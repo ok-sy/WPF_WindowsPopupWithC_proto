@@ -1,726 +1,337 @@
 using Popup.Dtos;
 using Popup.Models;
-using Popup.Views.Contents;
-using Popup.Views.Windows;
-using System.Linq;
-using System.Security.Policy;
-using System.Windows;
 using Popup.Managers;
 using Popup.Services;
+using Popup.Services.Auth;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
-
 
 namespace Popup
 {
+    /*
+     * 관리 화면 창. 팝업 조회·표시 흐름의 진입점이다.
+     *
+     * [기준 2·4·6 — 이 파일에서 바뀐 것]
+     *   - appsettings의 UserId를 제거했다. 사용자는 서버가 인증 헤더로 식별한다.
+     *     인증 헤더는 IAuthHeaderProvider(확장 지점)가 공급하고, 통합 토큰 필터 적용 전 개발 단계에서는
+     *     DevUserId를 X-Dev-User-Id 헤더로 보낸다.
+     *   - /statuses 조회와 클라이언트 완료 필터, PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
+     *     서버 목록(GET /p/api/wpf/popups)이 곧 표시 목록이다.
+     *   - 팝업 결과는 PopupResultQueue를 통해 종료 시점에 1회 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
+     *   - 주기 조회 간격은 서버 응답 pollingIntervalSeconds가 우선하며, 팝업이 열려 있으면 그 주기는 건너뛴다.
+     */
     public partial class MainWindow : Window
     {
-
-        /*
-         * 
-         * 팝업을 순서대로 표시하는 관리자
-         */
-        private readonly PopupManager
-            _popupManager;
-
-        /*
-         * DTO를 PopupOptions로 변환하는 서비스
-         */
-        private readonly PopupService
-            _popupService;
-
-        /*
-         * Java Spring Boot 서버와 통신하여
-         * 팝업 목록을 조회하는 API 서비스다.
-         */
-        private readonly PopupApiService?
-            _popupApiService;
-
-        /*
-         * WPF 내부 샘플만 사용하는 화면 시연 모드 여부다.
-         * true이면 Java API 생성, 사용자 ID 확인, 주기 조회를 모두 건너뛴다.
-         */
-        private readonly bool
-            _demoMode;
-
-        /*
-         * appsettings.json에서 읽은 현재 사용자 ID다.
-         *
-         * 현재는 로그인 시스템이 없으므로 설정값을 사용하고,
-         * 이후 사내 로그인 연계 시 이 값만 로그인 사용자 정보로 교체한다.
-         */
-        private readonly string
-            _currentUserId;
-
-        private readonly bool
-            _autoLoadOnStartup;
-
-        private readonly int
-            _pollingIntervalSeconds;
-
-        private readonly DispatcherTimer
-            _pollingTimer;
+        private readonly PopupManager _popupManager;
+        private readonly PopupService _popupService;
+        private readonly PopupApiService? _popupApiService;
+        private readonly PopupResultQueue? _resultQueue;
+        private readonly bool _demoMode;
+        private readonly bool _autoLoadOnStartup;
+        private readonly DispatcherTimer _pollingTimer;
+        private int _pollingIntervalSeconds;
+        private bool _isLoadingPopups;
 
         /*
          * 같은 실행 중 이미 화면에 전달한 팝업 ID를 기억한다.
-         * 주기 조회 때 서버가 같은 목록을 반환해도 중복 표시하지 않는다.
+         * 서버가 완료·숨김을 제외하더라도 TEXT/IMAGE처럼 완료 개념이 없는 팝업은 조회마다 다시 내려오므로,
+         * 한 실행 안에서는 한 번만 표시한다(다음 실행에서 다시 표시).
          */
-        private readonly HashSet<string>
-            _shownPopupIds =
-                new HashSet<string>(
-                    StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _shownPopupIds = new(StringComparer.OrdinalIgnoreCase);
 
-        private bool
-            _isLoadingPopups;
+        /* App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다. Demo Mode에서는 선택 화면을 계속 표시한다. */
+        public bool IsDemoMode => _demoMode;
 
-        /*
-         * App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다.
-         * Demo Mode에서는 선택 화면을 계속 표시한다.
-         */
-        public bool IsDemoMode =>
-            _demoMode;
-
-        /*
-         * appsettings.json에서 Java 팝업 API 주소와
-         * 현재 사용자 ID를 함께 읽는다.
-         *
-         * 반환 예:
-         * BaseUrl = http://localhost:8080/zero-rule-server/p
-         * UserId  = E1002
-         */
-        private static PopupClientSettings LoadPopupClientSettings()
-        {
-            /*
-             * 실행 중인 Popup.exe가 위치한 폴더를 기준으로
-             * appsettings.json의 전체 경로를 만든다.
-             *
-             * AppContext.BaseDirectory를 사용해야
-             * 바로가기나 다른 작업 폴더에서 실행해도
-             * EXE 옆의 설정 파일을 정확하게 찾을 수 있다.
-             */
-            string configurationFilePath =
-                Path.Combine(
-                    AppContext.BaseDirectory,
-                    "appsettings.json");
-
-            string configurationJson;
-
-            if (File.Exists(configurationFilePath))
-            {
-                configurationJson =
-                    File.ReadAllText(configurationFilePath);
-            }
-            else
-            {
-                using Stream configurationStream =
-                    typeof(MainWindow).Assembly.GetManifestResourceStream(
-                        "Popup.appsettings.json")
-                    ?? throw new InvalidOperationException(
-                        "내장 appsettings.json을 찾을 수 없습니다.");
-
-                using StreamReader configurationReader =
-                    new StreamReader(configurationStream);
-
-                configurationJson =
-                    configurationReader.ReadToEnd();
-            }
-
-            /*
-             * JSON 문자열을 탐색 가능한
-             * JsonDocument 객체로 변환한다.
-             *
-             * using을 사용하므로 메서드 종료 시
-             * JsonDocument가 자동으로 정리된다.
-             */
-            using JsonDocument configurationDocument =
-                JsonDocument.Parse(
-                    configurationJson);
-
-            JsonElement rootElement =
-                configurationDocument.RootElement;
-
-            /*
-             * 다음 구조에서 PopupApi 영역을 찾는다.
-             *
-             * {
-             *   "PopupApi": {
-             *     "BaseUrl": "...",
-             *     "UserId": "E1002"
-             *   }
-             * }
-             */
-            if (!rootElement.TryGetProperty(
-                    "PopupApi",
-                    out JsonElement popupApiElement))
-            {
-                throw new InvalidOperationException(
-                    "appsettings.json에 PopupApi 설정이 없습니다.");
-            }
-
-            /*
-             * PopupApi 내부에서 BaseUrl 값을 찾는다.
-             */
-            bool demoMode =
-                popupApiElement.TryGetProperty(
-                    "DemoMode",
-                    out JsonElement demoModeElement)
-                && demoModeElement.ValueKind == JsonValueKind.True;
-
-            /*
-             * JSON의 BaseUrl 값을
-             * C# 문자열로 변환한다.
-             */
-            string baseUrl =
-                string.Empty;
-
-            if (popupApiElement.TryGetProperty(
-                    "BaseUrl",
-                    out JsonElement baseUrlElement))
-            {
-                baseUrl =
-                    baseUrlElement.GetString()
-                    ?? string.Empty;
-            }
-
-            /*
-             * 속성은 존재하지만 값이 비어 있는 경우에도
-             * 잘못된 설정으로 처리한다.
-             */
-            if (!demoMode
-                && string.IsNullOrWhiteSpace(
-                    baseUrl))
-            {
-                throw new InvalidOperationException(
-                    "PopupApi.BaseUrl 값이 비어 있습니다.");
-            }
-
-            /*
-             * UserId는 실행 환경변수가 없을 때 사용할 대체값이다.
-             * 환경변수만 사용하는 운영 환경에서는 생략하거나 비워도 된다.
-             */
-            string configuredUserId =
-                string.Empty;
-
-            if (popupApiElement.TryGetProperty(
-                    "UserId",
-                    out JsonElement userIdElement))
-            {
-                configuredUserId =
-                    userIdElement.GetString()
-                    ?? string.Empty;
-            }
-
-            bool autoLoadOnStartup =
-                true;
-
-            if (popupApiElement.TryGetProperty(
-                    "AutoLoadOnStartup",
-                    out JsonElement autoLoadElement)
-                && (autoLoadElement.ValueKind == JsonValueKind.True
-                    || autoLoadElement.ValueKind == JsonValueKind.False))
-            {
-                autoLoadOnStartup =
-                    autoLoadElement.GetBoolean();
-            }
-
-            int pollingIntervalSeconds =
-                300;
-
-            if (popupApiElement.TryGetProperty(
-                    "PollingIntervalSeconds",
-                    out JsonElement pollingIntervalElement)
-                && pollingIntervalElement.TryGetInt32(
-                    out int configuredPollingIntervalSeconds))
-            {
-                pollingIntervalSeconds =
-                    Math.Max(
-                        0,
-                        configuredPollingIntervalSeconds);
-            }
-
-            return new PopupClientSettings
-            {
-                DemoMode =
-                    demoMode,
-
-                BaseUrl =
-                    baseUrl.Trim(),
-                UserId =
-                    configuredUserId.Trim(),
-                AutoLoadOnStartup =
-                    autoLoadOnStartup,
-                PollingIntervalSeconds =
-                    pollingIntervalSeconds
-            };
-        }
-
-        /*
-         * 현재 사용자 ID를 결정한다.
-         *
-         * 1순위: 실행 환경변수 POPUP_USER_ID
-         * 2순위: appsettings.json의 PopupApi.UserId
-         *
-         * 백그라운드 실행 프로그램은 POPUP_USER_ID만 전달하면
-         * 사용자마다 appsettings.json을 수정할 필요가 없다.
-         */
-        private static string ResolveCurrentUserId(
-            string configuredUserId)
-        {
-            string? environmentUserId =
-                Environment.GetEnvironmentVariable(
-                    "POPUP_USER_ID");
-
-            if (!string.IsNullOrWhiteSpace(
-                    environmentUserId))
-            {
-                return environmentUserId.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(
-                    configuredUserId))
-            {
-                return configuredUserId.Trim();
-            }
-
-            throw new InvalidOperationException(
-                "현재 사용자 ID가 없습니다.\n" +
-                "POPUP_USER_ID 환경변수 또는 " +
-                "appsettings.json의 PopupApi.UserId를 설정해주세요.");
-        }
-
-        /*
-         * MainWindow 생성자
-         *
-         * MainWindow.xaml을 읽어서
-         * 화면 요소를 실제 객체로 만든다.
-         */
         public MainWindow()
         {
             InitializeComponent();
 
-            /*
-             * MainWindow를 팝업의 부모 창으로 사용하는
-             * PopupManager를 생성한다.
-             */
-            _popupManager =
-                new PopupManager(
-                    this);
+            _popupManager = new PopupManager(this);
+            _popupService = new PopupService();
 
-            /*
-             * DTO 변환용 PopupService를 생성한다.
-             */
-            _popupService =
-                new PopupService();
+            PopupClientSettings settings = LoadPopupClientSettings();
+            _demoMode = settings.DemoMode;
+            _autoLoadOnStartup = settings.AutoLoadOnStartup;
+            _pollingIntervalSeconds = settings.PollingIntervalSeconds;
 
+            _pollingTimer = new DispatcherTimer();
+            _pollingTimer.Tick += PollingTimer_Tick;
 
-            /*
-             * Java Spring Boot 서버의 주소를 전달하여
-             * PopupApiService를 생성한다.
-             */
-            /*
-             * appsettings.json에서
-             * Java 팝업 API 주소를 읽는다.
-             */
-            PopupClientSettings popupClientSettings =
-                LoadPopupClientSettings();
-
-            _demoMode =
-                popupClientSettings.DemoMode;
-
-            _currentUserId =
-                _demoMode
-                    ? "DEMO_USER"
-                    : ResolveCurrentUserId(
-                        popupClientSettings.UserId);
-
-            _autoLoadOnStartup =
-                popupClientSettings.AutoLoadOnStartup;
-
-            _pollingIntervalSeconds =
-                popupClientSettings.PollingIntervalSeconds;
-
-            _pollingTimer =
-                new DispatcherTimer();
-
-            _pollingTimer.Tick +=
-                PollingTimer_Tick;
-
-            /*
-             * 설정 파일에서 읽은 API 주소를 전달하여
-             * PopupApiService를 생성한다.
-             */
             if (!_demoMode)
             {
-                _popupApiService =
-                    new PopupApiService(
-                        popupClientSettings.BaseUrl);
-            }
+                /*
+                 * [기준 6] 인증 헤더 공급자 선택. 지금은 None/Static만 있고, 통합 토큰·사내 SSO 규격이 확정되면
+                 * 여기서 새 구현체를 골라 주면 된다. PopupApiService는 헤더 값만 받는다.
+                 */
+                IAuthHeaderProvider authHeaderProvider = settings.AuthMode.Trim().ToUpperInvariant() switch
+                {
+                    "STATIC" => new StaticAuthHeaderProvider(settings.AuthStaticHeader),
+                    _ => new NoAuthHeaderProvider()
+                };
 
-            if (_demoMode)
+                _popupApiService = new PopupApiService(
+                    settings.BaseUrl,
+                    authHeaderProvider,
+                    ResolveDevUserId(settings.DevUserId));
+                _resultQueue = new PopupResultQueue(_popupApiService);
+            }
+            else
             {
-                Title =
-                    "Popup 관리 화면 - Demo Mode";
+                Title = "Popup 관리 화면 - Demo Mode";
             }
 
-            Loaded +=
-                MainWindow_Loaded;
+            Loaded += MainWindow_Loaded;
         }
 
         /*
-         * MainWindow가 처음 준비되면 API 팝업을 자동으로 조회한다.
-         * 설정값이 false이면 기존처럼 버튼을 눌러야 조회한다.
+         * appsettings.json을 읽는다. EXE 옆 파일이 있으면 그것을, 없으면 내장 리소스를 사용한다.
+         *
+         * {
+         *   "PopupApi": {
+         *     "DemoMode": false,
+         *     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
+         *     "AutoLoadOnStartup": true,
+         *     "PollingIntervalSeconds": 1800,
+         *     "Auth": { "Mode": "None", "StaticHeader": "" },
+         *     "DevUserId": ""
+         *   }
+         * }
          */
-        private async void MainWindow_Loaded(
-            object sender,
-            RoutedEventArgs e)
+        private static PopupClientSettings LoadPopupClientSettings()
         {
-            Loaded -=
-                MainWindow_Loaded;
-
-            if (_demoMode)
+            string configurationFilePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+            string configurationJson;
+            if (File.Exists(configurationFilePath))
             {
-                return;
+                configurationJson = File.ReadAllText(configurationFilePath);
             }
+            else
+            {
+                using Stream configurationStream =
+                    typeof(MainWindow).Assembly.GetManifestResourceStream("Popup.appsettings.json")
+                    ?? throw new InvalidOperationException("내장 appsettings.json을 찾을 수 없습니다.");
+                using StreamReader reader = new(configurationStream);
+                configurationJson = reader.ReadToEnd();
+            }
+
+            using JsonDocument document = JsonDocument.Parse(configurationJson);
+            if (!document.RootElement.TryGetProperty("PopupApi", out JsonElement api))
+            {
+                throw new InvalidOperationException("appsettings.json에 PopupApi 설정이 없습니다.");
+            }
+
+            PopupClientSettings settings = new()
+            {
+                DemoMode = GetBoolean(api, "DemoMode", false),
+                BaseUrl = GetString(api, "BaseUrl").Trim(),
+                AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
+                PollingIntervalSeconds = Math.Max(0, GetInt32(api, "PollingIntervalSeconds", 1800)),
+                DevUserId = GetString(api, "DevUserId").Trim()
+            };
+
+            if (api.TryGetProperty("Auth", out JsonElement auth) && auth.ValueKind == JsonValueKind.Object)
+            {
+                settings.AuthMode = GetString(auth, "Mode", "None").Trim();
+                settings.AuthStaticHeader = GetString(auth, "StaticHeader").Trim();
+            }
+
+            if (!settings.DemoMode && string.IsNullOrWhiteSpace(settings.BaseUrl))
+            {
+                throw new InvalidOperationException("PopupApi.BaseUrl 값이 비어 있습니다.");
+            }
+            return settings;
+        }
+
+        private static string GetString(JsonElement element, string name, string defaultValue = "")
+            => element.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() ?? defaultValue
+                : defaultValue;
+
+        private static bool GetBoolean(JsonElement element, string name, bool defaultValue)
+            => element.TryGetProperty(name, out JsonElement value)
+               && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
+                ? value.GetBoolean()
+                : defaultValue;
+
+        private static int GetInt32(JsonElement element, string name, int defaultValue)
+            => element.TryGetProperty(name, out JsonElement value) && value.TryGetInt32(out int result)
+                ? result
+                : defaultValue;
+
+        /*
+         * [개발 전용] X-Dev-User-Id 헤더로 보낼 사번. 1순위 환경변수 POPUP_DEV_USER_ID, 2순위 appsettings DevUserId.
+         * 둘 다 없으면 null → 헤더를 보내지 않는다(운영: 통합 토큰 필터가 사용자를 식별).
+         * 예전의 POPUP_USER_ID / PopupApi.UserId(요청 파라미터용)는 더 이상 읽지 않는다.
+         */
+        private static string? ResolveDevUserId(string configuredDevUserId)
+        {
+            string? fromEnvironment = Environment.GetEnvironmentVariable("POPUP_DEV_USER_ID");
+            if (!string.IsNullOrWhiteSpace(fromEnvironment)) return fromEnvironment.Trim();
+            return string.IsNullOrWhiteSpace(configuredDevUserId) ? null : configuredDevUserId.Trim();
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= MainWindow_Loaded;
+            if (_demoMode) return;
 
             if (_autoLoadOnStartup)
             {
-                await LoadAndShowAvailablePopupsAsync(
-                    showEmptyMessage: false,
-                    showErrorMessage: true);
+                await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: true);
             }
-
             StartPeriodicPolling();
         }
 
-        /*
-         * 설정된 초 간격으로 서버 조회 타이머를 시작한다.
-         * 0이면 주기 조회를 사용하지 않는다.
-         */
+        /* 설정된 초 간격으로 서버 조회 타이머를 시작한다. 0이면 주기 조회를 사용하지 않는다. */
         private void StartPeriodicPolling()
         {
-            if (_demoMode
-                || _pollingIntervalSeconds <= 0)
+            if (_demoMode || _pollingIntervalSeconds <= 0)
             {
+                _pollingTimer.Stop();
                 return;
             }
-
-            _pollingTimer.Interval =
-                TimeSpan.FromSeconds(
-                    _pollingIntervalSeconds);
-
+            _pollingTimer.Interval = TimeSpan.FromSeconds(_pollingIntervalSeconds);
             _pollingTimer.Start();
         }
 
         /*
-         * 주기 조회 실패는 백그라운드에서 조용히 넘긴다.
-         * 다음 주기가 되면 서버 연결을 다시 시도한다.
+         * [기준 4] 서버가 응답으로 내려준 조회 간격을 적용한다. 서버 값이 있으면 appsettings 값보다 우선한다.
          */
-        private async void PollingTimer_Tick(
-            object? sender,
-            EventArgs e)
+        private void ApplyPollingInterval(int serverIntervalSeconds)
         {
-            await LoadAndShowAvailablePopupsAsync(
-                showEmptyMessage: false,
-                showErrorMessage: false);
+            if (serverIntervalSeconds <= 0 || serverIntervalSeconds == _pollingIntervalSeconds) return;
+            _pollingIntervalSeconds = serverIntervalSeconds;
+            StartPeriodicPolling();
         }
 
-        /*
-         * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
-         * PopupManager를 통해 화면에 표시한다.
-         */
-        private async void OpenPopupButton_Click(
-            object sender,
-            RoutedEventArgs e)
+        /* 주기 조회 실패는 백그라운드에서 조용히 넘긴다. 다음 주기가 되면 서버 연결을 다시 시도한다. */
+        private async void PollingTimer_Tick(object? sender, EventArgs e)
+        {
+            await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
+        }
+
+        private async void OpenPopupButton_Click(object sender, RoutedEventArgs e)
         {
             await RefreshPopupsAsync();
         }
 
-        /*
-         * 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는
-         * 공개 팝업 재조회 메서드다.
-         */
+        /* 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는 공개 팝업 재조회 메서드다. */
         public async Task RefreshPopupsAsync()
         {
-            await LoadAndShowAvailablePopupsAsync(
-                showEmptyMessage: true,
-                showErrorMessage: true);
+            await LoadAndShowAvailablePopupsAsync(showEmptyMessage: true, showErrorMessage: true);
         }
 
         /*
-         * 자동 실행과 수동 버튼이 함께 사용하는 실제 조회 메서드다.
+         * 자동 실행·수동 버튼·주기 조회가 함께 사용하는 실제 조회 메서드다.
+         *
+         * 순서:
+         *  1. 미전송 결과 큐 flush — 이전 실행에서 못 보낸 완료·숨김이 먼저 반영되어야 서버 목록이 정확하다.
+         *  2. GET /p/api/wpf/popups — 서버가 판정한 최종 목록(공통 옵션·content·문항 포함).
+         *  3. 서버 조회 간격 적용, 이번 실행에서 이미 표시한 팝업 제외, PopupOptions 변환·표시.
+         * 팝업이 열려 있으면(HasOpenPopups) 조회를 건너뛴다(열린 팝업 위에 중복 표시 방지).
          */
-        private async Task LoadAndShowAvailablePopupsAsync(
-            bool showEmptyMessage,
-            bool showErrorMessage)
+        private async Task LoadAndShowAvailablePopupsAsync(bool showEmptyMessage, bool showErrorMessage)
         {
-            if (_popupApiService == null)
+            if (_popupApiService == null || _resultQueue == null)
             {
-                throw new InvalidOperationException(
-                    "API 모드의 PopupApiService가 생성되지 않았습니다.");
+                throw new InvalidOperationException("API 모드의 PopupApiService가 생성되지 않았습니다.");
             }
-
-            if (_isLoadingPopups)
+            if (_isLoadingPopups) return;
+            if (_popupManager.HasOpenPopups)
             {
+                if (showEmptyMessage)
+                {
+                    MessageBox.Show("표시 중인 팝업이 있어 새로 조회하지 않습니다.", "팝업 조회",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
                 return;
             }
 
-            _isLoadingPopups =
-                true;
-
-            /*
-             * 생성자에서 appsettings.json으로부터 읽어둔
-             * 현재 사용자 ID를 이번 API 요청 전체에서 사용한다.
-             */
-            string currentUserId =
-                _currentUserId;
-
+            _isLoadingPopups = true;
             try
             {
-                /*
-                 * Java API와 PostgreSQL DB를 통해
-                 * 현재 사용자에게 노출 가능한 팝업만 조회한다.
-                 */
-                List<PopupResponseDto> popupDtos =
-                    await _popupApiService
-                        .GetAvailablePopupsAsync(
-                            currentUserId);
+                await _resultQueue.FlushAsync();
 
-                /*
-                 * 앱을 다시 실행해도 이미 완료한 설문이나 영상이
-                 * 다시 표시되지 않도록 서버의 사용자별 상태를 조회한다.
-                 *
-                 * /api/popups 목록은 현재 기간·대상·숨김 조건을 처리하고,
-                 * /api/popups/statuses 목록은 사용자의 완료 이력을 알려준다.
-                 */
-                List<UserPopupStatusDto> popupStatuses =
-                    await _popupApiService
-                        .GetPopupStatusesAsync(
-                            currentUserId);
+                WpfPopupListResponseDto response = await _popupApiService.GetWpfPopupsAsync();
+                ApplyPollingInterval(response.PollingIntervalSeconds);
 
-                Dictionary<string, UserPopupStatusDto> statusByPopupId =
-                    popupStatuses
-                        .GroupBy(
-                            status => status.PopupId,
-                            StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(
-                            group => group.Key,
-                            group => group.First(),
-                            StringComparer.OrdinalIgnoreCase);
-
-                /*
-                 * 완료 상태가 없는 팝업과 아직 미완료인 팝업만 남긴다.
-                 * 숨김 상태는 Java 조회 SQL에서도 제외되지만,
-                 * 완료 상태는 이 단계에서 최종적으로 제외한다.
-                 */
-                popupDtos =
-                    popupDtos
-                        .Where(popup =>
-                            (!_shownPopupIds.Contains(
-                                popup.PopupId))
-                            && (!statusByPopupId.TryGetValue(
-                                    popup.PopupId,
-                                    out UserPopupStatusDto? status)
-                                || !status.Completed))
-                        .ToList();
+                List<PopupResponseDto> popupDtos = response.Popups
+                    .Where(popup => !_shownPopupIds.Contains(popup.PopupId))
+                    .ToList();
 
                 if (popupDtos.Count == 0)
                 {
                     if (showEmptyMessage)
                     {
-                        MessageBox.Show(
-                            "현재 표시할 팝업이 없습니다.",
-                            "팝업 조회",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        MessageBox.Show("현재 표시할 팝업이 없습니다.", "팝업 조회",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
                     }
-
                     return;
                 }
 
-                /*
-                 * 서버 DTO를 실제 PopupWindow에서 사용하는
-                 * PopupOptions 목록으로 변환한다.
-                 */
-                List<PopupOptions> popupOptionsList =
-                    _popupService.CreatePopupOptions(
-                        popupDtos);
-
-                foreach (PopupOptions popupOptions
-                         in popupOptionsList)
+                List<PopupOptions> popupOptionsList = _popupService.CreatePopupOptions(popupDtos);
+                foreach (PopupOptions popupOptions in popupOptionsList)
                 {
                     /*
-                     * PopupWindow에서 "다시 보지 않기"를 선택하면
-                     * 실행할 서버 저장 콜백을 설정한다.
-                     *
-                     * PopupWindow는 API 주소나 사용자 ID를 직접 알지 않고,
-                     * 이 콜백만 호출한다.
+                     * [기준 3·4] PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을
+                     * 큐로 넘기는 훅만 연결한다. 제출은 즉시 전송해 응답을 사용자에게 안내한다.
                      */
-                    popupOptions.HidePopupAsync =
-                        async (
-                            popupId,
-                            hideDays) =>
-                        {
-                            await _popupApiService
-                                .HidePopupAsync(
-                                    popupId,
-                                    currentUserId,
-                                    hideDays);
-                        };
-
-                    /*
-                     * 팝업 내용이 실제 화면에 표시되면
-                     * 서버에 DISPLAYED 이벤트를 저장한다.
-                     */
-                    popupOptions.PopupDisplayedAsync =
-                        async popupId =>
-                        {
-                            await _popupApiService
-                                .RecordPopupEventAsync(
-                                    popupId,
-                                    currentUserId,
-                                    "DISPLAYED");
-                        };
-
-                    /*
-                     * 팝업 창이 실제로 닫히면
-                     * 서버에 CLOSED 이벤트를 저장한다.
-                     */
-                    popupOptions.PopupClosedAsync =
-                        async popupId =>
-                        {
-                            await _popupApiService
-                                .RecordPopupEventAsync(
-                                    popupId,
-                                    currentUserId,
-                                    "CLOSED");
-                        };
-
-                    /*
-                     * 설문/퀴즈 팝업의 제출 이벤트를
-                     * 서버 응답 저장 API와 연결한다.
-                     */
-                    popupOptions.SubmitSurveyAsync =
-                        async (popupId, surveyAnswers) =>
-                        {
-                            List<PopupSubmitAnswerRequestDto> requestAnswers =
-                                surveyAnswers
-                                    .Select(answer =>
-                                        new PopupSubmitAnswerRequestDto
-                                        {
-                                            QuestionId =
-                                                answer.QuestionId,
-
-                                            TextAnswer =
-                                                string.IsNullOrWhiteSpace(
-                                                    answer.TextAnswer)
-                                                    ? null
-                                                    : answer.TextAnswer,
-
-                                            OptionIds =
-                                                new List<long>(
-                                                    answer.SelectedOptionIds)
-                                        })
-                                    .ToList();
-
-                            await _popupApiService
-                                .SubmitResponseAsync(
-                                    popupId,
-                                    currentUserId,
-                                    requestAnswers);
-                        };
-
-                    /*
-                     * VideoPopupView가 측정한 재생 위치와 실제 시청시간을
-                     * 서버의 영상 진행률 API에 저장한다.
-                     */
-                    popupOptions.SaveVideoProgressAsync =
-                        async (popupId, progress) =>
-                        {
-                            VideoProgressResponseDto response =
-                                await _popupApiService
-                                .SaveVideoProgressAsync(
-                                    popupId,
-                                    new VideoProgressRequestDto
-                                    {
-                                        UserId =
-                                            currentUserId,
-                                        DurationSeconds =
-                                            progress.DurationSeconds,
-                                        PositionSeconds =
-                                            progress.PositionSeconds,
-                                        MaximumPositionSeconds =
-                                            progress.MaximumPositionSeconds,
-                                        WatchedSeconds =
-                                            progress.WatchedSeconds
-                                    });
-
-                            return response.Completed;
-                        };
+                    popupOptions.ReportResultAsync = _resultQueue.EnqueueAndSendAsync;
+                    popupOptions.ReportResultImmediateAsync = _resultQueue.SendImmediateAsync;
                 }
 
-                /*
-                 * 조회한 팝업을 PopupManager에 전달한다.
-                 *
-                 * 서버의 displayMode 값에 따라:
-                 *
-                 * SEQUENTIAL
-                 * → 한 개씩 순차적으로 표시
-                 * SIMULTANEOUS
-                 * → 여러 팝업을 한 번에 표시
-                 */
-                foreach (PopupResponseDto popupDto
-                         in popupDtos)
+                foreach (PopupResponseDto popupDto in popupDtos)
                 {
-                    _shownPopupIds.Add(
-                        popupDto.PopupId);
+                    _shownPopupIds.Add(popupDto.PopupId);
                 }
-
-                _popupManager.ShowRange(
-                    popupOptionsList);
+                _popupManager.ShowRange(popupOptionsList);
+            }
+            catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Unauthorized
+                                                         || exception.StatusCode == HttpStatusCode.Forbidden)
+            {
+                if (showErrorMessage)
+                {
+                    MessageBox.Show(
+                        "팝업 서버가 사용자 인증을 거절했습니다.\n\n" + exception.Message,
+                        "인증 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (HttpRequestException exception)
             {
                 if (showErrorMessage)
                 {
                     MessageBox.Show(
-                        "Java 팝업 서버에 연결할 수 없습니다.\n\n" +
-                        "Spring Boot 서버가 실행 중인지 확인해주세요.\n\n" +
-                        exception.Message,
-                        "서버 연결 오류",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        "팝업 서버에 연결할 수 없습니다.\n\n서버가 실행 중인지 확인해주세요.\n\n" + exception.Message,
+                        "서버 연결 오류", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (TaskCanceledException)
             {
                 if (showErrorMessage)
                 {
-                    MessageBox.Show(
-                        "팝업 서버의 응답 시간이 초과되었습니다.",
-                        "서버 응답 시간 초과",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                    MessageBox.Show("팝업 서버의 응답 시간이 초과되었습니다.", "서버 응답 시간 초과",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception exception)
             {
                 if (showErrorMessage)
                 {
-                    MessageBox.Show(
-                        "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
-                        exception.Message,
-                        "팝업 오류",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    MessageBox.Show("팝업을 불러오는 중 오류가 발생했습니다.\n\n" + exception.Message, "팝업 오류",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
             {
-                _isLoadingPopups =
-                    false;
+                _isLoadingPopups = false;
             }
         }
     }

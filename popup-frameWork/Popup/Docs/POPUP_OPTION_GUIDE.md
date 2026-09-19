@@ -221,7 +221,21 @@ QUIZ는 다음 기능이 추가된다.
 
 ## 8. 실제 WPF API 호출 목록
 
-`PopupApiService`에서 실제 호출하는 사용자용 API이다.
+> **2026-09-19 갱신 (기준 3·4·6)** — 새 클라이언트는 아래 두 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 식별한다.
+> 표 아래의 기존 6개 메서드는 구 서버 호환용으로 코드에 남아 있으나 호출부가 없다(전환 완료 후 제거).
+>
+> | 메서드 | HTTP | 경로 | 기능 |
+> |---|---|---|---|
+> | `GetWpfPopupsAsync` | GET | `/api/wpf/popups` | 서버가 노출 판정(활성·기간·대상·숨김·완료)을 끝낸 최종 목록 + 공통 옵션·content·문항 |
+> | `PostResultsAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 항목(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED) 1회 전송. `PopupResultQueue`가 실패 시 보관·재전송 |
+>
+> 조회 흐름: `MainWindow` → `PopupResultQueue.FlushAsync`(미전송 결과) → `GetWpfPopupsAsync` → `PopupService.CreatePopupOptions` → `PopupManager`.
+> 결과 흐름: `PopupWindow.Closed` → `PopupResultBuilder`가 항목 조립 → `PopupResultQueue.EnqueueAndSendAsync`. 제출은 `SendImmediateAsync`로 즉시 전송 후 응답 안내.
+> 클라이언트의 기간·숨김·완료 판단(`PopupPolicyService`·`PopupStorageService`·`statuses` 필터)과 영상 진행률 10초 주기 저장은 제거했다.
+
+(아래는 구 API 기준 설명이다.)
+
+`PopupApiService`에서 실제 호출하던 사용자용 API이다.
 
 | 메서드 | HTTP | 경로 | 기능 |
 |---|---|---|---|

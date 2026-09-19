@@ -3,7 +3,7 @@
     "Popup": {
       "commandName": "Project",
       "environmentVariables": {
-        "POPUP_USER_ID": "E1002"
+        "POPUP_DEV_USER_ID": "E1001"
       }
     }
   }

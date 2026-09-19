@@ -1,6 +1,8 @@
 using Popup.Dtos;
+using Popup.Services.Auth;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -69,9 +71,26 @@ namespace Popup.Services
  * http://localhost:8080/zero-rule-server/p
  * https://zero-rule.company.com/zero-rule-server/p
  */
+        /*
+         * [추가 — 기준 6] Authorization 헤더 값을 공급하는 확장 지점이다.
+         * 통합 토큰(타 팀)·사내 SSO 규격이 확정되면 구현체만 교체한다. 이 클래스는 토큰 획득 방법을 모른다.
+         */
+        private readonly IAuthHeaderProvider _authHeaderProvider;
+
+        /*
+         * [추가 — 개발 전용] 서버 개발 프로파일(custom.wpf-popup.dev-user-header=true)에서만 의미가 있는
+         * X-Dev-User-Id 헤더 값이다. 통합 토큰 필터 적용 전 사용자를 지정해 조회·결과 API를 검증한다.
+         * 운영 배포 시 비워 두며, 비어 있으면 헤더를 붙이지 않는다.
+         */
+        private readonly string? _devUserId;
+
         public PopupApiService(
-            string baseUrl)
+            string baseUrl,
+            IAuthHeaderProvider? authHeaderProvider = null,
+            string? devUserId = null)
         {
+            _authHeaderProvider = authHeaderProvider ?? new NoAuthHeaderProvider();
+            _devUserId = string.IsNullOrWhiteSpace(devUserId) ? null : devUserId.Trim();
             /*
              * API 주소가 없으면
              * 서버 요청 주소를 만들 수 없으므로
@@ -467,6 +486,112 @@ namespace Popup.Services
             return await response.Content
                 .ReadFromJsonAsync<List<UserPopupStatusDto>>(_jsonOptions)
                 ?? new List<UserPopupStatusDto>();
+        }
+
+        /*
+         * =====================================================================
+         * [신규 WPF API — 기준 2·3·4·6] /p/api/wpf/**
+         *
+         * 아래 두 메서드가 새 클라이언트의 전부다. 위의 기존 6개 메서드(/api/popups/**)는
+         * 구 서버 호환용으로 남겨 두었으며 새 흐름에서는 호출하지 않는다(전환 완료 후 제거).
+         * 사용자 ID를 보내지 않는다. 서버가 인증 헤더(IAuthHeaderProvider가 준 값)로 사용자를 식별한다.
+         * =====================================================================
+         */
+
+        /// <summary>
+        /// 서버가 노출 판단(활성·기간·대상·숨김·완료)을 끝낸 최종 팝업 목록을 조회한다.
+        /// 공통 옵션·content·문항·선택지가 한 응답에 들어 있어 추가 호출이 없다.
+        /// </summary>
+        public Task<WpfPopupListResponseDto> GetWpfPopupsAsync()
+            => SendWithAuthAsync<WpfPopupListResponseDto>(
+                HttpMethod.Get, $"{_baseUrl}/api/wpf/popups", body: null);
+
+        /// <summary>
+        /// 팝업 처리 결과(닫기·숨김·제출·영상 시청)를 일괄 전송한다. PopupResultQueue가 호출한다.
+        /// HTTP 성공만으로 항목 성공을 판단하지 않고 응답 results[].status를 본다.
+        /// </summary>
+        public Task<WpfResultResponseDto> PostResultsAsync(WpfResultRequestDto request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (request.Results == null || request.Results.Count == 0)
+            {
+                throw new ArgumentException("전송할 결과 항목이 없습니다.", nameof(request));
+            }
+            return SendWithAuthAsync<WpfResultResponseDto>(
+                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups/results", request);
+        }
+
+        /// <summary>
+        /// [기준 6] 공통 전송 경로. 인증 헤더 부착과 401 재시도를 한 곳에서 처리한다.
+        ///  1. IAuthHeaderProvider.GetAuthorizationHeaderAsync() 값이 있으면 Authorization 헤더로 붙인다.
+        ///  2. 개발용 사번(_devUserId)이 설정되어 있으면 X-Dev-User-Id 헤더를 붙인다.
+        ///  3. 401이면 OnUnauthorizedAsync()로 토큰 갱신 기회를 준 뒤 같은 요청을 1회만 재시도한다.
+        /// 응답 본문이 WPF 오류 JSON({code,message})이면 메시지에 코드를 포함해 예외를 만든다.
+        /// </summary>
+        private async Task<TResponse> SendWithAuthAsync<TResponse>(
+            HttpMethod method,
+            string requestUrl,
+            object? body,
+            bool retried = false)
+        {
+            using HttpRequestMessage request = new(method, requestUrl);
+            if (body != null)
+            {
+                request.Content = JsonContent.Create(body, options: _jsonOptions);
+            }
+
+            string? authorization = await _authHeaderProvider.GetAuthorizationHeaderAsync();
+            if (!string.IsNullOrWhiteSpace(authorization))
+            {
+                request.Headers.TryAddWithoutValidation("Authorization", authorization);
+            }
+            if (_devUserId != null)
+            {
+                request.Headers.TryAddWithoutValidation("X-Dev-User-Id", _devUserId);
+            }
+
+            using HttpResponseMessage response = await HttpClient.SendAsync(request);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized && !retried)
+            {
+                await _authHeaderProvider.OnUnauthorizedAsync();
+                return await SendWithAuthAsync<TResponse>(method, requestUrl, body, retried: true);
+            }
+
+            await EnsureWpfSuccessAsync(response);
+
+            return await response.Content.ReadFromJsonAsync<TResponse>(_jsonOptions)
+                   ?? throw new InvalidOperationException("WPF 팝업 API 응답 본문이 비어 있습니다.");
+        }
+
+        /// <summary>WPF API 오류 본문 {code, message, timestamp}를 읽어 HttpRequestException에 담는다.</summary>
+        private static async Task EnsureWpfSuccessAsync(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            string errorBody = await response.Content.ReadAsStringAsync();
+            string detail = errorBody;
+            try
+            {
+                WpfErrorResponseDto? error = JsonSerializer.Deserialize<WpfErrorResponseDto>(
+                    errorBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (error != null && !string.IsNullOrWhiteSpace(error.Code))
+                {
+                    detail = $"[{error.Code}] {error.Message}";
+                }
+            }
+            catch (JsonException)
+            {
+                // 오류 본문이 JSON이 아니면 원문 그대로 사용한다.
+            }
+
+            throw new HttpRequestException(
+                $"WPF 팝업 API 요청 실패: {(int)response.StatusCode} {response.ReasonPhrase}\n{detail}",
+                null,
+                response.StatusCode);
         }
 
         /// <summary>공통 JSON POST 요청을 보내고 응답 DTO로 변환한다.</summary>

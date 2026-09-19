@@ -509,7 +509,9 @@ namespace Popup.Views.Windows
 
             /*
              * 서버가 완료 전 닫기를 금지한 VIDEO 팝업은
-             * 진행률 API에서 완료 판정을 받기 전까지 닫지 않는다.
+             * 누적 시청 비율이 완료 기준에 도달하기 전까지 닫지 않는다.
+             * [기준 4] 실시간 진행률 API가 없어졌으므로 VideoPopupView의 로컬 추정(HasReachedCompletion)을 쓴다.
+             * 최종 완료 판정은 창이 닫힐 때 보내는 결과 항목으로 서버가 한다.
              *
              * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는
              * 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
@@ -517,6 +519,7 @@ namespace Popup.Views.Windows
             if (_options.Content is VideoPopupView videoPopupView &&
                 !_options.AllowCloseBeforeComplete &&
                 !_options.IsCompleted &&
+                !videoPopupView.HasReachedCompletion(_options.CompletionRatio) &&
                 !videoPopupView.HasPlaybackFailed)
             {
                 double requiredPercent =
@@ -582,56 +585,33 @@ namespace Popup.Views.Windows
         }
 
         /*
-        * 사용자가 선택한 "다시 보지 않기" 설정을
-        * Java API를 통해 Oracle DB에 저장한다.
-        */
-        private async Task SaveDoNotShowAgainAsync()
+         * [기준 3·4] "다시 보지 않기" 처리.
+         * 예전에는 닫기 직전에 숨김 API(/hide)를 직접 호출해 성공해야 창을 닫았다.
+         * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
+         * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
+         * 메서드 이름·호출 위치는 기존 흐름(CloseButton_Click)을 유지하기 위해 그대로 두었다.
+         */
+        private Task SaveDoNotShowAgainAsync()
         {
-            /*
-             * 체크박스가 표시되지 않거나
-             * 사용자가 체크하지 않았다면
-             * 서버 저장 없이 정상적으로 종료한다.
-             */
-            if (_options.ShowDoNotShowAgain == false ||
-                DoNotShowAgainCheckBox.IsChecked != true)
-            {
-                return;
-            }
+            RecordDoNotShowAgainChoice();
+            return Task.CompletedTask;
+        }
 
-            /*
-             * 어떤 팝업을 숨길지 서버에 전달하려면
-             * PopupId가 반드시 필요하다.
-             */
-            if (string.IsNullOrWhiteSpace(
-                    _options.PopupId))
-            {
-                throw new InvalidOperationException(
-                    "팝업 ID가 없어 다시 보지 않기를 저장할 수 없습니다.");
-            }
+        /*
+         * 닫기 버튼 외의 경로(ESC, Alt+F4, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
+         * Closing 시점에 한 번 더 기록한다.
+         */
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            RecordDoNotShowAgainChoice();
+            base.OnClosing(e);
+        }
 
-            /*
-             * MainWindow에서 서버 저장 콜백이
-             * 설정되지 않은 경우 API를 호출할 수 없다.
-             */
-            if (_options.HidePopupAsync == null)
-            {
-                throw new InvalidOperationException(
-                    "팝업 숨김 저장 기능이 설정되지 않았습니다.");
-            }
-
-            /*
-             * 현재 정책은 30일 동안 숨김이다.
-             */
-            const int hideDays =
-                30;
-
-            /*
-             * MainWindow에서 설정한 콜백을 호출하여
-             * Java API와 Oracle DB에 숨김 상태를 저장한다.
-             */
-            await _options.HidePopupAsync(
-                _options.PopupId,
-                hideDays);
+        private void RecordDoNotShowAgainChoice()
+        {
+            _options.DoNotShowAgainChecked =
+                _options.ShowDoNotShowAgain
+                && DoNotShowAgainCheckBox.IsChecked == true;
         }
     }
 }

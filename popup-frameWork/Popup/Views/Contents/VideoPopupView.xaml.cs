@@ -49,21 +49,16 @@ namespace Popup.Views.Contents
         private readonly DispatcherTimer _progressTimer;
 
         /*
-         * 서버 저장용 진행 상태를 일정 간격으로 외부에 전달하는 타이머다.
-         * 화면 갱신 타이머보다 느린 10초 간격을 사용하여 API 호출을 줄인다.
+         * [기준 4] 서버 저장용 10초 주기 타이머(_progressSaveTimer)와 VideoProgressSaveRequested 이벤트를 제거했다.
+         * 재생 중에는 누적 시청·최대 도달 위치만 로컬에서 계산하고, 팝업이 닫힐 때 PopupManager가
+         * GetFinalProgress()로 한 번 읽어 결과 API에 담는다. 완료 판정은 서버가 한다.
          */
-        private readonly DispatcherTimer _progressSaveTimer;
 
         private double _maximumPositionSeconds;
         private double _watchedSeconds;
         private double _lastObservedPositionSeconds;
-        private VideoProgressSnapshot? _lastRequestedProgress;
-
-        /// <summary>
-        /// 현재 영상 진행 상태를 서버에 저장해야 할 때 발생한다.
-        /// </summary>
-        public event EventHandler<VideoProgressSnapshot>?
-            VideoProgressSaveRequested;
+        /* 가장 최근에 계산한 진행 스냅샷. 창이 닫힐 때 결과 항목(VIDEO_WATCHED)에 담긴다. */
+        private VideoProgressSnapshot? _latestProgress;
         /*
          * 일정 시간 동안 마우스 움직임이 없으면
          * 영상 컨트롤바를 숨기는 타이머다.
@@ -159,15 +154,6 @@ namespace Popup.Views.Contents
             _progressTimer.Tick +=
                 ProgressTimer_Tick;
 
-            _progressSaveTimer =
-                new DispatcherTimer
-                {
-                    Interval =
-                        TimeSpan.FromSeconds(10)
-                };
-
-            _progressSaveTimer.Tick +=
-                ProgressSaveTimer_Tick;
             if (string.IsNullOrWhiteSpace(videoPath))
             {
                 throw new ArgumentException(
@@ -668,16 +654,10 @@ namespace Popup.Views.Contents
                 currentPositionSeconds;
         }
 
-        private void ProgressSaveTimer_Tick(
-            object? sender,
-            EventArgs e)
-        {
-            RequestProgressSave();
-        }
-
         /*
-         * MediaElement의 현재 상태를 API 전달용 객체로 만들어
-         * PopupManager에 알린다.
+         * [기준 4] 현재 재생 상태로 진행 스냅샷을 갱신한다. 예전에는 이 시점마다 서버(/video-progress)를 호출했지만
+         * 이제 로컬 _latestProgress만 갱신하고, 서버 전송은 창이 닫힐 때 GetFinalProgress()를 통해 1회만 한다.
+         * force 인자는 기존 호출부(일시정지·탐색·종료) 호환을 위해 남겨 두며 동작 차이는 없다.
          */
         private void RequestProgressSave(bool force = false)
         {
@@ -737,21 +717,29 @@ namespace Popup.Views.Contents
                             durationSeconds)
                 };
 
-            if (!force &&
-                _lastRequestedProgress != null &&
-                _lastRequestedProgress.PositionSeconds == progress.PositionSeconds &&
-                _lastRequestedProgress.MaximumPositionSeconds == progress.MaximumPositionSeconds &&
-                _lastRequestedProgress.WatchedSeconds == progress.WatchedSeconds)
-            {
-                return;
-            }
+            _latestProgress = progress;
+        }
 
-            _lastRequestedProgress =
-                progress;
+        /// <summary>
+        /// [기준 4] 창이 닫힐 때 PopupManager가 호출한다. 현재 재생 상태로 스냅샷을 갱신한 뒤 돌려준다.
+        /// 영상이 한 번도 열리지 않았으면(재생 실패 등) null이며, 이 경우 VIDEO_WATCHED 대신 CLOSED로 보고한다.
+        /// </summary>
+        public VideoProgressSnapshot? GetFinalProgress()
+        {
+            RequestProgressSave(force: true);
+            return _latestProgress;
+        }
 
-            VideoProgressSaveRequested?.Invoke(
-                this,
-                progress);
+        /// <summary>
+        /// [기준 4] 로컬 추정 완료 여부. 실시간 서버 판정이 없어졌으므로 "완료 전 닫기 금지" 안내에만 쓴다.
+        /// 최종 완료 판정은 결과 API 응답(서버)이 한다.
+        /// </summary>
+        public bool HasReachedCompletion(double requiredRatio)
+        {
+            VideoProgressSnapshot? progress = GetFinalProgress();
+            if (progress == null || progress.DurationSeconds <= 0) return false;
+            double ratio = (double)(progress.WatchedSeconds / progress.DurationSeconds);
+            return ratio >= Math.Clamp(requiredRatio, 0.0, 1.0);
         }
 
         private void ProgressSlider_PreviewMouseLeftButtonDown(
@@ -777,7 +765,6 @@ namespace Popup.Views.Contents
 
             _progressTimer.Stop();
             _controlHideTimer.Stop();
-            _progressSaveTimer.Stop();
 
             /*
              * 드래그 중에는 영상이 계속 흘러가지 않도록
@@ -1534,7 +1521,6 @@ namespace Popup.Views.Contents
         object sender,
         RoutedEventArgs e)
         {
-            _progressSaveTimer.Stop();
 
             RequestProgressSave(force: true);
 
@@ -1575,7 +1561,6 @@ namespace Popup.Views.Contents
         {
 
             _progressTimer.Stop();
-            _progressSaveTimer.Stop();
 
             _isPlaying = false;
 
@@ -1690,7 +1675,6 @@ namespace Popup.Views.Contents
 
 
             _progressTimer.Start();
-            _progressSaveTimer.Start();
 
 
         }
@@ -1704,7 +1688,6 @@ namespace Popup.Views.Contents
 
             PopupVideo.Pause();
 
-            _progressSaveTimer.Stop();
 
             RequestProgressSave(force: true);
 
@@ -1745,7 +1728,6 @@ namespace Popup.Views.Contents
         {
             _isMediaOpened = false;
             _progressTimer.Stop();
-            _progressSaveTimer.Stop();
 
             /*
              * 로드 실패 후에도 완료 전 닫기 제한을 그대로 적용하면
@@ -1779,7 +1761,6 @@ namespace Popup.Views.Contents
                  */
                 RequestProgressSave(force: true);
 
-                _progressSaveTimer.Stop();
                 
                 _controlHideTimer.Stop();
                 /*

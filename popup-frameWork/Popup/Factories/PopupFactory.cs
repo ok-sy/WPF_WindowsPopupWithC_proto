@@ -24,14 +24,17 @@ namespace Popup.Factories
                 "TEXT" => CreateTextPopupView(popupDto.Content),
                 "IMAGE" => CreateImagePopupView(popupDto.Content),
                 "VIDEO" => CreateVideoPopupView(popupDto.Content),
-                "SURVEY" => CreateSurveyPopupView(popupDto.Content, false),
-                "QUIZ" => CreateSurveyPopupView(popupDto.Content, true),
+                "SURVEY" => CreateSurveyPopupView(popupDto, false),
+                "QUIZ" => CreateSurveyPopupView(popupDto, true),
                 _ => throw new NotSupportedException($"지원하지 않는 팝업 종류입니다: {popupDto.PopupType}")
             };
 
             return new PopupOptions
             {
                 PopupId = popupDto.PopupId,
+                // [기준 3] 결과 항목 조립(HIDDEN hideDays)과 제출 결과 안내(QUIZ 분기)에 필요한 값
+                PopupType = popupDto.PopupType.Trim().ToUpperInvariant(),
+                HideDays = popupDto.HideDays,
                 Title = popupDto.Title,
                 Content = content,
                 DisplayMode = ConvertPopupDisplayMode(popupDto.DisplayMode),
@@ -142,13 +145,21 @@ namespace Popup.Factories
                 contentDto.ShowDescription);
         }
 
-        private static SurveyPopupView CreateSurveyPopupView(JsonElement contentJson, bool isQuizMode)
+        /*
+         * [기준 3] 신규 WPF API는 문항을 최상위 questions에만 내려주고 content.questions는 제거했다.
+         * 최상위 questions가 있으면 그것을 쓰고, 비어 있으면 구 서버·데모 JSON 호환을 위해 content.questions를 읽는다.
+         * passingScore는 더 이상 내려오지 않으며(채점은 서버), SurveyPopupView도 로컬 채점을 하지 않는다.
+         */
+        private static SurveyPopupView CreateSurveyPopupView(PopupResponseDto popupDto, bool isQuizMode)
         {
-            SurveyPopupContentDto contentDto = contentJson.Deserialize<SurveyPopupContentDto>(JsonOptions)
+            SurveyPopupContentDto contentDto = popupDto.Content.Deserialize<SurveyPopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("SURVEY 또는 QUIZ content 변환에 실패했습니다.");
+            List<SurveyQuestionDto> questionDtos = popupDto.Questions.Count > 0
+                ? popupDto.Questions
+                : contentDto.Questions;
 
             List<SurveyQuestion> questions = new();
-            foreach (SurveyQuestionDto questionDto in contentDto.Questions)
+            foreach (SurveyQuestionDto questionDto in questionDtos)
             {
                 SurveyQuestion question = new()
                 {

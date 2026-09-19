@@ -1,4 +1,14 @@
-# 07. WPF 클라이언트 변경 설계
+# 07. WPF 클라이언트 변경 설계 — 구현 반영 (2026-09-19, 단계 6 완료)
+
+> **구현 결과 요약** — 아래 설계대로 구현했고 `dotnet build`(net10.0-windows, Debug) 경고 0·오류 0. 설계와 다른 점:
+> - `WpfAuthService`(SSO 토큰 획득) 대신 `Service/Auth/IAuthHeaderProvider` + `NoAuthHeaderProvider`/`StaticAuthHeaderProvider` (04 문서, 인증은 타 팀 통합 토큰).
+> - `appsettings.json`: `UserId` 제거, `Auth.Mode/StaticHeader`, `DevUserId`(개발 헤더 `X-Dev-User-Id`) 추가. `launchSettings.json`은 `POPUP_DEV_USER_ID`.
+> - `SurveyPopupView`의 로컬 퀴즈 채점(`CalculateScore`·`_passingScore`) 제거 — 서버가 정답을 내려주지 않으므로 채점 불가. 통과/미통과 안내는 결과 API 응답으로 `PopupManager`가 표시.
+> - `PopupWindow`의 "완료 전 닫기 금지" 판단은 실시간 서버 판정 대신 `VideoPopupView.HasReachedCompletion(ratio)` 로컬 추정 사용(최종 판정은 서버).
+> - `PopupWindow.OnClosing`에서 "다시 보지 않기" 체크를 `PopupOptions.DoNotShowAgainChecked`에 기록(ESC/Alt+F4 경로 포함).
+> - `PopupOptions`에 `PopupType`, `HideDays` 추가(결과 항목 조립·제출 안내 분기용).
+> - 미검증: 실제 서버 연동(Oracle·통합 토큰 없음). 데모 모드는 `ReportResult*` 훅이 null이라 전송 없이 동작.
+
 
 기준 항목 2·3·4·6·7의 WPF 측 구현. 대상: `popup-frameWork/Popup/`. WPF는 이번 과제 전용 클라이언트이므로 삭제·교체를 허용하되, 렌더링 계층(`Views/**`, `PopupFactory`, `PopupWindow`)은 **현행 구조를 유지**하고 서비스·매니저 계층만 바꾼다.
 

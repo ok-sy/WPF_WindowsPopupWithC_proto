@@ -1,4 +1,6 @@
-﻿using Popup.Models;
+﻿using Popup.Dtos;
+using Popup.Models;
+using Popup.Services;
 using Popup.Views.Windows;
 using System.Collections.Generic;
 using System.Windows;
@@ -20,6 +22,12 @@ namespace Popup.Managers
         private readonly BackgroundOverlayManager _backgroundOverlayManager = new();
         private readonly double _defaultBackgroundOverlayOpacity;
         private bool _isGroupActive;
+
+        /// <summary>
+        /// [기준 4] 팝업 그룹이 표시 중이거나 대기 중인지. MainWindow가 주기 조회를 건너뛰는 판단에 쓴다
+        /// (열려 있는 팝업 위에 같은 팝업이 다시 뜨는 것을 막는다).
+        /// </summary>
+        public bool HasOpenPopups => _isGroupActive || _popupGroupQueue.Count > 0;
 
         public PopupManager(
             Window owner,
@@ -158,8 +166,7 @@ namespace Popup.Managers
         {
             PopupWindow popupWindow = new(popupOptions);
             if (_backgroundOverlayManager.IsVisible) popupWindow.Topmost = true;
-            AttachContentEvents(popupWindow, popupOptions);
-            AttachLifecycleEvents(popupWindow, popupOptions);
+            AttachResultCollection(popupWindow, popupOptions);
             return popupWindow;
         }
 
@@ -193,8 +200,24 @@ namespace Popup.Managers
                 + (openedPopupIndex * 30);
         }
 
-        private void AttachContentEvents(PopupWindow popupWindow, PopupOptions popupOptions)
+        /*
+         * [기준 3·4] 기존 AttachContentEvents/AttachLifecycleEvents는
+         *   설문 제출 → SubmitSurveyAsync, 영상 진행 → SaveVideoProgressAsync(10초 주기),
+         *   표시/닫기 → PopupDisplayedAsync/PopupClosedAsync
+         * 네 종류의 콜백으로 서버를 각각 호출했다(팝업당 최소 2회, 영상은 다수).
+         * 이제 창 하나의 생명주기 동안 PopupResultBuilder에 사실만 기록하고, 닫힐 때 결과 항목 1개를
+         * ReportResultAsync(큐)로 넘긴다. 제출만 사용자가 결과를 즉시 알아야 하므로 ReportResultImmediateAsync로
+         * 바로 보내고 서버 응답(통과 여부·거절)을 안내한다. 서버 호출은 팝업당 최대 1회다.
+         */
+        private void AttachResultCollection(PopupWindow popupWindow, PopupOptions popupOptions)
         {
+            if (string.IsNullOrWhiteSpace(popupOptions.PopupId)) return;
+
+            PopupResultBuilder builder = new(popupOptions.PopupId, popupOptions.HideDays);
+
+            popupWindow.ContentRendered += (sender, eventArgs) =>
+                builder.MarkDisplayed(DateTimeOffset.Now);
+
             if (popupOptions.Content is SurveyPopupView surveyPopupView)
             {
                 bool isSubmitting = false;
@@ -204,15 +227,14 @@ namespace Popup.Managers
                     isSubmitting = true;
                     try
                     {
-                        if (popupOptions.SubmitSurveyAsync != null)
-                            await popupOptions.SubmitSurveyAsync(popupOptions.PopupId, answers);
-                        popupWindow.Close();
+                        await SubmitSurveyResultAsync(popupWindow, popupOptions, builder, answers);
                     }
                     catch (Exception exception)
                     {
+                        // 전송 자체가 실패하면 큐에 보관되어 있으므로(SendImmediateAsync) 안내만 하고 창은 유지한다.
                         MessageBox.Show(
-                            "설문 응답을 서버에 저장하지 못했습니다.\n\n" + exception.Message,
-                            "설문 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                            "응답을 서버에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.\n\n" + exception.Message,
+                            "응답 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     finally { isSubmitting = false; }
                 };
@@ -220,52 +242,70 @@ namespace Popup.Managers
 
             if (popupOptions.Content is VideoPopupView videoPopupView)
             {
-                bool isSavingVideoProgress = false;
-                videoPopupView.VideoProgressSaveRequested += async (sender, progress) =>
-                {
-                    if (isSavingVideoProgress || popupOptions.SaveVideoProgressAsync == null) return;
-                    isSavingVideoProgress = true;
-                    try
-                    {
-                        bool completed = await popupOptions.SaveVideoProgressAsync(
-                            popupOptions.PopupId, progress);
-                        if (completed) popupOptions.IsCompleted = true;
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.WriteLine($"영상 진행률 저장 실패 (PopupId: {popupOptions.PopupId}): {exception.Message}");
-                    }
-                    finally { isSavingVideoProgress = false; }
-                };
+                // 닫히기 직전 누적 시청량을 한 번만 읽는다(예전의 10초 주기 저장 대체).
+                popupWindow.Closing += (sender, eventArgs) =>
+                    builder.SetVideoProgress(videoPopupView.GetFinalProgress());
             }
-        }
-
-        private static void AttachLifecycleEvents(PopupWindow popupWindow, PopupOptions popupOptions)
-        {
-            bool displayedEventRecorded = false;
-            popupWindow.ContentRendered += async (sender, eventArgs) =>
-            {
-                if (displayedEventRecorded) return;
-                displayedEventRecorded = true;
-                await InvokeLifecycleCallbackSafelyAsync(
-                    popupOptions.PopupDisplayedAsync, popupOptions.PopupId, "DISPLAYED");
-            };
 
             popupWindow.Closed += async (sender, eventArgs) =>
             {
-                await InvokeLifecycleCallbackSafelyAsync(
-                    popupOptions.PopupClosedAsync, popupOptions.PopupId, "CLOSED");
+                if (builder.IsFinalized) return;                 // 제출로 이미 전송됨
+                WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
+                await ReportSafelyAsync(popupOptions.ReportResultAsync, item);
             };
         }
 
-        private static async Task InvokeLifecycleCallbackSafelyAsync(
-            Func<string, Task>? lifecycleCallback, string popupId, string eventType)
+        /*
+         * 설문·퀴즈 제출: 즉시 전송 후 서버 응답으로 안내한다.
+         *  - REJECTED           : 사유를 보여 주고 창을 유지한다(사용자가 다시 시도).
+         *  - QUIZ 미통과(passed=false): 안내 후 창을 닫는다. 재노출 여부는 다음 조회 시 서버가 결정한다.
+         *  - 그 외(ACCEPTED/DUPLICATE): 창을 닫는다. SURVEY는 채점 결과가 없다.
+         * ReportResultImmediateAsync가 없으면(데모 모드) 전송 없이 닫는다.
+         */
+        private static async Task SubmitSurveyResultAsync(
+            PopupWindow popupWindow, PopupOptions popupOptions, PopupResultBuilder builder, List<SurveyAnswer> answers)
         {
-            if (lifecycleCallback == null || string.IsNullOrWhiteSpace(popupId)) return;
-            try { await lifecycleCallback(popupId); }
+            WpfResultItemDto item = builder.BuildSubmitted(answers, DateTimeOffset.Now);
+            if (popupOptions.ReportResultImmediateAsync == null)
+            {
+                builder.MarkFinalized();
+                popupWindow.Close();
+                return;
+            }
+
+            WpfResultItemResponseDto response = await popupOptions.ReportResultImmediateAsync(item);
+            if (response.IsRejected)
+            {
+                MessageBox.Show(
+                    "응답이 접수되지 않았습니다.\n\n" + (response.Message ?? response.Code ?? "알 수 없는 오류"),
+                    "응답 거절", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            builder.MarkFinalized();
+            bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
+            if (isQuiz && response.Passed == false)
+            {
+                MessageBox.Show(
+                    $"점수: {response.TotalScore ?? 0:0.##}점\n\n통과 점수에 미달했습니다.\n다음에 다시 응시할 수 있습니다.",
+                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            else if (isQuiz && response.Passed == true)
+            {
+                MessageBox.Show(
+                    $"점수: {response.TotalScore ?? 0:0.##}점\n\n평가를 통과했습니다.",
+                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            popupWindow.Close();
+        }
+
+        private static async Task ReportSafelyAsync(Func<WpfResultItemDto, Task>? report, WpfResultItemDto item)
+        {
+            if (report == null) return;
+            try { await report(item); }
             catch (Exception exception)
             {
-                Debug.WriteLine($"팝업 {eventType} 이벤트 저장 실패 (PopupId: {popupId}): {exception.Message}");
+                Debug.WriteLine($"팝업 결과 보고 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
             }
         }
     }

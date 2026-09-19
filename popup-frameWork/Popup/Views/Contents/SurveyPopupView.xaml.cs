@@ -30,15 +30,9 @@ namespace Popup.Views.Contents
         private readonly bool _isQuizMode;
 
         /*
-         * QuizMode에서 사용자가 통과해야 하는 최소 점수다.
-         *
-         * 예:
-         * PassingScore = 80
-         * → 계산된 점수가 80점 이상이어야 통과
-         *
-         * 일반 설문에서는 사용하지 않는다.
+         * [기준 3] 통과 점수(_passingScore)는 더 이상 보관하지 않는다. 서버가 passingScore를 내려주지 않으며
+         * 채점·통과 판정은 결과 API 응답으로 받는다. 생성자 매개변수 passingScore는 호출부 호환용으로만 남긴다.
          */
-        private readonly double _passingScore;
 
         /*
          * 질문별로 생성된 입력 컨트롤을 저장한다.
@@ -79,7 +73,6 @@ namespace Popup.Views.Contents
              * 기본 생성 시에는 일반 설문으로 처리한다.
              */
             _isQuizMode = false;
-            _passingScore = 0;
         }
 
         /// <summary>
@@ -106,15 +99,9 @@ namespace Popup.Views.Contents
             _isQuizMode = isQuizMode;
 
             /*
-             * 통과 점수는 0점에서 100점 사이로 제한한다.
-             *
-             * 0보다 작으면 0,
-             * 100보다 크면 100으로 보정한다.
+             * [기준 3] passingScore는 서버 채점으로 전환되어 사용하지 않는다(호출부 호환용 매개변수).
              */
-            _passingScore = Math.Clamp(
-                passingScore,
-                0,
-                100);
+            _ = passingScore;
 
             /*
              * QuizMode일 경우
@@ -621,129 +608,11 @@ namespace Popup.Views.Contents
             return true;
         }
 
-        /// <summary>
-        /// 채점 대상으로 지정된 문항을 기준으로
-        /// 사용자의 점수를 계산한다.
-        /// </summary>
-        private double CalculateScore(
-            List<SurveyAnswer> answers)
-        {
-            /*
-             * IsScored가 true인 문항만
-             * 실제 채점 대상으로 사용한다.
-             */
-            List<SurveyQuestion> scoredQuestions =
-                _questions.FindAll(question =>
-                    question.IsScored);
+        /*
+         * [기준 3] 로컬 채점 메서드(CalculateScore, AreAnswersEqual)를 제거했다. 서버가 정답을 내려주지 않으며
+         * 채점·통과 판정은 결과 API(서버)가 담당한다. _passingScore·IsScored·CorrectAnswers 필드는 구 JSON 호환을 위해 남긴다.
+         */
 
-            /*
-             * 채점 대상 문항이 하나도 없으면
-             * 0으로 나누는 오류를 막기 위해
-             * 점수를 0점으로 반환한다.
-             */
-            if (scoredQuestions.Count == 0)
-            {
-                return 0;
-            }
-
-            int correctCount = 0;
-
-            foreach (SurveyQuestion question
-                     in scoredQuestions)
-            {
-                /*
-                 * 현재 문항에 해당하는
-                 * 사용자 응답을 찾는다.
-                 */
-                SurveyAnswer? answer = answers.Find(
-                    item => item.QuestionId ==
-                            question.QuestionId);
-
-                if (answer == null)
-                {
-                    continue;
-                }
-
-                /*
-                 * 주관식 문항은 현재 단계에서는
-                 * 자동 채점하지 않는다.
-                 *
-                 * 객관식 문항만
-                 * CorrectAnswers와 비교한다.
-                 */
-                if (question.QuestionType ==
-                    SurveyQuestionType.Text)
-                {
-                    continue;
-                }
-
-                bool isCorrect =
-                    AreAnswersEqual(
-                        answer.SelectedValues,
-                        question.CorrectAnswers);
-
-                if (isCorrect)
-                {
-                    correctCount++;
-                }
-            }
-
-            /*
-             * 정답 개수 / 전체 채점 문항 수 × 100
-             *
-             * 정수 나눗셈을 막기 위해
-             * correctCount를 double로 변환한다.
-             */
-            double score =
-                (double)correctCount /
-                scoredQuestions.Count *
-                100;
-
-            /*
-             * 소수점 둘째 자리까지 반올림한다.
-             */
-            return Math.Round(score, 2);
-        }
-
-        /// <summary>
-        /// 사용자 선택값과 정답 목록이
-        /// 완전히 같은지 확인한다.
-        /// </summary>
-        private bool AreAnswersEqual(
-            List<string> selectedValues,
-            List<string> correctAnswers)
-        {
-            /*
-             * 선택한 개수와 정답 개수가 다르면
-             * 같은 답일 수 없으므로 오답이다.
-             */
-            if (selectedValues.Count !=
-                correctAnswers.Count)
-            {
-                return false;
-            }
-
-            /*
-             * 순서는 무시하고 값만 비교한다.
-             *
-             * 예:
-             * 사용자 선택 = A, C
-             * 정답       = C, A
-             *
-             * 두 목록은 같은 답으로 처리한다.
-             */
-            foreach (string correctAnswer
-                     in correctAnswers)
-            {
-                if (!selectedValues.Contains(
-                    correctAnswer))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
         private void SubmitButton_Click(
     object sender,
     RoutedEventArgs e)
@@ -773,65 +642,11 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * 일반 설문 모드라면
-             * 채점하지 않고 응답 목록을 바로 외부로 전달한다.
-             */
-            if (!_isQuizMode)
-            {
-                SurveySubmitted?.Invoke(
-                    this,
-                    answers);
-
-                return;
-            }
-
-            /*
-             * QuizMode라면
-             * 채점 대상 문항의 정답률을 계산한다.
-             */
-            double score =
-                CalculateScore(answers);
-
-            /*
-             * 계산된 점수가 통과 점수 이상인지 확인한다.
-             */
-            bool isPassed =
-                score >= _passingScore;
-
-            if (!isPassed)
-            {
-                /*
-                 * 통과 점수에 미달한 경우
-                 * 팝업을 닫지 않고 사용자가 다시 답할 수 있게 한다.
-                 */
-                MessageBox.Show(
-                    $"점수: {score:0.##}점\n" +
-                    $"통과 점수: {_passingScore:0.##}점\n\n" +
-                    "통과 점수에 미달했습니다.\n" +
-                    "답안을 다시 확인해주세요.",
-                    "채점 결과",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-
-                return;
-            }
-
-            /*
-             * 통과 점수 이상이면 결과를 안내한다.
-             */
-            MessageBox.Show(
-                $"점수: {score:0.##}점\n" +
-                $"통과 점수: {_passingScore:0.##}점\n\n" +
-                "평가를 통과했습니다.",
-                "채점 결과",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-
-            /*
-             * 통과한 경우에만 응답 목록을 외부로 전달한다.
-             *
-             * MainWindow에서 이 이벤트를 받으면
-             * 저장 처리 후 팝업을 닫게 된다.
+             * [기준 3] 채점은 서버가 한다.
+             * 예전에는 QuizMode에서 CorrectAnswers로 로컬 채점해 통과한 경우에만 제출했지만,
+             * 서버는 정답을 내려주지 않으므로(정답 비노출) 로컬 채점이 불가능하다.
+             * 설문·퀴즈 모두 필수 문항 검증만 하고 답안을 그대로 외부(PopupManager)로 전달한다.
+             * 통과 여부·점수는 결과 API 응답으로 받아 PopupManager가 안내한다.
              */
             SurveySubmitted?.Invoke(
                 this,
