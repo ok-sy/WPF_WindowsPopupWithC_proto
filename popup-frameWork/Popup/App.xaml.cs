@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Drawing;
 using System.Threading;
 using System.Windows;
@@ -51,21 +53,38 @@ namespace Popup
             base.OnStartup(e);
 
             /*
+             * [방어 로직] 처리되지 않은 예외로 프로세스가 죽지 않도록 전역 핸들러를 가장 먼저 설치한다.
+             * UI 예외는 로그 후 계속 실행, 치명적 예외는 로그 후 자동 재시작(10분 내 3회 제한). CrashGuard 참고.
+             */
+            CrashGuard.Install(this);
+
+            /*
              * 첫 번째 실행만 이름이 지정된 Mutex의 소유자가 된다.
              *
              * 이미 실행 중인 Popup.exe가 있다면 createdNew가 false이므로
              * 두 번째 프로세스는 트레이 아이콘이나 타이머를 만들지 않고
              * 즉시 종료한다. 이로써 팝업 조회와 표시가 중복되지 않는다.
+             *
+             * [방어 로직] CrashGuard가 자동 재시작한 프로세스(--restarted)는 죽어 가는 부모가 Mutex를 아직
+             * 쥐고 있을 수 있으므로 최대 5초(250ms×20) 동안 획득을 재시도한다.
              */
-            _singleInstanceMutex =
-                new Mutex(
-                    initiallyOwned: true,
-                    name: SingleInstanceMutexName,
-                    createdNew: out bool createdNew);
+            bool restarted = e.Args.Any(a => a.Equals(CrashGuard.RestartedArgument, StringComparison.OrdinalIgnoreCase));
+            bool createdNew = false;
+            for (int attempt = 0; attempt < (restarted ? 20 : 1); attempt++)
+            {
+                _singleInstanceMutex?.Dispose();
+                _singleInstanceMutex =
+                    new Mutex(
+                        initiallyOwned: true,
+                        name: SingleInstanceMutexName,
+                        createdNew: out createdNew);
+                if (createdNew) break;
+                Thread.Sleep(250);
+            }
 
             if (!createdNew)
             {
-                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex?.Dispose();
                 _singleInstanceMutex =
                     null;
 
