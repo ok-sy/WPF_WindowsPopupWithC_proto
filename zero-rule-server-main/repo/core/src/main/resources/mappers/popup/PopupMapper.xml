@@ -558,7 +558,14 @@
                   FROM POPUP.USER_POPUP_STATUS s
                   WHERE s.EMPLOYEE_NO = u.EMPLOYEE_NO
                     AND s.POPUP_ID = n.POPUP_ID
-                    AND s.HIDDEN_UNTIL_AT &gt; <include refid="nowKst"/>
+                    AND (
+                        s.HIDDEN_UNTIL_AT &gt; <include refid="nowKst"/>
+                        <!-- [기준 2] 신규 WPF API: 완료(SURVEY/QUIZ 통과·VIDEO 완료) 팝업 제외까지 서버가 판정한다.
+                             기존 WPF-01은 excludeCompleted=false로 호출되어 원본 의미(숨김만 제외)를 유지한다. -->
+                        <if test="excludeCompleted">
+                        OR s.COMPLETED_YN = 'Y'
+                        </if>
+                    )
               )
         ),
         ELIGIBLE_POPUP AS

@@ -115,7 +115,20 @@ public interface PopupMapper {
             @Param("activeYn") String activeYn,
             @Param("auditUser") String auditUser);
 
-    List<PopupEntity> selectAvailablePopups(@Param("userId") String userId);
+    /**
+     * 사용자에게 노출 가능한 팝업. 활성·기간·대상 조건·숨김을 SQL에서 판정한다.
+     *
+     * @param excludeCompleted true면 USER_POPUP_STATUS.COMPLETED_YN='Y'인 팝업도 제외한다.
+     *                         [기준 2] 신규 WPF API는 완료 판단까지 서버가 끝내므로 true,
+     *                         기존 WPF-01 API는 클라이언트가 /statuses로 제외하던 계약을 유지하므로 false.
+     */
+    List<PopupEntity> selectAvailablePopups(@Param("userId") String userId,
+            @Param("excludeCompleted") boolean excludeCompleted);
+
+    /** 기존 호출부 호환(완료 제외 없음). */
+    default List<PopupEntity> selectAvailablePopups(String userId) {
+        return selectAvailablePopups(userId, false);
+    }
 
     List<PopupQuestionEntity> selectQuestionsByTemplateIds(
             @Param("templateIds") List<Long> templateIds);

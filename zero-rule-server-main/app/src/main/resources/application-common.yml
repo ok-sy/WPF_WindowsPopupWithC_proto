@@ -47,3 +47,11 @@ custom.user-jwt:
   token-expiration: 120m
   token-expiration-long: 6h
   allow-dup-login: true
+
+# [WPF 팝업 API 추가 — 기준 3·4·6] 신규 /p/api/wpf/** 설정. 기존 custom.* 항목은 변경하지 않는다.
+#  - polling-interval-seconds: 목록 응답에 실어 WPF 주기 조회 간격을 서버가 통제
+#  - dev-user-header: true면 X-Dev-User-Id 헤더로 사번을 지정하는 개발용 식별기 활성 (운영 false 고정).
+#    통합 토큰 필터(타 팀)가 적용되면 SecurityContext 기반 식별기가 사용된다.
+custom.wpf-popup:
+  polling-interval-seconds: 1800
+  dev-user-header: false

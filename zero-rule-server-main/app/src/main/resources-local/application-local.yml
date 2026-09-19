@@ -25,3 +25,7 @@ popup:
   video:
     enabled: true
     root: D:/popup-videos
+
+# [WPF 팝업 API — 개발 전용] 통합 토큰 필터 적용 전 X-Dev-User-Id 헤더로 사번 지정 허용
+custom.wpf-popup:
+  dev-user-header: true

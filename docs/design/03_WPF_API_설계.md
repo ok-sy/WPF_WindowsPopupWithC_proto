@@ -240,7 +240,7 @@ content 유형별 필드는 참조 저장소 `docs/interfaces/POPUP_INTERFACE_SP
 |---|---|---|
 | resultId, popupId, resultType | string | 항상 (요청 echo) |
 | status | `ACCEPTED` / `DUPLICATE` / `REJECTED` | 항상 |
-| code, message | string | REJECTED일 때. 예: `WPF_NOT_ELIGIBLE`, `WPF_INVALID_ANSWER`, `WPF_TYPE_MISMATCH` |
+| code, message | string | REJECTED일 때. `WPF_NOT_ELIGIBLE`(대상·기간 아님), `WPF_TYPE_MISMATCH`(설문형 아님), `WPF_INVALID_ANSWER`(문항·선택지·답안), `WPF_INVALID_HIDE_DAYS`, `WPF_INVALID_VIDEO`, `WPF_INVALID_RESULT`(그 외 검증), `WPF_INTERNAL`(서버 오류) |
 | popupStatus | `DISPLAYED` / `CLOSED` / `HIDDEN` / `SUBMITTED` / `COMPLETED` | ACCEPTED일 때 |
 | completed, completedAt | boolean, ISO | ACCEPTED일 때 (`completedAt`은 완료 시) |
 | hiddenUntil | ISO | HIDDEN |

@@ -773,6 +773,23 @@ public class PopupService {
     }
 
     /**
+     * [WPF API 추가 — 기준 3] 신규 WPF 목록 API(WpfPopupService)가 정답 제외 문항을 같은 규칙으로 재사용하기 위한
+     * 공개 진입점. 내부 loadQuestions(ids, admin=false)에 위임하며 정답·일치 모드는 절대 포함되지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<PopupQuestionDto>> loadPublicQuestions(List<Long> templateIds) {
+        return loadQuestions(templateIds, false);
+    }
+
+    /**
+     * [WPF API 추가 — 기준 2·3] 노출 판정이 끝난 엔티티와 정답 제외 문항을 공용 응답 DTO로 변환하는 공개 진입점.
+     * 기존 WPF-01·관리자 상세와 같은 toResponseDto를 사용해 content 조립 규칙이 한 곳에만 있게 한다.
+     */
+    public PopupResponseDto toPublicResponseDto(PopupEntity popup, List<PopupQuestionDto> questions) {
+        return toResponseDto(popup, questions);
+    }
+
+    /**
      * 템플릿들의 문항과 선택지를 각각 일괄 조회한 뒤 템플릿 ID별로 묶는다.
      * 빈 ID 목록에는 쿼리를 실행하지 않는다. admin 플래그는 응답에 정답 정보를
      * 포함할지 결정하며 사용자 조회의 기본값은 false다.

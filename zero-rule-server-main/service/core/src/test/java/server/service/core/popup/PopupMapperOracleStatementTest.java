@@ -92,6 +92,47 @@ class PopupMapperOracleStatementTest {
         assertEquals(30L, params.get("questionId"));
     }
 
+    /**
+     * [WPF API — 기준 3·4] WpfPopupMapper.xml은 PopupMapper.xml의 nowKst 조각을 네임스페이스 한정자로 include 한다.
+     * 두 XML을 함께 파싱해 모든 WpfPopupMapper 메서드가 구문과 바인딩되고 include가 해석되는지 확인한다.
+     */
+    @Test void wpfMapperBindsAllMethodsAndResolvesCrossNamespaceInclude() throws Exception {
+        var configuration = parse();
+        String wpfResource = "mappers/popup/WpfPopupMapper.xml";
+        try (var stream = getClass().getClassLoader().getResourceAsStream(wpfResource)) {
+            assertNotNull(stream, wpfResource + " 리소스가 없습니다.");
+            new XMLMapperBuilder(stream, configuration, wpfResource, configuration.getSqlFragments()).parse();
+        }
+        String wpfNs = server.repo.core.mapper.popup.WpfPopupMapper.class.getName() + ".";
+        List<String> missing = Arrays.stream(server.repo.core.mapper.popup.WpfPopupMapper.class.getMethods())
+                .filter(m -> !m.isDefault())
+                .map(Method::getName)
+                .distinct()
+                .filter(name -> !configuration.hasStatement(wpfNs + name))
+                .toList();
+        assertTrue(missing.isEmpty(), "XML 구문이 없는 WpfPopupMapper 메서드: " + missing);
+
+        // include가 실제 SQL 조각으로 치환되었는지 (미해결이면 파싱 단계에서 IncompleteElementException)
+        Map<String, Object> params = new HashMap<>();
+        params.put("userId", "E1001");
+        params.put("popupId", "P1");
+        params.put("displayedAt", null);
+        params.put("closedAt", null);
+        String sql = configuration.getMappedStatement(wpfNs + "mergeDisplayAndClose").getBoundSql(params).getSql();
+        assertTrue(sql.contains("SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul'"), "nowKst include 미해석");
+        assertFalse(sql.contains("<include"), "include 태그가 남아 있음");
+
+        // excludeCompleted 동적 조건: true일 때만 COMPLETED_YN 조건이 들어간다 (기준 2)
+        Map<String, Object> listParams = new HashMap<>();
+        listParams.put("userId", "E1001");
+        listParams.put("excludeCompleted", true);
+        String withCompleted = configuration.getMappedStatement(NS + "selectAvailablePopups").getBoundSql(listParams).getSql();
+        assertTrue(withCompleted.contains("COMPLETED_YN = 'Y'"));
+        listParams.put("excludeCompleted", false);
+        String withoutCompleted = configuration.getMappedStatement(NS + "selectAvailablePopups").getBoundSql(listParams).getSql();
+        assertFalse(withoutCompleted.contains("COMPLETED_YN = 'Y'"), "기존 WPF-01 계약: 완료 제외 없음");
+    }
+
     @Test void noPostgresOnlySyntaxRemains() throws Exception {
         String xml;
         try (var stream = getClass().getClassLoader().getResourceAsStream(RESOURCE)) {
