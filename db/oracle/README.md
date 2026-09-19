@@ -42,3 +42,18 @@ cd zero-rule-server-main
 | `ORA-01408` UNIQUE 제약과 같은 컬럼 목록의 인덱스 중복 불가 | `ix_question_template`, `ix_option_question` 생략 (UNIQUE 제약 인덱스가 대신함) |
 | `ORA-17004` NULL 바인드에 `Types.OTHER`(1111) 거부 | MyBatis `jdbcTypeForNull=NULL` (운영 `mybatis-config.xml`에 이미 설정, 테스트 Configuration에도 지정) |
 | `ORA-00932` `Types.NULL` 바인드를 CHAR로 추론해 `COALESCE(?, TIMESTAMP)` 타입 충돌 | `KstTimestampTypeHandler`가 null도 `setNull(Types.TIMESTAMP)`로 바인딩 |
+
+## 개발 서버(팝업 슬라이스)로 WPF 실연동
+
+이 저장소의 zero 프레임워크(`clover-* 0.0.1-POSTGRE-SNAPSHOT`)와 공통 매퍼 13개는 PostgreSQL 전용 SQL이라 **전체 zeroserver는 Oracle에서 기동되지 않는다**(공통 프레임워크의 Oracle 빌드는 타 팀/운영 소관). WPF 실연동은 팝업·WPF API 빈만 올린 개발 서버로 한다.
+
+```powershell
+cd zero-rule-server-main
+$env:POPUP_TEST_DB_PASSWORD = "popup"
+.\gradlew :app:wpfDevServer        # http://localhost:8080/zero-rule-server/p/api/wpf/** , X-Dev-User-Id 헤더로 사용자 지정
+```
+
+WPF는 `appsettings.json`의 `BaseUrl=http://localhost:8080/zero-rule-server/p`, `DevUserId=E1001`로 실행한다(인자 없이).
+HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOracleHttpTest` (E1002 데이터는 테스트가 정리).
+
+- `10_zero_rule_common_schema_oracle.sql` — `ERD/01_schema.sql`의 공통 스키마 53개 테이블을 `tools/convert-zero-rule-ddl.pl`로 변환한 것. `ZERO_RULE` 계정에 적용되지만 위 이유로 앱 기동에는 충분하지 않다(공통 매퍼가 PG 문법). 참고용.

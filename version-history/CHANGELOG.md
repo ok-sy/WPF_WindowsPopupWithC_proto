@@ -12,6 +12,16 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-19-10 — 서버 확인: 실제 HTTP+Oracle 통합 테스트, 팝업 슬라이스 개발 서버, WPF 실연동
+
+- 이유: 사용자 요청 "서버쪽 확인". Oracle 위에서 신규 WPF API를 실제 HTTP로 검증하고 WPF exe를 붙여 본다.
+- 확인된 제약: 전체 zeroserver를 Oracle로 기동하면 `SELECT nextval('cloverframework_seq')`(cloverframework_mappers/CLSequenceMapper.xml)에서 `ORA-00923` — 저장소의 zero 프레임워크가 `clover-* 0.0.1-POSTGRE-SNAPSHOT`이고 공통 매퍼 13개(`repo/core/mappers/*.xml`, popup 제외)도 PostgreSQL 전용. 공통 프레임워크 Oracle 빌드는 타 팀/운영 소관 → 미결 15로 기록. 공통 스키마 DDL은 참고용으로 변환해 둠(`db/oracle/10_zero_rule_common_schema_oracle.sql`, `tools/convert-zero-rule-ddl.pl`, ZERO_RULE에 53개 테이블·54 PK/UK·12 시퀀스 적용 성공).
+- 변경(추가): `app/src/test/.../wpf/WpfApiOracleHttpTest.java` — 팝업·WPF 빈만 올린 `@SpringBootTest(RANDOM_PORT)` + 실제 Oracle: 401/403 코드, 목록(사용자 판정·ISO 날짜·정답 비노출·content.questions 제거), 결과 5항목(HIDDEN·SURVEY 완료·VIDEO 완료·대상 외 REJECTED·DUPLICATE)이 항목별 커밋(영수증 3·로그 1)되고 이후 목록이 비는 것, 400 코드. E1002 데이터 자동 정리. `WpfApiDevServer`(테스트 소스) + Gradle 태스크 `:app:wpfDevServer` — 같은 슬라이스를 8080으로 실행.
+- 변경(수정): WPF 응답 DTO 5개에 `@JsonInclude(NON_NULL)` 명시 — 전역 BasicConfig 설정 없이도 계약 유지(HTTP 테스트에서 `totalScore: null` 노출로 발견). `app/build.gradle.kts` 태스크 추가(기존 빌드 설정 변경 없음).
+- 주요 파일: app/src/test/java/server/app/wpf/*, app/build.gradle.kts, domain/.../popup/wpf/*.java, db/oracle/10_*.sql, db/oracle/tools/*, db/oracle/README.md, docs/design/09.
+- 검증: 서버 테스트 50개 통과·skip 0(HTTP 통합 4 포함). `:app:wpfDevServer` 기동 후 `curl`로 목록 200/무헤더 401 확인. **WPF Debug 빌드(실서버 모드, DevUserId=E1001)를 붙여 UI Automation으로 첫 팝업(TEXT) 닫기 → Oracle `USER_POPUP_STATUS`(CLOSED, 표시 1회, 표시·닫힘 시각)·`WPF_RESULT_RECEIPT`(ACCEPTED)·`API_REQUEST_LOG`(200, accepted=1) 기록, 다음 팝업(VIDEO) 표시 확인.** 테스트 행 정리, 서버 종료.
+- 상태: 커밋 후 푸시.
+
 ## 2026-09-19-09 — WPF 방어 로직: 전역 예외 처리·크래시 로그·자동 재시작
 
 - 이유: 사용자 요청. 트레이 상주 프로그램이 처리되지 않은 예외로 죽으면 이후 팝업이 뜨지 않고 미전송 결과 큐도 멈춘다.

@@ -1,6 +1,7 @@
 package server.domain.popup.wpf;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
 
@@ -21,6 +22,8 @@ import java.util.Map;
  *   <li>날짜는 ISO 8601 문자열</li>
  * </ul>
  */
+// [기준 3] 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record WpfPopupItem(
         String popupId,
         String popupType,

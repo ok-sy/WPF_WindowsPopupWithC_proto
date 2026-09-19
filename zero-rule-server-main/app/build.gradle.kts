@@ -131,3 +131,12 @@ fun gitRev() = ProcessBuilder("git", "rev-parse", "--short", "HEAD").start().let
 	p.waitFor(100, TimeUnit.MILLISECONDS)
 	p.inputStream.bufferedReader().readLine() ?: "none"
 }
+
+// [WPF 연동 개발 서버 — 추가] 팝업·WPF API 슬라이스만 Oracle 위에서 8080으로 실행한다(테스트 소스, 배포 제외).
+// 전체 zeroserver는 PostgreSQL 전용 공통 프레임워크 때문에 Oracle에서 기동되지 않으므로 WPF 실연동 확인용으로 둔다.
+tasks.register<JavaExec>("wpfDevServer") {
+	group = "application"
+	description = "WPF 팝업 API 개발 서버 (Oracle POPUP 스키마, /zero-rule-server/p/api/wpf/**)"
+	classpath = sourceSets["test"].runtimeClasspath
+	mainClass.set("server.app.wpf.WpfApiDevServer")
+}

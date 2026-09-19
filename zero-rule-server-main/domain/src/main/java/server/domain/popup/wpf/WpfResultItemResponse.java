@@ -1,6 +1,7 @@
 package server.domain.popup.wpf;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.OffsetDateTime;
 
@@ -11,6 +12,8 @@ import java.time.OffsetDateTime;
  * {@code status}가 REJECTED면 {@code code}/{@code message}로 사유를 알린다. SURVEY 제출은 채점하지 않으므로
  * {@code totalScore}/{@code passed}를 채우지 않는다.</p>
  */
+// [기준 3] 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record WpfResultItemResponse(
         String resultId,
         String popupId,
