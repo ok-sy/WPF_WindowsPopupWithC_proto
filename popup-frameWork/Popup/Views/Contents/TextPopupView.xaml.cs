@@ -98,7 +98,7 @@ namespace Popup.Views.Contents
                         }
                         catch (Exception)
                         {
-                            MessageBox.Show("링크를 열지 못했습니다. 기본 브라우저 설정을 확인해 주세요.", "링크 오류",
+                            MessageBox.Show(Window.GetWindow(this)!, "링크를 열지 못했습니다. 기본 브라우저 설정을 확인해 주세요.", "링크 오류",
                                 MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     };

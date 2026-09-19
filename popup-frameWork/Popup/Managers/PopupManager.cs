@@ -18,6 +18,8 @@ namespace Popup.Managers
         private readonly Queue<List<PopupOptions>> _popupGroupQueue = new();
         private readonly Queue<PopupOptions> _sequentialGroupQueue = new();
         private readonly HashSet<PopupWindow> _activeGroupWindows = new();
+        /* 현재 열려 있는 모든 팝업 창(순차·동시 공통). 배경 클릭 시 다시 맨 앞으로 올리는 데 쓴다. */
+        private readonly HashSet<PopupWindow> _openWindows = new();
         private readonly Window _owner;
         private readonly BackgroundOverlayManager _backgroundOverlayManager = new();
         private readonly double _defaultBackgroundOverlayOpacity;
@@ -36,6 +38,9 @@ namespace Popup.Managers
         {
             _owner = owner;
             _defaultBackgroundOverlayOpacity = Math.Clamp(backgroundOverlayOpacity, 0.0, 1.0);
+            // [시연 피드백] Overlay를 소유자 창 아래 두어 앱 창 목록에 잡히지 않게 하고, 배경 클릭 시 팝업을 다시 맨 앞으로.
+            _backgroundOverlayManager.Owner = owner;
+            _backgroundOverlayManager.BackgroundClicked += (sender, eventArgs) => BringPopupsToFront();
         }
 
         public void Enqueue(PopupOptions popupOptions) => ShowRange(new[] { popupOptions });
@@ -165,7 +170,11 @@ namespace Popup.Managers
         private PopupWindow CreatePopupWindow(PopupOptions popupOptions)
         {
             PopupWindow popupWindow = new(popupOptions);
-            if (_backgroundOverlayManager.IsVisible) popupWindow.Topmost = true;
+            // [시연 피드백] 팝업은 Overlay 사용 여부와 무관하게 항상 최상위다. 배경·다른 앱을 눌러도 뒤로 가지 않는다.
+            popupWindow.Topmost = true;
+            popupWindow.Deactivated += (sender, eventArgs) => popupWindow.Topmost = true;
+            _openWindows.Add(popupWindow);
+            popupWindow.Closed += (sender, eventArgs) => _openWindows.Remove(popupWindow);
             AttachResultCollection(popupWindow, popupOptions);
             return popupWindow;
         }
@@ -232,7 +241,7 @@ namespace Popup.Managers
                     catch (Exception exception)
                     {
                         // 전송 자체가 실패하면 큐에 보관되어 있으므로(SendImmediateAsync) 안내만 하고 창은 유지한다.
-                        MessageBox.Show(
+                        MessageBox.Show(popupWindow,
                             "응답을 서버에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.\n\n" + exception.Message,
                             "응답 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
@@ -276,7 +285,7 @@ namespace Popup.Managers
             WpfResultItemResponseDto response = await popupOptions.ReportResultImmediateAsync(item);
             if (response.IsRejected)
             {
-                MessageBox.Show(
+                MessageBox.Show(popupWindow,
                     "응답이 접수되지 않았습니다.\n\n" + (response.Message ?? response.Code ?? "알 수 없는 오류"),
                     "응답 거절", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -286,17 +295,33 @@ namespace Popup.Managers
             bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
             if (isQuiz && response.Passed == false)
             {
-                MessageBox.Show(
+                MessageBox.Show(popupWindow,
                     $"점수: {response.TotalScore ?? 0:0.##}점\n\n통과 점수에 미달했습니다.\n다음에 다시 응시할 수 있습니다.",
                     "채점 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             else if (isQuiz && response.Passed == true)
             {
-                MessageBox.Show(
+                MessageBox.Show(popupWindow,
                     $"점수: {response.TotalScore ?? 0:0.##}점\n\n평가를 통과했습니다.",
                     "채점 결과", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             popupWindow.Close();
+        }
+
+        /*
+         * [시연 피드백] Overlay(배경)를 클릭하면 Overlay는 활성화되지 않지만, 안전하게 열려 있는 팝업을 모두
+         * 다시 최상위로 올리고 마지막 창을 활성화한다. 사용자가 어떤 배경을 눌러도 팝업이 가려지지 않는다.
+         */
+        private void BringPopupsToFront()
+        {
+            PopupWindow? last = null;
+            foreach (PopupWindow window in _openWindows)
+            {
+                if (!window.IsVisible) continue;
+                window.Topmost = true;
+                last = window;
+            }
+            last?.Activate();
         }
 
         private static async Task ReportSafelyAsync(Func<WpfResultItemDto, Task>? report, WpfResultItemDto item)

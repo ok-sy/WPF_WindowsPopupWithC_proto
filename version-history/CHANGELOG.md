@@ -12,6 +12,17 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-19-07 — WPF 시연 피드백 반영: 창 목록 1개·팝업 항상 최상위·Overlay 수정
+
+- 이유: 사용자 시연 결과 (1) 작업 관리자·작업 표시줄에 창이 여러 개 보임, (2) 배경을 누르면 팝업이 뒤로 가림, (3) 설문 시 메인 모니터에 배경(Overlay)이 안 보임.
+- 변경:
+  - `PopupWindow.xaml` — `ShowInTaskbar="False"`, `Topmost="True"`. `PopupManager` — 팝업은 Overlay 사용 여부와 무관하게 항상 Topmost, `Deactivated` 시 재확인, 열린 창 집합(`_openWindows`) 관리, Overlay 클릭 시 `BringPopupsToFront()`.
+  - `BackgroundOverlayManager` — Overlay 창에 `WS_EX_NOACTIVATE|WS_EX_TOOLWINDOW`, `WM_MOUSEACTIVATE → MA_NOACTIVATEANDEAT`(클릭은 삼키되 활성화 안 함 → 팝업 z-순서·포커스 유지), 제목 비움·소유자 지정(앱 창 목록 제외), Show/Loaded 뒤 `SetWindowPos`로 모니터 영역 재적용, `BackgroundClicked` 이벤트. **`AllowsTransparency=true` 추가** — 원본은 이 설정이 없어 `Opacity`가 무시되고 Overlay가 완전 불투명(검정)으로 떴음(실행 캡처로 확인).
+  - 팝업 위에 뜨는 `MessageBox` 전부에 팝업 창을 owner로 지정(Topmost 팝업 뒤에 숨지 않도록): `PopupManager`, `PopupWindow`, `SurveyPopupView`, `ImageFillPopupView`, `TextPopupView`.
+- 주요 파일: popup-frameWork/Popup/Managers/BackgroundOverlayManager.cs, Managers/PopupManager.cs, Views/Windows/PopupWindow.xaml(.cs), Views/Contents/SurveyPopupView.xaml.cs, ImageFillPopupView.xaml.cs, TextPopupView.xaml.cs.
+- 검증(UI Automation으로 Demo Mode 실행·설문 팝업 열기·창 열거·화면 캡처, 3모니터 환경): Overlay가 3개 모니터(주 모니터 (0,0)-(2560,1440) 포함) 모두에 생성되고 툴창·NOACTIVATE·Topmost 확인. 주 모니터 배경 클릭 후에도 `PopupWindow`가 z-순서 최상단·포그라운드 유지. Overlay 어둡기: 흰 배경 픽셀 250→137(≈0.55, 설정 0.45 반영), 수정 전에는 순흑(불투명). 재게시 `publish/win-x64/Popup.exe`·`dist/Popup.exe`. **(3)의 "설문 시 메인 모니터 Overlay 미생성"은 수정 전 빌드로도 재현되지 않았고**(모든 모니터에 생성됨) 원인이 불투명 Overlay 또는 창 소유 관계로 추정되어 위 수정으로 함께 대응. 작업 관리자 목록은 자동 확인 불가 — 수동 확인 필요.
+- 상태: 커밋 후 푸시.
+
 ## 2026-09-19-06 — WPF Demo Mode 재구성(결과 흐름 시뮬레이션) 및 단일 exe 게시
 
 - 이유: 사용자 요청. 기존 Demo Mode는 샘플 팝업만 띄우고 결과를 버렸다. 새 구조(기준 3·4)의 핵심인 "종료 시 결과 항목 1회 전송"을 서버 없이도 확인할 수 있게 하고, 배포용 exe를 만든다.

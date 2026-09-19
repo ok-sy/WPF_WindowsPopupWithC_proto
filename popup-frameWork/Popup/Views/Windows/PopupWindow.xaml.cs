@@ -529,7 +529,7 @@ namespace Popup.Views.Windows
                         1)
                     * 100;
 
-                MessageBox.Show(
+                MessageBox.Show(this,
                     $"이 영상은 {requiredPercent:0.##}% 이상 시청해야 " +
                     "닫을 수 있습니다.",
                     "필수 영상 시청",
@@ -566,7 +566,7 @@ namespace Popup.Views.Windows
                  * 서버 저장에 실패하면
                  * 팝업을 닫지 않고 오류를 표시한다.
                  */
-                MessageBox.Show(
+                MessageBox.Show(this,
                     "다시 보지 않기 설정을 저장하지 못했습니다.\n\n" +
                     exception.Message,
                     "팝업 설정 저장 오류",

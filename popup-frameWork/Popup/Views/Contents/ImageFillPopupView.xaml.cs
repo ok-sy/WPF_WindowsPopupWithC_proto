@@ -83,7 +83,7 @@ namespace Popup.Views.Contents
             }
             catch (Exception exception)
             {
-                MessageBox.Show(
+                MessageBox.Show(Window.GetWindow(this)!,
                     $"이미지를 불러오지 못했습니다.\n{exception.Message}",
                     "이미지 오류",
                     MessageBoxButton.OK,
@@ -101,7 +101,7 @@ namespace Popup.Views.Contents
             if (!Uri.TryCreate(_linkUrl, UriKind.Absolute, out Uri? uri)
                 || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
-                MessageBox.Show(
+                MessageBox.Show(Window.GetWindow(this)!,
                     "클릭 연결 URL은 http 또는 https 주소만 사용할 수 있습니다.",
                     "링크 오류",
                     MessageBoxButton.OK,
@@ -119,7 +119,7 @@ namespace Popup.Views.Contents
             }
             catch (Exception exception)
             {
-                MessageBox.Show(
+                MessageBox.Show(Window.GetWindow(this)!,
                     $"링크를 열지 못했습니다.\n{exception.Message}",
                     "링크 오류",
                     MessageBoxButton.OK,

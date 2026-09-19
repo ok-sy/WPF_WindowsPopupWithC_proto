@@ -632,7 +632,7 @@ namespace Popup.Views.Contents
                 answers,
                 out string validationMessage))
             {
-                MessageBox.Show(
+                MessageBox.Show(Window.GetWindow(this)!,
                     validationMessage,
                     "필수 문항 확인",
                     MessageBoxButton.OK,
