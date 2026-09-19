@@ -1,0 +1,4 @@
+spring:
+  profiles:
+    group:
+      "dev": "common,springdoc,dev_db"

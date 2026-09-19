@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.EmailTransInfoMapper">
+
+    <!-- 목록 조회 -->
+    <select id="emailTransInfoList"
+            resultType="server.domain.entity.EmailTransInfo"
+            parameterType="server.sql.ParamEmailTransInfo$EmailTransInfoList">
+
+        SELECT (
+                 SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 1, 4)
+                 || '/' || SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 5, 2)
+                 || '/' || SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 7, 2)
+                 || ' ' || SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 9, 2)
+                 || ':' || SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 11, 2)
+                 || ':' || SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 13, 2)
+               ) AS EMAIL_TRACSCEIVE_DATETIME
+             , CASE
+               WHEN EMAIL_TRANSCEIVE_TYPE_CD = 'R' THEN '수신'
+               WHEN EMAIL_TRANSCEIVE_TYPE_CD = 'S' THEN '송신'
+               ELSE EMAIL_TRANSCEIVE_TYPE_CD
+               END AS EMAIL_TRANSCEIVE_TYPE_CD
+             , EMP_ID
+             , OPPONENT_EMAIL_DOMAIN_ADDR
+             , FILE_ATTACH_YN
+             , FILE_ATTACH_SIZE
+             , EMAIL_TITLE
+             , DEPARTMENT_CD
+             , REG_DATETIME
+             , INSPECTION_YN
+             , CALL_RULE_RESULT
+          FROM IF_EMAIL_TRANSCEIVE_INFO
+         WHERE 1 = 1
+        <if test='empId neq null and empId != ""'>
+            AND EMP_ID LIKE '%' || #{empId} || '%'
+        </if>
+        <if test='emailTransceiveTypeCd neq null and emailTransceiveTypeCd != ""'>
+            AND EMAIL_TRANSCEIVE_TYPE_CD LIKE '%' || #{emailTransceiveTypeCd} || '%'
+        </if>
+           AND TO_DATE(SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 1, 8), 'YYYYMMDD')
+       BETWEEN TO_DATE(#{fromDt}, 'YYYYMMDD')
+           AND TO_DATE(#{toDt}, 'YYYYMMDD')
+         ORDER BY EMAIL_TRACSCEIVE_DATETIME DESC
+                , EMP_ID ASC
+    </select>
+
+    <select id="emailTransInfoListCnt"
+            resultType="long"
+            parameterType="server.sql.ParamEmailTransInfo$EmailTransInfoList">
+
+        SELECT COUNT(*)
+          FROM IF_EMAIL_TRANSCEIVE_INFO
+         WHERE 1 = 1
+        <if test='empId neq null and empId != ""'>
+            AND EMP_ID LIKE '%' || #{empId} || '%'
+        </if>
+        <if test='emailTransceiveTypeCd neq null and emailTransceiveTypeCd != ""'>
+            AND EMAIL_TRANSCEIVE_TYPE_CD LIKE '%' || #{emailTransceiveTypeCd} || '%'
+        </if>
+           AND TO_DATE(SUBSTR(EMAIL_TRACSCEIVE_DATETIME, 1, 8), 'YYYYMMDD')
+       BETWEEN TO_DATE(#{fromDt}, 'YYYYMMDD')
+           AND TO_DATE(#{toDt}, 'YYYYMMDD')
+    </select>
+
+</mapper>

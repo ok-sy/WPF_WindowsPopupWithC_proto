@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.RuleInterfaceMapper">
+
+    <select id="findRuleInterfaceInfo"
+            parameterType="server.sql.ParamsInterface$InterfaceInfos"
+            resultType="server.domain.vo.RuleInterfaceInfoVo">
+
+        SELECT IFID
+        , IF_NM
+        , IF_DESC
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '110'
+        AND CODE = IF_PROCESS_TYPE_CD
+        ) AS IF_PROCESS_TYPE_CD
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '109'
+        AND CODE = IF_CONNECTION_TYPE_CD
+        ) AS IF_CONNECTION_TYPE_CD
+        , RULE_USE_YN
+        , DOC_LENGTH
+        , CHARACTERSET
+        , EAIID
+        , (
+        SELECT LGON_ID
+        FROM CLOVER_USER
+        WHERE USER_ID = FIRSTREG_USERID
+        ) AS FIRSTREG_USERID
+        , (
+        SUBSTR(FIRSTREG_DATETIME, 1, 4)
+        || '/' || SUBSTR(FIRSTREG_DATETIME, 5, 2)
+        || '/' || SUBSTR(FIRSTREG_DATETIME, 7, 2)
+        || ' ' || SUBSTR(FIRSTREG_DATETIME, 9, 2)
+        || ':' || SUBSTR(FIRSTREG_DATETIME, 11, 2)
+        || ':' || SUBSTR(FIRSTREG_DATETIME, 13, 2)
+        ) AS FIRSTREG_DATETIME
+        , (
+        SELECT LGON_ID
+        FROM CLOVER_USER
+        WHERE USER_ID = UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        FROM INTERFACEINFO
+        <where>
+            DEL_YN = 'N'
+            <include refid="PAGE_WHERE"/>
+        </where>
+
+    </select>
+
+
+    <sql id="PAGE_WHERE">
+        <if test='ifid != null and ifid != ""'>
+            AND IFID LIKE '%' || #{ifid} || '%'
+        </if>
+
+        <if test='ifNm != null and ifNm != ""'>
+            AND IF_NM LIKE '%' || #{ifNm} || '%'
+        </if>
+    </sql>
+
+
+    <select id="newIfidSeq" resultType="String">
+        SELECT LPAD(nextval('interfaceinfo_ifid_seq')::text, 8, '0')
+    </select>
+
+
+    <insert id="insertRuleInterface"
+            parameterType="server.sql.ParamsInterface$InterfaceInsert">
+
+        INSERT INTO INTERFACEINFO (
+        IFID
+        , IF_NM
+        , IF_DESC
+        , IF_PROCESS_TYPE_CD
+        , IF_CONNECTION_TYPE_CD
+        , RULE_USE_YN
+        , DOC_LENGTH
+        , CHARACTERSET
+        , EAIID
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , DEL_YN
+        ) VALUES (
+        #{ifid}
+        , #{ifNm}
+        , #{ifDesc}
+        , #{ifProcessTypeCd}
+        , #{ifConnectionTypeCd}
+        , #{ruleUseYn}
+        , #{docLength}
+        , #{characterset}
+        , #{eaiid}
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , 'N'
+        )
+    </insert>
+
+
+    <update id="updateInterfaceInfo"
+            parameterType="server.sql.ParamsInterface$InterfaceUpdate">
+
+        UPDATE INTERFACEINFO
+        SET IF_NM = #{ifNm}
+        , IF_DESC = #{ifDesc}
+        , IF_PROCESS_TYPE_CD = (
+        SELECT CODE
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '110'
+        AND CODE_NM = #{ifProcessTypeCd}
+        )
+        , IF_CONNECTION_TYPE_CD = (
+        SELECT CODE
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '109'
+        AND CODE_NM = #{ifConnectionTypeCd}
+        )
+        , RULE_USE_YN = #{ruleUseYn}
+        , DOC_LENGTH = #{docLength}
+        , CHARACTERSET = #{characterset}
+        , EAIID = #{eaiid}
+        , UPDATE_USERID = #{updateUserid}
+        , UPDATE_DATETIME = TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        WHERE IFID = #{ifid}
+    </update>
+
+
+    <select id="findRuleInterfaceMap"
+            parameterType="server.sql.ParamsInterface$InterfaceInfos"
+            resultType="server.domain.vo.RuleInterfaceMapVo">
+
+        SELECT A.IFID
+        , A.FIELD_ENG_NM
+        , A.FIELD_KOR_NM
+        , A.FIELD_ORDER
+        , A.FIELD_LENGTH
+        , A.FIELD_START_NO
+        , A.FIELD_CODE_TYPE
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '108'
+        AND CODE = A.DATATYPE_CD
+        ) AS DATATYPE_CD
+        , A.FIELD_SCALE
+        , A.TRIM_YN
+        , A.CHARACTERSET
+        , A.FIRSTREG_USERID
+        , (
+        SUBSTR(A.FIRSTREG_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.FIRSTREG_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.FIRSTREG_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.FIRSTREG_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.FIRSTREG_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.FIRSTREG_DATETIME, 13, 2)
+        ) AS FIRSTREG_DATETIME
+        , A.UPDATE_USERID
+        , (
+        SUBSTR(A.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.IF_NM
+        FROM INTERFACEMAP A
+        , INTERFACEINFO B
+        <where>
+            <include refid="MAP_PAGE_WHERE"/>
+        </where>
+    </select>
+
+
+    <sql id="MAP_PAGE_WHERE">
+        A.IFID = B.IFID
+
+        <if test='ifid != null and ifid != ""'>
+            AND A.IFID = #{ifid}
+        </if>
+
+        <if test='ifNm != null and ifNm != ""'>
+            AND B.IF_NM = #{ifNm}
+        </if>
+    </sql>
+
+
+    <insert id="insertRuleMap"
+            parameterType="server.sql.ParamsInterface$InterfaceMapInsert">
+
+        INSERT INTO INTERFACEMAP (
+        IFID
+        , FIELD_ENG_NM
+        , FIELD_KOR_NM
+        , FIELD_ORDER
+        , FIELD_LENGTH
+        , FIELD_START_NO
+        , FIELD_CODE_TYPE
+        , DATATYPE_CD
+        , FIELD_SCALE
+        , TRIM_YN
+        , CHARACTERSET
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{ifid}
+        , #{fieldEngNm}
+        , #{fieldKorNm}
+        , #{fieldOrder}
+        , #{fieldLength}
+        , #{fieldStartNo}
+        , #{fieldCodeType}
+        , #{datatypeCd}
+        , #{fieldScale}
+        , #{trimYn}
+        , #{characterset}
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , NULL
+        , NULL
+        )
+    </insert>
+
+
+    <update id="updateRuleMap"
+            parameterType="server.sql.ParamsInterface$InterfaceMapUpdate">
+
+        UPDATE INTERFACEMAP
+        SET FIELD_KOR_NM = #{fieldKorNm}
+        , FIELD_ORDER = #{fieldOrder}
+        , FIELD_LENGTH = #{fieldLength}
+        , FIELD_START_NO = #{fieldStartNo}
+        , FIELD_CODE_TYPE = #{fieldCodeType}
+        , DATATYPE_CD = #{datatypeCd}
+        , FIELD_SCALE = #{fieldScale}
+        , TRIM_YN = #{trimYn}
+        , CHARACTERSET = #{characterset}
+        , UPDATE_USERID = #{updateUserid}
+        , UPDATE_DATETIME = TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        WHERE IFID = #{ifid}
+        AND FIELD_ENG_NM = #{fieldEngNm}
+    </update>
+
+
+    <delete id="deleteRuleMap" parameterType="String">
+        DELETE FROM INTERFACEMAP
+        WHERE IFID = #{ifid}
+        AND FIELD_ENG_NM = #{fieldEngNm}
+    </delete>
+
+
+    <select id="interfaceFindedOne" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM INTERFACEINFO
+        WHERE IFID = #{ifid}
+        AND IF_NM = #{ifNm}
+    </select>
+
+
+    <select id="itemFindedOne" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM RULEITEM
+        WHERE IFID = #{ifid}
+        AND ITEMALIAS_NM = #{itemaliasNm}
+    </select>
+
+
+    <update id="delInterfaceInfo" parameterType="String">
+        UPDATE INTERFACEINFO
+        SET DEL_YN = 'Y'
+        WHERE IFID = #{ifid}
+    </update>
+
+</mapper>

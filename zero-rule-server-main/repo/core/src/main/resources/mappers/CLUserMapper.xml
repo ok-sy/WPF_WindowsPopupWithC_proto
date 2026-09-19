@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.CLUserMapper">
+    <!-- CLOVER_USER 테이블 -->
+
+    <!-- 신규 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.CLUser">
+        INSERT INTO CLOVER_USER (
+              user_id
+            , lgon_id
+            , pswd
+            , user_nm
+            , bryy_mndy
+            , user_tno
+            , user_exno
+            , cti_user_ntno
+            , prt_posb_yn
+            , dwnl_posb_yn
+            , atnt_yn
+            , team_id
+            , user_gd
+            , user_state
+            , lgon_fail_cnt
+            , pswd_init_yn
+            , last_pswd_chng_dttm
+            , last_lgon_dttm
+            , memo
+            , reg_dttm
+            , regr_id
+            , chng_dttm
+            , chgr_id
+            , role_id
+            , nav_id
+        ) VALUES (
+              #{userId}
+            , #{lgonId}
+            , #{pswd}
+            , #{userNm}
+            , #{bryyMndy}
+            , #{userTno}
+            , #{userExno}
+            , #{ctiUserNtno}
+            , #{prtPosbYn}
+            , #{dwnlPosbYn}
+            , #{atntYn}
+            , #{teamId}
+            , #{userGd}
+            , #{userState}
+            , #{lgonFailCnt}
+            , #{pswdInitYn}
+            , #{lastPswdChngDttm}
+            , #{lastLgonDttm}
+            , #{memo}
+            , #{regDttm}
+            , #{regrId}
+            , #{chngDttm}
+            , #{chgrId}
+            , 2
+            , 1
+        )
+    </insert>
+
+    <update id="update" parameterType="server.sql.ParamsCLUser$Update">
+        UPDATE CLOVER_USER
+           SET user_nm       = #{userNm}
+             , user_state    = #{userState}
+             , pswd_init_yn  = #{pswdInitYn}
+             , bryy_mndy     = #{bryyMndy}
+             , user_tno      = #{userTno}
+             , user_exno     = #{userExno}
+             , user_gd       = #{userGd}
+             , cti_user_ntno = #{ctiUserNtno}
+             , prt_posb_yn   = #{prtPosbYn}
+             , dwnl_posb_yn  = #{dwnlPosbYn}
+             , atnt_yn       = #{atntYn}
+             , memo          = #{memo}
+             , team_id       = #{teamId}
+             , chgr_id       = #{chgrId}
+             , chng_dttm     = CURRENT_TIMESTAMP
+         WHERE user_id = #{userId}
+    </update>
+
+
+    <update id="updateLastLoginTime" parameterType="server.sql.ParamsCLUser$UpdateLastLoginTime">
+        UPDATE CLOVER_USER
+           SET last_lgon_dttm = CURRENT_TIMESTAMP
+             , chgr_id        = #{chgrId}
+             , chng_dttm      = CURRENT_TIMESTAMP
+         WHERE user_id = #{userId}
+    </update>
+
+
+    <!-- UserProfile 단건 조회 by user_id -->
+    <select id="findUserProfileByUserId" parameterType="long" resultType="server.domain.vo.UserProfile">
+        SELECT a.user_id
+             , a.lgon_id
+             , a.user_nm
+             , a.role_id
+             , a.nav_id
+          FROM CLOVER_USER a
+         WHERE a.user_id = #{value}
+           AND a.user_state != '9'
+    </select>
+
+
+    <!-- CLUserVo 단건 조회 by user_id -->
+    <select id="findUserVoByUserId" parameterType="long" resultType="server.domain.vo.CLUserVo">
+        SELECT a.user_id
+             , a.lgon_id
+             , a.pswd
+             , a.user_nm
+             , a.bryy_mndy
+             , a.user_tno
+             , a.user_exno
+             , a.cti_user_ntno
+             , a.prt_posb_yn
+             , a.dwnl_posb_yn
+             , a.atnt_yn
+             , a.team_id
+             , a.user_gd
+             , a.user_state
+             , a.lgon_fail_cnt
+             , a.pswd_init_yn
+             , a.last_pswd_chng_dttm
+             , a.last_lgon_dttm
+             , a.memo
+             , a.reg_dttm
+             , a.regr_id
+             , a.chng_dttm
+             , a.chgr_id
+             , (
+                 SELECT team_nm
+                 FROM CLOVER_TEAM
+                 WHERE TEAM_ID = A.TEAM_ID
+               ) AS team_nm
+          FROM CLOVER_USER a
+         WHERE a.user_id = #{value}
+           AND a.user_state != '9'
+    </select>
+
+
+    <!-- 존재 여부 체크 by lgon_id -->
+    <select id="existsByLgonId" parameterType="string" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+              FROM CLOVER_USER
+             WHERE lgon_id = #{value}
+               AND user_state != '9'
+        )
+    </select>
+
+
+    <!-- 단건 조회 by PK -->
+    <select id="findByUserId" parameterType="long" resultType="server.domain.entity.CLUser">
+        SELECT *
+          FROM CLOVER_USER
+         WHERE user_id = #{value}
+           AND user_state != '9'
+    </select>
+
+
+    <!-- 단건 조회 by lgon_id -->
+    <select id="findByLgonId" parameterType="string" resultType="server.domain.entity.CLUser">
+        SELECT *
+          FROM CLOVER_USER
+         WHERE lgon_id = #{value}
+           AND user_state != '9'
+    </select>
+
+
+    <!-- 단건 조회 - 인증 ID로 사용자 계정 조회 -->
+    <select id="findByAuthId" parameterType="long" resultType="server.domain.entity.CLUser">
+        SELECT a.*
+          FROM CLOVER_USER a
+             , CLOVER_USER_AUTH b
+         WHERE a.user_id = b.user_id
+           AND a.user_state != '9'
+           AND b.auth_id = #{value}
+    </select>
+
+
+    <!-- user 페이지 조회 - WHERE 조건 부분 -->
+    <sql id="PAGE_WHERE">
+        <if test='userNm != null and userNm != ""'>
+            <bind name="userNmLowercase" value="userNm.toLowerCase()"/>
+            AND USER_STATE != '9'
+            AND (
+                z.USER_NM LIKE '%' || #{userNmLowercase} || '%'
+                OR z.USER_NM LIKE '%' || #{userNm} || '%'
+                )
+        </if>
+        <if test='lgonId != null and lgonId != "" '>
+            AND z.LGON_ID LIKE '%' || #{lgonId} || '%'
+        </if>
+        <if test='keyword != null and keyword != "" '>
+            AND (
+                z.USER_NM LIKE '%' || #{keyword} || '%'
+                OR z.LGON_ID LIKE '%' || #{keyword} || '%'
+                )
+        </if>
+    </sql>
+
+
+    <!-- 다건조회 user 페이지 조회 -->
+    <select id="findPage"
+            parameterType="server.sql.ParamsCLUser$FindPage"
+            resultType="server.domain.vo.CLUserVo">
+
+        SELECT z.USER_ID
+             , z.LGON_ID
+             , z.USER_NM
+             , z.USER_STATE
+             , z.LAST_LGON_DTTM
+             , z.REG_DTTM
+             , z.CHNG_DTTM
+          FROM CLOVER_USER z
+        <where>
+            <include refid="PAGE_WHERE"/>
+        </where>
+         ORDER BY z.REG_DTTM DESC
+                , z.USER_ID
+         LIMIT #{rowsPerPage}
+        OFFSET #{pageNumber} * #{rowsPerPage}
+    </select>
+
+
+    <!-- user 페이지 조회 - 전체 데이터 건수 -->
+    <select id="countForUserPage"
+            parameterType="server.sql.ParamsCLUser$FindPage"
+            resultType="long">
+        SELECT COUNT(*)
+          FROM CLOVER_USER z
+        <where>
+            <include refid="PAGE_WHERE"/>
+        </where>
+    </select>
+
+
+    <!--
+    TODO jjfive 재설계중
+    역할 및 권한 이름 다건 조회 - 사용자의 모든 역할 및 권한 이름 조회
+    <select id="findRoleAndPrivilegeNamesByAccountId" parameterType="long" resultType="string">
+        SELECT a.name
+          FROM APP_PRIVILEGE        a
+             , APP_ROLE_PRIVILEGE   b
+             , APP_ROLE             c
+             , USER_ACCOUNT_ROLE    d
+         WHERE a.id          = b.privilege_id
+           AND b.role_id     = c.id
+           AND c.id          = d.role_id
+           AND d.account_id  = #{value}
+        UNION ALL
+        SELECT a.name
+          FROM APP_ROLE             a
+             , USER_ACCOUNT_ROLE    b
+         WHERE a.id          = b.role_id
+           AND b.account_id  = #{value}
+    </select>
+    -->
+
+
+    <!-- user_id 채번 -->
+    <select id="createMaxUserId" resultType="long">
+        SELECT COALESCE(MAX(USER_ID), 0) + 1 AS MAX_USER_ID
+          FROM CLOVER_USER
+    </select>
+
+
+    <!-- 사용자 비밀번호 초기화 상태로 변경 -->
+    <update id="updatePswdByAdmin" parameterType="server.sql.ParamsCLUser$UpdatePswdByAdmin">
+        UPDATE CLOVER_USER
+           SET pswd_init_yn = 'Y'
+             , pswd         = #{pswd}
+             , chgr_id      = #{chgrId}
+             , chng_dttm    = CURRENT_TIMESTAMP
+         WHERE user_id = #{userId}
+    </update>
+
+
+    <!-- 사용자 본인의 비밀번호 변경 -->
+    <update id="updatePswd" parameterType="server.sql.ParamsCLUser$UpdatePswd">
+        UPDATE CLOVER_USER
+           SET pswd_init_yn        = 'N'
+             , pswd                = #{pswd}
+             , chng_dttm           = CURRENT_TIMESTAMP
+             , last_pswd_chng_dttm = CURRENT_TIMESTAMP
+         WHERE user_id = #{userId}
+    </update>
+
+
+    <update id="updateLoginFailCnt" parameterType="server.sql.ParamsCLUser$UpdateLoginFailCnt">
+        UPDATE CLOVER_USER
+           SET lgon_fail_cnt = lgon_fail_cnt + 1
+             , chgr_id       = #{chgrId}
+             , chng_dttm     = CURRENT_TIMESTAMP
+         WHERE user_id = #{userId}
+    </update>
+
+
+    <!-- 삭제 - reg_dttm이 주어진 시간보다 오래된 사용자 비밀번호 초기화 -->
+    <update id="updateByPswdOverTime" parameterType="java.time.Instant">
+        <![CDATA[
+            UPDATE CLOVER_USER
+               SET PSWD_INIT_YN = 'Y'
+             WHERE reg_dttm <= #{value}
+        ]]>
+    </update>
+
+</mapper>

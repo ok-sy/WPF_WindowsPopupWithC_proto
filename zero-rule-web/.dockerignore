@@ -1,0 +1,15 @@
+.turbo
+.vscode
+node_modules
+main/.next
+main/.turbo
+main/node_modules
+main/.env
+sub/*/node_modules
+sub/*/dist
+sub/*/build
+sub/*/.turbo
+*/*/_publish*.sh
+_build*.sh
+_purge.sh
+tsconfig.tsbuildinfo

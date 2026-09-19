@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.PdsMapper">
+
+    <!-- PDS 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.Pds">
+        INSERT INTO PDS (
+        pds_id
+        , title
+        , title_no_space
+        , substance
+        , location
+        , attach_file_count
+        , create_user_id
+        , created_at
+        , changed_at
+        ) VALUES (
+        #{pdsId}
+        , #{title}
+        , #{titleNoSpace}
+        , #{substance}
+        , 'BASIC'
+        , (SELECT COUNT(*) FROM PDS_FILE k WHERE k.pds_id = #{pdsId})
+        , #{createUserId}
+        , #{createdAt}
+        , #{changedAt}
+        )
+    </insert>
+
+    <!-- PDS 업데이트 -->
+    <update id="update" parameterType="server.domain.entity.Pds">
+        UPDATE PDS
+        SET title             = #{title}
+        , title_no_space    = #{titleNoSpace}
+        , substance         = #{substance}
+        , attach_file_count = (
+        SELECT COUNT(*)
+        FROM PDS_FILE k
+        WHERE k.pds_id = #{pdsId}
+        )
+        , changed_at        = CURRENT_TIMESTAMP
+        WHERE pds_id = #{pdsId}
+    </update>
+
+    <!-- 첨부파일 개수 업데이트 -->
+    <update id="updateAttachFileCount" parameterType="long">
+        UPDATE PDS
+        SET attach_file_count = (
+        SELECT COUNT(*)
+        FROM PDS_FILE k
+        WHERE k.pds_id = #{pdsId}
+        )
+        , changed_at = CURRENT_TIMESTAMP
+        WHERE pds_id = #{pdsId}
+    </update>
+
+    <!-- Pds 단건 조회 by PK -->
+    <select id="findById" parameterType="long" resultType="server.domain.entity.Pds">
+        SELECT *
+        FROM PDS
+        WHERE pds_id = #{value}
+    </select>
+
+
+    <!-- PdsSimpleVo 단건 조회 by PK -->
+    <select id="findSimpleVoById" parameterType="long" resultType="server.domain.vo.PdsSimpleVo">
+        SELECT a.pds_id
+        , a.title
+        , a.attach_file_count
+        , a.create_user_id
+        , a.created_at
+        , a.changed_at
+        FROM PDS a
+        WHERE a.pds_id = #{value}
+    </select>
+
+    <!-- PdsVo 단건 조회 by PK -->
+    <select id="findVoById" parameterType="long" resultType="server.domain.vo.PdsVo">
+        SELECT a.pds_id
+        , a.title
+        , a.substance
+        , a.attach_file_count
+        , a.create_user_id
+        , a.created_at
+        , a.changed_at
+        FROM PDS a
+        WHERE a.pds_id = #{pdsId}
+    </select>
+
+    <!-- PDS 페이지 조회 - WHERE 조건 부분 -->
+    <sql id="PAGE_WHERE">
+        <if test='title != null and title != ""'>
+            <bind name="titleLowercase" value="title.toLowerCase()"/>
+            AND (
+            z.title_no_space LIKE '%' || #{titleLowercase} || '%'
+            OR z.title LIKE '%' || #{title} || '%'
+            )
+        </if>
+    </sql>
+
+    <!-- PDS 페이지 조회 - 전체 데이터 건수 -->
+    <select id="countForPage"
+            parameterType="server.sql.ParamsPds$FindPageSearch"
+            resultType="long">
+
+        SELECT COUNT(*)
+        FROM PDS z
+        <where>
+            <include refid="PAGE_WHERE"/>
+            AND z.location = 'BASIC'
+        </where>
+    </select>
+
+    <!-- 다건 조회 - PDS 페이지 조회 -->
+    <select id="findPage"
+            parameterType="server.sql.ParamsPds$FindPageSearch"
+            resultType="server.domain.vo.PdsSimpleVo">
+
+        SELECT z.*
+        FROM PDS z
+        <where>
+            <include refid="PAGE_WHERE"/>
+            AND z.location = 'BASIC'
+        </where>
+        ORDER BY z.created_at DESC
+        LIMIT #{rowsPerPage}
+        OFFSET #{pageNumber} * #{rowsPerPage}
+    </select>
+
+    <!-- 존재 여부 체크 by PK -->
+    <select id="existsById" parameterType="long" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM PDS
+        WHERE pds_id = #{value}
+        )
+    </select>
+
+    <!-- 삭제 by PK -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM PDS
+        WHERE pds_id = #{value}
+    </delete>
+
+
+    <!-- PDS 페이지 조회 - 전체 데이터 건수 -->
+    <select id="countForDocPage"
+            parameterType="server.sql.ParamsPds$FindPageSearch"
+            resultType="long">
+
+        SELECT COUNT(*)
+        FROM PDS z
+        <where>
+            <include refid="PAGE_WHERE"/>
+            AND z.location = 'DOC'
+        </where>
+    </select>
+
+    <!-- 다건 조회 - PDS 페이지 조회 -->
+    <select id="findDocPage"
+            parameterType="server.sql.ParamsPds$FindPageSearch"
+            resultType="server.domain.vo.PdsSimpleVo">
+
+        SELECT z.*
+        FROM PDS z
+        <where>
+            <include refid="PAGE_WHERE"/>
+            AND z.location = 'DOC'
+        </where>
+        ORDER BY z.created_at DESC
+        LIMIT #{rowsPerPage}
+        OFFSET #{pageNumber} * #{rowsPerPage}
+    </select>
+
+</mapper>

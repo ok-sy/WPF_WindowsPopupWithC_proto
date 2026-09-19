@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.nav.PageSectionMapper">
+
+    <!-- CLPageSection 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.nav.PageSection">
+        INSERT INTO CLOVER_PAGE_SECTION (
+        section_id
+        , section_nm
+        , icon
+        ) VALUES (
+        #{sectionId}
+        , #{sectionNm}
+        , #{icon}
+        )
+    </insert>
+
+    <!-- CLPageSection 업데이트 -->
+    <update id="update" parameterType="server.sql.nav.ParamsPageSection$Update">
+        UPDATE CLOVER_PAGE_SECTION
+        SET section_nm = #{sectionNm}
+        , icon       = #{icon}
+        WHERE section_id = #{sectionId}
+    </update>
+
+
+    <!-- CLPageSection 단건 조회 by PK -->
+    <select id="findById" parameterType="long" resultType="server.domain.entity.nav.PageSection">
+        SELECT *
+        FROM CLOVER_PAGE_SECTION
+        WHERE section_id = #{value}
+    </select>
+
+    <!-- 단건 조회 vo by PK -->
+    <select id="findVoById" parameterType="long" resultType="server.domain.vo.nav.PageSectionVo">
+        SELECT *
+        FROM CLOVER_PAGE_SECTION
+        WHERE section_id = #{value}
+    </select>
+
+    <!-- CLPageSection vo 다건 조회 -->
+    <select id="findVoList" resultType="server.domain.vo.nav.PageSectionVo">
+        SELECT a.*
+        FROM CLOVER_PAGE_SECTION a
+        ORDER BY a.section_nm, a.section_id
+    </select>
+
+
+    <!-- 존재 여부 체크 by PK -->
+    <select id="existsById" parameterType="long" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM CLOVER_PAGE_SECTION
+        WHERE section_id = #{value}
+        )
+    </select>
+
+
+    <!-- 삭제 by PK -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM CLOVER_PAGE_SECTION
+        WHERE section_id = #{value}
+    </delete>
+
+    <!-- 섹션 상위 수정 -->
+    <update id="updateUpSectionId">
+        UPDATE CLOVER_PAGE_SECTION
+        SET UP_SECTION_ID   = #{upSectionId}
+        , SECTION_SORT_NO = #{sectionSortNo}
+        WHERE section_id      = #{sectionId}
+    </update>
+
+</mapper>

@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.ItemMgmtMapper">
+
+    <insert id="itemMgmtInsert" parameterType="server.sql.ParamsItemMgmt$ItemMgmtInsert">
+        <selectKey keyProperty="itemId" resultType="java.lang.String" order="BEFORE">
+            SELECT '#P' || LPAD(
+            (COALESCE(MAX(SUBSTR(ITEMID, 3, 10)::BIGINT), 0) + 1)::TEXT
+            , 8
+            , '0'
+            )
+            FROM RULEITEM
+        </selectKey>
+
+        /* RuleItem.insertItem */
+        INSERT INTO RULEITEM (
+        ITEMID
+        , ITEM_NM
+        , ITEMALIAS_NM
+        , ITEMEXPLAN_DESC
+        , DATATYPE_CD
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , ITEM_USE_YN
+        , IFID
+        ) VALUES (
+        #{itemId}
+        , #{itemNm}
+        , #{itemAliasNm}
+        , #{itemExplanDesc}
+        , #{dataTypeCd}
+        , NULL
+        , NULL
+        , #{firstRegUserId}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , #{itemUseYn}
+        , #{ifid}
+        )
+    </insert>
+
+
+    <update id="itemMgmtModify" parameterType="server.sql.ParamsItemMgmt$ItemMgmtInsert">
+        UPDATE RULEITEM
+        SET ITEM_NM         = #{itemNm}
+        , ITEMALIAS_NM    = #{itemAliasNm}
+        , ITEMEXPLAN_DESC = #{itemExplanDesc}
+        , DATATYPE_CD     = #{dataTypeCd}
+        , UPDATE_USERID   = #{updateUserID}
+        , UPDATE_DATETIME = TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , ITEM_USE_YN     = #{itemUseYn}
+        , IFID            = #{ifid}
+        WHERE ITEMID = #{itemId}
+    </update>
+
+
+    <select id="itemMgmtSelect"
+            resultType="server.domain.entity.ItemMgmt"
+            parameterType="server.sql.ParamsItemMgmt$ItemMgmtSelect">
+
+        SELECT A.ITEMID
+        , A.ITEM_NM
+        , A.ITEMALIAS_NM
+        , A.ITEMEXPLAN_DESC
+        , A.DATATYPE_CD
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '102'
+        AND CODE = A.DATATYPE_CD
+        ) AS DATATYPE_NM
+        , (
+        SELECT LGON_ID
+        FROM CLOVER_USER
+        WHERE USER_ID::TEXT = A.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(A.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , (
+        SELECT LGON_ID
+        FROM CLOVER_USER
+        WHERE USER_ID::TEXT = A.FIRSTREG_USERID
+        ) AS FIRSTREG_USERID
+        , (
+        SUBSTR(A.FIRSTREG_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.FIRSTREG_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.FIRSTREG_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.FIRSTREG_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.FIRSTREG_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.FIRSTREG_DATETIME, 13, 2)
+        ) AS FIRSTREG_DATETIME
+        , A.ITEM_USE_YN
+        , A.IFID
+        , B.USED_CNT
+        FROM RULEITEM A
+        LEFT JOIN (
+        SELECT ITEMID
+        , COUNT(DISTINCT RULEID) AS USED_CNT
+        FROM (
+        SELECT RULEID
+        , SUBSTR(OBJECT_DATA, 2, LENGTH(OBJECT_DATA) - 2) AS ITEMID
+        FROM RULECONDITION_POSTFIXOBJECT
+        WHERE DATATYPE_CD = '3'
+        AND OBJECT_DATA LIKE '%'
+
+        UNION ALL
+
+        SELECT B.RULEID
+        , SUBSTR(B.OBJECT_DATA, 2, LENGTH(B.OBJECT_DATA) - 2) AS ITEMID
+        FROM RULECONDITIONRETURN_POSTOBJECT B
+        WHERE B.DATATYPE_CD = '3'
+        AND B.OBJECT_DATA LIKE '%'
+
+        UNION ALL
+
+        SELECT B.RULEID
+        , B.RETURN_ITEMID AS ITEMID
+        FROM RULECONDITIONRETURNITEM B
+        ) C
+        GROUP BY ITEMID
+        ) B
+        ON A.ITEMID = B.ITEMID
+        WHERE 1 = 1
+
+        <if test='ifid neq null and ifid != ""'>
+            AND A.IFID IN (#{ifid}, 'IF00000000')
+        </if>
+
+        <if test='itemUseYn neq null and itemUseYn != ""'>
+            AND A.ITEM_USE_YN = #{itemUseYn}
+        </if>
+
+        <if test='itemNm neq null and itemNm != "" '>
+            AND A.ITEM_NM LIKE '%' || #{itemNm} || '%'
+        </if>
+
+        <if test='itemAliasNm neq null and itemAliasNm != "" '>
+            AND A.ITEMALIAS_NM LIKE '%' || #{itemAliasNm} || '%'
+        </if>
+    </select>
+
+
+    <select id="itemInfo"
+            resultType="server.domain.entity.ItemMgmt"
+            parameterType="String">
+        SELECT ITEMID
+        , ITEM_NM
+        , ITEMALIAS_NM
+        , ITEMEXPLAN_DESC
+        , DATATYPE_CD
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , ITEM_USE_YN
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        FROM RULEITEM
+        WHERE ITEMID = #{value}
+    </select>
+
+
+    <select id="itemRefList"
+            resultType="server.domain.vo.ItemRefVo"
+            parameterType="String">
+        SELECT ITEMID
+        , ITEMREF_CD
+        , ITEMREF_NM
+        , ITEMREFALIAS_NM
+        , ITEMREFEXPR_DESC
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        FROM RULEITEMREF
+        WHERE ITEMID = #{value}
+    </select>
+
+
+    <insert id="itemRefInsert" parameterType="server.sql.ParamsItemMgmt$ItemRefInsert">
+        INSERT INTO RULEITEMREF (
+        ITEMID
+        , ITEMREF_CD
+        , ITEMREF_NM
+        , ITEMREFALIAS_NM
+        , ITEMREFEXPR_DESC
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{itemid}
+        , #{itemrefCd}
+        , #{itemrefNm}
+        , #{itemrefaliasNm}
+        , #{itemrefexprDesc}
+        , #{updateUserid}
+        , CURRENT_TIMESTAMP
+        )
+    </insert>
+
+
+    <update id="itemRefModify" parameterType="server.sql.ParamsItemMgmt$ItemRefModify">
+        UPDATE RULEITEMREF
+        SET ITEMREF_CD        = #{itemrefCd}
+        , ITEMREF_NM        = #{itemrefNm}
+        , ITEMREFALIAS_NM   = #{itemrefaliasNm}
+        , ITEMREFEXPR_DESC  = #{itemrefexprDesc}
+        , UPDATE_USERID     = #{updateUserid}
+        , UPDATE_DATETIME   = CURRENT_TIMESTAMP
+        WHERE ITEMID = #{itemId}
+        AND ITEMREF_CD = #{asisInputItemrefCd}
+    </update>
+
+
+    <delete id="itemRefDel" parameterType="String">
+        DELETE FROM RULEITEMREF
+        WHERE ITEMID = #{itemId}
+        AND ITEMREF_CD = #{itemrefCd}
+    </delete>
+
+
+    <select id="itemInsertDupCheck" resultType="int" parameterType="String">
+        SELECT COUNT(*)
+        FROM RULEITEMREF
+        WHERE ITEMID = #{itemid}
+        AND ITEMREF_CD = #{itemrefCd}
+    </select>
+
+
+    <select id="selectReturnItem" resultType="String" parameterType="String">
+        SELECT RULEID
+        FROM RULECONDITIONRETURNITEM
+        WHERE RETURN_ITEMID = #{value}
+    </select>
+
+
+    <select id="selectConditonItem" resultType="String" parameterType="String">
+        SELECT RULEID
+        FROM RULECONDITION_POSTFIXOBJECT
+        WHERE OBJECT_DATA = #{value}
+        AND DATATYPE_CD = '3'
+    </select>
+
+
+    <select id="selectCondtionReturnItem" resultType="String" parameterType="String">
+        SELECT RULEID
+        FROM RULECONDITIONRETURN_POSTOBJECT
+        WHERE OBJECT_DATA = #{value}
+        AND DATATYPE_CD = '3'
+    </select>
+
+
+    <select id="selectRuleInfo"
+            resultType="server.domain.vo.UsedRuleInfoVo"
+            parameterType="String">
+        SELECT RULEID
+        , RULE_NM
+        , RULE_STATE
+        , ACTIVATE_YN
+        FROM RULE
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="itemMgmtCheckNm"
+            resultType="server.domain.vo.ItemMgmtCheckNmVo"
+            parameterType="java.util.Map">
+        SELECT COUNT(1) AS CNT
+        FROM RULEITEM
+        WHERE ITEMALIAS_NM = #{itemAliasNm}
+        AND IFID = #{ifid}
+
+        UNION ALL
+
+        SELECT COUNT(1)
+        FROM RULEITEM
+        WHERE ITEM_NM = #{itemNm}
+        AND IFID = #{ifid}
+    </select>
+
+</mapper>

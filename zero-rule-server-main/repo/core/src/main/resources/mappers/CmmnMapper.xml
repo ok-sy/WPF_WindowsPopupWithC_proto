@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.CmmnMapper">
+
+    <!-- UserProfile 단건 조회 by user_id -->
+    <select id="findCodeByCodeType"
+            parameterType="String"
+            resultType="server.domain.vo.CodeVo">
+        SELECT CODE_TYPE
+             , CODE
+             , CODE_NM
+             , DTL_EXPL
+          FROM CLOVER_CODE
+         WHERE CODE_TYPE = #{value}
+         ORDER BY CODE_NM
+    </select>
+
+    <!-- 사용자에게 부여된 권한 카운트 -->
+    <select id="countByGrantedUserPriv"
+            parameterType="server.sql.ParamCmmn$CountByGrantedUserPriv"
+            resultType="int">
+        SELECT COUNT(*) CNT
+          FROM CLOVER_ROLE_USER A
+             , CLOVER_ROLE_PAGE B
+             , (
+                 SELECT PAGE_ID
+                      , PRIV_ID
+                   FROM CLOVER_API_PAGE
+                  WHERE API_URL = #{apiUrl}
+               ) C
+         WHERE A.USER_ID = #{userId}
+           AND B.ROLE_ID = A.ROLE_ID
+           AND C.PAGE_ID = B.PAGE_ID
+           AND C.PRIV_ID = B.PRIV_ID
+    </select>
+
+    <!-- 신규 등록 -->
+    <insert id="createApiLog" parameterType="server.sql.ParamCmmn$Create">
+        INSERT INTO CLOVER_API_LOG (
+              LOG_SEQ
+            , REQ_DTTM
+            , API_URL
+            , ST_TM
+            , ED_TM
+            , PROC_TM
+            , USER_ID
+        ) VALUES (
+              nextval('log_seq')
+            , CURRENT_TIMESTAMP
+            , #{apiUrl}
+            , #{stTm}
+            , #{edTm}
+            , #{procTm}::numeric
+            , #{userId}
+        )
+    </insert>
+
+    <select id="userPageRolePrivList" parameterType="long" resultType="server.domain.entity.UserPageRolePrivList">
+        SELECT
+        T2.PAGE_ID
+        , T2.PRIV_ID
+        , T3.PAGE_KEY
+        FROM (
+        SELECT *
+        FROM CLOVER_ROLE_USER
+        WHERE USER_ID = #{userId}
+        ) T1
+        , CLOVER_ROLE_PAGE T2
+        , CLOVER_PAGE T3
+        WHERE T2.ROLE_ID IN (T1.ROLE_ID)
+        AND T2.PAGE_ID = T3.PAGE_ID
+        GROUP BY T2.PAGE_ID, T2.PRIV_ID, T3.PAGE_KEY
+        ORDER BY T2.PAGE_ID
+    </select>
+</mapper>

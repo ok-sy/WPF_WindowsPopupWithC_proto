@@ -1,0 +1,51 @@
+{
+  "name": "@local/ui",
+  "version": "0.0.0",
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint src/*.ts*"
+  },
+  "devDependencies": {
+    "@mui/icons-material": "^6.4.1",
+    "@mui/material": "^6.4.1",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@tanstack/react-table": "^8.5.0",
+    "@types/eslint": "^9.6.1",
+    "@types/node": "^18.19.74",
+    "@types/react": "^18.3.18",
+    "@types/sanitize-html": "2.16.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^12.0.1",
+    "lru-cache": "^11.0.2",
+    "mitt": "^3.0.1",
+    "next": "^15.5.18",
+    "react": "^18.3.1",
+    "react-draggable": "^4.4.6",
+    "react-use": "^17.4.2",
+    "rxjs": "^7.8.1",
+    "sanitize-html": "2.17.5",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "@mui/icons-material": "^6",
+    "@mui/material": "^6",
+    "@tanstack/react-table": "^8",
+    "clsx": "^2",
+    "date-fns": "^2",
+    "framer-motion": "^12",
+    "lru-cache": "^11",
+    "mitt": "^3",
+    "next": "^15",
+    "react": "^18",
+    "react-draggable": "^4",
+    "react-use": "^17",
+    "rxjs": "^7"
+  },
+  "dependencies": {
+    "@next/eslint-plugin-next": "15.5.18"
+  }
+}

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.nav.PageMapper">
+
+    <!-- CLPage 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.nav.Page">
+        INSERT INTO CLOVER_PAGE (
+        page_id
+        , page_nm
+        , page_key
+        , icon
+        , url
+        , dtl_expl
+        ) VALUES (
+        #{pageId}
+        , #{pageNm}
+        , #{pageKey}
+        , #{icon}
+        , #{url}
+        , #{dtlExpl}
+        )
+    </insert>
+
+    <!-- CLPage 업데이트 -->
+    <update id="update" parameterType="server.domain.entity.nav.Page">
+        UPDATE CLOVER_PAGE
+        SET page_nm  = #{pageNm}
+        , page_key = #{pageKey}
+        , icon     = #{icon}
+        , url      = #{url}
+        , dtl_expl = #{dtlExpl}
+        WHERE page_id  = #{pageId}
+    </update>
+
+
+    <!-- CLPage 단건 조회 by PK -->
+    <select id="findById" parameterType="long" resultType="server.domain.entity.nav.Page">
+        SELECT *
+        FROM CLOVER_PAGE
+        WHERE page_id = #{value}
+    </select>
+
+    <!-- 단건 조회 vo by PK -->
+    <select id="findVoById" parameterType="long" resultType="server.domain.vo.nav.PageVo">
+        SELECT *
+        FROM CLOVER_PAGE
+        WHERE page_id = #{value}
+    </select>
+
+    <!-- CLPage vo 다건 조회 -->
+    <select id="findVoList" resultType="server.domain.vo.nav.PageVo">
+        SELECT a.*
+        FROM CLOVER_PAGE a
+        ORDER BY a.page_nm, a.page_id
+    </select>
+
+
+    <!-- CLPage 다건 조회 -->
+    <select id="findAll" resultType="server.domain.entity.nav.Page">
+        SELECT a.*
+        FROM CLOVER_PAGE a
+        ORDER BY a.page_nm, a.page_id
+    </select>
+
+
+    <!-- 존재 여부 체크 by PK -->
+    <select id="existsById" parameterType="long" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM CLOVER_PAGE
+        WHERE page_id = #{value}
+        )
+    </select>
+
+
+    <!-- 삭제 by PK -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM CLOVER_PAGE
+        WHERE page_id = #{value}
+    </delete>
+
+</mapper>

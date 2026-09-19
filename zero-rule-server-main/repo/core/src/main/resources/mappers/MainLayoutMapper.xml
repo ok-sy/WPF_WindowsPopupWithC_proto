@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.MainLayoutMapper">
+
+    <!-- 분당 URL 호출 갯수 -->
+    <select id="getMinuteUrlRequestCnt"
+            resultType="server.domain.vo.GetDateUrlRequestCntVo"
+            parameterType="String">
+        SELECT TO_CHAR(req_dttm, 'MI') AS REG_DTTM
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDDHH24')
+        = COALESCE(#{hour}, TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24'))
+        GROUP BY TO_CHAR(req_dttm, 'MI')
+        ORDER BY TO_CHAR(req_dttm, 'MI')
+    </select>
+
+
+    <!-- 시간별 URL 호출 갯수 -->
+    <select id="getHourUrlRequestCnt"
+            resultType="server.domain.vo.GetDateUrlRequestCntVo"
+            parameterType="String">
+        SELECT TO_CHAR(req_dttm, 'HH24') AS REG_DTTM
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDD')
+        = COALESCE(#{day}, TO_CHAR(CURRENT_DATE, 'YYYYMMDD'))
+        GROUP BY TO_CHAR(req_dttm, 'HH24')
+        ORDER BY TO_CHAR(req_dttm, 'HH24')
+    </select>
+
+
+    <!-- 일별 URL 호출 갯수 -->
+    <select id="getDayUrlRequestCnt"
+            resultType="server.domain.vo.GetDateUrlRequestCntVo"
+            parameterType="String">
+        SELECT (
+        SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 1, 4) || '년'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 5, 2) || '월'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 7, 2) || '일'
+        ) AS REG_DTTM
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMM')
+        = COALESCE(#{month}, TO_CHAR(CURRENT_DATE, 'YYYYMM'))
+        GROUP BY TO_CHAR(req_dttm, 'YYYYMMDD')
+        ORDER BY TO_CHAR(req_dttm, 'YYYYMMDD')
+    </select>
+
+
+    <!-- 월별 URL 호출 갯수 -->
+    <select id="getMonthlyUrlCallCnt"
+            resultType="server.domain.vo.GetDateUrlRequestCntVo">
+        SELECT TO_CHAR(REQ_DTTM, 'YYYYMM') AS REG_DTTM
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG A
+        WHERE TO_CHAR(REQ_DTTM, 'YYYYMMDD')
+        <![CDATA[ <= ]]>
+        TO_CHAR(CURRENT_DATE, 'YYYYMMDD')
+        GROUP BY TO_CHAR(REQ_DTTM, 'YYYYMM')
+        ORDER BY TO_CHAR(REQ_DTTM, 'YYYYMM')
+    </select>
+
+
+    <!-- URL별 수행속도 오래걸린 순서 TOP 10 -->
+    <select id="getProcessingSpeedByUrl"
+            resultType="server.domain.vo.GetMainChartProcessingSpeedByUrlVo">
+
+        SELECT X.API_URL AS API_URL
+        , Y.API_URL_NM AS API_URL_NM
+        , X.CNT AS PROC_TM_MAX
+        FROM (
+        SELECT API_URL
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG a
+        WHERE POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/zero-rule-server', '') = Y.API_URL
+        ORDER BY X.CNT DESC
+        LIMIT 10
+    </select>
+
+
+    <!-- 지연 서비스 TOP10 -->
+    <select id="getFrequentlyCalledUrl"
+            resultType="server.domain.vo.GetMainChartFrequentlyCalledUrlVo">
+
+        SELECT X.API_URL AS API_URL
+        , Y.API_URL_NM AS API_URL_NM
+        , X.MAX_TM AS CNT
+        FROM (
+        SELECT API_URL
+        , ROUND(MAX(PROC_TM) / 1000, 3) AS MAX_TM
+        FROM CLOVER_API_LOG
+        WHERE REQ_DTTM >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/zero-rule-server', '') = Y.API_URL
+        ORDER BY X.MAX_TM DESC
+        LIMIT 10
+    </select>
+
+
+    <!-- 월별 서비스 평균 응답시간 -->
+    <select id="getMonthServiceAvgResponseTime"
+            resultType="server.domain.vo.GetDateServiceAvgResponeTimeVo">
+
+        SELECT TO_CHAR(req_dttm, 'YYYYMM') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS AVG_TIME
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDD')
+        >= TO_CHAR(CURRENT_DATE - INTERVAL '6 months', 'YYYYMMDD')
+        GROUP BY TO_CHAR(req_dttm, 'YYYYMM')
+        ORDER BY TO_CHAR(req_dttm, 'YYYYMM')
+    </select>
+
+
+    <!-- 일별 서비스 평균 응답시간 -->
+    <select id="getDayServiceAvgResponseTime"
+            resultType="server.domain.vo.GetDateServiceAvgResponeTimeVo"
+            parameterType="String">
+
+        SELECT (
+        SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 1, 4) || '년'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 5, 2) || '월'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 7, 2) || '일'
+        ) AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS AVG_TIME
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMM')
+        = COALESCE(#{month}, TO_CHAR(CURRENT_DATE, 'YYYYMM'))
+        GROUP BY TO_CHAR(req_dttm, 'YYYYMMDD')
+        ORDER BY TO_CHAR(req_dttm, 'YYYYMMDD')
+    </select>
+
+
+    <!-- 시간별 서비스 평균 응답시간 -->
+    <select id="getHourServiceAvgResponseTime"
+            resultType="server.domain.vo.GetDateServiceAvgResponeTimeVo"
+            parameterType="String">
+
+        SELECT TO_CHAR(req_dttm, 'HH24') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS AVG_TIME
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDD')
+        = COALESCE(#{day}, TO_CHAR(CURRENT_DATE, 'YYYYMMDD'))
+        GROUP BY TO_CHAR(req_dttm, 'HH24')
+        ORDER BY TO_CHAR(req_dttm, 'HH24')
+    </select>
+
+
+    <!-- 분당 서비스 평균 응답시간 -->
+    <select id="getMinServiceAvgResponseTime"
+            resultType="server.domain.vo.GetDateServiceAvgResponeTimeVo"
+            parameterType="String">
+
+        SELECT TO_CHAR(req_dttm, 'MI') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS AVG_TIME
+        FROM CLOVER_API_LOG a
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDDHH24')
+        = COALESCE(#{hour}, TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24'))
+        GROUP BY TO_CHAR(req_dttm, 'MI')
+        ORDER BY TO_CHAR(req_dttm, 'MI')
+    </select>
+
+
+    <!-- 월별 서비스 지연시간 -->
+    <select id="getMonthServiceLateTime"
+            resultType="server.domain.vo.GetDateServiceLateTimeVo">
+
+        SELECT TO_CHAR(req_dttm, 'YYYYMM') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS LATE_TIME
+        FROM CLOVER_API_LOG
+        WHERE req_dttm >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        AND API_URL IN (
+        SELECT X.API_URL
+        FROM (
+        SELECT API_URL
+        , MAX(PROC_TM) AS MAX_TM
+        FROM CLOVER_API_LOG
+        WHERE req_dttm >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/rule-server', '') = Y.API_URL
+        ORDER BY X.MAX_TM DESC
+        LIMIT 10
+        )
+        GROUP BY TO_CHAR(req_dttm, 'YYYYMM')
+        ORDER BY TO_CHAR(req_dttm, 'YYYYMM')
+    </select>
+
+
+    <!-- 일별 서비스 지연시간 -->
+    <select id="getDayServiceLateTime"
+            resultType="server.domain.vo.GetDateServiceLateTimeVo"
+            parameterType="String">
+
+        SELECT (
+        SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 1, 4) || '년'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 5, 2) || '월'
+        || SUBSTR(TO_CHAR(req_dttm, 'YYYYMMDD'), 7, 2) || '일'
+        ) AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS LATE_TIME
+        FROM CLOVER_API_LOG
+        WHERE TO_CHAR(req_dttm, 'YYYYMM')
+        = COALESCE(#{month}, TO_CHAR(CURRENT_DATE, 'YYYYMM'))
+        AND POSITION('/p/' IN API_URL) = 0
+        AND API_URL IN (
+        SELECT X.API_URL
+        FROM (
+        SELECT API_URL
+        , MAX(PROC_TM) AS MAX_TM
+        FROM CLOVER_API_LOG
+        WHERE req_dttm >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/rule-server', '') = Y.API_URL
+        ORDER BY X.MAX_TM DESC
+        LIMIT 10
+        )
+        GROUP BY TO_CHAR(req_dttm, 'YYYYMMDD')
+        ORDER BY TO_CHAR(req_dttm, 'YYYYMMDD')
+    </select>
+
+
+    <!-- 시간별 서비스 지연시간 -->
+    <select id="getHourServiceLateTime"
+            resultType="server.domain.vo.GetDateServiceLateTimeVo"
+            parameterType="String">
+
+        SELECT TO_CHAR(req_dttm, 'HH24') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS LATE_TIME
+        FROM CLOVER_API_LOG
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDD')
+        = COALESCE(#{day}, TO_CHAR(CURRENT_DATE, 'YYYYMMDD'))
+        AND POSITION('/p/' IN API_URL) = 0
+        AND API_URL IN (
+        SELECT X.API_URL
+        FROM (
+        SELECT API_URL
+        , MAX(PROC_TM) AS MAX_TM
+        FROM CLOVER_API_LOG
+        WHERE req_dttm >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/rule-server', '') = Y.API_URL
+        ORDER BY X.MAX_TM DESC
+        LIMIT 10
+        )
+        GROUP BY TO_CHAR(req_dttm, 'HH24')
+        ORDER BY TO_CHAR(req_dttm, 'HH24')
+    </select>
+
+
+    <!-- 분당 서비스 지연시간 -->
+    <select id="getMinServiceLateTime"
+            resultType="server.domain.vo.GetDateServiceLateTimeVo"
+            parameterType="String">
+
+        SELECT TO_CHAR(req_dttm, 'MI') AS REG_DTTM
+        , ROUND(AVG(COALESCE(PROC_TM, 0)), 0) / 1000 AS LATE_TIME
+        FROM CLOVER_API_LOG
+        WHERE TO_CHAR(req_dttm, 'YYYYMMDDHH24')
+        = COALESCE(#{hour}, TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24'))
+        AND POSITION('/p/' IN API_URL) = 0
+        AND API_URL IN (
+        SELECT X.API_URL
+        FROM (
+        SELECT API_URL
+        , MAX(PROC_TM) AS MAX_TM
+        FROM CLOVER_API_LOG
+        WHERE req_dttm >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+        AND POSITION('/p/' IN API_URL) = 0
+        GROUP BY API_URL
+        ) X
+        LEFT JOIN CLOVER_API_PAGE Y
+        ON REPLACE(X.API_URL, '/rule-server', '') = Y.API_URL
+        ORDER BY X.MAX_TM DESC
+        LIMIT 10
+        )
+        GROUP BY TO_CHAR(req_dttm, 'MI')
+        ORDER BY TO_CHAR(req_dttm, 'MI')
+    </select>
+
+
+    <!-- 업무별 사용량 -->
+    <select id="usedTask" resultType="server.domain.vo.UsedTaskVo">
+        SELECT COALESCE(C.TEAM_NM, '무소속') AS TASK
+        , COUNT(*) AS CNT
+        FROM CLOVER_API_LOG A
+        JOIN CLOVER_USER B
+        ON A.USER_ID = B.USER_ID
+        LEFT JOIN CLOVER_TEAM C
+        ON B.TEAM_ID = C.TEAM_ID
+        GROUP BY C.TEAM_NM
+    </select>
+
+</mapper>

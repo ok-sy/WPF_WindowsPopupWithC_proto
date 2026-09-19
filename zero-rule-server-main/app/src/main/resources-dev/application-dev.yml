@@ -1,0 +1,22 @@
+custom.system:
+  config-name: dev
+  public-image-server-url: "/p/file/download/:FILEID:"
+  base-server-url: "https://zerorule.labcl.net/zero-rule-server"
+#  - "http://192.168.184.134:8080/zero-rule-server"
+
+clover:
+  task:
+    task-disabled: false
+    health-check-interval: 60s
+  file-manager:
+    upload-root-folder: /NAS/zerorule/was/upload
+
+
+spring:
+  config:
+    activate:
+      on-profile:
+        - dev
+  devtools:
+    livereload:
+      enabled: false

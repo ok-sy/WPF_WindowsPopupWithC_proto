@@ -1,0 +1,470 @@
+﻿<Window x:Class="Popup.Views.Windows.PopupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PopupWindow"
+        Width="760"
+        Height="620"
+        MinWidth="620"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent">
+
+    <Window.Resources>
+
+        <!--
+        하단 닫기 버튼 스타일
+
+        역할
+        하단에 표시되는 회색 버튼의
+        공통 모양을 정의한다.
+        -->
+        <Style x:Key="PopupButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="110"/>
+
+            <Setter Property="Height"
+                    Value="38"/>
+
+            <Setter Property="FontSize"
+                    Value="14"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Foreground"
+                    Value="White"/>
+
+            <Setter Property="Background"
+                    Value="#6B7280"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <!--
+                    기본 WPF 버튼 모양 대신
+                    직접 버튼 모양을 정의한다.
+                    -->
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="16,6">
+
+                            <!--
+                            Button의 Content 값을 표시한다.
+
+                            현재는 Content="닫기"가 출력된다.
+                            -->
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!--
+                            마우스를 버튼 위에 올렸을 때
+                            배경색을 더 진하게 변경한다.
+                            -->
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#4B5563"/>
+
+                            </Trigger>
+
+                            <!--
+                            마우스로 버튼을 누르고 있을 때
+                            배경색을 더 진하게 변경한다.
+                            -->
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#374151"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+        <!--
+        상단 X 버튼 스타일
+
+        역할
+        마우스를 올렸을 때 빨간색으로 변하는
+        창 닫기 버튼을 정의한다.
+        -->
+        <Style x:Key="HeaderCloseButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Width"
+                    Value="48"/>
+
+            <Setter Property="Height"
+                    Value="48"/>
+
+            <Setter Property="HorizontalAlignment"
+                    Value="Right"/>
+
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+
+            <Setter Property="FontSize"
+                    Value="18"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="#4B5563"/>
+
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <!--
+                    기본 WPF 버튼 모양 대신
+                    상단 닫기 버튼 모양을 직접 정의한다.
+                    -->
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="0,12,0,0">
+
+                            <!--
+                            Button의 Content 값을 표시한다.
+
+                            현재는 Content="✕"가 출력된다.
+                            -->
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!--
+                            마우스를 버튼 위에 올렸을 때
+                            빨간색 배경과 흰색 글자로 변경한다.
+                            -->
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#E81123"/>
+
+                                <Setter Property="Foreground"
+                                        Value="White"/>
+
+                            </Trigger>
+
+                            <!--
+                            마우스로 버튼을 누르고 있을 때
+                            배경색을 더 진한 빨간색으로 변경한다.
+                            -->
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="#C50F1F"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+    </Window.Resources>
+
+    <!--
+    바깥 여백
+
+    역할
+    Border의 그림자가 잘리지 않도록
+    Window 가장자리에 빈 공간을 만든다.
+    -->
+    <Grid x:Name="PopupOuterGrid"
+          Margin="24">
+
+        <!--
+        팝업의 실제 흰색 몸체
+
+        역할
+        배경, 둥근 모서리, 테두리,
+        그림자를 담당한다.
+        -->
+        <Border x:Name="PopupBodyBorder"
+                Background="White"
+                BorderBrush="#D1D5DB"
+                BorderThickness="1"
+                CornerRadius="12">
+
+            <Border.Effect>
+
+                <!--
+                팝업 바깥쪽에
+                그림자 효과를 적용한다.
+                -->
+                <DropShadowEffect Color="Black"
+                                  BlurRadius="22"
+                                  ShadowDepth="4"
+                                  Direction="270"
+                                  Opacity="0.28"/>
+
+            </Border.Effect>
+
+            <!--
+            팝업 전체를 세로 세 부분으로 나눈다.
+
+            0번 행
+            상단바 Header
+
+            1번 행
+            실제 팝업 내용
+
+            2번 행
+            하단 Footer 영역
+            -->
+            <Grid>
+
+                <Grid.RowDefinitions>
+
+                    <!--
+                    공통 Header 전용 행
+
+                    PopupOptions.ShowHeader 값에 따라
+                    PopupWindow.xaml.cs에서 높이를 변경한다.
+
+                    ShowHeader = true
+                    → Header 높이를 48로 유지
+
+                    ShowHeader = false
+                    → Header 높이를 0으로 만들어
+                      제목과 닫기 버튼뿐 아니라
+                      Header가 차지하던 공간까지 제거
+                    -->
+                    <RowDefinition x:Name="HeaderRow"
+                    Height="48"/>
+
+                    <!--
+                    실제 팝업 내용이
+                    남은 공간을 모두 사용한다.
+                    -->
+                    <RowDefinition Height="*"/>
+
+                    <!--
+                    하단 Footer 높이
+                    -->
+                    <RowDefinition x:Name="FooterRow"
+                                   Height="64"/>
+
+                </Grid.RowDefinitions>
+
+                <!--
+                공통 상단바 Header
+
+                역할
+                팝업 제목을 표시하고
+                창을 드래그할 수 있게 한다.
+                -->
+                <!--
+                공통 상단 Header 영역
+
+                PopupOptions.ShowHeader 값에 따라
+                전체 영역을 표시하거나 숨긴다.
+                -->
+                <Border x:Name="HeaderArea"
+                        Grid.Row="0"
+                        Background="White"
+                        CornerRadius="12,12,0,0"
+                        MouseLeftButtonDown="Header_MouseLeftButtonDown">
+
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+
+                            <!--
+                            제목 영역이
+                            남은 공간을 모두 사용한다.
+                            -->
+                            <ColumnDefinition Width="*"/>
+
+                            <!--
+                            닫기 버튼이 필요한 크기만 사용한다.
+                            -->
+                            <ColumnDefinition Width="Auto"/>
+
+                        </Grid.ColumnDefinitions>
+
+                        <!--
+                        팝업 제목
+
+                        x:Name을 지정했기 때문에
+                        PopupWindow.xaml.cs에서
+                        제목을 변경할 수 있다.
+                        -->
+                        <TextBlock x:Name="PopupTitleText"
+                                   Grid.Column="0"
+                                   Margin="18,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="#374151"
+                                   Text="팝업 제목"/>
+
+                        <!--
+                        상단 X 닫기 버튼
+
+                        x:Name을 지정했기 때문에
+                        PopupOptions의 ShowCloseButton 값에 따라
+                        표시하거나 숨길 수 있다.
+                        -->
+                        <Button x:Name="CloseButton"
+                                Grid.Column="1"
+                                Style="{StaticResource HeaderCloseButtonStyle}"
+                                Content="✕"
+                                Click="CloseButton_Click"/>
+
+                    </Grid>
+
+                </Border>
+                <!--
+                    헤더가 없는 팝업에서 사용하는
+                    투명한 창 이동 영역
+
+                    역할
+                    ShowHeader가 false인 SURVEY 또는 QUIZ 팝업도
+                    창 상단의 빈 공간을 잡고 이동할 수 있게 한다.
+
+                    PopupContent에는 현재 Margin="24"가 적용되어 있으므로
+                    높이 24 영역은 실제 콘텐츠와 겹치지 않는다.
+                -->
+                <Border x:Name="HeaderlessDragArea"
+                                Grid.Row="1"
+                                Height="24"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                Panel.ZIndex="10"
+                                Visibility="Collapsed"
+                                MouseLeftButtonDown="Header_MouseLeftButtonDown"/>
+                <!--
+                ContentControl
+
+                역할
+                실제 팝업 내용을 끼워 넣는 자리다.
+
+                PopupOptions의 Content에 전달된
+                TextPopupView
+                ImagePopupView
+                SurveyPopupView
+                VideoPopupView 등이 이 자리에 표시된다.
+                -->
+                <ContentControl x:Name="PopupContent"
+                Grid.Row="1"
+                Margin="24"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"/>
+
+                <!--
+                공통 하단 Footer 영역
+
+                x:Name을 지정했기 때문에
+                PopupOptions의 ShowFooter 값에 따라
+                Footer 전체를 표시하거나 숨길 수 있다.
+                -->
+                <Grid x:Name="FooterArea"
+                      Grid.Row="2"
+                      Margin="24,8,24,16">
+
+                    <Grid.ColumnDefinitions>
+
+                        <!--
+                        체크박스 영역이
+                        남은 공간을 모두 사용한다.
+                        -->
+                        <ColumnDefinition Width="*"/>
+
+                        <!--
+                        닫기 버튼이 필요한 크기만 사용한다.
+                        -->
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <!--
+                    30일간 보지 않기 체크박스
+
+                    x:Name을 지정했기 때문에
+                    PopupOptions의 ShowDoNotShowAgain 값에 따라
+                    표시하거나 숨길 수 있다.
+                    -->
+                    <CheckBox x:Name="DoNotShowAgainCheckBox"
+                              Grid.Column="0"
+                              VerticalAlignment="Center"
+                              FontSize="14"
+                              Content="30일간 보지 않기"/>
+
+                    <!--
+                    하단 닫기 버튼
+
+                    상단 X 버튼과 동일한
+                    CloseButton_Click 이벤트를 사용한다.
+                    -->
+                    <Button x:Name="FooterCloseButton"
+                            Grid.Column="1"
+                            Style="{StaticResource PopupButtonStyle}"
+                            Content="닫기"
+                            Click="CloseButton_Click"/>
+
+                </Grid>
+
+            </Grid>
+
+        </Border>
+
+    </Grid>
+
+</Window>

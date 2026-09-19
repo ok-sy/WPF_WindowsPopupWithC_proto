@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.CommonFileMapper">
+
+    <!-- file_id 다건 조회 - 삭제 마킹된 파일 ID 목록 조회 -->
+    <select id="findDeleteMarkedFileIds"
+            parameterType="server.sql.ParamsCommonFile$FindDeleteMarkedFiles"
+            resultType="string">
+        SELECT a.file_id
+          FROM ${tableName} a
+         WHERE a.del_yn = 'Y'
+           AND a.changed_at <![CDATA[ <= ]]> #{maxTimestamp}
+         ORDER BY a.changed_at
+         LIMIT #{maxCount}
+    </select>
+
+    <!-- 삭제 - 주어진 file_id의 모든 파일을 삭제 -->
+    <delete id="deleteByFileIdIn"
+            parameterType="server.sql.ParamsCommonFile$DeleteByFileIdIn">
+        DELETE FROM ${tableName}
+         WHERE file_id IN
+        <foreach collection="fileIds" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="findByFileId"
+            parameterType="server.sql.ParamsCommonFile$FindByFileId"
+            resultType="server.domain.vo.CommonFileVo">
+        SELECT a.file_id
+             , a.file_name
+             , a.changed_at
+          FROM ${tableName} a
+         WHERE a.file_id = #{fileId}
+    </select>
+
+</mapper>

@@ -1,0 +1,10 @@
+.next
+public
+static
+node_modules
+**/dist/**
+*.png
+*.svg
+**/.turbo/**
+**/build/**
+**/dist/**

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.nav.NavMapper">
+
+    <!-- CLNav 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.nav.Nav">
+        INSERT INTO CLOVER_NAV (
+        nav_id
+        , nav_nm
+        , expl
+        ) VALUES (
+        #{navId}
+        , #{navNm}
+        , #{expl}
+        )
+    </insert>
+
+    <!-- CLNav 업데이트 -->
+    <update id="update" parameterType="server.domain.entity.nav.Nav">
+        UPDATE CLOVER_NAV
+        SET nav_nm = #{navNm}
+        , expl   = #{expl}
+        WHERE nav_id = #{navId}
+    </update>
+
+
+    <!-- CLNav 단건 조회 by PK -->
+    <select id="findById" parameterType="long" resultType="server.domain.entity.nav.Nav">
+        SELECT *
+        FROM CLOVER_NAV
+        WHERE nav_id = #{value}
+    </select>
+
+    <!-- 단건 조회 vo by PK -->
+    <select id="findVoById" parameterType="long" resultType="server.domain.vo.nav.NavVo">
+        SELECT *
+        FROM CLOVER_NAV
+        WHERE nav_id = #{value}
+    </select>
+
+    <!-- CLNav vo 다건 조회 -->
+    <select id="findVoList" resultType="server.domain.vo.nav.NavVo">
+        SELECT a.*
+        FROM CLOVER_NAV a
+        ORDER BY a.nav_nm, a.nav_id
+    </select>
+
+
+    <!-- 존재 여부 체크 by PK -->
+    <select id="existsById" parameterType="long" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM CLOVER_NAV
+        WHERE nav_id = #{value}
+        )
+    </select>
+
+
+    <!-- 삭제 by PK -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM CLOVER_NAV
+        WHERE nav_id = #{value}
+    </delete>
+
+    <!-- NAV ITEM 삭제 -->
+    <delete id="navItemDeleteById" parameterType="long">
+        DELETE FROM CLOVER_NAV_ITEM
+        WHERE nav_id = #{value}
+    </delete>
+
+</mapper>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.TeamMapper">
+    <!-- CLOVER_TEAM 테이블 -->
+    <!-- 다건조회 team 조회 -->
+    <select id="findTeamVoByParam" parameterType="server.sql.ParamsTeam$FindTeamVoByParam" resultType="server.domain.vo.TeamVo">
+        SELECT T1.TEAM_ID           -- 팀아이디
+             , T1.TEAM_NM           -- 팀명
+             , T1.TEAM_EXPL         -- 팀설명
+             , T1.TEAM_CMMN_STUP_CN -- 팀공통 설정 내용(BLOB)
+             , T1.TEAM_TSK_CLSF     -- TEAM 업무 구분
+             , T3.CODE_NM           -- 코드이름
+             , COALESCE(T2.USER_CNT, 0) AS USER_CNT -- 사용자건수
+          FROM CLOVER_TEAM T1
+          LEFT JOIN (
+                SELECT TEAM_ID
+                     , COUNT(USER_ID) AS USER_CNT
+                  FROM CLOVER_USER
+                 GROUP BY TEAM_ID
+               ) T2 ON T1.TEAM_ID = T2.TEAM_ID
+          JOIN CLOVER_CODE T3 ON T1.TEAM_TSK_CLSF = T3.CODE::numeric AND T3.CODE_TYPE = '503'
+         WHERE T1.TEAM_STAT = 1
+           AND T1.TEAM_NM LIKE '%' || #{teadNm} || '%'
+         ORDER BY TEAM_ID ASC
+    </select>
+
+    <insert id="create" parameterType="server.sql.ParamsTeam$Create">
+        <selectKey keyProperty="teamId" resultType="java.lang.String" order="BEFORE">
+            SELECT COALESCE(MAX(team_id), 0) + 1 AS teamId FROM CLOVER_TEAM
+        </selectKey>
+
+        INSERT INTO CLOVER_TEAM (
+              team_id
+            , team_nm
+            , team_expl
+            , psnl_stup_acce_yn
+            , team_cmmn_stup_cn
+            , team_stat
+            , team_tsk_clsf
+            , reg_dttm
+            , regr_id
+            , chng_dttm
+            , chgr_id
+        ) VALUES (
+              #{teamId}
+            , #{teamNm}
+            , #{teamExpl}
+            , #{psnlStupAcceYn}
+            , #{teamCmmnStupCn}
+            , #{teamStat}
+            , #{teamTskClsf}
+            , CURRENT_TIMESTAMP
+            , #{regrId}
+            , CURRENT_TIMESTAMP
+            , #{chgrId}
+        )
+    </insert>
+
+    <update id="update" parameterType="server.sql.ParamsTeam$Update">
+        UPDATE CLOVER_TEAM
+           SET TEAM_NM       = #{teamNm}
+             , TEAM_EXPL     = #{teamExpl}
+             , TEAM_TSK_CLSF = #{teamTskClsf}
+             , CHGR_ID       = #{chgrId}
+             , CHNG_DTTM     = CURRENT_TIMESTAMP
+         WHERE TEAM_STAT     = 1
+           AND TEAM_ID       = #{teamId}
+    </update>
+
+    <select id="findTeamVoByTeamId" parameterType="long" resultType="server.domain.vo.TeamVo">
+        SELECT TEAM_ID
+             , TEAM_NM
+             , TEAM_EXPL
+             , PSNL_STUP_ACCE_YN
+             , TEAM_CMMN_STUP_CN
+             , TEAM_STAT
+             , TEAM_TSK_CLSF
+             , REG_DTTM
+             , REGR_ID
+             , CHNG_DTTM
+             , CHGR_ID
+          FROM CLOVER_TEAM
+         WHERE TEAM_ID = #{value}
+         ORDER BY TEAM_ID DESC
+    </select>
+
+    <!-- 팀별 사용자 조회 -->
+    <select id="findUserForTeam" parameterType="long" resultType="server.domain.vo.TeamForUserVo">
+        SELECT user_id
+             , lgon_id
+             , user_nm
+          FROM clover_user
+         WHERE team_id = #{teamId}
+    </select>
+</mapper>

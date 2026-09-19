@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.RuleEngineMapper">
+
+    <select id="ruleInfoList" resultType="server.domain.vo.ruleEngine.RuleInfoVo">
+        SELECT *
+        FROM (
+        SELECT '0' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , A.RULESORT_CD
+        , (SELECT COUNT(1)
+        FROM RULECONDITION
+        WHERE RULEID = A.RULEID) AS CONDITION_COUNT
+        , (SELECT COUNT(1)
+        FROM RULERETURNITEM
+        WHERE RULEID = A.RULEID) AS RETURN_ITEM_COUNT
+        , A.RULERETURN_TYPE
+        , 0 AS RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , '' AS RETURN_DATATYPE
+        , '' AS ITEM_NM
+        , '' AS ITEMALIAS_NM
+        , '' AS ITEM_ID
+        , A.ALLRETURN_YN
+        , 0 AS RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        WHERE A.RULE_STATE IN ('9')
+        AND A.RULE_APPLY_YN = 'Y'
+
+        UNION ALL
+
+        SELECT '1' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , B.RULECONDITIONNO
+        , B.CONDITION_INFIX_DESC
+        , ' ' || B.CONDITION_POSTFIX_DESC AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , '' AS RETURN_DATATYPE
+        , '' AS ITEM_NM
+        , '' AS ITEMALIAS_NM
+        , '' AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , 0 AS RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULECONDITION B
+        WHERE A.RULE_STATE IN ('9')
+        AND A.RULE_APPLY_YN = 'Y'
+        AND A.RULEID = B.RULEID
+
+        UNION ALL
+
+        SELECT '2' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , B.RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , B.RETURNITEM_EXPR_DESC AS RETURN_VALUE
+        , C.DATATYPE_CD AS RETURN_DATATYPE
+        , C.ITEM_NM
+        , C.ITEMALIAS_NM
+        , C.ITEMID AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , AA.RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULERETURNITEM AA
+        , RULECONDITIONRETURNITEM B
+        , RULEITEM C
+        WHERE A.RULE_STATE IN ('9')
+        AND A.RULE_APPLY_YN = 'Y'
+        AND A.RULEID = AA.RULEID
+        AND AA.RULEID = B.RULEID
+        AND AA.RETURN_ITEMID = B.RETURN_ITEMID
+        AND B.RETURN_ITEMID = C.ITEMID
+
+        UNION ALL
+
+        SELECT '3' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , 0 AS RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , C.DATATYPE_CD AS RETURN_DATATYPE
+        , C.ITEM_NM
+        , C.ITEMALIAS_NM
+        , C.ITEMID AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , AA.RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULERETURNITEM AA
+        , RULEITEM C
+        WHERE A.RULE_STATE IN ('9')
+        AND A.RULE_APPLY_YN = 'Y'
+        AND A.RULEID = AA.RULEID
+        AND AA.RETURN_ITEMID = C.ITEMID
+        ) T
+        ORDER BY RULECONFIG_TYPE
+        , RULEID
+        , RULECONDITIONNO
+        , RETURNITEM_NO
+    </select>
+
+
+    <select id="ruleTestInfoList" resultType="server.domain.vo.ruleEngine.RuleInfoVo">
+        SELECT *
+        FROM (
+        SELECT '0' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , A.RULESORT_CD
+        , (SELECT COUNT(1)
+        FROM RULECONDITION
+        WHERE RULEID = A.RULEID) AS CONDITION_COUNT
+        , (SELECT COUNT(1)
+        FROM RULERETURNITEM
+        WHERE RULEID = A.RULEID) AS RETURN_ITEM_COUNT
+        , A.RULERETURN_TYPE
+        , 0 AS RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , '' AS RETURN_DATATYPE
+        , '' AS ITEM_NM
+        , '' AS ITEMALIAS_NM
+        , '' AS ITEM_ID
+        , A.ALLRETURN_YN
+        , 0 AS RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        WHERE A.RULE_STATE IN ('1', '2', '3', '4', '9')
+
+        UNION ALL
+
+        SELECT '1' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , B.RULECONDITIONNO
+        , B.CONDITION_INFIX_DESC
+        , ' ' || B.CONDITION_POSTFIX_DESC AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , '' AS RETURN_DATATYPE
+        , '' AS ITEM_NM
+        , '' AS ITEMALIAS_NM
+        , '' AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , 0 AS RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULECONDITION B
+        WHERE A.RULE_STATE IN ('1', '2', '3', '4', '9')
+        AND A.RULEID = B.RULEID
+
+        UNION ALL
+
+        SELECT '2' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , B.RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , B.RETURNITEM_EXPR_DESC AS RETURN_VALUE
+        , C.DATATYPE_CD AS RETURN_DATATYPE
+        , C.ITEM_NM
+        , C.ITEMALIAS_NM
+        , C.ITEMID AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , AA.RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULERETURNITEM AA
+        , RULECONDITIONRETURNITEM B
+        , RULEITEM C
+        WHERE A.RULE_STATE IN ('1', '2', '3', '4', '9')
+        AND A.RULEID = AA.RULEID
+        AND AA.RULEID = B.RULEID
+        AND AA.RETURN_ITEMID = B.RETURN_ITEMID
+        AND B.RETURN_ITEMID = C.ITEMID
+
+        UNION ALL
+
+        SELECT '3' AS RULECONFIG_TYPE
+        , A.RULEID
+        , A.RULE_NM
+        , A.RULEALIAS_NM
+        , '' AS RULESORT_CD
+        , 0 AS CONDITION_COUNT
+        , 0 AS RETURN_ITEM_COUNT
+        , '' AS RULERETURN_TYPE
+        , 0 AS RULECONDITIONNO
+        , '' AS CONDITION_INFIX_DESC
+        , '' AS CONDITION_POSTFIX_DESC
+        , '' AS RETURN_VALUE
+        , C.DATATYPE_CD AS RETURN_DATATYPE
+        , C.ITEM_NM
+        , C.ITEMALIAS_NM
+        , C.ITEMID AS ITEM_ID
+        , '' AS ALLRETURN_YN
+        , AA.RETURNITEM_NO
+        , A.USE_YN
+        , A.RULE_VERNO
+        FROM RULE A
+        , RULERETURNITEM AA
+        , RULEITEM C
+        WHERE A.RULE_STATE IN ('1', '2', '3', '4', '9')
+        AND A.RULEID = AA.RULEID
+        AND AA.RETURN_ITEMID = C.ITEMID
+        ) T
+        ORDER BY RULECONFIG_TYPE
+        , RULEID
+        , RULECONDITIONNO
+        , RETURNITEM_NO
+    </select>
+
+
+    <select id="ruleConditionPostfixExpressionList"
+            resultType="server.domain.vo.ruleEngine.PostfixExpressionVo">
+        SELECT B.RULEID
+        , B.RULECONDITIONNO
+        , B.POSTFIXOBJECTNO
+        , B.OPERATOR_YN
+        , B.DATATYPE_CD
+        , B.OBJECT_DATA
+        FROM RULE A
+        , RULECONDITION_POSTFIXOBJECT B
+        WHERE A.RULEID = B.RULEID
+        ORDER BY B.RULEID ASC
+        , B.RULECONDITIONNO ASC
+        , B.POSTFIXOBJECTNO ASC
+    </select>
+
+
+    <select id="ruleConditionReturnPostfixExpressionList"
+            resultType="server.domain.vo.ruleEngine.PostfixExpressionVo">
+        SELECT B.RULEID
+        , B.RULECONDITIONNO
+        , B.RETURN_ITEMID
+        , B.POSTFIXOBJECTNO
+        , B.OPERATOR_YN
+        , B.DATATYPE_CD
+        , B.OBJECT_DATA
+        , AA.RETURNITEM_NO
+        FROM RULE A
+        , RULERETURNITEM AA
+        , RULECONDITIONRETURN_POSTOBJECT B
+        WHERE A.RULEID = AA.RULEID
+        AND AA.RULEID = B.RULEID
+        AND AA.RETURN_ITEMID = B.RETURN_ITEMID
+        ORDER BY B.RULEID ASC
+        , B.RULECONDITIONNO ASC
+        , B.POSTFIXOBJECTNO ASC
+    </select>
+
+
+    <select id="ruleItemList"
+            resultType="server.domain.vo.ruleEngine.RuleItemVo">
+        SELECT ITEMID
+        , ITEM_NM
+        , ITEMALIAS_NM
+        , DATATYPE_CD
+        FROM RULEITEM
+        WHERE ITEM_USE_YN = 'Y'
+    </select>
+
+
+    <insert id="insertLog"
+            parameterType="server.sql.ParamsRuleEngine$InsertLog">
+        INSERT INTO RULE_LOG (
+        LOG_TITLE
+        , LOG_START_TIME
+        , LOG_END_TIME
+        , TIME_GAP
+        , LOG_REQUEST
+        , LOG_RESPONSE
+        , RULEALIAS_NM
+        , LOG_NO
+        , RULE_ID
+        , RULE_VERNO
+        , INSPECTION_YN
+        , RES_CODE
+        ) VALUES (
+        #{logTitle}
+        , #{logStartTime}
+        , #{logEndTime}
+        , #{timeGap}
+        , #{logRequest}
+        , #{logResponse}
+        , #{ruleAliasNm}
+        , nextval('rule_log_seq')
+        , #{ruleId}
+        , #{ruleVerNo}
+        , #{inspectionYn}
+        , #{resCode}
+        )
+    </insert>
+
+</mapper>

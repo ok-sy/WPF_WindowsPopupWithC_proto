@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Popup": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "POPUP_USER_ID": "E1002"
+      }
+    }
+  }
+}

@@ -1,0 +1,1032 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.popup.PopupMapper">
+
+    <select id="insertQuestionTemplate" resultType="java.lang.Long" affectData="true" flushCache="true">
+        INSERT INTO popup.question_template
+            (template_group_id, template_name, template_type, template_version,
+             current_yn, active_yn, created_by, updated_by)
+        VALUES (left(replace(gen_random_uuid()::text, '-', ''), 30), left(#{name}, 100),
+                #{type}, 1, 'Y', 'Y', #{auditUser}, #{auditUser})
+        RETURNING question_template_id
+    </select>
+
+    <select id="insertAdminQuestion" resultType="java.lang.Long" affectData="true" flushCache="true">
+        INSERT INTO popup.popup_question
+            (question_template_id, question_type, question_title, question_description,
+             required_yn, scored_yn, question_score, sort_order, correct_answer,
+             answer_match_mode, created_by, updated_by)
+        VALUES (#{templateId}, #{question.questionType}, #{question.title}, #{question.description},
+                CASE WHEN #{question.isRequired} THEN 'Y' ELSE 'N' END,
+                CASE WHEN #{quiz} THEN 'Y' ELSE 'N' END,
+                CASE WHEN #{quiz} THEN #{question.questionScore}::numeric ELSE NULL END,
+                #{sortOrder},
+                CASE WHEN #{quiz} AND #{question.questionType} = 'TEXT' THEN #{question.correctAnswer} ELSE NULL END,
+                CASE WHEN #{quiz} AND #{question.questionType} = 'TEXT' THEN #{question.answerMatchMode} ELSE NULL END,
+                #{auditUser}, #{auditUser})
+        RETURNING question_id
+    </select>
+
+    <insert id="insertAdminOption">
+        INSERT INTO popup.popup_option
+            (question_id, option_value, option_text, correct_yn, sort_order, created_by, updated_by)
+        VALUES (#{questionId}, #{sortOrder}::text, #{option.text},
+                CASE WHEN #{quiz} AND coalesce(#{option.isCorrect}::boolean, false) THEN 'Y' ELSE 'N' END,
+                #{sortOrder}, #{auditUser}, #{auditUser})
+    </insert>
+
+    <resultMap id="adminPopupListItemResultMap"
+               type="server.domain.popup.AdminPopupListItemDto">
+        <constructor>
+            <idArg column="POPUP_ID" javaType="java.lang.String"/>
+            <arg column="POPUP_TYPE" javaType="java.lang.String"/>
+            <arg column="TITLE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_START_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_END_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_MODE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_ORDER" javaType="_int"/>
+            <arg column="SIZE_MODE" javaType="java.lang.String"/>
+            <arg column="ACTIVE_YN" javaType="java.lang.String"/>
+            <arg column="PERIOD_MODE" javaType="java.lang.String"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="CREATED_BY" javaType="java.lang.String"/>
+            <arg column="CREATED_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="UPDATED_BY" javaType="java.lang.String"/>
+            <arg column="UPDATED_AT" javaType="java.time.OffsetDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 관리자 화면은 비활성 및 게시 기간이 지난 팝업도 관리해야 하므로 전부 조회한다. -->
+    <select id="selectAdminPopups"
+            resultMap="adminPopupListItemResultMap">
+        SELECT
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            popup.display_mode,
+            popup.display_order,
+            popup.size_mode,
+            popup.active_yn,
+            popup.period_mode,
+            popup.question_template_id,
+            popup.created_by,
+            popup.created_at AT TIME ZONE 'Asia/Seoul' AS created_at,
+            popup.updated_by,
+            popup.updated_at AT TIME ZONE 'Asia/Seoul' AS updated_at
+        FROM popup.popup_notice popup
+        ORDER BY popup.display_order, popup.created_at DESC, popup.popup_id
+    </select>
+
+    <!--
+        관리자 상세조회는 사용자 대상·게시 기간·활성 여부를 검사하지 않는다.
+        반환 구조는 WPF 응답과 같아서 이후 웹 CSS 미리보기에도 그대로 사용한다.
+    -->
+    <select id="selectAdminPopupById"
+            resultMap="popupEntityResultMap">
+        SELECT
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            popup.display_mode,
+            popup.size_mode,
+            popup.popup_width,
+            popup.popup_height,
+            popup.width_ratio,
+            popup.height_ratio,
+            popup.minimum_width,
+            popup.minimum_height,
+            popup.maximum_width,
+            popup.maximum_height,
+            popup.show_header_yn,
+            popup.show_close_button_yn,
+            popup.show_footer_yn,
+            popup.show_do_not_show_again_yn AS show_dont_show_yn,
+            (
+                CASE popup.popup_type
+                    WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
+                        'contentTitle', content.content_title,
+                        'description', content.description,
+                        'plainText', content.content_body
+                    )
+                    WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
+                        'imageTitle', content.content_title,
+                        'imageUrl', content.media_url,
+                        'description', content.description,
+                        'linkUrl', content.link_url
+                    )
+                    WHEN 'VIDEO' THEN JSONB_BUILD_OBJECT(
+                        'videoTitle', content.content_title,
+                        'videoUrl', content.media_url,
+                        'description', content.description,
+                        'completionRatio', popup.completion_ratio,
+                        'allowCloseBeforeCompletion',
+                            popup.allow_close_before_complete_yn = 'Y'
+                    )
+                    WHEN 'SURVEY' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    WHEN 'QUIZ' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    ELSE '{}'::JSONB
+                END
+                || COALESCE(content.content_options, '{}'::JSONB)
+            )::TEXT AS content_json,
+            popup.display_order,
+            popup.active_yn AS use_yn,
+            popup.question_template_id,
+            popup.period_mode,
+            popup.repeat_interval,
+            popup.repeat_day_of_week,
+            popup.repeat_day_of_month,
+            popup.hide_days,
+            popup.completion_ratio,
+            popup.passing_score,
+            popup.allow_close_before_complete_yn
+        FROM popup.popup_notice popup
+        LEFT JOIN popup.popup_content content
+          ON content.popup_id = popup.popup_id
+        WHERE popup.popup_id = #{popupId}
+    </select>
+
+    <!-- popupId가 이미 존재하면 생성 정보는 유지하고 수정 정보만 갱신한다. -->
+    <insert id="upsertAdminPopupNotice">
+        INSERT INTO popup.popup_notice
+        (
+            popup_id,
+            question_template_id,
+            popup_type,
+            title,
+            show_on_login_yn,
+            show_on_schedule_yn,
+            display_start_at,
+            display_end_at,
+            display_mode,
+            display_order,
+            period_mode,
+            repeat_interval,
+            repeat_day_of_week,
+            repeat_day_of_month,
+            active_yn,
+            size_mode,
+            popup_width,
+            popup_height,
+            width_ratio,
+            height_ratio,
+            minimum_width,
+            minimum_height,
+            maximum_width,
+            maximum_height,
+            show_header_yn,
+            show_close_button_yn,
+            show_footer_yn,
+            show_do_not_show_again_yn,
+            hide_days,
+            completion_ratio,
+            passing_score,
+            allow_close_before_complete_yn,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{popupId},
+            #{questionTemplateId},
+            #{popupType},
+            #{title},
+            'N',
+            'N',
+            #{displayStartAt},
+            #{displayEndAt},
+            #{displayMode},
+            #{displayOrder},
+            #{periodMode},
+            #{repeatInterval},
+            #{repeatDayOfWeek},
+            #{repeatDayOfMonth},
+            #{activeYn},
+            #{sizeMode},
+            #{popupWidth},
+            #{popupHeight},
+            #{widthRatio},
+            #{heightRatio},
+            #{minimumWidth},
+            #{minimumHeight},
+            #{maximumWidth},
+            #{maximumHeight},
+            #{showHeaderYn},
+            #{showCloseButtonYn},
+            #{showFooterYn},
+            #{showDoNotShowAgainYn},
+            #{hideDays},
+            #{completionRatio},
+            #{passingScore},
+            #{allowCloseBeforeCompleteYn},
+            #{auditUser},
+            #{auditUser}
+        )
+        ON CONFLICT (popup_id) DO UPDATE
+        SET
+            question_template_id = EXCLUDED.question_template_id,
+            popup_type = EXCLUDED.popup_type,
+            title = EXCLUDED.title,
+            display_start_at = EXCLUDED.display_start_at,
+            display_end_at = EXCLUDED.display_end_at,
+            display_mode = EXCLUDED.display_mode,
+            display_order = EXCLUDED.display_order,
+            period_mode = EXCLUDED.period_mode,
+            repeat_interval = EXCLUDED.repeat_interval,
+            repeat_day_of_week = EXCLUDED.repeat_day_of_week,
+            repeat_day_of_month = EXCLUDED.repeat_day_of_month,
+            active_yn = EXCLUDED.active_yn,
+            size_mode = EXCLUDED.size_mode,
+            popup_width = EXCLUDED.popup_width,
+            popup_height = EXCLUDED.popup_height,
+            width_ratio = EXCLUDED.width_ratio,
+            height_ratio = EXCLUDED.height_ratio,
+            minimum_width = EXCLUDED.minimum_width,
+            minimum_height = EXCLUDED.minimum_height,
+            maximum_width = EXCLUDED.maximum_width,
+            maximum_height = EXCLUDED.maximum_height,
+            show_header_yn = EXCLUDED.show_header_yn,
+            show_close_button_yn = EXCLUDED.show_close_button_yn,
+            show_footer_yn = EXCLUDED.show_footer_yn,
+            show_do_not_show_again_yn = EXCLUDED.show_do_not_show_again_yn,
+            hide_days = EXCLUDED.hide_days,
+            completion_ratio = EXCLUDED.completion_ratio,
+            passing_score = EXCLUDED.passing_score,
+            allow_close_before_complete_yn =
+                EXCLUDED.allow_close_before_complete_yn,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="upsertAdminPopupContent">
+        INSERT INTO popup.popup_content
+        (
+            popup_id,
+            content_title,
+            description,
+            content_body,
+            media_url,
+            link_url,
+            content_options,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{popupId},
+            #{contentTitle},
+            #{description},
+            #{contentBody},
+            #{mediaUrl},
+            #{linkUrl},
+            CAST(#{contentOptionsJson} AS JSONB),
+            #{auditUser},
+            #{auditUser}
+        )
+        ON CONFLICT (popup_id) DO UPDATE
+        SET
+            content_title = EXCLUDED.content_title,
+            description = EXCLUDED.description,
+            content_body = EXCLUDED.content_body,
+            media_url = EXCLUDED.media_url,
+            link_url = EXCLUDED.link_url,
+            content_options = EXCLUDED.content_options,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="updateAdminPopupActive">
+        UPDATE popup.popup_notice
+        SET
+            active_yn = #{activeYn},
+            updated_by = #{auditUser},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE popup_id = #{popupId}
+    </update>
+
+    <resultMap id="adminPopupTargetRowResultMap"
+               type="server.domain.popup.AdminPopupTargetRow">
+        <constructor>
+            <idArg column="TARGET_GROUP_ID" javaType="java.lang.Long"/>
+            <arg column="TARGET_NAME" javaType="java.lang.String"/>
+            <arg column="TARGET_DESCRIPTION" javaType="java.lang.String"/>
+            <arg column="GROUP_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CONDITION_TYPE" javaType="java.lang.String"/>
+            <arg column="CONDITION_OPERATOR" javaType="java.lang.String"/>
+            <arg column="DEPARTMENT_ID" javaType="java.lang.String"/>
+            <arg column="POSITION_ID" javaType="java.lang.String"/>
+            <arg column="EMPLOYEE_NO" javaType="java.lang.String"/>
+            <arg column="CONDITION_DATE_VALUE" javaType="java.time.LocalDate"/>
+            <arg column="INCLUDE_CHILD_YN" javaType="java.lang.String"/>
+            <arg column="CONDITION_ORDER" javaType="java.lang.Integer"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectAdminPopupTargets"
+            resultMap="adminPopupTargetRowResultMap">
+        SELECT target.target_group_id,
+               target.target_name,
+               target.target_description,
+               target.group_order,
+               condition.condition_type,
+               condition.condition_operator,
+               condition.department_id,
+               condition.position_id,
+               condition.employee_no,
+               condition.condition_date_value,
+               condition.include_child_yn,
+               condition.condition_order
+        FROM popup.popup_target_group target
+        JOIN popup.popup_target_condition condition
+          ON condition.target_group_id = target.target_group_id
+        WHERE target.popup_id = #{popupId}
+        ORDER BY target.group_order, condition.condition_order
+    </select>
+
+    <delete id="deleteAdminPopupTargets">
+        DELETE FROM popup.popup_target_group WHERE popup_id = #{popupId}
+    </delete>
+
+    <select id="countAdminPopupTargetGroups" resultType="int">
+        SELECT COUNT(*) FROM popup.popup_target_group WHERE popup_id = #{popupId}
+    </select>
+
+    <select id="insertAdminTargetGroup"
+            resultType="long" affectData="true" flushCache="true">
+        INSERT INTO popup.popup_target_group
+        (popup_id, target_name, target_description, group_order, created_by, updated_by)
+        VALUES
+        (#{popupId}, #{targetName}, #{targetDescription}, #{groupOrder},
+         #{auditUser}, #{auditUser})
+        RETURNING target_group_id
+    </select>
+
+    <insert id="insertAdminTargetCondition">
+        INSERT INTO popup.popup_target_condition
+        (target_group_id, condition_type, condition_operator,
+         department_id, position_id, employee_no, condition_date_value,
+         include_child_yn, condition_order, created_by, updated_by)
+        VALUES
+        (#{targetGroupId}, #{condition.conditionType},
+         #{condition.conditionOperator},
+         CASE WHEN #{condition.conditionType} = 'DEPARTMENT'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'POSITION'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'EMPLOYEE'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'HIRE_DATE'
+              THEN CAST(#{condition.value} AS DATE) END,
+         CASE WHEN #{condition.includeChild} THEN 'Y' ELSE 'N' END,
+         #{conditionOrder},
+         #{auditUser}, #{auditUser})
+    </insert>
+
+    <resultMap id="popupEntityResultMap"
+               type="server.domain.popup.PopupEntity">
+        <constructor>
+            <idArg column="POPUP_ID" javaType="java.lang.String"/>
+            <arg column="POPUP_TYPE" javaType="java.lang.String"/>
+            <arg column="TITLE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_START_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_END_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_MODE" javaType="java.lang.String"/>
+            <arg column="SIZE_MODE" javaType="java.lang.String"/>
+            <arg column="POPUP_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="POPUP_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="WIDTH_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="HEIGHT_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="MINIMUM_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="MINIMUM_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="MAXIMUM_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="MAXIMUM_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="SHOW_HEADER_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_CLOSE_BUTTON_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_FOOTER_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_DONT_SHOW_YN" javaType="java.lang.String"/>
+            <arg column="CONTENT_JSON" javaType="java.lang.String"/>
+            <arg column="DISPLAY_ORDER" javaType="_int"/>
+            <arg column="USE_YN" javaType="java.lang.String"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="PERIOD_MODE" javaType="java.lang.String"/>
+            <arg column="REPEAT_INTERVAL" javaType="java.lang.Integer"/>
+            <arg column="REPEAT_DAY_OF_WEEK" javaType="java.lang.String"/>
+            <arg column="REPEAT_DAY_OF_MONTH" javaType="java.lang.Integer"/>
+            <arg column="HIDE_DAYS" javaType="java.lang.Integer"/>
+            <arg column="COMPLETION_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="PASSING_SCORE" javaType="java.math.BigDecimal"/>
+            <arg column="ALLOW_CLOSE_BEFORE_COMPLETE_YN" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="questionEntityResultMap"
+               type="server.domain.popup.PopupQuestionEntity">
+        <constructor>
+            <idArg column="QUESTION_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_TYPE" javaType="java.lang.String"/>
+            <arg column="QUESTION_TITLE" javaType="java.lang.String"/>
+            <arg column="QUESTION_DESCRIPTION" javaType="java.lang.String"/>
+            <arg column="REQUIRED_YN" javaType="java.lang.String"/>
+            <arg column="SCORED_YN" javaType="java.lang.String"/>
+            <arg column="QUESTION_SCORE" javaType="java.math.BigDecimal"/>
+            <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CORRECT_ANSWER" javaType="java.lang.String"/>
+            <arg column="ANSWER_MATCH_MODE" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="optionEntityResultMap"
+               type="server.domain.popup.PopupOptionEntity">
+        <constructor>
+            <idArg column="OPTION_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_ID" javaType="java.lang.Long"/>
+            <arg column="OPTION_VALUE" javaType="java.lang.String"/>
+            <arg column="OPTION_TEXT" javaType="java.lang.String"/>
+            <arg column="CORRECT_YN" javaType="java.lang.String"/>
+            <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 조건 내부 AND, 대상 그룹 간 OR로 사용자의 팝업을 선택한다. -->
+    <select id="selectAvailablePopups"
+            resultMap="popupEntityResultMap">
+        WITH RECURSIVE department_tree AS
+        (
+            SELECT
+                department_id AS ancestor_department_id,
+                department_id AS descendant_department_id
+            FROM popup.app_department
+
+            UNION ALL
+
+            SELECT
+                tree.ancestor_department_id,
+                child.department_id
+            FROM department_tree tree
+            JOIN popup.app_department child
+              ON child.parent_department_id = tree.descendant_department_id
+        ),
+        selected_user AS
+        (
+            SELECT usr.*
+            FROM popup.app_user usr
+            WHERE usr.employee_no = #{userId}
+              AND usr.active_yn = 'Y'
+        ),
+        condition_result AS
+        (
+            SELECT
+                popup.popup_id,
+                target.target_group_id,
+                CASE condition.condition_type
+                    WHEN 'DEPARTMENT' THEN
+                        CASE condition.condition_operator
+                            WHEN '=' THEN
+                                CASE
+                                    WHEN condition.include_child_yn = 'Y' THEN EXISTS
+                                    (
+                                        SELECT 1
+                                        FROM department_tree tree
+                                        WHERE tree.ancestor_department_id = condition.department_id
+                                          AND tree.descendant_department_id = usr.department_id
+                                    )
+                                    ELSE usr.department_id = condition.department_id
+                                END
+                            WHEN '!=' THEN
+                                CASE
+                                    WHEN condition.include_child_yn = 'Y' THEN NOT EXISTS
+                                    (
+                                        SELECT 1
+                                        FROM department_tree tree
+                                        WHERE tree.ancestor_department_id = condition.department_id
+                                          AND tree.descendant_department_id = usr.department_id
+                                    )
+                                    ELSE usr.department_id &lt;&gt; condition.department_id
+                                END
+                            ELSE FALSE
+                        END
+                    WHEN 'POSITION' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.position_id = condition.position_id
+                            WHEN '!=' THEN usr.position_id &lt;&gt; condition.position_id
+                            ELSE FALSE
+                        END
+                    WHEN 'EMPLOYEE' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.employee_no = condition.employee_no
+                            WHEN '!=' THEN usr.employee_no &lt;&gt; condition.employee_no
+                            ELSE FALSE
+                        END
+                    WHEN 'HIRE_DATE' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.hire_date = condition.condition_date_value
+                            WHEN '!=' THEN usr.hire_date &lt;&gt; condition.condition_date_value
+                            WHEN '&lt;'  THEN usr.hire_date &lt;  condition.condition_date_value
+                            WHEN '&lt;=' THEN usr.hire_date &lt;= condition.condition_date_value
+                            WHEN '&gt;'  THEN usr.hire_date &gt;  condition.condition_date_value
+                            WHEN '&gt;=' THEN usr.hire_date &gt;= condition.condition_date_value
+                            ELSE FALSE
+                        END
+                    ELSE FALSE
+                END AS condition_matched
+            FROM selected_user usr
+            CROSS JOIN popup.popup_notice popup
+            JOIN popup.popup_target_group target
+              ON target.popup_id = popup.popup_id
+            JOIN popup.popup_target_condition condition
+              ON condition.target_group_id = target.target_group_id
+            WHERE popup.active_yn = 'Y'
+              AND CURRENT_TIMESTAMP BETWEEN popup.display_start_at AND popup.display_end_at
+              AND
+              (
+                  popup.question_template_id IS NULL
+                  OR EXISTS
+                  (
+                      SELECT 1
+                      FROM popup.question_template template
+                      WHERE template.question_template_id = popup.question_template_id
+                        AND template.active_yn = 'Y'
+                  )
+              )
+              AND NOT EXISTS
+              (
+                  SELECT 1
+                  FROM popup.user_popup_status status
+                  WHERE status.employee_no = usr.employee_no
+                    AND status.popup_id = popup.popup_id
+                    AND status.hidden_until_at &gt; CURRENT_TIMESTAMP
+              )
+        ),
+        eligible_popup AS
+        (
+            SELECT popup_id
+            FROM condition_result
+            GROUP BY popup_id, target_group_id
+            HAVING BOOL_AND(condition_matched)
+        )
+        SELECT
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            CASE
+                WHEN popup.display_mode IN ('SEQUENTIAL', 'SIMULTANEOUS')
+                    THEN popup.display_mode
+                ELSE 'SEQUENTIAL'
+            END AS display_mode,
+            popup.size_mode,
+            popup.popup_width,
+            popup.popup_height,
+            popup.width_ratio,
+            popup.height_ratio,
+            popup.minimum_width,
+            popup.minimum_height,
+            popup.maximum_width,
+            popup.maximum_height,
+            popup.show_header_yn,
+            popup.show_close_button_yn,
+            popup.show_footer_yn,
+            popup.show_do_not_show_again_yn AS show_dont_show_yn,
+            (
+                CASE popup.popup_type
+                    WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
+                        'contentTitle', content.content_title,
+                        'description', content.description,
+                        'plainText', content.content_body
+                    )
+                    WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
+                        'imageTitle', content.content_title,
+                        'imageUrl', content.media_url,
+                        'description', content.description,
+                        'linkUrl', content.link_url
+                    )
+                    WHEN 'VIDEO' THEN JSONB_BUILD_OBJECT(
+                        'videoTitle', content.content_title,
+                        'videoUrl', content.media_url,
+                        'description', content.description,
+                        'completionRatio', popup.completion_ratio,
+                        'allowCloseBeforeCompletion', popup.allow_close_before_complete_yn = 'Y'
+                    )
+                    WHEN 'SURVEY' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    WHEN 'QUIZ' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    ELSE '{}'::JSONB
+                END
+                || COALESCE(content.content_options, '{}'::JSONB)
+            )::TEXT AS content_json,
+            popup.display_order,
+            popup.active_yn AS use_yn,
+            popup.question_template_id,
+            popup.period_mode,
+            popup.repeat_interval,
+            popup.repeat_day_of_week,
+            popup.repeat_day_of_month,
+            popup.hide_days,
+            popup.completion_ratio,
+            popup.passing_score,
+            popup.allow_close_before_complete_yn
+        FROM
+        (
+            SELECT DISTINCT popup_id
+            FROM eligible_popup
+        ) eligible
+        JOIN popup.popup_notice popup
+          ON popup.popup_id = eligible.popup_id
+        LEFT JOIN popup.popup_content content
+          ON content.popup_id = popup.popup_id
+        ORDER BY popup.display_order, popup.created_at, popup.popup_id
+    </select>
+
+    <select id="selectQuestionsByTemplateIds"
+            resultMap="questionEntityResultMap">
+        SELECT
+            question_id,
+            question_template_id,
+            question_type,
+            question_title,
+            question_description,
+            required_yn,
+            scored_yn,
+            question_score,
+            correct_answer,
+            answer_match_mode,
+            sort_order,
+            created_by,
+            created_at,
+            updated_by,
+            updated_at
+        FROM popup.popup_question
+        WHERE question_template_id IN
+        <foreach collection="templateIds"
+                 item="templateId"
+                 open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+        ORDER BY question_template_id, sort_order
+    </select>
+
+    <select id="selectOptionsByQuestionIds"
+            resultMap="optionEntityResultMap">
+        SELECT
+            option_id,
+            question_id,
+            option_value,
+            option_text,
+            correct_yn,
+            sort_order,
+            created_by,
+            created_at,
+            updated_by,
+            updated_at
+        FROM popup.popup_option
+        WHERE question_id IN
+        <foreach collection="questionIds"
+                 item="questionId"
+                 open="(" separator="," close=")">
+            #{questionId}
+        </foreach>
+        ORDER BY question_id, sort_order
+    </select>
+
+    <!-- 사용자와 팝업 조합이 없으면 생성하고, 있으면 숨김 기간을 갱신한다. -->
+    <insert id="upsertPopupHide">
+        INSERT INTO popup.user_popup_status
+        (
+            employee_no,
+            popup_id,
+            popup_status,
+            display_count,
+            hidden_from_at,
+            hidden_until_at,
+            completed_yn,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{userId},
+            #{popupId},
+            'HIDDEN',
+            0,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            'N',
+            #{userId},
+            #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = 'HIDDEN',
+            hidden_from_at = CURRENT_TIMESTAMP,
+            hidden_until_at = CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectHiddenUntil"
+            resultType="java.time.OffsetDateTime">
+        SELECT hidden_until_at AT TIME ZONE 'Asia/Seoul'
+        FROM popup.user_popup_status
+        WHERE employee_no = #{userId}
+          AND popup_id = #{popupId}
+    </select>
+
+    <!-- 활성 사용자와 제출 기간을 함께 확인하고 채점 설정을 조회한다. -->
+    <select id="selectSubmissionContext"
+            resultType="server.domain.popup.PopupSubmissionContext">
+        SELECT
+            notice.popup_id AS popupId,
+            notice.popup_type AS popupType,
+            notice.question_template_id AS questionTemplateId,
+            notice.passing_score AS passingScore
+        FROM popup.popup_notice notice
+        JOIN popup.app_user usr
+          ON usr.employee_no = #{userId}
+         AND usr.active_yn = 'Y'
+        WHERE notice.popup_id = #{popupId}
+          AND notice.active_yn = 'Y'
+          AND CURRENT_TIMESTAMP BETWEEN notice.display_start_at AND notice.display_end_at
+    </select>
+
+    <!-- 사용자/팝업별 최신 제출을 저장하고 생성된 응답 키를 반환한다. -->
+    <select id="upsertPopupResponse"
+            resultType="java.lang.Long"
+            affectData="true"
+            flushCache="true">
+        INSERT INTO popup.popup_response
+        (
+            client_request_id, popup_id, employee_no, question_template_id,
+            response_status, response_started_at, submitted_at, received_at,
+            total_score, passed_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{clientRequestId}, #{popupId}, #{userId}, #{questionTemplateId},
+            'SUBMITTED', #{responseStartedAt}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+            #{totalScore}, #{passedYn}, #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            client_request_id = EXCLUDED.client_request_id,
+            question_template_id = EXCLUDED.question_template_id,
+            response_status = 'SUBMITTED',
+            response_started_at = EXCLUDED.response_started_at,
+            submitted_at = CURRENT_TIMESTAMP,
+            received_at = CURRENT_TIMESTAMP,
+            total_score = EXCLUDED.total_score,
+            passed_yn = EXCLUDED.passed_yn,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING response_id
+    </select>
+
+    <!-- 재제출 시 이전 문항 답안과 하위 선택값은 FK cascade로 함께 제거된다. -->
+    <delete id="deleteResponseAnswers">
+        DELETE FROM popup.popup_response_answer
+        WHERE response_id = #{responseId}
+    </delete>
+
+    <select id="insertResponseAnswer"
+            resultType="java.lang.Long"
+            affectData="true"
+            flushCache="true">
+        INSERT INTO popup.popup_response_answer
+        (
+            response_id, question_id, text_answer,
+            earned_score, correct_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{responseId}, #{questionId}, #{textAnswer},
+            #{earnedScore}, #{correctYn}, #{userId}, #{userId}
+        )
+        RETURNING response_answer_id
+    </select>
+
+    <insert id="insertResponseValue">
+        INSERT INTO popup.popup_response_value
+        (
+            response_answer_id, option_id, selected_value,
+            created_by, updated_by
+        )
+        VALUES
+        (
+            #{responseAnswerId}, #{optionId}, #{selectedValue},
+            #{userId}, #{userId}
+        )
+    </insert>
+
+    <!-- 통과 여부를 팝업 표시 상태에도 반영한다. -->
+    <insert id="markPopupCompleted">
+        INSERT INTO popup.user_popup_status AS current_status
+        (
+            employee_no, popup_id, popup_status, display_count,
+            completed_yn, completed_at, created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId},
+            CASE WHEN #{passedYn} = 'Y' THEN 'COMPLETED' ELSE 'SUBMITTED' END,
+            0, #{passedYn},
+            CASE WHEN #{passedYn} = 'Y' THEN CURRENT_TIMESTAMP ELSE NULL END,
+            #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = CASE
+                WHEN current_status.completed_yn = 'Y'
+                     OR #{passedYn} = 'Y' THEN 'COMPLETED'
+                ELSE 'SUBMITTED'
+            END,
+            completed_yn = CASE
+                WHEN current_status.completed_yn = 'Y' THEN 'Y'
+                ELSE #{passedYn}
+            END,
+            completed_at = CASE
+                WHEN current_status.completed_at IS NOT NULL
+                    THEN current_status.completed_at
+                WHEN #{passedYn} = 'Y' THEN CURRENT_TIMESTAMP
+                ELSE NULL
+            END,
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectVideoPopupContext"
+            resultType="server.domain.popup.VideoPopupContext">
+        SELECT
+            notice.popup_id AS popupId,
+            notice.popup_type AS popupType,
+            notice.completion_ratio AS completionRatio
+        FROM popup.popup_notice notice
+        JOIN popup.app_user usr
+          ON usr.employee_no = #{userId}
+         AND usr.active_yn = 'Y'
+        WHERE notice.popup_id = #{popupId}
+          AND notice.popup_type = 'VIDEO'
+          AND notice.active_yn = 'Y'
+          AND CURRENT_TIMESTAMP BETWEEN notice.display_start_at AND notice.display_end_at
+    </select>
+
+    <!-- 낮은 재생값으로 다시 전송돼도 누적 최대값과 완료 상태는 되돌리지 않는다. -->
+    <insert id="upsertVideoProgress">
+        INSERT INTO popup.video_view_status AS current_view
+        (
+            employee_no, popup_id, total_duration_seconds,
+            last_position_seconds, maximum_position_seconds,
+            watched_seconds, watched_ratio, completed_yn,
+            first_played_at, last_played_at, completed_at,
+            created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId}, #{durationSeconds},
+            #{positionSeconds}, #{maximumPositionSeconds},
+            #{watchedSeconds}, #{watchedRatio}, #{completedYn},
+            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+            CASE WHEN #{completedYn} = 'Y' THEN CURRENT_TIMESTAMP ELSE NULL END,
+            #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            total_duration_seconds = EXCLUDED.total_duration_seconds,
+            last_position_seconds = EXCLUDED.last_position_seconds,
+            maximum_position_seconds = GREATEST(
+                current_view.maximum_position_seconds,
+                EXCLUDED.maximum_position_seconds
+            ),
+            watched_seconds = GREATEST(
+                current_view.watched_seconds,
+                EXCLUDED.watched_seconds
+            ),
+            watched_ratio = GREATEST(
+                current_view.watched_ratio,
+                EXCLUDED.watched_ratio
+            ),
+            completed_yn = CASE
+                WHEN current_view.completed_yn = 'Y' THEN 'Y'
+                ELSE EXCLUDED.completed_yn
+            END,
+            last_played_at = CURRENT_TIMESTAMP,
+            completed_at = CASE
+                WHEN current_view.completed_at IS NOT NULL
+                    THEN current_view.completed_at
+                WHEN EXCLUDED.completed_yn = 'Y' THEN CURRENT_TIMESTAMP
+                ELSE NULL
+            END,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectVideoCompletedAt"
+            resultType="java.time.OffsetDateTime">
+        SELECT completed_at AT TIME ZONE 'Asia/Seoul'
+        FROM popup.video_view_status
+        WHERE employee_no = #{userId}
+          AND popup_id = #{popupId}
+    </select>
+
+    <select id="countActiveUserAndPopup" resultType="int">
+        SELECT COUNT(*)
+        FROM popup.app_user usr
+        CROSS JOIN popup.popup_notice notice
+        WHERE usr.employee_no = #{userId}
+          AND usr.active_yn = 'Y'
+          AND notice.popup_id = #{popupId}
+          AND notice.active_yn = 'Y'
+    </select>
+
+    <!-- 표시 횟수와 닫은 시각을 누적하되 이미 완료된 상태는 유지한다. -->
+    <insert id="upsertPopupEvent">
+        INSERT INTO popup.user_popup_status AS current_status
+        (
+            employee_no, popup_id, popup_status,
+            first_displayed_at, last_displayed_at, display_count,
+            closed_at, completed_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId}, #{eventType},
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP END,
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP END,
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN 1 ELSE 0 END,
+            CASE WHEN #{eventType} = 'CLOSED' THEN CURRENT_TIMESTAMP END,
+            'N', #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = CASE
+                WHEN current_status.completed_yn = 'Y' THEN 'COMPLETED'
+                WHEN #{eventType} = 'CLOSED' THEN 'CLOSED'
+                ELSE 'DISPLAYED'
+            END,
+            first_displayed_at = CASE
+                WHEN #{eventType} = 'DISPLAYED' THEN COALESCE(
+                    current_status.first_displayed_at, CURRENT_TIMESTAMP)
+                ELSE current_status.first_displayed_at
+            END,
+            last_displayed_at = CASE
+                WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP
+                ELSE current_status.last_displayed_at
+            END,
+            display_count = current_status.display_count
+                + CASE WHEN #{eventType} = 'DISPLAYED' THEN 1 ELSE 0 END,
+            closed_at = CASE
+                WHEN #{eventType} = 'CLOSED' THEN CURRENT_TIMESTAMP
+                ELSE current_status.closed_at
+            END,
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectPopupStatuses"
+            resultType="server.domain.popup.UserPopupStatusDto">
+        SELECT
+            status.employee_no AS userId,
+            status.popup_id AS popupId,
+            status.popup_status AS popupStatus,
+            status.first_displayed_at AT TIME ZONE 'Asia/Seoul' AS firstDisplayedAt,
+            status.last_displayed_at AT TIME ZONE 'Asia/Seoul' AS lastDisplayedAt,
+            status.display_count AS displayCount,
+            status.closed_at AT TIME ZONE 'Asia/Seoul' AS closedAt,
+            status.hidden_until_at AT TIME ZONE 'Asia/Seoul' AS hiddenUntilAt,
+            (status.completed_yn = 'Y') AS completed,
+            status.completed_at AT TIME ZONE 'Asia/Seoul' AS completedAt
+        FROM popup.user_popup_status status
+        WHERE status.employee_no = #{userId}
+        ORDER BY status.popup_id
+    </select>
+
+    <select id="selectAdminQuestionTemplates" resultType="server.domain.popup.AdminQuestionTemplate">
+        SELECT question_template_id AS template_id, template_name, template_type
+        FROM popup.question_template WHERE active_yn = 'Y' AND current_yn = 'Y'
+        ORDER BY template_name, question_template_id
+    </select>
+</mapper>

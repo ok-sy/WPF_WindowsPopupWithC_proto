@@ -1,0 +1,1388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.RuleMapper">
+
+    <select id="findInterFaces" resultType="server.domain.vo.InterfaceVo">
+        SELECT IFID
+        , IF_NM
+        FROM INTERFACEINFO
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <select id="findRulesByInterfaceId"
+            resultType="server.domain.vo.RuleVo"
+            parameterType="server.sql.ParamRule$RuleTreeSearch">
+        SELECT RULEID
+        , RULE_NM
+        , RULEALIAS_NM
+        , RULE_DESC
+        , RULERETURN_TYPE
+        , RULESORT_CD
+        , RULEUSAGE_CD
+        , ALLRETURN_YN
+        , USE_YN
+        , RULE_VERNO
+        , ACTIVATE_YN
+        , TO_CHAR(ACTIVATE_DATETIME, 'YYYY/MM/DD HH24:MI:SS') AS ACTIVATE_DATETIME
+        , (SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = RULE_STATE) AS RULE_STATE
+        , TO_CHAR(DEPLOY_DATETIME, 'YYYY/MM/DD HH24:MI:SS') AS DEPLOY_DATETIME
+        , (SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = DEPLOY_USERID) AS DEPLOY_USERID
+        , IFID
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , (SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = UPDATE_USERID) AS UPDATE_USERID
+        , (
+        SUBSTR(UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , CASE
+        WHEN RULE_STATE = '3'
+        AND RULE_VERNO <![CDATA[ < ]]> 1 THEN 'N'
+        WHEN RULE_STATE = '3'
+        AND RULE_VERNO - TRUNC(RULE_VERNO) > 0 THEN 'U'
+        WHEN RULE_APPLY_YN = 'Y'
+        AND DEPLOY_WAIT_STATE_APPY_YN = 'N' THEN 'C'
+        WHEN RULE_APPLY_YN = 'N'
+        AND DEPLOY_WAIT_STATE_APPY_YN = 'Y' THEN 'O'
+        ELSE NULL
+        END AS TREE_ICON_TYPE
+        , RULE_APPLY_YN
+        FROM RULE
+        WHERE 1 = 1
+        <if test='value != null and value != ""'>
+            AND IFID = #{value}
+        </if>
+
+        <!-- AND RULEID LIKE '%' || #{value} || '%' OR RULE_NM LIKE '%' || #{value} || '%' -->
+
+        <if test='keyword != null and keyword != ""'>
+            AND (
+            RULEID LIKE '%' || #{keyword} || '%'
+            OR RULE_NM LIKE '%' || #{keyword} || '%'
+            )
+        </if>
+
+        AND RULE_STATE != 'D'
+        ORDER BY RULEID ASC
+    </select>
+
+
+    <select id="findRuleNameAndIdList" resultType="server.domain.vo.RuleNameVo">
+        SELECT RULE_NM
+        , RULEID
+        FROM RULE
+    </select>
+
+
+    <select id="findRuleInfoByRuleid"
+            parameterType="String"
+            resultType="server.domain.vo.RuleVo">
+        SELECT RULE_NM
+        , RULEID
+        , RULEALIAS_NM
+        , RULE_DESC
+        , RULERETURN_TYPE
+        , (
+        SUBSTR(UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , UPDATE_USERID
+        , RULESORT_CD
+        , RULEUSAGE_CD
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , ALLRETURN_YN
+        , USE_YN
+        , IFID
+        , RULE_VERNO
+        , ACTIVATE_YN
+        , TO_CHAR(ACTIVATE_DATETIME, 'YYYY/MM/DD HH24:MI:SS') AS ACTIVATE_DATETIME
+        , RULE_STATE
+        FROM RULE
+        <where>
+            <include refid="PAGE_WHERE"/>
+        </where>
+    </select>
+
+
+    <sql id="PAGE_WHERE">
+        <if test='ruleid != null and ruleid != ""'>
+            AND RULEID = #{ruleid}
+        </if>
+        <if test='rulealiasNm != null and rulealiasNm != ""'>
+            AND RULEALIAS_NM = #{rulealiasNm}
+        </if>
+    </sql>
+
+
+    <select id="findRuleReturnItemByRuleid"
+            parameterType="String"
+            resultType="server.domain.vo.RuleReturnItemAndItemInfoVo">
+        SELECT A1.RULEID
+        , A1.RETURN_ITEMID
+        , A1.RETURNITEM_NO
+        , A1.UPDATE_USERID
+        , (
+        SUBSTR(A1.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(A1.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(A1.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A1.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(A1.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(A1.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.ITEMID
+        , B.ITEM_NM
+        , B.ITEMALIAS_NM
+        , B.ITEMEXPLAN_DESC
+        , B.DATATYPE_CD
+        FROM RULERETURNITEM A1
+        , RULEITEM B
+        WHERE A1.RETURN_ITEMID = B.ITEMID
+        AND A1.RULEID = #{value}
+    </select>
+
+
+    <!-- 룰관리 상세 - RULE -->
+    <select id="ruleInfoForRule"
+            resultType="server.domain.vo.RuleInfoRuleVo"
+            parameterType="String">
+        SELECT I.IF_NM
+        , R.RULE_VERNO
+        , R.RULE_STATE
+        , R.RULE_NM
+        , R.RULE_DESC
+        , R.RULESORT_CD
+        , R.RULEUSAGE_CD
+        , R.UPDATE_USERID
+        , (
+        SUBSTR(R.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(R.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(R.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(R.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(R.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(R.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , R.RULERETURN_TYPE
+        , R.ALLRETURN_YN
+        , R.ACTIVATE_YN
+        FROM RULE R
+        , INTERFACEINFO I
+        WHERE R.IFID = I.IFID
+        AND R.RULEID = #{value}
+    </select>
+
+
+    <!-- 룰관리 상세 - RULE 반환 리스트 -->
+    <select id="ruleInfoForRuleReturn"
+            resultType="server.domain.entity.ItemMgmt"
+            parameterType="String">
+        SELECT I.ITEMID
+        , I.ITEM_NM
+        , I.ITEMALIAS_NM
+        , I.ITEMEXPLAN_DESC
+        , I.DATATYPE_CD
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '102'
+        AND CODE = I.DATATYPE_CD
+        ) AS DATATYPE_NM
+        , I.UPDATE_USERID
+        , (
+        SUBSTR(I.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(I.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(I.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(I.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(I.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(I.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , I.FIRSTREG_USERID
+        , I.FIRSTREG_DATETIME
+        , I.ITEM_USE_YN
+        , I.DATATYPE_CD
+        FROM RULERETURNITEM R
+        , RULEITEM I
+        WHERE R.RETURN_ITEMID = I.ITEMID
+        AND R.RULEID = #{value}
+    </select>
+
+
+    <!-- 룰관리 상세 - 조건식 리스트 -->
+    <select id="ruleInfoForCondition"
+            resultType="server.domain.vo.RuleInfoConditionVo"
+            parameterType="String">
+        SELECT RC.RULEID
+        , RCR.RETURN_ITEMID
+        , (SELECT ITEM_NM
+        FROM RULEITEM
+        WHERE ITEMID = RCR.RETURN_ITEMID) AS ITEM_NM
+        , RC.RULECONDITIONNO
+        , RCR.RETURNITEM_EXPR_DESC
+        , (SELECT DATATYPE_CD
+        FROM RULEITEM
+        WHERE ITEMID = RCR.RETURN_ITEMID) AS DATATYPE_CD
+        , RC.CONDITION_INFIX_DESC
+        , RC.CONDITION_POSTFIX_DESC
+        , RC.CONDITION_DESC
+        FROM RULE R
+        , RULECONDITION RC
+        , RULECONDITIONRETURNITEM RCR
+        WHERE RC.RULEID = R.RULEID
+        AND RCR.RULEID = RC.RULEID
+        AND RCR.RULEID = R.RULEID
+        AND RCR.RULECONDITIONNO = RC.RULECONDITIONNO
+        AND RC.RULEID = #{ruleid}
+        ORDER BY RC.RULECONDITIONNO, RCR.RETURN_ITEMID
+    </select>
+
+
+    <delete id="itemReturnDelAll" parameterType="String">
+        DELETE FROM RULERETURNITEM
+        WHERE RULEID = #{value}
+    </delete>
+
+    <delete id="conditionDelAll" parameterType="String">
+        DELETE FROM RULECONDITIONRETURNITEM
+        WHERE RULEID = #{value}
+    </delete>
+
+
+    <insert id="insertRuleInfo" parameterType="server.sql.ParamRule$InsertRuleInfo">
+        INSERT INTO RULE (
+        RULEID
+        , RULE_NM
+        , RULEALIAS_NM
+        , RULE_DESC
+        , RULERETURN_TYPE
+        , RULESORT_CD
+        , RULEUSAGE_CD
+        , ALLRETURN_YN
+        , USE_YN
+        , RULE_VERNO
+        , ACTIVATE_YN
+        , ACTIVATE_DATETIME
+        , RULE_STATE
+        , DEPLOY_DATETIME
+        , DEPLOY_USERID
+        , IFID
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , RULE_APPLY_YN
+        ) VALUES (
+        #{ruleid}
+        , #{ruleNm}
+        , #{rulealiasNm}
+        , #{ruleDesc}
+        , #{rulereturnType}
+        , #{rulesortCd}
+        , #{ruleusageCd}
+        , #{allreturnYn}
+        , #{useYn}
+        , #{ruleVerno}
+        , #{activateYn}
+        , NULL
+        , #{ruleState}
+        , NULL
+        , NULL
+        , #{ifid}
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , #{ruleApplyYn}
+        )
+    </insert>
+
+
+    <insert id="insertRuleReturnInfo"
+            parameterType="server.sql.ParamRule$InsertRuleReturn">
+        INSERT INTO RULERETURNITEM (
+        RULEID
+        , RETURN_ITEMID
+        , RETURNITEM_NO
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{ruleid}
+        , #{returnItemid}
+        , #{returnitemNo}
+        , #{updateUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+
+    <insert id="insertRulecondition"
+            parameterType="server.sql.ParamRule$InsertRuleCondition">
+        INSERT INTO RULECONDITION (
+        RULEID
+        , RULECONDITIONNO
+        , CONDITION_INFIX_DESC
+        , CONDITION_POSTFIX_DESC
+        , CONDITION_DESC
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{ruleid}
+        , #{ruleconditionno}
+        , #{conditionInfixDesc}
+        , #{conditionPostfixDesc}
+        , #{conditionDesc}
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , NULL
+        , NULL
+        )
+    </insert>
+
+
+    <insert id="updateRulecondition"
+            parameterType="server.sql.ParamRule$InsertRuleCondition">
+        INSERT INTO RULECONDITION (
+        RULEID
+        , RULECONDITIONNO
+        , CONDITION_INFIX_DESC
+        , CONDITION_POSTFIX_DESC
+        , CONDITION_DESC
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{ruleid}
+        , #{ruleconditionno}
+        , #{conditionInfixDesc}
+        , #{conditionPostfixDesc}
+        , #{conditionDesc}
+        , NULL
+        , NULL
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+
+    <insert id="insertRuleconditionreturnitem"
+            parameterType="server.sql.ParamRule$InsertRuleconditionreturnitem">
+        INSERT INTO RULECONDITIONRETURNITEM (
+        RETURN_ITEMID
+        , RULEID
+        , RULECONDITIONNO
+        , RETURNITEM_EXPR_DESC
+        , RETURNITEM_POSTFIX_DESC
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{returnItemid}
+        , #{ruleid}
+        , #{ruleconditionno}
+        , #{returnitemExprDesc}
+        , #{returnitemPostfixDesc}
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , NULL
+        , NULL
+        )
+    </insert>
+
+
+    <insert id="updateRuleconditionreturnitem"
+            parameterType="server.sql.ParamRule$InsertRuleconditionreturnitem">
+        INSERT INTO RULECONDITIONRETURNITEM (
+        RETURN_ITEMID
+        , RULEID
+        , RULECONDITIONNO
+        , RETURNITEM_EXPR_DESC
+        , RETURNITEM_POSTFIX_DESC
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        ) VALUES (
+        #{returnItemid}
+        , #{ruleid}
+        , #{ruleconditionno}
+        , #{returnitemExprDesc}
+        , #{returnitemPostfixDesc}
+        , NULL
+        , NULL
+        , #{firstregUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+
+    <insert id="insertRuleConditionPostfixObject"
+            parameterType="server.sql.ParamRule$InsertRuleconditionPostfixobject">
+        INSERT INTO RULECONDITION_POSTFIXOBJECT (
+        RULEID
+        , POSTFIXOBJECTNO
+        , RULECONDITIONNO
+        , DATATYPE_CD
+        , OPERATOR_YN
+        , OBJECT_DATA
+        ) VALUES (
+        #{ruleid}
+        , #{postfixobjectno}
+        , #{ruleconditionno}
+        , #{datatypeCd}
+        , #{operatorYn}
+        , #{objectData}
+        )
+    </insert>
+
+
+    <insert id="insertRuleconditionReturnPostfixobject"
+            parameterType="server.sql.ParamRule$InsertRuleconditionReturnPostfixobject">
+        INSERT INTO RULECONDITIONRETURN_POSTOBJECT (
+        RETURN_ITEMID
+        , RULEID
+        , RULECONDITIONNO
+        , POSTFIXOBJECTNO
+        , DATATYPE_CD
+        , OPERATOR_YN
+        , OBJECT_DATA
+        ) VALUES (
+        #{returnItemid}
+        , #{ruleid}
+        , #{ruleconditionno}
+        , #{postfixobjectno}
+        , #{datatypeCd}
+        , #{operatorYn}
+        , #{objectData}
+        )
+    </insert>
+
+
+    <select id="ruleObjNextValInfo"
+            resultType="String"
+            parameterType="server.sql.ParamRule$SelectRuleObjType">
+        SELECT DATATYPE_CD
+        FROM RULECONDITION_POSTFIXOBJECT
+        WHERE RULEID = #{ruleid}
+        AND POSTFIXOBJECTNO = #{postfixobjectno}
+        AND RULECONDITIONNO = #{ruleconditionno}
+        <if test='datatypeCd != null and datatypeCd != ""'>
+            AND DATATYPE_CD IN ('0', '1', '2')
+        </if>
+    </select>
+
+
+    <select id="ruleConditionInfo"
+            parameterType="String"
+            resultType="server.domain.vo.RuleInfoConditionVo">
+        SELECT RULECONDITIONNO
+        , CONDITION_INFIX_DESC
+        , CONDITION_POSTFIX_DESC
+        FROM RULECONDITION
+        WHERE RULEID = #{value}
+        ORDER BY RULECONDITIONNO
+    </select>
+
+
+    <select id="ruleReturnItemInfo" parameterType="String" resultType="String">
+        SELECT RETURNITEM_POSTFIX_DESC
+        FROM RULECONDITIONRETURNITEM
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="ruleInputItemIdToName" parameterType="String" resultType="String">
+        SELECT ITEM_NM
+        FROM RULEITEM
+        WHERE ITEMID = #{value}
+    </select>
+
+
+    <select id="newMainRuleIdSeq" resultType="String" parameterType="String">
+        SELECT LPAD(nextval('rule_main_seq')::text, 7, '0')
+    </select>
+
+
+    <select id="newSubRuleIdSeq" resultType="String">
+        SELECT LPAD(nextval('rule_sub_seq')::text, 7, '0')
+    </select>
+
+
+    <select id="selectRuleIdToNm" resultType="String">
+        SELECT RULEID
+        FROM RULE
+        WHERE RULE_NM = #{value}
+        AND RULE_APPLY_YN = 'Y'
+    </select>
+
+
+    <select id="selectItemIdToNm" resultType="String">
+        SELECT ITEMID
+        FROM RULEITEM
+        WHERE ITEM_NM = #{itemNm}
+        AND IFID = #{ifid}
+        AND ITEM_USE_YN = 'Y'
+    </select>
+
+
+    <update id="updateRuleInfo" parameterType="server.sql.ParamRule$InsertRuleInfo">
+        UPDATE RULE
+        SET RULE_NM = #{ruleNm}
+        , RULEALIAS_NM = #{rulealiasNm}
+        , RULE_DESC = #{ruleDesc}
+        , RULERETURN_TYPE = #{rulereturnType}
+        , RULESORT_CD = #{rulesortCd}
+        <!--         , RULEUSAGE_CD = #{ruleusageCd} -->
+        , ALLRETURN_YN = #{allreturnYn}
+        <!--         , USE_YN = #{useYn} -->
+        , RULE_VERNO = #{ruleVerno}
+        <!--         , ACTIVATE_YN = #{activateYn} -->
+        <!--         , ACTIVATE_DATETIME = #{activateDatetime} -->
+        , RULE_STATE = #{ruleState}
+        <!--         , DEPLOY_DATETIME = #{deployDatetime} -->
+        <!--         , DEPLOY_USERID = #{deployUserid} -->
+        , IFID = #{ifid}
+        <!--         , FIRSTREG_USERID = #{firstregUserid} -->
+        <!--         , FIRSTREG_DATETIME = #{firstregDatetime} -->
+        , UPDATE_USERID = #{updateUserid}
+        , UPDATE_DATETIME = TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <delete id="deleteRuleReturnItem" parameterType="String">
+        DELETE FROM RULERETURNITEM
+        WHERE RULEID = #{value}
+    </delete>
+
+    <delete id="deleteRuleCondition" parameterType="String">
+        DELETE FROM RULECONDITION
+        WHERE RULEID = #{value}
+    </delete>
+
+    <delete id="deleteRuleConditionObject" parameterType="String">
+        DELETE FROM RULECONDITION_POSTFIXOBJECT
+        WHERE RULEID = #{value}
+    </delete>
+
+    <delete id="deleteRuleConditionReturnItem" parameterType="String">
+        DELETE FROM RULECONDITIONRETURNITEM
+        WHERE RULEID = #{value}
+    </delete>
+
+    <delete id="deleteRuleConditionReturnItemObject" parameterType="String">
+        DELETE FROM RULECONDITIONRETURN_POSTOBJECT
+        WHERE RULEID = #{value}
+    </delete>
+
+
+    <select id="selectRuleConObj"
+            parameterType="String"
+            resultType="server.sql.ParamRule$InsertRuleconditionPostfixobject">
+        SELECT RULEID
+        , POSTFIXOBJECTNO
+        , RULECONDITIONNO
+        , DATATYPE_CD
+        , OPERATOR_YN
+        , OBJECT_DATA
+        FROM RULECONDITION_POSTFIXOBJECT
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="selectRuleReturnConObj"
+            parameterType="String"
+            resultType="server.sql.ParamRule$InsertRuleconditionReturnPostfixobject">
+        SELECT RETURN_ITEMID
+        , RULEID
+        , RULECONDITIONNO
+        , POSTFIXOBJECTNO
+        , DATATYPE_CD
+        , OPERATOR_YN
+        , OBJECT_DATA
+        FROM RULECONDITIONRETURN_POSTOBJECT
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="countReturnItem" parameterType="String" resultType="int">
+        SELECT COUNT(*)
+        FROM RULERETURNITEM A
+        , RULE B
+        WHERE A.RULEID = B.RULEID
+        AND RULE_NM = #{value}
+    </select>
+
+
+    <select id="findReturnItemDataType" parameterType="String" resultType="String">
+        SELECT B.DATATYPE_CD
+        FROM RULERETURNITEM A
+        , RULEITEM B
+        , RULE C
+        WHERE A.RETURN_ITEMID = B.ITEMID
+        AND C.RULEID = A.RULEID
+        AND C.RULE_NM = #{value}
+    </select>
+
+
+    <select id="findItemDataType" parameterType="String" resultType="String">
+        SELECT DATATYPE_CD
+        FROM RULEITEM
+        WHERE ITEM_NM = #{value}
+    </select>
+
+
+    <!-- 활성/비활성 토글 업데이트 -->
+    <update id="ruleActiveUpt" parameterType="server.sql.ParamRule$RuleActiveUpdate">
+        UPDATE RULE
+        SET ACTIVATE_YN = #{activeYn}
+        , ACTIVATE_DATETIME = CURRENT_TIMESTAMP
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <!-- 삭제 -->
+    <update id="ruleDel" parameterType="String">
+        UPDATE RULE
+        SET USE_YN = 'N'
+        , RULE_STATE = 'D'
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <update id="ruleTestSubmit" parameterType="String">
+        UPDATE RULE
+        SET RULE_STATE = '2'
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <select id="findRuleForLock"
+            parameterType="server.sql.ParamRule$FindRuleForLock"
+            resultType="int">
+        SELECT COUNT(*)
+        FROM LOCKS
+        WHERE LOCKKEY = #{ruleid}
+        AND LOCKCODE = '002'
+        AND USERID = #{userid}
+    </select>
+
+
+    <update id="updateRuleState" parameterType="java.util.Map">
+        UPDATE RULE
+        SET RULE_STATE = #{ruleState}
+        , DEPLOY_DATETIME = CURRENT_TIMESTAMP
+        , DEPLOY_USERID = #{userId}
+        , RULE_APPLY_YN = #{ruleApplyYn}
+        , DEPLOY_WAIT_STATE_APPY_YN = NULL
+        , RULE_VERNO = CEIL(RULE_VERNO)
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <update id="updateRuleVerno" parameterType="java.util.Map">
+        UPDATE RULE
+        SET RULE_VERNO = #{ruleVerno}
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <select id="getRuleVernoOrNew" parameterType="String" resultType="Long">
+        SELECT MAX(RULE_VERNO)
+        FROM RULE_HIST
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="findRuleList"
+            resultType="server.domain.vo.RuleVo"
+            parameterType="String">
+        SELECT RULEID
+        , RULE_NM
+        , RULEALIAS_NM
+        , RULE_DESC
+        , RULERETURN_TYPE
+        , RULESORT_CD
+        , RULEUSAGE_CD
+        , ALLRETURN_YN
+        , USE_YN
+        , RULE_VERNO
+        , ACTIVATE_YN
+        , ACTIVATE_DATETIME
+        , RULE_STATE
+        , DEPLOY_DATETIME
+        , DEPLOY_USERID
+        , IFID
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , RULE_APPLY_YN
+        , DEPLOY_WAIT_STATE_APPY_YN
+        FROM RULE
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="findRuleDetailInfoByRuleid"
+            parameterType="String"
+            resultType="server.domain.vo.RuleVo">
+        SELECT RULEID
+        , RULE_NM
+        , RULEALIAS_NM
+        , RULE_DESC
+        , RULERETURN_TYPE
+        , RULESORT_CD
+        , RULEUSAGE_CD
+        , ALLRETURN_YN
+        , USE_YN
+        , RULE_VERNO
+        , ACTIVATE_YN
+        , TO_CHAR(ACTIVATE_DATETIME, 'YYYY/MM/DD HH24:MI:SS') AS ACTIVATE_DATETIME
+        , (SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = RULE_STATE) AS RULE_STATE
+        , TO_CHAR(DEPLOY_DATETIME, 'YYYY/MM/DD HH24:MI:SS') AS DEPLOY_DATETIME
+        , (SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = DEPLOY_USERID) AS DEPLOY_USERID
+        , IFID
+        , FIRSTREG_USERID
+        , FIRSTREG_DATETIME
+        , (SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = UPDATE_USERID) AS UPDATE_USERID
+        , (
+        SUBSTR(UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , RULE_APPLY_YN
+        , DEPLOY_WAIT_STATE_APPY_YN
+        FROM RULE
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <!-- 중위식조건 룰 리턴항목 데이터 -->
+    <select id="ruleConditionInfixDesc"
+            parameterType="String"
+            resultType="server.domain.vo.RuleConditionInfixDescVo">
+        SELECT R.RULEID
+        , R.RULE_NM
+        , RI.DATATYPE_CD
+        FROM RULERETURNITEM RR
+        , RULE R
+        , RULEITEM RI
+        WHERE RR.RULEID = R.RULEID
+        AND RR.RETURN_ITEMID = RI.ITEMID
+        AND R.USE_YN = 'Y'
+        AND R.IFID = #{value}
+    </select>
+
+
+    <insert id="ruleProgressHistoryInsert"
+            parameterType="server.sql.ParamRule$InsertRuleProgress">
+        INSERT INTO RULE_PROGRESS_HISTORY (
+        RULEID
+        , RULE_VERNO
+        , RULE_STATE
+        , CURRENT_RULE_APPLY_YN
+        , DEPLOY_WAIT_STATE_APPLY_YN
+        , UPDATE_USERID
+        , UPDATE_DATETIME
+        , HISTORY_NO
+        ) VALUES (
+        #{ruleid}
+        , #{ruleVerno}
+        , #{ruleState}
+        , (SELECT RULE_APPLY_YN
+        FROM RULE
+        WHERE RULEID = #{ruleid})
+        , #{deployWaitStateApplyYn}
+        , #{updateUserid}
+        , TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS')
+        , (
+        SELECT COALESCE(MAX(HISTORY_NO) + 1, 0)
+        FROM RULE_PROGRESS_HISTORY
+        WHERE RULEID = #{ruleid}
+        )
+        )
+    </insert>
+
+
+    <select id="ruleProgressHstSelect"
+            parameterType="String"
+            resultType="server.domain.vo.RuleProgressHistoryVo">
+        SELECT RULEID
+        , RULE_VERNO
+        , (SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = RULE_STATE) AS RULE_STATE
+        , CURRENT_RULE_APPLY_YN
+        , DEPLOY_WAIT_STATE_APPLY_YN
+        , (SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = UPDATE_USERID) AS UPDATE_USERID
+        , (
+        SUBSTR(UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        FROM RULE_PROGRESS_HISTORY
+        WHERE RULEID = #{ruleid}
+        ORDER BY HISTORY_NO DESC
+    </select>
+
+
+    <update id="ruleDeploy" parameterType="String">
+        UPDATE RULE
+        SET RULE_STATE = '3'
+        , DEPLOY_WAIT_STATE_APPY_YN = #{ruleApplyYn}
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <update id="ruleDeployCancel" parameterType="String">
+        UPDATE RULE
+        SET RULE_STATE = '4'
+        , DEPLOY_WAIT_STATE_APPY_YN = NULL
+        WHERE RULEID = #{ruleid}
+    </update>
+
+
+    <select id="selectRuleState" resultType="String" parameterType="String">
+        SELECT RULE_STATE
+        FROM RULE
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <select id="findDeployWaitRule" resultType="server.domain.vo.RuleDeployWaitVo">
+        SELECT A.RULE_APPLY_YN
+        , CASE
+        WHEN A.RULE_VERNO - TRUNC(A.RULE_VERNO) > 0 THEN 'Y'
+        ELSE 'N'
+        END AS RULE_MODIFY_YN
+        , A.DEPLOY_WAIT_STATE_APPY_YN
+        , A.IFID
+        , A.RULEID
+        , A.RULE_VERNO
+        , A.RULE_NM
+        , (
+        SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = A.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(A.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , (
+        SELECT D.USER_NM
+        FROM RULE_PROGRESS_HISTORY C
+        JOIN CLOVER_USER D
+        ON C.UPDATE_USERID = D.USER_ID
+        WHERE C.RULEID = A.RULEID
+        AND C.RULE_VERNO = A.RULE_VERNO
+        AND C.RULE_STATE = '3'
+        AND C.HISTORY_NO = (
+        SELECT MAX(HISTORY_NO)
+        FROM RULE_PROGRESS_HISTORY
+        WHERE RULEID = C.RULEID
+        AND RULE_VERNO = C.RULE_VERNO
+        AND RULE_STATE = C.RULE_STATE
+        )
+        ) AS DEPLOY_WAIT_USERID
+        , (
+        SELECT SUBSTR(C.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(C.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(C.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(C.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(C.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(C.UPDATE_DATETIME, 13, 2)
+        FROM RULE_PROGRESS_HISTORY C
+        WHERE C.RULEID = A.RULEID
+        AND C.RULE_VERNO = A.RULE_VERNO
+        AND C.RULE_STATE = '3'
+        AND C.HISTORY_NO = (
+        SELECT MAX(HISTORY_NO)
+        FROM RULE_PROGRESS_HISTORY
+        WHERE RULEID = C.RULEID
+        AND RULE_VERNO = C.RULE_VERNO
+        AND RULE_STATE = C.RULE_STATE
+        )
+        ) AS DEPLOY_WAIT_DATETIME
+        , (
+        SELECT COUNT(DISTINCT ITEMID)
+        FROM (
+        SELECT F.RULEID
+        , F.RETURN_ITEMID AS ITEMID
+        FROM RULECONDITIONRETURNITEM F
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 2) AS ITEMID
+        FROM RULECONDITION_POSTFIXOBJECT F
+        WHERE F.DATATYPE_CD = '3'
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 2) AS ITEMID
+        FROM RULECONDITIONRETURN_POSTOBJECT F
+        WHERE F.DATATYPE_CD = '3'
+        ) D
+        WHERE D.RULEID = A.RULEID
+        ) AS USED_ITEM_CNT
+        , (
+        SELECT COUNT(DISTINCT SUB_RULE_ID)
+        FROM (
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 3, LENGTH(F.OBJECT_DATA) - 3) AS SUB_RULE_ID
+        FROM RULECONDITION_POSTFIXOBJECT F
+        WHERE F.DATATYPE_CD = '4'
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 3) AS SUB_RULE_ID
+        FROM RULECONDITIONRETURN_POSTOBJECT F
+        WHERE F.DATATYPE_CD = '4'
+        ) D
+        WHERE D.RULEID = A.RULEID
+        ) AS USED_RULE_CNT
+        , (
+        SELECT MAX(
+        SUBSTR(D.DEPLOY_DATETIME, 1, 4)
+        || '/' || SUBSTR(D.DEPLOY_DATETIME, 5, 2)
+        || '/' || SUBSTR(D.DEPLOY_DATETIME, 7, 2)
+        || ' ' || SUBSTR(D.DEPLOY_DATETIME, 9, 2)
+        || ':' || SUBSTR(D.DEPLOY_DATETIME, 11, 2)
+        || ':' || SUBSTR(D.DEPLOY_DATETIME, 13, 2)
+        )
+        FROM RULE_DEPLOY D
+        WHERE D.RULEID = A.RULEID
+        ) AS RECENT_DEPLOY_DATE
+        FROM RULE A
+        RIGHT OUTER JOIN RULECONDITIONRETURNITEM B
+        ON A.RULEID = B.RULEID
+        WHERE A.RULE_STATE = '3'
+        GROUP BY A.RULE_APPLY_YN
+        , CASE
+        WHEN A.RULE_VERNO - TRUNC(A.RULE_VERNO) > 0 THEN 'Y'
+        ELSE 'N'
+        END
+        , A.DEPLOY_WAIT_STATE_APPY_YN
+        , A.IFID
+        , A.RULEID
+        , A.RULE_VERNO
+        , A.RULE_NM
+        , A.UPDATE_USERID
+        , A.UPDATE_DATETIME
+    </select>
+
+
+    <select id="findUsedItem"
+            resultType="server.domain.vo.UsedItemInfo"
+            parameterType="String">
+
+        SELECT DISTINCT
+        '반환항목' AS USE_GUBUN
+        , A.RETURN_ITEMID AS ITEMID
+        , B.ITEM_NM
+        FROM RULERETURNITEM A
+        INNER JOIN RULEITEM B
+        ON A.RETURN_ITEMID = B.ITEMID
+        WHERE RULEID = #{value}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '조건식' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) AS ITEMID
+        , B.ITEM_NM
+        FROM RULECONDITION_POSTFIXOBJECT A
+        INNER JOIN RULEITEM B
+        ON SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) = B.ITEMID
+        WHERE A.DATATYPE_CD = '3'
+        AND RULEID = #{value}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '반환값' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) AS ITEMID
+        , B.ITEM_NM
+        FROM RULECONDITIONRETURN_POSTOBJECT A
+        INNER JOIN RULEITEM B
+        ON SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) = B.ITEMID
+        WHERE A.DATATYPE_CD = '3'
+        AND RULEID = #{value}
+    </select>
+
+
+    <select id="findUsedRule"
+            resultType="server.domain.vo.UsedRuleDetailInfo"
+            parameterType="String">
+
+        SELECT DISTINCT
+        '조건식' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) AS RULEID
+        , B.RULE_NM
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = B.RULE_STATE
+        ) AS RULE_STATE
+        , (
+        SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = B.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(B.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(B.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.RULE_APPLY_YN
+        FROM RULECONDITION_POSTFIXOBJECT A
+        INNER JOIN RULE B
+        ON SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) = B.RULEID
+        WHERE A.DATATYPE_CD = '4'
+        AND A.RULEID = #{value}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '반환값' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) AS RULEID
+        , B.RULE_NM
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = B.RULE_STATE
+        ) AS RULE_STATE
+        , (
+        SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = B.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(B.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(B.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.RULE_APPLY_YN
+        FROM RULECONDITIONRETURN_POSTOBJECT A
+        INNER JOIN RULE B
+        ON SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) = B.RULEID
+        WHERE A.DATATYPE_CD = '4'
+        AND A.RULEID = #{value}
+    </select>
+
+
+    <select id="findRecentDeploy" resultType="String">
+        SELECT MAX(
+        SUBSTR(DEPLOY_DATETIME, 1, 4)
+        || '/' || SUBSTR(DEPLOY_DATETIME, 5, 2)
+        || '/' || SUBSTR(DEPLOY_DATETIME, 7, 2)
+        || ' ' || SUBSTR(DEPLOY_DATETIME, 9, 2)
+        || ':' || SUBSTR(DEPLOY_DATETIME, 11, 2)
+        || ':' || SUBSTR(DEPLOY_DATETIME, 13, 2)
+        ) AS DEPLOY_DATETIME
+        FROM RULE_DEPLOY
+    </select>
+
+
+    <select id="findRuleDeployHis"
+            parameterType="server.sql.ParamRule$FindRuleDeployHis"
+            resultType="server.domain.vo.RuleDeployHistoryVo">
+
+        SELECT (
+        SUBSTR(A.DEPLOY_DATETIME, 1, 4)
+        || '/' || SUBSTR(A.DEPLOY_DATETIME, 5, 2)
+        || '/' || SUBSTR(A.DEPLOY_DATETIME, 7, 2)
+        || ' ' || SUBSTR(A.DEPLOY_DATETIME, 9, 2)
+        || ':' || SUBSTR(A.DEPLOY_DATETIME, 11, 2)
+        || ':' || SUBSTR(A.DEPLOY_DATETIME, 13, 2)
+        ) AS DEPLOY_DATETIME
+        , A.BEFORE_DEPLOY_APPLY_YN
+        , A.AFTER_DEPLOY_APPLY_YN
+        , A.RULE_UPDATE_YN
+        , B.IFID
+        , B.RULEID
+        , B.RULE_NM
+        , U.USER_NM AS DEPLOY_USERID
+        , (
+        SELECT COUNT(*)
+        FROM RULE_LOG
+        WHERE RULE_ID = A.RULEID
+        AND RULE_VERNO = A.RULE_VERNO
+        AND TO_DATE(SUBSTR(LOG_START_TIME, 1, 8), 'YYYYMMDD')
+        >= CURRENT_DATE - 3
+        ) AS RULE_CALL_D3
+        , (
+        SELECT COUNT(*)
+        FROM RULE_LOG
+        WHERE RULE_ID = A.RULEID
+        AND RULE_VERNO = A.RULE_VERNO
+        AND INSPECTION_YN = 'Y'
+        AND TO_DATE(SUBSTR(LOG_START_TIME, 1, 8), 'YYYYMMDD')
+        >= CURRENT_DATE - 3
+        ) AS RULE_CHECK_D3
+        , (
+        SELECT COUNT(DISTINCT ITEMID)
+        FROM (
+        SELECT F.RULEID
+        , F.RETURN_ITEMID AS ITEMID
+        , F.RULE_VERNO
+        FROM RULECONDITIONRETURNITEM_HIST F
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 2) AS ITEMID
+        , F.RULE_VERNO
+        FROM RULECONDITION_POSTFIXOBJECT_HI F
+        WHERE F.DATATYPE_CD = '3'
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 2) AS ITEMID
+        , F.RULE_VERNO
+        FROM RULECONDITIONRETURN_POSTOB_HI F
+        WHERE F.DATATYPE_CD = '3'
+        ) D
+        WHERE D.RULEID = A.RULEID
+        AND D.RULE_VERNO = A.RULE_VERNO
+        ) AS USED_ITEM_CNT
+        , (
+        SELECT COUNT(DISTINCT SUB_RULE_ID)
+        FROM (
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 3, LENGTH(F.OBJECT_DATA) - 3) AS SUB_RULE_ID
+        , F.RULE_VERNO
+        FROM RULECONDITION_POSTFIXOBJECT_HI F
+        WHERE F.DATATYPE_CD = '4'
+
+        UNION ALL
+
+        SELECT F.RULEID
+        , SUBSTR(F.OBJECT_DATA, 2, LENGTH(F.OBJECT_DATA) - 3) AS SUB_RULE_ID
+        , F.RULE_VERNO
+        FROM RULECONDITIONRETURN_POSTOB_HI F
+        WHERE F.DATATYPE_CD = '4'
+        ) D
+        WHERE D.RULEID = A.RULEID
+        AND D.RULE_VERNO = A.RULE_VERNO
+        ) AS USED_RULE_CNT
+        , A.RULE_VERNO
+        FROM RULE_DEPLOY A
+        INNER JOIN RULE B
+        ON A.RULEID = B.RULEID
+        INNER JOIN INTERFACEINFO INT
+        ON B.IFID = INT.IFID
+        INNER JOIN CLOVER_USER U
+        ON A.REG_USERID = U.USER_ID
+        <where>
+            <include refid="DEPLOY_WHERE"/>
+        </where>
+        ORDER BY A.DEPLOY_DATETIME DESC
+    </select>
+
+
+    <sql id="DEPLOY_WHERE">
+        <if test='ifid != null and ifid != ""'>
+            AND INT.IFID = #{ifid}
+        </if>
+
+        <if test='ruleNm != null and ruleNm != ""'>
+            AND B.RULE_NM LIKE '%' || #{ruleNm} || '%'
+        </if>
+
+        <if test='deployUserid != null and deployUserid != ""'>
+            AND U.USER_NM LIKE '%' || #{deployUserid} || '%'
+        </if>
+
+        AND TO_DATE(SUBSTR(A.DEPLOY_DATETIME, 1, 8), 'YYYYMMDD')
+        BETWEEN TO_DATE(#{fromDt}, 'YYYYMMDD')
+        AND TO_DATE(#{toDt}, 'YYYYMMDD')
+    </sql>
+
+
+    <select id="findDeployHisUsedItem"
+            resultType="server.domain.vo.UsedItemInfo"
+            parameterType="String">
+
+        SELECT DISTINCT
+        '반환항목' AS USE_GUBUN
+        , A.RETURN_ITEMID AS ITEMID
+        , B.ITEM_NM
+        FROM RULERETURNITEM_HIST A
+        INNER JOIN RULEITEM B
+        ON A.RETURN_ITEMID = B.ITEMID
+        WHERE RULEID = #{ruleid}
+        AND RULE_VERNO = #{ruleVerno}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '조건식' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) AS ITEMID
+        , B.ITEM_NM
+        FROM RULECONDITION_POSTFIXOBJECT_HI A
+        INNER JOIN RULEITEM B
+        ON SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) = B.ITEMID
+        WHERE A.DATATYPE_CD = '3'
+        AND RULEID = #{ruleid}
+        AND RULE_VERNO = #{ruleVerno}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '반환값' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) AS ITEMID
+        , B.ITEM_NM
+        FROM RULECONDITIONRETURN_POSTOB_HI A
+        INNER JOIN RULEITEM B
+        ON SUBSTR(A.OBJECT_DATA, 2, LENGTH(A.OBJECT_DATA) - 2) = B.ITEMID
+        WHERE A.DATATYPE_CD = '3'
+        AND RULEID = #{ruleid}
+        AND RULE_VERNO = #{ruleVerno}
+    </select>
+
+
+    <select id="findDeployHisUsedRule"
+            resultType="server.domain.vo.UsedRuleDetailInfo"
+            parameterType="String">
+
+        SELECT DISTINCT
+        '조건식' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) AS RULEID
+        , B.RULE_NM
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = B.RULE_STATE
+        ) AS RULE_STATE
+        , (
+        SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = B.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(B.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(B.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.RULE_APPLY_YN
+        FROM RULECONDITION_POSTFIXOBJECT_HI A
+        INNER JOIN RULE B
+        ON SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) = B.RULEID
+        WHERE A.DATATYPE_CD = '4'
+        AND A.RULEID = #{ruleid}
+        AND A.RULE_VERNO = #{ruleVerno}
+
+        UNION ALL
+
+        SELECT DISTINCT
+        '반환값' AS USE_GUBUN
+        , SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) AS RULEID
+        , B.RULE_NM
+        , (
+        SELECT CODE_NM
+        FROM CLOVER_CODE
+        WHERE CODE_TYPE = '604'
+        AND CODE = B.RULE_STATE
+        ) AS RULE_STATE
+        , (
+        SELECT USER_NM
+        FROM CLOVER_USER
+        WHERE USER_ID = B.UPDATE_USERID
+        ) AS UPDATE_USERID
+        , (
+        SUBSTR(B.UPDATE_DATETIME, 1, 4)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 5, 2)
+        || '/' || SUBSTR(B.UPDATE_DATETIME, 7, 2)
+        || ' ' || SUBSTR(B.UPDATE_DATETIME, 9, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 11, 2)
+        || ':' || SUBSTR(B.UPDATE_DATETIME, 13, 2)
+        ) AS UPDATE_DATETIME
+        , B.RULE_APPLY_YN
+        FROM RULECONDITIONRETURN_POSTOB_HI A
+        INNER JOIN RULE B
+        ON SUBSTR(A.OBJECT_DATA, 3, LENGTH(A.OBJECT_DATA) - 3) = B.RULEID
+        WHERE A.DATATYPE_CD = '4'
+        AND A.RULEID = #{ruleid}
+        AND A.RULE_VERNO = #{ruleVerno}
+    </select>
+
+
+    <select id="selectRuleNmDupCnt" resultType="int" parameterType="String">
+        SELECT COUNT(*)
+        FROM RULE
+        WHERE RULE_STATE != 'D'
+        AND RULE_NM = #{ruleNm}
+        <if test='ruleid != null and ruleid != ""'>
+            AND RULEID != #{ruleid}
+        </if>
+    </select>
+
+
+    <select id="selectRuleAliasDupCnt" resultType="int" parameterType="String">
+        SELECT COUNT(*)
+        FROM RULE
+        WHERE RULE_STATE != 'D'
+        AND RULEALIAS_NM = #{rulealiasNm}
+        <if test='ruleid != null and ruleid != ""'>
+            AND RULEID != #{ruleid}
+        </if>
+    </select>
+
+</mapper>

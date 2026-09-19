@@ -1,0 +1,15 @@
+<Window x:Class="Popup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Popup 관리 화면" Height="220" Width="420" ShowInTaskbar="False">
+    <Grid Margin="24">
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Popup API Client" FontSize="22" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" Margin="0,0,0,12"/>
+            <TextBlock Text="서버에서 현재 사용자에게 표시할 팝업을 조회합니다."
+                       TextAlignment="Center" Margin="0,0,0,20"/>
+            <Button Content="팝업 다시 조회" Width="160" Height="42"
+                    HorizontalAlignment="Center" Click="OpenPopupButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

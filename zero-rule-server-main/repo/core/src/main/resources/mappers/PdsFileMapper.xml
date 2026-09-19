@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.PdsFileMapper">
+
+    <!-- 신규 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.PdsFile">
+        INSERT INTO PDS_FILE (
+        file_id
+        , file_type
+        , file_name
+        , sort_number
+        , file_size
+        , width
+        , height
+        , duration
+        , content_type
+        , del_yn
+        , pds_id
+        , created_at
+        , changed_at
+        ) VALUES (
+        #{fileId}
+        , #{fileType}
+        , #{fileName}
+        , #{sortNumber}
+        , #{fileSize}
+        , #{width}
+        , #{height}
+        , #{duration}
+        , #{contentType}
+        , #{delYn}
+        , #{pdsId}
+        , #{createdAt}
+        , #{changedAt}
+        )
+    </insert>
+
+    <!-- pds_id 업데이트 -->
+    <update id="updatePdsIdById" parameterType="server.sql.ParamsPdsFile$UpdatePdsIdById">
+        UPDATE PDS_FILE
+        SET pds_id      = #{pdsId}
+        , sort_number = #{sortNumber}
+        , del_yn      = 'N'
+        , changed_at  = CURRENT_TIMESTAMP
+        WHERE file_id = #{fileId}
+    </update>
+
+    <!-- 파일명 업데이트 -->
+    <update id="updateFileNameById" parameterType="server.sql.ParamsPdsFile$UpdateFileNameById">
+        UPDATE PDS_FILE
+        SET file_name  = #{fileName}
+        , changed_at = CURRENT_TIMESTAMP
+        WHERE file_id    = #{fileId}
+    </update>
+
+    <!-- 단건 조회 by PK -->
+    <select id="findById" parameterType="string" resultType="server.domain.entity.PdsFile">
+        SELECT a.*
+        FROM PDS_FILE a
+        WHERE a.file_id = #{value}
+    </select>
+
+
+    <!-- 존재여부 체크 by PK -->
+    <select id="existsById" parameterType="string" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM PDS_FILE
+        WHERE file_id = #{value}
+        )
+    </select>
+
+
+    <!-- 다건 조회 - 특정 pds_id의 모든 파일 조회 -->
+    <select id="findByPdsId" parameterType="long" resultType="server.domain.entity.PdsFile">
+        SELECT a.*
+        FROM PDS_FILE a
+        WHERE a.pds_id = #{pdsId}
+        ORDER BY a.sort_number
+    </select>
+
+    <!-- 카운트 조회 by file_id collection -->
+    <select id="countByFileIdIn" parameterType="collection" resultType="int">
+        SELECT COUNT(*)
+        FROM PDS_FILE a
+        WHERE file_id IN
+        <foreach collection="arg0" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <!-- 삭제 마킹 - 주어진 file_id의 모든 파일을 삭제 마킹 -->
+    <update id="updateDeleteMarkByFileIdIn" parameterType="collection">
+        UPDATE PDS_FILE
+        SET pds_id     = 0
+        , del_yn     = 'Y'
+        , changed_at = CURRENT_TIMESTAMP
+        WHERE file_id IN
+        <foreach collection="arg0" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </update>
+
+    <!-- pdsId로 삭제 마킹 - 특정 게시물의 모든 파일 삭제 마킹 -->
+    <update id="updateDeleteMarkByPdsId" parameterType="long">
+        UPDATE PDS_FILE
+        SET pds_id     = 0
+        , del_yn     = 'Y'
+        , changed_at = CURRENT_TIMESTAMP
+        WHERE pds_id = #{value}
+    </update>
+
+    <!-- 삭제 by PK -->
+    <delete id="deleteById" parameterType="string">
+        DELETE FROM PDS_FILE
+        WHERE file_id = #{fileId}
+    </delete>
+
+
+    <!-- file_id 다건 조회 - 특정 pds_id의 모든 file_id 조회 -->
+    <select id="findFileIdByPdsId" parameterType="long" resultType="string">
+        SELECT a.file_id
+        FROM PDS_FILE a
+        WHERE a.pds_id = #{value}
+    </select>
+
+</mapper>

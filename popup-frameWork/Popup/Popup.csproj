@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+	</PropertyGroup>
+
+
+
+	<ItemGroup>
+		<!--
+  API 설정 파일을 실행 및 배포 폴더에 복사한다.
+  -->
+		<EmbeddedResource Include="appsettings.json">
+			<LogicalName>Popup.appsettings.json</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+		폐쇄망 데모 미디어를 어셈블리에 포함해 단일 EXE로 전달한다.
+		실행 시 DemoMediaPathService가 사용자 캐시에 추출한다.
+		-->
+		<EmbeddedResource Include="Media\**\*.*"
+				 Exclude="Media\.gitkeep">
+			<LogicalName>Popup.DemoMedia.%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+		운영 PC의 WebView2 Runtime 134 계열과 개발 SDK 버전을 맞춘다.
+		폐쇄망 운영 환경에서 Runtime보다 새로운 SDK API를 실수로 사용하는
+		호환성 문제를 방지하기 위해 Runtime 134 대응 Release SDK를 사용한다.
+		-->
+		<PackageReference Include="Microsoft.Web.WebView2"
+						  Version="1.0.3124.44" />
+	</ItemGroup>
+
+	<!--
+	트레이 아이콘을 위해 Windows Forms 어셈블리는 사용하지만,
+	WinForms 형식이 WPF 형식과 같은 이름으로 전역 등록되는 것은 막는다.
+	App.xaml.cs에서는 필요한 형식만 Forms 별칭으로 명시해서 사용한다.
+	-->
+	<ItemGroup>
+		<Using Remove="System.Windows.Forms" />
+		<Using Remove="System.Drawing" />
+	</ItemGroup>
+
+</Project>

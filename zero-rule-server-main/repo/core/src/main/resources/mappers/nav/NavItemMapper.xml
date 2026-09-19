@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.nav.NavItemMapper">
+
+    <!-- CLNavItem 등록 -->
+    <insert id="insert" parameterType="server.domain.entity.nav.NavItem">
+        INSERT INTO CLOVER_NAV_ITEM (
+        item_id
+        , nav_id
+        , page_id
+        , section_id
+        , sort_no
+        ) VALUES (
+        #{itemId}
+        , #{navId}
+        , #{pageId}
+        , #{sectionId}
+        , #{sortNo}
+        )
+    </insert>
+
+
+    <!-- CLNavItem 정렬 업데이트 -->
+    <update id="updateSectionIdAndSortNo" parameterType="server.sql.nav.ParamsNavItem$UpdateSectionIdAndSortNo">
+        UPDATE CLOVER_NAV_ITEM
+        SET section_id = #{sectionId}
+        , sort_no    = #{sortNo}
+        WHERE nav_id     = #{navId}
+        AND page_id    = #{pageId}
+    </update>
+
+
+    <!-- CLNavItem 의 sectionId 업데이트 -->
+    <update id="updateSectionId" parameterType="server.sql.nav.ParamsNavItem$UpdateSectionId">
+        UPDATE CLOVER_NAV_ITEM
+        SET section_id = #{newSectionId}
+        WHERE nav_id     = #{navId}
+        AND section_id = #{sectionId}
+    </update>
+
+    <!-- 페이지 아이템 목록 조회 -->
+    <select id="findPageItemsByNavId" parameterType="long" resultType="server.domain.vo.nav.NavPageItemVo">
+        SELECT a.item_id
+        , b.page_id
+        , a.section_id
+        , b.page_nm
+        , b.page_key
+        , b.url
+        , b.icon
+        , a.sort_no
+        , '0' AS hidden
+        FROM CLOVER_NAV_ITEM a
+        , CLOVER_PAGE b
+        WHERE a.nav_id = #{value}
+        AND a.page_id = b.page_id
+        ORDER BY a.sort_no, a.item_id
+    </select>
+
+    <!-- 섹션 목록 조회 by navId -->
+    <select id="findSectionListByNavId" parameterType="long" resultType="server.domain.entity.nav.PageSection">
+        SELECT a.section_id
+        , a.section_nm
+        , a.icon
+        , a.up_section_id
+        FROM CLOVER_PAGE_SECTION a
+        , (
+        SELECT k.section_id
+        FROM CLOVER_NAV_ITEM k
+        WHERE k.nav_id = #{value}
+        GROUP BY k.section_id
+        ) b
+        WHERE a.section_id = b.section_id
+    </select>
+
+
+    <!-- CLNavItem 특정 PAGE 삭제 -->
+    <update id="deleteByNavIdAndPageIdIn" parameterType="server.sql.nav.ParamsNavItem$DeleteByNavIdAndPageIdIn">
+        DELETE FROM CLOVER_NAV_ITEM
+        WHERE nav_id = #{navId}
+        AND page_id IN
+        <foreach collection="pageIds" item="it" separator="," open="(" close=")">
+            #{it}
+        </foreach>
+    </update>
+
+
+    <!-- CLNavItem 특정 PAGE 삭제 -->
+    <update id="deleteByPageId" parameterType="long">
+        DELETE FROM CLOVER_NAV_ITEM
+        WHERE page_id = #{value}
+    </update>
+
+    <!-- 섹션이 존재하는지 여부 by sectionId -->
+    <select id="existsBySectionId" parameterType="long" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM CLOVER_NAV_ITEM a
+        WHERE a.section_id = #{value}
+        )
+    </select>
+
+</mapper>

@@ -1,0 +1,4 @@
+# .NET SDK Windows 설치 파일은 GitHub 일반 파일 제한을 넘을 수 있으므로
+# 저장소에 추가할 경우 Git LFS로 관리한다.
+offline-sdk/*.exe filter=lfs diff=lfs merge=lfs -text
+offline-sdk/*.zip filter=lfs diff=lfs merge=lfs -text

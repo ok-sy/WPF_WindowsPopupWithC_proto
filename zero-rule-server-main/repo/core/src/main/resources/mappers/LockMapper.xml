@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.LockMapper">
+
+
+    <select id="findList" parameterType="server.sql.ParamLock$LockSearch" resultType="server.domain.vo.LockVo">
+        select a1.LOCKCODE
+        ,a1.LOCKKEY
+        ,a1.LOCKDATETIME
+        ,a1.USERID
+        ,a1.LOCKTYPECODE
+        ,a1.LOCKNOTE
+        ,b.USER_NM
+        ,b.LGON_ID
+        from locks a1
+        inner join clover_user b on  a1.userid = b.user_id
+        <where>
+            <include refid="PAGE_WHERE"/>
+        </where>
+    </select>
+
+    <sql id="PAGE_WHERE">
+        <if test='lockcode != null and lockcode != ""'>
+            AND a1.LOCKCODE = #{lockcode}
+        </if>
+        <if test='userid != null and userid != ""'>
+            AND b.LGON_ID LIKE '%' || #{userid} || '%'
+        </if>
+        <if test='userNm != null and userNm != "" '>
+            AND b.USER_NM LIKE '%' || #{userNm} || '%'
+        </if>
+    </sql>
+
+    <delete id="deleteOne" parameterType="String">
+    delete from LOCKS
+        WHERE LOCKKEY = #{value}
+    </delete>
+
+    <delete id="deleteDepLock" parameterType="String">
+        delete from LOCKS
+        WHERE lockcode = '003' AND LOCKKEY = #{value}
+    </delete>
+
+    <insert id="insertLock" parameterType="server.sql.ParamLock$InsertLock">
+        insert into LOCKS
+             (LOCKCODE
+             ,LOCKKEY
+             ,LOCKDATETIME
+             ,USERID
+             ,LOCKTYPECODE
+             ,LOCKNOTE)
+        values ( #{lockcode}
+            ,#{lockkey}
+            ,#{insertTime}
+            ,#{userid}
+            ,#{locktypecode}
+            ,#{locknote}
+        )
+    </insert>
+
+    <select id="findLockKey" parameterType="string" resultType="int">
+        select count(*)
+        from LOCKS
+        where LOCKKEY = #{value}
+    </select>
+
+    <select id="findIsTokenVali" parameterType="string" resultType="int">
+        select count(*)
+        from clover_user_auth
+        where auth_token = #{value}
+    </select>
+
+    <!--  룰 편집상태 확인  -->
+    <select id="findRuleUptMode" parameterType="server.sql.ParamLock$FindRuleUptMode" resultType="int">
+        SELECT
+            count(*)
+          FROM locks
+         WHERE lockcode = '002' AND lockkey = #{lockkey}
+    </select>
+
+    <!--  룰 적용상태 확인  -->
+    <select id="findRuleApplyMode" parameterType="String" resultType="int">
+        SELECT
+        count(*)
+        FROM locks
+        WHERE lockcode = '003' AND lockkey = #{lockkey}
+    </select>
+
+    <select id="findLockNote" parameterType="String" resultType="String">
+        SELECT
+        LOCKNOTE
+        FROM locks
+        WHERE lockkey = #{lockkey}
+    </select>
+
+    <!--  룰 적용상태 확인  -->
+    <select id="findRuleApplyModeCnt" resultType="String">
+        SELECT
+        LOCKNOTE
+        FROM locks
+        WHERE lockcode = '003'
+    </select>
+</mapper>

@@ -1,0 +1,10 @@
+
+zero-rule-web/main/.env
+zero-rule-web/main/.env.production
+
+# WPF 폐쇄망 복원/검증 시 생성되는 로컬 캐시와 게시 결과
+.offline-cache/
+.offline-verify/
+popup-frameWork/Popup/bin/
+popup-frameWork/Popup/obj/
+popup-frameWork/publish/

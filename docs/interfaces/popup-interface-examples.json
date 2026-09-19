@@ -1,0 +1,719 @@
+{
+  "documentVersion": "1.0",
+  "referenceDate": "2026-09-16",
+  "baseUrlExample": "http://localhost:8080/zero-rule-server",
+  "notice": "설계서용 가상 예시. 각 entries의 request/response만 송수신 본문이다. GET의 request.query는 URL 쿼리 표기용이며 실제 JSON 본문이 아니다. 관리자 응답은 msgId/body 중심 축약 예시이다.",
+  "entries": [
+    {
+      "id": "WPF-01",
+      "name": "사용자 팝업 목록",
+      "method": "GET",
+      "path": "/p/api/popups",
+      "request": {
+        "query": {
+          "userId": "SAMPLE-USER-001"
+        }
+      },
+      "response": [
+        {
+          "popupId": "SAMPLE-TEXT-001",
+          "popupType": "TEXT",
+          "title": "공지사항",
+          "displayStartAt": 1789516800,
+          "displayEndAt": 1792108800,
+          "displayMode": "SEQUENTIAL",
+          "displayOrder": 100,
+          "sizeMode": "FIXED",
+          "width": 560,
+          "height": 420,
+          "widthRatio": 0.7,
+          "heightRatio": 0.75,
+          "minimumWidth": 480,
+          "minimumHeight": 320,
+          "maximumWidth": 1200,
+          "maximumHeight": 900,
+          "showHeader": true,
+          "showCloseButton": true,
+          "showFooter": true,
+          "showDoNotShowAgain": false,
+          "periodMode": "FIXED",
+          "allowCloseBeforeComplete": true,
+          "questions": [],
+          "content": {
+            "contentTitle": "서비스 안내",
+            "description": "공지 내용을 확인해 주세요.",
+            "showContentHeader": true,
+            "plainText": "서비스 점검 안내입니다.",
+            "showPlainText": true,
+            "highlightText": "작업 중인 내용을 저장해 주세요.",
+            "showHighlight": true,
+            "bottomDescription": "자세히 보기",
+            "bottomDescriptionUrl": "https://example.com/notice",
+            "showBottomDescription": true,
+            "markdownMode": false,
+            "markdownContent": "",
+            "useBackgroundOverlay": true,
+            "backgroundOverlayOpacity": 0.45
+          }
+        },
+        {
+          "popupId": "SAMPLE-QUIZ-001",
+          "popupType": "QUIZ",
+          "title": "확인 퀴즈",
+          "displayStartAt": 1789516800,
+          "displayEndAt": 1792108800,
+          "displayMode": "SEQUENTIAL",
+          "displayOrder": 100,
+          "sizeMode": "FIXED",
+          "width": 560,
+          "height": 420,
+          "widthRatio": 0.7,
+          "heightRatio": 0.75,
+          "minimumWidth": 480,
+          "minimumHeight": 320,
+          "maximumWidth": 1200,
+          "maximumHeight": 900,
+          "showHeader": true,
+          "showCloseButton": true,
+          "showFooter": true,
+          "showDoNotShowAgain": false,
+          "periodMode": "FIXED",
+          "allowCloseBeforeComplete": true,
+          "questions": [
+            {
+              "questionId": 101,
+              "title": "안내를 확인했습니까?",
+              "description": "한 개를 선택하세요.",
+              "questionType": "SINGLE_CHOICE",
+              "isRequired": true,
+              "isScored": true,
+              "questionScore": 10,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "optionId": 1001,
+                  "value": "YES",
+                  "text": "예",
+                  "sortOrder": 1
+                },
+                {
+                  "optionId": 1002,
+                  "value": "NO",
+                  "text": "아니요",
+                  "sortOrder": 2
+                }
+              ]
+            }
+          ],
+          "content": {
+            "surveyTitle": "안내 확인",
+            "description": "문항에 응답해 주세요.",
+            "questions": [
+              {
+                "questionId": 101,
+                "title": "안내를 확인했습니까?",
+                "description": "한 개를 선택하세요.",
+                "questionType": "SINGLE_CHOICE",
+                "isRequired": true,
+                "isScored": true,
+                "questionScore": 10,
+                "sortOrder": 1,
+                "options": [
+                  {
+                    "optionId": 1001,
+                    "value": "YES",
+                    "text": "예",
+                    "sortOrder": 1
+                  },
+                  {
+                    "optionId": 1002,
+                    "value": "NO",
+                    "text": "아니요",
+                    "sortOrder": 2
+                  }
+                ]
+              }
+            ],
+            "useBackgroundOverlay": true,
+            "backgroundOverlayOpacity": 0.45
+          },
+          "questionTemplateId": 10,
+          "passingScore": 10
+        }
+      ],
+      "notes": "요청 본문 없음. 응답은 배열이며 body 래퍼 없음. 노출 가능한 팝업이 없으면 []."
+    },
+    {
+      "id": "WPF-02",
+      "name": "팝업 숨김",
+      "method": "POST",
+      "path": "/p/api/popups/{popupId}/hide",
+      "request": {
+        "userId": "SAMPLE-USER-001",
+        "hideDays": 1
+      },
+      "response": {
+        "userId": "SAMPLE-USER-001",
+        "popupId": "SAMPLE-TEXT-001",
+        "hideType": "UNTIL",
+        "hiddenUntil": 1789603200
+      },
+      "notes": "userId 필수, hideDays 필수 정수 1~3650. hiddenUntil은 서버/DB 계산 결과."
+    },
+    {
+      "id": "WPF-03",
+      "name": "답안 제출",
+      "method": "POST",
+      "path": "/p/api/popups/{popupId}/responses",
+      "request": {
+        "clientRequestId": "example-request-001",
+        "userId": "SAMPLE-USER-001",
+        "responseStartedAt": "2026-09-16T09:00:00+09:00",
+        "answers": [
+          {
+            "questionId": 101,
+            "optionIds": [
+              1001
+            ]
+          }
+        ]
+      },
+      "response": {
+        "responseId": 5001,
+        "clientRequestId": "example-request-001",
+        "userId": "SAMPLE-USER-001",
+        "popupId": "SAMPLE-QUIZ-001",
+        "responseStatus": "SUBMITTED",
+        "totalScore": 10,
+        "passed": true,
+        "submittedAt": 1789516860
+      },
+      "notes": "clientRequestId·userId·answers 필수. answers는 1개 이상, questionId 필수. responseStartedAt 선택. 선택형은 optionIds, 주관식은 textAnswer 사용. 실제 조회된 문항/선택지 ID를 사용. 점수는 보내지 않음."
+    },
+    {
+      "id": "WPF-04",
+      "name": "영상 진행률",
+      "method": "POST",
+      "path": "/p/api/popups/{popupId}/video-progress",
+      "request": {
+        "userId": "SAMPLE-USER-001",
+        "durationSeconds": 100,
+        "positionSeconds": 95,
+        "maximumPositionSeconds": 95,
+        "watchedSeconds": 95
+      },
+      "response": {
+        "userId": "SAMPLE-USER-001",
+        "popupId": "SAMPLE-VIDEO-001",
+        "watchedRatio": 0.95,
+        "requiredRatio": 0.9,
+        "completed": true,
+        "completedAt": 1789516895
+      },
+      "notes": "모든 요청 항목 필수. durationSeconds >= 0.001, 나머지 시간 >= 0. 단위 초. 서버의 completed를 완료 판단 기준으로 사용."
+    },
+    {
+      "id": "WPF-05",
+      "name": "표시·닫기 이벤트",
+      "method": "POST",
+      "path": "/p/api/popups/{popupId}/events",
+      "request": {
+        "userId": "SAMPLE-USER-001",
+        "eventType": "DISPLAYED"
+      },
+      "response": {
+        "userId": "SAMPLE-USER-001",
+        "popupId": "SAMPLE-TEXT-001",
+        "eventType": "DISPLAYED",
+        "recordedAt": 1789516800
+      },
+      "notes": "userId·eventType 필수. eventType은 DISPLAYED 또는 CLOSED."
+    },
+    {
+      "id": "WPF-06",
+      "name": "사용자 상태 목록",
+      "method": "GET",
+      "path": "/p/api/popups/statuses",
+      "request": {
+        "query": {
+          "userId": "SAMPLE-USER-001"
+        }
+      },
+      "response": [
+        {
+          "userId": "SAMPLE-USER-001",
+          "popupId": "SAMPLE-TEXT-001",
+          "popupStatus": "DISPLAYED",
+          "firstDisplayedAt": 1789516800,
+          "lastDisplayedAt": 1789516800,
+          "displayCount": 1,
+          "completed": false
+        }
+      ],
+      "notes": "요청 본문 없음. closedAt·hiddenUntilAt·completedAt은 해당 값이 있을 때 제공."
+    },
+    {
+      "id": "ADM-01",
+      "name": "관리자 목록",
+      "method": "POST",
+      "path": "/apis/popup/list",
+      "request": {},
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "popups": [
+            {
+              "popupId": "SAMPLE-TEXT-001",
+              "popupType": "TEXT",
+              "title": "공지사항",
+              "displayStartAt": 1789516800,
+              "displayEndAt": 1792108800,
+              "displayMode": "SEQUENTIAL",
+              "displayOrder": 100,
+              "sizeMode": "FIXED",
+              "activeYn": "Y",
+              "periodMode": "FIXED",
+              "createdBy": "SAMPLE-ADMIN",
+              "createdAt": 1789516800,
+              "updatedBy": "SAMPLE-ADMIN",
+              "updatedAt": 1789516800
+            }
+          ]
+        }
+      },
+      "notes": "별도 필터·페이지 요청 필드 없음. 비활성·기간 만료 포함. activeYn은 Y/N 문자열. questionTemplateId는 설정된 경우 제공."
+    },
+    {
+      "id": "ADM-02",
+      "name": "관리자 상세",
+      "method": "POST",
+      "path": "/apis/popup/info",
+      "request": {
+        "popupId": "SAMPLE-TEXT-001"
+      },
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "popup": {
+            "popupId": "SAMPLE-TEXT-001",
+            "popupType": "TEXT",
+            "title": "공지사항",
+            "displayStartAt": 1789516800,
+            "displayEndAt": 1792108800,
+            "displayMode": "SEQUENTIAL",
+            "displayOrder": 100,
+            "sizeMode": "FIXED",
+            "width": 560,
+            "height": 420,
+            "widthRatio": 0.7,
+            "heightRatio": 0.75,
+            "minimumWidth": 480,
+            "minimumHeight": 320,
+            "maximumWidth": 1200,
+            "maximumHeight": 900,
+            "showHeader": true,
+            "showCloseButton": true,
+            "showFooter": true,
+            "showDoNotShowAgain": false,
+            "periodMode": "FIXED",
+            "allowCloseBeforeComplete": true,
+            "questions": [],
+            "content": {
+              "contentTitle": "서비스 안내",
+              "description": "공지 내용을 확인해 주세요.",
+              "showContentHeader": true,
+              "plainText": "서비스 점검 안내입니다.",
+              "showPlainText": true,
+              "highlightText": "작업 중인 내용을 저장해 주세요.",
+              "showHighlight": true,
+              "bottomDescription": "자세히 보기",
+              "bottomDescriptionUrl": "https://example.com/notice",
+              "showBottomDescription": true,
+              "markdownMode": false,
+              "markdownContent": "",
+              "useBackgroundOverlay": true,
+              "backgroundOverlayOpacity": 0.45
+            }
+          },
+          "adminQuestions": [],
+          "targetGroups": [
+            {
+              "targetName": "예시 사용자",
+              "targetDescription": "설계서 예시",
+              "conditions": [
+                {
+                  "conditionType": "EMPLOYEE",
+                  "conditionOperator": "=",
+                  "value": "SAMPLE-USER-001",
+                  "includeChild": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "notes": "popupId 필수 1~50자. 정답 포함 문항은 popup.questions 및 adminQuestions에서 확인. 예시는 TEXT라 빈 배열."
+    },
+    {
+      "id": "ADM-03",
+      "name": "관리자 등록·수정",
+      "method": "POST",
+      "path": "/apis/popup/save",
+      "request": {
+        "popup": {
+          "popupId": "SAMPLE-TEXT-001",
+          "popupType": "TEXT",
+          "title": "공지사항",
+          "displayStartAt": "2026-09-16T09:00:00+09:00",
+          "displayEndAt": "2026-10-16T09:00:00+09:00",
+          "displayMode": "SEQUENTIAL",
+          "displayOrder": 100,
+          "sizeMode": "FIXED",
+          "width": 560,
+          "height": 420,
+          "widthRatio": 0.7,
+          "heightRatio": 0.75,
+          "minimumWidth": 480,
+          "minimumHeight": 320,
+          "maximumWidth": 1200,
+          "maximumHeight": 900,
+          "showHeader": true,
+          "showCloseButton": true,
+          "showFooter": true,
+          "showDoNotShowAgain": false,
+          "periodMode": "FIXED",
+          "allowCloseBeforeComplete": true,
+          "questions": [],
+          "content": {
+            "contentTitle": "서비스 안내",
+            "description": "공지 내용을 확인해 주세요.",
+            "showContentHeader": true,
+            "plainText": "서비스 점검 안내입니다.",
+            "showPlainText": true,
+            "highlightText": "작업 중인 내용을 저장해 주세요.",
+            "showHighlight": true,
+            "bottomDescription": "자세히 보기",
+            "bottomDescriptionUrl": "https://example.com/notice",
+            "showBottomDescription": true,
+            "markdownMode": false,
+            "markdownContent": "",
+            "useBackgroundOverlay": true,
+            "backgroundOverlayOpacity": 0.45
+          }
+        },
+        "active": true,
+        "targetGroups": [
+          {
+            "targetName": "예시 사용자",
+            "targetDescription": "설계서 예시",
+            "conditions": [
+              {
+                "conditionType": "EMPLOYEE",
+                "conditionOperator": "=",
+                "value": "SAMPLE-USER-001",
+                "includeChild": false
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "popup": {
+            "popupId": "SAMPLE-TEXT-001",
+            "popupType": "TEXT",
+            "title": "공지사항",
+            "displayStartAt": 1789516800,
+            "displayEndAt": 1792108800,
+            "displayMode": "SEQUENTIAL",
+            "displayOrder": 100,
+            "sizeMode": "FIXED",
+            "width": 560,
+            "height": 420,
+            "widthRatio": 0.7,
+            "heightRatio": 0.75,
+            "minimumWidth": 480,
+            "minimumHeight": 320,
+            "maximumWidth": 1200,
+            "maximumHeight": 900,
+            "showHeader": true,
+            "showCloseButton": true,
+            "showFooter": true,
+            "showDoNotShowAgain": false,
+            "periodMode": "FIXED",
+            "allowCloseBeforeComplete": true,
+            "questions": [],
+            "content": {
+              "contentTitle": "서비스 안내",
+              "description": "공지 내용을 확인해 주세요.",
+              "showContentHeader": true,
+              "plainText": "서비스 점검 안내입니다.",
+              "showPlainText": true,
+              "highlightText": "작업 중인 내용을 저장해 주세요.",
+              "showHighlight": true,
+              "bottomDescription": "자세히 보기",
+              "bottomDescriptionUrl": "https://example.com/notice",
+              "showBottomDescription": true,
+              "markdownMode": false,
+              "markdownContent": "",
+              "useBackgroundOverlay": true,
+              "backgroundOverlayOpacity": 0.45
+            }
+          }
+        }
+      },
+      "notes": "popup·active·targetGroups 필수. 같은 popupId는 수정. 활성 저장 시 대상 그룹 1개 이상. 저장 응답은 body.popup이며 대상 그룹/active를 별도 반환하지 않음."
+    },
+    {
+      "id": "ADM-04",
+      "name": "활성 변경",
+      "method": "POST",
+      "path": "/apis/popup/active",
+      "request": {
+        "popupId": "SAMPLE-TEXT-001",
+        "active": false
+      },
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "popup": {
+            "popupId": "SAMPLE-TEXT-001",
+            "popupType": "TEXT",
+            "title": "공지사항",
+            "displayStartAt": 1789516800,
+            "displayEndAt": 1792108800,
+            "displayMode": "SEQUENTIAL",
+            "displayOrder": 100,
+            "sizeMode": "FIXED",
+            "width": 560,
+            "height": 420,
+            "widthRatio": 0.7,
+            "heightRatio": 0.75,
+            "minimumWidth": 480,
+            "minimumHeight": 320,
+            "maximumWidth": 1200,
+            "maximumHeight": 900,
+            "showHeader": true,
+            "showCloseButton": true,
+            "showFooter": true,
+            "showDoNotShowAgain": false,
+            "periodMode": "FIXED",
+            "allowCloseBeforeComplete": true,
+            "questions": [],
+            "content": {
+              "contentTitle": "서비스 안내",
+              "description": "공지 내용을 확인해 주세요.",
+              "showContentHeader": true,
+              "plainText": "서비스 점검 안내입니다.",
+              "showPlainText": true,
+              "highlightText": "작업 중인 내용을 저장해 주세요.",
+              "showHighlight": true,
+              "bottomDescription": "자세히 보기",
+              "bottomDescriptionUrl": "https://example.com/notice",
+              "showBottomDescription": true,
+              "markdownMode": false,
+              "markdownContent": "",
+              "useBackgroundOverlay": true,
+              "backgroundOverlayOpacity": 0.45
+            }
+          }
+        }
+      },
+      "notes": "popupId 필수 1~50자, active 필수 boolean. 목록 조회의 activeYn과 형식이 다름."
+    },
+    {
+      "id": "ADM-05",
+      "name": "문항 템플릿 목록",
+      "method": "POST",
+      "path": "/apis/popup/question-templates",
+      "request": {},
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "templates": [
+            {
+              "templateId": 10,
+              "templateName": "확인 퀴즈",
+              "templateType": "QUIZ"
+            }
+          ]
+        }
+      },
+      "notes": "요청 필드 없음. templateId는 정수."
+    },
+    {
+      "id": "ADM-06",
+      "name": "문항 템플릿 상세",
+      "method": "POST",
+      "path": "/apis/popup/question-template",
+      "request": {
+        "templateId": 10
+      },
+      "response": {
+        "msgId": "BE00000001",
+        "body": {
+          "adminQuestions": [
+            {
+              "question": {
+                "questionId": 101,
+                "title": "안내를 확인했습니까?",
+                "description": "한 개를 선택하세요.",
+                "questionType": "SINGLE_CHOICE",
+                "isRequired": true,
+                "isScored": true,
+                "questionScore": 10,
+                "sortOrder": 1,
+                "options": [
+                  {
+                    "optionId": 1001,
+                    "value": "YES",
+                    "text": "예",
+                    "sortOrder": 1,
+                    "isCorrect": true
+                  },
+                  {
+                    "optionId": 1002,
+                    "value": "NO",
+                    "text": "아니요",
+                    "sortOrder": 2,
+                    "isCorrect": false
+                  }
+                ]
+              },
+              "correctValues": [
+                "YES"
+              ]
+            }
+          ]
+        }
+      },
+      "notes": "templateId 필수 정수. correctValues는 optionId가 아닌 선택지 value 문자열 목록. 주관식 정답은 question.correctAnswer."
+    }
+  ],
+  "contentExamples": {
+    "TEXT": {
+      "contentTitle": "서비스 안내",
+      "description": "공지 내용을 확인해 주세요.",
+      "showContentHeader": true,
+      "plainText": "서비스 점검 안내입니다.",
+      "showPlainText": true,
+      "highlightText": "작업 중인 내용을 저장해 주세요.",
+      "showHighlight": true,
+      "bottomDescription": "자세히 보기",
+      "bottomDescriptionUrl": "https://example.com/notice",
+      "showBottomDescription": true,
+      "markdownMode": false,
+      "markdownContent": "",
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45
+    },
+    "IMAGE": {
+      "imageTitle": "이미지 안내",
+      "description": "이미지 설명",
+      "imageUrl": "https://example.com/notice.png",
+      "showDescription": true,
+      "imageSizeMode": "ADAPTIVE",
+      "imageWidth": 640,
+      "imageHeight": 480,
+      "linkUrl": "https://example.com/notice",
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45
+    },
+    "VIDEO": {
+      "videoTitle": "교육 영상",
+      "description": "영상을 확인하세요.",
+      "videoUrl": "http://localhost:8080/zero-rule-server/p/api/popups/video?path=sample.mp4",
+      "showDescription": true,
+      "showControls": true,
+      "allowFullScreen": true,
+      "allowPlaybackRateChange": true,
+      "autoPlay": false,
+      "isLoop": false,
+      "defaultVolume": 0.7,
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45
+    },
+    "SURVEY": {
+      "surveyTitle": "설문",
+      "description": "의견을 입력해 주세요.",
+      "questions": [
+        {
+          "questionId": 102,
+          "title": "의견",
+          "description": "자유롭게 입력하세요.",
+          "questionType": "TEXT",
+          "isRequired": true,
+          "isScored": false,
+          "sortOrder": 1,
+          "options": []
+        }
+      ],
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45
+    },
+    "QUIZ": {
+      "surveyTitle": "안내 확인",
+      "description": "문항에 응답해 주세요.",
+      "questions": [
+        {
+          "questionId": 101,
+          "title": "안내를 확인했습니까?",
+          "description": "한 개를 선택하세요.",
+          "questionType": "SINGLE_CHOICE",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 10,
+          "sortOrder": 1,
+          "options": [
+            {
+              "optionId": 1001,
+              "value": "YES",
+              "text": "예",
+              "sortOrder": 1
+            },
+            {
+              "optionId": 1002,
+              "value": "NO",
+              "text": "아니요",
+              "sortOrder": 2
+            }
+          ]
+        }
+      ],
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45
+    }
+  },
+  "adminQuestionExample": {
+    "questionId": 101,
+    "title": "안내를 확인했습니까?",
+    "description": "한 개를 선택하세요.",
+    "questionType": "SINGLE_CHOICE",
+    "isRequired": true,
+    "isScored": true,
+    "questionScore": 10,
+    "sortOrder": 1,
+    "options": [
+      {
+        "optionId": 1001,
+        "value": "YES",
+        "text": "예",
+        "sortOrder": 1,
+        "isCorrect": true
+      },
+      {
+        "optionId": 1002,
+        "value": "NO",
+        "text": "아니요",
+        "sortOrder": 2,
+        "isCorrect": false
+      }
+    ]
+  },
+  "textAnswerExample": {
+    "questionId": 102,
+    "textAnswer": "확인했습니다.",
+    "optionIds": []
+  }
+}

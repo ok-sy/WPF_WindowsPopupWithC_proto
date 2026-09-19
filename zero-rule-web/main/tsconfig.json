@@ -1,0 +1,29 @@
+{
+  "extends": "@repo/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "plugins": [{ "name": "next" }],
+    "noUncheckedIndexedAccess": false,
+    // 이 문제를 해결하기 위해 declaration:false로 설정
+    // The inferred type of 'X' cannot be named without a reference
+    "declaration": false,
+    "declarationMap": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "experimentalDecorators": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@public/*": ["public/*"]
+    },
+    "typeRoots": ["../sub/validators/src/typings"]
+  },
+  "include": [
+    //
+    "**/*.ts",
+    "**/*.tsx",
+    "next-env.d.ts",
+    "next.config.mjs",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

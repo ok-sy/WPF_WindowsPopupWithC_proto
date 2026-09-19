@@ -1,0 +1,149 @@
+﻿<UserControl x:Class="Popup.Views.Contents.TextPopupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             MinWidth="320"
+             MinHeight="240">
+
+    <UserControl.Resources>
+
+        <!--
+        본문의 일반 글자 스타일
+
+        역할
+        글자 크기, 색상, 줄 간격,
+        자동 줄바꿈을 통일한다.
+        -->
+        <Style x:Key="BodyTextStyle"
+               TargetType="TextBlock">
+
+            <Setter Property="FontSize"
+                    Value="15"/>
+
+            <Setter Property="Foreground"
+                    Value="#374151"/>
+
+            <Setter Property="TextWrapping"
+                    Value="Wrap"/>
+
+            <Setter Property="LineHeight"
+                    Value="24"/>
+
+            
+        </Style>
+
+        <!--
+        제목용 TextBlock Style
+
+        x:Key는 Style의 이름이다.
+        다른 TextBlock에서
+        Style="{StaticResource TitleTextStyle}"
+        형태로 사용한다.
+        -->
+        <Style x:Key="TitleTextStyle"
+       TargetType="TextBlock">
+
+            <Setter Property="FontSize"
+            Value="26"/>
+
+            <Setter Property="FontWeight"
+            Value="Bold"/>
+
+            <Setter Property="Foreground"
+            Value="#1F2937"/>
+
+            <Setter Property="Margin"
+            Value="0,0,0,8"/>
+        </Style>
+
+       
+        
+        <Style TargetType="Hyperlink">
+            <Setter Property="Foreground" Value="#2563EB"/>
+            <Setter Property="TextDecorations" Value="{x:Null}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                    <Setter Property="TextDecorations" Value="Underline"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="TextDecorations" Value="Underline"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <!--
+    TextPopupView의 전체 본문 영역
+    -->
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 텍스트 팝업 전용 제목/설명 영역 -->
+        <StackPanel x:Name="ContentHeaderPanel"
+                    Grid.Row="0"
+                Margin="0,0,0,20">
+
+            <TextBlock x:Name="ContentTitleText"
+                        Style="{StaticResource TitleTextStyle}"
+                        Text="서비스 이용 안내"/>
+
+            <TextBlock x:Name="ContentDescriptionText"
+           Style="{StaticResource BodyTextStyle}"
+           Text="이 팝업은 WPF 화면 구성 예제를 보여주기 위해 만든 화면입니다."/>
+
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility ="Disabled">
+
+            <StackPanel>
+            <TextBlock x:Name="PlainTextBlock"
+                       Margin="0,0,0,16"
+                       Style="{StaticResource BodyTextStyle}"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+
+            <StackPanel x:Name="MarkdownPanel"
+                        Visibility="Collapsed"/>
+
+            <Border x:Name="HighlightContainer"
+                    Margin="0,16,0,0"
+                    Padding="14"
+                    Background="#EFF6FF"
+                    BorderBrush="#93C5FD"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Visibility="Collapsed">
+
+                <TextBlock x:Name="HighlightTextBlock"
+                           Style="{StaticResource BodyTextStyle}"
+                           Foreground="#1D4ED8"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+
+            </Border>
+            </StackPanel>
+
+        </ScrollViewer>
+
+        <TextBlock x:Name="BottomDescriptionText"
+                   Grid.Row="2"
+                   Margin="0,16,0,0"
+                   Padding="14"
+                   Style="{StaticResource BodyTextStyle}"
+                   Background="#F9FAFB"
+                   TextWrapping="Wrap"
+                   Visibility="Collapsed"/>
+
+    </Grid>
+
+</UserControl>

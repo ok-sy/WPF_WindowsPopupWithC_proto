@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile:
+        - dev_db
+  datasource:
+    jndi-name: jndi/dev_db
+    #url: jdbc:log4jdbc:oracle:thin:@//192.168.114.71:4004/XE
+    #driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+    #username: zero-rule
+  #password: Zerorule4321!

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.CLMsgMngMapper">
+    <!-- CLOVER_MSG_MNG 테이블 -->
+
+    <!-- 다건 조회 - 페이징 -->
+    <select id="findMsgPage"
+            resultType="server.domain.entity.CLMsgMng"
+            parameterType="server.sql.ParamsCLMsgMng$FindPage">
+
+        SELECT m.MSG_ID
+             , m.MSG_CLSF
+             , m.TSK_CLSF_CD
+             , m.OCCR_CLSF_CD
+             , m.MSG_PRNT_CD
+             , m.MSG_CN
+             , m.USE_YN
+             , m.REG_DTTM
+             , m.REGR_ID
+             , m.CHNG_DTTM
+             , m.CHGR_ID
+          FROM CLOVER_MSG_MNG m
+         WHERE m.MSG_CLSF = COALESCE(#{msgClsf}, m.MSG_CLSF)
+           AND m.TSK_CLSF_CD = COALESCE(#{tskClsfCd}, m.TSK_CLSF_CD)
+           AND m.OCCR_CLSF_CD = COALESCE(#{occrClsfCd}, m.OCCR_CLSF_CD)
+        <if test='msgId != null and msgId != "" '>
+            AND UPPER(m.MSG_ID) LIKE '%' || UPPER(#{msgId}) || '%'
+        </if>
+        <if test='msgCn != null and msgCn != "" '>
+            AND UPPER(m.MSG_CN) LIKE '%' || UPPER(#{msgCn}) || '%'
+        </if>
+         ORDER BY m.MSG_ID
+         LIMIT #{rowsPerPage}
+        OFFSET #{pageNumber} * #{rowsPerPage}
+    </select>
+
+
+    <!-- 다건조회 - 전체 데이터 건수 -->
+    <select id="countForMsgPage"
+            resultType="long"
+            parameterType="server.sql.ParamsCLMsgMng$FindPage">
+
+        SELECT COUNT(*)
+          FROM CLOVER_MSG_MNG m
+         WHERE m.MSG_CLSF = COALESCE(#{msgClsf}, m.MSG_CLSF)
+           AND m.TSK_CLSF_CD = COALESCE(#{tskClsfCd}, m.TSK_CLSF_CD)
+           AND m.OCCR_CLSF_CD = COALESCE(#{occrClsfCd}, m.OCCR_CLSF_CD)
+        <if test='msgId != null and msgId != "" '>
+            AND UPPER(m.MSG_ID) LIKE '%' || UPPER(#{msgId}) || '%'
+        </if>
+        <if test='msgCn != null and msgCn != "" '>
+            AND UPPER(m.MSG_CN) LIKE '%' || UPPER(#{msgCn}) || '%'
+        </if>
+    </select>
+
+    <!-- 메시지 등록 -->
+    <insert id="insert" parameterType="server.sql.ParamsCLMsgMng$Insert">
+
+        <selectKey resultType="String" keyProperty="msgId" order="BEFORE">
+            SELECT #{occrClsfCd}
+                   || #{tskClsfCd}
+                   || LPAD(
+                          (
+                              COALESCE(
+                                  MAX(SUBSTR(MSG_ID, 6)::BIGINT) + 1,
+                                  1
+                              )
+                          )::TEXT,
+                          5,
+                          '0'
+                      ) AS MSG_ID
+              FROM CLOVER_MSG_MNG
+             WHERE OCCR_CLSF_CD = #{occrClsfCd}
+               AND TSK_CLSF_CD = #{tskClsfCd}
+        </selectKey>
+
+        INSERT INTO CLOVER_MSG_MNG (
+              MSG_ID
+            , MSG_CLSF
+            , TSK_CLSF_CD
+            , OCCR_CLSF_CD
+            , MSG_PRNT_CD
+            , MSG_CN
+            , USE_YN
+            , REG_DTTM
+            , REGR_ID
+            , CHGR_ID
+        ) VALUES (
+              #{msgId}
+            , #{msgClsf}
+            , #{tskClsfCd}
+            , #{occrClsfCd}
+            , #{msgPrntCd}
+            , #{msgCn}
+            , 'Y'
+            , CURRENT_TIMESTAMP
+            , #{regrId}
+            , #{chgrId}
+        )
+    </insert>
+
+
+    <!-- 업데이트 -->
+    <update id="update" parameterType="server.sql.ParamsCLMsgMng$Update">
+        UPDATE CLOVER_MSG_MNG
+           SET MSG_CLSF     = #{msgClsf}
+             , OCCR_CLSF_CD = #{occrClsfCd}
+             , MSG_PRNT_CD  = #{msgPrntCd}
+             , MSG_CN       = #{msgCn}
+             , CHNG_DTTM    = CURRENT_TIMESTAMP
+             , CHGR_ID      = #{chgrId}
+         WHERE MSG_ID = #{msgId}
+    </update>
+
+
+    <!-- 사용여부 수정 -->
+    <update id="updateUseYn" parameterType="server.sql.ParamsCLMsgMng$UpdateUseYn">
+        UPDATE CLOVER_MSG_MNG
+           SET USE_YN = #{useYn}
+         WHERE MSG_ID = #{msgId}
+    </update>
+
+</mapper>

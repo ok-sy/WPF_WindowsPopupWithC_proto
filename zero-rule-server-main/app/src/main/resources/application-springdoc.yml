@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile:
+        - springdoc
+
+springdoc:
+  packagesToScan: server.web,cl.cloverframework.impl.controller
+  cache.disabled: true
+
+  # enable the /v3/api-docs endpoint(json format)
+  api-docs:
+    enabled: true
+  # enable the /swagger-ui endpoint(html format)
+  swagger-ui:
+    enabled: true
+    path: /p/api-doc

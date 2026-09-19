@@ -1,0 +1,101 @@
+[versions]
+springboot = "3.4.1"
+okhttp = "4.12.0"
+junitjupiter = "5.9.0"
+junitplatform = "1.9.0"
+# cloverframework = "0.0.17-local-SNAPSHOT"
+# cloverframework = "0.1.72-SNAPSHOT"
+cloverframework = "0.0.1-POSTGRE-SNAPSHOT"
+jjwt = "0.12.6"
+ojdbc6 = "11.2.0.4"
+
+[plugins]
+springboot = { id = "org.springframework.boot", version.ref = "springboot" }
+spring-dependencyManagement = "io.spring.dependency-management:1.1.7"
+
+[libraries]
+springboot-starter = { module = "org.springframework.boot:spring-boot-starter", version.ref = "springboot" }
+springboot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "springboot" }
+springboot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security", version.ref = "springboot" }
+springboot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot-starter-thymeleaf", version.ref = "springboot" }
+springboot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "springboot" }
+springboot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "springboot" }
+springboot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "springboot" }
+springboot-devtools = { module = "org.springframework.boot:spring-boot-devtools", version.ref = "springboot" }
+springboot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
+
+# spring batch
+# springboot-starter-batch = { module = "org.springframework.boot:spring-boot-starter-batch", version.ref = "springboot" }
+# springboot-batch-test = { module = "org.springframework.batch:spring-batch-test", version.ref = "springboot" }
+
+# spring
+spring-messaging = { module = "org.springframework:spring-messaging" }
+spring-session-core = { module = "org.springframework.session:spring-session-core" }
+spring-web = { module = "org.springframework:spring-web" }
+spring-tx = { module = "org.springframework:spring-tx" }
+
+# spring-security
+springsecurity-core = { module = "org.springframework.security:spring-security-core" }
+springsecurity-messaging = { module = "org.springframework.security:spring-security-messaging" }
+springsecurity-oauth2-client = { module = "org.springframework.security:spring-security-oauth2-client" }
+springsecurity-oauth2-jose = { module = "org.springframework.security:spring-security-oauth2-jose" }
+springsecurity-test = { module = "org.springframework.security:spring-security-test" }
+
+hibernate-validator-validator = { module = "org.hibernate.validator:hibernate-validator" }
+hibernate-validator-annotation-processor = { module = "org.hibernate.validator:hibernate-validator-annotation-processor" }
+gson = { module = "com.google.code.gson:gson" }
+lombok = { module = "org.projectlombok:lombok" }
+apache-commons-lang3 = { module = "org.apache.commons:commons-lang3" }
+apache-commons-codec = { module = "commons-codec:commons-codec" }
+apache-commons-dbcp2 = { module = "org.apache.commons:commons-dbcp2" }
+
+okhttp-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
+
+#jjwt = "io.jsonwebtoken:jjwt:0.12.6"
+# jwt
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+
+
+jsoup = "org.jsoup:jsoup:1.15.3"
+zxcvbn = "com.nulab-inc:zxcvbn:1.7.0"
+
+thymeleaf-extras-springsecurity5 = { module = "org.thymeleaf.extras:thymeleaf-extras-springsecurity5" }
+oracle-ojdbc = { module = "com.oracle.database.jdbc:ojdbc8" }
+oracle-ojdbc6 = { module = "com.oracle.database.jdbc:ojdbc6", version.ref = "ojdbc6"}
+
+logback-core = { module = "ch.qos.logback:logback-core" }
+logback-classic = { module = "ch.qos.logback:logback-classic" }
+slf4j-api = { module = "org.slf4j:slf4j-api" }
+log4jdbc-log4j2Jdbc41="org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16"
+
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junitjupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junitjupiter" }
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junitplatform" }
+junit-platform-commons = { module = "org.junit.platform:junit-platform-commons", version.ref = "junitplatform" }
+
+restAssured = { module = "io.rest-assured:rest-assured" }
+json-simple = "com.googlecode.json-simple:json-simple:1.1.1"
+
+## clover managed versions
+
+jna-jna = { module = "net.java.dev.jna:jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform" }
+oshi-core = { module = "com.github.oshi:oshi-core" } # for jdk8
+uap-java = { module = "com.github.ua-parser:uap-java" }
+guava-jre = { module = "com.google.guava:guava" }
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui" }
+jsr305 = { module = "com.google.code.findbugs:jsr305" }
+apache-commons-compress = { module = "org.apache.commons:commons-compress" }
+commons-io = { module = "commons-io:commons-io" }
+mybatis-springboot-starter = { module = "org.mybatis.spring.boot:mybatis-spring-boot-starter" }
+
+
+cloverframework-core = { module = "cl.cloverframework:clover-core" }
+cloverframework-task = { module = "cl.cloverframework:clover-task" }
+cloverframework-filemanager = { module = "cl.cloverframework:clover-filemanager" }
+cloverframework-web = { module = "cl.cloverframework:clover-web" }
+cloverframework-impl = { module = "cl.cloverframework:clover-impl" }
+cloverframework-bom = { module = "cl.cloverframework:clover-bom", version.ref = "cloverframework" }
