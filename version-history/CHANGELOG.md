@@ -12,6 +12,14 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-19-08 — VIDEO 전체화면을 팝업 창이 있는 모니터에 표시
+
+- 이유: 사용자 시연 피드백. 전체화면 창이 `WindowState.Maximized`만 지정되어 기본 위치(주 모니터/마지막 활성 모니터)에서 최대화되므로, 팝업이 보조 모니터에 있어도 전체화면은 다른 모니터에 떴다.
+- 변경: `VideoPopupView.EnterFullScreen` — 팝업 창 HWND로 현재 모니터(`Forms.Screen.FromHandle`)를 구해 `WindowStartupLocation.Manual` + 그 모니터 영역으로 Left/Top/Width/Height 지정, `SourceInitialized`에서 `SetWindowPos(HWND_TOPMOST, 물리 픽셀 영역)`로 정확히 맞춤. `Topmost=true`(팝업·Overlay와 동일 층). `WindowState`는 Normal 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs.
+- 검증(UI Automation): Demo Mode에서 비디오 팝업을 열고 창을 오른쪽 모니터(3200,300)로 이동 후 전체화면 버튼 실행 → 전체화면 창 rect `(2560,0)-(5120,1440)` = 해당 모니터 전체. 빌드 경고 0·오류 0. 재게시 `publish/win-x64/Popup.exe`·`dist/Popup.exe`. 고DPI(150%) 모니터에서의 전체화면은 미검증.
+- 상태: 커밋 후 푸시.
+
 ## 2026-09-19-07 — WPF 시연 피드백 반영: 창 목록 1개·팝업 항상 최상위·Overlay 수정
 
 - 이유: 사용자 시연 결과 (1) 작업 관리자·작업 표시줄에 창이 여러 개 보임, (2) 배경을 누르면 팝업이 뒤로 가림, (3) 설문 시 메인 모니터에 배경(Overlay)이 안 보임.

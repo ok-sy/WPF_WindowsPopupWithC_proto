@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Popup.Models;
+using System.Runtime.InteropServices;
+using Forms = System.Windows.Forms;
 
 namespace Popup.Views.Contents
 {
@@ -1312,6 +1314,19 @@ namespace Popup.Views.Contents
             Window? ownerWindow =
                 Window.GetWindow(this);
 
+            /*
+             * [시연 피드백] 전체화면은 "팝업 창이 떠 있는 모니터"에 띄운다.
+             * 예전에는 WindowState.Maximized만 지정해 새 창이 기본 위치(주 모니터 또는 마지막 활성 모니터)에서
+             * 최대화되어, 팝업이 보조 모니터에 있어도 전체화면이 다른 모니터에 나타났다.
+             * 팝업 창의 HWND로 현재 모니터를 구해 그 모니터의 물리 픽셀 영역에 창을 정확히 맞춘다
+             * (WindowState는 Normal 유지, SourceInitialized에서 SetWindowPos). 팝업·Overlay와 같이 Topmost다.
+             */
+            Forms.Screen targetScreen =
+                ownerWindow != null
+                    ? Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(ownerWindow).Handle)
+                    : Forms.Screen.PrimaryScreen ?? Forms.Screen.AllScreens[0];
+            System.Drawing.Rectangle targetBounds = targetScreen.Bounds;
+
             _fullScreenWindow =
                 new Window
                 {
@@ -1321,8 +1336,20 @@ namespace Popup.Views.Contents
                     WindowStyle =
                         WindowStyle.None,
 
+                    WindowStartupLocation =
+                        WindowStartupLocation.Manual,
+
                     WindowState =
-                        WindowState.Maximized,
+                        WindowState.Normal,
+
+                    Topmost =
+                        true,
+
+                    // DIP 초기값(고DPI 모니터에서는 SetWindowPos가 물리 픽셀로 다시 맞춘다)
+                    Left = targetBounds.Left,
+                    Top = targetBounds.Top,
+                    Width = targetBounds.Width,
+                    Height = targetBounds.Height,
 
                     ResizeMode =
                         ResizeMode.NoResize,
@@ -1335,6 +1362,21 @@ namespace Popup.Views.Contents
 
                     Content =
                         VideoContainer
+                };
+
+            _fullScreenWindow.SourceInitialized +=
+                (sender, eventArgs) =>
+                {
+                    IntPtr handle =
+                        new System.Windows.Interop.WindowInteropHelper(_fullScreenWindow).Handle;
+                    SetWindowPos(
+                        handle,
+                        HWND_TOPMOST,
+                        targetBounds.Left,
+                        targetBounds.Top,
+                        targetBounds.Width,
+                        targetBounds.Height,
+                        SWP_SHOWWINDOW);
                 };
 
             _fullScreenWindow.KeyDown +=
@@ -1831,5 +1873,13 @@ namespace Popup.Views.Contents
 
                 return null;
             }
+
+        /* 전체화면 창을 대상 모니터의 물리 픽셀 영역에 맞추기 위한 Win32 호출 (BackgroundOverlayManager와 동일 방식) */
+        private static readonly IntPtr HWND_TOPMOST = new(-1);
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(
+            IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int width, int height, uint flags);
     }
 }
