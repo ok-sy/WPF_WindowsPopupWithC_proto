@@ -4,7 +4,8 @@ plugins {
 
 
 dependencies {
-    testRuntimeOnly("org.postgresql:postgresql")
+    // [Oracle 전환 — 기준 5] 실DB 테스트 드라이버를 Oracle로 교체 (ojdbc는 implementation으로 이미 포함)
+    //testRuntimeOnly("org.postgresql:postgresql")
     implementation(projects.base)
     implementation(projects.util)
     implementation(projects.domain)

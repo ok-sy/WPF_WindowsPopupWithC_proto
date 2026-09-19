@@ -22,9 +22,11 @@ class PopupQuestionDatabaseTest {
     @Test void editorRoundTripGradingAndHistoricalAnswers() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
-        var dataSource = new UnpooledDataSource("org.postgresql.Driver",
-                System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:postgresql://localhost:5432/popup_db"),
-                System.getenv().getOrDefault("POPUP_TEST_DB_USER", "postgres"), password);
+        // [Oracle 전환 — 기준 5] 롤백 전용 실DB 테스트. 대상 DB를 PostgreSQL popup_db에서 Oracle POPUP 스키마로 바꾼다.
+        // 샘플(db/oracle/02_popup_sample_oracle.sql)의 SAMPLE-SURVEY-004 / E1001을 사용한다.
+        var dataSource = new UnpooledDataSource("oracle.jdbc.OracleDriver",
+                System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:oracle:thin:@//localhost:1521/XEPDB1"),
+                System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"), password);
         var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
         config.setMapUnderscoreToCamelCase(true);
         String resource = "mappers/popup/PopupMapper.xml";
@@ -37,7 +39,7 @@ class PopupQuestionDatabaseTest {
                 var mapper = session.getMapper(PopupMapper.class);
                 var json = new ObjectMapper().findAndRegisterModules();
                 var service = new PopupService(mapper, json);
-                var source = service.getAdminPopup("SAMPLE-SURVEY-001");
+                var source = service.getAdminPopup("SAMPLE-SURVEY-004");
                 ObjectNode draft = json.valueToTree(source);
                 String popupId = "TEST-" + UUID.randomUUID();
                 draft.put("popupId", popupId).put("popupType", "QUIZ").put("title", "문항 편집 검증")
@@ -83,7 +85,7 @@ class PopupQuestionDatabaseTest {
                 var updated = service.saveAdminPopup(json.treeToValue(edited, PopupResponseDto.class), true, targets, "SYSTEM");
                 assertNotEquals(saved.questionTemplateId(), updated.questionTemplateId());
                 assertEquals(3, mapper.selectQuestionsByTemplateIds(List.of(saved.questionTemplateId())).size());
-                assertEquals(source.questions(), service.getAdminPopup("SAMPLE-SURVEY-001").questions());
+                assertEquals(source.questions(), service.getAdminPopup("SAMPLE-SURVEY-004").questions());
             } finally {
                 session.rollback(true);
             }

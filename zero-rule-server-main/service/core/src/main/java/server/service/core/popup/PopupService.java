@@ -1,6 +1,5 @@
 package server.service.core.popup;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,10 +61,16 @@ public class PopupService {
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
+    /**
+     * [Oracle 전환 — 기준 5] content JSON을 SQL(JSONB) 대신 Java에서 조립한다.
+     * 스프링 빈으로 두지 않고 같은 ObjectMapper로 직접 생성해 기존 생성자 시그니처와 테스트를 유지한다.
+     */
+    private final PopupContentAssembler contentAssembler;
 
     public PopupService(PopupMapper popupMapper, ObjectMapper objectMapper) {
         this.popupMapper = popupMapper;
         this.objectMapper = objectMapper;
+        this.contentAssembler = new PopupContentAssembler(objectMapper);
     }
 
     /**
@@ -1011,15 +1016,16 @@ public class PopupService {
     }
 
     /**
-     * DB의 숫자·Y/N 값과 콘텐츠 JSON을 웹 및 WPF 공용 응답으로 변환한다.
+     * DB의 숫자·Y/N 값과 콘텐츠 컬럼을 웹 및 WPF 공용 응답으로 변환한다.
      * 크기 설정의 DB null 값에는 기본값을 적용하고, 선택 설정인 완료율·통과 점수는
      * null을 유지한다. 설문·퀴즈 문항은 최상위와 content.questions에 함께 제공한다.
+     * [Oracle 전환 — 기준 5] content는 매퍼가 내려준 JSON 문자열이 아니라
+     * PopupContentAssembler가 정규 컬럼 + CONTENT_OPTIONS로 조립한다.
      */
     private PopupResponseDto toResponseDto(
             PopupEntity popup,
             List<PopupQuestionDto> questions) {
-        Map<String, Object> content = new LinkedHashMap<>(
-                parseContentJson(popup.popupId(), popup.contentJson()));
+        Map<String, Object> content = contentAssembler.assemble(popup);
         if ("SURVEY".equalsIgnoreCase(popup.popupType())
                 || "QUIZ".equalsIgnoreCase(popup.popupType())) {
             content.put("questions", questions);
@@ -1048,25 +1054,6 @@ public class PopupService {
                 toNullableDouble(popup.passingScore()),
                 isYes(popup.allowCloseBeforeCompleteYn()),
                 questions, content);
-    }
-
-    /**
-     * 미설정 콘텐츠는 빈 맵으로 취급한다. JSON이 손상된 경우에는 빈 내용으로 숨기지 않고
-     * 팝업 ID와 원인 예외를 포함해 실패시켜 어떤 데이터가 잘못됐는지 추적할 수 있게 한다.
-     */
-    private Map<String, Object> parseContentJson(String popupId, String contentJson) {
-        if (contentJson == null || contentJson.isBlank()) {
-            return Map.of();
-        }
-        try {
-            return objectMapper.readValue(
-                    contentJson,
-                    new TypeReference<Map<String, Object>>() { });
-        } catch (Exception exception) {
-            throw new IllegalStateException(
-                    "팝업 content JSON 변환에 실패했습니다. popupId=" + popupId,
-                    exception);
-        }
     }
 
     private boolean isYes(String value) {

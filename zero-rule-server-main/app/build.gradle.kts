@@ -75,9 +75,10 @@ dependencies {
 
 	implementation(libs.spring.session.core)
 
-	//runtimeOnly(libs.oracle.ojdbc)
+	// [Oracle 전환 — 기준 5] popup 스키마를 Oracle로 이전하며 드라이버를 교체한다. PostgreSQL 드라이버는 필요 시 주석을 되살린다.
+	runtimeOnly(libs.oracle.ojdbc)
 	//runtimeOnly(libs.oracle.ojdbc6)
-	runtimeOnly("org.postgresql:postgresql")
+	//runtimeOnly("org.postgresql:postgresql")
 
 	// okhttp3
 	implementation(libs.okhttp.okhttp)

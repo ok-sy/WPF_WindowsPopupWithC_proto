@@ -26,19 +26,18 @@
 | `DATE` | `DATE` | `hire_date`, `condition_date_value` | 시각 00:00:00. 비교 시 `TRUNC` 불필요 (입력 시 보장) |
 | `BOOLEAN` (SELECT 결과) | `NUMBER(1)` 1/0 또는 `CHAR(1)` | 매퍼 계산 컬럼 | Java에서 `isYes()` 변환 (현행 방식 유지) |
 
-## 3. 날짜·시간대 처리
+## 3. 날짜·시간대 처리 (구현 반영 2026-09-19)
 
-현행 PostgreSQL 매퍼는 모든 SELECT에 `col AT TIME ZONE 'Asia/Seoul'`을 붙여 `OffsetDateTime`으로 받는다. Oracle에서는 다음으로 단순화한다.
+현행 PostgreSQL 매퍼는 모든 SELECT에 `col AT TIME ZONE 'Asia/Seoul'`을 붙여 `OffsetDateTime`으로 받는다. Oracle에서는 **Java 타입(`OffsetDateTime`)과 resultMap을 그대로 유지**하고 변환 지점만 바꾼다.
 
 | 항목 | 결정 |
 |---|---|
-| 저장 | `TIMESTAMP(6)`, 값은 KST 로컬 시각. DB 세션 시간대와 JVM `user.timezone`을 `Asia/Seoul`로 통일 |
-| 조회 | 매퍼 resultMap의 날짜 컬럼 `javaType`을 `java.time.LocalDateTime`으로 받고, 신규 WPF DTO 변환 시 `atOffset(ZoneOffset.of("+09:00"))` (`WpfPopupService`의 단일 헬퍼 `toKst()`) |
-| 현재 시각 | `SYSTIMESTAMP` (DDL 기본값·MERGE), 비교는 `SYSTIMESTAMP BETWEEN ...` |
-| 일수 가산 | `CURRENT_TIMESTAMP + (n * INTERVAL '1 day')` → `SYSTIMESTAMP + NUMTODSINTERVAL(:n, 'DAY')` |
-| 요청 파라미터 | WPF ISO 문자열 → Jackson `OffsetDateTime` → 매퍼 전달 전 `toLocalDateTime()` (KST 변환) |
-
-기존 `PopupMapper.xml`의 `OffsetDateTime` resultMap을 유지하려면 MyBatis 기본 `OffsetDateTimeTypeHandler`가 ojdbc의 `TIMESTAMP` → `OffsetDateTime` 변환(세션 시간대 기준)을 수행하므로 그대로 동작한다. 신규 매퍼는 `LocalDateTime`으로 명확히 한다.
+| 저장 컬럼 | `TIMESTAMP(6)`, 값은 항상 KST 로컬 시각 (시간대 없음) |
+| 조회 | `FROM_TZ(col, 'Asia/Seoul')`로 `TIMESTAMP WITH TIME ZONE`을 내려 MyBatis 기본 `OffsetDateTimeTypeHandler`가 `OffsetDateTime(+09:00)`으로 읽음. resultMap `javaType` 변경 없음 |
+| 바인드 (OffsetDateTime → 컬럼) | `#{x, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler}` — 어떤 오프셋으로 들어와도 KST 벽시계 시각으로 바꿔 `setTimestamp`. SQL 안 `AT TIME ZONE`은 NULL 바인드 시 타입 오류 위험이 있어 Java 핸들러로 처리 |
+| 현재 시각 | 매퍼 공통 조각 `<sql id="nowKst">CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</sql>` — 세션·DB 서버 시간대와 무관. DDL `DEFAULT`도 같은 식 사용 |
+| 일수 가산 | `nowKst + NUMTODSINTERVAL(#{hideDays}, 'DAY')` |
+| 커넥션 | `JndiResource`에서 `ALTER SESSION SET TIME_ZONE='Asia/Seoul'`, `oracle.jdbc.timezoneAsRegion=false`를 초기화 SQL·속성으로 지정 (보조 안전장치) |
 
 ## 4. SQL 문법 변환 패턴
 
@@ -224,19 +223,22 @@ SELECT ... FROM (SELECT DISTINCT POPUP_ID FROM ELIGIBLE_POPUP) e
 | selectPopupStatuses | `AT TIME ZONE` 제거, boolean→1/0 |
 | selectAdminQuestionTemplates | 변경 없음 |
 
-## 6. 서버 설정 변경 (최소)
+## 6. 서버 설정 변경
 
 | 파일 | 변경 | 비고 |
 |---|---|---|
-| `app/build.gradle.kts` | `runtimeOnly("org.postgresql:postgresql")` → 주석 처리, `runtimeOnly(libs.oracle.ojdbc)` 주석 해제 | 이미 준비된 항목 토글 |
-| `app/src/main/resources-*/application-*.yml` | 데이터소스 URL/드라이버를 Oracle로. JNDI 사용 환경은 컨테이너 설정 | 프로파일별 |
-| `repo/core/src/main/resources/mybatis-config.xml` | 변경 없음 | `jdbcTypeForNull=NULL`이 이미 설정되어 Oracle의 NULL 바인드 오류(ORA-17004) 없음 |
+| `app/build.gradle.kts` | `runtimeOnly("org.postgresql:postgresql")` 주석 처리, `runtimeOnly(libs.oracle.ojdbc)` 활성 | ojdbc8 버전은 Spring Boot BOM 관리 |
+| `app/src/main/java/server/app/config/JndiResource.java` | JNDI `jndi/dev_db` 데이터소스의 드라이버·URL·계정을 Oracle로. 환경변수 `POPUP_DB_URL/USER/PASSWORD` 우선, 없으면 로컬 기본값(`jdbc:oracle:thin:@//localhost:1521/XEPDB1`, `ZERO_RULE`). 세션 시간대 초기화 SQL 추가 | 프레임워크 설정 파일이지만 접속 값 외 구조 변경 없음 |
+| `service/core/build.gradle.kts` | `testRuntimeOnly("org.postgresql:postgresql")` 주석 처리 | ojdbc는 이미 `implementation` |
+| `repo/core/src/main/resources/mybatis-config.xml` | 변경 없음 | `jdbcTypeForNull=NULL`이 이미 설정되어 Oracle NULL 바인드 오류(ORA-17004) 없음 |
 
-## 7. 자체 점검 — 기존 구조 변경 여부
+## 7. 구현 결과 (단계 2 완료, 2026-09-19)
 
 | 구분 | 항목 |
 |---|---|
-| 추가 | 시퀀스 12개, 테이블 `WPF_RESULT_RECEIPT`, `PopupContentAssembler`, 매퍼 default 어댑터 메서드, `PopupEntity` 콘텐츠 컬럼 필드 6개 |
-| 수정 | `PopupMapper.xml` 27개 구문 문법 변환(ID·의미 유지), `PopupService.parseContentJson` 분기 1개, `build.gradle.kts` 드라이버 토글, 데이터소스 yml |
+| 추가 | 시퀀스 12개, 테이블 `WPF_RESULT_RECEIPT`, `PopupContentAssembler`, `KstTimestampTypeHandler`, 매퍼 Map 오버로드 5개 + default 어댑터 5개, 테스트 `PopupMapperOracleStatementTest`(4)·`PopupContentAssemblerTest`(5) |
+| 수정 (popup 소스 — 자유 수정 범위) | `PopupMapper.xml` 27개 구문 Oracle 변환(ID 유지), `PopupMapper.java`, `PopupEntity`(contentJson → 콘텐츠 컬럼 6개), `PopupService`(contentAssembler 사용, `parseContentJson` 제거), `PopupQuestionDatabaseTest`(Oracle 대상) |
+| 수정 (프레임워크 — 최소) | `JndiResource` 접속 값, `app/build.gradle.kts`·`service/core/build.gradle.kts` 드라이버 토글 |
 | 삭제 | 없음 |
-| 미변경 확인 | 테이블 16개의 컬럼 구성·제약 의미, `PopupService` 공개 메서드 시그니처, 관리자 API 계약 |
+| 미변경 확인 | 테이블 16개 컬럼 구성·제약 의미, `PopupService` 공개 메서드 시그니처, 관리자 API 계약, `MyBatisConfig`·`mybatis-config.xml` |
+| 검증 | `:service:core:test --tests server.service.core.popup.*` 21개 통과·1개 skip(실DB). **Oracle 실행 검증 미수행** — 단계 1(스키마 적용) 후 `POPUP_TEST_DB_PASSWORD`로 `PopupQuestionDatabaseTest` 실행 필요 |
