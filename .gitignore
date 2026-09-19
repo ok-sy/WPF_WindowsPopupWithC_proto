@@ -8,3 +8,12 @@ zero-rule-web/main/.env.production
 popup-frameWork/Popup/bin/
 popup-frameWork/Popup/obj/
 popup-frameWork/publish/
+
+# [proto 저장소] sample 저장소의 대용량 바이너리는 커밋하지 않는다 (OFFLINE_WPF_BUILD.md 참조, 필요 시 sample에서 복사)
+.vs/
+offline-sdk/*.exe
+offline-packages/nuget/*.nupkg
+popup-frameWork/dist/
+zero-rule-server-main/.idea/
+zero-rule-web/node_modules/
+zero-rule-server-main/**/build/

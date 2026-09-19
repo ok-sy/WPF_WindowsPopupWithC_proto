@@ -1,0 +1,56 @@
+{
+  "_comment": "POST /p/api/wpf/popups/results 응답 예시. wpf-results-request.json에 대응. 항목별 status를 확인해야 하며 HTTP 200만으로 성공을 판단하지 않는다.",
+  "receivedAt": "2026-09-19T09:12:31+09:00",
+  "results": [
+    {
+      "resultId": "8d2f5b1a-0c3e-4f6a-9b7c-1d2e3f4a5b6c",
+      "popupId": "SAMPLE-TEXT-001",
+      "resultType": "HIDDEN",
+      "status": "ACCEPTED",
+      "popupStatus": "HIDDEN",
+      "hiddenUntil": "2026-09-26T09:12:31+09:00",
+      "completed": false
+    },
+    {
+      "resultId": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "popupId": "SAMPLE-QUIZ-003",
+      "resultType": "SUBMITTED",
+      "status": "ACCEPTED",
+      "popupStatus": "COMPLETED",
+      "responseId": 5001,
+      "totalScore": 10,
+      "passed": true,
+      "completed": true,
+      "completedAt": "2026-09-19T09:12:31+09:00"
+    },
+    {
+      "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
+      "popupId": "SAMPLE-SURVEY-004",
+      "resultType": "SUBMITTED",
+      "status": "ACCEPTED",
+      "popupStatus": "COMPLETED",
+      "responseId": 5002,
+      "completed": true,
+      "completedAt": "2026-09-19T09:12:31+09:00",
+      "_comment": "SURVEY는 채점하지 않으므로 totalScore/passed가 없다."
+    },
+    {
+      "resultId": "9e8d7c6b-5a4f-4e3d-2c1b-0a9f8e7d6c5b",
+      "popupId": "SAMPLE-VIDEO-002",
+      "resultType": "VIDEO_WATCHED",
+      "status": "ACCEPTED",
+      "popupStatus": "COMPLETED",
+      "watchedRatio": 0.9842,
+      "requiredRatio": 0.9,
+      "completed": true,
+      "completedAt": "2026-09-19T09:12:31+09:00"
+    },
+    {
+      "resultId": "0f1e2d3c-4b5a-4968-8776-655443322110",
+      "popupId": "SAMPLE-TEXT-001",
+      "resultType": "CLOSED",
+      "status": "DUPLICATE",
+      "_comment": "같은 resultId가 이미 처리됨. WPF는 성공으로 간주해 큐에서 제거한다."
+    }
+  ]
+}

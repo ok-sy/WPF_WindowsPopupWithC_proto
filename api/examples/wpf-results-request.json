@@ -1,0 +1,59 @@
+{
+  "_comment": "POST /p/api/wpf/popups/results 요청 예시 (WPF2-02). 4가지 resultType을 한 요청에 담은 경우. 가상 데이터.",
+  "clientRequestId": "3f9c1c6e2d0a4c5f9a1b2c3d4e5f6a7b",
+  "sentAt": "2026-09-19T09:12:30+09:00",
+  "results": [
+    {
+      "resultId": "8d2f5b1a-0c3e-4f6a-9b7c-1d2e3f4a5b6c",
+      "popupId": "SAMPLE-TEXT-001",
+      "resultType": "HIDDEN",
+      "displayedAt": "2026-09-19T09:00:05+09:00",
+      "closedAt": "2026-09-19T09:00:40+09:00",
+      "hideDays": 7
+    },
+    {
+      "resultId": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "popupId": "SAMPLE-QUIZ-003",
+      "resultType": "SUBMITTED",
+      "displayedAt": "2026-09-19T09:00:41+09:00",
+      "closedAt": "2026-09-19T09:03:10+09:00",
+      "responseStartedAt": "2026-09-19T09:00:41+09:00",
+      "answers": [
+        { "questionId": 1, "optionIds": [1] }
+      ]
+    },
+    {
+      "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
+      "popupId": "SAMPLE-SURVEY-004",
+      "resultType": "SUBMITTED",
+      "displayedAt": "2026-09-19T09:03:11+09:00",
+      "closedAt": "2026-09-19T09:05:02+09:00",
+      "responseStartedAt": "2026-09-19T09:03:11+09:00",
+      "answers": [
+        { "questionId": 2, "optionIds": [3, 4] },
+        { "questionId": 3, "textAnswer": "회의실 예약 시스템 개선 요청" }
+      ]
+    },
+    {
+      "resultId": "9e8d7c6b-5a4f-4e3d-2c1b-0a9f8e7d6c5b",
+      "popupId": "SAMPLE-VIDEO-002",
+      "resultType": "VIDEO_WATCHED",
+      "displayedAt": "2026-09-19T09:05:03+09:00",
+      "closedAt": "2026-09-19T09:12:29+09:00",
+      "video": {
+        "durationSeconds": 540.0,
+        "positionSeconds": 540.0,
+        "maximumPositionSeconds": 540.0,
+        "watchedSeconds": 531.5
+      }
+    },
+    {
+      "resultId": "0f1e2d3c-4b5a-4968-8776-655443322110",
+      "popupId": "SAMPLE-TEXT-001",
+      "resultType": "CLOSED",
+      "displayedAt": "2026-09-18T17:30:00+09:00",
+      "closedAt": "2026-09-18T17:30:12+09:00",
+      "_comment": "전날 네트워크 오류로 미전송되어 큐에 남아 있던 항목. 서버가 처리 후 ACCEPTED 또는 이미 처리됐다면 DUPLICATE."
+    }
+  ]
+}
