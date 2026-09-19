@@ -42,10 +42,11 @@
 
 | 단계 | 상태 (2026-09-19) | 검증 |
 |---|---|---|
-| 2 서버 Oracle 전환 | 완료 `74456d2` | 컴파일·단위 21개 통과. **실DB 미검증** |
-| 3~5 신규 WPF API | 완료 `8697300` | 단위·MockMvc 45개 통과 |
+| 1 Oracle 스키마 | 완료 — 21c XE `XEPDB1`에 `db/oracle/00~03` 적용 | 테이블 17·시퀀스 12·샘플 적재 |
+| 2 서버 Oracle 전환 | 완료 `74456d2` | **실DB 롤백 테스트 통과**(`PopupQuestionDatabaseTest`) |
+| 3~5 신규 WPF API | 완료 `8697300` | 단위·MockMvc + **실DB 롤백 테스트**(`WpfPopupDatabaseTest`) 46개 통과 |
 | 6 WPF 클라이언트 | 완료 `65247b7` | `dotnet build` 경고 0·오류 0. **실연동 미검증** |
 | 7 관리자 웹 | 변경 불필요(베이스라인이 이미 SURVEY 채점 입력 숨김) | 코드 확인 |
-| 1·8, 실DB·실연동 | 미수행 — Oracle·통합 토큰 환경 확보 후 | — |
+| 8, 실연동 | 미수행 — zeroserver 기동은 공통 `ZERO_RULE` 스키마(범위 외)·통합 토큰 필요 | — |
 
 로컬 빌드 시 NuGet: 저장소 `NuGet.config`는 폐쇄망 오프라인 소스만 가리키고 nupkg는 커밋하지 않으므로, 온라인 환경에서는 `dotnet restore --source https://api.nuget.org/v3/index.json` 로 복원한다.

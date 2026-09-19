@@ -241,4 +241,4 @@ SELECT ... FROM (SELECT DISTINCT POPUP_ID FROM ELIGIBLE_POPUP) e
 | 수정 (프레임워크 — 최소) | `JndiResource` 접속 값, `app/build.gradle.kts`·`service/core/build.gradle.kts` 드라이버 토글 |
 | 삭제 | 없음 |
 | 미변경 확인 | 테이블 16개 컬럼 구성·제약 의미, `PopupService` 공개 메서드 시그니처, 관리자 API 계약, `MyBatisConfig`·`mybatis-config.xml` |
-| 검증 | `:service:core:test --tests server.service.core.popup.*` 21개 통과·1개 skip(실DB). **Oracle 실행 검증 미수행** — 단계 1(스키마 적용) 후 `POPUP_TEST_DB_PASSWORD`로 `PopupQuestionDatabaseTest` 실행 필요 |
+| 검증 | **Oracle 21c XE(XEPDB1) 실DB 검증 완료 (2026-09-19)** — `db/oracle/00~03` 적용 후 `PopupQuestionDatabaseTest`(관리자 저장·조회·제출·재제출 왕복)와 `WpfPopupDatabaseTest`(신규 WPF 목록·결과 4유형·멱등·완료 제외) 통과. 실DB에서 발견해 고친 것: ORA-01408(UNIQUE 중복 인덱스 → DDL에서 생략), ORA-17004(테스트 Configuration에 jdbcTypeForNull), ORA-00932(null TIMESTAMP 바인드 → 타입 핸들러). 서버 단위·MockMvc 포함 46개 통과·skip 0. 상세: db/oracle/README.md |

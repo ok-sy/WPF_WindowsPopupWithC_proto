@@ -29,6 +29,8 @@ class PopupQuestionDatabaseTest {
                 System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"), password);
         var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
         config.setMapUnderscoreToCamelCase(true);
+        // 운영 mybatis-config.xml과 동일: Oracle은 NULL 바인드에 JdbcType.OTHER(1111)를 거부(ORA-17004)하므로 NULL로 지정한다.
+        config.setJdbcTypeForNull(org.apache.ibatis.type.JdbcType.NULL);
         String resource = "mappers/popup/PopupMapper.xml";
         try (var stream = getClass().getClassLoader().getResourceAsStream(resource)) {
             assertNotNull(stream);

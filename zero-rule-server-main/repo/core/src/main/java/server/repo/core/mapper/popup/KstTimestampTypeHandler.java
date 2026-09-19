@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -30,6 +31,23 @@ public class KstTimestampTypeHandler extends BaseTypeHandler<OffsetDateTime> {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final ZoneOffset KST_OFFSET = ZoneOffset.ofHours(9);
+
+    /**
+     * null도 TIMESTAMP 타입으로 바인딩한다.
+     * 전역 jdbcTypeForNull=NULL(Types.NULL) 바인드를 Oracle은 CHAR로 추론하므로,
+     * {@code COALESCE(#{closedAt}, ...)}·{@code CASE WHEN #{displayedAt} IS NOT NULL ...}처럼
+     * 표현식의 타입을 결정해야 하는 자리에서 ORA-00932(CHAR 필요하지만 TIMESTAMP)가 난다.
+     * (Oracle 21c XE 실DB 테스트로 확인)
+     */
+    @Override
+    public void setParameter(PreparedStatement ps, int i, OffsetDateTime parameter, JdbcType jdbcType)
+            throws SQLException {
+        if (parameter == null) {
+            ps.setNull(i, Types.TIMESTAMP);
+            return;
+        }
+        setNonNullParameter(ps, i, parameter, jdbcType);
+    }
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, OffsetDateTime parameter, JdbcType jdbcType)
