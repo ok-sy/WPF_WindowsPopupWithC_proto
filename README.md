@@ -49,4 +49,15 @@
 | 7 관리자 웹 | 변경 불필요(베이스라인이 이미 SURVEY 채점 입력 숨김) | 코드 확인 |
 | 8, 실연동 | 미수행 — zeroserver 기동은 공통 `ZERO_RULE` 스키마(범위 외)·통합 토큰 필요 | — |
 
+## WPF 실행·빌드
+
+- **Demo Mode** (서버·DB 없이 시연): `Popup.exe --demo` 또는 `appsettings.json`의 `PopupApi.DemoMode: true`. 샘플 팝업 5종을 띄우고, 창이 닫힐 때 만들어지는 결과 항목과 인메모리 서버(`DemoPopupGateway`)의 응답을 화면 오른쪽 로그에 JSON으로 보여 준다. 숨김·완료는 실서버처럼 다음 조회에서 제외되며 "서버 상태 초기화"로 되돌린다.
+- **실서버 모드**: `appsettings.json`의 `BaseUrl`(예: `http://localhost:8080/zero-rule-server/p`), 개발 단계에서는 `DevUserId`(서버 `custom.wpf-popup.dev-user-header=true` 필요).
+- **단일 exe 게시** (self-contained, win-x64, 약 82MB):
+  ```powershell
+  cd popup-frameWork
+  dotnet publish Popup/Popup.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=None --source https://api.nuget.org/v3/index.json -o publish/win-x64
+  ```
+  결과: `popup-frameWork/publish/win-x64/Popup.exe` (Git 제외). 폐쇄망은 `OFFLINE_WPF_BUILD.md`·`scripts/build-wpf-offline.ps1` 참조.
+
 로컬 빌드 시 NuGet: 저장소 `NuGet.config`는 폐쇄망 오프라인 소스만 가리키고 nupkg는 커밋하지 않으므로, 온라인 환경에서는 `dotnet restore --source https://api.nuget.org/v3/index.json` 로 복원한다.

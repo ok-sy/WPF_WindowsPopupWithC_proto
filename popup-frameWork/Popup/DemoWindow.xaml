@@ -1,23 +1,48 @@
 <Window x:Class="Popup.DemoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Popup Demo Mode" Height="450" Width="800" ShowInTaskbar="True">
-    <Grid>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="Demo Mode - 팝업 선택" FontSize="22" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" Margin="0,0,0,20"/>
-            <Button Content="전체 팝업 순차 실행" Width="160" Height="42" Margin="0,0,0,12"
-                    Click="OpenAllPopupsButton_Click"/>
-            <Button Content="텍스트 팝업 열기" Width="160" Height="42" Margin="0,0,0,12"
-                    Tag="TEXT" Click="OpenPopupButton_Click"/>
-            <Button Content="이미지 팝업 열기" Width="160" Height="42" Margin="0,0,0,12"
-                    Tag="IMAGE" Click="OpenPopupButton_Click"/>
-            <Button Content="비디오 팝업 열기" Width="160" Height="42" Margin="0,0,0,12"
-                    Tag="VIDEO" Click="OpenPopupButton_Click"/>
-            <Button Content="설문 팝업" Width="160" Height="40" Margin="0,0,0,10"
-                    Tag="SURVEY" Click="OpenPopupButton_Click"/>
-            <Button Content="퀴즈 팝업" Width="160" Height="40"
-                    Tag="QUIZ" Click="OpenPopupButton_Click"/>
+        Title="Popup Demo Mode" Height="560" Width="1000" MinHeight="480" MinWidth="820" ShowInTaskbar="True">
+    <!--
+        Demo Mode 화면 (Java 서버·DB 없이 동작)
+        왼쪽: 샘플 팝업 실행 버튼. 오른쪽: 결과 API 시뮬레이션 로그.
+        새 구조(기준 3·4)에서는 팝업이 닫힐 때 결과 항목 1개가 전송되므로,
+        그 항목과 "서버"(DemoPopupGateway)의 응답을 그대로 보여 준다.
+    -->
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" VerticalAlignment="Top">
+            <TextBlock Text="Demo Mode" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock Text="서버 없이 팝업 표시와 결과 전송 흐름을 확인합니다." TextWrapping="Wrap"
+                       Foreground="#666" Margin="0,0,0,16"/>
+            <Button Content="전체 팝업 순차 실행" Height="40" Margin="0,0,0,10" Click="OpenAllPopupsButton_Click"/>
+            <Button Content="텍스트 팝업 열기" Height="36" Margin="0,0,0,8" Tag="TEXT" Click="OpenPopupButton_Click"/>
+            <Button Content="이미지 팝업 열기" Height="36" Margin="0,0,0,8" Tag="IMAGE" Click="OpenPopupButton_Click"/>
+            <Button Content="비디오 팝업 열기" Height="36" Margin="0,0,0,8" Tag="VIDEO" Click="OpenPopupButton_Click"/>
+            <Button Content="설문 팝업" Height="36" Margin="0,0,0,8" Tag="SURVEY" Click="OpenPopupButton_Click"/>
+            <Button Content="퀴즈 팝업" Height="36" Margin="0,0,0,20" Tag="QUIZ" Click="OpenPopupButton_Click"/>
+            <Button Content="서버 상태 초기화 (숨김·완료)" Height="34" Margin="0,0,0,8" Click="ResetServerButton_Click"/>
+            <Button Content="결과 로그 지우기" Height="34" Click="ClearLogButton_Click"/>
+            <TextBlock x:Name="ServerStateText" Margin="0,16,0,0" Foreground="#444" TextWrapping="Wrap"
+                       Text="숨김 0 · 완료 0"/>
         </StackPanel>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="결과 전송 로그 (POST /p/api/wpf/popups/results 시뮬레이션)"
+                       FontWeight="SemiBold" Margin="0,0,0,8"/>
+            <ListBox Grid.Row="1" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12"
+                     HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+            <TextBlock Grid.Row="2" Margin="0,8,0,0" Foreground="#666" TextWrapping="Wrap"
+                       Text="숨김·완료된 팝업은 실제 서버와 같이 다음 조회에서 제외됩니다. 퀴즈는 샘플 JSON의 정답으로 채점합니다(실서버는 정답을 내려주지 않음)."/>
+        </Grid>
     </Grid>
 </Window>

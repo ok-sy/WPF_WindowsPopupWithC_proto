@@ -128,9 +128,14 @@ namespace Popup
                 throw new InvalidOperationException("appsettings.json에 PopupApi 설정이 없습니다.");
             }
 
+            // [Demo Mode] appsettings의 DemoMode 외에 실행 인자 --demo 로도 켤 수 있다.
+            // 배포한 exe를 설정 파일 수정 없이 시연할 때 쓴다: Popup.exe --demo
+            bool demoByArgument = Environment.GetCommandLineArgs().Skip(1)
+                .Any(argument => argument.Equals("--demo", StringComparison.OrdinalIgnoreCase));
+
             PopupClientSettings settings = new()
             {
-                DemoMode = GetBoolean(api, "DemoMode", false),
+                DemoMode = demoByArgument || GetBoolean(api, "DemoMode", false),
                 BaseUrl = GetString(api, "BaseUrl").Trim(),
                 AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
                 PollingIntervalSeconds = Math.Max(0, GetInt32(api, "PollingIntervalSeconds", 1800)),

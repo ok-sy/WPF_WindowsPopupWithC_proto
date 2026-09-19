@@ -22,7 +22,7 @@ namespace Popup.Services
      * PopupWindow를 만들거나 화면에 표시하는 역할은
      * PopupService와 PopupManager가 담당한다.
      */
-    public class PopupApiService
+    public class PopupApiService : IPopupGateway
     {
         /*
          * Java Spring Boot 서버의 기본 주소다.

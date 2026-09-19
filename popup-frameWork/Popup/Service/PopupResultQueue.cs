@@ -38,11 +38,11 @@ namespace Popup.Services
 
         private const int MaxBatchSize = 50;
 
-        private readonly PopupApiService _apiService;
+        private readonly IPopupGateway _apiService;
         private readonly string _queueFilePath;
         private readonly SemaphoreSlim _gate = new(1, 1);
 
-        public PopupResultQueue(PopupApiService apiService, string? queueFilePath = null)
+        public PopupResultQueue(IPopupGateway apiService, string? queueFilePath = null)
         {
             _apiService = apiService ?? throw new ArgumentNullException(nameof(apiService));
             _queueFilePath = queueFilePath ?? Path.Combine(

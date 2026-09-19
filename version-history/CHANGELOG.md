@@ -12,6 +12,15 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-19-06 — WPF Demo Mode 재구성(결과 흐름 시뮬레이션) 및 단일 exe 게시
+
+- 이유: 사용자 요청. 기존 Demo Mode는 샘플 팝업만 띄우고 결과를 버렸다. 새 구조(기준 3·4)의 핵심인 "종료 시 결과 항목 1회 전송"을 서버 없이도 확인할 수 있게 하고, 배포용 exe를 만든다.
+- 변경(추가): `Service/IPopupGateway`(목록·결과 2개 메서드 추상화, `PopupApiService`가 구현), `Service/DemoPopupGateway`(인메모리 서버: 숨김·완료 상태 유지·다음 조회 제외, QUIZ는 샘플 JSON `correctAnswers`로 채점, SURVEY 즉시 완료, VIDEO 비율 판정, DUPLICATE, `ResultProcessed` 이벤트).
+- 변경(수정): `PopupResultQueue` 생성자를 `IPopupGateway`로. `DemoWindow.xaml/.cs` — 실제 모드와 같은 `PopupResultQueue`·훅을 쓰고 오른쪽에 결과 요청/응답 JSON 로그, "서버 상태 초기화"·"로그 지우기" 버튼, 숨김·완료 카운트. `MainWindow` — 실행 인자 `--demo`로 Demo Mode 활성(설정 파일 수정 불필요). README에 실행·게시 방법.
+- 주요 파일: popup-frameWork/Popup/Service/IPopupGateway.cs, DemoPopupGateway.cs, PopupResultQueue.cs, PopupApiService.cs, DemoWindow.xaml(.cs), MainWindow.xaml.cs, README.md.
+- 검증: `dotnet build` 경고 0·오류 0. `dotnet publish`(Release, win-x64, self-contained, single-file) → `popup-frameWork/publish/win-x64/Popup.exe` 82MB(Git 제외, 사본 `D:\work\PopupProject2026\dist\Popup.exe`). 게시본을 `--demo`로 실행해 8초 후 프로세스 생존·창 제목 `Popup Demo Mode` 확인 후 종료. **팝업 버튼 클릭·결과 로그 표시·퀴즈 채점 등 화면 조작은 미검증**(자동화 불가, 수동 확인 필요).
+- 상태: 커밋 후 푸시. 게시 결과물은 커밋하지 않음.
+
 ## 2026-09-19-05 — [단계 1] Oracle 스키마 실제 적용 및 실DB 검증
 
 - 이유: 로컬 Oracle 21c XE(system 계정) 확보. 기준 5의 DDL과 단계 2~5의 매퍼·서비스를 실DB로 검증.
