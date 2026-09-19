@@ -36,6 +36,16 @@
 | `ERD/2026hyundaicard_popup_data_insert.sql`, `popup-frameWork/Popup/Docs/2026hyundaicard_popup_data_insert.sql` | 14MB×2 | PostgreSQL 데이터 스냅샷. Oracle 전환 후 불필요 |
 | `.vs/`, `zero-rule-server-main/.idea/` | – | IDE 캐시 |
 
-## 구현 순서
+## 구현 순서·진행 상태
 
 [docs/design/09_전환계획_및_미결사항.md](docs/design/09_전환계획_및_미결사항.md) §1 을 따른다: Oracle 스키마 → 서버 매퍼 Oracle 변환 → 사용자 식별 어댑터 → WPF 조회 API → WPF 결과 API → WPF 클라이언트 → 관리자 웹(선택).
+
+| 단계 | 상태 (2026-09-19) | 검증 |
+|---|---|---|
+| 2 서버 Oracle 전환 | 완료 `74456d2` | 컴파일·단위 21개 통과. **실DB 미검증** |
+| 3~5 신규 WPF API | 완료 `8697300` | 단위·MockMvc 45개 통과 |
+| 6 WPF 클라이언트 | 완료 `65247b7` | `dotnet build` 경고 0·오류 0. **실연동 미검증** |
+| 7 관리자 웹 | 변경 불필요(베이스라인이 이미 SURVEY 채점 입력 숨김) | 코드 확인 |
+| 1·8, 실DB·실연동 | 미수행 — Oracle·통합 토큰 환경 확보 후 | — |
+
+로컬 빌드 시 NuGet: 저장소 `NuGet.config`는 폐쇄망 오프라인 소스만 가리키고 nupkg는 커밋하지 않으므로, 온라인 환경에서는 `dotnet restore --source https://api.nuget.org/v3/index.json` 로 복원한다.
