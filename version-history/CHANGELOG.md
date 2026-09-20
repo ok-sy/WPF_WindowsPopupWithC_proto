@@ -12,6 +12,18 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
+
+- 이유: 사용자 요청 "back front 동시 접속 쉘". 기존 스크립트는 경로만 바뀐 상태라 새 구조(원격/로컬 DB 전환, 팝업 스키마 설정, 프런트 API 주소)를 반영하지 못했고, 프런트 `.env`가 없어 `API_BASE_URL`이 비어 있었다.
+- 변경(수정, `shell/start-dev.ps1`): 백엔드·프런트 창을 각각 띄우는 구조는 유지하고
+  - 옵션 `-LocalDb`(로컬 XE: `ZERO_RULE_DB_URL/USER/PASSWORD` + `CUSTOM_POPUP_SCHEMA=POPUP`을 창 환경변수로), `-ApiBaseUrl`(기본 `http://localhost:8080/zero-rule-server`), `-RouterBaseUrl`, `-SkipBackend`, `-SkipFrontend`.
+  - JDK 17을 `JAVA_HOME` 또는 `C:\Program Files\Java\jdk-17*`에서 찾아 창에 지정. 프런트 `node_modules`가 없으면 `pnpm install`을 먼저 실행.
+  - 프런트 창에 `API_BASE_URL`·`ROUTER_BASE_URL` 환경변수 주입 후 `pnpm run dev --env-mode=loose`. **turbo 2.x는 strict env 모드**라 turbo.json에 선언되지 않은 환경변수를 `next dev`에 넘기지 않으므로 `--env-mode=loose`가 필요(turbo.json은 공통 파일이라 미수정). `pnpm run dev -- --env-mode=loose`처럼 `--`를 넣으면 turbo가 그 뒤를 next에 통째로 넘겨 효과가 없었다.
+- 검증: 스크립트로 두 창 기동 → 백엔드 `http://localhost:8080/zero-rule-server`(원격 DB) 401/200, 프런트 `http://localhost:3000/login/` 200이며 페이지 runtimeConfig에 `API_BASE_URL=http://localhost:8080/zero-rule-server`, `ROUTER_BASE_URL=/` 포함 확인. 브라우저와 같은 조건(Origin `http://localhost:3000`)의 preflight 200·로그인 POST에 `Access-Control-Allow-Origin` 반환·서버가 원격 DB 조회 응답("해당 사용자가 없습니다"). `-LocalDb`·`-SkipFrontend` 조합 기동 확인. 실제 브라우저 로그인·화면 조작은 미수행.
+  - 참고: 확인 초기에 preflight가 403(`Invalid CORS request`)으로 보였으나 서버 재기동 후 재현되지 않음(기동 중 요청 또는 이전 프로세스 잔존으로 추정, 설정 변경 없음).
+- 상태: 커밋 후 푸시.
+
+
 ## 2026-09-20-02 — 원격 개발 DB(Oracle 11g XE) 연동: 매퍼 PG 잔재 점검, DDL 11g 호환, 팝업 스키마 한정자 설정화, WPF↔서버↔원격 DB 왕복 확인
 
 - 이유: 사용자 요청 "postgres 매퍼로 남아있는건 다 변환하고 wpf <-> java <-> db(원격 서버, VPN) 테스트까지". 이후 "팝업 계정 따로" → 앱 계정에 CREATE USER 권한이 없음을 확인하자 "스키마만 따로 해서 스키마 분리로" 확정.
