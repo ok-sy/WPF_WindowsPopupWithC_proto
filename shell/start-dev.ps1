@@ -7,8 +7,10 @@
 #
 # 백엔드 : .\gradlew :app:bootRun -Pprofile=local  (JndiResource 기본값 = 공통 개발 DB 192.168.114.71:4004/XE, 팝업 테이블은 앱 계정 스키마)
 #          -LocalDb 이면 ZERO_RULE_DB_URL/USER/PASSWORD + CUSTOM_POPUP_SCHEMA=POPUP 환경변수를 창에 넣어 로컬 XE로 붙인다.
-# 프런트 : pnpm run dev (turbo → next dev, http://localhost:3000). next.config.mjs가 읽는 API_BASE_URL/ROUTER_BASE_URL을
-#          창 환경변수로 넣는다(.env 파일이 없어도 동작). node_modules가 없으면 pnpm install을 먼저 실행한다.
+# 프런트 : pnpm run dev --env-mode=loose (turbo → next dev, http://localhost:3000). next.config.mjs가 읽는 API_BASE_URL/ROUTER_BASE_URL을
+#          창 환경변수로 넣는다(.env 파일이 없어도 동작). turbo 2.x는 strict env 모드라 선언되지 않은 환경변수를 자식(next)에
+#          넘기지 않으므로 --env-mode=loose 가 필요하다(turbo.json 미수정). node_modules가 없으면 install --frozen-lockfile을 먼저 한다.
+#          pnpm은 package.json의 packageManager 버전을 npx로 실행한다(전역 pnpm 버전 차이로 lockfile이 바뀌는 것을 방지).
 # WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server/p, DevUserId=E1001.
 [CmdletBinding()]
 param(
@@ -42,10 +44,11 @@ if (-not $SkipBackend) {
     }
 }
 if (-not $SkipFrontend) {
-    $pnpmCmd = Get-Command pnpm.cmd -ErrorAction SilentlyContinue
-    if (-not $pnpmCmd) { $pnpmCmd = Get-Command pnpm -ErrorAction SilentlyContinue }
-    if (-not $pnpmCmd) { throw 'pnpm is missing. Install Node.js 18+ and pnpm (corepack enable).' }
-    $pnpmPath = $pnpmCmd.Source
+    if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) { throw 'Node.js (npx) is missing. Install Node.js 18+.' }
+    # package.json의 packageManager(pnpm@9.15.2)에 맞는 pnpm을 npx로 실행한다. 전역 pnpm(예: 7.x)을 쓰면 pnpm-lock.yaml이
+    # 다른 lockfile 버전으로 다시 써져 공통 웹 파일이 바뀌므로(2026-09-20 발생) 버전을 고정하고 --frozen-lockfile로 설치한다.
+    $pkg = Get-Content -Raw (Join-Path $frontendPath 'package.json') | ConvertFrom-Json
+    $pnpmSpec = if ($pkg.packageManager) { $pkg.packageManager } else { 'pnpm@9' }
 }
 
 function Start-DevWindow {
@@ -84,14 +87,14 @@ if (-not $SkipBackend) {
 # ---- 프런트엔드 --------------------------------------------------------------
 if (-not $SkipFrontend) {
     $frontendEnv = @{ API_BASE_URL = $ApiBaseUrl; ROUTER_BASE_URL = $RouterBaseUrl }
-    $escapedPnpm = $pnpmPath.Replace("'", "''")
+    $pnpmRun = "npx --yes $pnpmSpec"
     $install = ''
     if (-not (Test-Path -LiteralPath (Join-Path $frontendPath 'node_modules'))) {
         Write-Host 'Frontend node_modules missing -> pnpm install will run first.' -ForegroundColor Yellow
-        $install = "& '$escapedPnpm' install; "
+        $install = "$pnpmRun install --frozen-lockfile; "
     }
     Start-DevWindow -Title "Popup Frontend - pnpm dev [API $ApiBaseUrl]" -Directory $frontendPath -EnvVars $frontendEnv `
-        -Command ($install + "& '$escapedPnpm' run dev --env-mode=loose")
+        -Command ($install + "$pnpmRun run dev --env-mode=loose")
     Write-Host "Frontend -> http://localhost:3000  (API_BASE_URL=$ApiBaseUrl)"
 }
 

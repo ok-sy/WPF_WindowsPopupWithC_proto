@@ -68,6 +68,7 @@
   cd zero-rule-server; .\gradlew :app:bootRun -Pprofile=local
   ```
   로컬 DB에는 `db/oracle/00~03`(POPUP 스키마·ZERO_RULE 권한)과 공통 스키마(`db/oracle/10_*`, 참고용 변환본)가 있어야 한다. 스키마 배치 두 방식(별도 POPUP 계정 / 앱 계정 스키마)은 [db/oracle/README.md](db/oracle/README.md) 참조.
+- **백엔드+프런트 동시 실행**: `powershell -ExecutionPolicy Bypass -File .shellstart-dev.ps1` (기본 원격 DB; `-LocalDb`로 로컬 XE, `-SkipFrontend`/`-SkipBackend`). 프런트는 `http://localhost:3000`, `API_BASE_URL`을 창 환경변수로 주입하고 pnpm은 `packageManager` 버전을 npx로 실행한다.
 - 팝업 슬라이스만 띄우기(공통 DB 불필요): `.\gradlew :app:wpfDevServer` (`POPUP_TEST_DB_*` 환경변수, 테스트 소스).
 - 테스트: `.\gradlew :service:core:test :web:api:test :app:test --tests 'server.*popup*' --tests 'server.app.wpf.*'` — 실DB 테스트는 `POPUP_TEST_DB_PASSWORD`가 없으면 skip. 원격으로 돌리려면 `POPUP_TEST_DB_URL/USER/PASSWORD/SCHEMA=""`. 환경변수만 바꿔 다시 돌릴 때는 `cleanTest`를 앞에 붙인다(Gradle UP-TO-DATE).
 
