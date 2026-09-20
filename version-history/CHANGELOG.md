@@ -12,6 +12,16 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-20-04 — 관리자 웹 메뉴 데이터: 팝업 관리 폴더(NAV)·그룹(SECTION)·팝업 등록 페이지 (`db/oracle/04_popup_web_menu_oracle.sql`)
+
+- 이유: 사용자 요청 "web에 그룹이랑 폴더 추가"(기능 개발이 아닌 데이터 추가). zero-rule-web 사이드바는 DB 메뉴(`CLOVER_USER.nav_id` → `CLOVER_NAV`(폴더) → `CLOVER_NAV_ITEM` → `CLOVER_PAGE_SECTION`(그룹) → `CLOVER_PAGE`)를 쓰는데, 팝업 등록 화면(`/rgst-pop`, `features/RgstPop`)은 scene-router에만 있고 DB 메뉴에 없어 사이드바에 나오지 않았다. 원격 개발 DB 조회로 확인: NAV 2개(1 기본, 2 관리자 메뉴), `/rgst-pop` 페이지 없음, 사용자 3명(master·codingsb·aadd233).
+- 변경(추가, 공통 테이블 *데이터만*, 코드·구조 무변경): `db/oracle/04_popup_web_menu_oracle.sql` — 멱등 PL/SQL 블록(이름·url로 존재 확인 후 없는 것만 삽입, ID는 공통 `CLOVERFRAMEWORK_SEQ`, 11g 호환).
+  - `CLOVER_NAV` "팝업 관리"(폴더), `CLOVER_PAGE_SECTION` "팝업 관리"(그룹, 아이콘 `FolderOutlined`), `CLOVER_PAGE` "팝업 등록"(`/rgst-pop`, `page_key` = 기존 숫자 키 최대값+1, 아이콘 `NoteAlt`).
+  - `CLOVER_NAV_ITEM`: 새 NAV에 CLOVER 메인(sort 100, 다른 NAV와 동일한 첫 항목) + 그룹/팝업 등록(sort 200); 기존 "관리자 메뉴"(nav 2, master) 끝(sort max+100)에도 같은 그룹/팝업 등록 추가.
+  - 되돌리기 SQL을 파일 끝 주석으로 둠. `db/oracle/README.md` 실행 순서 표에 4번 행과 "04 — 관리자 웹 메뉴 데이터" 절 추가.
+- 검증: 로컬 XE 21c(`ZERO_RULE@XEPDB1`, 공통 테이블 존재·거의 비어 있음)에서 04를 2회 실행 — 1회차 NAV/SECTION/PAGE/ITEM 추가, 2회차 전부 "기존 사용"으로 중복 없음(멱등 확인; 로컬엔 CLOVER 메인 페이지·관리자 메뉴 NAV가 없어 해당 분기는 건너뜀). 원격 개발 DB(192.168.114.71) **조회**(NAV·SECTION·PAGE·NAV_ITEM·USER·시퀀스)는 수행. **원격 DB에 04 실행은 미수행** — 공유 개발 DB 데이터 변경이라 세션 정책이 자동 실행을 막았고, 사용자가 직접 실행하거나 허가 후 실행한다. 실행 후 `master` 로그인 → 사이드바 "팝업 관리 > 팝업 등록" 표시와 `/rgst-pop` 진입은 미확인.
+- 상태: 커밋 후 푸시(브랜치 `worktree-popup-web-menu-data`).
+
 ## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
 
 - 후속(같은 작업): 첫 커밋 `ee7d5e9`에 전역 pnpm 7.29가 다시 쓴 `zero-rule-web/pnpm-lock.yaml`(lockfile 9.0 → 6.0, 의존성 버전 변동)이 딸려 들어갔음을 발견 → 원본으로 되돌림(공통 웹 파일 무변경). 원인 제거: 스크립트가 `package.json`의 `packageManager`(pnpm@9.15.2)를 `npx --yes`로 실행하고 `install --frozen-lockfile`을 쓴다(corepack 0.29는 서명 키 오류로 사용 불가). 9.15.2로 재설치 후 lockfile 무변경·프런트 기동·`API_BASE_URL` 주입 재확인. `README.md` "서버 실행"에 스크립트 안내 추가.

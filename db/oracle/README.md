@@ -27,6 +27,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 1 | `01_popup_schema_oracle.sql` | POPUP | 테이블 17개(원본 16 + `WPF_RESULT_RECEIPT`), 시퀀스 12개, 인덱스, 주석 |
 | 2 | `02_popup_sample_oracle.sql` | POPUP | 개발 샘플(사용자 3·팝업 4·대상 조건 6·문항 3). 운영 금지 |
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
+| 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 
 ```powershell
 $env:NLS_LANG = "KOREAN_KOREA.AL32UTF8"     # 한글 주석·샘플이 UTF-8이므로 지정
@@ -37,6 +38,19 @@ sqlplus popup/popup@//localhost:1521/XEPDB1  @03_grant_zero_rule_oracle.sql ZERO
 ```
 
 01은 신규 스키마용이다. 다시 적용하려면 `DROP USER POPUP CASCADE` 후 0부터 실행한다.
+
+### 04 — 관리자 웹 메뉴 데이터 (2026-09-20)
+
+zero-rule-web 사이드바는 `lib/side-menu-list.tsx`가 아니라 DB 메뉴를 쓴다: 로그인 사용자 `CLOVER_USER.nav_id` → `CLOVER_NAV`(웹 "Nav 관리"의 폴더) → `CLOVER_NAV_ITEM` → `CLOVER_PAGE_SECTION`(메뉴 편집의 "새 그룹 추가") → `CLOVER_PAGE`(url = scene-router 경로). 팝업 등록 화면(`/rgst-pop`)은 라우터에는 있으나 DB 메뉴에 없어 사이드바에 보이지 않았다. 04는 공통 테이블에 **데이터만** 넣는다(ID는 공통 `CLOVERFRAMEWORK_SEQ`).
+
+```powershell
+$env:NLS_LANG = "KOREAN_KOREA.AL32UTF8"
+cd db\oracle
+sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @04_popup_web_menu_oracle.sql
+```
+
+- 결과: `master`(nav 2 "관리자 메뉴") 로그인 시 사이드바 맨 끝에 "팝업 관리 > 팝업 등록"이 보인다. 팝업 메뉴만 보이게 하려면 해당 사용자의 `CLOVER_USER.nav_id`를 새 NAV "팝업 관리" id로 바꾼다(웹 사용자 관리 화면 또는 UPDATE).
+- 실행 전 조회 스냅샷(2026-09-20): NAV 2개(1 기본, 2 관리자 메뉴), 사용자 3명(master·codingsb·aadd233, nav 2/1/2), `/rgst-pop` 페이지 없음, `CLOVERFRAMEWORK_SEQ` ≈ 376030.
 
 ## 실DB 테스트 (롤백 전용)
 
