@@ -3,8 +3,8 @@
 -- =====================================================================
 --  원본   : WPF_WindowsPopupWithC_sample / ERD/01_schema.sql (popup 스키마 16 테이블)
 --  기준   : 기준0.1.txt 항목 5 (PostgreSQL → Oracle 변환)
---  대상   : Oracle 19c (가정. README "설계 전제" 참조)
---  실행자 : POPUP 스키마 소유 계정 (또는 DBA가 CURRENT_SCHEMA 지정)
+--  대상   : Oracle 11g XE(11.2.0.2, 개발 DB 192.168.114.71 실측 2026-09-20) 이상. 19c 이상에서도 동일하게 동작한다.
+--  실행자 : 팝업 테이블을 소유할 계정 (POPUP 계정 또는, 계정을 만들 수 없으면 앱 계정 zero-rule)
 --  원칙   : 테이블·컬럼 구성은 원본과 동일하게 유지하고 Oracle 문법으로만 변환한다.
 --           신설은 §11 결과 수신 영수증 1개 테이블만이다.
 --           (인증 토큰 테이블은 두지 않는다. 토큰 인증은 타 팀이 웹·WPF 통합 토큰으로 개발 — docs/04)
@@ -12,7 +12,7 @@
 --  변환 규칙 요약 (상세: docs/05_Oracle_DB_설계.md)
 --    VARCHAR(n)                      → VARCHAR2(n CHAR)   (문자 단위 길이 유지)
 --    TEXT                            → CLOB
---    JSONB                           → CLOB + CHECK (... IS JSON)
+--    JSONB                           → CLOB  (IS JSON 체크는 12.1+ 전용이라 11g 호환을 위해 제거. JSON 유효성은 Java PopupContentAssembler가 보장)
 --    BIGINT IDENTITY                 → NUMBER(19) + 시퀀스 SEQ_<TABLE> (MyBatis selectKey BEFORE)
 --    INTEGER / NUMERIC(p,s)          → NUMBER(10) / NUMBER(p,s)
 --    TIMESTAMP                       → TIMESTAMP(6)  (KST 로컬 시각 저장, 변환은 Java에서)
@@ -27,12 +27,15 @@
 --
 --  주의
 --    * 이 스크립트는 신규 스키마용이다. 기존 테이블이 있으면 실행하지 않는다.
---    * 12.1 이하 Oracle은 식별자 30바이트 제한이 있어 일부 제약명이 길다. 19c 전제.
+--    * 식별자는 11g의 30바이트 제한에 맞춰 모두 30자 이하다 (2026-09-20: UK_QTEMPLATE_GROUP_VERSION·CK_TCOND_INCLUDE_CHILD·CK_TCOND_CHILD_DEPARTMENT로 단축).
 --    * 조직 마스터(APP_DEPARTMENT/APP_POSITION/APP_USER)는 운영 HR 마스터 연동 방식이
 --      확정되면 뷰 또는 동기화 테이블로 대체될 수 있다. 구조는 원본 유지.
 -- =====================================================================
 
-ALTER SESSION SET CURRENT_SCHEMA = POPUP;
+-- 실행 계정의 스키마에 만든다. 별도 POPUP 계정이 있으면 popup 으로 접속해 실행하고(로컬 XE 21c),
+-- 계정을 만들 수 없는 환경(원격 개발 DB 11g XE)에서는 앱 계정(zero-rule)으로 접속해 실행한 뒤
+-- 서버 설정 custom.popup.schema 를 빈 값으로 둔다(스키마 분리 설정화, 2026-09-20). DBA가 대신 실행할 때만 아래를 켠다.
+-- ALTER SESSION SET CURRENT_SCHEMA = POPUP;
 
 -- ---------------------------------------------------------------------
 -- §0. 시퀀스 (원본 IDENTITY 컬럼 1개당 1개)
@@ -130,7 +133,7 @@ CREATE TABLE QUESTION_TEMPLATE
     UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,
     UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,
     CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID),
-    CONSTRAINT UK_QUESTION_TEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION),
+    CONSTRAINT UK_QTEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION),
     CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION >= 1),
     CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N')),
     CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))
@@ -232,13 +235,14 @@ CREATE TABLE POPUP_CONTENT
     UPDATED_AT      TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,
     CONSTRAINT PK_POPUP_CONTENT PRIMARY KEY (POPUP_ID),
     CONSTRAINT FK_CONTENT_POPUP FOREIGN KEY (POPUP_ID)
-        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE,
-    -- 원본 JSONB. Oracle 19c는 CLOB + IS JSON 체크로 JSON 유효성을 보장한다.
-    CONSTRAINT CK_CONTENT_OPTIONS_JSON CHECK (CONTENT_OPTIONS IS JSON)
+        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE
+    -- 원본 JSONB → CLOB. [11g 호환] CHECK (CONTENT_OPTIONS IS JSON)은 12.1+ 전용이라 두지 않는다.
+    --   JSON 유효성은 서버(PopupContentAssembler)가 쓰기 전에 보장하고, 19c 이상에서는 아래를 추가해도 된다:
+    --   ALTER TABLE POPUP_CONTENT ADD CONSTRAINT CK_CONTENT_OPTIONS_JSON CHECK (CONTENT_OPTIONS IS JSON)   (문장 끝 세미콜론은 SQL*Plus가 문장 종료로 오해하므로 주석에서 뺌)
 );
 COMMENT ON TABLE  POPUP_CONTENT IS '유형별 콘텐츠. 제목·설명·본문·미디어URL은 정규 컬럼, 나머지 옵션은 CONTENT_OPTIONS JSON';
 COMMENT ON COLUMN POPUP_CONTENT.CONTENT_BODY IS 'TEXT 유형 plainText 본문 (원본 TEXT → CLOB)';
-COMMENT ON COLUMN POPUP_CONTENT.CONTENT_OPTIONS IS '확장 옵션 JSON (원본 JSONB → CLOB IS JSON). content 조립은 Java에서 수행';
+COMMENT ON COLUMN POPUP_CONTENT.CONTENT_OPTIONS IS '확장 옵션 JSON (원본 JSONB → CLOB, 11g 호환으로 IS JSON 체크 없음). content 조립은 Java에서 수행';
 
 CREATE TABLE POPUP_TARGET_GROUP
 (
@@ -283,7 +287,7 @@ CREATE TABLE POPUP_TARGET_CONDITION
     CONSTRAINT FK_TARGET_CONDITION_EMPLOYEE   FOREIGN KEY (EMPLOYEE_NO)   REFERENCES APP_USER (EMPLOYEE_NO),
     CONSTRAINT UQ_TARGET_CONDITION_ORDER UNIQUE (TARGET_GROUP_ID, CONDITION_ORDER),
     CONSTRAINT CK_TARGET_CONDITION_ORDER CHECK (CONDITION_ORDER >= 1),
-    CONSTRAINT CK_TARGET_CONDITION_INCLUDE_CHILD CHECK (INCLUDE_CHILD_YN IN ('Y', 'N')),
+    CONSTRAINT CK_TCOND_INCLUDE_CHILD CHECK (INCLUDE_CHILD_YN IN ('Y', 'N')),
     CONSTRAINT CK_TARGET_CONDITION_OPERATOR CHECK (CONDITION_OPERATOR IN ('=', '!=', '<', '<=', '>', '>=')),
     -- 원본: num_nonnulls(department_id, position_id, employee_no, condition_date_value) = 1
     --       AND CASE condition_type WHEN 'DEPARTMENT' THEN department_id IS NOT NULL ... ELSE FALSE END
@@ -303,7 +307,7 @@ CREATE TABLE POPUP_TARGET_CONDITION
             ELSE 0
          END) = 1
     ),
-    CONSTRAINT CK_TARGET_CONDITION_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_TYPE = 'DEPARTMENT')
+    CONSTRAINT CK_TCOND_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_TYPE = 'DEPARTMENT')
 );
 COMMENT ON TABLE  POPUP_TARGET_CONDITION IS '노출 대상 조건. 같은 그룹 내 AND. 유형별 값 컬럼 중 정확히 1개만 사용';
 COMMENT ON COLUMN POPUP_TARGET_CONDITION.CONDITION_TYPE IS 'DEPARTMENT / POSITION / EMPLOYEE / HIRE_DATE';

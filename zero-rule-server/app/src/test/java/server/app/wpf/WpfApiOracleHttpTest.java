@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import server.repo.core.mapper.popup.PopupSchema;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestTemplate;
@@ -83,12 +84,16 @@ class WpfApiOracleHttpTest {
         registry.add("spring.datasource.username", () -> System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"));
         registry.add("spring.datasource.password", () -> System.getenv("POPUP_TEST_DB_PASSWORD"));
         registry.add("spring.datasource.driver-class-name", () -> "oracle.jdbc.OracleDriver");
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] íì ë§¤í¼ì ${popupSchemaPrefix} â mybatis-spring-boot ìëêµ¬ì± ê²½ë¡ë¡ ê°ì ë³ìë¥¼ ê³µê¸íë¤.
+        registry.add("mybatis.configuration-properties." + PopupSchema.PROPERTY, () -> SCHEMA_PREFIX);
     }
 
     @LocalServerPort int port;
     @Autowired JdbcTemplate jdbc;
     private final RestTemplate rest = new RestTemplate();
     private final ObjectMapper json = new ObjectMapper();
+    // ì ë¦¬Â·ê²ì¦ SQLì ì°ë ì¤í¤ë§ ì ëì´ (íê²½ë³ì POPUP_TEST_DB_SCHEMA, ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+    private static final String SCHEMA_PREFIX = PopupSchema.prefix(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA));
 
     private static JdbcTemplate cleanupJdbc;
 
@@ -103,13 +108,13 @@ class WpfApiOracleHttpTest {
     }
 
     private static void cleanup(JdbcTemplate jdbc) {
-        jdbc.update("DELETE FROM POPUP.WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", USER);
-        jdbc.update("DELETE FROM POPUP.POPUP_RESPONSE_VALUE WHERE RESPONSE_ANSWER_ID IN (SELECT RESPONSE_ANSWER_ID FROM POPUP.POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM POPUP.POPUP_RESPONSE WHERE EMPLOYEE_NO = ?))", USER);
-        jdbc.update("DELETE FROM POPUP.POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM POPUP.POPUP_RESPONSE WHERE EMPLOYEE_NO = ?)", USER);
-        jdbc.update("DELETE FROM POPUP.POPUP_RESPONSE WHERE EMPLOYEE_NO = ?", USER);
-        jdbc.update("DELETE FROM POPUP.VIDEO_VIEW_STATUS WHERE EMPLOYEE_NO = ?", USER);
-        jdbc.update("DELETE FROM POPUP.USER_POPUP_STATUS WHERE EMPLOYEE_NO = ?", USER);
-        jdbc.update("DELETE FROM POPUP.API_REQUEST_LOG WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_VALUE WHERE RESPONSE_ANSWER_ID IN (SELECT RESPONSE_ANSWER_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?))", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?)", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "VIDEO_VIEW_STATUS WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "USER_POPUP_STATUS WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "API_REQUEST_LOG WHERE EMPLOYEE_NO = ?", USER);
     }
 
     private String url(String path) {
@@ -209,9 +214,9 @@ class WpfApiOracleHttpTest {
         assertEquals("DUPLICATE", results.get(4).get("status").asText());
 
         // 항목별 REQUIRES_NEW 커밋 확인 — 거절된 QUIZ 항목과 무관하게 나머지가 DB에 남아 있다
-        Integer receipts = jdbc.queryForObject("SELECT COUNT(*) FROM POPUP.WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", Integer.class, USER);
+        Integer receipts = jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", Integer.class, USER);
         assertEquals(3, receipts);
-        Integer logs = jdbc.queryForObject("SELECT COUNT(*) FROM POPUP.API_REQUEST_LOG WHERE EMPLOYEE_NO = ? AND CLIENT_REQUEST_ID = 'http-test'", Integer.class, USER);
+        Integer logs = jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "API_REQUEST_LOG WHERE EMPLOYEE_NO = ? AND CLIENT_REQUEST_ID = 'http-test'", Integer.class, USER);
         assertEquals(1, logs);
 
         // 완료·숨김 반영 후 목록은 비어야 한다 (기준 2)

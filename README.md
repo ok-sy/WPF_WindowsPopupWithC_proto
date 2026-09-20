@@ -51,19 +51,25 @@
 | 6 WPF 클라이언트 | 완료 `65247b7` | `dotnet build` 경고 0·오류 0. 실연동 확인(`1f9eabc`) |
 | 7 관리자 웹 | 변경 불필요(베이스라인이 이미 SURVEY 채점 입력 숨김) | 코드 확인 |
 | 서버 베이스라인 교체 | 완료 `0294d1e` + popup 재적용 — **전체 zeroserver가 Oracle에서 기동**(로컬 XE, `ZERO_RULE_DB_*` 환경변수) | 서버 테스트 50개 통과·skip 0. 전체 서버로 `/p/api/wpf/popups` 401/200, 결과 ACCEPTED·DUPLICATE 확인 |
+| 원격 개발 DB 연동 | 완료 — Oracle **11g XE**(192.168.114.71) `zero-rule` 스키마에 팝업 DDL·샘플 적용, 매퍼 스키마 한정자 설정화(`custom.popup.schema`) | 원격 실DB·HTTP 테스트 통과. **WPF exe → 전체 서버 → 원격 DB** 왕복(TEXT 팝업 닫기 → USER_POPUP_STATUS·영수증·로그) 확인 |
 | 8 구 API 제거 | 미수행 — 통합 토큰(타 팀) 적용 후 | — |
 
 ## 서버 실행 (zero-rule-server)
 
 - 요구: JDK 17, Gradle wrapper 8.11.1, `repo.labcl.net`(cloverframework `3.0.3-SNAPSHOT`) 접근.
-- 기본 DB는 업스트림 `JndiResource`의 공통 개발 DB(`192.168.114.71:4004/XE`, 계정 `zero-rule`). 접속이 안 되는 로컬에서는 환경변수로 로컬 Oracle을 지정한다(추가한 분기, 없으면 업스트림 값 그대로):
+- **기본(원격 개발 DB, VPN 필요)**: 업스트림 `JndiResource`의 공통 개발 DB(`192.168.114.71:4004/XE`, **Oracle 11g XE 11.2.0.2**, 계정 `zero-rule`). 팝업 테이블은 이 계정 스키마 안에 있고(`application-dev_db.yml`의 `custom.popup.schema: ""`), `db/oracle/01·02`가 적용돼 있다(2026-09-20).
+  ```powershell
+  cd zero-rule-server; .\gradlew :app:bootRun -Pprofile=local     # http://localhost:8080/zero-rule-server
+  ```
+- **로컬 XE 21c로 띄우기**(VPN 없이): 환경변수로 DB와 팝업 스키마를 지정한다(추가한 분기, 없으면 업스트림 값 그대로):
   ```powershell
   $env:ZERO_RULE_DB_URL='jdbc:log4jdbc:oracle:thin:@//localhost:1521/XEPDB1'; $env:ZERO_RULE_DB_USER='ZERO_RULE'; $env:ZERO_RULE_DB_PASSWORD='<pw>'
-  cd zero-rule-server; .gradlew :app:bootRun -Pprofile=local     # http://localhost:8080/zero-rule-server
+  $env:CUSTOM_POPUP_SCHEMA='POPUP'     # 로컬은 별도 POPUP 계정(설계 기본) → 매퍼 한정자 "POPUP."
+  cd zero-rule-server; .\gradlew :app:bootRun -Pprofile=local
   ```
-  로컬 DB에는 `db/oracle/00~03`(POPUP 스키마·ZERO_RULE 권한)과 공통 스키마(`db/oracle/10_*`, 참고용 변환본)가 있어야 한다. 팝업 매퍼는 `POPUP.` 한정자를 쓰므로 공통 계정으로 접속해도 된다.
-- 팝업 슬라이스만 띄우기(공통 DB 불필요): `.gradlew :app:wpfDevServer` (`POPUP_TEST_DB_*` 환경변수, 테스트 소스).
-- 테스트: `.gradlew :service:core:test :web:api:test :app:test --tests 'server.*popup*' --tests 'server.app.wpf.*'` — 실DB 테스트는 `POPUP_TEST_DB_PASSWORD`가 없으면 skip.
+  로컬 DB에는 `db/oracle/00~03`(POPUP 스키마·ZERO_RULE 권한)과 공통 스키마(`db/oracle/10_*`, 참고용 변환본)가 있어야 한다. 스키마 배치 두 방식(별도 POPUP 계정 / 앱 계정 스키마)은 [db/oracle/README.md](db/oracle/README.md) 참조.
+- 팝업 슬라이스만 띄우기(공통 DB 불필요): `.\gradlew :app:wpfDevServer` (`POPUP_TEST_DB_*` 환경변수, 테스트 소스).
+- 테스트: `.\gradlew :service:core:test :web:api:test :app:test --tests 'server.*popup*' --tests 'server.app.wpf.*'` — 실DB 테스트는 `POPUP_TEST_DB_PASSWORD`가 없으면 skip. 원격으로 돌리려면 `POPUP_TEST_DB_URL/USER/PASSWORD/SCHEMA=""`. 환경변수만 바꿔 다시 돌릴 때는 `cleanTest`를 앞에 붙인다(Gradle UP-TO-DATE).
 
 ## WPF 실행·빌드
 

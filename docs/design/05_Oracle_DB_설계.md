@@ -2,14 +2,14 @@
 
 기준 항목 5. 스크립트: [db/oracle/01_popup_schema_oracle.sql](../db/oracle/01_popup_schema_oracle.sql), 샘플: [db/oracle/02_popup_sample_oracle.sql](../db/oracle/02_popup_sample_oracle.sql).
 
-전제: **Oracle 19c** (README 설계 전제). 테이블·컬럼 구성은 원본과 동일하게 유지하고, 신설은 `WPF_RESULT_RECEIPT` 1개다. 인증용 테이블·컬럼은 만들지 않는다 (04 문서).
+전제: 설계 시 **Oracle 19c**로 가정했으나 **2026-09-20 원격 개발 DB 실측은 11g XE 11.2.0.2**. DDL을 11g 호환으로 조정했다 — 제약명 30자 이하(`UK_QTEMPLATE_GROUP_VERSION`·`CK_TCOND_INCLUDE_CHILD`·`CK_TCOND_CHILD_DEPARTMENT`), `IS JSON` 체크 제거(JSON 유효성은 `PopupContentAssembler`). 매퍼 SQL은 원래 11g 문법 범위(MERGE·함수 기반 인덱스·재귀 WITH·`SYSTIMESTAMP AT TIME ZONE`)다. 테이블·컬럼 구성은 원본과 동일하게 유지하고, 신설은 `WPF_RESULT_RECEIPT` 1개다. 인증용 테이블·컬럼은 만들지 않는다 (04 문서).
 
 ## 1. 스키마 배치
 
 | PostgreSQL | Oracle | 비고 |
 |---|---|---|
 | 스키마 `zero_rule` (공통 53개) | 기존 운영 Oracle의 zero 프레임워크 스키마 | 원본 DDL 주석(`-- Oracle table: ...`)과 `libs.versions.toml`의 ojdbc 항목으로 zero 프레임워크가 Oracle 출신임을 확인. **이번 변환 범위 외** |
-| 스키마 `popup` (16개) | 사용자/스키마 `POPUP` (16 + 신설 1) | 매퍼는 `POPUP.` 접두어로 한정자 사용 (현행 `popup.`과 동일 방식) |
+| 스키마 `popup` (16개) | 사용자/스키마 `POPUP` (16 + 신설 1) — **또는** 앱 계정 스키마 안(2026-09-20) | 매퍼는 `${popupSchemaPrefix}` 변수로 한정자를 붙인다. 설정 `custom.popup.schema`가 `POPUP`(기본)이면 `POPUP.`, 빈 값이면 한정자 없음. 원격 개발 DB는 앱 계정 `zero-rule`에 CREATE USER 권한이 없어 빈 값(팝업 테이블을 그 계정 스키마에 생성). 계산은 `PopupSchema`, 주입은 `MyBatisConfig`(추가 4줄) |
 
 ## 2. 데이터 타입 변환 규칙
 

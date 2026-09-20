@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupQuestionDto;
 import server.repo.core.mapper.popup.PopupMapper;
+import server.repo.core.mapper.popup.PopupSchema;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -38,6 +39,8 @@ class PopupMapperOracleStatementTest {
 
     private Configuration parse() throws Exception {
         var configuration = new Configuration();
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        configuration.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         try (var stream = getClass().getClassLoader().getResourceAsStream(RESOURCE)) {
             assertNotNull(stream, RESOURCE + " 리소스가 없습니다.");
             new XMLMapperBuilder(stream, configuration, RESOURCE, configuration.getSqlFragments()).parse();

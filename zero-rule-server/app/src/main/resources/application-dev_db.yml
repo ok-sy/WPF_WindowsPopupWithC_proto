@@ -9,3 +9,9 @@ spring:
     #driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
     #username: zero-rule
   #password: Zerorule4321!
+
+# [WPF 팝업 — 추가, 스키마 분리 설정화] 이 프로파일(공통 개발 DB 192.168.114.71, Oracle 11g XE)에서는 앱 계정 zero-rule에
+# CREATE USER 권한이 없어 별도 POPUP 계정을 만들 수 없다. 빈 값 = 팝업 테이블을 접속 계정 자신의 스키마에서 찾는다
+# (db/oracle/01·02를 zero-rule 계정으로 실행). POPUP 계정이 있는 DB(로컬 XE 21c)로 띄울 때는 환경변수
+# CUSTOM_POPUP_SCHEMA=POPUP 으로 덮어쓴다. 기본값(설정이 없을 때)은 MyBatisConfig의 POPUP.
+custom.popup.schema: ""

@@ -31,7 +31,10 @@
       - n * INTERVAL '1 day'          → NUMTODSINTERVAL(n, 'DAY')
       - 별칭 popup/content/target/condition/template/status → n/ct/g/c/t/s (예약어 충돌 회피·가독성)
 
-    [주의] 스키마 한정자 POPUP. 은 PostgreSQL 판의 popup. 과 같은 역할이다. 대상 스키마명이 다르면 일괄 치환한다.
+    [스키마 한정자 — 2026-09-20 설정화] 테이블·시퀀스 앞의 ${popupSchemaPrefix}는 MyBatis 구성 변수로, MyBatisConfig가
+           설정 custom.popup.schema(기본 POPUP)로부터 "POPUP." 또는 ""(빈 값: 접속 계정 자신의 스키마)를 넣는다.
+           PostgreSQL 판의 popup. 과 같은 역할이며, 별도 POPUP 계정을 만들 수 없는 환경(원격 개발 DB 11g XE, DBA 권한 없음)에서는
+           빈 값으로 두어 앱 계정 스키마의 팝업 테이블을 쓴다. 값은 상수 치환(${})이라 SQL 인젝션과 무관하다(설정 파일 값만 사용).
 -->
 <mapper namespace="server.repo.core.mapper.popup.PopupMapper">
 
@@ -45,9 +48,9 @@
     <!-- 새 템플릿 그룹을 만든다. 원본: gen_random_uuid() 30자 → RAWTOHEX(SYS_GUID()) 32자 중 30자. -->
     <insert id="insertQuestionTemplate" parameterType="map">
         <selectKey keyProperty="templateId" resultType="java.lang.Long" order="BEFORE">
-            SELECT POPUP.SEQ_QUESTION_TEMPLATE.NEXTVAL FROM DUAL
+            SELECT ${popupSchemaPrefix}SEQ_QUESTION_TEMPLATE.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO POPUP.QUESTION_TEMPLATE
+        INSERT INTO ${popupSchemaPrefix}QUESTION_TEMPLATE
             (QUESTION_TEMPLATE_ID, TEMPLATE_GROUP_ID, TEMPLATE_NAME, TEMPLATE_TYPE, TEMPLATE_VERSION,
              CURRENT_YN, ACTIVE_YN, CREATED_BY, UPDATED_BY)
         VALUES (#{templateId}, SUBSTR(RAWTOHEX(SYS_GUID()), 1, 30), SUBSTR(#{name}, 1, 100),
@@ -60,9 +63,9 @@
     -->
     <insert id="insertAdminQuestion" parameterType="map">
         <selectKey keyProperty="questionId" resultType="java.lang.Long" order="BEFORE">
-            SELECT POPUP.SEQ_POPUP_QUESTION.NEXTVAL FROM DUAL
+            SELECT ${popupSchemaPrefix}SEQ_POPUP_QUESTION.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO POPUP.POPUP_QUESTION
+        INSERT INTO ${popupSchemaPrefix}POPUP_QUESTION
             (QUESTION_ID, QUESTION_TEMPLATE_ID, QUESTION_TYPE, QUESTION_TITLE, QUESTION_DESCRIPTION,
              REQUIRED_YN, SCORED_YN, QUESTION_SCORE, SORT_ORDER, CORRECT_ANSWER,
              ANSWER_MATCH_MODE, CREATED_BY, UPDATED_BY)
@@ -80,9 +83,9 @@
 
     <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. -->
     <insert id="insertAdminOption">
-        INSERT INTO POPUP.POPUP_OPTION
+        INSERT INTO ${popupSchemaPrefix}POPUP_OPTION
             (OPTION_ID, QUESTION_ID, OPTION_VALUE, OPTION_TEXT, CORRECT_YN, SORT_ORDER, CREATED_BY, UPDATED_BY)
-        VALUES (POPUP.SEQ_POPUP_OPTION.NEXTVAL, #{questionId}, TO_CHAR(#{sortOrder}), #{option.text},
+        VALUES (${popupSchemaPrefix}SEQ_POPUP_OPTION.NEXTVAL, #{questionId}, TO_CHAR(#{sortOrder}), #{option.text},
                 CASE WHEN #{quiz} = 1 AND COALESCE(#{option.isCorrect}, 0) = 1 THEN 'Y' ELSE 'N' END,
                 #{sortOrder}, #{auditUser}, #{auditUser})
     </insert>
@@ -131,7 +134,7 @@
             FROM_TZ(n.CREATED_AT, 'Asia/Seoul')       AS CREATED_AT,
             n.UPDATED_BY,
             FROM_TZ(n.UPDATED_AT, 'Asia/Seoul')       AS UPDATED_AT
-        FROM POPUP.POPUP_NOTICE n
+        FROM ${popupSchemaPrefix}POPUP_NOTICE n
         ORDER BY n.DISPLAY_ORDER, n.CREATED_AT DESC, n.POPUP_ID
     </select>
 
@@ -189,15 +192,15 @@
             resultMap="popupEntityResultMap">
         SELECT
         <include refid="popupEntityColumns"/>
-        FROM POPUP.POPUP_NOTICE n
-        LEFT JOIN POPUP.POPUP_CONTENT ct
+        FROM ${popupSchemaPrefix}POPUP_NOTICE n
+        LEFT JOIN ${popupSchemaPrefix}POPUP_CONTENT ct
           ON ct.POPUP_ID = n.POPUP_ID
         WHERE n.POPUP_ID = #{popupId}
     </select>
 
     <!-- popupId가 이미 존재하면 생성 정보는 유지하고 수정 정보만 갱신한다 (원본 ON CONFLICT → MERGE). -->
     <update id="upsertAdminPopupNotice">
-        MERGE INTO POPUP.POPUP_NOTICE n
+        MERGE INTO ${popupSchemaPrefix}POPUP_NOTICE n
         USING (SELECT #{popupId} AS POPUP_ID FROM DUAL) src
            ON (n.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -262,7 +265,7 @@
 
     <!-- 본문·확장 옵션은 CLOB이므로 jdbcType=CLOB으로 바인딩해 4000자 제한을 피한다. -->
     <update id="upsertAdminPopupContent">
-        MERGE INTO POPUP.POPUP_CONTENT ct
+        MERGE INTO ${popupSchemaPrefix}POPUP_CONTENT ct
         USING (SELECT #{popupId} AS POPUP_ID FROM DUAL) src
            ON (ct.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -284,7 +287,7 @@
     </update>
 
     <update id="updateAdminPopupActive">
-        UPDATE POPUP.POPUP_NOTICE
+        UPDATE ${popupSchemaPrefix}POPUP_NOTICE
         SET
             ACTIVE_YN  = #{activeYn},
             UPDATED_BY = #{auditUser},
@@ -324,8 +327,8 @@
                c.CONDITION_DATE_VALUE,
                c.INCLUDE_CHILD_YN,
                c.CONDITION_ORDER
-        FROM POPUP.POPUP_TARGET_GROUP g
-        JOIN POPUP.POPUP_TARGET_CONDITION c
+        FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP g
+        JOIN ${popupSchemaPrefix}POPUP_TARGET_CONDITION c
           ON c.TARGET_GROUP_ID = g.TARGET_GROUP_ID
         WHERE g.POPUP_ID = #{popupId}
         ORDER BY g.GROUP_ORDER, c.CONDITION_ORDER
@@ -333,18 +336,18 @@
 
     <!-- 조건 행은 FK ON DELETE CASCADE로 함께 삭제된다. -->
     <delete id="deleteAdminPopupTargets">
-        DELETE FROM POPUP.POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
+        DELETE FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
     </delete>
 
     <select id="countAdminPopupTargetGroups" resultType="int">
-        SELECT COUNT(*) FROM POPUP.POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
+        SELECT COUNT(*) FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
     </select>
 
     <insert id="insertAdminTargetGroup" parameterType="map">
         <selectKey keyProperty="targetGroupId" resultType="java.lang.Long" order="BEFORE">
-            SELECT POPUP.SEQ_POPUP_TARGET_GROUP.NEXTVAL FROM DUAL
+            SELECT ${popupSchemaPrefix}SEQ_POPUP_TARGET_GROUP.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO POPUP.POPUP_TARGET_GROUP
+        INSERT INTO ${popupSchemaPrefix}POPUP_TARGET_GROUP
         (TARGET_GROUP_ID, POPUP_ID, TARGET_NAME, TARGET_DESCRIPTION, GROUP_ORDER, CREATED_BY, UPDATED_BY)
         VALUES
         (#{targetGroupId}, #{popupId}, #{targetName}, #{targetDescription}, #{groupOrder},
@@ -353,12 +356,12 @@
 
     <!-- 조건 유형에 맞는 값 컬럼 하나만 채운다 (CHECK CK_TARGET_CONDITION_VALUE). 입사일은 YYYY-MM-DD 문자열. -->
     <insert id="insertAdminTargetCondition">
-        INSERT INTO POPUP.POPUP_TARGET_CONDITION
+        INSERT INTO ${popupSchemaPrefix}POPUP_TARGET_CONDITION
         (TARGET_CONDITION_ID, TARGET_GROUP_ID, CONDITION_TYPE, CONDITION_OPERATOR,
          DEPARTMENT_ID, POSITION_ID, EMPLOYEE_NO, CONDITION_DATE_VALUE,
          INCLUDE_CHILD_YN, CONDITION_ORDER, CREATED_BY, UPDATED_BY)
         VALUES
-        (POPUP.SEQ_POPUP_TARGET_CONDITION.NEXTVAL, #{targetGroupId}, #{condition.conditionType},
+        (${popupSchemaPrefix}SEQ_POPUP_TARGET_CONDITION.NEXTVAL, #{targetGroupId}, #{condition.conditionType},
          #{condition.conditionOperator},
          CASE WHEN #{condition.conditionType} = 'DEPARTMENT' THEN #{condition.value} END,
          CASE WHEN #{condition.conditionType} = 'POSITION'   THEN #{condition.value} END,
@@ -461,17 +464,17 @@
         WITH DEPARTMENT_TREE (ANCESTOR_DEPARTMENT_ID, DESCENDANT_DEPARTMENT_ID) AS
         (
             SELECT DEPARTMENT_ID, DEPARTMENT_ID
-            FROM POPUP.APP_DEPARTMENT
+            FROM ${popupSchemaPrefix}APP_DEPARTMENT
             UNION ALL
             SELECT t.ANCESTOR_DEPARTMENT_ID, child.DEPARTMENT_ID
             FROM DEPARTMENT_TREE t
-            JOIN POPUP.APP_DEPARTMENT child
+            JOIN ${popupSchemaPrefix}APP_DEPARTMENT child
               ON child.PARENT_DEPARTMENT_ID = t.DESCENDANT_DEPARTMENT_ID
         ),
         SELECTED_USER AS
         (
             SELECT u.*
-            FROM POPUP.APP_USER u
+            FROM ${popupSchemaPrefix}APP_USER u
             WHERE u.EMPLOYEE_NO = #{userId}
               AND u.ACTIVE_YN = 'Y'
         ),
@@ -534,10 +537,10 @@
                     ELSE 0
                 END AS CONDITION_MATCHED
             FROM SELECTED_USER u
-            CROSS JOIN POPUP.POPUP_NOTICE n
-            JOIN POPUP.POPUP_TARGET_GROUP g
+            CROSS JOIN ${popupSchemaPrefix}POPUP_NOTICE n
+            JOIN ${popupSchemaPrefix}POPUP_TARGET_GROUP g
               ON g.POPUP_ID = n.POPUP_ID
-            JOIN POPUP.POPUP_TARGET_CONDITION c
+            JOIN ${popupSchemaPrefix}POPUP_TARGET_CONDITION c
               ON c.TARGET_GROUP_ID = g.TARGET_GROUP_ID
             WHERE n.ACTIVE_YN = 'Y'
               AND <include refid="nowKst"/> BETWEEN n.DISPLAY_START_AT AND n.DISPLAY_END_AT
@@ -547,7 +550,7 @@
                   OR EXISTS
                   (
                       SELECT 1
-                      FROM POPUP.QUESTION_TEMPLATE t
+                      FROM ${popupSchemaPrefix}QUESTION_TEMPLATE t
                       WHERE t.QUESTION_TEMPLATE_ID = n.QUESTION_TEMPLATE_ID
                         AND t.ACTIVE_YN = 'Y'
                   )
@@ -555,7 +558,7 @@
               AND NOT EXISTS
               (
                   SELECT 1
-                  FROM POPUP.USER_POPUP_STATUS s
+                  FROM ${popupSchemaPrefix}USER_POPUP_STATUS s
                   WHERE s.EMPLOYEE_NO = u.EMPLOYEE_NO
                     AND s.POPUP_ID = n.POPUP_ID
                     AND (
@@ -582,9 +585,9 @@
             SELECT DISTINCT POPUP_ID
             FROM ELIGIBLE_POPUP
         ) e
-        JOIN POPUP.POPUP_NOTICE n
+        JOIN ${popupSchemaPrefix}POPUP_NOTICE n
           ON n.POPUP_ID = e.POPUP_ID
-        LEFT JOIN POPUP.POPUP_CONTENT ct
+        LEFT JOIN ${popupSchemaPrefix}POPUP_CONTENT ct
           ON ct.POPUP_ID = n.POPUP_ID
         ORDER BY n.DISPLAY_ORDER, n.CREATED_AT, n.POPUP_ID
     </select>
@@ -604,7 +607,7 @@
             CORRECT_ANSWER,
             ANSWER_MATCH_MODE,
             SORT_ORDER
-        FROM POPUP.POPUP_QUESTION
+        FROM ${popupSchemaPrefix}POPUP_QUESTION
         WHERE QUESTION_TEMPLATE_ID IN
         <foreach collection="templateIds"
                  item="templateId"
@@ -623,7 +626,7 @@
             OPTION_TEXT,
             CORRECT_YN,
             SORT_ORDER
-        FROM POPUP.POPUP_OPTION
+        FROM ${popupSchemaPrefix}POPUP_OPTION
         WHERE QUESTION_ID IN
         <foreach collection="questionIds"
                  item="questionId"
@@ -639,7 +642,7 @@
 
     <!-- 사용자와 팝업 조합이 없으면 생성하고, 있으면 숨김 기간을 갱신한다. 만료 시각은 서버(KST) 기준. -->
     <update id="upsertPopupHide">
-        MERGE INTO POPUP.USER_POPUP_STATUS s
+        MERGE INTO ${popupSchemaPrefix}USER_POPUP_STATUS s
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (s.EMPLOYEE_NO = src.EMPLOYEE_NO AND s.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -655,7 +658,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, 'HIDDEN', 0,
+            ${popupSchemaPrefix}SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, 'HIDDEN', 0,
             <include refid="nowKst"/>,
             <include refid="nowKst"/> + NUMTODSINTERVAL(#{hideDays}, 'DAY'),
             'N', #{userId}, #{userId}
@@ -665,7 +668,7 @@
     <select id="selectHiddenUntil"
             resultType="java.time.OffsetDateTime">
         SELECT FROM_TZ(HIDDEN_UNTIL_AT, 'Asia/Seoul')
-        FROM POPUP.USER_POPUP_STATUS
+        FROM ${popupSchemaPrefix}USER_POPUP_STATUS
         WHERE EMPLOYEE_NO = #{userId}
           AND POPUP_ID = #{popupId}
     </select>
@@ -678,8 +681,8 @@
             n.POPUP_TYPE           AS popupType,
             n.QUESTION_TEMPLATE_ID AS questionTemplateId,
             n.PASSING_SCORE        AS passingScore
-        FROM POPUP.POPUP_NOTICE n
-        JOIN POPUP.APP_USER u
+        FROM ${popupSchemaPrefix}POPUP_NOTICE n
+        JOIN ${popupSchemaPrefix}APP_USER u
           ON u.EMPLOYEE_NO = #{userId}
          AND u.ACTIVE_YN = 'Y'
         WHERE n.POPUP_ID = #{popupId}
@@ -695,11 +698,11 @@
     <insert id="upsertPopupResponse" parameterType="map">
         <selectKey keyProperty="responseId" resultType="java.lang.Long" order="AFTER">
             SELECT RESPONSE_ID
-            FROM POPUP.POPUP_RESPONSE
+            FROM ${popupSchemaPrefix}POPUP_RESPONSE
             WHERE EMPLOYEE_NO = #{userId}
               AND POPUP_ID = #{popupId}
         </selectKey>
-        MERGE INTO POPUP.POPUP_RESPONSE r
+        MERGE INTO ${popupSchemaPrefix}POPUP_RESPONSE r
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (r.EMPLOYEE_NO = src.EMPLOYEE_NO AND r.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -721,7 +724,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_POPUP_RESPONSE.NEXTVAL, #{clientRequestId}, src.POPUP_ID, src.EMPLOYEE_NO, #{questionTemplateId},
+            ${popupSchemaPrefix}SEQ_POPUP_RESPONSE.NEXTVAL, #{clientRequestId}, src.POPUP_ID, src.EMPLOYEE_NO, #{questionTemplateId},
             'SUBMITTED', #{responseStartedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
             <include refid="nowKst"/>, <include refid="nowKst"/>,
             #{totalScore}, #{passedYn}, #{userId}, #{userId}
@@ -730,15 +733,15 @@
 
     <!-- 재제출 시 이전 문항 답안과 하위 선택값은 FK ON DELETE CASCADE로 함께 제거된다. -->
     <delete id="deleteResponseAnswers">
-        DELETE FROM POPUP.POPUP_RESPONSE_ANSWER
+        DELETE FROM ${popupSchemaPrefix}POPUP_RESPONSE_ANSWER
         WHERE RESPONSE_ID = #{responseId}
     </delete>
 
     <insert id="insertResponseAnswer" parameterType="map">
         <selectKey keyProperty="responseAnswerId" resultType="java.lang.Long" order="BEFORE">
-            SELECT POPUP.SEQ_POPUP_RESPONSE_ANSWER.NEXTVAL FROM DUAL
+            SELECT ${popupSchemaPrefix}SEQ_POPUP_RESPONSE_ANSWER.NEXTVAL FROM DUAL
         </selectKey>
-        INSERT INTO POPUP.POPUP_RESPONSE_ANSWER
+        INSERT INTO ${popupSchemaPrefix}POPUP_RESPONSE_ANSWER
         (
             RESPONSE_ANSWER_ID, RESPONSE_ID, QUESTION_ID, TEXT_ANSWER,
             EARNED_SCORE, CORRECT_YN, CREATED_BY, UPDATED_BY
@@ -751,21 +754,21 @@
     </insert>
 
     <insert id="insertResponseValue">
-        INSERT INTO POPUP.POPUP_RESPONSE_VALUE
+        INSERT INTO ${popupSchemaPrefix}POPUP_RESPONSE_VALUE
         (
             RESPONSE_VALUE_ID, RESPONSE_ANSWER_ID, OPTION_ID, SELECTED_VALUE,
             CREATED_BY, UPDATED_BY
         )
         VALUES
         (
-            POPUP.SEQ_POPUP_RESPONSE_VALUE.NEXTVAL, #{responseAnswerId}, #{optionId}, #{selectedValue},
+            ${popupSchemaPrefix}SEQ_POPUP_RESPONSE_VALUE.NEXTVAL, #{responseAnswerId}, #{optionId}, #{selectedValue},
             #{userId}, #{userId}
         )
     </insert>
 
     <!-- 통과 여부를 팝업 표시 상태에도 반영한다. 이미 완료된 상태는 되돌리지 않는다 (원본 CASE 로직 유지). -->
     <update id="markPopupCompleted">
-        MERGE INTO POPUP.USER_POPUP_STATUS s
+        MERGE INTO ${popupSchemaPrefix}USER_POPUP_STATUS s
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (s.EMPLOYEE_NO = src.EMPLOYEE_NO AND s.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -791,7 +794,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID,
+            ${popupSchemaPrefix}SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID,
             CASE WHEN #{passedYn} = 'Y' THEN 'COMPLETED' ELSE 'SUBMITTED' END,
             0, #{passedYn},
             CASE WHEN #{passedYn} = 'Y' THEN <include refid="nowKst"/> ELSE NULL END,
@@ -805,8 +808,8 @@
             n.POPUP_ID         AS popupId,
             n.POPUP_TYPE       AS popupType,
             n.COMPLETION_RATIO AS completionRatio
-        FROM POPUP.POPUP_NOTICE n
-        JOIN POPUP.APP_USER u
+        FROM ${popupSchemaPrefix}POPUP_NOTICE n
+        JOIN ${popupSchemaPrefix}APP_USER u
           ON u.EMPLOYEE_NO = #{userId}
          AND u.ACTIVE_YN = 'Y'
         WHERE n.POPUP_ID = #{popupId}
@@ -817,7 +820,7 @@
 
     <!-- 낮은 재생값으로 다시 전송돼도 누적 최대값과 완료 상태는 되돌리지 않는다 (GREATEST + CASE 유지). -->
     <update id="upsertVideoProgress">
-        MERGE INTO POPUP.VIDEO_VIEW_STATUS v
+        MERGE INTO ${popupSchemaPrefix}VIDEO_VIEW_STATUS v
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (v.EMPLOYEE_NO = src.EMPLOYEE_NO AND v.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -845,7 +848,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_VIDEO_VIEW_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, #{durationSeconds},
+            ${popupSchemaPrefix}SEQ_VIDEO_VIEW_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, #{durationSeconds},
             #{positionSeconds}, #{maximumPositionSeconds},
             #{watchedSeconds}, #{watchedRatio}, #{completedYn},
             <include refid="nowKst"/>, <include refid="nowKst"/>,
@@ -857,15 +860,15 @@
     <select id="selectVideoCompletedAt"
             resultType="java.time.OffsetDateTime">
         SELECT FROM_TZ(COMPLETED_AT, 'Asia/Seoul')
-        FROM POPUP.VIDEO_VIEW_STATUS
+        FROM ${popupSchemaPrefix}VIDEO_VIEW_STATUS
         WHERE EMPLOYEE_NO = #{userId}
           AND POPUP_ID = #{popupId}
     </select>
 
     <select id="countActiveUserAndPopup" resultType="int">
         SELECT COUNT(*)
-        FROM POPUP.APP_USER u
-        CROSS JOIN POPUP.POPUP_NOTICE n
+        FROM ${popupSchemaPrefix}APP_USER u
+        CROSS JOIN ${popupSchemaPrefix}POPUP_NOTICE n
         WHERE u.EMPLOYEE_NO = #{userId}
           AND u.ACTIVE_YN = 'Y'
           AND n.POPUP_ID = #{popupId}
@@ -874,7 +877,7 @@
 
     <!-- 표시 횟수와 닫은 시각을 누적하되 이미 완료된 상태는 유지한다. -->
     <update id="upsertPopupEvent">
-        MERGE INTO POPUP.USER_POPUP_STATUS s
+        MERGE INTO ${popupSchemaPrefix}USER_POPUP_STATUS s
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (s.EMPLOYEE_NO = src.EMPLOYEE_NO AND s.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -907,7 +910,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, #{eventType},
+            ${popupSchemaPrefix}SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, #{eventType},
             CASE WHEN #{eventType} = 'DISPLAYED' THEN <include refid="nowKst"/> END,
             CASE WHEN #{eventType} = 'DISPLAYED' THEN <include refid="nowKst"/> END,
             CASE WHEN #{eventType} = 'DISPLAYED' THEN 1 ELSE 0 END,
@@ -930,14 +933,14 @@
             FROM_TZ(s.HIDDEN_UNTIL_AT, 'Asia/Seoul')    AS hiddenUntilAt,
             CASE WHEN s.COMPLETED_YN = 'Y' THEN 1 ELSE 0 END AS completed,
             FROM_TZ(s.COMPLETED_AT, 'Asia/Seoul')       AS completedAt
-        FROM POPUP.USER_POPUP_STATUS s
+        FROM ${popupSchemaPrefix}USER_POPUP_STATUS s
         WHERE s.EMPLOYEE_NO = #{userId}
         ORDER BY s.POPUP_ID
     </select>
 
     <select id="selectAdminQuestionTemplates" resultType="server.domain.popup.AdminQuestionTemplate">
         SELECT QUESTION_TEMPLATE_ID AS templateId, TEMPLATE_NAME AS templateName, TEMPLATE_TYPE AS templateType
-        FROM POPUP.QUESTION_TEMPLATE
+        FROM ${popupSchemaPrefix}QUESTION_TEMPLATE
         WHERE ACTIVE_YN = 'Y' AND CURRENT_YN = 'Y'
         ORDER BY TEMPLATE_NAME, QUESTION_TEMPLATE_ID
     </select>

@@ -12,6 +12,29 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-20-02 — 원격 개발 DB(Oracle 11g XE) 연동: 매퍼 PG 잔재 점검, DDL 11g 호환, 팝업 스키마 한정자 설정화, WPF↔서버↔원격 DB 왕복 확인
+
+- 이유: 사용자 요청 "postgres 매퍼로 남아있는건 다 변환하고 wpf <-> java <-> db(원격 서버, VPN) 테스트까지". 이후 "팝업 계정 따로" → 앱 계정에 CREATE USER 권한이 없음을 확인하자 "스키마만 따로 해서 스키마 분리로" 확정.
+- 확인(읽기):
+  - 서버 매퍼 XML에 PostgreSQL 구문 없음(`nextval(`·`::`·`LIMIT`·`ON CONFLICT`·`RETURNING` 등 검색 — `PopupMapper.xml` 변환 규칙 *주석*에만 존재). cloverframework 3.0.3 내장 매퍼도 Oracle. nav는 프레임워크 `CLNavApiController`(`/apis/cloverframework/nav/*`)가 제공하고 zero-rule-web(`sub/domain/src/api-url.ts`)이 그 경로를 호출 → sample의 `/apis/nav/*` 서버 코드는 웹이 쓰지 않던 사본. 미결 16 해소.
+  - 원격 개발 DB `192.168.114.71:4004/XE`: **Oracle 11g XE 11.2.0.2**(설계 가정 19c와 다름). 앱 계정 `zero-rule`: 공통 테이블 53개, 권한 CONNECT/RESOURCE(+CREATE TABLE/SEQUENCE…), **CREATE USER 없음**. `POPUP` 계정 없음. 팝업 객체 17테이블·12시퀀스·제약/인덱스 이름은 기존 175개 객체와 충돌 없음. `ojdbc8 23.5.0.24.07`·`ojdbc6 11.2.0.4` 모두 11g 접속·`nowKst` 쿼리 정상.
+- 변경(DDL, `db/oracle/`): `01` — 11g 호환: 30자 초과 제약명 3개 단축(`UK_QTEMPLATE_GROUP_VERSION`, `CK_TCOND_INCLUDE_CHILD`, `CK_TCOND_CHILD_DEPARTMENT`), `CK_CONTENT_OPTIONS_JSON (IS JSON)` 제거(JSON 유효성은 Java), 헤더 "대상 11g XE 이상", `ALTER SESSION SET CURRENT_SCHEMA=POPUP` 주석 처리(실행 계정 스키마에 생성), 주석 안 세미콜론 제거(SQL*Plus가 문장 끝으로 오해 → ORA-00907). `02` — CURRENT_SCHEMA 주석 처리. `03` — 권한 대상 계정을 인자(`&1`)로 받아 큰따옴표 식별자로 사용(`ZERO_RULE` / `ZERO-RULE`). `00` — 원격 실행 안내.
+- 변경(서버, 스키마 분리 설정화):
+  - `repo/core/.../popup/PopupSchema.java` [추가] — 설정 `custom.popup.schema` → MyBatis 변수 `popupSchemaPrefix`("POPUP." 또는 ""). `PopupMapper.xml`·`WpfPopupMapper.xml` — `POPUP.` 67곳 → `${popupSchemaPrefix}`(상수 치환, 설정값만 사용).
+  - `app/.../config/MyBatisConfig.java` [공통, 추가 4줄] — `@Value custom.popup.schema`(기본 POPUP) → `factoryBean.setConfigurationProperties(PopupSchema.variables(...))`. 다른 매퍼는 변수를 쓰지 않아 영향 없음. 공통 파일 수정은 이제 6개(모두 추가형).
+  - `application-dev_db.yml` [공통, 추가] — `custom.popup.schema: ""`(원격 개발 DB는 앱 계정 스키마). 로컬 XE(POPUP 계정)로 띄울 때는 `CUSTOM_POPUP_SCHEMA=POPUP` 환경변수.
+  - 테스트 6개 — `POPUP_TEST_DB_SCHEMA`(기본 POPUP, 빈 값 = 접속 계정 스키마)로 같은 변수 주입(`Configuration.setVariables` / `mybatis.configuration-properties.*`), `WpfApiOracleHttpTest` 정리 SQL 접두어 변수화, `WpfApiDevServer` 동일.
+- 문서: `db/oracle/README.md`(11g·원격 적용 절차·스키마 배치 A/B·원격에서 부딪힌 것 5건), `README.md`(서버 실행: 기본 원격/로컬 환경변수, 진행 상태 행), `docs/design/05`(전제 11g·스키마 배치 행), `06`(공통 파일 6개), `09`(진행 상태 2차, 미결 1·16·17 해소).
+- 검증:
+  - 로컬 XE(POPUP 계정, 접두어 "POPUP."): 서버 테스트 50개 통과·skip 0 (변경 후 회귀 확인).
+  - 원격 11g에 `zero-rule`로 `01`·`02` 적용: 테이블 17·시퀀스 12·주석 37·샘플 36행 (`NLS_LANG=KOREAN_KOREA.AL32UTF8` 필요 — 없으면 한글 주석 따옴표가 깨져 ORA-01756. 1차 실행에서 7개 문장 실패 후 실패분만 재적용, COMMENT 37개는 UTF-8로 전부 덮어씀).
+  - 원격으로 `cleanTest` 후 popup 테스트 38개(service:core 34 + app HTTP 4) 통과·skip 0 — 시퀀스 진행값(`SEQ_API_REQUEST_LOG` 101 등)으로 실제 원격 실행 확인, E1002 정리 확인.
+  - **전체 zeroserver를 기본 설정(JNDI → 원격 11g, 접두어 "")으로 기동** → `PK_BATCH_NODE` 오류 없음(정식 공통 스키마). `/p/api/wpf/popups` 무헤더 401, E1001 200(팝업 4건).
+  - **WPF Debug exe(`BaseUrl=localhost:8080/zero-rule-server/p`, `DevUserId=E1001`) 실행 → UI Automation으로 TEXT 팝업 "9월 시스템 점검 안내" 닫기(`FooterCloseButton`) → 서버 로그 `GET popups`·`POST popups/results` → 원격 DB `USER_POPUP_STATUS`(CLOSED, 표시 1회, 표시·닫힘 시각)·`WPF_RESULT_RECEIPT`(CLOSED/ACCEPTED)·`API_REQUEST_LOG`(200) 기록 확인.** 다음 팝업(VIDEO) 창 표시 확인. 로그 SQL `INSERT INTO WPF_RESULT_RECEIPT`(한정자 없음)로 설정 반영 확인. 검증 행 3건 삭제, 원격은 샘플만 남음.
+  - 미수행: 관리자 웹 화면, VIDEO/SURVEY/QUIZ 팝업의 WPF 조작(자동화 범위 밖 — 서버 측은 HTTP 테스트로 커버), 운영 DB.
+- 상태: 커밋 후 푸시 예정.
+
+
 ## 2026-09-20-01 — 서버 공통 베이스라인을 업스트림 zero-rule-server Oracle 버전으로 교체, popup 재적용, 전체 서버 Oracle 기동 확인
 
 - 이유: 사용자가 zero-rule-server의 Oracle 버전(업스트림 `git.labcl.net/clover/zero-rule-server` @`56bb0c5`)을 전달하며 "정합성·설정 정보를 맞추고, 공통 영역은 추가·분기만, 기본은 서비스 추가"를 요청. 기존 sample 서버는 PostgreSQL 전용 프레임워크라 전체 기동이 불가했음(미결 15).

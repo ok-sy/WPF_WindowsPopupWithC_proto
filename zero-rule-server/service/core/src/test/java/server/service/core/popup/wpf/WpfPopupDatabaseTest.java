@@ -20,6 +20,7 @@ import server.domain.popup.wpf.WpfResultResponse;
 import server.domain.popup.wpf.WpfResultType;
 import server.domain.popup.wpf.WpfVideoProgress;
 import server.repo.core.mapper.popup.PopupMapper;
+import server.repo.core.mapper.popup.PopupSchema;
 import server.repo.core.mapper.popup.WpfPopupMapper;
 import server.service.core.popup.PopupService;
 
@@ -49,6 +50,8 @@ class WpfPopupDatabaseTest {
                 System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:oracle:thin:@//localhost:1521/XEPDB1"),
                 System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"), password);
         var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        config.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         config.setMapUnderscoreToCamelCase(true);
         config.setJdbcTypeForNull(JdbcType.NULL);
         for (String resource : List.of("mappers/popup/PopupMapper.xml", "mappers/popup/WpfPopupMapper.xml")) {

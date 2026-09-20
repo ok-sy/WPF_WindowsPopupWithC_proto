@@ -23,7 +23,7 @@
         표시·닫기 시각은 클라이언트 시각이므로 KstTimestampTypeHandler로 KST 벽시계 시각으로 저장한다.
     -->
     <update id="mergeDisplayAndClose">
-        MERGE INTO POPUP.USER_POPUP_STATUS s
+        MERGE INTO ${popupSchemaPrefix}USER_POPUP_STATUS s
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (s.EMPLOYEE_NO = src.EMPLOYEE_NO AND s.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
@@ -53,7 +53,7 @@
         )
         VALUES
         (
-            POPUP.SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, 'CLOSED',
+            ${popupSchemaPrefix}SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID, 'CLOSED',
             #{displayedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
             #{displayedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
             CASE WHEN #{displayedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler} IS NOT NULL
@@ -65,7 +65,7 @@
     </update>
 
     <select id="countActiveUser" resultType="int">
-        SELECT COUNT(*) FROM POPUP.APP_USER WHERE EMPLOYEE_NO = #{userId} AND ACTIVE_YN = 'Y'
+        SELECT COUNT(*) FROM ${popupSchemaPrefix}APP_USER WHERE EMPLOYEE_NO = #{userId} AND ACTIVE_YN = 'Y'
     </select>
 
     <!-- 결과 응답용 상태 1행. completed는 1/0 → boolean. -->
@@ -75,31 +75,31 @@
             CASE WHEN s.COMPLETED_YN = 'Y' THEN 1 ELSE 0 END AS completed,
             FROM_TZ(s.COMPLETED_AT, 'Asia/Seoul')            AS completedAt,
             FROM_TZ(s.HIDDEN_UNTIL_AT, 'Asia/Seoul')         AS hiddenUntilAt
-        FROM POPUP.USER_POPUP_STATUS s
+        FROM ${popupSchemaPrefix}USER_POPUP_STATUS s
         WHERE s.EMPLOYEE_NO = #{userId}
           AND s.POPUP_ID = #{popupId}
     </select>
 
     <select id="countReceipt" resultType="int">
-        SELECT COUNT(*) FROM POPUP.WPF_RESULT_RECEIPT WHERE RESULT_ID = #{resultId}
+        SELECT COUNT(*) FROM ${popupSchemaPrefix}WPF_RESULT_RECEIPT WHERE RESULT_ID = #{resultId}
     </select>
 
     <insert id="insertReceipt">
-        INSERT INTO POPUP.WPF_RESULT_RECEIPT
+        INSERT INTO ${popupSchemaPrefix}WPF_RESULT_RECEIPT
             (RECEIPT_ID, RESULT_ID, EMPLOYEE_NO, POPUP_ID, RESULT_TYPE, RESULT_STATUS, RESULT_CODE)
         VALUES
-            (POPUP.SEQ_WPF_RESULT_RECEIPT.NEXTVAL, #{resultId}, #{userId}, #{popupId},
+            (${popupSchemaPrefix}SEQ_WPF_RESULT_RECEIPT.NEXTVAL, #{resultId}, #{userId}, #{popupId},
              #{resultType}, #{resultStatus}, #{resultCode})
     </insert>
 
     <!-- 요청 단위 로그. 요약은 CLOB. POPUP_ID는 일괄 요청이라 NULL. 사용자 미확인(401/403) 요청은 EMPLOYEE_NO NULL, 작성자 'WPF'. -->
     <insert id="insertApiRequestLog">
-        INSERT INTO POPUP.API_REQUEST_LOG
+        INSERT INTO ${popupSchemaPrefix}API_REQUEST_LOG
             (API_REQUEST_LOG_ID, CLIENT_REQUEST_ID, EMPLOYEE_NO, POPUP_ID, API_PATH, HTTP_METHOD, CLIENT_IP,
              REQUEST_RECEIVED_AT, RESPONSE_COMPLETED_AT, ELAPSED_MILLISECONDS, HTTP_STATUS_CODE, SUCCESS_YN,
              REQUEST_SUMMARY, RESPONSE_SUMMARY, CREATED_BY, UPDATED_BY)
         VALUES
-            (POPUP.SEQ_API_REQUEST_LOG.NEXTVAL, #{clientRequestId}, #{userId}, NULL, #{apiPath}, #{httpMethod}, #{clientIp},
+            (${popupSchemaPrefix}SEQ_API_REQUEST_LOG.NEXTVAL, #{clientRequestId}, #{userId}, NULL, #{apiPath}, #{httpMethod}, #{clientIp},
              #{requestReceivedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
              <include refid="server.repo.core.mapper.popup.PopupMapper.nowKst"/>,
              #{elapsedMilliseconds}, #{httpStatusCode}, #{successYn},

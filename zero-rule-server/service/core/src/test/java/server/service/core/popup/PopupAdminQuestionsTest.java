@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import server.domain.popup.*;
 import server.repo.core.mapper.popup.PopupMapper;
+import server.repo.core.mapper.popup.PopupSchema;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -102,6 +103,8 @@ class PopupAdminQuestionsTest {
     @Test void mergedMapperHasNoDuplicateStatements() throws Exception {
         String resource = "mappers/popup/PopupMapper.xml";
         var configuration = new Configuration();
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        configuration.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         try (var stream = getClass().getClassLoader().getResourceAsStream(resource)) {
             assertNotNull(stream);
             new XMLMapperBuilder(stream, configuration, resource, configuration.getSqlFragments()).parse();

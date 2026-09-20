@@ -5,7 +5,10 @@
 --  내용 : 부서 3 / 직급 2 / 사용자 3, 팝업 4종(TEXT·VIDEO·SURVEY·QUIZ), 대상 조건, 문항.
 --  주의 : 운영 DB에 적용하지 않는다. 사번 E1001~E1003은 개발 SSO 모드(dev)에서 ssoToken으로 그대로 사용한다.
 -- =====================================================================
-ALTER SESSION SET CURRENT_SCHEMA = POPUP;
+-- 실행 계정의 스키마에 만든다. 별도 POPUP 계정이 있으면 popup 으로 접속해 실행하고(로컬 XE 21c),
+-- 계정을 만들 수 없는 환경(원격 개발 DB 11g XE)에서는 앱 계정(zero-rule)으로 접속해 실행한 뒤
+-- 서버 설정 custom.popup.schema 를 빈 값으로 둔다(스키마 분리 설정화, 2026-09-20). DBA가 대신 실행할 때만 아래를 켠다.
+-- ALTER SESSION SET CURRENT_SCHEMA = POPUP;
 
 -- 조직
 INSERT INTO APP_DEPARTMENT (DEPARTMENT_ID, PARENT_DEPARTMENT_ID, DEPARTMENT_NAME, DEPARTMENT_LEVEL, SORT_ORDER, CREATED_BY, UPDATED_BY)

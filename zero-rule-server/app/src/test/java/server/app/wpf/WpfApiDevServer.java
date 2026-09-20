@@ -1,5 +1,7 @@
 package server.app.wpf;
 
+import server.repo.core.mapper.popup.PopupSchema;
+
 import org.springframework.boot.SpringApplication;
 
 import java.util.HashMap;
@@ -31,6 +33,9 @@ public final class WpfApiDevServer {
         props.put("spring.datasource.driver-class-name", "oracle.jdbc.OracleDriver");
         props.put("mybatis.config-location", "classpath:mybatis-config.xml");
         props.put("mybatis.mapper-locations", "classpath:mappers/popup/*.xml");
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] íì ë§¤í¼ì ${popupSchemaPrefix} (íê²½ë³ì POPUP_TEST_DB_SCHEMA, ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        props.put("mybatis.configuration-properties." + PopupSchema.PROPERTY,
+                PopupSchema.prefix(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         props.put("custom.wpf-popup.dev-user-header", "true");
         props.put("custom.wpf-popup.polling-interval-seconds", "1800");
         props.put("spring.jackson.serialization.write-dates-as-timestamps", "true");

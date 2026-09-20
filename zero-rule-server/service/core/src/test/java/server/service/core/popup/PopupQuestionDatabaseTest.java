@@ -11,6 +11,7 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 import server.domain.popup.*;
 import server.repo.core.mapper.popup.PopupMapper;
+import server.repo.core.mapper.popup.PopupSchema;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -28,6 +29,8 @@ class PopupQuestionDatabaseTest {
                 System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:oracle:thin:@//localhost:1521/XEPDB1"),
                 System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"), password);
         var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
+        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        config.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         config.setMapUnderscoreToCamelCase(true);
         // 운영 mybatis-config.xml과 동일: Oracle은 NULL 바인드에 JdbcType.OTHER(1111)를 거부(ORA-17004)하므로 NULL로 지정한다.
         config.setJdbcTypeForNull(org.apache.ibatis.type.JdbcType.NULL);

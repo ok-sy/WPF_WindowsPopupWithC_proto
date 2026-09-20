@@ -3,7 +3,9 @@
 -- =====================================================================
 --  용도 : 01_popup_schema_oracle.sql 을 실행할 소유 계정(POPUP)을 만든다.
 --         zero 프레임워크 공통 스키마(ZERO_RULE)가 같은 DB에 있으면 팝업 테이블 접근 권한도 부여한다.
---  실행 : sqlplus system/<pw>@//host:1521/XEPDB1 @00_create_schema_oracle.sql
+--  실행 : sqlplus system/<pw>@//localhost:1521/XEPDB1 @00_create_schema_oracle.sql       (로컬 XE 21c)
+--         sqlplus system/<pw>@//192.168.114.71:4004/XE @00_create_schema_oracle.sql     (원격 개발 DB 11g XE — 앱 계정 ZERO-RULE은 이미 있음)
+--  주의 : 앱 계정(zero-rule)에는 CREATE USER 권한이 없으므로 이 스크립트는 DBA가 실행해야 한다.
 --  비밀번호는 개발 기본값이다. 운영에서는 반드시 바꾸고 소스에 적지 않는다.
 --
 --  [기준 5] PostgreSQL의 `CREATE SCHEMA popup` 에 대응한다. Oracle은 스키마 = 사용자이므로 사용자를 만든다.
