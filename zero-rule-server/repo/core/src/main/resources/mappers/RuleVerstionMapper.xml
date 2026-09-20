@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.RuleVerstionMapper">
+
+    <select id="findRuleAsisVerstionInfo" parameterType="java.util.Map" resultType="server.domain.vo.RuleVerstionVo">
+        SELECT RULEID
+            ,RULE_NM
+            ,RULEALIAS_NM
+            ,RULE_DESC
+            ,RULERETURN_TYPE
+            ,RULESORT_CD
+            ,RULEUSAGE_CD
+            ,ALLRETURN_YN
+            ,USE_YN
+            ,RULE_VERNO
+            ,ACTIVATE_YN
+            ,ACTIVATE_DATETIME
+            ,RULE_STATE
+            ,DEPLOY_DATETIME
+            ,DEPLOY_USERID
+            ,IFID
+            ,FIRSTREG_USERID
+            ,FIRSTREG_DATETIME
+            ,UPDATE_USERID
+            ,UPDATE_DATETIME
+        FROM RULE_HIST
+        WHERE RULEID = #{ruleid}
+        and RULE_VERNO = #{currentRuleVer}
+    </select>
+
+    <select id="findRuleAsisVerstionItem" parameterType="java.util.Map" resultType="server.domain.vo.RuleReturnItemVerstionVo">
+        SELECT RULEID
+              ,RETURN_ITEMID
+              ,RULE_VERNO
+              ,RETURNITEM_NO
+              ,UPDATE_USERID
+              ,UPDATE_DATETIME
+        FROM RULERETURNITEM_HIST
+        WHERE RULEID = #{ruleid}
+        and RULE_VERNO = #{currentRuleVer}
+    </select>
+
+    <select id="findRuleAsisVerstionConditon"  parameterType="java.util.Map" resultType="server.domain.vo.RuleConditionVerstionVo">
+        SELECT RULEID
+              ,RULECONDITIONNO
+              ,RULE_VERNO
+              ,CONDITION_INFIX_DESC
+              ,CONDITION_POSTFIX_DESC
+              ,CONDITION_DESC
+              ,FIRSTREG_USERID
+              ,FIRSTREG_DATETIME
+              ,UPDATE_USERID
+              ,UPDATE_DATETIME
+        FROM RULECONDITION_HIST
+        WHERE RULEID = #{ruleid}
+        and RULE_VERNO = #{currentRuleVer}
+    </select>
+
+
+    <select id="findRuleTobeVerstionInfo" parameterType="String" resultType="server.domain.vo.RuleVerstionVo">
+        SELECT RULEID
+              ,RULE_NM
+              ,RULEALIAS_NM
+              ,RULE_DESC
+              ,RULERETURN_TYPE
+              ,RULESORT_CD
+              ,RULEUSAGE_CD
+              ,ALLRETURN_YN
+              ,USE_YN
+              ,RULE_VERNO
+              ,ACTIVATE_YN
+              ,ACTIVATE_DATETIME
+              ,RULE_STATE
+              ,DEPLOY_DATETIME
+              ,DEPLOY_USERID
+              ,IFID
+              ,FIRSTREG_USERID
+              ,FIRSTREG_DATETIME
+              ,UPDATE_USERID
+              ,UPDATE_DATETIME
+        FROM RULE
+        WHERE RULEID = #{value}
+    </select>
+
+    <select id="findRuleTobeVerstionItem" parameterType="String" resultType="server.domain.vo.RuleReturnItemVerstionVo">
+        SELECT RULEID
+              ,RETURN_ITEMID
+              ,RETURNITEM_NO
+              ,UPDATE_USERID
+              ,UPDATE_DATETIME
+        FROM RULERETURNITEM
+        WHERE RULEID = #{value}
+    </select>
+
+    <select id="findRuleTobeVerstionConditon" parameterType="String" resultType="server.domain.vo.RuleConditionVerstionVo">
+        SELECT RULEID
+              ,RULECONDITIONNO
+              ,CONDITION_INFIX_DESC
+              ,CONDITION_POSTFIX_DESC
+              ,CONDITION_DESC
+              ,FIRSTREG_USERID
+              ,FIRSTREG_DATETIME
+              ,UPDATE_USERID
+              ,UPDATE_DATETIME
+        FROM RULECONDITION
+        WHERE RULEID = #{value}
+    </select>
+
+
+    <insert id="insertRuleHistory" parameterType="java.util.Map">
+        insert into RULE_HIST (
+                RULEID
+                ,RULE_VERNO
+                ,RULE_NM
+                ,RULEALIAS_NM
+                ,RULE_DESC
+                ,RULERETURN_TYPE
+                ,RULESORT_CD
+                ,RULEUSAGE_CD
+                ,ALLRETURN_YN
+                ,USE_YN
+                ,ACTIVATE_YN
+                ,ACTIVATE_DATETIME
+                ,RULE_STATE
+                ,DEPLOY_DATETIME
+                ,DEPLOY_USERID
+                ,IFID
+                ,RULEVERSIONCHANGECODE
+                ,FIRSTREG_USERID
+                ,FIRSTREG_DATETIME
+                ,UPDATE_USERID
+                ,UPDATE_DATETIME
+          )select
+                 RULEID
+                 ,RULE_VERNO
+                 ,RULE_NM
+                 ,RULEALIAS_NM
+                 ,RULE_DESC
+                 ,RULERETURN_TYPE
+                 ,RULESORT_CD
+                 ,RULEUSAGE_CD
+                 ,ALLRETURN_YN
+                 ,USE_YN
+                 ,ACTIVATE_YN
+                 ,ACTIVATE_DATETIME
+                 ,RULE_STATE
+                 ,DEPLOY_DATETIME
+                 ,DEPLOY_USERID
+                 ,IFID
+                 ,#{ruleversionchangecode}
+                 ,FIRSTREG_USERID
+                 ,FIRSTREG_DATETIME
+                 ,UPDATE_USERID
+                 ,UPDATE_DATETIME
+        from RULE
+        where ruleid = #{ruleid}
+    </insert>
+
+    <insert id="insertRuleReturnItemHistory" parameterType="java.util.Map">
+        insert into RULERETURNITEM_HIST (
+        RULEID
+        ,RETURN_ITEMID
+        ,RULE_VERNO
+        ,RETURNITEM_NO
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        )select
+        RULEID
+        ,RETURN_ITEMID
+        ,#{ruleVerno}
+        ,RETURNITEM_NO
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        from RULERETURNITEM where ruleid = #{ruleid}
+    </insert>
+
+    <insert id="insertRuleCondtionHistory" parameterType="java.util.Map">
+        insert into RULECONDITION_HIST (
+        RULEID
+        ,RULECONDITIONNO
+        ,RULE_VERNO
+        ,CONDITION_INFIX_DESC
+        ,CONDITION_POSTFIX_DESC
+        ,CONDITION_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        )select
+        RULEID
+        ,RULECONDITIONNO
+        ,#{ruleVerno}
+        ,CONDITION_INFIX_DESC
+        ,CONDITION_POSTFIX_DESC
+        ,CONDITION_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        from RULECONDITION where ruleid = #{ruleid}
+    </insert>
+
+    <insert id="insertRuleCondtionPostFixObjHistory" parameterType="java.util.Map">
+        insert into RULECONDITION_POSTFIXOBJECT_HI (
+        RULEID
+        ,POSTFIXOBJECTNO
+        ,RULECONDITIONNO
+        ,RULE_VERNO
+        ,DATATYPE_CD
+        ,OPERATOR_YN
+        ,OBJECT_DATA
+        )select
+        RULEID
+        ,POSTFIXOBJECTNO
+        ,RULECONDITIONNO
+        ,#{ruleVerno}
+        ,DATATYPE_CD
+        ,OPERATOR_YN
+        ,OBJECT_DATA
+        from RULECONDITION_POSTFIXOBJECT where ruleid = #{ruleid}
+    </insert>
+    <insert id="insertRuleCondtionReturnItemHistory" parameterType="java.util.Map">
+        insert into RULECONDITIONRETURNITEM_HIST (
+        RETURN_ITEMID
+        ,RULEID
+        ,RULECONDITIONNO
+        ,RULE_VERNO
+        ,RETURNITEM_EXPR_DESC
+        ,RETURNITEM_POSTFIX_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        )select
+        RETURN_ITEMID
+        ,RULEID
+        ,RULECONDITIONNO
+        ,#{ruleVerno}
+        ,RETURNITEM_EXPR_DESC
+        ,RETURNITEM_POSTFIX_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        from RULECONDITIONRETURNITEM where ruleid = #{ruleid}
+    </insert>
+
+
+    <select id="findRuleAsisVerstion" parameterType="java.util.Map" resultType="server.domain.vo.RuleVerstionVo">
+        SELECT RULEID
+        ,RULE_NM
+        ,RULEALIAS_NM
+        ,RULE_DESC
+        ,RULERETURN_TYPE
+        ,RULESORT_CD
+        ,RULEUSAGE_CD
+        ,ALLRETURN_YN
+        ,USE_YN
+        ,RULE_VERNO
+        ,ACTIVATE_YN
+        ,(TO_CHAR(ACTIVATE_DATETIME,'YYYY/MM/DD HH24:MI:SS')) as ACTIVATE_DATETIME
+        ,(select code_nm from clover_code where code_type='604' and code = SUBSTR(RULE_STATE,0,1)) as RULE_STATE
+        ,(TO_CHAR(DEPLOY_DATETIME,'YYYY/MM/DD HH24:MI:SS')) as DEPLOY_DATETIME
+        ,(select user_nm from clover_user where user_id = DEPLOY_USERID) as DEPLOY_USERID
+        ,IFID
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,(select user_nm from clover_user where user_id = UPDATE_USERID) as UPDATE_USERID
+        ,(SUBSTR(UPDATE_DATETIME,0,4)||'/'||SUBSTR(UPDATE_DATETIME,5,2)||'/'||SUBSTR(UPDATE_DATETIME,7,2)||' '||SUBSTR(UPDATE_DATETIME,9,2)||':'||SUBSTR(UPDATE_DATETIME,11,2)||':'||SUBSTR(UPDATE_DATETIME,13,2)
+        )as UPDATE_DATETIME
+        ,RULEVERSIONCHANGECODE
+        FROM RULE_HIST
+        WHERE RULEID = #{ruleid}
+        order by RULE_VERNO desc
+    </select>
+
+    <select id="findRuleItemHistory" parameterType="java.util.Map" resultType="server.domain.vo.RuleReturnItemVerstionVo">
+        SELECT a.RULEID
+        ,A.RETURN_ITEMID
+        ,A.RULE_VERNO
+        ,A.RETURNITEM_NO
+        ,A.UPDATE_USERID
+        ,A.UPDATE_DATETIME
+        ,b.ITEM_NM
+        ,b.ITEMALIAS_NM
+        ,(SELECT CODE_NM FROM CLOVER_CODE WHERE CODE_TYPE = '102' AND CODE = b.DATATYPE_CD) AS DATATYPE_NM
+        FROM RULERETURNITEM_HIST A
+        ,ruleitem b
+        WHERE A.RETURN_ITEMID = b.ITEMID
+        and RULEID = #{ruleid}
+    </select>
+
+    <select id="findRuleConditonHistory"  parameterType="java.util.Map" resultType="server.domain.vo.RuleConditionVerstionVo">
+        SELECT RULEID
+        ,RULECONDITIONNO
+        ,RULE_VERNO
+        ,CONDITION_INFIX_DESC
+        ,CONDITION_POSTFIX_DESC
+        ,CONDITION_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        ,(
+        SELECT LISTAGG(RETURNITEM_EXPR_DESC, ':__:') WITHIN GROUP (ORDER BY RULECONDITIONNO) AS concatenated_values
+        FROM
+        RULECONDITIONRETURNITEM_HIST
+        GROUP BY RULEID, RULE_VERNO,RULECONDITIONNO
+        having RULEID = a.RULEID
+        and RULE_VERNO = a.RULE_VERNO
+        and RULECONDITIONNO =  a.RULECONDITIONNO
+        ) as RESULT_VALUE
+        FROM RULECONDITION_HIST a
+        WHERE RULEID = #{ruleid}
+    </select>
+
+    <insert id="insertRuleDeployHst" parameterType="server.sql.ParamRule$InsertRuleDeploy">
+        insert into RULE_DEPLOY (
+        DEPLOY_DATETIME
+        ,RULEID
+        ,RULE_VERNO
+        ,RULE_UPDATE_YN
+        ,BEFORE_DEPLOY_APPLY_YN
+        ,AFTER_DEPLOY_APPLY_YN
+        ,RULE_UPDATE_USERID
+        ,RULE_UPDATE_DATETIME
+        ,REG_USERID
+        ,REG_DATETIME
+        ) values (
+        (select TO_CHAR(DEPLOY_DATETIME,'YYYYMMDDHH24MISS') as DEPLOY_DATETIME from rule where ruleid = #{ruleid})
+        ,#{ruleid}
+        ,#{ruleVerno}
+        ,#{ruleUpdateYn}
+        ,#{beforeDeployApplyYn}
+        ,#{afterDeployApplyYn}
+        ,#{ruleUpdateUserid}
+        ,#{ruleUpdateDatetime}
+        ,#{regUserid}
+        ,TO_CHAR(CURRENT_DATE,'YYYYMMDDHH24MISS')
+        )
+    </insert>
+    <select id="findUsedRule"  parameterType="java.util.Map" resultType="server.domain.vo.RuleConditionVerstionVo">
+        SELECT RULEID
+        ,RULECONDITIONNO
+        ,RULE_VERNO
+        ,CONDITION_INFIX_DESC
+        ,CONDITION_POSTFIX_DESC
+        ,CONDITION_DESC
+        ,FIRSTREG_USERID
+        ,FIRSTREG_DATETIME
+        ,UPDATE_USERID
+        ,UPDATE_DATETIME
+        ,(
+        SELECT LISTAGG(RETURNITEM_EXPR_DESC, ':__:') WITHIN GROUP (ORDER BY RULECONDITIONNO) AS concatenated_values
+        FROM
+        RULECONDITIONRETURNITEM_HIST
+        GROUP BY RULEID, RULE_VERNO,RULECONDITIONNO
+        having RULEID = a.RULEID
+        and RULE_VERNO = a.RULE_VERNO
+        and RULECONDITIONNO =  a.RULECONDITIONNO
+        ) as RESULT_VALUE
+        FROM RULECONDITION_HIST a
+        WHERE RULEID = #{ruleid}
+    </select>
+
+</mapper>

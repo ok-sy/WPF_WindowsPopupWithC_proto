@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.CLMsgMngMapper">
+    <!-- CLOVER_MSG_MNG 테이블 -->
+
+    <!--  다건 조회 - 페이징  -->
+    <select id="findMsgPage" resultType="server.domain.entity.CLMsgMng" parameterType="server.sql.ParamsCLMsgMng$FindPage">
+        select
+            t.MSG_ID,       -- 메시지 아이디
+            t.MSG_CLSF,     -- 메시지 타입
+            t.TSK_CLSF_CD,  -- 업무구분코드
+            t.OCCR_CLSF_CD, -- 발생구분코드
+            t.MSG_PRNT_CD,  -- 메시지출력코드
+            t.MSG_CN,        -- 메시지내용
+            t.USE_YN,        -- 메시지사용여부
+            t.REG_DTTM,      -- 등록일시
+            t.REGR_ID,       -- 등록자ID
+            t.CHNG_DTTM,     -- 변경일시
+            t.CHGR_ID       -- 변경자ID
+          from (
+              select
+                    a.*
+                  , ROWNUM AS RN
+                from (
+                    select
+                           m.MSG_ID,       -- 메시지 아이디
+                           m.MSG_CLSF,     -- 메시지 타입
+                           m.TSK_CLSF_CD,  -- 업무구분코드
+                           m.OCCR_CLSF_CD, -- 발생구분코드
+                           m.MSG_PRNT_CD,  -- 메시지출력코드
+                           m.MSG_CN,        -- 메시지내용
+                           m.USE_YN,        -- 메시지사용여부
+                           m.REG_DTTM,      -- 등록일시
+                           m.REGR_ID,       -- 등록자ID
+                           m.CHNG_DTTM,     -- 변경일시
+                           m.CHGR_ID       -- 변경자ID
+                      from CLOVER_MSG_MNG m
+                     where m.MSG_CLSF = nvl(#{msgClsf},m.MSG_CLSF)
+                       and m.TSK_CLSF_CD = nvl(#{tskClsfCd},m.TSK_CLSF_CD)
+                       and m.OCCR_CLSF_CD = nvl(#{occrClsfCd},m.OCCR_CLSF_CD)
+                    <if test='msgId != null and msgId != "" '>
+                       and UPPER(m.MSG_ID) LIKE '%' || UPPER(#{msgId}) || '%'
+                    </if>
+                    <if test='msgCn != null and msgCn != "" '>
+                       and UPPER(m.MSG_CN) LIKE '%' || UPPER(#{msgCn}) || '%'
+                    </if>
+                    order by msg_id
+                     ) a
+               where ROWNUM <![CDATA[ <= ]]> (#{pageNumber} + 1) * #{rowsPerPage}
+               ) t
+         WHERE RN > #{pageNumber} * #{rowsPerPage}
+    </select>
+
+    <!--  다건조회 - 전체 데이터 건수  -->
+    <select id="countForMsgPage" resultType="long" parameterType="server.sql.ParamsCLMsgMng$FindPage">
+        select count(*)
+          from CLOVER_MSG_MNG m
+         where m.MSG_CLSF = nvl(#{msgClsf},m.MSG_CLSF)
+           and m.TSK_CLSF_CD = nvl(#{tskClsfCd},m.TSK_CLSF_CD)
+           and m.OCCR_CLSF_CD = nvl(#{occrClsfCd},m.OCCR_CLSF_CD)
+        <if test='msgId != null and msgId != "" '>
+           and UPPER(m.MSG_ID) LIKE '%' || UPPER(#{msgId}) || '%'
+        </if>
+        <if test='msgCn != null and msgCn != "" '>
+           and UPPER(m.MSG_CN) LIKE '%' || UPPER(#{msgCn}) || '%'
+        </if>
+    </select>
+
+    <!--  메시지 등록  -->
+    <insert id="insert" parameterType="server.sql.ParamsCLMsgMng$Insert">
+        -- 임시
+            <selectKey resultType="String" keyProperty="msgId" order="BEFORE">
+                SELECT
+                CONCAT(#{occrClsfCd} || #{tskClsfCd}, LPAD(NVL(MAX(TO_NUMBER(SUBSTR(MSG_ID, 6))) + 1, 1), 5, '0')) AS MSG_ID
+                FROM CLOVER_MSG_MNG
+                WHERE OCCR_CLSF_CD = #{occrClsfCd}
+                AND TSK_CLSF_CD = #{tskClsfCd}
+            </selectKey>
+            INSERT INTO CLOVER_MSG_MNG (
+                      MSG_ID
+                    , MSG_CLSF
+                    , TSK_CLSF_CD
+                    , OCCR_CLSF_CD
+                    , MSG_PRNT_CD
+                    , MSG_CN
+                    , USE_YN
+                    , REG_DTTM
+                    , REGR_ID
+                    , CHGR_ID
+            ) VALUES (
+                      #{msgId}
+                    , #{msgClsf}
+                    , #{tskClsfCd}
+                    , #{occrClsfCd}
+                    , #{msgPrntCd}
+                    , #{msgCn}
+                    , 'Y'
+                    , SYSDATE
+                    , #{regrId}
+                    , #{chgrId}
+            )
+    </insert>
+
+    <!--  업데이트  -->
+    <update id="update" parameterType="server.sql.ParamsCLMsgMng$Update">
+        UPDATE CLOVER_MSG_MNG
+           SET MSG_CLSF     = #{msgClsf}
+             , OCCR_CLSF_CD = #{occrClsfCd}
+             , MSG_PRNT_CD  = #{msgPrntCd}
+             , MSG_CN       = #{msgCn}
+             , CHNG_DTTM    = SYSDATE
+             , CHGR_ID      = #{chgrId}
+         WHERE MSG_ID       = #{msgId}
+    </update>
+
+    <!--  사용여부 수정  -->
+    <update id="updateUseYn" parameterType="server.sql.ParamsCLMsgMng$UpdateUseYn">
+        UPDATE CLOVER_MSG_MNG
+           SET USE_YN = #{useYn}
+         WHERE MSG_ID = #{msgId}
+    </update>
+</mapper>

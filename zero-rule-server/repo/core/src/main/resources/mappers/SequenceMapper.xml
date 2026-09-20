@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="server.repo.core.mapper.SequenceMapper">
+    <select id="nextAuthSeq" resultType="long">
+        SELECT auth_seq.nextval FROM DUAL
+    </select>
+
+    <select id="nextFileSeq" resultType="long">
+        SELECT file_seq.nextval FROM DUAL
+    </select>
+
+    <select id="nextAccountSeq" resultType="long">
+        SELECT account_seq.nextval FROM DUAL
+    </select>
+
+    <select id="nextCommonSeq" resultType="long">
+        SELECT common_seq.nextval FROM DUAL
+    </select>
+
+    <select id="nextMetaSeq" resultType="long">
+        SELECT meta_seq.nextval FROM DUAL
+    </select>
+
+</mapper>

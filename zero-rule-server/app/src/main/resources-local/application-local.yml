@@ -1,0 +1,21 @@
+custom.system:
+  config-name: local
+  public-image-server-url: "/p/file/download/:FILEID:"
+  base-server-url: "http://localhost:8080/zero-rule-server"
+
+clover:
+  task:
+    task-disabled: false
+    health-check-interval: 60s
+  file-manager:
+    upload-root-folder: d:/tmp/zerorule/upload
+
+
+spring:
+  config:
+    activate:
+      on-profile:
+        - local
+  devtools:
+    livereload:
+      enabled: false

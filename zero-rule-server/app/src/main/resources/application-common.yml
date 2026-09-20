@@ -1,0 +1,49 @@
+spring:
+  config:
+    activate:
+      on-profile:
+        - common
+  servlet:
+    multipart.max-file-size: 4096MB
+    multipart.max-request-size: 4096MB
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  pid:
+    file: cloverserver.pid
+
+logging:
+  config: classpath:logback.xml
+
+server:
+  port: 8080
+  servlet:
+    context-path: /zero-rule-server
+  max-http-header-size: 8192
+  tomcat:
+    max-http-form-post-size: 4096MB
+  shutdown: graceful
+
+custom.auth-header:
+  user-refresh-token-header: "x-custom-authorization"
+  user-clear-header: "x-custom-authorization-clear"
+
+custom.server-security:
+  allowed-origins:
+    - http://localhost:3000
+    - http://localhost:3001
+    - https://zerorule.labcl.net
+    - http://zerorule.labcl.net
+    - http://localhost:6443
+    - http://localhost:8080
+    - http://192.168.184.134:6443
+    - http://192.168.184.134:8080
+
+custom.user-security:
+  debug-login-fail: true
+  passwd-reset-token-expire: 60m
+
+custom.user-jwt:
+  token-secret: 926D96C90030DD58429D2751AC1BDBBC
+  token-expiration: 120m
+  token-expiration-long: 6h
+  allow-dup-login: true

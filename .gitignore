@@ -14,6 +14,9 @@ popup-frameWork/publish/
 offline-sdk/*.exe
 offline-packages/nuget/*.nupkg
 popup-frameWork/dist/
-zero-rule-server-main/.idea/
+zero-rule-server/.idea/
+# 업스트림 zero-rule-server(git.labcl.net/clover/zero-rule-server @56bb0c5) 클론의 .git을 보관용으로 이름만 바꿔 둔 것 — 커밋하지 않는다
+zero-rule-server/.git-upstream-*/
 zero-rule-web/node_modules/
-zero-rule-server-main/**/build/
+zero-rule-server/**/build/
+zero-rule-server/.gradle/
