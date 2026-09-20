@@ -168,6 +168,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     }
     if (!popup.popupId.trim() || !popup.title.trim()) { toast.warn('팝업 ID와 제목을 입력해 주세요.'); return; }
     if (!Number.isInteger(popup.displayOrder) || popup.displayOrder < 1) { toast.warn('표시 우선순위는 1 이상의 정수로 입력해 주세요.'); return; }
+    // 서버(PopupService.validateAdminPopup)가 hideDays < 1 을 거절하고 WPF 숨김 API 는 1~3650 일만 받는다.
+    if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || popup.hideDays < 1 || popup.hideDays > 3650)) {
+      toast.warn('숨김 일수는 1~3650 사이의 정수로 입력하거나 비워 두세요.'); return;
+    }
     const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
     if (popup.popupType === 'TEXT' && bottomUrl && !normalizePopupLink(bottomUrl)) {
       toast.warn('하단 설명 연결 URL을 확인해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
@@ -336,6 +340,15 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
             </Box>
+            {/*
+              [옵션 정합성 — 2026-09-20] 숨김 일수(hideDays).
+              DB(POPUP_NOTICE.HIDE_DAYS)·서버 검증(1 이상)·WPF(다시 보지 않기 체크 시 HIDDEN 결과의 hideDays, 없으면 30일)는
+              모두 지원하는데 편집 화면에만 입력란이 없어 항상 null 로 저장되던 항목이다. 푸터+다시 보지 않기가 켜진 경우에만 의미가 있다.
+            */}
+            <TextField size="small" type="number" label="다시 보지 않기 숨김 일수" value={popup.hideDays ?? ''}
+              disabled={!popup.showFooter || !popup.showDoNotShowAgain} inputProps={{ min: 1, max: 3650, step: 1 }}
+              helperText="사용자가 '다시 보지 않기'를 체크하면 이 일수만큼 숨깁니다. 비우면 WPF 기본값 30일." sx={{ width: 260 }}
+              onChange={(e) => updatePopup('hideDays', e.target.value === '' ? null : Number(e.target.value))} />
 
             <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
               <Stack spacing={1.5}>

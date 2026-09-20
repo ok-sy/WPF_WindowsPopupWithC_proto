@@ -138,11 +138,24 @@ namespace Popup.Factories
             VideoPopupContentDto contentDto = contentJson.Deserialize<VideoPopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("VIDEO 팝업 content 변환에 실패했습니다.");
 
+            /*
+             * [관리자 웹 옵션 정합성 — 2026-09-20] 관리자 웹 "영상 재생" 섹션의 옵션 6개
+             * (showControls·allowFullScreen·allowPlaybackRateChange·autoPlay·isLoop·defaultVolume)를 View 에 전달한다.
+             * 이전에는 제목·URL·설명·설명 표시만 넘겨 웹에서 설정한 값이 WPF 에서 무시됐다.
+             * 값이 JSON 에 없을 때의 기본값(VideoPopupContentDto)은 웹 편집기의 기본 표시와 같다
+             * (autoPlay·isLoop 는 꺼짐, 나머지는 켜짐, 음량 0.7).
+             */
             return new VideoPopupView(
                 contentDto.VideoTitle,
                 contentDto.VideoUrl,
                 contentDto.Description,
-                contentDto.ShowDescription);
+                contentDto.ShowDescription,
+                contentDto.ShowControls,
+                contentDto.AllowFullScreen,
+                contentDto.AllowPlaybackRateChange,
+                contentDto.AutoPlay,
+                contentDto.IsLoop,
+                contentDto.DefaultVolume);
         }
 
         /*

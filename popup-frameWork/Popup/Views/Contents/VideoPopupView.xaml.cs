@@ -1,6 +1,7 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Web;
 using System.Windows;
@@ -138,13 +139,70 @@ namespace Popup.Views.Contents
         private Thickness
             _originalBorderThickness;
 
+        /*
+         * [관리자 웹 옵션 정합성 — 2026-09-20] 관리자 웹(PopupEditorDialog "영상 재생" 섹션)이 저장하는
+         * 재생 옵션 6개. 서버는 content_options_json 으로 그대로 내려주고 VideoPopupContentDto 가 파싱하지만
+         * 이전에는 PopupFactory 가 View 에 넘기지 않아 전부 무시됐다. 이제 생성자로 받아 실제 재생 동작에 적용한다.
+         *
+         *   _showControls              : 컨트롤바 표시 (false 면 컨트롤바를 절대 띄우지 않고 영상 클릭으로 재생/일시정지)
+         *   _allowFullScreen           : 전체화면 버튼 표시 / 웹 플레이어 전체화면 허용
+         *   _allowPlaybackRateChange   : 배속 버튼 표시 / HTML5 플레이어 배속 메뉴 허용
+         *   _autoPlay                  : 영상이 열리면 바로 재생할지 (false 면 첫 프레임에서 일시정지)
+         *   _isLoop                    : 끝나면 처음부터 다시 재생
+         *   _defaultVolume             : 시작 음량 (0~1). 웹 플레이어(HTML5 video)에도 적용, YouTube 는 URL 로 못 정함
+         */
+        private readonly bool _showControls;
+        private readonly bool _allowFullScreen;
+        private readonly bool _allowPlaybackRateChange;
+        private readonly bool _autoPlay;
+        private readonly bool _isLoop;
+        private readonly double _defaultVolume;
+
+        /* 배속 버튼이 순환하는 값. MediaElement.SpeedRatio 에 그대로 적용한다. */
+        private static readonly double[] PlaybackRates = { 0.5, 0.75, 1.0, 1.25, 1.5, 2.0 };
+        private int _playbackRateIndex = 2; // 1.0x
+
         public VideoPopupView(
             string videoTitle,
             string videoPath,
             string videoDescription,
-            bool showDescription = true)
+            bool showDescription = true,
+            bool showControls = true,
+            bool allowFullScreen = true,
+            bool allowPlaybackRateChange = true,
+            bool autoPlay = true,
+            bool isLoop = false,
+            double defaultVolume = 0.7)
         {
             InitializeComponent();
+
+            _showControls = showControls;
+            _allowFullScreen = allowFullScreen;
+            _allowPlaybackRateChange = allowPlaybackRateChange;
+            _autoPlay = autoPlay;
+            _isLoop = isLoop;
+            _defaultVolume = double.IsFinite(defaultVolume)
+                ? Math.Clamp(defaultVolume, 0.0, 1.0)
+                : 0.7;
+
+            /*
+             * 기본 음량을 슬라이더에 먼저 넣어 두면 MediaOpened 에서 PopupVideo.Volume = VolumeSlider.Value 로 반영된다.
+             * 음소거 해제 시 복원값도 같은 값으로 맞춘다.
+             */
+            VolumeSlider.Value = _defaultVolume;
+            _volumeBeforeMute = _defaultVolume > 0 ? _defaultVolume : 0.7;
+
+            /* 허용되지 않은 기능의 버튼은 열 자체를 접어 컨트롤바 폭을 낭비하지 않는다. */
+            if (!_allowFullScreen)
+            {
+                FullScreenButton.Visibility = Visibility.Collapsed;
+                FullScreenColumn.Width = new GridLength(0);
+            }
+            if (!_allowPlaybackRateChange)
+            {
+                PlaybackRateButton.Visibility = Visibility.Collapsed;
+                PlaybackRateColumn.Width = new GridLength(0);
+            }
 
             _progressTimer =
             new DispatcherTimer
@@ -237,7 +295,7 @@ namespace Popup.Views.Contents
 
                 PopupVideo.Visibility = Visibility.Visible;
                 VideoWebView.Visibility = Visibility.Collapsed;
-                LocalVideoControlArea.Visibility = Visibility.Visible;
+                LocalVideoControlArea.Visibility = ControlBarVisibility(true);
 
                 
                 ShowLoadingMessage("영상을 불러오는 중입니다.");
@@ -340,10 +398,18 @@ namespace Popup.Views.Contents
                 {
                     TryGetYouTubeVideoId(_videoPath, out string? videoId);
 
+                    /*
+                     * [관리자 웹 옵션] YouTube IFrame 파라미터로 옮길 수 있는 옵션만 반영한다.
+                     *   autoPlay → autoplay, showControls → controls, allowFullScreen → fs,
+                     *   isLoop → loop=1&playlist=<id> (YouTube 는 playlist 지정이 있어야 단일 영상 반복이 된다)
+                     * 기본 음량·배속 허용은 YouTube URL 로 제어할 수 없어 적용하지 않는다.
+                     */
                     string embedUrl =
                         $"https://www.youtube.com/embed/{videoId}" +
-                        "?autoplay=1" +
-                        "&controls=1" +
+                        $"?autoplay={(_autoPlay ? 1 : 0)}" +
+                        $"&controls={(_showControls ? 1 : 0)}" +
+                        $"&fs={(_allowFullScreen ? 1 : 0)}" +
+                        (_isLoop ? $"&loop=1&playlist={videoId}" : string.Empty) +
                         "&rel=0" +
                         "&playsinline=1";
 
@@ -353,6 +419,31 @@ namespace Popup.Views.Contents
 
                 string videoUrlJson =
                     JsonSerializer.Serialize(_videoPath);
+
+                /*
+                 * [관리자 웹 옵션] HTML5 <video> 속성으로 반영한다.
+                 *   showControls → controls, autoPlay → autoplay, isLoop → loop,
+                 *   allowFullScreen=false → controlsList nofullscreen, allowPlaybackRateChange=false → controlsList noplaybackrate,
+                 *   defaultVolume → 스크립트에서 video.volume 지정
+                 * controlsList 는 Chromium(WebView2) 전용 속성이라 그대로 쓸 수 있다.
+                 */
+                string videoAttributes =
+                    (_showControls ? " controls" : string.Empty) +
+                    (_autoPlay ? " autoplay" : string.Empty) +
+                    (_isLoop ? " loop" : string.Empty) +
+                    " playsinline";
+                string controlsList = string.Join(" ",
+                    new[]
+                    {
+                        _allowFullScreen ? null : "nofullscreen",
+                        _allowPlaybackRateChange ? null : "noplaybackrate",
+                    }.Where(token => token != null));
+                if (controlsList.Length > 0)
+                {
+                    videoAttributes += $" controlsList=\"{controlsList}\"";
+                }
+                string defaultVolumeJs =
+                    _defaultVolume.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
                 VideoWebView.NavigateToString(
                     $$"""
@@ -374,9 +465,14 @@ namespace Popup.Views.Contents
                       </style>
                     </head>
                     <body>
-                      <video id="video" src={{videoUrlJson}} controls autoplay playsinline></video>
+                      <video id="video" src={{videoUrlJson}}{{videoAttributes}}></video>
                       <script>
                         const video = document.getElementById('video');
+                        video.volume = {{defaultVolumeJs}};
+                        // 컨트롤바를 숨긴 경우 영상 클릭으로 재생/일시정지할 수 있게 한다 (로컬 MediaElement 와 같은 동작).
+                        if (!video.hasAttribute('controls')) {
+                          video.addEventListener('click', () => { if (video.paused) video.play(); else video.pause(); });
+                        }
                         const send = (type) => chrome.webview.postMessage({
                           type,
                           duration: Number.isFinite(video.duration) ? video.duration : 0,
@@ -567,7 +663,7 @@ namespace Popup.Views.Contents
                 Visibility.Collapsed;
 
             LocalVideoControlArea.Visibility =
-                Visibility.Visible;
+                ControlBarVisibility(true);
 
             PopupVideo.Volume =
                 VolumeSlider.Value;
@@ -602,7 +698,70 @@ namespace Popup.Views.Contents
             _lastObservedPositionSeconds =
                 0;
 
-            PlayVideo();
+            /* 배속은 MediaOpened 이후에 적용해야 반영된다. 기본 1.0x. */
+            PopupVideo.SpeedRatio =
+                PlaybackRates[_playbackRateIndex];
+
+            if (_autoPlay)
+            {
+                PlayVideo();
+                return;
+            }
+
+            /*
+             * [관리자 웹 옵션] 자동 재생 꺼짐: LoadMediaElementVideoAsync 가 미디어를 열기 위해 Play() 를 호출했으므로
+             * 여기서 바로 일시정지해 첫 프레임에서 멈춘 상태로 둔다. 컨트롤바(또는 영상 클릭)로 사용자가 시작한다.
+             */
+            PopupVideo.Pause();
+            PopupVideo.Position = TimeSpan.Zero;
+            _isPlaying = false;
+            PlayPauseIcon.Text = "";
+            PlayPauseButton.ToolTip = "재생";
+            LocalVideoControlArea.Visibility =
+                ControlBarVisibility(true);
+        }
+
+        /*
+         * [관리자 웹 옵션] 컨트롤바를 숨긴 팝업에서는 영상 영역 클릭으로 재생/일시정지를 전환한다.
+         * 컨트롤바가 있는 팝업은 기존처럼 버튼만 사용한다(클릭이 컨트롤바 조작과 겹치지 않도록).
+         */
+        private void VideoContainer_MouseLeftButtonUp(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            if (_showControls || !_isMediaOpened || _useWebPlayer)
+            {
+                return;
+            }
+
+            if (_isPlaying)
+            {
+                PauseVideo();
+            }
+            else
+            {
+                PlayVideo();
+            }
+        }
+
+        /*
+         * [관리자 웹 옵션] 배속 버튼: 목록을 순환하며 MediaElement.SpeedRatio 를 바꾼다.
+         * 재생 중이든 일시정지든 즉시 적용되고 다음 재생에도 유지된다.
+         */
+        private void PlaybackRateButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (!_allowPlaybackRateChange || _useWebPlayer)
+            {
+                return;
+            }
+
+            _playbackRateIndex = (_playbackRateIndex + 1) % PlaybackRates.Length;
+            double rate = PlaybackRates[_playbackRateIndex];
+            PopupVideo.SpeedRatio = rate;
+            PlaybackRateText.Text =
+                rate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "x";
         }
 
         private void ProgressTimer_Tick(
@@ -982,14 +1141,16 @@ namespace Popup.Views.Contents
 
         private void ShowVideoControls()
         {
+            /* [관리자 웹 옵션] 컨트롤 표시 꺼짐이면 어떤 경우에도 컨트롤바를 띄우지 않는다. */
             if (!_isMediaOpened
-                || _useWebPlayer)
+                || _useWebPlayer
+                || !_showControls)
             {
                 return;
             }
 
             LocalVideoControlArea.Visibility =
-                Visibility.Visible;
+                ControlBarVisibility(true);
 
             /*
              * 마우스가 움직일 때마다 기존 시간을 취소하고
@@ -1484,9 +1645,7 @@ namespace Popup.Views.Contents
              * 컨트롤바를 숨긴다.
              */
             LocalVideoControlArea.Visibility =
-                VideoContainer.IsMouseOver
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                ControlBarVisibility(VideoContainer.IsMouseOver);
         }
 
         private void FullScreenWindow_KeyDown(
@@ -1559,12 +1718,35 @@ namespace Popup.Views.Contents
                 @"mm\:ss");
         }
 
+        /*
+         * [관리자 웹 옵션] 컨트롤바를 보이려는 모든 경로가 거치는 헬퍼.
+         * "컨트롤 표시" 옵션이 꺼져 있으면 요청과 무관하게 항상 Collapsed 를 돌려준다.
+         */
+        private Visibility ControlBarVisibility(bool wanted)
+        {
+            return wanted && _showControls
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
         private void PopupVideo_MediaEnded(
         object sender,
         RoutedEventArgs e)
         {
 
             RequestProgressSave(force: true);
+
+            /*
+             * [관리자 웹 옵션] 반복 재생: 진행 스냅샷을 남긴 뒤 처음부터 다시 재생한다.
+             * 누적 시청시간(_watchedSeconds)은 계속 더해지므로 완료 판정(서버)에는 영향이 없다.
+             */
+            if (_isLoop)
+            {
+                PopupVideo.Position = TimeSpan.Zero;
+                _lastObservedPositionSeconds = 0;
+                PlayVideo(TimeSpan.Zero);
+                return;
+            }
 
             _isPlaying = false;
 
@@ -1573,7 +1755,7 @@ namespace Popup.Views.Contents
             _controlHideTimer.Stop();
 
             LocalVideoControlArea.Visibility =
-                Visibility.Visible;
+                ControlBarVisibility(true);
 
             PlayPauseIcon.Text =
                 "\uE768";
@@ -1750,7 +1932,7 @@ namespace Popup.Views.Contents
             _controlHideTimer.Stop();
 
             LocalVideoControlArea.Visibility =
-                Visibility.Visible;
+                ControlBarVisibility(true);
 
 
         }
