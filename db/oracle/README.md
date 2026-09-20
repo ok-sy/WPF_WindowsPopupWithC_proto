@@ -50,7 +50,8 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @04_popup_web_menu_oracle.sql
 ```
 
 - 결과: `master`(nav 2 "관리자 메뉴") 로그인 시 사이드바 맨 끝에 "팝업 관리 > 팝업 등록"이 보인다. 팝업 메뉴만 보이게 하려면 해당 사용자의 `CLOVER_USER.nav_id`를 새 NAV "팝업 관리" id로 바꾼다(웹 사용자 관리 화면 또는 UPDATE).
-- 실행 전 조회 스냅샷(2026-09-20): NAV 2개(1 기본, 2 관리자 메뉴), 사용자 3명(master·codingsb·aadd233, nav 2/1/2), `/rgst-pop` 페이지 없음, `CLOVERFRAMEWORK_SEQ` ≈ 376030.
+- 실행 전 조회 스냅샷(2026-09-20): NAV 2개(1 기본, 2 관리자 메뉴), 사용자 3명(nav 2/1/2), `/rgst-pop` 페이지 없음, `CLOVERFRAMEWORK_SEQ` ≈ 376030.
+- 원격 적용 완료(2026-09-20): NAV 376030 · SECTION 376031 · PAGE 376032(`page_key` 11112) · NAV_ITEM 3건. 원격 11g는 `VARCHAR2(n)`이 BYTE 의미라 `CLOVER_NAV.EXPL`(100)에 한글 설명을 길게 넣으면 `ORA-12899`가 난다 — 스크립트의 설명은 짧게 유지한다.
 
 ## 실DB 테스트 (롤백 전용)
 

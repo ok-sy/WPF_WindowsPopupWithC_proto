@@ -45,7 +45,8 @@ BEGIN
     EXCEPTION WHEN NO_DATA_FOUND THEN
         SELECT CLOVERFRAMEWORK_SEQ.NEXTVAL INTO v_nav_id FROM DUAL;
         INSERT INTO CLOVER_NAV (nav_id, nav_nm, expl)
-        VALUES (v_nav_id, '팝업 관리', 'WPF 팝업 시스템 관리자 메뉴. 사용자 nav_id 를 이 값으로 두면 팝업 메뉴만 보인다.');
+        -- expl 은 원격 11g 에서 VARCHAR2(100 BYTE) 로 잡혀 있어(한글 3바이트) 짧게 둔다. 긴 설명은 이 파일 헤더 참고.
+        VALUES (v_nav_id, '팝업 관리', 'WPF 팝업 시스템 관리자 메뉴');
         DBMS_OUTPUT.PUT_LINE('NAV     추가: ' || v_nav_id);
     END;
 
@@ -64,7 +65,8 @@ BEGIN
 
     ------------------------------------------------------------------
     -- 3) 페이지(PAGE) "팝업 등록" — url 은 zero-rule-web scene-router 의 '/rgst-pop'
-    --    page_key: 웹이 4자리로 0 패딩해 조회하므로 숫자 문자열. 기존 숫자 키의 최대값 + 1.
+    --    page_key: 웹(SceneManager.routeByPageKey)이 4자리로 0 패딩해 조회하므로 4자리 이하 숫자 문자열.
+    --    기존 4자리 이하 숫자 키의 최대값 + 1 (원격 DB의 'test' 페이지 키 11111 같은 이상치는 제외).
     ------------------------------------------------------------------
     BEGIN
         SELECT page_id INTO v_page_id FROM CLOVER_PAGE WHERE url = '/rgst-pop' AND ROWNUM = 1;
@@ -73,7 +75,7 @@ BEGIN
         SELECT TO_CHAR(NVL(MAX(TO_NUMBER(page_key)), 0) + 1)
           INTO v_page_key
           FROM CLOVER_PAGE
-         WHERE REGEXP_LIKE(page_key, '^[0-9]+$');
+         WHERE REGEXP_LIKE(page_key, '^[0-9]{1,4}$');
         SELECT CLOVERFRAMEWORK_SEQ.NEXTVAL INTO v_page_id FROM DUAL;
         INSERT INTO CLOVER_PAGE (page_id, page_key, page_nm, url, icon, dtl_expl)
         VALUES (v_page_id, v_page_key, '팝업 등록', '/rgst-pop', 'NoteAlt',
