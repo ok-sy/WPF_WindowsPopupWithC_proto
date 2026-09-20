@@ -27,7 +27,7 @@ sqlplus popup/popup@//localhost:1521/XEPDB1  @03_grant_zero_rule_oracle.sql
 $env:POPUP_TEST_DB_PASSWORD = "popup"
 $env:POPUP_TEST_DB_URL = "jdbc:oracle:thin:@//localhost:1521/XEPDB1"   # 기본값과 같으면 생략 가능
 $env:POPUP_TEST_DB_USER = "POPUP"
-cd zero-rule-server-main
+cd zero-rule-server
 .\gradlew :service:core:test --tests "server.service.core.popup.PopupQuestionDatabaseTest" --tests "server.service.core.popup.wpf.WpfPopupDatabaseTest"
 ```
 
@@ -48,7 +48,7 @@ cd zero-rule-server-main
 이 저장소의 zero 프레임워크(`clover-* 0.0.1-POSTGRE-SNAPSHOT`)와 공통 매퍼 13개는 PostgreSQL 전용 SQL이라 **전체 zeroserver는 Oracle에서 기동되지 않는다**(공통 프레임워크의 Oracle 빌드는 타 팀/운영 소관). WPF 실연동은 팝업·WPF API 빈만 올린 개발 서버로 한다.
 
 ```powershell
-cd zero-rule-server-main
+cd zero-rule-server
 $env:POPUP_TEST_DB_PASSWORD = "popup"
 .\gradlew :app:wpfDevServer        # http://localhost:8080/zero-rule-server/p/api/wpf/** , X-Dev-User-Id 헤더로 사용자 지정
 ```

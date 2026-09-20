@@ -12,6 +12,28 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-20-01 — 서버 공통 베이스라인을 업스트림 zero-rule-server Oracle 버전으로 교체, popup 재적용, 전체 서버 Oracle 기동 확인
+
+- 이유: 사용자가 zero-rule-server의 Oracle 버전(업스트림 `git.labcl.net/clover/zero-rule-server` @`56bb0c5`)을 전달하며 "정합성·설정 정보를 맞추고, 공통 영역은 추가·분기만, 기본은 서비스 추가"를 요청. 기존 sample 서버는 PostgreSQL 전용 프레임워크라 전체 기동이 불가했음(미결 15).
+- 정합성 확인(읽기): 업스트림은 Spring Boot 3.4.1 / Java 17 / cloverframework `3.0.3-SNAPSHOT`(repo.labcl.net 접근 확인) / 공통 매퍼 13개 Oracle SQL. 공통 보안·설정 파일(`SecurityConfig`·`CustomAuthenticationFilter`·`DefaultPublicUrls`·`MyBatisConfig`·`BasicConfig`·`WebMvcConfig`)은 기존과 내용 동일. popup 코드가 의존하는 공통 클래스는 `ApiBaseController`·`CLNewApiResponse` 뿐. 업스트림에 없는 것: popup/WPF 71개(우리 추가분), `nav` 기능 26개(sample 전용).
+  - 처음 전달된 버전(`zero-server`, Spring Boot 2.7 / Java 8 / `/zero-server` 컨텍스트)은 다른 제품 계열이라 사용자가 교체 → 두 번째 버전으로 진행.
+- 변경(교체, 커밋 `0294d1e`): `zero-rule-server-main/` 제거 → `zero-rule-server/`(업스트림 원본 그대로). 업스트림 클론의 `.git`은 `zero-rule-server/.git-upstream-56bb0c5/`로 이름만 바꿔 보관(.gitignore). `.idea/`도 ignore. `.gitignore` 경로 갱신.
+- 변경(재적용, 추가): popup·WPF 소스 71개(`domain/popup/**`, `repo/.../popup/**`, `service/.../popup/**`, `web/api/.../popup/**`, `base/props/WpfPopupProps`, 테스트 12개, `samples/popup-video-range/README.md`)를 이전 커밋에서 그대로 복원.
+- 변경(공통 파일, 모두 추가형·분기):
+  - `app/src/main/java/server/app/config/JndiResource.java` — 환경변수 `ZERO_RULE_DB_URL/USER/PASSWORD` 우선 분기 추가(없으면 업스트림 개발 DB 값 그대로). 드라이버(log4jdbc)·JNDI 이름 등 업스트림 유지. 이전 판의 `ALTER SESSION SET TIME_ZONE`은 popup 매퍼가 `SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul'`로 세션 시간대와 무관하므로 넣지 않음.
+  - `application-common.yml` — `custom.wpf-popup.polling-interval-seconds` 추가. **`dev-user-header: false`는 넣지 않음**: 전체 서버 기동 확인에서 `X-Dev-User-Id`가 무시됨 → 활성 프로파일 순서가 `local, common, springdoc, dev_db`라 common 값이 local의 `true`를 덮어쓰는 것이 원인. 기본값(false)은 `WpfPopupProps`가 가지므로 local에만 `true`를 둔다(주석에 기록).
+  - `application-local.yml` — `popup.video.*`, `custom.wpf-popup.dev-user-header: true` 추가.
+  - `service/core/build.gradle.kts` — `jackson-databind` 추가(PopupContentAssembler·PopupService). `app/build.gradle.kts` — `wpfDevServer` 태스크 재추가(주석을 "공통 DB 접속 불가 환경용"으로 수정).
+- 문서·스크립트: `README.md`(베이스라인 교체 설명, 디렉터리·진행 상태 표, "서버 실행" 절 신설), `docs/design/06`(헤더·공통 파일 5개 명시), `docs/design/09`(진행 상태 2026-09-20, 미결 15 해소, 미결 16 nav·17 로컬 BATCH_NODE 추가), `db/oracle/README.md`·`docs/interfaces/POPUP_INTERFACE_SPEC.md`·`shell/start-dev.ps1` 경로 `zero-rule-server-main` → `zero-rule-server`. 01·02 설계 문서와 과거 이력의 옛 경로는 역사 기록으로 그대로 둠.
+- 검증:
+  - `gradlew compileJava compileTestJava -Pprofile=local` 성공(JDK 17, Gradle 8.11.1, cloverframework 3.0.3-SNAPSHOT 원격 해석).
+  - 서버 테스트 50개 통과·실패 0·skip 0 (`service:core` 34, `web:api` 12, `app` 4 — 실DB `PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`·HTTP `WpfApiOracleHttpTest` 포함, 로컬 XE `XEPDB1`).
+  - **전체 zeroserver 기동**: `ZERO_RULE_DB_*`=로컬 XE로 `:app:bootRun -Pprofile=local` → `Started App`. 공통 `CustomAuthenticationFilter`를 거쳐 `GET /p/api/wpf/popups` 무헤더 401, `X-Dev-User-Id: E1001` 200(팝업 4건), `POST /p/api/wpf/popups/results` CLOSED → ACCEPTED, 재전송 → DUPLICATE. 검증 행(USER_POPUP_STATUS·WPF_RESULT_RECEIPT·API_REQUEST_LOG)은 sqlplus로 삭제.
+  - 기동 로그에 `CLOVER_BATCH_NODE` INSERT `ORA-00001` 1건 — 로컬 공통 스키마(PG DDL 변환본) 이슈, 동작 영향 없음(미결 17). 개발 DB `192.168.114.71:4004`는 이 PC에서 접속 불가라 미확인.
+  - WPF exe 실연동·관리자 웹은 이번에 재실행하지 않음(서버 API 계약 변경 없음).
+- 상태: 커밋 후 푸시 예정. nav 기능 반입 여부는 사용자 결정 대기.
+
+
 ## 2026-09-19-10 — 서버 확인: 실제 HTTP+Oracle 통합 테스트, 팝업 슬라이스 개발 서버, WPF 실연동
 
 - 이유: 사용자 요청 "서버쪽 확인". Oracle 위에서 신규 WPF API를 실제 HTTP로 검증하고 WPF exe를 붙여 본다.

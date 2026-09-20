@@ -1,7 +1,7 @@
 # 팝업 시스템 인터페이스 설계서 — JSON 송수신 기준
 
 - 문서 버전: 1.0 / 작성일: 2026-09-16 (KST)
-- 대상: 관리자 웹 ↔ zero-rule-server-main ↔ WPF 팝업 클라이언트
+- 대상: 관리자 웹 ↔ zero-rule-server ↔ WPF 팝업 클라이언트
 - 기준: 현재 저장소 구현. 설계서 예시는 가상 데이터이며 실운영 캡처가 아니다.
 - 범위: 팝업 관련 JSON API 12개, 공통 데이터 및 유형별 content. 로그인·타 업무 API와 화면 배치 설계는 제외한다.
 - 예제 모음: [popup-interface-examples.json](popup-interface-examples.json)
@@ -1013,13 +1013,13 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 
 | 기준 파일 | 확인 내용 |
 |---|---|
-| zero-rule-server-main/web/api/src/main/java/server/web/api/popup/PopupController.java | WPF API 6개 경로·메서드 |
-| zero-rule-server-main/web/api/src/main/java/server/web/api/popup/PopupAdminController.java | 관리자 API 6개 및 응답 래퍼 |
-| zero-rule-server-main/web/api/src/main/java/server/web/api/payload/popup/ | 요청 DTO·필수/범위 검증 |
-| zero-rule-server-main/domain/src/main/java/server/domain/popup/ | 공통 팝업·문항·응답 DTO |
-| zero-rule-server-main/service/core/src/main/java/server/service/core/popup/PopupService.java | 업무 검증·정답 제외·문항 복제·콘텐츠 조립 |
-| zero-rule-server-main/repo/core/src/main/resources/mappers/popup/PopupMapper.xml | 응답 upsert와 상태 저장 |
-| zero-rule-server-main/app/src/main/java/server/app/config/BasicConfig.java | timestamp 및 null 생략 설정 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupController.java | WPF API 6개 경로·메서드 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupAdminController.java | 관리자 API 6개 및 응답 래퍼 |
+| zero-rule-server/web/api/src/main/java/server/web/api/payload/popup/ | 요청 DTO·필수/범위 검증 |
+| zero-rule-server/domain/src/main/java/server/domain/popup/ | 공통 팝업·문항·응답 DTO |
+| zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java | 업무 검증·정답 제외·문항 복제·콘텐츠 조립 |
+| zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml | 응답 upsert와 상태 저장 |
+| zero-rule-server/app/src/main/java/server/app/config/BasicConfig.java | timestamp 및 null 생략 설정 |
 | zero-rule-web/sub/domain/src/base.ts | 관리자 응답 부가 필드 |
 | zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts | 관리자 클라이언트 요청·응답 사용 |
 | popup-frameWork/Popup/Service/PopupApiService.cs | WPF API 조합 경로 |

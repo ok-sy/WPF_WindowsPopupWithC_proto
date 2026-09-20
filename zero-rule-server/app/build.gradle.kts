@@ -129,3 +129,13 @@ fun gitRev() = ProcessBuilder("git", "rev-parse", "--short", "HEAD").start().let
 	p.waitFor(100, TimeUnit.MILLISECONDS)
 	p.inputStream.bufferedReader().readLine() ?: "none"
 }
+
+// [WPF 팝업 — 추가] 팝업·WPF API 슬라이스만 로컬 Oracle POPUP 스키마 위에서 8080으로 실행한다(테스트 소스, 배포 제외).
+// 전체 서버는 공통 개발 DB(JndiResource)가 필요하므로, 개발 DB에 접속할 수 없는 환경에서 WPF 실연동 확인용으로 둔다.
+// 전체 서버를 로컬 DB로 띄우려면 ZERO_RULE_DB_URL/USER/PASSWORD 환경변수를 주고 `:app:bootRun -Pprofile=local`.
+tasks.register<JavaExec>("wpfDevServer") {
+	group = "application"
+	description = "WPF 팝업 API 개발 서버 (Oracle POPUP 스키마, /zero-rule-server/p/api/wpf/**)"
+	classpath = sourceSets["test"].runtimeClasspath
+	mainClass.set("server.app.wpf.WpfApiDevServer")
+}

@@ -4,7 +4,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$backendPath = Join-Path $projectRoot 'zero-rule-server-main'
+$backendPath = Join-Path $projectRoot 'zero-rule-server'
 $frontendPath = Join-Path $projectRoot 'zero-rule-web'
 
 if (-not (Test-Path -LiteralPath (Join-Path $backendPath 'gradlew.bat'))) {
