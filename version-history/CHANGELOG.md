@@ -12,6 +12,14 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-20-04 — `shell/start-dev.ps1` 백엔드 창 즉시 종료 수정 (-Command 인자 괄호 누락)
+
+- 이유: 사용자가 `.\start-dev.ps1` 실행 시 백엔드 창이 `문자열에 " 종결자가 없습니다`(TerminatorExpectedAtEndOfString)로 바로 죽어 8080이 뜨지 않았고, WPF·프런트가 8080 연결 오류를 냈다.
+- 원인: 백엔드 `Start-DevWindow` 호출의 `-Command 'Write-Host "DB: ' + $dbLabel + '...'` 가 괄호 없이 쓰여, PowerShell 인자 모드에서 `-Command`에는 `Write-Host "DB: ` 까지만 바인딩되고 나머지(`+`, `$dbLabel`, …)는 `$args`로 흘러갔다(함수에 CmdletBinding이 없어 오류 없이 통과). 새 창은 닫히지 않은 큰따옴표 명령을 받아 파서 오류로 종료. 첫 커밋 `ee7d5e9`부터 있던 결함이며 프런트 쪽은 이미 괄호를 쓰고 있었다.
+- 변경(수정, `shell/start-dev.ps1` 83행): 인자를 `-Command ('...' + $dbLabel + '...')`로 괄호 묶음 + 원인 주석 추가. 그 외 변경 없음(공통 서버·웹 파일 무변경).
+- 검증: 스크립트 파싱 오류 0. `Start-DevWindow` 바인딩 시뮬레이션에서 수정 전 `-Command`=`Write-Host "DB: ` + 잔여 인자 4개 → 수정 후 전체 명령 1개·잔여 인자 0·생성 명령 파싱 오류 0 확인. 실제 스크립트로 두 창을 다시 띄우는 것은 이 세션에서 미수행(별도 창 생성 필요) — 사용자 작업 트리에서 `.\shell\start-dev.ps1` 재실행으로 확인 필요.
+- 상태: 브랜치 `worktree-fix-start-dev-command-quote`에 커밋 후 푸시. 사용자 작업 트리에는 같은 파일의 미커밋 수정(npx로 pnpm 실행)이 있어 83행만 동일하게 반영하면 된다.
+
 ## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
 
 - 후속(같은 작업): 첫 커밋 `ee7d5e9`에 전역 pnpm 7.29가 다시 쓴 `zero-rule-web/pnpm-lock.yaml`(lockfile 9.0 → 6.0, 의존성 버전 변동)이 딸려 들어갔음을 발견 → 원본으로 되돌림(공통 웹 파일 무변경). 원인 제거: 스크립트가 `package.json`의 `packageManager`(pnpm@9.15.2)를 `npx --yes`로 실행하고 `install --frozen-lockfile`을 쓴다(corepack 0.29는 서명 키 오류로 사용 불가). 9.15.2로 재설치 후 lockfile 무변경·프런트 기동·`API_BASE_URL` 주입 재확인. `README.md` "서버 실행"에 스크립트 안내 추가.

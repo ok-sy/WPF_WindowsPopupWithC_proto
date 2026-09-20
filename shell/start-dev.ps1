@@ -80,7 +80,10 @@ if (-not $SkipBackend) {
         $dbLabel = 'remote dev DB 192.168.114.71:4004/XE (VPN required, popup tables in app schema)'
     }
     Start-DevWindow -Title "Popup Backend - bootRun [$dbLabel]" -Directory $backendPath -EnvVars $backendEnv `
-        -Command 'Write-Host "DB: ' + $dbLabel + '" -ForegroundColor Cyan; & .\gradlew.bat :app:bootRun -Pprofile=local'
+        -Command ('Write-Host "DB: ' + $dbLabel + '" -ForegroundColor Cyan; & .\gradlew.bat :app:bootRun -Pprofile=local')
+    # [수정 2026-09-20] 위 -Command 인자는 반드시 괄호로 묶는다(프런트엔드 쪽과 동일). 괄호 없이 'a' + $x + 'b' 로 쓰면 PowerShell 인자 모드에서
+    #   -Command 에는 'Write-Host "DB: ' 까지만 바인딩되고 나머지(+, $dbLabel, ...)는 $args 로 흘러가, 새 창이 닫히지 않은 큰따옴표 명령을 받아
+    #   "문자열에 "" 종결자가 없습니다"(TerminatorExpectedAtEndOfString) 로 즉시 죽고 백엔드(8080)가 뜨지 않았다.
     Write-Host "Backend  -> http://localhost:8080/zero-rule-server  [$dbLabel]"
 }
 
