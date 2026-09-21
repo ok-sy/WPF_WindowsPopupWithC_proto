@@ -229,6 +229,19 @@ namespace Popup
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            /*
+             * [실행 순서 2/6]
+             * App.xaml.cs에서 MainWindow.Show()가 호출되면 여기로 들어온다.
+             *
+             * API 모드의 실제 자동 실행 흐름:
+             *   LoadAndShowAvailablePopupsAsync()
+             *     → PopupResultQueue.FlushAsync()
+             *     → PopupApiService.GetWpfPopupsAsync()
+             *     → PopupService.CreatePopupOptions()
+             *     → PopupManager.ShowRange()
+             *
+             * 즉 이 메서드부터 "서버에서 팝업을 받아 실제 화면에 띄우는" 작업이 시작된다.
+             */
             Loaded -= MainWindow_Loaded;
             if (_demoMode) return;
 
