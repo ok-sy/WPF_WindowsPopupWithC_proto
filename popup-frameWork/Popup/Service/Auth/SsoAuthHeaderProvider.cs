@@ -23,9 +23,10 @@ namespace Popup.Services.Auth
      *     → GetAuthorizationHeaderAsync(): 토큰이 없으면 SsoClient(Negotiate) → WpfLoginClient → 토큰 메모리 보관
      *     → "Bearer {token}" 반환
      *   서버 401
-     *     → OnUnauthorizedAsync(실패한 헤더): SSO → 로그인 → 새 토큰 (PopupApiService가 같은 요청을 1회 재전송)
+     *     → OnUnauthorizedAsync(실패한 헤더): 메모리 _lastUser로 로그인 API만 → 새 토큰 (PopupApiService가 같은 요청을 1회 재전송)
      *   1시간 주기 (StartPeriodicLogin)
-     *     → PeriodicTimer → SSO → 로그인 → 토큰 교체 (실패해도 현재 토큰을 지우지 않음)
+     *     → PeriodicTimer → 메모리 _lastUser로 로그인 API만 → 토큰 교체 (실패해도 현재 토큰을 지우지 않음)
+     *   ※ [설계 10 §14.1 확정] SSO GET은 프로세스 시작 후 최초 1회만. 사용자 정보도 메모리에만 두고 파일에 저장하지 않는다.
      *
      * [추가 이유] 서버 프로토타입 토큰은 10분 뒤 만료된다. 만료를 클라이언트가 미리 계산해 갱신하면 "401 → 재로그인 → 원 요청
      * 재전송" 경로가 실제로 검증되지 않으므로, 이 구현은 만료 시각을 진단용으로만 기억하고 갱신은 401 또는 정기 주기에만 한다.
@@ -179,13 +180,25 @@ namespace Popup.Services.Auth
                     return current;
                 }
 
-                SsoUserInfo user = await _ssoClient.GetUserAsync(linked.Token);
+                /*
+                 * [설계 10 §14.1 — 2026-09-21 확정] SSO GET은 프로세스 시작 후 최초 1회만.
+                 * 얻은 MAIN_USER_ID/MAIN_USER_CLASSI_CODE는 _lastUser(메모리)에 두고, 401 재로그인·1시간 정기 갱신은
+                 * 그 값으로 로그인 API만 다시 호출한다. 프로세스가 끝나면 _lastUser도 사라져 다음 실행에서 SSO GET 1회.
+                 * (관리 화면 "SSO 로그인 테스트"는 SSO 통신 확인용이라 TestLoginAsync에서 매번 SSO를 호출한다.)
+                 */
+                SsoUserInfo? user = _lastUser;
+                bool ssoCalled = false;
+                if (user == null)
+                {
+                    user = await _ssoClient.GetUserAsync(linked.Token);
+                    _lastUser = user;
+                    ssoCalled = true;
+                }
                 WpfLoginResponseDto login = await _loginClient.LoginAsync(user, linked.Token);
 
-                _lastUser = user;
                 _expiresAt = login.ExpiresAt;
                 Volatile.Write(ref _accessToken, login.AccessToken);
-                Debug.WriteLine($"[SSO-AUTH] 토큰 갱신 logonId={user.LogonId} expiresAt={login.ExpiresAt:O} (이전 토큰 {(current == null ? "없음" : "교체")})");
+                Debug.WriteLine($"[SSO-AUTH] 토큰 갱신 logonId={user.LogonId} expiresAt={login.ExpiresAt:O} (SSO {(ssoCalled ? "호출" : "재호출 없음")}, 이전 토큰 {(current == null ? "없음" : "교체")})");
                 return login.AccessToken;
             }
             catch (OperationCanceledException)

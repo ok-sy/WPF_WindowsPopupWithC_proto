@@ -14,6 +14,9 @@
 - 코드 변경: 없음. 현재 `SsoAuthHeaderProvider.LoginAsync()`는 재로그인마다 SSO를 다시 호출하므로 후속 구현 수정 필요.
 - 검증: 현재 main 소스와 설계 문서를 대조해 변경 대상 확인. 실행/빌드 테스트는 문서 변경만 수행하여 미실행.
 - 상태: main 반영 완료.
+- **후속(같은 작업, 구현 반영)**: `popup-frameWork/Popup/Service/Auth/SsoAuthHeaderProvider.cs` `LoginAsync()` — §14.1대로 `_lastUser`가 없을 때만 `SsoClient.GetUserAsync()`를 호출하고, 있으면 그 값으로 `WpfLoginClient.LoginAsync()`만 호출(401 재로그인·정기 갱신 모두). 진단 로그에 "SSO 호출/재호출 없음" 표시. 관리 화면 "SSO 로그인 테스트"(`TestLoginAsync`)는 §14.1 단서대로 매번 SSO GET 유지. 헤더 주석 갱신.
+  - 검증(MockSso Negotiate + 로컬 XE + TTL 20초, exe 자동 조회): 시작 시 SSO GET **1회**(20:28:02, NTLM) → `auth/login` → `GET popups` 200 → TEXT 팝업. 26초 후 닫기 → `POST results` 401(만료) → **SSO 재호출 없이** `auth/login` → 같은 resultId 재전송 → 영수증 ACCEPTED(TEXT). 다시 26초 후 VIDEO 닫기 → 401 → `auth/login`만 → 재전송 → ACCEPTED(VIDEO). MockSso 로그의 GET은 프로세스 전체에서 1건. `dotnet build Popup.slnx` 경고 0·오류 0.
+  - 미실행: 1시간 정기 갱신에서의 SSO 미호출(코드 경로는 401과 동일한 `LoginAsync`), 실제 사내 SSO 인코딩 확인(§14.2).
 
 ## 기록 규칙
 
