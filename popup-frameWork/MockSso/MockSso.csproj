@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+	  [설계 10 — 로컬 검증용] 사내 SSO 임시(모의) 서버.
+	  WPF SsoClient가 Windows 통합 인증으로 GET 하는 SSO 주소를 흉내 내어 MAIN_USER_ID / MAIN_USER_CLASSI_CODE XML을 돌려준다.
+	  외부 패키지 없음(HttpListener) → 폐쇄망 SDK 만으로 빌드된다. 운영·개발 서버에 배포하지 않는다.
+	  실행: dotnet run - -project popup-frameWork/MockSso - - -port 8099 -user E1001 -class A1   (start-dev.ps1 -MockSso 가 같은 명령을 띄운다)
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>MockSso</RootNamespace>
+		<AssemblyName>MockSso</AssemblyName>
+	</PropertyGroup>
+
+</Project>

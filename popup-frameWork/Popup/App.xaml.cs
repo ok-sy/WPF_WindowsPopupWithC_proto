@@ -117,7 +117,16 @@ namespace Popup
             {
                 MainWindow = _mainWindow;
                 _mainWindow.Show();
-                _mainWindow.Hide();
+                /*
+                 * [설계 10 — 로그인 테스트] 실행 인자 --show-main 이면 관리 화면을 숨기지 않고 띄운 채 시작한다.
+                 * "SSO 로그인 테스트"·"팝업 다시 조회" 버튼을 트레이 메뉴 없이 바로 누를 수 있어 SSO/로그인 확인에 쓴다.
+                 * 인자가 없으면 기존과 같이 한 번 표시 후 트레이로 숨긴다.
+                 */
+                bool showMain = e.Args.Any(a => a.Equals("--show-main", StringComparison.OrdinalIgnoreCase));
+                if (!showMain)
+                {
+                    _mainWindow.Hide();
+                }
             }
         }
 

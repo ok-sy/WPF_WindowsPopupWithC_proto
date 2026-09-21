@@ -12,7 +12,8 @@
 #          넘기지 않으므로 --env-mode=loose 가 필요하다(turbo.json 미수정). node_modules가 없으면 install --frozen-lockfile을 먼저 한다.
 #          pnpm은 package.json의 packageManager 버전을 npx로 실행한다(전역 pnpm 버전 차이로 lockfile이 바뀌는 것을 방지).
 # WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server/p, Auth.Mode=SsoPrototype(설계 10).
-# 모의SSO : -MockSso 이면 node shell/mock-sso.js 를 세 번째 창으로 띄운다(http://localhost:8099, MAIN_USER_ID=-MockSsoUserId).
+# 모의SSO : -MockSso 이면 임시 SSO 프로그램(popup-frameWork/MockSso, C# HttpListener, 실제 SSO처럼 Negotiate 도전)을 세 번째 창으로
+#          띄운다(http://localhost:8099, MAIN_USER_ID=-MockSsoUserId, MAIN_USER_CLASSI_CODE=-MockSsoClassCode).
 #          로컬 프로파일은 custom.wpf-auth-prototype.enabled=true 라 WPF가 SSO→로그인 API→Bearer 토큰으로 /p/api/wpf/** 를 호출한다.
 #          -TokenTtl '20s' 를 주면 백엔드 창에 CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES 를 넣어 만료→401→재로그인 시나리오를 빨리 본다.
 [CmdletBinding()]
@@ -26,8 +27,9 @@ param(
     [string]$RouterBaseUrl = '/',
     [switch]$SkipBackend,
     [switch]$SkipFrontend,
-    [switch]$MockSso,                                            # [설계 10] 모의 SSO(node shell/mock-sso.js) 창 추가
-    [string]$MockSsoUserId = 'E1001',
+    [switch]$MockSso,                                            # [설계 10] 임시 SSO 프로그램(popup-frameWork/MockSso) 창 추가
+    [string]$MockSsoUserId = 'E1001',                            # MAIN_USER_ID 값 ('windows' 이면 인증된 Windows 계정 이름)
+    [string]$MockSsoClassCode = 'A1',                            # MAIN_USER_CLASSI_CODE 값
     [string]$TokenTtl = ''                                       # 예: '20s' — 프로토타입 토큰 유효기간 덮어쓰기(비우면 yml 값 10분)
 )
 
@@ -114,10 +116,12 @@ if (-not $SkipFrontend) {
 
 # ---- 모의 SSO (설계 10 프로토타입) ------------------------------------------------
 if ($MockSso) {
-    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js is missing (needed for shell/mock-sso.js).' }
-    Start-DevWindow -Title "Mock SSO - node shell/mock-sso.js [user $MockSsoUserId]" -Directory $projectRoot `
-        -EnvVars @{ MOCK_SSO_PORT = '8099'; MOCK_SSO_USER_ID = $MockSsoUserId } -Command 'node .\shell\mock-sso.js'
-    Write-Host "Mock SSO -> http://localhost:8099/  (MAIN_USER_ID=$MockSsoUserId; WPF appsettings Auth.SsoUrl)"
+    # 임시 SSO 프로그램(C# HttpListener). 기본은 실제 SSO처럼 Negotiate 도전 → WPF의 UseDefaultCredentials 경로까지 검증된다.
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { throw '.NET SDK (dotnet) is missing (needed for popup-frameWork/MockSso).' }
+    $mockSsoPath = Join-Path $projectRoot 'popup-frameWork\MockSso'
+    Start-DevWindow -Title "Mock SSO - MockSso [user $MockSsoUserId class $MockSsoClassCode]" -Directory $mockSsoPath -EnvVars @{} `
+        -Command ('dotnet run --project .\MockSso.csproj -- --port 8099 --user ' + $MockSsoUserId + ' --class ' + $MockSsoClassCode)
+    Write-Host "Mock SSO -> http://localhost:8099/  (MAIN_USER_ID=$MockSsoUserId, MAIN_USER_CLASSI_CODE=$MockSsoClassCode; WPF appsettings Auth.SsoUrl)"
 }
 
 Write-Host 'Opened terminals. Check each window for startup logs. Press Ctrl+C in each window to stop.'

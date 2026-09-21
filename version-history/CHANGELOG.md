@@ -12,6 +12,22 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-21-02 — 임시 SSO 프로그램(C#, Negotiate)·WPF "SSO 로그인 테스트" 버튼 — 로그인까지 단독 테스트 가능
+
+- 이유: 사용자 요청 "sso는 xml을 get한 후 파싱해서 쓸 건데, xml을 리턴하는 임시 프로그램으로 구현하고 로그인까지 테스트할 수 있게". 필드는 사용자 확인대로 `classCode`(XML `MAIN_USER_CLASSI_CODE`) 유지 — 중간에 `userId/groupId`로 바꿨던 서버 변경은 커밋 전에 되돌림(설계 10 그대로 `logonId`/`classCode`).
+- 변경(WPF·도구):
+  - [추가] `popup-frameWork/MockSso`(콘솔, `HttpListener`, 외부 패키지 없음 → 폐쇄망 SDK로 빌드) — 실제 SSO처럼 **Windows 통합 인증(Negotiate) 도전**을 하고(`--anonymous`면 도전 없음) `MAIN_USER_ID`·`MAIN_USER_CLASSI_CODE`(+진단용 `WINDOWS_USER`/`AUTH_TYPE`) XML을 돌려준다. `--user E1001|windows`, `--class A1`, `--port 8099`, `--fail`(항상 401). `Popup.slnx`에 추가.
+  - [삭제] `shell/mock-sso.js`(node) — WPF PC에 node가 없을 수 있어 C#으로 대체. `start-dev.ps1 -MockSso`는 `dotnet run --project popup-frameWork/MockSso`를 띄우고 `-MockSsoClassCode` 인자 추가.
+  - [추가] 관리 화면 `MainWindow.xaml` "SSO 로그인 테스트" 버튼 → `SsoAuthHeaderProvider.TestLoginAsync()`(`SsoLoginTestResult`): SSO GET(URL·파싱된 logonId/classCode·소요 ms) → 로그인 API(URL·요청 필드·tokenType·토큰 길이·expiresAt·소요 ms)를 MessageBox로 표시, 실패 시 예외 종류·메시지로 단계 구분. 성공 토큰은 현재 토큰으로 교체. `SsoClient.SsoUrl` 속성 추가.
+  - [추가] `App.xaml.cs` 실행 인자 `--show-main` — 관리 화면을 트레이로 숨기지 않고 띄운 채 시작(테스트 버튼을 바로 누르기 위함). 인자 없으면 기존 동작.
+- 문서: README(임시 SSO 실행·`--show-main`·테스트 버튼), `docs/design/04 §6`(도구 행; 루트 docs/04 동일), `09` 진행 상태.
+- 검증:
+  - `curl` 무인증 → 401(`WWW-Authenticate: Negotiate`), `curl --negotiate -u :` → 200 XML(AUTH_TYPE=NTLM) — 사용자가 실제 SSO에서 확인한 것과 같은 조건.
+  - **WPF exe(`--show-main`) + MockSso(Negotiate) + 전체 서버(로컬 XE)**: 시작 시 `UseDefaultCredentials`로 NTLM 인증 후 XML 수신 → `auth/login` → 팝업 GET 200. UI Automation으로 "SSO 로그인 테스트" 클릭 → MockSso 로그에 두 번째 GET(NTLM), 서버에 두 번째 `auth/login`, MessageBox "SSO 로그인 테스트 — 성공"(MAIN_USER_ID=E1001, MAIN_USER_CLASSI_CODE=A1, 토큰 64자, expiresAt +10분) 스크린샷 확인.
+  - `dotnet build Popup.slnx` 경고 0·오류 0. 서버 소스는 2026-09-21-01 커밋과 동일(변경 없음). `start-dev.ps1` 구문 검사 통과(`-MockSso` 창 실제 기동은 미수행 — MockSso.exe를 직접 띄워 검증).
+  - 미실행: `--fail`·`--user windows` 옵션의 WPF 연동, 실제 사내 SSO URL.
+- 상태: 커밋 예정, 푸시 미수행.
+
 ## 2026-09-21-01 — WPF SSO·토큰 프로토타입 (설계 10): 서버 로그인 API·메모리 토큰 검사, WPF SSO→로그인→Bearer·401 재로그인·정기 재로그인
 
 - 이유: 사용자가 작성한 `docs/10_WPF_SSO_토큰_프로토타입_계획.md`("docs 체크해서 이어서 진행"). 운영 토큰(타 팀 통합 토큰) 구현이 아니라 **통신 형태와 `401 → 재로그인 → 원 요청 재전송` 동작을 검증하는 프로토타입**. 04 문서의 범위(타 팀)는 유지하며 서버 기본값은 꺼짐.

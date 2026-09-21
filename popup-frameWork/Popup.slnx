@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Popup/Popup.csproj" />
+  <Project Path="MockSso/MockSso.csproj" />
 </Solution>

@@ -272,6 +272,50 @@ namespace Popup
             await RefreshPopupsAsync();
         }
 
+        /*
+         * [설계 10 — 로그인 테스트] 팝업 조회와 무관하게 "SSO GET → XML(MAIN_USER_ID·MAIN_USER_CLASSI_CODE) 파싱 → 로그인 API → 토큰"
+         * 까지만 수행하고 단계별 결과를 보여준다. 실제 사내 SSO 또는 임시 SSO 프로그램(popup-frameWork/MockSso)에 붙여
+         * 로그인 흐름을 눈으로 확인하는 용도. 성공하면 얻은 토큰이 현재 토큰으로 교체된다(이후 조회에 사용).
+         */
+        private async void SsoLoginTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_ssoAuthHeaderProvider == null)
+            {
+                MessageBox.Show("appsettings.json 의 PopupApi.Auth.Mode 가 SsoPrototype 이 아니거나 Demo Mode 입니다.",
+                    "SSO 로그인 테스트", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SsoLoginTestButton.IsEnabled = false;
+            try
+            {
+                SsoLoginTestResult result = await _ssoAuthHeaderProvider.TestLoginAsync();
+                MessageBox.Show(
+                    "1. SSO GET (Windows 통합 인증)\n" +
+                    $"   {result.SsoUrl}\n" +
+                    $"   MAIN_USER_ID = {result.User.LogonId}\n" +
+                    $"   MAIN_USER_CLASSI_CODE = {result.User.ClassCode}\n" +
+                    $"   {result.SsoElapsedMs} ms\n\n" +
+                    "2. 로그인 API\n" +
+                    $"   POST {result.LoginUrl}\n" +
+                    $"   {{ logonId: {result.User.LogonId}, classCode: {result.User.ClassCode}, linkYn: N }}\n" +
+                    $"   tokenType = {result.TokenType}, 토큰 {result.TokenLength}자 (메모리 보관)\n" +
+                    $"   expiresAt = {result.ExpiresAt:yyyy-MM-dd HH:mm:ss zzz}\n" +
+                    $"   {result.LoginElapsedMs} ms",
+                    "SSO 로그인 테스트 — 성공", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception exception)
+            {
+                // 어느 단계 실패인지 메시지로 구분: "SSO 호출 실패"(HTTP) / "SSO 응답에 ... 태그"(XML) / "WPF 로그인 API 실패"(서버)
+                MessageBox.Show(exception.GetType().Name + "\n\n" + exception.Message,
+                    "SSO 로그인 테스트 — 실패", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                SsoLoginTestButton.IsEnabled = true;
+            }
+        }
+
         /* 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는 공개 팝업 재조회 메서드다. */
         public async Task RefreshPopupsAsync()
         {

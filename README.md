@@ -52,12 +52,12 @@
 | 7 관리자 웹 | 변경 불필요(베이스라인이 이미 SURVEY 채점 입력 숨김) | 코드 확인 |
 | 서버 베이스라인 교체 | 완료 `0294d1e` + popup 재적용 — **전체 zeroserver가 Oracle에서 기동**(로컬 XE, `ZERO_RULE_DB_*` 환경변수) | 서버 테스트 50개 통과·skip 0. 전체 서버로 `/p/api/wpf/popups` 401/200, 결과 ACCEPTED·DUPLICATE 확인 |
 | 원격 개발 DB 연동 | 완료 — Oracle **11g XE**(192.168.114.71) `zero-rule` 스키마에 팝업 DDL·샘플 적용, 매퍼 스키마 한정자 설정화(`custom.popup.schema`) | 원격 실DB·HTTP 테스트 통과. **WPF exe → 전체 서버 → 원격 DB** 왕복(TEXT 팝업 닫기 → USER_POPUP_STATUS·영수증·로그) 확인 |
-| SSO·토큰 프로토타입 (설계 10) | 완료 — WPF `SsoClient`(Windows 통합 인증)→`POST /p/api/wpf/auth/login`→메모리 Bearer 토큰, 서버 메모리 토큰 저장소(TTL 10분)·토큰 검사 식별기(로컬 프로파일 `custom.wpf-auth-prototype.enabled=true`) | 서버 테스트 59개 통과·skip 0. **WPF exe + 모의 SSO(`shell/mock-sso.js`) + 전체 서버(TTL 20초)**: 최초 로그인 → 팝업 GET 200, 만료 후 결과 POST 401 → 재로그인 → 같은 resultId 재전송 → 영수증 1건 ACCEPTED, 1분 정기 재로그인 확인 |
+| SSO·토큰 프로토타입 (설계 10) | 완료 — WPF `SsoClient`(Windows 통합 인증)→`POST /p/api/wpf/auth/login`→메모리 Bearer 토큰, 서버 메모리 토큰 저장소(TTL 10분)·토큰 검사 식별기(로컬 프로파일 `custom.wpf-auth-prototype.enabled=true`) | 서버 테스트 59개 통과·skip 0. **WPF exe + 임시 SSO 프로그램(`popup-frameWork/MockSso`, Negotiate 도전) + 전체 서버(TTL 20초)**: 최초 로그인 → 팝업 GET 200, 만료 후 결과 POST 401 → 재로그인 → 같은 resultId 재전송 → 영수증 1건 ACCEPTED, 1분 정기 재로그인 확인 |
 | 8 구 API 제거 | 미수행 — 통합 토큰(타 팀) 적용 후 | — |
 
 ## 서버 실행 (zero-rule-server)
 
-- **SSO·토큰 프로토타입(설계 10)**: 로컬 프로파일은 `custom.wpf-auth-prototype.enabled=true`라 `/p/api/wpf/**`가 **Bearer 토큰만** 통과한다(`X-Dev-User-Id`는 무시). WPF `appsettings.json`의 `Auth.Mode=SsoPrototype`·`Auth.SsoUrl`(기본 `http://localhost:8099/...` = 모의 SSO)로 자동 로그인한다. 사내 SSO 없이 확인하려면 `node shell/mock-sso.js`(또는 `start-dev.ps1 -MockSso`)를 띄운다. 만료→401→재로그인을 빨리 보려면 `-TokenTtl 20s`(환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s`). 개발용 헤더 모드로 돌아가려면 `application-local.yml`에서 `enabled: false`, WPF `Auth.Mode=None`.
+- **SSO·토큰 프로토타입(설계 10)**: 로컬 프로파일은 `custom.wpf-auth-prototype.enabled=true`라 `/p/api/wpf/**`가 **Bearer 토큰만** 통과한다(`X-Dev-User-Id`는 무시). WPF `appsettings.json`의 `Auth.Mode=SsoPrototype`·`Auth.SsoUrl`(기본 `http://localhost:8099/...` = 모의 SSO)로 자동 로그인한다. 사내 SSO 없이 확인하려면 임시 SSO 프로그램 `dotnet run --project popup-frameWork/MockSso`(또는 `start-dev.ps1 -MockSso`)를 띄운다 — 실제 SSO처럼 Windows 통합 인증(Negotiate) 도전을 하고 `MAIN_USER_ID`/`MAIN_USER_CLASSI_CODE` XML을 돌려준다(`--user`/`--class`/`--anonymous`/`--fail`). 로그인만 따로 확인하려면 `Popup.exe --show-main`으로 관리 화면을 띄운 채 시작해 **"SSO 로그인 테스트"** 버튼을 누른다(SSO GET → XML 파싱 값 → 로그인 API → 토큰 만료 시각을 단계별로 표시). 만료→401→재로그인을 빨리 보려면 `-TokenTtl 20s`(환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s`). 개발용 헤더 모드로 돌아가려면 `application-local.yml`에서 `enabled: false`, WPF `Auth.Mode=None`.
 
 - 요구: JDK 17, Gradle wrapper 8.11.1, `repo.labcl.net`(cloverframework `3.0.3-SNAPSHOT`) 접근.
 - **기본(원격 개발 DB, VPN 필요)**: 업스트림 `JndiResource`의 공통 개발 DB(`192.168.114.71:4004/XE`, **Oracle 11g XE 11.2.0.2**, 계정 `zero-rule`). 팝업 테이블은 이 계정 스키마 안에 있고(`application-dev_db.yml`의 `custom.popup.schema: ""`), `db/oracle/01·02`가 적용돼 있다(2026-09-20).

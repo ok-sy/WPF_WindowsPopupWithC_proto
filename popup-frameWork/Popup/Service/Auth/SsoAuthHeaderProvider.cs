@@ -5,6 +5,17 @@ using System.Threading.Tasks;
 
 namespace Popup.Services.Auth
 {
+    /// <summary>"SSO 로그인 테스트"의 단계별 결과. 토큰 값 자체는 담지 않는다(길이만).</summary>
+    public sealed record SsoLoginTestResult(
+        Uri SsoUrl,
+        SsoUserInfo User,
+        long SsoElapsedMs,
+        string LoginUrl,
+        string TokenType,
+        int TokenLength,
+        DateTimeOffset ExpiresAt,
+        long LoginElapsedMs);
+
     /*
      * [역할 — 설계 10 §5.3·§5.4] IAuthHeaderProvider의 SSO 프로토타입 구현체.
      *
@@ -80,6 +91,40 @@ namespace Popup.Services.Auth
         {
             string? failedToken = StripBearer(failedAuthorizationHeader);
             await LoginAsync(failedToken, force: false, cancellationToken);
+        }
+
+        /// <summary>
+        /// [로그인 테스트 — 관리 화면 "SSO 로그인 테스트" 버튼] SSO GET → XML 파싱 → 로그인 API를 지금 한 번 수행하고
+        /// 단계별 결과(사용자 값·만료 시각·소요 시간)를 돌려준다. 성공하면 얻은 토큰을 현재 토큰으로 교체한다.
+        /// 예외를 삼키지 않고 그대로 던져 어느 단계에서 실패했는지 호출자가 보여줄 수 있게 한다.
+        /// </summary>
+        public async Task<SsoLoginTestResult> TestLoginAsync(CancellationToken cancellationToken = default)
+        {
+            using CancellationTokenSource linked =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+            await _loginGate.WaitAsync(linked.Token);
+            try
+            {
+                Stopwatch ssoWatch = Stopwatch.StartNew();
+                SsoUserInfo user = await _ssoClient.GetUserAsync(linked.Token);
+                ssoWatch.Stop();
+
+                Stopwatch loginWatch = Stopwatch.StartNew();
+                WpfLoginResponseDto login = await _loginClient.LoginAsync(user, linked.Token);
+                loginWatch.Stop();
+
+                _lastUser = user;
+                _expiresAt = login.ExpiresAt;
+                Volatile.Write(ref _accessToken, login.AccessToken);
+
+                return new SsoLoginTestResult(
+                    _ssoClient.SsoUrl, user, ssoWatch.ElapsedMilliseconds,
+                    _loginClient.LoginUrl, login.TokenType, login.AccessToken.Length, login.ExpiresAt, loginWatch.ElapsedMilliseconds);
+            }
+            finally
+            {
+                _loginGate.Release();
+            }
         }
 
         /// <summary>

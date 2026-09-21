@@ -55,6 +55,8 @@ namespace Popup.Services.Auth
             };
         }
 
+        public Uri SsoUrl => _ssoUrl;
+
         /// <summary>SSO를 호출해 사용자 식별값을 얻는다. 실패하면 예외(HttpRequestException·InvalidOperationException 등).</summary>
         public async Task<SsoUserInfo> GetUserAsync(CancellationToken cancellationToken = default)
         {
