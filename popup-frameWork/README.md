@@ -63,6 +63,9 @@ PopupResultQueue
 결과 API 전송
 ```
 
+SSO 조회와 로그인 API 호출은 별도 시작 단계가 아니라 **첫 `GET /p/api/wpf/popups` 를 보내기 직전**에
+`SsoAuthHeaderProvider.GetAuthorizationHeaderAsync()` 안에서 지연 실행된다(위 흐름도의 순서는 같다).
+
 WPF는 **누가 어떤 팝업을 봐야 하는지 판단하지 않는다.**
 
 서버의:
@@ -75,9 +78,9 @@ GET /p/api/wpf/popups
 
 ---
 
-# 2. 프로그램 시작
+## 2. 프로그램 시작
 
-## 파일
+### 파일
 
 ```text
 Popup/App.xaml
@@ -144,9 +147,9 @@ MainWindow 숨김
 
 ---
 
-# 3. MainWindow에서 프로그램 구성
+## 3. MainWindow에서 프로그램 구성
 
-## 파일
+### 파일
 
 ```text
 Popup/MainWindow.xaml
@@ -185,9 +188,9 @@ MainWindow
 
 ---
 
-# 4. appsettings.json
+## 4. appsettings.json
 
-## 파일
+### 파일
 
 ```text
 Popup/appsettings.json
@@ -226,7 +229,7 @@ Popup/appsettings.json
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
 | `Auth.LoginPath` | Zero WPF 로그인 API |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
-| `DevUserId` | 개발용 사용자 헤더 값 |
+| `DevUserId` | 개발용 `X-Dev-User-Id` 헤더 값. 서버가 프로토타입 토큰 모드(`custom.wpf-auth-prototype.enabled=true`)이면 **무시**되고 Bearer 토큰만 통한다. 유지/제거는 별도 결정(설계 10 §14) |
 
 현재 로컬 테스트의 SSO URL:
 
@@ -240,9 +243,9 @@ http://localhost:8099/sso/encriptloginprocess.aspx
 
 ---
 
-# 5. 인증 방식 선택
+## 5. 인증 방식 선택
 
-## 파일
+### 파일
 
 ```text
 Popup/MainWindow.xaml.cs
@@ -271,9 +274,9 @@ SsoPrototype
 
 ---
 
-# 6. SSO 사용자 정보 조회
+## 6. SSO 사용자 정보 조회
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/Auth/SsoClient.cs
@@ -332,9 +335,9 @@ SsoUserInfo
 
 ---
 
-# 7. Zero 로그인 API 호출
+## 7. Zero 로그인 API 호출
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/Auth/WpfLoginClient.cs
@@ -374,9 +377,9 @@ POST /p/api/wpf/auth/login
 
 ---
 
-# 8. 토큰 메모리 관리
+## 8. 토큰 메모리 관리
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/Auth/SsoAuthHeaderProvider.cs
@@ -432,16 +435,17 @@ OnUnauthorizedAsync(...)
 
 이다.
 
-현재 main 코드의 자동 재로그인 구현은 아직 재로그인 과정에서 `SsoClient.GetUserAsync()`를 다시 호출하는 부분이 있으므로,
-후속 개발에서 위 정책에 맞춰 수정 대상이다.
+구현 상태(2026-09-21, 커밋 `4fe59aa`): `SsoAuthHeaderProvider.LoginAsync()`가 `_lastUser`가 없을 때만 `SsoClient.GetUserAsync()`를
+호출하고, 401 재로그인·정기 갱신은 `WpfLoginClient.LoginAsync(_lastUser)`만 호출한다. 임시 SSO(`MockSso`) + 토큰 TTL 20초로
+만료 2회를 겪는 동안 SSO GET이 프로세스 전체에서 1회만 발생하는 것을 확인했다.
 
 관리 화면의 **SSO 로그인 테스트** 버튼은 실제 SSO 연결 확인용이므로 강제 SSO GET을 수행해도 된다.
 
 ---
 
-# 9. 서버 API 호출
+## 9. 서버 API 호출
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/PopupApiService.cs
@@ -490,9 +494,9 @@ POST /p/api/wpf/popups/results
 
 ---
 
-# 10. 401 발생 시 원 요청 재전송
+## 10. 401 발생 시 원 요청 재전송
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/PopupApiService.cs
@@ -525,9 +529,9 @@ OnUnauthorizedAsync()
 
 ---
 
-# 11. 자동 팝업 조회
+## 11. 자동 팝업 조회
 
-## 파일
+### 파일
 
 ```text
 Popup/MainWindow.xaml.cs
@@ -556,9 +560,9 @@ LoadAndShowAvailablePopupsAsync(...)
 
 ---
 
-# 12. 서버 DTO → WPF 화면 설정 변환
+## 12. 서버 DTO → WPF 화면 설정 변환
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/PopupService.cs
@@ -578,9 +582,9 @@ PopupOptions
 
 ---
 
-# 13. 팝업 종류별 View 생성
+## 13. 팝업 종류별 View 생성
 
-## 파일
+### 파일
 
 ```text
 Popup/Factories/PopupFactory.cs
@@ -626,9 +630,9 @@ WidthRatio / HeightRatio
 
 ---
 
-# 14. 실제 팝업 표시
+## 14. 실제 팝업 표시
 
-## 파일
+### 파일
 
 ```text
 Popup/Managers/PopupManager.cs
@@ -670,9 +674,9 @@ Overlay도 이 클래스에서 관리한다.
 
 ---
 
-# 15. 공통 팝업 창
+## 15. 공통 팝업 창
 
-## 파일
+### 파일
 
 ```text
 Popup/Views/Windows/PopupWindow.xaml
@@ -700,9 +704,9 @@ Footer
 
 ---
 
-# 16. 사용자 행동을 결과 하나로 수집
+## 16. 사용자 행동을 결과 하나로 수집
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/PopupResultBuilder.cs
@@ -765,9 +769,9 @@ VIDEO_WATCHED
 
 ---
 
-# 17. 결과 유실 방지 큐
+## 17. 결과 유실 방지 큐
 
-## 파일
+### 파일
 
 ```text
 Popup/Service/PopupResultQueue.cs
@@ -811,9 +815,9 @@ pending-results.json 유지
 
 ---
 
-# 18. 주기 조회
+## 18. 주기 조회
 
-## 파일
+### 파일
 
 ```text
 Popup/MainWindow.xaml.cs
@@ -853,7 +857,7 @@ Timer Tick
 
 ---
 
-# 19. 프로그램 종료
+## 19. 프로그램 종료
 
 트레이 메뉴의 **종료**를 눌러야 실제로 끝난다.
 
@@ -869,7 +873,7 @@ SSO periodic login 정지
 
 ---
 
-# 20. 처음 소스를 볼 때 추천 순서
+## 20. 처음 소스를 볼 때 추천 순서
 
 ### 1단계 — 프로그램 시작만 보기
 
@@ -917,7 +921,7 @@ PopupManager.AttachResultCollection()
 
 ---
 
-# 21. 한 줄 역할표
+## 21. 한 줄 역할표
 
 | 파일 | 역할 |
 |---|---|
