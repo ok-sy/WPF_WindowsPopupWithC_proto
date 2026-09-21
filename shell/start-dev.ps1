@@ -80,7 +80,10 @@ if (-not $SkipBackend) {
         $dbLabel = 'remote dev DB 192.168.114.71:4004/XE (VPN required, popup tables in app schema)'
     }
     Start-DevWindow -Title "Popup Backend - bootRun [$dbLabel]" -Directory $backendPath -EnvVars $backendEnv `
-        -Command 'Write-Host "DB: ' + $dbLabel + '" -ForegroundColor Cyan; & .\gradlew.bat :app:bootRun -Pprofile=local'
+        -Command ('Write-Host "DB: ' + $dbLabel + '" -ForegroundColor Cyan; & .\gradlew.bat :app:bootRun -Pprofile=local')
+    # [fix 2026-09-20] -Command must be parenthesized (same as the frontend call below). Without parentheses only
+    #   'Write-Host "DB: ' is bound to -Command and the rest leaks into $args, so the new window runs an unterminated
+    #   double-quoted string -> TerminatorExpectedAtEndOfString and the backend (8080) never starts.
     Write-Host "Backend  -> http://localhost:8080/zero-rule-server  [$dbLabel]"
 }
 
