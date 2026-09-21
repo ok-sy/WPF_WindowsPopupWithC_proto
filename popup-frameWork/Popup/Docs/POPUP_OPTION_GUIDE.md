@@ -11,7 +11,7 @@
 
 | popupType | 설명 |
 |---|---|
-| `TEXT` | 일반 텍스트, 카드, 강조 문구, Markdown 안내 |
+| `TEXT` | 일반 텍스트, 카드, 강조 문구 |
 | `IMAGE` | 이미지, 설명, 링크 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
 | `SURVEY` | 객관식/주관식/평점 설문 |
@@ -120,10 +120,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `bottomDescription` | string | 본문 하단 설명 |
 | `bottomDescriptionUrl` | string | 하단 설명 클릭 시 열 HTTP/HTTPS URL. 비우면 일반 설명. 호버 시 색상·밑줄 변경 |
 | `showBottomDescription` | bool/null | 하단 설명 표시 여부 |
-| `markdownMode` | bool/null | Markdown 렌더링 모드 |
-| `markdownContent` | string | Markdown 본문 |
 
-Markdown 모드에서는 일반 텍스트/강조 영역 대신 Markdown 본문을 중심으로 사용한다. 하단 설명과 연결 URL은 Markdown 모드에서도 표시한다.
+> Markdown 모드(`markdownMode`/`markdownContent`)는 2026-09-21 제거했다. 값이 남아 있어도 WPF·웹 모두 무시한다.
 
 ---
 

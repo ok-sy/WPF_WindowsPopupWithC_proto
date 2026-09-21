@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-21-05 — TEXT 팝업 Markdown 모드 제거 (WPF·관리자 웹·예제·문서)
+
+- 이유: 사용자 지시 "text 팝업 markdown도 안 쓴다, 관련 소스 다 지우자". TEXT 팝업은 콘텐츠 제목·설명, 일반 텍스트, 강조 문구, 하단 설명만 사용한다.
+- 변경(WPF): `TextPopupView.xaml(.cs)` — 생성자 매개변수 `markdownMode`/`markdownContent`, `MarkdownPanel`, `RenderMarkdown`/`AddInlineMarkdown`(자체 렌더러) 삭제. `TextPopupContentDto` — `MarkdownMode`/`MarkdownContent` 삭제(서버 JSON에 남아 있어도 무시). `PopupFactory.CreateTextPopupView` 인자 정리. `DemoPopupDataService` — 데모 TEXT를 plainText/강조/하단 설명 구성으로 교체. `popup-frameWork/demo-text-notice.json`(markdown 데모, 코드 미참조) 삭제.
+- 변경(관리자 웹, popup 영역): `PopupEditorDialog.tsx` — 기본 content의 markdown 필드, "Markdown 모드" 스위치, "Markdown 내용" 입력란 삭제(일반 텍스트·강조 문구 항상 표시). `PopupPreview.tsx` — `MarkdownView`·markdown 분기 삭제, `react-markdown`/`remark-gfm` import 제거. `main/package.json` — 두 의존성 제거(팝업 전용이었음, 다른 사용처 없음 확인). `pnpm-lock.yaml` — pnpm 9.15.2 `install --lockfile-only`로 재생성(삭제만 875줄, 추가 0줄; pnpm이 바꾼 무관한 glob deprecated 문구 1줄은 원복).
+- 변경(서버): 없음 — content는 JSON 문자열로만 다루며 Java에 markdown 관련 코드 없음.
+- 변경(예제·문서): `api/examples/wpf-popups-response.json`, `docs/interfaces/popup-interface-examples.json`·`POPUP_INTERFACE_SPEC.md`, `docs/design/03`, `db/oracle/02` 샘플 content JSON에서 두 필드 제거. `Popup/Docs/POPUP_OPTION_GUIDE.md`·`POPUP_USER_OPTION_GUIDE.md`·`POPUP_ADMIN_UI_GAP.md`, `ERD/STRUCTURE_REVIEW.md` 표기 갱신. 루트 설계본(`docs/03`, `api/examples`, `db/oracle/02`)도 동일 반영.
+- 검증: `dotnet build Popup.slnx` 경고 0·오류 0. RgstPop 9개 파일 한정 `tsc --noEmit` 오류 0(전체 웹 type-check는 공통 MUI 타입 문제로 기존부터 미실행). `pnpm install --frozen-lockfile --offline` 성공(lockfile 정합). JSON 예제 파싱 확인. 소스 트리에 markdown 참조 없음(변경 이력·과거 검토표 제외). 미실행: 관리자 웹 화면 조작, 기존 DB에 markdownMode=true로 저장된 팝업의 표시 확인(해당 팝업은 plainText가 비어 있으면 본문이 비게 됨 — 운영 데이터 점검 필요).
+- 상태: 커밋 후 푸시(사용자 지시: pull 후 병합 없으면 커밋·푸시).
 ## 2026-09-21-04 — WPF 실행 흐름 README 및 소스 길잡이 주석 보강
 
 - 이유: 전체 프로젝트 설명이 방대해 WPF(`popup-frameWork`)만 프로그램 실행 순서대로 따라볼 수 있는 입문 문서와 소스 내 길잡이 주석을 요청.

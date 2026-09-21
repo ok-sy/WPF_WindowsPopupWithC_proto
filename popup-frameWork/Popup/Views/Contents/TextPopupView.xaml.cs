@@ -23,6 +23,9 @@ namespace Popup.Views.Contents
         /*
          * 서버 DTO에서 전달받은 값으로
          * TEXT 팝업 화면을 구성하는 생성자
+         *
+         * [2026-09-21 제거] markdown 모드(markdownMode/markdownContent, 자체 markdown 렌더러)는 사용하지 않기로 해
+         * 관련 매개변수·렌더링 코드를 삭제했다. TEXT 팝업은 plainText·highlightText·bottomDescription만 표시한다.
          */
         public TextPopupView(
             string contentTitle,
@@ -34,9 +37,7 @@ namespace Popup.Views.Contents
             bool showContentHeader,
             bool showPlainText,
             string plainText,
-            bool showBottomDescription,
-            bool? markdownMode,
-            string markdownContent)
+            bool showBottomDescription)
             {
                 /*
                  * TextPopupView.xaml을 읽어서
@@ -61,17 +62,13 @@ namespace Popup.Views.Contents
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-                bool useMarkdown = markdownMode == true
-                    || (markdownMode == null
-                        && !string.IsNullOrWhiteSpace(markdownContent));
-
                 PlainTextBlock.Text = plainText;
-                PlainTextBlock.Visibility = !useMarkdown && showPlainText
+                PlainTextBlock.Visibility = showPlainText
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
                 HighlightTextBlock.Text = highlightText;
-                HighlightContainer.Visibility = !useMarkdown && showHighlight
+                HighlightContainer.Visibility = showHighlight
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
@@ -110,109 +107,6 @@ namespace Popup.Views.Contents
                         ? Visibility.Collapsed
                         : Visibility.Visible;
 
-                MarkdownPanel.Visibility = useMarkdown
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-                if (useMarkdown)
-                {
-                    RenderMarkdown(markdownContent);
-                }
             }
-
-        private void RenderMarkdown(string markdown)
-        {
-            MarkdownPanel.Children.Clear();
-            foreach (string sourceLine in (markdown ?? string.Empty).Replace("\r", string.Empty).Split('\n'))
-            {
-                string line = sourceLine.TrimEnd();
-                TextBlock block = new TextBlock
-                {
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 8),
-                    FontSize = 15
-                };
-
-                string content = line;
-                if (line.StartsWith("### "))
-                {
-                    block.FontSize = 17;
-                    block.FontWeight = FontWeights.SemiBold;
-                    content = line.Substring(4);
-                }
-                else if (line.StartsWith("## "))
-                {
-                    block.FontSize = 20;
-                    block.FontWeight = FontWeights.Bold;
-                    content = line.Substring(3);
-                }
-                else if (line.StartsWith("# "))
-                {
-                    block.FontSize = 24;
-                    block.FontWeight = FontWeights.Bold;
-                    content = line.Substring(2);
-                }
-                else if (line.StartsWith("- ") || line.StartsWith("* "))
-                {
-                    content = "• " + line.Substring(2);
-                    block.Margin = new Thickness(14, 0, 0, 6);
-                }
-
-                AddInlineMarkdown(block, content);
-                MarkdownPanel.Children.Add(block);
-            }
-        }
-
-        private static void AddInlineMarkdown(TextBlock block, string content)
-        {
-            int position = 0;
-            while (position < content.Length)
-            {
-                int boldStart = content.IndexOf("**", position, StringComparison.Ordinal);
-                int codeStart = content.IndexOf('`', position);
-                int tokenStart = boldStart < 0
-                    ? codeStart
-                    : codeStart < 0 ? boldStart : Math.Min(boldStart, codeStart);
-                if (tokenStart < 0)
-                {
-                    block.Inlines.Add(new Run(content.Substring(position)));
-                    break;
-                }
-                if (tokenStart > position)
-                {
-                    block.Inlines.Add(new Run(content.Substring(position, tokenStart - position)));
-                }
-
-                if (tokenStart == codeStart)
-                {
-                    int codeEnd = content.IndexOf('`', codeStart + 1);
-                    if (codeEnd < 0)
-                    {
-                        block.Inlines.Add(new Run(content.Substring(codeStart)));
-                        break;
-                    }
-                    block.Inlines.Add(new Run(content.Substring(
-                        codeStart + 1, codeEnd - codeStart - 1))
-                    {
-                        FontFamily = new System.Windows.Media.FontFamily("Consolas"),
-                        Background = new System.Windows.Media.SolidColorBrush(
-                            System.Windows.Media.Color.FromRgb(238, 241, 245))
-                    });
-                    position = codeEnd + 1;
-                    continue;
-                }
-
-                int boldEnd = content.IndexOf("**", boldStart + 2, StringComparison.Ordinal);
-                if (boldEnd < 0)
-                {
-                    block.Inlines.Add(new Run(content.Substring(boldStart)));
-                    break;
-                }
-                block.Inlines.Add(new Run(content.Substring(boldStart + 2, boldEnd - boldStart - 2))
-                {
-                    FontWeight = FontWeights.Bold
-                });
-                position = boldEnd + 2;
-            }
-        }
         }
 }

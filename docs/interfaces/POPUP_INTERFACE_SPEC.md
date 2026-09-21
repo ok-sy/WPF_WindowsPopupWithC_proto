@@ -94,8 +94,6 @@ POST 경로의 {popupId}는 실제 대상 팝업 ID로 치환한다. 예시의 I
       "bottomDescription": "자세히 보기",
       "bottomDescriptionUrl": "https://example.com/notice",
       "showBottomDescription": true,
-      "markdownMode": false,
-      "markdownContent": "",
       "useBackgroundOverlay": true,
       "backgroundOverlayOpacity": 0.45
     }
@@ -428,8 +426,6 @@ popupId 필수 1~50자. 정답 포함 문항은 popup.questions 및 adminQuestio
         "bottomDescription": "자세히 보기",
         "bottomDescriptionUrl": "https://example.com/notice",
         "showBottomDescription": true,
-        "markdownMode": false,
-        "markdownContent": "",
         "useBackgroundOverlay": true,
         "backgroundOverlayOpacity": 0.45
       }
@@ -498,8 +494,6 @@ popup·active·targetGroups 필수. 같은 popupId는 수정. 활성 저장 시 
       "bottomDescription": "자세히 보기",
       "bottomDescriptionUrl": "https://example.com/notice",
       "showBottomDescription": true,
-      "markdownMode": false,
-      "markdownContent": "",
       "useBackgroundOverlay": true,
       "backgroundOverlayOpacity": 0.45
     }
@@ -563,8 +557,6 @@ popup·active·targetGroups 필수. 같은 popupId는 수정. 활성 저장 시 
         "bottomDescription": "자세히 보기",
         "bottomDescriptionUrl": "https://example.com/notice",
         "showBottomDescription": true,
-        "markdownMode": false,
-        "markdownContent": "",
         "useBackgroundOverlay": true,
         "backgroundOverlayOpacity": 0.45
       }
@@ -629,8 +621,6 @@ popupId 필수 1~50자, active 필수 boolean. 목록 조회의 activeYn과 형�
         "bottomDescription": "자세히 보기",
         "bottomDescriptionUrl": "https://example.com/notice",
         "showBottomDescription": true,
-        "markdownMode": false,
-        "markdownContent": "",
         "useBackgroundOverlay": true,
         "backgroundOverlayOpacity": 0.45
       }
@@ -780,8 +770,6 @@ content는 확장 JSON 객체로 저장된다. 아래 예시는 현재 사용하
   "bottomDescription": "자세히 보기",
   "bottomDescriptionUrl": "https://example.com/notice",
   "showBottomDescription": true,
-  "markdownMode": false,
-  "markdownContent": "",
   "useBackgroundOverlay": true,
   "backgroundOverlayOpacity": 0.45
 }
@@ -883,7 +871,7 @@ content는 확장 JSON 객체로 저장된다. 아래 예시는 현재 사용하
 }
 ```
 
-TEXT: bottomDescription은 표시 문구, bottomDescriptionUrl은 클릭 이동 주소. 웹은 https:// 생략 주소를 보정해 저장하고 미리보기에도 동일하게 적용한다. showBottomDescription=true에서 문구가 비어 있으면 URL을 표시한다. URL을 비우면 일반 설명이며 HTTP/HTTPS만 링크로 사용한다. markdownMode는 본문 선택이며 하단 설명은 별도 표시된다.
+TEXT: bottomDescription은 표시 문구, bottomDescriptionUrl은 클릭 이동 주소. 웹은 https:// 생략 주소를 보정해 저장하고 미리보기에도 동일하게 적용한다. showBottomDescription=true에서 문구가 비어 있으면 URL을 표시한다. URL을 비우면 일반 설명이며 HTTP/HTTPS만 링크로 사용한다. (Markdown 모드는 2026-09-21 제거 — markdownMode/markdownContent 필드는 무시된다.)
 
 IMAGE: imageSizeMode는 FIXED, FIT_TO_IMAGE, ADAPTIVE, FILL. imageWidth/imageHeight는 숫자. linkUrl은 이미지 클릭 이동 주소이다.
 

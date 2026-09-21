@@ -57,7 +57,7 @@ VALUES ('SAMPLE-TEXT-001', 'TEXT', '9월 시스템 점검 안내', SYSTIMESTAMP 
     560, 420, 0.7, 0.75, 480, 320, 1200, 900, 'Y', 7, 'SAMPLE', 'SAMPLE');
 INSERT INTO POPUP_CONTENT (POPUP_ID, CONTENT_TITLE, DESCRIPTION, CONTENT_BODY, CONTENT_OPTIONS, CREATED_BY, UPDATED_BY)
 VALUES ('SAMPLE-TEXT-001', '서비스 점검 안내', '점검 시간 동안 접속이 제한됩니다.', '9월 21일(일) 02:00~06:00 점검 예정입니다.',
-    '{"showContentHeader":true,"showPlainText":true,"highlightText":"작업 중인 내용을 저장해 주세요.","showHighlight":true,"bottomDescription":"자세히 보기","bottomDescriptionUrl":"https://intranet.example.com/notice/1","showBottomDescription":true,"markdownMode":false,"markdownContent":"","useBackgroundOverlay":true,"backgroundOverlayOpacity":0.45}',
+    '{"showContentHeader":true,"showPlainText":true,"highlightText":"작업 중인 내용을 저장해 주세요.","showHighlight":true,"bottomDescription":"자세히 보기","bottomDescriptionUrl":"https://intranet.example.com/notice/1","showBottomDescription":true,"useBackgroundOverlay":true,"backgroundOverlayOpacity":0.45}',
     'SAMPLE', 'SAMPLE');
 
 INSERT INTO POPUP_NOTICE (POPUP_ID, POPUP_TYPE, TITLE, DISPLAY_START_AT, DISPLAY_END_AT, DISPLAY_MODE, DISPLAY_ORDER, PERIOD_MODE, SIZE_MODE,

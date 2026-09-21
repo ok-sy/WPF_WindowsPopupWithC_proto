@@ -119,9 +119,7 @@ namespace Popup.Factories
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
                 contentDto.ShowBottomDescription ?? (!string.IsNullOrWhiteSpace(contentDto.BottomDescription)
-                    || !string.IsNullOrWhiteSpace(contentDto.BottomDescriptionUrl)),
-                contentDto.MarkdownMode,
-                contentDto.MarkdownContent);
+                    || !string.IsNullOrWhiteSpace(contentDto.BottomDescriptionUrl)));
         }
 
         private static FrameworkElement CreateImagePopupView(JsonElement contentJson)

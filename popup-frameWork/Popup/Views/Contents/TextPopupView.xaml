@@ -112,9 +112,6 @@
                        TextWrapping="Wrap"
                        Visibility="Collapsed"/>
 
-            <StackPanel x:Name="MarkdownPanel"
-                        Visibility="Collapsed"/>
-
             <Border x:Name="HighlightContainer"
                     Margin="0,16,0,0"
                     Padding="14"

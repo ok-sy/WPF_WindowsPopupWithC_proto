@@ -12,7 +12,6 @@ namespace Popup.Dtos
         public string BottomDescription { get; set; } = string.Empty;
         public string BottomDescriptionUrl { get; set; } = string.Empty;
         public bool? ShowBottomDescription { get; set; }
-        public bool? MarkdownMode { get; set; }
-        public string MarkdownContent { get; set; } = string.Empty;
+        // [2026-09-21 제거] MarkdownMode / MarkdownContent — markdown 모드를 쓰지 않기로 해 삭제. 서버 JSON에 남아 있어도 무시된다.
     }
 }
