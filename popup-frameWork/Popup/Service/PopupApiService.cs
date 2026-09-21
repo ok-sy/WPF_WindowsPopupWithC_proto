@@ -537,6 +537,20 @@ namespace Popup.Services
             object? body,
             bool retried = false)
         {
+            /*
+             * [실행 순서 4/6]
+             * 신규 WPF API의 공통 HTTP 전송 지점.
+             *
+             * 흐름:
+             *   IAuthHeaderProvider
+             *     → Authorization 헤더 생성
+             *     → 서버 요청
+             *     → 401이면 OnUnauthorizedAsync()
+             *     → 동일 method / URL / body를 딱 1회 재전송
+             *
+             * 결과 전송에서 body 객체를 그대로 재사용하므로
+             * WpfResultItemDto.ResultId도 유지된다.
+             */
             using HttpRequestMessage request = new(method, requestUrl);
             if (body != null)
             {
