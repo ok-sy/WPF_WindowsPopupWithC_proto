@@ -17,6 +17,17 @@ namespace Popup.Factories
 
         public static PopupOptions Create(PopupResponseDto popupDto)
         {
+            /*
+             * [실행 순서 5/6]
+             * 서버 JSON DTO를 "실제로 화면에 띄울 수 있는 WPF 객체"로 바꾸는 지점.
+             *
+             * PopupResponseDto
+             *   → popupType에 맞는 Content View 생성
+             *   → 공통 창 설정을 PopupOptions에 복사
+             *   → PopupManager가 PopupOptions를 받아 PopupWindow 생성
+             *
+             * 여기서는 노출 대상 여부를 판단하지 않는다.
+             */
             if (popupDto == null) throw new ArgumentNullException(nameof(popupDto));
 
             FrameworkElement content = popupDto.PopupType.Trim().ToUpperInvariant() switch
