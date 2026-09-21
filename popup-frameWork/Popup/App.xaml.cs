@@ -53,6 +53,20 @@ namespace Popup
             base.OnStartup(e);
 
             /*
+             * [실행 순서 1/6]
+             * Popup.exe의 실제 시작점이다.
+             *
+             * 이 메서드가 끝나기 전에 MainWindow를 생성하고 Show()를 한 번 호출한다.
+             * 그 다음 흐름은 MainWindow.xaml.cs의 MainWindow_Loaded()로 이어진다.
+             *
+             * 소스를 처음 읽는 경우:
+             *   App.OnStartup()
+             *     → new MainWindow()
+             *     → MainWindow_Loaded()
+             * 순서로 따라가면 된다.
+             */
+
+            /*
              * [방어 로직] 처리되지 않은 예외로 프로세스가 죽지 않도록 전역 핸들러를 가장 먼저 설치한다.
              * UI 예외는 로그 후 계속 실행, 치명적 예외는 로그 후 자동 재시작(10분 내 3회 제한). CrashGuard 참고.
              */
