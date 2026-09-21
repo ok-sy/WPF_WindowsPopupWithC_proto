@@ -67,6 +67,16 @@ namespace Popup.Services
         /// </summary>
         public async Task EnqueueAndSendAsync(WpfResultItemDto item)
         {
+            /*
+             * [결과 전송 흐름]
+             * PopupManager에서 닫기/숨김/영상 결과가 만들어지면 여기로 들어온다.
+             *
+             * 반드시 "파일에 먼저 저장"한 뒤 서버 전송을 시도한다.
+             * 네트워크/인증 문제로 전송이 실패해도 pending-results.json에 남아
+             * 다음 FlushAsync()에서 동일 resultId로 다시 보낼 수 있다.
+             *
+             * 이 파일 큐는 로그가 아니라 업무 결과 유실 방지 장치다.
+             */
             ArgumentNullException.ThrowIfNull(item);
             await _gate.WaitAsync();
             try
