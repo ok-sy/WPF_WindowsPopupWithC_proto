@@ -120,12 +120,22 @@ SSO GET
 
 ### 4.2 평상시 1시간 주기
 
+**확정(2026-09-21): SSO 조회는 WPF 프로세스 시작 후 최초 1회만 수행한다.**
+
+최초 SSO GET에서 얻은 `MAIN_USER_ID` / `MAIN_USER_CLASSI_CODE`는
+`SsoAuthHeaderProvider`의 메모리(`_lastUser`)에 보관한다.
+
+이후 1시간 정기 갱신에서는 사내 SSO를 다시 호출하지 않고,
+메모리에 보관한 사용자 정보로 Zero 로그인 API만 호출해 새 토큰을 발급받는다.
+
 ```text
 1시간 Timer
-→ 필요 시 SSO 정보 재조회
-→ login API
+→ 메모리 _lastUser 사용
+→ login API만 호출
 → 새 token으로 메모리 교체
 ```
+
+프로세스가 종료되면 `_lastUser`도 함께 사라지며, 다음 실행에서는 다시 SSO GET 1회를 수행한다.
 
 ### 4.3 10분 토큰 만료와의 관계
 
@@ -135,8 +145,8 @@ SSO GET
 기존 API 요청
 → 401
 → IAuthHeaderProvider.OnUnauthorizedAsync()
-→ SSO GET
-→ login API
+→ 메모리 _lastUser 사용
+→ login API만 호출
 → 새 token 메모리 저장
 → 기존 API 요청 동일 body로 1회 재전송
 ```
@@ -211,10 +221,11 @@ SSO XML 태그:
 
 책임:
 - `GetAuthorizationHeaderAsync()` → `Bearer {token}`
-- 토큰이 없으면 최초 로그인
-- `OnUnauthorizedAsync()` → 강제 재로그인
+- 최초 토큰이 없으면 SSO GET 1회 → 사용자 정보(`_lastUser`) 메모리 보관 → 로그인 API
+- `OnUnauthorizedAsync()` → `_lastUser`로 로그인 API만 다시 호출
+- 1시간 정기 갱신도 `_lastUser`로 로그인 API만 호출
 - 동시에 여러 요청이 401이어도 login API 중복 호출 방지
-- 파일/Registry/appsettings에 토큰 저장 금지
+- 파일/Registry/appsettings에 토큰·사용자 정보를 저장하지 않음
 
 ### 5.4 1시간 재로그인
 
@@ -446,13 +457,14 @@ custom:
 ### T4. 1시간 주기 로그인
 - 앱 계속 실행
 - 1시간 Timer
-- SSO/login 수행
+- SSO 재호출 없음
+- 메모리 `_lastUser`로 login API만 호출
 - 메모리 token 교체
 
 ### T5. 동시 401
 - 여러 요청이 동시에 401
 - `SemaphoreSlim`
-- 실제 SSO/login 1회
+- SSO 재호출 없이 login API 1회
 - 나머지 요청은 갱신된 token 사용
 
 ### T6. 앱 재시작
@@ -485,7 +497,8 @@ custom:
 
 5. 1시간 주기 의미
    - 1시간마다 선제 login API 호출
-   - 그 전에 token 만료 상태에서 API 호출 시 401 기반 즉시 재로그인
+   - 최초 SSO GET 이후에는 메모리 사용자 정보로 login API만 호출
+   - 그 전에 token 만료 상태에서 API 호출 시 401 기반 즉시 재로그인(SSO 재호출 없음)
 
 ## 12. 구현 순서
 
@@ -518,3 +531,76 @@ custom:
 - 1시간 정기 로그인도 별도로 동작한다.
 - 팝업 이벤트/영상 진행률 로그 API는 신규 흐름에서 호출하지 않는다.
 - 기존 팝업 조회/결과 큐 구조는 유지한다.
+
+
+## 14. 2026-09-21 검토 후 확정사항
+
+현재 구현 검토 후 다음 정책을 확정했다.
+
+| 항목 | 확정 내용 | 처리 |
+|---|---|---|
+| 실제 SSO 응답 인코딩(`ks_c_5601-1987`) | 폐쇄망에서 실제 사내 SSO에 연결한 뒤 확인한다. 현재 모의 SSO 기준으로 선제 수정하지 않는다. | **폐쇄망 실연동 시 확인** |
+| SSO 호출 주기 | **WPF 프로세스 시작 후 최초 1회만 SSO GET**. 이후 토큰 만료(401) 및 1시간 정기 갱신은 메모리에 저장한 `logonId/classCode`로 로그인 API만 호출한다. | **확정 — 구현 수정 필요** |
+| `DevUserId` / `X-Dev-User-Id` | SSO 프로토타입과 함께 남길지 제거할지는 별도 의사결정을 받는다. 현재 PrototypeTokenWpfUserResolver가 Bearer를 우선 사용하므로 기능 충돌은 없다. | **의사결정 대기** |
+| 로깅 제외 범위 | DB 이벤트 로그, DISPLAYED/CLOSED 이벤트, video-progress 등 업무성 로그 호출은 신규 흐름에서 제외한다. `Debug.WriteLine`/서버 개발 로그와 `PopupResultQueue`는 유지한다. | **확정** |
+
+### 14.1 수정 대상 — SSO 최초 1회 정책
+
+현재 `SsoAuthHeaderProvider.LoginAsync()`가 재로그인 때마다 아래 두 단계를 모두 수행한다.
+
+```text
+SsoClient.GetUserAsync()
+→ WpfLoginClient.LoginAsync()
+```
+
+이를 다음처럼 변경한다.
+
+```text
+최초 로그인
+  _lastUser == null
+  → SsoClient.GetUserAsync()
+  → _lastUser 메모리 저장
+  → WpfLoginClient.LoginAsync(_lastUser)
+
+401 재로그인
+  _lastUser != null
+  → WpfLoginClient.LoginAsync(_lastUser)
+  → SSO 재호출 없음
+
+1시간 정기 재로그인
+  _lastUser != null
+  → WpfLoginClient.LoginAsync(_lastUser)
+  → SSO 재호출 없음
+```
+
+개념 코드:
+
+```csharp
+SsoUserInfo user;
+
+if (_lastUser == null)
+{
+    user = await _ssoClient.GetUserAsync(linked.Token);
+    _lastUser = user;
+}
+else
+{
+    user = _lastUser;
+}
+
+WpfLoginResponseDto login =
+    await _loginClient.LoginAsync(user, linked.Token);
+```
+
+단, 관리 화면의 **SSO 로그인 테스트 버튼**은 실제 SSO 통신 확인 용도이므로
+현재처럼 버튼을 누를 때마다 SSO GET을 강제로 수행하는 동작을 유지해도 된다.
+
+### 14.2 폐쇄망 실연동 확인 항목
+
+실제 사내 SSO에 연결할 때 다음을 확인한다.
+
+1. `HttpClientHandler.UseDefaultCredentials = true`로 실제 Negotiate가 성공하는지
+2. 응답 `Content-Type charset`과 XML 선언의 인코딩이 실제로 `ks_c_5601-1987`/CP949인지
+3. `ReadAsStringAsync()`로 한글이 정상 해석되는지
+4. 깨질 경우에만 `CodePagesEncodingProvider` + CP949(949) 바이트 디코딩을 추가
+5. `MAIN_USER_ID`, `MAIN_USER_CLASSI_CODE` 값이 실제 응답에서 정상 추출되는지
