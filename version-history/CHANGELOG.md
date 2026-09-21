@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-21-04 — WPF 실행 흐름 README 및 소스 길잡이 주석 보강
+
+- 이유: 전체 프로젝트 설명이 방대해 WPF(`popup-frameWork`)만 프로그램 실행 순서대로 따라볼 수 있는 입문 문서와 소스 내 길잡이 주석을 요청.
+- 변경:
+  - `popup-frameWork/README.md`를 WPF 전용 실행 흐름 문서로 확장. `App → MainWindow → SSO → 로그인 → API → PopupFactory → PopupManager → PopupWindow → ResultBuilder/Queue` 순서와 파일 역할표, 추천 소스 읽기 순서 추가.
+  - 핵심 소스에 `[실행 순서]`, `[인증 흐름]`, `[401 복구 지점]`, `[결과 전송 흐름]` 주석 추가.
+  - 주석 추가 파일: `App.xaml.cs`, `MainWindow.xaml.cs`, `SsoAuthHeaderProvider.cs`, `PopupApiService.cs`, `PopupFactory.cs`, `PopupManager.cs`, `PopupResultQueue.cs`.
+  - 기능 로직·API 계약·설정값은 변경하지 않음.
+- 참고: README와 인증 주석에 현재 코드와 확정 설계의 차이(자동 재로그인 시 SSO 재호출 부분)를 명시해 후속 수정 위치를 찾기 쉽게 함.
+- 검증: 변경 내용은 README/주석만이며 실행 코드 변경 없음. GitHub main에 각 파일 반영 확인. 별도 빌드·실행 테스트는 미수행.
+- 상태: main 반영 완료.
+
 ## 2026-09-21-03 — WPF SSO 재로그인 정책 확정 및 설계 10 보완
 
 - 이유: SSO·토큰 프로토타입 구현 검토 후 실제 운영 의도에 맞는 재인증 정책을 확정.
