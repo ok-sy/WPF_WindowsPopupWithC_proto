@@ -27,6 +27,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 1 | `01_popup_schema_oracle.sql` | POPUP | 테이블 17개(원본 16 + `WPF_RESULT_RECEIPT`), 시퀀스 12개, 인덱스, 주석 |
 | 2 | `02_popup_sample_oracle.sql` | POPUP | 개발 샘플(사용자 3·팝업 4·대상 조건 6·문항 3). 운영 금지 |
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
+| 4 | `04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 인자: 로컬 `POPUP.` / 원격 앱 계정 스키마 `""`. 로컬 XE 적용 완료, **원격 개발 DB는 VPN 연결 후 실행 필요** |
 
 ```powershell
 $env:NLS_LANG = "KOREAN_KOREA.AL32UTF8"     # 한글 주석·샘플이 UTF-8이므로 지정
