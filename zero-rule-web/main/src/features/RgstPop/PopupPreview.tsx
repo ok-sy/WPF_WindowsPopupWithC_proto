@@ -14,8 +14,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
@@ -36,43 +34,7 @@ function titleKey(type: AdminPopupDetail['popupType']): string {
   return 'contentTitle';
 }
 
-function MarkdownView({ value }: { value: string }) {
-  return (
-    <Box sx={{
-      overflowWrap: 'anywhere',
-      '& > :first-child': { mt: 0 },
-      '& > :last-child': { mb: 0 },
-      '& h1': { fontSize: 24 },
-      '& h2': { fontSize: 20 },
-      '& h3': { fontSize: 17 },
-      '& h4, & h5, & h6': { fontSize: 15 },
-      '& h1, & h2, & h3, & h4, & h5, & h6': { fontWeight: 700, lineHeight: 1.4, mt: 2, mb: 1 },
-      '& p, & ul, & ol, & blockquote, & pre': { my: 1 },
-      '& ul, & ol': { pl: 3 },
-      '& ul': { listStyleType: 'disc' },
-      '& ol': { listStyleType: 'decimal' },
-      '& strong': { fontWeight: 700 },
-      '& em': { fontStyle: 'italic' },
-      '& a': { color: 'primary.main', textDecoration: 'underline' },
-      '& blockquote': { ml: 0, pl: 2, borderLeft: '3px solid', borderColor: 'divider', color: 'text.secondary' },
-      '& code': { fontFamily: 'monospace', bgcolor: '#eef1f5', px: 0.5, borderRadius: 0.5 },
-      '& pre': { p: 1.5, bgcolor: '#eef1f5', borderRadius: 1, overflowX: 'auto' },
-      '& pre code': { p: 0 },
-      '& table': { display: 'block', maxWidth: '100%', overflowX: 'auto', borderCollapse: 'collapse', my: 1.5 },
-      '& th, & td': { border: '1px solid', borderColor: 'divider', px: 1.5, py: 1 },
-      '& th': { bgcolor: '#f4f6fa', fontWeight: 700 },
-      '& img': { maxWidth: '100%', height: 'auto' },
-      '& .contains-task-list': { listStyle: 'none', pl: 1 },
-    }}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a> }}
-      >
-        {value}
-      </ReactMarkdown>
-    </Box>
-  );
-}
+// [2026-09-21 제거] MarkdownView(react-markdown + remark-gfm) — TEXT 팝업 Markdown 모드를 쓰지 않기로 해 삭제. 의존성도 package.json에서 제거.
 function previewSize(popup: AdminPopupDetail) {
   if (popup.sizeMode === 'FULLSCREEN') return { width: '100%', height: 520 };
   if (popup.sizeMode === 'RATIO') {
@@ -241,7 +203,6 @@ function PopupBody({ popup }: PopupPreviewProps) {
     );
   }
 
-  const markdownMode = content.markdownMode === true;
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
   const showHighlight =
@@ -265,13 +226,6 @@ function PopupBody({ popup }: PopupPreviewProps) {
       {bottomLabel}
     </Paper>
   );
-  if (markdownMode) {
-    return <Stack spacing={2}>
-      {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
-      <MarkdownView value={text(content.markdownContent, 'Markdown 내용을 입력해 주세요.')} />
-      {bottomDescription}
-    </Stack>;
-  }
 
   return (
     <Stack spacing={2}>

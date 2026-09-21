@@ -60,7 +60,7 @@ function createDefaultPopup(): AdminPopupDetail {
       showPlainText: true,
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
-      showBottomDescription: false, markdownMode: false, markdownContent: '',
+      showBottomDescription: false,
       showDescription: true, imageSizeMode: 'FIXED', imageWidth: 0, imageHeight: 0,
       linkUrl: '', showControls: true, allowFullScreen: true,
       allowPlaybackRateChange: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
@@ -209,7 +209,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const showTextPlainText = popup.content.showPlainText !== false;
   const showTextBottomDescription = popup.content.showBottomDescription == null
     ? Boolean(contentValue(popup, 'bottomDescription') || contentValue(popup, 'bottomDescriptionUrl')) : popup.content.showBottomDescription === true;
-  const markdownMode = popup.content.markdownMode === true;
   const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
   const backgroundOverlayOpacity = Math.max(0, Math.min(1, Number(popup.content.backgroundOverlayOpacity ?? 0.45)));
   const modalPreviewSize = previewOpen && typeof window !== 'undefined' ? previewDialogSize() : { width: popup.width, height: popup.height };
@@ -251,10 +250,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {imageFillMode && <Typography variant="caption" color="text.secondary">꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
-              {markdownMode ? <TextField label="Markdown 내용" value={contentValue(popup, 'markdownContent')} multiline minRows={14} placeholder={'# 제목\n\n일반 문장과 **강조 문장**\n\n- 목록 1\n- 목록 2'} onChange={(e) => updateContent('markdownContent', e.target.value)} /> : <Stack spacing={2}>
-                <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
-                <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
-              </Stack>}
+              {/* [2026-09-21 제거] Markdown 모드(markdownMode/markdownContent) — 사용하지 않기로 해 입력란·스위치를 삭제했다. TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
+              <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
+              <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
                 <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
                 <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
             </Stack>}
@@ -355,9 +353,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>텍스트 표시</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
                 <FormControlLabel control={<Switch size="small" checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
-                <FormControlLabel control={<Switch size="small" checked={markdownMode} onChange={(_, v) => updateContent('markdownMode', v)} />} label="Markdown 모드" />
-                {!markdownMode && <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />}
-                {!markdownMode && <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />}
+                <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />
+                <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />
                 {<FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
               </Box>
                 </>}

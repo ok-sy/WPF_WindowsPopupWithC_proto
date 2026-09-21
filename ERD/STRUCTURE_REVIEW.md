@@ -75,7 +75,7 @@ P0는 요구사항 충돌/데이터 정책, P1은 기능 정합성, P2는 유지
 - additionalDescription (현재 오른쪽 카드 안에서 표시)
 - highlightText / showHighlight
 
-유지 대상: 콘텐츠 제목·설명, plainText/showPlainText, Markdown 본문, 하단 설명, 공통 팝업 헤더/푸터.
+유지 대상: 콘텐츠 제목·설명, plainText/showPlainText, 하단 설명(Markdown 본문은 2026-09-21 제거), 공통 팝업 헤더/푸터.
 
 수정 순서:
 1. 기존 TEXT 콘텐츠에서 카드 본문에만 들어 있는 내용을 집계하고, 기본 본문으로 옮길 매핑을 작성한다. 덮어쓰기/문단 합침 규칙을 정한 뒤 적용한다.

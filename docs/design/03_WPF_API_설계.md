@@ -80,8 +80,6 @@
         "bottomDescription": "자세히 보기",
         "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
         "showBottomDescription": true,
-        "markdownMode": false,
-        "markdownContent": "",
         "useBackgroundOverlay": true,
         "backgroundOverlayOpacity": 0.45
       }

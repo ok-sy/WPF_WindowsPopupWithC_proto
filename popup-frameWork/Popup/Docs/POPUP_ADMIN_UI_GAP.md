@@ -336,7 +336,7 @@ validateRequiredQuestions
 | TEXT 일반 텍스트 | O | O | O | 없음 |
 | TEXT 좌/우 카드 | O | O | O | 없음 |
 | TEXT 강조/하단 설명 | O | O | O | 없음 |
-| TEXT Markdown | O | O | O | 없음 |
+| TEXT Markdown | 제거(2026-09-21) | 제거 | 제거 | 없음 |
 | IMAGE FIT_TO_IMAGE | O | O | O | 없음 |
 | IMAGE ADAPTIVE | O | O | O | 없음 |
 | IMAGE FILL | O | O | O | 없음 |
