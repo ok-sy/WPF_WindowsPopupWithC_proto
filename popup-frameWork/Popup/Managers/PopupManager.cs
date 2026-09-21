@@ -49,6 +49,19 @@ namespace Popup.Managers
 
         public void ShowRange(IEnumerable<PopupOptions> popupOptionsList)
         {
+            /*
+             * [실행 순서 6/6]
+             * 화면 표시의 최종 진입점.
+             *
+             * PopupOptions 목록
+             *   → DisplayOrder 정렬/그룹화
+             *   → SIMULTANEOUS 또는 SEQUENTIAL 결정
+             *   → PopupWindow 생성
+             *   → Show()
+             *
+             * 창이 만들어질 때 AttachResultCollection()도 연결되어
+             * 닫기/숨김/설문/영상 결과가 PopupResultBuilder → PopupResultQueue로 이어진다.
+             */
             if (popupOptionsList == null) return;
 
             List<List<PopupOptions>> groups = popupOptionsList
