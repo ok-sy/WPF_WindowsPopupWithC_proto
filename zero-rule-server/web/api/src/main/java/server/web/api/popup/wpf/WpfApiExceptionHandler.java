@@ -9,18 +9,21 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import server.domain.popup.wpf.WpfErrorResponse;
+import server.web.api.popup.wpf.auth.WpfAuthController;
 import server.service.core.popup.wpf.WpfUserInactiveException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 /**
- * WPF 컨트롤러({@link WpfPopupController}) 한정 예외 → {@code {code, message, timestamp}} JSON 변환.
+ * WPF 컨트롤러({@link WpfPopupController}, 프로토타입 로그인 {@link WpfAuthController}) 한정 예외 → {@code {code, message, timestamp}} JSON 변환.
  *
  * <p>[추가 이유 — 기준 3] 관리자 웹은 CLNewApiResponse/msgId 체계를 쓰고, 현재 팝업 API에는 통일된 오류 JSON이 없다.
  * WPF는 단순 코드 체계가 필요하며, 전역 예외 처리를 바꾸면 다른 업무 API 응답이 달라지므로
  * {@code assignableTypes}로 범위를 WPF 컨트롤러에 한정한 별도 어드바이스를 둔다.
- * 토큰 검증 실패(401)는 통합 토큰 필터(타 팀)가 컨트롤러 진입 전에 응답하므로 여기서는 다루지 않는다.</p>
+ * 토큰 검증 실패(401)는 통합 토큰 필터(타 팀)가 컨트롤러 진입 전에 응답하므로 여기서는 다루지 않는다.
+ * [설계 10] SSO·토큰 프로토타입에서는 {@code PrototypeTokenWpfUserResolver}가 토큰 없음·만료를 {@link WpfUnauthorizedException}으로
+ * 던지므로 그 401도 이 어드바이스가 같은 JSON으로 응답한다. 로그인 API의 검증 실패(400)도 함께 다룬다.</p>
  *
  * <table>
  *   <tr><th>HTTP</th><th>code</th><th>상황</th></tr>
@@ -30,7 +33,7 @@ import java.time.ZoneId;
  *   <tr><td>500</td><td>WPF_INTERNAL</td><td>그 외 (메시지 비노출, 로그만)</td></tr>
  * </table>
  */
-@RestControllerAdvice(assignableTypes = WpfPopupController.class)
+@RestControllerAdvice(assignableTypes = {WpfPopupController.class, WpfAuthController.class})
 public class WpfApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(WpfApiExceptionHandler.class);

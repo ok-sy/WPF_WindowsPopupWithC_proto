@@ -2,6 +2,7 @@ using Popup.Dtos;
 using Popup.Services.Auth;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -525,7 +526,9 @@ namespace Popup.Services
         /// [기준 6] 공통 전송 경로. 인증 헤더 부착과 401 재시도를 한 곳에서 처리한다.
         ///  1. IAuthHeaderProvider.GetAuthorizationHeaderAsync() 값이 있으면 Authorization 헤더로 붙인다.
         ///  2. 개발용 사번(_devUserId)이 설정되어 있으면 X-Dev-User-Id 헤더를 붙인다.
-        ///  3. 401이면 OnUnauthorizedAsync()로 토큰 갱신 기회를 준 뒤 같은 요청을 1회만 재시도한다.
+        ///  3. 401이면 OnUnauthorizedAsync(실패한 헤더)로 토큰 갱신 기회를 준 뒤 같은 method/url/body로 1회만 재시도한다.
+        ///     [설계 10 §5.6] body 객체(예: WpfResultRequestDto)를 그대로 다시 직렬화하므로 resultId·clientRequestId가 유지된다.
+        ///     실패한 헤더 값을 넘기는 이유: 동시 401에서 구현체가 "이미 갱신된 토큰인지" 비교해 재로그인을 1회로 줄인다(T5).
         /// 응답 본문이 WPF 오류 JSON({code,message})이면 메시지에 코드를 포함해 예외를 만든다.
         /// </summary>
         private async Task<TResponse> SendWithAuthAsync<TResponse>(
@@ -554,7 +557,8 @@ namespace Popup.Services
 
             if (response.StatusCode == HttpStatusCode.Unauthorized && !retried)
             {
-                await _authHeaderProvider.OnUnauthorizedAsync();
+                Debug.WriteLine($"[API] 401 {method} {requestUrl} → 인증 갱신 후 1회 재전송");
+                await _authHeaderProvider.OnUnauthorizedAsync(authorization);
                 return await SendWithAuthAsync<TResponse>(method, requestUrl, body, retried: true);
             }
 

@@ -11,7 +11,10 @@
 #          창 환경변수로 넣는다(.env 파일이 없어도 동작). turbo 2.x는 strict env 모드라 선언되지 않은 환경변수를 자식(next)에
 #          넘기지 않으므로 --env-mode=loose 가 필요하다(turbo.json 미수정). node_modules가 없으면 install --frozen-lockfile을 먼저 한다.
 #          pnpm은 package.json의 packageManager 버전을 npx로 실행한다(전역 pnpm 버전 차이로 lockfile이 바뀌는 것을 방지).
-# WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server/p, DevUserId=E1001.
+# WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server/p, Auth.Mode=SsoPrototype(설계 10).
+# 모의SSO : -MockSso 이면 node shell/mock-sso.js 를 세 번째 창으로 띄운다(http://localhost:8099, MAIN_USER_ID=-MockSsoUserId).
+#          로컬 프로파일은 custom.wpf-auth-prototype.enabled=true 라 WPF가 SSO→로그인 API→Bearer 토큰으로 /p/api/wpf/** 를 호출한다.
+#          -TokenTtl '20s' 를 주면 백엔드 창에 CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES 를 넣어 만료→401→재로그인 시나리오를 빨리 본다.
 [CmdletBinding()]
 param(
     [switch]$LocalDb,                                            # 로컬 XE 21c로 백엔드 기동
@@ -22,7 +25,10 @@ param(
     [string]$ApiBaseUrl = 'http://localhost:8080/zero-rule-server',  # 프런트가 호출할 백엔드 주소
     [string]$RouterBaseUrl = '/',
     [switch]$SkipBackend,
-    [switch]$SkipFrontend
+    [switch]$SkipFrontend,
+    [switch]$MockSso,                                            # [설계 10] 모의 SSO(node shell/mock-sso.js) 창 추가
+    [string]$MockSsoUserId = 'E1001',
+    [string]$TokenTtl = ''                                       # 예: '20s' — 프로토타입 토큰 유효기간 덮어쓰기(비우면 yml 값 10분)
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,6 +85,11 @@ if (-not $SkipBackend) {
     } else {
         $dbLabel = 'remote dev DB 192.168.114.71:4004/XE (VPN required, popup tables in app schema)'
     }
+    if ($TokenTtl) {
+        # WpfAuthPrototypeProps.tokenTtlMinutes (Duration, 단위 없는 숫자=분) — Spring relaxed binding으로 환경변수가 yml 값을 덮어쓴다
+        $backendEnv.CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES = $TokenTtl
+        $dbLabel += ", wpf token ttl=$TokenTtl"
+    }
     Start-DevWindow -Title "Popup Backend - bootRun [$dbLabel]" -Directory $backendPath -EnvVars $backendEnv `
         -Command ('Write-Host "DB: ' + $dbLabel + '" -ForegroundColor Cyan; & .\gradlew.bat :app:bootRun -Pprofile=local')
     # [fix 2026-09-20] -Command must be parenthesized (same as the frontend call below). Without parentheses only
@@ -99,6 +110,14 @@ if (-not $SkipFrontend) {
     Start-DevWindow -Title "Popup Frontend - pnpm dev [API $ApiBaseUrl]" -Directory $frontendPath -EnvVars $frontendEnv `
         -Command ($install + "$pnpmRun run dev --env-mode=loose")
     Write-Host "Frontend -> http://localhost:3000  (API_BASE_URL=$ApiBaseUrl)"
+}
+
+# ---- 모의 SSO (설계 10 프로토타입) ------------------------------------------------
+if ($MockSso) {
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js is missing (needed for shell/mock-sso.js).' }
+    Start-DevWindow -Title "Mock SSO - node shell/mock-sso.js [user $MockSsoUserId]" -Directory $projectRoot `
+        -EnvVars @{ MOCK_SSO_PORT = '8099'; MOCK_SSO_USER_ID = $MockSsoUserId } -Command 'node .\shell\mock-sso.js'
+    Write-Host "Mock SSO -> http://localhost:8099/  (MAIN_USER_ID=$MockSsoUserId; WPF appsettings Auth.SsoUrl)"
 }
 
 Write-Host 'Opened terminals. Check each window for startup logs. Press Ctrl+C in each window to stop.'
