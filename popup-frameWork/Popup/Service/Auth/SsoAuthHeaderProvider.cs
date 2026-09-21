@@ -76,6 +76,19 @@ namespace Popup.Services.Auth
         /// </summary>
         public async Task<string?> GetAuthorizationHeaderAsync(CancellationToken cancellationToken = default)
         {
+            /*
+             * [인증 흐름]
+             * PopupApiService가 API를 보내기 직전에 이 메서드를 호출한다.
+             *
+             * 토큰 없음:
+             *   SsoClient → WpfLoginClient → accessToken 메모리 저장
+             *
+             * 토큰 있음:
+             *   "Bearer {token}"만 반환
+             *
+             * 반환값은 PopupApiService.SendWithAuthAsync()에서
+             * Authorization 헤더로 그대로 붙는다.
+             */
             string? token = Volatile.Read(ref _accessToken);
             if (token == null)
             {
@@ -90,6 +103,19 @@ namespace Popup.Services.Auth
         /// </summary>
         public async Task OnUnauthorizedAsync(string? failedAuthorizationHeader, CancellationToken cancellationToken = default)
         {
+            /*
+             * [401 복구 지점]
+             * PopupApiService가 401을 받았을 때 호출한다.
+             * 여기서 인증을 갱신한 뒤 PopupApiService가 원래 method/url/body를 1회 다시 보낸다.
+             *
+             * 중요:
+             * failedAuthorizationHeader는 "401을 받은 그 요청이 사용한 토큰"이다.
+             * 동시에 여러 요청이 401이어도 이미 다른 요청이 토큰을 갱신했다면
+             * 불필요한 중복 로그인을 건너뛸 수 있다.
+             *
+             * 설계상 목표는 최초 SSO GET 이후 _lastUser를 재사용하는 것이다.
+             * 현재 구현과 설계 차이는 docs/design/10_WPF_SSO_토큰_프로토타입_계획.md 참고.
+             */
             string? failedToken = StripBearer(failedAuthorizationHeader);
             await LoginAsync(failedToken, force: false, cancellationToken);
         }
