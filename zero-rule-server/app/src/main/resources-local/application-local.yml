@@ -29,3 +29,12 @@ popup:
 # [WPF 팝업 API — 개발 전용] 통합 토큰 필터 적용 전 X-Dev-User-Id 헤더로 사번 지정 허용
 custom.wpf-popup:
   dev-user-header: true
+
+# [WPF SSO·토큰 프로토타입 — 설계 10] 로그인 API(/p/api/wpf/auth/login)·Bearer 토큰 검사 활성(로컬 프로파일 전용).
+#  켜져 있으면 /p/api/wpf/** 는 프로토타입 토큰만 통과하고 X-Dev-User-Id 헤더는 무시된다(PrototypeTokenWpfUserResolver가 @Primary).
+#  개발용 헤더 모드로 돌아가려면 enabled: false. 운영 프로파일에는 이 항목이 없다(props 기본 false).
+#  token-ttl-minutes: 단위 없는 숫자는 분(설계 10분). 만료 시나리오를 빨리 보려면 환경변수
+#  CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s 처럼 초 단위로 덮어쓴다.
+custom.wpf-auth-prototype:
+  enabled: true
+  token-ttl-minutes: 10

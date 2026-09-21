@@ -12,8 +12,29 @@
 - 비밀번호, 토큰, 개인정보는 적지 않는다.
 - zeroserver/zeroweb 변경은 추가/수정/삭제로 분류해 기존 구조 변경 여부를 함께 적는다.
 
+## 2026-09-21-01 — WPF SSO·토큰 프로토타입 (설계 10): 서버 로그인 API·메모리 토큰 검사, WPF SSO→로그인→Bearer·401 재로그인·정기 재로그인
+
+- 이유: 사용자가 작성한 `docs/10_WPF_SSO_토큰_프로토타입_계획.md`("docs 체크해서 이어서 진행"). 운영 토큰(타 팀 통합 토큰) 구현이 아니라 **통신 형태와 `401 → 재로그인 → 원 요청 재전송` 동작을 검증하는 프로토타입**. 04 문서의 범위(타 팀)는 유지하며 서버 기본값은 꺼짐.
+- 변경(서버, 모두 popup·WPF 영역 — 공통 프레임워크 파일 무변경):
+  - [추가] `base/.../props/WpfAuthPrototypeProps` — `custom.wpf-auth-prototype.enabled`(기본 false), `token-ttl-minutes`(Duration, 단위 없는 숫자=분, 기본 10; `20s` 처럼 초 지정 가능).
+  - [추가] `web/api/.../popup/wpf/auth/WpfPrototypeTokenStore` — JVM 메모리 `ConcurrentHashMap`, 토큰 = SecureRandom 32B + logonId + 발급시각의 SHA-256 hex(64자), 발급 시 만료 항목 정리, `Clock` 주입. `WpfAuthController` — `POST /p/api/wpf/auth/login {logonId, classCode, linkYn}` → `{accessToken, tokenType, expiresAt}`(진위 검증 없음, 필수 값만). `PrototypeTokenWpfUserResolver` — `WpfUserResolver` 구현, `@Primary` + `@ConditionalOnProperty(enabled=true)`: Bearer 없음/미등록/만료 → `WpfUnauthorizedException`(401 `WPF_UNAUTHORIZED`). `WpfLoginRequest`(payload)·`WpfLoginResponse`(domain, ISO 날짜).
+  - [수정] `WpfApiExceptionHandler` — `assignableTypes`에 `WpfAuthController` 추가. `application-local.yml` — `custom.wpf-auth-prototype.enabled: true, token-ttl-minutes: 10`(로컬 전용; 켜지면 `X-Dev-User-Id`는 무시됨). `application-common.yml` — 주석만(값은 local에만 두는 이유 기재).
+  - [테스트 추가] `WpfPrototypeTokenStoreTest` 4개(TTL 경계·미등록·재로그인 시 이전 토큰 유지·만료 정리), `WpfAuthPrototypeControllerTest` 4개(T1 로그인→Bearer→200, T2 만료→401→재로그인→200, 헤더 없음/Basic/모르는 토큰/개발 헤더만 → 401, 필수 값 검증 400).
+- 변경(WPF):
+  - [추가] `Service/Auth/SsoClient.cs` — `HttpClientHandler.UseDefaultCredentials=true`(+PreAuthenticate)로 SSO GET, XML에서 `MAIN_USER_ID`·`MAIN_USER_CLASSI_CODE`를 대소문자·네임스페이스 무시로 추출. `WpfLoginClient.cs` — 로그인 API 호출(자격 증명 미전송). `SsoAuthHeaderProvider.cs` — `IAuthHeaderProvider` 구현: 토큰 없으면 최초 로그인, `OnUnauthorizedAsync`는 `SemaphoreSlim` 안에서 "현재 토큰 == 401 받은 토큰"일 때만 재로그인(동시 401 → 1회), `PeriodicTimer` 정기 재로그인(실패 시 기존 토큰 유지), `Dispose`로 루프 정지·토큰 폐기. 토큰은 메모리 필드에만.
+  - [수정] `IAuthHeaderProvider.OnUnauthorizedAsync(string? failedAuthorizationHeader, ct)` — 실패한 헤더 값을 넘기도록 시그니처 변경(구현체 없던 기본 메서드). `PopupApiService.SendWithAuthAsync` — 그 값을 넘기고 진단 로그 1줄(재시도 구조·body 객체 재사용은 그대로 → resultId 유지). `PopupClientSettings` — `AuthSsoUrl/AuthLoginPath/AuthPeriodicLoginMinutes`. `MainWindow` — `Auth.Mode=SsoPrototype` 분기(+정기 루프 시작), `OnClosed`에서 Dispose, SsoUrl 필수 검증. `appsettings.json` — `Mode: SsoPrototype`, `SsoUrl`(기본 로컬 모의 SSO `http://localhost:8099/...`), `LoginPath`, `PeriodicLoginMinutes: 60`.
+- 변경(도구·문서): [추가] `shell/mock-sso.js` — SSO 모의 서버(node, 의존성 없음, `MOCK_SSO_USER_ID`/`MOCK_SSO_FAIL`). `shell/start-dev.ps1` — `-MockSso`(세 번째 창), `-TokenTtl '20s'`(백엔드 환경변수). 문서: `docs/design/10` 반입, `04 §6`(프로토타입 추가/수정 목록; 루트 docs/04에도 동일 반영), `09`(진행 상태 2026-09-21, 미결 2·9), README(진행 상태 행·서버 실행 안내).
+- 검증:
+  - 서버 전체 테스트(로컬 XE, `POPUP_TEST_DB_*`) **59개 통과·skip 0**(신규 8 포함).
+  - 전체 zeroserver를 로컬 XE + `CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s`로 기동: 헤더 없음 401, `X-Dev-User-Id`만 → 401("Bearer 토큰이 필요"), 로그인 200(64자 hex, expiresAt +20s), 토큰으로 팝업 GET 200(E1001 실DB 목록), 21초 후 같은 토큰 401("만료").
+  - **WPF Debug exe + 모의 SSO + 전체 서버 E2E**(서버 로그·모의 SSO 로그로 확인): T1 시작 → SSO GET 200 → `POST auth/login` → `GET popups` Bearer 200(로그인 UI 없음). T2/T3 토큰 만료 후 TEXT 팝업 닫기(UI Automation `FooterCloseButton`) → `POST popups/results` 401(서버 "토큰 만료") → SSO GET → `auth/login` 재발급 → **같은 RESULT_ID로 재전송 → `WPF_RESULT_RECEIPT` INSERT 1건 ACCEPTED**(중복 없음). T4 exe 옆 appsettings로 `PeriodicLoginMinutes=1` → 정확히 1분 뒤 401 없이 `auth/login` 재발급. 구 이벤트/영상 진행률 API(`/events`, `/video-progress`) 호출 0건(`/p/api/popups/video?path=`는 VIDEO 팝업의 WebView2 영상 파일 요청).
+  - WPF `dotnet build` 경고 0·오류 0. `start-dev.ps1` 구문 검사 통과(`-MockSso` 창 실제 기동은 미수행 — 모의 SSO는 직접 `node`로 띄워 검증).
+  - 미실행: T5 동시 401(코드의 `SemaphoreSlim`+토큰 비교로 설계, 동시 실행 테스트 없음), T6 앱 재시작, T7 SSO 실패(`MOCK_SSO_FAIL=1` 미실행), **실제 사내 SSO(Negotiate 도전) 연결**, 원격 개발 DB(VPN 미연결).
+- 상태: 커밋 후 푸시 예정. 로컬 XE 검증 행(`WPF_RESULT_RECEIPT`·`USER_POPUP_STATUS` E1001)은 정리하지 않음(로컬 전용 DB).
+
 ## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
 
+- 후속 2(같은 작업, 2026-09-21 커밋): 백엔드 창의 `-Command` 인자에 괄호가 없어 `'Write-Host "DB: '` 까지만 바인딩되고 나머지가 `$args`로 새어 새 창이 `TerminatorExpectedAtEndOfString`으로 실패(8080 미기동). 프런트 호출과 같이 괄호로 감싸 수정(스크립트 주석에 기록). 구문 검사 통과, 이번 세션의 서버는 같은 환경변수로 직접 기동해 확인.
 - 후속(같은 작업): 첫 커밋 `ee7d5e9`에 전역 pnpm 7.29가 다시 쓴 `zero-rule-web/pnpm-lock.yaml`(lockfile 9.0 → 6.0, 의존성 버전 변동)이 딸려 들어갔음을 발견 → 원본으로 되돌림(공통 웹 파일 무변경). 원인 제거: 스크립트가 `package.json`의 `packageManager`(pnpm@9.15.2)를 `npx --yes`로 실행하고 `install --frozen-lockfile`을 쓴다(corepack 0.29는 서명 키 오류로 사용 불가). 9.15.2로 재설치 후 lockfile 무변경·프런트 기동·`API_BASE_URL` 주입 재확인. `README.md` "서버 실행"에 스크립트 안내 추가.
 
 - 이유: 사용자 요청 "back front 동시 접속 쉘". 기존 스크립트는 경로만 바뀐 상태라 새 구조(원격/로컬 DB 전환, 팝업 스키마 설정, 프런트 API 주소)를 반영하지 못했고, 프런트 `.env`가 없어 `API_BASE_URL`이 비어 있었다.

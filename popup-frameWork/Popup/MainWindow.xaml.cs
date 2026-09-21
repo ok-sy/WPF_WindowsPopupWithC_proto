@@ -27,6 +27,11 @@ namespace Popup
      *     서버 목록(GET /p/api/wpf/popups)이 곧 표시 목록이다.
      *   - 팝업 결과는 PopupResultQueue를 통해 종료 시점에 1회 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
      *   - 주기 조회 간격은 서버 응답 pollingIntervalSeconds가 우선하며, 팝업이 열려 있으면 그 주기는 건너뛴다.
+     *
+     * [설계 10 — SSO·토큰 프로토타입]
+     *   - Auth.Mode=SsoPrototype 이면 SsoAuthHeaderProvider(사내 SSO Negotiate → 서버 로그인 API → 메모리 토큰)를 쓴다.
+     *     토큰 갱신은 서버 401(PopupApiService 재시도)과 정기 주기(Auth.PeriodicLoginMinutes, 기본 60분)로만 일어난다.
+     *     창이 닫힐 때(앱 종료) 정기 루프를 멈추고 메모리 토큰을 지운다.
      */
     public partial class MainWindow : Window
     {
@@ -34,6 +39,8 @@ namespace Popup
         private readonly PopupService _popupService;
         private readonly PopupApiService? _popupApiService;
         private readonly PopupResultQueue? _resultQueue;
+        /* [설계 10] SsoPrototype 모드의 인증 공급자. 정기 재로그인 루프 정지·토큰 폐기를 위해 보관한다(다른 모드는 null). */
+        private readonly SsoAuthHeaderProvider? _ssoAuthHeaderProvider;
         private readonly bool _demoMode;
         private readonly bool _autoLoadOnStartup;
         private readonly DispatcherTimer _pollingTimer;
@@ -68,14 +75,30 @@ namespace Popup
             if (!_demoMode)
             {
                 /*
-                 * [기준 6] 인증 헤더 공급자 선택. 지금은 None/Static만 있고, 통합 토큰·사내 SSO 규격이 확정되면
-                 * 여기서 새 구현체를 골라 주면 된다. PopupApiService는 헤더 값만 받는다.
+                 * [기준 6] 인증 헤더 공급자 선택. PopupApiService는 헤더 값만 받는다.
+                 *   None         : 헤더 없음(서버 dev-user-header 모드에서는 X-Dev-User-Id 로 사용자 지정)
+                 *   Static       : appsettings 고정 문자열
+                 *   SsoPrototype : [설계 10] 사내 SSO(Windows 통합 인증) → 서버 프로토타입 로그인 → 메모리 토큰, 401 시 재로그인
+                 * 통합 토큰(타 팀) 규격이 확정되면 여기에 구현체를 하나 더 고르면 된다.
                  */
-                IAuthHeaderProvider authHeaderProvider = settings.AuthMode.Trim().ToUpperInvariant() switch
+                IAuthHeaderProvider authHeaderProvider;
+                switch (settings.AuthMode.Trim().ToUpperInvariant())
                 {
-                    "STATIC" => new StaticAuthHeaderProvider(settings.AuthStaticHeader),
-                    _ => new NoAuthHeaderProvider()
-                };
+                    case "SSOPROTOTYPE":
+                        _ssoAuthHeaderProvider = new SsoAuthHeaderProvider(
+                            new SsoClient(settings.AuthSsoUrl),
+                            new WpfLoginClient(settings.BaseUrl, settings.AuthLoginPath));
+                        // [설계 10 §4.2] 1시간(설정값) 주기 선제 재로그인. 0 이하이면 401 기반 재로그인만 사용.
+                        _ssoAuthHeaderProvider.StartPeriodicLogin(TimeSpan.FromMinutes(settings.AuthPeriodicLoginMinutes));
+                        authHeaderProvider = _ssoAuthHeaderProvider;
+                        break;
+                    case "STATIC":
+                        authHeaderProvider = new StaticAuthHeaderProvider(settings.AuthStaticHeader);
+                        break;
+                    default:
+                        authHeaderProvider = new NoAuthHeaderProvider();
+                        break;
+                }
 
                 _popupApiService = new PopupApiService(
                     settings.BaseUrl,
@@ -100,10 +123,12 @@ namespace Popup
          *     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
          *     "AutoLoadOnStartup": true,
          *     "PollingIntervalSeconds": 1800,
-         *     "Auth": { "Mode": "None", "StaticHeader": "" },
+         *     "Auth": { "Mode": "None", "StaticHeader": "",
+         *               "SsoUrl": "https://SSO_URL/encriptloginprocess.aspx", "LoginPath": "/api/wpf/auth/login", "PeriodicLoginMinutes": 60 },
          *     "DevUserId": ""
          *   }
          * }
+         * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype(설계 10)에서만 쓴다.
          */
         private static PopupClientSettings LoadPopupClientSettings()
         {
@@ -146,11 +171,19 @@ namespace Popup
             {
                 settings.AuthMode = GetString(auth, "Mode", "None").Trim();
                 settings.AuthStaticHeader = GetString(auth, "StaticHeader").Trim();
+                settings.AuthSsoUrl = GetString(auth, "SsoUrl").Trim();
+                settings.AuthLoginPath = GetString(auth, "LoginPath", "/api/wpf/auth/login").Trim();
+                settings.AuthPeriodicLoginMinutes = GetInt32(auth, "PeriodicLoginMinutes", 60);
             }
 
             if (!settings.DemoMode && string.IsNullOrWhiteSpace(settings.BaseUrl))
             {
                 throw new InvalidOperationException("PopupApi.BaseUrl 값이 비어 있습니다.");
+            }
+            if (!settings.DemoMode && settings.AuthMode.Equals("SsoPrototype", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrWhiteSpace(settings.AuthSsoUrl))
+            {
+                throw new InvalidOperationException("PopupApi.Auth.Mode=SsoPrototype 에는 Auth.SsoUrl 값이 필요합니다.");
             }
             return settings;
         }
@@ -181,6 +214,17 @@ namespace Popup
             string? fromEnvironment = Environment.GetEnvironmentVariable("POPUP_DEV_USER_ID");
             if (!string.IsNullOrWhiteSpace(fromEnvironment)) return fromEnvironment.Trim();
             return string.IsNullOrWhiteSpace(configuredDevUserId) ? null : configuredDevUserId.Trim();
+        }
+
+        /*
+         * [설계 10] 앱 종료(트레이 종료 → Close)에서 정기 재로그인 루프를 멈추고 메모리 토큰을 지운다.
+         * API 모드의 X 버튼은 App.MainWindow_Closing이 취소하고 트레이로 숨기므로 여기까지 오지 않는다.
+         */
+        protected override void OnClosed(EventArgs e)
+        {
+            _pollingTimer.Stop();
+            _ssoAuthHeaderProvider?.Dispose();
+            base.OnClosed(e);
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)

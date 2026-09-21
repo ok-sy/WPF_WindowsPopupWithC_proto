@@ -28,13 +28,29 @@ namespace Popup.Models
         public int PollingIntervalSeconds { get; set; } =
             1800;
 
-        /// <summary>인증 헤더 공급 방식. None | Static. (향후 Sso)</summary>
+        /// <summary>인증 헤더 공급 방식. None | Static | SsoPrototype (설계 10).</summary>
         public string AuthMode { get; set; } =
             "None";
 
         /// <summary>AuthMode=Static일 때 Authorization 헤더에 그대로 넣을 문자열("Bearer ..."). 운영 배포 시 비움.</summary>
         public string AuthStaticHeader { get; set; } =
             string.Empty;
+
+        /*
+         * [설계 10 — AuthMode=SsoPrototype 전용 설정]
+         *   SsoUrl               : 사내 SSO 주소. Windows 통합 인증(Negotiate)으로 GET 하면 MAIN_USER_ID·MAIN_USER_CLASSI_CODE가 담긴 XML을 준다.
+         *   LoginPath            : BaseUrl 뒤에 붙는 서버 프로토타입 로그인 API 경로(기본 /api/wpf/auth/login).
+         *   PeriodicLoginMinutes : 정기 재로그인 주기(분, 기본 60). 0 이하이면 정기 재로그인을 끄고 401 기반 재로그인만 쓴다.
+         * 토큰은 파일·Registry·appsettings 어디에도 저장하지 않고 SsoAuthHeaderProvider 메모리에만 둔다.
+         */
+        public string AuthSsoUrl { get; set; } =
+            string.Empty;
+
+        public string AuthLoginPath { get; set; } =
+            "/api/wpf/auth/login";
+
+        public int AuthPeriodicLoginMinutes { get; set; } =
+            60;
 
         /// <summary>
         /// 개발 전용. 서버 custom.wpf-popup.dev-user-header=true일 때만 의미가 있는 사번.

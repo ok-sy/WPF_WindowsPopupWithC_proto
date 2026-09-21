@@ -56,3 +56,7 @@ custom.user-jwt:
 #      (전체 서버 기동 확인에서 발견). 개발용 true는 application-local.yml 에만 둔다.
 custom.wpf-popup:
   polling-interval-seconds: 1800
+
+# [WPF SSO·토큰 프로토타입 — 설계 10] POST /p/api/wpf/auth/login + Bearer 토큰 검사(WpfAuthPrototypeProps, custom.wpf-auth-prototype).
+#  운영 인증(타 팀 통합 토큰)이 아니라 통신 형태·401 재로그인 검증용이므로 기본 enabled=false(props 기본값).
+#  ※ dev-user-header와 같은 이유(common 값이 local 값을 덮어씀)로 여기에는 값을 적지 않고, 켜는 설정은 application-local.yml 에만 둔다.
