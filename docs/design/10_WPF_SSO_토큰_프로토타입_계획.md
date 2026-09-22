@@ -156,7 +156,7 @@ SSO GET
 
 ## 5. WPF 구현 계획
 
-### 5.1 신규: `popup-frameWork/Popup/Service/Auth/SsoClient.cs`
+### 5.1 신규: `popup-frameWork/Popup/Services/Auth/SsoClient.cs`
 
 역할:
 - 사내 SSO URL 호출
@@ -183,7 +183,7 @@ SSO XML 태그:
 - `MAIN_USER_ID`
 - `MAIN_USER_CLASSI_CODE`
 
-### 5.2 신규: `popup-frameWork/Popup/Service/Auth/WpfLoginClient.cs`
+### 5.2 신규: `popup-frameWork/Popup/Services/Auth/WpfLoginClient.cs`
 
 역할:
 - SSO에서 얻은 값을 Zero 서버 로그인 API에 전달
@@ -209,7 +209,7 @@ SSO XML 태그:
 }
 ```
 
-### 5.3 신규: `popup-frameWork/Popup/Service/Auth/SsoAuthHeaderProvider.cs`
+### 5.3 신규: `popup-frameWork/Popup/Services/Auth/SsoAuthHeaderProvider.cs`
 
 기존 `IAuthHeaderProvider` 구현체로 추가한다.
 

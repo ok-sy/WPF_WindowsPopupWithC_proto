@@ -86,6 +86,7 @@ class WpfPopupControllerTest {
                    {"resultId":"r1","popupId":"P1","resultType":"HIDDEN",
                     "displayedAt":"2026-09-19T09:00:05+09:00","closedAt":"2026-09-19T09:00:40+09:00","hideDays":7},
                    {"resultId":"r2","popupId":"Q1","resultType":"SUBMITTED","userId":"HACKER",
+                    "score":80,"passed":true,
                     "answers":[{"questionId":1,"optionIds":[10]},{"questionId":2,"textAnswer":"ok"}]}
                  ]}
                 """;
@@ -100,6 +101,10 @@ class WpfPopupControllerTest {
                     commands.get(0).displayedAt().toInstant());
             assertEquals(2, commands.get(1).answers().size());
             assertEquals(List.of(10L), commands.get(1).answers().get(0).optionIds());
+            // [설계 12] WPF 로컬 채점값이 커맨드까지 전달된다(서버는 참고·로그용)
+            assertEquals(80.0, commands.get(1).score());
+            assertEquals(Boolean.TRUE, commands.get(1).passed());
+            assertEquals(null, commands.get(0).score(), "HIDDEN 항목은 점수 없음");
             return new WpfResultResponse(OffsetDateTime.parse("2026-09-19T09:12:31+09:00"), List.of(
                     WpfResultItemResponse.accepted(commands.get(0)).build(),
                     WpfResultItemResponse.rejected(commands.get(1), "WPF_NOT_ELIGIBLE", "대상 아님")));

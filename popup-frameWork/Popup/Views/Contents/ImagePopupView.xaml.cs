@@ -6,8 +6,17 @@ using System.Windows.Media.Imaging;
 using Popup.Models;
 namespace Popup.Views.Contents
 {
-    public partial class ImagePopupView : UserControl
+    public partial class ImagePopupView : UserControl, IBodyFontSizeAware
     {
+        /*
+         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * IMAGE 팝업의 본문 = 이미지 설명(ImageDescriptionTextStyle, 기본 14). 제목(22)은 그대로 둔다.
+         */
+        public void ApplyBodyFontSize(double fontSize)
+        {
+            ImageDescriptionText.FontSize = fontSize;
+        }
+
         /*
          * 외부 이미지 또는 프로젝트 내부 이미지의
          * 경로를 저장한다.

@@ -20,6 +20,8 @@ import java.util.List;
  * @param responseStartedAt SUBMITTED일 때 응답 시작 시각(선택)
  * @param answers           SUBMITTED일 때 답안 목록
  * @param video             VIDEO_WATCHED일 때 시청 누적값
+ * @param score             [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 채점 점수(선택, 참고용)
+ * @param passed            [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 통과 여부(선택, 참고용)
  */
 public record WpfResultCommand(
         String resultId,
@@ -30,8 +32,17 @@ public record WpfResultCommand(
         Integer hideDays,
         OffsetDateTime responseStartedAt,
         List<PopupSubmitAnswer> answers,
-        WpfVideoProgress video
+        WpfVideoProgress video,
+        Double score,
+        Boolean passed
 ) {
+    /** 기존 호출부(테스트 등) 호환용 — score/passed 없이 만든다. */
+    public WpfResultCommand(String resultId, String popupId, WpfResultType resultType, OffsetDateTime displayedAt,
+                            OffsetDateTime closedAt, Integer hideDays, OffsetDateTime responseStartedAt,
+                            List<PopupSubmitAnswer> answers, WpfVideoProgress video) {
+        this(resultId, popupId, resultType, displayedAt, closedAt, hideDays, responseStartedAt, answers, video, null, null);
+    }
+
     public WpfResultCommand {
         answers = answers == null ? List.of() : List.copyOf(answers);
     }

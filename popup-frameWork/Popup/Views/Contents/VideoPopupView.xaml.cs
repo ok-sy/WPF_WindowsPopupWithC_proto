@@ -13,8 +13,17 @@ using Forms = System.Windows.Forms;
 
 namespace Popup.Views.Contents
 {
-    public partial class VideoPopupView : UserControl
+    public partial class VideoPopupView : UserControl, IBodyFontSizeAware
     {
+        /*
+         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * VIDEO 팝업의 본문 = 영상 설명(DescriptionTextBlock, 기본 14). 제목(22)·재생 컨트롤 글자는 그대로 둔다.
+         */
+        public void ApplyBodyFontSize(double fontSize)
+        {
+            DescriptionTextBlock.FontSize = fontSize;
+        }
+
         /*
          * 전달받은 원본 영상 경로다.
          */

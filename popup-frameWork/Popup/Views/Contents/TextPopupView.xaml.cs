@@ -5,8 +5,23 @@ using System.Windows.Documents;
 
 namespace Popup.Views.Contents
 {
-    public partial class TextPopupView : UserControl
+    public partial class TextPopupView : UserControl, IBodyFontSizeAware
     {
+        /*
+         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * TEXT 팝업의 본문 = 설명·일반 텍스트·강조 문구·하단 설명(BodyTextStyle, 기본 15).
+         * 제목(TitleTextStyle 26)은 본문이 아니므로 그대로 둔다. LineHeight(기본 24 = 15 × 1.6)는 같은 비율로 맞춘다.
+         */
+        public void ApplyBodyFontSize(double fontSize)
+        {
+            double lineHeight = Math.Round(fontSize * 1.6);
+            foreach (TextBlock textBlock in new[] { ContentDescriptionText, PlainTextBlock, HighlightTextBlock, BottomDescriptionText })
+            {
+                textBlock.FontSize = fontSize;
+                textBlock.LineHeight = lineHeight;
+            }
+        }
+
         /*
          * Visual Studio 미리보기 또는
          * 기존 코드에서 사용하는 기본 생성자

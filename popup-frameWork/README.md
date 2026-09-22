@@ -7,16 +7,16 @@
 ```text
 1. Popup/App.xaml.cs
 2. Popup/MainWindow.xaml.cs
-3. Popup/Service/Auth/SsoClient.cs
-4. Popup/Service/Auth/WpfLoginClient.cs
-5. Popup/Service/Auth/SsoAuthHeaderProvider.cs
-6. Popup/Service/PopupApiService.cs
-7. Popup/Service/PopupService.cs
+3. Popup/Services/Auth/SsoClient.cs
+4. Popup/Services/Auth/WpfLoginClient.cs
+5. Popup/Services/Auth/SsoAuthHeaderProvider.cs
+6. Popup/Services/PopupApiService.cs
+7. Popup/Services/PopupService.cs
 8. Popup/Factories/PopupFactory.cs
 9. Popup/Managers/PopupManager.cs
 10. Popup/Views/Windows/PopupWindow.xaml.cs
-11. Popup/Service/PopupResultBuilder.cs
-12. Popup/Service/PopupResultQueue.cs
+11. Popup/Services/PopupResultBuilder.cs
+12. Popup/Services/PopupResultQueue.cs
 ```
 
 ---
@@ -279,7 +279,7 @@ SsoPrototype
 ### 파일
 
 ```text
-Popup/Service/Auth/SsoClient.cs
+Popup/Services/Auth/SsoClient.cs
 ```
 
 역할:
@@ -340,7 +340,7 @@ SsoUserInfo
 ### 파일
 
 ```text
-Popup/Service/Auth/WpfLoginClient.cs
+Popup/Services/Auth/WpfLoginClient.cs
 ```
 
 SSO에서 얻은 정보를 Zero 서버로 전달한다.
@@ -382,7 +382,7 @@ POST /p/api/wpf/auth/login
 ### 파일
 
 ```text
-Popup/Service/Auth/SsoAuthHeaderProvider.cs
+Popup/Services/Auth/SsoAuthHeaderProvider.cs
 ```
 
 이 클래스가 WPF 인증 상태를 관리한다.
@@ -448,7 +448,7 @@ OnUnauthorizedAsync(...)
 ### 파일
 
 ```text
-Popup/Service/PopupApiService.cs
+Popup/Services/PopupApiService.cs
 ```
 
 신규 WPF의 핵심 API는 두 개다.
@@ -499,7 +499,7 @@ POST /p/api/wpf/popups/results
 ### 파일
 
 ```text
-Popup/Service/PopupApiService.cs
+Popup/Services/PopupApiService.cs
 ```
 
 공통 전송 메서드:
@@ -565,7 +565,7 @@ LoadAndShowAvailablePopupsAsync(...)
 ### 파일
 
 ```text
-Popup/Service/PopupService.cs
+Popup/Services/PopupService.cs
 ```
 
 이 클래스는 복잡한 판단을 하지 않는다.
@@ -709,7 +709,7 @@ Footer
 ### 파일
 
 ```text
-Popup/Service/PopupResultBuilder.cs
+Popup/Services/PopupResultBuilder.cs
 Popup/Managers/PopupManager.cs
 ```
 
@@ -750,10 +750,13 @@ VIDEO_WATCHED
 
 ```text
 제출
-→ SUBMITTED
+→ 필수 응답 검증 (WPF 즉시)
+→ QUIZ 채점: QuizGrader (WPF 즉시, 정답 키·배점·통과 점수는 서버 목록 응답에 포함)
+→ SUBMITTED (score/passed 포함)
 ```
 
-설문/퀴즈는 서버 응답을 바로 사용자에게 보여줘야 하므로 즉시 전송한다.
+[설계 12] 예전에는 서버 채점 응답을 기다렸지만, 이제 설문/퀴즈도 다른 결과와 똑같이
+"로컬 큐 저장 → 점수 안내(QUIZ) → 창 닫기 → 백그라운드 전송" 순서다. 서버는 결과 저장만 한다.
 
 ### 영상
 
@@ -774,24 +777,28 @@ VIDEO_WATCHED
 ### 파일
 
 ```text
-Popup/Service/PopupResultQueue.cs
+Popup/Services/PopupResultQueue.cs
 ```
 
 이 클래스는 로그가 아니라 **업무 결과 재전송 큐**다.
 
-흐름:
+흐름 ([설계 12] 사용자 화면과 서버 전송 분리):
 
 ```text
 결과 생성
 ↓
-pending-results.json 저장
+EnqueueAsync()  → pending-results.json 저장 (여기까지 await — 이 뒤엔 유실되지 않음)
 ↓
-POST /p/api/wpf/popups/results
+창 닫기 (서버 응답을 기다리지 않음)
+↓
+FlushInBackground() → POST /p/api/wpf/popups/results
 ↓
 성공
 ↓
 파일에서 제거
 ```
+
+서버가 426(클라이언트 버전 미지원, [설계 13])을 주면 전송을 멈추고 항목을 보존한다. 업데이트된 버전에서 재전송된다.
 
 전송 실패:
 

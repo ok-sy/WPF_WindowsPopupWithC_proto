@@ -1,5 +1,5 @@
 {
-  "_comment": "POST /p/api/wpf/popups/results 요청 예시 (WPF2-02). 4가지 resultType을 한 요청에 담은 경우. 가상 데이터.",
+  "_comment": "POST /p/api/wpf/popups/results 요청 예시 (WPF2-02). 4가지 resultType을 한 요청에 담은 경우. 가상 데이터. 공통 헤더: Authorization: Bearer <token>, X-Client-Version: 1.0.0 (설계 13).",
   "clientRequestId": "3f9c1c6e2d0a4c5f9a1b2c3d4e5f6a7b",
   "sentAt": "2026-09-19T09:12:30+09:00",
   "results": [
@@ -20,7 +20,10 @@
       "responseStartedAt": "2026-09-19T09:00:41+09:00",
       "answers": [
         { "questionId": 1, "optionIds": [1] }
-      ]
+      ],
+      "score": 10,
+      "passed": true,
+      "_comment": "[설계 12] QUIZ는 WPF가 로컬 채점한 score/passed를 함께 보낸다(서버는 저장·참고, 다르면 로그). SURVEY는 없음."
     },
     {
       "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",

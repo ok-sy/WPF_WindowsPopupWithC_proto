@@ -16,7 +16,7 @@ namespace Popup.Services
      *   resultId는 빌더가 만들어질 때(=창이 열릴 때) 확정되어, 전송 실패 후 재전송해도 서버가 같은 항목으로 인식한다.
      *
      * [유형 결정 규칙]
-     *   - 제출 이벤트로 이미 전송했으면(IsFinalized) 닫힘 시 다시 만들지 않는다.
+     *   - 제출 항목을 이미 만들어 큐에 넣었으면(IsFinalized) 닫힘 시 다시 만들지 않는다.
      *   - "다시 보지 않기" 체크 → HIDDEN (hideDays: 팝업 설정값, 없으면 30)
      *   - 영상 팝업이고 스냅샷이 있으면 → VIDEO_WATCHED
      *   - 그 외 → CLOSED
@@ -43,7 +43,7 @@ namespace Popup.Services
         /// <summary>창이 열릴 때 확정되는 멱등 키. 제출·닫힘 항목이 같은 키를 쓴다(창 하나 = 항목 하나).</summary>
         public string ResultId { get; } = Guid.NewGuid().ToString();
 
-        /// <summary>제출 등으로 이미 결과를 보냈으면 true. 닫힘 시 중복 항목을 만들지 않는다.</summary>
+        /// <summary>제출 항목을 이미 큐에 넣었으면 true. 닫힘 시 중복 항목을 만들지 않는다.</summary>
         public bool IsFinalized { get; private set; }
 
         /// <summary>팝업 내용이 처음 화면에 그려진 시각을 기록한다(최초 1회만).</summary>
@@ -63,10 +63,14 @@ namespace Popup.Services
             IsFinalized = true;
         }
 
-        /// <summary>설문·퀴즈 제출 항목. 제출 직후 즉시 전송되며 이후 닫힘 항목은 만들지 않는다.</summary>
-        public WpfResultItemDto BuildSubmitted(IEnumerable<SurveyAnswer> answers, DateTimeOffset submittedAt)
+        /// <summary>
+        /// 설문·퀴즈 제출 항목. [설계 12] 로컬 큐에 저장된 뒤 창이 닫히고 백그라운드로 전송된다. 이후 닫힘 항목은 만들지 않는다.
+        /// QUIZ는 WPF가 채점한 score/passed를 함께 담는다(SURVEY는 null).
+        /// </summary>
+        public WpfResultItemDto BuildSubmitted(SurveySubmission submission, DateTimeOffset submittedAt)
         {
-            List<PopupSubmitAnswerRequestDto> requestAnswers = answers
+            ArgumentNullException.ThrowIfNull(submission);
+            List<PopupSubmitAnswerRequestDto> requestAnswers = submission.Answers
                 .Select(answer => new PopupSubmitAnswerRequestDto
                 {
                     QuestionId = answer.QuestionId,
@@ -83,7 +87,9 @@ namespace Popup.Services
                 DisplayedAt = _displayedAt,
                 ClosedAt = submittedAt,
                 ResponseStartedAt = _displayedAt,
-                Answers = requestAnswers
+                Answers = requestAnswers,
+                Score = submission.Score,
+                Passed = submission.Passed
             };
         }
 

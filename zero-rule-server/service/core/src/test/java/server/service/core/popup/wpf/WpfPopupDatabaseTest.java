@@ -83,8 +83,9 @@ class WpfPopupDatabaseTest {
                 assertEquals(1, quiz.questions().size(), "문항은 최상위 questions");
                 assertFalse(quiz.content().containsKey("questions"));
                 assertFalse(quiz.content().containsKey("passingScore"));
-                assertNull(quiz.questions().get(0).correctAnswer());
-                assertNull(quiz.questions().get(0).options().get(0).isCorrect(), "정답 비노출");
+                // [설계 12] QUIZ는 WPF 로컬 채점용 정답 키·통과 점수를 내려준다. SURVEY는 여전히 정답 없음.
+                assertNotNull(quiz.passingScore(), "QUIZ 통과 점수 최상위 노출");
+                assertTrue(quiz.questions().get(0).options().stream().anyMatch(o -> Boolean.TRUE.equals(o.isCorrect())), "QUIZ 정답 키");
                 assertEquals("보안 교육 확인", quiz.content().get("surveyTitle"));
                 WpfPopupItem text = list.popups().get(0);
                 assertEquals("9월 21일(일) 02:00~06:00 점검 예정입니다.", text.content().get("plainText"));
@@ -97,6 +98,9 @@ class WpfPopupDatabaseTest {
                 long yesOptionId = quiz.questions().get(0).options().stream()
                         .filter(o -> o.value().equals("YES")).findFirst().orElseThrow().optionId();
                 WpfPopupItem survey = list.popups().stream().filter(p -> p.popupId().equals("SAMPLE-SURVEY-004")).findFirst().orElseThrow();
+                assertNull(survey.passingScore(), "SURVEY는 통과 점수 없음");
+                assertNull(survey.questions().get(0).options().get(0).isCorrect(), "SURVEY 정답 비노출");
+                assertNull(survey.questions().get(1).correctAnswer(), "SURVEY 서술형 정답 비노출");
                 long surveyChoiceQ = survey.questions().get(0).questionId();
                 long surveyTextQ = survey.questions().get(1).questionId();
                 List<Long> surveyOptionIds = survey.questions().get(0).options().stream().map(o -> o.optionId()).toList();

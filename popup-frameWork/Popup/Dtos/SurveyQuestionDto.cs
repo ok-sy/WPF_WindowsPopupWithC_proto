@@ -63,12 +63,27 @@ namespace Popup.Dtos
         public bool IsScored { get; set; }
 
         /*
-         * 정답 값 목록
+         * 정답 값 목록 (구 데모 JSON 형식)
          *
-         * 로컬 테스트에서는 사용할 수 있지만
-         * 운영 환경에서는 클라이언트로 내려주지 않는 게 안전하다.
+         * 데모 샘플(DemoPopupDataService)과 구 서버 JSON 호환용이다.
+         * 실제 서버는 이 필드 대신 options[].isCorrect / correctAnswer / answerMatchMode 로 정답을 내려준다.
+         * QuizGrader는 isCorrect 정보가 하나도 없을 때만 이 목록(선택지 value 집합)으로 채점한다.
          */
         public List<string> CorrectAnswers { get; set; } =
             new List<string>();
+
+        /*
+         * [설계 12 §4 — 로컬 채점] 문항 배점.
+         * 서버 PopupQuestionDto.questionScore. 정답이면 이 점수를 전부 얻고 부분 점수는 없다(서버 gradeAnswer와 같은 규칙).
+         * null이면(구 데모 JSON) QuizGrader가 100 / 채점 문항 수로 나눈다.
+         */
+        public double? QuestionScore { get; set; }
+
+        /*
+         * [설계 12 §4 — 로컬 채점] 서술형(TEXT) 문항의 정답 문자열과 일치 모드(EXACT / CONTAINS).
+         * 서버가 QUIZ 팝업에만 내려주며(WpfPopupService), SURVEY·비채점 문항에서는 null이다.
+         */
+        public string? CorrectAnswer { get; set; }
+        public string? AnswerMatchMode { get; set; }
     }
 }

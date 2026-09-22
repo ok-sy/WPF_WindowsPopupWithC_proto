@@ -20,3 +20,4 @@ zero-rule-server/.git-upstream-*/
 zero-rule-web/node_modules/
 zero-rule-server/**/build/
 zero-rule-server/.gradle/
+offline-export/

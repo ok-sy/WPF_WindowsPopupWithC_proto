@@ -557,6 +557,12 @@ namespace Popup.Services
                 request.Content = JsonContent.Create(body, options: _jsonOptions);
             }
 
+            /*
+             * [설계 13 §2·§4] 모든 WPF → 서버 요청에 실행 버전을 붙인다. 서버 인터셉터가 최소 지원 버전과 비교해
+             * 미달이면 426으로 차단한다(Authorization 확인과 별개). 화면 코드는 이 헤더를 모른다.
+             */
+            request.Headers.TryAddWithoutValidation(ClientVersion.HeaderName, ClientVersion.Value);
+
             string? authorization = await _authHeaderProvider.GetAuthorizationHeaderAsync();
             if (!string.IsNullOrWhiteSpace(authorization))
             {
@@ -568,6 +574,16 @@ namespace Popup.Services
             }
 
             using HttpResponseMessage response = await HttpClient.SendAsync(request);
+
+            /*
+             * [설계 13 §8] 426은 401 재로그인 경로에 넣지 않는다. 재시도 없이 전용 예외로 올려
+             * 호출자(MainWindow·PopupResultQueue)가 업데이트 안내·전송 중단(pending 보존)을 하게 한다.
+             */
+            if (response.StatusCode == HttpStatusCode.UpgradeRequired)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+                throw WpfClientVersionException.TryCreate(response, errorBody)!;
+            }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized && !retried)
             {

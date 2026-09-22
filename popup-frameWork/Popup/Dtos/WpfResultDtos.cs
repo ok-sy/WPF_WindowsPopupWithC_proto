@@ -58,6 +58,13 @@ namespace Popup.Dtos
         /// <summary>SUBMITTED일 때 답안. 기존 제출 API의 answers와 같은 구조.</summary>
         public List<PopupSubmitAnswerRequestDto>? Answers { get; set; }
 
+        /// <summary>
+        /// [설계 12 §4·§6] QUIZ SUBMITTED일 때 WPF가 로컬 채점한 점수·통과 여부. SURVEY는 null.
+        /// 서버는 이 값을 결과 저장에 참고하며(자기 채점값과 다르면 로그), 사용자 화면 판정은 이미 WPF에서 끝났다.
+        /// </summary>
+        public double? Score { get; set; }
+        public bool? Passed { get; set; }
+
         /// <summary>VIDEO_WATCHED일 때 시청 누적값(초).</summary>
         public WpfVideoProgressDto? Video { get; set; }
     }

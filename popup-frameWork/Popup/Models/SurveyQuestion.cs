@@ -73,8 +73,15 @@ namespace Popup.Models
          */
         public List<string> CorrectAnswers { get; set; } = new();
 
-        
+        /*
+         * [설계 12 §4 — 로컬 채점] 서버 문항 배점(questionScore). null이면 QuizGrader가 100/채점 문항 수로 나눈다.
+         */
+        public double? QuestionScore { get; set; }
 
-
+        /*
+         * [설계 12 §4 — 로컬 채점] 서술형 문항 정답과 일치 모드(EXACT/CONTAINS). 서버 규칙(PopupQuestionRules.matchesText)과 같다.
+         */
+        public string? CorrectAnswer { get; set; }
+        public string? AnswerMatchMode { get; set; }
     }
 }

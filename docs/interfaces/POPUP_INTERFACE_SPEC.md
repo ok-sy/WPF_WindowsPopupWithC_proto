@@ -1,10 +1,16 @@
 # 팝업 시스템 인터페이스 설계서 — JSON 송수신 기준
 
-- 문서 버전: 1.0 / 작성일: 2026-09-16 (KST)
+- 문서 버전: 2.0 / 작성일: 2026-09-16, 최신화 2026-09-22 (KST)
 - 대상: 관리자 웹 ↔ zero-rule-server ↔ WPF 팝업 클라이언트
-- 기준: 현재 저장소 구현. 설계서 예시는 가상 데이터이며 실운영 캡처가 아니다.
-- 범위: 팝업 관련 JSON API 12개, 공통 데이터 및 유형별 content. 로그인·타 업무 API와 화면 배치 설계는 제외한다.
-- 예제 모음: [popup-interface-examples.json](popup-interface-examples.json)
+- 기준: 현재 저장소 구현(커밋 기준 `main`). 설계서 예시는 가상 데이터이며 실운영 캡처가 아니다.
+- 범위: **현행 WPF 전용 API 3개(WPF2-00~02)**, 관리자 API 6개, 공통 데이터 및 유형별 content. 로그인 화면·타 업무 API와 화면 배치 설계는 제외한다.
+  구형 WPF API 6개(WPF-01~06)는 서버에 남아 있으나 현재 WPF가 호출하지 않으므로 **부록(§3-B)** 으로 옮겨 참고용으로만 둔다.
+- 예제 모음: [popup-interface-examples.json](popup-interface-examples.json)(관리자·구형), [../../api/examples/](../../api/examples/)(현행 WPF: `wpf-popups-response.json`, `wpf-results-request.json`, `wpf-results-response.json`)
+- 2.0 변경 요약(설계 문서 10·12·13·14 반영):
+  - WPF 인증 흐름(SSO → 로그인 API → 메모리 토큰 → `Authorization: Bearer`)과 공통 헤더 `X-Client-Version`(426 Upgrade Required) 추가
+  - 결과 API `/p/api/wpf/popups/results` 로 숨김·제출·영상·닫기 통합(CLOSED / HIDDEN / SUBMITTED / VIDEO_WATCHED)
+  - 설문 필수 응답 검증·퀴즈 채점·영상 시청 완료 판정은 WPF 로컬 처리, 서버는 결과 저장 중심. QUIZ 목록 응답에 정답 키·passingScore 포함, 결과 항목에 score/passed 추가
+  - content 공통 필드 headerFontSize / bodyFontSize / footerFontSize(관리자 폰트 크기) 추가
 
 ## 1. 공통 규약
 
@@ -13,41 +19,204 @@
 | 기본 주소 예시 | http://localhost:8080/zero-rule-server |
 | 본문 | UTF-8 JSON, Content-Type: application/json |
 | 필드명 | camelCase, 이름과 대소문자 유지 |
-| WPF API | /p/api/popups 아래. 배열 또는 객체 직접 반환, body 래퍼 없음 |
+| 현행 WPF API | `/p/api/wpf` 아래. 객체 직접 반환, body 래퍼 없음. 응답 날짜는 **ISO 8601 문자열**(`@JsonFormat`, 전역 epoch 설정 무시), 값 없는 필드 생략(NON_NULL) |
+| 구형 WPF API | `/p/api/popups` 아래(부록 §3-B). 배열 또는 객체 직접 반환, 날짜는 epoch 초 |
 | 관리자 API | /apis/popup 아래. 응답의 body에 업무 데이터 포함. 관리자 로그인/기존 권한 체계 사용 |
-| 식별자 | popupId·userId는 문자열. questionId·optionId·templateId·responseId는 JSON 정수 |
+| 식별자 | popupId·userId는 문자열. questionId·optionId·templateId·responseId는 JSON 정수. resultId·clientRequestId는 WPF가 만드는 GUID 문자열 |
 | 날짜 요청 | 시간대 포함 ISO 8601 문자열 권장. 예: 2026-09-16T09:00:00+09:00 |
-| 날짜 응답 | BasicConfig에서 WRITE_DATES_AS_TIMESTAMPS 사용. OffsetDateTime은 epoch 초 숫자(소수 가능). 예제는 정수 초. 웹/WPF는 ISO/epoch 호환 처리 |
+| 날짜 응답(관리자·구형) | BasicConfig에서 WRITE_DATES_AS_TIMESTAMPS 사용. OffsetDateTime은 epoch 초 숫자(소수 가능). 예제는 정수 초. 웹/WPF는 ISO/epoch 호환 처리 |
 | null | NON_NULL 설정으로 값 없는 응답 필드는 생략될 수 있음. 미제공을 오류나 0으로 단정하지 않음 |
 | boolean | true/false. 관리자 목록 activeYn만 Y/N 문자열 |
-| GET | 요청 JSON 본문 없음. userId를 URL 쿼리로 전송 |
+| GET | 요청 JSON 본문 없음. 현행 WPF API는 userId를 보내지 않는다(인증 정보로 식별). 구형 API만 URL 쿼리 userId |
 
-WPF 설정의 BaseUrl 예시는 http://localhost:8080/zero-rule-server/p 이며 클라이언트가 /api/popups를 붙인다. /p를 중복해서 붙이지 않는다. 별도 popup-api 프로젝트의 /api/popups와 주 서버 경로를 혼용하지 않는다.
+WPF 설정의 BaseUrl 예시는 http://localhost:8080/zero-rule-server/p 이며 클라이언트가 `/api/wpf/...`를 붙인다. /p를 중복해서 붙이지 않는다. 별도 popup-api 프로젝트의 /api/popups와 주 서버 경로를 혼용하지 않는다.
+
+### 1.1 현행 WPF API 공통 헤더 (설계 04·10·13)
+
+| 헤더 | 값 | 설명 |
+|---|---|---|
+| `Authorization` | `Bearer <token>` | 로그인 API(WPF2-00)가 발급한 토큰. 프로토타입에서는 서버 메모리 토큰(10분). 운영은 타 팀 통합 토큰으로 교체 예정이며 WPF 쪽 형태(`IAuthHeaderProvider`)는 동일 |
+| `X-Client-Version` | `1.0.0` | WPF 실행 버전(csproj `<Version>`). 서버 `custom.wpf-client.minimum-supported-version` 미만이면 **426**. 헤더 없음도 426(`require-header=true`) |
+| `X-Dev-User-Id` | 사번 | **개발 전용**. `custom.wpf-popup.dev-user-header=true` 프로파일에서만 사번 지정. 운영 없음 |
+
+인증 흐름:
+
+```text
+WPF 시작
+→ 사내 SSO GET(Windows 통합 인증, 프로세스당 최초 1회) → MAIN_USER_ID / MAIN_USER_CLASSI_CODE
+→ POST /p/api/wpf/auth/login { logonId, classCode, linkYn }  (+ X-Client-Version)
+→ { accessToken, tokenType, expiresAt }  → 메모리 보관
+→ 이후 요청: Authorization: Bearer <token> + X-Client-Version
+→ 401 이면 메모리 사용자 정보로 로그인 API만 재호출 후 원 요청(같은 body/resultId) 1회 재전송, 1시간마다 정기 재로그인
+→ 426 이면 재로그인·재시도 없이 업데이트 안내(주기 조회 중단, pending 결과 보존)
+```
+
+### 1.2 현행 WPF API 오류 응답
+
+| HTTP | code | 상황 |
+|---|---|---|
+| 400 | WPF_BAD_REQUEST | Bean Validation 실패, JSON 구문 오류, 서비스 검증(IllegalArgumentException) |
+| 401 | WPF_UNAUTHORIZED | 토큰 없음·만료·사번 미확인 |
+| 403 | WPF_USER_INACTIVE | APP_USER 없음 또는 ACTIVE_YN='N' |
+| 426 | CLIENT_VERSION_NOT_SUPPORTED | 클라이언트 버전 미지원. 본문에 clientVersion / minimumSupportedVersion / latestVersion 포함 |
+| 500 | WPF_INTERNAL | 서버 오류(메시지 비노출) |
+
+```json
+{ "code": "WPF_UNAUTHORIZED", "message": "인증 토큰이 없습니다.", "timestamp": "2026-09-22T09:00:00+09:00" }
+```
+```json
+{ "code": "CLIENT_VERSION_NOT_SUPPORTED", "message": "WPF 클라이언트 업데이트가 필요합니다.",
+  "clientVersion": "0.9.0", "minimumSupportedVersion": "1.0.0", "latestVersion": "1.0.0", "timestamp": "2026-09-22T09:00:00+09:00" }
+```
 
 관리자 정상 응답은 CLNewApiResponse를 사용한다. 아래 예시는 msgId와 body만 표시한 축약형이다. msgCn, msgClsf, msgPrntCd, msgKn, occrPrgNm, occrMethodNm, url 등의 부가 필드는 프레임워크/메시지 설정에 따라 달라진다. 정상 메시지 ID는 BE00000001을 요청하며 실제 메시지 레코드가 없으면 오류 응답이 될 수 있다. msgClsf가 ER이면 오류로 처리한다.
 
 ## 2. 인터페이스 목록
 
-| ID | 기능 | HTTP | 경로 | 응답 업무 데이터 |
-|---|---|---|---|---|
-| WPF-01 | 사용자 팝업 목록 | GET | /p/api/popups | 직접 배열/객체 |
-| WPF-02 | 팝업 숨김 | POST | /p/api/popups/{popupId}/hide | 직접 배열/객체 |
-| WPF-03 | 답안 제출 | POST | /p/api/popups/{popupId}/responses | 직접 배열/객체 |
-| WPF-04 | 영상 진행률 | POST | /p/api/popups/{popupId}/video-progress | 직접 배열/객체 |
-| WPF-05 | 표시·닫기 이벤트 | POST | /p/api/popups/{popupId}/events | 직접 배열/객체 |
-| WPF-06 | 사용자 상태 목록 | GET | /p/api/popups/statuses | 직접 배열/객체 |
-| ADM-01 | 관리자 목록 | POST | /apis/popup/list | body 내부 객체 |
-| ADM-02 | 관리자 상세 | POST | /apis/popup/info | body 내부 객체 |
-| ADM-03 | 관리자 등록·수정 | POST | /apis/popup/save | body 내부 객체 |
-| ADM-04 | 활성 변경 | POST | /apis/popup/active | body 내부 객체 |
-| ADM-05 | 문항 템플릿 목록 | POST | /apis/popup/question-templates | body 내부 객체 |
-| ADM-06 | 문항 템플릿 상세 | POST | /apis/popup/question-template | body 내부 객체 |
+| ID | 기능 | HTTP | 경로 | 응답 업무 데이터 | 상태 |
+|---|---|---|---|---|---|
+| WPF2-00 | WPF 로그인(프로토타입 토큰 발급) | POST | /p/api/wpf/auth/login | 직접 객체 | **현행** (`custom.wpf-auth-prototype.enabled=true`일 때만 등록) |
+| WPF2-01 | 표시 대상 팝업 목록(서버 판정 완료) | GET | /p/api/wpf/popups | 직접 객체 | **현행** |
+| WPF2-02 | 결과 일괄 전송(닫기·숨김·제출·영상) | POST | /p/api/wpf/popups/results | 직접 객체 | **현행** |
+| WPF-01 | 사용자 팝업 목록 | GET | /p/api/popups | 직접 배열/객체 | 구형·참고(현재 WPF 미사용) |
+| WPF-02 | 팝업 숨김 | POST | /p/api/popups/{popupId}/hide | 직접 배열/객체 | 구형 → WPF2-02 HIDDEN |
+| WPF-03 | 답안 제출 | POST | /p/api/popups/{popupId}/responses | 직접 배열/객체 | 구형 → WPF2-02 SUBMITTED |
+| WPF-04 | 영상 진행률 | POST | /p/api/popups/{popupId}/video-progress | 직접 배열/객체 | 구형 → WPF2-02 VIDEO_WATCHED |
+| WPF-05 | 표시·닫기 이벤트 | POST | /p/api/popups/{popupId}/events | 직접 배열/객체 | 구형 → WPF2-02 displayedAt/closedAt |
+| WPF-06 | 사용자 상태 목록 | GET | /p/api/popups/statuses | 직접 배열/객체 | 구형·참고 |
+| ADM-01 | 관리자 목록 | POST | /apis/popup/list | body 내부 객체 | 현행 |
+| ADM-02 | 관리자 상세 | POST | /apis/popup/info | body 내부 객체 | 현행 |
+| ADM-03 | 관리자 등록·수정 | POST | /apis/popup/save | body 내부 객체 | 현행 |
+| ADM-04 | 활성 변경 | POST | /apis/popup/active | body 내부 객체 | 현행 |
+| ADM-05 | 문항 템플릿 목록 | POST | /apis/popup/question-templates | body 내부 객체 | 현행 |
+| ADM-06 | 문항 템플릿 상세 | POST | /apis/popup/question-template | body 내부 객체 | 현행 |
 
 ## 3. API별 요청·응답 JSON
 
 POST 경로의 {popupId}는 실제 대상 팝업 ID로 치환한다. 예시의 ID는 실제 DB 등록값이 아니므로 그대로 실행하면 업무 검증에 실패할 수 있다.
 
-### WPF-01 사용자 팝업 목록
+## 3-A. 현행 WPF 전용 인터페이스 (WPF2-00 ~ WPF2-02)
+
+설계 기준: 03_WPF_API_설계 · 10_SSO_토큰_프로토타입 · 12_결과제출_UX_및_로컬판정 · 13_클라이언트_버전_서버검증. 공통 헤더·오류는 §1.1·§1.2.
+서버 구현: `web/api/.../popup/wpf/WpfPopupController.java`, `.../wpf/auth/WpfAuthController.java`, `.../wpf/version/WpfClientVersionInterceptor.java`.
+WPF 구현: `popup-frameWork/Popup/Services/PopupApiService.cs`, `Services/Auth/WpfLoginClient.cs`, `Services/PopupResultQueue.cs`.
+
+### WPF2-00 WPF 로그인 (프로토타입 토큰 발급)
+
+**POST /p/api/wpf/auth/login** — 헤더 `X-Client-Version` 만(Authorization 이전 단계). `custom.wpf-auth-prototype.enabled=true`(로컬 프로파일)일 때만 존재하며 운영 인증(타 팀 통합 토큰)이 확정되면 대체된다.
+
+| IN 필드 | 형식 | 필수 | 설명 |
+|---|---|---|---|
+| logonId | string | 필수 | SSO `MAIN_USER_ID`(사번) |
+| classCode | string | 필수 | SSO `MAIN_USER_CLASSI_CODE` |
+| linkYn | string | 선택 | 현재 "N" 고정 |
+
+| OUT 필드 | 형식 | 설명 |
+|---|---|---|
+| accessToken | string | opaque 토큰. WPF는 메모리에만 보관(파일·레지스트리 저장 없음) |
+| tokenType | string | "Bearer" |
+| expiresAt | string(ISO 8601) | 만료 시각(기본 10분). 만료 후 401 → 재로그인 |
+
+```json
+{ "logonId": "E1001", "classCode": "10", "linkYn": "N" }
+```
+```json
+{ "accessToken": "b7f3…", "tokenType": "Bearer", "expiresAt": "2026-09-22T09:10:00+09:00" }
+```
+
+### WPF2-01 표시 대상 팝업 목록
+
+**GET /p/api/wpf/popups** — 헤더 `Authorization`, `X-Client-Version`. 요청 본문·쿼리 없음.
+
+서버가 활성·기간·대상·숨김·**완료** 판정을 끝낸 최종 목록을 준다(WPF는 렌더링만). 공통 옵션·content·문항이 한 응답에 있어 추가 호출이 없다. 전체 예시: [api/examples/wpf-popups-response.json](../../api/examples/wpf-popups-response.json).
+
+| OUT 필드 | 형식 | 설명 |
+|---|---|---|
+| serverTime | string(ISO) | 서버 시각(KST) |
+| userId | string | 인증 정보로 식별한 사번 |
+| pollingIntervalSeconds | integer | 다음 주기 조회 간격(서버 `custom.wpf-popup.polling-interval-seconds`, 기본 1800). appsettings 값보다 우선 |
+| popups[] | array | 아래 항목. 없으면 [] |
+
+popups[] 항목 — §4 공통 팝업 객체와 같은 평면 구조에서 `questionTemplateId`를 제외하고 다음이 다르다.
+
+| 필드 | 형식 | 설명 |
+|---|---|---|
+| displayStartAt / displayEndAt | string(ISO 8601) | epoch가 아닌 문자열 |
+| hideDays | integer(선택) | HIDDEN 결과의 기본 숨김 일수(없으면 WPF 30일) |
+| completionRatio / allowCloseBeforeComplete | number / boolean | VIDEO 완료 판정(WPF 로컬) 기준 |
+| passingScore | number(선택) | **QUIZ에만** 제공(설계 12). SURVEY·기타는 생략 |
+| questions[] | array | 최상위에만 제공(content.questions 없음). **QUIZ에만** `options[].isCorrect`, `correctAnswer`, `answerMatchMode` 정답 키 포함 — WPF 로컬 채점용. SURVEY는 정답 키 없음 |
+| content | object | §5 유형별 content + 공통 옵션(useBackgroundOverlay, backgroundOverlayOpacity, headerFontSize, bodyFontSize, footerFontSize). `passingScore`·`validateRequiredQuestions`·`questions` 키는 제거됨 |
+
+WPF 처리 규칙(설계 11·12·14):
+- FIXED 크기는 서버 값을 그대로 쓰지 않고 작업 영역 95% 이내로 최종 보정한다(Header/Footer가 화면 밖으로 밀리지 않도록).
+- 폰트 크기(content.*FontSize)는 10~40으로 보정하고, 없으면 XAML 기본 크기.
+- 필수 응답 검증·QUIZ 채점(정답 키·questionScore·passingScore)·영상 시청 완료(completionRatio) 판정은 WPF가 즉시 수행한다.
+
+### WPF2-02 결과 일괄 전송
+
+**POST /p/api/wpf/popups/results** — 헤더 `Authorization`, `X-Client-Version`. 요청 예시: [wpf-results-request.json](../../api/examples/wpf-results-request.json), 응답 예시: [wpf-results-response.json](../../api/examples/wpf-results-response.json).
+
+WPF는 창이 닫힐 때 결과 항목 1개를 만들어 **먼저 로컬 파일 큐(`%LOCALAPPDATA%\Popup\pending-results.json`)에 저장하고 창을 닫은 뒤** 백그라운드로 전송한다(사용자 화면은 서버 응답을 기다리지 않음). 실패 항목은 파일에 남아 다음 조회 직전·다음 실행 시 같은 `resultId`로 재전송되며 서버는 `WPF_RESULT_RECEIPT.RESULT_ID`로 중복(DUPLICATE) 처리한다. 426이면 전송을 멈추고 항목을 보존한다.
+
+| IN 필드 (요청) | 형식 | 필수 | 설명 |
+|---|---|---|---|
+| clientRequestId | string(≤100) | 필수 | 요청 단위 식별(로그). 전송마다 새로 생성 |
+| sentAt | string(ISO) | 선택 | 전송 시각 |
+| results[] | array(1~50) | 필수 | 결과 항목 |
+
+| IN 필드 (results[]) | 형식 | 적용 유형 | 설명 |
+|---|---|---|---|
+| resultId | string(≤64, GUID) | 공통 | 멱등 키. 창이 열릴 때 확정, 재전송에도 동일 |
+| popupId | string | 공통 | 대상 팝업 |
+| resultType | string | 공통 | CLOSED / HIDDEN / SUBMITTED / VIDEO_WATCHED |
+| displayedAt | string(ISO) | 공통(선택) | 최초 표시 시각. 있으면 표시 횟수 +1 |
+| closedAt | string(ISO) | 공통(선택) | 닫힌 시각(제출은 제출 시각). 없으면 서버 수신 시각 |
+| hideDays | integer(1~3650) | HIDDEN 필수 | 숨김 일수 |
+| responseStartedAt | string(ISO) | SUBMITTED 선택 | 응답 시작 시각 |
+| answers[] | array | SUBMITTED 필수 | `{ questionId, optionIds[] }` 또는 `{ questionId, textAnswer }` (기존 제출 API와 같은 구조) |
+| score | number | SUBMITTED(QUIZ) 선택 | WPF 로컬 채점 점수(설계 12). 서버는 저장 시 자기 계산값과 다르면 경고 로그만 남김 |
+| passed | boolean | SUBMITTED(QUIZ) 선택 | WPF 로컬 통과 여부 |
+| video | object | VIDEO_WATCHED 필수 | `{ durationSeconds, positionSeconds, maximumPositionSeconds, watchedSeconds }` (초, 소수 가능) |
+
+| OUT 필드 (응답) | 형식 | 설명 |
+|---|---|---|
+| receivedAt | string(ISO) | 서버 수신 시각 |
+| results[] | array | 항목별 처리 결과(요청 순서) |
+
+| OUT 필드 (results[]) | 형식 | 설명 |
+|---|---|---|
+| resultId / popupId / resultType | string | 요청 항목 식별 |
+| status | string | ACCEPTED / DUPLICATE / REJECTED — 세 값 모두 "처리 종결"이므로 WPF는 큐에서 제거 |
+| code / message | string(선택) | REJECTED 사유: WPF_NOT_ELIGIBLE, WPF_TYPE_MISMATCH, WPF_INVALID_ANSWER, WPF_INVALID_HIDE_DAYS, WPF_INVALID_VIDEO, WPF_INVALID_RESULT, WPF_INTERNAL |
+| popupStatus / completed / completedAt / hiddenUntil | string / boolean / ISO / ISO(선택) | USER_POPUP_STATUS 반영 결과 |
+| responseId | integer(선택) | SUBMITTED 저장 응답 ID |
+| totalScore / passed | number / boolean(선택) | QUIZ SUBMITTED에서 서버 저장 계산값(참고). WPF는 이미 로컬 판정을 사용자에게 보여 준 뒤라 이 값을 기다리지 않는다 |
+| watchedRatio / requiredRatio | number(선택) | VIDEO_WATCHED 저장 결과(참고) |
+
+유형별 최소 항목 예:
+
+```json
+{ "resultId": "…", "popupId": "SAMPLE-TEXT-001", "resultType": "CLOSED",
+  "displayedAt": "2026-09-19T09:00:05+09:00", "closedAt": "2026-09-19T09:00:40+09:00" }
+```
+```json
+{ "resultId": "…", "popupId": "SAMPLE-TEXT-001", "resultType": "HIDDEN", "hideDays": 7 }
+```
+```json
+{ "resultId": "…", "popupId": "SAMPLE-QUIZ-003", "resultType": "SUBMITTED",
+  "answers": [ { "questionId": 1, "optionIds": [1] } ], "score": 10, "passed": true }
+```
+```json
+{ "resultId": "…", "popupId": "SAMPLE-VIDEO-002", "resultType": "VIDEO_WATCHED",
+  "video": { "durationSeconds": 540.0, "positionSeconds": 540.0, "maximumPositionSeconds": 540.0, "watchedSeconds": 531.5 } }
+```
+
+## 3-B. 부록 — 구형 WPF 인터페이스 (WPF-01 ~ WPF-06, 현재 WPF 미사용)
+
+서버 `PopupController`(/p/api/popups/**)에 남아 있으며 WPF `PopupApiService`에도 호출 메서드가 남아 있으나 현재 실행 흐름(MainWindow → GetWpfPopupsAsync / PostResultsAsync)에서는 호출하지 않는다. 계약 참고용으로만 유지한다.
+
+### (구형) WPF-01 사용자 팝업 목록
 
 **GET /p/api/popups**
 
@@ -185,7 +354,7 @@ POST 경로의 {popupId}는 실제 대상 팝업 ID로 치환한다. 예시의 I
 ]
 ```
 
-### WPF-02 팝업 숨김
+### (구형) WPF-02 팝업 숨김
 
 **POST /p/api/popups/{popupId}/hide**
 
@@ -211,7 +380,7 @@ userId 필수, hideDays 필수 정수 1~3650. hiddenUntil은 서버/DB 계산 �
 }
 ```
 
-### WPF-03 답안 제출
+### (구형) WPF-03 답안 제출
 
 **POST /p/api/popups/{popupId}/responses**
 
@@ -250,7 +419,7 @@ clientRequestId·userId·answers 필수. answers는 1개 이상, questionId 필�
 }
 ```
 
-### WPF-04 영상 진행률
+### (구형) WPF-04 영상 진행률
 
 **POST /p/api/popups/{popupId}/video-progress**
 
@@ -281,7 +450,7 @@ clientRequestId·userId·answers 필수. answers는 1개 이상, questionId 필�
 }
 ```
 
-### WPF-05 표시·닫기 이벤트
+### (구형) WPF-05 표시·닫기 이벤트
 
 **POST /p/api/popups/{popupId}/events**
 
@@ -307,7 +476,7 @@ userId·eventType 필수. eventType은 DISPLAYED 또는 CLOSED.
 }
 ```
 
-### WPF-06 사용자 상태 목록
+### (구형) WPF-06 사용자 상태 목록
 
 **GET /p/api/popups/statuses**
 
@@ -330,6 +499,8 @@ userId·eventType 필수. eventType은 DISPLAYED 또는 CLOSED.
   }
 ]
 ```
+
+## 3-C. 관리자 인터페이스 (ADM-01 ~ ADM-06)
 
 ### ADM-01 관리자 목록
 
@@ -755,6 +926,11 @@ content는 확장 JSON 객체로 저장된다. 아래 예시는 현재 사용하
 |---|---|---|
 | useBackgroundOverlay | boolean | 배경 클릭 차단 사용. 웹 신규 기본 true |
 | backgroundOverlayOpacity | number | 배경 어둡기 0~1. 웹 신규 기본 0.45 |
+| headerFontSize | number(선택) | [설계 14] WPF Header 제목 글자 크기(px/DIP). 10~40. 없으면 XAML 기본 17 |
+| bodyFontSize | number(선택) | [설계 14] 본문 글자 크기. 10~40. 없으면 유형별 기본(TEXT 15, IMAGE·VIDEO 설명 14, 설문 선택지 12 — 문항 제목/설명은 +4/+1 상대 유지) |
+| footerFontSize | number(선택) | [설계 14] Footer("다시 보지 않기"·닫기 버튼) 글자 크기. 10~40. 없으면 기본 14 |
+
+폰트 크기 3개는 별도 DB 컬럼 없이 CONTENT_OPTIONS JSON으로 저장·전달된다. 서버 저장 검증(`PopupService.validateFontSizeOptions`)과 WPF 최종 Clamp(`PopupWindow.ApplyFontSizes`) 모두 10~40 범위이며, 기존 데이터에 값이 없으면 이전과 동일하게 표시된다.
 
 ### TEXT
 
@@ -877,7 +1053,7 @@ IMAGE: imageSizeMode는 FIXED, FIT_TO_IMAGE, ADAPTIVE, FILL. imageWidth/imageHei
 
 VIDEO: defaultVolume은 0~1 숫자, 나머지 재생/표시 플래그는 boolean. completionRatio 및 allowCloseBeforeComplete는 최상위 popup 필드이다. 재생 옵션의 모든 WPF 실제 강제 동작은 별도 UI 검증 대상이며 JSON 전달과 구분한다.
 
-SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에 문항을 함께 제공한다. 관리자 저장 시 최상위 questions를 기준으로 처리하므로 두 배열을 서로 다르게 편집하지 않는다.
+SURVEY/QUIZ: 관리자 조회 응답과 구형 WPF-01은 최상위 questions와 content.questions에 문항을 함께 제공한다(현행 WPF2-01은 최상위 questions만). 관리자 저장 시 최상위 questions를 기준으로 처리하므로 두 배열을 서로 다르게 편집하지 않는다. content.passingScore는 관리자·구형 응답에만 있고 현행 WPF2-01은 최상위 passingScore(QUIZ만)로 준다.
 
 ## 6. 문항·선택지 및 정답
 
@@ -893,9 +1069,11 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 | options[].optionId | integer | 선택지 ID. 제출 optionIds는 이 값을 사용 |
 | options[].value / text | string | 저장 값 / 표시 문구 |
 | options[].sortOrder | integer | 선택지 순서 |
-| options[].isCorrect | boolean | 관리자용 정답 여부. 공개 응답에서 제외 |
-| correctAnswer | string | 관리자용 주관식 정답. 공개 응답에서 제외 |
-| answerMatchMode | string | EXACT 또는 CONTAINS. 관리자용, 공개 응답에서 제외 |
+| options[].isCorrect | boolean | 정답 여부. 관리자 응답과 **현행 WPF 목록(WPF2-01)의 QUIZ 팝업**에 제공. SURVEY·구형 WPF-01에서는 제외 |
+| correctAnswer | string | 주관식 정답. 위와 같은 범위 |
+| answerMatchMode | string | EXACT 또는 CONTAINS. 위와 같은 범위 |
+
+[설계 12] WPF 로컬 채점 규칙(서버 `PopupService.gradeAnswer`와 동일): 채점 문항(isScored)만 계산. 선택형은 선택 집합 == isCorrect 집합일 때 questionScore 전부(부분 점수 없음). 서술형은 answerMatchMode EXACT(trim 후 완전 일치)/CONTAINS(포함). 통과 = 총점 ≥ passingScore(없으면 0). 결과는 WPF2-02 `score`/`passed`로 전송된다.
 
 관리자 정답 문항 예시:
 
@@ -979,7 +1157,8 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 
 | 응답 | 필드 및 형식 |
 |---|---|
-| 숨김 | userId:string, popupId:string, hideType:string(UNTIL), hiddenUntil:날짜 |
+| **결과 일괄(WPF2-02, 현행)** | receivedAt:ISO, results[]: resultId/popupId/resultType/status(ACCEPTED·DUPLICATE·REJECTED), code/message(선택), popupStatus, completed, completedAt, hiddenUntil, responseId, totalScore, passed, watchedRatio, requiredRatio (모두 선택) — §3-A |
+| 숨김(구형) | userId:string, popupId:string, hideType:string(UNTIL), hiddenUntil:날짜 |
 | 제출 | responseId:integer, clientRequestId:string, userId:string, popupId:string, responseStatus:string(SUBMITTED), totalScore:number, passed:boolean, submittedAt:날짜 |
 | 영상 | userId:string, popupId:string, watchedRatio:number, requiredRatio:number, completed:boolean, completedAt:날짜(선택) |
 | 이벤트 | userId:string, popupId:string, eventType:string, recordedAt:날짜 |
@@ -991,8 +1170,8 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 
 ## 9. 오류와 JSON 외 인터페이스
 
-- Bean Validation과 서비스 검증이 별도로 존재한다. 누락 필드·잘못된 enum·기간/크기 오류·대상 불일치·잘못된 문항 ID 등을 거절한다.
-- 현재 팝업 API 전용으로 통일된 오류 JSON DTO/HTTP 상태 매핑은 확인되지 않았다. 프레임워크 예외 응답을 임의로 {code,message} 형식이라고 확정하지 않는다. 오류 계약 고정이 필요하면 실행 응답 수집과 공통 예외 처리 확인이 필요하다.
+- Bean Validation과 서비스 검증이 별도로 존재한다. 누락 필드·잘못된 enum·기간/크기 오류·대상 불일치·잘못된 문항 ID·폰트 크기 범위(10~40) 등을 거절한다.
+- **현행 WPF API(/p/api/wpf/**)** 는 `WpfApiExceptionHandler`가 `{code, message, timestamp}`(426은 버전 3개 추가)로 통일한다(§1.2). 관리자 API와 구형 WPF API는 프레임워크 예외 응답을 따르며 {code,message} 형식으로 확정하지 않는다.
 - 관리자 클라이언트는 응답의 msgClsf=ER 등을 검사한다. HTTP 성공만으로 업무 저장 성공을 판단하지 않는다.
 - GET /p/api/popups/video?path=sample.mp4 및 /p/api/popups/video/{*path}는 영상 바이너리 응답이므로 본 JSON 계약에서 제외한다. Range 요청은 206/416으로 처리될 수 있고 잘못된 경로/파일은 400/403/404/415가 가능하다.
 - 하단 링크와 이미지 링크 클릭은 브라우저 URL 이동이며 별도 팝업 API 요청 JSON을 만들지 않는다.
@@ -1001,7 +1180,15 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 
 | 기준 파일 | 확인 내용 |
 |---|---|
-| zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupController.java | WPF API 6개 경로·메서드 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java | 현행 WPF2-01·02 경로·헤더·사용자 식별 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/auth/WpfAuthController.java | WPF2-00 로그인(프로토타입) |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/version/WpfClientVersionInterceptor.java | X-Client-Version 검증·426 본문 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfApiExceptionHandler.java | 현행 WPF 오류 JSON |
+| zero-rule-server/web/api/src/main/java/server/web/api/payload/popup/wpf/WpfResultRequest.java | 결과 항목 IN 필드(score/passed 포함) |
+| zero-rule-server/domain/src/main/java/server/domain/popup/wpf/ | WpfPopupItem(passingScore·정답 키 범위), WpfResultItemResponse, 오류 DTO |
+| zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/ | 목록 조립(QUIZ 정답 키), 결과 처리·멱등 |
+| popup-frameWork/Popup/Services/QuizGrader.cs · PopupResultQueue.cs · ClientVersion.cs | WPF 로컬 채점·로컬 큐·버전 헤더/426 |
+| zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupController.java | 구형 WPF API 6개 경로·메서드 |
 | zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupAdminController.java | 관리자 API 6개 및 응답 래퍼 |
 | zero-rule-server/web/api/src/main/java/server/web/api/payload/popup/ | 요청 DTO·필수/범위 검증 |
 | zero-rule-server/domain/src/main/java/server/domain/popup/ | 공통 팝업·문항·응답 DTO |
@@ -1010,6 +1197,6 @@ SURVEY/QUIZ: 서버 조회 응답은 최상위 questions와 content.questions에
 | zero-rule-server/app/src/main/java/server/app/config/BasicConfig.java | timestamp 및 null 생략 설정 |
 | zero-rule-web/sub/domain/src/base.ts | 관리자 응답 부가 필드 |
 | zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts | 관리자 클라이언트 요청·응답 사용 |
-| popup-frameWork/Popup/Service/PopupApiService.cs | WPF API 조합 경로 |
+| popup-frameWork/Popup/Services/PopupApiService.cs | WPF API 조합 경로 |
 
 이 문서는 소스 대조 기반이다. 실제 서버 호출, 운영 DB 반영, 오류 응답 캡처 및 브라우저/WPF 전체 연동 시험은 문서 작성 과정에서 실행하지 않았다. 예시 JSON 구문과 DTO 필드 누락·불일치는 별도 정적 검사한다.

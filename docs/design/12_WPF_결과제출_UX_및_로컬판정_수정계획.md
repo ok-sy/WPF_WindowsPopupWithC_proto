@@ -399,8 +399,8 @@ WPF에서 영상 시청 완료 여부 판단
 popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs
 popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs
 popup-frameWork/Popup/Managers/PopupManager.cs
-popup-frameWork/Popup/Service/PopupResultBuilder.cs
-popup-frameWork/Popup/Service/PopupResultQueue.cs
+popup-frameWork/Popup/Services/PopupResultBuilder.cs
+popup-frameWork/Popup/Services/PopupResultQueue.cs
 popup-frameWork/Popup/Dtos/*
 ```
 
@@ -521,8 +521,16 @@ pending 결과 유지
 
 ```text
 문서화: 완료
-코드 수정: 미수행
-빌드/실행 테스트: 미수행
+코드 수정: 완료 (2026-09-22)
+  WPF   : PopupResultQueue → EnqueueAsync(저장만) / FlushAsync / FlushInBackground 로 분리, SendImmediateAsync·EnqueueAndSendAsync 제거
+          PopupManager → 제출·닫기 모두 "로컬 큐 저장 → (QUIZ 점수 안내) → 창 닫기 → 백그라운드 전송"
+          SurveyPopupView → 필수 응답 검증 + QuizGrader 로컬 채점(서버 gradeAnswer와 같은 규칙) → SurveySubmission(answers/score/passed)
+          VideoPopupView → 시청 완료 판정 로컬 유지(변경 없음), 결과는 큐 경로
+          DTO → SurveyQuestionDto.questionScore/correctAnswer/answerMatchMode, SurveyOptionDto.isCorrect, WpfResultItemDto.score/passed
+  Server: WpfPopupService/WpfPopupItem → QUIZ 팝업에만 passingScore·정답 키 포함(SURVEY는 제거), PopupService.loadQuestionsWithAnswerKey
+          WpfResultRequest/WpfResultCommand → score/passed 수신, WpfResultProcessor → 서버 계산값과 다르면 경고 로그(재채점·거절 없음)
+빌드/테스트: dotnet build 경고 0·오류 0, 서버 WPF 관련 단위 테스트 통과(web:api·service:core popup.* 55개, DB 필요 2개 skip)
+실행 테스트(T1~T8): 미수행 — 실제 서버·네트워크 단절·QUIZ 통과/미통과 화면 확인 필요
 ```
 
 후속 구현 핵심:

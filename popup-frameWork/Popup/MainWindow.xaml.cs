@@ -105,6 +105,8 @@ namespace Popup
                     authHeaderProvider,
                     ResolveDevUserId(settings.DevUserId));
                 _resultQueue = new PopupResultQueue(_popupApiService);
+                // [설계 13 §11] 백그라운드 결과 전송이 426을 받으면 주기 조회를 멈추고 업데이트 안내
+                _resultQueue.ClientVersionRejected += (sender, exception) => HandleClientVersionRejected(exception);
             }
             else
             {
@@ -280,6 +282,30 @@ namespace Popup
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
         }
 
+        /*
+         * [설계 13 §8·§10·§11] 서버 426(클라이언트 버전 미지원) 처리 — 목록 조회·로그인·백그라운드 결과 전송 공통.
+         *   - 401 재로그인 경로에 들어가지 않는다(WpfClientVersionException은 별도 타입).
+         *   - 같은 API를 무한 재시도하지 않도록 주기 조회 타이머를 멈춘다(프로그램을 업데이트 후 다시 실행해야 한다).
+         *   - pending 결과는 PopupResultQueue가 지우지 않았으므로 새 버전에서 재전송된다.
+         *   - 안내는 프로세스당 1회만 띄운다(백그라운드 Flush와 조회가 연달아 426을 받아도 창이 여러 개 뜨지 않게).
+         * 백그라운드 스레드에서 올 수 있으므로 Dispatcher로 UI 스레드에서 실행한다.
+         */
+        private bool _clientVersionRejected;
+
+        private void HandleClientVersionRejected(WpfClientVersionException exception, bool forceMessage = false)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => HandleClientVersionRejected(exception, forceMessage));
+                return;
+            }
+            _pollingTimer.Stop();
+            if (_clientVersionRejected && !forceMessage) return;   // forceMessage: 사용자가 직접 조회 버튼을 누른 경우
+            _clientVersionRejected = true;
+            MessageBox.Show(exception.UserMessage, "프로그램 업데이트 필요",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
         private async void OpenPopupButton_Click(object sender, RoutedEventArgs e)
         {
             await RefreshPopupsAsync();
@@ -388,10 +414,11 @@ namespace Popup
                 {
                     /*
                      * [기준 3·4] PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을
-                     * 큐로 넘기는 훅만 연결한다. 제출은 즉시 전송해 응답을 사용자에게 안내한다.
+                     * 큐로 넘기는 훅만 연결한다.
+                     * [설계 12] 제출 포함 모든 결과: 로컬 큐 저장(EnqueueAsync) → 창 닫기 → 백그라운드 전송(FlushInBackground).
                      */
-                    popupOptions.ReportResultAsync = _resultQueue.EnqueueAndSendAsync;
-                    popupOptions.ReportResultImmediateAsync = _resultQueue.SendImmediateAsync;
+                    popupOptions.EnqueueResultAsync = _resultQueue.EnqueueAsync;
+                    popupOptions.FlushResultsInBackground = _resultQueue.FlushInBackground;
                 }
 
                 foreach (PopupResponseDto popupDto in popupDtos)
@@ -399,6 +426,14 @@ namespace Popup
                     _shownPopupIds.Add(popupDto.PopupId);
                 }
                 _popupManager.ShowRange(popupOptionsList);
+            }
+            catch (WpfClientVersionException exception)
+            {
+                /*
+                 * [설계 13 §8] 서버가 이 WPF 버전을 더 이상 지원하지 않는다(426).
+                 * 재로그인·재시도 없이 주기 조회를 멈추고 업데이트 안내만 한다(항상 표시 — 조용히 넘기면 사용자가 원인을 모른다).
+                 */
+                HandleClientVersionRejected(exception, forceMessage: showErrorMessage);
             }
             catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Unauthorized
                                                          || exception.StatusCode == HttpStatusCode.Forbidden)

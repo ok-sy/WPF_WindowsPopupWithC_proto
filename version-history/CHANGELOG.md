@@ -2,6 +2,25 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-22-06 — 설계 11·12·13·14 TODO 구현 (FIXED 방어, 결과 비동기·로컬 판정, 클라이언트 버전 검증, 폰트 크기, Services 폴더, 반입 패키지, 정의서 v2.0)
+
+- 이유: 사용자 지시 "git pull 받고 todo 해야해" — pull로 받은 설계 11~14의 미수행 항목(코드 수정·반입 준비·정의서 최신화) 처리.
+- **WPF 폴더 정리(설계 14 §5A)**: `git mv Popup/Service → Popup/Services`(namespace `Popup.Services` 그대로). README·정의서·설계 10/12/13의 경로 참조 갱신.
+- **FIXED 화면 초과 방어(설계 11)**: `PopupWindow.ApplyWindowSize()` Fixed 분기 — WorkArea 95% 상한, 서버 Maximum 적용, Minimum > 상한 역전 보정, Window Min/Max도 보정값으로 재지정. 알 수 없는 SizeMode(default)도 Fixed 분기로 합류.
+- **결과 제출 UX·로컬 판정(설계 12)**:
+  - WPF: `PopupResultQueue` — `EnqueueAsync`(파일 저장만) / `FlushAsync` / `FlushInBackground`(예외 내부 처리)로 역할 분리, `EnqueueAndSendAsync`·`SendImmediateAsync` 삭제. `PopupOptions` 훅을 `EnqueueResultAsync`/`FlushResultsInBackground`로 교체(`ReportResult*` 삭제). `PopupManager` — 제출·닫기 모두 "로컬 큐 저장(await) → QUIZ 점수 안내 → 창 닫기 → 백그라운드 전송". `SurveyPopupView` — 필수 응답 검증 후 QUIZ는 새 `Services/QuizGrader`(서버 gradeAnswer와 같은 규칙: 선택 집합==정답 집합·EXACT/CONTAINS·부분 점수 없음, 구 데모 JSON correctAnswers 호환)로 즉시 채점, 이벤트 인자를 `Models/SurveySubmission`(answers/score/passed/passingScore)으로 변경, `passingScore` 매개변수 복원. DTO/모델에 `questionScore`/`correctAnswer`/`answerMatchMode`/`options[].isCorrect` 추가, `WpfResultItemDto.Score/Passed` 추가, `PopupResultBuilder.BuildSubmitted(SurveySubmission)`. `PopupFactory` — 정답 키·passingScore(최상위 우선, content 폴백) 전달. `DemoPopupGateway` — WPF가 보낸 score/passed 우선 사용. `MainWindow`/`DemoWindow` 훅 연결 교체.
+  - 서버(popup 영역만): `WpfPopupService.getPopupsForUser` — `PopupService.loadQuestionsWithAnswerKey`(신규, admin=true 재사용)로 1회 조회 후 **QUIZ에만** 정답 키·최상위 `passingScore` 포함, 그 외는 `WpfPopupItem.withoutAnswerKey`로 제거. `WpfPopupItem`에 `passingScore` 필드·`from(dto, includeGradingInfo)`. `WpfResultRequest.Item`/`WpfResultCommand`에 `score`/`passed`(선택, 기존 9-인자 생성자 유지). `WpfResultProcessor.handleSubmitted` — 서버 저장 계산값과 WPF 값이 다르면 경고 로그만(재채점·거절 없음).
+- **클라이언트 버전 서버 검증(설계 13)**:
+  - WPF: `Popup.csproj` `<Version>1.0.0</Version>`(+Assembly/FileVersion), `Services/ClientVersion.cs`(InformationalVersion 읽기, `X-Client-Version`), `PopupApiService.SendWithAuthAsync`·`WpfLoginClient.LoginAsync`에 헤더 부착. 426 → `WpfClientVersionException`(401 재시도 경로와 분리) → `MainWindow.HandleClientVersionRejected`(주기 조회 중단, 업데이트 안내 1회, 수동 조회 시 재안내), `PopupResultQueue.FlushAsync`는 426이면 pending 보존·전파(`ClientVersionRejected` 이벤트), `SsoAuthHeaderProvider`는 로그인 426을 삼키지 않고 정기 재로그인 루프 중단.
+  - 서버(신규 파일만, 공통 WebMvcConfig 미수정): `base/props/WpfClientVersionProps`(custom.wpf-client: latest-version / minimum-supported-version / require-header), `web/api/.../wpf/version/ClientSemver`(숫자 비교), `WpfClientVersionInterceptor`(/p/api/wpf/** 전용, 426 + `domain/.../WpfClientVersionErrorResponse` JSON), `WpfClientVersionWebConfig`(별도 WebMvcConfigurer). `application-common.yml`에 latest 1.0.0 / minimum 1.0.0 / require-header true.
+- **폰트 크기(설계 14 §5)**: DB 컬럼 없이 content(CONTENT_OPTIONS)의 `headerFontSize`/`bodyFontSize`/`footerFontSize`(10~40, 없으면 기본). 웹 `PopupEditorDialog` "폰트 크기" 입력 3개(`PopupFontSizeField`, 비우면 null)·`PopupPreview` 반영. 서버 `PopupService.validateFontSizeOptions`(저장 시 범위 검사). WPF `PopupOptions.Header/Body/FooterFontSize` → `PopupFactory` → `PopupWindow.ApplyFontSizes`(Clamp; Header=제목, Footer=체크박스+닫기 버튼) → 본문은 새 `IBodyFontSizeAware`를 TEXT(본문 4개+LineHeight 비율)/IMAGE(설명)/VIDEO(설명)/SURVEY(선택지 상속 + 문항 제목 +4·설명 +1)가 구현.
+- **폐쇄망 반입 준비(설계 14 §2·3·4·7)**: `scripts/export-offline-package.ps1` 신규 — A 문서 / B 서버(`git diff 0294d1e..HEAD`) / C 웹(`git diff f66e8ed..HEAD`) / D WPF 소스(bin·obj·publish·exe·dll·pdb 제외, 누출 검사) / E 개발 의존(옵션) 묶음·MANIFEST(A/M 상태)·README-IMPORT·zip 생성. `.gitignore`에 `offline-export/`.
+- **인터페이스 정의서 최신화(설계 14 §1)**: `docs/interfaces/POPUP_INTERFACE_SPEC.md` v2.0 — §1.1 공통 헤더·인증 흐름, §1.2 WPF 오류(426 포함), §2 목록에 WPF2-00~02 추가·구형 표시, §3-A WPF2-00/01/02 IN/OUT 표·샘플, §3-B 구형 WPF-01~06 부록, §3-C 관리자, §5 폰트 크기 공통 필드, §6 정답 키 제공 범위·로컬 채점 규칙, §8·§9·§10 갱신. `api/examples/wpf-popups-response.json`(QUIZ isCorrect/passingScore/폰트 크기)·`wpf-results-request.json`(score/passed, 공통 헤더 주석) 갱신. **Word 기준본(.docx)은 이 PC·저장소에 없어 Word 파일 갱신은 미수행.**
+- 문서: 설계 11·12·13·14 상태 절과 체크리스트 갱신, `popup-frameWork/README.md` §16·§17 흐름 갱신.
+- 검증: `dotnet build Popup.slnx` 경고 0·오류 0. 서버 `gradle --offline :web:api:test --tests server.web.api.popup.wpf.* :service:core:test --tests server.service.core.popup.*` 55개 통과(DB 필요 2개 skip; 신규 `WpfClientVersionInterceptorTest` 8개, `WpfPopupServiceTest` SURVEY 정답 제거 케이스, `WpfPopupControllerTest` score/passed 전달 추가, `WpfPopupDatabaseTest` 기대값 갱신). RgstPop 8개 파일 한정 `tsc --noEmit` 오류 0. 예제 JSON 파싱 확인. 반입 스크립트 로컬 실행(A 34/B 87/C 4/D 79 파일, zip 생성) 확인.
+- 미실행: WPF 실제 실행(FIXED 초과 값 화면, QUIZ 통과/미통과 안내, 네트워크 단절 pending, 426 안내, 폰트 크기 표시), 관리자 웹 화면 조작, 실제 서버 기동 E2E, 폐쇄망 PC `dotnet restore/build`, 원격 개발 DB 통합 테스트(`WpfPopupDatabaseTest`·`WpfApiOracleHttpTest`).
+- 상태: 미커밋(아래 커밋 시 갱신).
+
 ## 2026-09-21-05 — TEXT 팝업 Markdown 모드 제거 (WPF·관리자 웹·예제·문서)
 
 - 이유: 사용자 지시 "text 팝업 markdown도 안 쓴다, 관련 소스 다 지우자". TEXT 팝업은 콘텐츠 제목·설명, 일반 텍스트, 강조 문구, 하단 설명만 사용한다.

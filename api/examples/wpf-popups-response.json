@@ -1,5 +1,5 @@
 {
-  "_comment": "GET /p/api/wpf/popups 응답 예시 (WPF2-01). 가상 데이터. 사용자 E1001, 02_popup_sample_oracle.sql 기준.",
+  "_comment": "GET /p/api/wpf/popups 응답 예시 (WPF2-01). 가상 데이터. 사용자 E1001, 02_popup_sample_oracle.sql 기준. 요청 공통 헤더: Authorization: Bearer <token>, X-Client-Version: 1.0.0 (설계 13).",
   "serverTime": "2026-09-19T09:00:00+09:00",
   "userId": "E1001",
   "pollingIntervalSeconds": 1800,
@@ -106,7 +106,9 @@
       "showFooter": true,
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
+      "passingScore": 10,
       "periodMode": "FIXED",
+      "_comment": "[설계 12] QUIZ만 passingScore·정답 키(options[].isCorrect / correctAnswer / answerMatchMode)를 내려준다. WPF가 제출 즉시 로컬 채점한다. SURVEY에는 없다. [설계 14] content.headerFontSize/bodyFontSize/footerFontSize는 관리자 폰트 크기(10~40, 없으면 기본 크기).",
       "questions": [
         {
           "questionId": 1,
@@ -118,8 +120,8 @@
           "questionScore": 10,
           "sortOrder": 1,
           "options": [
-            { "optionId": 1, "value": "YES", "text": "예", "sortOrder": 1 },
-            { "optionId": 2, "value": "NO", "text": "아니요", "sortOrder": 2 }
+            { "optionId": 1, "value": "YES", "text": "예", "sortOrder": 1, "isCorrect": true },
+            { "optionId": 2, "value": "NO", "text": "아니요", "sortOrder": 2, "isCorrect": false }
           ]
         }
       ],
@@ -127,7 +129,10 @@
         "surveyTitle": "보안 교육 확인",
         "description": "문항에 응답해 주세요.",
         "useBackgroundOverlay": true,
-        "backgroundOverlayOpacity": 0.45
+        "backgroundOverlayOpacity": 0.45,
+        "headerFontSize": 18,
+        "bodyFontSize": 14,
+        "footerFontSize": 13
       }
     },
     {
