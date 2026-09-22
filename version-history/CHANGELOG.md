@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-22-09 — worktree 브랜치 2개 main 병합, 확장 바이너리·worktree `.gitignore` 등록
+
+- 이유: 사용자 지시 "수정한거 다 깃에 올려라". 확인 결과 main·두 worktree 브랜치 모두 작업 트리가 깨끗하고 origin과 동기화돼 있어 새로 푸시할 미커밋 변경은 없었고, 남은 것은 main에 병합되지 않은 브랜치 2개와 추적되지 않는 파일뿐이었다. 사용자가 병합을 선택했다.
+- 병합 1 — `worktree-fix-start-dev-command-quote`(커밋 `6efc4fd`, 기록 2026-09-20-04): main에 이미 같은 `-Command` 괄호 수정이 들어가 있어 코드는 동일했다. `shell/start-dev.ps1` 주석만 충돌 — 파일의 다른 주석과 맞춰 한글 원인 설명을 남기고 영문본은 버렸다. 병합 커밋 `f9408ce`.
+- 병합 2 — `worktree-popup-web-menu-data`(커밋 `497f1ad`·`f1eac89`·`4502089`, 기록 2026-09-20-05·-06): WPF·웹 코드(`PopupFactory`, `VideoPopupView.xaml(.cs)`, `VideoPopupContentDto`, `PopupEditorDialog.tsx`)는 main의 후속 작업(폰트 크기 `IBodyFontSizeAware`, QUIZ 정답 키)과 같은 파일을 건드렸으나 자동 병합됐다. 충돌 2건을 수동 해소: `db/oracle/README.md` 실행 순서 표에 `04_popup_web_menu_oracle.sql`·`04_cleanup_markdown_fields_oracle.sql` 두 행을 모두 두고 번호만 같고 서로 독립임을 주석으로 명시, `version-history/CHANGELOG.md`는 날짜별 순번 충돌(둘 다 2026-09-20-04)로 웹 메뉴 항목을 `-05`, 옵션 정합성 항목을 `-06`으로 재번호. 병합 커밋 `03da3b0`.
+- 변경(`.gitignore`, 사용자 추가 요청 "extention은 git ignore에 올려라"): `offline-extention/`(VS Code 확장 `.vsix` 5개, 총 175MB — `ms-dotnettools.csharp` 하나가 131MB로 GitHub 파일 제한 초과), `.claude/worktrees/`(작업용 worktree 체크아웃) 추가. 두 경로 모두 커밋하지 않는다.
+- 검증: WPF `dotnet build Popup/Popup.csproj -c Debug`(소스 `.offline-cache/packages`) 경고 0·오류 0. 웹 `npx tsc --noEmit -p main/tsconfig.json` 오류 0. `shell/start-dev.ps1` 파싱 오류 0. **미실행**: 병합된 기능의 실제 동작 확인(WPF 영상 재생 옵션 6개, 브라우저에서 숨김 일수 저장 왕복, 사이드바 "팝업 관리 > 팝업 등록" 표시), 서버 테스트, 웹 lint.
+- 상태: main에 병합·커밋 후 origin/main 푸시. worktree 브랜치 2개는 삭제하지 않고 그대로 뒀다.
+
 ## 2026-09-22-08 — Word 인터페이스 정의서 v2.0 저장소 반입 (QUIZ 재채점 정책 반영)
 
 - 이유: 설계 14 §1 "Word 인터페이스 정의서 최신화". 사용자가 `D:\work\PopupProject2026\docs\`에 올린 v2.0 기준본(`WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx` — POPUP_INTERFACE_SPEC.md v2.0과 같은 구조·내용)을 저장소에 넣는다.
