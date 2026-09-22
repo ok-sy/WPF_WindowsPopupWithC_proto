@@ -8,7 +8,7 @@
 - 변경: `docs/interfaces/WPF_Popup_API_Interface_v2.0.docx` 추가. 기준본 `word/document.xml`에서 2026-09-22-07(QUIZ 미통과 시 창 유지·재채점, 통과 시에만 제출) 관련 문구 3곳만 텍스트 치환(4.2 WPF 처리 규칙, 4.3 score/passed 설명, 10 QUIZ 규칙). 구조·서식 변경 없음.
 - 검증: 수정 후 `word/document.xml` XML well-formed 확인(PowerShell XmlDocument). 이 PC에 pandoc·LibreOffice·Word COM이 없어 렌더링 확인은 미수행 — Word에서 한 번 열어 확인 필요.
 - 문서: 설계 14 P0 항목·상태 갱신.
-- 상태: 커밋 후 푸시(아래 참고).
+- 상태: 커밋 `4a28283` (main) 푸시 완료.
 
 ## 2026-09-22-07 — QUIZ 미통과 시 창 유지·재채점 (통과할 때까지)
 
