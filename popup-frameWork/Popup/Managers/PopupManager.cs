@@ -282,17 +282,31 @@ namespace Popup.Managers
         }
 
         /*
-         * [설계 12 §2·§4] 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 안내하고 창을 닫는다.
-         *  1. 결과 항목(answers + score/passed) 생성
-         *  2. EnqueueResultAsync — pending-results.json 저장(await). 이 시점부터 결과는 유실되지 않는다.
-         *  3. QUIZ면 점수·통과 여부를 즉시 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
+         * [설계 12 §2·§4] 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 창을 닫는다.
+         *  1. QUIZ 미통과(passed=false)면 점수·통과 점수를 안내하고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다.
+         *     사용자는 답안을 고쳐 "채점"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다(2026-09-22 사용자 지시).
+         *     닫기 버튼으로 나가면 SUBMITTED 없이 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
+         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResultAsync(pending-results.json 저장, await).
+         *     이 시점부터 결과는 유실되지 않는다.
+         *  3. QUIZ 통과 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
-         * 미통과여도 답안은 제출되며 재응시 여부는 다음 조회 시 서버가 결정한다.
          * EnqueueResultAsync가 없으면(훅 미연결) 저장 없이 닫는다.
          */
         private static async Task SubmitSurveyResultAsync(
             PopupWindow popupWindow, PopupOptions popupOptions, PopupResultBuilder builder, SurveySubmission submission)
         {
+            bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
+            string passingText = submission.PassingScore is double passing && passing > 0
+                ? $" (통과 점수 {passing:0.##}점)" : string.Empty;
+
+            if (isQuiz && submission.Passed == false)
+            {
+                MessageBox.Show(popupWindow,
+                    $"점수: {submission.Score ?? 0:0.##}점{passingText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 채점해 주세요.",
+                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;   // 창 유지, 제출 없음
+            }
+
             WpfResultItemDto item = builder.BuildSubmitted(submission, DateTimeOffset.Now);
             if (popupOptions.EnqueueResultAsync != null)
             {
@@ -300,23 +314,11 @@ namespace Popup.Managers
             }
             builder.MarkFinalized();
 
-            bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
             if (isQuiz && submission.Score is double score)
             {
-                string passingText = submission.PassingScore is double passing && passing > 0
-                    ? $" (통과 점수 {passing:0.##}점)" : string.Empty;
-                if (submission.Passed == true)
-                {
-                    MessageBox.Show(popupWindow,
-                        $"점수: {score:0.##}점{passingText}\n\n평가를 통과했습니다.",
-                        "채점 결과", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show(popupWindow,
-                        $"점수: {score:0.##}점{passingText}\n\n통과 점수에 미달했습니다.\n다음에 다시 응시할 수 있습니다.",
-                        "채점 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                MessageBox.Show(popupWindow,
+                    $"점수: {score:0.##}점{passingText}\n\n평가를 통과했습니다.",
+                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             popupWindow.Close();

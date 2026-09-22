@@ -678,7 +678,7 @@ namespace Popup.Views.Contents
              * [설계 12 §4] QUIZ는 여기서 즉시 채점한다. 서버가 QUIZ 팝업에 한해 정답 정보
              * (options[].isCorrect / correctAnswer / answerMatchMode / questionScore)를 내려준다.
              * SURVEY는 채점하지 않으므로 점수·통과 여부가 null이다.
-             * 통과/미통과와 관계없이 답안은 항상 제출한다(재응시 여부는 다음 조회 시 서버가 결정).
+             * 미통과면 PopupManager가 안내만 하고 창을 유지한다(제출 없음, 답안 수정 후 재채점). 통과 시에만 SUBMITTED가 만들어진다.
              */
             SurveySubmission submission;
             if (_isQuizMode)

@@ -175,7 +175,7 @@ WPF는 창이 닫힐 때 결과 항목 1개를 만들어 **먼저 로컬 파일 
 | hideDays | integer(1~3650) | HIDDEN 필수 | 숨김 일수 |
 | responseStartedAt | string(ISO) | SUBMITTED 선택 | 응답 시작 시각 |
 | answers[] | array | SUBMITTED 필수 | `{ questionId, optionIds[] }` 또는 `{ questionId, textAnswer }` (기존 제출 API와 같은 구조) |
-| score | number | SUBMITTED(QUIZ) 선택 | WPF 로컬 채점 점수(설계 12). 서버는 저장 시 자기 계산값과 다르면 경고 로그만 남김 |
+| score | number | SUBMITTED(QUIZ) 선택 | WPF 로컬 채점 점수(설계 12). QUIZ는 통과한 제출만 전송되므로 실제로는 passingScore 이상 값만 온다. 서버는 저장 시 자기 계산값과 다르면 경고 로그만 남김 |
 | passed | boolean | SUBMITTED(QUIZ) 선택 | WPF 로컬 통과 여부 |
 | video | object | VIDEO_WATCHED 필수 | `{ durationSeconds, positionSeconds, maximumPositionSeconds, watchedSeconds }` (초, 소수 가능) |
 

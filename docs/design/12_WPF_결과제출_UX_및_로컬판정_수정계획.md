@@ -354,7 +354,7 @@ private async Task SendPendingResultsSafelyAsync()
 | HIDDEN | 닫기 | 없음 |
 | VIDEO_WATCHED | 시청 완료 여부 판단 후 닫기 | 없음 |
 | SURVEY SUBMITTED | 필수응답 검사 후 닫기 | 없음 |
-| QUIZ SUBMITTED | 필수응답 검사 + 점수/통과 표시 후 닫기 | 없음 |
+| QUIZ SUBMITTED | 필수응답 검사 + 점수 표시. **통과 시에만** 제출·닫기, 미통과면 안내 후 창 유지(재채점 반복, 2026-09-22 확정) | 없음 |
 
 즉 사용자 화면 기준으로 모든 결과 전송을 비동기화한다.
 

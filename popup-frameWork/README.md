@@ -752,7 +752,8 @@ VIDEO_WATCHED
 제출
 → 필수 응답 검증 (WPF 즉시)
 → QUIZ 채점: QuizGrader (WPF 즉시, 정답 키·배점·통과 점수는 서버 목록 응답에 포함)
-→ SUBMITTED (score/passed 포함)
+→ 통과: SUBMITTED (score/passed 포함) → 안내 → 닫기
+→ 미통과: 안내만 하고 창 유지 → 답안 수정 → 다시 "채점" (통과할 때까지, 제출 없음)
 ```
 
 [설계 12] 예전에는 서버 채점 응답을 기다렸지만, 이제 설문/퀴즈도 다른 결과와 똑같이
