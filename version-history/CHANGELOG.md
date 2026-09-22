@@ -13,7 +13,7 @@
 
 ## 2026-09-22-08 — Word 인터페이스 정의서 v2.0 저장소 반입 (QUIZ 재채점 정책 반영)
 
-- 이유: 설계 14 §1 "Word 인터페이스 정의서 최신화". 사용자가 `D:\work\PopupProject2026\docs\`에 올린 v2.0 기준본(`WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx` — POPUP_INTERFACE_SPEC.md v2.0과 같은 구조·내용)을 저장소에 넣는다.
+- 이유: 설계 14 §1 "Word 인터페이스 정의서 최신화". `D:\work\PopupProject2026\docs\`에 전달된 v2.0 기준본(`WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx` — POPUP_INTERFACE_SPEC.md v2.0과 같은 구조·내용)을 저장소에 넣는다.
 - 변경: `docs/interfaces/WPF_Popup_API_Interface_v2.0.docx` 추가. 기준본 `word/document.xml`에서 2026-09-22-07(QUIZ 미통과 시 창 유지·재채점, 통과 시에만 제출) 관련 문구 3곳만 텍스트 치환(4.2 WPF 처리 규칙, 4.3 score/passed 설명, 10 QUIZ 규칙). 구조·서식 변경 없음.
 - 검증: 수정 후 `word/document.xml` XML well-formed 확인(PowerShell XmlDocument). 이 PC에 pandoc·LibreOffice·Word COM이 없어 렌더링 확인은 미수행 — Word에서 한 번 열어 확인 필요.
 - 문서: 설계 14 P0 항목·상태 갱신.
@@ -21,8 +21,8 @@
 
 ## 2026-09-22-07 — QUIZ 미통과 시 창 유지·재채점 (통과할 때까지)
 
-- 이유: 사용자 지시 "퀴즈 통과하면 닫히고 통과 못하면 alert 팝업 띄우고 적정 점수 넘을 때까지". 이전(2026-09-22-06)에는 미통과여도 답안을 제출하고 창을 닫았다.
-- 변경(WPF): `PopupManager.SubmitSurveyResultAsync` — QUIZ `passed=false`면 점수·통과 점수 안내(MessageBox)만 하고 `return`(결과 생성·로컬 큐 저장·창 닫기 없음). 사용자는 답안을 고쳐 "채점"을 다시 누를 수 있다. 통과(또는 SURVEY)일 때만 SUBMITTED를 큐에 저장하고 닫는다. 닫기 버튼으로 나가면 CLOSED만 전송되어 다음 조회 때 다시 노출된다(기존 동작). `SurveyPopupView` 주석 갱신.
+- 이유: QUIZ는 통과 시에만 닫고, 미통과 시 점수 안내 후 재응답할 수 있어야 한다는 요구사항 반영. 이전(2026-09-22-06)에는 미통과여도 답안을 제출하고 창을 닫았다.
+- 변경(WPF): `PopupManager.SubmitSurveyResultAsync` — QUIZ `passed=false`면 점수·통과 점수 안내(MessageBox)만 하고 `return`(결과 생성·로컬 큐 저장·창 닫기 없음). 답안을 수정한 뒤 "채점"을 다시 실행할 수 있다. 통과(또는 SURVEY)일 때만 SUBMITTED를 큐에 저장하고 닫는다. 닫기 버튼으로 나가면 CLOSED만 전송되어 다음 조회 때 다시 노출된다(기존 동작). `SurveyPopupView` 주석 갱신.
 - 변경(서버·웹): 없음. 결과 API 계약은 그대로이며 QUIZ SUBMITTED는 실제로 통과 점수 이상만 들어온다.
 - 문서: 설계 12 §9 표, `popup-frameWork/README.md` §16, `POPUP_INTERFACE_SPEC.md` §3-A score 설명.
 - 검증: `dotnet build Popup.slnx` 경고 0·오류 0. 실행 확인(미통과 → 창 유지 → 수정 → 통과 → 닫힘)은 미수행.
@@ -30,7 +30,7 @@
 
 ## 2026-09-22-06 — 설계 11·12·13·14 TODO 구현 (FIXED 방어, 결과 비동기·로컬 판정, 클라이언트 버전 검증, 폰트 크기, Services 폴더, 반입 패키지, 정의서 v2.0)
 
-- 이유: 사용자 지시 "git pull 받고 todo 해야해" — pull로 받은 설계 11~14의 미수행 항목(코드 수정·반입 준비·정의서 최신화) 처리.
+- 이유: 설계 11~14에 남아 있던 미수행 항목(코드 수정·반입 준비·정의서 최신화) 처리.
 - **WPF 폴더 정리(설계 14 §5A)**: `git mv Popup/Service → Popup/Services`(namespace `Popup.Services` 그대로). README·정의서·설계 10/12/13의 경로 참조 갱신.
 - **FIXED 화면 초과 방어(설계 11)**: `PopupWindow.ApplyWindowSize()` Fixed 분기 — WorkArea 95% 상한, 서버 Maximum 적용, Minimum > 상한 역전 보정, Window Min/Max도 보정값으로 재지정. 알 수 없는 SizeMode(default)도 Fixed 분기로 합류.
 - **결과 제출 UX·로컬 판정(설계 12)**:
@@ -49,14 +49,14 @@
 
 ## 2026-09-21-05 — TEXT 팝업 Markdown 모드 제거 (WPF·관리자 웹·예제·문서)
 
-- 이유: 사용자 지시 "text 팝업 markdown도 안 쓴다, 관련 소스 다 지우자". TEXT 팝업은 콘텐츠 제목·설명, 일반 텍스트, 강조 문구, 하단 설명만 사용한다.
+- 이유: TEXT 팝업에서 Markdown 기능을 사용하지 않기로 확정해 관련 코드와 의존성을 제거. TEXT 팝업은 콘텐츠 제목·설명, 일반 텍스트, 강조 문구, 하단 설명만 사용한다.
 - 변경(WPF): `TextPopupView.xaml(.cs)` — 생성자 매개변수 `markdownMode`/`markdownContent`, `MarkdownPanel`, `RenderMarkdown`/`AddInlineMarkdown`(자체 렌더러) 삭제. `TextPopupContentDto` — `MarkdownMode`/`MarkdownContent` 삭제(서버 JSON에 남아 있어도 무시). `PopupFactory.CreateTextPopupView` 인자 정리. `DemoPopupDataService` — 데모 TEXT를 plainText/강조/하단 설명 구성으로 교체. `popup-frameWork/demo-text-notice.json`(markdown 데모, 코드 미참조) 삭제.
 - 변경(관리자 웹, popup 영역): `PopupEditorDialog.tsx` — 기본 content의 markdown 필드, "Markdown 모드" 스위치, "Markdown 내용" 입력란 삭제(일반 텍스트·강조 문구 항상 표시). `PopupPreview.tsx` — `MarkdownView`·markdown 분기 삭제, `react-markdown`/`remark-gfm` import 제거. `main/package.json` — 두 의존성 제거(팝업 전용이었음, 다른 사용처 없음 확인). `pnpm-lock.yaml` — pnpm 9.15.2 `install --lockfile-only`로 재생성(삭제만 875줄, 추가 0줄; pnpm이 바꾼 무관한 glob deprecated 문구 1줄은 원복).
 - 변경(서버): 없음 — content는 JSON 문자열로만 다루며 Java에 markdown 관련 코드 없음.
 - 변경(예제·문서): `api/examples/wpf-popups-response.json`, `docs/interfaces/popup-interface-examples.json`·`POPUP_INTERFACE_SPEC.md`, `docs/design/03`, `db/oracle/02` 샘플 content JSON에서 두 필드 제거. `Popup/Docs/POPUP_OPTION_GUIDE.md`·`POPUP_USER_OPTION_GUIDE.md`·`POPUP_ADMIN_UI_GAP.md`, `ERD/STRUCTURE_REVIEW.md` 표기 갱신. 루트 설계본(`docs/03`, `api/examples`, `db/oracle/02`)도 동일 반영.
 - 검증: `dotnet build Popup.slnx` 경고 0·오류 0. RgstPop 9개 파일 한정 `tsc --noEmit` 오류 0(전체 웹 type-check는 공통 MUI 타입 문제로 기존부터 미실행). `pnpm install --frozen-lockfile --offline` 성공(lockfile 정합). JSON 예제 파싱 확인. 소스 트리에 markdown 참조 없음(변경 이력·과거 검토표 제외). 미실행: 관리자 웹 화면 조작, 기존 DB에 markdownMode=true로 저장된 팝업의 표시 확인(해당 팝업은 plainText가 비어 있으면 본문이 비게 됨 — 운영 데이터 점검 필요).
 - 상태: 커밋 `1a445ec` 푸시 완료(pull 시 CHANGELOG만 충돌 — 원격의 `2026-09-21-04` 항목과 번호가 겹쳐 이 항목을 `-05`로 조정, 코드 충돌 없음).
-- **후속(DB 데이터 점검·정리, 사용자 요청)**: 로컬 XE `POPUP.POPUP_CONTENT` 4행 중 1행(`SAMPLE-TEXT-001`, `markdownMode:false` — 일반 텍스트 팝업)에만 두 필드가 남아 있어 JSON에서 필드만 제거(UPDATE 1행, COMMIT, 잔여 0행). `markdownMode=true` 팝업은 없음. 재실행 가능한 정리 스크립트 `db/oracle/04_cleanup_markdown_fields_oracle.sql`(인자: 스키마 접두어) 추가 — false 행은 필드 제거, true 행은 목록만 출력(삭제는 확인 후 수동). 로컬에서 재실행해 0행 확인. **원격 개발 DB(192.168.114.71)는 VPN 미연결로 미점검** — 연결 후 `sqlplus zero-rule/...@//192.168.114.71:4004/XE @04_cleanup_markdown_fields_oracle.sql ""` 실행 필요.
+- **후속(DB 데이터 점검·정리)**: 로컬 XE `POPUP.POPUP_CONTENT` 4행 중 1행(`SAMPLE-TEXT-001`, `markdownMode:false` — 일반 텍스트 팝업)에만 두 필드가 남아 있어 JSON에서 필드만 제거(UPDATE 1행, COMMIT, 잔여 0행). `markdownMode=true` 팝업은 없음. 재실행 가능한 정리 스크립트 `db/oracle/04_cleanup_markdown_fields_oracle.sql`(인자: 스키마 접두어) 추가 — false 행은 필드 제거, true 행은 목록만 출력(삭제는 확인 후 수동). 로컬에서 재실행해 0행 확인. **원격 개발 DB(192.168.114.71)는 VPN 미연결로 미점검** — 연결 후 `sqlplus zero-rule/...@//192.168.114.71:4004/XE @04_cleanup_markdown_fields_oracle.sql ""` 실행 필요.
 ## 2026-09-22-05 — WPF Service 폴더와 namespace 정합성 TODO 추가
 
 - 이유: 현재 물리 폴더는 `Popup/Service/`인데 namespace는 `Popup.Services`로 달라 IDE0130 스타일 진단과 소스 탐색 혼동이 발생할 수 있어 폐쇄망 반입 전 정리 필요.
@@ -175,7 +175,7 @@
 
 ## 2026-09-21-02 — 임시 SSO 프로그램(C#, Negotiate)·WPF "SSO 로그인 테스트" 버튼 — 로그인까지 단독 테스트 가능
 
-- 이유: 사용자 요청 "sso는 xml을 get한 후 파싱해서 쓸 건데, xml을 리턴하는 임시 프로그램으로 구현하고 로그인까지 테스트할 수 있게". 필드는 사용자 확인대로 `classCode`(XML `MAIN_USER_CLASSI_CODE`) 유지 — 중간에 `userId/groupId`로 바꿨던 서버 변경은 커밋 전에 되돌림(설계 10 그대로 `logonId`/`classCode`).
+- 이유: SSO XML 수신·파싱부터 로그인 API까지 독립적으로 검증할 수 있는 임시 프로그램이 필요해 구현. 필드는 협의된 기준대로 `classCode`(XML `MAIN_USER_CLASSI_CODE`) 유지 — 중간에 `userId/groupId`로 바꿨던 서버 변경은 커밋 전에 되돌림(설계 10 그대로 `logonId`/`classCode`).
 - 변경(WPF·도구):
   - [추가] `popup-frameWork/MockSso`(콘솔, `HttpListener`, 외부 패키지 없음 → 폐쇄망 SDK로 빌드) — 실제 SSO처럼 **Windows 통합 인증(Negotiate) 도전**을 하고(`--anonymous`면 도전 없음) `MAIN_USER_ID`·`MAIN_USER_CLASSI_CODE`(+진단용 `WINDOWS_USER`/`AUTH_TYPE`) XML을 돌려준다. `--user E1001|windows`, `--class A1`, `--port 8099`, `--fail`(항상 401). `Popup.slnx`에 추가.
   - [삭제] `shell/mock-sso.js`(node) — WPF PC에 node가 없을 수 있어 C#으로 대체. `start-dev.ps1 -MockSso`는 `dotnet run --project popup-frameWork/MockSso`를 띄우고 `-MockSsoClassCode` 인자 추가.
@@ -183,16 +183,16 @@
   - [추가] `App.xaml.cs` 실행 인자 `--show-main` — 관리 화면을 트레이로 숨기지 않고 띄운 채 시작(테스트 버튼을 바로 누르기 위함). 인자 없으면 기존 동작.
 - 문서: README(임시 SSO 실행·`--show-main`·테스트 버튼), `docs/design/04 §6`(도구 행; 루트 docs/04 동일), `09` 진행 상태.
 - 검증:
-  - `curl` 무인증 → 401(`WWW-Authenticate: Negotiate`), `curl --negotiate -u :` → 200 XML(AUTH_TYPE=NTLM) — 사용자가 실제 SSO에서 확인한 것과 같은 조건.
+  - `curl` 무인증 → 401(`WWW-Authenticate: Negotiate`), `curl --negotiate -u :` → 200 XML(AUTH_TYPE=NTLM) — 실제 사내 SSO에서 확인한 조건과 동일.
   - **WPF exe(`--show-main`) + MockSso(Negotiate) + 전체 서버(로컬 XE)**: 시작 시 `UseDefaultCredentials`로 NTLM 인증 후 XML 수신 → `auth/login` → 팝업 GET 200. UI Automation으로 "SSO 로그인 테스트" 클릭 → MockSso 로그에 두 번째 GET(NTLM), 서버에 두 번째 `auth/login`, MessageBox "SSO 로그인 테스트 — 성공"(MAIN_USER_ID=E1001, MAIN_USER_CLASSI_CODE=A1, 토큰 64자, expiresAt +10분) 스크린샷 확인.
   - `dotnet build Popup.slnx` 경고 0·오류 0. 서버 소스는 2026-09-21-01 커밋과 동일(변경 없음). `start-dev.ps1` 구문 검사 통과(`-MockSso` 창 실제 기동은 미수행 — MockSso.exe를 직접 띄워 검증).
   - 미실행: `--fail`·`--user windows` 옵션의 WPF 연동, 실제 사내 SSO URL.
-  - **세션(토큰) 만료 재검증(사용자 요청, MockSso Negotiate 구성 + 서버 TTL 20초, 로컬 XE)**: exe 옆 appsettings로 `AutoLoadOnStartup=false`, `--show-main`. ① "SSO 로그인 테스트"로 토큰 발급(20:24:38) → 25초 대기 → "팝업 다시 조회" → `GET popups` 401(서버 "토큰 만료") → SSO GET(NTLM) → `auth/login` 재발급 → `GET popups` 200·팝업 표시(사용자 조작 없음). ② 새 토큰 만료 후 TEXT 팝업 닫기 → `POST results` 401 → SSO GET → `auth/login` → **같은 RESULT_ID(07183dd6…)로 재전송 → `WPF_RESULT_RECEIPT` INSERT 1건 CLOSED/ACCEPTED**(RESULT_ID 조회 1회 = 중복 없음). 만료마다 SSO·로그인 각 1회. 검증 후 exe 옆 appsettings 삭제.
+  - **세션(토큰) 만료 재검증(MockSso Negotiate 구성 + 서버 TTL 20초, 로컬 XE)**: exe 옆 appsettings로 `AutoLoadOnStartup=false`, `--show-main`. ① "SSO 로그인 테스트"로 토큰 발급(20:24:38) → 25초 대기 → "팝업 다시 조회" → `GET popups` 401(서버 "토큰 만료") → SSO GET(NTLM) → `auth/login` 재발급 → `GET popups` 200·팝업 표시(사용자 조작 없음). ② 새 토큰 만료 후 TEXT 팝업 닫기 → `POST results` 401 → SSO GET → `auth/login` → **같은 RESULT_ID(07183dd6…)로 재전송 → `WPF_RESULT_RECEIPT` INSERT 1건 CLOSED/ACCEPTED**(RESULT_ID 조회 1회 = 중복 없음). 만료마다 SSO·로그인 각 1회. 검증 후 exe 옆 appsettings 삭제.
 - 상태: 커밋 `95300ea` 푸시 완료. 만료 재검증 기록은 후속 커밋.
 
 ## 2026-09-21-01 — WPF SSO·토큰 프로토타입 (설계 10): 서버 로그인 API·메모리 토큰 검사, WPF SSO→로그인→Bearer·401 재로그인·정기 재로그인
 
-- 이유: 사용자가 작성한 `docs/10_WPF_SSO_토큰_프로토타입_계획.md`("docs 체크해서 이어서 진행"). 운영 토큰(타 팀 통합 토큰) 구현이 아니라 **통신 형태와 `401 → 재로그인 → 원 요청 재전송` 동작을 검증하는 프로토타입**. 04 문서의 범위(타 팀)는 유지하며 서버 기본값은 꺼짐.
+- 이유: `docs/10_WPF_SSO_토큰_프로토타입_계획.md`의 후속 구현 진행. 운영 토큰(타 팀 통합 토큰) 구현이 아니라 **통신 형태와 `401 → 재로그인 → 원 요청 재전송` 동작을 검증하는 프로토타입**. 04 문서의 범위(타 팀)는 유지하며 서버 기본값은 꺼짐.
 - 변경(서버, 모두 popup·WPF 영역 — 공통 프레임워크 파일 무변경):
   - [추가] `base/.../props/WpfAuthPrototypeProps` — `custom.wpf-auth-prototype.enabled`(기본 false), `token-ttl-minutes`(Duration, 단위 없는 숫자=분, 기본 10; `20s` 처럼 초 지정 가능).
   - [추가] `web/api/.../popup/wpf/auth/WpfPrototypeTokenStore` — JVM 메모리 `ConcurrentHashMap`, 토큰 = SecureRandom 32B + logonId + 발급시각의 SHA-256 hex(64자), 발급 시 만료 항목 정리, `Clock` 주입. `WpfAuthController` — `POST /p/api/wpf/auth/login {logonId, classCode, linkYn}` → `{accessToken, tokenType, expiresAt}`(진위 검증 없음, 필수 값만). `PrototypeTokenWpfUserResolver` — `WpfUserResolver` 구현, `@Primary` + `@ConditionalOnProperty(enabled=true)`: Bearer 없음/미등록/만료 → `WpfUnauthorizedException`(401 `WPF_UNAUTHORIZED`). `WpfLoginRequest`(payload)·`WpfLoginResponse`(domain, ISO 날짜).
@@ -248,7 +248,7 @@
 - 후속 2(같은 작업, 2026-09-21 커밋): 백엔드 창의 `-Command` 인자에 괄호가 없어 `'Write-Host "DB: '` 까지만 바인딩되고 나머지가 `$args`로 새어 새 창이 `TerminatorExpectedAtEndOfString`으로 실패(8080 미기동). 프런트 호출과 같이 괄호로 감싸 수정(스크립트 주석에 기록). 구문 검사 통과, 이번 세션의 서버는 같은 환경변수로 직접 기동해 확인.
 - 후속(같은 작업): 첫 커밋 `ee7d5e9`에 전역 pnpm 7.29가 다시 쓴 `zero-rule-web/pnpm-lock.yaml`(lockfile 9.0 → 6.0, 의존성 버전 변동)이 딸려 들어갔음을 발견 → 원본으로 되돌림(공통 웹 파일 무변경). 원인 제거: 스크립트가 `package.json`의 `packageManager`(pnpm@9.15.2)를 `npx --yes`로 실행하고 `install --frozen-lockfile`을 쓴다(corepack 0.29는 서명 키 오류로 사용 불가). 9.15.2로 재설치 후 lockfile 무변경·프런트 기동·`API_BASE_URL` 주입 재확인. `README.md` "서버 실행"에 스크립트 안내 추가.
 
-- 이유: 사용자 요청 "back front 동시 접속 쉘". 기존 스크립트는 경로만 바뀐 상태라 새 구조(원격/로컬 DB 전환, 팝업 스키마 설정, 프런트 API 주소)를 반영하지 못했고, 프런트 `.env`가 없어 `API_BASE_URL`이 비어 있었다.
+- 이유: 백엔드·프런트엔드 동시 실행 스크립트가 필요해 보강. 기존 스크립트는 경로만 바뀐 상태라 새 구조(원격/로컬 DB 전환, 팝업 스키마 설정, 프런트 API 주소)를 반영하지 못했고, 프런트 `.env`가 없어 `API_BASE_URL`이 비어 있었다.
 - 변경(수정, `shell/start-dev.ps1`): 백엔드·프런트 창을 각각 띄우는 구조는 유지하고
   - 옵션 `-LocalDb`(로컬 XE: `ZERO_RULE_DB_URL/USER/PASSWORD` + `CUSTOM_POPUP_SCHEMA=POPUP`을 창 환경변수로), `-ApiBaseUrl`(기본 `http://localhost:8080/zero-rule-server`), `-RouterBaseUrl`, `-SkipBackend`, `-SkipFrontend`.
   - JDK 17을 `JAVA_HOME` 또는 `C:\Program Files\Java\jdk-17*`에서 찾아 창에 지정. 프런트 `node_modules`가 없으면 `pnpm install`을 먼저 실행.
@@ -260,7 +260,7 @@
 
 ## 2026-09-20-02 — 원격 개발 DB(Oracle 11g XE) 연동: 매퍼 PG 잔재 점검, DDL 11g 호환, 팝업 스키마 한정자 설정화, WPF↔서버↔원격 DB 왕복 확인
 
-- 이유: 사용자 요청 "postgres 매퍼로 남아있는건 다 변환하고 wpf <-> java <-> db(원격 서버, VPN) 테스트까지". 이후 "팝업 계정 따로" → 앱 계정에 CREATE USER 권한이 없음을 확인하자 "스키마만 따로 해서 스키마 분리로" 확정.
+- 이유: PostgreSQL 잔여 매퍼를 Oracle 기준으로 정리하고 WPF ↔ Java ↔ 원격 DB 연동까지 검증. 팝업 계정 분리 검토 중 앱 계정에 CREATE USER 권한이 없어 별도 사용자 생성 대신 스키마 분리 방식으로 확정.
 - 확인(읽기):
   - 서버 매퍼 XML에 PostgreSQL 구문 없음(`nextval(`·`::`·`LIMIT`·`ON CONFLICT`·`RETURNING` 등 검색 — `PopupMapper.xml` 변환 규칙 *주석*에만 존재). cloverframework 3.0.3 내장 매퍼도 Oracle. nav는 프레임워크 `CLNavApiController`(`/apis/cloverframework/nav/*`)가 제공하고 zero-rule-web(`sub/domain/src/api-url.ts`)이 그 경로를 호출 → sample의 `/apis/nav/*` 서버 코드는 웹이 쓰지 않던 사본. 미결 16 해소.
   - 원격 개발 DB `192.168.114.71:4004/XE`: **Oracle 11g XE 11.2.0.2**(설계 가정 19c와 다름). 앱 계정 `zero-rule`: 공통 테이블 53개, 권한 CONNECT/RESOURCE(+CREATE TABLE/SEQUENCE…), **CREATE USER 없음**. `POPUP` 계정 없음. 팝업 객체 17테이블·12시퀀스·제약/인덱스 이름은 기존 175개 객체와 충돌 없음. `ojdbc8 23.5.0.24.07`·`ojdbc6 11.2.0.4` 모두 11g 접속·`nowKst` 쿼리 정상.
@@ -283,9 +283,9 @@
 
 ## 2026-09-20-01 — 서버 공통 베이스라인을 업스트림 zero-rule-server Oracle 버전으로 교체, popup 재적용, 전체 서버 Oracle 기동 확인
 
-- 이유: 사용자가 zero-rule-server의 Oracle 버전(업스트림 `git.labcl.net/clover/zero-rule-server` @`56bb0c5`)을 전달하며 "정합성·설정 정보를 맞추고, 공통 영역은 추가·분기만, 기본은 서비스 추가"를 요청. 기존 sample 서버는 PostgreSQL 전용 프레임워크라 전체 기동이 불가했음(미결 15).
+- 이유: Oracle 기준 zero-rule-server 업스트림(`git.labcl.net/clover/zero-rule-server` @`56bb0c5`)에 맞춰 정합성과 설정 정보를 재정리. 공통 영역은 기존 동작을 유지하고 추가·분기 방식으로만 반영. 기존 sample 서버는 PostgreSQL 전용 프레임워크라 전체 기동이 불가했음(미결 15).
 - 정합성 확인(읽기): 업스트림은 Spring Boot 3.4.1 / Java 17 / cloverframework `3.0.3-SNAPSHOT`(repo.labcl.net 접근 확인) / 공통 매퍼 13개 Oracle SQL. 공통 보안·설정 파일(`SecurityConfig`·`CustomAuthenticationFilter`·`DefaultPublicUrls`·`MyBatisConfig`·`BasicConfig`·`WebMvcConfig`)은 기존과 내용 동일. popup 코드가 의존하는 공통 클래스는 `ApiBaseController`·`CLNewApiResponse` 뿐. 업스트림에 없는 것: popup/WPF 71개(우리 추가분), `nav` 기능 26개(sample 전용).
-  - 처음 전달된 버전(`zero-server`, Spring Boot 2.7 / Java 8 / `/zero-server` 컨텍스트)은 다른 제품 계열이라 사용자가 교체 → 두 번째 버전으로 진행.
+  - 처음 전달된 버전(`zero-server`, Spring Boot 2.7 / Java 8 / `/zero-server` 컨텍스트)은 다른 제품 계열이라 제품 계열이 다른 것으로 확인되어 두 번째 전달본으로 교체 후 진행.
 - 변경(교체, 커밋 `0294d1e`): `zero-rule-server-main/` 제거 → `zero-rule-server/`(업스트림 원본 그대로). 업스트림 클론의 `.git`은 `zero-rule-server/.git-upstream-56bb0c5/`로 이름만 바꿔 보관(.gitignore). `.idea/`도 ignore. `.gitignore` 경로 갱신.
 - 변경(재적용, 추가): popup·WPF 소스 71개(`domain/popup/**`, `repo/.../popup/**`, `service/.../popup/**`, `web/api/.../popup/**`, `base/props/WpfPopupProps`, 테스트 12개, `samples/popup-video-range/README.md`)를 이전 커밋에서 그대로 복원.
 - 변경(공통 파일, 모두 추가형·분기):
@@ -300,12 +300,12 @@
   - **전체 zeroserver 기동**: `ZERO_RULE_DB_*`=로컬 XE로 `:app:bootRun -Pprofile=local` → `Started App`. 공통 `CustomAuthenticationFilter`를 거쳐 `GET /p/api/wpf/popups` 무헤더 401, `X-Dev-User-Id: E1001` 200(팝업 4건), `POST /p/api/wpf/popups/results` CLOSED → ACCEPTED, 재전송 → DUPLICATE. 검증 행(USER_POPUP_STATUS·WPF_RESULT_RECEIPT·API_REQUEST_LOG)은 sqlplus로 삭제.
   - 기동 로그에 `CLOVER_BATCH_NODE` INSERT `ORA-00001` 1건 — 로컬 공통 스키마(PG DDL 변환본) 이슈, 동작 영향 없음(미결 17). 개발 DB `192.168.114.71:4004`는 이 PC에서 접속 불가라 미확인.
   - WPF exe 실연동·관리자 웹은 이번에 재실행하지 않음(서버 API 계약 변경 없음).
-- 상태: 커밋 후 푸시 예정. nav 기능 반입 여부는 사용자 결정 대기.
+- 상태: 커밋 후 푸시 예정. nav 기능 반입 여부는 별도 결정 대기.
 
 
 ## 2026-09-19-10 — 서버 확인: 실제 HTTP+Oracle 통합 테스트, 팝업 슬라이스 개발 서버, WPF 실연동
 
-- 이유: 사용자 요청 "서버쪽 확인". Oracle 위에서 신규 WPF API를 실제 HTTP로 검증하고 WPF exe를 붙여 본다.
+- 이유: Oracle 위에서 신규 WPF API를 실제 HTTP로 검증하고 WPF exe까지 연결해 서버 연동 상태를 확인한다.
 - 확인된 제약: 전체 zeroserver를 Oracle로 기동하면 `SELECT nextval('cloverframework_seq')`(cloverframework_mappers/CLSequenceMapper.xml)에서 `ORA-00923` — 저장소의 zero 프레임워크가 `clover-* 0.0.1-POSTGRE-SNAPSHOT`이고 공통 매퍼 13개(`repo/core/mappers/*.xml`, popup 제외)도 PostgreSQL 전용. 공통 프레임워크 Oracle 빌드는 타 팀/운영 소관 → 미결 15로 기록. 공통 스키마 DDL은 참고용으로 변환해 둠(`db/oracle/10_zero_rule_common_schema_oracle.sql`, `tools/convert-zero-rule-ddl.pl`, ZERO_RULE에 53개 테이블·54 PK/UK·12 시퀀스 적용 성공).
 - 변경(추가): `app/src/test/.../wpf/WpfApiOracleHttpTest.java` — 팝업·WPF 빈만 올린 `@SpringBootTest(RANDOM_PORT)` + 실제 Oracle: 401/403 코드, 목록(사용자 판정·ISO 날짜·정답 비노출·content.questions 제거), 결과 5항목(HIDDEN·SURVEY 완료·VIDEO 완료·대상 외 REJECTED·DUPLICATE)이 항목별 커밋(영수증 3·로그 1)되고 이후 목록이 비는 것, 400 코드. E1002 데이터 자동 정리. `WpfApiDevServer`(테스트 소스) + Gradle 태스크 `:app:wpfDevServer` — 같은 슬라이스를 8080으로 실행.
 - 변경(수정): WPF 응답 DTO 5개에 `@JsonInclude(NON_NULL)` 명시 — 전역 BasicConfig 설정 없이도 계약 유지(HTTP 테스트에서 `totalScore: null` 노출로 발견). `app/build.gradle.kts` 태스크 추가(기존 빌드 설정 변경 없음).
@@ -315,7 +315,7 @@
 
 ## 2026-09-19-09 — WPF 방어 로직: 전역 예외 처리·크래시 로그·자동 재시작
 
-- 이유: 사용자 요청. 트레이 상주 프로그램이 처리되지 않은 예외로 죽으면 이후 팝업이 뜨지 않고 미전송 결과 큐도 멈춘다.
+- 이유: 트레이 상주 프로그램이 처리되지 않은 예외로 죽으면 이후 팝업이 뜨지 않고 미전송 결과 큐도 멈춘다.
 - 변경: `Service/CrashGuard.cs` 신규 — `DispatcherUnhandledException`(로그 후 Handled=true, 프로세스 유지·안내), `TaskScheduler.UnobservedTaskException`(로그·SetObserved), `AppDomain.UnhandledException`(로그 후 같은 인자로 자동 재시작, 10분 내 3회 제한, `--restarted` 인자). 로그 `%LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log`. `App.OnStartup` — `CrashGuard.Install` 최우선 호출, `--restarted`이면 단일 인스턴스 Mutex 획득을 5초간 재시도(죽어 가는 부모와의 경합 대비).
 - 주요 파일: popup-frameWork/Popup/Service/CrashGuard.cs, App.xaml.cs.
 - 검증: 빌드 경고 0·오류 0. `--demo --restarted`로 기동 확인, 두 번째 인스턴스 즉시 종료 확인. 실제 예외 유발 경로(강제 크래시)는 미검증. 재게시 `dist/Popup.exe`.
@@ -323,7 +323,7 @@
 
 ## 2026-09-19-08 — VIDEO 전체화면을 팝업 창이 있는 모니터에 표시
 
-- 이유: 사용자 시연 피드백. 전체화면 창이 `WindowState.Maximized`만 지정되어 기본 위치(주 모니터/마지막 활성 모니터)에서 최대화되므로, 팝업이 보조 모니터에 있어도 전체화면은 다른 모니터에 떴다.
+- 이유: 시연 중 확인된 이슈. 전체화면 창이 `WindowState.Maximized`만 지정되어 기본 위치(주 모니터/마지막 활성 모니터)에서 최대화되므로, 팝업이 보조 모니터에 있어도 전체화면은 다른 모니터에 떴다.
 - 변경: `VideoPopupView.EnterFullScreen` — 팝업 창 HWND로 현재 모니터(`Forms.Screen.FromHandle`)를 구해 `WindowStartupLocation.Manual` + 그 모니터 영역으로 Left/Top/Width/Height 지정, `SourceInitialized`에서 `SetWindowPos(HWND_TOPMOST, 물리 픽셀 영역)`로 정확히 맞춤. `Topmost=true`(팝업·Overlay와 동일 층). `WindowState`는 Normal 유지.
 - 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs.
 - 검증(UI Automation): Demo Mode에서 비디오 팝업을 열고 창을 오른쪽 모니터(3200,300)로 이동 후 전체화면 버튼 실행 → 전체화면 창 rect `(2560,0)-(5120,1440)` = 해당 모니터 전체. 빌드 경고 0·오류 0. 재게시 `publish/win-x64/Popup.exe`·`dist/Popup.exe`. 고DPI(150%) 모니터에서의 전체화면은 미검증.
@@ -331,7 +331,7 @@
 
 ## 2026-09-19-07 — WPF 시연 피드백 반영: 창 목록 1개·팝업 항상 최상위·Overlay 수정
 
-- 이유: 사용자 시연 결과 (1) 작업 관리자·작업 표시줄에 창이 여러 개 보임, (2) 배경을 누르면 팝업이 뒤로 가림, (3) 설문 시 메인 모니터에 배경(Overlay)이 안 보임.
+- 이유: 시연 결과 (1) 작업 관리자·작업 표시줄에 창이 여러 개 보임, (2) 배경을 누르면 팝업이 뒤로 가림, (3) 설문 시 메인 모니터에 배경(Overlay)이 안 보임.
 - 변경:
   - `PopupWindow.xaml` — `ShowInTaskbar="False"`, `Topmost="True"`. `PopupManager` — 팝업은 Overlay 사용 여부와 무관하게 항상 Topmost, `Deactivated` 시 재확인, 열린 창 집합(`_openWindows`) 관리, Overlay 클릭 시 `BringPopupsToFront()`.
   - `BackgroundOverlayManager` — Overlay 창에 `WS_EX_NOACTIVATE|WS_EX_TOOLWINDOW`, `WM_MOUSEACTIVATE → MA_NOACTIVATEANDEAT`(클릭은 삼키되 활성화 안 함 → 팝업 z-순서·포커스 유지), 제목 비움·소유자 지정(앱 창 목록 제외), Show/Loaded 뒤 `SetWindowPos`로 모니터 영역 재적용, `BackgroundClicked` 이벤트. **`AllowsTransparency=true` 추가** — 원본은 이 설정이 없어 `Opacity`가 무시되고 Overlay가 완전 불투명(검정)으로 떴음(실행 캡처로 확인).
@@ -342,7 +342,7 @@
 
 ## 2026-09-19-06 — WPF Demo Mode 재구성(결과 흐름 시뮬레이션) 및 단일 exe 게시
 
-- 이유: 사용자 요청. 기존 Demo Mode는 샘플 팝업만 띄우고 결과를 버렸다. 새 구조(기준 3·4)의 핵심인 "종료 시 결과 항목 1회 전송"을 서버 없이도 확인할 수 있게 하고, 배포용 exe를 만든다.
+- 이유: 기존 Demo Mode는 샘플 팝업만 띄우고 결과를 버렸다. 새 구조(기준 3·4)의 핵심인 "종료 시 결과 항목 1회 전송"을 서버 없이도 확인할 수 있게 하고, 배포용 exe를 만든다.
 - 변경(추가): `Service/IPopupGateway`(목록·결과 2개 메서드 추상화, `PopupApiService`가 구현), `Service/DemoPopupGateway`(인메모리 서버: 숨김·완료 상태 유지·다음 조회 제외, QUIZ는 샘플 JSON `correctAnswers`로 채점, SURVEY 즉시 완료, VIDEO 비율 판정, DUPLICATE, `ResultProcessed` 이벤트).
 - 변경(수정): `PopupResultQueue` 생성자를 `IPopupGateway`로. `DemoWindow.xaml/.cs` — 실제 모드와 같은 `PopupResultQueue`·훅을 쓰고 오른쪽에 결과 요청/응답 JSON 로그, "서버 상태 초기화"·"로그 지우기" 버튼, 숨김·완료 카운트. `MainWindow` — 실행 인자 `--demo`로 Demo Mode 활성(설정 파일 수정 불필요). README에 실행·게시 방법.
 - 주요 파일: popup-frameWork/Popup/Service/IPopupGateway.cs, DemoPopupGateway.cs, PopupResultQueue.cs, PopupApiService.cs, DemoWindow.xaml(.cs), MainWindow.xaml.cs, README.md.
@@ -387,7 +387,7 @@
 
 ## 2026-09-19-02 — [단계 2] 서버 popup 매퍼·데이터소스 Oracle 전환
 
-- 이유: 기준 5(PostgreSQL popup 스키마 → Oracle). 관리자 API와 기존 WPF API가 Oracle POPUP 스키마에서 동작하도록 매퍼를 변환한다. popup 관련 소스는 사용자가 직접 추가한 코드이므로 구조 수정을 허용하고, 프레임워크 파일은 접속 값·드라이버 토글만 바꿨다.
+- 이유: 기준 5(PostgreSQL popup 스키마 → Oracle). 관리자 API와 기존 WPF API가 Oracle POPUP 스키마에서 동작하도록 매퍼를 변환한다. popup 관련 소스는 이번 개발 범위에서 추가된 코드이므로 구조 수정을 허용하고, 프레임워크 파일은 접속 값·드라이버 토글만 바꿨다.
 - 변경(popup 소스):
   - `PopupMapper.xml` 27개 구문 Oracle 변환 — RETURNING→selectKey(시퀀스), ON CONFLICT→MERGE, AT TIME ZONE→FROM_TZ, CURRENT_TIMESTAMP→공통 조각 `nowKst`, boolean 바인드 `= 1`, TO_CHAR/TO_DATE, CLOB jdbcType, WITH 재귀 컬럼 목록, BOOL_AND→MIN=1. 구문 ID·파라미터 유지. 콘텐츠 JSON은 SQL 조립을 제거하고 컬럼 6개를 반환.
   - `PopupMapper.java` — 키 반환 5개 메서드를 Map 파라미터 추상 메서드 + 기존 시그니처 default 어댑터로 분리(PopupService 호출부 변경 없음).
@@ -406,15 +406,15 @@
 - 변경: sample의 `zero-rule-server-main`, `zero-rule-web`, `popup-frameWork`, `ERD`, `docs/interfaces`, `scripts`, `shell`, 빌드 설정을 복사. 대용량 바이너리(offline-sdk exe, nupkg, dist)와 `popup-api/`(폐기), PG 데이터 스냅샷 2개, IDE 캐시는 제외하고 `.gitignore`에 추가. 설계 문서 9개와 기준 파일을 `docs/design/`, Oracle DDL·샘플을 `db/oracle/`, 신규 WPF API JSON 예제를 `api/examples/`에 반입. 저장소 README 신규 작성.
 - 주요 파일: README.md, .gitignore, docs/design/*, db/oracle/*, api/examples/*, version-history/CHANGELOG.md.
 - 검증: 복사 후 파일 1,616개·37MB. 2MB 초과 파일은 `popup-frameWork/Popup/Media/demo-video.mp4`(9.2MB, 데모용 유지)만 남음. 빌드·테스트 미실행(소스 변경 없음).
-- 상태: 베이스라인 소스는 sample과 동일(제외 항목 외 수정 없음). 커밋·푸시는 사용자 확인 후 수행.
+- 상태: 베이스라인 소스는 sample과 동일(제외 항목 외 수정 없음). 커밋·푸시는 변경 내용 확인 후 수행.
 
 ## 2026-09-16-08 — JSON 송수신 인터페이스 설계서 작성
 
-- 이유: 사용자 요청에 따라 시스템 간 주고받는 JSON 기준 인터페이스 설계서 제공.
+- 이유: 시스템 간 JSON 송수신 기준을 명확히 하기 위해 인터페이스 설계서를 작성.
 - 변경: 팝업 공개 API 6개와 관리자 API 6개 요청·응답, 공통 필드, 유형별 content, 문항·정답·대상 조건, 날짜/응답 래퍼/null 규칙 및 검증 한계 문서화. 복사 가능한 가상 JSON 예제 모음 추가.
 - 주요 파일: docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/popup-interface-examples.json, version-history/CHANGELOG.md.
 - 검증: 실제 컨트롤러·DTO·서비스·매퍼·ObjectMapper·웹 API 클라이언트 대조. 문서 JSON 코드 블록 30개 파싱, API 예제 12개 경로·메서드 대조, 응답 DTO 7종 필드 대조 및 공개 예시 정답 비노출 검사 통과. git diff --check 통과. 서버 호출·배포 미실행.
-- 상태: 사용자 요청에 따라 이번 master 커밋에 포함(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 직전 편집 화면 배치 수정 유지.
+- 상태: 이번 master 커밋에 포함(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 직전 편집 화면 배치 수정 유지.
 
 ## 2026-09-16-07 — 팝업 편집 입력과 표시 옵션 재배치
 
@@ -422,7 +422,7 @@
 - 변경: 왼쪽을 기본 정보 → 콘텐츠 → 노출 대상으로 정리. 공통 활성화·헤더·닫기·푸터·다시 보지 않기·배경 차단 및 유형별 표시/재생 토글을 오른쪽 미리보기 아래로 이동. 크기 설정도 오른쪽 옵션에 배치. 미리보기와 옵션 영역을 나누고 옵션만 독립 스크롤. 좁은 화면은 한 열로 전환. 대상 조건에 종속된 하위 부서 포함 토글은 대상 입력 옆에 유지.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, version-history/CHANGELOG.md.
 - 검증: TSX 구문 검사 및 git diff --check 통과. 변경 전후 AST 비교로 입력 변경 처리 50개 보존 확인(CRLF/LF 정규화). 전체 타입 검사 및 실제 브라우저 배치 검증은 미실행. 저장 데이터 구조와 기본값 변경 없음.
-- 상태: 사용자 요청에 따라 이번 master 커밋에 포함(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 배포 없음.
+- 상태: 이번 master 커밋에 포함(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 배포 없음.
 
 ## 2026-09-16-06 — 실제 크기 미리보기 전용 종료 버튼 추가
 
@@ -430,7 +430,7 @@
 - 변경: 팝업 표시 옵션과 독립적인 미리보기 종료 버튼을 화면 오른쪽 위에 항상 표시. 고정·비율·전체화면에서 동일하게 동작하고 기존 Esc 종료도 유지. 팝업 자체 크기를 바꾸지 않는 고정 위치 버튼 사용.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, version-history/CHANGELOG.md.
 - 검증: TypeScript transpileModule TSX 구문 오류 0개 및 git diff --check 통과. 전체 타입 검사는 재실행하지 않음. 실제 브라우저 클릭 동작 미검증.
-- 상태: 사용자 요청에 따라 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 기존 작업 보존. 배포 없음.
+- 상태: 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 기존 작업 보존. 배포 없음.
 
 ## 2026-09-16-05 — 좌우 카드 제거 및 하단 설명 링크 추가
 
@@ -439,7 +439,7 @@
 - 주요 파일: PopupEditorDialog.tsx, PopupPreview.tsx, TextPopupContentDto.cs, TextPopupView.xaml 및 코드 비하인드, PopupFactory.cs, PopupService.java, PopupMapper.xml(주 서버 및 popup-api), DemoPopupDataService.cs, demo-text-notice.json, POPUP_OPTION_GUIDE.md, ERD/STRUCTURE_REVIEW.md.
 - 후속 수정: 미리보기 URL 미적용 제보에 따라 https:// 생략 주소를 보정하는 공통 함수를 입력 저장·미리보기에 적용. 설명 없이 URL만 입력해도 링크 표시. 하단 설명 영역 전체를 클릭 가능한 링크로 변경. 주요 파일에 normalizePopupLink.ts 추가. WPF도 설명이 없으면 URL 표시. 후속 검증: URL 보정 6개 및 미리보기 정적 렌더링 5개(일반/Markdown 모드, URL 단독, 숨김) 통과. Markdown 렌더러는 테스트 대역 사용. 편집기 TSX 구문 및 diff 검사 통과. WPF 재빌드 경고·오류 0개. 전체 타입 검사 재실행 및 브라우저 실제 클릭은 미검증.
 - 검증: WPF dotnet build --no-restore 경고·오류 0개. 서버 :service:core:compileJava 통과. 웹 전체 타입 검사에서 이전과 동일한 108개 오류 발생, 수정한 PopupPreview.tsx 및 PopupEditorDialog.tsx 오류 없음. 미리보기 페이지 HTTP 200 및 git diff --check 통과. 실제 브라우저/WPF 클릭·호버 동작 미검증. 기존 DB 및 SQL 스냅샷은 변경하지 않음. 과거 JSON의 카드 필드는 더 이상 표시하지 않으며 DB 데이터 변환은 미실행.
-- 상태: 사용자 요청에 따라 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 앞선 배경 미리보기 수정 유지. 운영 배포 없음.
+- 상태: 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 앞선 배경 미리보기 수정 유지. 운영 배포 없음.
 
 ## 2026-09-16-04 — 배경 차단 설정 미리보기 반영
 
@@ -447,11 +447,11 @@
 - 변경: 편집기 미리보기에 배경 여백 및 설정값에 따른 검정 오버레이 표시. 실제 크기 창의 배경에도 사용 여부와 어둡기 적용. 차단 사용 시 배경 클릭으로 미리보기가 닫히지 않도록 처리. 실제 크기 창 내부에는 중복 배경을 표시하지 않음.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, PopupEditorDialog.tsx, version-history/CHANGELOG.md.
 - 검증: git diff --check 통과. 전체 웹 TypeScript 검사 실행 결과 공통 UI의 MUI SxProps 타입 충돌 등 108개 오류로 실패. 오류 목록에서 수정한 PopupPreview.tsx 및 PopupEditorDialog.tsx 오류 없음 확인. 개발 서버 /popup-preview/ HTTP 200 확인. 별도 창 미리보기의 기존 크기 유지. 브라우저 실제 배경색·클릭 동작 및 WPF 화면 미검증.
-- 상태: 사용자 요청에 따라 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 운영 배포 없음.
+- 상태: 이번 master 커밋에 포함할 내용으로 확정(커밋 직전 기록). 푸시 결과는 원격 브랜치와 완료 응답으로 확인. 운영 배포 없음.
 
 ## 2026-09-16-03 — 남은 로컬 커밋 및 변경 이력 master 통합
 
-- 이유: 사용자가 미반영 브랜치 커밋과 변경 이력을 모두 master에 반영하고 푸시하도록 요청함.
+- 이유: 미반영 브랜치의 커밋과 변경 이력을 master에 통합하고 원격 저장소에 반영.
 - 변경: agent/wpf-7-user-configuration의 79f8910 커밋 이력을 master에 병합. 해당 launchSettings.json의 POPUP_USER_ID=E1002 설정은 이미 master에 동일하게 존재하여 소스 변경 없음. 오늘 작업 기록 2026-09-16-01 및 02를 함께 커밋 대상으로 포함.
 - 주요 파일: version-history/CHANGELOG.md. 병합 대상 커밋의 파일은 popup-frameWork/Popup/Properties/launchSettings.json.
 - 검증: 최신 origin/master와 동기화 상태 확인. 병합 충돌 및 소스 변경 없음. 실행 설정 JSON 파싱 성공. build/offline-wpf-dependencies와 feature/popup-video-db-samples의 커밋은 이미 master에 포함됨. 소스 변경이 없어 빌드 및 테스트는 추가 실행하지 않음.
@@ -459,7 +459,7 @@
 
 ## 2026-09-16-02 — 로컬 DB 문항 편집 및 표시 순서 마이그레이션 적용
 
-- 이유: 사용자가 미완료 DB 변경 적용을 요청. 서버 JNDI 설정의 실제 대상은 localhost:5432/postgres이며 표시 순서·주관식 정답 관련 컬럼 3개가 누락되어 있었음.
+- 이유: 미완료 상태였던 DB 변경을 마저 적용. 서버 JNDI 설정의 실제 대상은 localhost:5432/postgres이며 표시 순서·주관식 정답 관련 컬럼 3개가 누락되어 있었음.
 - 변경: 기존 마이그레이션 3개를 단일 트랜잭션으로 실행하고 COMMIT 확인. popup.popup_notice.display_order(integer, NOT NULL, 기본값 100) 및 1 이상 제약, popup.popup_question.correct_answer(text), answer_match_mode(varchar(10), EXACT/CONTAINS 제약) 추가.
 - 권한: 문항 템플릿 목록·상세 API 권한은 이미 존재하여 추가 행 0개. 기존 팝업 상세 권한 복사 SQL 실행 완료.
 - 주요 파일: 실행한 ERD/popup_display_order_migration.sql, ERD/popup_question_answer_migration.sql, ERD/migrations/20260913_popup_question_template_permissions.sql. SQL 원본 변경 없음. 기록 파일 version-history/CHANGELOG.md 갱신.
@@ -486,7 +486,7 @@
 
 ## 2026-09-15-04 — 실행 스크립트·이력 파일 커밋 및 master 반영 준비
 
-- 이유: 사용자가 작업 브랜치 푸시, master 병합, fetch 및 로컬 master 전환을 요청함.
+- 이유: 작업 브랜치를 원격에 반영하고 master 병합·fetch·로컬 master 전환까지 정리.
 - 변경: `shell/start-dev.ps1`, `AGENTS.md`, 변경 이력을 함께 커밋 대상으로 정리. 이전 항목의 미커밋·미푸시 표기는 최초 기록 시점의 상태임을 명시.
 - 검증: 최신 origin/master의 추가 미반영 커밋 없음. PowerShell 구문 및 신규 파일 공백 검사 확인.
 - 진행 상태: 이 항목은 커밋 직전에 작성함. 원격 반영 여부는 Git 원격 브랜치와 최종 작업 결과로 확인한다.
