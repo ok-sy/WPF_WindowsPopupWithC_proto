@@ -201,6 +201,14 @@
   - 미실행: T5 동시 401(코드의 `SemaphoreSlim`+토큰 비교로 설계, 동시 실행 테스트 없음), T6 앱 재시작, T7 SSO 실패(`MOCK_SSO_FAIL=1` 미실행), **실제 사내 SSO(Negotiate 도전) 연결**, 원격 개발 DB(VPN 미연결).
 - 상태: 커밋 후 푸시 예정. 로컬 XE 검증 행(`WPF_RESULT_RECEIPT`·`USER_POPUP_STATUS` E1001)은 정리하지 않음(로컬 전용 DB).
 
+## 2026-09-20-04 — `shell/start-dev.ps1` 백엔드 창 즉시 종료 수정 (-Command 인자 괄호 누락)
+
+- 이유: 사용자가 `.\start-dev.ps1` 실행 시 백엔드 창이 `문자열에 " 종결자가 없습니다`(TerminatorExpectedAtEndOfString)로 바로 죽어 8080이 뜨지 않았고, WPF·프런트가 8080 연결 오류를 냈다.
+- 원인: 백엔드 `Start-DevWindow` 호출의 `-Command 'Write-Host "DB: ' + $dbLabel + '...'` 가 괄호 없이 쓰여, PowerShell 인자 모드에서 `-Command`에는 `Write-Host "DB: ` 까지만 바인딩되고 나머지(`+`, `$dbLabel`, …)는 `$args`로 흘러갔다(함수에 CmdletBinding이 없어 오류 없이 통과). 새 창은 닫히지 않은 큰따옴표 명령을 받아 파서 오류로 종료. 첫 커밋 `ee7d5e9`부터 있던 결함이며 프런트 쪽은 이미 괄호를 쓰고 있었다.
+- 변경(수정, `shell/start-dev.ps1` 83행): 인자를 `-Command ('...' + $dbLabel + '...')`로 괄호 묶음 + 원인 주석 추가. 그 외 변경 없음(공통 서버·웹 파일 무변경).
+- 검증: 스크립트 파싱 오류 0. `Start-DevWindow` 바인딩 시뮬레이션에서 수정 전 `-Command`=`Write-Host "DB: ` + 잔여 인자 4개 → 수정 후 전체 명령 1개·잔여 인자 0·생성 명령 파싱 오류 0 확인. 실제 스크립트로 두 창을 다시 띄우는 것은 이 세션에서 미수행(별도 창 생성 필요) — 사용자 작업 트리에서 `.\shell\start-dev.ps1` 재실행으로 확인 필요.
+- 상태: 브랜치 `worktree-fix-start-dev-command-quote`에 커밋(`6efc4fd`) 후 푸시. **2026-09-22 main 병합 완료** — main에는 이미 같은 괄호 수정이 영문 주석과 함께 들어가 있어 코드 변경은 동일했고, 병합 시 파일의 다른 주석과 맞춰 이 한글 주석만 남겼다.
+
 ## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
 
 - 후속 2(같은 작업, 2026-09-21 커밋): 백엔드 창의 `-Command` 인자에 괄호가 없어 `'Write-Host "DB: '` 까지만 바인딩되고 나머지가 `$args`로 새어 새 창이 `TerminatorExpectedAtEndOfString`으로 실패(8080 미기동). 프런트 호출과 같이 괄호로 감싸 수정(스크립트 주석에 기록). 구문 검사 통과, 이번 세션의 서버는 같은 환경변수로 직접 기동해 확인.
