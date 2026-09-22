@@ -21,3 +21,9 @@ zero-rule-web/node_modules/
 zero-rule-server/**/build/
 zero-rule-server/.gradle/
 offline-export/
+
+# 폐쇄망 반입용 VS Code 확장(.vsix) — 개당 최대 131MB로 GitHub 파일 제한을 넘고,
+# 위 "대용량 바이너리는 커밋하지 않는다" 규칙과 같은 이유로 저장소에 넣지 않는다.
+offline-extention/
+# Claude Code 작업용 worktree 체크아웃(임시)
+.claude/worktrees/
