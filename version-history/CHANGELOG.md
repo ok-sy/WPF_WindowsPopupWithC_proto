@@ -9,7 +9,9 @@
 - 변경(`AGENTS.md`): "변경 이력 문체" 절에 프로토타입 단계 기준 추가 — 개발자 1명·운영자 없음이므로 `운영 담당`·`운영 기준`·`운영 승인` 같은 없는 역할과 절차를 만들지 않고, 환경은 `로컬`/`원격 개발 DB`/`테스트`로 구분한다. `운영 토큰`·`운영 DB`처럼 장래 운영 환경을 가리키는 도메인 표현은 허용. 권장 이유 예시에서 `운영 기준 변경`을 빼고 `반입 준비`를 넣었으며, 같은 취지의 피함/권장 예시 한 쌍을 추가했다.
 - 유지: `사용자 ID`, `사용자 식별 어댑터`, `사용자 모니터/PC`, `사용자가 기다리지 않도록`, `해당 사용자가 없습니다`처럼 시스템 도메인 용어로서의 "사용자"는 규칙대로 그대로 둔다(잔여 11곳).
 - 검증: 문서만 수정했고 코드·설정 변경 없음(빌드·테스트 해당 없음). `git diff`로 두 파일의 변경 범위가 문구에 한정됨을 확인했고, 기존 항목에 `사용자 요청`·`사용자 지시`·`운영 담당` 표현이 남아 있지 않음을 검색으로 확인(이 항목이 규칙을 설명하며 인용한 것은 제외). 두 파일 모두 UTF-8·CRLF 유지.
-- 상태: 미커밋.
+- 후속(폐쇄망 반입 패키지 재생성): 기존 `offline-export/20260922/` 패키지가 커밋 `89e1e68` 시점 산출물이라 이후 변경(worktree 2개 병합분 + 이번 문체 수정)이 빠져 있어 현재 HEAD 기준으로 갱신했다. 갱신 파일 8개 — 4-docs: `AGENTS.md`, `version-history/CHANGELOG.md`, `db/oracle/README.md`, 신규 `db/oracle/04_popup_web_menu_oracle.sql`(MANIFEST-4-docs에도 추가) / 3-popup-frameWork: `VideoPopupContentDto.cs`, `PopupFactory.cs`, `VideoPopupView.xaml(.cs)` / 2-zero-rule-web: `PopupEditorDialog.tsx`. `1-zero-rule-server`·`5-offline-extention`·`6-offline-packages`는 변경 없어 기존 tar 그대로 재사용(SHA256 동일 확인). 두 README의 기준 커밋 표기를 `a37ff76`으로 갱신.
+- 검증(패키지): `2·3·4-*.tar` 재생성 후 `SHA256SUMS.txt` 재작성 → `sha256sum -c` 6/6 OK. `popup-offline-20260922.tgz`(1~5, 189,582,119바이트)·`팝업프로젝트_초기세팅파일.tgz`(1~6, 289,577,340바이트) 재압축 후 구성 파일 목록이 이전과 동일함을 확인. 후자를 임시 폴더에 풀어 `sha256sum -c` 6/6 OK, 내부 4-docs·3-popup-frameWork·2-zero-rule-web의 갱신 파일 6개가 저장소 현재 내용과 바이트 단위로 일치함을 `cmp`로 확인. 미실행: 폐쇄망에서의 실제 빌드·반입.
+- 상태: 문서 수정은 커밋 `a37ff76` 푸시 완료. 반입 패키지는 `.gitignore` 대상이라 저장소에 포함되지 않는다(로컬 `offline-export/20260922/`).
 
 ## 2026-09-22-09 — worktree 브랜치 2개 main 병합, 확장 바이너리·worktree `.gitignore` 등록
 
