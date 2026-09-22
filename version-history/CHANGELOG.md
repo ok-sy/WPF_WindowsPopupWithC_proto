@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-22-07 — QUIZ 미통과 시 창 유지·재채점 (통과할 때까지)
+
+- 이유: 사용자 지시 "퀴즈 통과하면 닫히고 통과 못하면 alert 팝업 띄우고 적정 점수 넘을 때까지". 이전(2026-09-22-06)에는 미통과여도 답안을 제출하고 창을 닫았다.
+- 변경(WPF): `PopupManager.SubmitSurveyResultAsync` — QUIZ `passed=false`면 점수·통과 점수 안내(MessageBox)만 하고 `return`(결과 생성·로컬 큐 저장·창 닫기 없음). 사용자는 답안을 고쳐 "채점"을 다시 누를 수 있다. 통과(또는 SURVEY)일 때만 SUBMITTED를 큐에 저장하고 닫는다. 닫기 버튼으로 나가면 CLOSED만 전송되어 다음 조회 때 다시 노출된다(기존 동작). `SurveyPopupView` 주석 갱신.
+- 변경(서버·웹): 없음. 결과 API 계약은 그대로이며 QUIZ SUBMITTED는 실제로 통과 점수 이상만 들어온다.
+- 문서: 설계 12 §9 표, `popup-frameWork/README.md` §16, `POPUP_INTERFACE_SPEC.md` §3-A score 설명.
+- 검증: `dotnet build Popup.slnx` 경고 0·오류 0. 실행 확인(미통과 → 창 유지 → 수정 → 통과 → 닫힘)은 미수행.
+- 상태: 커밋 후 푸시(아래 커밋 ID 참고).
+
 ## 2026-09-22-06 — 설계 11·12·13·14 TODO 구현 (FIXED 방어, 결과 비동기·로컬 판정, 클라이언트 버전 검증, 폰트 크기, Services 폴더, 반입 패키지, 정의서 v2.0)
 
 - 이유: 사용자 지시 "git pull 받고 todo 해야해" — pull로 받은 설계 11~14의 미수행 항목(코드 수정·반입 준비·정의서 최신화) 처리.
@@ -19,7 +28,7 @@
 - 문서: 설계 11·12·13·14 상태 절과 체크리스트 갱신, `popup-frameWork/README.md` §16·§17 흐름 갱신.
 - 검증: `dotnet build Popup.slnx` 경고 0·오류 0. 서버 `gradle --offline :web:api:test --tests server.web.api.popup.wpf.* :service:core:test --tests server.service.core.popup.*` 55개 통과(DB 필요 2개 skip; 신규 `WpfClientVersionInterceptorTest` 8개, `WpfPopupServiceTest` SURVEY 정답 제거 케이스, `WpfPopupControllerTest` score/passed 전달 추가, `WpfPopupDatabaseTest` 기대값 갱신). RgstPop 8개 파일 한정 `tsc --noEmit` 오류 0. 예제 JSON 파싱 확인. 반입 스크립트 로컬 실행(A 34/B 87/C 4/D 79 파일, zip 생성) 확인.
 - 미실행: WPF 실제 실행(FIXED 초과 값 화면, QUIZ 통과/미통과 안내, 네트워크 단절 pending, 426 안내, 폰트 크기 표시), 관리자 웹 화면 조작, 실제 서버 기동 E2E, 폐쇄망 PC `dotnet restore/build`, 원격 개발 DB 통합 테스트(`WpfPopupDatabaseTest`·`WpfApiOracleHttpTest`).
-- 상태: 커밋 `78486d2` (main). 푸시는 아래 참고.
+- 상태: 커밋 `78486d2`·`c83286b` (main) 푸시 완료.
 
 ## 2026-09-21-05 — TEXT 팝업 Markdown 모드 제거 (WPF·관리자 웹·예제·문서)
 
