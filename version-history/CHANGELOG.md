@@ -2,12 +2,21 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-22-10 — 변경 이력 문체 규칙 적용(잔여 대화체 정리)·프로토타입 단계 역할 표현 기준 추가
+
+- 이유: 2026-09-22에 정한 변경 이력 문체 규칙(AGENTS.md "변경 이력 문체")이 과거 항목 일부에 적용되지 않은 채 남아 있어 정리. 더불어 대화 주어를 걷어내는 과정에서 현재 존재하지 않는 역할(`운영 담당`)을 쓰는 문제가 드러나, 프로토타입 단계의 역할·환경 표현 기준을 규칙에 명시.
+- 변경(`version-history/CHANGELOG.md`): 잔여 대화체 7곳을 기술 서술로 교체 — `2026-09-22-09` 이유·`.gitignore` 변경 사유, `2026-09-20-04` 이유, `2026-09-20-04` 검증의 작업 트리 표현, `2026-09-20-06`·`2026-09-20-05` 이유, `2026-09-20-05` 검증의 원격 DB 적용 문구. 요청 원문 인용 제거, 주체는 행위 중심 서술로 대체. 사실 관계·검증 결과·미실행 표시는 그대로 두었다.
+- 변경(`AGENTS.md`): "변경 이력 문체" 절에 프로토타입 단계 기준 추가 — 개발자 1명·운영자 없음이므로 `운영 담당`·`운영 기준`·`운영 승인` 같은 없는 역할과 절차를 만들지 않고, 환경은 `로컬`/`원격 개발 DB`/`테스트`로 구분한다. `운영 토큰`·`운영 DB`처럼 장래 운영 환경을 가리키는 도메인 표현은 허용. 권장 이유 예시에서 `운영 기준 변경`을 빼고 `반입 준비`를 넣었으며, 같은 취지의 피함/권장 예시 한 쌍을 추가했다.
+- 유지: `사용자 ID`, `사용자 식별 어댑터`, `사용자 모니터/PC`, `사용자가 기다리지 않도록`, `해당 사용자가 없습니다`처럼 시스템 도메인 용어로서의 "사용자"는 규칙대로 그대로 둔다(잔여 11곳).
+- 검증: 문서만 수정했고 코드·설정 변경 없음(빌드·테스트 해당 없음). `git diff`로 두 파일의 변경 범위가 문구에 한정됨을 확인했고, 기존 항목에 `사용자 요청`·`사용자 지시`·`운영 담당` 표현이 남아 있지 않음을 검색으로 확인(이 항목이 규칙을 설명하며 인용한 것은 제외). 두 파일 모두 UTF-8·CRLF 유지.
+- 상태: 미커밋.
+
 ## 2026-09-22-09 — worktree 브랜치 2개 main 병합, 확장 바이너리·worktree `.gitignore` 등록
 
-- 이유: 사용자 지시 "수정한거 다 깃에 올려라". 확인 결과 main·두 worktree 브랜치 모두 작업 트리가 깨끗하고 origin과 동기화돼 있어 새로 푸시할 미커밋 변경은 없었고, 남은 것은 main에 병합되지 않은 브랜치 2개와 추적되지 않는 파일뿐이었다. 사용자가 병합을 선택했다.
+- 이유: 미반영 변경과 미병합 브랜치가 남아 있는지 점검하고 저장소 상태를 정리. 확인 결과 main·두 worktree 브랜치 모두 작업 트리가 깨끗하고 origin과 동기화돼 있어 새로 푸시할 미커밋 변경은 없었고, 남은 것은 main에 병합되지 않은 브랜치 2개와 추적되지 않는 파일뿐이었다. 두 브랜치는 main에 병합하기로 결정했다.
 - 병합 1 — `worktree-fix-start-dev-command-quote`(커밋 `6efc4fd`, 기록 2026-09-20-04): main에 이미 같은 `-Command` 괄호 수정이 들어가 있어 코드는 동일했다. `shell/start-dev.ps1` 주석만 충돌 — 파일의 다른 주석과 맞춰 한글 원인 설명을 남기고 영문본은 버렸다. 병합 커밋 `f9408ce`.
 - 병합 2 — `worktree-popup-web-menu-data`(커밋 `497f1ad`·`f1eac89`·`4502089`, 기록 2026-09-20-05·-06): WPF·웹 코드(`PopupFactory`, `VideoPopupView.xaml(.cs)`, `VideoPopupContentDto`, `PopupEditorDialog.tsx`)는 main의 후속 작업(폰트 크기 `IBodyFontSizeAware`, QUIZ 정답 키)과 같은 파일을 건드렸으나 자동 병합됐다. 충돌 2건을 수동 해소: `db/oracle/README.md` 실행 순서 표에 `04_popup_web_menu_oracle.sql`·`04_cleanup_markdown_fields_oracle.sql` 두 행을 모두 두고 번호만 같고 서로 독립임을 주석으로 명시, `version-history/CHANGELOG.md`는 날짜별 순번 충돌(둘 다 2026-09-20-04)로 웹 메뉴 항목을 `-05`, 옵션 정합성 항목을 `-06`으로 재번호. 병합 커밋 `03da3b0`.
-- 변경(`.gitignore`, 사용자 추가 요청 "extention은 git ignore에 올려라"): `offline-extention/`(VS Code 확장 `.vsix` 5개, 총 175MB — `ms-dotnettools.csharp` 하나가 131MB로 GitHub 파일 제한 초과), `.claude/worktrees/`(작업용 worktree 체크아웃) 추가. 두 경로 모두 커밋하지 않는다.
+- 변경(`.gitignore`, 대용량 확장 바이너리·작업용 체크아웃 추적 제외): `offline-extention/`(VS Code 확장 `.vsix` 5개, 총 175MB — `ms-dotnettools.csharp` 하나가 131MB로 GitHub 파일 제한 초과), `.claude/worktrees/`(작업용 worktree 체크아웃) 추가. 두 경로 모두 커밋하지 않는다.
 - 검증: WPF `dotnet build Popup/Popup.csproj -c Debug`(소스 `.offline-cache/packages`) 경고 0·오류 0. 웹 `npx tsc --noEmit -p main/tsconfig.json` 오류 0. `shell/start-dev.ps1` 파싱 오류 0. **미실행**: 병합된 기능의 실제 동작 확인(WPF 영상 재생 옵션 6개, 브라우저에서 숨김 일수 저장 왕복, 사이드바 "팝업 관리 > 팝업 등록" 표시), 서버 테스트, 웹 lint.
 - 상태: main에 병합·커밋 후 origin/main 푸시. worktree 브랜치 2개는 삭제하지 않고 그대로 뒀다.
 
@@ -212,15 +221,15 @@
 
 ## 2026-09-20-04 — `shell/start-dev.ps1` 백엔드 창 즉시 종료 수정 (-Command 인자 괄호 누락)
 
-- 이유: 사용자가 `.\start-dev.ps1` 실행 시 백엔드 창이 `문자열에 " 종결자가 없습니다`(TerminatorExpectedAtEndOfString)로 바로 죽어 8080이 뜨지 않았고, WPF·프런트가 8080 연결 오류를 냈다.
+- 이유: `.\start-dev.ps1` 실행 시 백엔드 창이 `문자열에 " 종결자가 없습니다`(TerminatorExpectedAtEndOfString)로 바로 죽어 8080이 뜨지 않았고, WPF·프런트가 8080 연결 오류를 냈다.
 - 원인: 백엔드 `Start-DevWindow` 호출의 `-Command 'Write-Host "DB: ' + $dbLabel + '...'` 가 괄호 없이 쓰여, PowerShell 인자 모드에서 `-Command`에는 `Write-Host "DB: ` 까지만 바인딩되고 나머지(`+`, `$dbLabel`, …)는 `$args`로 흘러갔다(함수에 CmdletBinding이 없어 오류 없이 통과). 새 창은 닫히지 않은 큰따옴표 명령을 받아 파서 오류로 종료. 첫 커밋 `ee7d5e9`부터 있던 결함이며 프런트 쪽은 이미 괄호를 쓰고 있었다.
 - 변경(수정, `shell/start-dev.ps1` 83행): 인자를 `-Command ('...' + $dbLabel + '...')`로 괄호 묶음 + 원인 주석 추가. 그 외 변경 없음(공통 서버·웹 파일 무변경).
-- 검증: 스크립트 파싱 오류 0. `Start-DevWindow` 바인딩 시뮬레이션에서 수정 전 `-Command`=`Write-Host "DB: ` + 잔여 인자 4개 → 수정 후 전체 명령 1개·잔여 인자 0·생성 명령 파싱 오류 0 확인. 실제 스크립트로 두 창을 다시 띄우는 것은 이 세션에서 미수행(별도 창 생성 필요) — 사용자 작업 트리에서 `.\shell\start-dev.ps1` 재실행으로 확인 필요.
+- 검증: 스크립트 파싱 오류 0. `Start-DevWindow` 바인딩 시뮬레이션에서 수정 전 `-Command`=`Write-Host "DB: ` + 잔여 인자 4개 → 수정 후 전체 명령 1개·잔여 인자 0·생성 명령 파싱 오류 0 확인. 실제 스크립트로 두 창을 다시 띄우는 것은 이 세션에서 미수행(별도 창 생성 필요) — 개발자 로컬 작업 트리에서 `.\shell\start-dev.ps1` 재실행으로 확인 필요.
 - 상태: 브랜치 `worktree-fix-start-dev-command-quote`에 커밋(`6efc4fd`) 후 푸시. **2026-09-22 main 병합 완료** — main에는 이미 같은 괄호 수정이 영문 주석과 함께 들어가 있어 코드 변경은 동일했고, 병합 시 파일의 다른 주석과 맞춰 이 한글 주석만 남겼다.
 
 ## 2026-09-20-06 — 관리자 웹 등록 화면 옵션 정합성 점검 및 보완 (VIDEO 재생 옵션 WPF 적용, 숨김 일수 입력 추가)
 
-- 이유: 사용자 요청 "web 등록 화면상에 구현된 옵션들이 전부 적용이 가능한 옵션들인지 정합성 체크하고 없으면 기능 추가". `PopupEditorDialog`의 옵션 하나하나를 서버 저장(`PopupService.toAdminSaveCommand`·`PopupMapper.upsert*`) → DB 컬럼/`CONTENT_OPTIONS` → 조회(`PopupContentAssembler`·`WpfPopupItem`) → WPF 소비(`PopupFactory`·각 View·`PopupWindow`·`PopupManager`)까지 대조했다.
+- 이유: 관리자 웹 등록 화면에 노출된 옵션이 전부 실제로 적용 가능한지 정합성 점검하고, 누락된 옵션은 기능 보완. `PopupEditorDialog`의 옵션 하나하나를 서버 저장(`PopupService.toAdminSaveCommand`·`PopupMapper.upsert*`) → DB 컬럼/`CONTENT_OPTIONS` → 조회(`PopupContentAssembler`·`WpfPopupItem`) → WPF 소비(`PopupFactory`·각 View·`PopupWindow`·`PopupManager`)까지 대조했다.
 - 점검 결과(확인만, 수정 없음 — 모두 끝까지 적용됨): 팝업 유형 5종 / 표시 방식·우선순위 / 노출 기간 / 크기 모드(FIXED·RATIO·FULLSCREEN)·너비/높이·비율·최소/최대 / 헤더·닫기·푸터·다시 보지 않기 / 활성화 / 배경 오버레이 사용·어둡기 / 대상 조건(부서·직급·사번·입사일, 연산자, 하위 부서 포함) / TEXT(제목·설명 표시, 일반 텍스트, 강조 문구, 하단 설명·URL, Markdown) / IMAGE(URL, 크기 모드 FIXED·FIT_TO_IMAGE·ADAPTIVE·FILL, 너비/높이, 클릭 URL, 설명 표시) / VIDEO(URL, 설명 표시, 완료 비율, 완료 전 닫기 허용) / SURVEY·QUIZ(문항 3종, 필수·채점·배점, 선택지·정답, 주관식 정답·비교 방식, 통과 점수, 템플릿 불러오기).
 - 불일치 1 — **VIDEO 재생 옵션 6개가 WPF에서 무시됨**: `showControls`·`allowFullScreen`·`allowPlaybackRateChange`·`autoPlay`·`isLoop`·`defaultVolume`는 웹에서 편집·저장되고 서버가 `content`로 내려주며 `VideoPopupContentDto`까지 파싱되지만 `PopupFactory.CreateVideoPopupView`가 제목·URL·설명·설명 표시만 넘겨 전부 버려졌다(배속 UI 자체도 없었음).
   - 변경(수정, WPF `popup-frameWork/Popup`): `Factories/PopupFactory.cs` — 옵션 6개를 `VideoPopupView` 생성자로 전달. `Views/Contents/VideoPopupView.xaml(.cs)` — 생성자 매개변수 6개 추가 및 적용: 컨트롤 표시 꺼짐이면 컨트롤바를 어떤 경로에서도 띄우지 않고(`ControlBarVisibility` 헬퍼) 영상 클릭으로 재생/일시정지; 전체화면·배속 버튼은 허용 여부에 따라 열 자체를 접음; **배속 버튼 신설**(0.5→0.75→1.0→1.25→1.5→2.0 순환, `MediaElement.SpeedRatio`); 자동 재생 꺼짐이면 첫 프레임에서 일시정지; 반복 재생이면 `MediaEnded`에서 처음부터 재생; 기본 음량을 볼륨 슬라이더·음소거 복원값에 적용. 웹 플레이어는 HTML5 `<video>` 속성(`controls`/`autoplay`/`loop`/`controlsList nofullscreen·noplaybackrate`/`video.volume`)과 YouTube 파라미터(`autoplay`/`controls`/`fs`/`loop&playlist`)로 반영(YouTube는 음량·배속 허용을 URL로 제어할 수 없어 미적용). `Dtos/VideoPopupContentDto.cs` 주석 갱신. JSON에 키가 없을 때 기본값은 웹 편집기 기본 표시와 동일(autoPlay·isLoop 꺼짐, 나머지 켜짐, 음량 0.7).
@@ -232,12 +241,12 @@
 
 ## 2026-09-20-05 — 관리자 웹 메뉴 데이터: 팝업 관리 폴더(NAV)·그룹(SECTION)·팝업 등록 페이지 (`db/oracle/04_popup_web_menu_oracle.sql`)
 
-- 이유: 사용자 요청 "web에 그룹이랑 폴더 추가"(기능 개발이 아닌 데이터 추가). zero-rule-web 사이드바는 DB 메뉴(`CLOVER_USER.nav_id` → `CLOVER_NAV`(폴더) → `CLOVER_NAV_ITEM` → `CLOVER_PAGE_SECTION`(그룹) → `CLOVER_PAGE`)를 쓰는데, 팝업 등록 화면(`/rgst-pop`, `features/RgstPop`)은 scene-router에만 있고 DB 메뉴에 없어 사이드바에 나오지 않았다. 원격 개발 DB 조회로 확인: NAV 2개(1 기본, 2 관리자 메뉴), `/rgst-pop` 페이지 없음, 사용자 3명.
+- 이유: 관리자 웹 사이드바에 팝업 등록 화면용 폴더·그룹 메뉴 추가(기능 개발이 아닌 메뉴 데이터 추가). zero-rule-web 사이드바는 DB 메뉴(`CLOVER_USER.nav_id` → `CLOVER_NAV`(폴더) → `CLOVER_NAV_ITEM` → `CLOVER_PAGE_SECTION`(그룹) → `CLOVER_PAGE`)를 쓰는데, 팝업 등록 화면(`/rgst-pop`, `features/RgstPop`)은 scene-router에만 있고 DB 메뉴에 없어 사이드바에 나오지 않았다. 원격 개발 DB 조회로 확인: NAV 2개(1 기본, 2 관리자 메뉴), `/rgst-pop` 페이지 없음, 사용자 3명.
 - 변경(추가, 공통 테이블 *데이터만*, 코드·구조 무변경): `db/oracle/04_popup_web_menu_oracle.sql` — 멱등 PL/SQL 블록(이름·url로 존재 확인 후 없는 것만 삽입, ID는 공통 `CLOVERFRAMEWORK_SEQ`, 11g 호환).
   - `CLOVER_NAV` "팝업 관리"(폴더), `CLOVER_PAGE_SECTION` "팝업 관리"(그룹, 아이콘 `FolderOutlined`), `CLOVER_PAGE` "팝업 등록"(`/rgst-pop`, `page_key` = 기존 숫자 키 최대값+1, 아이콘 `NoteAlt`).
   - `CLOVER_NAV_ITEM`: 새 NAV에 CLOVER 메인(sort 100, 다른 NAV와 동일한 첫 항목) + 그룹/팝업 등록(sort 200); 기존 "관리자 메뉴"(nav 2, master) 끝(sort max+100)에도 같은 그룹/팝업 등록 추가.
   - 되돌리기 SQL을 파일 끝 주석으로 둠. `db/oracle/README.md` 실행 순서 표에 4번 행과 "04 — 관리자 웹 메뉴 데이터" 절 추가.
-- 검증: 로컬 XE 21c(`ZERO_RULE@XEPDB1`, 공통 테이블 존재·거의 비어 있음)에서 04를 2회 실행 — 1회차 NAV/SECTION/PAGE/ITEM 추가, 2회차 전부 "기존 사용"으로 중복 없음(멱등 확인; 로컬엔 CLOVER 메인 페이지·관리자 메뉴 NAV가 없어 해당 분기는 건너뜀). 원격 개발 DB(192.168.114.71) **조회**(NAV·SECTION·PAGE·NAV_ITEM·USER·시퀀스) 후, 사용자 승인("여기서 날려")으로 **원격 DB에 04 실행 완료**.
+- 검증: 로컬 XE 21c(`ZERO_RULE@XEPDB1`, 공통 테이블 존재·거의 비어 있음)에서 04를 2회 실행 — 1회차 NAV/SECTION/PAGE/ITEM 추가, 2회차 전부 "기존 사용"으로 중복 없음(멱등 확인; 로컬엔 CLOVER 메인 페이지·관리자 메뉴 NAV가 없어 해당 분기는 건너뜀). 원격 개발 DB(192.168.114.71) **조회**(NAV·SECTION·PAGE·NAV_ITEM·USER·시퀀스) 후 적용 대상·영향 범위를 확인하고 **원격 개발 DB에 04 실행 완료**.
   - 1차 실행은 `ORA-12899`(CLOVER_NAV.EXPL 100바이트 초과 — 원격 11g는 BYTE 의미, 한글 3바이트)로 블록 전체 실패(삽입 0건). NAV 설명을 'WPF 팝업 시스템 관리자 메뉴'로 줄여 재실행 → NAV 376030, SECTION 376031, PAGE 376032(`/rgst-pop`), NAV_ITEM 3건(새 NAV: CLOVER 메인 sort 100·팝업 등록 sort 200 / 관리자 메뉴 nav 2: 팝업 등록 sort 2300) 추가·COMMIT.
   - `page_key`는 원격의 'test' 페이지 키 `11111` 때문에 `11112`로 채번됨. 웹은 4자리 패딩 조회라 동작에는 영향 없음. 스크립트는 이후 실행을 위해 4자리 이하 숫자 키만 최대값 계산 대상으로 수정(원격 행 정정 `UPDATE clover_page SET page_key='27' WHERE url='/rgst-pop'`은 미수행). 참고로 원격에 `page_key='26'` 중복(이메일송수신정보조회·OKSY)이 기존부터 있음.
   - 실행 후 `master` 로그인 → 사이드바 "팝업 관리 > 팝업 등록" 표시와 `/rgst-pop` 진입은 브라우저 미확인.
