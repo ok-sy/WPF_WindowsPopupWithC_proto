@@ -572,6 +572,88 @@ double fontSize =
 
 ---
 
+
+## 5A. WPF Service 폴더 / namespace 정합성 정리
+
+### 5A.1 현재 상태
+
+현재 WPF 프로젝트에는 다음과 같은 불일치가 있다.
+
+```text
+폴더명: popup-frameWork/Popup/Service/
+namespace: Popup.Services
+```
+
+C# 문법상 폴더 구조와 namespace는 강제로 일치할 필요가 없으므로 컴파일은 가능하다.
+하지만 IDE0130 같은 namespace/folder structure 스타일 진단이 발생할 수 있고,
+소스를 처음 보는 사람이 파일 위치와 namespace 관계를 헷갈릴 수 있다.
+
+### 5A.2 권장 정리 방향
+
+특별한 호환성 이유가 없다면 폴더명과 namespace를 맞춘다.
+
+권장안:
+
+```text
+폴더: popup-frameWork/Popup/Services/
+namespace: Popup.Services
+```
+
+현재 서비스 클래스가 여러 개이므로 단수형 `Service`보다 복수형 `Services`가 자연스럽다.
+
+대상 예:
+
+```text
+PopupService.cs
+PopupApiService.cs
+PopupResultQueue.cs
+PopupResultBuilder.cs
+WindowsStartupService.cs
+DemoPopupGateway.cs
+DemoPopupDataService.cs
+DemoMediaPathService.cs
+CrashGuard.cs
+Auth/**
+```
+
+### 5A.3 변경 시 확인사항
+
+폴더명만 `Service` → `Services`로 변경하고 각 파일의 namespace가 이미 `Popup.Services` 또는 `Popup.Services.Auth`라면
+대부분의 C# 코드 수정은 필요하지 않다.
+
+다만 다음은 확인한다.
+
+- [ ] csproj에 특정 파일 경로를 직접 Include/Remove 하고 있는지
+- [ ] 문서/README에 `Popup/Service/` 경로가 하드코딩되어 있는지
+- [ ] 테스트/스크립트가 기존 경로를 참조하는지
+- [ ] XAML이나 리소스 경로에 물리 경로가 직접 연결되어 있는지
+- [ ] Git 이동 후 IDE0130이 사라지는지
+- [ ] `dotnet build` 성공 여부
+
+### 5A.4 폐쇄망 반입 관점
+
+폐쇄망 반입 전에 이 정리를 끝내면
+새 환경에서 소스를 처음 열었을 때 namespace 경고와 폴더 혼동을 줄일 수 있다.
+
+반입 기준도 다음처럼 단순해진다.
+
+```text
+Popup/Services/**
+→ namespace Popup.Services
+
+Popup/Services/Auth/**
+→ namespace Popup.Services.Auth
+```
+
+### 5A.5 상태
+
+```text
+문서화: 완료
+폴더 rename: 미수행
+코드 namespace 변경: 불필요 예상
+빌드 테스트: 미수행
+```
+
 ## 6. 관련 기존 TODO/설계와 함께 확인
 
 폐쇄망 반입 전에 아래 문서의 후속 코드 변경도 같이 확인한다.
