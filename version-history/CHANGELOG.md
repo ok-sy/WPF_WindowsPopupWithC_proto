@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-22-08 — Word 인터페이스 정의서 v2.0 저장소 반입 (QUIZ 재채점 정책 반영)
+
+- 이유: 설계 14 §1 "Word 인터페이스 정의서 최신화". 사용자가 `D:\work\PopupProject2026\docs\`에 올린 v2.0 기준본(`WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx` — POPUP_INTERFACE_SPEC.md v2.0과 같은 구조·내용)을 저장소에 넣는다.
+- 변경: `docs/interfaces/WPF_Popup_API_Interface_v2.0.docx` 추가. 기준본 `word/document.xml`에서 2026-09-22-07(QUIZ 미통과 시 창 유지·재채점, 통과 시에만 제출) 관련 문구 3곳만 텍스트 치환(4.2 WPF 처리 규칙, 4.3 score/passed 설명, 10 QUIZ 규칙). 구조·서식 변경 없음.
+- 검증: 수정 후 `word/document.xml` XML well-formed 확인(PowerShell XmlDocument). 이 PC에 pandoc·LibreOffice·Word COM이 없어 렌더링 확인은 미수행 — Word에서 한 번 열어 확인 필요.
+- 문서: 설계 14 P0 항목·상태 갱신.
+- 상태: 커밋 후 푸시(아래 참고).
+
 ## 2026-09-22-07 — QUIZ 미통과 시 창 유지·재채점 (통과할 때까지)
 
 - 이유: 사용자 지시 "퀴즈 통과하면 닫히고 통과 못하면 alert 팝업 띄우고 적정 점수 넘을 때까지". 이전(2026-09-22-06)에는 미통과여도 답안을 제출하고 창을 닫았다.

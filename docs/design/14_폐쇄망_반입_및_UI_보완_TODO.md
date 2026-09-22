@@ -742,7 +742,7 @@ VSIX
 
 ### P0 — 폐쇄망 반입 전 필수
 
-- [x] 인터페이스 정의서 현재 기준 최신화 — `docs/interfaces/POPUP_INTERFACE_SPEC.md` v2.0(WPF2-00~02·헤더·426·결과 통합·로컬 판정·폰트 크기 반영, 구형 WPF-01~06은 부록). **Word(.docx) 기준본 `WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx`는 이 PC·저장소에 없어 Word 파일 갱신은 미수행** — 기준본 확보 후 v2.0 Markdown 내용을 옮긴다.
+- [x] 인터페이스 정의서 현재 기준 최신화 — `docs/interfaces/POPUP_INTERFACE_SPEC.md` v2.0(WPF2-00~02·헤더·426·결과 통합·로컬 판정·폰트 크기 반영, 구형 WPF-01~06은 부록). Word: 사용자가 전달한 v2.0 기준본(`D:workPopupProject2026docsWPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx`, 같은 구조)에 QUIZ 재채점 정책(2026-09-22-07)만 반영해 `docs/interfaces/WPF_Popup_API_Interface_v2.0.docx`로 저장소에 보관.
 - [x] Server 팝업 변경 파일 목록 확정 — `scripts/export-offline-package.ps1` 이 `git diff 0294d1e..HEAD -- zero-rule-server` 로 MANIFEST-B-server.txt(A=신규/M=수정) 생성. 공통 파일 수정분(M)은 7개: app/build.gradle.kts, JndiResource, MyBatisConfig, application-common/local/dev_db.yml, service/core/build.gradle.kts
 - [x] Web 팝업 변경 파일 목록 확정 — 같은 스크립트가 `git diff f66e8ed..HEAD -- zero-rule-web` 로 MANIFEST-C-web.txt 생성(RgstPop 2개 + package.json/pnpm-lock.yaml)
 - [x] WPF 소스-only 반입 패키지 생성 — 같은 스크립트 D-wpf(bin/obj/publish/.exe/.dll/.pdb 제외, 산출물 누출 검사 포함, `-IncludeMockSso` 선택). 로컬 실행 확인: A 34 / B 87 / C 4 / D 79(+MockSso 2) 파일
@@ -773,7 +773,7 @@ VSIX
 
 ```text
 TODO 문서화: 완료
-인터페이스 정의서 최신화: Markdown v2.0 완료 / Word(.docx) 갱신 미수행(기준본 파일 없음)
+인터페이스 정의서 최신화: Markdown v2.0 완료 / Word v2.0 docs/interfaces/WPF_Popup_API_Interface_v2.0.docx 보관(QUIZ 재채점 정책 반영)
 Server·Web·WPF 반입 패키지 생성: scripts/export-offline-package.ps1 작성·로컬 실행 확인 (2026-09-22)
 Service → Services 폴더 정리: 완료
 폰트 크기 기능 구현: 완료 (2026-09-22)
