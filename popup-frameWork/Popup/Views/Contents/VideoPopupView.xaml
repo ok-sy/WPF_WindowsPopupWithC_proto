@@ -407,7 +407,8 @@
             VerticalAlignment="Stretch"
             MouseEnter="VideoContainer_MouseEnter"
             MouseLeave="VideoContainer_MouseLeave"
-            MouseMove="VideoContainer_MouseMove">
+            MouseMove="VideoContainer_MouseMove"
+            MouseLeftButtonUp="VideoContainer_MouseLeftButtonUp">
             <Grid>
 
                 <!-- 로컬 파일 또는 직접 영상 URL -->
@@ -483,8 +484,17 @@
                             <!-- 음량 -->
                             <ColumnDefinition Width="90"/>
 
-                            <!-- 전체화면 -->
-                            <ColumnDefinition Width="40"/>
+                            <!--
+                            배속 (관리자 웹 "배속 변경 허용" 옵션)
+                            allowPlaybackRateChange=false 이면 코드에서 열 너비를 0으로 접는다.
+                            -->
+                            <ColumnDefinition x:Name="PlaybackRateColumn" Width="48"/>
+
+                            <!--
+                            전체화면 (관리자 웹 "전체화면 허용" 옵션)
+                            allowFullScreen=false 이면 코드에서 열 너비를 0으로 접는다.
+                            -->
+                            <ColumnDefinition x:Name="FullScreenColumn" Width="40"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- 재생 / 일시정지 -->
@@ -594,10 +604,39 @@
                         ValueChanged=
                             "VolumeSlider_ValueChanged"/>
 
+                        <!--
+                        배속 변경 버튼 (관리자 웹 "배속 변경 허용" 옵션)
+
+                        클릭할 때마다 0.5 → 0.75 → 1.0 → 1.25 → 1.5 → 2.0 → 0.5 순으로 순환하며
+                        MediaElement.SpeedRatio 에 적용한다. 로컬 파일 재생(MediaElement)에서만 동작하고,
+                        웹 영상(WebView2)은 브라우저 자체 컨트롤의 배속 메뉴를 쓴다.
+                        -->
+                        <Button
+                            x:Name="PlaybackRateButton"
+                            Grid.Column="6"
+                            Width="44"
+                            Height="36"
+                            Margin="4,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Click="PlaybackRateButton_Click"
+                            Style="{StaticResource VideoIconButtonStyle}"
+                            ToolTip="재생 속도">
+
+                            <TextBlock
+                                x:Name="PlaybackRateText"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Foreground="White"
+                                Text="1.0x"/>
+                        </Button>
+
                         <!-- 전체화면 -->
                         <Button
                             x:Name="FullScreenButton"
-                            Grid.Column="6"
+                            Grid.Column="7"
                             Width="36"
                             Height="36"
                             Margin="4,0,0,0"

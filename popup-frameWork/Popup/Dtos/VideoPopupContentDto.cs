@@ -42,8 +42,10 @@
         /*
          * 영상 컨트롤바 표시 여부
          *
-         * 현재 VideoPopupView가 항상 컨트롤바를 사용한다면
-         * 나중에 연결하기 전까지는 DTO에만 보관한다.
+         * [관리자 웹 옵션 정합성 — 2026-09-20] 아래 ShowControls·AllowFullScreen·AllowPlaybackRateChange·
+         * AutoPlay·IsLoop·DefaultVolume 는 관리자 웹 "영상 재생" 섹션의 값이며, PopupFactory 가
+         * VideoPopupView 생성자로 전달해 실제 재생 동작에 적용한다(이전에는 DTO 에만 보관되고 무시됐다).
+         * JSON 에 키가 없을 때의 기본값은 웹 편집기의 기본 표시(autoPlay·isLoop 꺼짐, 나머지 켜짐)와 같다.
          */
         public bool ShowControls { get; set; } =
             true;
