@@ -209,6 +209,31 @@
 - 검증: 스크립트 파싱 오류 0. `Start-DevWindow` 바인딩 시뮬레이션에서 수정 전 `-Command`=`Write-Host "DB: ` + 잔여 인자 4개 → 수정 후 전체 명령 1개·잔여 인자 0·생성 명령 파싱 오류 0 확인. 실제 스크립트로 두 창을 다시 띄우는 것은 이 세션에서 미수행(별도 창 생성 필요) — 사용자 작업 트리에서 `.\shell\start-dev.ps1` 재실행으로 확인 필요.
 - 상태: 브랜치 `worktree-fix-start-dev-command-quote`에 커밋(`6efc4fd`) 후 푸시. **2026-09-22 main 병합 완료** — main에는 이미 같은 괄호 수정이 영문 주석과 함께 들어가 있어 코드 변경은 동일했고, 병합 시 파일의 다른 주석과 맞춰 이 한글 주석만 남겼다.
 
+## 2026-09-20-06 — 관리자 웹 등록 화면 옵션 정합성 점검 및 보완 (VIDEO 재생 옵션 WPF 적용, 숨김 일수 입력 추가)
+
+- 이유: 사용자 요청 "web 등록 화면상에 구현된 옵션들이 전부 적용이 가능한 옵션들인지 정합성 체크하고 없으면 기능 추가". `PopupEditorDialog`의 옵션 하나하나를 서버 저장(`PopupService.toAdminSaveCommand`·`PopupMapper.upsert*`) → DB 컬럼/`CONTENT_OPTIONS` → 조회(`PopupContentAssembler`·`WpfPopupItem`) → WPF 소비(`PopupFactory`·각 View·`PopupWindow`·`PopupManager`)까지 대조했다.
+- 점검 결과(확인만, 수정 없음 — 모두 끝까지 적용됨): 팝업 유형 5종 / 표시 방식·우선순위 / 노출 기간 / 크기 모드(FIXED·RATIO·FULLSCREEN)·너비/높이·비율·최소/최대 / 헤더·닫기·푸터·다시 보지 않기 / 활성화 / 배경 오버레이 사용·어둡기 / 대상 조건(부서·직급·사번·입사일, 연산자, 하위 부서 포함) / TEXT(제목·설명 표시, 일반 텍스트, 강조 문구, 하단 설명·URL, Markdown) / IMAGE(URL, 크기 모드 FIXED·FIT_TO_IMAGE·ADAPTIVE·FILL, 너비/높이, 클릭 URL, 설명 표시) / VIDEO(URL, 설명 표시, 완료 비율, 완료 전 닫기 허용) / SURVEY·QUIZ(문항 3종, 필수·채점·배점, 선택지·정답, 주관식 정답·비교 방식, 통과 점수, 템플릿 불러오기).
+- 불일치 1 — **VIDEO 재생 옵션 6개가 WPF에서 무시됨**: `showControls`·`allowFullScreen`·`allowPlaybackRateChange`·`autoPlay`·`isLoop`·`defaultVolume`는 웹에서 편집·저장되고 서버가 `content`로 내려주며 `VideoPopupContentDto`까지 파싱되지만 `PopupFactory.CreateVideoPopupView`가 제목·URL·설명·설명 표시만 넘겨 전부 버려졌다(배속 UI 자체도 없었음).
+  - 변경(수정, WPF `popup-frameWork/Popup`): `Factories/PopupFactory.cs` — 옵션 6개를 `VideoPopupView` 생성자로 전달. `Views/Contents/VideoPopupView.xaml(.cs)` — 생성자 매개변수 6개 추가 및 적용: 컨트롤 표시 꺼짐이면 컨트롤바를 어떤 경로에서도 띄우지 않고(`ControlBarVisibility` 헬퍼) 영상 클릭으로 재생/일시정지; 전체화면·배속 버튼은 허용 여부에 따라 열 자체를 접음; **배속 버튼 신설**(0.5→0.75→1.0→1.25→1.5→2.0 순환, `MediaElement.SpeedRatio`); 자동 재생 꺼짐이면 첫 프레임에서 일시정지; 반복 재생이면 `MediaEnded`에서 처음부터 재생; 기본 음량을 볼륨 슬라이더·음소거 복원값에 적용. 웹 플레이어는 HTML5 `<video>` 속성(`controls`/`autoplay`/`loop`/`controlsList nofullscreen·noplaybackrate`/`video.volume`)과 YouTube 파라미터(`autoplay`/`controls`/`fs`/`loop&playlist`)로 반영(YouTube는 음량·배속 허용을 URL로 제어할 수 없어 미적용). `Dtos/VideoPopupContentDto.cs` 주석 갱신. JSON에 키가 없을 때 기본값은 웹 편집기 기본 표시와 동일(autoPlay·isLoop 꺼짐, 나머지 켜짐, 음량 0.7).
+- 불일치 2 — **숨김 일수(hideDays) 입력란 없음**: DB(`POPUP_NOTICE.HIDE_DAYS`)·서버 검증(1 이상)·WPF(다시 보지 않기 체크 시 `HIDDEN` 결과의 hideDays, 없으면 30일)는 지원하는데 웹은 항상 null로 저장했다.
+  - 변경(수정, 웹 popup 파일): `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx` — 표시 옵션에 "다시 보지 않기 숨김 일수" 숫자 입력 추가(푸터+다시 보지 않기가 켜진 경우만 활성, 비우면 WPF 기본 30일 안내), 저장 시 1~3650 정수 검증(WPF 숨김 API 범위와 동일).
+- 확인만(변경 없음): `periodMode`/`repeatInterval`/`repeatDayOfWeek`/`repeatDayOfMonth`는 화면에 노출되지 않는 숨은 필드(항상 `FIXED`)이며 서버 노출 판정·WPF 어디에서도 쓰이지 않는다 — 화면 옵션이 아니므로 이번 범위 밖. 웹 문항 유형은 TEXT/SINGLE_CHOICE/MULTIPLE_CHOICE 3종이고 WPF가 추가로 아는 RATING5는 서버 규칙(`PopupQuestionRules`)이 거절하므로 등록 불가(불일치 아님).
+- 검증: WPF `dotnet build Popup.csproj -c Debug`(오프라인 캐시 `.offline-cache/packages`를 소스로 지정) 오류 0·경고 0, 산출 DLL 타임스탬프 확인. 웹 `tsc --noEmit -p main/tsconfig.json` 및 `eslint PopupEditorDialog.tsx` 통과(워크트리에 node_modules 정션을 임시로 만들어 실행 후 제거). **실제 WPF 실행·영상 재생 동작(자동 재생 꺼짐·반복·배속·컨트롤 숨김) 및 브라우저에서 숨김 일수 저장 왕복은 미확인.**
+- 상태: 커밋 `4502089`(브랜치 `worktree-popup-web-menu-data`) 푸시 후 **2026-09-22 main 병합 완료**. 병합 시 main의 후속 작업(폰트 크기 `IBodyFontSizeAware`, QUIZ 정답 키 전달)과 같은 파일을 건드렸으나 자동 병합됐다. 원래 기록 ID는 `2026-09-20-05`였으나 같은 날짜 순번이 `shell/start-dev.ps1` 항목과 겹쳐 `-06`으로 조정했다.
+
+## 2026-09-20-05 — 관리자 웹 메뉴 데이터: 팝업 관리 폴더(NAV)·그룹(SECTION)·팝업 등록 페이지 (`db/oracle/04_popup_web_menu_oracle.sql`)
+
+- 이유: 사용자 요청 "web에 그룹이랑 폴더 추가"(기능 개발이 아닌 데이터 추가). zero-rule-web 사이드바는 DB 메뉴(`CLOVER_USER.nav_id` → `CLOVER_NAV`(폴더) → `CLOVER_NAV_ITEM` → `CLOVER_PAGE_SECTION`(그룹) → `CLOVER_PAGE`)를 쓰는데, 팝업 등록 화면(`/rgst-pop`, `features/RgstPop`)은 scene-router에만 있고 DB 메뉴에 없어 사이드바에 나오지 않았다. 원격 개발 DB 조회로 확인: NAV 2개(1 기본, 2 관리자 메뉴), `/rgst-pop` 페이지 없음, 사용자 3명.
+- 변경(추가, 공통 테이블 *데이터만*, 코드·구조 무변경): `db/oracle/04_popup_web_menu_oracle.sql` — 멱등 PL/SQL 블록(이름·url로 존재 확인 후 없는 것만 삽입, ID는 공통 `CLOVERFRAMEWORK_SEQ`, 11g 호환).
+  - `CLOVER_NAV` "팝업 관리"(폴더), `CLOVER_PAGE_SECTION` "팝업 관리"(그룹, 아이콘 `FolderOutlined`), `CLOVER_PAGE` "팝업 등록"(`/rgst-pop`, `page_key` = 기존 숫자 키 최대값+1, 아이콘 `NoteAlt`).
+  - `CLOVER_NAV_ITEM`: 새 NAV에 CLOVER 메인(sort 100, 다른 NAV와 동일한 첫 항목) + 그룹/팝업 등록(sort 200); 기존 "관리자 메뉴"(nav 2, master) 끝(sort max+100)에도 같은 그룹/팝업 등록 추가.
+  - 되돌리기 SQL을 파일 끝 주석으로 둠. `db/oracle/README.md` 실행 순서 표에 4번 행과 "04 — 관리자 웹 메뉴 데이터" 절 추가.
+- 검증: 로컬 XE 21c(`ZERO_RULE@XEPDB1`, 공통 테이블 존재·거의 비어 있음)에서 04를 2회 실행 — 1회차 NAV/SECTION/PAGE/ITEM 추가, 2회차 전부 "기존 사용"으로 중복 없음(멱등 확인; 로컬엔 CLOVER 메인 페이지·관리자 메뉴 NAV가 없어 해당 분기는 건너뜀). 원격 개발 DB(192.168.114.71) **조회**(NAV·SECTION·PAGE·NAV_ITEM·USER·시퀀스) 후, 사용자 승인("여기서 날려")으로 **원격 DB에 04 실행 완료**.
+  - 1차 실행은 `ORA-12899`(CLOVER_NAV.EXPL 100바이트 초과 — 원격 11g는 BYTE 의미, 한글 3바이트)로 블록 전체 실패(삽입 0건). NAV 설명을 'WPF 팝업 시스템 관리자 메뉴'로 줄여 재실행 → NAV 376030, SECTION 376031, PAGE 376032(`/rgst-pop`), NAV_ITEM 3건(새 NAV: CLOVER 메인 sort 100·팝업 등록 sort 200 / 관리자 메뉴 nav 2: 팝업 등록 sort 2300) 추가·COMMIT.
+  - `page_key`는 원격의 'test' 페이지 키 `11111` 때문에 `11112`로 채번됨. 웹은 4자리 패딩 조회라 동작에는 영향 없음. 스크립트는 이후 실행을 위해 4자리 이하 숫자 키만 최대값 계산 대상으로 수정(원격 행 정정 `UPDATE clover_page SET page_key='27' WHERE url='/rgst-pop'`은 미수행). 참고로 원격에 `page_key='26'` 중복(이메일송수신정보조회·OKSY)이 기존부터 있음.
+  - 실행 후 `master` 로그인 → 사이드바 "팝업 관리 > 팝업 등록" 표시와 `/rgst-pop` 진입은 브라우저 미확인.
+- 상태: 커밋 `497f1ad`·`f1eac89`(브랜치 `worktree-popup-web-menu-data`) 푸시 후 **2026-09-22 main 병합 완료**. 원래 기록 ID는 `2026-09-20-04`였으나 같은 날짜 순번이 `shell/start-dev.ps1` 항목과 겹쳐 `-05`로 조정했다. `db/oracle/README.md` 실행 순서 표에는 main의 `04_cleanup_markdown_fields_oracle.sql` 행과 나란히 두고, 두 `04_` 스크립트가 서로 독립임을 주석으로 적었다.
+
 ## 2026-09-20-03 — 백엔드·프런트엔드 동시 실행 스크립트 보강 (`shell/start-dev.ps1`)
 
 - 후속 2(같은 작업, 2026-09-21 커밋): 백엔드 창의 `-Command` 인자에 괄호가 없어 `'Write-Host "DB: '` 까지만 바인딩되고 나머지가 `$args`로 새어 새 창이 `TerminatorExpectedAtEndOfString`으로 실패(8080 미기동). 프런트 호출과 같이 괄호로 감싸 수정(스크립트 주석에 기록). 구문 검사 통과, 이번 세션의 서버는 같은 환경변수로 직접 기동해 확인.
