@@ -1,5 +1,7 @@
 package server.service.core.popup.wpf;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,8 @@ import server.service.core.popup.PopupService;
  */
 @Service
 public class WpfResultProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(WpfResultProcessor.class);
 
     private final PopupService popupService;
     private final PopupMapper popupMapper;
@@ -96,10 +100,15 @@ public class WpfResultProcessor {
     }
 
     /**
-     * SUBMITTED: 기존 submitResponse에 위임한다(노출 자격 재검사·문항 검증·QUIZ 채점·응답 upsert·완료 표시).
+     * SUBMITTED: 기존 submitResponse에 위임한다(노출 자격 재검사·문항 검증·응답 upsert·완료 표시).
      * resultId를 clientRequestId로 넘겨 POPUP_RESPONSE.CLIENT_REQUEST_ID에 남긴다.
      * SURVEY는 채점 대상이 아니므로 totalScore/passed를 응답에서 생략한다
      * (기존 로직은 passingScore=null → 0점 기준 통과로 완료 처리하므로 제출 즉시 COMPLETED가 된다).
+     *
+     * <p>[설계 12 §4·§6·§10] QUIZ 점수·통과 판정은 이제 WPF가 로컬에서 먼저 하고 사용자에게 즉시 보여 준 뒤,
+     * 결과 항목의 score/passed로 함께 보낸다. 서버는 결과 저장에 집중하며 WPF 값을 거절하거나 재채점으로 덮어쓰지 않는다.
+     * 다만 DB 저장 로직(submitResponse)이 이미 같은 규칙으로 점수를 계산하므로, 그 값과 WPF 값이 다르면
+     * 경고 로그만 남겨 정답 데이터 불일치를 추적할 수 있게 한다. (WPF 응답은 서버 계산값을 돌려주지만 WPF는 더 이상 기다리지 않는다.)</p>
      */
     private WpfResultItemResponse handleSubmitted(String employeeNo, WpfResultCommand item) {
         if (item.answers().isEmpty()) {
@@ -110,6 +119,9 @@ public class WpfResultProcessor {
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
 
         boolean quiz = "QUIZ".equalsIgnoreCase(popupTypeOf(employeeNo, item.popupId()));
+        if (quiz) {
+            logClientScoreMismatch(employeeNo, item, submitted);
+        }
         WpfResultItemResponse.Builder builder = WpfResultItemResponse.accepted(item)
                 .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
                 .response(submitted.responseId());
@@ -136,6 +148,25 @@ public class WpfResultProcessor {
                 .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
                 .video(progress.watchedRatio(), progress.requiredRatio())
                 .build();
+    }
+
+    /**
+     * [설계 12] WPF 로컬 채점값과 서버 저장 계산값이 다르면 경고 로그. 정답 데이터가 어긋났거나 구 클라이언트일 때 추적용.
+     * WPF가 값을 보내지 않았으면(구 버전) 비교하지 않는다. 점수는 소수 둘째 자리(WPF 반올림 기준)로 비교한다.
+     */
+    private static void logClientScoreMismatch(String employeeNo, WpfResultCommand item, PopupSubmitResponseDto submitted) {
+        if (item.score() == null && item.passed() == null) {
+            return;
+        }
+        boolean scoreDiffers = item.score() != null
+                && Math.abs(item.score() - submitted.totalScore()) >= 0.01;
+        boolean passedDiffers = item.passed() != null
+                && item.passed() != submitted.passed();
+        if (scoreDiffers || passedDiffers) {
+            log.warn("[WPF] QUIZ 로컬 채점값 불일치 userId={} popupId={} resultId={} wpf(score={}, passed={}) server(score={}, passed={})",
+                    employeeNo, item.popupId(), item.resultId(), item.score(), item.passed(),
+                    submitted.totalScore(), submitted.passed());
+        }
     }
 
     /** 표시(displayedAt)·닫기(closedAt) 정보를 USER_POPUP_STATUS에 1회 반영한다. */

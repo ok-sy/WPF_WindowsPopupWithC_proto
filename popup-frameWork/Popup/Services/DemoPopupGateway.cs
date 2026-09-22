@@ -17,13 +17,14 @@ namespace Popup.Services
      *   (PopupResultBuilder → PopupResultQueue → 게이트웨이 → 항목 응답 → 안내)을 실제 코드로 통과시킨다.
      *   서버 규칙을 최대한 그대로 재현한다:
      *     - HIDDEN : hideDays 동안 숨김 → 다음 목록에서 제외
-     *     - SUBMITTED : QUIZ는 샘플 JSON의 correctAnswers로 채점(문항당 100/채점문항수 점, passingScore 이상이면 통과·완료),
+     *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(설계 12 — 서버 재채점 없음, 실제 서버는 참고·로그).
+     *                   구 클라이언트가 score 없이 보내면 샘플 JSON의 correctAnswers로 채점한다.
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 목록에서 제외
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
      *   처리한 항목은 ResultProcessed 이벤트로 DemoWindow의 결과 로그에 보여 준다.
      *
-     * [주의] 실제 서버는 정답을 내려주지 않지만 데모 샘플 JSON에는 correctAnswers가 있어 로컬 채점이 가능하다.
+     * [주의] 데모 샘플 JSON은 구 형식(correctAnswers 값 목록)이며 QuizGrader가 이를 호환 처리한다.
      *        운영 코드(PopupApiService)와 혼동하지 않도록 이 클래스는 Demo Mode에서만 생성된다.
      */
     public sealed class DemoPopupGateway : IPopupGateway
@@ -143,7 +144,10 @@ namespace Popup.Services
                     response.ResponseId = Math.Abs(item.ResultId.GetHashCode());
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
-                        (double score, bool passed) = Grade(popup, item.Answers);
+                        // [설계 12] WPF가 판정한 값을 우선 사용. 없으면(구 클라이언트) 데모 채점기로 계산.
+                        (double score, bool passed) = item.Score is double localScore && item.Passed is bool localPassed
+                            ? (localScore, localPassed)
+                            : Grade(popup, item.Answers);
                         response.TotalScore = score;
                         response.Passed = passed;
                         if (passed) _completed.Add(item.PopupId);

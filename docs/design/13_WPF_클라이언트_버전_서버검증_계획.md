@@ -118,8 +118,8 @@ WPF에서 버전 Header를 붙이는 위치는
 현재 구조 기준 후보:
 
 ```text
-popup-frameWork/Popup/Service/PopupApiService.cs
-popup-frameWork/Popup/Service/Auth/WpfLoginClient.cs
+popup-frameWork/Popup/Services/PopupApiService.cs
+popup-frameWork/Popup/Services/Auth/WpfLoginClient.cs
 ```
 
 가능하면 향후 공통 HttpClient 구성으로 합쳐
@@ -500,8 +500,14 @@ pending 결과 유지
 
 ```text
 문서화: 완료
-코드 수정: 미수행
-빌드/실행 테스트: 미수행
+코드 수정: 완료 (2026-09-22)
+  WPF   : Popup.csproj <Version>1.0.0 → Services/ClientVersion.cs(InformationalVersion) → PopupApiService·WpfLoginClient가 X-Client-Version 헤더 부착
+          426 → WpfClientVersionException(401 재로그인 경로와 분리) → MainWindow 업데이트 안내·주기 조회 중단, PopupResultQueue는 pending 보존, 정기 재로그인 루프 중단
+  Server: WpfClientVersionProps(custom.wpf-client.latest-version / minimum-supported-version / require-header)
+          WpfClientVersionInterceptor(/p/api/wpf/** 만, ClientSemver 숫자 비교, 426 + WpfClientVersionErrorResponse) + WpfClientVersionWebConfig(공통 WebMvcConfig 미수정)
+          application-common.yml: latest 1.0.0 / minimum 1.0.0 / require-header true
+테스트: WpfClientVersionInterceptorTest (T1~T7·비활성·관리자 경로 미적용) 통과, dotnet build 경고 0
+실행 테스트(WPF 실제 426 화면·pending 보존): 미수행
 ```
 
 후속 구현 주요 대상:

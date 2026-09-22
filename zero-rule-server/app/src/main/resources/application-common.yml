@@ -60,3 +60,14 @@ custom.wpf-popup:
 # [WPF SSO·토큰 프로토타입 — 설계 10] POST /p/api/wpf/auth/login + Bearer 토큰 검사(WpfAuthPrototypeProps, custom.wpf-auth-prototype).
 #  운영 인증(타 팀 통합 토큰)이 아니라 통신 형태·401 재로그인 검증용이므로 기본 enabled=false(props 기본값).
 #  ※ dev-user-header와 같은 이유(common 값이 local 값을 덮어씀)로 여기에는 값을 적지 않고, 켜는 설정은 application-local.yml 에만 둔다.
+
+# [WPF 클라이언트 버전 검증 — 설계 13] /p/api/wpf/** 요청의 X-Client-Version 헤더를 최소 지원 버전과 숫자 비교(WpfClientVersionInterceptor).
+#  - latest-version            : 현재 배포된 최신 WPF 버전(426 응답 안내용). WPF csproj <Version>과 함께 올린다.
+#  - minimum-supported-version : 이 버전 미만 WPF 요청은 컨트롤러 진입 전 426 Upgrade Required. 비우면 검증 안 함.
+#  - require-header            : true면 헤더 없는 요청도 426(구 클라이언트 우회 방지). 헤더 없는 구 클라이언트를 잠시 허용하려면 false.
+#  프로파일 그룹 순서(local → common)상 common 값이 최종 적용되므로 환경별로 다르게 하려면 환경변수
+#  CUSTOM_WPF_CLIENT_MINIMUM_SUPPORTED_VERSION / CUSTOM_WPF_CLIENT_LATEST_VERSION 으로 덮어쓴다.
+custom.wpf-client:
+  latest-version: 1.0.0
+  minimum-supported-version: 1.0.0
+  require-header: true

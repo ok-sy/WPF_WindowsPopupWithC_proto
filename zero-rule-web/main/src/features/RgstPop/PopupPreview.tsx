@@ -257,6 +257,10 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
   const imageFill = popup.popupType === 'IMAGE'
     && String(popup.content.imageSizeMode ?? '').toUpperCase() === 'FILL';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
+  // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
+  const headerFontSize = fontSize(popup, 'headerFontSize');
+  const bodyFontSize = fontSize(popup, 'bodyFontSize');
+  const footerFontSize = fontSize(popup, 'footerFontSize');
   const showContentTitle = !imageFill
     && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
 
@@ -297,7 +301,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
       >
         {popup.showHeader && (
           <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
-            <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>
+            <Typography fontWeight={700} sx={{ flex: 1, fontSize: headerFontSize ?? undefined }} noWrap>
               {text(popup.title, '팝업 제목')}
             </Typography>
             {popup.showCloseButton && (
@@ -314,12 +318,16 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
               {contentTitle}
             </Typography>
           )}
-          <PopupBody popup={popup} />
+          {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
+          <Box sx={bodyFontSize ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } } : undefined}>
+            <PopupBody popup={popup} />
+          </Box>
         </Box>
         {popup.showFooter && (
           <>
             <Divider />
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between"
+              sx={{ px: 2, py: 1.5, flexShrink: 0, ...(footerFontSize ? { fontSize: footerFontSize, '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' } } : {}) }}>
               {popup.showDoNotShowAgain ? (
                 <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
               ) : (
@@ -340,4 +348,12 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
 
 function contentValue(popup: AdminPopupDetail, key: string): unknown {
   return popup.content[key];
+}
+
+/** [설계 14 §5.7] content의 폰트 크기 값을 읽어 10~40으로 보정한다. 없거나 숫자가 아니면 null(기본 크기). */
+function fontSize(popup: AdminPopupDetail, key: 'headerFontSize' | 'bodyFontSize' | 'footerFontSize'): number | null {
+  const value = popup.content[key];
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(10, Math.min(40, number)) : null;
 }

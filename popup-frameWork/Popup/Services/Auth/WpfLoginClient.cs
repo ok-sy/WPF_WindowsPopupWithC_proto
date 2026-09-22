@@ -75,10 +75,25 @@ namespace Popup.Services.Auth
             };
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            using HttpResponseMessage response = await HttpClient.PostAsJsonAsync(_loginUrl, request, JsonOptions, cancellationToken);
+            /*
+             * [설계 13 §9] 로그인(최초 서버 접점)에도 X-Client-Version을 보낸다. 지원 종료 버전이면 토큰 발급 전에 426으로
+             * 차단되어 이후 팝업 조회가 시작되지 않는다. 426은 WpfClientVersionException으로 구분해 던진다(재로그인 금지).
+             */
+            using HttpRequestMessage httpRequest = new(HttpMethod.Post, _loginUrl)
+            {
+                Content = JsonContent.Create(request, options: JsonOptions)
+            };
+            httpRequest.Headers.TryAddWithoutValidation(ClientVersion.HeaderName, ClientVersion.Value);
+
+            using HttpResponseMessage response = await HttpClient.SendAsync(httpRequest, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                WpfClientVersionException? versionException = WpfClientVersionException.TryCreate(response, errorBody);
+                if (versionException != null)
+                {
+                    throw versionException;
+                }
                 throw new HttpRequestException(
                     $"WPF 로그인 API 실패: {(int)response.StatusCode} {response.ReasonPhrase}\n{errorBody}",
                     null,

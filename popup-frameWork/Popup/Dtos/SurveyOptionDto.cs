@@ -31,5 +31,12 @@
          */
         public string Text { get; set; } =
             string.Empty;
+
+        /*
+         * [설계 12 §4 — 로컬 채점] 정답 선택지 여부.
+         * 서버 PopupOptionDto.isCorrect. QUIZ 팝업에만 내려오며 그 외에는 null(필드 생략)이다.
+         * 선택형 문항은 선택한 선택지 집합이 isCorrect=true 집합과 정확히 같을 때만 정답이다.
+         */
+        public bool? IsCorrect { get; set; }
     }
 }

@@ -66,6 +66,15 @@ namespace Popup.Factories
                 BackgroundOverlayOpacity = GetContentDouble(
                     popupDto.Content, "backgroundOverlayOpacity", 0.45),
 
+                /*
+                 * [설계 14 §5] Header/본문/Footer 폰트 크기. Overlay 옵션과 같이 content(CONTENT_OPTIONS)로 전달된다.
+                 * 값이 없으면 null → PopupWindow·View가 XAML 기본 크기를 유지한다(기존 데이터 호환).
+                 * 범위 보정(10~40)은 PopupWindow.ApplyFontSizes()가 한다.
+                 */
+                HeaderFontSize = GetContentNullableDouble(popupDto.Content, "headerFontSize"),
+                BodyFontSize = GetContentNullableDouble(popupDto.Content, "bodyFontSize"),
+                FooterFontSize = GetContentNullableDouble(popupDto.Content, "footerFontSize"),
+
                 CompletionRatio = popupDto.CompletionRatio ?? 1.0,
                 AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
                 SizeMode = ConvertPopupSizeMode(popupDto.SizeMode),
@@ -101,6 +110,19 @@ namespace Popup.Factories
                 return Math.Clamp(result, 0.0, 1.0);
             }
             return defaultValue;
+        }
+
+        /// <summary>content의 숫자 값을 그대로 읽는다(범위 보정 없음). 없거나 숫자가 아니면 null.</summary>
+        private static double? GetContentNullableDouble(JsonElement content, string propertyName)
+        {
+            if (content.ValueKind == JsonValueKind.Object
+                && content.TryGetProperty(propertyName, out JsonElement value)
+                && value.ValueKind == JsonValueKind.Number
+                && value.TryGetDouble(out double result))
+            {
+                return result;
+            }
+            return null;
         }
 
         private static TextPopupView CreateTextPopupView(JsonElement contentJson)
@@ -157,7 +179,9 @@ namespace Popup.Factories
         /*
          * [기준 3] 신규 WPF API는 문항을 최상위 questions에만 내려주고 content.questions는 제거했다.
          * 최상위 questions가 있으면 그것을 쓰고, 비어 있으면 구 서버·데모 JSON 호환을 위해 content.questions를 읽는다.
-         * passingScore는 더 이상 내려오지 않으며(채점은 서버), SurveyPopupView도 로컬 채점을 하지 않는다.
+         * [설계 12 §4] QUIZ는 WPF가 로컬 채점하므로 서버가 QUIZ 팝업에 한해 내려주는 정답 정보
+         * (questionScore / options[].isCorrect / correctAnswer / answerMatchMode)와 통과 점수(passingScore)를 모델에 옮긴다.
+         * passingScore는 최상위 값을 우선하고 없으면 content.passingScore(구 JSON)를 쓴다.
          */
         private static SurveyPopupView CreateSurveyPopupView(PopupResponseDto popupDto, bool isQuizMode)
         {
@@ -178,7 +202,10 @@ namespace Popup.Factories
                     QuestionType = ConvertSurveyQuestionType(questionDto.QuestionType),
                     IsRequired = questionDto.IsRequired,
                     IsScored = questionDto.IsScored,
-                    CorrectAnswers = new List<string>(questionDto.CorrectAnswers)
+                    CorrectAnswers = new List<string>(questionDto.CorrectAnswers),
+                    QuestionScore = questionDto.QuestionScore,
+                    CorrectAnswer = questionDto.CorrectAnswer,
+                    AnswerMatchMode = questionDto.AnswerMatchMode
                 };
 
                 foreach (SurveyOptionDto optionDto in questionDto.Options)
@@ -187,18 +214,22 @@ namespace Popup.Factories
                     {
                         OptionId = optionDto.OptionId,
                         Value = optionDto.Value,
-                        Text = optionDto.Text
+                        Text = optionDto.Text,
+                        IsCorrect = optionDto.IsCorrect
                     });
                 }
                 questions.Add(question);
             }
+
+            double? passingScore = popupDto.PassingScore
+                ?? (contentDto.PassingScore > 0 ? contentDto.PassingScore : null);
 
             return new SurveyPopupView(
                 contentDto.SurveyTitle,
                 contentDto.Description,
                 questions,
                 isQuizMode,
-                contentDto.PassingScore);
+                passingScore);
         }
 
         private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>

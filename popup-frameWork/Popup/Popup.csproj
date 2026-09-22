@@ -7,6 +7,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
+
+		<!--
+		[설계 13 §3] WPF 클라이언트 배포 버전. AssemblyInformationalVersion으로 컴파일되어
+		Services/ClientVersion.cs가 읽고 모든 서버 요청에 X-Client-Version 헤더로 보낸다.
+		서버 application-*.yml 의 custom.wpf-client.minimum-supported-version 이상이어야 API가 허용된다.
+		배포 때마다 이 값을 올리고 서버의 latest-version 도 함께 갱신한다. (형식: major.minor.patch)
+		-->
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
 	</PropertyGroup>
 
 

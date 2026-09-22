@@ -67,8 +67,49 @@ function createDefaultPopup(): AdminPopupDetail {
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
       useBackgroundOverlay: true,
       backgroundOverlayOpacity: 0.45,
+      // [설계 14 §5] Header/본문/Footer 폰트 크기. 신규 등록 기본값은 "미설정(null)" — WPF가 기존 XAML 기본 크기를 쓴다(§5.8).
+      // 값을 넣으면 Overlay 옵션처럼 content_options_json으로 저장되어 서버 → WPF PopupOptions까지 전달된다.
+      headerFontSize: null,
+      bodyFontSize: null,
+      footerFontSize: null,
     },
   };
+}
+
+/* [설계 14 §5.7] 폰트 크기 입력 범위(px). 서버 PopupService.validateFontSizeOptions·WPF PopupOptions.FontSizeMin/Max와 같다. */
+const FONT_SIZE_MIN = 10;
+const FONT_SIZE_MAX = 40;
+/* WPF XAML 기본 크기(설정 없을 때 표시되는 값) — 입력란 placeholder 안내용. Header 17 / Footer 14 / 본문은 유형별(TEXT 15, IMAGE·VIDEO 14, 설문 12). */
+const FONT_SIZE_DEFAULT_HINT: Record<'headerFontSize' | 'bodyFontSize' | 'footerFontSize', string> = {
+  headerFontSize: '17', bodyFontSize: '유형별(12~15)', footerFontSize: '14',
+};
+
+/** content의 폰트 크기 값을 읽는다. 없거나 숫자가 아니면 null(미설정). */
+function fontSizeValue(popup: AdminPopupDetail, key: keyof typeof FONT_SIZE_DEFAULT_HINT): number | null {
+  const value = popup.content[key];
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+/**
+ * [설계 14 §5] Header / 본문 / Footer 폰트 크기 입력란 하나. 비우면 미설정(null → 기본 크기), 입력 완료 시 10~40으로 보정한다.
+ * 정수 px 단위. WPF는 DIP 단위이지만 100% 배율에서 px와 같으므로 관리자에게는 px로 안내한다.
+ */
+function PopupFontSizeField({ label, popupKey, popup, onChange }: {
+  label: string; popupKey: keyof typeof FONT_SIZE_DEFAULT_HINT; popup: AdminPopupDetail; onChange: (value: number | null) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const current = fontSizeValue(popup, popupKey);
+  return <TextField size="small" type="number" label={label} value={draft ?? (current ?? '')}
+    placeholder={`기본 ${FONT_SIZE_DEFAULT_HINT[popupKey]}`} InputLabelProps={{ shrink: true }}
+    inputProps={{ min: FONT_SIZE_MIN, max: FONT_SIZE_MAX, step: 1 }}
+    helperText={`${FONT_SIZE_MIN}~${FONT_SIZE_MAX}px · 비우면 기본 크기`}
+    onChange={(event) => {
+      const input = event.target.value; setDraft(input);
+      if (input === '') { onChange(null); return; }
+      if (Number.isFinite(Number(input))) onChange(Math.round(Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, Number(input)))));
+    }} onBlur={() => setDraft(null)} />;
 }
 
 function dateFromApi(value: PopupDateValue): Date {
@@ -345,6 +386,21 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                     inputProps={{ min: 0, max: 100, step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
                     onChange={(e) => updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, Number(e.target.value))) / 100)} sx={{ width: 220 }} />
                 </Stack>
+              </Stack>
+            </Box>
+
+            {/* [설계 14 §5] Header / 본문 / Footer 폰트 크기 — 영역별 독립 설정. content_options_json에 저장되어 WPF PopupWindow·콘텐츠 View에 적용된다. */}
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" fontWeight={700}>폰트 크기</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  WPF 팝업의 헤더 제목 · 본문 텍스트 · 푸터(다시 보지 않기·닫기) 글자 크기를 각각 지정합니다. 비워 두면 기존과 같은 기본 크기로 표시됩니다.
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1.5 }}>
+                  <PopupFontSizeField label="헤더 (px)" popupKey="headerFontSize" popup={popup} onChange={(v) => updateContent('headerFontSize', v)} />
+                  <PopupFontSizeField label="본문 (px)" popupKey="bodyFontSize" popup={popup} onChange={(v) => updateContent('bodyFontSize', v)} />
+                  <PopupFontSizeField label="푸터 (px)" popupKey="footerFontSize" popup={popup} onChange={(v) => updateContent('footerFontSize', v)} />
+                </Box>
               </Stack>
             </Box>
 

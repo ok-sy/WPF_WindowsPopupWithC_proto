@@ -19,5 +19,8 @@
         /// 예: "매우 만족", "남성", "이메일"
         /// </summary>
         public string Text { get; set; } = string.Empty;
+
+        /// <summary>[설계 12 §4 — 로컬 채점] 정답 선택지 여부. 서버가 QUIZ에만 내려주며 그 외 null.</summary>
+        public bool? IsCorrect { get; set; }
     }
 }

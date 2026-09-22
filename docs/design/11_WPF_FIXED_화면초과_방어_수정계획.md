@@ -349,11 +349,13 @@ FULLSCREEN
 
 ```text
 문서화: 완료
-코드 수정: 미수행
-빌드/실행 테스트: 미수행
+코드 수정: 완료 (2026-09-22) — PopupWindow.ApplyWindowSize() Fixed 분기: WorkArea 95% 상한, Minimum 역전 보정,
+           Window MinWidth/MaxWidth 도 보정값으로 재지정. default(알 수 없는 SizeMode) 분기도 Fixed로 합류.
+빌드: dotnet build Popup.slnx 경고 0·오류 0
+실행 테스트(T1~T7): 미수행 — 5000x3000 등 실제 초과 값으로 화면 확인 필요
 ```
 
-후속 구현 대상:
+구현 위치:
 
 ```text
 popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs

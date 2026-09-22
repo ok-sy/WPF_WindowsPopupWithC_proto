@@ -29,20 +29,23 @@ namespace Popup.Models
         /*
          * [기준 3·4] 기존 콜백 5개(HidePopupAsync·PopupDisplayedAsync·PopupClosedAsync·SubmitSurveyAsync·
          * SaveVideoProgressAsync)는 각각 서버 API를 즉시 호출했다. 이제 팝업 창 하나의 결과는 항목 1개로
-         * 닫힐 때 한 번만 보내므로, 결과 항목을 넘기는 훅 2개로 통합한다. PopupWindow·View는 서버를 모른다.
+         * 닫힐 때 한 번만 보낸다. PopupWindow·View는 서버를 모른다.
+         *
+         * [설계 12] 제출 응답을 기다리던 훅(ReportResultImmediateAsync)은 제거했다. 닫기·숨김·영상·제출 모두
+         * 아래 훅 2개로 "로컬 큐 저장 → 창 닫기 → 백그라운드 전송" 경로를 탄다.
          */
 
         /// <summary>
-        /// 닫기·숨김·영상 시청 결과를 넘긴다. PopupResultQueue.EnqueueAndSendAsync에 연결되며
-        /// 전송 실패는 큐가 보관하므로 예외를 던지지 않는다.
+        /// 결과 항목을 로컬 큐(pending-results.json)에 저장한다. PopupResultQueue.EnqueueAsync에 연결된다.
+        /// 완료(await) 시점에 결과가 파일에 보존되므로 그 뒤에 창을 닫아도 유실되지 않는다. 서버 전송은 하지 않는다.
         /// </summary>
-        public Func<WpfResultItemDto, Task>? ReportResultAsync { get; set; }
+        public Func<WpfResultItemDto, Task>? EnqueueResultAsync { get; set; }
 
         /// <summary>
-        /// 설문·퀴즈 제출처럼 사용자가 결과(통과 여부·거절 사유)를 바로 알아야 하는 항목을 즉시 전송하고
-        /// 서버의 항목 응답을 돌려준다. PopupResultQueue.SendImmediateAsync에 연결된다.
+        /// 보관된 결과를 백그라운드로 서버에 전송한다(예외는 안에서 처리). PopupResultQueue.FlushInBackground에 연결된다.
+        /// 창을 닫은 뒤 호출하며 UI는 기다리지 않는다.
         /// </summary>
-        public Func<WpfResultItemDto, Task<WpfResultItemResponseDto>>? ReportResultImmediateAsync { get; set; }
+        public Action? FlushResultsInBackground { get; set; }
 
         /// <summary>
         /// "다시 보지 않기" 체크 여부. PopupWindow가 닫히기 직전에 기록하고 PopupManager가 HIDDEN 항목을 만든다.
@@ -84,6 +87,21 @@ namespace Popup.Models
          * PopupManager에서 실제 적용 전에 0~1 범위로 보정한다.
          */
         public double BackgroundOverlayOpacity { get; set; } = 0.45;
+
+        /*
+         * [설계 14 §5] Header / 본문 / Footer 폰트 크기.
+         * 관리자 웹이 content(CONTENT_OPTIONS JSON)의 headerFontSize/bodyFontSize/footerFontSize로 저장하고
+         * 서버 목록 응답의 content를 통해 그대로 내려온다(별도 DB 컬럼·Java DTO 변경 없음 — Overlay 옵션과 같은 경로).
+         * null이면 "관리자가 설정하지 않음"이며 PopupWindow·각 콘텐츠 View는 기존 XAML 기본 크기를 그대로 쓴다(기존 데이터 호환 §5.8).
+         * 값이 있어도 PopupWindow가 FontSizeMin~FontSizeMax로 최종 Clamp 하므로 서버 값을 그대로 신뢰하지 않는다(§5.7).
+         */
+        public double? HeaderFontSize { get; set; }
+        public double? BodyFontSize { get; set; }
+        public double? FooterFontSize { get; set; }
+
+        /// <summary>[설계 14 §5.7] WPF 최종 방어 범위. 관리자 웹 입력 범위(10~40)와 같다.</summary>
+        public const double FontSizeMin = 10;
+        public const double FontSizeMax = 40;
 
         public PopupSizeMode SizeMode { get; set; } = PopupSizeMode.Fixed;
         public double Width { get; set; } = 900;

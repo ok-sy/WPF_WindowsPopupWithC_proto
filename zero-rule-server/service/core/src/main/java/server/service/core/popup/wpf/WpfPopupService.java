@@ -72,6 +72,11 @@ public class WpfPopupService {
     /**
      * 사용자에게 지금 표시해야 할 최종 팝업 목록. 완료 팝업까지 SQL에서 제외한다.
      * 문항은 템플릿 ID를 모아 한 번에 조회한다(팝업마다 문항 쿼리를 반복하지 않음 — 기존 getPopups와 동일).
+     *
+     * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ 팝업은 정답 키(선택지 isCorrect·서술형 correctAnswer/answerMatchMode)와
+     * 통과 점수(passingScore)를 포함해 내려준다. WPF가 제출 즉시 점수·통과 여부를 판정하기 위해서다.
+     * SURVEY 등 QUIZ가 아닌 팝업의 문항은 기준 3과 같이 정답 없는 형태({@link WpfPopupItem#withoutAnswerKey})다.
+     * 문항 조회는 정답 포함 1회만 하고 팝업 유형별로 가공한다(쿼리 추가 없음).</p>
      */
     @Transactional(readOnly = true)
     public WpfPopupListResponse getPopupsForUser(String employeeNo) {
@@ -84,15 +89,19 @@ public class WpfPopupService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        Map<Long, List<PopupQuestionDto>> questionsByTemplate = popupService.loadPublicQuestions(templateIds);
+        Map<Long, List<PopupQuestionDto>> questionsByTemplate = popupService.loadQuestionsWithAnswerKey(templateIds);
 
         List<WpfPopupItem> items = popups.stream()
                 .map(popup -> {
+                    boolean quiz = "QUIZ".equalsIgnoreCase(popup.popupType());
                     List<PopupQuestionDto> questions = popup.questionTemplateId() == null
                             ? List.of()
                             : questionsByTemplate.getOrDefault(popup.questionTemplateId(), List.of());
+                    if (!quiz) {
+                        questions = WpfPopupItem.withoutAnswerKey(questions);
+                    }
                     PopupResponseDto dto = popupService.toPublicResponseDto(popup, questions);
-                    return WpfPopupItem.from(dto);
+                    return WpfPopupItem.from(dto, quiz);
                 })
                 .toList();
 

@@ -782,6 +782,17 @@ public class PopupService {
     }
 
     /**
+     * [설계 12 §4 — WPF 로컬 채점] 정답 정보(선택지 isCorrect·서술형 correctAnswer·answerMatchMode)를 포함한 문항.
+     * WPF가 QUIZ 제출 시 서버 응답을 기다리지 않고 즉시 점수·통과 여부를 계산하려면 정답 키가 필요하다.
+     * WpfPopupService가 QUIZ 팝업의 문항에만 사용하고, SURVEY 등 나머지는 정답 없는 형태로 내려준다.
+     * 기존 관리자 상세(admin=true)와 같은 loadQuestions를 재사용한다.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<PopupQuestionDto>> loadQuestionsWithAnswerKey(List<Long> templateIds) {
+        return loadQuestions(templateIds, true);
+    }
+
+    /**
      * [WPF API 추가 — 기준 2·3] 노출 판정이 끝난 엔티티와 정답 제외 문항을 공용 응답 DTO로 변환하는 공개 진입점.
      * 기존 WPF-01·관리자 상세와 같은 toResponseDto를 사용해 content 조립 규칙이 한 곳에만 있게 한다.
      */
@@ -884,6 +895,7 @@ public class PopupService {
         if (popup.passingScore() != null && popup.passingScore() < 0) {
             throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
         }
+        validateFontSizeOptions(popup.content());
         if (active == null) {
             throw new IllegalArgumentException("활성 여부는 필수입니다.");
         }
@@ -896,6 +908,42 @@ public class PopupService {
     private static void validatePositiveNumber(double value, String fieldName) {
         if (!Double.isFinite(value) || value <= 0) {
             throw new IllegalArgumentException(fieldName + "는 0보다 커야 합니다.");
+        }
+    }
+
+    /** [설계 14 §5.7] 관리자 폰트 크기 입력 범위. WPF PopupOptions.FontSizeMin/Max·웹 입력 범위와 같다. */
+    static final double FONT_SIZE_MIN = 10;
+    static final double FONT_SIZE_MAX = 40;
+    private static final List<String> FONT_SIZE_KEYS = List.of("headerFontSize", "bodyFontSize", "footerFontSize");
+
+    /**
+     * [설계 14 §5.7 — 입력 방어] content(CONTENT_OPTIONS)에 담겨 오는 Header/본문/Footer 폰트 크기를 검사한다.
+     * 값이 없거나 null이면 통과(기존 데이터·미설정 = 기본 크기, §5.8). 값이 있으면 숫자이고 10~40 범위여야 한다.
+     * 별도 DB 컬럼을 두지 않고 Overlay 옵션처럼 content JSON으로 저장·전달하므로 검증도 여기서 content 키 단위로 한다.
+     */
+    private static void validateFontSizeOptions(Map<String, Object> content) {
+        if (content == null) {
+            return;
+        }
+        for (String key : FONT_SIZE_KEYS) {
+            Object value = content.get(key);
+            if (value == null) {
+                continue;
+            }
+            double size;
+            if (value instanceof Number number) {
+                size = number.doubleValue();
+            } else {
+                try {
+                    size = Double.parseDouble(String.valueOf(value).trim());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("폰트 크기(" + key + ")는 숫자여야 합니다.");
+                }
+            }
+            if (!Double.isFinite(size) || size < FONT_SIZE_MIN || size > FONT_SIZE_MAX) {
+                throw new IllegalArgumentException(
+                        "폰트 크기(" + key + ")는 " + (int) FONT_SIZE_MIN + "~" + (int) FONT_SIZE_MAX + " 사이여야 합니다.");
+            }
         }
     }
 

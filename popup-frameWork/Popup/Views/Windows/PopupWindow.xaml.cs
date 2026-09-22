@@ -174,6 +174,11 @@ namespace Popup.Views.Windows
                     : Visibility.Collapsed;
 
             /*
+             * [설계 14 §5] 관리자 설정 폰트 크기(Header/Footer/본문)를 적용한다.
+             */
+            ApplyFontSizes();
+
+            /*
              * PopupOptions의 SizeMode에 따라
              * 팝업 크기를 계산해서 적용한다.
              */
@@ -211,18 +216,73 @@ namespace Popup.Views.Windows
                 /*
                  * 기존 고정 크기 방식
                  *
-                 * Width와 Height 값을 그대로 사용한다.
+                 * [설계 11 §4·§5·§6] 예전에는 서버 Width/Height를 그대로 적용해, 작업 영역보다 큰 값
+                 * (예: 5000 x 3000)이 내려오면 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
+                 * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있었다.
+                 * 이제 VIEWPORT_RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
+                 * 최종 상한을 두고, 안전 여백으로 작업 영역의 95%를 최대값으로 쓴다.
+                 *
+                 * 순서:
+                 *   서버 Width/Height
+                 *   → 서버 MaximumWidth/Height 적용
+                 *   → 작업 영역 95% 상한 적용
+                 *   → 최소값도 상한 이하로 보정(Minimum > 화면 최대일 때 Math.Clamp 예외 방지)
+                 *   → 최종 Window 크기
+                 *
+                 * MinWidth/MaxWidth(Window 속성)도 같은 보정값으로 다시 지정한다.
+                 * 그렇지 않으면 XAML/서버의 MinWidth가 보정된 Width보다 커서 WPF가 다시 키운다.
                  */
                 case PopupSizeMode.Fixed:
                     {
                         SizeToContent =
                             SizeToContent.Manual;
 
+                        Rect workArea =
+                            SystemParameters.WorkArea;
+
+                        double safeMaxWidth =
+                            Math.Min(
+                                _options.MaximumWidth,
+                                workArea.Width * FixedSizeSafeAreaRatio);
+
+                        double safeMaxHeight =
+                            Math.Min(
+                                _options.MaximumHeight,
+                                workArea.Height * FixedSizeSafeAreaRatio);
+
+                        double safeMinWidth =
+                            Math.Min(
+                                _options.MinimumWidth,
+                                safeMaxWidth);
+
+                        double safeMinHeight =
+                            Math.Min(
+                                _options.MinimumHeight,
+                                safeMaxHeight);
+
+                        MinWidth =
+                            safeMinWidth;
+
+                        MinHeight =
+                            safeMinHeight;
+
+                        MaxWidth =
+                            safeMaxWidth;
+
+                        MaxHeight =
+                            safeMaxHeight;
+
                         Width =
-                            _options.Width;
+                            Math.Clamp(
+                                _options.Width,
+                                safeMinWidth,
+                                safeMaxWidth);
 
                         Height =
-                            _options.Height;
+                            Math.Clamp(
+                                _options.Height,
+                                safeMinHeight,
+                                safeMaxHeight);
 
                         break;
                     }
@@ -380,21 +440,60 @@ namespace Popup.Views.Windows
                 /*
                  * 정의되지 않은 값이 들어온 경우
                  * 기존 고정 크기 방식으로 처리한다.
+                 * [설계 11] Fixed와 같은 화면 초과 방어를 받도록 Fixed 분기로 보낸다.
                  */
                 default:
                     {
-                        SizeToContent =
-                            SizeToContent.Manual;
-
-                        Width =
-                            _options.Width;
-
-                        Height =
-                            _options.Height;
-
-                        break;
+                        goto case PopupSizeMode.Fixed;
                     }
             }
+        }
+
+        /*
+         * [설계 11 §4] FIXED 크기의 화면 안전 여백. 작업 영역의 95%를 최대 크기로 쓴다.
+         * (1920 x 1080 작업 영역이면 약 1824 x 1026)
+         */
+        private const double FixedSizeSafeAreaRatio = 0.95;
+
+        /*
+         * [설계 14 §5] 관리자가 설정한 Header/Footer/본문 폰트 크기를 적용한다.
+         *
+         * - null(설정 없음)이면 아무것도 바꾸지 않아 XAML 기본값(Header 17, Footer 14, 본문은 View별)이 유지된다(§5.8).
+         * - 값이 있으면 FontSizeMin~FontSizeMax로 최종 Clamp 한다(§5.7 — 서버 값을 그대로 신뢰하지 않음).
+         * - Header: PopupTitleText.  Footer: "다시 보지 않기" 체크박스와 하단 닫기 버튼(§5.5 — Footer 공통 FontSize 하나).
+         *   상단 X 버튼은 아이콘 성격이라 제외한다.
+         * - 본문: 콘텐츠 View가 IBodyFontSizeAware를 구현하면 그 View에 위임한다(§5.6 — 유형별 본문 정의는 View가 안다).
+         */
+        private void ApplyFontSizes()
+        {
+            if (TryClampFontSize(_options.HeaderFontSize, out double headerFontSize))
+            {
+                PopupTitleText.FontSize = headerFontSize;
+            }
+
+            if (TryClampFontSize(_options.FooterFontSize, out double footerFontSize))
+            {
+                DoNotShowAgainCheckBox.FontSize = footerFontSize;
+                FooterCloseButton.FontSize = footerFontSize;
+            }
+
+            if (TryClampFontSize(_options.BodyFontSize, out double bodyFontSize)
+                && _options.Content is IBodyFontSizeAware bodyFontSizeAware)
+            {
+                bodyFontSizeAware.ApplyBodyFontSize(bodyFontSize);
+            }
+        }
+
+        /// <summary>설정값이 있고 유한한 숫자이면 10~40으로 보정해 돌려준다. 없으면 false(기본 크기 유지).</summary>
+        private static bool TryClampFontSize(double? configured, out double fontSize)
+        {
+            if (configured is double value && double.IsFinite(value) && value > 0)
+            {
+                fontSize = Math.Clamp(value, PopupOptions.FontSizeMin, PopupOptions.FontSizeMax);
+                return true;
+            }
+            fontSize = 0;
+            return false;
         }
 
         /*

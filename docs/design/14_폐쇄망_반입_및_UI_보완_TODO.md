@@ -244,8 +244,8 @@ DB/JNDI/프로파일 설정 변경분이 있는지 최종 점검한다.
 
 ### 2.4 반입 전 체크
 
-- [ ] 팝업 관련 변경 파일 목록 생성
-- [ ] 신규 파일 / 수정 파일 구분
+- [x] 팝업 관련 변경 파일 목록 생성 (scripts/export-offline-package.ps1 → MANIFEST-B-server.txt)
+- [x] 신규 파일 / 수정 파일 구분 (MANIFEST A/M 상태)
 - [ ] 공통 의존 파일 확인
 - [ ] Oracle 대상 SQL/Mapper 확인
 - [ ] 테스트 코드 중 팝업 관련 항목 별도 보관
@@ -253,7 +253,7 @@ DB/JNDI/프로파일 설정 변경분이 있는지 최종 점검한다.
 - [ ] 절대경로/개발 DB 주소/로컬 설정 제거 또는 환경화
 - [ ] 개발용 `DevUserId` 최종 처리 결정
 - [ ] SSO Prototype 코드를 운영 반입할지 최종 결정
-- [ ] Client Version 검증 구현 반영 여부 확인
+- [x] Client Version 검증 구현 반영 여부 확인 (설계 13 구현 완료)
 
 ---
 
@@ -321,13 +321,13 @@ coverage
 
 ### 3.4 반입 전 체크
 
-- [ ] 팝업 UI 변경 파일 목록 확정
-- [ ] 신규/수정 파일 구분
+- [x] 팝업 UI 변경 파일 목록 확정 (MANIFEST-C-web.txt)
+- [x] 신규/수정 파일 구분 (MANIFEST A/M 상태)
 - [ ] pnpm dependency 추가 여부 확인
 - [ ] 폐쇄망 package store에 필요한 npm package 존재 여부 확인
 - [ ] API base URL 하드코딩 확인
 - [ ] PopupAdmin DTO와 서버 DTO 최신 일치 확인
-- [ ] Header/Footer/본문 폰트 크기 설정 UI 추가
+- [x] Header/Footer/본문 폰트 크기 설정 UI 추가 (PopupEditorDialog, 2026-09-22)
 - [ ] FIXED 크기 화면 초과 방어와 관리자 입력 범위 정합성 확인
 - [ ] Preview와 실제 WPF 렌더링 차이 확인
 
@@ -412,11 +412,11 @@ WebView2 NuGet/Runtime (실제 사용 기능이 있을 경우)
 - [ ] appsettings의 외부망 주소 제거/변경
 - [ ] SSO URL 폐쇄망 실제 주소 적용
 - [ ] 소스에 개인 PC 절대경로가 없는지 확인
-- [ ] bin/obj/publish 삭제 후 반입 패키지 생성
-- [ ] EXE/DLL/PDB 미포함 확인
+- [x] bin/obj/publish 삭제 후 반입 패키지 생성 (스크립트가 제외 복사)
+- [x] EXE/DLL/PDB 미포함 확인 (스크립트 누출 검사)
 - [ ] Media 파일 반입 필요 여부 확인
 - [ ] Windows 시작프로그램 Registry 이름 최종 확정
-- [ ] Client Version 생성 기준 확정
+- [x] Client Version 생성 기준 확정 (csproj <Version> = InformationalVersion, 1.0.0)
 
 ---
 
@@ -649,9 +649,11 @@ Popup/Services/Auth/**
 
 ```text
 문서화: 완료
-폴더 rename: 미수행
-코드 namespace 변경: 불필요 예상
-빌드 테스트: 미수행
+폴더 rename: 완료 (2026-09-22, git mv Popup/Service → Popup/Services)
+코드 namespace 변경: 불필요 확인 (Popup.Services / Popup.Services.Auth 그대로)
+경로 참조 갱신: popup-frameWork/README.md, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/10·12·13 (CHANGELOG 과거 이력은 그대로 둠)
+csproj 직접 Include 없음, XAML 물리 경로 없음, 스크립트 참조 없음
+빌드 테스트: dotnet build Popup.slnx 경고 0·오류 0 (IDE0130 경고 없음)
 ```
 
 ## 6. 관련 기존 TODO/설계와 함께 확인
@@ -666,13 +668,13 @@ docs/design/13_WPF_클라이언트_버전_서버검증_계획.md
 
 특히 다음은 반입 직전에 코드와 문서 일치 여부를 재검증한다.
 
-- [ ] FIXED 화면 초과 방어
-- [ ] 결과 로컬 저장 후 UI 즉시 종료
-- [ ] 설문/퀴즈 WPF 로컬 판정
-- [ ] 영상 시청 완료 로컬 판정
-- [ ] 서버 Client Version 검증
-- [ ] SSO 최초 1회 조회 / 토큰 재발급 정책
-- [ ] Header/Footer/본문 폰트 크기 옵션
+- [x] FIXED 화면 초과 방어 — 구현 완료(설계 11 §11), 실제 초과 값 화면 확인은 미수행
+- [x] 결과 로컬 저장 후 UI 즉시 종료 — 구현 완료(설계 12 §14)
+- [x] 설문/퀴즈 WPF 로컬 판정 — 구현 완료(QuizGrader, 서버는 QUIZ에만 정답 키 제공)
+- [x] 영상 시청 완료 로컬 판정 — 기존 로직 유지 확인(PopupWindow.CloseButton_Click → HasReachedCompletion)
+- [x] 서버 Client Version 검증 — 구현 완료(설계 13 §15), WPF 1.0.0 / 서버 minimum 1.0.0
+- [x] SSO 최초 1회 조회 / 토큰 재발급 정책 — 기존 구현(설계 10 §14) 유지, 426 시 정기 재로그인 루프 중단 추가
+- [x] Header/Footer/본문 폰트 크기 옵션 — 구현 완료(§5, 아래 상태 참고)
 
 ---
 
@@ -740,20 +742,20 @@ VSIX
 
 ### P0 — 폐쇄망 반입 전 필수
 
-- [ ] Word 인터페이스 정의서 현재 기준 최신화
-- [ ] Server 팝업 변경 파일 목록 확정
-- [ ] Web 팝업 변경 파일 목록 확정
-- [ ] WPF 소스-only 반입 패키지 생성
-- [ ] 폐쇄망 빌드 의존 패키지 확인
-- [ ] appsettings / URL / 환경별 설정 확인
+- [x] 인터페이스 정의서 현재 기준 최신화 — `docs/interfaces/POPUP_INTERFACE_SPEC.md` v2.0(WPF2-00~02·헤더·426·결과 통합·로컬 판정·폰트 크기 반영, 구형 WPF-01~06은 부록). **Word(.docx) 기준본 `WPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx`는 이 PC·저장소에 없어 Word 파일 갱신은 미수행** — 기준본 확보 후 v2.0 Markdown 내용을 옮긴다.
+- [x] Server 팝업 변경 파일 목록 확정 — `scripts/export-offline-package.ps1` 이 `git diff 0294d1e..HEAD -- zero-rule-server` 로 MANIFEST-B-server.txt(A=신규/M=수정) 생성. 공통 파일 수정분(M)은 7개: app/build.gradle.kts, JndiResource, MyBatisConfig, application-common/local/dev_db.yml, service/core/build.gradle.kts
+- [x] Web 팝업 변경 파일 목록 확정 — 같은 스크립트가 `git diff f66e8ed..HEAD -- zero-rule-web` 로 MANIFEST-C-web.txt 생성(RgstPop 2개 + package.json/pnpm-lock.yaml)
+- [x] WPF 소스-only 반입 패키지 생성 — 같은 스크립트 D-wpf(bin/obj/publish/.exe/.dll/.pdb 제외, 산출물 누출 검사 포함, `-IncludeMockSso` 선택). 로컬 실행 확인: A 34 / B 87 / C 4 / D 79(+MockSso 2) 파일
+- [ ] 폐쇄망 빌드 의존 패키지 확인 — `-IncludeDevDependencies` 로 E 묶음 생성 가능. 실제 폐쇄망 PC에서 `dotnet restore/build` 성공 여부는 미확인
+- [ ] appsettings / URL / 환경별 설정 확인 — 반입 직전 작업(BaseUrl·SsoUrl·DevUserId 비우기, 서버 dev-user-header/prototype false, wpf-client 버전)
 
 ### P1 — 기능 보완 후 반입 권장
 
-- [ ] FIXED 화면 초과 방어
-- [ ] 결과 비동기 전송 UX
-- [ ] 로컬 설문/퀴즈 판정
-- [ ] Client Version 검증
-- [ ] Header/Footer/본문 폰트 크기 설정
+- [x] FIXED 화면 초과 방어 (설계 11)
+- [x] 결과 비동기 전송 UX (설계 12)
+- [x] 로컬 설문/퀴즈 판정 (설계 12)
+- [x] Client Version 검증 (설계 13)
+- [x] Header/Footer/본문 폰트 크기 설정 (§5)
 
 ### P2 — 최종 검증
 
@@ -771,10 +773,15 @@ VSIX
 
 ```text
 TODO 문서화: 완료
-Word 최신화: 미수행
-Server 반입 패키지 생성: 미수행
-Web 반입 패키지 생성: 미수행
-WPF 소스 반입 패키지 생성: 미수행
-폰트 크기 기능 구현: 미수행
-빌드/실행 테스트: 미수행
+인터페이스 정의서 최신화: Markdown v2.0 완료 / Word(.docx) 갱신 미수행(기준본 파일 없음)
+Server·Web·WPF 반입 패키지 생성: scripts/export-offline-package.ps1 작성·로컬 실행 확인 (2026-09-22)
+Service → Services 폴더 정리: 완료
+폰트 크기 기능 구현: 완료 (2026-09-22)
+  Web   : PopupEditorDialog "폰트 크기" 입력 3개(헤더/본문/푸터, 10~40px, 비우면 기본) → content.headerFontSize/bodyFontSize/footerFontSize
+          PopupPreview 헤더 제목·본문·푸터에 반영
+  Server: DB 컬럼 없음(CONTENT_OPTIONS JSON). PopupService.validateFontSizeOptions 로 저장 시 10~40 검사
+  WPF   : PopupOptions.HeaderFontSize/BodyFontSize/FooterFontSize(null=기본) → PopupFactory(content) → PopupWindow.ApplyFontSizes(Clamp 10~40)
+          Header=PopupTitleText, Footer=다시 보지 않기 체크박스+닫기 버튼, 본문=IBodyFontSizeAware(TEXT 본문 4개·IMAGE 설명·VIDEO 설명·설문 선택지/문항)
+빌드/테스트: dotnet build 경고 0·오류 0, 서버 popup.* 단위 테스트 통과, RgstPop tsc --noEmit 오류 0
+실행 테스트: 미수행 — 관리자 화면에서 폰트 크기 저장 → WPF 표시 확인 필요(P2 E2E)
 ```

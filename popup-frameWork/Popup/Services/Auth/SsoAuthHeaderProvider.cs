@@ -176,7 +176,16 @@ namespace Popup.Services.Auth
                 while (await timer.WaitForNextTickAsync(cancellationToken))
                 {
                     Debug.WriteLine($"[SSO-AUTH] 정기 재로그인 ({interval.TotalMinutes:0}분 주기)");
-                    await LoginAsync(failedToken: null, force: true, cancellationToken);
+                    try
+                    {
+                        await LoginAsync(failedToken: null, force: true, cancellationToken);
+                    }
+                    catch (WpfClientVersionException exception)
+                    {
+                        // [설계 13] 정기 재로그인이 426이면 루프를 멈춘다(무한 재시도 금지). 안내는 다음 조회의 426이 담당한다.
+                        Debug.WriteLine($"[SSO-AUTH] 정기 재로그인 중단(426): {exception.Message}");
+                        return;
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -230,6 +239,12 @@ namespace Popup.Services.Auth
             }
             catch (OperationCanceledException)
             {
+                throw;
+            }
+            catch (WpfClientVersionException)
+            {
+                // [설계 13 §9] 로그인 단계에서 버전 차단(426): 삼키지 않고 그대로 올려 호출자(MainWindow)가 업데이트 안내를 하게 한다.
+                //   토큰이 없는 상태로 조회를 계속해도 서버 인터셉터가 다시 426을 주므로 재시도 의미가 없다.
                 throw;
             }
             catch (Exception exception)

@@ -1,4 +1,5 @@
 ﻿using Popup.Models;
+using Popup.Services;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -12,10 +13,17 @@ namespace Popup.Views.Contents
     /// <summary>
     /// 설문 질문을 화면에 표시하는 사용자 컨트롤
     /// </summary>
-    public partial class SurveyPopupView : UserControl
+    public partial class SurveyPopupView : UserControl, IBodyFontSizeAware
     {
         // 현재 화면에 표시된 질문 목록
         private readonly List<SurveyQuestion> _questions = new();
+
+        /*
+         * [설계 14 §5.6] 문항 카드의 제목·설명 TextBlock을 보관한다.
+         * ApplyBodyFontSize()가 화면을 다시 만들지 않고 글자 크기만 바꾸기 위해 쓴다.
+         */
+        private readonly List<TextBlock> _questionTitleTexts = new();
+        private readonly List<TextBlock> _questionDescriptionTexts = new();
 
         /*
          * 현재 화면이 일반 설문인지
@@ -30,9 +38,10 @@ namespace Popup.Views.Contents
         private readonly bool _isQuizMode;
 
         /*
-         * [기준 3] 통과 점수(_passingScore)는 더 이상 보관하지 않는다. 서버가 passingScore를 내려주지 않으며
-         * 채점·통과 판정은 결과 API 응답으로 받는다. 생성자 매개변수 passingScore는 호출부 호환용으로만 남긴다.
+         * [설계 12 §4] QUIZ 통과 점수. 서버 목록 응답(content.passingScore / 최상위 passingScore)에서 온다.
+         * 기준 3 구현에서는 서버 채점으로 바뀌며 제거했으나, 설계 12로 로컬 채점이 다시 WPF 책임이 되어 복원했다.
          */
+        private readonly double? _passingScore;
 
         /*
          * 질문별로 생성된 입력 컨트롤을 저장한다.
@@ -51,14 +60,11 @@ namespace Popup.Views.Contents
         _answerControls = new();
 
         /*
-         * 설문 제출이 정상적으로 완료됐을 때
-         * 외부로 응답 목록을 전달하는 이벤트다.
-         *
-         * MainWindow 또는 PopupWindow에서
-         * 이 이벤트를 구독하면
-         * 사용자가 제출한 SurveyAnswer 목록을 받을 수 있다.
+         * [설계 12 §2·§4] 설문 제출이 정상적으로 완료됐을 때(필수 응답 검증 통과, QUIZ면 로컬 채점 완료)
+         * 답안 목록과 점수·통과 여부(SurveySubmission)를 외부(PopupManager)로 전달하는 이벤트다.
+         * 예전에는 답안 목록만 넘기고 점수는 서버 응답으로 받았다.
          */
-        public event EventHandler<List<SurveyAnswer>>?
+        public event EventHandler<SurveySubmission>?
             SurveySubmitted;
 
         /// <summary>
@@ -83,7 +89,7 @@ namespace Popup.Views.Contents
         string description,
         List<SurveyQuestion> questions,
         bool isQuizMode = false,
-        double passingScore = 0)
+        double? passingScore = null)
         {
             InitializeComponent();
 
@@ -99,9 +105,9 @@ namespace Popup.Views.Contents
             _isQuizMode = isQuizMode;
 
             /*
-             * [기준 3] passingScore는 서버 채점으로 전환되어 사용하지 않는다(호출부 호환용 매개변수).
+             * [설계 12 §4] QUIZ 통과 점수. 로컬 채점(QuizGrader)의 통과 기준으로 쓴다. 없으면 0(항상 통과).
              */
-            _ = passingScore;
+            _passingScore = passingScore;
 
             /*
              * QuizMode일 경우
@@ -127,6 +133,8 @@ namespace Popup.Views.Contents
              * 이전에 저장된 입력 컨트롤 정보도 함께 비운다.
              */
             _answerControls.Clear();
+            _questionTitleTexts.Clear();
+            _questionDescriptionTexts.Clear();
 
             for (int index = 0; index < _questions.Count; index++)
             {
@@ -177,6 +185,7 @@ namespace Popup.Views.Contents
                 $"{questionNumber}. {question.Title}{requiredMark}";
 
             cardPanel.Children.Add(titleText);
+            _questionTitleTexts.Add(titleText);
 
             if (!string.IsNullOrWhiteSpace(question.Description))
             {
@@ -191,6 +200,7 @@ namespace Popup.Views.Contents
                 };
 
                 cardPanel.Children.Add(descriptionText);
+                _questionDescriptionTexts.Add(descriptionText);
             }
 
             FrameworkElement answerControl =
@@ -609,10 +619,33 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [기준 3] 로컬 채점 메서드(CalculateScore, AreAnswersEqual)를 제거했다. 서버가 정답을 내려주지 않으며
-         * 채점·통과 판정은 결과 API(서버)가 담당한다. _passingScore·IsScored·CorrectAnswers 필드는 구 JSON 호환을 위해 남긴다.
+         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * SURVEY/QUIZ의 본문 = 선택지(RadioButton/CheckBox)·주관식 TextBox. 이들은 FontSize를 직접 지정하지 않아
+         * UserControl의 FontSize를 상속하므로 this.FontSize를 바꾸면 함께 바뀐다(기본 12).
+         * 문항 제목(기본 16)·문항 설명(기본 13)은 기존 상대 계층을 유지하도록 각각 +4, +1 로 맞춘다.
+         * 설문 제목(24)·설명(14)·제출 버튼(14)은 본문이 아니므로 그대로 둔다.
          */
+        public void ApplyBodyFontSize(double fontSize)
+        {
+            FontSize = fontSize;
+            foreach (TextBlock titleText in _questionTitleTexts)
+            {
+                titleText.FontSize = fontSize + 4;
+            }
+            foreach (TextBlock descriptionText in _questionDescriptionTexts)
+            {
+                descriptionText.FontSize = fontSize + 1;
+            }
+        }
 
+        /*
+         * [설계 12 §3·§4] 제출 처리 — 서버를 기다리지 않는다.
+         *   1. 화면 답안 수집
+         *   2. 필수 문항 검증(WPF 즉시, 누락 시 안내 후 중단)
+         *   3. QUIZ면 QuizGrader로 즉시 채점(점수·통과 여부)
+         *   4. SurveySubmitted 이벤트로 PopupManager에 전달 → 로컬 큐 저장 → 결과 안내 → 창 닫기 → 백그라운드 전송
+         * 기준 3 구현(서버 채점·응답 대기)에서 설계 12로 되돌린 지점이다.
+         */
         private void SubmitButton_Click(
     object sender,
     RoutedEventArgs e)
@@ -642,15 +675,31 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * [기준 3] 채점은 서버가 한다.
-             * 예전에는 QuizMode에서 CorrectAnswers로 로컬 채점해 통과한 경우에만 제출했지만,
-             * 서버는 정답을 내려주지 않으므로(정답 비노출) 로컬 채점이 불가능하다.
-             * 설문·퀴즈 모두 필수 문항 검증만 하고 답안을 그대로 외부(PopupManager)로 전달한다.
-             * 통과 여부·점수는 결과 API 응답으로 받아 PopupManager가 안내한다.
+             * [설계 12 §4] QUIZ는 여기서 즉시 채점한다. 서버가 QUIZ 팝업에 한해 정답 정보
+             * (options[].isCorrect / correctAnswer / answerMatchMode / questionScore)를 내려준다.
+             * SURVEY는 채점하지 않으므로 점수·통과 여부가 null이다.
+             * 통과/미통과와 관계없이 답안은 항상 제출한다(재응시 여부는 다음 조회 시 서버가 결정).
              */
+            SurveySubmission submission;
+            if (_isQuizMode)
+            {
+                QuizGrader.Result graded = QuizGrader.Grade(_questions, answers, _passingScore);
+                submission = new SurveySubmission
+                {
+                    Answers = answers,
+                    Score = graded.Score,
+                    Passed = graded.Passed,
+                    PassingScore = graded.PassingScore
+                };
+            }
+            else
+            {
+                submission = new SurveySubmission { Answers = answers };
+            }
+
             SurveySubmitted?.Invoke(
                 this,
-                answers);
+                submission);
         }
     }
 }
