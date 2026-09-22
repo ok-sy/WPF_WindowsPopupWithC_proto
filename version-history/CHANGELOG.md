@@ -12,6 +12,24 @@
 - 검증: `dotnet build Popup.slnx` 경고 0·오류 0. RgstPop 9개 파일 한정 `tsc --noEmit` 오류 0(전체 웹 type-check는 공통 MUI 타입 문제로 기존부터 미실행). `pnpm install --frozen-lockfile --offline` 성공(lockfile 정합). JSON 예제 파싱 확인. 소스 트리에 markdown 참조 없음(변경 이력·과거 검토표 제외). 미실행: 관리자 웹 화면 조작, 기존 DB에 markdownMode=true로 저장된 팝업의 표시 확인(해당 팝업은 plainText가 비어 있으면 본문이 비게 됨 — 운영 데이터 점검 필요).
 - 상태: 커밋 `1a445ec` 푸시 완료(pull 시 CHANGELOG만 충돌 — 원격의 `2026-09-21-04` 항목과 번호가 겹쳐 이 항목을 `-05`로 조정, 코드 충돌 없음).
 - **후속(DB 데이터 점검·정리, 사용자 요청)**: 로컬 XE `POPUP.POPUP_CONTENT` 4행 중 1행(`SAMPLE-TEXT-001`, `markdownMode:false` — 일반 텍스트 팝업)에만 두 필드가 남아 있어 JSON에서 필드만 제거(UPDATE 1행, COMMIT, 잔여 0행). `markdownMode=true` 팝업은 없음. 재실행 가능한 정리 스크립트 `db/oracle/04_cleanup_markdown_fields_oracle.sql`(인자: 스키마 접두어) 추가 — false 행은 필드 제거, true 행은 목록만 출력(삭제는 확인 후 수동). 로컬에서 재실행해 0행 확인. **원격 개발 DB(192.168.114.71)는 VPN 미연결로 미점검** — 연결 후 `sqlplus zero-rule/...@//192.168.114.71:4004/XE @04_cleanup_markdown_fields_oracle.sql ""` 실행 필요.
+## 2026-09-22-03 — WPF 클라이언트 버전 서버 검증 계획 문서화
+
+- 이유: 오래된 WPF 클라이언트가 서버 API를 호출해 DTO/API 계약 불일치나 필수 수정 미적용 상태로 동작하는 것을 방지하기 위함.
+- 추가 문서: `docs/design/13_WPF_클라이언트_버전_서버검증_계획.md`
+- 주요 내용:
+  - 서버가 `latestVersion`, `minimumSupportedVersion`을 보유.
+  - WPF는 주요 요청마다 `X-Client-Version` Header 전달.
+  - 로그인 API 포함 최초 서버 접점부터 버전 검증.
+  - 최소 지원 버전 미만 요청은 비즈니스 처리 전에 차단.
+  - 버전 비교는 문자열이 아닌 숫자 버전 비교.
+  - 권장 응답은 `426 Upgrade Required`.
+  - 426은 401 재로그인 로직과 분리.
+  - pending 결과 전송 중 426이면 결과를 삭제하지 않고 유지.
+  - 실행 중 서버 최소 지원 버전이 변경돼도 다음 요청에서 즉시 검증.
+- 코드 변경: 없음.
+- 빌드/실행 테스트: 문서 변경만 수행하여 미실행.
+- 상태: 문서 main 반영 완료, 코드 구현은 후속 작업.
+
 ## 2026-09-22-02 — WPF 결과 제출 UX 및 로컬 판정 구조 문서화
 
 - 이유: 팝업 닫기/제출 시 서버 결과 API 응답 대기로 사용자가 기다리지 않도록 UI 처리와 결과 전송을 분리하기 위함.
