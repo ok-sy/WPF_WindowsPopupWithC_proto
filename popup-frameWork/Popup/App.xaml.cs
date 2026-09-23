@@ -124,6 +124,9 @@ namespace Popup
             if (_mainWindow.IsDemoMode)
             {
                 _demoWindow = new DemoWindow();
+                _demoWindow.Closing +=
+                    DemoWindow_Closing;
+
                 MainWindow = _demoWindow;
                 _demoWindow.Show();
             }
@@ -314,6 +317,33 @@ namespace Popup
                 false;
 
             _mainWindow.Hide();
+        }
+
+        /*
+         * Demo Mode 선택 화면도 API 모드의 MainWindow와 동일하게
+         * X 버튼에서는 실제 Close하지 않고 트레이로 숨긴다.
+         *
+         * WPF Window는 한 번 Close되면 같은 인스턴스에 Show()를 다시 호출할 수 없으므로,
+         * DemoWindow를 닫은 뒤 트레이의 "관리 화면 열기"를 누르면
+         * InvalidOperationException이 발생하던 문제를 방지한다.
+         */
+        private void DemoWindow_Closing(
+            object? sender,
+            CancelEventArgs e)
+        {
+            if (_isExiting
+                || _demoWindow == null)
+            {
+                return;
+            }
+
+            e.Cancel =
+                true;
+
+            _demoWindow.ShowInTaskbar =
+                false;
+
+            _demoWindow.Hide();
         }
 
         /*
