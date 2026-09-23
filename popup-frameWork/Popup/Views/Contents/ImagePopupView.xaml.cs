@@ -485,22 +485,148 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * 외부에서 이미지 크기를 직접 지정했다면
-             * 지정 크기를 우선 적용한다.
+             * [2026-09-23-03] 크기 계산은 이미지 크기 모드별로 완전히 분리한다.
              *
-             * 지정 크기가 없고 FitToImage 모드인 경우에는
-             * 기존 자동 크기 계산을 사용한다.
+             * FitToImage
+             * imageWidth/imageHeight가 있으면 그 값이 1순위이고,
+             * 없으면 원본 크기를 쓴다. 그 결과로 팝업 크기를 다시 계산해
+             * RecommendedSizeChanged로 PopupWindow에 전달한다.
+             *
+             * Adaptive
+             * 팝업 크기가 기준이므로 이미지는 남은 영역 안에 맞춘다.
+             * imageWidth/imageHeight는 "최대 표시 크기"로만 쓰고
+             * 팝업 크기는 건드리지 않는다.
+             *
+             * 이전에는 모드와 무관하게 TryApplyRequestedImageSize()가 먼저 실행돼
+             * Adaptive에서도 지정 크기가 절대값으로 적용됐다. 그 결과 지정 크기가
+             * 팝업 폭보다 크면 이미지 컨테이너가 영역을 넘쳐 이미지가 잘려 보였다.
              */
-            bool requestedSizeApplied =
-                TryApplyRequestedImageSize(
-                    bitmapImage);
-
-            if (!requestedSizeApplied &&
-                _sizeMode == ImagePopupSizeMode.FitToImage)
+            if (_sizeMode == ImagePopupSizeMode.FitToImage)
             {
-                ApplyFitToImageSize(
+                bool requestedSizeApplied =
+                    TryApplyRequestedImageSize(
+                        bitmapImage);
+
+                if (!requestedSizeApplied)
+                {
+                    ApplyFitToImageSize(
+                        bitmapImage);
+                }
+            }
+            else
+            {
+                ApplyAdaptiveImageSizing(
                     bitmapImage);
             }
+        }
+
+        /*
+         * [2026-09-23-03] Adaptive 모드의 이미지 크기 처리다.
+         *
+         * 팝업 크기(FIXED/VIEWPORT_RATIO/FULLSCREEN 등 PopupOptions.SizeMode)가 기준이고,
+         * 이미지는 레이아웃이 나눠 준 영역 안에 Stretch="Uniform"으로 맞춰진다.
+         *
+         * 명시적 Width/Height를 지우고 정렬을 Stretch로 되돌리는 이유는
+         * 같은 View 인스턴스가 재사용되거나 이전 계산이 남아 있을 때
+         * 고정 크기가 그대로 유지되는 것을 막기 위해서다.
+         *
+         * MaxWidth/MaxHeight에는 "원본 크기"와 "요청 크기" 중 작은 값을 넣는다.
+         * - 원본 크기를 상한으로 두어 작은 이미지가 흐리게 확대되지 않게 한다.
+         * - imageWidth/imageHeight가 있으면 그보다 크게 표시되지 않게 한다.
+         * 영역이 상한보다 좁으면 Uniform 축소가 적용되므로 이미지는 항상 팝업 안에 들어온다.
+         */
+        private void ApplyAdaptiveImageSizing(
+            BitmapImage bitmapImage)
+        {
+            /*
+             * 이전 계산에서 남았을 수 있는 고정 크기를 해제한다.
+             * double.NaN은 WPF에서 "크기 미지정(Auto)"을 뜻한다.
+             */
+            PopupImage.Width = double.NaN;
+            PopupImage.Height = double.NaN;
+
+            PopupImage.HorizontalAlignment =
+                HorizontalAlignment.Stretch;
+
+            PopupImage.VerticalAlignment =
+                VerticalAlignment.Stretch;
+
+            ImageContainer.Width = double.NaN;
+            ImageContainer.Height = double.NaN;
+
+            ImageContainer.HorizontalAlignment =
+                HorizontalAlignment.Stretch;
+
+            ImageContainer.VerticalAlignment =
+                VerticalAlignment.Stretch;
+
+            /*
+             * 원본 이미지의 WPF 표시 크기(DIP)를 가져온다.
+             * 값을 얻지 못하면 픽셀 크기를 대신 쓴다.
+             */
+            double originalWidth =
+                bitmapImage.Width > 0
+                    ? bitmapImage.Width
+                    : bitmapImage.PixelWidth;
+
+            double originalHeight =
+                bitmapImage.Height > 0
+                    ? bitmapImage.Height
+                    : bitmapImage.PixelHeight;
+
+            /*
+             * 원본 크기를 확인할 수 없으면 상한을 두지 않는다.
+             * 이 경우에도 Uniform 배치라 이미지가 영역을 넘치지는 않는다.
+             */
+            PopupImage.MaxWidth =
+                ResolveAdaptiveMaximum(
+                    originalWidth,
+                    _requestedImageWidth);
+
+            PopupImage.MaxHeight =
+                ResolveAdaptiveMaximum(
+                    originalHeight,
+                    _requestedImageHeight);
+        }
+
+        /*
+         * Adaptive 모드에서 사용할 한 축의 최대 표시 크기를 구한다.
+         *
+         * originalSize
+         * 원본 이미지 크기. 0 이하이면 확인 실패로 본다.
+         *
+         * requestedSize
+         * content의 imageWidth 또는 imageHeight. 없으면 null이다.
+         */
+        private static double ResolveAdaptiveMaximum(
+            double originalSize,
+            double? requestedSize)
+        {
+            bool hasOriginal =
+                originalSize > 0;
+
+            bool hasRequested =
+                requestedSize.HasValue
+                && requestedSize.Value > 0;
+
+            if (hasOriginal && hasRequested)
+            {
+                return Math.Min(
+                    originalSize,
+                    requestedSize!.Value);
+            }
+
+            if (hasRequested)
+            {
+                return requestedSize!.Value;
+            }
+
+            if (hasOriginal)
+            {
+                return originalSize;
+            }
+
+            return double.PositiveInfinity;
         }
 
         /*
@@ -596,28 +722,17 @@ namespace Popup.Views.Contents
                     : new Thickness(0);
 
             /*
-             * Adaptive 모드에서 사용할
-             * 이미지 최대 표시 크기다.
+             * [2026-09-23-03] 이미지 최대 표시 크기와 팝업 추천 크기는
+             * 여기서 정하지 않는다.
              *
-             * FitToImage 모드이면 이후
-             * ApplyFitToImageSize에서 다시 계산된다.
+             * 레이아웃 메서드는 행·열 구성과 여백 같은 "배치"만 담당하고,
+             * 크기는 모드별 계산(ApplyAdaptiveImageSizing / ApplyFitToImageSize /
+             * TryApplyRequestedImageSize)이 담당한다.
+             *
+             * 이전에는 여기서 820x430 같은 고정 상한과 920x680 같은 추천 팝업 크기를
+             * 함께 지정했다. 팝업 실제 크기와 무관한 값이라 작은 팝업에서는
+             * 이미지가 영역을 넘치고, Adaptive인데도 팝업 크기를 바꾸려 시도했다.
              */
-            PopupImage.MaxWidth = 820;
-
-            PopupImage.MaxHeight =
-                _showDescription
-                    ? 430
-                    : 500;
-
-            /*
-             * Adaptive 모드일 때 사용할
-             * 기본 팝업 크기를 전달한다.
-             */
-            RecommendedSizeChanged?.Invoke(
-                920,
-                _showDescription
-                    ? 680
-                    : 600);
         }
 
         /*
@@ -705,22 +820,9 @@ namespace Popup.Views.Contents
                         0);
 
                 /*
-                 * 설명 영역이 있으므로
-                 * 이미지 최대 너비를 제한한다.
+                 * [2026-09-23-03] 이미지 최대 크기·추천 팝업 크기는
+                 * 모드별 크기 계산에서 다룬다(ApplyLandscapeLayout 주석 참고).
                  */
-                PopupImage.MaxWidth = 440;
-
-                /*
-                 * 세로 이미지의 최대 높이를 설정한다.
-                 */
-                PopupImage.MaxHeight = 650;
-
-                /*
-                 * 설명을 포함한 기본 팝업 크기를 전달한다.
-                 */
-                RecommendedSizeChanged?.Invoke(
-                    760,
-                    820);
             }
             else
             {
@@ -753,18 +855,9 @@ namespace Popup.Views.Contents
                     new Thickness(0);
 
                 /*
-                 * 이미지가 더 넓고 높게 표시될 수 있도록 한다.
+                 * [2026-09-23-03] 설명이 없는 경우에도 최대 크기는
+                 * 모드별 크기 계산에서 결정한다.
                  */
-                PopupImage.MaxWidth = 560;
-
-                PopupImage.MaxHeight = 700;
-
-                /*
-                 * 설명이 없는 기본 팝업 크기를 전달한다.
-                 */
-                RecommendedSizeChanged?.Invoke(
-                    650,
-                    820);
             }
         }
 
@@ -841,27 +934,9 @@ namespace Popup.Views.Contents
                     : new Thickness(0);
 
             /*
-             * 정사각형 이미지 최대 크기를 설정한다.
+             * [2026-09-23-03] 이미지 최대 크기·추천 팝업 크기는
+             * 모드별 크기 계산에서 다룬다(ApplyLandscapeLayout 주석 참고).
              */
-            /*
-             * 설명이 없으면 이미지가
-             * 더 큰 세로 공간을 사용할 수 있도록 한다.
-             */
-            PopupImage.MaxHeight =
-                _showDescription
-                    ? 520
-                    : 600;
-
-            /*
-             * 설명이 없으면
-             * 설명 영역만큼 팝업 높이를 줄인다.
-             */
-            RecommendedSizeChanged?.Invoke(
-                760,
-                _showDescription
-                    ? 760
-                    : 680);
-
         }
 
 
@@ -928,11 +1003,16 @@ namespace Popup.Views.Contents
                 imageWidth / imageHeight;
 
             /*
-             * 현재 프로젝트의 레이아웃 기준에 따라
-             * 비율이 0.8 이하이면 세로형으로 판단한다.
+             * 설명이 이미지 오른쪽에 배치되는지 판단한다.
+             *
+             * [2026-09-23-03] 이전에는 비율 0.8 이하만 세로형으로 봤기 때문에
+             * descriptionPosition을 RIGHT/BOTTOM으로 명시해도
+             * 팝업 크기 계산은 비율 기준으로만 움직여 실제 배치와 어긋났다.
+             * 배치를 정하는 ResolveDescriptionPosition()과 같은 기준을 쓴다.
              */
             bool isPortrait =
-                imageRatio <= 0.8;
+                ResolveDescriptionPosition(imageRatio)
+                == ImageDescriptionPosition.Right;
 
             /*
              * 세로형 이미지이면서 설명을 표시하는 경우
@@ -1184,6 +1264,15 @@ namespace Popup.Views.Contents
 
             ImageContainer.VerticalAlignment =
                 VerticalAlignment.Center;
+
+            /*
+             * 이미지 영역이 고정 크기가 됐으므로
+             * 그리드 행·열도 고정 크기 기준으로 맞춘다.
+             */
+            ApplyFitToImageGridSizing(
+                isPortrait,
+                descriptionWidth);
+
             /*
              * 최종 팝업 너비를 계산한다.
              *
@@ -1238,8 +1327,71 @@ namespace Popup.Views.Contents
         }
 
         /*
+         * [2026-09-23-03] FitToImage 모드에서 그리드 행·열 크기를 맞춘다.
+         *
+         * FitToImage는 이미지 크기가 먼저 정해지고 팝업 크기가 그 뒤에 따라온다.
+         * 그런데 배치 메서드는 Adaptive 기준으로 열·행을 Star(imageAreaRatio) 비율로
+         * 나눠 두기 때문에, 고정 크기 ImageContainer가 비율로 계산된 칸보다 크면
+         * 칸을 넘쳐 이미지가 잘려 보인다.
+         *
+         * 그래서 이미지 쪽 칸은 Auto(콘텐츠 크기)로, 설명 쪽 칸은
+         * 팝업 크기 계산에 쓴 것과 같은 고정 너비로 맞춘다.
+         *
+         * isPortrait
+         * 설명이 이미지 오른쪽에 배치되는 경우 true
+         *
+         * descriptionWidth
+         * 오른쪽 설명 영역의 고정 너비. 설명을 숨기면 0이다.
+         */
+        private void ApplyFitToImageGridSizing(
+            bool isPortrait,
+            double descriptionWidth)
+        {
+            if (!_showDescription)
+            {
+                /*
+                 * 설명이 없으면 이미지 칸이 전체를 쓰고
+                 * ImageContainer는 중앙 정렬로 표시된다.
+                 */
+                return;
+            }
+
+            if (isPortrait)
+            {
+                /*
+                 * 이미지 열은 콘텐츠(고정 크기 컨테이너) 크기를 그대로 쓰고,
+                 * 설명 열은 팝업 너비 계산에 사용한 고정 너비를 쓴다.
+                 */
+                ContentFirstColumn.Width =
+                    GridLength.Auto;
+
+                ContentSecondColumn.Width =
+                    new GridLength(
+                        descriptionWidth,
+                        GridUnitType.Pixel);
+
+                return;
+            }
+
+            /*
+             * 설명이 아래에 배치되는 경우에는
+             * 이미지 행을 Auto로 두고 남는 높이를 설명 행이 쓰게 한다.
+             */
+            ContentFirstRow.Height =
+                GridLength.Auto;
+
+            ContentSecondRow.Height =
+                new GridLength(
+                    1,
+                    GridUnitType.Star);
+        }
+
+        /*
          * 외부에서 지정한 이미지 크기를 적용하고
          * ImageContainer와 PopupWindow 크기도 함께 맞춘다.
+         *
+         * [2026-09-23-03] FitToImage 모드에서만 호출한다.
+         * Adaptive는 팝업 크기가 기준이므로 지정 크기를 절대값으로 쓰지 않는다.
          *
          * 반환값:
          * true  = 지정 크기가 존재하여 적용함
@@ -1361,8 +1513,82 @@ namespace Popup.Views.Contents
             }
 
             /*
+             * 이미지가 세로형인지, 즉 설명이 이미지 오른쪽에 배치되는지 판단한다.
+             *
+             * 오른쪽 배치이면 팝업 너비에 설명 영역 너비를 더해야 하므로
+             * 화면 크기 보정과 추천 크기 계산 모두에서 이 값을 사용한다.
+             */
+            bool isPortrait =
+                ResolveDescriptionPosition(originalRatio)
+                == ImageDescriptionPosition.Right;
+
+            double descriptionWidth =
+                isPortrait && _showDescription
+                    ? 260
+                    : 0;
+
+            /*
+             * [2026-09-23-03] 지정 크기를 현재 모니터 작업 영역 안으로 보정한다.
+             *
+             * FitToImage는 이미지 크기에서 팝업 크기가 나오므로,
+             * imageWidth/imageHeight에 화면보다 큰 값이 들어오면
+             * 팝업이 화면 밖으로 밀려 Header·닫기 버튼을 누를 수 없게 된다.
+             * 원본 크기 기준 자동 계산(ApplyFitToImageSize)에는 이미 같은 보정이 있는데
+             * 지정 크기 경로에만 빠져 있었다.
+             *
+             * 보정 기준은 자동 계산과 동일하게 작업 영역의 90%이며,
+             * 이미지 바깥쪽 여백(팝업 좌우 공통 공간, 컨테이너 Padding·Border,
+             * 오른쪽 설명 영역)을 제외한 값을 상한으로 쓴다.
+             */
+            double maximumImageWidth =
+                Math.Max(
+                    100,
+                    SystemParameters.WorkArea.Width * 0.9
+                    - 56
+                    - ImageContainer.Padding.Left
+                    - ImageContainer.Padding.Right
+                    - ImageContainer.BorderThickness.Left
+                    - ImageContainer.BorderThickness.Right
+                    - descriptionWidth);
+
+            double maximumImageHeight =
+                Math.Max(
+                    100,
+                    SystemParameters.WorkArea.Height * 0.9
+                    - (isPortrait && _showDescription
+                        ? 190
+                        : _showDescription
+                            ? 300
+                            : 190)
+                    - ImageContainer.Padding.Top
+                    - ImageContainer.Padding.Bottom
+                    - ImageContainer.BorderThickness.Top
+                    - ImageContainer.BorderThickness.Bottom);
+
+            /*
+             * 가로·세로 중 더 많이 줄여야 하는 쪽에 맞춰 축소 배율을 정한다.
+             * 1을 포함했으므로 화면에 들어오는 크기는 그대로 둔다.
+             */
+            double requestedScale =
+                Math.Min(
+                    1,
+                    Math.Min(
+                        maximumImageWidth / displayImageWidth,
+                        maximumImageHeight / displayImageHeight));
+
+            displayImageWidth *= requestedScale;
+
+            displayImageHeight *= requestedScale;
+
+            /*
              * 지정한 표시 크기를 Image 컨트롤에 직접 적용한다.
              */
+            PopupImage.HorizontalAlignment =
+                HorizontalAlignment.Center;
+
+            PopupImage.VerticalAlignment =
+                VerticalAlignment.Center;
+
             PopupImage.Width =
                 displayImageWidth;
 
@@ -1420,20 +1646,12 @@ namespace Popup.Views.Contents
                 VerticalAlignment.Center;
 
             /*
-             * 이미지가 세로형인지 판단한다.
-             *
-             * 세로형이고 설명을 표시하는 경우에는
-             * 설명 영역이 이미지 오른쪽에 배치되므로
-             * 팝업 너비에 설명 영역 너비를 추가해야 한다.
+             * 이미지 영역이 고정 크기가 됐으므로
+             * 그리드 행·열도 고정 크기 기준으로 맞춘다.
              */
-            bool isPortrait =
-                ResolveDescriptionPosition(originalRatio)
-                == ImageDescriptionPosition.Right;
-
-            double descriptionWidth =
-                isPortrait && _showDescription
-                    ? 260
-                    : 0;
+            ApplyFitToImageGridSizing(
+                isPortrait,
+                descriptionWidth);
 
             /*
              * PopupWindow와 ImagePopupView에서 사용하는

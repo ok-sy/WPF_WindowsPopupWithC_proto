@@ -158,11 +158,20 @@
 
                 Stretch="Uniform"이므로
                 이미지 비율이 유지된다.
+
+                [2026-09-23-03] 정렬은 Stretch가 기본이다.
+                ADAPTIVE는 팝업 크기가 기준이므로 이미지가 배정된 영역을
+                Uniform으로 채워야 팝업 안에 맞춰진다. Center 정렬이면
+                Image가 영역 크기와 무관하게 자기 크기를 유지해,
+                영역보다 큰 경우 좌우가 잘려 보였다.
+
+                FIT_TO_IMAGE는 코드에서 Width/Height와 Center 정렬을
+                직접 지정하므로 이 기본값의 영향을 받지 않는다.
                 -->
                 <Image x:Name="PopupImage"
                 Stretch="Uniform"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"/>     
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"/>
 
             </Border>
 
