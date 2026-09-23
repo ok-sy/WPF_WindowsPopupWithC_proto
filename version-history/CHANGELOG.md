@@ -13,6 +13,16 @@
 - 검증(패키지): `2·3·4-*.tar` 재생성 후 `SHA256SUMS.txt` 재작성 → `sha256sum -c` 6/6 OK. `popup-offline-20260922.tgz`(1~5, 189,582,119바이트)·`팝업프로젝트_초기세팅파일.tgz`(1~6, 289,577,340바이트) 재압축 후 구성 파일 목록이 이전과 동일함을 확인. 후자를 임시 폴더에 풀어 `sha256sum -c` 6/6 OK, 내부 4-docs·3-popup-frameWork·2-zero-rule-web의 갱신 파일 6개가 저장소 현재 내용과 바이트 단위로 일치함을 `cmp`로 확인. 미실행: 폐쇄망에서의 실제 빌드·반입.
 - 상태: 문서 수정은 커밋 `a37ff76` 푸시 완료. 반입 패키지는 `.gitignore` 대상이라 저장소에 포함되지 않는다(로컬 `offline-export/20260922/`).
 
+## 2026-09-23-01 — Demo Mode 관리 화면 재열기 예외 수정
+
+- 이유: Demo Mode 선택 화면을 X 버튼으로 닫은 뒤 트레이의 "관리 화면 열기"를 선택하면, 이미 Close된 `DemoWindow` 인스턴스에 `Show()`를 다시 호출해 `InvalidOperationException`이 발생하는 문제 확인.
+- 원인: API 모드 `MainWindow`는 `Closing` 이벤트에서 Close를 취소하고 `Hide()` 처리하지만, Demo Mode의 `DemoWindow`에는 같은 보호 로직이 없었다.
+- 변경(WPF): `App.OnStartup()`에서 `DemoWindow.Closing`을 `DemoWindow_Closing`에 연결. 일반 X 버튼에서는 `e.Cancel=true` 후 `Hide()` 처리하고, 트레이의 실제 "종료"에서는 `_isExiting=true` 상태이므로 정상 Close되도록 구성.
+- 영향 범위: 실서버/API 모드의 `MainWindow` 동작은 기존과 동일. 이번 예외는 Demo Mode 전용 경로에서 발생하던 문제를 수정.
+- 주요 파일: `popup-frameWork/Popup/App.xaml.cs`.
+- 검증: 코드 흐름 기준으로 Demo Mode의 Close → 재Show 경로 제거 확인. 실제 실행 및 `dotnet build`는 미수행.
+- 상태: main 반영 완료.
+
 ## 2026-09-22-09 — worktree 브랜치 2개 main 병합, 확장 바이너리·worktree `.gitignore` 등록
 
 - 이유: 미반영 변경과 미병합 브랜치가 남아 있는지 점검하고 저장소 상태를 정리. 확인 결과 main·두 worktree 브랜치 모두 작업 트리가 깨끗하고 origin과 동기화돼 있어 새로 푸시할 미커밋 변경은 없었고, 남은 것은 main에 병합되지 않은 브랜치 2개와 추적되지 않는 파일뿐이었다. 두 브랜치는 main에 병합하기로 결정했다.
