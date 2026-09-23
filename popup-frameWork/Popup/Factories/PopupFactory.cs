@@ -77,6 +77,7 @@ namespace Popup.Factories
 
                 CompletionRatio = popupDto.CompletionRatio ?? 1.0,
                 AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
+                Position = GetPopupPosition(popupDto.Content),
                 SizeMode = ConvertPopupSizeMode(popupDto.SizeMode),
                 Width = popupDto.Width,
                 Height = popupDto.Height,
@@ -87,6 +88,27 @@ namespace Popup.Factories
                 MaximumWidth = popupDto.MaximumWidth,
                 MaximumHeight = popupDto.MaximumHeight
             };
+        }
+
+        private static PopupPosition GetPopupPosition(JsonElement content)
+        {
+            if (content.ValueKind == JsonValueKind.Object
+                && content.TryGetProperty("popupPosition", out JsonElement value)
+                && value.ValueKind == JsonValueKind.String)
+                return value.GetString()?.Trim().ToUpperInvariant() switch
+                {
+                    "CENTER" => PopupPosition.Center,
+                    "TOP_LEFT" => PopupPosition.TopLeft,
+                    "TOP_CENTER" => PopupPosition.TopCenter,
+                    "TOP_RIGHT" => PopupPosition.TopRight,
+                    "CENTER_LEFT" => PopupPosition.CenterLeft,
+                    "CENTER_RIGHT" => PopupPosition.CenterRight,
+                    "BOTTOM_LEFT" => PopupPosition.BottomLeft,
+                    "BOTTOM_CENTER" => PopupPosition.BottomCenter,
+                    "BOTTOM_RIGHT" => PopupPosition.BottomRight,
+                    _ => PopupPosition.Center
+                };
+            return PopupPosition.Center;
         }
 
         private static bool GetContentBoolean(JsonElement content, string propertyName, bool defaultValue)

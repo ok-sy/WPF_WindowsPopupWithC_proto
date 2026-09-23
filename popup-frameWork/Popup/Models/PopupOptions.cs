@@ -22,6 +22,8 @@ namespace Popup.Models
         Simultaneous
     }
 
+    public enum PopupPosition { Center, TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight }
+
     public class PopupOptions
     {
         public string PopupId { get; set; } = string.Empty;
@@ -102,6 +104,8 @@ namespace Popup.Models
         /// <summary>[설계 14 §5.7] WPF 최종 방어 범위. 관리자 웹 입력 범위(10~40)와 같다.</summary>
         public const double FontSizeMin = 10;
         public const double FontSizeMax = 40;
+
+        public PopupPosition Position { get; set; } = PopupPosition.Center;
 
         public PopupSizeMode SizeMode { get; set; } = PopupSizeMode.Fixed;
         public double Width { get; set; } = 900;
