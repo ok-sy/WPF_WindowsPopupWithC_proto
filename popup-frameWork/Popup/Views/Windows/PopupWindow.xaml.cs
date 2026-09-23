@@ -73,6 +73,23 @@ namespace Popup.Views.Windows
             PopupContent.Content = _options.Content;
 
             /*
+             * [2026-09-23-03] IMAGE 팝업의 FIT_TO_IMAGE 크기 계산 결과를 받는다.
+             *
+             * ImagePopupView는 이미지를 불러온 뒤 imageWidth/imageHeight 또는
+             * 원본 크기를 기준으로 팝업 추천 크기를 계산해 이 이벤트로 알린다.
+             * 그동안 이 이벤트를 구독하는 곳이 없어 FIT_TO_IMAGE로 설정해도
+             * 팝업 크기는 PopupOptions 값 그대로였다.
+             *
+             * ADAPTIVE와 FILL은 팝업 크기가 기준이라 이 이벤트를 발생시키지 않으므로
+             * 여기서 모드를 다시 확인할 필요는 없다.
+             */
+            if (_options.Content is ImagePopupView imagePopupView)
+            {
+                imagePopupView.RecommendedSizeChanged +=
+                    ImagePopupView_RecommendedSizeChanged;
+            }
+
+            /*
              * 상단 X 버튼 표시 여부를 설정한다.
              */
             CloseButton.Visibility =
@@ -454,6 +471,88 @@ namespace Popup.Views.Windows
          * (1920 x 1080 작업 영역이면 약 1824 x 1026)
          */
         private const double FixedSizeSafeAreaRatio = 0.95;
+
+        /*
+         * [2026-09-23-03] IMAGE 팝업 FIT_TO_IMAGE의 추천 크기를 창에 적용한다.
+         *
+         * 이미지 크기가 먼저 정해지고 팝업 크기가 그 결과로 나오는 모드이므로,
+         * 여기서 서버가 준 Width/Height 대신 계산된 크기를 쓴다.
+         *
+         * 다만 서버 설정과 화면 밖으로 밀리는 문제는 그대로 막아야 하므로
+         * FIXED와 같은 기준(PopupOptions의 Minimum/Maximum + 작업 영역 95%)으로
+         * 보정한 뒤 적용하고, 크기가 바뀐 만큼 창을 다시 화면 중앙에 맞춘다.
+         *
+         * FULLSCREEN은 모니터 전체를 덮는 것이 목적이라 크기를 바꾸지 않는다.
+         */
+        private void ImagePopupView_RecommendedSizeChanged(
+            double recommendedWidth,
+            double recommendedHeight)
+        {
+            if (_options.SizeMode
+                == PopupSizeMode.Fullscreen)
+            {
+                return;
+            }
+
+            Rect workArea =
+                SystemParameters.WorkArea;
+
+            double safeMaxWidth =
+                Math.Min(
+                    _options.MaximumWidth,
+                    workArea.Width * FixedSizeSafeAreaRatio);
+
+            double safeMaxHeight =
+                Math.Min(
+                    _options.MaximumHeight,
+                    workArea.Height * FixedSizeSafeAreaRatio);
+
+            double safeMinWidth =
+                Math.Min(
+                    _options.MinimumWidth,
+                    safeMaxWidth);
+
+            double safeMinHeight =
+                Math.Min(
+                    _options.MinimumHeight,
+                    safeMaxHeight);
+
+            /*
+             * SizeToContent가 켜져 있으면(AUTO 모드) Width/Height 지정이 무시되므로
+             * 수동 크기 지정으로 전환한다.
+             */
+            SizeToContent =
+                SizeToContent.Manual;
+
+            MinWidth = safeMinWidth;
+            MinHeight = safeMinHeight;
+            MaxWidth = safeMaxWidth;
+            MaxHeight = safeMaxHeight;
+
+            Width =
+                Math.Clamp(
+                    recommendedWidth,
+                    safeMinWidth,
+                    safeMaxWidth);
+
+            Height =
+                Math.Clamp(
+                    recommendedHeight,
+                    safeMinHeight,
+                    safeMaxHeight);
+
+            /*
+             * 창이 이미 표시된 뒤 크기가 바뀌므로
+             * 작업 영역 기준으로 다시 중앙에 배치한다.
+             */
+            Left =
+                workArea.Left
+                + (workArea.Width - Width) / 2;
+
+            Top =
+                workArea.Top
+                + (workArea.Height - Height) / 2;
+        }
 
         /*
          * [설계 14 §5] 관리자가 설정한 Header/Footer/본문 폰트 크기를 적용한다.

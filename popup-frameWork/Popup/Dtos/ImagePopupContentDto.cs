@@ -41,9 +41,23 @@
         /*
          * 이미지 팝업 크기 계산 방식
          *
-         * 서버 JSON 예:
-         * FIXED
+         * 서버 JSON 값과 의미([2026-09-23-03] 기준):
+         *
+         * ADAPTIVE
+         * 팝업 width/height가 기준이다. 이미지는 팝업이 배정한 영역 안에
+         * 비율을 유지한 채 맞춰진다. imageWidth/imageHeight는 최대 표시 크기로만 쓰고
+         * 팝업 크기는 바꾸지 않는다.
+         *
          * FIT_TO_IMAGE
+         * 이미지 크기가 기준이다. imageWidth/imageHeight가 있으면 1순위로 쓰고
+         * 없으면 원본 크기를 쓴 다음, 그 결과로 팝업 width/height를 다시 계산한다.
+         *
+         * FILL
+         * 팝업 width/height가 기준이다. 이미지가 영역을 꽉 채우며
+         * 제목·설명 없이 전체 배경형으로 표시된다(ImageFillPopupView 사용).
+         *
+         * FIXED
+         * 과거 값이다. ADAPTIVE와 동일하게 처리한다.
          */
         public string ImageSizeMode { get; set; } =
             "FIXED";
@@ -53,11 +67,16 @@
          *
          * 값이 없거나 0이면
          * 이미지 원본 또는 기본 설정을 사용한다.
+         *
+         * ADAPTIVE에서는 최대 표시 너비,
+         * FIT_TO_IMAGE에서는 실제 표시 너비로 사용한다.
          */
         public double ImageWidth { get; set; }
 
         /*
          * 이미지 표시 영역에 사용할 요청 높이
+         *
+         * ImageWidth와 같은 기준으로 적용한다.
          */
         public double ImageHeight { get; set; }
 

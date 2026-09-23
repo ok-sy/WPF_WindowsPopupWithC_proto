@@ -2,6 +2,22 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-23-03 — IMAGE 크기 모드 계약 정리(ADAPTIVE/FIT_TO_IMAGE/FILL), 트레이 재표시 작업 표시줄 복구
+
+- 이유: `2026-09-23-02` 실행 검증에서 작은 팝업의 IMAGE ADAPTIVE가 이미지를 좌우로 자르는 것이 확인됐다. 원인을 추적한 결과 `imageSizeMode` 세 값이 "팝업 크기와 이미지 크기 중 무엇이 기준인가"를 다르게 정의하는데 WPF 구현이 그 구분을 지키지 않고 있었다. 함께 확인된 `RecommendedSizeChanged` 미구독 문제로 FIT_TO_IMAGE는 팝업 크기를 바꾸지 못하는 상태였다.
+- 계약 확정: ADAPTIVE는 팝업 width/height가 기준이고 이미지는 배정된 영역 안에 맞춰지며 imageWidth/imageHeight는 최대 표시 크기로만 쓴다. FIT_TO_IMAGE는 imageWidth/imageHeight가 1순위이고 없으면 원본 크기를 쓴 뒤 그 결과로 팝업 크기를 재계산한다. FILL은 팝업 width/height가 기준이고 이미지가 영역을 꽉 채운다. 과거 값 FIXED는 ADAPTIVE와 동일하게 처리한다.
+- 변경(크기 계산 분리): `ApplyAdaptiveLayout()`이 모드에 따라 경로를 나눈다. `TryApplyRequestedImageSize()`는 FIT_TO_IMAGE에서만 호출하고, ADAPTIVE는 신규 `ApplyAdaptiveImageSizing()`이 담당한다. 이전에는 모드와 무관하게 지정 크기가 먼저 절대값으로 적용돼, 지정 크기가 팝업이 내준 칸보다 크면 컨테이너가 칸을 넘쳐 잘렸다.
+- 변경(ADAPTIVE): `PopupImage`·`ImageContainer`의 Width/Height를 해제하고 정렬을 Stretch로 되돌린 뒤, 신규 `ResolveAdaptiveMaximum()`으로 원본 크기와 요청 크기 중 작은 값을 MaxWidth/MaxHeight에 넣는다. 원본을 상한에 포함해 작은 이미지의 확대를 막는다. `ImagePopupView.xaml`의 `PopupImage` 기본 정렬도 Center에서 Stretch로 바꿨다 — Center이면 Uniform이어도 요소가 영역 크기와 무관하게 자기 크기를 유지해 넘친 부분이 잘린다.
+- 변경(배치/크기 책임 분리): `ApplyLandscapeLayout()`·`ApplyPortraitLayout()`·`ApplySquareLayout()`에서 `PopupImage.MaxWidth/MaxHeight` 고정값(820x430 등)과 추천 팝업 크기 전달(920x680 등)을 제거했다. 배치 메서드는 행·열 구성과 여백만 담당한다.
+- 변경(FIT_TO_IMAGE): 신규 `ApplyFitToImageGridSizing()`으로 이미지 칸을 Auto, 설명 칸을 팝업 크기 계산에 쓴 고정 값으로 맞춰 고정 크기 컨테이너가 비율 칸을 넘치지 않게 했다. `TryApplyRequestedImageSize()`에 작업 영역 90% 기준 축소를 추가했고(자동 계산 경로에만 있던 보정), `ApplyFitToImageSize()`의 세로형 판단을 비율 기준에서 `ResolveDescriptionPosition()` 기준으로 바꿔 배치와 크기 계산이 어긋나지 않게 했다.
+- 변경(팝업 크기 반영): `PopupWindow`가 `ImagePopupView.RecommendedSizeChanged`를 구독한다. 이 이벤트는 저장소 어디에서도 구독되지 않아 FIT_TO_IMAGE 계산 결과가 버려지고 있었다. 핸들러는 `SizeToContent`를 Manual로 바꾼 뒤 `PopupOptions`의 Minimum/Maximum과 작업 영역 95%(설계 11과 같은 기준)로 보정해 적용하고 창을 다시 중앙에 맞춘다. FULLSCREEN은 제외한다.
+- 변경(Demo Mode 창): `ShowMainWindowMenuItem_Click()`의 Demo 분기에서 `ShowInTaskbar`를 복구하고 최소화 상태도 되돌린다. `DemoWindow_Closing`이 창을 숨기며 `ShowInTaskbar=false`로 두기 때문에, X로 닫았다 트레이로 다시 연 Demo Mode 창은 화면에는 보이지만 작업 표시줄 버튼이 없었다. API 모드 분기에는 같은 복구가 이미 있었다.
+- 문서: `docs/design/15_IMAGE_팝업_크기모드_정리.md` 추가. `ImagePopupContentDto`의 `ImageSizeMode`·`ImageWidth`·`ImageHeight` 주석을 확정된 계약으로 갱신(기존 주석은 FIXED/FIT_TO_IMAGE 두 값만 언급).
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/ImagePopupView.xaml(.cs)`, `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `popup-frameWork/Popup/Dtos/ImagePopupContentDto.cs`, `popup-frameWork/Popup/App.xaml.cs`, `docs/design/15_IMAGE_팝업_크기모드_정리.md`.
+- 검증: `dotnet build popup-frameWork/Popup/Popup.csproj` 오류 0·경고 0. 로컬 `Popup.exe --demo`로 `DEMO-IMAGE-001`(팝업 FIXED 400x700, imageWidth 620·imageHeight 520, 원본 `Media/demo-image.jpg` 750x1030) 기준 세 모드 확인 — ADAPTIVE는 창 480x700 유지에 이미지 전체가 잘림 없이 표시, FIT_TO_IMAGE는 창이 938x712로 재계산·재중앙 배치되고 계산식(622+260+56, 522+190)과 일치, FILL은 창 480x700 유지에 이미지가 영역을 꽉 채움. FIT_TO_IMAGE·FILL은 데모 JSON의 `imageSizeMode`만 임시로 바꿔 확인한 뒤 되돌렸다(`git status` 기준 데모 파일 변경 없음). 트레이 재표시 후 창 확장 스타일에 `WS_EX_APPWINDOW`가 설정되고 작업 표시줄에 버튼이 표시되는 것도 확인.
+- 미실행 검증: 외부 URL 이미지(다운로드 경로), VIEWPORT_RATIO·FULLSCREEN 팝업과의 조합, 폐쇄망 환경 재확인.
+- 상태: main 반영.
+
 ## 2026-09-23-02 — IMAGE 설명 영역 분리·공통 배치 옵션 추가
 
 - 이유: 작은 FIXED/VIEWPORT_RATIO 창에서 IMAGE ADAPTIVE 사용 시 이미지와 설명이 같은 가변 영역을 경쟁해 이미지가 좌우로 억지로 맞춰지는 것처럼 보이는 문제를 줄이고, 이미지 크기 모드와 설명 배치 정책의 책임을 분리.
@@ -10,7 +26,8 @@
 - 변경(Demo Mode): IMAGE 샘플에 descriptionPosition: AUTO, imageAreaRatio: 0.75를 추가하고 설명 표시를 켜 공통 레이아웃을 바로 확인할 수 있게 변경.
 - 호환성: 기존 JSON에 신규 필드가 없어도 AUTO/0.75 기본값으로 동작. FILL은 전체 배경형 전용 View라 설명 영역을 사용하지 않아 이번 옵션 적용 대상에서 제외.
 - 주요 파일: popup-frameWork/Popup/Dtos/ImagePopupContentDto.cs, Models/ImageDescriptionPosition.cs, Views/Contents/ImagePopupView.xaml.cs, Factories/PopupFactory.cs, Services/DemoPopupDataService.cs.
-- 검증: 코드 경로와 기본값/분기 정합성 확인. GitHub 상에서 반영해 로컬 dotnet build 및 실제 작은 창 렌더링 확인은 미수행.
+- 검증: `dotnet build popup-frameWork/Popup/Popup.csproj` 성공(오류 0·경고 0). Demo Mode의 DEMO-IMAGE-001(팝업 sizeMode FIXED 400x700, 원본 `Media/demo-image.jpg` 750x1030 → 비율 0.728)을 로컬에서 실행해 확인 — AUTO가 의도대로 RIGHT로 해석되어 설명이 이미지 오른쪽에 배치되고 열 비율도 0.75/0.25로 적용됐다.
+- 미해결(실행 중 확인된 이슈): 같은 조건에서 이미지가 좌우로 잘려 보인다. `TryApplyRequestedImageSize()`가 content의 `imageWidth`/`imageHeight`(620x520)를 `PopupImage.Width/Height`와 `ImageContainer.Width/Height`에 절대값으로 지정하는데, 이 적용이 레이아웃 계산 뒤에 일어나고 가용 폭으로 제한되지 않는다. 400폭 창에서 이미지 열은 약 300이라 622폭 컨테이너가 넘쳐 잘린다. `imageAreaRatio` 도입만으로는 해소되지 않으므로 지정 크기를 가용 공간 기준으로 축소하는 보정이 별도로 필요하다. 설명 열도 0.25 적용 시 약 75폭이라 문구가 3~4자 단위로 줄바꿈된다.
 - 상태: main 반영.
 
 ## 2026-09-22-10 — 변경 이력 문체 규칙 적용(잔여 대화체 정리)·프로토타입 단계 역할 표현 기준 추가
@@ -31,7 +48,8 @@
 - 변경(WPF): `App.OnStartup()`에서 `DemoWindow.Closing`을 `DemoWindow_Closing`에 연결. 일반 X 버튼에서는 `e.Cancel=true` 후 `Hide()` 처리하고, 트레이의 실제 "종료"에서는 `_isExiting=true` 상태이므로 정상 Close되도록 구성.
 - 영향 범위: 실서버/API 모드의 `MainWindow` 동작은 기존과 동일. 이번 예외는 Demo Mode 전용 경로에서 발생하던 문제를 수정.
 - 주요 파일: `popup-frameWork/Popup/App.xaml.cs`.
-- 검증: 코드 흐름 기준으로 Demo Mode의 Close → 재Show 경로 제거 확인. 실제 실행 및 `dotnet build`는 미수행.
+- 검증: `dotnet build popup-frameWork/Popup/Popup.csproj` 성공(오류 0·경고 0). 로컬에서 `Popup.exe --demo` 실행 후 Demo Mode 창에 WM_CLOSE를 보내 X 버튼 경로를 재현했고, 창 핸들이 유지된 채 숨겨지며 프로세스가 살아 있음을 확인. 이어서 트레이 메뉴 `관리 화면 열기`로 같은 핸들의 창이 예외 없이 다시 표시되고 `이미지 팝업 열기`까지 정상 동작하는 것, 트레이 `종료`로 프로세스가 정상 종료되는 것을 확인.
+- 후속 확인 필요: 재표시 경로에서 `ShowInTaskbar`가 복구되지 않는다. `DemoWindow_Closing`이 `ShowInTaskbar=false`로 두는데 `ShowMainWindowMenuItem_Click`의 Demo 분기는 `Show()`·`Activate()`만 호출해, X로 닫았다 다시 연 Demo Mode 창에는 작업 표시줄 버튼이 없다(재표시 후 확장 스타일에 WS_EX_APPWINDOW가 없음을 확인). API 모드 `_mainWindow` 분기에는 `ShowInTaskbar=true` 복구가 들어 있다.
 - 상태: main 반영 완료.
 
 ## 2026-09-22-09 — worktree 브랜치 2개 main 병합, 확장 바이너리·worktree `.gitignore` 등록

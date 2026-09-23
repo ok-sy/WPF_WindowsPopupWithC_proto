@@ -251,7 +251,26 @@ namespace Popup
         {
             if (_demoWindow != null)
             {
+                /*
+                 * [2026-09-23-03] 작업 표시줄 표시를 함께 되돌린다.
+                 *
+                 * DemoWindow_Closing이 창을 숨기면서 ShowInTaskbar를 false로 두기 때문에,
+                 * 여기서 복구하지 않으면 X로 닫았다 다시 연 Demo Mode 창은
+                 * 화면에는 보이지만 작업 표시줄에 버튼이 없는 상태가 된다.
+                 * 아래 API 모드 분기에는 같은 복구가 이미 들어 있었다.
+                 */
+                _demoWindow.ShowInTaskbar =
+                    true;
+
                 _demoWindow.Show();
+
+                if (_demoWindow.WindowState
+                    == WindowState.Minimized)
+                {
+                    _demoWindow.WindowState =
+                        WindowState.Normal;
+                }
+
                 _demoWindow.Activate();
                 return;
             }
