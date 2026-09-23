@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-23-02 — IMAGE 설명 영역 분리·공통 배치 옵션 추가
+
+- 이유: 작은 FIXED/VIEWPORT_RATIO 창에서 IMAGE ADAPTIVE 사용 시 이미지와 설명이 같은 가변 영역을 경쟁해 이미지가 좌우로 억지로 맞춰지는 것처럼 보이는 문제를 줄이고, 이미지 크기 모드와 설명 배치 정책의 책임을 분리.
+- 변경(WPF DTO/모델): IMAGE content 공통 옵션 descriptionPosition(AUTO/RIGHT/BOTTOM, 기본 AUTO)과 imageAreaRatio(기본 0.75, 유효 범위 0.5~0.9) 추가. ImageDescriptionPosition 모델을 추가해 문자열 옵션을 화면 코드에서 직접 비교하지 않도록 구성.
+- 변경(WPF 화면): ImagePopupView가 ADAPTIVE와 FIT_TO_IMAGE 모두 동일한 설명 배치 옵션을 사용하도록 변경. AUTO는 기존 의도대로 세로형(비율 <= 0.8)은 RIGHT, 그 외는 BOTTOM을 선택하고, 명시값은 이미지 비율과 무관하게 적용. 설명 표시 시 이미지/설명 영역을 imageAreaRatio로 먼저 분리하고 각 영역 안에서 이미지는 Stretch=Uniform으로 원본 비율을 유지. showDescription=false이면 설명 영역을 제거하고 이미지가 전체 영역을 사용.
+- 변경(Demo Mode): IMAGE 샘플에 descriptionPosition: AUTO, imageAreaRatio: 0.75를 추가하고 설명 표시를 켜 공통 레이아웃을 바로 확인할 수 있게 변경.
+- 호환성: 기존 JSON에 신규 필드가 없어도 AUTO/0.75 기본값으로 동작. FILL은 전체 배경형 전용 View라 설명 영역을 사용하지 않아 이번 옵션 적용 대상에서 제외.
+- 주요 파일: popup-frameWork/Popup/Dtos/ImagePopupContentDto.cs, Models/ImageDescriptionPosition.cs, Views/Contents/ImagePopupView.xaml.cs, Factories/PopupFactory.cs, Services/DemoPopupDataService.cs.
+- 검증: 코드 경로와 기본값/분기 정합성 확인. GitHub 상에서 반영해 로컬 dotnet build 및 실제 작은 창 렌더링 확인은 미수행.
+- 상태: main 반영.
+
 ## 2026-09-22-10 — 변경 이력 문체 규칙 적용(잔여 대화체 정리)·프로토타입 단계 역할 표현 기준 추가
 
 - 이유: 2026-09-22에 정한 변경 이력 문체 규칙(AGENTS.md "변경 이력 문체")이 과거 항목 일부에 적용되지 않은 채 남아 있어 정리. 더불어 대화 주어를 걷어내는 과정에서 현재 존재하지 않는 역할(`운영 담당`)을 쓰는 문제가 드러나, 프로토타입 단계의 역할·환경 표현 기준을 규칙에 명시.

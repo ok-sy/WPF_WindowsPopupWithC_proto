@@ -71,6 +71,12 @@ namespace Popup.Views.Contents
          */
         private readonly ImagePopupSizeMode _sizeMode;
 
+        /* ADAPTIVE/FIT_TO_IMAGE 공통 설명 배치 옵션. */
+        private readonly ImageDescriptionPosition _descriptionPosition;
+
+        /* 전체 콘텐츠 영역 중 이미지가 차지할 비율. */
+        private readonly double _imageAreaRatio;
+
         /*
          * 이미지 크기와 레이아웃 계산이 완료되었을 때
          * PopupWindow에 추천 너비와 높이를 전달한다.
@@ -111,7 +117,10 @@ namespace Popup.Views.Contents
             ImagePopupSizeMode sizeMode =
                 ImagePopupSizeMode.Adaptive,
             double? imageWidth = null,
-            double? imageHeight = null)
+            double? imageHeight = null,
+            ImageDescriptionPosition descriptionPosition =
+                ImageDescriptionPosition.Auto,
+            double imageAreaRatio = 0.75)
         {
             /*
              * ImagePopupView.xaml에 작성된 화면을
@@ -144,6 +153,13 @@ namespace Popup.Views.Contents
              * 이미지 팝업 크기 결정 방식을 저장한다.
              */
             _sizeMode = sizeMode;
+            _descriptionPosition = descriptionPosition;
+            _imageAreaRatio =
+                double.IsFinite(imageAreaRatio)
+                && imageAreaRatio >= 0.5
+                && imageAreaRatio <= 0.9
+                    ? imageAreaRatio
+                    : 0.75;
 
             /*
              * 외부에서 이미지 너비를 전달한 경우
@@ -452,17 +468,20 @@ namespace Popup.Views.Contents
              *
              * 먼저 이미지 비율에 알맞은 레이아웃을 적용한다.
              */
-            if (imageRatio >= 1.25)
+            ImageDescriptionPosition resolvedPosition =
+                ResolveDescriptionPosition(imageRatio);
+
+            if (!_showDescription)
             {
-                ApplyLandscapeLayout();
+                ApplySquareLayout();
             }
-            else if (imageRatio <= 0.8)
+            else if (resolvedPosition == ImageDescriptionPosition.Right)
             {
                 ApplyPortraitLayout();
             }
             else
             {
-                ApplySquareLayout();
+                ApplyLandscapeLayout();
             }
 
             /*
@@ -482,6 +501,22 @@ namespace Popup.Views.Contents
                 ApplyFitToImageSize(
                     bitmapImage);
             }
+        }
+
+        /*
+         * 설명 위치를 결정한다.
+         * 명시값은 이미지 비율과 무관하게 사용하고 AUTO만 기존 비율 규칙을 따른다.
+         */
+        private ImageDescriptionPosition ResolveDescriptionPosition(double imageRatio)
+        {
+            if (_descriptionPosition != ImageDescriptionPosition.Auto)
+            {
+                return _descriptionPosition;
+            }
+
+            return imageRatio <= 0.8
+                ? ImageDescriptionPosition.Right
+                : ImageDescriptionPosition.Bottom;
         }
 
         /*
@@ -515,16 +550,16 @@ namespace Popup.Views.Contents
              */
             ContentFirstRow.Height =
                 new GridLength(
-                    1,
+                    _showDescription ? _imageAreaRatio : 1,
                     GridUnitType.Star);
 
             /*
-             * 설명을 표시할 때만
-             * 두 번째 행이 설명 높이만큼 공간을 사용한다.
+             * 설명 표시 시 이미지/설명 영역을 먼저 분리한다.
+             * 작은 창에서도 설명 때문에 이미지 영역이 임의로 눌리지 않는다.
              */
             ContentSecondRow.Height =
                 _showDescription
-                    ? GridLength.Auto
+                    ? new GridLength(1 - _imageAreaRatio, GridUnitType.Star)
                     : new GridLength(0);
 
             /*
@@ -639,7 +674,7 @@ namespace Popup.Views.Contents
                  */
                 ContentFirstColumn.Width =
                     new GridLength(
-                        3,
+                        _imageAreaRatio,
                         GridUnitType.Star);
 
                 /*
@@ -648,7 +683,7 @@ namespace Popup.Views.Contents
                  */
                 ContentSecondColumn.Width =
                     new GridLength(
-                        2,
+                        1 - _imageAreaRatio,
                         GridUnitType.Star);
 
                 /*
@@ -1392,7 +1427,8 @@ namespace Popup.Views.Contents
              * 팝업 너비에 설명 영역 너비를 추가해야 한다.
              */
             bool isPortrait =
-                originalRatio <= 0.8;
+                ResolveDescriptionPosition(originalRatio)
+                == ImageDescriptionPosition.Right;
 
             double descriptionWidth =
                 isPortrait && _showDescription
