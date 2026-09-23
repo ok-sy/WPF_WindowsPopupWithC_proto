@@ -194,32 +194,14 @@ namespace Popup.Managers
 
         private void PositionSequentialPopup(PopupWindow popupWindow, PopupOptions popupOptions)
         {
-            if (_owner.IsVisible)
-            {
-                popupWindow.Owner = _owner;
-                return;
-            }
-            if (popupOptions.SizeMode != PopupSizeMode.Fullscreen)
-                popupWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            if (_owner.IsVisible) popupWindow.Owner = _owner;
+            popupWindow.ApplyPosition();
         }
 
         private void PositionSimultaneousPopup(PopupWindow popupWindow, int openedPopupIndex)
         {
-            popupWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-            if (_owner.IsVisible)
-            {
-                popupWindow.Owner = _owner;
-                popupWindow.Left = _owner.Left + 50 + (openedPopupIndex * 30);
-                popupWindow.Top = _owner.Top + 50 + (openedPopupIndex * 30);
-                return;
-            }
-
-            popupWindow.Left = SystemParameters.WorkArea.Left
-                + ((SystemParameters.WorkArea.Width - popupWindow.Width) / 2)
-                + (openedPopupIndex * 30);
-            popupWindow.Top = SystemParameters.WorkArea.Top
-                + ((SystemParameters.WorkArea.Height - popupWindow.Height) / 2)
-                + (openedPopupIndex * 30);
+            if (_owner.IsVisible) popupWindow.Owner = _owner;
+            popupWindow.ApplyPosition();
         }
         /*
          * [기준 3·4] 기존 AttachContentEvents/AttachLifecycleEvents는

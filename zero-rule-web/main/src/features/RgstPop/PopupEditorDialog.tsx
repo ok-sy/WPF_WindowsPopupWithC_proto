@@ -441,6 +441,20 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel control={<Switch size="small" checked={popup.allowCloseBeforeComplete} onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)} />} label="완료 전 닫기 허용" />
               </Box>
                 </>}
+            <Divider /><Typography variant="subtitle1" fontWeight={700}>위치 설정</Typography>
+            <TextField select label="주 모니터 표시 위치" value={contentValue(popup, 'popupPosition') || 'CENTER'}
+              disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateContent('popupPosition', e.target.value)}
+              helperText={popup.sizeMode === 'FULLSCREEN' ? '전체 화면은 주 모니터 전체에 표시됩니다.' : '작업 표시줄 제외 영역 기준입니다. 기본값은 중앙입니다.'}>
+              <MenuItem value="CENTER">중앙 (기본)</MenuItem>
+              <MenuItem value="TOP_LEFT">왼쪽 위</MenuItem>
+              <MenuItem value="TOP_CENTER">위쪽 중앙</MenuItem>
+              <MenuItem value="TOP_RIGHT">오른쪽 위</MenuItem>
+              <MenuItem value="CENTER_LEFT">왼쪽 중앙</MenuItem>
+              <MenuItem value="CENTER_RIGHT">오른쪽 중앙</MenuItem>
+              <MenuItem value="BOTTOM_LEFT">왼쪽 아래</MenuItem>
+              <MenuItem value="BOTTOM_CENTER">아래쪽 중앙</MenuItem>
+              <MenuItem value="BOTTOM_RIGHT">오른쪽 아래</MenuItem>
+            </TextField>
             <Divider /><Typography variant="subtitle1" fontWeight={700}>크기 설정</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 2 }}>
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>

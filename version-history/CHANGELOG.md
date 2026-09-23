@@ -2,6 +2,25 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-23-05 — 단일 EXE 자동 업데이트 최하위 TODO 정리
+
+- 이유: 런타임 포함 단일 EXE 교체와 서버 그룹별 순차 배포 방향을 후속 개선 과제로 보존하고 기존 반입·안정화 작업과 우선순위를 구분.
+- 변경: 설계 17에 PowerShell 교체·백업·기동 확인·복구, MAJOR/MINOR/PATCH 기본 정책과 별도 긴급도, 그룹별 일정·재접속·재시도 분산, 트래픽 산정, 426 최소 버전과의 충돌 방지, 진행 중 팝업·미전송 큐 보존, CrashGuard·Mutex 연계, 검증 기준을 문서화. 설계 14에 P3(최하위·명시적 착수 요청 전 이행 금지), 설계 09에 후순위 링크 추가. 다른 TODO 완료·일반 개선/검증/배포 요청·방식 논의를 착수 근거로 삼지 않는 조건 명시. API 필드는 미구현 후보로 명시.
+- 주요 파일: docs/design/17_WPF_단일_EXE_자동업데이트_TODO.md, docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md, docs/design/09_전환계획_및_미결사항.md.
+- 검증: 기존 버전 검사·업데이트 안내·CrashGuard·Mutex 코드 및 TODO 우선순위 대조. 관련 문서 링크 존재, 세 문서의 명시적 착수 조건, 미완료 체크리스트 및 git diff --check 검증 통과. 문서 변경으로 빌드·실행 테스트는 수행하지 않음.
+- 상태: 문서 작성, 기능 미구현·미착수. 이번 main 커밋에 포함하며 푸시 결과는 원격 브랜치로 확인한다. 이 작업에서 배포 변경 없음.
+
+## 2026-09-23-04 — 주 모니터 팝업 표시 위치 옵션
+
+- 이유: 부모 창 위치와 무관하게 주 모니터 지정 위치에 팝업을 표시하는 요구사항 반영.
+- 변경: content.popupPosition으로 중앙 및 8방향 위치 선택. 누락·잘못된 값은 중앙. 관리자 웹 선택과 WPF 표시를 연결하고 순차·동시·이미지 크기 변경에 공통 적용. 전체 화면은 주 모니터 사용.
+- 주요 파일: PopupOptions.cs, PopupFactory.cs, PopupManager.cs, PopupWindow.xaml.cs, PopupEditorDialog.tsx, docs/design/16_popup_position.md.
+- 검증(WPF): 3모니터 환경(주 모니터 2560x1440, 작업 영역 2560x1392)에서 실제 WPF 창을 생성하고 Win32 GetWindowRect로 좌표 확인. 두 보조 모니터에 각각 부모 창을 배치하여 77개 검사씩 총 154개 통과. FIXED/RATIO/AUTO × 9개 위치, 창 크기 변경, 누락·null·숫자·미지원 값의 중앙 기본값, 대소문자·공백, PopupManager 순차/동시 표시, FULLSCREEN 주 모니터 전체 영역 확인. 검증 하네스는 로컬 .offline-verify/position에 보관(Git 제외). 주 모니터 배율 변경 검증은 미실행.
+- 검증(웹): pnpm --filter @zerorule/web build 성공(타입 검사·페이지 생성 포함). 기존 파일의 lint 및 Next.js runtime config 폐기 예정 경고가 있으나 빌드 오류 없음. standalone 패키지를 임시 127.0.0.1:3107에서 실행해 /login/ 및 JS 정적 파일 HTTP 200 확인 후 종료. 실제 백엔드 저장·조회 왕복은 미실행.
+- 배포(WPF): Release/win-x64/self-contained/single-file 게시 후 D:/work/PopupProject2026/dist/Popup.exe 갱신(85,666,721바이트). 기존 파일은 dist/Popup.before-position-20260923.exe로 백업. 게시본과 배포본 SHA256 일치: 55F930B61D4E18432277615C16C6CCB55C36749F8AA4B21A0981BADB8C620872. 배포본 --demo 기동 후 텍스트 버튼 실행, 실제 팝업 rect (790,286)-(1770,1106)이 주 모니터 작업 영역 중앙임을 확인하고 테스트 프로세스 종료. 최초 UI Automation 최상위 열거에서 소유 팝업이 누락되어 Win32 EnumWindows로 확인.
+- 웹 패키지: D:/work/PopupProject2026/dist/admin-web-position-20260923 (standalone + static + public + start.cmd). 대상 서버 미지정으로 상시 웹 서비스 반영은 미실행. 기존 설정(API_BASE_URL 미지정)을 유지하며 실제 API 연동 시 해당 환경의 백엔드·프록시 필요.
+- 상태: WPF 로컬 dist 배포 완료, 웹 배포 패키지 생성·기동 검증 완료. 관련 소스·문서·검증 이력을 이번 main 커밋에 포함하며 푸시 결과는 원격 브랜치로 확인한다. 배포 바이너리는 Git 제외 유지.
+
 ## 2026-09-23-03 — IMAGE 크기 모드 계약 정리(ADAPTIVE/FIT_TO_IMAGE/FILL), 트레이 재표시 작업 표시줄 복구
 
 - 이유: `2026-09-23-02` 실행 검증에서 작은 팝업의 IMAGE ADAPTIVE가 이미지를 좌우로 자르는 것이 확인됐다. 원인을 추적한 결과 `imageSizeMode` 세 값이 "팝업 크기와 이미지 크기 중 무엇이 기준인가"를 다르게 정의하는데 WPF 구현이 그 구분을 지키지 않고 있었다. 함께 확인된 `RecommendedSizeChanged` 미구독 문제로 FIT_TO_IMAGE는 팝업 크기를 바꾸지 못하는 상태였다.

@@ -46,6 +46,9 @@ namespace Popup.Views.Windows
              * 실제 화면에 적용한다.
              */
             ApplyOptions();
+            ApplyPosition();
+            Loaded += (_, _) => ApplyPosition();
+            SizeChanged += (_, _) => ApplyPosition();
 
             if (_options.SizeMode
                 == PopupSizeMode.Fullscreen)
@@ -371,7 +374,7 @@ namespace Popup.Views.Windows
 
                 /*
                  * TEXT, IMAGE, VIDEO, SURVEY 등 콘텐츠 종류와 관계없이
-                 * 공통 PopupWindow를 현재 모니터 전체 크기로 표시한다.
+                 * 공통 PopupWindow를 주 모니터 전체 크기로 표시한다.
                  * 실제 모니터 좌표는 Window 핸들이 만들어진 뒤 적용한다.
                  */
                 case PopupSizeMode.Fullscreen:
@@ -543,15 +546,38 @@ namespace Popup.Views.Windows
 
             /*
              * 창이 이미 표시된 뒤 크기가 바뀌므로
-             * 작업 영역 기준으로 다시 중앙에 배치한다.
+             * 작업 영역 기준으로 선택한 위치에 다시 배치한다.
              */
-            Left =
-                workArea.Left
-                + (workArea.Width - Width) / 2;
+            ApplyPosition();
+        }
 
-            Top =
-                workArea.Top
-                + (workArea.Height - Height) / 2;
+        public void ApplyPosition()
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            // WPF logical units; WorkArea always refers to the primary monitor.
+            Rect area = SystemParameters.WorkArea;
+            if (_options.SizeMode == PopupSizeMode.Fullscreen)
+            {
+                if (PresentationSource.FromVisual(this) == null) { Left = area.Left; Top = area.Top; }
+                return;
+            }
+            double width = ActualWidth > 0 ? ActualWidth : Width;
+            double height = ActualHeight > 0 ? ActualHeight : Height;
+            if (!double.IsFinite(width) || !double.IsFinite(height)) return;
+            double x = _options.Position switch
+            {
+                PopupPosition.TopLeft or PopupPosition.CenterLeft or PopupPosition.BottomLeft => 0,
+                PopupPosition.TopRight or PopupPosition.CenterRight or PopupPosition.BottomRight => 1,
+                _ => 0.5
+            };
+            double y = _options.Position switch
+            {
+                PopupPosition.TopLeft or PopupPosition.TopCenter or PopupPosition.TopRight => 0,
+                PopupPosition.BottomLeft or PopupPosition.BottomCenter or PopupPosition.BottomRight => 1,
+                _ => 0.5
+            };
+            Left = area.Left + Math.Max(0, area.Width - width) * x;
+            Top = area.Top + Math.Max(0, area.Height - height) * y;
         }
 
         /*
@@ -596,7 +622,7 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * FULLSCREEN 모드에서 팝업이 열릴 모니터의 전체 영역을 구한다.
+         * FULLSCREEN 모드에서 주 모니터의 전체 영역을 구한다.
          *
          * WinForms Screen.Bounds는 실제 픽셀 단위이고,
          * WPF Window는 DIP 단위를 사용하므로 DPI 변환 후 적용한다.
@@ -614,7 +640,7 @@ namespace Popup.Views.Windows
                     this);
 
             Forms.Screen screen =
-                Forms.Screen.FromHandle(
+                Forms.Screen.PrimaryScreen ?? Forms.Screen.FromHandle(
                     windowInteropHelper.Handle);
 
             PresentationSource? presentationSource =
