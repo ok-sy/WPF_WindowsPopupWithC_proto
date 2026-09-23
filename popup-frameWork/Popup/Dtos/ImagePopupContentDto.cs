@@ -62,6 +62,20 @@
         public double ImageHeight { get; set; }
 
         /*
+         * 설명 영역 배치 방식.
+         * AUTO: 이미지 비율에 따라 RIGHT/BOTTOM 자동 선택
+         * RIGHT: 이미지 오른쪽 / BOTTOM: 이미지 아래
+         * ADAPTIVE/FIT_TO_IMAGE에서 공통으로 사용한다.
+         */
+        public string DescriptionPosition { get; set; } = "AUTO";
+
+        /*
+         * 이미지/설명 영역 비율. 0.75면 이미지 75%, 설명 25%.
+         * 0.5~0.9 범위 밖의 값은 WPF에서 기본값 0.75로 보정한다.
+         */
+        public double ImageAreaRatio { get; set; } = 0.75;
+
+        /*
          * 이미지를 클릭했을 때 이동할 외부 URL
          *
          * 연결할 URL이 없으면 빈 문자열을 사용한다.

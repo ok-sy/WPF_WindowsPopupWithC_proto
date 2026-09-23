@@ -161,7 +161,9 @@ namespace Popup.Factories
                 contentDto.ShowDescription,
                 ConvertImagePopupSizeMode(contentDto.ImageSizeMode),
                 contentDto.ImageWidth > 0 ? contentDto.ImageWidth : null,
-                contentDto.ImageHeight > 0 ? contentDto.ImageHeight : null);
+                contentDto.ImageHeight > 0 ? contentDto.ImageHeight : null,
+                ConvertImageDescriptionPosition(contentDto.DescriptionPosition),
+                contentDto.ImageAreaRatio);
         }
 
         private static VideoPopupView CreateVideoPopupView(JsonElement contentJson)
@@ -253,6 +255,15 @@ namespace Popup.Factories
                 "MULTIPLE_CHOICE" => SurveyQuestionType.MultipleChoice,
                 "TEXT" => SurveyQuestionType.Text,
                 _ => throw new ArgumentException($"지원하지 않는 설문 질문 유형입니다: {questionType}")
+            };
+
+        private static ImageDescriptionPosition ConvertImageDescriptionPosition(string descriptionPosition) =>
+            (descriptionPosition ?? "AUTO").Trim().ToUpperInvariant() switch
+            {
+                "AUTO" => ImageDescriptionPosition.Auto,
+                "RIGHT" => ImageDescriptionPosition.Right,
+                "BOTTOM" => ImageDescriptionPosition.Bottom,
+                _ => throw new ArgumentException($"지원하지 않는 이미지 설명 위치입니다: {descriptionPosition}")
             };
 
         private static ImagePopupSizeMode ConvertImagePopupSizeMode(string imageSizeMode) =>
