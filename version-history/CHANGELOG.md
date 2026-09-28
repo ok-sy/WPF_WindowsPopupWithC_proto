@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-06 — content 중복 키 정리(설계 18 L-3)
+
+- 이유: 관리자 저장 때 content 전체가 `CONTENT_OPTIONS`에 들어가고 조회 때 그 JSON이 정규 컬럼 위에 병합되어, 오래된 사본(특히 서버가 덧붙인 `completionRatio` 등 파생 키)이 실제 컬럼 값을 가리는 정합성 이슈. 모든 유형의 content 키가 모든 팝업에 저장되던 문제와 WPF가 읽지 않는 구 계약용 중복 키도 함께 정리.
+- 변경(서버): `PopupContentAssembler`가 옵션 JSON을 먼저 넣고 정규 컬럼이 덮어쓰도록 순서를 바꾸고, `completionRatio`·`allowCloseBeforeCompletion`·`passingScore`·`validateRequiredQuestions`를 content에 만들지 않음. 컬럼 사본·파생 키 목록(`STORED_COPY_KEYS`)을 두어 조회 시 무시하고 저장 시 `CONTENT_OPTIONS`에서 제거(`withoutStoredCopies`). `toResponseDto`의 `content.questions` 중복 삽입과 `WpfPopupItem`의 content 키 제거 목록 삭제. `/apis/popup/info` 응답의 `adminQuestions`(웹 미사용, 요청마다 문항 쿼리 1회)와 `AdminPopupQuestion.correctValues`(`options[].isCorrect`와 중복) 삭제. 테스트는 새 조립 규칙·저장 형태로 수정하고 사본 무시·저장 필터 테스트 추가.
+- 변경(웹): 저장 요청 content를 팝업 유형별 키(공통 Overlay·위치·폰트 + 유형별 WPF DTO·미리보기 키)만 남기도록 `contentForType` 추가. 편집 중 유형 전환 시 입력값은 유지. 타입에서 `AdminPopupInfo.adminQuestions`·`AdminPopupQuestion.correctValues` 제거.
+- 변경(DB): `db/oracle/07_cleanup_content_option_copies_oracle.sql` 추가 — 11g 호환 정규식으로 `CONTENT_OPTIONS`의 사본·파생 키 쌍 제거(문자열·숫자·불리언·null 값만, 배열·객체 값은 남김), 멱등.
+- 문서: 설계 18 L-3 체크리스트, `db/oracle/README.md`, `POPUP_OPTION_GUIDE.md`(SURVEY content 옵션), `POPUP_ADMIN_UI_GAP.md` §8.
+- 주요 파일: `zero-rule-server/.../popup/PopupContentAssembler.java`, `PopupService.java`, `WpfPopupItem.java`, `AdminPopupQuestion.java`, `PopupAdminController.java`, `PopupAdminPayloads.java`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `zero-rule-web/sub/domain/src/model/PopupAdmin.ts`, `db/oracle/07_cleanup_content_option_copies_oracle.sql`.
+- 검증: 서버 `gradlew --offline compileJava compileTestJava` 성공, `:service:core:test --tests server.service.core.popup.*` 42건 — 40 통과, 2 skip, 실패 0. 로컬 XE 실DB 테스트(`POPUP_TEST_DB_*` 지정) `PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest` 통과(롤백 전용). `pnpm --filter @zerorule/web build` 성공(변경 파일 lint 경고 없음). 07 치환식은 DUAL 샘플(이스케이프 따옴표·쉼표 포함 문자열, 값 안의 키 문자열, 배열 값, 첫 키 위치)로 확인 후 로컬 XE 실행 — 대상 0행(실행 전 `CONTENT_OPTIONS` 백업 스풀). WPF 코드 변경 없음(content 사본 참조 0건 확인).
+- 미실행 검증: 관리자 수정 → 재조회 브라우저 확인, WPF 표시 E2E, 원격 개발 DB에서 07 실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-05 — IMAGE 크기 모드 과거 값 FIXED 제거(설계 18 L-1)
 
 - 이유: `imageSizeMode = FIXED`는 계약상 과거 호환 값인데 관리자 웹이 신규 IMAGE 팝업 기본값·메뉴로 계속 저장하고 있어, WPF 호환 매핑을 없애기 전에 생성 경로와 기존 데이터를 먼저 정리할 필요. 설계 18 L-1 순서(웹 → 서버 검증 → 데이터 → WPF → 문서)대로 반영.

@@ -1,8 +1,7 @@
 package server.domain.popup;
-import java.util.List;
-/** Authenticated editor data only; never included in public popup responses. */
-public record AdminPopupQuestion(PopupQuestionDto question, List<String> correctValues) {
-    public AdminPopupQuestion {
-        correctValues = correctValues == null ? List.of() : List.copyOf(correctValues);
-    }
+/**
+ * Authenticated editor data only; never included in public popup responses.
+ * [설계 18 L-3] 정답은 question.options[].isCorrect / correctAnswer로 전달한다(중복이던 correctValues 삭제).
+ */
+public record AdminPopupQuestion(PopupQuestionDto question) {
 }

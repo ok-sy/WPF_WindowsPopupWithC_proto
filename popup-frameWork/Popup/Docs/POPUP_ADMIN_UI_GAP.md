@@ -270,6 +270,8 @@ allowCloseBeforeComplete
 
 ## 8. VERIFY - SURVEY validateRequiredQuestions
 
+> 2026-09-28 정리: WPF `SurveyPopupContentDto.ValidateRequiredQuestions`는 설계 18 L-0에서 삭제했고, 서버도 L-3부터 content에 이 키를 싣지 않는다. 아래는 당시 검토 기록이다.
+
 `SurveyPopupContentDto`에는 다음 필드가 있다.
 
 ```text

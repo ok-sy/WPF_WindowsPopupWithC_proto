@@ -117,3 +117,10 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 
 - 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행(IMAGE 팝업 없음). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
   `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @06_image_size_mode_adaptive_oracle.sql ""`
+
+## CONTENT_OPTIONS 사본 키 정리 (2026-09-28, 설계 18 L-3)
+
+`07_cleanup_content_option_copies_oracle.sql <스키마접두어>` — `CONTENT_OPTIONS`에 함께 저장돼 있던 정규 컬럼 사본(`contentTitle`·`imageTitle`·`videoTitle`·`surveyTitle`·`description`·`plainText`·`imageUrl`·`videoUrl`·`linkUrl`)과 서버 파생 키(`completionRatio`·`allowCloseBeforeCompletion`·`passingScore`·`validateRequiredQuestions`·`questions`)를 지운다. L-3 서버는 저장 시 이 키를 빼고 조회 시에도 무시하므로 **실행 순서 제약은 없다**(기존 행 정리용). 11g 호환 정규식 방식이며 배열·객체 값은 지우지 않고 4번 조회에 남긴다. 멱등.
+
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행. 원격 개발 DB 미실행:
+  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @07_cleanup_content_option_copies_oracle.sql ""`
