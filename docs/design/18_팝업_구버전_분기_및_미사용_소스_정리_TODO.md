@@ -3,7 +3,7 @@
 - 작성일: 2026-09-28 (KST)
 - 범위: **팝업 기능 소스만** — WPF `popup-frameWork/Popup`, 서버 `server.*.popup`/`server.*.wpf` 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop/**`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle/*.sql`. zero 공통 프레임워크(보안 필터·`DefaultPublicUrls`·`BasicConfig` 등)는 대상에서 제외한다.
 - 기준: 백엔드 독립형 WPF Client API 계약서 v3.0(`docs/interfaces/POPUP_INTERFACE_SPEC.md`) — WPF가 쓰는 API는 `POST /p/api/wpf/auth/login`, `GET /p/api/wpf/popups`, `POST /p/api/wpf/popups/results` 3개뿐이다.
-- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28, 미커밋), L-1 이후 미착수**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
+- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거) 코드 반영 완료(2026-09-28, 원격 개발 DB 데이터 보정 미실행), L-2 이후 미착수**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
 
 분류:
 
@@ -158,11 +158,14 @@
 
 ### L-1. imageSizeMode FIXED 제거 (순서 고정)
 
-- [ ] 1) 웹 W-1: 기본값·메뉴 ADAPTIVE, 로드·저장 시 FIXED→ADAPTIVE 정규화
-- [ ] 2) (선택) 서버 저장 검증에서 IMAGE `imageSizeMode` 허용값을 ADAPTIVE/FIT_TO_IMAGE/FILL로 제한
-- [ ] 3) DB D-5①: 로컬 XE·원격 개발 DB `CONTENT_OPTIONS` FIXED→ADAPTIVE, 샘플 SQL(`02`)·데모 JSON 수정
-- [ ] 4) WPF C-13: DTO 기본값 ADAPTIVE → FIXED 매핑 제거
-- [ ] 5) 계약서 v3.0에서 FIXED 과거 호환 설명 삭제, 설계 15 갱신
+- [x] 1) 웹 W-1: 기본값·메뉴 ADAPTIVE, 로드·템플릿 불러오기·저장 시 FIXED/빈 값→ADAPTIVE 정규화(`normalizeImageSizeMode`)
+- [x] 2) 서버 저장 검증에서 IMAGE `imageSizeMode` 허용값을 ADAPTIVE/FIT_TO_IMAGE/FILL로 제한(값 없음은 통과), 단위 테스트 2건
+- [x] 3) DB D-5①: `06_image_size_mode_adaptive_oracle.sql` 작성, 로컬 XE 실행(대상 0행). 샘플 SQL(`02`)·데모 JSON에는 FIXED 없음(수정 불필요)
+- [ ] 3-1) **원격 개발 DB에 `06` 실행(VPN 필요) — WPF 배포 전 필수.** FIXED 행이 남아 있으면 L-1 WPF에서 해당 사용자 팝업 목록 변환이 실패한다
+- [x] 4) WPF C-13: DTO 기본값 ADAPTIVE → FIXED 매핑 제거
+- [x] 5) 계약서 3.1로 갱신(FIXED 삭제), 설계 15·`POPUP_OPTION_GUIDE.md` 갱신
+- [x] 검증(정적): 서버 popup 테스트 39건 중 37 통과·2 skip·실패 0, `dotnet build Popup.slnx` 경고 0·오류 0, 웹 build 성공
+- [ ] 검증(실행): 관리자 웹에서 기존 FIXED 팝업 열기·저장, `--demo` IMAGE 표시, 서버 FIXED 저장 거부 HTTP 확인
 
 ### L-2. 데모 JSON v3 전환 → WPF 설문/퀴즈 구형 분기 제거
 

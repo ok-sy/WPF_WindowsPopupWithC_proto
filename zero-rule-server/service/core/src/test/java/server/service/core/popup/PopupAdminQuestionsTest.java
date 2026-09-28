@@ -93,6 +93,29 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
+    private PopupResponseDto imagePopup(String imageSizeMode) {
+        return new PopupResponseDto("TEST", "IMAGE", "Image", OffsetDateTime.now(),
+                OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
+                560, 420, .7, .75, 480, 320, 1200, 900,
+                true, true, true, false, null, "FIXED",
+                null, null, null, null, null, null, true, List.of(),
+                Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
+    }
+
+    // [설계 18 L-1] 과거 IMAGE 크기 모드 FIXED는 저장하지 않는다.
+    @Test void imagePopupRejectsLegacyFixedImageSizeMode() {
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                imagePopup("FIXED"), false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+    }
+
+    @Test void imagePopupAcceptsCurrentImageSizeModes() {
+        for (String mode : List.of("ADAPTIVE", "fit_to_image", "FILL")) {
+            service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
+        }
+        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+    }
+
     @Test void templateLookupRetainsCorrectAnswersForEditor() {
         existingQuestions();
         var entries = service.getAdminQuestions(10L);

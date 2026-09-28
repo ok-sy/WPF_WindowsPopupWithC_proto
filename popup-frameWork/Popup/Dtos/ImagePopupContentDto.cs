@@ -56,11 +56,11 @@
          * 팝업 width/height가 기준이다. 이미지가 영역을 꽉 채우며
          * 제목·설명 없이 전체 배경형으로 표시된다(ImageFillPopupView 사용).
          *
-         * FIXED
-         * 과거 값이다. ADAPTIVE와 동일하게 처리한다.
+         * 값이 없으면 ADAPTIVE로 처리한다.
+         * [설계 18 L-1] 과거 값 FIXED는 더 이상 받지 않는다(지원하지 않는 값으로 오류 처리).
          */
         public string ImageSizeMode { get; set; } =
-            "FIXED";
+            "ADAPTIVE";
 
         /*
          * 이미지 표시 영역에 사용할 요청 너비

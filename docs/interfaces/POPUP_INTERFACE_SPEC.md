@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.0
+- 문서 버전: 3.1
 - 최신화: 2026-09-28 (KST)
+- 3.1 변경: IMAGE `imageSizeMode`의 과거 호환 값 `FIXED` 삭제(ADAPTIVE / FIT_TO_IMAGE / FILL만 허용, 미지정 시 ADAPTIVE)
 - 대상: **별도 구축 백엔드 ↔ 제공되는 C# WPF 팝업 클라이언트**
 - 기준 구현: `popup-frameWork/Popup`
 - 목적: 백엔드 구현 방식, DB 구조, 관리자 화면 구조와 무관하게 **C# 클라이언트가 요구하는 HTTP/JSON 계약**만 정의한다.
@@ -356,7 +357,8 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
 | FIT_TO_IMAGE | 이미지 크기가 기준. imageWidth/imageHeight 우선, 없으면 원본 크기로 팝업 크기 재계산 |
 | FILL | 팝업 영역을 이미지로 꽉 채움. 제목/설명 없는 배경형 표시 |
-| FIXED | 과거 호환 값. 현재 WPF에서는 ADAPTIVE와 동일 처리 |
+
+필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다(v3.1).
 
 ### descriptionPosition
 
@@ -915,7 +917,6 @@ BOTTOM_RIGHT
 ADAPTIVE
 FIT_TO_IMAGE
 FILL
-FIXED
 ```
 
 ## descriptionPosition

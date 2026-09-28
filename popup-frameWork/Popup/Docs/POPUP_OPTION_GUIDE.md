@@ -144,10 +144,11 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 | 관리자 값 | 설명 | WPF 처리 |
 |---|---|---|
-| `FIXED` | 고정 영역 | 기존 Adaptive 처리로 변환 |
 | `FIT_TO_IMAGE` | 원본 크기/비율에 맞춤 | `FitToImage` |
 | `ADAPTIVE` | 화면/형태에 맞춤 | `Adaptive` |
 | `FILL` | 이미지만 꽉 채움 | 전용 `ImageFillPopupView` 사용 |
+
+값이 없으면 `Adaptive`로 처리한다. 과거 값 `FIXED`는 2026-09-28(설계 18 L-1)부터 지원하지 않는다.
 
 ---
 

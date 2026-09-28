@@ -62,6 +62,9 @@ public class PopupService {
             Set.of("SEQUENTIAL", "SIMULTANEOUS");
     private static final Set<String> SIZE_MODES =
             Set.of("FIXED", "RATIO", "FULLSCREEN");
+    /** [설계 18 L-1] IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
+    private static final Set<String> IMAGE_SIZE_MODES =
+            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "FILL");
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
@@ -807,12 +810,30 @@ public class PopupService {
             throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
         }
         validateFontSizeOptions(popup.content());
+        if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
+            validateImageSizeMode(popup.content());
+        }
         if (active == null) {
             throw new IllegalArgumentException("활성 여부는 필수입니다.");
         }
         if (auditUser == null || auditUser.isBlank()
                 || auditUser.trim().length() > 30) {
             throw new IllegalArgumentException("등록·수정자 정보는 1~30자여야 합니다.");
+        }
+    }
+
+    /**
+     * [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL만 저장한다.
+     * 값이 없으면 WPF 기본값(ADAPTIVE)을 쓰므로 통과시키고, FIXED 등 그 외 값은 거부한다.
+     */
+    private static void validateImageSizeMode(Map<String, Object> content) {
+        Object value = content == null ? null : content.get("imageSizeMode");
+        if (value == null || String.valueOf(value).isBlank()) {
+            return;
+        }
+        if (!IMAGE_SIZE_MODES.contains(normalizeUpper(String.valueOf(value)))) {
+            throw new IllegalArgumentException(
+                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, FILL 중 하나여야 합니다.");
         }
     }
 
