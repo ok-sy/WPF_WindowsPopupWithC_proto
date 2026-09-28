@@ -64,12 +64,9 @@ public record WpfPopupItem(
     private static final List<String> CONTENT_KEYS_HIDDEN_FROM_WPF =
             List.of("questions", "passingScore", "validateRequiredQuestions");
 
-    /** 기존 서비스가 만든 공용 DTO에서 WPF 항목을 만든다(정답 키·통과 점수 없음 — 기준 3 호환). */
-    public static WpfPopupItem from(PopupResponseDto dto) {
-        return from(dto, false);
-    }
-
     /**
+     * 공용 DTO에서 WPF 항목을 만든다. [설계 18 L-0] 호출자가 없던 1인자 오버로드 from(dto)는 삭제했다.
+     *
      * @param includeGradingInfo [설계 12] true(QUIZ)면 최상위 passingScore를 포함한다. 문항의 정답 키 포함 여부는
      *                           호출자가 넘긴 {@code dto.questions()}에 이미 반영되어 있다({@link #withoutAnswerKey}).
      */

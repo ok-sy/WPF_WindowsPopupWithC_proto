@@ -64,16 +64,10 @@ namespace Popup.Services
         /// </summary>
         public event EventHandler<WpfClientVersionException>? ClientVersionRejected;
 
-        /// <summary>보관 중인 항목 수. 화면 표시·진단용.</summary>
-        public int PendingCount
-        {
-            get
-            {
-                _gate.Wait();
-                try { return LoadPending().Count; }
-                finally { _gate.Release(); }
-            }
-        }
+        /*
+         * [설계 18 L-0 — C-10 삭제] 화면 표시·진단용으로 두었던 PendingCount 속성은 호출부가 없어 삭제했다.
+         * 보관 건수 확인이 다시 필요하면 pending-results.json을 직접 보거나 그때 진단 경로를 추가한다.
+         */
 
         /// <summary>
         /// [설계 12 §8.1] 항목을 pending-results.json에 저장하고 즉시 반환한다. 서버 전송은 하지 않는다.

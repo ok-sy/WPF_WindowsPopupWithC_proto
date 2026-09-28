@@ -68,7 +68,7 @@ class WpfPopupServiceTest {
         when(entity.popupType()).thenReturn("QUIZ");   // [설계 12] QUIZ만 정답 키·통과 점수 포함
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(entity));
         var question = new PopupQuestionDto(1L, "Q", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1,
-                List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null);
+                List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null, "VERTICAL");
         // [설계 12] WPF 로컬 채점: 목록은 정답 키 포함 문항을 1회 조회하고 QUIZ에만 그대로 내려준다
         when(popupService.loadQuestionsWithAnswerKey(List.of(20L))).thenReturn(Map.of(20L, List.of(question)));
         when(popupService.toPublicResponseDto(entity, List.of(question))).thenReturn(quizDto(List.of(question)));
@@ -99,9 +99,9 @@ class WpfPopupServiceTest {
         when(entity.popupType()).thenReturn("SURVEY");
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(entity));
         var withKey = new PopupQuestionDto(1L, "Q", null, "TEXT", true, true, BigDecimal.TEN, 1,
-                List.of(new PopupOptionDto(10L, "1", "A", 1, true)), "정답", "EXACT");
+                List.of(new PopupOptionDto(10L, "1", "A", 1, true)), "정답", "EXACT", "VERTICAL");
         var stripped = new PopupQuestionDto(1L, "Q", null, "TEXT", true, true, BigDecimal.TEN, 1,
-                List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null);
+                List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null, "VERTICAL");
         when(popupService.loadQuestionsWithAnswerKey(List.of(20L))).thenReturn(Map.of(20L, List.of(withKey)));
         when(popupService.toPublicResponseDto(entity, List.of(stripped))).thenReturn(
                 new PopupResponseDto("S1", "SURVEY", "설문", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
@@ -117,10 +117,10 @@ class WpfPopupServiceTest {
     }
 
     @Test void resultsAreIsolatedPerItemAndRejectionCodesMapped() {
-        var ok = new WpfResultCommand("r-ok", "P1", WpfResultType.CLOSED, null, null, null, null, null, null);
-        var notEligible = new WpfResultCommand("r-ne", "P2", WpfResultType.SUBMITTED, null, null, null, null, null, null);
-        var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null);
-        var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null);
+        var ok = new WpfResultCommand("r-ok", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null, null);
+        var notEligible = new WpfResultCommand("r-ne", "P2", WpfResultType.SUBMITTED, null, null, null, null, null, null, null, null);
+        var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null, null, null);
+        var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null, null, null);
 
         when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok).build());
         when(processor.processOne("E1001", notEligible))

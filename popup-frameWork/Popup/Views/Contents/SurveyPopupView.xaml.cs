@@ -447,36 +447,30 @@ namespace Popup.Views.Contents
         /// <summary>
         /// 선택한 보기의 비교용 Value와 서버 저장용 OptionId를
         /// SurveyAnswer에 함께 추가한다.
+        /// [설계 18 L-0 — C-19] 보기 컨트롤(RadioButton·CheckBox)의 Tag는 항상 SurveyOption으로 만들므로
+        /// "구 커스텀 컨트롤" 호환용 문자열 Tag 분기는 도달할 수 없어 삭제했다. SurveyOption이 아니면 무시한다.
         /// </summary>
         private static void AddSelectedOption(
             SurveyAnswer answer,
             object? optionTag)
         {
-            if (optionTag is SurveyOption option)
+            if (optionTag is not SurveyOption option)
             {
-                answer.SelectedValues.Add(
-                    option.Value);
-
-                /*
-                 * 서버에서 받은 보기에만 실제 OptionId가 있다.
-                 * 로컬 미리보기용 자동 생성 보기의 0은 전송하지 않는다.
-                 */
-                if (option.OptionId > 0)
-                {
-                    answer.SelectedOptionIds.Add(
-                        option.OptionId);
-                }
-
                 return;
             }
 
-            /*
-             * 이전 방식으로 만든 사용자 정의 컨트롤과의
-             * 호환을 위해 문자열 Tag도 계속 읽는다.
-             */
             answer.SelectedValues.Add(
-                optionTag?.ToString()
-                ?? string.Empty);
+                option.Value);
+
+            /*
+             * 서버 문항 보기는 항상 양수 OptionId를 가진다.
+             * 0 이하(값 누락 등 비정상 데이터)는 서버가 거부할 값이므로 전송 목록에 넣지 않는 방어 조건이다.
+             */
+            if (option.OptionId > 0)
+            {
+                answer.SelectedOptionIds.Add(
+                    option.OptionId);
+            }
         }
 
         /// <summary>

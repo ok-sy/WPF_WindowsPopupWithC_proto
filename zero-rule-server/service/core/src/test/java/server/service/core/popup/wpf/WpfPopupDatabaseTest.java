@@ -111,19 +111,19 @@ class WpfPopupDatabaseTest {
                 // ---- 결과: HIDDEN / SUBMITTED(QUIZ 정답·SURVEY) / VIDEO_WATCHED / CLOSED + 중복 ----
                 String hiddenId = UUID.randomUUID().toString();
                 WpfResultCommand hidden = new WpfResultCommand(hiddenId, "SAMPLE-TEXT-001", WpfResultType.HIDDEN,
-                        displayedAt, closedAt, 7, null, null, null);
+                        displayedAt, closedAt, 7, null, null, null, null, null);
                 WpfResultCommand quizSubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
                         WpfResultType.SUBMITTED, displayedAt, closedAt, null, displayedAt,
-                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null);
+                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, null, null);
                 WpfResultCommand surveySubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-SURVEY-004",
                         WpfResultType.SUBMITTED, displayedAt, closedAt, null, null,
                         List.of(new PopupSubmitAnswer(surveyChoiceQ, null, surveyOptionIds),
-                                new PopupSubmitAnswer(surveyTextQ, "회의실 예약 개선", List.of())), null);
+                                new PopupSubmitAnswer(surveyTextQ, "회의실 예약 개선", List.of())), null, null, null);
                 WpfResultCommand video = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-VIDEO-002",
                         WpfResultType.VIDEO_WATCHED, displayedAt, closedAt, null, null, null,
-                        new WpfVideoProgress(new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("531.5")));
+                        new WpfVideoProgress(new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("531.5")), null, null);
                 WpfResultCommand notEligible = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
-                        WpfResultType.CLOSED, null, null, null, null, null, null);
+                        WpfResultType.CLOSED, null, null, null, null, null, null, null, null);
 
                 WpfResultResponse response = service.processResults("E1001", List.of(hidden, quizSubmit, surveySubmit, video, hidden));
                 assertEquals(5, response.results().size());
@@ -168,7 +168,7 @@ class WpfPopupDatabaseTest {
                 // SUBMITTED는 노출 자격 재검사로 REJECTED
                 WpfResultResponse other = service.processResults("E1003", List.of(notEligible,
                         new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003", WpfResultType.SUBMITTED,
-                                null, null, null, null, List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null)));
+                                null, null, null, null, List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, null, null)));
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, other.results().get(0).status());
                 assertEquals(WpfResultItemResponse.Status.REJECTED, other.results().get(1).status());
                 assertEquals("WPF_NOT_ELIGIBLE", other.results().get(1).code());

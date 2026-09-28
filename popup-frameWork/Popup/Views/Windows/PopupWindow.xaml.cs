@@ -458,14 +458,13 @@ namespace Popup.Views.Windows
                     }
 
                 /*
-                 * 정의되지 않은 값이 들어온 경우
-                 * 기존 고정 크기 방식으로 처리한다.
-                 * [설계 11] Fixed와 같은 화면 초과 방어를 받도록 Fixed 분기로 보낸다.
+                 * [설계 18 L-0 — C-26] 예전에는 정의되지 않은 값을 Fixed 분기로 보냈지만(goto case Fixed),
+                 * PopupFactory가 sizeMode 문자열을 네 enum 값 중 하나로만 매핑하고 모르는 값은 ArgumentException으로
+                 * 거부하므로 이 분기에는 도달할 수 없다. 조용히 Fixed로 처리하는 대신 코드 오류로 드러나도록 예외를 던진다.
                  */
                 default:
-                    {
-                        goto case PopupSizeMode.Fixed;
-                    }
+                    throw new InvalidOperationException(
+                        $"정의되지 않은 PopupSizeMode 값입니다: {_options.SizeMode}");
             }
         }
 
@@ -709,7 +708,7 @@ namespace Popup.Views.Windows
         /*
  * 팝업의 닫기 버튼 또는 Header 닫기 버튼을 처리한다.
  */
-        private async void CloseButton_Click(
+        private void CloseButton_Click(
             object sender,
             RoutedEventArgs e)
         {
@@ -773,10 +772,12 @@ namespace Popup.Views.Windows
             try
             {
                 /*
-                 * 체크된 경우에만 서버에
-                 * 30일 숨김 정보를 저장한다.
+                 * "다시 보지 않기" 체크 여부만 PopupOptions에 기록한다(서버 호출 없음).
+                 * 창이 닫히면 PopupManager가 HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다.
+                 * [설계 18 L-0 — C-20] 구 /hide 호출 흐름을 유지하려고 두었던 껍데기
+                 * SaveDoNotShowAgainAsync()를 인라인하고 삭제했다(동작 동일). 그래서 이 핸들러에서 async도 뺐다.
                  */
-                await SaveDoNotShowAgainAsync();
+                RecordDoNotShowAgainChoice();
 
                 /*
                  * 저장이 성공했거나 저장할 필요가 없으면
@@ -809,19 +810,6 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [기준 3·4] "다시 보지 않기" 처리.
-         * 예전에는 닫기 직전에 숨김 API(/hide)를 직접 호출해 성공해야 창을 닫았다.
-         * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
-         * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
-         * 메서드 이름·호출 위치는 기존 흐름(CloseButton_Click)을 유지하기 위해 그대로 두었다.
-         */
-        private Task SaveDoNotShowAgainAsync()
-        {
-            RecordDoNotShowAgainChoice();
-            return Task.CompletedTask;
-        }
-
-        /*
          * 닫기 버튼 외의 경로(ESC, Alt+F4, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
          * Closing 시점에 한 번 더 기록한다.
          */
@@ -831,6 +819,12 @@ namespace Popup.Views.Windows
             base.OnClosing(e);
         }
 
+        /*
+         * [기준 3·4] "다시 보지 않기" 처리. 예전에는 닫기 직전에 숨김 API(/hide)를 직접 호출해 성공해야 창을 닫았다.
+         * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
+         * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
+         * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로).
+         */
         private void RecordDoNotShowAgainChoice()
         {
             _options.DoNotShowAgainChecked =

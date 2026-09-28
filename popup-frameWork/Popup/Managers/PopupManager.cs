@@ -43,10 +43,10 @@ namespace Popup.Managers
             _backgroundOverlayManager.BackgroundClicked += (sender, eventArgs) => BringPopupsToFront();
         }
 
-        public void Enqueue(PopupOptions popupOptions) => ShowRange(new[] { popupOptions });
-        public void Show(PopupOptions popupOptions) => ShowRange(new[] { popupOptions });
-        public void EnqueueRange(IEnumerable<PopupOptions> popupOptionsList) => ShowRange(popupOptionsList);
-
+        /*
+         * [설계 18 L-0 — C-9 삭제] 호출부가 없던 단건·별칭 진입점 Enqueue/Show/EnqueueRange를 삭제했다.
+         * MainWindow·DemoWindow 모두 ShowRange만 사용하므로 표시 진입점을 이 메서드 하나로 둔다.
+         */
         public void ShowRange(IEnumerable<PopupOptions> popupOptionsList)
         {
             /*

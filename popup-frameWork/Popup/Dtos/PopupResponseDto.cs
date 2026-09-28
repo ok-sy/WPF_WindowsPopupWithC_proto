@@ -142,14 +142,14 @@ namespace Popup.Dtos
 
         public bool ShowDoNotShowAgain { get; set; }
 
-        /* 설문·퀴즈가 참조하는 서버 질문 템플릿 ID */
-        public long? QuestionTemplateId { get; set; }
-
-        /* 기간·반복·숨김·완료 정책 값 */
-        public string PeriodMode { get; set; } = "FIXED";
-        public int? RepeatInterval { get; set; }
-        public string? RepeatDayOfWeek { get; set; }
-        public int? RepeatDayOfMonth { get; set; }
+        /*
+         * 숨김·완료 정책 값
+         *
+         * [설계 18 L-0 — C-5 삭제] WPF에서 읽는 곳이 없고 계약 v3.0 §6.3 응답 필드에도 없는
+         * QuestionTemplateId, PeriodMode, RepeatInterval, RepeatDayOfWeek, RepeatDayOfMonth를 삭제했다.
+         * 기간·반복 판단은 서버가 끝내고 노출 대상만 내려주므로 WPF는 이 값을 받을 필요가 없다.
+         * 서버가 여전히 보내더라도 System.Text.Json은 모르는 속성을 무시하므로 역직렬화 동작은 같다.
+         */
         public int? HideDays { get; set; }
         public double? CompletionRatio { get; set; }
         public double? PassingScore { get; set; }
