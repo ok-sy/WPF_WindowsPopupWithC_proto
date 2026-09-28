@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-01 — 백엔드 독립형 WPF Client API 계약서 v3.0 정리
+
+- 이유: 별도 백엔드가 기존 zero-rule-server 구현·DB·관리자 API를 재사용하지 않고 새로 구축되는 경우에도 제공되는 C# WPF 클라이언트와 연동할 수 있도록 인터페이스 문서의 책임 범위를 분리.
+- 변경: `docs/interfaces/POPUP_INTERFACE_SPEC.md`를 v3.0으로 재구성. 관리자 API, DB 매핑, Java/Spring 내부 클래스, 기존 서버 설정·구형 WPF API 설명을 본문 계약에서 제거하고, WPF가 실제 사용하는 로그인·최종 팝업 조회·결과 일괄 전송 3개 API와 HTTP/JSON 규약만 남겼다. 백엔드가 활성·기간·대상·숨김·완료 판정을 끝낸 최종 목록을 반환해야 한다는 책임 경계를 명시하고, WPF의 로컬 QUIZ 채점·VIDEO 완료 판정·결과 큐 저장·재전송 규칙을 별도 절로 정리했다.
+- 계약 보강: popupType별 TEXT/IMAGE/VIDEO/SURVEY/QUIZ content, popupPosition, IMAGE ADAPTIVE/FIT_TO_IMAGE/FILL 및 descriptionPosition/imageAreaRatio, 문항·정답 키, resultType, 결과 status, resultId 멱등 처리, 401 재인증 1회 재시도, 426 pending 보존 규칙, ENUM 요약과 신규 백엔드 구현 체크리스트를 포함했다.
+- 기준 소스: `PopupApiService.cs`, `PopupResultQueue.cs`, `WpfLoginClient.cs`, `SsoAuthHeaderProvider.cs`, WPF DTO 및 `PopupFactory.cs`의 현재 main 구현을 기준으로 필드와 처리 흐름을 대조했다.
+- 주요 파일: `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `version-history/CHANGELOG.md`.
+- 검증: 현재 main의 WPF 호출 경로·DTO·Factory·결과 큐 구현과 문서 내용을 대조. 문서 변경만 수행했으며 WPF 빌드, 서버 실행, 신규 백엔드 E2E 테스트는 수행하지 않음.
+- 상태: 인터페이스 문서 변경 커밋 `218943c` main 반영 완료. 변경 이력까지 main에 반영하며 별도 배포 변경 없음.
+
 ## 2026-09-23-05 — 단일 EXE 자동 업데이트 최하위 TODO 정리
 
 - 이유: 런타임 포함 단일 EXE 교체와 서버 그룹별 순차 배포 방향을 후속 개선 과제로 보존하고 기존 반입·안정화 작업과 우선순위를 구분.
