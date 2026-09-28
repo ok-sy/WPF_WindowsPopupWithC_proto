@@ -17,9 +17,9 @@ namespace Popup.Services
      *   - 선택형(SINGLE/MULTIPLE): 선택한 선택지 집합 == 정답(IsCorrect=true) 선택지 집합 이면 문항 배점 전부, 아니면 0. 부분 점수 없음.
      *   - 서술형(TEXT): 정답 문자열과 일치 모드 EXACT(trim 후 완전 일치) / CONTAINS(trim 후 포함) 로 비교. 모드가 없으면 오답.
      *   - 총점 = 정답 문항 배점 합. 통과 = 총점 >= 통과 점수(없으면 0 → 항상 통과).
+     *   - 배점(QuestionScore)이 없으면 0점이다. 서버는 QUIZ 저장 시 배점을 필수로 검증한다.
      *
-     * [구 데모 JSON 호환] 선택지에 isCorrect가 하나도 없고 question.CorrectAnswers(값 목록)가 있으면 그 값 집합으로 비교하고,
-     *   배점(QuestionScore)이 없으면 100 / 채점 문항 수 로 나눈다(DemoPopupGateway의 예전 규칙).
+     * [설계 18 L-2 — C-16·C-17] 구 데모 JSON 호환(보기 value 목록 CorrectAnswers 비교, 배점 없을 때 100/문항 수)을 삭제했다.
      */
     public static class QuizGrader
     {
@@ -37,7 +37,6 @@ namespace Popup.Services
                 return new Result(0, true, passing);
             }
 
-            double fallbackPerQuestion = 100.0 / scored.Count;
             double total = 0;
             foreach (SurveyQuestion question in scored)
             {
@@ -46,7 +45,7 @@ namespace Popup.Services
                 {
                     continue;
                 }
-                total += question.QuestionScore is double score && double.IsFinite(score) ? score : fallbackPerQuestion;
+                total += question.QuestionScore is double score && double.IsFinite(score) ? score : 0;
             }
 
             total = Math.Round(total, 2);
@@ -61,29 +60,12 @@ namespace Popup.Services
                 return MatchesText(answer.TextAnswer, question.CorrectAnswer, question.AnswerMatchMode);
             }
 
-            bool hasServerAnswerKey = question.Options.Any(option => option.IsCorrect.HasValue);
-            if (hasServerAnswerKey)
-            {
-                HashSet<long> correctIds = question.Options
-                    .Where(option => option.IsCorrect == true)
-                    .Select(option => option.OptionId)
-                    .ToHashSet();
-                HashSet<long> selectedIds = answer.SelectedOptionIds.ToHashSet();
-                return correctIds.Count > 0 && selectedIds.SetEquals(correctIds);
-            }
-
-            /* 구 데모 JSON: 정답이 선택지 value 목록으로만 있다. */
-            if (question.CorrectAnswers.Count == 0)
-            {
-                return false;
-            }
-            HashSet<string> correctValues = question.CorrectAnswers
-                .Select(value => value.Trim())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> selectedValues = answer.SelectedValues
-                .Select(value => value.Trim())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            return selectedValues.SetEquals(correctValues);
+            HashSet<long> correctIds = question.Options
+                .Where(option => option.IsCorrect == true)
+                .Select(option => option.OptionId)
+                .ToHashSet();
+            HashSet<long> selectedIds = answer.SelectedOptionIds.ToHashSet();
+            return correctIds.Count > 0 && selectedIds.SetEquals(correctIds);
         }
 
         /// <summary>서버 PopupQuestionRules.matchesText 와 같은 규칙. 모드가 EXACT/CONTAINS가 아니면 오답.</summary>

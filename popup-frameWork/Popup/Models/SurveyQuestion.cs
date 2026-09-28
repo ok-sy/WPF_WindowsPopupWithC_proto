@@ -48,7 +48,7 @@ namespace Popup.Models
          *
          * true
          * → 퀴즈 문항
-         * → CorrectAnswers와 사용자 응답을 비교하여 채점한다.
+         * → 보기의 IsCorrect(서술형은 CorrectAnswer)와 사용자 응답을 비교하여 채점한다.
          */
         public bool IsScored { get; set; }
 
@@ -59,23 +59,12 @@ namespace Popup.Models
         public List<SurveyOption> Options { get; set; } = new();
 
         /*
-         * QuizMode에서 사용할 정답 목록이다.
-         *
-         * SingleChoice
-         * → 정답 값 하나를 넣는다.
-         *
-         * MultipleChoice
-         * → 정답 값 여러 개를 넣는다.
-         *
-         * 일반 설문에서는 비워둔다.
-         *
-         * 여기에 들어가는 값은
-         * SurveyOption.Text가 아니라 SurveyOption.Value다.
+         * [설계 18 L-2 — C-16] 보기 value 목록으로 정답을 담던 CorrectAnswers를 삭제했다.
+         * 선택형 정답은 Options[].IsCorrect로만 판단한다.
          */
-        public List<string> CorrectAnswers { get; set; } = new();
 
         /*
-         * [설계 12 §4 — 로컬 채점] 서버 문항 배점(questionScore). null이면 QuizGrader가 100/채점 문항 수로 나눈다.
+         * [설계 12 §4 — 로컬 채점] 서버 문항 배점(questionScore). null이면 0점(설계 18 L-2 — C-17).
          */
         public double? QuestionScore { get; set; }
 

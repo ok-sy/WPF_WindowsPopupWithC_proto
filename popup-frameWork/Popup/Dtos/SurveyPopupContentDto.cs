@@ -27,26 +27,10 @@ namespace Popup.Dtos
             string.Empty;
 
         /*
-         * 설문 또는 퀴즈에 표시할 문항 목록
-         */
-        public List<SurveyQuestionDto> Questions { get; set; } =
-            new List<SurveyQuestionDto>();
-
-        /*
-         * 퀴즈 통과 점수
-         *
-         * 일반 설문에서는 사용하지 않는다.
-         *
-         * 예:
-         * 80
-         * → 80점 이상일 때 통과
-         */
-        public double PassingScore { get; set; }
-
-        /*
          * [설계 18 L-0 — C-8 삭제] 읽는 곳이 없던 ValidateRequiredQuestions 플래그를 삭제했다.
          * 필수 응답 검증은 SurveyPopupView가 문항별 SurveyQuestionDto.IsRequired로만 판단한다.
-         * (Questions·PassingScore는 데모 JSON v3 전환(L-2) 전까지 구형 content fallback으로 유지)
+         * [설계 18 L-2 — C-14·C-15 삭제] 문항과 통과 점수는 응답 최상위 questions / passingScore
+         * (PopupResponseDto)로만 받는다. content 안의 구형 Questions·PassingScore는 삭제했다.
          */
     }
 }

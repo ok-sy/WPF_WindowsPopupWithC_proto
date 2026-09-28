@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-10 — 데모 JSON v3 전환·설문/퀴즈 구형 분기 제거(설계 18 L-2) 및 관리자 IMAGE 미리보기 계약 반영(W-10)
+
+- 이유: WPF 설문/퀴즈의 구형 분기(`content.questions`·`content.passingScore`·보기 value 목록 정답)는 Demo Mode 샘플만 쓰고 있어, 샘플을 계약서 v3 형태로 바꾼 뒤 분기를 제거. 관리자 미리보기는 IMAGE의 ADAPTIVE/FIT_TO_IMAGE 차이와 설명 배치를 재현하지 않아 WPF 표시와 달랐고, 설명 배치 옵션은 편집할 수 없었다.
+- 변경(WPF, L-2): 데모 SURVEY/QUIZ를 최상위 `questions`·`passingScore`, `options[].isCorrect`, `questionScore`(각 50)로 변경. `PopupFactory`의 `content.questions`·`content.passingScore` fallback, `SurveyPopupContentDto.Questions/PassingScore`, `SurveyQuestionDto/SurveyQuestion.CorrectAnswers`, `QuizGrader`의 value 집합 채점 분기 삭제. 배점 없는 채점 문항은 0점(C-17 — 기존 100/문항 수 규칙 삭제). `SurveyAnswer.SelectedValues`를 삭제하고 필수 응답 검사를 `SelectedOptionIds` 기준으로 변경. 관련 주석 정리.
+- 변경(웹, W-10): `imagePreviewLayout.ts` 추가 — WPF `ImagePopupView`·`PopupWindow`의 규칙과 상수(오른쪽 설명 260, 여백 56/190/300, 테두리 2, 작업 영역 90%/95%, 최소 창 280×300)로 설명 위치(AUTO는 가로/세로 0.8 이하면 오른쪽), 영역 비율(0.5~0.9, 그 외 0.75), ADAPTIVE 최대 크기(원본·요청 중 작은 값), FIT_TO_IMAGE 이미지·창 크기를 계산. `PopupPreview`는 이미지 원본 크기를 읽어 이 규칙으로 배치하고 FIT_TO_IMAGE 창 크기를 편집기에 알린다(FULLSCREEN 제외). 편집기에 모드별 안내 문구, 설명 위치·이미지 영역 비율 입력, 신규 기본값(AUTO·0.75), 저장 전 비율 범위 검사 추가, 실제 크기 모달은 FIT_TO_IMAGE 재계산 크기로 연다. 불러오기·저장 시 설명 위치 정규화.
+- 변경(서버): IMAGE 저장 검증에 `descriptionPosition`(AUTO/RIGHT/BOTTOM)·`imageAreaRatio`(0.5~0.9) 검사 추가(값 없음은 통과), 테스트 1건 추가.
+- 문서: 설계 18 L-2·W-10, 설계 15 §6, `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md`.
+- 주요 파일: `popup-frameWork/Popup/Services/DemoPopupDataService.cs`, `Factories/PopupFactory.cs`, `Services/QuizGrader.cs`, `Models/SurveyAnswer.cs`, `Models/SurveyQuestion.cs`, `Dtos/SurveyPopupContentDto.cs`, `Dtos/SurveyQuestionDto.cs`, `Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/RgstPop/imagePreviewLayout.ts`, `PopupPreview.tsx`, `PopupEditorDialog.tsx`, `PopupService.java`.
+- 검증: 데모 JSON을 node로 파싱해 구조 확인(SURVEY 3문항·QUIZ 2문항 최상위, content에는 제목·설명만). `Popup.csproj`를 참조하는 임시 콘솔(작업 폴더 밖)로 실제 데모 QUIZ를 `QuizGrader` 채점 — 전부 정답 100·통과, 복수 선택 일부 50·불합격, 단일 오답 50·불합격, 무응답 0·불합격. `dotnet build popup-frameWork/Popup.slnx --no-incremental` 경고 0·오류 0. `imagePreviewLayout.ts`를 TypeScript로 변환해 설계 15 §5 조건(팝업 400×700, 원본 750×1030, 요청 620×520, 설명 AUTO)에서 창 938×712로 WPF 측정값과 일치, 작업 영역 축소·최대 크기 보정·한 축만 지정한 경우도 확인. 서버 `:service:core:test --tests server.service.core.popup.*` 44건 — 42 통과, 2 skip(실DB), 실패 0. `pnpm --filter @zerorule/web build` 성공, 변경 파일 eslint 경고 없음.
+- 미실행 검증: `--demo` 화면에서 SURVEY/QUIZ 제출·재도전, 관리자 편집기 브라우저에서 IMAGE 세 모드·설명 위치 미리보기 확인.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-09 — 미사용 템플릿 버전·예약 표시 컬럼 삭제(설계 18 L-5 D-6)
 
 - 이유: 문항 템플릿 버전 정책은 구현되지 않았고(저장마다 난수 그룹·버전 1·`CURRENT_YN='Y'`), 팝업의 로그인 시 표시·예약 표시 플래그와 예약 시각은 항상 N/NULL로만 쓰고 읽는 곳이 없다. 표시 시점은 노출 기간(`DISPLAY_START_AT`~`DISPLAY_END_AT`)과 WPF 폴링으로 정해지므로 정책 구현 대신 컬럼 삭제로 결정.

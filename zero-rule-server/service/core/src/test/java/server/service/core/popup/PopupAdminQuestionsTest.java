@@ -116,6 +116,30 @@ class PopupAdminQuestionsTest {
         verify(mapper, times(3)).upsertAdminPopupNotice(any());
     }
 
+    // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.
+    @Test void imagePopupValidatesDescriptionLayoutOptions() {
+        java.util.function.Function<Map<String, Object>, PopupResponseDto> withContent = extra -> {
+            var base = imagePopup("ADAPTIVE");
+            var content = new java.util.HashMap<>(base.content());
+            content.putAll(extra);
+            return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                    base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                    base.width(), base.height(), base.widthRatio(), base.heightRatio(),
+                    base.minimumWidth(), base.minimumHeight(), base.maximumWidth(), base.maximumHeight(),
+                    base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(),
+                    base.questionTemplateId(), base.periodMode(), base.repeatInterval(), base.repeatDayOfWeek(),
+                    base.repeatDayOfMonth(), base.hideDays(), base.completionRatio(), base.passingScore(),
+                    base.allowCloseBeforeComplete(), base.questions(), content);
+        };
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                withContent.apply(Map.of("descriptionPosition", "LEFT")), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                withContent.apply(Map.of("imageAreaRatio", 0.95)), false, List.of(), "admin"));
+        service.saveAdminPopup(withContent.apply(Map.of("descriptionPosition", "right", "imageAreaRatio", 0.6)),
+                false, List.of(), "admin");
+        verify(mapper, times(1)).upsertAdminPopupNotice(any());
+    }
+
     // [설계 18 L-3] 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다.
     @Test void saveStoresColumnValuesOutsideContentOptions() {
         service.saveAdminPopup(imagePopup("ADAPTIVE"), false, List.of(), "admin");

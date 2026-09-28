@@ -3,7 +3,7 @@
 - 작성일: 2026-09-28 (KST)
 - 범위: **팝업 기능 소스만** — WPF `popup-frameWork/Popup`, 서버 `server.*.popup`/`server.*.wpf` 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop/**`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle/*.sql`. zero 공통 프레임워크(보안 필터·`DefaultPublicUrls`·`BasicConfig` 등)는 대상에서 제외한다.
 - 기준: 백엔드 독립형 WPF Client API 계약서 v3.0(`docs/interfaces/POPUP_INTERFACE_SPEC.md`) — WPF가 쓰는 API는 `POST /p/api/wpf/auth/login`, `GET /p/api/wpf/popups`, `POST /p/api/wpf/popups/results` 3개뿐이다.
-- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08·09 미실행, 09는 로컬 XE도 미실행), L-5는 W-10 외 반영, L-2 미착수**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
+- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08·09 미실행, 09는 로컬 XE도 미실행), L-2·L-5(W-10 포함) 반영. 남은 것은 실행 검증과 원격 DB 적용**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
 
 분류:
 
@@ -169,10 +169,10 @@
 
 ### L-2. 데모 JSON v3 전환 → WPF 설문/퀴즈 구형 분기 제거
 
-- [ ] 1) `DemoPopupDataService` SURVEY/QUIZ: 최상위 `questions`·`passingScore`, `options[].isCorrect`, `questionScore`
-- [ ] 2) `--demo`로 QUIZ 합격/불합격·재도전 확인
-- [ ] 3) C-14~C-16 삭제, C-17 결정(서버 null 배점 처리와 대조)
-- [ ] 4) `SelectedValues` → `SelectedOptionIds` 필수 검사 교체 검토
+- [x] 1) `DemoPopupDataService` SURVEY/QUIZ: 최상위 `questions`·`passingScore`, `options[].isCorrect`, `questionScore`(각 50) — 2026-09-28
+- [ ] 2) `--demo`로 QUIZ 합격/불합격·재도전 화면 확인 — **미실행**. 대신 데모 JSON을 그대로 읽어 `QuizGrader`로 채점하는 임시 콘솔 검증 수행(전부 정답 100·통과, 일부 오답 50·불합격, 무응답 0·불합격)
+- [x] 3) C-14~C-16 삭제(`content.questions`·`content.passingScore` fallback, `CorrectAnswers` DTO·모델·채점 분기), C-17은 **배점 없음 = 0점**으로 결정(서버는 QUIZ 저장 시 배점 필수, 채점도 정답일 때 배점만 더함)
+- [x] 4) `SurveyAnswer.SelectedValues` 삭제, 필수 응답 검사를 `SelectedOptionIds`로 교체
 
 ### L-3. content 중복 키 정리 (서버·웹·WPF 동시)
 
@@ -202,7 +202,7 @@
 - [x] C-6 `DisplayStartAt`/`DisplayEndAt`: **유지**로 결정 — 계약 §6.3 선택 필드이고 서버가 이미 내려주며 WPF DTO에 두는 비용이 없음
 - [x] C-22 날짜 컨버터 숫자(epoch 초) 분기 삭제 — WPF API 3개 응답 날짜가 모두 ISO(`WpfJson.DATE_TIME`)임을 서버 DTO에서 확인. 클래스 이름 `IsoDateTimeOffsetJsonConverter`로 변경
 - [x] W-3 parity 문서는 L-0에서 현행 기준으로 재작성 완료
-- [ ] W-10 미리보기 IMAGE 계약(ADAPTIVE/FIT_TO_IMAGE) 반영 — 별도 기능 과제로 유지
+- [x] W-10 미리보기 IMAGE 계약 반영(2026-09-28): `imagePreviewLayout.ts`(WPF 규칙·상수), ADAPTIVE 최대 크기·영역 비율, FIT_TO_IMAGE 이미지 고정 크기 + 창 크기 재계산(편집기 안내·실제 크기 모달 적용), 설명 위치 AUTO/RIGHT/BOTTOM. 편집기에 `descriptionPosition`·`imageAreaRatio` 입력과 모드 안내 추가, 서버 저장 검증 추가. 설계 15 §5 값(938×712)과 계산 일치 확인. 브라우저 화면 확인은 미실행
 
 ---
 
