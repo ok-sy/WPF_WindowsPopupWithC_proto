@@ -86,19 +86,9 @@
             0.7;
 
         /*
-         * 영상 시청 완료로 인정할 최소 비율
-         *
-         * 예:
-         * 0.9
-         * → 전체 영상의 90% 이상 재생 시 완료 처리
+         * [설계 18 L-0 — C-7 삭제] content 안의 CompletionRatio·AllowCloseBeforeCompletion을 삭제했다.
+         * 완료 비율과 완료 전 닫기 허용 여부는 계약 v3.0 §8.3대로 팝업 최상위 값
+         * (PopupResponseDto.CompletionRatio·AllowCloseBeforeComplete)만 읽으며, content 쪽 값은 읽는 곳이 없었다.
          */
-        public double CompletionRatio { get; set; } =
-            0.9;
-
-        /*
-         * 영상 완료 전 팝업을 닫을 수 있는지 여부
-         */
-        public bool AllowCloseBeforeCompletion { get; set; } =
-            true;
     }
 }

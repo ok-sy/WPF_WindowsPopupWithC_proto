@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PopupQuestionRulesTest {
     private PopupQuestionDto text(String answer, String mode, String score) {
         return new PopupQuestionDto(1L, "보안 단축키", null, "TEXT", true, true,
-                score == null ? null : new BigDecimal(score), 1, List.of(), answer, mode);
+                score == null ? null : new BigDecimal(score), 1, List.of(), answer, mode, "VERTICAL");
     }
 
     @Test void exactMatchTrimsOnlyOuterWhitespace() {
@@ -44,9 +44,9 @@ class PopupQuestionRulesTest {
 
     @Test void singleChoiceMustHaveExactlyOneCorrectOption() {
         var options = List.of(new PopupOptionDto(1L, "1", "A", 1, true), new PopupOptionDto(2L, "2", "B", 2, true));
-        var single = new PopupQuestionDto(1L, "문항", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null);
+        var single = new PopupQuestionDto(1L, "문항", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null, "VERTICAL");
         assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(single), true, 10.0));
-        var multiple = new PopupQuestionDto(1L, "문항", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null);
+        var multiple = new PopupQuestionDto(1L, "문항", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null, "VERTICAL");
         assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(multiple), true, 10.0));
     }
 }

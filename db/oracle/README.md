@@ -107,3 +107,6 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 ## 문항별 선택지 배치 추가 (2026-09-28)
 
 기존 DB는 서버 배포 전에 POPUP 소유 계정에서 `05_question_option_layout_oracle.sql`을 한 번 실행한다. `POPUP_QUESTION.OPTION_LAYOUT` 기본값은 VERTICAL이며 HORIZONTAL도 허용한다. 신규 DB는 `01_popup_schema_oracle.sql`에 포함되어 있으므로 추가 SQL을 중복 실행하지 않는다.
+
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 적용 완료(기존 문항 3행 VERTICAL). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
+  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @05_question_option_layout_oracle.sql`

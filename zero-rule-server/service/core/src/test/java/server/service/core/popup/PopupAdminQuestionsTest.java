@@ -44,7 +44,7 @@ class PopupAdminQuestionsTest {
         return new PopupQuestionDto(1L, "Question", null, "SINGLE_CHOICE", true, true,
                 new BigDecimal("2.00"), 1,
                 List.of(new PopupOptionDto(2L, "1", "A", 1, firstCorrect),
-                        new PopupOptionDto(3L, "2", "B", 2, secondCorrect)), null, null);
+                        new PopupOptionDto(3L, "2", "B", 2, secondCorrect)), null, null, "VERTICAL");
     }
 
     private void existingQuestions() {

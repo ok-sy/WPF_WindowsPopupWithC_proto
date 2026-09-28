@@ -38,7 +38,8 @@ import java.util.Objects;
  * </ul>
  *
  * <p>기존 {@link PopupService}는 문항 조립·채점 규칙의 단일 원천으로 재사용하며 구조를 바꾸지 않는다.
- * 목록 항목은 {@code PopupService.getPopups}가 만드는 공용 DTO(정답 제외)를 {@link WpfPopupItem#from}으로 변환한다.</p>
+ * 목록 항목은 {@code PopupService.toPublicResponseDto}로 만든 공용 DTO를 {@link WpfPopupItem#from}으로 변환한다.
+ * QUIZ가 아닌 팝업은 {@link WpfPopupItem#withoutAnswerKey}로 정답 키를 제거한다.</p>
  */
 @Service
 public class WpfPopupService {
@@ -71,7 +72,7 @@ public class WpfPopupService {
 
     /**
      * 사용자에게 지금 표시해야 할 최종 팝업 목록. 완료 팝업까지 SQL에서 제외한다.
-     * 문항은 템플릿 ID를 모아 한 번에 조회한다(팝업마다 문항 쿼리를 반복하지 않음 — 기존 getPopups와 동일).
+     * 문항은 템플릿 ID를 모아 한 번에 조회한다(팝업마다 문항 쿼리를 반복하지 않음).
      *
      * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ 팝업은 정답 키(선택지 isCorrect·서술형 correctAnswer/answerMatchMode)와
      * 통과 점수(passingScore)를 포함해 내려준다. WPF가 제출 즉시 점수·통과 여부를 판정하기 위해서다.

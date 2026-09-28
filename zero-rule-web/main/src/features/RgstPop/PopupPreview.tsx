@@ -15,9 +15,10 @@ import {
   Typography,
 } from '@mui/material';
 
+// [설계 18 L-0 W-2] 새 창 미리보기 페이지(pages/popup-preview.tsx)를 여는 코드가 없어 페이지와 함께
+// standalone prop·분기를 삭제했다. 미리보기는 편집기 내 패널(fitContainer)과 "실제 크기로 보기" 모달만 사용한다.
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
-  standalone?: boolean;
   fitContainer?: boolean;
   showBackground?: boolean;
   onClose?: () => void;
@@ -34,7 +35,6 @@ function titleKey(type: AdminPopupDetail['popupType']): string {
   return 'contentTitle';
 }
 
-// [2026-09-21 제거] MarkdownView(react-markdown + remark-gfm) — TEXT 팝업 Markdown 모드를 쓰지 않기로 해 삭제. 의존성도 package.json에서 제거.
 function previewSize(popup: AdminPopupDetail) {
   if (popup.sizeMode === 'FULLSCREEN') return { width: '100%', height: 520 };
   if (popup.sizeMode === 'RATIO') {
@@ -246,15 +246,13 @@ function PopupBody({ popup }: PopupPreviewProps) {
   );
 }
 
-export default function PopupPreview({ popup, standalone = false, fitContainer = false, showBackground = !standalone, onClose }: PopupPreviewProps) {
+export default function PopupPreview({ popup, fitContainer = false, showBackground = true, onClose }: PopupPreviewProps) {
   const overlayEnabled = popup.content.useBackgroundOverlay !== false;
   const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? 0.45);
   const overlayOpacity = Number.isFinite(requestedOpacity) ? Math.max(0, Math.min(1, requestedOpacity)) : 0.45;
-  const size = standalone
-    ? { width: '100%', height: '100vh' }
-    : fitContainer
-      ? { width: '100%', height: '100%' }
-      : previewSize(popup);
+  const size = fitContainer
+    ? { width: '100%', height: '100%' }
+    : previewSize(popup);
   const imageFill = popup.popupType === 'IMAGE'
     && String(popup.content.imageSizeMode ?? '').toUpperCase() === 'FILL';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
@@ -268,7 +266,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
   return (
     <Box
       sx={{
-        minHeight: standalone ? '100vh' : fitContainer ? 0 : 570,
+        minHeight: fitContainer ? 0 : 570,
         height: fitContainer ? '100%' : undefined,
         p: showBackground ? 2 : 0,
         flex: fitContainer ? 1 : undefined,
@@ -296,7 +294,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
-          borderRadius: standalone ? 0 : 2,
+          borderRadius: 2,
           bgcolor: 'white',
         }}
       >

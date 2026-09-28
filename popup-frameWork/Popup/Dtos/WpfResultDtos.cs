@@ -9,7 +9,22 @@ namespace Popup.Dtos
      * [추가 이유 — 기준 3·4] 기존 숨김(hide)·제출(responses)·영상 진행률(video-progress)·표시/닫기 이벤트(events)
      * 4개 API 호출을 "결과 항목" 하나로 합쳐 팝업이 닫힐 때 1회만 보낸다. 요청에는 userId가 없다(서버가 인증 정보로 식별, 기준 6).
      * 항목마다 resultId(GUID)가 멱등 키이며, 서버는 같은 resultId를 다시 받으면 DUPLICATE로 응답하고 재처리하지 않는다.
+     *
+     * [설계 18 L-0 — C-4] WPF Client API 계약 v3.0이 WPF API를 3개(로그인·목록·결과)로 통일하면서 구 동작별 API DTO를
+     * 모아 두던 PopupInteractionDtos.cs(제출·영상 진행률·이벤트·상태 조회 요청/응답 7개 클래스)를 삭제했다.
+     * 그중 결과 항목 answers에 계속 쓰이는 PopupSubmitAnswerRequestDto만 이 파일로 옮겼다.
      */
+
+    /// <summary>
+    /// 설문·퀴즈 문항 하나에 제출할 답안이다. <see cref="WpfResultItemDto.Answers"/>의 항목 형식.
+    /// [설계 18 L-0 — C-4] 삭제된 PopupInteractionDtos.cs에서 이동(이름·필드 변경 없음, JSON 계약 그대로).
+    /// </summary>
+    public class PopupSubmitAnswerRequestDto
+    {
+        public long QuestionId { get; set; }
+        public string? TextAnswer { get; set; }
+        public List<long> OptionIds { get; set; } = new();
+    }
 
     /// <summary>결과 항목 유형. 서버 enum WpfResultType과 문자열이 같아야 한다.</summary>
     public static class WpfResultType
@@ -55,7 +70,7 @@ namespace Popup.Dtos
         /// <summary>SUBMITTED일 때 응답 시작 시각(선택).</summary>
         public DateTimeOffset? ResponseStartedAt { get; set; }
 
-        /// <summary>SUBMITTED일 때 답안. 기존 제출 API의 answers와 같은 구조.</summary>
+        /// <summary>SUBMITTED일 때 답안(문항별 questionId·optionIds·textAnswer).</summary>
         public List<PopupSubmitAnswerRequestDto>? Answers { get; set; }
 
         /// <summary>
@@ -69,7 +84,7 @@ namespace Popup.Dtos
         public WpfVideoProgressDto? Video { get; set; }
     }
 
-    /// <summary>영상 시청 누적값. 기존 VideoProgressRequestDto에서 userId를 뺀 형태.</summary>
+    /// <summary>영상 시청 누적값(초). 사용자 ID는 담지 않는다(서버가 인증 정보로 식별).</summary>
     public class WpfVideoProgressDto
     {
         public decimal DurationSeconds { get; set; }
@@ -115,7 +130,7 @@ namespace Popup.Dtos
         public double? WatchedRatio { get; set; }
         public double? RequiredRatio { get; set; }
 
-        public bool IsAccepted => string.Equals(Status, "ACCEPTED", StringComparison.OrdinalIgnoreCase);
+        /* [설계 18 L-0 — C-10 삭제] 호출부가 없던 IsAccepted는 삭제했다. 큐는 REJECTED만 구분해 로그를 남긴다. */
         public bool IsRejected => string.Equals(Status, "REJECTED", StringComparison.OrdinalIgnoreCase);
     }
 

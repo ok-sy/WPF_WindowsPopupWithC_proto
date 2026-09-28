@@ -1,0 +1,2179 @@
+{
+  "source": "db/oracle/01_popup_schema_oracle.sql",
+  "sha256": "0918b299c6950250b4af6431315b2ec54766c274ffa4b23539b057876e3c8ace",
+  "tables": 17,
+  "columns": 229,
+  "primaryKeys": 17,
+  "foreignKeys": 25,
+  "uniqueKeys": 12,
+  "checks": 50,
+  "sequences": 12,
+  "indexes": 15,
+  "xmlLimitations": [
+    "ERwin application/XSD compatibility unverified",
+    "CHECK/default/ON DELETE expressions retained as definitions, not executable XML objects",
+    "Standalone indexes and sequences included in SQL only",
+    "No diagram layout"
+  ],
+  "schema": [
+    {
+      "name": "APP_DEPARTMENT",
+      "columns": [
+        {
+          "name": "DEPARTMENT_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "PARENT_DEPARTMENT_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "DEPARTMENT_NAME",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DEPARTMENT_LEVEL",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "SORT_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "ACTIVE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_APP_DEPARTMENT",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "DEPARTMENT_ID"
+          ],
+          "sql": "CONSTRAINT PK_APP_DEPARTMENT PRIMARY KEY (DEPARTMENT_ID)"
+        },
+        {
+          "name": "FK_DEPARTMENT_PARENT",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "PARENT_DEPARTMENT_ID"
+          ],
+          "sql": "CONSTRAINT FK_DEPARTMENT_PARENT FOREIGN KEY (PARENT_DEPARTMENT_ID)\n        REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)",
+          "parent": "APP_DEPARTMENT",
+          "parentColumns": [
+            "DEPARTMENT_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_DEPARTMENT_LEVEL      CHECK (DEPARTMENT_LEVEL >= 1)",
+        "CONSTRAINT CK_DEPARTMENT_SORT_ORDER CHECK (SORT_ORDER >= 0)",
+        "CONSTRAINT CK_DEPARTMENT_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE APP_DEPARTMENT\n(\n    DEPARTMENT_ID        VARCHAR2(30 CHAR)  NOT NULL,\n    PARENT_DEPARTMENT_ID VARCHAR2(30 CHAR),\n    DEPARTMENT_NAME      VARCHAR2(100 CHAR) NOT NULL,\n    DEPARTMENT_LEVEL     NUMBER(10)         NOT NULL,\n    SORT_ORDER           NUMBER(10)         NOT NULL,\n    ACTIVE_YN            CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_APP_DEPARTMENT PRIMARY KEY (DEPARTMENT_ID),\n    CONSTRAINT FK_DEPARTMENT_PARENT FOREIGN KEY (PARENT_DEPARTMENT_ID)\n        REFERENCES APP_DEPARTMENT (DEPARTMENT_ID),\n    CONSTRAINT CK_DEPARTMENT_LEVEL      CHECK (DEPARTMENT_LEVEL >= 1),\n    CONSTRAINT CK_DEPARTMENT_SORT_ORDER CHECK (SORT_ORDER >= 0),\n    CONSTRAINT CK_DEPARTMENT_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "APP_POSITION",
+      "columns": [
+        {
+          "name": "POSITION_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POSITION_NAME",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "SORT_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "ACTIVE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_APP_POSITION",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "POSITION_ID"
+          ],
+          "sql": "CONSTRAINT PK_APP_POSITION PRIMARY KEY (POSITION_ID)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_POSITION_SORT_ORDER CHECK (SORT_ORDER >= 0)",
+        "CONSTRAINT CK_POSITION_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE APP_POSITION\n(\n    POSITION_ID   VARCHAR2(30 CHAR)  NOT NULL,\n    POSITION_NAME VARCHAR2(100 CHAR) NOT NULL,\n    SORT_ORDER    NUMBER(10)         NOT NULL,\n    ACTIVE_YN     CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY    VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT    TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY    VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT    TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_APP_POSITION PRIMARY KEY (POSITION_ID),\n    CONSTRAINT CK_POSITION_SORT_ORDER CHECK (SORT_ORDER >= 0),\n    CONSTRAINT CK_POSITION_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "APP_USER",
+      "columns": [
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NAME",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DEPARTMENT_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POSITION_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "ACTIVE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "HIRE_DATE",
+          "type": "DATE",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "LAST_LOGIN_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_APP_USER",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT PK_APP_USER PRIMARY KEY (EMPLOYEE_NO)"
+        },
+        {
+          "name": "FK_USER_DEPARTMENT",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "DEPARTMENT_ID"
+          ],
+          "sql": "CONSTRAINT FK_USER_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)",
+          "parent": "APP_DEPARTMENT",
+          "parentColumns": [
+            "DEPARTMENT_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_USER_POSITION",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POSITION_ID"
+          ],
+          "sql": "CONSTRAINT FK_USER_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID)",
+          "parent": "APP_POSITION",
+          "parentColumns": [
+            "POSITION_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_USER_ACTIVE CHECK (ACTIVE_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE APP_USER\n(\n    EMPLOYEE_NO   VARCHAR2(30 CHAR)  NOT NULL,\n    EMPLOYEE_NAME VARCHAR2(100 CHAR) NOT NULL,\n    DEPARTMENT_ID VARCHAR2(30 CHAR)  NOT NULL,\n    POSITION_ID   VARCHAR2(30 CHAR)  NOT NULL,\n    ACTIVE_YN     CHAR(1)            DEFAULT 'Y' NOT NULL,\n    HIRE_DATE     DATE,\n    LAST_LOGIN_AT TIMESTAMP(6),\n    CREATED_BY    VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT    TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY    VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT    TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_APP_USER PRIMARY KEY (EMPLOYEE_NO),\n    CONSTRAINT FK_USER_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID),\n    CONSTRAINT FK_USER_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID),\n    CONSTRAINT CK_USER_ACTIVE CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "QUESTION_TEMPLATE",
+      "columns": [
+        {
+          "name": "QUESTION_TEMPLATE_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TEMPLATE_GROUP_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TEMPLATE_NAME",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TEMPLATE_TYPE",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TEMPLATE_VERSION",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CURRENT_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "ACTIVE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_QUESTION_TEMPLATE",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "sql": "CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID)"
+        },
+        {
+          "name": "UK_QTEMPLATE_GROUP_VERSION",
+          "type": "UNIQUE",
+          "columns": [
+            "TEMPLATE_GROUP_ID",
+            "TEMPLATE_VERSION"
+          ],
+          "sql": "CONSTRAINT UK_QTEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION >= 1)",
+        "CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE QUESTION_TEMPLATE\n(\n    QUESTION_TEMPLATE_ID NUMBER(19)         NOT NULL,\n    TEMPLATE_GROUP_ID    VARCHAR2(30 CHAR)  NOT NULL,\n    TEMPLATE_NAME        VARCHAR2(100 CHAR) NOT NULL,\n    TEMPLATE_TYPE        VARCHAR2(10 CHAR)  NOT NULL,\n    TEMPLATE_VERSION     NUMBER(10)         NOT NULL,\n    CURRENT_YN           CHAR(1)            DEFAULT 'Y' NOT NULL,\n    ACTIVE_YN            CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID),\n    CONSTRAINT UK_QTEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION),\n    CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION >= 1),\n    CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N')),\n    CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "POPUP_NOTICE",
+      "columns": [
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_TEMPLATE_ID",
+          "type": "NUMBER(19)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_TYPE",
+          "type": "VARCHAR2(20 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TITLE",
+          "type": "VARCHAR2(200 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "SHOW_ON_LOGIN_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "SHOW_ON_SCHEDULE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "SCHEDULED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "DISPLAY_START_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DISPLAY_END_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DISPLAY_MODE",
+          "type": "VARCHAR2(20 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DISPLAY_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": "100"
+        },
+        {
+          "name": "PERIOD_MODE",
+          "type": "VARCHAR2(20 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "REPEAT_INTERVAL",
+          "type": "NUMBER(10)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "REPEAT_DAY_OF_WEEK",
+          "type": "VARCHAR2(20 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "REPEAT_DAY_OF_MONTH",
+          "type": "NUMBER(10)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "ACTIVE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "SIZE_MODE",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_WIDTH",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_HEIGHT",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "WIDTH_RATIO",
+          "type": "NUMBER(5,4)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "HEIGHT_RATIO",
+          "type": "NUMBER(5,4)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MINIMUM_WIDTH",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MINIMUM_HEIGHT",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MAXIMUM_WIDTH",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MAXIMUM_HEIGHT",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "SHOW_HEADER_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "SHOW_CLOSE_BUTTON_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "SHOW_FOOTER_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "SHOW_DO_NOT_SHOW_AGAIN_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "HIDE_DAYS",
+          "type": "NUMBER(10)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "COMPLETION_RATIO",
+          "type": "NUMBER(5,4)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "PASSING_SCORE",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "ALLOW_CLOSE_BEFORE_COMPLETE_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'Y'"
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_NOTICE",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_NOTICE PRIMARY KEY (POPUP_ID)"
+        },
+        {
+          "name": "FK_POPUP_QUESTION_TEMPLATE",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "sql": "CONSTRAINT FK_POPUP_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID)",
+          "parent": "QUESTION_TEMPLATE",
+          "parentColumns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER >= 1)",
+        "CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT >= DISPLAY_START_AT)",
+        "CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL)",
+        "CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL >= 1)",
+        "CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31)",
+        "CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS >= 1)",
+        "CONSTRAINT CK_POPUP_COMPLETION_RATIO CHECK (COMPLETION_RATIO IS NULL OR COMPLETION_RATIO BETWEEN 0 AND 1)",
+        "CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE >= 0)",
+        "CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO > 0)",
+        "CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO > 0)",
+        "CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (SHOW_ON_LOGIN_YN IN ('Y', 'N')\n         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')\n         AND ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE POPUP_NOTICE\n(\n    POPUP_ID                       VARCHAR2(50 CHAR)  NOT NULL,\n    QUESTION_TEMPLATE_ID           NUMBER(19),\n    POPUP_TYPE                     VARCHAR2(20 CHAR)  NOT NULL,\n    TITLE                          VARCHAR2(200 CHAR) NOT NULL,\n    SHOW_ON_LOGIN_YN               CHAR(1)            DEFAULT 'N' NOT NULL,\n    SHOW_ON_SCHEDULE_YN            CHAR(1)            DEFAULT 'N' NOT NULL,\n    SCHEDULED_AT                   TIMESTAMP(6),\n    DISPLAY_START_AT               TIMESTAMP(6)       NOT NULL,\n    DISPLAY_END_AT                 TIMESTAMP(6)       NOT NULL,\n    DISPLAY_MODE                   VARCHAR2(20 CHAR)  NOT NULL,\n    DISPLAY_ORDER                  NUMBER(10)         DEFAULT 100 NOT NULL,\n    PERIOD_MODE                    VARCHAR2(20 CHAR)  NOT NULL,\n    REPEAT_INTERVAL                NUMBER(10),\n    REPEAT_DAY_OF_WEEK             VARCHAR2(20 CHAR),\n    REPEAT_DAY_OF_MONTH            NUMBER(10),\n    ACTIVE_YN                      CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SIZE_MODE                      VARCHAR2(30 CHAR)  NOT NULL,\n    POPUP_WIDTH                    NUMBER(10,2),\n    POPUP_HEIGHT                   NUMBER(10,2),\n    WIDTH_RATIO                    NUMBER(5,4),\n    HEIGHT_RATIO                   NUMBER(5,4),\n    MINIMUM_WIDTH                  NUMBER(10,2),\n    MINIMUM_HEIGHT                 NUMBER(10,2),\n    MAXIMUM_WIDTH                  NUMBER(10,2),\n    MAXIMUM_HEIGHT                 NUMBER(10,2),\n    SHOW_HEADER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_CLOSE_BUTTON_YN           CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_FOOTER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_DO_NOT_SHOW_AGAIN_YN      CHAR(1)            DEFAULT 'N' NOT NULL,\n    HIDE_DAYS                      NUMBER(10),\n    COMPLETION_RATIO               NUMBER(5,4),\n    PASSING_SCORE                  NUMBER(10,2),\n    ALLOW_CLOSE_BEFORE_COMPLETE_YN CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_NOTICE PRIMARY KEY (POPUP_ID),\n    CONSTRAINT FK_POPUP_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID),\n    CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER >= 1),\n    CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT >= DISPLAY_START_AT),\n    CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL),\n    CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL >= 1),\n    CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31),\n    CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS >= 1),\n    CONSTRAINT CK_POPUP_COMPLETION_RATIO CHECK (COMPLETION_RATIO IS NULL OR COMPLETION_RATIO BETWEEN 0 AND 1),\n    CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE >= 0),\n    CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO > 0),\n    CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO > 0),\n    CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (SHOW_ON_LOGIN_YN IN ('Y', 'N')\n         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')\n         AND ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "POPUP_CONTENT",
+      "columns": [
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CONTENT_TITLE",
+          "type": "VARCHAR2(200 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "DESCRIPTION",
+          "type": "VARCHAR2(2000 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CONTENT_BODY",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MEDIA_URL",
+          "type": "VARCHAR2(2000 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "LINK_URL",
+          "type": "VARCHAR2(2000 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CONTENT_OPTIONS",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_CONTENT",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_CONTENT PRIMARY KEY (POPUP_ID)"
+        },
+        {
+          "name": "FK_CONTENT_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_CONTENT_POPUP FOREIGN KEY (POPUP_ID)\n        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "CASCADE"
+        }
+      ],
+      "checks": [],
+      "sql": "CREATE TABLE POPUP_CONTENT\n(\n    POPUP_ID        VARCHAR2(50 CHAR)   NOT NULL,\n    CONTENT_TITLE   VARCHAR2(200 CHAR),\n    DESCRIPTION     VARCHAR2(2000 CHAR),\n    CONTENT_BODY    CLOB,\n    MEDIA_URL       VARCHAR2(2000 CHAR),\n    LINK_URL        VARCHAR2(2000 CHAR),\n    CONTENT_OPTIONS CLOB,\n    CREATED_BY      VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT      TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY      VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT      TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_CONTENT PRIMARY KEY (POPUP_ID),\n    CONSTRAINT FK_CONTENT_POPUP FOREIGN KEY (POPUP_ID)\n        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE\n    \n    \n    \n)"
+    },
+    {
+      "name": "POPUP_TARGET_GROUP",
+      "columns": [
+        {
+          "name": "TARGET_GROUP_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TARGET_NAME",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TARGET_DESCRIPTION",
+          "type": "VARCHAR2(500 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "GROUP_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_TARGET_GROUP",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "TARGET_GROUP_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_TARGET_GROUP PRIMARY KEY (TARGET_GROUP_ID)"
+        },
+        {
+          "name": "FK_TARGET_GROUP_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_TARGET_GROUP_POPUP FOREIGN KEY (POPUP_ID)\n        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "UQ_TARGET_GROUP_ORDER",
+          "type": "UNIQUE",
+          "columns": [
+            "POPUP_ID",
+            "GROUP_ORDER"
+          ],
+          "sql": "CONSTRAINT UQ_TARGET_GROUP_ORDER UNIQUE (POPUP_ID, GROUP_ORDER)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_TARGET_GROUP_ORDER CHECK (GROUP_ORDER >= 1)"
+      ],
+      "sql": "CREATE TABLE POPUP_TARGET_GROUP\n(\n    TARGET_GROUP_ID    NUMBER(19)         NOT NULL,\n    POPUP_ID           VARCHAR2(50 CHAR)  NOT NULL,\n    TARGET_NAME        VARCHAR2(100 CHAR) NOT NULL,\n    TARGET_DESCRIPTION VARCHAR2(500 CHAR) NOT NULL,\n    GROUP_ORDER        NUMBER(10)         NOT NULL,\n    CREATED_BY         VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT         TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY         VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT         TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_TARGET_GROUP PRIMARY KEY (TARGET_GROUP_ID),\n    CONSTRAINT FK_TARGET_GROUP_POPUP FOREIGN KEY (POPUP_ID)\n        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE,\n    CONSTRAINT UQ_TARGET_GROUP_ORDER UNIQUE (POPUP_ID, GROUP_ORDER),\n    CONSTRAINT CK_TARGET_GROUP_ORDER CHECK (GROUP_ORDER >= 1)\n)"
+    },
+    {
+      "name": "POPUP_TARGET_CONDITION",
+      "columns": [
+        {
+          "name": "TARGET_CONDITION_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TARGET_GROUP_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CONDITION_TYPE",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CONDITION_OPERATOR",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "DEPARTMENT_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "POSITION_ID",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CONDITION_DATE_VALUE",
+          "type": "DATE",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "INCLUDE_CHILD_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "CONDITION_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_TARGET_CONDITION",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "TARGET_CONDITION_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_TARGET_CONDITION PRIMARY KEY (TARGET_CONDITION_ID)"
+        },
+        {
+          "name": "FK_TARGET_CONDITION_GROUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "TARGET_GROUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_TARGET_CONDITION_GROUP FOREIGN KEY (TARGET_GROUP_ID)\n        REFERENCES POPUP_TARGET_GROUP (TARGET_GROUP_ID) ON DELETE CASCADE",
+          "parent": "POPUP_TARGET_GROUP",
+          "parentColumns": [
+            "TARGET_GROUP_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "FK_TARGET_CONDITION_DEPARTMENT",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "DEPARTMENT_ID"
+          ],
+          "sql": "CONSTRAINT FK_TARGET_CONDITION_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)",
+          "parent": "APP_DEPARTMENT",
+          "parentColumns": [
+            "DEPARTMENT_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_TARGET_CONDITION_POSITION",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POSITION_ID"
+          ],
+          "sql": "CONSTRAINT FK_TARGET_CONDITION_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID)",
+          "parent": "APP_POSITION",
+          "parentColumns": [
+            "POSITION_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_TARGET_CONDITION_EMPLOYEE",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT FK_TARGET_CONDITION_EMPLOYEE   FOREIGN KEY (EMPLOYEE_NO)   REFERENCES APP_USER (EMPLOYEE_NO)",
+          "parent": "APP_USER",
+          "parentColumns": [
+            "EMPLOYEE_NO"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "UQ_TARGET_CONDITION_ORDER",
+          "type": "UNIQUE",
+          "columns": [
+            "TARGET_GROUP_ID",
+            "CONDITION_ORDER"
+          ],
+          "sql": "CONSTRAINT UQ_TARGET_CONDITION_ORDER UNIQUE (TARGET_GROUP_ID, CONDITION_ORDER)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_TARGET_CONDITION_ORDER CHECK (CONDITION_ORDER >= 1)",
+        "CONSTRAINT CK_TCOND_INCLUDE_CHILD CHECK (INCLUDE_CHILD_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_TARGET_CONDITION_OPERATOR CHECK (CONDITION_OPERATOR IN ('=', '!=', '<', '<=', '>', '>='))",
+        "CONSTRAINT CK_TARGET_CONDITION_VALUE CHECK\n    (\n        (CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END) = 1\n        AND\n        (CASE CONDITION_TYPE\n            WHEN 'DEPARTMENT' THEN CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'POSITION'   THEN CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'EMPLOYEE'   THEN CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'HIRE_DATE'  THEN CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END\n            ELSE 0\n         END) = 1\n    )",
+        "CONSTRAINT CK_TCOND_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_TYPE = 'DEPARTMENT')"
+      ],
+      "sql": "CREATE TABLE POPUP_TARGET_CONDITION\n(\n    TARGET_CONDITION_ID  NUMBER(19)        NOT NULL,\n    TARGET_GROUP_ID      NUMBER(19)        NOT NULL,\n    CONDITION_TYPE       VARCHAR2(30 CHAR) NOT NULL,\n    CONDITION_OPERATOR   VARCHAR2(10 CHAR) NOT NULL,\n    DEPARTMENT_ID        VARCHAR2(30 CHAR),\n    POSITION_ID          VARCHAR2(30 CHAR),\n    EMPLOYEE_NO          VARCHAR2(30 CHAR),\n    CONDITION_DATE_VALUE DATE,\n    INCLUDE_CHILD_YN     CHAR(1)           DEFAULT 'N' NOT NULL,\n    CONDITION_ORDER      NUMBER(10)        NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR) NOT NULL,\n    CREATED_AT           TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR) NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_TARGET_CONDITION PRIMARY KEY (TARGET_CONDITION_ID),\n    CONSTRAINT FK_TARGET_CONDITION_GROUP FOREIGN KEY (TARGET_GROUP_ID)\n        REFERENCES POPUP_TARGET_GROUP (TARGET_GROUP_ID) ON DELETE CASCADE,\n    CONSTRAINT FK_TARGET_CONDITION_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID),\n    CONSTRAINT FK_TARGET_CONDITION_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID),\n    CONSTRAINT FK_TARGET_CONDITION_EMPLOYEE   FOREIGN KEY (EMPLOYEE_NO)   REFERENCES APP_USER (EMPLOYEE_NO),\n    CONSTRAINT UQ_TARGET_CONDITION_ORDER UNIQUE (TARGET_GROUP_ID, CONDITION_ORDER),\n    CONSTRAINT CK_TARGET_CONDITION_ORDER CHECK (CONDITION_ORDER >= 1),\n    CONSTRAINT CK_TCOND_INCLUDE_CHILD CHECK (INCLUDE_CHILD_YN IN ('Y', 'N')),\n    CONSTRAINT CK_TARGET_CONDITION_OPERATOR CHECK (CONDITION_OPERATOR IN ('=', '!=', '<', '<=', '>', '>=')),\n    \n    \n    \n    CONSTRAINT CK_TARGET_CONDITION_VALUE CHECK\n    (\n        (CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END\n       + CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END) = 1\n        AND\n        (CASE CONDITION_TYPE\n            WHEN 'DEPARTMENT' THEN CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'POSITION'   THEN CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'EMPLOYEE'   THEN CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END\n            WHEN 'HIRE_DATE'  THEN CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END\n            ELSE 0\n         END) = 1\n    ),\n    CONSTRAINT CK_TCOND_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_TYPE = 'DEPARTMENT')\n)"
+    },
+    {
+      "name": "POPUP_QUESTION",
+      "columns": [
+        {
+          "name": "QUESTION_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_TEMPLATE_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_TYPE",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_TITLE",
+          "type": "VARCHAR2(1000 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_DESCRIPTION",
+          "type": "VARCHAR2(2000 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "REQUIRED_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "SCORED_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "QUESTION_SCORE",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CORRECT_ANSWER",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "ANSWER_MATCH_MODE",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "SORT_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_QUESTION",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "QUESTION_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_QUESTION PRIMARY KEY (QUESTION_ID)"
+        },
+        {
+          "name": "FK_QUESTION_TEMPLATE",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "sql": "CONSTRAINT FK_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID) ON DELETE CASCADE",
+          "parent": "QUESTION_TEMPLATE",
+          "parentColumns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "UQ_QUESTION_SORT_ORDER",
+          "type": "UNIQUE",
+          "columns": [
+            "QUESTION_TEMPLATE_ID",
+            "SORT_ORDER"
+          ],
+          "sql": "CONSTRAINT UQ_QUESTION_SORT_ORDER UNIQUE (QUESTION_TEMPLATE_ID, SORT_ORDER)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER >= 1)",
+        "CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS'))",
+        "CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_QUESTION_SCORE CHECK\n        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE >= 0)\n         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))"
+      ],
+      "sql": "CREATE TABLE POPUP_QUESTION\n(\n    QUESTION_ID          NUMBER(19)          NOT NULL,\n    QUESTION_TEMPLATE_ID NUMBER(19)          NOT NULL,\n    QUESTION_TYPE        VARCHAR2(30 CHAR)   NOT NULL,\n    QUESTION_TITLE       VARCHAR2(1000 CHAR) NOT NULL,\n    QUESTION_DESCRIPTION VARCHAR2(2000 CHAR),\n    REQUIRED_YN          CHAR(1)             DEFAULT 'N' NOT NULL,\n    SCORED_YN            CHAR(1)             DEFAULT 'N' NOT NULL,\n    QUESTION_SCORE       NUMBER(10,2),\n    CORRECT_ANSWER       CLOB,\n    ANSWER_MATCH_MODE    VARCHAR2(10 CHAR),\n    SORT_ORDER           NUMBER(10)          NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_QUESTION PRIMARY KEY (QUESTION_ID),\n    CONSTRAINT FK_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID) ON DELETE CASCADE,\n    CONSTRAINT UQ_QUESTION_SORT_ORDER UNIQUE (QUESTION_TEMPLATE_ID, SORT_ORDER),\n    CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER >= 1),\n    CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS')),\n    CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_QUESTION_SCORE CHECK\n        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE >= 0)\n         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))\n)"
+    },
+    {
+      "name": "POPUP_OPTION",
+      "columns": [
+        {
+          "name": "OPTION_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "OPTION_VALUE",
+          "type": "VARCHAR2(200 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "OPTION_TEXT",
+          "type": "VARCHAR2(1000 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CORRECT_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "SORT_ORDER",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_OPTION",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "OPTION_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_OPTION PRIMARY KEY (OPTION_ID)"
+        },
+        {
+          "name": "FK_OPTION_QUESTION",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "QUESTION_ID"
+          ],
+          "sql": "CONSTRAINT FK_OPTION_QUESTION FOREIGN KEY (QUESTION_ID)\n        REFERENCES POPUP_QUESTION (QUESTION_ID) ON DELETE CASCADE",
+          "parent": "POPUP_QUESTION",
+          "parentColumns": [
+            "QUESTION_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "UQ_OPTION_VALUE",
+          "type": "UNIQUE",
+          "columns": [
+            "QUESTION_ID",
+            "OPTION_VALUE"
+          ],
+          "sql": "CONSTRAINT UQ_OPTION_VALUE      UNIQUE (QUESTION_ID, OPTION_VALUE)"
+        },
+        {
+          "name": "UQ_OPTION_SORT_ORDER",
+          "type": "UNIQUE",
+          "columns": [
+            "QUESTION_ID",
+            "SORT_ORDER"
+          ],
+          "sql": "CONSTRAINT UQ_OPTION_SORT_ORDER UNIQUE (QUESTION_ID, SORT_ORDER)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_OPTION_SORT_ORDER CHECK (SORT_ORDER >= 1)",
+        "CONSTRAINT CK_OPTION_CORRECT    CHECK (CORRECT_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE POPUP_OPTION\n(\n    OPTION_ID    NUMBER(19)          NOT NULL,\n    QUESTION_ID  NUMBER(19)          NOT NULL,\n    OPTION_VALUE VARCHAR2(200 CHAR)  NOT NULL,\n    OPTION_TEXT  VARCHAR2(1000 CHAR) NOT NULL,\n    CORRECT_YN   CHAR(1)             DEFAULT 'N' NOT NULL,\n    SORT_ORDER   NUMBER(10)          NOT NULL,\n    CREATED_BY   VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT   TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY   VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT   TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_OPTION PRIMARY KEY (OPTION_ID),\n    CONSTRAINT FK_OPTION_QUESTION FOREIGN KEY (QUESTION_ID)\n        REFERENCES POPUP_QUESTION (QUESTION_ID) ON DELETE CASCADE,\n    CONSTRAINT UQ_OPTION_VALUE      UNIQUE (QUESTION_ID, OPTION_VALUE),\n    CONSTRAINT UQ_OPTION_SORT_ORDER UNIQUE (QUESTION_ID, SORT_ORDER),\n    CONSTRAINT CK_OPTION_SORT_ORDER CHECK (SORT_ORDER >= 1),\n    CONSTRAINT CK_OPTION_CORRECT    CHECK (CORRECT_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "USER_POPUP_STATUS",
+      "columns": [
+        {
+          "name": "USER_POPUP_STATUS_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_STATUS",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "FIRST_DISPLAYED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "LAST_DISPLAYED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "DISPLAY_COUNT",
+          "type": "NUMBER(10)",
+          "notNull": true,
+          "defaultValue": "0"
+        },
+        {
+          "name": "CLOSED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "HIDDEN_FROM_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "HIDDEN_UNTIL_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "COMPLETED_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "COMPLETED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_USER_POPUP_STATUS",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "USER_POPUP_STATUS_ID"
+          ],
+          "sql": "CONSTRAINT PK_USER_POPUP_STATUS PRIMARY KEY (USER_POPUP_STATUS_ID)"
+        },
+        {
+          "name": "UQ_USER_POPUP_STATUS",
+          "type": "UNIQUE",
+          "columns": [
+            "EMPLOYEE_NO",
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT UQ_USER_POPUP_STATUS UNIQUE (EMPLOYEE_NO, POPUP_ID)"
+        },
+        {
+          "name": "FK_STATUS_USER",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT FK_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)",
+          "parent": "APP_USER",
+          "parentColumns": [
+            "EMPLOYEE_NO"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_STATUS_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "CASCADE"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_STATUS_DISPLAY_COUNT CHECK (DISPLAY_COUNT >= 0)",
+        "CONSTRAINT CK_STATUS_COMPLETED     CHECK (COMPLETED_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_STATUS_HIDDEN_PERIOD CHECK\n        (HIDDEN_UNTIL_AT IS NULL OR HIDDEN_FROM_AT IS NULL OR HIDDEN_UNTIL_AT >= HIDDEN_FROM_AT)"
+      ],
+      "sql": "CREATE TABLE USER_POPUP_STATUS\n(\n    USER_POPUP_STATUS_ID NUMBER(19)        NOT NULL,\n    EMPLOYEE_NO          VARCHAR2(30 CHAR) NOT NULL,\n    POPUP_ID             VARCHAR2(50 CHAR) NOT NULL,\n    POPUP_STATUS         VARCHAR2(30 CHAR) NOT NULL,\n    FIRST_DISPLAYED_AT   TIMESTAMP(6),\n    LAST_DISPLAYED_AT    TIMESTAMP(6),\n    DISPLAY_COUNT        NUMBER(10)        DEFAULT 0 NOT NULL,\n    CLOSED_AT            TIMESTAMP(6),\n    HIDDEN_FROM_AT       TIMESTAMP(6),\n    HIDDEN_UNTIL_AT      TIMESTAMP(6),\n    COMPLETED_YN         CHAR(1)           DEFAULT 'N' NOT NULL,\n    COMPLETED_AT         TIMESTAMP(6),\n    CREATED_BY           VARCHAR2(30 CHAR) NOT NULL,\n    CREATED_AT           TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR) NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_USER_POPUP_STATUS PRIMARY KEY (USER_POPUP_STATUS_ID),\n    CONSTRAINT UQ_USER_POPUP_STATUS UNIQUE (EMPLOYEE_NO, POPUP_ID),\n    CONSTRAINT FK_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO),\n    CONSTRAINT FK_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE,\n    CONSTRAINT CK_STATUS_DISPLAY_COUNT CHECK (DISPLAY_COUNT >= 0),\n    CONSTRAINT CK_STATUS_COMPLETED     CHECK (COMPLETED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_STATUS_HIDDEN_PERIOD CHECK\n        (HIDDEN_UNTIL_AT IS NULL OR HIDDEN_FROM_AT IS NULL OR HIDDEN_UNTIL_AT >= HIDDEN_FROM_AT)\n)"
+    },
+    {
+      "name": "POPUP_RESPONSE",
+      "columns": [
+        {
+          "name": "RESPONSE_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CLIENT_REQUEST_ID",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_TEMPLATE_ID",
+          "type": "NUMBER(19)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_STATUS",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_STARTED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "SUBMITTED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "RECEIVED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "TOTAL_SCORE",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "PASSED_YN",
+          "type": "CHAR(1)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_RESPONSE",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "RESPONSE_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_RESPONSE PRIMARY KEY (RESPONSE_ID)"
+        },
+        {
+          "name": "UQ_RESPONSE_REQUEST",
+          "type": "UNIQUE",
+          "columns": [
+            "CLIENT_REQUEST_ID"
+          ],
+          "sql": "CONSTRAINT UQ_RESPONSE_REQUEST    UNIQUE (CLIENT_REQUEST_ID)"
+        },
+        {
+          "name": "UQ_RESPONSE_USER_POPUP",
+          "type": "UNIQUE",
+          "columns": [
+            "EMPLOYEE_NO",
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT UQ_RESPONSE_USER_POPUP UNIQUE (EMPLOYEE_NO, POPUP_ID)"
+        },
+        {
+          "name": "FK_RESPONSE_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_RESPONSE_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID)",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_RESPONSE_USER",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT FK_RESPONSE_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)",
+          "parent": "APP_USER",
+          "parentColumns": [
+            "EMPLOYEE_NO"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_RESPONSE_QUESTION_TEMPLATE",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "sql": "CONSTRAINT FK_RESPONSE_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID)",
+          "parent": "QUESTION_TEMPLATE",
+          "parentColumns": [
+            "QUESTION_TEMPLATE_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_RESPONSE_PASSED      CHECK (PASSED_YN IS NULL OR PASSED_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_RESPONSE_TOTAL_SCORE CHECK (TOTAL_SCORE IS NULL OR TOTAL_SCORE >= 0)"
+      ],
+      "sql": "CREATE TABLE POPUP_RESPONSE\n(\n    RESPONSE_ID          NUMBER(19)         NOT NULL,\n    CLIENT_REQUEST_ID    VARCHAR2(100 CHAR) NOT NULL,\n    POPUP_ID             VARCHAR2(50 CHAR)  NOT NULL,\n    EMPLOYEE_NO          VARCHAR2(30 CHAR)  NOT NULL,\n    QUESTION_TEMPLATE_ID NUMBER(19),\n    RESPONSE_STATUS      VARCHAR2(30 CHAR)  NOT NULL,\n    RESPONSE_STARTED_AT  TIMESTAMP(6),\n    SUBMITTED_AT         TIMESTAMP(6),\n    RECEIVED_AT          TIMESTAMP(6),\n    TOTAL_SCORE          NUMBER(10,2),\n    PASSED_YN            CHAR(1),\n    CREATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_RESPONSE PRIMARY KEY (RESPONSE_ID),\n    CONSTRAINT UQ_RESPONSE_REQUEST    UNIQUE (CLIENT_REQUEST_ID),\n    CONSTRAINT UQ_RESPONSE_USER_POPUP UNIQUE (EMPLOYEE_NO, POPUP_ID),\n    CONSTRAINT FK_RESPONSE_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID),\n    CONSTRAINT FK_RESPONSE_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO),\n    CONSTRAINT FK_RESPONSE_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID),\n    CONSTRAINT CK_RESPONSE_PASSED      CHECK (PASSED_YN IS NULL OR PASSED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_RESPONSE_TOTAL_SCORE CHECK (TOTAL_SCORE IS NULL OR TOTAL_SCORE >= 0)\n)"
+    },
+    {
+      "name": "POPUP_RESPONSE_ANSWER",
+      "columns": [
+        {
+          "name": "RESPONSE_ANSWER_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "QUESTION_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TEXT_ANSWER",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "EARNED_SCORE",
+          "type": "NUMBER(10,2)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CORRECT_YN",
+          "type": "CHAR(1)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_RESPONSE_ANSWER",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "RESPONSE_ANSWER_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_RESPONSE_ANSWER PRIMARY KEY (RESPONSE_ANSWER_ID)"
+        },
+        {
+          "name": "UQ_RESPONSE_QUESTION",
+          "type": "UNIQUE",
+          "columns": [
+            "RESPONSE_ID",
+            "QUESTION_ID"
+          ],
+          "sql": "CONSTRAINT UQ_RESPONSE_QUESTION UNIQUE (RESPONSE_ID, QUESTION_ID)"
+        },
+        {
+          "name": "FK_ANSWER_RESPONSE",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "RESPONSE_ID"
+          ],
+          "sql": "CONSTRAINT FK_ANSWER_RESPONSE FOREIGN KEY (RESPONSE_ID)\n        REFERENCES POPUP_RESPONSE (RESPONSE_ID) ON DELETE CASCADE",
+          "parent": "POPUP_RESPONSE",
+          "parentColumns": [
+            "RESPONSE_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "FK_ANSWER_QUESTION",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "QUESTION_ID"
+          ],
+          "sql": "CONSTRAINT FK_ANSWER_QUESTION FOREIGN KEY (QUESTION_ID) REFERENCES POPUP_QUESTION (QUESTION_ID)",
+          "parent": "POPUP_QUESTION",
+          "parentColumns": [
+            "QUESTION_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_ANSWER_EARNED_SCORE CHECK (EARNED_SCORE IS NULL OR EARNED_SCORE >= 0)",
+        "CONSTRAINT CK_ANSWER_CORRECT      CHECK (CORRECT_YN IS NULL OR CORRECT_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE POPUP_RESPONSE_ANSWER\n(\n    RESPONSE_ANSWER_ID NUMBER(19)        NOT NULL,\n    RESPONSE_ID        NUMBER(19)        NOT NULL,\n    QUESTION_ID        NUMBER(19)        NOT NULL,\n    TEXT_ANSWER        CLOB,\n    EARNED_SCORE       NUMBER(10,2),\n    CORRECT_YN         CHAR(1),\n    CREATED_BY         VARCHAR2(30 CHAR) NOT NULL,\n    CREATED_AT         TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY         VARCHAR2(30 CHAR) NOT NULL,\n    UPDATED_AT         TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_RESPONSE_ANSWER PRIMARY KEY (RESPONSE_ANSWER_ID),\n    CONSTRAINT UQ_RESPONSE_QUESTION UNIQUE (RESPONSE_ID, QUESTION_ID),\n    CONSTRAINT FK_ANSWER_RESPONSE FOREIGN KEY (RESPONSE_ID)\n        REFERENCES POPUP_RESPONSE (RESPONSE_ID) ON DELETE CASCADE,\n    CONSTRAINT FK_ANSWER_QUESTION FOREIGN KEY (QUESTION_ID) REFERENCES POPUP_QUESTION (QUESTION_ID),\n    CONSTRAINT CK_ANSWER_EARNED_SCORE CHECK (EARNED_SCORE IS NULL OR EARNED_SCORE >= 0),\n    CONSTRAINT CK_ANSWER_CORRECT      CHECK (CORRECT_YN IS NULL OR CORRECT_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "POPUP_RESPONSE_VALUE",
+      "columns": [
+        {
+          "name": "RESPONSE_VALUE_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_ANSWER_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "OPTION_ID",
+          "type": "NUMBER(19)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "SELECTED_VALUE",
+          "type": "VARCHAR2(200 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_POPUP_RESPONSE_VALUE",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "RESPONSE_VALUE_ID"
+          ],
+          "sql": "CONSTRAINT PK_POPUP_RESPONSE_VALUE PRIMARY KEY (RESPONSE_VALUE_ID)"
+        },
+        {
+          "name": "FK_VALUE_ANSWER",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "RESPONSE_ANSWER_ID"
+          ],
+          "sql": "CONSTRAINT FK_VALUE_ANSWER FOREIGN KEY (RESPONSE_ANSWER_ID)\n        REFERENCES POPUP_RESPONSE_ANSWER (RESPONSE_ANSWER_ID) ON DELETE CASCADE",
+          "parent": "POPUP_RESPONSE_ANSWER",
+          "parentColumns": [
+            "RESPONSE_ANSWER_ID"
+          ],
+          "deleteRule": "CASCADE"
+        },
+        {
+          "name": "FK_VALUE_OPTION",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "OPTION_ID"
+          ],
+          "sql": "CONSTRAINT FK_VALUE_OPTION FOREIGN KEY (OPTION_ID) REFERENCES POPUP_OPTION (OPTION_ID)",
+          "parent": "POPUP_OPTION",
+          "parentColumns": [
+            "OPTION_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [],
+      "sql": "CREATE TABLE POPUP_RESPONSE_VALUE\n(\n    RESPONSE_VALUE_ID  NUMBER(19)         NOT NULL,\n    RESPONSE_ANSWER_ID NUMBER(19)         NOT NULL,\n    OPTION_ID          NUMBER(19),\n    SELECTED_VALUE     VARCHAR2(200 CHAR) NOT NULL,\n    CREATED_BY         VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT         TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY         VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT         TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_RESPONSE_VALUE PRIMARY KEY (RESPONSE_VALUE_ID),\n    CONSTRAINT FK_VALUE_ANSWER FOREIGN KEY (RESPONSE_ANSWER_ID)\n        REFERENCES POPUP_RESPONSE_ANSWER (RESPONSE_ANSWER_ID) ON DELETE CASCADE,\n    CONSTRAINT FK_VALUE_OPTION FOREIGN KEY (OPTION_ID) REFERENCES POPUP_OPTION (OPTION_ID)\n)"
+    },
+    {
+      "name": "VIDEO_VIEW_STATUS",
+      "columns": [
+        {
+          "name": "VIDEO_VIEW_STATUS_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "TOTAL_DURATION_SECONDS",
+          "type": "NUMBER(12,3)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "LAST_POSITION_SECONDS",
+          "type": "NUMBER(12,3)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "MAXIMUM_POSITION_SECONDS",
+          "type": "NUMBER(12,3)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "WATCHED_SECONDS",
+          "type": "NUMBER(12,3)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "WATCHED_RATIO",
+          "type": "NUMBER(5,4)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "COMPLETED_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": "'N'"
+        },
+        {
+          "name": "FIRST_PLAYED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "LAST_PLAYED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "COMPLETED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_VIDEO_VIEW_STATUS",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "VIDEO_VIEW_STATUS_ID"
+          ],
+          "sql": "CONSTRAINT PK_VIDEO_VIEW_STATUS PRIMARY KEY (VIDEO_VIEW_STATUS_ID)"
+        },
+        {
+          "name": "UQ_VIDEO_VIEW_STATUS",
+          "type": "UNIQUE",
+          "columns": [
+            "EMPLOYEE_NO",
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT UQ_VIDEO_VIEW_STATUS UNIQUE (EMPLOYEE_NO, POPUP_ID)"
+        },
+        {
+          "name": "FK_VIDEO_STATUS_USER",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT FK_VIDEO_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)",
+          "parent": "APP_USER",
+          "parentColumns": [
+            "EMPLOYEE_NO"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_VIDEO_STATUS_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_VIDEO_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "CASCADE"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_VIDEO_COMPLETED        CHECK (COMPLETED_YN IN ('Y', 'N'))",
+        "CONSTRAINT CK_VIDEO_DURATION         CHECK (TOTAL_DURATION_SECONDS IS NULL OR TOTAL_DURATION_SECONDS >= 0)",
+        "CONSTRAINT CK_VIDEO_LAST_POSITION    CHECK (LAST_POSITION_SECONDS IS NULL OR LAST_POSITION_SECONDS >= 0)",
+        "CONSTRAINT CK_VIDEO_MAXIMUM_POSITION CHECK (MAXIMUM_POSITION_SECONDS IS NULL OR MAXIMUM_POSITION_SECONDS >= 0)",
+        "CONSTRAINT CK_VIDEO_WATCHED_SECONDS  CHECK (WATCHED_SECONDS IS NULL OR WATCHED_SECONDS >= 0)",
+        "CONSTRAINT CK_VIDEO_WATCHED_RATIO    CHECK (WATCHED_RATIO IS NULL OR WATCHED_RATIO BETWEEN 0 AND 1)"
+      ],
+      "sql": "CREATE TABLE VIDEO_VIEW_STATUS\n(\n    VIDEO_VIEW_STATUS_ID     NUMBER(19)        NOT NULL,\n    EMPLOYEE_NO              VARCHAR2(30 CHAR) NOT NULL,\n    POPUP_ID                 VARCHAR2(50 CHAR) NOT NULL,\n    TOTAL_DURATION_SECONDS   NUMBER(12,3),\n    LAST_POSITION_SECONDS    NUMBER(12,3),\n    MAXIMUM_POSITION_SECONDS NUMBER(12,3),\n    WATCHED_SECONDS          NUMBER(12,3),\n    WATCHED_RATIO            NUMBER(5,4),\n    COMPLETED_YN             CHAR(1)           DEFAULT 'N' NOT NULL,\n    FIRST_PLAYED_AT          TIMESTAMP(6),\n    LAST_PLAYED_AT           TIMESTAMP(6),\n    COMPLETED_AT             TIMESTAMP(6),\n    CREATED_BY               VARCHAR2(30 CHAR) NOT NULL,\n    CREATED_AT               TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY               VARCHAR2(30 CHAR) NOT NULL,\n    UPDATED_AT               TIMESTAMP(6)      DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_VIDEO_VIEW_STATUS PRIMARY KEY (VIDEO_VIEW_STATUS_ID),\n    CONSTRAINT UQ_VIDEO_VIEW_STATUS UNIQUE (EMPLOYEE_NO, POPUP_ID),\n    CONSTRAINT FK_VIDEO_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO),\n    CONSTRAINT FK_VIDEO_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE,\n    CONSTRAINT CK_VIDEO_COMPLETED        CHECK (COMPLETED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_VIDEO_DURATION         CHECK (TOTAL_DURATION_SECONDS IS NULL OR TOTAL_DURATION_SECONDS >= 0),\n    CONSTRAINT CK_VIDEO_LAST_POSITION    CHECK (LAST_POSITION_SECONDS IS NULL OR LAST_POSITION_SECONDS >= 0),\n    CONSTRAINT CK_VIDEO_MAXIMUM_POSITION CHECK (MAXIMUM_POSITION_SECONDS IS NULL OR MAXIMUM_POSITION_SECONDS >= 0),\n    CONSTRAINT CK_VIDEO_WATCHED_SECONDS  CHECK (WATCHED_SECONDS IS NULL OR WATCHED_SECONDS >= 0),\n    CONSTRAINT CK_VIDEO_WATCHED_RATIO    CHECK (WATCHED_RATIO IS NULL OR WATCHED_RATIO BETWEEN 0 AND 1)\n)"
+    },
+    {
+      "name": "API_REQUEST_LOG",
+      "columns": [
+        {
+          "name": "API_REQUEST_LOG_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CLIENT_REQUEST_ID",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "API_PATH",
+          "type": "VARCHAR2(1000 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "HTTP_METHOD",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CLIENT_IP",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "REQUEST_RECEIVED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_COMPLETED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "ELAPSED_MILLISECONDS",
+          "type": "NUMBER(19)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "HTTP_STATUS_CODE",
+          "type": "NUMBER(10)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "SUCCESS_YN",
+          "type": "CHAR(1)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "ERROR_CODE",
+          "type": "VARCHAR2(100 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "ERROR_MESSAGE",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "REQUEST_SUMMARY",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "RESPONSE_SUMMARY",
+          "type": "CLOB",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "CREATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        },
+        {
+          "name": "UPDATED_BY",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "UPDATED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_API_REQUEST_LOG",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "API_REQUEST_LOG_ID"
+          ],
+          "sql": "CONSTRAINT PK_API_REQUEST_LOG PRIMARY KEY (API_REQUEST_LOG_ID)"
+        },
+        {
+          "name": "FK_API_LOG_USER",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "EMPLOYEE_NO"
+          ],
+          "sql": "CONSTRAINT FK_API_LOG_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)",
+          "parent": "APP_USER",
+          "parentColumns": [
+            "EMPLOYEE_NO"
+          ],
+          "deleteRule": "NO ACTION"
+        },
+        {
+          "name": "FK_API_LOG_POPUP",
+          "type": "FOREIGN KEY",
+          "columns": [
+            "POPUP_ID"
+          ],
+          "sql": "CONSTRAINT FK_API_LOG_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID)",
+          "parent": "POPUP_NOTICE",
+          "parentColumns": [
+            "POPUP_ID"
+          ],
+          "deleteRule": "NO ACTION"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_API_LOG_ELAPSED CHECK (ELAPSED_MILLISECONDS IS NULL OR ELAPSED_MILLISECONDS >= 0)",
+        "CONSTRAINT CK_API_LOG_STATUS  CHECK (HTTP_STATUS_CODE IS NULL OR HTTP_STATUS_CODE BETWEEN 100 AND 599)",
+        "CONSTRAINT CK_API_LOG_SUCCESS CHECK (SUCCESS_YN IN ('Y', 'N'))"
+      ],
+      "sql": "CREATE TABLE API_REQUEST_LOG\n(\n    API_REQUEST_LOG_ID    NUMBER(19)          NOT NULL,\n    CLIENT_REQUEST_ID     VARCHAR2(100 CHAR),\n    EMPLOYEE_NO           VARCHAR2(30 CHAR),\n    POPUP_ID              VARCHAR2(50 CHAR),\n    API_PATH              VARCHAR2(1000 CHAR) NOT NULL,\n    HTTP_METHOD           VARCHAR2(10 CHAR)   NOT NULL,\n    CLIENT_IP             VARCHAR2(100 CHAR),\n    REQUEST_RECEIVED_AT   TIMESTAMP(6)        NOT NULL,\n    RESPONSE_COMPLETED_AT TIMESTAMP(6),\n    ELAPSED_MILLISECONDS  NUMBER(19),\n    HTTP_STATUS_CODE      NUMBER(10),\n    SUCCESS_YN            CHAR(1)             NOT NULL,\n    ERROR_CODE            VARCHAR2(100 CHAR),\n    ERROR_MESSAGE         CLOB,\n    REQUEST_SUMMARY       CLOB,\n    RESPONSE_SUMMARY      CLOB,\n    CREATED_BY            VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT            TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY            VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT            TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_API_REQUEST_LOG PRIMARY KEY (API_REQUEST_LOG_ID),\n    CONSTRAINT FK_API_LOG_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO),\n    CONSTRAINT FK_API_LOG_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID),\n    CONSTRAINT CK_API_LOG_ELAPSED CHECK (ELAPSED_MILLISECONDS IS NULL OR ELAPSED_MILLISECONDS >= 0),\n    CONSTRAINT CK_API_LOG_STATUS  CHECK (HTTP_STATUS_CODE IS NULL OR HTTP_STATUS_CODE BETWEEN 100 AND 599),\n    CONSTRAINT CK_API_LOG_SUCCESS CHECK (SUCCESS_YN IN ('Y', 'N'))\n)"
+    },
+    {
+      "name": "WPF_RESULT_RECEIPT",
+      "columns": [
+        {
+          "name": "RECEIPT_ID",
+          "type": "NUMBER(19)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESULT_ID",
+          "type": "VARCHAR2(64 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "EMPLOYEE_NO",
+          "type": "VARCHAR2(30 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "POPUP_ID",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESULT_TYPE",
+          "type": "VARCHAR2(20 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESULT_STATUS",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": true,
+          "defaultValue": null
+        },
+        {
+          "name": "RESULT_CODE",
+          "type": "VARCHAR2(50 CHAR)",
+          "notNull": false,
+          "defaultValue": null
+        },
+        {
+          "name": "RECEIVED_AT",
+          "type": "TIMESTAMP(6)",
+          "notNull": true,
+          "defaultValue": "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)"
+        }
+      ],
+      "keys": [
+        {
+          "name": "PK_WPF_RESULT_RECEIPT",
+          "type": "PRIMARY KEY",
+          "columns": [
+            "RECEIPT_ID"
+          ],
+          "sql": "CONSTRAINT PK_WPF_RESULT_RECEIPT PRIMARY KEY (RECEIPT_ID)"
+        },
+        {
+          "name": "UQ_WPF_RESULT_RECEIPT",
+          "type": "UNIQUE",
+          "columns": [
+            "RESULT_ID"
+          ],
+          "sql": "CONSTRAINT UQ_WPF_RESULT_RECEIPT UNIQUE (RESULT_ID)"
+        }
+      ],
+      "checks": [
+        "CONSTRAINT CK_WPF_RESULT_TYPE   CHECK (RESULT_TYPE IN ('CLOSED', 'HIDDEN', 'SUBMITTED', 'VIDEO_WATCHED'))",
+        "CONSTRAINT CK_WPF_RESULT_STATUS CHECK (RESULT_STATUS IN ('ACCEPTED', 'REJECTED'))"
+      ],
+      "sql": "CREATE TABLE WPF_RESULT_RECEIPT\n(\n    RECEIPT_ID    NUMBER(19)         NOT NULL,\n    RESULT_ID     VARCHAR2(64 CHAR)  NOT NULL,\n    EMPLOYEE_NO   VARCHAR2(30 CHAR)  NOT NULL,\n    POPUP_ID      VARCHAR2(50 CHAR)  NOT NULL,\n    RESULT_TYPE   VARCHAR2(20 CHAR)  NOT NULL,\n    RESULT_STATUS VARCHAR2(10 CHAR)  NOT NULL,\n    RESULT_CODE   VARCHAR2(50 CHAR),\n    RECEIVED_AT   TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_WPF_RESULT_RECEIPT PRIMARY KEY (RECEIPT_ID),\n    CONSTRAINT UQ_WPF_RESULT_RECEIPT UNIQUE (RESULT_ID),\n    CONSTRAINT CK_WPF_RESULT_TYPE   CHECK (RESULT_TYPE IN ('CLOSED', 'HIDDEN', 'SUBMITTED', 'VIDEO_WATCHED')),\n    CONSTRAINT CK_WPF_RESULT_STATUS CHECK (RESULT_STATUS IN ('ACCEPTED', 'REJECTED'))\n)"
+    }
+  ]
+}
