@@ -120,12 +120,20 @@ namespace Popup.Services
                       "questions": [
                         {
                           "questionId": 1001,
+                          "optionLayout": "VERTICAL",
                           "title": "화면 구성이 이해하기 쉬웠나요?",
-                          "questionType": "RATING5",
-                          "isRequired": true
+                          "questionType": "SINGLE_CHOICE",
+                          "isRequired": true,
+                          "options": [
+                            { "optionId": 1011, "value": "EASY", "text": "쉽게 이해할 수 있었습니다" },
+                            { "optionId": 1012, "value": "NORMAL", "text": "설명을 읽고 이해할 수 있었습니다" },
+                            { "optionId": 1013, "value": "HELP", "text": "추가 안내가 필요합니다. 화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다." },
+                            { "optionId": 1014, "value": "WRAP", "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" }
+                          ]
                         },
                         {
                           "questionId": 1002,
+                          "optionLayout": "HORIZONTAL",
                           "title": "가장 유용한 팝업 유형을 선택해주세요.",
                           "questionType": "SINGLE_CHOICE",
                           "isRequired": true,
@@ -167,6 +175,7 @@ namespace Popup.Services
                       "questions": [
                         {
                           "questionId": 2001,
+                          "optionLayout": "VERTICAL",
                           "title": "개인정보에 해당하는 것은?",
                           "questionType": "SINGLE_CHOICE",
                           "isRequired": true,
@@ -179,6 +188,7 @@ namespace Popup.Services
                         },
                         {
                           "questionId": 2002,
+                          "optionLayout": "HORIZONTAL",
                           "title": "안전한 비밀번호 관리 방법을 모두 선택하세요.",
                           "questionType": "MULTIPLE_CHOICE",
                           "isRequired": true,
@@ -186,7 +196,7 @@ namespace Popup.Services
                           "correctAnswers": ["LONG", "MFA"],
                           "options": [
                             { "optionId": 2201, "value": "LONG", "text": "충분히 긴 비밀번호 사용" },
-                            { "optionId": 2202, "value": "REUSE", "text": "모든 사이트에서 재사용" },
+                            { "optionId": 2202, "value": "REUSE", "text": "모든 사이트에서 동일한 비밀번호를 반복해서 재사용하고 다른 사람과 공유하는 방식은 안전하지 않습니다. 긴 복수 선택 보기의 줄바꿈을 확인하세요." },
                             { "optionId": 2203, "value": "MFA", "text": "다중 인증 사용" }
                           ]
                         }

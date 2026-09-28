@@ -1077,7 +1077,8 @@ public class PopupService {
                 question.sortOrder(),
                 optionDtos,
                 admin ? question.correctAnswer() : null,
-                admin ? question.answerMatchMode() : null);
+                admin ? question.answerMatchMode() : null,
+                question.optionLayout());
     }
 
     /**

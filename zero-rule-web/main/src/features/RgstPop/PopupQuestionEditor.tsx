@@ -34,7 +34,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? 0) * 100), 0) / 100;
   const add = () => onChange([...questions, {
-    questionId: -Date.now(), title: '', description: '', questionType: 'SINGLE_CHOICE',
+    questionId: -Date.now(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
     isRequired: quiz, isScored: quiz, questionScore: quiz ? 10 : null,
     sortOrder: questions.length + 1, answerMatchMode: 'EXACT', correctAnswer: '',
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
@@ -69,6 +69,10 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           {quiz && <TextField label="배점" type="number" value={q.questionScore ?? ''} inputProps={{ min: 0.01, step: 0.01, max: 99999999.99 }}
             onChange={(e) => update(index, { questionScore: e.target.value === '' ? null : Number(e.target.value), isScored: true })} />}
         </Stack>
+        {q.questionType !== 'TEXT' && <TextField select label="선택지 배치" value={q.optionLayout ?? 'VERTICAL'} onChange={(e) => update(index, { optionLayout: e.target.value as 'VERTICAL' | 'HORIZONTAL' })}>
+          <MenuItem value="VERTICAL">세로형</MenuItem>
+          <MenuItem value="HORIZONTAL">가로형</MenuItem>
+        </TextField>}
         {q.questionType === 'TEXT' ? quiz && <Stack spacing={1.5}>
           <TextField label="주관식 정답" required value={q.correctAnswer ?? ''} onChange={(e) => update(index, { correctAnswer: e.target.value })} />
           <TextField select label="정답 비교 방식" value={q.answerMatchMode ?? 'EXACT'} onChange={(e) => update(index, { answerMatchMode: e.target.value as 'EXACT' | 'CONTAINS' })}

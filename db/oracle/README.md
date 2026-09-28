@@ -103,3 +103,7 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 | `NLS_LANG` 미지정 시 한글 주석 따옴표 깨짐 (`ORA-01756`) | 실행 전 `KOREAN_KOREA.AL32UTF8` 지정 |
 | DDL 주석 안의 `;`를 SQL*Plus가 문장 끝으로 처리 (`ORA-00907`) | 주석에서 세미콜론 제거 |
 | 앱 계정에 `CREATE USER` 없음 | 방식 B(앱 계정 스키마) + `custom.popup.schema=""` |
+
+## 문항별 선택지 배치 추가 (2026-09-28)
+
+기존 DB는 서버 배포 전에 POPUP 소유 계정에서 `05_question_option_layout_oracle.sql`을 한 번 실행한다. `POPUP_QUESTION.OPTION_LAYOUT` 기본값은 VERTICAL이며 HORIZONTAL도 허용한다. 신규 DB는 `01_popup_schema_oracle.sql`에 포함되어 있으므로 추가 SQL을 중복 실행하지 않는다.

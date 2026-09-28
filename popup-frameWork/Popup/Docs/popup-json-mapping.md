@@ -948,7 +948,9 @@ YouTube 주소는 다음 형식을 지원할 수 있다.
 
 ### 7.6 RATING5 문항
 
-`RATING5` 문항은 `options`가 비어 있으면 클라이언트의 기본 보기 다섯 개를 사용한다.
+선택형 배치는 questions[].optionLayout으로 문항마다 지정한다: VERTICAL(기본), HORIZONTAL(너비 초과 시 줄바꿈). 누락은 세로형이며 서버 저장 시 미지원 값은 거절한다. WPF는 미지원 값을 세로형으로 표시한다. 문항 템플릿에도 배치를 저장한다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
+
+RATING5는 기존 데이터 호환용 단일 선택 유형이다. 자동 생성은 제거했으며 options가 비어 있으면 선택할 보기가 없다. 신규 문항은 SINGLE_CHOICE와 직접 입력한 보기를 사용한다.
 
 ```json
 {
@@ -960,7 +962,7 @@ YouTube 주소는 다음 형식을 지원할 수 있다.
 }
 ```
 
-기본 보기는 다음과 같다.
+직접 입력할 수 있는 보기 예시는 다음과 같다(자동 생성되지 않음).
 
 | value | text |
 |---:|---|
@@ -1110,7 +1112,7 @@ YouTube 주소는 다음 형식을 지원할 수 있다.
 - `questionType`은 정의된 값만 사용한다.
 - `SINGLE_CHOICE`와 `MULTIPLE_CHOICE`는 최소 한 개 이상의 `options`가 있어야 한다.
 - `TEXT` 문항은 `options`를 사용하지 않는다.
-- `RATING5`에서 `options`가 비어 있으면 클라이언트 기본 보기를 사용한다.
+- RATING5도 전달받은 options만 표시하며 기본 보기를 생성하지 않는다.
 - 동일 문항 안에서 `option.value`는 중복되지 않아야 한다.
 - `option.value`와 `option.text`는 null 또는 빈 문자열을 허용하지 않는다.
 - `required`가 누락되면 `false`로 처리한다.

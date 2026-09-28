@@ -229,7 +229,7 @@ namespace Popup.Views.Contents
             switch (question.QuestionType)
             {
                 case SurveyQuestionType.Rating5:
-                    return CreateRating5Control(question);
+                    return CreateSingleChoiceControl(question);
 
                 case SurveyQuestionType.SingleChoice:
                     return CreateSingleChoiceControl(question);
@@ -250,63 +250,27 @@ namespace Popup.Views.Contents
             }
         }
 
-        /// <summary>
-        /// 5점 평가 문항을 만든다.
-        /// </summary>
-        private FrameworkElement CreateRating5Control(
-    SurveyQuestion question)
+        private Panel CreateOptionPanel(SurveyQuestion question)
         {
-            /*
-             * 5점 척도는 항상 항목이 5개이므로
-             * 사용 가능한 너비를 5개의 동일한 열로 나눈다.
-             */
-            UniformGrid ratingPanel = new UniformGrid
+            Panel panel = question.HorizontalOptions ? new WrapPanel() : new StackPanel();
+            panel.Margin = new Thickness(0, 14, 0, 0);
+            panel.SizeChanged += (_, _) =>
             {
-                Margin = new Thickness(0, 16, 0, 0),
-                Columns = 5,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-
-            List<SurveyOption> ratingOptions =
-                GetRating5Options(question);
-
-            foreach (SurveyOption option in ratingOptions)
-            {
-                RadioButton radioButton = new RadioButton
+                foreach (FrameworkElement child in panel.Children)
                 {
-                    Margin = new Thickness(4, 4, 4, 4),
-
-                    HorizontalAlignment =
-                        HorizontalAlignment.Center,
-
-                    VerticalAlignment =
-                        VerticalAlignment.Center,
-
-                    HorizontalContentAlignment =
-                        HorizontalAlignment.Center,
-
-                    VerticalContentAlignment =
-                        VerticalAlignment.Center,
-
-                    Content =
-                        option.Text,
-
-                    /*
-                     * 화면 표시용 Value와 서버 저장용 OptionId를
-                     * 제출 시 모두 읽을 수 있도록 보기 객체를 보관한다.
-                     */
-                    Tag =
-                        option,
-
-                    GroupName =
-                        $"Question_{question.QuestionId}"
-                };
-
-                ratingPanel.Children.Add(radioButton);
-            }
-
-            return ratingPanel;
+                    child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
+                    if (child is ContentControl control && control.Content is TextBlock label)
+                        label.MaxWidth = Math.Max(0, child.MaxWidth - 24);
+                }
+            };
+            return panel;
         }
+
+        private static TextBlock CreateOptionText(string text) => new TextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap
+        };
 
         /// <summary>
         /// 일반 단일 선택 문항을 만든다.
@@ -314,17 +278,14 @@ namespace Popup.Views.Contents
         private FrameworkElement CreateSingleChoiceControl(
             SurveyQuestion question)
         {
-            StackPanel optionPanel = new StackPanel
-            {
-                Margin = new Thickness(0, 14, 0, 0)
-            };
+            Panel optionPanel = CreateOptionPanel(question);
 
             foreach (SurveyOption option in question.Options)
             {
                 RadioButton radioButton = new RadioButton
                 {
-                    Margin = new Thickness(0, 0, 0, 10),
-                    Content = option.Text,
+                    Margin = new Thickness(0, 0, 16, 10),
+                    Content = CreateOptionText(option.Text),
                     Tag = option,
                     GroupName = $"Question_{question.QuestionId}"
                 };
@@ -341,17 +302,14 @@ namespace Popup.Views.Contents
         private FrameworkElement CreateMultipleChoiceControl(
             SurveyQuestion question)
         {
-            StackPanel optionPanel = new StackPanel
-            {
-                Margin = new Thickness(0, 14, 0, 0)
-            };
+            Panel optionPanel = CreateOptionPanel(question);
 
             foreach (SurveyOption option in question.Options)
             {
                 CheckBox checkBox = new CheckBox
                 {
-                    Margin = new Thickness(0, 0, 0, 10),
-                    Content = option.Text,
+                    Margin = new Thickness(0, 0, 16, 10),
+                    Content = CreateOptionText(option.Text),
                     Tag = option
                 };
 
@@ -384,50 +342,6 @@ namespace Popup.Views.Contents
             return textBox;
         }
 
-        /// <summary>
-        /// Rating5의 기본 보기 다섯 개를 반환한다.
-        ///
-        /// 질문에 직접 Options가 들어 있다면
-        /// 직접 전달받은 Options를 우선 사용한다.
-        /// </summary>
-        private List<SurveyOption> GetRating5Options(
-            SurveyQuestion question)
-        {
-            if (question.Options != null &&
-                question.Options.Count > 0)
-            {
-                return question.Options;
-            }
-
-            return new List<SurveyOption>
-            {
-                new SurveyOption
-                {
-                    Value = "1",
-                    Text = "매우 좋지 않음"
-                },
-                new SurveyOption
-                {
-                    Value = "2",
-                    Text = "좋지 않음"
-                },
-                new SurveyOption
-                {
-                    Value = "3",
-                    Text = "보통"
-                },
-                new SurveyOption
-                {
-                    Value = "4",
-                    Text = "좋음"
-                },
-                new SurveyOption
-                {
-                    Value = "5",
-                    Text = "매우 좋음"
-                }
-            };
-        }
         /// <summary>
         /// 현재 화면에 입력된 모든 설문 응답을 수집한다.
         /// </summary>

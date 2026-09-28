@@ -30,6 +30,8 @@ namespace Popup.Models
         /// </summary>
         public SurveyQuestionType QuestionType { get; set; }
 
+        public bool HorizontalOptions { get; set; }
+
         /// <summary>
         /// 필수 응답 문항인지 지정한다.
         /// true면 답하지 않고 제출할 수 없다.
@@ -52,7 +54,7 @@ namespace Popup.Models
 
         /// <summary>
         /// 객관식 질문에서 표시할 보기 목록이다.
-        /// Rating5는 보기가 없으면 1~5점을 자동으로 생성한다.
+        /// Rating5도 전달받은 보기만 표시한다.
         /// Text 질문에서는 사용하지 않는다.
         /// </summary>
         public List<SurveyOption> Options { get; set; } = new();

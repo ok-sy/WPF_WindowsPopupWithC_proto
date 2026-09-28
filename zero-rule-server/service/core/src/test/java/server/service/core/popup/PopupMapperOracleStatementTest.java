@@ -89,6 +89,10 @@ class PopupMapperOracleStatementTest {
         assertEquals("SINGLE_CHOICE", meta.getValue("question.questionType"));
         assertEquals("정답", meta.getValue("question.correctAnswer"));
         assertEquals("EXACT", meta.getValue("question.answerMatchMode"));
+        assertEquals("VERTICAL", meta.getValue("question.optionLayout"));
+        var bound = configuration.getMappedStatement(NS + "insertAdminQuestion").getBoundSql(params);
+        assertTrue(bound.getSql().contains("OPTION_LAYOUT"));
+        assertTrue(bound.getParameterMappings().stream().anyMatch(p -> p.getProperty().equals("question.optionLayout")));
         assertEquals(new BigDecimal("2.00"), meta.getValue("question.questionScore"));
         // selectKey가 Map에 키를 채우는 경로
         meta.setValue("questionId", 30L);

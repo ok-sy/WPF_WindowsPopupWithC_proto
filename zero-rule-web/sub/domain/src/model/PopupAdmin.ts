@@ -18,6 +18,7 @@ export interface PopupQuestion {
   title: string;
   description?: string | null;
   questionType: string;
+  optionLayout?: 'VERTICAL' | 'HORIZONTAL';
   isRequired: boolean;
   isScored: boolean;
   questionScore?: number | null;
