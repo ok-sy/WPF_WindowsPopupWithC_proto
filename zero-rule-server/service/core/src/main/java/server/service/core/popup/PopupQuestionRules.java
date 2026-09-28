@@ -28,7 +28,7 @@ final class PopupQuestionRules {
             if (q.description() != null && q.description().length() > 2000) fail("문항 설명은 2000자 이하여야 합니다.");
             if (q.questionType() == null || !Set.of("TEXT", "SINGLE_CHOICE", "MULTIPLE_CHOICE").contains(q.questionType()))
                 fail("지원하지 않는 문항 유형입니다.");
-            if (!Set.of("VERTICAL", "HORIZONTAL").contains(q.optionLayout()))
+            if (q.optionLayout() == null || !Set.of("VERTICAL", "HORIZONTAL").contains(q.optionLayout()))
                 fail("선택지 배치는 VERTICAL 또는 HORIZONTAL이어야 합니다.");
             if (quiz) {
                 if (q.questionScore() == null || q.questionScore().signum() <= 0

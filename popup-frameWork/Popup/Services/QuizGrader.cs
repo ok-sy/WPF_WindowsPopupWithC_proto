@@ -14,7 +14,7 @@ namespace Popup.Services
      *
      * [채점 규칙 — 서버 gradeAnswer / PopupQuestionRules.matchesText 와 동일]
      *   - 채점 문항(IsScored)만 계산한다. 비채점 문항은 점수 없음.
-     *   - 선택형(SINGLE/MULTIPLE/RATING5): 선택한 선택지 집합 == 정답(IsCorrect=true) 선택지 집합 이면 문항 배점 전부, 아니면 0. 부분 점수 없음.
+     *   - 선택형(SINGLE/MULTIPLE): 선택한 선택지 집합 == 정답(IsCorrect=true) 선택지 집합 이면 문항 배점 전부, 아니면 0. 부분 점수 없음.
      *   - 서술형(TEXT): 정답 문자열과 일치 모드 EXACT(trim 후 완전 일치) / CONTAINS(trim 후 포함) 로 비교. 모드가 없으면 오답.
      *   - 총점 = 정답 문항 배점 합. 통과 = 총점 >= 통과 점수(없으면 0 → 항상 통과).
      *

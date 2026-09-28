@@ -13,6 +13,17 @@ class PopupQuestionRulesTest {
                 score == null ? null : new BigDecimal(score), 1, List.of(), answer, mode, "VERTICAL");
     }
 
+    // [설계 18 L-4 — S-16] DTO가 null 배치를 VERTICAL로 바꾸지 않으므로 저장 검증이 거부해야 한다.
+    @Test void nullOptionLayoutAndRemovedRating5AreRejected() {
+        var options = List.of(new PopupOptionDto(1L, "1", "A", 1, null), new PopupOptionDto(2L, "2", "B", 2, null));
+        var noLayout = new PopupQuestionDto(1L, "문항", null, "SINGLE_CHOICE", true, false, null, 1,
+                options, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(noLayout), false, null));
+        var rating5 = new PopupQuestionDto(1L, "문항", null, "RATING5", true, false, null, 1,
+                options, null, null, "HORIZONTAL");
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(rating5), false, null));
+    }
+
     @Test void exactMatchTrimsOnlyOuterWhitespace() {
         assertTrue(PopupQuestionRules.matchesText("  Windows + L  ", "Windows + L", "EXACT"));
         assertFalse(PopupQuestionRules.matchesText("Windows + L 누르기", "Windows + L", "EXACT"));

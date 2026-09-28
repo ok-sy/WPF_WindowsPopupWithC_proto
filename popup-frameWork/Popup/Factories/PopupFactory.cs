@@ -157,14 +157,13 @@ namespace Popup.Factories
                 contentDto.ContentTitle,
                 contentDto.Description,
                 contentDto.HighlightText,
-                contentDto.ShowHighlight ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
+                contentDto.ShowHighlight,
                 contentDto.BottomDescription,
                 contentDto.BottomDescriptionUrl,
                 contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
-                contentDto.ShowBottomDescription ?? (!string.IsNullOrWhiteSpace(contentDto.BottomDescription)
-                    || !string.IsNullOrWhiteSpace(contentDto.BottomDescriptionUrl)));
+                contentDto.ShowBottomDescription);
         }
 
         private static FrameworkElement CreateImagePopupView(JsonElement contentJson)
@@ -274,7 +273,6 @@ namespace Popup.Factories
         private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>
             questionType.Trim().ToUpperInvariant() switch
             {
-                "RATING5" => SurveyQuestionType.Rating5,
                 "SINGLE_CHOICE" => SurveyQuestionType.SingleChoice,
                 "MULTIPLE_CHOICE" => SurveyQuestionType.MultipleChoice,
                 "TEXT" => SurveyQuestionType.Text,

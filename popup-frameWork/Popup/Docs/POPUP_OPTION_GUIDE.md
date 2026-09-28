@@ -116,10 +116,10 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `plainText` | string | 일반 텍스트 본문 |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
 | `highlightText` | string | 강조 문구 |
-| `showHighlight` | bool/null | 강조 영역 표시 여부 |
+| `showHighlight` | bool | 강조 영역 표시 여부. 없으면 false |
 | `bottomDescription` | string | 본문 하단 설명 |
 | `bottomDescriptionUrl` | string | 하단 설명 클릭 시 열 HTTP/HTTPS URL. 비우면 일반 설명. 호버 시 색상·밑줄 변경 |
-| `showBottomDescription` | bool/null | 하단 설명 표시 여부 |
+| `showBottomDescription` | bool | 하단 설명 표시 여부. 없으면 false |
 
 > Markdown 모드(`markdownMode`/`markdownContent`)는 2026-09-21 제거했다. 값이 남아 있어도 WPF·웹 모두 무시한다.
 
@@ -194,7 +194,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 | questionType | UI 형태 | WPF 지원 |
 |---|---|---|
-| `RATING5` | 전달된 보기만 단일 선택 표시(자동 생성 없음) | O |
+| `RATING5` | 2026-09-28(설계 18 L-4) 삭제. 기존 문항은 08 스크립트로 `SINGLE_CHOICE` + 가로 배치로 이관 | X |
 | `SINGLE_CHOICE` | 단일 선택 RadioButton | O |
 | `MULTIPLE_CHOICE` | 복수 선택 CheckBox | O |
 | `TEXT` | 주관식 TextBox | O |

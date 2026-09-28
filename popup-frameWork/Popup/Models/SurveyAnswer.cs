@@ -16,9 +16,6 @@ namespace Popup.Models
         /// <summary>
         /// 객관식에서 사용자가 선택한 값 목록이다.
         ///
-        /// Rating5:
-        /// "1" ~ "5" 중 하나가 들어간다.
-        ///
         /// SingleChoice:
         /// 선택한 값 하나가 들어간다.
         ///

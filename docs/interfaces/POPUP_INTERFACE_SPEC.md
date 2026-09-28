@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.1
+- 문서 버전: 3.2
 - 최신화: 2026-09-28 (KST)
+- 3.2 변경: 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
 - 3.1 변경: IMAGE `imageSizeMode`의 과거 호환 값 `FIXED` 삭제(ADAPTIVE / FIT_TO_IMAGE / FILL만 허용, 미지정 시 ADAPTIVE)
 - 대상: **별도 구축 백엔드 ↔ 제공되는 C# WPF 팝업 클라이언트**
 - 기준 구현: `popup-frameWork/Popup`
@@ -320,10 +321,10 @@ BOTTOM_RIGHT
 | plainText | string | 본문 |
 | showPlainText | boolean | 본문 표시 여부 |
 | highlightText | string | 강조 문구 |
-| showHighlight | boolean | 강조 영역 표시 여부 |
+| showHighlight | boolean | 강조 영역 표시 여부. 없으면 false(v3.2) |
 | bottomDescription | string | 하단 설명 |
 | bottomDescriptionUrl | string | 클릭 시 이동 URL |
-| showBottomDescription | boolean | 하단 설명 영역 표시 |
+| showBottomDescription | boolean | 하단 설명 영역 표시. 없으면 false(v3.2) |
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 
@@ -550,14 +551,14 @@ passingScore 이상
 
 # 9. questions[] 계약
 
-선택지는 직접 전달한다. RATING5도 기본 보기를 자동 생성하지 않는다. 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
+선택지는 직접 전달한다(C#이 기본 보기를 자동 생성하지 않는다). 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
 
 | 필드 | 형식 | 설명 |
 |---|---|---|
 | questionId | integer | 결과 answers의 참조 ID |
 | title | string | 질문 제목 |
 | description | string | 부가 설명 |
-| questionType | string | RATING5 / SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
+| questionType | string | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (그 외 값은 팝업 변환 실패, v3.2) |
 | optionLayout | string | 문항별 선택지 배치. VERTICAL(기본) / HORIZONTAL. 가로형은 너비 초과 시 줄바꿈 |
 | isRequired | boolean | 필수 응답 여부 |
 | isScored | boolean | QUIZ 채점 대상 여부 |
@@ -930,7 +931,6 @@ BOTTOM
 ## questionType
 
 ```text
-RATING5
 SINGLE_CHOICE
 MULTIPLE_CHOICE
 TEXT

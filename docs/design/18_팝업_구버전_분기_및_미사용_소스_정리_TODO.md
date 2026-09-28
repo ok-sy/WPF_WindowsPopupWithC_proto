@@ -3,7 +3,7 @@
 - 작성일: 2026-09-28 (KST)
 - 범위: **팝업 기능 소스만** — WPF `popup-frameWork/Popup`, 서버 `server.*.popup`/`server.*.wpf` 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop/**`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle/*.sql`. zero 공통 프레임워크(보안 필터·`DefaultPublicUrls`·`BasicConfig` 등)는 대상에서 제외한다.
 - 기준: 백엔드 독립형 WPF Client API 계약서 v3.0(`docs/interfaces/POPUP_INTERFACE_SPEC.md`) — WPF가 쓰는 API는 `POST /p/api/wpf/auth/login`, `GET /p/api/wpf/popups`, `POST /p/api/wpf/popups/results` 3개뿐이다.
-- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거) 코드 반영 완료(2026-09-28, 원격 개발 DB 데이터 보정 미실행), L-2 이후 미착수**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
+- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08 미실행), L-2 미착수, L-5는 §5 L-5 참고**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
 
 분류:
 
@@ -185,11 +185,14 @@
 
 ### L-4. 원격 개발 DB 적용·데이터 확인 후 기본값 분기 제거
 
-- [ ] D-1(`05`)·D-2(`04`) 원격 개발 DB 적용 → 스크립트 보관 이동
-- [ ] D-3·D-4 조회 → 보정 SQL
-- [ ] S-14 CASE 제거 + DISPLAY_MODE CHECK, S-15 NOT NULL + 기본값 제거, S-16 null 검증 오류 전환
-- [ ] S-17·C-25 RATING5 정리(이관/삭제 + QUESTION_TYPE CHECK + 계약서)
-- [ ] C-23 TEXT 표시 플래그 non-null 전환(웹 미리보기 분기 동시)
+- [ ] D-1(`05`)·D-2(`04`) 원격 개발 DB 적용 → 스크립트 보관 이동 — **VPN 필요, 미실행**. 보관 이동은 원격 적용 후
+- [x] D-3·D-4 조회 → 보정 SQL: `08_legacy_data_constraints_oracle.sql`(확인 조회 → 보정 → 제약, 멱등). 로컬 XE는 대상 0행이라 임시 행으로 보정 결과·재실행 SKIP을 확인하고 삭제. **원격 개발 DB는 조회 결과 미확인** — 08의 1~4번 조회 출력으로 확인
+- [x] S-14 매퍼 CASE 제거 + `CK_POPUP_DISPLAY_MODE`, S-15 크기 8컬럼 NOT NULL + `toResponseDto` 기본값 제거, S-16 `PopupQuestionDto`의 null→VERTICAL 보정 제거(저장 검증 `PopupQuestionRules`가 null 거부 — `Set.of().contains(null)` NPE 방지 조건 추가)
+- [x] S-17·C-25 RATING5 이관(SINGLE_CHOICE + HORIZONTAL, 보기 없으면 1~5 생성) + `CK_QUESTION_TYPE` + DDL 주석, WPF `SurveyQuestionType.Rating5`·매핑·화면 분기 삭제, 계약서 3.2
+- [x] C-23 TEXT 표시 플래그 non-null 전환(WPF DTO `bool`, `PopupFactory` fallback 삭제, 웹 편집기·미리보기 동시), 기존 행은 08이 같은 규칙으로 채움
+- [x] DDL `01`에 같은 제약 반영, L-0에서 보류한 `POPUP_NOTICE.PASSING_SCORE` 주석 수정(S-20)
+- [x] 검증: 서버 popup 테스트 43건 전부 통과(로컬 XE 실DB 2건 포함), `dotnet build` 경고 0·오류 0, 웹 build 성공
+- [ ] 검증(실행): `--demo` TEXT·SURVEY 표시, 원격 개발 DB 08 실행 후 서버 기동·WPF 목록 확인
 
 ### L-5. 정책 결정이 필요한 항목
 

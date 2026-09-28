@@ -228,9 +228,6 @@ namespace Popup.Views.Contents
         {
             switch (question.QuestionType)
             {
-                case SurveyQuestionType.Rating5:
-                    return CreateSingleChoiceControl(question);
-
                 case SurveyQuestionType.SingleChoice:
                     return CreateSingleChoiceControl(question);
 
@@ -366,7 +363,6 @@ namespace Popup.Views.Contents
 
                 switch (question.QuestionType)
                 {
-                    case SurveyQuestionType.Rating5:
                     case SurveyQuestionType.SingleChoice:
                         CollectSingleChoiceAnswer(
                             answerControl,

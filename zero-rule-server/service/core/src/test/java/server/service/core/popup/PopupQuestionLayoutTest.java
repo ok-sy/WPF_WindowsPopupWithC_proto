@@ -27,12 +27,15 @@ class PopupQuestionLayoutTest {
         assertDoesNotThrow(() -> PopupQuestionRules.validate(restored, false, null));
     }
 
-    @Test void omittedLayoutDefaultsToVerticalAndUnknownLayoutIsRejected() throws Exception {
+    // [설계 18 L-4 — S-16] 누락된 배치를 VERTICAL로 바꾸지 않고 저장 검증에서 거부한다.
+    @Test void omittedOrUnknownLayoutIsRejected() throws Exception {
         var json = new ObjectMapper();
         var node = json.valueToTree(question(1, "HORIZONTAL"));
         ((com.fasterxml.jackson.databind.node.ObjectNode) node).remove("optionLayout");
-        assertEquals("VERTICAL", json.treeToValue(node, PopupQuestionDto.class).optionLayout());
-        assertEquals("VERTICAL", question(1, null).optionLayout());
+        var omitted = json.treeToValue(node, PopupQuestionDto.class);
+        assertNull(omitted.optionLayout());
+        assertThrows(IllegalArgumentException.class,
+                () -> PopupQuestionRules.validate(List.of(omitted), false, null));
         assertThrows(IllegalArgumentException.class,
                 () -> PopupQuestionRules.validate(List.of(question(1, "OTHER")), false, null));
     }
