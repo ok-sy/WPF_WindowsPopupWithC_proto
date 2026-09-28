@@ -5,7 +5,6 @@
      *
      * SingleChoice
      * MultipleChoice
-     * Rating5
      *
      * 문항에서 공통으로 사용한다.
      */

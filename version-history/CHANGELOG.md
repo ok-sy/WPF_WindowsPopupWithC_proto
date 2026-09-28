@@ -2,6 +2,20 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-07 — 과거 데이터 기본값 분기 제거 및 DB 제약 추가(설계 18 L-4)
+
+- 이유: 과거·이관 데이터를 위해 서버·WPF·관리자 웹에 흩어져 있던 기본값 보정(DISPLAY_MODE CASE, 크기 NULL 기본값, optionLayout null 보정, RATING5 매핑, TEXT 표시 플래그 추정)을 DB 보정과 제약으로 옮겨 코드 분기를 제거. 원격 개발 DB는 VPN 미연결로 조회할 수 없어, 보정·제약을 한 스크립트로 묶고 배포 전 실행 조건으로 둠.
+- 변경(DB): `db/oracle/08_legacy_data_constraints_oracle.sql` 추가 — 확인 조회 4종 → DISPLAY_MODE 보정, 크기 NULL을 기존 서버 기본값으로 보정, RATING5를 SINGLE_CHOICE + HORIZONTAL로 이관(선택지 없으면 1~5 생성), TEXT `showHighlight`/`showBottomDescription`을 기존 fallback 규칙(문구 유무)으로 채움 → `CK_POPUP_DISPLAY_MODE`, 크기 8컬럼 NOT NULL, `CK_QUESTION_TYPE` 추가(이미 있으면 SKIP) → 표 주석 갱신. `01_popup_schema_oracle.sql`에 같은 제약 반영, L-0에서 보류한 `PASSING_SCORE` 주석 수정.
+- 변경(서버): 매퍼 `popupEntityColumns`의 DISPLAY_MODE CASE 제거, `toResponseDto` 크기 기본값 제거, `PopupQuestionDto`의 null optionLayout → VERTICAL 보정 제거. `PopupQuestionRules`에 null 배치 명시 거부 조건 추가(`Set.of().contains(null)`이 NPE를 내던 문제 — 테스트로 발견). 테스트: null 배치·RATING5 거부 추가, 배치 누락 기본값 테스트를 거부 기대로 변경.
+- 변경(WPF): `SurveyQuestionType.Rating5`와 `PopupFactory` RATING5 매핑·`SurveyPopupView` 분기·관련 주석 삭제. `TextPopupContentDto.ShowHighlight`/`ShowBottomDescription`을 `bool`(기본 false)로 바꾸고 `PopupFactory`의 문구 유무 추정 삭제.
+- 변경(웹): `PopupEditorDialog`·`PopupPreview`의 TEXT 표시 플래그 null fallback 삭제(WPF와 동일하게 값이 없으면 숨김).
+- 문서: 계약서 3.2(RATING5 삭제, TEXT 플래그 미지정 시 false), `db/oracle/README.md`(08 절차·적용 현황), 설계 18 L-4 체크리스트, `POPUP_OPTION_GUIDE.md`·`POPUP_USER_OPTION_GUIDE.md`·`OPTION_LAYOUT_DEMO.md`.
+- 주요 파일: `db/oracle/08_legacy_data_constraints_oracle.sql`, `db/oracle/01_popup_schema_oracle.sql`, `PopupMapper.xml`, `PopupService.java`, `PopupQuestionDto.java`, `PopupQuestionRules.java`, `popup-frameWork/Popup/Factories/PopupFactory.cs`, `Dtos/TextPopupContentDto.cs`, `Models/SurveyQuestionType.cs`, `Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `PopupPreview.tsx`.
+- 검증: 로컬 XE 현황 조회(DISPLAY_MODE 전부 SEQUENTIAL, 크기 NULL 0, RATING5 0, TEXT 플래그 보유) 후 임시 검증 행(비정상 DISPLAY_MODE, NULL 크기, 보기 없는/있는 RATING5, 플래그 없는 TEXT 3종 — `{}` 포함)을 넣고 08 실행 → 보정값·생성 선택지·플래그가 기존 fallback 결과와 일치, 제약 추가 OK, 재실행 시 0행·SKIP 확인, 임시 행 삭제(로컬 XE에는 제약이 남음). 서버 `:service:core:test --tests server.service.core.popup.*` 43건 전부 통과(로컬 XE 실DB 2건 포함). `dotnet build popup-frameWork/Popup.slnx` 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공.
+- 미실행 검증: `01` 전체를 빈 스키마에 새로 실행하는 확인(변경은 컬럼 NOT NULL·CHECK 2개·주석), `--demo` 표시, 서버 기동 E2E.
+- 주의: **원격 개발 DB에 08 미실행.** 크기 NULL 행이 있으면 L-4 서버 조회가 NPE로 실패하고, RATING5 문항이 있으면 L-4 WPF에서 해당 팝업 목록 변환이 실패하므로 08 실행 후 배포한다. D-1(`05`)·D-2(`04`) 원격 적용과 보관 이동도 미실행. ERwin 산출물(2026-09-24 스냅샷)은 변경 전 `01` 기준이다.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-06 — content 중복 키 정리(설계 18 L-3)
 
 - 이유: 관리자 저장 때 content 전체가 `CONTENT_OPTIONS`에 들어가고 조회 때 그 JSON이 정규 컬럼 위에 병합되어, 오래된 사본(특히 서버가 덧붙인 `completionRatio` 등 파생 키)이 실제 컬럼 값을 가리는 정합성 이슈. 모든 유형의 content 키가 모든 팝업에 저장되던 문제와 WPF가 읽지 않는 구 계약용 중복 키도 함께 정리.

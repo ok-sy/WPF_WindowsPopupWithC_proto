@@ -124,3 +124,19 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 
 - 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행. 원격 개발 DB 미실행:
   `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @07_cleanup_content_option_copies_oracle.sql ""`
+
+## 과거 데이터 보정·제약 추가 (2026-09-28, 설계 18 L-4)
+
+기존 DB는 **L-4 서버·WPF 배포 전에** `08_legacy_data_constraints_oracle.sql <스키마접두어>`를 한 번 실행한다(전제: 05 적용). 확인 조회 → 보정 → 제약 순서이며 멱등이다.
+
+| 대상 | 보정 | 제약 | 제거된 코드 분기 |
+|---|---|---|---|
+| `POPUP_NOTICE.DISPLAY_MODE` | SEQUENTIAL/SIMULTANEOUS 외 → SEQUENTIAL | `CK_POPUP_DISPLAY_MODE` | 매퍼 CASE fallback |
+| `POPUP_NOTICE` 크기 컬럼 8개 | NULL → 900/620/0.7/0.75/480/320/1200/900 | NOT NULL | 서버 `toResponseDto` 기본값 |
+| `POPUP_QUESTION` RATING5 | SINGLE_CHOICE + HORIZONTAL, 선택지 없으면 1~5 생성 | `CK_QUESTION_TYPE` | WPF RATING5 매핑 |
+| TEXT `CONTENT_OPTIONS` | `showHighlight`/`showBottomDescription` 없으면 문구 유무로 채움 | — | WPF·웹 null fallback |
+
+RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므로 관리자 화면에서 정답을 지정해야 재저장할 수 있다(3번 조회에 소속 팝업이 표시됨). 스크립트는 `POPUP_QUESTION` 표 주석과 `POPUP_NOTICE.PASSING_SCORE` 주석도 현행 기준으로 바꾼다. 신규 DB는 `01`에 같은 제약이 포함되어 있다.
+
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 기존 샘플 데이터 보정 대상 0행, 제약 추가 완료. 임시 검증 행(비정상 DISPLAY_MODE·NULL 크기·보기 없는/있는 RATING5·플래그 없는 TEXT 3종)으로 보정 결과와 재실행 시 SKIP을 확인한 뒤 임시 행은 삭제. 원격 개발 DB 미실행:
+  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @08_legacy_data_constraints_oracle.sql ""`

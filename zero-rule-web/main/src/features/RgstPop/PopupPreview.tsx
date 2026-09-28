@@ -206,13 +206,9 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
-  const showHighlight =
-    content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
-
-  const showBottomDescription =
-    content.showBottomDescription == null
-      ? Boolean(content.bottomDescription || content.bottomDescriptionUrl)
-      : content.showBottomDescription === true;
+  // [설계 18 L-4 — C-23] WPF TextPopupContentDto와 같이 플래그가 없으면 숨김(과거 행 fallback 삭제).
+  const showHighlight = content.showHighlight === true;
+  const showBottomDescription = content.showBottomDescription === true;
 
   const bottomUrl = normalizePopupLink(content.bottomDescriptionUrl);
   const bottomLabel = String(content.bottomDescription ?? '').trim() || bottomUrl;

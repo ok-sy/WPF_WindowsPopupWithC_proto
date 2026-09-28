@@ -36,7 +36,6 @@ namespace Popup.Dtos
          * 질문 유형
          *
          * 서버 JSON 예:
-         * RATING5
          * SINGLE_CHOICE
          * MULTIPLE_CHOICE
          * TEXT

@@ -1013,8 +1013,8 @@ public class PopupService {
 
     /**
      * DB의 숫자·Y/N 값과 콘텐츠 컬럼을 웹 및 WPF 공용 응답으로 변환한다.
-     * 크기 설정의 DB null 값에는 기본값을 적용하고, 선택 설정인 완료율·통과 점수는
-     * null을 유지한다. 설문·퀴즈 문항은 최상위 questions로만 제공한다(설계 18 L-3 — content.questions 중복 제거).
+     * 크기 설정 8개는 NOT NULL 컬럼이다(설계 18 L-4 — 08 스크립트 이후 기본값 보정 없음). 선택 설정인
+     * 완료율·통과 점수는 null을 유지한다. 설문·퀴즈 문항은 최상위 questions로만 제공한다(설계 18 L-3 — content.questions 중복 제거).
      * [Oracle 전환 — 기준 5] content는 매퍼가 내려준 JSON 문자열이 아니라
      * PopupContentAssembler가 정규 컬럼 + CONTENT_OPTIONS로 조립한다.
      */
@@ -1027,14 +1027,14 @@ public class PopupService {
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
                 popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
-                toDouble(popup.popupWidth(), 900),
-                toDouble(popup.popupHeight(), 620),
-                toDouble(popup.widthRatio(), 0.7),
-                toDouble(popup.heightRatio(), 0.75),
-                toDouble(popup.minimumWidth(), 480),
-                toDouble(popup.minimumHeight(), 320),
-                toDouble(popup.maximumWidth(), 1200),
-                toDouble(popup.maximumHeight(), 900),
+                popup.popupWidth().doubleValue(),
+                popup.popupHeight().doubleValue(),
+                popup.widthRatio().doubleValue(),
+                popup.heightRatio().doubleValue(),
+                popup.minimumWidth().doubleValue(),
+                popup.minimumHeight().doubleValue(),
+                popup.maximumWidth().doubleValue(),
+                popup.maximumHeight().doubleValue(),
                 isYes(popup.showHeaderYn()),
                 isYes(popup.showCloseButtonYn()),
                 isYes(popup.showFooterYn()),
@@ -1050,10 +1050,6 @@ public class PopupService {
 
     private boolean isYes(String value) {
         return "Y".equalsIgnoreCase(value);
-    }
-
-    private double toDouble(BigDecimal value, double defaultValue) {
-        return value == null ? defaultValue : value.doubleValue();
     }
 
     private Double toNullableDouble(BigDecimal value) {

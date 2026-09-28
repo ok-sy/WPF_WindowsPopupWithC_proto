@@ -26,7 +26,7 @@ namespace Popup.Models
 
         /// <summary>
         /// 질문의 입력 방식을 지정한다.
-        /// Rating5, SingleChoice, MultipleChoice, Text 중 하나다.
+        /// SingleChoice, MultipleChoice, Text 중 하나다.
         /// </summary>
         public SurveyQuestionType QuestionType { get; set; }
 
@@ -54,7 +54,6 @@ namespace Popup.Models
 
         /// <summary>
         /// 객관식 질문에서 표시할 보기 목록이다.
-        /// Rating5도 전달받은 보기만 표시한다.
         /// Text 질문에서는 사용하지 않는다.
         /// </summary>
         public List<SurveyOption> Options { get; set; } = new();
@@ -62,7 +61,7 @@ namespace Popup.Models
         /*
          * QuizMode에서 사용할 정답 목록이다.
          *
-         * SingleChoice, Rating5
+         * SingleChoice
          * → 정답 값 하나를 넣는다.
          *
          * MultipleChoice

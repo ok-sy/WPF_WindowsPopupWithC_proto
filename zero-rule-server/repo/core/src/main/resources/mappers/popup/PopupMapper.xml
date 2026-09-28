@@ -142,6 +142,7 @@
     <!--
         popup_notice + popup_content 공통 SELECT 목록. 관리자 상세와 WPF 목록이 함께 사용한다.
         콘텐츠는 JSON으로 조립하지 않고 정규 컬럼 5개 + CONTENT_OPTIONS(CLOB)를 그대로 내린다.
+        [설계 18 L-4] DISPLAY_MODE는 CK_POPUP_DISPLAY_MODE(08 스크립트)로 보장하므로 CASE 보정을 두지 않는다.
     -->
     <sql id="popupEntityColumns">
             n.POPUP_ID,
@@ -149,10 +150,7 @@
             n.TITLE,
             FROM_TZ(n.DISPLAY_START_AT, 'Asia/Seoul') AS DISPLAY_START_AT,
             FROM_TZ(n.DISPLAY_END_AT, 'Asia/Seoul')   AS DISPLAY_END_AT,
-            CASE
-                WHEN n.DISPLAY_MODE IN ('SEQUENTIAL', 'SIMULTANEOUS') THEN n.DISPLAY_MODE
-                ELSE 'SEQUENTIAL'
-            END AS DISPLAY_MODE,
+            n.DISPLAY_MODE,
             n.SIZE_MODE,
             n.POPUP_WIDTH,
             n.POPUP_HEIGHT,

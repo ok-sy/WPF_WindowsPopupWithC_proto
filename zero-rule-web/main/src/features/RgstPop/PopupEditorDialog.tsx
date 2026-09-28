@@ -281,11 +281,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   const imageFillMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'FILL';
-  const showTextHighlight = popup.content.showHighlight == null ? Boolean(contentValue(popup, 'highlightText')) : popup.content.showHighlight === true;
+  // [설계 18 L-4 — C-23] 표시 플래그 없는 과거 행 fallback 삭제(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
+  const showTextHighlight = popup.content.showHighlight === true;
   const showTextContentHeader = popup.content.showContentHeader !== false;
   const showTextPlainText = popup.content.showPlainText !== false;
-  const showTextBottomDescription = popup.content.showBottomDescription == null
-    ? Boolean(contentValue(popup, 'bottomDescription') || contentValue(popup, 'bottomDescriptionUrl')) : popup.content.showBottomDescription === true;
+  const showTextBottomDescription = popup.content.showBottomDescription === true;
   const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
   const backgroundOverlayOpacity = Math.max(0, Math.min(1, Number(popup.content.backgroundOverlayOpacity ?? 0.45)));
   const modalPreviewSize = previewOpen && typeof window !== 'undefined' ? previewDialogSize() : { width: popup.width, height: popup.height };
