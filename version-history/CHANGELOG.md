@@ -10,6 +10,8 @@
 - 위치: `offline-export/20260928/`(저장소 루트, git 제외 경로).
 - 검증: tgz를 임시 폴더에 풀어 항목 11개 확인, tar 4개 SHA256 일치, 각 tar 해제 후 신규 파일(`IsoDateTimeOffsetJsonConverter.cs`, `imagePreviewLayout.ts`, `09_drop_unused_columns_oracle.sql`, `archive/05_*`) 포함·삭제 파일(`PopupController.java`, `FlexibleDateTimeOffsetJsonConverter.cs`) 미포함, WPF 묶음 exe/dll/pdb·bin/obj 0건, 개인 PC 절대경로 0건. 첫 생성 시 패키징 스크립트 인코딩(BOM 없음)으로 README·삭제 목록 한글이 깨져 폴더를 지우고 다시 생성한 뒤 한글 정상 확인.
 - 참고: `appsettings.json`은 로컬 값(localhost, `DevUserId` E1001)이며 README 체크리스트대로 폐쇄망에서 변경 필요(20260922와 동일).
+- 폐쇄망 사용 범위 반영: 폐쇄망은 서버·관리자 웹·DB 연계 없이 WPF Demo Mode(`--demo` 또는 `PopupApi.DemoMode`)로만 테스트하므로, README 첫머리에 사용 범위를 명시하고 서버·웹·DB 스크립트는 소스 동기화용·연계 시점 적용으로, DB 절과 반입 전 확인의 연계 항목은 연계 시점 확인으로 표시해 패키지를 다시 생성.
+- 데모 검증: `Popup.csproj`를 참조하는 임시 콘솔(STA, 저장소 외부)에서 `DemoPopupDataService` 팝업 5종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ)을 실제 `PopupFactory.Create`로 변환 — 모두 성공(RATIO → ViewportRatio 매핑 포함), QUIZ 채점 전부 정답 100·통과 / 한 문항 오답 50·불합격. 데모 이미지·영상(`Media/`)이 3-popup-frameWork 묶음에 포함되고 EXE 내장 리소스로 빌드됨을 확인. 화면 표시(`Popup.exe --demo`) 자체는 미실행.
 - 미실행 검증: 폐쇄망 신규 구축에 쓰일 `01_popup_schema_oracle.sql`(설계 18 L-4·L-5 제약·컬럼 변경 반영)을 빈 스키마에 처음부터 실행하는 확인. 로컬 XE에 새 스키마를 만들 DBA 계정 정보가 없어 수행하지 않음(ERwin 생성기의 DDL 파싱은 성공).
 - 상태: 패키지 생성 완료(반입 전). 변경 이력은 작업 브랜치에 커밋, 미푸시.
 
