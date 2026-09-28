@@ -196,11 +196,12 @@
 
 ### L-5. 정책 결정이 필요한 항목
 
-- [ ] D-6 템플릿 버전 정책(구현 또는 컬럼 삭제), SHOW_ON_*/SCHEDULED_AT 삭제 여부 → DDL·ERwin 모델 갱신
-- [ ] C-24 크기 모드 이름 `RATIO`/`VIEWPORT_RATIO` 단일화
-- [ ] C-6 `DisplayStartAt`/`DisplayEndAt` 계약 유지 여부
-- [ ] C-22 날짜 컨버터 숫자 분기 제거 여부
-- [ ] W-3 parity 문서 재작성/삭제, W-10 미리보기 IMAGE 계약 반영(별도 과제)
+- [ ] D-6 템플릿 버전 정책(구현 또는 컬럼 삭제), SHOW_ON_*/SCHEDULED_AT 삭제 여부 → DDL·ERwin 모델 갱신 — **결정 대기**(컬럼 삭제는 되돌리기 어려운 스키마 변경)
+- [x] C-24 `RATIO`로 단일화(2026-09-28): WPF `VIEWPORT_RATIO` 매핑 삭제, 데모 JSON 4건 `RATIO`, 계약서 3.2. 기존 행은 08이 `VIEWPORT_RATIO → RATIO` 보정 후 `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 저장 허용값) 추가. `AUTO`는 WPF 기능으로 남김(서버·웹은 생성하지 않음)
+- [x] C-6 `DisplayStartAt`/`DisplayEndAt`: **유지**로 결정 — 계약 §6.3 선택 필드이고 서버가 이미 내려주며 WPF DTO에 두는 비용이 없음
+- [x] C-22 날짜 컨버터 숫자(epoch 초) 분기 삭제 — WPF API 3개 응답 날짜가 모두 ISO(`WpfJson.DATE_TIME`)임을 서버 DTO에서 확인. 클래스 이름 `IsoDateTimeOffsetJsonConverter`로 변경
+- [x] W-3 parity 문서는 L-0에서 현행 기준으로 재작성 완료
+- [ ] W-10 미리보기 IMAGE 계약(ADAPTIVE/FIT_TO_IMAGE) 반영 — 별도 기능 과제로 유지
 
 ---
 

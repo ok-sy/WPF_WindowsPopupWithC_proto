@@ -135,6 +135,9 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 | `POPUP_NOTICE` 크기 컬럼 8개 | NULL → 900/620/0.7/0.75/480/320/1200/900 | NOT NULL | 서버 `toResponseDto` 기본값 |
 | `POPUP_QUESTION` RATING5 | SINGLE_CHOICE + HORIZONTAL, 선택지 없으면 1~5 생성 | `CK_QUESTION_TYPE` | WPF RATING5 매핑 |
 | TEXT `CONTENT_OPTIONS` | `showHighlight`/`showBottomDescription` 없으면 문구 유무로 채움 | — | WPF·웹 null fallback |
+| `POPUP_NOTICE.SIZE_MODE` (L-5 추가) | `VIEWPORT_RATIO` → `RATIO` | `CK_POPUP_SIZE_MODE` (FIXED/RATIO/FULLSCREEN) | WPF `VIEWPORT_RATIO` 매핑 |
+
+`AUTO` 등 그 외 SIZE_MODE 값이 남아 있으면 `CK_POPUP_SIZE_MODE` 추가가 ORA-02293으로 실패하고 스크립트가 멈춘다(앞선 보정은 커밋됨). 1-1번 조회 결과를 보고 값을 정한 뒤 다시 실행한다.
 
 RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므로 관리자 화면에서 정답을 지정해야 재저장할 수 있다(3번 조회에 소속 팝업이 표시됨). 스크립트는 `POPUP_QUESTION` 표 주석과 `POPUP_NOTICE.PASSING_SCORE` 주석도 현행 기준으로 바꾼다. 신규 DB는 `01`에 같은 제약이 포함되어 있다.
 

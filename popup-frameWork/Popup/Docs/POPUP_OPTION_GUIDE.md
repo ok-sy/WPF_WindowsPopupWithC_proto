@@ -70,7 +70,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | WPF 값 | API 문자열 | 동작 |
 |---|---|---|
 | `Fixed` | `FIXED` | `width`, `height` 사용 |
-| `ViewportRatio` | `VIEWPORT_RATIO` | 모니터 작업영역 × `widthRatio`, `heightRatio` |
+| `ViewportRatio` | `RATIO` | 모니터 작업영역 × `widthRatio`, `heightRatio` |
 | `Fullscreen` | `FULLSCREEN` | 대상 모니터 전체 영역 사용 |
 | `Auto` | `AUTO` | 콘텐츠 크기에 맞춘 뒤 최소/최대 범위 적용 |
 
@@ -79,11 +79,11 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | 옵션 | 설명 |
 |---|---|
 | `width`, `height` | FIXED 모드의 창 크기 |
-| `widthRatio`, `heightRatio` | VIEWPORT_RATIO 모드 비율 |
+| `widthRatio`, `heightRatio` | RATIO 모드 비율 |
 | `minimumWidth`, `minimumHeight` | 최소 창 크기 |
 | `maximumWidth`, `maximumHeight` | 최대 창 크기 |
 
-> 주의: 현재 관리자 웹/zero-rule-server는 `RATIO`를 사용하고 WPF `PopupFactory`는 `VIEWPORT_RATIO`를 받는다. 이 불일치는 `POPUP_ADMIN_UI_GAP.md`의 최우선 정리 항목이다.
+> 2026-09-28(설계 18 L-5 — C-24): API 문자열을 관리자 웹/zero-rule-server와 같은 `RATIO`로 단일화했다. `VIEWPORT_RATIO`는 더 이상 받지 않는다(내부 enum 이름 `ViewportRatio`는 유지).
 
 ---
 
@@ -256,9 +256,9 @@ AND showDoNotShowAgain = true
 
 문서를 사용하는 개발자는 아래 항목을 반드시 확인한다.
 
-1. 관리자 웹/zero-rule-server의 크기 비율 값은 `RATIO`, WPF는 `VIEWPORT_RATIO`를 기대한다.
+1. (해결 2026-09-28) 크기 비율 값은 관리자 웹·서버·WPF 모두 `RATIO`다.
 2. WPF에는 `AUTO` 크기 모드가 있으나 관리자 웹/zero-rule-server 허용 목록에는 없다.
-3. RATING5 자동 보기 생성은 제거했다. 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
+3. RATING5 유형은 삭제했다(2026-09-28). 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
 4. `hideDays`는 모델/서버 필드가 있으나 관리자 입력이 없다. WPF는 팝업 `hideDays`를 HIDDEN 결과에 넣고, 값이 없으면 30일을 쓴다.
 5. `periodMode`, 반복 관련 필드는 모델/DB에 있으나 관리자 입력 UI와 실제 반복 노출 정책 적용 범위를 추가 검증해야 한다.
 6. VIDEO의 여러 확장 옵션은 DTO/관리자 화면에는 있으나 실제 Video View 연결 여부를 옵션별로 확인해야 한다.
