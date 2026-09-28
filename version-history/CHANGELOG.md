@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-09 — 미사용 템플릿 버전·예약 표시 컬럼 삭제(설계 18 L-5 D-6)
+
+- 이유: 문항 템플릿 버전 정책은 구현되지 않았고(저장마다 난수 그룹·버전 1·`CURRENT_YN='Y'`), 팝업의 로그인 시 표시·예약 표시 플래그와 예약 시각은 항상 N/NULL로만 쓰고 읽는 곳이 없다. 표시 시점은 노출 기간(`DISPLAY_START_AT`~`DISPLAY_END_AT`)과 WPF 폴링으로 정해지므로 정책 구현 대신 컬럼 삭제로 결정.
+- 변경(DB): `QUESTION_TEMPLATE`에서 `TEMPLATE_GROUP_ID`·`TEMPLATE_VERSION`·`CURRENT_YN`과 `UK_QTEMPLATE_GROUP_VERSION`·`CK_QUESTION_TEMPLATE_VERSION`·`CK_QUESTION_TEMPLATE_CURRENT`·`UX_QUESTION_TEMPLATE_CURRENT` 삭제, `POPUP_NOTICE`에서 `SHOW_ON_LOGIN_YN`·`SHOW_ON_SCHEDULE_YN`·`SCHEDULED_AT`·`CK_POPUP_SCHEDULED_AT` 삭제, `CK_POPUP_YN_VALUES`는 나머지 Y/N 컬럼으로 재정의(`01`). 샘플 `02`는 템플릿을 이름으로 조회하도록 변경. 기존 DB용 `09_drop_unused_columns_oracle.sql` 추가(확인 조회 → `CURRENT_YN='N'` 템플릿 비활성화 → 인덱스·제약·컬럼 삭제 → YN CHECK 재생성, 멱등). 테이블은 삭제하지 않음.
+- 변경(서버): `insertQuestionTemplate`에서 삭제 컬럼 제외, 팝업 MERGE INSERT에서 `SHOW_ON_*` 제외, 템플릿 목록 조회 조건에서 `CURRENT_YN` 제외. Java 코드 참조 없음.
+- 변경(ERD): `scripts/export-popup-erwin.cjs`가 스냅샷 날짜를 인자로 받도록 바꾸고(기본 20260928) 누락된 `OPTION_LAYOUT` 한글명 추가. `ERD/model/popup_oracle_20260928_*`로 재생성(17 테이블, 224 컬럼, UNIQUE 11, CHECK 51, 인덱스 14)하고 2026-09-24 스냅샷 파일은 삭제(git 이력 보존), README를 0928 기준으로 갱신.
+- 문서: `db/oracle/README.md` 09 절차, 설계 18 D-6.
+- 주요 파일: `db/oracle/01_popup_schema_oracle.sql`, `02_popup_sample_oracle.sql`, `09_drop_unused_columns_oracle.sql`, `PopupMapper.xml`, `scripts/export-popup-erwin.cjs`, `ERD/model/*20260928*`.
+- 검증: 서버 `compileJava compileTestJava` 및 `:service:core:test --tests server.service.core.popup.*` 43건 — 41 통과, 2 skip(실DB 테스트, 환경 변수 미지정), 실패 0. ERwin 생성기 실행 성공(컬럼 수 229 → 224 = 삭제 6 + `OPTION_LAYOUT` 1 반영 확인).
+- 미실행: **`09`는 로컬 XE·원격 개발 DB 모두 미실행**(되돌릴 수 없는 컬럼 삭제라 개발자 실행으로 남김). 로컬 XE에 09를 실행하기 전까지 새 매퍼의 템플릿 저장과 실DB 테스트(`PopupQuestionDatabaseTest` 등)는 NOT NULL 위반으로 실패한다. `01`·`02`를 빈 스키마에 새로 실행하는 확인도 미실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-08 — 크기 모드 이름·날짜 형식 단일화(설계 18 L-5 일부)
 
 - 이유: 설계 18 L-5의 정책 항목 중 권장안이 분명한 항목을 확정. 서버·관리자 웹은 `RATIO`를 쓰는데 WPF와 데모 JSON은 `VIEWPORT_RATIO`도 받는 이중 이름, 서버 교체기에만 필요했던 epoch 초 날짜 허용이 남아 있었다.

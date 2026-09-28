@@ -8,6 +8,10 @@ const root = path.resolve(__dirname, '..');
 const input = path.join(root, 'db/oracle/01_popup_schema_oracle.sql');
 const out = path.join(root, 'ERD/model');
 const source = fs.readFileSync(input, 'utf8');
+// Snapshot date (YYYYMMDD, KST) used in output file names: node scripts/export-popup-erwin.cjs 20260928
+const stamp = process.argv[2] || '20260928';
+assert.match(stamp, /^\d{8}$/, 'snapshot date must be YYYYMMDD');
+const stampLabel = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6)}`;
 // This DDL uses -- comments only; quoted SQL strings may contain '--'.
 function stripComments(text) {
   return text.replace(/'(?:''|[^'])*'|--[^\r\n]*/g, s => s.startsWith('--') ? '' : s);
@@ -55,7 +59,7 @@ const labels = {
   TARGET_GROUP_ID:'대상 그룹 ID',TARGET_NAME:'대상명',TARGET_DESCRIPTION:'대상 설명',GROUP_ORDER:'그룹 순서',TARGET_CONDITION_ID:'대상 조건 ID',
   CONDITION_TYPE:'조건 유형',CONDITION_OPERATOR:'조건 연산자',CONDITION_DATE_VALUE:'조건 날짜',INCLUDE_CHILD_YN:'하위 부서 포함 여부',CONDITION_ORDER:'조건 순서',
   QUESTION_ID:'문항 ID',QUESTION_TYPE:'문항 유형',QUESTION_TITLE:'문항 제목',QUESTION_DESCRIPTION:'문항 설명',REQUIRED_YN:'필수 여부',SCORED_YN:'채점 여부',
-  QUESTION_SCORE:'문항 배점',CORRECT_ANSWER:'정답',ANSWER_MATCH_MODE:'정답 일치 방식',OPTION_ID:'선택지 ID',OPTION_VALUE:'선택지 값',OPTION_TEXT:'선택지 내용',CORRECT_YN:'정답 여부',
+  QUESTION_SCORE:'문항 배점',CORRECT_ANSWER:'정답',ANSWER_MATCH_MODE:'정답 일치 방식',OPTION_LAYOUT:'선택지 배치',OPTION_ID:'선택지 ID',OPTION_VALUE:'선택지 값',OPTION_TEXT:'선택지 내용',CORRECT_YN:'정답 여부',
   USER_POPUP_STATUS_ID:'사용자 팝업 상태 ID',POPUP_STATUS:'팝업 상태',FIRST_DISPLAYED_AT:'최초 표시 시각',LAST_DISPLAYED_AT:'최종 표시 시각',DISPLAY_COUNT:'표시 횟수',
   CLOSED_AT:'닫은 시각',HIDDEN_FROM_AT:'숨김 시작 시각',HIDDEN_UNTIL_AT:'숨김 종료 시각',COMPLETED_YN:'완료 여부',COMPLETED_AT:'완료 시각',
   RESPONSE_ID:'응답 ID',CLIENT_REQUEST_ID:'클라이언트 요청 ID',RESPONSE_STATUS:'응답 상태',RESPONSE_STARTED_AT:'응답 시작 시각',SUBMITTED_AT:'제출 시각',RECEIVED_AT:'수신 시각',TOTAL_SCORE:'총점',PASSED_YN:'통과 여부',
@@ -165,11 +169,11 @@ function makeXml(base) {
     }, `<Attribute_Groups>${attributes}</Attribute_Groups><Key_Group_Groups>${groups}</Key_Group_Groups>`);
   }
   const env = props('ModelEnvProps', {Model_Type:3, Target_Server:1075858979, Target_Server_Version:10, Target_Server_Minor_Version:0});
-  const model = props('ModelProps', {Name:'팝업 Oracle 현재 구조', Definition:'2026-09-24 저장소 Oracle DDL 기준. 삭제 후보 포함. XML 호환성 미검증. 전체 물리 DDL은 동봉 SQL 참조.'});
+  const model = props('ModelProps', {Name:'팝업 Oracle 현재 구조', Definition:`${stampLabel} 저장소 Oracle DDL 기준. XML 호환성 미검증. 전체 물리 DDL은 동봉 SQL 참조.`});
   return `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Generated interchange draft; ERwin XSD/application validation is required. -->\n<ERwin xmlns="${base}" xmlns:EMX="${base}/data" Format="ERwin">\n<EMX:Model xmlns="${base}/data" id="${id('model')}" name="팝업 Oracle 현재 구조">${env}${model}<Entity_Groups>${entities}</Entity_Groups><Relationship_Groups>${relations}</Relationship_Groups></EMX:Model></ERwin>\n`.replace(/></g, '>\n<');
 }
 fs.mkdirSync(out, {recursive:true});
-const prefix = 'popup_oracle_20260924';
+const prefix = `popup_oracle_${stamp}`;
 // CA r7-r9 and later erwin namespaces are different. No product build number is invented.
 fs.writeFileSync(path.join(out, `${prefix}_ca.xml`), makeXml('http://www.ca.com/erwin'));
 fs.writeFileSync(path.join(out, `${prefix}_erwin.xml`), makeXml('http://www.erwin.com/dm').replace('<ERwin ', '<erwin ').replace('Format="ERwin"', 'Format="erwin"').replace('</ERwin>', '</erwin>'));

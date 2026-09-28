@@ -143,3 +143,18 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 기존 샘플 데이터 보정 대상 0행, 제약 추가 완료. 임시 검증 행(비정상 DISPLAY_MODE·NULL 크기·보기 없는/있는 RATING5·플래그 없는 TEXT 3종)으로 보정 결과와 재실행 시 SKIP을 확인한 뒤 임시 행은 삭제. 원격 개발 DB 미실행:
   `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @08_legacy_data_constraints_oracle.sql ""`
+
+## 미사용 컬럼 삭제 (2026-09-28, 설계 18 L-5 / D-6)
+
+`09_drop_unused_columns_oracle.sql <스키마접두어>` — **되돌릴 수 없는 컬럼 삭제.** 테이블은 삭제하지 않는다.
+
+| 테이블 | 삭제 컬럼 | 함께 삭제 |
+|---|---|---|
+| `QUESTION_TEMPLATE` | `TEMPLATE_GROUP_ID`, `TEMPLATE_VERSION`, `CURRENT_YN` (버전 정책 미구현 — 항상 난수 그룹·1·Y) | `UK_QTEMPLATE_GROUP_VERSION`, `CK_QUESTION_TEMPLATE_VERSION`, `CK_QUESTION_TEMPLATE_CURRENT`, `UX_QUESTION_TEMPLATE_CURRENT` |
+| `POPUP_NOTICE` | `SHOW_ON_LOGIN_YN`, `SHOW_ON_SCHEDULE_YN`, `SCHEDULED_AT` (항상 N/NULL, 읽는 곳 없음. 표시 시점은 `DISPLAY_START_AT`~`DISPLAY_END_AT` 노출 기간과 WPF 폴링으로 정해짐) | `CK_POPUP_SCHEDULED_AT`. `CK_POPUP_YN_VALUES`는 나머지 Y/N 컬럼으로 다시 만듦 |
+
+- 순서: **L-5 서버 배포와 같은 시점에 실행.** 삭제 전 DB에서는 새 서버의 템플릿 INSERT가 NOT NULL 위반으로 실패하고, 삭제 후에는 이전 서버의 저장이 실패한다.
+- 실행 전 1번 조회로 의미 있는 값(`Y`·예약 시각·버전 2 이상·`CURRENT_YN='N'`)을 확인한다. `CURRENT_YN='N'` 템플릿은 목록에서 계속 숨도록 `ACTIVE_YN='N'`으로 바꾼 뒤 삭제한다.
+- 적용 현황: **로컬 XE·원격 개발 DB 모두 미실행.** 로컬 XE도 실행 전까지는 새 매퍼의 템플릿 저장과 실DB 테스트가 실패한다.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @09_drop_unused_columns_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @09_drop_unused_columns_oracle.sql ""`

@@ -3,7 +3,7 @@
 - 작성일: 2026-09-28 (KST)
 - 범위: **팝업 기능 소스만** — WPF `popup-frameWork/Popup`, 서버 `server.*.popup`/`server.*.wpf` 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop/**`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle/*.sql`. zero 공통 프레임워크(보안 필터·`DefaultPublicUrls`·`BasicConfig` 등)는 대상에서 제외한다.
 - 기준: 백엔드 독립형 WPF Client API 계약서 v3.0(`docs/interfaces/POPUP_INTERFACE_SPEC.md`) — WPF가 쓰는 API는 `POST /p/api/wpf/auth/login`, `GET /p/api/wpf/popups`, `POST /p/api/wpf/popups/results` 3개뿐이다.
-- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08 미실행), L-2 미착수, L-5는 §5 L-5 참고**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
+- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08·09 미실행, 09는 로컬 XE도 미실행), L-5는 W-10 외 반영, L-2 미착수**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
 
 분류:
 
@@ -196,7 +196,8 @@
 
 ### L-5. 정책 결정이 필요한 항목
 
-- [ ] D-6 템플릿 버전 정책(구현 또는 컬럼 삭제), SHOW_ON_*/SCHEDULED_AT 삭제 여부 → DDL·ERwin 모델 갱신 — **결정 대기**(컬럼 삭제는 되돌리기 어려운 스키마 변경)
+- [x] D-6 **두 묶음 모두 컬럼 삭제로 결정**(2026-09-28): `QUESTION_TEMPLATE.TEMPLATE_GROUP_ID·TEMPLATE_VERSION·CURRENT_YN`(+UK·CHECK 2·함수 기반 UX), `POPUP_NOTICE.SHOW_ON_LOGIN_YN·SHOW_ON_SCHEDULE_YN·SCHEDULED_AT`(+`CK_POPUP_SCHEDULED_AT`, `CK_POPUP_YN_VALUES` 재생성). 테이블은 유지. DDL `01`·샘플 `02`·매퍼 반영, `09_drop_unused_columns_oracle.sql` 작성, ERwin 산출물을 `popup_oracle_20260928_*`로 재생성(17 테이블·224 컬럼)
+- [ ] D-6 `09` 실행 — **로컬 XE·원격 개발 DB 모두 미실행**(컬럼 삭제 실행은 개발자가 직접). 실행 전까지 로컬 실DB 테스트·관리자 템플릿 저장 실패
 - [x] C-24 `RATIO`로 단일화(2026-09-28): WPF `VIEWPORT_RATIO` 매핑 삭제, 데모 JSON 4건 `RATIO`, 계약서 3.2. 기존 행은 08이 `VIEWPORT_RATIO → RATIO` 보정 후 `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 저장 허용값) 추가. `AUTO`는 WPF 기능으로 남김(서버·웹은 생성하지 않음)
 - [x] C-6 `DisplayStartAt`/`DisplayEndAt`: **유지**로 결정 — 계약 §6.3 선택 필드이고 서버가 이미 내려주며 WPF DTO에 두는 비용이 없음
 - [x] C-22 날짜 컨버터 숫자(epoch 초) 분기 삭제 — WPF API 3개 응답 날짜가 모두 ISO(`WpfJson.DATE_TIME`)임을 서버 DTO에서 확인. 클래스 이름 `IsoDateTimeOffsetJsonConverter`로 변경
