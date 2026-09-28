@@ -6,10 +6,11 @@
 
 - 이유: 설계 18(L-0~L-5, D-6, W-10)과 DB 스크립트 정리분을 폐쇄망에 반입하기 위한 패키지 생성. VS Code 확장·.NET SDK·NuGet 패키지는 20260922에 반입 완료라 제외.
 - 생성: `scripts/export-offline-package.ps1 -IncludeMockSso -NoZip`(커밋 `8ab4665` 기준, 작업 트리 브랜치)로 묶음을 만든 뒤 20260922와 같은 구성으로 정리 — `1-zero-rule-server`(87)·`2-zero-rule-web`(9)·`3-popup-frameWork`(76, MockSso 포함)·`4-docs`(45) 폴더와 tar, `MANIFEST-*`, `SHA256SUMS.txt`, `README-IMPORT.md`, 최종 `popup-offline-20260928.tgz`.
-- 추가: `DELETE-SINCE-20260922.txt` — 20260922 반입분에는 있었지만 이번 소스에 없는 파일(서버 7: 구 `PopupController`·payload·DTO, WPF 8: `TextPopupWindow`·구 API DTO·`FlexibleDateTimeOffsetJsonConverter.cs` 등, 문서 1: `04_cleanup`의 `archive/` 이동). 베이스라인에도 없던 파일이라 git diff 기준 MANIFEST에 D로 나오지 않아 별도 목록으로 만듦. README에 폐쇄망 DB 스크립트 실행 순서(archive/04·05 → 06 → 07 → 08 → 09, 09는 서버 교체와 같은 시점)와 계약서 3.2 동시 배포 조건 기재.
+- 추가: `DELETE-SINCE-20260922.txt` — 20260922 반입분에는 있었지만 이번 소스에 없는 파일(서버 7: 구 `PopupController`·payload·DTO, WPF 8: `TextPopupWindow`·구 API DTO·`FlexibleDateTimeOffsetJsonConverter.cs` 등, 문서 1: `04_cleanup`의 `archive/` 이동). 베이스라인에도 없던 파일이라 git diff 기준 MANIFEST에 D로 나오지 않아 별도 목록으로 만듦. README에 계약서 3.2 동시 배포 조건 기재. 폐쇄망에는 팝업 DB가 아직 구축되지 않았으므로 DB 안내는 신규 구축 순서(`00`(방식 A) → `01` → `02`(선택) → `03`(방식 A) → `04_popup_web_menu`)로 작성하고, `06`~`09`·`archive/`는 기존 DB 마이그레이션용이라 실행하지 않는다고 명시(처음에는 마이그레이션 순서로 작성했다가 수정해 패키지를 다시 생성).
 - 위치: `offline-export/20260928/`(저장소 루트, git 제외 경로).
 - 검증: tgz를 임시 폴더에 풀어 항목 11개 확인, tar 4개 SHA256 일치, 각 tar 해제 후 신규 파일(`IsoDateTimeOffsetJsonConverter.cs`, `imagePreviewLayout.ts`, `09_drop_unused_columns_oracle.sql`, `archive/05_*`) 포함·삭제 파일(`PopupController.java`, `FlexibleDateTimeOffsetJsonConverter.cs`) 미포함, WPF 묶음 exe/dll/pdb·bin/obj 0건, 개인 PC 절대경로 0건. 첫 생성 시 패키징 스크립트 인코딩(BOM 없음)으로 README·삭제 목록 한글이 깨져 폴더를 지우고 다시 생성한 뒤 한글 정상 확인.
 - 참고: `appsettings.json`은 로컬 값(localhost, `DevUserId` E1001)이며 README 체크리스트대로 폐쇄망에서 변경 필요(20260922와 동일).
+- 미실행 검증: 폐쇄망 신규 구축에 쓰일 `01_popup_schema_oracle.sql`(설계 18 L-4·L-5 제약·컬럼 변경 반영)을 빈 스키마에 처음부터 실행하는 확인. 로컬 XE에 새 스키마를 만들 DBA 계정 정보가 없어 수행하지 않음(ERwin 생성기의 DDL 파싱은 성공).
 - 상태: 패키지 생성 완료(반입 전). 변경 이력은 작업 브랜치에 커밋, 미푸시.
 
 ## 2026-09-28-11 — 설계 18 DB 스크립트 로컬 XE·원격 개발 DB 적용
