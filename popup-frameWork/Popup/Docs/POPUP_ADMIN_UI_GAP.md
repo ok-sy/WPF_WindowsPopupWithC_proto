@@ -146,13 +146,9 @@ UI만 추가하면 끝나지 않는다.
 
 하지만 관리자 등록/수정 화면에는 숨김 일수 입력란이 없다.
 
-또한 WPF `PopupWindow.SaveDoNotShowAgainAsync()`는 현재 다음 값으로 고정한다.
-
-```text
-30일
-```
-
-즉 서버에서 `hideDays`를 내려줘도 WPF PopupWindow가 그 값을 사용하지 않는다.
+> 설계 18 L-0 갱신: 이 절의 WPF 설명(`PopupWindow.SaveDoNotShowAgainAsync()`가 30일 고정 값으로 숨김 API 호출)은 구 구조 기준이며 해당 메서드는 삭제했다.
+> 현재 WPF는 `PopupResultBuilder`가 HIDDEN 결과 항목의 `hideDays`에 팝업 `hideDays`(없으면 30)를 넣어 `POST /api/wpf/popups/results`로 보낸다.
+> 아래 "필요한 작업"의 4~6번 WPF 항목은 이미 반영된 상태다.
 
 ### 필요한 작업
 

@@ -300,11 +300,7 @@ zero-rule-web/sub/domain/src/model/PopupAdmin.ts
 zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts
 ```
 
-필요 시 미리보기 페이지:
-
-```text
-zero-rule-web/main/pages/popup-preview.tsx
-```
+새 창 미리보기 페이지 `zero-rule-web/main/pages/popup-preview.tsx`는 편집기 내 "실제 크기로 보기" 모달로 대체되어 삭제했다(설계 18 W-2).
 
 ### 3.3 제외 원칙
 
@@ -766,6 +762,10 @@ VSIX
 - [ ] 결과 저장/재전송
 - [ ] 관리자 등록 → WPF 표시 E2E
 - [ ] 폐쇄망 PC 재부팅 후 자동 실행
+
+### P1A — 팝업 구버전 분기·미사용 소스 정리
+
+- [ ] [팝업 구버전 분기 및 미사용 소스 정리](18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md) — 구 WPF-01~06 서버 엔드포인트(`/p/api/popups?userId=` 공개 경로, 인증 없음)·WPF 구 API 메서드·`TextPopupWindow` 등 미사용 소스 삭제, `imageSizeMode` FIXED(관리자 웹이 아직 생성)·데모 JSON 구형 문항/정답 키·content 중복 키·RATING5 등 구버전 데이터 분기를 웹→데이터→WPF 순서로 제거. 반입 패키지(§7) 재생성 전에 L-0(동작 변화 없는 삭제) 완료 권장.
 
 ### P3 — 최하위 우선순위 / 명시적 착수 요청 전 이행 금지
 

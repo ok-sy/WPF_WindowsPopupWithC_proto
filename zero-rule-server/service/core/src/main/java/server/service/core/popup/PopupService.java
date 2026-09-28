@@ -9,7 +9,6 @@ import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.AdminPopupTargetCondition;
 import server.domain.popup.AdminPopupTargetGroup;
 import server.domain.popup.AdminPopupTargetRow;
-import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupOptionEntity;
@@ -21,7 +20,6 @@ import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoPopupContext;
 import server.domain.popup.VideoProgressResponseDto;
-import server.domain.popup.UserPopupStatusDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
@@ -48,6 +46,12 @@ import java.util.stream.Collectors;
  * <p>여러 테이블을 변경하는 공개 메서드는 하나의 트랜잭션으로 실행한다.
  * 저장 도중 예외가 발생하면 문항, 콘텐츠, 대상 조건 또는 응답 중
  * 일부만 저장되지 않도록 함께 롤백한다.</p>
+ *
+ * <p>[설계 18 L-0 — 구 WPF API 정리] WPF 인터페이스가 계약서 v3.0의 3개 API(로그인·목록·결과 일괄 전송)로
+ * 통합되어, 구 WPF-01~06 전용이던 {@code getPopups(userId)}, {@code recordPopupEvent}, {@code getPopupStatuses},
+ * 정답 제외 문항 조회 {@code loadPublicQuestions}와 그 보조 오버로드를 삭제했다. 목록은 WpfPopupService,
+ * 결과는 WpfResultProcessor가 담당하며, 이 클래스의 {@code hidePopup}·{@code submitResponse}·
+ * {@code saveVideoProgress}는 WpfResultProcessor가 위임 호출하므로 유지한다.</p>
  */
 @Service
 public class PopupService {
@@ -320,36 +324,6 @@ public class PopupService {
                             + normalizedPopupId);
         }
         return getAdminPopup(normalizedPopupId);
-    }
-
-    /**
-     * 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다.
-     * 노출 판정은 Mapper 쿼리에 맡기고, 중복 제거한 템플릿 ID로 문항과 선택지를
-     * 일괄 조회한다. 팝업마다 문항 조회 쿼리를 반복하지 않고 결과를 재사용한다.
-     */
-    @Transactional(readOnly = true)
-    public List<PopupResponseDto> getPopups(String userId) {
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
-        }
-
-        List<PopupEntity> popups = popupMapper.selectAvailablePopups(userId.trim());
-        List<Long> templateIds = popups.stream()
-                .map(PopupEntity::questionTemplateId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        Map<Long, List<PopupQuestionDto>> questionsByTemplate = loadQuestions(templateIds);
-
-        return popups.stream()
-                .map(popup -> {
-                    Long templateId = popup.questionTemplateId();
-                    List<PopupQuestionDto> questions = templateId == null
-                            ? List.of()
-                            : questionsByTemplate.getOrDefault(templateId, List.of());
-                    return toResponseDto(popup, questions);
-                })
-                .toList();
     }
 
     /**
@@ -703,56 +677,6 @@ public class PopupService {
                 completed, completedAt);
     }
 
-    /**
-     * DISPLAYED(표시) 또는 CLOSED(닫기) 이벤트를 사용자 상태에 반영한다.
-     * 활성 사용자·팝업의 존재를 확인하며, 답안 제출과 달리 노출 목록을 재조회하지 않는다.
-     * 응답 시각은 이 메서드에서 생성한 서버 현재 시각이다.
-     */
-    @Transactional
-    public PopupEventResponseDto recordPopupEvent(
-            String popupId,
-            String userId,
-            String eventType) {
-        if (popupId == null || popupId.isBlank()) {
-            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
-        }
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
-        }
-        if (eventType == null || eventType.isBlank()) {
-            throw new IllegalArgumentException("이벤트 유형은 필수입니다.");
-        }
-
-        String normalizedPopupId = popupId.trim();
-        String normalizedUserId = userId.trim();
-        String normalizedEventType = eventType.trim().toUpperCase();
-        if (!("DISPLAYED".equals(normalizedEventType)
-                || "CLOSED".equals(normalizedEventType))) {
-            throw new IllegalArgumentException(
-                    "이벤트 유형은 DISPLAYED 또는 CLOSED여야 합니다.");
-        }
-        if (popupMapper.countActiveUserAndPopup(
-                normalizedUserId, normalizedPopupId) == 0) {
-            throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다.");
-        }
-        if (popupMapper.upsertPopupEvent(
-                normalizedUserId, normalizedPopupId, normalizedEventType) <= 0) {
-            throw new IllegalStateException("팝업 이벤트 저장에 실패했습니다.");
-        }
-        return new PopupEventResponseDto(
-                normalizedUserId, normalizedPopupId,
-                normalizedEventType, OffsetDateTime.now());
-    }
-
-    /** 사용자의 팝업별 표시·숨김·완료 상태를 조회한다. */
-    @Transactional(readOnly = true)
-    public List<UserPopupStatusDto> getPopupStatuses(String userId) {
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
-        }
-        return popupMapper.selectPopupStatuses(userId.trim());
-    }
-
     @Transactional(readOnly = true)
     public List<server.domain.popup.AdminQuestionTemplate> getAdminQuestionTemplates() {
         return popupMapper.selectAdminQuestionTemplates();
@@ -766,19 +690,6 @@ public class PopupService {
                         question.options().stream().filter(option -> Boolean.TRUE.equals(option.isCorrect()))
                                 .map(PopupOptionDto::value).toList()))
                 .toList();
-    }
-
-    private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
-        return loadQuestions(templateIds, false);
-    }
-
-    /**
-     * [WPF API 추가 — 기준 3] 신규 WPF 목록 API(WpfPopupService)가 정답 제외 문항을 같은 규칙으로 재사용하기 위한
-     * 공개 진입점. 내부 loadQuestions(ids, admin=false)에 위임하며 정답·일치 모드는 절대 포함되지 않는다.
-     */
-    @Transactional(readOnly = true)
-    public Map<Long, List<PopupQuestionDto>> loadPublicQuestions(List<Long> templateIds) {
-        return loadQuestions(templateIds, false);
     }
 
     /**

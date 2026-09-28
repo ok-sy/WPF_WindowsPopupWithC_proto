@@ -52,7 +52,7 @@ class WpfResultProcessorTest {
 
     private WpfResultCommand item(WpfResultType type, Integer hideDays, List<PopupSubmitAnswer> answers,
                                   WpfVideoProgress video) {
-        return new WpfResultCommand("r-1", "P1", type, DISPLAYED, CLOSED, hideDays, null, answers, video);
+        return new WpfResultCommand("r-1", "P1", type, DISPLAYED, CLOSED, hideDays, null, answers, video, null, null);
     }
 
     @Test void duplicateResultIdIsNotProcessed() {

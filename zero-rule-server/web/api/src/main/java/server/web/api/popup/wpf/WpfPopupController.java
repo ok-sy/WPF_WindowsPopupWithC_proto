@@ -36,7 +36,8 @@ import java.time.ZoneId;
  *       토큰 발급·검증 자체는 타 팀 통합 토큰 필터가 담당하며 이 컨트롤러는 그 결과만 사용한다.</li>
  * </ul>
  *
- * <p>[기존 구조와의 관계] 기존 {@code PopupController}(/p/api/popups/**)는 수정하지 않고 별도 경로·별도 서비스를 쓴다.
+ * <p>[기존 구조와의 관계] 구 WPF 개별 API {@code PopupController}(/p/api/popups/**)는 설계 18 L-0에서 삭제했다.
+ * 같은 접두어의 {@code PopupVideoController}(GET /p/api/popups/video)는 영상 스트리밍 URL이라 유지한다.
  * 응답 날짜는 WPF DTO 필드의 {@code @JsonFormat}(ISO 8601)으로 직렬화하며 전역 ObjectMapper 설정은 건드리지 않는다.
  * SecurityConfig·CustomAuthenticationFilter·DefaultPublicUrls도 수정하지 않는다(/p/**는 이미 공개 경로이며,
  * 통합 토큰 필터 등록은 타 팀 작업).</p>

@@ -2,6 +2,36 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-29-01 — main 작업 내용 일괄 커밋
+
+- 이유: 누적된 팝업 소스 정리와 ERwin 산출물 및 문서 변경을 원격 저장소에 반영하기 위해 현재 작업 내용을 확정.
+- 변경: 아래 2026-09-28-03·04 및 2026-09-24-01의 미커밋 변경을 함께 포함. WPF `DemoMode=true` 설정과 `offline-packages/nuget/.gitkeep`, `offline-sdk/.gitkeep` 삭제도 포함.
+- 주요 파일: WPF·서버·웹 팝업 소스, `ERD/model/*`, `scripts/export-popup-erwin.cjs`, 설계 문서, `db/oracle/README.md`.
+- 검증: 기존 추적 파일의 공백 검사 통과. 전체 스테이징 후 ERwin 역공학 SQL의 공백만 있는 6개 행에서 trailing whitespace 확인; 생성 산출물은 원본 그대로 포함. 이번 작업에서는 빌드·테스트를 재실행하지 않음.
+- 상태: 관련 변경 전체를 이번 main 커밋에 포함. 아래 항목의 미커밋 표시는 당시 상태이며, 푸시 결과는 원격 브랜치와 커밋을 대조하여 확인.
+
+## 2026-09-28-04 — 팝업 미사용 소스 정리(설계 18 L-0)
+
+- 이유: WPF 인터페이스가 3개 API로 통합된 뒤 남은 구 WPF-01~06 경로와 호출자 없는 코드를 제거. 특히 구 `PopupController`는 공개 경로(`/p/**`)에서 요청의 `userId`를 그대로 신뢰해 다른 사용자의 팝업 조회·숨김·응답 기록이 가능한 상태였다. 동작이 바뀌지 않는 삭제만 먼저 반영하고 구버전 데이터 분기는 이후 단계로 남김.
+- 변경(서버): `PopupController`(`/p/api/popups` 목록·`/hide`·`/responses`·`/video-progress`·`/events`·`/statuses`)와 요청 payload 4개, `PopupService.getPopups`·`recordPopupEvent`·`getPopupStatuses`·`loadPublicQuestions`·1인자 `loadQuestions`, 매퍼 `upsertPopupEvent`·`selectPopupStatuses`, `PopupEventResponseDto`·`UserPopupStatusDto`, 호출자 없는 `WpfPopupItem.from(dto)`, 테스트 전용 호환 생성자(`WpfResultCommand` 9인자, `PopupQuestionDto` 11인자) 삭제. 테스트 호출부는 정식 생성자로 바꾸고, `PopupQuestionDatabaseTest`의 공개 목록 확인은 매퍼 노출 조회와 `WpfPopupItem.withoutAnswerKey`로 대체. `hidePopup`·`submitResponse`·`saveVideoProgress`는 `WpfResultProcessor`가 위임하므로 유지, 영상 스트리밍 `PopupVideoController`(`GET /p/api/popups/video`)도 유지. 매퍼 XML·WPF 서비스·컨트롤러·결과 요청 주석을 현행 구조로 수정.
+- 변경(WPF): sample 베이스라인 `TextPopupWindow` 삭제. `PopupApiService`의 구 API 메서드 6개와 전용 헬퍼 4개, 구 요청/응답 DTO 파일 3개 삭제(`PopupSubmitAnswerRequestDto`는 `WpfResultDtos.cs`로 이동). 미사용 필드·멤버(`PopupResponseDto` 템플릿/반복 필드, VIDEO content의 완료 비율 사본, SURVEY `ValidateRequiredQuestions`, `PopupManager.Enqueue/Show/EnqueueRange`, `PendingCount`, `LastUser`/`HasToken`, `IsAccepted`, `IsVersionError`)와 주석 처리된 코드 삭제. 데모 게이트웨이의 구 클라이언트용 서버 재채점 `Grade()` 삭제(점수 누락 QUIZ 제출은 불합격). 설문 문자열 Tag 호환 분기 삭제, `SaveDoNotShowAgainAsync` 인라인, 영상 진행률의 no-op 인자를 없애고 `UpdateProgressSnapshot()`으로 이름 변경, 도달 불가 `goto case` 정리, `ImagePopupSizeMode.Adaptive` 주석을 확정 계약으로 수정. 구 API를 설명하던 `Popup/Docs/popup-json-mapping.md`·PostgreSQL DDL 삭제, `POPUP_OPTION_GUIDE.md`는 계약서 v3.0 안내로 교체.
+- 변경(웹): 여는 코드가 없는 새 창 미리보기 페이지 `main/pages/popup-preview.tsx`와 `PopupPreview`의 `standalone` 분기 삭제. Markdown 제거 잔재(불필요한 괄호·들여쓰기·표식 주석) 정리, `PopupAdminApi.ts` 주석 위치 수정, `POPUP_PREVIEW_WPF_PARITY.md`를 현행 기준으로 재작성.
+- 문서: 설계 18 L-0 상태 갱신, 설계 14 §3.2 반입 목록에서 미리보기 페이지 제거, `ERD/README.md`·`POPUP_ADMIN_UI_GAP.md`의 삭제 파일·메서드 언급 수정.
+- 주요 파일: `zero-rule-server/.../popup/PopupService.java`, `PopupMapper.java/.xml`, `WpfPopupItem.java`, `WpfResultCommand.java`, `PopupQuestionDto.java`, 서버 popup 테스트, `popup-frameWork/Popup/Services/PopupApiService.cs`, `DemoPopupGateway.cs`, `Dtos/*`, `Views/**`, `zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx`, `PopupEditorDialog.tsx`.
+- 검증: 서버 `gradlew --offline compileJava compileTestJava` 및 `:web:api`·`:service:core`·`:app` popup/wpf 테스트 66건 — 60 통과, 6 skip(실DB 필요), 실패 0(매퍼 메서드↔구문 1:1 검사 포함). `dotnet build popup-frameWork/Popup.slnx`(증분·`--no-incremental`) 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공(변경 파일 lint 경고 없음, 라우트 목록에서 `/popup-preview` 제거 확인). 삭제 심볼 잔존 참조 grep 0건(설명 주석 제외). `git diff --check` 통과.
+- 미실행 검증: `--demo` 전체 팝업 표시·QUIZ 제출, 서버 기동 후 구 경로 404와 영상 스트리밍 확인, 관리자 미리보기 브라우저 확인.
+- 보류: DDL `POPUP_NOTICE.PASSING_SCORE` 주석 수정은 미커밋 ERwin 산출물의 원본 DDL 해시와 충돌하므로 ERwin 작업 반영 후 진행. `offline-export/20260922`의 기존 반입 산출물은 삭제 파일을 포함하므로 반입 전 재생성 필요.
+- 상태: 미커밋. 파일 삭제는 `git rm`으로 스테이징되어 있음. `popup-frameWork/Popup/appsettings.json`의 로컬 `DemoMode` 변경과 ERwin 작업(2026-09-24-01)은 이 작업과 별개.
+
+## 2026-09-28-03 — 팝업 구버전 분기·미사용 소스 조사 및 정리 TODO
+
+- 이유: WPF 인터페이스가 3개 API(계약서 v3.0)로 통합되고 IMAGE 크기 모드·문항 구조·Markdown 제거 등이 확정된 뒤에도 구 계약용 코드와 과거 데이터 분기가 남아 있어, 폐쇄망 반입 전에 정리 대상과 순서를 확정할 필요.
+- 변경: 팝업 소스(WPF `popup-frameWork/Popup`, 서버 popup/wpf 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle`)를 조사해 미사용 소스와 구버전 데이터 분기를 `docs/design/18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md`에 서버 S-1~20, 웹 W-1~10, DB D-1~6, WPF C-1~26으로 목록화하고, 변경 로직을 L-0(동작 변화 없는 삭제)~L-5(정책 결정) 단계로 정리. 설계 14 §8에 P1A 항목으로 연결. zero 공통 프레임워크는 대상에서 제외.
+- 주요 확인 사항: ① 구 `PopupController`(`/p/api/popups?userId=`, `/hide`·`/responses`·`/video-progress`·`/events`·`/statuses`)가 공개 경로에서 `userId`를 신뢰하며 호출부 없음 — 우선 삭제 대상(`/p/api/popups/video`는 현행이라 유지). ② `imageSizeMode` FIXED는 계약상 과거 값이지만 관리자 웹 기본값·메뉴가 아직 생성하므로 WPF 매핑은 웹·데이터 정리 후 제거. ③ WPF의 `content.questions`·`content.passingScore`·`correctAnswers` 분기는 Demo Mode 샘플 JSON만 사용하므로 데모 JSON 전환이 선행 조건. ④ 서버가 `content` 전체를 `CONTENT_OPTIONS`에 저장하고 조회 시 덮어써 컬럼 값이 오래된 사본에 가려질 수 있는 정합성 이슈. ⑤ `05_question_option_layout_oracle.sql`은 원격 개발 DB 미적용이라 삭제 금지.
+- 주요 파일: `docs/design/18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md`, `docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md`.
+- 검증: HEAD `5bfa543` 기준 참조 grep·호출 경로 추적과 CHANGELOG·설계 문서 대조로 수행한 정적 조사. 구 `PopupController` 매핑, 웹 FIXED 기본값, `TextPopupWindow` 무참조, 데모 JSON 구형 필드, `PopupFactory` FIXED/`content.passingScore` 분기는 직접 재확인. 소스 변경·빌드·실행 검증은 하지 않음.
+- 상태: 문서만 작성, 코드 정리 미착수. 미커밋.
+
 ## 2026-09-28-02 — 문항별 선택지 가로·세로 배치 및 줄바꿈
 
 - 이유: 설문·퀴즈 선택지는 직접 입력하고 각 문항에서 배치 방향을 개별 지정하도록 통일.
@@ -10,6 +40,7 @@
 - 주요 파일: PopupQuestionEditor.tsx, PopupPreview.tsx, PopupAdmin.ts, PopupQuestionDto/Entity.java, PopupMapper.xml, PopupService.java, WpfPopupItem.java, SurveyQuestionDto.cs, PopupFactory.cs, SurveyPopupView.xaml.cs, DemoWindow.xaml(.cs), DemoPopupDataService.cs, db/oracle/*.sql.
 - 검증: 웹 타입 검사 및 WPF 빌드(경고 0/오류 0) 통과. 서버 관련 테스트 23건 통과/실DB 테스트 1건 생략(접속 정보 없음). JSON 왕복·문항별 혼합 배치·정답 제거 후 배치 유지·기본값/유효성·MyBatis 바인딩 검증. 로컬 .offline-verify/option-layout 하네스에서 설문·퀴즈 × 문항별 가로/세로 조합 × 폭 400/620/900 레이아웃 393건 통과. git diff --check 통과.
 - 상태: 관련 코드·문서·SQL을 이번 main 커밋에 포함하며 푸시 결과는 원격 브랜치로 확인한다. DB SQL 적용·실제 DB 왕복·브라우저 화면·데모 창 버튼 클릭/제출·배포는 미실행. 서버 배포 전에 기존 DB에 컬럼 추가 SQL 적용 필요.
+- 후속(기존 DB 적용): 로컬 XE(`//localhost:1521/XEPDB1`, POPUP 계정)에 `05_question_option_layout_oracle.sql` 실행(`NLS_LANG=KOREAN_KOREA.AL32UTF8`, `WHENEVER SQLERROR EXIT FAILURE`). 실행 전 컬럼 없음 확인 → 실행 후 `OPTION_LAYOUT VARCHAR2(10 CHAR) NOT NULL DEFAULT 'VERTICAL'`, 제약 `CK_QUESTION_OPTION_LAYOUT`(VERTICAL/HORIZONTAL) 생성, 기존 문항 3행 모두 VERTICAL. **원격 개발 DB(192.168.114.71:4004/XE)는 TCP 연결 불가(VPN 미연결)로 미실행** — 연결 후 `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @05_question_option_layout_oracle.sql` 실행 필요. 적용 후 서버 기동·실DB 왕복 테스트는 미실행. `db/oracle/README.md`에 적용 현황 기록.
 
 ## 2026-09-28-01 — 백엔드 독립형 WPF Client API 계약서 v3.0 정리
 
@@ -20,6 +51,14 @@
 - 주요 파일: `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `version-history/CHANGELOG.md`.
 - 검증: 현재 main의 WPF 호출 경로·DTO·Factory·결과 큐 구현과 문서 내용을 대조. 문서 변경만 수행했으며 WPF 빌드, 서버 실행, 신규 백엔드 E2E 테스트는 수행하지 않음.
 - 상태: 인터페이스 문서 변경 커밋 `218943c` main 반영 완료. 변경 이력까지 main에 반영하며 별도 배포 변경 없음.
+
+## 2026-09-24-01 — 팝업 Oracle ERwin XML 초안 및 역공학 DDL 생성
+
+- 이유: 현재 팝업 DB 구조를 ERwin에서 검토할 수 있는 교환 파일 준비. 기존 바이너리 모델은 현재 Oracle DDL과 자동 동기화되지 않음.
+- 변경: Oracle 초기 DDL에서 팝업용 조직 마스터를 포함한 17개 테이블·229개 컬럼·PK 17개·FK 25개·UNIQUE 12개를 추출해 CA/신형 erwin 네임스페이스별 XML 초안 생성. 한글 논리명과 영문 물리명, 타입·NULL 여부·키 참조 포함. 삭제 후보와 템플릿 버전 컬럼은 보존. 전체 물리 정의용 역공학 SQL, 원본 해시·추출 결과 manifest, 재생성 스크립트와 안내 문서 추가.
+- 주요 파일: `scripts/export-popup-erwin.cjs`, `ERD/model/popup_oracle_20260924_*`, `ERD/model/README_popup_oracle_20260924.md`.
+- 검증: 생성기 실행 성공. 두 XML의 .NET XML 파싱, 객체 수, ID 중복 없음, 참조 해소, 추출 정의 대비 컬럼 타입·NULL 여부 대조 통과. `git diff --check` 통과. SQL에는 CHECK 50개·시퀀스 12개·인덱스 15개를 포함. DB 실행·접속은 하지 않음.
+- 상태: 미커밋. ERwin 및 버전별 XSD가 없어 실제 가져오기 호환성 미검증. XML의 CHECK·기본값·ON DELETE는 설명으로 보존하며 전용 물리 메타모델 객체는 미구현; 전체 물리 정의는 동봉 SQL 기준. 다이어그램 배치 미포함. 기존 `.erwin` 파일과 애플리케이션·DB 변경 없음.
 
 ## 2026-09-23-05 — 단일 EXE 자동 업데이트 최하위 TODO 정리
 

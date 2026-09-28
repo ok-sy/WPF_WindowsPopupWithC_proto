@@ -2,7 +2,6 @@ using Popup.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Popup.Services
@@ -18,19 +17,18 @@ namespace Popup.Services
      *   서버 규칙을 최대한 그대로 재현한다:
      *     - HIDDEN : hideDays 동안 숨김 → 다음 목록에서 제외
      *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(설계 12 — 서버 재채점 없음, 실제 서버는 참고·로그).
-     *                   구 클라이언트가 score 없이 보내면 샘플 JSON의 correctAnswers로 채점한다.
+     *                   score/passed가 빠진 항목은 불합격으로 기록한다(설계 18 L-0 — C-18, 구 클라이언트용 Grade() 삭제).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 목록에서 제외
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
      *   처리한 항목은 ResultProcessed 이벤트로 DemoWindow의 결과 로그에 보여 준다.
      *
-     * [주의] 데모 샘플 JSON은 구 형식(correctAnswers 값 목록)이며 QuizGrader가 이를 호환 처리한다.
+     * [주의] 데모 샘플 JSON은 구 형식(correctAnswers 값 목록)이며 WPF 화면 쪽 QuizGrader가 이를 호환 처리한다
+     *        (이 게이트웨이는 채점하지 않는다. 데모 JSON v3 전환은 설계 18 L-2).
      *        운영 코드(PopupApiService)와 혼동하지 않도록 이 클래스는 Demo Mode에서만 생성된다.
      */
     public sealed class DemoPopupGateway : IPopupGateway
     {
-        private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
         private readonly Dictionary<string, PopupResponseDto> _popups = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTimeOffset> _hiddenUntil = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _completed = new(StringComparer.OrdinalIgnoreCase);
@@ -144,11 +142,14 @@ namespace Popup.Services
                     response.ResponseId = Math.Abs(item.ResultId.GetHashCode());
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
-                        // [설계 12] WPF가 판정한 값을 우선 사용. 없으면(구 클라이언트) 데모 채점기로 계산.
-                        (double score, bool passed) = item.Score is double localScore && item.Passed is bool localPassed
-                            ? (localScore, localPassed)
-                            : Grade(popup, item.Answers);
-                        response.TotalScore = score;
+                        /*
+                         * [설계 12] WPF가 로컬 채점한 score/passed를 그대로 저장한다.
+                         * [설계 18 L-0 — C-18] score/passed 없이 오는 "구 클라이언트" 제출을 위한 데모 채점기 Grade()는 삭제했다.
+                         * 현행 WPF는 QUIZ 제출 때 항상 점수를 보내고 데모 결과 큐도 별도 파일이라 구 항목이 들어올 수 없다.
+                         * 그래도 값이 빠진 항목이 오면 불합격(Passed=false)으로 기록하고 처리를 계속한다.
+                         */
+                        bool passed = item.Score.HasValue && item.Passed == true;
+                        response.TotalScore = item.Score;
                         response.Passed = passed;
                         if (passed) _completed.Add(item.PopupId);
                         response.PopupStatus = passed ? "COMPLETED" : "SUBMITTED";
@@ -193,35 +194,6 @@ namespace Popup.Services
             response.PopupStatus = null;
             response.Completed = null;
             return response;
-        }
-
-        /*
-         * QUIZ 채점(데모 전용). 채점 문항마다 선택한 선택지 value 집합이 correctAnswers와 같으면 정답.
-         * 배점은 100/채점 문항 수. 통과 점수는 content.passingScore(없으면 100).
-         */
-        private static (double Score, bool Passed) Grade(PopupResponseDto popup, List<PopupSubmitAnswerRequestDto> answers)
-        {
-            SurveyPopupContentDto content = popup.Content.Deserialize<SurveyPopupContentDto>(JsonOptions) ?? new SurveyPopupContentDto();
-            List<SurveyQuestionDto> questions = popup.Questions.Count > 0 ? popup.Questions : content.Questions;
-            List<SurveyQuestionDto> scored = questions.Where(q => q.IsScored).ToList();
-            if (scored.Count == 0) return (100, true);
-
-            double perQuestion = 100.0 / scored.Count;
-            double score = 0;
-            foreach (SurveyQuestionDto question in scored)
-            {
-                PopupSubmitAnswerRequestDto? answer = answers.FirstOrDefault(a => a.QuestionId == question.QuestionId);
-                if (answer == null) continue;
-                HashSet<string> selected = question.Options
-                    .Where(o => answer.OptionIds.Contains(o.OptionId))
-                    .Select(o => o.Value)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                if (!string.IsNullOrWhiteSpace(answer.TextAnswer)) selected.Add(answer.TextAnswer.Trim());
-                if (selected.SetEquals(question.CorrectAnswers)) score += perQuestion;
-            }
-            score = Math.Round(score, 2);
-            double passing = content.PassingScore > 0 ? content.PassingScore : 100;
-            return (score, score >= passing);
         }
     }
 }

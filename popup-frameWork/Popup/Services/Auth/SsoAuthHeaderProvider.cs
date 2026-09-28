@@ -65,10 +65,10 @@ namespace Popup.Services.Auth
         /// <summary>진단용. 서버가 알려준 현재 토큰 만료 시각(없으면 null). 갱신 판단에는 쓰지 않는다.</summary>
         public DateTimeOffset? ExpiresAt => _expiresAt;
 
-        /// <summary>진단용. 마지막으로 SSO에서 얻은 사용자(없으면 null).</summary>
-        public SsoUserInfo? LastUser => _lastUser;
-
-        public bool HasToken => Volatile.Read(ref _accessToken) != null;
+        /*
+         * [설계 18 L-0 — C-10 삭제] 호출부가 없던 진단용 공개 속성 LastUser·HasToken을 삭제했다.
+         * _lastUser·_accessToken 필드는 재로그인·헤더 생성에 그대로 쓰며 외부에 노출하지 않는다.
+         */
 
         /// <summary>
         /// 토큰이 있으면 "Bearer {token}". 없으면(최초 실행·이전 로그인 실패) 로그인을 시도하고, 그래도 없으면 null

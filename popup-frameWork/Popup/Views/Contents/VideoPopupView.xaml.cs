@@ -541,12 +541,12 @@ namespace Popup.Views.Contents
 
                 if (type is "progress" or "pause")
                 {
-                    RequestProgressSave(force: type == "pause");
+                    UpdateProgressSnapshot();
                 }
                 else if (type == "ended")
                 {
                     _isPlaying = false;
-                    RequestProgressSave(force: true);
+                    UpdateProgressSnapshot();
                 }
             }
             catch (Exception exception)
@@ -620,13 +620,7 @@ namespace Popup.Views.Contents
                     "/watch",
                     StringComparison.OrdinalIgnoreCase))
             {
-                /*var query =
-                    HttpUtility.ParseQueryString(
-                        uri.Query);
-                videoId =
-                    videoId =
-                    query["v"];
-                */
+                /* [설계 18 L-0 — C-11] 주석 처리돼 있던 HttpUtility.ParseQueryString 구현은 삭제했다(GetQueryParameter 사용). */
                 videoId = GetQueryParameter(
                     uri,
                     "v");
@@ -827,9 +821,10 @@ namespace Popup.Views.Contents
         /*
          * [기준 4] 현재 재생 상태로 진행 스냅샷을 갱신한다. 예전에는 이 시점마다 서버(/video-progress)를 호출했지만
          * 이제 로컬 _latestProgress만 갱신하고, 서버 전송은 창이 닫힐 때 GetFinalProgress()를 통해 1회만 한다.
-         * force 인자는 기존 호출부(일시정지·탐색·종료) 호환을 위해 남겨 두며 동작 차이는 없다.
+         * [설계 18 L-0 — C-21] 구 RequestProgressSave(bool force)의 force 인자는 구 /video-progress 즉시 저장용으로
+         * 이미 동작 차이가 없는 인자였으므로 제거하고, 실제 역할에 맞게 UpdateProgressSnapshot으로 이름을 바꿨다.
          */
-        private void RequestProgressSave(bool force = false)
+        private void UpdateProgressSnapshot()
         {
             if (!_isMediaOpened)
             {
@@ -896,7 +891,7 @@ namespace Popup.Views.Contents
         /// </summary>
         public VideoProgressSnapshot? GetFinalProgress()
         {
-            RequestProgressSave(force: true);
+            UpdateProgressSnapshot();
             return _latestProgress;
         }
 
@@ -1079,7 +1074,7 @@ namespace Popup.Views.Contents
 
                 _isPlaying = false;
 
-                RequestProgressSave(force: true);
+                UpdateProgressSnapshot();
 
                 /*
                  * 재생 버튼 아이콘을
@@ -1743,7 +1738,7 @@ namespace Popup.Views.Contents
         RoutedEventArgs e)
         {
 
-            RequestProgressSave(force: true);
+            UpdateProgressSnapshot();
 
             /*
              * [관리자 웹 옵션] 반복 재생: 진행 스냅샷을 남긴 뒤 처음부터 다시 재생한다.
@@ -1922,7 +1917,7 @@ namespace Popup.Views.Contents
             PopupVideo.Pause();
 
 
-            RequestProgressSave(force: true);
+            UpdateProgressSnapshot();
 
             _isPlaying = false;
 
@@ -1992,7 +1987,7 @@ namespace Popup.Views.Contents
                 /*
                  * 영상 객체를 정리하기 전에 마지막 위치를 저장 요청한다.
                  */
-                RequestProgressSave(force: true);
+                UpdateProgressSnapshot();
 
                 
                 _controlHideTimer.Stop();

@@ -20,8 +20,8 @@ import java.util.List;
 /**
  * POST /p/api/wpf/popups/results 요청 본문.
  *
- * <p>[추가 이유 — 기준 3·4·6] 기존 PopupHideRequest·PopupSubmitRequest·VideoProgressRequest·PopupEventRequest
- * 4개 요청을 결과 항목 배열 하나로 합쳤다. 사용자 ID 필드는 없다(인증 정보에서 얻음).
+ * <p>[추가 이유 — 기준 3·4·6] 구 WPF 개별 API의 숨김·제출·영상 진행률·이벤트 4개 요청을 결과 항목 배열 하나로 합쳤다.
+ * 구 요청 클래스(PopupHideRequest 등)는 설계 18 L-0에서 삭제했다. 사용자 ID 필드는 없다(인증 정보에서 얻음).
  * Bean Validation은 형식만 검사하고, 유형별 필수 블록(hideDays/answers/video)은 서비스가 항목 단위로 검사해
  * 한 항목의 형식 오류가 요청 전체를 400으로 만들지 않도록 한다.</p>
  *
@@ -82,7 +82,7 @@ public record WpfResultRequest(
         }
     }
 
-    /** 영상 시청 누적값(초). 기존 VideoProgressRequest와 동일 제약. */
+    /** 영상 시청 누적값(초). 구 영상 진행률 요청과 동일 제약. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Video(
             @NotNull @DecimalMin("0.001") BigDecimal durationSeconds,

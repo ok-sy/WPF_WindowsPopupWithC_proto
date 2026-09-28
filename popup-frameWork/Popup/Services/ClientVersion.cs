@@ -87,7 +87,11 @@ namespace Popup.Services
         }
     }
 
-    /// <summary>426 응답 본문. 서버 WpfClientVersionInterceptor가 만든다.</summary>
+    /// <summary>
+    /// 426 응답 본문. 서버 WpfClientVersionInterceptor가 만든다.
+    /// [설계 18 L-0 — C-10 삭제] 호출부가 없던 IsVersionError(Code 비교) 계산 속성을 삭제했다.
+    /// 426 판정은 HTTP 상태 코드로 하므로(WpfClientVersionException.TryCreate) 본문 코드 비교가 필요 없다.
+    /// </summary>
     public sealed class WpfClientVersionErrorDto
     {
         public string? Code { get; set; }
@@ -95,6 +99,5 @@ namespace Popup.Services
         public string? ClientVersion { get; set; }
         public string? MinimumSupportedVersion { get; set; }
         public string? LatestVersion { get; set; }
-        [JsonIgnore] public bool IsVersionError => string.Equals(Code, "CLIENT_VERSION_NOT_SUPPORTED", StringComparison.OrdinalIgnoreCase);
     }
 }
