@@ -110,3 +110,10 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 
 - 적용 현황: 로컬 XE(POPUP) 2026-09-28 적용 완료(기존 문항 3행 VERTICAL). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
   `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @05_question_option_layout_oracle.sql`
+
+## IMAGE 크기 모드 FIXED 정리 (2026-09-28, 설계 18 L-1)
+
+기존 DB는 **WPF 배포 전에** `06_image_size_mode_adaptive_oracle.sql <스키마접두어>`를 한 번 실행한다. `POPUP_CONTENT.CONTENT_OPTIONS`의 `"imageSizeMode":"FIXED"`(대소문자 무관)와 빈 값을 `ADAPTIVE`로 바꾼다. WPF는 L-1 이후 FIXED를 지원하지 않는 값으로 오류 처리하므로, 남아 있으면 해당 사용자의 팝업 목록 변환이 실패한다. 팝업 창 크기 `sizeMode`의 FIXED는 대상이 아니다. 멱등.
+
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행(IMAGE 팝업 없음). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
+  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @06_image_size_mode_adaptive_oracle.sql ""`

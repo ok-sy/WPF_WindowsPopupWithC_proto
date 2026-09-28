@@ -26,7 +26,9 @@ FIT_TO_IMAGE로 지정해도 팝업 크기가 바뀌지 않는 문제가 있었�
   그 뒤 계산된 팝업 크기는 다시 `PopupOptions`의 Minimum/Maximum과 작업 영역의 95%로 보정한다(설계 11과 같은 기준).
 - `FILL`은 제목·설명 없이 이미지만 전체 배경으로 쓰는 전용 화면(`ImageFillPopupView`)이라
   설명 배치 옵션(`descriptionPosition`, `imageAreaRatio`)의 적용 대상이 아니다.
-- 과거 값 `FIXED`는 `ADAPTIVE`와 동일하게 처리한다.
+- 값이 없으면 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 설계 18 L-1(2026-09-28)에서 제거했다 —
+  관리자 웹은 FIXED를 선택·저장하지 않고(불러올 때 ADAPTIVE로 정규화), 서버 저장 검증은 FIXED를 거부하며,
+  기존 행은 `db/oracle/06_image_size_mode_adaptive_oracle.sql`로 ADAPTIVE로 바꾼다. WPF는 FIXED를 지원하지 않는 값으로 오류 처리한다.
 
 ---
 

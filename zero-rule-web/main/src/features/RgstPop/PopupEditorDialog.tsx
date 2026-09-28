@@ -61,7 +61,7 @@ function createDefaultPopup(): AdminPopupDetail {
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false,
-      showDescription: true, imageSizeMode: 'FIXED', imageWidth: 0, imageHeight: 0,
+      showDescription: true, imageSizeMode: 'ADAPTIVE', imageWidth: 0, imageHeight: 0,
       linkUrl: '', showControls: true, allowFullScreen: true,
       allowPlaybackRateChange: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
@@ -134,6 +134,18 @@ function contentValue(popup: AdminPopupDetail, key: string): string {
   return value == null ? '' : String(value);
 }
 
+/* [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL 세 값만 쓴다.
+ * 과거 값 FIXED와 빈 값은 불러오기·저장 시 ADAPTIVE로 바꿔 다시 저장되지 않게 한다. */
+const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE', 'FILL'];
+function normalizeImageSizeMode(value: unknown): string {
+  const mode = value == null ? '' : String(value).trim().toUpperCase();
+  return IMAGE_SIZE_MODES.includes(mode) ? mode : 'ADAPTIVE';
+}
+function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail {
+  if (popup.popupType !== 'IMAGE') return popup;
+  return { ...popup, content: { ...popup.content, imageSizeMode: normalizeImageSizeMode(popup.content.imageSizeMode) } };
+}
+
 function PopupDimensionField({ label, value, minimum, maximum, onChange }: {
   label: string; value: number; minimum: number; maximum: number; onChange: (value: number) => void;
 }) {
@@ -165,7 +177,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
-        setPopup({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 });
+        setPopup(withNormalizedImageSizeMode({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 }));
         setTargetGroups(body.targetGroups ?? []);
       }
     }).catch((error) => { if (!canceled) handleError(error); })
@@ -219,12 +231,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     }
     try {
       setLoading(true);
-      const requestPopup: AdminPopupDetail = {
+      const requestPopup: AdminPopupDetail = withNormalizedImageSizeMode({
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
         content: popup.popupType === 'TEXT' ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content,
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
-      };
+      });
       const hasInvalidTarget = targetGroups.some((group) => group.conditions.length === 0
         || group.conditions.some((condition) => !condition.value.trim()));
       if (active && targetGroups.length === 0) { toast.warn('활성 팝업은 대상 조건 그룹을 한 개 이상 추가해 주세요.'); return; }
@@ -266,7 +278,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       </DialogTitle>
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
-          setPopup((current) => ({ ...template, popupId: current.popupId, questionTemplateId: null }));
+          setPopup((current) => withNormalizedImageSizeMode({ ...template, popupId: current.popupId, questionTemplateId: null }));
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
       {loading && <LinearProgress />}
@@ -305,8 +317,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
             {popup.popupType === 'IMAGE' && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
-                <TextField select label="이미지 크기 모드" value={contentValue(popup, 'imageSizeMode') || 'FIXED'} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
-                  <MenuItem value="FIXED">고정 영역</MenuItem><MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
+                <TextField select label="이미지 크기 모드" value={normalizeImageSizeMode(popup.content.imageSizeMode)} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
+                  <MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
                 </TextField>
                 {!imageFillMode && <TextField type="number" label="이미지 너비" value={contentValue(popup, 'imageWidth')} onChange={(e) => updateContent('imageWidth', Number(e.target.value))} />}
                 {!imageFillMode && <TextField type="number" label="이미지 높이" value={contentValue(popup, 'imageHeight')} onChange={(e) => updateContent('imageHeight', Number(e.target.value))} />}

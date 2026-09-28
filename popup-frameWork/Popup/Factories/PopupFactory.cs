@@ -295,7 +295,6 @@ namespace Popup.Factories
             {
                 "ADAPTIVE" => ImagePopupSizeMode.Adaptive,
                 "FIT_TO_IMAGE" => ImagePopupSizeMode.FitToImage,
-                "FIXED" => ImagePopupSizeMode.Adaptive,
                 _ => throw new ArgumentException($"지원하지 않는 이미지 크기 방식입니다: {imageSizeMode}")
             };
 

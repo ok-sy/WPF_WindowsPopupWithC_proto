@@ -2,6 +2,20 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-05 — IMAGE 크기 모드 과거 값 FIXED 제거(설계 18 L-1)
+
+- 이유: `imageSizeMode = FIXED`는 계약상 과거 호환 값인데 관리자 웹이 신규 IMAGE 팝업 기본값·메뉴로 계속 저장하고 있어, WPF 호환 매핑을 없애기 전에 생성 경로와 기존 데이터를 먼저 정리할 필요. 설계 18 L-1 순서(웹 → 서버 검증 → 데이터 → WPF → 문서)대로 반영.
+- 변경(웹): `PopupEditorDialog` 신규 기본값을 `ADAPTIVE`로 바꾸고 "고정 영역" 메뉴 삭제. `normalizeImageSizeMode`로 IMAGE 팝업을 불러올 때·템플릿을 불러올 때·저장할 때 FIXED/빈 값/그 외 값을 `ADAPTIVE`로 정규화(선택 값이 메뉴 범위를 벗어나지 않게 표시 값도 같은 함수 사용).
+- 변경(서버): `PopupService.validateAdminPopup`에 IMAGE `content.imageSizeMode` 검사 추가 — 값이 없으면 통과(WPF 기본 ADAPTIVE), ADAPTIVE/FIT_TO_IMAGE/FILL(대소문자 무관) 외 값은 거부. `PopupAdminQuestionsTest`에 FIXED 거부·현행 3값 허용 테스트 2건 추가.
+- 변경(DB): `db/oracle/06_image_size_mode_adaptive_oracle.sql` 추가 — `CONTENT_OPTIONS`의 `"imageSizeMode":"FIXED"`(대소문자 무관)와 빈 값을 `ADAPTIVE`로 치환, 대상 목록·IMAGE 분포·잔여 건수 출력, 멱등. 팝업 창 `sizeMode`의 FIXED는 대상 아님. 샘플 SQL(`02`)에는 `imageSizeMode`가 없고 데모 JSON은 이미 ADAPTIVE라 수정 없음.
+- 변경(WPF): `ImagePopupContentDto.ImageSizeMode` 기본값 `ADAPTIVE`, `PopupFactory.ConvertImagePopupSizeMode`의 `FIXED → Adaptive` 매핑 삭제(FIXED는 지원하지 않는 값으로 `ArgumentException`), `ImagePopupSizeMode.Adaptive` 주석 수정.
+- 문서: 계약서 `POPUP_INTERFACE_SPEC.md` 3.1로 갱신(IMAGE 표·ENUM에서 FIXED 삭제, 미지정 시 ADAPTIVE·그 외 값은 변환 실패 명시), 설계 15, `POPUP_OPTION_GUIDE.md`, `db/oracle/README.md`(06 실행 절차·적용 현황), 설계 18 L-1 체크리스트 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `zero-rule-server/.../popup/PopupService.java`, `PopupAdminQuestionsTest.java`, `db/oracle/06_image_size_mode_adaptive_oracle.sql`, `popup-frameWork/Popup/Dtos/ImagePopupContentDto.cs`, `Factories/PopupFactory.cs`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 `gradlew --offline :service:core:test --tests server.service.core.popup.*` 39건 — 37 통과, 2 skip(실DB 필요), 실패 0(신규 IMAGE 테스트 2건 포함). `dotnet build popup-frameWork/Popup.slnx` 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공, `PopupEditorDialog.tsx` eslint 경고 없음. 로컬 XE(POPUP)에 06 실행 — 대상 0행(IMAGE 팝업 없음), 치환식은 DUAL 샘플 JSON으로 FIXED/fixed/빈 값만 ADAPTIVE로 바뀌고 FIT_TO_IMAGE·FILL·`sizeMode":"FIXED"`는 유지됨을 확인. `git diff --check` 통과.
+- 미실행 검증: 관리자 웹에서 기존 FIXED 팝업 열기·저장 브라우저 확인, `--demo` IMAGE 팝업 표시, 서버 기동 후 FIXED 저장 요청 거부 HTTP 확인.
+- 주의: **원격 개발 DB에는 06 미적용**(VPN 연결 필요). FIXED 행이 한 건이라도 남은 상태에서 이 WPF를 배포하면 해당 사용자의 팝업 목록 변환이 실패하므로, 원격 개발 DB에 06 실행 후 WPF를 배포한다.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-04 — 팝업 미사용 소스 정리(설계 18 L-0)
 
 - 이유: WPF 인터페이스가 3개 API로 통합된 뒤 남은 구 WPF-01~06 경로와 호출자 없는 코드를 제거. 특히 구 `PopupController`는 공개 경로(`/p/**`)에서 요청의 `userId`를 그대로 신뢰해 다른 사용자의 팝업 조회·숨김·응답 기록이 가능한 상태였다. 동작이 바뀌지 않는 삭제만 먼저 반영하고 구버전 데이터 분기는 이후 단계로 남김.
@@ -13,7 +27,7 @@
 - 검증: 서버 `gradlew --offline compileJava compileTestJava` 및 `:web:api`·`:service:core`·`:app` popup/wpf 테스트 66건 — 60 통과, 6 skip(실DB 필요), 실패 0(매퍼 메서드↔구문 1:1 검사 포함). `dotnet build popup-frameWork/Popup.slnx`(증분·`--no-incremental`) 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공(변경 파일 lint 경고 없음, 라우트 목록에서 `/popup-preview` 제거 확인). 삭제 심볼 잔존 참조 grep 0건(설명 주석 제외). `git diff --check` 통과.
 - 미실행 검증: `--demo` 전체 팝업 표시·QUIZ 제출, 서버 기동 후 구 경로 404와 영상 스트리밍 확인, 관리자 미리보기 브라우저 확인.
 - 보류: DDL `POPUP_NOTICE.PASSING_SCORE` 주석 수정은 미커밋 ERwin 산출물의 원본 DDL 해시와 충돌하므로 ERwin 작업 반영 후 진행. `offline-export/20260922`의 기존 반입 산출물은 삭제 파일을 포함하므로 반입 전 재생성 필요.
-- 상태: 미커밋. 파일 삭제는 `git rm`으로 스테이징되어 있음. `popup-frameWork/Popup/appsettings.json`의 로컬 `DemoMode` 변경과 ERwin 작업(2026-09-24-01)은 이 작업과 별개.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 ERwin 작업(2026-09-24-01)과 함께 커밋(L-1 작업의 기준 상태), main 미반영·미푸시. `popup-frameWork/Popup/appsettings.json`의 로컬 `DemoMode` 변경은 커밋에서 제외.
 
 ## 2026-09-28-03 — 팝업 구버전 분기·미사용 소스 조사 및 정리 TODO
 
