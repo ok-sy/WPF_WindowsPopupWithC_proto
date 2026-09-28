@@ -6,13 +6,14 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /*
-     * Java 서버 날짜를 DateTimeOffset으로 변환한다.
+     * WPF API 날짜(ISO 8601 문자열)를 DateTimeOffset으로 변환한다.
      *
-     * 기존 popup-api의 ISO 8601 문자열과
-     * zero-server의 Unix epoch 초 숫자를 모두 지원해서
-     * 서버 교체 중에도 같은 WPF DTO를 사용할 수 있게 한다.
+     * [설계 18 L-5 — C-22] 예전 이름은 FlexibleDateTimeOffsetJsonConverter였고, 서버 교체기에
+     * zero-server가 내리던 Unix epoch 초 숫자도 받았다. WPF API 3개는 모두 ISO 문자열
+     * (서버 WpfJson.DATE_TIME)로 내리고 계약서도 string(ISO)로 정의하므로 숫자 분기를 삭제했다.
+     * 요청 본문에 쓰는 형식(ISO "O")은 그대로다.
      */
-    public class FlexibleDateTimeOffsetJsonConverter
+    public class IsoDateTimeOffsetJsonConverter
         : JsonConverter<DateTimeOffset>
     {
         public override DateTimeOffset Read(
@@ -37,25 +38,8 @@ namespace Popup.Dtos
                     $"날짜 문자열 형식이 올바르지 않습니다: {value}");
             }
 
-            if (reader.TokenType == JsonTokenType.Number &&
-                reader.TryGetDecimal(out decimal epochSeconds))
-            {
-                long wholeSeconds =
-                    decimal.ToInt64(decimal.Truncate(epochSeconds));
-
-                long fractionalTicks =
-                    decimal.ToInt64(
-                        decimal.Truncate(
-                            (epochSeconds - wholeSeconds) *
-                            TimeSpan.TicksPerSecond));
-
-                return DateTimeOffset
-                    .FromUnixTimeSeconds(wholeSeconds)
-                    .AddTicks(fractionalTicks);
-            }
-
             throw new JsonException(
-                "날짜 값은 ISO 8601 문자열 또는 Unix epoch 초 숫자여야 합니다.");
+                "날짜 값은 ISO 8601 문자열이어야 합니다.");
         }
 
         public override void Write(

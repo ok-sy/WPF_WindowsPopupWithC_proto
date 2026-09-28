@@ -308,7 +308,7 @@ namespace Popup.Factories
             sizeMode.Trim().ToUpperInvariant() switch
             {
                 "FIXED" => PopupSizeMode.Fixed,
-                "VIEWPORT_RATIO" => PopupSizeMode.ViewportRatio,
+                // [설계 18 L-5 — C-24] 서버·관리자 웹 값 RATIO로 단일화. VIEWPORT_RATIO는 더 이상 받지 않는다.
                 "RATIO" => PopupSizeMode.ViewportRatio,
                 "FULLSCREEN" => PopupSizeMode.Fullscreen,
                 "AUTO" => PopupSizeMode.Auto,

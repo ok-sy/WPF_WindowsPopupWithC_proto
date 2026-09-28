@@ -2,7 +2,7 @@
 
 - 문서 버전: 3.2
 - 최신화: 2026-09-28 (KST)
-- 3.2 변경: 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
+- 3.2 변경: 팝업 `sizeMode`의 `VIEWPORT_RATIO` 삭제(`RATIO`로 단일화), 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
 - 3.1 변경: IMAGE `imageSizeMode`의 과거 호환 값 `FIXED` 삭제(ADAPTIVE / FIT_TO_IMAGE / FILL만 허용, 미지정 시 ADAPTIVE)
 - 대상: **별도 구축 백엔드 ↔ 제공되는 C# WPF 팝업 클라이언트**
 - 기준 구현: `popup-frameWork/Popup`
@@ -224,11 +224,11 @@ X-Client-Version: 1.0.0
 | displayOrder | integer | O | 작은 값 우선, 같은 값은 같은 표시 그룹 |
 | displayStartAt | string(ISO) | 선택 | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
 | displayEndAt | string(ISO) | 선택 | 동일 |
-| sizeMode | string | O | FIXED / RATIO / VIEWPORT_RATIO / FULLSCREEN / AUTO |
+| sizeMode | string | O | FIXED / RATIO / FULLSCREEN / AUTO (VIEWPORT_RATIO는 v3.2에서 삭제) |
 | width | number | O | FIXED/FILL 등 실제 창 크기 기준 |
 | height | number | O | 동일 |
-| widthRatio | number | O 권장 | RATIO/VIEWPORT_RATIO |
-| heightRatio | number | O 권장 | RATIO/VIEWPORT_RATIO |
+| widthRatio | number | O 권장 | RATIO |
+| heightRatio | number | O 권장 | RATIO |
 | minimumWidth | number | O 권장 | 최소 창 너비 |
 | minimumHeight | number | O 권장 | 최소 창 높이 |
 | maximumWidth | number | O 권장 | 최대 창 너비 |
@@ -249,7 +249,7 @@ X-Client-Version: 1.0.0
 WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을 보정한다.
 
 - FIXED: 작업 영역 95% 이내로 최종 제한
-- RATIO / VIEWPORT_RATIO: 작업 영역 비율 사용
+- RATIO: 작업 영역 비율 사용
 - FULLSCREEN: 주 모니터 전체
 - AUTO: 콘텐츠 기준 자동 크기
 - 잘못된 값은 일부 모드에서 기본값/보정값으로 처리되지만, 백엔드는 정상 범위 값을 제공해야 한다.
@@ -893,7 +893,6 @@ SIMULTANEOUS
 ```text
 FIXED
 RATIO
-VIEWPORT_RATIO
 FULLSCREEN
 AUTO
 ```

@@ -166,12 +166,11 @@ namespace Popup.Services
                 };
 
             /*
-             * zero-server는 OffsetDateTime을 Unix epoch 초로 반환하고,
-             * 기존 popup-api는 ISO 문자열로 반환한다.
-             * 두 형식을 모두 같은 DateTimeOffset DTO로 읽는다.
+             * WPF API(계약서 v3.x)의 날짜는 ISO 8601(+오프셋) 문자열이다.
+             * [설계 18 L-5 — C-22] 서버 교체기의 epoch 초 숫자 허용은 삭제했다.
              */
             _jsonOptions.Converters.Add(
-                new FlexibleDateTimeOffsetJsonConverter());
+                new IsoDateTimeOffsetJsonConverter());
         }
 
         /*

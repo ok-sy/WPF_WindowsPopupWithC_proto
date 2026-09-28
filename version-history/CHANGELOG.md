@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-08 — 크기 모드 이름·날짜 형식 단일화(설계 18 L-5 일부)
+
+- 이유: 설계 18 L-5의 정책 항목 중 권장안이 분명한 항목을 확정. 서버·관리자 웹은 `RATIO`를 쓰는데 WPF와 데모 JSON은 `VIEWPORT_RATIO`도 받는 이중 이름, 서버 교체기에만 필요했던 epoch 초 날짜 허용이 남아 있었다.
+- 결정: C-24 → `RATIO`로 단일화. C-22 → 날짜는 ISO 문자열만 허용. C-6 → `displayStartAt`/`displayEndAt` 선택 필드 유지. W-3 → L-0에서 완료된 것으로 정리. D-6(템플릿 버전 정책·미사용 컬럼 삭제)은 스키마 삭제를 동반해 결정 대기, W-10은 별도 기능 과제로 유지.
+- 변경(WPF): `PopupFactory.ConvertPopupSizeMode`에서 `VIEWPORT_RATIO` 삭제(내부 enum `ViewportRatio` 유지), 데모 JSON 4건 `RATIO`로 변경, 관련 주석 수정. `FlexibleDateTimeOffsetJsonConverter` → `IsoDateTimeOffsetJsonConverter`로 이름을 바꾸고 숫자(epoch 초) 읽기 분기 삭제(쓰기 ISO "O" 유지).
+- 변경(DB): `08_legacy_data_constraints_oracle.sql`에 SIZE_MODE 확인 조회(1-1), `VIEWPORT_RATIO → RATIO` 보정, `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 `SIZE_MODES`와 동일) 추가. `01`에도 같은 CHECK 반영.
+- 문서: 계약서 3.2 변경 항목에 `VIEWPORT_RATIO` 삭제 추가(sizeMode 표·ENUM·크기 처리 참고), `POPUP_OPTION_GUIDE.md` 크기 모드 표·주의 문구·§11, `db/oracle/README.md` 08 표, 설계 18 L-5 체크리스트.
+- 주요 파일: `popup-frameWork/Popup/Factories/PopupFactory.cs`, `Services/DemoPopupDataService.cs`, `Dtos/IsoDateTimeOffsetJsonConverter.cs`, `Services/PopupApiService.cs`, `db/oracle/08_legacy_data_constraints_oracle.sql`, `db/oracle/01_popup_schema_oracle.sql`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 WPF 응답 DTO의 날짜 필드가 모두 `@JsonFormat(STRING, WpfJson.DATE_TIME)`임을 확인. 로컬 XE에 `VIEWPORT_RATIO` 임시 행을 넣고 08 재실행 → RATIO 보정·`CK_POPUP_SIZE_MODE` 추가 OK, 기존 제약 SKIP, 결과 확인 0건, 임시 행 삭제. `dotnet build popup-frameWork/Popup.slnx`(`--no-incremental` 포함) 경고 0·오류 0. 서버·웹 코드 변경 없음.
+- 미실행 검증: `--demo`에서 RATIO 크기 팝업 표시 확인, 원격 개발 DB 08 실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
 ## 2026-09-28-07 — 과거 데이터 기본값 분기 제거 및 DB 제약 추가(설계 18 L-4)
 
 - 이유: 과거·이관 데이터를 위해 서버·WPF·관리자 웹에 흩어져 있던 기본값 보정(DISPLAY_MODE CASE, 크기 NULL 기본값, optionLayout null 보정, RATING5 매핑, TEXT 표시 플래그 추정)을 DB 보정과 제약으로 옮겨 코드 분기를 제거. 원격 개발 DB는 VPN 미연결로 조회할 수 없어, 보정·제약을 한 스크립트로 묶고 배포 전 실행 조건으로 둠.
