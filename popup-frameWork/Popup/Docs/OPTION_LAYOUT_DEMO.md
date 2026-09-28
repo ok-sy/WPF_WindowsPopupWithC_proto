@@ -42,4 +42,4 @@ dotnet run --project popup-frameWork/Popup/Popup.csproj -- --demo
 
 ## 기존 DB 적용
 
-서버 배포 전 POPUP 소유 계정으로 `db/oracle/05_question_option_layout_oracle.sql`을 한 번 실행한다. 기존 문항은 VERTICAL로 채워진다. 신규 DB는 초기 스키마에 포함되어 있으므로 추가 SQL을 실행하지 않는다. 이 작업에서는 DB에 실행하지 않았다.
+서버 배포 전 POPUP 소유 계정으로 `db/oracle/archive/05_question_option_layout_oracle.sql`을 한 번 실행한다. 기존 문항은 VERTICAL로 채워진다. 신규 DB는 초기 스키마에 포함되어 있으므로 추가 SQL을 실행하지 않는다. 로컬 XE·원격 개발 DB는 2026-09-28 적용 완료.

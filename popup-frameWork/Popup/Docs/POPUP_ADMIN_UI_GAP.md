@@ -88,7 +88,7 @@ RATING5 전용 입력 추가 계획은 문항별 배치 설정으로 대체했�
 
 배치는 POPUP_QUESTION.OPTION_LAYOUT에 저장해 문항 템플릿 저장·불러오기에도 유지한다. 기존 RATING5는 전달된 보기만 일반 단일 선택 UI로 표시하며 1~5점 자동 생성은 제거했다. 관리자 문항 유형은 SINGLE_CHOICE/MULTIPLE_CHOICE/TEXT를 유지한다.
 
-[데모 및 검증 절차](OPTION_LAYOUT_DEMO.md). 기존 DB에는 서버 배포 전 05_question_option_layout_oracle.sql 적용이 필요하다.
+[데모 및 검증 절차](OPTION_LAYOUT_DEMO.md). 기존 DB에는 서버 배포 전 db/oracle/archive/05_question_option_layout_oracle.sql 적용이 필요하다(로컬 XE·원격 개발 DB는 2026-09-28 적용 완료).
 
 ---
 

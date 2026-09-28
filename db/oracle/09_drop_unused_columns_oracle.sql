@@ -16,7 +16,9 @@
 -- 되돌리기: 컬럼 삭제는 되돌릴 수 없다. 필요하면 실행 전 1번 조회 결과를 보관한다. 여러 번 실행해도 결과가 같다.
 -- =====================================================================================================
 SET PAGESIZE 200 LINESIZE 250 TRIMSPOOL ON FEEDBACK ON DEFINE ON SERVEROUTPUT ON
-DEFINE S = &1
+-- 빈 인자("")도 받도록 DEFINE 대신 NEW_VALUE로 접두어를 받는다(DEFINE S = &1 은 빈 값에서 SP2-0137 오류).
+COLUMN schema_prefix NEW_VALUE S NOPRINT
+SELECT '&1' schema_prefix FROM DUAL;
 
 PROMPT === 1. 확인: 삭제 대상 컬럼에 의미 있는 값이 있는 행 (없어야 정상, 오류는 이미 삭제된 경우) ===
 WHENEVER SQLERROR CONTINUE

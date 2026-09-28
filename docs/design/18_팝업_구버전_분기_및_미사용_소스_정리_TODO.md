@@ -3,7 +3,7 @@
 - 작성일: 2026-09-28 (KST)
 - 범위: **팝업 기능 소스만** — WPF `popup-frameWork/Popup`, 서버 `server.*.popup`/`server.*.wpf` 패키지·`PopupMapper.xml`, 관리자 웹 `features/RgstPop/**`·`PopupAdmin.ts`·`PopupAdminApi.ts`, `db/oracle/*.sql`. zero 공통 프레임워크(보안 필터·`DefaultPublicUrls`·`BasicConfig` 등)는 대상에서 제외한다.
 - 기준: 백엔드 독립형 WPF Client API 계약서 v3.0(`docs/interfaces/POPUP_INTERFACE_SPEC.md`) — WPF가 쓰는 API는 `POST /p/api/wpf/auth/login`, `GET /p/api/wpf/popups`, `POST /p/api/wpf/popups/results` 3개뿐이다.
-- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28, 원격 개발 DB 스크립트 06·07·08·09 미실행, 09는 로컬 XE도 미실행), L-2·L-5(W-10 포함) 반영. 남은 것은 실행 검증과 원격 DB 적용**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
+- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28), L-2·L-5(W-10 포함) 반영. DB 스크립트 04·05·06·07·08·09는 로컬 XE·원격 개발 DB 모두 적용 완료(2026-09-28). 남은 것은 화면 실행 검증(`--demo`, 서버 기동, 관리자 브라우저)**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.
 
 분류:
 
@@ -93,8 +93,8 @@
 
 | ID | 분류 | 대상 | 변경 로직 |
 |---|---|---|---|
-| D-1 | MIGRATION-ONLY | `05_question_option_layout_oracle.sql` | 로컬 XE 적용 완료, **원격 개발 DB 미적용**. 적용 후 서버 기동·실DB 왕복 확인 → 스크립트는 `db/oracle/archive/` 등으로 이동. 적용 전 삭제 금지 |
-| D-2 | MIGRATION-ONLY | `04_cleanup_markdown_fields_oracle.sql` | 로컬 XE 완료, 원격 개발 DB 미확인. 적용 후 보관 이동 |
+| D-1 | MIGRATION-ONLY | `05_question_option_layout_oracle.sql` | **완료(2026-09-28)** — 로컬 XE·원격 개발 DB 적용, 원격 실DB 왕복 테스트 통과 → `db/oracle/archive/`로 이동 |
+| D-2 | MIGRATION-ONLY | `04_cleanup_markdown_fields_oracle.sql` | **완료(2026-09-28)** — 원격 개발 DB 1행 정리(markdownMode=false), 잔여 0 → `db/oracle/archive/`로 이동 |
 | D-3 | 데이터 확인 | `POPUP_NOTICE.DISPLAY_MODE`, 크기 컬럼 NULL | S-14·S-15 제거 전 조회로 비정상/NULL 행 확인. 보정 SQL → CHECK/NOT NULL 추가 |
 | D-4 | 데이터 확인 | `POPUP_QUESTION.QUESTION_TYPE = 'RATING5'` | 행 존재 여부 확인 → 이관 또는 삭제 → `QUESTION_TYPE` CHECK 추가(S-17) |
 | D-5 | 데이터 보정 | `CONTENT_OPTIONS` | ① `imageSizeMode` FIXED → ADAPTIVE(W-1 이후) ② 정규 컬럼·서버 파생 키 사본 제거(S-13 이후) ③ 남은 `markdown*` 키(D-2) |
@@ -161,7 +161,7 @@
 - [x] 1) 웹 W-1: 기본값·메뉴 ADAPTIVE, 로드·템플릿 불러오기·저장 시 FIXED/빈 값→ADAPTIVE 정규화(`normalizeImageSizeMode`)
 - [x] 2) 서버 저장 검증에서 IMAGE `imageSizeMode` 허용값을 ADAPTIVE/FIT_TO_IMAGE/FILL로 제한(값 없음은 통과), 단위 테스트 2건
 - [x] 3) DB D-5①: `06_image_size_mode_adaptive_oracle.sql` 작성, 로컬 XE 실행(대상 0행). 샘플 SQL(`02`)·데모 JSON에는 FIXED 없음(수정 불필요)
-- [ ] 3-1) **원격 개발 DB에 `06` 실행(VPN 필요) — WPF 배포 전 필수.** FIXED 행이 남아 있으면 L-1 WPF에서 해당 사용자 팝업 목록 변환이 실패한다
+- [x] 3-1) 원격 개발 DB에 `06` 실행(2026-09-28) — FIXED·빈 값 0행
 - [x] 4) WPF C-13: DTO 기본값 ADAPTIVE → FIXED 매핑 제거
 - [x] 5) 계약서 3.1로 갱신(FIXED 삭제), 설계 15·`POPUP_OPTION_GUIDE.md` 갱신
 - [x] 검증(정적): 서버 popup 테스트 39건 중 37 통과·2 skip·실패 0, `dotnet build Popup.slnx` 경고 0·오류 0, 웹 build 성공
@@ -185,19 +185,20 @@
 
 ### L-4. 원격 개발 DB 적용·데이터 확인 후 기본값 분기 제거
 
-- [ ] D-1(`05`)·D-2(`04`) 원격 개발 DB 적용 → 스크립트 보관 이동 — **VPN 필요, 미실행**. 보관 이동은 원격 적용 후
+- [x] D-1(`05`)·D-2(`04`) 원격 개발 DB 적용 → 스크립트 `archive/` 이동(2026-09-28)
+- [x] 원격 개발 DB에 `06`·`07`·`08`·`09` 적용(2026-09-28) — 06·08 보정 0행, 07 사본 키 1행 정리, 08 제약 11건, 09 컬럼 6개 삭제. 적용 후 원격 실DB 테스트 2건 통과, 데이터 건수 변화 없음
 - [x] D-3·D-4 조회 → 보정 SQL: `08_legacy_data_constraints_oracle.sql`(확인 조회 → 보정 → 제약, 멱등). 로컬 XE는 대상 0행이라 임시 행으로 보정 결과·재실행 SKIP을 확인하고 삭제. **원격 개발 DB는 조회 결과 미확인** — 08의 1~4번 조회 출력으로 확인
 - [x] S-14 매퍼 CASE 제거 + `CK_POPUP_DISPLAY_MODE`, S-15 크기 8컬럼 NOT NULL + `toResponseDto` 기본값 제거, S-16 `PopupQuestionDto`의 null→VERTICAL 보정 제거(저장 검증 `PopupQuestionRules`가 null 거부 — `Set.of().contains(null)` NPE 방지 조건 추가)
 - [x] S-17·C-25 RATING5 이관(SINGLE_CHOICE + HORIZONTAL, 보기 없으면 1~5 생성) + `CK_QUESTION_TYPE` + DDL 주석, WPF `SurveyQuestionType.Rating5`·매핑·화면 분기 삭제, 계약서 3.2
 - [x] C-23 TEXT 표시 플래그 non-null 전환(WPF DTO `bool`, `PopupFactory` fallback 삭제, 웹 편집기·미리보기 동시), 기존 행은 08이 같은 규칙으로 채움
 - [x] DDL `01`에 같은 제약 반영, L-0에서 보류한 `POPUP_NOTICE.PASSING_SCORE` 주석 수정(S-20)
 - [x] 검증: 서버 popup 테스트 43건 전부 통과(로컬 XE 실DB 2건 포함), `dotnet build` 경고 0·오류 0, 웹 build 성공
-- [ ] 검증(실행): `--demo` TEXT·SURVEY 표시, 원격 개발 DB 08 실행 후 서버 기동·WPF 목록 확인
+- [ ] 검증(실행): `--demo` TEXT·SURVEY 표시, 서버 기동·WPF 목록 화면 확인(원격 개발 DB 08 적용과 실DB 왕복 테스트는 2026-09-28 완료)
 
 ### L-5. 정책 결정이 필요한 항목
 
 - [x] D-6 **두 묶음 모두 컬럼 삭제로 결정**(2026-09-28): `QUESTION_TEMPLATE.TEMPLATE_GROUP_ID·TEMPLATE_VERSION·CURRENT_YN`(+UK·CHECK 2·함수 기반 UX), `POPUP_NOTICE.SHOW_ON_LOGIN_YN·SHOW_ON_SCHEDULE_YN·SCHEDULED_AT`(+`CK_POPUP_SCHEDULED_AT`, `CK_POPUP_YN_VALUES` 재생성). 테이블은 유지. DDL `01`·샘플 `02`·매퍼 반영, `09_drop_unused_columns_oracle.sql` 작성, ERwin 산출물을 `popup_oracle_20260928_*`로 재생성(17 테이블·224 컬럼)
-- [ ] D-6 `09` 실행 — **로컬 XE·원격 개발 DB 모두 미실행**(컬럼 삭제 실행은 개발자가 직접). 실행 전까지 로컬 실DB 테스트·관리자 템플릿 저장 실패
+- [x] D-6 `09` 실행(2026-09-28) — 로컬 XE·원격 개발 DB 모두 컬럼 6개 삭제, 잔여 0. 이후 두 DB에서 실DB 테스트 통과
 - [x] C-24 `RATIO`로 단일화(2026-09-28): WPF `VIEWPORT_RATIO` 매핑 삭제, 데모 JSON 4건 `RATIO`, 계약서 3.2. 기존 행은 08이 `VIEWPORT_RATIO → RATIO` 보정 후 `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 저장 허용값) 추가. `AUTO`는 WPF 기능으로 남김(서버·웹은 생성하지 않음)
 - [x] C-6 `DisplayStartAt`/`DisplayEndAt`: **유지**로 결정 — 계약 §6.3 선택 필드이고 서버가 이미 내려주며 WPF DTO에 두는 비용이 없음
 - [x] C-22 날짜 컨버터 숫자(epoch 초) 분기 삭제 — WPF API 3개 응답 날짜가 모두 ISO(`WpfJson.DATE_TIME`)임을 서버 DTO에서 확인. 클래스 이름 `IsoDateTimeOffsetJsonConverter`로 변경

@@ -28,9 +28,10 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 2 | `02_popup_sample_oracle.sql` | POPUP | 개발 샘플(사용자 3·팝업 4·대상 조건 6·문항 3). 운영 금지 |
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
-| 4 | `04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 인자: 로컬 `POPUP.` / 원격 앱 계정 스키마 `""`. 로컬 XE 적용 완료, **원격 개발 DB는 VPN 연결 후 실행 필요** |
+| 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
 
-> `04_` 두 스크립트는 번호만 같고 서로 독립이다(웹 메뉴 데이터 추가 / 기존 TEXT 팝업 content 정리). 둘 사이에 실행 순서 제약은 없다.
+> 마이그레이션 스크립트 `04`(정리)·`05`는 알려진 DB(로컬 XE·원격 개발 DB) 적용을 마쳐 `archive/`로 옮겼다. 신규 DB는 `01`만으로 같은 구조가 된다.
+> 스키마 접두어 인자는 로컬 방식 A `POPUP.`, 원격 방식 B는 빈 값 `""`이다. 2026-09-28부터 `04`·`06`~`09`는 `DEFINE S = &1` 대신 `COLUMN ... NEW_VALUE`로 인자를 받아 빈 값도 처리한다(이전 형태는 빈 값에서 SP2-0137로 아무 문장도 실행하지 않았다).
 
 ```powershell
 $env:NLS_LANG = "KOREAN_KOREA.AL32UTF8"     # 한글 주석·샘플이 UTF-8이므로 지정
@@ -106,24 +107,23 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 
 ## 문항별 선택지 배치 추가 (2026-09-28)
 
-기존 DB는 서버 배포 전에 POPUP 소유 계정에서 `05_question_option_layout_oracle.sql`을 한 번 실행한다. `POPUP_QUESTION.OPTION_LAYOUT` 기본값은 VERTICAL이며 HORIZONTAL도 허용한다. 신규 DB는 `01_popup_schema_oracle.sql`에 포함되어 있으므로 추가 SQL을 중복 실행하지 않는다.
+기존 DB는 서버 배포 전에 POPUP 소유 계정에서 `archive/05_question_option_layout_oracle.sql`을 한 번 실행한다. `POPUP_QUESTION.OPTION_LAYOUT` 기본값은 VERTICAL이며 HORIZONTAL도 허용한다. 신규 DB는 `01_popup_schema_oracle.sql`에 포함되어 있으므로 추가 SQL을 중복 실행하지 않는다.
 
-- 적용 현황: 로컬 XE(POPUP) 2026-09-28 적용 완료(기존 문항 3행 VERTICAL). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
-  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @05_question_option_layout_oracle.sql`
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 적용 완료(기존 문항 3행 VERTICAL). 원격 개발 DB 2026-09-28 적용 완료(기존 문항 3행 VERTICAL). `archive/`로 이동.
 
 ## IMAGE 크기 모드 FIXED 정리 (2026-09-28, 설계 18 L-1)
 
 기존 DB는 **WPF 배포 전에** `06_image_size_mode_adaptive_oracle.sql <스키마접두어>`를 한 번 실행한다. `POPUP_CONTENT.CONTENT_OPTIONS`의 `"imageSizeMode":"FIXED"`(대소문자 무관)와 빈 값을 `ADAPTIVE`로 바꾼다. WPF는 L-1 이후 FIXED를 지원하지 않는 값으로 오류 처리하므로, 남아 있으면 해당 사용자의 팝업 목록 변환이 실패한다. 팝업 창 크기 `sizeMode`의 FIXED는 대상이 아니다. 멱등.
 
-- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행(IMAGE 팝업 없음). 원격 개발 DB는 VPN 연결 후 방식 B 계정으로 실행 필요:
-  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @06_image_size_mode_adaptive_oracle.sql ""`
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행(IMAGE 팝업 없음). 원격 개발 DB 2026-09-28 실행 — 대상 0행.
+  원격 명령: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @06_image_size_mode_adaptive_oracle.sql ""`
 
 ## CONTENT_OPTIONS 사본 키 정리 (2026-09-28, 설계 18 L-3)
 
 `07_cleanup_content_option_copies_oracle.sql <스키마접두어>` — `CONTENT_OPTIONS`에 함께 저장돼 있던 정규 컬럼 사본(`contentTitle`·`imageTitle`·`videoTitle`·`surveyTitle`·`description`·`plainText`·`imageUrl`·`videoUrl`·`linkUrl`)과 서버 파생 키(`completionRatio`·`allowCloseBeforeCompletion`·`passingScore`·`validateRequiredQuestions`·`questions`)를 지운다. L-3 서버는 저장 시 이 키를 빼고 조회 시에도 무시하므로 **실행 순서 제약은 없다**(기존 행 정리용). 11g 호환 정규식 방식이며 배열·객체 값은 지우지 않고 4번 조회에 남긴다. 멱등.
 
-- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행. 원격 개발 DB 미실행:
-  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @07_cleanup_content_option_copies_oracle.sql ""`
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 대상 0행. 원격 개발 DB 2026-09-28 실행 — `SAMPLE-TEXT-001`의 사본 키 제거 1행(컬럼 값 유지 확인).
+  원격 명령: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @07_cleanup_content_option_copies_oracle.sql ""`
 
 ## 과거 데이터 보정·제약 추가 (2026-09-28, 설계 18 L-4)
 
@@ -141,8 +141,8 @@ HTTP 계약 자동 검증: `.\gradlew :app:test --tests server.app.wpf.WpfApiOra
 
 RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므로 관리자 화면에서 정답을 지정해야 재저장할 수 있다(3번 조회에 소속 팝업이 표시됨). 스크립트는 `POPUP_QUESTION` 표 주석과 `POPUP_NOTICE.PASSING_SCORE` 주석도 현행 기준으로 바꾼다. 신규 DB는 `01`에 같은 제약이 포함되어 있다.
 
-- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 기존 샘플 데이터 보정 대상 0행, 제약 추가 완료. 임시 검증 행(비정상 DISPLAY_MODE·NULL 크기·보기 없는/있는 RATING5·플래그 없는 TEXT 3종)으로 보정 결과와 재실행 시 SKIP을 확인한 뒤 임시 행은 삭제. 원격 개발 DB 미실행:
-  `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @08_legacy_data_constraints_oracle.sql ""`
+- 적용 현황: 로컬 XE(POPUP) 2026-09-28 실행 — 기존 샘플 데이터 보정 대상 0행, 제약 추가 완료. 임시 검증 행(비정상 DISPLAY_MODE·NULL 크기·보기 없는/있는 RATING5·플래그 없는 TEXT 3종)으로 보정 결과와 재실행 시 SKIP을 확인한 뒤 임시 행은 삭제. 원격 개발 DB 2026-09-28 실행 — 보정 대상 0행, 제약 11건 추가.
+  원격 명령: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @08_legacy_data_constraints_oracle.sql ""`
 
 ## 미사용 컬럼 삭제 (2026-09-28, 설계 18 L-5 / D-6)
 
@@ -155,6 +155,6 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 순서: **L-5 서버 배포와 같은 시점에 실행.** 삭제 전 DB에서는 새 서버의 템플릿 INSERT가 NOT NULL 위반으로 실패하고, 삭제 후에는 이전 서버의 저장이 실패한다.
 - 실행 전 1번 조회로 의미 있는 값(`Y`·예약 시각·버전 2 이상·`CURRENT_YN='N'`)을 확인한다. `CURRENT_YN='N'` 템플릿은 목록에서 계속 숨도록 `ACTIVE_YN='N'`으로 바꾼 뒤 삭제한다.
-- 적용 현황: **로컬 XE·원격 개발 DB 모두 미실행.** 로컬 XE도 실행 전까지는 새 매퍼의 템플릿 저장과 실DB 테스트가 실패한다.
+- 적용 현황: 로컬 XE·원격 개발 DB 모두 2026-09-28 실행 완료(의미 있는 값 0행, 잔여 컬럼 0). 실행 전 원격 데이터는 작업 로그용으로 스풀 백업했다. 실행 후 두 DB에서 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @09_drop_unused_columns_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @09_drop_unused_columns_oracle.sql ""`
