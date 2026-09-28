@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated interchange draft; ERwin XSD/application validation is required. -->
-<ERwin xmlns="http://www.ca.com/erwin" xmlns:EMX="http://www.ca.com/erwin/data" Format="ERwin">
-<EMX:Model xmlns="http://www.ca.com/erwin/data" id="{F6ED1044-3A44-3D80-C068-84F9F03C30E3}+00000000" name="팝업 Oracle 현재 구조">
+<erwin xmlns="http://www.erwin.com/dm" xmlns:EMX="http://www.erwin.com/dm/data" Format="erwin">
+<EMX:Model xmlns="http://www.erwin.com/dm/data" id="{F6ED1044-3A44-3D80-C068-84F9F03C30E3}+00000000" name="팝업 Oracle 현재 구조">
 <ModelEnvProps>
 <Model_Type>3</Model_Type>
 <Target_Server>1075858979</Target_Server>
@@ -10,7 +10,7 @@
 </ModelEnvProps>
 <ModelProps>
 <Name>팝업 Oracle 현재 구조</Name>
-<Definition>2026-09-24 저장소 Oracle DDL 기준. 삭제 후보 포함. XML 호환성 미검증. 전체 물리 DDL은 동봉 SQL 참조.</Definition>
+<Definition>2026-09-28 저장소 Oracle DDL 기준. XML 호환성 미검증. 전체 물리 DDL은 동봉 SQL 참조.</Definition>
 </ModelProps>
 <Entity_Groups>
 <Entity id="{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000" name="부서">
@@ -605,11 +605,9 @@ CONSTRAINT CK_USER_ACTIVE CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
 <Name>문항 템플릿</Name>
 <Type>1</Type>
 <Physical_Name>QUESTION_TEMPLATE</Physical_Name>
-<Definition>재사용·버전 관리되는 문항 템플릿 (원본: Reusable and versioned question template)
-CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION &gt;= 1)
-CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N'))
+<Definition>문항 템플릿. 문항이 바뀌면 새 행을 만들고 팝업이 QUESTION_TEMPLATE_ID로 참조
 CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
-<Comment>재사용·버전 관리되는 문항 템플릿 (원본: Reusable and versioned question template)</Comment>
+<Comment>문항 템플릿. 문항이 바뀌면 새 행을 만들고 팝업이 QUESTION_TEMPLATE_ID로 참조</Comment>
 </EntityProps>
 <Attribute_Groups>
 <Attribute id="{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000" name="문항 템플릿 ID">
@@ -628,20 +626,6 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 </Comment>
 </AttributeProps>
 </Attribute>
-<Attribute id="{08BFE70E-3339-5957-C27F-5EC2060E7325}+00000000" name="템플릿 그룹 ID">
-<AttributeProps>
-<Name>템플릿 그룹 ID</Name>
-<Type>100</Type>
-<Physical_Name>TEMPLATE_GROUP_ID</Physical_Name>
-<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
-<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
-<Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>1</Attribute_Order>
-<Column_Order>1</Column_Order>
-<Definition>템플릿 그룹. 원본 gen_random_uuid() → Oracle SUBSTR(RAWTOHEX(SYS_GUID()),1,30)</Definition>
-<Comment>템플릿 그룹. 원본 gen_random_uuid() → Oracle SUBSTR(RAWTOHEX(SYS_GUID()),1,30)</Comment>
-</AttributeProps>
-</Attribute>
 <Attribute id="{DEA3725F-E0CC-61F9-1F51-3BED8F8C6C20}+00000000" name="템플릿명">
 <AttributeProps>
 <Name>템플릿명</Name>
@@ -650,8 +634,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>2</Attribute_Order>
-<Column_Order>2</Column_Order>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -666,42 +650,12 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>3</Attribute_Order>
-<Column_Order>3</Column_Order>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
 <Definition>
 </Definition>
 <Comment>
 </Comment>
-</AttributeProps>
-</Attribute>
-<Attribute id="{A78A5EBE-CA4C-7FDF-5E66-01CC753B2DBA}+00000000" name="템플릿 버전">
-<AttributeProps>
-<Name>템플릿 버전</Name>
-<Type>100</Type>
-<Physical_Name>TEMPLATE_VERSION</Physical_Name>
-<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
-<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
-<Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>4</Attribute_Order>
-<Column_Order>4</Column_Order>
-<Definition>
-</Definition>
-<Comment>
-</Comment>
-</AttributeProps>
-</Attribute>
-<Attribute id="{9BB919CC-BB6B-250D-86F3-B6E59B5B4295}+00000000" name="현재 버전 여부">
-<AttributeProps>
-<Name>현재 버전 여부</Name>
-<Type>100</Type>
-<Physical_Name>CURRENT_YN</Physical_Name>
-<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
-<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
-<Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>5</Attribute_Order>
-<Column_Order>5</Column_Order>
-<Definition>DEFAULT 'Y'</Definition>
-<Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
 </Attribute>
 <Attribute id="{BCA56DE7-EFD8-FBA0-D212-FFAC0B18C3D2}+00000000" name="활성 여부">
@@ -712,8 +666,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>6</Attribute_Order>
-<Column_Order>6</Column_Order>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -726,8 +680,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>7</Attribute_Order>
-<Column_Order>7</Column_Order>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -742,8 +696,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>8</Attribute_Order>
-<Column_Order>8</Column_Order>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -756,8 +710,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>9</Attribute_Order>
-<Column_Order>9</Column_Order>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -772,8 +726,8 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>10</Attribute_Order>
-<Column_Order>10</Column_Order>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -795,27 +749,6 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 </Key_Group_Member>
 </Key_Group_Member_Groups>
 </Key_Group>
-<Key_Group id="{987F6D69-B41E-AEB9-D947-91BEE65FC26C}+00000000" name="UK_QTEMPLATE_GROUP_VERSION">
-<Key_GroupProps>
-<Name>UK_QTEMPLATE_GROUP_VERSION</Name>
-<Key_Group_Type>AK1</Key_Group_Type>
-<Physical_Name>UK_QTEMPLATE_GROUP_VERSION</Physical_Name>
-</Key_GroupProps>
-<Key_Group_Member_Groups>
-<Key_Group_Member id="{9CEF8786-3B6A-423A-FFDE-CC1B2C2F1268}+00000000" name="템플릿 그룹 ID">
-<Key_Group_MemberProps>
-<Name>템플릿 그룹 ID</Name>
-<Attribute_Ref>{08BFE70E-3339-5957-C27F-5EC2060E7325}+00000000</Attribute_Ref>
-</Key_Group_MemberProps>
-</Key_Group_Member>
-<Key_Group_Member id="{3E8E44CC-1432-5D8F-0353-BDD5A0D9A079}+00000000" name="템플릿 버전">
-<Key_Group_MemberProps>
-<Name>템플릿 버전</Name>
-<Attribute_Ref>{A78A5EBE-CA4C-7FDF-5E66-01CC753B2DBA}+00000000</Attribute_Ref>
-</Key_Group_MemberProps>
-</Key_Group_Member>
-</Key_Group_Member_Groups>
-</Key_Group>
 </Key_Group_Groups>
 </Entity>
 <Entity id="{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000" name="팝업 공지">
@@ -824,9 +757,10 @@ CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definit
 <Type>1</Type>
 <Physical_Name>POPUP_NOTICE</Physical_Name>
 <Definition>팝업 공통 설정. WPF 목록 응답의 평면 필드 원본
+CONSTRAINT CK_POPUP_DISPLAY_MODE   CHECK (DISPLAY_MODE IN ('SEQUENTIAL', 'SIMULTANEOUS'))
+CONSTRAINT CK_POPUP_SIZE_MODE      CHECK (SIZE_MODE IN ('FIXED', 'RATIO', 'FULLSCREEN'))
 CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER &gt;= 1)
 CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT &gt;= DISPLAY_START_AT)
-CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL)
 CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL &gt;= 1)
 CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31)
 CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS &gt;= 1)
@@ -835,9 +769,7 @@ CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCO
 CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO &gt; 0)
 CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO &gt; 0)
 CONSTRAINT CK_POPUP_YN_VALUES CHECK
-        (SHOW_ON_LOGIN_YN IN ('Y', 'N')
-         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')
-         AND ACTIVE_YN IN ('Y', 'N')
+        (ACTIVE_YN IN ('Y', 'N')
          AND SHOW_HEADER_YN IN ('Y', 'N')
          AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')
          AND SHOW_FOOTER_YN IN ('Y', 'N')
@@ -910,50 +842,6 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 </Comment>
 </AttributeProps>
 </Attribute>
-<Attribute id="{A8C330D5-6837-0B42-169B-6BEC51EC706B}+00000000" name="로그인 시 표시 여부">
-<AttributeProps>
-<Name>로그인 시 표시 여부</Name>
-<Type>100</Type>
-<Physical_Name>SHOW_ON_LOGIN_YN</Physical_Name>
-<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
-<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
-<Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>4</Attribute_Order>
-<Column_Order>4</Column_Order>
-<Definition>DEFAULT 'N'</Definition>
-<Comment>DEFAULT 'N'</Comment>
-</AttributeProps>
-</Attribute>
-<Attribute id="{3704B80E-D572-0C3B-8B29-D54FA93617A9}+00000000" name="예약 표시 여부">
-<AttributeProps>
-<Name>예약 표시 여부</Name>
-<Type>100</Type>
-<Physical_Name>SHOW_ON_SCHEDULE_YN</Physical_Name>
-<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
-<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
-<Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>5</Attribute_Order>
-<Column_Order>5</Column_Order>
-<Definition>DEFAULT 'N'</Definition>
-<Comment>DEFAULT 'N'</Comment>
-</AttributeProps>
-</Attribute>
-<Attribute id="{83FB2C37-4983-EAA9-DF60-146060806400}+00000000" name="예약 시각">
-<AttributeProps>
-<Name>예약 시각</Name>
-<Type>100</Type>
-<Physical_Name>SCHEDULED_AT</Physical_Name>
-<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
-<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>6</Attribute_Order>
-<Column_Order>6</Column_Order>
-<Definition>
-</Definition>
-<Comment>
-</Comment>
-</AttributeProps>
-</Attribute>
 <Attribute id="{412F4364-0F6C-C985-208F-78666AE32BD4}+00000000" name="표시 시작 시각">
 <AttributeProps>
 <Name>표시 시작 시각</Name>
@@ -962,8 +850,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>7</Attribute_Order>
-<Column_Order>7</Column_Order>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -978,8 +866,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>8</Attribute_Order>
-<Column_Order>8</Column_Order>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -994,8 +882,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>9</Attribute_Order>
-<Column_Order>9</Column_Order>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
 <Definition>SEQUENTIAL / SIMULTANEOUS</Definition>
 <Comment>SEQUENTIAL / SIMULTANEOUS</Comment>
 </AttributeProps>
@@ -1008,8 +896,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>10</Attribute_Order>
-<Column_Order>10</Column_Order>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
 <Definition>DEFAULT 100</Definition>
 <Comment>DEFAULT 100</Comment>
 </AttributeProps>
@@ -1022,8 +910,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>11</Attribute_Order>
-<Column_Order>11</Column_Order>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
 <Definition>기간/반복 모드. 반복 정책은 미확정으로 값만 보존</Definition>
 <Comment>기간/반복 모드. 반복 정책은 미확정으로 값만 보존</Comment>
 </AttributeProps>
@@ -1036,8 +924,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>12</Attribute_Order>
-<Column_Order>12</Column_Order>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1052,8 +940,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>13</Attribute_Order>
-<Column_Order>13</Column_Order>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1068,8 +956,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>14</Attribute_Order>
-<Column_Order>14</Column_Order>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1084,8 +972,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>15</Attribute_Order>
-<Column_Order>15</Column_Order>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -1098,8 +986,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>16</Attribute_Order>
-<Column_Order>16</Column_Order>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
 <Definition>FIXED / RATIO / FULLSCREEN</Definition>
 <Comment>FIXED / RATIO / FULLSCREEN</Comment>
 </AttributeProps>
@@ -1111,9 +999,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>POPUP_WIDTH</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>17</Attribute_Order>
-<Column_Order>17</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1127,9 +1015,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>POPUP_HEIGHT</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>18</Attribute_Order>
-<Column_Order>18</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1143,9 +1031,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>WIDTH_RATIO</Physical_Name>
 <Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>19</Attribute_Order>
-<Column_Order>19</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>16</Attribute_Order>
+<Column_Order>16</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1159,9 +1047,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>HEIGHT_RATIO</Physical_Name>
 <Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>20</Attribute_Order>
-<Column_Order>20</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>17</Attribute_Order>
+<Column_Order>17</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1175,9 +1063,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>MINIMUM_WIDTH</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>21</Attribute_Order>
-<Column_Order>21</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>18</Attribute_Order>
+<Column_Order>18</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1191,9 +1079,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>MINIMUM_HEIGHT</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>22</Attribute_Order>
-<Column_Order>22</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>19</Attribute_Order>
+<Column_Order>19</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1207,9 +1095,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>MAXIMUM_WIDTH</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>23</Attribute_Order>
-<Column_Order>23</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>20</Attribute_Order>
+<Column_Order>20</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1223,9 +1111,9 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Name>MAXIMUM_HEIGHT</Physical_Name>
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
-<Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>24</Attribute_Order>
-<Column_Order>24</Column_Order>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>21</Attribute_Order>
+<Column_Order>21</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1240,8 +1128,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>25</Attribute_Order>
-<Column_Order>25</Column_Order>
+<Attribute_Order>22</Attribute_Order>
+<Column_Order>22</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -1254,8 +1142,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>26</Attribute_Order>
-<Column_Order>26</Column_Order>
+<Attribute_Order>23</Attribute_Order>
+<Column_Order>23</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -1268,8 +1156,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>27</Attribute_Order>
-<Column_Order>27</Column_Order>
+<Attribute_Order>24</Attribute_Order>
+<Column_Order>24</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -1282,8 +1170,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>28</Attribute_Order>
-<Column_Order>28</Column_Order>
+<Attribute_Order>25</Attribute_Order>
+<Column_Order>25</Column_Order>
 <Definition>DEFAULT 'N'</Definition>
 <Comment>DEFAULT 'N'</Comment>
 </AttributeProps>
@@ -1296,8 +1184,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>29</Attribute_Order>
-<Column_Order>29</Column_Order>
+<Attribute_Order>26</Attribute_Order>
+<Column_Order>26</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1312,8 +1200,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>30</Attribute_Order>
-<Column_Order>30</Column_Order>
+<Attribute_Order>27</Attribute_Order>
+<Column_Order>27</Column_Order>
 <Definition>VIDEO 완료 기준 시청 비율 0~1. NULL이면 1.0</Definition>
 <Comment>VIDEO 완료 기준 시청 비율 0~1. NULL이면 1.0</Comment>
 </AttributeProps>
@@ -1326,10 +1214,10 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
 <Null_Option_Type>0</Null_Option_Type>
-<Attribute_Order>31</Attribute_Order>
-<Column_Order>31</Column_Order>
-<Definition>QUIZ 통과 점수. WPF 응답에는 내려주지 않음</Definition>
-<Comment>QUIZ 통과 점수. WPF 응답에는 내려주지 않음</Comment>
+<Attribute_Order>28</Attribute_Order>
+<Column_Order>28</Column_Order>
+<Definition>QUIZ 통과 점수. QUIZ 팝업은 WPF 응답 최상위 passingScore로 내려줌(설계 12)</Definition>
+<Comment>QUIZ 통과 점수. QUIZ 팝업은 WPF 응답 최상위 passingScore로 내려줌(설계 12)</Comment>
 </AttributeProps>
 </Attribute>
 <Attribute id="{01996AB4-ACB0-1A37-9AD4-1643E4EB0C95}+00000000" name="완료 전 닫기 허용 여부">
@@ -1340,8 +1228,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>CHAR(1)</Physical_Data_Type>
 <Logical_Data_Type>CHAR(1)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>32</Attribute_Order>
-<Column_Order>32</Column_Order>
+<Attribute_Order>29</Attribute_Order>
+<Column_Order>29</Column_Order>
 <Definition>DEFAULT 'Y'</Definition>
 <Comment>DEFAULT 'Y'</Comment>
 </AttributeProps>
@@ -1354,8 +1242,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>33</Attribute_Order>
-<Column_Order>33</Column_Order>
+<Attribute_Order>30</Attribute_Order>
+<Column_Order>30</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1370,8 +1258,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>34</Attribute_Order>
-<Column_Order>34</Column_Order>
+<Attribute_Order>31</Attribute_Order>
+<Column_Order>31</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -1384,8 +1272,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>35</Attribute_Order>
-<Column_Order>35</Column_Order>
+<Attribute_Order>32</Attribute_Order>
+<Column_Order>32</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -1400,8 +1288,8 @@ CONSTRAINT CK_POPUP_YN_VALUES CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>36</Attribute_Order>
-<Column_Order>36</Column_Order>
+<Attribute_Order>33</Attribute_Order>
+<Column_Order>33</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -2229,14 +2117,16 @@ CONSTRAINT CK_TCOND_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_
 <Name>팝업 문항</Name>
 <Type>1</Type>
 <Physical_Name>POPUP_QUESTION</Physical_Name>
-<Definition>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (기존 데이터 RATING5 허용)
+<Definition>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT
+CONSTRAINT CK_QUESTION_TYPE CHECK (QUESTION_TYPE IN ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TEXT'))
 CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER &gt;= 1)
+CONSTRAINT CK_QUESTION_OPTION_LAYOUT CHECK (OPTION_LAYOUT IN ('VERTICAL', 'HORIZONTAL'))
 CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS'))
 CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N'))
 CONSTRAINT CK_QUESTION_SCORE CHECK
         ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE &gt;= 0)
          OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))</Definition>
-<Comment>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (기존 데이터 RATING5 허용)</Comment>
+<Comment>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT</Comment>
 </EntityProps>
 <Attribute_Groups>
 <Attribute id="{08D896AB-7937-4C49-421C-5963DC158014}+00000000" name="문항 ID">
@@ -2395,6 +2285,20 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 </Comment>
 </AttributeProps>
 </Attribute>
+<Attribute id="{132E4A61-5B74-9BC0-F690-214514FF5CFC}+00000000" name="선택지 배치">
+<AttributeProps>
+<Name>선택지 배치</Name>
+<Type>100</Type>
+<Physical_Name>OPTION_LAYOUT</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>DEFAULT 'VERTICAL'</Definition>
+<Comment>DEFAULT 'VERTICAL'</Comment>
+</AttributeProps>
+</Attribute>
 <Attribute id="{AF7DD24F-A809-2BCD-F0B1-9F36A1592124}+00000000" name="정렬 순서">
 <AttributeProps>
 <Name>정렬 순서</Name>
@@ -2403,8 +2307,8 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 <Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
 <Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>10</Attribute_Order>
-<Column_Order>10</Column_Order>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -2419,8 +2323,8 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>11</Attribute_Order>
-<Column_Order>11</Column_Order>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -2435,8 +2339,8 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>12</Attribute_Order>
-<Column_Order>12</Column_Order>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -2449,8 +2353,8 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 <Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
 <Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>13</Attribute_Order>
-<Column_Order>13</Column_Order>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
 <Definition>
 </Definition>
 <Comment>
@@ -2465,8 +2369,8 @@ CONSTRAINT CK_QUESTION_SCORE CHECK
 <Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
 <Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
 <Null_Option_Type>1</Null_Option_Type>
-<Attribute_Order>14</Attribute_Order>
-<Column_Order>14</Column_Order>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
 <Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
 <Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
 </AttributeProps>
@@ -5088,4 +4992,4 @@ CONSTRAINT CK_WPF_RESULT_STATUS CHECK (RESULT_STATUS IN ('ACCEPTED', 'REJECTED')
 </Relationship>
 </Relationship_Groups>
 </EMX:Model>
-</ERwin>
+</erwin>
