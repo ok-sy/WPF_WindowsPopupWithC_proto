@@ -17,11 +17,13 @@
 -- 실행: 팝업 테이블이 있는 계정으로 SQL*Plus 실행 (NLS_LANG=KOREAN_KOREA.AL32UTF8).
 --       - 로컬 XE(POPUP 계정 스키마)      : @08_legacy_data_constraints_oracle.sql POPUP.
 --       - 원격 개발 DB(앱 계정 zero-rule) : @08_legacy_data_constraints_oracle.sql ""
---       전제: 05_question_option_layout_oracle.sql(OPTION_LAYOUT 컬럼) 적용 완료.
+--       전제: archive/05_question_option_layout_oracle.sql(OPTION_LAYOUT 컬럼) 적용 완료.
 -- 여러 번 실행해도 결과가 같다(이미 있는 제약·NOT NULL은 건너뜀).
 -- =====================================================================================================
 SET PAGESIZE 200 LINESIZE 250 LONG 4000 TRIMSPOOL ON FEEDBACK ON DEFINE ON SERVEROUTPUT ON
-DEFINE S = &1
+-- 빈 인자("")도 받도록 DEFINE 대신 NEW_VALUE로 접두어를 받는다(DEFINE S = &1 은 빈 값에서 SP2-0137 오류).
+COLUMN schema_prefix NEW_VALUE S NOPRINT
+SELECT '&1' schema_prefix FROM DUAL;
 COLUMN POPUP_ID FORMAT A24
 COLUMN DISPLAY_MODE FORMAT A20
 COLUMN QUESTION_TITLE FORMAT A40

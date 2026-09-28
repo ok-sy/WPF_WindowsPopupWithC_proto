@@ -12,7 +12,9 @@
 -- 여러 번 실행해도 결과가 같다.
 -- =====================================================================================================
 SET PAGESIZE 200 LINESIZE 250 LONG 4000 TRIMSPOOL ON FEEDBACK ON DEFINE ON
-DEFINE S = &1
+-- 빈 인자("")도 받도록 DEFINE 대신 NEW_VALUE로 접두어를 받는다(DEFINE S = &1 은 빈 값에서 SP2-0137 오류).
+COLUMN schema_prefix NEW_VALUE S NOPRINT
+SELECT '&1' schema_prefix FROM DUAL;
 
 PROMPT === 1. imageSizeMode 가 FIXED 또는 빈 값인 POPUP_CONTENT 행 ===
 COLUMN POPUP_ID FORMAT A24

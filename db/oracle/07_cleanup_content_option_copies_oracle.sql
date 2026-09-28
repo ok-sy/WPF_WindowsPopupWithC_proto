@@ -13,7 +13,9 @@
 -- 여러 번 실행해도 결과가 같다. 서버 L-3 반영 전후 어느 쪽에서 실행해도 조회 결과는 컬럼 값 기준으로 같다.
 -- =====================================================================================================
 SET PAGESIZE 200 LINESIZE 250 LONG 4000 TRIMSPOOL ON FEEDBACK ON DEFINE ON
-DEFINE S = &1
+-- 빈 인자("")도 받도록 DEFINE 대신 NEW_VALUE로 접두어를 받는다(DEFINE S = &1 은 빈 값에서 SP2-0137 오류).
+COLUMN schema_prefix NEW_VALUE S NOPRINT
+SELECT '&1' schema_prefix FROM DUAL;
 DEFINE K = 'contentTitle|imageTitle|videoTitle|surveyTitle|description|plainText|imageUrl|videoUrl|linkUrl|completionRatio|allowCloseBeforeCompletion|passingScore|validateRequiredQuestions|questions'
 DEFINE V = '("([^"\]|\\.)*"|[^],{}"[]+)'
 

@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-11 — 설계 18 DB 스크립트 로컬 XE·원격 개발 DB 적용
+
+- 이유: 설계 18 L-1~L-5 코드가 전제하는 스키마·데이터 상태를 로컬 XE와 원격 개발 DB에 맞추기 위해 미적용 스크립트를 실행. 원격 개발 DB는 04(markdown 정리)·05(선택지 배치)도 미적용 상태였다.
+- 실행 전 확인: 원격 개발 DB 포트 연결 확인 후 읽기 전용 조회 — `OPTION_LAYOUT` 없음, markdown 잔여 1행, 08 제약 없음, 09 대상 컬럼 존재, 팝업 4·템플릿 2, 비정상 DISPLAY_MODE·SIZE_MODE·문항 유형·FIXED 이미지 0행. `POPUP_CONTENT.CONTENT_OPTIONS`·`POPUP_NOTICE`·`QUESTION_TEMPLATE` 주요 값을 작업 로그용으로 스풀 백업(저장소 외부).
+- 실행: 로컬 XE — `09`(컬럼 6개 삭제, 잔여 0). 원격 개발 DB(방식 B, 접두어 빈 값) — `04`(markdownMode=false 1행 정리) → `05`(OPTION_LAYOUT 추가, 기존 3문항 VERTICAL) → `06`(0행) → `07`(`SAMPLE-TEXT-001` 사본 키 제거 1행) → `08`(보정 0행, CHECK·NOT NULL 11건) → `09`(컬럼 6개 삭제, `CK_POPUP_YN_VALUES` 재생성).
+- 변경(스크립트): `04`·`06`~`09`가 `DEFINE S = &1`로 접두어를 받아, README 안내대로 빈 값(`""`)을 넘기면 SP2-0137로 모든 문장이 실행되지 않는 문제를 원격 첫 실행에서 확인(04 첫 시도는 변경 없음). `COLUMN schema_prefix NEW_VALUE S` + `SELECT '&1'` 방식으로 바꿔 빈 값과 `POPUP.`을 모두 처리하도록 수정(원격·로컬에서 읽기 전용 확인 후 적용). 적용을 마친 `04_cleanup_markdown_fields_oracle.sql`·`05_question_option_layout_oracle.sql`은 `db/oracle/archive/`로 이동(설계 18 D-1·D-2)하고 참조 경로 수정.
+- 문서: `db/oracle/README.md` 적용 현황·인자 안내, 설계 18 상태·D-1·D-2·L-1·L-4·D-6 체크리스트, `POPUP_ADMIN_UI_GAP.md`·`OPTION_LAYOUT_DEMO.md`의 05 경로.
+- 검증: 스크립트별 결과 확인 조회 모두 0(잔여 FIXED·사본 키·비정상 값·삭제 대상 컬럼). 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용)를 로컬 XE와 원격 개발 DB 각각에서 실행해 모두 통과. 원격 실행 후 팝업 4·템플릿 2·문항 3·선택지 4로 건수 변화 없음, `SAMPLE-TEXT-001` 제목·설명·본문 컬럼 값 유지 확인.
+- 미실행: 서버 기동 후 WPF·관리자 화면 확인.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시. DB 변경은 로컬 XE·원격 개발 DB에 이미 반영됨(되돌릴 수 없는 컬럼 삭제 포함).
+
 ## 2026-09-28-10 — 데모 JSON v3 전환·설문/퀴즈 구형 분기 제거(설계 18 L-2) 및 관리자 IMAGE 미리보기 계약 반영(W-10)
 
 - 이유: WPF 설문/퀴즈의 구형 분기(`content.questions`·`content.passingScore`·보기 value 목록 정답)는 Demo Mode 샘플만 쓰고 있어, 샘플을 계약서 v3 형태로 바꾼 뒤 분기를 제거. 관리자 미리보기는 IMAGE의 ADAPTIVE/FIT_TO_IMAGE 차이와 설명 배치를 재현하지 않아 WPF 표시와 달랐고, 설명 배치 옵션은 편집할 수 없었다.
