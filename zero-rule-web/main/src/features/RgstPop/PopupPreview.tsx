@@ -179,7 +179,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
                 {question.description}
               </Typography>
             )}
-            <Stack sx={{ mt: 1 }}>
+            <Stack sx={{ mt: 1, minWidth: 0, flexDirection: question?.questionType !== 'TEXT' && question?.optionLayout === 'HORIZONTAL' ? 'row' : 'column', flexWrap: 'wrap', gap: 1 }}>
               {question?.questionType === 'TEXT' ? (
                 <Box sx={{ minHeight: 62, border: '1px solid', borderColor: 'divider', borderRadius: 1 }} />
               ) : (
@@ -189,6 +189,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
                       key={option.optionId}
                       control={question?.questionType === 'MULTIPLE_CHOICE' ? <Checkbox size="small" /> : <Radio size="small" />}
                       label={option.text}
+                      sx={{ m: 0, minWidth: 0, maxWidth: '100%', '& .MuiButtonBase-root': { flexShrink: 0 }, '& .MuiFormControlLabel-label': { minWidth: 0, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' } }}
                     />
                   ),
                 )
@@ -301,7 +302,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
       >
         {popup.showHeader && (
           <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
-            <Typography fontWeight={700} sx={{ flex: 1, fontSize: headerFontSize ?? undefined }} noWrap>
+            <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', fontSize: headerFontSize ?? undefined }}>
               {text(popup.title, '팝업 제목')}
             </Typography>
             {popup.showCloseButton && (
@@ -312,7 +313,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: imageFill ? 'hidden' : 'auto', p: imageFill ? 0 : 3 }}>
+        <Box sx={{ flex: 1, minHeight: 0, minWidth: 0, overflowY: imageFill ? 'hidden' : 'auto', overflowX: 'hidden', overflowWrap: 'anywhere', p: imageFill ? 0 : 3 }}>
           {showContentTitle && (
             <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
               {contentTitle}
@@ -327,7 +328,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           <>
             <Divider />
             <Stack direction="row" alignItems="center" justifyContent="space-between"
-              sx={{ px: 2, py: 1.5, flexShrink: 0, ...(footerFontSize ? { fontSize: footerFontSize, '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' } } : {}) }}>
+              sx={{ px: 2, py: 1.5, flexShrink: 0, flexWrap: 'wrap', gap: 1, ...(footerFontSize ? { fontSize: footerFontSize, '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' } } : {}) }}>
               {popup.showDoNotShowAgain ? (
                 <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
               ) : (

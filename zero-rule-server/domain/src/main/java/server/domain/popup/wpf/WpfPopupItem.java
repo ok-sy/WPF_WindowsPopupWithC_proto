@@ -105,7 +105,7 @@ public record WpfPopupItem(
                                 .map(option -> new PopupOptionDto(
                                         option.optionId(), option.value(), option.text(), option.sortOrder(), null))
                                 .toList(),
-                        null, null))
+                        null, null, question.optionLayout()))
                 .toList();
     }
 }

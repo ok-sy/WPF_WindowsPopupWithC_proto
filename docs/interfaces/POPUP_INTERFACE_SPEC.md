@@ -548,12 +548,15 @@ passingScore 이상
 
 # 9. questions[] 계약
 
+선택지는 직접 전달한다. RATING5도 기본 보기를 자동 생성하지 않는다. 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
+
 | 필드 | 형식 | 설명 |
 |---|---|---|
 | questionId | integer | 결과 answers의 참조 ID |
 | title | string | 질문 제목 |
 | description | string | 부가 설명 |
 | questionType | string | RATING5 / SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
+| optionLayout | string | 문항별 선택지 배치. VERTICAL(기본) / HORIZONTAL. 가로형은 너비 초과 시 줄바꿈 |
 | isRequired | boolean | 필수 응답 여부 |
 | isScored | boolean | QUIZ 채점 대상 여부 |
 | questionScore | number | QUIZ 배점. 선택 |

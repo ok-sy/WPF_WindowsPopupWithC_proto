@@ -68,7 +68,7 @@
         INSERT INTO ${popupSchemaPrefix}POPUP_QUESTION
             (QUESTION_ID, QUESTION_TEMPLATE_ID, QUESTION_TYPE, QUESTION_TITLE, QUESTION_DESCRIPTION,
              REQUIRED_YN, SCORED_YN, QUESTION_SCORE, SORT_ORDER, CORRECT_ANSWER,
-             ANSWER_MATCH_MODE, CREATED_BY, UPDATED_BY)
+             ANSWER_MATCH_MODE, OPTION_LAYOUT, CREATED_BY, UPDATED_BY)
         VALUES (#{questionId}, #{templateId}, #{question.questionType}, #{question.title}, #{question.description},
                 CASE WHEN #{question.isRequired} = 1 THEN 'Y' ELSE 'N' END,
                 CASE WHEN #{quiz} = 1 THEN 'Y' ELSE 'N' END,
@@ -78,7 +78,7 @@
                      THEN #{question.correctAnswer, jdbcType=CLOB} ELSE NULL END,
                 CASE WHEN #{quiz} = 1 AND #{question.questionType} = 'TEXT'
                      THEN #{question.answerMatchMode} ELSE NULL END,
-                #{auditUser}, #{auditUser})
+                #{question.optionLayout}, #{auditUser}, #{auditUser})
     </insert>
 
     <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. -->
@@ -433,6 +433,7 @@
             <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
             <arg column="CORRECT_ANSWER" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="ANSWER_MATCH_MODE" javaType="java.lang.String"/>
+            <arg column="OPTION_LAYOUT" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
@@ -606,6 +607,7 @@
             QUESTION_SCORE,
             CORRECT_ANSWER,
             ANSWER_MATCH_MODE,
+            OPTION_LAYOUT,
             SORT_ORDER
         FROM ${popupSchemaPrefix}POPUP_QUESTION
         WHERE QUESTION_TEMPLATE_ID IN

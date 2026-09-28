@@ -194,14 +194,14 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 | questionType | UI 형태 | WPF 지원 |
 |---|---|---|
-| `RATING5` | 1~5점 RadioButton | O |
+| `RATING5` | 전달된 보기만 단일 선택 표시(자동 생성 없음) | O |
 | `SINGLE_CHOICE` | 단일 선택 RadioButton | O |
 | `MULTIPLE_CHOICE` | 복수 선택 CheckBox | O |
 | `TEXT` | 주관식 TextBox | O |
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.
 
-현재 관리자 `PopupQuestionEditor`의 선택 목록에는 `RATING5`가 없으므로 UI에서 신규 구성할 수 없다. WPF DTO/Factory/View 자체는 이미 처리한다.
+선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. 기존 RATING5도 같은 배치를 사용하며 보기 자동 생성은 제거했다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
 
 ### 7.3 QUIZ
 
@@ -303,7 +303,7 @@ WPF는 한 번 조회한 팝업 ID를 `_shownPopupIds`로 기억해 같은 실�
 
 1. 관리자 웹/zero-rule-server의 크기 비율 값은 `RATIO`, WPF는 `VIEWPORT_RATIO`를 기대한다.
 2. WPF에는 `AUTO` 크기 모드가 있으나 관리자 웹/zero-rule-server 허용 목록에는 없다.
-3. `RATING5`는 WPF에서 구현되어 있으나 관리자 문항 유형 선택 목록에 없다.
+3. RATING5 자동 보기 생성은 제거했다. 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
 4. `hideDays`는 모델/서버 필드가 있으나 관리자 입력이 없고 WPF는 30일 고정이다.
 5. `periodMode`, 반복 관련 필드는 모델/DB에 있으나 관리자 입력 UI와 실제 반복 노출 정책 적용 범위를 추가 검증해야 한다.
 6. VIDEO의 여러 확장 옵션은 DTO/관리자 화면에는 있으나 실제 Video View 연결 여부를 옵션별로 확인해야 한다.

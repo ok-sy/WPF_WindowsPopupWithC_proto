@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-28-02 — 문항별 선택지 가로·세로 배치 및 줄바꿈
+
+- 이유: 설문·퀴즈 선택지는 직접 입력하고 각 문항에서 배치 방향을 개별 지정하도록 통일.
+- 변경: 문항 편집기에 세로형(기본)/가로형 선택 추가. questions[].optionLayout을 문항 템플릿의 POPUP_QUESTION.OPTION_LAYOUT에 저장하고 관리자 조회·WPF 응답·정답 제거 경로에 유지. 웹 미리보기/WPF는 문항별 배치를 적용하고 가로형 너비 초과 시 줄바꿈. RATING5의 5열 전용 UI 및 자동 보기 생성 제거. DB 초기 스키마 및 기존 DB용 05_question_option_layout_oracle.sql 추가.
+- 데모·문서: 1번/2번 문항 배치를 각각 선택하도록 데모 수정. 긴 문장·공백 없는 문자열·복수 선택 보기 포함. 사용자/옵션/JSON/API 계약 및 OPTION_LAYOUT_DEMO.md의 실행·확인 절차를 문항별 설정으로 정리.
+- 주요 파일: PopupQuestionEditor.tsx, PopupPreview.tsx, PopupAdmin.ts, PopupQuestionDto/Entity.java, PopupMapper.xml, PopupService.java, WpfPopupItem.java, SurveyQuestionDto.cs, PopupFactory.cs, SurveyPopupView.xaml.cs, DemoWindow.xaml(.cs), DemoPopupDataService.cs, db/oracle/*.sql.
+- 검증: 웹 타입 검사 및 WPF 빌드(경고 0/오류 0) 통과. 서버 관련 테스트 23건 통과/실DB 테스트 1건 생략(접속 정보 없음). JSON 왕복·문항별 혼합 배치·정답 제거 후 배치 유지·기본값/유효성·MyBatis 바인딩 검증. 로컬 .offline-verify/option-layout 하네스에서 설문·퀴즈 × 문항별 가로/세로 조합 × 폭 400/620/900 레이아웃 393건 통과. git diff --check 통과.
+- 상태: 관련 코드·문서·SQL을 이번 main 커밋에 포함하며 푸시 결과는 원격 브랜치로 확인한다. DB SQL 적용·실제 DB 왕복·브라우저 화면·데모 창 버튼 클릭/제출·배포는 미실행. 서버 배포 전에 기존 DB에 컬럼 추가 SQL 적용 필요.
+
 ## 2026-09-28-01 — 백엔드 독립형 WPF Client API 계약서 v3.0 정리
 
 - 이유: 별도 백엔드가 기존 zero-rule-server 구현·DB·관리자 API를 재사용하지 않고 새로 구축되는 경우에도 제공되는 C# WPF 클라이언트와 연동할 수 있도록 인터페이스 문서의 책임 범위를 분리.

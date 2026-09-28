@@ -237,6 +237,7 @@ namespace Popup.Factories
                     Title = questionDto.Title,
                     Description = questionDto.Description,
                     QuestionType = ConvertSurveyQuestionType(questionDto.QuestionType),
+                    HorizontalOptions = string.Equals(questionDto.OptionLayout, "HORIZONTAL", StringComparison.Ordinal),
                     IsRequired = questionDto.IsRequired,
                     IsScored = questionDto.IsScored,
                     CorrectAnswers = new List<string>(questionDto.CorrectAnswers),

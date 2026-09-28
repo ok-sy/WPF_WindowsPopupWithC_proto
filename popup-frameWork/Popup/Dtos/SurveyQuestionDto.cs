@@ -18,6 +18,8 @@ namespace Popup.Dtos
          */
         public long QuestionId { get; set; }
 
+        public string? OptionLayout { get; set; } = "VERTICAL";
+
         /*
          * 화면에 표시할 질문 제목
          */

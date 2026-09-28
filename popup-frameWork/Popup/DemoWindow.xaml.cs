@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -91,6 +92,21 @@ namespace Popup
                     return;
                 }
 
+                string[] layouts = {
+                    (Question1LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL",
+                    (Question2LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL"
+                };
+                foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType is "SURVEY" or "QUIZ"))
+                {
+                    for (int i = 0; i < Math.Min(layouts.Length, popup.Questions.Count); i++)
+                        popup.Questions[i].OptionLayout = layouts[i];
+                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
+                    if (content["questions"] is JsonArray questions)
+                        for (int i = 0; i < Math.Min(layouts.Length, questions.Count); i++)
+                            questions[i]!["optionLayout"] = layouts[i];
+                    popup.Content = JsonSerializer.SerializeToElement(content);
+                }
+                AppendLog($"--- 문항별 배치: 1번 {layouts[0]}, 2번 {layouts[1]} ---");
                 List<PopupOptions> popupOptions = _popupService.CreatePopupOptions(response.Popups);
                 foreach (PopupOptions options in popupOptions)
                 {

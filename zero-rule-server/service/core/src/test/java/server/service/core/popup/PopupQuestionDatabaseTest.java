@@ -57,12 +57,14 @@ class PopupQuestionDatabaseTest {
                         BigDecimal.TEN, 2, List.of(), "보안", "CONTAINS");
                 var choice = new PopupQuestionDto(-3L, "객관식", null, "SINGLE_CHOICE", true, true,
                         BigDecimal.TEN, 3, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
-                        new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null);
+                        new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null, "HORIZONTAL");
                 draft.set("questions", json.valueToTree(List.of(exact, contains, choice)));
                 var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
                         new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
                 var saved = service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
                 assertEquals(3, saved.questions().size());
+                assertEquals("VERTICAL", saved.questions().get(0).optionLayout());
+                assertEquals("HORIZONTAL", saved.questions().get(2).optionLayout());
                 assertNotEquals(source.questionTemplateId(), saved.questionTemplateId());
                 assertEquals("Windows + L", saved.questions().get(0).correctAnswer());
                 assertEquals("CONTAINS", saved.questions().get(1).answerMatchMode());

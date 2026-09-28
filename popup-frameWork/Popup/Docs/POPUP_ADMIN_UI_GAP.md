@@ -82,48 +82,13 @@ VIEWPORT_RATIO
 
 ---
 
-## 3. P1 - SURVEY/QUIZ 5점 평가(RATING5) 관리자 입력 추가
+## 3. 완료 — 문항별 가로·세로 배치로 통일 (2026-09-28)
 
-### WPF 구현 상태
+RATING5 전용 입력 추가 계획은 문항별 배치 설정으로 대체했다. 선택지는 단일·복수 선택 문항에서 직접 입력하고, 각 문항의 optionLayout으로 VERTICAL/HORIZONTAL을 지정한다. 가로형은 너비 초과 시 줄바꿈한다.
 
-WPF에는 이미 다음 기능이 있다.
+배치는 POPUP_QUESTION.OPTION_LAYOUT에 저장해 문항 템플릿 저장·불러오기에도 유지한다. 기존 RATING5는 전달된 보기만 일반 단일 선택 UI로 표시하며 1~5점 자동 생성은 제거했다. 관리자 문항 유형은 SINGLE_CHOICE/MULTIPLE_CHOICE/TEXT를 유지한다.
 
-- `SurveyQuestionType.Rating5`
-- `SurveyQuestionDto.QuestionType = "RATING5"` 처리
-- `PopupFactory`의 `RATING5` 변환
-- `SurveyPopupView.CreateRating5Control()`
-- 1~5점 RadioButton UI
-- SurveyAnswer에 Rating5 값 저장 구조
-
-즉 **WPF DTO에도 이미 `RATING5`를 받을 수 있는 구조가 있다.**
-
-### 현재 빠진 부분
-
-관리자 `PopupQuestionEditor.tsx` 문항 유형 선택지는 현재 다음 세 개뿐이다.
-
-```text
-SINGLE_CHOICE
-MULTIPLE_CHOICE
-TEXT
-```
-
-`RATING5`가 없다.
-
-### 필요한 화면 기능
-
-문항 유형 ComboBox에 추가:
-
-```text
-5점 평가 (RATING5)
-```
-
-RATING5 선택 시 일반 선택지 추가 UI는 숨기고 1~5 값이 고정이라는 점을 사용자에게 안내하는 편이 좋다.
-
-### 추가 검증 필요
-
-서버 저장/채점 로직이 RATING5를 일반 단일 선택형처럼 처리할지, SURVEY 전용으로만 허용할지 정책을 결정해야 한다.
-
-QUIZ에서 RATING5를 허용할 경우 정답/배점 처리 기준도 정의해야 한다.
+[데모 및 검증 절차](OPTION_LAYOUT_DEMO.md). 기존 DB에는 서버 배포 전 05_question_option_layout_oracle.sql 적용이 필요하다.
 
 ---
 
@@ -347,7 +312,7 @@ validateRequiredQuestions
 | SURVEY 단일 선택 | O | O | O | 없음 |
 | SURVEY 복수 선택 | O | O | O | 없음 |
 | SURVEY 주관식 | O | O | O | 없음 |
-| SURVEY RATING5 | O | X | 구조 존재 | UI 추가 |
+| SURVEY RATING5 | 기존 보기만 표시 | 단일 선택 사용 | 문항별 배치 저장 | 자동 생성 제거 |
 | QUIZ 배점/정답 | O | O | O | 없음 |
 | QUIZ 통과 점수 | O | O | O | 없음 |
 | FIXED 크기 | O | O | O | 없음 |
@@ -362,7 +327,7 @@ validateRequiredQuestions
 ## 10. 권장 작업 순서
 
 1. **P0 - `RATIO` / `VIEWPORT_RATIO` 계약 통일**
-2. **P1 - SURVEY `RATING5` 관리자 문항 유형 추가**
+2. 완료: RATING5 자동 생성 제거 및 문항별 가로·세로 배치로 통일.
 3. **VERIFY - VIDEO 옵션이 실제 View까지 전달되는지 정리**
 4. **P1/P2 - hideDays를 실제 팝업 설정값으로 연결**
 5. **P1/P2 - AUTO 크기 모드 Web/Server 지원 추가**
