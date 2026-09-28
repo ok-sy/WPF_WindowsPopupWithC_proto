@@ -82,7 +82,7 @@ class PopupMapperOracleStatementTest {
         Map<String, Object> params = new HashMap<>();
         params.put("templateId", 20L);
         params.put("question", new PopupQuestionDto(1L, "제목", "설명", "SINGLE_CHOICE", true, true,
-                new BigDecimal("2.00"), 1, List.of(new PopupOptionDto(2L, "1", "A", 1, true)), "정답", "EXACT"));
+                new BigDecimal("2.00"), 1, List.of(new PopupOptionDto(2L, "1", "A", 1, true)), "정답", "EXACT", "VERTICAL"));
         params.put("quiz", true);
         MetaObject meta = configuration.newMetaObject(params);
         assertEquals(true, meta.getValue("question.isRequired"));

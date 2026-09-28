@@ -219,81 +219,36 @@ QUIZ는 다음 기능이 추가된다.
 
 ## 8. 실제 WPF API 호출 목록
 
-> **2026-09-19 갱신 (기준 3·4·6)** — 새 클라이언트는 아래 두 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 식별한다.
-> 표 아래의 기존 6개 메서드는 구 서버 호환용으로 코드에 남아 있으나 호출부가 없다(전환 완료 후 제거).
->
-> | 메서드 | HTTP | 경로 | 기능 |
-> |---|---|---|---|
-> | `GetWpfPopupsAsync` | GET | `/api/wpf/popups` | 서버가 노출 판정(활성·기간·대상·숨김·완료)을 끝낸 최종 목록 + 공통 옵션·content·문항 |
-> | `PostResultsAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 항목(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED) 1회 전송. `PopupResultQueue`가 실패 시 보관·재전송 |
->
-> 조회 흐름: `MainWindow` → `PopupResultQueue.FlushAsync`(미전송 결과) → `GetWpfPopupsAsync` → `PopupService.CreatePopupOptions` → `PopupManager`.
-> 결과 흐름: `PopupWindow.Closed` → `PopupResultBuilder`가 항목 조립 → `PopupResultQueue.EnqueueAndSendAsync`. 제출은 `SendImmediateAsync`로 즉시 전송 후 응답 안내.
-> 클라이언트의 기간·숨김·완료 판단(`PopupPolicyService`·`PopupStorageService`·`statuses` 필터)과 영상 진행률 10초 주기 저장은 제거했다.
+> **설계 18 L-0 (2026-09-28)** — 구 사용자용 API(`/api/popups?userId=`, `/hide`, `/responses`, `/video-progress`, `/events`, `/statuses`) 설명과 해당 `PopupApiService` 메서드는 삭제했다.
+> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.0 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](../../../docs/interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
 
-(아래는 구 API 기준 설명이다.)
+WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 사용자를 식별한다.
 
-`PopupApiService`에서 실제 호출하던 사용자용 API이다.
-
-| 메서드 | HTTP | 경로 | 기능 |
+| 호출 위치 | HTTP | 경로 | 기능 |
 |---|---|---|---|
-| `GetAvailablePopupsAsync` | GET | `/api/popups?userId={userId}` | 현재 사용자에게 노출 가능한 팝업 조회 |
-| `GetPopupStatusesAsync` | GET | `/api/popups/statuses?userId={userId}` | 사용자별 표시/완료/숨김 상태 조회 |
-| `HidePopupAsync` | POST | `/api/popups/{popupId}/hide` | 다시 보지 않기 저장 |
-| `SubmitResponseAsync` | POST | `/api/popups/{popupId}/responses` | SURVEY/QUIZ 답안 제출 |
-| `SaveVideoProgressAsync` | POST | `/api/popups/{popupId}/video-progress` | VIDEO 진행률/완료 판정 |
-| `RecordPopupEventAsync` | POST | `/api/popups/{popupId}/events` | `DISPLAYED`, `CLOSED` 이벤트 저장 |
-
-### 8.1 조회 흐름
-
-```text
-MainWindow
-→ GetAvailablePopupsAsync
-→ GetPopupStatusesAsync
-→ 완료 팝업 및 현재 실행에서 이미 연 팝업 제외
-→ PopupService.CreatePopupOptions
-→ PopupManager.ShowRange
-```
-
-### 8.2 팝업 표시/닫기 이벤트
-
-PopupOptions에는 UI와 API를 느슨하게 연결하기 위한 콜백이 들어간다.
-
-- `PopupDisplayedAsync` → `DISPLAYED`
-- `PopupClosedAsync` → `CLOSED`
-- `HidePopupAsync` → 숨김 API
-- `SubmitSurveyAsync` → 설문/퀴즈 응답 API
-- `SaveVideoProgressAsync` → 영상 진행률 API
-
-PopupWindow와 각 View는 서버 주소나 사용자 ID를 직접 알지 않고 이 콜백을 호출한다.
+| `WpfLoginClient.LoginAsync` | POST | `/api/wpf/auth/login` | 로그인(토큰 발급, SSO 프로토타입) |
+| `PopupApiService.GetWpfPopupsAsync` | GET | `/api/wpf/popups` | 서버가 노출 판정을 끝낸 최종 목록 + 공통 옵션·content·문항 |
+| `PopupApiService.PostResultsAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 항목(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED) 전송. `PopupResultQueue`가 실패 시 보관·재전송 |
 
 ---
 
 ## 9. 다시 보지 않기
-
-현재 실제 동작은 다음과 같다.
 
 ```text
 showFooter = true
 AND showDoNotShowAgain = true
 → 체크박스 표시
 → 사용자가 체크 후 닫기
-→ PopupWindow.SaveDoNotShowAgainAsync
-→ HidePopupAsync
-→ POST /api/popups/{popupId}/hide
+→ PopupWindow.RecordDoNotShowAgainChoice (체크 여부만 기록, 서버 호출 없음)
+→ 창이 닫히면 HIDDEN 결과 항목(hideDays: 팝업 hideDays, 없으면 30) 생성
+→ POST /api/wpf/popups/results
 ```
-
-현재 PopupWindow는 숨김 기간을 `30`일 상수로 전달한다. `hideDays` 필드는 서버/DTO에 존재하지만 WPF 창에서 아직 이 값을 사용하지 않는다.
 
 ---
 
 ## 10. 표시 완료 및 중복 방지
 
-WPF는 한 번 조회한 팝업 ID를 `_shownPopupIds`로 기억해 같은 실행 중 주기 조회에서 동일 팝업을 다시 열지 않는다.
-
-또한 서버 `statuses` 조회 결과에서 `completed=true`인 팝업은 재표시 대상에서 제외한다.
-
-숨김 상태는 사용자 팝업 조회 SQL에서도 제외된다.
+기간·대상·숨김·완료 판정은 서버가 목록 조회 시 끝낸다. WPF는 한 번 연 팝업 ID를 `_shownPopupIds`로 기억해 같은 실행 중 주기 조회에서 동일 팝업을 다시 열지 않는다.
 
 ---
 
@@ -304,7 +259,7 @@ WPF는 한 번 조회한 팝업 ID를 `_shownPopupIds`로 기억해 같은 실�
 1. 관리자 웹/zero-rule-server의 크기 비율 값은 `RATIO`, WPF는 `VIEWPORT_RATIO`를 기대한다.
 2. WPF에는 `AUTO` 크기 모드가 있으나 관리자 웹/zero-rule-server 허용 목록에는 없다.
 3. RATING5 자동 보기 생성은 제거했다. 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
-4. `hideDays`는 모델/서버 필드가 있으나 관리자 입력이 없고 WPF는 30일 고정이다.
+4. `hideDays`는 모델/서버 필드가 있으나 관리자 입력이 없다. WPF는 팝업 `hideDays`를 HIDDEN 결과에 넣고, 값이 없으면 30일을 쓴다.
 5. `periodMode`, 반복 관련 필드는 모델/DB에 있으나 관리자 입력 UI와 실제 반복 노출 정책 적용 범위를 추가 검증해야 한다.
 6. VIDEO의 여러 확장 옵션은 DTO/관리자 화면에는 있으나 실제 Video View 연결 여부를 옵션별로 확인해야 한다.
 

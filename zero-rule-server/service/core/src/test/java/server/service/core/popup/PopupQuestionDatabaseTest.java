@@ -10,6 +10,7 @@ import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 import server.domain.popup.*;
+import server.domain.popup.wpf.WpfPopupItem;
 import server.repo.core.mapper.popup.PopupMapper;
 import server.repo.core.mapper.popup.PopupSchema;
 import java.math.BigDecimal;
@@ -52,9 +53,9 @@ class PopupQuestionDatabaseTest {
                         .put("displayStartAt", OffsetDateTime.now().minusDays(1).toString())
                         .put("displayEndAt", OffsetDateTime.now().plusDays(1).toString());
                 var exact = new PopupQuestionDto(-1L, "정확히 일치", null, "TEXT", true, true,
-                        BigDecimal.TEN, 1, List.of(), "Windows + L", "EXACT");
+                        BigDecimal.TEN, 1, List.of(), "Windows + L", "EXACT", "VERTICAL");
                 var contains = new PopupQuestionDto(-2L, "포함", null, "TEXT", true, true,
-                        BigDecimal.TEN, 2, List.of(), "보안", "CONTAINS");
+                        BigDecimal.TEN, 2, List.of(), "보안", "CONTAINS", "VERTICAL");
                 var choice = new PopupQuestionDto(-3L, "객관식", null, "SINGLE_CHOICE", true, true,
                         BigDecimal.TEN, 3, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
                         new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null, "HORIZONTAL");
@@ -70,8 +71,9 @@ class PopupQuestionDatabaseTest {
                 assertEquals("CONTAINS", saved.questions().get(1).answerMatchMode());
                 assertTrue(saved.questions().get(2).options().get(0).isCorrect());
                 assertEquals(saved.questionTemplateId(), service.saveAdminPopup(saved, true, targets, "SYSTEM").questionTemplateId());
-                var publicPopup = service.getPopups("E1001").stream().filter(p -> popupId.equals(p.popupId())).findFirst().orElseThrow();
-                String publicJson = json.writeValueAsString(publicPopup);
+                // [설계 18 L-0] 구 WPF-01 getPopups 삭제. 노출 대상 포함은 매퍼로, 정답 제거는 비QUIZ WPF 경로의 withoutAnswerKey로 확인한다.
+                assertTrue(mapper.selectAvailablePopups("E1001", false).stream().anyMatch(p -> popupId.equals(p.popupId())));
+                String publicJson = json.writeValueAsString(WpfPopupItem.withoutAnswerKey(saved.questions()));
                 assertFalse(publicJson.contains("correctAnswer"));
                 assertFalse(publicJson.contains("answerMatchMode"));
                 assertFalse(publicJson.contains("isCorrect"));

@@ -11,7 +11,6 @@ import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.VideoPopupContext;
-import server.domain.popup.UserPopupStatusDto;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -120,7 +119,7 @@ public interface PopupMapper {
      *
      * @param excludeCompleted true면 USER_POPUP_STATUS.COMPLETED_YN='Y'인 팝업도 제외한다.
      *                         [기준 2] 신규 WPF API는 완료 판단까지 서버가 끝내므로 true,
-     *                         기존 WPF-01 API는 클라이언트가 /statuses로 제외하던 계약을 유지하므로 false.
+     *                         false는 답안 제출(submitResponse) 재검증처럼 완료 팝업도 허용해야 하는 경우에 쓴다.
      */
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId,
             @Param("excludeCompleted") boolean excludeCompleted);
@@ -225,11 +224,6 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId);
 
-    int upsertPopupEvent(
-            @Param("userId") String userId,
-            @Param("popupId") String popupId,
-            @Param("eventType") String eventType);
-
-    List<UserPopupStatusDto> selectPopupStatuses(
-            @Param("userId") String userId);
+    // [설계 18 L-0] 구 WPF-04(/events)·WPF-06(/statuses) 전용 upsertPopupEvent·selectPopupStatuses 삭제.
+    // 표시·닫기 기록은 WpfPopupMapper의 합본 구문, 완료 제외는 selectAvailablePopups(userId, true)가 대체한다.
 }

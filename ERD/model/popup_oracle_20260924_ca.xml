@@ -1,0 +1,5091 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated interchange draft; ERwin XSD/application validation is required. -->
+<ERwin xmlns="http://www.ca.com/erwin" xmlns:EMX="http://www.ca.com/erwin/data" Format="ERwin">
+<EMX:Model xmlns="http://www.ca.com/erwin/data" id="{F6ED1044-3A44-3D80-C068-84F9F03C30E3}+00000000" name="팝업 Oracle 현재 구조">
+<ModelEnvProps>
+<Model_Type>3</Model_Type>
+<Target_Server>1075858979</Target_Server>
+<Target_Server_Version>10</Target_Server_Version>
+<Target_Server_Minor_Version>0</Target_Server_Minor_Version>
+</ModelEnvProps>
+<ModelProps>
+<Name>팝업 Oracle 현재 구조</Name>
+<Definition>2026-09-24 저장소 Oracle DDL 기준. 삭제 후보 포함. XML 호환성 미검증. 전체 물리 DDL은 동봉 SQL 참조.</Definition>
+</ModelProps>
+<Entity_Groups>
+<Entity id="{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000" name="부서">
+<EntityProps>
+<Name>부서</Name>
+<Type>1</Type>
+<Physical_Name>APP_DEPARTMENT</Physical_Name>
+<Definition>부서 마스터. 팝업 대상 조건(DEPARTMENT)과 하위 부서 포함 판단에 사용
+CONSTRAINT CK_DEPARTMENT_LEVEL      CHECK (DEPARTMENT_LEVEL &gt;= 1)
+CONSTRAINT CK_DEPARTMENT_SORT_ORDER CHECK (SORT_ORDER &gt;= 0)
+CONSTRAINT CK_DEPARTMENT_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
+<Comment>부서 마스터. 팝업 대상 조건(DEPARTMENT)과 하위 부서 포함 판단에 사용</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{EA9F8DDF-2104-1409-EA22-1A7491A74594}+00000000" name="부서 ID">
+<AttributeProps>
+<Name>부서 ID</Name>
+<Type>0</Type>
+<Physical_Name>DEPARTMENT_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6E0F3753-6DEA-F7CF-A4D1-4D46D7862951}+00000000" name="상위 부서 ID">
+<AttributeProps>
+<Name>상위 부서 ID</Name>
+<Type>100</Type>
+<Physical_Name>PARENT_DEPARTMENT_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>상위 부서. 하위 포함 조건은 재귀 조회로 판단</Definition>
+<Comment>상위 부서. 하위 포함 조건은 재귀 조회로 판단</Comment>
+<Parent_Attribute_Ref>{EA9F8DDF-2104-1409-EA22-1A7491A74594}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{7CBA14CA-C8F3-0C91-40B0-180059FE6E61}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{EB5B2750-B100-FF9D-AFB0-5AABB1C20B7D}+00000000" name="부서명">
+<AttributeProps>
+<Name>부서명</Name>
+<Type>100</Type>
+<Physical_Name>DEPARTMENT_NAME</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4116E4A3-5003-C3BB-99E8-40FF522ABC6B}+00000000" name="부서 단계">
+<AttributeProps>
+<Name>부서 단계</Name>
+<Type>100</Type>
+<Physical_Name>DEPARTMENT_LEVEL</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{04CE9AD7-2B88-E338-0043-6AF749AF6B47}+00000000" name="정렬 순서">
+<AttributeProps>
+<Name>정렬 순서</Name>
+<Type>100</Type>
+<Physical_Name>SORT_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0CDECDC9-E79F-F684-9731-0B3E34ADEB58}+00000000" name="활성 여부">
+<AttributeProps>
+<Name>활성 여부</Name>
+<Type>100</Type>
+<Physical_Name>ACTIVE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{40B35CA9-FE5F-6D47-CD5D-95572EE974CE}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3D4E8B09-B804-3508-FC45-D2EFF8F5C9E9}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{F3B167E7-0BDB-B4FA-DCFE-8EF286999970}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4B1C5860-E54E-4633-7F0B-C4AE44B94C01}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{74624EEC-D1E8-FED7-5903-2D66D79B39D0}+00000000" name="PK_APP_DEPARTMENT">
+<Key_GroupProps>
+<Name>PK_APP_DEPARTMENT</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_APP_DEPARTMENT</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{4A96D70F-61D5-256E-1E67-2F325C5AB09A}+00000000" name="부서 ID">
+<Key_Group_MemberProps>
+<Name>부서 ID</Name>
+<Attribute_Ref>{EA9F8DDF-2104-1409-EA22-1A7491A74594}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{86B41E94-FCEB-2EB0-FB5B-6E74FD7AFB3A}+00000000" name="FK_DEPARTMENT_PARENT">
+<Key_GroupProps>
+<Name>FK_DEPARTMENT_PARENT</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_DEPARTMENT_PARENT</Physical_Name>
+<Relationship_Ref>{7CBA14CA-C8F3-0C91-40B0-180059FE6E61}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{228F3923-F776-E9D6-EBDE-B68130B3ABBD}+00000000" name="상위 부서 ID">
+<Key_Group_MemberProps>
+<Name>상위 부서 ID</Name>
+<Attribute_Ref>{6E0F3753-6DEA-F7CF-A4D1-4D46D7862951}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{4A96D70F-61D5-256E-1E67-2F325C5AB09A}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{080EE35B-DD95-8CEE-2E67-FAB4DEA4709A}+00000000" name="직급">
+<EntityProps>
+<Name>직급</Name>
+<Type>1</Type>
+<Physical_Name>APP_POSITION</Physical_Name>
+<Definition>직급 마스터. 팝업 대상 조건(POSITION)에 사용
+CONSTRAINT CK_POSITION_SORT_ORDER CHECK (SORT_ORDER &gt;= 0)
+CONSTRAINT CK_POSITION_ACTIVE     CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
+<Comment>직급 마스터. 팝업 대상 조건(POSITION)에 사용</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{FC5836CF-EC3E-0531-4A00-4A067E43DA9D}+00000000" name="직급 ID">
+<AttributeProps>
+<Name>직급 ID</Name>
+<Type>0</Type>
+<Physical_Name>POSITION_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{D3EB6A6F-C134-A4CE-AE2F-F43BBF6ED5AE}+00000000" name="직급명">
+<AttributeProps>
+<Name>직급명</Name>
+<Type>100</Type>
+<Physical_Name>POSITION_NAME</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9EF9C055-F9DE-9815-1D4C-AB82B9D58824}+00000000" name="정렬 순서">
+<AttributeProps>
+<Name>정렬 순서</Name>
+<Type>100</Type>
+<Physical_Name>SORT_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E861FABC-FD75-920F-143E-70A8601D87E9}+00000000" name="활성 여부">
+<AttributeProps>
+<Name>활성 여부</Name>
+<Type>100</Type>
+<Physical_Name>ACTIVE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1F4B239D-765C-C78C-B448-A9EAB03B3D9F}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1547C10C-669B-3331-594E-015178368BDA}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C2DE627F-94F7-2A5F-6456-A891A227B856}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9441B03E-C1D2-3675-F770-94A033D78321}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{BE775F3C-BBA5-F668-247F-065FA4B8EF47}+00000000" name="PK_APP_POSITION">
+<Key_GroupProps>
+<Name>PK_APP_POSITION</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_APP_POSITION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{17C31A55-5888-6F36-4BF5-7416E9FC4FE1}+00000000" name="직급 ID">
+<Key_Group_MemberProps>
+<Name>직급 ID</Name>
+<Attribute_Ref>{FC5836CF-EC3E-0531-4A00-4A067E43DA9D}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000" name="사용자">
+<EntityProps>
+<Name>사용자</Name>
+<Type>1</Type>
+<Physical_Name>APP_USER</Physical_Name>
+<Definition>사용자(사번) 마스터. WPF 토큰의 사번과 대상 계산의 기준 키
+CONSTRAINT CK_USER_ACTIVE CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
+<Comment>사용자(사번) 마스터. WPF 토큰의 사번과 대상 계산의 기준 키</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>0</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>사번. SSO가 반환하는 사용자 식별자와 일치해야 함</Definition>
+<Comment>사번. SSO가 반환하는 사용자 식별자와 일치해야 함</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7D631EEE-CC6D-BD74-B0CD-26BD84B13BA5}+00000000" name="직원명">
+<AttributeProps>
+<Name>직원명</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NAME</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{63E3DC15-E1E4-7C28-B0CE-3CFB1880A0CB}+00000000" name="부서 ID">
+<AttributeProps>
+<Name>부서 ID</Name>
+<Type>100</Type>
+<Physical_Name>DEPARTMENT_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{EA9F8DDF-2104-1409-EA22-1A7491A74594}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{7DD8A543-4AFA-7BCA-55CD-A4E0562FE3F2}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E6145D9B-4715-EA19-4B0E-E36944E5F8B4}+00000000" name="직급 ID">
+<AttributeProps>
+<Name>직급 ID</Name>
+<Type>100</Type>
+<Physical_Name>POSITION_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{FC5836CF-EC3E-0531-4A00-4A067E43DA9D}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{64BA0276-0308-95BC-25D6-B879A56479F3}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{625238B8-BD3C-4A01-5359-55279530D806}+00000000" name="활성 여부">
+<AttributeProps>
+<Name>활성 여부</Name>
+<Type>100</Type>
+<Physical_Name>ACTIVE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3953675C-8AF1-8E6A-2DD7-E55752380A9C}+00000000" name="입사일">
+<AttributeProps>
+<Name>입사일</Name>
+<Type>100</Type>
+<Physical_Name>HIRE_DATE</Physical_Name>
+<Physical_Data_Type>DATE</Physical_Data_Type>
+<Logical_Data_Type>DATE</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>입사일. 대상 조건 HIRE_DATE 비교 대상 (시각 없음)</Definition>
+<Comment>입사일. 대상 조건 HIRE_DATE 비교 대상 (시각 없음)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A6B40DC3-0B3B-58D1-06F8-637871256322}+00000000" name="최종 로그인 시각">
+<AttributeProps>
+<Name>최종 로그인 시각</Name>
+<Type>100</Type>
+<Physical_Name>LAST_LOGIN_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5A10C92E-11B3-69C4-988F-109F4412DB03}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{913F85F1-CA62-E64A-7AD8-CCB418FC5DCB}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6AC15D95-B393-F832-72C0-ECA3927BEC3F}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C7AAD326-4D58-0B4E-0988-197483EAAEA0}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000" name="PK_APP_USER">
+<Key_GroupProps>
+<Name>PK_APP_USER</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_APP_USER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{0498FE96-B185-1662-9766-E8F889016A2B}+00000000" name="FK_USER_DEPARTMENT">
+<Key_GroupProps>
+<Name>FK_USER_DEPARTMENT</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_USER_DEPARTMENT</Physical_Name>
+<Relationship_Ref>{7DD8A543-4AFA-7BCA-55CD-A4E0562FE3F2}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{52A36737-29A4-4BF5-493B-73E6081E089C}+00000000" name="부서 ID">
+<Key_Group_MemberProps>
+<Name>부서 ID</Name>
+<Attribute_Ref>{63E3DC15-E1E4-7C28-B0CE-3CFB1880A0CB}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{4A96D70F-61D5-256E-1E67-2F325C5AB09A}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{9A401C88-18C0-3CB3-E4AD-CE4FC8D677B9}+00000000" name="FK_USER_POSITION">
+<Key_GroupProps>
+<Name>FK_USER_POSITION</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_USER_POSITION</Physical_Name>
+<Relationship_Ref>{64BA0276-0308-95BC-25D6-B879A56479F3}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{9556EF75-BA09-8964-086D-90F26608D1F5}+00000000" name="직급 ID">
+<Key_Group_MemberProps>
+<Name>직급 ID</Name>
+<Attribute_Ref>{E6145D9B-4715-EA19-4B0E-E36944E5F8B4}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{17C31A55-5888-6F36-4BF5-7416E9FC4FE1}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{F1384D3F-945C-0C88-2F17-69E4D7F082EC}+00000000" name="문항 템플릿">
+<EntityProps>
+<Name>문항 템플릿</Name>
+<Type>1</Type>
+<Physical_Name>QUESTION_TEMPLATE</Physical_Name>
+<Definition>재사용·버전 관리되는 문항 템플릿 (원본: Reusable and versioned question template)
+CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION &gt;= 1)
+CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N'))
+CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))</Definition>
+<Comment>재사용·버전 관리되는 문항 템플릿 (원본: Reusable and versioned question template)</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000" name="문항 템플릿 ID">
+<AttributeProps>
+<Name>문항 템플릿 ID</Name>
+<Type>0</Type>
+<Physical_Name>QUESTION_TEMPLATE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{08BFE70E-3339-5957-C27F-5EC2060E7325}+00000000" name="템플릿 그룹 ID">
+<AttributeProps>
+<Name>템플릿 그룹 ID</Name>
+<Type>100</Type>
+<Physical_Name>TEMPLATE_GROUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>템플릿 그룹. 원본 gen_random_uuid() → Oracle SUBSTR(RAWTOHEX(SYS_GUID()),1,30)</Definition>
+<Comment>템플릿 그룹. 원본 gen_random_uuid() → Oracle SUBSTR(RAWTOHEX(SYS_GUID()),1,30)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DEA3725F-E0CC-61F9-1F51-3BED8F8C6C20}+00000000" name="템플릿명">
+<AttributeProps>
+<Name>템플릿명</Name>
+<Type>100</Type>
+<Physical_Name>TEMPLATE_NAME</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{401454E7-C7B8-81C3-DED2-2E2039A3A116}+00000000" name="템플릿 유형">
+<AttributeProps>
+<Name>템플릿 유형</Name>
+<Type>100</Type>
+<Physical_Name>TEMPLATE_TYPE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A78A5EBE-CA4C-7FDF-5E66-01CC753B2DBA}+00000000" name="템플릿 버전">
+<AttributeProps>
+<Name>템플릿 버전</Name>
+<Type>100</Type>
+<Physical_Name>TEMPLATE_VERSION</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9BB919CC-BB6B-250D-86F3-B6E59B5B4295}+00000000" name="현재 버전 여부">
+<AttributeProps>
+<Name>현재 버전 여부</Name>
+<Type>100</Type>
+<Physical_Name>CURRENT_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BCA56DE7-EFD8-FBA0-D212-FFAC0B18C3D2}+00000000" name="활성 여부">
+<AttributeProps>
+<Name>활성 여부</Name>
+<Type>100</Type>
+<Physical_Name>ACTIVE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{62780D53-3828-578E-23A1-C03CFD8BF544}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7E38B659-7606-CA08-A105-06EEE77A23CB}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BB5DAAEE-7230-DED8-C72D-0399CA3106C0}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{911AA3D6-1E60-38A0-BFF4-BE4C0F229D22}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{E69C3B6A-5A16-2B62-0172-9458901FF9AF}+00000000" name="PK_QUESTION_TEMPLATE">
+<Key_GroupProps>
+<Name>PK_QUESTION_TEMPLATE</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_QUESTION_TEMPLATE</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{E73C0F70-C070-F27B-AFDB-478FE4B6175E}+00000000" name="문항 템플릿 ID">
+<Key_Group_MemberProps>
+<Name>문항 템플릿 ID</Name>
+<Attribute_Ref>{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{987F6D69-B41E-AEB9-D947-91BEE65FC26C}+00000000" name="UK_QTEMPLATE_GROUP_VERSION">
+<Key_GroupProps>
+<Name>UK_QTEMPLATE_GROUP_VERSION</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UK_QTEMPLATE_GROUP_VERSION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{9CEF8786-3B6A-423A-FFDE-CC1B2C2F1268}+00000000" name="템플릿 그룹 ID">
+<Key_Group_MemberProps>
+<Name>템플릿 그룹 ID</Name>
+<Attribute_Ref>{08BFE70E-3339-5957-C27F-5EC2060E7325}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{3E8E44CC-1432-5D8F-0353-BDD5A0D9A079}+00000000" name="템플릿 버전">
+<Key_Group_MemberProps>
+<Name>템플릿 버전</Name>
+<Attribute_Ref>{A78A5EBE-CA4C-7FDF-5E66-01CC753B2DBA}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000" name="팝업 공지">
+<EntityProps>
+<Name>팝업 공지</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_NOTICE</Physical_Name>
+<Definition>팝업 공통 설정. WPF 목록 응답의 평면 필드 원본
+CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER &gt;= 1)
+CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT &gt;= DISPLAY_START_AT)
+CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL)
+CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL &gt;= 1)
+CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31)
+CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS &gt;= 1)
+CONSTRAINT CK_POPUP_COMPLETION_RATIO CHECK (COMPLETION_RATIO IS NULL OR COMPLETION_RATIO BETWEEN 0 AND 1)
+CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE &gt;= 0)
+CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO &gt; 0)
+CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO &gt; 0)
+CONSTRAINT CK_POPUP_YN_VALUES CHECK
+        (SHOW_ON_LOGIN_YN IN ('Y', 'N')
+         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')
+         AND ACTIVE_YN IN ('Y', 'N')
+         AND SHOW_HEADER_YN IN ('Y', 'N')
+         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')
+         AND SHOW_FOOTER_YN IN ('Y', 'N')
+         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')
+         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))</Definition>
+<Comment>팝업 공통 설정. WPF 목록 응답의 평면 필드 원본</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>0</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0E7784B9-9408-A2A3-0645-3A14EA42ED22}+00000000" name="문항 템플릿 ID">
+<AttributeProps>
+<Name>문항 템플릿 ID</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_TEMPLATE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{42D0A986-F25D-9EFF-2793-E21AD6A9492C}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E3E7C440-CE64-91FF-D98F-0EB30552A8EA}+00000000" name="팝업 유형">
+<AttributeProps>
+<Name>팝업 유형</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_TYPE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>TEXT / IMAGE / VIDEO / SURVEY / QUIZ</Definition>
+<Comment>TEXT / IMAGE / VIDEO / SURVEY / QUIZ</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5A552BA3-A15E-1A3E-F2DB-729570C77B98}+00000000" name="제목">
+<AttributeProps>
+<Name>제목</Name>
+<Type>100</Type>
+<Physical_Name>TITLE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(200 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(200 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A8C330D5-6837-0B42-169B-6BEC51EC706B}+00000000" name="로그인 시 표시 여부">
+<AttributeProps>
+<Name>로그인 시 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_ON_LOGIN_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3704B80E-D572-0C3B-8B29-D54FA93617A9}+00000000" name="예약 표시 여부">
+<AttributeProps>
+<Name>예약 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_ON_SCHEDULE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{83FB2C37-4983-EAA9-DF60-146060806400}+00000000" name="예약 시각">
+<AttributeProps>
+<Name>예약 시각</Name>
+<Type>100</Type>
+<Physical_Name>SCHEDULED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{412F4364-0F6C-C985-208F-78666AE32BD4}+00000000" name="표시 시작 시각">
+<AttributeProps>
+<Name>표시 시작 시각</Name>
+<Type>100</Type>
+<Physical_Name>DISPLAY_START_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2940131C-FCF9-286C-8A11-68DFC05E091F}+00000000" name="표시 종료 시각">
+<AttributeProps>
+<Name>표시 종료 시각</Name>
+<Type>100</Type>
+<Physical_Name>DISPLAY_END_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6D7D6A75-B458-404A-5692-04D27F2C4840}+00000000" name="표시 방식">
+<AttributeProps>
+<Name>표시 방식</Name>
+<Type>100</Type>
+<Physical_Name>DISPLAY_MODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>SEQUENTIAL / SIMULTANEOUS</Definition>
+<Comment>SEQUENTIAL / SIMULTANEOUS</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{786D0361-59C6-3DAE-7A18-5FDFC7289E42}+00000000" name="표시 순서">
+<AttributeProps>
+<Name>표시 순서</Name>
+<Type>100</Type>
+<Physical_Name>DISPLAY_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>DEFAULT 100</Definition>
+<Comment>DEFAULT 100</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{72BBD5D5-D777-7A56-906F-8CF7FF2C5A5F}+00000000" name="기간 방식">
+<AttributeProps>
+<Name>기간 방식</Name>
+<Type>100</Type>
+<Physical_Name>PERIOD_MODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>기간/반복 모드. 반복 정책은 미확정으로 값만 보존</Definition>
+<Comment>기간/반복 모드. 반복 정책은 미확정으로 값만 보존</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{79D4AFAB-F77D-0425-0EF0-6BA7D503464D}+00000000" name="반복 간격">
+<AttributeProps>
+<Name>반복 간격</Name>
+<Type>100</Type>
+<Physical_Name>REPEAT_INTERVAL</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{93DFD5B1-1429-A48B-9E92-880A8767F3A9}+00000000" name="반복 요일">
+<AttributeProps>
+<Name>반복 요일</Name>
+<Type>100</Type>
+<Physical_Name>REPEAT_DAY_OF_WEEK</Physical_Name>
+<Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6D4E5DE0-3EC5-CC12-DC85-42AE333D1463}+00000000" name="반복 일자">
+<AttributeProps>
+<Name>반복 일자</Name>
+<Type>100</Type>
+<Physical_Name>REPEAT_DAY_OF_MONTH</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{130416E3-DF89-14DB-A1E7-7B1FF2BD4BF2}+00000000" name="활성 여부">
+<AttributeProps>
+<Name>활성 여부</Name>
+<Type>100</Type>
+<Physical_Name>ACTIVE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E53C54A6-E155-F545-F10D-F3D465F5D69B}+00000000" name="크기 방식">
+<AttributeProps>
+<Name>크기 방식</Name>
+<Type>100</Type>
+<Physical_Name>SIZE_MODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>16</Attribute_Order>
+<Column_Order>16</Column_Order>
+<Definition>FIXED / RATIO / FULLSCREEN</Definition>
+<Comment>FIXED / RATIO / FULLSCREEN</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BF289A79-E3E3-7009-E64B-D58CEF7DB5B4}+00000000" name="팝업 너비">
+<AttributeProps>
+<Name>팝업 너비</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_WIDTH</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>17</Attribute_Order>
+<Column_Order>17</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7881C753-DF66-D7B4-E103-EDFCE2E88AA8}+00000000" name="팝업 높이">
+<AttributeProps>
+<Name>팝업 높이</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_HEIGHT</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>18</Attribute_Order>
+<Column_Order>18</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A80BB9C6-6305-682F-9DA1-AC267D2CAA5A}+00000000" name="너비 비율">
+<AttributeProps>
+<Name>너비 비율</Name>
+<Type>100</Type>
+<Physical_Name>WIDTH_RATIO</Physical_Name>
+<Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>19</Attribute_Order>
+<Column_Order>19</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{58898AF5-5A3C-A95A-452C-EE9B2A43E7F0}+00000000" name="높이 비율">
+<AttributeProps>
+<Name>높이 비율</Name>
+<Type>100</Type>
+<Physical_Name>HEIGHT_RATIO</Physical_Name>
+<Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>20</Attribute_Order>
+<Column_Order>20</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4BBDE426-B448-3186-DA93-2706057238D6}+00000000" name="최소 너비">
+<AttributeProps>
+<Name>최소 너비</Name>
+<Type>100</Type>
+<Physical_Name>MINIMUM_WIDTH</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>21</Attribute_Order>
+<Column_Order>21</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{ECEB9F83-6E82-D65F-CDC3-B2DEA9F67E9C}+00000000" name="최소 높이">
+<AttributeProps>
+<Name>최소 높이</Name>
+<Type>100</Type>
+<Physical_Name>MINIMUM_HEIGHT</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>22</Attribute_Order>
+<Column_Order>22</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BD08416A-DC3F-CBA5-D8BD-02D2A6B41446}+00000000" name="최대 너비">
+<AttributeProps>
+<Name>최대 너비</Name>
+<Type>100</Type>
+<Physical_Name>MAXIMUM_WIDTH</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>23</Attribute_Order>
+<Column_Order>23</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0FD272EA-A9A1-A1BD-D130-EE7DFA547C30}+00000000" name="최대 높이">
+<AttributeProps>
+<Name>최대 높이</Name>
+<Type>100</Type>
+<Physical_Name>MAXIMUM_HEIGHT</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>24</Attribute_Order>
+<Column_Order>24</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{82D718D9-6F1E-5839-D849-9B8007200524}+00000000" name="머리글 표시 여부">
+<AttributeProps>
+<Name>머리글 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_HEADER_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>25</Attribute_Order>
+<Column_Order>25</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BEEDFC8B-31BE-BC19-19FC-1B627E263992}+00000000" name="닫기 버튼 표시 여부">
+<AttributeProps>
+<Name>닫기 버튼 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_CLOSE_BUTTON_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>26</Attribute_Order>
+<Column_Order>26</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{B7DF18AE-AA99-EB9E-C3B8-E09B548871FD}+00000000" name="바닥글 표시 여부">
+<AttributeProps>
+<Name>바닥글 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_FOOTER_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>27</Attribute_Order>
+<Column_Order>27</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C2FDDC89-355A-12A2-25DE-140DC0E2C6A6}+00000000" name="다시 보지 않기 표시 여부">
+<AttributeProps>
+<Name>다시 보지 않기 표시 여부</Name>
+<Type>100</Type>
+<Physical_Name>SHOW_DO_NOT_SHOW_AGAIN_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>28</Attribute_Order>
+<Column_Order>28</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9500D4F8-384F-2E0E-8E07-DE6C11C09C17}+00000000" name="숨김 일수">
+<AttributeProps>
+<Name>숨김 일수</Name>
+<Type>100</Type>
+<Physical_Name>HIDE_DAYS</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>29</Attribute_Order>
+<Column_Order>29</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{33507A90-D6A4-F86F-B08F-0CCCA5503F3D}+00000000" name="완료 기준 비율">
+<AttributeProps>
+<Name>완료 기준 비율</Name>
+<Type>100</Type>
+<Physical_Name>COMPLETION_RATIO</Physical_Name>
+<Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>30</Attribute_Order>
+<Column_Order>30</Column_Order>
+<Definition>VIDEO 완료 기준 시청 비율 0~1. NULL이면 1.0</Definition>
+<Comment>VIDEO 완료 기준 시청 비율 0~1. NULL이면 1.0</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2F7902E1-C56B-D357-7935-0B3C3E577492}+00000000" name="통과 점수">
+<AttributeProps>
+<Name>통과 점수</Name>
+<Type>100</Type>
+<Physical_Name>PASSING_SCORE</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>31</Attribute_Order>
+<Column_Order>31</Column_Order>
+<Definition>QUIZ 통과 점수. WPF 응답에는 내려주지 않음</Definition>
+<Comment>QUIZ 통과 점수. WPF 응답에는 내려주지 않음</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{01996AB4-ACB0-1A37-9AD4-1643E4EB0C95}+00000000" name="완료 전 닫기 허용 여부">
+<AttributeProps>
+<Name>완료 전 닫기 허용 여부</Name>
+<Type>100</Type>
+<Physical_Name>ALLOW_CLOSE_BEFORE_COMPLETE_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>32</Attribute_Order>
+<Column_Order>32</Column_Order>
+<Definition>DEFAULT 'Y'</Definition>
+<Comment>DEFAULT 'Y'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E4D74411-CFBC-F1BA-6A5B-4F03EFA6ACA3}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>33</Attribute_Order>
+<Column_Order>33</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DFC844B8-1D4C-BD62-8DE2-5D4EDA9248D3}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>34</Attribute_Order>
+<Column_Order>34</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4DAE7421-D7D3-1E82-6A02-AEA6C15C979E}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>35</Attribute_Order>
+<Column_Order>35</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{78439E5E-BA9F-6F25-3B6E-35DBAE28884A}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>36</Attribute_Order>
+<Column_Order>36</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000" name="PK_POPUP_NOTICE">
+<Key_GroupProps>
+<Name>PK_POPUP_NOTICE</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_NOTICE</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{C70770B2-A28A-0C45-2C44-C0A990513095}+00000000" name="FK_POPUP_QUESTION_TEMPLATE">
+<Key_GroupProps>
+<Name>FK_POPUP_QUESTION_TEMPLATE</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_POPUP_QUESTION_TEMPLATE</Physical_Name>
+<Relationship_Ref>{42D0A986-F25D-9EFF-2793-E21AD6A9492C}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{68088B90-CA46-DBAC-E19D-CD9AE866ACAC}+00000000" name="문항 템플릿 ID">
+<Key_Group_MemberProps>
+<Name>문항 템플릿 ID</Name>
+<Attribute_Ref>{0E7784B9-9408-A2A3-0645-3A14EA42ED22}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{E73C0F70-C070-F27B-AFDB-478FE4B6175E}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{837D904B-E715-FF22-0DB6-84BF8371C180}+00000000" name="팝업 콘텐츠">
+<EntityProps>
+<Name>팝업 콘텐츠</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_CONTENT</Physical_Name>
+<Definition>유형별 콘텐츠. 제목·설명·본문·미디어URL은 정규 컬럼, 나머지 옵션은 CONTENT_OPTIONS JSON</Definition>
+<Comment>유형별 콘텐츠. 제목·설명·본문·미디어URL은 정규 컬럼, 나머지 옵션은 CONTENT_OPTIONS JSON</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{2A85A562-0D73-6AD8-6428-DA60D715F876}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>0</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{B7DC4740-B08D-F172-5E9D-39B1585DC53C}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C9F832D7-4606-612B-D800-1EE28EDE992F}+00000000" name="콘텐츠 제목">
+<AttributeProps>
+<Name>콘텐츠 제목</Name>
+<Type>100</Type>
+<Physical_Name>CONTENT_TITLE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(200 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(200 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{20BA8991-9406-E07F-6D23-91DB28CBD0B5}+00000000" name="설명">
+<AttributeProps>
+<Name>설명</Name>
+<Type>100</Type>
+<Physical_Name>DESCRIPTION</Physical_Name>
+<Physical_Data_Type>VARCHAR2(2000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(2000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{07E4D5B7-B796-1137-99FE-C84FB13A99E9}+00000000" name="콘텐츠 본문">
+<AttributeProps>
+<Name>콘텐츠 본문</Name>
+<Type>100</Type>
+<Physical_Name>CONTENT_BODY</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>TEXT 유형 plainText 본문 (원본 TEXT → CLOB)</Definition>
+<Comment>TEXT 유형 plainText 본문 (원본 TEXT → CLOB)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8FE1EDAD-BD72-9370-9869-6BB377A2F8F7}+00000000" name="미디어 URL">
+<AttributeProps>
+<Name>미디어 URL</Name>
+<Type>100</Type>
+<Physical_Name>MEDIA_URL</Physical_Name>
+<Physical_Data_Type>VARCHAR2(2000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(2000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{34794C34-7ABA-680A-F921-B8BFDA8B9F82}+00000000" name="연결 URL">
+<AttributeProps>
+<Name>연결 URL</Name>
+<Type>100</Type>
+<Physical_Name>LINK_URL</Physical_Name>
+<Physical_Data_Type>VARCHAR2(2000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(2000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2A536853-689D-DFD9-D648-9D23450B75C0}+00000000" name="콘텐츠 옵션 JSON">
+<AttributeProps>
+<Name>콘텐츠 옵션 JSON</Name>
+<Type>100</Type>
+<Physical_Name>CONTENT_OPTIONS</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>확장 옵션 JSON (원본 JSONB → CLOB, 11g 호환으로 IS JSON 체크 없음). content 조립은 Java에서 수행</Definition>
+<Comment>확장 옵션 JSON (원본 JSONB → CLOB, 11g 호환으로 IS JSON 체크 없음). content 조립은 Java에서 수행</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3E1A70DF-9173-400C-CE75-53AD3023D5B6}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{82E084C3-EB5C-C398-D2B5-A06768BDDFE8}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3357EDC0-3718-F404-E1DD-9374A711180F}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{76C6A85C-3D5B-607C-EB36-77B51892B23F}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{0F4D256A-FFBE-17FF-5E34-C9FFDBD0E276}+00000000" name="PK_POPUP_CONTENT">
+<Key_GroupProps>
+<Name>PK_POPUP_CONTENT</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_CONTENT</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{3AA72AF1-A1F3-18FC-926F-ACE25879A785}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{2A85A562-0D73-6AD8-6428-DA60D715F876}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{5B32B1E2-3E8C-BF83-CEE0-533F6F49AA8E}+00000000" name="FK_CONTENT_POPUP">
+<Key_GroupProps>
+<Name>FK_CONTENT_POPUP</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_CONTENT_POPUP</Physical_Name>
+<Relationship_Ref>{B7DC4740-B08D-F172-5E9D-39B1585DC53C}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{EE6AB296-AA24-1424-D087-C5CFB8A18D8C}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{2A85A562-0D73-6AD8-6428-DA60D715F876}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{AE5C9299-8044-13EB-B4D5-73E74BB8EB68}+00000000" name="팝업 대상 그룹">
+<EntityProps>
+<Name>팝업 대상 그룹</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_TARGET_GROUP</Physical_Name>
+<Definition>노출 대상 그룹. 그룹 간 OR
+CONSTRAINT CK_TARGET_GROUP_ORDER CHECK (GROUP_ORDER &gt;= 1)</Definition>
+<Comment>노출 대상 그룹. 그룹 간 OR</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{27FAA259-025D-588B-4D1F-B994DEA9F566}+00000000" name="대상 그룹 ID">
+<AttributeProps>
+<Name>대상 그룹 ID</Name>
+<Type>0</Type>
+<Physical_Name>TARGET_GROUP_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4DAF377E-828B-9EB7-70D5-1A2808C4EF64}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{777EFB72-EDC8-CB05-2CE9-F2E9C8CC7292}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{162E555A-8014-22AE-D383-616BD5D3A76E}+00000000" name="대상명">
+<AttributeProps>
+<Name>대상명</Name>
+<Type>100</Type>
+<Physical_Name>TARGET_NAME</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7547C8AE-0294-170A-291A-28A96D8F4AF2}+00000000" name="대상 설명">
+<AttributeProps>
+<Name>대상 설명</Name>
+<Type>100</Type>
+<Physical_Name>TARGET_DESCRIPTION</Physical_Name>
+<Physical_Data_Type>VARCHAR2(500 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(500 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6A0BD0CF-630E-6492-74B8-6F20CE30A6E7}+00000000" name="그룹 순서">
+<AttributeProps>
+<Name>그룹 순서</Name>
+<Type>100</Type>
+<Physical_Name>GROUP_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{88E1492E-941B-CA9A-EDE9-60D1E1EB80E8}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{491147AD-01A1-3780-DFE9-DE47B29A1183}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{B539A8ED-0731-AF8D-6436-D78AF6165DF4}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{EE79A051-FC69-8073-8B6A-568996A751C3}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{EAB4875D-5B0B-B05A-92F8-FAFF42E045BB}+00000000" name="PK_POPUP_TARGET_GROUP">
+<Key_GroupProps>
+<Name>PK_POPUP_TARGET_GROUP</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_TARGET_GROUP</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{1AE9236D-49E8-C4E1-4CAA-E2F02FDC7AF5}+00000000" name="대상 그룹 ID">
+<Key_Group_MemberProps>
+<Name>대상 그룹 ID</Name>
+<Attribute_Ref>{27FAA259-025D-588B-4D1F-B994DEA9F566}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{EC896418-47D5-396E-8177-76BEF4FAB632}+00000000" name="FK_TARGET_GROUP_POPUP">
+<Key_GroupProps>
+<Name>FK_TARGET_GROUP_POPUP</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_TARGET_GROUP_POPUP</Physical_Name>
+<Relationship_Ref>{777EFB72-EDC8-CB05-2CE9-F2E9C8CC7292}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{491E998F-B7E7-2921-0E76-CA1E32D2729A}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{4DAF377E-828B-9EB7-70D5-1A2808C4EF64}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{0EF07458-6808-A40E-DF69-C97EBD88CE11}+00000000" name="UQ_TARGET_GROUP_ORDER">
+<Key_GroupProps>
+<Name>UQ_TARGET_GROUP_ORDER</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_TARGET_GROUP_ORDER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{44FCDCB2-FF05-5563-733C-50459E7F3228}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{4DAF377E-828B-9EB7-70D5-1A2808C4EF64}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{E0B317D3-2252-7AF6-BE54-75F0A10C1305}+00000000" name="그룹 순서">
+<Key_Group_MemberProps>
+<Name>그룹 순서</Name>
+<Attribute_Ref>{6A0BD0CF-630E-6492-74B8-6F20CE30A6E7}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{18F207E7-9D4B-0D57-661E-C62A9B9D929E}+00000000" name="팝업 대상 조건">
+<EntityProps>
+<Name>팝업 대상 조건</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_TARGET_CONDITION</Physical_Name>
+<Definition>노출 대상 조건. 같은 그룹 내 AND. 유형별 값 컬럼 중 정확히 1개만 사용
+CONSTRAINT CK_TARGET_CONDITION_ORDER CHECK (CONDITION_ORDER &gt;= 1)
+CONSTRAINT CK_TCOND_INCLUDE_CHILD CHECK (INCLUDE_CHILD_YN IN ('Y', 'N'))
+CONSTRAINT CK_TARGET_CONDITION_OPERATOR CHECK (CONDITION_OPERATOR IN ('=', '!=', '&lt;', '&lt;=', '&gt;', '&gt;='))
+CONSTRAINT CK_TARGET_CONDITION_VALUE CHECK
+    (
+        (CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END
+       + CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END
+       + CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END
+       + CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END) = 1
+        AND
+        (CASE CONDITION_TYPE
+            WHEN 'DEPARTMENT' THEN CASE WHEN DEPARTMENT_ID        IS NOT NULL THEN 1 ELSE 0 END
+            WHEN 'POSITION'   THEN CASE WHEN POSITION_ID          IS NOT NULL THEN 1 ELSE 0 END
+            WHEN 'EMPLOYEE'   THEN CASE WHEN EMPLOYEE_NO          IS NOT NULL THEN 1 ELSE 0 END
+            WHEN 'HIRE_DATE'  THEN CASE WHEN CONDITION_DATE_VALUE IS NOT NULL THEN 1 ELSE 0 END
+            ELSE 0
+         END) = 1
+    )
+CONSTRAINT CK_TCOND_CHILD_DEPARTMENT CHECK (INCLUDE_CHILD_YN = 'N' OR CONDITION_TYPE = 'DEPARTMENT')</Definition>
+<Comment>노출 대상 조건. 같은 그룹 내 AND. 유형별 값 컬럼 중 정확히 1개만 사용</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{F43E699D-6F07-6D3E-EC1A-788EF78C321A}+00000000" name="대상 조건 ID">
+<AttributeProps>
+<Name>대상 조건 ID</Name>
+<Type>0</Type>
+<Physical_Name>TARGET_CONDITION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1AC5A0CF-429F-D90C-D2AD-38D7BD97367C}+00000000" name="대상 그룹 ID">
+<AttributeProps>
+<Name>대상 그룹 ID</Name>
+<Type>100</Type>
+<Physical_Name>TARGET_GROUP_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{27FAA259-025D-588B-4D1F-B994DEA9F566}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{5804BF4B-4167-D273-F054-3A71DF8BEFBB}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8676F7B6-EEE6-73C8-2A57-A1DE2C41FCC5}+00000000" name="조건 유형">
+<AttributeProps>
+<Name>조건 유형</Name>
+<Type>100</Type>
+<Physical_Name>CONDITION_TYPE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>DEPARTMENT / POSITION / EMPLOYEE / HIRE_DATE</Definition>
+<Comment>DEPARTMENT / POSITION / EMPLOYEE / HIRE_DATE</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A24A842F-EDED-4F49-57BA-DB3F89285BA3}+00000000" name="조건 연산자">
+<AttributeProps>
+<Name>조건 연산자</Name>
+<Type>100</Type>
+<Physical_Name>CONDITION_OPERATOR</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{D3CA5EAA-33A6-695E-D403-F1B5EBEF96BE}+00000000" name="부서 ID">
+<AttributeProps>
+<Name>부서 ID</Name>
+<Type>100</Type>
+<Physical_Name>DEPARTMENT_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{EA9F8DDF-2104-1409-EA22-1A7491A74594}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{1448C99B-F2D0-FBAA-1313-4190CB06CA7E}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7E7AA323-C422-36B7-1393-D0B2F57643CF}+00000000" name="직급 ID">
+<AttributeProps>
+<Name>직급 ID</Name>
+<Type>100</Type>
+<Physical_Name>POSITION_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{FC5836CF-EC3E-0531-4A00-4A067E43DA9D}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{414F5BCE-BFA2-D926-EB9C-ECF668CF4022}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{11CA16DC-7507-6BA3-3751-54458AC0039A}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{0D0E756F-4D4F-C209-011D-7CCB63D5296A}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{B2A3DBA5-30C6-1DA2-72DF-13651AACBA1C}+00000000" name="조건 날짜">
+<AttributeProps>
+<Name>조건 날짜</Name>
+<Type>100</Type>
+<Physical_Name>CONDITION_DATE_VALUE</Physical_Name>
+<Physical_Data_Type>DATE</Physical_Data_Type>
+<Logical_Data_Type>DATE</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>CONDITION_TYPE이 HIRE_DATE일 때 비교 날짜</Definition>
+<Comment>CONDITION_TYPE이 HIRE_DATE일 때 비교 날짜</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A7370561-3FB9-B384-2DD2-DD27BDF2DAE0}+00000000" name="하위 부서 포함 여부">
+<AttributeProps>
+<Name>하위 부서 포함 여부</Name>
+<Type>100</Type>
+<Physical_Name>INCLUDE_CHILD_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{F4A6C9AA-6BAD-0148-F2B4-28D6F738C475}+00000000" name="조건 순서">
+<AttributeProps>
+<Name>조건 순서</Name>
+<Type>100</Type>
+<Physical_Name>CONDITION_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2DCF9AF8-D22D-9674-7241-80C84AD189C1}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{68F3F700-1CB3-DA5E-30A4-35E6FB49335A}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5AF9E9BE-4A55-3756-852E-74ADED04426E}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2637AECA-BEDD-85A4-756A-03D29597B61E}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{8C64279D-5267-C94B-4A0E-F881300516FF}+00000000" name="PK_POPUP_TARGET_CONDITION">
+<Key_GroupProps>
+<Name>PK_POPUP_TARGET_CONDITION</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_TARGET_CONDITION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{742DE114-B562-FB33-BD27-ADED3901E73B}+00000000" name="대상 조건 ID">
+<Key_Group_MemberProps>
+<Name>대상 조건 ID</Name>
+<Attribute_Ref>{F43E699D-6F07-6D3E-EC1A-788EF78C321A}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{02F618C1-E180-197B-7CDE-86726365B747}+00000000" name="FK_TARGET_CONDITION_GROUP">
+<Key_GroupProps>
+<Name>FK_TARGET_CONDITION_GROUP</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_TARGET_CONDITION_GROUP</Physical_Name>
+<Relationship_Ref>{5804BF4B-4167-D273-F054-3A71DF8BEFBB}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{1884AF9D-E968-B228-3963-61467500EF24}+00000000" name="대상 그룹 ID">
+<Key_Group_MemberProps>
+<Name>대상 그룹 ID</Name>
+<Attribute_Ref>{1AC5A0CF-429F-D90C-D2AD-38D7BD97367C}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{1AE9236D-49E8-C4E1-4CAA-E2F02FDC7AF5}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{6FBA206C-2C97-3E3F-1059-A60F0663D450}+00000000" name="FK_TARGET_CONDITION_DEPARTMENT">
+<Key_GroupProps>
+<Name>FK_TARGET_CONDITION_DEPARTMENT</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_TARGET_CONDITION_DEPARTMENT</Physical_Name>
+<Relationship_Ref>{1448C99B-F2D0-FBAA-1313-4190CB06CA7E}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{19DF6AAF-AC24-621A-953D-41300E5F34B6}+00000000" name="부서 ID">
+<Key_Group_MemberProps>
+<Name>부서 ID</Name>
+<Attribute_Ref>{D3CA5EAA-33A6-695E-D403-F1B5EBEF96BE}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{4A96D70F-61D5-256E-1E67-2F325C5AB09A}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{B8599354-BECB-7ED9-BB95-3BDE9126D9FD}+00000000" name="FK_TARGET_CONDITION_POSITION">
+<Key_GroupProps>
+<Name>FK_TARGET_CONDITION_POSITION</Name>
+<Key_Group_Type>IF3</Key_Group_Type>
+<Physical_Name>FK_TARGET_CONDITION_POSITION</Physical_Name>
+<Relationship_Ref>{414F5BCE-BFA2-D926-EB9C-ECF668CF4022}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{339025AC-A810-382E-EA6A-965BA705BB65}+00000000" name="직급 ID">
+<Key_Group_MemberProps>
+<Name>직급 ID</Name>
+<Attribute_Ref>{7E7AA323-C422-36B7-1393-D0B2F57643CF}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{17C31A55-5888-6F36-4BF5-7416E9FC4FE1}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{4F6411EF-446A-950C-9F8E-059DBF4601F8}+00000000" name="FK_TARGET_CONDITION_EMPLOYEE">
+<Key_GroupProps>
+<Name>FK_TARGET_CONDITION_EMPLOYEE</Name>
+<Key_Group_Type>IF4</Key_Group_Type>
+<Physical_Name>FK_TARGET_CONDITION_EMPLOYEE</Physical_Name>
+<Relationship_Ref>{0D0E756F-4D4F-C209-011D-7CCB63D5296A}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{F9D3A725-8C22-2F57-2ECF-A1DC9DDD8C35}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{11CA16DC-7507-6BA3-3751-54458AC0039A}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{147B6FD4-7E55-D58B-37A2-39164611C1FE}+00000000" name="UQ_TARGET_CONDITION_ORDER">
+<Key_GroupProps>
+<Name>UQ_TARGET_CONDITION_ORDER</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_TARGET_CONDITION_ORDER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{5657A31D-D46A-2BFE-483D-B3054064C0E6}+00000000" name="대상 그룹 ID">
+<Key_Group_MemberProps>
+<Name>대상 그룹 ID</Name>
+<Attribute_Ref>{1AC5A0CF-429F-D90C-D2AD-38D7BD97367C}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{2BB14BF3-2DBD-B2F0-D747-40A039E356FB}+00000000" name="조건 순서">
+<Key_Group_MemberProps>
+<Name>조건 순서</Name>
+<Attribute_Ref>{F4A6C9AA-6BAD-0148-F2B4-28D6F738C475}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{1C6F14C4-E412-132D-A657-64115D577730}+00000000" name="팝업 문항">
+<EntityProps>
+<Name>팝업 문항</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_QUESTION</Physical_Name>
+<Definition>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (기존 데이터 RATING5 허용)
+CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER &gt;= 1)
+CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS'))
+CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N'))
+CONSTRAINT CK_QUESTION_SCORE CHECK
+        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE &gt;= 0)
+         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))</Definition>
+<Comment>문항. QUESTION_TYPE: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (기존 데이터 RATING5 허용)</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{08D896AB-7937-4C49-421C-5963DC158014}+00000000" name="문항 ID">
+<AttributeProps>
+<Name>문항 ID</Name>
+<Type>0</Type>
+<Physical_Name>QUESTION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3D94158F-68C5-C0DF-00E8-A499154F3399}+00000000" name="문항 템플릿 ID">
+<AttributeProps>
+<Name>문항 템플릿 ID</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_TEMPLATE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{73B0A64B-D133-AC6C-CD19-CF9E8F5759DB}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{FA025DF1-A471-CFD3-5FF6-9994AD103378}+00000000" name="문항 유형">
+<AttributeProps>
+<Name>문항 유형</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_TYPE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5FA24D09-E762-0DA0-4A3E-3131E5A3D503}+00000000" name="문항 제목">
+<AttributeProps>
+<Name>문항 제목</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_TITLE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(1000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(1000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BEFAC62F-F513-1BF9-0C9B-EAD6CB46D657}+00000000" name="문항 설명">
+<AttributeProps>
+<Name>문항 설명</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_DESCRIPTION</Physical_Name>
+<Physical_Data_Type>VARCHAR2(2000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(2000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0C2D8771-6EFF-C430-9463-5B21B25C305A}+00000000" name="필수 여부">
+<AttributeProps>
+<Name>필수 여부</Name>
+<Type>100</Type>
+<Physical_Name>REQUIRED_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{F129B5EE-07D3-49D7-76A1-FC05CD67DE55}+00000000" name="채점 여부">
+<AttributeProps>
+<Name>채점 여부</Name>
+<Type>100</Type>
+<Physical_Name>SCORED_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9A488CF9-A690-F40F-0724-807B1E25CB8F}+00000000" name="문항 배점">
+<AttributeProps>
+<Name>문항 배점</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_SCORE</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E11D5192-5C58-E485-B461-CAA54959F37F}+00000000" name="정답">
+<AttributeProps>
+<Name>정답</Name>
+<Type>100</Type>
+<Physical_Name>CORRECT_ANSWER</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>서술형 정답(관리자 전용, WPF 응답 제외). 원본 TEXT → CLOB</Definition>
+<Comment>서술형 정답(관리자 전용, WPF 응답 제외). 원본 TEXT → CLOB</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2F53C7CB-0FC4-DBC2-2997-97AE52E75138}+00000000" name="정답 일치 방식">
+<AttributeProps>
+<Name>정답 일치 방식</Name>
+<Type>100</Type>
+<Physical_Name>ANSWER_MATCH_MODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{AF7DD24F-A809-2BCD-F0B1-9F36A1592124}+00000000" name="정렬 순서">
+<AttributeProps>
+<Name>정렬 순서</Name>
+<Type>100</Type>
+<Physical_Name>SORT_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{88CABDCB-382D-0956-B9C2-EF705B29F970}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DDB9F913-8258-FAF5-C05E-45639CA32E98}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{65F8A13C-6127-85F1-8993-F5C9246D86C1}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{D82747B1-DB1B-3828-5DCE-B954FF3BE457}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{FCCB855F-2335-A254-3D40-C21C9B76F8C9}+00000000" name="PK_POPUP_QUESTION">
+<Key_GroupProps>
+<Name>PK_POPUP_QUESTION</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_QUESTION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{E69E296D-247D-F07A-A6C7-B941CFD5D784}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{08D896AB-7937-4C49-421C-5963DC158014}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{BA7669B9-8ECF-50CD-DB49-66C5838AE860}+00000000" name="FK_QUESTION_TEMPLATE">
+<Key_GroupProps>
+<Name>FK_QUESTION_TEMPLATE</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_QUESTION_TEMPLATE</Physical_Name>
+<Relationship_Ref>{73B0A64B-D133-AC6C-CD19-CF9E8F5759DB}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{A25FB891-0064-25D4-401E-333E1539766F}+00000000" name="문항 템플릿 ID">
+<Key_Group_MemberProps>
+<Name>문항 템플릿 ID</Name>
+<Attribute_Ref>{3D94158F-68C5-C0DF-00E8-A499154F3399}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{E73C0F70-C070-F27B-AFDB-478FE4B6175E}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{12B88D0A-9078-D02E-DC31-459D0C4AA387}+00000000" name="UQ_QUESTION_SORT_ORDER">
+<Key_GroupProps>
+<Name>UQ_QUESTION_SORT_ORDER</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_QUESTION_SORT_ORDER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{14EAEEAD-614A-4610-3018-B15DC7885983}+00000000" name="문항 템플릿 ID">
+<Key_Group_MemberProps>
+<Name>문항 템플릿 ID</Name>
+<Attribute_Ref>{3D94158F-68C5-C0DF-00E8-A499154F3399}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{D78566CA-DBE9-0AC8-5B8D-8A12C5A1DEF7}+00000000" name="정렬 순서">
+<Key_Group_MemberProps>
+<Name>정렬 순서</Name>
+<Attribute_Ref>{AF7DD24F-A809-2BCD-F0B1-9F36A1592124}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{7AF0917B-8209-D149-2123-F979B28EB0CC}+00000000" name="팝업 선택지">
+<EntityProps>
+<Name>팝업 선택지</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_OPTION</Physical_Name>
+<Definition>선택지. CORRECT_YN은 관리자 전용, WPF 응답 제외
+CONSTRAINT CK_OPTION_SORT_ORDER CHECK (SORT_ORDER &gt;= 1)
+CONSTRAINT CK_OPTION_CORRECT    CHECK (CORRECT_YN IN ('Y', 'N'))</Definition>
+<Comment>선택지. CORRECT_YN은 관리자 전용, WPF 응답 제외</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{5AB54A32-1C9A-B3D9-9A74-CE8697CC1AC6}+00000000" name="선택지 ID">
+<AttributeProps>
+<Name>선택지 ID</Name>
+<Type>0</Type>
+<Physical_Name>OPTION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DCA31C38-6A5E-C511-C67A-121F0E4A1BFA}+00000000" name="문항 ID">
+<AttributeProps>
+<Name>문항 ID</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{08D896AB-7937-4C49-421C-5963DC158014}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{65D82489-CA35-A471-EAE1-873FBEEF32CA}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2232CF7A-DEF9-3C42-CB27-6CB15BCEE557}+00000000" name="선택지 값">
+<AttributeProps>
+<Name>선택지 값</Name>
+<Type>100</Type>
+<Physical_Name>OPTION_VALUE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(200 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(200 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E694723B-F303-153A-3C80-4AF7934F58FC}+00000000" name="선택지 내용">
+<AttributeProps>
+<Name>선택지 내용</Name>
+<Type>100</Type>
+<Physical_Name>OPTION_TEXT</Physical_Name>
+<Physical_Data_Type>VARCHAR2(1000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(1000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E79E2BE1-BF50-0EC4-503C-6159BE0DACF8}+00000000" name="정답 여부">
+<AttributeProps>
+<Name>정답 여부</Name>
+<Type>100</Type>
+<Physical_Name>CORRECT_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BE496701-CB74-28B7-5794-3AF1BDAF291A}+00000000" name="정렬 순서">
+<AttributeProps>
+<Name>정렬 순서</Name>
+<Type>100</Type>
+<Physical_Name>SORT_ORDER</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{B7073D92-57C3-8AAE-6686-DD45DEE79E70}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{29499302-10B1-E177-D214-AA0BAA154AC1}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7CAC260E-B1B5-9943-690A-F82631C84CE8}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BAD27F8E-0214-97BA-7FB7-242DEAA6DECB}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{FD6314C3-A367-E45C-1B40-70BBE594F270}+00000000" name="PK_POPUP_OPTION">
+<Key_GroupProps>
+<Name>PK_POPUP_OPTION</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_OPTION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{B45BAA1A-A31F-CD53-4E13-E199434186CC}+00000000" name="선택지 ID">
+<Key_Group_MemberProps>
+<Name>선택지 ID</Name>
+<Attribute_Ref>{5AB54A32-1C9A-B3D9-9A74-CE8697CC1AC6}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{E14A8058-83F1-0E08-AD3F-0E3CE2FC2E22}+00000000" name="FK_OPTION_QUESTION">
+<Key_GroupProps>
+<Name>FK_OPTION_QUESTION</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_OPTION_QUESTION</Physical_Name>
+<Relationship_Ref>{65D82489-CA35-A471-EAE1-873FBEEF32CA}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{15D68DED-E37A-47B4-F01A-BE44D562A653}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{DCA31C38-6A5E-C511-C67A-121F0E4A1BFA}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{E69E296D-247D-F07A-A6C7-B941CFD5D784}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{F89D3C1F-6E78-D337-D539-E850494A5FE4}+00000000" name="UQ_OPTION_VALUE">
+<Key_GroupProps>
+<Name>UQ_OPTION_VALUE</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_OPTION_VALUE</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{361F2D1D-A929-DF15-8B0C-C1D412864273}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{DCA31C38-6A5E-C511-C67A-121F0E4A1BFA}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{1C35AE38-CDF8-1D09-4068-B79DB721F2D4}+00000000" name="선택지 값">
+<Key_Group_MemberProps>
+<Name>선택지 값</Name>
+<Attribute_Ref>{2232CF7A-DEF9-3C42-CB27-6CB15BCEE557}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{B3334A08-89E3-FA36-61F9-E3DDB4F52623}+00000000" name="UQ_OPTION_SORT_ORDER">
+<Key_GroupProps>
+<Name>UQ_OPTION_SORT_ORDER</Name>
+<Key_Group_Type>AK2</Key_Group_Type>
+<Physical_Name>UQ_OPTION_SORT_ORDER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{2E91E033-5739-36AF-17A2-212748A4CACB}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{DCA31C38-6A5E-C511-C67A-121F0E4A1BFA}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{72D06526-4F60-4274-EFCC-1B6402B70453}+00000000" name="정렬 순서">
+<Key_Group_MemberProps>
+<Name>정렬 순서</Name>
+<Attribute_Ref>{BE496701-CB74-28B7-5794-3AF1BDAF291A}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{D7620605-2A98-C9CB-0EFF-85129B600AC5}+00000000" name="사용자 팝업 상태">
+<EntityProps>
+<Name>사용자 팝업 상태</Name>
+<Type>1</Type>
+<Physical_Name>USER_POPUP_STATUS</Physical_Name>
+<Definition>사용자×팝업 1행. WPF 결과 API가 종료 시점에 1회 갱신. 노출 계산의 숨김·완료 판단 원본
+CONSTRAINT CK_STATUS_DISPLAY_COUNT CHECK (DISPLAY_COUNT &gt;= 0)
+CONSTRAINT CK_STATUS_COMPLETED     CHECK (COMPLETED_YN IN ('Y', 'N'))
+CONSTRAINT CK_STATUS_HIDDEN_PERIOD CHECK
+        (HIDDEN_UNTIL_AT IS NULL OR HIDDEN_FROM_AT IS NULL OR HIDDEN_UNTIL_AT &gt;= HIDDEN_FROM_AT)</Definition>
+<Comment>사용자×팝업 1행. WPF 결과 API가 종료 시점에 1회 갱신. 노출 계산의 숨김·완료 판단 원본</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{86375E45-CA38-1873-32D1-8AF6D4FF5CD1}+00000000" name="사용자 팝업 상태 ID">
+<AttributeProps>
+<Name>사용자 팝업 상태 ID</Name>
+<Type>0</Type>
+<Physical_Name>USER_POPUP_STATUS_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4DF1170F-EFEA-A8AE-134E-84E8B119A31C}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{935AB811-2BDB-70E4-0AAE-562FD6F0F7AF}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{AD8CD461-B9A5-B456-3811-D592F010FEDB}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{360DA55B-18C7-2043-3806-11D775AB57AA}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A61C16E3-7762-7B40-C8A8-3C6235FA5F98}+00000000" name="팝업 상태">
+<AttributeProps>
+<Name>팝업 상태</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_STATUS</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>DISPLAYED / CLOSED / HIDDEN / SUBMITTED / COMPLETED</Definition>
+<Comment>DISPLAYED / CLOSED / HIDDEN / SUBMITTED / COMPLETED</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{98281DED-C880-6883-D606-E104184A790D}+00000000" name="최초 표시 시각">
+<AttributeProps>
+<Name>최초 표시 시각</Name>
+<Type>100</Type>
+<Physical_Name>FIRST_DISPLAYED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{FBD7E8DA-FE6C-2783-ECAB-881F55BAA9F4}+00000000" name="최종 표시 시각">
+<AttributeProps>
+<Name>최종 표시 시각</Name>
+<Type>100</Type>
+<Physical_Name>LAST_DISPLAYED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6ECA9291-5073-9D6D-04CF-476B360F1B8A}+00000000" name="표시 횟수">
+<AttributeProps>
+<Name>표시 횟수</Name>
+<Type>100</Type>
+<Physical_Name>DISPLAY_COUNT</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>DEFAULT 0</Definition>
+<Comment>DEFAULT 0</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9D4522BB-D6E5-09EB-564A-8BA14CC2A5BE}+00000000" name="닫은 시각">
+<AttributeProps>
+<Name>닫은 시각</Name>
+<Type>100</Type>
+<Physical_Name>CLOSED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1C83E5D6-F514-92E3-5ABE-317CAD21A735}+00000000" name="숨김 시작 시각">
+<AttributeProps>
+<Name>숨김 시작 시각</Name>
+<Type>100</Type>
+<Physical_Name>HIDDEN_FROM_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8656FB87-FA33-8974-D6CF-85062B783D81}+00000000" name="숨김 종료 시각">
+<AttributeProps>
+<Name>숨김 종료 시각</Name>
+<Type>100</Type>
+<Physical_Name>HIDDEN_UNTIL_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6B618179-D9A2-3563-EABB-9E3E3C759D66}+00000000" name="완료 여부">
+<AttributeProps>
+<Name>완료 여부</Name>
+<Type>100</Type>
+<Physical_Name>COMPLETED_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>Y이면 조회에서 제외 (SURVEY/QUIZ 통과/VIDEO 완료)
+DEFAULT 'N'</Definition>
+<Comment>Y이면 조회에서 제외 (SURVEY/QUIZ 통과/VIDEO 완료)
+DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0BEA3698-CF60-3D45-5AB3-BB811D4D7A98}+00000000" name="완료 시각">
+<AttributeProps>
+<Name>완료 시각</Name>
+<Type>100</Type>
+<Physical_Name>COMPLETED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7EBCD668-6502-6D40-92D3-E12F319B0726}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{608D5425-EF51-814B-50BA-BA99DBD4E242}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9C87FE1F-2F27-8011-0486-90B010C3F1BF}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{EB6FC877-B8A4-370E-9D64-3B996998768F}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{BADE6D5C-A99A-D59C-BDBD-9899D6365B70}+00000000" name="PK_USER_POPUP_STATUS">
+<Key_GroupProps>
+<Name>PK_USER_POPUP_STATUS</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_USER_POPUP_STATUS</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{D4B70861-D246-0F02-71EA-8C55D1CB53B5}+00000000" name="사용자 팝업 상태 ID">
+<Key_Group_MemberProps>
+<Name>사용자 팝업 상태 ID</Name>
+<Attribute_Ref>{86375E45-CA38-1873-32D1-8AF6D4FF5CD1}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{8AEB2D1F-4497-D01F-BE25-81C4EF90519D}+00000000" name="UQ_USER_POPUP_STATUS">
+<Key_GroupProps>
+<Name>UQ_USER_POPUP_STATUS</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_USER_POPUP_STATUS</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{FA75C3AF-1325-EBFC-81FB-D974A62B9A65}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{4DF1170F-EFEA-A8AE-134E-84E8B119A31C}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{DFFDB047-AB6A-3749-6771-8030BBFCFCBB}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{AD8CD461-B9A5-B456-3811-D592F010FEDB}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{A777BE29-D9F6-ACD0-4298-7BC3E564660F}+00000000" name="FK_STATUS_USER">
+<Key_GroupProps>
+<Name>FK_STATUS_USER</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_STATUS_USER</Physical_Name>
+<Relationship_Ref>{935AB811-2BDB-70E4-0AAE-562FD6F0F7AF}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{5CB0C405-0C1B-0340-D9C9-5ECD28644300}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{4DF1170F-EFEA-A8AE-134E-84E8B119A31C}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{1C3BA3F1-DD13-200D-EA8A-984DCB539324}+00000000" name="FK_STATUS_POPUP">
+<Key_GroupProps>
+<Name>FK_STATUS_POPUP</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_STATUS_POPUP</Physical_Name>
+<Relationship_Ref>{360DA55B-18C7-2043-3806-11D775AB57AA}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{BEAE8BE6-48D2-2249-C80C-444F659D3F74}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{AD8CD461-B9A5-B456-3811-D592F010FEDB}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{FE832FC9-10CD-690B-4C8B-40329775C3B6}+00000000" name="팝업 응답">
+<EntityProps>
+<Name>팝업 응답</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_RESPONSE</Physical_Name>
+<Definition>사용자×팝업 최신 응답 1건(원본 정책 유지). 재제출 시 MERGE 후 하위 답안 교체
+CONSTRAINT CK_RESPONSE_PASSED      CHECK (PASSED_YN IS NULL OR PASSED_YN IN ('Y', 'N'))
+CONSTRAINT CK_RESPONSE_TOTAL_SCORE CHECK (TOTAL_SCORE IS NULL OR TOTAL_SCORE &gt;= 0)</Definition>
+<Comment>사용자×팝업 최신 응답 1건(원본 정책 유지). 재제출 시 MERGE 후 하위 답안 교체</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{F2A7D35D-A715-2E3A-411C-AA756538FAC2}+00000000" name="응답 ID">
+<AttributeProps>
+<Name>응답 ID</Name>
+<Type>0</Type>
+<Physical_Name>RESPONSE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{66B223B1-8C5C-73FF-A0E6-5C91D79653F7}+00000000" name="클라이언트 요청 ID">
+<AttributeProps>
+<Name>클라이언트 요청 ID</Name>
+<Type>100</Type>
+<Physical_Name>CLIENT_REQUEST_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>WPF 결과 항목의 resultId를 저장</Definition>
+<Comment>WPF 결과 항목의 resultId를 저장</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{CBB6EA5B-AD38-3617-AF0B-377BBB3FDD48}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{4C9D7960-BC9A-A1FD-5A71-06B40980649E}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{FB7890C0-811A-F09A-376C-153708EBA646}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{24965583-C760-F3BB-1D1A-2277C7C4E727}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9F5C6294-30E7-20DB-E78D-C5898FAE6D7F}+00000000" name="문항 템플릿 ID">
+<AttributeProps>
+<Name>문항 템플릿 ID</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_TEMPLATE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{ADCA3CF6-2643-227B-92F9-A2AC92E091D0}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{4777D1B2-1868-36D0-BE8A-82F7A4F31105}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5B56673F-CE5A-8656-4FA3-809C6B71A634}+00000000" name="응답 상태">
+<AttributeProps>
+<Name>응답 상태</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_STATUS</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A6DBF38B-2F4B-796C-CD32-79627DD34B8A}+00000000" name="응답 시작 시각">
+<AttributeProps>
+<Name>응답 시작 시각</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_STARTED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{AE10EAE0-5978-48A6-D2B6-65D49BC624DB}+00000000" name="제출 시각">
+<AttributeProps>
+<Name>제출 시각</Name>
+<Type>100</Type>
+<Physical_Name>SUBMITTED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{5D1DC605-5320-2756-E0DC-A0CA6009414F}+00000000" name="수신 시각">
+<AttributeProps>
+<Name>수신 시각</Name>
+<Type>100</Type>
+<Physical_Name>RECEIVED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8EAD2F12-BE7C-0C14-7114-F9DBE1DDEE49}+00000000" name="총점">
+<AttributeProps>
+<Name>총점</Name>
+<Type>100</Type>
+<Physical_Name>TOTAL_SCORE</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>QUIZ만 사용. SURVEY는 NULL</Definition>
+<Comment>QUIZ만 사용. SURVEY는 NULL</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9DBB422C-000C-3C09-B9C1-AD5082C0058A}+00000000" name="통과 여부">
+<AttributeProps>
+<Name>통과 여부</Name>
+<Type>100</Type>
+<Physical_Name>PASSED_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1233C192-BEE9-5DD0-AF01-25FE2B94AE21}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{207F133D-DC9F-3C57-3B7F-8273C3A86655}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{3BCBB4A3-84A1-37CA-4BAA-96FE80B57A3A}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1A38E5DE-65CD-4AEB-9ABE-03C82EFD7A70}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{68FFC351-DA28-4B88-24FE-1E76E9D55A47}+00000000" name="PK_POPUP_RESPONSE">
+<Key_GroupProps>
+<Name>PK_POPUP_RESPONSE</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_RESPONSE</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{8A46D92C-EE23-A74E-15A3-84B805BC4879}+00000000" name="응답 ID">
+<Key_Group_MemberProps>
+<Name>응답 ID</Name>
+<Attribute_Ref>{F2A7D35D-A715-2E3A-411C-AA756538FAC2}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{8A9EAB42-021B-848C-2094-6BCFED6C2E6E}+00000000" name="UQ_RESPONSE_REQUEST">
+<Key_GroupProps>
+<Name>UQ_RESPONSE_REQUEST</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_RESPONSE_REQUEST</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{AE0DB64C-7DEB-3AFC-CC33-0664A0B47763}+00000000" name="클라이언트 요청 ID">
+<Key_Group_MemberProps>
+<Name>클라이언트 요청 ID</Name>
+<Attribute_Ref>{66B223B1-8C5C-73FF-A0E6-5C91D79653F7}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{5AB23DED-FC1F-47F0-F284-0F9C310491F2}+00000000" name="UQ_RESPONSE_USER_POPUP">
+<Key_GroupProps>
+<Name>UQ_RESPONSE_USER_POPUP</Name>
+<Key_Group_Type>AK2</Key_Group_Type>
+<Physical_Name>UQ_RESPONSE_USER_POPUP</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{67D09712-B929-205B-3661-7F641733811D}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{FB7890C0-811A-F09A-376C-153708EBA646}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{7641F80A-F855-3E95-8C3F-5D8BF4C4E3B7}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{CBB6EA5B-AD38-3617-AF0B-377BBB3FDD48}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{22A7DEDD-DF72-D16B-E070-8B91E1E49319}+00000000" name="FK_RESPONSE_POPUP">
+<Key_GroupProps>
+<Name>FK_RESPONSE_POPUP</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_RESPONSE_POPUP</Physical_Name>
+<Relationship_Ref>{4C9D7960-BC9A-A1FD-5A71-06B40980649E}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{EB822EFD-B09B-EA46-BE9F-BCB955E1F7C0}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{CBB6EA5B-AD38-3617-AF0B-377BBB3FDD48}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{9DF82640-DFA0-5FDF-94AB-51F939C6480C}+00000000" name="FK_RESPONSE_USER">
+<Key_GroupProps>
+<Name>FK_RESPONSE_USER</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_RESPONSE_USER</Physical_Name>
+<Relationship_Ref>{24965583-C760-F3BB-1D1A-2277C7C4E727}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{A57E4753-8112-9FAC-678E-C60FDF877A84}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{FB7890C0-811A-F09A-376C-153708EBA646}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{D289A79F-C17A-5A84-998D-C20A3D467A73}+00000000" name="FK_RESPONSE_QUESTION_TEMPLATE">
+<Key_GroupProps>
+<Name>FK_RESPONSE_QUESTION_TEMPLATE</Name>
+<Key_Group_Type>IF3</Key_Group_Type>
+<Physical_Name>FK_RESPONSE_QUESTION_TEMPLATE</Physical_Name>
+<Relationship_Ref>{4777D1B2-1868-36D0-BE8A-82F7A4F31105}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{795B6960-6E61-B4BD-A538-2875AE2094DC}+00000000" name="문항 템플릿 ID">
+<Key_Group_MemberProps>
+<Name>문항 템플릿 ID</Name>
+<Attribute_Ref>{9F5C6294-30E7-20DB-E78D-C5898FAE6D7F}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{E73C0F70-C070-F27B-AFDB-478FE4B6175E}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{73CF691C-24D2-8204-0DFD-49A5EFA05F86}+00000000" name="문항 답안">
+<EntityProps>
+<Name>문항 답안</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_RESPONSE_ANSWER</Physical_Name>
+<Definition>문항별 답안. 서술형은 TEXT_ANSWER, 선택형은 POPUP_RESPONSE_VALUE
+CONSTRAINT CK_ANSWER_EARNED_SCORE CHECK (EARNED_SCORE IS NULL OR EARNED_SCORE &gt;= 0)
+CONSTRAINT CK_ANSWER_CORRECT      CHECK (CORRECT_YN IS NULL OR CORRECT_YN IN ('Y', 'N'))</Definition>
+<Comment>문항별 답안. 서술형은 TEXT_ANSWER, 선택형은 POPUP_RESPONSE_VALUE</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{0EAB4849-5980-F919-BCAC-C890C43FA645}+00000000" name="문항 답안 ID">
+<AttributeProps>
+<Name>문항 답안 ID</Name>
+<Type>0</Type>
+<Physical_Name>RESPONSE_ANSWER_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{486DA5D2-6BE9-3442-AF9A-1A85E5B8CCCD}+00000000" name="응답 ID">
+<AttributeProps>
+<Name>응답 ID</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{F2A7D35D-A715-2E3A-411C-AA756538FAC2}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{A07AFA83-3082-AA87-976A-16E7482D9034}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{90C1E04D-4B42-9919-0F2A-DBDB24F1F516}+00000000" name="문항 ID">
+<AttributeProps>
+<Name>문항 ID</Name>
+<Type>100</Type>
+<Physical_Name>QUESTION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{08D896AB-7937-4C49-421C-5963DC158014}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{BF653A90-8ACA-6441-62EE-8E633EC2F9C4}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8FA59327-AF60-F138-D6AD-8DFAE7D1B564}+00000000" name="서술형 답안">
+<AttributeProps>
+<Name>서술형 답안</Name>
+<Type>100</Type>
+<Physical_Name>TEXT_ANSWER</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{AB5BE042-D822-0B4A-4C28-E3067F42566A}+00000000" name="획득 점수">
+<AttributeProps>
+<Name>획득 점수</Name>
+<Type>100</Type>
+<Physical_Name>EARNED_SCORE</Physical_Name>
+<Physical_Data_Type>NUMBER(10,2)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10,2)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C1EA8716-DE2C-A279-1DB5-A857851B6FE9}+00000000" name="정답 여부">
+<AttributeProps>
+<Name>정답 여부</Name>
+<Type>100</Type>
+<Physical_Name>CORRECT_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{BF264A35-C5AD-82A0-E828-E114373727CD}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7E853E0E-A544-9F38-934F-B872D51D74F1}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7134BF2E-9A9C-B4AC-8B3E-D91DB6817A7F}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2B5B2C60-8310-6D7C-0F6B-2FC95A40C358}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{C161BC25-A09B-7963-A513-D10FA0287C48}+00000000" name="PK_POPUP_RESPONSE_ANSWER">
+<Key_GroupProps>
+<Name>PK_POPUP_RESPONSE_ANSWER</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_RESPONSE_ANSWER</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{FE2A73C6-7473-E0CC-4621-BC80699436D0}+00000000" name="문항 답안 ID">
+<Key_Group_MemberProps>
+<Name>문항 답안 ID</Name>
+<Attribute_Ref>{0EAB4849-5980-F919-BCAC-C890C43FA645}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{4204B8FE-7D2F-107C-0C57-768F32C27BB8}+00000000" name="UQ_RESPONSE_QUESTION">
+<Key_GroupProps>
+<Name>UQ_RESPONSE_QUESTION</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_RESPONSE_QUESTION</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{44C0A67E-39F8-AF10-6632-57E3582AE1BB}+00000000" name="응답 ID">
+<Key_Group_MemberProps>
+<Name>응답 ID</Name>
+<Attribute_Ref>{486DA5D2-6BE9-3442-AF9A-1A85E5B8CCCD}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{F64DAE45-74C2-B225-B5D8-E9A8AFAE7B0B}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{90C1E04D-4B42-9919-0F2A-DBDB24F1F516}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{2F0B519D-97CB-4BE1-9D11-8D62F6F82742}+00000000" name="FK_ANSWER_RESPONSE">
+<Key_GroupProps>
+<Name>FK_ANSWER_RESPONSE</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_ANSWER_RESPONSE</Physical_Name>
+<Relationship_Ref>{A07AFA83-3082-AA87-976A-16E7482D9034}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{CC49B4F4-EADA-99C1-8A6D-65D03590A545}+00000000" name="응답 ID">
+<Key_Group_MemberProps>
+<Name>응답 ID</Name>
+<Attribute_Ref>{486DA5D2-6BE9-3442-AF9A-1A85E5B8CCCD}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{8A46D92C-EE23-A74E-15A3-84B805BC4879}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{EE272379-3D68-A624-94AB-13944854EE81}+00000000" name="FK_ANSWER_QUESTION">
+<Key_GroupProps>
+<Name>FK_ANSWER_QUESTION</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_ANSWER_QUESTION</Physical_Name>
+<Relationship_Ref>{BF653A90-8ACA-6441-62EE-8E633EC2F9C4}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{50226473-661D-0344-D61F-EB3B12F3DF98}+00000000" name="문항 ID">
+<Key_Group_MemberProps>
+<Name>문항 ID</Name>
+<Attribute_Ref>{90C1E04D-4B42-9919-0F2A-DBDB24F1F516}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{E69E296D-247D-F07A-A6C7-B941CFD5D784}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{4175465A-5049-D9F5-0755-5E7F357BD0F0}+00000000" name="선택 답안 값">
+<EntityProps>
+<Name>선택 답안 값</Name>
+<Type>1</Type>
+<Physical_Name>POPUP_RESPONSE_VALUE</Physical_Name>
+<Definition>선택형 답안의 선택지. 선택지 삭제 대비 SELECTED_VALUE를 함께 보관</Definition>
+<Comment>선택형 답안의 선택지. 선택지 삭제 대비 SELECTED_VALUE를 함께 보관</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{52EE38BF-12F0-F6EE-6D23-EA3C4F072189}+00000000" name="선택 답안 값 ID">
+<AttributeProps>
+<Name>선택 답안 값 ID</Name>
+<Type>0</Type>
+<Physical_Name>RESPONSE_VALUE_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{54442E08-4FED-5828-E667-22052BE99E5E}+00000000" name="문항 답안 ID">
+<AttributeProps>
+<Name>문항 답안 ID</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_ANSWER_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{0EAB4849-5980-F919-BCAC-C890C43FA645}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{61AF057D-E21C-92C4-628C-50839A1116EE}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{72A27591-176A-04A4-177F-A5EBF4F01393}+00000000" name="선택지 ID">
+<AttributeProps>
+<Name>선택지 ID</Name>
+<Type>100</Type>
+<Physical_Name>OPTION_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{5AB54A32-1C9A-B3D9-9A74-CE8697CC1AC6}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{445CF0A8-BD23-875B-E235-E3995C7BD6AB}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{09A57019-5431-31C8-8C7D-8F01B2FF1C5E}+00000000" name="선택 값">
+<AttributeProps>
+<Name>선택 값</Name>
+<Type>100</Type>
+<Physical_Name>SELECTED_VALUE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(200 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(200 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{4A69BACE-33F3-8FBA-6F67-3ECC43E0B8F1}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9D0A1E28-CCEB-23CA-B3E8-2552916221D8}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{8E63ACE0-B2F4-ADAE-3513-E2DDCF24299C}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{65A31E1D-6C65-E7AD-76E9-8A01C032A63B}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{7D0A81D5-2FD9-3C4A-8165-D88C1F09831B}+00000000" name="PK_POPUP_RESPONSE_VALUE">
+<Key_GroupProps>
+<Name>PK_POPUP_RESPONSE_VALUE</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_POPUP_RESPONSE_VALUE</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{710968A5-3D0A-60CA-C4C4-B27FFF9D1C3E}+00000000" name="선택 답안 값 ID">
+<Key_Group_MemberProps>
+<Name>선택 답안 값 ID</Name>
+<Attribute_Ref>{52EE38BF-12F0-F6EE-6D23-EA3C4F072189}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{8A93E150-0167-8251-D40A-95C2AABC3ADC}+00000000" name="FK_VALUE_ANSWER">
+<Key_GroupProps>
+<Name>FK_VALUE_ANSWER</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_VALUE_ANSWER</Physical_Name>
+<Relationship_Ref>{61AF057D-E21C-92C4-628C-50839A1116EE}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{69BC87BA-6934-7984-3A86-42598A15DF8A}+00000000" name="문항 답안 ID">
+<Key_Group_MemberProps>
+<Name>문항 답안 ID</Name>
+<Attribute_Ref>{54442E08-4FED-5828-E667-22052BE99E5E}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{FE2A73C6-7473-E0CC-4621-BC80699436D0}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{F770E0CE-E725-AFE1-AAC1-061EDA22F063}+00000000" name="FK_VALUE_OPTION">
+<Key_GroupProps>
+<Name>FK_VALUE_OPTION</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_VALUE_OPTION</Physical_Name>
+<Relationship_Ref>{445CF0A8-BD23-875B-E235-E3995C7BD6AB}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{A68C65D1-0918-278D-B60A-7C8BB5E38ED9}+00000000" name="선택지 ID">
+<Key_Group_MemberProps>
+<Name>선택지 ID</Name>
+<Attribute_Ref>{72A27591-176A-04A4-177F-A5EBF4F01393}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{B45BAA1A-A31F-CD53-4E13-E199434186CC}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{1D513899-38B5-6FCB-B21C-A4CF6384B04B}+00000000" name="영상 시청 상태">
+<EntityProps>
+<Name>영상 시청 상태</Name>
+<Type>1</Type>
+<Physical_Name>VIDEO_VIEW_STATUS</Physical_Name>
+<Definition>영상 시청 누적. 실시간 진행률 전송을 제거했으므로 팝업 종료 시 1회 MERGE(최대값 유지)
+CONSTRAINT CK_VIDEO_COMPLETED        CHECK (COMPLETED_YN IN ('Y', 'N'))
+CONSTRAINT CK_VIDEO_DURATION         CHECK (TOTAL_DURATION_SECONDS IS NULL OR TOTAL_DURATION_SECONDS &gt;= 0)
+CONSTRAINT CK_VIDEO_LAST_POSITION    CHECK (LAST_POSITION_SECONDS IS NULL OR LAST_POSITION_SECONDS &gt;= 0)
+CONSTRAINT CK_VIDEO_MAXIMUM_POSITION CHECK (MAXIMUM_POSITION_SECONDS IS NULL OR MAXIMUM_POSITION_SECONDS &gt;= 0)
+CONSTRAINT CK_VIDEO_WATCHED_SECONDS  CHECK (WATCHED_SECONDS IS NULL OR WATCHED_SECONDS &gt;= 0)
+CONSTRAINT CK_VIDEO_WATCHED_RATIO    CHECK (WATCHED_RATIO IS NULL OR WATCHED_RATIO BETWEEN 0 AND 1)</Definition>
+<Comment>영상 시청 누적. 실시간 진행률 전송을 제거했으므로 팝업 종료 시 1회 MERGE(최대값 유지)</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{D7BB4770-C104-75CF-102F-B9308DE8A3C8}+00000000" name="영상 시청 상태 ID">
+<AttributeProps>
+<Name>영상 시청 상태 ID</Name>
+<Type>0</Type>
+<Physical_Name>VIDEO_VIEW_STATUS_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C228066B-A5D1-78A0-A99E-94433CC51DB4}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{E820ACCE-6C81-B398-8223-32AC86622982}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{97651B6D-F133-AAA5-3FB9-D153E51F1C83}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{769EDB33-1D9A-7327-7DD9-1D2DC845E734}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0B3F7CCD-500F-B113-0428-B20CC178A866}+00000000" name="전체 영상 길이 초">
+<AttributeProps>
+<Name>전체 영상 길이 초</Name>
+<Type>100</Type>
+<Physical_Name>TOTAL_DURATION_SECONDS</Physical_Name>
+<Physical_Data_Type>NUMBER(12,3)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(12,3)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A9DB7174-5DDE-1E8E-0D7C-CE8E3C47C2E0}+00000000" name="최종 재생 위치 초">
+<AttributeProps>
+<Name>최종 재생 위치 초</Name>
+<Type>100</Type>
+<Physical_Name>LAST_POSITION_SECONDS</Physical_Name>
+<Physical_Data_Type>NUMBER(12,3)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(12,3)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DE5C57B5-6527-C6AD-5670-3EA097B6CBC8}+00000000" name="최대 재생 위치 초">
+<AttributeProps>
+<Name>최대 재생 위치 초</Name>
+<Type>100</Type>
+<Physical_Name>MAXIMUM_POSITION_SECONDS</Physical_Name>
+<Physical_Data_Type>NUMBER(12,3)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(12,3)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1A551521-F9FB-86A3-24C8-637052360699}+00000000" name="시청 시간 초">
+<AttributeProps>
+<Name>시청 시간 초</Name>
+<Type>100</Type>
+<Physical_Name>WATCHED_SECONDS</Physical_Name>
+<Physical_Data_Type>NUMBER(12,3)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(12,3)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{9981676E-6567-0C2C-5E3B-1ACF14862C74}+00000000" name="시청 비율">
+<AttributeProps>
+<Name>시청 비율</Name>
+<Type>100</Type>
+<Physical_Name>WATCHED_RATIO</Physical_Name>
+<Physical_Data_Type>NUMBER(5,4)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(5,4)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2570359A-7D2C-DFB1-A04A-BF09349265B8}+00000000" name="완료 여부">
+<AttributeProps>
+<Name>완료 여부</Name>
+<Type>100</Type>
+<Physical_Name>COMPLETED_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>DEFAULT 'N'</Definition>
+<Comment>DEFAULT 'N'</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{A55C0826-8034-AD81-F931-BE9BDE392B8A}+00000000" name="최초 재생 기록 시각">
+<AttributeProps>
+<Name>최초 재생 기록 시각</Name>
+<Type>100</Type>
+<Physical_Name>FIRST_PLAYED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{47F9AE71-36F3-079A-0319-A028C2A1AD23}+00000000" name="최종 재생 기록 시각">
+<AttributeProps>
+<Name>최종 재생 기록 시각</Name>
+<Type>100</Type>
+<Physical_Name>LAST_PLAYED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0A831E7E-7BB9-4003-2D00-1AA62CED99EF}+00000000" name="완료 시각">
+<AttributeProps>
+<Name>완료 시각</Name>
+<Type>100</Type>
+<Physical_Name>COMPLETED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{D0F7F641-AFCF-DC8B-8B68-9D56525E22DC}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{14D3FEBE-D3A7-944A-970A-27CB29E726E7}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{71183AD0-8A8A-1173-C23E-F532DF602D4B}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{AD6CE8F7-E7B6-A956-1545-B2BC91395E7B}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{2D9ACC7D-4601-9AED-527C-8FCE4D96B568}+00000000" name="PK_VIDEO_VIEW_STATUS">
+<Key_GroupProps>
+<Name>PK_VIDEO_VIEW_STATUS</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_VIDEO_VIEW_STATUS</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{2FA7ACA3-CED4-E3DC-0F8D-A63238EC39E4}+00000000" name="영상 시청 상태 ID">
+<Key_Group_MemberProps>
+<Name>영상 시청 상태 ID</Name>
+<Attribute_Ref>{D7BB4770-C104-75CF-102F-B9308DE8A3C8}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{872CB844-D14F-7014-A464-1970FFB0EB04}+00000000" name="UQ_VIDEO_VIEW_STATUS">
+<Key_GroupProps>
+<Name>UQ_VIDEO_VIEW_STATUS</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_VIDEO_VIEW_STATUS</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{4EE33CBB-701C-52DD-E3FC-1D0FBE57AC24}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{C228066B-A5D1-78A0-A99E-94433CC51DB4}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+<Key_Group_Member id="{0E4D32DC-746B-4434-6A35-D76D72B6809A}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{97651B6D-F133-AAA5-3FB9-D153E51F1C83}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{C1C5113C-9365-1616-DE14-6D67AD1E416F}+00000000" name="FK_VIDEO_STATUS_USER">
+<Key_GroupProps>
+<Name>FK_VIDEO_STATUS_USER</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_VIDEO_STATUS_USER</Physical_Name>
+<Relationship_Ref>{E820ACCE-6C81-B398-8223-32AC86622982}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{E5AD6CCB-D062-F1AA-AED4-A5E3143F11F8}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{C228066B-A5D1-78A0-A99E-94433CC51DB4}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{ABF2C57C-B800-9ABA-60D7-22CADC82A844}+00000000" name="FK_VIDEO_STATUS_POPUP">
+<Key_GroupProps>
+<Name>FK_VIDEO_STATUS_POPUP</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_VIDEO_STATUS_POPUP</Physical_Name>
+<Relationship_Ref>{769EDB33-1D9A-7327-7DD9-1D2DC845E734}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{A0B30612-DAC8-FE97-B9C5-8BB0028F4F9E}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{97651B6D-F133-AAA5-3FB9-D153E51F1C83}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{744B7D72-30C3-5481-4FA0-32402472CD17}+00000000" name="API 요청 로그">
+<EntityProps>
+<Name>API 요청 로그</Name>
+<Type>1</Type>
+<Physical_Name>API_REQUEST_LOG</Physical_Name>
+<Definition>WPF API 요청 로그. 원본은 미사용 테이블이었으나 결과 API 수신 로그로 활용
+CONSTRAINT CK_API_LOG_ELAPSED CHECK (ELAPSED_MILLISECONDS IS NULL OR ELAPSED_MILLISECONDS &gt;= 0)
+CONSTRAINT CK_API_LOG_STATUS  CHECK (HTTP_STATUS_CODE IS NULL OR HTTP_STATUS_CODE BETWEEN 100 AND 599)
+CONSTRAINT CK_API_LOG_SUCCESS CHECK (SUCCESS_YN IN ('Y', 'N'))</Definition>
+<Comment>WPF API 요청 로그. 원본은 미사용 테이블이었으나 결과 API 수신 로그로 활용</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{E72839CF-65A2-EB82-692F-C6237B8C08CF}+00000000" name="API 요청 로그 ID">
+<AttributeProps>
+<Name>API 요청 로그 ID</Name>
+<Type>0</Type>
+<Physical_Name>API_REQUEST_LOG_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0FF02D9A-E465-FB0B-BE9C-F9E283CFE9B1}+00000000" name="클라이언트 요청 ID">
+<AttributeProps>
+<Name>클라이언트 요청 ID</Name>
+<Type>100</Type>
+<Physical_Name>CLIENT_REQUEST_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0D1E39D7-B599-55C3-2F5A-D2617536C994}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{D04AD883-3013-E4AB-9FB8-23CAAC1DB060}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{F1D8C40E-9984-C62E-E9DF-A89627355ABC}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{51B9A83E-DD9A-B98F-C83C-F6174421A802}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+<Parent_Attribute_Ref>{99229708-48EB-378A-F9CA-267EE34E9CC1}+00000000</Parent_Attribute_Ref>
+<Parent_Relationship_Ref>{6BCE352D-5BE1-6D59-90F0-D48976AB0FFD}+00000000</Parent_Relationship_Ref>
+</AttributeProps>
+</Attribute>
+<Attribute id="{56E834E9-2F38-D728-A9E5-0C2C9A5D0043}+00000000" name="API 경로">
+<AttributeProps>
+<Name>API 경로</Name>
+<Type>100</Type>
+<Physical_Name>API_PATH</Physical_Name>
+<Physical_Data_Type>VARCHAR2(1000 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(1000 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{85D8A27A-E3F5-76B6-45A9-ECE9CC5B745E}+00000000" name="HTTP 메서드">
+<AttributeProps>
+<Name>HTTP 메서드</Name>
+<Type>100</Type>
+<Physical_Name>HTTP_METHOD</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C76219E2-D29A-7937-4D2F-B7A7C11C0196}+00000000" name="클라이언트 IP">
+<AttributeProps>
+<Name>클라이언트 IP</Name>
+<Type>100</Type>
+<Physical_Name>CLIENT_IP</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{48F95B7D-7B6D-454C-159C-63B7126F8E5C}+00000000" name="요청 수신 시각">
+<AttributeProps>
+<Name>요청 수신 시각</Name>
+<Type>100</Type>
+<Physical_Name>REQUEST_RECEIVED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{1CB2C453-8FE4-AB4C-D8FD-B7F1CAE3CA6B}+00000000" name="응답 완료 시각">
+<AttributeProps>
+<Name>응답 완료 시각</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_COMPLETED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>8</Attribute_Order>
+<Column_Order>8</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{2C3446B3-BC21-AB82-427D-68CCFEB80F2F}+00000000" name="처리 시간 밀리초">
+<AttributeProps>
+<Name>처리 시간 밀리초</Name>
+<Type>100</Type>
+<Physical_Name>ELAPSED_MILLISECONDS</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>9</Attribute_Order>
+<Column_Order>9</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{57BA9827-2118-1786-8F3B-E2C9C44E95DE}+00000000" name="HTTP 상태 코드">
+<AttributeProps>
+<Name>HTTP 상태 코드</Name>
+<Type>100</Type>
+<Physical_Name>HTTP_STATUS_CODE</Physical_Name>
+<Physical_Data_Type>NUMBER(10)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(10)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>10</Attribute_Order>
+<Column_Order>10</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{D070F489-4FA2-8EFF-C9EC-60919D4C9474}+00000000" name="성공 여부">
+<AttributeProps>
+<Name>성공 여부</Name>
+<Type>100</Type>
+<Physical_Name>SUCCESS_YN</Physical_Name>
+<Physical_Data_Type>CHAR(1)</Physical_Data_Type>
+<Logical_Data_Type>CHAR(1)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>11</Attribute_Order>
+<Column_Order>11</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{55530A9D-488E-152C-157B-98006C21BA14}+00000000" name="오류 코드">
+<AttributeProps>
+<Name>오류 코드</Name>
+<Type>100</Type>
+<Physical_Name>ERROR_CODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(100 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(100 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>12</Attribute_Order>
+<Column_Order>12</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7960D82B-9EDD-D4E1-ABB4-D6E8D67D7917}+00000000" name="오류 메시지">
+<AttributeProps>
+<Name>오류 메시지</Name>
+<Type>100</Type>
+<Physical_Name>ERROR_MESSAGE</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>13</Attribute_Order>
+<Column_Order>13</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{7CF75D2B-5128-A396-EFA6-177F488FD290}+00000000" name="요청 요약">
+<AttributeProps>
+<Name>요청 요약</Name>
+<Type>100</Type>
+<Physical_Name>REQUEST_SUMMARY</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>14</Attribute_Order>
+<Column_Order>14</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{C08A999F-5EF3-3769-9D4F-E0F4C182A733}+00000000" name="응답 요약">
+<AttributeProps>
+<Name>응답 요약</Name>
+<Type>100</Type>
+<Physical_Name>RESPONSE_SUMMARY</Physical_Name>
+<Physical_Data_Type>CLOB</Physical_Data_Type>
+<Logical_Data_Type>CLOB</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>15</Attribute_Order>
+<Column_Order>15</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{72A45DA6-033B-5E46-23C0-D5B2668A2CCE}+00000000" name="등록자">
+<AttributeProps>
+<Name>등록자</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>16</Attribute_Order>
+<Column_Order>16</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{6DB4C34A-6986-C18B-6832-3E9915335988}+00000000" name="등록 시각">
+<AttributeProps>
+<Name>등록 시각</Name>
+<Type>100</Type>
+<Physical_Name>CREATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>17</Attribute_Order>
+<Column_Order>17</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{67A69858-65EC-1E90-5EC0-DAE32563403D}+00000000" name="수정자">
+<AttributeProps>
+<Name>수정자</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_BY</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>18</Attribute_Order>
+<Column_Order>18</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{87F6BE7D-B276-CAF5-D163-A8B12EAAB1A4}+00000000" name="수정 시각">
+<AttributeProps>
+<Name>수정 시각</Name>
+<Type>100</Type>
+<Physical_Name>UPDATED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>19</Attribute_Order>
+<Column_Order>19</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{85295C96-97FB-A245-C188-8EF5C661E8AC}+00000000" name="PK_API_REQUEST_LOG">
+<Key_GroupProps>
+<Name>PK_API_REQUEST_LOG</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_API_REQUEST_LOG</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{1552E24D-F99F-7F87-12DF-AF411F3CD097}+00000000" name="API 요청 로그 ID">
+<Key_Group_MemberProps>
+<Name>API 요청 로그 ID</Name>
+<Attribute_Ref>{E72839CF-65A2-EB82-692F-C6237B8C08CF}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{36D3CF76-90F5-05CB-C07A-325C455A32A1}+00000000" name="FK_API_LOG_USER">
+<Key_GroupProps>
+<Name>FK_API_LOG_USER</Name>
+<Key_Group_Type>IF1</Key_Group_Type>
+<Physical_Name>FK_API_LOG_USER</Physical_Name>
+<Relationship_Ref>{F1D8C40E-9984-C62E-E9DF-A89627355ABC}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{922BE301-05DC-E300-FC42-8E42401DBBC6}+00000000" name="사번">
+<Key_Group_MemberProps>
+<Name>사번</Name>
+<Attribute_Ref>{0D1E39D7-B599-55C3-2F5A-D2617536C994}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{A11030B5-96A3-BB19-21C8-899F23CED4F3}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{FA797B4A-C958-398C-31BC-68D0BB104871}+00000000" name="FK_API_LOG_POPUP">
+<Key_GroupProps>
+<Name>FK_API_LOG_POPUP</Name>
+<Key_Group_Type>IF2</Key_Group_Type>
+<Physical_Name>FK_API_LOG_POPUP</Physical_Name>
+<Relationship_Ref>{6BCE352D-5BE1-6D59-90F0-D48976AB0FFD}+00000000</Relationship_Ref>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{F7E296D5-B799-6C5B-F8C8-0281B05542EC}+00000000" name="팝업 ID">
+<Key_Group_MemberProps>
+<Name>팝업 ID</Name>
+<Attribute_Ref>{51B9A83E-DD9A-B98F-C83C-F6174421A802}+00000000</Attribute_Ref>
+<Parent_Key_Group_Member_Ref>{0AA024A0-3274-35DA-577D-C48BA23DAC34}+00000000</Parent_Key_Group_Member_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+<Entity id="{B1EDCA44-7864-258A-040B-5A7FC162491A}+00000000" name="WPF 결과 수신 영수증">
+<EntityProps>
+<Name>WPF 결과 수신 영수증</Name>
+<Type>1</Type>
+<Physical_Name>WPF_RESULT_RECEIPT</Physical_Name>
+<Definition>WPF 결과 항목 멱등 키. 같은 RESULT_ID 재수신 시 DUPLICATE 응답
+CONSTRAINT CK_WPF_RESULT_TYPE   CHECK (RESULT_TYPE IN ('CLOSED', 'HIDDEN', 'SUBMITTED', 'VIDEO_WATCHED'))
+CONSTRAINT CK_WPF_RESULT_STATUS CHECK (RESULT_STATUS IN ('ACCEPTED', 'REJECTED'))</Definition>
+<Comment>WPF 결과 항목 멱등 키. 같은 RESULT_ID 재수신 시 DUPLICATE 응답</Comment>
+</EntityProps>
+<Attribute_Groups>
+<Attribute id="{0FFB9FBE-C6F3-59A1-2BA7-9A5782521ACB}+00000000" name="수신 영수증 ID">
+<AttributeProps>
+<Name>수신 영수증 ID</Name>
+<Type>0</Type>
+<Physical_Name>RECEIPT_ID</Physical_Name>
+<Physical_Data_Type>NUMBER(19)</Physical_Data_Type>
+<Logical_Data_Type>NUMBER(19)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>0</Attribute_Order>
+<Column_Order>0</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{E71A4368-9CE5-6995-2709-FE64C2510460}+00000000" name="결과 ID">
+<AttributeProps>
+<Name>결과 ID</Name>
+<Type>100</Type>
+<Physical_Name>RESULT_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(64 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(64 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>1</Attribute_Order>
+<Column_Order>1</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{0E37DC02-DBD4-AA54-B0D7-C379B9532D61}+00000000" name="사번">
+<AttributeProps>
+<Name>사번</Name>
+<Type>100</Type>
+<Physical_Name>EMPLOYEE_NO</Physical_Name>
+<Physical_Data_Type>VARCHAR2(30 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(30 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>2</Attribute_Order>
+<Column_Order>2</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{75C46AA9-C7A5-6191-D53F-F7EF24E9DA4B}+00000000" name="팝업 ID">
+<AttributeProps>
+<Name>팝업 ID</Name>
+<Type>100</Type>
+<Physical_Name>POPUP_ID</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>3</Attribute_Order>
+<Column_Order>3</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{FDCADBFC-B3B9-A077-C694-DB1385392B80}+00000000" name="결과 유형">
+<AttributeProps>
+<Name>결과 유형</Name>
+<Type>100</Type>
+<Physical_Name>RESULT_TYPE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(20 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(20 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>4</Attribute_Order>
+<Column_Order>4</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{DF10BF47-26B9-B118-B521-E1C46348D719}+00000000" name="결과 상태">
+<AttributeProps>
+<Name>결과 상태</Name>
+<Type>100</Type>
+<Physical_Name>RESULT_STATUS</Physical_Name>
+<Physical_Data_Type>VARCHAR2(10 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(10 CHAR)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>5</Attribute_Order>
+<Column_Order>5</Column_Order>
+<Definition>최초 처리 결과. 재수신 응답은 DUPLICATE로 별도 표기</Definition>
+<Comment>최초 처리 결과. 재수신 응답은 DUPLICATE로 별도 표기</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{B7023B4D-7248-01E9-E834-E18B7BD348A3}+00000000" name="결과 코드">
+<AttributeProps>
+<Name>결과 코드</Name>
+<Type>100</Type>
+<Physical_Name>RESULT_CODE</Physical_Name>
+<Physical_Data_Type>VARCHAR2(50 CHAR)</Physical_Data_Type>
+<Logical_Data_Type>VARCHAR2(50 CHAR)</Logical_Data_Type>
+<Null_Option_Type>0</Null_Option_Type>
+<Attribute_Order>6</Attribute_Order>
+<Column_Order>6</Column_Order>
+<Definition>
+</Definition>
+<Comment>
+</Comment>
+</AttributeProps>
+</Attribute>
+<Attribute id="{CA4BE6D6-AFEB-C2D8-45A0-C0F0DEED05FB}+00000000" name="수신 시각">
+<AttributeProps>
+<Name>수신 시각</Name>
+<Type>100</Type>
+<Physical_Name>RECEIVED_AT</Physical_Name>
+<Physical_Data_Type>TIMESTAMP(6)</Physical_Data_Type>
+<Logical_Data_Type>TIMESTAMP(6)</Logical_Data_Type>
+<Null_Option_Type>1</Null_Option_Type>
+<Attribute_Order>7</Attribute_Order>
+<Column_Order>7</Column_Order>
+<Definition>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Definition>
+<Comment>DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</Comment>
+</AttributeProps>
+</Attribute>
+</Attribute_Groups>
+<Key_Group_Groups>
+<Key_Group id="{5418A528-BE54-B54C-E09F-071DE36F70B5}+00000000" name="PK_WPF_RESULT_RECEIPT">
+<Key_GroupProps>
+<Name>PK_WPF_RESULT_RECEIPT</Name>
+<Key_Group_Type>PK</Key_Group_Type>
+<Physical_Name>PK_WPF_RESULT_RECEIPT</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{B8EE95A4-642A-8CFE-3F26-51FD00B32D48}+00000000" name="수신 영수증 ID">
+<Key_Group_MemberProps>
+<Name>수신 영수증 ID</Name>
+<Attribute_Ref>{0FFB9FBE-C6F3-59A1-2BA7-9A5782521ACB}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+<Key_Group id="{6E9B51A5-60A7-03BF-E751-510F61E007A0}+00000000" name="UQ_WPF_RESULT_RECEIPT">
+<Key_GroupProps>
+<Name>UQ_WPF_RESULT_RECEIPT</Name>
+<Key_Group_Type>AK1</Key_Group_Type>
+<Physical_Name>UQ_WPF_RESULT_RECEIPT</Physical_Name>
+</Key_GroupProps>
+<Key_Group_Member_Groups>
+<Key_Group_Member id="{8310266C-B7F6-AB97-7CA6-6F0F81DCE4F0}+00000000" name="결과 ID">
+<Key_Group_MemberProps>
+<Name>결과 ID</Name>
+<Attribute_Ref>{E71A4368-9CE5-6995-2709-FE64C2510460}+00000000</Attribute_Ref>
+</Key_Group_MemberProps>
+</Key_Group_Member>
+</Key_Group_Member_Groups>
+</Key_Group>
+</Key_Group_Groups>
+</Entity>
+</Entity_Groups>
+<Relationship_Groups>
+<Relationship id="{7CBA14CA-C8F3-0C91-40B0-180059FE6E61}+00000000" name="FK_DEPARTMENT_PARENT">
+<RelationshipProps>
+<Name>FK_DEPARTMENT_PARENT</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{74624EEC-D1E8-FED7-5903-2D66D79B39D0}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_DEPARTMENT_PARENT FOREIGN KEY (PARENT_DEPARTMENT_ID)
+        REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)</Definition>
+<Physical_Name>FK_DEPARTMENT_PARENT</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{7DD8A543-4AFA-7BCA-55CD-A4E0562FE3F2}+00000000" name="FK_USER_DEPARTMENT">
+<RelationshipProps>
+<Name>FK_USER_DEPARTMENT</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{74624EEC-D1E8-FED7-5903-2D66D79B39D0}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_USER_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)</Definition>
+<Physical_Name>FK_USER_DEPARTMENT</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{64BA0276-0308-95BC-25D6-B879A56479F3}+00000000" name="FK_USER_POSITION">
+<RelationshipProps>
+<Name>FK_USER_POSITION</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{080EE35B-DD95-8CEE-2E67-FAB4DEA4709A}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{BE775F3C-BBA5-F668-247F-065FA4B8EF47}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_USER_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID)</Definition>
+<Physical_Name>FK_USER_POSITION</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{42D0A986-F25D-9EFF-2793-E21AD6A9492C}+00000000" name="FK_POPUP_QUESTION_TEMPLATE">
+<RelationshipProps>
+<Name>FK_POPUP_QUESTION_TEMPLATE</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F1384D3F-945C-0C88-2F17-69E4D7F082EC}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{E69C3B6A-5A16-2B62-0172-9458901FF9AF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_POPUP_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)
+        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID)</Definition>
+<Physical_Name>FK_POPUP_QUESTION_TEMPLATE</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{B7DC4740-B08D-F172-5E9D-39B1585DC53C}+00000000" name="FK_CONTENT_POPUP">
+<RelationshipProps>
+<Name>FK_CONTENT_POPUP</Name>
+<Type>2</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{837D904B-E715-FF22-0DB6-84BF8371C180}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_CONTENT_POPUP FOREIGN KEY (POPUP_ID)
+        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_CONTENT_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{777EFB72-EDC8-CB05-2CE9-F2E9C8CC7292}+00000000" name="FK_TARGET_GROUP_POPUP">
+<RelationshipProps>
+<Name>FK_TARGET_GROUP_POPUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{AE5C9299-8044-13EB-B4D5-73E74BB8EB68}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_TARGET_GROUP_POPUP FOREIGN KEY (POPUP_ID)
+        REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_TARGET_GROUP_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{5804BF4B-4167-D273-F054-3A71DF8BEFBB}+00000000" name="FK_TARGET_CONDITION_GROUP">
+<RelationshipProps>
+<Name>FK_TARGET_CONDITION_GROUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{AE5C9299-8044-13EB-B4D5-73E74BB8EB68}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{18F207E7-9D4B-0D57-661E-C62A9B9D929E}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{EAB4875D-5B0B-B05A-92F8-FAFF42E045BB}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_TARGET_CONDITION_GROUP FOREIGN KEY (TARGET_GROUP_ID)
+        REFERENCES POPUP_TARGET_GROUP (TARGET_GROUP_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_TARGET_CONDITION_GROUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{1448C99B-F2D0-FBAA-1313-4190CB06CA7E}+00000000" name="FK_TARGET_CONDITION_DEPARTMENT">
+<RelationshipProps>
+<Name>FK_TARGET_CONDITION_DEPARTMENT</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{B72E4DC0-37E9-341D-FBB5-91B54C52D5CA}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{18F207E7-9D4B-0D57-661E-C62A9B9D929E}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{74624EEC-D1E8-FED7-5903-2D66D79B39D0}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_TARGET_CONDITION_DEPARTMENT FOREIGN KEY (DEPARTMENT_ID) REFERENCES APP_DEPARTMENT (DEPARTMENT_ID)</Definition>
+<Physical_Name>FK_TARGET_CONDITION_DEPARTMENT</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{414F5BCE-BFA2-D926-EB9C-ECF668CF4022}+00000000" name="FK_TARGET_CONDITION_POSITION">
+<RelationshipProps>
+<Name>FK_TARGET_CONDITION_POSITION</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{080EE35B-DD95-8CEE-2E67-FAB4DEA4709A}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{18F207E7-9D4B-0D57-661E-C62A9B9D929E}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{BE775F3C-BBA5-F668-247F-065FA4B8EF47}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_TARGET_CONDITION_POSITION   FOREIGN KEY (POSITION_ID)   REFERENCES APP_POSITION (POSITION_ID)</Definition>
+<Physical_Name>FK_TARGET_CONDITION_POSITION</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{0D0E756F-4D4F-C209-011D-7CCB63D5296A}+00000000" name="FK_TARGET_CONDITION_EMPLOYEE">
+<RelationshipProps>
+<Name>FK_TARGET_CONDITION_EMPLOYEE</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{18F207E7-9D4B-0D57-661E-C62A9B9D929E}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_TARGET_CONDITION_EMPLOYEE   FOREIGN KEY (EMPLOYEE_NO)   REFERENCES APP_USER (EMPLOYEE_NO)</Definition>
+<Physical_Name>FK_TARGET_CONDITION_EMPLOYEE</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{73B0A64B-D133-AC6C-CD19-CF9E8F5759DB}+00000000" name="FK_QUESTION_TEMPLATE">
+<RelationshipProps>
+<Name>FK_QUESTION_TEMPLATE</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F1384D3F-945C-0C88-2F17-69E4D7F082EC}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{1C6F14C4-E412-132D-A657-64115D577730}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{E69C3B6A-5A16-2B62-0172-9458901FF9AF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)
+        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_QUESTION_TEMPLATE</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{65D82489-CA35-A471-EAE1-873FBEEF32CA}+00000000" name="FK_OPTION_QUESTION">
+<RelationshipProps>
+<Name>FK_OPTION_QUESTION</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{1C6F14C4-E412-132D-A657-64115D577730}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{7AF0917B-8209-D149-2123-F979B28EB0CC}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{FCCB855F-2335-A254-3D40-C21C9B76F8C9}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_OPTION_QUESTION FOREIGN KEY (QUESTION_ID)
+        REFERENCES POPUP_QUESTION (QUESTION_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_OPTION_QUESTION</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{935AB811-2BDB-70E4-0AAE-562FD6F0F7AF}+00000000" name="FK_STATUS_USER">
+<RelationshipProps>
+<Name>FK_STATUS_USER</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{D7620605-2A98-C9CB-0EFF-85129B600AC5}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)</Definition>
+<Physical_Name>FK_STATUS_USER</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{360DA55B-18C7-2043-3806-11D775AB57AA}+00000000" name="FK_STATUS_POPUP">
+<RelationshipProps>
+<Name>FK_STATUS_POPUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{D7620605-2A98-C9CB-0EFF-85129B600AC5}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_STATUS_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{4C9D7960-BC9A-A1FD-5A71-06B40980649E}+00000000" name="FK_RESPONSE_POPUP">
+<RelationshipProps>
+<Name>FK_RESPONSE_POPUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{FE832FC9-10CD-690B-4C8B-40329775C3B6}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_RESPONSE_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID)</Definition>
+<Physical_Name>FK_RESPONSE_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{24965583-C760-F3BB-1D1A-2277C7C4E727}+00000000" name="FK_RESPONSE_USER">
+<RelationshipProps>
+<Name>FK_RESPONSE_USER</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{FE832FC9-10CD-690B-4C8B-40329775C3B6}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_RESPONSE_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)</Definition>
+<Physical_Name>FK_RESPONSE_USER</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{4777D1B2-1868-36D0-BE8A-82F7A4F31105}+00000000" name="FK_RESPONSE_QUESTION_TEMPLATE">
+<RelationshipProps>
+<Name>FK_RESPONSE_QUESTION_TEMPLATE</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F1384D3F-945C-0C88-2F17-69E4D7F082EC}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{FE832FC9-10CD-690B-4C8B-40329775C3B6}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{E69C3B6A-5A16-2B62-0172-9458901FF9AF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_RESPONSE_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)
+        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID)</Definition>
+<Physical_Name>FK_RESPONSE_QUESTION_TEMPLATE</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{A07AFA83-3082-AA87-976A-16E7482D9034}+00000000" name="FK_ANSWER_RESPONSE">
+<RelationshipProps>
+<Name>FK_ANSWER_RESPONSE</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{FE832FC9-10CD-690B-4C8B-40329775C3B6}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{73CF691C-24D2-8204-0DFD-49A5EFA05F86}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{68FFC351-DA28-4B88-24FE-1E76E9D55A47}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_ANSWER_RESPONSE FOREIGN KEY (RESPONSE_ID)
+        REFERENCES POPUP_RESPONSE (RESPONSE_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_ANSWER_RESPONSE</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{BF653A90-8ACA-6441-62EE-8E633EC2F9C4}+00000000" name="FK_ANSWER_QUESTION">
+<RelationshipProps>
+<Name>FK_ANSWER_QUESTION</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{1C6F14C4-E412-132D-A657-64115D577730}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{73CF691C-24D2-8204-0DFD-49A5EFA05F86}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{FCCB855F-2335-A254-3D40-C21C9B76F8C9}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_ANSWER_QUESTION FOREIGN KEY (QUESTION_ID) REFERENCES POPUP_QUESTION (QUESTION_ID)</Definition>
+<Physical_Name>FK_ANSWER_QUESTION</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{61AF057D-E21C-92C4-628C-50839A1116EE}+00000000" name="FK_VALUE_ANSWER">
+<RelationshipProps>
+<Name>FK_VALUE_ANSWER</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{73CF691C-24D2-8204-0DFD-49A5EFA05F86}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{4175465A-5049-D9F5-0755-5E7F357BD0F0}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{C161BC25-A09B-7963-A513-D10FA0287C48}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_VALUE_ANSWER FOREIGN KEY (RESPONSE_ANSWER_ID)
+        REFERENCES POPUP_RESPONSE_ANSWER (RESPONSE_ANSWER_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_VALUE_ANSWER</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{445CF0A8-BD23-875B-E235-E3995C7BD6AB}+00000000" name="FK_VALUE_OPTION">
+<RelationshipProps>
+<Name>FK_VALUE_OPTION</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{7AF0917B-8209-D149-2123-F979B28EB0CC}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{4175465A-5049-D9F5-0755-5E7F357BD0F0}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{FD6314C3-A367-E45C-1B40-70BBE594F270}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_VALUE_OPTION FOREIGN KEY (OPTION_ID) REFERENCES POPUP_OPTION (OPTION_ID)</Definition>
+<Physical_Name>FK_VALUE_OPTION</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{E820ACCE-6C81-B398-8223-32AC86622982}+00000000" name="FK_VIDEO_STATUS_USER">
+<RelationshipProps>
+<Name>FK_VIDEO_STATUS_USER</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{1D513899-38B5-6FCB-B21C-A4CF6384B04B}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_VIDEO_STATUS_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)</Definition>
+<Physical_Name>FK_VIDEO_STATUS_USER</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{769EDB33-1D9A-7327-7DD9-1D2DC845E734}+00000000" name="FK_VIDEO_STATUS_POPUP">
+<RelationshipProps>
+<Name>FK_VIDEO_STATUS_POPUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{1D513899-38B5-6FCB-B21C-A4CF6384B04B}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_VIDEO_STATUS_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID) ON DELETE CASCADE</Definition>
+<Physical_Name>FK_VIDEO_STATUS_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{F1D8C40E-9984-C62E-E9DF-A89627355ABC}+00000000" name="FK_API_LOG_USER">
+<RelationshipProps>
+<Name>FK_API_LOG_USER</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{4D87AEB8-E79E-7233-AC30-BAAFE00653D2}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{744B7D72-30C3-5481-4FA0-32402472CD17}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{AFE91591-0DAF-DA10-357D-BAE8645775EF}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_API_LOG_USER  FOREIGN KEY (EMPLOYEE_NO) REFERENCES APP_USER (EMPLOYEE_NO)</Definition>
+<Physical_Name>FK_API_LOG_USER</Physical_Name>
+</RelationshipProps>
+</Relationship>
+<Relationship id="{6BCE352D-5BE1-6D59-90F0-D48976AB0FFD}+00000000" name="FK_API_LOG_POPUP">
+<RelationshipProps>
+<Name>FK_API_LOG_POPUP</Name>
+<Type>7</Type>
+<Parent_Entity_Ref>{F61EACD2-5C18-CBBA-265B-DB60FE08A01D}+00000000</Parent_Entity_Ref>
+<Child_Entity_Ref>{744B7D72-30C3-5481-4FA0-32402472CD17}+00000000</Child_Entity_Ref>
+<Key_Group_Ref>{1B90440F-8D29-85E9-ADCB-B056E6D4EA1C}+00000000</Key_Group_Ref>
+<Definition>CONSTRAINT FK_API_LOG_POPUP FOREIGN KEY (POPUP_ID) REFERENCES POPUP_NOTICE (POPUP_ID)</Definition>
+<Physical_Name>FK_API_LOG_POPUP</Physical_Name>
+</RelationshipProps>
+</Relationship>
+</Relationship_Groups>
+</EMX:Model>
+</ERwin>

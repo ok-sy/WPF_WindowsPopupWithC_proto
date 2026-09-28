@@ -44,15 +44,9 @@ namespace Popup.Dtos
         public double PassingScore { get; set; }
 
         /*
-         * 사용자가 제출하기 전에
-         * 모든 필수 문항에 응답해야 하는지 여부
-         * 
-         * 현재 SurveyPopupView에서는
-         * SurveyQuestionDto.IsRequired를 기준으로
-         * 필수 문항 검증을 하고 있으므로
-         * 나중에 정책 확장이 필요할 때 사용한다.
+         * [설계 18 L-0 — C-8 삭제] 읽는 곳이 없던 ValidateRequiredQuestions 플래그를 삭제했다.
+         * 필수 응답 검증은 SurveyPopupView가 문항별 SurveyQuestionDto.IsRequired로만 판단한다.
+         * (Questions·PassingScore는 데모 JSON v3 전환(L-2) 전까지 구형 content fallback으로 유지)
          */
-        public bool ValidateRequiredQuestions { get; set; } =
-            true;
     }
 }

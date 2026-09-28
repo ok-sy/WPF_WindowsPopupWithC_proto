@@ -295,11 +295,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {imageFillMode && <Typography variant="caption" color="text.secondary">꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
-              {/* [2026-09-21 제거] Markdown 모드(markdownMode/markdownContent) — 사용하지 않기로 해 입력란·스위치를 삭제했다. TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
+              {/* TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
               <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
               <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
-                <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
-                <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
+              <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
+              <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
             </Stack>}
 
             {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
@@ -424,7 +424,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel control={<Switch size="small" checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
                 <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />
                 <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />
-                {<FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
+                <FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />
               </Box>
                 </>}
                 {popup.popupType === 'IMAGE' && !imageFillMode && <>

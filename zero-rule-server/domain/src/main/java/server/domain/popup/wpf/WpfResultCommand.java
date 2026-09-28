@@ -36,13 +36,7 @@ public record WpfResultCommand(
         Double score,
         Boolean passed
 ) {
-    /** 기존 호출부(테스트 등) 호환용 — score/passed 없이 만든다. */
-    public WpfResultCommand(String resultId, String popupId, WpfResultType resultType, OffsetDateTime displayedAt,
-                            OffsetDateTime closedAt, Integer hideDays, OffsetDateTime responseStartedAt,
-                            List<PopupSubmitAnswer> answers, WpfVideoProgress video) {
-        this(resultId, popupId, resultType, displayedAt, closedAt, hideDays, responseStartedAt, answers, video, null, null);
-    }
-
+    // [설계 18 L-0] 테스트에서만 쓰던 score/passed 없는 9인자 호환 생성자를 삭제했다. 호출부는 정식 생성자를 쓴다.
     public WpfResultCommand {
         answers = answers == null ? List.of() : List.copyOf(answers);
     }

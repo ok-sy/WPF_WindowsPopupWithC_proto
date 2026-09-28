@@ -179,19 +179,10 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * 이미지 너비에 NaN 또는 무한대가 전달되는 것을 방지한다.
-             * .NET 구버전용 체크
+             * [설계 18 L-0 — C-11] 위 double.IsFinite 검사와 같은 내용을 .NET 구버전 API로 쓴
+             * 주석 처리 블록(IsNaN/IsInfinity)은 사용하지 않는 코드라 삭제했다. 동작 변화 없음.
              */
-            /*if (imageWidth.HasValue &&
-                (double.IsNaN(imageWidth.Value)
-                 || double.IsInfinity(imageWidth.Value)
-                 || imageWidth.Value <= 0))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(imageWidth),
-                    "이미지 너비는 0보다 큰 유한한 값이어야 합니다.");
-            }
-            */
+
             /*
              * 외부에서 이미지 높이를 전달한 경우
              * 유효한 양수인지 확인한다.

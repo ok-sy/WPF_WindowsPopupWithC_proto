@@ -59,7 +59,8 @@ namespace Popup.Factories
                  * Overlay 옵션은 popup_content.content_options_json 안에 저장한다.
                  * 서버가 content JSON을 그대로 WPF에 전달하므로 별도 DB 컬럼이나
                  * Java DTO 계약을 늘리지 않고도 관리자 설정을 전달할 수 있다.
-                 * 기존 데이터에 값이 없으면 이전 동작과 동일하게 true / 0.45를 사용한다.
+                 * 선택 필드이며, 미지정 시 기본값 true / 0.45를 사용한다.
+                 * [설계 18 §4.2 유지 항목] 구버전 데이터 분기가 아니라 선택 필드 기본값이므로 유지하고 주석만 정정했다.
                  */
                 UseBackgroundOverlay = GetContentBoolean(
                     popupDto.Content, "useBackgroundOverlay", true),
@@ -68,7 +69,7 @@ namespace Popup.Factories
 
                 /*
                  * [설계 14 §5] Header/본문/Footer 폰트 크기. Overlay 옵션과 같이 content(CONTENT_OPTIONS)로 전달된다.
-                 * 값이 없으면 null → PopupWindow·View가 XAML 기본 크기를 유지한다(기존 데이터 호환).
+                 * 선택 필드이며, 미지정 시 null → PopupWindow·View가 XAML 기본 크기를 유지한다(미지정 시 기본값).
                  * 범위 보정(10~40)은 PopupWindow.ApplyFontSizes()가 한다.
                  */
                 HeaderFontSize = GetContentNullableDouble(popupDto.Content, "headerFontSize"),
