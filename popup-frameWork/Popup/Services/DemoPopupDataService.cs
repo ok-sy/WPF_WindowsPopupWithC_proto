@@ -116,8 +116,9 @@ namespace Popup.Services
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "교육 만족도 설문",
-                      "description": "시연 화면 확인을 위해 아래 문항에 응답해주세요.",
-                      "questions": [
+                      "description": "시연 화면 확인을 위해 아래 문항에 응답해주세요."
+                    },
+                    "questions": [
                         {
                           "questionId": 1001,
                           "optionLayout": "VERTICAL",
@@ -150,8 +151,7 @@ namespace Popup.Services
                           "questionType": "TEXT",
                           "isRequired": false
                         }
-                      ]
-                    }
+                    ]
                   },
                   {
                     "popupId": "DEMO-QUIZ-001",
@@ -170,9 +170,10 @@ namespace Popup.Services
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "정보보안 교육 평가",
-                      "description": "두 문항을 모두 맞히면 통과합니다.",
-                      "passingScore": 100,
-                      "questions": [
+                      "description": "두 문항을 모두 맞히면 통과합니다."
+                    },
+                    "passingScore": 100,
+                    "questions": [
                         {
                           "questionId": 2001,
                           "optionLayout": "VERTICAL",
@@ -180,10 +181,10 @@ namespace Popup.Services
                           "questionType": "SINGLE_CHOICE",
                           "isRequired": true,
                           "isScored": true,
-                          "correctAnswers": ["PHONE"],
+                          "questionScore": 50,
                           "options": [
-                            { "optionId": 2101, "value": "PHONE", "text": "휴대전화 번호" },
-                            { "optionId": 2102, "value": "WEATHER", "text": "오늘의 날씨" }
+                            { "optionId": 2101, "value": "PHONE", "text": "휴대전화 번호", "isCorrect": true },
+                            { "optionId": 2102, "value": "WEATHER", "text": "오늘의 날씨", "isCorrect": false }
                           ]
                         },
                         {
@@ -193,15 +194,14 @@ namespace Popup.Services
                           "questionType": "MULTIPLE_CHOICE",
                           "isRequired": true,
                           "isScored": true,
-                          "correctAnswers": ["LONG", "MFA"],
+                          "questionScore": 50,
                           "options": [
-                            { "optionId": 2201, "value": "LONG", "text": "충분히 긴 비밀번호 사용" },
-                            { "optionId": 2202, "value": "REUSE", "text": "모든 사이트에서 동일한 비밀번호를 반복해서 재사용하고 다른 사람과 공유하는 방식은 안전하지 않습니다. 긴 복수 선택 보기의 줄바꿈을 확인하세요." },
-                            { "optionId": 2203, "value": "MFA", "text": "다중 인증 사용" }
+                            { "optionId": 2201, "value": "LONG", "text": "충분히 긴 비밀번호 사용", "isCorrect": true },
+                            { "optionId": 2202, "value": "REUSE", "text": "모든 사이트에서 동일한 비밀번호를 반복해서 재사용하고 다른 사람과 공유하는 방식은 안전하지 않습니다. 긴 복수 선택 보기의 줄바꿈을 확인하세요.", "isCorrect": false },
+                            { "optionId": 2203, "value": "MFA", "text": "다중 인증 사용", "isCorrect": true }
                           ]
                         }
-                      ]
-                    }
+                    ]
                   }
                 ]
                 """;

@@ -210,7 +210,8 @@ FIT_TO_IMAGE와 FILL은 데모 JSON의 `imageSizeMode`만 임시로 바꿔 확�
 
 ## 6. 남은 항목
 
-- 관리자 웹 팝업 편집기에 `imageSizeMode` 세 값과 `imageWidth`/`imageHeight`의 의미 차이를 안내하는 설명이 없다.
-  ADAPTIVE에서 크기를 입력해도 팝업이 커지지 않는 점은 편집 화면에서 오해하기 쉬우므로 문구 보완이 필요하다.
+- (해결 2026-09-28, 설계 18 W-10) 관리자 편집기에 모드별 크기 기준 안내 문구와 `descriptionPosition`·`imageAreaRatio` 입력을 추가했고,
+  미리보기가 이 문서의 계약(ADAPTIVE 최대 크기, FIT_TO_IMAGE 창 크기 재계산, 설명 위치 AUTO 규칙)을 같은 상수로 재현한다.
+  서버는 두 옵션의 허용값(AUTO/RIGHT/BOTTOM, 0.5~0.9)을 저장 시 검사한다.
 - FIT_TO_IMAGE의 설명 영역 너비 260과 팝업 외부 여백 56 · 190 · 300은 상수로 남아 있다.
   Header/Footer 표시 여부에 따라 실제 값이 달라지므로, 오차가 문제되면 실제 측정값 기반으로 바꾼다.

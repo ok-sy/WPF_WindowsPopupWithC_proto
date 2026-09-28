@@ -22,9 +22,10 @@
 
 ## 알려진 차이
 
-- IMAGE: FILL이 아닌 모드는 모두 `imageWidth`/`imageHeight`를 최대 크기로만 적용한다.
-  ADAPTIVE와 FIT_TO_IMAGE의 기준 차이(팝업 크기 기준 vs 이미지 크기 기준) 계약은 아직 재현하지 않는다.
-- IMAGE: `descriptionPosition`, `imageAreaRatio` 편집 UI가 없어 미리보기에도 반영되지 않는다(설계 18 W-10).
+- IMAGE(2026-09-28, 설계 18 W-10 반영): 크기 모드와 설명 배치는 `imagePreviewLayout.ts`가 WPF `ImagePopupView`(설계 15)와 같은 규칙·상수로 계산한다.
+  ADAPTIVE는 원본·요청 크기 중 작은 값을 최대 표시 크기로 쓰고 `imageAreaRatio`로 이미지·설명 영역을 나눈다.
+  FIT_TO_IMAGE는 요청(없으면 원본) 크기로 이미지를 표시하고 팝업 창 크기를 다시 계산한다 — 편집기 패널에는 그 값을 안내하고, "실제 크기로 보기" 모달이 그 크기로 열린다.
+  `descriptionPosition` AUTO는 가로/세로 0.8 이하면 오른쪽, 그 외 아래. 남은 차이: 작업 영역 대신 브라우저 창 크기를 쓰고, 오른쪽 설명 폭 260·여백 56/190/300은 WPF 상수를 그대로 쓰므로 Header/Footer 유무에 따른 실제 크기는 조금 다를 수 있다.
 - 글꼴 메트릭, 네이티브 미디어 컨트롤, 창 테두리, DPI 반올림은 WPF와 조금 다를 수 있다.
 
 ## 수동 비교 절차

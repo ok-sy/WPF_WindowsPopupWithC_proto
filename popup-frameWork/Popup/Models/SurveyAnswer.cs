@@ -14,19 +14,9 @@ namespace Popup.Models
         public long QuestionId { get; set; }
 
         /// <summary>
-        /// 객관식에서 사용자가 선택한 값 목록이다.
-        ///
-        /// SingleChoice:
-        /// 선택한 값 하나가 들어간다.
-        ///
-        /// MultipleChoice:
-        /// 선택한 값 여러 개가 들어갈 수 있다.
-        /// </summary>
-        public List<string> SelectedValues { get; set; } = new();
-
-        /// <summary>
         /// 객관식에서 사용자가 선택한 보기의 서버 OPTION_ID 목록이다.
-        /// API는 화면 표시용 Value가 아니라 이 ID로 선택 보기를 저장한다.
+        /// API 저장, QUIZ 채점, 필수 응답 검사가 모두 이 ID를 기준으로 한다.
+        /// [설계 18 L-2] 구 데모 채점용이던 선택 값 목록(SelectedValues)은 삭제했다.
         /// </summary>
         public List<long> SelectedOptionIds { get; set; } = new();
 
