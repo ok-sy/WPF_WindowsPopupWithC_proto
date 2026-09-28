@@ -176,11 +176,12 @@
 
 ### L-3. content 중복 키 정리 (서버·웹·WPF 동시)
 
-- [ ] C-7(WPF가 content 사본을 읽지 않음) 완료 확인
-- [ ] 서버 S-12 중복 키 생성 중단, S-13 저장 시 컬럼·파생 키 제거
-- [ ] 웹 W-9 유형별 content 정리, W-6·S-8 `adminQuestions`/`correctValues` 제거
-- [ ] DB D-5② 기존 행 정리
-- [ ] 검증: 관리자 수정 → 재조회 시 컬럼 값이 반영되는지(사본에 가려지지 않는지), WPF 표시 E2E
+- [x] C-7(WPF가 content 사본을 읽지 않음) 완료 확인 — WPF에서 `completionRatio`·`allowCloseBeforeCompletion`·`validateRequiredQuestions` content 참조 0건
+- [x] 서버 S-12 중복 키 생성 중단(`PopupContentAssembler` 파생 키 제거, `toResponseDto`의 `content.questions` 제거, `WpfPopupItem` 제거 목록 삭제), S-13 저장 시 컬럼·파생 키 제거(`withoutStoredCopies`) + 조회 시 옵션 먼저·컬럼이 덮어쓰도록 순서 변경
+- [x] 웹 W-9 저장 시 유형별 content 키만 전송(`contentForType`), W-6·S-8 `/info`의 `adminQuestions`·`AdminPopupQuestion.correctValues` 제거(`/question-template`의 `adminQuestions`는 유지)
+- [x] DB D-5② `07_cleanup_content_option_copies_oracle.sql` 작성, 로컬 XE 실행(대상 0행). 원격 개발 DB 미실행(기능상 필수 아님 — 서버가 조회 시 사본을 무시)
+- [x] 검증(정적·실DB): 서버 popup 테스트 42건 중 40 통과·2 skip, 로컬 XE 실DB 테스트 2건(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`) 통과, 웹 build 성공
+- [ ] 검증(실행): 관리자 수정 → 재조회 시 컬럼 값 반영 브라우저 확인, WPF 표시 E2E
 
 ### L-4. 원격 개발 DB 적용·데이터 확인 후 기본값 분기 제거
 

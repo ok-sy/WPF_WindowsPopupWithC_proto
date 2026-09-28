@@ -689,9 +689,7 @@ public class PopupService {
     public List<server.domain.popup.AdminPopupQuestion> getAdminQuestions(Long templateId) {
         if (templateId == null) return List.of();
         return loadQuestions(List.of(templateId), true).getOrDefault(templateId, List.of()).stream()
-                .map(question -> new server.domain.popup.AdminPopupQuestion(question,
-                        question.options().stream().filter(option -> Boolean.TRUE.equals(option.isCorrect()))
-                                .map(PopupOptionDto::value).toList()))
+                .map(server.domain.popup.AdminPopupQuestion::new)
                 .toList();
     }
 
@@ -881,16 +879,16 @@ public class PopupService {
 
     /**
      * API 값을 DB 저장 형식(대문자 코드, Y/N, BigDecimal)으로 변환한다.
-     * 문항은 별도 테이블로 관리하므로 콘텐츠 JSON의 questions는 제거한다.
-     * 유형별 제목·미디어 URL은 개별 컬럼으로 추출하고 나머지 콘텐츠 설정도 JSON에 보관한다.
+     * 유형별 제목·설명·본문·미디어 URL·링크 URL은 개별 컬럼으로 추출한다.
+     * [설계 18 L-3] CONTENT_OPTIONS에는 컬럼 사본과 서버 파생 키(문항·완료 비율·통과 점수 등)를 빼고
+     * 나머지 확장 옵션만 보관한다. 사본을 저장하면 조회 시 컬럼 값과 어긋날 수 있다.
      */
     private AdminPopupSaveCommand toAdminSaveCommand(
             PopupResponseDto popup,
             boolean active,
             String auditUser,
             Long questionTemplateId) {
-        Map<String, Object> content = new LinkedHashMap<>(popup.content());
-        content.remove("questions");
+        Map<String, Object> content = popup.content() == null ? Map.of() : popup.content();
         String popupType = normalizeUpper(popup.popupType());
 
         return new AdminPopupSaveCommand(
@@ -929,7 +927,7 @@ public class PopupService {
                 contentText(content, "plainText"),
                 contentText(content, mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),
-                writeContentJson(popup.popupId(), content),
+                writeContentJson(popup.popupId(), PopupContentAssembler.withoutStoredCopies(content)),
                 auditUser);
     }
 
@@ -1016,7 +1014,7 @@ public class PopupService {
     /**
      * DB의 숫자·Y/N 값과 콘텐츠 컬럼을 웹 및 WPF 공용 응답으로 변환한다.
      * 크기 설정의 DB null 값에는 기본값을 적용하고, 선택 설정인 완료율·통과 점수는
-     * null을 유지한다. 설문·퀴즈 문항은 최상위와 content.questions에 함께 제공한다.
+     * null을 유지한다. 설문·퀴즈 문항은 최상위 questions로만 제공한다(설계 18 L-3 — content.questions 중복 제거).
      * [Oracle 전환 — 기준 5] content는 매퍼가 내려준 JSON 문자열이 아니라
      * PopupContentAssembler가 정규 컬럼 + CONTENT_OPTIONS로 조립한다.
      */
@@ -1024,10 +1022,6 @@ public class PopupService {
             PopupEntity popup,
             List<PopupQuestionDto> questions) {
         Map<String, Object> content = contentAssembler.assemble(popup);
-        if ("SURVEY".equalsIgnoreCase(popup.popupType())
-                || "QUIZ".equalsIgnoreCase(popup.popupType())) {
-            content.put("questions", questions);
-        }
 
         return new PopupResponseDto(
                 popup.popupId(), popup.popupType(), popup.title(),

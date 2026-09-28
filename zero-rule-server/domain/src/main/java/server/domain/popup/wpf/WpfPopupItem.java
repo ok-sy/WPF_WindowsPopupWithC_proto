@@ -18,8 +18,8 @@ import java.util.Map;
  * WPF에 불필요하거나 노출하면 안 되는 필드를 뺀다.</p>
  * <ul>
  *   <li>제외: {@code questionTemplateId}(서버 내부 키)</li>
- *   <li>문항은 최상위 {@code questions}에만 둔다. 기존 응답의 {@code content.questions} 중복 제거</li>
- *   <li>content에서 {@code passingScore}, {@code validateRequiredQuestions}도 제거 (SURVEY/QUIZ 내부 값)</li>
+ *   <li>문항은 최상위 {@code questions}에만 둔다. [설계 18 L-3] content에 문항·통과 점수·완료 비율 등 파생 키를
+ *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
  *   <li>날짜는 ISO 8601 문자열</li>
  * </ul>
  *
@@ -61,9 +61,6 @@ public record WpfPopupItem(
         List<PopupQuestionDto> questions,
         Map<String, Object> content
 ) {
-    private static final List<String> CONTENT_KEYS_HIDDEN_FROM_WPF =
-            List.of("questions", "passingScore", "validateRequiredQuestions");
-
     /**
      * 공용 DTO에서 WPF 항목을 만든다. [설계 18 L-0] 호출자가 없던 1인자 오버로드 from(dto)는 삭제했다.
      *
@@ -72,7 +69,6 @@ public record WpfPopupItem(
      */
     public static WpfPopupItem from(PopupResponseDto dto, boolean includeGradingInfo) {
         Map<String, Object> content = new LinkedHashMap<>(dto.content());
-        CONTENT_KEYS_HIDDEN_FROM_WPF.forEach(content::remove);
         return new WpfPopupItem(
                 dto.popupId(), dto.popupType(), dto.title(),
                 dto.displayStartAt(), dto.displayEndAt(),

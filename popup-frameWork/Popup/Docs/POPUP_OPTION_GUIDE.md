@@ -185,9 +185,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 |---|---|
 | `surveyTitle` | 설문/퀴즈 콘텐츠 제목 |
 | `description` | 설명 |
-| `questions` | 문항 목록 |
-| `passingScore` | 퀴즈 통과 점수. 일반 설문에서는 사용하지 않음 |
-| `validateRequiredQuestions` | 필수 응답 정책용 필드. 현재 실제 검증은 문항별 `isRequired` 중심 |
+
+문항 목록은 응답 최상위 `questions`, 퀴즈 통과 점수는 최상위 `passingScore`(QUIZ만)로 받는다. 서버는 2026-09-28(설계 18 L-3)부터 content에 `questions`·`passingScore`·`validateRequiredQuestions`를 싣지 않는다. 필수 응답 검사는 문항별 `isRequired` 기준이다.
 
 ### 7.2 문항 옵션
 

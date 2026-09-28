@@ -116,10 +116,17 @@ class PopupAdminQuestionsTest {
         verify(mapper, times(3)).upsertAdminPopupNotice(any());
     }
 
+    // [설계 18 L-3] 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다.
+    @Test void saveStoresColumnValuesOutsideContentOptions() {
+        service.saveAdminPopup(imagePopup("ADAPTIVE"), false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupContent(argThat(c -> "https://example.com/a.png".equals(c.mediaUrl())
+                && !c.contentOptionsJson().contains("imageUrl")
+                && c.contentOptionsJson().contains("imageSizeMode")));
+    }
+
     @Test void templateLookupRetainsCorrectAnswersForEditor() {
         existingQuestions();
         var entries = service.getAdminQuestions(10L);
-        assertEquals(List.of("1"), entries.get(0).correctValues());
         assertTrue(entries.get(0).question().options().get(0).isCorrect());
     }
 

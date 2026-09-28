@@ -50,8 +50,6 @@ public class PopupAdminController extends ApiBaseController {
                 "BE00000001",
                 PopupAdminPayloads.PopupInfoResponse.builder()
                         .popup(popup)
-                        .adminQuestions(popupService.getAdminQuestions(
-                                popup.questionTemplateId()))
                         .targetGroups(popupService.getAdminTargetGroups(request.getPopupId()))
                         .build());
     }

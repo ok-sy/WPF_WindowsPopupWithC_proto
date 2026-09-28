@@ -42,7 +42,6 @@ public final class PopupAdminPayloads {
     @Builder
     @Data
     public static class PopupInfoResponse {
-        private List<server.domain.popup.AdminPopupQuestion> adminQuestions;
         @Schema(description = "팝업 표시 설정과 유형별 콘텐츠")
         private PopupResponseDto popup;
 

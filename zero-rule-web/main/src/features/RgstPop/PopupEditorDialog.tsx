@@ -141,6 +141,25 @@ function normalizeImageSizeMode(value: unknown): string {
   const mode = value == null ? '' : String(value).trim().toUpperCase();
   return IMAGE_SIZE_MODES.includes(mode) ? mode : 'ADAPTIVE';
 }
+/* [설계 18 L-3] 저장 시 팝업 유형에서 쓰는 content 키만 보낸다(WPF content DTO·관리자 미리보기 기준).
+ * 편집 중에는 유형을 바꿔도 입력값이 남도록 모든 키를 유지하고, 저장 요청에서만 걸러 다른 유형의 키가
+ * CONTENT_OPTIONS에 쌓이지 않게 한다. 새 content 옵션을 추가하면 이 목록에도 넣어야 저장된다. */
+const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
+  'headerFontSize', 'bodyFontSize', 'footerFontSize'];
+const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
+  TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'showPlainText', 'highlightText',
+    'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
+  IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'imageWidth', 'imageHeight',
+    'descriptionPosition', 'imageAreaRatio', 'linkUrl'],
+  VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
+    'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
+  SURVEY: ['surveyTitle', 'description'],
+  QUIZ: ['surveyTitle', 'description'],
+};
+function contentForType(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
+  const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
+  return Object.fromEntries(keys.filter((key) => key in content).map((key) => [key, content[key]]));
+}
 function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail {
   if (popup.popupType !== 'IMAGE') return popup;
   return { ...popup, content: { ...popup.content, imageSizeMode: normalizeImageSizeMode(popup.content.imageSizeMode) } };
@@ -233,7 +252,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       setLoading(true);
       const requestPopup: AdminPopupDetail = withNormalizedImageSizeMode({
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
-        content: popup.popupType === 'TEXT' ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content,
+        content: contentForType(popup.popupType, popup.popupType === 'TEXT'
+          ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content),
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       });
