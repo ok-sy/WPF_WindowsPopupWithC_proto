@@ -54,6 +54,11 @@ namespace Popup
         {
             if (sender is Button { Tag: string popupType })
             {
+                if (popupType == "IMAGE_ORIGINAL")
+                {
+                    ImageModeCombo.SelectedIndex = 0;
+                    popupType = "IMAGE";
+                }
                 ShowDemoPopups(popupType);
             }
         }
@@ -65,7 +70,11 @@ namespace Popup
             AppendLog("--- 서버 상태 초기화 (숨김·완료·영수증 삭제) ---");
         }
 
-        private void ClearLogButton_Click(object sender, RoutedEventArgs e) => ResultLogList.Items.Clear();
+        private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            ResultLogList.Items.Clear();
+            QuizScoreText.Text = "퀴즈 완료 후 score / passed가 여기에 표시됩니다.";
+        }
 
         /// <summary>
         /// 실제 모드의 MainWindow.LoadAndShowAvailablePopupsAsync와 같은 순서:
@@ -90,6 +99,31 @@ namespace Popup
                         "표시할 팝업이 없습니다. (숨김·완료 상태이면 '서버 상태 초기화'를 누르세요)",
                         "Demo Mode", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
+                }
+
+                bool needsLink = response.Popups.Any(p => p.PopupId == "DEMO-FOOTER-LINK"
+                    || (p.PopupId == "DEMO-VIDEO-QUIZ" && VideoQuizLinkCheck.IsChecked == true));
+                string linkText = FooterLinkInput.Text.Trim();
+                if (needsLink && (!Uri.TryCreate(linkText, UriKind.Absolute, out var link)
+                    || (link.Scheme != Uri.UriSchemeHttp && link.Scheme != Uri.UriSchemeHttps)
+                    || string.IsNullOrWhiteSpace(link.Host)))
+                {
+                    MessageBox.Show(this, "바로가기 URL에 http 또는 https 주소를 입력해 주세요.", "Demo Mode",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                double completionRatio = double.Parse(
+                    (VideoCompletionCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "0.8",
+                    System.Globalization.CultureInfo.InvariantCulture);
+                foreach (PopupResponseDto popup in response.Popups)
+                {
+                    if (popup.PopupId is not ("DEMO-FOOTER-LINK" or "DEMO-VIDEO-QUIZ")) continue;
+                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
+                    bool useLink = popup.PopupId == "DEMO-FOOTER-LINK" || VideoQuizLinkCheck.IsChecked == true;
+                    content["footerAction"] = useLink ? "LINK_AND_CLOSE" : "CLOSE";
+                    content["footerLinkUrl"] = useLink ? linkText : string.Empty;
+                    popup.Content = JsonSerializer.SerializeToElement(content);
+                    if (popup.PopupId == "DEMO-VIDEO-QUIZ") popup.CompletionRatio = completionRatio;
                 }
 
                 string[] layouts = {
@@ -139,6 +173,8 @@ namespace Popup
                           + (e.Response.Code != null ? $" {e.Response.Code}" : string.Empty));
                 AppendLog("  요청: " + JsonSerializer.Serialize(e.Item, LogJsonOptions));
                 AppendLog("  응답: " + JsonSerializer.Serialize(e.Response, LogJsonOptions));
+                if (e.Item.Score is double score)
+                    QuizScoreText.Text = $"{e.Item.PopupId} · score: {score:0.##} · passed: {e.Item.Passed?.ToString().ToLowerInvariant()}";
                 UpdateServerState();
             });
         }

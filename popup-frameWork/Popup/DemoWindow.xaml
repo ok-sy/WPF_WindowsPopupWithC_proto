@@ -10,7 +10,7 @@
     -->
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="300"/>
             <ColumnDefinition Width="16"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -20,6 +20,25 @@
             <TextBlock Text="Demo Mode" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <TextBlock Text="서버 없이 팝업 표시와 결과 전송 흐름을 확인합니다." TextWrapping="Wrap"
                        Foreground="#666" Margin="0,0,0,16"/>
+            <GroupBox Header="새 기능 확인" Margin="0,0,0,16" Padding="10">
+                <StackPanel>
+                    <TextBlock Text="푸터 바로가기 URL" Margin="0,0,0,4"/>
+                    <TextBox x:Name="FooterLinkInput" Text="https://example.com/" Margin="0,0,0,8"/>
+                    <Button Content="바로가기 → 링크 열고 닫기" Height="36" Margin="0,0,0,12" Tag="FOOTER_LINK" Click="OpenPopupButton_Click"/>
+                    <TextBlock Text="동영상 완료 비율" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="VideoCompletionCombo" SelectedIndex="3" Margin="0,0,0,6">
+                        <ComboBoxItem Content="0%" Tag="0"/>
+                        <ComboBoxItem Content="25%" Tag="0.25"/>
+                        <ComboBoxItem Content="50%" Tag="0.5"/>
+                        <ComboBoxItem Content="80%" Tag="0.8"/>
+                        <ComboBoxItem Content="100%" Tag="1"/>
+                    </ComboBox>
+                    <CheckBox x:Name="VideoQuizLinkCheck" Content="동영상+퀴즈 푸터에도 바로가기 사용" Margin="0,0,0,8"/>
+                    <Button Content="동영상 + 퀴즈 실행" Height="36" Margin="0,0,0,6" Tag="VIDEO_QUIZ" Click="OpenPopupButton_Click"/>
+                    <TextBlock Text="설정 비율까지 시청하면 퀴즈와 푸터가 활성화됩니다. 퀴즈 완료 점수는 오른쪽 결과 JSON에서 확인하세요." TextWrapping="Wrap" Foreground="#666" Margin="0,0,0,12"/>
+                    <Button Content="ORIGINAL 이미지 · 원본 그대로 자르기" Height="36" Tag="IMAGE_ORIGINAL" Click="OpenPopupButton_Click"/>
+                </StackPanel>
+            </GroupBox>
             <TextBlock Text="1번 문항 선택지 배치" Margin="0,0,0,4"/>
             <ComboBox x:Name="Question1LayoutCombo" SelectedIndex="0" Margin="0,0,0,8">
                 <ComboBoxItem Content="세로형" Tag="VERTICAL"/>
@@ -43,8 +62,6 @@
             <Button Content="비디오 팝업 열기" Height="36" Margin="0,0,0,8" Tag="VIDEO" Click="OpenPopupButton_Click"/>
             <Button Content="설문 팝업" Height="36" Margin="0,0,0,8" Tag="SURVEY" Click="OpenPopupButton_Click"/>
             <Button Content="퀴즈 팝업" Height="36" Margin="0,0,0,20" Tag="QUIZ" Click="OpenPopupButton_Click"/>
-            <Button Content="동영상 + 퀴즈" Height="36" Margin="0,0,0,8" Tag="VIDEO_QUIZ" Click="OpenPopupButton_Click"/>
-            <Button Content="바로가기 + 닫기" Height="36" Margin="0,0,0,8" Tag="FOOTER_LINK" Click="OpenPopupButton_Click"/>
             <Button Content="서버 상태 초기화 (숨김·완료)" Height="34" Margin="0,0,0,8" Click="ResetServerButton_Click"/>
             <Button Content="결과 로그 지우기" Height="34" Click="ClearLogButton_Click"/>
             <TextBlock x:Name="ServerStateText" Margin="0,16,0,0" Foreground="#444" TextWrapping="Wrap"
@@ -58,12 +75,14 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="결과 전송 로그 (POST /p/api/wpf/popups/results 시뮬레이션)"
-                       FontWeight="SemiBold" Margin="0,0,0,8"/>
+            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock Text="결과 전송 JSON" FontWeight="SemiBold"/>
+                <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 score / passed가 여기에 표시됩니다." TextWrapping="Wrap" Margin="0,8,0,0" FontSize="16" Foreground="#2563EB"/>
+            </StackPanel>
             <ListBox Grid.Row="1" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12"
                      HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
             <TextBlock Grid.Row="2" Margin="0,8,0,0" Foreground="#666" TextWrapping="Wrap"
-                       Text="숨김·완료된 팝업은 실제 서버와 같이 다음 조회에서 제외됩니다. 퀴즈는 샘플 JSON의 정답으로 채점합니다(실서버는 정답을 내려주지 않음)."/>
+                       Text="숨김·완료된 팝업은 실제 서버와 같이 다음 조회에서 제외됩니다. 퀴즈 완료 요청 JSON에는 score·passed가 포함됩니다. 다시 확인하려면 서버 상태를 초기화하세요."/>
         </Grid>
     </Grid>
 </Window>
