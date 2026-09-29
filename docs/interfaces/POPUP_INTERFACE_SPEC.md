@@ -397,7 +397,7 @@ BOTTOM
 ```
 
 - AUTO: 이미지 비율에 따라 RIGHT/BOTTOM 결정
-- FILL에서는 사용하지 않음
+- FILL / ORIGINAL에서는 사용하지 않음
 
 ### imageAreaRatio
 
