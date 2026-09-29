@@ -74,6 +74,8 @@ namespace Popup.Models
         public bool ShowHeader { get; set; } = true;
         public bool ShowCloseButton { get; set; } = true;
         public bool ShowFooter { get; set; } = true;
+        public bool OpenFooterLinkAndClose { get; set; }
+        public string FooterLinkUrl { get; set; } = string.Empty;
         public bool ShowDoNotShowAgain { get; set; } = true;
 
         /*

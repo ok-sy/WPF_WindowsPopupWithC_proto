@@ -81,6 +81,10 @@ public class PopupContentAssembler {
             case "SURVEY", "QUIZ" -> {
                 content.put("surveyTitle", popup.contentTitle());
                 content.put("description", popup.description());
+                if ("QUIZ".equals(type) && Boolean.TRUE.equals(content.get("videoEnabled"))) {
+                    content.put("videoUrl", popup.mediaUrl());
+                    content.put("videoTitle", popup.contentTitle());
+                }
             }
             default -> { /* 알 수 없는 유형은 확장 옵션만 전달 */ }
         }

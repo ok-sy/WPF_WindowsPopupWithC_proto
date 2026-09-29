@@ -46,6 +46,12 @@ namespace Popup.Views.Windows
              * 실제 화면에 적용한다.
              */
             ApplyOptions();
+            FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "닫기";
+            if (_options.Content is VideoQuizPopupView videoQuiz)
+            {
+                FooterArea.IsEnabled = videoQuiz.IsUnlocked;
+                videoQuiz.Unlocked += (_, _) => FooterArea.IsEnabled = true;
+            }
             ApplyPosition();
             Loaded += (_, _) => ApplyPosition();
             SizeChanged += (_, _) => ApplyPosition();
@@ -730,6 +736,11 @@ namespace Popup.Views.Windows
             e.Handled =
                 true;
 
+            if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
+                && (ReferenceEquals(sender, FooterCloseButton)
+                    || (!_options.AllowCloseBeforeComplete && !combined.Video.HasPlaybackFailed)))
+                return;
+
             /*
              * 서버가 완료 전 닫기를 금지한 VIDEO 팝업은
              * 누적 시청 비율이 완료 기준에 도달하기 전까지 닫지 않는다.
@@ -771,6 +782,25 @@ namespace Popup.Views.Windows
 
             try
             {
+                if (ReferenceEquals(sender, FooterCloseButton) && _options.OpenFooterLinkAndClose)
+                {
+                    if (!Uri.TryCreate(_options.FooterLinkUrl, UriKind.Absolute, out var link)
+                        || (link.Scheme != Uri.UriSchemeHttp && link.Scheme != Uri.UriSchemeHttps)
+                        || string.IsNullOrWhiteSpace(link.Host))
+                    {
+                        MessageBox.Show(this, "바로가기 주소를 확인해 주세요.", "바로가기", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link.AbsoluteUri) { UseShellExecute = true });
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show(this, "링크를 열지 못했습니다.\n\n" + exception.Message, "바로가기", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
                 /*
                  * "다시 보지 않기" 체크 여부만 PopupOptions에 기록한다(서버 호출 없음).
                  * 창이 닫히면 PopupManager가 HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다.
@@ -815,6 +845,9 @@ namespace Popup.Views.Windows
          */
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
+                && !_options.AllowCloseBeforeComplete && !combined.Video.HasPlaybackFailed)
+                e.Cancel = true;
             RecordDoNotShowAgainChoice();
             base.OnClosing(e);
         }

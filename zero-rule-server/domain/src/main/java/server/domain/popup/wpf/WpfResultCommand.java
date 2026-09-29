@@ -19,7 +19,7 @@ import java.util.List;
  * @param hideDays          HIDDEN일 때 숨김 일수
  * @param responseStartedAt SUBMITTED일 때 응답 시작 시각(선택)
  * @param answers           SUBMITTED일 때 답안 목록
- * @param video             VIDEO_WATCHED일 때 시청 누적값
+ * @param video             VIDEO_WATCHED 또는 동영상+퀴즈 SUBMITTED일 때 시청 누적값
  * @param score             [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 채점 점수(선택, 참고용)
  * @param passed            [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 통과 여부(선택, 참고용)
  */

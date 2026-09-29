@@ -129,6 +129,29 @@ class WpfResultProcessorTest {
         verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "VIDEO_WATCHED", "ACCEPTED", null);
     }
 
+    @Test void videoQuizRequiresWatchThresholdBeforeSubmission() {
+        when(popupMapper.selectVideoPopupContext("E1001", "P1"))
+                .thenReturn(new server.domain.popup.VideoPopupContext("P1", "QUIZ", new BigDecimal("0.8")));
+        var answers = List.of(new PopupSubmitAnswer(1L, "answer", null));
+        assertThrows(IllegalArgumentException.class, () -> processor.processOne("E1001",
+                item(WpfResultType.SUBMITTED, null, answers, null)));
+        var video = new WpfVideoProgress(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ONE);
+        when(popupService.saveVideoProgress(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.1, 0.8, false, null));
+        assertThrows(IllegalArgumentException.class, () -> processor.processOne("E1001",
+                item(WpfResultType.SUBMITTED, null, answers, video)));
+        verify(popupService, never()).submitResponse(any(), any(), any(), any(), any());
+        verify(wpfMapper, never()).insertReceipt(any(), any(), any(), any(), any(), any());
+
+        when(popupService.saveVideoProgress(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.8, 0.8, true, CLOSED));
+        when(popupService.submitResponse(any(), any(), any(), any(), any()))
+                .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
+        var result = processor.processOne("E1001", item(WpfResultType.SUBMITTED, null, answers, video));
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, result.status());
+        verify(popupService).submitResponse("P1", "r-1", "E1001", null, answers);
+    }
+
     @Test void businessRejectionPropagatesWithoutReceipt() {
         when(popupService.submitResponse(any(), any(), any(), any(), any()))
                 .thenThrow(new IllegalArgumentException("현재 사용자에게 제출 가능한 팝업이 아닙니다."));

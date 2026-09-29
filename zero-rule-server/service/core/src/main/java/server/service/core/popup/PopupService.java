@@ -64,7 +64,7 @@ public class PopupService {
             Set.of("FIXED", "RATIO", "FULLSCREEN");
     /** [설계 18 L-1] IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
     private static final Set<String> IMAGE_SIZE_MODES =
-            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "FILL");
+            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "FILL", "ORIGINAL");
     private static final Set<String> IMAGE_DESCRIPTION_POSITIONS =
             Set.of("AUTO", "RIGHT", "BOTTOM");
 
@@ -669,8 +669,10 @@ public class PopupService {
         if (affectedRows <= 0) {
             throw new IllegalStateException("영상 진행률 저장에 실패했습니다.");
         }
-        popupMapper.markPopupCompleted(
-                normalizedUserId, normalizedPopupId, completedYn);
+        // 동영상+퀴즈는 영상만 봐서는 완료되지 않는다. 퀴즈 통과 시 submitResponse에서 완료한다.
+        if ("VIDEO".equals(context.popupType())) {
+            popupMapper.markPopupCompleted(normalizedUserId, normalizedPopupId, completedYn);
+        }
         OffsetDateTime completedAt = completed
                 ? popupMapper.selectVideoCompletedAt(
                         normalizedUserId, normalizedPopupId)
@@ -803,13 +805,14 @@ public class PopupService {
             throw new IllegalArgumentException("숨김 일수는 1일 이상이어야 합니다.");
         }
         if (popup.completionRatio() != null
-                && (popup.completionRatio() < 0 || popup.completionRatio() > 1)) {
+                && (!Double.isFinite(popup.completionRatio()) || popup.completionRatio() < 0 || popup.completionRatio() > 1)) {
             throw new IllegalArgumentException("완료 비율은 0~1 사이여야 합니다.");
         }
         if (popup.passingScore() != null && popup.passingScore() < 0) {
             throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
         }
         validateFontSizeOptions(popup.content());
+        validateActionOptions(popup);
         if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
             validateImageSizeMode(popup.content());
             validateImageLayoutOptions(popup.content());
@@ -823,10 +826,36 @@ public class PopupService {
         }
     }
 
-    /**
-     * [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL만 저장한다.
-     * 값이 없으면 WPF 기본값(ADAPTIVE)을 쓰므로 통과시키고, FIXED 등 그 외 값은 거부한다.
-     */
+    /** 선택적인 푸터 링크 및 영상 결합 모드 설정을 저장 전에 검증한다. */
+    static void validateActionOptions(PopupResponseDto popup) {
+        Map<String, Object> content = popup.content();
+        if (content == null) return;
+        Object action = content.get("footerAction");
+        if (action != null && !Set.of("CLOSE", "LINK_AND_CLOSE").contains(action))
+            throw new IllegalArgumentException("푸터 동작은 CLOSE 또는 LINK_AND_CLOSE여야 합니다.");
+        if ("LINK_AND_CLOSE".equals(action)) {
+            try {
+                java.net.URI uri = java.net.URI.create(contentText(content, "footerLinkUrl"));
+                if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                        || uri.getHost() == null) throw new IllegalArgumentException();
+            } catch (Exception e) {
+                throw new IllegalArgumentException("바로가기 URL은 유효한 http/https 주소여야 합니다.");
+            }
+        }
+        Object video = content.get("videoEnabled");
+        if (video != null && !(video instanceof Boolean))
+            throw new IllegalArgumentException("videoEnabled는 boolean이어야 합니다.");
+        if (Boolean.TRUE.equals(video)) {
+            if (!"QUIZ".equals(normalizeUpper(popup.popupType()))
+                    || contentText(content, "videoUrl") == null || contentText(content, "videoUrl").isBlank())
+                throw new IllegalArgumentException("동영상+퀴즈는 QUIZ 유형과 영상 URL이 필요합니다.");
+            String url = contentText(content, "videoUrl").toLowerCase(java.util.Locale.ROOT);
+            if (url.contains("youtube.com/") || url.contains("youtu.be/"))
+                throw new IllegalArgumentException("동영상+퀴즈는 시청 비율을 확인할 수 있는 영상 파일 URL을 사용해 주세요.");
+        }
+    }
+
+    /** IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL / ORIGINAL만 저장한다. */
     private static void validateImageSizeMode(Map<String, Object> content) {
         Object value = content == null ? null : content.get("imageSizeMode");
         if (value == null || String.valueOf(value).isBlank()) {
@@ -834,7 +863,7 @@ public class PopupService {
         }
         if (!IMAGE_SIZE_MODES.contains(normalizeUpper(String.valueOf(value)))) {
             throw new IllegalArgumentException(
-                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, FILL 중 하나여야 합니다.");
+                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, FILL, ORIGINAL 중 하나여야 합니다.");
         }
     }
 
@@ -954,7 +983,8 @@ public class PopupService {
                 contentText(content, contentTitleKey(popupType)),
                 contentText(content, "description"),
                 contentText(content, "plainText"),
-                contentText(content, mediaUrlKey(popupType)),
+                contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
+                        ? "videoUrl" : mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),
                 writeContentJson(popup.popupId(), PopupContentAssembler.withoutStoredCopies(content)),
                 auditUser);

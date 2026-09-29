@@ -16,6 +16,7 @@ import {
   IconButton,
   Paper,
   Radio,
+  Slider,
   Stack,
   Typography,
 } from '@mui/material';
@@ -63,17 +64,31 @@ interface PopupBodyProps {
   naturalImageSize: Size | null;
   fitLayout: FitToImageLayout | null;
   onImageLoad: (size: Size) => void;
+  videoUnlocked?: boolean;
 }
 
-function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBodyProps) {
+function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad, videoUnlocked = false }: PopupBodyProps) {
   const content = popup.content;
   const description = text(content.description, '팝업 설명이 여기에 표시됩니다.');
+
+  if (popup.popupType === 'QUIZ' && content.videoEnabled === true) {
+    return <Stack spacing={2}>
+      <PopupBody popup={{ ...popup, popupType: 'VIDEO' }} naturalImageSize={null} fitLayout={null} onImageLoad={onImageLoad} />
+      <Typography variant="body2" color="text.secondary">
+        {videoUnlocked ? '시청 기준을 충족했습니다. 퀴즈에 응답해 주세요.' : '시청 기준에 도달하면 퀴즈와 하단 버튼이 활성화됩니다.'}
+      </Typography>
+      <Box component="fieldset" disabled={!videoUnlocked} sx={{ border: 0, p: 0, m: 0, minWidth: 0, opacity: videoUnlocked ? 1 : 0.5 }}>
+        <PopupBody popup={{ ...popup, content: { ...content, videoEnabled: false } }} naturalImageSize={null} fitLayout={null} onImageLoad={onImageLoad} />
+      </Box>
+    </Stack>;
+  }
 
   if (popup.popupType === 'IMAGE') {
     // [설계 18 L-5 — W-10] WPF ImagePopupView(설계 15)와 같은 규칙으로 크기 모드·설명 배치를 재현한다.
     const imageUrl = text(content.imageUrl, '');
     const mode = imageSizeMode(popup);
-    const imageFill = mode === 'FILL';
+    const original = mode === 'ORIGINAL';
+    const imageFill = mode === 'FILL' || original;
     const showDescription = !imageFill && content.showDescription !== false;
     const placement = descriptionPlacement(popup, naturalImageSize);
     const areaRatio = imageAreaRatio(popup);
@@ -91,13 +106,15 @@ function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBod
         })}
         sx={{
           display: 'block',
-          width: fixedImage ? fixedImage.width : '100%',
-          height: fixedImage ? fixedImage.height : '100%',
-          maxWidth: fixedImage ? '100%' : maximum.width ?? '100%',
-          maxHeight: fixedImage ? '100%' : maximum.height ?? '100%',
+          width: original ? naturalImageSize?.width ?? 'auto' : fixedImage ? fixedImage.width : '100%',
+          height: original ? naturalImageSize?.height ?? 'auto' : fixedImage ? fixedImage.height : '100%',
+          maxWidth: original ? 'none' : fixedImage ? '100%' : maximum.width ?? '100%',
+          maxHeight: original ? 'none' : fixedImage ? '100%' : maximum.height ?? '100%',
           minWidth: 0,
           minHeight: 0,
-          objectFit: imageFill ? 'cover' : 'contain',
+          objectFit: original ? 'none' : imageFill ? 'cover' : 'contain',
+          objectPosition: original ? 'left top' : 'center',
+          flexShrink: original ? 0 : undefined,
           cursor: linkUrl ? 'pointer' : 'default',
         }}
       />
@@ -115,7 +132,7 @@ function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBod
     ) : image;
 
     if (imageFill) {
-      return <Box sx={{ height: '100%', width: '100%', display: 'flex' }}>{linkedImage}</Box>;
+      return <Box sx={{ height: '100%', width: '100%', display: 'flex', overflow: 'hidden', alignItems: 'flex-start' }}>{linkedImage}</Box>;
     }
 
     // FIT_TO_IMAGE는 이미지 칸이 이미지 크기를 그대로 담고(Auto), ADAPTIVE는 imageAreaRatio 비율로 칸을 나눈다.
@@ -201,7 +218,7 @@ function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBod
           </Stack>
         )}
         <Typography variant="caption" color="text.secondary">
-          완료 기준 {Math.round((popup.completionRatio ?? 0.8) * 100)}% · 기본 음량{' '}
+          완료 기준 {Math.round((popup.completionRatio ?? 1) * 100)}% · 기본 음량{' '}
           {Math.round((Number.isFinite(defaultVolume) ? defaultVolume : 0.7) * 100)}%
         </Typography>
       </Stack>
@@ -291,6 +308,20 @@ function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBod
 }
 
 export default function PopupPreview({ popup, fitContainer = false, showBackground = true, onClose, onRecommendedSize }: PopupPreviewProps) {
+  const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
+  const [previewWatchRatio, setPreviewWatchRatio] = useState(0);
+  useEffect(() => setPreviewWatchRatio(0), [popup.popupId, popup.content.videoUrl, popup.completionRatio, isVideoQuiz]);
+  const videoUnlocked = !isVideoQuiz || previewWatchRatio >= (popup.completionRatio ?? 1);
+  const linkAction = popup.content.footerAction === 'LINK_AND_CLOSE';
+  const footerLink = normalizePopupLink(String(popup.content.footerLinkUrl ?? ''));
+  const handleFooter = () => {
+    if (!videoUnlocked) return;
+    if (linkAction) {
+      if (!footerLink) return;
+      window.open(footerLink, '_blank', 'noopener,noreferrer');
+    }
+    onClose?.();
+  };
   const imageUrl = popup.popupType === 'IMAGE' ? String(popup.content.imageUrl ?? '').trim() : '';
   const [naturalImage, setNaturalImage] = useState<{ url: string; size: Size } | null>(null);
   const naturalImageSize = naturalImage && naturalImage.url === imageUrl ? naturalImage.size : null;
@@ -313,7 +344,7 @@ export default function PopupPreview({ popup, fitContainer = false, showBackgrou
     ? { width: '100%', height: '100%' }
     : previewSize(recommendedWidth != null && recommendedHeight != null
       ? { ...popup, sizeMode: 'FIXED', width: recommendedWidth, height: recommendedHeight } : popup);
-  const imageFill = popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'FILL';
+  const imageFill = popup.popupType === 'IMAGE' && ['FILL', 'ORIGINAL'].includes(imageSizeMode(popup));
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
   // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
   const headerFontSize = fontSize(popup, 'headerFontSize');
@@ -357,13 +388,18 @@ export default function PopupPreview({ popup, fitContainer = false, showBackgrou
           bgcolor: 'white',
         }}
       >
+        {isVideoQuiz && <Box sx={{ px: 2, pt: 1, bgcolor: '#eef3fa', flexShrink: 0 }}>
+          <Typography variant="caption">미리보기 시청 비율: {Math.round(previewWatchRatio * 100)}% (완료 기준 {Math.round((popup.completionRatio ?? 1) * 100)}%)</Typography>
+          <Slider size="small" aria-label="미리보기 시청 비율" value={previewWatchRatio * 100} min={0} max={100}
+            onChange={(_, value) => setPreviewWatchRatio(Number(value) / 100)} />
+        </Box>}
         {popup.showHeader && (
           <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
             <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', fontSize: headerFontSize ?? undefined }}>
               {text(popup.title, '팝업 제목')}
             </Typography>
             {popup.showCloseButton && (
-              <IconButton size="small" aria-label="닫기 미리보기" onClick={onClose}>
+              <IconButton size="small" aria-label="닫기 미리보기" disabled={isVideoQuiz && !videoUnlocked && !popup.allowCloseBeforeComplete} onClick={onClose}>
                 <CloseIcon fontSize="small" />
               </IconButton>
             )}
@@ -377,8 +413,8 @@ export default function PopupPreview({ popup, fitContainer = false, showBackgrou
             </Typography>
           )}
           {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
-          <Box sx={bodyFontSize ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } } : undefined}>
-            <PopupBody popup={popup} naturalImageSize={naturalImageSize} fitLayout={fitLayout}
+          <Box sx={{ ...(imageFill ? { height: '100%', overflow: 'hidden' } : {}), ...(bodyFontSize ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } } : {}) }}>
+            <PopupBody popup={popup} videoUnlocked={videoUnlocked} naturalImageSize={naturalImageSize} fitLayout={fitLayout}
               onImageLoad={(size) => setNaturalImage({ url: imageUrl, size })} />
           </Box>
         </Box>
@@ -388,13 +424,13 @@ export default function PopupPreview({ popup, fitContainer = false, showBackgrou
             <Stack direction="row" alignItems="center" justifyContent="space-between"
               sx={{ px: 2, py: 1.5, flexShrink: 0, flexWrap: 'wrap', gap: 1, ...(footerFontSize ? { fontSize: footerFontSize, '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' } } : {}) }}>
               {popup.showDoNotShowAgain ? (
-                <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
+                <FormControlLabel disabled={!videoUnlocked} control={<Checkbox size="small" />} label="다시 보지 않기" />
               ) : (
                 <span />
               )}
               {popup.showCloseButton && (
-                <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>
-                  닫기
+                <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} disabled={!videoUnlocked || (linkAction && !footerLink)} onClick={handleFooter}>
+                  {linkAction ? '바로가기' : '닫기'}
                 </Button>
               )}
             </Stack>

@@ -9,15 +9,15 @@ using System.Windows.Media.Imaging;
 namespace Popup.Views.Contents
 {
     /// <summary>
-    /// IMAGE 팝업의 FILL 모드 전용 View.
-    /// 기존 ImagePopupView는 그대로 유지하고 FILL에서만 이 View를 사용한다.
+    /// IMAGE의 FILL 및 ORIGINAL 모드. ORIGINAL은 원본 픽셀 크기를 유지하고 왼쪽 위에서 자른다.
     /// </summary>
     public partial class ImageFillPopupView : UserControl
     {
         private readonly string _imagePath;
         private readonly string _linkUrl;
+        private readonly bool _useOriginalSize;
 
-        public ImageFillPopupView(string imagePath, string linkUrl)
+        public ImageFillPopupView(string imagePath, string linkUrl, bool useOriginalSize = false)
         {
             InitializeComponent();
 
@@ -28,11 +28,19 @@ namespace Popup.Views.Contents
 
             _imagePath = imagePath;
             _linkUrl = linkUrl ?? string.Empty;
+            _useOriginalSize = useOriginalSize;
+            if (_useOriginalSize)
+            {
+                PopupImage.Visibility = Visibility.Collapsed;
+                OriginalCanvas.Visibility = Visibility.Visible;
+            }
 
             if (!string.IsNullOrWhiteSpace(_linkUrl))
             {
                 PopupImage.Cursor = Cursors.Hand;
                 PopupImage.ToolTip = _linkUrl;
+                OriginalImage.Cursor = Cursors.Hand;
+                OriginalImage.ToolTip = _linkUrl;
             }
 
             Loaded += ImageFillPopupView_Loaded;
@@ -80,6 +88,21 @@ namespace Popup.Views.Contents
                 }
 
                 PopupImage.Source = bitmapImage;
+                if (_useOriginalSize)
+                {
+                    // 이미지 메타데이터 DPI와 무관하게 원본 1px를 1 DIP로 표시한다.
+                    // Canvas의 DesiredSize는 이미지 크기를 따르지 않아 팝업이 커지지 않는다.
+                    void ApplyOriginalSize()
+                    {
+                        OriginalImage.Source = bitmapImage;
+                        OriginalImage.Width = bitmapImage.PixelWidth;
+                        OriginalImage.Height = bitmapImage.PixelHeight;
+                    }
+                    if (bitmapImage.IsDownloading)
+                        bitmapImage.DownloadCompleted += (_, _) => ApplyOriginalSize();
+                    else
+                        ApplyOriginalSize();
+                }
             }
             catch (Exception exception)
             {

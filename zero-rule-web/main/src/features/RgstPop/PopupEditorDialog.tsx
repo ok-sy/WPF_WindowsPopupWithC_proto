@@ -62,7 +62,7 @@ function createDefaultPopup(): AdminPopupDetail {
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false,
-      showDescription: true, imageSizeMode: 'ADAPTIVE', imageWidth: 0, imageHeight: 0,
+      showDescription: true, imageSizeMode: 'ORIGINAL', imageWidth: 0, imageHeight: 0,
       descriptionPosition: 'AUTO', imageAreaRatio: 0.75,
       linkUrl: '', showControls: true, allowFullScreen: true,
       allowPlaybackRateChange: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
@@ -136,9 +136,9 @@ function contentValue(popup: AdminPopupDetail, key: string): string {
   return value == null ? '' : String(value);
 }
 
-/* [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL 세 값만 쓴다.
+/* [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL / ORIGINAL 네 값만 쓴다.
  * 과거 값 FIXED와 빈 값은 불러오기·저장 시 ADAPTIVE로 바꿔 다시 저장되지 않게 한다. */
-const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE', 'FILL'];
+const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE', 'FILL', 'ORIGINAL'];
 function normalizeImageSizeMode(value: unknown): string {
   const mode = value == null ? '' : String(value).trim().toUpperCase();
   return IMAGE_SIZE_MODES.includes(mode) ? mode : 'ADAPTIVE';
@@ -147,7 +147,7 @@ function normalizeImageSizeMode(value: unknown): string {
  * 편집 중에는 유형을 바꿔도 입력값이 남도록 모든 키를 유지하고, 저장 요청에서만 걸러 다른 유형의 키가
  * CONTENT_OPTIONS에 쌓이지 않게 한다. 새 content 옵션을 추가하면 이 목록에도 넣어야 저장된다. */
 const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
-  'headerFontSize', 'bodyFontSize', 'footerFontSize'];
+  'headerFontSize', 'bodyFontSize', 'footerFontSize', 'footerAction', 'footerLinkUrl'];
 const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
   TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'showPlainText', 'highlightText',
     'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
@@ -156,7 +156,7 @@ const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
     'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
   SURVEY: ['surveyTitle', 'description'],
-  QUIZ: ['surveyTitle', 'description'],
+  QUIZ: ['surveyTitle', 'description', 'videoEnabled', 'videoUrl', 'videoTitle', 'showDescription', 'showControls', 'allowFullScreen', 'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
 };
 function contentForType(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
   const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
@@ -266,12 +266,23 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (popup.popupType === 'TEXT' && bottomUrl && !normalizePopupLink(bottomUrl)) {
       toast.warn('하단 설명 연결 URL을 확인해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
     }
+    if (popup.content.footerAction === 'LINK_AND_CLOSE' && !normalizePopupLink(contentValue(popup, 'footerLinkUrl'))) {
+      toast.warn('바로가기 URL을 입력해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
+    }
+    if (isVideoQuiz && (!contentValue(popup, 'videoUrl').trim() || /youtube\.com\/|youtu\.be\//i.test(contentValue(popup, 'videoUrl')))) {
+      toast.warn('동영상+퀴즈에는 시청 비율을 확인할 수 있는 영상 파일 URL을 입력해 주세요.'); return;
+    }
+    if (hasVideo && popup.completionRatio != null && (!Number.isFinite(popup.completionRatio) || popup.completionRatio < 0 || popup.completionRatio > 1)) {
+      toast.warn('완료 비율은 0~1 사이로 입력해 주세요.'); return;
+    }
     try {
       setLoading(true);
       const requestPopup: AdminPopupDetail = withNormalizedImageSizeMode({
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
-        content: contentForType(popup.popupType, popup.popupType === 'TEXT'
-          ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content),
+        content: contentForType(popup.popupType, { ...popup.content,
+          ...(popup.popupType === 'TEXT' ? { bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : {}),
+          footerLinkUrl: normalizePopupLink(contentValue(popup, 'footerLinkUrl')) ?? '',
+        }),
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       });
@@ -300,9 +311,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   };
 
   const titleKey = contentTitleKey(popup.popupType);
-  const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
+  const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
+  const hasVideo = popup.popupType === 'VIDEO' || isVideoQuiz;
+  const isMedia = popup.popupType === 'IMAGE' || hasVideo;
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
-  const imageFillMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'FILL';
+  const imageFillMode = popup.popupType === 'IMAGE' && ['FILL', 'ORIGINAL'].includes(contentValue(popup, 'imageSizeMode').toUpperCase());
   // [설계 18 L-4 — C-23] 표시 플래그 없는 과거 행 fallback 삭제(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
   const showTextHighlight = popup.content.showHighlight === true;
   const showTextContentHeader = popup.content.showContentHeader !== false;
@@ -331,8 +344,14 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
               <TextField required label="팝업 ID" value={popup.popupId} disabled={editing} inputProps={{ maxLength: 50 }} onChange={(e) => updatePopup('popupId', e.target.value)} />
               <TextField required label="팝업 제목" value={popup.title} inputProps={{ maxLength: 200 }} onChange={(e) => updatePopup('title', e.target.value)} />
-              <TextField select label="팝업 유형" value={popup.popupType} onChange={(e) => updatePopup('popupType', e.target.value as PopupType)}>
+              <TextField select label="팝업 유형" value={isVideoQuiz ? 'VIDEO_QUIZ' : popup.popupType} onChange={(e) => {
+                const combined = e.target.value === 'VIDEO_QUIZ';
+                setPopup((previous) => ({ ...previous, popupType: combined ? 'QUIZ' : e.target.value as PopupType,
+                  content: { ...previous.content, videoEnabled: combined },
+                  completionRatio: combined ? previous.completionRatio ?? 0.8 : previous.completionRatio }));
+              }}>
                 {popupTypes.map((type) => <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>)}
+                <MenuItem value="VIDEO_QUIZ">동영상 + 퀴즈</MenuItem>
               </TextField>
               <TextField select label="표시 방식" value={popup.displayMode} onChange={(e) => updatePopup('displayMode', e.target.value as PopupDisplayMode)}>
                 <MenuItem value="SEQUENTIAL">순차 표시</MenuItem><MenuItem value="SIMULTANEOUS">동시 표시</MenuItem>
@@ -346,7 +365,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
             {!imageFillMode && <><TextField label="콘텐츠 제목" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
-            {imageFillMode && <Typography variant="caption" color="text.secondary">꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
+            {imageFillMode && <Typography variant="caption" color="text.secondary">이 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
               {/* TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
@@ -360,14 +379,15 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {popup.popupType === 'IMAGE' && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
                 <TextField select label="이미지 크기 모드" value={normalizeImageSizeMode(popup.content.imageSizeMode)} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
-                  <MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
+                  <MenuItem value="ORIGINAL">원본 그대로 (넘치는 부분 자르기)</MenuItem><MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
                 </TextField>
                 {!imageFillMode && <TextField type="number" label="이미지 너비" value={contentValue(popup, 'imageWidth')} onChange={(e) => updateContent('imageWidth', Number(e.target.value))} />}
                 {!imageFillMode && <TextField type="number" label="이미지 높이" value={contentValue(popup, 'imageHeight')} onChange={(e) => updateContent('imageHeight', Number(e.target.value))} />}
               </Box>
               {/* [설계 18 L-5 — W-10] 모드별 크기 기준 안내(설계 15 §6 남은 항목)와 설명 배치 옵션 편집 */}
               <Typography variant="caption" color="text.secondary">
-                {imageFillMode ? '팝업 크기 그대로 이미지만 꽉 채웁니다. 제목·설명과 이미지 너비·높이는 쓰지 않습니다.'
+                {contentValue(popup, 'imageSizeMode') === 'ORIGINAL' ? '왼쪽 위에 원본 크기로 표시하고 넘치는 부분을 자릅니다. 이미지가 작아도 확대하지 않습니다.'
+                  : imageFillMode ? '팝업 크기 그대로 이미지만 꽉 채웁니다. 제목·설명과 이미지 너비·높이는 쓰지 않습니다.'
                   : normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'
                     ? `이미지 크기가 기준입니다. 너비·높이(없으면 원본 크기)로 표시하고 팝업 창 크기를 다시 계산합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
                     : '팝업 크기가 기준입니다. 이미지는 영역 안에 비율을 유지해 맞추며, 너비·높이는 최대 표시 크기로만 씁니다.'}
@@ -389,7 +409,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
               onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions, questionTemplateId: templateId }))} />}
             {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
-            {popup.popupType === 'VIDEO' && <Stack spacing={2}>
+            {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)} />
                 <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
@@ -451,6 +471,14 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
             </Box>
+            <TextField select size="small" label="푸터 버튼 동작" value={contentValue(popup, 'footerAction') || 'CLOSE'}
+              disabled={!popup.showFooter || !popup.showCloseButton} onChange={(e) => updateContent('footerAction', e.target.value)}>
+              <MenuItem value="CLOSE">닫기</MenuItem><MenuItem value="LINK_AND_CLOSE">바로가기 (링크 열고 닫기)</MenuItem>
+            </TextField>
+            {popup.content.footerAction === 'LINK_AND_CLOSE' && <TextField size="small" label="바로가기 URL"
+              value={contentValue(popup, 'footerLinkUrl')} onChange={(e) => updateContent('footerLinkUrl', e.target.value)}
+              helperText="하단 바로가기 버튼을 누르면 브라우저로 링크를 열고 팝업을 닫습니다." />}
+            {isVideoQuiz && <Typography variant="caption" color="text.secondary">영상 누적 시청 비율이 완료 기준에 도달하면 퀴즈와 푸터가 활성화됩니다.</Typography>}
             {/*
               [옵션 정합성 — 2026-09-20] 숨김 일수(hideDays).
               DB(POPUP_NOTICE.HIDE_DAYS)·서버 검증(1 이상)·WPF(다시 보지 않기 체크 시 HIDDEN 결과의 hideDays, 없으면 30일)는
@@ -503,7 +531,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>이미지 표시</Typography>
               {!imageFillMode && <FormControlLabel control={<Switch checked={popup.content.showDescription !== false} onChange={(_, value) => updateContent('showDescription', value)} />} label="이미지 설명 표시" />}
                 </>}
-                {popup.popupType === 'VIDEO' && <>
+                {hasVideo && <>
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>영상 재생</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
                 {[

@@ -224,15 +224,21 @@ namespace Popup.Managers
             popupWindow.ContentRendered += (sender, eventArgs) =>
                 builder.MarkDisplayed(DateTimeOffset.Now);
 
-            if (popupOptions.Content is SurveyPopupView surveyPopupView)
+            SurveyPopupView? surveyPopupView = popupOptions.Content as SurveyPopupView
+                ?? (popupOptions.Content as VideoQuizPopupView)?.Quiz;
+            VideoPopupView? videoPopupView = popupOptions.Content as VideoPopupView
+                ?? (popupOptions.Content as VideoQuizPopupView)?.Video;
+            if (surveyPopupView != null)
             {
                 bool isSubmitting = false;
                 surveyPopupView.SurveySubmitted += async (sender, submission) =>
                 {
                     if (isSubmitting) return;
+                    if (popupOptions.Content is VideoQuizPopupView combined && !combined.IsUnlocked) return;
                     isSubmitting = true;
                     try
                     {
+                        if (videoPopupView != null) builder.SetVideoProgress(videoPopupView.GetFinalProgress());
                         await SubmitSurveyResultAsync(popupWindow, popupOptions, builder, submission);
                     }
                     catch (Exception exception)
@@ -246,7 +252,7 @@ namespace Popup.Managers
                 };
             }
 
-            if (popupOptions.Content is VideoPopupView videoPopupView)
+            if (videoPopupView != null)
             {
                 // 닫히기 직전 누적 시청량을 한 번만 읽는다(예전의 10초 주기 저장 대체).
                 // 시청 완료 판정(closable 여부)은 PopupWindow.CloseButton_Click이 로컬 HasReachedCompletion으로 한다(설계 12 §5).

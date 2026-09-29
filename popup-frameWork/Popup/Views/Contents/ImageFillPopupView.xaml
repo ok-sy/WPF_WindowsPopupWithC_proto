@@ -7,19 +7,25 @@
              d:DesignWidth="760"
              d:DesignHeight="560">
     <!--
-    FILL 전용 이미지 View.
+    FILL / ORIGINAL 이미지 View.
     공통 PopupWindow의 콘텐츠 Margin 24를 상쇄해서
-    Header/Footer 사이의 본문 영역을 이미지가 빈 공간 없이 채운다.
+    Header/Footer 사이의 본문 영역을 사용한다. ORIGINAL은 왼쪽 위 원본 크기로 표시하고 자른다.
     -->
     <Grid Margin="-24">
         <Border Background="Black"
                 ClipToBounds="True">
-            <Image x:Name="PopupImage"
-                   Stretch="UniformToFill"
-                   HorizontalAlignment="Stretch"
-                   VerticalAlignment="Stretch"
-                   Cursor="Arrow"
-                   MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
+            <Grid>
+                <Image x:Name="PopupImage"
+                       Stretch="UniformToFill"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Stretch"
+                       Cursor="Arrow"
+                       MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
+                <Canvas x:Name="OriginalCanvas" Visibility="Collapsed" Background="White" ClipToBounds="True">
+                    <Image x:Name="OriginalImage" Canvas.Left="0" Canvas.Top="0" Stretch="Fill"
+                           MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
+                </Canvas>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

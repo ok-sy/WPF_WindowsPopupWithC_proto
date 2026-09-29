@@ -62,7 +62,10 @@ namespace Popup.Services
         public Task<WpfPopupListResponseDto> GetWpfPopupsAsync(string? popupType)
         {
             List<PopupResponseDto> visible = _popups.Values
-                .Where(popup => popupType == null || popup.PopupType.Equals(popupType, StringComparison.OrdinalIgnoreCase))
+                .Where(popup => popupType == null || (popupType == "VIDEO_QUIZ" ? popup.PopupId == "DEMO-VIDEO-QUIZ"
+                    : popupType == "FOOTER_LINK" ? popup.PopupId == "DEMO-FOOTER-LINK"
+                    : popup.PopupType.Equals(popupType, StringComparison.OrdinalIgnoreCase)
+                        && popup.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK")))
                 .Where(popup => !_completed.Contains(popup.PopupId))
                 .Where(popup => !_hiddenUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)
                 .OrderBy(popup => popup.DisplayOrder)
@@ -130,6 +133,12 @@ namespace Popup.Services
                     break;
 
                 case WpfResultType.Submitted:
+                    if (popup.Content.TryGetProperty("videoEnabled", out var enabled) && enabled.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                        if (item.Video == null || item.Video.DurationSeconds <= 0
+                            || (double)(decimal.Floor(item.Video.WatchedSeconds / item.Video.DurationSeconds * 10000) / 10000) < (popup.CompletionRatio ?? 1))
+                            return Reject(response, "WPF_VIDEO_INCOMPLETE", "영상 시청 완료 비율을 충족해야 합니다.");
+                    }
                     if (item.Answers == null || item.Answers.Count == 0)
                     {
                         return Reject(response, "WPF_INVALID_ANSWER", "답안이 없습니다.");
@@ -170,7 +179,7 @@ namespace Popup.Services
                     double required = popup.CompletionRatio ?? 1.0;
                     response.WatchedRatio = ratio;
                     response.RequiredRatio = required;
-                    if (ratio >= required)
+                    if (ratio >= required && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
                     {
                         _completed.Add(item.PopupId);
                         response.PopupStatus = "COMPLETED";

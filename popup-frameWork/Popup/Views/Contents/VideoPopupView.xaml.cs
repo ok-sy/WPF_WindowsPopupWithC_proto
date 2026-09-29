@@ -71,6 +71,7 @@ namespace Popup.Views.Contents
         private double _lastObservedPositionSeconds;
         /* 가장 최근에 계산한 진행 스냅샷. 창이 닫힐 때 결과 항목(VIDEO_WATCHED)에 담긴다. */
         private VideoProgressSnapshot? _latestProgress;
+        public event EventHandler<VideoProgressSnapshot>? ProgressUpdated;
         /*
          * 일정 시간 동안 마우스 움직임이 없으면
          * 영상 컨트롤바를 숨기는 타이머다.
@@ -788,6 +789,7 @@ namespace Popup.Views.Contents
 
             ProgressSlider.Value =
                 currentPosition.TotalSeconds;
+            UpdateProgressSnapshot();
         }
 
         /*
@@ -883,6 +885,7 @@ namespace Popup.Views.Contents
                 };
 
             _latestProgress = progress;
+            ProgressUpdated?.Invoke(this, progress);
         }
 
         /// <summary>

@@ -20,9 +20,9 @@ const MIN_WINDOW: Size = { width: 280, height: 300 };
 
 export const IMAGE_DESCRIPTION_POSITIONS = ['AUTO', 'RIGHT', 'BOTTOM'] as const;
 
-export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'FILL' {
+export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'FILL' | 'ORIGINAL' {
   const mode = String(popup.content.imageSizeMode ?? '').trim().toUpperCase();
-  return mode === 'FIT_TO_IMAGE' || mode === 'FILL' ? mode : 'ADAPTIVE';
+  return mode === 'FIT_TO_IMAGE' || mode === 'FILL' || mode === 'ORIGINAL' ? mode : 'ADAPTIVE';
 }
 
 /** WPF와 같이 0.5~0.9 밖이거나 숫자가 아니면 0.75. */
