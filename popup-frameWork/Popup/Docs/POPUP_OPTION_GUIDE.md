@@ -14,7 +14,7 @@
 | `TEXT` | 일반 텍스트, 카드, 강조 문구 |
 | `IMAGE` | 이미지, 설명, 링크 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
-| `SURVEY` | 객관식/주관식/평점 설문 |
+| `SURVEY` | 객관식/주관식 설문 |
 | `QUIZ` | 정답, 배점, 통과 점수가 있는 퀴즈. `content.videoEnabled=true`이면 동영상+퀴즈 |
 
 전체 흐름은 다음과 같다.
@@ -163,12 +163,12 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `videoUrl` | 빈 문자열 | 영상 URL/경로 | 사용 |
 | `description` | 빈 문자열 | 영상 설명 | 사용 |
 | `showDescription` | `true` | 설명 표시 | 사용 |
-| `showControls` | `true` | 컨트롤 표시 | DTO/관리자 값 존재. View 실제 강제 여부는 변경 시 함께 검증 필요 |
-| `allowFullScreen` | `true` | 영상 자체 전체화면 허용 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `allowPlaybackRateChange` | `true` | 배속 변경 허용 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `autoPlay` | `false` | 자동 재생 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `isLoop` | `false` | 반복 재생 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `defaultVolume` | `0.7` | 기본 음량 0~1 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
+| `showControls` | `true` | 컨트롤 표시 | 사용 |
+| `allowFullScreen` | `true` | 영상 자체 전체화면 허용 | 사용 |
+| `allowPlaybackRateChange` | `true` | 배속 변경 허용 | 사용 |
+| `autoPlay` | `false` | 자동 재생 | 사용 |
+| `isLoop` | `false` | 반복 재생 | 사용 |
+| `defaultVolume` | `0.7` | 기본 음량 0~1 | 사용 |
 | `completionRatio` | `1.0` | 완료 인정 비율 | 누적 시청 기준/닫기 제한에 사용 |
 | `allowCloseBeforeComplete` | `true` | 완료 전 닫기 허용 | PopupWindow에서 사용 |
 
@@ -202,7 +202,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.
 
-선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. 기존 RATING5도 같은 배치를 사용하며 보기 자동 생성은 제거했다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
+선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
 
 ### 7.3 QUIZ
 
