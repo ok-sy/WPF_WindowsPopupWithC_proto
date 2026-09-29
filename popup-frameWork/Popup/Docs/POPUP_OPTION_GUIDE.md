@@ -2,7 +2,7 @@
 
 ## 1. 문서 목적
 
-이 문서는 관리자 화면, Java API, PostgreSQL, WPF 클라이언트가 공유하는 팝업 옵션과 실제 호출 기능을 최신 `master` 소스 기준으로 정리한다.
+이 문서는 관리자 화면, zero-rule-server(Oracle), WPF 클라이언트가 공유하는 팝업 옵션과 실제 호출 기능을 최신 `main` 소스 기준으로 정리한다.
 
 사용자·운영자가 화면에서 어떤 값을 선택하는지에 대한 설명은 `POPUP_USER_OPTION_GUIDE.md`를 참고한다.
 관리자 화면에 아직 노출되지 않았거나 계층 간 값이 불일치하는 항목은 `POPUP_ADMIN_UI_GAP.md`를 참고한다.
@@ -14,24 +14,24 @@
 | `TEXT` | 일반 텍스트, 카드, 강조 문구 |
 | `IMAGE` | 이미지, 설명, 링크 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
-| `SURVEY` | 객관식/주관식/평점 설문 |
-| `QUIZ` | 정답, 배점, 통과 점수가 있는 퀴즈 |
+| `SURVEY` | 객관식/주관식 설문 |
+| `QUIZ` | 정답, 배점, 통과 점수가 있는 퀴즈. `content.videoEnabled=true`이면 동영상+퀴즈 |
 
 전체 흐름은 다음과 같다.
 
 ```text
 관리자 화면
-→ Java 관리자 API
-→ PostgreSQL
-→ Java 사용자 팝업 API
+→ 관리자 API
+→ Oracle
+→ WPF 전용 목록 API
 → WPF PopupResponseDto
 → PopupService / PopupFactory
 → PopupOptions + 타입별 View
 → PopupManager
 → PopupWindow
 → 사용자 동작
-→ Java 이벤트/응답/진행률 API
-→ PostgreSQL
+→ WPF 결과 일괄 API
+→ Oracle
 ```
 
 ---
@@ -87,20 +87,18 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 ---
 
-## 3. 기간·반복·숨김·완료 정책 필드
+## 3. 숨김·완료 정책 필드
 
-`PopupResponseDto` 및 관리자 모델에는 다음 정책 값이 존재한다.
+목록 API는 서버에서 기간·대상·숨김·완료 여부를 판정한 최종 노출 목록만 내려준다. WPF가 실제로 받거나 사용하는 정책 값은 아래와 같다.
 
-| 옵션 | 설명 | 현재 런타임 반영 상태 |
-|---|---|---|
-| `periodMode` | 기간/반복 정책 종류 | DTO/DB에 존재. 사용자 조회에서 반복 정책 전체가 적용되는지 별도 검증 필요 |
-| `repeatInterval` | 반복 간격 | DTO/DB에 존재 |
-| `repeatDayOfWeek` | 반복 요일 | DTO/DB에 존재 |
-| `repeatDayOfMonth` | 반복 일자 | DTO/DB에 존재 |
-| `hideDays` | 다시 보지 않기 숨김 일수 | 서버 필드 존재. 현재 WPF PopupWindow는 30일을 상수로 호출 |
-| `completionRatio` | VIDEO 완료 인정 비율 | 실제 VIDEO 완료 판정/닫기 제한에 사용 |
-| `passingScore` | QUIZ 통과 점수 | 서버 채점 및 화면 입력에 사용 |
-| `allowCloseBeforeComplete` | VIDEO 완료 전 닫기 허용 | PopupWindow 닫기 차단에 사용 |
+| 옵션 | 필수 여부 | Default | 설명 |
+|---|---|---|---|
+| `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용 |
+| `completionRatio` | VIDEO/동영상+퀴즈 | 1.0 | 누적 시청 완료 기준 0~1 |
+| `passingScore` | QUIZ | 없음 | WPF 로컬 채점 통과 점수 |
+| `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 헤더 X/Alt+F4 허용 여부 |
+
+기간·반복 정책 자체는 서버 내부 책임이며 WPF 응답 DTO에는 별도 반복 정책 필드를 두지 않는다.
 
 ---
 
@@ -138,17 +136,20 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `imageSizeMode` | string | 이미지 표시 방식 |
 | `imageWidth` | number | 요청 이미지 너비 |
 | `imageHeight` | number | 요청 이미지 높이 |
+| `descriptionPosition` | string | 설명 위치 AUTO/RIGHT/BOTTOM |
+| `imageAreaRatio` | number | 이미지 영역 비율, 기본 0.75(0.5~0.9) |
 | `linkUrl` | string | 이미지 클릭 시 이동 URL |
 
 현재 관리자 화면에는 다음 이미지 모드가 노출된다.
 
 | 관리자 값 | 설명 | WPF 처리 |
 |---|---|---|
-| `FIT_TO_IMAGE` | 원본 크기/비율에 맞춤 | `FitToImage` |
-| `ADAPTIVE` | 화면/형태에 맞춤 | `Adaptive` |
-| `FILL` | 이미지만 꽉 채움 | 전용 `ImageFillPopupView` 사용 |
+| `ORIGINAL` | 원본 픽셀 크기 유지, 왼쪽 위 배치, 넘치는 영역 자름 | 전용 원본 렌더링(스크롤/확대·축소 없음) |
+| `FIT_TO_IMAGE` | 지정 크기(없으면 원본)에 맞춰 창 크기 재계산 | `FitToImage` |
+| `ADAPTIVE` | 고정 팝업 영역 안에 비율 유지하여 맞춤 | `Adaptive` |
+| `FILL` | 이미지만 영역에 꽉 채움 | 전용 `ImageFillPopupView` 사용 |
 
-값이 없으면 `Adaptive`로 처리한다. 과거 값 `FIXED`는 2026-09-28(설계 18 L-1)부터 지원하지 않는다.
+신규 관리자 등록 기본 선택은 `ORIGINAL`이다. API 필드가 없으면 기존 호환을 위해 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 지원하지 않는다.
 
 ---
 
@@ -162,16 +163,16 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `videoUrl` | 빈 문자열 | 영상 URL/경로 | 사용 |
 | `description` | 빈 문자열 | 영상 설명 | 사용 |
 | `showDescription` | `true` | 설명 표시 | 사용 |
-| `showControls` | `true` | 컨트롤 표시 | DTO/관리자 값 존재. View 실제 강제 여부는 변경 시 함께 검증 필요 |
-| `allowFullScreen` | `true` | 영상 자체 전체화면 허용 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `allowPlaybackRateChange` | `true` | 배속 변경 허용 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `autoPlay` | `false` | 자동 재생 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `isLoop` | `false` | 반복 재생 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `defaultVolume` | `0.7` | 기본 음량 0~1 | DTO/관리자 값 존재. View 실제 연결 여부 검증 필요 |
-| `completionRatio` | `0.9` 계열 | 완료 인정 비율 | 진행률 API/닫기 제한에 사용 |
+| `showControls` | `true` | 컨트롤 표시 | 사용 |
+| `allowFullScreen` | `true` | 영상 자체 전체화면 허용 | 사용 |
+| `allowPlaybackRateChange` | `true` | 배속 변경 허용 | 사용 |
+| `autoPlay` | `false` | 자동 재생 | 사용 |
+| `isLoop` | `false` | 반복 재생 | 사용 |
+| `defaultVolume` | `0.7` | 기본 음량 0~1 | 사용 |
+| `completionRatio` | `1.0` | 완료 인정 비율 | 누적 시청 기준/닫기 제한에 사용 |
 | `allowCloseBeforeComplete` | `true` | 완료 전 닫기 허용 | PopupWindow에서 사용 |
 
-영상 진행률은 현재 위치만 보내는 것이 아니라 `durationSeconds`, `positionSeconds`, `maximumPositionSeconds`, `watchedSeconds`를 서버에 전송하고 서버 응답의 `completed`를 최종 완료 상태로 사용한다.
+영상 진행률은 결과 항목의 `video` 블록으로 `durationSeconds`, `positionSeconds`, `maximumPositionSeconds`, `watchedSeconds`를 전송한다. 동영상+퀴즈는 누적 시청 기준 충족 후 퀴즈·푸터가 활성화되고, 통과한 SUBMITTED 결과에 답안·점수·영상 정보를 함께 담는다.
 
 ---
 
@@ -201,7 +202,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.
 
-선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. 기존 RATING5도 같은 배치를 사용하며 보기 자동 생성은 제거했다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
+선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
 
 ### 7.3 QUIZ
 
@@ -213,14 +214,15 @@ QUIZ는 다음 기능이 추가된다.
 - 총점 계산
 - 통과 점수 입력
 - 응답 서버 제출
-- 서버 결과를 최종 점수/통과 결과로 사용
+- WPF 로컬 채점 및 통과 여부 판정
+- `content.videoEnabled=true`인 경우 영상 시청 기준 충족 후 퀴즈 입력 활성화
 
 ---
 
 ## 8. 실제 WPF API 호출 목록
 
 > **설계 18 L-0 (2026-09-28)** — 구 사용자용 API(`/api/popups?userId=`, `/hide`, `/responses`, `/video-progress`, `/events`, `/statuses`) 설명과 해당 `PopupApiService` 메서드는 삭제했다.
-> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.0 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](../../../docs/interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
+> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.5 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](../../../docs/interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
 
 WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 사용자를 식별한다.
 
@@ -252,15 +254,21 @@ AND showDoNotShowAgain = true
 
 ---
 
-## 11. 관리자 화면과 런타임의 현재 차이
+## 11. 공통 푸터 동작
+
+`content.footerAction`은 기본 `CLOSE`이며, `LINK_AND_CLOSE`일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 이 동작은 푸터와 닫기 버튼이 표시된 경우에만 화면에 나타난다.
+
+---
+
+## 12. 관리자 화면과 런타임의 현재 차이
 
 문서를 사용하는 개발자는 아래 항목을 반드시 확인한다.
 
-1. (해결 2026-09-28) 크기 비율 값은 관리자 웹·서버·WPF 모두 `RATIO`다.
+1. 크기 비율 값은 관리자 웹·서버·WPF 모두 `RATIO`다.
 2. WPF에는 `AUTO` 크기 모드가 있으나 관리자 웹/zero-rule-server 허용 목록에는 없다.
 3. RATING5 유형은 삭제했다(2026-09-28). 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
-4. `hideDays`는 모델/서버 필드가 있으나 관리자 입력이 없다. WPF는 팝업 `hideDays`를 HIDDEN 결과에 넣고, 값이 없으면 30일을 쓴다.
-5. `periodMode`, 반복 관련 필드는 모델/DB에 있으나 관리자 입력 UI와 실제 반복 노출 정책 적용 범위를 추가 검증해야 한다.
-6. VIDEO의 여러 확장 옵션은 DTO/관리자 화면에는 있으나 실제 Video View 연결 여부를 옵션별로 확인해야 한다.
+4. `hideDays`는 관리자 입력 가능하며, 비우면 WPF가 HIDDEN 결과에 30일을 사용한다.
+5. 기간·대상·숨김·완료 대상 판정은 서버가 목록 조회 전에 끝낸다.
+6. IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈는 최신 main에서 관리자·미리보기·WPF·서버 계약에 반영되어 있다.
 
 세부 작업 후보와 우선순위는 `POPUP_ADMIN_UI_GAP.md`에서 관리한다.
