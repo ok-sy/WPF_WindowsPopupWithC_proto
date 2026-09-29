@@ -2,15 +2,22 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
-<<<<<<< HEAD
-## 2026-09-29-05 — DemoWindow 새 기능 실행 및 설정 영역
+## 2026-09-29-07 — IMAGE ORIGINAL 레이아웃 정합성 점검
+
+- 이유: ORIGINAL의 Canvas가 Grid만으로 충분한 클리핑에 대한 과한 중복 방어인지 점검. FIXED/RATIO/FULLSCREEN처럼 창 크기가 정해진 경우에는 Grid만으로도 잘리지만, `sizeMode=AUTO`는 `SizeToContent`로 무한 크기 측정을 하므로 Grid 안의 원본 크기 Image가 그대로 창 크기로 전달되어 "팝업 크기 유지" 계약이 깨짐. Canvas는 자식과 무관하게 DesiredSize 0을 반환하므로 유지가 맞다고 판단.
+- 변경: Canvas는 유지하고 중복 설정만 제거. 바깥 Border의 `ClipToBounds`와 겹치는 Canvas `ClipToBounds`, 기본값과 같은 `Canvas.Left/Top=0` 삭제. Canvas를 쓰는 이유를 XAML 주석으로 기록. 무한 크기 측정 시 원본 이미지가 DesiredSize로 전달되지 않는지 확인하는 동작 검증 추가.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/ImageFillPopupView.xaml`, `popup-frameWork/Popup.BehaviorTests/Program.cs`.
+- 검증: `Popup.BehaviorTests` 54건 통과(기존 좌상단 고정·클리핑·흰 여백·창 크기 유지 포함). 같은 검증을 Canvas 대신 Grid로 임시 교체해 실행했을 때 신규 SizeToContent 검증이 실패함을 확인한 뒤 원복. 실제 GUI에서 AUTO+ORIGINAL 팝업 수동 확인은 미실행.
+- 상태: 2026-09-29-06 충돌 정리와 함께 main 커밋·푸시.
+
+## 2026-09-29-06 — DemoWindow 새 기능 실행 및 설정 영역
 
 - 이유: 추가된 기능을 데모 화면에서 쉽게 찾고 설정을 바꾸며 확인할 수 있도록 시연 진입점 보완.
 - 변경: 왼쪽 상단에 새 기능 확인 영역 추가. 바로가기 URL 입력·링크 열고 닫기 실행, 동영상+퀴즈 완료 비율 선택(0·25·50·80·100%), 퀴즈 푸터 바로가기 사용 체크, ORIGINAL 이미지 직접 실행 버튼 제공. 퀴즈 완료 시 오른쪽 상단에 score·passed 요약 표시하고 기존 요청·응답 JSON 로그 유지. 링크 검증·로그 초기화 처리 및 잘못된 정답 미제공 안내 문구 수정.
 - 주요 파일: `popup-frameWork/Popup/DemoWindow.xaml`, `DemoWindow.xaml.cs`.
 - 검증: WPF 빌드 및 기존 동작 검증 50건 통과. `git diff --check` 통과. 실제 GUI 버튼 클릭·브라우저 실행은 미실행.
-- 상태: 미커밋·미푸시. Debug 실행 파일 빌드 완료. 배포용 dist·오프라인 패키지는 갱신하지 않음.
-=======
+- 상태: `b42613d` 커밋 후 문서 작업(2026-09-29-05)과 `a96056c`로 병합해 main 반영. 병합 시 남은 CHANGELOG 충돌 표시는 이후 정리(두 항목 모두 유지, 커밋 시각 순으로 순번 조정). Debug 실행 파일 빌드 완료. 배포용 dist·오프라인 패키지는 갱신하지 않음.
+
 ## 2026-09-29-05 — API/인터페이스 및 팝업 가이드 최신화
 
 - 이유: 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 기능이 인터페이스 계약에는 일부 반영됐지만, 필드별 필수 여부·생략 시 기본값이 표마다 일관되지 않았고 옵션/사용자/미리보기 가이드에는 구 API·구 이미지 모드·과거 정책 설명이 남아 있어 연동 기준을 명확히 할 필요가 있음.
@@ -19,7 +26,6 @@
 - 주요 파일: `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `popup-frameWork/Popup/Docs/POPUP_OPTION_GUIDE.md`, `POPUP_USER_OPTION_GUIDE.md`, `FOOTER_LINK_VIDEO_QUIZ.md`, `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md`.
 - 검증: 최신 main의 `PopupResponseDto`, TEXT/IMAGE/VIDEO/Survey DTO, `PopupFactory`, 결과 DTO와 문서 기본값을 대조. 원격 반영 후 v3.5 표 구조와 가이드 링크를 재조회하고, 잔존 구문(RATIO 명칭 불일치·VIDEO 연결 미확정 표현·RATING5 문구)을 추가 정리. 문서 전용 변경으로 빌드·실행 테스트는 수행하지 않음.
 - 상태: main 커밋·푸시 후 원격 내용 재조회로 확인.
->>>>>>> d9a976995df8f3fda8ce54f6eaa5e46c5922da4e
 
 ## 2026-09-29-04 — IMAGE ORIGINAL 원본 크기 자르기 모드
 

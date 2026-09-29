@@ -21,8 +21,16 @@
                        VerticalAlignment="Stretch"
                        Cursor="Arrow"
                        MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
-                <Canvas x:Name="OriginalCanvas" Visibility="Collapsed" Background="White" ClipToBounds="True">
-                    <Image x:Name="OriginalImage" Canvas.Left="0" Canvas.Top="0" Stretch="Fill"
+                <!--
+                ORIGINAL 전용 Canvas.
+                Grid에 원본 크기 Image를 바로 두면 FIXED/RATIO처럼 크기가 정해진 팝업에서는 잘리지만,
+                sizeMode=AUTO(SizeToContent)는 무한 크기로 측정하므로 이미지 크기가 팝업 크기로 전달되어
+                "팝업 크기 유지" 계약이 깨진다. Canvas는 자식 크기와 무관하게 DesiredSize 0을 반환하므로
+                어떤 sizeMode에서도 팝업 크기에 영향을 주지 않는다.
+                자식 기본 좌표가 (0,0)이라 왼쪽 위에 고정되고, 넘친 부분은 바깥 Border의 ClipToBounds가 자른다.
+                -->
+                <Canvas x:Name="OriginalCanvas" Visibility="Collapsed" Background="White">
+                    <Image x:Name="OriginalImage" Stretch="Fill"
                            MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
                 </Canvas>
             </Grid>

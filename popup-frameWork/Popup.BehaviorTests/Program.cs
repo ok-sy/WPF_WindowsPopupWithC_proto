@@ -165,6 +165,10 @@ internal static class Program
             var view = (ImageFillPopupView)PopupFactory.Create(dto).Content!;
             view.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
             view.Margin = new Thickness(24); // PopupWindow의 본문 여백 재현
+            // sizeMode=AUTO(SizeToContent)는 무한 크기로 측정한다. 이때도 원본 이미지 크기가 팝업 크기로 전달되면 안 된다.
+            view.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Check(view.DesiredSize.Width < width && view.DesiredSize.Height < height,
+                "Original image must not grow popup under SizeToContent");
             var host = new Grid { Width = 200, Height = 150, ClipToBounds = true };
             host.Children.Add(view);
             host.Measure(new Size(200, 150));
