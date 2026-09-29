@@ -89,7 +89,14 @@ namespace Popup.Services
                 ResponseStartedAt = _displayedAt,
                 Answers = requestAnswers,
                 Score = submission.Score,
-                Passed = submission.Passed
+                Passed = submission.Passed,
+                Video = _videoProgress == null ? null : new WpfVideoProgressDto
+                {
+                    DurationSeconds = _videoProgress.DurationSeconds,
+                    PositionSeconds = _videoProgress.PositionSeconds,
+                    MaximumPositionSeconds = _videoProgress.MaximumPositionSeconds,
+                    WatchedSeconds = _videoProgress.WatchedSeconds
+                }
             };
         }
 

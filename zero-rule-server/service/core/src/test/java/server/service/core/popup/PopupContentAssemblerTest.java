@@ -28,6 +28,21 @@ class PopupContentAssemblerTest {
                 completionRatio, passingScore, allowClose);
     }
 
+    @Test void videoQuizKeepsVideoAndFooterOptionsThroughStorage() {
+        var content = assembler.assemble(entity("QUIZ", "교육", "설명", null, "https://example.com/lesson.mp4", null,
+                "{\"videoEnabled\":true,\"footerAction\":\"LINK_AND_CLOSE\",\"footerLinkUrl\":\"https://example.com/\"}",
+                new BigDecimal("0.8"), BigDecimal.TEN, "N"));
+        assertEquals("https://example.com/lesson.mp4", content.get("videoUrl"));
+        assertEquals("교육", content.get("surveyTitle"));
+        assertEquals(true, content.get("videoEnabled"));
+        assertEquals("LINK_AND_CLOSE", content.get("footerAction"));
+        assertEquals("https://example.com/", content.get("footerLinkUrl"));
+        var stored = PopupContentAssembler.withoutStoredCopies(content);
+        assertFalse(stored.containsKey("videoUrl"));
+        assertEquals(true, stored.get("videoEnabled"));
+        assertEquals("https://example.com/", stored.get("footerLinkUrl"));
+    }
+
     @Test void textUsesPlainTextAndColumnWinsOverStaleOptionCopy() {
         Map<String, Object> content = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null, null,
                 "{\"showPlainText\":true,\"description\":\"오래된 사본\",\"plainText\":\"오래된 본문\"}", null, null, "Y"));

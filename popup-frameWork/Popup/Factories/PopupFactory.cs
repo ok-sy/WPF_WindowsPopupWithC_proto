@@ -36,6 +36,9 @@ namespace Popup.Factories
                 "IMAGE" => CreateImagePopupView(popupDto.Content),
                 "VIDEO" => CreateVideoPopupView(popupDto.Content),
                 "SURVEY" => CreateSurveyPopupView(popupDto, false),
+                "QUIZ" when GetContentBoolean(popupDto.Content, "videoEnabled", false) =>
+                    new VideoQuizPopupView(CreateVideoPopupView(popupDto.Content),
+                        CreateSurveyPopupView(popupDto, true), popupDto.CompletionRatio ?? 1.0),
                 "QUIZ" => CreateSurveyPopupView(popupDto, true),
                 _ => throw new NotSupportedException($"지원하지 않는 팝업 종류입니다: {popupDto.PopupType}")
             };
@@ -53,6 +56,8 @@ namespace Popup.Factories
                 ShowHeader = popupDto.ShowHeader,
                 ShowCloseButton = popupDto.ShowCloseButton,
                 ShowFooter = popupDto.ShowFooter,
+                OpenFooterLinkAndClose = GetContentString(popupDto.Content, "footerAction") == "LINK_AND_CLOSE",
+                FooterLinkUrl = GetContentString(popupDto.Content, "footerLinkUrl"),
                 ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
 
                 /*
@@ -111,6 +116,10 @@ namespace Popup.Factories
                 };
             return PopupPosition.Center;
         }
+
+        private static string GetContentString(JsonElement content, string propertyName) =>
+            content.ValueKind == JsonValueKind.Object && content.TryGetProperty(propertyName, out var value)
+                && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
 
         private static bool GetContentBoolean(JsonElement content, string propertyName, bool defaultValue)
         {
@@ -171,9 +180,10 @@ namespace Popup.Factories
             ImagePopupContentDto contentDto = contentJson.Deserialize<ImagePopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("IMAGE 팝업 content 변환에 실패했습니다.");
 
-            if (string.Equals(contentDto.ImageSizeMode, "FILL", StringComparison.OrdinalIgnoreCase))
+            bool original = string.Equals(contentDto.ImageSizeMode, "ORIGINAL", StringComparison.OrdinalIgnoreCase);
+            if (original || string.Equals(contentDto.ImageSizeMode, "FILL", StringComparison.OrdinalIgnoreCase))
             {
-                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl);
+                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl, original);
             }
 
             return new ImagePopupView(

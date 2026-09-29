@@ -212,6 +212,28 @@ namespace Popup.Services
                 ?? throw new InvalidOperationException(
                     "Demo Mode 샘플 JSON을 읽지 못했습니다.");
 
+            JsonObject videoQuiz = demoPopups.First(node => node?["popupType"]?.GetValue<string>() == "QUIZ")!.DeepClone().AsObject();
+            videoQuiz["popupId"] = "DEMO-VIDEO-QUIZ";
+            videoQuiz["title"] = "동영상 + 퀴즈";
+            videoQuiz["height"] = 850;
+            videoQuiz["completionRatio"] = 0.8;
+            videoQuiz["allowCloseBeforeComplete"] = true;
+            videoQuiz["showFooter"] = true;
+            videoQuiz["showCloseButton"] = true;
+            videoQuiz["content"]!["videoEnabled"] = true;
+            videoQuiz["content"]!["videoTitle"] = "교육 영상";
+            videoQuiz["content"]!["autoPlay"] = false;
+            demoPopups.Add(videoQuiz);
+
+            JsonObject linked = demoPopups.First(node => node?["popupType"]?.GetValue<string>() == "TEXT")!.DeepClone().AsObject();
+            linked["popupId"] = "DEMO-FOOTER-LINK";
+            linked["title"] = "바로가기 버튼 데모";
+            linked["showFooter"] = true;
+            linked["showCloseButton"] = true;
+            linked["content"]!["footerAction"] = "LINK_AND_CLOSE";
+            linked["content"]!["footerLinkUrl"] = "https://example.com/";
+            demoPopups.Add(linked);
+
             /*
              * 개별 버튼으로 실행했다면 선택한 종류만 먼저 남긴다.
              * 따라서 TEXT나 SURVEY를 확인할 때 이미지·동영상 파일이 없어도 된다.
@@ -227,9 +249,15 @@ namespace Popup.Services
                         demoPopups[index]?["popupType"]?.GetValue<string>()
                         ?? string.Empty;
 
-                    if (!popupType.Equals(
+                    bool selected = requestedPopupType == "VIDEO_QUIZ"
+                        ? demoPopups[index]?["popupId"]?.GetValue<string>() == "DEMO-VIDEO-QUIZ"
+                        : requestedPopupType == "FOOTER_LINK"
+                        ? demoPopups[index]?["popupId"]?.GetValue<string>() == "DEMO-FOOTER-LINK"
+                        : popupType.Equals(
                             requestedPopupType,
-                            StringComparison.OrdinalIgnoreCase))
+                            StringComparison.OrdinalIgnoreCase)
+                            && demoPopups[index]?["popupId"]?.GetValue<string>() is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK");
+                    if (!selected)
                     {
                         demoPopups.RemoveAt(
                             index);
@@ -268,7 +296,8 @@ namespace Popup.Services
                 }
                 else if (popupType.Equals(
                              "VIDEO",
-                             StringComparison.OrdinalIgnoreCase))
+                             StringComparison.OrdinalIgnoreCase)
+                         || contentObject["videoEnabled"]?.GetValue<bool>() == true)
                 {
                     contentObject["videoUrl"] =
                         DemoMediaPathService.GetVideoPath();

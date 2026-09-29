@@ -15,7 +15,8 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" VerticalAlignment="Top">
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel VerticalAlignment="Top">
             <TextBlock Text="Demo Mode" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <TextBlock Text="서버 없이 팝업 표시와 결과 전송 흐름을 확인합니다." TextWrapping="Wrap"
                        Foreground="#666" Margin="0,0,0,16"/>
@@ -33,14 +34,23 @@
             <Button Content="전체 팝업 순차 실행" Height="40" Margin="0,0,0,10" Click="OpenAllPopupsButton_Click"/>
             <Button Content="텍스트 팝업 열기" Height="36" Margin="0,0,0,8" Tag="TEXT" Click="OpenPopupButton_Click"/>
             <Button Content="이미지 팝업 열기" Height="36" Margin="0,0,0,8" Tag="IMAGE" Click="OpenPopupButton_Click"/>
+            <ComboBox x:Name="ImageModeCombo" SelectedIndex="0" Margin="0,0,0,8">
+                <ComboBoxItem Content="ORIGINAL · 원본 그대로 자르기" Tag="ORIGINAL"/>
+                <ComboBoxItem Content="ADAPTIVE · 화면에 맞춤" Tag="ADAPTIVE"/>
+                <ComboBoxItem Content="FIT_TO_IMAGE · 원본에 맞춤" Tag="FIT_TO_IMAGE"/>
+                <ComboBoxItem Content="FILL · 꽉 채우기" Tag="FILL"/>
+            </ComboBox>
             <Button Content="비디오 팝업 열기" Height="36" Margin="0,0,0,8" Tag="VIDEO" Click="OpenPopupButton_Click"/>
             <Button Content="설문 팝업" Height="36" Margin="0,0,0,8" Tag="SURVEY" Click="OpenPopupButton_Click"/>
             <Button Content="퀴즈 팝업" Height="36" Margin="0,0,0,20" Tag="QUIZ" Click="OpenPopupButton_Click"/>
+            <Button Content="동영상 + 퀴즈" Height="36" Margin="0,0,0,8" Tag="VIDEO_QUIZ" Click="OpenPopupButton_Click"/>
+            <Button Content="바로가기 + 닫기" Height="36" Margin="0,0,0,8" Tag="FOOTER_LINK" Click="OpenPopupButton_Click"/>
             <Button Content="서버 상태 초기화 (숨김·완료)" Height="34" Margin="0,0,0,8" Click="ResetServerButton_Click"/>
             <Button Content="결과 로그 지우기" Height="34" Click="ClearLogButton_Click"/>
             <TextBlock x:Name="ServerStateText" Margin="0,16,0,0" Foreground="#444" TextWrapping="Wrap"
                        Text="숨김 0 · 완료 0"/>
         </StackPanel>
+        </ScrollViewer>
 
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>

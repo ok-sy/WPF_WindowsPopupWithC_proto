@@ -110,10 +110,10 @@ class PopupAdminQuestionsTest {
     }
 
     @Test void imagePopupAcceptsCurrentImageSizeModes() {
-        for (String mode : List.of("ADAPTIVE", "fit_to_image", "FILL")) {
+        for (String mode : List.of("ADAPTIVE", "fit_to_image", "FILL", "ORIGINAL")) {
             service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
         }
-        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+        verify(mapper, times(4)).upsertAdminPopupNotice(any());
     }
 
     // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.

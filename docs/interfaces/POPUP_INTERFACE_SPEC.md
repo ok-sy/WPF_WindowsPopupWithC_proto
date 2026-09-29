@@ -1,7 +1,9 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.2
-- 최신화: 2026-09-28 (KST)
+- 문서 버전: 3.4
+- 최신화: 2026-09-29 (KST)
+- 3.4 변경: IMAGE `imageSizeMode=ORIGINAL` 추가. 팝업 크기를 유지하고 원본 이미지를 왼쪽 위에 배치한 뒤 넘치는 영역을 자른다.
+- 3.3 변경: 공통 푸터 `footerAction`·`footerLinkUrl`, QUIZ의 `videoEnabled` 영상 결합 모드 추가. 영상 결합 QUIZ 제출은 `answers`와 `video`를 한 결과 항목에 포함한다.
 - 3.2 변경: 팝업 `sizeMode`의 `VIEWPORT_RATIO` 삭제(`RATIO`로 단일화), 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
 - 3.1 변경: IMAGE `imageSizeMode`의 과거 호환 값 `FIXED` 삭제(ADAPTIVE / FIT_TO_IMAGE / FILL만 허용, 미지정 시 ADAPTIVE)
 - 대상: **별도 구축 백엔드 ↔ 제공되는 C# WPF 팝업 클라이언트**
@@ -267,7 +269,11 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | headerFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
 | bodyFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
 | footerFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
+| footerAction | string | 선택. CLOSE(기본) / LINK_AND_CLOSE |
+| footerLinkUrl | string | LINK_AND_CLOSE일 때 필수. 절대 http/https URL |
 | popupPosition | string | 없거나 잘못되면 CENTER |
+
+`LINK_AND_CLOSE`는 하단 닫기 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. 헤더 X는 기존 닫기 동작을 유지한다. 버튼 표시는 `showFooter`·`showCloseButton`을 따른다.
 
 ### popupPosition ENUM
 
@@ -358,8 +364,13 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
 | FIT_TO_IMAGE | 이미지 크기가 기준. imageWidth/imageHeight 우선, 없으면 원본 크기로 팝업 크기 재계산 |
 | FILL | 팝업 영역을 이미지로 꽉 채움. 제목/설명 없는 배경형 표시 |
+| ORIGINAL | 팝업 크기는 유지. 원본 이미지를 왼쪽 위에 확대·축소 없이 표시하고 오른쪽·아래 초과 부분을 자름 |
 
-필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다(v3.1).
+필드가 없으면 ADAPTIVE로 처리한다. 위 네 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
+
+ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·`imageWidth`·`imageHeight`·설명 배치 옵션은 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. `linkUrl` 이미지 클릭 동작은 유지한다. 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
+
+관리자 신규 등록 기본 선택은 ORIGINAL이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
 
 ### descriptionPosition
 
@@ -547,6 +558,40 @@ passingScore 이상
 
 따라서 백엔드는 **미통과 QUIZ의 SUBMITTED 결과가 오지 않는 것**을 정상 동작으로 본다.
 
+## 8.6 동영상 + 퀴즈 (v3.3)
+
+별도 popupType을 추가하지 않고 `popupType: "QUIZ"`, `content.videoEnabled: true`로 지정한다. 일반 QUIZ는 이 옵션을 생략하거나 false로 보낸다.
+
+```json
+{
+  "popupType": "QUIZ",
+  "completionRatio": 0.8,
+  "passingScore": 80,
+  "allowCloseBeforeComplete": true,
+  "content": {
+    "videoEnabled": true,
+    "videoUrl": "https://example.com/training.mp4",
+    "videoTitle": "교육 영상",
+    "surveyTitle": "이해도 확인",
+    "description": "영상을 시청한 뒤 퀴즈에 응답하세요.",
+    "autoPlay": false,
+    "showControls": true,
+    "footerAction": "LINK_AND_CLOSE",
+    "footerLinkUrl": "https://example.com/training"
+  }
+}
+```
+
+위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
+
+- 영상 아래 퀴즈를 함께 표시한다. 작은 창에서는 콘텐츠를 스크롤한다.
+- 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·채점 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
+- 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
+- `allowCloseBeforeComplete: true`면 헤더 X·Alt+F4로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
+- 현재 플레이어의 YouTube 임베드는 시청 비율을 제공하지 않으므로 이 모드는 로컬 영상 파일 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
+- 영상만 보고 닫으면 `VIDEO_WATCHED`를 보내되 **퀴즈 완료로 처리하지 않는다**. 퀴즈 통과 후에만 `SUBMITTED`로 완료한다. 숨김 선택 시에는 기존 HIDDEN 정책을 따른다.
+- 새 모드를 사용하려면 WPF와 백엔드를 함께 갱신해야 한다. 기존 클라이언트는 `videoEnabled`를 이해하지 못한다.
+
 ---
 
 # 9. questions[] 계약
@@ -719,6 +764,8 @@ VIDEO_WATCHED
 ```
 
 현재 WPF는 통과한 QUIZ만 SUBMITTED 한다.
+
+동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 항목에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 
 ---
 

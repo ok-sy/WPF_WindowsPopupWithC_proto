@@ -96,6 +96,12 @@ namespace Popup
                     (Question1LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL",
                     (Question2LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL"
                 };
+                foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType == "IMAGE"))
+                {
+                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
+                    content["imageSizeMode"] = (ImageModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "ORIGINAL";
+                    popup.Content = JsonSerializer.SerializeToElement(content);
+                }
                 foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType is "SURVEY" or "QUIZ"))
                 {
                     for (int i = 0; i < Math.Min(layouts.Length, popup.Questions.Count); i++)

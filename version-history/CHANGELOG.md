@@ -2,6 +2,26 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-29-04 — IMAGE ORIGINAL 원본 크기 자르기 모드
+
+- 이유: 팝업 크기에 이미지를 맞추거나 창 크기를 재계산하지 않고, 원본을 그대로 넣어 초과 영역만 자르는 기본 표시 방식 추가.
+- 변경: `content.imageSizeMode=ORIGINAL` 지원. 헤더·푸터 사이 본문 왼쪽 위에 원본 픽셀 크기로 표시하고 오른쪽·아래 초과 부분을 자름. 확대·축소·스크롤·창 자동 크기 변경 없음. 작은 이미지의 남는 영역은 흰색. 이미지 메타데이터 DPI와 무관하게 1px를 1 DIP로 배치하며 OS 화면 배율은 적용. 제목·설명·요청 이미지 너비/높이는 사용하지 않고 이미지 클릭 링크는 유지. FILL의 로더·링크 처리를 재사용하되 Canvas로 원본 크기를 고정하여 잘라냄.
+- 변경(웹·서버): 관리자 모드 선택 및 미리보기 추가, 신규 등록 기본 선택 ORIGINAL. 기존 저장값과 옵션 누락 시 ADAPTIVE 유지. 서버 허용값에 ORIGINAL 추가(기존 CONTENT_OPTIONS 사용, 신규 DDL 없음). WPF 데모 이미지 모드 선택 추가. 인터페이스 계약 v3.4 갱신.
+- 주요 파일: `ImageFillPopupView.xaml/.cs`, `PopupFactory.cs`, `DemoWindow.xaml/.cs`, `PopupEditorDialog.tsx`, `PopupPreview.tsx`, `imagePreviewLayout.ts`, `PopupService.java`.
+- 검증: WPF 빌드 및 동작 검증 총 50건 통과. 신규 원본 모드 16건은 80×60·400×300 이미지 × DPI 96·192 조합을 실제 RenderTargetBitmap으로 렌더링하여 좌상단 정렬, 확대·축소 없음, 큰 이미지 클리핑, 작은 이미지 흰 여백, 창 크기 유지 확인. 서버 관리자 저장 테스트 11건 통과(ORIGINAL 포함). 웹 타입 검사 및 `git diff --check` 통과.
+- 상태: 2026-09-29-03 변경과 함께 이번 main 커밋에 포함하며 원격 푸시 후 동기화 확인. 실제 GUI·원격 이미지 다운로드·브라우저 화면 수동 검증, 배포·오프라인 패키지 재생성은 미실행.
+
+## 2026-09-29-03 — 푸터 바로가기 및 동영상+퀴즈 모드
+
+- 이유: 푸터에서 안내 링크를 열고 종료하는 동작과 영상 시청 후 퀴즈 응답을 활성화하는 교육 흐름 지원.
+- 변경(WPF): `footerAction=LINK_AND_CLOSE`이면 하단 버튼을 바로가기로 표시하고 HTTP(S) 주소를 기본 브라우저로 연 뒤 닫음. 주소 오류·실행 실패 시 창 유지. `QUIZ`의 `content.videoEnabled=true`이면 영상 아래 퀴즈를 함께 표시하고, 누적 시청 비율이 최상위 `completionRatio` 이상일 때 퀴즈와 푸터 전체를 활성화. 완료 전 입력·푸터 클릭 차단, 완료 후 되감기에도 활성 유지, 작은 창에서는 본문 스크롤. 일반 종료와 제출 모두 영상 진행률을 수집하며 제출 항목에 답안·점수와 video를 함께 기록. 데모 화면에 두 모드 실행 버튼 추가.
+- 변경(웹·서버): 관리자 유형 선택에 동영상+퀴즈 추가(저장은 QUIZ+videoEnabled), 푸터 동작·URL 편집과 시청 비율 미리보기 추가. 기존 MEDIA_URL·CONTENT_OPTIONS로 저장·복원하고 URL·모드 검증 추가. 서버는 시청 기준을 충족한 동영상+퀴즈 제출만 허용하며, 영상만 시청한 결과로 퀴즈를 완료 처리하지 않음. 신규 DDL 없음. 인터페이스 계약 v3.3 및 사용 가이드 추가.
+- 주요 파일: `Popup/Views/Contents/VideoQuizPopupView.cs`, `VideoPopupView.xaml.cs`, `PopupWindow.xaml.cs`, `PopupFactory.cs`, `PopupManager.cs`, `PopupResultBuilder.cs`, `PopupEditorDialog.tsx`, `PopupPreview.tsx`, `PopupService.java`, `PopupContentAssembler.java`, `WpfResultProcessor.java`, `PopupMapper.xml`.
+- 검증: WPF 빌드 성공 및 `Popup.BehaviorTests` 22건 통과(시청 경계 0·80·100%, 건너뛰기·되감기, 퀴즈·푸터 활성화, 필수 시청 종료 제한, 기본 닫기 유지, 통합 제출과 완료 판정). 서버 API·테스트 컴파일 및 service core popup 테스트 49건 중 47 통과·2 skip·실패 0. 웹 타입 검사·프로덕션 빌드 성공(기존 공통 lint·runtime config 경고 존재). `git diff --check` 통과.
+- 한계·미실행: GUI에서 실제 영상 재생·외부 브라우저 실행, 실DB 왕복 검증 미실행. 동영상+퀴즈는 시청 비율을 제공하지 않는 YouTube 임베드를 지원하지 않으며 영상 파일·직접 재생 URL 사용. 새 모드 사용 시 WPF·서버 동시 갱신 필요.
+- 상태: 2026-09-29-04 변경과 함께 이번 main 커밋에 포함하며 원격 푸시 후 동기화 확인. 배포·DB 적용·오프라인 패키지 재생성은 수행하지 않음.
+- 후속(퀴즈 점수 JSON): 일반 퀴즈·동영상+퀴즈 모두 기존 `results[].score`·`passed` 경로로 완료 점수를 전달하는 것을 확인. 실제 API 직렬화 옵션과 재전송 큐 옵션으로 0점·87.5점·100점의 JSON 변환·복원 검증 12건 추가. WPF 동작 검증 총 34건 통과. 결과 전송 로직의 추가 변경은 필요하지 않았음.
+
 ## 2026-09-29-02 — 오프라인 패키지 작업 브랜치 main 병합
 
 - 이유: 20260928 오프라인 패키지의 설계 18 후속 변경이 로컬 작업 브랜치에만 남아 있어 main과 정합성을 맞춤.

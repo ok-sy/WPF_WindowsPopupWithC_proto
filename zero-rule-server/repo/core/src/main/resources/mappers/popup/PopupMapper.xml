@@ -810,7 +810,10 @@
           ON u.EMPLOYEE_NO = #{userId}
          AND u.ACTIVE_YN = 'Y'
         WHERE n.POPUP_ID = #{popupId}
-          AND n.POPUP_TYPE = 'VIDEO'
+          AND (n.POPUP_TYPE = 'VIDEO' OR (n.POPUP_TYPE = 'QUIZ' AND EXISTS (
+              SELECT 1 FROM ${popupSchemaPrefix}POPUP_CONTENT vc
+              WHERE vc.POPUP_ID = n.POPUP_ID AND vc.MEDIA_URL IS NOT NULL
+          )))
           AND n.ACTIVE_YN = 'Y'
           AND <include refid="nowKst"/> BETWEEN n.DISPLAY_START_AT AND n.DISPLAY_END_AT
     </select>

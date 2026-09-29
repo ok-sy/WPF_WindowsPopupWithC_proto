@@ -114,6 +114,14 @@ public class WpfResultProcessor {
         if (item.answers().isEmpty()) {
             throw new IllegalArgumentException("SUBMITTED 결과에는 answers가 1개 이상 필요합니다.");
         }
+        var videoContext = popupMapper.selectVideoPopupContext(employeeNo, item.popupId());
+        if (videoContext != null && "QUIZ".equals(videoContext.popupType())) {
+            WpfVideoProgress video = item.video();
+            if (video == null) throw new IllegalArgumentException("동영상+퀴즈 제출에는 영상 시청 정보가 필요합니다.");
+            VideoProgressResponseDto progress = popupService.saveVideoProgress(item.popupId(), employeeNo,
+                    video.durationSeconds(), video.positionSeconds(), video.maximumPositionSeconds(), video.watchedSeconds());
+            if (!progress.completed()) throw new IllegalArgumentException("영상 시청 완료 비율을 충족해야 퀴즈를 제출할 수 있습니다.");
+        }
         PopupSubmitResponseDto submitted = popupService.submitResponse(
                 item.popupId(), item.resultId(), employeeNo, item.responseStartedAt(), item.answers());
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
