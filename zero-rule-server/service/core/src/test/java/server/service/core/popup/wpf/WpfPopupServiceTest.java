@@ -51,8 +51,8 @@ class WpfPopupServiceTest {
         return new PopupResponseDto("Q1", "QUIZ", "퀴즈", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
                 "SEQUENTIAL", 10, "FIXED", 600, 480, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, 20L, "FIXED", null, null, null, null, null, 10.0, true, questions,
-                Map.of("surveyTitle", "보안", "passingScore", 10.0, "validateRequiredQuestions", true,
-                        "questions", questions, "useBackgroundOverlay", true));
+                // [설계 18 L-3] PopupContentAssembler는 content에 문항·통과 점수 등 파생 키를 넣지 않는다.
+                Map.of("surveyTitle", "보안", "useBackgroundOverlay", true));
     }
 
     @Test void inactiveUserIsForbidden() {

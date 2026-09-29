@@ -97,9 +97,9 @@ export interface PopupTargetGroup {
   conditions: PopupTargetCondition[];
 }
 
+/** 정답은 question.options[].isCorrect / correctAnswer로 전달된다. */
 export interface AdminPopupQuestion {
   question: PopupQuestion;
-  correctValues: string[];
 }
 export interface AdminQuestionTemplate {
   templateId: number;
@@ -108,7 +108,6 @@ export interface AdminQuestionTemplate {
 }
 
 export interface AdminPopupInfo {
-  adminQuestions: AdminPopupQuestion[];
   popup: AdminPopupDetail;
   targetGroups: PopupTargetGroup[];
 }

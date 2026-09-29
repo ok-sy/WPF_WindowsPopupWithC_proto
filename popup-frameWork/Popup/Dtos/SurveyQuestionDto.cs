@@ -36,7 +36,6 @@ namespace Popup.Dtos
          * 질문 유형
          *
          * 서버 JSON 예:
-         * RATING5
          * SINGLE_CHOICE
          * MULTIPLE_CHOICE
          * TEXT
@@ -65,19 +64,14 @@ namespace Popup.Dtos
         public bool IsScored { get; set; }
 
         /*
-         * 정답 값 목록 (구 데모 JSON 형식)
-         *
-         * 데모 샘플(DemoPopupDataService)과 구 서버 JSON 호환용이다.
-         * 실제 서버는 이 필드 대신 options[].isCorrect / correctAnswer / answerMatchMode 로 정답을 내려준다.
-         * QuizGrader는 isCorrect 정보가 하나도 없을 때만 이 목록(선택지 value 집합)으로 채점한다.
+         * [설계 18 L-2 — C-16 삭제] 구 데모 JSON의 정답 값 목록(correctAnswers)을 삭제했다.
+         * 정답은 options[].isCorrect / correctAnswer / answerMatchMode 로만 받는다.
          */
-        public List<string> CorrectAnswers { get; set; } =
-            new List<string>();
 
         /*
          * [설계 12 §4 — 로컬 채점] 문항 배점.
          * 서버 PopupQuestionDto.questionScore. 정답이면 이 점수를 전부 얻고 부분 점수는 없다(서버 gradeAnswer와 같은 규칙).
-         * null이면(구 데모 JSON) QuizGrader가 100 / 채점 문항 수로 나눈다.
+         * null이면 0점으로 계산한다(설계 18 L-2 — C-17. 서버는 QUIZ 저장 시 배점을 필수로 검증한다).
          */
         public double? QuestionScore { get; set; }
 

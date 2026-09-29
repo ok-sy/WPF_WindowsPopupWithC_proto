@@ -56,7 +56,6 @@
             <!--
                 코드에서 질문 UI를 만들어 이 StackPanel에 추가한다.
 
-                Rating5       → RadioButton 5개
                 SingleChoice  → RadioButton
                 MultipleChoice→ CheckBox
                 Text          → TextBox

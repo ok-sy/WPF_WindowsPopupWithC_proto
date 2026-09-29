@@ -239,7 +239,7 @@ namespace Popup.Views.Windows
                  * [설계 11 §4·§5·§6] 예전에는 서버 Width/Height를 그대로 적용해, 작업 영역보다 큰 값
                  * (예: 5000 x 3000)이 내려오면 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
                  * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있었다.
-                 * 이제 VIEWPORT_RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
+                 * 이제 RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
                  * 최종 상한을 두고, 안전 여백으로 작업 영역의 95%를 최대값으로 쓴다.
                  *
                  * 순서:

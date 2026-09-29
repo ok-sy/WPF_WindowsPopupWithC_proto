@@ -62,6 +62,11 @@ public class PopupService {
             Set.of("SEQUENTIAL", "SIMULTANEOUS");
     private static final Set<String> SIZE_MODES =
             Set.of("FIXED", "RATIO", "FULLSCREEN");
+    /** [설계 18 L-1] IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
+    private static final Set<String> IMAGE_SIZE_MODES =
+            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "FILL");
+    private static final Set<String> IMAGE_DESCRIPTION_POSITIONS =
+            Set.of("AUTO", "RIGHT", "BOTTOM");
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
@@ -686,9 +691,7 @@ public class PopupService {
     public List<server.domain.popup.AdminPopupQuestion> getAdminQuestions(Long templateId) {
         if (templateId == null) return List.of();
         return loadQuestions(List.of(templateId), true).getOrDefault(templateId, List.of()).stream()
-                .map(question -> new server.domain.popup.AdminPopupQuestion(question,
-                        question.options().stream().filter(option -> Boolean.TRUE.equals(option.isCorrect()))
-                                .map(PopupOptionDto::value).toList()))
+                .map(server.domain.popup.AdminPopupQuestion::new)
                 .toList();
     }
 
@@ -807,12 +810,57 @@ public class PopupService {
             throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
         }
         validateFontSizeOptions(popup.content());
+        if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
+            validateImageSizeMode(popup.content());
+            validateImageLayoutOptions(popup.content());
+        }
         if (active == null) {
             throw new IllegalArgumentException("활성 여부는 필수입니다.");
         }
         if (auditUser == null || auditUser.isBlank()
                 || auditUser.trim().length() > 30) {
             throw new IllegalArgumentException("등록·수정자 정보는 1~30자여야 합니다.");
+        }
+    }
+
+    /**
+     * [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL만 저장한다.
+     * 값이 없으면 WPF 기본값(ADAPTIVE)을 쓰므로 통과시키고, FIXED 등 그 외 값은 거부한다.
+     */
+    private static void validateImageSizeMode(Map<String, Object> content) {
+        Object value = content == null ? null : content.get("imageSizeMode");
+        if (value == null || String.valueOf(value).isBlank()) {
+            return;
+        }
+        if (!IMAGE_SIZE_MODES.contains(normalizeUpper(String.valueOf(value)))) {
+            throw new IllegalArgumentException(
+                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, FILL 중 하나여야 합니다.");
+        }
+    }
+
+    /**
+     * [설계 18 L-5 — W-10] 관리자 편집기에서 설명 배치 옵션을 입력할 수 있게 되어 저장 값을 검사한다.
+     * descriptionPosition은 WPF가 AUTO / RIGHT / BOTTOM 외 값을 오류로 처리하고,
+     * imageAreaRatio는 WPF가 0.5~0.9 밖이면 0.75로 바꾸므로 범위 밖 값을 저장하지 않는다. 값이 없으면 통과(WPF 기본값).
+     */
+    private static void validateImageLayoutOptions(Map<String, Object> content) {
+        Object position = content == null ? null : content.get("descriptionPosition");
+        if (position != null && !String.valueOf(position).isBlank()
+                && !IMAGE_DESCRIPTION_POSITIONS.contains(normalizeUpper(String.valueOf(position)))) {
+            throw new IllegalArgumentException("설명 위치는 AUTO, RIGHT, BOTTOM 중 하나여야 합니다.");
+        }
+        Object ratio = content == null ? null : content.get("imageAreaRatio");
+        if (ratio == null || String.valueOf(ratio).isBlank()) {
+            return;
+        }
+        double value;
+        try {
+            value = ratio instanceof Number number ? number.doubleValue() : Double.parseDouble(String.valueOf(ratio).trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("이미지 영역 비율은 숫자여야 합니다.");
+        }
+        if (!Double.isFinite(value) || value < 0.5 || value > 0.9) {
+            throw new IllegalArgumentException("이미지 영역 비율은 0.5~0.9 사이여야 합니다.");
         }
     }
 
@@ -860,16 +908,16 @@ public class PopupService {
 
     /**
      * API 값을 DB 저장 형식(대문자 코드, Y/N, BigDecimal)으로 변환한다.
-     * 문항은 별도 테이블로 관리하므로 콘텐츠 JSON의 questions는 제거한다.
-     * 유형별 제목·미디어 URL은 개별 컬럼으로 추출하고 나머지 콘텐츠 설정도 JSON에 보관한다.
+     * 유형별 제목·설명·본문·미디어 URL·링크 URL은 개별 컬럼으로 추출한다.
+     * [설계 18 L-3] CONTENT_OPTIONS에는 컬럼 사본과 서버 파생 키(문항·완료 비율·통과 점수 등)를 빼고
+     * 나머지 확장 옵션만 보관한다. 사본을 저장하면 조회 시 컬럼 값과 어긋날 수 있다.
      */
     private AdminPopupSaveCommand toAdminSaveCommand(
             PopupResponseDto popup,
             boolean active,
             String auditUser,
             Long questionTemplateId) {
-        Map<String, Object> content = new LinkedHashMap<>(popup.content());
-        content.remove("questions");
+        Map<String, Object> content = popup.content() == null ? Map.of() : popup.content();
         String popupType = normalizeUpper(popup.popupType());
 
         return new AdminPopupSaveCommand(
@@ -908,7 +956,7 @@ public class PopupService {
                 contentText(content, "plainText"),
                 contentText(content, mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),
-                writeContentJson(popup.popupId(), content),
+                writeContentJson(popup.popupId(), PopupContentAssembler.withoutStoredCopies(content)),
                 auditUser);
     }
 
@@ -994,8 +1042,8 @@ public class PopupService {
 
     /**
      * DB의 숫자·Y/N 값과 콘텐츠 컬럼을 웹 및 WPF 공용 응답으로 변환한다.
-     * 크기 설정의 DB null 값에는 기본값을 적용하고, 선택 설정인 완료율·통과 점수는
-     * null을 유지한다. 설문·퀴즈 문항은 최상위와 content.questions에 함께 제공한다.
+     * 크기 설정 8개는 NOT NULL 컬럼이다(설계 18 L-4 — 08 스크립트 이후 기본값 보정 없음). 선택 설정인
+     * 완료율·통과 점수는 null을 유지한다. 설문·퀴즈 문항은 최상위 questions로만 제공한다(설계 18 L-3 — content.questions 중복 제거).
      * [Oracle 전환 — 기준 5] content는 매퍼가 내려준 JSON 문자열이 아니라
      * PopupContentAssembler가 정규 컬럼 + CONTENT_OPTIONS로 조립한다.
      */
@@ -1003,23 +1051,19 @@ public class PopupService {
             PopupEntity popup,
             List<PopupQuestionDto> questions) {
         Map<String, Object> content = contentAssembler.assemble(popup);
-        if ("SURVEY".equalsIgnoreCase(popup.popupType())
-                || "QUIZ".equalsIgnoreCase(popup.popupType())) {
-            content.put("questions", questions);
-        }
 
         return new PopupResponseDto(
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
                 popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
-                toDouble(popup.popupWidth(), 900),
-                toDouble(popup.popupHeight(), 620),
-                toDouble(popup.widthRatio(), 0.7),
-                toDouble(popup.heightRatio(), 0.75),
-                toDouble(popup.minimumWidth(), 480),
-                toDouble(popup.minimumHeight(), 320),
-                toDouble(popup.maximumWidth(), 1200),
-                toDouble(popup.maximumHeight(), 900),
+                popup.popupWidth().doubleValue(),
+                popup.popupHeight().doubleValue(),
+                popup.widthRatio().doubleValue(),
+                popup.heightRatio().doubleValue(),
+                popup.minimumWidth().doubleValue(),
+                popup.minimumHeight().doubleValue(),
+                popup.maximumWidth().doubleValue(),
+                popup.maximumHeight().doubleValue(),
                 isYes(popup.showHeaderYn()),
                 isYes(popup.showCloseButtonYn()),
                 isYes(popup.showFooterYn()),
@@ -1035,10 +1079,6 @@ public class PopupService {
 
     private boolean isYes(String value) {
         return "Y".equalsIgnoreCase(value);
-    }
-
-    private double toDouble(BigDecimal value, double defaultValue) {
-        return value == null ? defaultValue : value.doubleValue();
     }
 
     private Double toNullableDouble(BigDecimal value) {

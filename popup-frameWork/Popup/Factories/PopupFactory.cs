@@ -157,14 +157,13 @@ namespace Popup.Factories
                 contentDto.ContentTitle,
                 contentDto.Description,
                 contentDto.HighlightText,
-                contentDto.ShowHighlight ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
+                contentDto.ShowHighlight,
                 contentDto.BottomDescription,
                 contentDto.BottomDescriptionUrl,
                 contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
-                contentDto.ShowBottomDescription ?? (!string.IsNullOrWhiteSpace(contentDto.BottomDescription)
-                    || !string.IsNullOrWhiteSpace(contentDto.BottomDescriptionUrl)));
+                contentDto.ShowBottomDescription);
         }
 
         private static FrameworkElement CreateImagePopupView(JsonElement contentJson)
@@ -215,22 +214,19 @@ namespace Popup.Factories
         }
 
         /*
-         * [기준 3] 신규 WPF API는 문항을 최상위 questions에만 내려주고 content.questions는 제거했다.
-         * 최상위 questions가 있으면 그것을 쓰고, 비어 있으면 구 서버·데모 JSON 호환을 위해 content.questions를 읽는다.
+         * [기준 3] 문항은 응답 최상위 questions로만 받는다.
          * [설계 12 §4] QUIZ는 WPF가 로컬 채점하므로 서버가 QUIZ 팝업에 한해 내려주는 정답 정보
-         * (questionScore / options[].isCorrect / correctAnswer / answerMatchMode)와 통과 점수(passingScore)를 모델에 옮긴다.
-         * passingScore는 최상위 값을 우선하고 없으면 content.passingScore(구 JSON)를 쓴다.
+         * (questionScore / options[].isCorrect / correctAnswer / answerMatchMode)와 최상위 passingScore를 모델에 옮긴다.
+         * [설계 18 L-2 — C-14·C-15·C-16] 구 서버·데모 JSON용 content.questions / content.passingScore /
+         * correctAnswers(보기 value 목록) fallback을 삭제했다. 데모 JSON도 v3 형태로 바꿨다.
          */
         private static SurveyPopupView CreateSurveyPopupView(PopupResponseDto popupDto, bool isQuizMode)
         {
             SurveyPopupContentDto contentDto = popupDto.Content.Deserialize<SurveyPopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("SURVEY 또는 QUIZ content 변환에 실패했습니다.");
-            List<SurveyQuestionDto> questionDtos = popupDto.Questions.Count > 0
-                ? popupDto.Questions
-                : contentDto.Questions;
 
             List<SurveyQuestion> questions = new();
-            foreach (SurveyQuestionDto questionDto in questionDtos)
+            foreach (SurveyQuestionDto questionDto in popupDto.Questions)
             {
                 SurveyQuestion question = new()
                 {
@@ -241,7 +237,6 @@ namespace Popup.Factories
                     HorizontalOptions = string.Equals(questionDto.OptionLayout, "HORIZONTAL", StringComparison.Ordinal),
                     IsRequired = questionDto.IsRequired,
                     IsScored = questionDto.IsScored,
-                    CorrectAnswers = new List<string>(questionDto.CorrectAnswers),
                     QuestionScore = questionDto.QuestionScore,
                     CorrectAnswer = questionDto.CorrectAnswer,
                     AnswerMatchMode = questionDto.AnswerMatchMode
@@ -260,21 +255,17 @@ namespace Popup.Factories
                 questions.Add(question);
             }
 
-            double? passingScore = popupDto.PassingScore
-                ?? (contentDto.PassingScore > 0 ? contentDto.PassingScore : null);
-
             return new SurveyPopupView(
                 contentDto.SurveyTitle,
                 contentDto.Description,
                 questions,
                 isQuizMode,
-                passingScore);
+                popupDto.PassingScore);
         }
 
         private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>
             questionType.Trim().ToUpperInvariant() switch
             {
-                "RATING5" => SurveyQuestionType.Rating5,
                 "SINGLE_CHOICE" => SurveyQuestionType.SingleChoice,
                 "MULTIPLE_CHOICE" => SurveyQuestionType.MultipleChoice,
                 "TEXT" => SurveyQuestionType.Text,
@@ -295,7 +286,6 @@ namespace Popup.Factories
             {
                 "ADAPTIVE" => ImagePopupSizeMode.Adaptive,
                 "FIT_TO_IMAGE" => ImagePopupSizeMode.FitToImage,
-                "FIXED" => ImagePopupSizeMode.Adaptive,
                 _ => throw new ArgumentException($"지원하지 않는 이미지 크기 방식입니다: {imageSizeMode}")
             };
 
@@ -311,7 +301,7 @@ namespace Popup.Factories
             sizeMode.Trim().ToUpperInvariant() switch
             {
                 "FIXED" => PopupSizeMode.Fixed,
-                "VIEWPORT_RATIO" => PopupSizeMode.ViewportRatio,
+                // [설계 18 L-5 — C-24] 서버·관리자 웹 값 RATIO로 단일화. VIEWPORT_RATIO는 더 이상 받지 않는다.
                 "RATIO" => PopupSizeMode.ViewportRatio,
                 "FULLSCREEN" => PopupSizeMode.Fullscreen,
                 "AUTO" => PopupSizeMode.Auto,

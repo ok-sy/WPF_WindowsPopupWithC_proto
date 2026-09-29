@@ -23,8 +23,8 @@ namespace Popup.Services
      *     - 같은 resultId 재수신은 DUPLICATE
      *   처리한 항목은 ResultProcessed 이벤트로 DemoWindow의 결과 로그에 보여 준다.
      *
-     * [주의] 데모 샘플 JSON은 구 형식(correctAnswers 값 목록)이며 WPF 화면 쪽 QuizGrader가 이를 호환 처리한다
-     *        (이 게이트웨이는 채점하지 않는다. 데모 JSON v3 전환은 설계 18 L-2).
+     * [주의] 데모 샘플 JSON은 계약서 v3 형태(최상위 questions·passingScore, options[].isCorrect, questionScore)다
+     *        (설계 18 L-2). 이 게이트웨이는 채점하지 않고 WPF 화면 쪽 QuizGrader가 채점한다.
      *        운영 코드(PopupApiService)와 혼동하지 않도록 이 클래스는 Demo Mode에서만 생성된다.
      */
     public sealed class DemoPopupGateway : IPopupGateway

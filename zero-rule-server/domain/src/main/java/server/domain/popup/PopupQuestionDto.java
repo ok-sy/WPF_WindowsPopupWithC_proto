@@ -22,10 +22,10 @@ public record PopupQuestionDto(
 ) {
     /**
      * [설계 18 L-0] optionLayout 도입 전 호출부 호환용 11인자 생성자는 삭제했다(테스트에서만 사용).
-     * null optionLayout의 VERTICAL 보정은 원격 개발 DB에 05 스크립트가 적용될 때까지 유지한다(설계 18 S-16).
+     * [설계 18 L-4 — S-16] null optionLayout을 VERTICAL로 바꾸던 보정을 삭제했다. DB 컬럼은 NOT NULL DEFAULT이고
+     * (05 스크립트), 관리자 저장에서 null은 PopupQuestionRules.validate가 거부한다.
      */
     public PopupQuestionDto {
-        optionLayout = optionLayout == null ? "VERTICAL" : optionLayout;
         options = options == null ? List.of() : List.copyOf(options);
     }
 }

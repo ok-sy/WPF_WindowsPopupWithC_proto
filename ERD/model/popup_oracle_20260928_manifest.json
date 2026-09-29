@@ -1,14 +1,14 @@
 {
   "source": "db/oracle/01_popup_schema_oracle.sql",
-  "sha256": "0918b299c6950250b4af6431315b2ec54766c274ffa4b23539b057876e3c8ace",
+  "sha256": "37d420107f7c59398604a67308a0f3941439ae25b1440868e9a99e7f3fd06ad0",
   "tables": 17,
-  "columns": 229,
+  "columns": 224,
   "primaryKeys": 17,
   "foreignKeys": 25,
-  "uniqueKeys": 12,
-  "checks": 50,
+  "uniqueKeys": 11,
+  "checks": 51,
   "sequences": 12,
-  "indexes": 15,
+  "indexes": 14,
   "xmlLimitations": [
     "ERwin application/XSD compatibility unverified",
     "CHECK/default/ON DELETE expressions retained as definitions, not executable XML objects",
@@ -299,12 +299,6 @@
           "defaultValue": null
         },
         {
-          "name": "TEMPLATE_GROUP_ID",
-          "type": "VARCHAR2(30 CHAR)",
-          "notNull": true,
-          "defaultValue": null
-        },
-        {
           "name": "TEMPLATE_NAME",
           "type": "VARCHAR2(100 CHAR)",
           "notNull": true,
@@ -315,18 +309,6 @@
           "type": "VARCHAR2(10 CHAR)",
           "notNull": true,
           "defaultValue": null
-        },
-        {
-          "name": "TEMPLATE_VERSION",
-          "type": "NUMBER(10)",
-          "notNull": true,
-          "defaultValue": null
-        },
-        {
-          "name": "CURRENT_YN",
-          "type": "CHAR(1)",
-          "notNull": true,
-          "defaultValue": "'Y'"
         },
         {
           "name": "ACTIVE_YN",
@@ -367,23 +349,12 @@
             "QUESTION_TEMPLATE_ID"
           ],
           "sql": "CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID)"
-        },
-        {
-          "name": "UK_QTEMPLATE_GROUP_VERSION",
-          "type": "UNIQUE",
-          "columns": [
-            "TEMPLATE_GROUP_ID",
-            "TEMPLATE_VERSION"
-          ],
-          "sql": "CONSTRAINT UK_QTEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION)"
         }
       ],
       "checks": [
-        "CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION >= 1)",
-        "CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N'))",
         "CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))"
       ],
-      "sql": "CREATE TABLE QUESTION_TEMPLATE\n(\n    QUESTION_TEMPLATE_ID NUMBER(19)         NOT NULL,\n    TEMPLATE_GROUP_ID    VARCHAR2(30 CHAR)  NOT NULL,\n    TEMPLATE_NAME        VARCHAR2(100 CHAR) NOT NULL,\n    TEMPLATE_TYPE        VARCHAR2(10 CHAR)  NOT NULL,\n    TEMPLATE_VERSION     NUMBER(10)         NOT NULL,\n    CURRENT_YN           CHAR(1)            DEFAULT 'Y' NOT NULL,\n    ACTIVE_YN            CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID),\n    CONSTRAINT UK_QTEMPLATE_GROUP_VERSION UNIQUE (TEMPLATE_GROUP_ID, TEMPLATE_VERSION),\n    CONSTRAINT CK_QUESTION_TEMPLATE_VERSION CHECK (TEMPLATE_VERSION >= 1),\n    CONSTRAINT CK_QUESTION_TEMPLATE_CURRENT CHECK (CURRENT_YN IN ('Y', 'N')),\n    CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
+      "sql": "CREATE TABLE QUESTION_TEMPLATE\n(\n    QUESTION_TEMPLATE_ID NUMBER(19)         NOT NULL,\n    TEMPLATE_NAME        VARCHAR2(100 CHAR) NOT NULL,\n    TEMPLATE_TYPE        VARCHAR2(10 CHAR)  NOT NULL,\n    ACTIVE_YN            CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID),\n    CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))\n)"
     },
     {
       "name": "POPUP_NOTICE",
@@ -410,24 +381,6 @@
           "name": "TITLE",
           "type": "VARCHAR2(200 CHAR)",
           "notNull": true,
-          "defaultValue": null
-        },
-        {
-          "name": "SHOW_ON_LOGIN_YN",
-          "type": "CHAR(1)",
-          "notNull": true,
-          "defaultValue": "'N'"
-        },
-        {
-          "name": "SHOW_ON_SCHEDULE_YN",
-          "type": "CHAR(1)",
-          "notNull": true,
-          "defaultValue": "'N'"
-        },
-        {
-          "name": "SCHEDULED_AT",
-          "type": "TIMESTAMP(6)",
-          "notNull": false,
           "defaultValue": null
         },
         {
@@ -493,49 +446,49 @@
         {
           "name": "POPUP_WIDTH",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "POPUP_HEIGHT",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "WIDTH_RATIO",
           "type": "NUMBER(5,4)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "HEIGHT_RATIO",
           "type": "NUMBER(5,4)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "MINIMUM_WIDTH",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "MINIMUM_HEIGHT",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "MAXIMUM_WIDTH",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
           "name": "MAXIMUM_HEIGHT",
           "type": "NUMBER(10,2)",
-          "notNull": false,
+          "notNull": true,
           "defaultValue": null
         },
         {
@@ -635,9 +588,10 @@
         }
       ],
       "checks": [
+        "CONSTRAINT CK_POPUP_DISPLAY_MODE   CHECK (DISPLAY_MODE IN ('SEQUENTIAL', 'SIMULTANEOUS'))",
+        "CONSTRAINT CK_POPUP_SIZE_MODE      CHECK (SIZE_MODE IN ('FIXED', 'RATIO', 'FULLSCREEN'))",
         "CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER >= 1)",
         "CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT >= DISPLAY_START_AT)",
-        "CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL)",
         "CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL >= 1)",
         "CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31)",
         "CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS >= 1)",
@@ -645,9 +599,9 @@
         "CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE >= 0)",
         "CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO > 0)",
         "CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO > 0)",
-        "CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (SHOW_ON_LOGIN_YN IN ('Y', 'N')\n         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')\n         AND ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))"
+        "CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))"
       ],
-      "sql": "CREATE TABLE POPUP_NOTICE\n(\n    POPUP_ID                       VARCHAR2(50 CHAR)  NOT NULL,\n    QUESTION_TEMPLATE_ID           NUMBER(19),\n    POPUP_TYPE                     VARCHAR2(20 CHAR)  NOT NULL,\n    TITLE                          VARCHAR2(200 CHAR) NOT NULL,\n    SHOW_ON_LOGIN_YN               CHAR(1)            DEFAULT 'N' NOT NULL,\n    SHOW_ON_SCHEDULE_YN            CHAR(1)            DEFAULT 'N' NOT NULL,\n    SCHEDULED_AT                   TIMESTAMP(6),\n    DISPLAY_START_AT               TIMESTAMP(6)       NOT NULL,\n    DISPLAY_END_AT                 TIMESTAMP(6)       NOT NULL,\n    DISPLAY_MODE                   VARCHAR2(20 CHAR)  NOT NULL,\n    DISPLAY_ORDER                  NUMBER(10)         DEFAULT 100 NOT NULL,\n    PERIOD_MODE                    VARCHAR2(20 CHAR)  NOT NULL,\n    REPEAT_INTERVAL                NUMBER(10),\n    REPEAT_DAY_OF_WEEK             VARCHAR2(20 CHAR),\n    REPEAT_DAY_OF_MONTH            NUMBER(10),\n    ACTIVE_YN                      CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SIZE_MODE                      VARCHAR2(30 CHAR)  NOT NULL,\n    POPUP_WIDTH                    NUMBER(10,2),\n    POPUP_HEIGHT                   NUMBER(10,2),\n    WIDTH_RATIO                    NUMBER(5,4),\n    HEIGHT_RATIO                   NUMBER(5,4),\n    MINIMUM_WIDTH                  NUMBER(10,2),\n    MINIMUM_HEIGHT                 NUMBER(10,2),\n    MAXIMUM_WIDTH                  NUMBER(10,2),\n    MAXIMUM_HEIGHT                 NUMBER(10,2),\n    SHOW_HEADER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_CLOSE_BUTTON_YN           CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_FOOTER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_DO_NOT_SHOW_AGAIN_YN      CHAR(1)            DEFAULT 'N' NOT NULL,\n    HIDE_DAYS                      NUMBER(10),\n    COMPLETION_RATIO               NUMBER(5,4),\n    PASSING_SCORE                  NUMBER(10,2),\n    ALLOW_CLOSE_BEFORE_COMPLETE_YN CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_NOTICE PRIMARY KEY (POPUP_ID),\n    CONSTRAINT FK_POPUP_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID),\n    CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER >= 1),\n    CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT >= DISPLAY_START_AT),\n    CONSTRAINT CK_POPUP_SCHEDULED_AT   CHECK (SHOW_ON_SCHEDULE_YN = 'N' OR SCHEDULED_AT IS NOT NULL),\n    CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL >= 1),\n    CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31),\n    CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS >= 1),\n    CONSTRAINT CK_POPUP_COMPLETION_RATIO CHECK (COMPLETION_RATIO IS NULL OR COMPLETION_RATIO BETWEEN 0 AND 1),\n    CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE >= 0),\n    CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO > 0),\n    CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO > 0),\n    CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (SHOW_ON_LOGIN_YN IN ('Y', 'N')\n         AND SHOW_ON_SCHEDULE_YN IN ('Y', 'N')\n         AND ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))\n)"
+      "sql": "CREATE TABLE POPUP_NOTICE\n(\n    POPUP_ID                       VARCHAR2(50 CHAR)  NOT NULL,\n    QUESTION_TEMPLATE_ID           NUMBER(19),\n    POPUP_TYPE                     VARCHAR2(20 CHAR)  NOT NULL,\n    TITLE                          VARCHAR2(200 CHAR) NOT NULL,\n    DISPLAY_START_AT               TIMESTAMP(6)       NOT NULL,\n    DISPLAY_END_AT                 TIMESTAMP(6)       NOT NULL,\n    DISPLAY_MODE                   VARCHAR2(20 CHAR)  NOT NULL,\n    DISPLAY_ORDER                  NUMBER(10)         DEFAULT 100 NOT NULL,\n    PERIOD_MODE                    VARCHAR2(20 CHAR)  NOT NULL,\n    REPEAT_INTERVAL                NUMBER(10),\n    REPEAT_DAY_OF_WEEK             VARCHAR2(20 CHAR),\n    REPEAT_DAY_OF_MONTH            NUMBER(10),\n    ACTIVE_YN                      CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SIZE_MODE                      VARCHAR2(30 CHAR)  NOT NULL,\n    POPUP_WIDTH                    NUMBER(10,2)       NOT NULL,\n    POPUP_HEIGHT                   NUMBER(10,2)       NOT NULL,\n    WIDTH_RATIO                    NUMBER(5,4)        NOT NULL,\n    HEIGHT_RATIO                   NUMBER(5,4)        NOT NULL,\n    MINIMUM_WIDTH                  NUMBER(10,2)       NOT NULL,\n    MINIMUM_HEIGHT                 NUMBER(10,2)       NOT NULL,\n    MAXIMUM_WIDTH                  NUMBER(10,2)       NOT NULL,\n    MAXIMUM_HEIGHT                 NUMBER(10,2)       NOT NULL,\n    SHOW_HEADER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_CLOSE_BUTTON_YN           CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_FOOTER_YN                 CHAR(1)            DEFAULT 'Y' NOT NULL,\n    SHOW_DO_NOT_SHOW_AGAIN_YN      CHAR(1)            DEFAULT 'N' NOT NULL,\n    HIDE_DAYS                      NUMBER(10),\n    COMPLETION_RATIO               NUMBER(5,4),\n    PASSING_SCORE                  NUMBER(10,2),\n    ALLOW_CLOSE_BEFORE_COMPLETE_YN CHAR(1)            DEFAULT 'Y' NOT NULL,\n    CREATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    CREATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY                     VARCHAR2(30 CHAR)  NOT NULL,\n    UPDATED_AT                     TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_NOTICE PRIMARY KEY (POPUP_ID),\n    CONSTRAINT FK_POPUP_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID),\n    CONSTRAINT CK_POPUP_DISPLAY_MODE   CHECK (DISPLAY_MODE IN ('SEQUENTIAL', 'SIMULTANEOUS')),\n    CONSTRAINT CK_POPUP_SIZE_MODE      CHECK (SIZE_MODE IN ('FIXED', 'RATIO', 'FULLSCREEN')),\n    CONSTRAINT CK_POPUP_DISPLAY_ORDER  CHECK (DISPLAY_ORDER >= 1),\n    CONSTRAINT CK_POPUP_DISPLAY_PERIOD CHECK (DISPLAY_END_AT >= DISPLAY_START_AT),\n    CONSTRAINT CK_POPUP_REPEAT_INTERVAL CHECK (REPEAT_INTERVAL IS NULL OR REPEAT_INTERVAL >= 1),\n    CONSTRAINT CK_POPUP_REPEAT_DAY_OF_MONTH CHECK (REPEAT_DAY_OF_MONTH IS NULL OR REPEAT_DAY_OF_MONTH BETWEEN 1 AND 31),\n    CONSTRAINT CK_POPUP_HIDE_DAYS        CHECK (HIDE_DAYS IS NULL OR HIDE_DAYS >= 1),\n    CONSTRAINT CK_POPUP_COMPLETION_RATIO CHECK (COMPLETION_RATIO IS NULL OR COMPLETION_RATIO BETWEEN 0 AND 1),\n    CONSTRAINT CK_POPUP_PASSING_SCORE    CHECK (PASSING_SCORE IS NULL OR PASSING_SCORE >= 0),\n    CONSTRAINT CK_POPUP_WIDTH_RATIO      CHECK (WIDTH_RATIO IS NULL OR WIDTH_RATIO > 0),\n    CONSTRAINT CK_POPUP_HEIGHT_RATIO     CHECK (HEIGHT_RATIO IS NULL OR HEIGHT_RATIO > 0),\n    CONSTRAINT CK_POPUP_YN_VALUES CHECK\n        (ACTIVE_YN IN ('Y', 'N')\n         AND SHOW_HEADER_YN IN ('Y', 'N')\n         AND SHOW_CLOSE_BUTTON_YN IN ('Y', 'N')\n         AND SHOW_FOOTER_YN IN ('Y', 'N')\n         AND SHOW_DO_NOT_SHOW_AGAIN_YN IN ('Y', 'N')\n         AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))\n)"
     },
     {
       "name": "POPUP_CONTENT",
@@ -1072,6 +1026,12 @@
           "defaultValue": null
         },
         {
+          "name": "OPTION_LAYOUT",
+          "type": "VARCHAR2(10 CHAR)",
+          "notNull": true,
+          "defaultValue": "'VERTICAL'"
+        },
+        {
           "name": "SORT_ORDER",
           "type": "NUMBER(10)",
           "notNull": true,
@@ -1135,12 +1095,14 @@
         }
       ],
       "checks": [
+        "CONSTRAINT CK_QUESTION_TYPE CHECK (QUESTION_TYPE IN ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TEXT'))",
         "CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER >= 1)",
+        "CONSTRAINT CK_QUESTION_OPTION_LAYOUT CHECK (OPTION_LAYOUT IN ('VERTICAL', 'HORIZONTAL'))",
         "CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS'))",
         "CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N'))",
         "CONSTRAINT CK_QUESTION_SCORE CHECK\n        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE >= 0)\n         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))"
       ],
-      "sql": "CREATE TABLE POPUP_QUESTION\n(\n    QUESTION_ID          NUMBER(19)          NOT NULL,\n    QUESTION_TEMPLATE_ID NUMBER(19)          NOT NULL,\n    QUESTION_TYPE        VARCHAR2(30 CHAR)   NOT NULL,\n    QUESTION_TITLE       VARCHAR2(1000 CHAR) NOT NULL,\n    QUESTION_DESCRIPTION VARCHAR2(2000 CHAR),\n    REQUIRED_YN          CHAR(1)             DEFAULT 'N' NOT NULL,\n    SCORED_YN            CHAR(1)             DEFAULT 'N' NOT NULL,\n    QUESTION_SCORE       NUMBER(10,2),\n    CORRECT_ANSWER       CLOB,\n    ANSWER_MATCH_MODE    VARCHAR2(10 CHAR),\n    SORT_ORDER           NUMBER(10)          NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_QUESTION PRIMARY KEY (QUESTION_ID),\n    CONSTRAINT FK_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID) ON DELETE CASCADE,\n    CONSTRAINT UQ_QUESTION_SORT_ORDER UNIQUE (QUESTION_TEMPLATE_ID, SORT_ORDER),\n    CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER >= 1),\n    CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS')),\n    CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_QUESTION_SCORE CHECK\n        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE >= 0)\n         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))\n)"
+      "sql": "CREATE TABLE POPUP_QUESTION\n(\n    QUESTION_ID          NUMBER(19)          NOT NULL,\n    QUESTION_TEMPLATE_ID NUMBER(19)          NOT NULL,\n    QUESTION_TYPE        VARCHAR2(30 CHAR)   NOT NULL,\n    QUESTION_TITLE       VARCHAR2(1000 CHAR) NOT NULL,\n    QUESTION_DESCRIPTION VARCHAR2(2000 CHAR),\n    REQUIRED_YN          CHAR(1)             DEFAULT 'N' NOT NULL,\n    SCORED_YN            CHAR(1)             DEFAULT 'N' NOT NULL,\n    QUESTION_SCORE       NUMBER(10,2),\n    CORRECT_ANSWER       CLOB,\n    ANSWER_MATCH_MODE    VARCHAR2(10 CHAR),\n    OPTION_LAYOUT       VARCHAR2(10 CHAR) DEFAULT 'VERTICAL' NOT NULL,\n    SORT_ORDER           NUMBER(10)          NOT NULL,\n    CREATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    CREATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    UPDATED_BY           VARCHAR2(30 CHAR)   NOT NULL,\n    UPDATED_AT           TIMESTAMP(6)        DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,\n    CONSTRAINT PK_POPUP_QUESTION PRIMARY KEY (QUESTION_ID),\n    CONSTRAINT FK_QUESTION_TEMPLATE FOREIGN KEY (QUESTION_TEMPLATE_ID)\n        REFERENCES QUESTION_TEMPLATE (QUESTION_TEMPLATE_ID) ON DELETE CASCADE,\n    CONSTRAINT UQ_QUESTION_SORT_ORDER UNIQUE (QUESTION_TEMPLATE_ID, SORT_ORDER),\n    CONSTRAINT CK_QUESTION_TYPE CHECK (QUESTION_TYPE IN ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TEXT')),\n    CONSTRAINT CK_QUESTION_SORT_ORDER CHECK (SORT_ORDER >= 1),\n    CONSTRAINT CK_QUESTION_OPTION_LAYOUT CHECK (OPTION_LAYOUT IN ('VERTICAL', 'HORIZONTAL')),\n    CONSTRAINT CK_QUESTION_MATCH_MODE CHECK (ANSWER_MATCH_MODE IS NULL OR ANSWER_MATCH_MODE IN ('EXACT', 'CONTAINS')),\n    CONSTRAINT CK_QUESTION_YN_VALUES CHECK (REQUIRED_YN IN ('Y', 'N') AND SCORED_YN IN ('Y', 'N')),\n    CONSTRAINT CK_QUESTION_SCORE CHECK\n        ((SCORED_YN = 'Y' AND QUESTION_SCORE IS NOT NULL AND QUESTION_SCORE >= 0)\n         OR (SCORED_YN = 'N' AND QUESTION_SCORE IS NULL))\n)"
     },
     {
       "name": "POPUP_OPTION",

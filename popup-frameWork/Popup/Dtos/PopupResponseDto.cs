@@ -84,7 +84,7 @@ namespace Popup.Dtos
          *
          * 서버 JSON 예:
          * FIXED
-         * VIEWPORT_RATIO
+         * RATIO
          * FULLSCREEN
          * AUTO
          */

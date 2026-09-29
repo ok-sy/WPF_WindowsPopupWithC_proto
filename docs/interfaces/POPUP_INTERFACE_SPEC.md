@@ -1,7 +1,9 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.0
+- 문서 버전: 3.2
 - 최신화: 2026-09-28 (KST)
+- 3.2 변경: 팝업 `sizeMode`의 `VIEWPORT_RATIO` 삭제(`RATIO`로 단일화), 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
+- 3.1 변경: IMAGE `imageSizeMode`의 과거 호환 값 `FIXED` 삭제(ADAPTIVE / FIT_TO_IMAGE / FILL만 허용, 미지정 시 ADAPTIVE)
 - 대상: **별도 구축 백엔드 ↔ 제공되는 C# WPF 팝업 클라이언트**
 - 기준 구현: `popup-frameWork/Popup`
 - 목적: 백엔드 구현 방식, DB 구조, 관리자 화면 구조와 무관하게 **C# 클라이언트가 요구하는 HTTP/JSON 계약**만 정의한다.
@@ -222,11 +224,11 @@ X-Client-Version: 1.0.0
 | displayOrder | integer | O | 작은 값 우선, 같은 값은 같은 표시 그룹 |
 | displayStartAt | string(ISO) | 선택 | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
 | displayEndAt | string(ISO) | 선택 | 동일 |
-| sizeMode | string | O | FIXED / RATIO / VIEWPORT_RATIO / FULLSCREEN / AUTO |
+| sizeMode | string | O | FIXED / RATIO / FULLSCREEN / AUTO (VIEWPORT_RATIO는 v3.2에서 삭제) |
 | width | number | O | FIXED/FILL 등 실제 창 크기 기준 |
 | height | number | O | 동일 |
-| widthRatio | number | O 권장 | RATIO/VIEWPORT_RATIO |
-| heightRatio | number | O 권장 | RATIO/VIEWPORT_RATIO |
+| widthRatio | number | O 권장 | RATIO |
+| heightRatio | number | O 권장 | RATIO |
 | minimumWidth | number | O 권장 | 최소 창 너비 |
 | minimumHeight | number | O 권장 | 최소 창 높이 |
 | maximumWidth | number | O 권장 | 최대 창 너비 |
@@ -247,7 +249,7 @@ X-Client-Version: 1.0.0
 WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을 보정한다.
 
 - FIXED: 작업 영역 95% 이내로 최종 제한
-- RATIO / VIEWPORT_RATIO: 작업 영역 비율 사용
+- RATIO: 작업 영역 비율 사용
 - FULLSCREEN: 주 모니터 전체
 - AUTO: 콘텐츠 기준 자동 크기
 - 잘못된 값은 일부 모드에서 기본값/보정값으로 처리되지만, 백엔드는 정상 범위 값을 제공해야 한다.
@@ -319,10 +321,10 @@ BOTTOM_RIGHT
 | plainText | string | 본문 |
 | showPlainText | boolean | 본문 표시 여부 |
 | highlightText | string | 강조 문구 |
-| showHighlight | boolean | 강조 영역 표시 여부 |
+| showHighlight | boolean | 강조 영역 표시 여부. 없으면 false(v3.2) |
 | bottomDescription | string | 하단 설명 |
 | bottomDescriptionUrl | string | 클릭 시 이동 URL |
-| showBottomDescription | boolean | 하단 설명 영역 표시 |
+| showBottomDescription | boolean | 하단 설명 영역 표시. 없으면 false(v3.2) |
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 
@@ -356,7 +358,8 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
 | FIT_TO_IMAGE | 이미지 크기가 기준. imageWidth/imageHeight 우선, 없으면 원본 크기로 팝업 크기 재계산 |
 | FILL | 팝업 영역을 이미지로 꽉 채움. 제목/설명 없는 배경형 표시 |
-| FIXED | 과거 호환 값. 현재 WPF에서는 ADAPTIVE와 동일 처리 |
+
+필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다(v3.1).
 
 ### descriptionPosition
 
@@ -548,14 +551,14 @@ passingScore 이상
 
 # 9. questions[] 계약
 
-선택지는 직접 전달한다. RATING5도 기본 보기를 자동 생성하지 않는다. 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
+선택지는 직접 전달한다(C#이 기본 보기를 자동 생성하지 않는다). 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
 
 | 필드 | 형식 | 설명 |
 |---|---|---|
 | questionId | integer | 결과 answers의 참조 ID |
 | title | string | 질문 제목 |
 | description | string | 부가 설명 |
-| questionType | string | RATING5 / SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
+| questionType | string | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (그 외 값은 팝업 변환 실패, v3.2) |
 | optionLayout | string | 문항별 선택지 배치. VERTICAL(기본) / HORIZONTAL. 가로형은 너비 초과 시 줄바꿈 |
 | isRequired | boolean | 필수 응답 여부 |
 | isScored | boolean | QUIZ 채점 대상 여부 |
@@ -890,7 +893,6 @@ SIMULTANEOUS
 ```text
 FIXED
 RATIO
-VIEWPORT_RATIO
 FULLSCREEN
 AUTO
 ```
@@ -915,7 +917,6 @@ BOTTOM_RIGHT
 ADAPTIVE
 FIT_TO_IMAGE
 FILL
-FIXED
 ```
 
 ## descriptionPosition
@@ -929,7 +930,6 @@ BOTTOM
 ## questionType
 
 ```text
-RATING5
 SINGLE_CHOICE
 MULTIPLE_CHOICE
 TEXT

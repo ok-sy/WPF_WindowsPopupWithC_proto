@@ -514,7 +514,7 @@ namespace Popup.Views.Contents
         /*
          * [2026-09-23-03] Adaptive 모드의 이미지 크기 처리다.
          *
-         * 팝업 크기(FIXED/VIEWPORT_RATIO/FULLSCREEN 등 PopupOptions.SizeMode)가 기준이고,
+         * 팝업 크기(FIXED/RATIO/FULLSCREEN 등 PopupOptions.SizeMode)가 기준이고,
          * 이미지는 레이아웃이 나눠 준 영역 안에 Stretch="Uniform"으로 맞춰진다.
          *
          * 명시적 Width/Height를 지우고 정렬을 Stretch로 되돌리는 이유는

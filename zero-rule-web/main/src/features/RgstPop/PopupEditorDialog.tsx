@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import PopupPreview from './PopupPreview';
+import type { Size } from './imagePreviewLayout';
 import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEditor';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
@@ -61,7 +62,8 @@ function createDefaultPopup(): AdminPopupDetail {
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false,
-      showDescription: true, imageSizeMode: 'FIXED', imageWidth: 0, imageHeight: 0,
+      showDescription: true, imageSizeMode: 'ADAPTIVE', imageWidth: 0, imageHeight: 0,
+      descriptionPosition: 'AUTO', imageAreaRatio: 0.75,
       linkUrl: '', showControls: true, allowFullScreen: true,
       allowPlaybackRateChange: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
@@ -134,6 +136,46 @@ function contentValue(popup: AdminPopupDetail, key: string): string {
   return value == null ? '' : String(value);
 }
 
+/* [설계 18 L-1] IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL 세 값만 쓴다.
+ * 과거 값 FIXED와 빈 값은 불러오기·저장 시 ADAPTIVE로 바꿔 다시 저장되지 않게 한다. */
+const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE', 'FILL'];
+function normalizeImageSizeMode(value: unknown): string {
+  const mode = value == null ? '' : String(value).trim().toUpperCase();
+  return IMAGE_SIZE_MODES.includes(mode) ? mode : 'ADAPTIVE';
+}
+/* [설계 18 L-3] 저장 시 팝업 유형에서 쓰는 content 키만 보낸다(WPF content DTO·관리자 미리보기 기준).
+ * 편집 중에는 유형을 바꿔도 입력값이 남도록 모든 키를 유지하고, 저장 요청에서만 걸러 다른 유형의 키가
+ * CONTENT_OPTIONS에 쌓이지 않게 한다. 새 content 옵션을 추가하면 이 목록에도 넣어야 저장된다. */
+const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
+  'headerFontSize', 'bodyFontSize', 'footerFontSize'];
+const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
+  TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'showPlainText', 'highlightText',
+    'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
+  IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'imageWidth', 'imageHeight',
+    'descriptionPosition', 'imageAreaRatio', 'linkUrl'],
+  VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
+    'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
+  SURVEY: ['surveyTitle', 'description'],
+  QUIZ: ['surveyTitle', 'description'],
+};
+function contentForType(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
+  const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
+  return Object.fromEntries(keys.filter((key) => key in content).map((key) => [key, content[key]]));
+}
+/* [설계 18 L-5 — W-10] WPF ConvertImageDescriptionPosition은 AUTO/RIGHT/BOTTOM 외 값을 오류로 처리한다. */
+function normalizeDescriptionPosition(value: unknown): string {
+  const position = value == null ? '' : String(value).trim().toUpperCase();
+  return position === 'RIGHT' || position === 'BOTTOM' ? position : 'AUTO';
+}
+function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail {
+  if (popup.popupType !== 'IMAGE') return popup;
+  return { ...popup, content: {
+    ...popup.content,
+    imageSizeMode: normalizeImageSizeMode(popup.content.imageSizeMode),
+    descriptionPosition: normalizeDescriptionPosition(popup.content.descriptionPosition),
+  } };
+}
+
 function PopupDimensionField({ label, value, minimum, maximum, onChange }: {
   label: string; value: number; minimum: number; maximum: number; onChange: (value: number) => void;
 }) {
@@ -154,6 +196,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const [active, setActive] = useState(true);
   const [targetGroups, setTargetGroups] = useState<PopupTargetGroup[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // [설계 18 L-5 — W-10] 미리보기가 계산한 FIT_TO_IMAGE 팝업 창 크기(WPF RecommendedSizeChanged와 같은 값)
+  const [fitWindow, setFitWindow] = useState<Size | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const editing = popupId != null;
@@ -165,7 +209,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
-        setPopup({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 });
+        setPopup(withNormalizedImageSizeMode({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 }));
         setTargetGroups(body.targetGroups ?? []);
       }
     }).catch((error) => { if (!canceled) handleError(error); })
@@ -213,18 +257,24 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || popup.hideDays < 1 || popup.hideDays > 3650)) {
       toast.warn('숨김 일수는 1~3650 사이의 정수로 입력하거나 비워 두세요.'); return;
     }
+    const areaRatio = popup.content.imageAreaRatio;
+    if (popup.popupType === 'IMAGE' && areaRatio != null && areaRatio !== ''
+      && !(Number(areaRatio) >= 0.5 && Number(areaRatio) <= 0.9)) {
+      toast.warn('이미지 영역 비율은 0.5~0.9 사이로 입력하거나 비워 두세요.'); return;
+    }
     const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
     if (popup.popupType === 'TEXT' && bottomUrl && !normalizePopupLink(bottomUrl)) {
       toast.warn('하단 설명 연결 URL을 확인해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
     }
     try {
       setLoading(true);
-      const requestPopup: AdminPopupDetail = {
+      const requestPopup: AdminPopupDetail = withNormalizedImageSizeMode({
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
-        content: popup.popupType === 'TEXT' ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content,
+        content: contentForType(popup.popupType, popup.popupType === 'TEXT'
+          ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content),
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
-      };
+      });
       const hasInvalidTarget = targetGroups.some((group) => group.conditions.length === 0
         || group.conditions.some((condition) => !condition.value.trim()));
       if (active && targetGroups.length === 0) { toast.warn('활성 팝업은 대상 조건 그룹을 한 개 이상 추가해 주세요.'); return; }
@@ -236,6 +286,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
   const previewDialogSize = () => {
     const availableWidth = window.innerWidth, availableHeight = window.innerHeight;
+    // FIT_TO_IMAGE는 WPF처럼 이미지 크기로 다시 계산한 창 크기(최소·최대·작업 영역 95% 보정 완료)를 쓴다.
+    if (fitWindow) {
+      return { width: Math.round(Math.min(availableWidth * 0.96, fitWindow.width)), height: Math.round(Math.min(availableHeight * 0.96, fitWindow.height)) };
+    }
     const requestedWidth = popup.sizeMode === 'FULLSCREEN' ? availableWidth
       : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : popup.width;
     const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
@@ -249,11 +303,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   const imageFillMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'FILL';
-  const showTextHighlight = popup.content.showHighlight == null ? Boolean(contentValue(popup, 'highlightText')) : popup.content.showHighlight === true;
+  // [설계 18 L-4 — C-23] 표시 플래그 없는 과거 행 fallback 삭제(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
+  const showTextHighlight = popup.content.showHighlight === true;
   const showTextContentHeader = popup.content.showContentHeader !== false;
   const showTextPlainText = popup.content.showPlainText !== false;
-  const showTextBottomDescription = popup.content.showBottomDescription == null
-    ? Boolean(contentValue(popup, 'bottomDescription') || contentValue(popup, 'bottomDescriptionUrl')) : popup.content.showBottomDescription === true;
+  const showTextBottomDescription = popup.content.showBottomDescription === true;
   const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
   const backgroundOverlayOpacity = Math.max(0, Math.min(1, Number(popup.content.backgroundOverlayOpacity ?? 0.45)));
   const modalPreviewSize = previewOpen && typeof window !== 'undefined' ? previewDialogSize() : { width: popup.width, height: popup.height };
@@ -266,7 +320,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       </DialogTitle>
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
-          setPopup((current) => ({ ...template, popupId: current.popupId, questionTemplateId: null }));
+          setPopup((current) => withNormalizedImageSizeMode({ ...template, popupId: current.popupId, questionTemplateId: null }));
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
       {loading && <LinearProgress />}
@@ -305,12 +359,30 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
             {popup.popupType === 'IMAGE' && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
-                <TextField select label="이미지 크기 모드" value={contentValue(popup, 'imageSizeMode') || 'FIXED'} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
-                  <MenuItem value="FIXED">고정 영역</MenuItem><MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
+                <TextField select label="이미지 크기 모드" value={normalizeImageSizeMode(popup.content.imageSizeMode)} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
+                  <MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
                 </TextField>
                 {!imageFillMode && <TextField type="number" label="이미지 너비" value={contentValue(popup, 'imageWidth')} onChange={(e) => updateContent('imageWidth', Number(e.target.value))} />}
                 {!imageFillMode && <TextField type="number" label="이미지 높이" value={contentValue(popup, 'imageHeight')} onChange={(e) => updateContent('imageHeight', Number(e.target.value))} />}
               </Box>
+              {/* [설계 18 L-5 — W-10] 모드별 크기 기준 안내(설계 15 §6 남은 항목)와 설명 배치 옵션 편집 */}
+              <Typography variant="caption" color="text.secondary">
+                {imageFillMode ? '팝업 크기 그대로 이미지만 꽉 채웁니다. 제목·설명과 이미지 너비·높이는 쓰지 않습니다.'
+                  : normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'
+                    ? `이미지 크기가 기준입니다. 너비·높이(없으면 원본 크기)로 표시하고 팝업 창 크기를 다시 계산합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
+                    : '팝업 크기가 기준입니다. 이미지는 영역 안에 비율을 유지해 맞추며, 너비·높이는 최대 표시 크기로만 씁니다.'}
+              </Typography>
+              {!imageFillMode && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                <TextField select label="설명 위치" value={normalizeDescriptionPosition(popup.content.descriptionPosition)}
+                  disabled={popup.content.showDescription === false} onChange={(e) => updateContent('descriptionPosition', e.target.value)}
+                  helperText="자동: 세로로 긴 이미지(가로/세로 0.8 이하)는 오른쪽, 그 외는 아래">
+                  <MenuItem value="AUTO">자동</MenuItem><MenuItem value="RIGHT">이미지 오른쪽</MenuItem><MenuItem value="BOTTOM">이미지 아래</MenuItem>
+                </TextField>
+                <TextField type="number" label="이미지 영역 비율" value={contentValue(popup, 'imageAreaRatio')}
+                  disabled={popup.content.showDescription === false || normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'}
+                  inputProps={{ min: 0.5, max: 0.9, step: 0.05 }} helperText="0.5~0.9. 화면에 맞춤에서 이미지와 설명 영역을 나누는 비율(범위 밖은 0.75)"
+                  onChange={(e) => updateContent('imageAreaRatio', e.target.value === '' ? null : Number(e.target.value))} />
+              </Box>}
               <TextField label="클릭 연결 URL" value={contentValue(popup, 'linkUrl')} onChange={(e) => updateContent('linkUrl', e.target.value)} />
             </Stack>}
 
@@ -366,7 +438,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <Typography variant="subtitle1" fontWeight={700}>팝업 미리보기</Typography>
                 <Button size="small" variant="outlined" startIcon={<PreviewIcon />} onClick={() => setPreviewOpen(true)}>실제 크기로 보기</Button>
               </Stack>
-              <PopupPreview popup={popup} fitContainer />
+              <PopupPreview popup={popup} fitContainer onRecommendedSize={setFitWindow} />
             </Stack>
             <Box sx={{ minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, bgcolor: 'background.paper', borderRadius: 1, p: 2,
               '& .MuiFormControlLabel-root': { m: 0 }, '& .MuiFormControlLabel-label': { fontSize: 13 } }}>

@@ -93,10 +93,64 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
+    private PopupResponseDto imagePopup(String imageSizeMode) {
+        return new PopupResponseDto("TEST", "IMAGE", "Image", OffsetDateTime.now(),
+                OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
+                560, 420, .7, .75, 480, 320, 1200, 900,
+                true, true, true, false, null, "FIXED",
+                null, null, null, null, null, null, true, List.of(),
+                Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
+    }
+
+    // [설계 18 L-1] 과거 IMAGE 크기 모드 FIXED는 저장하지 않는다.
+    @Test void imagePopupRejectsLegacyFixedImageSizeMode() {
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                imagePopup("FIXED"), false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+    }
+
+    @Test void imagePopupAcceptsCurrentImageSizeModes() {
+        for (String mode : List.of("ADAPTIVE", "fit_to_image", "FILL")) {
+            service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
+        }
+        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+    }
+
+    // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.
+    @Test void imagePopupValidatesDescriptionLayoutOptions() {
+        java.util.function.Function<Map<String, Object>, PopupResponseDto> withContent = extra -> {
+            var base = imagePopup("ADAPTIVE");
+            var content = new java.util.HashMap<>(base.content());
+            content.putAll(extra);
+            return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                    base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                    base.width(), base.height(), base.widthRatio(), base.heightRatio(),
+                    base.minimumWidth(), base.minimumHeight(), base.maximumWidth(), base.maximumHeight(),
+                    base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(),
+                    base.questionTemplateId(), base.periodMode(), base.repeatInterval(), base.repeatDayOfWeek(),
+                    base.repeatDayOfMonth(), base.hideDays(), base.completionRatio(), base.passingScore(),
+                    base.allowCloseBeforeComplete(), base.questions(), content);
+        };
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                withContent.apply(Map.of("descriptionPosition", "LEFT")), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                withContent.apply(Map.of("imageAreaRatio", 0.95)), false, List.of(), "admin"));
+        service.saveAdminPopup(withContent.apply(Map.of("descriptionPosition", "right", "imageAreaRatio", 0.6)),
+                false, List.of(), "admin");
+        verify(mapper, times(1)).upsertAdminPopupNotice(any());
+    }
+
+    // [설계 18 L-3] 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다.
+    @Test void saveStoresColumnValuesOutsideContentOptions() {
+        service.saveAdminPopup(imagePopup("ADAPTIVE"), false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupContent(argThat(c -> "https://example.com/a.png".equals(c.mediaUrl())
+                && !c.contentOptionsJson().contains("imageUrl")
+                && c.contentOptionsJson().contains("imageSizeMode")));
+    }
+
     @Test void templateLookupRetainsCorrectAnswersForEditor() {
         existingQuestions();
         var entries = service.getAdminQuestions(10L);
-        assertEquals(List.of("1"), entries.get(0).correctValues());
         assertTrue(entries.get(0).question().options().get(0).isCorrect());
     }
 

@@ -33,7 +33,7 @@ namespace Popup.Views.Contents
          * → 일반 설문
          *
          * true
-         * → CorrectAnswers를 기준으로 점수를 계산하는 퀴즈
+         * → 보기 IsCorrect·서술형 정답을 기준으로 점수를 계산하는 퀴즈
          */
         private readonly bool _isQuizMode;
 
@@ -228,9 +228,6 @@ namespace Popup.Views.Contents
         {
             switch (question.QuestionType)
             {
-                case SurveyQuestionType.Rating5:
-                    return CreateSingleChoiceControl(question);
-
                 case SurveyQuestionType.SingleChoice:
                     return CreateSingleChoiceControl(question);
 
@@ -366,7 +363,6 @@ namespace Popup.Views.Contents
 
                 switch (question.QuestionType)
                 {
-                    case SurveyQuestionType.Rating5:
                     case SurveyQuestionType.SingleChoice:
                         CollectSingleChoiceAnswer(
                             answerControl,
@@ -445,8 +441,7 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// 선택한 보기의 비교용 Value와 서버 저장용 OptionId를
-        /// SurveyAnswer에 함께 추가한다.
+        /// 선택한 보기의 서버 OptionId를 SurveyAnswer에 추가한다.
         /// [설계 18 L-0 — C-19] 보기 컨트롤(RadioButton·CheckBox)의 Tag는 항상 SurveyOption으로 만들므로
         /// "구 커스텀 컨트롤" 호환용 문자열 Tag 분기는 도달할 수 없어 삭제했다. SurveyOption이 아니면 무시한다.
         /// </summary>
@@ -458,9 +453,6 @@ namespace Popup.Views.Contents
             {
                 return;
             }
-
-            answer.SelectedValues.Add(
-                option.Value);
 
             /*
              * 서버 문항 보기는 항상 양수 OptionId를 가진다.
@@ -507,7 +499,7 @@ namespace Popup.Views.Contents
 
                 bool hasAnswer = answer != null &&
                 (
-                    answer.SelectedValues.Count > 0 ||
+                    answer.SelectedOptionIds.Count > 0 ||
                     !string.IsNullOrWhiteSpace(
                         answer.TextAnswer)
                 );
