@@ -21,7 +21,7 @@
 - 제출 결과에는 퀴즈 답안·점수·통과 여부와 영상 시청 정보를 함께 보낸다. 영상만 시청하고 닫은 경우 퀴즈 완료로 처리하지 않는다.
 - 완료 점수는 요청 JSON의 `results[].score`, 통과 여부는 `results[].passed`다. 예: `{"resultType":"SUBMITTED","score":87.5,"passed":true}`(관련 필드 발췌). 일반 퀴즈와 동영상+퀴즈 모두 동일하며 재전송 큐에도 점수를 보존한다.
 - 시청 기준과 퀴즈 통과를 모두 충족해야 완료된다. 기존 일반 퀴즈의 통과 시 자동 종료 동작은 유지한다. 푸터 바로가기는 푸터 버튼을 클릭한 경우에만 실행한다.
-- WPF와 서버를 함께 갱신해야 새 모드가 동작한다. 상세 계약은 `docs/interfaces/POPUP_INTERFACE_SPEC.md` v3.3을 참고한다.
+- WPF와 서버를 함께 갱신해야 새 모드가 동작한다. 상세 계약은 `docs/interfaces/POPUP_INTERFACE_SPEC.md` v3.5를 참고한다.
 
 ## 자동 검증
 
