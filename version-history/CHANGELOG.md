@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-29-02 — 오프라인 패키지 작업 브랜치 main 병합
+
+- 이유: 20260928 오프라인 패키지의 설계 18 후속 변경이 로컬 작업 브랜치에만 남아 있어 main과 정합성을 맞춤.
+- 변경: `worktree-popup-l1-image-size-fixed`의 L-1~L-5, IMAGE 미리보기, DB 및 ERwin 갱신, 반입 문서를 병합. 중복 L-0 커밋의 충돌은 후속 작업 브랜치 기준으로 해결하고 main의 `DemoMode=true`, 오프라인 폴더 `.gitkeep` 삭제 및 기존 변경 이력은 유지.
+- 주요 파일: WPF 팝업 DTO·Factory·설문·퀴즈·이미지 처리, 서버 popup 패키지, 웹 미리보기, `db/oracle`, `ERD/model`, 설계·반입 문서.
+- 검증: WPF 솔루션 빌드 경고 0·오류 0, 서버 API 및 테스트 컴파일 성공, service core popup 테스트 44건 중 42 통과·2 skip·실패 0, 웹 타입 검사 통과. 미해결 충돌 없음. ERwin 생성 SQL의 기존 공백 6행을 제외한 스테이징 공백 검사 통과. 작업 브랜치 대비 차이는 기존 main 설정·gitkeep 삭제·변경 이력뿐임.
+- 상태: 이번 병합 커밋에 포함하며 main 및 작업 브랜치를 원격에 푸시 후 확인. 오프라인 압축파일 재생성, DB 적용, 화면 실행은 수행하지 않음.
+
 ## 2026-09-29-01 — main 작업 내용 일괄 커밋
 
 - 이유: 누적된 팝업 소스 정리와 ERwin 산출물 및 문서 변경을 원격 저장소에 반영하기 위해 현재 작업 내용을 확정.
@@ -9,6 +17,106 @@
 - 주요 파일: WPF·서버·웹 팝업 소스, `ERD/model/*`, `scripts/export-popup-erwin.cjs`, 설계 문서, `db/oracle/README.md`.
 - 검증: 기존 추적 파일의 공백 검사 통과. 전체 스테이징 후 ERwin 역공학 SQL의 공백만 있는 6개 행에서 trailing whitespace 확인; 생성 산출물은 원본 그대로 포함. 이번 작업에서는 빌드·테스트를 재실행하지 않음.
 - 상태: 관련 변경 전체를 이번 main 커밋에 포함. 아래 항목의 미커밋 표시는 당시 상태이며, 푸시 결과는 원격 브랜치와 커밋을 대조하여 확인.
+
+## 2026-09-28-12 — 폐쇄망 반입 패키지 20260928 생성
+
+- 이유: 설계 18(L-0~L-5, D-6, W-10)과 DB 스크립트 정리분을 폐쇄망에 반입하기 위한 패키지 생성. VS Code 확장·.NET SDK·NuGet 패키지는 20260922에 반입 완료라 제외.
+- 생성: `scripts/export-offline-package.ps1 -IncludeMockSso -NoZip`(커밋 `8ab4665` 기준, 작업 트리 브랜치)로 묶음을 만든 뒤 20260922와 같은 구성으로 정리 — `1-zero-rule-server`(87)·`2-zero-rule-web`(9)·`3-popup-frameWork`(76, MockSso 포함)·`4-docs`(45) 폴더와 tar, `MANIFEST-*`, `SHA256SUMS.txt`, `README-IMPORT.md`, 최종 `popup-offline-20260928.tgz`.
+- 추가: `DELETE-SINCE-20260922.txt` — 20260922 반입분에는 있었지만 이번 소스에 없는 파일(서버 7: 구 `PopupController`·payload·DTO, WPF 8: `TextPopupWindow`·구 API DTO·`FlexibleDateTimeOffsetJsonConverter.cs` 등, 문서 1: `04_cleanup`의 `archive/` 이동). 베이스라인에도 없던 파일이라 git diff 기준 MANIFEST에 D로 나오지 않아 별도 목록으로 만듦. README에 계약서 3.2 동시 배포 조건 기재. 폐쇄망에는 팝업 DB가 아직 구축되지 않았으므로 DB 안내는 신규 구축 순서(`00`(방식 A) → `01` → `02`(선택) → `03`(방식 A) → `04_popup_web_menu`)로 작성하고, `06`~`09`·`archive/`는 기존 DB 마이그레이션용이라 실행하지 않는다고 명시(처음에는 마이그레이션 순서로 작성했다가 수정해 패키지를 다시 생성).
+- 위치: `offline-export/20260928/`(저장소 루트, git 제외 경로).
+- 검증: tgz를 임시 폴더에 풀어 항목 11개 확인, tar 4개 SHA256 일치, 각 tar 해제 후 신규 파일(`IsoDateTimeOffsetJsonConverter.cs`, `imagePreviewLayout.ts`, `09_drop_unused_columns_oracle.sql`, `archive/05_*`) 포함·삭제 파일(`PopupController.java`, `FlexibleDateTimeOffsetJsonConverter.cs`) 미포함, WPF 묶음 exe/dll/pdb·bin/obj 0건, 개인 PC 절대경로 0건. 첫 생성 시 패키징 스크립트 인코딩(BOM 없음)으로 README·삭제 목록 한글이 깨져 폴더를 지우고 다시 생성한 뒤 한글 정상 확인.
+- 참고: `appsettings.json`은 로컬 값(localhost, `DevUserId` E1001)이며 README 체크리스트대로 폐쇄망에서 변경 필요(20260922와 동일).
+- 폐쇄망 사용 범위 반영: 폐쇄망은 서버·관리자 웹·DB 연계 없이 WPF Demo Mode(`--demo` 또는 `PopupApi.DemoMode`)로만 테스트하므로, README 첫머리에 사용 범위를 명시하고 서버·웹·DB 스크립트는 소스 동기화용·연계 시점 적용으로, DB 절과 반입 전 확인의 연계 항목은 연계 시점 확인으로 표시해 패키지를 다시 생성.
+- 데모 검증: `Popup.csproj`를 참조하는 임시 콘솔(STA, 저장소 외부)에서 `DemoPopupDataService` 팝업 5종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ)을 실제 `PopupFactory.Create`로 변환 — 모두 성공(RATIO → ViewportRatio 매핑 포함), QUIZ 채점 전부 정답 100·통과 / 한 문항 오답 50·불합격. 데모 이미지·영상(`Media/`)이 3-popup-frameWork 묶음에 포함되고 EXE 내장 리소스로 빌드됨을 확인. 화면 표시(`Popup.exe --demo`) 자체는 미실행.
+- 미실행 검증: 폐쇄망 신규 구축에 쓰일 `01_popup_schema_oracle.sql`(설계 18 L-4·L-5 제약·컬럼 변경 반영)을 빈 스키마에 처음부터 실행하는 확인. 로컬 XE에 새 스키마를 만들 DBA 계정 정보가 없어 수행하지 않음(ERwin 생성기의 DDL 파싱은 성공).
+- 상태: 패키지 생성 완료(반입 전). 변경 이력은 작업 브랜치에 커밋, 미푸시.
+
+## 2026-09-28-11 — 설계 18 DB 스크립트 로컬 XE·원격 개발 DB 적용
+
+- 이유: 설계 18 L-1~L-5 코드가 전제하는 스키마·데이터 상태를 로컬 XE와 원격 개발 DB에 맞추기 위해 미적용 스크립트를 실행. 원격 개발 DB는 04(markdown 정리)·05(선택지 배치)도 미적용 상태였다.
+- 실행 전 확인: 원격 개발 DB 포트 연결 확인 후 읽기 전용 조회 — `OPTION_LAYOUT` 없음, markdown 잔여 1행, 08 제약 없음, 09 대상 컬럼 존재, 팝업 4·템플릿 2, 비정상 DISPLAY_MODE·SIZE_MODE·문항 유형·FIXED 이미지 0행. `POPUP_CONTENT.CONTENT_OPTIONS`·`POPUP_NOTICE`·`QUESTION_TEMPLATE` 주요 값을 작업 로그용으로 스풀 백업(저장소 외부).
+- 실행: 로컬 XE — `09`(컬럼 6개 삭제, 잔여 0). 원격 개발 DB(방식 B, 접두어 빈 값) — `04`(markdownMode=false 1행 정리) → `05`(OPTION_LAYOUT 추가, 기존 3문항 VERTICAL) → `06`(0행) → `07`(`SAMPLE-TEXT-001` 사본 키 제거 1행) → `08`(보정 0행, CHECK·NOT NULL 11건) → `09`(컬럼 6개 삭제, `CK_POPUP_YN_VALUES` 재생성).
+- 변경(스크립트): `04`·`06`~`09`가 `DEFINE S = &1`로 접두어를 받아, README 안내대로 빈 값(`""`)을 넘기면 SP2-0137로 모든 문장이 실행되지 않는 문제를 원격 첫 실행에서 확인(04 첫 시도는 변경 없음). `COLUMN schema_prefix NEW_VALUE S` + `SELECT '&1'` 방식으로 바꿔 빈 값과 `POPUP.`을 모두 처리하도록 수정(원격·로컬에서 읽기 전용 확인 후 적용). 적용을 마친 `04_cleanup_markdown_fields_oracle.sql`·`05_question_option_layout_oracle.sql`은 `db/oracle/archive/`로 이동(설계 18 D-1·D-2)하고 참조 경로 수정.
+- 문서: `db/oracle/README.md` 적용 현황·인자 안내, 설계 18 상태·D-1·D-2·L-1·L-4·D-6 체크리스트, `POPUP_ADMIN_UI_GAP.md`·`OPTION_LAYOUT_DEMO.md`의 05 경로.
+- 검증: 스크립트별 결과 확인 조회 모두 0(잔여 FIXED·사본 키·비정상 값·삭제 대상 컬럼). 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용)를 로컬 XE와 원격 개발 DB 각각에서 실행해 모두 통과. 원격 실행 후 팝업 4·템플릿 2·문항 3·선택지 4로 건수 변화 없음, `SAMPLE-TEXT-001` 제목·설명·본문 컬럼 값 유지 확인.
+- 미실행: 서버 기동 후 WPF·관리자 화면 확인.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시. DB 변경은 로컬 XE·원격 개발 DB에 이미 반영됨(되돌릴 수 없는 컬럼 삭제 포함).
+
+## 2026-09-28-10 — 데모 JSON v3 전환·설문/퀴즈 구형 분기 제거(설계 18 L-2) 및 관리자 IMAGE 미리보기 계약 반영(W-10)
+
+- 이유: WPF 설문/퀴즈의 구형 분기(`content.questions`·`content.passingScore`·보기 value 목록 정답)는 Demo Mode 샘플만 쓰고 있어, 샘플을 계약서 v3 형태로 바꾼 뒤 분기를 제거. 관리자 미리보기는 IMAGE의 ADAPTIVE/FIT_TO_IMAGE 차이와 설명 배치를 재현하지 않아 WPF 표시와 달랐고, 설명 배치 옵션은 편집할 수 없었다.
+- 변경(WPF, L-2): 데모 SURVEY/QUIZ를 최상위 `questions`·`passingScore`, `options[].isCorrect`, `questionScore`(각 50)로 변경. `PopupFactory`의 `content.questions`·`content.passingScore` fallback, `SurveyPopupContentDto.Questions/PassingScore`, `SurveyQuestionDto/SurveyQuestion.CorrectAnswers`, `QuizGrader`의 value 집합 채점 분기 삭제. 배점 없는 채점 문항은 0점(C-17 — 기존 100/문항 수 규칙 삭제). `SurveyAnswer.SelectedValues`를 삭제하고 필수 응답 검사를 `SelectedOptionIds` 기준으로 변경. 관련 주석 정리.
+- 변경(웹, W-10): `imagePreviewLayout.ts` 추가 — WPF `ImagePopupView`·`PopupWindow`의 규칙과 상수(오른쪽 설명 260, 여백 56/190/300, 테두리 2, 작업 영역 90%/95%, 최소 창 280×300)로 설명 위치(AUTO는 가로/세로 0.8 이하면 오른쪽), 영역 비율(0.5~0.9, 그 외 0.75), ADAPTIVE 최대 크기(원본·요청 중 작은 값), FIT_TO_IMAGE 이미지·창 크기를 계산. `PopupPreview`는 이미지 원본 크기를 읽어 이 규칙으로 배치하고 FIT_TO_IMAGE 창 크기를 편집기에 알린다(FULLSCREEN 제외). 편집기에 모드별 안내 문구, 설명 위치·이미지 영역 비율 입력, 신규 기본값(AUTO·0.75), 저장 전 비율 범위 검사 추가, 실제 크기 모달은 FIT_TO_IMAGE 재계산 크기로 연다. 불러오기·저장 시 설명 위치 정규화.
+- 변경(서버): IMAGE 저장 검증에 `descriptionPosition`(AUTO/RIGHT/BOTTOM)·`imageAreaRatio`(0.5~0.9) 검사 추가(값 없음은 통과), 테스트 1건 추가.
+- 문서: 설계 18 L-2·W-10, 설계 15 §6, `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md`.
+- 주요 파일: `popup-frameWork/Popup/Services/DemoPopupDataService.cs`, `Factories/PopupFactory.cs`, `Services/QuizGrader.cs`, `Models/SurveyAnswer.cs`, `Models/SurveyQuestion.cs`, `Dtos/SurveyPopupContentDto.cs`, `Dtos/SurveyQuestionDto.cs`, `Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/RgstPop/imagePreviewLayout.ts`, `PopupPreview.tsx`, `PopupEditorDialog.tsx`, `PopupService.java`.
+- 검증: 데모 JSON을 node로 파싱해 구조 확인(SURVEY 3문항·QUIZ 2문항 최상위, content에는 제목·설명만). `Popup.csproj`를 참조하는 임시 콘솔(작업 폴더 밖)로 실제 데모 QUIZ를 `QuizGrader` 채점 — 전부 정답 100·통과, 복수 선택 일부 50·불합격, 단일 오답 50·불합격, 무응답 0·불합격. `dotnet build popup-frameWork/Popup.slnx --no-incremental` 경고 0·오류 0. `imagePreviewLayout.ts`를 TypeScript로 변환해 설계 15 §5 조건(팝업 400×700, 원본 750×1030, 요청 620×520, 설명 AUTO)에서 창 938×712로 WPF 측정값과 일치, 작업 영역 축소·최대 크기 보정·한 축만 지정한 경우도 확인. 서버 `:service:core:test --tests server.service.core.popup.*` 44건 — 42 통과, 2 skip(실DB), 실패 0. `pnpm --filter @zerorule/web build` 성공, 변경 파일 eslint 경고 없음.
+- 미실행 검증: `--demo` 화면에서 SURVEY/QUIZ 제출·재도전, 관리자 편집기 브라우저에서 IMAGE 세 모드·설명 위치 미리보기 확인.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
+## 2026-09-28-09 — 미사용 템플릿 버전·예약 표시 컬럼 삭제(설계 18 L-5 D-6)
+
+- 이유: 문항 템플릿 버전 정책은 구현되지 않았고(저장마다 난수 그룹·버전 1·`CURRENT_YN='Y'`), 팝업의 로그인 시 표시·예약 표시 플래그와 예약 시각은 항상 N/NULL로만 쓰고 읽는 곳이 없다. 표시 시점은 노출 기간(`DISPLAY_START_AT`~`DISPLAY_END_AT`)과 WPF 폴링으로 정해지므로 정책 구현 대신 컬럼 삭제로 결정.
+- 변경(DB): `QUESTION_TEMPLATE`에서 `TEMPLATE_GROUP_ID`·`TEMPLATE_VERSION`·`CURRENT_YN`과 `UK_QTEMPLATE_GROUP_VERSION`·`CK_QUESTION_TEMPLATE_VERSION`·`CK_QUESTION_TEMPLATE_CURRENT`·`UX_QUESTION_TEMPLATE_CURRENT` 삭제, `POPUP_NOTICE`에서 `SHOW_ON_LOGIN_YN`·`SHOW_ON_SCHEDULE_YN`·`SCHEDULED_AT`·`CK_POPUP_SCHEDULED_AT` 삭제, `CK_POPUP_YN_VALUES`는 나머지 Y/N 컬럼으로 재정의(`01`). 샘플 `02`는 템플릿을 이름으로 조회하도록 변경. 기존 DB용 `09_drop_unused_columns_oracle.sql` 추가(확인 조회 → `CURRENT_YN='N'` 템플릿 비활성화 → 인덱스·제약·컬럼 삭제 → YN CHECK 재생성, 멱등). 테이블은 삭제하지 않음.
+- 변경(서버): `insertQuestionTemplate`에서 삭제 컬럼 제외, 팝업 MERGE INSERT에서 `SHOW_ON_*` 제외, 템플릿 목록 조회 조건에서 `CURRENT_YN` 제외. Java 코드 참조 없음.
+- 변경(ERD): `scripts/export-popup-erwin.cjs`가 스냅샷 날짜를 인자로 받도록 바꾸고(기본 20260928) 누락된 `OPTION_LAYOUT` 한글명 추가. `ERD/model/popup_oracle_20260928_*`로 재생성(17 테이블, 224 컬럼, UNIQUE 11, CHECK 51, 인덱스 14)하고 2026-09-24 스냅샷 파일은 삭제(git 이력 보존), README를 0928 기준으로 갱신.
+- 문서: `db/oracle/README.md` 09 절차, 설계 18 D-6.
+- 주요 파일: `db/oracle/01_popup_schema_oracle.sql`, `02_popup_sample_oracle.sql`, `09_drop_unused_columns_oracle.sql`, `PopupMapper.xml`, `scripts/export-popup-erwin.cjs`, `ERD/model/*20260928*`.
+- 검증: 서버 `compileJava compileTestJava` 및 `:service:core:test --tests server.service.core.popup.*` 43건 — 41 통과, 2 skip(실DB 테스트, 환경 변수 미지정), 실패 0. ERwin 생성기 실행 성공(컬럼 수 229 → 224 = 삭제 6 + `OPTION_LAYOUT` 1 반영 확인).
+- 미실행: **`09`는 로컬 XE·원격 개발 DB 모두 미실행**(되돌릴 수 없는 컬럼 삭제라 개발자 실행으로 남김). 로컬 XE에 09를 실행하기 전까지 새 매퍼의 템플릿 저장과 실DB 테스트(`PopupQuestionDatabaseTest` 등)는 NOT NULL 위반으로 실패한다. `01`·`02`를 빈 스키마에 새로 실행하는 확인도 미실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
+## 2026-09-28-08 — 크기 모드 이름·날짜 형식 단일화(설계 18 L-5 일부)
+
+- 이유: 설계 18 L-5의 정책 항목 중 권장안이 분명한 항목을 확정. 서버·관리자 웹은 `RATIO`를 쓰는데 WPF와 데모 JSON은 `VIEWPORT_RATIO`도 받는 이중 이름, 서버 교체기에만 필요했던 epoch 초 날짜 허용이 남아 있었다.
+- 결정: C-24 → `RATIO`로 단일화. C-22 → 날짜는 ISO 문자열만 허용. C-6 → `displayStartAt`/`displayEndAt` 선택 필드 유지. W-3 → L-0에서 완료된 것으로 정리. D-6(템플릿 버전 정책·미사용 컬럼 삭제)은 스키마 삭제를 동반해 결정 대기, W-10은 별도 기능 과제로 유지.
+- 변경(WPF): `PopupFactory.ConvertPopupSizeMode`에서 `VIEWPORT_RATIO` 삭제(내부 enum `ViewportRatio` 유지), 데모 JSON 4건 `RATIO`로 변경, 관련 주석 수정. `FlexibleDateTimeOffsetJsonConverter` → `IsoDateTimeOffsetJsonConverter`로 이름을 바꾸고 숫자(epoch 초) 읽기 분기 삭제(쓰기 ISO "O" 유지).
+- 변경(DB): `08_legacy_data_constraints_oracle.sql`에 SIZE_MODE 확인 조회(1-1), `VIEWPORT_RATIO → RATIO` 보정, `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 `SIZE_MODES`와 동일) 추가. `01`에도 같은 CHECK 반영.
+- 문서: 계약서 3.2 변경 항목에 `VIEWPORT_RATIO` 삭제 추가(sizeMode 표·ENUM·크기 처리 참고), `POPUP_OPTION_GUIDE.md` 크기 모드 표·주의 문구·§11, `db/oracle/README.md` 08 표, 설계 18 L-5 체크리스트.
+- 주요 파일: `popup-frameWork/Popup/Factories/PopupFactory.cs`, `Services/DemoPopupDataService.cs`, `Dtos/IsoDateTimeOffsetJsonConverter.cs`, `Services/PopupApiService.cs`, `db/oracle/08_legacy_data_constraints_oracle.sql`, `db/oracle/01_popup_schema_oracle.sql`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 WPF 응답 DTO의 날짜 필드가 모두 `@JsonFormat(STRING, WpfJson.DATE_TIME)`임을 확인. 로컬 XE에 `VIEWPORT_RATIO` 임시 행을 넣고 08 재실행 → RATIO 보정·`CK_POPUP_SIZE_MODE` 추가 OK, 기존 제약 SKIP, 결과 확인 0건, 임시 행 삭제. `dotnet build popup-frameWork/Popup.slnx`(`--no-incremental` 포함) 경고 0·오류 0. 서버·웹 코드 변경 없음.
+- 미실행 검증: `--demo`에서 RATIO 크기 팝업 표시 확인, 원격 개발 DB 08 실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
+## 2026-09-28-07 — 과거 데이터 기본값 분기 제거 및 DB 제약 추가(설계 18 L-4)
+
+- 이유: 과거·이관 데이터를 위해 서버·WPF·관리자 웹에 흩어져 있던 기본값 보정(DISPLAY_MODE CASE, 크기 NULL 기본값, optionLayout null 보정, RATING5 매핑, TEXT 표시 플래그 추정)을 DB 보정과 제약으로 옮겨 코드 분기를 제거. 원격 개발 DB는 VPN 미연결로 조회할 수 없어, 보정·제약을 한 스크립트로 묶고 배포 전 실행 조건으로 둠.
+- 변경(DB): `db/oracle/08_legacy_data_constraints_oracle.sql` 추가 — 확인 조회 4종 → DISPLAY_MODE 보정, 크기 NULL을 기존 서버 기본값으로 보정, RATING5를 SINGLE_CHOICE + HORIZONTAL로 이관(선택지 없으면 1~5 생성), TEXT `showHighlight`/`showBottomDescription`을 기존 fallback 규칙(문구 유무)으로 채움 → `CK_POPUP_DISPLAY_MODE`, 크기 8컬럼 NOT NULL, `CK_QUESTION_TYPE` 추가(이미 있으면 SKIP) → 표 주석 갱신. `01_popup_schema_oracle.sql`에 같은 제약 반영, L-0에서 보류한 `PASSING_SCORE` 주석 수정.
+- 변경(서버): 매퍼 `popupEntityColumns`의 DISPLAY_MODE CASE 제거, `toResponseDto` 크기 기본값 제거, `PopupQuestionDto`의 null optionLayout → VERTICAL 보정 제거. `PopupQuestionRules`에 null 배치 명시 거부 조건 추가(`Set.of().contains(null)`이 NPE를 내던 문제 — 테스트로 발견). 테스트: null 배치·RATING5 거부 추가, 배치 누락 기본값 테스트를 거부 기대로 변경.
+- 변경(WPF): `SurveyQuestionType.Rating5`와 `PopupFactory` RATING5 매핑·`SurveyPopupView` 분기·관련 주석 삭제. `TextPopupContentDto.ShowHighlight`/`ShowBottomDescription`을 `bool`(기본 false)로 바꾸고 `PopupFactory`의 문구 유무 추정 삭제.
+- 변경(웹): `PopupEditorDialog`·`PopupPreview`의 TEXT 표시 플래그 null fallback 삭제(WPF와 동일하게 값이 없으면 숨김).
+- 문서: 계약서 3.2(RATING5 삭제, TEXT 플래그 미지정 시 false), `db/oracle/README.md`(08 절차·적용 현황), 설계 18 L-4 체크리스트, `POPUP_OPTION_GUIDE.md`·`POPUP_USER_OPTION_GUIDE.md`·`OPTION_LAYOUT_DEMO.md`.
+- 주요 파일: `db/oracle/08_legacy_data_constraints_oracle.sql`, `db/oracle/01_popup_schema_oracle.sql`, `PopupMapper.xml`, `PopupService.java`, `PopupQuestionDto.java`, `PopupQuestionRules.java`, `popup-frameWork/Popup/Factories/PopupFactory.cs`, `Dtos/TextPopupContentDto.cs`, `Models/SurveyQuestionType.cs`, `Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `PopupPreview.tsx`.
+- 검증: 로컬 XE 현황 조회(DISPLAY_MODE 전부 SEQUENTIAL, 크기 NULL 0, RATING5 0, TEXT 플래그 보유) 후 임시 검증 행(비정상 DISPLAY_MODE, NULL 크기, 보기 없는/있는 RATING5, 플래그 없는 TEXT 3종 — `{}` 포함)을 넣고 08 실행 → 보정값·생성 선택지·플래그가 기존 fallback 결과와 일치, 제약 추가 OK, 재실행 시 0행·SKIP 확인, 임시 행 삭제(로컬 XE에는 제약이 남음). 서버 `:service:core:test --tests server.service.core.popup.*` 43건 전부 통과(로컬 XE 실DB 2건 포함). `dotnet build popup-frameWork/Popup.slnx` 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공.
+- 미실행 검증: `01` 전체를 빈 스키마에 새로 실행하는 확인(변경은 컬럼 NOT NULL·CHECK 2개·주석), `--demo` 표시, 서버 기동 E2E.
+- 주의: **원격 개발 DB에 08 미실행.** 크기 NULL 행이 있으면 L-4 서버 조회가 NPE로 실패하고, RATING5 문항이 있으면 L-4 WPF에서 해당 팝업 목록 변환이 실패하므로 08 실행 후 배포한다. D-1(`05`)·D-2(`04`) 원격 적용과 보관 이동도 미실행. ERwin 산출물(2026-09-24 스냅샷)은 변경 전 `01` 기준이다.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
+## 2026-09-28-06 — content 중복 키 정리(설계 18 L-3)
+
+- 이유: 관리자 저장 때 content 전체가 `CONTENT_OPTIONS`에 들어가고 조회 때 그 JSON이 정규 컬럼 위에 병합되어, 오래된 사본(특히 서버가 덧붙인 `completionRatio` 등 파생 키)이 실제 컬럼 값을 가리는 정합성 이슈. 모든 유형의 content 키가 모든 팝업에 저장되던 문제와 WPF가 읽지 않는 구 계약용 중복 키도 함께 정리.
+- 변경(서버): `PopupContentAssembler`가 옵션 JSON을 먼저 넣고 정규 컬럼이 덮어쓰도록 순서를 바꾸고, `completionRatio`·`allowCloseBeforeCompletion`·`passingScore`·`validateRequiredQuestions`를 content에 만들지 않음. 컬럼 사본·파생 키 목록(`STORED_COPY_KEYS`)을 두어 조회 시 무시하고 저장 시 `CONTENT_OPTIONS`에서 제거(`withoutStoredCopies`). `toResponseDto`의 `content.questions` 중복 삽입과 `WpfPopupItem`의 content 키 제거 목록 삭제. `/apis/popup/info` 응답의 `adminQuestions`(웹 미사용, 요청마다 문항 쿼리 1회)와 `AdminPopupQuestion.correctValues`(`options[].isCorrect`와 중복) 삭제. 테스트는 새 조립 규칙·저장 형태로 수정하고 사본 무시·저장 필터 테스트 추가.
+- 변경(웹): 저장 요청 content를 팝업 유형별 키(공통 Overlay·위치·폰트 + 유형별 WPF DTO·미리보기 키)만 남기도록 `contentForType` 추가. 편집 중 유형 전환 시 입력값은 유지. 타입에서 `AdminPopupInfo.adminQuestions`·`AdminPopupQuestion.correctValues` 제거.
+- 변경(DB): `db/oracle/07_cleanup_content_option_copies_oracle.sql` 추가 — 11g 호환 정규식으로 `CONTENT_OPTIONS`의 사본·파생 키 쌍 제거(문자열·숫자·불리언·null 값만, 배열·객체 값은 남김), 멱등.
+- 문서: 설계 18 L-3 체크리스트, `db/oracle/README.md`, `POPUP_OPTION_GUIDE.md`(SURVEY content 옵션), `POPUP_ADMIN_UI_GAP.md` §8.
+- 주요 파일: `zero-rule-server/.../popup/PopupContentAssembler.java`, `PopupService.java`, `WpfPopupItem.java`, `AdminPopupQuestion.java`, `PopupAdminController.java`, `PopupAdminPayloads.java`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `zero-rule-web/sub/domain/src/model/PopupAdmin.ts`, `db/oracle/07_cleanup_content_option_copies_oracle.sql`.
+- 검증: 서버 `gradlew --offline compileJava compileTestJava` 성공, `:service:core:test --tests server.service.core.popup.*` 42건 — 40 통과, 2 skip, 실패 0. 로컬 XE 실DB 테스트(`POPUP_TEST_DB_*` 지정) `PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest` 통과(롤백 전용). `pnpm --filter @zerorule/web build` 성공(변경 파일 lint 경고 없음). 07 치환식은 DUAL 샘플(이스케이프 따옴표·쉼표 포함 문자열, 값 안의 키 문자열, 배열 값, 첫 키 위치)로 확인 후 로컬 XE 실행 — 대상 0행(실행 전 `CONTENT_OPTIONS` 백업 스풀). WPF 코드 변경 없음(content 사본 참조 0건 확인).
+- 미실행 검증: 관리자 수정 → 재조회 브라우저 확인, WPF 표시 E2E, 원격 개발 DB에서 07 실행.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
+
+## 2026-09-28-05 — IMAGE 크기 모드 과거 값 FIXED 제거(설계 18 L-1)
+
+- 이유: `imageSizeMode = FIXED`는 계약상 과거 호환 값인데 관리자 웹이 신규 IMAGE 팝업 기본값·메뉴로 계속 저장하고 있어, WPF 호환 매핑을 없애기 전에 생성 경로와 기존 데이터를 먼저 정리할 필요. 설계 18 L-1 순서(웹 → 서버 검증 → 데이터 → WPF → 문서)대로 반영.
+- 변경(웹): `PopupEditorDialog` 신규 기본값을 `ADAPTIVE`로 바꾸고 "고정 영역" 메뉴 삭제. `normalizeImageSizeMode`로 IMAGE 팝업을 불러올 때·템플릿을 불러올 때·저장할 때 FIXED/빈 값/그 외 값을 `ADAPTIVE`로 정규화(선택 값이 메뉴 범위를 벗어나지 않게 표시 값도 같은 함수 사용).
+- 변경(서버): `PopupService.validateAdminPopup`에 IMAGE `content.imageSizeMode` 검사 추가 — 값이 없으면 통과(WPF 기본 ADAPTIVE), ADAPTIVE/FIT_TO_IMAGE/FILL(대소문자 무관) 외 값은 거부. `PopupAdminQuestionsTest`에 FIXED 거부·현행 3값 허용 테스트 2건 추가.
+- 변경(DB): `db/oracle/06_image_size_mode_adaptive_oracle.sql` 추가 — `CONTENT_OPTIONS`의 `"imageSizeMode":"FIXED"`(대소문자 무관)와 빈 값을 `ADAPTIVE`로 치환, 대상 목록·IMAGE 분포·잔여 건수 출력, 멱등. 팝업 창 `sizeMode`의 FIXED는 대상 아님. 샘플 SQL(`02`)에는 `imageSizeMode`가 없고 데모 JSON은 이미 ADAPTIVE라 수정 없음.
+- 변경(WPF): `ImagePopupContentDto.ImageSizeMode` 기본값 `ADAPTIVE`, `PopupFactory.ConvertImagePopupSizeMode`의 `FIXED → Adaptive` 매핑 삭제(FIXED는 지원하지 않는 값으로 `ArgumentException`), `ImagePopupSizeMode.Adaptive` 주석 수정.
+- 문서: 계약서 `POPUP_INTERFACE_SPEC.md` 3.1로 갱신(IMAGE 표·ENUM에서 FIXED 삭제, 미지정 시 ADAPTIVE·그 외 값은 변환 실패 명시), 설계 15, `POPUP_OPTION_GUIDE.md`, `db/oracle/README.md`(06 실행 절차·적용 현황), 설계 18 L-1 체크리스트 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `zero-rule-server/.../popup/PopupService.java`, `PopupAdminQuestionsTest.java`, `db/oracle/06_image_size_mode_adaptive_oracle.sql`, `popup-frameWork/Popup/Dtos/ImagePopupContentDto.cs`, `Factories/PopupFactory.cs`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 `gradlew --offline :service:core:test --tests server.service.core.popup.*` 39건 — 37 통과, 2 skip(실DB 필요), 실패 0(신규 IMAGE 테스트 2건 포함). `dotnet build popup-frameWork/Popup.slnx` 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공, `PopupEditorDialog.tsx` eslint 경고 없음. 로컬 XE(POPUP)에 06 실행 — 대상 0행(IMAGE 팝업 없음), 치환식은 DUAL 샘플 JSON으로 FIXED/fixed/빈 값만 ADAPTIVE로 바뀌고 FIT_TO_IMAGE·FILL·`sizeMode":"FIXED"`는 유지됨을 확인. `git diff --check` 통과.
+- 미실행 검증: 관리자 웹에서 기존 FIXED 팝업 열기·저장 브라우저 확인, `--demo` IMAGE 팝업 표시, 서버 기동 후 FIXED 저장 요청 거부 HTTP 확인.
+- 주의: **원격 개발 DB에는 06 미적용**(VPN 연결 필요). FIXED 행이 한 건이라도 남은 상태에서 이 WPF를 배포하면 해당 사용자의 팝업 목록 변환이 실패하므로, 원격 개발 DB에 06 실행 후 WPF를 배포한다.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 커밋, main 미반영·미푸시.
 
 ## 2026-09-28-04 — 팝업 미사용 소스 정리(설계 18 L-0)
 
@@ -21,7 +129,7 @@
 - 검증: 서버 `gradlew --offline compileJava compileTestJava` 및 `:web:api`·`:service:core`·`:app` popup/wpf 테스트 66건 — 60 통과, 6 skip(실DB 필요), 실패 0(매퍼 메서드↔구문 1:1 검사 포함). `dotnet build popup-frameWork/Popup.slnx`(증분·`--no-incremental`) 경고 0·오류 0. `pnpm --filter @zerorule/web build` 성공(변경 파일 lint 경고 없음, 라우트 목록에서 `/popup-preview` 제거 확인). 삭제 심볼 잔존 참조 grep 0건(설명 주석 제외). `git diff --check` 통과.
 - 미실행 검증: `--demo` 전체 팝업 표시·QUIZ 제출, 서버 기동 후 구 경로 404와 영상 스트리밍 확인, 관리자 미리보기 브라우저 확인.
 - 보류: DDL `POPUP_NOTICE.PASSING_SCORE` 주석 수정은 미커밋 ERwin 산출물의 원본 DDL 해시와 충돌하므로 ERwin 작업 반영 후 진행. `offline-export/20260922`의 기존 반입 산출물은 삭제 파일을 포함하므로 반입 전 재생성 필요.
-- 상태: 미커밋. 파일 삭제는 `git rm`으로 스테이징되어 있음. `popup-frameWork/Popup/appsettings.json`의 로컬 `DemoMode` 변경과 ERwin 작업(2026-09-24-01)은 이 작업과 별개.
+- 상태: 작업 브랜치 `worktree-popup-l1-image-size-fixed`에 ERwin 작업(2026-09-24-01)과 함께 커밋(L-1 작업의 기준 상태), main 미반영·미푸시. `popup-frameWork/Popup/appsettings.json`의 로컬 `DemoMode` 변경은 커밋에서 제외.
 
 ## 2026-09-28-03 — 팝업 구버전 분기·미사용 소스 조사 및 정리 TODO
 

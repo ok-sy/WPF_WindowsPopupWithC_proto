@@ -1,5 +1,10 @@
 import normalizePopupLink from './normalizePopupLink';
+import {
+  adaptiveMaximum, descriptionPlacement, fitToImageLayout, IMAGE_DESCRIPTION_WIDTH, imageAreaRatio, imageSizeMode,
+  type FitToImageLayout, type Size,
+} from './imagePreviewLayout';
 import type { AdminPopupDetail } from '@local/domain';
+import { type SyntheticEvent, useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
@@ -22,6 +27,8 @@ interface PopupPreviewProps {
   fitContainer?: boolean;
   showBackground?: boolean;
   onClose?: () => void;
+  /** [설계 18 L-5 — W-10] IMAGE FIT_TO_IMAGE에서 WPF가 다시 계산할 팝업 창 크기. 그 외에는 null. */
+  onRecommendedSize?: (size: Size | null) => void;
 }
 
 function text(value: unknown, fallback: string): string {
@@ -51,16 +58,27 @@ function previewSize(popup: AdminPopupDetail) {
   };
 }
 
-function PopupBody({ popup }: PopupPreviewProps) {
+interface PopupBodyProps {
+  popup: AdminPopupDetail;
+  naturalImageSize: Size | null;
+  fitLayout: FitToImageLayout | null;
+  onImageLoad: (size: Size) => void;
+}
+
+function PopupBody({ popup, naturalImageSize, fitLayout, onImageLoad }: PopupBodyProps) {
   const content = popup.content;
   const description = text(content.description, '팝업 설명이 여기에 표시됩니다.');
 
   if (popup.popupType === 'IMAGE') {
+    // [설계 18 L-5 — W-10] WPF ImagePopupView(설계 15)와 같은 규칙으로 크기 모드·설명 배치를 재현한다.
     const imageUrl = text(content.imageUrl, '');
-    const imageFill = String(content.imageSizeMode ?? '').toUpperCase() === 'FILL';
+    const mode = imageSizeMode(popup);
+    const imageFill = mode === 'FILL';
     const showDescription = !imageFill && content.showDescription !== false;
-    const imageWidth = imageFill ? undefined : Number(content.imageWidth) || undefined;
-    const imageHeight = imageFill ? undefined : Number(content.imageHeight) || undefined;
+    const placement = descriptionPlacement(popup, naturalImageSize);
+    const areaRatio = imageAreaRatio(popup);
+    const fixedImage = mode === 'FIT_TO_IMAGE' ? fitLayout?.image : undefined;
+    const maximum = mode === 'ADAPTIVE' ? adaptiveMaximum(popup, naturalImageSize) : {};
     const linkUrl = text(content.linkUrl, '');
 
     const image = imageUrl ? (
@@ -68,54 +86,84 @@ function PopupBody({ popup }: PopupPreviewProps) {
         component="img"
         src={imageUrl}
         alt="팝업 이미지 미리보기"
+        onLoad={(event: SyntheticEvent<HTMLImageElement>) => onImageLoad({
+          width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight,
+        })}
         sx={{
-          width: '100%',
-          height: imageFill ? '100%' : undefined,
-          maxWidth: imageWidth,
-          maxHeight: imageHeight,
-          flex: 1,
-          minHeight: imageFill ? 0 : 150,
-          borderRadius: imageFill ? 0 : 1,
-          border: imageFill ? 'none' : '1px solid',
-          borderColor: 'divider',
-          objectFit: imageFill ? 'cover' : 'contain',
-          bgcolor: '#f4f6fa',
-          cursor: linkUrl ? 'pointer' : 'default',
           display: 'block',
+          width: fixedImage ? fixedImage.width : '100%',
+          height: fixedImage ? fixedImage.height : '100%',
+          maxWidth: fixedImage ? '100%' : maximum.width ?? '100%',
+          maxHeight: fixedImage ? '100%' : maximum.height ?? '100%',
+          minWidth: 0,
+          minHeight: 0,
+          objectFit: imageFill ? 'cover' : 'contain',
+          cursor: linkUrl ? 'pointer' : 'default',
         }}
       />
     ) : (
-      <Box
-        sx={{
-          width: '100%',
-          flex: 1,
-          minHeight: 150,
-          borderRadius: 1,
-          border: '1px dashed',
-          borderColor: 'divider',
-          bgcolor: '#f4f6fa',
-          display: 'grid',
-          placeItems: 'center',
-        }}
-      >
+      <Box sx={{ width: '100%', height: '100%', minHeight: 150, display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
         이미지 URL을 입력하면 여기에 표시됩니다.
       </Box>
     );
 
+    const linkedImage = linkUrl && imageUrl ? (
+      <Box component="a" href={linkUrl} target="_blank" rel="noreferrer"
+        sx={{ display: 'contents' }}>
+        {image}
+      </Box>
+    ) : image;
+
+    if (imageFill) {
+      return <Box sx={{ height: '100%', width: '100%', display: 'flex' }}>{linkedImage}</Box>;
+    }
+
+    // FIT_TO_IMAGE는 이미지 칸이 이미지 크기를 그대로 담고(Auto), ADAPTIVE는 imageAreaRatio 비율로 칸을 나눈다.
+    const imageArea = (
+      <Box
+        sx={{
+          flex: fixedImage ? '0 0 auto' : showDescription ? `${areaRatio} 1 0` : '1 1 0',
+          minWidth: 0,
+          minHeight: fixedImage ? undefined : 150,
+          maxWidth: '100%',
+          maxHeight: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: '#f4f6fa',
+          overflow: 'hidden',
+        }}
+      >
+        {linkedImage}
+      </Box>
+    );
+    if (!showDescription) {
+      return <Stack alignItems="center" justifyContent="center" sx={{ height: '100%', width: '100%' }}>{imageArea}</Stack>;
+    }
+
+    const descriptionArea = (
+      <Box
+        sx={{
+          minWidth: 0,
+          minHeight: 0,
+          overflowY: 'auto',
+          ...(placement === 'RIGHT'
+            ? (fixedImage ? { flex: `0 0 ${fitLayout?.descriptionWidth ?? IMAGE_DESCRIPTION_WIDTH}px` } : { flex: `${1 - areaRatio} 1 0` })
+            : (fixedImage ? { flex: '1 1 0' } : { flex: `${1 - areaRatio} 1 0` })),
+        }}
+      >
+        <Typography color="text.secondary">{description}</Typography>
+      </Box>
+    );
+
     return (
-      <Stack spacing={imageFill ? 0 : 1.5} alignItems="center" sx={{ height: '100%', width: '100%' }}>
-        {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        {linkUrl && imageUrl ? (
-          <Box
-            component="a"
-            href={linkUrl}
-            target="_blank"
-            rel="noreferrer"
-            sx={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', textDecoration: 'none' }}
-          >
-            {image}
-          </Box>
-        ) : image}
+      <Stack direction={placement === 'RIGHT' ? 'row' : 'column'} spacing={2}
+        alignItems={fixedImage ? 'center' : 'stretch'} sx={{ height: '100%', width: '100%', minHeight: 0 }}>
+        {imageArea}
+        {descriptionArea}
       </Stack>
     );
   }
@@ -206,13 +254,9 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
-  const showHighlight =
-    content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
-
-  const showBottomDescription =
-    content.showBottomDescription == null
-      ? Boolean(content.bottomDescription || content.bottomDescriptionUrl)
-      : content.showBottomDescription === true;
+  // [설계 18 L-4 — C-23] WPF TextPopupContentDto와 같이 플래그가 없으면 숨김(과거 행 fallback 삭제).
+  const showHighlight = content.showHighlight === true;
+  const showBottomDescription = content.showBottomDescription === true;
 
   const bottomUrl = normalizePopupLink(content.bottomDescriptionUrl);
   const bottomLabel = String(content.bottomDescription ?? '').trim() || bottomUrl;
@@ -246,15 +290,30 @@ function PopupBody({ popup }: PopupPreviewProps) {
   );
 }
 
-export default function PopupPreview({ popup, fitContainer = false, showBackground = true, onClose }: PopupPreviewProps) {
+export default function PopupPreview({ popup, fitContainer = false, showBackground = true, onClose, onRecommendedSize }: PopupPreviewProps) {
+  const imageUrl = popup.popupType === 'IMAGE' ? String(popup.content.imageUrl ?? '').trim() : '';
+  const [naturalImage, setNaturalImage] = useState<{ url: string; size: Size } | null>(null);
+  const naturalImageSize = naturalImage && naturalImage.url === imageUrl ? naturalImage.size : null;
+  const workArea: Size = typeof window === 'undefined'
+    ? { width: 1920, height: 1040 } : { width: window.innerWidth, height: window.innerHeight };
+  const fitLayout = popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'FIT_TO_IMAGE' && naturalImageSize
+    ? fitToImageLayout(popup, naturalImageSize, workArea) : null;
+  // WPF와 같이 FULLSCREEN 팝업은 창 크기를 바꾸지 않는다.
+  const recommendedWidth = fitLayout && popup.sizeMode !== 'FULLSCREEN' ? fitLayout.window.width : null;
+  const recommendedHeight = fitLayout && popup.sizeMode !== 'FULLSCREEN' ? fitLayout.window.height : null;
+  useEffect(() => {
+    onRecommendedSize?.(recommendedWidth != null && recommendedHeight != null
+      ? { width: recommendedWidth, height: recommendedHeight } : null);
+  }, [onRecommendedSize, recommendedWidth, recommendedHeight]);
+
   const overlayEnabled = popup.content.useBackgroundOverlay !== false;
   const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? 0.45);
   const overlayOpacity = Number.isFinite(requestedOpacity) ? Math.max(0, Math.min(1, requestedOpacity)) : 0.45;
   const size = fitContainer
     ? { width: '100%', height: '100%' }
-    : previewSize(popup);
-  const imageFill = popup.popupType === 'IMAGE'
-    && String(popup.content.imageSizeMode ?? '').toUpperCase() === 'FILL';
+    : previewSize(recommendedWidth != null && recommendedHeight != null
+      ? { ...popup, sizeMode: 'FIXED', width: recommendedWidth, height: recommendedHeight } : popup);
+  const imageFill = popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'FILL';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
   // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
   const headerFontSize = fontSize(popup, 'headerFontSize');
@@ -319,7 +378,8 @@ export default function PopupPreview({ popup, fitContainer = false, showBackgrou
           )}
           {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
           <Box sx={bodyFontSize ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } } : undefined}>
-            <PopupBody popup={popup} />
+            <PopupBody popup={popup} naturalImageSize={naturalImageSize} fitLayout={fitLayout}
+              onImageLoad={(size) => setNaturalImage({ url: imageUrl, size })} />
           </Box>
         </Box>
         {popup.showFooter && (

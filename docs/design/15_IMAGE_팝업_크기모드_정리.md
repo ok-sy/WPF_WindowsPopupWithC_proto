@@ -26,7 +26,9 @@ FIT_TO_IMAGE로 지정해도 팝업 크기가 바뀌지 않는 문제가 있었�
   그 뒤 계산된 팝업 크기는 다시 `PopupOptions`의 Minimum/Maximum과 작업 영역의 95%로 보정한다(설계 11과 같은 기준).
 - `FILL`은 제목·설명 없이 이미지만 전체 배경으로 쓰는 전용 화면(`ImageFillPopupView`)이라
   설명 배치 옵션(`descriptionPosition`, `imageAreaRatio`)의 적용 대상이 아니다.
-- 과거 값 `FIXED`는 `ADAPTIVE`와 동일하게 처리한다.
+- 값이 없으면 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 설계 18 L-1(2026-09-28)에서 제거했다 —
+  관리자 웹은 FIXED를 선택·저장하지 않고(불러올 때 ADAPTIVE로 정규화), 서버 저장 검증은 FIXED를 거부하며,
+  기존 행은 `db/oracle/06_image_size_mode_adaptive_oracle.sql`로 ADAPTIVE로 바꾼다. WPF는 FIXED를 지원하지 않는 값으로 오류 처리한다.
 
 ---
 
@@ -208,7 +210,8 @@ FIT_TO_IMAGE와 FILL은 데모 JSON의 `imageSizeMode`만 임시로 바꿔 확�
 
 ## 6. 남은 항목
 
-- 관리자 웹 팝업 편집기에 `imageSizeMode` 세 값과 `imageWidth`/`imageHeight`의 의미 차이를 안내하는 설명이 없다.
-  ADAPTIVE에서 크기를 입력해도 팝업이 커지지 않는 점은 편집 화면에서 오해하기 쉬우므로 문구 보완이 필요하다.
+- (해결 2026-09-28, 설계 18 W-10) 관리자 편집기에 모드별 크기 기준 안내 문구와 `descriptionPosition`·`imageAreaRatio` 입력을 추가했고,
+  미리보기가 이 문서의 계약(ADAPTIVE 최대 크기, FIT_TO_IMAGE 창 크기 재계산, 설명 위치 AUTO 규칙)을 같은 상수로 재현한다.
+  서버는 두 옵션의 허용값(AUTO/RIGHT/BOTTOM, 0.5~0.9)을 저장 시 검사한다.
 - FIT_TO_IMAGE의 설명 영역 너비 260과 팝업 외부 여백 56 · 190 · 300은 상수로 남아 있다.
   Header/Footer 표시 여부에 따라 실제 값이 달라지므로, 오차가 문제되면 실제 측정값 기반으로 바꾼다.

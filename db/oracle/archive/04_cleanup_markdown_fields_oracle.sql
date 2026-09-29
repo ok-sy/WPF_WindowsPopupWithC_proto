@@ -12,7 +12,9 @@
 -- 로컬 XE 에는 2026-09-21 적용 완료(SAMPLE-TEXT-001, markdownMode=false → 필드 제거).
 -- =====================================================================================================
 SET PAGESIZE 200 LINESIZE 250 LONG 4000 TRIMSPOOL ON FEEDBACK ON DEFINE ON
-DEFINE S = &1
+-- 빈 인자("")도 받도록 DEFINE 대신 NEW_VALUE로 접두어를 받는다(DEFINE S = &1 은 빈 값에서 SP2-0137 오류).
+COLUMN schema_prefix NEW_VALUE S NOPRINT
+SELECT '&1' schema_prefix FROM DUAL;
 
 PROMPT === 1. markdown 필드가 남아 있는 POPUP_CONTENT 행 ===
 COLUMN POPUP_ID FORMAT A24
