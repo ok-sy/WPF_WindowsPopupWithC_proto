@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.4
+- 문서 버전: 3.5
 - 최신화: 2026-09-29 (KST)
+- 3.5 변경: 주요 요청/응답 필드 표에 `필수 여부`와 `Default`를 추가하고, 생략 시 C# 처리 기준을 명확화. 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 계약을 정합성 점검.
 - 3.4 변경: IMAGE `imageSizeMode=ORIGINAL` 추가. 팝업 크기를 유지하고 원본 이미지를 왼쪽 위에 배치한 뒤 넘치는 영역을 자른다.
 - 3.3 변경: 공통 푸터 `footerAction`·`footerLinkUrl`, QUIZ의 `videoEnabled` 영상 결합 모드 추가. 영상 결합 QUIZ 제출은 `answers`와 `video`를 한 결과 항목에 포함한다.
 - 3.2 변경: 팝업 `sizeMode`의 `VIEWPORT_RATIO` 삭제(`RATIO`로 단일화), 문항 유형 `RATING5` 삭제, TEXT `showHighlight`·`showBottomDescription` 미지정 시 문구 유무로 추정하던 처리 삭제(없으면 false)
@@ -13,6 +14,8 @@
 - 예제 데이터는 형식 설명용이며 실제 사용자·팝업 데이터가 아니다.
 
 > 핵심 원칙: 백엔드는 내부 구조를 자유롭게 설계할 수 있다. 다만 이 문서의 URL, 헤더, JSON 필드, ENUM, 의미와 처리 결과를 C# 클라이언트가 이해할 수 있는 형태로 제공해야 한다.
+>
+> **표 읽는 기준**: `필수 여부`는 백엔드가 계약상 값을 제공해야 하는지의 기준이고, `Default`는 필드가 생략되거나 null일 때 현재 C# 클라이언트가 사용하는 값/처리다. 필수 필드에 C# fallback이 있더라도 신규 백엔드는 필수 값을 명시해서 보내는 것을 기준으로 한다.
 
 ---
 
@@ -157,11 +160,11 @@ X-Client-Version: 1.0.0
 }
 ```
 
-| 필드 | 형식 | 필수 | 설명 |
-|---|---|---|---|
-| logonId | string | O | SSO에서 얻은 사용자 식별값 |
-| classCode | string | O | SSO에서 얻은 사용자 분류 코드 |
-| linkYn | string | O 권장 | 현재 C#은 `N` 전송 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| logonId | string | O | 없음 | SSO에서 얻은 사용자 식별값 |
+| classCode | string | O | 없음 | SSO에서 얻은 사용자 분류 코드 |
+| linkYn | string | O | `"N"` | 현재 C#은 항상 `N` 전송 |
 
 ## 5.2 Response
 
@@ -173,11 +176,11 @@ X-Client-Version: 1.0.0
 }
 ```
 
-| 필드 | 형식 | 필수 | 설명 |
-|---|---|---|---|
-| accessToken | string | O | 비어 있으면 C# 로그인 실패 처리 |
-| tokenType | string | O 권장 | 현재 기준 `Bearer` |
-| expiresAt | string(ISO 8601) | O | C# 진단용 만료 시각 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| accessToken | string | O | 없음 | 비어 있으면 C# 로그인 실패 처리 |
+| tokenType | string | 선택 | `"Bearer"` | 현재 C# DTO 기본값. 인증 헤더는 Bearer 방식 사용 |
+| expiresAt | string(ISO 8601) | 선택 | .NET DateTimeOffset 기본값 | 현재 C#은 진단 로그에 사용하며 별도 필수 검증은 하지 않음 |
 
 ---
 
@@ -206,45 +209,45 @@ X-Client-Version: 1.0.0
 }
 ```
 
-| 필드 | 형식 | 필수 | 설명 |
-|---|---|---|---|
-| serverTime | string(ISO) | 선택 | 서버 기준 시각. WPF는 참고만 함 |
-| userId | string | O 권장 | 인증 정보에서 식별된 사용자 |
-| pollingIntervalSeconds | integer | O 권장 | 다음 자동 조회 간격(초). 0 이하면 WPF 로컬 설정 유지 |
-| popups | array | O | 표시 대상 팝업. 없으면 빈 배열 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| serverTime | string(ISO) | 선택 | `null` | 서버 기준 시각. WPF는 참고만 함 |
+| userId | string | 선택 | `""` | 인증 정보에서 식별된 사용자. 요청에는 보내지 않음 |
+| pollingIntervalSeconds | integer | 선택 | `0` | 0 이하면 WPF 로컬 설정 유지 |
+| popups | array | O | `[]` | 표시 대상 팝업. 없으면 빈 배열 |
 
 ---
 
 ## 6.3 popups[] 공통 필드
 
-| 필드 | 형식 | 필수 | C# 처리 |
-|---|---|---|---|
-| popupId | string | O | 결과 전송 식별자 |
-| popupType | string | O | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
-| title | string | O | 공통 Header 제목 |
-| displayMode | string | O | SEQUENTIAL / SIMULTANEOUS |
-| displayOrder | integer | O | 작은 값 우선, 같은 값은 같은 표시 그룹 |
-| displayStartAt | string(ISO) | 선택 | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
-| displayEndAt | string(ISO) | 선택 | 동일 |
-| sizeMode | string | O | FIXED / RATIO / FULLSCREEN / AUTO (VIEWPORT_RATIO는 v3.2에서 삭제) |
-| width | number | O | FIXED/FILL 등 실제 창 크기 기준 |
-| height | number | O | 동일 |
-| widthRatio | number | O 권장 | RATIO |
-| heightRatio | number | O 권장 | RATIO |
-| minimumWidth | number | O 권장 | 최소 창 너비 |
-| minimumHeight | number | O 권장 | 최소 창 높이 |
-| maximumWidth | number | O 권장 | 최대 창 너비 |
-| maximumHeight | number | O 권장 | 최대 창 높이 |
-| showHeader | boolean | O | 공통 Header 표시 |
-| showCloseButton | boolean | O | 닫기 버튼 표시 |
-| showFooter | boolean | O | Footer 표시 |
-| showDoNotShowAgain | boolean | O | 다시 보지 않기 체크박스 표시 |
-| hideDays | integer | 선택 | HIDDEN 결과에 사용. 없으면 C# 기본 30일 |
-| completionRatio | number | VIDEO | 완료 인정 비율 0~1 |
-| allowCloseBeforeComplete | boolean | O 권장 | VIDEO 완료 전 닫기 허용 여부 |
-| passingScore | number | QUIZ | 로컬 통과 점수 |
-| questions | array | SURVEY/QUIZ | 문항 목록 |
-| content | object | O | 유형별 화면 데이터 및 공통 옵션 |
+| 필드 | 형식 | 필수 여부 | Default | C# 처리 |
+|---|---|---|---|---|
+| popupId | string | O | 없음 | 결과 전송 식별자 |
+| popupType | string | O | 없음 | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
+| title | string | O | `""` | 공통 Header 제목 |
+| displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
+| displayOrder | integer | O | `100` | 작은 값 우선, 같은 값은 같은 표시 그룹 |
+| displayStartAt | string(ISO) | 선택 | `null` | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
+| displayEndAt | string(ISO) | 선택 | `null` | 동일 |
+| sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO |
+| width | number | O | `900` | FIXED 등 실제 창 너비 기준 |
+| height | number | O | `620` | FIXED 등 실제 창 높이 기준 |
+| widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
+| heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
+| minimumWidth | number | 선택 | `480` | 최소 창 너비 |
+| minimumHeight | number | 선택 | `320` | 최소 창 높이 |
+| maximumWidth | number | 선택 | `1200` | 최대 창 너비 |
+| maximumHeight | number | 선택 | `900` | 최대 창 높이 |
+| showHeader | boolean | O | `true` | 공통 Header 표시 |
+| showCloseButton | boolean | O | `true` | 닫기 버튼 표시 |
+| showFooter | boolean | O | `true` | Footer 표시 |
+| showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
+| hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
+| completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
+| allowCloseBeforeComplete | boolean | VIDEO / 동영상+퀴즈 | `true` | 완료 전 닫기 허용 여부 |
+| passingScore | number | QUIZ | `null` | 로컬 통과 점수. QUIZ 백엔드는 명시 권장 |
+| questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
+| content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
 
 ### 크기 처리 참고
 
@@ -262,16 +265,16 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 모든 popupType의 `content` 안에서 사용할 수 있다.
 
-| 필드 | 형식 | 기본값/처리 |
-|---|---|---|
-| useBackgroundOverlay | boolean | 없으면 true |
-| backgroundOverlayOpacity | number | 없으면 0.45, WPF에서 0~1 보정 |
-| headerFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
-| bodyFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
-| footerFontSize | number | 선택. 있으면 10~40으로 최종 보정 |
-| footerAction | string | 선택. CLOSE(기본) / LINK_AND_CLOSE |
-| footerLinkUrl | string | LINK_AND_CLOSE일 때 필수. 절대 http/https URL |
-| popupPosition | string | 없거나 잘못되면 CENTER |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| useBackgroundOverlay | boolean | 선택 | `true` | 배경 Overlay 사용 |
+| backgroundOverlayOpacity | number | 선택 | `0.45` | WPF에서 0~1 보정 |
+| headerFontSize | number | 선택 | XAML 기본값(현재 Header 17) | 값이 있으면 10~40으로 보정 |
+| bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
+| footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
+| footerAction | string | 선택 | `CLOSE` | CLOSE / LINK_AND_CLOSE |
+| footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 절대 http/https URL |
+| popupPosition | string | 선택 | `CENTER` | 없거나 잘못되면 CENTER |
 
 `LINK_AND_CLOSE`는 하단 닫기 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. 헤더 X는 기존 닫기 동작을 유지한다. 버튼 표시는 `showFooter`·`showCloseButton`을 따른다.
 
@@ -319,18 +322,18 @@ BOTTOM_RIGHT
 }
 ```
 
-| 필드 | 형식 | 설명 |
-|---|---|---|
-| contentTitle | string | 콘텐츠 내부 제목 |
-| description | string | 콘텐츠 설명 |
-| showContentHeader | boolean | 콘텐츠 제목/설명 영역 표시 여부 |
-| plainText | string | 본문 |
-| showPlainText | boolean | 본문 표시 여부 |
-| highlightText | string | 강조 문구 |
-| showHighlight | boolean | 강조 영역 표시 여부. 없으면 false(v3.2) |
-| bottomDescription | string | 하단 설명 |
-| bottomDescriptionUrl | string | 클릭 시 이동 URL |
-| showBottomDescription | boolean | 하단 설명 영역 표시. 없으면 false(v3.2) |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| contentTitle | string | 선택 | `""` | 콘텐츠 내부 제목 |
+| description | string | 선택 | `""` | 콘텐츠 설명 |
+| showContentHeader | boolean | 선택 | `true` | 콘텐츠 제목/설명 영역 표시 여부 |
+| plainText | string | 선택 | `""` | 본문 |
+| showPlainText | boolean | 선택 | `true` | 본문 표시 여부 |
+| highlightText | string | 선택 | `""` | 강조 문구 |
+| showHighlight | boolean | 선택 | `false` | 강조 영역 표시 여부 |
+| bottomDescription | string | 선택 | `""` | 하단 설명 |
+| bottomDescriptionUrl | string | 선택 | `""` | 클릭 시 이동 URL |
+| showBottomDescription | boolean | 선택 | `false` | 하단 설명 영역 표시 |
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 
@@ -356,6 +359,19 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
   "popupPosition": "CENTER"
 }
 ```
+
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| imageTitle | string | 선택 | `""` | 이미지 콘텐츠 내부 제목 |
+| imageUrl | string | O | `""` | 표시할 이미지 URL/경로. 빈 값이면 이미지 팝업 생성 불가 |
+| description | string | 선택 | `""` | 이미지 설명 |
+| showDescription | boolean | 선택 | `true` | 설명 표시 여부 |
+| imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / FILL / ORIGINAL |
+| imageWidth | number | 선택 | `0` | ADAPTIVE 최대 크기, FIT_TO_IMAGE 요청 크기. ORIGINAL/FILL에서는 미사용 |
+| imageHeight | number | 선택 | `0` | imageWidth와 동일 기준 |
+| descriptionPosition | string | 선택 | `AUTO` | AUTO / RIGHT / BOTTOM. ORIGINAL/FILL에서는 미사용 |
+| imageAreaRatio | number | 선택 | `0.75` | 0.5~0.9, 범위 밖이면 0.75 |
+| linkUrl | string | 선택 | `""` | 이미지 클릭 시 이동 URL |
 
 ### imageSizeMode
 
@@ -412,18 +428,18 @@ BOTTOM
 }
 ```
 
-| 필드 | 형식 | 기본 |
-|---|---|---|
-| videoTitle | string | "" |
-| videoUrl | string | "" |
-| description | string | "" |
-| showDescription | boolean | true |
-| showControls | boolean | true |
-| allowFullScreen | boolean | true |
-| allowPlaybackRateChange | boolean | true |
-| autoPlay | boolean | false |
-| isLoop | boolean | false |
-| defaultVolume | number | 0.7 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| videoTitle | string | 선택 | `""` | 영상 콘텐츠 내부 제목 |
+| videoUrl | string | O | `""` | 재생할 영상 URL/경로 |
+| description | string | 선택 | `""` | 영상 설명 |
+| showDescription | boolean | 선택 | `true` | 설명 표시 |
+| showControls | boolean | 선택 | `true` | 컨트롤 표시 |
+| allowFullScreen | boolean | 선택 | `true` | 영상 전체화면 허용 |
+| allowPlaybackRateChange | boolean | 선택 | `true` | 배속 변경 허용 |
+| autoPlay | boolean | 선택 | `false` | 자동 재생 |
+| isLoop | boolean | 선택 | `false` | 반복 재생 |
+| defaultVolume | number | 선택 | `0.7` | 기본 음량 0~1 |
 
 VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
 
@@ -598,28 +614,28 @@ passingScore 이상
 
 선택지는 직접 전달한다(C#이 기본 보기를 자동 생성하지 않는다). 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
 
-| 필드 | 형식 | 설명 |
-|---|---|---|
-| questionId | integer | 결과 answers의 참조 ID |
-| title | string | 질문 제목 |
-| description | string | 부가 설명 |
-| questionType | string | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT (그 외 값은 팝업 변환 실패, v3.2) |
-| optionLayout | string | 문항별 선택지 배치. VERTICAL(기본) / HORIZONTAL. 가로형은 너비 초과 시 줄바꿈 |
-| isRequired | boolean | 필수 응답 여부 |
-| isScored | boolean | QUIZ 채점 대상 여부 |
-| questionScore | number | QUIZ 배점. 선택 |
-| correctAnswer | string | QUIZ TEXT 정답. 선택 |
-| answerMatchMode | string | EXACT / CONTAINS. 선택 |
-| options | array | 선택형 보기 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| questionId | integer | O | `0` | 결과 answers의 참조 ID. 실제 서버는 유효 ID 제공 |
+| title | string | O | `""` | 질문 제목 |
+| description | string | 선택 | `""` | 부가 설명 |
+| questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
+| optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
+| isRequired | boolean | 선택 | `false` | 필수 응답 여부 |
+| isScored | boolean | QUIZ 권장 | `false` | QUIZ 채점 대상 여부 |
+| questionScore | number | 채점 QUIZ | `null` → C# 계산상 0점 | 문항 배점 |
+| correctAnswer | string | QUIZ TEXT 채점 문항 | `null` | TEXT 정답 |
+| answerMatchMode | string | QUIZ TEXT 채점 문항 | `null` | EXACT / CONTAINS |
+| options | array | 선택형 문항 | `[]` | 선택형 보기. TEXT는 빈 배열 |
 
 ### options[]
 
-| 필드 | 형식 | 설명 |
-|---|---|---|
-| optionId | integer | 제출 시 optionIds에 사용 |
-| value | string | 선택지 업무 값 |
-| text | string | 화면 표시 문구 |
-| isCorrect | boolean | QUIZ 선택형 정답 여부. SURVEY에서는 생략 가능 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| optionId | integer | O | `0` | 제출 시 optionIds에 사용. 실제 서버는 유효 ID 제공 |
+| value | string | 선택 | `""` | 선택지 업무 값 |
+| text | string | O | `""` | 화면 표시 문구 |
+| isCorrect | boolean | QUIZ 선택형 채점 문항 | `null` | 정답 여부. SURVEY에서는 생략 가능 |
 
 ---
 
@@ -661,21 +677,21 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 }
 ```
 
-| 필드 | 형식 | 필수 | 설명 |
-|---|---|---|---|
-| clientRequestId | string | O | 전송 요청 단위 ID. 재전송 요청에서는 새 값일 수 있음 |
-| sentAt | string(ISO) | O | 이번 전송 시각 |
-| results | array | O | 1~50개씩 전송 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| clientRequestId | string | O | C#이 전송 시 새 GUID(N 형식) 생성 | 전송 요청 단위 ID. 재전송 요청에서는 새 값일 수 있음 |
+| sentAt | string(ISO) | O | C# 전송 시각 | 이번 전송 시각 |
+| results | array | O | `[]` | 실제 전송 시 1~50개씩 전송 |
 
 ### results[] 공통
 
-| 필드 | 형식 | 필수 |
-|---|---|---|
-| resultId | string(GUID) | O |
-| popupId | string | O |
-| resultType | string | O |
-| displayedAt | string(ISO) | 선택 |
-| closedAt | string(ISO) | 선택 |
+| 필드 | 형식 | 필수 여부 | Default/생성 기준 |
+|---|---|---|---|
+| resultId | string(GUID) | O | 팝업 결과 생성 시 GUID 생성, 재전송 시 유지 |
+| popupId | string | O | 원 팝업의 popupId |
+| resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정 |
+| displayedAt | string(ISO) | 선택 | `null` 가능 |
+| closedAt | string(ISO) | 선택 | `null` 가능 |
 
 ### resultType ENUM
 
@@ -787,12 +803,12 @@ VIDEO_WATCHED
 }
 ```
 
-| 필드 | 단위 |
-|---|---|
-| durationSeconds | 초 |
-| positionSeconds | 초 |
-| maximumPositionSeconds | 초 |
-| watchedSeconds | 초 |
+| 필드 | 형식 | 필수 여부 | Default | 단위/의미 |
+|---|---|---|---|---|
+| durationSeconds | number | O | `0` | 초, 전체 길이 |
+| positionSeconds | number | O | `0` | 초, 현재 위치 |
+| maximumPositionSeconds | number | O | `0` | 초, 최대 도달 위치 |
+| watchedSeconds | number | O | `0` | 초, 누적 시청 시간 |
 
 ---
 
@@ -812,18 +828,18 @@ VIDEO_WATCHED
 }
 ```
 
-### 필수 응답 필드
+### 응답 필드
 
-| 필드 | 형식 | 설명 |
-|---|---|---|
-| receivedAt | string(ISO) | 선택 가능 |
-| results | array | 처리한 항목별 결과 |
-| results[].resultId | string | 요청 resultId와 동일 |
-| results[].popupId | string | 요청 popupId |
-| results[].resultType | string | 요청 resultType |
-| results[].status | string | ACCEPTED / DUPLICATE / REJECTED |
-| results[].code | string | REJECTED 사유. 선택 |
-| results[].message | string | REJECTED 설명. 선택 |
+| 필드 | 형식 | 필수 여부 | Default | 설명 |
+|---|---|---|---|---|
+| receivedAt | string(ISO) | 선택 | `null` | 서버 수신 시각 |
+| results | array | O | `[]` | 처리한 항목별 결과 |
+| results[].resultId | string | O | 없음 | 요청 resultId와 동일 |
+| results[].popupId | string | O | 없음 | 요청 popupId |
+| results[].resultType | string | O | 없음 | 요청 resultType |
+| results[].status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED |
+| results[].code | string | 선택 | `null` | REJECTED 사유 |
+| results[].message | string | 선택 | `null` | REJECTED 설명 |
 
 ### status 의미
 
@@ -964,6 +980,7 @@ BOTTOM_RIGHT
 ADAPTIVE
 FIT_TO_IMAGE
 FILL
+ORIGINAL
 ```
 
 ## descriptionPosition

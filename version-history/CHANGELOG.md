@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-09-29-05 — API/인터페이스 및 팝업 가이드 최신화
+
+- 이유: 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 기능이 인터페이스 계약에는 일부 반영됐지만, 필드별 필수 여부·생략 시 기본값이 표마다 일관되지 않았고 옵션/사용자/미리보기 가이드에는 구 API·구 이미지 모드·과거 정책 설명이 남아 있어 연동 기준을 명확히 할 필요가 있음.
+- 변경(인터페이스): `POPUP_INTERFACE_SPEC.md`를 v3.5로 올리고 로그인, 팝업 목록, 공통 content, TEXT/IMAGE/VIDEO, questions/options, 결과 요청·응답·영상 블록의 표를 `필수 여부 / Default / 설명` 기준으로 정리. 필수 필드에 C# fallback이 있더라도 신규 백엔드는 값을 명시해야 한다는 표 해석 원칙 추가. IMAGE enum 요약에 ORIGINAL을 포함하고 최신 v3.4 기능을 재점검.
+- 변경(가이드): `POPUP_OPTION_GUIDE.md`의 PostgreSQL·구 이벤트 API·반복 정책 DTO 설명을 현재 Oracle + 3개 WPF API 구조로 정리하고 ORIGINAL, 기본 completionRatio 1.0, 푸터 바로가기, 동영상+퀴즈를 반영. 사용자 가이드의 이미지 모드·숨김 일수·퀴즈 채점·결과 전송 흐름과 미리보기 정합성 문서를 최신 main 기준으로 갱신. 동영상+퀴즈 전용 안내 문서의 계약 버전을 v3.5로 연결.
+- 주요 파일: `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `popup-frameWork/Popup/Docs/POPUP_OPTION_GUIDE.md`, `POPUP_USER_OPTION_GUIDE.md`, `FOOTER_LINK_VIDEO_QUIZ.md`, `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md`.
+- 검증: 최신 main의 `PopupResponseDto`, TEXT/IMAGE/VIDEO/Survey DTO, `PopupFactory`, 결과 DTO와 문서 기본값을 대조. 문서 전용 변경으로 빌드·실행 테스트는 수행하지 않음.
+- 상태: main 커밋·푸시 후 원격 내용 재조회로 확인.
+
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
 ## 2026-09-29-04 — IMAGE ORIGINAL 원본 크기 자르기 모드
