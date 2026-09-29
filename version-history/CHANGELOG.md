@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-30-01 — 폐쇄망 반입 패키지 20260930 생성
+
+- 이유: 20260928 반입 이후 추가된 푸터 바로가기, 동영상+퀴즈, IMAGE ORIGINAL, 퀴즈 점수 전송, DemoWindow 보완, 계약서 v3.5·최소 기능 정의서를 폐쇄망에 반입하기 위한 패키지 생성. VS Code 확장·.NET SDK·NuGet 패키지는 신규 의존성이 없어 제외(20260922 반입분 사용).
+- 생성: `scripts/export-offline-package.ps1 -IncludeMockSso -NoZip`(커밋 `5b58e59`, main 기준)로 묶음을 만든 뒤 20260928과 같은 구성으로 정리 — `1-zero-rule-server`(88: A 81·M 7)·`2-zero-rule-web`(9: A 1·M 8, D 1)·`3-popup-frameWork`(78, MockSso 포함)·`4-docs`(46) 폴더와 tar, `MANIFEST-*`, `SHA256SUMS.txt`, `README-IMPORT.md`, `DELETE-SINCE-20260928.txt`, 최종 `popup-offline-20260930.tgz`.
+- 제외: 커밋 `b42613d`에 함께 들어간 Word 임시 잠금 파일 `docs/interfaces/~$F_Popup_API_Interface_v2.0.docx`가 4-docs에 복사되어 패키지와 MANIFEST에서 제거. 저장소의 해당 파일은 그대로 둠.
+- 삭제 목록: 20260928 MANIFEST 대비 사라진 파일 0건이라 `DELETE-SINCE-20260928.txt`는 빈 목록으로 두고, 20260922 삭제 목록 미적용 시 먼저 적용하도록 README에 안내. DB는 20260928 이후 DDL 변경이 없어 신규 구축 순서를 그대로 유지하고, 계약서 3.5 동시 배포 조건과 `appsettings.json`의 `DemoMode` 기본값 `true` 변경(서버 연계 시 `false`)을 README에 기재.
+- 위치: `offline-export/20260930/`(저장소 루트, git 제외 경로).
+- 검증: tgz를 임시 폴더에 풀어 항목 11개 확인, tar 4개 SHA256 일치, 신규 파일(`VideoQuizPopupView.cs`, `WPF_POPUP_MINIMAL_SPEC.md`, `PopupActionOptionsTest.java`)과 최신 ORIGINAL Canvas 정리 반영 확인, WPF 묶음 exe/dll/pdb·bin/obj·개인 PC 절대경로·`~$` 임시 파일 0건, 4-docs CHANGELOG에 병합 충돌 표시 0건. `Popup.csproj`를 참조하는 임시 콘솔(저장소 외부)에서 `DemoPopupDataService` 팝업 7종을 실제 `PopupFactory.Create`로 변환해 모두 성공. 화면 표시(`Popup.exe --demo`)와 폐쇄망 빌드(`build-wpf-offline.ps1`)는 미실행.
+- 상태: 반입 패키지는 `.gitignore` 대상이라 저장소에 포함되지 않음. 이 변경 이력만 main 커밋·푸시.
+
 ## 2026-09-29-07 — IMAGE ORIGINAL 레이아웃 정합성 점검
 
 - 이유: ORIGINAL의 Canvas가 Grid만으로 충분한 클리핑에 대한 과한 중복 방어인지 점검. FIXED/RATIO/FULLSCREEN처럼 창 크기가 정해진 경우에는 Grid만으로도 잘리지만, `sizeMode=AUTO`는 `SizeToContent`로 무한 크기 측정을 하므로 Grid 안의 원본 크기 Image가 그대로 창 크기로 전달되어 "팝업 크기 유지" 계약이 깨짐. Canvas는 자식과 무관하게 DesiredSize 0을 반환하므로 유지가 맞다고 판단.
