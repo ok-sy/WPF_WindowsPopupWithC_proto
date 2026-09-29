@@ -27,3 +27,6 @@ offline-export/
 offline-extention/
 # Claude Code 작업용 worktree 체크아웃(임시)
 .claude/worktrees/
+
+# Microsoft Office가 문서를 열 때 생성하는 임시/잠금 파일
+~$*
