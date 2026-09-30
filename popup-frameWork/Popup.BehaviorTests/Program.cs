@@ -39,6 +39,9 @@ internal static class Program
     private static void Main()
     {
         CheckOriginalImages();
+        CheckPollingSchedule();
+        CheckCombinedScrolling();
+        CheckWebVideoControls();
         var dto = DemoPopupDataService.CreatePopups("VIDEO_QUIZ").Single();
         dto.AllowCloseBeforeComplete = false;
         var options = PopupFactory.Create(dto);
@@ -135,6 +138,94 @@ internal static class Program
                 "Queued JSON round trip must preserve score for retry");
         }
         Console.WriteLine($"PASS: {_checks} popup behavior checks");
+    }
+
+    private static void CheckPollingSchedule()
+    {
+        var method = typeof(Popup.MainWindow).GetMethod("GetPollingDelay", BindingFlags.Static | BindingFlags.NonPublic)!;
+        TimeSpan Delay(int interval, double elapsed) => (TimeSpan)method.Invoke(null, new object[] { interval, TimeSpan.FromSeconds(elapsed) })!;
+        Check(Delay(0, 0).TotalSeconds == 1800 && Delay(99999, 0).TotalSeconds == 3600, "Polling always respects 30/60 minute bounds");
+        Check(Delay(3600, 15).TotalSeconds == 3585, "Initial response latency must not shift startup cadence");
+        Check(Delay(3600, 3602).TotalSeconds == 3598, "Delayed UI tick must preserve subsequent cadence");
+        Check(Delay(1800, 3610).TotalSeconds == 1790, "Changed server interval still uses startup epoch");
+    }
+
+    private static void CheckCombinedScrolling()
+    {
+        var questions = Enumerable.Range(1, 50).Select(i => new SurveyQuestion
+        {
+            QuestionId = i, Title = $"Long question {i}", QuestionType = SurveyQuestionType.Text
+        }).ToList();
+        var standalone = new SurveyPopupView("Survey", "Description", questions);
+        var inner = (ScrollViewer)standalone.FindName("QuestionScrollViewer");
+        Check(inner.Parent != null && inner.VerticalScrollBarVisibility == ScrollBarVisibility.Auto, "Standalone survey keeps own scrolling");
+        var video = new VideoPopupView("Video", "test.mp4", "", autoPlay: false);
+        var combined = new VideoQuizPopupView(video, standalone, .8);
+        var scroll = (ScrollViewer)combined.Content;
+        Check(inner.Parent == null && inner.Content == null, "Combined mode physically removes inner scroll owner so wheel bubbles");
+        foreach (var size in new[] { new Size(450, 220), new Size(800, 600), new Size(1200, 900) })
+        {
+            combined.Measure(size);
+            combined.Arrange(new Rect(size));
+            combined.UpdateLayout();
+            double extent = scroll.ExtentHeight;
+            Check(extent > 3000 && scroll.ViewportHeight <= size.Height, "All long questions contribute to a single scroll extent");
+            scroll.ScrollToEnd();
+            combined.UpdateLayout();
+            Check(Math.Abs(scroll.VerticalOffset - scroll.ScrollableHeight) < 1, "Single scroll reaches last question and submit area");
+            Check(ReferenceEquals(combined.Video, video), "Scrolling retains the player instance");
+            Report(combined, Snapshot(80));
+            combined.UpdateLayout();
+            Check(Math.Abs(scroll.ExtentHeight - extent) < 1, "Unlocking does not change content height");
+        }
+    }
+
+    private static void CheckWebVideoControls()
+    {
+        var method = typeof(VideoPopupView).GetMethod("ApplyWebPlaybackState", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var htmlMethod = typeof(VideoPopupView).GetMethod("BuildWebVideoHtml", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        foreach (bool allowRate in new[] { false, true })
+        {
+            var player = new VideoPopupView("Web", "https://example.com/video.mp4?a=1&b=2", "",
+                allowFullScreen: false, allowPlaybackRateChange: allowRate, autoPlay: false, defaultVolume: .35);
+            string html = (string)htmlMethod.Invoke(player, null)!;
+            Check(html.Contains("a=1&amp;b=2") && !html.Contains(" controls"), "HTML5 URL query is preserved without native controls");
+            File.WriteAllText(Path.Combine(AppContext.BaseDirectory, $"video-controls-{allowRate}.html"), html);
+            Check(((Button)player.FindName("FullScreenButton")).Visibility == Visibility.Collapsed, "Web fullscreen option hides shared button");
+            Check(((Button)player.FindName("PlaybackRateButton")).Visibility == (allowRate ? Visibility.Visible : Visibility.Collapsed), "Web rate option controls shared button");
+            void State(string type, double position, bool paused = false, bool seeking = false, double volume = .35, double rate = 1)
+            {
+                var state = JsonSerializer.SerializeToElement(new { type, duration = 100, position, paused, seeking, volume, rate });
+                method.Invoke(player, new object[] { state });
+            }
+            State("opened", 0, true);
+            Check(((Border)player.FindName("LocalVideoControlArea")).Visibility == Visibility.Visible, "URL metadata enables shared WPF controls");
+            State("play", 0);
+            State("progress", .5);
+            Check(player.GetFinalProgress()!.WatchedSeconds == .5m, "Web playback advances watched time");
+            State("seeking", 90, seeking: true);
+            State("seeked", 90);
+            State("playing", 90);
+            State("progress", 90.5);
+            Check(player.GetFinalProgress()!.WatchedSeconds == 1m, "Seeking does not add skipped footage to watched time");
+            State("waiting", 90.5);
+            State("volumechange", 90.5, volume: 0);
+            Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Visible, "Buffering persists during control changes");
+            State("playing", 90.5);
+            State("pause", 91, true);
+            Check(((Slider)player.FindName("ProgressSlider")).Value == 91, "Web pause synchronizes WPF progress");
+            Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Collapsed, "Resume clears buffering message");
+            Check(player.GetFinalProgress()!.WatchedSeconds == 1.5m, "Pause includes final played interval exactly once");
+            State("ended", 100, true);
+            State("play", 0);
+            State("progress", .5);
+            Check(player.GetFinalProgress()!.WatchedSeconds == 2m, "Replay retains cumulative watched time");
+            State("error", .5, true);
+            Check(player.HasPlaybackFailed, "Web error enables existing failure escape policy");
+        }
+        var hidden = new VideoPopupView("Web", "https://example.com/video.mp4", "", showControls: false);
+        method.Invoke(hidden, new object[] { JsonSerializer.SerializeToElement(new { type = "opened", duration = 100, position = 0, paused = true, seeking = false, volume = .7, rate = 1 }) });
+        Check(((Border)hidden.FindName("LocalVideoControlArea")).Visibility == Visibility.Collapsed, "Hidden controls remain hidden for URL playback");
     }
 
     private static void CheckOriginalImages()

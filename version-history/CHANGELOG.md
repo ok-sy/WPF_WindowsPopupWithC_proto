@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-30-04 — WPF 조회 주기 및 VIDEO 공통 UI 구현
+
+- 이유: 서버 기준 표시 대상 정책에 맞춰 조회 주기를 30~60분으로 제한하고, 로컬/URL 영상의 조작 UI 및 동영상+퀴즈 이중 스크롤을 통일.
+- 변경: 서버 `custom.wpf-popup.polling-interval-seconds`가 조회 주기를 소유하고 응답·WPF fallback을 1800~3600초로 제한. 로그인 직후 최초 조회 경로를 유지하고 `Stopwatch` 경과시간으로 기동 기준 조회 경계를 계산해 응답 지연·PC 시계 변경에 따른 주기 이동을 방지. 열린 팝업도 조회하며 기존 ID 중복 제거 후 새 목록을 표시 큐에 합류. 단일 타이머·조회 gate 및 426/종료 이후 재시작·늦은 응답 표시 차단. 서버 SQL의 활성·기간·대상·숨김·완료 판단은 기존 구현과 정합성을 확인해 유지.
+- 변경(UI): 로컬 MediaElement와 HTTP/HTTPS HTML5 영상이 동일한 고정 WPF 컨트롤 행을 사용. WebView2 HWND와 컨트롤 영역을 분리하고 Chromium 기본 controls·자동 숨김 타이머 제거. 공통 재생·일시정지·탐색·음량/음소거·배속·전체화면 명령, WebView 메시지 상태 동기화 및 버퍼링 안내 적용. 탐색 구간 시청시간 합산 방지, 배속 변경 금지 시 HTML5 1.0배 유지, URL 쿼리의 HTML 속성 인코딩 보완. YouTube iframe은 기존 별도 플레이어 정책 유지.
+- 변경(스크롤): VIDEO+QUIZ 결합 모드에서 내부 SurveyPopupView ScrollViewer를 실제 계층에서 제거하고 고정 문항 높이를 Auto로 변경. 영상·전체 문항·제출 영역을 부모 단일 스크롤에 배치하고 공통 푸터는 창 하단에 유지. 단독 SURVEY/QUIZ 자체 스크롤 유지. 현재 계약에 VIDEO+SURVEY 모드가 없음을 확인. TODO·인터페이스 조회 정책·WPF README·영상+퀴즈 안내 갱신.
+- 주요 파일: `popup-frameWork/Popup/MainWindow.xaml.cs`, `Views/Contents/VideoPopupView.xaml/.cs`, `VideoQuizPopupView.cs`, `SurveyPopupView.xaml/.cs`, `Popup.BehaviorTests/Program.cs`, `Popup.BehaviorTests/video-controls.test.cjs`, `zero-rule-server/base/src/main/java/server/base/props/WpfPopupProps.java`, `WpfPopupServiceTest.java`, `docs/design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md`.
+- 검증: WPF 빌드 경고·오류 0, 동작 검증 97건 통과(50문항·3종 viewport의 끝까지 스크롤 및 잠금 해제 높이 유지, 조회 경계, URL 상태·시청시간 포함). 실제 생성 HTML의 JavaScript를 영상/WebView 브리지 테스트 더블로 실행해 42건 통과. Gradle offline `:service:core:test --tests server.service.core.popup.wpf.WpfPopupServiceTest` 5개 테스트 통과. `git diff --check` 통과. 401 흐름은 단일 타이머·조회 gate·인증 재시도 경로 코드 점검. 실제 GUI·디코딩·전체화면 왕복·물리 입력 및 원격 개발 DB의 완료/숨김 후 HTTP 재조회는 미실행.
+- 상태: 구현·자동 검증 완료, 이번 main 커밋에 포함해 origin/main에 푸시 진행. 커밋 전 WPF 97건·HTML5 브리지 42건 재검증 통과, 서버 서비스 테스트는 Gradle `--rerun-tasks`로 재실행. 배포용 dist·반입 패키지·관리자 UI·DDL 갱신 없음. 실제 GUI·원격 DB 확인 항목은 TODO에 미완료로 유지.
+
 ## 2026-09-30-03 — 20260930 반입 폴더 전체 TGZ 압축
 
 - 이유: 현재 반입 폴더 전체를 단일 파일로 전달하기 위한 압축본 생성.

@@ -21,6 +21,7 @@ namespace Popup.Views.Contents
             Quiz = quiz;
             _requiredRatio = double.IsFinite(requiredRatio) ? Math.Clamp(requiredRatio, 0, 1) : 1;
             Quiz.IsEnabled = false;
+            Quiz.UseParentScrolling();
             _notice = new TextBlock
             {
                 Text = $"영상을 {_requiredRatio * 100:0.##}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.",
@@ -30,7 +31,7 @@ namespace Popup.Views.Contents
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(300) });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(400) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetRow(_notice, 1);
             Grid.SetRow(Quiz, 2);
             grid.Children.Add(Video);

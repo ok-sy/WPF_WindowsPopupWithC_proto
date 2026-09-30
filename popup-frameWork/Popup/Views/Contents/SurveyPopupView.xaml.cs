@@ -1,4 +1,4 @@
-﻿using Popup.Models;
+using Popup.Models;
 using Popup.Services;
 using System;
 using System.Collections.Generic;
@@ -15,6 +15,18 @@ namespace Popup.Views.Contents
     /// </summary>
     public partial class SurveyPopupView : UserControl, IBodyFontSizeAware
     {
+        /// <summary>결합 화면은 부모 스크롤이 전체 문항과 제출 영역을 담당한다.</summary>
+        internal void UseParentScrolling()
+        {
+            if (QuestionScrollViewer.Parent is not Grid host) return;
+            // 내부 ScrollViewer를 실제 계층에서 빼야 휠 이벤트도 부모에 전달된다.
+            QuestionScrollViewer.Content = null;
+            host.Children.Remove(QuestionScrollViewer);
+            Grid.SetRow(QuestionListPanel, 1);
+            host.RowDefinitions[1].Height = GridLength.Auto;
+            host.Children.Add(QuestionListPanel);
+        }
+
         // 현재 화면에 표시된 질문 목록
         private readonly List<SurveyQuestion> _questions = new();
 

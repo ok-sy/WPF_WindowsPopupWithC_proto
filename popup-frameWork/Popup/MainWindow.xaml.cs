@@ -26,7 +26,7 @@ namespace Popup
      *   - /statuses 조회와 클라이언트 완료 필터, PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
      *     서버 목록(GET /p/api/wpf/popups)이 곧 표시 목록이다.
      *   - 팝업 결과는 PopupResultQueue를 통해 종료 시점에 1회 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
-     *   - 주기 조회 간격은 서버 응답 pollingIntervalSeconds가 우선하며, 팝업이 열려 있으면 그 주기는 건너뛴다.
+     *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). 열린 팝업도 조회를 막지 않는다.
      *
      * [설계 10 — SSO·토큰 프로토타입]
      *   - Auth.Mode=SsoPrototype 이면 SsoAuthHeaderProvider(사내 SSO Negotiate → 서버 로그인 API → 메모리 토큰)를 쓴다.
@@ -44,6 +44,8 @@ namespace Popup
         private readonly bool _demoMode;
         private readonly bool _autoLoadOnStartup;
         private readonly DispatcherTimer _pollingTimer;
+        private readonly System.Diagnostics.Stopwatch _pollingClock = new();
+        private bool _isClosed;
         private int _pollingIntervalSeconds;
         private bool _isLoadingPopups;
 
@@ -165,7 +167,7 @@ namespace Popup
                 DemoMode = demoByArgument || GetBoolean(api, "DemoMode", false),
                 BaseUrl = GetString(api, "BaseUrl").Trim(),
                 AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
-                PollingIntervalSeconds = Math.Max(0, GetInt32(api, "PollingIntervalSeconds", 1800)),
+                PollingIntervalSeconds = Math.Clamp(GetInt32(api, "PollingIntervalSeconds", 1800), 1800, 3600),
                 DevUserId = GetString(api, "DevUserId").Trim()
             };
 
@@ -224,6 +226,7 @@ namespace Popup
          */
         protected override void OnClosed(EventArgs e)
         {
+            _isClosed = true;
             _pollingTimer.Stop();
             _ssoAuthHeaderProvider?.Dispose();
             base.OnClosed(e);
@@ -247,23 +250,32 @@ namespace Popup
             Loaded -= MainWindow_Loaded;
             if (_demoMode) return;
 
+            _pollingClock.Restart();
+            StartPeriodicPolling();
             if (_autoLoadOnStartup)
             {
                 await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: true);
             }
-            StartPeriodicPolling();
         }
 
-        /* 설정된 초 간격으로 서버 조회 타이머를 시작한다. 0이면 주기 조회를 사용하지 않는다. */
+        /* 기동 시점 기준의 30~60분 조회 타이머. 인증 재시도는 별도 타이머를 만들지 않는다. */
         private void StartPeriodicPolling()
         {
-            if (_demoMode || _pollingIntervalSeconds <= 0)
+            if (_demoMode || _clientVersionRejected || _isClosed)
             {
                 _pollingTimer.Stop();
                 return;
             }
-            _pollingTimer.Interval = TimeSpan.FromSeconds(_pollingIntervalSeconds);
+            _pollingTimer.Stop();
+            _pollingTimer.Interval = GetPollingDelay(_pollingIntervalSeconds, _pollingClock.Elapsed);
             _pollingTimer.Start();
+        }
+
+        // PC 벽시계 변경·응답 소요시간과 무관하게 기동 시점의 반복 조회 경계를 유지한다.
+        private static TimeSpan GetPollingDelay(int intervalSeconds, TimeSpan elapsed)
+        {
+            long intervalTicks = TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1800, 3600)).Ticks;
+            return TimeSpan.FromTicks(intervalTicks - elapsed.Ticks % intervalTicks);
         }
 
         /*
@@ -271,7 +283,9 @@ namespace Popup
          */
         private void ApplyPollingInterval(int serverIntervalSeconds)
         {
-            if (serverIntervalSeconds <= 0 || serverIntervalSeconds == _pollingIntervalSeconds) return;
+            if (serverIntervalSeconds <= 0) return; // 선택 필드 누락 시 범위 제한된 로컬 fallback 유지
+            serverIntervalSeconds = Math.Clamp(serverIntervalSeconds, 1800, 3600);
+            if (serverIntervalSeconds == _pollingIntervalSeconds) return;
             _pollingIntervalSeconds = serverIntervalSeconds;
             StartPeriodicPolling();
         }
@@ -279,6 +293,7 @@ namespace Popup
         /* 주기 조회 실패는 백그라운드에서 조용히 넘긴다. 다음 주기가 되면 서버 연결을 다시 시도한다. */
         private async void PollingTimer_Tick(object? sender, EventArgs e)
         {
+            StartPeriodicPolling();
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
         }
 
@@ -368,7 +383,7 @@ namespace Popup
          *  1. 미전송 결과 큐 flush — 이전 실행에서 못 보낸 완료·숨김이 먼저 반영되어야 서버 목록이 정확하다.
          *  2. GET /p/api/wpf/popups — 서버가 판정한 최종 목록(공통 옵션·content·문항 포함).
          *  3. 서버 조회 간격 적용, 이번 실행에서 이미 표시한 팝업 제외, PopupOptions 변환·표시.
-         * 팝업이 열려 있으면(HasOpenPopups) 조회를 건너뛴다(열린 팝업 위에 중복 표시 방지).
+         * 중복은 _shownPopupIds로 막고 새 팝업은 PopupManager의 표시 순서에 합류한다.
          */
         private async Task LoadAndShowAvailablePopupsAsync(bool showEmptyMessage, bool showErrorMessage)
         {
@@ -376,16 +391,7 @@ namespace Popup
             {
                 throw new InvalidOperationException("API 모드의 PopupApiService가 생성되지 않았습니다.");
             }
-            if (_isLoadingPopups) return;
-            if (_popupManager.HasOpenPopups)
-            {
-                if (showEmptyMessage)
-                {
-                    MessageBox.Show("표시 중인 팝업이 있어 새로 조회하지 않습니다.", "팝업 조회",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                return;
-            }
+            if (_isLoadingPopups || _isClosed || _clientVersionRejected) return;
 
             _isLoadingPopups = true;
             try
@@ -393,6 +399,7 @@ namespace Popup
                 await _resultQueue.FlushAsync();
 
                 WpfPopupListResponseDto response = await _popupApiService.GetWpfPopupsAsync();
+                if (_isClosed || _clientVersionRejected) return;
                 ApplyPollingInterval(response.PollingIntervalSeconds);
 
                 List<PopupResponseDto> popupDtos = response.Popups

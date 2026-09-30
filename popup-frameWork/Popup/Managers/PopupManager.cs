@@ -26,8 +26,8 @@ namespace Popup.Managers
         private bool _isGroupActive;
 
         /// <summary>
-        /// [기준 4] 팝업 그룹이 표시 중이거나 대기 중인지. MainWindow가 주기 조회를 건너뛰는 판단에 쓴다
-        /// (열려 있는 팝업 위에 같은 팝업이 다시 뜨는 것을 막는다).
+        /// 팝업 그룹이 표시 중이거나 대기 중인지. DemoWindow의 데모 재실행 제한에 사용한다.
+        /// API 모드의 주기 조회는 열린 팝업과 무관하게 수행하고 표시한 ID로 중복을 제외한다.
         /// </summary>
         public bool HasOpenPopups => _isGroupActive || _popupGroupQueue.Count > 0;
 

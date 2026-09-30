@@ -62,6 +62,19 @@ class WpfPopupServiceTest {
         verify(popupMapper, never()).selectAvailablePopups(anyString(), anyBoolean());
     }
 
+    @Test void pollingResponseAlwaysRespectsThirtyToSixtyMinutePolicy() {
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of());
+        when(popupService.loadQuestionsWithAnswerKey(List.of())).thenReturn(Map.of());
+        int[] configured = {-1, 0, 300, 1800, 2700, 3600, 7200};
+        int[] expected = {1800, 1800, 1800, 1800, 2700, 3600, 3600};
+        for (int i = 0; i < configured.length; i++) {
+            WpfPopupProps props = new WpfPopupProps();
+            props.setPollingIntervalSeconds(configured[i]);
+            var configuredService = new WpfPopupService(popupService, popupMapper, wpfMapper, processor, props);
+            assertEquals(expected[i], configuredService.getPopupsForUser("E1001").pollingIntervalSeconds());
+        }
+    }
+
     @Test void listExcludesCompletedAndHidesInternalFields() {
         PopupEntity entity = mock(PopupEntity.class);
         when(entity.questionTemplateId()).thenReturn(20L);

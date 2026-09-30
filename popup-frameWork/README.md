@@ -556,7 +556,7 @@ LoadAndShowAvailablePopupsAsync(...)
 6. PopupManager.ShowRange()
 ```
 
-팝업이 이미 열려 있으면 주기 조회는 건너뛴다.
+팝업이 열려 있어도 조회한다. 같은 실행에서 이미 표시한 ID는 제외하고 새 팝업은 기존 표시 큐에 합류한다.
 
 ---
 
@@ -845,22 +845,20 @@ PollingIntervalSeconds
 pollingIntervalSeconds
 ```
 
-가 있으면 서버 값이 우선한다.
+가 양수이면 서버 값이 우선한다. 서버 설정과 WPF 로컬 fallback은 모두 1800~3600초(30~60분)로 제한한다. `Stopwatch` 경과시간으로 기동 기준 조회 경계를 유지하므로 PC 시각 변경이나 응답 지연이 주기를 밀지 않는다. 기본 `AutoLoadOnStartup=true`로 로그인 직후 최초 목록을 조회한다.
 
 흐름:
 
 ```text
 Timer Tick
 ↓
-팝업이 열려 있나?
- ├─ Yes → 이번 조회 생략
- └─ No
-      ↓
-      Flush pending results
-      ↓
-      GET /p/api/wpf/popups
-      ↓
-      새 팝업 표시
+조회가 이미 진행 중인가?
+ ├─ Yes → 중복 조회 생략
+ └─ No → Flush pending results
+            ↓
+          GET /p/api/wpf/popups
+            ↓
+          이미 표시한 ID 제외 → 새 팝업 표시 큐에 합류
 ```
 
 ---
