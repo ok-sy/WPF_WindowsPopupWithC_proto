@@ -49,7 +49,7 @@ custom.user-jwt:
   allow-dup-login: true
 
 # [WPF 팝업 API 추가 — 기준 3·4·6] 신규 /p/api/wpf/** 설정. 기존 custom.* 항목은 변경하지 않는다.
-#  - polling-interval-seconds: 목록 응답에 실어 WPF 주기 조회 간격을 서버가 통제
+#  - polling-interval-seconds: 서버 소유 조회 주기(기본 1800초). 응답은 1800~3600초(30~60분)로 제한.
 #  - dev-user-header(기본 false = WpfPopupProps 기본값): true면 X-Dev-User-Id 헤더로 사번을 지정하는 개발용 식별기 활성.
 #    통합 토큰 필터(타 팀)가 적용되면 SecurityContext 기반 식별기가 사용된다.
 #    ※ 여기(common)에는 적지 않는다 — 프로파일 그룹 활성 순서가 local → common 이어서 common 값이 local 값을 덮어쓴다

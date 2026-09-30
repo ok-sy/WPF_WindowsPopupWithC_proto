@@ -21,5 +21,10 @@ public class WpfPopupProps {
 
     private int pollingIntervalSeconds = 1800;
 
+    /** 서버 설정이 조회 주기를 소유하며 응답값은 30~60분으로 제한한다. */
+    public int getPollingIntervalSeconds() {
+        return Math.max(1800, Math.min(3600, pollingIntervalSeconds));
+    }
+
     private boolean devUserHeader = false;
 }

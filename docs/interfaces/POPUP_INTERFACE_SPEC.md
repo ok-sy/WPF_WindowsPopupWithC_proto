@@ -213,7 +213,7 @@ X-Client-Version: 1.0.0
 |---|---|---|---|---|
 | serverTime | string(ISO) | 선택 | `null` | 서버 기준 시각. WPF는 참고만 함 |
 | userId | string | 선택 | `""` | 인증 정보에서 식별된 사용자. 요청에는 보내지 않음 |
-| pollingIntervalSeconds | integer | 선택 | `0` | 0 이하면 WPF 로컬 설정 유지 |
+| pollingIntervalSeconds | integer | 선택 | `0` | 서버 설정이 소유하는 1800~3600초(30~60분) 주기. 0 이하면 범위 제한된 WPF 로컬 설정 유지. 기동 시점 기준 반복 조회 |
 | popups | array | O | `[]` | 표시 대상 팝업. 없으면 빈 배열 |
 
 ---

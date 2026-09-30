@@ -1,9 +1,9 @@
 # 19. WPF 운영 조회 및 VIDEO UI 보완 TODO
 
 - 작성일: 2026-09-30 (KST)
-- 상태: **TODO / 정책 정리 완료 / 구현 미착수**
+- 상태: **구현 완료 / 자동 검증 완료 / 실제 GUI·원격 DB 검증 대기**
 - 범위: WPF 주기 조회 정책, VIDEO 로컬/URL 공통 컨트롤 UI, VIDEO+SURVEY/QUIZ 이중 스크롤 제거
-- 원칙: 이번 문서는 구현 TODO를 정리하는 문서이며, 실제 코드 변경은 별도 착수 시 진행한다.
+- 착수: 2026-09-30. 아래 체크는 코드 적용·자동 검증과 실제 GUI·DB 검증을 구분한다.
 
 ---
 
@@ -100,16 +100,20 @@ WPF는 다음 판단을 하지 않는다.
 
 ### 1.6 구현 TODO
 
-- [ ] 로그인 성공 직후 팝업 목록 최초 조회
-- [ ] 30~60분 범위의 polling 주기 적용
-- [ ] 로그인/기동 시점 기준 반복 조회
-- [ ] 서버 응답 목록 즉시 표시
-- [ ] WPF의 노출 시작/종료 시간 판단 코드 제거 또는 미사용 처리
-- [ ] 팝업별 예약/시간대기 로직이 남아 있는지 점검
-- [ ] 서버가 최종 표시 대상만 반환하도록 조회 SQL/Service 정합성 확인
-- [ ] polling 값의 소유 위치(서버 설정/관리자 설정/응답 필드) 최종 확정
-- [ ] 재로그인/401 처리 후 polling 흐름이 중복 실행되지 않는지 확인
+- [x] 로그인 성공 직후 팝업 목록 최초 조회(기존 자동 조회 경로 유지)
+- [x] 30~60분 범위의 polling 주기 적용
+- [x] 로그인/기동 시점 기준 반복 조회
+- [x] 서버 응답 목록 즉시 표시
+- [x] WPF의 노출 시작/종료 시간 판단 코드 제거 또는 미사용 처리(기존 미사용 확인)
+- [x] 팝업별 예약/시간대기 로직이 남아 있는지 점검
+- [x] 서버가 최종 표시 대상만 반환하도록 조회 SQL/Service 정합성 확인(SQL·서비스 코드 및 서비스 테스트)
+- [x] polling 값의 소유 위치(서버 설정/관리자 설정/응답 필드) 최종 확정
+- [x] 재로그인/401 처리 후 polling 흐름이 중복 실행되지 않는지 확인(단일 DispatcherTimer·조회 gate·인증 1회 재시도 경로 코드 점검)
 - [ ] 여러 번 조회해도 이미 완료/숨김 처리된 팝업이 서버에서 다시 내려오지 않는지 검증
+
+적용: 서버 `custom.wpf-popup.polling-interval-seconds`가 소유한다. 기본 1800초이며 서버 응답·WPF 로컬 설정 모두 1800~3600초로 제한한다. 응답의 선택 필드가 없거나 0 이하이면 제한된 로컬 설정을 유지한다. WPF는 `Stopwatch` 경과시간으로 기동 기준 조회 경계를 계산하므로 PC 벽시계 변경이나 응답 지연이 주기를 밀지 않는다. `AutoLoadOnStartup=false`는 기존 수동 조회 테스트 설정이며 기본값은 `true`다. 열린 팝업이 있어도 조회하며, 이번 실행에서 표시한 ID 중복을 제거한 뒤 새 목록을 기존 표시 큐에 합류시킨다. 426·종료 후 타이머 재시작과 늦게 도착한 목록 표시는 차단한다.
+
+서버 목록 SQL은 DB의 KST 시각·활성 사용자·대상 조건·활성 문항 템플릿·숨김·완료를 이미 판단한다. SQL 변경은 필요 없었다. 완료/숨김 후 재조회는 기존 `WpfApiOracleHttpTest`에 시나리오가 있으나 이번 작업에서는 원격 DB 테스트를 실행하지 않았다.
 
 ### 1.7 완료 기준
 
@@ -122,9 +126,9 @@ WPF는 다음 판단을 하지 않는다.
 
 ## 2. VIDEO 로컬/URL 공통 WPF 컨트롤바
 
-### 2.1 현재 구조
+### 2.1 변경 전 구조
 
-현재 영상 재생 UI는 소스 종류에 따라 다르다.
+변경 전 영상 재생 UI는 소스 종류에 따라 달랐다.
 
 ```text
 로컬 영상
@@ -237,19 +241,21 @@ ratechange
 
 ### 2.6 구현 TODO
 
-- [ ] URL 영상에서 Chromium 기본 `controls` 제거
-- [ ] 로컬/URL 공통 WPF 컨트롤바 사용
-- [ ] Play/Pause 공통 명령 추상화
-- [ ] Seek 공통 명령 추상화
-- [ ] Volume/Mute 공통 명령 추상화
-- [ ] PlaybackRate 공통 명령 추상화
-- [ ] Fullscreen 공통 명령 추상화
-- [ ] WebView2 ↔ WPF 상태 메시지 동기화
-- [ ] `allowPlaybackRateChange=false` 시 URL 영상도 강제로 1.0배 유지
-- [ ] `allowFullScreen=false` 시 URL 영상도 전체화면 진입 차단
-- [ ] buffering/waiting/stalled 상태 UI 처리
+- [x] URL 영상에서 Chromium 기본 `controls` 제거
+- [x] 로컬/URL 공통 WPF 컨트롤바 사용
+- [x] Play/Pause 공통 명령 추상화
+- [x] Seek 공통 명령 추상화
+- [x] Volume/Mute 공통 명령 추상화
+- [x] PlaybackRate 공통 명령 추상화
+- [x] Fullscreen 공통 명령 추상화
+- [x] WebView2 ↔ WPF 상태 메시지 동기화
+- [x] `allowPlaybackRateChange=false` 시 URL 영상도 강제로 1.0배 유지
+- [x] `allowFullScreen=false` 시 URL 영상도 전체화면 진입 차단
+- [x] buffering/waiting/stalled 상태 UI 처리
 - [ ] VIDEO+QUIZ에서도 동일 컨트롤바 동작 확인
-- [ ] 가능하면 `IVideoPlayer` 계층으로 MediaElement/WebView2 재생 엔진 분리 검토
+- [x] 가능하면 `IVideoPlayer` 계층으로 MediaElement/WebView2 재생 엔진 분리 검토(현재는 View의 공통 명령 메서드로 통합, 별도 엔진 계층은 추가하지 않음)
+
+적용: WebView2의 HWND가 WPF 오버레이를 가리는 문제를 피하려고 두 엔진 모두 영상 아래 별도 행에 같은 WPF 컨트롤을 고정 표시한다. 자동 숨김에 따른 영상 높이·스크롤 위치 변화도 없앤다. HTML5 명령은 `PostWebMessageAsJson`으로 전달하고 메타데이터·위치·재생/일시정지·탐색·버퍼링·음량·배속·종료·오류를 WPF에 반영한다. 탐색 중 이동한 구간은 누적 시청시간에 넣지 않는다. URL의 쿼리 문자열은 HTML 속성 인코딩으로 보존한다. YouTube iframe은 기존 별도 플레이어/시청량 측정 미지원 정책을 유지하며 이번 HTML5 공통 컨트롤 적용 대상에 포함하지 않는다.
 
 ### 2.7 완료 기준
 
@@ -312,15 +318,17 @@ PopupWindow 또는 결합 View
 
 ### 3.4 구현 TODO
 
-- [ ] 현재 VIDEO+SURVEY/QUIZ 스크롤 계층 확인
-- [ ] 이중 `ScrollViewer` 발생 위치 특정
-- [ ] 결합 화면 세로 스크롤 소유자를 1개로 통일
-- [ ] 결합 모드에서는 Survey/Quiz 내부 세로 스크롤 제거 또는 비활성화
-- [ ] 단독 SURVEY/QUIZ 기존 스크롤 동작 유지
+- [x] 현재 VIDEO+SURVEY/QUIZ 스크롤 계층 확인
+- [x] 이중 `ScrollViewer` 발생 위치 특정
+- [x] 결합 화면 세로 스크롤 소유자를 1개로 통일
+- [x] 결합 모드에서는 Survey/Quiz 내부 세로 스크롤 제거 또는 비활성화
+- [x] 단독 SURVEY/QUIZ 기존 스크롤 동작 유지
 - [ ] 휠 스크롤/스크롤바 드래그/키보드 스크롤 확인
-- [ ] 긴 설문에서 마지막 문항 및 제출 영역 접근 가능 여부 확인
+- [x] 긴 설문에서 마지막 문항 및 제출 영역 접근 가능 여부 확인(50문항·세 가지 viewport 크기 자동 레이아웃 검증)
 - [ ] VIDEO 재생 중 스크롤해도 재생 상태 유지 확인
-- [ ] VIDEO+QUIZ completionRatio 잠금/해제 후 레이아웃 점프 여부 확인
+- [x] VIDEO+QUIZ completionRatio 잠금/해제 후 레이아웃 점프 여부 확인(자동 레이아웃 검증)
+
+적용: 현재 계약은 `QUIZ + content.videoEnabled`만 영상 결합을 지원하며 VIDEO+SURVEY 모드는 없다. `PopupWindow` 본문에 외부 ScrollViewer는 없고, 이중 스크롤은 `VideoQuizPopupView`와 내부 `SurveyPopupView`에서 발생했다. 결합 모드에서는 내부 ScrollViewer를 실제 계층에서 제거해 문항 패널을 직접 배치하고 고정 400 높이를 Auto로 바꾼다. 부모의 단일 ScrollViewer가 영상·전체 문항·제출 영역을 담당하고, 공통 푸터는 PopupWindow에 고정한다. 단독 SURVEY/QUIZ는 기존 자체 스크롤을 유지한다.
 
 ### 3.5 완료 기준
 
@@ -346,13 +354,12 @@ PopupWindow 또는 결합 View
 
 ---
 
-## 5. 이번 TODO에서 하지 않는 것
+## 5. 검증 결과와 남은 확인
 
-- 실제 polling 코드 구현
-- 서버 SQL/Service 변경
-- VIDEO 컨트롤바 구현
-- WebView2 JavaScript 구현
-- 이중 ScrollViewer 제거 코드 구현
-- 관리자 화면 변경
+- WPF 빌드 성공(경고·오류 0). `Popup.BehaviorTests` 97건 통과: 기존 검증에 조회 경계·50문항 레이아웃·WebView 상태 동기화·시청시간 검증을 추가.
+- 생성된 실제 HTML5 플레이어 스크립트의 명령·이벤트·배속 제한·전체화면 차단은 `video-controls.test.cjs`에서 브리지/영상 테스트 더블로 실행해 42건 통과.
+- 서버 `WpfPopupServiceTest` 5개 테스트 통과: 서버 조회 응답의 30~60분 경계와 최종 목록 조립 검증. `git diff --check` 통과.
+- 실제 로컬/URL 디코딩, VIDEO+QUIZ GUI 조작, 휠·스크롤바 드래그·키보드, 전체화면 왕복 재생 유지는 수동 확인 대기.
+- 실제 완료/숨김 후 반복 HTTP 조회는 원격 개발 DB 확인 대기. 관리자 UI·DDL·반입 패키지·배포용 dist 갱신은 이번 구현 범위에 포함하지 않는다.
 
-위 항목은 별도 착수 요청 시 구현한다.
+자동 검증은 실제 브라우저·영상 디코더·DB 검증을 대신하지 않는다. 체크가 남은 항목은 위 수동/통합 검증에 해당한다.
