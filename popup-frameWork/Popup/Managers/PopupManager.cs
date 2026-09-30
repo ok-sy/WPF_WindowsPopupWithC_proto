@@ -244,9 +244,9 @@ namespace Popup.Managers
                     catch (Exception exception)
                     {
                         // 로컬 파일 저장 자체가 실패한 경우(디스크 오류 등). 창을 유지해 사용자가 다시 시도할 수 있게 한다.
-                        MessageBox.Show(popupWindow,
+                        PopupAlert.Show(popupWindow,
                             "응답을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.\n\n" + exception.Message,
-                            "응답 저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                            "저장하지 못했어요", "다시 시도");
                     }
                     finally { isSubmitting = false; }
                 };
@@ -289,12 +289,13 @@ namespace Popup.Managers
 
             if (isQuiz && submission.Passed == false)
             {
-                MessageBox.Show(popupWindow,
-                    $"점수: {submission.Score ?? 0:0.##}점{passingText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 채점해 주세요.",
-                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
+                PopupAlert.Show(popupWindow,
+                    $"점수: {submission.Score ?? 0:0.##}점{passingText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 제출해 주세요.",
+                    "다시 도전해 주세요", "답안 수정");
                 return;   // 창 유지, 제출 없음
             }
 
+            if (!popupWindow.TryOpenSubmissionLink()) return;
             WpfResultItemDto item = builder.BuildSubmitted(submission, DateTimeOffset.Now);
             if (popupOptions.EnqueueResultAsync != null)
             {
@@ -304,9 +305,9 @@ namespace Popup.Managers
 
             if (isQuiz && submission.Score is double score)
             {
-                MessageBox.Show(popupWindow,
+                PopupAlert.Show(popupWindow,
                     $"점수: {score:0.##}점{passingText}\n\n평가를 통과했습니다.",
-                    "채점 결과", MessageBoxButton.OK, MessageBoxImage.Information);
+                    "평가를 통과했어요", "완료");
             }
 
             popupWindow.Close();

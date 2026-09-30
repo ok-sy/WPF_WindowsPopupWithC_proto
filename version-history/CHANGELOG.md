@@ -2,6 +2,22 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-09-30-06 — 제출 버튼 통일 및 제출 안내 UI 정리
+
+- 이유: VIDEO+QUIZ 하단 닫기를 퀴즈 제출로 오인하는 흐름을 해소하고, 단독 설문·퀴즈와 제출 동작·버튼 디자인을 통일.
+- 변경: SURVEY·QUIZ·VIDEO+QUIZ 하단 버튼을 제출로 연결하고, 푸터가 있으면 내부 버튼을 숨겨 제출 버튼 하나만 표시. 푸터 미표시 시 내부 제출 유지, 닫기 숨김 옵션과 제출 버튼 구분. 영상 잠금·필수 응답 검증·로컬 채점·통과 시 저장·전송 순서를 유지하고 바로가기 설정은 검증/통과 후 실행. 헤더 X·Alt+F4는 별도 종료 경로 유지. 흰 바탕·검은 테두리·둥근 모서리의 공통 버튼 및 채점·미응답·저장 오류 모달 적용. 관련 안내·인터페이스 정의서 및 Word/PDF 갱신.
+- 주요 파일: `PopupWindow.xaml/.cs`, `SurveyPopupView.xaml/.cs`, `PopupManager.cs`, `PopupStyles.xaml`, `PopupAlert.cs`, `Popup.BehaviorTests/Program.cs`, 인터페이스 정의서 및 WPF 가이드.
+- 검증: 별도 출력 경로에서 WPF 동작 검증 143건 통과(기존 Debug 실행 파일이 실행 중으로 잠김). 단독/결합 모드 및 푸터 표시/닫기 표시 조합의 단일 제출·실제 답안 수집·채점, 영상 잠금 경계, 모달 레이아웃·Enter/Escape 설정 검증. 안내창을 WPF 비트맵으로 렌더링해 시각 확인. Word에서 목차 갱신·PDF 재출력 성공(42쪽). 실제 GUI 클릭·영상 디코딩은 미실행.
+- 상태: 문서 후속 수정·점수 로그 검증과 함께 main 커밋 및 origin/main 푸시 대상으로 정리. 실행 중인 기존 앱은 종료하거나 교체하지 않음.
+
+## 2026-09-30-05 — DemoWindow 퀴즈 점수 반환·로그 검증
+
+- 이유: VIDEO+QUIZ 제출 후 점수 반환과 DemoWindow 로그 표시 경로를 단독 QUIZ와 비교할 필요.
+- 변경: 실제 DemoPopupGateway 및 DemoWindow 이벤트 처리기를 연결해 결합·단독 퀴즈의 응답 totalScore/passed, 요청 score/passed 로그, 응답 로그, 화면 점수 요약을 검증하는 8개 확인 추가. 실행 코드 변경 없음.
+- 주요 파일: `popup-frameWork/Popup.BehaviorTests/Program.cs`.
+- 검증: 전체 동작 검증 105건 통과. 두 모드 모두 점수 100·통과 true가 응답 및 로그에 유지됨. 실제 영상 재생·수동 제출 증상은 미재현. 조사 시 실행 중인 Popup.exe 프로세스 없음.
+- 상태: 제출 UI 변경과 함께 main 커밋 및 origin/main 푸시 대상으로 정리.
+
 ## 2026-09-30-04 — WPF 조회 주기 및 VIDEO 공통 UI 구현
 
 - 이유: 서버 기준 표시 대상 정책에 맞춰 조회 주기를 30~60분으로 제한하고, 로컬/URL 영상의 조작 UI 및 동영상+퀴즈 이중 스크롤을 통일.
@@ -10,7 +26,9 @@
 - 변경(스크롤): VIDEO+QUIZ 결합 모드에서 내부 SurveyPopupView ScrollViewer를 실제 계층에서 제거하고 고정 문항 높이를 Auto로 변경. 영상·전체 문항·제출 영역을 부모 단일 스크롤에 배치하고 공통 푸터는 창 하단에 유지. 단독 SURVEY/QUIZ 자체 스크롤 유지. 현재 계약에 VIDEO+SURVEY 모드가 없음을 확인. TODO·인터페이스 조회 정책·WPF README·영상+퀴즈 안내 갱신.
 - 주요 파일: `popup-frameWork/Popup/MainWindow.xaml.cs`, `Views/Contents/VideoPopupView.xaml/.cs`, `VideoQuizPopupView.cs`, `SurveyPopupView.xaml/.cs`, `Popup.BehaviorTests/Program.cs`, `Popup.BehaviorTests/video-controls.test.cjs`, `zero-rule-server/base/src/main/java/server/base/props/WpfPopupProps.java`, `WpfPopupServiceTest.java`, `docs/design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md`.
 - 검증: WPF 빌드 경고·오류 0, 동작 검증 97건 통과(50문항·3종 viewport의 끝까지 스크롤 및 잠금 해제 높이 유지, 조회 경계, URL 상태·시청시간 포함). 실제 생성 HTML의 JavaScript를 영상/WebView 브리지 테스트 더블로 실행해 42건 통과. Gradle offline `:service:core:test --tests server.service.core.popup.wpf.WpfPopupServiceTest` 5개 테스트 통과. `git diff --check` 통과. 401 흐름은 단일 타이머·조회 gate·인증 재시도 경로 코드 점검. 실제 GUI·디코딩·전체화면 왕복·물리 입력 및 원격 개발 DB의 완료/숨김 후 HTTP 재조회는 미실행.
-- 상태: 구현·자동 검증 완료, 이번 main 커밋에 포함해 origin/main에 푸시 진행. 커밋 전 WPF 97건·HTML5 브리지 42건 재검증 통과, 서버 서비스 테스트는 Gradle `--rerun-tasks`로 재실행. 배포용 dist·반입 패키지·관리자 UI·DDL 갱신 없음. 실제 GUI·원격 DB 확인 항목은 TODO에 미완료로 유지.
+- 후속 문서: 설계 02·03·06·07·09, 전체/최소 인터페이스 정의서, 옵션·사용자 가이드, 웹 미리보기 정합성 문서를 현재 조회·VIDEO 컨트롤·결합 스크롤 동작에 맞춰 보완. JSON 계약 변경이 없어 v3.5 유지. Word 생성 스크립트 기준일 갱신 후 DOCX/PDF 재생성.
+- 후속 검증: Word에서 실제 열기·목차 갱신·PDF 출력 성공(41쪽). DOCX XML/rels 15개 파싱 성공 및 고정 WPF 컨트롤바·30~60분·부모 단일 스크롤·기동 기준 문구 포함 확인. 전체 PDF 시각 검토는 미실행.
+- 상태: 구현은 `944bf7b`로 origin/main 푸시 완료. 후속 문서 수정은 제출 UI 변경과 함께 main 커밋 및 푸시 대상으로 정리. 커밋 전 WPF 97건·HTML5 브리지 42건 재검증 통과, 서버 서비스 테스트는 Gradle `--rerun-tasks`로 재실행. 배포용 dist·반입 패키지·관리자 UI·DDL 갱신 없음. 실제 GUI·원격 DB 확인 항목은 TODO에 미완료로 유지.
 
 ## 2026-09-30-03 — 20260930 반입 폴더 전체 TGZ 압축
 

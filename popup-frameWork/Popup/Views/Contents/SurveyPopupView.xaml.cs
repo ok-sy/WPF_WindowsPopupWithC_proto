@@ -127,7 +127,7 @@ namespace Popup.Views.Contents
              */
             if (_isQuizMode)
             {
-                SubmitButton.Content = "채점";
+                SubmitButton.Content = "제출";
             }
 
             BuildQuestions();
@@ -562,6 +562,13 @@ namespace Popup.Views.Contents
     object sender,
     RoutedEventArgs e)
         {
+            Submit();
+        }
+
+        public void UseFooterSubmission() => SubmitButton.Visibility = Visibility.Collapsed;
+
+        public void Submit()
+        {
             /*
              * 화면에 입력된 모든 응답을
              * SurveyAnswer 목록으로 만든다.
@@ -577,11 +584,9 @@ namespace Popup.Views.Contents
                 answers,
                 out string validationMessage))
             {
-                MessageBox.Show(Window.GetWindow(this)!,
+                Popup.Views.Windows.PopupAlert.Show(Window.GetWindow(this),
                     validationMessage,
-                    "필수 문항 확인",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    "답안을 확인해 주세요");
 
                 return;
             }

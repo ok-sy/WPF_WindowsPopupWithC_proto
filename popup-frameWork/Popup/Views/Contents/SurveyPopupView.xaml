@@ -7,6 +7,13 @@
              d:DesignHeight="650"
              d:DesignWidth="700">
 
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid Background="White">
 
         <Grid.RowDefinitions>
@@ -89,10 +96,8 @@
 
                 <!-- 제출 버튼 -->
                 <Button x:Name="SubmitButton"
+                        Style="{StaticResource ActionButtonStyle}"
                         Grid.Column="1"
-                        Width="110"
-                        Height="40"
-                        Padding="18,8"
                         Content="제출"
                         FontSize="14"
                         FontWeight="SemiBold"

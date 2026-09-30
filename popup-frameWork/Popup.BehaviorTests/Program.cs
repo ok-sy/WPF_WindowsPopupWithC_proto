@@ -42,6 +42,9 @@ internal static class Program
         CheckPollingSchedule();
         CheckCombinedScrolling();
         CheckWebVideoControls();
+        CheckDemoScoreLogging();
+        CheckFooterSubmission();
+        CheckAlertLayout();
         var dto = DemoPopupDataService.CreatePopups("VIDEO_QUIZ").Single();
         dto.AllowCloseBeforeComplete = false;
         var options = PopupFactory.Create(dto);
@@ -138,6 +141,101 @@ internal static class Program
                 "Queued JSON round trip must preserve score for retry");
         }
         Console.WriteLine($"PASS: {_checks} popup behavior checks");
+    }
+
+    private static void CheckAlertLayout()
+    {
+        var create = typeof(PopupAlert).GetMethod("CreateDialog", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var dialog = (Window)create.Invoke(null, new object?[] { null,
+            "점수: 100점 (통과 점수 80점)\n\n평가를 통과했습니다.", "평가를 통과했어요", "완료" })!;
+        var body = (Border)dialog.Content;
+        body.Measure(new Size(430, double.PositiveInfinity));
+        body.Arrange(new Rect(new Point(), body.DesiredSize));
+        body.UpdateLayout();
+        Check(body.DesiredSize.Height > 200 && body.DesiredSize.Height < 450, "Alert sizes to message without clipping");
+        var button = ((StackPanel)body.Child).Children.OfType<Button>().Single();
+        Check(button.IsDefault && button.IsCancel && (string)button.Content == "완료", "Alert supports Enter and Escape confirmation");
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(body.ActualWidth), (int)Math.Ceiling(body.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(body);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(AppContext.BaseDirectory, "submission-alert-preview.png"));
+        encoder.Save(file);
+        dialog.Close();
+    }
+
+    private static void CheckFooterSubmission()
+    {
+        foreach (var type in new[] { "QUIZ", "VIDEO_QUIZ" })
+        foreach (var showFooter in new[] { true, false })
+        foreach (var showClose in new[] { true, false })
+        {
+            var options = PopupFactory.Create(DemoPopupDataService.CreatePopups(type).Single());
+            options.ShowFooter = showFooter;
+            options.ShowCloseButton = showClose;
+            var window = new PopupWindow(options);
+            var combined = options.Content as VideoQuizPopupView;
+            var quiz = combined?.Quiz ?? (SurveyPopupView)options.Content!;
+            var footer = (Button)window.FindName("FooterCloseButton");
+            var inner = (Button)quiz.FindName("SubmitButton");
+            Check((string)footer.Content == "제출", $"{type} footer uses submission label");
+            Check(footer.Visibility == Visibility.Visible, "Hiding close does not hide submission action");
+            Check(inner.Visibility == (showFooter ? Visibility.Collapsed : Visibility.Visible), "Exactly one submission button remains visible");
+            int submitted = 0;
+            SurveySubmission? result = null;
+            quiz.SurveySubmitted += (_, value) => { submitted++; result = value; };
+            var controls = (Dictionary<long, FrameworkElement>)typeof(SurveyPopupView)
+                .GetField("_answerControls", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(quiz)!;
+            foreach (var panel in controls.Values.OfType<Panel>())
+            foreach (var control in panel.Children.OfType<System.Windows.Controls.Primitives.ToggleButton>())
+                control.IsChecked = ((SurveyOption)control.Tag).IsCorrect == true;
+            void ClickFooter() => typeof(PopupWindow).GetMethod("CloseButton_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(window, new object[] { footer, new RoutedEventArgs(Button.ClickEvent) });
+            if (combined != null)
+            {
+                ClickFooter();
+                Check(submitted == 0, "Locked video quiz cannot submit from footer");
+                Report(combined, Snapshot(80));
+            }
+            if (showFooter) ClickFooter(); else quiz.Submit();
+            Check(submitted == 1 && result?.Score == 100 && result.Passed == true,
+                $"{type} single button collects answers and grades before emitting submission");
+            window.Close();
+        }
+    }
+
+    private static void CheckDemoScoreLogging()
+    {
+        var demo = new Popup.DemoWindow();
+        var gateway = (DemoPopupGateway)typeof(Popup.DemoWindow)
+            .GetField("_gateway", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(demo)!;
+        foreach (var type in new[] { "VIDEO_QUIZ", "QUIZ" })
+        {
+            var dto = DemoPopupDataService.CreatePopups(type).Single();
+            var builder = new PopupResultBuilder(dto.PopupId, null);
+            if (type == "VIDEO_QUIZ") builder.SetVideoProgress(Snapshot(80));
+            var item = builder.BuildSubmitted(new SurveySubmission
+            {
+                Score = 100, Passed = true,
+                Answers = new() { new SurveyAnswer { QuestionId = 2001, SelectedOptionIds = new() { 2101 } } }
+            }, DateTimeOffset.Now);
+            var response = gateway.PostResultsAsync(new WpfResultRequestDto { Results = new() { item } })
+                .GetAwaiter().GetResult().Results.Single();
+            Check(response.TotalScore == 100 && response.Passed == true, $"{type} response preserves score and passed");
+            var summary = ((TextBlock)demo.FindName("QuizScoreText")).Text;
+            Check(summary.Contains(dto.PopupId) && summary.Contains("score: 100") && summary.Contains("passed: true"),
+                $"{type} updates DemoWindow score summary");
+            var log = (ListBox)demo.FindName("ResultLogList");
+            var requestJson = JsonDocument.Parse(((string)log.Items[log.Items.Count - 2]).Substring(6));
+            var responseJson = JsonDocument.Parse(((string)log.Items[log.Items.Count - 1]).Substring(6));
+            Check(requestJson.RootElement.GetProperty("score").GetDouble() == 100
+                && requestJson.RootElement.GetProperty("passed").GetBoolean(), $"{type} request log includes score and passed");
+            Check(responseJson.RootElement.GetProperty("totalScore").GetDouble() == 100
+                && responseJson.RootElement.GetProperty("passed").GetBoolean(), $"{type} response log includes totalScore and passed");
+            requestJson.Dispose();
+            responseJson.Dispose();
+        }
+        demo.Close();
     }
 
     private static void CheckPollingSchedule()

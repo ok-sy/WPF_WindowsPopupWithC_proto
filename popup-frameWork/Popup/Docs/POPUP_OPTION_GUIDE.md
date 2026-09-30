@@ -172,6 +172,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `completionRatio` | `1.0` | 완료 인정 비율 | 누적 시청 기준/닫기 제한에 사용 |
 | `allowCloseBeforeComplete` | `true` | 완료 전 닫기 허용 | PopupWindow에서 사용 |
 
+로컬 MediaElement와 HTTP/HTTPS HTML5 영상은 영상 아래 같은 고정 WPF 컨트롤바를 사용한다. URL 영상의 브라우저 기본 controls는 없으며 공통 재생·일시정지·탐색·음량/음소거·배속·전체화면 옵션을 적용한다. `showControls=false`이면 숨기고 영상 클릭으로 재생을 전환한다. `allowPlaybackRateChange=false`이면 HTML5도 1.0배로 제한하며 `allowFullScreen=false`이면 WPF 버튼과 진입을 제한한다. buffering/waiting/stalled는 안내 메시지로 표시한다. YouTube iframe은 기존 별도 UI·기본 음량/배속 제어 및 시청량 미지원 정책을 유지한다.
+
 영상 진행률은 결과 항목의 `video` 블록으로 `durationSeconds`, `positionSeconds`, `maximumPositionSeconds`, `watchedSeconds`를 전송한다. 동영상+퀴즈는 누적 시청 기준 충족 후 퀴즈·푸터가 활성화되고, 통과한 SUBMITTED 결과에 답안·점수·영상 정보를 함께 담는다.
 
 ---

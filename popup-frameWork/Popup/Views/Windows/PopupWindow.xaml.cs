@@ -47,6 +47,14 @@ namespace Popup.Views.Windows
              */
             ApplyOptions();
             FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "닫기";
+            var survey = _options.Content as SurveyPopupView ?? (_options.Content as VideoQuizPopupView)?.Quiz;
+            if (survey != null)
+            {
+                FooterCloseButton.Content = "제출";
+                // 닫기 숨김 옵션으로 필수 제출 경로까지 사라지지 않도록 한다.
+                FooterCloseButton.Visibility = Visibility.Visible;
+                if (_options.ShowFooter) survey.UseFooterSubmission();
+            }
             if (_options.Content is VideoQuizPopupView videoQuiz)
             {
                 FooterArea.IsEnabled = videoQuiz.IsUnlocked;
@@ -164,7 +172,7 @@ namespace Popup.Views.Windows
              *
              * Visibility만 Collapsed로 변경하면
              * Footer 안의 버튼과 체크박스는 보이지 않지만,
-             * Grid의 Footer 행 높이 64는 그대로 남을 수 있다.
+             * Grid의 Footer 행 높이 80은 그대로 남을 수 있다.
              *
              * 그래서 FooterArea의 표시 여부와
              * FooterRow의 높이를 함께 변경해야 한다.
@@ -175,14 +183,14 @@ namespace Popup.Views.Windows
 
             /*
              * ShowFooter가 true면
-             * Footer가 사용할 높이 64를 유지한다.
+             * Footer가 사용할 높이 80을 유지한다.
              *
              * ShowFooter가 false면
              * Footer 행 높이를 0으로 만들어
              * Footer가 차지하던 빈 공간까지 완전히 제거한다.
              */
             FooterRow.Height = _options.ShowFooter
-            ? new GridLength(64)
+            ? new GridLength(80)
             : new GridLength(0);
 
             /*
@@ -741,6 +749,16 @@ namespace Popup.Views.Windows
                     || (!_options.AllowCloseBeforeComplete && !combined.Video.HasPlaybackFailed)))
                 return;
 
+            if (ReferenceEquals(sender, FooterCloseButton))
+            {
+                var survey = _options.Content as SurveyPopupView ?? (_options.Content as VideoQuizPopupView)?.Quiz;
+                if (survey != null)
+                {
+                    survey.Submit();
+                    return;
+                }
+            }
+
             /*
              * 서버가 완료 전 닫기를 금지한 VIDEO 팝업은
              * 누적 시청 비율이 완료 기준에 도달하기 전까지 닫지 않는다.
@@ -858,6 +876,28 @@ namespace Popup.Views.Windows
          * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
          * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로).
          */
+        internal bool TryOpenSubmissionLink()
+        {
+            if (!_options.OpenFooterLinkAndClose) return true;
+            if (!Uri.TryCreate(_options.FooterLinkUrl, UriKind.Absolute, out var link)
+                || (link.Scheme != Uri.UriSchemeHttp && link.Scheme != Uri.UriSchemeHttps)
+                || string.IsNullOrWhiteSpace(link.Host))
+            {
+                PopupAlert.Show(this, "바로가기 주소를 확인해 주세요.", "링크를 확인해 주세요");
+                return false;
+            }
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link.AbsoluteUri) { UseShellExecute = true });
+                return true;
+            }
+            catch (Exception exception)
+            {
+                PopupAlert.Show(this, "링크를 열지 못했습니다.\n\n" + exception.Message, "다시 시도해 주세요");
+                return false;
+            }
+        }
+
         private void RecordDoNotShowAgainChoice()
         {
             _options.DoNotShowAgainChecked =
