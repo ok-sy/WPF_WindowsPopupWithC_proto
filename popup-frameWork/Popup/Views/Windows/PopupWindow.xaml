@@ -15,6 +15,10 @@
         Background="Transparent">
 
     <Window.Resources>
+        <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+        </ResourceDictionary.MergedDictionaries>
 
         <!--
         하단 닫기 버튼 스타일
@@ -217,6 +221,7 @@
 
         </Style>
 
+        </ResourceDictionary>
     </Window.Resources>
 
     <!--
@@ -299,7 +304,7 @@
                     하단 Footer 높이
                     -->
                     <RowDefinition x:Name="FooterRow"
-                                   Height="64"/>
+                                   Height="80"/>
 
                 </Grid.RowDefinitions>
 
@@ -457,7 +462,7 @@
                     -->
                     <Button x:Name="FooterCloseButton"
                             Grid.Column="1"
-                            Style="{StaticResource PopupButtonStyle}"
+                            Style="{StaticResource ActionButtonStyle}"
                             Content="닫기"
                             Click="CloseButton_Click"/>
 

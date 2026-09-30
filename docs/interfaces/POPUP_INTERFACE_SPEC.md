@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.5
-- 최신화: 2026-09-29 (KST)
+- 최신화: 2026-09-30 (KST)
+- 2026-09-30 보완: JSON 필드·ENUM 변경 없이 30~60분 조회 정책, 로컬/URL 공통 WPF 컨트롤 및 동영상+퀴즈 단일 스크롤 동작을 명시.
 - 3.5 변경: 주요 요청/응답 필드 표에 `필수 여부`와 `Default`를 추가하고, 생략 시 C# 처리 기준을 명확화. 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 계약을 정합성 점검.
 - 3.4 변경: IMAGE `imageSizeMode=ORIGINAL` 추가. 팝업 크기를 유지하고 원본 이미지를 왼쪽 위에 배치한 뒤 넘치는 영역을 자른다.
 - 3.3 변경: 공통 푸터 `footerAction`·`footerLinkUrl`, QUIZ의 `videoEnabled` 영상 결합 모드 추가. 영상 결합 QUIZ 제출은 `answers`와 `video`를 한 결과 항목에 포함한다.
@@ -216,6 +217,10 @@ X-Client-Version: 1.0.0
 | pollingIntervalSeconds | integer | 선택 | `0` | 서버 설정이 소유하는 1800~3600초(30~60분) 주기. 0 이하면 범위 제한된 WPF 로컬 설정 유지. 기동 시점 기준 반복 조회 |
 | popups | array | O | `[]` | 표시 대상 팝업. 없으면 빈 배열 |
 
+기본 `AutoLoadOnStartup=true`에서 로그인 직후 최초 조회하고, 기동 시점 기준으로 30~60분 간격의 재조회를 수행한다. WPF는 PC 시각과 `displayStartAt`/`displayEndAt`를 비교하거나 팝업별 예약 타이머를 만들지 않는다. 서버 응답 목록을 즉시 렌더링하며 기존 순차/동시 표시 규칙을 적용한다. 열린 팝업이 있어도 재조회하고, 이번 실행에서 이미 표시한 ID를 제외한 새 팝업은 기존 표시 큐에 합류한다. 조회 요청이 진행 중이면 중복 요청은 생략하고, 401 재인증은 동일 요청 1회 재시도로 처리해 조회 타이머를 추가하지 않는다.
+
+서버/로컬 설정의 양수 값은 1800~3600초로 보정하며 로컬 설정이 0 이하이면 1800초를 사용한다. 최대 60분의 신규 노출 지연을 허용한다. `serverTime`은 참고용이며 PC 벽시계 변경이 표시 대상 판단이나 반복 조회 기준을 바꾸지 않는다.
+
 ---
 
 ## 6.3 popups[] 공통 필드
@@ -276,7 +281,9 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 절대 http/https URL |
 | popupPosition | string | 선택 | `CENTER` | 없거나 잘못되면 CENTER |
 
-`LINK_AND_CLOSE`는 하단 닫기 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. 헤더 X는 기존 닫기 동작을 유지한다. 버튼 표시는 `showFooter`·`showCloseButton`을 따른다.
+`LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. SURVEY·QUIZ·VIDEO+QUIZ에서는 버튼 이름을 **제출**로 통일하고 필수 응답 검증 및 QUIZ 통과 후 링크를 연다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. 헤더 X는 기존 닫기 동작을 유지한다. 버튼 표시는 `showFooter`·`showCloseButton`을 따른다.
+
+SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showCloseButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며, 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 헤더 X/Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 
 ### popupPosition ENUM
 
@@ -443,6 +450,10 @@ BOTTOM
 
 VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
 
+로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 아래에 같은 **고정 WPF 컨트롤바**를 사용한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. 초기 음량은 두 엔진 모두 `defaultVolume`을 따른다.
+
+위치·재생/일시정지·음량·배속·종료·오류는 WPF 컨트롤과 동기화하며 waiting/stalled는 버퍼링 안내로 표시한다. 탐색한 구간은 누적 `watchedSeconds`에 합산하지 않는다. YouTube iframe은 기존 별도 플레이어 UI를 유지하고 기본 음량·배속 제어 및 시청량 측정을 지원하지 않는다.
+
 ---
 
 ## 8.4 SURVEY
@@ -600,8 +611,8 @@ passingScore 이상
 
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
 
-- 영상 아래 퀴즈를 함께 표시한다. 작은 창에서는 콘텐츠를 스크롤한다.
-- 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·채점 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
+- 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항·제출 영역은 부모 단일 세로 스크롤로 이동하고 공통 푸터는 창 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
+- 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - `allowCloseBeforeComplete: true`면 헤더 X·Alt+F4로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
 - 현재 플레이어의 YouTube 임베드는 시청 비율을 제공하지 않으므로 이 모드는 로컬 영상 파일 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.

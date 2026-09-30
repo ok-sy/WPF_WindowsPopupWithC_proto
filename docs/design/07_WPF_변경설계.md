@@ -1,4 +1,6 @@
-# 07. WPF 클라이언트 변경 설계 — 구현 반영 (2026-09-19, 단계 6 완료)
+# 07. WPF 클라이언트 변경 설계 — 구현 반영
+
+> 기준: 초기 단계 6 설계·스켈레톤은 2026-09-19 기록이다. **2026-09-30 후속 반영**: 조회 주기·열린 팝업 조회·공통 VIDEO 컨트롤·결합 화면 단일 스크롤은 [19번 문서](19_WPF_운영_조회_및_VIDEO_UI_TODO.md)와 현재 소스를 따른다. 그 밖의 초기 설계 예시는 10·12·18번 후속 설계로 변경된 부분이 있으므로 현재 계약은 `docs/interfaces/POPUP_INTERFACE_SPEC.md`를 기준으로 한다.
 
 > **구현 결과 요약** — 아래 설계대로 구현했고 `dotnet build`(net10.0-windows, Debug) 경고 0·오류 0. 설계와 다른 점:
 > - `WpfAuthService`(SSO 토큰 획득) 대신 `Service/Auth/IAuthHeaderProvider` + `NoAuthHeaderProvider`/`StaticAuthHeaderProvider` (04 문서, 인증은 타 팀 통합 토큰).
@@ -21,15 +23,15 @@
 | 추가 | `Service/PopupResultBuilder.cs` | 팝업 창 생명주기·사용자 입력을 `WpfResultItemDto`로 조립 |
 | 추가 | `Dtos/WpfPopupListResponseDto.cs`, `Dtos/WpfResultDtos.cs` | 신규 API DTO |
 | 수정 | `Service/PopupApiService.cs` | `GetWpfPopupsAsync()`, `PostResultsAsync()` 추가. 요청 전 `IAuthHeaderProvider`에서 받은 값이 있으면 `Authorization` 헤더 부착, 401이면 `OnUnauthorizedAsync` 후 1회 재시도. 기존 6개 메서드는 유지(호출부 없음, 전환 후 제거) |
-| 수정 | `MainWindow.xaml.cs` | 시작 시 토큰 획득 → 목록 조회. `/statuses` 호출·완료 필터·`PopupPolicyService` 제거. 주기 조회 간격은 서버 응답 `pollingIntervalSeconds` 사용, 팝업 열림 중 조회 건너뜀. 종료 시 큐 flush |
+| 수정 | `MainWindow.xaml.cs` | 시작 시 토큰 획득 → 목록 조회. `/statuses` 호출·완료 필터·`PopupPolicyService` 제거. 주기 조회 간격은 서버 응답 `pollingIntervalSeconds` 우선(1800~3600초). 기동 기준 반복 조회, 열린 팝업도 조회하고 표시한 ID로 중복 제거. 종료 시 큐 flush |
 | 수정 | `Managers/PopupManager.cs` | `AttachContentEvents/AttachLifecycleEvents`를 `PopupResultBuilder` 기반으로 교체. 영상 진행률 저장 이벤트 구독 제거 |
-| 수정 | `Views/Contents/VideoPopupView.xaml.cs` | `_progressSaveTimer` 및 주기 `RequestProgressSave` 제거. 창 닫힘 시 `VideoProgressSnapshot` 1회 제공하는 `GetFinalProgress()`만 남김. 재생 UI 로직은 유지 |
+| 수정 | `Views/Contents/VideoPopupView.xaml.cs` | `_progressSaveTimer` 및 주기 `RequestProgressSave` 제거. 창 닫힘 시 `VideoProgressSnapshot` 1회 제공하는 `GetFinalProgress()`만 남김. 2026-09-30 후속: 로컬/HTTP(S) HTML5 공통 WPF 컨트롤·버퍼링 상태·탐색 시청량 제외 적용. YouTube iframe은 별도 UI 유지 |
 | 수정 | `Factories/PopupFactory.cs` | SURVEY/QUIZ 문항을 `content.questions`가 아닌 최상위 `Questions`에서 읽음 (1개 분기) |
 | 수정 | `Models/PopupOptions.cs` | `HidePopupAsync/SubmitSurveyAsync/SaveVideoProgressAsync/PopupDisplayedAsync/PopupClosedAsync` 5개 콜백 → `Func<WpfResultItemDto, Task> ReportResultAsync` 1개 |
-| 수정 | `appsettings.json`, `Models/PopupClientSettings.cs` | `UserId` 제거. `Auth.Mode/StaticHeader`(헤더 공급 방식), `DevUserId`(개발 헤더용 사번) 추가. `PollingIntervalSeconds` 기본 1800 (서버 값이 우선) |
+| 수정 | `appsettings.json`, `Models/PopupClientSettings.cs` | `UserId` 제거. `Auth.Mode/StaticHeader`(헤더 공급 방식), `DevUserId`(개발 헤더용 사번) 추가. `PollingIntervalSeconds` 기본 1800, 범위 1800~3600 (양수 서버 값이 우선, 선택 필드 누락/0 이하는 로컬 fallback) |
 | 삭제 | `Service/PopupPolicyService.cs` | 기간·숨김 로컬 판단 제거 (기준 2) |
 | 삭제 | `Service/PopupStorageService.cs` | 숨김 로컬 파일 저장 제거 (서버 상태가 유일한 기준) |
-| 유지 | `Views/**`, `PopupWindow`, `BackgroundOverlayManager`, `DemoPopupDataService`, DTO(`*ContentDto`) | 렌더링 구조 불변 |
+| 후속 수정 | `Views/Contents/VideoPopupView`, `VideoQuizPopupView`, `SurveyPopupView` | 로컬/URL 공통 고정 컨트롤 행, 결합 모드의 내부 ScrollViewer 제거·문항 높이 Auto. 단독 설문/퀴즈 스크롤 유지(19 문서) |
 
 ## 2. 실행 흐름
 
@@ -198,19 +200,27 @@ public VideoProgressSnapshot GetFinalProgress() => new()
  *     개발 단계에서는 DevUserId 설정을 X-Dev-User-Id 헤더로 보내 서버 개발 프로파일에서만 사용자를 지정한다.
  *   - /statuses 조회와 완료 팝업 제외 로직을 제거했다. 서버 목록이 곧 표시 목록이다.
  *   - PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
- *   - 주기 조회 간격은 서버 응답 pollingIntervalSeconds를 우선 적용하고, 팝업이 열려 있으면 그 주기는 건너뛴다.
+ *   - 주기 조회는 서버 응답을 우선 적용하고 30~60분으로 제한한다. 열린 팝업도 조회한다.
  */
 private async Task LoadAndShowAvailablePopupsAsync(bool showEmptyMessage, bool showErrorMessage)
 {
-    if (_isLoadingPopups || _popupManager.HasOpenPopups) return;
+    if (_isLoadingPopups || _isClosed || _clientVersionRejected) return;
     _isLoadingPopups = true;
     try
     {
         await _resultQueue.FlushAsync();                                   // 미전송 결과 먼저 반영 (완료·숨김 정확성)
         WpfPopupListResponseDto response = await _popupApiService.GetWpfPopupsAsync();
+        if (_isClosed || _clientVersionRejected) return;
         ApplyPollingInterval(response.PollingIntervalSeconds);
-        List<PopupOptions> options = _popupService.CreatePopupOptions(response.Popups, _resultQueue);
-        _popupManager.ShowPopups(options);
+        var dtos = response.Popups.Where(p => !_shownPopupIds.Contains(p.PopupId)).ToList();
+        List<PopupOptions> options = _popupService.CreatePopupOptions(dtos);
+        foreach (var option in options)
+        {
+            option.EnqueueResultAsync = _resultQueue.EnqueueAsync;
+            option.FlushResultsInBackground = _resultQueue.FlushInBackground;
+        }
+        foreach (var dto in dtos) _shownPopupIds.Add(dto.PopupId);
+        _popupManager.ShowRange(options);
     }
     catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
                              { if (showErrorMessage) ShowAuthError(); }   // 재시도 후에도 401 → 인증 안내
@@ -227,7 +237,7 @@ private async Task LoadAndShowAvailablePopupsAsync(bool showEmptyMessage, bool s
     "DemoMode": false,
     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
     "AutoLoadOnStartup": true,
-    "PollingIntervalSeconds": 1800,  // 서버 응답 값이 있으면 그 값이 우선
+    "PollingIntervalSeconds": 1800,  // 1800~3600초. 양수 서버 응답 우선, 누락/0 이하는 fallback
     "Auth": {
       "Mode": "None",                // None | Static | Sso(향후, 타 팀 통합 토큰 규격 확정 후)
       "StaticHeader": ""             // Mode=Static: "Bearer ..." 문자열 그대로 전송 (연동 테스트용)

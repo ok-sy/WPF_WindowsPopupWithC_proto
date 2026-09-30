@@ -1,7 +1,7 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-09-29
+- 작성 기준: 2026-09-30
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
@@ -132,7 +132,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | CloseOnFail | 해당 설정 필드 없음. QUIZ 미통과 시 창을 유지하는 내부 동작 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
-| FooterAction / FooterLinkUrl | `footerAction=LINK_AND_CLOSE`이면 Footer 버튼이 “바로가기”로 바뀌며, 유효한 HTTP/HTTPS URL을 연 뒤 팝업을 닫음 |
+| FooterAction / FooterLinkUrl | `footerAction=LINK_AND_CLOSE`이면 일반 콘텐츠는 “바로가기”, SURVEY·QUIZ·VIDEO+QUIZ는 “제출”로 표시. 응답 검증·퀴즈 통과 후 유효한 HTTP/HTTPS URL을 열고 종료 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
 
 ## 6. 최소 버전 한눈에 보기
@@ -149,6 +149,12 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 ## 7. 확장 기능 관리 원칙
 
 현재 코드에 구현되어 있더라도 최초 오픈 범위에서 제외한 기능은 요구사항 확정 후 기능 단위로 별도 제공한다. 외부 문서에서는 “추가 기능 적용”으로 관리하며, 내부적으로는 기존 구현의 활성화 또는 필요한 보완 개발 여부를 검토하여 처리한다.
+
+### 표시·조회 동작
+
+- 로그인/기동 직후 최초 조회 후 30~60분 간격으로 기동 기준 반복 조회한다. 서버 `pollingIntervalSeconds`가 우선하며 선택 필드 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다. 서버만 활성·기간·대상·숨김·완료를 판단하고 WPF는 응답을 바로 표시한다. 열린 팝업도 조회하되 이번 실행에서 표시한 ID는 제외한다.
+- 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 고정 WPF 컨트롤을 사용한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen·DefaultVolume을 두 재생 방식에 적용한다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
+- VIDEO+QUIZ는 영상·전체 문항·제출 영역을 단일 세로 스크롤로 이동하고 공통 Footer는 창 하단에 고정한다. 단독 SURVEY/QUIZ 스크롤은 유지한다. YouTube iframe은 공통 HTML5 컨트롤 적용과 시청량 측정 대상에 포함하지 않는다.
 
 ### 추가 확인 사항
 
