@@ -30,3 +30,9 @@ offline-extention/
 
 # Microsoft Office가 문서를 열 때 생성하는 임시/잠금 파일
 ~$*
+
+# WPF 동작/복구 테스트 빌드 결과
+popup-frameWork/Popup.BehaviorTests/bin/
+popup-frameWork/Popup.BehaviorTests/obj/
+popup-frameWork/Popup.RecoveryTests/bin/
+popup-frameWork/Popup.RecoveryTests/obj/

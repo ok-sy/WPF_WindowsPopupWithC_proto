@@ -47,15 +47,17 @@ namespace Popup.Services.Auth
         };
 
         private readonly string _loginUrl;
+        private readonly HttpClient _httpClient;
 
         /// <param name="baseUrl">PopupApi.BaseUrl (예: http://localhost:8080/zero-rule-server/p)</param>
         /// <param name="loginPath">PopupApi.Auth.LoginPath (기본 /api/wpf/auth/login)</param>
-        public WpfLoginClient(string baseUrl, string? loginPath)
+        public WpfLoginClient(string baseUrl, string? loginPath, HttpClient? httpClient = null)
         {
             if (string.IsNullOrWhiteSpace(baseUrl))
             {
                 throw new ArgumentException("팝업 API 주소가 필요합니다.", nameof(baseUrl));
             }
+            _httpClient = httpClient ?? HttpClient;
             string path = string.IsNullOrWhiteSpace(loginPath) ? "/api/wpf/auth/login" : loginPath.Trim();
             _loginUrl = baseUrl.Trim().TrimEnd('/') + "/" + path.TrimStart('/');
         }
@@ -85,7 +87,7 @@ namespace Popup.Services.Auth
             };
             httpRequest.Headers.TryAddWithoutValidation(ClientVersion.HeaderName, ClientVersion.Value);
 
-            using HttpResponseMessage response = await HttpClient.SendAsync(httpRequest, cancellationToken);
+            using HttpResponseMessage response = await _httpClient.SendAsync(httpRequest, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);

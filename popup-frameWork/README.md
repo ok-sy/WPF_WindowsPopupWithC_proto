@@ -863,14 +863,31 @@ Timer Tick
 
 ---
 
+조회 실패가 DNS/연결 오류·Timeout·500/502/503/504이면 같은 타이머로 10초 간격 3회씩 5사이클 복구한다. 사이클 사이에는 30분 휴식 후 첫 10초를 기다린다. 이후 계속 실패하면 60분 간격으로 확인한다. 성공하면 복구 횟수를 초기화하고 서버 최신 주기를 기존 기동 기준으로 적용한다. 400/403과 재인증 후에도 실패한 401은 복구 대상에서 제외한다.
+
+`PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE FILL도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
+
+복구/HTTP/인증/큐 검증(Windows/Linux 공통, .NET 10):
+
+```sh
+dotnet run --project popup-frameWork/Popup.RecoveryTests/Popup.RecoveryTests.csproj
+```
+
+WPF 클리핑을 포함한 화면 동작 검증(Windows):
+
+```sh
+dotnet run --project popup-frameWork/Popup.BehaviorTests/Popup.BehaviorTests.csproj
+```
+
 ## 19. 프로그램 종료
 
-트레이 메뉴의 **종료**를 눌러야 실제로 끝난다.
+트레이 메뉴의 **종료** 또는 426 업데이트 안내를 닫으면 실제로 끝난다.
 
 `MainWindow.OnClosed()`에서:
 
 ```text
-polling timer 정지
+polling/복구 timer 정지
+HTTP/인증 요청 취소 및 결과 전송 중단(로컬 큐 유지)
 SSO periodic login 정지
 메모리 token 제거
 ```

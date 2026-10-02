@@ -7,8 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -48,6 +46,8 @@ namespace Popup
         private bool _isClosed;
         private int _pollingIntervalSeconds;
         private bool _isLoadingPopups;
+        private readonly PopupPollingRecovery _pollingRecovery = new();
+        private TimeSpan? _nextRecoveryDelay;
 
         /*
          * 같은 실행 중 이미 화면에 전달한 팝업 ID를 기억한다.
@@ -91,6 +91,7 @@ namespace Popup
                             new SsoClient(settings.AuthSsoUrl),
                             new WpfLoginClient(settings.BaseUrl, settings.AuthLoginPath));
                         // [설계 10 §4.2] 1시간(설정값) 주기 선제 재로그인. 0 이하이면 401 기반 재로그인만 사용.
+                        _ssoAuthHeaderProvider.ClientVersionRejected += (_, exception) => HandleClientVersionRejected(exception);
                         _ssoAuthHeaderProvider.StartPeriodicLogin(TimeSpan.FromMinutes(settings.AuthPeriodicLoginMinutes));
                         authHeaderProvider = _ssoAuthHeaderProvider;
                         break;
@@ -227,8 +228,7 @@ namespace Popup
         protected override void OnClosed(EventArgs e)
         {
             _isClosed = true;
-            _pollingTimer.Stop();
-            _ssoAuthHeaderProvider?.Dispose();
+            StopServerRequests();
             base.OnClosed(e);
         }
 
@@ -267,15 +267,15 @@ namespace Popup
                 return;
             }
             _pollingTimer.Stop();
-            _pollingTimer.Interval = GetPollingDelay(_pollingIntervalSeconds, _pollingClock.Elapsed);
+            _pollingTimer.Interval = _nextRecoveryDelay
+                ?? GetPollingDelay(_pollingIntervalSeconds, _pollingClock.Elapsed);
             _pollingTimer.Start();
         }
 
         // PC 벽시계 변경·응답 소요시간과 무관하게 기동 시점의 반복 조회 경계를 유지한다.
         private static TimeSpan GetPollingDelay(int intervalSeconds, TimeSpan elapsed)
         {
-            long intervalTicks = TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1800, 3600)).Ticks;
-            return TimeSpan.FromTicks(intervalTicks - elapsed.Ticks % intervalTicks);
+            return PopupPollingRecovery.NormalDelay(intervalSeconds, elapsed);
         }
 
         /*
@@ -287,13 +287,12 @@ namespace Popup
             serverIntervalSeconds = Math.Clamp(serverIntervalSeconds, 1800, 3600);
             if (serverIntervalSeconds == _pollingIntervalSeconds) return;
             _pollingIntervalSeconds = serverIntervalSeconds;
-            StartPeriodicPolling();
         }
 
-        /* 주기 조회 실패는 백그라운드에서 조용히 넘긴다. 다음 주기가 되면 서버 연결을 다시 시도한다. */
+        /* 정상/복구 타이머를 일회성으로 사용한다. 조회 종료 후 다음 요청 하나만 예약한다. */
         private async void PollingTimer_Tick(object? sender, EventArgs e)
         {
-            StartPeriodicPolling();
+            _pollingTimer.Stop();
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
         }
 
@@ -302,23 +301,33 @@ namespace Popup
          *   - 401 재로그인 경로에 들어가지 않는다(WpfClientVersionException은 별도 타입).
          *   - 같은 API를 무한 재시도하지 않도록 주기 조회 타이머를 멈춘다(프로그램을 업데이트 후 다시 실행해야 한다).
          *   - pending 결과는 PopupResultQueue가 지우지 않았으므로 새 버전에서 재전송된다.
-         *   - 안내는 프로세스당 1회만 띄운다(백그라운드 Flush와 조회가 연달아 426을 받아도 창이 여러 개 뜨지 않게).
+         *   - 안내는 프로세스당 1회만 띄우고 안내를 닫으면 Agent를 정상 종료한다.
          * 백그라운드 스레드에서 올 수 있으므로 Dispatcher로 UI 스레드에서 실행한다.
          */
         private bool _clientVersionRejected;
 
-        private void HandleClientVersionRejected(WpfClientVersionException exception, bool forceMessage = false)
+        private void HandleClientVersionRejected(WpfClientVersionException exception)
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.BeginInvoke(() => HandleClientVersionRejected(exception, forceMessage));
+                Dispatcher.BeginInvoke(() => HandleClientVersionRejected(exception));
                 return;
             }
-            _pollingTimer.Stop();
-            if (_clientVersionRejected && !forceMessage) return;   // forceMessage: 사용자가 직접 조회 버튼을 누른 경우
-            _clientVersionRejected = true;
+            if (_clientVersionRejected || _isClosed) return;
+            _clientVersionRejected = true; // 모달의 중첩 메시지 루프에 들어가기 전에 차단한다.
+            StopServerRequests();
             MessageBox.Show(exception.UserMessage, "프로그램 업데이트 필요",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+            // 트레이 숨김 경로 대신 기존 정상 종료 경로로 창·아이콘·Mutex를 정리한다.
+            if (Application.Current is App app) app.ExitAgent();
+        }
+
+        private void StopServerRequests()
+        {
+            _pollingTimer.Stop();
+            _resultQueue?.StopTransmission(); // 로컬 Enqueue는 계속 허용해 결과 저장을 보존한다.
+            _popupApiService?.StopRequests();
+            _ssoAuthHeaderProvider?.Dispose();
         }
 
         private async void OpenPopupButton_Click(object sender, RoutedEventArgs e)
@@ -333,6 +342,7 @@ namespace Popup
          */
         private async void SsoLoginTestButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isClosed || _clientVersionRejected) return;
             if (_ssoAuthHeaderProvider == null)
             {
                 MessageBox.Show("appsettings.json 의 PopupApi.Auth.Mode 가 SsoPrototype 이 아니거나 Demo Mode 입니다.",
@@ -358,6 +368,11 @@ namespace Popup
                     $"   {result.LoginElapsedMs} ms",
                     "SSO 로그인 테스트 — 성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            catch (WpfClientVersionException exception)
+            {
+                HandleClientVersionRejected(exception);
+            }
+            catch (OperationCanceledException) when (_isClosed || _clientVersionRejected) { }
             catch (Exception exception)
             {
                 // 어느 단계 실패인지 메시지로 구분: "SSO 호출 실패"(HTTP) / "SSO 응답에 ... 태그"(XML) / "WPF 로그인 API 실패"(서버)
@@ -394,13 +409,17 @@ namespace Popup
             if (_isLoadingPopups || _isClosed || _clientVersionRejected) return;
 
             _isLoadingPopups = true;
+            _pollingTimer.Stop();
             try
             {
                 await _resultQueue.FlushAsync();
+                if (_isClosed || _clientVersionRejected) return;
 
                 WpfPopupListResponseDto response = await _popupApiService.GetWpfPopupsAsync();
                 if (_isClosed || _clientVersionRejected) return;
                 ApplyPollingInterval(response.PollingIntervalSeconds);
+                _pollingRecovery.Reset();
+                _nextRecoveryDelay = null;
 
                 List<PopupResponseDto> popupDtos = response.Popups
                     .Where(popup => !_shownPopupIds.Contains(popup.PopupId))
@@ -434,52 +453,38 @@ namespace Popup
                 }
                 _popupManager.ShowRange(popupOptionsList);
             }
+            catch (OperationCanceledException) when (_isClosed || _clientVersionRejected)
+            {
+                // 종료/426 취소는 Timeout으로 오인해 복구 예약하지 않는다.
+            }
             catch (WpfClientVersionException exception)
             {
-                /*
-                 * [설계 13 §8] 서버가 이 WPF 버전을 더 이상 지원하지 않는다(426).
-                 * 재로그인·재시도 없이 주기 조회를 멈추고 업데이트 안내만 한다(항상 표시 — 조용히 넘기면 사용자가 원인을 모른다).
-                 */
-                HandleClientVersionRejected(exception, forceMessage: showErrorMessage);
-            }
-            catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Unauthorized
-                                                         || exception.StatusCode == HttpStatusCode.Forbidden)
-            {
-                if (showErrorMessage)
-                {
-                    MessageBox.Show(
-                        "팝업 서버가 사용자 인증을 거절했습니다.\n\n" + exception.Message,
-                        "인증 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            catch (HttpRequestException exception)
-            {
-                if (showErrorMessage)
-                {
-                    MessageBox.Show(
-                        "팝업 서버에 연결할 수 없습니다.\n\n서버가 실행 중인지 확인해주세요.\n\n" + exception.Message,
-                        "서버 연결 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                if (showErrorMessage)
-                {
-                    MessageBox.Show("팝업 서버의 응답 시간이 초과되었습니다.", "서버 응답 시간 초과",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                HandleClientVersionRejected(exception);
             }
             catch (Exception exception)
             {
+                if (_isClosed || _clientVersionRejected) return;
+                if (PopupPollingRecovery.IsTransient(exception))
+                {
+                    _nextRecoveryDelay = _pollingRecovery.NextDelay();
+                    System.Diagnostics.Debug.WriteLine($"[POLLING] 복구 조회 예약: {_nextRecoveryDelay.Value.TotalSeconds}초, {exception.Message}");
+                }
+                else
+                {
+                    // 400/401(1회 재인증 후에도 실패)/403 및 데이터 오류는 복구 루프에서 제외한다.
+                    _pollingRecovery.Reset();
+                    _nextRecoveryDelay = null;
+                }
                 if (showErrorMessage)
                 {
-                    MessageBox.Show("팝업을 불러오는 중 오류가 발생했습니다.\n\n" + exception.Message, "팝업 오류",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("팝업 조회에 실패했습니다.\n\n" + exception.Message,
+                        "팝업 조회 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             finally
             {
                 _isLoadingPopups = false;
+                StartPeriodicPolling();
             }
         }
     }

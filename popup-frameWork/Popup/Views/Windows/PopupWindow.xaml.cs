@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Threading.Tasks;
 using Popup.Views.Contents;
 using System.Windows.Interop;
+using System.Windows.Media;
 using Forms = System.Windows.Forms;
 namespace Popup.Views.Windows
 
@@ -70,6 +71,18 @@ namespace Popup.Views.Windows
                 SourceInitialized +=
                     PopupWindow_SourceInitialized;
             }
+        }
+
+        // 테두리·그림자 자체는 자르지 않고, 테두리 안쪽의 모든 WPF 콘텐츠를 함께 자른다.
+        private void PopupBodyContent_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // 현재 팝업 외곽은 네 모서리/테두리 두께가 동일하다(일반 12/1, 전체화면 0/0).
+            // WPF Border의 안쪽 반경은 CornerRadius - BorderThickness / 2 이다.
+            double radius = Math.Max(0, PopupBodyBorder.CornerRadius.TopLeft
+                - PopupBodyBorder.BorderThickness.Left / 2);
+            var clip = new RectangleGeometry(new Rect(PopupBodyContent.RenderSize), radius, radius);
+            clip.Freeze();
+            PopupBodyContent.Clip = clip;
         }
 
         /*

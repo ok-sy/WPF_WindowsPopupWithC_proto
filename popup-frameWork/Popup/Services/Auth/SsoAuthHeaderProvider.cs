@@ -65,6 +65,9 @@ namespace Popup.Services.Auth
         /// <summary>진단용. 서버가 알려준 현재 토큰 만료 시각(없으면 null). 갱신 판단에는 쓰지 않는다.</summary>
         public DateTimeOffset? ExpiresAt => _expiresAt;
 
+        // 정기 로그인에서 받은 426도 다음 polling까지 기다리지 않고 즉시 종료 안내한다.
+        public event EventHandler<WpfClientVersionException>? ClientVersionRejected;
+
         /*
          * [설계 18 L-0 — C-10 삭제] 호출부가 없던 진단용 공개 속성 LastUser·HasToken을 삭제했다.
          * _lastUser·_accessToken 필드는 재로그인·헤더 생성에 그대로 쓰며 외부에 노출하지 않는다.
@@ -100,7 +103,7 @@ namespace Popup.Services.Auth
 
         /// <summary>
         /// 401 처리. 401을 받은 요청이 보냈던 토큰이 아직 현재 토큰이면 재로그인한다(이미 다른 요청이 바꿨으면 건너뜀).
-        /// 실패하면 예외를 삼키고 토큰을 그대로 둔다 — 재전송이 다시 401을 받아 호출자에게 인증 오류로 전달된다.
+        /// 인증 거절은 토큰을 그대로 둔다. 통신/일시 서버 장애와 426은 원인을 유지해 호출자에게 전달한다.
         /// </summary>
         public async Task OnUnauthorizedAsync(string? failedAuthorizationHeader, CancellationToken cancellationToken = default)
         {
@@ -182,9 +185,18 @@ namespace Popup.Services.Auth
                     }
                     catch (WpfClientVersionException exception)
                     {
-                        // [설계 13] 정기 재로그인이 426이면 루프를 멈춘다(무한 재시도 금지). 안내는 다음 조회의 426이 담당한다.
+                        ClientVersionRejected?.Invoke(this, exception);
                         Debug.WriteLine($"[SSO-AUTH] 정기 재로그인 중단(426): {exception.Message}");
                         return;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception exception)
+                    {
+                        // polling에는 통신 원인을 전파하되 정기 로그인 루프는 다음 주기에 계속 실행한다.
+                        Debug.WriteLine($"[SSO-AUTH] 정기 재로그인 실패(다음 주기 유지): {exception.Message}");
                     }
                 }
             }
@@ -247,9 +259,14 @@ namespace Popup.Services.Auth
                 //   토큰이 없는 상태로 조회를 계속해도 서버 인터셉터가 다시 426을 주므로 재시도 의미가 없다.
                 throw;
             }
+            catch (Exception exception) when (PopupPollingRecovery.IsTransient(exception))
+            {
+                // 로그인 서버의 연결/5xx 실패를 401로 바꾸면 polling 복구를 놓치므로 전파한다.
+                throw;
+            }
             catch (Exception exception)
             {
-                // [T7] SSO 401·네트워크 오류·태그 없음·로그인 API 오류: UI를 띄우지 않고 기존 상태를 유지한다.
+                // [T7] SSO 인증 거절·필수 태그 없음 등: UI를 띄우지 않고 기존 상태를 유지한다.
                 Debug.WriteLine($"[SSO-AUTH] 로그인 실패: {exception.GetType().Name}: {exception.Message}");
                 return _accessToken;
             }

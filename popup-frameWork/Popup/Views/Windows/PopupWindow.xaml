@@ -273,7 +273,9 @@
             2번 행
             하단 Footer 영역
             -->
-            <Grid>
+            <!-- Border의 CornerRadius는 자식 콘텐츠를 자르지 않으므로 공통 Grid에 Clip을 적용한다. -->
+            <Grid x:Name="PopupBodyContent"
+                  SizeChanged="PopupBodyContent_SizeChanged">
 
                 <Grid.RowDefinitions>
 
