@@ -743,12 +743,63 @@ buffered 영역
 - [ ] VIDEO+QUIZ 결합 화면에서 Overlay가 스크롤/레이아웃에 미치는 영향 확인
 - [ ] 로컬/URL/전체화면/VIDEO+QUIZ 실제 GUI 수동 검증
 
-### 9.8 완료 기준
+### 9.8 Windows Master Volume/Mute 양방향 Sync
+
+BackgroundOverlay가 활성화된 상태에서는 사용자가 Windows 작업표시줄의 시스템 볼륨 UI에 접근하기 어려울 수 있다.
+특히 Windows Master Volume이 0이거나 Mute 상태이면 플레이어 내부 Volume만 올려서는 실제 소리를 들을 수 없다.
+
+따라서 VIDEO 플레이어의 Volume/Mute UI를 Windows Master Volume/Mute와 양방향 동기화하는 방향으로 구현한다.
+
+```text
+VIDEO 팝업 시작
+→ Windows Master Volume/Mute 조회
+→ Player Volume/Mute UI에 현재 상태 반영
+
+Player Volume 변경
+→ Windows Master Volume 변경
+
+Player Mute 변경
+→ Windows Master Mute 변경
+
+Windows Master Volume/Mute가 외부에서 변경됨
+→ Player UI에도 변경 상태 반영
+```
+
+동일한 값을 Player 내부 볼륨과 Windows Master Volume 양쪽에서 중복 적용하면 출력이 이중으로 감쇠될 수 있으므로,
+Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows Master Volume 적용 책임을 분리하여 중복 감쇠가 발생하지 않도록 한다.
+
+구현 원칙:
+
+- Windows 기본 Core Audio API를 사용한다.
+- 외부 NuGet 패키지(예: NAudio)는 추가하지 않고 Core Audio COM API 직접 연동을 우선한다.
+- Player Volume Slider는 Windows Master Volume의 현재 값을 표시하고 변경한다.
+- Player Mute는 Windows Master Mute 상태와 동기화한다.
+- Windows 측 볼륨/Mute 변경 이벤트를 수신하여 Player UI에도 반영하는 양방향 Sync를 적용한다.
+- 로컬 MediaElement와 URL WebView2 영상 모두 같은 Player Volume/Mute UI 정책을 사용한다.
+- Windows Master Volume을 변경하므로 다른 프로그램의 출력에도 영향을 준다는 점을 전제로 한다.
+- 사용자가 Player에서 직접 변경한 Windows 볼륨은 팝업 종료 시 임의로 이전 값으로 복원하지 않고 사용자의 최종 설정으로 유지한다.
+- 기본 출력 장치 없음/출력 장치 변경/Core Audio 접근 실패 시 영상 재생 자체가 실패하지 않도록 예외 처리한다.
+
+추가 TODO:
+
+- [ ] Core Audio COM interop 계층 구현(외부 NuGet 없음)
+- [ ] 기본 출력 장치 Master Volume/Mute 초기값 조회
+- [ ] Player Volume Slider 초기값을 Windows Master Volume과 동기화
+- [ ] Player Volume 변경 → Windows Master Volume 반영
+- [ ] Player Mute 변경 → Windows Master Mute 반영
+- [ ] Windows Master Volume/Mute 변경 이벤트 → Player UI 반영
+- [ ] 내부 MediaElement/HTML5 volume과 Master Volume의 중복 감쇠 방지
+- [ ] 로컬 MediaElement/URL WebView2 동일 동작 확인
+- [ ] Windows Master Volume=0 및 Mute=true 상태에서 BackgroundOverlay VIDEO 진입 검증
+- [ ] 출력 장치 변경/장치 없음/Core Audio 실패 시 예외 처리 검증
+- [ ] 팝업 종료 후 사용자가 변경한 Windows 최종 볼륨 상태 유지 확인
+
+### 9.9 완료 기준
 
 - 컨트롤바가 영상 영역의 높이를 별도로 차지하지 않고 하단 Overlay로 표시된다.
 - 재생 중 일정 시간 입력이 없으면 컨트롤이 숨겨지고 사용자 입력 시 다시 나타난다.
 - 일시정지 상태에서는 컨트롤을 바로 사용할 수 있다.
 - 영상 영역 클릭만으로 Play/Pause가 가능하며 중앙 상태 피드백이 표시된다.
 - Loading/Buffering/재생/일시정지 상태를 사용자가 시각적으로 구분할 수 있다.
-- 기존 Seek/Volume/Mute/PlaybackRate/Fullscreen/완료율 계산 기능에 회귀가 없다.
+- Overlay UI 변경 후에도 기존 Seek/배속/전체화면/완료율 계산 기능이 기존과 동일하게 동작하며, Volume/Mute는 Windows Master Volume/Mute 양방향 Sync 정책에 따라 정상 동작한다.
 - 로컬 영상과 URL 영상에서 가능한 한 동일한 플레이어 경험을 제공한다.
