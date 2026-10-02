@@ -29,8 +29,8 @@
 
         <!-- 설문 상단 영역 -->
         <Border Grid.Row="0"
-            Padding="24,12,24,10"
-            BorderBrush="#E5E7EB"
+            Padding="0,4,0,16"
+            BorderBrush="#EEF0F3"
             BorderThickness="0,0,0,1">
 
             <StackPanel>
@@ -38,19 +38,14 @@
                 <!-- 설문 제목 -->
                 <TextBlock x:Name="SurveyTitleText"
                            Text="설문조사"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Foreground="#111827"
+                           Style="{StaticResource CommonContentTitleStyle}"
                            TextWrapping="Wrap"/>
 
                 <!-- 설문 설명 -->
                 <TextBlock x:Name="SurveyDescriptionText"
-                           Margin="0,6,0,0"
+                           Margin="0,2,0,0"
                            Text="아래 문항에 응답해주세요."
-                           FontSize="14"
-                           Foreground="#6B7280"
-                           LineHeight="22"
-                           TextWrapping="Wrap"/>
+                           Style="{StaticResource CommonDescriptionTextStyle}"/>
 
             </StackPanel>
         </Border>
@@ -68,14 +63,14 @@
                 Text          → TextBox
             -->
             <StackPanel x:Name="QuestionListPanel"
-                Margin="24,12,24,12"/>
+                Margin="0,14,0,8"/>
 
         </ScrollViewer>
 
         <!-- 설문 하단 영역 -->
         <Border Grid.Row="2"
-            Padding="24,10"
-            BorderBrush="#E5E7EB"
+            Padding="0,14,0,0"
+            BorderBrush="#EEF0F3"
             BorderThickness="0,1,0,0">
 
             <Grid>
@@ -91,7 +86,7 @@
                    VerticalAlignment="Center"
                    Text="* 표시된 문항은 필수 응답입니다."
                    FontSize="13"
-                   Foreground="#6B7280"
+                   Foreground="{StaticResource PopupTextSecondaryBrush}"
                    TextWrapping="Wrap"/>
 
                 <!-- 제출 버튼 -->
