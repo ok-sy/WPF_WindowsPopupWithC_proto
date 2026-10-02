@@ -7,6 +7,10 @@
              MinHeight="240">
 
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
         <!--
         본문의 일반 글자 스타일
@@ -16,7 +20,8 @@
         자동 줄바꿈을 통일한다.
         -->
         <Style x:Key="BodyTextStyle"
-               TargetType="TextBlock">
+               TargetType="TextBlock"
+               BasedOn="{StaticResource CommonDescriptionTextStyle}">
 
             <Setter Property="FontSize"
                     Value="15"/>
@@ -42,16 +47,17 @@
         형태로 사용한다.
         -->
         <Style x:Key="TitleTextStyle"
-       TargetType="TextBlock">
+       TargetType="TextBlock"
+       BasedOn="{StaticResource CommonContentTitleStyle}">
 
             <Setter Property="FontSize"
-            Value="26"/>
+            Value="24"/>
 
             <Setter Property="FontWeight"
-            Value="Bold"/>
+            Value="SemiBold"/>
 
             <Setter Property="Foreground"
-            Value="#1F2937"/>
+            Value="{StaticResource PopupTextPrimaryBrush}"/>
 
             <Setter Property="Margin"
             Value="0,0,0,8"/>
@@ -73,6 +79,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <!--
@@ -118,7 +125,7 @@
                     Background="#EFF6FF"
                     BorderBrush="#93C5FD"
                     BorderThickness="1"
-                    CornerRadius="6"
+                    CornerRadius="8"
                     Visibility="Collapsed">
 
                 <TextBlock x:Name="HighlightTextBlock"
@@ -137,7 +144,7 @@
                    Margin="0,16,0,0"
                    Padding="14"
                    Style="{StaticResource BodyTextStyle}"
-                   Background="#F9FAFB"
+                   Background="#FAFAFB"
                    TextWrapping="Wrap"
                    Visibility="Collapsed"/>
 
