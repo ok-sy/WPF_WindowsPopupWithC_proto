@@ -395,8 +395,7 @@
             x:Name="TitleTextBlock"
             Grid.Row="0"
             Margin="0,0,0,15"
-            Style="{StaticResource CommonContentTitleStyle}"
-            Margin="0,0,0,15"/>
+            Style="{StaticResource CommonContentTitleStyle}"/>
 
         <!-- 영상 표시 영역 -->
         <Border

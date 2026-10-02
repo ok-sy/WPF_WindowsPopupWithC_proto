@@ -264,7 +264,7 @@ internal static class Program
                 var clip = (RectangleGeometry)body.Clip;
                 Check(clip.Rect.Size == body.RenderSize, $"{mode}: clip follows resized body");
                 Check(clip.IsFrozen && clip.FillContains(new Point(50, 50)), "Clip preserves central content");
-                Check(clip.RadiusX == (mode == PopupSizeMode.Fullscreen ? 0 : 11.5), "Clip matches WPF inner border radius");
+                Check(clip.RadiusX == (mode == PopupSizeMode.Fullscreen ? 0 : 15.5), "Clip matches WPF inner border radius");
                 Check(!clip.FillContains(new Point(-1, 50)), "Overflow beyond popup body is excluded");
                 foreach (double scale in new[] { 1d, 1.25, 1.5, 2d })
                 {

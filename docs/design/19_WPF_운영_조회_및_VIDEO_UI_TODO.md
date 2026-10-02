@@ -1,7 +1,7 @@
 # 19. WPF 운영 조회 및 VIDEO UI 보완 TODO
 
 - 작성일: 2026-09-30 (KST)
-- 상태: **§1~3 기존 구현·자동 검증 완료 / §6~7 코드 반영(2026-10-02), 복구 자동 검증 완료 / WPF 렌더링·실제 GUI·원격 DB 검증 대기**
+- 상태: **§1~3 기존 구현·자동 검증 완료 / §6~7 코드 반영(2026-10-02), 복구 자동 검증 완료 / Windows 렌더링·동작 213건 및 HTML5 42건 검증 완료 / 실제 GUI·원격 DB 검증 대기**
 - 범위: WPF 주기 조회 정책, VIDEO 로컬/URL 공통 컨트롤 UI, VIDEO+QUIZ 이중 스크롤 제거, 공통 외곽 Clip, polling 장애 복구
 - 착수: 2026-09-30. 아래 체크는 코드 적용·자동 검증과 실제 GUI·DB 검증을 구분한다.
 
@@ -398,7 +398,7 @@ PopupWindow 외곽 영역
 
 ### 6.3 구현 TODO
 
-체크 완료는 코드 반영·정적 확인을 뜻한다. Windows 렌더링 테스트는 추가·빌드했으며 실행은 대기 중이다.
+체크 완료는 코드 반영·정적 확인을 뜻한다. Windows 렌더링 자동 검증은 2026-10-02 실행 완료했으며 실제 모니터·GUI 검증은 구분해 남긴다.
 
 - [x] IMAGE `FILL` 모드에서 이미지가 팝업 외곽을 벗어나는 현재 구조 확인
 - [x] PopupWindow의 실제 외곽 Border/ContentPresenter/Content 영역 Clip 계층 확인
@@ -406,9 +406,10 @@ PopupWindow 외곽 영역
 - [x] IMAGE FILL 확대 시 팝업 밖 픽셀이 보이지 않도록 처리
 - [x] IMAGE에만 특수 처리하지 않고 가능한 경우 공통 Content Clip으로 적용
 - [ ] TEXT/VIDEO/SURVEY/QUIZ에 부작용이 없는지 확인
-- [ ] FIXED/RATIO/FULLSCREEN/AUTO 등 지원 크기 모드별 확인
+- [x] FIXED/RATIO/FULLSCREEN/AUTO의 공통 Clip·리사이즈 자동 렌더링 확인
+- [ ] 지원 크기 모드별 실제 GUI·영상 확인
 - [ ] DPI 배율(예: 100%/125%/150%/200%)에서 모서리 1px 틈/삐져나옴 여부 확인
-- [ ] 외곽 Border 두께가 있을 경우 Border 안쪽 기준 Clip 정합성 확인
+- [x] 현행 동일 두께 Border 안쪽 Clip 반경 및 경계 밖 제외 자동 검증
 
 ### 6.4 완료 기준
 
@@ -569,7 +570,8 @@ HTTP 504
 - [x] 복구 성공 응답의 `pollingIntervalSeconds`를 다음 정상 조회에 적용
 - [x] 정상 polling/장애복구/401 재로그인 간 중복 요청 방지
 - [x] 앱 종료 시 모든 재시도 Timer/Task Cancellation 처리
-- [ ] 네트워크 단절 → 복구, 서버 재기동 → 복구, 5xx → 복구 시나리오 자동/수동 검증
+- [x] 통신 예외·5xx 분류, 재시도 단계 및 성공 후 복귀 자동 검증(실제 복구/HTTP/인증/큐 코드 122건)
+- [ ] 실제 네트워크 단절 → 복구, 서버 재기동 → 복구, 5xx → 복구 수동 통합 검증
 
 ### 7.7 완료 기준
 
@@ -598,3 +600,14 @@ HTTP 504
 - `video-controls.test.cjs`는 WPF 테스트가 생성하는 HTML이 없어 실행되지 않았다(ENOENT). 이전 42건 통과 기록을 이번 실행 결과로 재사용하지 않는다.
 - 실제 서버/DB/사내 SSO/네트워크 재연결/GUI 클릭·업데이트 종료 검증 및 dist·반입 패키지 재생성은 미실행.
 - 변경 소스 줄별 설명: [20261002_WPF_TODO_변경_라인별_설명](../reviews/20261002_WPF_TODO_변경_라인별_설명.md).
+
+### 7.9 2026-10-02 Windows 후속 검증
+
+- VIDEO 제목 TextBlock의 중복 Margin 속성을 제거해 WPF XAML 컴파일 오류 MC3000을 수정.
+- 현행 PopupBodyBorder는 CornerRadius=16, BorderThickness=1이다. Clip 반경은 15.5이며 오래된 테스트 기대값 11.5와 소스 주석을 정정.
+- Windows .NET SDK 10.0.401로 임시 프로젝트·별도 artifacts 경로에서 WPF 빌드 및 동작 검증 **213건 통과**. 4종 크기 모드·리사이즈·100/125/150/200% RenderTargetBitmap·6종 콘텐츠 공통 Clip 존재·결합 스크롤·영상 상태·제출 경로 포함.
+- 생성된 HTML로 Node HTML5 브리지 **42건 통과**. 실제 복구/HTTP/인증/큐 소스 검증 **122건 통과**. git diff --check 통과.
+- 저장소 global.json(10.0.400)·NuGet.Config는 유지. 오프라인 NuGet 소스가 없어 이번 검증은 공식 NuGet 소스를 지정. 기존 중간 생성 파일 불일치는 임시 artifacts 경로로 분리해 해결.
+- 검증 중 데모 미디어가 삭제된 상태여서 HEAD의 이미지·영상을 임시 테스트 출력에만 복사했다. 저장소 미디어 삭제 상태는 유지. 검증 프로젝트는 처음 조사 시 삭제 상태였으므로 HEAD를 임시 경로에 복사해 실행했으며, 이후 작업 폴더에 다시 존재하는 테스트의 반경 기대값도 정정했다.
+- RenderTargetBitmap의 DPI 검증은 실제 모니터 배율 및 WebView2 HWND 경계 검증을 대신하지 않는다. VIDEO+QUIZ 실재생·휠/드래그/키보드·전체화면 왕복·네트워크 재연결·서버 재기동은 미실행.
+- POPUP_TEST_DB_PASSWORD 환경변수가 없어 원격 개발 DB HTTP 완료/숨김 재조회는 미실행. 커밋·푸시·배포·반입 패키지 재생성 없음.
