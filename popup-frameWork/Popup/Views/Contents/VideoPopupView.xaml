@@ -5,6 +5,11 @@
              Unloaded="VideoPopupView_Unloaded">
 
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
         <Style
         x:Key="VideoIconButtonStyle"
         TargetType="Button">
@@ -374,6 +379,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid>
@@ -389,10 +395,8 @@
             x:Name="TitleTextBlock"
             Grid.Row="0"
             Margin="0,0,0,15"
-            FontSize="22"
-            FontWeight="Bold"
-            Foreground="#111827"
-            TextWrapping="Wrap"/>
+            Style="{StaticResource CommonContentTitleStyle}"
+            Margin="0,0,0,15"/>
 
         <!-- 영상 표시 영역 -->
         <Border
