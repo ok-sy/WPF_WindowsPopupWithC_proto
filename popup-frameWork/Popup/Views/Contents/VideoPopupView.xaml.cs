@@ -40,6 +40,8 @@ namespace Popup.Views.Contents
         private bool _syncingWebState;
         private bool _webSeekPending;
         private bool _webIsBuffering;
+        private bool _webIsLoading = true;
+        private bool _webPlaybackBlocked;
         private double _webDurationSeconds;
         private double _webPositionSeconds;
 
@@ -368,7 +370,13 @@ namespace Popup.Views.Contents
                 /*
                  * WebView2 초기화를 명시적으로 수행한다.
                  */
-                await VideoWebView.EnsureCoreWebView2Async();
+                // 영상 전용 프로필로 다른 WebView의 기본 브라우저 옵션과 충돌하지 않는다.
+                // 프로토타입에서 소리 있는 자동 재생도 클릭 없이 시작하도록 정책을 지정한다.
+                var environment = await CoreWebView2Environment.CreateAsync(
+                    userDataFolder: Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Popup", "VideoWebView2"),
+                    options: new CoreWebView2EnvironmentOptions("--autoplay-policy=no-user-gesture-required"));
+                await VideoWebView.EnsureCoreWebView2Async(environment);
 
                 /*
                  * 새 창 열기 동작을 현재 WebView 안에서 처리한다.
@@ -457,14 +465,15 @@ namespace Popup.Views.Contents
                   </style>
                 </head>
                 <body>
-                  <video id="video" src="{{videoUrlAttribute}}"{{videoAttributes}}></video>
+                  <video id="video" src="{{videoUrlAttribute}}" preload="auto"{{videoAttributes}}></video>
                   <script>
                     const video = document.getElementById('video');
                     video.volume = {{defaultVolumeJs}};
                     // 로컬과 동일하게 컨트롤 숨김 시에만 영상 클릭으로 재생/일시정지한다.
                     if ({{(_showControls ? "false" : "true")}}) {
                       video.addEventListener('click', () => {
-                        if (video.paused) video.play().catch(() => send('pause')); else video.pause();
+                        autoplayPending = false;
+                        if (video.paused) startPlayback(); else video.pause();
                       });
                     }
                     const send = (type) => chrome.webview.postMessage({
@@ -474,7 +483,17 @@ namespace Popup.Views.Contents
                       paused: video.paused, seeking: video.seeking,
                       volume: video.volume, rate: video.playbackRate
                     });
+                    const startPlayback = () => video.play().catch(error => {
+                      if (error.name === 'AbortError') return; // 재생 직후 수동 pause는 오류가 아니다.
+                      send(error.name === 'NotAllowedError' ? 'playblocked' : 'error');
+                    });
+                    let autoplayPending = {{(_autoPlay ? "true" : "false")}};
+                    video.addEventListener('loadstart', () => send('loading'));
                     video.addEventListener('loadedmetadata', () => send('opened'));
+                    video.addEventListener('canplay', () => {
+                      send('ready');
+                      if (autoplayPending) { autoplayPending = false; startPlayback(); }
+                    });
                     video.addEventListener('timeupdate', () => send('progress'));
                     video.addEventListener('play', () => send('play'));
                     video.addEventListener('pause', () => send('pause'));
@@ -492,8 +511,9 @@ namespace Popup.Views.Contents
                       switch (data.command) {
                         case 'play':
                           if (video.ended) video.currentTime = 0;
-                          video.play().catch(() => send('pause')); break;
-                        case 'pause': video.pause(); break;
+                          autoplayPending = false;
+                          startPlayback(); break;
+                        case 'pause': autoplayPending = false; video.pause(); break;
                         case 'seek':
                           if (video.currentTime === data.value) send('seeked');
                           else { video.currentTime = data.value; send('seeking'); }
@@ -549,8 +569,12 @@ namespace Popup.Views.Contents
             _isMediaOpened = _webDurationSeconds > 0;
             bool wasPlaying = _isPlaying;
             bool seeking = root.GetProperty("seeking").GetBoolean();
+            if (type == "playblocked") _webPlaybackBlocked = true;
+            else if (type is "loading" or "play" or "playing" or "ended") _webPlaybackBlocked = false;
+            if (type == "loading") _webIsLoading = true;
+            else if (type is "ready" or "playing" or "playblocked" or "ended") _webIsLoading = false;
             if (type is "waiting" or "stalled") _webIsBuffering = true;
-            else if (type is "playing" or "pause" or "ended") _webIsBuffering = false;
+            else if (type is "ready" or "playing" or "pause" or "playblocked" or "ended") _webIsBuffering = false;
             if (seeking || _isSeeking || _webSeekPending || type is "seeking" or "seeked" or "waiting" or "stalled")
                 _lastObservedPositionSeconds = _webPositionSeconds;
             else
@@ -558,7 +582,16 @@ namespace Popup.Views.Contents
             if (type == "seeked") _webSeekPending = false;
             _isPlaying = !root.GetProperty("paused").GetBoolean() && !seeking && !_webIsBuffering
                 && type is not ("ended" or "waiting" or "stalled");
-            if (_webIsBuffering) ShowLoadingMessage("영상을 버퍼링하는 중입니다.");
+            if (_webPlaybackBlocked)
+            {
+                VideoLoadingProgress.Visibility = Visibility.Collapsed;
+                VideoMessageText.Text = _showControls
+                    ? "재생 버튼을 눌러 영상을 시작해 주세요."
+                    : "영상 영역을 클릭해 재생을 시작해 주세요.";
+                VideoMessageArea.Visibility = Visibility.Visible;
+            }
+            else if (_webIsLoading) ShowLoadingMessage("영상을 불러오는 중입니다.");
+            else if (_webIsBuffering) ShowLoadingMessage("영상을 버퍼링하는 중입니다.");
             else if (!HasPlaybackFailed) VideoMessageArea.Visibility = Visibility.Collapsed;
             if (!_isSeeking)
             {
@@ -1722,14 +1755,14 @@ namespace Popup.Views.Contents
             object sender,
             CoreWebView2NavigationCompletedEventArgs e)
         {
-            if (e.IsSuccess)
+            if (e.IsSuccess && _isYouTubeVideo)
             {
                 VideoMessageArea.Visibility =
                     Visibility.Collapsed;
 
            
             }
-            else
+            else if (!e.IsSuccess)
             {
                 ShowVideoError(
                     $"웹 영상 페이지를 불러오지 못했습니다.\n" +
@@ -1891,6 +1924,7 @@ namespace Popup.Views.Contents
         private void ShowLoadingMessage(
             string message)
         {
+            VideoLoadingProgress.Visibility = Visibility.Visible;
             VideoMessageText.Text =
                 message;
 
@@ -1901,6 +1935,7 @@ namespace Popup.Views.Contents
         private void ShowVideoError(
             string message)
         {
+            VideoLoadingProgress.Visibility = Visibility.Collapsed;
             _isMediaOpened = false;
             _progressTimer.Stop();
 
