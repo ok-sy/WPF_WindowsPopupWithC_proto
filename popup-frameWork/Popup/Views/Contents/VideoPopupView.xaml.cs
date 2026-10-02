@@ -44,6 +44,11 @@ namespace Popup.Views.Contents
         private bool _webPlaybackBlocked;
         private double _webDurationSeconds;
         private double _webPositionSeconds;
+        private readonly DispatcherTimer _controlsHideTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+        private readonly DispatcherTimer _feedbackTimer = new() { Interval = TimeSpan.FromMilliseconds(700) };
+        private bool _controlsPointerDown;
+        private bool _controlsKeyboardActive;
+        private readonly System.Collections.Generic.List<(double Start, double End)> _bufferedRanges = new();
 
         /*
          * MediaElement가 영상을 정상적으로 열었는지 나타낸다.
@@ -190,6 +195,9 @@ namespace Popup.Views.Contents
             _allowFullScreen = allowFullScreen;
             _allowPlaybackRateChange = allowPlaybackRateChange;
             _autoPlay = autoPlay;
+            _controlsHideTimer.Tick += ControlsHideTimer_Tick;
+            _feedbackTimer.Tick += (_, _) => { _feedbackTimer.Stop(); PlaybackFeedback.Visibility = Visibility.Collapsed; };
+            LocalVideoControlArea.PreviewKeyDown += (_, _) => { _controlsKeyboardActive = true; ShowVideoControls(); };
             _isLoop = isLoop;
             _defaultVolume = double.IsFinite(defaultVolume)
                 ? Math.Clamp(defaultVolume, 0.0, 1.0)
@@ -241,6 +249,7 @@ namespace Popup.Views.Contents
 
             _useWebPlayer =
                 _isYouTubeVideo || IsHttpVideoUrl(_videoPath);
+            VideoInteractionLayer.Visibility = _isYouTubeVideo ? Visibility.Collapsed : Visibility.Visible;
 
             TitleTextBlock.Text =
                 videoTitle ?? string.Empty;
@@ -469,19 +478,15 @@ namespace Popup.Views.Contents
                   <script>
                     const video = document.getElementById('video');
                     video.volume = {{defaultVolumeJs}};
-                    // 로컬과 동일하게 컨트롤 숨김 시에만 영상 클릭으로 재생/일시정지한다.
-                    if ({{(_showControls ? "false" : "true")}}) {
-                      video.addEventListener('click', () => {
-                        autoplayPending = false;
-                        if (video.paused) startPlayback(); else video.pause();
-                      });
-                    }
+                    // 영상 클릭은 CompositionControl 위의 공통 WPF 입력 레이어에서 처리한다.
                     const send = (type) => chrome.webview.postMessage({
                       type,
                       duration: Number.isFinite(video.duration) ? video.duration : 0,
                       position: Number.isFinite(video.currentTime) ? video.currentTime : 0,
                       paused: video.paused, seeking: video.seeking,
-                      volume: video.volume, rate: video.playbackRate
+                      volume: video.volume, rate: video.playbackRate,
+                      buffered: Array.from({length: video.buffered?.length || 0}, (_, i) =>
+                        [video.buffered.start(i), video.buffered.end(i)])
                     });
                     const startPlayback = () => video.play().catch(error => {
                       if (error.name === 'AbortError') return; // 재생 직후 수동 pause는 오류가 아니다.
@@ -495,6 +500,7 @@ namespace Popup.Views.Contents
                       if (autoplayPending) { autoplayPending = false; startPlayback(); }
                     });
                     video.addEventListener('timeupdate', () => send('progress'));
+                    video.addEventListener('progress', () => send('buffered'));
                     video.addEventListener('play', () => send('play'));
                     video.addEventListener('pause', () => send('pause'));
                     video.addEventListener('ended', () => send('ended'));
@@ -559,6 +565,14 @@ namespace Popup.Views.Contents
             string type = root.GetProperty("type").GetString() ?? string.Empty;
             _webDurationSeconds = root.GetProperty("duration").GetDouble();
             _webPositionSeconds = root.GetProperty("position").GetDouble();
+            if (root.TryGetProperty("buffered", out JsonElement buffered) && buffered.ValueKind == JsonValueKind.Array)
+            {
+                _bufferedRanges.Clear();
+                foreach (JsonElement range in buffered.EnumerateArray())
+                    if (range.ValueKind == JsonValueKind.Array && range.GetArrayLength() == 2)
+                        _bufferedRanges.Add((range[0].GetDouble(), range[1].GetDouble()));
+                DrawBufferedTrack();
+            }
 
             if (type == "error")
             {
@@ -788,18 +802,18 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [관리자 웹 옵션] 컨트롤바를 숨긴 팝업에서는 영상 영역 클릭으로 재생/일시정지를 전환한다.
-         * 컨트롤바가 있는 팝업은 기존처럼 버튼만 사용한다(클릭이 컨트롤바 조작과 겹치지 않도록).
+         * 컨트롤과 별도 형제 레이어에서 영상 클릭을 처리해 버튼/Slider 입력과 분리한다.
          */
         private void VideoContainer_MouseLeftButtonUp(
             object sender,
             MouseButtonEventArgs e)
         {
-            if (_showControls || !_isMediaOpened || _isYouTubeVideo)
+            if (!_isMediaOpened || _isYouTubeVideo)
             {
                 return;
             }
 
+            bool requestedPlaying = !_isPlaying;
             if (_isPlaying)
             {
                 PauseVideo();
@@ -808,6 +822,9 @@ namespace Popup.Views.Contents
             {
                 PlayVideo();
             }
+            ShowPlaybackFeedback(requestedPlaying);
+            ShowVideoControls();
+            e.Handled = true;
         }
 
         /*
@@ -839,6 +856,9 @@ namespace Popup.Views.Contents
             {
                 return;
             }
+            if (_isPlaying && PopupVideo.BufferingProgress > 0 && PopupVideo.BufferingProgress < 1)
+                ShowLoadingMessage("영상을 버퍼링하는 중입니다.");
+            else if (!HasPlaybackFailed) VideoMessageArea.Visibility = Visibility.Collapsed;
 
             TimeSpan currentPosition =
                 PopupVideo.Position;
@@ -1153,10 +1173,8 @@ namespace Popup.Views.Contents
 
             if (!VideoContainer.IsMouseOver)
             {
-                LocalVideoControlArea.Visibility =
-                    Visibility.Collapsed;
-
                 ShowVideoControls();
+                HideVideoControlsIfIdle();
             }
 
         }
@@ -1173,7 +1191,91 @@ namespace Popup.Views.Contents
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
 
-            // HWND 경계 밖의 공통 컨트롤 행은 고정해 영상 높이와 스크롤 위치를 유지한다.
+            _controlsHideTimer.Stop();
+            if (_isPlaying) _controlsHideTimer.Start();
+        }
+
+        private void ControlsHideTimer_Tick(object? sender, EventArgs e)
+        {
+            _controlsHideTimer.Stop();
+            if (!_isPlaying || _isSeeking || _controlsPointerDown || _controlsKeyboardActive)
+            {
+                ShowVideoControls();
+                return;
+            }
+            HideVideoControlsIfIdle();
+        }
+
+        private void HideVideoControlsIfIdle()
+        {
+            if (!_isPlaying || _isSeeking || _controlsPointerDown || _controlsKeyboardActive) return;
+            _controlsHideTimer.Stop();
+            LocalVideoControlArea.Visibility = Visibility.Collapsed;
+        }
+
+        private void VideoContainer_MouseEnter(object sender, MouseEventArgs e) => ShowVideoControls();
+
+        private void VideoContainer_MouseLeave(object sender, MouseEventArgs e)
+        {
+            HideVideoControlsIfIdle();
+        }
+
+        private void VideoContainer_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Released) _controlsPointerDown = false;
+            _controlsKeyboardActive = false;
+            ShowVideoControls();
+        }
+
+        private void VideoControls_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _controlsPointerDown = true;
+            _controlsKeyboardActive = false;
+            ShowVideoControls();
+        }
+
+        private void VideoControls_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            _controlsPointerDown = false;
+            ShowVideoControls();
+            if (!VideoContainer.IsMouseOver) HideVideoControlsIfIdle();
+        }
+
+        private void VideoControls_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => ShowVideoControls();
+        private void VideoControls_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (!LocalVideoControlArea.IsKeyboardFocusWithin) _controlsKeyboardActive = false;
+            ShowVideoControls();
+            if (!VideoContainer.IsMouseOver) HideVideoControlsIfIdle();
+        }
+
+        private void ShowPlaybackFeedback(bool playing)
+        {
+            PlaybackFeedbackIcon.Text = playing ? "\uE768" : "\uE769";
+            PlaybackFeedback.Visibility = Visibility.Visible;
+            _feedbackTimer.Stop();
+            _feedbackTimer.Start();
+        }
+
+        private void BufferedTrack_SizeChanged(object sender, SizeChangedEventArgs e) => DrawBufferedTrack();
+        private void DrawBufferedTrack()
+        {
+            if (BufferedTrack == null) return;
+            BufferedTrack.Children.Clear();
+            if (_webDurationSeconds <= 0 || !double.IsFinite(_webDurationSeconds)) return;
+            foreach (var (start, end) in _bufferedRanges)
+            {
+                if (!double.IsFinite(start) || !double.IsFinite(end) || end <= start) continue;
+                double left = Math.Clamp(start / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
+                double right = Math.Clamp(end / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
+                var segment = new System.Windows.Shapes.Rectangle
+                {
+                    Width = Math.Max(0, right - left), Height = 4,
+                    Fill = System.Windows.Media.Brushes.Gray, RadiusX = 2, RadiusY = 2
+                };
+                Canvas.SetLeft(segment, left);
+                BufferedTrack.Children.Add(segment);
+            }
         }
 
         
@@ -1513,6 +1615,7 @@ namespace Popup.Views.Contents
 
             _fullScreenWindow.Show();
             _fullScreenWindow.Activate();
+            ShowVideoControls();
         }
 
         private void ExitFullScreen()
@@ -1600,6 +1703,7 @@ namespace Popup.Views.Contents
                 "전체 화면";
 
             LocalVideoControlArea.Visibility = ControlBarVisibility(true);
+            ShowVideoControls();
         }
 
         private void FullScreenWindow_KeyDown(
@@ -1883,8 +1987,7 @@ namespace Popup.Views.Contents
 
 
             _progressTimer.Start();
-
-
+            ShowVideoControls();
         }
 
         private void PauseVideo()
@@ -1917,8 +2020,7 @@ namespace Popup.Views.Contents
 
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
-
-
+            ShowVideoControls();
         }
 
         private void ShowLoadingMessage(
@@ -1945,6 +2047,9 @@ namespace Popup.Views.Contents
              * 실패 상태만 기록하며 시청 완료 상태나 진행률은 변경하지 않는다.
              */
             HasPlaybackFailed = true;
+            _controlsHideTimer.Stop();
+            _feedbackTimer.Stop();
+            PlaybackFeedback.Visibility = Visibility.Collapsed;
 
             VideoMessageText.Text =
                 message;
@@ -1957,6 +2062,8 @@ namespace Popup.Views.Contents
             object sender,
             RoutedEventArgs e)
         {
+            _controlsHideTimer.Stop();
+            _feedbackTimer.Stop();
             try
             {
                 if (_fullScreenWindow != null)
@@ -2012,6 +2119,8 @@ namespace Popup.Views.Contents
             _isMediaOpened = false;
             _isPlaying = false;
             _isSeeking = false;
+            _controlsHideTimer.Stop();
+            _feedbackTimer.Stop();
         }
 
         private static string? GetQueryParameter(

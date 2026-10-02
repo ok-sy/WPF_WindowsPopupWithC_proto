@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 let checks = 0;
-const htmlDirectory = process.argv[2] || path.join(__dirname, 'bin/Debug/net10.0-windows');
+const htmlDirectory = process.argv[2] || path.join(__dirname, 'bin/Debug/net10.0-windows10.0.17763.0');
 function check(condition, message) { assert.ok(condition, message); checks++; }
 
 async function main() {
@@ -16,6 +16,7 @@ async function main() {
     let rate = 1;
     const video = {
       duration: 100, currentTime: 0, paused: true, ended: false, seeking: false, volume: 1,
+      buffered: { length: 2, start: i => i === 0 ? 0 : 40, end: i => i === 0 ? 20 : 60 },
       addEventListener(type, callback) {
         if (!listeners.has(type)) listeners.set(type, []);
         listeners.get(type).push(callback);
@@ -36,6 +37,9 @@ async function main() {
     check(messages.at(-1).type === 'opened' && messages.at(-1).duration === 100, 'metadata crosses bridge');
     video.emit('canplay');
     check(video.paused && messages.at(-1).type === 'ready', 'autoplay=false remains paused when playable');
+    video.emit('progress');
+    check(messages.at(-1).type === 'buffered', 'download progress reports buffered ranges');
+    check(JSON.stringify(messages.at(-1).buffered) === '[[0,20],[40,60]]', 'disjoint buffers preserve their timeline coordinates');
     send('play');
     check(!video.paused && messages.at(-1).type === 'play', 'WPF play command reaches engine');
     send('pause');

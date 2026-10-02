@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Popup.Dtos;
@@ -43,6 +44,7 @@ internal static class Program
         CheckPopupClipping();
         CheckCombinedScrolling();
         CheckWebVideoControls();
+        CheckVideoOverlay();
         CheckDemoScoreLogging();
         CheckFooterSubmission();
         CheckAlertLayout();
@@ -331,6 +333,67 @@ internal static class Program
         }
     }
 
+    private static void CheckVideoOverlay()
+    {
+        var stateMethod = typeof(VideoPopupView).GetMethod("ApplyWebPlaybackState", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var hideMethod = typeof(VideoPopupView).GetMethod("ControlsHideTimer_Tick", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var showMethod = typeof(VideoPopupView).GetMethod("ShowVideoControls", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        foreach (bool showControls in new[] { false, true })
+        {
+            var player = new VideoPopupView("Overlay", "https://example.com/video.mp4", "", showControls: showControls, autoPlay: false);
+            var surface = (Grid)player.FindName("VideoSurface");
+            var controls = (Border)player.FindName("LocalVideoControlArea");
+            var layer = (Border)player.FindName("VideoInteractionLayer");
+            Check(surface.RowDefinitions.Count == 0 && Grid.GetRow(controls) == 0, "Controls and video share one overlay surface");
+            Check(player.FindName("VideoWebView") is Microsoft.Web.WebView2.Wpf.WebView2CompositionControl,
+                "Web player supports WPF visual composition");
+            void State(string type, bool paused) => stateMethod.Invoke(player, new object[] {
+                JsonSerializer.SerializeToElement(new { type, duration = 100, position = 0, paused, seeking = false,
+                    volume = .7, rate = 1, buffered = new[] { new[] { 0d, 20d }, new[] { 40d, 60d } } }) });
+            State("opened", true);
+            State("ready", true);
+            State("play", false);
+            showMethod.Invoke(player, null);
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Overlay respects showControls");
+            var enterMethod = typeof(VideoPopupView).GetMethod("VideoContainer_MouseEnter", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var leaveMethod = typeof(VideoPopupView).GetMethod("VideoContainer_MouseLeave", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            leaveMethod.Invoke(player, new object[] { surface, new MouseEventArgs(Mouse.PrimaryDevice, 0) });
+            Check(controls.Visibility == Visibility.Collapsed, "Leaving playing video hides controls immediately");
+            enterMethod.Invoke(player, new object[] { surface, new MouseEventArgs(Mouse.PrimaryDevice, 0) });
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Entering video immediately restores controls within policy");
+            hideMethod.Invoke(player, new object?[] { null, EventArgs.Empty });
+            Check(controls.Visibility == Visibility.Collapsed, "Idle playing state hides controls");
+            typeof(VideoPopupView).GetField("_controlsPointerDown", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, true);
+            showMethod.Invoke(player, null);
+            hideMethod.Invoke(player, new object?[] { null, EventArgs.Empty });
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Control drag pins overlay without overriding policy");
+            leaveMethod.Invoke(player, new object[] { surface, new MouseEventArgs(Mouse.PrimaryDevice, 0) });
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Mouse leave preserves active control drag");
+            typeof(VideoPopupView).GetField("_controlsPointerDown", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(player, false);
+            State("pause", true);
+            hideMethod.Invoke(player, new object?[] { null, EventArgs.Empty });
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Paused controls stay available");
+            leaveMethod.Invoke(player, new object[] { surface, new MouseEventArgs(Mouse.PrimaryDevice, 0) });
+            Check(controls.Visibility == (showControls ? Visibility.Visible : Visibility.Collapsed), "Mouse leave preserves paused controls");
+            var click = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonUpEvent };
+            layer.RaiseEvent(click);
+            Check(((Border)player.FindName("PlaybackFeedback")).Visibility == Visibility.Visible && click.Handled,
+                "Video clicks show central feedback and handle input");
+            Check(((TextBlock)player.FindName("PlaybackFeedbackIcon")).Text == "\uE768", "Requested play has play feedback");
+            ((Button)player.FindName("PlayPauseButton")).RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                { RoutedEvent = UIElement.MouseLeftButtonUpEvent });
+            Check(((TextBlock)player.FindName("PlaybackFeedbackIcon")).Text == "\uE768", "Control input does not bubble into video interaction layer");
+            var track = (Canvas)player.FindName("BufferedTrack");
+            track.Measure(new Size(100, 4)); track.Arrange(new Rect(0, 0, 100, 4)); track.UpdateLayout();
+            Check(track.Children.Count == 2 && Math.Abs(((FrameworkElement)track.Children[0]).Width - 20) < .001
+                && Canvas.GetLeft(track.Children[1]) == 40, "Disjoint buffered ranges occupy actual timeline positions");
+            typeof(VideoPopupView).GetMethod("VideoPopupView_Unloaded", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(player,
+                new object[] { player, new RoutedEventArgs(FrameworkElement.UnloadedEvent) });
+            Check(!((System.Windows.Threading.DispatcherTimer)typeof(VideoPopupView).GetField("_controlsHideTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(player)!).IsEnabled,
+                "Unload stops overlay timers");
+        }
+    }
+
     private static void CheckWebVideoControls()
     {
         var method = typeof(VideoPopupView).GetMethod("ApplyWebPlaybackState", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -353,7 +416,7 @@ internal static class Program
             Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Visible,
                 "Metadata alone does not hide initial video loading");
             State("volumechange", 0, true);
-            Check(((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Visible,
+            Check(((FrameworkElement)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Visible,
                 "Control changes preserve initial loading indicator");
             State("ready", 0, true);
             Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Collapsed,
@@ -361,7 +424,7 @@ internal static class Program
             State("playblocked", 0, true);
             State("volumechange", 0, true);
             Check(!player.HasPlaybackFailed && ((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Visible
-                && ((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
+                && ((FrameworkElement)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
                 "Blocked playback preserves actionable guidance without granting failure escape");
             Check(((Border)player.FindName("LocalVideoControlArea")).Visibility == Visibility.Visible, "URL metadata enables shared WPF controls");
             State("play", 0);
@@ -386,7 +449,7 @@ internal static class Program
             Check(player.GetFinalProgress()!.WatchedSeconds == 2m, "Replay retains cumulative watched time");
             State("error", .5, true);
             Check(player.HasPlaybackFailed, "Web error enables existing failure escape policy");
-            Check(((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
+            Check(((FrameworkElement)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
                 "Playback errors stop loading indicator");
         }
         var autoplayPlayer = new VideoPopupView("Web", "https://example.com/video.mp4", "", autoPlay: true, defaultVolume: .35);
