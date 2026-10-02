@@ -167,7 +167,7 @@
 
                         <Border x:Name="ButtonBorder"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="0,12,0,0">
+                                CornerRadius="0,16,0,0">
 
                             <!--
                             Button의 Content 값을 표시한다.
@@ -243,9 +243,9 @@
         -->
         <Border x:Name="PopupBodyBorder"
                 Background="White"
-                BorderBrush="#D1D5DB"
+                BorderBrush="#E5E7EB"
                 BorderThickness="1"
-                CornerRadius="12">
+                CornerRadius="16">
 
             <Border.Effect>
 
@@ -326,7 +326,7 @@
                 <Border x:Name="HeaderArea"
                         Grid.Row="0"
                         Background="White"
-                        CornerRadius="12,12,0,0"
+                        CornerRadius="16,16,0,0"
                         MouseLeftButtonDown="Header_MouseLeftButtonDown">
 
                     <Grid>
@@ -359,7 +359,7 @@
                                    VerticalAlignment="Center"
                                    FontSize="17"
                                    FontWeight="SemiBold"
-                                   Foreground="#374151"
+                                   Foreground="#111827"
                                    Text="팝업 제목"/>
 
                         <!--
@@ -411,7 +411,7 @@
                 -->
                 <ContentControl x:Name="PopupContent"
                 Grid.Row="1"
-                Margin="24"
+                Margin="28,24,28,24"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
@@ -426,7 +426,7 @@
                 -->
                 <Grid x:Name="FooterArea"
                       Grid.Row="2"
-                      Margin="24,8,24,16">
+                      Margin="28,8,28,16">
 
                     <Grid.ColumnDefinitions>
 
