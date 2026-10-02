@@ -2,6 +2,13 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-02-05 — WPF framework 소스 반입 패키지 생성
+
+- 이유: VIDEO Overlay·hover 수정이 반영된 framework 소스를 폐쇄망 저장소에 전달하기 위한 소스 전용 묶음 생성.
+- 변경: origin/main 푸시 완료한 eaafad1 기준으로 추적 중인 popup-frameWork 파일 85개를 원본 경로 유지 ZIP 및 source 폴더로 추출. bin/obj/publish/dist·EXE/DLL/PDB·미커밋 데모 데이터/영상·서버/웹·SDK/NuGet 묶음 제외. 내장 리소스로 필요한 커밋된 데모 이미지·영상 포함. MANIFEST·SHA256SUMS·반입 안내 생성.
+- 주요 파일: `offline-export/20261002-wpf-source/popup-framework-source-20261002.zip`(9,847,367 bytes), `source/popup-frameWork/`, `MANIFEST.txt`, `SHA256SUMS.txt`, `README-IMPORT.md`(Git 제외).
+- 검증: Git 트리와 ZIP 파일 수 85개 일치, framework 외 경로·빌드 출력·실행 바이너리 0건. 추출된 XML/JSON 파싱 및 Overlay/hover 소스 포함 확인. SHA256 F53AD4924C45743BAAC603DFB452B844ECD9C6A2E8301D0485363A3F3ED65132. 실행 파일 생성·폐쇄망 빌드·배포는 수행하지 않음.
+- 상태: 소스 묶음 생성 완료. 산출물은 Git 제외이며 변경 이력만 커밋·푸시 대상으로 정리. Windows SDK NuGet 의존성 재수집 및 Runtime 134 검증은 남아 있고 소스 묶음에 SDK/NuGet 바이너리는 포함하지 않음. 별도 SDK/NuGet 설정·미디어·데모 데이터·서버 로컬 설정·IDE 변경 유지.
 ## 2026-10-02-04 — VIDEO 공통 Overlay 및 자동 숨김 구현
 
 - 이유: 설계 19 §9의 영상 위 컨트롤·중앙 재생 상태·로딩 피드백 요구사항 반영.
@@ -10,7 +17,7 @@
 - 주요 파일: `VideoPopupView.xaml/.cs`, `Popup.csproj`, `Popup.BehaviorTests/Popup.BehaviorTests.csproj`, `Program.cs`, `video-controls.test.cjs`, 설계 19, WPF README.
 - 검증: Windows WPF 동작 245건·HTML5 64건 통과. 실제 MediaElement/WebView2 Runtime 154.0.4258.48·로컬 HTTP 자동 검증 37건 통과(자동 재생·지연 로딩·오류·이벤트 주입 Buffering·영상 클릭·3초 숨김·중앙 피드백 제거·Pause 표시 유지·Overlay 배치). 로컬/URL PNG를 렌더링·시각 확인해 영상 위 WPF 컨트롤 표시 확인. 기존 VIDEO+QUIZ 단일 스크롤·높이·잠금·시청시간 검증 유지. `git diff --check` 통과.
 - 후속(hover 반응): 영상 MouseEnter 즉시 표시·MouseLeave 즉시 숨김 적용. 영상 내부 3초 무입력 정책 유지, Pause·Seek·마우스/키보드 조작 중 이탈은 표시 유지. 영상 밖에서 조작·키보드 포커스가 끝나면 즉시 숨김. 진입/이탈·Pause·드래그 유지 회귀 검증을 추가해 WPF 동작 253건 통과. 실제 물리 hover 입력 검증은 미실행.
-- 상태: VIDEO Overlay·hover 후속 수정과 검증 기록을 main 커밋·origin/main 푸시 대상으로 정리. 실제 전체화면 왕복·물리 입력·모니터 DPI·Runtime 134·YouTube·사용 서버 URL 미실행. Windows SDK 패키지 반입·dist·반입 묶음·배포 갱신 없음. 기존 SDK/NuGet·미디어·데모 데이터 별도 변경 유지.
+- 상태: VIDEO Overlay·hover 수정은 ae4d017로 커밋하고 원격 문서를 통합한 eaafad1까지 origin/main 푸시 완료. 실제 전체화면 왕복·물리 입력·모니터 DPI·Runtime 134·YouTube·사용 서버 URL 미실행. Windows SDK 패키지 반입·dist·반입 묶음·배포 갱신 없음. 기존 SDK/NuGet·미디어·데모 데이터 별도 변경 유지.
 ## 2026-10-02-03 — URL 영상 자동 재생 및 로딩 안내 보완
 
 - 이유: URL 영상에서 클릭 전 자동 재생이 원활하지 않은 현상과 영상 준비 중 안내가 조기에 사라지는 흐름을 보완.
