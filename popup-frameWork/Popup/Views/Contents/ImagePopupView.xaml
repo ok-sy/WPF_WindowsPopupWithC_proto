@@ -8,6 +8,10 @@
              d:DesignHeight="560">
 
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
         <!--
         이미지 제목 스타일
@@ -16,13 +20,14 @@
         제목의 공통 디자인을 설정한다.
         -->
         <Style x:Key="ImageTitleTextStyle"
-               TargetType="TextBlock">
+               TargetType="TextBlock"
+               BasedOn="{StaticResource CommonContentTitleStyle}">
 
             <Setter Property="FontSize"
                     Value="22"/>
 
             <Setter Property="FontWeight"
-                    Value="Bold"/>
+                    Value="SemiBold"/>
 
             <Setter Property="Foreground"
                     Value="#111827"/>
@@ -42,7 +47,8 @@
         설명 문구의 디자인을 설정한다.
         -->
         <Style x:Key="ImageDescriptionTextStyle"
-               TargetType="TextBlock">
+               TargetType="TextBlock"
+               BasedOn="{StaticResource CommonDescriptionTextStyle}">
 
             <Setter Property="FontSize"
                     Value="14"/>
@@ -58,6 +64,7 @@
 
         </Style>
 
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <!--
@@ -146,8 +153,8 @@
             <Border x:Name="ImageContainer"
                     Grid.Row="0"
                     Grid.Column="0"
-                    Background="#F9FAFB"
-                    BorderBrush="#D1D5DB"
+                    Background="#FAFAFB"
+                    BorderBrush="#EEF0F3"
                     BorderThickness="1"
                     CornerRadius="10"
                     Padding="0">
@@ -184,8 +191,8 @@
             <Border x:Name="DescriptionContainer"
                     Grid.Row="1"
                     Grid.Column="0"
-                    Background="#F3F4F6"
-                    BorderBrush="#E5E7EB"
+                    Background="#FAFAFB"
+                    BorderBrush="#EEF0F3"
                     BorderThickness="1"
                     CornerRadius="8"
                     Padding="16"
