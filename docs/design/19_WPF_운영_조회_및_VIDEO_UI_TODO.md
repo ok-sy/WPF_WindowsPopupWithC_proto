@@ -1,7 +1,7 @@
 # 19. WPF 운영 조회 및 VIDEO UI 보완 TODO
 
 - 작성일: 2026-09-30 (KST)
-- 상태: **§1~3 기존 구현·자동 검증 완료 / §6~7 코드 반영(2026-10-02), 복구 자동 검증 완료 / Windows 렌더링·동작 213건 및 HTML5 42건 검증 완료 / 실제 GUI·원격 DB 검증 대기**
+- 상태: **§1~3 기존 구현·자동 검증 완료 / §6~7 코드 반영(2026-10-02), 복구 자동 검증 완료 / §9 Overlay 구현·자동 검증 완료 / Windows 렌더링·동작 213건 및 HTML5 42건 검증 완료 / 실제 GUI·원격 DB 검증 대기**
 - 범위: WPF 주기 조회 정책, VIDEO 로컬/URL 공통 컨트롤 UI, VIDEO+QUIZ 이중 스크롤 제거, 공통 외곽 Clip, polling 장애 복구
 - 착수: 2026-09-30. 아래 체크는 코드 적용·자동 검증과 실제 GUI·DB 검증을 구분한다.
 
@@ -255,7 +255,7 @@ ratechange
 - [ ] VIDEO+QUIZ에서도 동일 컨트롤바 동작 확인
 - [x] 가능하면 `IVideoPlayer` 계층으로 MediaElement/WebView2 재생 엔진 분리 검토(현재는 View의 공통 명령 메서드로 통합, 별도 엔진 계층은 추가하지 않음)
 
-적용: WebView2의 HWND가 WPF 오버레이를 가리는 문제를 피하려고 두 엔진 모두 영상 아래 별도 행에 같은 WPF 컨트롤을 고정 표시한다. 자동 숨김에 따른 영상 높이·스크롤 위치 변화도 없앤다. HTML5 명령은 `PostWebMessageAsJson`으로 전달하고 메타데이터·위치·재생/일시정지·탐색·버퍼링·음량·배속·종료·오류를 WPF에 반영한다. 탐색 중 이동한 구간은 누적 시청시간에 넣지 않는다. URL의 쿼리 문자열은 HTML 속성 인코딩으로 보존한다. YouTube iframe은 기존 별도 플레이어/시청량 측정 미지원 정책을 유지하며 이번 HTML5 공통 컨트롤 적용 대상에 포함하지 않는다.
+초기 적용: WebView2 HWND 때문에 영상 아래 별도 행에 공통 WPF 컨트롤을 고정했다. 이후 §9에서 CompositionControl과 공통 Overlay로 전환했고, 컨트롤 숨김 여부가 영상 높이·스크롤 위치에 영향을 주지 않는다. HTML5 명령은 `PostWebMessageAsJson`으로 전달하고 메타데이터·위치·재생/일시정지·탐색·버퍼링·음량·배속·종료·오류를 WPF에 반영한다. 탐색 중 이동한 구간은 누적 시청시간에 넣지 않는다. URL의 쿼리 문자열은 HTML 속성 인코딩으로 보존한다. YouTube iframe은 기존 별도 플레이어/시청량 측정 미지원 정책을 유지하며 이번 HTML5 공통 컨트롤 적용 대상에 포함하지 않는다.
 
 ### 2.7 완료 기준
 
@@ -722,26 +722,29 @@ buffered 영역
 
 ### 9.7 구현 TODO
 
-- [ ] VIDEO 컨트롤바를 별도 Row에서 영상 하단 Overlay 구조로 변경
-- [ ] 로컬 MediaElement에서 Overlay 컨트롤 정상 표시 확인
-- [ ] WebView2 HWND 위에 WPF Overlay가 실제 표시 가능한지 구조/제약 재검증
-- [ ] WebView2 제약으로 직접 Overlay가 불가능한 경우 HTML 내부 Overlay 또는 대체 구조 결정
-- [ ] 영상 영역 클릭 Play/Pause 구현
-- [ ] 컨트롤 버튼/Slider 클릭 시 영상 클릭 이벤트 전파 방지
-- [ ] Play/Pause 전환 시 화면 중앙 상태 아이콘 표시 후 자동 숨김
-- [ ] 초기 Loading UI를 영상 중앙 Overlay 형태로 정리
-- [ ] waiting/stalled Buffering UI를 영상 중앙 Overlay 형태로 정리
-- [ ] 재생 중 일정 시간 입력이 없으면 컨트롤 자동 숨김
-- [ ] 마우스 이동/클릭 시 컨트롤 즉시 재표시
-- [ ] Pause 상태에서는 컨트롤 표시 유지
-- [ ] Seek/Volume/PlaybackRate 조작 중 자동 숨김 방지
-- [ ] 전체화면에서 동일 Overlay 컨트롤 재사용
-- [ ] Fullscreen 진입/복귀 후 자동 숨김 타이머 및 재생 상태 유지
-- [ ] `showControls=false` 정책과 자동 표시 로직 충돌 여부 확인
-- [ ] `allowFullScreen` / `allowPlaybackRateChange` 기존 정책 유지
-- [ ] URL 영상 buffered 범위 표시 가능 여부 검토
-- [ ] VIDEO+QUIZ 결합 화면에서 Overlay가 스크롤/레이아웃에 미치는 영향 확인
-- [ ] 로컬/URL/전체화면/VIDEO+QUIZ 실제 GUI 수동 검증
+체크 완료는 코드 반영·자동 검증 범위다. 실제 재생 및 렌더링 확인은 §9.9에 기록하며 물리 입력·전체화면 왕복은 별도로 남긴다.
+
+- [x] VIDEO 컨트롤바를 별도 Row에서 영상 하단 Overlay 구조로 변경
+- [x] 로컬 MediaElement에서 Overlay 컨트롤 정상 표시 확인
+- [x] WebView2 HWND 위에 WPF Overlay가 실제 표시 가능한지 구조/제약 재검증
+- [x] WebView2 제약으로 직접 Overlay가 불가능한 경우 HTML 내부 Overlay 또는 대체 구조 결정
+- [x] 영상 영역 클릭 Play/Pause 구현
+- [x] 컨트롤 버튼/Slider 클릭 시 영상 클릭 이벤트 전파 방지
+- [x] Play/Pause 전환 시 화면 중앙 상태 아이콘 표시 후 자동 숨김
+- [x] 초기 Loading UI를 영상 중앙 Overlay 형태로 정리
+- [x] waiting/stalled Buffering UI를 영상 중앙 Overlay 형태로 정리
+- [x] 재생 중 일정 시간 입력이 없으면 컨트롤 자동 숨김
+- [x] 마우스 진입/이동/클릭 시 컨트롤 즉시 재표시
+- [x] 재생 중 마우스 이탈 시 즉시 숨김(정지·조작 중 유지)
+- [x] Pause 상태에서는 컨트롤 표시 유지
+- [x] Seek/Volume/PlaybackRate 조작 중 자동 숨김 방지
+- [x] 전체화면에서 동일 Overlay 컨트롤 재사용
+- [ ] Fullscreen 진입/복귀 후 실제 재생 상태 유지 검증(동일 컨테이너 재사용·타이머 재예약은 코드 반영)
+- [x] `showControls=false` 정책과 자동 표시 로직 충돌 여부 확인
+- [x] `allowFullScreen` / `allowPlaybackRateChange` 기존 정책 유지
+- [x] URL 영상 buffered 범위 표시 가능 여부 검토
+- [x] VIDEO+QUIZ 결합 화면에서 Overlay가 스크롤/레이아웃에 미치는 영향 확인
+- [ ] 로컬/URL/전체화면/VIDEO+QUIZ 물리 입력·전체화면 왕복 수동 검증
 
 ### 9.8 완료 기준
 
@@ -752,3 +755,15 @@ buffered 영역
 - Loading/Buffering/재생/일시정지 상태를 사용자가 시각적으로 구분할 수 있다.
 - 기존 Seek/Volume/Mute/PlaybackRate/Fullscreen/완료율 계산 기능에 회귀가 없다.
 - 로컬 영상과 URL 영상에서 가능한 한 동일한 플레이어 경험을 제공한다.
+
+### 9.9 2026-10-02 Overlay 구현 및 검증
+
+- 로컬/URL 컨트롤·클릭 입력·중앙 재생 피드백·Loading/Buffering Spinner를 동일 VideoSurface의 WPF Overlay로 통합. 별도 컨트롤 행 제거. URL은 HWND 기반 WebView2 대신 현행 SDK 1.0.3124.44의 WebView2CompositionControl 사용([Microsoft WPF WebView2 문서](https://learn.microsoft.com/en-us/microsoft-edge/webview2/platforms/wpf)). HTML 내부 별도 UI는 추가하지 않음. YouTube는 기존 자체 플레이어 정책 유지.
+- 마우스 진입 시 즉시 표시, 재생 중 이탈 시 즉시 숨김. 영상 안에서 3초 무입력 시 컨트롤 숨김, 이동·클릭 시 재표시. Pause·Seek·마우스 조작·키보드 조작 동안 표시 유지. 조작 종료 후 재예약. 입력은 영상 전용 형제 Border에서 처리해 컨트롤 버튼/Slider 입력이 재생 토글로 전달되지 않음. 중앙 Play/Pause 피드백은 700ms 후 제거. 종료 시 두 타이머 정리.
+- HTML5 progress 메시지에 buffered 구간 배열 추가. 끊어진 다운로드 구간도 진행바의 해당 시간 위치에 회색으로 표시. 범위 표시로 시청시간을 변경하지 않음. MediaElement는 초기 로딩 및 BufferingProgress가 제공하는 0~1 사이 대기 상태를 공통 Spinner로 표현.
+- 전체화면은 기존 VideoContainer를 이동해 동일 Overlay를 재사용하고 진입·복귀 시 숨김 타이머 재예약. showControls=false·전체화면/배속 금지 정책 유지. 결합 VIDEO+QUIZ의 단일 ScrollViewer·문항 잠금·높이 유지 레이아웃 검증 통과.
+- CompositionControl 실제 Loaded에는 Microsoft.Windows.SDK.NET·WinRT.Runtime이 필요하다. Popup 및 동작 검증 프로젝트 TargetFramework를 net10.0-windows10.0.17763.0으로 명시해 Windows SDK 런타임을 포함. WebView2 버전 유지. 폐쇄망에는 Windows SDK NuGet 의존성 재수집이 필요하며 이번 작업에서 반입 묶음·dist는 재생성하지 않음.
+- Windows SDK 10.0.401 환경에서 WPF 동작 **245건**, 생성 HTML5 브리지 **64건** 통과. WPF Overlay 계층, 클릭 전파 분리, Pause/조작 중 숨김 방지, showControls=false, buffered 구간 좌표, 종료 타이머 정리 포함. 기존 결합 스크롤·완료율·시청시간·제출 경로 검증 유지.
+- 임시 실제 MediaElement/WebView2 Runtime 154.0.4258.48 + 로컬 HTTP 테스트 **37건 통과**: 자동 재생·로딩·HTTP 오류·브리지 Buffering·WPF 영상 클릭·3초 숨김·피드백 자동 제거·Pause 컨트롤 유지·영역 안 Overlay 배치. 로컬/URL 렌더링 PNG를 생성·시각 확인해 실제 영상 위 WPF 컨트롤 표시 확인. 클릭·버퍼링 입력은 이벤트 주입이며 물리 입력·실제 네트워크 단절 테스트는 아님.
+- 전체화면 왕복·물리 마우스/키보드·실제 모니터 DPI·폐쇄망 Runtime 134·YouTube·사용 서버 URL 검증은 미실행. 해당 항목을 완료로 처리하지 않음. 미커밋·미푸시.
+- hover 후속: 진입 즉시 표시·재생 중 이탈 즉시 숨김 및 정지/드래그 유지 검증 추가 후 Windows WPF 동작 253건 통과. 실제 물리 마우스 검증은 미실행.

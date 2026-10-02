@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-02-04 — VIDEO 공통 Overlay 및 자동 숨김 구현
+
+- 이유: 설계 19 §9의 영상 위 컨트롤·중앙 재생 상태·로딩 피드백 요구사항 반영.
+- 변경: 컨트롤 전용 행 제거, 로컬/URL 공통 WPF Overlay·영상 클릭 입력·700ms Play/Pause 피드백·중앙 Spinner 적용. 재생 중 3초 자동 숨김과 입력 시 재표시, Pause·Seek·마우스/키보드 조작 중 표시 유지, 종료 시 타이머 정리. HTML5 buffered 구간을 진행바에 표시하고 시청시간 계산과 분리. 전체화면은 동일 VideoContainer·Overlay를 이동해 재사용. YouTube 자체 플레이어 및 기존 옵션 정책 유지.
+- 변경(의존성): 현행 WebView2 SDK의 CompositionControl로 HWND 겹침을 해소. 실제 초기화에 필요한 Windows SDK 런타임을 포함하도록 Popup·동작 검증 프로젝트를 net10.0-windows10.0.17763.0으로 변경. WebView2 패키지 버전 유지, 폐쇄망 의존성 재수집 필요 사항을 README에 기록.
+- 주요 파일: `VideoPopupView.xaml/.cs`, `Popup.csproj`, `Popup.BehaviorTests/Popup.BehaviorTests.csproj`, `Program.cs`, `video-controls.test.cjs`, 설계 19, WPF README.
+- 검증: Windows WPF 동작 245건·HTML5 64건 통과. 실제 MediaElement/WebView2 Runtime 154.0.4258.48·로컬 HTTP 자동 검증 37건 통과(자동 재생·지연 로딩·오류·이벤트 주입 Buffering·영상 클릭·3초 숨김·중앙 피드백 제거·Pause 표시 유지·Overlay 배치). 로컬/URL PNG를 렌더링·시각 확인해 영상 위 WPF 컨트롤 표시 확인. 기존 VIDEO+QUIZ 단일 스크롤·높이·잠금·시청시간 검증 유지. `git diff --check` 통과.
+- 후속(hover 반응): 영상 MouseEnter 즉시 표시·MouseLeave 즉시 숨김 적용. 영상 내부 3초 무입력 정책 유지, Pause·Seek·마우스/키보드 조작 중 이탈은 표시 유지. 영상 밖에서 조작·키보드 포커스가 끝나면 즉시 숨김. 진입/이탈·Pause·드래그 유지 회귀 검증을 추가해 WPF 동작 253건 통과. 실제 물리 hover 입력 검증은 미실행.
+- 상태: VIDEO Overlay·hover 후속 수정과 검증 기록을 main 커밋·origin/main 푸시 대상으로 정리. 실제 전체화면 왕복·물리 입력·모니터 DPI·Runtime 134·YouTube·사용 서버 URL 미실행. Windows SDK 패키지 반입·dist·반입 묶음·배포 갱신 없음. 기존 SDK/NuGet·미디어·데모 데이터 별도 변경 유지.
 ## 2026-10-02-03 — URL 영상 자동 재생 및 로딩 안내 보완
 
 - 이유: URL 영상에서 클릭 전 자동 재생이 원활하지 않은 현상과 영상 준비 중 안내가 조기에 사라지는 흐름을 보완.

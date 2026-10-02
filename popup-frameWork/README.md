@@ -994,3 +994,9 @@ Popup/Media/demo-video.mp4
 실행 시 `%LOCALAPPDATA%/Popup/DemoMedia/<콘텐츠 해시>/`에 내장 미디어를 추출한다.
 캐시 파일의 해시가 일치하면 재사용하며, EXE 옆 `Media/demo-image.jpg` 또는
 `Media/demo-video.mp4`가 있으면 해당 외부 파일을 우선 사용한다.
+
+### VIDEO Overlay 컨트롤
+
+로컬 MediaElement와 직접 HTTP/HTTPS 영상은 영상 하단의 반투명 WPF Overlay 컨트롤을 사용한다. 마우스가 영상에 들어오면 즉시 표시하고 재생 중 영상 밖으로 나가면 즉시 숨긴다. 영상 안에서 입력이 없으면 기존처럼 3초 후 숨기고 이동/클릭 시 다시 표시한다. 일시정지 및 Seek/음량/키보드 조작 중에는 표시를 유지한다. 영상 클릭은 재생/일시정지를 전환하고 중앙 아이콘을 700ms 표시한다. showControls=false이면 컨트롤은 숨기지만 영상 클릭은 사용할 수 있다. 로딩·버퍼링은 중앙 Spinner, 오류는 별도 안내로 표현한다. URL 진행바의 회색 구간은 다운로드 확보 범위이며 시청 완료율과 구분된다. YouTube는 기존 자체 플레이어를 사용한다.
+
+URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 prepare-offline-packages.ps1로 재수집해야 한다. 이번 변경에서 반입 묶음은 재생성하지 않았다.

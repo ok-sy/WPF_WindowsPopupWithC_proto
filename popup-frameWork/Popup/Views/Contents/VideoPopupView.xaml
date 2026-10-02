@@ -408,14 +408,10 @@
             ClipToBounds="True"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            MouseLeftButtonUp="VideoContainer_MouseLeftButtonUp">
-            <Grid>
-                <!-- WebView2 HWND와 겹치지 않도록 메시지와 공통 컨트롤을 별도 행에 둔다. -->
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            MouseEnter="VideoContainer_MouseEnter"
+            MouseLeave="VideoContainer_MouseLeave"
+            PreviewMouseMove="VideoContainer_PreviewMouseMove">
+            <Grid x:Name="VideoSurface" ClipToBounds="True">
 
                 <!-- 로컬 파일 또는 직접 영상 URL -->
                 <MediaElement
@@ -430,21 +426,40 @@
                 MediaFailed="PopupVideo_MediaFailed"/>
 
                 <!-- 웹 영상 -->
-                <wv2:WebView2
+                <wv2:WebView2CompositionControl
                 x:Name="VideoWebView"
                 Visibility="Collapsed"
                 NavigationCompleted="VideoWebView_NavigationCompleted"/>
 
+                <!-- 클릭 입력은 두 엔진 위의 공통 레이어에서 처리한다. -->
+                <Border x:Name="VideoInteractionLayer" Background="Transparent"
+                        MouseLeftButtonUp="VideoContainer_MouseLeftButtonUp"/>
+                <Border x:Name="PlaybackFeedback" Background="#AA111111" CornerRadius="36"
+                        Width="72" Height="72" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsHitTestVisible="False" Visibility="Collapsed">
+                    <TextBlock x:Name="PlaybackFeedbackIcon" Foreground="White" FontSize="32"
+                               FontFamily="Segoe Fluent Icons" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
                 <!-- 로딩 및 오류 메시지 -->
                 <Border
                 x:Name="VideoMessageArea"
-                Grid.Row="1"
                 Panel.ZIndex="20"
-                Background="#99000000">
+                HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="12"
+                IsHitTestVisible="False" Background="#BB000000">
 
                     <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <ProgressBar x:Name="VideoLoadingProgress" IsIndeterminate="True"
-                                 Width="140" Height="4" Margin="0,0,0,10"/>
+                    <Grid x:Name="VideoLoadingProgress" Width="36" Height="36" Margin="0,0,0,10">
+                        <Ellipse Stroke="#55FFFFFF" StrokeThickness="3"/>
+                        <Path Stroke="White" StrokeThickness="3" Data="M18,1 A17,17 0 0 1 35,18"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform><RotateTransform/></Path.RenderTransform>
+                            <Path.Triggers><EventTrigger RoutedEvent="Loaded"><BeginStoryboard><Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                 From="0" To="360" Duration="0:0:1" RepeatBehavior="Forever"/>
+                            </Storyboard></BeginStoryboard></EventTrigger></Path.Triggers>
+                        </Path>
+                    </Grid>
                     <TextBlock
                         x:Name="VideoMessageText"
                         HorizontalAlignment="Center"
@@ -461,7 +476,6 @@
                 <!-- 로컬/URL 공통 하단 컨트롤바 -->
                 <Border
                     x:Name="LocalVideoControlArea"
-                    Grid.Row="2"
                     Panel.ZIndex="10"
                     Height="60"
                     Margin="12"
@@ -470,6 +484,10 @@
                     VerticalAlignment="Bottom"
                     Background="#D9111111"
                     CornerRadius="10"
+                    PreviewMouseDown="VideoControls_PreviewMouseDown"
+                    PreviewMouseUp="VideoControls_PreviewMouseUp"
+                    GotKeyboardFocus="VideoControls_GotKeyboardFocus"
+                    LostKeyboardFocus="VideoControls_LostKeyboardFocus"
                     Visibility="Collapsed">
                     
 
@@ -545,10 +563,11 @@
                         왼쪽의 재생 완료 구간은
                         VideoProgressSliderStyle의 그라데이션으로 표시한다.
                         -->
+                        <Grid Grid.Column="2" Margin="6,0,10,0" VerticalAlignment="Center">
+                        <Canvas x:Name="BufferedTrack" Height="4" VerticalAlignment="Center" IsHitTestVisible="False"
+                                SizeChanged="BufferedTrack_SizeChanged"/>
                         <Slider
                         x:Name="ProgressSlider"
-                        Grid.Column="2"
-                        Margin="6,0,10,0"
                         VerticalAlignment="Center"
                         Minimum="0"
                         Maximum="1"
@@ -561,6 +580,7 @@
                         PreviewMouseLeftButtonUp=
                             "ProgressSlider_PreviewMouseLeftButtonUp"
                         LostMouseCapture="ProgressSlider_LostMouseCapture"/>
+                        </Grid>
 
                         <!-- 전체 시간 -->
                         <TextBlock
@@ -617,8 +637,7 @@
                         배속 변경 버튼 (관리자 웹 "배속 변경 허용" 옵션)
 
                         클릭할 때마다 0.5 → 0.75 → 1.0 → 1.25 → 1.5 → 2.0 → 0.5 순으로 순환하며
-                        MediaElement.SpeedRatio 에 적용한다. 로컬 파일 재생(MediaElement)에서만 동작하고,
-                        웹 영상(WebView2)은 브라우저 자체 컨트롤의 배속 메뉴를 쓴다.
+                        MediaElement.SpeedRatio 또는 HTML5 playbackRate에 동일하게 적용한다.
                         -->
                         <Button
                             x:Name="PlaybackRateButton"
