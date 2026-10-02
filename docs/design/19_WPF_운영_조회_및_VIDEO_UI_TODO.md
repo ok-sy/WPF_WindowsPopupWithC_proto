@@ -619,3 +619,136 @@ HTTP 504
 - 검증: Windows WPF 동작 223건 및 HTML5 브리지 60건 통과. 임시 WPF/HTTP 통합 테스트에서 실제 WebView2 Runtime 154.0.4258.48로 20건 통과: 1.2초 HTTP 지연 중 로딩, 소리 유지·클릭 없는 자동 재생, 자동 재생 끔, WPF 재생 명령, 수동 pause 유지, 브라우저 이벤트를 주입한 버퍼링/음량/재개 표시, 실제 HTTP 404 오류·로딩 종료. 실제 네트워크 대역폭 저하 버퍼링·사용 서버 URL·Runtime 134·YouTube 검증은 미실행.
 - 제약: 브라우저 플래그는 Microsoft가 개발용으로 안내하는 방식이므로 현재 프로토타입에 적용했다. 정식 배포 전 대상 Runtime에서 정책·지원 여부를 재검토한다([Microsoft WebView2 browser flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)).
 - 상태: URL 영상 자동 재생·로딩 안내 및 검증 기록을 main 커밋·origin/main 푸시 대상으로 정리. 실행 중인 기존 앱 교체, dist·반입 패키지·배포 갱신 없음.
+
+---
+
+## 9. VIDEO 플레이어 Overlay UI/UX 개선 TODO
+
+### 9.1 목적
+
+현재 영상과 공통 컨트롤바가 별도 행으로 분리되어 있어 기능적으로는 안정적이지만,
+일반적인 동영상 플레이어와 비교하면 영상 영역과 조작 영역이 분리되어 보인다.
+
+VIDEO 플레이어를 **영상 위에 컨트롤이 겹치는 Overlay 구조**로 변경하고,
+재생 중에는 일정 시간 사용자 입력이 없으면 컨트롤을 숨겨 영상 자체에 집중할 수 있도록 한다.
+
+### 9.2 목표 구조
+
+```text
+VideoContainer
+├─ MediaElement / WebView2 video
+├─ Interaction Layer
+│  └─ 영상 영역 클릭 → Play / Pause
+├─ Playback State Overlay
+│  └─ 중앙 Play / Pause 피드백
+├─ Loading Overlay
+│  └─ Loading / Buffering 표시
+└─ Control Overlay (Bottom)
+   ├─ Progress / Seek
+   ├─ CurrentTime / Duration
+   ├─ Play / Pause
+   ├─ Volume / Mute
+   ├─ PlaybackRate
+   └─ Fullscreen
+```
+
+기존처럼 컨트롤바 전용 높이를 별도로 차지하지 않고
+영상 영역 하단에 반투명 컨트롤바를 Overlay한다.
+
+### 9.3 컨트롤 자동 표시/숨김
+
+기본 동작은 다음과 같이 한다.
+
+```text
+재생 중
+→ 마우스 이동/클릭
+→ 컨트롤 표시
+→ 일정 시간 입력 없음(초기안 3초)
+→ 컨트롤 숨김
+
+일시정지
+→ 컨트롤 계속 표시
+
+Seek/Volume/PlaybackRate 등 조작 중
+→ 컨트롤 표시 유지
+→ 조작 종료 후 자동 숨김 타이머 재시작
+```
+
+전체화면에서도 별도 컨트롤 UI를 만들지 않고 동일한 Overlay 컨트롤을 사용한다.
+
+### 9.4 영상 화면 클릭 Play/Pause
+
+영상 표시 영역 자체를 클릭하여 재생/일시정지를 전환할 수 있게 한다.
+
+```text
+재생 중 영상 클릭
+→ Pause
+→ 화면 중앙에 Pause 상태 피드백
+→ 짧은 시간 후 자동 숨김
+
+일시정지 중 영상 클릭
+→ Play
+→ 화면 중앙에 Play 상태 피드백
+→ 짧은 시간 후 자동 숨김
+```
+
+하단 컨트롤의 버튼/Slider 조작은 영상 클릭 이벤트로 전달되지 않도록 처리한다.
+
+### 9.5 Loading / Buffering UI
+
+초기 영상 로딩뿐 아니라 재생 중 데이터 대기로 멈춘 상태도 사용자가 구분할 수 있도록 한다.
+
+- 초기 Loading 표시
+- HTML5 `waiting` / `stalled` 시 Buffering 표시
+- 재생 가능/재개 시 자동 제거
+- 로컬 MediaElement에서도 가능한 범위에서 동일한 상태 표현 검토
+- 오류 메시지와 Buffering 상태는 명확히 구분
+- 기존 진행률/시청시간 계산에는 영향을 주지 않음
+
+현재 막대형 ProgressBar만 사용하는 방식보다 영상 중앙 Spinner 등 플레이어에 자연스러운 표현을 검토한다.
+
+### 9.6 진행바 보완 검토
+
+현재 재생 위치뿐 아니라 URL 영상에서 브라우저가 확보한 buffered 범위를 표시할 수 있는지 검토한다.
+
+```text
+재생 완료 영역
+현재 위치
+buffered 영역
+아직 로드되지 않은 영역
+```
+
+특히 URL 영상 Seek 시 서버 Range Request/다운로드 상태를 사용자가 구분하는 데 도움이 되는지 확인한다.
+
+### 9.7 구현 TODO
+
+- [ ] VIDEO 컨트롤바를 별도 Row에서 영상 하단 Overlay 구조로 변경
+- [ ] 로컬 MediaElement에서 Overlay 컨트롤 정상 표시 확인
+- [ ] WebView2 HWND 위에 WPF Overlay가 실제 표시 가능한지 구조/제약 재검증
+- [ ] WebView2 제약으로 직접 Overlay가 불가능한 경우 HTML 내부 Overlay 또는 대체 구조 결정
+- [ ] 영상 영역 클릭 Play/Pause 구현
+- [ ] 컨트롤 버튼/Slider 클릭 시 영상 클릭 이벤트 전파 방지
+- [ ] Play/Pause 전환 시 화면 중앙 상태 아이콘 표시 후 자동 숨김
+- [ ] 초기 Loading UI를 영상 중앙 Overlay 형태로 정리
+- [ ] waiting/stalled Buffering UI를 영상 중앙 Overlay 형태로 정리
+- [ ] 재생 중 일정 시간 입력이 없으면 컨트롤 자동 숨김
+- [ ] 마우스 이동/클릭 시 컨트롤 즉시 재표시
+- [ ] Pause 상태에서는 컨트롤 표시 유지
+- [ ] Seek/Volume/PlaybackRate 조작 중 자동 숨김 방지
+- [ ] 전체화면에서 동일 Overlay 컨트롤 재사용
+- [ ] Fullscreen 진입/복귀 후 자동 숨김 타이머 및 재생 상태 유지
+- [ ] `showControls=false` 정책과 자동 표시 로직 충돌 여부 확인
+- [ ] `allowFullScreen` / `allowPlaybackRateChange` 기존 정책 유지
+- [ ] URL 영상 buffered 범위 표시 가능 여부 검토
+- [ ] VIDEO+QUIZ 결합 화면에서 Overlay가 스크롤/레이아웃에 미치는 영향 확인
+- [ ] 로컬/URL/전체화면/VIDEO+QUIZ 실제 GUI 수동 검증
+
+### 9.8 완료 기준
+
+- 컨트롤바가 영상 영역의 높이를 별도로 차지하지 않고 하단 Overlay로 표시된다.
+- 재생 중 일정 시간 입력이 없으면 컨트롤이 숨겨지고 사용자 입력 시 다시 나타난다.
+- 일시정지 상태에서는 컨트롤을 바로 사용할 수 있다.
+- 영상 영역 클릭만으로 Play/Pause가 가능하며 중앙 상태 피드백이 표시된다.
+- Loading/Buffering/재생/일시정지 상태를 사용자가 시각적으로 구분할 수 있다.
+- 기존 Seek/Volume/Mute/PlaybackRate/Fullscreen/완료율 계산 기능에 회귀가 없다.
+- 로컬 영상과 URL 영상에서 가능한 한 동일한 플레이어 경험을 제공한다.
