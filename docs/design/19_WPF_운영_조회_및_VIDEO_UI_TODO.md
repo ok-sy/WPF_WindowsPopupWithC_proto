@@ -611,3 +611,11 @@ HTTP 504
 - 검증 중 데모 미디어가 삭제된 상태여서 HEAD의 이미지·영상을 임시 테스트 출력에만 복사했다. 저장소 미디어 삭제 상태는 유지. 검증 프로젝트는 처음 조사 시 삭제 상태였으므로 HEAD를 임시 경로에 복사해 실행했으며, 이후 작업 폴더에 다시 존재하는 테스트의 반경 기대값도 정정했다.
 - RenderTargetBitmap의 DPI 검증은 실제 모니터 배율 및 WebView2 HWND 경계 검증을 대신하지 않는다. VIDEO+QUIZ 실재생·휠/드래그/키보드·전체화면 왕복·네트워크 재연결·서버 재기동은 미실행.
 - POPUP_TEST_DB_PASSWORD 환경변수가 없어 원격 개발 DB HTTP 완료/숨김 재조회는 미실행. 커밋·푸시·배포·반입 패키지 재생성 없음.
+## 8. 2026-10-02 URL 영상 자동 재생 및 로딩 안내 보완
+
+- 원인 후보: 기존 HTML5는 autoplay 속성에만 의존해 소리 있는 자동 재생 정책에 대응하지 못했고, NavigationCompleted 성공 시 영상 준비 전에도 로딩 안내를 숨겼다. 실제 사용 서버 URL 증상은 별도 재현하지 않았다.
+- 변경: 영상 전용 WebView2 프로필(`LocalApplicationData/Popup/VideoWebView2`)에 `--autoplay-policy=no-user-gesture-required` 적용. HTML5 preload 및 canplay 시 1회 명시적 재생 요청 추가. autoPlay=false·수동 일시정지 후 canplay 재발생 시 자동 재생하지 않음.
+- 표시: 초기 로딩은 페이지 탐색 완료·메타데이터·음량 변경으로 숨기지 않고 canplay/playing 시 해제. waiting/stalled는 버퍼링 안내 및 불확정 ProgressBar 표시. 재생 정책 거절은 재생 버튼/영상 클릭 안내, 디코딩·HTTP 오류는 오류 안내로 구분. AbortError는 수동 pause에 따른 취소로 처리. 정책 거절은 시청 완료·재생 실패 상태로 간주하지 않는다.
+- 검증: Windows WPF 동작 223건 및 HTML5 브리지 60건 통과. 임시 WPF/HTTP 통합 테스트에서 실제 WebView2 Runtime 154.0.4258.48로 20건 통과: 1.2초 HTTP 지연 중 로딩, 소리 유지·클릭 없는 자동 재생, 자동 재생 끔, WPF 재생 명령, 수동 pause 유지, 브라우저 이벤트를 주입한 버퍼링/음량/재개 표시, 실제 HTTP 404 오류·로딩 종료. 실제 네트워크 대역폭 저하 버퍼링·사용 서버 URL·Runtime 134·YouTube 검증은 미실행.
+- 제약: 브라우저 플래그는 Microsoft가 개발용으로 안내하는 방식이므로 현재 프로토타입에 적용했다. 정식 배포 전 대상 Runtime에서 정책·지원 여부를 재검토한다([Microsoft WebView2 browser flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)).
+- 상태: URL 영상 자동 재생·로딩 안내 및 검증 기록을 main 커밋·origin/main 푸시 대상으로 정리. 실행 중인 기존 앱 교체, dist·반입 패키지·배포 갱신 없음.

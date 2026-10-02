@@ -350,6 +350,19 @@ internal static class Program
                 method.Invoke(player, new object[] { state });
             }
             State("opened", 0, true);
+            Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Visible,
+                "Metadata alone does not hide initial video loading");
+            State("volumechange", 0, true);
+            Check(((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Visible,
+                "Control changes preserve initial loading indicator");
+            State("ready", 0, true);
+            Check(((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Collapsed,
+                "Playable video clears loading with autoplay disabled");
+            State("playblocked", 0, true);
+            State("volumechange", 0, true);
+            Check(!player.HasPlaybackFailed && ((Border)player.FindName("VideoMessageArea")).Visibility == Visibility.Visible
+                && ((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
+                "Blocked playback preserves actionable guidance without granting failure escape");
             Check(((Border)player.FindName("LocalVideoControlArea")).Visibility == Visibility.Visible, "URL metadata enables shared WPF controls");
             State("play", 0);
             State("progress", .5);
@@ -373,7 +386,11 @@ internal static class Program
             Check(player.GetFinalProgress()!.WatchedSeconds == 2m, "Replay retains cumulative watched time");
             State("error", .5, true);
             Check(player.HasPlaybackFailed, "Web error enables existing failure escape policy");
+            Check(((ProgressBar)player.FindName("VideoLoadingProgress")).Visibility == Visibility.Collapsed,
+                "Playback errors stop loading indicator");
         }
+        var autoplayPlayer = new VideoPopupView("Web", "https://example.com/video.mp4", "", autoPlay: true, defaultVolume: .35);
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "video-autoplay.html"), (string)htmlMethod.Invoke(autoplayPlayer, null)!);
         var hidden = new VideoPopupView("Web", "https://example.com/video.mp4", "", showControls: false);
         method.Invoke(hidden, new object[] { JsonSerializer.SerializeToElement(new { type = "opened", duration = 100, position = 0, paused = true, seeking = false, volume = .7, rate = 1 }) });
         Check(((Border)hidden.FindName("LocalVideoControlArea")).Visibility == Visibility.Collapsed, "Hidden controls remain hidden for URL playback");

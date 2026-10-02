@@ -442,9 +442,11 @@
                 Panel.ZIndex="20"
                 Background="#99000000">
 
+                    <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <ProgressBar x:Name="VideoLoadingProgress" IsIndeterminate="True"
+                                 Width="140" Height="4" Margin="0,0,0,10"/>
                     <TextBlock
                         x:Name="VideoMessageText"
-                        Margin="30"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="16"
@@ -453,6 +455,7 @@
                         Text="영상을 불러오는 중입니다."
                         TextAlignment="Center"
                         TextWrapping="Wrap"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- 로컬/URL 공통 하단 컨트롤바 -->
