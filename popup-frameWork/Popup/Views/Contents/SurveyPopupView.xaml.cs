@@ -169,13 +169,14 @@ namespace Popup.Views.Contents
         {
             Border cardBorder = new Border
             {
-                Margin = new Thickness(0, 0, 0, 16),
-                Padding = new Thickness(18),
-                Background = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 12),
+                Padding = new Thickness(20),
+                Background = new SolidColorBrush(
+                    Color.FromRgb(250, 250, 251)),
                 BorderBrush = new SolidColorBrush(
-                    Color.FromRgb(229, 231, 235)),
+                    Color.FromRgb(238, 240, 243)),
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8)
+                CornerRadius = new CornerRadius(10)
             };
 
             StackPanel cardPanel = new StackPanel();
@@ -186,6 +187,7 @@ namespace Popup.Views.Contents
                 FontWeight = FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(
                     Color.FromRgb(17, 24, 39)),
+                LineHeight = 24,
                 TextWrapping = TextWrapping.Wrap
             };
 
@@ -262,7 +264,7 @@ namespace Popup.Views.Contents
         private Panel CreateOptionPanel(SurveyQuestion question)
         {
             Panel panel = question.HorizontalOptions ? new WrapPanel() : new StackPanel();
-            panel.Margin = new Thickness(0, 14, 0, 0);
+            panel.Margin = new Thickness(0, 12, 0, 0);
             panel.SizeChanged += (_, _) =>
             {
                 foreach (FrameworkElement child in panel.Children)
@@ -293,7 +295,7 @@ namespace Popup.Views.Contents
             {
                 RadioButton radioButton = new RadioButton
                 {
-                    Margin = new Thickness(0, 0, 16, 10),
+                    Margin = new Thickness(0, 0, 8, 6),
                     Content = CreateOptionText(option.Text),
                     Tag = option,
                     GroupName = $"Question_{question.QuestionId}"
@@ -336,9 +338,12 @@ namespace Popup.Views.Contents
         {
             TextBox textBox = new TextBox
             {
-                Margin = new Thickness(0, 14, 0, 0),
-                MinHeight = 90,
-                Padding = new Thickness(10),
+                Margin = new Thickness(0, 12, 0, 0),
+                MinHeight = 96,
+                Padding = new Thickness(12),
+                Background = new SolidColorBrush(Color.FromRgb(255, 255, 255)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
+                BorderThickness = new Thickness(1),
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility =
