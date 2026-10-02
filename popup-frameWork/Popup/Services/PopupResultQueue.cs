@@ -49,6 +49,10 @@ namespace Popup.Services
         private readonly IPopupGateway _apiService;
         private readonly string _queueFilePath;
         private readonly SemaphoreSlim _gate = new(1, 1);
+        private volatile bool _transmissionStopped;
+
+        // HTTP만 중단한다. 아직 열린 팝업의 결과를 파일에 저장하는 Enqueue는 유지한다.
+        public void StopTransmission() => _transmissionStopped = true;
 
         public PopupResultQueue(IPopupGateway apiService, string? queueFilePath = null)
         {
@@ -132,6 +136,7 @@ namespace Popup.Services
             await _gate.WaitAsync();
             try
             {
+                if (_transmissionStopped) return;
                 List<WpfResultItemDto> pending = LoadPending();
                 if (pending.Count == 0)
                 {
@@ -140,6 +145,7 @@ namespace Popup.Services
 
                 foreach (WpfResultItemDto[] batch in pending.Chunk(MaxBatchSize))
                 {
+                    if (_transmissionStopped) return;
                     WpfResultResponseDto response;
                     try
                     {
@@ -150,6 +156,7 @@ namespace Popup.Services
                     }
                     catch (WpfClientVersionException)
                     {
+                        StopTransmission();
                         // [설계 13 §11] 버전 차단 — 항목을 지우지 않고 전송을 멈춘다. 업데이트 후 재전송.
                         throw;
                     }

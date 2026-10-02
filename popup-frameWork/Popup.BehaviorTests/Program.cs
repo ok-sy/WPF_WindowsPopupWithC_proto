@@ -40,6 +40,7 @@ internal static class Program
     {
         CheckOriginalImages();
         CheckPollingSchedule();
+        CheckPopupClipping();
         CheckCombinedScrolling();
         CheckWebVideoControls();
         CheckDemoScoreLogging();
@@ -236,6 +237,58 @@ internal static class Program
             responseJson.Dispose();
         }
         demo.Close();
+    }
+
+    // Windows에서 실행: 실제 외곽 Grid를 렌더링해 경계를 넘는 콘텐츠의 픽셀이 잘리는지 검사한다.
+    private static void CheckPopupClipping()
+    {
+        foreach (PopupSizeMode mode in Enum.GetValues<PopupSizeMode>())
+        {
+            var overflow = new Canvas();
+            var paint = new Border { Width = 2000, Height = 2000, Background = Brushes.Red };
+            Canvas.SetLeft(paint, -50);
+            Canvas.SetTop(paint, -50);
+            overflow.Children.Add(paint);
+            var window = new PopupWindow(new PopupOptions
+            {
+                Content = overflow, SizeMode = mode, Width = 760, Height = 620,
+                ShowHeader = false, ShowFooter = false, UseBackgroundOverlay = false
+            });
+            var border = (Border)window.FindName("PopupBodyBorder");
+            var body = (Grid)window.FindName("PopupBodyContent");
+            foreach (Size size in new[] { new Size(240, 160), new Size(480, 320) })
+            {
+                border.Measure(size);
+                border.Arrange(new Rect(size));
+                border.UpdateLayout();
+                var clip = (RectangleGeometry)body.Clip;
+                Check(clip.Rect.Size == body.RenderSize, $"{mode}: clip follows resized body");
+                Check(clip.IsFrozen && clip.FillContains(new Point(50, 50)), "Clip preserves central content");
+                Check(clip.RadiusX == (mode == PopupSizeMode.Fullscreen ? 0 : 11.5), "Clip matches WPF inner border radius");
+                Check(!clip.FillContains(new Point(-1, 50)), "Overflow beyond popup body is excluded");
+                foreach (double scale in new[] { 1d, 1.25, 1.5, 2d })
+                {
+                    int width = (int)Math.Ceiling(body.ActualWidth * scale);
+                    int height = (int)Math.Ceiling(body.ActualHeight * scale);
+                    var bitmap = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+                    bitmap.Render(body);
+                    byte[] corner = new byte[4];
+                    bitmap.CopyPixels(new Int32Rect(0, 0, 1, 1), corner, 4, 0);
+                    Check(mode == PopupSizeMode.Fullscreen || corner[3] == 0, "Rounded corner excludes painted overflow at requested rendering DPI");
+                }
+            }
+            window.Close();
+        }
+        foreach (string type in new[] { "TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ", "VIDEO_QUIZ" })
+        {
+            var window = new PopupWindow(PopupFactory.Create(DemoPopupDataService.CreatePopups(type).First()));
+            var border = (Border)window.FindName("PopupBodyBorder");
+            border.Measure(new Size(760, 620));
+            border.Arrange(new Rect(0, 0, 760, 620));
+            border.UpdateLayout();
+            Check(((Grid)window.FindName("PopupBodyContent")).Clip != null, $"{type} uses common clipping");
+            window.Close();
+        }
     }
 
     private static void CheckPollingSchedule()

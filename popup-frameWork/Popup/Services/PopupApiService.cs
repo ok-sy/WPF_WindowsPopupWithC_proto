@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Popup.Services
@@ -53,6 +54,12 @@ namespace Popup.Services
          * 따라서 프로그램 전체에서 같은 객체를
          * 재사용할 수 있도록 static으로 선언한다.
          */
+        private readonly CancellationTokenSource _requestLifetime = new();
+        private readonly HttpClient _httpClient;
+
+        // 426/종료 이후 새 요청과 진행 중 HTTP·재인증을 함께 취소한다.
+        public void StopRequests() => _requestLifetime.Cancel();
+
         private static readonly HttpClient HttpClient =
             new HttpClient
             {
@@ -96,8 +103,10 @@ namespace Popup.Services
         public PopupApiService(
             string baseUrl,
             IAuthHeaderProvider? authHeaderProvider = null,
-            string? devUserId = null)
+            string? devUserId = null,
+            HttpClient? httpClient = null)
         {
+            _httpClient = httpClient ?? HttpClient;
             _authHeaderProvider = authHeaderProvider ?? new NoAuthHeaderProvider();
             _devUserId = string.IsNullOrWhiteSpace(devUserId) ? null : devUserId.Trim();
             /*
@@ -234,6 +243,8 @@ namespace Popup.Services
              * 결과 전송에서 body 객체를 그대로 재사용하므로
              * WpfResultItemDto.ResultId도 유지된다.
              */
+            CancellationToken cancellationToken = _requestLifetime.Token;
+            cancellationToken.ThrowIfCancellationRequested();
             using HttpRequestMessage request = new(method, requestUrl);
             if (body != null)
             {
@@ -246,7 +257,7 @@ namespace Popup.Services
              */
             request.Headers.TryAddWithoutValidation(ClientVersion.HeaderName, ClientVersion.Value);
 
-            string? authorization = await _authHeaderProvider.GetAuthorizationHeaderAsync();
+            string? authorization = await _authHeaderProvider.GetAuthorizationHeaderAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(authorization))
             {
                 request.Headers.TryAddWithoutValidation("Authorization", authorization);
@@ -256,7 +267,7 @@ namespace Popup.Services
                 request.Headers.TryAddWithoutValidation("X-Dev-User-Id", _devUserId);
             }
 
-            using HttpResponseMessage response = await HttpClient.SendAsync(request);
+            using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
 
             /*
              * [설계 13 §8] 426은 401 재로그인 경로에 넣지 않는다. 재시도 없이 전용 예외로 올려
@@ -264,32 +275,32 @@ namespace Popup.Services
              */
             if (response.StatusCode == HttpStatusCode.UpgradeRequired)
             {
-                string errorBody = await response.Content.ReadAsStringAsync();
+                string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
                 throw WpfClientVersionException.TryCreate(response, errorBody)!;
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized && !retried)
             {
                 Debug.WriteLine($"[API] 401 {method} {requestUrl} → 인증 갱신 후 1회 재전송");
-                await _authHeaderProvider.OnUnauthorizedAsync(authorization);
+                await _authHeaderProvider.OnUnauthorizedAsync(authorization, cancellationToken);
                 return await SendWithAuthAsync<TResponse>(method, requestUrl, body, retried: true);
             }
 
-            await EnsureWpfSuccessAsync(response);
+            await EnsureWpfSuccessAsync(response, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<TResponse>(_jsonOptions)
+            return await response.Content.ReadFromJsonAsync<TResponse>(_jsonOptions, cancellationToken)
                    ?? throw new InvalidOperationException("WPF 팝업 API 응답 본문이 비어 있습니다.");
         }
 
         /// <summary>WPF API 오류 본문 {code, message, timestamp}를 읽어 HttpRequestException에 담는다.</summary>
-        private static async Task EnsureWpfSuccessAsync(HttpResponseMessage response)
+        private static async Task EnsureWpfSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             if (response.IsSuccessStatusCode)
             {
                 return;
             }
 
-            string errorBody = await response.Content.ReadAsStringAsync();
+            string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
             string detail = errorBody;
             try
             {

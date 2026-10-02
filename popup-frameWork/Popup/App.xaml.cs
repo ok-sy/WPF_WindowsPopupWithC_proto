@@ -373,6 +373,13 @@ namespace Popup
             object? sender,
             EventArgs e)
         {
+            ExitAgent();
+        }
+
+        // 트레이 종료와 426 안내 닫기가 같은 정상 종료 경로를 사용한다.
+        public void ExitAgent()
+        {
+            if (_isExiting) return;
             _isExiting =
                 true;
 

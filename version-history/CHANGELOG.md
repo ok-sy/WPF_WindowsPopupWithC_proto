@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-02-01 — 공통 외곽 Clip 및 polling 장애 복구 구현
+
+- 이유: 설계 19 §6·§7의 FILL 모서리 넘침, 통신 실패 시 장시간 조회 공백, 426 안내 후 에이전트 계속 실행을 현행 조회·인증·결과 큐 정책과 맞춰 보완.
+- 변경: 공통 본문 Grid에 테두리 안쪽 반경(일반 11.5 / 전체화면 0) Clip 적용. 단일 조회 타이머/gate에서 10초×3회×5 Cycle, Cycle 사이 30분 휴식 후 첫 10초, 이후 60분 복구 구현. 400/403·최종 401 제외, 복구 성공 시 최신 서버 주기/기동 기준 복귀. 로그인 통신 오류 전파 및 정기 로그인 실패 후 주기 유지. 목록/결과/로그인 426 시 모든 추가 통신·정기 인증 중단, 안내 닫기 후 트레이와 같은 정상 종료, pending 파일 및 로컬 저장 유지. HTTP·인증 취소 토큰 전달.
+- 주요 파일: `MainWindow.xaml.cs`, `App.xaml.cs`, `PopupPollingRecovery.cs`, `PopupApiService.cs`, `PopupResultQueue.cs`, `SsoAuthHeaderProvider.cs`, `WpfLoginClient.cs`, `PopupWindow.xaml/.cs`, `Popup.RecoveryTests`, `Popup.BehaviorTests/Program.cs`, 설계 19·인터페이스 정의서·README·줄별 설명.
+- 검증: 임시 .NET SDK 10.0.100에서 WPF/동작 테스트 cross-target 빌드 경고 0·오류 0, 실제 복구/HTTP/인증/큐 코드 자동 검증 122건 통과. `global.json`의 10.0.400 및 폐쇄망 NuGet 설정 유지. Windows Clip 테스트는 추가·컴파일했지만 실행 미완료. HTML5 브리지 테스트는 WPF 생성 HTML 부재(ENOENT)로 실행 못 함. 실제 DPI/GUI/WebView2/서버·DB·사내 SSO 검증 미실행.
+- 상태: main 커밋·origin/main 푸시 대상으로 구현/문서 정리. 실제 푸시 결과는 커밋 생성 이후 보고. dist·반입 패키지·Word/PDF 재생성 없음. 자동 업데이트 §17은 착수 보류 유지.
+
 ## 2026-09-30-06 — 제출 버튼 통일 및 제출 안내 UI 정리
 
 - 이유: VIDEO+QUIZ 하단 닫기를 퀴즈 제출로 오인하는 흐름을 해소하고, 단독 설문·퀴즈와 제출 동작·버튼 디자인을 통일.
