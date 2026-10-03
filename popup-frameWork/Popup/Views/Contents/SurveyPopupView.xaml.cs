@@ -2,6 +2,7 @@ using Popup.Models;
 using Popup.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -25,6 +26,12 @@ namespace Popup.Views.Contents
             Grid.SetRow(QuestionListPanel, 1);
             host.RowDefinitions[1].Height = GridLength.Auto;
             host.Children.Add(QuestionListPanel);
+        }
+
+        internal FrameworkElement DetachSubmissionArea()
+        {
+            if (SubmissionArea.Parent is Panel host) host.Children.Remove(SubmissionArea);
+            return SubmissionArea;
         }
 
         // 현재 화면에 표시된 질문 목록
@@ -79,6 +86,10 @@ namespace Popup.Views.Contents
         public event EventHandler<SurveySubmission>?
             SurveySubmitted;
 
+        public event EventHandler? ResponseProgressChanged;
+        public bool CanSubmit { get; private set; }
+        public string ResponseProgressText { get; private set; } = string.Empty;
+
         /// <summary>
         /// Visual Studio 미리보기와 기본 생성을 위한 생성자
         /// </summary>
@@ -91,6 +102,8 @@ namespace Popup.Views.Contents
              * 기본 생성 시에는 일반 설문으로 처리한다.
              */
             _isQuizMode = false;
+            IsEnabledChanged += (_, _) => UpdateResponseProgress();
+            UpdateResponseProgress();
         }
 
         /// <summary>
@@ -131,6 +144,7 @@ namespace Popup.Views.Contents
             }
 
             BuildQuestions();
+            IsEnabledChanged += (_, _) => UpdateResponseProgress();
         }
 
         /// <summary>
@@ -158,6 +172,7 @@ namespace Popup.Views.Contents
 
                 QuestionListPanel.Children.Add(questionCard);
             }
+            UpdateResponseProgress();
         }
 
         /// <summary>
@@ -169,14 +184,7 @@ namespace Popup.Views.Contents
         {
             Border cardBorder = new Border
             {
-                Margin = new Thickness(0, 0, 0, 12),
-                Padding = new Thickness(20),
-                Background = new SolidColorBrush(
-                    Color.FromRgb(250, 250, 251)),
-                BorderBrush = new SolidColorBrush(
-                    Color.FromRgb(238, 240, 243)),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(10)
+                Style = (Style)FindResource("SurveyQuestionCardStyle")
             };
 
             StackPanel cardPanel = new StackPanel();
@@ -185,8 +193,7 @@ namespace Popup.Views.Contents
             {
                 FontSize = 16,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = new SolidColorBrush(
-                    Color.FromRgb(17, 24, 39)),
+                Foreground = (Brush)FindResource("SurveySelectedText"),
                 LineHeight = 24,
                 TextWrapping = TextWrapping.Wrap
             };
@@ -195,10 +202,23 @@ namespace Popup.Views.Contents
                 ? " *"
                 : string.Empty;
 
-            titleText.Text =
-                $"{questionNumber}. {question.Title}{requiredMark}";
-
-            cardPanel.Children.Add(titleText);
+            titleText.Text = $"{question.Title}{requiredMark}";
+            Grid titleRow = new Grid();
+            titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            titleRow.Children.Add(new TextBlock
+            {
+                Margin = new Thickness(0, 0, 16, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Text = questionNumber.ToString("D2"),
+                FontSize = 12,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("SurveyMutedText")
+            });
+            Grid.SetColumn(titleText, 1);
+            titleText.VerticalAlignment = VerticalAlignment.Center;
+            titleRow.Children.Add(titleText);
+            cardPanel.Children.Add(titleRow);
             _questionTitleTexts.Add(titleText);
 
             if (!string.IsNullOrWhiteSpace(question.Description))
@@ -207,8 +227,7 @@ namespace Popup.Views.Contents
                 {
                     Margin = new Thickness(0, 6, 0, 0),
                     FontSize = 13,
-                    Foreground = new SolidColorBrush(
-                        Color.FromRgb(107, 114, 128)),
+                    Foreground = (Brush)FindResource("SurveyMutedText"),
                     Text = question.Description,
                     TextWrapping = TextWrapping.Wrap
                 };
@@ -256,7 +275,7 @@ namespace Popup.Views.Contents
                     {
                         Margin = new Thickness(0, 14, 0, 0),
                         Text = "지원하지 않는 질문 형식입니다.",
-                        Foreground = Brushes.Red
+                        Foreground = (Brush)FindResource("SurveyMutedText")
                     };
             }
         }
@@ -264,24 +283,65 @@ namespace Popup.Views.Contents
         private Panel CreateOptionPanel(SurveyQuestion question)
         {
             Panel panel = question.HorizontalOptions ? new WrapPanel() : new StackPanel();
-            panel.Margin = new Thickness(0, 12, 0, 0);
+            panel.Margin = (Thickness)FindResource("SurveyAnswerSpacing");
             panel.SizeChanged += (_, _) =>
             {
                 foreach (FrameworkElement child in panel.Children)
                 {
                     child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
                     if (child is ContentControl control && control.Content is TextBlock label)
-                        label.MaxWidth = Math.Max(0, child.MaxWidth - 24);
+                        label.MaxWidth = Math.Max(0, child.MaxWidth - control.Padding.Left - control.Padding.Right
+                            - control.BorderThickness.Left - control.BorderThickness.Right - (question.HorizontalOptions ? 0 : 28));
                 }
             };
             return panel;
         }
 
-        private static TextBlock CreateOptionText(string text) => new TextBlock
+        // Reserve the semibold text size before selection so wrapping cannot move subsequent rows.
+        private sealed class StableChoiceText : TextBlock
         {
-            Text = text,
-            TextWrapping = TextWrapping.Wrap
-        };
+            private readonly TextBlock _selectedMeasure = new TextBlock();
+
+            static StableChoiceText()
+            {
+                foreach (DependencyProperty property in new[] { TextProperty, MaxWidthProperty, FontFamilyProperty,
+                    FontSizeProperty, FontStyleProperty, FontStretchProperty, FlowDirectionProperty,
+                    LanguageProperty, TextWrappingProperty, LineHeightProperty, LineStackingStrategyProperty })
+                    property.OverrideMetadata(typeof(StableChoiceText), new FrameworkPropertyMetadata(
+                        (d, _) => ((StableChoiceText)d).ReserveHeight()));
+            }
+
+            private void ReserveHeight()
+            {
+                if (_selectedMeasure == null) return;
+                _selectedMeasure.Text = Text;
+                _selectedMeasure.FontFamily = FontFamily;
+                _selectedMeasure.FontSize = FontSize;
+                _selectedMeasure.FontStyle = FontStyle;
+                _selectedMeasure.FontStretch = FontStretch;
+                _selectedMeasure.FlowDirection = FlowDirection;
+                _selectedMeasure.Language = Language;
+                _selectedMeasure.TextWrapping = TextWrapping;
+                _selectedMeasure.LineHeight = LineHeight;
+                _selectedMeasure.LineStackingStrategy = LineStackingStrategy;
+                Size constraint = new Size(MaxWidth, double.PositiveInfinity);
+                _selectedMeasure.FontWeight = FontWeights.Normal;
+                _selectedMeasure.Measure(constraint);
+                double normalHeight = _selectedMeasure.DesiredSize.Height;
+                _selectedMeasure.FontWeight = FontWeights.SemiBold;
+                _selectedMeasure.Measure(constraint);
+                MinHeight = Math.Max(normalHeight, _selectedMeasure.DesiredSize.Height);
+            }
+        }
+
+        private static TextBlock CreateOptionText(string text, bool horizontal)
+        {
+            TextBlock label = horizontal ? new TextBlock() : new StableChoiceText();
+            label.Text = text;
+            label.LineHeight = 22;
+            label.TextWrapping = TextWrapping.Wrap;
+            return label;
+        }
 
         /// <summary>
         /// 일반 단일 선택 문항을 만든다.
@@ -293,12 +353,26 @@ namespace Popup.Views.Contents
 
             foreach (SurveyOption option in question.Options)
             {
+                bool isLast = option == question.Options.Last();
                 RadioButton radioButton = new RadioButton
                 {
-                    Margin = new Thickness(0, 0, 8, 6),
-                    Content = CreateOptionText(option.Text),
+                    Style = (Style)FindResource(question.HorizontalOptions ? "SurveyChoiceChipStyle" : "SurveyRadioButtonStyle"),
+                    Margin = GetOptionMargin(question.HorizontalOptions, isLast),
+                    Content = CreateOptionText(option.Text, question.HorizontalOptions),
                     Tag = option,
                     GroupName = $"Question_{question.QuestionId}"
+                };
+
+                radioButton.Checked += AnswerSelectionChanged;
+                radioButton.Unchecked += AnswerSelectionChanged;
+                System.Windows.Automation.AutomationProperties.SetName(radioButton, option.Text);
+                radioButton.PreviewKeyDown += (_, e) =>
+                {
+                    if (e.Key == System.Windows.Input.Key.Enter)
+                    {
+                        radioButton.IsChecked = true;
+                        e.Handled = true;
+                    }
                 };
 
                 optionPanel.Children.Add(radioButton);
@@ -317,17 +391,42 @@ namespace Popup.Views.Contents
 
             foreach (SurveyOption option in question.Options)
             {
+                bool isLast = option == question.Options.Last();
                 CheckBox checkBox = new CheckBox
                 {
-                    Margin = new Thickness(0, 0, 16, 10),
-                    Content = CreateOptionText(option.Text),
+                    Style = (Style)FindResource(
+                        question.HorizontalOptions
+                            ? "SurveyCheckBoxChipStyle"
+                            : "SurveyCheckBoxRowStyle"),
+                    HorizontalAlignment = question.HorizontalOptions ? HorizontalAlignment.Left : HorizontalAlignment.Stretch,
+                    Margin = GetOptionMargin(question.HorizontalOptions, isLast),
+                    Content = CreateOptionText(option.Text, question.HorizontalOptions),
                     Tag = option
+                };
+
+                checkBox.Checked += AnswerSelectionChanged;
+                checkBox.Unchecked += AnswerSelectionChanged;
+                System.Windows.Automation.AutomationProperties.SetName(checkBox, option.Text);
+                checkBox.PreviewKeyDown += (_, e) =>
+                {
+                    if (e.Key == System.Windows.Input.Key.Enter)
+                    {
+                        checkBox.IsChecked = checkBox.IsChecked != true;
+                        e.Handled = true;
+                    }
                 };
 
                 optionPanel.Children.Add(checkBox);
             }
 
             return optionPanel;
+        }
+
+        private static Thickness GetOptionMargin(bool horizontal, bool isLast)
+        {
+            return horizontal
+                ? new Thickness(0, 0, isLast ? 0 : 8, 0)
+                : new Thickness(0, 0, 0, isLast ? 0 : 8);
         }
 
         /// <summary>
@@ -338,12 +437,9 @@ namespace Popup.Views.Contents
         {
             TextBox textBox = new TextBox
             {
-                Margin = new Thickness(0, 12, 0, 0),
+                Margin = (Thickness)FindResource("SurveyAnswerSpacing"),
                 MinHeight = 96,
-                Padding = new Thickness(12),
-                Background = new SolidColorBrush(Color.FromRgb(255, 255, 255)),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
-                BorderThickness = new Thickness(1),
+                Style = (Style)FindResource("SurveyTextBoxStyle"),
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility =
@@ -352,6 +448,10 @@ namespace Popup.Views.Contents
                 // 어떤 질문의 TextBox인지 구분하기 위한 값
                 Tag = question.QuestionId
             };
+
+            textBox.TextChanged += (_, _) => UpdateResponseProgress();
+            System.Windows.Automation.AutomationProperties.SetHelpText(textBox,
+                "추가 의견이 있다면 자유롭게 작성해주세요.");
 
             return textBox;
         }
@@ -538,9 +638,9 @@ namespace Popup.Views.Contents
         /*
          * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
          * SURVEY/QUIZ의 본문 = 선택지(RadioButton/CheckBox)·주관식 TextBox. 이들은 FontSize를 직접 지정하지 않아
-         * UserControl의 FontSize를 상속하므로 this.FontSize를 바꾸면 함께 바뀐다(기본 12).
+         * UserControl의 FontSize를 상속하므로 this.FontSize를 바꾸면 함께 바뀐다(기본 14).
          * 문항 제목(기본 16)·문항 설명(기본 13)은 기존 상대 계층을 유지하도록 각각 +4, +1 로 맞춘다.
-         * 설문 제목(24)·설명(14)·제출 버튼(14)은 본문이 아니므로 그대로 둔다.
+         * 설문 제목(25)·설명(14)·제출 버튼(14)은 본문이 아니므로 그대로 둔다.
          */
         public void ApplyBodyFontSize(double fontSize)
         {
@@ -570,7 +670,29 @@ namespace Popup.Views.Contents
             Submit();
         }
 
-        public void UseFooterSubmission() => SubmitButton.Visibility = Visibility.Collapsed;
+        public void UseFooterSubmission()
+        {
+            SubmitButton.Visibility = Visibility.Collapsed;
+            SubmissionArea.Visibility = Visibility.Collapsed;
+        }
+
+        private void AnswerSelectionChanged(object sender, RoutedEventArgs e) => UpdateResponseProgress();
+
+        private void UpdateResponseProgress()
+        {
+            var answers = CollectAnswers();
+            int required = _questions.Count(question => question.IsRequired);
+            int completed = _questions.Count(question => question.IsRequired && answers.Any(answer =>
+                answer.QuestionId == question.QuestionId && (answer.SelectedOptionIds.Count > 0 || !string.IsNullOrWhiteSpace(answer.TextAnswer))));
+            CanSubmit = IsEnabled && completed == required;
+            ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
+                : completed == required ? $"필수 문항 {completed}/{required} 응답 완료"
+                : $"필수 문항 {completed}/{required} 응답 · 남은 {required - completed}문항";
+            RequiredProgressText.Text = ResponseProgressText;
+            RequiredProgressText.Foreground = (Brush)FindResource("SurveyMutedText");
+            SubmitButton.IsEnabled = CanSubmit;
+            ResponseProgressChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         public void Submit()
         {

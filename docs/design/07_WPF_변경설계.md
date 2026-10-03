@@ -31,7 +31,7 @@
 | 수정 | `appsettings.json`, `Models/PopupClientSettings.cs` | `UserId` 제거. `Auth.Mode/StaticHeader`(헤더 공급 방식), `DevUserId`(개발 헤더용 사번) 추가. `PollingIntervalSeconds` 기본 1800, 범위 1800~3600 (양수 서버 값이 우선, 선택 필드 누락/0 이하는 로컬 fallback) |
 | 삭제 | `Service/PopupPolicyService.cs` | 기간·숨김 로컬 판단 제거 (기준 2) |
 | 삭제 | `Service/PopupStorageService.cs` | 숨김 로컬 파일 저장 제거 (서버 상태가 유일한 기준) |
-| 후속 수정 | `Views/Contents/VideoPopupView`, `VideoQuizPopupView`, `SurveyPopupView` | 로컬/URL 공통 고정 컨트롤 행, 결합 모드의 내부 ScrollViewer 제거·문항 높이 Auto. 단독 설문/퀴즈 스크롤 유지(19 문서) |
+| 후속 수정 | `Views/Contents/VideoPopupView`, `VideoQuizPopupView`, `SurveyPopupView`, `Services/WindowsMasterVolume` | 로컬/URL 공통 Overlay 컨트롤·시스템 음량/음소거 동기화, 결합 모드의 내부 ScrollViewer 제거·문항 높이 Auto. 단독 설문/퀴즈 스크롤 유지(19 문서, 2026-10-03) |
 
 ## 2. 실행 흐름
 

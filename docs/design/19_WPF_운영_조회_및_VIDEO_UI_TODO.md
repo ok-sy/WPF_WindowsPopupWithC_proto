@@ -1,9 +1,10 @@
 # 19. WPF 운영 조회 및 VIDEO UI 보완 TODO
 
 - 작성일: 2026-09-30 (KST)
-- 상태: **§1~3 기존 구현·자동 검증 완료 / §6~7 코드 반영(2026-10-02), 복구 자동 검증 완료 / §9 Overlay 구현·자동 검증 완료 / Windows 렌더링·동작 213건 및 HTML5 42건 검증 완료 / 실제 GUI·원격 DB 검증 대기**
+- 상태: **§1~3 및 §6~7 구현·자동 검증 완료 / §9 Overlay 및 §9.8 시스템 볼륨 구현·자동 검증 완료 / 2026-10-03 WPF 동작 292건·HTML5 89건 통과 / 실제 GUI·장치 교체·원격 DB 검증 대기**
 - 범위: WPF 주기 조회 정책, VIDEO 로컬/URL 공통 컨트롤 UI, VIDEO+QUIZ 이중 스크롤 제거, 공통 외곽 Clip, polling 장애 복구
 - 착수: 2026-09-30. 아래 체크는 코드 적용·자동 검증과 실제 GUI·DB 검증을 구분한다.
+- 검증 프로젝트 관리: `Popup.BehaviorTests`·`Popup.RecoveryTests`는 2026-10-03부터 로컬 전용이며 Git 추적에서 제외한다. 아래 프로젝트 경로·검증 건수는 수행 당시의 검증 기록이다.
 
 ---
 
@@ -194,7 +195,8 @@ allowPlaybackRateChange = false
 → URL 영상 playbackRate도 1.0으로 제한
 
 defaultVolume = 0.7
-→ MediaElement / HTML5 video 모두 동일 초기값 적용
+→ 시스템 볼륨 연결 전/실패 시 MediaElement / HTML5 video 초기값
+→ §9.8 시스템 연결 성공 시 현재 Windows 값으로 UI를 대체하고 내부 음량은 1.0 유지
 ```
 
 ### 2.5 URL 영상 제어
@@ -328,7 +330,7 @@ PopupWindow 또는 결합 View
 - [ ] VIDEO 재생 중 스크롤해도 재생 상태 유지 확인
 - [x] VIDEO+QUIZ completionRatio 잠금/해제 후 레이아웃 점프 여부 확인(자동 레이아웃 검증)
 
-적용: 현재 계약은 `QUIZ + content.videoEnabled`만 영상 결합을 지원하며 VIDEO+SURVEY 모드는 없다. `PopupWindow` 본문에 외부 ScrollViewer는 없고, 이중 스크롤은 `VideoQuizPopupView`와 내부 `SurveyPopupView`에서 발생했다. 결합 모드에서는 내부 ScrollViewer를 실제 계층에서 제거해 문항 패널을 직접 배치하고 고정 400 높이를 Auto로 바꾼다. 부모의 단일 ScrollViewer가 영상·전체 문항·제출 영역을 담당하고, 공통 푸터는 PopupWindow에 고정한다. 단독 SURVEY/QUIZ는 기존 자체 스크롤을 유지한다.
+적용: 현재 계약은 `QUIZ + content.videoEnabled`만 영상 결합을 지원하며 VIDEO+SURVEY 모드는 없다. `PopupWindow` 본문에 외부 ScrollViewer는 없고, 이중 스크롤은 `VideoQuizPopupView`와 내부 `SurveyPopupView`에서 발생했다. 결합 모드에서는 내부 ScrollViewer를 실제 계층에서 제거해 문항 패널을 직접 배치하고 고정 400 높이를 Auto로 바꾼다. 부모의 단일 ScrollViewer가 영상·전체 문항을 담당하고 제출 영역은 스크롤 밖 하단에 고정한다. 공통 푸터를 쓰면 PopupWindow 제출 버튼만 표시하고, 끄면 내부 제출 영역을 고정한다. 단독 SURVEY/QUIZ는 기존 자체 스크롤을 유지한다.
 
 ### 3.5 완료 기준
 
@@ -722,7 +724,9 @@ buffered 영역
 
 ### 9.7 구현 TODO
 
-체크 완료는 코드 반영·자동 검증 범위다. 실제 재생 및 렌더링 확인은 §9.9에 기록하며 물리 입력·전체화면 왕복은 별도로 남긴다.
+2026-10-03 후속 정책: 재생 중 마우스가 영상 위에 머물러 추가 입력이 없으면 일반 화면은 3초, 영상 전체화면은 2초 후 컨트롤을 숨긴다. 전체화면 진입·복귀 및 마우스 이동 시 현재 모드의 시간으로 다시 예약한다. 일시정지·Seek·버튼/키보드 조작 중 표시 유지와 마우스 이탈 즉시 숨김은 유지한다.
+
+체크 완료는 코드 반영·자동 검증 범위다. 실제 재생 및 렌더링 확인은 §9.10에 기록하며 물리 입력·전체화면 왕복은 별도로 남긴다.
 
 - [x] VIDEO 컨트롤바를 별도 Row에서 영상 하단 Overlay 구조로 변경
 - [x] 로컬 MediaElement에서 Overlay 컨트롤 정상 표시 확인
@@ -783,19 +787,24 @@ Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows
 - 사용자가 Player에서 직접 변경한 Windows 볼륨은 팝업 종료 시 임의로 이전 값으로 복원하지 않고 사용자의 최종 설정으로 유지한다.
 - 기본 출력 장치 없음/출력 장치 변경/Core Audio 접근 실패 시 영상 재생 자체가 실패하지 않도록 예외 처리한다.
 
-추가 TODO:
+추가 TODO(체크 완료는 코드·자동 검증 범위이며 실제 장치 조작 검증은 별도로 남긴다):
 
-- [ ] Core Audio COM interop 계층 구현(외부 NuGet 없음)
-- [ ] 기본 출력 장치 Master Volume/Mute 초기값 조회
-- [ ] Player Volume Slider 초기값을 Windows Master Volume과 동기화
-- [ ] Player Volume 변경 → Windows Master Volume 반영
-- [ ] Player Mute 변경 → Windows Master Mute 반영
-- [ ] Windows Master Volume/Mute 변경 이벤트 → Player UI 반영
-- [ ] 내부 MediaElement/HTML5 volume과 Master Volume의 중복 감쇠 방지
-- [ ] 로컬 MediaElement/URL WebView2 동일 동작 확인
+- [x] Core Audio COM interop 계층 구현(외부 NuGet 없음)
+- [x] 기본 출력 장치 Master Volume/Mute 초기값 조회(실제 COM 읽기 확인)
+- [x] Player Volume Slider 초기값을 Windows Master Volume과 동기화
+- [x] Player Volume 변경 → Windows Master Volume 반영(코드·테스트 대역 검증)
+- [x] Player Mute 변경 → Windows Master Mute 반영(코드·테스트 대역 검증)
+- [x] Windows Master Volume/Mute 변경 이벤트 → Player UI 반영(콜백 등록·실제 초기 조회·테스트 대역 검증)
+- [x] 내부 MediaElement/HTML5 volume과 Master Volume의 중복 감쇠 방지
+- [x] 로컬 MediaElement/URL WebView2 동일 동작 확인(자동 상태·HTML5 브리지 검증)
 - [ ] Windows Master Volume=0 및 Mute=true 상태에서 BackgroundOverlay VIDEO 진입 검증
-- [ ] 출력 장치 변경/장치 없음/Core Audio 실패 시 예외 처리 검증
-- [ ] 팝업 종료 후 사용자가 변경한 Windows 최종 볼륨 상태 유지 확인
+- [x] 출력 장치 변경/장치 없음/Core Audio 실패 시 예외 처리 검증(장치 교체·실패·복구 상태 주입 및 해제 검증)
+- [x] 팝업 종료 후 사용자가 변경한 Windows 최종 볼륨 상태 유지 확인(테스트 대역에서 종료 시 쓰기 0회·최종 값 유지)
+- [ ] 실제 Windows 외부 볼륨 변경·플레이어 조작·장치 교체·재생 중 복구·종료 후 상태 유지 수동 검증
+
+2026-10-03 적용: `WindowsMasterVolume`이 Core Audio 엔드포인트를 소유하며 WPF Dispatcher에서만 COM 조회·변경·해제를 수행한다. 네이티브 음량 알림은 Dispatcher에 재조회만 예약하고 콜백 안에서 등록 해제하지 않는다. 기본 멀티미디어 출력 장치 변경·장치 없음은 2초 타이머로 감지하고 기존 콜백·COM 참조를 해제한 뒤 다시 연결한다. 시작·장치 복구 시 Windows 값을 읽기만 하며 설정을 강제로 바꾸지 않는다. 음량 슬라이더를 0보다 크게 바꾸면 시스템 Mute를 해제하고 음소거 버튼은 기존 음량을 유지한다. 연결 실패 시 마지막 표시 음량을 내부 플레이어에 적용하며 최초 연결 실패 시 `defaultVolume`을 사용한다. 시스템 음량 연결 성공 시 내부 음량은 1.0이고 HTML5 상태 메시지는 시스템 슬라이더를 덮어쓰지 않는다. 종료 시 콜백·타이머·COM만 정리하고 Windows 최종 값은 유지한다. YouTube는 기존 자체 플레이어 정책으로 제외한다.
+
+검증: WPF 빌드 경고·오류 0, WPF 동작 292건 및 생성 HTML5 브리지 89건 통과. 초기 0·Mute, UI 변경, 외부 알림의 쓰기 루프 방지, 실패 시 UI 복원, 장치 없음 내부 음량, 새 장치 값 채택, 종료 후 늦은 이벤트 무시·설정 미복원 검증 포함. 실제 Core Audio 읽기 성공. 실제 Windows 설정 변경·물리 장치 교체·BackgroundOverlay 화면의 오디오 출력 확인은 미실행.
 
 ### 9.9 완료 기준
 
@@ -807,7 +816,7 @@ Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows
 - Overlay UI 변경 후에도 기존 Seek/배속/전체화면/완료율 계산 기능이 기존과 동일하게 동작하며, Volume/Mute는 Windows Master Volume/Mute 양방향 Sync 정책에 따라 정상 동작한다.
 - 로컬 영상과 URL 영상에서 가능한 한 동일한 플레이어 경험을 제공한다.
 
-### 9.9 2026-10-02 Overlay 구현 및 검증
+### 9.10 2026-10-02 Overlay 구현 및 검증
 
 - 로컬/URL 컨트롤·클릭 입력·중앙 재생 피드백·Loading/Buffering Spinner를 동일 VideoSurface의 WPF Overlay로 통합. 별도 컨트롤 행 제거. URL은 HWND 기반 WebView2 대신 현행 SDK 1.0.3124.44의 WebView2CompositionControl 사용([Microsoft WPF WebView2 문서](https://learn.microsoft.com/en-us/microsoft-edge/webview2/platforms/wpf)). HTML 내부 별도 UI는 추가하지 않음. YouTube는 기존 자체 플레이어 정책 유지.
 - 마우스 진입 시 즉시 표시, 재생 중 이탈 시 즉시 숨김. 영상 안에서 3초 무입력 시 컨트롤 숨김, 이동·클릭 시 재표시. Pause·Seek·마우스 조작·키보드 조작 동안 표시 유지. 조작 종료 후 재예약. 입력은 영상 전용 형제 Border에서 처리해 컨트롤 버튼/Slider 입력이 재생 토글로 전달되지 않음. 중앙 Play/Pause 피드백은 700ms 후 제거. 종료 시 두 타이머 정리.
@@ -816,5 +825,5 @@ Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows
 - CompositionControl 실제 Loaded에는 Microsoft.Windows.SDK.NET·WinRT.Runtime이 필요하다. Popup 및 동작 검증 프로젝트 TargetFramework를 net10.0-windows10.0.17763.0으로 명시해 Windows SDK 런타임을 포함. WebView2 버전 유지. 폐쇄망에는 Windows SDK NuGet 의존성 재수집이 필요하며 이번 작업에서 반입 묶음·dist는 재생성하지 않음.
 - Windows SDK 10.0.401 환경에서 WPF 동작 **245건**, 생성 HTML5 브리지 **64건** 통과. WPF Overlay 계층, 클릭 전파 분리, Pause/조작 중 숨김 방지, showControls=false, buffered 구간 좌표, 종료 타이머 정리 포함. 기존 결합 스크롤·완료율·시청시간·제출 경로 검증 유지.
 - 임시 실제 MediaElement/WebView2 Runtime 154.0.4258.48 + 로컬 HTTP 테스트 **37건 통과**: 자동 재생·로딩·HTTP 오류·브리지 Buffering·WPF 영상 클릭·3초 숨김·피드백 자동 제거·Pause 컨트롤 유지·영역 안 Overlay 배치. 로컬/URL 렌더링 PNG를 생성·시각 확인해 실제 영상 위 WPF 컨트롤 표시 확인. 클릭·버퍼링 입력은 이벤트 주입이며 물리 입력·실제 네트워크 단절 테스트는 아님.
-- 전체화면 왕복·물리 마우스/키보드·실제 모니터 DPI·폐쇄망 Runtime 134·YouTube·사용 서버 URL 검증은 미실행. 해당 항목을 완료로 처리하지 않음. 미커밋·미푸시.
+- 전체화면 왕복·물리 마우스/키보드·실제 모니터 DPI·폐쇄망 Runtime 134·YouTube·사용 서버 URL 검증은 미실행. 해당 항목을 완료로 처리하지 않음. Overlay·hover 구현은 ae4d017로 커밋하고 eaafad1까지 origin/main 푸시 완료.
 - hover 후속: 진입 즉시 표시·재생 중 이탈 즉시 숨김 및 정지/드래그 유지 검증 추가 후 Windows WPF 동작 253건 통과. 실제 물리 마우스 검증은 미실행.

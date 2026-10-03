@@ -1,4 +1,4 @@
-﻿<Window x:Class="Popup.Views.Windows.PopupWindow"
+<Window x:Class="Popup.Views.Windows.PopupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PopupWindow"
@@ -450,11 +450,15 @@
                     PopupOptions의 ShowDoNotShowAgain 값에 따라
                     표시하거나 숨길 수 있다.
                     -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock x:Name="FooterResponseProgressText" Visibility="Collapsed" FontSize="12"
+                               Foreground="{StaticResource PopupTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6"/>
                     <CheckBox x:Name="DoNotShowAgainCheckBox"
                               Grid.Column="0"
                               VerticalAlignment="Center"
                               FontSize="14"
                               Content="30일간 보지 않기"/>
+                    </StackPanel>
 
                     <!--
                     하단 닫기 버튼

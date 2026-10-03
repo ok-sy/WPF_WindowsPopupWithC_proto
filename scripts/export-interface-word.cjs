@@ -103,7 +103,7 @@ body += p('INTERFACE SPECIFICATION', 'Kicker', '<w:spacing w:before="1100" w:aft
 body += p('WPF 팝업', 'CoverTitle');
 body += p('API 인터페이스 정의서', 'CoverTitle');
 body += p('백엔드 연동 · HTTP / JSON 계약', 'Subtitle');
-body += p('VERSION 3.5   /   2026.09.30', 'CoverVersion', '<w:spacing w:before="500" w:after="640"/>');
+body += p('VERSION 3.5   /   2026.10.03', 'CoverVersion', '<w:spacing w:before="500" w:after="640"/>');
 body += p('로그인 → 표시 대상 조회 → 처리 결과 전송', 'CoverFlow');
 body += p('TEXT   ·   IMAGE   ·   VIDEO   ·   SURVEY   ·   QUIZ', 'Subtitle');
 body += p('이 문서를 읽는 순서', 'CoverGuide', '<w:spacing w:before="720" w:after="160"/>');
@@ -111,7 +111,7 @@ body += p('연동 시작    3장 API 목록 → 4장 인증 → 5·6·10장 요�
 body += p('화면 데이터    6·7장 공통 필드 → 8장 유형별 content → 9장 문항');
 body += p('오류와 검증    11~13장 결과 처리 → 16장 구현 체크리스트');
 body += p('범위 확인    부록 A 관리자 연동 / 부록 B 최초 외부 제공 범위');
-body += p('계약 기준: 2026-09-30 v3.5  |  문서 편집: 2026-09-30\n예제는 설명용 가상 데이터입니다.', 'CoverNote', '<w:spacing w:before="700"/>');
+body += p('계약 기준: 2026-10-03 v3.5  |  문서 편집: 2026-10-03\n예제는 설명용 가상 데이터입니다.', 'CoverNote', '<w:spacing w:before="700"/>');
 body += p('목차', 'TOCTitle', '<w:pageBreakBefore/>');
 body += '<!--TOC-->';
 heading('문서 안내', 1, true);
@@ -128,6 +128,8 @@ table(['Method', '경로', '기능'], [
 body += p('기존 WPF 조회·숨김·응답·이벤트 API는 제거되었습니다. 현재 로그인·목록·결과 API 3개를 사용합니다. 영상 스트리밍 `GET /p/api/popups/video`는 유지합니다.');
 body += p('**IMAGE 기본값 구분**\n관리자 신규 등록은 ORIGINAL을 선택합니다. WPF 계약에서 imageSizeMode가 생략되면 ADAPTIVE를 사용합니다.', 'Callout');
 body += p('동영상+퀴즈는 `QUIZ`와 `content.videoEnabled=true`로 저장합니다. 새 기능을 사용할 때 WPF와 서버를 함께 갱신합니다.');
+body += p('SURVEY·QUIZ 미리보기는 세로형 전체 폭 Row·우측 체크 Path와 가로형 공통 Chip, 무채색 상태 및 스크롤 밖 고정 제출 영역을 사용합니다. 실제 컨트롤의 단일/복수 선택·필수 검증·응답 OPTION_ID 계약은 유지합니다.');
+body += p('관리자 미리보기의 예제 문항은 WPF Demo와 동일한 가로/세로·단일/복수·짧은/긴 보기 사례입니다. 예제·응답·로컬 미리보기 점수는 편집 데이터나 서버 결과 API에 저장하지 않습니다. 상세 케이스·검증은 설계 21·22를 참조합니다.');
 body += p('Content·Options 상세 가이드: `popup-frameWork/Popup/Docs/POPUP_OPTION_GUIDE.md`');
 heading('부록 B. 최초 외부 제공 최소 기능 범위', 1, true);
 body += p('이 부록은 최초 제공할 기능 범위입니다. 본문의 전체 구현 계약과 구분하여 읽으세요.', 'Callout');
@@ -170,7 +172,7 @@ const parts = {
   'word/document.xml': xml(`<w:document xmlns:w="${W}" xmlns:r="${R}"><w:body>${body}<w:sectPr><w:headerReference w:type="default" r:id="header1"/><w:footerReference w:type="default" r:id="footer1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1050" w:right="1060" w:bottom="1050" w:left="1060" w:header="480" w:footer="480"/><w:titlePg/></w:sectPr></w:body></w:document>`),
   'word/styles.xml': xml(styles),
   'word/settings.xml': xml(`<w:settings xmlns:w="${W}"><w:zoom w:percent="100"/><w:defaultTabStop w:val="420"/><w:updateFields w:val="true"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`),
-  'word/header1.xml': xml(`<w:hdr xmlns:w="${W}">${p(run('WPF POPUP   /   API INTERFACE', '<w:b/>'+sz(16)+color('61728A')) + run('                                      v3.5  ·  2026.09.30', sz(16)+color('61728A')), 'Normal', '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="7" w:color="CDD7E2"/></w:pBdr>', true)}</w:hdr>`),
+  'word/header1.xml': xml(`<w:hdr xmlns:w="${W}">${p(run('WPF POPUP   /   API INTERFACE', '<w:b/>'+sz(16)+color('61728A')) + run('                                      v3.5  ·  2026.10.03', sz(16)+color('61728A')), 'Normal', '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="7" w:color="CDD7E2"/></w:pBdr>', true)}</w:hdr>`),
   'word/footer1.xml': xml(`<w:ftr xmlns:w="${W}">${p(run('WPF 팝업 API 인터페이스 정의서', sz(16)+color('61728A')) + run('                                      ') + field('PAGE') + run(' / ') + field('NUMPAGES'), 'Normal', '', true)}</w:ftr>`)
 };
 // DOCX용 ZIP writer (Deflate, CRC32, 중앙 디렉터리).

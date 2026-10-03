@@ -867,17 +867,9 @@ Timer Tick
 
 `PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE FILL도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
 
-복구/HTTP/인증/큐 검증(Windows/Linux 공통, .NET 10):
+WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03부터 로컬 전용으로 관리하며 Git·소스 반입 대상에서 제외한다. 저장소의 일반 빌드에는 필요하지 않다. 실행한 검증 결과는 `version-history/CHANGELOG.md`와 설계 19에 기록한다.
 
-```sh
-dotnet run --project popup-frameWork/Popup.RecoveryTests/Popup.RecoveryTests.csproj
-```
-
-WPF 클리핑을 포함한 화면 동작 검증(Windows):
-
-```sh
-dotnet run --project popup-frameWork/Popup.BehaviorTests/Popup.BehaviorTests.csproj
-```
+SURVEY·QUIZ는 #F8F8F8의 약한 문항 그룹(radius 11·padding 20/18·간격 14)에 세로 선택 Row와 가로 Choice Chip을 배치한다. RadioButton·CheckBox 기능은 유지하고 세로형은 흰 배경·약한 회색 테두리와 항상 보이는 우측 체크 Path로 표시한다. 선택한 Row는 #ECECEC 배경·#AFAFAF 테두리·진한 체크·SemiBold로 강조하고 가로형 단일·복수 선택은 체크 없는 공통 Chip을 사용한다. 배경 없는 01 번호·제목 25·줄바꿈·포커스 outline을 적용하며 세로형 MinHeight는 48이다. Normal/SemiBold 텍스트 높이를 미리 확보해 선택 시 줄바꿈 높이 변화를 방지한다. 주관식은 radius 10·placeholder·약한 테두리·focus 강조를 사용하고 96~180 높이에서 입력을 스크롤한다. 필수 응답 상태와 #4A4A4F Submit은 하단에 고정하고 VIDEO+QUIZ의 내부 제출 영역도 공통 푸터를 끈 상태에서 고정한다. 스크롤바 폭은 8이며 본문과 10 간격을 둔다. 상세 구현·검증 범위는 `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`에 기록한다. Demo SURVEY 6문항·QUIZ/VIDEO+QUIZ 5문항과 정답·배점은 설계 21, 웹 미리보기 정합성은 설계 22를 참조한다.
 
 ## 19. 프로그램 종료
 
@@ -997,6 +989,8 @@ Popup/Media/demo-video.mp4
 
 ### VIDEO Overlay 컨트롤
 
-로컬 MediaElement와 직접 HTTP/HTTPS 영상은 영상 하단의 반투명 WPF Overlay 컨트롤을 사용한다. 마우스가 영상에 들어오면 즉시 표시하고 재생 중 영상 밖으로 나가면 즉시 숨긴다. 영상 안에서 입력이 없으면 기존처럼 3초 후 숨기고 이동/클릭 시 다시 표시한다. 일시정지 및 Seek/음량/키보드 조작 중에는 표시를 유지한다. 영상 클릭은 재생/일시정지를 전환하고 중앙 아이콘을 700ms 표시한다. showControls=false이면 컨트롤은 숨기지만 영상 클릭은 사용할 수 있다. 로딩·버퍼링은 중앙 Spinner, 오류는 별도 안내로 표현한다. URL 진행바의 회색 구간은 다운로드 확보 범위이며 시청 완료율과 구분된다. YouTube는 기존 자체 플레이어를 사용한다.
+로컬 MediaElement와 직접 HTTP/HTTPS 영상은 영상 하단의 반투명 WPF Overlay 컨트롤을 사용한다. 마우스가 영상에 들어오면 즉시 표시하고 재생 중 영상 밖으로 나가면 즉시 숨긴다. 영상 안에서 입력이 없으면 기존처럼 일반 화면 3초·영상 전체화면 2초 후 숨기고 이동/클릭 시 다시 표시한다. 일시정지 및 Seek/음량/키보드 조작 중에는 표시를 유지한다. 영상 클릭은 재생/일시정지를 전환하고 중앙 아이콘을 700ms 표시한다. showControls=false이면 컨트롤은 숨기지만 영상 클릭은 사용할 수 있다. 로딩·버퍼링은 중앙 Spinner, 오류는 별도 안내로 표현한다. URL 진행바의 회색 구간은 다운로드 확보 범위이며 시청 완료율과 구분된다. YouTube는 기존 자체 플레이어를 사용한다.
+
+음량·음소거는 Core Audio COM API로 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다(추가 NuGet 없음). 시작 시 현재 시스템 값을 읽으며 내부 MediaElement/HTML5 음량은 1.0으로 유지한다. `defaultVolume`은 시스템 연결 전/실패 시 내부 플레이어 초기값이다. 외부 볼륨 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 슬라이더를 올리면 Windows 음소거도 해제하며 음소거 버튼은 음량 값을 유지한다. 다른 프로그램의 출력에도 영향을 주고 종료 시 이전 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다. YouTube는 시스템 동기화 대상에서 제외한다.
 
 URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 prepare-offline-packages.ps1로 재수집해야 한다. 이번 변경에서 반입 묶음은 재생성하지 않았다.
