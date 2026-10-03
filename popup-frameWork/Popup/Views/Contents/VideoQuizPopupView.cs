@@ -37,8 +37,17 @@ namespace Popup.Views.Contents
             grid.Children.Add(Video);
             grid.Children.Add(_notice);
             grid.Children.Add(Quiz);
-            Content = new ScrollViewer { Content = grid, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            var host = new Grid();
+            host.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            host.Children.Add(new ScrollViewer { Content = grid, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Style = (Style)Quiz.FindResource("SurveyScrollViewerStyle") });
+            // Keep submission fixed even when the popup's common footer is disabled.
+            var submission = Quiz.DetachSubmissionArea();
+            Grid.SetRow(submission, 1);
+            host.Children.Add(submission);
+            Content = host;
             Video.ProgressUpdated += (_, progress) => UpdateProgress(progress);
         }
 

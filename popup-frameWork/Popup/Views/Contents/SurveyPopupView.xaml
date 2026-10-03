@@ -5,16 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="650"
-             d:DesignWidth="700">
+             d:DesignWidth="700" FontSize="14" MaxWidth="760">
 
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+                <ResourceDictionary Source="/Popup;component/Views/Contents/SurveyStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Background="White">
+    <Grid Background="{StaticResource SurveySurfaceBrush}">
 
         <Grid.RowDefinitions>
             <!-- 설문 제목과 설명 -->
@@ -29,9 +30,7 @@
 
         <!-- 설문 상단 영역 -->
         <Border Grid.Row="0"
-            Padding="0,4,0,16"
-            BorderBrush="#EEF0F3"
-            BorderThickness="0,0,0,1">
+            Padding="0,4,0,10">
 
             <StackPanel>
 
@@ -39,19 +38,21 @@
                 <TextBlock x:Name="SurveyTitleText"
                            Text="설문조사"
                            Style="{StaticResource CommonContentTitleStyle}"
+                           FontSize="25" Foreground="{StaticResource SurveySelectedText}"
                            TextWrapping="Wrap"/>
 
                 <!-- 설문 설명 -->
                 <TextBlock x:Name="SurveyDescriptionText"
                            Margin="0,2,0,0"
                            Text="아래 문항에 응답해주세요."
-                           Style="{StaticResource CommonDescriptionTextStyle}"/>
+                           Style="{StaticResource CommonDescriptionTextStyle}" Foreground="{StaticResource SurveyMutedText}"/>
 
             </StackPanel>
         </Border>
 
         <!-- 질문 목록 영역 -->
         <ScrollViewer x:Name="QuestionScrollViewer" Grid.Row="1"
+                      Style="{StaticResource SurveyScrollViewerStyle}"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
 
@@ -63,14 +64,14 @@
                 Text          → TextBox
             -->
             <StackPanel x:Name="QuestionListPanel"
-                Margin="0,14,0,8"/>
+                Margin="0,4,0,20"/>
 
         </ScrollViewer>
 
         <!-- 설문 하단 영역 -->
-        <Border Grid.Row="2"
+        <Border x:Name="SubmissionArea" Grid.Row="2"
             Padding="0,14,0,0"
-            BorderBrush="#EEF0F3"
+            BorderBrush="{StaticResource SurveyCardBorder}"
             BorderThickness="0,1,0,0">
 
             <Grid>
@@ -81,17 +82,17 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- 필수 문항 안내 -->
-                <TextBlock Grid.Column="0"
+                <TextBlock x:Name="RequiredProgressText" Grid.Column="0"
                    Margin="0,0,12,0"
                    VerticalAlignment="Center"
                    Text="* 표시된 문항은 필수 응답입니다."
                    FontSize="13"
-                   Foreground="{StaticResource PopupTextSecondaryBrush}"
+                   Foreground="{StaticResource SurveyMutedText}"
                    TextWrapping="Wrap"/>
 
                 <!-- 제출 버튼 -->
                 <Button x:Name="SubmitButton"
-                        Style="{StaticResource ActionButtonStyle}"
+                        Style="{StaticResource SurveySubmitButtonStyle}"
                         Grid.Column="1"
                         Content="제출"
                         FontSize="14"

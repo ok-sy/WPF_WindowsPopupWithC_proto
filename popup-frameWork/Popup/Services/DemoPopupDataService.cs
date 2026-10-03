@@ -81,7 +81,7 @@ namespace Popup.Services
                     "title": "교육 영상 시연",
                     "displayMode": "SEQUENTIAL",
                     "sizeMode": "RATIO",
-                    "widthRatio": 0.70,
+                    "widthRatio": 0.7,
                     "heightRatio": 0.75,
                     "minimumWidth": 680,
                     "minimumHeight": 500,
@@ -116,41 +116,180 @@ namespace Popup.Services
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "교육 만족도 설문",
-                      "description": "시연 화면 확인을 위해 아래 문항에 응답해주세요."
+                      "description": "가로·세로 단일/복수 선택과 주관식을 확인할 수 있는 설문입니다. 필수 문항에 답하고 추가 의견은 자유롭게 남겨주세요."
                     },
                     "questions": [
-                        {
-                          "questionId": 1001,
-                          "optionLayout": "VERTICAL",
-                          "title": "화면 구성이 이해하기 쉬웠나요?",
-                          "questionType": "SINGLE_CHOICE",
-                          "isRequired": true,
-                          "options": [
-                            { "optionId": 1011, "value": "EASY", "text": "쉽게 이해할 수 있었습니다" },
-                            { "optionId": 1012, "value": "NORMAL", "text": "설명을 읽고 이해할 수 있었습니다" },
-                            { "optionId": 1013, "value": "HELP", "text": "추가 안내가 필요합니다. 화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다." },
-                            { "optionId": 1014, "value": "WRAP", "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" }
-                          ]
-                        },
-                        {
-                          "questionId": 1002,
-                          "optionLayout": "HORIZONTAL",
-                          "title": "가장 유용한 팝업 유형을 선택해주세요.",
-                          "questionType": "SINGLE_CHOICE",
-                          "isRequired": true,
-                          "options": [
-                            { "optionId": 1101, "value": "TEXT", "text": "텍스트" },
-                            { "optionId": 1102, "value": "IMAGE", "text": "이미지" },
-                            { "optionId": 1103, "value": "VIDEO", "text": "영상" },
-                            { "optionId": 1104, "value": "SURVEY", "text": "설문" }
-                          ]
-                        },
-                        {
-                          "questionId": 1003,
-                          "title": "추가 의견을 작성해주세요.",
-                          "questionType": "TEXT",
-                          "isRequired": false
-                        }
+                      {
+                        "questionId": 1001,
+                        "optionLayout": "VERTICAL",
+                        "title": "화면 구성이 이해하기 쉬웠나요?",
+                        "questionType": "SINGLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 1011,
+                            "value": "EASY",
+                            "text": "쉽게 이해할 수 있었습니다"
+                          },
+                          {
+                            "optionId": 1012,
+                            "value": "NORMAL",
+                            "text": "설명을 읽고 이해할 수 있었습니다"
+                          },
+                          {
+                            "optionId": 1013,
+                            "value": "HELP",
+                            "text": "추가 안내가 필요합니다. 화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다."
+                          },
+                          {
+                            "optionId": 1014,
+                            "value": "WRAP",
+                            "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 1002,
+                        "optionLayout": "HORIZONTAL",
+                        "title": "가장 유용한 팝업 유형을 선택해주세요.",
+                        "questionType": "SINGLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 1101,
+                            "value": "TEXT",
+                            "text": "텍스트"
+                          },
+                          {
+                            "optionId": 1102,
+                            "value": "IMAGE",
+                            "text": "이미지"
+                          },
+                          {
+                            "optionId": 1103,
+                            "value": "VIDEO",
+                            "text": "영상"
+                          },
+                          {
+                            "optionId": 1104,
+                            "value": "SURVEY",
+                            "text": "설문"
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 1004,
+                        "optionLayout": "VERTICAL",
+                        "title": "교육에서 도움이 된 요소를 모두 선택해주세요.",
+                        "questionType": "MULTIPLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 1401,
+                            "value": "1401",
+                            "text": "실습"
+                          },
+                          {
+                            "optionId": 1402,
+                            "value": "1402",
+                            "text": "업무 상황에 맞춘 구체적인 사례와 단계별 설명 덕분에 처음 접하는 내용도 이해할 수 있었고, 교육 이후 실제 업무에 적용할 방법을 찾는 데 도움이 되었습니다."
+                          },
+                          {
+                            "optionId": 1403,
+                            "value": "1403",
+                            "text": "질의응답"
+                          },
+                          {
+                            "optionId": 1404,
+                            "value": "1404",
+                            "text": "Detailed examples and guided exercises helped me understand the workflow and confidently apply the learning to everyday tasks."
+                          },
+                          {
+                            "optionId": 1405,
+                            "value": "1405",
+                            "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 1005,
+                        "optionLayout": "HORIZONTAL",
+                        "title": "다음 교육에서 다루었으면 하는 주제를 모두 선택해주세요.",
+                        "questionType": "MULTIPLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 1501,
+                            "value": "1501",
+                            "text": "보안"
+                          },
+                          {
+                            "optionId": 1502,
+                            "value": "1502",
+                            "text": "협업"
+                          },
+                          {
+                            "optionId": 1503,
+                            "value": "1503",
+                            "text": "데이터"
+                          },
+                          {
+                            "optionId": 1504,
+                            "value": "1504",
+                            "text": "업무 자동화"
+                          },
+                          {
+                            "optionId": 1505,
+                            "value": "1505",
+                            "text": "실제 프로젝트를 따라 하며 요구사항 정리부터 구현과 검증까지 전체 과정을 경험하는 심화 실습"
+                          },
+                          {
+                            "optionId": 1506,
+                            "value": "1506",
+                            "text": "Accessibility and responsive interface design"
+                          },
+                          {
+                            "optionId": 1507,
+                            "value": "1507",
+                            "text": "기타"
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 1006,
+                        "optionLayout": "HORIZONTAL",
+                        "title": "선호하는 후속 교육 방식을 하나 선택해주세요.",
+                        "questionType": "SINGLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 1601,
+                            "value": "1601",
+                            "text": "온라인"
+                          },
+                          {
+                            "optionId": 1602,
+                            "value": "1602",
+                            "text": "대면"
+                          },
+                          {
+                            "optionId": 1603,
+                            "value": "1603",
+                            "text": "영상과 실습 자료를 먼저 살펴본 뒤 소규모 워크숍에서 질문하고 함께 문제를 해결하는 혼합 과정"
+                          },
+                          {
+                            "optionId": 1604,
+                            "value": "1604",
+                            "text": "Self-paced learning with a live question-and-answer session"
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 1003,
+                        "title": "추가 의견을 작성해주세요.",
+                        "questionType": "TEXT",
+                        "isRequired": false
+                      }
                     ]
                   },
                   {
@@ -170,37 +309,144 @@ namespace Popup.Services
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "정보보안 교육 평가",
-                      "description": "두 문항을 모두 맞히면 통과합니다."
+                      "description": "객관식 4문항은 각 25점이며 100점이면 통과합니다. 단일선택은 하나, 복수선택은 해당하는 항목을 모두 선택하세요. 마지막 의견은 선택 사항입니다."
                     },
                     "passingScore": 100,
                     "questions": [
-                        {
-                          "questionId": 2001,
-                          "optionLayout": "VERTICAL",
-                          "title": "개인정보에 해당하는 것은?",
-                          "questionType": "SINGLE_CHOICE",
-                          "isRequired": true,
-                          "isScored": true,
-                          "questionScore": 50,
-                          "options": [
-                            { "optionId": 2101, "value": "PHONE", "text": "휴대전화 번호", "isCorrect": true },
-                            { "optionId": 2102, "value": "WEATHER", "text": "오늘의 날씨", "isCorrect": false }
-                          ]
-                        },
-                        {
-                          "questionId": 2002,
-                          "optionLayout": "HORIZONTAL",
-                          "title": "안전한 비밀번호 관리 방법을 모두 선택하세요.",
-                          "questionType": "MULTIPLE_CHOICE",
-                          "isRequired": true,
-                          "isScored": true,
-                          "questionScore": 50,
-                          "options": [
-                            { "optionId": 2201, "value": "LONG", "text": "충분히 긴 비밀번호 사용", "isCorrect": true },
-                            { "optionId": 2202, "value": "REUSE", "text": "모든 사이트에서 동일한 비밀번호를 반복해서 재사용하고 다른 사람과 공유하는 방식은 안전하지 않습니다. 긴 복수 선택 보기의 줄바꿈을 확인하세요.", "isCorrect": false },
-                            { "optionId": 2203, "value": "MFA", "text": "다중 인증 사용", "isCorrect": true }
-                          ]
-                        }
+                      {
+                        "questionId": 2001,
+                        "optionLayout": "VERTICAL",
+                        "title": "개인정보에 해당하는 것은?",
+                        "questionType": "SINGLE_CHOICE",
+                        "isRequired": true,
+                        "isScored": true,
+                        "questionScore": 25,
+                        "options": [
+                          {
+                            "optionId": 2101,
+                            "value": "PHONE",
+                            "text": "휴대전화 번호",
+                            "isCorrect": true
+                          },
+                          {
+                            "optionId": 2102,
+                            "value": "WEATHER",
+                            "text": "오늘의 날씨",
+                            "isCorrect": false
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 2002,
+                        "optionLayout": "HORIZONTAL",
+                        "title": "안전한 비밀번호 관리 방법을 모두 선택하세요.",
+                        "questionType": "MULTIPLE_CHOICE",
+                        "isRequired": true,
+                        "isScored": true,
+                        "questionScore": 25,
+                        "options": [
+                          {
+                            "optionId": 2201,
+                            "value": "LONG",
+                            "text": "충분히 긴 비밀번호 사용",
+                            "isCorrect": true
+                          },
+                          {
+                            "optionId": 2202,
+                            "value": "REUSE",
+                            "text": "모든 사이트에서 동일한 비밀번호를 반복해서 재사용하고 다른 사람과 공유하는 방식은 안전하지 않습니다. 긴 복수 선택 보기의 줄바꿈을 확인하세요.",
+                            "isCorrect": false
+                          },
+                          {
+                            "optionId": 2203,
+                            "value": "MFA",
+                            "text": "다중 인증 사용",
+                            "isCorrect": true
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": 2003,
+                        "optionLayout": "HORIZONTAL",
+                        "title": "의심스러운 메일을 받았을 때 가장 먼저 할 행동은?",
+                        "questionType": "SINGLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 2301,
+                            "value": "2301",
+                            "text": "신고",
+                            "isCorrect": true
+                          },
+                          {
+                            "optionId": 2302,
+                            "value": "2302",
+                            "text": "회신",
+                            "isCorrect": false
+                          },
+                          {
+                            "optionId": 2303,
+                            "value": "2303",
+                            "text": "발신자를 확인하지 않고 첨부파일을 열어 안내에 따라 계정 정보와 인증번호를 입력한다.",
+                            "isCorrect": false
+                          },
+                          {
+                            "optionId": 2304,
+                            "value": "2304",
+                            "text": "Forward the suspicious attachment to everyone without checking the sender.",
+                            "isCorrect": false
+                          }
+                        ],
+                        "isScored": true,
+                        "questionScore": 25
+                      },
+                      {
+                        "questionId": 2004,
+                        "optionLayout": "VERTICAL",
+                        "title": "개인정보를 안전하게 처리하는 방법을 모두 선택하세요.",
+                        "questionType": "MULTIPLE_CHOICE",
+                        "isRequired": true,
+                        "options": [
+                          {
+                            "optionId": 2401,
+                            "value": "2401",
+                            "text": "화면 잠금",
+                            "isCorrect": true
+                          },
+                          {
+                            "optionId": 2402,
+                            "value": "2402",
+                            "text": "업무에 필요한 최소한의 개인정보만 수집하고, 보관 기간이 끝나거나 처리 목적이 달성되면 정해진 절차에 따라 안전하게 삭제한다.",
+                            "isCorrect": true
+                          },
+                          {
+                            "optionId": 2403,
+                            "value": "2403",
+                            "text": "공개 폴더에 저장",
+                            "isCorrect": false
+                          },
+                          {
+                            "optionId": 2404,
+                            "value": "2404",
+                            "text": "Share customer records through an unrestricted public link so that anyone can download them without authentication.",
+                            "isCorrect": false
+                          },
+                          {
+                            "optionId": 2405,
+                            "value": "2405",
+                            "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+                            "isCorrect": false
+                          }
+                        ],
+                        "isScored": true,
+                        "questionScore": 25
+                      },
+                      {
+                        "questionId": 2005,
+                        "title": "교육 내용 중 다시 살펴보고 싶은 부분이나 추가 의견을 남겨주세요.",
+                        "questionType": "TEXT",
+                        "isRequired": false
+                      }
                     ]
                   }
                 ]
@@ -223,6 +469,8 @@ namespace Popup.Services
             videoQuiz["content"]!["videoEnabled"] = true;
             videoQuiz["content"]!["videoTitle"] = "교육 영상";
             videoQuiz["content"]!["autoPlay"] = false;
+            videoQuiz["content"]!["surveyTitle"] = "교육 영상 이해도 평가";
+            videoQuiz["content"]!["description"] = "영상을 80% 이상 시청하면 응답할 수 있습니다. 객관식 4문항은 각 25점이며 100점이면 통과합니다. 마지막 의견은 선택 사항입니다.";
             demoPopups.Add(videoQuiz);
 
             JsonObject linked = demoPopups.First(node => node?["popupType"]?.GetValue<string>() == "TEXT")!.DeepClone().AsObject();

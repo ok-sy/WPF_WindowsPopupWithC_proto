@@ -1,7 +1,7 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-09-30
+- 작성 기준: 2026-10-03
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
@@ -87,7 +87,7 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 |---|---|---:|---|---|
 | VideoUrl | 지원 | Y | `""` | 영상 URL 또는 로컬 경로 |
 | ShowControls | 지원 | N | `true` | 재생/일시정지/음량 등 기본 컨트롤 |
-| DefaultVolume | 지원 | N | `0.7` | 기본 음량. 별도 IsMuted 필드는 없음 |
+| DefaultVolume | 지원 | N | `0.7` | 시스템 볼륨 연결 전/실패 시 초기 음량. 연결 성공 시 현재 Windows 값 우선. 별도 IsMuted 필드는 없음 |
 | AllowFullScreen | 지원 | N | `true` | 영상 플레이어 자체 전체화면 허용 |
 | CompletionRatio | 지원 | N | `1.0` | 팝업 최상위 값. 완료 판단 비율 |
 | VideoTitle | 미제공 | N | `""` | 영상 콘텐츠 내부 제목 |
@@ -121,6 +121,8 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 
 SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. 점수·합격점·오답 시 닫기 제한은 QUIZ 동작으로 구분한다. 주관식 정답/자동 채점(`CorrectAnswer`/`AnswerMatchMode`)은 최소 버전에서 미제공한다.
 
+단일/복수 선택의 VERTICAL은 전체 폭 Row·우측 체크 Path, HORIZONTAL은 공통 Chip으로 표시한다. 무채색 상태·긴 문장 줄바꿈·필수 응답 진행 상태는 UI 구현이며 추가 계약 필드가 없다. 제출 영역은 스크롤 밖 하단에 고정하고 필수 미응답 또는 영상 시청 잠금 시 비활성화한다. 공통 Footer가 있는 SURVEY/QUIZ의 버튼은 제출로 동작하며, Header 닫기는 기존 종료 정책을 유지한다. Demo·웹 미리보기의 예제/응답은 실제 API 데이터와 구분한다.
+
 ## 5. 필드 정리 시 주의사항
 
 | 문서에서 혼동하기 쉬운 표현 | 실제 코드 기준 정리 |
@@ -128,7 +130,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | TextStyle | 해당 필드 없음. HeaderFontSize / BodyFontSize / FooterFontSize로 분리 |
 | 공통 Width/Height vs IMAGE Width/Height | 공통값은 PopupWindow 크기, ImageWidth/ImageHeight는 이미지 표시 영역 크기 |
 | ORIGINAL + ImageWidth/ImageHeight | ORIGINAL 모드에서는 ImageWidth/ImageHeight가 적용되지 않으므로 최소 버전에서 사용하지 않음 |
-| IsMuted | 해당 필드 없음. DefaultVolume과 영상 컨트롤의 음소거 UI로 처리 |
+| IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | CloseOnFail | 해당 설정 필드 없음. QUIZ 미통과 시 창을 유지하는 내부 동작 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
@@ -153,7 +155,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 ### 표시·조회 동작
 
 - 로그인/기동 직후 최초 조회 후 30~60분 간격으로 기동 기준 반복 조회한다. 서버 `pollingIntervalSeconds`가 우선하며 선택 필드 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다. 서버만 활성·기간·대상·숨김·완료를 판단하고 WPF는 응답을 바로 표시한다. 열린 팝업도 조회하되 이번 실행에서 표시한 ID는 제외한다.
-- 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 고정 WPF 컨트롤을 사용한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen·DefaultVolume을 두 재생 방식에 적용한다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
+- 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 WPF Overlay 컨트롤을 사용한다. 재생 중 무입력·마우스 이탈 시 숨기고 진입·이동 시 표시하며 일시정지·조작 중에는 유지한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen을 두 재생 방식에 적용한다. 음량·음소거는 현재 Windows Master Volume/Mute와 동기화하며 내부 영상 음량은 1.0으로 유지한다. DefaultVolume은 시스템 연결 전/실패 시 초기 음량이다. Windows 값 변경은 다른 프로그램에도 영향을 주며 종료 시 이전 값으로 복원하지 않는다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
 - VIDEO+QUIZ는 영상·전체 문항·제출 영역을 단일 세로 스크롤로 이동하고 공통 Footer는 창 하단에 고정한다. 단독 SURVEY/QUIZ 스크롤은 유지한다. YouTube iframe은 공통 HTML5 컨트롤 적용과 시청량 측정 대상에 포함하지 않는다.
 
 ### 추가 확인 사항

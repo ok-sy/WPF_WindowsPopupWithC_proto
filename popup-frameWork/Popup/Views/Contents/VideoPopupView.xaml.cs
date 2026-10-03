@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Popup.Models;
+using Popup.Services;
 using System.Runtime.InteropServices;
 using Forms = System.Windows.Forms;
 
@@ -113,6 +114,9 @@ namespace Popup.Views.Contents
          * 현재 음소거 상태인지 나타낸다.
          */
         private bool _isMuted;
+        private IMasterVolume? _masterVolume;
+        private bool _syncingMasterVolume;
+        private bool HasMasterVolume => _masterVolume?.State != null;
 
         /*
          * 음소거 해제 시 복원할 이전 음량이다.
@@ -204,8 +208,8 @@ namespace Popup.Views.Contents
                 : 0.7;
 
             /*
-             * 기본 음량을 슬라이더에 먼저 넣어 두면 MediaOpened 에서 PopupVideo.Volume = VolumeSlider.Value 로 반영된다.
-             * 음소거 해제 시 복원값도 같은 값으로 맞춘다.
+             * 장치 연결 전/실패 시 defaultVolume을 내부 플레이어에 적용한다.
+             * Loaded에서 시스템 볼륨 연결에 성공하면 현재 Windows 값으로 대체한다.
              */
             VolumeSlider.Value = _defaultVolume;
             _volumeBeforeMute = _defaultVolume > 0 ? _defaultVolume : 0.7;
@@ -277,6 +281,9 @@ namespace Popup.Views.Contents
              * Loaded 이벤트가 중복 실행되지 않도록 제거한다.
              */
             Loaded -= VideoPopupView_Loaded;
+
+            if (!_isYouTubeVideo)
+                AttachMasterVolume(new WindowsMasterVolume(Dispatcher));
 
             if (_useWebPlayer)
             {
@@ -453,7 +460,7 @@ namespace Popup.Views.Contents
                 (_isLoop ? " loop" : string.Empty) +
                 " playsinline";
             string defaultVolumeJs =
-                _defaultVolume.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                (HasMasterVolume ? 1.0 : VolumeSlider.Value).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
             return $$"""
                 <!doctype html>
@@ -615,7 +622,16 @@ namespace Popup.Views.Contents
             }
             DurationTimeText.Text = FormatTime(TimeSpan.FromSeconds(_webDurationSeconds));
             _syncingWebState = true;
-            try { VolumeSlider.Value = root.GetProperty("volume").GetDouble(); }
+            try
+            {
+                if (_masterVolume == null) VolumeSlider.Value = root.GetProperty("volume").GetDouble();
+                else
+                {
+                    // Late HTML5 messages from before an endpoint loss must not replace fallback UI gain.
+                    double playerVolume = HasMasterVolume ? 1 : VolumeSlider.Value;
+                    if (root.GetProperty("volume").GetDouble() != playerVolume) SetVideoVolume(playerVolume);
+                }
+            }
             finally { _syncingWebState = false; }
             PlaybackRateText.Text = root.GetProperty("rate").GetDouble().ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "x";
             PlayPauseIcon.Text = _isPlaying ? "\uE769" : "\uE768";
@@ -746,7 +762,7 @@ namespace Popup.Views.Contents
                 ControlBarVisibility(true);
 
             PopupVideo.Volume =
-                VolumeSlider.Value;
+                HasMasterVolume ? 1 : VolumeSlider.Value;
 
             if (PopupVideo.NaturalDuration.HasTimeSpan)
             {
@@ -1192,6 +1208,7 @@ namespace Popup.Views.Contents
                 ControlBarVisibility(true);
 
             _controlsHideTimer.Stop();
+            _controlsHideTimer.Interval = TimeSpan.FromSeconds(_fullScreenWindow == null ? 3 : 2);
             if (_isPlaying) _controlsHideTimer.Start();
         }
 
@@ -1291,6 +1308,14 @@ namespace Popup.Views.Contents
              */
             if (PopupVideo == null)
             {
+                return;
+            }
+
+            if (_syncingMasterVolume) return;
+            if (HasMasterVolume)
+            {
+                _masterVolume!.SetVolume(e.NewValue);
+                ApplyMasterVolume(_masterVolume.State);
                 return;
             }
 
@@ -1407,6 +1432,13 @@ namespace Popup.Views.Contents
         {
             if (!_isMediaOpened)
             {
+                return;
+            }
+
+            if (HasMasterVolume)
+            {
+                _masterVolume!.SetMute(!_masterVolume.State!.Value.Muted);
+                ApplyMasterVolume(_masterVolume.State);
                 return;
             }
 
@@ -1933,6 +1965,40 @@ namespace Popup.Views.Contents
             else PopupVideo.Volume = volume;
         }
 
+        internal void AttachMasterVolume(IMasterVolume masterVolume)
+        {
+            if (_masterVolume != null)
+            {
+                _masterVolume.Changed -= ApplyMasterVolume;
+                _masterVolume.Dispose();
+            }
+            _masterVolume = masterVolume;
+            _masterVolume.Changed += ApplyMasterVolume;
+            ApplyMasterVolume(masterVolume.State);
+        }
+
+        private void ApplyMasterVolume(MasterVolumeState? state)
+        {
+            _syncingMasterVolume = true;
+            try
+            {
+                if (state is { } current)
+                {
+                    VolumeSlider.Value = current.Volume;
+                    _isMuted = current.Muted;
+                    SetVideoVolume(1);
+                }
+                else
+                {
+                    // No endpoint: retain the displayed level and use the internal player.
+                    _isMuted = VolumeSlider.Value <= 0;
+                    SetVideoVolume(VolumeSlider.Value);
+                }
+                UpdateVolumeIcon();
+            }
+            finally { _syncingMasterVolume = false; }
+        }
+
         private void SetPlaybackRate(double rate)
         {
             rate = _allowPlaybackRateChange ? rate : 1;
@@ -2062,6 +2128,12 @@ namespace Popup.Views.Contents
             object sender,
             RoutedEventArgs e)
         {
+            if (_masterVolume != null)
+            {
+                _masterVolume.Changed -= ApplyMasterVolume;
+                _masterVolume.Dispose();
+                _masterVolume = null;
+            }
             _controlsHideTimer.Stop();
             _feedbackTimer.Stop();
             try

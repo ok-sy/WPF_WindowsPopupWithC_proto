@@ -54,7 +54,21 @@ namespace Popup.Views.Windows
                 FooterCloseButton.Content = "제출";
                 // 닫기 숨김 옵션으로 필수 제출 경로까지 사라지지 않도록 한다.
                 FooterCloseButton.Visibility = Visibility.Visible;
-                if (_options.ShowFooter) survey.UseFooterSubmission();
+                FooterCloseButton.Style = (Style)survey.FindResource("SurveySubmitButtonStyle");
+                FooterResponseProgressText.Visibility = Visibility.Visible;
+                void RefreshSurveyFooter()
+                {
+                    FooterCloseButton.IsEnabled = survey.CanSubmit;
+                    FooterResponseProgressText.Text = survey.ResponseProgressText;
+                    FooterResponseProgressText.Foreground = (System.Windows.Media.Brush)survey.FindResource("SurveyMutedText");
+                }
+                survey.ResponseProgressChanged += (_, _) => RefreshSurveyFooter();
+                RefreshSurveyFooter();
+                if (_options.ShowFooter)
+                {
+                    FooterRow.Height = GridLength.Auto;
+                    survey.UseFooterSubmission();
+                }
             }
             if (_options.Content is VideoQuizPopupView videoQuiz)
             {

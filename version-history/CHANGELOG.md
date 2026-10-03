@@ -2,6 +2,137 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-03-16 — 문서·인터페이스 정의서 정합성 점검 및 통합 반영
+
+- 이유: VIDEO·Survey·Quiz·웹 미리보기 수정분을 문서와 대조하고 커밋 가능한 최종 결과물로 정리.
+- 변경: 인터페이스 v3.5에서 결합 화면의 영상/문항 Scroll과 하단 고정 제출 영역을 구분하고 공통 Footer의 제출 우선 동작·Row/Chip 표시·필수 진행 상태 명시. JSON 필드·ENUM·응답/점수 계약은 유지. 설계 20을 최종 무채색 UI 기준으로 통합하고 가이드·README의 오래된 스크롤 설명 보완. Word 생성기의 관리자 미리보기 부록 보완, DOCX 목차/페이지 갱신 및 PDF 43쪽 재생성. 앞선 변경 상태는 각 작업 시점의 기록이며 통합 반영은 Git 이력으로 확인한다.
+- 주요 파일: 인터페이스 Markdown/최소 범위/DOCX/PDF, Word 생성기, 설계 19~22·WPF/웹 가이드, 앞선 VIDEO·Survey·Demo·웹 코드 및 검증 프로젝트 Git 제외 정책.
+- 검증: WPF 최종 빌드 경고·오류 0, WPF 582건·HTML5 89건 재검증 통과. 웹 타입/production 빌드·변경 파일 lint·headless Edge 40건 통과 결과 유지. DOCX 실제 텍스트에 수정 내용 포함 확인, Word PDF 43쪽 생성. git diff --check 및 원격 main 동기화 확인. 로컬 검증 프로젝트·하네스 및 기존 별도 MockSso 실행 설정은 커밋 대상에서 제외.
+- 상태: 검증 완료, main 통합 커밋·푸시 대상 확정. 실행 파일/dist 반입 패키지·배포 갱신 없음. 실제 물리 입력·DPI·원격 API·관리자 로그인 검증은 미실행으로 유지.
+
+## 2026-10-03-15 — 웹 Survey·Quiz 미리보기 WPF UI 정합성 반영
+
+- 이유: 관리자 웹 미리보기의 기본 Radio/Checkbox·스크롤 내부 제출 영역을 최종 WPF Survey·Quiz UI와 동일한 시각·동작 규칙으로 구성.
+- 변경: SurveyPreview 공통 컴포넌트·무채색 토큰, 세로 전체 폭 Row/우측 Path·가로 공통 Chip·선택 높이 안정화·TextArea·고정 Footer·필수 진행 문구·진회색 Submit 적용. native 입력·Space/Enter·영상 완료 기준 잠금/해금 유지. WPF Demo SURVEY 6/QUIZ 5문항을 예제 전환으로 제공하며 원본 편집 데이터에 저장하지 않음. 응답·채점은 미리보기 로컬 상태에만 반영, API·서버·Payload 변경 없음.
+- 주요 파일: PopupPreview.tsx, SurveyPreview.tsx, popupDemoQuestions.ts, 웹 README·설계 22. 검증 하네스·PNG Git 제외 유지.
+- 검증: 웹 타입 검사·production 빌드 통과, 변경 세 파일 lint 경고·오류 없음. headless Edge 브라우저 40건 통과: native 선택/키보드·필수 응답·100점 채점·영상 해금·원본 데이터 불변·Footer 고정·버튼 색상·좁은 폭/긴 문장·크기 안정성. PNG 시각 확인. 기존 전체 프로젝트 lint 및 runtime config deprecation 경고 유지. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시·미배포. 실제 관리자 로그인·API 저장·물리 입력·DPI 검증 미실행. dist 반입 패키지 갱신 없음.
+
+## 2026-10-03-14 — Demo Survey·Quiz Q&A 조합 확장
+
+- 이유: 가로·세로 단일/복수 선택과 짧은/긴 보기의 UI를 세 Demo에서 충분히 확인할 수 있도록 사례 확장.
+- 변경: SURVEY 6문항에 세로/가로 복수 선택·짧은/긴 가로 단일 선택 추가. QUIZ 5문항에 가로 단일·세로 복수·선택 주관식 추가, 객관식 4문항 각 25점·총점/통과점수 100 구성. 짧은 한글·긴 한글·긴 영문·공백 없는 문자열 혼합. VIDEO+QUIZ는 확장된 QUIZ를 복제하고 80% 시청 안내 추가. 기존 문항/선택지 ID·데이터 계약·채점/응답 로직 유지.
+- 주요 파일: DemoPopupDataService.cs, 설계 21 Demo Q&A. 로컬 검증 소스 Git 제외 유지.
+- 검증: WPF 빌드 경고·오류 0, WPF 582건 통과. 세 Demo의 네 조합·주관식·ID 중복 없음, 정답 100점 통과 및 한 문항 오답 75점 미통과, 기존 제출·영상 해금·응답 수집 회귀 확인. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 실제 Demo 물리 입력·다양한 모니터 확인 미실행. 원격 API·배포 갱신 없음.
+
+## 2026-10-03-13 — MultipleChoice Row/Chip 스타일 분기 명확화
+
+- 이유: 세로형 복수선택의 전체 폭 Outline Row 정책과 가로형 Chip 정책을 명시하고 긴 문장 렌더링 정합성 확인.
+- 변경: SurveyCheckBoxStyle을 SurveyCheckBoxRowStyle로 명확히 명명하고 HorizontalOptions 분기에서 참조. 공통 Row 컨트롤·Template Border에 Stretch 명시, SingleChoice와 동일 Path·Padding·상태 유지. 기존 Margin·CheckBox 동작·응답 수집·채점·Payload 유지.
+- 주요 파일: SurveyStyles.xaml, SurveyPopupView.xaml.cs, 설계 20. 로컬 검증 소스 Git 제외 유지.
+- 검증: WPF 빌드 경고·오류 0, WPF 555건 통과. Factory 경로에서 복수선택 VERTICAL DTO의 짧은/긴 문장 전체 폭·Border Stretch·700/380/280 폭 Wrap·체크 중앙/비중첩·선택 높이·모든 OPTION_ID 수집 확인. 세로 복수선택 PNG 생성·시각 확인. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 실제 물리 입력·원격 API 검증 미실행. Demo 원본 배치 데이터·배포 변경 없음.
+
+## 2026-10-03-12 — Survey·Quiz 가로형 복수선택 Chip 시각 통일
+
+- 이유: 가로형 복수선택에 남아 있던 기존 체크박스 Indicator를 제거하고 단일선택 Chip과 시각 규칙 통일.
+- 변경: SurveyOptionChipStyle 공통 ToggleButton Template을 RadioButton·CheckBox에서 공유. 복수선택 사각 Indicator·문자 체크 제거, 기존 Chip의 Selected/Hover/Pressed/Focus/Disabled 상태 유지. MaxWidth 계산에서 가로형 CheckBox 아이콘 폭 32 차감 제거. 세로형 우측 Path·단일/복수 선택·필수 검증·점수·Payload 유지.
+- 주요 파일: SurveyStyles.xaml, SurveyPopupView.xaml.cs, 설계 20·설문 안내. 검증 소스 Git 제외 유지.
+- 검증: WPF 빌드 경고·오류 0, WPF 524건 통과. Demo QUIZ·VIDEO+QUIZ의 Factory 경로에서 기본 glyph 제거·700/280 폭 긴 문장·복수 선택 및 원래 OPTION_ID 수집 확인. QUIZ PNG 생성·시각 확인. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 실제 물리 입력·원격 API 검증 미실행. 배포 갱신 없음.
+
+## 2026-10-03-11 — Survey Submit 버튼 진회색 톤다운
+
+- 이유: Submit의 과한 near-black 대비를 낮추고 설문 UI에 어울리는 무채색 CTA로 조정.
+- 변경: SurveyButtonBackgroundBrush #4A4A4F, SurveySubmitHoverBrush #3D3D42, SurveySubmitPressedBrush #303035 적용. 흰 텍스트·SemiBold·Disabled·Focus·버튼 크기/Padding/Radius 유지. Header 닫기는 기존 투명 스타일 유지. 선택지·응답·검증·채점·Payload 변경 없음.
+- 주요 파일: SurveyStyles.xaml, 설계 20·설문 안내. Git 제외 로컬 검증 코드 보완.
+- 검증: WPF 빌드 경고·오류 0, WPF 496건 통과. 반복 Hover/Pressed/Disabled 전환·Enabled 복귀·Focus 및 크기 안정성 검증. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 물리 입력·모니터 대비 확인 미실행. 검증 프로젝트 Git 제외 유지, 배포 갱신 없음.
+
+## 2026-10-03-10 — Survey 세로 선택지 Outline 및 우측 체크 Path
+
+- 이유: Hover 이전에도 선택 영역을 구분하고, 무채색 체크 명도로 선택 상태를 전달하며 긴 문장 선택 시 레이아웃 흔들림 방지.
+- 변경: 세로형 RadioButton·CheckBox 공통 Row Template에 고정 폭 28의 우측 체크 Path 적용. Normal White/#E5E5E5/#D4D4D4, Hover #F5F5F5/#D4D4D4/#A3A3A3, Selected #ECECEC/#AFAFAF/near-black 상태 적용. Padding 16/12·MinHeight 48·BorderThickness 1 유지, Focus는 border 색만 변경. 가로형 Chip Template 유지. 긴 텍스트 MaxWidth에서 체크 공간 확보하고 Normal/SemiBold 높이를 사전 측정해 선택 시 높이 변화 방지. 응답·필수 검증·점수·Payload 변경 없음.
+- 주요 파일: SurveyStyles.xaml, SurveyPopupView.xaml.cs, 설계 20·README·설문 안내. 검증 소스는 Git 제외 유지.
+- 검증: 최종 WPF 빌드 경고·오류 0, WPF 483건·HTML5 89건 통과. 756/380/280 폭의 체크 중앙·텍스트 비중첩·선택 크기·스크롤 안정성, Hover/Selected/Disabled 체크 명도, 단일/복수 선택·키보드·응답 ID·기존 채점/제출 회귀 확인. 기본·선택·좁은 창 렌더 PNG 확인. 추가 검증에서 발견한 SemiBold 줄바꿈 높이 변동을 수정하고 전체 재검증 통과. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 실제 물리 입력·스크린리더·DPI·원격 API 검증 미실행. 배포 갱신 없음.
+
+## 2026-10-03-09 — Survey 가로·세로 옵션 간격 정합성 수정
+
+- 이유: 가로형 옵션에 아래 Margin이 섞여 마지막 옵션과 세로 배치가 달라 보이고 마지막 오른쪽에 여백이 남는 문제 수정.
+- 변경: 단일·복수 선택의 Margin 계산을 GetOptionMargin(horizontal, isLast)로 공통화. 가로형은 오른쪽 8px, 세로형은 아래 8px만 사용하고 마지막 항목은 Margin 0. 기존 스타일 높이·Padding·Selected BorderThickness·WrapPanel·MaxWidth 및 응답 로직 유지.
+- 주요 파일: SurveyPopupView.xaml.cs, 설계 20. Git 제외 로컬 검증 코드 보완.
+- 검증: WPF 빌드 경고·오류 0, WPF 416건 통과. 네 배치 조합의 동일 높이·실제 8px 간격·마지막 여백 제거, 이미지/설문 선택 전후 높이·BorderThickness 1, 좁은 폭 줄바꿈·선택 배타성·복수 선택·응답 OPTION_ID 검증. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 검증 프로젝트 Git 제외 유지. 실제 물리 입력·다중 행 간격의 주관적 시각 확인 미실행. 가로형 아래 Margin은 요구 규칙대로 0 유지.
+
+## 2026-10-03-08 — Survey 무채색 테마 전환
+
+- 이유: 최종 UI 구조를 유지하며 Survey·Quiz 상태 표현을 White/Gray/Near Black 명암 체계로 통일.
+- 변경: Survey 전용 teal 제거. Card #F8F8F8·Hover #F1F1F1·Selected #EAEAEA/#AFAFAF·Focus #737373 적용. 번호·설명·진행 문구 muted gray, 활성 Submit near-black, Disabled 연회색 적용. 선택지·입력·스크롤바를 공통 리소스로 구성. 레이아웃·응답·필수 검증·점수·DTO·Payload 유지.
+- 주요 파일: SurveyStyles.xaml, SurveyPopupView.xaml/.cs, PopupWindow.xaml, 설계 20·README·설문 안내.
+- 검증: WPF 빌드 경고·오류 0, WPF 동작 362건·HTML5 89건 통과. 상태·긴 문장·좁은 창·고정 Footer·스크롤·Demo/DTO 왕복 회귀 및 렌더 PNG 확인. git diff --check 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 검증 프로젝트 Git 제외 유지. 물리 입력·스크린리더·DPI·실제 원격 API 검증 미실행. dist·배포 갱신 없음.
+
+## 2026-10-03-07 — 설문 약한 그룹 카드 및 선택 Row/Chip 리디자인
+
+- 이유: 비선택 상태의 세로 보기가 입력창처럼 보이는 형태를 정리하고, 문항 구분·선택 강조·키보드 포커스·고정 제출 영역을 동일한 시각 규칙으로 구성.
+- 변경: #FAFBFB 배경·radius 11·border/shadow 없음·padding 20/20/20/18·간격 14의 약한 문항 그룹 복원, 문항 Divider 및 상단 설명 Divider 제거. 배경 없는 01 번호·Header 간격 16·입력 간격 14 적용. 세로 선택지는 비선택 배경/테두리를 투명하게 두고 선택 때만 공통 연한 teal 배경·soft teal border·teal text·SemiBold 표시. Chip은 매우 약한 기본 테두리와 흰 배경을 유지하며 동일 선택 토큰 사용. MinHeight 44·자동 높이·긴 한글/공백 없는 영문 Wrap 유지. Hover/Pressed/Focus/Disabled와 FocusVisualStyle 적용, disabled hover 제거·focus padding 보정. RadioButton IsChecked·GroupName·native 접근성·Space 및 Enter 선택 유지.
+- 변경(입력/스크롤): TextArea 기본 테두리 약화·focus만 포인트 강조·padding 16/14·placeholder 유지. MinHeight 96 및 MaxHeight 180 이후 내부 스크롤 적용. Footer 진행 텍스트는 subdued gray, 버튼은 높이 46·radius 11 유지. VIDEO+QUIZ는 공통 Footer를 끈 경우에도 내부 제출 영역을 부모 ScrollViewer 밖 하단 Row로 옮겨 고정. 설문 최대폭 760 및 목록 Bottom 여백 20 적용. native ScrollContentPresenter/PART_Track/스크롤 명령을 유지하는 폭 8의 연한 ScrollBar/Thumb, 본문과 gap 10 적용. 스타일 색상·간격·Focus·카드 규칙은 SurveyStyles 공통 리소스로 분리. DTO·서버 모델·응답 저장·필수 검증·점수 계산·제출 JSON 변경 없음.
+- 주요 파일: `SurveyStyles.xaml`, `SurveyPopupView.xaml/.cs`, `VideoQuizPopupView.cs`, `PopupWindow.xaml.cs`, 설계 20·README·설문/퀴즈 안내.
+- 검증: .NET SDK 10.0.400 WPF 빌드 경고·오류 0, 로컬 WPF 동작 362건 및 HTML5 브리지 89건 통과. 기존 채점·답안·전송 JSON·Demo 회귀, API DTO JSON 왕복 후 Factory의 SURVEY 생성, 756/380/280 폭의 긴 영문·Chip·TextArea 경계, 상태 속성 주입, native 역할/SelectionItem·synthetic Space/Enter 선택·배타성, focus 높이 유지·disabled hover 제거, 실제 Thumb 폭 및 native Drag 이벤트, TextArea 내부 스크롤, 단독/결합 Footer 고정 검증 포함. 비선택·선택 완료·좁은 창 WPF PNG 생성·시각 확인. `git diff --check` 통과. 실패한 후속 검증은 native ScrollBar 명령을 거치도록 입력 주입을 보정하고 TextArea 높이 상한을 적용한 뒤 전체 재검증 통과.
+- 상태: 로컬 반영, 미커밋·미푸시. 검증 프로젝트는 Git 제외 유지. PNG는 `.offline-verify/master-volume-build/bin/Popup.BehaviorTests/debug/survey-redesign-default.png`, `survey-redesign-selected.png`, `survey-redesign-narrow.png`. 실제 물리 클릭·Tab/키보드·휠/트랙 클릭·스크린리더·모니터 DPI·원격 API 조회/저장 검증은 미실행으로 상세 TODO에 유지. 기존 변경 유지, dist·반입 패키지·배포 갱신 없음.
+
+## 2026-10-03-06 — 설문 문항 배경 제거 및 Divider 구분
+
+- 이유: 문항을 감싸는 배경·라운드를 제거해 선택지 카드 중심으로 화면 밀도를 정리.
+- 변경: 문항의 연회색 배경·CornerRadius·외곽 padding과 번호 배지 배경 제거. 문항 사이에만 1px Divider 및 위아래 합계 20px 간격 적용. 마지막 선택지 아래 여백을 제거해 문항 간 간격 중복 방지. 선택지의 포인트 색·카드 모양·선택/focus 상태는 유지하며 기본 높이 48→42, 세로 padding 12→9로 축소. focus padding도 보정해 높이 변화 방지. 긴 선택지는 자동 줄바꿈·높이 증가 유지. 주관식 입력 스타일과 답안·채점·제출 기능 유지.
+- 주요 파일: `SurveyPopupView.xaml.cs`, `SurveyStyles.xaml`, 설계 20·README.
+- 검증: WPF 빌드 경고·오류 0, 로컬 전용 WPF 동작 318건 통과. 기존 레이아웃 확인을 배경·라운드 제거 및 Divider·간격 기준으로 갱신. 실제 WPF 렌더 PNG를 재생성·시각 확인. `git diff --check` 통과. 물리 마우스·키보드 및 모니터 DPI 검증 미실행.
+- 상태: 로컬 반영, 미커밋·미푸시. 검증 프로젝트 Git 제외 유지, 앞선 변경 유지. dist·반입 패키지 갱신 없음.
+
+## 2026-10-03-05 — SURVEY·QUIZ 카드/Chip UI 및 필수 응답 진행 상태
+
+- 이유: 긴 답변·가로형 짧은 보기·주관식 입력을 같은 시각 체계로 정리하고 필수 응답 완료 여부를 제출 전에 확인할 수 있도록 UI 개선.
+- 변경: 설문 전용 스타일에서 틸 #0F766E를 선택·포커스·제출에 적용. 단일 선택은 RadioButton IsChecked·GroupName을 유지하며 원형/체크 아이콘 없이 전체 클릭 가능한 카드·가로 Choice Chip으로 렌더링. 배경·테두리·SemiBold로 선택 상태 구분, hover·focus·disabled 스타일 적용. 긴 문장의 줄바꿈·높이 증가·폭 방어·padding·줄 간격 반영. 복수 선택은 기존 CheckBox 기능 유지. 문항 테두리 제거·연한 배경·radius 14·padding 20·간격 20, 01 번호 배지·제목 25·문항 제목 16 적용. 주관식 radius 10·포인트 focus·placeholder 적용하며 안내를 답안으로 넣지 않음.
+- 변경(제출): 기존 답안 수집 결과로 필수 완료/전체 수를 표시하고 미응답·공백·입력 삭제 및 영상 퀴즈 잠금에 맞춰 내부/공통 Footer 제출 버튼을 활성·비활성화. 높이 46·radius 11의 전용 제출 버튼 적용. 공통 Footer 사용 시 내부 안내·버튼 영역 숨김, Footer 높이는 Auto로 응답 상태·숨김 체크박스 줄바꿈에 대응. 기존 필수 응답 검증·점수 계산·제출 이벤트 데이터 구조 유지. 단일·복수 선택에서 Enter 선택 처리 및 자동화 이름 제공, 기존 native 접근성 역할·키보드 기능 유지.
+- 주요 파일: `SurveyStyles.xaml`, `SurveyPopupView.xaml/.cs`, `PopupWindow.xaml/.cs`, `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`, README·설문/퀴즈 안내. 로컬 Git 제외 검증 프로젝트에서 후속 UI 검증 추가.
+- 검증: WPF 빌드 경고·오류 0, 기존 채점·제출·VIDEO+QUIZ 스크롤·시청 정책을 포함한 WPF 동작 318건 및 HTML5 브리지 89건 통과. 필수 응답 진행·Footer 활성·optional TextBox·공백/삭제·마지막 복수 선택 해제·영상 잠금·Radio 배타성·native 접근성 역할/SelectionItem·glyph 제거·620/300 폭의 긴 문장·Chip·선택 스타일·placeholder 검증 포함. WPF RenderTargetBitmap으로 응답 완료 및 미완료 화면 PNG를 생성·시각 확인. `git diff --check` 통과. 실제 물리 Tab/Space/Enter/방향키·전체 카드 클릭·스크린리더·모니터 DPI 검증은 미실행.
+- 상태: 로컬 반영, 미커밋·미푸시. 검증 프로젝트는 Git 제외 유지. PNG는 `.offline-verify/master-volume-build/bin/Popup.BehaviorTests/debug/survey-card-preview.png` 및 `survey-card-incomplete-preview.png`에 생성. 기존 시스템 볼륨·전체화면 숨김·검증 프로젝트 Git 제외 변경 유지. dist·반입 패키지·배포 갱신 없음.
+
+## 2026-10-03-04 — SURVEY·QUIZ 선택지 흑백 하이라이트
+
+- 이유: 설문·퀴즈 선택지의 파란 강조색을 검은색 기본 강조와 회색 명암으로 통일.
+- 변경: 공통 RadioButton·CheckBox의 기본 테두리를 회색 #737373, hover 테두리를 진회색 #404040·배경을 #F5F5F5, 선택 배경을 #E5E5E5·표시색을 #171717로 변경. 단일 선택 점·다중 선택 체크는 동일한 검정 계열을 사용하고 비활성 상태는 기존 불투명도 0.45 유지. 같은 SurveyPopupView를 쓰는 SURVEY·QUIZ·VIDEO+QUIZ에 공통 적용.
+- 주요 파일: `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`.
+- 검증: .NET SDK 10.0.400 WPF 빌드 경고·오류 0. 두 선택지 템플릿의 파란 색상 제거 및 기본/hover/선택 명암 구분 확인. `git diff --check` 통과. 실제 마우스 조작·GUI 시각 확인은 미실행.
+- 상태: 로컬 반영, 미커밋·미푸시. 앞선 시스템 볼륨·전체화면 숨김·검증 프로젝트 Git 제외 변경 유지. dist·반입 패키지 갱신 없음.
+
+## 2026-10-03-03 — VIDEO 전체화면 컨트롤 2초 자동 숨김
+
+- 이유: 영상 전체화면에서 마우스가 영상 위에 머무를 때 컨트롤 자동 숨김 대기시간 단축.
+- 변경: 컨트롤 표시·타이머 재예약 시 영상 전체화면은 2초, 일반 화면은 3초로 설정. 전체화면 진입·복귀와 마우스 이동 시 현재 모드의 시간을 적용. 일시정지·Seek·마우스/키보드 조작 중 표시 유지 및 마우스 이탈 즉시 숨김은 유지. 관련 인터페이스·옵션 안내·README·설계 19와 Word/PDF 갱신.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs`, `docs/design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md`, 인터페이스 정의서·옵션 안내·README.
+- 검증: .NET SDK 10.0.400 WPF 빌드 경고·오류 0. 전체화면 진입·복귀에서 공통 컨트롤 표시 메서드를 호출하는 경로 확인. Word 실제 열기·목차 갱신·PDF 출력 성공(43쪽). `git diff --check` 통과. 실제 마우스 hover·2초 경과·전체화면 왕복 GUI 확인은 미실행.
+- 상태: 로컬 반영, 미커밋·미푸시. 앞선 검증 프로젝트 Git 제외 및 시스템 볼륨 수정 유지. dist·반입 패키지 갱신 없음.
+
+## 2026-10-03-02 — WPF 검증 프로젝트 Git 추적 제외
+
+- 이유: 개발용 독립 검증 프로젝트를 제품 소스·반입 대상과 분리하고 저장소 구성을 정리.
+- 변경: `Popup.BehaviorTests`·`Popup.RecoveryTests`의 추적 파일 5개를 Git 인덱스에서 제거하고 `.gitignore`에서 두 디렉터리 전체 제외. 최신 로컬 검증 소스와 빌드 결과는 유지. README·결합 화면 안내에서 저장소에 없는 프로젝트 실행 명령을 제거하고 설계·리뷰 문서에는 검증 당시 기록임을 명시. 기존 검증 결과·변경 이력은 유지.
+- 주요 파일: `.gitignore`, `popup-frameWork/README.md`, `Popup/Docs/FOOTER_LINK_VIDEO_QUIZ.md`, 설계 19·20261002 리뷰 문서, Git 인덱스의 검증 프로젝트 파일 5개.
+- 검증: 솔루션은 기존부터 Popup·MockSso만 참조하며 검증 프로젝트 참조 없음. Git 추적 파일 0개·디렉터리 제외 규칙 적용·로컬 파일 5개 보존 확인. `git diff --check` 및 인덱스 변경 공백 검사 통과. 실행 코드 변경 없음으로 추가 빌드·테스트는 실행하지 않음.
+- 상태: 로컬 정리 완료, 검증 프로젝트 삭제는 스테이징 상태. 미커밋·미푸시. 앞선 시스템 볼륨 구현·문서 변경과 기존 `MockSso/Properties/`는 유지. 기존 반입 패키지·dist 재생성 없음.
+
+## 2026-10-03-01 — VIDEO Windows 시스템 볼륨 동기화 및 추가 변경 정합성 보완
+
+- 이유: 설계 19 §9.8의 시스템 볼륨 0·Mute 상태에서도 플레이어에서 음량을 조절할 수 있도록 양방향 동기화 구현. 기존 Overlay 변경 이후 인터페이스·옵션 문서에 남은 고정 컨트롤 행 설명과 상태 기록의 불일치 해소.
+- 변경: 외부 NuGet 없이 Core Audio COM 직접 연동. 기본 멀티미디어 출력 장치의 Master Volume/Mute 초기 조회·변경·외부 이벤트 수신, Dispatcher에서 COM 소유·해제, 2초 주기의 기본 장치 변경·연결 복구 적용. 로컬/HTML5 내부 음량을 1.0으로 유지해 이중 감쇠 방지. 슬라이더 증가 시 시스템 Mute 해제, 음소거 시 음량 값 유지. 장치 없음·연결 실패 시 내부 음량으로 전환하고 새 장치 연결 시 현재 Windows 값을 채택. 실패한 쓰기는 실제 상태로 UI 복원. 종료 시 콜백·타이머·COM 정리하며 시스템 값 복원 없음. YouTube는 기존 자체 플레이어 유지.
+- 변경(문서): defaultVolume을 시스템 연결 전/실패 시 초기값으로 명시하고, Overlay·자동 숨김·시스템 음량 정책을 인터페이스 정의서·최소 정의서·옵션 안내·결합 화면 안내·README·설계 07/19에 반영. 설계 19의 중복 §9.9 번호와 이미 푸시된 Overlay의 미커밋 표기 수정. TODO는 자동 검증과 실제 장치 조작 검증을 분리. JSON 필드·ENUM 변경 없이 v3.5 유지, Word 생성 기준일 갱신 및 DOCX/PDF 재생성.
+- 주요 파일: `popup-frameWork/Popup/Services/WindowsMasterVolume.cs`, `Views/Contents/VideoPopupView.xaml.cs`, `Popup.BehaviorTests/Program.cs`, `video-controls.test.cjs`, `docs/design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md`, 인터페이스 정의서·옵션 안내·README, `scripts/export-interface-word.cjs`.
+- 검증: .NET SDK 10.0.400에서 WPF 빌드 경고·오류 0, WPF 동작 292건·생성 HTML5 브리지 89건 통과. 시스템 초기 0·Mute·슬라이더/음소거·외부 알림 쓰기 루프 방지·실패한 쓰기의 UI 복원·장치 없음/복구·내부 unity gain·종료 후 늦은 이벤트 무시·최종 설정 미복원 검증 포함. 실제 Core Audio 초기 조회 성공(Windows 설정 변경 없이 읽기만 수행). 설치된 Word에서 실제 열기·목차 갱신·PDF 출력 성공(43쪽), DOCX XML/rels 파싱 및 시스템 볼륨·Overlay·기준일 문구 확인. `git diff --check` 통과. 격리 산출물은 `.offline-verify/master-volume-build/`에 생성. 기존 오프라인 NuGet 소스 부재로 이번 복원만 공식 NuGet 소스를 지정했으며 SDK/NuGet 설정 파일은 유지.
+- 상태: 로컬 코드·문서 수정 완료, 미커밋·미푸시. 실제 Windows 볼륨 쓰기·외부 변경 알림·물리 출력 장치 교체·BackgroundOverlay에서 오디오 출력·전체화면 왕복·물리 입력·Runtime 134·원격 DB 검증 미실행. PDF 전체 페이지 시각 검토 미실행. dist·반입 패키지·배포 갱신 없음. 기존 미추적 `MockSso/Properties/` 유지. 자동 업데이트 설계 17의 P3 미착수 및 기존 수동/통합 검증 대기 상태 유지.
+
 ## 2026-10-02-05 — WPF framework 소스 반입 패키지 생성
 
 - 이유: VIDEO Overlay·hover 수정이 반영된 framework 소스를 폐쇄망 저장소에 전달하기 위한 소스 전용 묶음 생성.

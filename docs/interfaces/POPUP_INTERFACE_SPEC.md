@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.5
-- 최신화: 2026-09-30 (KST)
+- 최신화: 2026-10-03 (KST)
+- 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
 - 2026-09-30 보완: JSON 필드·ENUM 변경 없이 30~60분 조회 정책, 로컬/URL 공통 WPF 컨트롤 및 동영상+퀴즈 단일 스크롤 동작을 명시.
 - 3.5 변경: 주요 요청/응답 필드 표에 `필수 여부`와 `Default`를 추가하고, 생략 시 C# 처리 기준을 명확화. 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 계약을 정합성 점검.
 - 3.4 변경: IMAGE `imageSizeMode=ORIGINAL` 추가. 팝업 크기를 유지하고 원본 이미지를 왼쪽 위에 배치한 뒤 넘치는 영역을 자른다.
@@ -446,11 +447,13 @@ BOTTOM
 | allowPlaybackRateChange | boolean | 선택 | `true` | 배속 변경 허용 |
 | autoPlay | boolean | 선택 | `false` | 자동 재생 |
 | isLoop | boolean | 선택 | `false` | 반복 재생 |
-| defaultVolume | number | 선택 | `0.7` | 기본 음량 0~1 |
+| defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |
 
 VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
 
-로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 아래에 같은 **고정 WPF 컨트롤바**를 사용한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. 초기 음량은 두 엔진 모두 `defaultVolume`을 따른다.
+로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다.
+
+음량·음소거는 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다. 시작 시 현재 Windows 값을 읽고 시스템 설정을 바꾸지 않는다. 연결 성공 시 내부 영상 음량은 1.0으로 유지해 이중 감쇠를 방지하며, `defaultVolume`은 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기값으로 사용한다. 슬라이더를 0보다 크게 조절하면 Windows 음소거도 해제하고, 음소거 버튼은 현재 음량 값을 유지한 채 Windows Mute만 전환한다. 외부 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 변경은 다른 프로그램의 출력에도 영향을 주며 팝업 종료 시 이전 시스템 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다.
 
 위치·재생/일시정지·음량·배속·종료·오류는 WPF 컨트롤과 동기화하며 waiting/stalled는 버퍼링 안내로 표시한다. 탐색한 구간은 누적 `watchedSeconds`에 합산하지 않는다. YouTube iframe은 기존 별도 플레이어 UI를 유지하고 기본 음량·배속 제어 및 시청량 측정을 지원하지 않는다.
 
@@ -611,7 +614,8 @@ passingScore 이상
 
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
 
-- 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항·제출 영역은 부모 단일 세로 스크롤로 이동하고 공통 푸터는 창 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
+- 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
+- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 닫기·바로가기 대신 제출로 동작한다. 이 화면에서 `footerAction`·`footerLinkUrl`은 제출 동작을 대체하지 않는다. 헤더 닫기는 기존 종료 정책을 따른다.
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - `allowCloseBeforeComplete: true`면 헤더 X·Alt+F4로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
@@ -624,6 +628,10 @@ passingScore 이상
 # 9. questions[] 계약
 
 선택지는 직접 전달한다(C#이 기본 보기를 자동 생성하지 않는다). 각 문항의 optionLayout으로 가로·세로를 개별 지정하며, 누락·미지원 값은 WPF에서 세로형으로 표시한다. 한 팝업에서 두 배치를 혼합할 수 있다.
+
+단일·복수 선택 모두 VERTICAL은 전체 폭 Outline Row와 항상 보이는 우측 체크 Path, HORIZONTAL은 원형/사각 표시 없는 Choice Chip으로 렌더링한다. 단일 선택은 한 개, 복수 선택은 여러 개의 OPTION_ID를 수집하며 기존 응답 계약을 유지한다. 긴 문장은 자동 줄바꿈하고 선택 상태는 무채색 배경·테두리·글자 굵기로 구분한다. UI 색상·아이콘·간격을 위한 새 JSON 필드는 추가하지 않는다.
+
+필수 응답 진행 상태와 제출 버튼은 본문 스크롤 밖 하단에 고정한다. 미응답 필수 문항이 있으면 비활성화하고, VIDEO+QUIZ는 영상 시청 잠금도 해제되어야 활성화한다. TEXT의 Placeholder는 응답으로 저장하지 않는다. Demo 및 관리자 미리보기의 예제 문항은 실제 API가 제공해야 할 기본 보기나 정답을 의미하지 않는다.
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
