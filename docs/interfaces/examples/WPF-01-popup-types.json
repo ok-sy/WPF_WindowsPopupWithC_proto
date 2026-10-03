@@ -1,0 +1,336 @@
+{
+  "serverTime": "2026-10-03T12:00:00+09:00",
+  "userId": "E1001",
+  "pollingIntervalSeconds": 1800,
+  "popups": [
+    {
+      "popupId": "TEXT-001",
+      "popupType": "TEXT",
+      "title": "서비스 안내",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": true,
+      "questions": [],
+      "content": {
+        "contentTitle": "점검 공지",
+        "description": "안내 내용을 확인해주세요.",
+        "showContentHeader": true,
+        "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+        "showPlainText": true,
+        "highlightText": "작업 내용을 미리 저장해주세요.",
+        "showHighlight": true,
+        "bottomDescription": "자세히 보기",
+        "bottomDescriptionUrl": "https://example.com/notice",
+        "showBottomDescription": true
+      }
+    },
+    {
+      "popupId": "IMAGE-001",
+      "popupType": "IMAGE",
+      "title": "교육 안내",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": true,
+      "questions": [],
+      "content": {
+        "imageTitle": "교육 일정",
+        "imageUrl": "https://example.com/media/training.png",
+        "description": "이미지에서 교육 일정을 확인해주세요.",
+        "showDescription": true,
+        "imageSizeMode": "ADAPTIVE",
+        "descriptionPosition": "BOTTOM",
+        "imageAreaRatio": 0.75
+      }
+    },
+    {
+      "popupId": "VIDEO-001",
+      "popupType": "VIDEO",
+      "title": "교육 영상",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": false,
+      "questions": [],
+      "completionRatio": 0.8,
+      "content": {
+        "videoTitle": "보안 교육",
+        "videoUrl": "https://example.com/media/security.mp4",
+        "description": "영상의 80% 이상을 시청해주세요.",
+        "showDescription": true,
+        "showControls": true,
+        "allowFullScreen": true,
+        "allowPlaybackRateChange": true,
+        "autoPlay": true,
+        "isLoop": false,
+        "defaultVolume": 0.7
+      }
+    },
+    {
+      "popupId": "SURVEY-001",
+      "popupType": "SURVEY",
+      "title": "교육 만족도 설문",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": true,
+      "questions": [
+        {
+          "questionId": 101,
+          "questionType": "SINGLE_CHOICE",
+          "optionLayout": "VERTICAL",
+          "title": "교육 내용을 이해하기 쉬웠나요?",
+          "description": "",
+          "isRequired": true,
+          "isScored": false,
+          "options": [
+            {
+              "optionId": 1001,
+              "value": "1001",
+              "text": "네"
+            },
+            {
+              "optionId": 1002,
+              "value": "1002",
+              "text": "전반적으로 이해하기 쉬웠지만 실제 업무에 적용하는 구체적인 예시와 추가 설명이 조금 더 필요했습니다."
+            }
+          ]
+        },
+        {
+          "questionId": 102,
+          "questionType": "MULTIPLE_CHOICE",
+          "optionLayout": "HORIZONTAL",
+          "title": "도움이 된 자료를 모두 선택해주세요.",
+          "description": "",
+          "isRequired": true,
+          "isScored": false,
+          "options": [
+            {
+              "optionId": 1003,
+              "value": "1003",
+              "text": "텍스트"
+            },
+            {
+              "optionId": 1004,
+              "value": "1004",
+              "text": "이미지"
+            },
+            {
+              "optionId": 1005,
+              "value": "1005",
+              "text": "영상"
+            },
+            {
+              "optionId": 1006,
+              "value": "1006",
+              "text": "설문"
+            }
+          ]
+        },
+        {
+          "questionId": 103,
+          "questionType": "TEXT",
+          "optionLayout": "VERTICAL",
+          "title": "추가 의견을 작성해주세요.",
+          "description": "",
+          "isRequired": false,
+          "isScored": false,
+          "options": []
+        }
+      ],
+      "content": {
+        "surveyTitle": "교육 만족도 설문",
+        "description": "필수 문항에 응답한 후 제출해주세요."
+      }
+    },
+    {
+      "popupId": "QUIZ-001",
+      "popupType": "QUIZ",
+      "title": "보안 확인 퀴즈",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": true,
+      "questions": [
+        {
+          "questionId": 201,
+          "questionType": "SINGLE_CHOICE",
+          "optionLayout": "HORIZONTAL",
+          "title": "안전한 연결 방식은 무엇인가요?",
+          "description": "",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 40,
+          "options": [
+            {
+              "optionId": 2001,
+              "value": "2001",
+              "text": "HTTPS",
+              "isCorrect": true
+            },
+            {
+              "optionId": 2002,
+              "value": "2002",
+              "text": "HTTP",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "questionId": 202,
+          "questionType": "MULTIPLE_CHOICE",
+          "optionLayout": "VERTICAL",
+          "title": "안전한 계정 관리 방법을 모두 선택해주세요.",
+          "description": "",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 60,
+          "options": [
+            {
+              "optionId": 2003,
+              "value": "2003",
+              "text": "다중 인증 사용",
+              "isCorrect": true
+            },
+            {
+              "optionId": 2004,
+              "value": "2004",
+              "text": "모든 사이트에서 같은 비밀번호를 반복해서 사용하고 다른 사람에게도 공유합니다.",
+              "isCorrect": false
+            },
+            {
+              "optionId": 2005,
+              "value": "2005",
+              "text": "충분히 길고 고유한 비밀번호 사용",
+              "isCorrect": true
+            }
+          ]
+        }
+      ],
+      "passingScore": 80,
+      "content": {
+        "surveyTitle": "보안 확인 퀴즈",
+        "description": "총점 100점, 통과 기준 80점입니다.",
+        "videoEnabled": false
+      }
+    },
+    {
+      "popupId": "VIDEO-QUIZ-001",
+      "popupType": "QUIZ",
+      "title": "영상 교육 및 확인 퀴즈",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showCloseButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "allowCloseBeforeComplete": false,
+      "questions": [
+        {
+          "questionId": 301,
+          "questionType": "SINGLE_CHOICE",
+          "optionLayout": "HORIZONTAL",
+          "title": "안전한 연결 방식은 무엇인가요?",
+          "description": "",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 40,
+          "options": [
+            {
+              "optionId": 3001,
+              "value": "2001",
+              "text": "HTTPS",
+              "isCorrect": true
+            },
+            {
+              "optionId": 3002,
+              "value": "2002",
+              "text": "HTTP",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "questionId": 302,
+          "questionType": "MULTIPLE_CHOICE",
+          "optionLayout": "VERTICAL",
+          "title": "안전한 계정 관리 방법을 모두 선택해주세요.",
+          "description": "",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 60,
+          "options": [
+            {
+              "optionId": 3011,
+              "value": "2003",
+              "text": "다중 인증 사용",
+              "isCorrect": true
+            },
+            {
+              "optionId": 3012,
+              "value": "2004",
+              "text": "모든 사이트에서 같은 비밀번호를 반복해서 사용하고 다른 사람에게도 공유합니다.",
+              "isCorrect": false
+            },
+            {
+              "optionId": 3013,
+              "value": "2005",
+              "text": "충분히 길고 고유한 비밀번호 사용",
+              "isCorrect": true
+            }
+          ]
+        }
+      ],
+      "passingScore": 80,
+      "content": {
+        "videoTitle": "보안 교육",
+        "videoUrl": "https://example.com/media/security.mp4",
+        "description": "영상의 80% 이상을 시청해주세요.",
+        "showDescription": true,
+        "showControls": true,
+        "allowFullScreen": true,
+        "allowPlaybackRateChange": true,
+        "autoPlay": true,
+        "isLoop": false,
+        "defaultVolume": 0.7,
+        "surveyTitle": "영상 확인 퀴즈",
+        "videoEnabled": true
+      },
+      "completionRatio": 0.8
+    }
+  ]
+}

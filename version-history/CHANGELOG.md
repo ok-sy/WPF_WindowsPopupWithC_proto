@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-03-17 — 백엔드 전달용 유형별 JSON 및 필수값 누락 점검
+
+- 이유: 백엔드 연동 시 실제 수신 기본값과 계약상 필수값을 구분하고 누락으로 인한 결과 전송·필수 응답·채점 오류를 예방.
+- 변경: TEXT/IMAGE/VIDEO/SURVEY/QUIZ/VIDEO+QUIZ 전체 항목 예시 및 6종 Envelope JSON 추가. WPF DTO·Factory·결과 대기열·채점기와 Java 저장 검증을 대조해 필수값, 생략/null 차이, ID 양수/중복, isScored·passingScore 누락, 결과 status 미검증을 명시. 최소 정의서에서 예시/점검표 연결. 기존 v3.5 DOCX/PDF 갱신.
+- 주요 파일: docs/interfaces/POPUP_INTERFACE_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md, examples/WPF-01-popup-types.json, WPF_Popup_API_Interface_v3.5.docx/.pdf.
+- 검증: 실제 C# DTO/QuizGrader를 링크한 로컬 제외 프로젝트 58건 통과(6종 JSON·ID/옵션/레이아웃·100점 정답/미응답·0점 통과 누락 재현·null 처리). Word 목차·페이지 갱신 및 PDF 52쪽 생성. 미디어 URL은 형식 예시이며 실제 원격 자원 재생/API 연동은 미실행.
+- 상태: 문서 검증 완료, main 커밋·푸시 대상으로 확정. 개발용 로컬 테스트와 별도 MockSso 실행 설정은 Git 반영 제외. 제품 코드·수신 검증·서버 저장 로직 변경 없음. 필수값 보완 대상은 정의서 6.4절 TODO로 기록.
+
 ## 2026-10-03-16 — 문서·인터페이스 정의서 정합성 점검 및 통합 반영
 
 - 이유: VIDEO·Survey·Quiz·웹 미리보기 수정분을 문서와 대조하고 커밋 가능한 최종 결과물로 정리.

@@ -72,7 +72,7 @@ WPF는 서버가 내려준 최종 목록을 받아 다음을 수행한다.
 | JSON 필드명 | camelCase |
 | 날짜/시간 | ISO 8601 문자열 권장. 예: `2026-09-28T15:30:00+09:00` |
 | Boolean | `true` / `false` |
-| null/생략 | 선택 필드는 null 또는 생략 가능. 필수 필드는 명시 권장 |
+| null/생략 | 선택 필드는 생략 가능. null은 nullable로 명시한 필드만 허용. 필수 필드는 반드시 제공(6.4 참고) |
 | 사용자 ID | 목록/결과 API 요청 JSON에는 userId를 넣지 않음. 인증 정보로 서버가 식별 |
 | HTTP timeout | WPF HTTP 호출은 현재 10초 |
 | 목록 없음 | 오류가 아니라 `popups: []` 반환 |
@@ -251,7 +251,7 @@ X-Client-Version: 1.0.0
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
 | allowCloseBeforeComplete | boolean | VIDEO / 동영상+퀴즈 | `true` | 완료 전 닫기 허용 여부 |
-| passingScore | number | QUIZ | `null` | 로컬 통과 점수. QUIZ 백엔드는 명시 권장 |
+| passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
 
@@ -264,6 +264,62 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - FULLSCREEN: 주 모니터 전체
 - AUTO: 콘텐츠 기준 자동 크기
 - 잘못된 값은 일부 모드에서 기본값/보정값으로 처리되지만, 백엔드는 정상 범위 값을 제공해야 한다.
+
+---
+
+## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03)
+
+기준 커밋: a93a74d. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
+
+### 반드시 제공할 값
+
+| 필드 / 조건 | 백엔드 제공 기준 | 현재 WPF 누락·오류 처리 |
+|---|---|---|
+| 로그인 accessToken | 공백 아닌 토큰 | 로그인 단계에서 명시적으로 거부 |
+| popups | 배열. 대상 없음은 [] | 생략은 []로 조용히 처리, null은 목록 처리 실패 |
+| popupId | 공백 아닌 고유 ID. 서버 저장 기준 1~50자 | 빈 값도 생성 가능하지만 결과 수집 연결을 건너뛰므로 CLOSED/HIDDEN/SUBMITTED 등이 전송되지 않음 |
+| popupType | TEXT / IMAGE / VIDEO / SURVEY / QUIZ | 누락·미지원 값은 Factory 오류. null도 처리 실패 |
+| content | 유형별 object. null 금지 | 생략·null·잘못된 형식이면 화면 생성 실패. {}는 필수 내용까지 보장하지 않음 |
+| IMAGE content.imageUrl | 공백 아닌 접근 가능한 이미지 경로/URL | 누락·빈 값은 View 생성자 오류 |
+| VIDEO content.videoUrl | 공백 아닌 접근 가능한 영상 경로/URL | 누락·빈 값은 View 생성자 오류 |
+| VIDEO+QUIZ content.videoEnabled / videoUrl | popupType=QUIZ, videoEnabled=true, 재생 가능한 영상 파일 URL | 플래그 생략은 일반 QUIZ. 활성화 후 URL 누락은 생성 실패 |
+| SURVEY/QUIZ questions | 문항 1개 이상. null 항목 금지 | 생략은 빈 화면으로 진행할 수 있음. null은 변환 실패 |
+| questionId / optionId | 양수이며 참조 대상과 일치. 문항 ID는 팝업 내 고유, 선택지 ID는 해당 문항 내 고유 | ID 기본값 0. 문항 중복은 응답 컨트롤 매핑·Radio 그룹 충돌, optionId 0 이하는 선택 답안 수집에서 제외 |
+| questionType | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT | 누락·미지원 값은 문항 변환 실패 |
+| question.title / options[].text | 공백 아닌 표시 문구 | 누락은 빈 문구로 표시될 수 있음. 서버 저장은 제목/선택지 1~1000자 검증 |
+| options | 선택형은 2개 이상, TEXT는 [] | 생략은 빈 목록, null은 변환 실패. 기본 선택지를 자동 생성하지 않음 |
+| 필수 문항 isRequired | 반드시 true를 명시 | 누락은 false이므로 필수 응답 검증이 적용되지 않음 |
+| 채점 QUIZ isScored | 채점할 문항에 true, 최소 1개 이상 | 누락은 false. 채점 문항이 하나도 없으면 passingScore와 무관하게 score=0, passed=true |
+| 채점 QUIZ questionScore | 유한 양수 배점. 서버 저장은 소수점 2자리, 최대 99999999.99 검증 | 누락/null은 0점으로 계산 |
+| 채점 QUIZ passingScore | 최상위에 명시, 0~총점. 0점 통과가 의도되지 않았다면 양수 | 누락/null/0 이하는 통과 기준 0으로 계산되어 0점도 통과 가능 |
+| 채점 선택형 options[].isCorrect | 정답은 true, 오답은 false 권장. 단일 정답 1개, 복수 정답 1개 이상 | 누락/null은 정답 아님. 정답 키가 없으면 해당 문항은 정답 처리되지 않음 |
+| 채점 TEXT correctAnswer / answerMatchMode | 비어 있지 않은 정답, EXACT 또는 CONTAINS | 누락 시 해당 문항 오답. 구현은 지원하나 최소 외부 오픈 범위에서는 TEXT 자동 채점 제외 |
+| 결과 응답 results[].resultId | 요청한 resultId 그대로 반환 | 누락/불일치는 대기 결과를 해제하지 못해 재전송 지속 |
+| 결과 응답 results[].status | ACCEPTED / DUPLICATE / REJECTED | 현재 status 검증 없이 일치하는 resultId만으로 대기 결과를 제거. 누락·미지원 상태도 제거될 수 있으므로 서버가 반드시 보장 |
+
+한 팝업의 Factory 변환 실패가 현재 조회 묶음 전체 생성을 중단할 수 있다. 서버는 잘못된 항목을 WPF 응답에 포함하지 않도록 응답 직전 검증을 수행해야 한다. results 배열은 반드시 반환하고 응답할 항목이 없으면 []를 사용한다. null 또는 null 항목은 처리 실패를 유발할 수 있다.
+
+### 기본값 사용이 가능한 항목과 null 주의
+
+- displayMode 생략은 SEQUENTIAL, sizeMode 생략은 FIXED. 명시한 값은 지원 ENUM이어야 하며 null은 허용하지 않는다.
+- width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다. 기존 공통 필드 표의 O는 전체 계약 권장 출력 필드이며, 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
+- optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
+- completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
+- serverTime/userId는 참고용, pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
+- **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.
+
+### 저장소 서버 검증과 남은 보완 사항
+
+PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검사한다. PopupQuestionRules.validate는 SURVEY/QUIZ 문항, 선택형 보기 2개 이상, QUIZ 배점·정답·통과 점수를 검사한다. QUIZ의 videoEnabled=true에는 validateActionOptions가 videoUrl을 요구한다. 따라서 모든 필수값 처리가 없는 것은 아니다.
+
+다만 현재 규칙에는 QUIZ의 isScored=true 문항 존재 보장이 없다. 일반 IMAGE/VIDEO의 공백 아닌 미디어 URL 검증도 위 저장 검증에서 보장하지 않는다. WPF 수신 측에는 ID 양수/중복·필수 데이터·채점 구성·결과 status의 전체 검증이 없다. 서버 저장 검증을 통과해도 isScored=false인 QUIZ가 0점 통과할 수 있으므로 다음을 보완 대상으로 관리한다.
+
+- [ ] 서버 조회 응답: 공백 ID, 중복 문항/선택지 ID, 빈 질문/선택지, null 배열/항목, 유형별 미디어 필수값 검증.
+- [ ] 서버 QUIZ 저장/조회: 최소 1개 isScored=true, 채점 배점·정답·passingScore 일관성 보장. 의도적인 0점 통과와 누락을 구분.
+- [ ] WPF 수신: 필수값 검증 및 잘못된 팝업의 개별 격리 검토.
+- [ ] WPF 결과 처리: status 필수·허용값 검증 후 대기열 종료 여부 결정 검토.
+
+이 절은 현재 동작과 보완 대상을 명시한 것이며, 이번 문서 수정에서 클라이언트/서버 검증 코드는 변경하지 않았다. 기준 소스: PopupResponseDto, SurveyQuestionDto, PopupFactory, PopupManager.AttachResultCollection, SurveyPopupView.AddSelectedOption, QuizGrader, PopupResultQueue, 서버 PopupService 및 PopupQuestionRules.
 
 ---
 
@@ -641,7 +697,7 @@ passingScore 이상
 | questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
 | isRequired | boolean | 선택 | `false` | 필수 응답 여부 |
-| isScored | boolean | QUIZ 권장 | `false` | QUIZ 채점 대상 여부 |
+| isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
 | questionScore | number | 채점 QUIZ | `null` → C# 계산상 0점 | 문항 배점 |
 | correctAnswer | string | QUIZ TEXT 채점 문항 | `null` | TEXT 정답 |
 | answerMatchMode | string | QUIZ TEXT 채점 문항 | `null` | EXACT / CONTAINS |
@@ -1046,58 +1102,381 @@ REJECTED
 
 ---
 
-# 15. 전체 목록 응답 예시
+# 15. 유형별 전체 JSON 예시
+
+아래는 GET /api/wpf/popups의 popups 배열에 들어갈 완전한 항목이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
+
+6개 항목을 포함한 전체 응답 파일: [WPF-01-popup-types.json](examples/WPF-01-popup-types.json). 개별 항목은 다음 Envelope의 popups에 넣는다.
 
 ```json
 {
-  "serverTime": "2026-09-28T15:30:00+09:00",
+  "serverTime": "2026-10-03T12:00:00+09:00",
   "userId": "E1001",
   "pollingIntervalSeconds": 1800,
-  "popups": [
-    {
-      "popupId": "TEXT-001",
-      "popupType": "TEXT",
-      "title": "공지사항",
-      "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
-      "sizeMode": "FIXED",
-      "width": 560,
-      "height": 420,
-      "widthRatio": 0.7,
-      "heightRatio": 0.75,
-      "minimumWidth": 480,
-      "minimumHeight": 320,
-      "maximumWidth": 1200,
-      "maximumHeight": 900,
-      "showHeader": true,
-      "showCloseButton": true,
-      "showFooter": true,
-      "showDoNotShowAgain": true,
-      "hideDays": 30,
-      "allowCloseBeforeComplete": true,
-      "questions": [],
-      "content": {
-        "contentTitle": "서비스 안내",
-        "description": "공지 내용을 확인해 주세요.",
-        "showContentHeader": true,
-        "plainText": "서비스 점검 안내입니다.",
-        "showPlainText": true,
-        "highlightText": "작업 중인 내용을 저장해 주세요.",
-        "showHighlight": true,
-        "bottomDescription": "자세히 보기",
-        "bottomDescriptionUrl": "https://example.com/notice",
-        "showBottomDescription": true,
-        "useBackgroundOverlay": true,
-        "backgroundOverlayOpacity": 0.45,
-        "popupPosition": "CENTER",
-        "headerFontSize": 17,
-        "bodyFontSize": 15,
-        "footerFontSize": 14
-      }
-    }
-  ]
+  "popups": []
 }
 ```
+
+## 15.1 TEXT
+
+```json
+{
+  "popupId": "TEXT-001",
+  "popupType": "TEXT",
+  "title": "서비스 안내",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": true,
+  "questions": [],
+  "content": {
+    "contentTitle": "점검 공지",
+    "description": "안내 내용을 확인해주세요.",
+    "showContentHeader": true,
+    "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+    "showPlainText": true,
+    "highlightText": "작업 내용을 미리 저장해주세요.",
+    "showHighlight": true,
+    "bottomDescription": "자세히 보기",
+    "bottomDescriptionUrl": "https://example.com/notice",
+    "showBottomDescription": true
+  }
+}
+```
+
+## 15.2 IMAGE
+
+```json
+{
+  "popupId": "IMAGE-001",
+  "popupType": "IMAGE",
+  "title": "교육 안내",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": true,
+  "questions": [],
+  "content": {
+    "imageTitle": "교육 일정",
+    "imageUrl": "https://example.com/media/training.png",
+    "description": "이미지에서 교육 일정을 확인해주세요.",
+    "showDescription": true,
+    "imageSizeMode": "ADAPTIVE",
+    "descriptionPosition": "BOTTOM",
+    "imageAreaRatio": 0.75
+  }
+}
+```
+
+## 15.3 VIDEO
+
+```json
+{
+  "popupId": "VIDEO-001",
+  "popupType": "VIDEO",
+  "title": "교육 영상",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": false,
+  "questions": [],
+  "completionRatio": 0.8,
+  "content": {
+    "videoTitle": "보안 교육",
+    "videoUrl": "https://example.com/media/security.mp4",
+    "description": "영상의 80% 이상을 시청해주세요.",
+    "showDescription": true,
+    "showControls": true,
+    "allowFullScreen": true,
+    "allowPlaybackRateChange": true,
+    "autoPlay": true,
+    "isLoop": false,
+    "defaultVolume": 0.7
+  }
+}
+```
+
+## 15.4 SURVEY — 세로 단일 / 가로 복수 / 주관식
+
+```json
+{
+  "popupId": "SURVEY-001",
+  "popupType": "SURVEY",
+  "title": "교육 만족도 설문",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": true,
+  "questions": [
+    {
+      "questionId": 101,
+      "questionType": "SINGLE_CHOICE",
+      "optionLayout": "VERTICAL",
+      "title": "교육 내용을 이해하기 쉬웠나요?",
+      "description": "",
+      "isRequired": true,
+      "isScored": false,
+      "options": [
+        {
+          "optionId": 1001,
+          "value": "1001",
+          "text": "네"
+        },
+        {
+          "optionId": 1002,
+          "value": "1002",
+          "text": "전반적으로 이해하기 쉬웠지만 실제 업무에 적용하는 구체적인 예시와 추가 설명이 조금 더 필요했습니다."
+        }
+      ]
+    },
+    {
+      "questionId": 102,
+      "questionType": "MULTIPLE_CHOICE",
+      "optionLayout": "HORIZONTAL",
+      "title": "도움이 된 자료를 모두 선택해주세요.",
+      "description": "",
+      "isRequired": true,
+      "isScored": false,
+      "options": [
+        {
+          "optionId": 1003,
+          "value": "1003",
+          "text": "텍스트"
+        },
+        {
+          "optionId": 1004,
+          "value": "1004",
+          "text": "이미지"
+        },
+        {
+          "optionId": 1005,
+          "value": "1005",
+          "text": "영상"
+        },
+        {
+          "optionId": 1006,
+          "value": "1006",
+          "text": "설문"
+        }
+      ]
+    },
+    {
+      "questionId": 103,
+      "questionType": "TEXT",
+      "optionLayout": "VERTICAL",
+      "title": "추가 의견을 작성해주세요.",
+      "description": "",
+      "isRequired": false,
+      "isScored": false,
+      "options": []
+    }
+  ],
+  "content": {
+    "surveyTitle": "교육 만족도 설문",
+    "description": "필수 문항에 응답한 후 제출해주세요."
+  }
+}
+```
+
+## 15.5 QUIZ — 가로 단일 / 세로 복수
+
+```json
+{
+  "popupId": "QUIZ-001",
+  "popupType": "QUIZ",
+  "title": "보안 확인 퀴즈",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": true,
+  "questions": [
+    {
+      "questionId": 201,
+      "questionType": "SINGLE_CHOICE",
+      "optionLayout": "HORIZONTAL",
+      "title": "안전한 연결 방식은 무엇인가요?",
+      "description": "",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 40,
+      "options": [
+        {
+          "optionId": 2001,
+          "value": "2001",
+          "text": "HTTPS",
+          "isCorrect": true
+        },
+        {
+          "optionId": 2002,
+          "value": "2002",
+          "text": "HTTP",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionId": 202,
+      "questionType": "MULTIPLE_CHOICE",
+      "optionLayout": "VERTICAL",
+      "title": "안전한 계정 관리 방법을 모두 선택해주세요.",
+      "description": "",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 60,
+      "options": [
+        {
+          "optionId": 2003,
+          "value": "2003",
+          "text": "다중 인증 사용",
+          "isCorrect": true
+        },
+        {
+          "optionId": 2004,
+          "value": "2004",
+          "text": "모든 사이트에서 같은 비밀번호를 반복해서 사용하고 다른 사람에게도 공유합니다.",
+          "isCorrect": false
+        },
+        {
+          "optionId": 2005,
+          "value": "2005",
+          "text": "충분히 길고 고유한 비밀번호 사용",
+          "isCorrect": true
+        }
+      ]
+    }
+  ],
+  "passingScore": 80,
+  "content": {
+    "surveyTitle": "보안 확인 퀴즈",
+    "description": "총점 100점, 통과 기준 80점입니다.",
+    "videoEnabled": false
+  }
+}
+```
+
+## 15.6 VIDEO+QUIZ — popupType은 QUIZ
+
+```json
+{
+  "popupId": "VIDEO-QUIZ-001",
+  "popupType": "QUIZ",
+  "title": "영상 교육 및 확인 퀴즈",
+  "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showCloseButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "allowCloseBeforeComplete": false,
+  "questions": [
+    {
+      "questionId": 301,
+      "questionType": "SINGLE_CHOICE",
+      "optionLayout": "HORIZONTAL",
+      "title": "안전한 연결 방식은 무엇인가요?",
+      "description": "",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 40,
+      "options": [
+        {
+          "optionId": 3001,
+          "value": "2001",
+          "text": "HTTPS",
+          "isCorrect": true
+        },
+        {
+          "optionId": 3002,
+          "value": "2002",
+          "text": "HTTP",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionId": 302,
+      "questionType": "MULTIPLE_CHOICE",
+      "optionLayout": "VERTICAL",
+      "title": "안전한 계정 관리 방법을 모두 선택해주세요.",
+      "description": "",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 60,
+      "options": [
+        {
+          "optionId": 3011,
+          "value": "2003",
+          "text": "다중 인증 사용",
+          "isCorrect": true
+        },
+        {
+          "optionId": 3012,
+          "value": "2004",
+          "text": "모든 사이트에서 같은 비밀번호를 반복해서 사용하고 다른 사람에게도 공유합니다.",
+          "isCorrect": false
+        },
+        {
+          "optionId": 3013,
+          "value": "2005",
+          "text": "충분히 길고 고유한 비밀번호 사용",
+          "isCorrect": true
+        }
+      ]
+    }
+  ],
+  "passingScore": 80,
+  "content": {
+    "videoTitle": "보안 교육",
+    "videoUrl": "https://example.com/media/security.mp4",
+    "description": "영상의 80% 이상을 시청해주세요.",
+    "showDescription": true,
+    "showControls": true,
+    "allowFullScreen": true,
+    "allowPlaybackRateChange": true,
+    "autoPlay": true,
+    "isLoop": false,
+    "defaultVolume": 0.7,
+    "surveyTitle": "영상 확인 퀴즈",
+    "videoEnabled": true
+  },
+  "completionRatio": 0.8
+}
+```
+
+QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 60점을 얻으며 부분 점수는 없다. VIDEO+QUIZ는 영상 시청 80% 완료 후 문항 제출이 가능하다. TEXT 자동 채점은 최소 외부 제공 범위에 포함하지 않아 예시에서는 선택형 채점만 사용한다.
 
 ---
 
