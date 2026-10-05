@@ -64,9 +64,7 @@ public class PopupService {
             Set.of("FIXED", "RATIO", "FULLSCREEN");
     /** [설계 18 L-1] IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
     private static final Set<String> IMAGE_SIZE_MODES =
-            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "FILL", "ORIGINAL");
-    private static final Set<String> IMAGE_DESCRIPTION_POSITIONS =
-            Set.of("AUTO", "RIGHT", "BOTTOM");
+            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL");
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
@@ -789,8 +787,13 @@ public class PopupService {
                 || popup.displayEndAt().isBefore(popup.displayStartAt())) {
             throw new IllegalArgumentException("팝업 노출 종료일은 시작일 이후여야 합니다.");
         }
-        validatePositiveNumber(popup.width(), "팝업 너비");
-        validatePositiveNumber(popup.height(), "팝업 높이");
+        if (!isOrdinaryImage(popup)) {
+            if (popup.width() == null || popup.height() == null) throw new IllegalArgumentException("팝업 너비와 높이는 필수입니다.");
+            validatePositiveNumber(popup.width(), "팝업 너비");
+            validatePositiveNumber(popup.height(), "팝업 높이");
+        } else if (popup.width() != null || popup.height() != null) {
+            throw new IllegalArgumentException("IMAGE 크기는 content.width/height만 지정해야 합니다.");
+        }
         validatePositiveNumber(popup.widthRatio(), "너비 비율");
         validatePositiveNumber(popup.heightRatio(), "높이 비율");
         validatePositiveNumber(popup.minimumWidth(), "최소 너비");
@@ -815,7 +818,7 @@ public class PopupService {
         validateActionOptions(popup);
         if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
             validateImageSizeMode(popup.content());
-            validateImageLayoutOptions(popup.content());
+            validateImageLayoutOptions(popup);
         }
         if (active == null) {
             throw new IllegalArgumentException("활성 여부는 필수입니다.");
@@ -855,7 +858,7 @@ public class PopupService {
         }
     }
 
-    /** IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / FILL / ORIGINAL만 저장한다. */
+    /** IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / ORIGINAL만 저장한다. */
     private static void validateImageSizeMode(Map<String, Object> content) {
         Object value = content == null ? null : content.get("imageSizeMode");
         if (value == null || String.valueOf(value).isBlank()) {
@@ -863,33 +866,30 @@ public class PopupService {
         }
         if (!IMAGE_SIZE_MODES.contains(normalizeUpper(String.valueOf(value)))) {
             throw new IllegalArgumentException(
-                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, FILL, ORIGINAL 중 하나여야 합니다.");
+                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, ORIGINAL 중 하나여야 합니다.");
         }
     }
 
-    /**
-     * [설계 18 L-5 — W-10] 관리자 편집기에서 설명 배치 옵션을 입력할 수 있게 되어 저장 값을 검사한다.
-     * descriptionPosition은 WPF가 AUTO / RIGHT / BOTTOM 외 값을 오류로 처리하고,
-     * imageAreaRatio는 WPF가 0.5~0.9 밖이면 0.75로 바꾸므로 범위 밖 값을 저장하지 않는다. 값이 없으면 통과(WPF 기본값).
-     */
-    private static void validateImageLayoutOptions(Map<String, Object> content) {
-        Object position = content == null ? null : content.get("descriptionPosition");
-        if (position != null && !String.valueOf(position).isBlank()
-                && !IMAGE_DESCRIPTION_POSITIONS.contains(normalizeUpper(String.valueOf(position)))) {
-            throw new IllegalArgumentException("설명 위치는 AUTO, RIGHT, BOTTOM 중 하나여야 합니다.");
+    /** IMAGE ordinary dimensions are optional positive numbers; retired fields and mode-incompatible options are rejected. */
+    private static boolean isOrdinaryImage(PopupResponseDto popup) {
+        return "IMAGE".equals(normalizeUpper(popup.popupType()))
+            && !"ORIGINAL".equals(normalizeUpper(contentText(popup.content(), "imageSizeMode")));
+    }
+
+    private static void validateImageLayoutOptions(PopupResponseDto popup) {
+        Map<String, Object> content = popup.content();
+        for (String key : List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio")) {
+            if (content.containsKey(key)) throw new IllegalArgumentException("폐기된 IMAGE 필드: " + key);
         }
-        Object ratio = content == null ? null : content.get("imageAreaRatio");
-        if (ratio == null || String.valueOf(ratio).isBlank()) {
-            return;
-        }
-        double value;
-        try {
-            value = ratio instanceof Number number ? number.doubleValue() : Double.parseDouble(String.valueOf(ratio).trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("이미지 영역 비율은 숫자여야 합니다.");
-        }
-        if (!Double.isFinite(value) || value < 0.5 || value > 0.9) {
-            throw new IllegalArgumentException("이미지 영역 비율은 0.5~0.9 사이여야 합니다.");
+        boolean fit = "FIT_TO_IMAGE".equals(normalizeUpper(contentText(content, "imageSizeMode")));
+        if (content.containsKey("keepAspectRatio") && (!fit || !(content.get("keepAspectRatio") instanceof Boolean)))
+            throw new IllegalArgumentException("keepAspectRatio는 FIT_TO_IMAGE 전용 boolean입니다.");
+        for (String key : List.of("width", "height")) {
+            Object value = content.get(key);
+            if (value == null) continue;
+            if (!isOrdinaryImage(popup) || !(value instanceof Number))
+                throw new IllegalArgumentException("IMAGE content 크기는 일반 모드의 숫자여야 합니다.");
+            validatePositiveNumber(((Number)value).doubleValue(), key);
         }
     }
 
@@ -964,8 +964,8 @@ public class PopupService {
                 popup.repeatDayOfMonth(),
                 toYn(active),
                 normalizeUpper(popup.sizeMode()),
-                BigDecimal.valueOf(popup.width()),
-                BigDecimal.valueOf(popup.height()),
+                BigDecimal.valueOf(popup.width() == null ? 560 : popup.width()),
+                BigDecimal.valueOf(popup.height() == null ? 420 : popup.height()),
                 BigDecimal.valueOf(popup.widthRatio()),
                 BigDecimal.valueOf(popup.heightRatio()),
                 BigDecimal.valueOf(popup.minimumWidth()),
@@ -1086,8 +1086,8 @@ public class PopupService {
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
                 popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
-                popup.popupWidth().doubleValue(),
-                popup.popupHeight().doubleValue(),
+                "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode")) ? null : popup.popupWidth().doubleValue(),
+                "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode")) ? null : popup.popupHeight().doubleValue(),
                 popup.widthRatio().doubleValue(),
                 popup.heightRatio().doubleValue(),
                 popup.minimumWidth().doubleValue(),

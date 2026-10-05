@@ -1,3 +1,7 @@
+# 설계 15 — 기존 IMAGE 크기 계약 (설계 23으로 대체)
+
+2026-10-05 이후 구현 계약은 [설계 23](23_IMAGE_크기모드_단순화_TODO.md)과 [인터페이스 v3.6](../interfaces/POPUP_INTERFACE_SPEC.md)을 따른다. 아래는 변경 전 기록이다.
+
 # 15. IMAGE 팝업 크기 모드(ADAPTIVE / FIT_TO_IMAGE / FILL) 정리
 
 ## 0. 목적

@@ -19,6 +19,7 @@ namespace Popup.Views.Windows
          * 화면 초기화 시 사용한다.
          */
         private readonly PopupOptions _options;
+        private Rect _lastImageWorkArea;
 
         /*
          * PopupWindow 생성자
@@ -78,6 +79,34 @@ namespace Popup.Views.Windows
             ApplyPosition();
             Loaded += (_, _) => ApplyPosition();
             SizeChanged += (_, _) => ApplyPosition();
+            if (_options.Content is ImagePopupView imageView)
+            {
+                void RefreshImageBounds()
+                {
+                    Rect area = CurrentWorkArea();
+                    _lastImageWorkArea = area;
+                    if (!imageView.NeedsNaturalWindowSize) ApplyWindowSize();
+                    double outerWidth = PopupContent.Margin.Left + PopupContent.Margin.Right
+                        + PopupOuterGrid.Margin.Left + PopupOuterGrid.Margin.Right
+                        + PopupBodyBorder.BorderThickness.Left + PopupBodyBorder.BorderThickness.Right;
+                    double outerHeight = PopupContent.Margin.Top + PopupContent.Margin.Bottom
+                        + PopupOuterGrid.Margin.Top + PopupOuterGrid.Margin.Bottom
+                        + PopupBodyBorder.BorderThickness.Top + PopupBodyBorder.BorderThickness.Bottom
+                        + (_options.ShowHeader ? HeaderRow.Height.Value : 0)
+                        + (_options.ShowFooter ? FooterRow.Height.Value : 0);
+                    imageView.SetAvailableBounds(Math.Min(_options.MaximumWidth, area.Width * FixedSizeSafeAreaRatio) - outerWidth,
+                        Math.Min(_options.MaximumHeight, area.Height * FixedSizeSafeAreaRatio) - outerHeight);
+                }
+                Loaded += (_, _) => RefreshImageBounds();
+                DpiChanged += (_, _) => RefreshImageBounds();
+                LocationChanged += (_, _) => { if (CurrentWorkArea() != _lastImageWorkArea) RefreshImageBounds(); };
+                System.ComponentModel.PropertyChangedEventHandler workAreaChanged = (_, args) => {
+                    if (args.PropertyName == nameof(SystemParameters.WorkArea) && !Dispatcher.HasShutdownStarted)
+                        Dispatcher.BeginInvoke(new Action(RefreshImageBounds));
+                };
+                SystemParameters.StaticPropertyChanged += workAreaChanged;
+                Closed += (_, _) => SystemParameters.StaticPropertyChanged -= workAreaChanged;
+            }
 
             if (_options.SizeMode
                 == PopupSizeMode.Fullscreen)
@@ -298,8 +327,7 @@ namespace Popup.Views.Windows
                         SizeToContent =
                             SizeToContent.Manual;
 
-                        Rect workArea =
-                            SystemParameters.WorkArea;
+                        Rect workArea = CurrentWorkArea();
 
                         double safeMaxWidth =
                             Math.Min(
@@ -357,8 +385,7 @@ namespace Popup.Views.Windows
                         SizeToContent =
                             SizeToContent.Manual;
 
-                        Rect workArea =
-                            SystemParameters.WorkArea;
+                        Rect workArea = CurrentWorkArea();
 
                         /*
                          * 잘못된 비율이 들어와도
@@ -473,8 +500,7 @@ namespace Popup.Views.Windows
                  */
                 case PopupSizeMode.Auto:
                     {
-                        Rect workArea =
-                            SystemParameters.WorkArea;
+                        Rect workArea = CurrentWorkArea();
 
                         SizeToContent =
                             SizeToContent.WidthAndHeight;
@@ -537,9 +563,21 @@ namespace Popup.Views.Windows
                 return;
             }
 
-            Rect workArea =
-                SystemParameters.WorkArea;
+            Rect workArea = CurrentWorkArea();
 
+            if (_options.Content is ImagePopupView image)
+            {
+                double horizontal = PopupContent.Margin.Left + PopupContent.Margin.Right
+                    + PopupOuterGrid.Margin.Left + PopupOuterGrid.Margin.Right
+                    + PopupBodyBorder.BorderThickness.Left + PopupBodyBorder.BorderThickness.Right;
+                double vertical = PopupContent.Margin.Top + PopupContent.Margin.Bottom
+                    + PopupOuterGrid.Margin.Top + PopupOuterGrid.Margin.Bottom
+                    + PopupBodyBorder.BorderThickness.Top + PopupBodyBorder.BorderThickness.Bottom
+                    + (_options.ShowHeader ? HeaderRow.Height.Value : 0)
+                    + (_options.ShowFooter ? FooterRow.Height.Value : 0);
+                recommendedWidth = image.RequestedWindowWidth ?? recommendedWidth + horizontal;
+                recommendedHeight = image.RequestedWindowHeight ?? recommendedHeight + vertical;
+            }
             double safeMaxWidth =
                 Math.Min(
                     _options.MaximumWidth,
@@ -591,11 +629,22 @@ namespace Popup.Views.Windows
             ApplyPosition();
         }
 
+        private Rect CurrentWorkArea()
+        {
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget == null) return SystemParameters.WorkArea;
+            var screen = Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
+            var transform = source.CompositionTarget.TransformFromDevice;
+            var origin = transform.Transform(new Point(screen.Left, screen.Top));
+            var size = transform.Transform(new Vector(screen.Width, screen.Height));
+            return new Rect(origin, new Size(size.X, size.Y));
+        }
+
         public void ApplyPosition()
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
             // WPF logical units; WorkArea always refers to the primary monitor.
-            Rect area = SystemParameters.WorkArea;
+            Rect area = CurrentWorkArea();
             if (_options.SizeMode == PopupSizeMode.Fullscreen)
             {
                 if (PresentationSource.FromVisual(this) == null) { Left = area.Left; Top = area.Top; }

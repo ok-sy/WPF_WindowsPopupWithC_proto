@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.5
-- 최신화: 2026-10-03 (KST)
+- 문서 버전: 3.6
+- 최신화: 2026-10-06 (KST)
+- 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
 - 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
 - 2026-09-30 보완: JSON 필드·ENUM 변경 없이 30~60분 조회 정책, 로컬/URL 공통 WPF 컨트롤 및 동영상+퀴즈 단일 스크롤 동작을 명시.
 - 3.5 변경: 주요 요청/응답 필드 표에 `필수 여부`와 `Default`를 추가하고, 생략 시 C# 처리 기준을 명확화. 최신 main의 IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈 계약을 정합성 점검.
@@ -236,8 +237,8 @@ X-Client-Version: 1.0.0
 | displayStartAt | string(ISO) | 선택 | `null` | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
 | displayEndAt | string(ISO) | 선택 | `null` | 동일 |
 | sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO |
-| width | number | O | `900` | FIXED 등 실제 창 너비 기준 |
-| height | number | O | `620` | FIXED 등 실제 창 높이 기준 |
+| width | number | IMAGE 일반 모드 외 | `900` | 일반 IMAGE는 생략하고 content.width 사용, ORIGINAL 및 다른 유형은 창 크기 |
+| height | number | IMAGE 일반 모드 외 | `620` | 일반 IMAGE는 생략하고 content.height 사용 |
 | widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
 | heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
 | minimumWidth | number | 선택 | `480` | 최소 창 너비 |
@@ -412,10 +413,8 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
   "description": "이미지 설명",
   "showDescription": true,
   "imageSizeMode": "ADAPTIVE",
-  "imageWidth": 640,
-  "imageHeight": 480,
-  "descriptionPosition": "AUTO",
-  "imageAreaRatio": 0.75,
+  "width": 640,
+  "height": 480,
   "linkUrl": "https://example.com/notice",
 
   "useBackgroundOverlay": true,
@@ -430,11 +429,10 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | imageUrl | string | O | `""` | 표시할 이미지 URL/경로. 빈 값이면 이미지 팝업 생성 불가 |
 | description | string | 선택 | `""` | 이미지 설명 |
 | showDescription | boolean | 선택 | `true` | 설명 표시 여부 |
-| imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / FILL / ORIGINAL |
-| imageWidth | number | 선택 | `0` | ADAPTIVE 최대 크기, FIT_TO_IMAGE 요청 크기. ORIGINAL/FILL에서는 미사용 |
-| imageHeight | number | 선택 | `0` | imageWidth와 동일 기준 |
-| descriptionPosition | string | 선택 | `AUTO` | AUTO / RIGHT / BOTTOM. ORIGINAL/FILL에서는 미사용 |
-| imageAreaRatio | number | 선택 | `0.75` | 0.5~0.9, 범위 밖이면 0.75 |
+| imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL |
+| width | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 너비, FIT_TO_IMAGE 실제 이미지 너비, 양수·유한값 |
+| height | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 높이, FIT_TO_IMAGE 실제 이미지 높이, 양수·유한값 |
+| keepAspectRatio | boolean | FIT_TO_IMAGE 전용 | `true` | 원본 비율 고정/해제 |
 | linkUrl | string | 선택 | `""` | 이미지 클릭 시 이동 URL |
 
 ### imageSizeMode
@@ -442,32 +440,26 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | 값 | 의미 |
 |---|---|
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
-| FIT_TO_IMAGE | 이미지 크기가 기준. imageWidth/imageHeight 우선, 없으면 원본 크기로 팝업 크기 재계산 |
-| FILL | 팝업 영역을 이미지로 꽉 채움. 제목/설명 없는 배경형 표시 |
+| FIT_TO_IMAGE | content.width/height 이미지 크기 기준, 없으면 원본 DIP. 최대 창 초과 시 축소 없이 Clip |
 | ORIGINAL | 팝업 크기는 유지. 원본 이미지를 왼쪽 위에 확대·축소 없이 표시하고 오른쪽·아래 초과 부분을 자름 |
 
-필드가 없으면 ADAPTIVE로 처리한다. 위 네 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
+필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
 
-ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·`imageWidth`·`imageHeight`·설명 배치 옵션은 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. `linkUrl` 이미지 클릭 동작은 유지한다. 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
+ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·content.width/height·keepAspectRatio는 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. `linkUrl` 이미지 클릭 동작은 유지한다. 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
 
-관리자 신규 등록 기본 선택은 ORIGINAL이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
+관리자 신규 등록 기본 선택은 ADAPTIVE이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
 
-### descriptionPosition
+### 비율 및 창 경계 (v3.6 / 설계 23)
 
-```text
-AUTO
-RIGHT
-BOTTOM
-```
-
-- AUTO: 이미지 비율에 따라 RIGHT/BOTTOM 결정
-- FILL / ORIGINAL에서는 사용하지 않음
-
-### imageAreaRatio
-
-- 이미지와 설명 영역의 비율
-- 기본 0.75
-- WPF 기준 정상 범위 0.5~0.9
+- 일반 IMAGE의 크기는 content.width/height 한 쌍만 전달한다. 최상위 width/height는 생략한다. ORIGINAL은 기존 최상위 창 크기를 사용한다.
+- ADAPTIVE: content 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
+- FIT_TO_IMAGE: content 크기는 실제 이미지 표시 DIP 크기. keepAspectRatio 기본 true. 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 **너비 우선으로 높이를 정규화**한다. 편집기 연동값은 소수 둘째 자리로 반올림하되, 렌더링은 원본 비율로 다시 계산하므로 별도 오차 거부 기준은 없다.
+- 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
+- 최소·최대는 창 제한이다. 최대는 설정값과 현재 모니터 작업 영역 95% 중 작은 값이고 최소는 유효 최대 이하로 보정한다. 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. 최대 초과 이미지의 표시 크기는 유지하고 **중앙 기준**으로 자른다. FULLSCREEN은 창 크기가 우선이며 FIT_TO_IMAGE의 이미지 크기는 그대로 유지한다.
+- 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
+- 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(48)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
+- WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
+- FILL, imageWidth/imageHeight, descriptionPosition, imageAreaRatio는 새 입력에서 제거했다. 서버 저장은 해당 키·모드와 중복 최상위 크기를 거절한다. 기존 DB는 조회 변환 또는 전환 계획 스크립트를 통해 새 계약으로 제공한다.
 
 ---
 
@@ -1056,16 +1048,7 @@ BOTTOM_RIGHT
 ```text
 ADAPTIVE
 FIT_TO_IMAGE
-FILL
 ORIGINAL
-```
-
-## descriptionPosition
-
-```text
-AUTO
-RIGHT
-BOTTOM
 ```
 
 ## questionType
@@ -1160,8 +1143,6 @@ REJECTED
   "displayMode": "SEQUENTIAL",
   "displayOrder": 100,
   "sizeMode": "FIXED",
-  "width": 900,
-  "height": 620,
   "showHeader": true,
   "showCloseButton": true,
   "showFooter": true,
@@ -1174,8 +1155,8 @@ REJECTED
     "description": "이미지에서 교육 일정을 확인해주세요.",
     "showDescription": true,
     "imageSizeMode": "ADAPTIVE",
-    "descriptionPosition": "BOTTOM",
-    "imageAreaRatio": 0.75
+    "width": 900,
+    "height": 620
   }
 }
 ```

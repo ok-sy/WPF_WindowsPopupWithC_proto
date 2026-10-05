@@ -57,8 +57,9 @@ export interface AdminPopupDetail {
   displayMode: PopupDisplayMode;
   displayOrder: number;
   sizeMode: PopupSizeMode;
-  width: number;
-  height: number;
+  /** IMAGE 일반 모드는 content.width/height만 전송한다. */
+  width?: number;
+  height?: number;
   widthRatio: number;
   heightRatio: number;
   minimumWidth: number;

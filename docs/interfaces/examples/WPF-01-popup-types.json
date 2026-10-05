@@ -38,8 +38,6 @@
       "displayMode": "SEQUENTIAL",
       "displayOrder": 100,
       "sizeMode": "FIXED",
-      "width": 900,
-      "height": 620,
       "showHeader": true,
       "showCloseButton": true,
       "showFooter": true,
@@ -52,8 +50,8 @@
         "description": "이미지에서 교육 일정을 확인해주세요.",
         "showDescription": true,
         "imageSizeMode": "ADAPTIVE",
-        "descriptionPosition": "BOTTOM",
-        "imageAreaRatio": 0.75
+        "width": 900,
+        "height": 620
       }
     },
     {

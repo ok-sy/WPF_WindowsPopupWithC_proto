@@ -8,10 +8,7 @@ import popupDemoQuestions from './popupDemoQuestions';
 import normalizePopupLink from './normalizePopupLink';
 import {
   adaptiveMaximum,
-  descriptionPlacement,
   fitToImageLayout,
-  IMAGE_DESCRIPTION_WIDTH,
-  imageAreaRatio,
   imageSizeMode,
   type FitToImageLayout,
   type Size,
@@ -56,7 +53,7 @@ function titleKey(type: AdminPopupDetail['popupType']): string {
   return 'contentTitle';
 }
 
-function previewSize(popup: AdminPopupDetail) {
+function previewSize(popup: AdminPopupDetail, recommended?: Size) {
   if (popup.sizeMode === 'FULLSCREEN') return { width: '100%', height: 520 };
   if (popup.sizeMode === 'RATIO') {
     return {
@@ -65,10 +62,12 @@ function previewSize(popup: AdminPopupDetail) {
     };
   }
 
-  const scale = Math.min(1, 760 / Math.max(popup.width, 1), 520 / Math.max(popup.height, 1));
+  const width = recommended?.width ?? (popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' ? Number(popup.content.width ?? 560) : (popup.width ?? 560));
+  const height = recommended?.height ?? (popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' ? Number(popup.content.height ?? 420) : (popup.height ?? 420));
+  const scale = Math.min(1, 760 / Math.max(width, 1), 520 / Math.max(height, 1));
   return {
-    width: Math.max(320, popup.width * scale),
-    height: Math.max(260, popup.height * scale),
+    width: Math.max(320, width * scale),
+    height: Math.max(260, height * scale),
   };
 }
 
@@ -129,10 +128,9 @@ function PopupBody({
     const imageUrl = text(content.imageUrl, '');
     const mode = imageSizeMode(popup);
     const original = mode === 'ORIGINAL';
-    const imageFill = mode === 'FILL' || original;
-    const showDescription = !imageFill && content.showDescription !== false;
-    const placement = descriptionPlacement(popup, naturalImageSize);
-    const areaRatio = imageAreaRatio(popup);
+    const imageFill = original;
+    const showDescription = !imageFill && content.showDescription !== false && Boolean(String(content.description ?? '').trim());
+
     const fixedImage = mode === 'FIT_TO_IMAGE' ? fitLayout?.image : undefined;
     const maximum = mode === 'ADAPTIVE' ? adaptiveMaximum(popup, naturalImageSize) : {};
     const linkUrl = text(content.linkUrl, '');
@@ -160,13 +158,13 @@ function PopupBody({
             : fixedImage
               ? fixedImage.height
               : '100%',
-          maxWidth: original ? 'none' : fixedImage ? '100%' : (maximum.width ?? '100%'),
-          maxHeight: original ? 'none' : fixedImage ? '100%' : (maximum.height ?? '100%'),
+          maxWidth: original ? 'none' : fixedImage ? 'none' : (maximum.width ?? '100%'),
+          maxHeight: original ? 'none' : fixedImage ? 'none' : (maximum.height ?? '100%'),
           minWidth: 0,
           minHeight: 0,
-          objectFit: original ? 'none' : imageFill ? 'cover' : 'contain',
+          objectFit: original ? 'none' : fixedImage && content.keepAspectRatio === false ? 'fill' : 'contain',
           objectPosition: original ? 'left top' : 'center',
-          flexShrink: original ? 0 : undefined,
+          flexShrink: original || fixedImage ? 0 : undefined,
           cursor: linkUrl ? 'pointer' : 'default',
         }}
       />
@@ -216,13 +214,14 @@ function PopupBody({
       );
     }
 
-    // FIT_TO_IMAGE는 이미지 칸이 이미지 크기를 그대로 담고(Auto), ADAPTIVE는 imageAreaRatio 비율로 칸을 나눈다.
+    // The viewport flexes; FIT_TO_IMAGE bitmap dimensions remain fixed when the viewport clips.
     const imageArea = (
       <Box
         sx={{
-          flex: fixedImage ? '0 0 auto' : showDescription ? `${areaRatio} 1 0` : '1 1 0',
+          flex: '1 1 0',
+          width: '100%',
           minWidth: 0,
-          minHeight: fixedImage ? undefined : 150,
+          minHeight: 0,
           maxWidth: '100%',
           maxHeight: '100%',
           display: 'flex',
@@ -252,23 +251,21 @@ function PopupBody({
           minWidth: 0,
           minHeight: 0,
           overflowY: 'auto',
-          ...(placement === 'RIGHT'
-            ? fixedImage
-              ? { flex: `0 0 ${fitLayout?.descriptionWidth ?? IMAGE_DESCRIPTION_WIDTH}px` }
-              : { flex: `${1 - areaRatio} 1 0` }
-            : fixedImage
-              ? { flex: '1 1 0' }
-              : { flex: `${1 - areaRatio} 1 0` }),
+          flex: '0 1 auto',
+          maxHeight: fixedImage ? `min(${fixedImage.height * 0.3}px, 30%)` : '30%',
+          width: '100%',
+          p: 2,
+          border: '1px solid #EEF0F3',
         }}
       >
-        <Typography color="text.secondary">{description}</Typography>
+        <Typography color="text.secondary">{String(content.description ?? '')}</Typography>
       </Box>
     );
 
     return (
       <Stack
-        direction={placement === 'RIGHT' ? 'row' : 'column'}
-        spacing={2}
+        direction="column"
+        spacing={1.75}
         alignItems={fixedImage ? 'center' : 'stretch'}
         sx={{ height: '100%', width: '100%', minHeight: 0 }}
       >
@@ -479,19 +476,32 @@ export default function PopupPreview({
   const imageUrl = popup.popupType === 'IMAGE' ? String(popup.content.imageUrl ?? '').trim() : '';
   const [naturalImage, setNaturalImage] = useState<{ url: string; size: Size } | null>(null);
   const naturalImageSize = naturalImage && naturalImage.url === imageUrl ? naturalImage.size : null;
-  const workArea: Size =
+  const [workArea, setWorkArea] = useState<Size>(() =>
     typeof window === 'undefined'
       ? { width: 1920, height: 1040 }
-      : { width: window.innerWidth, height: window.innerHeight };
+      : { width: window.innerWidth, height: window.innerHeight });
+  useEffect(() => {
+    const resize = () => setWorkArea({width: window.innerWidth, height: window.innerHeight});
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
   const fitLayout =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'FIT_TO_IMAGE' && naturalImageSize
       ? fitToImageLayout(popup, naturalImageSize, workArea)
       : null;
+  const naturalLayout = popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' && naturalImageSize
+    && (popup.content.width == null || popup.content.height == null)
+    ? fitToImageLayout({...popup, content: {...popup.content, width: null, height: null, keepAspectRatio: true}}, naturalImageSize, workArea)
+    : null;
+  const clampWindowAxis = (value: unknown, fallback: number, minimum: number, maximum: number, available: number) =>
+    Math.max(Math.min(minimum, maximum, available * .95), Math.min(maximum, available * .95, Number(value ?? fallback)));
   // WPF와 같이 FULLSCREEN 팝업은 창 크기를 바꾸지 않는다.
   const recommendedWidth =
-    fitLayout && popup.sizeMode !== 'FULLSCREEN' ? fitLayout.window.width : null;
+    popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.width ?? (naturalLayout
+      ? clampWindowAxis(popup.content.width, naturalLayout.window.width, popup.minimumWidth, popup.maximumWidth, workArea.width) : null);
   const recommendedHeight =
-    fitLayout && popup.sizeMode !== 'FULLSCREEN' ? fitLayout.window.height : null;
+    popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.height ?? (naturalLayout
+      ? clampWindowAxis(popup.content.height, naturalLayout.window.height, popup.minimumHeight, popup.maximumHeight, workArea.height) : null);
   useEffect(() => {
     onRecommendedSize?.(
       recommendedWidth != null && recommendedHeight != null
@@ -507,20 +517,17 @@ export default function PopupPreview({
     : 0.45;
   const size = fitContainer
     ? { width: '100%', height: '100%' }
-    : previewSize(
-        recommendedWidth != null && recommendedHeight != null
-          ? { ...popup, sizeMode: 'FIXED', width: recommendedWidth, height: recommendedHeight }
-          : popup,
-      );
+    : previewSize(popup, recommendedWidth != null && recommendedHeight != null
+        ? {width: recommendedWidth, height: recommendedHeight} : undefined);
   const imageFill =
-    popup.popupType === 'IMAGE' && ['FILL', 'ORIGINAL'].includes(imageSizeMode(popup));
-  const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
+    popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
+  const contentTitle = popup.popupType === 'IMAGE' ? String(contentValue(popup, 'imageTitle') ?? '') : text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
   // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
   const headerFontSize = fontSize(popup, 'headerFontSize');
   const bodyFontSize = fontSize(popup, 'bodyFontSize');
   const footerFontSize = fontSize(popup, 'footerFontSize');
   const showContentTitle =
-    !imageFill && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
+    !imageFill && Boolean(contentTitle.trim()) && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
 
   return (
     <Box
@@ -528,6 +535,7 @@ export default function PopupPreview({
         minHeight: fitContainer ? 0 : 570,
         height: fitContainer ? '100%' : undefined,
         p: showBackground ? 2 : 0,
+        ...(popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN' ? {p: '24px'} : {}),
         flex: fitContainer ? 1 : undefined,
         boxSizing: 'border-box',
         position: 'relative',
@@ -561,6 +569,7 @@ export default function PopupPreview({
           overflow: 'hidden',
           borderRadius: 2,
           bgcolor: 'white',
+          ...(popup.popupType === 'IMAGE' ? {border: '1px solid #E5E7EB', boxSizing: 'border-box'} : {}),
         }}
       >
         {isSurvey && (
@@ -593,7 +602,7 @@ export default function PopupPreview({
           </Box>
         )}
         {popup.showHeader && (
-          <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" sx={{ height: popup.popupType === 'IMAGE' ? 48 : undefined, minHeight: popup.popupType === 'IMAGE' ? 48 : 52, px: 2, flexShrink: 0 }}>
             <Typography
               fontWeight={700}
               sx={{
@@ -617,16 +626,18 @@ export default function PopupPreview({
             )}
           </Stack>
         )}
-        {popup.showHeader && <Divider />}
+        {popup.showHeader && popup.popupType !== 'IMAGE' && <Divider />}
         <Box
           sx={{
             flex: 1,
             minHeight: 0,
             minWidth: 0,
-            overflowY: imageFill ? 'hidden' : 'auto',
+            overflowY: popup.popupType === 'IMAGE' ? 'hidden' : 'auto',
+            ...(popup.popupType === 'IMAGE' ? {display: 'flex', flexDirection: 'column'} : {}),
             overflowX: 'hidden',
             overflowWrap: 'anywhere',
             p: imageFill ? 0 : 3,
+            ...(popup.popupType === 'IMAGE' && !imageFill ? {px: '28px', py: '24px'} : {}),
             ...(isSurvey
               ? {
                   scrollbarWidth: 'thin',
@@ -647,6 +658,7 @@ export default function PopupPreview({
               fontWeight={800}
               sx={{
                 mb: isSurvey ? 1 : 2,
+                ...(popup.popupType === 'IMAGE' ? {fontSize: 22, fontWeight: 600, flexShrink: 0} : {}),
                 ...(isSurvey ? { fontSize: 25, color: surveyColors.text } : {}),
               }}
             >
@@ -656,7 +668,7 @@ export default function PopupPreview({
           {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
           <Box
             sx={{
-              ...(imageFill ? { height: '100%', overflow: 'hidden' } : {}),
+              ...(popup.popupType === 'IMAGE' ? { flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' } : {}),
               ...(bodyFontSize
                 ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } }
                 : {}),
@@ -721,7 +733,7 @@ export default function PopupPreview({
         )}
         {!isSurvey && popup.showFooter && (
           <>
-            <Divider />
+            {popup.popupType !== 'IMAGE' && <Divider />}
             <Stack
               direction="row"
               alignItems="center"
@@ -729,6 +741,7 @@ export default function PopupPreview({
               sx={{
                 px: 2,
                 py: 1.5,
+                ...(popup.popupType === 'IMAGE' ? {height: 80, boxSizing: 'border-box'} : {}),
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 1,

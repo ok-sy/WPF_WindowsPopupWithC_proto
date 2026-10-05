@@ -134,6 +134,8 @@ namespace Popup
                 {
                     JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
                     content["imageSizeMode"] = (ImageModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "ORIGINAL";
+                    if (content["imageSizeMode"]!.GetValue<string>() == "ORIGINAL") { content.Remove("width"); content.Remove("height"); }
+                    else if (content["imageSizeMode"]!.GetValue<string>() == "FIT_TO_IMAGE") content["keepAspectRatio"] = true;
                     popup.Content = JsonSerializer.SerializeToElement(content);
                 }
                 foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType is "SURVEY" or "QUIZ"))

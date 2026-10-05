@@ -1,5 +1,7 @@
 # POPUP 스키마 — Oracle 스크립트
 
+IMAGE 계약 v3.6의 대상 조회·전환 및 복원 SQL 생성은 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md)를 따른다. 2026-10-06 로컬·원격 개발 DB에서 실행 완료(IMAGE 대상 0행)했으며 서버 조회 변환은 정리 전 저장 행도 새 계약으로 제공한다.
+
 기준 5(PostgreSQL popup 스키마 → Oracle). 검증 환경: **로컬 Oracle 21c XE `XEPDB1`**(2026-09-19, POPUP 계정) 및 **원격 개발 DB Oracle 11g XE 11.2.0.2 `192.168.114.71:4004/XE`**(2026-09-20, `zero-rule` 계정 스키마). DDL은 11g 호환으로 작성되어 있다(식별자 30자 이하, `IS JSON` 체크 없음).
 
 ## 스키마 배치 — 두 가지 방식 (2026-09-20 스키마 분리 설정화)

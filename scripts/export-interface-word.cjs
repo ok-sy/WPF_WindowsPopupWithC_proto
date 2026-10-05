@@ -1,7 +1,7 @@
 // Word 전용 표·탐색·인쇄 레이아웃. Node 표준 라이브러리만 사용.
 const fs = require('node:fs'), path = require('node:path'), zlib = require('node:zlib');
 const root = path.resolve(__dirname, '..');
-const output = path.resolve(process.argv[2] || path.join(root, 'docs/interfaces/WPF_Popup_API_Interface_v3.5.docx'));
+const output = path.resolve(process.argv[2] || path.join(root, 'docs/interfaces/WPF_Popup_API_Interface_v3.6.docx'));
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -103,7 +103,7 @@ body += p('INTERFACE SPECIFICATION', 'Kicker', '<w:spacing w:before="1100" w:aft
 body += p('WPF 팝업', 'CoverTitle');
 body += p('API 인터페이스 정의서', 'CoverTitle');
 body += p('백엔드 연동 · HTTP / JSON 계약', 'Subtitle');
-body += p('VERSION 3.5   /   2026.10.03', 'CoverVersion', '<w:spacing w:before="500" w:after="640"/>');
+body += p('VERSION 3.6   /   2026.10.06', 'CoverVersion', '<w:spacing w:before="500" w:after="640"/>');
 body += p('로그인 → 표시 대상 조회 → 처리 결과 전송', 'CoverFlow');
 body += p('TEXT   ·   IMAGE   ·   VIDEO   ·   SURVEY   ·   QUIZ', 'Subtitle');
 body += p('이 문서를 읽는 순서', 'CoverGuide', '<w:spacing w:before="720" w:after="160"/>');
@@ -111,7 +111,7 @@ body += p('연동 시작    3장 API 목록 → 4장 인증 → 5·6·10장 요�
 body += p('화면 데이터    6·7장 공통 필드 → 8장 유형별 content → 9장 문항');
 body += p('오류와 검증    11~13장 결과 처리 → 16장 구현 체크리스트');
 body += p('범위 확인    부록 A 관리자 연동 / 부록 B 최초 외부 제공 범위');
-body += p('계약 기준: 2026-10-03 v3.5  |  문서 편집: 2026-10-03\n예제는 설명용 가상 데이터입니다.', 'CoverNote', '<w:spacing w:before="700"/>');
+body += p('계약 기준: 2026-10-06 v3.6  |  문서 편집: 2026-10-06\n예제는 설명용 가상 데이터입니다.', 'CoverNote', '<w:spacing w:before="700"/>');
 body += p('목차', 'TOCTitle', '<w:pageBreakBefore/>');
 body += '<!--TOC-->';
 heading('문서 안내', 1, true);
@@ -172,7 +172,7 @@ const parts = {
   'word/document.xml': xml(`<w:document xmlns:w="${W}" xmlns:r="${R}"><w:body>${body}<w:sectPr><w:headerReference w:type="default" r:id="header1"/><w:footerReference w:type="default" r:id="footer1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1050" w:right="1060" w:bottom="1050" w:left="1060" w:header="480" w:footer="480"/><w:titlePg/></w:sectPr></w:body></w:document>`),
   'word/styles.xml': xml(styles),
   'word/settings.xml': xml(`<w:settings xmlns:w="${W}"><w:zoom w:percent="100"/><w:defaultTabStop w:val="420"/><w:updateFields w:val="true"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`),
-  'word/header1.xml': xml(`<w:hdr xmlns:w="${W}">${p(run('WPF POPUP   /   API INTERFACE', '<w:b/>'+sz(16)+color('61728A')) + run('                                      v3.5  ·  2026.10.03', sz(16)+color('61728A')), 'Normal', '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="7" w:color="CDD7E2"/></w:pBdr>', true)}</w:hdr>`),
+  'word/header1.xml': xml(`<w:hdr xmlns:w="${W}">${p(run('WPF POPUP   /   API INTERFACE', '<w:b/>'+sz(16)+color('61728A')) + run('                                      v3.6  ·  2026.10.06', sz(16)+color('61728A')), 'Normal', '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="7" w:color="CDD7E2"/></w:pBdr>', true)}</w:hdr>`),
   'word/footer1.xml': xml(`<w:ftr xmlns:w="${W}">${p(run('WPF 팝업 API 인터페이스 정의서', sz(16)+color('61728A')) + run('                                      ') + field('PAGE') + run(' / ') + field('NUMPAGES'), 'Normal', '', true)}</w:ftr>`)
 };
 // DOCX용 ZIP writer (Deflate, CRC32, 중앙 디렉터리).

@@ -2,6 +2,13 @@ plugins {
     id("java-library")
 }
 
+// Reads IMAGE rows and writes forward/rollback SQL only. Credentials are environment variables.
+tasks.register<JavaExec>("planImageContractMigration") {
+    workingDir(rootProject.projectDir)
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("server.service.core.popup.ImageContractMigration")
+}
+
 
 dependencies {
     implementation(projects.base)

@@ -865,7 +865,7 @@ Timer Tick
 
 조회 실패가 DNS/연결 오류·Timeout·500/502/503/504이면 같은 타이머로 10초 간격 3회씩 5사이클 복구한다. 사이클 사이에는 30분 휴식 후 첫 10초를 기다린다. 이후 계속 실패하면 60분 간격으로 확인한다. 성공하면 복구 횟수를 초기화하고 서버 최신 주기를 기존 기동 기준으로 적용한다. 400/403과 재인증 후에도 실패한 401은 복구 대상에서 제외한다.
 
-`PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE FILL도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
+`PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE 일반 모드도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
 
 WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03부터 로컬 전용으로 관리하며 Git·소스 반입 대상에서 제외한다. 저장소의 일반 빌드에는 필요하지 않다. 실행한 검증 결과는 `version-history/CHANGELOG.md`와 설계 19에 기록한다.
 
@@ -994,3 +994,7 @@ Popup/Media/demo-video.mp4
 음량·음소거는 Core Audio COM API로 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다(추가 NuGet 없음). 시작 시 현재 시스템 값을 읽으며 내부 MediaElement/HTML5 음량은 1.0으로 유지한다. `defaultVolume`은 시스템 연결 전/실패 시 내부 플레이어 초기값이다. 외부 볼륨 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 슬라이더를 올리면 Windows 음소거도 해제하며 음소거 버튼은 음량 값을 유지한다. 다른 프로그램의 출력에도 영향을 주고 종료 시 이전 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다. YouTube는 시스템 동기화 대상에서 제외한다.
 
 URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 prepare-offline-packages.ps1로 재수집해야 한다. 이번 변경에서 반입 묶음은 재생성하지 않았다.
+
+## IMAGE 계약 v3.6 (설계 23)
+
+일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. 최소·최대는 창만 제한하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.6, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.

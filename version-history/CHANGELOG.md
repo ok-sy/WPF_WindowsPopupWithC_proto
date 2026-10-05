@@ -2,6 +2,22 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-02 — IMAGE DB 전환 확인 및 폐쇄망 반입본 생성
+
+- 이유: IMAGE v3.6 구현분의 개발 DB 정합성 확인과 최신 소스·문서의 폐쇄망 반입 준비.
+- 변경: 로컬 OracleServiceXE 시작, 로컬 POPUP 및 원격 개발 DB zero-rule에서 전환 계획·원문 백업 생성 후 전환 SQL 실행·검증·COMMIT. 두 DB 모두 IMAGE 0행으로 UPDATE 0행. Gradle 전환 도구의 상대 출력 경로를 서버 루트 기준으로 고정. 20261006 반입본은 서버·웹 변경분, WPF/MockSso 소스와 기존 영상 교체분, 최신 문서의 4개 TAR 및 통합 TGZ로 구성. NuGet·SDK는 기존 반입본 사용, 개인 launchSettings와 검증 하네스·빌드 산출물 제외.
+- 주요 파일: db/oracle/11_IMAGE_CONTRACT_TRANSITION.md, db/oracle/README.md, 설계 23, service/core/build.gradle.kts, offline-export/20261006/ (Git 제외), version-history/CHANGELOG.md.
+- 검증: 두 DB 계획 생성·전환 SQL·COMMIT 성공, IMAGE 행 수 각각 0 확인. 반입본 소스 빌드·압축 검증은 진행 중.
+- 상태: DB 전환 확인 완료. 반입본 생성·커밋·푸시 진행 중. 배포·실제 IMAGE 저장/API 연계·물리 다중 모니터·폐쇄망 실행 미실행. MockSso 개인 실행 설정은 Git 제외 유지.
+## 2026-10-06-01 — IMAGE 단일 크기 계약 및 비율 옵션 구현
+
+- 이유: 설계 23의 창 우선/이미지 우선 구분, 비율 잠금, 최대 창 초과 Clip, 하단 설명 계약 반영.
+- 변경: 일반 IMAGE 외부 크기를 content.width/height 한 쌍으로 통일하고 FIT_TO_IMAGE 전용 keepAspectRatio(기본 true)를 추가. 웹 모드별 라벨·비율 양방향 연동·독립 입력·왜곡 안내 및 미리보기 반영. WPF는 고정 시 너비 우선 원본 비율 정규화, 해제 시 지정 크기·누락 축 원본 DIP 사용, 최대 초과 시 표시 크기 유지/중앙 Clip. 창 계산은 제목·설명 측정, 표시 중인 헤더/푸터 행과 실제 여백/Border를 합산. 설명 하단 통일·30% 제한 스크롤, 빈 제목/설명 간격 제거, 모니터·작업 영역·DPI 재계산. ADAPTIVE 원본 초과 확대 제한 및 ORIGINAL/FULLSCREEN 계약 유지.
+- 변경: 서버 DTO의 일반 IMAGE 최상위 크기 생략, 새 입력의 구 필드·FILL·중복 크기 지시·비율 모드·크기 검증, 기존 저장 행의 새 응답 변환. FILL 분기와 설명 배치/비율 계약 제거. Oracle 11g용 대상 조회 및 원문 백업·전환/복원 SQL 생성 도구 준비(SELECT만 실행하는 도구, 원문 비교·행 잠금·오류 시 ROLLBACK, 자동 COMMIT 없음). 최초 구현 검증 시 DB 미실행, 후속 적용 결과는 2026-10-06-02 참조.
+- 주요 파일: PopupEditorDialog.tsx, PopupPreview.tsx, imagePreviewLayout.ts, ImagePopupContentDto.cs, PopupFactory.cs, ImagePopupView.xaml/.cs, PopupWindow.xaml.cs, PopupContentAssembler.java, PopupService.java, ImageContractMigration.java, db/oracle/11_IMAGE_CONTRACT_TRANSITION.md, 설계 23, 인터페이스 v3.6 Markdown/JSON/Word/PDF 및 가이드.
+- 검증: WPF 빌드 경고·오류 0 및 로컬 행동 검증 699건, 서버 core 55건/API 29건(총 84건), headless Edge IMAGE 표시 23건 통과. 웹 type-check·build 성공(기존 lint/runtimeConfig 경고 존재). Word 목차 갱신·PDF 내보내기 완료. git diff --check 통과. 원격 DB·실제 API 저장 클릭·물리 다중 모니터/DPI 전환·폐쇄망 실행은 미실행.
+- 상태: 로컬 구현·자동 검증 완료, 미커밋. DB 전환·반입·커밋·푸시 후속 결과는 2026-10-06-02 및 Git 이력 참조. 배포 미실행. 기존 영상/MockSso 및 반입 패키지 변경 이력 보존. WPF 로컬 검증 프로젝트는 기존 Git 제외 정책 유지.
+
 ## 2026-10-05-01 — IMAGE 크기 모드 단순화 구현 TODO
 
 - 이유: 창 기준과 이미지 기준 표시를 명확히 구분하고 FIT_TO_IMAGE의 불필요한 여백·설명 배치·최소/최대 계산 정책을 정리.
@@ -10,6 +26,14 @@
 - 변경(최종): IMAGE 응답 크기를 content.width/height로 통일하고 수신 시 내부 창/이미지 크기로 변환하도록 명시. FIT_TO_IMAGE 전용 keepAspectRatio(기본 true), 고정 시 비율 연동·해제 시 지정 크기와 왜곡 허용, 최대 창 초과 시 자동 축소 없는 Clip, JSON 예시·기존 필드 전환·검증 항목으로 설계 23 재정리. 별도 stretch ENUM은 추가하지 않으며 DB 컬럼 통합은 전제하지 않음.
 - 검증: 현행 ImagePopupView·PopupWindow·PopupFactory·관리자 편집기 및 설계 15 대조, 문서 diff 점검. 제품 코드 미변경으로 빌드·런타임 테스트·DB 전환 미실행.
 - 상태: TODO 문서 커밋 대상. 구현·원격 푸시·배포 미실행. 커밋 여부는 Git 이력으로 확인.
+
+## 2026-10-03-18 — 폐쇄망 반입 패키지 20261003 생성
+
+- 이유: 최신 WPF·웹 UI, Demo 문항, VIDEO 및 백엔드 전달 정의서를 폐쇄망 반입용 소스로 정리.
+- 변경: 기존 서버/웹 기준 커밋 대비 변경분, WPF 소스 및 MockSso, 최신 문서를 4개 묶음과 오늘자 TGZ로 구성. 기존 폐쇄망 의존성 반입본을 사용하므로 최종 TGZ에서 6-offline-packages와 해당 manifest·체크섬 항목 제외. 개발용 로컬 검증 프로젝트·캐시·별도 실행 설정·빌드 산출물 제외. 20260930 이후 삭제 목록과 manifest·SHA256 제공. 브라우저 끝부분 탐색 시 처음부터 재생되는 Demo 영상 이슈에 대해 libx264/yuv420p/High/AAC/faststart 재인코딩본으로 Media/demo-video.mp4 교체.
+- 주요 파일: offline-export/20261003의 반입 패키지 및 README-IMPORT.md, MANIFEST, SHA256SUMS.txt, DELETE-SINCE-20260930.txt.
+- 검증: 반입 파일만 새 폴더에 복사해 외부 feed 없이 restore·win-x64 self-contained publish 성공. 재인코딩 영상 전체 디코딩 오류 없음. headless Edge 중간/끝부분/되감기 탐색 4곳 및 끝부분 재생 확인(96.708초에서 97.008초로 진행, 오류 없음). TAR/TGZ 파일 목록 및 SHA256 확인. 기존 코드 검증 결과는 해당 변경 이력 참조.
+- 상태: 로컬 반입 패키지 생성 완료. NuGet은 기존 반입본 사용, 이번 TGZ에 포함하지 않음. 패키지·FFmpeg 도구·로컬 검증은 Git 제외, 영상 소스 및 변경 이력 미커밋. 폐쇄망 PC 설치·실행·실제 API 연계 미실행.
 
 ## 2026-10-03-17 — 백엔드 전달용 유형별 JSON 및 필수값 누락 점검
 

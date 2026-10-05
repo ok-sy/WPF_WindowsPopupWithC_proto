@@ -1,7 +1,7 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-10-03
+- 작성 기준: 2026-10-06
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
@@ -72,16 +72,12 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 |---|---|---:|---|---|
 | ImageUrl | 지원 | Y | `""` | 이미지 URL 또는 경로 |
 | ImageSizeMode | ORIGINAL만 사용 | Y(운영 기준) | 코드 기본 `ADAPTIVE` | 최소 버전은 `ORIGINAL`로 고정 전달 |
-| ImageWidth | 미사용 | N | `0` | ORIGINAL 경로에서는 사용되지 않음 |
-| ImageHeight | 미사용 | N | `0` | ORIGINAL 경로에서는 사용되지 않음 |
 | ImageTitle | 미제공 | N | `""` | 이미지 콘텐츠 내부 제목 |
 | Description | 미제공 | N | `""` | 이미지 설명 |
 | ShowDescription | 미제공 | N | `true` | 설명 표시 여부 |
-| DescriptionPosition | 미제공 | N | `AUTO` | AUTO / RIGHT / BOTTOM |
-| ImageAreaRatio | 미제공 | N | `0.75` | 이미지/설명 영역 비율 |
 | LinkUrl | 미제공 | N | `""` | 이미지 클릭 링크 |
 
-최소 IMAGE는 ORIGINAL 표시 + 공통 Width/Height만 사용한다. `ImageWidth`/`ImageHeight`는 공통 Width/Height와 다른 필드이며 ORIGINAL 모드에서는 적용되지 않는다.
+최소 IMAGE는 ORIGINAL 표시 + 공통 Width/Height만 사용한다. 일반 모드는 content.width/height만 사용하며 ORIGINAL에 적용하지 않는다. keepAspectRatio는 FIT_TO_IMAGE 전용이다.
 
 ### 4.3 VIDEO
 
@@ -130,7 +126,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | 문서에서 혼동하기 쉬운 표현 | 실제 코드 기준 정리 |
 |---|---|
 | TextStyle | 해당 필드 없음. HeaderFontSize / BodyFontSize / FooterFontSize로 분리 |
-| 공통 Width/Height vs IMAGE Width/Height | 공통값은 PopupWindow 크기, ImageWidth/ImageHeight는 이미지 표시 영역 크기 |
+| 공통 Width/Height vs IMAGE Width/Height | 공통값은 PopupWindow 크기, 일반 IMAGE content.width/height는 ADAPTIVE 창 크기 / FIT_TO_IMAGE 이미지 표시 크기 |
 | ORIGINAL + ImageWidth/ImageHeight | ORIGINAL 모드에서는 ImageWidth/ImageHeight가 적용되지 않으므로 최소 버전에서 사용하지 않음 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
@@ -145,7 +141,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 |---|---|
 | 공통 | PopupId/PopupType + 공통 Width/Height + 제목/Header + 닫기 + Footer + 다시 보지 않기 + Overlay + 드래그 이동 + Footer 바로가기(URL 열기 후 닫기) |
 | TEXT | PlainText 중심. 별도 TextStyle 없음. 공통 Width/Height 사용 |
-| IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. ImageWidth/ImageHeight는 사용하지 않음 |
+| IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. content.width/height 및 keepAspectRatio는 사용하지 않음 |
 | VIDEO | VideoUrl + 기본 Controls/음량 + 영상 FullScreen + CompletionRatio + 공통 Width/Height |
 | SURVEY | 단일/복수 선택 + 주관식 + 필수값 검증 + 선택지 VERTICAL/HORIZONTAL. 채점 없음 |
 | QUIZ | 점수/합격점/배점 + 미통과 시 창 유지 + VIDEO+QUIZ(CompletionRatio 도달 후 Quiz/Footer 활성화). 주관식 정답 비교 기능은 최소 버전 미제공 |

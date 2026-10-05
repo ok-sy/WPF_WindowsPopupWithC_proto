@@ -49,7 +49,7 @@ class WpfPopupServiceTest {
 
     private PopupResponseDto quizDto(List<PopupQuestionDto> questions) {
         return new PopupResponseDto("Q1", "QUIZ", "퀴즈", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
-                "SEQUENTIAL", 10, "FIXED", 600, 480, .7, .75, 480, 320, 1200, 900,
+                "SEQUENTIAL", 10, "FIXED", 600.0, 480.0, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, 20L, "FIXED", null, null, null, null, null, 10.0, true, questions,
                 // [설계 18 L-3] PopupContentAssembler는 content에 문항·통과 점수 등 파생 키를 넣지 않는다.
                 Map.of("surveyTitle", "보안", "useBackgroundOverlay", true));
@@ -118,7 +118,7 @@ class WpfPopupServiceTest {
         when(popupService.loadQuestionsWithAnswerKey(List.of(20L))).thenReturn(Map.of(20L, List.of(withKey)));
         when(popupService.toPublicResponseDto(entity, List.of(stripped))).thenReturn(
                 new PopupResponseDto("S1", "SURVEY", "설문", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
-                        "SEQUENTIAL", 10, "FIXED", 600, 480, .7, .75, 480, 320, 1200, 900,
+                        "SEQUENTIAL", 10, "FIXED", 600.0, 480.0, .7, .75, 480, 320, 1200, 900,
                         true, true, true, false, 20L, "FIXED", null, null, null, null, null, 10.0, true, List.of(stripped),
                         Map.of("surveyTitle", "설문", "passingScore", 10.0)));
 

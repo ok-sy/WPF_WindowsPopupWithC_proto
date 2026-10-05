@@ -34,7 +34,7 @@ class PopupAdminQuestionsTest {
     private PopupResponseDto popup(List<PopupQuestionDto> questions) {
         return new PopupResponseDto("TEST", "QUIZ", "Quiz", OffsetDateTime.now(),
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
-                560, 420, .7, .75, 480, 320, 1200, 900,
+                560.0, 420.0, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, 10L, "FIXED",
                 null, null, null, null, null, 2.0, true, questions,
                 Map.of("useBackgroundOverlay", true, "backgroundOverlayOpacity", .45));
@@ -96,7 +96,7 @@ class PopupAdminQuestionsTest {
     private PopupResponseDto imagePopup(String imageSizeMode) {
         return new PopupResponseDto("TEST", "IMAGE", "Image", OffsetDateTime.now(),
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
-                560, 420, .7, .75, 480, 320, 1200, 900,
+                ("ORIGINAL".equals(imageSizeMode) ? 560.0 : null), ("ORIGINAL".equals(imageSizeMode) ? 420.0 : null), .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, null, "FIXED",
                 null, null, null, null, null, null, true, List.of(),
                 Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
@@ -110,10 +110,50 @@ class PopupAdminQuestionsTest {
     }
 
     @Test void imagePopupAcceptsCurrentImageSizeModes() {
-        for (String mode : List.of("ADAPTIVE", "fit_to_image", "FILL", "ORIGINAL")) {
+        for (String mode : List.of("ADAPTIVE", "fit_to_image", "ORIGINAL")) {
             service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
         }
-        verify(mapper, times(4)).upsertAdminPopupNotice(any());
+        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+    }
+
+    private PopupResponseDto imageWithContent(String mode, Map<String, Object> extras, Double topWidth) {
+        var base = imagePopup(mode);
+        var content = new java.util.HashMap<>(base.content());
+        content.putAll(extras);
+        return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                topWidth, base.height(), base.widthRatio(), base.heightRatio(), base.minimumWidth(), base.minimumHeight(),
+                base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
+                base.showDoNotShowAgain(), null, base.periodMode(), null, null, null, null, null, null,
+                true, List.of(), content);
+    }
+
+    @Test void image23RejectsRetiredFieldsInvalidDimensionsAndDuplicateInstructions() {
+        for (String key : List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio"))
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                    imageWithContent("ADAPTIVE", Map.of(key, 1), null), false, List.of(), "admin"));
+        for (Object value : List.of(0, -1, Double.NaN, Double.POSITIVE_INFINITY, "600"))
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                    imageWithContent("FIT_TO_IMAGE", Map.of("width", value), null), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                imageWithContent("ADAPTIVE", Map.of("keepAspectRatio", true), null), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                imageWithContent("FIT_TO_IMAGE", Map.of("keepAspectRatio", "false"), null), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(imagePopup("FILL"), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                imageWithContent("ADAPTIVE", Map.of("width", 600), 600.0), false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+    }
+
+    @Test void image23StoresOversizedUnlockedImageAndOmitsTopLevelDimensions() throws Exception {
+        var popup = imageWithContent("FIT_TO_IMAGE", Map.of("width", 5000, "height", 3000, "keepAspectRatio", false), null);
+        service.saveAdminPopup(popup, false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupContent(argThat(c -> c.contentOptionsJson().contains("5000")
+                && c.contentOptionsJson().contains("\"keepAspectRatio\":false")));
+        var json = new ObjectMapper().findAndRegisterModules().valueToTree(server.domain.popup.wpf.WpfPopupItem.from(popup, false));
+        assertFalse(json.has("width"));
+        assertFalse(json.has("height"));
+        assertEquals(5000, json.path("content").path("width").asInt());
     }
 
     // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.
@@ -135,7 +175,7 @@ class PopupAdminQuestionsTest {
                 withContent.apply(Map.of("descriptionPosition", "LEFT")), false, List.of(), "admin"));
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 withContent.apply(Map.of("imageAreaRatio", 0.95)), false, List.of(), "admin"));
-        service.saveAdminPopup(withContent.apply(Map.of("descriptionPosition", "right", "imageAreaRatio", 0.6)),
+        service.saveAdminPopup(withContent.apply(Map.of("width", 600, "height", 400)),
                 false, List.of(), "admin");
         verify(mapper, times(1)).upsertAdminPopupNotice(any());
     }

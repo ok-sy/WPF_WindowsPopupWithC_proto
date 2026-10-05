@@ -120,8 +120,20 @@
           "questionScore": 10,
           "sortOrder": 1,
           "options": [
-            { "optionId": 1, "value": "YES", "text": "예", "sortOrder": 1, "isCorrect": true },
-            { "optionId": 2, "value": "NO", "text": "아니요", "sortOrder": 2, "isCorrect": false }
+            {
+              "optionId": 1,
+              "value": "YES",
+              "text": "예",
+              "sortOrder": 1,
+              "isCorrect": true
+            },
+            {
+              "optionId": 2,
+              "value": "NO",
+              "text": "아니요",
+              "sortOrder": 2,
+              "isCorrect": false
+            }
           ]
         }
       ],
@@ -167,8 +179,18 @@
           "isScored": false,
           "sortOrder": 1,
           "options": [
-            { "optionId": 3, "value": "CHAIR", "text": "의자", "sortOrder": 1 },
-            { "optionId": 4, "value": "MONITOR", "text": "모니터", "sortOrder": 2 }
+            {
+              "optionId": 3,
+              "value": "CHAIR",
+              "text": "의자",
+              "sortOrder": 1
+            },
+            {
+              "optionId": 4,
+              "value": "MONITOR",
+              "text": "모니터",
+              "sortOrder": 2
+            }
           ]
         },
         {

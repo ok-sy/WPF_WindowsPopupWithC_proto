@@ -1,4 +1,4 @@
-﻿param([string]$OutputPath = 'docs/interfaces/WPF_Popup_API_Interface_v3.5.docx')
+﻿param([string]$OutputPath = 'docs/interfaces/WPF_Popup_API_Interface_v3.6.docx')
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 if (-not [IO.Path]::IsPathRooted($OutputPath)) { $OutputPath = Join-Path $repo $OutputPath }

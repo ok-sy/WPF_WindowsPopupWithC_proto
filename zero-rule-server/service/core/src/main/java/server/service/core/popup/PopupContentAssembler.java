@@ -68,6 +68,22 @@ public class PopupContentAssembler {
                 content.put("plainText", popup.contentBody());
             }
             case "IMAGE" -> {
+                // Read old storage into the new contract; new requests must use only new fields.
+                String mode = String.valueOf(content.getOrDefault("imageSizeMode", "ADAPTIVE")).trim().toUpperCase(java.util.Locale.ROOT);
+                if ("FILL".equals(mode)) mode = "ADAPTIVE";
+                content.put("imageSizeMode", mode);
+                if (!"ORIGINAL".equals(mode)) {
+                    if (!content.containsKey("width")) content.put("width", "FIT_TO_IMAGE".equals(mode)
+                        ? positiveLegacy(content.get("imageWidth")) : popup.popupWidth());
+                    if (!content.containsKey("height")) content.put("height", "FIT_TO_IMAGE".equals(mode)
+                        ? positiveLegacy(content.get("imageHeight")) : popup.popupHeight());
+                    if ("FIT_TO_IMAGE".equals(mode)) content.putIfAbsent("keepAspectRatio", true);
+                } else {
+                    content.remove("width");
+                    content.remove("height");
+                }
+                List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio").forEach(content::remove);
+                if (!"FIT_TO_IMAGE".equals(mode)) content.remove("keepAspectRatio");
                 content.put("imageTitle", popup.contentTitle());
                 content.put("imageUrl", popup.mediaUrl());
                 content.put("description", popup.description());
@@ -96,6 +112,11 @@ public class PopupContentAssembler {
         Map<String, Object> options = new LinkedHashMap<>(content == null ? Map.of() : content);
         STORED_COPY_KEYS.forEach(options::remove);
         return options;
+    }
+
+    private static Object positiveLegacy(Object value) {
+        if (value instanceof Number n && Double.isFinite(n.doubleValue()) && n.doubleValue() > 0) return value;
+        return null;
     }
 
     private Map<String, Object> parseOptions(String popupId, String json) {

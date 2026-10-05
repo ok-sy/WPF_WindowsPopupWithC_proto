@@ -84,9 +84,10 @@ namespace Popup.Factories
                 CompletionRatio = popupDto.CompletionRatio ?? 1.0,
                 AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
                 Position = GetPopupPosition(popupDto.Content),
-                SizeMode = ConvertPopupSizeMode(popupDto.SizeMode),
-                Width = popupDto.Width,
-                Height = popupDto.Height,
+                SizeMode = content is ImagePopupView && !string.Equals(popupDto.SizeMode, "FULLSCREEN", StringComparison.OrdinalIgnoreCase)
+                    ? PopupSizeMode.Fixed : ConvertPopupSizeMode(popupDto.SizeMode),
+                Width = content is ImagePopupView imageWidthView ? imageWidthView.RequestedWindowWidth ?? 560 : popupDto.Width,
+                Height = content is ImagePopupView imageHeightView ? imageHeightView.RequestedWindowHeight ?? 420 : popupDto.Height,
                 WidthRatio = popupDto.WidthRatio,
                 HeightRatio = popupDto.HeightRatio,
                 MinimumWidth = popupDto.MinimumWidth,
@@ -181,9 +182,9 @@ namespace Popup.Factories
                 ?? throw new InvalidOperationException("IMAGE 팝업 content 변환에 실패했습니다.");
 
             bool original = string.Equals(contentDto.ImageSizeMode, "ORIGINAL", StringComparison.OrdinalIgnoreCase);
-            if (original || string.Equals(contentDto.ImageSizeMode, "FILL", StringComparison.OrdinalIgnoreCase))
+            if (original)
             {
-                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl, original);
+                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl);
             }
 
             return new ImagePopupView(
@@ -192,10 +193,9 @@ namespace Popup.Factories
                 contentDto.Description,
                 contentDto.ShowDescription,
                 ConvertImagePopupSizeMode(contentDto.ImageSizeMode),
-                contentDto.ImageWidth > 0 ? contentDto.ImageWidth : null,
-                contentDto.ImageHeight > 0 ? contentDto.ImageHeight : null,
-                ConvertImageDescriptionPosition(contentDto.DescriptionPosition),
-                contentDto.ImageAreaRatio);
+                contentDto.Width,
+                contentDto.Height,
+                contentDto.KeepAspectRatio);
         }
 
         private static VideoPopupView CreateVideoPopupView(JsonElement contentJson)
@@ -280,15 +280,6 @@ namespace Popup.Factories
                 "MULTIPLE_CHOICE" => SurveyQuestionType.MultipleChoice,
                 "TEXT" => SurveyQuestionType.Text,
                 _ => throw new ArgumentException($"지원하지 않는 설문 질문 유형입니다: {questionType}")
-            };
-
-        private static ImageDescriptionPosition ConvertImageDescriptionPosition(string descriptionPosition) =>
-            (descriptionPosition ?? "AUTO").Trim().ToUpperInvariant() switch
-            {
-                "AUTO" => ImageDescriptionPosition.Auto,
-                "RIGHT" => ImageDescriptionPosition.Right,
-                "BOTTOM" => ImageDescriptionPosition.Bottom,
-                _ => throw new ArgumentException($"지원하지 않는 이미지 설명 위치입니다: {descriptionPosition}")
             };
 
         private static ImagePopupSizeMode ConvertImagePopupSizeMode(string imageSizeMode) =>

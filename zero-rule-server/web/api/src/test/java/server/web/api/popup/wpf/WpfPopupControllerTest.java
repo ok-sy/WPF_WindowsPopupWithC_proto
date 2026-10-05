@@ -72,6 +72,26 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.code").value("WPF_USER_INACTIVE"));
     }
 
+    @Test void image23HttpResponseUsesSingleContentDimensionPair() throws Exception {
+        var dto = new ObjectMapper().readValue("""
+                {"popupId":"IMAGE-23","popupType":"IMAGE","title":"IMAGE","sizeMode":"FIXED",
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":400,"maximumHeight":300,
+                 "content":{"imageUrl":"https://example.com/a.png","imageSizeMode":"FIT_TO_IMAGE",
+                            "width":900,"height":600,"keepAspectRatio":false}}
+                """, server.domain.popup.PopupResponseDto.class);
+        when(service.getPopupsForUser("E1001")).thenReturn(new WpfPopupListResponse(
+                OffsetDateTime.now(), "E1001", 1800,
+                List.of(server.domain.popup.wpf.WpfPopupItem.from(dto, false))));
+        mvc.perform(get("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.popups[0].width").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].height").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.width").value(900))
+                .andExpect(jsonPath("$.popups[0].content.height").value(600))
+                .andExpect(jsonPath("$.popups[0].content.keepAspectRatio").value(false))
+                .andExpect(jsonPath("$.popups[0].content.imageWidth").doesNotExist());
+    }
+
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {
         // 항목 없음 → 400 (요청 전체 형식 오류)
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")

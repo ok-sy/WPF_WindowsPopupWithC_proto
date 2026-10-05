@@ -17,6 +17,28 @@ class PopupContentAssemblerTest {
 
     private final PopupContentAssembler assembler = new PopupContentAssembler(new ObjectMapper());
 
+    @Test void image23ConvertsLegacyStorageWithoutDuplicateDimensions() {
+        var content = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+                "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"imageWidth\":600,\"imageHeight\":400,\"descriptionPosition\":\"RIGHT\",\"imageAreaRatio\":0.75}", null, null, "Y"));
+        assertEquals(600, content.get("width"));
+        assertEquals(400, content.get("height"));
+        assertEquals(true, content.get("keepAspectRatio"));
+        for (String key : new String[]{"imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio"})
+            assertFalse(content.containsKey(key));
+        var fill = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+                "{\"imageSizeMode\":\"FILL\"}", null, null, "Y"));
+        assertEquals("ADAPTIVE", fill.get("imageSizeMode"));
+        var current = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+                "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"width\":900,\"imageWidth\":600,\"keepAspectRatio\":false}", null, null, "Y"));
+        assertEquals(900, current.get("width"));
+        assertEquals(false, current.get("keepAspectRatio"));
+        var original = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+                "{\"imageSizeMode\":\"ORIGINAL\",\"width\":900,\"height\":600,\"keepAspectRatio\":true}", null, null, "Y"));
+        assertFalse(original.containsKey("width"));
+        assertFalse(original.containsKey("height"));
+        assertFalse(original.containsKey("keepAspectRatio"));
+    }
+
     private PopupEntity entity(String type, String title, String description, String body, String media,
                                String link, String options, BigDecimal completionRatio, BigDecimal passingScore,
                                String allowClose) {
