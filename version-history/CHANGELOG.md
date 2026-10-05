@@ -7,8 +7,8 @@
 - 이유: IMAGE v3.6 구현분의 개발 DB 정합성 확인과 최신 소스·문서의 폐쇄망 반입 준비.
 - 변경: 로컬 OracleServiceXE 시작, 로컬 POPUP 및 원격 개발 DB zero-rule에서 전환 계획·원문 백업 생성 후 전환 SQL 실행·검증·COMMIT. 두 DB 모두 IMAGE 0행으로 UPDATE 0행. Gradle 전환 도구의 상대 출력 경로를 서버 루트 기준으로 고정. 20261006 반입본은 서버·웹 변경분, WPF/MockSso 소스와 기존 영상 교체분, 최신 문서의 4개 TAR 및 통합 TGZ로 구성. NuGet·SDK는 기존 반입본 사용, 개인 launchSettings와 검증 하네스·빌드 산출물 제외.
 - 주요 파일: db/oracle/11_IMAGE_CONTRACT_TRANSITION.md, db/oracle/README.md, 설계 23, service/core/build.gradle.kts, offline-export/20261006/ (Git 제외), version-history/CHANGELOG.md.
-- 검증: 두 DB 계획 생성·전환 SQL·COMMIT 성공, IMAGE 행 수 각각 0 확인. 반입본 소스 빌드·압축 검증은 진행 중.
-- 상태: DB 전환 확인 완료. 반입본 생성·커밋·푸시 진행 중. 배포·실제 IMAGE 저장/API 연계·물리 다중 모니터·폐쇄망 실행 미실행. MockSso 개인 실행 설정은 Git 제외 유지.
+- 검증: 두 DB 계획 생성·전환 SQL·COMMIT 성공, IMAGE 행 수 각각 0 확인. 반입본 소스만 새 폴더에 복사해 외부 feed 없이 restore·win-x64 self-contained publish 성공. Gradle 상대 출력 경로 검증 성공. TAR/TGZ 목록·실행 산출물 제외·영상 원본 SHA256 일치 및 압축 SHA256 검증 완료.
+- 상태: DB 전환 확인 완료. 반입본 생성·검증 완료. 구현 커밋 6cb656e main 푸시 완료. 검증 결과 기록 보완은 후속 커밋에 포함. 배포·실제 IMAGE 저장/API 연계·물리 다중 모니터·폐쇄망 실행 미실행. MockSso 개인 실행 설정은 Git 제외 유지.
 ## 2026-10-06-01 — IMAGE 단일 크기 계약 및 비율 옵션 구현
 
 - 이유: 설계 23의 창 우선/이미지 우선 구분, 비율 잠금, 최대 창 초과 Clip, 하단 설명 계약 반영.
