@@ -81,7 +81,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `width`, `height` | FIXED 모드의 창 크기 |
 | `widthRatio`, `heightRatio` | RATIO 모드 비율 |
 | `minimumWidth`, `minimumHeight` | 최소 창 크기 |
-| `maximumWidth`, `maximumHeight` | 최대 창 크기 |
+| `maximumWidth`, `maximumHeight` | 최대 창 크기. IMAGE는 고정 상한을 사용하지 않고 작업 영역 90%로 계산 |
 
 > 2026-09-28(설계 18 L-5 — C-24): API 문자열을 관리자 웹/zero-rule-server와 같은 `RATIO`로 단일화했다. `VIEWPORT_RATIO`는 더 이상 받지 않는다(내부 enum 이름 `ViewportRatio`는 유지).
 
@@ -156,7 +156,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 - ADAPTIVE: content 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
 - FIT_TO_IMAGE: content 크기는 실제 이미지 표시 DIP 크기. keepAspectRatio 기본 true. 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 **너비 우선으로 높이를 정규화**한다. 편집기 연동값은 소수 둘째 자리로 반올림하되, 렌더링은 원본 비율로 다시 계산하므로 별도 오차 거부 기준은 없다.
 - 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
-- 최소·최대는 창 제한이다. 최대는 설정값과 현재 모니터 작업 영역 95% 중 작은 값이고 최소는 유효 최대 이하로 보정한다. 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. 최대 초과 이미지의 표시 크기는 유지하고 **중앙 기준**으로 자른다. FULLSCREEN은 창 크기가 우선이며 FIT_TO_IMAGE의 이미지 크기는 그대로 유지한다.
+- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. content.width/height의 지정 픽셀/DIP 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
 - 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(48)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
 - WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.

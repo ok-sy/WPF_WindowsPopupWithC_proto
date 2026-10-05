@@ -128,6 +128,17 @@ class PopupAdminQuestionsTest {
                 true, List.of(), content);
     }
 
+    @Test void imageScreenPolicyAllowsMinimumAboveStoredLegacyMaximum() {
+        var base = imagePopup("ADAPTIVE");
+        var large = new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                base.width(), base.height(), base.widthRatio(), base.heightRatio(), 2000, 1500,
+                1200, 900, base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(),
+                null, base.periodMode(), null, null, null, null, null, null, true, List.of(), base.content());
+        service.saveAdminPopup(large, false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupNotice(any());
+    }
+
     @Test void image23RejectsRetiredFieldsInvalidDimensionsAndDuplicateInstructions() {
         for (String key : List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio"))
             assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(

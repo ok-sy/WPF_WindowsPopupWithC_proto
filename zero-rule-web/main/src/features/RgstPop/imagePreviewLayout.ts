@@ -40,8 +40,8 @@ function textHeight(text: string, width: number, font: number, line: number): nu
 export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workArea: Size): FitToImageLayout | null {
   if (natural.width <= 0 || natural.height <= 0) return null;
   const image = displayImageSize(popup, natural);
-  const maxWidth = Math.min(popup.maximumWidth, workArea.width * 0.95);
-  const maxHeight = Math.min(popup.maximumHeight, workArea.height * 0.95);
+  const maxWidth = workArea.width * 0.90;
+  const maxHeight = workArea.height * 0.90;
   const chrome = 48 + 48 + 2 + (popup.showHeader ? 48 : 0) + (popup.showFooter ? 80 : 0);
   const measureWidth = Math.max(1, Math.min(image.width + 2, maxWidth - 106));
   const title = textHeight(String(popup.content.imageTitle ?? ''), measureWidth, 22, 27);

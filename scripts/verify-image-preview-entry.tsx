@@ -12,6 +12,7 @@ const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, san
     content: {imageSizeMode: mode, imageUrl: source, imageTitle: '', description, showDescription: true,
       width, height, ...(mode === 'FIT_TO_IMAGE' ? {keepAspectRatio: locked} : {})}} as any;
   const natural = {width: naturalWidth, height: naturalHeight};
+  (window as any).layoutForScreen = (screenWidth: number, screenHeight: number) => fitToImageLayout(popup, natural, {width: screenWidth, height: screenHeight});
   const layout = fitToImageLayout(popup, natural, {width: 1000, height: 900})!;
   const size = mode === 'FIT_TO_IMAGE' ? layout.window : {width: Number(width ?? 560), height: Number(height ?? 420)};
   (window as any).imageState = {popup, layout, display: displayImageSize(popup, natural)};

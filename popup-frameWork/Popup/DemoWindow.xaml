@@ -1,87 +1,128 @@
 <Window x:Class="Popup.DemoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Popup Demo Mode" Height="720" Width="1000" MinHeight="700" MinWidth="820" ShowInTaskbar="True">
-    <!--
-        Demo Mode 화면 (Java 서버·DB 없이 동작)
-        왼쪽: 샘플 팝업 실행 버튼. 오른쪽: 결과 API 시뮬레이션 로그.
-        새 구조(기준 3·4)에서는 팝업이 닫힐 때 결과 항목 1개가 전송되므로,
-        그 항목과 "서버"(DemoPopupGateway)의 응답을 그대로 보여 준다.
-    -->
-    <Grid Margin="16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="16"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-
-        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel VerticalAlignment="Top">
-            <TextBlock Text="Demo Mode" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,4"/>
-            <TextBlock Text="서버 없이 팝업 표시와 결과 전송 흐름을 확인합니다." TextWrapping="Wrap"
-                       Foreground="#666" Margin="0,0,0,16"/>
-            <GroupBox Header="새 기능 확인" Margin="0,0,0,16" Padding="10">
-                <StackPanel>
-                    <TextBlock Text="푸터 바로가기 URL" Margin="0,0,0,4"/>
-                    <TextBox x:Name="FooterLinkInput" Text="https://example.com/" Margin="0,0,0,8"/>
-                    <Button Content="바로가기 → 링크 열고 닫기" Height="36" Margin="0,0,0,12" Tag="FOOTER_LINK" Click="OpenPopupButton_Click"/>
-                    <TextBlock Text="동영상 완료 비율" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="VideoCompletionCombo" SelectedIndex="3" Margin="0,0,0,6">
-                        <ComboBoxItem Content="0%" Tag="0"/>
-                        <ComboBoxItem Content="25%" Tag="0.25"/>
-                        <ComboBoxItem Content="50%" Tag="0.5"/>
-                        <ComboBoxItem Content="80%" Tag="0.8"/>
-                        <ComboBoxItem Content="100%" Tag="1"/>
-                    </ComboBox>
-                    <CheckBox x:Name="VideoQuizLinkCheck" Content="동영상+퀴즈 푸터에도 바로가기 사용" Margin="0,0,0,8"/>
-                    <Button Content="동영상 + 퀴즈 실행" Height="36" Margin="0,0,0,6" Tag="VIDEO_QUIZ" Click="OpenPopupButton_Click"/>
-                    <TextBlock Text="설정 비율까지 시청하면 퀴즈와 푸터가 활성화됩니다. 퀴즈 완료 점수는 오른쪽 결과 JSON에서 확인하세요." TextWrapping="Wrap" Foreground="#666" Margin="0,0,0,12"/>
-                    <Button Content="ORIGINAL 이미지 · 원본 그대로 자르기" Height="36" Tag="IMAGE_ORIGINAL" Click="OpenPopupButton_Click"/>
-                </StackPanel>
-            </GroupBox>
-            <TextBlock Text="1번 문항 선택지 배치" Margin="0,0,0,4"/>
-            <ComboBox x:Name="Question1LayoutCombo" SelectedIndex="0" Margin="0,0,0,8">
-                <ComboBoxItem Content="세로형" Tag="VERTICAL"/>
-                <ComboBoxItem Content="가로형 (너비 초과 시 줄바꿈)" Tag="HORIZONTAL"/>
-            </ComboBox>
-            <TextBlock Text="2번 문항 선택지 배치" Margin="0,0,0,4"/>
-            <ComboBox x:Name="Question2LayoutCombo" SelectedIndex="1" Margin="0,0,0,8">
-                <ComboBoxItem Content="세로형" Tag="VERTICAL"/>
-                <ComboBoxItem Content="가로형 (너비 초과 시 줄바꿈)" Tag="HORIZONTAL"/>
-            </ComboBox>
-            <TextBlock Text="문항별 배치를 선택한 뒤 설문·퀴즈를 여세요. 긴 보기와 공백 없는 문구도 확인할 수 있습니다." TextWrapping="Wrap" Foreground="#666" Margin="0,0,0,8"/>
-            <Button Content="전체 팝업 순차 실행" Height="40" Margin="0,0,0,10" Click="OpenAllPopupsButton_Click"/>
-            <Button Content="텍스트 팝업 열기" Height="36" Margin="0,0,0,8" Tag="TEXT" Click="OpenPopupButton_Click"/>
-            <Button Content="이미지 팝업 열기" Height="36" Margin="0,0,0,8" Tag="IMAGE" Click="OpenPopupButton_Click"/>
-            <ComboBox x:Name="ImageModeCombo" SelectedIndex="0" Margin="0,0,0,8">
-                <ComboBoxItem Content="ORIGINAL · 원본 그대로 자르기" Tag="ORIGINAL"/>
-                <ComboBoxItem Content="ADAPTIVE · 화면에 맞춤" Tag="ADAPTIVE"/>
-                <ComboBoxItem Content="FIT_TO_IMAGE · 원본에 맞춤" Tag="FIT_TO_IMAGE"/>
-            </ComboBox>
-            <Button Content="비디오 팝업 열기" Height="36" Margin="0,0,0,8" Tag="VIDEO" Click="OpenPopupButton_Click"/>
-            <Button Content="설문 팝업" Height="36" Margin="0,0,0,8" Tag="SURVEY" Click="OpenPopupButton_Click"/>
-            <Button Content="퀴즈 팝업" Height="36" Margin="0,0,0,20" Tag="QUIZ" Click="OpenPopupButton_Click"/>
-            <Button Content="서버 상태 초기화 (숨김·완료)" Height="34" Margin="0,0,0,8" Click="ResetServerButton_Click"/>
-            <Button Content="결과 로그 지우기" Height="34" Click="ClearLogButton_Click"/>
-            <TextBlock x:Name="ServerStateText" Margin="0,16,0,0" Foreground="#444" TextWrapping="Wrap"
-                       Text="숨김 0 · 완료 0"/>
-        </StackPanel>
-        </ScrollViewer>
-
-        <Grid Grid.Column="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Margin="0,0,0,8">
-                <TextBlock Text="결과 전송 JSON" FontWeight="SemiBold"/>
-                <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 score / passed가 여기에 표시됩니다." TextWrapping="Wrap" Margin="0,8,0,0" FontSize="16" Foreground="#2563EB"/>
+        Title="Popup Demo Mode" Height="760" Width="1080" MinHeight="600" MinWidth="820"
+        Background="#F5F6F8" Foreground="#20242B" FontFamily="Malgun Gothic" FontSize="13" ShowInTaskbar="True">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#20242B"/>
+            <Setter Property="BorderBrush" Value="#D7DBE1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#20242B"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#68707C"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="LineHeight" Value="21"/>
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TabItem"><Setter Property="Padding" Value="8,8"/></Style>
+        <Style x:Key="JsonText" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="BorderBrush" Value="#E0E3E8"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="20" Background="{Binding Background, RelativeSource={RelativeSource AncestorType=Window}}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Popup Demo" FontSize="24" FontWeight="SemiBold"/>
+                <TextBlock Text="서버 없이 팝업과 결과 전송을 확인합니다." Foreground="#68707C" Margin="0,6,0,0"/>
             </StackPanel>
-            <ListBox Grid.Row="1" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12"
-                     HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
-            <TextBlock Grid.Row="2" Margin="0,8,0,0" Foreground="#666" TextWrapping="Wrap"
-                       Text="숨김·완료된 팝업은 실제 서버와 같이 다음 조회에서 제외됩니다. 퀴즈 완료 요청 JSON에는 score·passed가 포함됩니다. 다시 확인하려면 서버 상태를 초기화하세요."/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="상태 초기화" Margin="0,0,8,0" Click="ResetServerButton_Click" ToolTip="숨김·완료 상태와 처리한 결과를 초기화합니다."/>
+                <Button Content="전체 실행" Margin="0" Style="{StaticResource PrimaryButton}" Click="OpenAllPopupsButton_Click"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border Background="White" BorderBrush="#E0E3E8" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock Text="팝업 실행" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14"/>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock Text="시연할 샘플" Style="{StaticResource Label}"/>
+                            <ComboBox x:Name="ScenarioCombo" SelectedIndex="0" SelectionChanged="ScenarioCombo_SelectionChanged">
+                                <ComboBoxItem Content="텍스트" Tag="DEMO-TEXT-001"/>
+                                <ComboBoxItem Content="이미지" Tag="DEMO-IMAGE-001"/>
+                                <ComboBoxItem Content="동영상" Tag="DEMO-VIDEO-001"/>
+                                <ComboBoxItem Content="설문" Tag="DEMO-SURVEY-001"/>
+                                <ComboBoxItem Content="퀴즈" Tag="DEMO-QUIZ-001"/>
+                                <ComboBoxItem Content="동영상 + 퀴즈" Tag="DEMO-VIDEO-QUIZ"/>
+                                <ComboBoxItem Content="푸터 바로가기" Tag="DEMO-FOOTER-LINK"/>
+                            </ComboBox>
+                            <Button Content="선택한 샘플 실행" Style="{StaticResource PrimaryButton}" Click="OpenSelectedPopupButton_Click"/>
+                            <Button Content="옵션 설정" Click="EditOptionsButton_Click"/>
+                            <Button Content="선택한 옵션 기본값 복원" Click="ResetOptionsButton_Click"/>
+                            <Border Background="#F5F6F8" Padding="12" CornerRadius="6" Margin="0,12,0,16">
+                                <TextBlock x:Name="ScenarioSummaryText" TextWrapping="Wrap" Foreground="#374151" LineHeight="22"/>
+                            </Border>
+                            <TextBlock Text="설정창에서 공통 창·콘텐츠·문항 옵션을 편집하세요. 샘플별 설정은 다음 실행에 적용되며 앱 종료 시 초기화됩니다." Style="{StaticResource Hint}"/>
+                            <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 상단의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Border Grid.Row="2" BorderBrush="#E0E3E8" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,12,0,0">
+                        <TextBlock x:Name="ServerStateText" Foreground="#68707C" Text="숨김 0 · 완료 0"/>
+                    </Border>
+                </Grid>
+            </Border>
+            <Border Grid.Column="2" Background="White" BorderBrush="#E0E3E8" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="0.7*"/>
+                        <RowDefinition Height="8"/><RowDefinition Height="1.3*"/><RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,12">
+                        <Button DockPanel.Dock="Right" Content="로그 지우기" Margin="12,0,0,0" Padding="10,6" Click="ClearLogButton_Click"/>
+                        <TextBlock Text="결과 전송 로그" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <Border Grid.Row="1" Background="#F5F6F8" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                        <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 점수와 통과 여부가 표시됩니다." TextWrapping="Wrap" Foreground="#374151"/>
+                    </Border>
+                    <ListBox Grid.Row="2" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12" BorderBrush="#E0E3E8"
+                             SelectionChanged="ResultLogList_SelectionChanged" HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                    <GridSplitter Grid.Row="3" Height="4" HorizontalAlignment="Stretch" Background="#E0E3E8" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+                    <TabControl x:Name="DetailTabs" Grid.Row="4" BorderThickness="0">
+                        <TabItem Header="Request · 요청">
+                            <DockPanel Margin="0,8,0,0">
+                                <Button x:Name="CopyRequestButton" DockPanel.Dock="Top" Content="요청 JSON 복사" HorizontalAlignment="Right" IsEnabled="False" Tag="REQUEST" Click="CopyJsonButton_Click"/>
+                                <TextBox x:Name="RequestJsonText" Style="{StaticResource JsonText}"/>
+                            </DockPanel>
+                        </TabItem>
+                        <TabItem Header="Response · 응답">
+                            <DockPanel Margin="0,8,0,0">
+                                <Button x:Name="CopyResponseButton" DockPanel.Dock="Top" Content="응답 JSON 복사" HorizontalAlignment="Right" IsEnabled="False" Tag="RESPONSE" Click="CopyJsonButton_Click"/>
+                                <TextBox x:Name="ResponseJsonText" Style="{StaticResource JsonText}"/>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                    <TextBlock Grid.Row="5" x:Name="CopyStatusText" Text="로그를 선택하면 요청·응답 JSON을 확인하고 복사할 수 있습니다." Foreground="#68707C" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

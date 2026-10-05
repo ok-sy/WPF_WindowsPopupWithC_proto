@@ -995,6 +995,12 @@ Popup/Media/demo-video.mp4
 
 URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 prepare-offline-packages.ps1로 재수집해야 한다. 이번 변경에서 반입 묶음은 재생성하지 않았다.
 
+## Demo 관리 화면
+
+Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기 샘플을 선택해 실행하거나 옵션을 설정한다. 설정창은 공통 창·콘텐츠·문항/선택지를 구분하며 창 크기/위치·표시 영역·숨김 일수·완료 조건·배경/폰트, 텍스트 문구, 이미지 크기/비율, 영상 재생, 문항 문구/배치/필수 여부·배점/정답 등을 편집한다. 설정은 샘플별 다음 실행과 데모 결과 검증에 함께 적용되며 앱 종료 시 초기화된다. 선택한 옵션 기본값 복원은 해당 샘플만 되돌리고, 상단 상태 초기화는 숨김/완료 상태를 지우되 편집한 옵션을 유지한다.
+
+오른쪽 결과 로그를 선택하면 해당 결과의 Request·Response JSON이 들여쓰기된 읽기 전용 텍스트로 표시되며, 각 탭의 복사 버튼 또는 텍스트 선택·Ctrl+C로 복사할 수 있다. 로그 지우기는 로그·상세 JSON·점수 표시를 지우며 숨김/완료 상태는 유지한다.
+
 ## IMAGE 계약 v3.6 (설계 23)
 
-일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. 최소·최대는 창만 제한하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.6, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.
+일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.6, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.

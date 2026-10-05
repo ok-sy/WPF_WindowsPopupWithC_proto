@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -34,6 +33,10 @@ namespace Popup
         private readonly PopupService _popupService;
         private readonly DemoPopupGateway _gateway;
         private readonly PopupResultQueue _resultQueue;
+        private readonly Dictionary<int, (string Request, string Response)> _resultDetails = new();
+        private bool _isLoading;
+        private const string EmptyScoreText = "퀴즈 완료 후 점수와 통과 여부가 표시됩니다.";
+        private const string EmptyDetailText = "로그를 선택하면 요청·응답 JSON을 확인하고 복사할 수 있습니다.";
 
         public DemoWindow()
         {
@@ -45,27 +48,16 @@ namespace Popup
             _resultQueue = new PopupResultQueue(
                 _gateway,
                 Path.Combine(Path.GetTempPath(), "Popup", "demo-pending-results.json"));
+            InitializeDemoSettings();
             UpdateServerState();
         }
 
         private void OpenAllPopupsButton_Click(object sender, RoutedEventArgs e) => ShowDemoPopups();
 
-        private void OpenPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button { Tag: string popupType })
-            {
-                if (popupType == "IMAGE_ORIGINAL")
-                {
-                    ImageModeCombo.SelectedIndex = 0;
-                    popupType = "IMAGE";
-                }
-                ShowDemoPopups(popupType);
-            }
-        }
-
         private void ResetServerButton_Click(object sender, RoutedEventArgs e)
         {
             _gateway.Reload();
+            foreach (var popup in _configuredPopups.Values) _gateway.ConfigurePopup(popup);
             UpdateServerState();
             AppendLog("--- 서버 상태 초기화 (숨김·완료·영수증 삭제) ---");
         }
@@ -73,7 +65,9 @@ namespace Popup
         private void ClearLogButton_Click(object sender, RoutedEventArgs e)
         {
             ResultLogList.Items.Clear();
-            QuizScoreText.Text = "퀴즈 완료 후 score / passed가 여기에 표시됩니다.";
+            _resultDetails.Clear();
+            ShowResultDetails(null);
+            QuizScoreText.Text = EmptyScoreText;
         }
 
         /// <summary>
@@ -82,6 +76,7 @@ namespace Popup
         /// </summary>
         public async void ShowDemoPopups(string? popupType = null)
         {
+            if (_isLoading) return;
             try
             {
                 if (_popupManager.HasOpenPopups)
@@ -91,6 +86,7 @@ namespace Popup
                     return;
                 }
 
+                _isLoading = true;
                 await _resultQueue.FlushAsync();
                 WpfPopupListResponseDto response = await _gateway.GetWpfPopupsAsync(popupType);
                 if (response.Popups.Count == 0)
@@ -101,54 +97,7 @@ namespace Popup
                     return;
                 }
 
-                bool needsLink = response.Popups.Any(p => p.PopupId == "DEMO-FOOTER-LINK"
-                    || (p.PopupId == "DEMO-VIDEO-QUIZ" && VideoQuizLinkCheck.IsChecked == true));
-                string linkText = FooterLinkInput.Text.Trim();
-                if (needsLink && (!Uri.TryCreate(linkText, UriKind.Absolute, out var link)
-                    || (link.Scheme != Uri.UriSchemeHttp && link.Scheme != Uri.UriSchemeHttps)
-                    || string.IsNullOrWhiteSpace(link.Host)))
-                {
-                    MessageBox.Show(this, "바로가기 URL에 http 또는 https 주소를 입력해 주세요.", "Demo Mode",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-                double completionRatio = double.Parse(
-                    (VideoCompletionCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "0.8",
-                    System.Globalization.CultureInfo.InvariantCulture);
-                foreach (PopupResponseDto popup in response.Popups)
-                {
-                    if (popup.PopupId is not ("DEMO-FOOTER-LINK" or "DEMO-VIDEO-QUIZ")) continue;
-                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
-                    bool useLink = popup.PopupId == "DEMO-FOOTER-LINK" || VideoQuizLinkCheck.IsChecked == true;
-                    content["footerAction"] = useLink ? "LINK_AND_CLOSE" : "CLOSE";
-                    content["footerLinkUrl"] = useLink ? linkText : string.Empty;
-                    popup.Content = JsonSerializer.SerializeToElement(content);
-                    if (popup.PopupId == "DEMO-VIDEO-QUIZ") popup.CompletionRatio = completionRatio;
-                }
 
-                string[] layouts = {
-                    (Question1LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL",
-                    (Question2LayoutCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "VERTICAL"
-                };
-                foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType == "IMAGE"))
-                {
-                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
-                    content["imageSizeMode"] = (ImageModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "ORIGINAL";
-                    if (content["imageSizeMode"]!.GetValue<string>() == "ORIGINAL") { content.Remove("width"); content.Remove("height"); }
-                    else if (content["imageSizeMode"]!.GetValue<string>() == "FIT_TO_IMAGE") content["keepAspectRatio"] = true;
-                    popup.Content = JsonSerializer.SerializeToElement(content);
-                }
-                foreach (PopupResponseDto popup in response.Popups.Where(p => p.PopupType is "SURVEY" or "QUIZ"))
-                {
-                    for (int i = 0; i < Math.Min(layouts.Length, popup.Questions.Count); i++)
-                        popup.Questions[i].OptionLayout = layouts[i];
-                    JsonObject content = JsonNode.Parse(popup.Content.GetRawText())!.AsObject();
-                    if (content["questions"] is JsonArray questions)
-                        for (int i = 0; i < Math.Min(layouts.Length, questions.Count); i++)
-                            questions[i]!["optionLayout"] = layouts[i];
-                    popup.Content = JsonSerializer.SerializeToElement(content);
-                }
-                AppendLog($"--- 문항별 배치: 1번 {layouts[0]}, 2번 {layouts[1]} ---");
                 List<PopupOptions> popupOptions = _popupService.CreatePopupOptions(response.Popups);
                 foreach (PopupOptions options in popupOptions)
                 {
@@ -165,20 +114,65 @@ namespace Popup
                     "Demo Mode 팝업을 만드는 중 오류가 발생했습니다.\n\n" + exception.Message,
                     "Demo Mode 오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         private void Gateway_ResultProcessed(object? sender, (WpfResultItemDto Item, WpfResultItemResponseDto Response) e)
         {
             Dispatcher.Invoke(() =>
             {
+                string request = JsonSerializer.Serialize(e.Item, LogJsonOptions);
+                string response = JsonSerializer.Serialize(e.Response, LogJsonOptions);
+                int firstIndex = ResultLogList.Items.Count;
+                _resultDetails[firstIndex] = (request, response);
                 AppendLog($"[{DateTime.Now:HH:mm:ss}] {e.Item.ResultType,-13} {e.Item.PopupId} → {e.Response.Status}"
                           + (e.Response.Code != null ? $" {e.Response.Code}" : string.Empty));
-                AppendLog("  요청: " + JsonSerializer.Serialize(e.Item, LogJsonOptions));
-                AppendLog("  응답: " + JsonSerializer.Serialize(e.Response, LogJsonOptions));
+                ResultLogList.SelectedIndex = firstIndex;
                 if (e.Item.Score is double score)
                     QuizScoreText.Text = $"{e.Item.PopupId} · score: {score:0.##} · passed: {e.Item.Passed?.ToString().ToLowerInvariant()}";
                 UpdateServerState();
             });
+        }
+
+        private void ResultLogList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_resultDetails.TryGetValue(ResultLogList.SelectedIndex, out var details))
+                ShowResultDetails(details);
+            else
+                ShowResultDetails(null);
+        }
+
+        private void ShowResultDetails((string Request, string Response)? details)
+        {
+            RequestJsonText.Text = details.HasValue ? FormatJson(details.Value.Request) : string.Empty;
+            ResponseJsonText.Text = details.HasValue ? FormatJson(details.Value.Response) : string.Empty;
+            CopyRequestButton.IsEnabled = CopyResponseButton.IsEnabled = details.HasValue;
+            CopyStatusText.Text = details.HasValue ? "선택한 결과 · 텍스트 선택과 Ctrl+C로도 복사할 수 있습니다." : EmptyDetailText;
+        }
+
+        private static string FormatJson(string json)
+        {
+            using JsonDocument document = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        }
+
+        private void CopyJsonButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool isRequest = sender is Button { Tag: "REQUEST" };
+            string json = isRequest ? RequestJsonText.Text : ResponseJsonText.Text;
+            if (string.IsNullOrEmpty(json)) return;
+            try
+            {
+                Clipboard.SetText(json);
+                CopyStatusText.Text = isRequest ? "요청 JSON을 복사했습니다." : "응답 JSON을 복사했습니다.";
+            }
+            catch (System.Runtime.InteropServices.ExternalException)
+            {
+                CopyStatusText.Text = "클립보드를 사용할 수 없습니다. 텍스트를 선택해 Ctrl+C로 다시 복사하세요.";
+            }
         }
 
         private void AppendLog(string line)

@@ -46,6 +46,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(Math.abs(rendered.width - 120) < 1 && Math.abs(rendered.height - (locked ? 120 * naturalHeight / naturalWidth : 90)) < 1,
       'Landscape, portrait and square bitmaps render using actual original ratio or explicit unlocked size');
   }
+  await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 100, 400)"); await pause(150);
+  check(await run('window.imageState.layout.window.width===900 && window.imageState.layout.window.height===810'),
+    'Image window uses 90% of browser work area rather than fixed maximum pixels');
+  check(await run('window.layoutForScreen(3840,2160).window.width===3456 && window.layoutForScreen(3840,2160).window.height===1944'),
+    '4K image window is not constrained by legacy 1200x900 maximum');
+  check(await run("(()=>{const r=document.querySelector('img').getBoundingClientRect();return r.width===4000 && r.height===3000;})()"),
+    'Screen policy limits only the window and keeps requested bitmap dimensions');
+  await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 5000, 400)"); await pause(100);
+  check(await run('window.imageState.layout.window.width===900'), 'Effective minimum never exceeds screen maximum');
   await run("window.scenario('FIT_TO_IMAGE', true, 100, 50, '', 400, 600)"); await pause(100);
   check(await run("document.querySelector('img').getBoundingClientRect().width===100 && window.imageState.layout.window.width===400"), 'Minimum window adds whitespace without enlarging image');
   await run("window.scenario('ADAPTIVE', true, 400, 300)"); await pause(100);

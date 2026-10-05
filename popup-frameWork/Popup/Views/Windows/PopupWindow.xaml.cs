@@ -79,12 +79,14 @@ namespace Popup.Views.Windows
             ApplyPosition();
             Loaded += (_, _) => ApplyPosition();
             SizeChanged += (_, _) => ApplyPosition();
-            if (_options.Content is ImagePopupView imageView)
+            if (IsImagePopup)
             {
+                var imageView = _options.Content as ImagePopupView;
                 void RefreshImageBounds()
                 {
                     Rect area = CurrentWorkArea();
                     _lastImageWorkArea = area;
+                    if (imageView == null) { ApplyWindowSize(); return; }
                     if (!imageView.NeedsNaturalWindowSize) ApplyWindowSize();
                     double outerWidth = PopupContent.Margin.Left + PopupContent.Margin.Right
                         + PopupOuterGrid.Margin.Left + PopupOuterGrid.Margin.Right
@@ -94,8 +96,10 @@ namespace Popup.Views.Windows
                         + PopupBodyBorder.BorderThickness.Top + PopupBodyBorder.BorderThickness.Bottom
                         + (_options.ShowHeader ? HeaderRow.Height.Value : 0)
                         + (_options.ShowFooter ? FooterRow.Height.Value : 0);
-                    imageView.SetAvailableBounds(Math.Min(_options.MaximumWidth, area.Width * FixedSizeSafeAreaRatio) - outerWidth,
-                        Math.Min(_options.MaximumHeight, area.Height * FixedSizeSafeAreaRatio) - outerHeight);
+                    imageView.SetAvailableBounds(EffectiveMaximumWidth(area, FixedSizeSafeAreaRatio) - outerWidth,
+                        EffectiveMaximumHeight(area, FixedSizeSafeAreaRatio) - outerHeight);
+                    if (_lastImageRecommendation is Size recommendation)
+                        ImagePopupView_RecommendedSizeChanged(recommendation.Width, recommendation.Height);
                 }
                 Loaded += (_, _) => RefreshImageBounds();
                 DpiChanged += (_, _) => RefreshImageBounds();
@@ -148,12 +152,12 @@ namespace Popup.Views.Windows
             /*
              * [2026-09-23-03] IMAGE 팝업의 FIT_TO_IMAGE 크기 계산 결과를 받는다.
              *
-             * ImagePopupView는 이미지를 불러온 뒤 imageWidth/imageHeight 또는
+             * ImagePopupView는 이미지를 불러온 뒤 content.width/height 또는
              * 원본 크기를 기준으로 팝업 추천 크기를 계산해 이 이벤트로 알린다.
              * 그동안 이 이벤트를 구독하는 곳이 없어 FIT_TO_IMAGE로 설정해도
              * 팝업 크기는 PopupOptions 값 그대로였다.
              *
-             * ADAPTIVE와 FILL은 팝업 크기가 기준이라 이 이벤트를 발생시키지 않으므로
+             * ADAPTIVE에서 두 축을 모두 지정하면 팝업 크기가 기준이므로
              * 여기서 모드를 다시 확인할 필요는 없다.
              */
             if (_options.Content is ImagePopupView imagePopupView)
@@ -296,10 +300,10 @@ namespace Popup.Views.Windows
                 _options.MinimumHeight;
 
             MaxWidth =
-                _options.MaximumWidth;
+                IsImagePopup ? CurrentWorkArea().Width * ImageSafeAreaRatio : _options.MaximumWidth;
 
             MaxHeight =
-                _options.MaximumHeight;
+                IsImagePopup ? CurrentWorkArea().Height * ImageSafeAreaRatio : _options.MaximumHeight;
 
             switch (_options.SizeMode)
             {
@@ -310,7 +314,7 @@ namespace Popup.Views.Windows
                  * (예: 5000 x 3000)이 내려오면 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
                  * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있었다.
                  * 이제 RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
-                 * 최종 상한을 두고, 안전 여백으로 작업 영역의 95%를 최대값으로 쓴다.
+                 * 최종 상한을 두고, IMAGE는 작업 영역 90%만으로 최대값을 정하고, 다른 유형은 기존 95%와 설정 최대값을 적용한다.
                  *
                  * 순서:
                  *   서버 Width/Height
@@ -330,14 +334,10 @@ namespace Popup.Views.Windows
                         Rect workArea = CurrentWorkArea();
 
                         double safeMaxWidth =
-                            Math.Min(
-                                _options.MaximumWidth,
-                                workArea.Width * FixedSizeSafeAreaRatio);
+                            EffectiveMaximumWidth(workArea, FixedSizeSafeAreaRatio);
 
                         double safeMaxHeight =
-                            Math.Min(
-                                _options.MaximumHeight,
-                                workArea.Height * FixedSizeSafeAreaRatio);
+                            EffectiveMaximumHeight(workArea, FixedSizeSafeAreaRatio);
 
                         double safeMinWidth =
                             Math.Min(
@@ -416,26 +416,28 @@ namespace Popup.Views.Windows
                          * 실제 모니터 작업 영역도 넘지 않게 제한한다.
                          */
                         double maximumWidth =
-                            Math.Min(
-                                _options.MaximumWidth,
-                                workArea.Width);
+                            EffectiveMaximumWidth(workArea, 1.0);
 
                         double maximumHeight =
-                            Math.Min(
-                                _options.MaximumHeight,
-                                workArea.Height);
+                            EffectiveMaximumHeight(workArea, 1.0);
 
                         Width =
                             Math.Clamp(
                                 calculatedWidth,
-                                _options.MinimumWidth,
+                                IsImagePopup ? Math.Min(_options.MinimumWidth, maximumWidth) : _options.MinimumWidth,
                                 maximumWidth);
 
                         Height =
                             Math.Clamp(
                                 calculatedHeight,
-                                _options.MinimumHeight,
+                                IsImagePopup ? Math.Min(_options.MinimumHeight, maximumHeight) : _options.MinimumHeight,
                                 maximumHeight);
+
+                        if (IsImagePopup)
+                        {
+                            MinWidth = Math.Min(_options.MinimumWidth, maximumWidth);
+                            MinHeight = Math.Min(_options.MinimumHeight, maximumHeight);
+                        }
 
                         break;
                     }
@@ -512,14 +514,16 @@ namespace Popup.Views.Windows
                             _options.MinimumHeight;
 
                         MaxWidth =
-                            Math.Min(
-                                _options.MaximumWidth,
-                                workArea.Width * 0.9);
+                            EffectiveMaximumWidth(workArea, 0.9);
 
                         MaxHeight =
-                            Math.Min(
-                                _options.MaximumHeight,
-                                workArea.Height * 0.9);
+                            EffectiveMaximumHeight(workArea, 0.9);
+
+                        if (IsImagePopup)
+                        {
+                            MinWidth = Math.Min(MinWidth, MaxWidth);
+                            MinHeight = Math.Min(MinHeight, MaxHeight);
+                        }
 
                         break;
                     }
@@ -540,6 +544,15 @@ namespace Popup.Views.Windows
          * (1920 x 1080 작업 영역이면 약 1824 x 1026)
          */
         private const double FixedSizeSafeAreaRatio = 0.95;
+        private const double ImageSafeAreaRatio = 0.90;
+        private Size? _lastImageRecommendation;
+        private bool IsImagePopup => _options.PopupType == "IMAGE" || _options.Content is ImagePopupView or ImageFillPopupView;
+
+        private double EffectiveMaximumWidth(Rect area, double otherRatio) => IsImagePopup
+            ? area.Width * ImageSafeAreaRatio : Math.Min(_options.MaximumWidth, area.Width * otherRatio);
+        private double EffectiveMaximumHeight(Rect area, double otherRatio) => IsImagePopup
+            ? area.Height * ImageSafeAreaRatio : Math.Min(_options.MaximumHeight, area.Height * otherRatio);
+
 
         /*
          * [2026-09-23-03] IMAGE 팝업 FIT_TO_IMAGE의 추천 크기를 창에 적용한다.
@@ -548,7 +561,7 @@ namespace Popup.Views.Windows
          * 여기서 서버가 준 Width/Height 대신 계산된 크기를 쓴다.
          *
          * 다만 서버 설정과 화면 밖으로 밀리는 문제는 그대로 막아야 하므로
-         * FIXED와 같은 기준(PopupOptions의 Minimum/Maximum + 작업 영역 95%)으로
+         * IMAGE 전용 기준(작업 영역 90%, 고정 최대 픽셀값 미사용)으로
          * 보정한 뒤 적용하고, 크기가 바뀐 만큼 창을 다시 화면 중앙에 맞춘다.
          *
          * FULLSCREEN은 모니터 전체를 덮는 것이 목적이라 크기를 바꾸지 않는다.
@@ -563,6 +576,7 @@ namespace Popup.Views.Windows
                 return;
             }
 
+            _lastImageRecommendation = new Size(recommendedWidth, recommendedHeight);
             Rect workArea = CurrentWorkArea();
 
             if (_options.Content is ImagePopupView image)
@@ -579,14 +593,10 @@ namespace Popup.Views.Windows
                 recommendedHeight = image.RequestedWindowHeight ?? recommendedHeight + vertical;
             }
             double safeMaxWidth =
-                Math.Min(
-                    _options.MaximumWidth,
-                    workArea.Width * FixedSizeSafeAreaRatio);
+                EffectiveMaximumWidth(workArea, FixedSizeSafeAreaRatio);
 
             double safeMaxHeight =
-                Math.Min(
-                    _options.MaximumHeight,
-                    workArea.Height * FixedSizeSafeAreaRatio);
+                EffectiveMaximumHeight(workArea, FixedSizeSafeAreaRatio);
 
             double safeMinWidth =
                 Math.Min(

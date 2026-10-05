@@ -269,7 +269,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       toast.warn('숨김 일수는 1~3650 사이의 정수로 입력하거나 비워 두세요.'); return;
     }
     if (![popup.minimumWidth, popup.minimumHeight, popup.maximumWidth, popup.maximumHeight].every(v => Number.isFinite(v) && v > 0)
-      || popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight) {
+      || (popup.popupType !== 'IMAGE' && (popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight))) {
       toast.warn('창 최소·최대 크기는 양수이며 최소가 최대보다 작거나 같아야 합니다.'); return;
     }
     if (popup.popupType === 'IMAGE' && popup.content.imageSizeMode !== 'ORIGINAL') {
@@ -321,7 +321,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
   const previewDialogSize = () => {
     const availableWidth = window.innerWidth, availableHeight = window.innerHeight;
-    // FIT_TO_IMAGE는 WPF처럼 이미지 크기로 다시 계산한 창 크기(최소·최대·작업 영역 95% 보정 완료)를 쓴다.
+    // IMAGE는 고정 최대 픽셀값 대신 화면 작업 영역 90%로 창 크기를 제한한다.
     if (fitWindow) {
       return { width: Math.round(Math.min(availableWidth * 0.96, fitWindow.width)), height: Math.round(Math.min(availableHeight * 0.96, fitWindow.height)) };
     }
@@ -329,6 +329,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : popup.popupType === 'IMAGE' && !imageFillMode ? Number(popup.content.width ?? 560) : (popup.width ?? 560);
     const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
       : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : popup.popupType === 'IMAGE' && !imageFillMode ? Number(popup.content.height ?? 420) : (popup.height ?? 420);
+    if (popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN') {
+      const maximumWidth = availableWidth * .90, maximumHeight = availableHeight * .90;
+      return {width: Math.round(Math.max(Math.min(popup.minimumWidth, maximumWidth), Math.min(maximumWidth, requestedWidth))),
+        height: Math.round(Math.max(Math.min(popup.minimumHeight, maximumHeight), Math.min(maximumHeight, requestedHeight)))};
+    }
     const width = popup.sizeMode === 'FULLSCREEN' ? requestedWidth : Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, requestedWidth));
     const height = popup.sizeMode === 'FULLSCREEN' ? requestedHeight : Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, requestedHeight));
     return { width: Math.round(Math.max(320, Math.min(availableWidth * 0.96, width))), height: Math.round(Math.max(260, Math.min(availableHeight * 0.96, height))) };
@@ -591,10 +596,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>
                 <MenuItem value="FIXED">고정 크기</MenuItem>{(popup.popupType !== 'IMAGE' || imageFillMode) && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
-              {popup.sizeMode === 'FIXED' && (popup.popupType !== 'IMAGE' || imageFillMode) && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popup.minimumWidth} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popup.minimumHeight} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
+              {popup.sizeMode === 'FIXED' && (popup.popupType !== 'IMAGE' || imageFillMode) && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popup.minimumWidth} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popup.minimumHeight} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
               {popup.sizeMode === 'RATIO' && (popup.popupType !== 'IMAGE' || imageFillMode) && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
             </Box>
-            {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">미리보기 최대 크기: {popup.maximumWidth}px × {popup.maximumHeight}px</Typography>}
+            {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">{popup.popupType === 'IMAGE' ? '이미지 창 최대: 현재 화면 작업 영역의 90%. 고정 최대 픽셀값을 사용하지 않습니다.' : `미리보기 최대 크기: ${popup.maximumWidth}px × ${popup.maximumHeight}px`}</Typography>}
 
 
               </Stack>

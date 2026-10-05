@@ -58,6 +58,13 @@ namespace Popup.Services
         public int HiddenCount => _hiddenUntil.Count(pair => pair.Value > DateTimeOffset.Now);
         public int CompletedCount => _completed.Count;
 
+        /// <summary>Demo 화면에서 편집한 샘플을 표시와 결과 검증에 함께 사용한다. 숨김·완료 상태는 유지한다.</summary>
+        public void ConfigurePopup(PopupResponseDto popup)
+        {
+            if (!_popups.ContainsKey(popup.PopupId)) throw new ArgumentException("데모 목록에 없는 팝업입니다.", nameof(popup));
+            _popups[popup.PopupId] = popup;
+        }
+
         /// <summary>서버와 같은 규칙으로 숨김·완료 팝업을 제외한 목록. popupType을 주면 그 유형만.</summary>
         public Task<WpfPopupListResponseDto> GetWpfPopupsAsync(string? popupType)
         {

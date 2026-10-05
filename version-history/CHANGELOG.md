@@ -2,6 +2,32 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-05 — Demo 옵션 및 IMAGE 화면 정책 반입본 갱신
+
+- 이유: Demo 관리 화면·옵션 편집·JSON 복사와 IMAGE 작업 영역 90% 정책을 최신 폐쇄망 반입본에 포함.
+- 변경: offline-export/20261006의 서버·웹·WPF·문서 소스를 현재 수정분으로 갱신하고 신규 Demo 설정 파일 3개 포함. 반입 안내·manifest·소스 SHA256·TAR/TGZ 및 체크섬 재생성. 이전 TGZ는 Git 제외 검증 폴더에 백업. NuGet/SDK는 기존 반입본 사용, 개인 MockSso 실행 설정과 검증 프로젝트·실행 산출물은 제외.
+- 주요 파일: offline-export/20261006/ (Git 제외), version-history/CHANGELOG.md 및 2026-10-06-03/04의 코드·문서.
+- 검증: 반입 소스 파일별 SHA256 일치 확인, 반입본만 새 폴더에 복사해 외부 feed 없이 restore·win-x64 self-contained publish 성공. TAR/TGZ 목록·실행 산출물 제외 및 추출 파일 SHA256 검증 완료. 기존 구현 검증은 WPF 775건·서버 85건·브라우저 27건 및 웹 type-check/build 통과.
+- 상태: 반입본 갱신·검증 완료. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 폐쇄망 PC 실행·배포 미실행.
+
+## 2026-10-06-04 — IMAGE 창 최대를 화면 작업 영역 기준으로 전환
+
+- 이유: IMAGE 창에 고정 최대값 1200×900이 먼저 적용되어 큰 디스플레이에서 지정 크기보다 작게 표시되는 문제 개선.
+- 변경: IMAGE(ORIGINAL 포함)의 일반 창 최대를 현재 모니터 작업 영역 너비·높이의 90%로 계산하고 고정 maximumWidth/maximumHeight 값을 상한으로 사용하지 않음. 최소는 화면 상한 이하로 보정. FIT_TO_IMAGE 지정 이미지 픽셀/DIP 크기를 유지하고 중앙 Clip, ADAPTIVE 비율 유지 표시, ORIGINAL 왼쪽 위 Clip, FULLSCREEN 전체 모니터 우선 유지. 모니터/작업 영역/DPI 변경 시 기존 이미지 추천 크기도 새 화면 상한으로 재적용. 다른 유형의 기존 최대값 정책 유지.
+- 변경: Demo 이미지 고정 최대 입력 제거와 화면 정책 안내, 웹 미리보기/실제 크기 모달의 동일 90% 제한 및 ORIGINAL 크기 입력의 고정 최대 제약 제거. 서버/웹/Demo IMAGE 최소가 사용하지 않는 고정 최대보다 큰 경우의 비교 검증 제거(저장 컬럼의 유한 양수 검증 유지). 인터페이스 v3.6 MD/Word/PDF·설계 23·옵션 가이드 갱신.
+- 주요 파일: PopupWindow.xaml.cs, DemoOptionsWindow.cs/.Fields.cs, imagePreviewLayout.ts, PopupPreview.tsx, PopupEditorDialog.tsx, PopupService.java, PopupAdminQuestionsTest.java, scripts/verify-image-preview*, 인터페이스 v3.6 및 IMAGE 문서.
+- 검증: WPF 빌드 경고·오류 0, 행동 검증 775건 통과(고정 최대 무시·작업 영역 90%·4K 상한·ORIGINAL 및 최소 상한 보정·다른 유형 회귀 포함). 서버 core/API 85건 통과. 브라우저 IMAGE 검증 27건·웹 type-check/build 통과(기존 lint/runtimeConfig 경고 존재). 인터페이스 Word 갱신·PDF 내보내기 및 git diff --check 완료. 물리 다중 모니터/DPI 전환·폐쇄망 실행 미실행.
+- 상태: 로컬 구현·검증 완료. DB 구조·저장 데이터 수정·배포 미실행. 반입본 갱신과 커밋·푸시 후속 결과는 2026-10-06-05 및 Git 이력 참조.
+
+## 2026-10-06-03 — Demo 관리 화면·옵션 편집 및 요청·응답 JSON 복사
+
+- 이유: 누적된 유형별 옵션과 실행 버튼을 정리하고 전송 결과 JSON의 확인·복사 편의 개선.
+- 변경: 전체 실행·상태 초기화 상단 배치, 샘플 선택·실행·옵션 편집·선택 옵션 기본값 복원 분리. 설정창에서 공통 창/콘텐츠/문항·선택지를 편집하며 크기·비율·위치·표시 영역·숨김·완료 조건·푸터 링크·Overlay·폰트, 텍스트 문구, 이미지 표시 크기/비율, 영상 재생, 문항·선택지 문구/배치/필수·배점/정답 등을 지원. 비활성 옵션의 입력 검증 제외, 유한 숫자·범위·최소/최대·푸터 URL 검증, 설정 취소 시 원본 보존. 샘플별 편집 값을 실제 표시와 게이트웨이 결과 검증에 함께 적용하고 상태 초기화 후에도 유지(앱 종료 시 초기화).
+- 변경: 결과 요약·점수·JSON 상세 구분. 결과 한 건당 로그 요약 한 줄 표시, 선택한 과거 결과의 Request/Response JSON을 들여쓰기해 표시. 읽기 전용 텍스트 선택·Ctrl+C 및 요청/응답별 복사 버튼 제공, 빈 상세 복사 비활성화와 클립보드 사용 실패 안내. 로그 초기화 시 JSON 상세·복사 상태·점수 초기화. Demo 설정 코드를 별도 partial 파일로 분리하고 목록 로딩 중 재진입 방지.
+- 주요 파일: popup-frameWork/Popup/DemoWindow.xaml, DemoWindow.xaml.cs, DemoWindow.Settings.cs, DemoOptionsWindow.cs, DemoOptionsWindow.Fields.cs, Services/DemoPopupGateway.cs, popup-frameWork/README.md.
+- 검증: WPF 빌드 경고·오류 0. 로컬 행동 검증 765건 통과. 기존 회귀, 결과 선택·JSON 보존·복사 버튼 상태·초기화, 두 화면 크기의 7개 샘플 배치, 모든 샘플 설정창/탭 배치, 편집 취소 원본 보존·실제 Factory 적용·영상 완료 비율의 게이트웨이 검증·상태 초기화 후 옵션 유지 검증. 렌더링 이미지 확인. 실제 시스템 클립보드 쓰기는 코드 검토 범위이며 자동 검증에서 실행하지 않음.
+- 상태: 로컬 구현·검증 완료. 반입본 갱신과 커밋·푸시 후속 결과는 2026-10-06-05 및 Git 이력 참조. 배포 미실행. 로컬 검증 프로젝트는 기존 Git 제외 정책 유지.
+
 ## 2026-10-06-02 — IMAGE DB 전환 확인 및 폐쇄망 반입본 생성
 
 - 이유: IMAGE v3.6 구현분의 개발 DB 정합성 확인과 최신 소스·문서의 폐쇄망 반입 준비.

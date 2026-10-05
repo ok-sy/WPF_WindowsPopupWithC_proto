@@ -800,8 +800,8 @@ public class PopupService {
         validatePositiveNumber(popup.minimumHeight(), "최소 높이");
         validatePositiveNumber(popup.maximumWidth(), "최대 너비");
         validatePositiveNumber(popup.maximumHeight(), "최대 높이");
-        if (popup.maximumWidth() < popup.minimumWidth()
-                || popup.maximumHeight() < popup.minimumHeight()) {
+        if (!"IMAGE".equals(popup.popupType()) && (popup.maximumWidth() < popup.minimumWidth()
+                || popup.maximumHeight() < popup.minimumHeight())) {
             throw new IllegalArgumentException("최대 크기는 최소 크기보다 작을 수 없습니다.");
         }
         if (popup.hideDays() != null && popup.hideDays() < 1) {
