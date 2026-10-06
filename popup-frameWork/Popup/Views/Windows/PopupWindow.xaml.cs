@@ -48,6 +48,10 @@ namespace Popup.Views.Windows
              * 실제 화면에 적용한다.
              */
             ApplyOptions();
+            if (HostsVideo)
+            {
+                ApplyVideoWindowSurface();
+            }
             FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "닫기";
             var survey = _options.Content as SurveyPopupView ?? (_options.Content as VideoQuizPopupView)?.Quiz;
             if (survey != null)
@@ -118,6 +122,33 @@ namespace Popup.Views.Windows
                 SourceInitialized +=
                     PopupWindow_SourceInitialized;
             }
+        }
+
+        private bool HostsVideo => _options.Content is VideoPopupView or VideoQuizPopupView;
+
+        /*
+         * [설계 24 §3·§4] VIDEO / VIDEO+QUIZ 창은 불투명 창으로 만들고 영상 부모의 그림자를 뺀다.
+         *
+         * 저사양 PC 비교에서 영상을 자식으로 둔 Border.Effect(DropShadowEffect)와
+         * AllowsTransparency=True(레이어드 창)가 재생 중 CPU 부하의 대부분을 차지했다.
+         * 그림자가 있으면 영상 프레임마다 효과를 다시 그리고, 레이어드 창은 매 프레임을
+         * 소프트웨어 경로로 합성하기 때문이다.
+         *
+         * AllowsTransparency는 네이티브 핸들 생성 전에만 바꿀 수 있으므로 생성자에서 결정한다.
+         * 불투명 창은 HWND 밖에 그림자를 그릴 수 없고 모서리 바깥도 투명하게 비울 수 없으므로,
+         * 그림자용 24px 여백과 둥근 모서리를 함께 없애고 1px 테두리만 남긴다.
+         * 장식용 그림자(형제 요소·OS 창 그림자)는 저사양 PC 부하 비교 후 별도로 결정한다.
+         * 배경 오버레이는 별도 창(BackgroundOverlayManager)이라 이 설정과 무관하게 유지된다.
+         * TEXT/IMAGE/SURVEY 등 다른 팝업은 기존 투명 창 외형을 그대로 쓴다.
+         */
+        private void ApplyVideoWindowSurface()
+        {
+            AllowsTransparency = false;
+            Background = PopupBodyBorder.Background;
+            PopupOuterGrid.Margin = new Thickness(0);
+            PopupBodyBorder.Effect = null;
+            PopupBodyBorder.CornerRadius = new CornerRadius(0);
+            HeaderArea.CornerRadius = new CornerRadius(0);
         }
 
         // 테두리·그림자 자체는 자르지 않고, 테두리 안쪽의 모든 WPF 콘텐츠를 함께 자른다.

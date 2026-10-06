@@ -451,13 +451,10 @@
                     <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid x:Name="VideoLoadingProgress" Width="36" Height="36" Margin="0,0,0,10">
                         <Ellipse Stroke="#55FFFFFF" StrokeThickness="3"/>
+                        <!-- [설계 24 §2] 회전은 Loaded 트리거 대신 SetLoadingAnimation이 로딩·버퍼링 동안만 실행한다. -->
                         <Path Stroke="White" StrokeThickness="3" Data="M18,1 A17,17 0 0 1 35,18"
                               RenderTransformOrigin="0.5,0.5">
-                            <Path.RenderTransform><RotateTransform/></Path.RenderTransform>
-                            <Path.Triggers><EventTrigger RoutedEvent="Loaded"><BeginStoryboard><Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                                 From="0" To="360" Duration="0:0:1" RepeatBehavior="Forever"/>
-                            </Storyboard></BeginStoryboard></EventTrigger></Path.Triggers>
+                            <Path.RenderTransform><RotateTransform x:Name="LoadingSpinnerRotate"/></Path.RenderTransform>
                         </Path>
                     </Grid>
                     <TextBlock

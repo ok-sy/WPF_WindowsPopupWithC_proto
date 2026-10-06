@@ -10,6 +10,14 @@
 - 검증: WPF 빌드 경고·오류 0, popupSample.exe/.dll 생성 확인. `--demo` 실행과 POPUP_DEV_USER_ID 지정 일반 실행 모두 15초 이상 종료 없이 유지. 행동 검증 798건·복구 122건 통과. 19:03~19:04 이벤트 로그의 Popup.dll 비정상 종료(0xe0434352, 스택 없음)는 원인 스택을 확보하지 못해 이번 변경과의 직접 관련은 미확인. 스크립트에는 Popup.exe 참조가 없으나 README·설계 문서의 `Popup.exe` 표기는 미갱신.
 - 상태: 로컬 반영·검증 완료. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
 
+## 2026-10-06-06 — VIDEO 저사양 PC 렌더링 부하 개선
+
+- 이유: 저사양 PC에서 영상 팝업 재생 중 CPU 약 90%, 일시정지 중 약 80%가 관찰됨. 현장 비교에서 무한 로딩 애니메이션, 영상 부모 Border의 DropShadowEffect, 레이어드(AllowsTransparency) 창이 주요 부하 요인으로 확인되어 설계 24로 정리하고 기능 유지 범위에서 반영.
+- 변경: 설계 24(현장 비교 결과·수정 TODO) 작성. VideoPopupView의 Loaded 트리거 RepeatBehavior=Forever 회전 애니메이션을 제거하고 SetLoadingAnimation 단일 지점에서 로딩·버퍼링 동안만 실행. 안내 닫기·재생 차단·오류·일시정지·재생 종료·Unloaded에서 clock 제거, 중복 시작 방지. PopupWindow는 VIDEO/VIDEO+QUIZ 창만 핸들 생성 전에 AllowsTransparency=false, 흰 배경, 그림자 여백·DropShadowEffect·둥근 모서리 제거(1px 테두리 유지). 다른 팝업 유형·배경 오버레이·전체화면 창은 변경 없음. 장식용 그림자 대안은 실측 후 결정하도록 보류.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml/.cs, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, docs/design/24_VIDEO_저사양_PC_CPU_개선_TODO.md, Popup.BehaviorTests/Program.cs(Git 제외 검증 프로젝트).
+- 검증: WPF 빌드 경고·오류 0. 행동 검증 798건 통과(신규 23건: 유형별 창 불투명·그림자 정책, 로딩/재버퍼링/일시정지/재생 차단/오류/Unloaded별 애니메이션 clock 유무). 복구 122건·HTML5 bridge 89건 통과. 기준 커밋에 임시 테스트 코드(OpenSimpleVideoTest 등)가 없음을 확인. 저사양 PC CPU 실측, 불투명 창 외형·드래그·다중 모니터/DPI·WebView2 표시의 실제 화면 확인 미실행.
+- 상태: 로컬 구현·자동 검증 완료. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 반입본 갱신·배포 미실행.
+
 ## 2026-10-06-05 — Demo 옵션 및 IMAGE 화면 정책 반입본 갱신
 
 - 이유: Demo 관리 화면·옵션 편집·JSON 복사와 IMAGE 작업 영역 90% 정책을 최신 폐쇄망 반입본에 포함.

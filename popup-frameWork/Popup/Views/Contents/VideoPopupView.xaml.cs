@@ -605,6 +605,7 @@ namespace Popup.Views.Contents
                 && type is not ("ended" or "waiting" or "stalled");
             if (_webPlaybackBlocked)
             {
+                SetLoadingAnimation(false);
                 VideoLoadingProgress.Visibility = Visibility.Collapsed;
                 VideoMessageText.Text = _showControls
                     ? "재생 버튼을 눌러 영상을 시작해 주세요."
@@ -613,7 +614,7 @@ namespace Popup.Views.Contents
             }
             else if (_webIsLoading) ShowLoadingMessage("영상을 불러오는 중입니다.");
             else if (_webIsBuffering) ShowLoadingMessage("영상을 버퍼링하는 중입니다.");
-            else if (!HasPlaybackFailed) VideoMessageArea.Visibility = Visibility.Collapsed;
+            else if (!HasPlaybackFailed) HideVideoMessage();
             if (!_isSeeking)
             {
                 ProgressSlider.Maximum = Math.Max(1, _webDurationSeconds);
@@ -754,9 +755,7 @@ namespace Popup.Views.Contents
          RoutedEventArgs e)
         {
             _isMediaOpened = true;
-
-            VideoMessageArea.Visibility =
-                Visibility.Collapsed;
+            HideVideoMessage();
 
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
@@ -874,7 +873,7 @@ namespace Popup.Views.Contents
             }
             if (_isPlaying && PopupVideo.BufferingProgress > 0 && PopupVideo.BufferingProgress < 1)
                 ShowLoadingMessage("영상을 버퍼링하는 중입니다.");
-            else if (!HasPlaybackFailed) VideoMessageArea.Visibility = Visibility.Collapsed;
+            else if (!HasPlaybackFailed) HideVideoMessage();
 
             TimeSpan currentPosition =
                 PopupVideo.Position;
@@ -1852,7 +1851,7 @@ namespace Popup.Views.Contents
             PlayPauseButton.ToolTip =
                 "다시 재생";
 
-       
+            HideVideoMessage();
 
             if (PopupVideo.NaturalDuration.HasTimeSpan)
             {
@@ -1893,10 +1892,7 @@ namespace Popup.Views.Contents
         {
             if (e.IsSuccess && _isYouTubeVideo)
             {
-                VideoMessageArea.Visibility =
-                    Visibility.Collapsed;
-
-           
+                HideVideoMessage();
             }
             else if (!e.IsSuccess)
             {
@@ -2083,6 +2079,14 @@ namespace Popup.Views.Contents
 
             _progressTimer.Stop();
 
+            /*
+             * [설계 24 §2] 진행 타이머가 멈추면 버퍼링 안내를 닫을 경로가 없으므로
+             * 일시정지 시점에 함께 닫아 숨겨진/남은 로딩 애니메이션이 없게 한다.
+             */
+            if (!HasPlaybackFailed)
+            {
+                HideVideoMessage();
+            }
 
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
@@ -2103,6 +2107,7 @@ namespace Popup.Views.Contents
         private void ShowVideoError(
             string message)
         {
+            SetLoadingAnimation(false);
             VideoLoadingProgress.Visibility = Visibility.Collapsed;
             _isMediaOpened = false;
             _progressTimer.Stop();
@@ -2122,6 +2127,46 @@ namespace Popup.Views.Contents
 
             VideoMessageArea.Visibility =
                 Visibility.Visible;
+            SetLoadingAnimation(true);
+        }
+
+        /*
+         * 로딩/버퍼링 안내를 닫는다. 오류 안내는 HasPlaybackFailed로 유지되므로 호출 측에서 구분한다.
+         */
+        private void HideVideoMessage()
+        {
+            SetLoadingAnimation(false);
+            VideoMessageArea.Visibility =
+                Visibility.Collapsed;
+        }
+
+        /*
+         * [설계 24 §2] 로딩 회전 애니메이션의 유일한 시작/중지 지점.
+         *
+         * 예전에는 Path의 Loaded 트리거로 RepeatBehavior=Forever 애니메이션을 무조건 시작해,
+         * 안내가 Collapsed여도 animation clock이 계속 돌며 WPF 렌더 루프를 깨웠다.
+         * 저사양 PC에서 영상 일시정지 중에도 CPU 약 80%가 유지된 원인 중 하나였다.
+         * 이제 실제 로딩·버퍼링 표시 동안에만 실행하고, 그 밖의 모든 경로에서 clock을 제거한다.
+         * 이미 실행 중이면 다시 시작하지 않아 250ms 진행 타이머의 반복 호출에도 clock이 늘지 않는다.
+         */
+        private bool _loadingAnimationRunning;
+
+        private void SetLoadingAnimation(bool running)
+        {
+            if (running == _loadingAnimationRunning)
+            {
+                return;
+            }
+
+            _loadingAnimationRunning = running;
+            LoadingSpinnerRotate.BeginAnimation(
+                System.Windows.Media.RotateTransform.AngleProperty,
+                running
+                    ? new System.Windows.Media.Animation.DoubleAnimation(0, 360, TimeSpan.FromSeconds(1))
+                    {
+                        RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+                    }
+                    : null);
         }
 
         private void VideoPopupView_Unloaded(
@@ -2136,6 +2181,7 @@ namespace Popup.Views.Contents
             }
             _controlsHideTimer.Stop();
             _feedbackTimer.Stop();
+            SetLoadingAnimation(false);
             try
             {
                 if (_fullScreenWindow != null)
