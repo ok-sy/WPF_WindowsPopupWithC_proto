@@ -149,7 +149,47 @@ namespace Popup.Views.Windows
             PopupBodyBorder.Effect = null;
             PopupBodyBorder.CornerRadius = new CornerRadius(0);
             HeaderArea.CornerRadius = new CornerRadius(0);
+            if (_options.SizeMode != PopupSizeMode.Fullscreen)
+            {
+                SourceInitialized += (_, _) => ApplyDwmRoundedCorners();
+            }
         }
+
+        /*
+         * 불투명 창의 둥근 모서리는 Windows 11 DWM에 맡긴다.
+         *
+         * DWM이 창 표면을 GPU에서 합성할 때 모서리를 자르므로 WPF 렌더링·CPU 부하가 늘지 않는다.
+         * (WPF Clip/레이어드 창과 달리 영상 프레임마다 추가 작업이 없다.)
+         * DWM이 자른 모서리에서는 WPF 1px 테두리가 끊기므로, 성공하면 WPF 테두리를 빼고
+         * 같은 색의 DWM 테두리로 대신한다.
+         * Windows 10 등 속성을 지원하지 않는 OS는 실패 HRESULT를 돌려주므로 기존 직각 창을 유지한다.
+         */
+        private void ApplyDwmRoundedCorners()
+        {
+            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+            int preference = DwmwcpRound;
+            if (DwmSetWindowAttribute(hwnd, DwmwaWindowCornerPreference, ref preference, sizeof(int)) != 0)
+            {
+                return;
+            }
+
+            if (PopupBodyBorder.BorderBrush is SolidColorBrush brush)
+            {
+                // COLORREF는 0x00BBGGRR 순서다.
+                int borderColor = brush.Color.R | (brush.Color.G << 8) | (brush.Color.B << 16);
+                if (DwmSetWindowAttribute(hwnd, DwmwaBorderColor, ref borderColor, sizeof(int)) == 0)
+                {
+                    PopupBodyBorder.BorderThickness = new Thickness(0);
+                }
+            }
+        }
+
+        private const int DwmwaWindowCornerPreference = 33;
+        private const int DwmwaBorderColor = 34;
+        private const int DwmwcpRound = 2;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
         // 테두리·그림자 자체는 자르지 않고, 테두리 안쪽의 모든 WPF 콘텐츠를 함께 자른다.
         private void PopupBodyContent_SizeChanged(object sender, SizeChangedEventArgs e)

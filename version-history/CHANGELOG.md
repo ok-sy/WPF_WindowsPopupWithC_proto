@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-08 — VIDEO 불투명 창 둥근 모서리 DWM 적용
+
+- 이유: 2026-10-06-06에서 CPU 부하 때문에 VIDEO 창을 불투명 창으로 바꾸면서 둥근 모서리가 사라짐. WPF Clip이나 레이어드 창을 다시 쓰지 않고, 영상 프레임마다 CPU 작업이 늘지 않는 방식으로 외형을 복원.
+- 변경: VIDEO/VIDEO+QUIZ 창(FULLSCREEN 제외)의 SourceInitialized에서 DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE=ROUND)를 적용. DWM이 GPU 합성 단계에서 모서리를 자르므로 WPF 렌더링은 변하지 않음. 적용에 성공하면 모서리에서 끊기는 WPF 1px 테두리를 0으로 바꾸고, 같은 색(#E5E7EB)을 DWMWA_BORDER_COLOR로 지정. 속성을 지원하지 않는 OS(Windows 10 등)는 실패 HRESULT를 받아 기존 직각 창과 1px 테두리를 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs.
+- 검증: WPF 빌드 경고·오류 0(실행 중인 popupSample.exe가 기본 출력 파일을 잠그고 있어 임시 출력 폴더로 빌드). 실제 화면의 모서리·테두리 확인, Windows 10 fallback 확인, 저사양 PC CPU 실측, 행동 검증 미실행.
+- 상태: 로컬 반영. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-06-07 — WPF 출력 어셈블리 이름 popupSample 전환
 
 - 이유: WPF 실행 파일 이름을 popupSample로 바꾸려면 출력 어셈블리 이름과 XAML ResourceDictionary pack URI의 어셈블리 이름이 같아야 함. 다르면 공통 스타일 로드에 실패해 팝업 화면 생성 중 예외가 발생.
