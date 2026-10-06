@@ -50,6 +50,8 @@ namespace Popup.Views.Contents
         private bool _controlsPointerDown;
         private bool _controlsKeyboardActive;
         private readonly System.Collections.Generic.List<(double Start, double End)> _bufferedRanges = new();
+        private readonly System.Collections.Generic.List<(double Start, double End)> _incomingBufferedRanges = new();
+        private double _drawnBufferedDurationSeconds = double.NaN;
 
         /*
          * MediaElement가 영상을 정상적으로 열었는지 나타낸다.
@@ -574,11 +576,18 @@ namespace Popup.Views.Contents
             _webPositionSeconds = root.GetProperty("position").GetDouble();
             if (root.TryGetProperty("buffered", out JsonElement buffered) && buffered.ValueKind == JsonValueKind.Array)
             {
-                _bufferedRanges.Clear();
+                // 버퍼 정보는 모든 메시지에 실려 오므로 구간이 실제로 바뀐 경우에만 막대를 다시 그린다.
+                _incomingBufferedRanges.Clear();
                 foreach (JsonElement range in buffered.EnumerateArray())
                     if (range.ValueKind == JsonValueKind.Array && range.GetArrayLength() == 2)
-                        _bufferedRanges.Add((range[0].GetDouble(), range[1].GetDouble()));
-                DrawBufferedTrack();
+                        _incomingBufferedRanges.Add((range[0].GetDouble(), range[1].GetDouble()));
+                bool durationChanged = _drawnBufferedDurationSeconds != _webDurationSeconds;
+                if (durationChanged || !_incomingBufferedRanges.SequenceEqual(_bufferedRanges))
+                {
+                    _bufferedRanges.Clear();
+                    _bufferedRanges.AddRange(_incomingBufferedRanges);
+                    DrawBufferedTrack();
+                }
             }
 
             if (type == "error")
@@ -1277,21 +1286,36 @@ namespace Popup.Views.Contents
         private void DrawBufferedTrack()
         {
             if (BufferedTrack == null) return;
-            BufferedTrack.Children.Clear();
-            if (_webDurationSeconds <= 0 || !double.IsFinite(_webDurationSeconds)) return;
-            foreach (var (start, end) in _bufferedRanges)
+            _drawnBufferedDurationSeconds = _webDurationSeconds;
+            int used = 0;
+            if (_webDurationSeconds > 0 && double.IsFinite(_webDurationSeconds))
             {
-                if (!double.IsFinite(start) || !double.IsFinite(end) || end <= start) continue;
-                double left = Math.Clamp(start / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
-                double right = Math.Clamp(end / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
-                var segment = new System.Windows.Shapes.Rectangle
+                foreach (var (start, end) in _bufferedRanges)
                 {
-                    Width = Math.Max(0, right - left), Height = 4,
-                    Fill = System.Windows.Media.Brushes.Gray, RadiusX = 2, RadiusY = 2
-                };
-                Canvas.SetLeft(segment, left);
-                BufferedTrack.Children.Add(segment);
+                    if (!double.IsFinite(start) || !double.IsFinite(end) || end <= start) continue;
+                    double left = Math.Clamp(start / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
+                    double right = Math.Clamp(end / _webDurationSeconds, 0, 1) * BufferedTrack.ActualWidth;
+                    // 기존 막대를 재사용해 요소 생성·트리 변경을 줄인다.
+                    System.Windows.Shapes.Rectangle segment;
+                    if (used < BufferedTrack.Children.Count)
+                    {
+                        segment = (System.Windows.Shapes.Rectangle)BufferedTrack.Children[used];
+                    }
+                    else
+                    {
+                        segment = new System.Windows.Shapes.Rectangle
+                        {
+                            Height = 4, Fill = System.Windows.Media.Brushes.Gray, RadiusX = 2, RadiusY = 2
+                        };
+                        BufferedTrack.Children.Add(segment);
+                    }
+                    segment.Width = Math.Max(0, right - left);
+                    Canvas.SetLeft(segment, left);
+                    used++;
+                }
             }
+            if (used < BufferedTrack.Children.Count)
+                BufferedTrack.Children.RemoveRange(used, BufferedTrack.Children.Count - used);
         }
 
         
@@ -2102,31 +2126,6 @@ namespace Popup.Views.Contents
 
             VideoMessageArea.Visibility =
                 Visibility.Visible;
-        }
-
-        private void ShowVideoError(
-            string message)
-        {
-            SetLoadingAnimation(false);
-            VideoLoadingProgress.Visibility = Visibility.Collapsed;
-            _isMediaOpened = false;
-            _progressTimer.Stop();
-
-            /*
-             * 로드 실패 후에도 완료 전 닫기 제한을 그대로 적용하면
-             * 사용자가 재생할 수 없는 팝업에 갇히게 된다.
-             * 실패 상태만 기록하며 시청 완료 상태나 진행률은 변경하지 않는다.
-             */
-            HasPlaybackFailed = true;
-            _controlsHideTimer.Stop();
-            _feedbackTimer.Stop();
-            PlaybackFeedback.Visibility = Visibility.Collapsed;
-
-            VideoMessageText.Text =
-                message;
-
-            VideoMessageArea.Visibility =
-                Visibility.Visible;
             SetLoadingAnimation(true);
         }
 
@@ -2167,6 +2166,31 @@ namespace Popup.Views.Contents
                         RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
                     }
                     : null);
+        }
+
+        private void ShowVideoError(
+            string message)
+        {
+            SetLoadingAnimation(false);
+            VideoLoadingProgress.Visibility = Visibility.Collapsed;
+            _isMediaOpened = false;
+            _progressTimer.Stop();
+
+            /*
+             * 로드 실패 후에도 완료 전 닫기 제한을 그대로 적용하면
+             * 사용자가 재생할 수 없는 팝업에 갇히게 된다.
+             * 실패 상태만 기록하며 시청 완료 상태나 진행률은 변경하지 않는다.
+             */
+            HasPlaybackFailed = true;
+            _controlsHideTimer.Stop();
+            _feedbackTimer.Stop();
+            PlaybackFeedback.Visibility = Visibility.Collapsed;
+
+            VideoMessageText.Text =
+                message;
+
+            VideoMessageArea.Visibility =
+                Visibility.Visible;
         }
 
         private void VideoPopupView_Unloaded(

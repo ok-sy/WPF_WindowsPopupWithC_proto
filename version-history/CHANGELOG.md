@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-09 — VIDEO 버퍼 막대 갱신 축소 (렌더링 진단 로그는 측정 후 제거)
+
+- 이유: 저사양 PC CPU 측정값이 WPF 소프트웨어 렌더링(원격 데스크톱·가상머신·오래된 드라이버) 상태에서 나온 것인지 구분할 근거가 없음. HTML5 재생 중 모든 메시지마다 버퍼 막대 요소를 지우고 새로 만드는 부분 정리. 로딩·버퍼링·재생 상태별 CPU 점유율과 컨트롤바 표시 지연을 현장에서 수치로 확인할 필요.
+- 변경(보완): Services/VideoPerformanceMonitor 추가. 영상 팝업 Loaded~Unloaded 동안 1초마다 스레드 풀에서 앱·영상 전용 WebView2 프로세스(CoreWebView2Environment.GetProcessInfos)·시스템 CPU를 작업 관리자 기준(전체 코어 대비 %)으로 샘플링하고, 같은 시점에 Input 우선순위 작업의 UI 스레드 실행 지연을 측정. 상태(loading/buffering/playing/paused/idle/error/youtube)가 바뀌거나 30초가 지나면 구간별 CPU 평균/최대와 UI 지연 p50/p95/max를 render 로그에 기록. 숨겨진 컨트롤바를 마우스로 다시 띄운 경우 OS 입력 시각부터 다음 렌더 프레임까지의 지연을 기록.
+- 변경: Services/RenderDiagnostics 추가. 단일 인스턴스 확정 후 `%LOCALAPPDATA%\Popup\logs\render-yyyyMMdd.log`에 RenderCapability Tier·원격 세션 여부·ProcessRenderMode를 기록하고 TierChanged 시 다시 기록. 영상이 열리면 엔진(MediaElement/WebView2-HTML5/WebView2-YouTube), 원본 해상도(HTML5는 메시지에 videoWidth/videoHeight 추가, YouTube는 0x0), 표시 영역 크기를 기록. 버퍼 구간·길이가 바뀐 경우에만 DrawBufferedTrack을 호출하고, 기존 Rectangle을 재사용하며 남는 막대만 제거.
+- 변경(제거): 로컬 측정을 마친 뒤 진단 코드 전체 제거. RenderDiagnostics.cs·VideoPerformanceMonitor.cs 삭제, App 시작 시 호출, 영상 열림 로그 호출, HTML5 메시지의 videoWidth/videoHeight, 컨트롤바 표시 지연 측정용 래퍼를 되돌림. 버퍼 막대 갱신 축소(구간·길이 변경 시에만 다시 그리고 Rectangle 재사용)만 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs (진단 단계에서 Services/RenderDiagnostics.cs, Services/VideoPerformanceMonitor.cs, App.xaml.cs를 수정했다가 제거).
+- 검증: 진단 코드 포함 상태와 제거 후 모두 WPF 빌드 경고·오류 0, 행동 검증 798건 통과(실행 중인 popupSample.exe가 기본 출력 파일을 잠그고 있어 임시 출력 폴더로 빌드·실행). 진단 코드 포함 상태의 로컬 MediaElement 재생 로그(16코어, Tier 2, 592x252 영상): playing 구간 app CPU 평균 0.4~2.4%(최대 5.9%), system 4.0~11.7%, UI 지연 p95 23~36ms(최대 43ms). 컨트롤바 표시 지연은 모두 0ms로 기록되어 측정 방식의 신뢰성이 낮았음. 버퍼 막대 표시, HTML5·YouTube 경로, 저사양 PC CPU 실측 미실행.
+- 상태: 로컬 반영. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 반입본·배포 미갱신. 측정 결과 파일 `%LOCALAPPDATA%\Popup\logs\render-20261006.log`는 로컬에 남아 있음.
+
 ## 2026-10-06-08 — VIDEO 불투명 창 둥근 모서리 DWM 적용
 
 - 이유: 2026-10-06-06에서 CPU 부하 때문에 VIDEO 창을 불투명 창으로 바꾸면서 둥근 모서리가 사라짐. WPF Clip이나 레이어드 창을 다시 쓰지 않고, 영상 프레임마다 CPU 작업이 늘지 않는 방식으로 외형을 복원.
