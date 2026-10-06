@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-10 — popupSample 전환 및 VIDEO 경량화 반입본 갱신
+
+- 이유: 2026-10-06-06~09(출력 어셈블리 popupSample 전환, VIDEO 저사양 PC 부하 개선, DWM 둥근 모서리, 버퍼 막대 갱신 축소)를 20261006 폐쇄망 반입본에 포함.
+- 변경: offline-export/20261006의 3-popup-frameWork에 a1d8a1e 이후 변경된 WPF 소스 9개, 4-docs에 설계 24와 변경 이력을 반영. MANIFEST-4-docs에 설계 24 추가, 반입 안내의 기준 커밋·변경 요약·실행 파일 이름(popupSample.exe) 갱신, 소스 SHA256·3/4번 TAR·통합 TGZ 및 체크섬 재생성. 서버·웹 묶음은 변경 없음. 이전 TGZ와 안내·체크섬은 Git 제외 검증 폴더에 백업.
+- 주요 파일: offline-export/20261006/ (Git 제외), version-history/CHANGELOG.md.
+- 검증: 3·4번 묶음 소스 145개와 저장소 파일 일치 확인. 새 3번 TAR만 새 폴더에 풀고 6-offline-packages의 NuGet만으로 build-wpf-offline.ps1 실행해 외부 feed 없이 restore·win-x64 self-contained publish 성공(popupSample.exe 생성). 통합 TGZ를 새 폴더에 풀어 개별 TAR SHA256과 추출 소스 SHA256 대조. 게시본 실행, 폐쇄망 PC 실행·배포 미실행.
+- 상태: 반입본 갱신·검증 완료. 이 변경 이력 항목은 main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 폐쇄망 PC 반입·배포 미실행.
+
 ## 2026-10-06-09 — VIDEO 버퍼 막대 갱신 축소 (렌더링 진단 로그는 측정 후 제거)
 
 - 이유: 저사양 PC CPU 측정값이 WPF 소프트웨어 렌더링(원격 데스크톱·가상머신·오래된 드라이버) 상태에서 나온 것인지 구분할 근거가 없음. HTML5 재생 중 모든 메시지마다 버퍼 막대 요소를 지우고 새로 만드는 부분 정리. 로딩·버퍼링·재생 상태별 CPU 점유율과 컨트롤바 표시 지연을 현장에서 수치로 확인할 필요.
