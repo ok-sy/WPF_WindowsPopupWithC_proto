@@ -10,8 +10,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
-                <ResourceDictionary Source="/Popup;component/Views/Contents/SurveyStyles.xaml"/>
+                <ResourceDictionary Source="/popupSample;component/Views/Windows/PopupStyles.xaml"/>
+                <ResourceDictionary Source="/popupSample;component/Views/Contents/SurveyStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>

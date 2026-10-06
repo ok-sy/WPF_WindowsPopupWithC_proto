@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-06-07 — WPF 출력 어셈블리 이름 popupSample 전환
+
+- 이유: WPF 실행 파일 이름을 popupSample로 바꾸려면 출력 어셈블리 이름과 XAML ResourceDictionary pack URI의 어셈블리 이름이 같아야 함. 다르면 공통 스타일 로드에 실패해 팝업 화면 생성 중 예외가 발생.
+- 변경: Popup.csproj에 AssemblyName=popupSample 추가. PopupWindow·TextPopupView·ImagePopupView·VideoPopupView·SurveyPopupView XAML과 PopupAlert.cs의 `/Popup;component/` 참조를 `/popupSample;component/`로 변경. 루트 네임스페이스(Popup.*)와 포함 리소스 LogicalName(Popup.appsettings.json, Popup.DemoMedia.*)은 명시 값이라 유지.
+- 주요 파일: popup-frameWork/Popup/Popup.csproj, Views/Windows/PopupWindow.xaml, Views/Windows/PopupAlert.cs, Views/Contents/{Text,Image,Video,Survey}PopupView.xaml.
+- 검증: WPF 빌드 경고·오류 0, popupSample.exe/.dll 생성 확인. `--demo` 실행과 POPUP_DEV_USER_ID 지정 일반 실행 모두 15초 이상 종료 없이 유지. 행동 검증 798건·복구 122건 통과. 19:03~19:04 이벤트 로그의 Popup.dll 비정상 종료(0xe0434352, 스택 없음)는 원인 스택을 확보하지 못해 이번 변경과의 직접 관련은 미확인. 스크립트에는 Popup.exe 참조가 없으나 README·설계 문서의 `Popup.exe` 표기는 미갱신.
+- 상태: 로컬 반영·검증 완료. main 커밋·푸시 대상이며 완료 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-06-05 — Demo 옵션 및 IMAGE 화면 정책 반입본 갱신
 
 - 이유: Demo 관리 화면·옵션 편집·JSON 복사와 IMAGE 작업 영역 90% 정책을 최신 폐쇄망 반입본에 포함.

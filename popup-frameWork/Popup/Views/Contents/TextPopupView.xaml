@@ -9,7 +9,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+                <ResourceDictionary Source="/popupSample;component/Views/Windows/PopupStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
         <!--

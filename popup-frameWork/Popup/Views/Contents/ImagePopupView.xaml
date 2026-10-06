@@ -4,7 +4,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Popup;component/Views/Windows/PopupStyles.xaml"/>
+                <ResourceDictionary Source="/popupSample;component/Views/Windows/PopupStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="ImageTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CommonContentTitleStyle}">
                 <Setter Property="FontSize" Value="22"/>

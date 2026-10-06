@@ -25,7 +25,7 @@ public static class PopupAlert
         if (owner?.IsVisible == true) dialog.Owner = owner;
         dialog.Resources.MergedDictionaries.Add(new ResourceDictionary
         {
-            Source = new System.Uri("/Popup;component/Views/Windows/PopupStyles.xaml", System.UriKind.Relative)
+            Source = new System.Uri("/popupSample;component/Views/Windows/PopupStyles.xaml", System.UriKind.Relative)
         });
         var panel = new StackPanel { Margin = new Thickness(30) };
         panel.Children.Add(new TextBlock { Text = title, FontSize = 25, FontWeight = FontWeights.Bold,

@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
+		<!-- 출력 파일 이름(popupSample.exe). XAML ResourceDictionary pack URI의 어셈블리 이름도 이 값과 같아야 한다. -->
+		<AssemblyName>popupSample</AssemblyName>
 		<!-- CompositionControl의 WinRT 렌더링에 필요한 Windows SDK 런타임도 포함한다. -->
 		<TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
 		<Nullable>enable</Nullable>
