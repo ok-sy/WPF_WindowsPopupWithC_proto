@@ -10,7 +10,7 @@
 
 구현된 전체 기능은 [WPF 팝업 전체 기능 버전 정의서](WPF_POPUP_ALL_SPEC.md)에서 함께 관리한다. 기능 변경 시 두 문서의 필드명·기본값·ENUM·고정 동작을 함께 확인하되, 전체 기능 추가만으로 최소 제공 범위를 확장하지 않는다.
 
-백엔드 전달 시 함께 확인할 자료: [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [전체 응답 JSON 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 popupId, 문항/선택지 ID, isRequired, 채점용 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
+백엔드 전달 시 함께 확인할 자료: [유형별 최소 JSON 예시](#8-백엔드-전달용-유형별-최소-json-예시), [복사·테스트용 최소 JSON 파일](examples/WPF-01-popup-types-minimal.json), [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [전체 응답 JSON 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 popupId, content, 문항/선택지 ID, isRequired, QUIZ의 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
 
 ## 2. 최소 기능 적용 원칙
 
@@ -28,9 +28,10 @@
 |---|---|---:|---|---|
 | PopupId | 지원 | Y | 없음 | 팝업 고유 ID |
 | PopupType | 지원 | Y | `""` | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
+| Content | 지원 | Y | `{}` | 유형별 `content` object. null 금지. 유형별 필수값은 아래 표 적용 |
 | Width | 지원 | N | `900` | 팝업 Window 너비. 모든 타입 공통 |
 | Height | 지원 | N | `620` | 팝업 Window 높이. 모든 타입 공통 |
-| Title | 지원 | N | `""` | 공통 Header 제목 |
+| Title | 지원 | Y(계약) | `""` | 공통 Header 제목. `showHeader=false`여도 백엔드 응답 계약상 값 제공 |
 | ShowHeader | 지원 | N | `true` | 제목/Header 표시 여부 |
 | ShowFooterButton | 지원 | N | `true` | Footer 버튼 표시. 일반 콘텐츠는 닫기·바로가기, SURVEY/QUIZ는 제출. 상단 X는 없음 |
 | ShowFooter | 지원 | N | `true` | Footer 표시 |
@@ -49,7 +50,7 @@
 
 > FontSize 계열은 미지정 시 각 XAML/콘텐츠 기본값을 유지하고, 값이 지정되면 10~40 범위로 보정(Clamp)하여 적용한다.
 
-> 신규 JSON은 `showFooterButton`을 사용한다. 기존 서버의 `showCloseButton`은 수신 호환 이름이며 같은 필드로 반영된다. 두 이름을 동시에 보내지 않는다. `ShowFooterButton=false`여도 SURVEY·QUIZ·VIDEO+QUIZ의 제출 버튼은 유지한다. Header는 검은 배경·흰 제목·고정 로고·높이 40이며 일반 팝업 Radius 6, Fullscreen Radius 0은 API 옵션이 아닌 고정 외형이다.
+> 신규 JSON 계약명은 `showFooterButton`이다. C#은 기존 `showCloseButton`도 수신 호환 이름으로 받아 같은 필드에 반영하며 두 이름을 동시에 보내지 않는다. **현재 저장소의 Java `WpfPopupItem`은 아직 실제 응답 키를 `showCloseButton`으로 직렬화한다.** 신규 백엔드가 `showFooterButton`으로 전환하려면 Java 응답 DTO도 함께 맞춰야 한다. `ShowFooterButton=false`여도 SURVEY·QUIZ·VIDEO+QUIZ의 제출 버튼은 유지한다. Header는 검은 배경·흰 제목·고정 로고·높이 40이며 일반 팝업 Radius 6, Fullscreen Radius 0은 API 옵션이 아닌 고정 외형이다.
 
 ## 4. 팝업 유형별 최소 기능
 
@@ -106,23 +107,25 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| Questions | 지원 | Y | `[]` | 팝업 최상위 문항 목록 |
-| QuestionId | 지원 | Y | `0` | 문항 ID |
-| Title | 지원 | Y | `""` | 문항 제목 |
-| QuestionType | 지원 | Y | `""` | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
-| IsRequired | 지원 | Y(계약) | `false` | 필수 응답 검증. 코드 기본값과 서버 제공 의무 구분 |
-| Options | 선택형에서 지원 | 조건부 | `[]` | 주관식(TEXT)은 빈 배열 |
+| Questions | 지원 | Y | `[]` | 팝업 최상위 문항 목록. 1개 이상 |
+| QuestionId | 지원 | Y | `0` | 양수·팝업 내 고유 ID를 서버가 보장 |
+| Title | 지원 | Y | `""` | 공백 아닌 문항 제목 |
+| QuestionType | 지원 | Y | `""` | SURVEY: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. 최소 QUIZ: SINGLE_CHOICE / MULTIPLE_CHOICE |
+| IsRequired | 지원 | Y(계약) | `false` | true/false를 서버가 명시. 누락 시 false가 되어 필수 검증이 사라짐 |
+| Options | 선택형에서 지원 | Y(선택형) | `[]` | 선택형 2개 이상. SURVEY TEXT는 빈 배열 |
+| OptionId | 선택형에서 지원 | Y(선택형) | `0` | 양수·해당 문항 내 고유 ID |
+| Value / Text | 선택형에서 지원 | Y(선택형) | `""` | 전달 값 / 화면 문구. 응답 식별은 OptionId 사용 |
+| IsCorrect | 최소 QUIZ 선택형에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시 |
 | OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 사용 |
 | CompletionRatio | VIDEO+QUIZ에서 지원 | N | `1.0` | 누적 시청 도달률(0~1). 기준 도달 전 QUIZ 및 Footer 비활성화, 도달 시 활성화 |
-| PassingScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 팝업 최상위 값. SURVEY에서는 채점하지 않음 |
-| IsScored | QUIZ에서 지원 | 채점 시 제공 | `false` | 문항 채점 대상 여부 |
-| QuestionScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 문항 배점 |
-| CorrectAnswer | 미제공 | N | `null` | 주관식 정답. 최소 버전에서는 오픈하지 않음 |
-| AnswerMatchMode | 미제공 | N | `null` | EXACT / CONTAINS. 주관식 정답 비교 방식 |
-| CloseOnFail | 지원(고정 동작) | N | 설정 필드 없음 | 실제 필드는 없음. QUIZ 미통과 시 창을 유지하는 내부 동작 |
+| PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 팝업 최상위 합격점. 0~총점. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
+| IsScored | QUIZ에서 지원 | Y(QUIZ) | `false` | 최소 QUIZ 문항은 true 명시. SURVEY는 false 사용 |
+| QuestionScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 양수 배점. 누락/null이면 WPF 로컬 계산은 0점 |
+| CorrectAnswer | 미제공 | N | `null` | TEXT QUIZ 정답. 최소 버전의 QUIZ에서는 TEXT 자동 채점 자체를 오픈하지 않음 |
+| AnswerMatchMode | 미제공 | N | `null` | EXACT / CONTAINS. 최소 버전의 QUIZ에서는 미사용 |
 
-SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. 점수·합격점·오답 시 닫기 제한은 QUIZ 동작으로 구분한다. 주관식 정답/자동 채점(`CorrectAnswer`/`AnswerMatchMode`)은 최소 버전에서 미제공한다.
+SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. **최소 QUIZ는 SINGLE_CHOICE / MULTIPLE_CHOICE만 제공하며 TEXT 자동 채점은 최초 오픈 범위에서 제외한다.** QUIZ는 `isScored=true`, `questionScore`, 선택지별 `isCorrect`, 최상위 `passingScore`를 서버가 반드시 제공한다. 미통과 시에는 별도 `CloseOnFail` JSON 필드 없이 WPF가 창을 유지하고 답 수정 후 재채점한다.
 
 단일/복수 선택의 VERTICAL은 전체 폭 Row·우측 체크 Path, HORIZONTAL은 공통 Chip으로 표시한다. 무채색 상태·긴 문장 줄바꿈·필수 응답 진행 상태는 UI 구현이며 추가 계약 필드가 없다. 제출 영역은 스크롤 밖 하단에 고정하고 필수 미응답 또는 영상 시청 잠금 시 비활성화한다. 공통 Footer가 있는 SURVEY/QUIZ의 버튼은 제출로 동작한다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 완료 전 종료 정책을 적용한다. Demo·웹 미리보기의 예제/응답은 실제 API 데이터와 구분한다.
 
@@ -135,7 +138,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | ORIGINAL + ImageWidth/ImageHeight | ORIGINAL 모드에서는 ImageWidth/ImageHeight가 적용되지 않으므로 최소 버전에서 사용하지 않음 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
-| CloseOnFail | 해당 설정 필드 없음. QUIZ 미통과 시 창을 유지하는 내부 동작 |
+| QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
 | FooterAction / FooterLinkUrl | `footerAction=LINK_AND_CLOSE`이면 일반 콘텐츠는 “바로가기”, SURVEY·QUIZ·VIDEO+QUIZ는 “제출”로 표시. 응답 검증·퀴즈 통과 후 유효한 HTTP/HTTPS URL을 열고 종료 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
@@ -149,7 +152,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. content.width/height 및 keepAspectRatio는 사용하지 않음 |
 | VIDEO | VideoUrl + 기본 Controls/음량 + 영상 FullScreen + CompletionRatio + 공통 Width/Height |
 | SURVEY | 단일/복수 선택 + 주관식 + 필수값 검증 + 선택지 VERTICAL/HORIZONTAL. 채점 없음 |
-| QUIZ | 점수/합격점/배점 + 미통과 시 창 유지 + VIDEO+QUIZ(CompletionRatio 도달 후 Quiz/Footer 활성화). 주관식 정답 비교 기능은 최소 버전 미제공 |
+| QUIZ | SINGLE_CHOICE / MULTIPLE_CHOICE 채점 + 배점/정답/합격점 + 미통과 시 창 유지 + VIDEO+QUIZ. TEXT 자동 채점은 최소 버전 미제공 |
 
 ## 7. 확장 기능 관리 원칙
 
@@ -165,3 +168,242 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 - Footer 바로가기는 `footerAction=LINK_AND_CLOSE`일 때만 동작하며 `footerLinkUrl`은 HTTP/HTTPS 절대 URL이어야 한다.
 - VIDEO+QUIZ는 QUIZ 타입에서 `videoEnabled=true`인 경우에만 결합형으로 동작한다.
+
+## 8. 백엔드 전달용 유형별 최소 JSON 예시
+
+아래 예시는 **최소 오픈 범위에서 백엔드가 WPF 목록 응답의 `popups[]` 한 건을 만드는 기준**이다. 선택 필드는 생략할 수 있지만 필수값은 기본값에 기대지 않고 명시한다. 복사·테스트용 전체 배열은 [examples/WPF-01-popup-types-minimal.json](examples/WPF-01-popup-types-minimal.json)을 사용한다.
+
+### 8.1 TEXT
+
+```json
+{
+  "popupId": "TEXT-001",
+  "popupType": "TEXT",
+  "title": "서비스 안내",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "questions": [],
+  "content": {
+    "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+    "showPlainText": true,
+    "contentTitle": "점검 공지",
+    "showContentHeader": true,
+    "description": "안내 내용을 확인해 주세요."
+  }
+}
+```
+
+### 8.2 IMAGE
+
+```json
+{
+  "popupId": "IMAGE-001",
+  "popupType": "IMAGE",
+  "title": "교육 안내",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "questions": [],
+  "content": {
+    "imageUrl": "https://example.com/media/training.png",
+    "imageSizeMode": "ORIGINAL"
+  }
+}
+```
+
+### 8.3 VIDEO
+
+```json
+{
+  "popupId": "VIDEO-001",
+  "popupType": "VIDEO",
+  "title": "보안 교육",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "completionRatio": 0.8,
+  "questions": [],
+  "content": {
+    "videoUrl": "https://example.com/media/security.mp4",
+    "showControls": true,
+    "defaultVolume": 0.7,
+    "allowFullScreen": true
+  }
+}
+```
+
+### 8.4 SURVEY
+
+```json
+{
+  "popupId": "SURVEY-001",
+  "popupType": "SURVEY",
+  "title": "교육 만족도 설문",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "questions": [
+    {
+      "questionId": 101,
+      "title": "교육 내용을 이해하기 쉬웠나요?",
+      "questionType": "SINGLE_CHOICE",
+      "isRequired": true,
+      "isScored": false,
+      "optionLayout": "VERTICAL",
+      "options": [
+        {
+          "optionId": 1001,
+          "value": "YES",
+          "text": "네"
+        },
+        {
+          "optionId": 1002,
+          "value": "NO",
+          "text": "아니요"
+        }
+      ]
+    },
+    {
+      "questionId": 102,
+      "title": "추가 의견을 작성해 주세요.",
+      "questionType": "TEXT",
+      "isRequired": false,
+      "isScored": false,
+      "optionLayout": "VERTICAL",
+      "options": []
+    }
+  ],
+  "content": {
+    "surveyTitle": "교육 만족도 설문",
+    "description": "필수 문항에 응답한 후 제출해 주세요."
+  }
+}
+```
+
+### 8.5 QUIZ
+
+```json
+{
+  "popupId": "QUIZ-001",
+  "popupType": "QUIZ",
+  "title": "보안 확인 퀴즈",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "passingScore": 80,
+  "questions": [
+    {
+      "questionId": 201,
+      "title": "안전한 연결 방식은 무엇인가요?",
+      "questionType": "SINGLE_CHOICE",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 100,
+      "optionLayout": "VERTICAL",
+      "options": [
+        {
+          "optionId": 2001,
+          "value": "HTTPS",
+          "text": "HTTPS",
+          "isCorrect": true
+        },
+        {
+          "optionId": 2002,
+          "value": "HTTP",
+          "text": "HTTP",
+          "isCorrect": false
+        }
+      ]
+    }
+  ],
+  "content": {
+    "surveyTitle": "보안 확인 퀴즈",
+    "description": "80점 이상 획득해야 합니다.",
+    "videoEnabled": false
+  }
+}
+```
+
+### 8.6 VIDEO+QUIZ
+
+```json
+{
+  "popupId": "VIDEO-QUIZ-001",
+  "popupType": "QUIZ",
+  "title": "영상 교육 및 확인 퀴즈",
+  "displayMode": "SEQUENTIAL",
+  "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
+  "showHeader": true,
+  "showFooterButton": true,
+  "showFooter": true,
+  "showDoNotShowAgain": false,
+  "completionRatio": 0.8,
+  "passingScore": 80,
+  "questions": [
+    {
+      "questionId": 301,
+      "title": "안전한 연결 방식은 무엇인가요?",
+      "questionType": "SINGLE_CHOICE",
+      "isRequired": true,
+      "isScored": true,
+      "questionScore": 100,
+      "optionLayout": "VERTICAL",
+      "options": [
+        {
+          "optionId": 3001,
+          "value": "HTTPS",
+          "text": "HTTPS",
+          "isCorrect": true
+        },
+        {
+          "optionId": 3002,
+          "value": "HTTP",
+          "text": "HTTP",
+          "isCorrect": false
+        }
+      ]
+    }
+  ],
+  "content": {
+    "videoEnabled": true,
+    "videoUrl": "https://example.com/media/security.mp4",
+    "videoTitle": "보안 교육",
+    "showControls": true,
+    "defaultVolume": 0.7,
+    "allowFullScreen": true,
+    "surveyTitle": "영상 확인 퀴즈",
+    "description": "영상의 80% 이상을 시청한 뒤 퀴즈에 응답해 주세요."
+  }
+}
+```
+
+> 최소 QUIZ 예시에는 TEXT 문항을 넣지 않는다. TEXT QUIZ 자동 채점은 전체 기능에는 구현되어 있지만 최소 외부 오픈 범위에서는 제외한다.
+
