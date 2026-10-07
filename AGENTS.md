@@ -14,6 +14,7 @@
 ## 변경 이력 기록
 
 - 프로젝트 문서는 저장소 루트 `docs/`에서 통합 관리한다. 설계·TODO는 `docs/design/`, 인터페이스·예제는 `docs/interfaces/`, 검토·측정 가이드는 `docs/reviews/`에 둔다. WPF 내부에 별도 `Docs/`를 만들지 않는다.
+- WPF 기능 추가·수정·삭제 시 `docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md`(최초 외부 제공 범위)와 `docs/interfaces/WPF_POPUP_ALL_SPEC.md`(전체 구현 기능)를 함께 검토·갱신한다. 이름·JSON 위치·기본값·ENUM·고정 동작은 관련 인터페이스 계약·예제와 맞추되 전체 기능 추가만으로 최소 제공 범위를 임의 확장하지 않는다.
 
 이 저장소에서 파일을 수정하는 작업은 변경 이력을 함께 관리한다.
 

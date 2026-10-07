@@ -134,6 +134,9 @@ body += p('Content·Options 상세 가이드: `docs/POPUP_OPTION_GUIDE.md`');
 heading('부록 B. 최초 외부 제공 최소 기능 범위', 1, true);
 body += p('이 부록은 최초 제공할 기능 범위입니다. 본문의 전체 구현 계약과 구분하여 읽으세요.', 'Callout');
 markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md'), 'utf8'), true);
+heading('부록 C. WPF 전체 구현 기능 범위', 1, true);
+body += p('전체 구현 기능은 최소 외부 제공 범위와 함께 관리하며, 전체 지원을 이유로 최소 제공 범위를 자동 확장하지 않습니다.');
+markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF_POPUP_ALL_SPEC.md'), 'utf8'), true);
 
 const toc = p('<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>', 'Normal', '', true)
   + headings.filter(h => h.level <= 2).map(h => p(`<w:hyperlink w:anchor="${h.name}" w:history="1">${run(h.text)}</w:hyperlink>`, h.level === 1 ? 'TOC1' : 'TOC2', '', true)).join('')

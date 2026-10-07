@@ -7,6 +7,8 @@
 사용자·운영자가 화면에서 어떤 값을 선택하는지에 대한 설명은 `POPUP_USER_OPTION_GUIDE.md`를 참고한다.
 관리자 화면에 아직 노출되지 않았거나 계층 간 값이 불일치하는 항목은 `POPUP_ADMIN_UI_GAP.md`를 참고한다.
 
+기능 범위는 [최소 기능 정의서](interfaces/WPF_POPUP_MINIMAL_SPEC.md)와 [전체 기능 정의서](interfaces/WPF_POPUP_ALL_SPEC.md)를 함께 관리한다.
+
 지원 팝업 유형은 다음과 같다.
 
 | popupType | 설명 |
@@ -96,7 +98,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용 |
 | `completionRatio` | VIDEO/동영상+퀴즈 | 1.0 | 누적 시청 완료 기준 0~1 |
 | `passingScore` | QUIZ | 없음 | WPF 로컬 채점 통과 점수 |
-| `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 헤더 X/Alt+F4 허용 여부 |
+| `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 Alt+F4 허용 여부 |
 
 기간·반복 정책 자체는 서버 내부 책임이며 WPF 응답 DTO에는 별도 반복 정책 필드를 두지 않는다.
 

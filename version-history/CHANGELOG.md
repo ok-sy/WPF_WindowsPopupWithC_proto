@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-07-12 — 최소·전체 WPF 기능 정의서 동시 관리 및 바깥 문서 정리
+
+- 이유: 최초 외부 제공 범위와 전체 구현 기능을 구분해 유지하고 저장소 바깥의 별도 문서 사본으로 인한 혼동 제거.
+- 변경: MINIMAL과 같은 공통·유형별·주의사항·요약 구조의 WPF_POPUP_ALL_SPEC.md 추가. DTO·Factory·View 기준 전체 지원·기본값·전달 위치·고정 동작·미구현 및 미검증 범위를 명시. MINIMAL의 ShowFooterButton·상단 X 제거·계약상 필수값 설명을 정정하고 최소 제공 범위 유지. 두 문서의 공동 갱신 규칙을 AGENTS.md에 추가하고 상호 링크·문서 목록·옵션 가이드 연결. API 계약과 JSON 예제의 신규 Footer 필드명 정합성 보완, 이전 showCloseButton 수신 호환은 별도 명시. Word 생성에 전체 기능 부록 C 추가. 외부 D:\work\PopupProject2026\docs는 정확한 절대 경로 확인 후 삭제.
+- 주요 파일: docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, WPF_POPUP_ALL_SPEC.md, POPUP_INTERFACE_SPEC.md, JSON 예제 2개, docs/README.md, docs/POPUP_OPTION_GUIDE.md, AGENTS.md, scripts/export-interface-word.cjs.
+- 검증: 소스의 DTO·Factory·View와 주요 필드·기본값 대조. MINIMAL·ALL을 포함한 임시 Word 생성 성공(표 39개·제목 105개). 바깥 docs 삭제 후 Test-Path false 확인. JSON 예제 2개 구문 및 관련 로컬 문서 링크 21개 확인, git diff --check 통과. 코드 변경이 없어 앱 빌드·기능 테스트 미실행. 저장소 기존 Word/PDF 재생성 및 실환경 기능 검증 미실행.
+- 상태: 최소·전체 기능 정의서 공동 관리 문서 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-07-11 — 프로젝트 문서를 루트 docs로 통합
 
 - 이유: 저장소 루트와 WPF 내부에 분산된 문서의 위치와 참조 기준을 통일.

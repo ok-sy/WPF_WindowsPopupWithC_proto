@@ -42,7 +42,7 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 }
 New-Item -ItemType Directory -Force $OutputRoot | Out-Null
 
-$dirty = (& git status --porcelain -- zero-rule-server zero-rule-web popup-frameWork) | Where-Object { $_ }
+$dirty = (& git status --porcelain -- zero-rule-server zero-rule-web popup-frameWork docs) | Where-Object { $_ }
 if ($dirty) {
     Write-Warning "커밋되지 않은 변경이 있습니다. git diff 기준 목록(B/C)에 반영되지 않을 수 있습니다:"
     $dirty | ForEach-Object { Write-Warning "  $_" }

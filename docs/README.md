@@ -15,6 +15,8 @@
 
 현행 API 기준은 [인터페이스 정의서](interfaces/POPUP_INTERFACE_SPEC.md)이며,
 변경 이력은 [저장소 CHANGELOG](../version-history/CHANGELOG.md)에 기록한다.
+기능 범위는 [최소 기능 정의서](interfaces/WPF_POPUP_MINIMAL_SPEC.md)와
+[전체 기능 정의서](interfaces/WPF_POPUP_ALL_SPEC.md)를 함께 관리한다.
 저장소 루트의 [README](../README.md)와 WPF [실행 가이드](../popup-frameWork/README.md)를 함께 참고한다.
 
 문서 이동 이전의 CHANGELOG·커밋 검토 표 경로는 당시 기록이다. 과거

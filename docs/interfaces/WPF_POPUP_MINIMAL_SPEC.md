@@ -1,12 +1,14 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-10-06
+- 작성 기준: 2026-10-07 (KST)
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
 
 본 문서는 현재 구현된 WPF 팝업 기능 중 최초 외부 오픈 범위를 최소화하여 정의한다. 실제 코드가 지원하는 기능과 최초 제공 기능을 구분하며, 추후 요구가 발생하면 기능 단위로 추가 오픈할 수 있도록 한다.
+
+구현된 전체 기능은 [WPF 팝업 전체 기능 버전 정의서](WPF_POPUP_ALL_SPEC.md)에서 함께 관리한다. 기능 변경 시 두 문서의 필드명·기본값·ENUM·고정 동작을 함께 확인하되, 전체 기능 추가만으로 최소 제공 범위를 확장하지 않는다.
 
 백엔드 전달 시 함께 확인할 자료: [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [전체 응답 JSON 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 popupId, 문항/선택지 ID, isRequired, 채점용 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
 
@@ -30,7 +32,7 @@
 | Height | 지원 | N | `620` | 팝업 Window 높이. 모든 타입 공통 |
 | Title | 지원 | N | `""` | 공통 Header 제목 |
 | ShowHeader | 지원 | N | `true` | 제목/Header 표시 여부 |
-| ShowCloseButton | 지원 | N | `true` | 닫기(X) 버튼 |
+| ShowFooterButton | 지원 | N | `true` | Footer 버튼 표시. 일반 콘텐츠는 닫기·바로가기, SURVEY/QUIZ는 제출. 상단 X는 없음 |
 | ShowFooter | 지원 | N | `true` | Footer 표시 |
 | FooterAction | 지원 | N | `""` | `content.footerAction`. `LINK_AND_CLOSE` 지정 시 Footer 버튼을 바로가기로 사용 |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | `content.footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
@@ -47,6 +49,8 @@
 
 > FontSize 계열은 미지정 시 각 XAML/콘텐츠 기본값을 유지하고, 값이 지정되면 10~40 범위로 보정(Clamp)하여 적용한다.
 
+> 신규 JSON은 `showFooterButton`을 사용한다. 기존 서버의 `showCloseButton`은 수신 호환 이름이며 같은 필드로 반영된다. 두 이름을 동시에 보내지 않는다. `ShowFooterButton=false`여도 SURVEY·QUIZ·VIDEO+QUIZ의 제출 버튼은 유지한다. Header는 검은 배경·흰 제목·고정 로고·높이 40이며 일반 팝업 Radius 6, Fullscreen Radius 0은 API 옵션이 아닌 고정 외형이다.
+
 ## 4. 팝업 유형별 최소 기능
 
 ### 4.1 TEXT
@@ -61,6 +65,7 @@
 | HighlightText | 미제공 | N | `""` | 강조 텍스트 |
 | ShowHighlight | 미제공 | N | `false` | 강조 영역 표시 |
 | BottomDescription | 미제공 | N | `""` | 하단 설명 |
+| BottomDescriptionUrl | 미제공 | N | `""` | 하단 설명 링크 |
 | ShowBottomDescription | 미제공 | N | `false` | 하단 설명 표시 |
 | HeaderFontSize / BodyFontSize / FooterFontSize | 미제공 | N | `null` | 공통 옵션 사용. TextStyle이라는 별도 객체/필드는 없음 |
 
@@ -105,21 +110,21 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 | QuestionId | 지원 | Y | `0` | 문항 ID |
 | Title | 지원 | Y | `""` | 문항 제목 |
 | QuestionType | 지원 | Y | `""` | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
-| IsRequired | 지원 | N | `false` | 필수 응답 검증 |
+| IsRequired | 지원 | Y(계약) | `false` | 필수 응답 검증. 코드 기본값과 서버 제공 의무 구분 |
 | Options | 선택형에서 지원 | 조건부 | `[]` | 주관식(TEXT)은 빈 배열 |
 | OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 사용 |
 | CompletionRatio | VIDEO+QUIZ에서 지원 | N | `1.0` | 누적 시청 도달률(0~1). 기준 도달 전 QUIZ 및 Footer 비활성화, 도달 시 활성화 |
-| PassingScore | QUIZ에서 지원 | N | `null` | 팝업 최상위 값. SURVEY에서는 채점하지 않음 |
-| IsScored | QUIZ에서 지원 | N | `false` | 문항 채점 대상 여부 |
-| QuestionScore | QUIZ에서 지원 | N | `null` | 문항 배점 |
+| PassingScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 팝업 최상위 값. SURVEY에서는 채점하지 않음 |
+| IsScored | QUIZ에서 지원 | 채점 시 제공 | `false` | 문항 채점 대상 여부 |
+| QuestionScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 문항 배점 |
 | CorrectAnswer | 미제공 | N | `null` | 주관식 정답. 최소 버전에서는 오픈하지 않음 |
 | AnswerMatchMode | 미제공 | N | `null` | EXACT / CONTAINS. 주관식 정답 비교 방식 |
 | CloseOnFail | 지원(고정 동작) | N | 설정 필드 없음 | 실제 필드는 없음. QUIZ 미통과 시 창을 유지하는 내부 동작 |
 
 SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. 점수·합격점·오답 시 닫기 제한은 QUIZ 동작으로 구분한다. 주관식 정답/자동 채점(`CorrectAnswer`/`AnswerMatchMode`)은 최소 버전에서 미제공한다.
 
-단일/복수 선택의 VERTICAL은 전체 폭 Row·우측 체크 Path, HORIZONTAL은 공통 Chip으로 표시한다. 무채색 상태·긴 문장 줄바꿈·필수 응답 진행 상태는 UI 구현이며 추가 계약 필드가 없다. 제출 영역은 스크롤 밖 하단에 고정하고 필수 미응답 또는 영상 시청 잠금 시 비활성화한다. 공통 Footer가 있는 SURVEY/QUIZ의 버튼은 제출로 동작하며, Header 닫기는 기존 종료 정책을 유지한다. Demo·웹 미리보기의 예제/응답은 실제 API 데이터와 구분한다.
+단일/복수 선택의 VERTICAL은 전체 폭 Row·우측 체크 Path, HORIZONTAL은 공통 Chip으로 표시한다. 무채색 상태·긴 문장 줄바꿈·필수 응답 진행 상태는 UI 구현이며 추가 계약 필드가 없다. 제출 영역은 스크롤 밖 하단에 고정하고 필수 미응답 또는 영상 시청 잠금 시 비활성화한다. 공통 Footer가 있는 SURVEY/QUIZ의 버튼은 제출로 동작한다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 완료 전 종료 정책을 적용한다. Demo·웹 미리보기의 예제/응답은 실제 API 데이터와 구분한다.
 
 ## 5. 필드 정리 시 주의사항
 

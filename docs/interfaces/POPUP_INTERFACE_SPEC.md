@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.6
-- 최신화: 2026-10-06 (KST)
+- 최신화: 2026-10-07 (KST)
+- 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
 - 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
 - 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
 - 2026-09-30 보완: JSON 필드·ENUM 변경 없이 30~60분 조회 정책, 로컬/URL 공통 WPF 컨트롤 및 동영상+퀴즈 단일 스크롤 동작을 명시.
@@ -246,7 +247,7 @@ X-Client-Version: 1.0.0
 | maximumWidth | number | 선택 | `1200` | 최대 창 너비. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
 | maximumHeight | number | 선택 | `900` | 최대 창 높이. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
-| showCloseButton | boolean | O | `true` | 닫기 버튼 표시 |
+| showFooterButton | boolean | O | `true` | Footer 버튼 표시. 상단 X는 없음. SURVEY/QUIZ 제출은 유지 |
 | showFooter | boolean | O | `true` | Footer 표시 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
@@ -255,6 +256,8 @@ X-Client-Version: 1.0.0
 | passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
+
+> 기존 서버 JSON의 `showCloseButton`은 WPF 수신 호환 이름으로 `showFooterButton`에 반영된다. 두 이름을 동시에 보내지 않는다. Header는 검은 배경·흰 제목·고정 로고·높이 40, 일반 외곽은 테두리 0·Radius 6이며 FULLSCREEN은 Radius 0이다.
 
 ### 크기 처리 참고
 
@@ -339,9 +342,9 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 | footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 절대 http/https URL |
 | popupPosition | string | 선택 | `CENTER` | 없거나 잘못되면 CENTER |
 
-`LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. SURVEY·QUIZ·VIDEO+QUIZ에서는 버튼 이름을 **제출**로 통일하고 필수 응답 검증 및 QUIZ 통과 후 링크를 연다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. 헤더 X는 기존 닫기 동작을 유지한다. 버튼 표시는 `showFooter`·`showCloseButton`을 따른다.
+`LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. SURVEY·QUIZ·VIDEO+QUIZ에서는 버튼 이름을 **제출**로 통일하고 필수 응답 검증 및 QUIZ 통과 후 링크를 연다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
-SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showCloseButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며, 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 헤더 X/Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
+SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며, 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 
 ### popupPosition ENUM
 
@@ -457,7 +460,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 - 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
 - IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. content.width/height의 지정 픽셀/DIP 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
-- 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(48)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
+- 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(40)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
 - WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
 - FILL, imageWidth/imageHeight, descriptionPosition, imageAreaRatio는 새 입력에서 제거했다. 서버 저장은 해당 키·모드와 중복 최상위 크기를 거절한다. 기존 DB는 조회 변환 또는 전환 계획 스크립트를 통해 새 계약으로 제공한다.
 
@@ -666,7 +669,7 @@ passingScore 이상
 - SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 닫기·바로가기 대신 제출로 동작한다. 이 화면에서 `footerAction`·`footerLinkUrl`은 제출 동작을 대체하지 않는다. 헤더 닫기는 기존 종료 정책을 따른다.
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
-- `allowCloseBeforeComplete: true`면 헤더 X·Alt+F4로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
+- `allowCloseBeforeComplete: true`면 Alt+F4 등으로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
 - 현재 플레이어의 YouTube 임베드는 시청 비율을 제공하지 않으므로 이 모드는 로컬 영상 파일 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
 - 영상만 보고 닫으면 `VIDEO_WATCHED`를 보내되 **퀴즈 완료로 처리하지 않는다**. 퀴즈 통과 후에만 `SUBMITTED`로 완료한다. 숨김 선택 시에는 기존 HIDDEN 정책을 따른다.
 - 새 모드를 사용하려면 WPF와 백엔드를 함께 갱신해야 한다. 기존 클라이언트는 `videoEnabled`를 이해하지 못한다.
@@ -1113,7 +1116,7 @@ REJECTED
   "width": 900,
   "height": 620,
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
@@ -1144,7 +1147,7 @@ REJECTED
   "displayOrder": 100,
   "sizeMode": "FIXED",
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
@@ -1174,7 +1177,7 @@ REJECTED
   "width": 900,
   "height": 620,
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
@@ -1208,7 +1211,7 @@ REJECTED
   "width": 900,
   "height": 620,
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
@@ -1296,7 +1299,7 @@ REJECTED
   "width": 900,
   "height": 620,
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
@@ -1378,7 +1381,7 @@ REJECTED
   "width": 900,
   "height": 620,
   "showHeader": true,
-  "showCloseButton": true,
+  "showFooterButton": true,
   "showFooter": true,
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
