@@ -38,13 +38,14 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 |---|---|---:|---|---|
 | PopupId | 지원 | Y | `""` | 식별·숨김·결과 연결 ID. 서버가 유효값 보장 |
 | PopupType | 지원 | Y | `""` | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
-| Title | 지원 | N | `""` | 공통 Header 제목 |
+| Content | 지원 | Y | `{}` | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
+| Title | 지원 | Y(계약) | `""` | 공통 Header 제목. Header 숨김 여부와 별개로 백엔드 응답 계약상 제공 |
 | DisplayStartAt / DisplayEndAt | DTO 수신 | N | `null` | 기간·대상·숨김·완료를 판정한 최종 목록은 서버 책임 |
 | DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
 | DisplayOrder | 지원 | N | `100` | 작은 순서 그룹부터 표시 |
 | ShowHeader | 지원 | N | `true` | 제목·고정 로고 및 Header 영역 |
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
-| showCloseButton | 이전 이름 수신 호환 | N | 미지정 | LegacyShowCloseButton setter가 ShowFooterButton에 반영. 신규·이전 이름을 동시에 보내지 않음 |
+| showCloseButton | 이전 이름 수신 호환 | N | 미지정 | C# LegacyShowCloseButton setter가 ShowFooterButton에 반영. 신규·이전 이름을 동시에 보내지 않음 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과의 숨김 일수 |
@@ -57,7 +58,9 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | content.FooterFontSize | 지원 | N | `null` | 미지정 시 Footer 14. 지정 시 10~40 보정 |
 | CompletionRatio | 지원 | N | `null` → `1.0` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준 |
 | AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음 |
-| PassingScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 합격점은 서버가 계약에 맞게 제공 |
+| PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
+
+**현재 저장소의 Java `WpfPopupItem`은 실제 응답 키를 아직 `showCloseButton`으로 직렬화한다.** C#은 호환 처리하지만 신규 계약명은 `showFooterButton`이며, Java 응답 DTO를 전환하기 전까지는 현재 서버 출력과 문서 계약명이 다르다는 점을 구분한다.
 
 Header에는 닫기 버튼이 없고 로고에는 닫기 동작을 연결하지 않는다.
 SURVEY·QUIZ·VIDEO+QUIZ는 `ShowFooterButton=false`여도 제출을 유지한다.
@@ -162,20 +165,19 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | questions[].IsRequired | 지원 | 계약상 Y | `false` | 기본값과 계약상 제공 의무 구분 |
 | questions[].Options | 선택형에서 지원 | 조건부 | `[]` | TEXT는 빈 배열 |
 | questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
-| questions[].IsScored | QUIZ에서 지원 | 채점 시 제공 | `false` | 채점 대상 여부 |
-| questions[].QuestionScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 미지정 시 로컬 점수 0. 서버는 배점 보장 |
-| questions[].CorrectAnswer | TEXT QUIZ에서 지원 | 채점 시 제공 | `null` | 주관식 정답. 최소 버전에서는 미제공 |
-| questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | 채점 시 제공 | `null` | EXACT / CONTAINS |
-| options[].OptionId | 지원 | 선택형에서 Y | `0` | 응답 OPTION_ID 연결 |
-| options[].Value / Text | 지원 | 선택형에서 Y | `""` | 전달 값·화면 문구 |
-| options[].IsCorrect | QUIZ에서 지원 | 채점 시 제공 | `null` | 객관식 정답 표시. SURVEY는 채점하지 않음 |
-| PassingScore | QUIZ에서 지원 | 채점 시 제공 | `null` | 최상위 합격점 |
-| CloseOnFail | 고정 동작 | 해당 없음 | 설정 필드 없음 | 불합격 시 창 유지·수정·재채점 |
+| questions[].IsScored | QUIZ에서 지원 | Y(QUIZ 계약) | `false` | 채점 문항은 true 명시. 현재 서버 저장 규칙은 최소 1개 true 존재까지는 보장하지 않으므로 응답 검증 필요 |
+| questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` | 양수 배점. 누락/null이면 WPF 로컬 점수 0 |
+| questions[].CorrectAnswer | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | 공백 아닌 주관식 정답. 최소 버전에서는 TEXT QUIZ 미제공 |
+| questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | EXACT / CONTAINS |
+| options[].OptionId | 지원 | Y(선택형) | `0` | 응답 OPTION_ID 연결. 양수·문항 내 고유 ID를 서버가 보장 |
+| options[].Value / Text | 지원 | Y(선택형) | `""` | 전달 값·화면 문구 |
+| options[].IsCorrect | QUIZ에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시. SURVEY는 채점하지 않음 |
+| PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 최상위 합격점. 0~총점 범위 |
 
 선택형은 VERTICAL 전체 폭 Row·우측 체크 Path, HORIZONTAL 공통 Chip으로 표시한다.
 긴 문장 줄바꿈, 단일/복수 선택, 필수 미응답 검증, 주관식 입력·스크롤을 지원한다.
 제출 영역은 스크롤 밖에 고정한다. QUIZ는 필수 검증·로컬 채점 후 통과 시 제출하며
-서버 결과 전송을 기다리기 전에 로컬 큐 저장을 완료한다. RATING5·correctAnswers는 삭제된 계약이다.
+서버 결과 전송을 기다리기 전에 로컬 큐 저장을 완료한다. **미통과 시 별도 `CloseOnFail` JSON 필드 없이 창을 유지하고 수정·재채점한다.** RATING5·correctAnswers는 삭제된 계약이다.
 
 ### 4.5 VIDEO+QUIZ
 
@@ -193,7 +195,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | API | 로그인·목록 조회·결과 일괄 전송 | 요청·응답·경로는 인터페이스 계약서 참조 |
 | 조회 | 30~60분 조회 정책, 실패 후 재조회 복구 | 팝업 content의 옵션이 아님 |
 | 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐·백그라운드 전송 | 재전송은 같은 resultId 유지 |
-| 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 CloseOnFail 필드 없음 |
+| 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 JSON 제어 필드 없음 |
 | 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작 | Demo 결과는 실제 서버·DB 저장과 구분 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |
 | 자동 업데이트 | 구현 기능으로 포함하지 않음 | 설계 17은 착수 보류 계획 |
