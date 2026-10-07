@@ -177,3 +177,38 @@ Fullscreen = Region 미적용 / Radius 0
 - [ ] VIDEO 내부 전체화면 창이 모서리 창보다 위에 표시되는지
 
 드래그 중 모서리 지연이 눈에 띄면, 이동 중에만 모서리 창을 숨기고 이동 종료(`WM_EXITSIZEMOVE`) 후 다시 표시하는 방식으로 보완한다. 그래도 수용이 어려우면 기존 결론(둥근 Region 6 또는 Radius 0 사각형)으로 되돌린다.
+
+
+## 2026-10-07 OpaqueWindowCorners 실화면 추가 검증
+
+### 확인된 문제
+
+- [x] 검은색 등 팝업과 대비가 큰 뒤 배경에서 우측 상단 모서리에 흰색 돌출부가 육안으로 확인됨.
+  - 단순 1px seam 또는 안티앨리어싱 차이 수준이 아니라, 본 창에서 제거한 사각형 Region과 별도 Corner HwndSource가 그리는 영역이 정확히 일치하지 않는 형태로 보임.
+  - 따라서 현재 `OpaqueWindowCorners` 구현은 실화면 검증 완료 상태로 보지 않는다.
+- [x] DPI/배율이 다른 모니터로 팝업을 드래그할 때 모서리가 순간적으로 돌출되는 이른바 '고양이귀' 현상 확인.
+  - 본 창의 DPI/위치/Region 변경 시점과 별도 Corner HwndSource의 DPI/크기/위치 갱신 시점이 어긋나는 것으로 추정한다.
+  - 단순 해상도 차이보다는 모니터별 DPI 배율 차이가 있는 환경을 우선 재현 조건으로 본다.
+
+### 수정 TODO
+
+- [ ] 현재 `CreateCorner()`의 `bodySize = size * 4`인 큰 WPF Border를 만든 뒤 일부만 Clip하는 방식을 재검토한다.
+- [ ] 본 창에서 실제로 제거하는 `s × s` 물리 픽셀 영역과 Corner HwndSource가 그리는 영역이 1:1로 대응하도록 좌표계를 통일한다.
+- [ ] 필요하면 큰 Border 일부를 잘라 쓰는 방식 대신 각 `s × s` Corner 안에 quarter-circle/Path/Geometry를 직접 그려 곡선을 만든다.
+- [ ] Region 절단 크기, Corner HWND 크기, 곡선 반지름을 동일한 DPI 기준 물리 픽셀 값에서 계산한다.
+- [ ] 검은색/짙은색/밝은색 배경 모두에서 네 모서리에 불투명 돌출부, 빈틈, 1px seam이 없는지 확인한다.
+- [ ] `WM_DPICHANGED` 전환 시 본 창의 새 DPI/위치/크기가 적용된 뒤 Region과 Corner HWND를 같은 값으로 재생성/재배치하도록 순서를 정리한다.
+- [ ] 100% → 125%, 100% → 150%, 125% → 150% 모니터 간 양방향 드래그를 확인한다.
+- [ ] DPI 전환 중 고양이귀가 남으면 이동 중 Corner HWND를 숨기고 `WM_EXITSIZEMOVE`에서 최종 DPI/좌표로 다시 만든 뒤 표시하는 보완안을 시험한다.
+- [ ] 수정 후 VIDEO 재생 CPU가 기존 `AllowsTransparency=false` 수준에서 증가하지 않는지 다시 실측한다.
+
+### 채택 기준
+
+`OpaqueWindowCorners` 방식은 아래 조건을 모두 만족할 때만 기존 `SetWindowRgn` 둥근 Region 방식의 대체안으로 채택한다.
+
+1. 검은색처럼 대비가 큰 배경에서도 네 모서리 돌출/빈틈이 육안으로 보이지 않을 것.
+2. DPI가 다른 모니터 사이를 이동해도 고양이귀가 발생하지 않을 것.
+3. 드래그 중 Corner HWND 추적 지연이 눈에 띄지 않을 것.
+4. VIDEO 재생 CPU가 `AllowsTransparency=false` 기존 수준에서 유의미하게 증가하지 않을 것.
+
+위 조건을 만족시키지 못하면 이 방식을 계속 복잡하게 확장하지 않고, 검증된 기존 대안인 `SetWindowRgn Radius 6` 또는 VIDEO Radius 0 사각형 정책으로 되돌린다.
