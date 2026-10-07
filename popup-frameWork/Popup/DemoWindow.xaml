@@ -25,6 +25,7 @@
         <Style x:Key="Label" TargetType="TextBlock">
             <Setter Property="Margin" Value="0,0,0,6"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            
         </Style>
         <Style TargetType="ComboBox">
             <Setter Property="MinHeight" Value="34"/>
@@ -58,13 +59,13 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <Border Background="White" BorderBrush="#E0E3E8" BorderThickness="1" CornerRadius="8" Padding="16">
+            <Border Background="White" BorderBrush="#E0E3E8" BorderThickness="1" CornerRadius="8" Padding="5" Grid.ColumnSpan="2" Margin="0,0,10,0">
                 <Grid>
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <TextBlock Text="팝업 실행" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14"/>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel>
-                            <TextBlock Text="시연할 샘플" Style="{StaticResource Label}"/>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel >
+                            <TextBlock Text="시연할 샘플" Style="{StaticResource Label}" />
                             <ComboBox x:Name="ScenarioCombo" SelectedIndex="0" SelectionChanged="ScenarioCombo_SelectionChanged">
                                 <ComboBoxItem Content="텍스트" Tag="DEMO-TEXT-001"/>
                                 <ComboBoxItem Content="이미지" Tag="DEMO-IMAGE-001"/>
