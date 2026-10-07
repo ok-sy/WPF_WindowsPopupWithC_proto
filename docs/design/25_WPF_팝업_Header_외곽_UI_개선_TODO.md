@@ -76,3 +76,72 @@
 - [ ] Footer 버튼 숨김/표시가 `ShowFooterButton`에 따라 정상 동작하는지 확인
 - [ ] SURVEY / QUIZ / VIDEO+QUIZ 제출 버튼 동작에 회귀가 없는지 확인
 - [ ] Fullscreen에서 Radius 0 및 Region 처리 회귀가 없는지 확인
+
+
+## 2026-10-07 VIDEO 투명창 / Radius 성능 검증 결과
+
+### 실측 결과
+
+- [x] 로딩바/Progress UI 수정 후 대기 상태의 비정상 CPU 점유가 개선되는 것을 확인했다.
+- [x] `AllowsTransparency=true` 상태에서 VIDEO 재생 시 CPU 사용률이 약 70~80%까지 다시 상승하는 것을 확인했다.
+- [x] 동일 조건에서 영상을 일시정지하면 CPU 사용률이 크게 내려가는 것을 확인했다.
+- [x] `AllowsTransparency=false` 상태에서는 VIDEO 재생 중 CPU 사용률이 약 10% 내외로 유지되는 것을 확인했다.
+- [x] 따라서 기존 고CPU 원인은 하나가 아니라 다음 두 가지가 함께 존재했던 것으로 판단한다.
+  1. 기존 Progress/로딩 UI의 불필요한 갱신 부하
+  2. `AllowsTransparency=true`인 WPF 최상위 Window에서 WebView2 영상 프레임이 계속 갱신될 때 발생하는 합성 부하
+- [x] Progress UI 문제를 수정해도 두 번째 부하는 남으므로 VIDEO / VIDEO+QUIZ의 `AllowsTransparency=false` 정책은 유지한다.
+
+### SetWindowRgn Radius 검증
+
+- [x] `CreateRoundRectRgn + SetWindowRgn`으로 VIDEO Window 외곽 Radius 적용이 가능한 것을 확인했다.
+- [x] Radius 6보다 값을 크게 올릴수록 곡선 구간의 계단/우글거림이 더 눈에 띄었다.
+- [x] `Math.Ceiling` 대신 `Math.Round` 사용, `width + 1 / height + 1` 제거, ellipse diameter 반올림 통일을 시험했으나 육안상 큰 개선은 없었다.
+- [x] 따라서 현재 보이는 거친 외곽은 좌표 보정 오차보다는 Win32 Region 방식 자체의 픽셀 단위 경계 특성에 의한 것으로 판단한다.
+- [x] VIDEO의 Region Radius는 디자인 기준인 6을 유지한다. 7~9로 키워 숨기는 방식은 현재 환경에서 오히려 품질이 나빠지므로 사용하지 않는다.
+
+### 현재 결론
+
+VIDEO / VIDEO+QUIZ는 아래 조합을 기본 구현으로 사용한다.
+
+```text
+AllowsTransparency = false
+WPF 내부 CornerRadius = 0
+CreateRoundRectRgn + SetWindowRgn = 사용
+Region Radius = 6 DIP 기준, DPI 배율 적용
+Fullscreen = Region 미적용 / Radius 0
+```
+
+이 조합은 WPF 투명창만큼 외곽이 매끈하지는 않지만, 현재 Horizon 환경과 저사양 PC 성능 조건을 동시에 만족시키는 가장 현실적인 절충안이다.
+
+### 재시도하지 않을 항목
+
+특별한 환경 변화나 명확한 근거가 없으면 아래 실험을 반복하지 않는다.
+
+- `AllowsTransparency=true`로 되돌려 VIDEO를 운영하지 않는다.
+  - Progress UI 개선 후에도 영상 재생 중 약 70~80% CPU가 재현되었다.
+- Region Radius를 7~9 이상으로 키워 계단 현상을 숨기려 하지 않는다.
+  - 현재 환경에서는 Radius가 커질수록 우글거림이 더 눈에 띄었다.
+- `Ceiling/Round`, `width + 1` 수준의 좌표 미세조정을 반복하지 않는다.
+  - 이미 비교했으며 큰 개선이 없었다.
+- Overlay 색으로 모서리를 덮는 방식은 사용하지 않는다.
+  - Overlay 자체가 선택사항이고 투명도도 가변이므로 실제 뒤 배경색을 안정적으로 재현할 수 없다.
+- DWM Rounded Corner만을 전제로 하지 않는다.
+  - 현재 Horizon 환경에서는 DWM rounded corner 시각 효과가 보장되지 않는다.
+
+### 더 나은 방식 검토 결과
+
+- Microsoft의 `WebView2CompositionControl`은 WPF의 WebView2 airspace 문제를 해결하기 위한 컨트롤이며 일반 `WebView2`의 대체재가 될 수 있다.
+- 다만 현재 확인 가능한 공식 문서만으로는 이것이 `AllowsTransparency=true`인 최상위 WPF Layered Window에서 발생하는 VIDEO 재생 합성 비용까지 제거한다고 볼 근거가 없다.
+- 따라서 현재 제품 코드에는 구조 변경을 적용하지 않는다.
+- 향후 WebView2 런타임/SDK 또는 Horizon 그래픽 드라이버가 바뀌는 시점에만 별도 실험 항목으로 검토한다.
+- 해당 실험을 하게 되면 기존 `WebView2`와 `WebView2CompositionControl`을 동일 영상/동일 Window 조건에서 비교하고, 재생 중 CPU가 `AllowsTransparency=false` 수준에 근접하는 경우에만 채택한다.
+
+### 후속 개발 원칙
+
+더 나은 방법이 새로 확인되지 않는 한 다음 개발자는 위 결론을 그대로 답습한다.
+
+1. VIDEO / VIDEO+QUIZ는 `AllowsTransparency=false`를 유지한다.
+2. Radius가 필요하면 `SetWindowRgn` 방식과 Radius 6을 사용한다.
+3. 약간의 Region 계단 현상은 현재 성능/환경 제약에서 허용 가능한 한계로 본다.
+4. 외곽 품질이 절대적으로 더 중요해지는 경우에만 VIDEO를 Radius 0의 사각형 Window로 전환하는 안을 제품 디자인과 협의한다.
+5. Fullscreen에서는 기존대로 Radius 0을 유지한다.
