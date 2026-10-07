@@ -3,6 +3,14 @@
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
 
+## 2026-10-07-03 — style(wpf): 팝업 외곽 테두리 제거 및 Radius 6 적용
+
+- 이유: 공통 팝업 외곽 규격 통일.
+- 변경: 외곽 테두리 0·Radius 6, Header 위쪽 Radius 6 적용. Fullscreen Radius 0과 Clip 계산 구조 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs.
+- 검증: 분할 전 새 창 크기·Clip 기준 행동 검증 798건 통과. 분할 커밋별 테스트는 미실행.
+- 상태: 구현 요건별 분할 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-07-02 — feat(wpf): 검은 헤더와 고정 로고 적용
 
 - 이유: 공통 헤더 외형 단순화.

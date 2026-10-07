@@ -141,8 +141,8 @@
         <Border x:Name="PopupBodyBorder"
                 Background="White"
                 BorderBrush="#E5E7EB"
-                BorderThickness="1"
-                CornerRadius="16">
+                BorderThickness="0"
+                CornerRadius="6">
 
             <Border.Effect>
 
@@ -223,7 +223,7 @@
                 <Border x:Name="HeaderArea"
                         Grid.Row="0"
                         Background="Black"
-                        CornerRadius="16,16,0,0"
+                        CornerRadius="6,6,0,0"
                         MouseLeftButtonDown="Header_MouseLeftButtonDown">
 
                     <Grid>
