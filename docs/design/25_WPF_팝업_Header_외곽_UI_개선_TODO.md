@@ -145,3 +145,35 @@ Fullscreen = Region 미적용 / Radius 0
 3. 약간의 Region 계단 현상은 현재 성능/환경 제약에서 허용 가능한 한계로 본다.
 4. 외곽 품질이 절대적으로 더 중요해지는 경우에만 VIDEO를 Radius 0의 사각형 Window로 전환하는 안을 제품 디자인과 협의한다.
 5. Fullscreen에서는 기존대로 Radius 0을 유지한다.
+
+## 2026-10-07 VIDEO Radius 대안: Region 직사각형 절단 + 안티앨리어싱 모서리 창
+
+### 배경
+
+둥근 Region(`CreateRoundRectRgn`)은 픽셀 단위 on/off 경계라 좌표를 어떻게 보정해도 곡선 계단이 남는다. 반면 VIDEO 창의 네 모서리 아래에는 영상이 오지 않는다(콘텐츠 여백 28/24 안쪽에만 영상이 있음). 모서리 아래는 항상 Header 또는 본문 단색이므로 모서리만 별도 창으로 그려도 이음새가 생기지 않는다.
+
+### 방식
+
+- [x] 본 창은 `AllowsTransparency=false` 유지.
+- [x] 본 창 Region은 전체 사각형에서 네 모서리의 Radius 크기 정사각형(`ceil(Radius × DPI 배율)` px)만 `CombineRgn(RGN_DIFF)`로 뺀다. 직사각형 Region이라 계단이 생기지 않는다.
+- [x] 잘라낸 네 자리에 per-pixel alpha 레이어드 창(`HwndSource`, `UsesPerPixelTransparency`) 4개를 띄우고, 일반 팝업과 같은 WPF `Border(CornerRadius, BorderThickness, BorderBrush, Background)`의 해당 모서리만 그린다. 일반 팝업과 같은 WPF 래스터라이저를 쓰므로 곡선 품질이 동일하다.
+- [x] 모서리 창은 본 창 소유(owned), `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT | WS_EX_TOPMOST`. 포커스·Alt+Tab·클릭에 관여하지 않는다.
+- [x] 본 창 `WM_WINDOWPOSCHANGED`에서 모서리 창 위치를 따라 옮기고, 크기가 바뀐 경우에만 Region을 다시 만든다. `DpiChanged`에서 모서리 창을 다시 만든다. `IsVisibleChanged`로 표시/숨김을 맞추고 `Closed`에서 해제한다.
+- [x] 모서리 색: 위쪽은 `ShowHeader`이면 `HeaderArea.Background`, 아니면 본문 배경. 아래쪽은 본문 배경. 테두리는 `PopupBodyBorder`의 두께·색(설계 25에서 0이 되면 자동으로 테두리 없음).
+- [x] Radius는 `PopupBodyBorder`의 XAML 값(현재 16, 설계 25 적용 후 6)을 읽어 일반 팝업과 항상 같게 맞춘다.
+- [x] Fullscreen은 기존대로 미적용.
+- [x] 기존 DWM rounded-corner 코드와 PInvoke는 제거했다.
+
+### 성능 판단
+
+모서리 창은 수 px 크기의 정적 화면이며 생성·DPI 변경 때만 렌더링된다. 영상 프레임은 불투명 본 창에서만 갱신되므로 레이어드 합성 비용(`AllowsTransparency=true` 시 70~80% CPU)이 다시 생기지 않는다. 레이어드 창 자체는 DWM rounded corner와 달리 Horizon에서도 동작한다(기존 `AllowsTransparency=true` 창이 표시되었던 것으로 확인됨).
+
+### 확인 필요
+
+- [ ] Horizon 환경에서 모서리 곡선이 일반 팝업과 육안상 동일한지
+- [ ] VIDEO 재생 CPU가 기존 `AllowsTransparency=false` 수준(약 10%)에서 늘지 않는지
+- [ ] 드래그 이동 중 모서리 창이 본 창을 늦게 따라와 모서리가 잠깐 비어 보이는지(원격 세션 지연 포함)
+- [ ] 100%/125%/150% DPI 및 다중 모니터 이동 시 모서리 정렬
+- [ ] VIDEO 내부 전체화면 창이 모서리 창보다 위에 표시되는지
+
+드래그 중 모서리 지연이 눈에 띄면, 이동 중에만 모서리 창을 숨기고 이동 종료(`WM_EXITSIZEMOVE`) 후 다시 표시하는 방식으로 보완한다. 그래도 수용이 어려우면 기존 결론(둥근 Region 6 또는 Radius 0 사각형)으로 되돌린다.

@@ -136,60 +136,47 @@ namespace Popup.Views.Windows
          *
          * AllowsTransparency는 네이티브 핸들 생성 전에만 바꿀 수 있으므로 생성자에서 결정한다.
          * 불투명 창은 HWND 밖에 그림자를 그릴 수 없고 모서리 바깥도 투명하게 비울 수 없으므로,
-         * 그림자용 24px 여백과 둥근 모서리를 함께 없애고 1px 테두리만 남긴다.
+         * 그림자용 24px 여백과 WPF 둥근 모서리를 없애고, 모서리는 OpaqueWindowCorners로 따로 그린다.
          * 장식용 그림자(형제 요소·OS 창 그림자)는 저사양 PC 부하 비교 후 별도로 결정한다.
          * 배경 오버레이는 별도 창(BackgroundOverlayManager)이라 이 설정과 무관하게 유지된다.
          * TEXT/IMAGE/SURVEY 등 다른 팝업은 기존 투명 창 외형을 그대로 쓴다.
          */
         private void ApplyVideoWindowSurface()
         {
+            // 일반 팝업과 같은 Radius를 모서리 창으로 재현하기 위해 0으로 바꾸기 전에 기억한다.
+            double radius = PopupBodyBorder.CornerRadius.TopLeft;
             AllowsTransparency = false;
             Background = PopupBodyBorder.Background;
             PopupOuterGrid.Margin = new Thickness(0);
             PopupBodyBorder.Effect = null;
             PopupBodyBorder.CornerRadius = new CornerRadius(0);
             HeaderArea.CornerRadius = new CornerRadius(0);
-            if (_options.SizeMode != PopupSizeMode.Fullscreen)
+            if (_options.SizeMode != PopupSizeMode.Fullscreen && radius > 0)
             {
-                SourceInitialized += (_, _) => ApplyDwmRoundedCorners();
+                SourceInitialized += (_, _) => ApplyRoundedWindowCorners(radius);
             }
         }
 
         /*
-         * 불투명 창의 둥근 모서리는 Windows 11 DWM에 맡긴다.
+         * [설계 25] 불투명 창의 둥근 모서리는 OpaqueWindowCorners가 담당한다.
          *
-         * DWM이 창 표면을 GPU에서 합성할 때 모서리를 자르므로 WPF 렌더링·CPU 부하가 늘지 않는다.
-         * (WPF Clip/레이어드 창과 달리 영상 프레임마다 추가 작업이 없다.)
-         * DWM이 자른 모서리에서는 WPF 1px 테두리가 끊기므로, 성공하면 WPF 테두리를 빼고
-         * 같은 색의 DWM 테두리로 대신한다.
-         * Windows 10 등 속성을 지원하지 않는 OS는 실패 HRESULT를 돌려주므로 기존 직각 창을 유지한다.
+         * DWM rounded corner는 Horizon 환경에서 보장되지 않고, SetWindowRgn 둥근 Region은
+         * 곡선에 계단이 생긴다. 모서리 정사각형만 Region으로 잘라내고 그 자리에
+         * 작은 레이어드 창으로 안티앨리어싱된 모서리를 그린다.
+         * 모서리 색은 생성 시점의 Header/본문/테두리 값을 사용한다.
          */
-        private void ApplyDwmRoundedCorners()
+        private void ApplyRoundedWindowCorners(double radius)
         {
-            IntPtr hwnd = new WindowInteropHelper(this).Handle;
-            int preference = DwmwcpRound;
-            if (DwmSetWindowAttribute(hwnd, DwmwaWindowCornerPreference, ref preference, sizeof(int)) != 0)
-            {
-                return;
-            }
-
-            if (PopupBodyBorder.BorderBrush is SolidColorBrush brush)
-            {
-                // COLORREF는 0x00BBGGRR 순서다.
-                int borderColor = brush.Color.R | (brush.Color.G << 8) | (brush.Color.B << 16);
-                if (DwmSetWindowAttribute(hwnd, DwmwaBorderColor, ref borderColor, sizeof(int)) == 0)
-                {
-                    PopupBodyBorder.BorderThickness = new Thickness(0);
-                }
-            }
+            Brush? bodyFill = PopupBodyBorder.Background;
+            var corners = new OpaqueWindowCorners(
+                this,
+                radius,
+                PopupBodyBorder.BorderThickness.Left,
+                PopupBodyBorder.BorderBrush,
+                topFill: _options.ShowHeader ? HeaderArea.Background : bodyFill,
+                bottomFill: bodyFill);
+            corners.Attach();
         }
-
-        private const int DwmwaWindowCornerPreference = 33;
-        private const int DwmwaBorderColor = 34;
-        private const int DwmwcpRound = 2;
-
-        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
         // 테두리·그림자 자체는 자르지 않고, 테두리 안쪽의 모든 WPF 콘텐츠를 함께 자른다.
         private void PopupBodyContent_SizeChanged(object sender, SizeChangedEventArgs e)

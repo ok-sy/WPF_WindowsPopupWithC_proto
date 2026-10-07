@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-07-01 — VIDEO 불투명 창 둥근 모서리를 Region 절단 + 모서리 레이어드 창으로 전환
+
+- 이유: Horizon(VMware) 환경에서 DWM rounded corner가 동작하지 않고, 대안으로 시험한 CreateRoundRectRgn + SetWindowRgn은 픽셀 단위 경계라 곡선 계단이 남음(설계 25 2026-10-07 검증 결과). VIDEO 창 모서리 아래에는 영상이 오지 않고 항상 Header/본문 단색이라는 점을 이용해 AllowsTransparency=false를 유지하면서 일반 팝업과 같은 안티앨리어싱 곡선을 재현.
+- 변경: Views/Windows/OpaqueWindowCorners 추가. 본 창 Region을 전체 사각형에서 네 모서리의 Radius 크기 정사각형만 뺀 직사각형 조합으로 설정하고, 그 자리에 본 창 소유의 per-pixel alpha HwndSource 4개(WS_EX_TOOLWINDOW·NOACTIVATE·TRANSPARENT·TOPMOST)를 띄워 같은 CornerRadius·테두리·배경의 WPF Border 모서리를 그림. WM_WINDOWPOSCHANGED에서 위치 추적·크기 변경 시에만 Region 재생성, DpiChanged에서 재생성, IsVisibleChanged로 표시 동기화, Closed에서 해제. SetWindowRgn 실패 시에만 HRGN 해제. PopupWindow는 0으로 바꾸기 전 PopupBodyBorder Radius를 기억해 FULLSCREEN 외 VIDEO/VIDEO+QUIZ에 적용하고, 위쪽 모서리 색은 ShowHeader에 따라 Header/본문 배경 사용. 기존 DWM rounded-corner 메서드·상수·PInvoke 제거. 설계 25에 방식·성능 판단·확인 항목 추가.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, docs/design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md.
+- 검증: WPF 빌드 경고·오류 0, 행동 검증 798건 통과. 실제 화면의 모서리 품질, 드래그 중 모서리 추적, DPI·다중 모니터, Horizon 환경 표시, VIDEO 재생 CPU 실측 미실행.
+- 상태: 로컬 반영, 미커밋. 반입본·배포 미갱신. 설계 25의 나머지 항목(Header 검은색·로고·ShowFooterButton·Radius 6 전환)은 미적용.
+
 ## 2026-10-06-10 — popupSample 전환 및 VIDEO 경량화 반입본 갱신
 
 - 이유: 2026-10-06-06~09(출력 어셈블리 popupSample 전환, VIDEO 저사양 PC 부하 개선, DWM 둥근 모서리, 버퍼 막대 갱신 축소)를 20261006 폐쇄망 반입본에 포함.
