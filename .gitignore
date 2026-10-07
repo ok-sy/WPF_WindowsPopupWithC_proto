@@ -35,3 +35,5 @@ offline-extention/
 # 로컬 전용 WPF 검증 프로젝트(소스·빌드 결과 전체)
 popup-frameWork/Popup.BehaviorTests/
 popup-frameWork/Popup.RecoveryTests/
+scripts/CornerWindowTests/bin/
+scripts/CornerWindowTests/obj/

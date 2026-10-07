@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-07-13 — TODO26 VIDEO 모서리 창 DPI 이동 동기화
+
+- 이유: VIDEO 팝업을 배율이 다른 모니터로 드래그할 때 모서리 창 4개와 본 창이 어긋나는 현상 확인. manifest가 없어 앱이 System-aware로 실행되어 DWM이 본 창과 모서리 창을 HWND별로 서로 다른 시점에 확대했고, PerMonitorV2에서도 기존 코드는 본 창 DPI 변경 시 모서리를 숨긴 뒤 Loaded 우선순위에서 HWND를 재생성하고 모서리 자체 WM_DPICHANGED는 OS 권장 rect로 이동해 어긋남이 남는 구조.
+- 변경: app.manifest와 ApplicationManifest로 PerMonitorV2 선언(WinForms 전용 WFO0003 경고 제외). OpaqueWindowCorners의 DPI 처리를 숨김·재생성 방식에서 HWND 재사용 방식으로 변경. 본 창 WM_DPICHANGED Hook 단계에서 wParam의 새 DPI로 모서리 물리 크기·Geometry를 다시 그리고 Region·위치를 즉시 갱신. 모서리 창 자체 WM_DPICHANGED는 권장 rect를 본 창 모서리 위치로 바꾸고 새 DPI로 다시 그림. 모서리 검증 프로젝트 scripts/CornerWindowTests 추가 및 bin/obj 제외. 전체 기능 정의서의 VIDEO 모서리 이동 항목 갱신(최소 제공 범위·JSON 계약 변경 없음).
+- 주요 파일: popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs, popup-frameWork/Popup/app.manifest, popup-frameWork/Popup/Popup.csproj, scripts/CornerWindowTests/, docs/interfaces/WPF_POPUP_ALL_SPEC.md, .gitignore.
+- 검증: 수정 전 모서리 검증에서 모서리 자체 DPI 변경 후 본 창 모서리 이탈 실패 재현. 수정 후 합성 WM_DPICHANGED(96/120/144) 기준 모서리 부착·물리 픽셀 크기·Geometry·표시 유지·HWND 재사용 388개 통과. WPF 빌드 경고·오류 0, 기존 로컬 행동 검증 798개 통과. 실제 배율이 다른 모니터 간 드래그, PerMonitorV2 전환에 따른 TEXT/IMAGE/SURVEY·MainWindow·트레이 표시 회귀, Horizon 검증 미실행.
+- 상태: TODO26 dev 커밋 2건(PerMonitorV2 manifest, 모서리 DPI·드래그 동기화)에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미실행.
+
+  드래그 동기화 보완: 영상 재생 중 드래그 시 모서리가 본체에서 쪼개져 보이는 현상 확인. 이동 루프가 본 창을 먼저 옮긴 뒤 WM_WINDOWPOSCHANGED에서 모서리 4개를 개별 SetWindowPos로 따라가게 해 그 사이 DWM 합성이 끼는 구조. 이동 루프(WM_ENTERSIZEMOVE~EXITSIZEMOVE) 중 본 창 WM_WINDOWPOSCHANGING의 제안 위치·크기로 본 창과 모서리 4개를 DeferWindowPos 한 묶음으로 이동하고 원래 제안은 NOMOVE/NOSIZE로 변경. 이동 루프·DPI 권장 rect 계산은 OS 기본 동작 유지, 묶음 실패 시 기존 추적 경로로 복귀. 모서리 검증에 이동 루프 중 위치·크기 변경 시 제안 좌표 유지 및 본 창 이동 통지 시점의 모서리 부착 검증 추가해 793개 통과, 묶음 이동을 끈 빌드에서 부착 검증 실패 확인 후 원복. 앱 빌드 경고·오류 0, 기존 행동 검증 798개 통과. 실제 영상 재생 중 드래그 육안 확인·Horizon 미실행.
+
+  모서리 렌더 구조 변경: 150% 모니터를 다녀온 뒤 우상단 모서리가 6px 칸에 약 4px로 작게 그려지는 화면 캡처를 확인. 연결된 실제 100%/150% 모니터 사이 프로그램 이동으로 재현했으며 WPF HwndSource 레이어드 모서리의 렌더 내용이 창 DPI와 어긋나는 문제로 판단(크기·배율 값은 정상). HEAD의 숨김·재생성 방식도 같은 왕복에서 Region과 모서리가 어긋남을 확인. 모서리 창을 WPF HwndSource에서 DefWindowProc만 쓰는 Win32 레이어드 창으로 교체하고, 본 창 DPI 기준 물리 픽셀 quarter-circle을 RenderTargetBitmap(96 DPI)으로 만들어 UpdateLayeredWindow로 위치·크기·내용을 한 번에 적용. 모서리 창은 WM_DPICHANGED에 반응하지 않으며 크기가 바뀐 모서리는 묶음 이동에서 제외하고 WM_WINDOWPOSCHANGED에서 내용과 함께 갱신. CornerWindowTests를 새 구조 기준(레이어드·소유 관계·DPI별 물리 크기·HWND 재사용·묶음 이동·표시/종료)으로 갱신하고, 배율이 다른 모니터가 있으면 실제 드래그 왕복 3회 후 네 모서리 화면 픽셀(CAPTUREBLT)이 처음과 같은지 비교하도록 추가. 100%↔150% 실모니터 왕복 포함 761개 통과. 앱 빌드 경고·오류 0, 기존 행동 검증 798개 통과. 마우스 드래그·영상 재생 중 육안 확인, 125% 조합, Horizon 미실행.
+
 ## 2026-10-07-12 — 최소·전체 WPF 기능 정의서 동시 관리 및 바깥 문서 정리
 
 - 이유: 최초 외부 제공 범위와 전체 구현 기능을 구분해 유지하고 저장소 바깥의 별도 문서 사본으로 인한 혼동 제거.

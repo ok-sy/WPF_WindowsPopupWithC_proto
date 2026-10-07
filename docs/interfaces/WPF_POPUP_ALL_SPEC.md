@@ -89,7 +89,7 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | 외곽 | BorderThickness 0 / Radius 6 | 고정 외형. FULLSCREEN은 Radius 0 |
 | 일반 팝업 Clip | 실제 본문 크기와 안쪽 반경으로 계산 | 별도 옵션 없음 |
 | VIDEO / VIDEO+QUIZ | AllowsTransparency=false, 내부 WPF Radius 0 | 고정 정책. 작은 모서리 창으로 외곽 곡선 보완 |
-| VIDEO 모서리 이동 | 위치 추적, DPI 변경 후 재생성, 드래그 중 표시 유지 | 별도 옵션 없음. Horizon·다중 DPI 품질 및 CPU 실측은 남아 있음 |
+| VIDEO 모서리 이동 | Win32 레이어드 모서리 창 4개를 본 창 DPI 기준 물리 픽셀로 직접 그림. DPI 변경 시 HWND 재사용·즉시 재배치, 드래그 중 본 창과 묶음 이동. 앱은 PerMonitorV2로 실행 | 별도 옵션 없음. 실제 다중 DPI 모니터·Horizon 품질 및 CPU 실측은 남아 있음 |
 
 ## 4. 팝업 유형별 전체 기능
 
