@@ -118,109 +118,6 @@
 
         </Style>
 
-        <!--
-        상단 X 버튼 스타일
-
-        역할
-        마우스를 올렸을 때 빨간색으로 변하는
-        창 닫기 버튼을 정의한다.
-        -->
-        <Style x:Key="HeaderCloseButtonStyle"
-               TargetType="Button">
-
-            <Setter Property="Width"
-                    Value="48"/>
-
-            <Setter Property="Height"
-                    Value="48"/>
-
-            <Setter Property="HorizontalAlignment"
-                    Value="Right"/>
-
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-
-            <Setter Property="FontSize"
-                    Value="18"/>
-
-            <Setter Property="Background"
-                    Value="Transparent"/>
-
-            <Setter Property="Foreground"
-                    Value="#4B5563"/>
-
-            <Setter Property="BorderThickness"
-                    Value="0"/>
-
-            <Setter Property="Cursor"
-                    Value="Hand"/>
-
-            <Setter Property="Template">
-
-                <Setter.Value>
-
-                    <!--
-                    기본 WPF 버튼 모양 대신
-                    상단 닫기 버튼 모양을 직접 정의한다.
-                    -->
-                    <ControlTemplate TargetType="Button">
-
-                        <Border x:Name="ButtonBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="0,16,0,0">
-
-                            <!--
-                            Button의 Content 값을 표시한다.
-
-                            현재는 Content="✕"가 출력된다.
-                            -->
-                            <ContentPresenter
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"/>
-
-                        </Border>
-
-                        <ControlTemplate.Triggers>
-
-                            <!--
-                            마우스를 버튼 위에 올렸을 때
-                            빨간색 배경과 흰색 글자로 변경한다.
-                            -->
-                            <Trigger Property="IsMouseOver"
-                                     Value="True">
-
-                                <Setter TargetName="ButtonBorder"
-                                        Property="Background"
-                                        Value="#E81123"/>
-
-                                <Setter Property="Foreground"
-                                        Value="White"/>
-
-                            </Trigger>
-
-                            <!--
-                            마우스로 버튼을 누르고 있을 때
-                            배경색을 더 진한 빨간색으로 변경한다.
-                            -->
-                            <Trigger Property="IsPressed"
-                                     Value="True">
-
-                                <Setter TargetName="ButtonBorder"
-                                        Property="Background"
-                                        Value="#C50F1F"/>
-
-                            </Trigger>
-
-                        </ControlTemplate.Triggers>
-
-                    </ControlTemplate>
-
-                </Setter.Value>
-
-            </Setter>
-
-        </Style>
-
         </ResourceDictionary>
     </Window.Resources>
 
@@ -294,7 +191,7 @@
                       Header가 차지하던 공간까지 제거
                     -->
                     <RowDefinition x:Name="HeaderRow"
-                    Height="48"/>
+                    Height="40"/>
 
                     <!--
                     실제 팝업 내용이
@@ -325,7 +222,7 @@
                 -->
                 <Border x:Name="HeaderArea"
                         Grid.Row="0"
-                        Background="White"
+                        Background="Black"
                         CornerRadius="16,16,0,0"
                         MouseLeftButtonDown="Header_MouseLeftButtonDown">
 
@@ -355,25 +252,20 @@
                         -->
                         <TextBlock x:Name="PopupTitleText"
                                    Grid.Column="0"
-                                   Margin="18,0,0,0"
+                                   Margin="18,0,12,0"
                                    VerticalAlignment="Center"
                                    FontSize="17"
                                    FontWeight="SemiBold"
-                                   Foreground="#111827"
+                                   Foreground="White"
+                                   TextTrimming="CharacterEllipsis"
                                    Text="팝업 제목"/>
 
-                        <!--
-                        상단 X 닫기 버튼
-
-                        x:Name을 지정했기 때문에
-                        PopupOptions의 ShowCloseButton 값에 따라
-                        표시하거나 숨길 수 있다.
-                        -->
-                        <Button x:Name="CloseButton"
-                                Grid.Column="1"
-                                Style="{StaticResource HeaderCloseButtonStyle}"
-                                Content="✕"
-                                Click="CloseButton_Click"/>
+                        <!-- 고정 로고: 닫기 동작 없이 표시 -->
+                        <Image x:Name="HeaderLogo" Grid.Column="1"
+                               Source="/popupSample;component/Resources/HeaderLogo.png"
+                               Width="100" Height="24" Margin="0,0,18,0"
+                               Stretch="Uniform" VerticalAlignment="Center"
+                               IsHitTestVisible="False"/>
 
                     </Grid>
 

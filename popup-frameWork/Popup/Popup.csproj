@@ -64,4 +64,7 @@
 		<Using Remove="System.Drawing" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Resources\HeaderLogo.png" />
+  </ItemGroup>
 </Project>

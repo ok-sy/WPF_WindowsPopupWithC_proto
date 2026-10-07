@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+
+## 2026-10-07-02 — feat(wpf): 검은 헤더와 고정 로고 적용
+
+- 이유: 공통 헤더 외형 단순화.
+- 변경: 검은 배경·흰 제목·높이 40과 고정 로고 Resource 적용. 상단 X 제거, Header 높이는 XAML 단일 기준 사용. 로고는 기존 웹 이미지 임시 사용.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, popup-frameWork/Popup/Popup.csproj, popup-frameWork/Popup/Resources/HeaderLogo.png.
+- 검증: 분할 전 WPF 빌드 경고·오류 0. 로고 최종 확정·실환경 표시 확인 미완료.
+- 상태: 구현 요건별 분할 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-07-01 — VIDEO 불투명 창 둥근 모서리를 Region 절단 + 모서리 레이어드 창으로 전환
 
 - 이유: Horizon(VMware) 환경에서 DWM rounded corner가 동작하지 않고, 대안으로 시험한 CreateRoundRectRgn + SetWindowRgn은 픽셀 단위 경계라 곡선 계단이 남음(설계 25 2026-10-07 검증 결과). VIDEO 창 모서리 아래에는 영상이 오지 않고 항상 Header/본문 단색이라는 점을 이용해 AllowsTransparency=false를 유지하면서 일반 팝업과 같은 안티앨리어싱 곡선을 재현.

@@ -225,20 +225,11 @@ namespace Popup.Views.Windows
             }
 
             /*
-             * 상단 X 버튼 표시 여부를 설정한다.
-             */
-            CloseButton.Visibility =
-                _options.ShowCloseButton
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
-
-            /*
              * Header 전체 표시 여부를 적용한다.
              *
              * Visibility만 Collapsed로 변경하면
-             * 제목과 닫기 버튼은 보이지 않지만,
-             * Header 전용 Grid 행 높이 48은 그대로 남을 수 있다.
+             * 제목과 로고는 보이지 않지만,
+             * XAML에서 정의한 Header 행 높이는 그대로 남을 수 있다.
              *
              * 따라서 HeaderArea의 표시 여부와
              * HeaderRow의 높이를 함께 변경한다.
@@ -263,27 +254,14 @@ namespace Popup.Views.Windows
                     : Visibility.Visible;
             /*
              * ShowHeader가 true면
-             * Header가 사용할 높이 48을 유지한다.
+             * XAML에서 정의한 Header 높이를 유지한다.
              *
              * ShowHeader가 false면
              * Header 행 높이를 0으로 만들어
              * Header가 차지하던 빈 공간까지 제거한다.
              */
-            HeaderRow.Height = _options.ShowHeader
-                ? new GridLength(48)
-                : new GridLength(0);
-
-            /*
-             * 상단 X 닫기 버튼 표시 여부를 적용한다.
-             *
-             * Header 전체가 숨겨져 있으면
-             * ShowCloseButton이 true여도 버튼은 표시되지 않는다.
-             */
-            CloseButton.Visibility =
-                _options.ShowHeader && _options.ShowCloseButton
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
+            // 표시 높이는 XAML의 HeaderRow가 단일 기준이다.
+            if (!_options.ShowHeader) HeaderRow.Height = new GridLength(0);
 
             /*
              * Footer 표시 여부를 적용한다.
