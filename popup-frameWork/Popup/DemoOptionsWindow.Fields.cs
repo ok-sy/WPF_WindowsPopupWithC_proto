@@ -60,7 +60,7 @@ namespace Popup
             }
             panel = Group("표시 영역·완료 조건", false);
             Field("showHeader", "헤더 표시", typeof(bool));
-            Field("showCloseButton", "닫기 버튼 표시", typeof(bool));
+            Field("showFooterButton", "Footer 버튼 표시", typeof(bool));
             Field("showFooter", "푸터 표시", typeof(bool));
             Field("showDoNotShowAgain", "다시 보지 않기 표시", typeof(bool));
             Field("hideDays", "숨김 일수 · 비우면 30일", typeof(int?), min: 1);

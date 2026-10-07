@@ -299,7 +299,7 @@ namespace Popup.Views.Windows
                     : Visibility.Collapsed;
 
             FooterCloseButton.Visibility =
-                _options.ShowCloseButton
+                _options.ShowFooterButton
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 

@@ -36,7 +36,7 @@ namespace Popup.Services
                     "maximumWidth": 980,
                     "maximumHeight": 820,
                     "showHeader": true,
-                    "showCloseButton": true,
+                    "showFooterButton": true,
                     "showFooter": true,
                     "showDoNotShowAgain": false,
                     "content": {
@@ -58,7 +58,7 @@ namespace Popup.Services
                     "displayMode": "SEQUENTIAL",
                     "sizeMode": "FIXED",
                     "showHeader": false,
-                    "showCloseButton": true,
+                    "showFooterButton": true,
                     "showFooter": true,
                     "showDoNotShowAgain": true,
                     "content": {
@@ -84,7 +84,7 @@ namespace Popup.Services
                     "maximumWidth": 1200,
                     "maximumHeight": 900,
                     "showHeader": true,
-                    "showCloseButton": true,
+                    "showFooterButton": true,
                     "showFooter": true,
                     "showDoNotShowAgain": false,
                     "allowCloseBeforeComplete": true,
@@ -108,7 +108,7 @@ namespace Popup.Services
                     "maximumWidth": 900,
                     "maximumHeight": 900,
                     "showHeader": false,
-                    "showCloseButton": true,
+                    "showFooterButton": true,
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "교육 만족도 설문",
@@ -301,7 +301,7 @@ namespace Popup.Services
                     "maximumWidth": 900,
                     "maximumHeight": 900,
                     "showHeader": false,
-                    "showCloseButton": true,
+                    "showFooterButton": true,
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "정보보안 교육 평가",
@@ -461,7 +461,7 @@ namespace Popup.Services
             videoQuiz["completionRatio"] = 0.8;
             videoQuiz["allowCloseBeforeComplete"] = true;
             videoQuiz["showFooter"] = true;
-            videoQuiz["showCloseButton"] = true;
+            videoQuiz["showFooterButton"] = true;
             videoQuiz["content"]!["videoEnabled"] = true;
             videoQuiz["content"]!["videoTitle"] = "교육 영상";
             videoQuiz["content"]!["autoPlay"] = false;
@@ -473,7 +473,7 @@ namespace Popup.Services
             linked["popupId"] = "DEMO-FOOTER-LINK";
             linked["title"] = "바로가기 버튼 데모";
             linked["showFooter"] = true;
-            linked["showCloseButton"] = true;
+            linked["showFooterButton"] = true;
             linked["content"]!["footerAction"] = "LINK_AND_CLOSE";
             linked["content"]!["footerLinkUrl"] = "https://example.com/";
             demoPopups.Add(linked);

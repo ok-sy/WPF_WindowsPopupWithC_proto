@@ -54,7 +54,7 @@ namespace Popup.Factories
                 DisplayMode = ConvertPopupDisplayMode(popupDto.DisplayMode),
                 DisplayOrder = popupDto.DisplayOrder,
                 ShowHeader = popupDto.ShowHeader,
-                ShowCloseButton = popupDto.ShowCloseButton,
+                ShowFooterButton = popupDto.ShowFooterButton,
                 ShowFooter = popupDto.ShowFooter,
                 OpenFooterLinkAndClose = GetContentString(popupDto.Content, "footerAction") == "LINK_AND_CLOSE",
                 FooterLinkUrl = GetContentString(popupDto.Content, "footerLinkUrl"),

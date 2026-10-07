@@ -134,8 +134,17 @@ namespace Popup.Dtos
         public bool ShowHeader { get; set; } =
             true;
 
-        public bool ShowCloseButton { get; set; } =
+        public bool ShowFooterButton { get; set; } =
             true;
+
+        // 기존 서버 JSON의 false 값도 유지한다. 새 응답/데모는 showFooterButton을 사용한다.
+        [System.Text.Json.Serialization.JsonPropertyName("showCloseButton")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public bool? LegacyShowCloseButton
+        {
+            get => null;
+            set { if (value.HasValue) ShowFooterButton = value.Value; }
+        }
 
         public bool ShowFooter { get; set; } =
             true;

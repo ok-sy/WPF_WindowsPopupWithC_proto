@@ -50,7 +50,7 @@
 | `displayMode` | `SEQUENTIAL` | 같은 우선순위 그룹 안의 표시 방식 |
 | `displayOrder` | `100` | 숫자가 작을수록 먼저 표시. 같은 숫자는 한 표시 그룹 |
 | `showHeader` | `true` | 공통 Header 표시 |
-| `showCloseButton` | `true` | 닫기 버튼 표시. Header가 없으면 상단 X도 표시되지 않음 |
+| `showFooterButton` | `true` | Footer 버튼 표시(닫기·제출·바로가기). Header에는 고정 로고 표시 |
 | `showFooter` | `true` | Footer 표시 |
 | `showDoNotShowAgain` | `false` | 다시 보지 않기 체크박스 표시. Footer가 있어야 화면에 보임 |
 

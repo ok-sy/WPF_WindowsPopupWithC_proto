@@ -72,7 +72,7 @@ namespace Popup.Models
         public int DisplayOrder { get; set; } = 100;
 
         public bool ShowHeader { get; set; } = true;
-        public bool ShowCloseButton { get; set; } = true;
+        public bool ShowFooterButton { get; set; } = true;
         public bool ShowFooter { get; set; } = true;
         public bool OpenFooterLinkAndClose { get; set; }
         public string FooterLinkUrl { get; set; } = string.Empty;

@@ -3,6 +3,14 @@
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
 
+## 2026-10-07-04 — refactor(wpf): Footer 버튼 표시 옵션 이름 통일
+
+- 이유: 버튼 표시 옵션을 실제 Footer 역할에 맞게 정리.
+- 변경: ShowFooterButton으로 모델·DTO·Factory·Demo 옵션 변경. 기존 서버 showCloseButton JSON 수신 호환 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, popup-frameWork/Popup/Models/PopupOptions.cs, popup-frameWork/Popup/Dtos/PopupResponseDto.cs, popup-frameWork/Popup/Factories/PopupFactory.cs, popup-frameWork/Popup/Services/DemoPopupDataService.cs, popup-frameWork/Popup/DemoOptionsWindow.Fields.cs, popup-frameWork/Popup/Docs/POPUP_OPTION_GUIDE.md.
+- 검증: 분할 전 행동 검증 798건 통과. 서버·웹 옵션 이름은 변경하지 않음.
+- 상태: 구현 요건별 분할 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-07-03 — style(wpf): 팝업 외곽 테두리 제거 및 Radius 6 적용
 
 - 이유: 공통 팝업 외곽 규격 통일.
