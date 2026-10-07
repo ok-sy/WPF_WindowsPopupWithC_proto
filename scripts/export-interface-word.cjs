@@ -130,7 +130,7 @@ body += p('**IMAGE 기본값 구분**\n관리자 신규 등록은 ORIGINAL을 �
 body += p('동영상+퀴즈는 `QUIZ`와 `content.videoEnabled=true`로 저장합니다. 새 기능을 사용할 때 WPF와 서버를 함께 갱신합니다.');
 body += p('SURVEY·QUIZ 미리보기는 세로형 전체 폭 Row·우측 체크 Path와 가로형 공통 Chip, 무채색 상태 및 스크롤 밖 고정 제출 영역을 사용합니다. 실제 컨트롤의 단일/복수 선택·필수 검증·응답 OPTION_ID 계약은 유지합니다.');
 body += p('관리자 미리보기의 예제 문항은 WPF Demo와 동일한 가로/세로·단일/복수·짧은/긴 보기 사례입니다. 예제·응답·로컬 미리보기 점수는 편집 데이터나 서버 결과 API에 저장하지 않습니다. 상세 케이스·검증은 설계 21·22를 참조합니다.');
-body += p('Content·Options 상세 가이드: `popup-frameWork/Popup/Docs/POPUP_OPTION_GUIDE.md`');
+body += p('Content·Options 상세 가이드: `docs/POPUP_OPTION_GUIDE.md`');
 heading('부록 B. 최초 외부 제공 최소 기능 범위', 1, true);
 body += p('이 부록은 최초 제공할 기능 범위입니다. 본문의 전체 구현 계약과 구분하여 읽으세요.', 'Callout');
 markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md'), 'utf8'), true);

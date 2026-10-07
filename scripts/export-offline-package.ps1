@@ -2,7 +2,7 @@
 <#
 [역할 — 설계 14 §2·§3·§4·§7] 폐쇄망 반입 패키지를 소스 기준으로 만든다.
 
-  A. 문서        docs/interfaces, docs/design, db/oracle, api/examples, README, 변경 이력
+  A. 문서        docs 전체(옵션 가이드·설계·인터페이스·검토), db/oracle, api/examples, README, 변경 이력
   B. Server      zero-rule-server — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정된 파일만 (git diff)
   C. Web         zero-rule-web    — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정된 파일만 (git diff)
   D. WPF         popup-frameWork  — 소스만 (bin/obj/publish/*.exe/*.dll/*.pdb 제외)
@@ -42,7 +42,7 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 }
 New-Item -ItemType Directory -Force $OutputRoot | Out-Null
 
-$dirty = (& git status --porcelain -- zero-rule-server zero-rule-web popup-frameWork docs) | Where-Object { $_ }
+$dirty = (& git status --porcelain -- zero-rule-server zero-rule-web popup-frameWork) | Where-Object { $_ }
 if ($dirty) {
     Write-Warning "커밋되지 않은 변경이 있습니다. git diff 기준 목록(B/C)에 반영되지 않을 수 있습니다:"
     $dirty | ForEach-Object { Write-Warning "  $_" }

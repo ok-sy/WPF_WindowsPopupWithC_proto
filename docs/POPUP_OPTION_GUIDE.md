@@ -233,7 +233,7 @@ QUIZ는 다음 기능이 추가된다.
 ## 8. 실제 WPF API 호출 목록
 
 > **설계 18 L-0 (2026-09-28)** — 구 사용자용 API(`/api/popups?userId=`, `/hide`, `/responses`, `/video-progress`, `/events`, `/statuses`) 설명과 해당 `PopupApiService` 메서드는 삭제했다.
-> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.6 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](../../../docs/interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
+> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.6 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
 
 WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 사용자를 식별한다.
 

@@ -13,6 +13,8 @@
 
 ## 변경 이력 기록
 
+- 프로젝트 문서는 저장소 루트 `docs/`에서 통합 관리한다. 설계·TODO는 `docs/design/`, 인터페이스·예제는 `docs/interfaces/`, 검토·측정 가이드는 `docs/reviews/`에 둔다. WPF 내부에 별도 `Docs/`를 만들지 않는다.
+
 이 저장소에서 파일을 수정하는 작업은 변경 이력을 함께 관리한다.
 
 - 코드, 설정, 스크립트, 문서를 수정하면 완료 전에 `version-history/CHANGELOG.md`를 갱신한다.
