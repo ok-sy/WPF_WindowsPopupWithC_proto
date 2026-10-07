@@ -3,6 +3,14 @@
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
 
+## 2026-10-07-05 — fix(wpf): VIDEO 모서리 좌표 및 드래그 표시 보완
+
+- 이유: 모서리 돌출과 드래그 중 사라짐 보완.
+- 변경: 물리 픽셀 영역에 대응하는 quarter-circle Geometry 사용. DPI 적용 후 재생성, 드래그 중 표시·위치 추적 유지, 이동 종료 시 위치만 갱신. VIDEO 불투명 창 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs, docs/design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md.
+- 검증: 분할 전 드래그 숨김 제거 후 WPF 빌드 경고·오류 0. Horizon·다중 DPI·영상 CPU 실측 미실행.
+- 상태: 구현 요건별 분할 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 반입본·배포 미갱신.
+
 ## 2026-10-07-04 — refactor(wpf): Footer 버튼 표시 옵션 이름 통일
 
 - 이유: 버튼 표시 옵션을 실제 Footer 역할에 맞게 정리.

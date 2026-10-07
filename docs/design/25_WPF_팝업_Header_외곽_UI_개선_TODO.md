@@ -1,5 +1,16 @@
 # WPF 팝업 Header / 외곽 UI 개선 TODO
 
+## 2026-10-07 구현 반영 상태
+
+- [x] 공통 외곽 테두리 0, Radius 6, Header 검은색·흰 제목 적용.
+- [x] Header 높이 40을 XAML 단일 기준으로 적용하고 C#은 숨김 시에만 0 적용.
+- [x] 상단 X 제거 및 고정 로고 Resource 표시(기존 웹 clover-text-logo.png 임시 사용).
+- [x] ShowFooterButton으로 WPF·Demo 옵션 변경. 기존 서버 showCloseButton은 DTO 수신 호환 유지.
+- [x] VIDEO 불투명 창·Fullscreen Radius 0 유지. 기존 모서리 레이어드 창에 quarter-circle Geometry 및 DPI 적용 후 재생성 반영. 드래그 중에는 모서리를 표시한 채 위치를 추적하고 종료 시 위치만 갱신.
+- [ ] 로고 최종 확정, Horizon 실화면·대비 배경·다중 모니터 DPI·드래그·영상 CPU 검증.
+
+아래 초기 SetWindowRgn 둥근 Region 항목은 이후 검증 결과와 모서리 창 보완안으로 대체되었으며 실환경 채택 기준은 아직 확인되지 않았다.
+
 ## 목적
 
 팝업 공통 외형을 단순화하고 VIDEO / VIDEO+QUIZ에서도 저사양 PC 성능 개선 상태(`AllowsTransparency=false`)를 유지하면서 일반 팝업과 최대한 동일한 Radius 6 외형을 적용한다.

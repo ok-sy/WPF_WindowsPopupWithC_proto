@@ -70,7 +70,19 @@ namespace Popup.Views.Windows
             Rebuild();
         }
 
-        private void Window_DpiChanged(object sender, DpiChangedEventArgs e) => Rebuild();
+        private void Window_DpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            HideCorners();
+            // WPF가 새 DPI와 제안된 창 위치를 적용한 뒤 같은 좌표로 재생성한다.
+            _window.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() => { if (!_disposed) Rebuild(); }));
+        }
+
+        private void HideCorners()
+        {
+            foreach (var corner in _corners)
+                if (corner != null) ShowWindow(corner.Handle, SwHide);
+        }
 
         private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
@@ -127,22 +139,29 @@ namespace Popup.Views.Windows
             double radius = _radius * ownerScale / cornerScale;
             double thickness = _borderThickness * ownerScale / cornerScale;
 
-            // 일반 팝업과 같은 Border를 크게 그리고 해당 모서리만 보이도록 자른다.
-            double bodySize = size * 4;
-            var body = new Border
+            // HWND의 s×s 물리 픽셀에 정확히 대응하는 quarter-circle을 직접 그린다.
+            // Border의 정렬/레이아웃 반올림이 작은 창의 경계를 넘지 않도록 한다.
+            var geometry = new StreamGeometry();
+            using (var context = geometry.Open())
             {
-                Width = bodySize,
-                Height = bodySize,
-                CornerRadius = new CornerRadius(radius),
-                BorderThickness = new Thickness(thickness),
-                BorderBrush = _borderBrush,
-                Background = isBottom ? _bottomFill : _topFill,
+                context.BeginFigure(new Point(size, 0), true, true);
+                context.LineTo(new Point(size, size), true, false);
+                context.LineTo(new Point(0, size), true, false);
+                context.LineTo(new Point(0, radius), true, false);
+                context.ArcTo(new Point(radius, 0), new Size(radius, radius),
+                    0, false, SweepDirection.Clockwise, true, false);
+            }
+            geometry.Freeze();
+            var path = new System.Windows.Shapes.Path
+            {
+                Data = geometry, Fill = isBottom ? _bottomFill : _topFill,
+                Width = size, Height = size,
+                RenderTransform = new MatrixTransform(
+                    isRight ? -1 : 1, 0, 0, isBottom ? -1 : 1,
+                    isRight ? size : 0, isBottom ? size : 0)
             };
-            Canvas.SetLeft(body, isRight ? size - bodySize : 0);
-            Canvas.SetTop(body, isBottom ? size - bodySize : 0);
-
             var root = new Canvas { Width = size, Height = size, ClipToBounds = true };
-            root.Children.Add(body);
+            root.Children.Add(path);
             corner.RootVisual = root;
             if (corner.CompositionTarget != null)
             {
@@ -155,6 +174,11 @@ namespace Popup.Views.Windows
         {
             if (msg == WmWindowPosChanged)
             {
+                UpdateBounds();
+            }
+            else if (msg == 0x0232) // WM_EXITSIZEMOVE
+            {
+                // 같은 DPI의 이동은 위치만 갱신해 불필요한 HWND 재생성·깜빡임을 피한다.
                 UpdateBounds();
             }
             return IntPtr.Zero;
