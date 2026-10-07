@@ -98,7 +98,7 @@
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,12">
                         <Button DockPanel.Dock="Right" Content="로그 지우기" Margin="12,0,0,0" Padding="10,6" Click="ClearLogButton_Click"/>
-                        <TextBlock Text="결과 전송 로그" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="목록 조회 · 결과 전송 로그" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
                     <Border Grid.Row="1" Background="#F5F6F8" CornerRadius="6" Padding="12" Margin="0,0,0,12">
                         <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 점수와 통과 여부가 표시됩니다." TextWrapping="Wrap" Foreground="#374151"/>

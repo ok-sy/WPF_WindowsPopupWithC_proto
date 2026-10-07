@@ -23,6 +23,14 @@ namespace Popup
     /// </summary>
     public partial class DemoWindow : Window
     {
+        // 화면 표시·복사용. 기본 인코더는 한글 등 비 ASCII를 \uXXXX로 이스케이프하므로 원문 그대로 쓴다.
+        // TextBox에만 표시하고 HTML/스크립트에 넣지 않으므로 완화된 이스케이프를 사용한다.
+        private static readonly JsonSerializerOptions DisplayJsonOptions = new()
+        {
+            WriteIndented = true,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
         private static readonly JsonSerializerOptions LogJsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -89,6 +97,7 @@ namespace Popup
                 _isLoading = true;
                 await _resultQueue.FlushAsync();
                 WpfPopupListResponseDto response = await _gateway.GetWpfPopupsAsync(popupType);
+                LogListQuery(popupType, response);
                 if (response.Popups.Count == 0)
                 {
                     MessageBox.Show(
@@ -105,7 +114,6 @@ namespace Popup
                     options.EnqueueResultAsync = _resultQueue.EnqueueAsync;
                     options.FlushResultsInBackground = _resultQueue.FlushInBackground;
                 }
-                AppendLog($"--- 목록 조회: {string.Join(", ", response.Popups.Select(p => p.PopupId))} ---");
                 _popupManager.ShowRange(popupOptions);
             }
             catch (Exception exception)
@@ -137,6 +145,30 @@ namespace Popup
             });
         }
 
+        /// <summary>
+        /// 목록 조회도 결과 전송처럼 로그 항목으로 남긴다. Header·Footer·폰트·content 등 서버가 내려주는
+        /// 팝업 설정은 목록 응답에만 있으므로 응답 탭에서 확인·복사할 수 있게 한다.
+        /// 요청은 실제 모드(PopupApiService)와 같은 GET /api/wpf/popups이며 본문이 없다.
+        /// Demo에는 인증 토큰이 없어 Authorization·X-Dev-User-Id 헤더는 기록하지 않는다.
+        /// 샘플 유형 선택은 Demo 화면 전용 필터라 요청 JSON이 아니라 로그 줄에만 표시한다.
+        /// </summary>
+        private void LogListQuery(string? popupType, WpfPopupListResponseDto response)
+        {
+            string request = JsonSerializer.Serialize(new
+            {
+                method = "GET",
+                url = "/api/wpf/popups",
+                headers = new Dictionary<string, string> { [ClientVersion.HeaderName] = ClientVersion.Value },
+                body = (object?)null
+            });
+            int index = ResultLogList.Items.Count;
+            _resultDetails[index] = (request, JsonSerializer.Serialize(response, LogJsonOptions));
+            string ids = response.Popups.Count == 0 ? "표시할 팝업 없음" : string.Join(", ", response.Popups.Select(p => p.PopupId));
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] 목록 조회{(popupType == null ? string.Empty : $" ({popupType})")} → {ids}");
+            ResultLogList.SelectedIndex = index;
+            DetailTabs.SelectedIndex = 1;
+        }
+
         private void ResultLogList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_resultDetails.TryGetValue(ResultLogList.SelectedIndex, out var details))
@@ -156,7 +188,7 @@ namespace Popup
         private static string FormatJson(string json)
         {
             using JsonDocument document = JsonDocument.Parse(json);
-            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(document.RootElement, DisplayJsonOptions);
         }
 
         private void CopyJsonButton_Click(object sender, RoutedEventArgs e)
