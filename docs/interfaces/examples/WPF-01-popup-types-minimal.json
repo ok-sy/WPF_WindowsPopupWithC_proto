@@ -1,0 +1,215 @@
+{
+  "serverTime": "2026-10-07T23:00:00+09:00",
+  "userId": "E1001",
+  "pollingIntervalSeconds": 1800,
+  "popups": [
+    {
+      "popupId": "TEXT-001",
+      "popupType": "TEXT",
+      "title": "서비스 안내",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "questions": [],
+      "content": {
+        "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+        "showPlainText": true,
+        "contentTitle": "점검 공지",
+        "showContentHeader": true,
+        "description": "안내 내용을 확인해 주세요."
+      }
+    },
+    {
+      "popupId": "IMAGE-001",
+      "popupType": "IMAGE",
+      "title": "교육 안내",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "questions": [],
+      "content": {
+        "imageUrl": "https://example.com/media/training.png",
+        "imageSizeMode": "ORIGINAL"
+      }
+    },
+    {
+      "popupId": "VIDEO-001",
+      "popupType": "VIDEO",
+      "title": "보안 교육",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "completionRatio": 0.8,
+      "questions": [],
+      "content": {
+        "videoUrl": "https://example.com/media/security.mp4",
+        "showControls": true,
+        "defaultVolume": 0.7,
+        "allowFullScreen": true
+      }
+    },
+    {
+      "popupId": "SURVEY-001",
+      "popupType": "SURVEY",
+      "title": "교육 만족도 설문",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "questions": [
+        {
+          "questionId": 101,
+          "title": "교육 내용을 이해하기 쉬웠나요?",
+          "questionType": "SINGLE_CHOICE",
+          "isRequired": true,
+          "isScored": false,
+          "optionLayout": "VERTICAL",
+          "options": [
+            {
+              "optionId": 1001,
+              "value": "YES",
+              "text": "네"
+            },
+            {
+              "optionId": 1002,
+              "value": "NO",
+              "text": "아니요"
+            }
+          ]
+        },
+        {
+          "questionId": 102,
+          "title": "추가 의견을 작성해 주세요.",
+          "questionType": "TEXT",
+          "isRequired": false,
+          "isScored": false,
+          "optionLayout": "VERTICAL",
+          "options": []
+        }
+      ],
+      "content": {
+        "surveyTitle": "교육 만족도 설문",
+        "description": "필수 문항에 응답한 후 제출해 주세요."
+      }
+    },
+    {
+      "popupId": "QUIZ-001",
+      "popupType": "QUIZ",
+      "title": "보안 확인 퀴즈",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "passingScore": 80,
+      "questions": [
+        {
+          "questionId": 201,
+          "title": "안전한 연결 방식은 무엇인가요?",
+          "questionType": "SINGLE_CHOICE",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 100,
+          "optionLayout": "VERTICAL",
+          "options": [
+            {
+              "optionId": 2001,
+              "value": "HTTPS",
+              "text": "HTTPS",
+              "isCorrect": true
+            },
+            {
+              "optionId": 2002,
+              "value": "HTTP",
+              "text": "HTTP",
+              "isCorrect": false
+            }
+          ]
+        }
+      ],
+      "content": {
+        "surveyTitle": "보안 확인 퀴즈",
+        "description": "80점 이상 획득해야 합니다.",
+        "videoEnabled": false
+      }
+    },
+    {
+      "popupId": "VIDEO-QUIZ-001",
+      "popupType": "QUIZ",
+      "title": "영상 교육 및 확인 퀴즈",
+      "displayMode": "SEQUENTIAL",
+      "displayOrder": 100,
+      "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
+      "showHeader": true,
+      "showFooterButton": true,
+      "showFooter": true,
+      "showDoNotShowAgain": false,
+      "completionRatio": 0.8,
+      "passingScore": 80,
+      "questions": [
+        {
+          "questionId": 301,
+          "title": "안전한 연결 방식은 무엇인가요?",
+          "questionType": "SINGLE_CHOICE",
+          "isRequired": true,
+          "isScored": true,
+          "questionScore": 100,
+          "optionLayout": "VERTICAL",
+          "options": [
+            {
+              "optionId": 3001,
+              "value": "HTTPS",
+              "text": "HTTPS",
+              "isCorrect": true
+            },
+            {
+              "optionId": 3002,
+              "value": "HTTP",
+              "text": "HTTP",
+              "isCorrect": false
+            }
+          ]
+        }
+      ],
+      "content": {
+        "videoEnabled": true,
+        "videoUrl": "https://example.com/media/security.mp4",
+        "videoTitle": "보안 교육",
+        "showControls": true,
+        "defaultVolume": 0.7,
+        "allowFullScreen": true,
+        "surveyTitle": "영상 확인 퀴즈",
+        "description": "영상의 80% 이상을 시청한 뒤 퀴즈에 응답해 주세요."
+      }
+    }
+  ]
+}
