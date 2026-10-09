@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-08-01 — TODO27 영상 진행바 SEEK ON/OFF 계획
+
+- 이유: 영상 재생 위치 변경 허용 여부를 설정으로 제어하면서 진행률 표시와 기존 재생 기능을 유지할 필요.
+- 변경: content.allowSeek(기본 true), OFF에서 진행바 클릭·드래그·키보드 탐색 차단, 로컬/HTTP 및 VIDEO+QUIZ/전체화면 공통 정책과 회귀 검증 TODO 작성. 창 이동은 변경 범위에서 제외.
+- 주요 파일: docs/design/27_VIDEO_SEEK_ON_OFF_TODO.md.
+- 검증: main 4a90327의 진행바 탐색 핸들러와 HTML5 seek 명령 경로 확인, 문서 diff 검사. 제품 코드 변경·빌드·Windows 검증 미실행.
+- 상태: 문서 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인. 구현·배포 미실행.
+
 ## 2026-10-07-13 — TODO26 VIDEO 모서리 창 DPI 이동 동기화
 
 - 이유: VIDEO 팝업을 배율이 다른 모니터로 드래그할 때 모서리 창 4개와 본 창이 어긋나는 현상 확인. manifest가 없어 앱이 System-aware로 실행되어 DWM이 본 창과 모서리 창을 HWND별로 서로 다른 시점에 확대했고, PerMonitorV2에서도 기존 코드는 본 창 DPI 변경 시 모서리를 숨긴 뒤 Loaded 우선순위에서 HWND를 재생성하고 모서리 자체 WM_DPICHANGED는 OS 권장 rect로 이동해 어긋남이 남는 구조.
