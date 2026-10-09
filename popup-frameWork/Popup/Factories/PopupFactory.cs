@@ -173,7 +173,8 @@ namespace Popup.Factories
                 contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
-                contentDto.ShowBottomDescription);
+                contentDto.ShowBottomDescription,
+                contentDto.TextBlocks);
         }
 
         private static FrameworkElement CreateImagePopupView(JsonElement contentJson)

@@ -100,7 +100,8 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PlainText | 지원 | 본문 사용 시 Y | `""` | 일반 문자열 본문 |
+| PlainText | 지원 | 본문 사용 시 Y | `""` | 일반 문자열 본문. TextBlocks가 있으면 서버 파생 값 |
+| TextBlocks | 지원 | N | 없음 | 문단·Run 서식 본문(굵게·기울임·밑줄, 허용 색·크기·글꼴, 문단 정렬). 있으면 PlainText 대신 표시. 상세는 인터페이스 계약 8.1 |
 | ShowPlainText | 지원 | N | `true` | 본문 영역 표시 |
 | ContentTitle / Description | 지원 | N | `""` | 콘텐츠 내부 제목·설명 |
 | ShowContentHeader | 지원 | N | `true` | 내부 제목 영역 표시 |

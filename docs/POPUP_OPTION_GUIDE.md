@@ -113,7 +113,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `contentTitle` | string | 콘텐츠 내부 제목 |
 | `description` | string | 콘텐츠 제목 아래 설명 |
 | `showContentHeader` | bool | 콘텐츠 제목/설명 영역 사용 여부 |
-| `plainText` | string | 일반 텍스트 본문 |
+| `plainText` | string | 일반 텍스트 본문. `textBlocks`가 있으면 서버가 서식 본문에서 만든 값 |
+| `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시 |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
 | `highlightText` | string | 강조 문구 |
 | `showHighlight` | bool | 강조 영역 표시 여부. 없으면 false |

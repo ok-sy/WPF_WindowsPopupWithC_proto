@@ -40,6 +40,11 @@ namespace Popup
                 + $"표시 방식: {popup.DisplayMode} · 순서 {popup.DisplayOrder}";
             if (popup.PopupType == "IMAGE")
                 ScenarioSummaryText.Text += "\n이미지: " + popup.Content.GetProperty("imageSizeMode").GetString();
+            // [설계 28] TEXT 샘플은 서식 본문 사용 여부를 함께 보여 준다.
+            if (popup.PopupType == "TEXT")
+                ScenarioSummaryText.Text += "\n본문: " + (popup.Content.TryGetProperty("textBlocks", out var textBlocks)
+                    && textBlocks.ValueKind == System.Text.Json.JsonValueKind.Array
+                    ? $"서식 본문 {textBlocks.GetArrayLength()}문단" : "일반 텍스트");
             // [설계 27] 영상 샘플은 재생 위치 변경(Seek) 허용 여부를 함께 보여 준다. 생략 시 허용.
             bool hasVideo = popup.PopupType == "VIDEO" || (popup.Content.TryGetProperty("videoEnabled", out var videoEnabled)
                 && videoEnabled.ValueKind == System.Text.Json.JsonValueKind.True);

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Popup.Dtos;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -15,7 +18,9 @@ namespace Popup.Views.Contents
         public void ApplyBodyFontSize(double fontSize)
         {
             double lineHeight = Math.Round(fontSize * 1.6);
-            foreach (TextBlock textBlock in new[] { ContentDescriptionText, PlainTextBlock, HighlightTextBlock, BottomDescriptionText })
+            // [설계 28] 서식 본문 문단도 기본 크기를 따른다. 구간에 지정한 크기(Run.FontSize)는 그대로 유지된다.
+            foreach (TextBlock textBlock in new[] { ContentDescriptionText, PlainTextBlock, HighlightTextBlock, BottomDescriptionText }
+                         .Concat(RichTextPanel.Children.OfType<TextBlock>()))
             {
                 textBlock.FontSize = fontSize;
                 textBlock.LineHeight = lineHeight;
@@ -52,7 +57,8 @@ namespace Popup.Views.Contents
             bool showContentHeader,
             bool showPlainText,
             string plainText,
-            bool showBottomDescription)
+            bool showBottomDescription,
+            IReadOnlyList<PopupTextBlockDto>? textBlocks = null)
             {
                 /*
                  * TextPopupView.xaml을 읽어서
@@ -81,6 +87,18 @@ namespace Popup.Views.Contents
                 PlainTextBlock.Visibility = showPlainText
                     ? Visibility.Visible
                     : Visibility.Collapsed;
+
+                /*
+                 * [설계 28] 서식 본문이 있으면 문단·Run으로 표시하고 일반 본문은 숨긴다.
+                 * 서식 본문이 없는 기존 데이터는 위 plainText 표시를 그대로 쓴다.
+                 */
+                List<TextBlock> paragraphs = PopupRichText.CreateParagraphs(textBlocks, (Style)FindResource("BodyTextStyle"));
+                if (paragraphs.Count > 0)
+                {
+                    foreach (TextBlock paragraph in paragraphs) RichTextPanel.Children.Add(paragraph);
+                    RichTextPanel.Visibility = PlainTextBlock.Visibility;
+                    PlainTextBlock.Visibility = Visibility.Collapsed;
+                }
 
                 HighlightTextBlock.Text = highlightText;
                 HighlightContainer.Visibility = showHighlight

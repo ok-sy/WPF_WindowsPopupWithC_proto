@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.6
 - 최신화: 2026-10-09 (KST)
+- 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
 - 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
 - 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
 - 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
@@ -375,6 +376,9 @@ BOTTOM_RIGHT
   "description": "공지 내용을 확인해 주세요.",
   "showContentHeader": true,
   "plainText": "서비스 점검 안내입니다.",
+  "textBlocks": [
+    { "alignment": "LEFT", "runs": [ { "text": "서비스 " }, { "text": "점검", "bold": true, "color": "#DC2626" }, { "text": " 안내입니다." } ] }
+  ],
   "showPlainText": true,
   "highlightText": "작업 중인 내용을 저장해 주세요.",
   "showHighlight": true,
@@ -396,7 +400,8 @@ BOTTOM_RIGHT
 | contentTitle | string | 선택 | `""` | 콘텐츠 내부 제목 |
 | description | string | 선택 | `""` | 콘텐츠 설명 |
 | showContentHeader | boolean | 선택 | `true` | 콘텐츠 제목/설명 영역 표시 여부 |
-| plainText | string | 선택 | `""` | 본문 |
+| plainText | string | 선택 | `""` | 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열 |
+| textBlocks | array | 선택 | 없음 | 서식 본문. 있으면 plainText 대신 표시(아래 표) |
 | showPlainText | boolean | 선택 | `true` | 본문 표시 여부 |
 | highlightText | string | 선택 | `""` | 강조 문구 |
 | showHighlight | boolean | 선택 | `false` | 강조 영역 표시 여부 |
@@ -405,6 +410,24 @@ BOTTOM_RIGHT
 | showBottomDescription | boolean | 선택 | `false` | 하단 설명 영역 표시 |
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
+
+### textBlocks (서식 본문, 설계 28)
+
+`textBlocks`가 있으면 WPF는 `plainText` 대신 문단·Run 서식 본문을 표시한다. 없으면 기존처럼 `plainText`를 표시한다.
+서버는 저장 시 `textBlocks`를 검증하고 `plainText`를 `textBlocks`에서 다시 만들어 저장한다(클라이언트가 보낸 plainText는 사용하지 않음). HTML은 저장·전달하지 않는다.
+
+| 필드 | 형식 | 필수 여부 | 허용 값 | 설명 |
+|---|---|---|---|---|
+| textBlocks[] | array | 선택 | 최대 500문단 | 문단 목록. 문단 사이는 줄바꿈 |
+| textBlocks[].alignment | string | 선택 | `LEFT`(기본)·`CENTER`·`RIGHT` | 문단 정렬 |
+| textBlocks[].runs[] | array | O | 전체 최대 2000개 | 같은 서식의 글자 묶음. 빈 배열 = 빈 문단 |
+| runs[].text | string | O | 빈 값 불가, `\n`·`\t` 외 제어 문자 불가 | 글자. `\n`은 문단 내부 줄바꿈 |
+| runs[].bold / italic / underline | boolean | 선택 | `true`·`false` | 굵게·기울임·밑줄 |
+| runs[].color | string | 선택 | `#111827` `#6B7280` `#DC2626` `#EA580C` `#CA8A04` `#16A34A` `#2563EB` `#7C3AED` | 글자 색 |
+| runs[].size | number | 선택 | 12·14·16·18·20·24·28·32 (px) | 글자 크기. 없으면 bodyFontSize·기본 크기 |
+| runs[].font | string | 선택 | `MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG` | 글꼴 ID. PC에 없으면 대체 글꼴 |
+
+본문 전체(파생 plainText)는 20000자 이하이다. 허용 밖 키·값은 저장 API가 거부하며, WPF는 허용 밖 서식 값을 무시하고 글자만 표시한다. 1차 적용 대상은 TEXT 본문뿐이며 다른 유형의 content에 textBlocks를 넣으면 저장을 거부한다.
 
 ---
 

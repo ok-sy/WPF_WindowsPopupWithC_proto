@@ -157,6 +157,9 @@ namespace Popup
                     throw new ArgumentException("일반 이미지의 창 크기는 고정 또는 전체화면을 선택하세요. 이미지 탭의 너비·높이를 사용합니다.");
                 if (mode != "FIT_TO_IMAGE") content.Remove("keepAspectRatio");
             }
+            // [설계 28] 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
+            if (draft["popupType"]!.GetValue<string>() == "TEXT" && content["textBlocks"] is JsonArray textBlocks)
+                content["plainText"] = ValidateTextBlocks(textBlocks);
             // Questions live at the top level in the current contract.
             content.Remove("questions"); content.Remove("passingScore");
         }
@@ -169,6 +172,7 @@ namespace Popup
                 if (videoSection && key == "description") continue; // Combined quiz and video share this description.
                 if (key is "questionId" or "optionId" or "options") continue;
                 if (!quiz && key is "isScored" or "questionScore" or "correctAnswer" or "answerMatchMode" or "isCorrect") continue;
+                if (key == "textBlocks") { AddTextBlocksField(panel, target, Labels.GetValueOrDefault(key, property.Name)); continue; }
                 string[]? choices = key switch
                 {
                     "imageSizeMode" => new[] { "ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL" },
@@ -180,6 +184,83 @@ namespace Popup
                 AddField(panel, target, key, Labels.GetValueOrDefault(key, property.Name), property.PropertyType,
                     choices, min, key == "defaultVolume" ? 1 : null, property.PropertyType == typeof(string) && choices == null);
             }
+        }
+
+        /*
+         * [설계 28] Demo는 서식 편집기 대신 textBlocks JSON을 직접 편집한다. 빈 값이면 서식 본문을 쓰지 않는다.
+         */
+        private void AddTextBlocksField(StackPanel panel, JsonObject target, string label)
+        {
+            var row = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
+            panel.Children.Add(row);
+            _fieldRows[(target, "textBlocks")] = row;
+            row.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6), TextWrapping = TextWrapping.Wrap });
+            row.Children.Add(new TextBlock
+            {
+                Text = "문단: { alignment: LEFT|CENTER|RIGHT, runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
+                    + "색 " + string.Join(" ", Popup.Views.Contents.PopupRichText.Colors) + " · 크기 "
+                    + string.Join(" ", Popup.Views.Contents.PopupRichText.Sizes) + " · 글꼴 " + string.Join(" ", Popup.Views.Contents.PopupRichText.Fonts.Keys),
+                TextWrapping = TextWrapping.Wrap, Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 6),
+            });
+            var text = new TextBox
+            {
+                Text = target["textBlocks"] is JsonArray array ? array.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }) : "",
+                Padding = new Thickness(8), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Malgun Gothic"),
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MinHeight = 120, MaxHeight = 280,
+            };
+            row.Children.Add(text);
+            _inputs[(target, "textBlocks")] = text;
+            _readFields.Add(() =>
+            {
+                if (!row.IsEnabled) return;
+                string input = text.Text.Trim();
+                if (input.Length == 0) { target.Remove("textBlocks"); return; }
+                JsonNode? node;
+                try { node = JsonNode.Parse(input); }
+                catch (JsonException) { throw new ArgumentException("서식 본문: JSON 형식이 올바르지 않습니다."); }
+                if (node is not JsonArray) throw new ArgumentException("서식 본문: 문단 배열이어야 합니다.");
+                target["textBlocks"] = node;
+            });
+        }
+
+        /* 서버 PopupRichText.validateAndDerivePlainText와 같은 규칙. 통과하면 파생 plainText를 돌려준다. */
+        internal static string ValidateTextBlocks(JsonArray blocks)
+        {
+            var plain = new System.Text.StringBuilder();
+            int runs = 0;
+            if (blocks.Count > 500) throw new ArgumentException("서식 본문: 문단은 500개 이하여야 합니다.");
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                if (blocks[i] is not JsonObject block || block.Any(p => p.Key is not ("alignment" or "runs")))
+                    throw new ArgumentException("서식 본문: 문단에는 alignment, runs만 사용할 수 있습니다.");
+                if (block["alignment"] is JsonNode alignment && alignment.GetValueKind() != JsonValueKind.Null
+                    && !(alignment.GetValueKind() == JsonValueKind.String && alignment.GetValue<string>() is "LEFT" or "CENTER" or "RIGHT"))
+                    throw new ArgumentException("서식 본문: 정렬은 LEFT, CENTER, RIGHT 중 하나여야 합니다.");
+                if (block["runs"] is not JsonArray runArray) throw new ArgumentException("서식 본문: runs는 배열이어야 합니다.");
+                if (i > 0) plain.Append('\n');
+                foreach (JsonNode? runNode in runArray)
+                {
+                    if (++runs > 2000) throw new ArgumentException("서식 본문: 구간은 2000개 이하여야 합니다.");
+                    if (runNode is not JsonObject run || run.Any(p => p.Key is not ("text" or "bold" or "italic" or "underline" or "color" or "size" or "font")))
+                        throw new ArgumentException("서식 본문: 구간에 허용되지 않은 항목이 있습니다.");
+                    if (run["text"] is not JsonValue textValue || textValue.GetValueKind() != JsonValueKind.String || textValue.GetValue<string>().Length == 0)
+                        throw new ArgumentException("서식 본문: 구간 text는 빈 값이 아닌 문자열이어야 합니다.");
+                    string text = textValue.GetValue<string>();
+                    if (text.Any(c => c < 0x20 && c != '\n' && c != '\t')) throw new ArgumentException("서식 본문: 사용할 수 없는 제어 문자가 있습니다.");
+                    foreach (string flag in new[] { "bold", "italic", "underline" })
+                        if (run[flag] is JsonNode f && f.GetValueKind() is not (JsonValueKind.True or JsonValueKind.False))
+                            throw new ArgumentException($"서식 본문: {flag}는 true/false여야 합니다.");
+                    if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.Colors.Contains(color.GetValue<string>())))
+                        throw new ArgumentException("서식 본문: 허용되지 않은 글자 색입니다.");
+                    if (run["size"] is JsonNode size && !(size.GetValueKind() == JsonValueKind.Number && Popup.Views.Contents.PopupRichText.Sizes.Contains(size.GetValue<double>())))
+                        throw new ArgumentException("서식 본문: 허용되지 않은 글자 크기입니다.");
+                    if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.Fonts.ContainsKey(font.GetValue<string>())))
+                        throw new ArgumentException("서식 본문: 허용되지 않은 글꼴입니다.");
+                    plain.Append(text);
+                }
+            }
+            if (plain.Length > 20000) throw new ArgumentException("서식 본문: 본문은 20000자 이하여야 합니다.");
+            return plain.ToString();
         }
 
         private void UpdateFieldAvailability()

@@ -119,6 +119,11 @@
                        TextWrapping="Wrap"
                        Visibility="Collapsed"/>
 
+            <!-- [설계 28] 서식 본문(textBlocks). 문단마다 TextBlock을 넣으며, 있으면 PlainTextBlock 대신 표시한다. -->
+            <StackPanel x:Name="RichTextPanel"
+                        Margin="0,0,0,16"
+                        Visibility="Collapsed"/>
+
             <Border x:Name="HighlightContainer"
                     Margin="0,16,0,0"
                     Padding="14"

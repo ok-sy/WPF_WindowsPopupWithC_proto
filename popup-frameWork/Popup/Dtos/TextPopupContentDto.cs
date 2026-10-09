@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Popup.Dtos
 {
     public class TextPopupContentDto
@@ -6,6 +8,8 @@ namespace Popup.Dtos
         public string Description { get; set; } = string.Empty;
         public bool ShowContentHeader { get; set; } = true;
         public string PlainText { get; set; } = string.Empty;
+        // [설계 28] 서식 본문. 있으면 PlainText 대신 표시하고, 없으면(기존 데이터) PlainText를 표시한다.
+        public List<PopupTextBlockDto>? TextBlocks { get; set; }
         public bool ShowPlainText { get; set; } = true;
         public string HighlightText { get; set; } = string.Empty;
         // [설계 18 L-4 — C-23] 표시 플래그 도입 전 행용 null fallback(문구가 있으면 표시)을 삭제했다.

@@ -60,6 +60,7 @@
 |---|---|---:|---|---|
 | PlainText | 지원 | Y | `""` | 일반 본문 텍스트 |
 | ShowPlainText | 지원 | N | `true` | PlainText 표시 여부 |
+| TextBlocks | 미제공 | N | 없음 | 서식 본문. 최소 제공 범위에서는 PlainText만 사용 |
 | ContentTitle | 지원 | N | `""` | TEXT 콘텐츠 내부 제목 |
 | ShowContentHeader | 지원 | N | `true` | 콘텐츠 내부 제목 영역 표시 |
 | Description | 지원 | N | `""` | 콘텐츠 설명 |
