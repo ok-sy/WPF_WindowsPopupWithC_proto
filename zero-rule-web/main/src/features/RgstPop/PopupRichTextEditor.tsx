@@ -1,8 +1,10 @@
 // @ts-nocheck — CKEditor 커스텀 빌드는 타입 선언이 없다(CommonCKEditor와 동일).
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography, type PopoverPosition } from '@mui/material';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
+import PopupRichTextMenu from './PopupRichTextMenu';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
+import { applyFormat, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
 
 const CKEditor = dynamic(() => import('@ckeditor/ckeditor5-react').then((m) => m.CKEditor), { ssr: false });
 
@@ -25,6 +27,37 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [initialHtml] = useState(() => blocksToHtml(initialBlocks));
+  /* [설계 28 §11] 우클릭·'서식' 버튼 서식 메뉴 */
+  const [menuPosition, setMenuPosition] = useState<PopoverPosition | null>(null);
+  const [formatState, setFormatState] = useState<FormatState | null>(null);
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
+  const detachRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => detachRef.current?.(), []);
+
+  const openMenu = (position: PopoverPosition) => {
+    const editor = editorRef.current;
+    if (!editor || disabledRef.current) return;
+    // 메뉴를 열기 전 선택 상태를 읽는다. 선택 범위는 편집기 모델에 그대로 남아 적용 대상이 된다.
+    setFormatState(readFormatState(editor));
+    setMenuPosition(position);
+  };
+  const closeMenu = () => {
+    setMenuPosition(null);
+    // Esc·바깥 클릭으로 닫아도 원래 선택 범위·커서로 돌아간다.
+    editorRef.current?.editing.view.focus();
+  };
+  const applyMenu = (action: FormatAction) => {
+    if (editorRef.current) applyFormat(editorRef.current, action);
+  };
+  /* 키보드(메뉴 키·Shift+F10)로 연 경우 마우스 좌표가 없으므로 커서·선택 위치 아래에 연다. */
+  const caretPosition = (fallback: HTMLElement): PopoverPosition => {
+    const selection = window.getSelection();
+    const rect = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).getBoundingClientRect() : null;
+    if (rect && (rect.width > 0 || rect.height > 0)) return { top: rect.bottom + 4, left: rect.left };
+    const box = fallback.getBoundingClientRect();
+    return { top: box.top + 24, left: box.left + 16 };
+  };
 
   useEffect(() => {
     if (typeof document !== 'undefined') setEditor(() => require('@cp949/ckeditor5-custom-build'));
@@ -41,7 +74,16 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
 
   return (
     <Box sx={{ opacity: disabled ? 0.6 : 1 }}>
-      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="caption" color="text.secondary">{label} · 글자를 선택하고 우클릭하면 서식 메뉴가 열립니다</Typography>
+        <Button size="small" disabled={disabled} aria-haspopup="menu"
+          // 버튼을 눌러도 편집기의 선택 범위가 풀리지 않게 한다.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={(event) => {
+            const box = event.currentTarget.getBoundingClientRect();
+            openMenu({ top: box.bottom + 4, left: box.left });
+          }}>서식</Button>
+      </Stack>
       <Box ref={toolbarRef} className="ck-reset_all" sx={{ border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0' }} />
       <Box sx={{ border: '1px solid #c4c4c4', borderRadius: '0 0 4px 4px', minHeight: 140, '& .ck-editor__editable': { minHeight: 140, px: 1.5 } }}>
         {Editor && (
@@ -57,6 +99,16 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
                 container.appendChild(editor.ui.view.toolbar.element);
               }
               applyReadOnly(editor, Boolean(disabled));
+              // 서식 편집 영역 안에서만 사용자 정의 메뉴를 쓰고, Shift+우클릭은 브라우저 기본 메뉴(복사·붙여넣기 등)를 연다.
+              const editable: HTMLElement = editor.ui.getEditableElement();
+              const onContextMenu = (event: MouseEvent) => {
+                if (event.shiftKey || disabledRef.current) return;
+                event.preventDefault();
+                const fromKeyboard = event.button !== 2 && event.clientX === 0 && event.clientY === 0;
+                openMenu(fromKeyboard ? caretPosition(editable) : { top: event.clientY, left: event.clientX });
+              };
+              editable.addEventListener('contextmenu', onContextMenu);
+              detachRef.current = () => editable.removeEventListener('contextmenu', onContextMenu);
             }}
             onChange={(_, editor) => {
               const blocks = htmlToBlocks(editor.getData());
@@ -65,6 +117,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
           />
         )}
       </Box>
+      <PopupRichTextMenu position={menuPosition} state={formatState} onApply={applyMenu} onClose={closeMenu} />
     </Box>
   );
 }
