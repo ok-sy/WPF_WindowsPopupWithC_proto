@@ -27,12 +27,13 @@ export const RICH_COLORS = [
   { color: '#2563EB', label: '파랑' }, { color: '#7C3AED', label: '보라' },
 ];
 export const RICH_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
-/* CKEditor는 공백이 있는 글꼴명을 따옴표로 감싸지 않으면 오류 없이 무시한다(설계 28 §9.3). */
+/* css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
+ * 정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다(설계 28 §9.3). */
 export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
   { id: 'MALGUN_GOTHIC', css: "'맑은 고딕', 'Malgun Gothic', sans-serif", label: '맑은 고딕' },
-  { id: 'GULIM', css: "'굴림', Gulim, sans-serif", label: '굴림' },
-  { id: 'DOTUM', css: "'돋움', Dotum, sans-serif", label: '돋움' },
-  { id: 'BATANG', css: "'바탕', Batang, serif", label: '바탕' },
+  { id: 'GULIM', css: '굴림, Gulim, sans-serif', label: '굴림' },
+  { id: 'DOTUM', css: '돋움, Dotum, sans-serif', label: '돋움' },
+  { id: 'BATANG', css: '바탕, Batang, serif', label: '바탕' },
 ];
 /** 서버와 같은 색 규칙: 대문자 #RRGGBB. */
 export const isAllowedColor = (value: unknown): value is string =>
