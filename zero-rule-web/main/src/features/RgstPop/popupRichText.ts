@@ -1,7 +1,8 @@
 /*
  * [설계 28] TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
  * 저장·전달 기준은 문단·Run JSON이며 HTML은 CKEditor 입출력에서만 다룬다.
- * 허용 값은 서버 PopupRichText.java, WPF PopupRichText.cs와 같아야 한다.
+ * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java, WPF PopupRichText.cs와 같아야 한다.
+ * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
 export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
 export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
@@ -33,6 +34,9 @@ export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
   { id: 'DOTUM', css: "'돋움', Dotum, sans-serif", label: '돋움' },
   { id: 'BATANG', css: "'바탕', Batang, serif", label: '바탕' },
 ];
+/** 서버와 같은 색 규칙: 대문자 #RRGGBB. */
+export const isAllowedColor = (value: unknown): value is string =>
+  typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value);
 const ALIGN_FROM_CSS: Record<string, RichAlignment> = { left: 'LEFT', center: 'CENTER', right: 'RIGHT' };
 const FLAG_KEYS = ['bold', 'italic', 'underline', 'color', 'size', 'font'] as const;
 /* 글자는 보존하고 일반 문단으로 바꾸는 블록. 그 외 블록(표·이미지 등)은 제거한다. */
@@ -87,7 +91,8 @@ export function htmlToBlocks(html: string): RichBlock[] {
       else if (tag === 'U') next.underline = true;
       if (element.style) {
         const color = element.style.color ? toHexColor(element.style.color) : '';
-        if (color && RICH_COLORS.some((item) => item.color === color)) next.color = color;
+        // 붙여넣은 색(rgb·hsl은 브라우저가 rgb로 계산)도 hex로 바꿔 유지한다.
+        if (isAllowedColor(color)) next.color = color;
         const size = element.style.fontSize;
         if (size.endsWith('px') && RICH_SIZES.includes(Number.parseFloat(size))) next.size = Number.parseFloat(size);
         const font = element.style.fontFamily ? RICH_FONTS.find((item) => normalizeFontCss(item.css) === normalizeFontCss(element.style.fontFamily)) : undefined;
@@ -159,7 +164,7 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
       if (run.bold === true) clean.bold = true;
       if (run.italic === true) clean.italic = true;
       if (run.underline === true) clean.underline = true;
-      if (RICH_COLORS.some((item) => item.color === run.color)) clean.color = run.color;
+      if (isAllowedColor(run.color)) clean.color = run.color;
       if (typeof run.size === 'number' && RICH_SIZES.includes(run.size)) clean.size = run.size;
       if (RICH_FONTS.some((item) => item.id === run.font)) clean.font = run.font;
       return clean;

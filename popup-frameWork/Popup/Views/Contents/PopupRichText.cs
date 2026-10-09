@@ -11,12 +11,13 @@ namespace Popup.Views.Contents
     /*
      * [설계 28] 문단·Run JSON을 WPF TextBlock Inlines로 만든다.
      * HTML/XAML 문자열을 로드하지 않고, 허용 목록 밖의 서식 값은 무시하고 글자만 표시한다.
-     * 허용 값은 서버 PopupRichText.java, 관리자 웹 popupRichText.ts와 같아야 한다.
+     * 크기·글꼴 허용 값과 색 규칙은 서버 PopupRichText.java, 관리자 웹 popupRichText.ts와 같아야 한다.
+     * 글자 색은 팔레트가 아니라 #RRGGBB(대문자) 형식만 확인한다.
      */
     internal static class PopupRichText
     {
-        internal static readonly HashSet<string> Colors = new()
-            { "#111827", "#6B7280", "#DC2626", "#EA580C", "#CA8A04", "#16A34A", "#2563EB", "#7C3AED" };
+        internal static bool IsAllowedColor(string? value) =>
+            value is { Length: 7 } && value[0] == '#' && value.Skip(1).All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
         internal static readonly HashSet<double> Sizes = new() { 12, 14, 16, 18, 20, 24, 28, 32 };
         /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다(설계 28 §5). */
         internal static readonly Dictionary<string, string> Fonts = new()
@@ -64,7 +65,7 @@ namespace Popup.Views.Contents
             if (format.Bold) run.FontWeight = FontWeights.Bold;
             if (format.Italic) run.FontStyle = FontStyles.Italic;
             if (format.Underline) run.TextDecorations = TextDecorations.Underline;
-            if (format.Color != null && Colors.Contains(format.Color))
+            if (IsAllowedColor(format.Color))
                 run.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(format.Color));
             if (format.Size is double size && Sizes.Contains(size)) run.FontSize = size;
             if (format.Font != null && Fonts.TryGetValue(format.Font, out string? family)) run.FontFamily = new FontFamily(family);

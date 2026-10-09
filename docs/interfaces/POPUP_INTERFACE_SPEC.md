@@ -423,7 +423,7 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | textBlocks[].runs[] | array | O | 전체 최대 2000개 | 같은 서식의 글자 묶음. 빈 배열 = 빈 문단 |
 | runs[].text | string | O | 빈 값 불가, `\n`·`\t` 외 제어 문자 불가 | 글자. `\n`은 문단 내부 줄바꿈 |
 | runs[].bold / italic / underline | boolean | 선택 | `true`·`false` | 굵게·기울임·밑줄 |
-| runs[].color | string | 선택 | `#111827` `#6B7280` `#DC2626` `#EA580C` `#CA8A04` `#16A34A` `#2563EB` `#7C3AED` | 글자 색 |
+| runs[].color | string | 선택 | 대문자 `#RRGGBB` | 글자 색. 팔레트로 제한하지 않음(관리자 편집기 팔레트는 선택지일 뿐). 가독성은 작성자가 판단 |
 | runs[].size | number | 선택 | 12·14·16·18·20·24·28·32 (px) | 글자 크기. 없으면 bodyFontSize·기본 크기 |
 | runs[].font | string | 선택 | `MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG` | 글꼴 ID. PC에 없으면 대체 글꼴 |
 

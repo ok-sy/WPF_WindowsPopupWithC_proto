@@ -12,14 +12,14 @@ import java.util.Set;
  * 문단 내부 줄바꿈은 Run text의 \n이다. HTML은 저장하지 않으며, 허용 목록 밖의 키·값은 저장을 거부한다
  * (관리자 편집기는 허용 값만 만들므로 거부는 API 직접 입력 방어다).</p>
  *
- * <p>허용 값은 관리자 웹 {@code popupRichText.ts}, WPF {@code PopupRichText.cs}와 같아야 한다.</p>
+ * <p>글자 색은 팔레트로 제한하지 않고 {@code #RRGGBB}(대문자) 형식만 검사한다. 가독성은 작성자가 판단한다.
+ * 크기·글꼴·정렬 허용 값과 색 규칙은 관리자 웹 {@code popupRichText.ts}, WPF {@code PopupRichText.cs}와 같아야 한다.</p>
  */
 final class PopupRichText {
 
     static final String KEY = "textBlocks";
     static final Set<String> ALIGNMENTS = Set.of("LEFT", "CENTER", "RIGHT");
-    static final Set<String> COLORS = Set.of(
-            "#111827", "#6B7280", "#DC2626", "#EA580C", "#CA8A04", "#16A34A", "#2563EB", "#7C3AED");
+    private static final java.util.regex.Pattern HEX_COLOR = java.util.regex.Pattern.compile("^#[0-9A-F]{6}$");
     static final Set<Integer> SIZES = Set.of(12, 14, 16, 18, 20, 24, 28, 32);
     static final Set<String> FONTS = Set.of("MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG");
     static final int MAX_BLOCKS = 500;
@@ -86,8 +86,8 @@ final class PopupRichText {
                     }
                 }
                 Object color = run.get("color");
-                if (color != null && !(color instanceof String c && COLORS.contains(c))) {
-                    throw invalid("허용되지 않은 글자 색입니다.");
+                if (color != null && !(color instanceof String c && HEX_COLOR.matcher(c).matches())) {
+                    throw invalid("글자 색은 #RRGGBB(대문자) 형식이어야 합니다.");
                 }
                 Object size = run.get("size");
                 if (size != null && !(size instanceof Number n && n.doubleValue() == n.intValue()

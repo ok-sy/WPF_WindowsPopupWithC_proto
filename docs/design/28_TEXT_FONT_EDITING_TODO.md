@@ -48,7 +48,7 @@
 | 적용 범위 | 기능 | 비고 |
 | --- | --- | --- |
 | 선택 구간 | 굵게, 기울임, 밑줄 | |
-| 선택 구간 | 글자 색 | 허용 팔레트 값만. 색 형식(#RRGGBB) 확정 필요 |
+| 선택 구간 | 글자 색 | 대문자 #RRGGBB 형식만 검사. 팔레트·명도 대비로 제한하지 않음(2026-10-09 결정: 형식 검사는 보안 목적, 가독성은 작성자 판단, 색 추가 시 코드 수정 불필요) |
 | 선택 구간 | 글자 크기 | 허용 목록 값만. 단위·범위 확정 필요 |
 | 선택 구간 | 글꼴 | 기본 글꼴 우선, 필요하면 공통 글꼴 몇 개(§5) |
 | 문단 | 왼쪽·가운데·오른쪽 정렬 | |
@@ -211,7 +211,7 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 
 ## 12.1 1차 구현 결과 (2026-10-09)
 
-- 계약: content.textBlocks = [{ alignment, runs: [{ text, bold, italic, underline, color, size, font }] }]. 허용 값: 색 8종(#111827 #6B7280 #DC2626 #EA580C #CA8A04 #16A34A #2563EB #7C3AED), 크기 12·14·16·18·20·24·28·32px, 글꼴 ID MALGUN_GOTHIC·GULIM·DOTUM·BATANG, 정렬 LEFT·CENTER·RIGHT. 최대 500문단·2000구간·20000자. 상세는 인터페이스 계약 8.1.
+- 계약: content.textBlocks = [{ alignment, runs: [{ text, bold, italic, underline, color, size, font }] }]. 허용 값: 색은 대문자 #RRGGBB 형식이면 모두 허용(팔레트 제한 없음, 편집기 팔레트 8색 #111827 #6B7280 #DC2626 #EA580C #CA8A04 #16A34A #2563EB #7C3AED는 선택지), 크기 12·14·16·18·20·24·28·32px, 글꼴 ID MALGUN_GOTHIC·GULIM·DOTUM·BATANG, 정렬 LEFT·CENTER·RIGHT. 최대 500문단·2000구간·20000자. 상세는 인터페이스 계약 8.1.
 - 서버: `PopupRichText.java`가 구조·허용 값·제한을 검증하고(허용 밖 값은 저장 거부, TEXT 외 유형의 textBlocks 거부) plainText를 textBlocks에서 파생해 CONTENT_BODY에 저장한다. textBlocks는 CONTENT_OPTIONS에 저장되며 DB 변경은 없다.
 - 관리자 웹: `PopupRichTextEditor.tsx`(팝업 전용 CKEditor 툴바: 굵게·기울임·밑줄·글자색·크기·글꼴·정렬·서식 지우기·실행 취소/다시 실행)와 `popupRichText.ts`(HTML↔Run 변환, 허용 값, 붙여넣기 정리). 변경 시 textBlocks와 파생 plainText를 함께 갱신. 서식 본문이 없는 기존 데이터는 plainText를 서식 없는 문단으로 열어 편집한다. 미리보기는 React 요소로 표시한다(innerHTML 미사용).
 - WPF: `PopupTextBlockDto`·`PopupRichText.cs`가 문단별 TextBlock Inlines로 표시. 허용 밖 서식 값은 무시하고 글자만 표시, 빈 문단은 한 줄 높이 유지, 큰 글자 구간은 줄 높이를 늘림. bodyFontSize는 문단 기본 크기에 적용되고 구간 크기가 우선한다. textBlocks가 없으면 기존 plainText 표시.

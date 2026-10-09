@@ -76,6 +76,16 @@ class PopupRichTextTest {
         }
     }
 
+    @Test void colorsAreAnyUppercaseHexNotPalette() {
+        for (String color : new String[]{"#0891B2", "#FFFFFF", "#FDE047", "#000000"}) {
+            assertDoesNotThrow(() -> PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run("a", "color", color)))), color);
+        }
+        for (String color : new String[]{"#0891b2", "#FFF", "red", "#0891B2;x:y", "rgb(0,0,0)", "#0891B2 "}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run("a", "color", color)))), color);
+        }
+    }
+
     @Test void enforcesSizeLimits() {
         List<Object> tooMany = new ArrayList<>();
         for (int i = 0; i <= PopupRichText.MAX_BLOCKS; i++) tooMany.add(block("LEFT"));

@@ -198,7 +198,7 @@ namespace Popup
             row.Children.Add(new TextBlock
             {
                 Text = "문단: { alignment: LEFT|CENTER|RIGHT, runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
-                    + "색 " + string.Join(" ", Popup.Views.Contents.PopupRichText.Colors) + " · 크기 "
+                    + "색 #RRGGBB(대문자) · 크기 "
                     + string.Join(" ", Popup.Views.Contents.PopupRichText.Sizes) + " · 글꼴 " + string.Join(" ", Popup.Views.Contents.PopupRichText.Fonts.Keys),
                 TextWrapping = TextWrapping.Wrap, Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 6),
             });
@@ -250,8 +250,8 @@ namespace Popup
                     foreach (string flag in new[] { "bold", "italic", "underline" })
                         if (run[flag] is JsonNode f && f.GetValueKind() is not (JsonValueKind.True or JsonValueKind.False))
                             throw new ArgumentException($"서식 본문: {flag}는 true/false여야 합니다.");
-                    if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.Colors.Contains(color.GetValue<string>())))
-                        throw new ArgumentException("서식 본문: 허용되지 않은 글자 색입니다.");
+                    if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.IsAllowedColor(color.GetValue<string>())))
+                        throw new ArgumentException("서식 본문: 글자 색은 #RRGGBB(대문자) 형식이어야 합니다.");
                     if (run["size"] is JsonNode size && !(size.GetValueKind() == JsonValueKind.Number && Popup.Views.Contents.PopupRichText.Sizes.Contains(size.GetValue<double>())))
                         throw new ArgumentException("서식 본문: 허용되지 않은 글자 크기입니다.");
                     if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.Fonts.ContainsKey(font.GetValue<string>())))
