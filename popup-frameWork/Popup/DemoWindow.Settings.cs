@@ -40,6 +40,12 @@ namespace Popup
                 + $"표시 방식: {popup.DisplayMode} · 순서 {popup.DisplayOrder}";
             if (popup.PopupType == "IMAGE")
                 ScenarioSummaryText.Text += "\n이미지: " + popup.Content.GetProperty("imageSizeMode").GetString();
+            // [설계 27] 영상 샘플은 재생 위치 변경(Seek) 허용 여부를 함께 보여 준다. 생략 시 허용.
+            bool hasVideo = popup.PopupType == "VIDEO" || (popup.Content.TryGetProperty("videoEnabled", out var videoEnabled)
+                && videoEnabled.ValueKind == System.Text.Json.JsonValueKind.True);
+            if (hasVideo)
+                ScenarioSummaryText.Text += "\n영상: 재생 위치 변경 " + (popup.Content.TryGetProperty("allowSeek", out var seek)
+                    && seek.ValueKind == System.Text.Json.JsonValueKind.False ? "제한" : "허용");
         }
 
         private bool CanEditOptions()

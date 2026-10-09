@@ -92,7 +92,8 @@ namespace Popup.Services
                       "videoTitle": "Demo Mode 교육 영상",
                       "videoUrl": "LOCAL_DEMO_VIDEO",
                       "description": "재생, 일시정지, 전체화면 컨트롤을 확인하세요.",
-                      "showDescription": true
+                      "showDescription": true,
+                      "allowSeek": true
                     }
                   },
                   {
@@ -465,6 +466,7 @@ namespace Popup.Services
             videoQuiz["content"]!["videoEnabled"] = true;
             videoQuiz["content"]!["videoTitle"] = "교육 영상";
             videoQuiz["content"]!["autoPlay"] = false;
+            videoQuiz["content"]!["allowSeek"] = true;
             videoQuiz["content"]!["surveyTitle"] = "교육 영상 이해도 평가";
             videoQuiz["content"]!["description"] = "영상을 80% 이상 시청하면 응답할 수 있습니다. 객관식 4문항은 각 25점이며 100점이면 통과합니다. 마지막 의견은 선택 사항입니다.";
             demoPopups.Add(videoQuiz);
