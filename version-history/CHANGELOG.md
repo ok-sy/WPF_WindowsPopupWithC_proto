@@ -8,7 +8,8 @@
 - 변경(서버): PopupRichText에서 textBlocks 구조·허용 값(정렬 3종, 색 8종, 크기 8종, 글꼴 ID 4종)·제한(500문단·2000구간·20000자·제어 문자)을 검증하고 허용 밖 키·값은 저장 거부. TEXT 외 유형의 textBlocks 거부. 저장 시 plainText(CONTENT_BODY)를 textBlocks에서 파생하며 textBlocks는 기존 CONTENT_OPTIONS에 저장(DB 변경 없음). textBlocks가 없으면 기존 plainText 저장 유지.
 - 주요 파일: zero-rule-server/service/core/.../popup/PopupRichText.java, PopupService.java, PopupRichTextTest.java.
 - 검증: PopupRichTextTest 6건(파생 문자열의 공백·줄바꿈·빈 문단 보존, 클라이언트 plainText 무시, 허용 밖 값·HTML 문자열 거부, 제한, 유형 제한, CONTENT_OPTIONS 저장·조회) 포함 :service:core popup 패키지 테스트 통과(DB 연동 2건 기존대로 skip).
-- 상태: 서버 커밋에 포함.
+- 상태: 서버·관리자 웹 커밋에 포함.
+  관리자 웹: 팝업 전용 서식 편집 컴포넌트(PopupRichTextEditor, 기존 CKEditor 빌드 사용, 툴바를 굵게·기울임·밑줄·글자색·크기·글꼴·정렬·서식 지우기·실행 취소/다시 실행으로 제한)로 TEXT 일반 본문 입력을 교체하고 변경 시 textBlocks와 파생 plainText를 함께 갱신. popupRichText.ts에 허용 값과 HTML↔Run 변환(허용 밖 서식 제거, script·style·이미지 제거, 제목·인용·목록·표 셀 글자는 일반 문단으로 보존, 공백·빈 문단 규칙, 재편집 HTML 이스케이프) 추가. 서식 본문 없는 기존 데이터는 plainText를 서식 없는 문단으로 열어 편집. 미리보기는 React 요소로 서식 본문 표시(innerHTML 미사용). 공용 CommonCKEditor는 변경하지 않음. 주요 파일: zero-rule-web/main/src/features/RgstPop/(popupRichText.ts, PopupRichTextEditor.tsx, PopupEditorDialog.tsx, PopupPreview.tsx). 검증: tsc --noEmit 통과. 변환 모듈을 실제 편집기 빌드(CKEditor 5 v34.1.0)와 WebView2 하네스(저장소 밖)에서 실행해 편집 명령 서식의 Run JSON 왕복 일치, 툴바 항목 제한, 붙여넣기 HTML 정리, 기존 plainText 변환 왕복, 저장 데이터의 허용 밖 값 필터링, 읽기 전용 전환 확인(표 셀 글자 누락을 발견해 수정). 관리자 화면 실행·수동 입력 확인 미실행.
 
 ## 2026-10-09-03 — TODO28 TEXT 본문 서식 편집 방향 정리
 

@@ -26,6 +26,8 @@ import { displayImageSize, type Size } from './imagePreviewLayout';
 import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEditor';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
+import PopupRichTextEditor from './PopupRichTextEditor';
+import { plainTextToBlocks, readTextBlocks } from './popupRichText';
 
 interface PopupEditorDialogProps {
   open: boolean;
@@ -148,7 +150,7 @@ function normalizeImageSizeMode(value: unknown): string {
 const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
   'headerFontSize', 'bodyFontSize', 'footerFontSize', 'footerAction', 'footerLinkUrl'];
 const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
-  TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'showPlainText', 'highlightText',
+  TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'textBlocks', 'showPlainText', 'highlightText',
     'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'width', 'height', 'keepAspectRatio', 'linkUrl'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
@@ -211,16 +213,20 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   });
   const [templateOpen, setTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  /* [설계 28] 본문 편집기는 커서 보존을 위해 처음 값만 받는다. 불러오기·템플릿 적용 시 key를 바꿔 다시 연다. */
+  const [bodyEditorKey, setBodyEditorKey] = useState(0);
   const editing = popupId != null;
 
   useEffect(() => {
     if (!open) return;
     setActive(initialActive); setTemplateOpen(false); setLoading(false);
+    setBodyEditorKey((key) => key + 1);
     if (popupId == null) { setPopup(createDefaultPopup()); setTargetGroups([]); return; }
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
         setPopup(withNormalizedImageSizeMode({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 }));
+        setBodyEditorKey((key) => key + 1);
         setTargetGroups(body.targetGroups ?? []);
       }
     }).catch((error) => { if (!canceled) handleError(error); })
@@ -363,6 +369,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
           setPopup((current) => withNormalizedImageSizeMode({ ...template, popupId: current.popupId, questionTemplateId: null }));
+          setBodyEditorKey((key) => key + 1);
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
       {loading && <LinearProgress />}
@@ -398,7 +405,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
               {/* TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
-              <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
+              {/* [설계 28] 본문은 서식 편집기로 입력하고 textBlocks(기준)와 파생 plainText를 함께 갱신한다. */}
+              {<PopupRichTextEditor key={bodyEditorKey} label="일반 텍스트" disabled={!showTextPlainText}
+                initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
+                onChange={(blocks, plainText) => setPopup((previous) => ({
+                  ...previous, content: { ...previous.content, textBlocks: blocks, plainText },
+                }))} />}
               <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
               <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
               <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />

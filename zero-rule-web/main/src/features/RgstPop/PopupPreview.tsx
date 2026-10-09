@@ -6,6 +6,7 @@ import SurveyPreview, {
 } from './SurveyPreview';
 import popupDemoQuestions from './popupDemoQuestions';
 import normalizePopupLink from './normalizePopupLink';
+import { readTextBlocks, richFontCss } from './popupRichText';
 import {
   adaptiveMaximum,
   fitToImageLayout,
@@ -321,6 +322,7 @@ function PopupBody({
 
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
+  const richBlocks = readTextBlocks(content.textBlocks);
   // [설계 18 L-4 — C-23] WPF TextPopupContentDto와 같이 플래그가 없으면 숨김(과거 행 fallback 삭제).
   const showHighlight = content.showHighlight === true;
   const showBottomDescription = content.showBottomDescription === true;
@@ -361,8 +363,20 @@ function PopupBody({
   return (
     <Stack spacing={2}>
       {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
-      {showPlainText && (
-        <Typography sx={{ whiteSpace: 'pre-wrap' }}>{String(content.plainText ?? '')}</Typography>
+      {showPlainText && (richBlocks
+        ? <Box>{richBlocks.map((block, index) => (
+            /* [설계 28] 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
+            <Typography key={index} component="div" sx={{ whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em' }}>
+              {block.runs.map((run, runIndex) => (
+                <Box key={runIndex} component="span" sx={{
+                  fontWeight: run.bold ? 700 : undefined, fontStyle: run.italic ? 'italic' : undefined,
+                  textDecoration: run.underline ? 'underline' : undefined, color: run.color,
+                  fontSize: run.size ? `${run.size}px` : undefined, fontFamily: richFontCss(run.font),
+                }}>{run.text}</Box>
+              ))}
+            </Typography>
+          ))}</Box>
+        : <Typography sx={{ whiteSpace: 'pre-wrap' }}>{String(content.plainText ?? '')}</Typography>
       )}
       {showHighlight && (
         <Box
