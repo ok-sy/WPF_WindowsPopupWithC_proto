@@ -40,8 +40,6 @@ class PopupActionOptionsTest {
                 Map.of("videoEnabled", true, "videoUrl", "https://example.com/training.mp4"))));
         assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup("QUIZ",
                 Map.of("videoEnabled", true))));
-        assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup("QUIZ",
-                Map.of("videoEnabled", true, "videoUrl", "https://youtu.be/test"))));
     }
 
     @Test void allowSeekAcceptsOnlyBooleanAndIsStoredAsContentOption() {

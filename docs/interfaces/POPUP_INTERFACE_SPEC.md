@@ -2,7 +2,7 @@
 
 - 문서 버전: 3.6
 - 최신화: 2026-10-09 (KST)
-- 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다.
+- 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
 - 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
 - 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
 - 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
@@ -509,7 +509,7 @@ VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionR
 
 음량·음소거는 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다. 시작 시 현재 Windows 값을 읽고 시스템 설정을 바꾸지 않는다. 연결 성공 시 내부 영상 음량은 1.0으로 유지해 이중 감쇠를 방지하며, `defaultVolume`은 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기값으로 사용한다. 슬라이더를 0보다 크게 조절하면 Windows 음소거도 해제하고, 음소거 버튼은 현재 음량 값을 유지한 채 Windows Mute만 전환한다. 외부 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 변경은 다른 프로그램의 출력에도 영향을 주며 팝업 종료 시 이전 시스템 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다.
 
-위치·재생/일시정지·음량·배속·종료·오류는 WPF 컨트롤과 동기화하며 waiting/stalled는 버퍼링 안내로 표시한다. 탐색한 구간은 누적 `watchedSeconds`에 합산하지 않는다. YouTube iframe은 기존 별도 플레이어 UI를 유지하고 기본 음량·배속 제어 및 시청량 측정을 지원하지 않는다.
+위치·재생/일시정지·음량·배속·종료·오류는 WPF 컨트롤과 동기화하며 waiting/stalled는 버퍼링 안내로 표시한다. 탐색한 구간은 누적 `watchedSeconds`에 합산하지 않는다.
 
 ---
 
@@ -673,7 +673,7 @@ passingScore 이상
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - `allowCloseBeforeComplete: true`면 Alt+F4 등으로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
-- 현재 플레이어의 YouTube 임베드는 시청 비율을 제공하지 않으므로 이 모드는 로컬 영상 파일 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
+- 이 모드는 로컬 영상 파일 경로 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
 - 영상만 보고 닫으면 `VIDEO_WATCHED`를 보내되 **퀴즈 완료로 처리하지 않는다**. 퀴즈 통과 후에만 `SUBMITTED`로 완료한다. 숨김 선택 시에는 기존 HIDDEN 정책을 따른다.
 - 새 모드를 사용하려면 WPF와 백엔드를 함께 갱신해야 한다. 기존 클라이언트는 `videoEnabled`를 이해하지 못한다.
 

@@ -856,9 +856,6 @@ public class PopupService {
             if (!"QUIZ".equals(normalizeUpper(popup.popupType()))
                     || contentText(content, "videoUrl") == null || contentText(content, "videoUrl").isBlank())
                 throw new IllegalArgumentException("동영상+퀴즈는 QUIZ 유형과 영상 URL이 필요합니다.");
-            String url = contentText(content, "videoUrl").toLowerCase(java.util.Locale.ROOT);
-            if (url.contains("youtube.com/") || url.contains("youtu.be/"))
-                throw new IllegalArgumentException("동영상+퀴즈는 시청 비율을 확인할 수 있는 영상 파일 URL을 사용해 주세요.");
         }
     }
 

@@ -2,13 +2,21 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-09-02 — VIDEO YouTube 임베드 재생 제거
+
+- 이유: 영상 소스를 로컬 파일 경로와 HTTP(S) 직접 재생 URL(스트리밍)로 한정하기로 확정. YouTube 임베드는 공통 컨트롤·시청량 측정·음량 동기화·탐색 정책을 적용할 수 없는 별도 경로라 유지 비용만 발생.
+- 변경: VideoPopupView에서 YouTube 주소 판별(TryGetYouTubeVideoId·전용 쿼리 파서)·embed URL 생성·YouTube 전용 분기(컨트롤·클릭·배속·진행 계산·로드 완료 처리·시스템 볼륨 연결 제외)를 삭제하고 미사용 using System.Web 제거. HTTP(S) URL은 모두 HTML5 video로 재생하며 YouTube 페이지 주소는 일반 URL로 취급되어 재생 실패 처리. 서버·관리자 웹의 동영상+퀴즈 YouTube URL 거부 검사와 해당 테스트 케이스 삭제(영상 URL 필수 검사는 유지). DTO 주석·README·옵션 가이드·사용자 옵션 가이드·인터페이스 계약·전체/최소 정의서·푸터 링크 문서·웹 미리보기 정합성 문서에서 YouTube 설명 제거. 설계·검토 이력 문서는 당시 기록으로 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs, popup-frameWork/Popup/Dtos/VideoPopupContentDto.cs, zero-rule-server/service/core/.../PopupService.java·PopupActionOptionsTest.java, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, popup-frameWork/README.md, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/FOOTER_LINK_VIDEO_QUIZ.md, docs/interfaces/(POPUP_INTERFACE_SPEC·WPF_POPUP_ALL_SPEC·WPF_POPUP_MINIMAL_SPEC), zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md, docs/design/27_VIDEO_SEEK_ON_OFF_TODO.md.
+- 검증: 아래 TODO27 항목과 같은 실행에서 확인(WPF 빌드·행동 검증·HTML5 브리지·서버 popup 테스트·웹 tsc). 실제 Windows 화면 재생 확인 미실행.
+- 상태: YouTube 재생 제거 커밋에 포함(미푸시).
+
 ## 2026-10-09-01 — TODO27 영상 진행바 SEEK ON/OFF 구현
 
 - 이유: 설계 27에 따라 영상 재생 위치 변경 허용 여부를 content 옵션으로 제어하고, 진행률 표시와 기존 재생 기능은 유지할 필요.
-- 변경: content.allowSeek(boolean, 생략 시 true) 추가. WPF는 VideoPopupContentDto → PopupFactory → VideoPopupView 경로로 전달해 VIDEO·VIDEO+QUIZ에 같은 정책을 적용. OFF에서 진행바를 비활성(IsEnabled·IsTabStop false)으로 두어 마우스·키보드·UI Automation 입력을 막고, 진행바 누름 처리는 캡처·일시정지·탐색 상태 설정 전에 반환하며 FinishSeeking과 HTML5 seek 명령에서도 위치 변경을 거부. 종료 후 재시작·루프는 별도 경로로 유지. 진행률·시간 갱신 유지, 접근성 HelpText로 탐색 불가 상태 노출(진행바 외형 변경 없음). YouTube 임베드에는 allowSeek를 적용하지 않음. 관리자 웹 '재생 위치 변경 허용' 스위치(기본 켜짐)·미리보기 '탐색 제한' 표시, Demo 옵션 라벨 추가. 서버는 기존 CONTENT_OPTIONS로 저장·조회하고 boolean 이외 값을 거부(DB 컬럼 추가 없음). 인터페이스 계약·전체/최소 정의서(최소 범위는 미제공으로 표기)·옵션 가이드·JSON 예제 갱신.
+- 변경: content.allowSeek(boolean, 생략 시 true) 추가. WPF는 VideoPopupContentDto → PopupFactory → VideoPopupView 경로로 전달해 VIDEO·VIDEO+QUIZ에 같은 정책을 적용. OFF에서 진행바를 비활성(IsEnabled·IsTabStop false)으로 두어 마우스·키보드·UI Automation 입력을 막고, 진행바 누름 처리는 캡처·일시정지·탐색 상태 설정 전에 반환하며 FinishSeeking과 HTML5 seek 명령에서도 위치 변경을 거부. 종료 후 재시작·루프는 별도 경로로 유지. 진행률·시간 갱신 유지, 접근성 HelpText로 탐색 불가 상태 노출(진행바 외형 변경 없음). YouTube는 별도 처리 없이 재생 기능 자체를 제거(2026-10-09-02). 관리자 웹 '재생 위치 변경 허용' 스위치(기본 켜짐)·미리보기 '탐색 제한' 표시, Demo 옵션 라벨 추가. 서버는 기존 CONTENT_OPTIONS로 저장·조회하고 boolean 이외 값을 거부(DB 컬럼 추가 없음). 인터페이스 계약·전체/최소 정의서(최소 범위는 미제공으로 표기)·옵션 가이드·JSON 예제 갱신.
 - 주요 파일: popup-frameWork/Popup/Dtos/VideoPopupContentDto.cs, popup-frameWork/Popup/Factories/PopupFactory.cs, popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs, popup-frameWork/Popup/DemoOptionsWindow.Fields.cs, zero-rule-server/service/core/.../PopupService.java·PopupActionOptionsTest.java, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx·PopupPreview.tsx, docs/interfaces/(POPUP_INTERFACE_SPEC·WPF_POPUP_ALL_SPEC·WPF_POPUP_MINIMAL_SPEC·예제 JSON), docs/POPUP_OPTION_GUIDE.md, docs/design/27_VIDEO_SEEK_ON_OFF_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 행동 검증 테스트를 임시 출력 경로로 빌드(경고·오류 0)하고 factory 전달(VIDEO·VIDEO_QUIZ × true/false/누락)·OFF 진행률 표시·누름 시 캡처 미발생·UI Automation SetValue 거부·HelpText 검증 12건을 추가해 816건 통과. HTML5 브리지 검증에 seek 차단·종료 후 재시작 유지를 추가해 95건 통과. 서버 :service:core popup 패키지 테스트 통과(DB 연동 2건은 기존대로 skip). 관리자 웹 tsc --noEmit 통과. 실제 Windows 화면에서 로컬/HTTP 영상·전체화면·VIDEO+QUIZ 조작 확인과 관리자 웹 화면 확인 미실행.
-- 상태: TODO27 커밋에 포함(미푸시). 설계 27 §2의 진행바 비활성 시각 표시·YouTube 등 외부 임베드 처리 항목과 §3 실제 화면 검증 미완료.
+- 상태: TODO27 커밋에 포함(미푸시). 설계 27 §2의 진행바 비활성 시각 표시 항목과 §3 실제 화면 검증 미완료.
 
 ## 2026-10-08-02 — TODO28 TEXT 본문 서식 편집 요구사항 기록
 

@@ -135,7 +135,7 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| VideoUrl | 지원 | Y | `""` | 로컬 파일·URL. 엔진별 동작 차이는 아래 참고 |
+| VideoUrl | 지원 | Y | `""` | 로컬 파일 경로 또는 HTTP(S) 직접 재생 URL. 엔진별 동작 차이는 아래 참고 |
 | VideoTitle | 지원 | N | `""` | 콘텐츠 내부 제목 |
 | Description / ShowDescription | 지원 | N | `""` / `true` | 영상 설명 |
 | ShowControls | 지원 | N | `true` | 공통 WPF 컨트롤 |
@@ -152,7 +152,7 @@ CompletionRatio와 AllowCloseBeforeComplete는 최상위 필드다. content 안�
 `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 Windows Master Volume/Mute 연결 성공 시 현재 시스템 값이 우선하며 종료 후 이전 값으로 복원하지 않는다.
 연결 실패 시 내부 음량을 사용한다. IsMuted라는 별도 계약 필드는 없다.
-YouTube iframe은 공통 HTML5 컨트롤과 시청량 측정 대상에서 제외한다.
+
 AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 
 ### 4.4 SURVEY / QUIZ

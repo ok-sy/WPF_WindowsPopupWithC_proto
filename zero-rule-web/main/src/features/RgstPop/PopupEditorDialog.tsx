@@ -287,8 +287,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (popup.content.footerAction === 'LINK_AND_CLOSE' && !normalizePopupLink(contentValue(popup, 'footerLinkUrl'))) {
       toast.warn('바로가기 URL을 입력해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
     }
-    if (isVideoQuiz && (!contentValue(popup, 'videoUrl').trim() || /youtube\.com\/|youtu\.be\//i.test(contentValue(popup, 'videoUrl')))) {
-      toast.warn('동영상+퀴즈에는 시청 비율을 확인할 수 있는 영상 파일 URL을 입력해 주세요.'); return;
+    if (isVideoQuiz && !contentValue(popup, 'videoUrl').trim()) {
+      toast.warn('동영상+퀴즈에는 영상 파일 경로 또는 URL을 입력해 주세요.'); return;
     }
     if (hasVideo && popup.completionRatio != null && (!Number.isFinite(popup.completionRatio) || popup.completionRatio < 0 || popup.completionRatio > 1)) {
       toast.warn('완료 비율은 0~1 사이로 입력해 주세요.'); return;

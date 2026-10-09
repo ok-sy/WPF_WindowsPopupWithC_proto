@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Web;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -32,11 +31,9 @@ namespace Popup.Views.Contents
         private readonly string _videoPath;
 
         /*
-         * 현재 영상이 YouTube 영상인지 나타낸다.
+         * HTTP/HTTPS URL 영상이면 WebView2 HTML5 video로 스트리밍한다. 그 외는 로컬 경로(MediaElement)다.
          */
         private readonly bool _useWebPlayer;
-
-        private readonly bool _isYouTubeVideo;
 
         private bool _syncingWebState;
         private bool _webSeekPending;
@@ -170,7 +167,7 @@ namespace Popup.Views.Contents
          *   _allowPlaybackRateChange   : 배속 버튼 표시 / HTML5 플레이어 배속 메뉴 허용
          *   _autoPlay                  : 영상이 열리면 바로 재생할지 (false 면 첫 프레임에서 일시정지)
          *   _isLoop                    : 끝나면 처음부터 다시 재생
-         *   _defaultVolume             : 시작 음량 (0~1). 웹 플레이어(HTML5 video)에도 적용, YouTube 는 URL 로 못 정함
+         *   _defaultVolume             : 시작 음량 (0~1). 웹 플레이어(HTML5 video)에도 적용
          *   _allowSeek                 : [설계 27] 진행바로 재생 위치 변경 허용. false 여도 진행률·시간 표시는 유지
          */
         private readonly bool _showControls;
@@ -264,15 +261,8 @@ namespace Popup.Views.Contents
 
             _videoPath = videoPath.Trim();
 
-            /*
-             * 생성 시점에 YouTube 주소 여부를 판별한다.
-             */
-            _isYouTubeVideo =
-                TryGetYouTubeVideoId(_videoPath, out _);
-
             _useWebPlayer =
-                _isYouTubeVideo || IsHttpVideoUrl(_videoPath);
-            VideoInteractionLayer.Visibility = _isYouTubeVideo ? Visibility.Collapsed : Visibility.Visible;
+                IsHttpVideoUrl(_videoPath);
 
             TitleTextBlock.Text =
                 videoTitle ?? string.Empty;
@@ -301,8 +291,7 @@ namespace Popup.Views.Contents
              */
             Loaded -= VideoPopupView_Loaded;
 
-            if (!_isYouTubeVideo)
-                AttachMasterVolume(new WindowsMasterVolume(Dispatcher));
+            AttachMasterVolume(new WindowsMasterVolume(Dispatcher));
 
             if (_useWebPlayer)
             {
@@ -377,7 +366,7 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * YouTube 주소를 WebView2에 임베드한다.
+         * HTTP/HTTPS 영상 URL을 WebView2 HTML5 video로 스트리밍한다.
          */
         private async System.Threading.Tasks.Task LoadWebVideoAsync()
         {
@@ -390,17 +379,14 @@ namespace Popup.Views.Contents
                     Visibility.Visible;
 
                 /*
-                 * YouTube는 자체 플레이어 UI를 사용하므로
-                 * MediaElement 전용 버튼을 숨긴다.
+                 * 메타데이터를 받기 전까지 공통 컨트롤을 숨긴다.
                  */
                 LocalVideoControlArea.Visibility =
                     Visibility.Collapsed;
 
 
                 ShowLoadingMessage(
-                    _isYouTubeVideo
-                        ? "YouTube 영상을 불러오는 중입니다."
-                        : "영상을 스트리밍하는 중입니다.");
+                    "영상을 스트리밍하는 중입니다.");
 
                 /*
                  * WebView2 초기화를 명시적으로 수행한다.
@@ -434,29 +420,6 @@ namespace Popup.Views.Contents
 
                 VideoWebView.CoreWebView2.Settings.AreDevToolsEnabled =
                     false;
-
-                if (_isYouTubeVideo)
-                {
-                    TryGetYouTubeVideoId(_videoPath, out string? videoId);
-
-                    /*
-                     * [관리자 웹 옵션] YouTube IFrame 파라미터로 옮길 수 있는 옵션만 반영한다.
-                     *   autoPlay → autoplay, showControls → controls, allowFullScreen → fs,
-                     *   isLoop → loop=1&playlist=<id> (YouTube 는 playlist 지정이 있어야 단일 영상 반복이 된다)
-                     * 기본 음량·배속 허용은 YouTube URL 로 제어할 수 없어 적용하지 않는다.
-                     */
-                    string embedUrl =
-                        $"https://www.youtube.com/embed/{videoId}" +
-                        $"?autoplay={(_autoPlay ? 1 : 0)}" +
-                        $"&controls={(_showControls ? 1 : 0)}" +
-                        $"&fs={(_allowFullScreen ? 1 : 0)}" +
-                        (_isLoop ? $"&loop=1&playlist={videoId}" : string.Empty) +
-                        "&rel=0" +
-                        "&playsinline=1";
-
-                    VideoWebView.Source = new Uri(embedUrl);
-                    return;
-                }
 
                 VideoWebView.NavigateToString(BuildWebVideoHtml());
             }
@@ -695,89 +658,6 @@ namespace Popup.Views.Contents
             }));
         }
 
-        /*
-         * YouTube 공유 주소, 일반 주소, Shorts 주소,
-         * embed 주소에서 영상 ID를 추출한다.
-         */
-        private static bool TryGetYouTubeVideoId(
-            string url,
-            out string? videoId)
-        {
-            videoId = null;
-
-            if (!Uri.TryCreate(
-                    url,
-                    UriKind.Absolute,
-                    out Uri? uri))
-            {
-                return false;
-            }
-
-            string host =
-                uri.Host.ToLowerInvariant();
-
-            /*
-             * youtu.be/VIDEO_ID
-             */
-            if (host == "youtu.be"
-                || host == "www.youtu.be")
-            {
-                videoId =
-                    uri.AbsolutePath.Trim('/');
-
-                return !string.IsNullOrWhiteSpace(videoId);
-            }
-
-            if (host != "youtube.com"
-                && host != "www.youtube.com"
-                && host != "m.youtube.com")
-            {
-                return false;
-            }
-
-            /*
-             * youtube.com/watch?v=VIDEO_ID
-             */
-            if (uri.AbsolutePath.Equals(
-                    "/watch",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                /* [설계 18 L-0 — C-11] 주석 처리돼 있던 HttpUtility.ParseQueryString 구현은 삭제했다(GetQueryParameter 사용). */
-                videoId = GetQueryParameter(
-                    uri,
-                    "v");
-
-                return !string.IsNullOrWhiteSpace(videoId);
-            }
-
-            /*
-             * youtube.com/embed/VIDEO_ID
-             * youtube.com/shorts/VIDEO_ID
-             */
-            string[] pathSegments =
-                uri.AbsolutePath
-                    .Trim('/')
-                    .Split(
-                        '/',
-                        StringSplitOptions.RemoveEmptyEntries);
-
-            if (pathSegments.Length >= 2
-                && (pathSegments[0].Equals(
-                        "embed",
-                        StringComparison.OrdinalIgnoreCase)
-                    || pathSegments[0].Equals(
-                        "shorts",
-                        StringComparison.OrdinalIgnoreCase)))
-            {
-                videoId =
-                    pathSegments[1];
-
-                return !string.IsNullOrWhiteSpace(videoId);
-            }
-
-            return false;
-        }
-
         private void PopupVideo_MediaOpened(
          object sender,
          RoutedEventArgs e)
@@ -851,7 +731,7 @@ namespace Popup.Views.Contents
             object sender,
             MouseButtonEventArgs e)
         {
-            if (!_isMediaOpened || _isYouTubeVideo)
+            if (!_isMediaOpened)
             {
                 return;
             }
@@ -878,7 +758,7 @@ namespace Popup.Views.Contents
             object sender,
             RoutedEventArgs e)
         {
-            if (!_allowPlaybackRateChange || _isYouTubeVideo)
+            if (!_allowPlaybackRateChange)
             {
                 return;
             }
@@ -961,7 +841,7 @@ namespace Popup.Views.Contents
             double durationSeconds;
             double positionSeconds;
 
-            if (_useWebPlayer && !_isYouTubeVideo)
+            if (_useWebPlayer)
             {
                 durationSeconds = _webDurationSeconds;
                 positionSeconds = Math.Clamp(
@@ -1226,7 +1106,6 @@ namespace Popup.Views.Contents
         {
             /* [관리자 웹 옵션] 컨트롤 표시 꺼짐이면 어떤 경우에도 컨트롤바를 띄우지 않는다. */
             if (!_isMediaOpened
-                || _isYouTubeVideo
                 || !_showControls)
             {
                 return;
@@ -1934,11 +1813,7 @@ namespace Popup.Views.Contents
             object sender,
             CoreWebView2NavigationCompletedEventArgs e)
         {
-            if (e.IsSuccess && _isYouTubeVideo)
-            {
-                HideVideoMessage();
-            }
-            else if (!e.IsSuccess)
+            if (!e.IsSuccess)
             {
                 ShowVideoError(
                     $"웹 영상 페이지를 불러오지 못했습니다.\n" +
@@ -1971,8 +1846,7 @@ namespace Popup.Views.Contents
     object sender,
     RoutedEventArgs e)
         {
-            if (!_isMediaOpened
-                || _isYouTubeVideo)
+            if (!_isMediaOpened)
             {
                 return;
             }
@@ -2250,7 +2124,7 @@ namespace Popup.Views.Contents
                     null;
 
                 /*
-                 * YouTube 영상 정리
+                 * 웹 영상 정리
                  *
                  * 빈 페이지로 이동시켜 영상과 음성을 중단한다.
                  */
@@ -2284,33 +2158,6 @@ namespace Popup.Views.Contents
             _controlsHideTimer.Stop();
             _feedbackTimer.Stop();
         }
-
-        private static string? GetQueryParameter(
-        Uri uri,
-        string parameterName)
-            {
-                string query =
-                    uri.Query.TrimStart('?');
-
-                foreach (string pair in query.Split('&'))
-                {
-                    string[] parts =
-                        pair.Split(
-                            '=',
-                            2);
-
-                    if (parts.Length == 2
-                        && parts[0].Equals(
-                            parameterName,
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        return Uri.UnescapeDataString(
-                            parts[1]);
-                    }
-                }
-
-                return null;
-            }
 
         /* 전체화면 창을 대상 모니터의 물리 픽셀 영역에 맞추기 위한 Win32 호출 (BackgroundOverlayManager와 동일 방식) */
         private static readonly IntPtr HWND_TOPMOST = new(-1);

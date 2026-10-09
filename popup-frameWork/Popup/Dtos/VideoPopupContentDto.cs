@@ -22,7 +22,6 @@
          * 예:
          * C:\Videos\education.mp4
          * https://example.com/video.mp4
-         * https://www.youtube.com/watch?v=...
          */
         public string VideoUrl { get; set; } =
             string.Empty;
