@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-09-03 — TODO28 TEXT 본문 서식 편집 방향 정리
+
+- 이유: 서식 편집 요구사항의 저장 형식·편집기·보안·적용 범위를 개발 결정 전에 확정할 필요.
+- 변경: 1차 범위를 TEXT 일반 본문으로 확정하고 SURVEY·QUIZ는 공통 구조만 준비하는 것으로 정리. 저장·전달은 문단·Run JSON(content.textBlocks, CONTENT_OPTIONS 저장, DB 변경 없음), plainText는 서버 파생, HTML은 편집기 입출력 경계에서만 처리하는 방향과 방식 비교·변환 책임 표 추가. 서식 범위(굵게·기울임·밑줄, 허용 목록 색·크기, 제한된 글꼴), 보안 원칙(innerHTML 금지, 재편집 HTML 생성 시 이스케이프, 서버 재검증, style 값 별도 검증), 기존 CKEditor 빌드 확인 결과(@cp949/ckeditor5-custom-build 0.0.15 내장 CKEditor 5 v34.1.0, 서식 플러그인 포함·General HTML Support 미포함, GPL 사용 시 배포 조건 확인 필요), Demo 반영 항목, 문항·선택지 확장 시 DB·VARCHAR 제한, 개발 전 왕복 검증 계획 기록.
+- 주요 파일: docs/design/28_TEXT_FONT_EDITING_TODO.md.
+- 검증: 편집기 빌드 버전·플러그인과 DB 스키마(CONTENT_OPTIONS·CONTENT_BODY CLOB, 문항·선택지 VARCHAR2)를 저장소에서 확인. 제품 코드 변경이 없어 빌드·실행 검증 미실행.
+- 상태: 문서 커밋에 포함. 개발 미착수.
+
 ## 2026-10-09-02 — VIDEO YouTube 임베드 재생 제거
 
 - 이유: 영상 소스를 로컬 파일 경로와 HTTP(S) 직접 재생 URL(스트리밍)로 한정하기로 확정. YouTube 임베드는 공통 컨트롤·시청량 측정·음량 동기화·탐색 정책을 적용할 수 없는 별도 경로라 유지 비용만 발생.
