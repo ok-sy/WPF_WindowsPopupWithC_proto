@@ -816,6 +816,7 @@ public class PopupService {
         }
         validateFontSizeOptions(popup.content());
         validateActionOptions(popup);
+        validateRichText(popup);
         if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
             validateImageSizeMode(popup.content());
             validateImageLayoutOptions(popup);
@@ -857,6 +858,24 @@ public class PopupService {
                     || contentText(content, "videoUrl") == null || contentText(content, "videoUrl").isBlank())
                 throw new IllegalArgumentException("동영상+퀴즈는 QUIZ 유형과 영상 URL이 필요합니다.");
         }
+    }
+
+    /** [설계 28] TEXT 본문 서식(textBlocks)은 TEXT에서만 허용하며 구조·허용 값을 검증한다. */
+    static void validateRichText(PopupResponseDto popup) {
+        Object textBlocks = popup.content() == null ? null : popup.content().get(PopupRichText.KEY);
+        if (textBlocks != null && !"TEXT".equals(normalizeUpper(popup.popupType()))) {
+            throw new IllegalArgumentException("본문 서식(textBlocks)은 TEXT 팝업에서만 사용할 수 있습니다.");
+        }
+        PopupRichText.validateAndDerivePlainText(textBlocks);
+    }
+
+    /**
+     * [설계 28] 서식 본문이 있으면 CONTENT_BODY(plainText)는 클라이언트 값이 아니라 textBlocks에서 파생한다.
+     * 두 값을 따로 수정해 어긋나는 것을 막고, 결과·통계·구버전 클라이언트는 기존 plainText를 그대로 쓴다.
+     */
+    static String bodyText(Map<String, Object> content) {
+        String derived = PopupRichText.validateAndDerivePlainText(content.get(PopupRichText.KEY));
+        return derived != null ? derived : contentText(content, "plainText");
     }
 
     /** IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / ORIGINAL만 저장한다. */
@@ -983,7 +1002,7 @@ public class PopupService {
                 toYn(popup.allowCloseBeforeComplete()),
                 contentText(content, contentTitleKey(popupType)),
                 contentText(content, "description"),
-                contentText(content, "plainText"),
+                bodyText(content),
                 contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
                         ? "videoUrl" : mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),

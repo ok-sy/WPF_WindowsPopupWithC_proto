@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-09-04 — TODO28 TEXT 본문 서식 1차 구현
+
+- 이유: 설계 28 1차 범위(TEXT 본문)의 서식 편집을 저장·조회·표시까지 반영. 저장 기준은 문단·Run JSON(content.textBlocks)이며 HTML은 저장하지 않음.
+- 변경(서버): PopupRichText에서 textBlocks 구조·허용 값(정렬 3종, 색 8종, 크기 8종, 글꼴 ID 4종)·제한(500문단·2000구간·20000자·제어 문자)을 검증하고 허용 밖 키·값은 저장 거부. TEXT 외 유형의 textBlocks 거부. 저장 시 plainText(CONTENT_BODY)를 textBlocks에서 파생하며 textBlocks는 기존 CONTENT_OPTIONS에 저장(DB 변경 없음). textBlocks가 없으면 기존 plainText 저장 유지.
+- 주요 파일: zero-rule-server/service/core/.../popup/PopupRichText.java, PopupService.java, PopupRichTextTest.java.
+- 검증: PopupRichTextTest 6건(파생 문자열의 공백·줄바꿈·빈 문단 보존, 클라이언트 plainText 무시, 허용 밖 값·HTML 문자열 거부, 제한, 유형 제한, CONTENT_OPTIONS 저장·조회) 포함 :service:core popup 패키지 테스트 통과(DB 연동 2건 기존대로 skip).
+- 상태: 서버 커밋에 포함.
+
 ## 2026-10-09-03 — TODO28 TEXT 본문 서식 편집 방향 정리
 
 - 이유: 서식 편집 요구사항의 저장 형식·편집기·보안·적용 범위를 개발 결정 전에 확정할 필요.
