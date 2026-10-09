@@ -616,6 +616,7 @@
       "showControls": true,
       "allowFullScreen": true,
       "allowPlaybackRateChange": true,
+      "allowSeek": true,
       "autoPlay": false,
       "isLoop": false,
       "defaultVolume": 0.7,

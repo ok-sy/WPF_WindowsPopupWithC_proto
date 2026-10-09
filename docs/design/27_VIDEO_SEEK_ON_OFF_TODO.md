@@ -1,6 +1,6 @@
 # 27. VIDEO 진행바 SEEK ON/OFF TODO
 
-기준일: 2026-10-08 (KST). 소스 확인: main 4a90327. 상태: 설계 정리·구현 미완료.
+기준일: 2026-10-08 (KST). 소스 확인: main 4a90327. 상태: 2026-10-09 구현 반영·자동 검증 완료, 실제 Windows 화면 검증 미실행.
 
 ## 1. 목적과 계약
 
@@ -32,17 +32,27 @@
 
 ## 2. 구현 TODO
 
-- [ ] VideoPopupContentDto에 allowSeek 수신 속성 및 기본 true 추가. 명시적 false가 기본값으로 덮이지 않도록 검증한다.
-- [ ] PopupFactory → VideoPopupView 생성 경로로 옵션 전달. VIDEO 및 VIDEO+QUIZ가 같은 정책을 사용하도록 한다.
-- [ ] 진행바 클릭·드래그의 시작/이동/종료와 키보드 등 위치 변경 진입점을 조사해 OFF일 때 차단한다. 실제 위치 변경 명령에서도 방어한다.
-- [ ] 단순히 Slider의 HitTest만 끄는 것으로 끝내지 않는다. 키보드·접근성 명령 및 웹 메시지 경로도 확인한다.
-- [ ] OFF에서는 마우스 캡처·재생 일시정지·isSeeking 설정이 발생하지 않도록 탐색 시작 전에 반환한다. 창 닫기/포커스 이탈 시 캡처 해제도 보존한다.
+- [x] VideoPopupContentDto에 allowSeek 수신 속성 및 기본 true 추가. 명시적 false가 기본값으로 덮이지 않도록 검증한다.
+- [x] PopupFactory → VideoPopupView 생성 경로로 옵션 전달. VIDEO 및 VIDEO+QUIZ가 같은 정책을 사용하도록 한다.
+- [x] 진행바 클릭·드래그의 시작/이동/종료와 키보드 등 위치 변경 진입점을 조사해 OFF일 때 차단한다. 실제 위치 변경 명령에서도 방어한다.
+- [x] 단순히 Slider의 HitTest만 끄는 것으로 끝내지 않는다. 키보드·접근성 명령 및 웹 메시지 경로도 확인한다.
+- [x] OFF에서는 마우스 캡처·재생 일시정지·isSeeking 설정이 발생하지 않도록 탐색 시작 전에 반환한다. 창 닫기/포커스 이탈 시 캡처 해제도 보존한다.
 - [ ] OFF여도 재생 위치에 따른 ProgressSlider.Value 및 시간 표시 갱신은 계속한다. 변경 불가 상태가 시각·접근성 정보에 드러나도록 한다.
-- [ ] MediaElement.Position 변경과 HTML5 seek 명령 전송/처리에 동일 정책 적용. HTML5 currentTime 초기화·루프·재시작은 별도 처리한다.
+- [x] MediaElement.Position 변경과 HTML5 seek 명령 전송/처리에 동일 정책 적용. HTML5 currentTime 초기화·루프·재시작은 별도 처리한다.
 - [ ] 웹 플레이어가 자체 탐색 UI를 노출하는지 확인한다. YouTube 등 외부 임베드는 동일한 제어가 가능한지 확인하고 미지원 조합은 등록 제한/명시적 안내로 처리한다. 막지 못하는 탐색을 막는다고 표시하지 않는다.
-- [ ] 관리자 등록·Demo 옵션에 '재생 위치 변경 허용' 체크박스 추가. 기본 체크, VIDEO/영상 포함 QUIZ에서 표시.
-- [ ] 서버 저장·조회에서 content.allowSeek를 유지하고 boolean 검증을 적용한다. 기존 content 경로를 우선 사용하며 별도 DB 컬럼 추가를 전제하지 않는다.
-- [ ] docs/interfaces/WPF_POPUP_ALL_SPEC.md와 관련 API/JSON 예제 갱신. WPF_POPUP_MINIMAL_SPEC.md도 검토하되 최초 제공 범위를 임의 확장하지 않는다.
+- [x] 관리자 등록·Demo 옵션에 '재생 위치 변경 허용' 체크박스 추가. 기본 체크, VIDEO/영상 포함 QUIZ에서 표시.
+- [x] 서버 저장·조회에서 content.allowSeek를 유지하고 boolean 검증을 적용한다. 기존 content 경로를 우선 사용하며 별도 DB 컬럼 추가를 전제하지 않는다.
+- [x] docs/interfaces/WPF_POPUP_ALL_SPEC.md와 관련 API/JSON 예제 갱신. WPF_POPUP_MINIMAL_SPEC.md도 검토하되 최초 제공 범위를 임의 확장하지 않는다.
+
+### 2.1 구현 결과 (2026-10-09)
+
+- WPF: `VideoPopupContentDto.AllowSeek`(기본 true) → `PopupFactory.CreateVideoPopupView` → `VideoPopupView(allowSeek)`. VIDEO와 VIDEO+QUIZ가 같은 생성 경로를 사용한다.
+- OFF 진입점 차단: `ProgressSlider.IsEnabled=false`·`IsTabStop=false`로 마우스·키보드·UI Automation(RangeValue) 입력을 막는다. 비활성 요소는 hit test 대상이 아니라 마우스 이동은 컨트롤바로 전달되어 자동 숨김 동작이 유지된다. `ProgressSlider_PreviewMouseLeftButtonDown`은 캡처·일시정지·`_isSeeking` 설정 전에 반환하고 `FinishSeeking`도 위치 변경 전에 반환한다.
+- HTML5: 생성 HTML의 `allowSeek` 상수로 `seek` 명령을 무시한다. 종료 후 재시작(`play` 명령의 `currentTime=0`)과 `loop` 속성은 별도 경로라 유지된다. 기본 controls가 없어 브라우저 자체 탐색 UI는 없다.
+- YouTube: allowSeek 관련 처리를 두지 않는다(임베드 파라미터·관리자 안내 없음). 위 웹 플레이어 항목의 외부 임베드 부분은 미처리로 남긴다. VIDEO+QUIZ는 기존 정책상 YouTube 등록이 거부된다.
+- 표시: 진행률·현재/전체 시간 갱신은 그대로이며 접근성 HelpText로 탐색 불가 상태를 노출한다. 진행바 외형은 바꾸지 않았다(비활성 시각 표시 방식 미결정 — 위 항목 미완료로 유지).
+- 관리자 웹: '재생 위치 변경 허용' 스위치(기본 켜짐, VIDEO·동영상+퀴즈), 미리보기에 '탐색 제한' 표시. Demo 옵션 창은 DTO 속성에서 자동 생성되어 같은 항목이 표시된다.
+- 서버: 기존 `CONTENT_OPTIONS` JSON 경로로 저장·조회되며 DB 컬럼은 추가하지 않았다. `validateActionOptions`에서 boolean 이외 값을 거부한다.
 
 ## 3. 검증 TODO
 
@@ -56,4 +66,5 @@
 - [ ] allowPlaybackRateChange와 독립적인 ON/OFF 조합 확인.
 - [ ] 창 헤더 드래그 및 저사양 CPU 개선 동작이 유지되는지 확인.
 
-이번 작업은 TODO 문서 작성이다. 제품 코드 수정·빌드·실제 Windows 검증은 수행하지 않았다.
+자동 검증(2026-10-09): WPF 행동 검증에 factory 전달(VIDEO·VIDEO_QUIZ × true/false/누락), OFF 진행률·시간 표시, 마우스 누름 시 캡처·`_isSeeking` 미발생, UI Automation SetValue 거부, HelpText를 추가해 816건 통과. HTML5 브리지 검증에 seek 명령 차단·종료 후 재시작 유지를 추가해 95건 통과. 서버 `PopupActionOptionsTest`에 boolean 검증·CONTENT_OPTIONS 유지 추가, popup 패키지 테스트 통과. 관리자 웹 `tsc --noEmit` 통과.
+위 3절 항목은 실제 Windows 화면·로컬/HTTP 영상 재생 확인이 필요해 아직 체크하지 않았다.

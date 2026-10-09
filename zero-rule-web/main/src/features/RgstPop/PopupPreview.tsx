@@ -300,7 +300,7 @@ function PopupBody({
         </Box>
         {showControls && (
           <Stack direction="row" justifyContent="space-between" color="text.secondary">
-            <Typography variant="caption">▶ 00:00 / 00:00</Typography>
+            <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>
             <Typography variant="caption">
               {content.allowPlaybackRateChange !== false ? '1.0× · ' : ''}
               {content.allowFullScreen !== false ? '전체화면' : '전체화면 제한'}

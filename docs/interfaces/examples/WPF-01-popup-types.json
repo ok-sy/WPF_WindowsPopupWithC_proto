@@ -78,6 +78,7 @@
         "showControls": true,
         "allowFullScreen": true,
         "allowPlaybackRateChange": true,
+        "allowSeek": true,
         "autoPlay": true,
         "isLoop": false,
         "defaultVolume": 0.7
@@ -322,6 +323,7 @@
         "showControls": true,
         "allowFullScreen": true,
         "allowPlaybackRateChange": true,
+        "allowSeek": true,
         "autoPlay": true,
         "isLoop": false,
         "defaultVolume": 0.7,

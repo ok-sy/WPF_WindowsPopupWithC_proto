@@ -220,7 +220,8 @@ namespace Popup.Factories
                 contentDto.AllowPlaybackRateChange,
                 contentDto.AutoPlay,
                 contentDto.IsLoop,
-                contentDto.DefaultVolume);
+                contentDto.DefaultVolume,
+                contentDto.AllowSeek);
         }
 
         /*

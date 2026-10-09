@@ -44,6 +44,18 @@ class PopupActionOptionsTest {
                 Map.of("videoEnabled", true, "videoUrl", "https://youtu.be/test"))));
     }
 
+    @Test void allowSeekAcceptsOnlyBooleanAndIsStoredAsContentOption() {
+        for (String type : new String[]{"VIDEO", "QUIZ"}) {
+            assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("allowSeek", false))));
+            assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("allowSeek", true))));
+            assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup(type,
+                    Map.of("allowSeek", "false"))));
+            assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup(type,
+                    Map.of("allowSeek", 0))));
+        }
+        assertEquals(false, PopupContentAssembler.withoutStoredCopies(Map.of("allowSeek", false)).get("allowSeek"));
+    }
+
     @Test void watchingQuizVideoDoesNotCompleteTheQuiz() {
         PopupMapper mapper = mock(PopupMapper.class);
         PopupService service = new PopupService(mapper, new ObjectMapper());

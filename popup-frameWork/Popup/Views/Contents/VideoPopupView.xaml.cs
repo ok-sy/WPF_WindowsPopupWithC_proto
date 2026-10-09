@@ -171,6 +171,7 @@ namespace Popup.Views.Contents
          *   _autoPlay                  : 영상이 열리면 바로 재생할지 (false 면 첫 프레임에서 일시정지)
          *   _isLoop                    : 끝나면 처음부터 다시 재생
          *   _defaultVolume             : 시작 음량 (0~1). 웹 플레이어(HTML5 video)에도 적용, YouTube 는 URL 로 못 정함
+         *   _allowSeek                 : [설계 27] 진행바로 재생 위치 변경 허용. false 여도 진행률·시간 표시는 유지
          */
         private readonly bool _showControls;
         private readonly bool _allowFullScreen;
@@ -178,6 +179,7 @@ namespace Popup.Views.Contents
         private readonly bool _autoPlay;
         private readonly bool _isLoop;
         private readonly double _defaultVolume;
+        private readonly bool _allowSeek;
 
         /* 배속 버튼이 순환하는 값. MediaElement.SpeedRatio 에 그대로 적용한다. */
         private static readonly double[] PlaybackRates = { 0.5, 0.75, 1.0, 1.25, 1.5, 2.0 };
@@ -193,7 +195,8 @@ namespace Popup.Views.Contents
             bool allowPlaybackRateChange = true,
             bool autoPlay = true,
             bool isLoop = false,
-            double defaultVolume = 0.7)
+            double defaultVolume = 0.7,
+            bool allowSeek = true)
         {
             InitializeComponent();
 
@@ -201,6 +204,7 @@ namespace Popup.Views.Contents
             _allowFullScreen = allowFullScreen;
             _allowPlaybackRateChange = allowPlaybackRateChange;
             _autoPlay = autoPlay;
+            _allowSeek = allowSeek;
             _controlsHideTimer.Tick += ControlsHideTimer_Tick;
             _feedbackTimer.Tick += (_, _) => { _feedbackTimer.Stop(); PlaybackFeedback.Visibility = Visibility.Collapsed; };
             LocalVideoControlArea.PreviewKeyDown += (_, _) => { _controlsKeyboardActive = true; ShowVideoControls(); };
@@ -226,6 +230,19 @@ namespace Popup.Views.Contents
             {
                 PlaybackRateButton.Visibility = Visibility.Collapsed;
                 PlaybackRateColumn.Width = new GridLength(0);
+            }
+
+            /*
+             * [설계 27] 탐색 금지: 진행바는 표시만 하고 마우스·키보드·UI Automation(RangeValue) 입력을 받지 않는다.
+             * 비활성 요소는 hit test 대상이 아니므로 마우스 이동은 컨트롤바로 전달되어 자동 숨김 동작은 그대로다.
+             * 실제 위치 변경 경로(FinishSeeking·HTML5 seek 명령)에서도 한 번 더 막는다.
+             */
+            if (!_allowSeek)
+            {
+                ProgressSlider.IsEnabled = false;
+                ProgressSlider.IsTabStop = false;
+                System.Windows.Automation.AutomationProperties.SetHelpText(
+                    ProgressSlider, "재생 위치 변경이 허용되지 않은 영상입니다.");
             }
 
             _progressTimer =
@@ -517,6 +534,7 @@ namespace Popup.Views.Contents
                     for (const type of ['seeking', 'seeked', 'waiting', 'stalled', 'playing', 'ratechange', 'volumechange'])
                       video.addEventListener(type, () => send(type));
                     const allowRate = {{(_allowPlaybackRateChange ? "true" : "false")}};
+                    const allowSeek = {{(_allowSeek ? "true" : "false")}};
                     video.addEventListener('ratechange', () => {
                       if (!allowRate && video.playbackRate !== 1) video.playbackRate = 1;
                     });
@@ -530,6 +548,7 @@ namespace Popup.Views.Contents
                           startPlayback(); break;
                         case 'pause': autoplayPending = false; video.pause(); break;
                         case 'seek':
+                          if (!allowSeek) break; // 루프·종료 후 재시작은 loop 속성과 play 명령에서 처리한다.
                           if (video.currentTime === data.value) send('seeked');
                           else { video.currentTime = data.value; send('seeking'); }
                           break;
@@ -1020,7 +1039,8 @@ namespace Popup.Views.Contents
         object sender,
         MouseButtonEventArgs e)
         {
-            if (!_isMediaOpened)
+            // [설계 27] 탐색 금지면 캡처·일시정지·_isSeeking 설정 전에 반환한다.
+            if (!_isMediaOpened || !_allowSeek)
             {
                 return;
             }
@@ -1154,7 +1174,7 @@ namespace Popup.Views.Contents
             _isSeeking = false;
             ProgressSlider.ReleaseMouseCapture();
 
-            if (!_isMediaOpened)
+            if (!_isMediaOpened || !_allowSeek)
             {
                 return;
             }

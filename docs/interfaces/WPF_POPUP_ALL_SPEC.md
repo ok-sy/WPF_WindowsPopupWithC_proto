@@ -1,7 +1,7 @@
 # WPF 팝업 전체 기능 버전 정의서
 
 - 문서 성격: All Feature Specification / Implemented WPF Scope
-- 작성 기준: 2026-10-07 (KST)
+- 작성 기준: 2026-10-09 (KST)
 - 기준 소스: `PopupResponseDto`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
 - 대응 문서: [최소 기능 버전 정의서](WPF_POPUP_MINIMAL_SPEC.md)
 
@@ -142,12 +142,14 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | DefaultVolume | 지원 | N | `0.7` | Windows 음량 연결 전·실패 시 대체값 |
 | AllowFullScreen | 지원 | N | `true` | 영상 플레이어 자체 전체화면 |
 | AllowPlaybackRateChange | 지원 | N | `true` | false면 HTML5 포함 1.0배로 제한 |
+| AllowSeek | 지원 | N | `true` | false면 진행바 탐색 금지, 진행률 표시 유지. VIDEO+QUIZ 공통 |
 | AutoPlay | 지원 | N | `false` | 자동 재생 |
 | IsLoop | 지원 | N | `false` | 반복 재생 |
 
 CompletionRatio와 AllowCloseBeforeComplete는 최상위 필드다. content 안에 중복 정의하지 않는다.
 시청량은 단순 재생 위치와 구분해 누적하며 완료 기준은 콘텐츠·결과에 연결한다.
 로컬 MediaElement와 WebView2 HTML5 경로의 공통 컨트롤·진행바·버퍼 표시·hover 표시를 지원한다.
+`allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 Windows Master Volume/Mute 연결 성공 시 현재 시스템 값이 우선하며 종료 후 이전 값으로 복원하지 않는다.
 연결 실패 시 내부 음량을 사용한다. IsMuted라는 별도 계약 필드는 없다.
 YouTube iframe은 공통 HTML5 컨트롤과 시청량 측정 대상에서 제외한다.

@@ -845,6 +845,10 @@ public class PopupService {
                 throw new IllegalArgumentException("바로가기 URL은 유효한 http/https 주소여야 합니다.");
             }
         }
+        // [설계 27] 영상 진행바 탐색 허용. 생략 시 클라이언트 기본값 true, 값이 있으면 boolean만 저장한다.
+        Object seek = content.get("allowSeek");
+        if (seek != null && !(seek instanceof Boolean))
+            throw new IllegalArgumentException("allowSeek는 boolean이어야 합니다.");
         Object video = content.get("videoEnabled");
         if (video != null && !(video instanceof Boolean))
             throw new IllegalArgumentException("videoEnabled는 boolean이어야 합니다.");

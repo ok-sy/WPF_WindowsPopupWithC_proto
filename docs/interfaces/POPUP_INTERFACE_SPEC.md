@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.6
-- 최신화: 2026-10-07 (KST)
+- 최신화: 2026-10-09 (KST)
+- 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다.
 - 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
 - 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
 - 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
@@ -477,6 +478,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
   "showControls": true,
   "allowFullScreen": true,
   "allowPlaybackRateChange": true,
+  "allowSeek": true,
   "autoPlay": false,
   "isLoop": false,
   "defaultVolume": 0.7,
@@ -496,13 +498,14 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 | showControls | boolean | 선택 | `true` | 컨트롤 표시 |
 | allowFullScreen | boolean | 선택 | `true` | 영상 전체화면 허용 |
 | allowPlaybackRateChange | boolean | 선택 | `true` | 배속 변경 허용 |
+| allowSeek | boolean | 선택 | `true` | 진행바로 재생 위치 변경 허용. 동영상+퀴즈에도 적용 |
 | autoPlay | boolean | 선택 | `false` | 자동 재생 |
 | isLoop | boolean | 선택 | `false` | 반복 재생 |
 | defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |
 
 VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
 
-로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다.
+로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 
 음량·음소거는 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다. 시작 시 현재 Windows 값을 읽고 시스템 설정을 바꾸지 않는다. 연결 성공 시 내부 영상 음량은 1.0으로 유지해 이중 감쇠를 방지하며, `defaultVolume`은 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기값으로 사용한다. 슬라이더를 0보다 크게 조절하면 Windows 음소거도 해제하고, 음소거 버튼은 현재 음량 값을 유지한 채 Windows Mute만 전환한다. 외부 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 변경은 다른 프로그램의 출력에도 영향을 주며 팝업 종료 시 이전 시스템 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다.
 
@@ -1191,6 +1194,7 @@ REJECTED
     "showControls": true,
     "allowFullScreen": true,
     "allowPlaybackRateChange": true,
+    "allowSeek": true,
     "autoPlay": true,
     "isLoop": false,
     "defaultVolume": 0.7
@@ -1450,6 +1454,7 @@ REJECTED
     "showControls": true,
     "allowFullScreen": true,
     "allowPlaybackRateChange": true,
+    "allowSeek": true,
     "autoPlay": true,
     "isLoop": false,
     "defaultVolume": 0.7,

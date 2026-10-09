@@ -98,6 +98,7 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 | Description | 미제공 | N | `""` | 영상 설명 |
 | ShowDescription | 미제공 | N | `true` | 영상 설명 표시 |
 | AllowPlaybackRateChange | 미제공 | N | `true` | 배속 변경 허용 |
+| AllowSeek | 미제공 | N | `true` | 재생 위치 변경 허용. 생략 시 기존 탐색 가능 동작 |
 | AutoPlay | 미제공 | N | `false` | 자동 재생 |
 | IsLoop | 미제공 | N | `false` | 반복 재생 |
 | AllowCloseBeforeComplete | 미제공 | N | `true` | 팝업 최상위 값. 완료 전 닫기 허용 |

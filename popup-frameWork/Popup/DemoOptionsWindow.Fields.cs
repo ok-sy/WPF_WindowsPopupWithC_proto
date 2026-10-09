@@ -19,7 +19,7 @@ namespace Popup
             ["width"]="너비 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지", ["height"]="높이 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지",
             ["keepAspectRatio"]="이미지 비율 고정", ["showDescription"]="설명 표시", ["linkUrl"]="이미지 바로가기 URL · ORIGINAL",
             ["videoTitle"]="영상 제목", ["videoUrl"]="영상 경로 또는 URL", ["showControls"]="재생 컨트롤 표시",
-            ["allowFullScreen"]="영상 전체화면 허용", ["allowPlaybackRateChange"]="배속 변경 허용", ["autoPlay"]="자동 재생",
+            ["allowFullScreen"]="영상 전체화면 허용", ["allowPlaybackRateChange"]="배속 변경 허용", ["allowSeek"]="재생 위치 변경 허용", ["autoPlay"]="자동 재생",
             ["isLoop"]="반복 재생", ["defaultVolume"]="기본 음량 · 0~1, 시스템 동기화 연결 전/실패 시",
             ["surveyTitle"]="설문·퀴즈 제목", ["title"]="문항 제목", ["optionLayout"]="선택지 배치",
             ["questionType"]="문항 유형", ["isRequired"]="필수 응답", ["isScored"]="채점 대상", ["questionScore"]="문항 배점",

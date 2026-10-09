@@ -64,6 +64,13 @@
             true;
 
         /*
+         * [설계 27] 진행바로 재생 위치를 변경(Seek)할 수 있는지 여부
+         * false여도 진행률·시간 표시는 유지하고 앞/뒤 이동만 막는다.
+         */
+        public bool AllowSeek { get; set; } =
+            true;
+
+        /*
          * 영상 시작 시 자동 재생 여부
          */
         public bool AutoPlay { get; set; }

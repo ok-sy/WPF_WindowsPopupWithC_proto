@@ -64,7 +64,7 @@ function createDefaultPopup(): AdminPopupDetail {
       showBottomDescription: false,
       showDescription: true, imageSizeMode: 'ADAPTIVE', width: 560, height: 420,
       linkUrl: '', showControls: true, allowFullScreen: true,
-      allowPlaybackRateChange: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
+      allowPlaybackRateChange: true, allowSeek: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
       useBackgroundOverlay: true,
       backgroundOverlayOpacity: 0.45,
@@ -152,9 +152,9 @@ const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
     'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'width', 'height', 'keepAspectRatio', 'linkUrl'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
-    'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
+    'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
   SURVEY: ['surveyTitle', 'description'],
-  QUIZ: ['surveyTitle', 'description', 'videoEnabled', 'videoUrl', 'videoTitle', 'showDescription', 'showControls', 'allowFullScreen', 'allowPlaybackRateChange', 'autoPlay', 'isLoop', 'defaultVolume'],
+  QUIZ: ['surveyTitle', 'description', 'videoEnabled', 'videoUrl', 'videoTitle', 'showDescription', 'showControls', 'allowFullScreen', 'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
 };
 function contentForType(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
   const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
@@ -572,7 +572,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
                 {[
                   ['showDescription', '영상 설명 표시'], ['showControls', '컨트롤 표시'], ['allowFullScreen', '전체화면 허용'],
-                  ['allowPlaybackRateChange', '배속 변경 허용'], ['autoPlay', '자동 재생'], ['isLoop', '반복 재생'],
+                  ['allowPlaybackRateChange', '배속 변경 허용'], ['allowSeek', '재생 위치 변경 허용'], ['autoPlay', '자동 재생'], ['isLoop', '반복 재생'],
                 ].map(([key, label]) => <FormControlLabel key={key} control={<Switch size="small" checked={popup.content[key] == null ? key !== 'autoPlay' && key !== 'isLoop' : popup.content[key] === true} onChange={(_, value) => updateContent(key, value)} />} label={label} />)}
                 <FormControlLabel control={<Switch size="small" checked={popup.allowCloseBeforeComplete} onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)} />} label="완료 전 닫기 허용" />
               </Box>
