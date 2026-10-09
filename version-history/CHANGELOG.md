@@ -22,7 +22,7 @@
 
   Demo 반영: Demo 샘플(DEMO-VIDEO-001·DEMO-VIDEO-QUIZ) content에 allowSeek=true를 명시하고 Demo 창 시나리오 요약에 영상 샘플의 '재생 위치 변경 허용/제한' 표시 추가. Demo 옵션 창은 DTO 속성에서 자동 생성되어 '재생 위치 변경 허용' 체크박스가 이미 표시됨. 행동 검증에 두 샘플의 옵션 창 기본값(체크)·해제 값의 DTO 반영·실제 팝업 진행바 비활성·Demo 요약 표시 검증 8건을 추가해 824건 통과, HTML5 브리지 95건 통과. 주요 파일: popup-frameWork/Popup/Services/DemoPopupDataService.cs, popup-frameWork/Popup/DemoWindow.Settings.cs. Demo 반영 커밋에 포함, 원격 반영. Demo 화면 동작 확인 완료.
 
-  실제 Windows 화면 검증: 설계 27 §3 항목(true/false/누락 조합의 로컬·HTTP 영상, OFF 시 진행바 입력 차단과 진행률 갱신, ON 회귀, 재생 컨트롤·전체화면·루프·재오픈, VIDEO+QUIZ 시청 조건·결과 전송, 배속 옵션 독립성, 창 드래그·저사양 개선 유지)을 Windows에서 확인 완료. 설계 27 문서 체크 갱신 커밋에 포함(미푸시).
+  실제 Windows 화면 검증: 설계 27 §3 항목(true/false/누락 조합의 로컬·HTTP 영상, OFF 시 진행바 입력 차단과 진행률 갱신, ON 회귀, 재생 컨트롤·전체화면·루프·재오픈, VIDEO+QUIZ 시청 조건·결과 전송, 배속 옵션 독립성, 창 드래그·저사양 개선 유지)을 Windows에서 확인 완료. 설계 27 문서 체크 갱신 커밋에 포함. 원격 반영 여부는 Git 이력으로 확인.
 
 ## 2026-10-08-02 — TODO28 TEXT 본문 서식 편집 요구사항 기록
 
@@ -46,7 +46,7 @@
 - 변경: 목록 조회 시 로그 항목을 추가하고 요청 탭에 실제 모드와 같은 GET /api/wpf/popups(본문 없음, X-Client-Version 헤더), 응답 탭에 목록 응답 전체 JSON을 기록. 표시할 팝업이 없는 조회도 기록하고 조회 직후 응답 탭을 선택. Demo에는 인증 토큰이 없어 Authorization·X-Dev-User-Id는 기록하지 않으며 샘플 유형 선택은 Demo 전용 필터라 로그 줄에만 표시. 로그 제목을 '목록 조회 · 결과 전송 로그'로 변경. 전체 기능 정의서 실행 항목 갱신(최소 제공 범위·JSON 계약 변경 없음).
 - 주요 파일: popup-frameWork/Popup/DemoWindow.xaml(.cs), docs/interfaces/WPF_POPUP_ALL_SPEC.md, popup-frameWork/Popup.BehaviorTests/Program.cs(로컬 전용).
 - 검증: 실행 중인 앱이 기본 출력 파일을 잠그고 있어 임시 출력 경로로 빌드(경고·오류 0). 기존 행동 검증에 목록 조회 로그 선택·요청 method/URL/버전 헤더·응답의 showHeader/showFooter/content·응답 탭 선택·빈 목록 기록 검증 5건을 추가해 803건 통과. 실제 Demo 화면 육안 확인 미실행.
-- 상태: Demo 목록 조회 JSON 로그 커밋에 포함(미푸시). 20261007 반입본에 포함.
+- 상태: Demo 목록 조회 JSON 로그 커밋에 포함, 원격 반영. 20261007 반입본에 포함.
 
   표시 보완: Demo 요청·응답 JSON 탭에서 한글이 \uXXXX로 이스케이프되어 읽기 어려운 문제 확인(System.Text.Json 기본 인코더 동작, JSON 값 자체는 정상). 표시·복사용 포맷에 UnsafeRelaxedJsonEscaping 인코더를 적용해 원문을 그대로 표시(TextBox 표시 전용, HTML·스크립트 삽입 없음). 결과 전송 로그에도 동일 적용. 한글 원문 표시 검증 추가해 행동 검증 804건 통과.
 
@@ -56,7 +56,7 @@
 - 변경: main의 Demo 목록 조회 JSON 로그 커밋(2026-10-07-15) 기준으로 offline-export/20261007 생성(4a90327 기준 최초 생성 후 Demo 변경을 포함해 재생성, WPF/MockSso·문서 묶음, MANIFEST, DELETE-SINCE-20260930, 반입 안내, 소스 SHA256, TAR·통합 TGZ 및 체크섬). 서버·웹 묶음은 20261006과 바이트 단위로 같아 제외하고, 기존 반입본과 같은 3·4 번호를 유지. MockSso 개인 launchSettings 제외. 이력 재작성으로 직전 기준 커밋과 조상 관계가 없어 삭제 목록은 rename 미적용 트리 비교로 산출해 popup-frameWork/Popup/Docs 5개(루트 docs 이동) 추가. NuGet·SDK는 20261006 반입본 사용(패키지 참조 변경 없음).
 - 주요 파일: offline-export/20261007/ (Git 제외), .offline-verify/package-20261007.ps1·finalize-20261007.ps1 (Git 제외), version-history/CHANGELOG.md.
 - 검증: 생성 단계에서 서버·웹 묶음이 20261006과 바이트 단위 동일함을 확인해 제외, WPF 묶음 차이는 Git 변경 파일과 일치. 새 worktree 체크아웃은 core.autocrlf로 줄바꿈이 달라져 사용하지 않고 정리된 main 작업 트리에서 생성. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·win-x64 self-contained publish 성공, popupSample.exe의 PerMonitorV2 manifest 포함 확인. TAR 목록·제외 대상 누출·영상 원본 해시·TGZ 구성 검증, TGZ 추출 후 TAR·소스 SHA256 일치. 서버·웹은 소스 변경이 없어 포함·재빌드 미실행.
-- 상태: 반입본 생성·검증 완료. 이 변경 이력 항목은 Demo 목록 조회 JSON 로그 커밋에 포함(미푸시). 폐쇄망 PC 반입·실행·배포 미실행.
+- 상태: 반입본 생성·검증 완료. 이 변경 이력 항목은 Demo 목록 조회 JSON 로그 커밋에 포함, 원격 반영. 폐쇄망 PC 반입·실행·배포 미실행.
 
 ## 2026-10-07-13 — TODO26 VIDEO 모서리 창 DPI 이동 동기화
 
