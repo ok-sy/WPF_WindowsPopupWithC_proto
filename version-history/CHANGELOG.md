@@ -61,6 +61,8 @@
 
   재생성: 최초 생성 이후의 결과 항목 변환 예외 상태 분리(2026-10-12-19)와 Demo 창 높이 미세 조정(7dcbbaa, DemoWindow.xaml 1줄)을 반영하기 위해 main 7dcbbaa 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성은 같음(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 서버 묶음의 WpfPopupController에 processItems 반영, WPF 묶음의 DemoWindow.xaml이 저장소와 같음을 확인. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,631,950바이트). 구현 검증은 서버 105건(로컬 XE DB 연동 포함). 재생성 기록 커밋은 미푸시. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 적용 미실행.
 
+  재생성(2차): 문서 정리·정합성 보완(2026-10-12-21), IMAGE linkUrl 삭제·DB 14(2026-10-12-22), 관리자 웹 WPF 정합성 보완(2026-10-12-23), 정의서 Word/PDF v3.7(2026-10-12-24)을 반영하기 위해 main 6ac5375 소스 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성: 서버 A88·M7, 웹 A8·M8·D2, WPF 85, 문서 73(구버전 Word/PDF는 docs/interfaces/OLD 제외 규칙으로 미포함, Excel 정의서·Word/PDF v3.7 포함). DELETE-SINCE-20260930에 이번 문서 정리 삭제분 14개 추가(반입 안내에 구버전 Word/PDF는 OLD로 옮겨 보관 가능하다고 명시). 반입 안내에 DB 적용 순서 13 → (서버 교체) → 12 → 14 반영. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,630,926바이트). 재생성 기록 커밋은 미푸시. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13·14 적용 미실행.
+
 ## 2026-10-12-17 — 오프라인 빌드 스크립트 단일 EXE 옵션
 
 - 이유: 폐쇄망 빌드 스크립트(build-wpf-offline.ps1)는 폴더형 게시만 지원했고, 단일 EXE 게시는 온라인 NuGet 원본을 쓰는 README 명령으로만 안내되어 있었음. 오프라인 패키지로 실행 파일 하나만 내보낼 수 있게 함.
