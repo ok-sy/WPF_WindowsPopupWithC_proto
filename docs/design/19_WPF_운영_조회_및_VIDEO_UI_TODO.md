@@ -257,7 +257,7 @@ ratechange
 - [ ] VIDEO+QUIZ에서도 동일 컨트롤바 동작 확인
 - [x] 가능하면 `IVideoPlayer` 계층으로 MediaElement/WebView2 재생 엔진 분리 검토(현재는 View의 공통 명령 메서드로 통합, 별도 엔진 계층은 추가하지 않음)
 
-초기 적용: WebView2 HWND 때문에 영상 아래 별도 행에 공통 WPF 컨트롤을 고정했다. 이후 §9에서 CompositionControl과 공통 Overlay로 전환했고, 컨트롤 숨김 여부가 영상 높이·스크롤 위치에 영향을 주지 않는다. HTML5 명령은 `PostWebMessageAsJson`으로 전달하고 메타데이터·위치·재생/일시정지·탐색·버퍼링·음량·배속·종료·오류를 WPF에 반영한다. 탐색 중 이동한 구간은 누적 시청시간에 넣지 않는다. URL의 쿼리 문자열은 HTML 속성 인코딩으로 보존한다. YouTube iframe은 기존 별도 플레이어/시청량 측정 미지원 정책을 유지하며 이번 HTML5 공통 컨트롤 적용 대상에 포함하지 않는다.
+초기 적용: WebView2 HWND 때문에 영상 아래 별도 행에 공통 WPF 컨트롤을 고정했다. 이후 §9에서 CompositionControl과 공통 Overlay로 전환했고, 컨트롤 숨김 여부가 영상 높이·스크롤 위치에 영향을 주지 않는다. HTML5 명령은 `PostWebMessageAsJson`으로 전달하고 메타데이터·위치·재생/일시정지·탐색·버퍼링·음량·배속·종료·오류를 WPF에 반영한다. 탐색 중 이동한 구간은 누적 시청시간에 넣지 않는다. URL의 쿼리 문자열은 HTML 속성 인코딩으로 보존한다. YouTube iframe은 기존 별도 플레이어/시청량 측정 미지원 정책을 유지하며 이번 HTML5 공통 컨트롤 적용 대상에 포함하지 않는다. (2026-10-09: YouTube 임베드 재생은 제거했다 — CHANGELOG 2026-10-09-02. 현재 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원한다.)
 
 ### 2.7 완료 기준
 
@@ -618,7 +618,7 @@ HTTP 504
 - 원인 후보: 기존 HTML5는 autoplay 속성에만 의존해 소리 있는 자동 재생 정책에 대응하지 못했고, NavigationCompleted 성공 시 영상 준비 전에도 로딩 안내를 숨겼다. 실제 사용 서버 URL 증상은 별도 재현하지 않았다.
 - 변경: 영상 전용 WebView2 프로필(`LocalApplicationData/Popup/VideoWebView2`)에 `--autoplay-policy=no-user-gesture-required` 적용. HTML5 preload 및 canplay 시 1회 명시적 재생 요청 추가. autoPlay=false·수동 일시정지 후 canplay 재발생 시 자동 재생하지 않음.
 - 표시: 초기 로딩은 페이지 탐색 완료·메타데이터·음량 변경으로 숨기지 않고 canplay/playing 시 해제. waiting/stalled는 버퍼링 안내 및 불확정 ProgressBar 표시. 재생 정책 거절은 재생 버튼/영상 클릭 안내, 디코딩·HTTP 오류는 오류 안내로 구분. AbortError는 수동 pause에 따른 취소로 처리. 정책 거절은 시청 완료·재생 실패 상태로 간주하지 않는다.
-- 검증: Windows WPF 동작 223건 및 HTML5 브리지 60건 통과. 임시 WPF/HTTP 통합 테스트에서 실제 WebView2 Runtime 154.0.4258.48로 20건 통과: 1.2초 HTTP 지연 중 로딩, 소리 유지·클릭 없는 자동 재생, 자동 재생 끔, WPF 재생 명령, 수동 pause 유지, 브라우저 이벤트를 주입한 버퍼링/음량/재개 표시, 실제 HTTP 404 오류·로딩 종료. 실제 네트워크 대역폭 저하 버퍼링·사용 서버 URL·Runtime 134·YouTube 검증은 미실행.
+- 검증: Windows WPF 동작 223건 및 HTML5 브리지 60건 통과. 임시 WPF/HTTP 통합 테스트에서 실제 WebView2 Runtime 154.0.4258.48로 20건 통과: 1.2초 HTTP 지연 중 로딩, 소리 유지·클릭 없는 자동 재생, 자동 재생 끔, WPF 재생 명령, 수동 pause 유지, 브라우저 이벤트를 주입한 버퍼링/음량/재개 표시, 실제 HTTP 404 오류·로딩 종료. 실제 네트워크 대역폭 저하 버퍼링·사용 서버 URL·Runtime 134·YouTube 검증은 미실행(YouTube는 2026-10-09 재생 제거로 검증 대상에서 제외).
 - 제약: 브라우저 플래그는 Microsoft가 개발용으로 안내하는 방식이므로 현재 프로토타입에 적용했다. 정식 배포 전 대상 Runtime에서 정책·지원 여부를 재검토한다([Microsoft WebView2 browser flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)).
 - 상태: URL 영상 자동 재생·로딩 안내 및 검증 기록을 main 커밋·origin/main 푸시 대상으로 정리. 실행 중인 기존 앱 교체, dist·반입 패키지·배포 갱신 없음.
 
@@ -802,7 +802,7 @@ Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows
 - [x] 팝업 종료 후 사용자가 변경한 Windows 최종 볼륨 상태 유지 확인(테스트 대역에서 종료 시 쓰기 0회·최종 값 유지)
 - [ ] 실제 Windows 외부 볼륨 변경·플레이어 조작·장치 교체·재생 중 복구·종료 후 상태 유지 수동 검증
 
-2026-10-03 적용: `WindowsMasterVolume`이 Core Audio 엔드포인트를 소유하며 WPF Dispatcher에서만 COM 조회·변경·해제를 수행한다. 네이티브 음량 알림은 Dispatcher에 재조회만 예약하고 콜백 안에서 등록 해제하지 않는다. 기본 멀티미디어 출력 장치 변경·장치 없음은 2초 타이머로 감지하고 기존 콜백·COM 참조를 해제한 뒤 다시 연결한다. 시작·장치 복구 시 Windows 값을 읽기만 하며 설정을 강제로 바꾸지 않는다. 음량 슬라이더를 0보다 크게 바꾸면 시스템 Mute를 해제하고 음소거 버튼은 기존 음량을 유지한다. 연결 실패 시 마지막 표시 음량을 내부 플레이어에 적용하며 최초 연결 실패 시 `defaultVolume`을 사용한다. 시스템 음량 연결 성공 시 내부 음량은 1.0이고 HTML5 상태 메시지는 시스템 슬라이더를 덮어쓰지 않는다. 종료 시 콜백·타이머·COM만 정리하고 Windows 최종 값은 유지한다. YouTube는 기존 자체 플레이어 정책으로 제외한다.
+2026-10-03 적용: `WindowsMasterVolume`이 Core Audio 엔드포인트를 소유하며 WPF Dispatcher에서만 COM 조회·변경·해제를 수행한다. 네이티브 음량 알림은 Dispatcher에 재조회만 예약하고 콜백 안에서 등록 해제하지 않는다. 기본 멀티미디어 출력 장치 변경·장치 없음은 2초 타이머로 감지하고 기존 콜백·COM 참조를 해제한 뒤 다시 연결한다. 시작·장치 복구 시 Windows 값을 읽기만 하며 설정을 강제로 바꾸지 않는다. 음량 슬라이더를 0보다 크게 바꾸면 시스템 Mute를 해제하고 음소거 버튼은 기존 음량을 유지한다. 연결 실패 시 마지막 표시 음량을 내부 플레이어에 적용하며 최초 연결 실패 시 `defaultVolume`을 사용한다. 시스템 음량 연결 성공 시 내부 음량은 1.0이고 HTML5 상태 메시지는 시스템 슬라이더를 덮어쓰지 않는다. 종료 시 콜백·타이머·COM만 정리하고 Windows 최종 값은 유지한다. YouTube는 기존 자체 플레이어 정책으로 제외한다. (2026-10-09: YouTube 임베드 재생 제거, CHANGELOG 2026-10-09-02)
 
 검증: WPF 빌드 경고·오류 0, WPF 동작 292건 및 생성 HTML5 브리지 89건 통과. 초기 0·Mute, UI 변경, 외부 알림의 쓰기 루프 방지, 실패 시 UI 복원, 장치 없음 내부 음량, 새 장치 값 채택, 종료 후 늦은 이벤트 무시·설정 미복원 검증 포함. 실제 Core Audio 읽기 성공. 실제 Windows 설정 변경·물리 장치 교체·BackgroundOverlay 화면의 오디오 출력 확인은 미실행.
 
@@ -818,12 +818,12 @@ Sync 모드에서는 MediaElement/HTML5 video의 내부 볼륨 처리와 Windows
 
 ### 9.10 2026-10-02 Overlay 구현 및 검증
 
-- 로컬/URL 컨트롤·클릭 입력·중앙 재생 피드백·Loading/Buffering Spinner를 동일 VideoSurface의 WPF Overlay로 통합. 별도 컨트롤 행 제거. URL은 HWND 기반 WebView2 대신 현행 SDK 1.0.3124.44의 WebView2CompositionControl 사용([Microsoft WPF WebView2 문서](https://learn.microsoft.com/en-us/microsoft-edge/webview2/platforms/wpf)). HTML 내부 별도 UI는 추가하지 않음. YouTube는 기존 자체 플레이어 정책 유지.
+- 로컬/URL 컨트롤·클릭 입력·중앙 재생 피드백·Loading/Buffering Spinner를 동일 VideoSurface의 WPF Overlay로 통합. 별도 컨트롤 행 제거. URL은 HWND 기반 WebView2 대신 현행 SDK 1.0.3124.44의 WebView2CompositionControl 사용([Microsoft WPF WebView2 문서](https://learn.microsoft.com/en-us/microsoft-edge/webview2/platforms/wpf)). HTML 내부 별도 UI는 추가하지 않음. YouTube는 기존 자체 플레이어 정책 유지. (2026-10-09: YouTube 임베드 재생 제거, CHANGELOG 2026-10-09-02)
 - 마우스 진입 시 즉시 표시, 재생 중 이탈 시 즉시 숨김. 영상 안에서 3초 무입력 시 컨트롤 숨김, 이동·클릭 시 재표시. Pause·Seek·마우스 조작·키보드 조작 동안 표시 유지. 조작 종료 후 재예약. 입력은 영상 전용 형제 Border에서 처리해 컨트롤 버튼/Slider 입력이 재생 토글로 전달되지 않음. 중앙 Play/Pause 피드백은 700ms 후 제거. 종료 시 두 타이머 정리.
 - HTML5 progress 메시지에 buffered 구간 배열 추가. 끊어진 다운로드 구간도 진행바의 해당 시간 위치에 회색으로 표시. 범위 표시로 시청시간을 변경하지 않음. MediaElement는 초기 로딩 및 BufferingProgress가 제공하는 0~1 사이 대기 상태를 공통 Spinner로 표현.
 - 전체화면은 기존 VideoContainer를 이동해 동일 Overlay를 재사용하고 진입·복귀 시 숨김 타이머 재예약. showControls=false·전체화면/배속 금지 정책 유지. 결합 VIDEO+QUIZ의 단일 ScrollViewer·문항 잠금·높이 유지 레이아웃 검증 통과.
 - CompositionControl 실제 Loaded에는 Microsoft.Windows.SDK.NET·WinRT.Runtime이 필요하다. Popup 및 동작 검증 프로젝트 TargetFramework를 net10.0-windows10.0.17763.0으로 명시해 Windows SDK 런타임을 포함. WebView2 버전 유지. 폐쇄망에는 Windows SDK NuGet 의존성 재수집이 필요하며 이번 작업에서 반입 묶음·dist는 재생성하지 않음.
 - Windows SDK 10.0.401 환경에서 WPF 동작 **245건**, 생성 HTML5 브리지 **64건** 통과. WPF Overlay 계층, 클릭 전파 분리, Pause/조작 중 숨김 방지, showControls=false, buffered 구간 좌표, 종료 타이머 정리 포함. 기존 결합 스크롤·완료율·시청시간·제출 경로 검증 유지.
 - 임시 실제 MediaElement/WebView2 Runtime 154.0.4258.48 + 로컬 HTTP 테스트 **37건 통과**: 자동 재생·로딩·HTTP 오류·브리지 Buffering·WPF 영상 클릭·3초 숨김·피드백 자동 제거·Pause 컨트롤 유지·영역 안 Overlay 배치. 로컬/URL 렌더링 PNG를 생성·시각 확인해 실제 영상 위 WPF 컨트롤 표시 확인. 클릭·버퍼링 입력은 이벤트 주입이며 물리 입력·실제 네트워크 단절 테스트는 아님.
-- 전체화면 왕복·물리 마우스/키보드·실제 모니터 DPI·폐쇄망 Runtime 134·YouTube·사용 서버 URL 검증은 미실행. 해당 항목을 완료로 처리하지 않음. Overlay·hover 구현은 ae4d017로 커밋하고 eaafad1까지 origin/main 푸시 완료.
+- 전체화면 왕복·물리 마우스/키보드·실제 모니터 DPI·폐쇄망 Runtime 134·YouTube·사용 서버 URL 검증은 미실행(YouTube는 2026-10-09 재생 제거로 검증 대상에서 제외). 해당 항목을 완료로 처리하지 않음. Overlay·hover 구현은 ae4d017로 커밋하고 eaafad1까지 origin/main 푸시 완료.
 - hover 후속: 진입 즉시 표시·재생 중 이탈 즉시 숨김 및 정지/드래그 유지 검증 추가 후 Windows WPF 동작 253건 통과. 실제 물리 마우스 검증은 미실행.

@@ -4,8 +4,8 @@
 
 이 문서는 관리자 화면, zero-rule-server(Oracle), WPF 클라이언트가 공유하는 팝업 옵션과 실제 호출 기능을 최신 `main` 소스 기준으로 정리한다.
 
-사용자·운영자가 화면에서 어떤 값을 선택하는지에 대한 설명은 `POPUP_USER_OPTION_GUIDE.md`를 참고한다.
-관리자 화면에 아직 노출되지 않았거나 계층 간 값이 불일치하는 항목은 `POPUP_ADMIN_UI_GAP.md`를 참고한다.
+관리자 화면에서 어떤 값을 선택하는지에 대한 설명은 [`POPUP_USER_OPTION_GUIDE.md`](POPUP_USER_OPTION_GUIDE.md)를 참고한다.
+계층 간 값이 다르거나 아직 정하지 않은 항목(WPF 전용 `AUTO` 크기 모드, 기간·반복 정책 등)은 [`design/09_전환계획_및_미결사항.md`](design/09_전환계획_및_미결사항.md)에서 관리한다.
 
 기능 범위는 [최소 기능 정의서](interfaces/WPF_POPUP_MINIMAL_SPEC.md)와 [전체 기능 정의서](interfaces/WPF_POPUP_ALL_SPEC.md)를 함께 관리한다.
 
@@ -47,14 +47,20 @@
 | `popupId` | `NOTICE_001` | 팝업 고유 ID. 숨김, 상태, 응답, 이벤트의 기준 키 |
 | `popupType` | `TEXT` | `TEXT`, `IMAGE`, `VIDEO`, `SURVEY`, `QUIZ` |
 | `title` | 문자열 | PopupWindow 공통 Header 제목 |
-| `displayStartAt` | 일시 | 노출 시작 시각 |
-| `displayEndAt` | 일시 | 노출 종료 시각 |
 | `displayMode` | `SEQUENTIAL` | 같은 우선순위 그룹 안의 표시 방식 |
 | `displayOrder` | `100` | 숫자가 작을수록 먼저 표시. 같은 숫자는 한 표시 그룹 |
 | `showHeader` | `true` | 공통 Header 표시 |
 | `showFooterButton` | `true` | Footer 버튼 표시(닫기·제출·바로가기). Header에는 고정 로고 표시 |
 | `showFooter` | `true` | Footer 표시 |
 | `showDoNotShowAgain` | `false` | 다시 보지 않기 체크박스 표시. Footer가 있어야 화면에 보임 |
+| `footerAction` | `CLOSE` | Footer 버튼 동작. `CLOSE`(닫기) / `LINK_AND_CLOSE`(바로가기) / `SUBMIT`(제출, SURVEY·QUIZ 고정). 생략·미지원 값은 유형별 기본값 |
+| `footerLinkUrl` | 빈 문자열 | `LINK_AND_CLOSE`일 때 열 절대 HTTP/HTTPS URL |
+| `useBackgroundOverlay` | `true` | 팝업 표시 중 배경 클릭 차단·어둡게 표시 |
+| `backgroundOverlayOpacity` | `0.45` | 배경 어둡기 0~1(범위 밖 값은 보정) |
+| `popupPosition` | `CENTER` | 주 모니터 작업 영역 기준 9방향 위치(`TOP_LEFT`~`BOTTOM_RIGHT`). 미지원 값은 `CENTER`. FULLSCREEN에서는 사용하지 않음 |
+| `headerFontSize` / `bodyFontSize` / `footerFontSize` | 없음(null) | 영역별 글자 크기. 없으면 XAML 기본 크기, 값이 있으면 10~40으로 보정 |
+
+> 위 표는 WPF 목록 응답(`popups[]` 최상위, `PopupResponseDto`) 기준이다. `displayStartAt`/`displayEndAt`은 WPF 응답에서 삭제했다(설계 29). 관리자 API·DB는 `footerAction`~`footerFontSize`를 `content`(CONTENT_OPTIONS)에 저장하고, 서버가 WPF 응답을 만들 때 최상위로 올린다(설계 30·31). 관리자 `showCloseButton`(라벨 "닫기 표시")은 WPF `showFooterButton`에 대응한다.
 
 ### 2.2 표시 방식
 
@@ -139,7 +145,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `imageSizeMode` | string | 이미지 표시 방식 |
 | `width` / `height` | number | content 내부 단일 크기. ADAPTIVE 창 크기, FIT_TO_IMAGE 이미지 표시 크기 |
 | `keepAspectRatio` | bool | FIT_TO_IMAGE 비율 고정, 기본 true. false는 왜곡 허용 |
-| `linkUrl` | string | 이미지 클릭 시 이동 URL |
+| `linkUrl` | string | 이미지 클릭 시 이동 URL. WPF는 `ORIGINAL`에서만 사용 |
 
 현재 관리자 화면에는 다음 이미지 모드가 노출된다.
 
@@ -149,7 +155,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `FIT_TO_IMAGE` | 지정 크기(없으면 원본)에 맞춰 창 크기 재계산 | `FitToImage` |
 | `ADAPTIVE` | 고정 팝업 영역 안에 비율 유지하여 맞춤 | `Adaptive` |
 
-신규 관리자 등록 기본 선택은 `ORIGINAL`이다. API 필드가 없으면 기존 호환을 위해 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 지원하지 않는다.
+신규 관리자 등록 기본 선택은 `ADAPTIVE`이다. API 필드가 없으면 기존 호환을 위해 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 지원하지 않는다.
 
 ---
 
@@ -217,7 +223,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.
 
-선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. [데모 확인 절차](OPTION_LAYOUT_DEMO.md).
+선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. 필드 계약은 [`interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md) §9를 따른다.
 
 ### 7.3 QUIZ
 
@@ -237,7 +243,7 @@ QUIZ는 다음 기능이 추가된다.
 ## 8. 실제 WPF API 호출 목록
 
 > **설계 18 L-0 (2026-09-28)** — 구 사용자용 API(`/api/popups?userId=`, `/hide`, `/responses`, `/video-progress`, `/events`, `/statuses`) 설명과 해당 `PopupApiService` 메서드는 삭제했다.
-> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.6 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
+> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.7 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
 
 WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 사용자를 식별한다.
 
@@ -271,7 +277,7 @@ AND showDoNotShowAgain = true
 
 ## 11. 공통 푸터 동작
 
-`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 목록 응답에서는 `popups[]` 최상위 값이다(설계 30). 이 동작은 푸터와 닫기 버튼이 표시된 경우에만 화면에 나타난다.
+`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 목록 응답에서는 `popups[]` 최상위 값이다(설계 30). 이 동작은 `showFooter`와 `showFooterButton`이 모두 켜져 Footer 버튼이 표시된 경우에만 화면에 나타난다.
 
 ---
 
@@ -286,4 +292,4 @@ AND showDoNotShowAgain = true
 5. 기간·대상·숨김·완료 대상 판정은 서버가 목록 조회 전에 끝낸다.
 6. IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈는 최신 main에서 관리자·미리보기·WPF·서버 계약에 반영되어 있다.
 
-세부 작업 후보와 우선순위는 `POPUP_ADMIN_UI_GAP.md`에서 관리한다.
+남은 미결 항목(WPF 전용 `AUTO` 크기 모드 처리, 기간·반복 정책)은 [`design/09_전환계획_및_미결사항.md`](design/09_전환계획_및_미결사항.md)에서 관리한다.

@@ -27,7 +27,7 @@
 
 > 핵심 원칙: 백엔드는 내부 구조를 자유롭게 설계할 수 있다. 다만 이 문서의 URL, 헤더, JSON 필드, ENUM, 의미와 처리 결과를 C# 클라이언트가 이해할 수 있는 형태로 제공해야 한다.
 >
-> **표 읽는 기준**: `필수 여부`는 백엔드가 계약상 값을 제공해야 하는지의 기준이고, `Default`는 필드가 생략되거나 null일 때 현재 C# 클라이언트가 사용하는 값/처리다. 필수 필드에 C# fallback이 있더라도 신규 백엔드는 필수 값을 명시해서 보내는 것을 기준으로 한다.
+> **표 읽는 기준**: `필수 여부`는 백엔드가 계약상 값을 제공해야 하는지의 기준이고, `Default`는 필드가 생략되거나 null일 때 현재 C# 클라이언트가 사용하는 값/처리다. 필수 필드에 C# fallback이 있더라도 신규 백엔드는 필수 값을 명시해서 보내는 것을 기준으로 한다. 최소·전체 기능 정의서가 같은 필드를 `N`으로 적는 경우의 차이는 6.4 "필수 여부 표기 기준"을 따른다.
 
 ---
 
@@ -124,7 +124,7 @@ X-Client-Version: 1.0.0
 
 값은 WPF 실행 파일의 버전에서 생성된다.
 
-백엔드가 최소 지원 버전을 검사하지 않는 경우 이 헤더를 무시할 수 있다. 버전 강제 업데이트 기능을 구현한다면 §9의 426 계약을 따른다.
+백엔드가 최소 지원 버전을 검사하지 않는 경우 이 헤더를 무시할 수 있다. 버전 강제 업데이트 기능을 구현한다면 §13.1의 426 계약을 따른다.
 
 ### 4.2 Authorization
 
@@ -238,8 +238,8 @@ X-Client-Version: 1.0.0
 
 | 필드 | 형식 | 필수 여부 | Default | C# 처리 |
 |---|---|---|---|---|
-| popupId | string | O | 없음 | 결과 전송 식별자 |
-| popupType | string | O | 없음 | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
+| popupId | string | O | 계약 기본값 없음(C# 초기값 `""`) | 결과 전송 식별자. 빈 값이면 결과 수집 연결을 건너뜀 |
+| popupType | string | O | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | title | string | O | `""` | 공통 Header 제목 |
 | displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
 | displayOrder | integer | O | `100` | 작은 값 우선, 같은 값은 같은 표시 그룹 |
@@ -285,9 +285,9 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 ---
 
-## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03)
+## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03, 2026-10-12 갱신)
 
-기준 커밋: a93a74d. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
+기준: 최초 점검은 2026-10-03 `main` 코드이며, 이후 설계 29~34 변경(목록 필드 정리·결과 status 확장 등)을 2026-10-12 `main` 기준으로 같은 절에 반영했다. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
 
 ### 반드시 제공할 값
 
@@ -320,7 +320,8 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 ### 기본값 사용이 가능한 항목과 null 주의
 
 - displayMode 생략은 SEQUENTIAL, sizeMode 생략은 FIXED. 명시한 값은 지원 ENUM이어야 하며 null은 허용하지 않는다.
-- width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다. 기존 공통 필드 표의 O는 전체 계약 권장 출력 필드이며, 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
+- width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다.
+- **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`displayOrder`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
 - completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
 - serverTime/userId는 진단용(WPF 동작에 미사용), pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
@@ -445,10 +446,11 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
   "showDescription": true,
   "imageSizeMode": "ADAPTIVE",
   "width": 640,
-  "height": 480,
-  "linkUrl": "https://example.com/notice"
+  "height": 480
 }
 ```
+
+위 예시는 일반 모드(ADAPTIVE)다. `linkUrl`은 ORIGINAL에서만 동작하므로 일반 모드 예시에는 넣지 않는다. ORIGINAL 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png","linkUrl":"https://example.com/notice"}`.
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
@@ -460,7 +462,7 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | width | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 너비, FIT_TO_IMAGE 실제 이미지 너비, 양수·유한값 |
 | height | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 높이, FIT_TO_IMAGE 실제 이미지 높이, 양수·유한값 |
 | keepAspectRatio | boolean | FIT_TO_IMAGE 전용 | `true` | 원본 비율 고정/해제 |
-| linkUrl | string | 선택 | `""` | 이미지 클릭 시 이동 URL |
+| linkUrl | string | 선택(ORIGINAL 전용) | `""` | 이미지 클릭 시 이동 URL. **ORIGINAL에서만 적용**(ImageFillPopupView). ADAPTIVE·FIT_TO_IMAGE View에는 전달하지 않으므로 보내도 클릭 동작이 없다 |
 
 ### imageSizeMode
 
@@ -686,7 +688,7 @@ passingScore 이상
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
-- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. 헤더 닫기는 기존 종료 정책을 따른다.
+- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 종료 경로는 `allowCloseBeforeComplete` 등 기존 종료 정책을 따른다.
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - `allowCloseBeforeComplete: true`면 Alt+F4 등으로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
@@ -770,7 +772,7 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
 | clientRequestId | string | O | C#이 전송 시 새 GUID(N 형식) 생성 | 전송 요청 단위 ID. 재전송 요청에서는 새 값일 수 있음 |
-| sentAt | string(ISO) | O | C# 전송 시각 | 이번 전송 시각 |
+| sentAt | string(ISO) | 선택(서버) / WPF 항상 전송 | C# 전송 시각 | 이번 전송 시각. 서버는 필수 검증하지 않으며 현재 업무 로직에 사용하지 않음 |
 | results | array | O | `[]` | 실제 전송 시 1~50개씩 전송 |
 
 ### results[] 공통
@@ -782,6 +784,13 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 | resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정 |
 | displayedAt | string(ISO) | 선택 | `null` 가능 |
 | closedAt | string(ISO) | 선택 | `null` 가능 |
+| hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 목록의 hideDays(1 이상), 없으면 30. 1~3650(§10.4) |
+| answers[] | array | SUBMITTED(SURVEY·QUIZ·VIDEO+QUIZ) 필수 | `null`. 1개 이상. `questionId`·`optionIds[]`(TEXT는 [])·`textAnswer`(TEXT 문항). null 요소 금지(§10.5·10.6) |
+| score | number | QUIZ SUBMITTED 필수 | `null`. WPF 최종 채점 점수, 0 이상. SURVEY는 보내지 않음(§10.6) |
+| passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 최종 통과 여부(§10.6) |
+| video | object | VIDEO_WATCHED·VIDEO+QUIZ SUBMITTED 필수 | `null`. 영상 시청 정보(§10.7) |
+
+유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 항목만 `REJECTED`로 응답한다(§11).
 
 > `closedAt - displayedAt`은 팝업 표시부터 종료·제출까지의 **화면 체류·처리 시간**이며, 첫 입력부터의 실제 응답 시간은 아니다(설계 34-09). 서버는 두 시각을 사용자·팝업 단위 상태(USER_POPUP_STATUS의 표시·닫기 시각)에 최신값으로 반영하므로, 결과 건별 체류 시간 통계가 필요하면 별도 보존 경로를 정해야 한다. 별도 응답 시작 시각(`responseStartedAt`)은 displayedAt과 같은 값이라 제거했다(설계 32). 보내더라도 서버는 무시한다.
 
@@ -930,7 +939,7 @@ VIDEO_WATCHED
 | results[].popupId | string | O | 없음 | 요청 popupId |
 | results[].resultType | string | O | 없음 | 요청 resultType |
 | results[].status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR |
-| results[].code | string | 선택 | `null` | REJECTED·오류 사유 코드(WPF_RETRYABLE, WPF_INTERNAL 등) |
+| results[].code | string | 선택 | `null` | REJECTED·오류 사유 코드. 값은 아래 "항목 code 값" 표 |
 | results[].message | string | 선택 | `null` | REJECTED·오류 설명(내부 오류 상세는 노출하지 않음) |
 
 ### status 의미
@@ -942,6 +951,23 @@ VIDEO_WATCHED
 | REJECTED | 수정 없이 재전송해도 실패하는 업무 오류. 사유 기록 후 종결 |
 | RETRYABLE_ERROR | DB 연결 장애·데드락·잠금 대기·타임아웃 등 확인된 일시 장애. 항목은 롤백됨 |
 | INTERNAL_ERROR | 원인 미확정 내부 오류. 항목은 롤백됨 |
+
+### 항목 code 값
+
+현재 저장소 서버(WpfPopupController·WpfPopupService)가 결과 항목에 넣는 code다. WPF는 code를 로그에만 남기고 큐 처리는 `status`로만 결정하므로, 백엔드는 code를 진단용으로 확장할 수 있다.
+
+| status | code | 의미 |
+|---|---|---|
+| REJECTED | WPF_INVALID_RESULT | 항목 형식 오류(resultId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
+| REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(대상 아님, 유효한 영상 팝업 아님, 사용자·팝업 확인 실패) |
+| REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
+| REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지 등) |
+| REJECTED | WPF_INVALID_HIDE_DAYS | 숨김 일수 업무 검증 실패 |
+| REJECTED | WPF_INVALID_VIDEO | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
+| RETRYABLE_ERROR | WPF_RETRYABLE | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
+| INTERNAL_ERROR | WPF_INTERNAL | 원인 미확정 내부 오류. 검증 통과 후 변환 단계의 예상하지 못한 예외 포함 |
+
+REJECTED의 세부 code(WPF_NOT_ELIGIBLE~WPF_INVALID_VIDEO)는 서버 업무 예외 메시지를 기준으로 분류한 진단값이다. 요청 전체 단위 오류는 항목 code가 아니라 §13의 HTTP 오류 본문 code로 응답한다: 요청 외곽 검증·JSON 역직렬화 오류는 400 `WPF_BAD_REQUEST`, 인증 실패는 401 `WPF_UNAUTHORIZED`, 사용자 비활성은 403 `WPF_USER_INACTIVE`, 그 밖의 처리 실패는 500 `WPF_INTERNAL`.
 
 삭제 기준은 "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"이다(설계 34-19~24).
 
@@ -956,7 +982,7 @@ VIDEO_WATCHED
 | 요청 전체 처리 실패 | 그 밖의 4xx·5xx | — | 전송한 결과 모두 보관·재전송 |
 | 타임아웃·연결 끊김 | 응답 없음 | — | 전송한 결과 모두 보관·재전송 |
 
-- 서버: 요청 외곽 구조(`clientRequestId`, `results` 1~50개) 및 JSON 역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400, 역직렬화 후 항목 검증 오류(resultId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 그 항목만 `REJECTED`(`WPF_INVALID_RESULT`)로 응답하고 나머지 항목은 처리한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 그 항목만 `INTERNAL_ERROR`(`WPF_INTERNAL`)로 응답한다. 응답은 요청 항목 순서를 유지한다. 처리 오류는 예외 형식·DB 오류 형식으로 분류하고 오류 메시지 문자열로 판단하지 않는다. 항목 저장과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패 항목은 롤백한 뒤 상태를 응답한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
+- 서버: 요청 외곽 구조(`clientRequestId`, `results` 1~50개) 및 JSON 역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400, 역직렬화 후 항목 검증 오류(resultId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 그 항목만 `REJECTED`(`WPF_INVALID_RESULT`)로 응답하고 나머지 항목은 처리한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 그 항목만 `INTERNAL_ERROR`(`WPF_INTERNAL`)로 응답한다. 응답은 요청 항목 순서를 유지한다. 처리 오류의 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 구분은 예외 형식·DB 오류 형식(원인 체인 포함)으로 하고 오류 메시지 문자열로 판단하지 않는다. 이 원칙은 두 상태의 구분에만 해당하며, 업무 검증 실패(REJECTED)의 세부 code 분류는 위 "항목 code 값" 표와 같이 업무 예외 메시지를 기준으로 한다. 항목 저장과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패 항목은 롤백한 뒤 상태를 응답한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
 - WPF: 저장에 실패한 미확정 결과(닫기 취소·제출 저장 실패)는 큐에 남기지 않아 전송되지 않으며, 창이 상태를 유지하다 다음 닫기·제출 때 결과를 다시 만들어 저장한다(앱 종료 중 닫기만 메모리 보관 후 종료 직전 전송 시도). 이번 batch에 없는 resultId 응답, 응답 누락 항목, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId와 결과 데이터를 유지한다. 재시도 간격·최대 횟수·재개 시점은 별도 확정 대상이며 현재는 기존 전송 시점(시작·목록 조회 전·결과 저장 후·종료 전)에 재시도한다.
 
 ### 제거된 응답 필드
@@ -1000,9 +1026,9 @@ VIDEO_WATCHED
 
 | HTTP | 의미 | WPF 동작 |
 |---|---|---|
-| 400 | 요청 형식/업무 검증 오류 | 장애 복구 제외, 정상 조회 주기 유지 |
+| 400 | 요청 형식 오류(`WPF_BAD_REQUEST`): Bean Validation·JSON 구문·역직렬화 실패. 결과 API는 요청 외곽(clientRequestId·results 1~50개)과 JSON 역직렬화 오류만 400이며, 항목 형식·업무 검증 오류는 HTTP 200의 항목 `REJECTED`로 응답(§11) | 목록 조회는 장애 복구 제외, 정상 조회 주기 유지. 결과 전송은 §11의 400 분할 재전송 처리 |
 | 401 | 인증 없음/만료 | 재로그인 후 원 요청 1회 재시도 |
-| 403 | 인증됐지만 사용자 사용 불가 | 장애 복구 제외, 오류 표시 가능 |
+| 403 | 인증됐지만 사용자 사용 불가(`WPF_USER_INACTIVE`) | 장애 복구 제외, 오류 표시 가능 |
 | 426 | C# 버전 지원 중단 | 조회·결과 전송·정기 로그인 중단, pending 유지, 안내 닫기 후 정상 종료 |
 | 500/502/503/504 | 일시 서버 오류 | 목록 조회는 10초×3회×5 Cycle 복구, Cycle 간 30분 휴식 후 첫 10초, 이후 60분 확인. 결과 전송은 로컬 큐 유지 |
 
@@ -1162,6 +1188,9 @@ INTERNAL_ERROR
     "description": "안내 내용을 확인해주세요.",
     "showContentHeader": true,
     "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+    "textBlocks": [
+      { "alignment": "LEFT", "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
+    ],
     "showPlainText": true,
     "highlightText": "작업 내용을 미리 저장해주세요.",
     "showHighlight": true,

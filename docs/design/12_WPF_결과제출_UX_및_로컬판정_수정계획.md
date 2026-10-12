@@ -529,6 +529,7 @@ pending 결과 유지
           DTO → SurveyQuestionDto.questionScore/correctAnswer/answerMatchMode, SurveyOptionDto.isCorrect, WpfResultItemDto.score/passed
   Server: WpfPopupService/WpfPopupItem → QUIZ 팝업에만 passingScore·정답 키 포함(SURVEY는 제거), PopupService.loadQuestionsWithAnswerKey
           WpfResultRequest/WpfResultCommand → score/passed 수신, WpfResultProcessor → 서버 계산값과 다르면 경고 로그(재채점·거절 없음)
+          (2026-10-12 설계 33: 서버는 WPF score·passed를 저장·완료 판정에 그대로 사용. QUIZ에 score·passed가 없으면 REJECTED)
 빌드/테스트: dotnet build 경고 0·오류 0, 서버 WPF 관련 단위 테스트 통과(web:api·service:core popup.* 55개, DB 필요 2개 skip)
 실행 테스트(T1~T8): 미수행 — 실제 서버·네트워크 단절·QUIZ 통과/미통과 화면 확인 필요
 ```

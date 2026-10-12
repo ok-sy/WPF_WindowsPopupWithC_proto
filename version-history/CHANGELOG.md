@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-21 — 불필요 문서 정리 및 문서 정합성 보완
+
+- 이유: 설계 29~34 이후 docs에 이미 해결된 차이 목록·중복 안내·구버전 정의서가 남아 현행 계약과 다른 내용(Header X 닫기, 구 Demo 화면, IMAGE FILL·TEXT 카드, displayStartAt, v3.5·v3.6 표기, Popup.exe 등)을 안내하고 있어 정리 필요.
+- 변경(정리): 삭제 — docs/POPUP_ADMIN_UI_GAP.md(미해결 2건 AUTO 크기 모드·기간/반복 정책은 설계 09 미결 18·19로 이관), docs/FOOTER_LINK_VIDEO_QUIZ.md(유효 내용은 POPUP_USER_OPTION_GUIDE §10~11로 흡수), docs/OPTION_LAYOUT_DEMO.md, docs/interfaces/popup-interface-examples.json(삭제된 구 WPF-01~06 예제), 설계 08·16·21(21은 설계 20 §6으로 통합), docs/reviews/20261007_커밋메시지_TODO_분류검토.md. 구버전 Word/PDF(v2.0·v3.5·v3.6)는 docs/interfaces/OLD/로 옮기고 .gitignore에 추가해 로컬에만 보관. zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md는 docs/reviews/로 옮겨 현행 기준으로 재작성(미리보기 Header X 표시·IMAGE linkUrl 모든 모드 링크·popupPosition 미반영을 알려진 차이로 기록). 설계 03에는 대체됨 배너 추가.
+- 변경(정합성): POPUP_INTERFACE_SPEC — IMAGE linkUrl ORIGINAL 전용, sentAt 서버 선택, 426 참조 §13.1, 400 의미(결과 API 항목 오류는 200 REJECTED), Header 닫기 서술, results[] 공통 표 보강, 항목 code 값 표 신설, 필수 여부 표기 기준, §15 TEXT textBlocks. ALL/MINIMAL — IMAGE 관리자 신규 기본 ADAPTIVE, 호환 필드 서술 제거, MINIMAL HideDays·DisplayOrder 행과 예시 displayOrder 추가. Excel RESULT_REQUEST VIDEO+QUIZ 예시를 Sample의 문항 301만 쓰도록 수정. Word 생성 스크립트 기본 출력·표지를 v3.7/2026.10.12로 갱신. 가이드 2종·docs/README·루트 README·OFFLINE_WPF_BUILD·popup-frameWork/README·db/oracle/README를 현행 코드(popupSample.exe, TargetFramework·WebView2 버전, Demo 7종, 최상위 공통 옵션, allowSeek, 서식 편집)에 맞춰 갱신. 반입 스크립트의 docs 묶음에서 OLD 제외. 설계 02·05·06·07·09·12·14·18·19·23·24·25·26·30·32에 상태 정정·날짜 메모 추가(23 DB 적용, 30·32 스크립트 13·12 적용, YouTube 제거, showCloseButton 별칭 삭제 등).
+- 주요 파일: docs/(README.md, POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md, WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx), docs/design/*, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, README.md, OFFLINE_WPF_BUILD.md, popup-frameWork/README.md, db/oracle/README.md, scripts/(export-interface-word.cjs·.ps1, export-offline-package.ps1), .gitignore.
+- 검증: 삭제·이동 문서를 가리키는 링크를 저장소 전체에서 검색해 정리(남은 언급은 이관·이동 이력 표기뿐). JSON 예제 5개와 SPEC의 json 블록 파싱 정상, MINIMAL §8 예시와 examples JSON 일치. Excel은 RESULT_REQUEST 시트 XML만 직접 수정하고 다른 엔트리·셀 텍스트 변화 없음 확인. node --check(export-interface-word.cjs), PowerShell 구문 검사(export-offline-package.ps1) 통과. git diff --check 통과. Word 생성기·반입 스크립트 실행, 앱 실행 확인은 미실행. 코드 변경 없음.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-20 — Excel 인터페이스 정의서(WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx) 대조·보완
 
 - 이유: docs/interfaces에 추가된 Excel 인터페이스 정의서를 최신 main 계약과 대조한 결과 일부 비고가 현재 동작과 다르고 최근 결과 처리 규칙이 빠져 있었음. 또 원본에 예전 배치의 병합 영역이 남아 서로 겹치거나 데이터 행을 덮고 있어(TEXT showPlainText~description 4행, 공통 backgroundOverlayOpacity·content 행, SURVEY_QUIZ 영상+퀴즈 추가 필드 표 등) Excel에서 복구 안내가 뜨거나 덮인 행이 보이지 않을 수 있었음.

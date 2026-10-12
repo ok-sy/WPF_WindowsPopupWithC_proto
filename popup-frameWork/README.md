@@ -24,7 +24,7 @@
 ## 1. 전체 실행 흐름
 
 ```text
-Popup.exe 실행
+popupSample.exe 실행
     ↓
 App.xaml.cs
     ↓
@@ -109,7 +109,7 @@ protected override void OnStartup(StartupEventArgs e)
 실행 순서:
 
 ```text
-Popup.exe
+popupSample.exe
 ↓
 CrashGuard 설치
 ↓
@@ -132,7 +132,7 @@ MainWindow를 잠깐 `Show()` 하는 이유는 화면을 보여주기 위해서�
 일반 실행에서는 관리 화면을 다시 숨기고 트레이에서 상주한다.
 
 ```text
-Popup.exe 실행 중
+popupSample.exe 실행 중
 MainWindow 숨김
 트레이 아이콘 표시
 ```
@@ -597,7 +597,8 @@ TEXT
   → TextPopupView
 
 IMAGE
-  → ImagePopupView / ImageFillPopupView
+  → ImagePopupView (ADAPTIVE / FIT_TO_IMAGE)
+  → ImageFillPopupView (ORIGINAL: 원본 크기·왼쪽 위 잘림·클릭 링크)
 
 VIDEO
   → VideoPopupView
@@ -619,10 +620,13 @@ Title
 DisplayMode
 DisplayOrder
 ShowHeader
-ShowCloseButton
+ShowFooterButton
 ShowFooter
+FooterAction / FooterLinkUrl
 ShowDoNotShowAgain
-UseBackgroundOverlay
+UseBackgroundOverlay / BackgroundOverlayOpacity
+Position
+HeaderFontSize / BodyFontSize / FooterFontSize
 SizeMode
 Width / Height
 WidthRatio / HeightRatio
@@ -753,7 +757,7 @@ VIDEO_WATCHED
 → 필수 응답 검증 (WPF 즉시)
 → QUIZ 채점: QuizGrader (WPF 즉시, 정답 키·배점·통과 점수는 서버 목록 응답에 포함)
 → 통과: SUBMITTED (score/passed 포함) → 안내 → 닫기
-→ 미통과: 안내만 하고 창 유지 → 답안 수정 → 다시 "채점" (통과할 때까지, 제출 없음)
+→ 미통과: 안내만 하고 창 유지 → 답안 수정 → 다시 "제출" (통과할 때까지 SUBMITTED 결과 없음)
 ```
 
 [설계 12] 예전에는 서버 채점 응답을 기다렸지만, 이제 설문/퀴즈도 다른 결과와 똑같이
@@ -875,7 +879,7 @@ Timer Tick
 
 WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03부터 로컬 전용으로 관리하며 Git·소스 반입 대상에서 제외한다. 저장소의 일반 빌드에는 필요하지 않다. 실행한 검증 결과는 `version-history/CHANGELOG.md`와 설계 19에 기록한다.
 
-SURVEY·QUIZ는 #F8F8F8의 약한 문항 그룹(radius 11·padding 20/18·간격 14)에 세로 선택 Row와 가로 Choice Chip을 배치한다. RadioButton·CheckBox 기능은 유지하고 세로형은 흰 배경·약한 회색 테두리와 항상 보이는 우측 체크 Path로 표시한다. 선택한 Row는 #ECECEC 배경·#AFAFAF 테두리·진한 체크·SemiBold로 강조하고 가로형 단일·복수 선택은 체크 없는 공통 Chip을 사용한다. 배경 없는 01 번호·제목 25·줄바꿈·포커스 outline을 적용하며 세로형 MinHeight는 48이다. Normal/SemiBold 텍스트 높이를 미리 확보해 선택 시 줄바꿈 높이 변화를 방지한다. 주관식은 radius 10·placeholder·약한 테두리·focus 강조를 사용하고 96~180 높이에서 입력을 스크롤한다. 필수 응답 상태와 #4A4A4F Submit은 하단에 고정하고 VIDEO+QUIZ의 내부 제출 영역도 공통 푸터를 끈 상태에서 고정한다. 스크롤바 폭은 8이며 본문과 10 간격을 둔다. 상세 구현·검증 범위는 `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`에 기록한다. Demo SURVEY 6문항·QUIZ/VIDEO+QUIZ 5문항과 정답·배점은 설계 21, 웹 미리보기 정합성은 설계 22를 참조한다.
+SURVEY·QUIZ는 #F8F8F8의 약한 문항 그룹(radius 11·padding 20/18·간격 14)에 세로 선택 Row와 가로 Choice Chip을 배치한다. RadioButton·CheckBox 기능은 유지하고 세로형은 흰 배경·약한 회색 테두리와 항상 보이는 우측 체크 Path로 표시한다. 선택한 Row는 #ECECEC 배경·#AFAFAF 테두리·진한 체크·SemiBold로 강조하고 가로형 단일·복수 선택은 체크 없는 공통 Chip을 사용한다. 배경 없는 01 번호·제목 25·줄바꿈·포커스 outline을 적용하며 세로형 MinHeight는 48이다. Normal/SemiBold 텍스트 높이를 미리 확보해 선택 시 줄바꿈 높이 변화를 방지한다. 주관식은 radius 10·placeholder·약한 테두리·focus 강조를 사용하고 96~180 높이에서 입력을 스크롤한다. 필수 응답 상태와 #4A4A4F Submit은 하단에 고정하고 VIDEO+QUIZ의 내부 제출 영역도 공통 푸터를 끈 상태에서 고정한다. 스크롤바 폭은 8이며 본문과 10 간격을 둔다. 상세 구현·검증 범위는 `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`에 기록한다. Demo SURVEY 6문항·QUIZ/VIDEO+QUIZ 5문항과 정답·배점은 설계 20 §6, 웹 미리보기 정합성은 설계 22를 참조한다.
 
 ## 19. 프로그램 종료
 
@@ -974,9 +978,9 @@ Java API와 DB 없이 WPF 화면만 시연할 수 있다.
 }
 ```
 
-Demo Mode에서는 프로그램 시작 시 팝업 선택 화면이 표시된다. TEXT, IMAGE,
-VIDEO, SURVEY, QUIZ 버튼으로 원하는 화면을 하나씩 열거나, `전체 팝업 순차 실행`
-버튼으로 5종을 순서대로 확인할 수 있다.
+Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(실행 인자 `--demo`로도 켤 수 있다).
+`시연할 샘플` 목록에서 텍스트·이미지·동영상·설문·퀴즈·동영상 + 퀴즈·푸터 바로가기 7종 중 하나를 골라
+`선택한 샘플 실행`으로 열거나, `전체 실행`으로 모두 확인할 수 있다. 세부 버튼은 아래 "Demo 관리 화면"을 참고한다.
 
 실제 API 연동 모드로 돌아가려면 `DemoMode`를 `false`로 변경한다.
 
@@ -999,14 +1003,14 @@ Popup/Media/demo-video.mp4
 
 음량·음소거는 Core Audio COM API로 Windows 기본 멀티미디어 출력 장치의 Master Volume/Mute와 양방향 동기화한다(추가 NuGet 없음). 시작 시 현재 시스템 값을 읽으며 내부 MediaElement/HTML5 음량은 1.0으로 유지한다. `defaultVolume`은 시스템 연결 전/실패 시 내부 플레이어 초기값이다. 외부 볼륨 변경은 이벤트로 반영하고 기본 장치 변경·장치 없음은 2초 주기로 확인한다. 슬라이더를 올리면 Windows 음소거도 해제하며 음소거 버튼은 음량 값을 유지한다. 다른 프로그램의 출력에도 영향을 주고 종료 시 이전 값으로 복원하지 않는다. 장치 복구 시 새 장치의 현재 값을 읽는다.
 
-URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 prepare-offline-packages.ps1로 재수집해야 한다. 이번 변경에서 반입 묶음은 재생성하지 않았다.
+URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 표시된다. Windows SDK 런타임을 포함하려고 대상 프레임워크를 net10.0-windows10.0.17763.0으로 지정했다. WebView2 1.0.3124.44는 유지한다. 폐쇄망 반입 전 Microsoft.Windows.SDK.NET.Ref 등 Windows SDK 패키지를 `scripts/prepare-offline-packages.ps1`로 수집하고, 반입 묶음은 `scripts/export-offline-package.ps1`로 만든다(절차는 루트 `OFFLINE_WPF_BUILD.md`).
 
 ## Demo 관리 화면
 
-Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기 샘플을 선택해 실행하거나 옵션을 설정한다. 설정창은 공통 창·콘텐츠·문항/선택지를 구분하며 창 크기/위치·표시 영역·숨김 일수·완료 조건·배경/폰트, 텍스트 문구, 이미지 크기/비율, 영상 재생, 문항 문구/배치/필수 여부·배점/정답 등을 편집한다. 설정은 샘플별 다음 실행과 데모 결과 검증에 함께 적용되며 앱 종료 시 초기화된다. 선택한 옵션 기본값 복원은 해당 샘플만 되돌리고, 상단 상태 초기화는 숨김/완료 상태를 지우되 편집한 옵션을 유지한다.
+Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기 샘플을 선택해 `선택한 샘플 실행`으로 열거나 `옵션 설정`으로 옵션을 편집한다. `전체 실행`은 데모 목록 조회 흐름으로 숨김·완료되지 않은 샘플을 모두 표시한다. 설정창은 공통 창·콘텐츠·문항/선택지를 구분하며 창 크기/위치·표시 영역·숨김 일수·완료 조건·배경/폰트, 텍스트 문구, 이미지 크기/비율, 영상 재생, 문항 문구/배치/필수 여부·배점/정답 등을 편집한다. 설정은 샘플별 다음 실행과 데모 결과 검증에 함께 적용되며 앱 종료 시 초기화된다. 선택한 옵션 기본값 복원은 해당 샘플만 되돌리고, 상단 상태 초기화는 숨김/완료 상태를 지우되 편집한 옵션을 유지한다.
 
 오른쪽 결과 로그를 선택하면 해당 결과의 Request·Response JSON이 들여쓰기된 읽기 전용 텍스트로 표시되며, 각 탭의 복사 버튼 또는 텍스트 선택·Ctrl+C로 복사할 수 있다. 로그 지우기는 로그·상세 JSON·점수 표시를 지우며 숨김/완료 상태는 유지한다.
 
-## IMAGE 계약 v3.6 (설계 23)
+## IMAGE 계약 (설계 23)
 
-일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.6, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.
+일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.7, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.

@@ -17,6 +17,9 @@
 응답 DTO 또는 Factory의 생략 처리 기준이다. 필수값은 계약상 제공 의무이며 C#이
 기본값을 갖는다고 생략해도 된다는 뜻은 아니다. 명시적 null은 nullable 필드만 사용한다.
 ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함께 적용한다.
+`필수값 여부`의 `N`은 "생략하면 Default 값으로 동작"한다는 뜻이다. 계약서 6.3 표가 `O`(권장 출력)로
+적은 필드라도 C# 기본값이 있으면 이 문서에서는 `N`으로 적으며 의미는 같다(계약서 6.4 "필수 여부 표기 기준").
+Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 있어도 백엔드가 생략해서는 안 되는 값이다.
 
 ## 2. 전체 기능 적용 원칙
 
@@ -27,7 +30,7 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | IMAGE 예외 | ORIGINAL은 공통 창 크기, FULLSCREEN은 모니터 전체 영역 우선 |
 | 기본값 | 응답 DTO·Factory 기본값과 Demo·관리자 화면의 초기값을 구분 |
 | 고정 동작 | UI·드래그·결과 큐 등의 동작을 가상의 API 필드로 만들지 않음 |
-| 호환 필드 | 신규 이름과 이전 서버 수신 호환 이름을 구분 |
+| 필드 이름 | 계약 이름 하나만 수신. legacy 수신 별칭(`showCloseButton` 등)은 삭제(설계 29-11) |
 | 미구현 | 구현되지 않은 기능은 전체 기능에도 지원으로 적지 않음 |
 
 ## 3. 공통 기능 범위
@@ -36,9 +39,9 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 
 | 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PopupId | 지원 | Y | `""` | 식별·숨김·결과 연결 ID. 서버가 유효값 보장 |
-| PopupType | 지원 | Y | `""` | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
-| Content | 지원 | Y | `{}` | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
+| PopupId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 식별·숨김·결과 연결 ID. 서버가 유효값 보장. 빈 값이면 결과 연결 생략 |
+| PopupType | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
+| Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
 | Title | 지원 | Y(계약) | `""` | 공통 Header 제목. Header 숨김 여부와 별개로 백엔드 응답 계약상 제공 |
 | DisplayStartAt / DisplayEndAt | 삭제(설계 29) | - | - | 기간·대상·숨김·완료를 판정한 최종 목록은 서버 책임. 목록 응답·DTO에 없음 |
 | DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
@@ -118,7 +121,7 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
 | ImageUrl | 지원 | Y | `""` | 이미지 URL 또는 로컬 경로 |
-| ImageSizeMode | 지원 | N | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL. 관리자 신규 기본 ORIGINAL과 구분 |
+| ImageSizeMode | 지원 | N | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL. 필드 생략 시 ADAPTIVE이며 관리자 신규 등록 기본 선택도 ADAPTIVE |
 | ImageTitle | 일반 모드에서 지원 | N | `""` | ORIGINAL View는 내부 제목을 표시하지 않음 |
 | Description / ShowDescription | 일반 모드에서 지원 | N | `""` / `true` | 하단 설명·스크롤. ORIGINAL View에는 전달하지 않음 |
 | Width / Height | 일반 모드에서 지원 | N | `null` | ADAPTIVE 창 크기, FIT_TO_IMAGE 이미지 표시 크기. ORIGINAL에서는 사용하지 않음 |

@@ -110,9 +110,10 @@ function Export-TreeBundle {
     Write-Host "[$Name] $count files -> $bundleRoot"
 }
 
-# A. 문서
-Export-TreeBundle -Name "A-docs" -Roots @("docs", "db", "api") -ExcludeDirs @() -ExcludeExtensions @() `
-    -ExtraFiles @("README.md", "AGENTS.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md", "zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md")
+# A. 문서 — 미리보기 정합성 문서는 docs/reviews 로 옮겨 docs 묶음에 포함된다.
+#    docs/interfaces/OLD 는 Git 제외(.gitignore)된 구버전 Word/PDF 로컬 보관 폴더이므로 반입하지 않는다.
+Export-TreeBundle -Name "A-docs" -Roots @("docs", "db", "api") -ExcludeDirs @("OLD") -ExcludeExtensions @() `
+    -ExtraFiles @("README.md", "AGENTS.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md")
 
 # B. Server — 팝업 관련 변경분만. 빌드 산출물·업스트림 보관 .git 은 제외.
 Export-GitDiffBundle -Name "B-server" -Baseline $ServerBaseline -PathSpec "zero-rule-server" `

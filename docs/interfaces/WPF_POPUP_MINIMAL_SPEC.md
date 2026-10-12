@@ -19,16 +19,16 @@
 | 기능 노출 | 업무상 필요한 항목만 외부 설정값으로 노출 |
 | 공통 크기 | 팝업 Window의 Width / Height를 공통 사용 |
 | 타입별 크기 | 별도 타입 Width / Height를 중복 정의하지 않음 |
-| 기본값 | 코드 기본값과 최소 버전 운영값이 다르면 비고에 구분 |
+| 기본값 | 코드 기본값과 최소 버전에서 전달할 값이 다르면 비고에 구분 |
 | 확장 | 현재 구현되어 있어도 최초 오픈 범위 밖이면 별도 기능 오픈 건으로 관리 |
 
 ## 3. 공통 기능 범위
 
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PopupId | 지원 | Y | 없음 | 팝업 고유 ID |
-| PopupType | 지원 | Y | `""` | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
-| Content | 지원 | Y | `{}` | 유형별 `content` object. null 금지. 유형별 필수값은 아래 표 적용 |
+| PopupId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 팝업 고유 ID. 빈 값이면 결과 연결 생략 |
+| PopupType | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
+| Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 아래 표 적용 |
 | Width | 지원 | N | `900` | 팝업 Window 너비. 모든 타입 공통 |
 | Height | 지원 | N | `620` | 팝업 Window 높이. 모든 타입 공통 |
 | Title | 지원 | Y(계약) | `""` | 공통 Header 제목. `showHeader=false`여도 백엔드 응답 계약상 값 제공 |
@@ -38,6 +38,7 @@
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
+| HideDays | 기본값 사용 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과(HIDDEN)의 숨김 일수. 최소 버전은 생략해 30일 사용. 코드는 1 이상 값 지정 지원 |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`. 배경 Overlay 사용 |
 | BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위 `backgroundOverlayOpacity`. Overlay 불투명도(0~1) |
 | DragMove | 지원(고정 동작) | N | 설정 필드 없음 | 드래그 이동은 별도 API 옵션이 아닌 Window 동작 |
@@ -46,7 +47,10 @@
 | FooterFontSize | 미제공 | N | `null` | Footer 글자 크기 |
 | SizeMode | FIXED만 사용 | N | `FIXED` | 코드는 FIXED/RATIO/FULLSCREEN/AUTO 지원 |
 | DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 코드는 SEQUENTIAL/SIMULTANEOUS 지원 |
+| DisplayOrder | 기본값 사용 | N | `100` | 표시 우선순위(작은 값 우선). 최소 버전 예시는 기본값 100을 명시 |
 | Position | 기본값 사용 | N | `CENTER` | 최상위 `popupPosition`. 최소 버전은 CENTER 고정 |
+
+> `필수값 여부`의 `N`은 "생략하면 Default 값으로 동작"한다는 뜻이다. 인터페이스 계약서 6.3 표가 `O`(권장 출력)로 적은 필드라도 C# 기본값이 있으면 이 문서에서는 `N`으로 적으며 의미는 같다(계약서 6.4 "필수 여부 표기 기준"). Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 있어도 백엔드가 생략해서는 안 되는 값이다.
 
 > FontSize 계열은 미지정 시 각 XAML/콘텐츠 기본값을 유지하고, 값이 지정되면 10~40 범위로 보정(Clamp)하여 적용한다.
 
@@ -78,7 +82,7 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
 | ImageUrl | 지원 | Y | `""` | 이미지 URL 또는 경로 |
-| ImageSizeMode | ORIGINAL만 사용 | Y(운영 기준) | 코드 기본 `ADAPTIVE` | 최소 버전은 `ORIGINAL`로 고정 전달 |
+| ImageSizeMode | ORIGINAL만 사용 | Y(최소 버전 명시 전달) | 코드 기본 `ADAPTIVE` | 생략하면 ADAPTIVE가 되므로 최소 버전은 `ORIGINAL`을 항상 명시해 전달 |
 | ImageTitle | 미제공 | N | `""` | 이미지 콘텐츠 내부 제목 |
 | Description | 미제공 | N | `""` | 이미지 설명 |
 | ShowDescription | 미제공 | N | `true` | 설명 표시 여부 |
@@ -183,6 +187,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "TEXT",
   "title": "서비스 안내",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -210,6 +215,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "IMAGE",
   "title": "교육 안내",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -234,6 +240,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "VIDEO",
   "title": "보안 교육",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -261,6 +268,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "SURVEY",
   "title": "교육 만족도 설문",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -315,6 +323,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "QUIZ",
   "title": "보안 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -365,6 +374,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "popupType": "QUIZ",
   "title": "영상 교육 및 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
+  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,

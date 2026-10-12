@@ -15,7 +15,7 @@
 - [x] Header 우측 X 닫기 버튼 제거
 - [x] Header 우측에 고정 WPF Resource 로고 표시
 - [x] `ShowCloseButton → ShowFooterButton`으로 WPF/Demo 옵션 정리
-- [x] 기존 서버 `showCloseButton` JSON은 DTO에서 하위 호환 수신
+- [x] 기존 서버 `showCloseButton` JSON은 DTO에서 하위 호환 수신 (2026-10-12: 설계 29-11에서 WPF 응답 이름을 `showFooterButton`으로 통일하고 C# legacy 별칭을 삭제. 현재 WPF는 `showCloseButton`을 읽지 않음)
 - [x] VIDEO / VIDEO+QUIZ는 `AllowsTransparency=false` 유지
 - [x] VIDEO 내부 WPF `PopupBodyBorder/HeaderArea CornerRadius=0` 유지
 - [x] VIDEO Fullscreen에서는 별도 모서리 처리 미적용

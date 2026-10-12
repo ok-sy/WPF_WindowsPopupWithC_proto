@@ -37,3 +37,6 @@ popup-frameWork/Popup.BehaviorTests/
 popup-frameWork/Popup.RecoveryTests/
 scripts/CornerWindowTests/bin/
 scripts/CornerWindowTests/obj/
+
+# 구버전 인터페이스 정의서(Word/PDF) 로컬 보관 — 현행 기준은 POPUP_INTERFACE_SPEC.md·WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx
+docs/interfaces/OLD/

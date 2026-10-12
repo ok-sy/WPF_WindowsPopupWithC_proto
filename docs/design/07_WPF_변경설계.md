@@ -6,6 +6,7 @@
 > - `WpfAuthService`(SSO 토큰 획득) 대신 `Service/Auth/IAuthHeaderProvider` + `NoAuthHeaderProvider`/`StaticAuthHeaderProvider` (04 문서, 인증은 타 팀 통합 토큰).
 > - `appsettings.json`: `UserId` 제거, `Auth.Mode/StaticHeader`, `DevUserId`(개발 헤더 `X-Dev-User-Id`) 추가. `launchSettings.json`은 `POPUP_DEV_USER_ID`.
 > - `SurveyPopupView`의 로컬 퀴즈 채점(`CalculateScore`·`_passingScore`) 제거 — 서버가 정답을 내려주지 않으므로 채점 불가. 통과/미통과 안내는 결과 API 응답으로 `PopupManager`가 표시.
+>   - 2026-10-12: 설계 12(2026-09-22)에서 `QuizGrader` 로컬 채점으로 다시 전환했고, 설계 33에서 서버는 WPF가 보낸 `score`·`passed`를 그대로 저장한다. 결과 응답에는 점수·통과 값이 없다.
 > - `PopupWindow`의 "완료 전 닫기 금지" 판단은 실시간 서버 판정 대신 `VideoPopupView.HasReachedCompletion(ratio)` 로컬 추정 사용(최종 판정은 서버).
 > - `PopupWindow.OnClosing`에서 "다시 보지 않기" 체크를 `PopupOptions.DoNotShowAgainChecked`에 기록(ESC/Alt+F4 경로 포함).
 > - `PopupOptions`에 `PopupType`, `HideDays` 추가(결과 항목 조립·제출 안내 분기용).
@@ -64,7 +65,7 @@ sequenceDiagram
 |---|---|---|---|
 | 전체 | 닫기 버튼 / ESC / 창 종료 | `CLOSED` | displayedAt, closedAt |
 | 전체 (`showDoNotShowAgain`) | "다시 보지 않기" 후 닫기 | `HIDDEN` | + hideDays (팝업의 `hideDays`, null이면 30) |
-| SURVEY / QUIZ | 제출 버튼 | `SUBMITTED` | + responseStartedAt, answers[] |
+| SURVEY / QUIZ | 제출 버튼 | `SUBMITTED` | + responseStartedAt, answers[] (2026-10-12: `responseStartedAt`은 설계 32에서 제거. QUIZ는 + score, passed — 설계 12·33) |
 | SURVEY / QUIZ | 제출 없이 닫기 (`allowCloseBeforeComplete=true`) | `CLOSED` | |
 | VIDEO | 창 닫힘(영상 종료 포함) | `VIDEO_WATCHED` | + video{duration, position, maximumPosition, watched} |
 

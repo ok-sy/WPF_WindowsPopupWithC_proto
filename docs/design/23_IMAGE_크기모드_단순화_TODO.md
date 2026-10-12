@@ -122,7 +122,7 @@ content.keepAspectRatio는 FIT_TO_IMAGE 전용이며 생략 기본값은 true다
 - 로딩 전 일반 IMAGE 임시 창은 560×420 DIP. ADAPTIVE의 명시 축은 유지하고 누락 축만 원본과 측정된 콘텐츠에서 산정한다. ADAPTIVE 원본 초과 확대 제한은 유지하며 별도 이미지 상한 입력은 제거했다.
 - IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. content.width/height의 지정 픽셀/DIP 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 실제 콘텐츠 높이와 이미지 높이 중 작은 값의 최대 30%에서 스크롤한다. 빈 설명과 빈 제목의 컨테이너/전용 간격을 제거한다. 실제 측정·행 높이와 그림자 Margin(24), 콘텐츠 Margin(28/24), 창/이미지 Border를 합산한다. 재계산은 원본 로딩·텍스트 변경·SizeChanged·현재 모니터/작업 영역·DPI 변경에 연결하고 추천 크기의 반복 통지를 억제한다.
-- 구 저장의 새 필드가 이미 있으면 새 값이 우선이며 폐기 필드는 응답에서 제거한다. 새 입력은 구 필드·FILL·중복 크기 지시를 거절한다. 전환 순서·영향·도구는 [DB 전환 문서](../../db/oracle/11_IMAGE_CONTRACT_TRANSITION.md)에 기록했다. DB에는 아직 적용하지 않았다.
+- 구 저장의 새 필드가 이미 있으면 새 값이 우선이며 폐기 필드는 응답에서 제거한다. 새 입력은 구 필드·FILL·중복 크기 지시를 거절한다. 전환 순서·영향·도구는 [DB 전환 문서](../../db/oracle/11_IMAGE_CONTRACT_TRANSITION.md)에 기록했다. ~~DB에는 아직 적용하지 않았다.~~ 같은 날(2026-10-06) 로컬 XE·원격 개발 DB에 계획 생성·전환 SQL 실행·COMMIT 완료(두 DB IMAGE 0행, UPDATE 0행, DB 전환 문서·§6 기준).
 - WPF 빌드 경고·오류 0, 로컬 WPF 행동 검증 699건 통과. 가로/세로/정사각형·누락 축·비율·원본 DPI·최대 Clip·최소 여백·제목/설명/헤더/푸터·FULLSCREEN/ORIGINAL 및 기존 결과 전송 회귀 포함. 로컬 검증 프로젝트는 기존 Git 제외 정책을 유지한다.
 - 서버 service:core 55건 + web:api 29건 = 84건 통과. 폐기 필드/중복 크기/비율 옵션 검증, 저장 옵션, 구 저장 변환, HTTP JSON의 단일 크기 필드 및 전환 SQL 생성 규칙 포함.
 - 웹 type-check·build 성공. 기존 프로젝트의 lint/runtimeConfig 경고는 남아 있다. headless Edge 실제 이미지 표시 검증 23건 통과. 반복 실행: node scripts/verify-image-preview.cjs. 캡처: .offline-verify/image23/clipped-with-description.png.

@@ -17,14 +17,15 @@
 
 | 경로 | 내용 | 출처 |
 |---|---|---|
-| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계 문서 01~09 | 신규 |
+| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~34(삭제·통합으로 일부 번호 결번) | 신규 |
 | `db/oracle/` | Oracle DDL·샘플 (`POPUP` 스키마) | 신규 |
 | `api/examples/` | 신규 WPF API JSON 예제 | 신규 |
 | `zero-rule-server/` | 주 서버 (Spring Boot 3.4.1, MyBatis, Oracle) | 업스트림 zero-rule-server @56bb0c5 (2026-09-20 교체) |
 | `zero-rule-web/` | 관리자 웹 (Next.js) | 베이스라인 |
 | `popup-frameWork/` | WPF 클라이언트 (.NET 10) | 베이스라인 |
 | `ERD/` | PostgreSQL 기준 DDL·검토 문서 (Oracle 전환 원본 참조용) | 베이스라인 |
-| `docs/interfaces/` | 현행(구) 인터페이스 설계서 | 베이스라인 |
+| `docs/interfaces/` | WPF Client API 계약서 `POPUP_INTERFACE_SPEC.md`(v3.7)·Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`·최소/전체 기능 정의서·예제 JSON. 구버전 Word/PDF는 Git 제외 로컬 폴더 `docs/interfaces/OLD/`에만 둔다 | 신규(베이스라인 문서 대체) |
+| `docs/reviews/` | 미리보기·WPF 정합성, 저사양 PC VIDEO 측정 가이드, TODO 변경 라인별 설명 | 신규 |
 | `scripts/`, `shell/`, `OFFLINE_WPF_BUILD.md` | 빌드·실행 스크립트 | 베이스라인 |
 
 ## 베이스라인에서 제외한 항목
@@ -45,7 +46,13 @@
 
 [docs/design/09_전환계획_및_미결사항.md](docs/design/09_전환계획_및_미결사항.md) §1 을 따른다: Oracle 스키마 → 서버 매퍼 Oracle 변환 → 사용자 식별 어댑터 → WPF 조회 API → WPF 결과 API → WPF 클라이언트 → 관리자 웹(선택).
 
-| 단계 | 상태 (2026-09-20) | 검증 |
+아래 표는 2026-09-20 시점 스냅샷이다. 이후 변경은 다음과 같다.
+
+- 관리자 웹: 팝업 편집기·미리보기를 개편했다(IMAGE 크기 모드·TEXT 서식 편집·VIDEO 재생 옵션·배경/위치/폰트 등, 설계 14·22·23·27·28 등).
+- 구 사용자 API(`/p/api/popups?userId=` 등 WPF-01~06)는 설계 18 L-0(2026-09-28)에서 삭제했다. 남은 API는 관리자 `/apis/popup/*`, WPF `/p/api/wpf/auth/login`·`/p/api/wpf/popups`(+`/results`), 영상 `/p/api/popups/video`다.
+- 최신 진행 상태는 `docs/design/`의 각 TODO 문서와 [version-history/CHANGELOG.md](version-history/CHANGELOG.md)를 기준으로 한다.
+
+| 단계 | 상태 (2026-09-20 스냅샷) | 검증 |
 |---|---|---|
 | 1 Oracle 스키마 | 완료 — 21c XE `XEPDB1`에 `db/oracle/00~03` 적용 | 테이블 17·시퀀스 12·샘플 적재 |
 | 2 서버 Oracle 전환 | 완료 `74456d2` | **실DB 롤백 테스트 통과**(`PopupQuestionDatabaseTest`) |
@@ -55,11 +62,11 @@
 | 서버 베이스라인 교체 | 완료 `0294d1e` + popup 재적용 — **전체 zeroserver가 Oracle에서 기동**(로컬 XE, `ZERO_RULE_DB_*` 환경변수) | 서버 테스트 50개 통과·skip 0. 전체 서버로 `/p/api/wpf/popups` 401/200, 결과 ACCEPTED·DUPLICATE 확인 |
 | 원격 개발 DB 연동 | 완료 — Oracle **11g XE**(192.168.114.71) `zero-rule` 스키마에 팝업 DDL·샘플 적용, 매퍼 스키마 한정자 설정화(`custom.popup.schema`) | 원격 실DB·HTTP 테스트 통과. **WPF exe → 전체 서버 → 원격 DB** 왕복(TEXT 팝업 닫기 → USER_POPUP_STATUS·영수증·로그) 확인 |
 | SSO·토큰 프로토타입 (설계 10) | 완료 — WPF `SsoClient`(Windows 통합 인증)→`POST /p/api/wpf/auth/login`→메모리 Bearer 토큰, 서버 메모리 토큰 저장소(TTL 10분)·토큰 검사 식별기(로컬 프로파일 `custom.wpf-auth-prototype.enabled=true`) | 서버 테스트 59개 통과·skip 0. **WPF exe + 임시 SSO 프로그램(`popup-frameWork/MockSso`, Negotiate 도전) + 전체 서버(TTL 20초)**: 최초 로그인 → 팝업 GET 200, 만료 후 결과 POST 401 → 재로그인 → 같은 resultId 재전송 → 영수증 1건 ACCEPTED, 1분 정기 재로그인 확인 |
-| 8 구 API 제거 | 미수행 — 통합 토큰(타 팀) 적용 후 | — |
+| 8 구 API 제거 | (스냅샷 당시 미수행) → 설계 18 L-0(2026-09-28)에서 구 사용자 API 삭제 | 설계 18 참조 |
 
 ## 서버 실행 (zero-rule-server)
 
-- **SSO·토큰 프로토타입(설계 10)**: 로컬 프로파일은 `custom.wpf-auth-prototype.enabled=true`라 `/p/api/wpf/**`가 **Bearer 토큰만** 통과한다(`X-Dev-User-Id`는 무시). WPF `appsettings.json`의 `Auth.Mode=SsoPrototype`·`Auth.SsoUrl`(기본 `http://localhost:8099/...` = 모의 SSO)로 자동 로그인한다. 사내 SSO 없이 확인하려면 임시 SSO 프로그램 `dotnet run --project popup-frameWork/MockSso`(또는 `start-dev.ps1 -MockSso`)를 띄운다 — 실제 SSO처럼 Windows 통합 인증(Negotiate) 도전을 하고 `MAIN_USER_ID`/`MAIN_USER_CLASSI_CODE` XML을 돌려준다(`--user`/`--class`/`--anonymous`/`--fail`). 로그인만 따로 확인하려면 `Popup.exe --show-main`으로 관리 화면을 띄운 채 시작해 **"SSO 로그인 테스트"** 버튼을 누른다(SSO GET → XML 파싱 값 → 로그인 API → 토큰 만료 시각을 단계별로 표시). 만료→401→재로그인을 빨리 보려면 `-TokenTtl 20s`(환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s`). 개발용 헤더 모드로 돌아가려면 `application-local.yml`에서 `enabled: false`, WPF `Auth.Mode=None`.
+- **SSO·토큰 프로토타입(설계 10)**: 로컬 프로파일은 `custom.wpf-auth-prototype.enabled=true`라 `/p/api/wpf/**`가 **Bearer 토큰만** 통과한다(`X-Dev-User-Id`는 무시). WPF `appsettings.json`의 `Auth.Mode=SsoPrototype`·`Auth.SsoUrl`(기본 `http://localhost:8099/...` = 모의 SSO)로 자동 로그인한다. 사내 SSO 없이 확인하려면 임시 SSO 프로그램 `dotnet run --project popup-frameWork/MockSso`(또는 `shell\start-dev.ps1 -MockSso`)를 띄운다 — 실제 SSO처럼 Windows 통합 인증(Negotiate) 도전을 하고 `MAIN_USER_ID`/`MAIN_USER_CLASSI_CODE` XML을 돌려준다(`--user`/`--class`/`--anonymous`/`--fail`). 로그인만 따로 확인하려면 `popupSample.exe --show-main`으로 관리 화면을 띄운 채 시작해 **"SSO 로그인 테스트"** 버튼을 누른다(SSO GET → XML 파싱 값 → 로그인 API → 토큰 만료 시각을 단계별로 표시). 만료→401→재로그인을 빨리 보려면 `-TokenTtl 20s`(환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_TOKEN_TTL_MINUTES=20s`). 개발용 헤더 모드로 돌아가려면 `application-local.yml`에서 `enabled: false`, WPF `Auth.Mode=None`.
 
 - 요구: JDK 17, Gradle wrapper 8.11.1, `repo.labcl.net`(cloverframework `3.0.3-SNAPSHOT`) 접근.
 - **기본(원격 개발 DB, VPN 필요)**: 업스트림 `JndiResource`의 공통 개발 DB(`192.168.114.71:4004/XE`, **Oracle 11g XE 11.2.0.2**, 계정 `zero-rule`). 팝업 테이블은 이 계정 스키마 안에 있고(`application-dev_db.yml`의 `custom.popup.schema: ""`), `db/oracle/01·02`가 적용돼 있다(2026-09-20).
@@ -73,19 +80,19 @@
   cd zero-rule-server; .\gradlew :app:bootRun -Pprofile=local
   ```
   로컬 DB에는 `db/oracle/00~03`(POPUP 스키마·ZERO_RULE 권한)과 공통 스키마(`db/oracle/10_*`, 참고용 변환본)가 있어야 한다. 스키마 배치 두 방식(별도 POPUP 계정 / 앱 계정 스키마)은 [db/oracle/README.md](db/oracle/README.md) 참조.
-- **백엔드+프런트 동시 실행**: `powershell -ExecutionPolicy Bypass -File .shellstart-dev.ps1` (기본 원격 DB; `-LocalDb`로 로컬 XE, `-SkipFrontend`/`-SkipBackend`). 프런트는 `http://localhost:3000`, `API_BASE_URL`을 창 환경변수로 주입하고 pnpm은 `packageManager` 버전을 npx로 실행한다.
+- **백엔드+프런트 동시 실행**: `powershell -ExecutionPolicy Bypass -File .\shell\start-dev.ps1` (기본 원격 DB; `-LocalDb`로 로컬 XE, `-SkipFrontend`/`-SkipBackend`). 프런트는 `http://localhost:3000`, `API_BASE_URL`을 창 환경변수로 주입하고 pnpm은 `packageManager` 버전을 npx로 실행한다.
 - 팝업 슬라이스만 띄우기(공통 DB 불필요): `.\gradlew :app:wpfDevServer` (`POPUP_TEST_DB_*` 환경변수, 테스트 소스).
 - 테스트: `.\gradlew :service:core:test :web:api:test :app:test --tests 'server.*popup*' --tests 'server.app.wpf.*'` — 실DB 테스트는 `POPUP_TEST_DB_PASSWORD`가 없으면 skip. 원격으로 돌리려면 `POPUP_TEST_DB_URL/USER/PASSWORD/SCHEMA=""`. 환경변수만 바꿔 다시 돌릴 때는 `cleanTest`를 앞에 붙인다(Gradle UP-TO-DATE).
 
 ## WPF 실행·빌드
 
-- **Demo Mode** (서버·DB 없이 시연): `Popup.exe --demo` 또는 `appsettings.json`의 `PopupApi.DemoMode: true`. 샘플 팝업 5종을 띄우고, 창이 닫힐 때 만들어지는 결과 항목과 인메모리 서버(`DemoPopupGateway`)의 응답을 화면 오른쪽 로그에 JSON으로 보여 준다. 숨김·완료는 실서버처럼 다음 조회에서 제외되며 "서버 상태 초기화"로 되돌린다.
+- **Demo Mode** (서버·DB 없이 시연): `popupSample.exe --demo` 또는 `appsettings.json`의 `PopupApi.DemoMode: true`. 샘플 7종(텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기) 중 하나를 골라 "선택한 샘플 실행"하거나 "전체 실행"하고, "옵션 설정"으로 샘플별 옵션을 바꾼다. 창이 닫힐 때 만들어지는 결과 항목과 인메모리 서버(`DemoPopupGateway`)의 응답을 화면 오른쪽 로그에 JSON으로 보여 준다. 숨김·완료는 실서버처럼 다음 조회에서 제외되며 "상태 초기화"로 되돌린다.
 - **실서버 모드**: `appsettings.json`의 `BaseUrl`(예: `http://localhost:8080/zero-rule-server/p`), 개발 단계에서는 `DevUserId`(서버 `custom.wpf-popup.dev-user-header=true` 필요).
-- **단일 exe 게시** (self-contained, win-x64, 약 82MB):
+- **단일 exe 게시** (self-contained, win-x64. 2026-10-12 오프라인 `-SingleFile` 빌드 기준 91,631,438바이트 — `OFFLINE_WPF_BUILD.md`):
   ```powershell
   cd popup-frameWork
   dotnet publish Popup/Popup.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=None --source https://api.nuget.org/v3/index.json -o publish/win-x64
   ```
-  결과: `popup-frameWork/publish/win-x64/Popup.exe` (Git 제외). 폐쇄망은 `OFFLINE_WPF_BUILD.md`·`scripts/build-wpf-offline.ps1` 참조.
+  결과: `popup-frameWork/publish/win-x64/popupSample.exe` (Git 제외). 폐쇄망은 `OFFLINE_WPF_BUILD.md`·`scripts/build-wpf-offline.ps1 -SingleFile`(결과 `publish/win-x64-single/popupSample.exe`) 참조. 폐쇄망 반입 묶음은 `scripts/export-offline-package.ps1`로 만든다.
 
 로컬 빌드 시 NuGet: 저장소 `NuGet.config`는 폐쇄망 오프라인 소스만 가리키고 nupkg는 커밋하지 않으므로, 온라인 환경에서는 `dotnet restore --source https://api.nuget.org/v3/index.json` 로 복원한다.

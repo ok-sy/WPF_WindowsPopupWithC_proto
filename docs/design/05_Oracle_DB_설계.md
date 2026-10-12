@@ -1,8 +1,8 @@
 # 05. Oracle DB 설계 — PostgreSQL popup 스키마 변환
 
-기준 항목 5. 스크립트: [db/oracle/01_popup_schema_oracle.sql](../db/oracle/01_popup_schema_oracle.sql), 샘플: [db/oracle/02_popup_sample_oracle.sql](../db/oracle/02_popup_sample_oracle.sql).
+기준 항목 5. 스크립트: [db/oracle/01_popup_schema_oracle.sql](../../db/oracle/01_popup_schema_oracle.sql), 샘플: [db/oracle/02_popup_sample_oracle.sql](../../db/oracle/02_popup_sample_oracle.sql).
 
-전제: 설계 시 **Oracle 19c**로 가정했으나 **2026-09-20 원격 개발 DB 실측은 11g XE 11.2.0.2**. DDL을 11g 호환으로 조정했다 — 제약명 30자 이하(`UK_QTEMPLATE_GROUP_VERSION`·`CK_TCOND_INCLUDE_CHILD`·`CK_TCOND_CHILD_DEPARTMENT`), `IS JSON` 체크 제거(JSON 유효성은 `PopupContentAssembler`). 매퍼 SQL은 원래 11g 문법 범위(MERGE·함수 기반 인덱스·재귀 WITH·`SYSTIMESTAMP AT TIME ZONE`)다. 테이블·컬럼 구성은 원본과 동일하게 유지하고, 신설은 `WPF_RESULT_RECEIPT` 1개다. 인증용 테이블·컬럼은 만들지 않는다 (04 문서).
+전제: 설계 시 **Oracle 19c**로 가정했으나 **2026-09-20 원격 개발 DB 실측은 11g XE 11.2.0.2**. DDL을 11g 호환으로 조정했다 — 제약명 30자 이하(`UK_QTEMPLATE_GROUP_VERSION`·`CK_TCOND_INCLUDE_CHILD`·`CK_TCOND_CHILD_DEPARTMENT`), `IS JSON` 체크 제거(JSON 유효성은 `PopupContentAssembler`). 매퍼 SQL은 원래 11g 문법 범위(MERGE·함수 기반 인덱스·재귀 WITH·`SYSTIMESTAMP AT TIME ZONE`)다. 테이블·컬럼 구성은 원본과 동일하게 유지하고, 신설은 `WPF_RESULT_RECEIPT` 1개다(2026-10-12 기준 `db/oracle/09`(미사용 컬럼 삭제, 설계 18 L-5)·`12`(`RESPONSE_STARTED_AT` 삭제, 설계 32)로 일부 컬럼이 삭제되어 원본과 다르다. 현행 컬럼은 `db/oracle/01_popup_schema_oracle.sql`·`db/oracle/README.md` 기준). 인증용 테이블·컬럼은 만들지 않는다 (04 문서).
 
 ## 1. 스키마 배치
 
@@ -240,5 +240,5 @@ SELECT ... FROM (SELECT DISTINCT POPUP_ID FROM ELIGIBLE_POPUP) e
 | 수정 (popup 소스 — 자유 수정 범위) | `PopupMapper.xml` 27개 구문 Oracle 변환(ID 유지), `PopupMapper.java`, `PopupEntity`(contentJson → 콘텐츠 컬럼 6개), `PopupService`(contentAssembler 사용, `parseContentJson` 제거), `PopupQuestionDatabaseTest`(Oracle 대상) |
 | 수정 (프레임워크 — 최소) | `JndiResource` 접속 값, `app/build.gradle.kts`·`service/core/build.gradle.kts` 드라이버 토글 |
 | 삭제 | 없음 |
-| 미변경 확인 | 테이블 16개 컬럼 구성·제약 의미, `PopupService` 공개 메서드 시그니처, 관리자 API 계약, `MyBatisConfig`·`mybatis-config.xml` |
+| 미변경 확인 | 테이블 16개 컬럼 구성·제약 의미(작성 당시 기준 — 2026-10-12 기준 `db/oracle/09`(미사용 컬럼 삭제, 설계 18 L-5)·`12`(`RESPONSE_STARTED_AT` 삭제, 설계 32)로 일부 컬럼이 삭제되어 원본과 다르다), `PopupService` 공개 메서드 시그니처, 관리자 API 계약, `MyBatisConfig`·`mybatis-config.xml` |
 | 검증 | **Oracle 21c XE(XEPDB1) 실DB 검증 완료 (2026-09-19)** — `db/oracle/00~03` 적용 후 `PopupQuestionDatabaseTest`(관리자 저장·조회·제출·재제출 왕복)와 `WpfPopupDatabaseTest`(신규 WPF 목록·결과 4유형·멱등·완료 제외) 통과. 실DB에서 발견해 고친 것: ORA-01408(UNIQUE 중복 인덱스 → DDL에서 생략), ORA-17004(테스트 Configuration에 jdbcTypeForNull), ORA-00932(null TIMESTAMP 바인드 → 타입 핸들러). 서버 단위·MockMvc 포함 46개 통과·skip 0. 상세: db/oracle/README.md |

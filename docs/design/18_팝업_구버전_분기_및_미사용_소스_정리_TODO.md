@@ -76,7 +76,7 @@
 |---|---|---|---|---|
 | W-1 | **구버전 값 생성** | `PopupEditorDialog.tsx:64` 기본값 `imageSizeMode: 'FIXED'`, `:308-309` fallback `\|\| 'FIXED'`·메뉴 "고정 영역" | §0-1. 계약상 과거 값인 FIXED를 신규 저장 | 메뉴에서 FIXED 제거, 기본값 `'ADAPTIVE'`. 표시 값은 `!v \|\| v === 'FIXED' ? 'ADAPTIVE' : v`로 정규화(MUI 범위 밖 경고 방지). 저장 시에도 정규화 |
 | W-2 | DEAD | `main/pages/popup-preview.tsx` 전체, `PopupPreview.tsx`의 `standalone` prop(L20, 249, 253-254, 271, 299) | localStorage `?key=` 기반 새 창 미리보기. 여는 코드(`setItem`/`window.open`) 없음. 편집기 내 "실제 크기로 보기" 모달이 대체 | 페이지와 `standalone` 분기 삭제. 설계 14 §3.2의 반입 대상 목록에서도 제거 |
-| W-3 | DEAD(문서) | `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md` | TEXT 카드 2개(2026-09-16 제거)·새 창 보기(W-2) 기술, popupPosition·폰트 크기·IMAGE 모드·optionLayout 누락 | 현행 기준으로 재작성하거나 삭제 |
+| W-3 | DEAD(문서) | `zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md` | TEXT 카드 2개(2026-09-16 제거)·새 창 보기(W-2) 기술, popupPosition·폰트 크기·IMAGE 모드·optionLayout 누락 | 현행 기준으로 재작성하거나 삭제. **완료** — L-0(2026-09-28)에서 재작성, 2026-10-12에 `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`로 옮겨 현행 계약(v3.7) 기준으로 다시 정리 |
 | W-4 | DEAD(잔재) | `PopupEditorDialog.tsx:427` 불필요한 `{...}`, `:301-302` 들여쓰기 | Markdown 조건(`!markdownMode &&`) 제거(1a445ec) 잔재 | 괄호 제거·정렬 |
 | W-5 | DEAD(주석) | `PopupEditorDialog.tsx:298`, `PopupPreview.tsx:37` `[2026-09-21 제거]` 표식 | Markdown 제거 흔적. 코드·의존성은 없음 | 삭제(선택). 미정리 행의 `markdown*` 키는 편집기 저장 시 다시 기록되므로 D-2 적용이 실질 조치 |
 | W-6 | DEAD 필드 | `PopupAdmin.ts:100-103` `AdminPopupQuestion.correctValues`, `:111` `AdminPopupInfo.adminQuestions` | 참조 0건. 정답은 `popup.questions[].options[].isCorrect`가 대체 | 타입에서 제거. 서버 S-8과 함께 |
@@ -202,7 +202,7 @@
 - [x] C-24 `RATIO`로 단일화(2026-09-28): WPF `VIEWPORT_RATIO` 매핑 삭제, 데모 JSON 4건 `RATIO`, 계약서 3.2. 기존 행은 08이 `VIEWPORT_RATIO → RATIO` 보정 후 `CK_POPUP_SIZE_MODE`(FIXED/RATIO/FULLSCREEN — 서버 저장 허용값) 추가. `AUTO`는 WPF 기능으로 남김(서버·웹은 생성하지 않음)
 - [x] C-6 `DisplayStartAt`/`DisplayEndAt`: **유지**로 결정 — 계약 §6.3 선택 필드이고 서버가 이미 내려주며 WPF DTO에 두는 비용이 없음
 - [x] C-22 날짜 컨버터 숫자(epoch 초) 분기 삭제 — WPF API 3개 응답 날짜가 모두 ISO(`WpfJson.DATE_TIME`)임을 서버 DTO에서 확인. 클래스 이름 `IsoDateTimeOffsetJsonConverter`로 변경
-- [x] W-3 parity 문서는 L-0에서 현행 기준으로 재작성 완료
+- [x] W-3 parity 문서는 L-0에서 현행 기준으로 재작성 완료 (2026-10-12: `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`로 이동·현행 기준 재작성)
 - [x] W-10 미리보기 IMAGE 계약 반영(2026-09-28): `imagePreviewLayout.ts`(WPF 규칙·상수), ADAPTIVE 최대 크기·영역 비율, FIT_TO_IMAGE 이미지 고정 크기 + 창 크기 재계산(편집기 안내·실제 크기 모달 적용), 설명 위치 AUTO/RIGHT/BOTTOM. 편집기에 `descriptionPosition`·`imageAreaRatio` 입력과 모드 안내 추가, 서버 저장 검증 추가. 설계 15 §5 값(938×712)과 계산 일치 확인. 브라우저 화면 확인은 미실행
 
 ---

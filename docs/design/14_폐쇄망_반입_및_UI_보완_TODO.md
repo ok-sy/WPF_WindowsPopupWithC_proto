@@ -739,6 +739,7 @@ VSIX
 ### P0 — 폐쇄망 반입 전 필수
 
 - [x] 인터페이스 정의서 현재 기준 최신화 — `docs/interfaces/POPUP_INTERFACE_SPEC.md` v2.0(WPF2-00~02·헤더·426·결과 통합·로컬 판정·폰트 크기 반영, 구형 WPF-01~06은 부록). Word: 사용자가 전달한 v2.0 기준본(`D:workPopupProject2026docsWPF_Popup_API_Interface_Baseline_With_Admin_Content_Options.docx`, 같은 구조)에 QUIZ 재채점 정책(2026-09-22-07)만 반영해 `docs/interfaces/WPF_Popup_API_Interface_v2.0.docx`로 저장소에 보관.
+  > 2026-10-12: 구 Word/PDF 정의서(v2.0·v3.5·v3.6)는 로컬 전용 `docs/interfaces/OLD/`(Git 제외)로 옮겼다. 현행 계약은 `docs/interfaces/POPUP_INTERFACE_SPEC.md` v3.7과 Excel 정의서 `docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`.
 - [x] Server 팝업 변경 파일 목록 확정 — `scripts/export-offline-package.ps1` 이 `git diff 0294d1e..HEAD -- zero-rule-server` 로 MANIFEST-B-server.txt(A=신규/M=수정) 생성. 공통 파일 수정분(M)은 7개: app/build.gradle.kts, JndiResource, MyBatisConfig, application-common/local/dev_db.yml, service/core/build.gradle.kts
 - [x] Web 팝업 변경 파일 목록 확정 — 같은 스크립트가 `git diff f66e8ed..HEAD -- zero-rule-web` 로 MANIFEST-C-web.txt 생성(RgstPop 2개 + package.json/pnpm-lock.yaml)
 - [x] WPF 소스-only 반입 패키지 생성 — 같은 스크립트 D-wpf(bin/obj/publish/.exe/.dll/.pdb 제외, 산출물 누출 검사 포함, `-IncludeMockSso` 선택). 로컬 실행 확인: A 34 / B 87 / C 4 / D 79(+MockSso 2) 파일
@@ -765,7 +766,8 @@ VSIX
 
 ### P1A — 팝업 구버전 분기·미사용 소스 정리
 
-- [ ] [팝업 구버전 분기 및 미사용 소스 정리](18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md) — 구 WPF-01~06 서버 엔드포인트(`/p/api/popups?userId=` 공개 경로, 인증 없음)·WPF 구 API 메서드·`TextPopupWindow` 등 미사용 소스 삭제, `imageSizeMode` FIXED(관리자 웹이 아직 생성)·데모 JSON 구형 문항/정답 키·content 중복 키·RATING5 등 구버전 데이터 분기를 웹→데이터→WPF 순서로 제거. 반입 패키지(§7) 재생성 전에 L-0(동작 변화 없는 삭제) 완료 권장.
+- [x] [팝업 구버전 분기 및 미사용 소스 정리](18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md) — 구 WPF-01~06 서버 엔드포인트(`/p/api/popups?userId=` 공개 경로, 인증 없음)·WPF 구 API 메서드·`TextPopupWindow` 등 미사용 소스 삭제, `imageSizeMode` FIXED(관리자 웹이 아직 생성)·데모 JSON 구형 문항/정답 키·content 중복 키·RATING5 등 구버전 데이터 분기를 웹→데이터→WPF 순서로 제거. 반입 패키지(§7) 재생성 전에 L-0(동작 변화 없는 삭제) 완료 권장.
+  > 2026-10-12: 설계 18 L-0~L-5 코드 반영과 DB 스크립트 04~09 로컬 XE·원격 개발 DB 적용은 2026-09-28 완료. 화면 실행 검증(`--demo`, 서버 기동 후 HTTP, 관리자 브라우저)은 설계 18 기준 미실행으로 남아 있다.
 
 ### P3 — 최하위 우선순위 / 명시적 착수 요청 전 이행 금지
 
@@ -778,6 +780,7 @@ VSIX
 ```text
 TODO 문서화: 완료
 인터페이스 정의서 최신화: Markdown v2.0 완료 / Word v2.0 docs/interfaces/WPF_Popup_API_Interface_v2.0.docx 보관(QUIZ 재채점 정책 반영)
+  (2026-10-12: 구 Word/PDF는 로컬 전용 docs/interfaces/OLD/로 이동·Git 제외. 현행은 POPUP_INTERFACE_SPEC.md v3.7)
 Server·Web·WPF 반입 패키지 생성: scripts/export-offline-package.ps1 작성·로컬 실행 확인 (2026-09-22)
 Service → Services 폴더 정리: 완료
 폰트 크기 기능 구현: 완료 (2026-09-22)
@@ -785,6 +788,8 @@ Service → Services 폴더 정리: 완료
           PopupPreview 헤더 제목·본문·푸터에 반영
   Server: DB 컬럼 없음(CONTENT_OPTIONS JSON). PopupService.validateFontSizeOptions 로 저장 시 10~40 검사
   WPF   : PopupOptions.HeaderFontSize/BodyFontSize/FooterFontSize(null=기본) → PopupFactory(content) → PopupWindow.ApplyFontSizes(Clamp 10~40)
+  (2026-10-12, 설계 31-04~06: WPF API에서는 글꼴 크기 3개를 content가 아닌 popups[] 최상위로 내려주고 WPF는 content 키를 읽지 않음.
+   관리자 API·DB CONTENT_OPTIONS 저장 위치는 유지)
           Header=PopupTitleText, Footer=다시 보지 않기 체크박스+닫기 버튼, 본문=IBodyFontSizeAware(TEXT 본문 4개·IMAGE 설명·VIDEO 설명·설문 선택지/문항)
 빌드/테스트: dotnet build 경고 0·오류 0, 서버 popup.* 단위 테스트 통과, RgstPop tsc --noEmit 오류 0
 실행 테스트: 미수행 — 관리자 화면에서 폰트 크기 저장 → WPF 표시 확인 필요(P2 E2E)
