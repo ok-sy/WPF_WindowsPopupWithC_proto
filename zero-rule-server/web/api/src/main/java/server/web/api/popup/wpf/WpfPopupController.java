@@ -78,16 +78,19 @@ public class WpfPopupController {
         String employeeNo = wpfUserResolver.resolveEmployeeNo(request);
         WpfResultResponse response = wpfPopupService.processResults(employeeNo, body.toCommands());
 
-        long accepted = response.results().stream()
-                .filter(r -> r.status() == WpfResultItemResponse.Status.ACCEPTED).count();
-        long rejected = response.results().stream()
-                .filter(r -> r.status() == WpfResultItemResponse.Status.REJECTED).count();
+        // [설계 34-19] 상태별 건수를 그대로 센다(일시·미확정 오류를 DUPLICATE로 잘못 세지 않도록).
+        java.util.Map<WpfResultItemResponse.Status, Long> counts = response.results().stream()
+                .collect(java.util.stream.Collectors.groupingBy(WpfResultItemResponse::status,
+                        () -> new java.util.EnumMap<>(WpfResultItemResponse.Status.class), java.util.stream.Collectors.counting()));
+        boolean allSettledWithoutError = counts.keySet().stream()
+                .allMatch(s -> s == WpfResultItemResponse.Status.ACCEPTED || s == WpfResultItemResponse.Status.DUPLICATE);
+        String summary = java.util.Arrays.stream(WpfResultItemResponse.Status.values())
+                .map(s -> s.name().toLowerCase(java.util.Locale.ROOT) + "=" + counts.getOrDefault(s, 0L))
+                .collect(java.util.stream.Collectors.joining(","));
         try {
             wpfPopupService.logRequest(body.clientRequestId(), employeeNo, request.getRequestURI(), "POST",
-                    request.getRemoteAddr(), receivedAt, 200, rejected == 0,
-                    "items=" + body.results().size(),
-                    "accepted=" + accepted + ",duplicate=" + (body.results().size() - accepted - rejected)
-                            + ",rejected=" + rejected);
+                    request.getRemoteAddr(), receivedAt, 200, allSettledWithoutError,
+                    "items=" + body.results().size(), summary);
         } catch (RuntimeException ex) {
             log.warn("WPF 결과 API 요청 로그 저장 실패 clientRequestId={}", body.clientRequestId(), ex);
         }

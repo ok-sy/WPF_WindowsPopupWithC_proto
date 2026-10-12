@@ -219,24 +219,27 @@ class WpfPopupControllerTest {
             assertEquals(80.0, commands.get(1).score());
             assertEquals(Boolean.TRUE, commands.get(1).passed());
             assertEquals(null, commands.get(0).score(), "HIDDEN 항목은 점수 없음");
-            return new WpfResultResponse(OffsetDateTime.parse("2026-09-19T09:12:31+09:00"), List.of(
-                    WpfResultItemResponse.accepted(commands.get(0)).build(),
+            return new WpfResultResponse(List.of(
+                    WpfResultItemResponse.accepted(commands.get(0)),
                     WpfResultItemResponse.rejected(commands.get(1), "WPF_NOT_ELIGIBLE", "대상 아님")));
         });
 
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.receivedAt").value("2026-09-19T09:12:31+09:00"))
+                .andExpect(jsonPath("$.receivedAt").doesNotExist())
                 .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
                 .andExpect(jsonPath("$.results[1].status").value("REJECTED"))
                 .andExpect(jsonPath("$.results[1].code").value("WPF_NOT_ELIGIBLE"))
-                .andExpect(jsonPath("$.results[1].popupStatus").doesNotExist());
+                .andExpect(jsonPath("$.results[1].popupStatus").doesNotExist())
+                .andExpect(jsonPath("$.results[0].completed").doesNotExist())
+                .andExpect(jsonPath("$.results[0].responseId").doesNotExist());
 
         // 사용자는 헤더(인증 정보)에서만 온다. 본문의 userId는 무시된다.
         verify(service).processResults(eq("E1001"), anyList());
         verify(service).logRequest(eq("c1"), eq("E1001"), anyString(), eq("POST"), any(), any(),
-                eq(200), eq(false), anyString(), anyString());
+                eq(200), eq(false), anyString(),
+                eq("accepted=1,duplicate=0,rejected=1,retryable_error=0,internal_error=0"));
     }
 
     @Test void devResolverRejectsBlankHeaderAndTrims() {

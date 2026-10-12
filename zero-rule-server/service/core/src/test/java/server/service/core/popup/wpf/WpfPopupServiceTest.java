@@ -140,7 +140,7 @@ class WpfPopupServiceTest {
         var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null, null);
         var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null, null);
 
-        when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok).build());
+        when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
         when(processor.processOne("E1001", notEligible))
                 .thenThrow(new IllegalArgumentException("현재 사용자에게 제출 가능한 팝업이 아닙니다."));
         when(processor.processOne("E1001", badAnswer))

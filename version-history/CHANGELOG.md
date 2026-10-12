@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-13 — TODO34-03 결과 응답 미사용 필드 제거
+
+- 이유: 34-03 결정. 결과 응답의 ROOT receivedAt과 popupStatus·completed·completedAt·responseId는 WPF가 읽지 않고 서버·WPF 로그에도 쓰이지 않음을 확인(서버 요청 로그는 컨트롤러의 자체 수신 시각과 상태별 건수만 기록, WPF 큐 로그는 popupId·resultType·code·message만 사용)해 제거. popupId·resultType은 거절·미종결 로그 진단용으로 유지.
+- 변경(서버): WpfResultItemResponse를 resultId·popupId·resultType·status·code·message만 남기고 Builder 제거(accepted/duplicate/rejected/failed 팩토리), WpfResultResponse에서 receivedAt 제거. WpfResultProcessor의 응답 조립용 상태 조회(selectStatus) 4곳 제거로 결과 항목당 조회 1회 감소(완료·숨김·시청·응답 저장은 그대로). 요청 로그 응답 요약을 상태별 실제 건수(accepted·duplicate·rejected·retryable_error·internal_error)로 바꾸고 success를 "모두 ACCEPTED·DUPLICATE"로 판정 — 2026-10-12-10 변경 후 일시·미확정 오류가 duplicate로 집계되던 문제 수정.
+- 변경(WPF): WpfResultResponseDto.ReceivedAt, WpfResultItemResponseDto.PopupStatus·Completed·CompletedAt·ResponseId 삭제. Demo 게이트웨이 응답 설정 제거(완료·숨김 상태 관리는 유지).
+- 문서: 계약서 11장 응답 예시·필드표·제거 필드 안내, 결과 응답 예제 JSON, 설계 34 §3.4 대조표·34-03 갱신.
+- 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultResponse.java, WpfUserPopupStatus.java), zero-rule-server/service/core/.../popup/wpf/(WpfResultProcessor.java, WpfPopupService.java), zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, 서버 테스트(WpfResultProcessorTest·WpfPopupServiceTest·WpfPopupDatabaseTest·WpfPopupControllerTest), popup-frameWork/Popup/(Dtos/WpfResultDtos.cs, Services/DemoPopupGateway.cs), api/examples/wpf-results-response.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/34_*, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 응답 필드 부재(서버 record·HTTP JSON·C# DTO) 검증 확대, DB 연동 테스트의 완료·숨김 확인을 응답 필드 대신 USER_POPUP_STATUS 조회로 변경, 요청 로그 요약 문자열 검증 추가. 로컬 XE DB 연동 포함 서버 103건 통과(skip 0), :app 컴파일 통과. WPF 행동 검증 900건(Demo 완료 확인을 다음 목록 제외 여부로 변경), 재전송 큐 137건 통과.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-12 — TODO34-39·41 모달 안내 흐름 자동 검증
 
 - 이유: 완료 전 닫기 금지 VIDEO의 Footer 동작 우회 여부(34-39)와 QUIZ 미통과 후 재제출 흐름(34-41)은 Win32 MessageBox·PopupAlert 모달이 테스트 실행을 멈춰 실제 화면 확인 대상으로 남아 있었음.

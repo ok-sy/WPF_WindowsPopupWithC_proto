@@ -142,7 +142,7 @@ public class WpfPopupService {
                                 "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
             }
         }
-        return new WpfResultResponse(OffsetDateTime.now(KST), results);
+        return new WpfResultResponse(results);
     }
 
     /**

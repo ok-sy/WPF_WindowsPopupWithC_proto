@@ -98,7 +98,7 @@ namespace Popup.Services
                 results.Add(response);
                 ResultProcessed?.Invoke(this, (item, response));
             }
-            return Task.FromResult(new WpfResultResponseDto { ReceivedAt = DateTimeOffset.Now, Results = results });
+            return Task.FromResult(new WpfResultResponseDto { Results = results });
         }
 
         private WpfResultItemResponseDto ProcessOne(WpfResultItemDto item)
@@ -121,8 +121,6 @@ namespace Popup.Services
             }
 
             response.Status = "ACCEPTED";
-            response.PopupStatus = "CLOSED";
-            response.Completed = _completed.Contains(item.PopupId);
 
             switch (item.ResultType)
             {
@@ -135,7 +133,6 @@ namespace Popup.Services
                         return Reject(response, "WPF_INVALID_HIDE_DAYS", "숨김 일수는 1 이상이어야 합니다.");
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
-                    response.PopupStatus = "HIDDEN";
                     break;
 
                 case WpfResultType.Submitted:
@@ -154,7 +151,6 @@ namespace Popup.Services
                     {
                         return Reject(response, "WPF_TYPE_MISMATCH", "설문형 팝업만 답안을 제출할 수 있습니다.");
                     }
-                    response.ResponseId = Math.Abs(item.ResultId.GetHashCode());
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
                         /*
@@ -168,12 +164,10 @@ namespace Popup.Services
                         }
                         bool passed = item.Passed.Value;
                         if (passed) _completed.Add(item.PopupId);
-                        response.PopupStatus = passed ? "COMPLETED" : "SUBMITTED";
                     }
                     else
                     {
                         _completed.Add(item.PopupId);          // SURVEY는 제출 즉시 완료 (채점 없음)
-                        response.PopupStatus = "COMPLETED";
                     }
                     break;
 
@@ -187,7 +181,6 @@ namespace Popup.Services
                     if (ratio >= required && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
                     {
                         _completed.Add(item.PopupId);
-                        response.PopupStatus = "COMPLETED";
                     }
                     break;
 
@@ -195,8 +188,6 @@ namespace Popup.Services
                     return Reject(response, "WPF_INVALID_RESULT", $"알 수 없는 결과 유형: {item.ResultType}");
             }
 
-            response.Completed = _completed.Contains(item.PopupId);
-            if (response.Completed == true) response.CompletedAt = DateTimeOffset.Now;
             return response;
         }
 
@@ -205,8 +196,6 @@ namespace Popup.Services
             response.Status = "REJECTED";
             response.Code = code;
             response.Message = message;
-            response.PopupStatus = null;
-            response.Completed = null;
             return response;
         }
     }

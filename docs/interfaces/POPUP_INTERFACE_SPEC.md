@@ -3,7 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-12 (KST)
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
-- 3.7 변경(2026-10-12, 설계 34): 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
+- 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 ROOT `receivedAt`과 `popupStatus`·`completed`·`completedAt`·`responseId` 제거(WPF·로그 미사용). 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
 - 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
 - 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
@@ -910,7 +910,6 @@ VIDEO_WATCHED
 
 ```json
 {
-  "receivedAt": "2026-09-28T15:35:11+09:00",
   "results": [
     {
       "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
@@ -926,7 +925,6 @@ VIDEO_WATCHED
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| receivedAt | string(ISO) | 선택 | `null` | 서버 수신 시각 |
 | results | array | O | `[]` | 처리한 항목별 결과 |
 | results[].resultId | string | O | 없음 | 요청 resultId와 동일 |
 | results[].popupId | string | O | 없음 | 요청 popupId |
@@ -960,16 +958,15 @@ VIDEO_WATCHED
 - 서버: 예외 형식·DB 오류 형식으로 분류하고 오류 메시지 문자열로 판단하지 않는다. 항목 저장과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패 항목은 롤백한 뒤 상태를 응답한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
 - WPF: 이번 batch에 없는 resultId 응답, 응답 누락 항목, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId와 결과 데이터를 유지한다. 재시도 간격·최대 횟수·재개 시점은 별도 확정 대상이며 현재는 기존 전송 시점(시작·목록 조회 전·결과 저장 후·종료 전)에 재시도한다.
 
-### 선택 응답 필드
+### 제거된 응답 필드
 
-C# DTO는 다음 값을 받을 수 있으나, 현재 UI는 서버 응답을 기다려 사용자 판정을 바꾸지 않는다. QUIZ 점수·통과 여부(`totalScore`·`passed`)는 요청 값과 의미가 같아 응답에서 제거했다(설계 33). 숨김 만료 시각(`hiddenUntil`)과 영상 시청·요구 비율(`watchedRatio`·`requiredRatio`)도 WPF가 쓰지 않아 제거했다(설계 34-05). 서버는 숨김 만료·시청 기록·완료 계산을 내부에서 그대로 저장·처리한다.
+결과 응답은 항목 처리 종결 여부만 알린다. 위 표 밖의 필드는 내려주지 않으며 WPF도 읽지 않는다.
 
-```text
-popupStatus
-completed
-completedAt
-responseId
-```
+- `totalScore`·`passed`: 요청 값과 의미가 같아 제거(설계 33)
+- `hiddenUntil`·`watchedRatio`·`requiredRatio`: WPF 미사용(설계 34-05)
+- ROOT `receivedAt`, `popupStatus`·`completed`·`completedAt`·`responseId`: WPF 미사용·로그 미사용(설계 34-03). 서버 수신 시각은 요청 로그에 남는다.
+
+서버는 숨김 만료·시청 기록·완료 판정·응답 저장을 내부에서 그대로 처리하며, 완료·숨김 결과는 다음 목록 조회에서 제외 여부로 반영된다. `popupId`·`resultType`은 WPF 거절 로그 진단용으로 유지한다.
 
 ---
 

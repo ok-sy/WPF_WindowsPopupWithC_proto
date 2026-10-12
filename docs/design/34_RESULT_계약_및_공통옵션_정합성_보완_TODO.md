@@ -55,7 +55,7 @@ TODO 29~33의 후속 검토 결과와 확정 요건을 통합한다.
 
 - [x] 34-01 C# DTO·사용처, Java DTO·응답 조립, Demo, JSON, 문서·Excel의 RESULT 전체 필드 대조표 작성. — §3.4 작성(Excel은 저장소에 없어 제외)
 - [x] 34-02 응답 receivedAt / popupId / resultType / popupStatus / completed / completedAt / responseId의 실제 사용처와 진단 필요를 항목별 기록. — §3.4 응답 표
-- [ ] 34-03 위 항목은 유지 확정 목록으로 간주하지 않는다. 필요한 항목만 남기되, 삭제 여부와 이유를 대조표에 먼저 확정한다. — §3.4에 삭제 후보 표시. receivedAt·popupStatus·completed·completedAt·responseId 삭제 여부 확정 필요
+- [x] 34-03 위 항목은 유지 확정 목록으로 간주하지 않는다. 필요한 항목만 남기되, 삭제 여부와 이유를 대조표에 먼저 확정한다. — 2026-10-12: 로그·WPF 미사용 확인 후 receivedAt·popupStatus·completed·completedAt·responseId 제거, popupId·resultType 유지(§3.4)
 - [x] 34-04 resultId는 WPF 결과 항목의 멱등·응답 대응 키, responseId는 서버 응답 저장 레코드 식별자임을 구분한다. 이름이 비슷하다는 이유만으로 서로 대체하지 않는다. — §3.4 responseId 행
 - [x] 34-05 응답의 totalScore / passed / hiddenUntil / watchedRatio / requiredRatio를 C#·Java DTO, 응답 builder, Demo, 예제·문서에서 제거. — 2026-10-12 제거(Java 응답·builder·processor, C# DTO, Demo 게이트웨이, 예제·계약서)
 - [x] 34-06 제거한 응답 필드의 내부 저장·로그·완료/숨김 처리 경로가 유지되는지 확인. — hidePopup·saveVideoProgress·markPopupCompleted 경로 유지 확인(WpfResultProcessorTest·DB 연동 테스트)
@@ -86,10 +86,10 @@ TODO 29~33의 후속 검토 결과와 확정 요건을 통합한다.
 | resultId | 요청 echo | 큐 종결 판정(PopupResultQueue) | 유지 |
 | status | 처리 상태 | 큐 종결 판정·거절 로그·Demo 로그 | 유지 |
 | code / message | 거절·오류 사유 | 거절 로그·Demo 로그 | 유지 |
-| popupId / resultType | 요청 echo | 거절 로그 문구에만 사용 | 유지 권장(진단 로그). resultId로 대체 가능 |
-| receivedAt | 서버 수신 시각 | 없음 | 삭제 후보(진단 전용) |
-| popupStatus / completed / completedAt | USER_POPUP_STATUS 조회값 | 없음(Demo 게이트웨이 설정만) | 삭제 후보. 완료 여부는 다음 목록 조회가 반영 |
-| responseId | POPUP_RESPONSE.RESPONSE_ID | 없음 | 삭제 후보. resultId(WPF 결과 멱등·응답 대응 키)와 다른 서버 저장 레코드 식별자이며 서로 대체하지 않음(34-04) |
+| popupId / resultType | 요청 echo | 거절·미종결 로그 문구 | 유지(진단 로그) |
+| receivedAt | — | 없음 | 제거 완료(34-03). 서버 수신 시각은 요청 로그에 남음 |
+| popupStatus / completed / completedAt | — | 없음 | 제거 완료(34-03). 완료 여부는 다음 목록 조회가 반영. 응답 조립용 상태 조회(selectStatus)도 제거 |
+| responseId | POPUP_RESPONSE.RESPONSE_ID | 없음 | 제거 완료(34-03). resultId(WPF 결과 멱등·응답 대응 키)와 다른 서버 저장 레코드 식별자이며 서로 대체하지 않음(34-04) |
 | totalScore / passed | — | — | 제거 완료(설계 33) |
 | hiddenUntil / watchedRatio / requiredRatio | — | — | 제거 완료(34-05). 숨김 만료·시청 기록·완료 계산은 서버 내부 유지(34-06) |
 

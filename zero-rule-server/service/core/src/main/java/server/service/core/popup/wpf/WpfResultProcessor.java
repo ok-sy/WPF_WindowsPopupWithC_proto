@@ -70,9 +70,7 @@ public class WpfResultProcessor {
     private WpfResultItemResponse handleClosed(String employeeNo, WpfResultCommand item) {
         requireActiveUserAndPopup(employeeNo, item.popupId());
         recordDisplayAndClose(employeeNo, item);
-        return WpfResultItemResponse.accepted(item)
-                .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
-                .build();
+        return WpfResultItemResponse.accepted(item);
     }
 
     /**
@@ -89,10 +87,7 @@ public class WpfResultProcessor {
         if (hidden.hiddenUntil() == null) {
             throw new IllegalStateException("숨김 만료 시각을 확인할 수 없습니다. popupId=" + item.popupId());
         }
-        // selectStatus의 hiddenUntilAt이 방금 저장된 HIDDEN_UNTIL_AT을 돌려준다.
-        return WpfResultItemResponse.accepted(item)
-                .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
-                .build();
+        return WpfResultItemResponse.accepted(item);
     }
 
     /**
@@ -119,10 +114,7 @@ public class WpfResultProcessor {
         PopupSubmitResponseDto submitted = popupService.submitResponse(
                 item.popupId(), item.resultId(), employeeNo, item.answers(), item.score(), item.passed());
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
-        return WpfResultItemResponse.accepted(item)
-                .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
-                .response(submitted.responseId())
-                .build();
+        return WpfResultItemResponse.accepted(item);
     }
 
     /**
@@ -139,9 +131,7 @@ public class WpfResultProcessor {
                 item.popupId(), employeeNo, video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds());
         recordDisplayAndClose(employeeNo, item);
-        return WpfResultItemResponse.accepted(item)
-                .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
-                .build();
+        return WpfResultItemResponse.accepted(item);
     }
 
     /** 표시(displayedAt)·닫기(closedAt) 정보를 USER_POPUP_STATUS에 1회 반영한다. */

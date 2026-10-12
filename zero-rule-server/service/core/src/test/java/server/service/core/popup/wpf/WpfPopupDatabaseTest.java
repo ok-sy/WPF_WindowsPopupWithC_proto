@@ -142,20 +142,19 @@ class WpfPopupDatabaseTest {
 
                 WpfResultItemResponse r0 = response.results().get(0);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r0.status());
-                assertEquals("HIDDEN", r0.popupStatus());
+                assertEquals("HIDDEN", wpfMapper.selectStatus("E1001", "SAMPLE-TEXT-001").popupStatus());
 
                 WpfResultItemResponse r1 = response.results().get(1);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r1.status(), r1.message());
-                assertEquals(Boolean.TRUE, r1.completed());
-                assertNotNull(r1.responseId());
+                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-QUIZ-003").completed(), "QUIZ 통과 완료 저장");
 
                 WpfResultItemResponse r2 = response.results().get(2);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r2.status(), r2.message());
-                assertEquals(Boolean.TRUE, r2.completed(), "SURVEY는 제출 즉시 완료");
+                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-SURVEY-004").completed(), "SURVEY는 제출 즉시 완료");
 
                 WpfResultItemResponse r3 = response.results().get(3);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r3.status(), r3.message());
-                assertEquals(Boolean.TRUE, r3.completed());
+                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-VIDEO-002").completed(), "VIDEO 시청 완료 저장");
 
                 assertEquals(WpfResultItemResponse.Status.DUPLICATE, response.results().get(4).status(), "같은 resultId 재전송");
                 // [설계 34-22] 재전송된 같은 resultId는 표시 횟수·영수증을 다시 쌓지 않는다(처리 1회분만 증가).

@@ -10,7 +10,6 @@ import server.domain.popup.VideoProgressResponseDto;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfResultType;
-import server.domain.popup.wpf.WpfUserPopupStatus;
 import server.domain.popup.wpf.WpfVideoProgress;
 import server.repo.core.mapper.popup.PopupMapper;
 import server.repo.core.mapper.popup.WpfPopupMapper;
@@ -46,8 +45,6 @@ class WpfResultProcessorTest {
         when(wpfMapper.countReceipt(anyString())).thenReturn(0);
         when(wpfMapper.mergeDisplayAndClose(anyString(), anyString(), any(), any())).thenReturn(1);
         when(popupMapper.countActiveUserAndPopup(anyString(), anyString())).thenReturn(1);
-        when(wpfMapper.selectStatus("E1001", "P1"))
-                .thenReturn(new WpfUserPopupStatus("CLOSED", false, null, null));
     }
 
     private WpfResultCommand item(WpfResultType type, Integer hideDays, List<PopupSubmitAnswer> answers,
@@ -66,17 +63,15 @@ class WpfResultProcessorTest {
     @Test void closedRecordsDisplayAndCloseAndReceipt() {
         var res = processor.processOne("E1001", item(WpfResultType.CLOSED, null, null, null));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
-        assertEquals("CLOSED", res.popupStatus());
         verify(wpfMapper).mergeDisplayAndClose("E1001", "P1", DISPLAYED, CLOSED);
         verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "CLOSED", "ACCEPTED", null);
         verifyNoInteractions(popupService);
+        verify(wpfMapper, never()).selectStatus(any(), any());   // [설계 34-03] 응답에 상태를 싣지 않아 조회하지 않는다
     }
 
     @Test void hiddenDelegatesToExistingHidePopup() {
         when(popupService.hidePopup("P1", "E1001", 7))
                 .thenReturn(new PopupHideResponseDto("E1001", "P1", "UNTIL", CLOSED.plusDays(7)));
-        when(wpfMapper.selectStatus("E1001", "P1"))
-                .thenReturn(new WpfUserPopupStatus("HIDDEN", false, null, CLOSED.plusDays(7)));
         var res = processor.processOne("E1001", item(WpfResultType.HIDDEN, 7, null, null));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
         // [설계 34-05] 숨김 만료 시각은 저장하지만 응답에는 없다.
@@ -94,19 +89,17 @@ class WpfResultProcessorTest {
         var answers = List.of(new PopupSubmitAnswer(1L, null, List.of(10L)));
         when(popupService.submitResponse(eq("P1"), eq("r-1"), eq("E1001"), eq(answers), any(), any()))
                 .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
-        when(wpfMapper.selectStatus("E1001", "P1"))
-                .thenReturn(new WpfUserPopupStatus("COMPLETED", true, CLOSED, null));
 
         var quizItem = new WpfResultCommand("r-1", "P1", WpfResultType.SUBMITTED, DISPLAYED, CLOSED, null,
                 answers, null, 80.0, true);
         var quiz = processor.processOne("E1001", quizItem);
-        assertEquals(5001L, quiz.responseId());
-        assertEquals(Boolean.TRUE, quiz.completed());
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, quiz.status());
         // 제출은 resultId를 clientRequestId로, WPF 판정값을 그대로 전달한다 (POPUP_RESPONSE.CLIENT_REQUEST_ID·TOTAL_SCORE·PASSED_YN)
         verify(popupService).submitResponse("P1", "r-1", "E1001", answers, 80.0, true);
-        // [설계 33·34-05] 확정 삭제 응답 필드 5개는 응답 계약에 없다.
+        // [설계 33·34-03·34-05] 확정 삭제 응답 필드는 응답 계약에 없다.
         var names = java.util.Arrays.stream(WpfResultItemResponse.class.getRecordComponents()).map(c -> c.getName()).toList();
-        for (String removed : List.of("totalScore", "passed", "hiddenUntil", "watchedRatio", "requiredRatio")) {
+        for (String removed : List.of("totalScore", "passed", "hiddenUntil", "watchedRatio", "requiredRatio",
+                "popupStatus", "completed", "completedAt", "responseId")) {
             assertFalse(names.contains(removed), removed);
         }
     }
@@ -117,11 +110,9 @@ class WpfResultProcessorTest {
         when(popupService.saveVideoProgress("P1", "E1001", video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds()))
                 .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.9842, 0.9, true, CLOSED));
-        when(wpfMapper.selectStatus("E1001", "P1"))
-                .thenReturn(new WpfUserPopupStatus("COMPLETED", true, CLOSED, null));
         var res = processor.processOne("E1001", item(WpfResultType.VIDEO_WATCHED, null, null, video));
         // [설계 34-05] 시청 비율은 저장 계층(saveVideoProgress)에서 계산하고 응답에는 없다.
-        assertEquals(Boolean.TRUE, res.completed());
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
         verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "VIDEO_WATCHED", "ACCEPTED", null);
     }
 
