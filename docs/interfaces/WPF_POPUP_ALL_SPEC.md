@@ -48,8 +48,8 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과의 숨김 일수 |
-| content.FooterAction | 지원 | N | `""` | LINK_AND_CLOSE이면 링크 실행 후 종료 |
-| content.FooterLinkUrl | 조건부 지원 | 조건부 | `""` | LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
+| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
+| FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
 | content.UseBackgroundOverlay | 지원 | N | `true` | 별도 Overlay 창 사용 |
 | content.BackgroundOverlayOpacity | 지원 | N | `0.45` | 0~1로 보정. 뒤쪽 마우스 입력을 막으며 키보드 전체 차단은 아님 |
 | content.HeaderFontSize | 지원 | N | `null` | 미지정 시 Header 17. 지정 시 10~40 보정 |
@@ -64,8 +64,9 @@ Footer 버튼 표시는 서버 응답(Java `WpfPopupItem`)과 C# 모두 `showFoo
 Header에는 닫기 버튼이 없고 로고에는 닫기 동작을 연결하지 않는다.
 SURVEY·QUIZ·VIDEO+QUIZ는 `ShowFooterButton=false`여도 제출을 유지한다.
 Footer가 있으면 공통 제출 버튼, 없으면 콘텐츠 내부 제출 버튼을 사용한다.
-LINK_AND_CLOSE는 일반 콘텐츠에서 바로가기, 설문·퀴즈에서 제출로 표시하며
-필수 응답 검증·QUIZ 통과 후 링크를 연다. URL 오류나 실행 실패 시 창을 유지한다.
+Footer 버튼 이름은 CLOSE '닫기', LINK_AND_CLOSE '바로가기', SUBMIT '제출'이다.
+LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL 오류나 실행 실패 시 창을 유지한다.
+설문·퀴즈의 제출 후 링크 열기는 제거했다(설계 30).
 
 ### 3.2 크기·위치
 

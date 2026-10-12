@@ -24,6 +24,12 @@ namespace Popup.Models
 
     public enum PopupPosition { Center, TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight }
 
+    /*
+     * [설계 30] 공통 Footer 버튼 동작(JSON footerAction).
+     * Close = '닫기', LinkAndClose = '바로가기'(footerLinkUrl을 연 뒤 닫기), Submit = '제출'(SURVEY/QUIZ 고정).
+     */
+    public enum PopupFooterAction { Close, LinkAndClose, Submit }
+
     public class PopupOptions
     {
         public string PopupId { get; set; } = string.Empty;
@@ -74,7 +80,8 @@ namespace Popup.Models
         public bool ShowHeader { get; set; } = true;
         public bool ShowFooterButton { get; set; } = true;
         public bool ShowFooter { get; set; } = true;
-        public bool OpenFooterLinkAndClose { get; set; }
+        public PopupFooterAction FooterAction { get; set; } = PopupFooterAction.Close;
+        public bool OpenFooterLinkAndClose => FooterAction == PopupFooterAction.LinkAndClose;
         public string FooterLinkUrl { get; set; } = string.Empty;
         public bool ShowDoNotShowAgain { get; set; } = true;
 

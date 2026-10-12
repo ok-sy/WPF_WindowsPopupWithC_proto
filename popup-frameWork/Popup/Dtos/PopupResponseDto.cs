@@ -130,6 +130,16 @@ namespace Popup.Dtos
         public bool ShowFooter { get; set; } =
             true;
 
+        /*
+         * [설계 30] 공통 Footer 버튼 동작. content가 아니라 popups[] 최상위로 받는다.
+         * CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출, SURVEY·QUIZ 고정).
+         * 생략·미지원 값은 PopupFactory가 유형별 기본값(CLOSE 또는 SUBMIT)으로 처리한다.
+         */
+        public string FooterAction { get; set; } = "CLOSE";
+
+        /* [설계 30] LINK_AND_CLOSE일 때 열 절대 http/https URL. 그 밖의 동작에서는 쓰지 않는다. */
+        public string FooterLinkUrl { get; set; } = string.Empty;
+
         public bool ShowDoNotShowAgain { get; set; }
 
         /*

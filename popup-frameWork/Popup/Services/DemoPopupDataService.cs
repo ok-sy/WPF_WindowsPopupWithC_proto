@@ -591,8 +591,9 @@ namespace Popup.Services
             linked["title"] = "바로가기 버튼 데모";
             linked["showFooter"] = true;
             linked["showFooterButton"] = true;
-            linked["content"]!["footerAction"] = "LINK_AND_CLOSE";
-            linked["content"]!["footerLinkUrl"] = "https://example.com/";
+            // [설계 30] Footer 동작은 content가 아니라 popups[] 최상위 값이다.
+            linked["footerAction"] = "LINK_AND_CLOSE";
+            linked["footerLinkUrl"] = "https://example.com/";
             demoPopups.Add(linked);
 
             /*

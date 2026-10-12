@@ -1,6 +1,7 @@
 package server.domain.popup.wpf;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import server.domain.popup.PopupFooterAction;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
@@ -20,6 +21,9 @@ import java.util.Map;
  *       {@code repeatInterval}/{@code repeatDayOfWeek}/{@code repeatDayOfMonth}). 노출 판정은 서버가 끝내고
  *       최종 목록만 내려주므로 WPF 계약에 두지 않는다. 관리자 API({@link PopupResponseDto})에는 그대로 있다.</li>
  *   <li>[설계 29-11] Footer 버튼 표시는 {@code showFooterButton} 하나로 내려준다(관리자 API·DB의 showCloseButton 값).</li>
+ *   <li>[설계 30] Footer 동작은 content가 아니라 최상위 {@code footerAction}(CLOSE / LINK_AND_CLOSE / SUBMIT)과
+ *       {@code footerLinkUrl}(LINK_AND_CLOSE일 때만)로 내려준다. SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다.
+ *       content에서는 두 키를 뺀다({@link PopupFooterAction}).</li>
  *   <li>문항은 최상위 {@code questions}에만 둔다. [설계 18 L-3] content에 문항·통과 점수·완료 비율 등 파생 키를
  *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
  * </ul>
@@ -48,6 +52,8 @@ public record WpfPopupItem(
         boolean showHeader,
         boolean showFooterButton,
         boolean showFooter,
+        String footerAction,
+        String footerLinkUrl,
         boolean showDoNotShowAgain,
         Integer hideDays,
         boolean allowCloseBeforeComplete,
@@ -64,12 +70,17 @@ public record WpfPopupItem(
      */
     public static WpfPopupItem from(PopupResponseDto dto, boolean includeGradingInfo) {
         Map<String, Object> content = new LinkedHashMap<>(dto.content());
+        String footerAction = PopupFooterAction.effective(dto.popupType(), content.get(PopupFooterAction.ACTION_KEY));
+        String footerLinkUrl = PopupFooterAction.effectiveLink(dto.popupType(), content);
+        content.remove(PopupFooterAction.ACTION_KEY);
+        content.remove(PopupFooterAction.LINK_KEY);
         return new WpfPopupItem(
                 dto.popupId(), dto.popupType(), dto.title(),
                 dto.displayMode(), dto.displayOrder(), dto.sizeMode(),
                 dto.width(), dto.height(), dto.widthRatio(), dto.heightRatio(),
                 dto.minimumWidth(), dto.minimumHeight(), dto.maximumWidth(), dto.maximumHeight(),
-                dto.showHeader(), dto.showCloseButton(), dto.showFooter(), dto.showDoNotShowAgain(),
+                dto.showHeader(), dto.showCloseButton(), dto.showFooter(), footerAction, footerLinkUrl,
+                dto.showDoNotShowAgain(),
                 dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
                 dto.questions(), content);

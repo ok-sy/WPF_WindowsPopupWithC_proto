@@ -15,6 +15,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "questions": [],
       "content": {
@@ -37,6 +38,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "questions": [],
       "content": {
@@ -56,6 +58,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "completionRatio": 0.8,
       "questions": [],
@@ -78,6 +81,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "questions": [
         {
@@ -127,6 +131,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "passingScore": 80,
       "questions": [
@@ -172,6 +177,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "completionRatio": 0.8,
       "passingScore": 80,

@@ -15,6 +15,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "questions": [],
@@ -44,6 +45,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "questions": [],
@@ -69,6 +71,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "CLOSE",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": false,
       "questions": [],
@@ -99,6 +102,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "questions": [
@@ -182,6 +186,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "questions": [
@@ -259,6 +264,7 @@
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
+      "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": false,
       "questions": [

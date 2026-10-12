@@ -68,17 +68,26 @@ namespace Popup
             if (popup.PopupType == "VIDEO" || HasVideo(popup))
                 Field("completionRatio", "영상 시청 완료 비율 · 0~1", typeof(double?), min: 0, max: 1);
             if (popup.PopupType == "QUIZ") Field("passingScore", "퀴즈 통과 점수", typeof(double?), min: 0);
-            panel = Group("위치·푸터 바로가기", false);
+            panel = Group("위치·푸터 동작", false);
             JsonObject content = _draft["content"]!.AsObject();
             content["popupPosition"] ??= "CENTER";
-            content["footerAction"] ??= "CLOSE";
-            content["footerLinkUrl"] ??= "";
             content["useBackgroundOverlay"] ??= true;
             content["backgroundOverlayOpacity"] ??= .45;
             AddField(panel, content, "popupPosition", "창 위치", typeof(string), new[] {
                 "CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT", "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT" });
-            AddField(panel, content, "footerAction", "푸터 동작", typeof(string), new[] { "CLOSE", "LINK_AND_CLOSE" });
-            AddField(panel, content, "footerLinkUrl", "푸터 바로가기 URL", typeof(string));
+            // [설계 30] Footer 동작은 최상위 값. 설문·퀴즈는 제출(SUBMIT) 고정이라 선택 항목을 두지 않는다.
+            if (popup.PopupType is "SURVEY" or "QUIZ")
+            {
+                _draft["footerAction"] = "SUBMIT";
+                _draft["footerLinkUrl"] = "";
+                panel.Children.Add(new TextBlock { Text = "푸터 동작: 제출 (설문·퀴즈 고정)", Margin = new Thickness(0, 0, 0, 16) });
+            }
+            else
+            {
+                if (_draft["footerAction"]?.GetValue<string>() != "LINK_AND_CLOSE") _draft["footerAction"] = "CLOSE";
+                AddField(panel, _draft, "footerAction", "푸터 동작", typeof(string), new[] { "CLOSE", "LINK_AND_CLOSE" });
+                AddField(panel, _draft, "footerLinkUrl", "푸터 바로가기 URL", typeof(string));
+            }
             panel = Group("배경·글자 크기", false);
             AddField(panel, content, "useBackgroundOverlay", "배경 Overlay 사용", typeof(bool));
             AddField(panel, content, "backgroundOverlayOpacity", "배경 불투명도 · 0~1", typeof(double), min: 0, max: 1);

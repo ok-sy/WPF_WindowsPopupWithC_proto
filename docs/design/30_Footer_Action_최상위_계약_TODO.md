@@ -129,6 +129,8 @@ SUBMIT
 
 ## 4. 팝업 타입별 정책
 
+> 2026-10-12 정합성 확인: 기존 코드는 SURVEY/QUIZ에 LINK_AND_CLOSE를 설정하면 '제출 후 링크 열기'로 동작했다(PopupWindow.TryOpenSubmissionLink). 이 TODO의 SUBMIT 고정 정책에 따라 해당 경로를 제거했다.
+
 | popupType | footerAction 기본/허용 정책 |
 |---|---|
 | TEXT | CLOSE / LINK_AND_CLOSE |
@@ -286,32 +288,32 @@ WPF:
 
 ## 9. 구현 TODO
 
-- [ ] 30-01 `footerAction` 계약을 CLOSE / LINK_AND_CLOSE / SUBMIT 3값으로 정의
-- [ ] 30-02 `footerAction`을 `content`에서 `popups[]` 최상위로 이동
-- [ ] 30-03 `footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동
-- [ ] 30-04 C# `PopupResponseDto.FooterAction` 추가
-- [ ] 30-05 C# `PopupResponseDto.FooterLinkUrl` 추가
-- [ ] 30-06 `PopupFactory`가 최상위 Footer 값을 사용하도록 변경
-- [ ] 30-07 CLOSE 동작 회귀 검증
-- [ ] 30-08 LINK_AND_CLOSE URL 열기/실패 동작 검증
-- [ ] 30-09 SURVEY Footer Action을 SUBMIT으로 고정
-- [ ] 30-10 QUIZ Footer Action을 SUBMIT으로 고정
-- [ ] 30-11 VIDEO+QUIZ Footer Action을 SUBMIT으로 고정
-- [ ] 30-12 QUIZ 불합격 시 창 유지 및 재제출 회귀 검증
-- [ ] 30-13 Java `WpfPopupItem` 최상위 Footer 필드 추가
-- [ ] 30-14 서버 응답 조립 시 content의 Footer 값을 최상위로 승격
-- [ ] 30-15 관리자 API에서 popupType별 허용 Action 검증 추가
-- [ ] 30-16 LINK_AND_CLOSE일 때 footerLinkUrl 필수/URL 형식 검증
-- [ ] 30-17 SURVEY/QUIZ에 CLOSE/LINK_AND_CLOSE가 들어오는 경우의 저장 정책 결정
-- [ ] 30-18 구버전 WPF와의 전환 순서 결정
-- [ ] 30-19 필요 시 `minimumSupportedVersion` 상향
-- [ ] 30-20 content 내부 legacy Footer key 제거
-- [ ] `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
-- [ ] 최소/전체 기능 정의서 수정
-- [ ] 유형별 Sample JSON 수정
-- [ ] Excel 인터페이스 정의서 반영
-- [ ] 서버/WPF 계약 테스트 추가
-- [ ] TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증
+- [x] 30-01 `footerAction` 계약을 CLOSE / LINK_AND_CLOSE / SUBMIT 3값으로 정의
+- [x] 30-02 `footerAction`을 `content`에서 `popups[]` 최상위로 이동
+- [x] 30-03 `footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동
+- [x] 30-04 C# `PopupResponseDto.FooterAction` 추가
+- [x] 30-05 C# `PopupResponseDto.FooterLinkUrl` 추가
+- [x] 30-06 `PopupFactory`가 최상위 Footer 값을 사용하도록 변경 — content lookup 제거, `ConvertFooterAction`(유형별 정규화)
+- [x] 30-07 CLOSE 동작 회귀 검증 — 로컬 행동 검증
+- [x] 30-08 LINK_AND_CLOSE URL 열기/실패 동작 검증 — 로컬 행동 검증(URL 검증·Demo 거부). 실제 브라우저 실행 미확인
+- [x] 30-09 SURVEY Footer Action을 SUBMIT으로 고정
+- [x] 30-10 QUIZ Footer Action을 SUBMIT으로 고정
+- [x] 30-11 VIDEO+QUIZ Footer Action을 SUBMIT으로 고정
+- [x] 30-12 QUIZ 불합격 시 창 유지 및 재제출 회귀 검증 — 기존 행동 검증 유지 통과
+- [x] 30-13 Java `WpfPopupItem` 최상위 Footer 필드 추가
+- [x] 30-14 서버 응답 조립 시 content의 Footer 값을 최상위로 승격 — WpfPopupItem.from에서 승격, content에서 두 키 제거
+- [x] 30-15 관리자 API에서 popupType별 허용 Action 검증 추가 — SUBMIT은 SURVEY/QUIZ 전용, 미지원 값 거부
+- [x] 30-16 LINK_AND_CLOSE일 때 footerLinkUrl 필수/URL 형식 검증 — 기존 검증 유지(일반 유형만)
+- [x] 30-17 SURVEY/QUIZ에 CLOSE/LINK_AND_CLOSE가 들어오는 경우의 저장 정책 결정 — 정규화로 결정: SURVEY/QUIZ는 어떤 허용 값이 와도 키를 저장하지 않음(SUBMIT). 기존 데이터는 `db/oracle/13_normalize_footer_action_oracle.sql`(로컬·원격 개발 DB 미실행)
+- [x] 30-18 구버전 WPF와의 전환 순서 결정 — 운영 배포 버전이 없어 단계 1 중복 전송 없이 즉시 전환
+- [x] 30-19 필요 시 `minimumSupportedVersion` 상향 — 운영 배포 버전이 없어 상향 불필요로 결정(미변경)
+- [x] 30-20 content 내부 legacy Footer key 제거 — WPF 응답 content에서 제거, WPF는 content 키를 읽지 않음. 관리자 API·DB(CONTENT_OPTIONS)는 저장 위치로 유지
+- [x] `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
+- [x] 최소/전체 기능 정의서 수정
+- [x] 유형별 Sample JSON 수정
+- [ ] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영
+- [x] 서버/WPF 계약 테스트 추가
+- [ ] TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증 — 단위·행동 검증 통과, 실제 Windows 화면·서버 HTTP 미확인
 
 ---
 

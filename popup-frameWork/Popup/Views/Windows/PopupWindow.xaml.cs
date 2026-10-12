@@ -997,29 +997,10 @@ namespace Popup.Views.Windows
          * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
          * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
          * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로).
+         *
+         * [설계 30] SURVEY/QUIZ의 '제출 후 링크 열기'(TryOpenSubmissionLink)는 삭제했다. 설문·퀴즈 Footer 동작은 SUBMIT 고정이며
+         * 바로가기(LINK_AND_CLOSE)는 일반 콘텐츠(TEXT/IMAGE/VIDEO)의 Footer 버튼에서만 실행한다.
          */
-        internal bool TryOpenSubmissionLink()
-        {
-            if (!_options.OpenFooterLinkAndClose) return true;
-            if (!Uri.TryCreate(_options.FooterLinkUrl, UriKind.Absolute, out var link)
-                || (link.Scheme != Uri.UriSchemeHttp && link.Scheme != Uri.UriSchemeHttps)
-                || string.IsNullOrWhiteSpace(link.Host))
-            {
-                PopupAlert.Show(this, "바로가기 주소를 확인해 주세요.", "링크를 확인해 주세요");
-                return false;
-            }
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link.AbsoluteUri) { UseShellExecute = true });
-                return true;
-            }
-            catch (Exception exception)
-            {
-                PopupAlert.Show(this, "링크를 열지 못했습니다.\n\n" + exception.Message, "다시 시도해 주세요");
-                return false;
-            }
-        }
-
         private void RecordDoNotShowAgainChoice()
         {
             _options.DoNotShowAgainChecked =

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
+import server.domain.popup.PopupFooterAction;
 import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.AdminPopupTargetCondition;
@@ -861,14 +862,21 @@ public class PopupService {
         }
     }
 
-    /** 선택적인 푸터 링크 및 영상 결합 모드 설정을 저장 전에 검증한다. */
+    /**
+     * 선택적인 푸터 동작 및 영상 결합 모드 설정을 저장 전에 검증한다.
+     * [설계 30] footerAction은 CLOSE / LINK_AND_CLOSE / SUBMIT. SURVEY/QUIZ는 SUBMIT 고정이라 어떤 허용 값이 와도
+     * 저장 시 정규화(키 제거)하고, 그 밖의 유형에 SUBMIT은 거부한다. LINK_AND_CLOSE는 절대 http/https URL이 필수다.
+     */
     static void validateActionOptions(PopupResponseDto popup) {
         Map<String, Object> content = popup.content();
         if (content == null) return;
-        Object action = content.get("footerAction");
-        if (action != null && !Set.of("CLOSE", "LINK_AND_CLOSE").contains(action))
-            throw new IllegalArgumentException("푸터 동작은 CLOSE 또는 LINK_AND_CLOSE여야 합니다.");
-        if ("LINK_AND_CLOSE".equals(action)) {
+        Object action = content.get(PopupFooterAction.ACTION_KEY);
+        if (!PopupFooterAction.isKnown(action))
+            throw new IllegalArgumentException("푸터 동작은 CLOSE, LINK_AND_CLOSE, SUBMIT 중 하나여야 합니다.");
+        boolean submitType = PopupFooterAction.isSubmitType(popup.popupType());
+        if (PopupFooterAction.SUBMIT.equals(action) && !submitType)
+            throw new IllegalArgumentException("제출(SUBMIT) 푸터 동작은 설문·퀴즈에서만 사용할 수 있습니다.");
+        if (PopupFooterAction.LINK_AND_CLOSE.equals(action) && !submitType) {
             try {
                 java.net.URI uri = java.net.URI.create(contentText(content, "footerLinkUrl"));
                 if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
@@ -1037,8 +1045,15 @@ public class PopupService {
                 contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
                         ? "videoUrl" : mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),
-                writeContentJson(popup.popupId(), PopupContentAssembler.withoutStoredCopies(content)),
+                writeContentJson(popup.popupId(), storedOptions(popupType, content)),
                 auditUser);
+    }
+
+    /** CONTENT_OPTIONS 저장 형태. 정규 컬럼 사본을 빼고 [설계 30] Footer 동작을 저장 정규형으로 맞춘다. */
+    static Map<String, Object> storedOptions(String popupType, Map<String, Object> content) {
+        Map<String, Object> options = PopupContentAssembler.withoutStoredCopies(content);
+        PopupFooterAction.normalizeStored(popupType, options);
+        return options;
     }
 
     private String writeContentJson(String popupId, Map<String, Object> content) {

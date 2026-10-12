@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-04 — TODO30 Footer Action 최상위 계약 및 3모드 정리
+
+- 이유: 설계 30 반영. Footer는 콘텐츠 속성이 아니라 PopupWindow 공통 영역의 동작이므로 WPF 응답에서 showFooter·showFooterButton과 같은 레벨(popups[] 최상위)로 정리하고 동작을 3값으로 명시. 운영 배포 버전이 없어 구버전 호환 단계(content 중복 전송·fallback) 없이 코드와 저장 데이터를 정규화.
+- 정합성 확인: 기존 코드는 SURVEY/QUIZ/VIDEO+QUIZ에 LINK_AND_CLOSE를 설정하면 '제출 후 링크 열기'로 동작(PopupWindow.TryOpenSubmissionLink, docs/FOOTER_LINK_VIDEO_QUIZ.md)해 설계 30의 SUBMIT 고정 정책과 충돌. 3모드 정의(CLOSE '닫기' / LINK_AND_CLOSE '바로가기' / SUBMIT '제출')에 맞춰 제출 후 링크 경로를 제거. 관리자 미리보기는 이미 설문·퀴즈를 제출로만 처리해 변경 없음.
+- 변경(서버): domain에 PopupFooterAction(3값, 유형별 실제 동작·저장 정규형) 추가. WpfPopupItem에 최상위 footerAction·footerLinkUrl(LINK_AND_CLOSE일 때만)을 추가하고 content에서 두 키 제거. SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT. 관리자 저장 검증은 미지원 값과 일반 유형의 SUBMIT을 거부하고(LINK_AND_CLOSE URL 검증 유지), 저장 시 PopupService.storedOptions로 정규화(SURVEY/QUIZ는 두 키 미저장, 일반 유형은 LINK_AND_CLOSE일 때만 저장). 기존 행 정리용 db/oracle/13_normalize_footer_action_oracle.sql(07과 같은 정규식 방식, 멱등) 추가. 관리자 API·DB 저장 위치(CONTENT_OPTIONS)는 유지.
+- 변경(WPF): PopupResponseDto.FooterAction("CLOSE")·FooterLinkUrl 추가, PopupFooterAction enum(Close/LinkAndClose/Submit)과 PopupOptions.FooterAction 추가(OpenFooterLinkAndClose는 파생 속성). PopupFactory는 content lookup을 제거하고 ConvertFooterAction으로 유형별 정규화(SURVEY/QUIZ Submit, 일반 유형은 LINK_AND_CLOSE만 바로가기·그 밖은 Close). PopupWindow.TryOpenSubmissionLink와 PopupManager 호출 삭제. Demo 샘플(DEMO-FOOTER-LINK)·옵션 창의 Footer 동작을 최상위로 옮기고 설문·퀴즈는 '제출 고정' 표시.
+- 변경(관리자 웹): 설문·퀴즈는 푸터 버튼 동작을 '제출' 고정(비활성)으로 표시하고 저장 시 두 키를 보내지 않음. 일반 유형도 바로가기일 때만 동작·URL을 저장(서버 정규형과 동일).
+- 문서: 인터페이스 계약 3.7(§6.3 최상위 필드 추가, §7 content 공통 필드에서 제거, 동영상+퀴즈 예시·설명, §15 예시에 footerAction), 전체/최소 정의서, 예제 JSON(api/examples·docs/interfaces/examples), FOOTER_LINK_VIDEO_QUIZ·옵션 가이드·사용자 옵션 가이드, db/oracle/README, 설계 30 체크리스트 갱신.
+- 주요 파일: zero-rule-server/domain/.../popup/(PopupFooterAction.java, wpf/WpfPopupItem.java), zero-rule-server/service/core/.../popup/PopupService.java, 서버 테스트(PopupActionOptionsTest·WpfPopupControllerTest), db/oracle/(13_normalize_footer_action_oracle.sql, README.md), popup-frameWork/Popup/(Dtos/PopupResponseDto.cs, Models/PopupOptions.cs, Factories/PopupFactory.cs, Views/Windows/PopupWindow.xaml.cs, Managers/PopupManager.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow(.Fields).cs), zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, docs/interfaces/, docs/(FOOTER_LINK_VIDEO_QUIZ.md, POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), api/examples/wpf-popups-response.json, docs/design/30_Footer_Action_최상위_계약_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 서버 유형별 정책·저장 정규형 테스트와 최상위 승격 HTTP 테스트를 추가해 :service:core popup·:web:api popup 99건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 앱 빌드 경고·오류 0, 행동 검증에 동작 변환·content 키 미사용·SURVEY/QUIZ/VIDEO+QUIZ 제출 고정·제출 후 링크 경로 삭제·Demo 설문 편집 SUBMIT 고정 검증을 추가해 873건 통과, 재전송 큐 122건 통과. 관리자 웹 tsc --noEmit 통과. 13번 SQL(로컬·원격 개발 DB), 실제 Windows 화면·브라우저 실행, 관리자 화면 수동 확인 미실행. Excel 정의서 미반영(저장소에 없음).
+- 상태: TODO30 커밋에 포함. 미푸시.
+
 ## 2026-10-12-03 — TODO33 결과 응답 totalScore/passed 제거 및 WPF 판정값 저장
 
 - 이유: 설계 33 반영. QUIZ 채점·통과 판정 책임이 WPF에 있으므로 결과 응답에서 같은 의미의 totalScore/passed를 제거. 정합성 확인 중 설계 33 §2(서버는 WPF 판정 결과를 저장)와 달리 서버가 자체 채점값을 저장하고 WPF 값은 비교 로그에만 쓰는 것을 확인해 WPF 값 저장으로 일치시킴.

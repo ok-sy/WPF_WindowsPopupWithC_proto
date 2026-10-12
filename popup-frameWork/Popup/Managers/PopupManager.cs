@@ -295,7 +295,6 @@ namespace Popup.Managers
                 return;   // 창 유지, 제출 없음
             }
 
-            if (!popupWindow.TryOpenSubmissionLink()) return;
             WpfResultItemDto item = builder.BuildSubmitted(submission, DateTimeOffset.Now);
             if (popupOptions.EnqueueResultAsync != null)
             {

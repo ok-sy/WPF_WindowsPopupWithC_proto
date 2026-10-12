@@ -143,9 +143,9 @@ namespace Popup
                 (draft["minimumWidth"]!.GetValue<double>() > draft["maximumWidth"]!.GetValue<double>()
                 || draft["minimumHeight"]!.GetValue<double>() > draft["maximumHeight"]!.GetValue<double>()))
                 throw new ArgumentException("최소 창 크기는 최대 창 크기 이하여야 합니다.");
-            if (content["footerAction"]?.GetValue<string>() == "LINK_AND_CLOSE")
+            if (draft["footerAction"]?.GetValue<string>() == "LINK_AND_CLOSE")
             {
-                string link = content["footerLinkUrl"]?.GetValue<string>() ?? "";
+                string link = draft["footerLinkUrl"]?.GetValue<string>() ?? "";
                 if (!Uri.TryCreate(link, UriKind.Absolute, out var url) || (url.Scheme != "http" && url.Scheme != "https") || string.IsNullOrWhiteSpace(url.Host))
                     throw new ArgumentException("푸터 바로가기에 http 또는 https URL을 입력하세요.");
             }
@@ -293,7 +293,7 @@ namespace Popup
                 Enable(content, "description", ordinaryImage);
                 Enable(content, "showDescription", ordinaryImage);
             }
-            Enable(content, "footerLinkUrl", Choice(content, "footerAction", "CLOSE") == "LINK_AND_CLOSE");
+            Enable(_draft, "footerLinkUrl", Choice(_draft, "footerAction", "CLOSE") == "LINK_AND_CLOSE");
             if (_draft["questions"] is JsonArray questions)
                 foreach (JsonNode? node in questions)
                 {

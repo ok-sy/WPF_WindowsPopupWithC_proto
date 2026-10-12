@@ -170,3 +170,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 로컬 XE·원격 개발 DB 모두 미실행.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @12_drop_response_started_at_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @12_drop_response_started_at_oracle.sql ""`
+
+## Footer 동작 저장 정규화 (2026-10-12, 설계 30)
+
+`13_normalize_footer_action_oracle.sql <스키마접두어>` — CONTENT_OPTIONS의 `footerAction`·`footerLinkUrl`을 저장 정규형으로 맞춘다(07과 같은 정규식 방식, 멱등).
+
+- 정규형: SURVEY/QUIZ는 두 키를 저장하지 않음(SUBMIT 고정). TEXT/IMAGE/VIDEO는 `LINK_AND_CLOSE`일 때만 두 키를 저장하고 CLOSE·생략은 저장하지 않음. 서버 저장 로직(`PopupService.storedOptions`)과 같다.
+- 서버 WPF 응답은 저장 값과 무관하게 같은 규칙으로 최상위 `footerAction`을 만들므로 기능상 필수는 아니다(관리자 재편집 시 이전 URL이 남아 보이지 않게 하는 정리).
+- 적용 현황: 로컬 XE·원격 개발 DB 모두 미실행.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @13_normalize_footer_action_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @13_normalize_footer_action_oracle.sql ""`

@@ -33,6 +33,29 @@ class PopupActionOptionsTest {
                 Map.of("footerAction", "UNKNOWN"))));
     }
 
+    /** [설계 30] SUBMIT은 설문·퀴즈 전용이고, 설문·퀴즈는 어떤 허용 값이 와도 SUBMIT으로 정규화(키 미저장)한다. */
+    @Test void footerActionPolicyByPopupType() {
+        assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup("TEXT",
+                Map.of("footerAction", "SUBMIT"))));
+        for (String type : new String[]{"SURVEY", "QUIZ"}) {
+            for (String action : new String[]{"SUBMIT", "CLOSE", "LINK_AND_CLOSE"}) {
+                // 설문·퀴즈의 링크는 쓰지 않으므로 URL을 검사하지 않는다.
+                assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("footerAction", action))));
+                var stored = PopupService.storedOptions(type, Map.of("footerAction", action,
+                        "footerLinkUrl", "https://example.com/", "surveyTitle", "t", "useBackgroundOverlay", true));
+                assertFalse(stored.containsKey("footerAction") || stored.containsKey("footerLinkUrl"), type + "/" + action);
+                assertEquals(true, stored.get("useBackgroundOverlay"));
+            }
+            assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup(type,
+                    Map.of("footerAction", "OPEN"))));
+        }
+        var link = PopupService.storedOptions("IMAGE", Map.of("footerAction", "LINK_AND_CLOSE", "footerLinkUrl", " https://example.com/ "));
+        assertEquals("LINK_AND_CLOSE", link.get("footerAction"));
+        assertEquals("https://example.com/", link.get("footerLinkUrl"));
+        var close = PopupService.storedOptions("VIDEO", Map.of("footerAction", "CLOSE", "footerLinkUrl", "https://example.com/"));
+        assertFalse(close.containsKey("footerAction") || close.containsKey("footerLinkUrl"), "CLOSE는 기본값이라 저장하지 않는다");
+    }
+
     @Test void combinedQuizRequiresTrackableVideoAndQuizType() {
         assertDoesNotThrow(() -> PopupService.validateActionOptions(popup("QUIZ",
                 Map.of("videoEnabled", true, "videoUrl", "https://example.com/training.mp4"))));

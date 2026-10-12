@@ -162,6 +162,16 @@ function contentForType(popupType: string, content: AdminPopupDetail['content'])
   const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
   return Object.fromEntries(keys.filter((key) => key in content).map((key) => [key, content[key]]));
 }
+/* [설계 30] Footer 동작 저장 정규형(서버 PopupFooterAction과 같음). 설문·퀴즈는 제출(SUBMIT) 고정이라 저장하지 않고,
+ * 그 밖의 유형은 바로가기(LINK_AND_CLOSE)일 때만 동작·URL을 저장한다. 닫기(CLOSE)는 기본값이라 저장하지 않는다. */
+function isSubmitPopupType(popupType: string): boolean {
+  return popupType === 'SURVEY' || popupType === 'QUIZ';
+}
+function withNormalizedFooter(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
+  const { footerAction, footerLinkUrl, ...rest } = content;
+  if (isSubmitPopupType(popupType) || footerAction !== 'LINK_AND_CLOSE') return rest;
+  return { ...rest, footerAction, footerLinkUrl };
+}
 function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail {
   if (popup.popupType !== 'IMAGE') return popup;
   return { ...popup, sizeMode: popup.content.imageSizeMode !== 'ORIGINAL' && popup.sizeMode !== 'FULLSCREEN' ? 'FIXED' : popup.sizeMode, content: {
@@ -290,7 +300,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (popup.popupType === 'TEXT' && bottomUrl && !normalizePopupLink(bottomUrl)) {
       toast.warn('하단 설명 연결 URL을 확인해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
     }
-    if (popup.content.footerAction === 'LINK_AND_CLOSE' && !normalizePopupLink(contentValue(popup, 'footerLinkUrl'))) {
+    if (!isSubmitPopupType(popup.popupType) && popup.content.footerAction === 'LINK_AND_CLOSE'
+      && !normalizePopupLink(contentValue(popup, 'footerLinkUrl'))) {
       toast.warn('바로가기 URL을 입력해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
     }
     if (isVideoQuiz && !contentValue(popup, 'videoUrl').trim()) {
@@ -303,10 +314,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       setLoading(true);
       const requestPopup: AdminPopupDetail = withNormalizedImageSizeMode({
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
-        content: contentForType(popup.popupType, { ...popup.content,
+        content: withNormalizedFooter(popup.popupType, contentForType(popup.popupType, { ...popup.content,
           ...(popup.popupType === 'TEXT' ? { bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : {}),
           footerLinkUrl: normalizePopupLink(contentValue(popup, 'footerLinkUrl')) ?? '',
-        }),
+        })),
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       });
@@ -519,11 +530,18 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
             </Box>
-            <TextField select size="small" label="푸터 버튼 동작" value={contentValue(popup, 'footerAction') || 'CLOSE'}
-              disabled={!popup.showFooter || !popup.showCloseButton} onChange={(e) => updateContent('footerAction', e.target.value)}>
-              <MenuItem value="CLOSE">닫기</MenuItem><MenuItem value="LINK_AND_CLOSE">바로가기 (링크 열고 닫기)</MenuItem>
-            </TextField>
-            {popup.content.footerAction === 'LINK_AND_CLOSE' && <TextField size="small" label="바로가기 URL"
+            {isSurvey ? (
+              <TextField select size="small" label="푸터 버튼 동작" value="SUBMIT" disabled
+                helperText="설문·퀴즈는 제출 버튼으로 고정됩니다.">
+                <MenuItem value="SUBMIT">제출</MenuItem>
+              </TextField>
+            ) : (
+              <TextField select size="small" label="푸터 버튼 동작" value={contentValue(popup, 'footerAction') === 'LINK_AND_CLOSE' ? 'LINK_AND_CLOSE' : 'CLOSE'}
+                disabled={!popup.showFooter || !popup.showCloseButton} onChange={(e) => updateContent('footerAction', e.target.value)}>
+                <MenuItem value="CLOSE">닫기</MenuItem><MenuItem value="LINK_AND_CLOSE">바로가기 (링크 열고 닫기)</MenuItem>
+              </TextField>
+            )}
+            {!isSurvey && popup.content.footerAction === 'LINK_AND_CLOSE' && <TextField size="small" label="바로가기 URL"
               value={contentValue(popup, 'footerLinkUrl')} onChange={(e) => updateContent('footerLinkUrl', e.target.value)}
               helperText="하단 바로가기 버튼을 누르면 브라우저로 링크를 열고 팝업을 닫습니다." />}
             {isVideoQuiz && <Typography variant="caption" color="text.secondary">영상 누적 시청 비율이 완료 기준에 도달하면 퀴즈와 푸터가 활성화됩니다.</Typography>}

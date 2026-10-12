@@ -116,6 +116,39 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popups[0].repeatDayOfMonth").doesNotExist());
     }
 
+    /** [설계 30] Footer 동작은 content에서 빼 최상위로 내려주고, SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다. */
+    @Test void footerActionIsPromotedToTopLevel() throws Exception {
+        var mapper = new ObjectMapper();
+        String base = """
+                {"popupId":"%s","popupType":"%s","title":"t","sizeMode":"FIXED","width":500,"height":300,
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":900,"maximumHeight":700,
+                 "content":{%s}}
+                """;
+        var link = mapper.readValue(base.formatted("TEXT-30", "TEXT",
+                "\"plainText\":\"x\",\"footerAction\":\"LINK_AND_CLOSE\",\"footerLinkUrl\":\"https://example.com/\""),
+                server.domain.popup.PopupResponseDto.class);
+        var close = mapper.readValue(base.formatted("IMAGE-30", "IMAGE", "\"imageUrl\":\"https://example.com/a.png\""),
+                server.domain.popup.PopupResponseDto.class);
+        var quiz = mapper.readValue(base.formatted("QUIZ-30", "QUIZ",
+                "\"surveyTitle\":\"q\",\"footerAction\":\"LINK_AND_CLOSE\",\"footerLinkUrl\":\"https://example.com/\""),
+                server.domain.popup.PopupResponseDto.class);
+        when(service.getPopupsForUser("E1001")).thenReturn(new WpfPopupListResponse(OffsetDateTime.now(), "E1001", 1800,
+                List.of(server.domain.popup.wpf.WpfPopupItem.from(link, false),
+                        server.domain.popup.wpf.WpfPopupItem.from(close, false),
+                        server.domain.popup.wpf.WpfPopupItem.from(quiz, true))));
+        mvc.perform(get("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.popups[0].footerAction").value("LINK_AND_CLOSE"))
+                .andExpect(jsonPath("$.popups[0].footerLinkUrl").value("https://example.com/"))
+                .andExpect(jsonPath("$.popups[0].content.footerAction").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.footerLinkUrl").doesNotExist())
+                .andExpect(jsonPath("$.popups[1].footerAction").value("CLOSE"))
+                .andExpect(jsonPath("$.popups[1].footerLinkUrl").doesNotExist())
+                .andExpect(jsonPath("$.popups[2].footerAction").value("SUBMIT"))
+                .andExpect(jsonPath("$.popups[2].footerLinkUrl").doesNotExist())
+                .andExpect(jsonPath("$.popups[2].content.footerAction").doesNotExist());
+    }
+
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {
         // 항목 없음 → 400 (요청 전체 형식 오류)
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")

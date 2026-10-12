@@ -271,7 +271,7 @@ AND showDoNotShowAgain = true
 
 ## 11. 공통 푸터 동작
 
-`content.footerAction`은 기본 `CLOSE`이며, `LINK_AND_CLOSE`일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 이 동작은 푸터와 닫기 버튼이 표시된 경우에만 화면에 나타난다.
+`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 목록 응답에서는 `popups[]` 최상위 값이다(설계 30). 이 동작은 푸터와 닫기 버튼이 표시된 경우에만 화면에 나타난다.
 
 ---
 

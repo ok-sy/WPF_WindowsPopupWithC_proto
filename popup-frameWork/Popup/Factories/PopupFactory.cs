@@ -56,8 +56,8 @@ namespace Popup.Factories
                 ShowHeader = popupDto.ShowHeader,
                 ShowFooterButton = popupDto.ShowFooterButton,
                 ShowFooter = popupDto.ShowFooter,
-                OpenFooterLinkAndClose = GetContentString(popupDto.Content, "footerAction") == "LINK_AND_CLOSE",
-                FooterLinkUrl = GetContentString(popupDto.Content, "footerLinkUrl"),
+                FooterAction = ConvertFooterAction(popupDto.PopupType, popupDto.FooterAction),
+                FooterLinkUrl = popupDto.FooterLinkUrl ?? string.Empty,
                 ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
 
                 /*
@@ -97,6 +97,18 @@ namespace Popup.Factories
             };
         }
 
+        /*
+         * [설계 30] 최상위 footerAction을 동작으로 바꾼다. SURVEY/QUIZ(동영상+퀴즈 포함)는 제출 경로가 사라지지 않도록
+         * 서버 값과 무관하게 Submit이다. 그 밖의 유형은 LINK_AND_CLOSE만 바로가기이고 생략·CLOSE·SUBMIT·미지원 값은 Close다.
+         */
+        public static PopupFooterAction ConvertFooterAction(string popupType, string? footerAction)
+        {
+            string type = popupType?.Trim().ToUpperInvariant() ?? string.Empty;
+            if (type is "SURVEY" or "QUIZ") return PopupFooterAction.Submit;
+            return string.Equals(footerAction?.Trim(), "LINK_AND_CLOSE", StringComparison.OrdinalIgnoreCase)
+                ? PopupFooterAction.LinkAndClose : PopupFooterAction.Close;
+        }
+
         private static PopupPosition GetPopupPosition(JsonElement content)
         {
             if (content.ValueKind == JsonValueKind.Object
@@ -117,10 +129,6 @@ namespace Popup.Factories
                 };
             return PopupPosition.Center;
         }
-
-        private static string GetContentString(JsonElement content, string propertyName) =>
-            content.ValueKind == JsonValueKind.Object && content.TryGetProperty(propertyName, out var value)
-                && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
 
         private static bool GetContentBoolean(JsonElement content, string propertyName, bool defaultValue)
         {

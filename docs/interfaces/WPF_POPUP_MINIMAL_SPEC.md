@@ -35,8 +35,8 @@
 | ShowHeader | 지원 | N | `true` | 제목/Header 표시 여부 |
 | ShowFooterButton | 지원 | N | `true` | Footer 버튼 표시. 일반 콘텐츠는 닫기·바로가기, SURVEY/QUIZ는 제출. 상단 X는 없음 |
 | ShowFooter | 지원 | N | `true` | Footer 표시 |
-| FooterAction | 지원 | N | `""` | `content.footerAction`. `LINK_AND_CLOSE` 지정 시 Footer 버튼을 바로가기로 사용 |
-| FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | `content.footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
+| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
+| FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
 | UseBackgroundOverlay | 지원 | N | `true` | content 옵션. 배경 Overlay 사용 |
 | BackgroundOverlayOpacity | 지원 | N | `0.45` | Overlay 불투명도(0~1) |
@@ -142,7 +142,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
-| FooterAction / FooterLinkUrl | `footerAction=LINK_AND_CLOSE`이면 일반 콘텐츠는 “바로가기”, SURVEY·QUIZ·VIDEO+QUIZ는 “제출”로 표시. 응답 검증·퀴즈 통과 후 유효한 HTTP/HTTPS URL을 열고 종료 |
+| FooterAction / FooterLinkUrl | `content`가 아니라 `popups[]` 최상위 값. 일반 콘텐츠는 CLOSE “닫기” 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
 
 ## 6. 최소 버전 한눈에 보기
@@ -168,7 +168,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ### 추가 확인 사항
 
-- Footer 바로가기는 `footerAction=LINK_AND_CLOSE`일 때만 동작하며 `footerLinkUrl`은 HTTP/HTTPS 절대 URL이어야 한다.
+- Footer 바로가기는 일반 콘텐츠에서 최상위 `footerAction=LINK_AND_CLOSE`일 때만 동작하며 최상위 `footerLinkUrl`은 HTTP/HTTPS 절대 URL이어야 한다.
 - VIDEO+QUIZ는 QUIZ 타입에서 `videoEnabled=true`인 경우에만 결합형으로 동작한다.
 
 ## 8. 백엔드 전달용 유형별 최소 JSON 예시
@@ -189,6 +189,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "questions": [],
   "content": {
@@ -215,6 +216,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "questions": [],
   "content": {
@@ -238,6 +240,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "completionRatio": 0.8,
   "questions": [],
@@ -264,6 +267,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "questions": [
     {
@@ -317,6 +321,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "passingScore": 80,
   "questions": [
@@ -366,6 +371,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "completionRatio": 0.8,
   "passingScore": 80,

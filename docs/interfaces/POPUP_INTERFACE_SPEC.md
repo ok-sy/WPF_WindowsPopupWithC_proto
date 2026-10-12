@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-12 (KST)
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
+- 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
 - 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`.
 - 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
@@ -252,6 +253,8 @@ X-Client-Version: 1.0.0
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
 | showFooterButton | boolean | O | `true` | Footer 버튼 표시. 상단 X는 없음. SURVEY/QUIZ 제출은 유지 |
 | showFooter | boolean | O | `true` | Footer 표시 |
+| footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT 고정(다른 값이 와도 SUBMIT). 일반 유형의 생략·미지원 값·SUBMIT은 CLOSE |
+| footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 바로가기 URL. 절대 http/https. 다른 동작에서는 보내지 않음 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
@@ -341,11 +344,9 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 | headerFontSize | number | 선택 | XAML 기본값(현재 Header 17) | 값이 있으면 10~40으로 보정 |
 | bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
 | footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
-| footerAction | string | 선택 | `CLOSE` | CLOSE / LINK_AND_CLOSE |
-| footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 절대 http/https URL |
 | popupPosition | string | 선택 | `CENTER` | 없거나 잘못되면 CENTER |
 
-`LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. SURVEY·QUIZ·VIDEO+QUIZ에서는 버튼 이름을 **제출**로 통일하고 필수 응답 검증 및 QUIZ 통과 후 링크를 연다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
+Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **닫기**로 표시하고 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
 SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며, 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 
@@ -683,9 +684,7 @@ passingScore 이상
     "surveyTitle": "이해도 확인",
     "description": "영상을 시청한 뒤 퀴즈에 응답하세요.",
     "autoPlay": false,
-    "showControls": true,
-    "footerAction": "LINK_AND_CLOSE",
-    "footerLinkUrl": "https://example.com/training"
+    "showControls": true
   }
 }
 ```
@@ -693,7 +692,7 @@ passingScore 이상
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
-- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 닫기·바로가기 대신 제출로 동작한다. 이 화면에서 `footerAction`·`footerLinkUrl`은 제출 동작을 대체하지 않는다. 헤더 닫기는 기존 종료 정책을 따른다.
+- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. 헤더 닫기는 기존 종료 정책을 따른다.
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - `allowCloseBeforeComplete: true`면 Alt+F4 등으로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
@@ -1147,6 +1146,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
@@ -1178,6 +1178,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
@@ -1208,6 +1209,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "CLOSE",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
   "questions": [],
@@ -1243,6 +1245,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [
@@ -1331,6 +1334,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [
@@ -1413,6 +1417,7 @@ REJECTED
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
+  "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
   "questions": [
