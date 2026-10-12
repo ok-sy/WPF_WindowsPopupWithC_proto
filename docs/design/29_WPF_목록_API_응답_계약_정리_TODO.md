@@ -191,7 +191,7 @@ WPF가 화면 표시·사용자 동작·채점에 직접 사용하는 값
 - [x] WPF 목록 API JSON 샘플 갱신 (`api/examples/wpf-popups-response.json`)
 - [x] `POPUP_INTERFACE_SPEC.md` 필드표 갱신
 - [x] 최소/전체 기능 정의서 갱신
-- [ ] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음(docx·pdf v3.6만 존재). 미반영
+- [x] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음(docx·pdf v3.6만 존재). 미반영 → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [x] 서버가 제거 전 필드를 보내도 C# 역직렬화가 정상인지 회귀 검증 (로컬 행동 검증)
 - [ ] 제거 후 목록 조회·표시·결과 전송 회귀 검증 — 단위·행동 검증 통과, 실제 서버 HTTP·Windows 화면 확인 미실행
 

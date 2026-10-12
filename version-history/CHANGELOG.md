@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-20 — Excel 인터페이스 정의서(WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx) 대조·보완
+
+- 이유: docs/interfaces에 추가된 Excel 인터페이스 정의서를 최신 main 계약과 대조한 결과 일부 비고가 현재 동작과 다르고 최근 결과 처리 규칙이 빠져 있었음. 또 원본에 예전 배치의 병합 영역이 남아 서로 겹치거나 데이터 행을 덮고 있어(TEXT showPlainText~description 4행, 공통 backgroundOverlayOpacity·content 행, SURVEY_QUIZ 영상+퀴즈 추가 필드 표 등) Excel에서 복구 안내가 뜨거나 덮인 행이 보이지 않을 수 있었음.
+- 변경: 병합 정리 — 다른 값 셀을 덮는 병합, 겹치는 병합 중 시작 셀이 빈 병합, 남은 겹침 중 작은 범위를 제거(9개 시트, 제거 40건). 셀 값·서식은 유지. 내용 보완 — TEXT 정렬·글자색(대문자 #RRGGBB, 팔레트 제한 없음)·크기(12~32px 8종)·글꼴 ID 4종, IMAGE linkUrl은 ORIGINAL 전용, RESULT_REQUEST sentAt 서버 필수 아님·answers/optionIds null 요소 금지·HIDDEN 우선순위, RESULT_RESPONSE 예시 메시지를 실제 서버 문구로 바꾸고 오류 분류 기준 표(HTTP·항목 status·code·WPF 처리, 미확정 결과 비전송) 추가, 개요 핵심 변경에 설문·퀴즈 SUBMIT 전용·항목 오류 분류·큐 삭제 기준 추가. 설계 29~33의 Excel 반영 항목과 34-43 완료 처리.
+- 주요 파일: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/design/(29_*·30_*·31_*·32_*·33_*·34_*).
+- 검증: 편집 전 원본 백업. 첫 시도(openpyxl 저장)에서 겹친 병합에 덮인 셀 값이 지워지는 것을 확인해 즉시 원본으로 되돌리고(해시 일치), 시트 XML을 직접 편집하는 방식으로 다시 작업. 결과 파일에서 모든 XML 파싱 정상, 병합 겹침·데이터 덮음 0건, 원본 대비 셀 값 차이가 의도한 셀(14개 셀 수정·RESULT_RESPONSE 43~51행 추가)뿐임을 확인. openpyxl로 경고 없이 열리고 다시 저장해도 값 손실 없음. Excel 자동화(COM)는 이 PC에서 등록 오류(E_NOINTERFACE)로 실행할 수 없어 Excel 화면 확인 미실행.
+- 상태: 커밋에 포함. 미푸시. 20261012 반입본에는 이 Excel 정의서가 포함되지 않음.
+
 ## 2026-10-12-19 — TODO34 결과 항목 변환 예외 상태 분리
 
 - 이유: 2026-10-12-15에서 추가한 검증 후 변환(toCommand) 예외 처리가 모든 RuntimeException을 REJECTED/WPF_INVALID_RESULT로 응답해, 서버 코드 결함 등 원인 미확정 오류도 WPF가 영구 오류로 보고 결과를 삭제할 수 있었음(보존 정책과 충돌).

@@ -314,7 +314,7 @@ WPF:
 - [x] `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
 - [x] 최소/전체 기능 정의서 수정
 - [x] 유형별 Sample JSON 수정
-- [ ] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영
+- [x] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영 → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [x] 서버/WPF 계약 테스트 추가
 - [ ] TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증 — 단위·행동 검증 통과, 실제 Windows 화면·서버 HTTP 미확인
 

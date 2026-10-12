@@ -135,7 +135,7 @@ WPF
 - [x] 33-04 서버 결과 응답 DTO의 passed 제거
 - [x] 33-05 서버 응답 조립 로직에서 두 필드 제거
 - [x] 33-06 WPF 응답 처리 코드에서 두 필드 참조 여부 확인 — WPF 응답 처리 코드에서 참조 없음 확인(PopupManager는 로컬 판정만 사용). Demo 게이트웨이 응답 설정 제거
-- [ ] 33-07 RESULT_RESPONSE 문서/Excel에서 두 필드 제거 — 계약서 반영. 저장소에 Excel 정의서 없음(미반영)
+- [x] 33-07 RESULT_RESPONSE 문서/Excel에서 두 필드 제거 — 계약서 반영. 저장소에 Excel 정의서 없음(미반영) → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [x] 33-08 Sample JSON에서 두 필드 제거 (`api/examples/wpf-results-response.json`, 계약서 11장)
 - [x] 33-09 요청의 score/passed는 유지되는지 회귀 검증 — 서버 단위·HTTP 테스트, WPF 행동 검증 통과
 - [x] 33-10 QUIZ 로컬 판정 후 서버 응답을 기다리지 않고 기존 UX가 유지되는지 검증 — 로컬 행동 검증(Demo 결과 큐) 통과. 실제 Windows 화면 미확인

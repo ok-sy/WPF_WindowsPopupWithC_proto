@@ -91,7 +91,7 @@ SUBMITTED 결과에서 응답 시작 시각을 표현하기 위한 필드.
 - [x] 32-03 서버 결과 요청 DTO의 responseStartedAt 제거
 - [x] 32-04 서버 저장/매핑 로직에서 responseStartedAt 의존 여부 확인 후 제거 — PopupService.submitResponse·PopupMapper.upsertPopupResponse(MERGE)에서 제거. 읽는 곳 없음 확인
 - [x] 32-05 결과 API 문서에서 responseStartedAt 제거
-- [ ] 32-06 RESULT_REQUEST Excel 시트에서 responseStartedAt 제거 — 저장소에 Excel 정의서 없음. 미반영
+- [x] 32-06 RESULT_REQUEST Excel 시트에서 responseStartedAt 제거 — 저장소에 Excel 정의서 없음. 미반영 → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [x] 32-07 Sample JSON에서 responseStartedAt 제거 (`api/examples/wpf-results-request.json`, 계약서 10.5)
 - [x] 32-08 기존 DB 컬럼이 있으면 유지/삭제 여부 별도 결정 — 삭제로 결정. `db/oracle/12_drop_response_started_at_oracle.sql` 추가, `01` 스키마에서 제거. 로컬·원격 개발 DB 미실행
 - [x] 32-09 결과 전송/재전송 회귀 검증 — 서버 단위·HTTP 테스트, WPF 행동·재전송 큐 검증 통과. 실제 서버 HTTP 미실행

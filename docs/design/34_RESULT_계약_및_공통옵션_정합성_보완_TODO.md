@@ -193,7 +193,7 @@ SURVEY/QUIZ 제출 후 링크 열기는 이번 계약에 포함하지 않는다.
 ## 7. 문서·검증·완료 기준
 
 - [x] 34-42 구현 시 TODO 29~33의 상태·상충 문구를 본 문서 기준으로 갱신. — 설계 30·31 §8, 33 §5에 TODO34 대체 안내, 30-17·32·33 문구 정정
-- [ ] 34-43 POPUP_INTERFACE_SPEC, WPF_POPUP_MINIMAL_SPEC, WPF_POPUP_ALL_SPEC, RESULT_REQUEST/RESULT_RESPONSE Excel 및 관련 계약 문서 동기화. 전체 기능 정리로 최소 공개 범위를 임의 확장하지 않음. — 계약서·최소/전체 정의서 동기화. Excel 정의서는 저장소에 없어 미반영
+- [x] 34-43 POPUP_INTERFACE_SPEC, WPF_POPUP_MINIMAL_SPEC, WPF_POPUP_ALL_SPEC, RESULT_REQUEST/RESULT_RESPONSE Excel 및 관련 계약 문서 동기화. 전체 기능 정리로 최소 공개 범위를 임의 확장하지 않음. — 계약서·최소/전체 정의서 동기화. Excel 정의서는 저장소에 없어 미반영 → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [x] 34-44 api/examples의 목록·결과 요청·결과 응답 및 Demo 생성·표시 JSON 갱신. — api/examples 목록·결과 요청·결과 응답, docs/interfaces/examples 갱신
 - [x] 34-45 서버/WPF 계약 테스트로 삭제 필드 부재, 신규 위치, 기본값, Action 제약, WPF 점수 저장, 결과 재시도를 검증. — 삭제 필드 부재·신규 위치·기본값·Action 제약·WPF 점수 저장·결과 재시도 테스트(서버 103, 행동 890, 복구 137)
 - [ ] 34-46 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 실제 화면 검증. — 미실행

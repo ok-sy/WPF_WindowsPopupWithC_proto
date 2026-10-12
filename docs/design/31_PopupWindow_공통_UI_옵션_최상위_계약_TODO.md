@@ -366,7 +366,7 @@ WPF:
 - [x] 31-18 `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
 - [x] 31-19 최소/전체 기능 정의서 수정
 - [x] 31-20 유형별 Sample JSON 수정 (api/examples, docs/interfaces/examples, 계약서 §8·§15)
-- [ ] 31-21 Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영
+- [x] 31-21 Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영 → 2026-10-12: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx(Excel 정의서) 추가·대조·보완으로 반영
 - [ ] 31-22 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증 — 단위·행동 검증 통과, 실제 서버 HTTP·Windows 화면 미확인
 - [ ] 31-23 Overlay·위치·폰트 크기 실제 WPF 화면 수동 검증 — 미실행
 
