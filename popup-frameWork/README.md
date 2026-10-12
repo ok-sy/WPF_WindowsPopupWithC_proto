@@ -202,6 +202,7 @@ Popup/appsettings.json
 {
   "PopupApi": {
     "DemoMode": false,
+    "DemoSsoLoginTest": false,
     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
     "AutoLoadOnStartup": true,
     "PollingIntervalSeconds": 1800,
@@ -222,6 +223,7 @@ Popup/appsettings.json
 | 설정 | 역할 |
 |---|---|
 | `DemoMode` | Java 서버 없이 WPF 화면만 테스트 |
+| `DemoSsoLoginTest` | `DemoMode`에서 Demo 화면에 SSO 테스트·로그인 테스트 버튼을 따로 표시(기본 false). `Auth.SsoUrl`·`BaseUrl`+`Auth.LoginPath` 사용 |
 | `BaseUrl` | Zero Spring 서버 주소 |
 | `AutoLoadOnStartup` | 프로그램 시작 시 자동 팝업 조회 |
 | `PollingIntervalSeconds` | 기본 팝업 재조회 간격 |
@@ -983,6 +985,15 @@ Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(�
 `선택한 샘플 실행`으로 열거나, `전체 실행`으로 모두 확인할 수 있다. 세부 버튼은 아래 "Demo 관리 화면"을 참고한다.
 
 실제 API 연동 모드로 돌아가려면 `DemoMode`를 `false`로 변경한다.
+
+### Demo SSO·로그인 테스트
+
+`PopupApi.DemoSsoLoginTest`를 `true`로 두면 Demo 화면 왼쪽 아래에 `SSO · 로그인 테스트` 영역이 나타난다.
+팝업 조회·결과 전송은 Demo 그대로 서버 없이 동작하고, 이 영역의 버튼만 실제로 통신한다.
+
+- `SSO 테스트`: `Auth.SsoUrl`을 Windows 통합 인증으로 GET 해 `MAIN_USER_ID`·`MAIN_USER_CLASSI_CODE`를 읽고 입력칸에 채운다.
+- `로그인 테스트`: 입력칸의 사번·사용자 구분 코드로 `BaseUrl`+`Auth.LoginPath`(`POST /p/api/wpf/auth/login`)를 호출한다. SSO 없이 값을 직접 입력해 단독으로 호출할 수 있다.
+- 결과칸에 호출 주소·값·소요 시간 또는 실패 예외를 표시한다. 발급 토큰은 길이만 표시하고 보관하지 않는다.
 
 ### 폐쇄망 Demo 미디어
 

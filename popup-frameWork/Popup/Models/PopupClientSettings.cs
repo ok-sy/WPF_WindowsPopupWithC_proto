@@ -15,6 +15,13 @@ namespace Popup.Models
          */
         public bool DemoMode { get; set; }
 
+        /*
+         * [Demo SSO·로그인 테스트] DemoMode에서 Demo 화면에 "SSO 테스트"(Auth.SsoUrl GET → 사번·구분 코드)와
+         * "로그인 테스트"(BaseUrl+Auth.LoginPath POST, 입력한 사번·구분 코드) 버튼을 따로 표시한다.
+         * 팝업 조회·결과 전송은 하지 않고 토큰도 보관하지 않는다. Auth.Mode와 무관하며 DemoMode=false에서는 쓰지 않는다.
+         */
+        public bool DemoSsoLoginTest { get; set; }
+
         public string BaseUrl { get; set; } =
             string.Empty;
 

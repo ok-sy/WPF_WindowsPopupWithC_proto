@@ -59,6 +59,9 @@ namespace Popup
         /* App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다. Demo Mode에서는 선택 화면을 계속 표시한다. */
         public bool IsDemoMode => _demoMode;
 
+        /* [Demo SSO·로그인 테스트] DemoMode이고 DemoSsoLoginTest=true일 때만 설정을 넘긴다(그 밖에는 null → 버튼 숨김). */
+        public PopupClientSettings? DemoAuthTestSettings { get; }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -68,6 +71,7 @@ namespace Popup
 
             PopupClientSettings settings = LoadPopupClientSettings();
             _demoMode = settings.DemoMode;
+            DemoAuthTestSettings = settings.DemoMode && settings.DemoSsoLoginTest ? settings : null;
             _autoLoadOnStartup = settings.AutoLoadOnStartup;
             _pollingIntervalSeconds = settings.PollingIntervalSeconds;
 
@@ -125,6 +129,7 @@ namespace Popup
          * {
          *   "PopupApi": {
          *     "DemoMode": false,
+         *     "DemoSsoLoginTest": false,
          *     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
          *     "AutoLoadOnStartup": true,
          *     "PollingIntervalSeconds": 1800,
@@ -166,6 +171,7 @@ namespace Popup
             PopupClientSettings settings = new()
             {
                 DemoMode = demoByArgument || GetBoolean(api, "DemoMode", false),
+                DemoSsoLoginTest = GetBoolean(api, "DemoSsoLoginTest", false),
                 BaseUrl = GetString(api, "BaseUrl").Trim(),
                 AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
                 PollingIntervalSeconds = Math.Clamp(GetInt32(api, "PollingIntervalSeconds", 1800), 1800, 3600),

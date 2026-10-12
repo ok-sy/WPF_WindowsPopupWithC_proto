@@ -83,6 +83,19 @@
                             </Border>
                             <TextBlock Text="설정창에서 공통 창·콘텐츠·문항 옵션을 편집하세요. 샘플별 설정은 다음 실행에 적용되며 앱 종료 시 초기화됩니다." Style="{StaticResource Hint}"/>
                             <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 상단의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
+                            <!-- [Demo SSO·로그인 테스트] appsettings PopupApi.DemoSsoLoginTest=true일 때만 표시. SSO와 로그인 API를 따로 호출한다. -->
+                            <StackPanel x:Name="AuthTestPanel" Visibility="Collapsed">
+                                <TextBlock Text="SSO · 로그인 테스트" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
+                                <Button x:Name="SsoTestButton" Content="SSO 테스트" Click="SsoTestButton_Click"
+                                        ToolTip="Auth.SsoUrl을 Windows 통합 인증으로 호출해 MAIN_USER_ID·MAIN_USER_CLASSI_CODE를 읽습니다."/>
+                                <TextBlock Text="사번 (logonId)" Style="{StaticResource Label}"/>
+                                <TextBox x:Name="AuthLogonIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="사용자 구분 코드 (classCode)" Style="{StaticResource Label}"/>
+                                <TextBox x:Name="AuthClassCodeText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
+                                <Button x:Name="LoginTestButton" Content="로그인 테스트" Click="LoginTestButton_Click"
+                                        ToolTip="입력한 사번·구분 코드로 서버 로그인 API를 호출합니다. SSO 테스트에 성공하면 값이 자동으로 채워집니다."/>
+                                <TextBox x:Name="AuthTestResultText" Style="{StaticResource JsonText}" MinHeight="120" Margin="0,4,0,16" TextWrapping="Wrap"/>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                     <Border Grid.Row="2" BorderBrush="#E0E3E8" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,12,0,0">

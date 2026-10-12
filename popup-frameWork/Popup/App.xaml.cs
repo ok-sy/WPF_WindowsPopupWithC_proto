@@ -127,6 +127,10 @@ namespace Popup
             if (_mainWindow.IsDemoMode)
             {
                 _demoWindow = new DemoWindow();
+                if (_mainWindow.DemoAuthTestSettings is { } authTestSettings)
+                {
+                    _demoWindow.EnableAuthTest(authTestSettings);
+                }
                 _demoWindow.Closing +=
                     DemoWindow_Closing;
 

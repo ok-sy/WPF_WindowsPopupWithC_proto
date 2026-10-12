@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-01 — TODO10 Demo SSO·로그인 분리 테스트
+
+- 이유: 서버 팝업 API 연동 없이 SSO 사용자 정보 획득과 서버 로그인 API 호출을 각각 확인할 필요가 있어, 기존 관리 화면 "SSO 로그인 테스트"(SSO→로그인 일괄, DemoMode=false 전용)와 별도로 Demo 화면에 단계별 테스트를 추가.
+- 변경: appsettings `PopupApi.DemoSsoLoginTest`(기본 false) 추가. true이고 DemoMode이면 Demo 화면에 `SSO · 로그인 테스트` 영역 표시 — `SSO 테스트`는 Auth.SsoUrl GET(Windows 통합 인증) 후 사번·구분 코드를 입력칸에 채우고, `로그인 테스트`는 입력칸 값으로 BaseUrl+Auth.LoginPath POST(직접 입력으로 단독 호출 가능). 결과칸에 주소·값·소요 시간·실패 예외 표시, 토큰은 길이만 표시하고 보관하지 않음. 팝업 조회·결과 전송·정기 재로그인은 Demo에서 계속 수행하지 않음. MainWindow가 설정을 `DemoAuthTestSettings`로 넘기고 App이 DemoWindow에 연결.
+- 주요 파일: popup-frameWork/Popup/(DemoWindow.AuthTest.cs, DemoWindow.xaml, App.xaml.cs, MainWindow.xaml.cs, Models/PopupClientSettings.cs, appsettings.json), popup-frameWork/README.md.
+- 검증: WPF 빌드(별도 출력 폴더) 경고 0·오류 0. 기본 출력 폴더는 실행 중인 popupSample.exe 잠금으로 복사 실패. BehaviorTests·실제 화면·MockSso/서버 연동 확인은 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-25 — TODO17 단일 EXE 자동 업데이트 폐기
 
 - 이유: 자동 업데이트 과제를 진행하지 않기로 확정해 착수 보류 상태였던 설계 17을 폐기로 정리하고 관련 문서의 상태 표기를 맞춤.
