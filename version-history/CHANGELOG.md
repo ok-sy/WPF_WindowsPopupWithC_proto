@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-16 — Demo 샘플 절대경로 구분자 '/' 치환
+
+- 이유: Demo 요청·응답 JSON 로그에서 로컬 미디어 절대경로가 "C:\\Users\\...\\demo-video.mp4"처럼 JSON 이스케이프로 표시되어 읽기 어려움. 슬래시 구분자 절대경로가 실제 재생에 문제없음을 확인해 Demo 샘플 경로만 텍스트 치환.
+- 변경: DemoPopupDataService가 Demo 샘플 content에 넣는 imageUrl·videoUrl(DemoMediaPathService 반환값)의 '\'를 '/'로 치환. 미디어 파일 위치·추출 로직, 서버·관리자 데이터, 실제 API 경로 처리는 변경 없음.
+- 주요 파일: popup-frameWork/Popup/Services/DemoPopupDataService.cs, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 행동 검증 CheckDemoVideoPath를 '/' 구분자·파일 존재(영상·이미지)·JSON 왕복 검증으로 갱신해 906건 통과(Demo 이미지·영상을 쓰는 기존 렌더링·재생 검증 포함). 실행 중인 popupSample이 기본 출력 파일을 잠그고 있어 임시 출력 경로로 빌드·실행. 실제 Demo 화면 재생은 개발자 확인 완료로 전달받음.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-15 — TODO34 결과 큐 2차 검토 보완(미확정 결과 선전송·answers null 요소)
 
 - 이유: 2026-10-12-14 변경 검토에서 두 가지 확인. ① 저장 실패로 닫기를 취소해도 항목이 큐 메모리(_unsaved)에 남아 다른 Flush(폴링·다른 팝업 종료)로 먼저 전송될 수 있었고, 사용자가 '다시 보지 않기' 등을 바꿔 다시 닫으면 같은 resultId가 DUPLICATE로 처리되어 최종 결과가 반영되지 않았음. 제출 저장 실패 경로도 같은 문제. ② 결과 요청 answers가 List<@Valid Answer>라 [null] 요소가 검증을 통과한 뒤 변환(Answer::toAnswer)에서 NullPointerException이 나, 같은 요청의 정상 항목까지 처리되지 않을 수 있었음. 또 계약서의 "HTTP 400은 envelope 오류에만" 설명은 JSON 역직렬화 오류(잘못된 날짜·숫자 자료형)가 여전히 전체 400인 구현과 맞지 않았음.

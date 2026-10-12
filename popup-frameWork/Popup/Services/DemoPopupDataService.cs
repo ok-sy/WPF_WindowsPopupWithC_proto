@@ -649,12 +649,13 @@ namespace Popup.Services
                     continue;
                 }
 
+                // Demo 샘플의 절대경로는 구분자를 '/'로 바꿔 넣는다(Windows가 허용하며 JSON 로그에 '\\' 이스케이프가 생기지 않음).
                 if (popupType.Equals(
                         "IMAGE",
                         StringComparison.OrdinalIgnoreCase))
                 {
                     contentObject["imageUrl"] =
-                        DemoMediaPathService.GetImagePath();
+                        DemoMediaPathService.GetImagePath().Replace('\\', '/');
                 }
                 else if (popupType.Equals(
                              "VIDEO",
@@ -662,7 +663,7 @@ namespace Popup.Services
                          || contentObject["videoEnabled"]?.GetValue<bool>() == true)
                 {
                     contentObject["videoUrl"] =
-                        DemoMediaPathService.GetVideoPath();
+                        DemoMediaPathService.GetVideoPath().Replace('\\', '/');
                 }
             }
 
