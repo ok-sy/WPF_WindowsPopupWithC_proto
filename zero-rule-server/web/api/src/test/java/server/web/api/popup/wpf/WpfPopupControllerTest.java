@@ -16,6 +16,7 @@ import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfResultResponse;
 import server.domain.popup.wpf.WpfResultType;
 import server.service.core.popup.wpf.WpfPopupService;
+import server.web.api.payload.popup.wpf.WpfResultRequest;
 import server.service.core.popup.wpf.WpfUserInactiveException;
 
 import java.time.OffsetDateTime;
@@ -224,6 +225,34 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.results[6].code").value("WPF_INVALID_RESULT"))
                 .andExpect(jsonPath("$.results[7].resultId").value("null-option"))
                 .andExpect(jsonPath("$.results[7].status").value("REJECTED"));
+    }
+
+    /** [설계 34 — 검토 보완] 검증 통과 후 변환 예외는 영구 오류(REJECTED)가 아니라 INTERNAL_ERROR이고, 같은 요청의 정상 항목은 처리된다. */
+    @Test void unexpectedConversionFailureIsInternalErrorNotRejected() {
+        var controller = new WpfPopupController(service, new DevHeaderWpfUserResolver());
+        var ok = new WpfResultRequest.Item("ok-1", "P1", "CLOSED", null, null, null, null, null, null, null);
+        WpfResultRequest.Item broken = mock(WpfResultRequest.Item.class);
+        when(broken.validationError()).thenReturn(null);
+        when(broken.resultId()).thenReturn("broken");
+        when(broken.popupId()).thenReturn("P2");
+        when(broken.type()).thenReturn(WpfResultType.CLOSED);
+        when(broken.toCommand()).thenThrow(new IllegalStateException("conversion bug"));
+        var bad = new WpfResultRequest.Item("bad", "P3", "OPENED", null, null, null, null, null, null, null);
+        when(service.processResults(eq("E1001"), anyList())).thenAnswer(inv -> {
+            List<WpfResultCommand> commands = inv.getArgument(1);
+            assertEquals(List.of("ok-1"), commands.stream().map(WpfResultCommand::resultId).toList());
+            return new WpfResultResponse(commands.stream().map(WpfResultItemResponse::accepted).toList());
+        });
+
+        var results = controller.processItems("E1001", List.of(ok, broken, bad));
+
+        assertEquals(List.of("ok-1", "broken", "bad"), results.stream().map(WpfResultItemResponse::resultId).toList());
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, results.get(0).status());
+        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, results.get(1).status());
+        assertEquals("WPF_INTERNAL", results.get(1).code());
+        assertFalse(results.get(1).message().contains("conversion bug"), "내부 오류 상세 비노출");
+        assertEquals(WpfResultItemResponse.Status.REJECTED, results.get(2).status());
+        assertEquals("WPF_INVALID_RESULT", results.get(2).code());
     }
 
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {

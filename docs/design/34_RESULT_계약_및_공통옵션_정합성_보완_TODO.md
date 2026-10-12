@@ -135,7 +135,7 @@ PopupResultQueue.FlushAsync는 응답에 resultId가 있으면 상태와 무관�
 | DB 장애 등 일시적인 서버 오류 | 보관 후 재전송 |
 | 알 수 없는 상태 / 항목 응답 누락 | 보관 |
 
-- [x] 34-19 일시 실패를 표현할 HTTP 또는 항목별 status/code 계약 확정. WPF_INTERNAL을 영구 거절로 소비하지 않도록 서버·WPF를 함께 변경. — 항목 status RETRYABLE_ERROR(예외 형식으로 분류한 일시 장애)·INTERNAL_ERROR(미확정) 추가. HTTP 4xx·5xx·응답 없음은 요청 전체 보관. WPF_INTERNAL은 INTERNAL_ERROR로 보관·제한 재시도 / 검토 보완(2026-10-12): 항목 형식 오류는 요청 전체 400이 아니라 그 항목만 REJECTED(WPF_INVALID_RESULT). WPF는 400 시 batch를 나눠 원인 항목만 이번 실행에서 제외 / 2차 검토 보완: answers·optionIds의 null 요소 금지(@NotNull), 검증 후 변환 실패도 그 항목만 REJECTED. 외곽 구조·JSON 역직렬화 오류만 400
+- [x] 34-19 일시 실패를 표현할 HTTP 또는 항목별 status/code 계약 확정. WPF_INTERNAL을 영구 거절로 소비하지 않도록 서버·WPF를 함께 변경. — 항목 status RETRYABLE_ERROR(예외 형식으로 분류한 일시 장애)·INTERNAL_ERROR(미확정) 추가. HTTP 4xx·5xx·응답 없음은 요청 전체 보관. WPF_INTERNAL은 INTERNAL_ERROR로 보관·제한 재시도 / 검토 보완(2026-10-12): 항목 형식 오류는 요청 전체 400이 아니라 그 항목만 REJECTED(WPF_INVALID_RESULT). WPF는 400 시 batch를 나눠 원인 항목만 이번 실행에서 제외 / 2차 검토 보완: answers·optionIds의 null 요소 금지(@NotNull), 검증 후 변환 실패도 그 항목만 REJECTED. 외곽 구조·JSON 역직렬화 오류만 400 / 3차 검토 보완: 검증 통과 후 변환 예외는 REJECTED가 아니라 INTERNAL_ERROR(WPF_INTERNAL)
 - [x] 34-20 큐 삭제를 명시적 종결 상태에 한정하고, 응답 resultId가 현재 전송 batch에 속하는지 검증. — PopupResultQueue.Settle: 이번 batch의 resultId + 종결 상태만 제거
 - [x] 34-21 일부 항목 성공·일부 실패 시 성공만 제거하고 실패는 같은 resultId로 재전송. — 일부 성공 시 성공만 제거, 나머지는 같은 resultId로 재전송(RecoveryTests)
 - [x] 34-22 서버 커밋 후 응답 유실 → 재전송 → DUPLICATE 시 중복 저장·집계가 없는지 검증. — WpfPopupDatabaseTest(로컬 XE): DUPLICATE 재전송 시 표시 횟수·영수증 증가 없음

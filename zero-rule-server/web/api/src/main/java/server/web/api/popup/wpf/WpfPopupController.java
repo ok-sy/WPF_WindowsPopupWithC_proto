@@ -74,40 +74,49 @@ public class WpfPopupController {
      * 응답은 요청 항목 순서를 유지한다.
      * 요청 단위 로그는 처리 결과와 무관하게 남기되, 로그 실패가 응답을 막지 않도록 예외를 삼킨다.
      */
+    /**
+     * 항목별로 검증·변환한 뒤 정상 항목만 서비스에 넘기고, 요청 순서대로 응답을 합친다.
+     * <ul>
+     *   <li>validationError()로 확인한 입력 오류 → REJECTED / WPF_INVALID_RESULT (영구, WPF 큐에서 제거)</li>
+     *   <li>[설계 34 — 검토 보완] 검증 통과 후 예상하지 못한 변환 예외 → INTERNAL_ERROR / WPF_INTERNAL.
+     *       서버 결함일 수 있으므로 영구 오류로 돌리지 않아 WPF가 결과를 보관·재시도한다(상세는 로그만).</li>
+     * </ul>
+     */
+    java.util.List<WpfResultItemResponse> processItems(String employeeNo, java.util.List<WpfResultRequest.Item> items) {
+        java.util.List<WpfResultCommand> commands = new java.util.ArrayList<>();
+        java.util.List<WpfResultItemResponse> failures = new java.util.ArrayList<>(items.size());   // null = 서비스 처리 대상
+        for (WpfResultRequest.Item item : items) {
+            String error = item == null ? "결과 항목이 비어 있습니다." : item.validationError();
+            if (error != null) {
+                failures.add(new WpfResultItemResponse(item == null ? null : item.resultId(), item == null ? null : item.popupId(),
+                        item == null ? null : item.type(), WpfResultItemResponse.Status.REJECTED,
+                        "WPF_INVALID_RESULT", "결과 항목 형식 오류: " + error));
+                continue;
+            }
+            try {
+                commands.add(item.toCommand());
+                failures.add(null);
+            } catch (RuntimeException ex) {
+                log.error("WPF 결과 항목 변환 중 예상하지 못한 오류 resultId={}", item.resultId(), ex);
+                failures.add(new WpfResultItemResponse(item.resultId(), item.popupId(), item.type(),
+                        WpfResultItemResponse.Status.INTERNAL_ERROR, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
+            }
+        }
+        java.util.Iterator<WpfResultItemResponse> processed =
+                wpfPopupService.processResults(employeeNo, commands).results().iterator();
+        java.util.List<WpfResultItemResponse> merged = new java.util.ArrayList<>(items.size());
+        for (WpfResultItemResponse failure : failures) {
+            merged.add(failure != null ? failure : processed.next());
+        }
+        return merged;
+    }
+
     @Operation(summary = "WPF 팝업 처리 결과 일괄 전송 (닫기·숨김·제출·영상)")
     @PostMapping("/results")
     public WpfResultResponse postResults(@Valid @RequestBody WpfResultRequest body, HttpServletRequest request) {
         OffsetDateTime receivedAt = OffsetDateTime.now(KST);
         String employeeNo = wpfUserResolver.resolveEmployeeNo(request);
-        java.util.List<WpfResultCommand> commands = new java.util.ArrayList<>();
-        java.util.List<String> errors = new java.util.ArrayList<>(body.results().size());
-        for (WpfResultRequest.Item item : body.results()) {
-            String error = item == null ? "결과 항목이 비어 있습니다." : item.validationError();
-            if (error == null) {
-                try {
-                    commands.add(item.toCommand());
-                } catch (RuntimeException ex) {
-                    // 검증을 통과했어도 변환이 실패하면 그 항목만 거절한다(같은 요청의 정상 항목 처리 보장).
-                    error = "결과 항목을 변환할 수 없습니다.";
-                    log.warn("WPF 결과 항목 변환 실패 resultId={}", item.resultId(), ex);
-                }
-            }
-            errors.add(error);
-        }
-        WpfResultResponse processed = wpfPopupService.processResults(employeeNo, commands);
-        java.util.Iterator<WpfResultItemResponse> processedResults = processed.results().iterator();
-        java.util.List<WpfResultItemResponse> merged = new java.util.ArrayList<>(body.results().size());
-        for (int i = 0; i < body.results().size(); i++) {
-            WpfResultRequest.Item item = body.results().get(i);
-            if (errors.get(i) == null) {
-                merged.add(processedResults.next());
-            } else {
-                merged.add(new WpfResultItemResponse(item == null ? null : item.resultId(), item == null ? null : item.popupId(),
-                        item == null ? null : item.type(), WpfResultItemResponse.Status.REJECTED,
-                        "WPF_INVALID_RESULT", "결과 항목 형식 오류: " + errors.get(i)));
-            }
-        }
-        WpfResultResponse response = new WpfResultResponse(merged);
+        WpfResultResponse response = new WpfResultResponse(processItems(employeeNo, body.results()));
 
         // [설계 34-19] 상태별 건수를 그대로 센다(일시·미확정 오류를 DUPLICATE로 잘못 세지 않도록).
         java.util.Map<WpfResultItemResponse.Status, Long> counts = response.results().stream()
