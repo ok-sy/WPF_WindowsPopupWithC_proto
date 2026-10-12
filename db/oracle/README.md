@@ -191,6 +191,6 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 배경: IMAGE 이미지 클릭 시 URL을 여는 기능(`content.linkUrl`)을 ORIGINAL 포함 모든 모드에서 폐기했다. `LINK_URL`은 이 기능 전용 컬럼이라 다른 유형·통계·조회에서 읽는 곳이 없다. 서버는 요청에 `linkUrl`이 남아 있어도 저장하지 않고 예전 옵션 사본도 응답에 싣지 않는다(`PopupContentAssembler.STORED_COPY_KEYS`). `01_popup_schema_oracle.sql`에서도 컬럼을 뺐다. Footer `footerLinkUrl`·하단 안내 `bottomDescriptionUrl`은 별개 기능이라 그대로다.
 - 순서: 서버 반영 후 실행. 새 서버는 이 컬럼을 쓰지 않아 실행 전후 모두 동작하며, 실행 후에는 이전 서버의 팝업 조회·저장이 ORA-00904로 실패한다.
-- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, `linkUrl` 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 재실행 시 SKIP 확인. 실행 후 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과. 원격 개발 DB는 미실행.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, `linkUrl` 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 재실행 시 SKIP 확인. 실행 후 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과. 원격 개발 DB(11g XE, `zero-rule` 스키마) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 비밀번호에 `!`가 있어 sqlplus에서 비밀번호를 큰따옴표로 감싸 접속(`zero-rule/"<pw>"@...`).
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @14_drop_link_url_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @14_drop_link_url_oracle.sql ""`
