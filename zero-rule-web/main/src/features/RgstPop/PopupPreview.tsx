@@ -15,8 +15,8 @@ import {
   type Size,
 } from './imagePreviewLayout';
 import type { AdminPopupDetail } from '@local/domain';
+import { routerUrlOf } from '@/lib/urls';
 import { type SyntheticEvent, useEffect, useId, useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
   Box,
@@ -24,7 +24,6 @@ import {
   Checkbox,
   Divider,
   FormControlLabel,
-  IconButton,
   Paper,
   Radio,
   Slider,
@@ -134,7 +133,6 @@ function PopupBody({
 
     const fixedImage = mode === 'FIT_TO_IMAGE' ? fitLayout?.image : undefined;
     const maximum = mode === 'ADAPTIVE' ? adaptiveMaximum(popup, naturalImageSize) : {};
-    const linkUrl = text(content.linkUrl, '');
 
     const image = imageUrl ? (
       <Box
@@ -166,7 +164,6 @@ function PopupBody({
           objectFit: original ? 'none' : fixedImage && content.keepAspectRatio === false ? 'fill' : 'contain',
           objectPosition: original ? 'left top' : 'center',
           flexShrink: original || fixedImage ? 0 : undefined,
-          cursor: linkUrl ? 'pointer' : 'default',
         }}
       />
     ) : (
@@ -184,21 +181,6 @@ function PopupBody({
       </Box>
     );
 
-    const linkedImage =
-      linkUrl && imageUrl ? (
-        <Box
-          component="a"
-          href={linkUrl}
-          target="_blank"
-          rel="noreferrer"
-          sx={{ display: 'contents' }}
-        >
-          {image}
-        </Box>
-      ) : (
-        image
-      );
-
     if (imageFill) {
       return (
         <Box
@@ -210,7 +192,7 @@ function PopupBody({
             alignItems: 'flex-start',
           }}
         >
-          {linkedImage}
+          {image}
         </Box>
       );
     }
@@ -235,7 +217,7 @@ function PopupBody({
           overflow: 'hidden',
         }}
       >
-        {linkedImage}
+        {image}
       </Box>
     );
     if (!showDescription) {
@@ -628,16 +610,16 @@ export default function PopupPreview({
             >
               {text(popup.title, '팝업 제목')}
             </Typography>
-            {popup.showCloseButton && (
-              <IconButton
-                size="small"
-                aria-label="닫기 미리보기"
-                disabled={isVideoQuiz && !videoUnlocked && !popup.allowCloseBeforeComplete}
-                onClick={onClose}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            )}
+            {/* WPF PopupWindow.xaml HeaderLogo와 같이 상단 닫기 버튼 없이 오른쪽에 고정 로고(100x24, Uniform, 오른쪽 여백 18)만 표시한다.
+                닫기는 하단 버튼 또는 "실제 크기로 보기" 모달의 종료 버튼으로 한다. */}
+            <Box
+              component="img"
+              src={routerUrlOf('/images/popup-header-logo.png')}
+              alt=""
+              aria-hidden
+              draggable={false}
+              sx={{ width: 100, height: 24, ml: 1.5, mr: '2px', objectFit: 'contain', flexShrink: 0, pointerEvents: 'none', userSelect: 'none' }}
+            />
           </Stack>
         )}
         {popup.showHeader && popup.popupType !== 'IMAGE' && <Divider />}

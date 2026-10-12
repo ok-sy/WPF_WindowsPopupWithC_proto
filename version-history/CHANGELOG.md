@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-23 — 관리자 웹 WPF 기준 미반영 항목 보완(최소·최대 크기, Header 로고, 표시 위치 미리보기)
+
+- 이유: WPF(C#) DTO·창 동작과 관리자 웹을 대조한 결과 WPF가 사용하는 최소·최대 창 크기를 관리자 화면에서 편집할 수 없었고, 미리보기는 WPF에 없는 Header X 닫기 버튼을 그리며 실제 크기 미리보기에 popupPosition이 반영되지 않아 정합성 보완.
+- 변경: 크기 설정에 최소·최대 너비/높이 입력 추가(WPF ApplyWindowSize·EffectiveMaximum 기준 — FULLSCREEN은 숨김, IMAGE는 최소만 표시하고 최대는 작업 영역 90% 안내, 그 밖은 네 값 표시, 서버 검증과 같은 양수·최대≥최소 보정). PopupDimensionField에 helperText 선택 prop 추가. 미리보기 Header의 X 버튼을 제거하고 WPF HeaderLogo.png 사본(`public/images/popup-header-logo.png`)을 같은 크기(100×24)·여백으로 클릭 불가 표시. 실제 크기로 보기 모달에 9방향 위치 정렬 적용(브라우저 창을 작업 영역으로 보고 가장자리 여백 일반 24px·영상 0px, FULLSCREEN 무시, 위쪽 배치 시 종료 버튼을 아래로 이동). 미리보기 대응 문서와 사용자 가이드 갱신.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/(PopupEditorDialog.tsx, PopupPreview.tsx), zero-rule-web/main/public/images/popup-header-logo.png, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/POPUP_USER_OPTION_GUIDE.md.
+- 검증: `npx tsc --noEmit -p .` 오류 없음, 변경 파일 eslint 통과, `npm run build` 성공(경고는 기존 미변경 파일에서만). 브라우저 화면 확인은 미실행. WPF DTO 대비 관리자 미편집 항목은 서버가 받지 않는 sizeMode AUTO만 남음(설계 09 미결 18).
+- 상태: 커밋에 포함. 미푸시. 남은 차이 — WPF Header 배경은 검정·미리보기 Header는 흰색, WPF 일반 창은 그림자 여백 24px가 창 크기에 포함, 설문·퀴즈 미리보기는 showFooter와 무관하게 제출 영역 표시.
+
 ## 2026-10-12-22 — IMAGE linkUrl(이미지 클릭 링크) 삭제
 
 - 이유: IMAGE linkUrl은 WPF에서 ORIGINAL 모드에만 동작하고 관리자 화면은 모든 모드에서 입력·미리보기를 제공해 동작이 엇갈렸음. 이미지 클릭 링크 기능을 사용하지 않기로 확정해 모든 모드에서 제거하고 데이터·코드를 정규화(운영 버전이 없어 하위 호환 없이 처리).
