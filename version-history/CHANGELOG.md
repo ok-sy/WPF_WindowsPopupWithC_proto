@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-24 — 인터페이스 정의서 Word/PDF v3.7 생성
+
+- 이유: Markdown 정의서 v3.7(설계 29~34, 문서 정합성 보완, IMAGE linkUrl 삭제 반영)에 맞는 Word/PDF 배포본이 없어 생성. 구버전 v2.0·v3.5·v3.6은 docs/interfaces/OLD(Git 제외)로 옮긴 상태.
+- 변경: `scripts/export-interface-word.cjs`로 `docs/interfaces/WPF_Popup_API_Interface_v3.7.docx` 생성(표 42·제목 114), `scripts/export-interface-pdf.vbs`(Word COM)로 필드·목차 갱신 후 `WPF_Popup_API_Interface_v3.7.pdf` 생성.
+- 주요 파일: docs/interfaces/WPF_Popup_API_Interface_v3.7.docx, docs/interfaces/WPF_Popup_API_Interface_v3.7.pdf.
+- 검증: docx 본문에서 버전 3.7 표기·RETRYABLE_ERROR 포함, VERSION 3.6 표기 없음, linkUrl은 3.7 삭제 이력·ORIGINAL 설명에만 남음 확인. Word에서 PDF 내보내기 정상 완료. PDF 화면 검토는 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-23 — 관리자 웹 WPF 기준 미반영 항목 보완(최소·최대 크기, Header 로고, 표시 위치 미리보기)
 
 - 이유: WPF(C#) DTO·창 동작과 관리자 웹을 대조한 결과 WPF가 사용하는 최소·최대 창 크기를 관리자 화면에서 편집할 수 없었고, 미리보기는 WPF에 없는 Header X 닫기 버튼을 그리며 실제 크기 미리보기에 popupPosition이 반영되지 않아 정합성 보완.
