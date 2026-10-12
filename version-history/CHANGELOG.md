@@ -18,6 +18,8 @@
 - 검증: 묶음 구성 확인(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 실행 산출물(exe·dll·pdb)·bin/obj·검증 하네스 누출 없음. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(출력 폴더에 popupSample.exe 1개, 91,631,950바이트). 서버·웹 묶음은 git diff 기준 파일 목록이며 폐쇄망 기존 소스 병합·빌드는 미실행. 구현 검증은 2026-10-12-15 기준(서버 104·행동 905·복구 146, 이후 Demo 경로 변경으로 행동 906). 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 스크립트 적용 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-15~17 항목은 같은 푸시로 원격 반영.
 
+  재생성: 최초 생성 이후의 결과 항목 변환 예외 상태 분리(2026-10-12-19)와 Demo 창 높이 미세 조정(7dcbbaa, DemoWindow.xaml 1줄)을 반영하기 위해 main 7dcbbaa 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성은 같음(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 서버 묶음의 WpfPopupController에 processItems 반영, WPF 묶음의 DemoWindow.xaml이 저장소와 같음을 확인. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,631,950바이트). 구현 검증은 서버 105건(로컬 XE DB 연동 포함). 재생성 기록 커밋은 미푸시. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 적용 미실행.
+
 ## 2026-10-12-17 — 오프라인 빌드 스크립트 단일 EXE 옵션
 
 - 이유: 폐쇄망 빌드 스크립트(build-wpf-offline.ps1)는 폴더형 게시만 지원했고, 단일 EXE 게시는 온라인 NuGet 원본을 쓰는 README 명령으로만 안내되어 있었음. 오프라인 패키지로 실행 파일 하나만 내보낼 수 있게 함.
