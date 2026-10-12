@@ -71,6 +71,20 @@ Set-ExecutionPolicy -Scope Process Bypass
 popup-frameWork\publish\win-x64
 ```
 
+실행 파일 하나만 만들려면 `-SingleFile` 옵션을 준다. .NET 런타임·`appsettings.json`·Demo 이미지·영상이 `popupSample.exe` 안에 포함된다(2026-10-12 기준 91,631,438바이트).
+
+```powershell
+.\scripts\build-wpf-offline.ps1 -SingleFile
+```
+
+```text
+popup-frameWork\publish\win-x64-single\popupSample.exe
+```
+
+- 설정은 `popup-frameWork\Popup\Properties\PublishProfiles\FolderProfile.pubxml`과 같다(PublishSingleFile, 네이티브 라이브러리 포함, 압축, 디버그 기호 제외). 참조 설명서(.xml) 파일은 내보내지 않는다.
+- WebView2 Runtime은 포함되지 않으므로 대상 PC에 따로 설치되어 있어야 한다.
+- 첫 실행 때 포함된 네이티브 라이브러리를 사용자 임시 폴더에 풀어 쓴다. 실행 중 EXE 옆에 WebView2 사용자 데이터 폴더(`popupSample.exe.WebView2`)가 만들어진다.
+
 실행 전 다음 파일도 확인한다.
 
 ```text

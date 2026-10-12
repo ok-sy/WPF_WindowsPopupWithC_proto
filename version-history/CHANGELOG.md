@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-17 — 오프라인 빌드 스크립트 단일 EXE 옵션
+
+- 이유: 폐쇄망 빌드 스크립트(build-wpf-offline.ps1)는 폴더형 게시만 지원했고, 단일 EXE 게시는 온라인 NuGet 원본을 쓰는 README 명령으로만 안내되어 있었음. 오프라인 패키지로 실행 파일 하나만 내보낼 수 있게 함.
+- 변경: scripts/build-wpf-offline.ps1에 -SingleFile 스위치 추가 — FolderProfile.pubxml과 같은 설정(PublishSingleFile·IncludeNativeLibrariesForSelfExtract·EnableCompressionInSingleFile·DebugType=None·DebugSymbols=false)에 참조 설명서(.xml) 제외(AllowedReferenceRelatedFileExtensions=.pdb)를 더해 popup-frameWork\publish\win-x64-single에 게시. 옵션 없이 실행하면 기존 폴더형 게시(publish\win-x64)와 같음. restore·publish 종료 코드 확인 추가. OFFLINE_WPF_BUILD.md에 사용법·포함 범위·WebView2 Runtime 별도 설치 필요 기록.
+- 주요 파일: scripts/build-wpf-offline.ps1, OFFLINE_WPF_BUILD.md.
+- 검증: -SingleFile로 스크립트를 실행해 출력 폴더에 popupSample.exe(91,631,438바이트) 1개만 생성됨을 확인. 생성된 EXE 실행·폐쇄망 PC 확인과 옵션 없는 폴더형 게시 재실행은 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-16 — Demo 샘플 절대경로 구분자 '/' 치환
 
 - 이유: Demo 요청·응답 JSON 로그에서 로컬 미디어 절대경로가 "C:\\Users\\...\\demo-video.mp4"처럼 JSON 이스케이프로 표시되어 읽기 어려움. 슬래시 구분자 절대경로가 실제 재생에 문제없음을 확인해 Demo 샘플 경로만 텍스트 치환.
