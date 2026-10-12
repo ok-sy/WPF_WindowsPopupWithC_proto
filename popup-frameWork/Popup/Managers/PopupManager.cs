@@ -211,7 +211,9 @@ namespace Popup.Managers
          * 이제 창 하나의 생명주기 동안 PopupResultBuilder에 사실만 기록하고, 닫힐 때 결과 항목 1개를 만든다.
          *
          * [설계 12 §1·§7·§9] 모든 결과(CLOSED/HIDDEN/VIDEO_WATCHED/SUBMITTED)는 서버 응답을 기다리지 않는다.
-         *   결과 항목 생성 → EnqueueResultAsync(pending-results.json 저장) → 창 닫기 → FlushResultsInBackground(백그라운드 전송)
+         *   결과 항목 생성 → EnqueueResult(pending-results.json 저장) → 창 닫기 → FlushResultsInBackground(백그라운드 전송)
+         * [설계 34-23] 일반 결과(CLOSED/HIDDEN/VIDEO_WATCHED)도 제출과 같은 순서로, 창이 실제로 닫히기 전(Closing, 취소되지 않은 경우)
+         *   파일에 먼저 저장한다. 예전에는 Closed 이후 비동기로 저장해 저장 전에 프로세스가 끝나면 결과가 남지 않을 수 있었다.
          * 설문·퀴즈 제출도 SurveyPopupView가 필수 응답 검증·로컬 채점을 끝낸 뒤 같은 경로를 탄다.
          * 기준 3 구현의 "제출 즉시 전송 후 서버 응답(통과 여부·거절) 안내"는 제거했다.
          */
@@ -231,7 +233,7 @@ namespace Popup.Managers
             if (surveyPopupView != null)
             {
                 bool isSubmitting = false;
-                surveyPopupView.SurveySubmitted += async (sender, submission) =>
+                surveyPopupView.SurveySubmitted += (sender, submission) =>
                 {
                     if (isSubmitting) return;
                     if (popupOptions.Content is VideoQuizPopupView combined && !combined.IsUnlocked) return;
@@ -239,7 +241,7 @@ namespace Popup.Managers
                     try
                     {
                         if (videoPopupView != null) builder.SetVideoProgress(videoPopupView.GetFinalProgress());
-                        await SubmitSurveyResultAsync(popupWindow, popupOptions, builder, submission);
+                        SubmitSurveyResult(popupWindow, popupOptions, builder, submission);
                     }
                     catch (Exception exception)
                     {
@@ -260,13 +262,16 @@ namespace Popup.Managers
                     builder.SetVideoProgress(videoPopupView.GetFinalProgress());
             }
 
-            popupWindow.Closed += async (sender, eventArgs) =>
+            // 영상 시청량 기록(위 Closing 핸들러) 뒤에 실행된다. PopupWindow.OnClosing이 취소를 먼저 결정하고
+            // "다시 보지 않기" 선택을 기록한 뒤 Closing 이벤트를 올린다.
+            popupWindow.Closing += (sender, eventArgs) =>
             {
-                if (builder.IsFinalized) return;                 // 제출 항목을 이미 큐에 넣음
+                if (eventArgs.Cancel || builder.IsFinalized) return;   // 닫기 취소 또는 제출 항목을 이미 큐에 넣음
                 WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
-                await EnqueueSafelyAsync(popupOptions, item);
-                popupOptions.FlushResultsInBackground?.Invoke();
+                EnqueueSafely(popupOptions, item);
+                builder.MarkFinalized();
             };
+            popupWindow.Closed += (sender, eventArgs) => popupOptions.FlushResultsInBackground?.Invoke();
         }
 
         /*
@@ -274,13 +279,13 @@ namespace Popup.Managers
          *  1. QUIZ 미통과(passed=false)면 점수·통과 점수를 안내하고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다.
          *     사용자는 답안을 고쳐 "채점"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다(2026-09-22 사용자 지시).
          *     닫기 버튼으로 나가면 SUBMITTED 없이 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
-         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResultAsync(pending-results.json 저장, await).
+         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(pending-results.json 저장).
          *     이 시점부터 결과는 유실되지 않는다.
          *  3. QUIZ 통과 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
-         * EnqueueResultAsync가 없으면(훅 미연결) 저장 없이 닫는다.
+         * EnqueueResult가 없으면(훅 미연결) 저장 없이 닫는다.
          */
-        private static async Task SubmitSurveyResultAsync(
+        private static void SubmitSurveyResult(
             PopupWindow popupWindow, PopupOptions popupOptions, PopupResultBuilder builder, SurveySubmission submission)
         {
             bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
@@ -296,10 +301,7 @@ namespace Popup.Managers
             }
 
             WpfResultItemDto item = builder.BuildSubmitted(submission, DateTimeOffset.Now);
-            if (popupOptions.EnqueueResultAsync != null)
-            {
-                await popupOptions.EnqueueResultAsync(item);
-            }
+            popupOptions.EnqueueResult?.Invoke(item);
             builder.MarkFinalized();
 
             if (isQuiz && submission.Score is double score)
@@ -309,8 +311,7 @@ namespace Popup.Managers
                     "평가를 통과했어요", "완료");
             }
 
-            popupWindow.Close();
-            popupOptions.FlushResultsInBackground?.Invoke();
+            popupWindow.Close();   // Closed 핸들러가 백그라운드 전송을 시작한다
         }
 
 
@@ -330,14 +331,17 @@ namespace Popup.Managers
             last?.Activate();
         }
 
-        /// <summary>닫힘 항목을 로컬 큐에 저장한다. 창은 이미 닫힌 뒤라 실패해도 안내할 창이 없으므로 로그만 남긴다.</summary>
-        private static async Task EnqueueSafelyAsync(PopupOptions popupOptions, WpfResultItemDto item)
+        /// <summary>
+        /// 닫힘 항목을 로컬 큐에 저장한다. 닫기를 막지 않기 위해 디스크 저장 실패는 로그만 남긴다.
+        /// [설계 34-24] 이때 항목은 큐 메모리에 보관되어 다음 저장·전송 때 다시 기록·전송된다.
+        /// </summary>
+        private static void EnqueueSafely(PopupOptions popupOptions, WpfResultItemDto item)
         {
-            if (popupOptions.EnqueueResultAsync == null) return;
-            try { await popupOptions.EnqueueResultAsync(item); }
+            if (popupOptions.EnqueueResult == null) return;
+            try { popupOptions.EnqueueResult(item); }
             catch (Exception exception)
             {
-                Debug.WriteLine($"팝업 결과 로컬 저장 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                Debug.WriteLine($"팝업 결과 로컬 저장 실패, 메모리 보관 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
             }
         }
     }

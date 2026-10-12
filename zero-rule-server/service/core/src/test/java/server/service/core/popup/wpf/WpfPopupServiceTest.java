@@ -154,9 +154,35 @@ class WpfPopupServiceTest {
         assertEquals(WpfResultItemResponse.Status.REJECTED, response.results().get(1).status());
         assertEquals("WPF_NOT_ELIGIBLE", response.results().get(1).code());
         assertEquals("WPF_INVALID_ANSWER", response.results().get(2).code());
+        // [설계 34-19] 분류되지 않은 오류는 REJECTED가 아니라 INTERNAL_ERROR(WPF 보관·재시도)
+        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, response.results().get(3).status());
         assertEquals("WPF_INTERNAL", response.results().get(3).code());
         assertFalse(response.results().get(3).message().contains("db down"), "내부 오류 메시지 비노출");
         // 한 항목의 실패 뒤에도 다음 항목이 처리된다
         verify(processor, times(4)).processOne(eq("E1001"), any());
+    }
+
+    /** [설계 34-19] 일시 장애는 예외 형식(원인 체인 포함)으로 RETRYABLE_ERROR, 그 밖은 INTERNAL_ERROR. 메시지로 판단하지 않는다. */
+    @Test void transientFailuresAreRetryableAndOthersInternal() {
+        var deadlock = new WpfResultCommand("r-dl", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        var down = new WpfResultCommand("r-down", "P2", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        var wrapped = new WpfResultCommand("r-wrap", "P3", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        var integrity = new WpfResultCommand("r-int", "P4", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        var misleading = new WpfResultCommand("r-msg", "P5", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        when(processor.processOne("E1001", deadlock)).thenThrow(new org.springframework.dao.CannotAcquireLockException("ORA-00060"));
+        when(processor.processOne("E1001", down)).thenThrow(new org.springframework.jdbc.CannotGetJdbcConnectionException("no connection"));
+        when(processor.processOne("E1001", wrapped)).thenThrow(new RuntimeException(new java.sql.SQLRecoverableException("IO error")));
+        when(processor.processOne("E1001", integrity)).thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique"));
+        when(processor.processOne("E1001", misleading)).thenThrow(new IllegalStateException("timeout deadlock connection"));
+
+        var results = service.processResults("E1001", List.of(deadlock, down, wrapped, integrity, misleading)).results();
+
+        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(0).status());
+        assertEquals("WPF_RETRYABLE", results.get(0).code());
+        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(1).status());
+        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(2).status());
+        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, results.get(3).status());
+        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, results.get(4).status(), "메시지 문자열로 일시 장애를 추정하지 않음");
+        assertEquals("r-msg", results.get(4).resultId());
     }
 }

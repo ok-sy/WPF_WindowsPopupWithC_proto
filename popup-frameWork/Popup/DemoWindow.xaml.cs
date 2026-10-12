@@ -111,7 +111,7 @@ namespace Popup
                 foreach (PopupOptions options in popupOptions)
                 {
                     // [설계 12] 운영 코드(MainWindow)와 같은 훅: 로컬 큐 저장 → 창 닫기 → 백그라운드 전송(데모 게이트웨이)
-                    options.EnqueueResultAsync = _resultQueue.EnqueueAsync;
+                    options.EnqueueResult = _resultQueue.Enqueue;
                     options.FlushResultsInBackground = _resultQueue.FlushInBackground;
                 }
                 _popupManager.ShowRange(popupOptions);

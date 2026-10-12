@@ -114,9 +114,12 @@ public class WpfPopupService {
      * 이 메서드 자체는 트랜잭션이 아니다(항목 간 격리 목적).
      *
      * <ul>
-     *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·문항 불일치 등) → REJECTED + 메시지</li>
-     *   <li>그 외 RuntimeException: 서버 오류 → REJECTED WPF_INTERNAL (메시지 비노출, 로그)</li>
+     *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·문항 불일치 등) → REJECTED + 메시지(영구, WPF 큐에서 제거)</li>
+     *   <li>[설계 34-19] 확인된 일시 장애(DB 연결 실패·데드락·잠금 대기·타임아웃 등, 예외 형식으로 분류) → RETRYABLE_ERROR</li>
+     *   <li>[설계 34-19] 그 밖의 RuntimeException(원인 미확정) → INTERNAL_ERROR. 무조건 REJECTED로 돌려주지 않는다</li>
      * </ul>
+     * 항목 처리와 영수증(WPF_RESULT_RECEIPT)은 같은 REQUIRES_NEW 트랜잭션이라 실패 항목은 롤백된 뒤 상태를 응답하며,
+     * WPF가 같은 resultId로 재전송하면 다시 처리된다. 분류는 예외 형식으로만 하고 메시지 문자열로 판단하지 않는다.
      */
     public WpfResultResponse processResults(String employeeNo, List<WpfResultCommand> items) {
         requireActiveUser(employeeNo);
@@ -129,12 +132,37 @@ public class WpfPopupService {
             } catch (IllegalArgumentException ex) {
                 results.add(WpfResultItemResponse.rejected(item, codeOf(item, ex), ex.getMessage()));
             } catch (RuntimeException ex) {
-                log.error("WPF 결과 항목 처리 실패 userId={} popupId={} resultId={} type={}",
-                        userId, item.popupId(), item.resultId(), item.resultType(), ex);
-                results.add(WpfResultItemResponse.rejected(item, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
+                boolean retryable = isTransientFailure(ex);
+                log.error("WPF 결과 항목 처리 실패({}) userId={} popupId={} resultId={} type={}",
+                        retryable ? "일시 장애" : "미확정 오류", userId, item.popupId(), item.resultId(), item.resultType(), ex);
+                results.add(retryable
+                        ? WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.RETRYABLE_ERROR,
+                                "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
+                        : WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.INTERNAL_ERROR,
+                                "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
             }
         }
         return new WpfResultResponse(OffsetDateTime.now(KST), results);
+    }
+
+    /**
+     * [설계 34-19] 재시도하면 성공할 수 있는 일시 장애인지 예외 형식(원인 체인 포함)으로 판단한다.
+     * Spring 일시 장애 계열(TransientDataAccessException: 데드락·잠금 대기·쿼리 타임아웃 등), 복구 가능 오류,
+     * DB 자원 접근 실패(연결 불가), 트랜잭션 시작 실패, JDBC 일시·복구 가능 예외를 일시 장애로 본다.
+     */
+    static boolean isTransientFailure(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof org.springframework.dao.TransientDataAccessException
+                    || t instanceof org.springframework.dao.RecoverableDataAccessException
+                    || t instanceof org.springframework.dao.DataAccessResourceFailureException
+                    || t instanceof org.springframework.transaction.CannotCreateTransactionException
+                    || t instanceof org.springframework.transaction.TransactionTimedOutException
+                    || t instanceof java.sql.SQLTransientException
+                    || t instanceof java.sql.SQLRecoverableException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 요청 단위 로그. 본 처리와 분리된 트랜잭션이라 로그 실패가 결과 처리에 영향을 주지 않도록 호출자가 예외를 잡는다. */

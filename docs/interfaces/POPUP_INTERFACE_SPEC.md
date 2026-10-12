@@ -3,7 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-12 (KST)
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
-- 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
+- 3.7 변경(2026-10-12, 설계 34): 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
 - 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
 - 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
@@ -313,7 +313,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | 채점 선택형 options[].isCorrect | 정답은 true, 오답은 false 권장. 단일 정답 1개, 복수 정답 1개 이상 | 누락/null은 정답 아님. 정답 키가 없으면 해당 문항은 정답 처리되지 않음 |
 | 채점 TEXT correctAnswer / answerMatchMode | 비어 있지 않은 정답, EXACT 또는 CONTAINS | 누락 시 해당 문항 오답. 구현은 지원하나 최소 외부 오픈 범위에서는 TEXT 자동 채점 제외 |
 | 결과 응답 results[].resultId | 요청한 resultId 그대로 반환 | 누락/불일치는 대기 결과를 해제하지 못해 재전송 지속 |
-| 결과 응답 results[].status | ACCEPTED / DUPLICATE / REJECTED | 현재 status 검증 없이 일치하는 resultId만으로 대기 결과를 제거. 누락·미지원 상태도 제거될 수 있으므로 서버가 반드시 보장 |
+| 결과 응답 results[].status | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR | 이번 전송 batch의 resultId이면서 종결 상태(ACCEPTED·DUPLICATE·REJECTED)인 항목만 제거. 그 밖의 상태·미지원 값·누락 항목은 보관 후 재전송(설계 34) |
 
 한 팝업의 Factory 변환 실패가 현재 조회 묶음 전체 생성을 중단할 수 있다. 서버는 잘못된 항목을 WPF 응답에 포함하지 않도록 응답 직전 검증을 수행해야 한다. results 배열은 반드시 반환하고 응답할 항목이 없으면 []를 사용한다. null 또는 null 항목은 처리 실패를 유발할 수 있다.
 
@@ -930,9 +930,9 @@ VIDEO_WATCHED
 | results[].resultId | string | O | 없음 | 요청 resultId와 동일 |
 | results[].popupId | string | O | 없음 | 요청 popupId |
 | results[].resultType | string | O | 없음 | 요청 resultType |
-| results[].status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED |
-| results[].code | string | 선택 | `null` | REJECTED 사유 |
-| results[].message | string | 선택 | `null` | REJECTED 설명 |
+| results[].status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR |
+| results[].code | string | 선택 | `null` | REJECTED·오류 사유 코드(WPF_RETRYABLE, WPF_INTERNAL 등) |
+| results[].message | string | 선택 | `null` | REJECTED·오류 설명(내부 오류 상세는 노출하지 않음) |
 
 ### status 의미
 
@@ -940,11 +940,24 @@ VIDEO_WATCHED
 |---|---|
 | ACCEPTED | 처음 정상 처리 |
 | DUPLICATE | 동일 resultId가 이미 처리됨. 재처리하지 않음 |
-| REJECTED | 업무 검증상 처리하지 않음 |
+| REJECTED | 수정 없이 재전송해도 실패하는 업무 오류. 사유 기록 후 종결 |
+| RETRYABLE_ERROR | DB 연결 장애·데드락·잠금 대기·타임아웃 등 확인된 일시 장애. 항목은 롤백됨 |
+| INTERNAL_ERROR | 원인 미확정 내부 오류. 항목은 롤백됨 |
 
-현재 C# 큐는 **응답 results에 포함된 resultId를 처리 종결 항목으로 보고 로컬 큐에서 제거**한다.
+삭제 기준은 "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"이다(설계 34-19~24).
 
-따라서 일시적 장애로 다시 받아야 하는 항목은 HTTP 5xx 등 요청 자체를 실패시키거나, 해당 계약을 별도 협의해야 한다. `REJECTED`를 반환하면 WPF는 재전송하지 않는다.
+| 상황 | HTTP | 항목 status | WPF 처리 |
+|---|---|---|---|
+| 저장 완료 | 200 | ACCEPTED | 해당 결과 삭제 |
+| 동일 resultId 처리 완료 | 200 | DUPLICATE | 해당 결과 삭제 |
+| 영구 업무 오류 | 200 | REJECTED | 사유 기록 후 삭제 |
+| 확인된 일시 장애 | 200 | RETRYABLE_ERROR | 보관·재전송 |
+| 원인 미확정 내부 오류 | 200 | INTERNAL_ERROR | 보관·실행당 제한 횟수(현재 3회)만 재시도. 소진해도 삭제하지 않고 다음 실행에서 재시도 |
+| 요청 전체 처리 실패 | 4xx·5xx | — | 전송한 결과 모두 보관·재전송 |
+| 타임아웃·연결 끊김 | 응답 없음 | — | 전송한 결과 모두 보관·재전송 |
+
+- 서버: 예외 형식·DB 오류 형식으로 분류하고 오류 메시지 문자열로 판단하지 않는다. 항목 저장과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패 항목은 롤백한 뒤 상태를 응답한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
+- WPF: 이번 batch에 없는 resultId 응답, 응답 누락 항목, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId와 결과 데이터를 유지한다. 재시도 간격·최대 횟수·재개 시점은 별도 확정 대상이며 현재는 기존 전송 시점(시작·목록 조회 전·결과 저장 후·종료 전)에 재시도한다.
 
 ### 선택 응답 필드
 
@@ -1102,6 +1115,8 @@ VIDEO_WATCHED
 ACCEPTED
 DUPLICATE
 REJECTED
+RETRYABLE_ERROR
+INTERNAL_ERROR
 ```
 
 ---
@@ -1521,8 +1536,8 @@ QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 6
 - [ ] QUIZ는 로컬 채점용 정답 키와 passingScore를 내려준다.
 - [ ] 결과 API는 resultId 기준 멱등 처리를 한다.
 - [ ] 동일 resultId 재수신 시 업무 데이터를 중복 저장하지 않는다.
-- [ ] results[].status를 ACCEPTED/DUPLICATE/REJECTED 중 하나로 반환한다.
-- [ ] REJECTED는 WPF가 재전송하지 않는 종결 상태임을 고려한다.
+- [ ] results[].status를 ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR 중 하나로 반환한다.
+- [ ] REJECTED는 WPF가 재전송하지 않는 종결 상태이므로 영구 업무 오류에만 쓰고, 일시 장애·미확정 오류는 RETRYABLE_ERROR·INTERNAL_ERROR로 반환한다.
 - [ ] 네트워크/서버 장애 시 WPF가 같은 결과를 재전송할 수 있음을 고려한다.
 - [ ] 401이면 WPF가 로그인 후 원 요청을 한 번 재시도하는 것을 고려한다.
 - [ ] 426을 사용할 경우 지정된 오류 형식을 제공한다.

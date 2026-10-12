@@ -2,6 +2,16 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-10 — TODO34 RESULT 처리 상태별 큐 삭제·재전송 정합성
+
+- 이유: 서버가 원인 미확정 오류까지 REJECTED/WPF_INTERNAL로 돌려주고 WPF 큐는 응답에 resultId만 있으면 상태와 무관하게 삭제해, 일시 장애로 저장 실패한 결과가 재시도 없이 소실될 수 있었음(34-19~24). 삭제 기준을 "서버 응답 수신"이 아니라 "항목 처리 종결"로 확정한 최종안 반영. 요청 데이터와 목록 조회 방식은 변경하지 않음.
+- 변경(서버): WpfResultItemResponse.Status에 RETRYABLE_ERROR·INTERNAL_ERROR 추가, failed() 팩토리 추가. WpfPopupService.processResults는 IllegalArgumentException만 REJECTED로, 예외 형식(원인 체인 포함: TransientDataAccessException·RecoverableDataAccessException·DataAccessResourceFailureException·CannotCreateTransactionException·TransactionTimedOutException·SQLTransientException·SQLRecoverableException)으로 확인된 일시 장애는 RETRYABLE_ERROR(WPF_RETRYABLE), 그 밖은 INTERNAL_ERROR(WPF_INTERNAL, 상세 비노출)로 응답. 메시지 문자열로 판단하지 않음. 항목 처리와 영수증은 기존 REQUIRES_NEW 트랜잭션이라 실패 항목은 롤백 후 응답(확인).
+- 변경(WPF): PopupResultQueue를 이번 batch의 resultId이면서 ACCEPTED·DUPLICATE·REJECTED인 항목만 제거하도록 변경. RETRYABLE_ERROR·알 수 없는 상태·응답 누락·다른 batch 응답은 보관, INTERNAL_ERROR는 실행당 3회(임시값)까지만 재시도하고 소진해도 삭제하지 않음(다음 실행에서 재시도). 파일 잠금과 전송 잠금을 분리해 전송 중에도 저장이 즉시 끝나고, 전송 후 최신 파일을 다시 읽어 종결 항목만 제거(전송 중 저장 항목 보존). 임시 파일 기록 후 교체, 손상 파일은 pending-results.corrupt-시각.json으로 보존, 디스크 저장 실패 항목은 실행 중 메모리에 보관했다가 재기록·전송. 일반 결과(CLOSED/HIDDEN/VIDEO_WATCHED)를 Closed 이후 비동기 저장에서 Closing(취소되지 않은 경우) 동기 저장으로 옮겨 제출 경로와 순서 통일(PopupOptions.EnqueueResultAsync → EnqueueResult, 제출 경로 동기화). 재시도 간격·최대 횟수·재개 시점은 기존 전송 시점을 유지하고 별도 확정 대상으로 남김.
+- 문서: 계약서 3.7(status 5종, 상황별 HTTP·status·WPF 처리 표, 서버·WPF 기준, 백엔드 체크리스트), 전체 정의서 결과 행, popup-frameWork/README 결과 큐 흐름, 설계 34-19~24 갱신. 최소 정의서에는 결과 큐 기술이 없어 변경 없음.
+- 주요 파일: zero-rule-server/domain/.../popup/wpf/WpfResultItemResponse.java, zero-rule-server/service/core/.../popup/wpf/WpfPopupService.java, 서버 테스트(WpfPopupServiceTest·WpfPopupDatabaseTest), popup-frameWork/Popup/(Services/PopupResultQueue.cs, Managers/PopupManager.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, README.md), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md), docs/design/34_*, popup-frameWork/Popup.BehaviorTests·Popup.RecoveryTests/(로컬 전용).
+- 검증: 서버 분류 테스트(데드락·연결 불가·원인 체인 SQLRecoverableException → RETRYABLE_ERROR, 무결성 위반·메시지에 timeout/deadlock이 있는 IllegalStateException → INTERNAL_ERROR) 추가, DB 연동 테스트에 DUPLICATE 재전송 시 표시 횟수·영수증 미증가 검증 추가. 로컬 XE 대상 DB 연동 포함 :service:core popup·:web:api popup 102건 통과(skip 0), :app 컴파일 통과. RecoveryTests에 상태별 종결·보관, 다른 batch 응답 무시, INTERNAL_ERROR 실행당 3회·미삭제·다음 실행 재전송, RETRYABLE_ERROR 매번 재전송, 요청 전체 실패 보관, 전송 중 저장 보존, 손상 파일 보존·임시 파일 미잔존, 디스크 저장 실패 시 메모리 보관 후 전송 검증을 추가해 137건 통과. BehaviorTests에 CLOSED·HIDDEN이 Closed 이전에 한 번만 저장되는지 검증을 추가해 888건 통과. WPF 앱 빌드 경고·오류 0. 실제 서버 장애 상황(DB 중단)과 Windows 화면·프로세스 강제 종료 확인은 미실행.
+- 상태: 커밋에 포함. 미푸시. 재시도 간격·최대 횟수·재개 시점 정책 미확정.
+
 ## 2026-10-12-09 — TODO34 RESULT 응답 필드 추가 정리 및 대조표
 
 - 이유: TODO34 §3.1 확정 사항 중 미반영이던 응답 hiddenUntil·watchedRatio·requiredRatio 제거와, 나머지 RESULT 필드의 사용처·필요성 기록(34-01~06), 체류 시간·문항별 점수 의미 문서화(34-09·16) 필요.

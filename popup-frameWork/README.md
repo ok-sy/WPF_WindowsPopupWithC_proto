@@ -788,16 +788,20 @@ Popup/Services/PopupResultQueue.cs
 ```text
 결과 생성
 ↓
-EnqueueAsync()  → pending-results.json 저장 (여기까지 await — 이 뒤엔 유실되지 않음)
+Enqueue()  → pending-results.json 저장 (동기 — 이 뒤엔 유실되지 않음. 일반 결과도 창이 닫히기 전 Closing에서 저장)
 ↓
 창 닫기 (서버 응답을 기다리지 않음)
 ↓
 FlushInBackground() → POST /p/api/wpf/popups/results
 ↓
-성공
+항목 status가 ACCEPTED / DUPLICATE / REJECTED(종결)
 ↓
-파일에서 제거
+파일에서 제거 (RETRYABLE_ERROR·INTERNAL_ERROR·응답 누락은 보관 후 같은 resultId로 재전송)
 ```
+
+[설계 34] 파일은 임시 파일에 쓴 뒤 교체하고, 읽을 수 없는 파일은 `pending-results.corrupt-시각.json`으로 보존한다.
+디스크 저장 실패 시 이번 실행 동안 메모리에 보관했다가 다음 저장·전송 때 다시 기록·전송한다.
+INTERNAL_ERROR 항목은 실행당 3회까지만 재시도하며(임시값) 횟수를 소진해도 삭제하지 않는다.
 
 서버가 426(클라이언트 버전 미지원, [설계 13])을 주면 전송을 멈추고 항목을 보존한다. 업데이트된 버전에서 재전송된다.
 

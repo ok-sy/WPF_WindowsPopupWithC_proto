@@ -31,8 +31,17 @@ public record WpfResultItemResponse(
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = WpfJson.DATE_TIME) OffsetDateTime completedAt,
         Long responseId
 ) {
-    /** ACCEPTED: 처리 완료 / DUPLICATE: 같은 resultId를 이미 처리함(재처리 없음) / REJECTED: 업무 검증 실패 */
-    public enum Status { ACCEPTED, DUPLICATE, REJECTED }
+    /**
+     * 항목 처리 상태. [설계 34-19] WPF는 ACCEPTED·DUPLICATE·REJECTED(종결)만 큐에서 지우고 나머지는 보관·재전송한다.
+     * <ul>
+     *   <li>ACCEPTED: 처리 완료</li>
+     *   <li>DUPLICATE: 같은 resultId를 이미 처리함(재처리 없음)</li>
+     *   <li>REJECTED: 수정 없이 재전송해도 실패하는 업무 검증 오류(영구)</li>
+     *   <li>RETRYABLE_ERROR: DB 연결 장애·데드락·타임아웃 등 확인된 일시 장애. 항목은 롤백됨</li>
+     *   <li>INTERNAL_ERROR: 원인 미확정 내부 오류. 항목은 롤백됨. WPF는 보관하고 제한적으로 재시도</li>
+     * </ul>
+     */
+    public enum Status { ACCEPTED, DUPLICATE, REJECTED, RETRYABLE_ERROR, INTERNAL_ERROR }
 
     public static WpfResultItemResponse duplicate(WpfResultCommand item) {
         return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), Status.DUPLICATE,
@@ -41,6 +50,15 @@ public record WpfResultItemResponse(
 
     public static WpfResultItemResponse rejected(WpfResultCommand item, String code, String message) {
         return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), Status.REJECTED,
+                code, message, null, null, null, null);
+    }
+
+    /** [설계 34-19] 일시 장애·미확정 오류. 업무 데이터와 영수증은 롤백된 상태이며 같은 resultId로 다시 받을 수 있다. */
+    public static WpfResultItemResponse failed(WpfResultCommand item, Status status, String code, String message) {
+        if (status != Status.RETRYABLE_ERROR && status != Status.INTERNAL_ERROR) {
+            throw new IllegalArgumentException("failed()는 RETRYABLE_ERROR / INTERNAL_ERROR 전용입니다: " + status);
+        }
+        return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), status,
                 code, message, null, null, null, null);
     }
 

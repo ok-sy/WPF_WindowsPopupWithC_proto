@@ -43,6 +43,16 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 class WpfPopupDatabaseTest {
 
+    private static int countOf(SqlSession session, String prefix, String sqlFormat, String parameter) throws Exception {
+        try (var statement = session.getConnection().prepareStatement(sqlFormat.formatted(prefix == null ? "" : prefix))) {
+            if (parameter != null) statement.setString(1, parameter);
+            try (var rs = statement.executeQuery()) {
+                assertTrue(rs.next());
+                return rs.getInt(1);
+            }
+        }
+    }
+
     @Test void listAndResultsRoundTripOnOracle() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
@@ -123,6 +133,10 @@ class WpfPopupDatabaseTest {
                 WpfResultCommand notEligible = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
                         WpfResultType.CLOSED, null, null, null, null, null, null, null);
 
+                String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
+                        .getProperty("popupSchemaPrefix");
+                int displayBefore = countOf(session, prefix, "SELECT NVL(MAX(DISPLAY_COUNT), 0) FROM %sUSER_POPUP_STATUS "
+                        + "WHERE EMPLOYEE_NO = 'E1001' AND POPUP_ID = 'SAMPLE-TEXT-001'", null);
                 WpfResultResponse response = service.processResults("E1001", List.of(hidden, quizSubmit, surveySubmit, video, hidden));
                 assertEquals(5, response.results().size());
 
@@ -144,6 +158,10 @@ class WpfPopupDatabaseTest {
                 assertEquals(Boolean.TRUE, r3.completed());
 
                 assertEquals(WpfResultItemResponse.Status.DUPLICATE, response.results().get(4).status(), "같은 resultId 재전송");
+                // [설계 34-22] 재전송된 같은 resultId는 표시 횟수·영수증을 다시 쌓지 않는다(처리 1회분만 증가).
+                assertEquals(displayBefore + 1, countOf(session, prefix, "SELECT DISPLAY_COUNT FROM %sUSER_POPUP_STATUS "
+                        + "WHERE EMPLOYEE_NO = 'E1001' AND POPUP_ID = 'SAMPLE-TEXT-001'", null), "DUPLICATE 재전송은 표시 횟수를 늘리지 않는다");
+                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", hiddenId), "영수증은 1건");
 
                 // 표시·닫기 정보가 반영됐다 (mergeDisplayAndClose)
                 var status = wpfMapper.selectStatus("E1001", "SAMPLE-TEXT-001");

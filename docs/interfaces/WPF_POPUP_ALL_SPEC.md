@@ -197,7 +197,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 인증 | SSO XML → 로그인 → Bearer, 토큰 만료 시 재로그인·재시도 | 인증 URL·실환경 통합 정책은 별도 연동 조건 |
 | API | 로그인·목록 조회·결과 일괄 전송 | 요청·응답·경로는 인터페이스 계약서 참조 |
 | 조회 | 30~60분 조회 정책, 실패 후 재조회 복구 | 팝업 content의 옵션이 아님 |
-| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐·백그라운드 전송 | 재전송은 같은 resultId 유지 |
+| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐·백그라운드 전송 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 JSON 제어 필드 없음 |
 | 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 목록 조회(GET /api/wpf/popups 요청과 Header·Footer·content를 포함한 목록 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음 | Demo 결과는 실제 서버·DB 저장과 구분. Demo 요청 JSON에는 인증 헤더가 없고 샘플 유형 선택은 로그 줄에만 표시 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |

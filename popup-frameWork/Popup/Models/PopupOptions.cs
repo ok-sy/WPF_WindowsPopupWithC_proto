@@ -44,10 +44,11 @@ namespace Popup.Models
          */
 
         /// <summary>
-        /// 결과 항목을 로컬 큐(pending-results.json)에 저장한다. PopupResultQueue.EnqueueAsync에 연결된다.
-        /// 완료(await) 시점에 결과가 파일에 보존되므로 그 뒤에 창을 닫아도 유실되지 않는다. 서버 전송은 하지 않는다.
+        /// 결과 항목을 로컬 큐(pending-results.json)에 저장한다(동기). PopupResultQueue.Enqueue에 연결된다.
+        /// 반환 시점에 결과가 파일에 보존되므로 그 뒤에 창을 닫아도 유실되지 않는다. 서버 전송은 하지 않는다.
+        /// [설계 34-23] 창 닫기(Closing) 중에도 호출하므로 동기 저장이다. 디스크 저장 실패 시 예외를 던지며 항목은 큐 메모리에 남는다.
         /// </summary>
-        public Func<WpfResultItemDto, Task>? EnqueueResultAsync { get; set; }
+        public Action<WpfResultItemDto>? EnqueueResult { get; set; }
 
         /// <summary>
         /// 보관된 결과를 백그라운드로 서버에 전송한다(예외는 안에서 처리). PopupResultQueue.FlushInBackground에 연결된다.
