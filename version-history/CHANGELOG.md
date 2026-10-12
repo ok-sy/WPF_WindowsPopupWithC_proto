@@ -9,6 +9,7 @@
 - 주요 파일: offline-export/20261013/ (Git 제외), .offline-verify/package-20261013.ps1·finalize-20261013.ps1 (Git 제외), version-history/CHANGELOG.md.
 - 검증: 20261012 대비 WPF 묶음은 DemoWindow.AuthTest.cs 1개 추가(86개), 문서 73개 동일 구성. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,637,582바이트). TAR·TGZ 항목 수·누출(exe·dll·bin/obj·검증 하네스) 검사 통과. 폐쇄망 PC 반입·실행·배포 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-25·2026-10-13-01 항목은 같은 푸시로 원격 반영.
+- 보완(20261012 병합): 20261012 반입본을 폐쇄망에 반입하지 못해 20261013 단독으로는 서버·웹 변경이 빠짐. 20261012의 1-zero-rule-server·2-zero-rule-web 묶음과 MANIFEST를 20261013에 합치고(diff -rq로 원본과 동일 확인), README-IMPORT를 20261007 기준 병합 안내(12 반입분·13 추가분·DB 스크립트 순서)로 재작성. 3·4 묶음은 20261012 파일을 모두 포함(WPF는 DemoWindow.AuthTest.cs만 추가, 문서 73개 동일)해 그대로 사용. finalize 스크립트로 4개 TAR·SHA256SUMS·SOURCE-SHA256SUMS·통합 TGZ 재생성. 20261012.tgz는 따로 반입하지 않음. 폐쇄망 반입·서버 병합 빌드·DB 적용 미실행. 병합 기록은 커밋에 포함해 원격 반영.
 
 ## 2026-10-13-01 — TODO10 Demo SSO·로그인 분리 테스트
 
