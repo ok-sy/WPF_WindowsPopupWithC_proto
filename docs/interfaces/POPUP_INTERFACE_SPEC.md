@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-12 (KST)
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
+- 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
 - 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
 - 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`.
@@ -255,6 +256,12 @@ X-Client-Version: 1.0.0
 | showFooter | boolean | O | `true` | Footer 표시 |
 | footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT 고정(다른 값이 와도 SUBMIT). 일반 유형의 생략·미지원 값·SUBMIT은 CLOSE |
 | footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 바로가기 URL. 절대 http/https. 다른 동작에서는 보내지 않음 |
+| useBackgroundOverlay | boolean | 선택 | `true` | 배경 Overlay 사용(설계 31) |
+| backgroundOverlayOpacity | number | 선택 | `0.45` | Overlay 불투명도 0~1. 서버 저장 검증, WPF도 0~1로 보정 |
+| popupPosition | string | 선택 | `CENTER` | §7 popupPosition ENUM. 없거나 잘못되면 CENTER |
+| headerFontSize | number | 선택 | XAML 기본값(현재 Header 17) | 값이 있으면 10~40으로 보정 |
+| bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
+| footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
@@ -333,18 +340,18 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 
 ---
 
-# 7. content 공통 필드
+# 7. PopupWindow 공통 옵션 (최상위)
 
-모든 popupType의 `content` 안에서 사용할 수 있다.
+3.7부터 `content`에는 popupType별 콘텐츠·전용 옵션만 둔다. PopupWindow 전체에 적용되는 공통 옵션은 §6.3의 `popups[]` 최상위 필드다(설계 30·31).
 
-| 필드 | 형식 | 필수 여부 | Default | 설명 |
-|---|---|---|---|---|
-| useBackgroundOverlay | boolean | 선택 | `true` | 배경 Overlay 사용 |
-| backgroundOverlayOpacity | number | 선택 | `0.45` | WPF에서 0~1 보정 |
-| headerFontSize | number | 선택 | XAML 기본값(현재 Header 17) | 값이 있으면 10~40으로 보정 |
-| bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
-| footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
-| popupPosition | string | 선택 | `CENTER` | 없거나 잘못되면 CENTER |
+| 구분 | 최상위 필드 |
+|---|---|
+| Footer 동작 | `footerAction`, `footerLinkUrl` |
+| 배경 Overlay | `useBackgroundOverlay`, `backgroundOverlayOpacity` |
+| 위치 | `popupPosition` |
+| 글자 크기 | `headerFontSize`, `bodyFontSize`, `footerFontSize` |
+
+`content` 안에 같은 이름의 키가 있어도 WPF는 읽지 않는다. 관리자 저장 위치(CONTENT_OPTIONS)와 WPF 응답 위치는 달라도 된다. 서버가 응답 조립 시 최상위로 옮긴다.
 
 Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **닫기**로 표시하고 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
@@ -386,14 +393,7 @@ BOTTOM_RIGHT
   "showHighlight": true,
   "bottomDescription": "자세히 보기",
   "bottomDescriptionUrl": "https://example.com/notice",
-  "showBottomDescription": true,
-
-  "useBackgroundOverlay": true,
-  "backgroundOverlayOpacity": 0.45,
-  "popupPosition": "CENTER",
-  "headerFontSize": 17,
-  "bodyFontSize": 15,
-  "footerFontSize": 14
+  "showBottomDescription": true
 }
 ```
 
@@ -444,11 +444,7 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
   "imageSizeMode": "ADAPTIVE",
   "width": 640,
   "height": 480,
-  "linkUrl": "https://example.com/notice",
-
-  "useBackgroundOverlay": true,
-  "backgroundOverlayOpacity": 0.45,
-  "popupPosition": "CENTER"
+  "linkUrl": "https://example.com/notice"
 }
 ```
 
@@ -506,11 +502,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
   "allowSeek": true,
   "autoPlay": false,
   "isLoop": false,
-  "defaultVolume": 0.7,
-
-  "useBackgroundOverlay": true,
-  "backgroundOverlayOpacity": 0.45,
-  "popupPosition": "CENTER"
+  "defaultVolume": 0.7
 }
 ```
 
@@ -1147,6 +1139,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "CLOSE",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
@@ -1179,6 +1174,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "CLOSE",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
@@ -1210,6 +1208,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "CLOSE",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
   "questions": [],
@@ -1246,6 +1247,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "SUBMIT",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [
@@ -1335,6 +1339,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "SUBMIT",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": true,
   "questions": [
@@ -1418,6 +1425,9 @@ REJECTED
   "showFooterButton": true,
   "showFooter": true,
   "footerAction": "SUBMIT",
+  "useBackgroundOverlay": true,
+  "backgroundOverlayOpacity": 0.45,
+  "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "allowCloseBeforeComplete": false,
   "questions": [

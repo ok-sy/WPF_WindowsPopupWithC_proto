@@ -149,6 +149,42 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popups[2].content.footerAction").doesNotExist());
     }
 
+    /** [설계 31] PopupWindow 공통 UI 옵션은 최상위로 승격하고 content에서 뺀다. 범위 밖·미지원 값은 기본값으로 보정한다. */
+    @Test void windowOptionsArePromotedToTopLevel() throws Exception {
+        var dto = new ObjectMapper().readValue("""
+                {"popupId":"TEXT-31","popupType":"TEXT","title":"t","sizeMode":"FIXED","width":500,"height":300,
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":900,"maximumHeight":700,
+                 "content":{"plainText":"x","useBackgroundOverlay":false,"backgroundOverlayOpacity":0.6,
+                            "popupPosition":"TOP_RIGHT","headerFontSize":18,"bodyFontSize":"15","footerFontSize":13}}
+                """, server.domain.popup.PopupResponseDto.class);
+        var defaults = new ObjectMapper().readValue("""
+                {"popupId":"IMAGE-31","popupType":"IMAGE","title":"t","sizeMode":"FIXED","width":500,"height":300,
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":900,"maximumHeight":700,
+                 "content":{"imageUrl":"https://example.com/a.png","backgroundOverlayOpacity":3,"popupPosition":"MIDDLE"}}
+                """, server.domain.popup.PopupResponseDto.class);
+        when(service.getPopupsForUser("E1001")).thenReturn(new WpfPopupListResponse(OffsetDateTime.now(), "E1001", 1800,
+                List.of(server.domain.popup.wpf.WpfPopupItem.from(dto, false),
+                        server.domain.popup.wpf.WpfPopupItem.from(defaults, false))));
+        mvc.perform(get("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.popups[0].useBackgroundOverlay").value(false))
+                .andExpect(jsonPath("$.popups[0].backgroundOverlayOpacity").value(0.6))
+                .andExpect(jsonPath("$.popups[0].popupPosition").value("TOP_RIGHT"))
+                .andExpect(jsonPath("$.popups[0].headerFontSize").value(18.0))
+                .andExpect(jsonPath("$.popups[0].bodyFontSize").value(15.0))
+                .andExpect(jsonPath("$.popups[0].footerFontSize").value(13.0))
+                .andExpect(jsonPath("$.popups[0].content.useBackgroundOverlay").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.backgroundOverlayOpacity").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.popupPosition").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.headerFontSize").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.bodyFontSize").doesNotExist())
+                .andExpect(jsonPath("$.popups[0].content.footerFontSize").doesNotExist())
+                .andExpect(jsonPath("$.popups[1].useBackgroundOverlay").value(true))
+                .andExpect(jsonPath("$.popups[1].backgroundOverlayOpacity").value(1.0))
+                .andExpect(jsonPath("$.popups[1].popupPosition").value("CENTER"))
+                .andExpect(jsonPath("$.popups[1].headerFontSize").doesNotExist());
+    }
+
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {
         // 항목 없음 → 400 (요청 전체 형식 오류)
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")

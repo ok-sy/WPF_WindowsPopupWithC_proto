@@ -140,6 +140,18 @@ namespace Popup.Dtos
         /* [설계 30] LINK_AND_CLOSE일 때 열 절대 http/https URL. 그 밖의 동작에서는 쓰지 않는다. */
         public string FooterLinkUrl { get; set; } = string.Empty;
 
+        /*
+         * [설계 31] PopupWindow 공통 UI 옵션. content가 아니라 popups[] 최상위로 받는다.
+         * Overlay 기본 true / 0.45(0~1 보정), 위치 기본 CENTER(미지원 값도 CENTER),
+         * 폰트 크기는 null이면 XAML 기본 크기이며 값이 있으면 PopupWindow가 10~40으로 보정한다.
+         */
+        public bool UseBackgroundOverlay { get; set; } = true;
+        public double BackgroundOverlayOpacity { get; set; } = 0.45;
+        public string PopupPosition { get; set; } = "CENTER";
+        public double? HeaderFontSize { get; set; }
+        public double? BodyFontSize { get; set; }
+        public double? FooterFontSize { get; set; }
+
         public bool ShowDoNotShowAgain { get; set; }
 
         /*

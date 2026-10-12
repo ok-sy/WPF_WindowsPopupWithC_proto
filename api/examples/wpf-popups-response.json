@@ -23,6 +23,9 @@
       "showFooterButton": true,
       "showFooter": true,
       "footerAction": "CLOSE",
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45,
+      "popupPosition": "CENTER",
       "showDoNotShowAgain": true,
       "hideDays": 7,
       "allowCloseBeforeComplete": true,
@@ -37,9 +40,7 @@
         "showHighlight": true,
         "bottomDescription": "자세히 보기",
         "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
-        "showBottomDescription": true,
-        "useBackgroundOverlay": true,
-        "backgroundOverlayOpacity": 0.45
+        "showBottomDescription": true
       }
     },
     {
@@ -61,6 +62,9 @@
       "showFooterButton": true,
       "showFooter": true,
       "footerAction": "CLOSE",
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.6,
+      "popupPosition": "CENTER",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": false,
       "completionRatio": 0.9,
@@ -75,9 +79,7 @@
         "allowPlaybackRateChange": false,
         "autoPlay": true,
         "isLoop": false,
-        "defaultVolume": 0.7,
-        "useBackgroundOverlay": true,
-        "backgroundOverlayOpacity": 0.6
+        "defaultVolume": 0.7
       }
     },
     {
@@ -99,10 +101,16 @@
       "showFooterButton": true,
       "showFooter": true,
       "footerAction": "SUBMIT",
+      "useBackgroundOverlay": true,
+      "backgroundOverlayOpacity": 0.45,
+      "popupPosition": "CENTER",
+      "headerFontSize": 18,
+      "bodyFontSize": 14,
+      "footerFontSize": 13,
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "passingScore": 10,
-      "_comment": "[설계 12] QUIZ만 passingScore·정답 키(options[].isCorrect / correctAnswer / answerMatchMode)를 내려준다. WPF가 제출 즉시 로컬 채점한다. SURVEY에는 없다. [설계 14] content.headerFontSize/bodyFontSize/footerFontSize는 관리자 폰트 크기(10~40, 없으면 기본 크기).",
+      "_comment": "[설계 12] QUIZ만 passingScore·정답 키(options[].isCorrect / correctAnswer / answerMatchMode)를 내려준다. WPF가 제출 즉시 로컬 채점한다. SURVEY에는 없다. [설계 14·31] 최상위 headerFontSize/bodyFontSize/footerFontSize는 관리자 폰트 크기(10~40, 없으면 기본 크기).",
       "questions": [
         {
           "questionId": 1,
@@ -133,12 +141,7 @@
       ],
       "content": {
         "surveyTitle": "보안 교육 확인",
-        "description": "문항에 응답해 주세요.",
-        "useBackgroundOverlay": true,
-        "backgroundOverlayOpacity": 0.45,
-        "headerFontSize": 18,
-        "bodyFontSize": 14,
-        "footerFontSize": 13
+        "description": "문항에 응답해 주세요."
       }
     },
     {
@@ -160,6 +163,9 @@
       "showFooterButton": true,
       "showFooter": true,
       "footerAction": "SUBMIT",
+      "useBackgroundOverlay": false,
+      "backgroundOverlayOpacity": 0.45,
+      "popupPosition": "CENTER",
       "showDoNotShowAgain": false,
       "allowCloseBeforeComplete": true,
       "questions": [
@@ -197,9 +203,7 @@
       ],
       "content": {
         "surveyTitle": "사무환경 설문",
-        "description": "의견을 남겨 주세요.",
-        "useBackgroundOverlay": false,
-        "backgroundOverlayOpacity": 0.45
+        "description": "의견을 남겨 주세요."
       }
     }
   ]

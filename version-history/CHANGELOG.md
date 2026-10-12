@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-05 — TODO31 PopupWindow 공통 UI 옵션 최상위 계약 정리
+
+- 이유: 설계 31 반영. Overlay·위치·Header/본문/Footer 글자 크기는 콘텐츠가 아니라 PopupWindow 전체 정책이므로 WPF 응답에서 popups[] 최상위로 분리해 content에는 유형별 콘텐츠·전용 옵션만 남김. 운영 배포 버전이 없어 content fallback 없이 즉시 전환.
+- 정합성 확인: 설계 31의 현재 상태 기술(PopupFactory content lookup, opacity 0~1 보정, 위치 미지원 값 CENTER, PopupWindow 10~40 보정)은 코드와 일치. 서버는 폰트 크기만 저장 검증하고 Overlay·위치 값은 검증하지 않고 있었음.
+- 변경(서버): domain에 PopupWindowOptions(6개 키·기본값·읽기 규칙) 추가. WpfPopupItem에 최상위 useBackgroundOverlay·backgroundOverlayOpacity(0~1 보정)·popupPosition(9개 값, 그 밖 CENTER)·header/body/footerFontSize(설정 시만)를 추가하고 content에서 6개 키 제거. 관리자 저장 검증에 validateWindowOptions(Overlay boolean, opacity 0~1 숫자, 위치 9개 값) 추가. opacity 범위는 서버 저장 검증 + WPF 보정 유지로 확정(31-10). 관리자 API·DB 저장 위치(CONTENT_OPTIONS)와 관리자 웹은 변경 없음(웹 입력 값 형식이 새 검증과 맞는 것 확인).
+- 변경(WPF): PopupResponseDto에 UseBackgroundOverlay(true)·BackgroundOverlayOpacity(0.45)·PopupPosition("CENTER")·Header/Body/FooterFontSize 추가. PopupFactory의 content lookup(GetContentDouble·GetContentNullableDouble·GetPopupPosition) 삭제, 최상위 값 사용(opacity 0~1 보정, ConvertPopupPosition). Demo 옵션 창의 위치·Overlay·글자 크기 필드를 최상위로 이동.
+- 문서: 인터페이스 계약 3.7(§6.3 최상위 필드 추가, §7을 PopupWindow 공통 옵션 안내로 교체, §8 유형별 content 예시에서 공통 옵션 제거, §15 예시에 최상위 값), 전체/최소 정의서, 예제 JSON(api/examples·docs/interfaces/examples/WPF-01-popup-types.json), 설계 31 체크리스트 갱신. zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md는 관리자 content 기준 문서라 유지.
+- 주요 파일: zero-rule-server/domain/.../popup/(PopupWindowOptions.java, wpf/WpfPopupItem.java), zero-rule-server/service/core/.../popup/PopupService.java, 서버 테스트(PopupActionOptionsTest·WpfPopupServiceTest·WpfPopupControllerTest), popup-frameWork/Popup/(Dtos/PopupResponseDto.cs, Factories/PopupFactory.cs, Models/PopupOptions.cs, DemoOptionsWindow.Fields.cs), api/examples/wpf-popups-response.json, docs/interfaces/, docs/design/31_PopupWindow_공통_UI_옵션_최상위_계약_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 저장 검증 테스트와 최상위 승격·기본값·보정 HTTP 테스트를 추가해 :service:core popup·:web:api popup 101건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 앱 빌드 경고·오류 0, 행동 검증에 content 키 미사용·최상위 값 반영·opacity 보정·위치 9개 값/미지원 값·생략 기본값 검증을 추가하고 Demo 글자 크기 편집 검증을 최상위 필드로 옮겨 880건 통과, 재전송 큐 122건 통과. Overlay·위치·폰트 실제 WPF 화면 수동 검증(31-23)과 실제 서버 HTTP 확인 미실행. Excel 정의서 미반영(저장소에 없음).
+- 상태: TODO31 커밋에 포함. 미푸시.
+
 ## 2026-10-12-04 — TODO30 Footer Action 최상위 계약 및 3모드 정리
 
 - 이유: 설계 30 반영. Footer는 콘텐츠 속성이 아니라 PopupWindow 공통 영역의 동작이므로 WPF 응답에서 showFooter·showFooterButton과 같은 레벨(popups[] 최상위)로 정리하고 동작을 3값으로 명시. 운영 배포 버전이 없어 구버전 호환 단계(content 중복 전송·fallback) 없이 코드와 저장 데이터를 정규화.

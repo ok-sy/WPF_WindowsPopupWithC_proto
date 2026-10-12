@@ -50,11 +50,11 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과의 숨김 일수 |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
-| content.UseBackgroundOverlay | 지원 | N | `true` | 별도 Overlay 창 사용 |
-| content.BackgroundOverlayOpacity | 지원 | N | `0.45` | 0~1로 보정. 뒤쪽 마우스 입력을 막으며 키보드 전체 차단은 아님 |
-| content.HeaderFontSize | 지원 | N | `null` | 미지정 시 Header 17. 지정 시 10~40 보정 |
-| content.BodyFontSize | 지원 | N | `null` | 미지정 시 View 기본. 지원 View에 본문 크기 전달 |
-| content.FooterFontSize | 지원 | N | `null` | 미지정 시 Footer 14. 지정 시 10~40 보정 |
+| UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`(설계 31). 별도 Overlay 창 사용 |
+| BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위. 0~1로 보정(서버 저장 검증). 뒤쪽 마우스 입력을 막으며 키보드 전체 차단은 아님 |
+| HeaderFontSize | 지원 | N | `null` | 최상위. 미지정 시 Header 17. 지정 시 10~40 보정 |
+| BodyFontSize | 지원 | N | `null` | 최상위. 미지정 시 View 기본. 지원 View에 본문 크기 전달 |
+| FooterFontSize | 지원 | N | `null` | 최상위. 미지정 시 Footer 14. 지정 시 10~40 보정 |
 | CompletionRatio | 지원 | N | `null` → `1.0` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준 |
 | AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
@@ -77,7 +77,7 @@ LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL �
 | WidthRatio / HeightRatio | 지원 | N | `0.7` / `0.75` | RATIO 모니터 작업 영역 비율 |
 | MinimumWidth / MinimumHeight | 지원 | N | `480` / `320` | 화면 상한과 함께 보정 |
 | MaximumWidth / MaximumHeight | 지원 | N | `1200` / `900` | 일반 콘텐츠 상한. IMAGE는 현재 작업 영역의 90% 적용 |
-| content.PopupPosition | 지원 | N | `CENTER` | 9개 위치. 알 수 없는 값은 CENTER |
+| PopupPosition | 지원 | N | `CENTER` | 최상위 `popupPosition`(설계 31). 9개 위치. 알 수 없는 값은 CENTER |
 | DragMove | 고정 동작 | 해당 없음 | 설정 필드 없음 | Header 또는 Header 없는 상단 이동 영역 사용 |
 
 위치 값: CENTER, TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER_LEFT, CENTER_RIGHT,

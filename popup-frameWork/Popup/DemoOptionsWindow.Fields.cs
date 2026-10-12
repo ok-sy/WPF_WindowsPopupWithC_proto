@@ -68,12 +68,9 @@ namespace Popup
             if (popup.PopupType == "VIDEO" || HasVideo(popup))
                 Field("completionRatio", "영상 시청 완료 비율 · 0~1", typeof(double?), min: 0, max: 1);
             if (popup.PopupType == "QUIZ") Field("passingScore", "퀴즈 통과 점수", typeof(double?), min: 0);
+            // [설계 31] 위치·Overlay·글자 크기는 PopupWindow 공통 옵션이라 content가 아니라 최상위 값이다.
             panel = Group("위치·푸터 동작", false);
-            JsonObject content = _draft["content"]!.AsObject();
-            content["popupPosition"] ??= "CENTER";
-            content["useBackgroundOverlay"] ??= true;
-            content["backgroundOverlayOpacity"] ??= .45;
-            AddField(panel, content, "popupPosition", "창 위치", typeof(string), new[] {
+            AddField(panel, _draft, "popupPosition", "창 위치", typeof(string), new[] {
                 "CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT", "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT" });
             // [설계 30] Footer 동작은 최상위 값. 설문·퀴즈는 제출(SUBMIT) 고정이라 선택 항목을 두지 않는다.
             if (popup.PopupType is "SURVEY" or "QUIZ")
@@ -89,11 +86,11 @@ namespace Popup
                 AddField(panel, _draft, "footerLinkUrl", "푸터 바로가기 URL", typeof(string));
             }
             panel = Group("배경·글자 크기", false);
-            AddField(panel, content, "useBackgroundOverlay", "배경 Overlay 사용", typeof(bool));
-            AddField(panel, content, "backgroundOverlayOpacity", "배경 불투명도 · 0~1", typeof(double), min: 0, max: 1);
-            AddField(panel, content, "headerFontSize", "헤더 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
-            AddField(panel, content, "bodyFontSize", "본문 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
-            AddField(panel, content, "footerFontSize", "푸터 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
+            AddField(panel, _draft, "useBackgroundOverlay", "배경 Overlay 사용", typeof(bool));
+            AddField(panel, _draft, "backgroundOverlayOpacity", "배경 불투명도 · 0~1", typeof(double), min: 0, max: 1);
+            AddField(panel, _draft, "headerFontSize", "헤더 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
+            AddField(panel, _draft, "bodyFontSize", "본문 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
+            AddField(panel, _draft, "footerFontSize", "푸터 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
         }
 
         private static bool HasVideo(PopupResponseDto popup) => popup.Content.TryGetProperty("videoEnabled", out var enabled)

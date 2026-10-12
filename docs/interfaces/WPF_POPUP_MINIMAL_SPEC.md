@@ -38,15 +38,15 @@
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
-| UseBackgroundOverlay | 지원 | N | `true` | content 옵션. 배경 Overlay 사용 |
-| BackgroundOverlayOpacity | 지원 | N | `0.45` | Overlay 불투명도(0~1) |
+| UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`. 배경 Overlay 사용 |
+| BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위 `backgroundOverlayOpacity`. Overlay 불투명도(0~1) |
 | DragMove | 지원(고정 동작) | N | 설정 필드 없음 | 드래그 이동은 별도 API 옵션이 아닌 Window 동작 |
 | HeaderFontSize | 미제공 | N | `null` | 설정 시 10~40 범위로 보정. null이면 XAML 기본 |
 | BodyFontSize | 미제공 | N | `null` | TextStyle이라는 통합 필드는 없음 |
 | FooterFontSize | 미제공 | N | `null` | Footer 글자 크기 |
 | SizeMode | FIXED만 사용 | N | `FIXED` | 코드는 FIXED/RATIO/FULLSCREEN/AUTO 지원 |
 | DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 코드는 SEQUENTIAL/SIMULTANEOUS 지원 |
-| Position | 기본값 사용 | N | `CENTER` | `content.popupPosition`. 최소 버전은 CENTER 고정 |
+| Position | 기본값 사용 | N | `CENTER` | 최상위 `popupPosition`. 최소 버전은 CENTER 고정 |
 
 > FontSize 계열은 미지정 시 각 XAML/콘텐츠 기본값을 유지하고, 값이 지정되면 10~40 범위로 보정(Clamp)하여 적용한다.
 

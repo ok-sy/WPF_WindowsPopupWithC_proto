@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.PopupFooterAction;
+import server.domain.popup.PopupWindowOptions;
 import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.AdminPopupTargetCondition;
@@ -847,6 +848,7 @@ public class PopupService {
             throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
         }
         validateFontSizeOptions(popup.content());
+        validateWindowOptions(popup.content());
         validateActionOptions(popup);
         validateRichText(popup);
         if ("IMAGE".equals(normalizeUpper(popup.popupType()))) {
@@ -956,6 +958,24 @@ public class PopupService {
         if (!Double.isFinite(value) || value <= 0) {
             throw new IllegalArgumentException(fieldName + "는 0보다 커야 합니다.");
         }
+    }
+
+    /**
+     * [설계 31] PopupWindow 공통 UI 옵션(Overlay·위치) 입력 방어. 값이 없으면 통과(WPF 응답 시 기본값).
+     * opacity 범위(0~1)는 저장 시 서버가 검증하고, WPF는 받은 값을 한 번 더 0~1로 보정한다.
+     */
+    static void validateWindowOptions(Map<String, Object> content) {
+        if (content == null) return;
+        Object overlay = content.get(PopupWindowOptions.USE_OVERLAY_KEY);
+        if (overlay != null && !(overlay instanceof Boolean))
+            throw new IllegalArgumentException("배경 Overlay 사용(useBackgroundOverlay)은 boolean이어야 합니다.");
+        Object opacity = content.get(PopupWindowOptions.OVERLAY_OPACITY_KEY);
+        if (opacity != null && !(opacity instanceof Number number
+                && Double.isFinite(number.doubleValue()) && number.doubleValue() >= 0 && number.doubleValue() <= 1))
+            throw new IllegalArgumentException("배경 불투명도(backgroundOverlayOpacity)는 0~1 사이 숫자여야 합니다.");
+        Object position = content.get(PopupWindowOptions.POSITION_KEY);
+        if (position != null && !(position instanceof String text && PopupWindowOptions.POSITIONS.contains(text)))
+            throw new IllegalArgumentException("팝업 위치(popupPosition)는 CENTER, TOP_LEFT 등 9개 값 중 하나여야 합니다.");
     }
 
     /** [설계 14 §5.7] 관리자 폰트 크기 입력 범위. WPF PopupOptions.FontSizeMin/Max·웹 입력 범위와 같다. */

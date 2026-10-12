@@ -5,6 +5,7 @@ import server.domain.popup.PopupFooterAction;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
+import server.domain.popup.PopupWindowOptions;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,9 @@ import java.util.Map;
  *   <li>[설계 30] Footer 동작은 content가 아니라 최상위 {@code footerAction}(CLOSE / LINK_AND_CLOSE / SUBMIT)과
  *       {@code footerLinkUrl}(LINK_AND_CLOSE일 때만)로 내려준다. SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다.
  *       content에서는 두 키를 뺀다({@link PopupFooterAction}).</li>
+ *   <li>[설계 31] PopupWindow 공통 UI 옵션(useBackgroundOverlay·backgroundOverlayOpacity·popupPosition·
+ *       header/body/footerFontSize)도 content가 아니라 최상위로 내려준다. Overlay·위치는 기본값을 채워 항상 보내고
+ *       폰트 크기는 설정된 경우만 보낸다. content에서는 해당 키를 뺀다({@link PopupWindowOptions}).</li>
  *   <li>문항은 최상위 {@code questions}에만 둔다. [설계 18 L-3] content에 문항·통과 점수·완료 비율 등 파생 키를
  *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
  * </ul>
@@ -54,6 +58,12 @@ public record WpfPopupItem(
         boolean showFooter,
         String footerAction,
         String footerLinkUrl,
+        boolean useBackgroundOverlay,
+        double backgroundOverlayOpacity,
+        String popupPosition,
+        Double headerFontSize,
+        Double bodyFontSize,
+        Double footerFontSize,
         boolean showDoNotShowAgain,
         Integer hideDays,
         boolean allowCloseBeforeComplete,
@@ -74,12 +84,20 @@ public record WpfPopupItem(
         String footerLinkUrl = PopupFooterAction.effectiveLink(dto.popupType(), content);
         content.remove(PopupFooterAction.ACTION_KEY);
         content.remove(PopupFooterAction.LINK_KEY);
+        boolean useOverlay = PopupWindowOptions.useBackgroundOverlay(content);
+        double overlayOpacity = PopupWindowOptions.backgroundOverlayOpacity(content);
+        String position = PopupWindowOptions.popupPosition(content);
+        Double headerFontSize = PopupWindowOptions.fontSize(content, PopupWindowOptions.HEADER_FONT_SIZE_KEY);
+        Double bodyFontSize = PopupWindowOptions.fontSize(content, PopupWindowOptions.BODY_FONT_SIZE_KEY);
+        Double footerFontSize = PopupWindowOptions.fontSize(content, PopupWindowOptions.FOOTER_FONT_SIZE_KEY);
+        PopupWindowOptions.KEYS.forEach(content::remove);
         return new WpfPopupItem(
                 dto.popupId(), dto.popupType(), dto.title(),
                 dto.displayMode(), dto.displayOrder(), dto.sizeMode(),
                 dto.width(), dto.height(), dto.widthRatio(), dto.heightRatio(),
                 dto.minimumWidth(), dto.minimumHeight(), dto.maximumWidth(), dto.maximumHeight(),
                 dto.showHeader(), dto.showCloseButton(), dto.showFooter(), footerAction, footerLinkUrl,
+                useOverlay, overlayOpacity, position, headerFontSize, bodyFontSize, footerFontSize,
                 dto.showDoNotShowAgain(),
                 dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,

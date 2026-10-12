@@ -61,29 +61,21 @@ namespace Popup.Factories
                 ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
 
                 /*
-                 * Overlay 옵션은 popup_content.content_options_json 안에 저장한다.
-                 * 서버가 content JSON을 그대로 WPF에 전달하므로 별도 DB 컬럼이나
-                 * Java DTO 계약을 늘리지 않고도 관리자 설정을 전달할 수 있다.
-                 * 선택 필드이며, 미지정 시 기본값 true / 0.45를 사용한다.
-                 * [설계 18 §4.2 유지 항목] 구버전 데이터 분기가 아니라 선택 필드 기본값이므로 유지하고 주석만 정정했다.
+                 * [설계 31] PopupWindow 공통 UI 옵션은 popups[] 최상위 값을 쓴다(content 키는 읽지 않는다).
+                 * 관리자 설정은 서버 DB의 CONTENT_OPTIONS에 저장되지만 서버가 WPF 응답 조립 시 최상위로 승격한다.
+                 * Overlay 불투명도는 서버가 저장 시 0~1을 검증하고 WPF도 0~1로 한 번 더 보정한다.
+                 * 폰트 크기 null → PopupWindow·View가 XAML 기본 크기 유지. 범위 보정(10~40)은 PopupWindow.ApplyFontSizes()가 한다.
                  */
-                UseBackgroundOverlay = GetContentBoolean(
-                    popupDto.Content, "useBackgroundOverlay", true),
-                BackgroundOverlayOpacity = GetContentDouble(
-                    popupDto.Content, "backgroundOverlayOpacity", 0.45),
-
-                /*
-                 * [설계 14 §5] Header/본문/Footer 폰트 크기. Overlay 옵션과 같이 content(CONTENT_OPTIONS)로 전달된다.
-                 * 선택 필드이며, 미지정 시 null → PopupWindow·View가 XAML 기본 크기를 유지한다(미지정 시 기본값).
-                 * 범위 보정(10~40)은 PopupWindow.ApplyFontSizes()가 한다.
-                 */
-                HeaderFontSize = GetContentNullableDouble(popupDto.Content, "headerFontSize"),
-                BodyFontSize = GetContentNullableDouble(popupDto.Content, "bodyFontSize"),
-                FooterFontSize = GetContentNullableDouble(popupDto.Content, "footerFontSize"),
+                UseBackgroundOverlay = popupDto.UseBackgroundOverlay,
+                BackgroundOverlayOpacity = double.IsFinite(popupDto.BackgroundOverlayOpacity)
+                    ? Math.Clamp(popupDto.BackgroundOverlayOpacity, 0.0, 1.0) : 0.45,
+                HeaderFontSize = popupDto.HeaderFontSize,
+                BodyFontSize = popupDto.BodyFontSize,
+                FooterFontSize = popupDto.FooterFontSize,
 
                 CompletionRatio = popupDto.CompletionRatio ?? 1.0,
                 AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
-                Position = GetPopupPosition(popupDto.Content),
+                Position = ConvertPopupPosition(popupDto.PopupPosition),
                 SizeMode = content is ImagePopupView && !string.Equals(popupDto.SizeMode, "FULLSCREEN", StringComparison.OrdinalIgnoreCase)
                     ? PopupSizeMode.Fixed : ConvertPopupSizeMode(popupDto.SizeMode),
                 Width = content is ImagePopupView imageWidthView ? imageWidthView.RequestedWindowWidth ?? 560 : popupDto.Width,
@@ -109,12 +101,9 @@ namespace Popup.Factories
                 ? PopupFooterAction.LinkAndClose : PopupFooterAction.Close;
         }
 
-        private static PopupPosition GetPopupPosition(JsonElement content)
-        {
-            if (content.ValueKind == JsonValueKind.Object
-                && content.TryGetProperty("popupPosition", out JsonElement value)
-                && value.ValueKind == JsonValueKind.String)
-                return value.GetString()?.Trim().ToUpperInvariant() switch
+        /* [설계 31] 최상위 popupPosition 9개 값. 없거나 미지원 값이면 CENTER. */
+        public static PopupPosition ConvertPopupPosition(string? popupPosition) =>
+                popupPosition?.Trim().ToUpperInvariant() switch
                 {
                     "CENTER" => PopupPosition.Center,
                     "TOP_LEFT" => PopupPosition.TopLeft,
@@ -127,8 +116,6 @@ namespace Popup.Factories
                     "BOTTOM_RIGHT" => PopupPosition.BottomRight,
                     _ => PopupPosition.Center
                 };
-            return PopupPosition.Center;
-        }
 
         private static bool GetContentBoolean(JsonElement content, string propertyName, bool defaultValue)
         {
@@ -139,31 +126,6 @@ namespace Popup.Factories
                 return value.GetBoolean();
             }
             return defaultValue;
-        }
-
-        private static double GetContentDouble(JsonElement content, string propertyName, double defaultValue)
-        {
-            if (content.ValueKind == JsonValueKind.Object
-                && content.TryGetProperty(propertyName, out JsonElement value)
-                && value.ValueKind == JsonValueKind.Number
-                && value.TryGetDouble(out double result))
-            {
-                return Math.Clamp(result, 0.0, 1.0);
-            }
-            return defaultValue;
-        }
-
-        /// <summary>content의 숫자 값을 그대로 읽는다(범위 보정 없음). 없거나 숫자가 아니면 null.</summary>
-        private static double? GetContentNullableDouble(JsonElement content, string propertyName)
-        {
-            if (content.ValueKind == JsonValueKind.Object
-                && content.TryGetProperty(propertyName, out JsonElement value)
-                && value.ValueKind == JsonValueKind.Number
-                && value.TryGetDouble(out double result))
-            {
-                return result;
-            }
-            return null;
         }
 
         private static TextPopupView CreateTextPopupView(JsonElement contentJson)

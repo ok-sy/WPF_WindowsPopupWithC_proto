@@ -56,6 +56,20 @@ class PopupActionOptionsTest {
         assertFalse(close.containsKey("footerAction") || close.containsKey("footerLinkUrl"), "CLOSE는 기본값이라 저장하지 않는다");
     }
 
+    /** [설계 31] Overlay·위치 저장 검증. 값이 없으면 통과하고 WPF 응답에서 기본값을 쓴다. */
+    @Test void windowOptionsValidation() {
+        assertDoesNotThrow(() -> PopupService.validateWindowOptions(Map.of()));
+        assertDoesNotThrow(() -> PopupService.validateWindowOptions(Map.of("useBackgroundOverlay", false,
+                "backgroundOverlayOpacity", 0, "popupPosition", "BOTTOM_RIGHT")));
+        assertDoesNotThrow(() -> PopupService.validateWindowOptions(Map.of("backgroundOverlayOpacity", 1.0)));
+        for (Map<String, Object> bad : java.util.List.<Map<String, Object>>of(
+                Map.of("useBackgroundOverlay", "true"), Map.of("backgroundOverlayOpacity", 1.5),
+                Map.of("backgroundOverlayOpacity", -0.1), Map.of("backgroundOverlayOpacity", "0.5"),
+                Map.of("popupPosition", "MIDDLE"), Map.of("popupPosition", "center"))) {
+            assertThrows(IllegalArgumentException.class, () -> PopupService.validateWindowOptions(bad), bad.toString());
+        }
+    }
+
     @Test void combinedQuizRequiresTrackableVideoAndQuizType() {
         assertDoesNotThrow(() -> PopupService.validateActionOptions(popup("QUIZ",
                 Map.of("videoEnabled", true, "videoUrl", "https://example.com/training.mp4"))));

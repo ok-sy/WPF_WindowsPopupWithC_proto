@@ -99,7 +99,12 @@ class WpfPopupServiceTest {
         assertEquals(10.0, item.passingScore(), "[설계 12] QUIZ는 통과 점수를 최상위로 내려줌");
         assertFalse(item.content().containsKey("validateRequiredQuestions"));
         assertEquals("보안", item.content().get("surveyTitle"));
-        assertEquals(true, item.content().get("useBackgroundOverlay"));
+        // [설계 31] PopupWindow 공통 UI 옵션은 content에서 빼 최상위로 내려준다(없는 값은 기본값).
+        assertTrue(item.useBackgroundOverlay());
+        assertFalse(item.content().containsKey("useBackgroundOverlay"));
+        assertEquals(0.45, item.backgroundOverlayOpacity());
+        assertEquals("CENTER", item.popupPosition());
+        assertNull(item.headerFontSize());
         // 완료 제외 플래그로 호출됐는지 (기준 2)
         verify(popupMapper).selectAvailablePopups("E1001", true);
         verify(popupMapper, never()).selectAvailablePopups("E1001", false);

@@ -343,29 +343,29 @@ WPF:
 
 ## 9. 구현 TODO
 
-- [ ] 31-01 `useBackgroundOverlay`를 popups[] 최상위로 이동
-- [ ] 31-02 `backgroundOverlayOpacity`를 popups[] 최상위로 이동
-- [ ] 31-03 `popupPosition`을 popups[] 최상위로 이동
-- [ ] 31-04 `headerFontSize`를 popups[] 최상위로 이동
-- [ ] 31-05 `bodyFontSize`를 popups[] 최상위로 이동
-- [ ] 31-06 `footerFontSize`를 popups[] 최상위로 이동
-- [ ] 31-07 C# `PopupResponseDto` 공통 UI 속성 추가
-- [ ] 31-08 C# `PopupFactory`의 content 공통 옵션 lookup 제거
-- [ ] 31-09 Overlay 기본값 true / opacity 0.45 회귀 검증
-- [ ] 31-10 opacity 0~1 범위 처리 위치를 서버/WPF 중 어디에 둘지 확정
-- [ ] 31-11 popupPosition 9개 값 및 미지원 값 처리 회귀 검증
-- [ ] 31-12 FontSize 10~40 보정 정책 유지 확인
-- [ ] 31-13 Java `WpfPopupItem` 최상위 공통 UI 필드 추가
-- [ ] 31-14 서버 응답 조립 시 content_options_json에서 공통 옵션 추출
-- [ ] 31-15 신규 WPF 전환 기간 content fallback 필요 여부 결정
-- [ ] 31-16 `minimumSupportedVersion` 상향 시점 결정
-- [ ] 31-17 content 내부 legacy 공통 UI key 제거
-- [ ] 31-18 `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
-- [ ] 31-19 최소/전체 기능 정의서 수정
-- [ ] 31-20 유형별 Sample JSON 수정
-- [ ] 31-21 Excel 인터페이스 정의서 반영
-- [ ] 31-22 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증
-- [ ] 31-23 Overlay·위치·폰트 크기 실제 WPF 화면 수동 검증
+- [x] 31-01 `useBackgroundOverlay`를 popups[] 최상위로 이동
+- [x] 31-02 `backgroundOverlayOpacity`를 popups[] 최상위로 이동
+- [x] 31-03 `popupPosition`을 popups[] 최상위로 이동
+- [x] 31-04 `headerFontSize`를 popups[] 최상위로 이동
+- [x] 31-05 `bodyFontSize`를 popups[] 최상위로 이동
+- [x] 31-06 `footerFontSize`를 popups[] 최상위로 이동
+- [x] 31-07 C# `PopupResponseDto` 공통 UI 속성 추가
+- [x] 31-08 C# `PopupFactory`의 content 공통 옵션 lookup 제거 — useBackgroundOverlay·opacity·position·폰트 lookup 제거(videoEnabled는 QUIZ content 전용이라 유지)
+- [x] 31-09 Overlay 기본값 true / opacity 0.45 회귀 검증 — 로컬 행동 검증(생략 시 true / 0.45)
+- [x] 31-10 opacity 0~1 범위 처리 위치를 서버/WPF 중 어디에 둘지 확정 — 서버 저장 시 0~1 검증(범위 밖 거부), 서버 응답 0~1 보정, WPF도 0~1 보정 유지로 확정
+- [x] 31-11 popupPosition 9개 값 및 미지원 값 처리 회귀 검증 — 9개 값 변환·미지원 값 CENTER(서버 응답·WPF 모두)
+- [x] 31-12 FontSize 10~40 보정 정책 유지 확인 — PopupWindow 10~40 보정 유지, 서버 저장 검증 유지
+- [x] 31-13 Java `WpfPopupItem` 최상위 공통 UI 필드 추가
+- [x] 31-14 서버 응답 조립 시 content_options_json에서 공통 옵션 추출 — WpfPopupItem.from에서 승격, content에서 6개 키 제거(Overlay·위치는 기본값을 채워 항상 전송)
+- [x] 31-15 신규 WPF 전환 기간 content fallback 필요 여부 결정 — 운영 배포 버전이 없어 fallback 없이 즉시 전환
+- [x] 31-16 `minimumSupportedVersion` 상향 시점 결정 — 운영 배포 버전이 없어 상향 불필요로 결정(미변경)
+- [x] 31-17 content 내부 legacy 공통 UI key 제거 — WPF 응답 content에서 제거, WPF는 content 키를 읽지 않음. 관리자 API·DB(CONTENT_OPTIONS) 저장 위치 유지
+- [x] 31-18 `POPUP_INTERFACE_SPEC.md` 공통 필드표 수정
+- [x] 31-19 최소/전체 기능 정의서 수정
+- [x] 31-20 유형별 Sample JSON 수정 (api/examples, docs/interfaces/examples, 계약서 §8·§15)
+- [ ] 31-21 Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음. 미반영
+- [ ] 31-22 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 전체 회귀 검증 — 단위·행동 검증 통과, 실제 서버 HTTP·Windows 화면 미확인
+- [ ] 31-23 Overlay·위치·폰트 크기 실제 WPF 화면 수동 검증 — 미실행
 
 ---
 
