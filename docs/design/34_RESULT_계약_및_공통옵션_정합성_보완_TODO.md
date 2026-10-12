@@ -186,9 +186,9 @@ SURVEY/QUIZ 제출 후 링크 열기는 이번 계약에 포함하지 않는다.
 - [x] 34-36 WPF에서 SURVEY/QUIZ의 제출 경로 보장. — ConvertFooterAction이 SURVEY/QUIZ를 항상 Submit
 - [x] 34-37 제출 경로의 TryOpenSubmissionLink 호출 제거 또는 비실행 보장. SUBMIT에서 footerLinkUrl 미사용. — TryOpenSubmissionLink 삭제
 - [x] 34-38 LINK_AND_CLOSE는 HTTP(S) 절대 URL 필수. 주소 오류·브라우저 실행 실패 시 창 유지. — URL 검증·실패 시 창 유지 기존 동작 유지
-- [ ] 34-39 VIDEO 완료 전 닫기 금지가 CLOSE/LINK_AND_CLOSE에서 우회되지 않는지 검증. — 코드 확인: CloseButton_Click이 영상 완료 검사 뒤에 바로가기를 실행. 모달 안내창 때문에 자동 검증 미추가, 실제 화면 확인 필요
+- [x] 34-39 VIDEO 완료 전 닫기 금지가 CLOSE/LINK_AND_CLOSE에서 우회되지 않는지 검증. — 자동 검증(BehaviorTests CheckModalFlows34): 완료 전 닫기 금지 VIDEO에서 CLOSE·LINK_AND_CLOSE 모두 '필수 영상 시청' 안내만 뜨고 창 유지, 바로가기 미실행. 모달은 테스트가 창 제목으로 찾아 닫음
 - [x] 34-40 showFooter=false인 SURVEY/QUIZ 내부 제출 경로, showFooterButton=false에서도 제출 가능함을 검증. — 기존 CheckFooterSubmission(showFooter·showFooterButton 조합별 제출 버튼 1개 유지)
-- [ ] 34-41 QUIZ 미통과 시 창 유지·답안 수정·재제출, VIDEO+QUIZ 시청 조건 유지 검증. — 로컬 채점 미통과(75점) 검증은 있으나 창 유지·재제출의 화면 흐름 자동 검증은 없음(안내창 모달). 실제 화면 확인 필요
+- [x] 34-41 QUIZ 미통과 시 창 유지·답안 수정·재제출, VIDEO+QUIZ 시청 조건 유지 검증. — 자동 검증(CheckModalFlows34): 오답 제출 시 '다시 도전해 주세요' 안내·창 유지·결과 미저장, 답안 수정 후 재제출 시 '평가를 통과했어요'·창 닫힘·통과 SUBMITTED 1건 저장. VIDEO+QUIZ 시청 조건은 기존 CheckFooterSubmission
 
 ## 7. 문서·검증·완료 기준
 
