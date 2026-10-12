@@ -706,7 +706,6 @@
             r.CLIENT_REQUEST_ID    = #{clientRequestId},
             r.QUESTION_TEMPLATE_ID = #{questionTemplateId},
             r.RESPONSE_STATUS      = 'SUBMITTED',
-            r.RESPONSE_STARTED_AT  = #{responseStartedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
             r.SUBMITTED_AT         = <include refid="nowKst"/>,
             r.RECEIVED_AT          = <include refid="nowKst"/>,
             r.TOTAL_SCORE          = #{totalScore},
@@ -716,14 +715,13 @@
         WHEN NOT MATCHED THEN INSERT
         (
             RESPONSE_ID, CLIENT_REQUEST_ID, POPUP_ID, EMPLOYEE_NO, QUESTION_TEMPLATE_ID,
-            RESPONSE_STATUS, RESPONSE_STARTED_AT, SUBMITTED_AT, RECEIVED_AT,
+            RESPONSE_STATUS, SUBMITTED_AT, RECEIVED_AT,
             TOTAL_SCORE, PASSED_YN, CREATED_BY, UPDATED_BY
         )
         VALUES
         (
             ${popupSchemaPrefix}SEQ_POPUP_RESPONSE.NEXTVAL, #{clientRequestId}, src.POPUP_ID, src.EMPLOYEE_NO, #{questionTemplateId},
-            'SUBMITTED', #{responseStartedAt, typeHandler=server.repo.core.mapper.popup.KstTimestampTypeHandler},
-            <include refid="nowKst"/>, <include refid="nowKst"/>,
+            'SUBMITTED', <include refid="nowKst"/>, <include refid="nowKst"/>,
             #{totalScore}, #{passedYn}, #{userId}, #{userId}
         )
     </insert>

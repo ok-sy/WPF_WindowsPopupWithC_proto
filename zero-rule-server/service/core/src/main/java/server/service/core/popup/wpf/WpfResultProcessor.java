@@ -123,7 +123,7 @@ public class WpfResultProcessor {
             if (!progress.completed()) throw new IllegalArgumentException("영상 시청 완료 비율을 충족해야 퀴즈를 제출할 수 있습니다.");
         }
         PopupSubmitResponseDto submitted = popupService.submitResponse(
-                item.popupId(), item.resultId(), employeeNo, item.responseStartedAt(), item.answers());
+                item.popupId(), item.resultId(), employeeNo, item.answers());
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
 
         boolean quiz = "QUIZ".equalsIgnoreCase(popupTypeOf(employeeNo, item.popupId()));

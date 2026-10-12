@@ -67,8 +67,8 @@ namespace Popup.Dtos
         /// <summary>HIDDEN일 때 숨김 일수(1~3650).</summary>
         public int? HideDays { get; set; }
 
-        /// <summary>SUBMITTED일 때 응답 시작 시각(선택).</summary>
-        public DateTimeOffset? ResponseStartedAt { get; set; }
+        /* [설계 32] 응답 시작 시각(ResponseStartedAt)은 DisplayedAt을 그대로 복사하던 중복 값이라 삭제했다.
+           응답·처리 소요 시간은 ClosedAt - DisplayedAt으로 계산한다. */
 
         /// <summary>SUBMITTED일 때 답안(문항별 questionId·optionIds·textAnswer).</summary>
         public List<PopupSubmitAnswerRequestDto>? Answers { get; set; }

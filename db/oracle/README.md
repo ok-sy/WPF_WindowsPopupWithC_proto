@@ -160,3 +160,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 로컬 XE·원격 개발 DB 모두 2026-09-28 실행 완료(의미 있는 값 0행, 잔여 컬럼 0). 실행 전 원격 데이터는 작업 로그용으로 스풀 백업했다. 실행 후 두 DB에서 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @09_drop_unused_columns_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @09_drop_unused_columns_oracle.sql ""`
+
+## 응답 시작 시각 컬럼 삭제 (2026-10-12, 설계 32)
+
+`12_drop_response_started_at_oracle.sql <스키마접두어>` — **되돌릴 수 없는 컬럼 삭제.** `POPUP_RESPONSE.RESPONSE_STARTED_AT`만 삭제한다.
+
+- 배경: WPF가 `responseStartedAt`에 `displayedAt`을 복사해 보내던 중복 값이라 결과 요청·서버 저장에서 제거했다. 읽는 곳이 없다. `01_popup_schema_oracle.sql`에서도 컬럼을 뺐다.
+- 순서: 설계 32 서버 배포 후 실행. 새 서버는 이 컬럼을 쓰지 않아 실행 전후 모두 동작하며, 실행 후에는 이전 서버의 응답 저장이 실패한다.
+- 적용 현황: 로컬 XE·원격 개발 DB 모두 미실행.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @12_drop_response_started_at_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @12_drop_response_started_at_oracle.sql ""`

@@ -86,7 +86,6 @@ namespace Popup.Services
                 ResultType = WpfResultType.Submitted,
                 DisplayedAt = _displayedAt,
                 ClosedAt = submittedAt,
-                ResponseStartedAt = _displayedAt,
                 Answers = requestAnswers,
                 Score = submission.Score,
                 Passed = submission.Passed,

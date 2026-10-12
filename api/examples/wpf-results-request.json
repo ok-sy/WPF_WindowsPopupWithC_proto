@@ -17,7 +17,6 @@
       "resultType": "SUBMITTED",
       "displayedAt": "2026-09-19T09:00:41+09:00",
       "closedAt": "2026-09-19T09:03:10+09:00",
-      "responseStartedAt": "2026-09-19T09:00:41+09:00",
       "answers": [
         { "questionId": 1, "optionIds": [1] }
       ],
@@ -31,7 +30,6 @@
       "resultType": "SUBMITTED",
       "displayedAt": "2026-09-19T09:03:11+09:00",
       "closedAt": "2026-09-19T09:05:02+09:00",
-      "responseStartedAt": "2026-09-19T09:03:11+09:00",
       "answers": [
         { "questionId": 2, "optionIds": [3, 4] },
         { "questionId": 3, "textAnswer": "회의실 예약 시스템 개선 요청" }

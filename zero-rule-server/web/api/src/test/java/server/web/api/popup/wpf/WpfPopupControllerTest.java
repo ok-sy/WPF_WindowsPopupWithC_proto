@@ -130,6 +130,7 @@ class WpfPopupControllerTest {
                    {"resultId":"r1","popupId":"P1","resultType":"HIDDEN",
                     "displayedAt":"2026-09-19T09:00:05+09:00","closedAt":"2026-09-19T09:00:40+09:00","hideDays":7},
                    {"resultId":"r2","popupId":"Q1","resultType":"SUBMITTED","userId":"HACKER",
+                    "responseStartedAt":"2026-09-19T09:00:06+09:00",
                     "score":80,"passed":true,
                     "answers":[{"questionId":1,"optionIds":[10]},{"questionId":2,"textAnswer":"ok"}]}
                  ]}

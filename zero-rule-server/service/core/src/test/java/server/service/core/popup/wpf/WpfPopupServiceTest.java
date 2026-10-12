@@ -130,10 +130,10 @@ class WpfPopupServiceTest {
     }
 
     @Test void resultsAreIsolatedPerItemAndRejectionCodesMapped() {
-        var ok = new WpfResultCommand("r-ok", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null, null);
-        var notEligible = new WpfResultCommand("r-ne", "P2", WpfResultType.SUBMITTED, null, null, null, null, null, null, null, null);
-        var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null, null, null);
-        var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null, null, null);
+        var ok = new WpfResultCommand("r-ok", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null);
+        var notEligible = new WpfResultCommand("r-ne", "P2", WpfResultType.SUBMITTED, null, null, null, null, null, null, null);
+        var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null, null);
+        var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null, null);
 
         when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok).build());
         when(processor.processOne("E1001", notEligible))

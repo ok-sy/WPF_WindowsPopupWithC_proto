@@ -157,14 +157,12 @@ public interface PopupMapper {
     /** PopupService 호출용. 저장된 응답의 RESPONSE_ID를 반환한다. */
     default Long upsertPopupResponse(
             String clientRequestId, String userId, String popupId,
-            Long questionTemplateId, OffsetDateTime responseStartedAt,
-            BigDecimal totalScore, String passedYn) {
+            Long questionTemplateId, BigDecimal totalScore, String passedYn) {
         Map<String, Object> params = new HashMap<>();
         params.put("clientRequestId", clientRequestId);
         params.put("userId", userId);
         params.put("popupId", popupId);
         params.put("questionTemplateId", questionTemplateId);
-        params.put("responseStartedAt", responseStartedAt);
         params.put("totalScore", totalScore);
         params.put("passedYn", passedYn);
         upsertPopupResponse(params);

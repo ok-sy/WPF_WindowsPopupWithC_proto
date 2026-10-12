@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-02 — TODO32 결과 요청 responseStartedAt 제거
+
+- 이유: 설계 32 반영. WPF가 SUBMITTED 결과의 responseStartedAt에 displayedAt을 그대로 복사해 보내 표시 시각과 의미가 중복. 응답·처리 소요 시간은 closedAt - displayedAt으로 계산 가능.
+- 정합성 확인: 설계 32의 현재 상태 기술(`ResponseStartedAt = _displayedAt`)은 코드와 일치. 서버는 값을 POPUP_RESPONSE.RESPONSE_STARTED_AT에 저장만 하고 읽는 곳(통계·관리자 조회)은 없음.
+- 변경: C# WpfResultItemDto.ResponseStartedAt과 PopupResultBuilder.BuildSubmitted 할당 삭제. 서버 WpfResultRequest.Item·WpfResultCommand에서 필드 제거(구 클라이언트가 보내도 ignoreUnknown으로 무시), PopupService.submitResponse·PopupMapper.upsertPopupResponse 인자와 MERGE의 RESPONSE_STARTED_AT 갱신·삽입 제거. DB 컬럼은 삭제하기로 하고 db/oracle/12_drop_response_started_at_oracle.sql(멱등, 서버 배포 후 실행) 추가, 01 스키마에서 컬럼 제거, db/oracle/README 절 추가. 결과 요청 예제 JSON·계약서 10.4/10.5·설계 32 갱신. 전체/최소 정의서에는 해당 필드 기술이 없어 변경 없음. 설계 03·07(당시 설계 기록)과 ERD 스냅샷(ERD/model, 2026-09-28)은 변경하지 않음.
+- 주요 파일: popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/PopupResultBuilder.cs, zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, zero-rule-server/domain/.../popup/wpf/WpfResultCommand.java, zero-rule-server/service/core/.../popup/(PopupService.java, wpf/WpfResultProcessor.java), zero-rule-server/repo/core/.../popup/(PopupMapper.java, PopupMapper.xml), 서버 테스트(WpfResultProcessorTest·WpfPopupServiceTest·WpfPopupDatabaseTest·PopupQuestionDatabaseTest·WpfPopupControllerTest), db/oracle/(01_popup_schema_oracle.sql, 12_drop_response_started_at_oracle.sql, README.md), api/examples/wpf-results-request.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/32_RESULT_responseStartedAt_제거_TODO.md.
+- 검증: :service:core popup·:web:api popup 테스트 통과(94건, DB 연동 2건 기존대로 skip), 요청에 responseStartedAt이 있어도 정상 변환되는지 HTTP 테스트에 추가. :app 컴파일 통과. WPF 행동 검증에 생성 JSON 미포함·큐에 남은 구 형식 항목 역직렬화 검증을 추가해 856건 통과, 재전송 큐 검증(RecoveryTests) 122건 통과. 12번 SQL·DB 연동 테스트는 로컬·원격 개발 DB 모두 미실행. Excel 정의서 미반영(저장소에 없음).
+- 상태: TODO32 커밋에 포함. 미푸시.
+
 ## 2026-10-12-01 — TODO29 WPF 목록 API 응답 계약 정리
 
 - 이유: 설계 29 반영. 노출 판정은 서버가 끝낸 최종 목록만 내려주므로 WPF가 쓰지 않는 서버 내부 판정 값을 목록 응답에서 제거하고, Footer 버튼 표시 이름의 서버·C# 불일치(showCloseButton ↔ showFooterButton)를 해소. 운영 배포 버전이 없어 구버전 호환 단계 없이 코드를 정규화.

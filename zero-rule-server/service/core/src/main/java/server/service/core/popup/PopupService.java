@@ -383,7 +383,6 @@ public class PopupService {
             String popupId,
             String clientRequestId,
             String userId,
-            OffsetDateTime responseStartedAt,
             List<PopupSubmitAnswer> answers) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
@@ -479,8 +478,7 @@ public class PopupService {
 
         Long responseId = popupMapper.upsertPopupResponse(
                 normalizedRequestId, normalizedUserId, normalizedPopupId,
-                context.questionTemplateId(), responseStartedAt,
-                totalScore, passedYn);
+                context.questionTemplateId(), totalScore, passedYn);
         if (responseId == null) {
             throw new IllegalStateException("설문 응답 저장에 실패했습니다.");
         }

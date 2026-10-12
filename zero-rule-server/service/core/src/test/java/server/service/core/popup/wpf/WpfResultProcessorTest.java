@@ -52,7 +52,7 @@ class WpfResultProcessorTest {
 
     private WpfResultCommand item(WpfResultType type, Integer hideDays, List<PopupSubmitAnswer> answers,
                                   WpfVideoProgress video) {
-        return new WpfResultCommand("r-1", "P1", type, DISPLAYED, CLOSED, hideDays, null, answers, video, null, null);
+        return new WpfResultCommand("r-1", "P1", type, DISPLAYED, CLOSED, hideDays, answers, video, null, null);
     }
 
     @Test void duplicateResultIdIsNotProcessed() {
@@ -91,7 +91,7 @@ class WpfResultProcessorTest {
 
     @Test void submittedQuizReturnsScoreAndSurveyDoesNot() {
         var answers = List.of(new PopupSubmitAnswer(1L, null, List.of(10L)));
-        when(popupService.submitResponse(eq("P1"), eq("r-1"), eq("E1001"), any(), eq(answers)))
+        when(popupService.submitResponse(eq("P1"), eq("r-1"), eq("E1001"), eq(answers)))
                 .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
         when(wpfMapper.selectStatus("E1001", "P1"))
                 .thenReturn(new WpfUserPopupStatus("COMPLETED", true, CLOSED, null));
@@ -111,7 +111,7 @@ class WpfResultProcessorTest {
         assertNull(survey.totalScore(), "SURVEY는 채점 결과를 내려주지 않는다");
         assertNull(survey.passed());
         // 제출은 resultId를 clientRequestId로 전달한다 (POPUP_RESPONSE.CLIENT_REQUEST_ID)
-        verify(popupService, times(2)).submitResponse(eq("P1"), eq("r-1"), eq("E1001"), any(), eq(answers));
+        verify(popupService, times(2)).submitResponse(eq("P1"), eq("r-1"), eq("E1001"), eq(answers));
     }
 
     @Test void videoDelegatesToExistingSaveVideoProgress() {
@@ -140,20 +140,20 @@ class WpfResultProcessorTest {
                 .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.1, 0.8, false, null));
         assertThrows(IllegalArgumentException.class, () -> processor.processOne("E1001",
                 item(WpfResultType.SUBMITTED, null, answers, video)));
-        verify(popupService, never()).submitResponse(any(), any(), any(), any(), any());
+        verify(popupService, never()).submitResponse(any(), any(), any(), any());
         verify(wpfMapper, never()).insertReceipt(any(), any(), any(), any(), any(), any());
 
         when(popupService.saveVideoProgress(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.8, 0.8, true, CLOSED));
-        when(popupService.submitResponse(any(), any(), any(), any(), any()))
+        when(popupService.submitResponse(any(), any(), any(), any()))
                 .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
         var result = processor.processOne("E1001", item(WpfResultType.SUBMITTED, null, answers, video));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, result.status());
-        verify(popupService).submitResponse("P1", "r-1", "E1001", null, answers);
+        verify(popupService).submitResponse("P1", "r-1", "E1001", answers);
     }
 
     @Test void businessRejectionPropagatesWithoutReceipt() {
-        when(popupService.submitResponse(any(), any(), any(), any(), any()))
+        when(popupService.submitResponse(any(), any(), any(), any()))
                 .thenThrow(new IllegalArgumentException("현재 사용자에게 제출 가능한 팝업이 아닙니다."));
         assertThrows(IllegalArgumentException.class, () -> processor.processOne("E1001",
                 item(WpfResultType.SUBMITTED, null, List.of(new PopupSubmitAnswer(1L, "x", null)), null)));
