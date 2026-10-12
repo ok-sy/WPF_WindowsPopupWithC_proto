@@ -12,7 +12,7 @@ import java.util.List;
  * 서비스 메서드 인자로 따로 전달한다(요청 본문의 userId를 신뢰하지 않음).</p>
  *
  * <p>[설계 32] 응답 시작 시각(responseStartedAt)은 WPF가 displayedAt을 그대로 복사하던 중복 값이라 제거했다.
- * 응답·처리 소요 시간은 closedAt - displayedAt으로 계산한다.</p>
+ * closedAt - displayedAt은 화면 체류·처리 시간이며 첫 입력부터의 응답 시간은 아니다[설계 34-09].</p>
  *
  * @param resultId          항목 멱등 키(UUID). WPF_RESULT_RECEIPT.RESULT_ID
  * @param popupId           대상 팝업

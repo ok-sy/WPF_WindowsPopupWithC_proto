@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-12 (KST)
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
+- 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
 - 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
 - 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
@@ -781,7 +782,7 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 | displayedAt | string(ISO) | 선택 | `null` 가능 |
 | closedAt | string(ISO) | 선택 | `null` 가능 |
 
-> 응답·처리 소요 시간은 `closedAt - displayedAt`으로 계산한다. 별도 응답 시작 시각(`responseStartedAt`)은 displayedAt과 같은 값이라 제거했다(설계 32). 보내더라도 서버는 무시한다.
+> `closedAt - displayedAt`은 팝업 표시부터 종료·제출까지의 **화면 체류·처리 시간**이며, 첫 입력부터의 실제 응답 시간은 아니다(설계 34-09). 서버는 두 시각을 사용자·팝업 단위 상태(USER_POPUP_STATUS의 표시·닫기 시각)에 최신값으로 반영하므로, 결과 건별 체류 시간 통계가 필요하면 별도 보존 경로를 정해야 한다. 별도 응답 시작 시각(`responseStartedAt`)은 displayedAt과 같은 값이라 제거했다(설계 32). 보내더라도 서버는 무시한다.
 
 ### resultType ENUM
 
@@ -871,7 +872,7 @@ VIDEO_WATCHED
 
 현재 WPF는 통과한 QUIZ만 SUBMITTED 한다.
 
-`score`·`passed`는 QUIZ SUBMITTED에서 필수다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 백엔드가 자체 계산한 점수와 다르면 로그만 남기고 저장 값은 바꾸지 않는다. SURVEY에는 보내지 않는다.
+`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드가 문항별로 계산한 점수·정오답(문항 상세 저장)은 진단값이며, 그 합계가 저장된 최종 점수(WPF `score`)와 다를 수 있다(설계 34-16). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 백엔드가 자체 계산한 점수와 다르면 로그만 남기고 저장 값은 바꾸지 않는다. SURVEY에는 보내지 않는다.
 
 동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 항목에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 
@@ -947,16 +948,13 @@ VIDEO_WATCHED
 
 ### 선택 응답 필드
 
-C# DTO는 다음 값을 받을 수 있으나, 현재 UI는 서버 응답을 기다려 사용자 판정을 바꾸지 않는다. QUIZ 점수·통과 여부(`totalScore`·`passed`)는 요청 값과 의미가 같아 응답에서 제거했다(설계 33).
+C# DTO는 다음 값을 받을 수 있으나, 현재 UI는 서버 응답을 기다려 사용자 판정을 바꾸지 않는다. QUIZ 점수·통과 여부(`totalScore`·`passed`)는 요청 값과 의미가 같아 응답에서 제거했다(설계 33). 숨김 만료 시각(`hiddenUntil`)과 영상 시청·요구 비율(`watchedRatio`·`requiredRatio`)도 WPF가 쓰지 않아 제거했다(설계 34-05). 서버는 숨김 만료·시청 기록·완료 계산을 내부에서 그대로 저장·처리한다.
 
 ```text
 popupStatus
 completed
 completedAt
-hiddenUntil
 responseId
-watchedRatio
-requiredRatio
 ```
 
 ---

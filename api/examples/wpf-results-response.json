@@ -8,7 +8,6 @@
       "resultType": "HIDDEN",
       "status": "ACCEPTED",
       "popupStatus": "HIDDEN",
-      "hiddenUntil": "2026-09-26T09:12:31+09:00",
       "completed": false
     },
     {
@@ -38,8 +37,6 @@
       "resultType": "VIDEO_WATCHED",
       "status": "ACCEPTED",
       "popupStatus": "COMPLETED",
-      "watchedRatio": 0.9842,
-      "requiredRatio": 0.9,
       "completed": true,
       "completedAt": "2026-09-19T09:12:31+09:00"
     },

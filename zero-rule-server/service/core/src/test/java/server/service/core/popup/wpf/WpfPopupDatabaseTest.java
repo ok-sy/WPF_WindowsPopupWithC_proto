@@ -129,8 +129,6 @@ class WpfPopupDatabaseTest {
                 WpfResultItemResponse r0 = response.results().get(0);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r0.status());
                 assertEquals("HIDDEN", r0.popupStatus());
-                assertNotNull(r0.hiddenUntil());
-                assertTrue(r0.hiddenUntil().isAfter(OffsetDateTime.now().plusDays(6)));
 
                 WpfResultItemResponse r1 = response.results().get(1);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r1.status(), r1.message());
@@ -143,8 +141,6 @@ class WpfPopupDatabaseTest {
 
                 WpfResultItemResponse r3 = response.results().get(3);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r3.status(), r3.message());
-                assertEquals(0.9842, r3.watchedRatio());
-                assertEquals(0.9, r3.requiredRatio());
                 assertEquals(Boolean.TRUE, r3.completed());
 
                 assertEquals(WpfResultItemResponse.Status.DUPLICATE, response.results().get(4).status(), "같은 resultId 재전송");

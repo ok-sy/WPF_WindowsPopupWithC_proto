@@ -53,19 +53,52 @@ TODO 29~33의 후속 검토 결과와 확정 요건을 통합한다.
 
 ### 3.2 나머지 항목의 최소화 점검
 
-- [ ] 34-01 C# DTO·사용처, Java DTO·응답 조립, Demo, JSON, 문서·Excel의 RESULT 전체 필드 대조표 작성.
-- [ ] 34-02 응답 receivedAt / popupId / resultType / popupStatus / completed / completedAt / responseId의 실제 사용처와 진단 필요를 항목별 기록.
-- [ ] 34-03 위 항목은 유지 확정 목록으로 간주하지 않는다. 필요한 항목만 남기되, 삭제 여부와 이유를 대조표에 먼저 확정한다.
-- [ ] 34-04 resultId는 WPF 결과 항목의 멱등·응답 대응 키, responseId는 서버 응답 저장 레코드 식별자임을 구분한다. 이름이 비슷하다는 이유만으로 서로 대체하지 않는다.
-- [ ] 34-05 응답의 totalScore / passed / hiddenUntil / watchedRatio / requiredRatio를 C#·Java DTO, 응답 builder, Demo, 예제·문서에서 제거.
-- [ ] 34-06 제거한 응답 필드의 내부 저장·로그·완료/숨김 처리 경로가 유지되는지 확인.
+- [x] 34-01 C# DTO·사용처, Java DTO·응답 조립, Demo, JSON, 문서·Excel의 RESULT 전체 필드 대조표 작성. — §3.4 작성(Excel은 저장소에 없어 제외)
+- [x] 34-02 응답 receivedAt / popupId / resultType / popupStatus / completed / completedAt / responseId의 실제 사용처와 진단 필요를 항목별 기록. — §3.4 응답 표
+- [ ] 34-03 위 항목은 유지 확정 목록으로 간주하지 않는다. 필요한 항목만 남기되, 삭제 여부와 이유를 대조표에 먼저 확정한다. — §3.4에 삭제 후보 표시. receivedAt·popupStatus·completed·completedAt·responseId 삭제 여부 확정 필요
+- [x] 34-04 resultId는 WPF 결과 항목의 멱등·응답 대응 키, responseId는 서버 응답 저장 레코드 식별자임을 구분한다. 이름이 비슷하다는 이유만으로 서로 대체하지 않는다. — §3.4 responseId 행
+- [x] 34-05 응답의 totalScore / passed / hiddenUntil / watchedRatio / requiredRatio를 C#·Java DTO, 응답 builder, Demo, 예제·문서에서 제거. — 2026-10-12 제거(Java 응답·builder·processor, C# DTO, Demo 게이트웨이, 예제·계약서)
+- [x] 34-06 제거한 응답 필드의 내부 저장·로그·완료/숨김 처리 경로가 유지되는지 확인. — hidePopup·saveVideoProgress·markPopupCompleted 경로 유지 확인(WpfResultProcessorTest·DB 연동 테스트)
+
+### 3.4 RESULT 필드 대조표 (2026-10-12 작성, 34-01·02·04)
+
+기준: C# `WpfResultDtos.cs`·`PopupResultBuilder`·`PopupResultQueue`·`DemoPopupGateway`·`DemoWindow`, Java `WpfResultRequest`·`WpfResultCommand`·`WpfResultItemResponse`·`WpfResultProcessor`·`WpfPopupService`·`PopupService`, `api/examples`, `POPUP_INTERFACE_SPEC.md` §10~11. Excel 정의서는 저장소에 없어 대조 제외.
+
+요청
+
+| 필드 | WPF 생성 | 서버 사용 | 상태 |
+|---|---|---|---|
+| clientRequestId | 전송마다 새 GUID | WPF_API_REQUEST_LOG 요청 로그 | 유지(진단) |
+| sentAt | 전송 시각 | 수신만 하고 업무 미사용 | 유지 여부 결정 필요(진단용, 서버 미사용) |
+| resultId | 결과 생성 시 GUID, 재전송 시 유지 | WPF_RESULT_RECEIPT 멱등 키, POPUP_RESPONSE.CLIENT_REQUEST_ID | 유지 |
+| popupId / resultType | 팝업 ID·유형 | 처리 분기·대상 확인 | 유지 |
+| displayedAt / closedAt | 표시·종료(제출) 시각 | USER_POPUP_STATUS 표시 횟수·닫기 시각 | 유지 |
+| hideDays | HIDDEN | 숨김 만료 계산 | 유지 |
+| answers | SUBMITTED | 문항 소속·필수 답안 검증, 문항별 상세 저장 | 유지 |
+| score / passed | QUIZ SUBMITTED | 최종 점수·통과·완료 판정 저장(설계 33) | 유지 |
+| video | VIDEO_WATCHED, 동영상+퀴즈 SUBMITTED | 시청 기록·완료 판정 | 유지 |
+| responseStartedAt | — | — | 제거 완료(설계 32) |
+
+응답 (`results[]` 외 ROOT `receivedAt`)
+
+| 필드 | 서버 설정 | WPF 사용처 | 상태 |
+|---|---|---|---|
+| resultId | 요청 echo | 큐 종결 판정(PopupResultQueue) | 유지 |
+| status | 처리 상태 | 큐 종결 판정·거절 로그·Demo 로그 | 유지 |
+| code / message | 거절·오류 사유 | 거절 로그·Demo 로그 | 유지 |
+| popupId / resultType | 요청 echo | 거절 로그 문구에만 사용 | 유지 권장(진단 로그). resultId로 대체 가능 |
+| receivedAt | 서버 수신 시각 | 없음 | 삭제 후보(진단 전용) |
+| popupStatus / completed / completedAt | USER_POPUP_STATUS 조회값 | 없음(Demo 게이트웨이 설정만) | 삭제 후보. 완료 여부는 다음 목록 조회가 반영 |
+| responseId | POPUP_RESPONSE.RESPONSE_ID | 없음 | 삭제 후보. resultId(WPF 결과 멱등·응답 대응 키)와 다른 서버 저장 레코드 식별자이며 서로 대체하지 않음(34-04) |
+| totalScore / passed | — | — | 제거 완료(설계 33) |
+| hiddenUntil / watchedRatio / requiredRatio | — | — | 제거 완료(34-05). 숨김 만료·시청 기록·완료 계산은 서버 내부 유지(34-06) |
 
 ### 3.3 responseStartedAt 제거
 
 - [ ] 34-07 WpfResultItemDto, PopupResultBuilder.BuildSubmitted, WpfResultRequest.Item, WpfResultCommand와 서비스 전달 경로에서 responseStartedAt 제거.
 - [ ] 34-08 PopupService.submitResponse 및 Mapper의 RESPONSE_STARTED_AT 의존을 확인하고, DB 컬럼 유지/제거와 기존 데이터 처리 방식을 명시.
-- [ ] 34-09 closedAt - displayedAt은 화면 체류/처리 시간이며 실제 첫 입력부터의 응답 시간은 아님을 문서화. DB 통계가 필요하면 해당 결과의 두 시각을 보존·연계하는 경로 확인.
-- [ ] 34-10 개발용 pending-results.json에 실제 미전송 자료가 있으면 결과 유실 없이 전환. 구버전 상시 호환 로직은 만들지 않으며, 테스트 데이터 초기화가 필요하면 명시적으로 수행.
+- [x] 34-09 closedAt - displayedAt은 화면 체류/처리 시간이며 실제 첫 입력부터의 응답 시간은 아님을 문서화. DB 통계가 필요하면 해당 결과의 두 시각을 보존·연계하는 경로 확인. — 계약서 §10.4·WpfResultCommand·설계 32 문구 정정. 서버는 USER_POPUP_STATUS에 사용자·팝업 단위 최신 표시·닫기 시각만 보존하므로 결과 건별 통계가 필요하면 별도 결정
+- [x] 34-10 개발용 pending-results.json에 실제 미전송 자료가 있으면 결과 유실 없이 전환. 구버전 상시 호환 로직은 만들지 않으며, 테스트 데이터 초기화가 필요하면 명시적으로 수행. — 실제 %LOCALAPPDATA%\Popup\pending-results.json 없음 확인(전환 대상 없음). 구버전 호환 로직 미추가
 
 ## 4. WPF 판정값을 서버가 저장
 
@@ -85,7 +118,7 @@ PopupService.submitResponse는 자체 채점한 totalScore/passedYn을 DB 및 �
 - [ ] 34-13 신규 QUIZ SUBMITTED에서 score/passed 누락 및 잘못된 자료형·값의 검증 정책 확정. 구버전용 서버 재채점 fallback은 추가하지 않음.
 - [ ] 34-14 SURVEY는 점수·통과값을 강제하지 않고 제출 완료로 처리. QUIZ와 SURVEY 검증·저장 분기 명시.
 - [ ] 34-15 서버 계산을 유지한다면 비교·진단 전용으로 분리하고 최종 점수·통과·완료를 덮어쓰지 않도록 보장.
-- [ ] 34-16 문항별 earnedScore/correctYn과 WPF 총점의 정합성 정책 확정. 진단값과 최종 저장값을 혼동하지 않도록 문서화.
+- [x] 34-16 문항별 earnedScore/correctYn과 WPF 총점의 정합성 정책 확정. 진단값과 최종 저장값을 혼동하지 않도록 문서화. — 계약서 §10.6: 문항별 점수·정오답은 진단값, 최종 점수·통과·완료는 WPF 값 기준
 - [ ] 34-17 형식·문항 소속·선택지·필수 답안·영상 요건·인증 검증을 단순 점수 저장 변경 때문에 제거하지 않음.
 - [ ] 34-18 표시 후 정답/합격점 변경 사례에서 WPF 결과가 서버 재계산으로 바뀌지 않는지 검증. 데이터 버전 정책이 필요하면 후속 결정 사항으로 기록.
 

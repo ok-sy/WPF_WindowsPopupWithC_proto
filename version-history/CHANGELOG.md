@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-09 — TODO34 RESULT 응답 필드 추가 정리 및 대조표
+
+- 이유: TODO34 §3.1 확정 사항 중 미반영이던 응답 hiddenUntil·watchedRatio·requiredRatio 제거와, 나머지 RESULT 필드의 사용처·필요성 기록(34-01~06), 체류 시간·문항별 점수 의미 문서화(34-09·16) 필요.
+- 변경: Java WpfResultItemResponse에서 hiddenUntil·watchedRatio·requiredRatio와 Builder.video 제거(status()의 hiddenUntil 복사 제거), WpfResultProcessor의 영상 비율 응답 조립 제거(saveVideoProgress·hidePopup 내부 처리 유지). C# WpfResultItemResponseDto에서 HiddenUntil·WatchedRatio·RequiredRatio 삭제, Demo 게이트웨이 응답 설정 제거(Demo 숨김 상태는 유지). 결과 응답 예제 JSON·계약서 11장 갱신. TODO34 §3.4에 요청·응답 필드 대조표(WPF 생성·서버 사용·상태) 추가: receivedAt·popupStatus·completed·completedAt·responseId는 WPF 미사용으로 삭제 후보 표시(확정 대기), popupId·resultType은 거절 로그용으로 유지 권장, sentAt은 서버 미사용 기록. resultId(결과 멱등 키)와 responseId(서버 응답 레코드 ID) 구분 명시. closedAt - displayedAt을 화면 체류·처리 시간으로 정정(계약서·WpfResultCommand·설계 32), 서버가 USER_POPUP_STATUS에 사용자·팝업 단위 최신 시각만 보존함을 기록. 문항별 점수·정오답은 진단값이고 최종 점수·통과·완료는 WPF 값 기준임을 계약서 10.6에 명시. 실제 pending-results.json 없음 확인(34-10).
+- 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultCommand.java), zero-rule-server/service/core/.../popup/wpf/WpfResultProcessor.java, 서버 테스트(WpfResultProcessorTest·WpfPopupDatabaseTest), popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/DemoPopupGateway.cs, api/examples/wpf-results-response.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(32_*, 34_*), popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 확정 삭제 5개 필드 부재 테스트(서버 record·C# DTO) 추가. :service:core popup·:web:api popup 101건 통과, 로컬 XE 대상 DB 연동 테스트 2건(PopupQuestionDatabaseTest·WpfPopupDatabaseTest) 별도 실행 통과, :app 컴파일 통과. WPF 행동 검증 884건 통과. 34-35 변경도 같은 실행에서 확인. 실제 서버 HTTP·Windows 화면 미확인. Excel 정의서 미반영(저장소에 없음).
+- 상태: 커밋에 포함. 미푸시. 34-03(삭제 후보 5개 필드 확정) 결정 대기.
+
 ## 2026-10-12-08 — TODO34-35 설문·퀴즈 Footer 동작 명시값 검증
 
 - 이유: TODO34 §6.3(SURVEY/QUIZ는 SUBMIT만 허용, 생략과 잘못된 명시값 구분)이 TODO30의 정규화 수용 정책보다 우선. 기존 저장 데이터는 13번 스크립트로 로컬·원격 개발 DB 모두 정규형이라 거부로 바꿔도 재저장 실패 대상이 없음.

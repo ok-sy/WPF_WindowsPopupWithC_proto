@@ -79,7 +79,7 @@ class WpfResultProcessorTest {
                 .thenReturn(new WpfUserPopupStatus("HIDDEN", false, null, CLOSED.plusDays(7)));
         var res = processor.processOne("E1001", item(WpfResultType.HIDDEN, 7, null, null));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
-        assertEquals(CLOSED.plusDays(7), res.hiddenUntil());
+        // [설계 34-05] 숨김 만료 시각은 저장하지만 응답에는 없다.
         verify(popupService).hidePopup("P1", "E1001", 7);
     }
 
@@ -104,9 +104,11 @@ class WpfResultProcessorTest {
         assertEquals(Boolean.TRUE, quiz.completed());
         // 제출은 resultId를 clientRequestId로, WPF 판정값을 그대로 전달한다 (POPUP_RESPONSE.CLIENT_REQUEST_ID·TOTAL_SCORE·PASSED_YN)
         verify(popupService).submitResponse("P1", "r-1", "E1001", answers, 80.0, true);
-        assertFalse(java.util.Arrays.stream(WpfResultItemResponse.class.getRecordComponents())
-                .anyMatch(c -> c.getName().equals("totalScore") || c.getName().equals("passed")),
-                "결과 응답에는 totalScore/passed가 없다");
+        // [설계 33·34-05] 확정 삭제 응답 필드 5개는 응답 계약에 없다.
+        var names = java.util.Arrays.stream(WpfResultItemResponse.class.getRecordComponents()).map(c -> c.getName()).toList();
+        for (String removed : List.of("totalScore", "passed", "hiddenUntil", "watchedRatio", "requiredRatio")) {
+            assertFalse(names.contains(removed), removed);
+        }
     }
 
     @Test void videoDelegatesToExistingSaveVideoProgress() {
@@ -118,8 +120,7 @@ class WpfResultProcessorTest {
         when(wpfMapper.selectStatus("E1001", "P1"))
                 .thenReturn(new WpfUserPopupStatus("COMPLETED", true, CLOSED, null));
         var res = processor.processOne("E1001", item(WpfResultType.VIDEO_WATCHED, null, null, video));
-        assertEquals(0.9842, res.watchedRatio());
-        assertEquals(0.9, res.requiredRatio());
+        // [설계 34-05] 시청 비율은 저장 계층(saveVideoProgress)에서 계산하고 응답에는 없다.
         assertEquals(Boolean.TRUE, res.completed());
         verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "VIDEO_WATCHED", "ACCEPTED", null);
     }

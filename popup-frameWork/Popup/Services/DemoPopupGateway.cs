@@ -136,7 +136,6 @@ namespace Popup.Services
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
                     response.PopupStatus = "HIDDEN";
-                    response.HiddenUntil = _hiddenUntil[item.PopupId];
                     break;
 
                 case WpfResultType.Submitted:
@@ -185,8 +184,6 @@ namespace Popup.Services
                     }
                     double ratio = Math.Min(1.0, Math.Floor((double)(item.Video.WatchedSeconds / item.Video.DurationSeconds) * 10000) / 10000);
                     double required = popup.CompletionRatio ?? 1.0;
-                    response.WatchedRatio = ratio;
-                    response.RequiredRatio = required;
                     if (ratio >= required && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
                     {
                         _completed.Add(item.PopupId);

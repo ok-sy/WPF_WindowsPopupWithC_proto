@@ -13,6 +13,9 @@ import java.time.OffsetDateTime;
  *
  * <p>[설계 33] QUIZ 점수·통과 여부는 WPF가 판정해 요청(score/passed)으로 보내고 서버는 저장만 하므로,
  * 응답에서 같은 의미의 totalScore/passed를 다시 내려주지 않는다. 응답은 처리·저장 상태에 집중한다.</p>
+ *
+ * <p>[설계 34-05] 숨김 만료 시각(hiddenUntil)과 영상 시청·요구 비율(watchedRatio/requiredRatio)도 응답에서 뺐다.
+ * 숨김 만료·영상 시청 기록·완료 계산은 서버 내부에서 그대로 저장·처리한다.</p>
  */
 // [기준 3] 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -26,22 +29,19 @@ public record WpfResultItemResponse(
         String popupStatus,
         Boolean completed,
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = WpfJson.DATE_TIME) OffsetDateTime completedAt,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = WpfJson.DATE_TIME) OffsetDateTime hiddenUntil,
-        Long responseId,
-        Double watchedRatio,
-        Double requiredRatio
+        Long responseId
 ) {
     /** ACCEPTED: 처리 완료 / DUPLICATE: 같은 resultId를 이미 처리함(재처리 없음) / REJECTED: 업무 검증 실패 */
     public enum Status { ACCEPTED, DUPLICATE, REJECTED }
 
     public static WpfResultItemResponse duplicate(WpfResultCommand item) {
         return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), Status.DUPLICATE,
-                null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     public static WpfResultItemResponse rejected(WpfResultCommand item, String code, String message) {
         return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), Status.REJECTED,
-                code, message, null, null, null, null, null, null, null);
+                code, message, null, null, null, null);
     }
 
     /** ACCEPTED 응답 조립용 빌더. 유형별로 필요한 값만 채운다. */
@@ -54,10 +54,7 @@ public record WpfResultItemResponse(
         private String popupStatus;
         private Boolean completed;
         private OffsetDateTime completedAt;
-        private OffsetDateTime hiddenUntil;
         private Long responseId;
-        private Double watchedRatio;
-        private Double requiredRatio;
 
         private Builder(WpfResultCommand item) {
             this.item = item;
@@ -68,7 +65,6 @@ public record WpfResultItemResponse(
                 this.popupStatus = status.popupStatus();
                 this.completed = status.completed();
                 this.completedAt = status.completedAt();
-                this.hiddenUntil = status.hiddenUntilAt();
             }
             return this;
         }
@@ -78,16 +74,9 @@ public record WpfResultItemResponse(
             return this;
         }
 
-        public Builder video(Double watchedRatio, Double requiredRatio) {
-            this.watchedRatio = watchedRatio;
-            this.requiredRatio = requiredRatio;
-            return this;
-        }
-
         public WpfResultItemResponse build() {
             return new WpfResultItemResponse(item.resultId(), item.popupId(), item.resultType(), Status.ACCEPTED,
-                    null, null, popupStatus, completed, completedAt, hiddenUntil, responseId,
-                    watchedRatio, requiredRatio);
+                    null, null, popupStatus, completed, completedAt, responseId);
         }
     }
 }

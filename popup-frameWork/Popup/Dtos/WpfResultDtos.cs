@@ -120,13 +120,10 @@ namespace Popup.Dtos
         public string? PopupStatus { get; set; }
         public bool? Completed { get; set; }
         public DateTimeOffset? CompletedAt { get; set; }
-        public DateTimeOffset? HiddenUntil { get; set; }
         public long? ResponseId { get; set; }
 
-        /* [설계 33] TotalScore/Passed는 삭제했다. QUIZ 판정은 WPF가 끝내 요청(Score/Passed)으로 보내고 서버는 저장만 한다. */
-
-        public double? WatchedRatio { get; set; }
-        public double? RequiredRatio { get; set; }
+        /* [설계 33] TotalScore/Passed는 삭제했다. QUIZ 판정은 WPF가 끝내 요청(Score/Passed)으로 보내고 서버는 저장만 한다.
+           [설계 34-05] HiddenUntil·WatchedRatio·RequiredRatio도 삭제했다. 숨김 만료·시청 비율은 서버가 내부에서 저장·계산한다. */
 
         /* [설계 18 L-0 — C-10 삭제] 호출부가 없던 IsAccepted는 삭제했다. 큐는 REJECTED만 구분해 로그를 남긴다. */
         public bool IsRejected => string.Equals(Status, "REJECTED", StringComparison.OrdinalIgnoreCase);

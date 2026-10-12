@@ -77,7 +77,7 @@ public class WpfResultProcessor {
 
     /**
      * HIDDEN: 표시·닫기 반영 후 기존 hidePopup으로 숨김 기간을 설정한다.
-     * 만료 시각은 서버(KST) 시각 기준이며 응답의 hiddenUntil로 돌려준다.
+     * 만료 시각은 서버(KST) 시각 기준으로 저장하며 [설계 34-05] 응답으로 돌려주지 않는다.
      */
     private WpfResultItemResponse handleHidden(String employeeNo, WpfResultCommand item) {
         if (item.hideDays() == null) {
@@ -134,13 +134,13 @@ public class WpfResultProcessor {
         if (video == null) {
             throw new IllegalArgumentException("VIDEO_WATCHED 결과에는 video 블록이 필요합니다.");
         }
-        VideoProgressResponseDto progress = popupService.saveVideoProgress(
+        // 시청 비율 계산·완료 판정·최대값 유지는 서버 내부 처리이며 [설계 34-05] 비율은 응답에 싣지 않는다.
+        popupService.saveVideoProgress(
                 item.popupId(), employeeNo, video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds());
         recordDisplayAndClose(employeeNo, item);
         return WpfResultItemResponse.accepted(item)
                 .status(wpfMapper.selectStatus(employeeNo, item.popupId()))
-                .video(progress.watchedRatio(), progress.requiredRatio())
                 .build();
     }
 
