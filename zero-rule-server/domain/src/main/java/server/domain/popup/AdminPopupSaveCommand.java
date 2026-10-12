@@ -42,7 +42,6 @@ public record AdminPopupSaveCommand(
         String description,
         String contentBody,
         String mediaUrl,
-        String linkUrl,
         String contentOptionsJson,
         String auditUser
 ) {

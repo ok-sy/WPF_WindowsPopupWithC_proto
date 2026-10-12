@@ -166,7 +166,6 @@
             ct.DESCRIPTION,
             ct.CONTENT_BODY,
             ct.MEDIA_URL,
-            ct.LINK_URL,
             ct.CONTENT_OPTIONS         AS CONTENT_OPTIONS_JSON,
             n.DISPLAY_ORDER,
             n.ACTIVE_YN                AS USE_YN,
@@ -268,16 +267,15 @@
             ct.DESCRIPTION     = #{description},
             ct.CONTENT_BODY    = #{contentBody, jdbcType=CLOB},
             ct.MEDIA_URL       = #{mediaUrl},
-            ct.LINK_URL        = #{linkUrl},
             ct.CONTENT_OPTIONS = #{contentOptionsJson, jdbcType=CLOB},
             ct.UPDATED_BY      = #{auditUser},
             ct.UPDATED_AT      = <include refid="nowKst"/>
         WHEN NOT MATCHED THEN INSERT
-            (POPUP_ID, CONTENT_TITLE, DESCRIPTION, CONTENT_BODY, MEDIA_URL, LINK_URL, CONTENT_OPTIONS,
+            (POPUP_ID, CONTENT_TITLE, DESCRIPTION, CONTENT_BODY, MEDIA_URL, CONTENT_OPTIONS,
              CREATED_BY, UPDATED_BY)
         VALUES
             (src.POPUP_ID, #{contentTitle}, #{description}, #{contentBody, jdbcType=CLOB},
-             #{mediaUrl}, #{linkUrl}, #{contentOptionsJson, jdbcType=CLOB},
+             #{mediaUrl}, #{contentOptionsJson, jdbcType=CLOB},
              #{auditUser}, #{auditUser})
     </update>
 
@@ -398,7 +396,6 @@
             <arg column="DESCRIPTION" javaType="java.lang.String"/>
             <arg column="CONTENT_BODY" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="MEDIA_URL" javaType="java.lang.String"/>
-            <arg column="LINK_URL" javaType="java.lang.String"/>
             <arg column="CONTENT_OPTIONS_JSON" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="DISPLAY_ORDER" javaType="_int"/>
             <arg column="USE_YN" javaType="java.lang.String"/>

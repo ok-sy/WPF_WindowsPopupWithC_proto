@@ -1070,7 +1070,6 @@ public class PopupService {
                 bodyText(content),
                 contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
                         ? "videoUrl" : mediaUrlKey(popupType)),
-                contentText(content, "linkUrl"),
                 writeContentJson(popup.popupId(), storedOptions(popupType, content)),
                 auditUser);
     }

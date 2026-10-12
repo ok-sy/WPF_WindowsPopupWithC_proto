@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * 팝업 유형별 content JSON(Map)을 DB 컬럼에서 조립한다.
  *
- * <p>[역할] POPUP_CONTENT의 정규 컬럼(제목·설명·본문·미디어URL·링크URL)과 확장 옵션 JSON(CONTENT_OPTIONS)을
+ * <p>[역할] POPUP_CONTENT의 정규 컬럼(제목·설명·본문·미디어URL)과 확장 옵션 JSON(CONTENT_OPTIONS)을
  * 합쳐 WPF·관리자 웹이 소비하는 {@code content} 객체를 만든다.</p>
  *
  * <p>[추가 이유 — 기준 5] PostgreSQL 매퍼는 SQL 안에서 JSONB_BUILD_OBJECT로 조립했다. Oracle은 JSON 함수 지원 범위가
@@ -22,7 +22,7 @@ import java.util.Map;
  *   1) CONTENT_OPTIONS의 키를 먼저 넣는다. 단, 정규 컬럼 사본과 서버 파생 키({@link #STORED_COPY_KEYS})는 버린다.
  *   2) 유형별 정규 컬럼 값을 넣는다 — 컬럼이 기준 값이며 옵션 JSON의 같은 키를 덮어쓴다.
  *      TEXT   : contentTitle, description, plainText(=CONTENT_BODY)
- *      IMAGE  : imageTitle, imageUrl(=MEDIA_URL), description, linkUrl
+ *      IMAGE  : imageTitle, imageUrl(=MEDIA_URL), description
  *      VIDEO  : videoTitle, videoUrl(=MEDIA_URL), description
  *      SURVEY / QUIZ : surveyTitle, description
  * </pre>
@@ -36,14 +36,17 @@ public class PopupContentAssembler {
     /**
      * [설계 18 L-3] CONTENT_OPTIONS에 두지 않는 키. 정규 컬럼에 저장되는 값과, 다른 컬럼·테이블에서 파생되어
      * 예전 응답 content에 중복으로 실리던 값이다. 저장 시 제거하고({@link #withoutStoredCopies}), 조회 시에도 무시한다.
+     * 폐기된 키도 여기에 두어 요청에 남아 있어도 저장하지 않고, 예전 행의 사본도 응답에 싣지 않는다.
      */
     static final List<String> STORED_COPY_KEYS = List.of(
             // 정규 컬럼(POPUP_CONTENT)
             "contentTitle", "imageTitle", "videoTitle", "surveyTitle",
-            "description", "plainText", "imageUrl", "videoUrl", "linkUrl",
+            "description", "plainText", "imageUrl", "videoUrl",
             // 서버 파생 값(POPUP_NOTICE 컬럼·문항 테이블)
             "completionRatio", "allowCloseBeforeCompletion", "passingScore",
-            "validateRequiredQuestions", "questions");
+            "validateRequiredQuestions", "questions",
+            // 폐기 키: IMAGE 클릭 링크(LINK_URL 컬럼 삭제). 모든 모드에서 제공하지 않는다.
+            "linkUrl");
 
     private final ObjectMapper objectMapper;
 
@@ -87,7 +90,6 @@ public class PopupContentAssembler {
                 content.put("imageTitle", popup.contentTitle());
                 content.put("imageUrl", popup.mediaUrl());
                 content.put("description", popup.description());
-                content.put("linkUrl", popup.linkUrl());
             }
             case "VIDEO" -> {
                 content.put("videoTitle", popup.contentTitle());

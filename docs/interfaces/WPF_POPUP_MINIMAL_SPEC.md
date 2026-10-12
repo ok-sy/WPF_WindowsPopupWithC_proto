@@ -86,7 +86,6 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 | ImageTitle | 미제공 | N | `""` | 이미지 콘텐츠 내부 제목 |
 | Description | 미제공 | N | `""` | 이미지 설명 |
 | ShowDescription | 미제공 | N | `true` | 설명 표시 여부 |
-| LinkUrl | 미제공 | N | `""` | 이미지 클릭 링크 |
 
 최소 IMAGE는 ORIGINAL 표시 + 공통 Width/Height만 사용한다. 일반 모드는 content.width/height만 사용하며 ORIGINAL에 적용하지 않는다. keepAspectRatio는 FIT_TO_IMAGE 전용이다.
 

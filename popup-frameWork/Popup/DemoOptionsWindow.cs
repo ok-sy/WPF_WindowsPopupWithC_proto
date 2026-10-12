@@ -288,7 +288,6 @@ namespace Popup
                 Enable(content, "width", ordinaryImage);
                 Enable(content, "height", ordinaryImage);
                 Enable(content, "keepAspectRatio", imageMode == "FIT_TO_IMAGE");
-                Enable(content, "linkUrl", imageMode == "ORIGINAL");
                 Enable(content, "imageTitle", ordinaryImage);
                 Enable(content, "description", ordinaryImage);
                 Enable(content, "showDescription", ordinaryImage);

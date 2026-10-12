@@ -17,7 +17,7 @@ namespace Popup
             ["bottomDescription"]="하단 안내", ["bottomDescriptionUrl"]="하단 안내 링크", ["showBottomDescription"]="하단 안내 표시",
             ["imageTitle"]="이미지 제목", ["imageUrl"]="이미지 경로 또는 URL", ["imageSizeMode"]="이미지 표시 방식",
             ["width"]="너비 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지", ["height"]="높이 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지",
-            ["keepAspectRatio"]="이미지 비율 고정", ["showDescription"]="설명 표시", ["linkUrl"]="이미지 바로가기 URL · ORIGINAL",
+            ["keepAspectRatio"]="이미지 비율 고정", ["showDescription"]="설명 표시",
             ["videoTitle"]="영상 제목", ["videoUrl"]="영상 경로 또는 URL", ["showControls"]="재생 컨트롤 표시",
             ["allowFullScreen"]="영상 전체화면 허용", ["allowPlaybackRateChange"]="배속 변경 허용", ["allowSeek"]="재생 위치 변경 허용", ["autoPlay"]="자동 재생",
             ["isLoop"]="반복 재생", ["defaultVolume"]="기본 음량 · 0~1, 시스템 동기화 연결 전/실패 시",

@@ -155,7 +155,7 @@ namespace Popup.Factories
             bool original = string.Equals(contentDto.ImageSizeMode, "ORIGINAL", StringComparison.OrdinalIgnoreCase);
             if (original)
             {
-                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl);
+                return new ImageFillPopupView(contentDto.ImageUrl);
             }
 
             return new ImagePopupView(

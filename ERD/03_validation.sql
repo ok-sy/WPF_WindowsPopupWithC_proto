@@ -291,7 +291,6 @@ SELECT
     content.description,
     content.content_body,
     content.media_url,
-    content.link_url,
     content.content_options,
     template.question_template_id,
     template.template_group_id,

@@ -126,7 +126,6 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | Description / ShowDescription | 일반 모드에서 지원 | N | `""` / `true` | 하단 설명·스크롤. ORIGINAL View에는 전달하지 않음 |
 | Width / Height | 일반 모드에서 지원 | N | `null` | ADAPTIVE 창 크기, FIT_TO_IMAGE 이미지 표시 크기. ORIGINAL에서는 사용하지 않음 |
 | KeepAspectRatio | FIT_TO_IMAGE에서 지원 | N | `true` | false면 지정한 두 축 크기로 왜곡 허용 |
-| LinkUrl | ORIGINAL에서 지원 | 링크 사용 시 제공 | `""` | ImageFillPopupView에 전달. 일반 ImagePopupView에는 전달하지 않음 |
 
 - ADAPTIVE: 창 우선, 비율을 유지해 이미지 표시.
 - FIT_TO_IMAGE: 이미지 표시 크기 우선. 치수 생략 시 원본 DIP 크기 사용.

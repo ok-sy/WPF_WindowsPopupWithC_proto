@@ -2122,7 +2122,6 @@ CREATE TABLE popup_content
     description     VARCHAR(2000),
     content_body    TEXT,
     media_url       VARCHAR(2000),
-    link_url        VARCHAR(2000),
     content_options JSONB,
     created_by      VARCHAR(30) NOT NULL,
     created_at      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,

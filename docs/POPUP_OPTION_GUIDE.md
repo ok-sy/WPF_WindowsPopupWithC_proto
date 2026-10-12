@@ -145,7 +145,6 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `imageSizeMode` | string | 이미지 표시 방식 |
 | `width` / `height` | number | content 내부 단일 크기. ADAPTIVE 창 크기, FIT_TO_IMAGE 이미지 표시 크기 |
 | `keepAspectRatio` | bool | FIT_TO_IMAGE 비율 고정, 기본 true. false는 왜곡 허용 |
-| `linkUrl` | string | 이미지 클릭 시 이동 URL. WPF는 `ORIGINAL`에서만 사용 |
 
 현재 관리자 화면에는 다음 이미지 모드가 노출된다.
 

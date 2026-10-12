@@ -116,7 +116,7 @@ VALUES
 INSERT INTO popup_content
 (
     popup_id, content_title, description, content_body,
-    media_url, link_url, content_options,
+    media_url, content_options,
     created_by, updated_by
 )
 VALUES
@@ -124,7 +124,7 @@ VALUES
         'SAMPLE-TEXT-001', '서비스 일시 중단 안내',
         '시스템 정기 점검 안내입니다.',
         '2026년 정기 점검으로 일부 서비스 이용이 제한될 수 있습니다.',
-        NULL, NULL,
+        NULL,
         '{"emphasis": "점검 시간 동안 저장되지 않은 작업은 유실될 수 있습니다."}'::jsonb,
         'SYSTEM', 'SYSTEM'
     ),
@@ -133,7 +133,6 @@ VALUES
         '이미지 팝업 렌더링 확인용 데이터입니다.',
         NULL,
         'https://example.com/images/popup-sample.png',
-        'https://example.com/service',
         '{"stretch": "Uniform", "showDescription": true}'::jsonb,
         'SYSTEM', 'SYSTEM'
     ),
@@ -142,14 +141,13 @@ VALUES
         '전체 영상의 80% 이상 시청해야 완료됩니다.',
         NULL,
         'https://example.com/videos/security-training.mp4',
-        NULL,
         '{"playbackRates": [0.75, 1.0, 1.25, 1.5], "defaultVolume": 0.8}'::jsonb,
         'SYSTEM', 'SYSTEM'
     ),
     (
         'SAMPLE-SURVEY-001', '교육 확인 설문',
         '80점 이상이면 통과됩니다.',
-        NULL, NULL, NULL,
+        NULL, NULL,
         '{"submitButtonText": "제출"}'::jsonb,
         'SYSTEM', 'SYSTEM'
     );

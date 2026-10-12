@@ -18,21 +18,21 @@ class PopupContentAssemblerTest {
     private final PopupContentAssembler assembler = new PopupContentAssembler(new ObjectMapper());
 
     @Test void image23ConvertsLegacyStorageWithoutDuplicateDimensions() {
-        var content = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+        var content = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
                 "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"imageWidth\":600,\"imageHeight\":400,\"descriptionPosition\":\"RIGHT\",\"imageAreaRatio\":0.75}", null, null, "Y"));
         assertEquals(600, content.get("width"));
         assertEquals(400, content.get("height"));
         assertEquals(true, content.get("keepAspectRatio"));
         for (String key : new String[]{"imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio"})
             assertFalse(content.containsKey(key));
-        var fill = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+        var fill = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
                 "{\"imageSizeMode\":\"FILL\"}", null, null, "Y"));
         assertEquals("ADAPTIVE", fill.get("imageSizeMode"));
-        var current = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+        var current = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
                 "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"width\":900,\"imageWidth\":600,\"keepAspectRatio\":false}", null, null, "Y"));
         assertEquals(900, current.get("width"));
         assertEquals(false, current.get("keepAspectRatio"));
-        var original = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png", null,
+        var original = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
                 "{\"imageSizeMode\":\"ORIGINAL\",\"width\":900,\"height\":600,\"keepAspectRatio\":true}", null, null, "Y"));
         assertFalse(original.containsKey("width"));
         assertFalse(original.containsKey("height"));
@@ -40,18 +40,18 @@ class PopupContentAssemblerTest {
     }
 
     private PopupEntity entity(String type, String title, String description, String body, String media,
-                               String link, String options, BigDecimal completionRatio, BigDecimal passingScore,
+                               String options, BigDecimal completionRatio, BigDecimal passingScore,
                                String allowClose) {
         return new PopupEntity("P1", type, "제목", null, null, "SEQUENTIAL", "FIXED",
                 null, null, null, null, null, null, null, null,
                 "Y", "Y", "Y", "N",
-                title, description, body, media, link, options,
+                title, description, body, media, options,
                 100, "Y", null, "FIXED", null, null, null, null,
                 completionRatio, passingScore, allowClose);
     }
 
     @Test void videoQuizKeepsVideoAndFooterOptionsThroughStorage() {
-        var content = assembler.assemble(entity("QUIZ", "교육", "설명", null, "https://example.com/lesson.mp4", null,
+        var content = assembler.assemble(entity("QUIZ", "교육", "설명", null, "https://example.com/lesson.mp4",
                 "{\"videoEnabled\":true,\"footerAction\":\"LINK_AND_CLOSE\",\"footerLinkUrl\":\"https://example.com/\"}",
                 new BigDecimal("0.8"), BigDecimal.TEN, "N"));
         assertEquals("https://example.com/lesson.mp4", content.get("videoUrl"));
@@ -66,7 +66,7 @@ class PopupContentAssemblerTest {
     }
 
     @Test void textUsesPlainTextAndColumnWinsOverStaleOptionCopy() {
-        Map<String, Object> content = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null, null,
+        Map<String, Object> content = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null,
                 "{\"showPlainText\":true,\"description\":\"오래된 사본\",\"plainText\":\"오래된 본문\"}", null, null, "Y"));
         assertEquals("안내", content.get("contentTitle"));
         assertEquals("본문", content.get("plainText"), "[설계 18 L-3] 정규 컬럼이 옵션 JSON의 사본보다 우선");
@@ -76,7 +76,7 @@ class PopupContentAssemblerTest {
     }
 
     @Test void storedCopiesAndDerivedKeysAreIgnored() {
-        Map<String, Object> content = assembler.assemble(entity("VIDEO", "영상", null, null, "http://x/v.mp4", null,
+        Map<String, Object> content = assembler.assemble(entity("VIDEO", "영상", null, null, "http://x/v.mp4",
                 "{\"completionRatio\":0.5,\"allowCloseBeforeCompletion\":true,\"passingScore\":1,"
                         + "\"validateRequiredQuestions\":true,\"questions\":[],\"linkUrl\":\"http://old\",\"autoPlay\":true}",
                 new BigDecimal("0.9000"), null, "N"));
@@ -96,14 +96,14 @@ class PopupContentAssemblerTest {
 
     @Test void imageAndVideoMapMediaColumns() {
         Map<String, Object> image = assembler.assemble(entity("IMAGE", "이미지", null, null,
-                "https://x/img.png", "https://x/link", null, null, null, "Y"));
+                "https://x/img.png", "{\"linkUrl\":\"https://x/link\"}", null, null, "Y"));
         assertEquals("이미지", image.get("imageTitle"));
         assertEquals("https://x/img.png", image.get("imageUrl"));
-        assertEquals("https://x/link", image.get("linkUrl"));
+        assertFalse(image.containsKey("linkUrl"), "IMAGE 클릭 링크는 폐기되어 예전 옵션 사본도 싣지 않는다");
         assertTrue(image.containsKey("description"), "원본처럼 null 값도 키로 포함한다");
 
         Map<String, Object> video = assembler.assemble(entity("VIDEO", "영상", "설명", null,
-                "http://x/v.mp4", null, "{\"autoPlay\":true}", new BigDecimal("0.9000"), null, "N"));
+                "http://x/v.mp4", "{\"autoPlay\":true}", new BigDecimal("0.9000"), null, "N"));
         assertEquals("http://x/v.mp4", video.get("videoUrl"));
         assertFalse(video.containsKey("completionRatio"), "[설계 18 L-3] 완료 비율은 응답 최상위로만");
         assertFalse(video.containsKey("allowCloseBeforeCompletion"));
@@ -112,7 +112,7 @@ class PopupContentAssemblerTest {
 
     @Test void surveyAndQuizShareSurveyTitleWithoutDerivedKeys() {
         for (String type : new String[]{"SURVEY", "QUIZ"}) {
-            Map<String, Object> content = assembler.assemble(entity(type, "설문", "설명", null, null, null,
+            Map<String, Object> content = assembler.assemble(entity(type, "설문", "설명", null, null,
                     null, null, new BigDecimal("30.00"), "Y"));
             assertEquals("설문", content.get("surveyTitle"));
             assertFalse(content.containsKey("passingScore"), "[설계 18 L-3] 통과 점수는 응답 최상위로만");
@@ -123,12 +123,12 @@ class PopupContentAssemblerTest {
 
     @Test void corruptedOptionsFailWithPopupId() {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
-                assembler.assemble(entity("TEXT", "a", null, null, null, null, "{not json", null, null, "Y")));
+                assembler.assemble(entity("TEXT", "a", null, null, null, "{not json", null, null, "Y")));
         assertTrue(ex.getMessage().contains("P1"));
     }
 
     @Test void unknownTypeReturnsOnlyOptions() {
-        Map<String, Object> content = assembler.assemble(entity("OTHER", "a", "b", null, null, null,
+        Map<String, Object> content = assembler.assemble(entity("OTHER", "a", "b", null, null,
                 "{\"k\":1}", null, null, "Y"));
         assertEquals(Map.of("k", 1), content);
     }

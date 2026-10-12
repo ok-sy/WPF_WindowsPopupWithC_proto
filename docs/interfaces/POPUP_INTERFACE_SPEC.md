@@ -7,6 +7,7 @@
 - 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
 - 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
+- 3.7 변경(2026-10-12): IMAGE content `linkUrl`(이미지 클릭 시 URL 열기) 삭제. 모든 imageSizeMode에서 이미지 클릭 동작이 없으며 WPF는 이 키를 읽지 않는다.
 - 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`.
 - 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
 - 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
@@ -450,7 +451,7 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 }
 ```
 
-위 예시는 일반 모드(ADAPTIVE)다. `linkUrl`은 ORIGINAL에서만 동작하므로 일반 모드 예시에는 넣지 않는다. ORIGINAL 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png","linkUrl":"https://example.com/notice"}`.
+위 예시는 일반 모드(ADAPTIVE)다.
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
@@ -462,7 +463,6 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 | width | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 너비, FIT_TO_IMAGE 실제 이미지 너비, 양수·유한값 |
 | height | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 높이, FIT_TO_IMAGE 실제 이미지 높이, 양수·유한값 |
 | keepAspectRatio | boolean | FIT_TO_IMAGE 전용 | `true` | 원본 비율 고정/해제 |
-| linkUrl | string | 선택(ORIGINAL 전용) | `""` | 이미지 클릭 시 이동 URL. **ORIGINAL에서만 적용**(ImageFillPopupView). ADAPTIVE·FIT_TO_IMAGE View에는 전달하지 않으므로 보내도 클릭 동작이 없다 |
 
 ### imageSizeMode
 
@@ -474,7 +474,7 @@ Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 
 필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
 
-ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·content.width/height·keepAspectRatio는 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. `linkUrl` 이미지 클릭 동작은 유지한다. 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
+ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·content.width/height·keepAspectRatio는 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. 이미지 클릭 동작은 없다(3.7에서 `linkUrl` 삭제). 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
 
 관리자 신규 등록 기본 선택은 ADAPTIVE이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
 

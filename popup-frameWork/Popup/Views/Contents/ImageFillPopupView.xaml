@@ -24,8 +24,7 @@
                 자식 기본 좌표가 (0,0)이라 왼쪽 위에 고정되고, 넘친 부분은 바깥 Border의 ClipToBounds가 자른다.
                 -->
                 <Canvas x:Name="OriginalCanvas" Background="White">
-                    <Image x:Name="OriginalImage" Stretch="Fill"
-                           MouseLeftButtonUp="PopupImage_MouseLeftButtonUp"/>
+                    <Image x:Name="OriginalImage" Stretch="Fill"/>
                 </Canvas>
             </Grid>
         </Border>

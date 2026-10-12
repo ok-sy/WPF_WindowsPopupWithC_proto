@@ -31,7 +31,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`, `13` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화. 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`14` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제. 상세·적용 현황은 아래 각 절 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
 | 참고 | `10_zero_rule_common_schema_oracle.sql` | 로컬 `ZERO_RULE` | 공통 스키마 변환본(로컬 XE에서 전체 서버 기동용, 정식 DDL 아님) |
 
@@ -184,3 +184,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — 정리 대상 0행(샘플 데이터에 Footer 키 없음), 잔여 0. 원격 개발 DB(zero-rule) 2026-10-12 실행 — 정리 대상 0행(Footer 키 보유 행 없음), 갱신 0행, 잔여 0.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @13_normalize_footer_action_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @13_normalize_footer_action_oracle.sql ""`
+
+## IMAGE 클릭 링크 컬럼 삭제 (2026-10-12)
+
+`14_drop_link_url_oracle.sql <스키마접두어>` — **되돌릴 수 없는 컬럼 삭제.** CONTENT_OPTIONS에 남은 `linkUrl` 키를 지운 뒤(07과 같은 정규식 방식) `POPUP_CONTENT.LINK_URL`을 삭제한다. 멱등.
+
+- 배경: IMAGE 이미지 클릭 시 URL을 여는 기능(`content.linkUrl`)을 ORIGINAL 포함 모든 모드에서 폐기했다. `LINK_URL`은 이 기능 전용 컬럼이라 다른 유형·통계·조회에서 읽는 곳이 없다. 서버는 요청에 `linkUrl`이 남아 있어도 저장하지 않고 예전 옵션 사본도 응답에 싣지 않는다(`PopupContentAssembler.STORED_COPY_KEYS`). `01_popup_schema_oracle.sql`에서도 컬럼을 뺐다. Footer `footerLinkUrl`·하단 안내 `bottomDescriptionUrl`은 별개 기능이라 그대로다.
+- 순서: 서버 반영 후 실행. 새 서버는 이 컬럼을 쓰지 않아 실행 전후 모두 동작하며, 실행 후에는 이전 서버의 팝업 조회·저장이 ORA-00904로 실패한다.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, `linkUrl` 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 재실행 시 SKIP 확인. 실행 후 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과. 원격 개발 DB는 미실행.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @14_drop_link_url_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @14_drop_link_url_oracle.sql ""`

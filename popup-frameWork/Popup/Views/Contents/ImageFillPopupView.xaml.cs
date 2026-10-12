@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace Popup.Views.Contents
@@ -14,9 +12,8 @@ namespace Popup.Views.Contents
     public partial class ImageFillPopupView : UserControl
     {
         private readonly string _imagePath;
-        private readonly string _linkUrl;
 
-        public ImageFillPopupView(string imagePath, string linkUrl)
+        public ImageFillPopupView(string imagePath)
         {
             InitializeComponent();
 
@@ -26,14 +23,6 @@ namespace Popup.Views.Contents
             }
 
             _imagePath = imagePath;
-            _linkUrl = linkUrl ?? string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(_linkUrl))
-            {
-                OriginalImage.Cursor = Cursors.Hand;
-                OriginalImage.ToolTip = _linkUrl;
-            }
-
             Loaded += ImageFillPopupView_Loaded;
         }
 
@@ -98,42 +87,6 @@ namespace Popup.Views.Contents
                 MessageBox.Show(Window.GetWindow(this)!,
                     $"이미지를 불러오지 못했습니다.\n{exception.Message}",
                     "이미지 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-        }
-
-        private void PopupImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(_linkUrl))
-            {
-                return;
-            }
-
-            if (!Uri.TryCreate(_linkUrl, UriKind.Absolute, out Uri? uri)
-                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-            {
-                MessageBox.Show(Window.GetWindow(this)!,
-                    "클릭 연결 URL은 http 또는 https 주소만 사용할 수 있습니다.",
-                    "링크 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = uri.AbsoluteUri,
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(Window.GetWindow(this)!,
-                    $"링크를 열지 못했습니다.\n{exception.Message}",
-                    "링크 오류",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
