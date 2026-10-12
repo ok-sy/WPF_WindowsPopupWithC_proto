@@ -10,6 +10,7 @@
 - 검증: 20261012 대비 WPF 묶음은 DemoWindow.AuthTest.cs 1개 추가(86개), 문서 73개 동일 구성. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,637,582바이트). TAR·TGZ 항목 수·누출(exe·dll·bin/obj·검증 하네스) 검사 통과. 폐쇄망 PC 반입·실행·배포 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-25·2026-10-13-01 항목은 같은 푸시로 원격 반영.
 - 보완(20261012 병합): 20261012 반입본을 폐쇄망에 반입하지 못해 20261013 단독으로는 서버·웹 변경이 빠짐. 20261012의 1-zero-rule-server·2-zero-rule-web 묶음과 MANIFEST를 20261013에 합치고(diff -rq로 원본과 동일 확인), README-IMPORT를 20261007 기준 병합 안내(12 반입분·13 추가분·DB 스크립트 순서)로 재작성. 3·4 묶음은 20261012 파일을 모두 포함(WPF는 DemoWindow.AuthTest.cs만 추가, 문서 73개 동일)해 그대로 사용. finalize 스크립트로 4개 TAR·SHA256SUMS·SOURCE-SHA256SUMS·통합 TGZ 재생성. 20261012.tgz는 따로 반입하지 않음. 폐쇄망 반입·서버 병합 빌드·DB 적용 미실행. 병합 기록은 커밋에 포함해 원격 반영.
+- 보완(TODO별 패치노트·AGENTS.md 제외): 묶음별 변경 내용과 확인 위치를 알 수 있도록 1·2·3 묶음 루트에 README-PATCH-<묶음>.md를 추가하고 20261007 이후 변경을 TODO별(10·27~34, IMAGE linkUrl 삭제, 관리자 웹 정합성, Demo 보완)로 파일 목록과 함께 정리. 반입 루트 README.md를 덮어쓰지 않도록 묶음별 고유 파일명 사용, 각 MANIFEST에 항목 추가. 20261012 README에서 누락된 설계 27(allowSeek, YouTube 임베드 제거)을 README-IMPORT 변경 목록에 보완. 개발 저장소 작업 규칙인 AGENTS.md를 4-docs·MANIFEST에서 빼고 scripts/export-offline-package.ps1 문서 묶음 ExtraFiles에서도 제외. finalize로 TAR·체크섬·통합 TGZ 재생성. 패치노트 내용은 adf2617..HEAD 커밋별 변경 파일·커밋 메시지와 대조. 미커밋.
 
 ## 2026-10-13-01 — TODO10 Demo SSO·로그인 분리 테스트
 
