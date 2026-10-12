@@ -178,6 +178,6 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 정규형: SURVEY/QUIZ는 두 키를 저장하지 않음(SUBMIT 고정). TEXT/IMAGE/VIDEO는 `LINK_AND_CLOSE`일 때만 두 키를 저장하고 CLOSE·생략은 저장하지 않음. 서버 저장 로직(`PopupService.storedOptions`)과 같다.
 - 서버 WPF 응답은 저장 값과 무관하게 같은 규칙으로 최상위 `footerAction`을 만들므로 기능상 필수는 아니다(관리자 재편집 시 이전 URL이 남아 보이지 않게 하는 정리).
 - 제한: 07과 같이 값에 이스케이프된 따옴표(`\"`)가 있는 쌍이 JSON 맨 앞에 오면 지워지지 않는다(일반 URL에는 없음). 3번 잔여 행 수로 확인한다. 정규식은 로컬 XE에서 예시 문자열로 확인했다(맨 앞·중간·끝 키, 빈 값, 키만 있는 객체).
-- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — 정리 대상 0행(샘플 데이터에 Footer 키 없음), 잔여 0. 원격 개발 DB(zero-rule) 2026-10-12 — 실행 전 조회로 Footer 키 보유 행 0건 확인, 실행 후 확인 조회에서도 정리 대상 0행·CLEANUP 갱신 0행(바꿀 데이터 없음).
+- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — 정리 대상 0행(샘플 데이터에 Footer 키 없음), 잔여 0. 원격 개발 DB(zero-rule) 2026-10-12 실행 — 정리 대상 0행(Footer 키 보유 행 없음), 갱신 0행, 잔여 0.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @13_normalize_footer_action_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @13_normalize_footer_action_oracle.sql ""`

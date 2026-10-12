@@ -8,7 +8,7 @@
 - 변경: 로컬 XE(POPUP 스키마)에 13_normalize_footer_action_oracle.sql(정리 대상 0행, 잔여 0)과 12_drop_response_started_at_oracle.sql(값이 있던 행 0, RESPONSE_STARTED_AT 삭제, 잔여 컬럼 0)을 실행. 실행 전 TNS 리스너가 중지되어 있어 로컬 서비스를 시작. 13번 정규식을 예시 문자열로 확인한 결과 값에 이스케이프된 따옴표가 있는 쌍이 맨 앞에 오면 지워지지 않는 제한(07과 동일)을 db/oracle/README에 기록.
 - 주요 파일: db/oracle/README.md.
 - 검증: 실행 전 조회(샘플 4행에 Footer 키 없음, RESPONSE_STARTED_AT 값 0행)와 스크립트 결과 확인. 실행 후 실DB 테스트 PopupQuestionDatabaseTest·WpfPopupDatabaseTest(롤백 전용)를 로컬 XE로 실행해 통과(기존에는 skip이던 테스트로, 컬럼 삭제 후 MERGE·WPF 점수 저장·결과 처리 경로 확인).
-- 원격 개발 DB(zero-rule 스키마): 실행 전 조회로 콘텐츠 4행 중 Footer 키 보유 0행, RESPONSE_STARTED_AT 값 0행(POPUP_RESPONSE 0행) 확인. 12번 실행 — 컬럼 삭제 OK, 잔여 컬럼 0. 13번은 정리 대상이 없어 실행 후 확인 조회에서도 정리 대상 0행·CLEANUP 갱신 0행. 원격에서 이전 버전 서버가 동작 중이면 응답 저장이 실패하므로 원격 서버는 설계 32 이후 코드로 실행해야 함.
+- 원격 개발 DB(zero-rule 스키마): 실행 전 조회로 콘텐츠 4행 중 Footer 키 보유 0행, RESPONSE_STARTED_AT 값 0행(POPUP_RESPONSE 0행) 확인. 12번 실행 — 컬럼 삭제 OK, 잔여 컬럼 0. 13번 실행 — 정리 대상 0행, 갱신 0행, 잔여 0. 원격에서 이전 버전 서버가 동작 중이면 응답 저장이 실패하므로 원격 서버는 설계 32 이후 코드로 실행해야 함.
 - 상태: 로컬 XE·원격 개발 DB 적용 완료. 원격 대상 실DB 테스트는 미실행. 문서 커밋에 포함. 미푸시.
 
 ## 2026-10-12-06 — TODO34 RESULT 계약 및 공통 옵션 정합성 보완 계획
