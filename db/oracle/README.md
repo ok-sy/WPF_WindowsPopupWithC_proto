@@ -167,7 +167,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 배경: WPF가 `responseStartedAt`에 `displayedAt`을 복사해 보내던 중복 값이라 결과 요청·서버 저장에서 제거했다. 읽는 곳이 없다. `01_popup_schema_oracle.sql`에서도 컬럼을 뺐다.
 - 순서: 설계 32 서버 배포 후 실행. 새 서버는 이 컬럼을 쓰지 않아 실행 전후 모두 동작하며, 실행 후에는 이전 서버의 응답 저장이 실패한다.
-- 적용 현황: 로컬 XE·원격 개발 DB 모두 미실행.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — 값이 있던 행 0, 컬럼 삭제 OK, 잔여 컬럼 0. 실행 후 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과. 원격 개발 DB 미실행.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @12_drop_response_started_at_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @12_drop_response_started_at_oracle.sql ""`
 
@@ -177,6 +177,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 정규형: SURVEY/QUIZ는 두 키를 저장하지 않음(SUBMIT 고정). TEXT/IMAGE/VIDEO는 `LINK_AND_CLOSE`일 때만 두 키를 저장하고 CLOSE·생략은 저장하지 않음. 서버 저장 로직(`PopupService.storedOptions`)과 같다.
 - 서버 WPF 응답은 저장 값과 무관하게 같은 규칙으로 최상위 `footerAction`을 만들므로 기능상 필수는 아니다(관리자 재편집 시 이전 URL이 남아 보이지 않게 하는 정리).
-- 적용 현황: 로컬 XE·원격 개발 DB 모두 미실행.
+- 제한: 07과 같이 값에 이스케이프된 따옴표(`\"`)가 있는 쌍이 JSON 맨 앞에 오면 지워지지 않는다(일반 URL에는 없음). 3번 잔여 행 수로 확인한다. 정규식은 로컬 XE에서 예시 문자열로 확인했다(맨 앞·중간·끝 키, 빈 값, 키만 있는 객체).
+- 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — 정리 대상 0행(샘플 데이터에 Footer 키 없음), 잔여 0. 원격 개발 DB 미실행.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @13_normalize_footer_action_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @13_normalize_footer_action_oracle.sql ""`
