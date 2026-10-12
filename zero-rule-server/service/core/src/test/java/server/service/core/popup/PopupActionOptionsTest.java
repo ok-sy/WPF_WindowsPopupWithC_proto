@@ -74,6 +74,30 @@ class PopupActionOptionsTest {
         }
     }
 
+    /** [설계 34-31·32] false·0은 명시값으로 유지하고, null·빈 문자열은 생략(유형별 기본값)으로 본다. */
+    @Test void blankMeansOmittedAndFalseOrZeroIsKept() {
+        var blank = new java.util.HashMap<String, Object>();
+        blank.put("footerAction", "");
+        blank.put("popupPosition", " ");
+        blank.put("backgroundOverlayOpacity", "");
+        blank.put("headerFontSize", "");
+        blank.put("useBackgroundOverlay", null);
+        for (String type : new String[]{"TEXT", "QUIZ"}) {
+            assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, blank)), type);
+        }
+        assertDoesNotThrow(() -> PopupService.validateWindowOptions(blank));
+        assertDoesNotThrow(() -> PopupService.validateFontSizeOptions(blank));
+        assertEquals("CLOSE", server.domain.popup.PopupFooterAction.effective("TEXT", ""));
+        assertEquals("SUBMIT", server.domain.popup.PopupFooterAction.effective("SURVEY", null));
+        assertEquals("CENTER", server.domain.popup.PopupWindowOptions.popupPosition(blank));
+        assertEquals(0.45, server.domain.popup.PopupWindowOptions.backgroundOverlayOpacity(blank));
+        assertNull(server.domain.popup.PopupWindowOptions.fontSize(blank, "headerFontSize"));
+        assertTrue(server.domain.popup.PopupWindowOptions.useBackgroundOverlay(blank));
+        Map<String, Object> explicit = Map.of("useBackgroundOverlay", false, "backgroundOverlayOpacity", 0);
+        assertFalse(server.domain.popup.PopupWindowOptions.useBackgroundOverlay(explicit), "false는 누락이 아니다");
+        assertEquals(0.0, server.domain.popup.PopupWindowOptions.backgroundOverlayOpacity(explicit), "0은 누락이 아니다");
+    }
+
     @Test void combinedQuizRequiresTrackableVideoAndQuizType() {
         assertDoesNotThrow(() -> PopupService.validateActionOptions(popup("QUIZ",
                 Map.of("videoEnabled", true, "videoUrl", "https://example.com/training.mp4"))));

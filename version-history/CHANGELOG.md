@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-11 — TODO34 공통 옵션 기본값·빈 값 정책 및 문서 정합성
+
+- 이유: 34-31·32(false/0을 누락으로 취급하지 않음, null·빈 문자열·미지원 enum 처리의 서버·WPF·문서 일치)와 34-42(설계 29~33의 상충 문구 정리) 반영. 서버는 응답 조립에서 빈 문자열을 기본값으로 처리하면서 등록 검증에서는 Footer 동작·위치·폰트의 빈 문자열을 거부해 정책이 어긋나 있었음.
+- 변경: PopupFooterAction.explicitValue 추가, 등록 검증(Footer 동작·Overlay·위치·폰트 크기)에서 null·빈 문자열을 생략(유형별 기본값)으로 처리. 미지원 값·유형에 맞지 않는 Action 거부는 유지. 계약서 §6.4에 빈 값·false/0·non-nullable 정책 명시. 설계 30·31 §8(단계별 호환)과 33 §5(응답 유지 목록)에 설계 34로 대체되었음을 안내하고, 설계 34 체크리스트를 구현·검증 결과로 갱신(41개 완료, 34-03·39·41·43·46·47 미완료 사유 기록).
+- 주요 파일: zero-rule-server/domain/.../popup/PopupFooterAction.java, zero-rule-server/service/core/.../popup/PopupService.java, PopupActionOptionsTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(30_*, 31_*, 33_*, 34_*), popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: 서버 빈 값·false/0 테스트 추가, 로컬 XE DB 연동 포함 :service:core popup·:web:api popup 103건 통과(skip 0), :app 컴파일 통과. WPF 행동 검증에 false/0 유지·빈/null enum 기본값 검증을 추가해 890건 통과. 최소 정의서는 기본값 기술이 그대로 맞아 변경 없음.
+- 상태: 커밋에 포함. 미푸시. 미완료: 34-03(응답 삭제 후보 5개 필드 확정), 34-39·41·46(실제 Windows 화면 확인), 34-43(Excel 정의서 저장소에 없음).
+
 ## 2026-10-12-10 — TODO34 RESULT 처리 상태별 큐 삭제·재전송 정합성
 
 - 이유: 서버가 원인 미확정 오류까지 REJECTED/WPF_INTERNAL로 돌려주고 WPF 큐는 응답에 resultId만 있으면 상태와 무관하게 삭제해, 일시 장애로 저장 실패한 결과가 재시도 없이 소실될 수 있었음(34-19~24). 삭제 기준을 "서버 응답 수신"이 아니라 "항목 처리 종결"로 확정한 최종안 반영. 요청 데이터와 목록 조회 방식은 변경하지 않음.

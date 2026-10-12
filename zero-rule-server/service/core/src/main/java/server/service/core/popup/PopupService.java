@@ -873,7 +873,7 @@ public class PopupService {
     static void validateActionOptions(PopupResponseDto popup) {
         Map<String, Object> content = popup.content();
         if (content == null) return;
-        Object action = content.get(PopupFooterAction.ACTION_KEY);
+        Object action = PopupFooterAction.explicitValue(content.get(PopupFooterAction.ACTION_KEY));
         if (!PopupFooterAction.isKnown(action))
             throw new IllegalArgumentException("푸터 동작은 CLOSE, LINK_AND_CLOSE, SUBMIT 중 하나여야 합니다.");
         boolean submitType = PopupFooterAction.isSubmitType(popup.popupType());
@@ -969,14 +969,17 @@ public class PopupService {
      */
     static void validateWindowOptions(Map<String, Object> content) {
         if (content == null) return;
-        Object overlay = content.get(PopupWindowOptions.USE_OVERLAY_KEY);
+        // [설계 34-32] null·빈 문자열은 생략(기본값)으로 본다. false·0은 정상 명시값이다.
+        java.util.function.Function<String, Object> value = key -> content.get(key) instanceof String text && text.isBlank()
+                ? null : content.get(key);
+        Object overlay = value.apply(PopupWindowOptions.USE_OVERLAY_KEY);
         if (overlay != null && !(overlay instanceof Boolean))
             throw new IllegalArgumentException("배경 Overlay 사용(useBackgroundOverlay)은 boolean이어야 합니다.");
-        Object opacity = content.get(PopupWindowOptions.OVERLAY_OPACITY_KEY);
+        Object opacity = value.apply(PopupWindowOptions.OVERLAY_OPACITY_KEY);
         if (opacity != null && !(opacity instanceof Number number
                 && Double.isFinite(number.doubleValue()) && number.doubleValue() >= 0 && number.doubleValue() <= 1))
             throw new IllegalArgumentException("배경 불투명도(backgroundOverlayOpacity)는 0~1 사이 숫자여야 합니다.");
-        Object position = content.get(PopupWindowOptions.POSITION_KEY);
+        Object position = value.apply(PopupWindowOptions.POSITION_KEY);
         if (position != null && !(position instanceof String text && PopupWindowOptions.POSITIONS.contains(text)))
             throw new IllegalArgumentException("팝업 위치(popupPosition)는 CENTER, TOP_LEFT 등 9개 값 중 하나여야 합니다.");
     }
@@ -991,14 +994,14 @@ public class PopupService {
      * 값이 없거나 null이면 통과(기존 데이터·미설정 = 기본 크기, §5.8). 값이 있으면 숫자이고 10~40 범위여야 한다.
      * 별도 DB 컬럼을 두지 않고 Overlay 옵션처럼 content JSON으로 저장·전달하므로 검증도 여기서 content 키 단위로 한다.
      */
-    private static void validateFontSizeOptions(Map<String, Object> content) {
+    static void validateFontSizeOptions(Map<String, Object> content) {
         if (content == null) {
             return;
         }
         for (String key : FONT_SIZE_KEYS) {
             Object value = content.get(key);
-            if (value == null) {
-                continue;
+            if (value == null || (value instanceof String text && text.isBlank())) {
+                continue;   // [설계 34-32] 생략·빈 문자열 = 화면 기본 크기
             }
             double size;
             if (value instanceof Number number) {

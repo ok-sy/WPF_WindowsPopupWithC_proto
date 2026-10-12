@@ -34,9 +34,15 @@ public final class PopupFooterAction {
         return "SURVEY".equals(type) || "QUIZ".equals(type);
     }
 
-    /** 허용 값(CLOSE / LINK_AND_CLOSE / SUBMIT)인지. null은 생략으로 보고 허용한다. */
+    /** [설계 34-32] null·빈 문자열은 생략으로 본다(유형별 기본값). 그 밖의 값은 그대로 돌려준다. */
+    public static Object explicitValue(Object action) {
+        return action instanceof String value && value.isBlank() ? null : action;
+    }
+
+    /** 허용 값(CLOSE / LINK_AND_CLOSE / SUBMIT)인지. 생략(null·빈 문자열)은 허용한다. */
     public static boolean isKnown(Object action) {
-        return action == null || (action instanceof String value && VALUES.contains(value));
+        Object value = explicitValue(action);
+        return value == null || (value instanceof String text && VALUES.contains(text));
     }
 
     /** 유형별 실제 동작. SURVEY/QUIZ는 SUBMIT, 그 밖에는 LINK_AND_CLOSE가 아니면 CLOSE. */

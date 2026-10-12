@@ -324,6 +324,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
 - completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
 - serverTime/userId는 진단용(WPF 동작에 미사용), pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
+- [설계 34-31·32] `footerAction`·`popupPosition`의 빈 문자열·null은 생략과 같이 유형별 기본값(CLOSE 또는 SUBMIT, CENTER)으로 처리하며 미지원 값도 기본값이다. 백엔드 등록 단계는 빈 문자열을 생략으로 받고 미지원 값·유형에 맞지 않는 Action은 거부한다. `useBackgroundOverlay=false`·`backgroundOverlayOpacity=0`은 누락이 아닌 정상 명시값이다. 두 값은 non-nullable이므로 null 대신 생략한다. 글자 크기는 null·생략이면 화면 기본 크기다.
 - **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.
 
 ### 저장소 서버 검증과 남은 보완 사항

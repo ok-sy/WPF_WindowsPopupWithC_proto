@@ -95,8 +95,8 @@ TODO 29~33의 후속 검토 결과와 확정 요건을 통합한다.
 
 ### 3.3 responseStartedAt 제거
 
-- [ ] 34-07 WpfResultItemDto, PopupResultBuilder.BuildSubmitted, WpfResultRequest.Item, WpfResultCommand와 서비스 전달 경로에서 responseStartedAt 제거.
-- [ ] 34-08 PopupService.submitResponse 및 Mapper의 RESPONSE_STARTED_AT 의존을 확인하고, DB 컬럼 유지/제거와 기존 데이터 처리 방식을 명시.
+- [x] 34-07 WpfResultItemDto, PopupResultBuilder.BuildSubmitted, WpfResultRequest.Item, WpfResultCommand와 서비스 전달 경로에서 responseStartedAt 제거. — TODO32 커밋(568ec33)
+- [x] 34-08 PopupService.submitResponse 및 Mapper의 RESPONSE_STARTED_AT 의존을 확인하고, DB 컬럼 유지/제거와 기존 데이터 처리 방식을 명시. — 컬럼 삭제로 결정, 12번 스크립트를 로컬 XE·원격 개발 DB에 적용(기존 값 0행)
 - [x] 34-09 closedAt - displayedAt은 화면 체류/처리 시간이며 실제 첫 입력부터의 응답 시간은 아님을 문서화. DB 통계가 필요하면 해당 결과의 두 시각을 보존·연계하는 경로 확인. — 계약서 §10.4·WpfResultCommand·설계 32 문구 정정. 서버는 USER_POPUP_STATUS에 사용자·팝업 단위 최신 표시·닫기 시각만 보존하므로 결과 건별 통계가 필요하면 별도 결정
 - [x] 34-10 개발용 pending-results.json에 실제 미전송 자료가 있으면 결과 유실 없이 전환. 구버전 상시 호환 로직은 만들지 않으며, 테스트 데이터 초기화가 필요하면 명시적으로 수행. — 실제 %LOCALAPPDATA%\Popup\pending-results.json 없음 확인(전환 대상 없음). 구버전 호환 로직 미추가
 
@@ -113,14 +113,14 @@ WPF 답안 검증·채점 → score/passed 확정 → 결과 로컬 저장 → �
 PopupService.submitResponse는 자체 채점한 totalScore/passedYn을 DB 및 완료 상태에 반영한다.
 응답 DTO에서 점수 필드만 삭제해서는 책임 불일치가 해결되지 않는다.
 
-- [ ] 34-11 QUIZ의 최종 저장 점수·통과값을 요청 score/passed로 변경.
-- [ ] 34-12 USER_POPUP_STATUS 완료 처리에 동일한 passed를 적용하여 WPF 합격과 서버 미완료가 어긋나지 않도록 정리.
-- [ ] 34-13 신규 QUIZ SUBMITTED에서 score/passed 누락 및 잘못된 자료형·값의 검증 정책 확정. 구버전용 서버 재채점 fallback은 추가하지 않음.
-- [ ] 34-14 SURVEY는 점수·통과값을 강제하지 않고 제출 완료로 처리. QUIZ와 SURVEY 검증·저장 분기 명시.
-- [ ] 34-15 서버 계산을 유지한다면 비교·진단 전용으로 분리하고 최종 점수·통과·완료를 덮어쓰지 않도록 보장.
+- [x] 34-11 QUIZ의 최종 저장 점수·통과값을 요청 score/passed로 변경. — TODO33 커밋
+- [x] 34-12 USER_POPUP_STATUS 완료 처리에 동일한 passed를 적용하여 WPF 합격과 서버 미완료가 어긋나지 않도록 정리. — markPopupCompleted에 WPF passed 적용
+- [x] 34-13 신규 QUIZ SUBMITTED에서 score/passed 누락 및 잘못된 자료형·값의 검증 정책 확정. 구버전용 서버 재채점 fallback은 추가하지 않음. — QUIZ score/passed 누락·음수·NaN → REJECTED(WPF_INVALID_RESULT), 재채점 fallback 없음
+- [x] 34-14 SURVEY는 점수·통과값을 강제하지 않고 제출 완료로 처리. QUIZ와 SURVEY 검증·저장 분기 명시. — SURVEY는 WPF 값 미사용, 0점·통과로 제출 완료
+- [x] 34-15 서버 계산을 유지한다면 비교·진단 전용으로 분리하고 최종 점수·통과·완료를 덮어쓰지 않도록 보장. — 서버 계산은 문항 상세·불일치 로그 전용(PopupSubmitScoreTest)
 - [x] 34-16 문항별 earnedScore/correctYn과 WPF 총점의 정합성 정책 확정. 진단값과 최종 저장값을 혼동하지 않도록 문서화. — 계약서 §10.6: 문항별 점수·정오답은 진단값, 최종 점수·통과·완료는 WPF 값 기준
-- [ ] 34-17 형식·문항 소속·선택지·필수 답안·영상 요건·인증 검증을 단순 점수 저장 변경 때문에 제거하지 않음.
-- [ ] 34-18 표시 후 정답/합격점 변경 사례에서 WPF 결과가 서버 재계산으로 바뀌지 않는지 검증. 데이터 버전 정책이 필요하면 후속 결정 사항으로 기록.
+- [x] 34-17 형식·문항 소속·선택지·필수 답안·영상 요건·인증 검증을 단순 점수 저장 변경 때문에 제거하지 않음. — 문항 소속·선택지·필수 답안·영상 요건·인증 검증 유지
+- [x] 34-18 표시 후 정답/합격점 변경 사례에서 WPF 결과가 서버 재계산으로 바뀌지 않는지 검증. 데이터 버전 정책이 필요하면 후속 결정 사항으로 기록. — 서버 계산과 다른 WPF 값이 그대로 저장되는지 검증(PopupSubmitScoreTest). 데이터 버전 정책은 후속 결정
 
 ## 5. RESULT 저장 성공·실패와 재전송
 
@@ -148,12 +148,12 @@ PopupResultQueue.FlushAsync는 응답에 resultId가 있으면 상태와 무관�
 
 ### 6.1 신규 계약만 사용
 
-- [ ] 34-25 TODO 29의 showCloseButton → showFooterButton 통일 및 C# LegacyShowCloseButton 제거.
-- [ ] 34-26 TODO 30의 footerAction / footerLinkUrl을 popups[] 최상위로 이동.
-- [ ] 34-27 TODO 31의 useBackgroundOverlay / backgroundOverlayOpacity / popupPosition / headerFontSize / bodyFontSize / footerFontSize를 최상위로 이동.
-- [ ] 34-28 WPF는 최상위만 읽고, 서버 응답 content에서는 이동한 key 제거. 이행용 중복 전송·content fallback 미구현.
-- [ ] 34-29 DB CONTENT_OPTIONS 등에 저장된 값은 응답 조립 시 승격 가능. API 위치 변경 때문에 불필요한 DB 컬럼을 추가하지 않음.
-- [ ] 34-30 관리자 저장·재조회·미리보기 및 Demo 생성/가공 경로가 값을 잃지 않도록 확인. 관리자 API 저장 위치와 WPF 응답 위치는 별도로 문서화.
+- [x] 34-25 TODO 29의 showCloseButton → showFooterButton 통일 및 C# LegacyShowCloseButton 제거. — TODO29 커밋
+- [x] 34-26 TODO 30의 footerAction / footerLinkUrl을 popups[] 최상위로 이동. — TODO30 커밋
+- [x] 34-27 TODO 31의 useBackgroundOverlay / backgroundOverlayOpacity / popupPosition / headerFontSize / bodyFontSize / footerFontSize를 최상위로 이동. — TODO31 커밋
+- [x] 34-28 WPF는 최상위만 읽고, 서버 응답 content에서는 이동한 key 제거. 이행용 중복 전송·content fallback 미구현. — content fallback·중복 전송 없음
+- [x] 34-29 DB CONTENT_OPTIONS 등에 저장된 값은 응답 조립 시 승격 가능. API 위치 변경 때문에 불필요한 DB 컬럼을 추가하지 않음. — CONTENT_OPTIONS 저장 유지, 응답 조립 시 승격, DB 컬럼 추가 없음
+- [x] 34-30 관리자 저장·재조회·미리보기 및 Demo 생성/가공 경로가 값을 잃지 않도록 확인. 관리자 API 저장 위치와 WPF 응답 위치는 별도로 문서화. — 관리자 저장·재조회는 content 유지(웹 tsc 통과), Demo 생성·옵션 창은 최상위로 이동. 저장 위치와 응답 위치를 계약서 §7에 문서화. 관리자 화면 수동 확인 미실행
 
 ### 6.2 기본값과 검증
 
@@ -167,9 +167,9 @@ PopupResultQueue.FlushAsync는 응답에 resultId가 있으면 상태와 무관�
 - headerFontSize / bodyFontSize / footerFontSize: 생략 시 화면 기본값.
 - footerAction: 일반 팝업 생략 시 CLOSE, SURVEY/QUIZ 생략 시 SUBMIT.
 
-- [ ] 34-31 false/0을 누락으로 취급하지 않는지 검증.
-- [ ] 34-32 null·빈 문자열·미지원 enum 및 숫자 범위 처리 정책을 서버·WPF·문서에서 일치시킴.
-- [ ] 34-33 opacity 0~1, 기존 FontSize 10~40 보정, 위치 9개 값 처리 검증.
+- [x] 34-31 false/0을 누락으로 취급하지 않는지 검증. — 서버·WPF 테스트로 false·0 유지 확인
+- [x] 34-32 null·빈 문자열·미지원 enum 및 숫자 범위 처리 정책을 서버·WPF·문서에서 일치시킴. — 빈 문자열·null은 생략(기본값), 미지원 enum은 응답·WPF 기본값/등록 거부. 계약서 §6.4 문서화
+- [x] 34-33 opacity 0~1, 기존 FontSize 10~40 보정, 위치 9개 값 처리 검증. — opacity 0~1(서버 저장 검증·응답·WPF 보정), FontSize 10~40, 위치 9개 값 테스트
 
 ### 6.3 유형별 허용 Action
 
@@ -181,23 +181,23 @@ PopupResultQueue.FlushAsync는 응답에 resultId가 있으면 상태와 무관�
 공통화는 같은 필드로 동작을 정의한다는 의미이며 모든 유형에 모든 모드를 허용한다는 의미가 아니다.
 SURVEY/QUIZ 제출 후 링크 열기는 이번 계약에 포함하지 않는다.
 
-- [ ] 34-34 관리자 화면에서 유형별 Action 선택 제한.
+- [x] 34-34 관리자 화면에서 유형별 Action 선택 제한. — 관리자 웹 설문·퀴즈 Footer 동작 제출 고정(TODO30)
 - [x] 34-35 서버에서 명시적으로 잘못된 유형/Action 조합 검증. 누락 시 유형별 기본값과 잘못된 명시값을 구분. — 2026-10-12: SURVEY/QUIZ에 CLOSE·LINK_AND_CLOSE 명시 시 저장 거부, 생략은 SUBMIT 기본값. 일반 유형 SUBMIT 거부(기존). PopupActionOptionsTest
-- [ ] 34-36 WPF에서 SURVEY/QUIZ의 제출 경로 보장.
-- [ ] 34-37 제출 경로의 TryOpenSubmissionLink 호출 제거 또는 비실행 보장. SUBMIT에서 footerLinkUrl 미사용.
-- [ ] 34-38 LINK_AND_CLOSE는 HTTP(S) 절대 URL 필수. 주소 오류·브라우저 실행 실패 시 창 유지.
-- [ ] 34-39 VIDEO 완료 전 닫기 금지가 CLOSE/LINK_AND_CLOSE에서 우회되지 않는지 검증.
-- [ ] 34-40 showFooter=false인 SURVEY/QUIZ 내부 제출 경로, showFooterButton=false에서도 제출 가능함을 검증.
-- [ ] 34-41 QUIZ 미통과 시 창 유지·답안 수정·재제출, VIDEO+QUIZ 시청 조건 유지 검증.
+- [x] 34-36 WPF에서 SURVEY/QUIZ의 제출 경로 보장. — ConvertFooterAction이 SURVEY/QUIZ를 항상 Submit
+- [x] 34-37 제출 경로의 TryOpenSubmissionLink 호출 제거 또는 비실행 보장. SUBMIT에서 footerLinkUrl 미사용. — TryOpenSubmissionLink 삭제
+- [x] 34-38 LINK_AND_CLOSE는 HTTP(S) 절대 URL 필수. 주소 오류·브라우저 실행 실패 시 창 유지. — URL 검증·실패 시 창 유지 기존 동작 유지
+- [ ] 34-39 VIDEO 완료 전 닫기 금지가 CLOSE/LINK_AND_CLOSE에서 우회되지 않는지 검증. — 코드 확인: CloseButton_Click이 영상 완료 검사 뒤에 바로가기를 실행. 모달 안내창 때문에 자동 검증 미추가, 실제 화면 확인 필요
+- [x] 34-40 showFooter=false인 SURVEY/QUIZ 내부 제출 경로, showFooterButton=false에서도 제출 가능함을 검증. — 기존 CheckFooterSubmission(showFooter·showFooterButton 조합별 제출 버튼 1개 유지)
+- [ ] 34-41 QUIZ 미통과 시 창 유지·답안 수정·재제출, VIDEO+QUIZ 시청 조건 유지 검증. — 로컬 채점 미통과(75점) 검증은 있으나 창 유지·재제출의 화면 흐름 자동 검증은 없음(안내창 모달). 실제 화면 확인 필요
 
 ## 7. 문서·검증·완료 기준
 
-- [ ] 34-42 구현 시 TODO 29~33의 상태·상충 문구를 본 문서 기준으로 갱신.
-- [ ] 34-43 POPUP_INTERFACE_SPEC, WPF_POPUP_MINIMAL_SPEC, WPF_POPUP_ALL_SPEC, RESULT_REQUEST/RESULT_RESPONSE Excel 및 관련 계약 문서 동기화. 전체 기능 정리로 최소 공개 범위를 임의 확장하지 않음.
-- [ ] 34-44 api/examples의 목록·결과 요청·결과 응답 및 Demo 생성·표시 JSON 갱신.
-- [ ] 34-45 서버/WPF 계약 테스트로 삭제 필드 부재, 신규 위치, 기본값, Action 제약, WPF 점수 저장, 결과 재시도를 검증.
-- [ ] 34-46 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 실제 화면 검증.
-- [ ] 34-47 요건별 구현 커밋과 version-history/CHANGELOG.md에 변경·검증·미완료 사항 기록.
+- [x] 34-42 구현 시 TODO 29~33의 상태·상충 문구를 본 문서 기준으로 갱신. — 설계 30·31 §8, 33 §5에 TODO34 대체 안내, 30-17·32·33 문구 정정
+- [ ] 34-43 POPUP_INTERFACE_SPEC, WPF_POPUP_MINIMAL_SPEC, WPF_POPUP_ALL_SPEC, RESULT_REQUEST/RESULT_RESPONSE Excel 및 관련 계약 문서 동기화. 전체 기능 정리로 최소 공개 범위를 임의 확장하지 않음. — 계약서·최소/전체 정의서 동기화. Excel 정의서는 저장소에 없어 미반영
+- [x] 34-44 api/examples의 목록·결과 요청·결과 응답 및 Demo 생성·표시 JSON 갱신. — api/examples 목록·결과 요청·결과 응답, docs/interfaces/examples 갱신
+- [x] 34-45 서버/WPF 계약 테스트로 삭제 필드 부재, 신규 위치, 기본값, Action 제약, WPF 점수 저장, 결과 재시도를 검증. — 삭제 필드 부재·신규 위치·기본값·Action 제약·WPF 점수 저장·결과 재시도 테스트(서버 103, 행동 890, 복구 137)
+- [ ] 34-46 TEXT / IMAGE / VIDEO / SURVEY / QUIZ / VIDEO+QUIZ 실제 화면 검증. — 미실행
+- [ ] 34-47 요건별 구현 커밋과 version-history/CHANGELOG.md에 변경·검증·미완료 사항 기록. — 요건별 커밋·CHANGELOG 기록 진행 중
 
 완료 기준:
 - RESULT 필드는 실제 사용처와 필요성이 설명되며 확정 삭제 필드가 계약에서 제거됨.
