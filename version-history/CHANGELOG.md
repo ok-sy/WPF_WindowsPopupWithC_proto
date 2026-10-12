@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-08 — TODO34-35 설문·퀴즈 Footer 동작 명시값 검증
+
+- 이유: TODO34 §6.3(SURVEY/QUIZ는 SUBMIT만 허용, 생략과 잘못된 명시값 구분)이 TODO30의 정규화 수용 정책보다 우선. 기존 저장 데이터는 13번 스크립트로 로컬·원격 개발 DB 모두 정규형이라 거부로 바꿔도 재저장 실패 대상이 없음.
+- 변경: PopupService.validateActionOptions가 SURVEY/QUIZ(동영상+퀴즈 포함)에 CLOSE·LINK_AND_CLOSE를 명시하면 거부. 생략·SUBMIT은 허용하고 저장 시 키를 남기지 않는 정규형은 유지. 관리자 웹은 설문·퀴즈 저장 시 두 키를 보내지 않으므로 변경 없음. WPF의 방어적 SUBMIT 처리 유지. 계약서 §6.3 footerAction 설명, 설계 30-17·34-35 갱신.
+- 주요 파일: zero-rule-server/service/core/.../popup/PopupService.java, PopupActionOptionsTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(30_*, 34_*).
+- 검증: PopupActionOptionsTest(SURVEY/QUIZ × 생략·SUBMIT 허용, CLOSE·LINK_AND_CLOSE 거부, 저장 키 미보존) 통과. 전체 popup 테스트는 아래 34 후속 항목과 함께 실행.
+- 상태: TODO34-35 커밋에 포함. 미푸시.
+
 ## 2026-10-12-07 — TODO32·30 DB 스크립트 로컬 XE·원격 개발 DB 적용
 
 - 이유: TODO34-35(설문·퀴즈의 잘못된 Footer 동작 명시값 거부) 반영 전에 기존 저장 데이터를 정규형으로 맞추고, 설계 32의 미사용 컬럼을 정리할 필요.

@@ -254,7 +254,7 @@ X-Client-Version: 1.0.0
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
 | showFooterButton | boolean | O | `true` | Footer 버튼 표시. 상단 X는 없음. SURVEY/QUIZ 제출은 유지 |
 | showFooter | boolean | O | `true` | Footer 표시 |
-| footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT 고정(다른 값이 와도 SUBMIT). 일반 유형의 생략·미지원 값·SUBMIT은 CLOSE |
+| footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT만 허용. 백엔드는 유형에 맞지 않는 명시값을 등록 단계에서 거부하며, WPF는 방어적으로 SURVEY·QUIZ를 항상 SUBMIT, 일반 유형의 생략·미지원 값·SUBMIT을 CLOSE로 처리 |
 | footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 바로가기 URL. 절대 http/https. 다른 동작에서는 보내지 않음 |
 | useBackgroundOverlay | boolean | 선택 | `true` | 배경 Overlay 사용(설계 31) |
 | backgroundOverlayOpacity | number | 선택 | `0.45` | Overlay 불투명도 0~1. 서버 저장 검증, WPF도 0~1로 보정 |

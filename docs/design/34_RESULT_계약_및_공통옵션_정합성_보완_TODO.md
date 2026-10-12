@@ -149,7 +149,7 @@ PopupResultQueue.FlushAsync는 응답에 resultId가 있으면 상태와 무관�
 SURVEY/QUIZ 제출 후 링크 열기는 이번 계약에 포함하지 않는다.
 
 - [ ] 34-34 관리자 화면에서 유형별 Action 선택 제한.
-- [ ] 34-35 서버에서 명시적으로 잘못된 유형/Action 조합 검증. 누락 시 유형별 기본값과 잘못된 명시값을 구분.
+- [x] 34-35 서버에서 명시적으로 잘못된 유형/Action 조합 검증. 누락 시 유형별 기본값과 잘못된 명시값을 구분. — 2026-10-12: SURVEY/QUIZ에 CLOSE·LINK_AND_CLOSE 명시 시 저장 거부, 생략은 SUBMIT 기본값. 일반 유형 SUBMIT 거부(기존). PopupActionOptionsTest
 - [ ] 34-36 WPF에서 SURVEY/QUIZ의 제출 경로 보장.
 - [ ] 34-37 제출 경로의 TryOpenSubmissionLink 호출 제거 또는 비실행 보장. SUBMIT에서 footerLinkUrl 미사용.
 - [ ] 34-38 LINK_AND_CLOSE는 HTTP(S) 절대 URL 필수. 주소 오류·브라우저 실행 실패 시 창 유지.

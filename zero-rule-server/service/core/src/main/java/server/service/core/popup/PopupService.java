@@ -866,8 +866,9 @@ public class PopupService {
 
     /**
      * 선택적인 푸터 동작 및 영상 결합 모드 설정을 저장 전에 검증한다.
-     * [설계 30] footerAction은 CLOSE / LINK_AND_CLOSE / SUBMIT. SURVEY/QUIZ는 SUBMIT 고정이라 어떤 허용 값이 와도
-     * 저장 시 정규화(키 제거)하고, 그 밖의 유형에 SUBMIT은 거부한다. LINK_AND_CLOSE는 절대 http/https URL이 필수다.
+     * [설계 30·34-35] footerAction은 CLOSE / LINK_AND_CLOSE / SUBMIT. 유형별 허용 값만 받는다.
+     * TEXT/IMAGE/VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY/QUIZ(동영상+퀴즈 포함)는 SUBMIT만 허용하며 잘못된 명시값은 거부한다.
+     * 생략은 유형별 기본값(CLOSE 또는 SUBMIT)으로 본다. LINK_AND_CLOSE는 절대 http/https URL이 필수다.
      */
     static void validateActionOptions(PopupResponseDto popup) {
         Map<String, Object> content = popup.content();
@@ -878,6 +879,8 @@ public class PopupService {
         boolean submitType = PopupFooterAction.isSubmitType(popup.popupType());
         if (PopupFooterAction.SUBMIT.equals(action) && !submitType)
             throw new IllegalArgumentException("제출(SUBMIT) 푸터 동작은 설문·퀴즈에서만 사용할 수 있습니다.");
+        if (action != null && !PopupFooterAction.SUBMIT.equals(action) && submitType)
+            throw new IllegalArgumentException("설문·퀴즈의 푸터 동작은 제출(SUBMIT)만 사용할 수 있습니다.");
         if (PopupFooterAction.LINK_AND_CLOSE.equals(action) && !submitType) {
             try {
                 java.net.URI uri = java.net.URI.create(contentText(content, "footerLinkUrl"));

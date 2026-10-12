@@ -304,7 +304,7 @@ WPF:
 - [x] 30-14 서버 응답 조립 시 content의 Footer 값을 최상위로 승격 — WpfPopupItem.from에서 승격, content에서 두 키 제거
 - [x] 30-15 관리자 API에서 popupType별 허용 Action 검증 추가 — SUBMIT은 SURVEY/QUIZ 전용, 미지원 값 거부
 - [x] 30-16 LINK_AND_CLOSE일 때 footerLinkUrl 필수/URL 형식 검증 — 기존 검증 유지(일반 유형만)
-- [x] 30-17 SURVEY/QUIZ에 CLOSE/LINK_AND_CLOSE가 들어오는 경우의 저장 정책 결정 — 정규화로 결정: SURVEY/QUIZ는 어떤 허용 값이 와도 키를 저장하지 않음(SUBMIT). 기존 데이터는 `db/oracle/13_normalize_footer_action_oracle.sql`(로컬·원격 개발 DB 미실행)
+- [x] 30-17 SURVEY/QUIZ에 CLOSE/LINK_AND_CLOSE가 들어오는 경우의 저장 정책 결정 — 정규화로 결정했으나 TODO34-35에 따라 SURVEY/QUIZ의 CLOSE·LINK_AND_CLOSE 명시값은 저장 거부로 변경(SUBMIT·생략만 허용, 키는 저장하지 않음). 기존 데이터는 `db/oracle/13_normalize_footer_action_oracle.sql`(로컬·원격 개발 DB 미실행)
 - [x] 30-18 구버전 WPF와의 전환 순서 결정 — 운영 배포 버전이 없어 단계 1 중복 전송 없이 즉시 전환
 - [x] 30-19 필요 시 `minimumSupportedVersion` 상향 — 운영 배포 버전이 없어 상향 불필요로 결정(미변경)
 - [x] 30-20 content 내부 legacy Footer key 제거 — WPF 응답 content에서 제거, WPF는 content 키를 읽지 않음. 관리자 API·DB(CONTENT_OPTIONS)는 저장 위치로 유지

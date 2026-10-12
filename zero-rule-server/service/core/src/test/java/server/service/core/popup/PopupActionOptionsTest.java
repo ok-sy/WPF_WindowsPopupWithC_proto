@@ -33,14 +33,18 @@ class PopupActionOptionsTest {
                 Map.of("footerAction", "UNKNOWN"))));
     }
 
-    /** [설계 30] SUBMIT은 설문·퀴즈 전용이고, 설문·퀴즈는 어떤 허용 값이 와도 SUBMIT으로 정규화(키 미저장)한다. */
+    /** [설계 30·34-35] SUBMIT은 설문·퀴즈 전용이고, 설문·퀴즈에 CLOSE·LINK_AND_CLOSE를 명시하면 거부한다. 저장 시 키는 남기지 않는다. */
     @Test void footerActionPolicyByPopupType() {
         assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup("TEXT",
                 Map.of("footerAction", "SUBMIT"))));
         for (String type : new String[]{"SURVEY", "QUIZ"}) {
+            assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of())));
+            assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("footerAction", "SUBMIT"))));
+            for (String wrong : new String[]{"CLOSE", "LINK_AND_CLOSE"}) {
+                assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup(type,
+                        Map.of("footerAction", wrong, "footerLinkUrl", "https://example.com/"))), type + "/" + wrong);
+            }
             for (String action : new String[]{"SUBMIT", "CLOSE", "LINK_AND_CLOSE"}) {
-                // 설문·퀴즈의 링크는 쓰지 않으므로 URL을 검사하지 않는다.
-                assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("footerAction", action))));
                 var stored = PopupService.storedOptions(type, Map.of("footerAction", action,
                         "footerLinkUrl", "https://example.com/", "surveyTitle", "t", "useBackgroundOverlay", true));
                 assertFalse(stored.containsKey("footerAction") || stored.containsKey("footerLinkUrl"), type + "/" + action);
