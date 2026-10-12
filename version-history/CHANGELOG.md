@@ -2,13 +2,21 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-02 — 20261013 폐쇄망 반입본 생성
+
+- 이유: 20261012 반입 이후의 Demo SSO·로그인 분리 테스트(2026-10-13-01)와 설계 17 폐기 문서(2026-10-12-25)를 폐쇄망에 반입하기 위해 새 반입본 필요.
+- 변경: main(f4e768e 소스 기준)에서 scripts/export-offline-package.ps1(-IncludeMockSso -NoZip)로 offline-export/20261013 생성. 서버·웹 묶음은 20261012와 바이트 단위로 같아(6ac5375 이후 zero-rule-server·zero-rule-web 변경 없음) 제외하고 3-popup-frameWork·4-docs만 기존 번호로 구성. MockSso 개인 launchSettings 제외. DELETE-SINCE-20260930(20261012와 같은 목록, 머리글 인코딩만 정상화), MANIFEST, 반입 안내(README-IMPORT), 소스 SHA256, TAR·통합 TGZ 및 체크섬 생성. NuGet·SDK는 20261006 반입본 사용(패키지 참조 변경 없음).
+- 주요 파일: offline-export/20261013/ (Git 제외), .offline-verify/package-20261013.ps1·finalize-20261013.ps1 (Git 제외), version-history/CHANGELOG.md.
+- 검증: 20261012 대비 WPF 묶음은 DemoWindow.AuthTest.cs 1개 추가(86개), 문서 73개 동일 구성. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,637,582바이트). TAR·TGZ 항목 수·누출(exe·dll·bin/obj·검증 하네스) 검사 통과. 폐쇄망 PC 반입·실행·배포 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-25·2026-10-13-01 항목은 같은 푸시로 원격 반영.
+
 ## 2026-10-13-01 — TODO10 Demo SSO·로그인 분리 테스트
 
 - 이유: 서버 팝업 API 연동 없이 SSO 사용자 정보 획득과 서버 로그인 API 호출을 각각 확인할 필요가 있어, 기존 관리 화면 "SSO 로그인 테스트"(SSO→로그인 일괄, DemoMode=false 전용)와 별도로 Demo 화면에 단계별 테스트를 추가.
 - 변경: appsettings `PopupApi.DemoSsoLoginTest`(기본 false) 추가. true이고 DemoMode이면 Demo 화면에 `SSO · 로그인 테스트` 영역 표시 — `SSO 테스트`는 Auth.SsoUrl GET(Windows 통합 인증) 후 사번·구분 코드를 입력칸에 채우고, `로그인 테스트`는 입력칸 값으로 BaseUrl+Auth.LoginPath POST(직접 입력으로 단독 호출 가능). 결과칸에 주소·값·소요 시간·실패 예외 표시, 토큰은 길이만 표시하고 보관하지 않음. 팝업 조회·결과 전송·정기 재로그인은 Demo에서 계속 수행하지 않음. MainWindow가 설정을 `DemoAuthTestSettings`로 넘기고 App이 DemoWindow에 연결.
 - 주요 파일: popup-frameWork/Popup/(DemoWindow.AuthTest.cs, DemoWindow.xaml, App.xaml.cs, MainWindow.xaml.cs, Models/PopupClientSettings.cs, appsettings.json), popup-frameWork/README.md.
-- 검증: WPF 빌드(별도 출력 폴더) 경고 0·오류 0. 기본 출력 폴더는 실행 중인 popupSample.exe 잠금으로 복사 실패. BehaviorTests·실제 화면·MockSso/서버 연동 확인은 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 검증: WPF 빌드(별도 출력 폴더) 경고 0·오류 0. 기본 출력 폴더는 실행 중인 popupSample.exe 잠금으로 복사 실패. 이후 앱 종료 뒤 DemoSsoLoginTest=true로 Debug 재빌드해 출력 DLL에 설정·버튼 영역 포함 확인(설정은 false로 원복, appsettings는 EXE 내장 리소스라 값 변경 시 재빌드 필요). BehaviorTests·실제 화면·MockSso/서버 연동 확인은 미실행.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-25 — TODO17 단일 EXE 자동 업데이트 폐기
 
@@ -16,7 +24,7 @@
 - 변경: 설계 17 상단 우선순위·상태를 폐기로 변경(설계 초안은 기록으로 유지). 설계 09 P3 항목, 설계 14 후속 TODO 항목을 폐기로 표기. WPF_POPUP_ALL_SPEC 미포함 기능 표의 설계 17 설명을 폐기로 갱신. MINIMAL 명세는 해당 항목이 없어 변경 없음.
 - 주요 파일: docs/design/17_WPF_단일_EXE_자동업데이트_TODO.md, docs/design/09_전환계획_및_미결사항.md, docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md.
 - 검증: 문서 변경만 있어 빌드·테스트 대상 없음. docs 내 설계 17 참조 문구 grep으로 확인.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-24 — 인터페이스 정의서 Word/PDF v3.7 생성
 
