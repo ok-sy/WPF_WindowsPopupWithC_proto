@@ -8,7 +8,7 @@
 - 변경: `scripts/export-interface-word.cjs`로 `docs/interfaces/WPF_Popup_API_Interface_v3.7.docx` 생성(표 42·제목 114), `scripts/export-interface-pdf.vbs`(Word COM)로 필드·목차 갱신 후 `WPF_Popup_API_Interface_v3.7.pdf` 생성.
 - 주요 파일: docs/interfaces/WPF_Popup_API_Interface_v3.7.docx, docs/interfaces/WPF_Popup_API_Interface_v3.7.pdf.
 - 검증: docx 본문에서 버전 3.7 표기·RETRYABLE_ERROR 포함, VERSION 3.6 표기 없음, linkUrl은 3.7 삭제 이력·ORIGINAL 설명에만 남음 확인. Word에서 PDF 내보내기 정상 완료. PDF 화면 검토는 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-23 — 관리자 웹 WPF 기준 미반영 항목 보완(최소·최대 크기, Header 로고, 표시 위치 미리보기)
 
@@ -16,7 +16,7 @@
 - 변경: 크기 설정에 최소·최대 너비/높이 입력 추가(WPF ApplyWindowSize·EffectiveMaximum 기준 — FULLSCREEN은 숨김, IMAGE는 최소만 표시하고 최대는 작업 영역 90% 안내, 그 밖은 네 값 표시, 서버 검증과 같은 양수·최대≥최소 보정). PopupDimensionField에 helperText 선택 prop 추가. 미리보기 Header의 X 버튼을 제거하고 WPF HeaderLogo.png 사본(`public/images/popup-header-logo.png`)을 같은 크기(100×24)·여백으로 클릭 불가 표시. 실제 크기로 보기 모달에 9방향 위치 정렬 적용(브라우저 창을 작업 영역으로 보고 가장자리 여백 일반 24px·영상 0px, FULLSCREEN 무시, 위쪽 배치 시 종료 버튼을 아래로 이동). 미리보기 대응 문서와 사용자 가이드 갱신.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/(PopupEditorDialog.tsx, PopupPreview.tsx), zero-rule-web/main/public/images/popup-header-logo.png, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/POPUP_USER_OPTION_GUIDE.md.
 - 검증: `npx tsc --noEmit -p .` 오류 없음, 변경 파일 eslint 통과, `npm run build` 성공(경고는 기존 미변경 파일에서만). 브라우저 화면 확인은 미실행. WPF DTO 대비 관리자 미편집 항목은 서버가 받지 않는 sizeMode AUTO만 남음(설계 09 미결 18).
-- 상태: 커밋에 포함. 미푸시. 남은 차이 — WPF Header 배경은 검정·미리보기 Header는 흰색, WPF 일반 창은 그림자 여백 24px가 창 크기에 포함, 설문·퀴즈 미리보기는 showFooter와 무관하게 제출 영역 표시.
+- 상태: 커밋에 포함. 원격 반영. 남은 차이 — WPF Header 배경은 검정·미리보기 Header는 흰색, WPF 일반 창은 그림자 여백 24px가 창 크기에 포함, 설문·퀴즈 미리보기는 showFooter와 무관하게 제출 영역 표시.
 
 ## 2026-10-12-22 — IMAGE linkUrl(이미지 클릭 링크) 삭제
 
@@ -24,7 +24,7 @@
 - 변경: WPF — ImagePopupContentDto.LinkUrl, ImageFillPopupView 생성자 인자·손 모양 커서·ToolTip·클릭 처리기, Demo 옵션 창 linkUrl 항목 삭제. 서버 — AdminPopupSaveCommand·PopupEntity linkUrl, PopupMapper LINK_URL 조회·저장, PopupContentAssembler 응답 조립, PopupService 저장값 추출 삭제. 요청 content에 남은 linkUrl은 거부하지 않고 저장 사본 키 목록(폐기 키)으로 버리며 기존 CONTENT_OPTIONS 사본도 응답에 싣지 않음. DB — `db/oracle/14_drop_link_url_oracle.sql`(CONTENT_OPTIONS의 "linkUrl" 키 제거 후 POPUP_CONTENT.LINK_URL 컬럼 삭제, 재실행 시 SKIP), 01 스키마·README, ERD SQL 3종, export-popup-erwin 라벨 갱신. 관리자 웹 — IMAGE 기본값·저장 키·"클릭 연결 URL" 입력·미리보기 링크 삭제(다음 저장 때 기존 값 제거). 문서 — POPUP_INTERFACE_SPEC 3.7 변경 이력·IMAGE 표·ORIGINAL 설명, ALL/MINIMAL·옵션 가이드·사용자 가이드에서 linkUrl 행 삭제, Excel IMAGE 시트 linkUrl 행 삭제(시트 XML 직접 수정)·개요 핵심 변경 추가. footerLinkUrl·bottomDescriptionUrl은 유지.
 - 주요 파일: popup-frameWork/Popup/(Dtos/ImagePopupContentDto.cs, Factories/PopupFactory.cs, Views/Contents/ImageFillPopupView.xaml(.cs), DemoOptionsWindow(.Fields).cs), zero-rule-server/(AdminPopupSaveCommand, PopupEntity, PopupMapper.xml, PopupContentAssembler, PopupService, PopupContentAssemblerTest), db/oracle/(14_drop_link_url_oracle.sql, 01_popup_schema_oracle.sql, README.md), ERD/(01~03 SQL), scripts/export-popup-erwin.cjs, docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md.
 - 검증: WPF 빌드 경고·오류 0, 로컬 BehaviorTests 910건 통과(ORIGINAL 이미지에 커서·ToolTip 없음 검사 추가), RecoveryTests 빌드 성공(미실행). 서버 service:core 71건·web:api 34건 통과(실DB 테스트 포함, 컬럼 삭제 후 실행), app 컴파일 성공. 로컬 XE에 14 스크립트 실행 — 값 있는 행 0, 키 있는 행 0, 컬럼 삭제 OK, 재실행 SKIP 확인. Excel은 IMAGE·개요 시트 XML만 바뀌고 파일 정상 열림 확인. ERD/model 스냅샷(2026-09-28)과 .erwin은 재생성하지 않음.
-- 상태: 커밋에 포함. 미푸시. 원격 개발 DB에도 14 스크립트 실행 완료(2026-10-12, 값·키 보유 행 0, 컬럼 삭제 OK, 잔여 0). 이전 버전 서버로 원격 DB를 쓰면 LINK_URL 조회 실패.
+- 상태: 커밋에 포함. 원격 반영. 원격 개발 DB에도 14 스크립트 실행 완료(2026-10-12, 값·키 보유 행 0, 컬럼 삭제 OK, 잔여 0). 이전 버전 서버로 원격 DB를 쓰면 LINK_URL 조회 실패.
 
 ## 2026-10-12-21 — 불필요 문서 정리 및 문서 정합성 보완
 
@@ -33,7 +33,7 @@
 - 변경(정합성): POPUP_INTERFACE_SPEC — IMAGE linkUrl ORIGINAL 전용, sentAt 서버 선택, 426 참조 §13.1, 400 의미(결과 API 항목 오류는 200 REJECTED), Header 닫기 서술, results[] 공통 표 보강, 항목 code 값 표 신설, 필수 여부 표기 기준, §15 TEXT textBlocks. ALL/MINIMAL — IMAGE 관리자 신규 기본 ADAPTIVE, 호환 필드 서술 제거, MINIMAL HideDays·DisplayOrder 행과 예시 displayOrder 추가. Excel RESULT_REQUEST VIDEO+QUIZ 예시를 Sample의 문항 301만 쓰도록 수정. Word 생성 스크립트 기본 출력·표지를 v3.7/2026.10.12로 갱신. 가이드 2종·docs/README·루트 README·OFFLINE_WPF_BUILD·popup-frameWork/README·db/oracle/README를 현행 코드(popupSample.exe, TargetFramework·WebView2 버전, Demo 7종, 최상위 공통 옵션, allowSeek, 서식 편집)에 맞춰 갱신. 반입 스크립트의 docs 묶음에서 OLD 제외. 설계 02·05·06·07·09·12·14·18·19·23·24·25·26·30·32에 상태 정정·날짜 메모 추가(23 DB 적용, 30·32 스크립트 13·12 적용, YouTube 제거, showCloseButton 별칭 삭제 등).
 - 주요 파일: docs/(README.md, POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md, WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx), docs/design/*, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, README.md, OFFLINE_WPF_BUILD.md, popup-frameWork/README.md, db/oracle/README.md, scripts/(export-interface-word.cjs·.ps1, export-offline-package.ps1), .gitignore.
 - 검증: 삭제·이동 문서를 가리키는 링크를 저장소 전체에서 검색해 정리(남은 언급은 이관·이동 이력 표기뿐). JSON 예제 5개와 SPEC의 json 블록 파싱 정상, MINIMAL §8 예시와 examples JSON 일치. Excel은 RESULT_REQUEST 시트 XML만 직접 수정하고 다른 엔트리·셀 텍스트 변화 없음 확인. node --check(export-interface-word.cjs), PowerShell 구문 검사(export-offline-package.ps1) 통과. git diff --check 통과. Word 생성기·반입 스크립트 실행, 앱 실행 확인은 미실행. 코드 변경 없음.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-20 — Excel 인터페이스 정의서(WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx) 대조·보완
 
@@ -41,7 +41,7 @@
 - 변경: 병합 정리 — 다른 값 셀을 덮는 병합, 겹치는 병합 중 시작 셀이 빈 병합, 남은 겹침 중 작은 범위를 제거(9개 시트, 제거 40건). 셀 값·서식은 유지. 내용 보완 — TEXT 정렬·글자색(대문자 #RRGGBB, 팔레트 제한 없음)·크기(12~32px 8종)·글꼴 ID 4종, IMAGE linkUrl은 ORIGINAL 전용, RESULT_REQUEST sentAt 서버 필수 아님·answers/optionIds null 요소 금지·HIDDEN 우선순위, RESULT_RESPONSE 예시 메시지를 실제 서버 문구로 바꾸고 오류 분류 기준 표(HTTP·항목 status·code·WPF 처리, 미확정 결과 비전송) 추가, 개요 핵심 변경에 설문·퀴즈 SUBMIT 전용·항목 오류 분류·큐 삭제 기준 추가. 설계 29~33의 Excel 반영 항목과 34-43 완료 처리.
 - 주요 파일: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/design/(29_*·30_*·31_*·32_*·33_*·34_*).
 - 검증: 편집 전 원본 백업. 첫 시도(openpyxl 저장)에서 겹친 병합에 덮인 셀 값이 지워지는 것을 확인해 즉시 원본으로 되돌리고(해시 일치), 시트 XML을 직접 편집하는 방식으로 다시 작업. 결과 파일에서 모든 XML 파싱 정상, 병합 겹침·데이터 덮음 0건, 원본 대비 셀 값 차이가 의도한 셀(14개 셀 수정·RESULT_RESPONSE 43~51행 추가)뿐임을 확인. openpyxl로 경고 없이 열리고 다시 저장해도 값 손실 없음. Excel 자동화(COM)는 이 PC에서 등록 오류(E_NOINTERFACE)로 실행할 수 없어 Excel 화면 확인 미실행.
-- 상태: 커밋에 포함. 미푸시. 20261012 반입본에는 이 Excel 정의서가 포함되지 않음.
+- 상태: 커밋에 포함. 원격 반영. 20261012 반입본에는 이 Excel 정의서가 포함되지 않음.
 
 ## 2026-10-12-19 — TODO34 결과 항목 변환 예외 상태 분리
 
@@ -59,9 +59,9 @@
 - 검증: 묶음 구성 확인(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 실행 산출물(exe·dll·pdb)·bin/obj·검증 하네스 누출 없음. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(출력 폴더에 popupSample.exe 1개, 91,631,950바이트). 서버·웹 묶음은 git diff 기준 파일 목록이며 폐쇄망 기존 소스 병합·빌드는 미실행. 구현 검증은 2026-10-12-15 기준(서버 104·행동 905·복구 146, 이후 Demo 경로 변경으로 행동 906). 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 스크립트 적용 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-15~17 항목은 같은 푸시로 원격 반영.
 
-  재생성: 최초 생성 이후의 결과 항목 변환 예외 상태 분리(2026-10-12-19)와 Demo 창 높이 미세 조정(7dcbbaa, DemoWindow.xaml 1줄)을 반영하기 위해 main 7dcbbaa 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성은 같음(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 서버 묶음의 WpfPopupController에 processItems 반영, WPF 묶음의 DemoWindow.xaml이 저장소와 같음을 확인. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,631,950바이트). 구현 검증은 서버 105건(로컬 XE DB 연동 포함). 재생성 기록 커밋은 미푸시. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 적용 미실행.
+  재생성: 최초 생성 이후의 결과 항목 변환 예외 상태 분리(2026-10-12-19)와 Demo 창 높이 미세 조정(7dcbbaa, DemoWindow.xaml 1줄)을 반영하기 위해 main 7dcbbaa 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성은 같음(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 서버 묶음의 WpfPopupController에 processItems 반영, WPF 묶음의 DemoWindow.xaml이 저장소와 같음을 확인. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,631,950바이트). 구현 검증은 서버 105건(로컬 XE DB 연동 포함). 재생성 기록 커밋은 원격 반영. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 적용 미실행.
 
-  재생성(2차): 문서 정리·정합성 보완(2026-10-12-21), IMAGE linkUrl 삭제·DB 14(2026-10-12-22), 관리자 웹 WPF 정합성 보완(2026-10-12-23), 정의서 Word/PDF v3.7(2026-10-12-24)을 반영하기 위해 main 6ac5375 소스 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성: 서버 A88·M7, 웹 A8·M8·D2, WPF 85, 문서 73(구버전 Word/PDF는 docs/interfaces/OLD 제외 규칙으로 미포함, Excel 정의서·Word/PDF v3.7 포함). DELETE-SINCE-20260930에 이번 문서 정리 삭제분 14개 추가(반입 안내에 구버전 Word/PDF는 OLD로 옮겨 보관 가능하다고 명시). 반입 안내에 DB 적용 순서 13 → (서버 교체) → 12 → 14 반영. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,630,926바이트). 재생성 기록 커밋은 미푸시. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13·14 적용 미실행.
+  재생성(2차): 문서 정리·정합성 보완(2026-10-12-21), IMAGE linkUrl 삭제·DB 14(2026-10-12-22), 관리자 웹 WPF 정합성 보완(2026-10-12-23), 정의서 Word/PDF v3.7(2026-10-12-24)을 반영하기 위해 main 6ac5375 소스 기준으로 offline-export/20261012를 지우고 같은 절차로 다시 생성(이 보완 기록 포함 커밋의 변경 이력으로 4-docs 교체). 묶음 구성: 서버 A88·M7, 웹 A8·M8·D2, WPF 85, 문서 73(구버전 Word/PDF는 docs/interfaces/OLD 제외 규칙으로 미포함, Excel 정의서·Word/PDF v3.7 포함). DELETE-SINCE-20260930에 이번 문서 정리 삭제분 14개 추가(반입 안내에 구버전 Word/PDF는 OLD로 옮겨 보관 가능하다고 명시). 반입 안내에 DB 적용 순서 13 → (서버 교체) → 12 → 14 반영. 반입 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,630,926바이트). 재생성 기록 커밋은 원격 반영. 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13·14 적용 미실행.
 
 ## 2026-10-12-17 — 오프라인 빌드 스크립트 단일 EXE 옵션
 
