@@ -2,13 +2,21 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-18 — 20261012 폐쇄망 반입본 생성
+
+- 이유: 20261007 반입 이후의 설계 28(TEXT 서식) 후속·29~34(WPF 목록·결과 계약 정리, Footer·공통 UI 옵션 최상위, WPF 판정값 저장, 결과 재전송 정합성)·DB 스크립트 12·13·단일 EXE 빌드 옵션을 폐쇄망에 반입하기 위해 새 반입본 필요. 서버·웹·WPF가 계약을 함께 바꿨으므로 세 묶음을 모두 포함.
+- 변경: main(7d3d26a 소스 기준, 변경 이력은 이 기록 포함 커밋)에서 scripts/export-offline-package.ps1(-IncludeMockSso -NoZip)로 offline-export/20261012 생성 후 기존 번호 체계(1-zero-rule-server·2-zero-rule-web·3-popup-frameWork·4-docs)로 정리. MockSso 개인 launchSettings 제외. DELETE-SINCE-20260930(20261007과 같은 목록, adf2617 이후 신규 삭제 없음), MANIFEST, 반입 안내(README-IMPORT), 소스 SHA256, TAR·통합 TGZ 및 체크섬 생성. NuGet·SDK는 20261006 반입본 사용(adf2617 이후 csproj·package.json·Gradle 의존성 변경 없음). 20261006의 6-offline-packages에는 예전 scripts/build-wpf-offline.ps1이 들어 있어 의존 묶음을 먼저 풀고 3-popup-frameWork를 덮어써야 함을 반입 안내에 명시.
+- 주요 파일: offline-export/20261012/ (Git 제외), .offline-verify/package-20261012.ps1·finalize-20261012.ps1 (Git 제외), version-history/CHANGELOG.md.
+- 검증: 묶음 구성 확인(서버 A88·M7, 웹 A7·M9·D1, WPF 85, 문서 82). 실행 산출물(exe·dll·pdb)·bin/obj·검증 하네스 누출 없음. 반입 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(출력 폴더에 popupSample.exe 1개, 91,631,950바이트). 서버·웹 묶음은 git diff 기준 파일 목록이며 폐쇄망 기존 소스 병합·빌드는 미실행. 구현 검증은 2026-10-12-15 기준(서버 104·행동 905·복구 146, 이후 Demo 경로 변경으로 행동 906). 폐쇄망 PC 반입·실행·배포, 폐쇄망 DB 12·13 스크립트 적용 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록과 2026-10-12-15~17 항목은 같은 푸시로 원격 반영.
+
 ## 2026-10-12-17 — 오프라인 빌드 스크립트 단일 EXE 옵션
 
 - 이유: 폐쇄망 빌드 스크립트(build-wpf-offline.ps1)는 폴더형 게시만 지원했고, 단일 EXE 게시는 온라인 NuGet 원본을 쓰는 README 명령으로만 안내되어 있었음. 오프라인 패키지로 실행 파일 하나만 내보낼 수 있게 함.
 - 변경: scripts/build-wpf-offline.ps1에 -SingleFile 스위치 추가 — FolderProfile.pubxml과 같은 설정(PublishSingleFile·IncludeNativeLibrariesForSelfExtract·EnableCompressionInSingleFile·DebugType=None·DebugSymbols=false)에 참조 설명서(.xml) 제외(AllowedReferenceRelatedFileExtensions=.pdb)를 더해 popup-frameWork\publish\win-x64-single에 게시. 옵션 없이 실행하면 기존 폴더형 게시(publish\win-x64)와 같음. restore·publish 종료 코드 확인 추가. OFFLINE_WPF_BUILD.md에 사용법·포함 범위·WebView2 Runtime 별도 설치 필요 기록.
 - 주요 파일: scripts/build-wpf-offline.ps1, OFFLINE_WPF_BUILD.md.
 - 검증: -SingleFile로 스크립트를 실행해 출력 폴더에 popupSample.exe(91,631,438바이트) 1개만 생성됨을 확인. 생성된 EXE 실행·폐쇄망 PC 확인과 옵션 없는 폴더형 게시 재실행은 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-16 — Demo 샘플 절대경로 구분자 '/' 치환
 
@@ -16,7 +24,7 @@
 - 변경: DemoPopupDataService가 Demo 샘플 content에 넣는 imageUrl·videoUrl(DemoMediaPathService 반환값)의 '\'를 '/'로 치환. 미디어 파일 위치·추출 로직, 서버·관리자 데이터, 실제 API 경로 처리는 변경 없음.
 - 주요 파일: popup-frameWork/Popup/Services/DemoPopupDataService.cs, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 행동 검증 CheckDemoVideoPath를 '/' 구분자·파일 존재(영상·이미지)·JSON 왕복 검증으로 갱신해 906건 통과(Demo 이미지·영상을 쓰는 기존 렌더링·재생 검증 포함). 실행 중인 popupSample이 기본 출력 파일을 잠그고 있어 임시 출력 경로로 빌드·실행. 실제 Demo 화면 재생은 개발자 확인 완료로 전달받음.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-15 — TODO34 결과 큐 2차 검토 보완(미확정 결과 선전송·answers null 요소)
 
@@ -27,7 +35,7 @@
 - Demo videoUrl 확인: Demo 요청·응답 JSON 로그의 "C:\\Users\\Administrator\\AppData\\Local\\Popup\\DemoMedia\\<해시>\\demo-video.mp4"는 JSON 문자열 이스케이프(\\ = \)로 정상. 실제 값은 단일 백슬래시 로컬 경로이며 파일이 존재(9,403,080바이트)하고 JSON 왕복 시 같은 값으로 복원됨을 행동 검증으로 확인(CheckDemoVideoPath). 코드 변경 없음.
 - 주요 파일: popup-frameWork/Popup/(Services/PopupResultQueue.cs, Managers/PopupManager.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, README.md), zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, WpfPopupControllerTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/34_*, popup-frameWork/Popup.BehaviorTests·Popup.RecoveryTests/(로컬 전용).
 - 검증: 서버 컨트롤러 혼합 요청 테스트에 answers:[null]·optionIds:[null] 항목 추가(정상 항목 처리, 해당 항목만 REJECTED), 로컬 XE DB 연동 포함 서버 104건 통과(skip 0), :app 컴파일 통과. RecoveryTests: 저장 실패 결과 미전송, RetainForExit 항목만 메모리 전송, 손상 파일 사용 불가 시 실패 결과 미전송·종료 보관분 전송으로 갱신해 146건 통과. BehaviorTests: 닫기 저장 실패 후 '다시 보지 않기'를 바꿔 다시 닫으면 최종 상태(HIDDEN)로 1건 저장, Demo videoUrl 경로 검증 추가해 905건 통과. 실행 중인 popupSample(PID 35976)·Visual Studio가 Popup/bin 출력 파일을 잠그고 있어 WPF 테스트는 임시 출력 경로(-p:OutDir)로 빌드·실행(컴파일 경고·오류 없음 확인). 실제 디스크 장애·앱 종료 중 저장 실패는 미확인.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-14 — TODO34 결과 큐 검토 지적 보완(닫기 저장 실패·손상 파일 보존 실패·400 차단)
 
