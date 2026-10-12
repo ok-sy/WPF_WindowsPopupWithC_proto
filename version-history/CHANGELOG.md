@@ -10,7 +10,7 @@
 - 문서: 계약서 11장 응답 예시·필드표·제거 필드 안내, 결과 응답 예제 JSON, 설계 34 §3.4 대조표·34-03 갱신.
 - 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultResponse.java, WpfUserPopupStatus.java), zero-rule-server/service/core/.../popup/wpf/(WpfResultProcessor.java, WpfPopupService.java), zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, 서버 테스트(WpfResultProcessorTest·WpfPopupServiceTest·WpfPopupDatabaseTest·WpfPopupControllerTest), popup-frameWork/Popup/(Dtos/WpfResultDtos.cs, Services/DemoPopupGateway.cs), api/examples/wpf-results-response.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/34_*, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 응답 필드 부재(서버 record·HTTP JSON·C# DTO) 검증 확대, DB 연동 테스트의 완료·숨김 확인을 응답 필드 대신 USER_POPUP_STATUS 조회로 변경, 요청 로그 요약 문자열 검증 추가. 로컬 XE DB 연동 포함 서버 103건 통과(skip 0), :app 컴파일 통과. WPF 행동 검증 900건(Demo 완료 확인을 다음 목록 제외 여부로 변경), 재전송 큐 137건 통과.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-12 — TODO34-39·41 모달 안내 흐름 자동 검증
 
@@ -18,7 +18,7 @@
 - 변경: 로컬 전용 행동 검증에 같은 UI 스레드의 보이는 최상위 창을 제목으로 찾아 WM_CLOSE로 닫고 뜬 안내창을 기록하는 도우미를 추가하고 CheckModalFlows34 작성. VIDEO(완료 비율 0.8, 완료 전 닫기 금지)에서 CLOSE·LINK_AND_CLOSE 각각 Footer 클릭 시 '필수 영상 시청' 안내만 뜨고 창이 유지되며 바로가기가 실행되지 않음(차단이 뚫리면 잘못된 URL 안내가 떠 구분)을 확인. QUIZ는 PopupManager 경로로 오답 제출 → '다시 도전해 주세요'·창 유지·결과 미저장, 정답으로 고쳐 재제출 → '평가를 통과했어요'·창 닫힘·통과 SUBMITTED 1건(100점) 저장을 확인. 실제 창을 띄우므로 키보드 포커스에 민감한 기존 검증 뒤(마지막)에 실행. 제품 코드 변경 없음. 설계 34-39·41 체크.
 - 주요 파일: popup-frameWork/Popup.BehaviorTests/Program.cs(로컬 전용, Git 제외), docs/design/34_*.
 - 검증: 행동 검증 895건 통과(2회 연속 실행). 첫 배치에서는 새 검증을 앞쪽에 두어 뒤의 'Space 키 라디오 선택' 검증이 포커스 영향으로 실패했고, 실행 순서를 마지막으로 옮겨 해결.
-- 상태: 문서 커밋에 포함(검증 프로젝트는 Git 제외). 미푸시. 34-46(유형별 실제 화면 육안 확인) 미실행.
+- 상태: 문서 커밋에 포함(검증 프로젝트는 Git 제외). 원격 반영. 34-46(유형별 실제 화면 육안 확인) 미실행.
 
 ## 2026-10-12-11 — TODO34 공통 옵션 기본값·빈 값 정책 및 문서 정합성
 
@@ -26,7 +26,7 @@
 - 변경: PopupFooterAction.explicitValue 추가, 등록 검증(Footer 동작·Overlay·위치·폰트 크기)에서 null·빈 문자열을 생략(유형별 기본값)으로 처리. 미지원 값·유형에 맞지 않는 Action 거부는 유지. 계약서 §6.4에 빈 값·false/0·non-nullable 정책 명시. 설계 30·31 §8(단계별 호환)과 33 §5(응답 유지 목록)에 설계 34로 대체되었음을 안내하고, 설계 34 체크리스트를 구현·검증 결과로 갱신(41개 완료, 34-03·39·41·43·46·47 미완료 사유 기록).
 - 주요 파일: zero-rule-server/domain/.../popup/PopupFooterAction.java, zero-rule-server/service/core/.../popup/PopupService.java, PopupActionOptionsTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(30_*, 31_*, 33_*, 34_*), popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 서버 빈 값·false/0 테스트 추가, 로컬 XE DB 연동 포함 :service:core popup·:web:api popup 103건 통과(skip 0), :app 컴파일 통과. WPF 행동 검증에 false/0 유지·빈/null enum 기본값 검증을 추가해 890건 통과. 최소 정의서는 기본값 기술이 그대로 맞아 변경 없음.
-- 상태: 커밋에 포함. 미푸시. 미완료: 34-03(응답 삭제 후보 5개 필드 확정), 34-39·41·46(실제 Windows 화면 확인), 34-43(Excel 정의서 저장소에 없음).
+- 상태: 커밋에 포함. 원격 반영. 미완료: 34-03(응답 삭제 후보 5개 필드 확정), 34-39·41·46(실제 Windows 화면 확인), 34-43(Excel 정의서 저장소에 없음).
 
 ## 2026-10-12-10 — TODO34 RESULT 처리 상태별 큐 삭제·재전송 정합성
 
@@ -36,7 +36,7 @@
 - 문서: 계약서 3.7(status 5종, 상황별 HTTP·status·WPF 처리 표, 서버·WPF 기준, 백엔드 체크리스트), 전체 정의서 결과 행, popup-frameWork/README 결과 큐 흐름, 설계 34-19~24 갱신. 최소 정의서에는 결과 큐 기술이 없어 변경 없음.
 - 주요 파일: zero-rule-server/domain/.../popup/wpf/WpfResultItemResponse.java, zero-rule-server/service/core/.../popup/wpf/WpfPopupService.java, 서버 테스트(WpfPopupServiceTest·WpfPopupDatabaseTest), popup-frameWork/Popup/(Services/PopupResultQueue.cs, Managers/PopupManager.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, README.md), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md), docs/design/34_*, popup-frameWork/Popup.BehaviorTests·Popup.RecoveryTests/(로컬 전용).
 - 검증: 서버 분류 테스트(데드락·연결 불가·원인 체인 SQLRecoverableException → RETRYABLE_ERROR, 무결성 위반·메시지에 timeout/deadlock이 있는 IllegalStateException → INTERNAL_ERROR) 추가, DB 연동 테스트에 DUPLICATE 재전송 시 표시 횟수·영수증 미증가 검증 추가. 로컬 XE 대상 DB 연동 포함 :service:core popup·:web:api popup 102건 통과(skip 0), :app 컴파일 통과. RecoveryTests에 상태별 종결·보관, 다른 batch 응답 무시, INTERNAL_ERROR 실행당 3회·미삭제·다음 실행 재전송, RETRYABLE_ERROR 매번 재전송, 요청 전체 실패 보관, 전송 중 저장 보존, 손상 파일 보존·임시 파일 미잔존, 디스크 저장 실패 시 메모리 보관 후 전송 검증을 추가해 137건 통과. BehaviorTests에 CLOSED·HIDDEN이 Closed 이전에 한 번만 저장되는지 검증을 추가해 888건 통과. WPF 앱 빌드 경고·오류 0. 실제 서버 장애 상황(DB 중단)과 Windows 화면·프로세스 강제 종료 확인은 미실행.
-- 상태: 커밋에 포함. 미푸시. 재시도 간격·최대 횟수·재개 시점 정책 미확정.
+- 상태: 커밋에 포함. 원격 반영. 재시도 간격·최대 횟수·재개 시점 정책 미확정.
 
 ## 2026-10-12-09 — TODO34 RESULT 응답 필드 추가 정리 및 대조표
 
@@ -44,7 +44,7 @@
 - 변경: Java WpfResultItemResponse에서 hiddenUntil·watchedRatio·requiredRatio와 Builder.video 제거(status()의 hiddenUntil 복사 제거), WpfResultProcessor의 영상 비율 응답 조립 제거(saveVideoProgress·hidePopup 내부 처리 유지). C# WpfResultItemResponseDto에서 HiddenUntil·WatchedRatio·RequiredRatio 삭제, Demo 게이트웨이 응답 설정 제거(Demo 숨김 상태는 유지). 결과 응답 예제 JSON·계약서 11장 갱신. TODO34 §3.4에 요청·응답 필드 대조표(WPF 생성·서버 사용·상태) 추가: receivedAt·popupStatus·completed·completedAt·responseId는 WPF 미사용으로 삭제 후보 표시(확정 대기), popupId·resultType은 거절 로그용으로 유지 권장, sentAt은 서버 미사용 기록. resultId(결과 멱등 키)와 responseId(서버 응답 레코드 ID) 구분 명시. closedAt - displayedAt을 화면 체류·처리 시간으로 정정(계약서·WpfResultCommand·설계 32), 서버가 USER_POPUP_STATUS에 사용자·팝업 단위 최신 시각만 보존함을 기록. 문항별 점수·정오답은 진단값이고 최종 점수·통과·완료는 WPF 값 기준임을 계약서 10.6에 명시. 실제 pending-results.json 없음 확인(34-10).
 - 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultCommand.java), zero-rule-server/service/core/.../popup/wpf/WpfResultProcessor.java, 서버 테스트(WpfResultProcessorTest·WpfPopupDatabaseTest), popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/DemoPopupGateway.cs, api/examples/wpf-results-response.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(32_*, 34_*), popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 확정 삭제 5개 필드 부재 테스트(서버 record·C# DTO) 추가. :service:core popup·:web:api popup 101건 통과, 로컬 XE 대상 DB 연동 테스트 2건(PopupQuestionDatabaseTest·WpfPopupDatabaseTest) 별도 실행 통과, :app 컴파일 통과. WPF 행동 검증 884건 통과. 34-35 변경도 같은 실행에서 확인. 실제 서버 HTTP·Windows 화면 미확인. Excel 정의서 미반영(저장소에 없음).
-- 상태: 커밋에 포함. 미푸시. 34-03(삭제 후보 5개 필드 확정) 결정 대기.
+- 상태: 커밋에 포함. 원격 반영. 34-03(삭제 후보 5개 필드 확정) 결정 대기.
 
 ## 2026-10-12-08 — TODO34-35 설문·퀴즈 Footer 동작 명시값 검증
 
@@ -52,7 +52,7 @@
 - 변경: PopupService.validateActionOptions가 SURVEY/QUIZ(동영상+퀴즈 포함)에 CLOSE·LINK_AND_CLOSE를 명시하면 거부. 생략·SUBMIT은 허용하고 저장 시 키를 남기지 않는 정규형은 유지. 관리자 웹은 설문·퀴즈 저장 시 두 키를 보내지 않으므로 변경 없음. WPF의 방어적 SUBMIT 처리 유지. 계약서 §6.3 footerAction 설명, 설계 30-17·34-35 갱신.
 - 주요 파일: zero-rule-server/service/core/.../popup/PopupService.java, PopupActionOptionsTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(30_*, 34_*).
 - 검증: PopupActionOptionsTest(SURVEY/QUIZ × 생략·SUBMIT 허용, CLOSE·LINK_AND_CLOSE 거부, 저장 키 미보존) 통과. 전체 popup 테스트는 아래 34 후속 항목과 함께 실행.
-- 상태: TODO34-35 커밋에 포함. 미푸시.
+- 상태: TODO34-35 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-07 — TODO32·30 DB 스크립트 로컬 XE·원격 개발 DB 적용
 
@@ -61,7 +61,7 @@
 - 주요 파일: db/oracle/README.md.
 - 검증: 실행 전 조회(샘플 4행에 Footer 키 없음, RESPONSE_STARTED_AT 값 0행)와 스크립트 결과 확인. 실행 후 실DB 테스트 PopupQuestionDatabaseTest·WpfPopupDatabaseTest(롤백 전용)를 로컬 XE로 실행해 통과(기존에는 skip이던 테스트로, 컬럼 삭제 후 MERGE·WPF 점수 저장·결과 처리 경로 확인).
 - 원격 개발 DB(zero-rule 스키마): 실행 전 조회로 콘텐츠 4행 중 Footer 키 보유 0행, RESPONSE_STARTED_AT 값 0행(POPUP_RESPONSE 0행) 확인. 12번 실행 — 컬럼 삭제 OK, 잔여 컬럼 0. 13번 실행 — 정리 대상 0행, 갱신 0행, 잔여 0. 원격에서 이전 버전 서버가 동작 중이면 응답 저장이 실패하므로 원격 서버는 설계 32 이후 코드로 실행해야 함.
-- 상태: 로컬 XE·원격 개발 DB 적용 완료. 원격 대상 실DB 테스트는 미실행. 문서 커밋에 포함. 미푸시.
+- 상태: 로컬 XE·원격 개발 DB 적용 완료. 원격 대상 실DB 테스트는 미실행. 문서 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-06 — TODO34 RESULT 계약 및 공통 옵션 정합성 보완 계획
 
@@ -80,7 +80,7 @@
 - 문서: 인터페이스 계약 3.7(§6.3 최상위 필드 추가, §7을 PopupWindow 공통 옵션 안내로 교체, §8 유형별 content 예시에서 공통 옵션 제거, §15 예시에 최상위 값), 전체/최소 정의서, 예제 JSON(api/examples·docs/interfaces/examples/WPF-01-popup-types.json), 설계 31 체크리스트 갱신. zero-rule-web/POPUP_PREVIEW_WPF_PARITY.md는 관리자 content 기준 문서라 유지.
 - 주요 파일: zero-rule-server/domain/.../popup/(PopupWindowOptions.java, wpf/WpfPopupItem.java), zero-rule-server/service/core/.../popup/PopupService.java, 서버 테스트(PopupActionOptionsTest·WpfPopupServiceTest·WpfPopupControllerTest), popup-frameWork/Popup/(Dtos/PopupResponseDto.cs, Factories/PopupFactory.cs, Models/PopupOptions.cs, DemoOptionsWindow.Fields.cs), api/examples/wpf-popups-response.json, docs/interfaces/, docs/design/31_PopupWindow_공통_UI_옵션_최상위_계약_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 저장 검증 테스트와 최상위 승격·기본값·보정 HTTP 테스트를 추가해 :service:core popup·:web:api popup 101건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 앱 빌드 경고·오류 0, 행동 검증에 content 키 미사용·최상위 값 반영·opacity 보정·위치 9개 값/미지원 값·생략 기본값 검증을 추가하고 Demo 글자 크기 편집 검증을 최상위 필드로 옮겨 880건 통과, 재전송 큐 122건 통과. Overlay·위치·폰트 실제 WPF 화면 수동 검증(31-23)과 실제 서버 HTTP 확인 미실행. Excel 정의서 미반영(저장소에 없음).
-- 상태: TODO31 커밋에 포함. 미푸시.
+- 상태: TODO31 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-04 — TODO30 Footer Action 최상위 계약 및 3모드 정리
 
@@ -92,7 +92,7 @@
 - 문서: 인터페이스 계약 3.7(§6.3 최상위 필드 추가, §7 content 공통 필드에서 제거, 동영상+퀴즈 예시·설명, §15 예시에 footerAction), 전체/최소 정의서, 예제 JSON(api/examples·docs/interfaces/examples), FOOTER_LINK_VIDEO_QUIZ·옵션 가이드·사용자 옵션 가이드, db/oracle/README, 설계 30 체크리스트 갱신.
 - 주요 파일: zero-rule-server/domain/.../popup/(PopupFooterAction.java, wpf/WpfPopupItem.java), zero-rule-server/service/core/.../popup/PopupService.java, 서버 테스트(PopupActionOptionsTest·WpfPopupControllerTest), db/oracle/(13_normalize_footer_action_oracle.sql, README.md), popup-frameWork/Popup/(Dtos/PopupResponseDto.cs, Models/PopupOptions.cs, Factories/PopupFactory.cs, Views/Windows/PopupWindow.xaml.cs, Managers/PopupManager.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow(.Fields).cs), zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, docs/interfaces/, docs/(FOOTER_LINK_VIDEO_QUIZ.md, POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), api/examples/wpf-popups-response.json, docs/design/30_Footer_Action_최상위_계약_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: 서버 유형별 정책·저장 정규형 테스트와 최상위 승격 HTTP 테스트를 추가해 :service:core popup·:web:api popup 99건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 앱 빌드 경고·오류 0, 행동 검증에 동작 변환·content 키 미사용·SURVEY/QUIZ/VIDEO+QUIZ 제출 고정·제출 후 링크 경로 삭제·Demo 설문 편집 SUBMIT 고정 검증을 추가해 873건 통과, 재전송 큐 122건 통과. 관리자 웹 tsc --noEmit 통과. 13번 SQL(로컬·원격 개발 DB), 실제 Windows 화면·브라우저 실행, 관리자 화면 수동 확인 미실행. Excel 정의서 미반영(저장소에 없음).
-- 상태: TODO30 커밋에 포함. 미푸시.
+- 상태: TODO30 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-03 — TODO33 결과 응답 totalScore/passed 제거 및 WPF 판정값 저장
 
@@ -100,7 +100,7 @@
 - 변경: 서버 WpfResultItemResponse에서 totalScore·passed와 Builder.score 제거, WpfResultProcessor의 QUIZ 점수 응답 조립·유형 재조회(popupTypeOf)·불일치 로그 제거. PopupService.submitResponse가 clientScore/clientPassed를 받아 QUIZ는 두 값을 필수로 검증(누락·음수·비정상 수는 IllegalArgumentException → REJECTED WPF_INVALID_RESULT)하고 POPUP_RESPONSE.TOTAL_SCORE·PASSED_YN과 완료 판정(markPopupCompleted)에 그대로 사용. 서버 계산값은 문항별 상세(POPUP_RESPONSE_ANSWER) 저장과 불일치 경고 로그(PopupService로 이동)에만 사용. SURVEY는 기존처럼 0점·통과 저장으로 제출 즉시 완료. C# WpfResultItemResponseDto.TotalScore·Passed 삭제, Demo 게이트웨이는 응답 점수 설정을 제거하고 서버와 같이 score/passed 없는 QUIZ 제출을 거절. 결과 요청·응답 예제 JSON, 계약서 10.6·11장, 설계 33 갱신. 전체/최소 정의서에는 응답 필드 기술이 없어 변경 없음.
 - 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultCommand.java), zero-rule-server/service/core/.../popup/(PopupService.java, wpf/WpfResultProcessor.java), zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, 서버 테스트(PopupSubmitScoreTest 신규·WpfResultProcessorTest·WpfPopupDatabaseTest·PopupQuestionDatabaseTest), popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/DemoPopupGateway.cs, api/examples/(wpf-results-request.json, wpf-results-response.json), docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/33_RESULT_응답_score판정값_제거_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: PopupSubmitScoreTest 3건(서버 계산과 다른 WPF 값 저장·완료 판정, score/passed 누락·음수·NaN 거절 및 미저장, SURVEY 기존 저장 유지) 추가, :service:core popup·:web:api popup 테스트 97건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 행동 검증에 응답 로그 totalScore/passed 미포함·score 없는 QUIZ 거절·응답 DTO 필드 부재 검증을 반영해 858건 통과, 재전송 큐 검증 122건 통과. DB 연동 테스트(로컬·원격 개발 DB)와 실제 서버 HTTP·Windows 화면 확인 미실행. Excel 정의서 미반영(저장소에 없음).
-- 상태: TODO33 커밋에 포함. 미푸시.
+- 상태: TODO33 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-02 — TODO32 결과 요청 responseStartedAt 제거
 
@@ -109,7 +109,7 @@
 - 변경: C# WpfResultItemDto.ResponseStartedAt과 PopupResultBuilder.BuildSubmitted 할당 삭제. 서버 WpfResultRequest.Item·WpfResultCommand에서 필드 제거(구 클라이언트가 보내도 ignoreUnknown으로 무시), PopupService.submitResponse·PopupMapper.upsertPopupResponse 인자와 MERGE의 RESPONSE_STARTED_AT 갱신·삽입 제거. DB 컬럼은 삭제하기로 하고 db/oracle/12_drop_response_started_at_oracle.sql(멱등, 서버 배포 후 실행) 추가, 01 스키마에서 컬럼 제거, db/oracle/README 절 추가. 결과 요청 예제 JSON·계약서 10.4/10.5·설계 32 갱신. 전체/최소 정의서에는 해당 필드 기술이 없어 변경 없음. 설계 03·07(당시 설계 기록)과 ERD 스냅샷(ERD/model, 2026-09-28)은 변경하지 않음.
 - 주요 파일: popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/PopupResultBuilder.cs, zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, zero-rule-server/domain/.../popup/wpf/WpfResultCommand.java, zero-rule-server/service/core/.../popup/(PopupService.java, wpf/WpfResultProcessor.java), zero-rule-server/repo/core/.../popup/(PopupMapper.java, PopupMapper.xml), 서버 테스트(WpfResultProcessorTest·WpfPopupServiceTest·WpfPopupDatabaseTest·PopupQuestionDatabaseTest·WpfPopupControllerTest), db/oracle/(01_popup_schema_oracle.sql, 12_drop_response_started_at_oracle.sql, README.md), api/examples/wpf-results-request.json, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/32_RESULT_responseStartedAt_제거_TODO.md.
 - 검증: :service:core popup·:web:api popup 테스트 통과(94건, DB 연동 2건 기존대로 skip), 요청에 responseStartedAt이 있어도 정상 변환되는지 HTTP 테스트에 추가. :app 컴파일 통과. WPF 행동 검증에 생성 JSON 미포함·큐에 남은 구 형식 항목 역직렬화 검증을 추가해 856건 통과, 재전송 큐 검증(RecoveryTests) 122건 통과. 12번 SQL·DB 연동 테스트는 로컬·원격 개발 DB 모두 미실행. Excel 정의서 미반영(저장소에 없음).
-- 상태: TODO32 커밋에 포함. 미푸시.
+- 상태: TODO32 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-01 — TODO29 WPF 목록 API 응답 계약 정리
 
@@ -118,7 +118,7 @@
 - 변경: 서버 WpfPopupItem에서 displayStartAt·displayEndAt·periodMode·repeatInterval·repeatDayOfWeek·repeatDayOfMonth 제거, showCloseButton을 showFooterButton으로 직렬화(관리자 API PopupResponseDto·DB SHOW_CLOSE_BUTTON_YN 이름은 유지). C# PopupResponseDto에서 DisplayStartAt·DisplayEndAt와 legacy showCloseButton 수신 별칭(LegacyShowCloseButton) 삭제. ROOT serverTime·userId는 진단용으로 유지하기로 확정하고 서버·C# 주석과 계약서에 용도 명시. 목록 응답 예제 JSON·인터페이스 계약 3.7·전체/최소 정의서·설계 29 체크리스트 갱신.
 - 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfPopupItem.java, WpfPopupListResponse.java), zero-rule-server/web/api/src/test/.../WpfPopupControllerTest.java, zero-rule-server/service/core/src/test/.../WpfPopupDatabaseTest.java, popup-frameWork/Popup/Dtos/(PopupResponseDto.cs, WpfPopupListResponseDto.cs), api/examples/wpf-popups-response.json, docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md), docs/design/29_WPF_목록_API_응답_계약_정리_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
 - 검증: :service:core popup·:web:api popup 테스트 통과(94건, DB 연동 2건 기존대로 skip), 제거 필드 미출력·showFooterButton 직렬화 HTTP 테스트 추가. :app 컴파일 통과. WPF 행동 검증에 제거 필드 수신 무시·legacy showCloseButton 미반영·showFooterButton 반영·과거 종료 시각 무관 표시 검증을 추가해 854건 통과(빌드 경고·오류 0). 실제 서버 HTTP·Windows 화면 확인 미실행. Excel 정의서 미반영(저장소에 없음).
-- 상태: TODO29 커밋에 포함. 미푸시.
+- 상태: TODO29 커밋에 포함. 원격 반영.
 
 ## 2026-10-09-04 — TODO28 TEXT 본문 서식 1차 구현
 
