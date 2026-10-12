@@ -444,6 +444,7 @@ namespace Popup
                      * [설계 12] 제출 포함 모든 결과: 로컬 큐 저장(EnqueueAsync) → 창 닫기 → 백그라운드 전송(FlushInBackground).
                      */
                     popupOptions.EnqueueResult = _resultQueue.Enqueue;
+                    popupOptions.RetainResultForExit = _resultQueue.RetainForExit;
                     popupOptions.FlushResultsInBackground = _resultQueue.FlushInBackground;
                 }
 

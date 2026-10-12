@@ -51,6 +51,11 @@ namespace Popup.Models
         public Action<WpfResultItemDto>? EnqueueResult { get; set; }
 
         /// <summary>
+        /// [설계 34-23] 앱 종료 중 저장에 실패한 닫힘 결과를 메모리에 남겨 종료 직전 전송에 포함한다. PopupResultQueue.RetainForExit에 연결된다.
+        /// </summary>
+        public Action<WpfResultItemDto>? RetainResultForExit { get; set; }
+
+        /// <summary>
         /// 보관된 결과를 백그라운드로 서버에 전송한다(예외는 안에서 처리). PopupResultQueue.FlushInBackground에 연결된다.
         /// 창을 닫은 뒤 호출하며 UI는 기다리지 않는다.
         /// </summary>

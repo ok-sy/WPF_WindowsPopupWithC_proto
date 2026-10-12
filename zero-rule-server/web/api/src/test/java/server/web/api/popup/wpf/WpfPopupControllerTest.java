@@ -194,7 +194,9 @@ class WpfPopupControllerTest {
                    {"resultId":"bad-hide","popupId":"P1","resultType":"HIDDEN","hideDays":0},
                    {"resultId":"bad-video","popupId":"P1","resultType":"VIDEO_WATCHED","video":{"durationSeconds":0}},
                    {"resultId":"","popupId":"P1","resultType":"CLOSED"},
-                   {"resultId":"ok-2","popupId":"P2","resultType":"closed"}
+                   {"resultId":"ok-2","popupId":"P2","resultType":"closed"},
+                   {"resultId":"null-answer","popupId":"Q1","resultType":"SUBMITTED","answers":[null]},
+                   {"resultId":"null-option","popupId":"Q1","resultType":"SUBMITTED","answers":[{"questionId":1,"optionIds":[null]}]}
                  ]}
                 """;
         when(service.processResults(eq("E1001"), anyList())).thenAnswer(inv -> {
@@ -206,7 +208,7 @@ class WpfPopupControllerTest {
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.results.length()").value(6))
+                .andExpect(jsonPath("$.results.length()").value(8))
                 .andExpect(jsonPath("$.results[0].resultId").value("ok-1"))
                 .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
                 .andExpect(jsonPath("$.results[1].resultId").value("bad-type"))
@@ -216,7 +218,12 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.results[3].status").value("REJECTED"))
                 .andExpect(jsonPath("$.results[4].status").value("REJECTED"))
                 .andExpect(jsonPath("$.results[5].resultId").value("ok-2"))
-                .andExpect(jsonPath("$.results[5].status").value("ACCEPTED"));
+                .andExpect(jsonPath("$.results[5].status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.results[6].resultId").value("null-answer"))
+                .andExpect(jsonPath("$.results[6].status").value("REJECTED"))
+                .andExpect(jsonPath("$.results[6].code").value("WPF_INVALID_RESULT"))
+                .andExpect(jsonPath("$.results[7].resultId").value("null-option"))
+                .andExpect(jsonPath("$.results[7].status").value("REJECTED"));
     }
 
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {

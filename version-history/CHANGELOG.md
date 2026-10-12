@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-15 — TODO34 결과 큐 2차 검토 보완(미확정 결과 선전송·answers null 요소)
+
+- 이유: 2026-10-12-14 변경 검토에서 두 가지 확인. ① 저장 실패로 닫기를 취소해도 항목이 큐 메모리(_unsaved)에 남아 다른 Flush(폴링·다른 팝업 종료)로 먼저 전송될 수 있었고, 사용자가 '다시 보지 않기' 등을 바꿔 다시 닫으면 같은 resultId가 DUPLICATE로 처리되어 최종 결과가 반영되지 않았음. 제출 저장 실패 경로도 같은 문제. ② 결과 요청 answers가 List<@Valid Answer>라 [null] 요소가 검증을 통과한 뒤 변환(Answer::toAnswer)에서 NullPointerException이 나, 같은 요청의 정상 항목까지 처리되지 않을 수 있었음. 또 계약서의 "HTTP 400은 envelope 오류에만" 설명은 JSON 역직렬화 오류(잘못된 날짜·숫자 자료형)가 여전히 전체 400인 구현과 맞지 않았음.
+- 변경(WPF): PopupResultQueue.Enqueue는 디스크 저장에 실패하면 항목을 어디에도 남기지 않고 예외를 던짐(미확정 결과 비전송). 창은 상태를 유지하다 다음 닫기·제출 때 결과를 다시 만들어 같은 resultId로 저장. 앱 종료 중에만 RetainForExit(PopupOptions.RetainResultForExit)로 메모리에 남겨 종료 직전 전송을 시도(종료 후 유실 가능). 이미 파일에 있던 확정 항목의 재기록 실패만 메모리에 보관.
+- 변경(서버): WpfResultRequest의 answers를 List<@NotNull @Valid Answer>, optionIds를 List<@NotNull Long>로 바꿔 null 요소를 항목 검증 오류로 처리. 컨트롤러는 검증 후 변환(toCommand)에서 예외가 나도 그 항목만 REJECTED(WPF_INVALID_RESULT)로 돌리고 로그를 남김.
+- 문서: 계약서 11장 — "요청 외곽 구조 및 JSON 역직렬화 오류는 HTTP 400, 역직렬화 후 항목 검증 오류는 항목별 REJECTED"로 정정, 미확정 결과 비전송 규칙 추가. popup-frameWork/README 결과 큐, 설계 34-19·23 보완 기록.
+- Demo videoUrl 확인: Demo 요청·응답 JSON 로그의 "C:\\Users\\Administrator\\AppData\\Local\\Popup\\DemoMedia\\<해시>\\demo-video.mp4"는 JSON 문자열 이스케이프(\\ = \)로 정상. 실제 값은 단일 백슬래시 로컬 경로이며 파일이 존재(9,403,080바이트)하고 JSON 왕복 시 같은 값으로 복원됨을 행동 검증으로 확인(CheckDemoVideoPath). 코드 변경 없음.
+- 주요 파일: popup-frameWork/Popup/(Services/PopupResultQueue.cs, Managers/PopupManager.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, README.md), zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, WpfPopupControllerTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/34_*, popup-frameWork/Popup.BehaviorTests·Popup.RecoveryTests/(로컬 전용).
+- 검증: 서버 컨트롤러 혼합 요청 테스트에 answers:[null]·optionIds:[null] 항목 추가(정상 항목 처리, 해당 항목만 REJECTED), 로컬 XE DB 연동 포함 서버 104건 통과(skip 0), :app 컴파일 통과. RecoveryTests: 저장 실패 결과 미전송, RetainForExit 항목만 메모리 전송, 손상 파일 사용 불가 시 실패 결과 미전송·종료 보관분 전송으로 갱신해 146건 통과. BehaviorTests: 닫기 저장 실패 후 '다시 보지 않기'를 바꿔 다시 닫으면 최종 상태(HIDDEN)로 1건 저장, Demo videoUrl 경로 검증 추가해 905건 통과. 실행 중인 popupSample(PID 35976)·Visual Studio가 Popup/bin 출력 파일을 잠그고 있어 WPF 테스트는 임시 출력 경로(-p:OutDir)로 빌드·실행(컴파일 경고·오류 없음 확인). 실제 디스크 장애·앱 종료 중 저장 실패는 미확인.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-12-14 — TODO34 결과 큐 검토 지적 보완(닫기 저장 실패·손상 파일 보존 실패·400 차단)
 
 - 이유: 2026-10-12-10 구현 검토에서 세 가지 결함 확인. ① 일반 닫기 경로가 디스크 저장 실패를 로그로만 처리하고 창을 닫아, 전송도 실패한 채 프로그램이 종료되면 결과가 유실될 수 있었음(34-23 "영속 저장 후 닫기" 미충족 — 10번 항목의 완료 판정 정정). ② 손상 큐 파일을 .corrupt로 옮기지 못해도 빈 목록으로 진행해 이후 저장에서 원본이 삭제·덮어써질 수 있었음. ③ 서버가 항목 형식까지 @Valid로 검사해 한 항목의 형식 오류가 요청 전체 400이 되고, WPF는 4xx를 보관 후 같은 50건을 반복 전송해 뒤의 정상 결과까지 계속 대기할 수 있었음(결과 요청 javadoc의 "항목 형식 오류가 요청 전체를 400으로 만들지 않는다"는 설명과도 불일치).

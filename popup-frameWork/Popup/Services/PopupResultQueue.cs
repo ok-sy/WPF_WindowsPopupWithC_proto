@@ -44,8 +44,9 @@ namespace Popup.Services
      *
      * [파일 — 설계 34-24] %LOCALAPPDATA%\Popup\pending-results.json — 사용자 프로필 단위. 토큰·사번은 저장하지 않는다.
      *   임시 파일에 쓴 뒤 교체해 쓰기 도중 종료돼도 기존 파일이 깨지지 않게 한다. 읽을 수 없는 파일은 버리지 않고
-     *   pending-results.corrupt-시각.json으로 옮겨 보존한다. 디스크 저장에 실패한 항목은 이번 실행 동안 메모리에 보관하고
-     *   다음 저장·전송 때 다시 기록·전송한다(프로세스가 종료되면 메모리 보관분은 남지 않는다).
+     *   pending-results.corrupt-시각.json으로 옮겨 보존한다. 새 결과의 디스크 저장 실패는 호출자에게 알리고 큐에 남기지 않는다
+     *   (창이 열린 채 상태를 유지). 이미 확정되어 파일에 있던 항목의 재기록 실패와 앱 종료 중 결과(RetainForExit)만
+     *   이번 실행 동안 메모리에 보관해 다시 기록·전송한다(프로세스가 종료되면 메모리 보관분은 남지 않는다).
      * [동시성] 파일 접근(_fileLock)과 전송(_flushGate)을 분리한다. 전송 중에도 Enqueue는 짧게 끝난다.
      */
     public sealed class PopupResultQueue
@@ -99,9 +100,11 @@ namespace Popup.Services
          */
 
         /// <summary>
-        /// [설계 12 §8.1·설계 34-23] 항목을 pending-results.json에 저장하고 반환한다(동기). 서버 전송은 하지 않는다.
+        /// [설계 12 §8.1·설계 34-23] 확정된 결과 항목을 pending-results.json에 저장하고 반환한다(동기). 서버 전송은 하지 않는다.
         /// 전송 중에도 파일 잠금만 짧게 잡으므로 창 닫기(Closing) 경로에서 호출해도 된다.
-        /// 디스크 저장에 실패하면 항목을 메모리에 보관한 뒤 예외를 다시 던진다(호출자가 안내·로그를 결정).
+        /// [검토 보완] 디스크 저장에 실패하면 항목을 큐(메모리 포함)에 남기지 않고 예외를 던진다. 호출자는 창을 유지한 채
+        /// 상태를 들고 있다가 다음 닫기·제출 때 결과를 다시 만들어 저장한다. 미확정 결과가 먼저 전송되어 최종 결과가
+        /// 같은 resultId의 DUPLICATE로 무시되는 일을 막기 위해서다. 앱 종료 중에는 <see cref="RetainForExit"/>를 쓴다.
         /// </summary>
         public void Enqueue(WpfResultItemDto item)
         {
@@ -117,10 +120,32 @@ namespace Popup.Services
             ArgumentNullException.ThrowIfNull(item);
             lock (_fileLock)
             {
+                List<WpfResultItemDto> pending = LoadPendingUnlocked();
+                pending.RemoveAll(p => p.ResultId == item.ResultId);
+                pending.Add(item);
+                SavePendingUnlocked(pending);   // 실패하면 예외 — item은 어디에도 남지 않는다
+            }
+        }
+
+        /// <summary>
+        /// [설계 34-23] 앱 종료 중이라 닫기를 막을 수 없을 때만 쓴다. 디스크 저장을 다시 시도하고, 실패해도 이번 실행 동안
+        /// 메모리에 보관해 종료 직전 전송에 포함한다. 프로세스가 끝나면 메모리 보관분은 남지 않는다. 예외를 던지지 않는다.
+        /// </summary>
+        public void RetainForExit(WpfResultItemDto item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            lock (_fileLock)
+            {
                 _unsaved.RemoveAll(p => p.ResultId == item.ResultId);
                 _unsaved.Add(item);
-                List<WpfResultItemDto> pending = LoadPendingUnlocked();
-                SavePendingUnlocked(pending);   // 실패하면 item은 _unsaved에 남는다
+                try
+                {
+                    TrySavePendingUnlocked(LoadPendingUnlocked());
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"종료 중 결과 파일 저장 실패, 메모리 보관 resultId={item.ResultId}: {exception.Message}");
+                }
             }
         }
 

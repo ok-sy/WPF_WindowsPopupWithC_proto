@@ -337,8 +337,9 @@ namespace Popup.Managers
 
         /// <summary>
         /// [설계 34-23] 닫힘 항목을 창이 닫히기 전에 로컬 큐 파일에 저장한다. 성공하면 true.
-        /// 디스크 저장에 실패하면 안내 후 false를 돌려 호출자가 닫기를 취소하게 한다(항목은 큐 메모리에도 보관).
-        /// 앱 종료 중에는 닫기를 막을 수 없으므로 true를 돌려 닫는다. 이때 메모리 보관분은 종료와 함께 남지 않을 수 있다.
+        /// 디스크 저장에 실패하면 안내 후 false를 돌려 호출자가 닫기를 취소하게 한다. 항목은 큐에 남기지 않으며(전송되지 않음)
+        /// 창이 상태를 유지하다 다음 닫기 때 결과를 다시 만들어 저장한다.
+        /// 앱 종료 중에는 닫기를 막을 수 없으므로 RetainResultForExit로 메모리에 남기고 true를 돌려 닫는다(종료 후에는 남지 않을 수 있음).
         /// </summary>
         private static bool TryEnqueueBeforeClose(PopupWindow popupWindow, PopupOptions popupOptions, WpfResultItemDto item)
         {
@@ -353,7 +354,11 @@ namespace Popup.Managers
                 Debug.WriteLine($"팝업 결과 로컬 저장 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
                 bool exiting = (Application.Current is App app && app.IsExiting)
                     || Application.Current?.Dispatcher.HasShutdownStarted == true;
-                if (exiting) return true;
+                if (exiting)
+                {
+                    popupOptions.RetainResultForExit?.Invoke(item);
+                    return true;
+                }
                 PopupAlert.Show(popupWindow,
                     "결과를 저장하지 못해 창을 닫지 않았습니다. 잠시 후 다시 닫아 주세요.\n\n" + exception.Message,
                     "저장하지 못했어요", "확인");

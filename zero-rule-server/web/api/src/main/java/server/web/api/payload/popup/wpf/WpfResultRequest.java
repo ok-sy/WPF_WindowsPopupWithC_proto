@@ -62,7 +62,7 @@ public record WpfResultRequest(
             OffsetDateTime displayedAt,
             OffsetDateTime closedAt,
             @Min(1) @Max(3650) Integer hideDays,
-            List<@Valid Answer> answers,
+            List<@NotNull @Valid Answer> answers,
             @Valid Video video,
             @DecimalMin("0.0") Double score,
             Boolean passed
@@ -109,7 +109,7 @@ public record WpfResultRequest(
     public record Answer(
             @NotNull Long questionId,
             String textAnswer,
-            List<Long> optionIds
+            List<@NotNull Long> optionIds
     ) {
         public PopupSubmitAnswer toAnswer() {
             return new PopupSubmitAnswer(questionId, textAnswer, optionIds);

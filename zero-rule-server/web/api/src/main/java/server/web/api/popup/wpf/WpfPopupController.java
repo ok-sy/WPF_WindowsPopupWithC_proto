@@ -83,8 +83,16 @@ public class WpfPopupController {
         java.util.List<String> errors = new java.util.ArrayList<>(body.results().size());
         for (WpfResultRequest.Item item : body.results()) {
             String error = item == null ? "결과 항목이 비어 있습니다." : item.validationError();
+            if (error == null) {
+                try {
+                    commands.add(item.toCommand());
+                } catch (RuntimeException ex) {
+                    // 검증을 통과했어도 변환이 실패하면 그 항목만 거절한다(같은 요청의 정상 항목 처리 보장).
+                    error = "결과 항목을 변환할 수 없습니다.";
+                    log.warn("WPF 결과 항목 변환 실패 resultId={}", item.resultId(), ex);
+                }
+            }
             errors.add(error);
-            if (error == null) commands.add(item.toCommand());
         }
         WpfResultResponse processed = wpfPopupService.processResults(employeeNo, commands);
         java.util.Iterator<WpfResultItemResponse> processedResults = processed.results().iterator();
