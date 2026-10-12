@@ -8,7 +8,7 @@
 - 변경: WpfPopupController의 항목 처리를 processItems로 분리하고, validationError()로 확인한 입력 오류만 REJECTED/WPF_INVALID_RESULT, 검증 통과 후 예상하지 못한 변환 예외는 INTERNAL_ERROR/WPF_INTERNAL(상세 비노출, error 로그)로 응답. 항목별 처리·요청 순서 유지는 그대로. 계약서 11장에 변환 예외 상태 추가, popup-frameWork/README의 메모리 보관 설명을 "이미 확정된 항목의 재기록 실패·앱 종료 중 결과만"으로 좁힘, 설계 34-19 보완 기록.
 - 주요 파일: zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, WpfPopupControllerTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, popup-frameWork/README.md, docs/design/34_*.
 - 검증: 변환 예외를 강제로 발생시키는 항목(Mockito)과 정상 항목·형식 오류 항목을 함께 처리해 정상은 ACCEPTED, 변환 예외는 INTERNAL_ERROR(WPF_INTERNAL, 상세 비노출), 형식 오류는 REJECTED이며 응답 순서가 요청 순서와 같음을 확인. 로컬 XE DB 연동 포함 서버 105건 통과(skip 0), :app 컴파일 통과. WPF 코드 변경 없음(INTERNAL_ERROR 보관·제한 재시도는 기존 RecoveryTests로 확인됨).
-- 상태: 커밋에 포함. 미푸시. 20261012 반입본에는 포함되지 않음(반입 후 변경).
+- 상태: 커밋에 포함. 원격 반영. 20261012 반입본에는 포함되지 않음(반입 후 변경).
 
 ## 2026-10-12-18 — 20261012 폐쇄망 반입본 생성
 
