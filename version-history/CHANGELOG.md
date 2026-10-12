@@ -10,7 +10,7 @@
 - 문서: 계약서 11장 상황표(400 분리 처리, 항목 형식 오류 REJECTED), popup-frameWork/README 결과 큐, 설계 34-19·23·24 보완 기록.
 - 주요 파일: popup-frameWork/Popup/(Services/PopupResultQueue.cs, Managers/PopupManager.cs, App.xaml.cs, README.md), zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, zero-rule-server/web/api/.../popup/wpf/WpfPopupController.java, WpfPopupControllerTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/34_*, popup-frameWork/Popup.BehaviorTests·Popup.RecoveryTests/(로컬 전용).
 - 검증: 서버 컨트롤러 테스트에 정상 2건·형식 오류 4건(알 수 없는 resultType·hideDays 0·video 형식·빈 resultId) 혼합 요청이 200으로 정상 항목만 처리되고 오류 항목만 REJECTED되는지 추가, 로컬 XE DB 연동 포함 서버 104건 통과(skip 0), :app 컴파일 통과. RecoveryTests에 400 원인 항목 격리·같은 실행 미재전송·이후 결과 비차단·다음 실행 재시도, 손상 파일 이동 불가 시 Enqueue 실패 통지·메모리분 전송·원본 미변경 검증을 추가해 145건 통과. BehaviorTests에 닫기 중 디스크 저장 실패 시 안내·창 유지, 재시도 시 같은 resultId 1건 저장 검증을 추가해 902건 통과. WPF 앱 빌드 경고·오류 0. 실제 디스크 장애·앱 종료 중 저장 실패는 미확인.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-12-13 — TODO34-03 결과 응답 미사용 필드 제거
 
