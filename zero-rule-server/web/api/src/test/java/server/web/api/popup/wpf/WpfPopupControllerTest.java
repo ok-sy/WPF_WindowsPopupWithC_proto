@@ -185,6 +185,40 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popups[1].headerFontSize").doesNotExist());
     }
 
+    /** [설계 34 — 검토 보완] 형식 오류 항목은 그 항목만 REJECTED이고, 같은 요청의 정상 항목은 처리된다(요청 전체 400 아님). */
+    @Test void invalidItemIsRejectedAloneAndOthersAreProcessed() throws Exception {
+        String body = """
+                {"clientRequestId":"c9","results":[
+                   {"resultId":"ok-1","popupId":"P1","resultType":"CLOSED"},
+                   {"resultId":"bad-type","popupId":"P1","resultType":"OPENED"},
+                   {"resultId":"bad-hide","popupId":"P1","resultType":"HIDDEN","hideDays":0},
+                   {"resultId":"bad-video","popupId":"P1","resultType":"VIDEO_WATCHED","video":{"durationSeconds":0}},
+                   {"resultId":"","popupId":"P1","resultType":"CLOSED"},
+                   {"resultId":"ok-2","popupId":"P2","resultType":"closed"}
+                 ]}
+                """;
+        when(service.processResults(eq("E1001"), anyList())).thenAnswer(inv -> {
+            List<WpfResultCommand> commands = inv.getArgument(1);
+            assertEquals(List.of("ok-1", "ok-2"), commands.stream().map(WpfResultCommand::resultId).toList());
+            assertEquals(WpfResultType.CLOSED, commands.get(1).resultType(), "resultType 대소문자 무시");
+            return new WpfResultResponse(commands.stream().map(WpfResultItemResponse::accepted).toList());
+        });
+        mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results.length()").value(6))
+                .andExpect(jsonPath("$.results[0].resultId").value("ok-1"))
+                .andExpect(jsonPath("$.results[0].status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.results[1].resultId").value("bad-type"))
+                .andExpect(jsonPath("$.results[1].status").value("REJECTED"))
+                .andExpect(jsonPath("$.results[1].code").value("WPF_INVALID_RESULT"))
+                .andExpect(jsonPath("$.results[2].status").value("REJECTED"))
+                .andExpect(jsonPath("$.results[3].status").value("REJECTED"))
+                .andExpect(jsonPath("$.results[4].status").value("REJECTED"))
+                .andExpect(jsonPath("$.results[5].resultId").value("ok-2"))
+                .andExpect(jsonPath("$.results[5].status").value("ACCEPTED"));
+    }
+
     @Test void resultsValidateBodyAndPassCommandsWithoutUserIdFromBody() throws Exception {
         // 항목 없음 → 400 (요청 전체 형식 오류)
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")

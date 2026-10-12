@@ -268,7 +268,11 @@ namespace Popup.Managers
             {
                 if (eventArgs.Cancel || builder.IsFinalized) return;   // 닫기 취소 또는 제출 항목을 이미 큐에 넣음
                 WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
-                EnqueueSafely(popupOptions, item);
+                if (!TryEnqueueBeforeClose(popupWindow, popupOptions, item))
+                {
+                    eventArgs.Cancel = true;   // [설계 34-23] 영속 저장 전에는 닫지 않는다. 다시 닫으면 같은 resultId로 재시도한다.
+                    return;
+                }
                 builder.MarkFinalized();
             };
             popupWindow.Closed += (sender, eventArgs) => popupOptions.FlushResultsInBackground?.Invoke();
@@ -332,16 +336,28 @@ namespace Popup.Managers
         }
 
         /// <summary>
-        /// 닫힘 항목을 로컬 큐에 저장한다. 닫기를 막지 않기 위해 디스크 저장 실패는 로그만 남긴다.
-        /// [설계 34-24] 이때 항목은 큐 메모리에 보관되어 다음 저장·전송 때 다시 기록·전송된다.
+        /// [설계 34-23] 닫힘 항목을 창이 닫히기 전에 로컬 큐 파일에 저장한다. 성공하면 true.
+        /// 디스크 저장에 실패하면 안내 후 false를 돌려 호출자가 닫기를 취소하게 한다(항목은 큐 메모리에도 보관).
+        /// 앱 종료 중에는 닫기를 막을 수 없으므로 true를 돌려 닫는다. 이때 메모리 보관분은 종료와 함께 남지 않을 수 있다.
         /// </summary>
-        private static void EnqueueSafely(PopupOptions popupOptions, WpfResultItemDto item)
+        private static bool TryEnqueueBeforeClose(PopupWindow popupWindow, PopupOptions popupOptions, WpfResultItemDto item)
         {
-            if (popupOptions.EnqueueResult == null) return;
-            try { popupOptions.EnqueueResult(item); }
+            if (popupOptions.EnqueueResult == null) return true;
+            try
+            {
+                popupOptions.EnqueueResult(item);
+                return true;
+            }
             catch (Exception exception)
             {
-                Debug.WriteLine($"팝업 결과 로컬 저장 실패, 메모리 보관 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                Debug.WriteLine($"팝업 결과 로컬 저장 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                bool exiting = (Application.Current is App app && app.IsExiting)
+                    || Application.Current?.Dispatcher.HasShutdownStarted == true;
+                if (exiting) return true;
+                PopupAlert.Show(popupWindow,
+                    "결과를 저장하지 못해 창을 닫지 않았습니다. 잠시 후 다시 닫아 주세요.\n\n" + exception.Message,
+                    "저장하지 못했어요", "확인");
+                return false;
             }
         }
     }

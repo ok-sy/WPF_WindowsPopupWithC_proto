@@ -43,6 +43,9 @@ namespace Popup
 
         private bool _isExiting;
 
+        /// <summary>[설계 34-23] 앱 종료(트레이 종료·426 안내 종료·Windows 세션 종료) 중인지. 이때는 팝업 닫기를 취소하지 않는다.</summary>
+        public bool IsExiting => _isExiting;
+
         /*
          * API 모드는 관리용 MainWindow를 한 번 표시한 뒤 트레이로 숨긴다.
          * Demo Mode는 사용자가 팝업 종류를 고를 수 있도록 선택 화면을 유지한다.

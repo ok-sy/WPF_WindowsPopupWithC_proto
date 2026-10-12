@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +38,8 @@ namespace Popup.Services
      *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
      *     횟수를 소진해도 삭제하지 않으며 다음 실행에서 다시 시도한다. 재시도 간격·최대 횟수 정책은 별도 확정 대상이다.
      *   - 알 수 없는 상태, 응답 누락 항목, 이번 batch에 없는 resultId 응답은 종결로 보지 않는다(보관).
-     *   - 요청 전체 실패(5xx·4xx·타임아웃·연결 끊김)는 전송한 항목을 모두 보관한다.
+     *   - 요청 전체 실패(5xx·4xx·타임아웃·연결 끊김)는 전송한 항목을 모두 보관한다. 단 400(요청 형식 오류)은 batch를 나눠
+     *     원인 항목을 좁히고, 단독으로도 400인 항목만 이번 실행에서 제외(파일 보관)해 나머지 전송을 막지 않는다.
      *   항목의 resultId는 생성 시 확정되어 재전송 시 서버가 DUPLICATE로 걸러낸다.
      *
      * [파일 — 설계 34-24] %LOCALAPPDATA%\Popup\pending-results.json — 사용자 프로필 단위. 토큰·사번은 저장하지 않는다.
@@ -69,6 +72,8 @@ namespace Popup.Services
         private readonly SemaphoreSlim _flushGate = new(1, 1);
         private readonly List<WpfResultItemDto> _unsaved = new();
         private readonly Dictionary<string, int> _internalErrorAttempts = new(StringComparer.OrdinalIgnoreCase);
+        /* [설계 34 — 검토 보완] 단독으로 보내도 400인 항목. 이번 실행에서만 전송에서 빼고 파일에는 남긴다. */
+        private readonly HashSet<string> _quarantined = new(StringComparer.OrdinalIgnoreCase);
         private volatile bool _transmissionStopped;
 
         // HTTP만 중단한다. 아직 열린 팝업의 결과를 파일에 저장하는 Enqueue는 유지한다.
@@ -161,6 +166,7 @@ namespace Popup.Services
             {
                 if (_transmissionStopped) return;
                 List<WpfResultItemDto> pending;
+                bool fileAvailable = true;
                 lock (_fileLock)
                 {
                     try
@@ -169,18 +175,25 @@ namespace Popup.Services
                     }
                     catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                     {
-                        Debug.WriteLine($"결과 큐 파일을 읽지 못해 이번 전송을 건너뜁니다(보관 유지): {exception.Message}");
-                        return;
+                        // 파일을 읽거나 보존할 수 없으면 파일은 건드리지 않고 메모리 보관분만 전송한다.
+                        fileAvailable = false;
+                        pending = _unsaved.ToList();
+                        Debug.WriteLine($"결과 큐 파일 사용 불가 — 파일은 그대로 두고 메모리 보관 {pending.Count}건만 전송: {exception.Message}");
                     }
-                    TrySavePendingUnlocked(pending);   // 메모리 보관분을 다시 디스크에 기록해 본다
+                    if (fileAvailable) TrySavePendingUnlocked(pending);   // 메모리 보관분을 다시 디스크에 기록해 본다
                 }
                 List<WpfResultItemDto> sendable = pending
+                    .Where(p => !_quarantined.Contains(p.ResultId))
                     .Where(p => !_internalErrorAttempts.TryGetValue(p.ResultId, out int attempts)
                         || attempts < MaxInternalErrorAttemptsPerSession)
                     .ToList();
 
-                foreach (WpfResultItemDto[] batch in sendable.Chunk(MaxBatchSize))
+                // [설계 34 — 검토 보완] 400(요청 형식 오류)이면 batch를 반으로 나눠 다시 보내 원인 항목을 좁힌다.
+                // 혼자 보내도 400인 항목은 이번 실행에서만 제외(파일에는 보관)해 뒤의 정상 결과 전송을 막지 않는다.
+                var work = new Stack<WpfResultItemDto[]>(sendable.Chunk(MaxBatchSize).Reverse());
+                while (work.Count > 0)
                 {
+                    WpfResultItemDto[] batch = work.Pop();
                     if (_transmissionStopped) return;
                     WpfResultResponseDto response;
                     try
@@ -196,9 +209,26 @@ namespace Popup.Services
                         // [설계 13 §11] 버전 차단 — 항목을 지우지 않고 전송을 멈춘다. 업데이트 후 재전송.
                         throw;
                     }
+                    catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        if (batch.Length > 1)
+                        {
+                            int half = batch.Length / 2;
+                            work.Push(batch[half..]);
+                            work.Push(batch[..half]);
+                            Debug.WriteLine($"결과 전송 400 — {batch.Length}건을 나눠 다시 전송합니다: {exception.Message}");
+                        }
+                        else
+                        {
+                            _quarantined.Add(batch[0].ResultId);
+                            Debug.WriteLine($"결과 항목 단독 전송도 400 — 이번 실행에서 제외(파일 보관) popupId={batch[0].PopupId} " +
+                                $"type={batch[0].ResultType}: {exception.Message}");
+                        }
+                        continue;
+                    }
                     catch (Exception exception)
                     {
-                        // 5xx·4xx·타임아웃·연결 끊김: 전송한 항목을 모두 보관하고 다음 기회에 재전송한다.
+                        // 5xx·그 밖의 4xx·타임아웃·연결 끊김: 전송한 항목을 모두 보관하고 다음 기회에 재전송한다.
                         Debug.WriteLine($"결과 전송 실패, 보관 유지 ({batch.Length}건): {exception.Message}");
                         return;
                     }
@@ -207,12 +237,13 @@ namespace Popup.Services
                     if (settled.Count == 0) continue;
                     lock (_fileLock)
                     {
+                        _unsaved.RemoveAll(p => settled.Contains(p.ResultId));
+                        if (!fileAvailable) continue;
                         // 전송 중 새로 저장된 항목을 지우지 않도록 최신 파일을 다시 읽어 종결 항목만 뺀다.
                         try
                         {
                             List<WpfResultItemDto> current = LoadPendingUnlocked();
                             current.RemoveAll(p => settled.Contains(p.ResultId));
-                            _unsaved.RemoveAll(p => settled.Contains(p.ResultId));
                             TrySavePendingUnlocked(current);
                         }
                         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -304,8 +335,16 @@ namespace Popup.Services
                 // [설계 34-24] 손상된 큐 파일은 버리지 않고 옆으로 옮겨 보존한다(수동 복구용).
                 string corrupt = Path.Combine(Path.GetDirectoryName(_queueFilePath) ?? ".",
                     $"{Path.GetFileNameWithoutExtension(_queueFilePath)}.corrupt-{DateTime.Now:yyyyMMddHHmmssfff}.json");
-                try { File.Move(_queueFilePath, corrupt); }
-                catch (Exception moveException) { Debug.WriteLine($"손상 큐 파일 이동 실패: {moveException.Message}"); }
+                // [검토 보완] 보존(이동)에 실패하면 원본을 덮어쓰거나 지우지 않도록 예외를 던진다.
+                //   Enqueue는 저장 실패를 호출자에게 알리고(항목은 메모리 보관), Flush는 파일을 건드리지 않고 메모리분만 전송한다.
+                try
+                {
+                    File.Move(_queueFilePath, corrupt);
+                }
+                catch (Exception moveException)
+                {
+                    throw new IOException($"손상된 결과 큐 파일을 보존하지 못해 덮어쓰지 않습니다: {moveException.Message}", exception);
+                }
                 Debug.WriteLine($"결과 큐 파일을 읽을 수 없어 {corrupt}로 보존하고 새로 시작합니다: {exception.Message}");
                 return new List<WpfResultItemDto>();
             }
