@@ -1,6 +1,8 @@
 package server.service.core.popup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
@@ -55,6 +57,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PopupService {
+
+    private static final Logger log = LoggerFactory.getLogger(PopupService.class);
 
     private static final Set<String> POPUP_TYPES =
             Set.of("TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ");
@@ -373,17 +377,23 @@ public class PopupService {
     }
 
     /**
-     * 설문·퀴즈 답안을 서버의 문항·정답과 대조해 채점하고 응답 테이블에 저장한다.
-     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안을 검사한 후 채점한다.
+     * 설문·퀴즈 답안을 검증해 응답 테이블에 저장한다.
+     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안을 검사한 후 문항별 정오답·점수를 계산한다.
      * 요청 ID를 응답 upsert에 전달하고 반환된 응답 ID의 하위 답안을 교체한다.
      * 모든 저장은 한 트랜잭션이므로 중간 실패 시 일부 답안만 남지 않는다.
+     *
+     * <p>[설계 33] QUIZ의 최종 점수·통과 여부는 WPF가 로컬 채점으로 결정한 {@code clientScore}/{@code clientPassed}를
+     * 그대로 저장하고 완료 판정에도 사용한다(둘 다 필수). 서버 계산값은 문항별 상세 저장과 불일치 경고 로그에만 쓴다.
+     * SURVEY는 채점 대상이 아니므로 WPF 값을 받지 않고 기존처럼 0점·통과로 저장해 제출 즉시 완료한다.</p>
      */
     @Transactional
     public PopupSubmitResponseDto submitResponse(
             String popupId,
             String clientRequestId,
             String userId,
-            List<PopupSubmitAnswer> answers) {
+            List<PopupSubmitAnswer> answers,
+            Double clientScore,
+            Boolean clientPassed) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
         }
@@ -459,7 +469,7 @@ public class PopupService {
                 : popupMapper.selectOptionsByQuestionIds(questionIds).stream()
                 .collect(Collectors.groupingBy(PopupOptionEntity::questionId));
 
-        // 클라이언트가 보낸 점수가 아니라 DB의 배점과 정답으로 모든 답안을 먼저 검증·채점한다.
+        // 답안 형식을 DB의 문항·선택지로 검증하고 문항별 정오답·점수를 계산한다(상세 저장·불일치 확인용).
         List<GradedAnswer> gradedAnswers = answers.stream()
                 .map(answer -> gradeAnswer(
                         questionById.get(answer.questionId()),
@@ -475,6 +485,16 @@ public class PopupService {
         BigDecimal passingScore = context.passingScore() == null
                 ? BigDecimal.ZERO : context.passingScore();
         String passedYn = totalScore.compareTo(passingScore) >= 0 ? "Y" : "N";
+        if ("QUIZ".equalsIgnoreCase(context.popupType())) {
+            if (clientScore == null || clientPassed == null
+                    || !Double.isFinite(clientScore) || clientScore < 0) {
+                throw new IllegalArgumentException("QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
+            }
+            logClientScoreMismatch(normalizedUserId, normalizedPopupId, normalizedRequestId,
+                    clientScore, clientPassed, totalScore, "Y".equals(passedYn));
+            totalScore = BigDecimal.valueOf(clientScore).setScale(2, RoundingMode.HALF_UP);
+            passedYn = clientPassed ? "Y" : "N";
+        }
 
         Long responseId = popupMapper.upsertPopupResponse(
                 normalizedRequestId, normalizedUserId, normalizedPopupId,
@@ -508,6 +528,19 @@ public class PopupService {
                 responseId, normalizedRequestId, normalizedUserId,
                 normalizedPopupId, "SUBMITTED", totalScore.doubleValue(),
                 "Y".equals(passedYn), OffsetDateTime.now());
+    }
+
+    /**
+     * [설계 12·33] WPF 로컬 채점값과 서버 계산값이 다르면 경고 로그만 남긴다(저장 값은 WPF 값).
+     * 정답 데이터가 어긋났는지 추적하기 위한 것이다. 점수는 소수 둘째 자리(WPF 반올림 기준)로 비교한다.
+     */
+    private static void logClientScoreMismatch(String userId, String popupId, String resultId,
+                                               double clientScore, boolean clientPassed,
+                                               BigDecimal serverScore, boolean serverPassed) {
+        if (Math.abs(clientScore - serverScore.doubleValue()) >= 0.01 || clientPassed != serverPassed) {
+            log.warn("[WPF] QUIZ 로컬 채점값 불일치 userId={} popupId={} resultId={} wpf(score={}, passed={}) server(score={}, passed={})",
+                    userId, popupId, resultId, clientScore, clientPassed, serverScore, serverPassed);
+        }
     }
 
     /** 서술형은 공백이 아닌 텍스트, 선택형은 하나 이상의 선택지 제출을 필수 답안으로 본다. */

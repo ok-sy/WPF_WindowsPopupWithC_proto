@@ -80,13 +80,13 @@ class PopupQuestionDatabaseTest {
                 var questions = saved.questions();
                 var second = new PopupSubmitAnswer(questions.get(1).questionId(), "정보보안을 지킵니다", List.of());
                 var third = new PopupSubmitAnswer(questions.get(2).questionId(), null, List.of(questions.get(2).options().get(0).optionId()));
-                assertThrows(IllegalArgumentException.class, () -> service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001", List.of(second, third)));
+                assertThrows(IllegalArgumentException.class, () -> service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001", List.of(second, third), 20.0, false));
                 var failed = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
-                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), "Windows + L 누르기", List.of()), second, third));
+                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), "Windows + L 누르기", List.of()), second, third), 20.0, false);
                 assertEquals(20.0, failed.totalScore());
                 assertFalse(failed.passed());
                 var passed = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
-                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), " Windows + L ", List.of()), second, third));
+                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), " Windows + L ", List.of()), second, third), 30.0, true);
                 assertEquals(30.0, passed.totalScore());
                 assertTrue(passed.passed());
                 ObjectNode edited = json.valueToTree(saved);

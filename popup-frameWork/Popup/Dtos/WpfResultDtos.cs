@@ -74,8 +74,8 @@ namespace Popup.Dtos
         public List<PopupSubmitAnswerRequestDto>? Answers { get; set; }
 
         /// <summary>
-        /// [설계 12 §4·§6] QUIZ SUBMITTED일 때 WPF가 로컬 채점한 점수·통과 여부. SURVEY는 null.
-        /// 서버는 이 값을 결과 저장에 참고하며(자기 채점값과 다르면 로그), 사용자 화면 판정은 이미 WPF에서 끝났다.
+        /// [설계 12 §4·§6 / 설계 33] QUIZ SUBMITTED일 때 WPF가 로컬 채점한 점수·통과 여부(QUIZ 필수). SURVEY는 null.
+        /// 서버는 이 값을 그대로 저장·완료 판정에 쓰고(자기 계산값과 다르면 로그), 응답으로 다시 내려주지 않는다.
         /// </summary>
         public double? Score { get; set; }
         public bool? Passed { get; set; }
@@ -123,9 +123,7 @@ namespace Popup.Dtos
         public DateTimeOffset? HiddenUntil { get; set; }
         public long? ResponseId { get; set; }
 
-        /// <summary>QUIZ 제출에만 제공. SURVEY는 채점하지 않아 null.</summary>
-        public double? TotalScore { get; set; }
-        public bool? Passed { get; set; }
+        /* [설계 33] TotalScore/Passed는 삭제했다. QUIZ 판정은 WPF가 끝내 요청(Score/Passed)으로 보내고 서버는 저장만 한다. */
 
         public double? WatchedRatio { get; set; }
         public double? RequiredRatio { get; set; }

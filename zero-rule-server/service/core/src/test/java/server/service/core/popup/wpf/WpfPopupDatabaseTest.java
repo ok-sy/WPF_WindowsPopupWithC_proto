@@ -112,7 +112,7 @@ class WpfPopupDatabaseTest {
                         displayedAt, closedAt, 7, null, null, null, null);
                 WpfResultCommand quizSubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
                         WpfResultType.SUBMITTED, displayedAt, closedAt, null,
-                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, null, null);
+                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, 10.0, true);
                 WpfResultCommand surveySubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-SURVEY-004",
                         WpfResultType.SUBMITTED, displayedAt, closedAt, null,
                         List.of(new PopupSubmitAnswer(surveyChoiceQ, null, surveyOptionIds),
@@ -134,14 +134,11 @@ class WpfPopupDatabaseTest {
 
                 WpfResultItemResponse r1 = response.results().get(1);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r1.status(), r1.message());
-                assertEquals(10.0, r1.totalScore());
-                assertEquals(Boolean.TRUE, r1.passed());
                 assertEquals(Boolean.TRUE, r1.completed());
                 assertNotNull(r1.responseId());
 
                 WpfResultItemResponse r2 = response.results().get(2);
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, r2.status(), r2.message());
-                assertNull(r2.totalScore(), "SURVEY는 채점 결과 없음");
                 assertEquals(Boolean.TRUE, r2.completed(), "SURVEY는 제출 즉시 완료");
 
                 WpfResultItemResponse r3 = response.results().get(3);
@@ -166,7 +163,7 @@ class WpfPopupDatabaseTest {
                 // SUBMITTED는 노출 자격 재검사로 REJECTED
                 WpfResultResponse other = service.processResults("E1003", List.of(notEligible,
                         new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003", WpfResultType.SUBMITTED,
-                                null, null, null, List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, null, null)));
+                                null, null, null, List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, 10.0, true)));
                 assertEquals(WpfResultItemResponse.Status.ACCEPTED, other.results().get(0).status());
                 assertEquals(WpfResultItemResponse.Status.REJECTED, other.results().get(1).status());
                 assertEquals("WPF_NOT_ELIGIBLE", other.results().get(1).code());

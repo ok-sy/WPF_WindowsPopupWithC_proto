@@ -159,14 +159,15 @@ namespace Popup.Services
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
                         /*
-                         * [설계 12] WPF가 로컬 채점한 score/passed를 그대로 저장한다.
+                         * [설계 12·33] WPF가 로컬 채점한 score/passed를 그대로 저장한다(서버와 같이 QUIZ 필수, 없으면 REJECTED).
                          * [설계 18 L-0 — C-18] score/passed 없이 오는 "구 클라이언트" 제출을 위한 데모 채점기 Grade()는 삭제했다.
-                         * 현행 WPF는 QUIZ 제출 때 항상 점수를 보내고 데모 결과 큐도 별도 파일이라 구 항목이 들어올 수 없다.
-                         * 그래도 값이 빠진 항목이 오면 불합격(Passed=false)으로 기록하고 처리를 계속한다.
+                         * [설계 33] 응답에는 totalScore/passed를 다시 내려주지 않는다.
                          */
-                        bool passed = item.Score.HasValue && item.Passed == true;
-                        response.TotalScore = item.Score;
-                        response.Passed = passed;
+                        if (!item.Score.HasValue || item.Passed == null)
+                        {
+                            return Reject(response, "WPF_INVALID_RESULT", "QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
+                        }
+                        bool passed = item.Passed.Value;
                         if (passed) _completed.Add(item.PopupId);
                         response.PopupStatus = passed ? "COMPLETED" : "SUBMITTED";
                     }

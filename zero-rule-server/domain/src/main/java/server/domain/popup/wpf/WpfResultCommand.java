@@ -22,8 +22,8 @@ import java.util.List;
  * @param hideDays          HIDDEN일 때 숨김 일수
  * @param answers           SUBMITTED일 때 답안 목록
  * @param video             VIDEO_WATCHED 또는 동영상+퀴즈 SUBMITTED일 때 시청 누적값
- * @param score             [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 채점 점수(선택, 참고용)
- * @param passed            [설계 12] QUIZ SUBMITTED일 때 WPF 로컬 통과 여부(선택, 참고용)
+ * @param score             [설계 12·33] QUIZ SUBMITTED일 때 WPF 로컬 채점 점수(QUIZ 필수). 서버가 그대로 저장한다
+ * @param passed            [설계 12·33] QUIZ SUBMITTED일 때 WPF 로컬 통과 여부(QUIZ 필수). 저장·완료 판정에 사용한다
  */
 public record WpfResultCommand(
         String resultId,

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-03 — TODO33 결과 응답 totalScore/passed 제거 및 WPF 판정값 저장
+
+- 이유: 설계 33 반영. QUIZ 채점·통과 판정 책임이 WPF에 있으므로 결과 응답에서 같은 의미의 totalScore/passed를 제거. 정합성 확인 중 설계 33 §2(서버는 WPF 판정 결과를 저장)와 달리 서버가 자체 채점값을 저장하고 WPF 값은 비교 로그에만 쓰는 것을 확인해 WPF 값 저장으로 일치시킴.
+- 변경: 서버 WpfResultItemResponse에서 totalScore·passed와 Builder.score 제거, WpfResultProcessor의 QUIZ 점수 응답 조립·유형 재조회(popupTypeOf)·불일치 로그 제거. PopupService.submitResponse가 clientScore/clientPassed를 받아 QUIZ는 두 값을 필수로 검증(누락·음수·비정상 수는 IllegalArgumentException → REJECTED WPF_INVALID_RESULT)하고 POPUP_RESPONSE.TOTAL_SCORE·PASSED_YN과 완료 판정(markPopupCompleted)에 그대로 사용. 서버 계산값은 문항별 상세(POPUP_RESPONSE_ANSWER) 저장과 불일치 경고 로그(PopupService로 이동)에만 사용. SURVEY는 기존처럼 0점·통과 저장으로 제출 즉시 완료. C# WpfResultItemResponseDto.TotalScore·Passed 삭제, Demo 게이트웨이는 응답 점수 설정을 제거하고 서버와 같이 score/passed 없는 QUIZ 제출을 거절. 결과 요청·응답 예제 JSON, 계약서 10.6·11장, 설계 33 갱신. 전체/최소 정의서에는 응답 필드 기술이 없어 변경 없음.
+- 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfResultItemResponse.java, WpfResultCommand.java), zero-rule-server/service/core/.../popup/(PopupService.java, wpf/WpfResultProcessor.java), zero-rule-server/web/api/.../payload/popup/wpf/WpfResultRequest.java, 서버 테스트(PopupSubmitScoreTest 신규·WpfResultProcessorTest·WpfPopupDatabaseTest·PopupQuestionDatabaseTest), popup-frameWork/Popup/Dtos/WpfResultDtos.cs, popup-frameWork/Popup/Services/DemoPopupGateway.cs, api/examples/(wpf-results-request.json, wpf-results-response.json), docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/33_RESULT_응답_score판정값_제거_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: PopupSubmitScoreTest 3건(서버 계산과 다른 WPF 값 저장·완료 판정, score/passed 누락·음수·NaN 거절 및 미저장, SURVEY 기존 저장 유지) 추가, :service:core popup·:web:api popup 테스트 97건 통과(DB 연동 2건 기존대로 skip), :app 컴파일 통과. WPF 행동 검증에 응답 로그 totalScore/passed 미포함·score 없는 QUIZ 거절·응답 DTO 필드 부재 검증을 반영해 858건 통과, 재전송 큐 검증 122건 통과. DB 연동 테스트(로컬·원격 개발 DB)와 실제 서버 HTTP·Windows 화면 확인 미실행. Excel 정의서 미반영(저장소에 없음).
+- 상태: TODO33 커밋에 포함. 미푸시.
+
 ## 2026-10-12-02 — TODO32 결과 요청 responseStartedAt 제거
 
 - 이유: 설계 32 반영. WPF가 SUBMITTED 결과의 responseStartedAt에 displayedAt을 그대로 복사해 보내 표시 시각과 의미가 중복. 응답·처리 소요 시간은 closedAt - displayedAt으로 계산 가능.

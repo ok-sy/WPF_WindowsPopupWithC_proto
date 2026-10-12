@@ -46,8 +46,8 @@ public record WpfResultRequest(
      * 동영상+퀴즈 SUBMITTED는 answers와 video를 함께 사용한다.
      * displayedAt·closedAt은 모든 유형이 함께 보낼 수 있다(기존 DISPLAYED/CLOSED 이벤트 대체).
      * [설계 32] responseStartedAt은 displayedAt과 같은 값이라 제거했다. 구 클라이언트가 보내도 ignoreUnknown으로 무시한다.
-     * [설계 12 §4·§6] score/passed: QUIZ SUBMITTED에서 WPF가 로컬 채점한 점수·통과 여부(선택). 서버는 저장 시
-     * 자기 채점값과 비교해 다르면 로그만 남긴다(현재 범위에서 서버 재채점·거절은 하지 않음).
+     * [설계 12 §4·§6 / 설계 33] score/passed: QUIZ SUBMITTED에서 WPF가 로컬 채점한 점수·통과 여부(QUIZ 필수, 없으면 REJECTED).
+     * 서버는 이 값을 그대로 저장·완료 판정에 쓰고, 자기 계산값과 다르면 로그만 남긴다. SURVEY는 보내지 않는다.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Item(

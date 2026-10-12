@@ -97,6 +97,10 @@ WPF
 서버가 요청의 score/passed를 검증 로그 용도로 비교하는 것은 가능하지만,
 응답 계약으로 동일 값을 다시 내려줄 필요는 없다.
 
+> 2026-10-12 정합성 확인·반영: 기존 서버는 `submitResponse`에서 자체 채점한 점수·통과 여부를 저장하고 WPF 값과 다르면 경고 로그만 남겼다(§2의 "서버는 WPF가 결정한 결과를 저장"과 불일치).
+> 이를 WPF 값 저장으로 변경했다. QUIZ SUBMITTED는 `score`·`passed`가 필수(없거나 음수·비정상 수면 REJECTED `WPF_INVALID_RESULT`)이며 POPUP_RESPONSE.TOTAL_SCORE·PASSED_YN과 완료 판정에 그대로 쓴다.
+> 서버 계산값은 문항별 상세(POPUP_RESPONSE_ANSWER의 점수·정오답) 저장과 불일치 경고 로그에만 사용한다. SURVEY는 기존처럼 0점·통과로 저장해 제출 즉시 완료한다.
+
 ---
 
 ## 5. 응답에 유지할 값
@@ -123,16 +127,17 @@ WPF
 
 ## 6. 구현 TODO
 
-- [ ] 33-01 C# `WpfResultItemResponseDto.TotalScore` 제거
-- [ ] 33-02 C# `WpfResultItemResponseDto.Passed` 제거
-- [ ] 33-03 서버 결과 응답 DTO의 totalScore 제거
-- [ ] 33-04 서버 결과 응답 DTO의 passed 제거
-- [ ] 33-05 서버 응답 조립 로직에서 두 필드 제거
-- [ ] 33-06 WPF 응답 처리 코드에서 두 필드 참조 여부 확인
-- [ ] 33-07 RESULT_RESPONSE 문서/Excel에서 두 필드 제거
-- [ ] 33-08 Sample JSON에서 두 필드 제거
-- [ ] 33-09 요청의 score/passed는 유지되는지 회귀 검증
-- [ ] 33-10 QUIZ 로컬 판정 후 서버 응답을 기다리지 않고 기존 UX가 유지되는지 검증
+- [x] 33-01 C# `WpfResultItemResponseDto.TotalScore` 제거
+- [x] 33-02 C# `WpfResultItemResponseDto.Passed` 제거
+- [x] 33-03 서버 결과 응답 DTO의 totalScore 제거
+- [x] 33-04 서버 결과 응답 DTO의 passed 제거
+- [x] 33-05 서버 응답 조립 로직에서 두 필드 제거
+- [x] 33-06 WPF 응답 처리 코드에서 두 필드 참조 여부 확인 — WPF 응답 처리 코드에서 참조 없음 확인(PopupManager는 로컬 판정만 사용). Demo 게이트웨이 응답 설정 제거
+- [ ] 33-07 RESULT_RESPONSE 문서/Excel에서 두 필드 제거 — 계약서 반영. 저장소에 Excel 정의서 없음(미반영)
+- [x] 33-08 Sample JSON에서 두 필드 제거 (`api/examples/wpf-results-response.json`, 계약서 11장)
+- [x] 33-09 요청의 score/passed는 유지되는지 회귀 검증 — 서버 단위·HTTP 테스트, WPF 행동 검증 통과
+- [x] 33-10 QUIZ 로컬 판정 후 서버 응답을 기다리지 않고 기존 UX가 유지되는지 검증 — 로컬 행동 검증(Demo 결과 큐) 통과. 실제 Windows 화면 미확인
+- [x] 33-11 (2026-10-12 추가) 서버가 QUIZ의 WPF score/passed를 저장·완료 판정에 사용(QUIZ 필수, 누락 시 REJECTED). Demo 게이트웨이도 같은 규칙
 
 ---
 

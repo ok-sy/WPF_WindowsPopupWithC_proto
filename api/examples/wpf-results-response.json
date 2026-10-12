@@ -18,10 +18,9 @@
       "status": "ACCEPTED",
       "popupStatus": "COMPLETED",
       "responseId": 5001,
-      "totalScore": 10,
-      "passed": true,
       "completed": true,
-      "completedAt": "2026-09-19T09:12:31+09:00"
+      "completedAt": "2026-09-19T09:12:31+09:00",
+      "_comment": "[설계 33] QUIZ 점수·통과 여부는 요청의 score/passed를 서버가 저장하며 응답에는 다시 내려주지 않는다."
     },
     {
       "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
@@ -31,8 +30,7 @@
       "popupStatus": "COMPLETED",
       "responseId": 5002,
       "completed": true,
-      "completedAt": "2026-09-19T09:12:31+09:00",
-      "_comment": "SURVEY는 채점하지 않으므로 totalScore/passed가 없다."
+      "completedAt": "2026-09-19T09:12:31+09:00"
     },
     {
       "resultId": "9e8d7c6b-5a4f-4e3d-2c1b-0a9f8e7d6c5b",

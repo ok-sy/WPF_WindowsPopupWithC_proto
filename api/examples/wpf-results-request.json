@@ -22,7 +22,7 @@
       ],
       "score": 10,
       "passed": true,
-      "_comment": "[설계 12] QUIZ는 WPF가 로컬 채점한 score/passed를 함께 보낸다(서버는 저장·참고, 다르면 로그). SURVEY는 없음."
+      "_comment": "[설계 12·33] QUIZ는 WPF가 로컬 채점한 score/passed를 함께 보낸다(QUIZ 필수, 서버는 그대로 저장·완료 판정, 서버 계산값과 다르면 로그). SURVEY는 없음."
     },
     {
       "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
