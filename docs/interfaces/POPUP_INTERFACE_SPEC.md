@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
-- 문서 버전: 3.6
-- 최신화: 2026-10-09 (KST)
+- 문서 버전: 3.7
+- 최신화: 2026-10-12 (KST)
+- 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
 - 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
 - 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
 - 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
@@ -217,12 +218,12 @@ X-Client-Version: 1.0.0
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| serverTime | string(ISO) | 선택 | `null` | 서버 기준 시각. WPF는 참고만 함 |
-| userId | string | 선택 | `""` | 인증 정보에서 식별된 사용자. 요청에는 보내지 않음 |
+| serverTime | string(ISO) | 선택 | `null` | 서버 기준 시각. 진단용(로그·PC 시각 차이 확인)이며 WPF는 표시 대상·조회 주기 판단에 쓰지 않음 |
+| userId | string | 선택 | `""` | 인증 정보에서 식별된 사용자. 진단용이며 WPF는 표시·판정·결과 생성에 쓰지 않음. 요청에는 보내지 않음 |
 | pollingIntervalSeconds | integer | 선택 | `0` | 서버 설정이 소유하는 1800~3600초(30~60분) 주기. 0 이하면 범위 제한된 WPF 로컬 설정 유지. 기동 시점 기준 반복 조회 |
 | popups | array | O | `[]` | 표시 대상 팝업. 없으면 빈 배열 |
 
-기본 `AutoLoadOnStartup=true`에서 로그인 직후 최초 조회하고, 기동 시점 기준으로 30~60분 간격의 재조회를 수행한다. WPF는 PC 시각과 `displayStartAt`/`displayEndAt`를 비교하거나 팝업별 예약 타이머를 만들지 않는다. 서버 응답 목록을 즉시 렌더링하며 기존 순차/동시 표시 규칙을 적용한다. 열린 팝업이 있어도 재조회하고, 이번 실행에서 이미 표시한 ID를 제외한 새 팝업은 기존 표시 큐에 합류한다. 조회 요청이 진행 중이면 중복 요청은 생략하고, 401 재인증은 동일 요청 1회 재시도로 처리해 조회 타이머를 추가하지 않는다.
+기본 `AutoLoadOnStartup=true`에서 로그인 직후 최초 조회하고, 기동 시점 기준으로 30~60분 간격의 재조회를 수행한다. 노출 기간·반복 판정은 서버가 끝내며 목록 항목에는 노출 시작·종료 시각을 싣지 않는다. WPF는 PC 시각으로 노출 여부를 판단하거나 팝업별 예약 타이머를 만들지 않는다. 서버 응답 목록을 즉시 렌더링하며 기존 순차/동시 표시 규칙을 적용한다. 열린 팝업이 있어도 재조회하고, 이번 실행에서 이미 표시한 ID를 제외한 새 팝업은 기존 표시 큐에 합류한다. 조회 요청이 진행 중이면 중복 요청은 생략하고, 401 재인증은 동일 요청 1회 재시도로 처리해 조회 타이머를 추가하지 않는다.
 
 서버/로컬 설정의 양수 값은 1800~3600초로 보정하며 로컬 설정이 0 이하이면 1800초를 사용한다. 최대 60분의 신규 노출 지연을 허용한다. `serverTime`은 참고용이며 PC 벽시계 변경이 표시 대상 판단이나 반복 조회 기준을 바꾸지 않는다.
 
@@ -237,8 +238,6 @@ X-Client-Version: 1.0.0
 | title | string | O | `""` | 공통 Header 제목 |
 | displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
 | displayOrder | integer | O | `100` | 작은 값 우선, 같은 값은 같은 표시 그룹 |
-| displayStartAt | string(ISO) | 선택 | `null` | DTO 수신 가능. 표시 대상 판단은 서버에서 완료하는 것이 기준 |
-| displayEndAt | string(ISO) | 선택 | `null` | 동일 |
 | sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO |
 | width | number | IMAGE 일반 모드 외 | `900` | 일반 IMAGE는 생략하고 content.width 사용, ORIGINAL 및 다른 유형은 창 크기 |
 | height | number | IMAGE 일반 모드 외 | `620` | 일반 IMAGE는 생략하고 content.height 사용 |
@@ -259,7 +258,7 @@ X-Client-Version: 1.0.0
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
 
-> 기존 서버 JSON의 `showCloseButton`은 WPF 수신 호환 이름으로 `showFooterButton`에 반영된다. 두 이름을 동시에 보내지 않는다. Header는 검은 배경·흰 제목·고정 로고·높이 40, 일반 외곽은 테두리 0·Radius 6이며 FULLSCREEN은 Radius 0이다.
+> Footer 버튼 표시는 `showFooterButton`만 사용한다. legacy 이름 `showCloseButton`은 수신하지 않는다(설계 29-11). 서버 내부 판정 값(`displayStartAt`·`displayEndAt`·`periodMode`·`repeat*`)은 응답에 넣지 않으며 보내더라도 WPF는 무시한다. Header는 검은 배경·흰 제목·고정 로고·높이 40, 일반 외곽은 테두리 0·Radius 6이며 FULLSCREEN은 Radius 0이다.
 
 ### 크기 처리 참고
 
@@ -311,7 +310,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다. 기존 공통 필드 표의 O는 전체 계약 권장 출력 필드이며, 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
 - completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
-- serverTime/userId는 참고용, pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
+- serverTime/userId는 진단용(WPF 동작에 미사용), pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
 - **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.
 
 ### 저장소 서버 검증과 남은 보완 사항

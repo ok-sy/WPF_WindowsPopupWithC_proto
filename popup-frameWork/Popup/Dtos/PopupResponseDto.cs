@@ -11,22 +11,11 @@ namespace Popup.Dtos
      */
     public class PopupResponseDto
     {
-         /*
-         * 팝업 노출 시작 일시
-         *
-         * null이면 시작 일시 제한 없이
-         * 바로 노출할 수 있다.
-         */
-        public DateTimeOffset? DisplayStartAt { get; set; }
-
         /*
-         * 팝업 노출 종료 일시
-         *
-         * null이면 종료 일시 제한 없이
-         * 계속 노출할 수 있다.
+         * [설계 29-01·29-02] 노출 시작·종료 일시(DisplayStartAt/DisplayEndAt)는 삭제했다.
+         * 서버가 기간을 포함한 노출 판정을 끝낸 최종 목록만 내려주므로 WPF는 시각을 비교하지 않는다.
+         * 서버가 보내더라도 System.Text.Json은 모르는 속성을 무시한다.
          */
-        public DateTimeOffset? DisplayEndAt { get; set; }
-
 
         /*
          * 팝업 고유 번호
@@ -134,17 +123,9 @@ namespace Popup.Dtos
         public bool ShowHeader { get; set; } =
             true;
 
+        /* [설계 29-11] 서버 응답 이름을 showFooterButton으로 통일해 legacy showCloseButton 수신 별칭을 삭제했다. */
         public bool ShowFooterButton { get; set; } =
             true;
-
-        // 기존 서버 JSON의 false 값도 유지한다. 새 응답/데모는 showFooterButton을 사용한다.
-        [System.Text.Json.Serialization.JsonPropertyName("showCloseButton")]
-        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public bool? LegacyShowCloseButton
-        {
-            get => null;
-            set { if (value.HasValue) ShowFooterButton = value.Value; }
-        }
 
         public bool ShowFooter { get; set; } =
             true;

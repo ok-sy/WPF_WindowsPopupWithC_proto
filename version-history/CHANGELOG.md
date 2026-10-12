@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-12-01 — TODO29 WPF 목록 API 응답 계약 정리
+
+- 이유: 설계 29 반영. 노출 판정은 서버가 끝낸 최종 목록만 내려주므로 WPF가 쓰지 않는 서버 내부 판정 값을 목록 응답에서 제거하고, Footer 버튼 표시 이름의 서버·C# 불일치(showCloseButton ↔ showFooterButton)를 해소. 운영 배포 버전이 없어 구버전 호환 단계 없이 코드를 정규화.
+- 정합성 확인: 설계 29~33을 코드와 대조. 설계 29의 현재 상태 기술은 코드와 일치(serverTime·userId는 WPF에서 읽는 곳 없음, Demo 게이트웨이만 값 설정). docs/interfaces/popup-interface-examples.json은 삭제된 legacy WPF-01~06 엔드포인트와 관리자 API 예제라 WPF 목록 계약 변경 대상에서 제외. 설계 문서의 'Excel 인터페이스 정의서'는 저장소에 없음(docx·pdf v3.6만 존재).
+- 변경: 서버 WpfPopupItem에서 displayStartAt·displayEndAt·periodMode·repeatInterval·repeatDayOfWeek·repeatDayOfMonth 제거, showCloseButton을 showFooterButton으로 직렬화(관리자 API PopupResponseDto·DB SHOW_CLOSE_BUTTON_YN 이름은 유지). C# PopupResponseDto에서 DisplayStartAt·DisplayEndAt와 legacy showCloseButton 수신 별칭(LegacyShowCloseButton) 삭제. ROOT serverTime·userId는 진단용으로 유지하기로 확정하고 서버·C# 주석과 계약서에 용도 명시. 목록 응답 예제 JSON·인터페이스 계약 3.7·전체/최소 정의서·설계 29 체크리스트 갱신.
+- 주요 파일: zero-rule-server/domain/.../popup/wpf/(WpfPopupItem.java, WpfPopupListResponse.java), zero-rule-server/web/api/src/test/.../WpfPopupControllerTest.java, zero-rule-server/service/core/src/test/.../WpfPopupDatabaseTest.java, popup-frameWork/Popup/Dtos/(PopupResponseDto.cs, WpfPopupListResponseDto.cs), api/examples/wpf-popups-response.json, docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md), docs/design/29_WPF_목록_API_응답_계약_정리_TODO.md, popup-frameWork/Popup.BehaviorTests/(로컬 전용).
+- 검증: :service:core popup·:web:api popup 테스트 통과(94건, DB 연동 2건 기존대로 skip), 제거 필드 미출력·showFooterButton 직렬화 HTTP 테스트 추가. :app 컴파일 통과. WPF 행동 검증에 제거 필드 수신 무시·legacy showCloseButton 미반영·showFooterButton 반영·과거 종료 시각 무관 표시 검증을 추가해 854건 통과(빌드 경고·오류 0). 실제 서버 HTTP·Windows 화면 확인 미실행. Excel 정의서 미반영(저장소에 없음).
+- 상태: TODO29 커밋에 포함. 미푸시.
+
 ## 2026-10-09-04 — TODO28 TEXT 본문 서식 1차 구현
 
 - 이유: 설계 28 1차 범위(TEXT 본문)의 서식 편집을 저장·조회·표시까지 반영. 저장 기준은 문단·Run JSON(content.textBlocks)이며 HTML은 저장하지 않음.

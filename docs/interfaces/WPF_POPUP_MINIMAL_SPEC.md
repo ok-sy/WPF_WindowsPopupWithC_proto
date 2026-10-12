@@ -1,7 +1,7 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-10-07 (KST)
+- 작성 기준: 2026-10-12 (KST)
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
@@ -50,7 +50,7 @@
 
 > FontSize 계열은 미지정 시 각 XAML/콘텐츠 기본값을 유지하고, 값이 지정되면 10~40 범위로 보정(Clamp)하여 적용한다.
 
-> 신규 JSON 계약명은 `showFooterButton`이다. C#은 기존 `showCloseButton`도 수신 호환 이름으로 받아 같은 필드에 반영하며 두 이름을 동시에 보내지 않는다. **현재 저장소의 Java `WpfPopupItem`은 아직 실제 응답 키를 `showCloseButton`으로 직렬화한다.** 신규 백엔드가 `showFooterButton`으로 전환하려면 Java 응답 DTO도 함께 맞춰야 한다. `ShowFooterButton=false`여도 SURVEY·QUIZ·VIDEO+QUIZ의 제출 버튼은 유지한다. Header는 검은 배경·흰 제목·고정 로고·높이 40이며 일반 팝업 Radius 6, Fullscreen Radius 0은 API 옵션이 아닌 고정 외형이다.
+> JSON 계약명은 `showFooterButton`이며 서버 응답(Java `WpfPopupItem`)도 같은 이름을 사용한다. legacy `showCloseButton`은 수신하지 않는다(설계 29-11). `ShowFooterButton=false`여도 SURVEY·QUIZ·VIDEO+QUIZ의 제출 버튼은 유지한다. Header는 검은 배경·흰 제목·고정 로고·높이 40이며 일반 팝업 Radius 6, Fullscreen Radius 0은 API 옵션이 아닌 고정 외형이다.
 
 ## 4. 팝업 유형별 최소 기능
 

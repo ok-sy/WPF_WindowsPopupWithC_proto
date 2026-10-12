@@ -1,7 +1,7 @@
 # WPF 팝업 전체 기능 버전 정의서
 
 - 문서 성격: All Feature Specification / Implemented WPF Scope
-- 작성 기준: 2026-10-09 (KST)
+- 작성 기준: 2026-10-12 (KST)
 - 기준 소스: `PopupResponseDto`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
 - 대응 문서: [최소 기능 버전 정의서](WPF_POPUP_MINIMAL_SPEC.md)
 
@@ -40,12 +40,11 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | PopupType | 지원 | Y | `""` | TEXT / IMAGE / VIDEO / SURVEY / QUIZ |
 | Content | 지원 | Y | `{}` | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
 | Title | 지원 | Y(계약) | `""` | 공통 Header 제목. Header 숨김 여부와 별개로 백엔드 응답 계약상 제공 |
-| DisplayStartAt / DisplayEndAt | DTO 수신 | N | `null` | 기간·대상·숨김·완료를 판정한 최종 목록은 서버 책임 |
+| DisplayStartAt / DisplayEndAt | 삭제(설계 29) | - | - | 기간·대상·숨김·완료를 판정한 최종 목록은 서버 책임. 목록 응답·DTO에 없음 |
 | DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
 | DisplayOrder | 지원 | N | `100` | 작은 순서 그룹부터 표시 |
 | ShowHeader | 지원 | N | `true` | 제목·고정 로고 및 Header 영역 |
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
-| showCloseButton | 이전 이름 수신 호환 | N | 미지정 | C# LegacyShowCloseButton setter가 ShowFooterButton에 반영. 신규·이전 이름을 동시에 보내지 않음 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과의 숨김 일수 |
@@ -60,7 +59,7 @@ ID·필수 응답·채점 관련 서버 보장 조건은 계약서 6.4절을 함
 | AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
 
-**현재 저장소의 Java `WpfPopupItem`은 실제 응답 키를 아직 `showCloseButton`으로 직렬화한다.** C#은 호환 처리하지만 신규 계약명은 `showFooterButton`이며, Java 응답 DTO를 전환하기 전까지는 현재 서버 출력과 문서 계약명이 다르다는 점을 구분한다.
+Footer 버튼 표시는 서버 응답(Java `WpfPopupItem`)과 C# 모두 `showFooterButton` 하나만 사용한다. legacy `showCloseButton` 수신 별칭은 삭제했다(설계 29-11). 관리자 API·DB는 기존 이름(showCloseButton·SHOW_CLOSE_BUTTON_YN)을 유지하고 WPF 응답 조립 시 변환한다.
 
 Header에는 닫기 버튼이 없고 로고에는 닫기 동작을 연결하지 않는다.
 SURVEY·QUIZ·VIDEO+QUIZ는 `ShowFooterButton=false`여도 제출을 유지한다.

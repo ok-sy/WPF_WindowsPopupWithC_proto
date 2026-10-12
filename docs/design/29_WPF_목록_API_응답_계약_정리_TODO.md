@@ -77,7 +77,7 @@ WPF가 화면 표시·사용자 동작·채점에 직접 사용하는 값
 
 ---
 
-## 3. 삭제 여부 결정 필요
+## 3. 삭제 여부 결정 필요 (2026-10-12 결정: 둘 다 유지)
 
 ### 29-09. serverTime 제거 여부 확정
 
@@ -176,24 +176,24 @@ WPF가 화면 표시·사용자 동작·채점에 직접 사용하는 값
 
 ## 7. 구현 TODO
 
-- [ ] 29-01 C# `PopupResponseDto.DisplayStartAt` 제거
-- [ ] 29-02 C# `PopupResponseDto.DisplayEndAt` 제거
-- [ ] 29-03 Java `WpfPopupItem.displayStartAt` 제거
-- [ ] 29-04 Java `WpfPopupItem.displayEndAt` 제거
-- [ ] 29-05 Java `WpfPopupItem.periodMode` 제거
-- [ ] 29-06 Java `WpfPopupItem.repeatInterval` 제거
-- [ ] 29-07 Java `WpfPopupItem.repeatDayOfWeek` 제거
-- [ ] 29-08 Java `WpfPopupItem.repeatDayOfMonth` 제거
-- [ ] 29-09 `serverTime` 최종 삭제 여부 결정 및 반영
-- [ ] 29-10 `userId` 최종 삭제 여부 결정 및 반영
-- [ ] 29-11 `showCloseButton` → `showFooterButton` 계약 통일
-- [ ] `WpfPopupListResponse` 생성부/테스트 수정
-- [ ] WPF 목록 API JSON 샘플 갱신
-- [ ] `POPUP_INTERFACE_SPEC.md` 필드표 갱신
-- [ ] 최소/전체 기능 정의서 갱신
-- [ ] Excel 인터페이스 정의서 반영
-- [ ] 서버가 제거 전 필드를 보내도 C# 역직렬화가 정상인지 회귀 검증
-- [ ] 제거 후 목록 조회·표시·결과 전송 회귀 검증
+- [x] 29-01 C# `PopupResponseDto.DisplayStartAt` 제거
+- [x] 29-02 C# `PopupResponseDto.DisplayEndAt` 제거
+- [x] 29-03 Java `WpfPopupItem.displayStartAt` 제거
+- [x] 29-04 Java `WpfPopupItem.displayEndAt` 제거
+- [x] 29-05 Java `WpfPopupItem.periodMode` 제거
+- [x] 29-06 Java `WpfPopupItem.repeatInterval` 제거
+- [x] 29-07 Java `WpfPopupItem.repeatDayOfWeek` 제거
+- [x] 29-08 Java `WpfPopupItem.repeatDayOfMonth` 제거
+- [x] 29-09 `serverTime` 최종 삭제 여부 결정 및 반영 — 유지(진단용) 확정, 서버·C# 주석과 계약서에 용도 명시
+- [x] 29-10 `userId` 최종 삭제 여부 결정 및 반영 — 유지(진단용) 확정, 용도 명시
+- [x] 29-11 `showCloseButton` → `showFooterButton` 계약 통일 — WPF 응답만 전환, 관리자 API·DB 이름 유지, C# legacy 별칭 즉시 삭제(운영 버전 없음)
+- [x] `WpfPopupListResponse` 생성부/테스트 수정
+- [x] WPF 목록 API JSON 샘플 갱신 (`api/examples/wpf-popups-response.json`)
+- [x] `POPUP_INTERFACE_SPEC.md` 필드표 갱신
+- [x] 최소/전체 기능 정의서 갱신
+- [ ] Excel 인터페이스 정의서 반영 — 저장소에 Excel 정의서 없음(docx·pdf v3.6만 존재). 미반영
+- [x] 서버가 제거 전 필드를 보내도 C# 역직렬화가 정상인지 회귀 검증 (로컬 행동 검증)
+- [ ] 제거 후 목록 조회·표시·결과 전송 회귀 검증 — 단위·행동 검증 통과, 실제 서버 HTTP·Windows 화면 확인 미실행
 
 ---
 

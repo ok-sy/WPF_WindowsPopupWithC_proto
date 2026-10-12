@@ -13,10 +13,15 @@ namespace Popup.Dtos
     /// </summary>
     public class WpfPopupListResponseDto
     {
-        /// <summary>서버 시각(KST). WPF는 시각 판단을 하지 않고 참고만 한다.</summary>
+        /// <summary>
+        /// 서버 시각(KST). [설계 29-09 — 유지] 진단용(로그·PC 시각 차이 확인)이며 WPF는 표시 대상·조회 주기 판단에 쓰지 않는다.
+        /// </summary>
         public DateTimeOffset? ServerTime { get; set; }
 
-        /// <summary>서버가 인증 정보에서 확인한 사번. 요청에는 보내지 않는다.</summary>
+        /// <summary>
+        /// 서버가 인증 정보에서 확인한 사번. 요청에는 보내지 않는다.
+        /// [설계 29-10 — 유지] 진단용이며 WPF는 표시·판정·결과 생성에 쓰지 않는다(사용자 식별은 인증 계층 책임).
+        /// </summary>
         public string UserId { get; set; } = string.Empty;
 
         /// <summary>서버가 통제하는 주기 조회 간격(초). 0 이하이면 appsettings 값을 유지한다.</summary>

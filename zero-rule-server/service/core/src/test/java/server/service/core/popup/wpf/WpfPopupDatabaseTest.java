@@ -91,8 +91,6 @@ class WpfPopupDatabaseTest {
                 assertEquals("9월 21일(일) 02:00~06:00 점검 예정입니다.", text.content().get("plainText"));
                 assertEquals(true, text.content().get("showHighlight"), "CONTENT_OPTIONS JSON 병합");
                 assertEquals(7, text.hideDays());
-                assertNotNull(text.displayStartAt());
-                assertEquals(9 * 3600, text.displayStartAt().getOffset().getTotalSeconds(), "FROM_TZ → +09:00");
 
                 long quizQuestionId = quiz.questions().get(0).questionId();
                 long yesOptionId = quiz.questions().get(0).options().stream()

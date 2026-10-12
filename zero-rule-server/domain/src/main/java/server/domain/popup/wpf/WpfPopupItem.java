@@ -1,12 +1,10 @@
 package server.domain.popup.wpf;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
 
-import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +16,12 @@ import java.util.Map;
  * WPF에 불필요하거나 노출하면 안 되는 필드를 뺀다.</p>
  * <ul>
  *   <li>제외: {@code questionTemplateId}(서버 내부 키)</li>
+ *   <li>[설계 29] 제외: 노출 기간·반복 판정 값({@code displayStartAt}/{@code displayEndAt}/{@code periodMode}/
+ *       {@code repeatInterval}/{@code repeatDayOfWeek}/{@code repeatDayOfMonth}). 노출 판정은 서버가 끝내고
+ *       최종 목록만 내려주므로 WPF 계약에 두지 않는다. 관리자 API({@link PopupResponseDto})에는 그대로 있다.</li>
+ *   <li>[설계 29-11] Footer 버튼 표시는 {@code showFooterButton} 하나로 내려준다(관리자 API·DB의 showCloseButton 값).</li>
  *   <li>문항은 최상위 {@code questions}에만 둔다. [설계 18 L-3] content에 문항·통과 점수·완료 비율 등 파생 키를
  *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
- *   <li>날짜는 ISO 8601 문자열</li>
  * </ul>
  *
  * <p>[설계 12 §4 — 변경] 기준 3에서는 채점이 서버 책임이라 {@code passingScore}와 정답 키를 WPF에 내려주지 않았다.
@@ -33,8 +34,6 @@ public record WpfPopupItem(
         String popupId,
         String popupType,
         String title,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = WpfJson.DATE_TIME) OffsetDateTime displayStartAt,
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = WpfJson.DATE_TIME) OffsetDateTime displayEndAt,
         String displayMode,
         Integer displayOrder,
         String sizeMode,
@@ -47,17 +46,13 @@ public record WpfPopupItem(
         double maximumWidth,
         double maximumHeight,
         boolean showHeader,
-        boolean showCloseButton,
+        boolean showFooterButton,
         boolean showFooter,
         boolean showDoNotShowAgain,
         Integer hideDays,
         boolean allowCloseBeforeComplete,
         Double completionRatio,
         Double passingScore,
-        String periodMode,
-        Integer repeatInterval,
-        String repeatDayOfWeek,
-        Integer repeatDayOfMonth,
         List<PopupQuestionDto> questions,
         Map<String, Object> content
 ) {
@@ -71,14 +66,12 @@ public record WpfPopupItem(
         Map<String, Object> content = new LinkedHashMap<>(dto.content());
         return new WpfPopupItem(
                 dto.popupId(), dto.popupType(), dto.title(),
-                dto.displayStartAt(), dto.displayEndAt(),
                 dto.displayMode(), dto.displayOrder(), dto.sizeMode(),
                 dto.width(), dto.height(), dto.widthRatio(), dto.heightRatio(),
                 dto.minimumWidth(), dto.minimumHeight(), dto.maximumWidth(), dto.maximumHeight(),
                 dto.showHeader(), dto.showCloseButton(), dto.showFooter(), dto.showDoNotShowAgain(),
                 dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
-                dto.periodMode(), dto.repeatInterval(), dto.repeatDayOfWeek(), dto.repeatDayOfMonth(),
                 dto.questions(), content);
     }
 
