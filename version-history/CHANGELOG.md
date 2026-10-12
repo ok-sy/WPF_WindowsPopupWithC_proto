@@ -2,13 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
-## 2026-10-12-07 — TODO32·30 DB 스크립트 로컬 XE 적용
+## 2026-10-12-07 — TODO32·30 DB 스크립트 로컬 XE·원격 개발 DB 적용
 
 - 이유: TODO34-35(설문·퀴즈의 잘못된 Footer 동작 명시값 거부) 반영 전에 기존 저장 데이터를 정규형으로 맞추고, 설계 32의 미사용 컬럼을 정리할 필요.
 - 변경: 로컬 XE(POPUP 스키마)에 13_normalize_footer_action_oracle.sql(정리 대상 0행, 잔여 0)과 12_drop_response_started_at_oracle.sql(값이 있던 행 0, RESPONSE_STARTED_AT 삭제, 잔여 컬럼 0)을 실행. 실행 전 TNS 리스너가 중지되어 있어 로컬 서비스를 시작. 13번 정규식을 예시 문자열로 확인한 결과 값에 이스케이프된 따옴표가 있는 쌍이 맨 앞에 오면 지워지지 않는 제한(07과 동일)을 db/oracle/README에 기록.
 - 주요 파일: db/oracle/README.md.
 - 검증: 실행 전 조회(샘플 4행에 Footer 키 없음, RESPONSE_STARTED_AT 값 0행)와 스크립트 결과 확인. 실행 후 실DB 테스트 PopupQuestionDatabaseTest·WpfPopupDatabaseTest(롤백 전용)를 로컬 XE로 실행해 통과(기존에는 skip이던 테스트로, 컬럼 삭제 후 MERGE·WPF 점수 저장·결과 처리 경로 확인).
-- 상태: 원격 개발 DB에는 두 스크립트 모두 미실행(접속 정보 미보유, 원격에서 이전 서버가 동작 중인지 미확인). 문서 커밋에 포함. 미푸시.
+- 원격 개발 DB(zero-rule 스키마): 실행 전 조회로 콘텐츠 4행 중 Footer 키 보유 0행, RESPONSE_STARTED_AT 값 0행(POPUP_RESPONSE 0행) 확인. 12번 실행 — 컬럼 삭제 OK, 잔여 컬럼 0. 13번은 정리 대상이 없어 실행 후 확인 조회에서도 정리 대상 0행·CLEANUP 갱신 0행. 원격에서 이전 버전 서버가 동작 중이면 응답 저장이 실패하므로 원격 서버는 설계 32 이후 코드로 실행해야 함.
+- 상태: 로컬 XE·원격 개발 DB 적용 완료. 원격 대상 실DB 테스트는 미실행. 문서 커밋에 포함. 미푸시.
 
 ## 2026-10-12-06 — TODO34 RESULT 계약 및 공통 옵션 정합성 보완 계획
 
