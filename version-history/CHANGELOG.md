@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-13 — TODO36 C# 서식 화이트리스트 검토 완료(유지 결정)
+
+- 이유: 서버·웹·C# 서식 허용 규칙 중복 여부와 C# 검사 제거 가능 범위 판단.
+- 변경: 세 구현의 색·크기·글꼴·정렬·키·개수 규칙 대조표, 호출 경로별 검증 경계, 표시 변환과 정책 검사 구분, 결정 근거를 설계36에 기록. 서버 검증이 관리자 저장 시에만 실행되고 조회 응답·Demo 내장 샘플은 재검증하지 않아 C# 검사를 표시 단계 방어선으로 유지. 호출처가 없는 `PopupRichText.ToPlainText` 삭제, 클래스 주석에 유지 근거 추가. 허용 규칙·인터페이스 계약 변경 없음. JSON 형식 오류(예: `"bold":"true"`) 시 TEXT 팝업 생성 실패 위험은 범위 밖 잔여 위험으로 기록.
+- 주요 파일: docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md, popup-frameWork/Popup/Views/Contents/PopupRichText.cs, version-history/CHANGELOG.md.
+- 검증: 서버 `validateAndDerivePlainText` 호출처가 `PopupService` 저장 경로뿐임을 grep으로 확인. `ToPlainText` 호출처 없음 확인. BehaviorTests 936건 통과(로컬). 형식 오류 시 예외 동작은 코드 확인만, 실행 재현 안 함.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-13-12 — TODO38 WPF TEXT 기울임 글자 우측 잘림 수정
 
 - 이유: WPF 팝업 서식 본문에서 줄 끝 기울임 글자의 오른쪽 획이 잘리는 표시 오류 수정.

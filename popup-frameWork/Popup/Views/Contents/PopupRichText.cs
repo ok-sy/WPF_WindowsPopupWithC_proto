@@ -14,6 +14,8 @@ namespace Popup.Views.Contents
      * HTML/XAML 문자열을 로드하지 않고, 허용 목록 밖의 서식 값은 무시하고 글자만 표시한다.
      * 크기·글꼴 허용 값과 색 규칙은 서버 PopupRichText.java, 관리자 웹 popupRichText.ts와 같아야 한다.
      * 글자 색은 팔레트가 아니라 #RRGGBB(대문자) 형식만 확인한다.
+     * [설계 36] 서버는 저장 시에만 검증하고 조회 응답·Demo 내장 샘플은 재검증하지 않으므로, 이 표시 단계 검사는
+     * 중복 정책이 아니라 마지막 방어선으로 유지한다(색 파싱 예외·비정상 크기 방지). Demo 옵션 검증도 같은 목록을 쓴다.
      */
     internal static class PopupRichText
     {
@@ -88,10 +90,5 @@ namespace Popup.Views.Contents
             if (format.Font != null && Fonts.TryGetValue(format.Font, out string? family)) run.FontFamily = new FontFamily(family);
             return run;
         }
-
-        /// <summary>서식 본문의 일반 문자열(서버 파생 규칙과 동일).</summary>
-        internal static string ToPlainText(IReadOnlyList<PopupTextBlockDto> blocks) =>
-            string.Join("\n", blocks.Where(b => b != null)
-                .Select(b => string.Concat((b.Runs ?? new()).Where(r => r != null).Select(r => r.Text))));
     }
 }
