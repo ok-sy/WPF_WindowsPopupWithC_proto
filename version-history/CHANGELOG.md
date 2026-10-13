@@ -2,13 +2,13 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
-## 2026-10-13-04 — TODO36 TEXT 서식 변환 타입검사 중복 검토
+## 2026-10-13-04 — TODO36 TEXT 서식 변환·C# 화이트리스트 중복 검토
 
-- 이유: TEXT 서식 변환 경로에서 유형 검사가 반복될 가능성이 제기되어 책임 경계를 확인할 필요.
-- 변경: TODO36 추가. 실제 PopupRichText.cs 경로 확인, 호출부·입력 검증 구분, 중복 여부 판단 및 필요 시 회귀 검증을 기록.
+- 이유: 서버와 C#의 서식 정책 중복 여부 및 표시 변환·오류 방어 책임을 구분할 필요.
+- 변경: 진행협의중 카드 `TEXT EDITOR 화이트리스트 CS쪽 제거 여부 체크`(https://trello.com/c/e9oWww78)를 연결. 기존 popupType 중복 분기 중심 설명을 실제 색상·크기 허용 검사와 글꼴 매핑 검토로 정정.
 - 주요 파일: docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md, version-history/CHANGELOG.md.
-- 검증: 현재 조사한 작업본에는 PopupRichText.cs 파일이 확인되지 않아 코드 변경 없이 경로 조사 과제로 기록.
-- 상태: 검토 TODO만 추가. 타입 검사 제거·코드 변경·테스트 미실행.
+- 검증: 최신 원격 main의 popup-frameWork/Popup/Views/Contents/PopupRichText.cs에서 IsAllowedColor, Sizes.Contains, Fonts.TryGetValue 및 nullable 값 확인을 확인. 파일을 찾지 못했다는 기존 작업본 기준 기록을 정정.
+- 상태: 검토 TODO만 수정. 화이트리스트 제거 여부 미결정, 코드 변경·실행 테스트 미실행.
 
 ## 2026-10-13-03 — TODO35 단건 팝업 API 흐름 및 응답 상태 정리
 
