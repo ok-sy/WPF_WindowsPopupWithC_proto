@@ -1,37 +1,6 @@
 {
-  "_comment": "POST /p/api/wpf/popups/results 응답 예시. wpf-results-request.json에 대응. 항목별 status를 확인해야 하며 HTTP 200만으로 성공을 판단하지 않는다.",
-  "results": [
-    {
-      "resultId": "8d2f5b1a-0c3e-4f6a-9b7c-1d2e3f4a5b6c",
-      "popupId": "SAMPLE-TEXT-001",
-      "resultType": "HIDDEN",
-      "status": "ACCEPTED"
-    },
-    {
-      "resultId": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-      "popupId": "SAMPLE-QUIZ-003",
-      "resultType": "SUBMITTED",
-      "status": "ACCEPTED",
-      "_comment": "[설계 33] QUIZ 점수·통과 여부는 요청의 score/passed를 서버가 저장하며 응답에는 다시 내려주지 않는다."
-    },
-    {
-      "resultId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
-      "popupId": "SAMPLE-SURVEY-004",
-      "resultType": "SUBMITTED",
-      "status": "ACCEPTED"
-    },
-    {
-      "resultId": "9e8d7c6b-5a4f-4e3d-2c1b-0a9f8e7d6c5b",
-      "popupId": "SAMPLE-VIDEO-002",
-      "resultType": "VIDEO_WATCHED",
-      "status": "ACCEPTED"
-    },
-    {
-      "resultId": "0f1e2d3c-4b5a-4968-8776-655443322110",
-      "popupId": "SAMPLE-TEXT-001",
-      "resultType": "CLOSED",
-      "status": "DUPLICATE",
-      "_comment": "같은 resultId가 이미 처리됨. WPF는 성공으로 간주해 큐에서 제거한다."
-    }
-  ]
+  "_comment": "[설계 35] POST /p/api/wpf/popups/results 응답 예시. wpf-results-request.json에 대응. HTTP 200만으로 성공을 판단하지 않고 status를 확인한다. 저장(ACCEPTED·DUPLICATE)이면 nextStatus가 있으며 AVAILABLE은 즉시 다음 조회, EMPTY는 pollingIntervalSeconds 대기. 거절·실패에는 nextStatus 없이 code·message가 오고, 저장은 됐으나 후보 확인이 실패하면 nextStatus를 생략하고 code=WPF_NEXT_STATUS_UNKNOWN을 보낸다.",
+  "resultId": "8d2f5b1a-0c3e-4f6a-9b7c-1d2e3f4a5b6c",
+  "status": "ACCEPTED",
+  "nextStatus": "AVAILABLE"
 }

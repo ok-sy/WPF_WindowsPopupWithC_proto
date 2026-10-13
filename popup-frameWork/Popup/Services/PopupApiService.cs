@@ -25,12 +25,12 @@ namespace Popup.Services
      * PopupService와 PopupManager가 담당한다.
      *
      * [설계 18 L-0 — C-2·C-3 삭제] WPF Client API 계약 v3.0이 WPF가 쓰는 API를
-     * 로그인·목록 조회·결과 일괄 전송 3개로 통일했다(docs/interfaces/POPUP_INTERFACE_SPEC.md).
+     * 로그인·조회·결과 수신 3개로 통일했다(설계 35 단건 순차, docs/interfaces/POPUP_INTERFACE_SPEC.md).
      * 그래서 호출부가 없던 구 동작별 API 메서드(GetAvailablePopupsAsync, HidePopupAsync,
      * SubmitResponseAsync, SaveVideoProgressAsync, RecordPopupEventAsync, GetPopupStatusesAsync —
      * /api/popups?userId= 계열)와 그 전용 헬퍼(PostAsync, EnsureSuccessAsync, BuildPopupUrl,
      * ValidatePopupAndUser), "구 서버 호환용" 안내 주석을 삭제했다. 남은 공개 메서드는
-     * GetWpfPopupsAsync·PostResultsAsync 두 개이며 로그인 API는 SsoAuthHeaderProvider가 호출한다.
+     * GetNextPopupAsync·PostResultAsync 두 개이며(설계 35 단건 순차) 로그인 API는 SsoAuthHeaderProvider가 호출한다.
      */
     public class PopupApiService : IPopupGateway
     {
@@ -192,26 +192,23 @@ namespace Popup.Services
          */
 
         /// <summary>
-        /// 서버가 노출 판단(활성·기간·대상·숨김·완료)을 끝낸 최종 팝업 목록을 조회한다.
-        /// 공통 옵션·content·문항·선택지가 한 응답에 들어 있어 추가 호출이 없다.
+        /// [설계 35] 서버가 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)과 정렬을 끝낸 팝업 최대 1건을 조회한다.
+        /// 서버가 전달 건(deliveryId)을 만들거나 재사용하므로 POST이며 본문은 {}다.
+        /// 공통 옵션·content·문항·선택지가 한 응답에 들어 있어 추가 호출이 없다. 대상이 없으면 Popup=null(정상).
         /// </summary>
-        public Task<WpfPopupListResponseDto> GetWpfPopupsAsync()
-            => SendWithAuthAsync<WpfPopupListResponseDto>(
-                HttpMethod.Get, $"{_baseUrl}/api/wpf/popups", body: null);
+        public Task<WpfNextPopupResponseDto> GetNextPopupAsync()
+            => SendWithAuthAsync<WpfNextPopupResponseDto>(
+                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", new { });
 
         /// <summary>
-        /// 팝업 처리 결과(닫기·숨김·제출·영상 시청)를 일괄 전송한다. PopupResultQueue가 호출한다.
-        /// HTTP 성공만으로 항목 성공을 판단하지 않고 응답 results[].status를 본다.
+        /// [설계 35] 팝업 처리 결과(닫기·숨김·제출·영상 시청) 1건을 전송한다. PopupResultQueue가 순서대로 호출한다.
+        /// HTTP 성공만으로 저장 성공을 판단하지 않고 응답 status를 보며, 저장 성공이면 nextStatus로 다음 조회 여부를 정한다.
         /// </summary>
-        public Task<WpfResultResponseDto> PostResultsAsync(WpfResultRequestDto request)
+        public Task<WpfResultResponseDto> PostResultAsync(WpfResultItemDto item)
         {
-            ArgumentNullException.ThrowIfNull(request);
-            if (request.Results == null || request.Results.Count == 0)
-            {
-                throw new ArgumentException("전송할 결과 항목이 없습니다.", nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(item);
             return SendWithAuthAsync<WpfResultResponseDto>(
-                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups/results", request);
+                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups/results", item);
         }
 
         /// <summary>
@@ -219,7 +216,7 @@ namespace Popup.Services
         ///  1. IAuthHeaderProvider.GetAuthorizationHeaderAsync() 값이 있으면 Authorization 헤더로 붙인다.
         ///  2. 개발용 사번(_devUserId)이 설정되어 있으면 X-Dev-User-Id 헤더를 붙인다.
         ///  3. 401이면 OnUnauthorizedAsync(실패한 헤더)로 토큰 갱신 기회를 준 뒤 같은 method/url/body로 1회만 재시도한다.
-        ///     [설계 10 §5.6] body 객체(예: WpfResultRequestDto)를 그대로 다시 직렬화하므로 resultId·clientRequestId가 유지된다.
+        ///     [설계 10 §5.6] body 객체(예: WpfResultItemDto)를 그대로 다시 직렬화하므로 resultId·deliveryId가 유지된다.
         ///     실패한 헤더 값을 넘기는 이유: 동시 401에서 구현체가 "이미 갱신된 토큰인지" 비교해 재로그인을 1회로 줄인다(T5).
         /// 응답 본문이 WPF 오류 JSON({code,message})이면 메시지에 코드를 포함해 예외를 만든다.
         /// </summary>

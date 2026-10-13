@@ -2,7 +2,7 @@
 
 - 문서 성격: All Feature Specification / Implemented WPF Scope
 - 작성 기준: 2026-10-13 (KST)
-- 기준 소스: `PopupResponseDto`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
+- 기준 소스: `WpfNextPopupResponseDto`, `PopupResponseDto`, `WpfResultDtos`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
 - 대응 문서: [최소 기능 버전 정의서](WPF_POPUP_MINIMAL_SPEC.md)
 
 ## 1. 문서 목적
@@ -39,13 +39,14 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 
 | 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
+| DeliveryId | 지원(설계 35) | Y | 계약 기본값 없음(C# 초기값 `""`) | 조회 응답 `popup.deliveryId`. 서버가 조회마다 발급·재사용하는 전달 건 ID이며 결과 요청에 그대로 보냄. 빈 값이면 결과가 `REJECTED`(`WPF_INVALID_RESULT`) |
 | PopupId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 식별·숨김·결과 연결 ID. 서버가 유효값 보장. 빈 값이면 결과 연결 생략 |
 | PopupType | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
 | Title | 지원 | Y(계약) | `""` | 공통 Header 제목. Header 숨김 여부와 별개로 백엔드 응답 계약상 제공 |
-| DisplayStartAt / DisplayEndAt | 삭제(설계 29) | - | - | 기간·대상·숨김·완료를 판정한 최종 목록은 서버 책임. 목록 응답·DTO에 없음 |
-| DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
-| DisplayOrder | 지원 | N | `100` | 작은 순서 그룹부터 표시 |
+| DisplayStartAt / DisplayEndAt | 삭제(설계 29) | - | - | 기간·대상·숨김·완료 판정은 서버 책임. 조회 응답·DTO에 없음 |
+| DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 서버 팝업이 동시에 여러 개 열리지 않음 |
+| DisplayOrder | 응답에서 삭제(설계 35) | - | - | 관리자 표시 순서는 서버 정렬 기준으로만 사용하고 조회 응답에 싣지 않음. 서버가 순서상 첫 1건을 내려줌 |
 | ShowHeader | 지원 | N | `true` | 제목·고정 로고 및 Header 영역 |
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
@@ -196,15 +197,16 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 기능 | 전체 구현 범위 | 설정·계약 구분 |
 |---|---|---|
 | 인증 | SSO XML → 로그인 → Bearer, 토큰 만료 시 재로그인·재시도 | 인증 URL·실환경 통합 정책은 별도 연동 조건 |
-| API | 로그인·목록 조회·결과 일괄 전송 | 요청·응답·경로는 인터페이스 계약서 참조 |
-| 조회 | 30~60분 조회 정책, 실패 후 재조회 복구 | 팝업 content의 옵션이 아님 |
-| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐·백그라운드 전송 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
+| API | 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) (설계 35) | 요청·응답·경로는 인터페이스 계약서 참조 |
+| 조회 | 한 번에 팝업 1건 표시. 표시 중에는 다른 조회 없음. 결과 저장 응답 `nextStatus`=AVAILABLE이면 즉시 조회, EMPTY·`popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분) 대기, `nextStatus` 없음은 즉시 조회. 조회 실패 후 재조회 복구 | 팝업 content의 옵션이 아님. 대기는 기동 시점 기준이 아니라 해당 응답 시점부터 계산 |
+| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
+| 미전송 결과 복구 | 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도. 400 결과는 이번 실행에서 제외, 배열 일괄 재전송 없음 | 주간회의 결정 전 **임시 기준**(설계 35 §4). 확정 계약 아님 |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 JSON 제어 필드 없음 |
-| 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 목록 조회(GET /api/wpf/popups 요청과 Header·Footer·content를 포함한 목록 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음 | Demo 결과는 실제 서버·DB 저장과 구분. Demo 요청 JSON에는 인증 헤더가 없고 샘플 유형 선택은 로그 줄에만 표시 |
+| 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시 | Demo 결과는 실제 서버·DB 저장과 구분. Demo 요청 JSON에는 인증 헤더가 없고 샘플 유형 선택은 로그 줄에만 표시 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |
 | 자동 업데이트 | 구현 기능으로 포함하지 않음 | 설계 17은 폐기(2026-10-12) |
 
-서버가 기간·대상·숨김·완료를 판정하고 WPF에는 최종 표시 목록을 내려준다.
+서버가 기간·대상·숨김·완료·재노출 유예를 판정하고 WPF에는 표시 순서상 첫 1건을 내려준다. TEXT·IMAGE 닫기(CLOSED)는 서버에서 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 조회에서 제외된다.
 서버 DB·관리자 API·웹 입력 범위는 이 전체 WPF 기능 정의서의 지원 판정과 구분한다.
 전체 기능 지원 표시는 모든 영상 엔진·Horizon·DPI 조합의 실환경 검증 완료를 뜻하지 않는다.
 현재 남은 실측은 [설계 25](../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)와
@@ -214,7 +216,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 
 | 유형 | 전체 제공 기능 | 최소 버전과의 주요 차이 |
 |---|---|---|
-| 공통 | 표시 순서·동시 표시·크기 모드·9개 위치·폰트·Footer 링크·숨김·Overlay | 최소는 기본 표시 방식·위치·폰트 및 FIXED 중심 |
+| 공통 | 단건 순차 표시·크기 모드·9개 위치·폰트·Footer 링크·숨김·Overlay | 최소는 기본 표시 방식·위치·폰트 및 FIXED 중심 |
 | TEXT | 서식 본문(제목·설명 문단 포함)·강조·하단 설명 및 링크 | 최소는 일반 본문(PlainText) 중심 |
 | IMAGE | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL, 이미지 치수·비율·설명·화면 상한 | 최소는 ORIGINAL 및 공통 창 크기 |
 | VIDEO | 공통 컨트롤·시청량·음량·전체화면·배속·자동 및 반복 재생 | 최소는 기본 컨트롤·음량·전체화면·완료 비율 중심 |

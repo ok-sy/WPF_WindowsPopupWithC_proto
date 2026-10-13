@@ -26,12 +26,12 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 순서 | 파일 | 실행 계정 | 내용 |
 |---|---|---|---|
 | 0 | `00_create_schema_oracle.sql` | SYSTEM(DBA) | `POPUP` 사용자(=스키마) 생성, 없으면 앱 접속 계정 `ZERO_RULE`도 생성 |
-| 1 | `01_popup_schema_oracle.sql` | POPUP | 테이블 17개(원본 16 + `WPF_RESULT_RECEIPT`), 시퀀스 12개, 인덱스, 주석 |
+| 1 | `01_popup_schema_oracle.sql` | POPUP | 테이블 18개(원본 16 + `WPF_RESULT_RECEIPT` + `WPF_POPUP_DELIVERY`), 시퀀스 12개, 인덱스, 주석 |
 | 2 | `02_popup_sample_oracle.sql` | POPUP | 개발 샘플(사용자 3·팝업 4·대상 조건 6·문항 3). 운영 금지 |
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`~`14` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제. 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`15` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행). 상세·적용 현황은 아래 각 절 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
 | 참고 | `10_zero_rule_common_schema_oracle.sql` | 로컬 `ZERO_RULE` | 공통 스키마 변환본(로컬 XE에서 전체 서버 기동용, 정식 DDL 아님) |
 
@@ -194,3 +194,12 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 로컬 XE(POPUP) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, `linkUrl` 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 재실행 시 SKIP 확인. 실행 후 실DB 테스트(`PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest`, 롤백 전용) 통과. 원격 개발 DB(11g XE, `zero-rule` 스키마) 2026-10-12 실행 — `LINK_URL` 값이 있던 행 0, 키 보유 행 0(갱신 0행), 컬럼 삭제 OK, 잔여 컬럼·키 0. 비밀번호에 `!`가 있어 sqlplus에서 비밀번호를 큰따옴표로 감싸 접속(`zero-rule/"<pw>"@...`).
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @14_drop_link_url_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @14_drop_link_url_oracle.sql ""`
+## WPF 팝업 전달 건 테이블 신설 (2026-10-13, 설계 35)
+
+`15_wpf_popup_delivery_oracle.sql <스키마접두어>` — `WPF_POPUP_DELIVERY` 테이블과 인덱스 2개(사용자당 OPEN 1건 함수 기반 유니크, 재노출 유예 조회용)를 만든다. 이미 있으면 SKIP(멱등). `01_popup_schema_oracle.sql` §12에도 같은 정의를 넣었다.
+
+- 배경: WPF 조회 API를 단건 순차 전달(`POST /p/api/wpf/popups` → popup 1건 또는 null)로 바꿨다. 조회 API가 전달 건(`deliveryId`)을 만들거나 재사용하고, 결과 수신 API가 소유·팝업 일치·미종료를 확인한 뒤 전달 건을 종료한다. `DEFER_UNTIL_AT`(결과 저장 시각 + pollingIntervalSeconds)으로 미완료로 닫힌 팝업의 재노출을 유예하며, 조회와 후속 후보 확인(nextStatus)이 같은 조건을 쓴다.
+- 순서: **서버 반영 전에 실행.** 새 서버는 조회·결과 처리에서 이 테이블을 사용하므로 없으면 ORA-00942로 실패한다. 이전 서버는 이 테이블을 쓰지 않아 실행 후에도 동작한다. 팝업 테이블 소유 계정과 앱 계정이 다르면(방식 A) `03_grant_zero_rule_oracle.sql`을 다시 실행해 권한을 준다.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-13 실행 — 테이블·인덱스 생성 OK, 재실행 시 SKIP 확인. `03`을 다시 실행해 로컬 `ZERO_RULE`에 권한 부여. 실행 후 실DB 테스트(`WpfPopupDatabaseTest` 롤백 전용, `WpfApiOracleHttpTest`) 통과. **원격 개발 DB 미적용.**
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @15_wpf_popup_delivery_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @15_wpf_popup_delivery_oracle.sql ""`

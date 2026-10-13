@@ -35,23 +35,17 @@ namespace Popup.Dtos
         public const string VideoWatched = "VIDEO_WATCHED";
     }
 
-    /// <summary>결과 일괄 전송 요청 본문.</summary>
-    public class WpfResultRequestDto
-    {
-        /// <summary>요청 단위 식별(로그용). 전송 시마다 새로 만든다.</summary>
-        public string ClientRequestId { get; set; } = Guid.NewGuid().ToString("N");
+    /* [설계 35] 일괄 전송 envelope(WpfResultRequestDto: clientRequestId·sentAt·results[])는 단건 순차 전송으로 바꾸며 삭제했다.
+       결과 항목 1건(WpfResultItemDto)이 곧 POST /p/api/wpf/popups/results 요청 본문이다. */
 
-        /// <summary>WPF 전송 시각. 재전송이라도 항목의 시각은 바뀌지 않는다.</summary>
-        public DateTimeOffset SentAt { get; set; } = DateTimeOffset.Now;
-
-        public List<WpfResultItemDto> Results { get; set; } = new();
-    }
-
-    /// <summary>결과 항목 1건. 팝업 창 하나가 닫힐 때 하나 만들어진다.</summary>
+    /// <summary>결과 1건 = 결과 수신 요청 본문. 팝업 창 하나가 닫힐 때 하나 만들어진다.</summary>
     public class WpfResultItemDto
     {
         /// <summary>항목 멱등 키. 창이 열릴 때 확정되어 재전송 시에도 같다.</summary>
         public string ResultId { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>[설계 35] 조회 응답 popup.deliveryId. 서버가 전달 건 소유·팝업 일치를 검증하고 결과 저장 시 종료한다.</summary>
+        public string DeliveryId { get; set; } = string.Empty;
 
         public string PopupId { get; set; } = string.Empty;
 
@@ -93,22 +87,15 @@ namespace Popup.Dtos
         public decimal WatchedSeconds { get; set; }
     }
 
-    /// <summary>결과 일괄 전송 응답.</summary>
+    /// <summary>
+    /// [설계 35] 결과 1건 처리 응답. HTTP 200이어도 <see cref="Status"/>를 봐야 한다.
+    /// ACCEPTED·DUPLICATE·REJECTED는 "처리 종결"이므로 큐에서 제거하고, RETRYABLE_ERROR·INTERNAL_ERROR는 보관·재전송한다(설계 34).
+    /// 저장 성공(ACCEPTED·DUPLICATE)이면 <see cref="NextStatus"/>가 후속 후보 유무(AVAILABLE/EMPTY)를 알린다.
+    /// 이전 일괄 응답(results[])과 항목 응답의 popupId·resultType은 삭제했다.
+    /// </summary>
     public class WpfResultResponseDto
     {
-        /* [설계 34-03] 쓰지 않던 ReceivedAt은 삭제했다. */
-        public List<WpfResultItemResponseDto> Results { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 항목별 처리 결과. HTTP 200이어도 <see cref="Status"/>를 봐야 한다.
-    /// ACCEPTED·DUPLICATE·REJECTED는 "처리 종결"이므로 큐에서 제거하고, RETRYABLE_ERROR·INTERNAL_ERROR는 보관·재전송한다(설계 34).
-    /// </summary>
-    public class WpfResultItemResponseDto
-    {
         public string ResultId { get; set; } = string.Empty;
-        public string PopupId { get; set; } = string.Empty;
-        public string ResultType { get; set; } = string.Empty;
 
         /// <summary>ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR</summary>
         public string Status { get; set; } = string.Empty;
@@ -117,7 +104,14 @@ namespace Popup.Dtos
         public string? Code { get; set; }
         public string? Message { get; set; }
 
-        /* [설계 34-03] PopupStatus·Completed·CompletedAt·ResponseId는 WPF가 쓰지 않아 삭제했다(완료 여부는 다음 목록 조회에 반영). */
+        /// <summary>[설계 35] AVAILABLE(즉시 다음 조회) / EMPTY(폴링 간격 대기). 저장 실패·후보 확인 실패면 null.</summary>
+        public string? NextStatus { get; set; }
+
+        /// <summary>서버가 결과를 저장했는지(ACCEPTED·DUPLICATE).</summary>
+        public bool IsSaved => string.Equals(Status, "ACCEPTED", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Status, "DUPLICATE", StringComparison.OrdinalIgnoreCase);
+
+        /* [설계 34-03] PopupStatus·Completed·CompletedAt·ResponseId는 WPF가 쓰지 않아 삭제했다(완료 여부는 다음 조회에 반영). */
 
         /* [설계 33] TotalScore/Passed는 삭제했다. QUIZ 판정은 WPF가 끝내 요청(Score/Passed)으로 보내고 서버는 저장만 한다.
            [설계 34-05] HiddenUntil·WatchedRatio·RequiredRatio도 삭제했다. 숨김 만료·시청 비율은 서버가 내부에서 저장·계산한다. */

@@ -92,6 +92,59 @@
              #{resultType}, #{resultStatus}, #{resultCode})
     </insert>
 
+    <!-- ===================================================================
+         [설계 35] 전달 건(WPF_POPUP_DELIVERY). 컬럼 순서는 WpfPopupDelivery 레코드 생성자 순서와 같다.
+         =================================================================== -->
+
+    <!-- 사용자의 미완료(OPEN) 전달 건. 사용자당 1건(UX_WPF_POPUP_DELIVERY_OPEN). -->
+    <select id="selectOpenDelivery" resultType="server.domain.popup.wpf.WpfPopupDelivery">
+        SELECT d.DELIVERY_ID, d.EMPLOYEE_NO, d.POPUP_ID, d.DELIVERY_STATUS, n.POPUP_TYPE
+        FROM ${popupSchemaPrefix}WPF_POPUP_DELIVERY d
+        LEFT JOIN ${popupSchemaPrefix}POPUP_NOTICE n ON n.POPUP_ID = d.POPUP_ID
+        WHERE d.EMPLOYEE_NO = #{userId}
+          AND d.DELIVERY_STATUS = 'OPEN'
+    </select>
+
+    <!-- 결과 처리용 전달 건. 같은 전달 건의 동시 결과 처리를 직렬화하려고 행을 잠근다. -->
+    <select id="selectDeliveryForUpdate" resultType="server.domain.popup.wpf.WpfPopupDelivery">
+        SELECT d.DELIVERY_ID, d.EMPLOYEE_NO, d.POPUP_ID, d.DELIVERY_STATUS,
+               (SELECT n.POPUP_TYPE FROM ${popupSchemaPrefix}POPUP_NOTICE n WHERE n.POPUP_ID = d.POPUP_ID) AS POPUP_TYPE
+        FROM ${popupSchemaPrefix}WPF_POPUP_DELIVERY d
+        WHERE d.DELIVERY_ID = #{deliveryId}
+        FOR UPDATE
+    </select>
+
+    <!-- 새 전달 건. 사용자에게 OPEN 건이 이미 있으면 유니크 인덱스 위반(DuplicateKeyException) — 동시 조회 방어. -->
+    <insert id="insertDelivery">
+        INSERT INTO ${popupSchemaPrefix}WPF_POPUP_DELIVERY (DELIVERY_ID, EMPLOYEE_NO, POPUP_ID, DELIVERY_STATUS)
+        VALUES (#{deliveryId}, #{userId}, #{popupId}, 'OPEN')
+    </insert>
+
+    <!-- 재조회 시 더 이상 노출 대상이 아닌 OPEN 건 종료(게시 중단·기간 만료·대상 변경). -->
+    <update id="expireDelivery">
+        UPDATE ${popupSchemaPrefix}WPF_POPUP_DELIVERY
+           SET DELIVERY_STATUS = 'EXPIRED',
+               COMPLETED_AT = <include refid="server.repo.core.mapper.popup.PopupMapper.nowKst"/>
+         WHERE DELIVERY_ID = #{deliveryId}
+           AND DELIVERY_STATUS = 'OPEN'
+    </update>
+
+    <!--
+        결과 저장과 같은 트랜잭션에서 전달 건 종료. DEFER_UNTIL_AT = 저장 시각 + 폴링 간격:
+        미완료로 닫힌 팝업은 이 시각까지 조회·후속 후보에서 제외된다(완료·숨김 팝업은 원래 제외되므로 영향 없음).
+    -->
+    <update id="completeDelivery">
+        UPDATE ${popupSchemaPrefix}WPF_POPUP_DELIVERY
+           SET DELIVERY_STATUS = 'DONE',
+               RESULT_ID = #{resultId},
+               RESULT_TYPE = #{resultType},
+               COMPLETED_AT = <include refid="server.repo.core.mapper.popup.PopupMapper.nowKst"/>,
+               DEFER_UNTIL_AT = <include refid="server.repo.core.mapper.popup.PopupMapper.nowKst"/>
+                                + NUMTODSINTERVAL(#{deferSeconds}, 'SECOND')
+         WHERE DELIVERY_ID = #{deliveryId}
+           AND DELIVERY_STATUS &lt;&gt; 'DONE'
+    </update>
+
     <!-- 요청 단위 로그. 요약은 CLOB. POPUP_ID는 일괄 요청이라 NULL. 사용자 미확인(401/403) 요청은 EMPLOYEE_NO NULL, 작성자 'WPF'. -->
     <insert id="insertApiRequestLog">
         INSERT INTO ${popupSchemaPrefix}API_REQUEST_LOG

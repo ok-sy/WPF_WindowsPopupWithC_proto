@@ -221,7 +221,7 @@ namespace Popup.Managers
         {
             if (string.IsNullOrWhiteSpace(popupOptions.PopupId)) return;
 
-            PopupResultBuilder builder = new(popupOptions.PopupId, popupOptions.HideDays);
+            PopupResultBuilder builder = new(popupOptions.PopupId, popupOptions.HideDays, popupOptions.DeliveryId);
 
             popupWindow.ContentRendered += (sender, eventArgs) =>
                 builder.MarkDisplayed(DateTimeOffset.Now);

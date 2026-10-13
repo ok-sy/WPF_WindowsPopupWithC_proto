@@ -2,6 +2,19 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-16 — TODO35 단건 순차 조회·결과 1건 수신 API 구현(제안 0.3 기준)
+
+- 이유: 팝업 순차 전달 API 제안 0.3(`docs/interfaces/popup_api_proposal_v0.3.docx`)의 정상 흐름(로그인 → 단건 조회 → 표시 → 결과 1건 수신 → nextStatus에 따른 다음 조회) 구현. 결정값: 기존 조회 경로를 POST로 교체, 전달 건(deliveryId) 포함, 결과 요청은 기존 필드 유지 + deliveryId, TEXT·IMAGE 닫기는 완료 처리, 설문·퀴즈·영상 미완료 결과는 저장 시각부터 pollingIntervalSeconds 동안 사용자·팝업 단위 재노출 유예(조회·nextStatus 공통 조건).
+- 변경:
+  - DB: `WPF_POPUP_DELIVERY` 신설(사용자당 OPEN 1건 함수 기반 유니크 인덱스, `DEFER_UNTIL_AT`). `01` §12 반영, 증분 `15_wpf_popup_delivery_oracle.sql` 추가.
+  - 서버: `POST /p/api/wpf/popups` → `{pollingIntervalSeconds, popup|null}`(popup에 deliveryId, displayOrder·serverTime·userId·popups[] 삭제). OPEN 전달 건 재사용·대상 아님 시 만료·동시 조회 시 유니크 위반 재조회. `POST /p/api/wpf/popups/results` 결과 1건 → `{resultId, status, nextStatus}`(전달 건 소유·팝업 일치·미종료 검증, 처리 후 전달 건 종료·유예 기록, 후보 확인은 조회와 같은 SQL 조각 `eligiblePopupCte` + ROWNUM 1, 후보 확인 실패는 nextStatus 생략·`WPF_NEXT_STATUS_UNKNOWN`). 새 거절 코드 `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`. 일괄 envelope·results[] 삭제.
+  - WPF: 게이트웨이 `GetNextPopupAsync`·`PostResultAsync`, 결과 대기열 저장 순서 1건씩 전송(미종결에서 멈춤 → `ResultFlushOutcome`), MainWindow 1건 표시 → 닫힘 → 결과 → AVAILABLE 즉시 조회·EMPTY 최신 간격 대기, 표시 중 조회 금지, `_shownPopupIds` 삭제, 빈 조회 대기를 기동 시점 경계 대신 최신 간격 전체로 변경. deliveryId를 PopupOptions·PopupResultBuilder로 전달. Demo 게이트웨이·Demo 화면도 단건 흐름.
+  - 장애 복구(주간회의 결정 대기) 임시 기준: 기존 디스크 대기열 유지, 미전송 결과를 순서대로 1건씩 재전송, 미종결 결과가 남으면 다음 팝업을 조회하지 않고 복구 간격 뒤 재시도. 400 결과는 실행 중 격리, INTERNAL_ERROR는 실행당 3회 후 차단 해제.
+  - 문서: POPUP_INTERFACE_SPEC(3.7 변경 이력에 설계 35, 버전 유지)·ALL/MINIMAL 명세·옵션 가이드 2종·popup-frameWork README·미리보기 대응 문서, 예제 JSON 5종(유형별 예제는 popup 카탈로그 구조), Excel 정의서(공통·유형별 경로 popup., deliveryId 행, RESULT_REQUEST/RESPONSE 단건·nextStatus, 개요·Sample), Word/PDF v3.7 재생성, DB README·설계05, 설계35 결정·구현·검증 기록. 제안 0.3 원본 문서 저장소 반영.
+- 주요 파일: db/oracle/(01_popup_schema_oracle.sql, 15_wpf_popup_delivery_oracle.sql, README.md), zero-rule-server/(web/api .../wpf/WpfPopupController.java·payload/WpfResultRequest.java, service/core .../wpf/WpfPopupService.java·WpfResultProcessor.java, repo/core mappers/popup/PopupMapper.xml·WpfPopupMapper.xml 및 매퍼 인터페이스, domain .../wpf/WpfNextPopupResponse.java·WpfPopupDelivery.java·WpfResultResponse.java·WpfResultCommand.java·WpfPopupItem.java, 관련 테스트), popup-frameWork/Popup/(MainWindow.xaml.cs, Services/PopupApiService.cs·IPopupGateway.cs·PopupResultQueue.cs·PopupResultBuilder.cs·PopupPollingRecovery.cs·DemoPopupGateway.cs, Dtos/WpfNextPopupResponseDto.cs·WpfResultDtos.cs·PopupResponseDto.cs, DemoWindow.xaml(.cs), Factories/PopupFactory.cs, Models/PopupOptions.cs, Managers/PopupManager.cs), docs/interfaces/*, docs/design/(35_*, 05_*), api/examples/*, version-history/CHANGELOG.md.
+- 검증: 로컬 XE(POPUP)에 15 스크립트 실행·재실행 SKIP 확인, 03 재실행으로 로컬 ZERO_RULE 권한 부여. 서버 `gradlew test --offline --continue`(POPUP_TEST_DB_PASSWORD 설정) 120건 통과·skip 0 — 단위·실DB 롤백(TEXT 닫기 완료 → 영상 미완료 유예 1800초 → QUIZ → SURVEY → EMPTY → popup=null, 다른 사용자 전달 건 거절)·실서버 HTTP 통합(POST 조회·재사용, 결과 순차·DUPLICATE·popup=null·커밋 확인). WPF 빌드 경고 0·오류 0, BehaviorTests 955건(실제 MainWindow + 가짜 HTTP: 1건 표시 → 닫힘 → deliveryId 결과 → AVAILABLE 즉시 조회 → EMPTY 2700초 대기, 결과 전송 실패 시 조회 보류·10초 복구 예약), RecoveryTests 153건(로컬, 테스트 프로젝트는 .gitignore 대상). 예제 JSON·명세 json 블록·Excel 예시 JSON 파싱, docx 본문 반영 확인. 미실행: 원격 개발 DB 15 스크립트 적용, 실제 서버+WPF 화면 연동, 관리자 웹 영향 확인(관리자 API 변경 없음), 폐쇄망 반입. 실서버 HTTP 테스트에서 JDK HttpURLConnection이 본문 있는 POST의 401 응답 본문을 읽지 못해 무헤더 401은 상태 코드만 확인(본문 코드는 MockMvc 테스트에서 확인).
+- 상태: 커밋에 포함. 원격 반영. 원격 개발 DB에 15 스크립트 적용 전에는 새 서버의 조회·결과 API가 ORA-00942로 실패한다.
+
 ## 2026-10-13-15 — TODO37 TEXT 콘텐츠 제목·설명을 서식 본문(textBlocks)으로 통합
 
 - 이유: 서식 본문으로 제목·설명 역할까지 표현할 수 있어 TEXT.content의 별도 제목·설명 영역을 본문으로 통합(진행 확정 과제). textBlocks 이름 유지, plainText는 서버 파생값으로 유지하기로 결정.
@@ -12,7 +25,7 @@
   - 문서·샘플: POPUP_INTERFACE_SPEC(3.7 변경 이력에 설계 37 추가, 버전 유지), WPF_POPUP_ALL_SPEC·WPF_POPUP_MINIMAL_SPEC(최소 범위는 세 필드 삭제만, textBlocks 미추가), 옵션 가이드 2종, 미리보기 대응 문서, 예제 JSON 3종, DB 샘플 SQL(SAMPLE-TEXT-001), 설계05 메모, Excel 정의서 TEXT 시트 3행 삭제·메모·Sample 갱신(XML 수준 편집), Word/PDF v3.7 재생성. 설계37 결정·구현·검증 기록 및 카드 대응표 상태 갱신.
 - 주요 파일: zero-rule-server/service/core/.../popup/(PopupRichText.java, PopupContentAssembler.java, PopupService.java, PopupContentAssemblerTest.java), zero-rule-web/main/src/features/RgstPop/(PopupEditorDialog.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/TextPopupContentDto.cs, Factories/PopupFactory.cs, Views/Contents/TextPopupView.xaml(.cs), Services/DemoPopupDataService.cs, DemoOptionsWindow.Fields.cs), docs/interfaces/*, docs/(POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/(05_Oracle_DB_설계.md, 37_TEXT_EDITOR_BODY_통합검토_TODO.md), api/examples/wpf-popups-response.json, db/oracle/02_popup_sample_oracle.sql, version-history/CHANGELOG.md.
 - 검증: 서버 `gradlew test --offline` 성공(최근 실행 112건, Oracle 연동 6건 skip) — 통합 전 행 합침(여러 줄·빈 줄·기존 textBlocks), 합친 본문의 저장 검증 통과·파생 plainText 일치, 숨김 행 미병합, 저장 옵션 정리 포함. 관리자 웹 `tsc --noEmit`·eslint(변경 파일)·`npm run build` 성공. WPF BehaviorTests 938건·RecoveryTests 146건 통과(로컬, 테스트 프로젝트는 .gitignore 대상), 렌더링 이미지에서 제목이 첫 문단으로 표시됨 확인. 예제 JSON·명세 예제·SQL 옵션 JSON 파싱, Excel TEXT 시트·Sample JSON, docx 본문 확인. 미실행: 브라우저 화면 확인, 실제 서버 연동 재편집 저장, 원격 개발 DB 기존 TEXT 행 조회·샘플 SQL 실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-13-14 — TODO35 착수 전 현행 대조 및 구현 보류 사유 기록
 
@@ -20,7 +33,7 @@
 - 변경: 설계35 §4에 현행 구조(목록·배치 결과·디스크 대기열), 확정 사항(기존 `GET /api/wpf/popups` 응답을 단건 구조로 교체, 새 경로 없음), 미결 사항(결과 수신 요청 단건/배열, 닫기(CLOSED) 후 재노출 기준) 기록. CLOSED는 완료·숨김으로 기록되지 않아 단건 흐름에서 nextStatus=AVAILABLE → 같은 팝업 재조회가 반복될 수 있고, 현재는 클라이언트 `_shownPopupIds`로 걸러짐을 명시.
 - 주요 파일: docs/design/35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md, version-history/CHANGELOG.md.
 - 검증: 서버 `selectAvailablePopups` 제외 조건(숨김·완료), WPF `MainWindow.xaml.cs`의 `_shownPopupIds` 사용 확인. 실행 코드 변경 없음.
-- 상태: 커밋에 포함. 미푸시. 구현 보류(결정 대기).
+- 상태: 커밋에 포함. 원격 반영. 구현 보류(결정 대기).
 
 ## 2026-10-13-13 — TODO36 C# 서식 화이트리스트 검토 완료(유지 결정)
 
@@ -28,7 +41,7 @@
 - 변경: 세 구현의 색·크기·글꼴·정렬·키·개수 규칙 대조표, 호출 경로별 검증 경계, 표시 변환과 정책 검사 구분, 결정 근거를 설계36에 기록. 서버 검증이 관리자 저장 시에만 실행되고 조회 응답·Demo 내장 샘플은 재검증하지 않아 C# 검사를 표시 단계 방어선으로 유지. 호출처가 없는 `PopupRichText.ToPlainText` 삭제, 클래스 주석에 유지 근거 추가. 허용 규칙·인터페이스 계약 변경 없음. JSON 형식 오류(예: `"bold":"true"`) 시 TEXT 팝업 생성 실패 위험은 범위 밖 잔여 위험으로 기록.
 - 주요 파일: docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md, popup-frameWork/Popup/Views/Contents/PopupRichText.cs, version-history/CHANGELOG.md.
 - 검증: 서버 `validateAndDerivePlainText` 호출처가 `PopupService` 저장 경로뿐임을 grep으로 확인. `ToPlainText` 호출처 없음 확인. BehaviorTests 936건 통과(로컬). 형식 오류 시 예외 동작은 코드 확인만, 실행 재현 안 함.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-13-12 — TODO38 WPF TEXT 기울임 글자 우측 잘림 수정
 
@@ -36,7 +49,7 @@
 - 변경: 원인을 문단 TextBlock이 ScrollViewer 표시 영역 폭과 같아 기울어진 획 돌출분(글자 크기의 최대 약 33%)이 표시 영역 클리핑에 걸리는 것으로 확인. 외곽 클리핑은 유지하고 기울임 구간이 있는 문단에만 가장 큰 기울임 글자 크기 × 0.35(올림)의 오른쪽 Padding을 두는 `PopupRichText.ReserveItalicOverhang` 추가. 본문 기본 크기 적용(ApplyBodyFontSize) 후 다시 계산. 기울임이 없는 문단은 배치 변화 없음. 기울임 문단의 오른쪽 정렬 줄 끝·줄바꿈 위치가 여유 폭만큼 안쪽으로 이동.
 - 주요 파일: popup-frameWork/Popup/Views/Contents/(PopupRichText.cs, TextPopupView.xaml.cs), docs/design/38_WPF_TEXT_기울임_우측잘림_TODO.md, version-history/CHANGELOG.md.
 - 검증: BehaviorTests에 `CheckItalicOverhang38` 추가(로컬, .gitignore 대상이라 미커밋) — 폭 300px 오른쪽 정렬 기울임 문단을 경계 밖까지 렌더링해 잉크 위치 측정. 수정 전 실패(잉크 301px) 재현, 수정 후 글꼴 4종 × 크기 2종 × 문자열 3종·본문 크기 32 변경 모두 경계 안, 비기울임 문단 Padding 0. 전체 936건 통과. 실제 팝업 화면·고DPI·사용자 재현 문자열 확인은 미실행.
-- 상태: 커밋에 포함. 미푸시. 실제 화면 회귀 확인 남음. MINIMAL/ALL 명세는 표시 보정으로 계약 변경이 없어 유지.
+- 상태: 커밋에 포함. 원격 반영. 실제 화면 회귀 확인 남음. MINIMAL/ALL 명세는 표시 보정으로 계약 변경이 없어 유지.
 
 ## 2026-10-13-11 — TODO26 Header/Footer 분리 설계 폐기 상태 동기화
 

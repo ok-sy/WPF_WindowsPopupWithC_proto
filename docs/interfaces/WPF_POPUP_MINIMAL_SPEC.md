@@ -10,7 +10,7 @@
 
 구현된 전체 기능은 [WPF 팝업 전체 기능 버전 정의서](WPF_POPUP_ALL_SPEC.md)에서 함께 관리한다. 기능 변경 시 두 문서의 필드명·기본값·ENUM·고정 동작을 함께 확인하되, 전체 기능 추가만으로 최소 제공 범위를 확장하지 않는다.
 
-백엔드 전달 시 함께 확인할 자료: [유형별 최소 JSON 예시](#8-백엔드-전달용-유형별-최소-json-예시), [복사·테스트용 최소 JSON 파일](examples/WPF-01-popup-types-minimal.json), [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [전체 응답 JSON 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 popupId, content, 문항/선택지 ID, isRequired, QUIZ의 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
+백엔드 전달 시 함께 확인할 자료: [유형별 최소 JSON 예시](#8-백엔드-전달용-유형별-최소-json-예시), [복사·테스트용 최소 JSON 파일](examples/WPF-01-popup-types-minimal.json), [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [유형별 전체 popup 예시 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 deliveryId, popupId, content, 문항/선택지 ID, isRequired, QUIZ의 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
 
 ## 2. 최소 기능 적용 원칙
 
@@ -26,6 +26,7 @@
 
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
+| DeliveryId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 서버가 조회마다 발급·재사용하는 전달 건 ID(설계 35). WPF는 결과 요청에 그대로 보냄 |
 | PopupId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 팝업 고유 ID. 빈 값이면 결과 연결 생략 |
 | PopupType | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 아래 표 적용 |
@@ -46,8 +47,8 @@
 | BodyFontSize | 미제공 | N | `null` | TextStyle이라는 통합 필드는 없음 |
 | FooterFontSize | 미제공 | N | `null` | Footer 글자 크기 |
 | SizeMode | FIXED만 사용 | N | `FIXED` | 코드는 FIXED/RATIO/FULLSCREEN/AUTO 지원 |
-| DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 코드는 SEQUENTIAL/SIMULTANEOUS 지원 |
-| DisplayOrder | 기본값 사용 | N | `100` | 표시 우선순위(작은 값 우선). 최소 버전 예시는 기본값 100을 명시 |
+| DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 코드는 SEQUENTIAL/SIMULTANEOUS 지원. 조회 응답이 1건이라 서버 팝업이 동시에 열리지 않음 |
+| DisplayOrder | 응답 필드 아님(설계 35) | - | - | 표시 순서는 서버가 정렬해 첫 1건만 내려주므로 조회 응답에 싣지 않음 |
 | Position | 기본값 사용 | N | `CENTER` | 최상위 `popupPosition`. 최소 버전은 CENTER 고정 |
 
 > `필수값 여부`의 `N`은 "생략하면 Default 값으로 동작"한다는 뜻이다. 인터페이스 계약서 6.3 표가 `O`(권장 출력)로 적은 필드라도 C# 기본값이 있으면 이 문서에서는 `N`으로 적으며 의미는 같다(계약서 6.4 "필수 여부 표기 기준"). Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 있어도 백엔드가 생략해서는 안 되는 값이다.
@@ -143,7 +144,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
-| FooterAction / FooterLinkUrl | `content`가 아니라 `popups[]` 최상위 값. 일반 콘텐츠는 CLOSE “닫기” 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
+| FooterAction / FooterLinkUrl | `content`가 아니라 `popup` 최상위 값. 일반 콘텐츠는 CLOSE “닫기” 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
 
 ## 6. 최소 버전 한눈에 보기
@@ -163,7 +164,9 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ### 표시·조회 동작
 
-- 로그인/기동 직후 최초 조회 후 30~60분 간격으로 기동 기준 반복 조회한다. 서버 `pollingIntervalSeconds`가 우선하며 선택 필드 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다. 서버만 활성·기간·대상·숨김·완료를 판단하고 WPF는 응답을 바로 표시한다. 열린 팝업도 조회하되 이번 실행에서 표시한 ID는 제외한다.
+- API는 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) 세 가지다(설계 35). 조회 응답은 `pollingIntervalSeconds`와 팝업 1건 `popup`(없으면 `null`)이며 결과 요청에는 `popup.deliveryId`를 넣는다. 상세는 [인터페이스 계약서](POPUP_INTERFACE_SPEC.md) 6·10·11절을 따른다.
+- 로그인/기동 직후 최초 조회한다. 서버만 활성·기간·대상·숨김·완료·재노출 유예를 판단하고 표시 순서상 첫 1건을 내려주며 WPF는 받은 1건을 바로 표시한다. 표시 중에는 다른 조회를 하지 않는다. 결과 응답 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY 또는 조회 결과 `popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분)만큼 기다린 뒤 조회한다. 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다.
+- 보내지 못한 결과가 남아 있으면 다음 팝업을 조회하지 않고 같은 resultId로 1건씩 재전송한다. 이 복구 동작은 주간회의 결정 전 임시 기준이다.
 - 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 WPF Overlay 컨트롤을 사용한다. 재생 중 무입력·마우스 이탈 시 숨기고 진입·이동 시 표시하며 일시정지·조작 중에는 유지한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen을 두 재생 방식에 적용한다. 음량·음소거는 현재 Windows Master Volume/Mute와 동기화하며 내부 영상 음량은 1.0으로 유지한다. DefaultVolume은 시스템 연결 전/실패 시 초기 음량이다. Windows 값 변경은 다른 프로그램에도 영향을 주며 종료 시 이전 값으로 복원하지 않는다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
 - VIDEO+QUIZ는 영상·전체 문항·제출 영역을 단일 세로 스크롤로 이동하고 공통 Footer는 창 하단에 고정한다. 단독 SURVEY/QUIZ 스크롤은 유지한다.
 
@@ -174,17 +177,17 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ## 8. 백엔드 전달용 유형별 최소 JSON 예시
 
-아래 예시는 **최소 오픈 범위에서 백엔드가 WPF 목록 응답의 `popups[]` 한 건을 만드는 기준**이다. 선택 필드는 생략할 수 있지만 필수값은 기본값에 기대지 않고 명시한다. 복사·테스트용 전체 배열은 [examples/WPF-01-popup-types-minimal.json](examples/WPF-01-popup-types-minimal.json)을 사용한다.
+아래 예시는 **최소 오픈 범위에서 백엔드가 WPF 조회 응답의 `popup` 1건을 만드는 기준**이다. 실제 응답은 `{"pollingIntervalSeconds": 1800, "popup": { … }}`처럼 한 번에 1건만 담는다. `deliveryId`는 서버가 조회마다 발급하며 예시 값은 형식 설명용이다. 선택 필드는 생략할 수 있지만 필수값은 기본값에 기대지 않고 명시한다. 유형별 예시 모음은 [examples/WPF-01-popup-types-minimal.json](examples/WPF-01-popup-types-minimal.json)을 사용한다.
 
 ### 8.1 TEXT
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b01",
   "popupId": "TEXT-001",
   "popupType": "TEXT",
   "title": "서비스 안내",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -205,11 +208,11 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b02",
   "popupId": "IMAGE-001",
   "popupType": "IMAGE",
   "title": "교육 안내",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -230,11 +233,11 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b03",
   "popupId": "VIDEO-001",
   "popupType": "VIDEO",
   "title": "보안 교육",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -258,11 +261,11 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b04",
   "popupId": "SURVEY-001",
   "popupType": "SURVEY",
   "title": "교육 만족도 설문",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -313,11 +316,11 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b05",
   "popupId": "QUIZ-001",
   "popupType": "QUIZ",
   "title": "보안 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -364,11 +367,11 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b06",
   "popupId": "VIDEO-QUIZ-001",
   "popupType": "QUIZ",
   "title": "영상 교육 및 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,

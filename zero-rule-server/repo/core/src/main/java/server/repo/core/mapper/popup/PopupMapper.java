@@ -124,6 +124,12 @@ public interface PopupMapper {
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId,
             @Param("excludeCompleted") boolean excludeCompleted);
 
+    /**
+     * [설계 35] WPF 후속 후보 유무(0 또는 1). selectAvailablePopups(userId, true)와 같은 조건(완료·숨김·재노출 유예 제외)이며
+     * 콘텐츠는 읽지 않는다.
+     */
+    int countAvailablePopups(@Param("userId") String userId, @Param("excludeCompleted") boolean excludeCompleted);
+
     /** 기존 호출부 호환(완료 제외 없음). */
     default List<PopupEntity> selectAvailablePopups(String userId) {
         return selectAvailablePopups(userId, false);

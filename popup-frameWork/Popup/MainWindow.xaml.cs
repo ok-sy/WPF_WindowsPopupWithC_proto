@@ -22,7 +22,7 @@ namespace Popup
      *     인증 헤더는 IAuthHeaderProvider(확장 지점)가 공급하고, 통합 토큰 필터 적용 전 개발 단계에서는
      *     DevUserId를 X-Dev-User-Id 헤더로 보낸다.
      *   - /statuses 조회와 클라이언트 완료 필터, PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
-     *     서버 목록(GET /p/api/wpf/popups)이 곧 표시 목록이다.
+     *     서버 단건 조회(POST /p/api/wpf/popups, 설계 35)가 표시할 1건을 정한다.
      *   - 팝업 결과는 PopupResultQueue를 통해 종료 시점에 1회 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
      *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). 열린 팝업도 조회를 막지 않는다.
      *
@@ -42,7 +42,6 @@ namespace Popup
         private readonly bool _demoMode;
         private readonly bool _autoLoadOnStartup;
         private readonly DispatcherTimer _pollingTimer;
-        private readonly System.Diagnostics.Stopwatch _pollingClock = new();
         private bool _isClosed;
         private int _pollingIntervalSeconds;
         private bool _isLoadingPopups;
@@ -50,11 +49,11 @@ namespace Popup
         private TimeSpan? _nextRecoveryDelay;
 
         /*
-         * 같은 실행 중 이미 화면에 전달한 팝업 ID를 기억한다.
-         * 서버가 완료·숨김을 제외하더라도 TEXT/IMAGE처럼 완료 개념이 없는 팝업은 조회마다 다시 내려오므로,
-         * 한 실행 안에서는 한 번만 표시한다(다음 실행에서 다시 표시).
+         * [설계 35] 단건 순차 표시: 지금 화면에 서버 팝업 1건이 떠 있으면 true. 표시 중에는 주기·수동 조회를 하지 않고
+         * (중복 조회·표시 방지), 창이 닫혀 결과가 처리된 뒤 nextStatus에 따라 다음 조회를 이어 간다.
+         * 이전의 실행 중 표시 ID 기억(_shownPopupIds)은 서버가 완료·재노출 유예로 판단하므로 삭제했다.
          */
-        private readonly HashSet<string> _shownPopupIds = new(StringComparer.OrdinalIgnoreCase);
+        private bool _popupShowing;
 
         /* App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다. Demo Mode에서는 선택 화면을 계속 표시한다. */
         public bool IsDemoMode => _demoMode;
@@ -247,16 +246,16 @@ namespace Popup
              * API 모드의 실제 자동 실행 흐름:
              *   LoadAndShowAvailablePopupsAsync()
              *     → PopupResultQueue.FlushAsync()
-             *     → PopupApiService.GetWpfPopupsAsync()
+             *     → PopupApiService.GetNextPopupAsync()   (팝업 1건 또는 null)
              *     → PopupService.CreatePopupOptions()
-             *     → PopupManager.ShowRange()
+             *     → PopupManager.ShowRange()             (1건 표시)
+             *     → 창 닫힘 → 결과 1건 전송 → nextStatus AVAILABLE이면 즉시 다음 조회, EMPTY면 조회 간격 대기
              *
              * 즉 이 메서드부터 "서버에서 팝업을 받아 실제 화면에 띄우는" 작업이 시작된다.
              */
             Loaded -= MainWindow_Loaded;
             if (_demoMode) return;
 
-            _pollingClock.Restart();
             StartPeriodicPolling();
             if (_autoLoadOnStartup)
             {
@@ -264,7 +263,7 @@ namespace Popup
             }
         }
 
-        /* 기동 시점 기준의 30~60분 조회 타이머. 인증 재시도는 별도 타이머를 만들지 않는다. */
+        /* 다음 조회 하나만 예약하는 30~60분 타이머(복구 중이면 복구 간격). 인증 재시도는 별도 타이머를 만들지 않는다. */
         private void StartPeriodicPolling()
         {
             if (_demoMode || _clientVersionRejected || _isClosed)
@@ -273,15 +272,14 @@ namespace Popup
                 return;
             }
             _pollingTimer.Stop();
-            _pollingTimer.Interval = _nextRecoveryDelay
-                ?? GetPollingDelay(_pollingIntervalSeconds, _pollingClock.Elapsed);
+            _pollingTimer.Interval = _nextRecoveryDelay ?? GetPollingDelay(_pollingIntervalSeconds);
             _pollingTimer.Start();
         }
 
-        // PC 벽시계 변경·응답 소요시간과 무관하게 기동 시점의 반복 조회 경계를 유지한다.
-        private static TimeSpan GetPollingDelay(int intervalSeconds, TimeSpan elapsed)
+        // [설계 35] 빈 조회·EMPTY 이후 가장 최근 조회 간격만큼 기다린다(30~60분으로 제한).
+        private static TimeSpan GetPollingDelay(int intervalSeconds)
         {
-            return PopupPollingRecovery.NormalDelay(intervalSeconds, elapsed);
+            return PopupPollingRecovery.NormalDelay(intervalSeconds);
         }
 
         /*
@@ -303,7 +301,7 @@ namespace Popup
         }
 
         /*
-         * [설계 13 §8·§10·§11] 서버 426(클라이언트 버전 미지원) 처리 — 목록 조회·로그인·백그라운드 결과 전송 공통.
+         * [설계 13 §8·§10·§11] 서버 426(클라이언트 버전 미지원) 처리 — 조회·로그인·결과 전송 공통.
          *   - 401 재로그인 경로에 들어가지 않는다(WpfClientVersionException은 별도 타입).
          *   - 같은 API를 무한 재시도하지 않도록 주기 조회 타이머를 멈춘다(프로그램을 업데이트 후 다시 실행해야 한다).
          *   - pending 결과는 PopupResultQueue가 지우지 않았으므로 새 버전에서 재전송된다.
@@ -398,13 +396,14 @@ namespace Popup
         }
 
         /*
-         * 자동 실행·수동 버튼·주기 조회가 함께 사용하는 실제 조회 메서드다.
+         * [설계 35] 자동 실행·수동 버튼·주기 조회가 함께 사용하는 단건 조회 메서드다.
          *
          * 순서:
-         *  1. 미전송 결과 큐 flush — 이전 실행에서 못 보낸 완료·숨김이 먼저 반영되어야 서버 목록이 정확하다.
-         *  2. GET /p/api/wpf/popups — 서버가 판정한 최종 목록(공통 옵션·content·문항 포함).
-         *  3. 서버 조회 간격 적용, 이번 실행에서 이미 표시한 팝업 제외, PopupOptions 변환·표시.
-         * 중복은 _shownPopupIds로 막고 새 팝업은 PopupManager의 표시 순서에 합류한다.
+         *  1. 미전송 결과 전송(순서대로 1건씩). 미종결 결과가 남으면 조회하지 않고 복구 간격 뒤 다시 시도한다
+         *     — 미전송 결과를 건너뛰고 다음 팝업으로 가지 않는다(장애 복구 정책 확정 전 임시 기준, 설계 35 §4).
+         *  2. POST /p/api/wpf/popups — 서버가 판정·정렬한 팝업 최대 1건(deliveryId 포함). 최신 조회 간격 적용.
+         *  3. popup=null이면 조회 간격 뒤 다시 조회. 있으면 1건을 표시하고, 표시 중에는 다른 조회를 하지 않는다.
+         *  4. 창이 닫히면 OnPopupFinished가 결과를 보내고 nextStatus로 다음 단계를 정한다.
          */
         private async Task LoadAndShowAvailablePopupsAsync(bool showEmptyMessage, bool showErrorMessage)
         {
@@ -413,25 +412,43 @@ namespace Popup
                 throw new InvalidOperationException("API 모드의 PopupApiService가 생성되지 않았습니다.");
             }
             if (_isLoadingPopups || _isClosed || _clientVersionRejected) return;
+            if (_popupShowing)
+            {
+                // 표시 중 팝업 1건을 유지한다. 닫히면 다음 조회가 이어진다.
+                if (showEmptyMessage)
+                {
+                    MessageBox.Show("표시 중인 팝업을 먼저 확인해 주세요.", "팝업 조회",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                return;
+            }
 
             _isLoadingPopups = true;
             _pollingTimer.Stop();
+            bool shown = false;
             try
             {
-                await _resultQueue.FlushAsync();
+                ResultFlushOutcome flushed = await _resultQueue.FlushAsync();
                 if (_isClosed || _clientVersionRejected) return;
+                if (flushed.Blocked)
+                {
+                    _nextRecoveryDelay = _pollingRecovery.NextDelay();
+                    System.Diagnostics.Debug.WriteLine($"[POLLING] 미전송 결과 우선 — 조회 보류, {_nextRecoveryDelay.Value.TotalSeconds}초 뒤 재시도");
+                    if (showErrorMessage)
+                    {
+                        MessageBox.Show("이전 팝업 처리 결과를 서버에 보내지 못해 새 팝업을 조회하지 않았습니다.\n잠시 후 다시 시도합니다.",
+                            "팝업 조회", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    return;
+                }
 
-                WpfPopupListResponseDto response = await _popupApiService.GetWpfPopupsAsync();
+                WpfNextPopupResponseDto response = await _popupApiService.GetNextPopupAsync();
                 if (_isClosed || _clientVersionRejected) return;
                 ApplyPollingInterval(response.PollingIntervalSeconds);
                 _pollingRecovery.Reset();
                 _nextRecoveryDelay = null;
 
-                List<PopupResponseDto> popupDtos = response.Popups
-                    .Where(popup => !_shownPopupIds.Contains(popup.PopupId))
-                    .ToList();
-
-                if (popupDtos.Count == 0)
+                if (response.Popup == null)
                 {
                     if (showEmptyMessage)
                     {
@@ -441,24 +458,17 @@ namespace Popup
                     return;
                 }
 
-                List<PopupOptions> popupOptionsList = _popupService.CreatePopupOptions(popupDtos);
-                foreach (PopupOptions popupOptions in popupOptionsList)
-                {
-                    /*
-                     * [기준 3·4] PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을
-                     * 큐로 넘기는 훅만 연결한다.
-                     * [설계 12] 제출 포함 모든 결과: 로컬 큐 저장(EnqueueAsync) → 창 닫기 → 백그라운드 전송(FlushInBackground).
-                     */
-                    popupOptions.EnqueueResult = _resultQueue.Enqueue;
-                    popupOptions.RetainResultForExit = _resultQueue.RetainForExit;
-                    popupOptions.FlushResultsInBackground = _resultQueue.FlushInBackground;
-                }
-
-                foreach (PopupResponseDto popupDto in popupDtos)
-                {
-                    _shownPopupIds.Add(popupDto.PopupId);
-                }
-                _popupManager.ShowRange(popupOptionsList);
+                PopupOptions popupOptions = _popupService.CreatePopupOptions(new List<PopupResponseDto> { response.Popup }).Single();
+                /*
+                 * [기준 3·4] PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을 큐로 넘기는 훅만 연결한다.
+                 * [설계 12·35] 결과: 로컬 큐 저장(Enqueue) → 창 닫기 → OnPopupFinished(전송 후 nextStatus에 따라 다음 조회).
+                 */
+                popupOptions.EnqueueResult = _resultQueue.Enqueue;
+                popupOptions.RetainResultForExit = _resultQueue.RetainForExit;
+                popupOptions.FlushResultsInBackground = OnPopupFinished;
+                _popupShowing = true;
+                shown = true;
+                _popupManager.ShowRange(new[] { popupOptions });
             }
             catch (OperationCanceledException) when (_isClosed || _clientVersionRejected)
             {
@@ -470,6 +480,7 @@ namespace Popup
             }
             catch (Exception exception)
             {
+                if (shown) _popupShowing = false;
                 if (_isClosed || _clientVersionRejected) return;
                 if (PopupPollingRecovery.IsTransient(exception))
                 {
@@ -491,8 +502,46 @@ namespace Popup
             finally
             {
                 _isLoadingPopups = false;
-                StartPeriodicPolling();
+                // 표시 중에는 타이머를 걸지 않는다. 닫힌 뒤 OnPopupFinished가 다음 단계를 정한다.
+                if (!_popupShowing) StartPeriodicPolling();
             }
         }
-    }
+
+        /*
+         * [설계 35] 표시한 팝업 창이 닫히면(결과는 이미 큐에 저장됨) 결과를 보내고 nextStatus로 다음 단계를 정한다.
+         *   - 미종결 결과가 남음(전송 실패 등) → 조회하지 않고 복구 간격 뒤 재시도
+         *   - EMPTY → 가장 최근 조회 간격만큼 대기
+         *   - AVAILABLE, 또는 확인 불가(후보 확인 실패·이번 저장 결과 없음) → 즉시 조회.
+         *     후보가 그사이 게시 중단·만료되어도 조회 응답 popup=null을 정상 처리한다.
+         * 거절(REJECTED)된 결과는 종결이므로 다음 조회를 막지 않는다.
+         */
+        private async void OnPopupFinished()
+        {
+            _popupShowing = false;
+            if (_isClosed || _clientVersionRejected || _resultQueue == null) return;
+            ResultFlushOutcome outcome;
+            try
+            {
+                outcome = await _resultQueue.FlushAsync();
+            }
+            catch (WpfClientVersionException exception)
+            {
+                HandleClientVersionRejected(exception);
+                return;
+            }
+            if (_isClosed || _clientVersionRejected || _popupShowing || _isLoadingPopups) return;
+            if (outcome.Blocked)
+            {
+                _nextRecoveryDelay = _pollingRecovery.NextDelay();
+                StartPeriodicPolling();
+                return;
+            }
+            if (string.Equals(outcome.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
+            {
+                _nextRecoveryDelay = null;
+                StartPeriodicPolling();
+                return;
+            }
+            await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
+        }    }
 }

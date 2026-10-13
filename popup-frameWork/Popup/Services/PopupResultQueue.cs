@@ -23,8 +23,8 @@ namespace Popup.Services
      * [설계 12 §7·§8 — 역할 분리] 사용자 화면(창 닫기)과 서버 전송을 분리한다.
      *   - Enqueue(Async) : 파일에 저장만 하고 즉시 반환. 이 메서드가 끝나면 결과는 로컬에 안전하게 보존된 것이므로
      *                      호출자(PopupManager)는 서버 응답을 기다리지 않고 바로 창을 닫아도 된다.
-     *   - FlushAsync     : 보관된 항목을 최대 50개씩 전송. 종결 항목 제거, 그 밖의 항목 유지.
-     *                      WPF 시작 직후·목록 조회 직전·종료 직전·Enqueue 직후(백그라운드)에 호출한다.
+     *   - FlushAsync     : [설계 35] 보관된 결과를 순서대로 1건씩 전송. 종결 결과 제거, 미종결에서 멈추고 Blocked로 알림.
+     *                      WPF 시작 직후·조회 직전·팝업 닫힘 직후·종료 직전에 호출한다.
      *   - FlushInBackground : FlushAsync를 기다리지 않고 실행하며 예외를 안에서 삼킨다(UI에 영향 없음).
      *   예전 EnqueueAndSendAsync(저장 후 전송 완료까지 대기)·SendImmediateAsync(제출 응답 대기)는 제거했다.
      *   설문·퀴즈 제출도 이제 로컬 판정 후 같은 경로로 간다.
@@ -38,8 +38,8 @@ namespace Popup.Services
      *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
      *     횟수를 소진해도 삭제하지 않으며 다음 실행에서 다시 시도한다. 재시도 간격·최대 횟수 정책은 별도 확정 대상이다.
      *   - 알 수 없는 상태, 응답 누락 항목, 이번 batch에 없는 resultId 응답은 종결로 보지 않는다(보관).
-     *   - 요청 전체 실패(5xx·4xx·타임아웃·연결 끊김)는 전송한 항목을 모두 보관한다. 단 400(요청 형식 오류)은 batch를 나눠
-     *     원인 항목을 좁히고, 단독으로도 400인 항목만 이번 실행에서 제외(파일 보관)해 나머지 전송을 막지 않는다.
+     *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 형식 오류)인 결과는 이번 실행에서만
+     *     제외(파일 보관)해 나머지 전송을 막지 않는다.
      *   항목의 resultId는 생성 시 확정되어 재전송 시 서버가 DUPLICATE로 걸러낸다.
      *
      * [파일 — 설계 34-24] %LOCALAPPDATA%\Popup\pending-results.json — 사용자 프로필 단위. 토큰·사번은 저장하지 않는다.
@@ -49,6 +49,12 @@ namespace Popup.Services
      *   이번 실행 동안 메모리에 보관해 다시 기록·전송한다(프로세스가 종료되면 메모리 보관분은 남지 않는다).
      * [동시성] 파일 접근(_fileLock)과 전송(_flushGate)을 분리한다. 전송 중에도 Enqueue는 짧게 끝난다.
      */
+    /// <summary>
+    /// [설계 35] <see cref="PopupResultQueue.FlushAsync"/> 결과. Blocked=true면 미종결 결과가 남아 다음 조회를 미룬다.
+    /// LastSaved는 이번에 저장된(ACCEPTED·DUPLICATE) 마지막 결과 응답이며 NextStatus로 다음 조회 시점을 정한다.
+    /// </summary>
+    public sealed record ResultFlushOutcome(bool Blocked, WpfResultResponseDto? LastSaved);
+
     public sealed class PopupResultQueue
     {
         private static readonly JsonSerializerOptions FileJsonOptions = new()
@@ -56,8 +62,6 @@ namespace Popup.Services
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
-
-        private const int MaxBatchSize = 50;
 
         /* [설계 34-19] INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
         public const int MaxInternalErrorAttemptsPerSession = 3;
@@ -181,15 +185,18 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// 보관된 항목을 최대 50개씩 전송하고 종결된 항목만 제거한다. 네트워크·서버 오류는 조용히 넘기고 다음 기회에 다시 시도한다.
-        /// 426(<see cref="WpfClientVersionException"/>)만 호출자에게 전파한다(항목은 보관 유지).
+        /// [설계 35] 보관된 결과를 저장된 순서대로 1건씩 전송하고 종결된 결과만 제거한다.
+        /// 네트워크·서버 오류는 조용히 넘기고 보관한다. 426(<see cref="WpfClientVersionException"/>)만 호출자에게 전파한다(보관 유지).
+        /// 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)를 만나면 순서를 지키기 위해 거기서 멈추고
+        /// <see cref="ResultFlushOutcome.Blocked"/>로 알린다. 호출자(MainWindow)는 이 경우 다음 팝업을 조회하지 않는다
+        /// (미전송 결과 우선 — 장애 복구 정책 확정 전 임시 기준, 설계 35 §4).
         /// </summary>
-        public async Task FlushAsync()
+        public async Task<ResultFlushOutcome> FlushAsync()
         {
             await _flushGate.WaitAsync();
             try
             {
-                if (_transmissionStopped) return;
+                if (_transmissionStopped) return new ResultFlushOutcome(true, null);
                 List<WpfResultItemDto> pending;
                 bool fileAvailable = true;
                 lock (_fileLock)
@@ -213,20 +220,14 @@ namespace Popup.Services
                         || attempts < MaxInternalErrorAttemptsPerSession)
                     .ToList();
 
-                // [설계 34 — 검토 보완] 400(요청 형식 오류)이면 batch를 반으로 나눠 다시 보내 원인 항목을 좁힌다.
-                // 혼자 보내도 400인 항목은 이번 실행에서만 제외(파일에는 보관)해 뒤의 정상 결과 전송을 막지 않는다.
-                var work = new Stack<WpfResultItemDto[]>(sendable.Chunk(MaxBatchSize).Reverse());
-                while (work.Count > 0)
+                WpfResultResponseDto? lastSaved = null;
+                foreach (WpfResultItemDto item in sendable)
                 {
-                    WpfResultItemDto[] batch = work.Pop();
-                    if (_transmissionStopped) return;
+                    if (_transmissionStopped) return new ResultFlushOutcome(true, lastSaved);
                     WpfResultResponseDto response;
                     try
                     {
-                        response = await _apiService.PostResultsAsync(new WpfResultRequestDto
-                        {
-                            Results = batch.ToList()
-                        });
+                        response = await _apiService.PostResultAsync(item);
                     }
                     catch (WpfClientVersionException)
                     {
@@ -236,39 +237,30 @@ namespace Popup.Services
                     }
                     catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
                     {
-                        if (batch.Length > 1)
-                        {
-                            int half = batch.Length / 2;
-                            work.Push(batch[half..]);
-                            work.Push(batch[..half]);
-                            Debug.WriteLine($"결과 전송 400 — {batch.Length}건을 나눠 다시 전송합니다: {exception.Message}");
-                        }
-                        else
-                        {
-                            _quarantined.Add(batch[0].ResultId);
-                            Debug.WriteLine($"결과 항목 단독 전송도 400 — 이번 실행에서 제외(파일 보관) popupId={batch[0].PopupId} " +
-                                $"type={batch[0].ResultType}: {exception.Message}");
-                        }
+                        // [설계 34 — 검토 보완] 요청 본문 자체가 400인 결과는 이번 실행에서만 제외(파일 보관)해 뒤 결과 전송을 막지 않는다.
+                        _quarantined.Add(item.ResultId);
+                        Debug.WriteLine($"결과 전송 400 — 이번 실행에서 제외(파일 보관) popupId={item.PopupId} " +
+                            $"type={item.ResultType}: {exception.Message}");
                         continue;
                     }
                     catch (Exception exception)
                     {
-                        // 5xx·그 밖의 4xx·타임아웃·연결 끊김: 전송한 항목을 모두 보관하고 다음 기회에 재전송한다.
-                        Debug.WriteLine($"결과 전송 실패, 보관 유지 ({batch.Length}건): {exception.Message}");
-                        return;
+                        // 5xx·그 밖의 4xx·타임아웃·연결 끊김: 보관하고 다음 기회에 같은 resultId로 재전송한다.
+                        Debug.WriteLine($"결과 전송 실패, 보관 유지 resultId={item.ResultId}: {exception.Message}");
+                        return new ResultFlushOutcome(true, lastSaved);
                     }
 
-                    HashSet<string> settled = Settle(batch, response);
-                    if (settled.Count == 0) continue;
+                    if (!Settle(item, response)) return new ResultFlushOutcome(true, lastSaved);
+                    if (response.IsSaved) lastSaved = response;
                     lock (_fileLock)
                     {
-                        _unsaved.RemoveAll(p => settled.Contains(p.ResultId));
+                        _unsaved.RemoveAll(p => p.ResultId == item.ResultId);
                         if (!fileAvailable) continue;
                         // 전송 중 새로 저장된 항목을 지우지 않도록 최신 파일을 다시 읽어 종결 항목만 뺀다.
                         try
                         {
                             List<WpfResultItemDto> current = LoadPendingUnlocked();
-                            current.RemoveAll(p => settled.Contains(p.ResultId));
+                            current.RemoveAll(p => p.ResultId == item.ResultId);
                             TrySavePendingUnlocked(current);
                         }
                         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -278,6 +270,7 @@ namespace Popup.Services
                         }
                     }
                 }
+                return new ResultFlushOutcome(false, lastSaved);
             }
             finally
             {
@@ -286,51 +279,39 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 34-20·21] 이번 batch에 속한 resultId의 종결 상태(ACCEPTED/DUPLICATE/REJECTED)만 제거 대상으로 돌려준다.
-        /// INTERNAL_ERROR는 재시도 횟수를 세고, 그 밖의 상태·누락 항목은 보관한다.
+        /// [설계 34-19~21·35] 이번에 보낸 결과의 종결 여부. ACCEPTED/DUPLICATE/REJECTED면 true(제거).
+        /// INTERNAL_ERROR는 재시도 횟수를 세고, 그 밖의 상태·다른 resultId 응답은 보관(false)한다.
         /// </summary>
-        private HashSet<string> Settle(WpfResultItemDto[] batch, WpfResultResponseDto response)
+        private bool Settle(WpfResultItemDto item, WpfResultResponseDto? response)
         {
-            HashSet<string> sent = batch.Select(p => p.ResultId).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> settled = new(StringComparer.OrdinalIgnoreCase);
-            foreach (WpfResultItemResponseDto? itemResponse in response?.Results ?? new List<WpfResultItemResponseDto>())
+            if (response == null || !string.Equals(response.ResultId, item.ResultId, StringComparison.OrdinalIgnoreCase))
             {
-                if (itemResponse == null || string.IsNullOrEmpty(itemResponse.ResultId) || !sent.Contains(itemResponse.ResultId))
-                {
-                    Debug.WriteLine($"결과 응답 무시(이번 전송 항목 아님) resultId={itemResponse?.ResultId}");
-                    continue;
-                }
-                if (SettledStatuses.Contains(itemResponse.Status ?? string.Empty))
-                {
-                    LogRejected(itemResponse);
-                    settled.Add(itemResponse.ResultId);
-                    _internalErrorAttempts.Remove(itemResponse.ResultId);
-                }
-                else if (string.Equals(itemResponse.Status, "INTERNAL_ERROR", StringComparison.OrdinalIgnoreCase))
-                {
-                    int attempts = _internalErrorAttempts.TryGetValue(itemResponse.ResultId, out int count) ? count + 1 : 1;
-                    _internalErrorAttempts[itemResponse.ResultId] = attempts;
-                    Debug.WriteLine($"결과 항목 내부 오류(보관, 이번 실행 {attempts}/{MaxInternalErrorAttemptsPerSession}회) " +
-                        $"popupId={itemResponse.PopupId} code={itemResponse.Code}");
-                }
-                else
-                {
-                    Debug.WriteLine($"결과 항목 미종결(보관) status={itemResponse.Status} popupId={itemResponse.PopupId} code={itemResponse.Code}");
-                }
+                Debug.WriteLine($"결과 응답 무시(이번 전송 항목 아님) resultId={response?.ResultId}");
+                return false;
             }
-            return settled;
-        }
-
-        private static void LogRejected(WpfResultItemResponseDto itemResponse)
-        {
-            if (itemResponse.IsRejected)
+            if (SettledStatuses.Contains(response.Status ?? string.Empty))
             {
-                Debug.WriteLine(
-                    $"결과 항목 거절 popupId={itemResponse.PopupId} type={itemResponse.ResultType} " +
-                    $"code={itemResponse.Code} message={itemResponse.Message}");
+                if (response.IsRejected)
+                {
+                    Debug.WriteLine($"결과 거절 popupId={item.PopupId} type={item.ResultType} " +
+                        $"code={response.Code} message={response.Message}");
+                }
+                _internalErrorAttempts.Remove(item.ResultId);
+                return true;
             }
+            if (string.Equals(response.Status, "INTERNAL_ERROR", StringComparison.OrdinalIgnoreCase))
+            {
+                int attempts = _internalErrorAttempts.TryGetValue(item.ResultId, out int count) ? count + 1 : 1;
+                _internalErrorAttempts[item.ResultId] = attempts;
+                Debug.WriteLine($"결과 내부 오류(보관, 이번 실행 {attempts}/{MaxInternalErrorAttemptsPerSession}회) " +
+                    $"popupId={item.PopupId} code={response.Code}");
+            }
+            else
+            {
+                Debug.WriteLine($"결과 미종결(보관) status={response.Status} popupId={item.PopupId} code={response.Code}");
+            }
+            return false;
         }
-
         /// <summary>파일 항목과 메모리 보관 항목(디스크 저장 실패분)을 resultId 기준으로 합친다. _fileLock 안에서 호출한다.</summary>
         private List<WpfResultItemDto> LoadPendingUnlocked()
         {

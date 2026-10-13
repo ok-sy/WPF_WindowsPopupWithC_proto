@@ -30,6 +30,8 @@ import java.util.Map;
  *       폰트 크기는 설정된 경우만 보낸다. content에서는 해당 키를 뺀다({@link PopupWindowOptions}).</li>
  *   <li>문항은 최상위 {@code questions}에만 둔다. [설계 18 L-3] content에 문항·통과 점수·완료 비율 등 파생 키를
  *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
+ *   <li>[설계 35] 단건 순차 전달: 조회 API가 발급한 전달 건 ID {@code deliveryId}를 맨 앞에 둔다(결과 수신 시 그대로 반환).
+ *       표시 순서는 서버가 정해 1건씩 내려주므로 {@code displayOrder}는 WPF 계약에서 뺐다.</li>
  * </ul>
  *
  * <p>[설계 12 §4 — 변경] 기준 3에서는 채점이 서버 책임이라 {@code passingScore}와 정답 키를 WPF에 내려주지 않았다.
@@ -39,11 +41,11 @@ import java.util.Map;
 // [기준 3] 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record WpfPopupItem(
+        String deliveryId,
         String popupId,
         String popupType,
         String title,
         String displayMode,
-        Integer displayOrder,
         String sizeMode,
         Double width,
         Double height,
@@ -92,8 +94,8 @@ public record WpfPopupItem(
         Double footerFontSize = PopupWindowOptions.fontSize(content, PopupWindowOptions.FOOTER_FONT_SIZE_KEY);
         PopupWindowOptions.KEYS.forEach(content::remove);
         return new WpfPopupItem(
-                dto.popupId(), dto.popupType(), dto.title(),
-                dto.displayMode(), dto.displayOrder(), dto.sizeMode(),
+                null, dto.popupId(), dto.popupType(), dto.title(),
+                dto.displayMode(), dto.sizeMode(),
                 dto.width(), dto.height(), dto.widthRatio(), dto.heightRatio(),
                 dto.minimumWidth(), dto.minimumHeight(), dto.maximumWidth(), dto.maximumHeight(),
                 dto.showHeader(), dto.showCloseButton(), dto.showFooter(), footerAction, footerLinkUrl,
@@ -102,6 +104,15 @@ public record WpfPopupItem(
                 dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
                 dto.questions(), content);
+    }
+
+    /** [설계 35] 조회 API가 정한 전달 건 ID를 붙인 사본. */
+    public WpfPopupItem withDeliveryId(String id) {
+        return new WpfPopupItem(id, popupId, popupType, title, displayMode, sizeMode, width, height,
+                widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
+                showHeader, showFooterButton, showFooter, footerAction, footerLinkUrl,
+                useBackgroundOverlay, backgroundOverlayOpacity, popupPosition, headerFontSize, bodyFontSize, footerFontSize,
+                showDoNotShowAgain, hideDays, allowCloseBeforeComplete, completionRatio, passingScore, questions, content);
     }
 
     /**

@@ -82,7 +82,7 @@ namespace Popup.Services.Auth
             /*
              * [실행 순서 3/6 — 인증 흐름]
              * PopupApiService가 API를 보내기 직전에 이 메서드를 호출한다.
-             * (첫 GET /p/api/wpf/popups 안에서 호출되므로 SSO·로그인은 "첫 API 호출 시점"에 일어난다.)
+             * (첫 POST /p/api/wpf/popups 안에서 호출되므로 SSO·로그인은 "첫 API 호출 시점"에 일어난다.)
              *
              * 토큰 없음(프로세스 시작 후 첫 호출):
              *   SsoClient(SSO GET 1회) → WpfLoginClient → accessToken·_lastUser 메모리 저장

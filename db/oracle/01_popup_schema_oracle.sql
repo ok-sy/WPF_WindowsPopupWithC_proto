@@ -6,7 +6,7 @@
 --  대상   : Oracle 11g XE(11.2.0.2, 개발 DB 192.168.114.71 실측 2026-09-20) 이상. 19c 이상에서도 동일하게 동작한다.
 --  실행자 : 팝업 테이블을 소유할 계정 (POPUP 계정 또는, 계정을 만들 수 없으면 앱 계정 zero-rule)
 --  원칙   : 테이블·컬럼 구성은 원본과 동일하게 유지하고 Oracle 문법으로만 변환한다.
---           신설은 §11 결과 수신 영수증 1개 테이블만이다.
+--           신설은 §11 결과 수신 영수증, §12 팝업 전달 건(설계 35) 두 테이블이다.
 --           (인증 토큰 테이블은 두지 않는다. 토큰 인증은 타 팀이 웹·WPF 통합 토큰으로 개발 — docs/04)
 --
 --  변환 규칙 요약 (상세: docs/05_Oracle_DB_설계.md)
@@ -580,5 +580,31 @@ CREATE TABLE WPF_RESULT_RECEIPT
 CREATE INDEX IX_WPF_RESULT_RECEIPT_USER ON WPF_RESULT_RECEIPT (EMPLOYEE_NO, RECEIVED_AT);
 COMMENT ON TABLE  WPF_RESULT_RECEIPT IS 'WPF 결과 항목 멱등 키. 같은 RESULT_ID 재수신 시 DUPLICATE 응답';
 COMMENT ON COLUMN WPF_RESULT_RECEIPT.RESULT_STATUS IS '최초 처리 결과. 재수신 응답은 DUPLICATE로 별도 표기';
+
+-- ---------------------------------------------------------------------
+-- §12. [신설] WPF 팝업 전달 건 — 설계 35 (단건 순차 조회·결과 수신)
+-- ---------------------------------------------------------------------
+-- 조회 API가 표시할 팝업 1건을 정하면 전달 건(DELIVERY_ID)을 만들고, 결과 수신 API가 그 전달 건을 종료한다.
+-- 사용자당 미완료(OPEN) 전달 건은 1건이며(함수 기반 유니크 인덱스), 조회 응답 유실 시 같은 건을 재사용한다.
+-- DEFER_UNTIL_AT: 결과 저장 시각 + pollingIntervalSeconds. 미완료로 닫힌 팝업의 재노출 유예(조회·nextStatus 공통 조건).
+CREATE TABLE WPF_POPUP_DELIVERY
+(
+    DELIVERY_ID     VARCHAR2(64 CHAR)  NOT NULL,
+    EMPLOYEE_NO     VARCHAR2(30 CHAR)  NOT NULL,
+    POPUP_ID        VARCHAR2(50 CHAR)  NOT NULL,
+    DELIVERY_STATUS VARCHAR2(10 CHAR)  DEFAULT 'OPEN' NOT NULL,
+    RESULT_ID       VARCHAR2(64 CHAR),
+    RESULT_TYPE     VARCHAR2(20 CHAR),
+    DELIVERED_AT    TIMESTAMP(6)       DEFAULT CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) NOT NULL,
+    COMPLETED_AT    TIMESTAMP(6),
+    DEFER_UNTIL_AT  TIMESTAMP(6),
+    CONSTRAINT PK_WPF_POPUP_DELIVERY PRIMARY KEY (DELIVERY_ID),
+    CONSTRAINT CK_WPF_DELIVERY_STATUS CHECK (DELIVERY_STATUS IN ('OPEN', 'DONE', 'EXPIRED'))
+);
+CREATE UNIQUE INDEX UX_WPF_POPUP_DELIVERY_OPEN ON WPF_POPUP_DELIVERY (CASE WHEN DELIVERY_STATUS = 'OPEN' THEN EMPLOYEE_NO END);
+CREATE INDEX IX_WPF_POPUP_DELIVERY_DEFER ON WPF_POPUP_DELIVERY (EMPLOYEE_NO, POPUP_ID, DEFER_UNTIL_AT);
+COMMENT ON TABLE  WPF_POPUP_DELIVERY IS 'WPF 팝업 전달 건. 조회 API가 생성·재사용하고 결과 수신 API가 종료';
+COMMENT ON COLUMN WPF_POPUP_DELIVERY.DELIVERY_STATUS IS 'OPEN(표시 중·결과 대기) / DONE(결과 저장) / EXPIRED(재조회 시 대상 아님)';
+COMMENT ON COLUMN WPF_POPUP_DELIVERY.DEFER_UNTIL_AT IS '결과 저장 시각 + 폴링 간격. 이 시각 전에는 같은 사용자·팝업을 다시 선정하지 않음';
 
 COMMIT;

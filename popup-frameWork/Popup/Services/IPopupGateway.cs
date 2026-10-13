@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace Popup.Services
 {
     /*
-     * [역할] WPF가 서버에 요구하는 두 가지 통신(목록 조회, 결과 전송)의 추상화다.
+     * [역할] WPF가 서버에 요구하는 두 가지 통신(단건 조회, 결과 1건 전송)의 추상화다.
      *
      * [추가 이유 — 기준 3·4 + Demo Mode]
      *   실제 구현은 PopupApiService(HTTP, /p/api/wpf/**)이고, Demo Mode는 DemoPopupGateway(인메모리 서버 시뮬레이션)다.
@@ -13,10 +13,10 @@ namespace Popup.Services
      */
     public interface IPopupGateway
     {
-        /// <summary>서버가 노출 판정을 끝낸 최종 팝업 목록(공통 옵션·content·문항 포함).</summary>
-        Task<WpfPopupListResponseDto> GetWpfPopupsAsync();
+        /// <summary>[설계 35] 지금 표시할 팝업 최대 1건(공통 옵션·content·문항·deliveryId 포함)과 조회 간격. 없으면 Popup=null.</summary>
+        Task<WpfNextPopupResponseDto> GetNextPopupAsync();
 
-        /// <summary>팝업 처리 결과 일괄 전송. 항목별 결과는 응답 results[]에 담긴다.</summary>
-        Task<WpfResultResponseDto> PostResultsAsync(WpfResultRequestDto request);
+        /// <summary>[설계 35] 팝업 처리 결과 1건 전송. 응답의 status(처리 상태)와 nextStatus(후속 후보 유무)를 본다.</summary>
+        Task<WpfResultResponseDto> PostResultAsync(WpfResultItemDto item);
     }
 }

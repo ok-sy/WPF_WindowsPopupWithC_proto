@@ -8,7 +8,7 @@
 
 별도 새 창 미리보기 페이지(`pages/popup-preview.tsx`)는 설계 18 L-0(W-2)에서 삭제했다.
 
-> 옵션 위치: 관리자 API·DB는 공통 UI 옵션(`footerAction`, `footerLinkUrl`, `useBackgroundOverlay`, `backgroundOverlayOpacity`, `popupPosition`, `headerFontSize`, `bodyFontSize`, `footerFontSize`)을 `content.*`에 저장하고 미리보기도 `content.*`를 읽는다. WPF 목록 응답(`/p/api/wpf/popups`)에서는 같은 값이 `popups[]` 최상위 필드다(설계 30·31, `popup-frameWork/Popup/Dtos/PopupResponseDto.cs`). 관리자 `showCloseButton`(편집기 라벨 "닫기 표시")은 WPF `showFooterButton`(Footer 버튼 표시)에 대응한다.
+> 옵션 위치: 관리자 API·DB는 공통 UI 옵션(`footerAction`, `footerLinkUrl`, `useBackgroundOverlay`, `backgroundOverlayOpacity`, `popupPosition`, `headerFontSize`, `bodyFontSize`, `footerFontSize`)을 `content.*`에 저장하고 미리보기도 `content.*`를 읽는다. WPF 조회 응답(`POST /p/api/wpf/popups`)에서는 같은 값이 `popup` 최상위 필드다(설계 30·31·35, `popup-frameWork/Popup/Dtos/PopupResponseDto.cs`). 관리자 `showCloseButton`(편집기 라벨 "닫기 표시")은 WPF `showFooterButton`(Footer 버튼 표시)에 대응한다.
 
 | 영역 | WPF 소스 | 웹 미리보기 |
 | --- | --- | --- |

@@ -1,14 +1,12 @@
 {
-  "serverTime": "2026-10-07T23:00:00+09:00",
-  "userId": "E1001",
-  "pollingIntervalSeconds": 1800,
-  "popups": [
+  "_comment": "[설계 35] POST /p/api/wpf/popups 응답의 popup 값을 유형별로 모은 참고 예시(최소 기능 정의서 §8). 한 응답이 아니다. 실제 응답은 {\"pollingIntervalSeconds\": 1800, \"popup\": <아래 예시 중 1건>} 형태로 한 번에 1건만 담고, 표시 대상이 없으면 popup은 null이다. deliveryId는 서버가 조회마다 발급하는 값이며 예시 값은 형식 설명용이다. 표시 순서(displayOrder)는 서버 정렬 기준이라 응답에 없다.",
+  "popupExamples": [
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b01",
       "popupId": "TEXT-001",
       "popupType": "TEXT",
       "title": "서비스 안내",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,
@@ -24,11 +22,11 @@
       }
     },
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b02",
       "popupId": "IMAGE-001",
       "popupType": "IMAGE",
       "title": "교육 안내",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,
@@ -44,11 +42,11 @@
       }
     },
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b03",
       "popupId": "VIDEO-001",
       "popupType": "VIDEO",
       "title": "보안 교육",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,
@@ -67,11 +65,11 @@
       }
     },
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b04",
       "popupId": "SURVEY-001",
       "popupType": "SURVEY",
       "title": "교육 만족도 설문",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,
@@ -117,11 +115,11 @@
       }
     },
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b05",
       "popupId": "QUIZ-001",
       "popupType": "QUIZ",
       "title": "보안 확인 퀴즈",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,
@@ -163,11 +161,11 @@
       }
     },
     {
+      "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1b06",
       "popupId": "VIDEO-QUIZ-001",
       "popupType": "QUIZ",
       "title": "영상 교육 및 확인 퀴즈",
       "displayMode": "SEQUENTIAL",
-      "displayOrder": 100,
       "sizeMode": "FIXED",
       "width": 900,
       "height": 620,

@@ -11,7 +11,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import server.domain.popup.wpf.WpfPopupListResponse;
+import server.domain.popup.wpf.WpfNextPopupResponse;
 import server.service.core.popup.wpf.WpfPopupService;
 import server.web.api.popup.wpf.WpfApiExceptionHandler;
 import server.web.api.popup.wpf.WpfPopupController;
@@ -58,8 +58,7 @@ class WpfAuthPrototypeControllerTest {
                 .setControllerAdvice(new WpfApiExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
                 .build();
-        when(popupService.getPopupsForUser("E1001")).thenReturn(new WpfPopupListResponse(
-                OffsetDateTime.parse("2026-09-21T18:00:00+09:00"), "E1001", 1800, List.of()));
+        when(popupService.getNextPopup("E1001")).thenReturn(new WpfNextPopupResponse(1800, null));
     }
 
     private String login() throws Exception {
@@ -81,39 +80,39 @@ class WpfAuthPrototypeControllerTest {
 
     @Test void t1_loginThenPopupsWithBearer() throws Exception {
         String token = login();
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value("E1001"));
-        verify(popupService).getPopupsForUser("E1001");
+                .andExpect(jsonPath("$.pollingIntervalSeconds").value(1800));
+        verify(popupService).getNextPopup("E1001");
     }
 
     @Test void t2_expiredTokenIs401ThenReloginWorks() throws Exception {
         String token = login();
         clock.advance(Duration.ofMinutes(10));
 
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
-        verify(popupService, never()).getPopupsForUser(anyString());
+        verify(popupService, never()).getNextPopup(anyString());
 
         // WPF: 401 → OnUnauthorizedAsync → SSO·login → 새 토큰으로 원 요청 재전송
         String renewed = login();
         assertNotEquals(token, renewed);
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Bearer " + renewed))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + renewed))
                 .andExpect(status().isOk());
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());   // 만료 토큰은 계속 거절
     }
 
     @Test void missingOrWrongAuthorizationIs401AndDevHeaderIsIgnored() throws Exception {
-        mvc.perform(get("/p/api/wpf/popups"))
+        mvc.perform(post("/p/api/wpf/popups"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
-        mvc.perform(get("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
+        mvc.perform(post("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Basic abc"))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Basic abc"))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(get("/p/api/wpf/popups").header("Authorization", "Bearer " + "0".repeat(64)))
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + "0".repeat(64)))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(popupService);
     }

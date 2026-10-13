@@ -26,11 +26,13 @@ namespace Popup.Services
         private const int DefaultHideDays = 30;
 
         private readonly string _popupId;
+        private readonly string _deliveryId;
         private readonly int? _configuredHideDays;
         private DateTimeOffset? _displayedAt;
         private VideoProgressSnapshot? _videoProgress;
 
-        public PopupResultBuilder(string popupId, int? configuredHideDays)
+        /// <param name="deliveryId">[설계 35] 조회 응답의 전달 건 ID. 결과 항목에 그대로 담는다(Demo·테스트는 생략 가능).</param>
+        public PopupResultBuilder(string popupId, int? configuredHideDays, string? deliveryId = null)
         {
             if (string.IsNullOrWhiteSpace(popupId))
             {
@@ -38,6 +40,7 @@ namespace Popup.Services
             }
             _popupId = popupId.Trim();
             _configuredHideDays = configuredHideDays;
+            _deliveryId = deliveryId?.Trim() ?? string.Empty;
         }
 
         /// <summary>창이 열릴 때 확정되는 멱등 키. 제출·닫힘 항목이 같은 키를 쓴다(창 하나 = 항목 하나).</summary>
@@ -82,6 +85,7 @@ namespace Popup.Services
             return new WpfResultItemDto
             {
                 ResultId = ResultId,
+                DeliveryId = _deliveryId,
                 PopupId = _popupId,
                 ResultType = WpfResultType.Submitted,
                 DisplayedAt = _displayedAt,
@@ -105,6 +109,7 @@ namespace Popup.Services
             WpfResultItemDto item = new()
             {
                 ResultId = ResultId,
+                DeliveryId = _deliveryId,
                 PopupId = _popupId,
                 DisplayedAt = _displayedAt,
                 ClosedAt = closedAt

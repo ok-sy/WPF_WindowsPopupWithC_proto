@@ -13,18 +13,15 @@ import org.junit.jupiter.api.Test;
 import server.base.props.WpfPopupProps;
 import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.wpf.WpfPopupItem;
-import server.domain.popup.wpf.WpfPopupListResponse;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfResultResponse;
 import server.domain.popup.wpf.WpfResultType;
-import server.domain.popup.wpf.WpfVideoProgress;
 import server.repo.core.mapper.popup.PopupMapper;
 import server.repo.core.mapper.popup.PopupSchema;
 import server.repo.core.mapper.popup.WpfPopupMapper;
 import server.service.core.popup.PopupService;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +50,7 @@ class WpfPopupDatabaseTest {
         }
     }
 
-    @Test void listAndResultsRoundTripOnOracle() throws Exception {
+    @Test void nextPopupAndResultRoundTripOnOracle() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
         var dataSource = new UnpooledDataSource("oracle.jdbc.OracleDriver",
@@ -76,121 +73,111 @@ class WpfPopupDatabaseTest {
                 PopupMapper popupMapper = session.getMapper(PopupMapper.class);
                 WpfPopupMapper wpfMapper = session.getMapper(WpfPopupMapper.class);
                 PopupService popupService = new PopupService(popupMapper, new ObjectMapper().findAndRegisterModules());
-                WpfResultProcessor processor = new WpfResultProcessor(popupService, popupMapper, wpfMapper);
-                WpfPopupService service = new WpfPopupService(popupService, popupMapper, wpfMapper, processor, new WpfPopupProps());
-
-                // ---- 목록: 대상 조건(부서 하위 포함·직급·사번·입사일)이 SQL에서 판정된다 ----
-                assertEquals(List.of("SAMPLE-TEXT-001", "SAMPLE-VIDEO-002", "SAMPLE-QUIZ-003", "SAMPLE-SURVEY-004"),
-                        ids(service.getPopupsForUser("E1001")));
-                assertEquals(List.of("SAMPLE-TEXT-001", "SAMPLE-VIDEO-002", "SAMPLE-SURVEY-004"),
-                        ids(service.getPopupsForUser("E1002")));
-                assertEquals(List.of("SAMPLE-TEXT-001", "SAMPLE-SURVEY-004"),
-                        ids(service.getPopupsForUser("E1003")));
-                assertThrows(WpfUserInactiveException.class, () -> service.getPopupsForUser("E9999"));
-
-                WpfPopupListResponse list = service.getPopupsForUser("E1001");
-                WpfPopupItem quiz = list.popups().stream().filter(p -> p.popupId().equals("SAMPLE-QUIZ-003")).findFirst().orElseThrow();
-                assertEquals(1, quiz.questions().size(), "문항은 최상위 questions");
-                assertFalse(quiz.content().containsKey("questions"));
-                assertFalse(quiz.content().containsKey("passingScore"));
-                // [설계 12] QUIZ는 WPF 로컬 채점용 정답 키·통과 점수를 내려준다. SURVEY는 여전히 정답 없음.
-                assertNotNull(quiz.passingScore(), "QUIZ 통과 점수 최상위 노출");
-                assertTrue(quiz.questions().get(0).options().stream().anyMatch(o -> Boolean.TRUE.equals(o.isCorrect())), "QUIZ 정답 키");
-                assertEquals("보안 교육 확인", quiz.content().get("surveyTitle"));
-                WpfPopupItem text = list.popups().get(0);
-                assertEquals("9월 21일(일) 02:00~06:00 점검 예정입니다.", text.content().get("plainText"));
-                assertEquals(true, text.content().get("showHighlight"), "CONTENT_OPTIONS JSON 병합");
-                assertEquals(7, text.hideDays());
-
-                long quizQuestionId = quiz.questions().get(0).questionId();
-                long yesOptionId = quiz.questions().get(0).options().stream()
-                        .filter(o -> o.value().equals("YES")).findFirst().orElseThrow().optionId();
-                WpfPopupItem survey = list.popups().stream().filter(p -> p.popupId().equals("SAMPLE-SURVEY-004")).findFirst().orElseThrow();
-                assertNull(survey.passingScore(), "SURVEY는 통과 점수 없음");
-                assertNull(survey.questions().get(0).options().get(0).isCorrect(), "SURVEY 정답 비노출");
-                assertNull(survey.questions().get(1).correctAnswer(), "SURVEY 서술형 정답 비노출");
-                long surveyChoiceQ = survey.questions().get(0).questionId();
-                long surveyTextQ = survey.questions().get(1).questionId();
-                List<Long> surveyOptionIds = survey.questions().get(0).options().stream().map(o -> o.optionId()).toList();
-
+                WpfPopupProps props = new WpfPopupProps();
+                WpfResultProcessor processor = new WpfResultProcessor(popupService, popupMapper, wpfMapper, props);
+                WpfPopupService service = new WpfPopupService(popupService, popupMapper, wpfMapper, processor, props);
+                String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
+                        .getProperty("popupSchemaPrefix");
                 OffsetDateTime displayedAt = OffsetDateTime.parse("2026-09-19T09:00:05+09:00");
                 OffsetDateTime closedAt = OffsetDateTime.parse("2026-09-19T09:03:10+09:00");
 
-                // ---- 결과: HIDDEN / SUBMITTED(QUIZ 정답·SURVEY) / VIDEO_WATCHED / CLOSED + 중복 ----
-                String hiddenId = UUID.randomUUID().toString();
-                WpfResultCommand hidden = new WpfResultCommand(hiddenId, "SAMPLE-TEXT-001", WpfResultType.HIDDEN,
-                        displayedAt, closedAt, 7, null, null, null, null);
-                WpfResultCommand quizSubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
-                        WpfResultType.SUBMITTED, displayedAt, closedAt, null,
-                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, 10.0, true);
-                WpfResultCommand surveySubmit = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-SURVEY-004",
-                        WpfResultType.SUBMITTED, displayedAt, closedAt, null,
-                        List.of(new PopupSubmitAnswer(surveyChoiceQ, null, surveyOptionIds),
-                                new PopupSubmitAnswer(surveyTextQ, "회의실 예약 개선", List.of())), null, null, null);
-                WpfResultCommand video = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-VIDEO-002",
-                        WpfResultType.VIDEO_WATCHED, displayedAt, closedAt, null, null,
-                        new WpfVideoProgress(new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("540"), new BigDecimal("531.5")), null, null);
-                WpfResultCommand notEligible = new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003",
-                        WpfResultType.CLOSED, null, null, null, null, null, null, null);
+                // ---- [설계 35] 단건 조회: 대상 조건(부서 하위 포함·직급·사번·입사일)을 SQL에서 판정하고 서버 정렬 첫 팝업 1건 ----
+                assertThrows(WpfUserInactiveException.class, () -> service.getNextPopup("E9999"));
+                assertEquals("SAMPLE-TEXT-001", service.getNextPopup("E1002").popup().popupId());
+                WpfPopupItem text = service.getNextPopup("E1001").popup();
+                assertEquals("SAMPLE-TEXT-001", text.popupId());
+                assertNotNull(text.deliveryId());
+                assertEquals(text.deliveryId(), service.getNextPopup("E1001").popup().deliveryId(), "OPEN 전달 건 재사용");
+                // [설계 37] 통합 전 제목·설명은 본문 앞 줄로 합쳐 내려간다
+                assertEquals("서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
+                        text.content().get("plainText"));
+                assertEquals(true, text.content().get("showHighlight"), "CONTENT_OPTIONS JSON 병합");
+                assertEquals(7, text.hideDays());
 
-                String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
-                        .getProperty("popupSchemaPrefix");
+                // ---- 일반 안내 닫기: 완료 처리, 후속 후보 AVAILABLE, 중복 재전송·같은 전달 건 재제출 ----
                 int displayBefore = countOf(session, prefix, "SELECT NVL(MAX(DISPLAY_COUNT), 0) FROM %sUSER_POPUP_STATUS "
                         + "WHERE EMPLOYEE_NO = 'E1001' AND POPUP_ID = 'SAMPLE-TEXT-001'", null);
-                WpfResultResponse response = service.processResults("E1001", List.of(hidden, quizSubmit, surveySubmit, video, hidden));
-                assertEquals(5, response.results().size());
-
-                WpfResultItemResponse r0 = response.results().get(0);
-                assertEquals(WpfResultItemResponse.Status.ACCEPTED, r0.status());
-                assertEquals("HIDDEN", wpfMapper.selectStatus("E1001", "SAMPLE-TEXT-001").popupStatus());
-
-                WpfResultItemResponse r1 = response.results().get(1);
-                assertEquals(WpfResultItemResponse.Status.ACCEPTED, r1.status(), r1.message());
-                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-QUIZ-003").completed(), "QUIZ 통과 완료 저장");
-
-                WpfResultItemResponse r2 = response.results().get(2);
-                assertEquals(WpfResultItemResponse.Status.ACCEPTED, r2.status(), r2.message());
-                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-SURVEY-004").completed(), "SURVEY는 제출 즉시 완료");
-
-                WpfResultItemResponse r3 = response.results().get(3);
-                assertEquals(WpfResultItemResponse.Status.ACCEPTED, r3.status(), r3.message());
-                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-VIDEO-002").completed(), "VIDEO 시청 완료 저장");
-
-                assertEquals(WpfResultItemResponse.Status.DUPLICATE, response.results().get(4).status(), "같은 resultId 재전송");
-                // [설계 34-22] 재전송된 같은 resultId는 표시 횟수·영수증을 다시 쌓지 않는다(처리 1회분만 증가).
+                String closeId = UUID.randomUUID().toString();
+                WpfResultCommand closeText = new WpfResultCommand(closeId, text.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.CLOSED,
+                        displayedAt, closedAt, null, null, null, null, null);
+                WpfResultResponse closed = service.processResult("E1001", closeText);
+                assertEquals(WpfResultItemResponse.Status.ACCEPTED, closed.status(), closed.message());
+                assertEquals(WpfResultResponse.NextStatus.AVAILABLE, closed.nextStatus());
+                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-TEXT-001").completed(), "TEXT 닫기는 완료");
+                assertEquals(WpfResultItemResponse.Status.DUPLICATE, service.processResult("E1001", closeText).status(), "같은 resultId 재전송");
                 assertEquals(displayBefore + 1, countOf(session, prefix, "SELECT DISPLAY_COUNT FROM %sUSER_POPUP_STATUS "
                         + "WHERE EMPLOYEE_NO = 'E1001' AND POPUP_ID = 'SAMPLE-TEXT-001'", null), "DUPLICATE 재전송은 표시 횟수를 늘리지 않는다");
-                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", hiddenId), "영수증은 1건");
+                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", closeId), "영수증은 1건");
+                WpfResultResponse again = service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                        text.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.CLOSED, null, null, null, null, null, null, null));
+                assertEquals("WPF_DELIVERY_COMPLETED", again.code());
 
-                // 표시·닫기 정보가 반영됐다 (mergeDisplayAndClose)
-                var status = wpfMapper.selectStatus("E1001", "SAMPLE-TEXT-001");
-                assertEquals("HIDDEN", status.popupStatus());
+                // ---- 영상 미완료 닫기: 완료 아님, 폴링 간격 동안 재노출 유예 → 다음 후보로 진행 ----
+                WpfPopupItem video = service.getNextPopup("E1001").popup();
+                assertEquals("SAMPLE-VIDEO-002", video.popupId());
+                assertNotEquals(text.deliveryId(), video.deliveryId());
+                WpfResultResponse videoClosed = service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                        video.deliveryId(), "SAMPLE-VIDEO-002", WpfResultType.CLOSED, displayedAt, closedAt, null, null, null, null, null));
+                assertEquals(WpfResultResponse.NextStatus.AVAILABLE, videoClosed.nextStatus());
+                assertFalse(wpfMapper.selectStatus("E1001", "SAMPLE-VIDEO-002").completed(), "미완료 닫기는 완료가 아님");
+                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE DELIVERY_ID = ? "
+                        + "AND DELIVERY_STATUS = 'DONE' AND DEFER_UNTIL_AT BETWEEN CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) "
+                        + "+ NUMTODSINTERVAL(1700, 'SECOND') AND CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) "
+                        + "+ NUMTODSINTERVAL(1900, 'SECOND')", video.deliveryId()), "유예 = 저장 시각 + 1800초");
 
-                // ---- 완료·숨김 팝업은 다음 목록에서 제외된다 (기준 2) ----
-                assertEquals(List.of(), ids(service.getPopupsForUser("E1001")));
-                // 기존 WPF-01 계약(완료 제외 없음)은 숨김만 제외한다
-                assertEquals(List.of("SAMPLE-VIDEO-002", "SAMPLE-QUIZ-003", "SAMPLE-SURVEY-004"),
-                        popupMapper.selectAvailablePopups("E1001").stream().map(p -> p.popupId()).toList());
+                // ---- QUIZ: 정답 키·통과 점수 포함, 통과 제출 → 완료 ----
+                WpfPopupItem quiz = service.getNextPopup("E1001").popup();
+                assertEquals("SAMPLE-QUIZ-003", quiz.popupId(), "유예 중인 영상은 건너뛴다");
+                assertEquals(1, quiz.questions().size(), "문항은 최상위 questions");
+                assertFalse(quiz.content().containsKey("questions"));
+                assertNotNull(quiz.passingScore(), "QUIZ 통과 점수 최상위 노출");
+                assertTrue(quiz.questions().get(0).options().stream().anyMatch(o -> Boolean.TRUE.equals(o.isCorrect())), "QUIZ 정답 키");
+                assertEquals("보안 교육 확인", quiz.content().get("surveyTitle"));
+                long quizQuestionId = quiz.questions().get(0).questionId();
+                long yesOptionId = quiz.questions().get(0).options().stream()
+                        .filter(o -> o.value().equals("YES")).findFirst().orElseThrow().optionId();
+                WpfResultResponse quizDone = service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                        quiz.deliveryId(), "SAMPLE-QUIZ-003", WpfResultType.SUBMITTED, displayedAt, closedAt, null,
+                        List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, 10.0, true));
+                assertEquals(WpfResultItemResponse.Status.ACCEPTED, quizDone.status(), quizDone.message());
+                assertTrue(wpfMapper.selectStatus("E1001", "SAMPLE-QUIZ-003").completed(), "QUIZ 통과 완료 저장");
 
-                // 대상 아님(E1003은 QUIZ 대상이 아님): CLOSED는 활성 사용자·팝업만 확인하므로 ACCEPTED,
-                // SUBMITTED는 노출 자격 재검사로 REJECTED
-                WpfResultResponse other = service.processResults("E1003", List.of(notEligible,
-                        new WpfResultCommand(UUID.randomUUID().toString(), "SAMPLE-QUIZ-003", WpfResultType.SUBMITTED,
-                                null, null, null, List.of(new PopupSubmitAnswer(quizQuestionId, null, List.of(yesOptionId))), null, 10.0, true)));
-                assertEquals(WpfResultItemResponse.Status.ACCEPTED, other.results().get(0).status());
-                assertEquals(WpfResultItemResponse.Status.REJECTED, other.results().get(1).status());
-                assertEquals("WPF_NOT_ELIGIBLE", other.results().get(1).code());
+                // ---- SURVEY: 정답 비노출, 제출 즉시 완료 → 남은 후보 없음(EMPTY) → popup=null ----
+                WpfPopupItem survey = service.getNextPopup("E1001").popup();
+                assertEquals("SAMPLE-SURVEY-004", survey.popupId());
+                assertNull(survey.passingScore(), "SURVEY는 통과 점수 없음");
+                assertNull(survey.questions().get(0).options().get(0).isCorrect(), "SURVEY 정답 비노출");
+                assertNull(survey.questions().get(1).correctAnswer(), "SURVEY 서술형 정답 비노출");
+                WpfResultResponse surveyDone = service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                        survey.deliveryId(), "SAMPLE-SURVEY-004", WpfResultType.SUBMITTED, displayedAt, closedAt, null,
+                        List.of(new PopupSubmitAnswer(survey.questions().get(0).questionId(), null,
+                                        survey.questions().get(0).options().stream().map(o -> o.optionId()).toList()),
+                                new PopupSubmitAnswer(survey.questions().get(1).questionId(), "회의실 예약 개선", List.of())),
+                        null, null, null));
+                assertEquals(WpfResultItemResponse.Status.ACCEPTED, surveyDone.status(), surveyDone.message());
+                assertEquals(WpfResultResponse.NextStatus.EMPTY, surveyDone.nextStatus(), "완료·유예 제외 후 후보 없음");
+                assertNull(service.getNextPopup("E1001").popup());
+                // 완료·유예 제외는 WPF 조회 전용. 기존 호출(답안 제출 재검증)은 숨김만 제외한다
+                assertTrue(popupMapper.selectAvailablePopups("E1001").stream().anyMatch(p -> p.popupId().equals("SAMPLE-VIDEO-002")));
+
+                // ---- 전달 건 검증: 다른 사용자의 전달 건·팝업 불일치는 거절, 숨김은 정상 처리 ----
+                WpfPopupItem otherText = service.getNextPopup("E1003").popup();
+                assertEquals("SAMPLE-TEXT-001", otherText.popupId());
+                assertEquals("WPF_INVALID_DELIVERY", service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                        otherText.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.CLOSED, null, null, null, null, null, null, null)).code());
+                assertEquals("WPF_INVALID_DELIVERY", service.processResult("E1003", new WpfResultCommand(UUID.randomUUID().toString(),
+                        otherText.deliveryId(), "SAMPLE-SURVEY-004", WpfResultType.CLOSED, null, null, null, null, null, null, null)).code());
+                WpfResultResponse hidden = service.processResult("E1003", new WpfResultCommand(UUID.randomUUID().toString(),
+                        otherText.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.HIDDEN, displayedAt, closedAt, 7, null, null, null, null));
+                assertEquals(WpfResultItemResponse.Status.ACCEPTED, hidden.status(), hidden.message());
+                assertEquals("HIDDEN", wpfMapper.selectStatus("E1003", "SAMPLE-TEXT-001").popupStatus());
+                assertEquals("SAMPLE-SURVEY-004", service.getNextPopup("E1003").popup().popupId());
 
                 // 요청 로그
-                service.logRequest("test-req", "E1001", "/p/api/wpf/popups/results", "POST", "127.0.0.1",
-                        OffsetDateTime.now(), 200, true, "items=5", "accepted=4");
-            } finally {
+                service.logRequest(closeId, "E1001", "/p/api/wpf/popups/results", "POST", "127.0.0.1",
+                        OffsetDateTime.now(), 200, true, "popupId=SAMPLE-TEXT-001,type=CLOSED", "status=ACCEPTED,next=AVAILABLE");            } finally {
                 session.rollback(true);
             }
         }
-    }
-
-    private static List<String> ids(WpfPopupListResponse response) {
-        return response.popups().stream().map(WpfPopupItem::popupId).toList();
     }
 }

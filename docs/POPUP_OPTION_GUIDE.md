@@ -25,14 +25,14 @@
 관리자 화면
 → 관리자 API
 → Oracle
-→ WPF 전용 목록 API
+→ WPF 단건 조회 API(팝업 1건 + deliveryId)
 → WPF PopupResponseDto
 → PopupService / PopupFactory
 → PopupOptions + 타입별 View
 → PopupManager
 → PopupWindow
 → 사용자 동작
-→ WPF 결과 일괄 API
+→ WPF 결과 수신 API(결과 1건, 응답 nextStatus)
 → Oracle
 ```
 
@@ -47,8 +47,8 @@
 | `popupId` | `NOTICE_001` | 팝업 고유 ID. 숨김, 상태, 응답, 이벤트의 기준 키 |
 | `popupType` | `TEXT` | `TEXT`, `IMAGE`, `VIDEO`, `SURVEY`, `QUIZ` |
 | `title` | 문자열 | PopupWindow 공통 Header 제목 |
-| `displayMode` | `SEQUENTIAL` | 같은 우선순위 그룹 안의 표시 방식 |
-| `displayOrder` | `100` | 숫자가 작을수록 먼저 표시. 같은 숫자는 한 표시 그룹 |
+| `displayMode` | `SEQUENTIAL` | 같은 우선순위 그룹 안의 표시 방식. WPF 조회가 1건씩이라 서버 팝업의 동시 표시는 일어나지 않음(2.2) |
+| `displayOrder` | `100` | 관리자 표시 순서. 숫자가 작을수록 먼저 표시. 서버가 이 순서(같으면 생성 시각·ID 순)로 첫 1건을 골라 내려주며 WPF 조회 응답에는 싣지 않음(설계 35) |
 | `showHeader` | `true` | 공통 Header 표시 |
 | `showFooterButton` | `true` | Footer 버튼 표시(닫기·제출·바로가기). Header에는 고정 로고 표시 |
 | `showFooter` | `true` | Footer 표시 |
@@ -60,16 +60,16 @@
 | `popupPosition` | `CENTER` | 주 모니터 작업 영역 기준 9방향 위치(`TOP_LEFT`~`BOTTOM_RIGHT`). 미지원 값은 `CENTER`. FULLSCREEN에서는 사용하지 않음 |
 | `headerFontSize` / `bodyFontSize` / `footerFontSize` | 없음(null) | 영역별 글자 크기. 없으면 XAML 기본 크기, 값이 있으면 10~40으로 보정 |
 
-> 위 표는 WPF 목록 응답(`popups[]` 최상위, `PopupResponseDto`) 기준이다. `displayStartAt`/`displayEndAt`은 WPF 응답에서 삭제했다(설계 29). 관리자 API·DB는 `footerAction`~`footerFontSize`를 `content`(CONTENT_OPTIONS)에 저장하고, 서버가 WPF 응답을 만들 때 최상위로 올린다(설계 30·31). 관리자 `showCloseButton`(라벨 "닫기 표시")은 WPF `showFooterButton`에 대응한다.
+> 위 표는 WPF 조회 응답(`popup` 최상위, `PopupResponseDto`) 기준이다. 단, `displayOrder`는 관리자 API·DB 값이며 WPF 응답에는 없다. 조회 응답의 `popup`에는 서버 발급 `deliveryId`가 함께 온다(설계 35). `displayStartAt`/`displayEndAt`은 WPF 응답에서 삭제했다(설계 29). 관리자 API·DB는 `footerAction`~`footerFontSize`를 `content`(CONTENT_OPTIONS)에 저장하고, 서버가 WPF 응답을 만들 때 최상위로 올린다(설계 30·31). 관리자 `showCloseButton`(라벨 "닫기 표시")은 WPF `showFooterButton`에 대응한다.
 
 ### 2.2 표시 방식
 
 | 값 | 동작 |
 |---|---|
-| `SEQUENTIAL` | 같은 `displayOrder` 그룹에서도 한 개씩 차례로 표시 |
-| `SIMULTANEOUS` | 같은 `displayOrder` 그룹의 팝업을 동시에 표시 |
+| `SEQUENTIAL` | 한 개씩 차례로 표시 |
+| `SIMULTANEOUS` | WPF `PopupManager`가 함께 받은 같은 순서 그룹의 팝업을 동시에 표시 |
 
-`displayOrder` 그룹이 끝난 뒤 다음 순서 그룹으로 넘어간다.
+[설계 35] WPF 조회 API는 서버가 `displayOrder` 순으로 고른 팝업 1건만 내려주고, 그 결과를 저장한 뒤 다음 1건을 조회한다. 따라서 API 모드에서는 서버 팝업이 항상 한 개씩 차례로 표시되며 `SIMULTANEOUS` 동시 표시는 일어나지 않는다. 값 자체는 계약에 남아 있다.
 
 ### 2.3 창 크기 옵션
 
@@ -97,7 +97,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 ## 3. 숨김·완료 정책 필드
 
-목록 API는 서버에서 기간·대상·숨김·완료 여부를 판정한 최종 노출 목록만 내려준다. WPF가 실제로 받거나 사용하는 정책 값은 아래와 같다.
+조회 API는 서버에서 기간·대상·숨김·완료·재노출 유예 여부를 판정하고 표시 순서상 첫 1건만 내려준다. WPF가 실제로 받거나 사용하는 정책 값은 아래와 같다.
 
 | 옵션 | 필수 여부 | Default | 설명 |
 |---|---|---|---|
@@ -248,8 +248,8 @@ WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서�
 | 호출 위치 | HTTP | 경로 | 기능 |
 |---|---|---|---|
 | `WpfLoginClient.LoginAsync` | POST | `/api/wpf/auth/login` | 로그인(토큰 발급, SSO 프로토타입) |
-| `PopupApiService.GetWpfPopupsAsync` | GET | `/api/wpf/popups` | 서버가 노출 판정을 끝낸 최종 목록 + 공통 옵션·content·문항 |
-| `PopupApiService.PostResultsAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 항목(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED) 전송. `PopupResultQueue`가 실패 시 보관·재전송 |
+| `PopupApiService.GetNextPopupAsync` | POST | `/api/wpf/popups` | 서버가 노출 판정·정렬을 끝낸 팝업 1건(`popup`, 없으면 null) + `deliveryId`·공통 옵션·content·문항 |
+| `PopupApiService.PostResultAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 1건(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED, `deliveryId` 포함) 전송. 응답 `nextStatus`로 다음 조회 시점 결정. `PopupResultQueue`가 실패 시 보관·순서대로 재전송 |
 
 ---
 
@@ -269,13 +269,13 @@ AND showDoNotShowAgain = true
 
 ## 10. 표시 완료 및 중복 방지
 
-기간·대상·숨김·완료 판정은 서버가 목록 조회 시 끝낸다. WPF는 한 번 연 팝업 ID를 `_shownPopupIds`로 기억해 같은 실행 중 주기 조회에서 동일 팝업을 다시 열지 않는다.
+기간·대상·숨김·완료·재노출 유예 판정은 서버가 조회 시 끝낸다(설계 35). TEXT·IMAGE 닫기(Footer 닫기·바로가기 포함)는 서버가 완료로 처리해 노출 기간 안에 다시 내려주지 않는다. 미완료로 끝난 SURVEY·QUIZ·VIDEO는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 제외한 뒤 조건을 만족하면 다시 내려준다. WPF는 팝업 표시 중에 다른 조회를 하지 않으며, 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 삭제했다.
 
 ---
 
 ## 11. 공통 푸터 동작
 
-`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 목록 응답에서는 `popups[]` 최상위 값이다(설계 30). 이 동작은 `showFooter`와 `showFooterButton`이 모두 켜져 Footer 버튼이 표시된 경우에만 화면에 나타난다.
+`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 조회 응답에서는 `popup` 최상위 값이다(설계 30). 이 동작은 `showFooter`와 `showFooterButton`이 모두 켜져 Footer 버튼이 표시된 경우에만 화면에 나타난다.
 
 ---
 
@@ -287,7 +287,7 @@ AND showDoNotShowAgain = true
 2. WPF에는 `AUTO` 크기 모드가 있으나 관리자 웹/zero-rule-server 허용 목록에는 없다.
 3. RATING5 유형은 삭제했다(2026-09-28). 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
 4. `hideDays`는 관리자 입력 가능하며, 비우면 WPF가 HIDDEN 결과에 30일을 사용한다.
-5. 기간·대상·숨김·완료 대상 판정은 서버가 목록 조회 전에 끝낸다.
+5. 기간·대상·숨김·완료·재노출 유예 판정과 표시 순서 정렬은 서버가 조회 시 끝내고 1건만 내려준다.
 6. IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈는 최신 main에서 관리자·미리보기·WPF·서버 계약에 반영되어 있다.
 
 남은 미결 항목(WPF 전용 `AUTO` 크기 모드 처리, 기간·반복 정책)은 [`design/09_전환계획_및_미결사항.md`](design/09_전환계획_및_미결사항.md)에서 관리한다.

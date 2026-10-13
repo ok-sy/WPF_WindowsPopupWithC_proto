@@ -34,6 +34,9 @@ namespace Popup.Models
     {
         public string PopupId { get; set; } = string.Empty;
 
+        /// <summary>[설계 35] 조회 응답의 전달 건 ID. 결과 항목(PopupResultBuilder)에 담아 서버로 돌려준다.</summary>
+        public string DeliveryId { get; set; } = string.Empty;
+
         /*
          * [기준 3·4] 기존 콜백 5개(HidePopupAsync·PopupDisplayedAsync·PopupClosedAsync·SubmitSurveyAsync·
          * SaveVideoProgressAsync)는 각각 서버 API를 즉시 호출했다. 이제 팝업 창 하나의 결과는 항목 1개로

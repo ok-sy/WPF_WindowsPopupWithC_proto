@@ -2,6 +2,7 @@ package server.repo.core.mapper.popup;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfUserPopupStatus;
 
 import java.time.OffsetDateTime;
@@ -47,6 +48,22 @@ public interface WpfPopupMapper {
             @Param("resultType") String resultType,
             @Param("resultStatus") String resultStatus,
             @Param("resultCode") String resultCode);
+
+    /** [설계 35] 사용자의 미완료(OPEN) 전달 건. 없으면 null. */
+    WpfPopupDelivery selectOpenDelivery(@Param("userId") String userId);
+
+    /** [설계 35] 결과 처리용 전달 건(행 잠금). 없으면 null. */
+    WpfPopupDelivery selectDeliveryForUpdate(@Param("deliveryId") String deliveryId);
+
+    /** [설계 35] OPEN 전달 건 생성. 사용자에게 OPEN 건이 있으면 DuplicateKeyException. */
+    int insertDelivery(@Param("deliveryId") String deliveryId, @Param("userId") String userId, @Param("popupId") String popupId);
+
+    /** [설계 35] 노출 대상이 아니게 된 OPEN 전달 건을 EXPIRED로 종료. */
+    int expireDelivery(@Param("deliveryId") String deliveryId);
+
+    /** [설계 35] 결과 저장 시 전달 건 종료와 재노출 유예(저장 시각 + deferSeconds). 이미 DONE이면 0. */
+    int completeDelivery(@Param("deliveryId") String deliveryId, @Param("resultId") String resultId,
+                         @Param("resultType") String resultType, @Param("deferSeconds") int deferSeconds);
 
     /** WPF 결과 API 요청 단위 로그 (원본에서 미사용이던 API_REQUEST_LOG 활용). */
     int insertApiRequestLog(

@@ -451,9 +451,10 @@
         CASE 안의 EXISTS는 Oracle SQL에서 허용된다.
         완료(COMPLETED_YN) 제외는 excludeCompleted=true일 때만 적용한다. WPF 목록(WpfPopupService)은 true,
         답안 제출 재검증(PopupService.submitResponse)은 false로 호출한다.
+        [설계 35] excludeCompleted=true(WPF 조회·후속 후보 확인)는 재노출 유예 중(WPF_POPUP_DELIVERY.DEFER_UNTIL_AT)인
+        사용자·팝업도 제외한다. 조회(selectAvailablePopups)와 후보 확인(countAvailablePopups)이 같은 조각을 써서 기준이 같다.
     -->
-    <select id="selectAvailablePopups"
-            resultMap="popupEntityResultMap">
+    <sql id="eligiblePopupCte">
         WITH DEPARTMENT_TREE (ANCESTOR_DEPARTMENT_ID, DESCENDANT_DEPARTMENT_ID) AS
         (
             SELECT DEPARTMENT_ID, DEPARTMENT_ID
@@ -563,6 +564,16 @@
                         </if>
                     )
               )
+              <if test="excludeCompleted">
+              AND NOT EXISTS
+              (
+                  SELECT 1
+                  FROM ${popupSchemaPrefix}WPF_POPUP_DELIVERY d
+                  WHERE d.EMPLOYEE_NO = u.EMPLOYEE_NO
+                    AND d.POPUP_ID = n.POPUP_ID
+                    AND d.DEFER_UNTIL_AT &gt; <include refid="nowKst"/>
+              )
+              </if>
         ),
         ELIGIBLE_POPUP AS
         (
@@ -571,6 +582,11 @@
             GROUP BY POPUP_ID, TARGET_GROUP_ID
             HAVING MIN(CONDITION_MATCHED) = 1
         )
+    </sql>
+
+    <select id="selectAvailablePopups"
+            resultMap="popupEntityResultMap">
+        <include refid="eligiblePopupCte"/>
         SELECT
         <include refid="popupEntityColumns"/>
         FROM
@@ -583,6 +599,12 @@
         LEFT JOIN ${popupSchemaPrefix}POPUP_CONTENT ct
           ON ct.POPUP_ID = n.POPUP_ID
         ORDER BY n.DISPLAY_ORDER, n.CREATED_AT, n.POPUP_ID
+    </select>
+
+    <!-- [설계 35] 결과 저장 후 후속 후보 유무. 콘텐츠를 읽지 않고 첫 행만 확인한다(전체 COUNT 집계 대신 ROWNUM 1). -->
+    <select id="countAvailablePopups" resultType="int">
+        <include refid="eligiblePopupCte"/>
+        SELECT COUNT(*) FROM ELIGIBLE_POPUP WHERE ROWNUM = 1
     </select>
 
     <!-- Oracle IN 절은 1,000개 제한이 있다. 템플릿 ID는 팝업 수 이하이므로 실무 범위 안이다. -->

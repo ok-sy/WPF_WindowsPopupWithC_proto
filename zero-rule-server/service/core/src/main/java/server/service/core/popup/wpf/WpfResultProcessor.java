@@ -3,9 +3,11 @@ package server.service.core.popup.wpf;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import server.base.props.WpfPopupProps;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoProgressResponseDto;
+import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfVideoProgress;
@@ -29,6 +31,11 @@ import server.service.core.popup.PopupService;
  *
  * <p>[멱등성] WPF_RESULT_RECEIPT.RESULT_ID(UNIQUE). 이미 있으면 DUPLICATE를 돌려주고 아무것도 하지 않는다.
  * 영수증은 성공 처리와 같은 트랜잭션에서 기록되어, 처리 도중 실패하면 영수증도 남지 않아 재전송 시 재처리된다.</p>
+ *
+ * <p>[설계 35] 전달 건(deliveryId): 영수증 확인 뒤 전달 건의 소유(사번)·팝업 일치·미종료를 확인하고, 처리 성공 시 같은 트랜잭션에서
+ * 전달 건을 종료하며 재노출 유예(저장 시각 + pollingIntervalSeconds)를 기록한다. 일반 안내(TEXT·IMAGE)의 닫기(CLOSED,
+ * Footer 닫기·바로가기 포함)는 완료로 처리해 이후 조회에서 제외한다. 설문·퀴즈·영상은 기존 제출·통과·시청 완료 조건을 유지하고,
+ * 미완료로 닫으면 유예 기간 동안만 제외된다.</p>
  */
 @Service
 public class WpfResultProcessor {
@@ -36,11 +43,14 @@ public class WpfResultProcessor {
     private final PopupService popupService;
     private final PopupMapper popupMapper;
     private final WpfPopupMapper wpfMapper;
+    private final WpfPopupProps props;
 
-    public WpfResultProcessor(PopupService popupService, PopupMapper popupMapper, WpfPopupMapper wpfMapper) {
+    public WpfResultProcessor(PopupService popupService, PopupMapper popupMapper, WpfPopupMapper wpfMapper,
+                              WpfPopupProps props) {
         this.popupService = popupService;
         this.popupMapper = popupMapper;
         this.wpfMapper = wpfMapper;
+        this.props = props;
     }
 
     /**
@@ -53,24 +63,52 @@ public class WpfResultProcessor {
         if (wpfMapper.countReceipt(item.resultId()) > 0) {
             return WpfResultItemResponse.duplicate(item);
         }
+        WpfPopupDelivery delivery = requireDelivery(employeeNo, item);
 
         WpfResultItemResponse response = switch (item.resultType()) {
-            case CLOSED -> handleClosed(employeeNo, item);
+            case CLOSED -> handleClosed(employeeNo, item, delivery.popupType());
             case HIDDEN -> handleHidden(employeeNo, item);
             case SUBMITTED -> handleSubmitted(employeeNo, item);
             case VIDEO_WATCHED -> handleVideo(employeeNo, item);
         };
 
+        wpfMapper.completeDelivery(item.deliveryId(), item.resultId(), item.resultType().name(),
+                props.getPollingIntervalSeconds());
         wpfMapper.insertReceipt(item.resultId(), employeeNo, item.popupId(),
                 item.resultType().name(), "ACCEPTED", null);
         return response;
     }
 
-    /** CLOSED: 활성 사용자·팝업 확인 후 표시·닫기 정보만 반영한다. 완료 상태는 건드리지 않는다. */
-    private WpfResultItemResponse handleClosed(String employeeNo, WpfResultCommand item) {
+    /**
+     * CLOSED: 활성 사용자·팝업 확인 후 표시·닫기 정보를 반영한다.
+     * [설계 35] 일반 안내(TEXT·IMAGE)는 닫기가 곧 확인이므로 완료로 처리한다. 그 밖의 유형(설문·퀴즈·영상)의 닫기는
+     * 완료 전 닫기라 완료 상태를 건드리지 않는다(전달 건 재노출 유예만 적용).
+     */
+    private WpfResultItemResponse handleClosed(String employeeNo, WpfResultCommand item, String popupType) {
         requireActiveUserAndPopup(employeeNo, item.popupId());
         recordDisplayAndClose(employeeNo, item);
+        if ("TEXT".equals(popupType) || "IMAGE".equals(popupType)) {
+            popupMapper.markPopupCompleted(employeeNo, item.popupId(), "Y");
+        }
         return WpfResultItemResponse.accepted(item);
+    }
+
+    /**
+     * [설계 35] 전달 건 확인: 존재·소유 사번·팝업 일치·미종료. 같은 전달 건의 동시 결과는 행 잠금으로 직렬화한다.
+     * 재조회로 EXPIRED가 된 건(표시 중 게시 중단 등)의 결과는 기존과 같이 받는다.
+     */
+    private WpfPopupDelivery requireDelivery(String employeeNo, WpfResultCommand item) {
+        WpfPopupDelivery delivery = item.deliveryId() == null ? null : wpfMapper.selectDeliveryForUpdate(item.deliveryId());
+        if (delivery == null || !employeeNo.equals(delivery.employeeNo())) {
+            throw new IllegalArgumentException("유효한 전달 건이 아닙니다. deliveryId=" + item.deliveryId());
+        }
+        if (!delivery.popupId().equals(item.popupId())) {
+            throw new IllegalArgumentException("전달 건의 팝업과 일치하지 않습니다. deliveryId=" + item.deliveryId());
+        }
+        if (delivery.done()) {
+            throw new IllegalArgumentException("이미 결과가 저장된 전달 건입니다. deliveryId=" + item.deliveryId());
+        }
+        return delivery;
     }
 
     /**

@@ -7,9 +7,11 @@ import server.domain.popup.PopupEntity;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
+import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfPopupItem;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
+import server.domain.popup.wpf.WpfResultResponse;
 import server.domain.popup.wpf.WpfResultType;
 import server.repo.core.mapper.popup.PopupMapper;
 import server.repo.core.mapper.popup.WpfPopupMapper;
@@ -25,8 +27,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * [WPF 조회·결과 API — 기준 2·3·6] 목록 조립(완료 제외 플래그, WPF 비노출 필드 제거)과
- * 결과 일괄 처리의 항목 격리·코드 매핑을 DB 없이 검증한다.
+ * [WPF 조회·결과 API — 기준 2·3·6, 설계 35] 단건 조회(전달 건 생성·재사용·만료, WPF 비노출 필드 제거)와
+ * 결과 1건 처리의 코드 매핑·후속 후보 상태(nextStatus)를 DB 없이 검증한다.
  */
 class WpfPopupServiceTest {
 
@@ -55,49 +57,62 @@ class WpfPopupServiceTest {
                 Map.of("surveyTitle", "보안", "useBackgroundOverlay", true));
     }
 
+    private static WpfResultCommand result(String resultId, String popupId, WpfResultType type) {
+        return new WpfResultCommand(resultId, "D-" + resultId, popupId, type, null, null, null, null, null, null, null);
+    }
+
+    private PopupEntity entity(String popupId, String type, Long templateId) {
+        PopupEntity entity = mock(PopupEntity.class);
+        when(entity.popupId()).thenReturn(popupId);
+        when(entity.popupType()).thenReturn(type);
+        when(entity.questionTemplateId()).thenReturn(templateId);
+        return entity;
+    }
+
     @Test void inactiveUserIsForbidden() {
         when(wpfMapper.countActiveUser("E9999")).thenReturn(0);
-        assertThrows(WpfUserInactiveException.class, () -> service.getPopupsForUser("E9999"));
-        assertThrows(WpfUserInactiveException.class, () -> service.processResults("E9999", List.of()));
+        assertThrows(WpfUserInactiveException.class, () -> service.getNextPopup("E9999"));
+        assertThrows(WpfUserInactiveException.class, () -> service.processResult("E9999", result("r", "P1", WpfResultType.CLOSED)));
         verify(popupMapper, never()).selectAvailablePopups(anyString(), anyBoolean());
+        verify(wpfMapper, never()).insertDelivery(any(), any(), any());
     }
 
     @Test void pollingResponseAlwaysRespectsThirtyToSixtyMinutePolicy() {
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of());
-        when(popupService.loadQuestionsWithAnswerKey(List.of())).thenReturn(Map.of());
         int[] configured = {-1, 0, 300, 1800, 2700, 3600, 7200};
         int[] expected = {1800, 1800, 1800, 1800, 2700, 3600, 3600};
         for (int i = 0; i < configured.length; i++) {
             WpfPopupProps props = new WpfPopupProps();
             props.setPollingIntervalSeconds(configured[i]);
             var configuredService = new WpfPopupService(popupService, popupMapper, wpfMapper, processor, props);
-            assertEquals(expected[i], configuredService.getPopupsForUser("E1001").pollingIntervalSeconds());
+            var response = configuredService.getNextPopup("E1001");
+            assertEquals(expected[i], response.pollingIntervalSeconds());
+            assertNull(response.popup(), "대상이 없으면 popup=null");
         }
+        verify(wpfMapper, never()).insertDelivery(any(), any(), any());
     }
 
-    @Test void listExcludesCompletedAndHidesInternalFields() {
-        PopupEntity entity = mock(PopupEntity.class);
-        when(entity.questionTemplateId()).thenReturn(20L);
-        when(entity.popupType()).thenReturn("QUIZ");   // [설계 12] QUIZ만 정답 키·통과 점수 포함
-        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(entity));
+    @Test void firstEligiblePopupGetsNewDeliveryAndHidesInternalFields() {
+        PopupEntity first = entity("Q1", "QUIZ", 20L);   // [설계 12] QUIZ만 정답 키·통과 점수 포함
+        PopupEntity second = entity("T2", "TEXT", null);
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(first, second));
         var question = new PopupQuestionDto(1L, "Q", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1,
                 List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null, "VERTICAL");
-        // [설계 12] WPF 로컬 채점: 목록은 정답 키 포함 문항을 1회 조회하고 QUIZ에만 그대로 내려준다
         when(popupService.loadQuestionsWithAnswerKey(List.of(20L))).thenReturn(Map.of(20L, List.of(question)));
-        when(popupService.toPublicResponseDto(entity, List.of(question))).thenReturn(quizDto(List.of(question)));
+        when(popupService.toPublicResponseDto(first, List.of(question))).thenReturn(quizDto(List.of(question)));
 
-        var response = service.getPopupsForUser("E1001");
+        var response = service.getNextPopup("E1001");
 
-        assertEquals("E1001", response.userId());
         assertEquals(1800, response.pollingIntervalSeconds());
-        assertNotNull(response.serverTime());
-        var item = response.popups().get(0);
-        assertEquals("Q1", item.popupId());
+        var item = response.popup();
+        assertEquals("Q1", item.popupId(), "서버 정렬 첫 팝업 1건");
+        assertNotNull(item.deliveryId());
+        verify(wpfMapper).insertDelivery(item.deliveryId(), "E1001", "Q1");
+        verify(popupService, never()).toPublicResponseDto(eq(second), any());
         assertEquals(1, item.questions().size(), "문항은 최상위 questions에만");
         assertFalse(item.content().containsKey("questions"), "content.questions 중복 제거");
         assertFalse(item.content().containsKey("passingScore"), "content에는 두지 않고 최상위로");
         assertEquals(10.0, item.passingScore(), "[설계 12] QUIZ는 통과 점수를 최상위로 내려줌");
-        assertFalse(item.content().containsKey("validateRequiredQuestions"));
         assertEquals("보안", item.content().get("surveyTitle"));
         // [설계 31] PopupWindow 공통 UI 옵션은 content에서 빼 최상위로 내려준다(없는 값은 기본값).
         assertTrue(item.useBackgroundOverlay());
@@ -105,84 +120,137 @@ class WpfPopupServiceTest {
         assertEquals(0.45, item.backgroundOverlayOpacity());
         assertEquals("CENTER", item.popupPosition());
         assertNull(item.headerFontSize());
-        // 완료 제외 플래그로 호출됐는지 (기준 2)
+        // 완료·숨김·재노출 유예 제외 플래그로 호출됐는지 (기준 2)
         verify(popupMapper).selectAvailablePopups("E1001", true);
         verify(popupMapper, never()).selectAvailablePopups("E1001", false);
     }
 
-    /** [설계 12] 정답 키는 QUIZ에만. SURVEY는 정답 포함으로 조회된 문항에서 isCorrect/correctAnswer/answerMatchMode를 제거해 내려준다. */
+    @Test void openDeliveryIsReusedWhileStillEligible() {
+        PopupEntity first = entity("T1", "TEXT", null);
+        PopupEntity reused = entity("T2", "TEXT", null);
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(first, reused));
+        when(wpfMapper.selectOpenDelivery("E1001")).thenReturn(new WpfPopupDelivery("D-OPEN", "E1001", "T2", "OPEN", "TEXT"));
+        when(popupService.toPublicResponseDto(reused, List.of())).thenReturn(quizDto(List.of()));
+
+        var item = service.getNextPopup("E1001").popup();
+
+        assertEquals("D-OPEN", item.deliveryId(), "조회 응답 유실 후 재조회는 같은 전달 건");
+        verify(wpfMapper, never()).insertDelivery(any(), any(), any());
+        verify(wpfMapper, never()).expireDelivery(any());
+    }
+
+    @Test void openDeliveryNoLongerEligibleIsExpiredAndNextIsChosen() {
+        PopupEntity next = entity("T1", "TEXT", null);
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(next));
+        when(wpfMapper.selectOpenDelivery("E1001")).thenReturn(new WpfPopupDelivery("D-OLD", "E1001", "STOPPED", "OPEN", "TEXT"));
+        when(popupService.toPublicResponseDto(next, List.of())).thenReturn(quizDto(List.of()));
+
+        var item = service.getNextPopup("E1001").popup();
+
+        verify(wpfMapper).expireDelivery("D-OLD");
+        assertNotEquals("D-OLD", item.deliveryId());
+        verify(wpfMapper).insertDelivery(item.deliveryId(), "E1001", "T1");
+    }
+
+    @Test void concurrentQueryReusesDeliveryCreatedByOtherRequest() {
+        PopupEntity first = entity("T1", "TEXT", null);
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(first));
+        when(wpfMapper.selectOpenDelivery("E1001"))
+                .thenReturn(null, new WpfPopupDelivery("D-OTHER", "E1001", "T1", "OPEN", "TEXT"));
+        when(wpfMapper.insertDelivery(any(), eq("E1001"), eq("T1")))
+                .thenThrow(new org.springframework.dao.DuplicateKeyException("UX_WPF_POPUP_DELIVERY_OPEN"));
+        when(popupService.toPublicResponseDto(first, List.of())).thenReturn(quizDto(List.of()));
+
+        assertEquals("D-OTHER", service.getNextPopup("E1001").popup().deliveryId());
+    }
+
+    @Test void savedResultReportsNextCandidate() {
+        var ok = result("r-ok", "P1", WpfResultType.CLOSED);
+        var dup = result("r-dup", "P1", WpfResultType.CLOSED);
+        when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
+        when(processor.processOne("E1001", dup)).thenReturn(WpfResultItemResponse.duplicate(dup));
+        when(popupMapper.countAvailablePopups("E1001", true)).thenReturn(1, 0);
+
+        var accepted = service.processResult("E1001", ok);
+        var duplicate = service.processResult("E1001", dup);
+
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, accepted.status());
+        assertEquals(WpfResultResponse.NextStatus.AVAILABLE, accepted.nextStatus());
+        assertEquals("r-ok", accepted.resultId());
+        assertNull(accepted.code());
+        assertEquals(WpfResultItemResponse.Status.DUPLICATE, duplicate.status());
+        assertEquals(WpfResultResponse.NextStatus.EMPTY, duplicate.nextStatus(), "중복 처리 성공도 후속 후보를 알려준다");
+    }
+
+    @Test void candidateCheckFailureIsNotReportedAsEmpty() {
+        var ok = result("r-ok", "P1", WpfResultType.CLOSED);
+        when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
+        when(popupMapper.countAvailablePopups("E1001", true)).thenThrow(new IllegalStateException("db down"));
+
+        var response = service.processResult("E1001", ok);
+
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, response.status(), "저장 성공은 유지");
+        assertNull(response.nextStatus(), "후보 확인 실패를 EMPTY로 바꾸지 않는다");
+        assertEquals("WPF_NEXT_STATUS_UNKNOWN", response.code());
+    }
+
+    @Test void rejectionCodesAreMappedAndNoNextStatus() {
+        var cases = Map.of(
+                "현재 사용자에게 제출 가능한 팝업이 아닙니다.", "WPF_NOT_ELIGIBLE",
+                "현재 설문에 포함되지 않은 문항입니다. questionId=9", "WPF_INVALID_ANSWER",
+                "유효한 전달 건이 아닙니다. deliveryId=x", "WPF_INVALID_DELIVERY",
+                "전달 건의 팝업과 일치하지 않습니다. deliveryId=x", "WPF_INVALID_DELIVERY",
+                "이미 결과가 저장된 전달 건입니다. deliveryId=x", "WPF_DELIVERY_COMPLETED");
+        int n = 0;
+        for (var entry : cases.entrySet()) {
+            var item = result("r-" + n++, "P1", WpfResultType.SUBMITTED);
+            when(processor.processOne("E1001", item)).thenThrow(new IllegalArgumentException(entry.getKey()));
+            var response = service.processResult("E1001", item);
+            assertEquals(WpfResultItemResponse.Status.REJECTED, response.status());
+            assertEquals(entry.getValue(), response.code(), entry.getKey());
+            assertNull(response.nextStatus(), "거절에는 다음 조회 진행 정보 없음");
+        }
+        verify(popupMapper, never()).countAvailablePopups(anyString(), anyBoolean());
+    }
+
+    /** [설계 34-19] 일시 장애는 예외 형식(원인 체인 포함)으로 RETRYABLE_ERROR, 그 밖은 INTERNAL_ERROR. 메시지로 판단하지 않는다. */
+    @Test void transientFailuresAreRetryableAndOthersInternal() {
+        var failures = new java.util.LinkedHashMap<RuntimeException, WpfResultItemResponse.Status>();
+        failures.put(new org.springframework.dao.CannotAcquireLockException("ORA-00060"), WpfResultItemResponse.Status.RETRYABLE_ERROR);
+        failures.put(new org.springframework.jdbc.CannotGetJdbcConnectionException("no connection"), WpfResultItemResponse.Status.RETRYABLE_ERROR);
+        failures.put(new RuntimeException(new java.sql.SQLRecoverableException("IO error")), WpfResultItemResponse.Status.RETRYABLE_ERROR);
+        failures.put(new org.springframework.dao.DataIntegrityViolationException("unique"), WpfResultItemResponse.Status.INTERNAL_ERROR);
+        failures.put(new IllegalStateException("timeout deadlock connection"), WpfResultItemResponse.Status.INTERNAL_ERROR);
+        int i = 0;
+        for (var entry : failures.entrySet()) {
+            var item = result("r-" + i++, "P1", WpfResultType.CLOSED);
+            when(processor.processOne("E1001", item)).thenThrow(entry.getKey());
+            var response = service.processResult("E1001", item);
+            assertEquals(entry.getValue(), response.status(), String.valueOf(entry.getKey()));
+            assertEquals(entry.getValue() == WpfResultItemResponse.Status.RETRYABLE_ERROR ? "WPF_RETRYABLE" : "WPF_INTERNAL", response.code());
+            assertNull(response.nextStatus());
+            assertFalse(response.message().contains("db down") || response.message().contains("deadlock"), "내부 오류 메시지 비노출");
+        }
+    }
+
     @Test void surveyQuestionsAreStrippedOfAnswerKeyAndPassingScore() {
-        PopupEntity entity = mock(PopupEntity.class);
-        when(entity.questionTemplateId()).thenReturn(20L);
-        when(entity.popupType()).thenReturn("SURVEY");
-        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(entity));
+        PopupEntity survey = entity("S1", "SURVEY", 20L);
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(survey));
         var withKey = new PopupQuestionDto(1L, "Q", null, "TEXT", true, true, BigDecimal.TEN, 1,
                 List.of(new PopupOptionDto(10L, "1", "A", 1, true)), "정답", "EXACT", "VERTICAL");
         var stripped = new PopupQuestionDto(1L, "Q", null, "TEXT", true, true, BigDecimal.TEN, 1,
                 List.of(new PopupOptionDto(10L, "1", "A", 1, null)), null, null, "VERTICAL");
         when(popupService.loadQuestionsWithAnswerKey(List.of(20L))).thenReturn(Map.of(20L, List.of(withKey)));
-        when(popupService.toPublicResponseDto(entity, List.of(stripped))).thenReturn(
+        when(popupService.toPublicResponseDto(survey, List.of(stripped))).thenReturn(
                 new PopupResponseDto("S1", "SURVEY", "설문", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
                         "SEQUENTIAL", 10, "FIXED", 600.0, 480.0, .7, .75, 480, 320, 1200, 900,
                         true, true, true, false, 20L, "FIXED", null, null, null, null, null, 10.0, true, List.of(stripped),
                         Map.of("surveyTitle", "설문", "passingScore", 10.0)));
 
-        var item = service.getPopupsForUser("E1001").popups().get(0);
+        var item = service.getNextPopup("E1001").popup();
 
         assertEquals(stripped, item.questions().get(0), "SURVEY 문항에 정답 키 없음");
         assertNull(item.passingScore(), "SURVEY는 통과 점수 없음");
         assertEquals(List.of(stripped), WpfPopupItem.withoutAnswerKey(List.of(withKey)));
-    }
-
-    @Test void resultsAreIsolatedPerItemAndRejectionCodesMapped() {
-        var ok = new WpfResultCommand("r-ok", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        var notEligible = new WpfResultCommand("r-ne", "P2", WpfResultType.SUBMITTED, null, null, null, null, null, null, null);
-        var badAnswer = new WpfResultCommand("r-ba", "P3", WpfResultType.SUBMITTED, null, null, null, null, null, null, null);
-        var boom = new WpfResultCommand("r-boom", "P4", WpfResultType.VIDEO_WATCHED, null, null, null, null, null, null, null);
-
-        when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
-        when(processor.processOne("E1001", notEligible))
-                .thenThrow(new IllegalArgumentException("현재 사용자에게 제출 가능한 팝업이 아닙니다."));
-        when(processor.processOne("E1001", badAnswer))
-                .thenThrow(new IllegalArgumentException("현재 설문에 포함되지 않은 문항입니다. questionId=9"));
-        when(processor.processOne("E1001", boom)).thenThrow(new IllegalStateException("db down"));
-
-        var response = service.processResults("E1001", List.of(ok, notEligible, badAnswer, boom));
-
-        assertEquals(4, response.results().size());
-        assertEquals(WpfResultItemResponse.Status.ACCEPTED, response.results().get(0).status());
-        assertEquals(WpfResultItemResponse.Status.REJECTED, response.results().get(1).status());
-        assertEquals("WPF_NOT_ELIGIBLE", response.results().get(1).code());
-        assertEquals("WPF_INVALID_ANSWER", response.results().get(2).code());
-        // [설계 34-19] 분류되지 않은 오류는 REJECTED가 아니라 INTERNAL_ERROR(WPF 보관·재시도)
-        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, response.results().get(3).status());
-        assertEquals("WPF_INTERNAL", response.results().get(3).code());
-        assertFalse(response.results().get(3).message().contains("db down"), "내부 오류 메시지 비노출");
-        // 한 항목의 실패 뒤에도 다음 항목이 처리된다
-        verify(processor, times(4)).processOne(eq("E1001"), any());
-    }
-
-    /** [설계 34-19] 일시 장애는 예외 형식(원인 체인 포함)으로 RETRYABLE_ERROR, 그 밖은 INTERNAL_ERROR. 메시지로 판단하지 않는다. */
-    @Test void transientFailuresAreRetryableAndOthersInternal() {
-        var deadlock = new WpfResultCommand("r-dl", "P1", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        var down = new WpfResultCommand("r-down", "P2", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        var wrapped = new WpfResultCommand("r-wrap", "P3", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        var integrity = new WpfResultCommand("r-int", "P4", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        var misleading = new WpfResultCommand("r-msg", "P5", WpfResultType.CLOSED, null, null, null, null, null, null, null);
-        when(processor.processOne("E1001", deadlock)).thenThrow(new org.springframework.dao.CannotAcquireLockException("ORA-00060"));
-        when(processor.processOne("E1001", down)).thenThrow(new org.springframework.jdbc.CannotGetJdbcConnectionException("no connection"));
-        when(processor.processOne("E1001", wrapped)).thenThrow(new RuntimeException(new java.sql.SQLRecoverableException("IO error")));
-        when(processor.processOne("E1001", integrity)).thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique"));
-        when(processor.processOne("E1001", misleading)).thenThrow(new IllegalStateException("timeout deadlock connection"));
-
-        var results = service.processResults("E1001", List.of(deadlock, down, wrapped, integrity, misleading)).results();
-
-        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(0).status());
-        assertEquals("WPF_RETRYABLE", results.get(0).code());
-        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(1).status());
-        assertEquals(WpfResultItemResponse.Status.RETRYABLE_ERROR, results.get(2).status());
-        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, results.get(3).status());
-        assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, results.get(4).status(), "메시지 문자열로 일시 장애를 추정하지 않음");
-        assertEquals("r-msg", results.get(4).resultId());
     }
 }

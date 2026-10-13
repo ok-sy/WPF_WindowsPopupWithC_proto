@@ -40,7 +40,7 @@ Zero 로그인 API 호출
     ↓
 Bearer Token 메모리 보관
     ↓
-팝업 목록 API 호출
+팝업 조회 API 호출 (팝업 1건 또는 null)
     ↓
 서버 JSON 수신
     ↓
@@ -60,10 +60,12 @@ PopupResultBuilder
     ↓
 PopupResultQueue
     ↓
-결과 API 전송
+결과 API 전송 (결과 1건)
+    ↓
+nextStatus=AVAILABLE이면 즉시 다음 조회, EMPTY면 조회 간격 대기
 ```
 
-SSO 조회와 로그인 API 호출은 별도 시작 단계가 아니라 **첫 `GET /p/api/wpf/popups` 를 보내기 직전**에
+SSO 조회와 로그인 API 호출은 별도 시작 단계가 아니라 **첫 `POST /p/api/wpf/popups` 를 보내기 직전**에
 `SsoAuthHeaderProvider.GetAuthorizationHeaderAsync()` 안에서 지연 실행된다(위 흐름도의 순서는 같다).
 
 WPF는 **누가 어떤 팝업을 봐야 하는지 판단하지 않는다.**
@@ -71,10 +73,10 @@ WPF는 **누가 어떤 팝업을 봐야 하는지 판단하지 않는다.**
 서버의:
 
 ```text
-GET /p/api/wpf/popups
+POST /p/api/wpf/popups
 ```
 
-응답이 이미 최종 표시 대상이므로, WPF는 받은 목록을 화면으로 변환해서 표시하는 역할에 집중한다.
+응답이 이미 서버가 고른 표시 대상 1건(`popup`, 없으면 `null`)이므로, WPF는 받은 팝업을 화면으로 변환해서 표시하는 역할에 집중한다([설계 35] 단건 순차 흐름).
 
 ---
 
@@ -453,17 +455,17 @@ OnUnauthorizedAsync(...)
 Popup/Services/PopupApiService.cs
 ```
 
-신규 WPF의 핵심 API는 두 개다.
+신규 WPF의 핵심 API는 두 개다([설계 35] 단건 조회·결과 1건 전송).
 
 ```text
-GET  /p/api/wpf/popups
-POST /p/api/wpf/popups/results
+POST /p/api/wpf/popups           (본문 {}, 응답 pollingIntervalSeconds + popup 1건 또는 null)
+POST /p/api/wpf/popups/results   (결과 1건, 응답 resultId·status·nextStatus)
 ```
 
-### 목록 조회
+### 팝업 조회
 
 ```csharp
-GetWpfPopupsAsync()
+GetNextPopupAsync()
 ```
 
 호출 흐름:
@@ -475,19 +477,19 @@ IAuthHeaderProvider.GetAuthorizationHeaderAsync()
 ↓
 Authorization: Bearer ...
 ↓
-GET /p/api/wpf/popups
+POST /p/api/wpf/popups
 ```
 
 ### 결과 전송
 
 ```csharp
-PostResultsAsync()
+PostResultAsync(WpfResultItemDto item)
 ```
 
 호출 흐름:
 
 ```text
-WpfResultRequestDto
+WpfResultItemDto (resultId·deliveryId·popupId·resultType …)
 ↓
 Authorization: Bearer ...
 ↓
@@ -526,8 +528,8 @@ OnUnauthorizedAsync()
 1회 재전송
 ```
 
-결과 POST의 경우 기존 `WpfResultRequestDto` 객체를 그대로 다시 직렬화하므로
-항목의 `resultId`는 바뀌지 않는다.
+결과 POST의 경우 기존 `WpfResultItemDto` 객체를 그대로 다시 직렬화하므로
+`resultId`·`deliveryId`는 바뀌지 않는다.
 
 ---
 
@@ -550,15 +552,16 @@ LoadAndShowAvailablePopupsAsync(...)
 순서:
 
 ```text
-1. PopupResultQueue.FlushAsync()
-2. GET /p/api/wpf/popups
-3. pollingIntervalSeconds 적용
-4. 같은 실행에서 이미 표시한 popupId 제거
+1. PopupResultQueue.FlushAsync()   — 미전송 결과를 순서대로 1건씩 전송. 미종결 결과가 남으면 조회하지 않고 복구 간격 뒤 재시도
+2. POST /p/api/wpf/popups          — popup 1건 또는 null
+3. pollingIntervalSeconds 적용      — 가장 최근 값
+4. popup=null이면 조회 간격 대기
 5. PopupService.CreatePopupOptions()
-6. PopupManager.ShowRange()
+6. PopupManager.ShowRange()        — 1건 표시
+7. 창 닫힘 → OnPopupFinished()     — 결과 전송 후 nextStatus로 다음 단계 결정
 ```
 
-팝업이 열려 있어도 조회한다. 같은 실행에서 이미 표시한 ID는 제외하고 새 팝업은 기존 표시 큐에 합류한다.
+[설계 35] 팝업이 표시 중이면 주기·수동 조회를 하지 않는다. 창이 닫혀 결과가 저장되면 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY면 가장 최근 조회 간격만큼 기다린다. `nextStatus`가 없으면(후보 확인 실패 등) 즉시 조회하며 `popup=null`은 정상 처리한다. REJECTED 결과는 종결이므로 다음 조회를 막지 않는다. 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 서버가 완료·재노출 유예로 판단하므로 삭제했다. 미전송 결과를 먼저 보내고 다음 조회를 미루는 동작은 주간회의 결정 전 임시 기준이다.
 
 ---
 
@@ -618,9 +621,10 @@ QUIZ
 
 ```text
 PopupId
+DeliveryId
 Title
 DisplayMode
-DisplayOrder
+DisplayOrder (서버 조회 응답에는 없음)
 ShowHeader
 ShowFooterButton
 ShowFooter
@@ -675,6 +679,8 @@ SEQUENTIAL
 → Closed
 → 다음 팝업 Show()
 ```
+
+[설계 35] API 모드에서는 서버 조회 결과 1건만 `ShowRange()`로 넘기므로 서버 팝업의 그룹화·동시 표시는 일어나지 않는다. 표시 순서는 서버가 `DISPLAY_ORDER`로 정렬해 정하며 조회 응답에는 `displayOrder`가 없다.
 
 Overlay도 이 클래스에서 관리한다.
 
@@ -757,7 +763,7 @@ VIDEO_WATCHED
 ```text
 제출
 → 필수 응답 검증 (WPF 즉시)
-→ QUIZ 채점: QuizGrader (WPF 즉시, 정답 키·배점·통과 점수는 서버 목록 응답에 포함)
+→ QUIZ 채점: QuizGrader (WPF 즉시, 정답 키·배점·통과 점수는 서버 조회 응답 popup에 포함)
 → 통과: SUBMITTED (score/passed 포함) → 안내 → 닫기
 → 미통과: 안내만 하고 창 유지 → 답안 수정 → 다시 "제출" (통과할 때까지 SUBMITTED 결과 없음)
 ```
@@ -798,17 +804,17 @@ Enqueue()  → pending-results.json 저장 (동기 — 이 뒤엔 유실되지 �
 ↓
 창 닫기 (서버 응답을 기다리지 않음)
 ↓
-FlushInBackground() → POST /p/api/wpf/popups/results
+FlushAsync() → POST /p/api/wpf/popups/results (저장 순서대로 1건씩)
 ↓
-항목 status가 ACCEPTED / DUPLICATE / REJECTED(종결)
+status가 ACCEPTED / DUPLICATE / REJECTED(종결)
 ↓
-파일에서 제거 (RETRYABLE_ERROR·INTERNAL_ERROR·응답 누락은 보관 후 같은 resultId로 재전송)
+파일에서 제거 (RETRYABLE_ERROR·INTERNAL_ERROR·응답 누락은 보관 후 같은 resultId로 재전송하고, 그동안 다음 조회를 미룸)
 ```
 
 [설계 34] 파일은 임시 파일에 쓴 뒤 교체하고, 읽을 수 없는 파일은 `pending-results.corrupt-시각.json`으로 보존한다.
 이미 확정되어 파일에 있던 항목의 재기록 실패와 앱 종료 중 결과만 이번 실행 동안 메모리에 보관했다가 다시 기록·전송한다. 새 결과의 저장 실패는 큐에 남기지 않는다(창 유지 후 다음 닫기·제출 때 다시 저장).
 INTERNAL_ERROR 항목은 실행당 3회까지만 재시도하며(임시값) 횟수를 소진해도 삭제하지 않는다.
-HTTP 400이면 batch를 나눠 원인 항목을 좁히고, 단독으로도 400인 항목만 이번 실행에서 제외해 뒤의 결과 전송을 막지 않는다.
+HTTP 400인 결과는 이번 실행에서 제외(파일 보관)해 뒤의 결과 전송과 조회를 막지 않는다. [설계 35] 배열·일괄 재전송은 없으며 결과 1건씩 순서대로 보낸다(임시 기준).
 손상 파일을 보존(이동)하지 못하면 파일을 덮어쓰지 않고 저장 실패로 알린다. 일반 닫기에서 저장에 실패하면 안내 후 창을 닫지 않으며, 그 결과는 큐에 남기지 않아 전송되지 않는다(다음 닫기 때 최종 상태로 다시 생성·저장). 앱 종료 중에만 메모리에 남겨 종료 직전 전송을 시도한다.
 
 서버가 426(클라이언트 버전 미지원, [설계 13])을 주면 전송을 멈추고 항목을 보존한다. 업데이트된 버전에서 재전송된다.
@@ -851,31 +857,31 @@ Popup/MainWindow.xaml.cs
 PollingIntervalSeconds
 ```
 
-지만 서버의 목록 응답에:
+지만 서버의 조회 응답에:
 
 ```text
 pollingIntervalSeconds
 ```
 
-가 양수이면 서버 값이 우선한다. 서버 설정과 WPF 로컬 fallback은 모두 1800~3600초(30~60분)로 제한한다. `Stopwatch` 경과시간으로 기동 기준 조회 경계를 유지하므로 PC 시각 변경이나 응답 지연이 주기를 밀지 않는다. 기본 `AutoLoadOnStartup=true`로 로그인 직후 최초 목록을 조회한다.
+가 양수이면 서버 값이 우선한다(매 응답의 가장 최근 값). 서버 설정과 WPF 로컬 fallback은 모두 1800~3600초(30~60분)로 제한한다. [설계 35] 대기는 기동 시점 기준 경계가 아니라 빈 조회(`popup=null`)·EMPTY 응답 시점부터 그 간격만큼 센다. 팝업 표시 중에는 타이머를 걸지 않는다. 기본 `AutoLoadOnStartup=true`로 로그인 직후 최초 조회한다.
 
 흐름:
 
 ```text
 Timer Tick
 ↓
-조회가 이미 진행 중인가?
- ├─ Yes → 중복 조회 생략
- └─ No → Flush pending results
+조회 진행 중이거나 팝업 표시 중인가?
+ ├─ Yes → 조회 생략
+ └─ No → Flush pending results (미종결 결과가 남으면 조회 보류·복구 간격 뒤 재시도)
             ↓
-          GET /p/api/wpf/popups
+          POST /p/api/wpf/popups
             ↓
-          이미 표시한 ID 제외 → 새 팝업 표시 큐에 합류
+          popup 있음 → 1건 표시 / null → 조회 간격 대기
 ```
 
 ---
 
-조회 실패가 DNS/연결 오류·Timeout·500/502/503/504이면 같은 타이머로 10초 간격 3회씩 5사이클 복구한다. 사이클 사이에는 30분 휴식 후 첫 10초를 기다린다. 이후 계속 실패하면 60분 간격으로 확인한다. 성공하면 복구 횟수를 초기화하고 서버 최신 주기를 기존 기동 기준으로 적용한다. 400/403과 재인증 후에도 실패한 401은 복구 대상에서 제외한다.
+조회 실패가 DNS/연결 오류·Timeout·500/502/503/504이면 같은 타이머로 10초 간격 3회씩 5사이클 복구한다. 사이클 사이에는 30분 휴식 후 첫 10초를 기다린다. 이후 계속 실패하면 60분 간격으로 확인한다. 성공하면 복구 횟수를 초기화하고 응답의 최신 주기를 적용한다. 미전송 결과 때문에 조회를 보류한 경우도 같은 복구 간격으로 재시도한다. 400/403과 재인증 후에도 실패한 401은 복구 대상에서 제외한다.
 
 `PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE 일반 모드도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
 
@@ -922,7 +928,7 @@ SsoClient.cs
 
 ```text
 MainWindow.LoadAndShowAvailablePopupsAsync()
-→ PopupApiService.GetWpfPopupsAsync()
+→ PopupApiService.GetNextPopupAsync()
 → PopupService.CreatePopupOptions()
 → PopupFactory.Create()
 ```
@@ -941,7 +947,7 @@ PopupManager.ShowRange()
 PopupManager.AttachResultCollection()
 → PopupResultBuilder
 → PopupResultQueue
-→ PopupApiService.PostResultsAsync()
+→ PopupApiService.PostResultAsync()
 ```
 
 이 다섯 흐름을 따로 보면 전체 코드가 훨씬 읽기 쉽다.
@@ -1018,7 +1024,7 @@ URL은 WebView2CompositionControl을 사용해 WPF 컨트롤이 영상 위에 �
 
 ## Demo 관리 화면
 
-Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기 샘플을 선택해 `선택한 샘플 실행`으로 열거나 `옵션 설정`으로 옵션을 편집한다. `전체 실행`은 데모 목록 조회 흐름으로 숨김·완료되지 않은 샘플을 모두 표시한다. 설정창은 공통 창·콘텐츠·문항/선택지를 구분하며 창 크기/위치·표시 영역·숨김 일수·완료 조건·배경/폰트, 텍스트 문구, 이미지 크기/비율, 영상 재생, 문항 문구/배치/필수 여부·배점/정답 등을 편집한다. 설정은 샘플별 다음 실행과 데모 결과 검증에 함께 적용되며 앱 종료 시 초기화된다. 선택한 옵션 기본값 복원은 해당 샘플만 되돌리고, 상단 상태 초기화는 숨김/완료 상태를 지우되 편집한 옵션을 유지한다.
+Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기 샘플을 선택해 `선택한 샘플 실행`으로 열거나 `옵션 설정`으로 옵션을 편집한다. `전체 실행`은 데모 단건 조회 흐름으로 숨김·완료·재노출 유예되지 않은 샘플을 1건씩 표시하고, 결과 저장 응답이 AVAILABLE이면 다음 1건을 이어서 표시한다. 설정창은 공통 창·콘텐츠·문항/선택지를 구분하며 창 크기/위치·표시 영역·숨김 일수·완료 조건·배경/폰트, 텍스트 문구, 이미지 크기/비율, 영상 재생, 문항 문구/배치/필수 여부·배점/정답 등을 편집한다. 설정은 샘플별 다음 실행과 데모 결과 검증에 함께 적용되며 앱 종료 시 초기화된다. 선택한 옵션 기본값 복원은 해당 샘플만 되돌리고, 상단 상태 초기화는 숨김·완료·재노출 유예·전달 건 상태를 지우되 편집한 옵션을 유지한다.
 
 오른쪽 결과 로그를 선택하면 해당 결과의 Request·Response JSON이 들여쓰기된 읽기 전용 텍스트로 표시되며, 각 탭의 복사 버튼 또는 텍스트 선택·Ctrl+C로 복사할 수 있다. 로그 지우기는 로그·상세 JSON·점수 표시를 지우며 숨김/완료 상태는 유지한다.
 

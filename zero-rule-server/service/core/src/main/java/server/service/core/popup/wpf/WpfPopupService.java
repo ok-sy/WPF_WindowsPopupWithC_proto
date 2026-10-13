@@ -2,6 +2,7 @@ package server.service.core.popup.wpf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +11,8 @@ import server.domain.popup.PopupEntity;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
 import server.domain.popup.wpf.WpfPopupItem;
-import server.domain.popup.wpf.WpfPopupListResponse;
+import server.domain.popup.wpf.WpfNextPopupResponse;
+import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfResultResponse;
@@ -20,10 +22,8 @@ import server.service.core.popup.PopupService;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 신규 WPF API(/p/api/wpf/**)의 업무 진입점: 최종 팝업 목록 조립과 결과 항목 일괄 처리.
@@ -71,80 +71,108 @@ public class WpfPopupService {
     }
 
     /**
-     * 사용자에게 지금 표시해야 할 최종 팝업 목록. 완료 팝업까지 SQL에서 제외한다.
-     * 문항은 템플릿 ID를 모아 한 번에 조회한다(팝업마다 문항 쿼리를 반복하지 않음).
+     * [설계 35] 지금 표시할 팝업 최대 1건과 전달 건 ID. 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)은 SQL에서 끝낸다.
      *
-     * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ 팝업은 정답 키(선택지 isCorrect·서술형 correctAnswer/answerMatchMode)와
-     * 통과 점수(passingScore)를 포함해 내려준다. WPF가 제출 즉시 점수·통과 여부를 판정하기 위해서다.
-     * SURVEY 등 QUIZ가 아닌 팝업의 문항은 기준 3과 같이 정답 없는 형태({@link WpfPopupItem#withoutAnswerKey})다.
-     * 문항 조회는 정답 포함 1회만 하고 팝업 유형별로 가공한다(쿼리 추가 없음).</p>
+     * <ol>
+     *   <li>사용자의 OPEN 전달 건이 있고 그 팝업이 아직 노출 대상이면 같은 deliveryId로 다시 준다(조회 응답 유실 복구).</li>
+     *   <li>OPEN 건의 팝업이 더 이상 대상이 아니면(게시 중단·기간 만료 등) EXPIRED로 닫고 새로 고른다.</li>
+     *   <li>새 건은 서버 정렬(DISPLAY_ORDER, CREATED_AT, POPUP_ID) 첫 팝업으로 만든다. 동시 조회로 OPEN 건이 먼저 생기면
+     *       (유니크 인덱스 위반) 그 건을 재사용한다.</li>
+     * </ol>
+     * 전달 자체는 읽음·완료로 처리하지 않는다. 문항은 고른 팝업 1건만 읽는다.
+     *
+     * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ는 정답 키·통과 점수를 포함하고, 그 밖의 유형은 정답 키를 뺀다.</p>
      */
-    @Transactional(readOnly = true)
-    public WpfPopupListResponse getPopupsForUser(String employeeNo) {
+    @Transactional
+    public WpfNextPopupResponse getNextPopup(String employeeNo) {
         requireActiveUser(employeeNo);
         String userId = employeeNo.trim();
+        List<PopupEntity> eligible = popupMapper.selectAvailablePopups(userId, true);
 
-        List<PopupEntity> popups = popupMapper.selectAvailablePopups(userId, true);
-        List<Long> templateIds = popups.stream()
-                .map(PopupEntity::questionTemplateId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        Map<Long, List<PopupQuestionDto>> questionsByTemplate = popupService.loadQuestionsWithAnswerKey(templateIds);
+        PopupEntity chosen = null;
+        String deliveryId = null;
+        WpfPopupDelivery open = wpfMapper.selectOpenDelivery(userId);
+        if (open != null) {
+            chosen = find(eligible, open.popupId());
+            if (chosen != null) {
+                deliveryId = open.deliveryId();
+            } else {
+                wpfMapper.expireDelivery(open.deliveryId());
+            }
+        }
+        if (chosen == null && !eligible.isEmpty()) {
+            chosen = eligible.get(0);
+            deliveryId = UUID.randomUUID().toString();
+            try {
+                wpfMapper.insertDelivery(deliveryId, userId, chosen.popupId());
+            } catch (DuplicateKeyException concurrent) {
+                WpfPopupDelivery other = wpfMapper.selectOpenDelivery(userId);
+                chosen = other == null ? null : find(eligible, other.popupId());
+                deliveryId = chosen == null ? null : other.deliveryId();
+            }
+        }
+        return new WpfNextPopupResponse(props.getPollingIntervalSeconds(),
+                chosen == null ? null : toItem(chosen).withDeliveryId(deliveryId));
+    }
 
-        List<WpfPopupItem> items = popups.stream()
-                .map(popup -> {
-                    boolean quiz = "QUIZ".equalsIgnoreCase(popup.popupType());
-                    List<PopupQuestionDto> questions = popup.questionTemplateId() == null
-                            ? List.of()
-                            : questionsByTemplate.getOrDefault(popup.questionTemplateId(), List.of());
-                    if (!quiz) {
-                        questions = WpfPopupItem.withoutAnswerKey(questions);
-                    }
-                    PopupResponseDto dto = popupService.toPublicResponseDto(popup, questions);
-                    return WpfPopupItem.from(dto, quiz);
-                })
-                .toList();
+    private static PopupEntity find(List<PopupEntity> popups, String popupId) {
+        return popups.stream().filter(p -> p.popupId().equals(popupId)).findFirst().orElse(null);
+    }
 
-        return new WpfPopupListResponse(OffsetDateTime.now(KST), userId, props.getPollingIntervalSeconds(), items);
+    private WpfPopupItem toItem(PopupEntity popup) {
+        boolean quiz = "QUIZ".equalsIgnoreCase(popup.popupType());
+        List<PopupQuestionDto> questions = popup.questionTemplateId() == null
+                ? List.of()
+                : popupService.loadQuestionsWithAnswerKey(List.of(popup.questionTemplateId()))
+                        .getOrDefault(popup.questionTemplateId(), List.of());
+        if (!quiz) {
+            questions = WpfPopupItem.withoutAnswerKey(questions);
+        }
+        return WpfPopupItem.from(popupService.toPublicResponseDto(popup, questions), quiz);
     }
 
     /**
-     * 결과 항목을 순서대로 처리한다. 항목마다 REQUIRES_NEW 트랜잭션이며 한 항목의 실패는 REJECTED 응답으로만 남는다.
-     * 이 메서드 자체는 트랜잭션이 아니다(항목 간 격리 목적).
+     * [설계 35] 결과 1건 처리 후 후속 후보 유무(nextStatus)를 돌려준다. 결과 처리는 REQUIRES_NEW 트랜잭션이며
+     * 이 메서드 자체는 트랜잭션이 아니다(후보 확인이 저장 커밋 후 상태를 보도록).
      *
      * <ul>
-     *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·문항 불일치 등) → REJECTED + 메시지(영구, WPF 큐에서 제거)</li>
-     *   <li>[설계 34-19] 확인된 일시 장애(DB 연결 실패·데드락·잠금 대기·타임아웃 등, 예외 형식으로 분류) → RETRYABLE_ERROR</li>
-     *   <li>[설계 34-19] 그 밖의 RuntimeException(원인 미확정) → INTERNAL_ERROR. 무조건 REJECTED로 돌려주지 않는다</li>
+     *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·전달 건 불일치·문항 불일치 등) → REJECTED + 코드(영구)</li>
+     *   <li>[설계 34-19] 확인된 일시 장애 → RETRYABLE_ERROR, 그 밖의 RuntimeException → INTERNAL_ERROR</li>
+     *   <li>ACCEPTED·DUPLICATE: 저장 후 노출 후보(완료·숨김·재노출 유예 제외)가 있으면 AVAILABLE, 없으면 EMPTY.
+     *       후보 확인이 실패하면 EMPTY로 바꾸지 않고 nextStatus를 생략하며 code=WPF_NEXT_STATUS_UNKNOWN을 준다.
+     *       방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.</li>
+     *   <li>거절·실패에는 nextStatus가 없다(다음 조회를 자동 진행하지 않음).</li>
      * </ul>
-     * 항목 처리와 영수증(WPF_RESULT_RECEIPT)은 같은 REQUIRES_NEW 트랜잭션이라 실패 항목은 롤백된 뒤 상태를 응답하며,
-     * WPF가 같은 resultId로 재전송하면 다시 처리된다. 분류는 예외 형식으로만 하고 메시지 문자열로 판단하지 않는다.
      */
-    public WpfResultResponse processResults(String employeeNo, List<WpfResultCommand> items) {
+    public WpfResultResponse processResult(String employeeNo, WpfResultCommand item) {
         requireActiveUser(employeeNo);
         String userId = employeeNo.trim();
 
-        List<WpfResultItemResponse> results = new ArrayList<>(items.size());
-        for (WpfResultCommand item : items) {
-            try {
-                results.add(resultProcessor.processOne(userId, item));
-            } catch (IllegalArgumentException ex) {
-                results.add(WpfResultItemResponse.rejected(item, codeOf(item, ex), ex.getMessage()));
-            } catch (RuntimeException ex) {
-                boolean retryable = isTransientFailure(ex);
-                log.error("WPF 결과 항목 처리 실패({}) userId={} popupId={} resultId={} type={}",
-                        retryable ? "일시 장애" : "미확정 오류", userId, item.popupId(), item.resultId(), item.resultType(), ex);
-                results.add(retryable
-                        ? WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.RETRYABLE_ERROR,
-                                "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
-                        : WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.INTERNAL_ERROR,
-                                "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
-            }
+        WpfResultItemResponse processed;
+        try {
+            processed = resultProcessor.processOne(userId, item);
+        } catch (IllegalArgumentException ex) {
+            return WpfResultResponse.of(WpfResultItemResponse.rejected(item, codeOf(item, ex), ex.getMessage()), null);
+        } catch (RuntimeException ex) {
+            boolean retryable = isTransientFailure(ex);
+            log.error("WPF 결과 처리 실패({}) userId={} popupId={} resultId={} type={}",
+                    retryable ? "일시 장애" : "미확정 오류", userId, item.popupId(), item.resultId(), item.resultType(), ex);
+            return WpfResultResponse.of(retryable
+                    ? WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.RETRYABLE_ERROR,
+                            "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
+                    : WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.INTERNAL_ERROR,
+                            "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."), null);
         }
-        return new WpfResultResponse(results);
+        try {
+            boolean available = popupMapper.countAvailablePopups(userId, true) > 0;
+            return WpfResultResponse.of(processed,
+                    available ? WpfResultResponse.NextStatus.AVAILABLE : WpfResultResponse.NextStatus.EMPTY);
+        } catch (RuntimeException ex) {
+            log.error("WPF 후속 후보 확인 실패(결과는 저장됨) userId={} resultId={}", userId, item.resultId(), ex);
+            return new WpfResultResponse(processed.resultId(), processed.status(), null,
+                    "WPF_NEXT_STATUS_UNKNOWN", "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.");
+        }
     }
-
     /**
      * [설계 34-19] 재시도하면 성공할 수 있는 일시 장애인지 예외 형식(원인 체인 포함)으로 판단한다.
      * Spring 일시 장애 계열(TransientDataAccessException: 데드락·잠금 대기·쿼리 타임아웃 등), 복구 가능 오류,
@@ -184,6 +212,12 @@ public class WpfPopupService {
         if (message.contains("제출 가능한 팝업이 아닙니다") || message.contains("유효한 영상 팝업이 아닙니다")
                 || message.contains("유효한 사용자 또는 팝업이 아닙니다")) {
             return "WPF_NOT_ELIGIBLE";
+        }
+        if (message.contains("이미 결과가 저장된 전달 건")) {
+            return "WPF_DELIVERY_COMPLETED";
+        }
+        if (message.contains("전달 건")) {
+            return "WPF_INVALID_DELIVERY";
         }
         if (message.contains("설문형 팝업만")) {
             return "WPF_TYPE_MISMATCH";

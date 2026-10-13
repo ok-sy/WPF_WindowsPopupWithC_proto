@@ -1,207 +1,40 @@
 {
-  "_comment": "GET /p/api/wpf/popups 응답 예시 (WPF2-01). 가상 데이터. 사용자 E1001, 02_popup_sample_oracle.sql 기준. 요청 공통 헤더: Authorization: Bearer <token>, X-Client-Version: 1.0.0 (설계 13).",
-  "serverTime": "2026-09-19T09:00:00+09:00",
-  "userId": "E1001",
+  "_comment": "[설계 35] POST /p/api/wpf/popups 응답 예시 (WPF2-01). 요청 본문은 {}. 가상 데이터. 사용자 E1001, 02_popup_sample_oracle.sql 기준. 서버가 표시 순서상 첫 1건만 popup으로 내려주며 deliveryId는 결과 요청에 그대로 보낸다. 표시 대상이 없으면 \"popup\": null. 요청 공통 헤더: Authorization: Bearer <token>, X-Client-Version: 1.0.0 (설계 13).",
   "pollingIntervalSeconds": 1800,
-  "popups": [
-    {
-      "popupId": "SAMPLE-TEXT-001",
-      "popupType": "TEXT",
-      "title": "9월 시스템 점검 안내",
-      "displayMode": "SEQUENTIAL",
-      "displayOrder": 10,
-      "sizeMode": "FIXED",
-      "width": 560,
-      "height": 420,
-      "widthRatio": 0.7,
-      "heightRatio": 0.75,
-      "minimumWidth": 480,
-      "minimumHeight": 320,
-      "maximumWidth": 1200,
-      "maximumHeight": 900,
-      "showHeader": true,
-      "showFooterButton": true,
-      "showFooter": true,
-      "footerAction": "CLOSE",
-      "useBackgroundOverlay": true,
-      "backgroundOverlayOpacity": 0.45,
-      "popupPosition": "CENTER",
-      "showDoNotShowAgain": true,
-      "hideDays": 7,
-      "allowCloseBeforeComplete": true,
-      "questions": [],
-      "content": {
-        "plainText": "서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
-        "showPlainText": true,
-        "highlightText": "작업 중인 내용을 저장해 주세요.",
-        "showHighlight": true,
-        "bottomDescription": "자세히 보기",
-        "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
-        "showBottomDescription": true
-      }
-    },
-    {
-      "popupId": "SAMPLE-VIDEO-002",
-      "popupType": "VIDEO",
-      "title": "정보보호 교육 영상",
-      "displayMode": "SEQUENTIAL",
-      "displayOrder": 20,
-      "sizeMode": "FIXED",
-      "width": 960,
-      "height": 600,
-      "widthRatio": 0.8,
-      "heightRatio": 0.8,
-      "minimumWidth": 640,
-      "minimumHeight": 400,
-      "maximumWidth": 1600,
-      "maximumHeight": 1000,
-      "showHeader": true,
-      "showFooterButton": true,
-      "showFooter": true,
-      "footerAction": "CLOSE",
-      "useBackgroundOverlay": true,
-      "backgroundOverlayOpacity": 0.6,
-      "popupPosition": "CENTER",
-      "showDoNotShowAgain": false,
-      "allowCloseBeforeComplete": false,
-      "completionRatio": 0.9,
-      "questions": [],
-      "content": {
-        "videoTitle": "정보보호 교육",
-        "description": "영상을 끝까지 시청해 주세요.",
-        "videoUrl": "http://localhost:8080/zero-rule-server/p/api/popups/video?path=sample.mp4",
-        "showDescription": true,
-        "showControls": true,
-        "allowFullScreen": true,
-        "allowPlaybackRateChange": false,
-        "autoPlay": true,
-        "isLoop": false,
-        "defaultVolume": 0.7
-      }
-    },
-    {
-      "popupId": "SAMPLE-QUIZ-003",
-      "popupType": "QUIZ",
-      "title": "보안 교육 확인 퀴즈",
-      "displayMode": "SEQUENTIAL",
-      "displayOrder": 30,
-      "sizeMode": "FIXED",
-      "width": 600,
-      "height": 480,
-      "widthRatio": 0.7,
-      "heightRatio": 0.75,
-      "minimumWidth": 480,
-      "minimumHeight": 320,
-      "maximumWidth": 1200,
-      "maximumHeight": 900,
-      "showHeader": true,
-      "showFooterButton": true,
-      "showFooter": true,
-      "footerAction": "SUBMIT",
-      "useBackgroundOverlay": true,
-      "backgroundOverlayOpacity": 0.45,
-      "popupPosition": "CENTER",
-      "headerFontSize": 18,
-      "bodyFontSize": 14,
-      "footerFontSize": 13,
-      "showDoNotShowAgain": false,
-      "allowCloseBeforeComplete": true,
-      "passingScore": 10,
-      "_comment": "[설계 12] QUIZ만 passingScore·정답 키(options[].isCorrect / correctAnswer / answerMatchMode)를 내려준다. WPF가 제출 즉시 로컬 채점한다. SURVEY에는 없다. [설계 14·31] 최상위 headerFontSize/bodyFontSize/footerFontSize는 관리자 폰트 크기(10~40, 없으면 기본 크기).",
-      "questions": [
-        {
-          "questionId": 1,
-          "title": "보안 교육 내용을 확인했습니까?",
-          "description": "한 개를 선택하세요.",
-          "questionType": "SINGLE_CHOICE",
-          "isRequired": true,
-          "isScored": true,
-          "questionScore": 10,
-          "sortOrder": 1,
-          "options": [
-            {
-              "optionId": 1,
-              "value": "YES",
-              "text": "예",
-              "sortOrder": 1,
-              "isCorrect": true
-            },
-            {
-              "optionId": 2,
-              "value": "NO",
-              "text": "아니요",
-              "sortOrder": 2,
-              "isCorrect": false
-            }
-          ]
-        }
-      ],
-      "content": {
-        "surveyTitle": "보안 교육 확인",
-        "description": "문항에 응답해 주세요."
-      }
-    },
-    {
-      "popupId": "SAMPLE-SURVEY-004",
-      "popupType": "SURVEY",
-      "title": "사무환경 설문",
-      "displayMode": "SEQUENTIAL",
-      "displayOrder": 40,
-      "sizeMode": "FIXED",
-      "width": 600,
-      "height": 520,
-      "widthRatio": 0.7,
-      "heightRatio": 0.75,
-      "minimumWidth": 480,
-      "minimumHeight": 320,
-      "maximumWidth": 1200,
-      "maximumHeight": 900,
-      "showHeader": true,
-      "showFooterButton": true,
-      "showFooter": true,
-      "footerAction": "SUBMIT",
-      "useBackgroundOverlay": false,
-      "backgroundOverlayOpacity": 0.45,
-      "popupPosition": "CENTER",
-      "showDoNotShowAgain": false,
-      "allowCloseBeforeComplete": true,
-      "questions": [
-        {
-          "questionId": 2,
-          "title": "개선이 필요한 항목을 모두 선택하세요.",
-          "questionType": "MULTIPLE_CHOICE",
-          "isRequired": true,
-          "isScored": false,
-          "sortOrder": 1,
-          "options": [
-            {
-              "optionId": 3,
-              "value": "CHAIR",
-              "text": "의자",
-              "sortOrder": 1
-            },
-            {
-              "optionId": 4,
-              "value": "MONITOR",
-              "text": "모니터",
-              "sortOrder": 2
-            }
-          ]
-        },
-        {
-          "questionId": 3,
-          "title": "기타 의견",
-          "questionType": "TEXT",
-          "isRequired": false,
-          "isScored": false,
-          "sortOrder": 2,
-          "options": []
-        }
-      ],
-      "content": {
-        "surveyTitle": "사무환경 설문",
-        "description": "의견을 남겨 주세요."
-      }
+  "popup": {
+    "deliveryId": "6b1d2c3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+    "popupId": "SAMPLE-TEXT-001",
+    "popupType": "TEXT",
+    "title": "9월 시스템 점검 안내",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 560,
+    "height": 420,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 480,
+    "minimumHeight": 320,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "CLOSE",
+    "useBackgroundOverlay": true,
+    "backgroundOverlayOpacity": 0.45,
+    "popupPosition": "CENTER",
+    "showDoNotShowAgain": true,
+    "hideDays": 7,
+    "allowCloseBeforeComplete": true,
+    "questions": [],
+    "content": {
+      "plainText": "서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
+      "showPlainText": true,
+      "highlightText": "작업 중인 내용을 저장해 주세요.",
+      "showHighlight": true,
+      "bottomDescription": "자세히 보기",
+      "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
+      "showBottomDescription": true
     }
-  ]
+  }
 }

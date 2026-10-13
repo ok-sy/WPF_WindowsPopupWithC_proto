@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
+- 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
 - 3.7 변경(2026-10-13, 설계 37): TEXT content에서 `contentTitle`·`description`·`showContentHeader` 제거. 콘텐츠 제목·설명은 서식 본문 `textBlocks`의 앞 문단으로 작성하며 `plainText`도 같은 순서의 일반 문자열이다. 서버는 TEXT 저장 시 받은 제목·설명을 사용하지 않고, 통합 전 저장 데이터는 조회 시 본문 앞 문단으로 합쳐 보낸다(제목 문단: 굵게·크기 24, `showContentHeader=false`였던 행은 제외). WPF는 TEXT content의 세 키를 읽지 않는다. IMAGE·VIDEO·SURVEY·QUIZ의 제목·설명과 공통 `title`은 변경 없음.
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
 - 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 ROOT `receivedAt`과 `popupStatus`·`completed`·`completedAt`·`responseId` 제거(WPF·로그 미사용). 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
@@ -37,7 +38,7 @@
 
 ### 1.1 백엔드 책임
 
-백엔드는 다음을 끝낸 **최종 표시 대상 목록**만 WPF에 내려준다.
+백엔드는 다음을 끝낸 표시 대상 중 **순서상 첫 1건**만 WPF에 내려준다(설계 35).
 
 - 사용자 식별
 - 팝업 활성 여부
@@ -45,23 +46,26 @@
 - 사용자/부서/직급 등 대상 조건
 - 숨김 기간
 - 이미 완료된 팝업 제외 정책
+- 미완료 결과의 재노출 유예(§10.8)
+- 표시 순서 정렬(관리자 표시 순서 `displayOrder` 기준)과 전달 건(`deliveryId`) 관리
+- 결과 저장 후 다음 후보 유무(`nextStatus`) 판정
 - 기타 서버 측 업무 정책
 
 WPF에 전체 팝업을 내려준 뒤 대상 여부를 다시 판단하게 하지 않는다.
 
 ### 1.2 WPF 책임
 
-WPF는 서버가 내려준 최종 목록을 받아 다음을 수행한다.
+WPF는 서버가 내려준 팝업 1건을 받아 다음을 수행한다.
 
 - 팝업 화면 렌더링
-- 표시 우선순위 및 순차/동시 표시
+- 한 번에 1건 표시, 결과 처리 후 `nextStatus`에 따른 다음 조회
 - 창 위치·크기 최종 보정
 - SURVEY 필수 응답 확인
 - QUIZ 로컬 채점
 - VIDEO 완료 비율 로컬 판정
 - 닫기/숨김/제출/영상 결과 생성
 - 결과를 로컬 파일에 먼저 저장
-- 서버 결과 API 비동기 전송 및 재전송
+- 결과 API 단건 순차 전송 및 재전송
 
 ### 1.3 서버 구현 자유 영역
 
@@ -85,9 +89,9 @@ WPF는 서버가 내려준 최종 목록을 받아 다음을 수행한다.
 | 날짜/시간 | ISO 8601 문자열 권장. 예: `2026-09-28T15:30:00+09:00` |
 | Boolean | `true` / `false` |
 | null/생략 | 선택 필드는 생략 가능. null은 nullable로 명시한 필드만 허용. 필수 필드는 반드시 제공(6.4 참고) |
-| 사용자 ID | 목록/결과 API 요청 JSON에는 userId를 넣지 않음. 인증 정보로 서버가 식별 |
+| 사용자 ID | 조회/결과 API 요청 JSON에는 userId를 넣지 않음. 인증 정보로 서버가 식별 |
 | HTTP timeout | WPF HTTP 호출은 현재 10초 |
-| 목록 없음 | 오류가 아니라 `popups: []` 반환 |
+| 표시 대상 없음 | 오류가 아니라 `popup: null` 반환 |
 
 C# 역직렬화는 대소문자를 구분하지 않지만, 신규 백엔드는 문서의 camelCase 이름을 그대로 사용하는 것을 기준으로 한다.
 
@@ -98,8 +102,8 @@ C# 역직렬화는 대소문자를 구분하지 않지만, 신규 백엔드는 �
 | ID | 기능 | Method | 기본 경로 |
 |---|---|---|---|
 | WPF-00 | 로그인/토큰 발급 | POST | `/api/wpf/auth/login` |
-| WPF-01 | 표시 대상 팝업 조회 | GET | `/api/wpf/popups` |
-| WPF-02 | 팝업 처리 결과 일괄 전송 | POST | `/api/wpf/popups/results` |
+| WPF-01 | 표시 대상 팝업 1건 조회 | POST | `/api/wpf/popups` |
+| WPF-02 | 팝업 처리 결과 1건 전송 | POST | `/api/wpf/popups/results` |
 
 실제 전체 URL은 WPF의 `PopupApi.BaseUrl` 뒤에 위 경로를 붙여 사용한다.
 
@@ -107,10 +111,12 @@ C# 역직렬화는 대소문자를 구분하지 않지만, 신규 백엔드는 �
 
 ```text
 BaseUrl = https://example.company/popup-api
-GET https://example.company/popup-api/api/wpf/popups
+POST https://example.company/popup-api/api/wpf/popups
 ```
 
 로그인 경로는 현재 C# 설정의 `Auth.LoginPath`로 교체 가능하며, 미설정 시 `/api/wpf/auth/login`을 사용한다.
+
+정상 호출 순서는 로그인 → 조회 → 팝업 1건 표시·사용자 처리 → 결과 1건 전송 → (nextStatus에 따라) 조회다(§6.2). 결과 수신 API가 결과 저장을 맡으며 별도 저장 API는 없다. 이전 목록 조회(`GET`, `popups[]`)와 결과 일괄 전송(`results[]` 1~50건)은 설계 35에서 삭제했으며 구버전 클라이언트와 호환하지 않는다.
 
 ---
 
@@ -118,7 +124,7 @@ GET https://example.company/popup-api/api/wpf/popups
 
 ### 4.1 X-Client-Version
 
-현재 C#은 로그인, 목록 조회, 결과 전송에 다음 헤더를 보낸다.
+현재 C#은 로그인, 조회, 결과 전송에 다음 헤더를 보낸다.
 
 ```http
 X-Client-Version: 1.0.0
@@ -136,7 +142,7 @@ X-Client-Version: 1.0.0
 Authorization: Bearer <accessToken>
 ```
 
-형태로 목록/결과 API에 전달한다.
+형태로 조회/결과 API에 전달한다.
 
 현재 C#의 SSO 프로토타입 인증 흐름은 다음과 같다.
 
@@ -145,7 +151,7 @@ Authorization: Bearer <accessToken>
 → 사내 SSO에서 logonId / classCode 확보
 → 로그인 API 호출
 → accessToken 메모리 저장
-→ 목록/결과 API에 Bearer 토큰 전달
+→ 조회/결과 API에 Bearer 토큰 전달
 
 401 발생
 → 기존 SSO 사용자 정보로 로그인 API 재호출
@@ -203,48 +209,75 @@ X-Client-Version: 1.0.0
 ## 6.1 Request
 
 ```http
-GET /api/wpf/popups
+POST /api/wpf/popups
+Content-Type: application/json
 Authorization: Bearer <token>
 X-Client-Version: 1.0.0
 ```
 
+```json
+{}
+```
+
 - Query String 없음
-- Request Body 없음
-- userId 없음
+- Request Body는 빈 객체 `{}`(본문 생략도 허용). 서버는 본문 내용을 사용하지 않는다
+- userId 없음. 사용자는 인증 정보로 식별한다
+- 조회가 전달 건(`deliveryId`)을 만들거나 재사용하므로 POST를 사용한다
 
 ## 6.2 Response Envelope
 
 ```json
 {
-  "serverTime": "2026-09-28T15:30:00+09:00",
-  "userId": "E1001",
   "pollingIntervalSeconds": 1800,
-  "popups": []
+  "popup": null
 }
 ```
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| serverTime | string(ISO) | 선택 | `null` | 서버 기준 시각. 진단용(로그·PC 시각 차이 확인)이며 WPF는 표시 대상·조회 주기 판단에 쓰지 않음 |
-| userId | string | 선택 | `""` | 인증 정보에서 식별된 사용자. 진단용이며 WPF는 표시·판정·결과 생성에 쓰지 않음. 요청에는 보내지 않음 |
-| pollingIntervalSeconds | integer | 선택 | `0` | 서버 설정이 소유하는 1800~3600초(30~60분) 주기. 0 이하면 범위 제한된 WPF 로컬 설정 유지. 기동 시점 기준 반복 조회 |
-| popups | array | O | `[]` | 표시 대상 팝업. 없으면 빈 배열 |
+| pollingIntervalSeconds | integer | O | `0` | 서버 설정이 소유하는 1800~3600초(30~60분) 조회 간격. 매 응답에 포함하며 WPF는 가장 최근 값을 반영. 0 이하면 범위 제한된 WPF 로컬 설정 유지 |
+| popup | object \| null | O | `null` | 지금 표시할 팝업 1건(§6.3). 표시 대상이 없으면 키를 유지하고 `null` |
 
-기본 `AutoLoadOnStartup=true`에서 로그인 직후 최초 조회하고, 기동 시점 기준으로 30~60분 간격의 재조회를 수행한다. 노출 기간·반복 판정은 서버가 끝내며 목록 항목에는 노출 시작·종료 시각을 싣지 않는다. WPF는 PC 시각으로 노출 여부를 판단하거나 팝업별 예약 타이머를 만들지 않는다. 서버 응답 목록을 즉시 렌더링하며 기존 순차/동시 표시 규칙을 적용한다. 열린 팝업이 있어도 재조회하고, 이번 실행에서 이미 표시한 ID를 제외한 새 팝업은 기존 표시 큐에 합류한다. 조회 요청이 진행 중이면 중복 요청은 생략하고, 401 재인증은 동일 요청 1회 재시도로 처리해 조회 타이머를 추가하지 않는다.
+응답에는 팝업 목록·`serverTime`·`userId`·`nextStatus`가 없다(설계 35에서 ROOT `serverTime`·`userId`·`popups[]` 제거). 다음 후보 유무는 결과 응답의 `nextStatus`(§11)로만 알린다. 서버가 위 필드를 보내더라도 WPF는 읽지 않는다.
 
-서버/로컬 설정의 양수 값은 1800~3600초로 보정하며 로컬 설정이 0 이하이면 1800초를 사용한다. 최대 60분의 신규 노출 지연을 허용한다. `serverTime`은 참고용이며 PC 벽시계 변경이 표시 대상 판단이나 반복 조회 기준을 바꾸지 않는다.
+### 서버 선택 기준
+
+서버는 게시 중이며 노출 기간·대상 조건을 만족하는 팝업 중 숨김·완료·재노출 유예(§10.8) 대상을 제외하고, 관리자 표시 순서(`DISPLAY_ORDER`) → 생성 시각 → `POPUP_ID` 순으로 첫 1건을 고른다. 표시 순서 값은 서버 정렬에만 쓰며 응답에 싣지 않는다.
+
+- 고른 팝업마다 전달 건을 만들고 서버 발급 UUID 문자열 `deliveryId`를 `popup`에 넣는다. 사용자당 열린(OPEN) 전달 건은 최대 1건이다.
+- 열린 전달 건의 팝업이 아직 표시 조건을 만족하면 다시 조회해도 같은 `deliveryId`로 같은 팝업을 돌려준다(조회 응답 유실 복구). 조건을 벗어났으면(게시 중단·기간 만료·대상 변경 등) 그 전달 건을 만료하고 다음 후보를 고른다.
+- 전달 자체는 읽음·완료 처리가 아니다. 완료·숨김·재노출 유예는 결과 수신(WPF-02)으로만 반영된다.
+
+### 조회 시점과 정상 흐름
+
+```text
+로그인
+→ 미전송 결과 전송(§12.1)
+→ POST /api/wpf/popups
+→ popup=null      : 가장 최근 pollingIntervalSeconds 대기 후 다시 조회
+→ popup 있음      : 1건 표시 → 닫기·숨김·제출·시청 종료 → 결과 1건 전송(WPF-02)
+→ 결과 status가 저장(ACCEPTED·DUPLICATE)이면 nextStatus 확인
+     AVAILABLE    : 즉시 다시 조회
+     EMPTY        : 가장 최근 pollingIntervalSeconds 대기 후 조회
+     nextStatus 없음(후보 확인 실패) : 즉시 다시 조회(popup=null이면 정상 처리)
+→ REJECTED       : 종결로 보고 다음 조회를 막지 않음
+```
+
+기본 `AutoLoadOnStartup=true`에서 로그인 직후 최초 조회한다. 팝업을 표시하는 동안에는 주기·수동 조회를 하지 않으며, 창이 닫혀 결과를 처리한 뒤 위 규칙으로 다음 조회를 정한다. 대기 시간은 기동 시점 기준 반복 경계에 맞추지 않고, 빈 조회·EMPTY 응답 시점부터 가장 최근 간격만큼 센다. 노출 기간·반복 판정은 서버가 끝내며 `popup`에는 노출 시작·종료 시각을 싣지 않는다. WPF는 PC 시각으로 노출 여부를 판단하거나 팝업별 예약 타이머를 만들지 않는다. 조회 요청이 진행 중이면 중복 요청은 생략하고, 401 재인증은 재로그인 후 실패한 요청 1회 재시도로 처리해 조회 타이머를 추가하지 않는다.
+
+서버/로컬 설정의 양수 값은 1800~3600초로 보정하며 로컬 설정이 0 이하이면 1800초를 사용한다. 표시 대상이 없을 때 최대 60분의 신규 노출 지연을 허용한다. 조회 오류는 정상 응답 `popup: null`과 구분해 HTTP 오류로 처리한다(§13). AVAILABLE 응답 뒤 조회 사이에 게시 중단·기간 만료가 생길 수 있으므로 조회 결과 `popup: null`은 정상 처리한다.
 
 ---
 
-## 6.3 popups[] 공통 필드
+## 6.3 popup 공통 필드
 
 | 필드 | 형식 | 필수 여부 | Default | C# 처리 |
 |---|---|---|---|---|
+| deliveryId | string | O | 계약 기본값 없음(C# 초기값 `""`) | 서버 발급 전달 건 ID(UUID 문자열, 64자 이하). WPF는 만들거나 바꾸지 않고 결과 요청에 그대로 넣는다(§10.2) |
 | popupId | string | O | 계약 기본값 없음(C# 초기값 `""`) | 결과 전송 식별자. 빈 값이면 결과 수집 연결을 건너뜀 |
 | popupType | string | O | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | title | string | O | `""` | 공통 Header 제목 |
-| displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS |
-| displayOrder | integer | O | `100` | 작은 값 우선, 같은 값은 같은 표시 그룹 |
+| displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 동시에 열리는 다른 서버 팝업은 없다 |
 | sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO |
 | width | number | IMAGE 일반 모드 외 | `900` | 일반 IMAGE는 생략하고 content.width 사용, ORIGINAL 및 다른 유형은 창 크기 |
 | height | number | IMAGE 일반 모드 외 | `620` | 일반 IMAGE는 생략하고 content.height 사용 |
@@ -273,7 +306,7 @@ X-Client-Version: 1.0.0
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
 
-> Footer 버튼 표시는 `showFooterButton`만 사용한다. legacy 이름 `showCloseButton`은 수신하지 않는다(설계 29-11). 서버 내부 판정 값(`displayStartAt`·`displayEndAt`·`periodMode`·`repeat*`)은 응답에 넣지 않으며 보내더라도 WPF는 무시한다. Header는 검은 배경·흰 제목·고정 로고·높이 40, 일반 외곽은 테두리 0·Radius 6이며 FULLSCREEN은 Radius 0이다.
+> `displayOrder`는 서버 정렬 기준이며 응답에 넣지 않는다(설계 35). 보내더라도 WPF는 표시 순서에 사용하지 않는다. Footer 버튼 표시는 `showFooterButton`만 사용한다. legacy 이름 `showCloseButton`은 수신하지 않는다(설계 29-11). 서버 내부 판정 값(`displayStartAt`·`displayEndAt`·`periodMode`·`repeat*`)은 응답에 넣지 않으며 보내더라도 WPF는 무시한다. Header는 검은 배경·흰 제목·고정 로고·높이 40, 일반 외곽은 테두리 0·Radius 6이며 FULLSCREEN은 Radius 0이다.
 
 ### 크기 처리 참고
 
@@ -289,14 +322,15 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 ## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03, 2026-10-12 갱신)
 
-기준: 최초 점검은 2026-10-03 `main` 코드이며, 이후 설계 29~34 변경(목록 필드 정리·결과 status 확장 등)을 2026-10-12 `main` 기준으로 같은 절에 반영했다. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
+기준: 최초 점검은 2026-10-03 `main` 코드이며, 이후 설계 29~34 변경(목록 필드 정리·결과 status 확장 등)을 2026-10-12 `main` 기준으로, 설계 35 단건 조회·결과 구조를 2026-10-13 기준으로 같은 절에 반영했다. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
 
 ### 반드시 제공할 값
 
 | 필드 / 조건 | 백엔드 제공 기준 | 현재 WPF 누락·오류 처리 |
 |---|---|---|
 | 로그인 accessToken | 공백 아닌 토큰 | 로그인 단계에서 명시적으로 거부 |
-| popups | 배열. 대상 없음은 [] | 생략은 []로 조용히 처리, null은 목록 처리 실패 |
+| popup | 팝업 1건 객체. 대상 없음은 키를 유지하고 null | 생략·null 모두 표시 대상 없음으로 처리하고 조회 간격 뒤 다시 조회 |
+| deliveryId | popup이 있으면 공백 아닌 서버 발급 ID | 빈 값이어도 화면은 표시되지만 결과 요청의 deliveryId가 비어 서버가 `REJECTED`(`WPF_INVALID_RESULT`)로 거절 |
 | popupId | 공백 아닌 고유 ID. 서버 저장 기준 1~50자 | 빈 값도 생성 가능하지만 결과 수집 연결을 건너뛰므로 CLOSED/HIDDEN/SUBMITTED 등이 전송되지 않음 |
 | popupType | TEXT / IMAGE / VIDEO / SURVEY / QUIZ | 누락·미지원 값은 Factory 오류. null도 처리 실패 |
 | content | 유형별 object. null 금지 | 생략·null·잘못된 형식이면 화면 생성 실패. {}는 필수 내용까지 보장하지 않음 |
@@ -314,19 +348,19 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | 채점 QUIZ passingScore | 최상위에 명시, 0~총점. 0점 통과가 의도되지 않았다면 양수 | 누락/null/0 이하는 통과 기준 0으로 계산되어 0점도 통과 가능 |
 | 채점 선택형 options[].isCorrect | 정답은 true, 오답은 false 권장. 단일 정답 1개, 복수 정답 1개 이상 | 누락/null은 정답 아님. 정답 키가 없으면 해당 문항은 정답 처리되지 않음 |
 | 채점 TEXT correctAnswer / answerMatchMode | 비어 있지 않은 정답, EXACT 또는 CONTAINS | 누락 시 해당 문항 오답. 구현은 지원하나 최소 외부 오픈 범위에서는 TEXT 자동 채점 제외 |
-| 결과 응답 results[].resultId | 요청한 resultId 그대로 반환 | 누락/불일치는 대기 결과를 해제하지 못해 재전송 지속 |
-| 결과 응답 results[].status | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR | 이번 전송 batch의 resultId이면서 종결 상태(ACCEPTED·DUPLICATE·REJECTED)인 항목만 제거. 그 밖의 상태·미지원 값·누락 항목은 보관 후 재전송(설계 34) |
+| 결과 응답 resultId | 요청한 resultId 그대로 반환 | 누락/불일치는 대기 결과를 해제하지 못해 재전송 지속 |
+| 결과 응답 status | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR | 보낸 결과의 resultId이면서 종결 상태(ACCEPTED·DUPLICATE·REJECTED)일 때만 제거. 그 밖의 상태·미지원 값·누락은 보관 후 재전송(설계 34)하며 다음 조회를 미룸(§12.1) |
 
-한 팝업의 Factory 변환 실패가 현재 조회 묶음 전체 생성을 중단할 수 있다. 서버는 잘못된 항목을 WPF 응답에 포함하지 않도록 응답 직전 검증을 수행해야 한다. results 배열은 반드시 반환하고 응답할 항목이 없으면 []를 사용한다. null 또는 null 항목은 처리 실패를 유발할 수 있다.
+조회 응답 팝업의 Factory 변환이 실패하면 그 팝업을 표시할 수 없으며, 열린 전달 건이 표시 조건을 만족하는 동안 다시 조회해도 같은 팝업이 내려온다. 서버는 잘못된 팝업을 WPF 응답에 포함하지 않도록 응답 직전 검증을 수행해야 한다. 결과 응답은 결과 1건 객체로 반환하며 빈 본문·null은 처리 실패를 유발할 수 있다.
 
 ### 기본값 사용이 가능한 항목과 null 주의
 
 - displayMode 생략은 SEQUENTIAL, sizeMode 생략은 FIXED. 명시한 값은 지원 ENUM이어야 하며 null은 허용하지 않는다.
 - width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다.
-- **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`displayOrder`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
+- **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
 - completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
-- serverTime/userId는 진단용(WPF 동작에 미사용), pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
+- pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
 - [설계 34-31·32] `footerAction`·`popupPosition`의 빈 문자열·null은 생략과 같이 유형별 기본값(CLOSE 또는 SUBMIT, CENTER)으로 처리하며 미지원 값도 기본값이다. 백엔드 등록 단계는 빈 문자열을 생략으로 받고 미지원 값·유형에 맞지 않는 Action은 거부한다. `useBackgroundOverlay=false`·`backgroundOverlayOpacity=0`은 누락이 아닌 정상 명시값이다. 두 값은 non-nullable이므로 null 대신 생략한다. 글자 크기는 null·생략이면 화면 기본 크기다.
 - **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.
 
@@ -347,7 +381,7 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 
 # 7. PopupWindow 공통 옵션 (최상위)
 
-3.7부터 `content`에는 popupType별 콘텐츠·전용 옵션만 둔다. PopupWindow 전체에 적용되는 공통 옵션은 §6.3의 `popups[]` 최상위 필드다(설계 30·31).
+3.7부터 `content`에는 popupType별 콘텐츠·전용 옵션만 둔다. PopupWindow 전체에 적용되는 공통 옵션은 §6.3의 `popup` 최상위 필드다(설계 30·31).
 
 | 구분 | 최상위 필드 |
 |---|---|
@@ -523,7 +557,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 | isLoop | boolean | 선택 | `false` | 반복 재생 |
 | defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |
 
-VIDEO의 완료 기준은 content가 아니라 **popups[] 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
+VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
 
 로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 
@@ -730,7 +764,7 @@ passingScore 이상
 
 ---
 
-# 10. WPF-02 결과 일괄 전송
+# 10. WPF-02 결과 단건 전송
 
 ## 10.1 기본 흐름
 
@@ -741,10 +775,11 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 → WPF 로컬 결과 생성
 → %LOCALAPPDATA%\Popup\pending-results.json 저장
 → 팝업 닫기
-→ POST /api/wpf/popups/results
+→ POST /api/wpf/popups/results (결과 1건)
+→ 응답 status·nextStatus로 다음 조회 시점 결정(§6.2)
 ```
 
-네트워크/서버 오류 시 파일에 남겨 두고 다음 기회에 동일 `resultId`로 재전송한다.
+팝업 1건의 결과는 요청 1건이다. 네트워크/서버 오류 시 파일에 남겨 두고 동일 `resultId`로 재전송한다(§12.1).
 
 백엔드는 `resultId`를 **멱등 키**로 처리해야 한다.
 
@@ -752,44 +787,43 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 
 ## 10.2 Request
 
+```http
+POST /api/wpf/popups/results
+Content-Type: application/json
+Authorization: Bearer <token>
+X-Client-Version: 1.0.0
+```
+
 ```json
 {
-  "clientRequestId": "c2cc2e16d4714e569ea8451ab5284479",
-  "sentAt": "2026-09-28T15:35:10+09:00",
-  "results": [
-    {
-      "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
-      "popupId": "NOTICE-001",
-      "resultType": "CLOSED",
-      "displayedAt": "2026-09-28T15:34:00+09:00",
-      "closedAt": "2026-09-28T15:35:00+09:00"
-    }
-  ]
+  "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e11",
+  "popupId": "NOTICE-001",
+  "resultType": "CLOSED",
+  "displayedAt": "2026-09-28T15:34:00+09:00",
+  "closedAt": "2026-09-28T15:35:00+09:00"
 }
 ```
 
-| 필드 | 형식 | 필수 여부 | Default | 설명 |
-|---|---|---|---|---|
-| clientRequestId | string | O | C#이 전송 시 새 GUID(N 형식) 생성 | 전송 요청 단위 ID. 재전송 요청에서는 새 값일 수 있음 |
-| sentAt | string(ISO) | 선택(서버) / WPF 항상 전송 | C# 전송 시각 | 이번 전송 시각. 서버는 필수 검증하지 않으며 현재 업무 로직에 사용하지 않음 |
-| results | array | O | `[]` | 실제 전송 시 1~50개씩 전송 |
+요청 본문은 결과 1건 객체다. 이전 envelope(`clientRequestId`·`sentAt`·`results[]` 1~50건)는 설계 35에서 삭제했으며 배열·일괄 재전송은 제공하지 않는다.
 
-### results[] 공통
+### 결과 필드
 
 | 필드 | 형식 | 필수 여부 | Default/생성 기준 |
 |---|---|---|---|
-| resultId | string(GUID) | O | 팝업 결과 생성 시 GUID 생성, 재전송 시 유지 |
-| popupId | string | O | 원 팝업의 popupId |
+| resultId | string(GUID) | O | 팝업 결과 생성 시 GUID 생성, 재전송 시 유지. 64자 이하 |
+| deliveryId | string | O | 조회 응답 `popup.deliveryId` 그대로. 64자 이하. 서버가 전달 건 소유·팝업 일치·미종료를 검증 |
+| popupId | string | O | 원 팝업의 popupId. 전달 건의 팝업과 같아야 함 |
 | resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정 |
 | displayedAt | string(ISO) | 선택 | `null` 가능 |
 | closedAt | string(ISO) | 선택 | `null` 가능 |
-| hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 목록의 hideDays(1 이상), 없으면 30. 1~3650(§10.4) |
+| hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 조회 응답 popup의 hideDays(1 이상), 없으면 30. 1~3650(§10.4) |
 | answers[] | array | SUBMITTED(SURVEY·QUIZ·VIDEO+QUIZ) 필수 | `null`. 1개 이상. `questionId`·`optionIds[]`(TEXT는 [])·`textAnswer`(TEXT 문항). null 요소 금지(§10.5·10.6) |
 | score | number | QUIZ SUBMITTED 필수 | `null`. WPF 최종 채점 점수, 0 이상. SURVEY는 보내지 않음(§10.6) |
 | passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 최종 통과 여부(§10.6) |
 | video | object | VIDEO_WATCHED·VIDEO+QUIZ SUBMITTED 필수 | `null`. 영상 시청 정보(§10.7) |
 
-유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 항목만 `REJECTED`로 응답한다(§11).
+유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 결과를 `REJECTED`로 응답한다(§11). 제안서 v0.3의 `action`·`completedAt` 이름은 채택하지 않고 기존 `resultType`·`closedAt` 등 필드 이름을 유지한다.
 
 > `closedAt - displayedAt`은 팝업 표시부터 종료·제출까지의 **화면 체류·처리 시간**이며, 첫 입력부터의 실제 응답 시간은 아니다(설계 34-09). 서버는 두 시각을 사용자·팝업 단위 상태(USER_POPUP_STATUS의 표시·닫기 시각)에 최신값으로 반영하므로, 결과 건별 체류 시간 통계가 필요하면 별도 보존 경로를 정해야 한다. 별도 응답 시작 시각(`responseStartedAt`)은 displayedAt과 같은 값이라 제거했다(설계 32). 보내더라도 서버는 무시한다.
 
@@ -809,6 +843,7 @@ VIDEO_WATCHED
 ```json
 {
   "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e11",
   "popupId": "NOTICE-001",
   "resultType": "CLOSED",
   "displayedAt": "2026-09-28T15:34:00+09:00",
@@ -823,6 +858,7 @@ VIDEO_WATCHED
 ```json
 {
   "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e12",
   "popupId": "NOTICE-001",
   "resultType": "HIDDEN",
   "displayedAt": "2026-09-28T15:34:00+09:00",
@@ -841,6 +877,7 @@ VIDEO_WATCHED
 ```json
 {
   "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e13",
   "popupId": "SURVEY-001",
   "resultType": "SUBMITTED",
   "displayedAt": "2026-09-28T15:34:00+09:00",
@@ -866,6 +903,7 @@ VIDEO_WATCHED
 ```json
 {
   "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e14",
   "popupId": "QUIZ-001",
   "resultType": "SUBMITTED",
   "answers": [
@@ -883,7 +921,7 @@ VIDEO_WATCHED
 
 `score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드가 문항별로 계산한 점수·정오답(문항 상세 저장)은 진단값이며, 그 합계가 저장된 최종 점수(WPF `score`)와 다를 수 있다(설계 34-16). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 백엔드가 자체 계산한 점수와 다르면 로그만 남기고 저장 값은 바꾸지 않는다. SURVEY에는 보내지 않는다.
 
-동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 항목에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
+동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 결과에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 
 ---
 
@@ -892,6 +930,7 @@ VIDEO_WATCHED
 ```json
 {
   "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e15",
   "popupId": "VIDEO-001",
   "resultType": "VIDEO_WATCHED",
   "displayedAt": "2026-09-28T15:30:00+09:00",
@@ -914,50 +953,90 @@ VIDEO_WATCHED
 
 ---
 
+## 10.8 결과 저장 후 서버 처리와 재노출 기준
+
+서버는 결과 1건을 다음 순서로 처리한다(설계 35).
+
+```text
+resultId 영수증 확인(이미 있으면 DUPLICATE)
+→ 전달 건 확인: 존재·요청 사용자 소유·popupId 일치·미종료
+→ 유형별 결과 처리(기존 숨김·제출·시청·완료 판정)
+→ 같은 트랜잭션에서 전달 건 종료 + 재노출 유예(저장 시각 + pollingIntervalSeconds) 기록 + 영수증 기록
+→ 응답(status, 저장 성공이면 nextStatus)
+```
+
+| 결과 | 이후 조회 |
+|---|---|
+| TEXT·IMAGE `CLOSED`(Footer 닫기·바로가기 `LINK_AND_CLOSE` 포함) | 완료 처리. 노출 기간 안에서 다시 표시하지 않음 |
+| `HIDDEN` | 기존 숨김 정책. `hideDays` 동안 제외 |
+| SURVEY·QUIZ `SUBMITTED`, VIDEO 시청 기준 충족 | 기존 완료 조건대로 완료 처리 |
+| 미완료로 끝난 SURVEY·QUIZ·VIDEO(완료 전 닫기, QUIZ 미통과, 시청 기준 미달) | 저장 시각부터 `pollingIntervalSeconds` 동안 조회·`nextStatus` 후보에서 제외. 이후에도 표시 조건을 만족하면 다시 표시 |
+
+`nextStatus`는 같은 제외 기준으로 남은 후보가 있는지를 뜻한다. 방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.
+
+---
+
 # 11. 결과 API Response
 
 ```json
 {
-  "results": [
-    {
-      "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
-      "popupId": "NOTICE-001",
-      "resultType": "CLOSED",
-      "status": "ACCEPTED"
-    }
-  ]
+  "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
+  "status": "ACCEPTED",
+  "nextStatus": "AVAILABLE"
 }
 ```
+
+결과 1건에 대한 응답 1건이다. 팝업 콘텐츠는 포함하지 않으며, 후보가 있으면 WPF가 조회 API를 다시 호출한다.
 
 ### 응답 필드
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| results | array | O | `[]` | 처리한 항목별 결과 |
-| results[].resultId | string | O | 없음 | 요청 resultId와 동일 |
-| results[].popupId | string | O | 없음 | 요청 popupId |
-| results[].resultType | string | O | 없음 | 요청 resultType |
-| results[].status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR |
-| results[].code | string | 선택 | `null` | REJECTED·오류 사유 코드. 값은 아래 "항목 code 값" 표 |
-| results[].message | string | 선택 | `null` | REJECTED·오류 설명(내부 오류 상세는 노출하지 않음) |
+| resultId | string | O | 없음 | 요청 resultId와 동일 |
+| status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR. 저장·처리 상태 |
+| nextStatus | string | status가 ACCEPTED·DUPLICATE일 때 | 생략 | AVAILABLE(즉시 다음 조회) / EMPTY(남은 후보 없음, 조회 간격 대기). 거절·실패 응답에는 없음. 저장은 됐으나 후보 확인이 실패하면 생략(EMPTY로 보내지 않음) |
+| code | string | 선택 | 생략 | 거절·실패 사유 코드, 또는 ACCEPTED·DUPLICATE의 후보 확인 실패 `WPF_NEXT_STATUS_UNKNOWN`. 값은 아래 "code 값" 표 |
+| message | string | 선택 | 생략 | 거절·실패 설명(내부 오류 상세는 노출하지 않음) |
+
+이전 일괄 응답의 `results[]`와 항목 `popupId`·`resultType`은 삭제했다(설계 35).
+
+```json
+{
+  "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
+  "status": "REJECTED",
+  "code": "WPF_INVALID_DELIVERY",
+  "message": "유효한 전달 건이 아닙니다. deliveryId=d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e11"
+}
+```
+
+```json
+{
+  "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
+  "status": "ACCEPTED",
+  "code": "WPF_NEXT_STATUS_UNKNOWN",
+  "message": "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다."
+}
+```
 
 ### status 의미
 
 | status | 의미 |
 |---|---|
 | ACCEPTED | 처음 정상 처리 |
-| DUPLICATE | 동일 resultId가 이미 처리됨. 재처리하지 않음 |
+| DUPLICATE | 동일 resultId가 이미 처리됨. 재처리하지 않으며 `nextStatus`는 함께 반환 |
 | REJECTED | 수정 없이 재전송해도 실패하는 업무 오류. 사유 기록 후 종결 |
-| RETRYABLE_ERROR | DB 연결 장애·데드락·잠금 대기·타임아웃 등 확인된 일시 장애. 항목은 롤백됨 |
-| INTERNAL_ERROR | 원인 미확정 내부 오류. 항목은 롤백됨 |
+| RETRYABLE_ERROR | DB 연결 장애·데드락·잠금 대기·타임아웃 등 확인된 일시 장애. 결과 처리는 롤백됨 |
+| INTERNAL_ERROR | 원인 미확정 내부 오류. 결과 처리는 롤백됨 |
 
-### 항목 code 값
+### code 값
 
-현재 저장소 서버(WpfPopupController·WpfPopupService)가 결과 항목에 넣는 code다. WPF는 code를 로그에만 남기고 큐 처리는 `status`로만 결정하므로, 백엔드는 code를 진단용으로 확장할 수 있다.
+현재 저장소 서버(WpfPopupController·WpfPopupService)가 결과 응답에 넣는 code다. WPF는 code를 로그에만 남기고 큐 처리는 `status`로만 결정하므로, 백엔드는 code를 진단용으로 확장할 수 있다.
 
 | status | code | 의미 |
 |---|---|---|
-| REJECTED | WPF_INVALID_RESULT | 항목 형식 오류(resultId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
+| REJECTED | WPF_INVALID_RESULT | 결과 형식 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
+| REJECTED | WPF_INVALID_DELIVERY | 유효한 전달 건이 아님(존재하지 않는 deliveryId, 다른 사용자의 전달 건, 전달 건의 팝업과 popupId 불일치) |
+| REJECTED | WPF_DELIVERY_COMPLETED | 다른 resultId의 결과가 이미 저장된 전달 건(같은 resultId 재전송은 DUPLICATE) |
 | REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(대상 아님, 유효한 영상 팝업 아님, 사용자·팝업 확인 실패) |
 | REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
 | REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지 등) |
@@ -965,34 +1044,37 @@ VIDEO_WATCHED
 | REJECTED | WPF_INVALID_VIDEO | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
 | RETRYABLE_ERROR | WPF_RETRYABLE | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
 | INTERNAL_ERROR | WPF_INTERNAL | 원인 미확정 내부 오류. 검증 통과 후 변환 단계의 예상하지 못한 예외 포함 |
+| ACCEPTED·DUPLICATE | WPF_NEXT_STATUS_UNKNOWN | 결과는 저장했으나 다음 후보 확인 실패. `nextStatus` 생략. WPF는 즉시 조회 |
 
-REJECTED의 세부 code(WPF_NOT_ELIGIBLE~WPF_INVALID_VIDEO)는 서버 업무 예외 메시지를 기준으로 분류한 진단값이다. 요청 전체 단위 오류는 항목 code가 아니라 §13의 HTTP 오류 본문 code로 응답한다: 요청 외곽 검증·JSON 역직렬화 오류는 400 `WPF_BAD_REQUEST`, 인증 실패는 401 `WPF_UNAUTHORIZED`, 사용자 비활성은 403 `WPF_USER_INACTIVE`, 그 밖의 처리 실패는 500 `WPF_INTERNAL`.
+REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무 예외 메시지를 기준으로 분류한 진단값이다. 요청 처리 자체가 실패한 오류는 결과 응답 code가 아니라 §13의 HTTP 오류 본문 code로 응답한다: JSON 구문·역직렬화 오류는 400 `WPF_BAD_REQUEST`, 인증 실패는 401 `WPF_UNAUTHORIZED`, 사용자 비활성은 403 `WPF_USER_INACTIVE`, 그 밖의 처리 실패는 500 `WPF_INTERNAL`.
 
-삭제 기준은 "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"이다(설계 34-19~24).
+삭제 기준은 "서버가 응답했다"가 아니라 "그 결과의 처리가 종결됐다"이다(설계 34-19~24, 35).
 
-| 상황 | HTTP | 항목 status | WPF 처리 |
+| 상황 | HTTP | status | WPF 처리 |
 |---|---|---|---|
-| 저장 완료 | 200 | ACCEPTED | 해당 결과 삭제 |
-| 동일 resultId 처리 완료 | 200 | DUPLICATE | 해당 결과 삭제 |
-| 영구 업무 오류 | 200 | REJECTED | 사유 기록 후 삭제 |
-| 확인된 일시 장애 | 200 | RETRYABLE_ERROR | 보관·재전송 |
-| 원인 미확정 내부 오류 | 200 | INTERNAL_ERROR | 보관·실행당 제한 횟수(현재 3회)만 재시도. 소진해도 삭제하지 않고 다음 실행에서 재시도 |
-| 요청 외곽 구조·JSON 역직렬화 오류 | 400 | — | 전송한 결과 보관. batch를 반으로 나눠 다시 보내 원인 항목을 좁히고, 단독으로도 400인 항목만 이번 실행에서 제외(파일 보관, 다음 실행 재시도) |
-| 요청 전체 처리 실패 | 그 밖의 4xx·5xx | — | 전송한 결과 모두 보관·재전송 |
-| 타임아웃·연결 끊김 | 응답 없음 | — | 전송한 결과 모두 보관·재전송 |
+| 저장 완료 | 200 | ACCEPTED | 해당 결과 삭제 후 `nextStatus`로 다음 조회 결정 |
+| 동일 resultId 처리 완료 | 200 | DUPLICATE | 해당 결과 삭제 후 `nextStatus`로 다음 조회 결정 |
+| 영구 업무 오류 | 200 | REJECTED | 사유 기록 후 삭제. 다음 조회를 막지 않음 |
+| 확인된 일시 장애 | 200 | RETRYABLE_ERROR | 보관·재전송. 종결 전 다음 조회 보류(§12.1) |
+| 원인 미확정 내부 오류 | 200 | INTERNAL_ERROR | 보관·실행당 제한 횟수(현재 3회)만 재시도하며 그동안 다음 조회 보류. 소진하면 이번 실행에서는 조회를 막지 않고, 삭제하지 않아 다음 실행에서 재시도 |
+| JSON 구문·역직렬화 오류 | 400 | — | 그 결과를 이번 실행에서 제외(파일 보관, 다음 실행 재시도)하고 뒤 결과·조회를 막지 않음 |
+| 요청 처리 실패 | 그 밖의 4xx·5xx | — | 보관·재전송. 다음 조회 보류(§12.1) |
+| 타임아웃·연결 끊김 | 응답 없음 | — | 보관·재전송. 다음 조회 보류(§12.1) |
 
-- 서버: 요청 외곽 구조(`clientRequestId`, `results` 1~50개) 및 JSON 역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400, 역직렬화 후 항목 검증 오류(resultId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 그 항목만 `REJECTED`(`WPF_INVALID_RESULT`)로 응답하고 나머지 항목은 처리한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 그 항목만 `INTERNAL_ERROR`(`WPF_INTERNAL`)로 응답한다. 응답은 요청 항목 순서를 유지한다. 처리 오류의 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 구분은 예외 형식·DB 오류 형식(원인 체인 포함)으로 하고 오류 메시지 문자열로 판단하지 않는다. 이 원칙은 두 상태의 구분에만 해당하며, 업무 검증 실패(REJECTED)의 세부 code 분류는 위 "항목 code 값" 표와 같이 업무 예외 메시지를 기준으로 한다. 항목 저장과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패 항목은 롤백한 뒤 상태를 응답한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
-- WPF: 저장에 실패한 미확정 결과(닫기 취소·제출 저장 실패)는 큐에 남기지 않아 전송되지 않으며, 창이 상태를 유지하다 다음 닫기·제출 때 결과를 다시 만들어 저장한다(앱 종료 중 닫기만 메모리 보관 후 종료 직전 전송 시도). 이번 batch에 없는 resultId 응답, 응답 누락 항목, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId와 결과 데이터를 유지한다. 재시도 간격·최대 횟수·재개 시점은 별도 확정 대상이며 현재는 기존 전송 시점(시작·목록 조회 전·결과 저장 후·종료 전)에 재시도한다.
+- 서버: JSON 구문·역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400 `WPF_BAD_REQUEST`, 역직렬화 후 형식 검증 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 HTTP 200의 `REJECTED`(`WPF_INVALID_RESULT`)로 응답한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 `INTERNAL_ERROR`(`WPF_INTERNAL`)로 응답한다. 처리 오류의 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 구분은 예외 형식·DB 오류 형식(원인 체인 포함)으로 하고 오류 메시지 문자열로 판단하지 않는다. 이 원칙은 두 상태의 구분에만 해당하며, 업무 검증 실패(REJECTED)의 세부 code 분류는 위 "code 값" 표와 같이 업무 예외 메시지를 기준으로 한다. 결과 저장·전달 건 종료·재노출 유예 기록과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패하면 롤백한 뒤 상태를 응답한다. `nextStatus` 후보 확인은 저장 커밋 뒤에 수행한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
+- WPF: 저장에 실패한 미확정 결과(닫기 취소·제출 저장 실패)는 큐에 남기지 않아 전송되지 않으며, 창이 상태를 유지하다 다음 닫기·제출 때 결과를 다시 만들어 저장한다(앱 종료 중 닫기만 메모리 보관 후 종료 직전 전송 시도). 보낸 결과와 다른 resultId 응답, 응답 누락, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId·deliveryId와 결과 데이터를 유지한다. 전송 시점은 시작·조회 전·팝업 닫힘 직후·종료 전이며, 미종결 결과가 남았을 때의 순서·재시도 간격은 §12.1 임시 기준을 따른다.
 
 ### 제거된 응답 필드
 
-결과 응답은 항목 처리 종결 여부만 알린다. 위 표 밖의 필드는 내려주지 않으며 WPF도 읽지 않는다.
+결과 응답은 결과 처리 종결 여부와 다음 후보 유무만 알린다. 위 표 밖의 필드는 내려주지 않으며 WPF도 읽지 않는다.
+
+- `results[]`, 항목 `popupId`·`resultType`: 단건 응답으로 바꾸며 제거(설계 35). 거절 로그는 WPF가 보낸 결과의 popupId·resultType으로 남긴다
 
 - `totalScore`·`passed`: 요청 값과 의미가 같아 제거(설계 33)
 - `hiddenUntil`·`watchedRatio`·`requiredRatio`: WPF 미사용(설계 34-05)
 - ROOT `receivedAt`, `popupStatus`·`completed`·`completedAt`·`responseId`: WPF 미사용·로그 미사용(설계 34-03). 서버 수신 시각은 요청 로그에 남는다.
 
-서버는 숨김 만료·시청 기록·완료 판정·응답 저장을 내부에서 그대로 처리하며, 완료·숨김 결과는 다음 목록 조회에서 제외 여부로 반영된다. `popupId`·`resultType`은 WPF 거절 로그 진단용으로 유지한다.
+서버는 숨김 만료·시청 기록·완료 판정·응답 저장을 내부에서 그대로 처리하며, 완료·숨김·재노출 유예는 다음 조회와 `nextStatus`에서 제외 여부로 반영된다(§10.8).
 
 ---
 
@@ -1000,12 +1082,21 @@ REJECTED의 세부 code(WPF_NOT_ELIGIBLE~WPF_INVALID_VIDEO)는 서버 업무 예
 
 백엔드 신규 구현에서 반드시 맞춰야 하는 핵심 규칙이다.
 
-1. `resultId`는 결과 항목 단위 멱등 키다.
+1. `resultId`는 결과 1건 단위 멱등 키다.
 2. 동일 `resultId`가 여러 번 들어오면 업무 데이터를 중복 저장하지 않는다.
-3. 이미 처리한 항목은 `DUPLICATE`로 응답할 수 있다.
-4. `clientRequestId`는 전송 단위 추적용이며 업무 멱등 키가 아니다.
-5. 네트워크 오류로 WPF가 같은 resultId를 다시 보내는 것은 정상 시나리오다.
-6. 한 요청에 최대 50개의 results가 들어올 수 있다.
+3. 이미 처리한 결과는 `DUPLICATE`로 응답하며 저장 성공과 같이 `nextStatus`를 함께 준다.
+4. `deliveryId`는 조회 전달 건 ID다. 한 전달 건에는 결과 1건만 저장되며, 다른 resultId로 같은 전달 건의 결과를 보내면 `REJECTED`(`WPF_DELIVERY_COMPLETED`)다.
+5. 네트워크 오류로 WPF가 같은 resultId를 다시 보내는 것은 정상 시나리오다. 토큰 만료로 실패하면 재로그인 후 같은 resultId로 결과 전송을 재시도하며 조회부터 다시 시작하지 않는다.
+6. 한 요청에는 결과 1건만 들어온다. 배열·일괄 재전송은 제공하지 않는다.
+
+## 12.1 미전송 결과 복구 — 임시 기준
+
+> 장애 복구 세부 정책은 주간회의 결정 대기 항목이다(설계 35 §4). 아래는 현재 구현의 **임시 기준**이며 확정 계약이 아니다.
+
+- 보내지 못한 결과는 로컬 파일 큐(`%LOCALAPPDATA%\Popup\pending-results.json`)에 보관하고, 조회 전에 저장 순서대로 **1건씩** 다시 보낸다.
+- 미종결 결과(전송 실패·응답 없음·RETRYABLE_ERROR·재시도 횟수가 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …, §13의 조회 장애 복구 간격과 같음) 뒤 다시 시도한다.
+- HTTP 400인 결과는 이번 실행에서만 제외(파일 보관)해 뒤 결과·조회를 막지 않는다. INTERNAL_ERROR는 실행당 최대 3회 시도 후 이번 실행에서는 조회를 막지 않는다. 두 경우 모두 파일에서 삭제하지 않아 다음 실행에서 다시 보낸다.
+- REJECTED는 종결이므로 다음 조회를 막지 않는다.
 
 ---
 
@@ -1025,13 +1116,13 @@ REJECTED의 세부 code(WPF_NOT_ELIGIBLE~WPF_INVALID_VIDEO)는 서버 업무 예
 
 | HTTP | 의미 | WPF 동작 |
 |---|---|---|
-| 400 | 요청 형식 오류(`WPF_BAD_REQUEST`): Bean Validation·JSON 구문·역직렬화 실패. 결과 API는 요청 외곽(clientRequestId·results 1~50개)과 JSON 역직렬화 오류만 400이며, 항목 형식·업무 검증 오류는 HTTP 200의 항목 `REJECTED`로 응답(§11) | 목록 조회는 장애 복구 제외, 정상 조회 주기 유지. 결과 전송은 §11의 400 분할 재전송 처리 |
+| 400 | 요청 형식 오류(`WPF_BAD_REQUEST`): Bean Validation·JSON 구문·역직렬화 실패. 결과 API는 JSON 구문·역직렬화 오류만 400이며, 결과 형식·업무 검증 오류는 HTTP 200의 `REJECTED`로 응답(§11) | 조회는 장애 복구 제외, 정상 조회 주기 유지. 결과 전송은 그 결과를 이번 실행에서 제외(§12.1) |
 | 401 | 인증 없음/만료 | 재로그인 후 원 요청 1회 재시도 |
 | 403 | 인증됐지만 사용자 사용 불가(`WPF_USER_INACTIVE`) | 장애 복구 제외, 오류 표시 가능 |
 | 426 | C# 버전 지원 중단 | 조회·결과 전송·정기 로그인 중단, pending 유지, 안내 닫기 후 정상 종료 |
-| 500/502/503/504 | 일시 서버 오류 | 목록 조회는 10초×3회×5 Cycle 복구, Cycle 간 30분 휴식 후 첫 10초, 이후 60분 확인. 결과 전송은 로컬 큐 유지 |
+| 500/502/503/504 | 일시 서버 오류 | 조회는 10초×3회×5 Cycle 복구, Cycle 간 30분 휴식 후 첫 10초, 이후 60분 확인. 결과 전송은 로컬 큐 유지 후 같은 간격으로 재시도하며 그동안 조회 보류(§12.1) |
 
-DNS/연결 오류·Timeout도 목록 장애 복구 대상으로 처리한다. 401 재로그인은 기존 원 요청 1회 재전송 경로를 사용하며 정상 polling 기준점을 재설정하지 않는다. 복구 성공 시 서버 최신 주기를 기존 기동 기준으로 적용한다. 그 외 HTTP 상태/데이터 오류는 적극 복구 루프에 넣지 않는다.
+DNS/연결 오류·Timeout도 조회 장애 복구 대상으로 처리한다. 401 재로그인은 기존 원 요청 1회 재전송 경로를 사용한다(결과 전송은 같은 resultId 유지). 복구 성공 시 응답의 최신 `pollingIntervalSeconds`를 적용한다. 그 외 HTTP 상태/데이터 오류는 적극 복구 루프에 넣지 않는다.
 
 ---
 
@@ -1077,6 +1168,8 @@ QUIZ
 SEQUENTIAL
 SIMULTANEOUS
 ```
+
+조회 응답이 1건이라 서버 팝업이 동시에 여러 개 열리지 않는다.
 
 ## sizeMode
 
@@ -1143,20 +1236,27 @@ RETRYABLE_ERROR
 INTERNAL_ERROR
 ```
 
+## nextStatus
+
+```text
+AVAILABLE
+EMPTY
+```
+
+결과 status가 ACCEPTED·DUPLICATE일 때만 반환한다. 후보 확인 실패 시 생략한다.
+
 ---
 
 # 15. 유형별 전체 JSON 예시
 
-아래는 GET /api/wpf/popups의 popups 배열에 들어갈 완전한 항목이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
+아래는 POST /api/wpf/popups 응답의 `popup`에 들어갈 유형별 완전한 객체다. **실제 응답에는 한 번에 1건만 들어간다.** `deliveryId`는 서버가 조회마다 발급하는 값이며 예시 값은 형식 설명용이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
 
-6개 항목을 포함한 전체 응답 파일: [WPF-01-popup-types.json](examples/WPF-01-popup-types.json). 개별 항목은 다음 Envelope의 popups에 넣는다.
+6개 유형의 `popup` 예시를 모은 참고 파일: [WPF-01-popup-types.json](examples/WPF-01-popup-types.json)(유형별 응답 예시 모음이며 한 응답이 아니다). 각 객체는 다음 Envelope의 `popup` 자리에 넣는다.
 
 ```json
 {
-  "serverTime": "2026-10-03T12:00:00+09:00",
-  "userId": "E1001",
   "pollingIntervalSeconds": 1800,
-  "popups": []
+  "popup": { "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a01", "popupId": "TEXT-001", "popupType": "TEXT", "...": "§15.1 참고" }
 }
 ```
 
@@ -1164,11 +1264,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a01",
   "popupId": "TEXT-001",
   "popupType": "TEXT",
   "title": "서비스 안내",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -1203,11 +1303,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a02",
   "popupId": "IMAGE-001",
   "popupType": "IMAGE",
   "title": "교육 안내",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "showHeader": true,
   "showFooterButton": true,
@@ -1235,11 +1335,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a03",
   "popupId": "VIDEO-001",
   "popupType": "VIDEO",
   "title": "교육 영상",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -1274,11 +1374,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a04",
   "popupId": "SURVEY-001",
   "popupType": "SURVEY",
   "title": "교육 만족도 설문",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -1366,11 +1466,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a05",
   "popupId": "QUIZ-001",
   "popupType": "QUIZ",
   "title": "보안 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -1452,11 +1552,11 @@ INTERNAL_ERROR
 
 ```json
 {
+  "deliveryId": "3f2b8c1e-6a4d-4e2f-9b1a-0c7d5e8f1a06",
   "popupId": "VIDEO-QUIZ-001",
   "popupType": "QUIZ",
   "title": "영상 교육 및 확인 퀴즈",
   "displayMode": "SEQUENTIAL",
-  "displayOrder": 100,
   "sizeMode": "FIXED",
   "width": 900,
   "height": 620,
@@ -1554,15 +1654,19 @@ QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 6
 새 백엔드가 C# WPF와 연동되기 위해 최소한 다음을 확인한다.
 
 - [ ] 로그인 API가 accessToken을 반환한다.
-- [ ] 목록/결과 API가 Bearer 인증 사용자를 식별할 수 있다.
-- [ ] GET /api/wpf/popups에는 userId 요청 파라미터를 요구하지 않는다.
-- [ ] 목록 API는 서버에서 노출 판정을 끝낸 최종 목록만 반환한다.
-- [ ] popups가 없을 때 빈 배열을 반환한다.
+- [ ] 조회/결과 API가 Bearer 인증 사용자를 식별할 수 있다.
+- [ ] POST /api/wpf/popups에는 userId 요청 파라미터·본문을 요구하지 않는다.
+- [ ] 조회 API는 서버에서 노출 판정·정렬을 끝낸 첫 1건만 `popup`으로 반환하고 `deliveryId`를 발급한다.
+- [ ] 표시 대상이 없을 때 `popup: null`을 반환하고, 매 응답에 `pollingIntervalSeconds`를 넣는다.
+- [ ] 열린 전달 건이 아직 표시 조건을 만족하면 재조회에 같은 `deliveryId`를 돌려준다.
 - [ ] popupType별 content 필드 이름을 그대로 제공한다.
 - [ ] QUIZ는 로컬 채점용 정답 키와 passingScore를 내려준다.
 - [ ] 결과 API는 resultId 기준 멱등 처리를 한다.
 - [ ] 동일 resultId 재수신 시 업무 데이터를 중복 저장하지 않는다.
-- [ ] results[].status를 ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR 중 하나로 반환한다.
+- [ ] 결과 API는 결과 1건 객체를 받고 `deliveryId`의 소유·팝업 일치·미종료를 검증한다.
+- [ ] status를 ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR 중 하나로 반환한다.
+- [ ] ACCEPTED·DUPLICATE에는 `nextStatus`(AVAILABLE/EMPTY)를 넣고, 후보 확인 실패는 EMPTY 대신 생략과 `WPF_NEXT_STATUS_UNKNOWN`으로 알린다.
+- [ ] TEXT·IMAGE CLOSED는 완료로, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 `pollingIntervalSeconds` 동안 재노출 유예로 처리한다.
 - [ ] REJECTED는 WPF가 재전송하지 않는 종결 상태이므로 영구 업무 오류에만 쓰고, 일시 장애·미확정 오류는 RETRYABLE_ERROR·INTERNAL_ERROR로 반환한다.
 - [ ] 네트워크/서버 장애 시 WPF가 같은 결과를 재전송할 수 있음을 고려한다.
 - [ ] 401이면 WPF가 로그인 후 원 요청을 한 번 재시도하는 것을 고려한다.
@@ -1585,7 +1689,7 @@ popup-frameWork/Popup/
 │     ├─ WpfLoginClient.cs
 │     └─ SsoAuthHeaderProvider.cs
 ├─ Dtos/
-│  ├─ WpfPopupListResponseDto.cs
+│  ├─ WpfNextPopupResponseDto.cs
 │  ├─ PopupResponseDto.cs
 │  ├─ WpfResultDtos.cs
 │  ├─ TextPopupContentDto.cs

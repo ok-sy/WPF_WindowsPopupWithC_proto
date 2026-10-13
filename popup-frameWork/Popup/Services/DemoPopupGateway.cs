@@ -8,7 +8,7 @@ namespace Popup.Services
 {
     /*
      * [역할] Demo Mode의 인메모리 "서버". IPopupGateway를 구현해 Java 서버·DB 없이도
-     *        목록 조회(GET /p/api/wpf/popups)와 결과 전송(POST /p/api/wpf/popups/results)의 동작을 흉내 낸다.
+     *        단건 조회(POST /p/api/wpf/popups)와 결과 1건 전송(POST /p/api/wpf/popups/results)의 동작을 흉내 낸다.
      *
      * [추가 이유 — Demo Mode]
      *   예전 Demo Mode는 샘플 팝업을 띄우기만 하고 결과(닫기·숨김·제출·영상)는 버렸다.
@@ -21,6 +21,8 @@ namespace Popup.Services
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 목록에서 제외
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
+     *     - [설계 35] 조회마다 전달 건(deliveryId)을 발급하고 결과에서 일치·미종료를 검사한다. 일반 안내(TEXT·IMAGE) 닫기는 완료,
+     *       설문·퀴즈·영상의 미완료 결과는 조회 간격(DeferSeconds) 동안 재노출 유예. 저장 후 남은 후보로 nextStatus를 돌려준다.
      *   처리한 항목은 ResultProcessed 이벤트로 DemoWindow의 결과 로그에 보여 준다.
      *
      * [주의] 데모 샘플 JSON은 계약서 v3 형태(최상위 questions·passingScore, options[].isCorrect, questionScore)다
@@ -33,9 +35,15 @@ namespace Popup.Services
         private readonly Dictionary<string, DateTimeOffset> _hiddenUntil = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _completed = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _receipts = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, DateTimeOffset> _deferredUntil = new(StringComparer.OrdinalIgnoreCase);
+        /* [설계 35] 전달 건: deliveryId → (popupId, 결과 저장 여부) */
+        private readonly Dictionary<string, (string PopupId, bool Done)> _deliveries = new(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>결과 항목 1건이 처리될 때마다 (요청 항목, 응답) 쌍으로 알린다. DemoWindow가 로그로 표시한다.</summary>
-        public event EventHandler<(WpfResultItemDto Item, WpfResultItemResponseDto Response)>? ResultProcessed;
+        /// <summary>[설계 35] 미완료 결과의 재노출 유예(서버 pollingIntervalSeconds 최솟값과 같은 30분).</summary>
+        public const int DeferSeconds = 1800;
+
+        /// <summary>결과 1건이 처리될 때마다 (요청, 응답) 쌍으로 알린다. DemoWindow가 로그로 표시한다.</summary>
+        public event EventHandler<(WpfResultItemDto Item, WpfResultResponseDto Response)>? ResultProcessed;
 
         public DemoPopupGateway()
         {
@@ -49,6 +57,8 @@ namespace Popup.Services
             _hiddenUntil.Clear();
             _completed.Clear();
             _receipts.Clear();
+            _deferredUntil.Clear();
+            _deliveries.Clear();
             foreach (PopupResponseDto popup in DemoPopupDataService.CreatePopups())
             {
                 _popups[popup.PopupId] = popup;
@@ -57,6 +67,7 @@ namespace Popup.Services
 
         public int HiddenCount => _hiddenUntil.Count(pair => pair.Value > DateTimeOffset.Now);
         public int CompletedCount => _completed.Count;
+        public int DeferredCount => _deferredUntil.Count(pair => pair.Value > DateTimeOffset.Now);
 
         /// <summary>Demo 화면에서 편집한 샘플을 표시와 결과 검증에 함께 사용한다. 숨김·완료 상태는 유지한다.</summary>
         public void ConfigurePopup(PopupResponseDto popup)
@@ -65,50 +76,49 @@ namespace Popup.Services
             _popups[popup.PopupId] = popup;
         }
 
-        /// <summary>서버와 같은 규칙으로 숨김·완료 팝업을 제외한 목록. popupType을 주면 그 유형만.</summary>
-        public Task<WpfPopupListResponseDto> GetWpfPopupsAsync(string? popupType)
-        {
-            List<PopupResponseDto> visible = _popups.Values
-                .Where(popup => popupType == null || (popupType == "VIDEO_QUIZ" ? popup.PopupId == "DEMO-VIDEO-QUIZ"
-                    : popupType == "FOOTER_LINK" ? popup.PopupId == "DEMO-FOOTER-LINK"
-                    : popup.PopupType.Equals(popupType, StringComparison.OrdinalIgnoreCase)
-                        && popup.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK")))
-                .Where(popup => !_completed.Contains(popup.PopupId))
-                .Where(popup => !_hiddenUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)
-                .OrderBy(popup => popup.DisplayOrder)
-                .ToList();
-            return Task.FromResult(new WpfPopupListResponseDto
-            {
-                ServerTime = DateTimeOffset.Now,
-                UserId = "DEMO_USER",
-                PollingIntervalSeconds = 0,
-                Popups = visible
-            });
-        }
+        /// <summary>서버와 같은 규칙으로 숨김·완료·재노출 유예 팝업을 제외한 후보(표시 순서). popupType을 주면 그 유형만.</summary>
+        private List<PopupResponseDto> Candidates(string? popupType) => _popups.Values
+            .Where(popup => popupType == null || (popupType == "VIDEO_QUIZ" ? popup.PopupId == "DEMO-VIDEO-QUIZ"
+                : popupType == "FOOTER_LINK" ? popup.PopupId == "DEMO-FOOTER-LINK"
+                : popup.PopupType.Equals(popupType, StringComparison.OrdinalIgnoreCase)
+                    && popup.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK")))
+            .Where(popup => !_completed.Contains(popup.PopupId))
+            .Where(popup => !_hiddenUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)
+            .Where(popup => !_deferredUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)
+            .OrderBy(popup => popup.DisplayOrder)
+            .ToList();
 
-        public Task<WpfPopupListResponseDto> GetWpfPopupsAsync() => GetWpfPopupsAsync(null);
-
-        public Task<WpfResultResponseDto> PostResultsAsync(WpfResultRequestDto request)
+        /// <summary>
+        /// [설계 35] 후보 첫 팝업 1건에 새 전달 건을 붙여 돌려준다(없으면 Popup=null). popupType을 주면 그 유형만(Demo 화면 필터).
+        /// 원본 샘플은 바꾸지 않고 사본에 deliveryId를 넣는다.
+        /// </summary>
+        public Task<WpfNextPopupResponseDto> GetNextPopupAsync(string? popupType)
         {
-            ArgumentNullException.ThrowIfNull(request);
-            List<WpfResultItemResponseDto> results = new();
-            foreach (WpfResultItemDto item in request.Results)
+            PopupResponseDto? first = Candidates(popupType).FirstOrDefault();
+            PopupResponseDto? delivered = null;
+            if (first != null)
             {
-                WpfResultItemResponseDto response = ProcessOne(item);
-                results.Add(response);
-                ResultProcessed?.Invoke(this, (item, response));
+                delivered = System.Text.Json.JsonSerializer.Deserialize<PopupResponseDto>(System.Text.Json.JsonSerializer.Serialize(first))!;
+                delivered.DeliveryId = "DEMO-DLV-" + Guid.NewGuid().ToString("N");
+                _deliveries[delivered.DeliveryId] = (first.PopupId, false);
             }
-            return Task.FromResult(new WpfResultResponseDto { Results = results });
+            return Task.FromResult(new WpfNextPopupResponseDto { PollingIntervalSeconds = 0, Popup = delivered });
         }
 
-        private WpfResultItemResponseDto ProcessOne(WpfResultItemDto item)
+        public Task<WpfNextPopupResponseDto> GetNextPopupAsync() => GetNextPopupAsync(null);
+
+        /// <summary>서버처럼 결과 1건을 처리하고, 저장 성공이면 남은 후보 유무를 nextStatus로 알린다.</summary>
+        public Task<WpfResultResponseDto> PostResultAsync(WpfResultItemDto item)
         {
-            WpfResultItemResponseDto response = new()
-            {
-                ResultId = item.ResultId,
-                PopupId = item.PopupId,
-                ResultType = item.ResultType
-            };
+            ArgumentNullException.ThrowIfNull(item);
+            WpfResultResponseDto response = ProcessOne(item);
+            if (response.IsSaved) response.NextStatus = Candidates(null).Count > 0 ? "AVAILABLE" : "EMPTY";
+            ResultProcessed?.Invoke(this, (item, response));
+            return Task.FromResult(response);
+        }
+        private WpfResultResponseDto ProcessOne(WpfResultItemDto item)
+        {
+            WpfResultResponseDto response = new() { ResultId = item.ResultId };
 
             if (!_receipts.Add(item.ResultId))
             {
@@ -117,7 +127,18 @@ namespace Popup.Services
             }
             if (!_popups.TryGetValue(item.PopupId, out PopupResponseDto? popup))
             {
+                _receipts.Remove(item.ResultId);
                 return Reject(response, "WPF_NOT_ELIGIBLE", "데모 목록에 없는 팝업입니다.");
+            }
+            if (!_deliveries.TryGetValue(item.DeliveryId ?? string.Empty, out var delivery) || delivery.PopupId != item.PopupId)
+            {
+                _receipts.Remove(item.ResultId);
+                return Reject(response, "WPF_INVALID_DELIVERY", "유효한 전달 건이 아닙니다.");
+            }
+            if (delivery.Done)
+            {
+                _receipts.Remove(item.ResultId);
+                return Reject(response, "WPF_DELIVERY_COMPLETED", "이미 결과가 저장된 전달 건입니다.");
             }
 
             response.Status = "ACCEPTED";
@@ -125,6 +146,9 @@ namespace Popup.Services
             switch (item.ResultType)
             {
                 case WpfResultType.Closed:
+                    // [설계 35] 일반 안내(TEXT·IMAGE)의 닫기는 확인 완료. 그 밖의 유형은 완료 전 닫기라 유예만 적용한다.
+                    if (popup.PopupType.Equals("TEXT", StringComparison.OrdinalIgnoreCase)
+                        || popup.PopupType.Equals("IMAGE", StringComparison.OrdinalIgnoreCase)) _completed.Add(item.PopupId);
                     break;
 
                 case WpfResultType.Hidden:
@@ -188,10 +212,12 @@ namespace Popup.Services
                     return Reject(response, "WPF_INVALID_RESULT", $"알 수 없는 결과 유형: {item.ResultType}");
             }
 
+            _deliveries[item.DeliveryId!] = (item.PopupId, true);
+            if (!_completed.Contains(item.PopupId)) _deferredUntil[item.PopupId] = DateTimeOffset.Now.AddSeconds(DeferSeconds);
             return response;
         }
 
-        private static WpfResultItemResponseDto Reject(WpfResultItemResponseDto response, string code, string message)
+        private static WpfResultResponseDto Reject(WpfResultResponseDto response, string code, string message)
         {
             response.Status = "REJECTED";
             response.Code = code;

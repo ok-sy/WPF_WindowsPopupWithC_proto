@@ -15,6 +15,7 @@ import java.util.List;
  * closedAt - displayedAt은 화면 체류·처리 시간이며 첫 입력부터의 응답 시간은 아니다[설계 34-09].</p>
  *
  * @param resultId          항목 멱등 키(UUID). WPF_RESULT_RECEIPT.RESULT_ID
+ * @param deliveryId        [설계 35] 조회 응답 popup.deliveryId. 전달 건 소유·팝업 일치를 검증하고 결과 저장 시 종료한다
  * @param popupId           대상 팝업
  * @param resultType        처리 유형
  * @param displayedAt       팝업이 처음 표시된 시각(선택). 있으면 표시 횟수 +1
@@ -27,6 +28,7 @@ import java.util.List;
  */
 public record WpfResultCommand(
         String resultId,
+        String deliveryId,
         String popupId,
         WpfResultType resultType,
         OffsetDateTime displayedAt,

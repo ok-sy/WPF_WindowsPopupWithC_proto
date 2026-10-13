@@ -238,6 +238,7 @@ SELECT ... FROM (SELECT DISTINCT POPUP_ID FROM ELIGIBLE_POPUP) e
 | 구분 | 항목 |
 |---|---|
 | 추가 | 시퀀스 12개, 테이블 `WPF_RESULT_RECEIPT`, `PopupContentAssembler`, `KstTimestampTypeHandler`, 매퍼 Map 오버로드 5개 + default 어댑터 5개, 테스트 `PopupMapperOracleStatementTest`(4)·`PopupContentAssemblerTest`(5) |
+| 추가(2026-10-13, 설계 35) | 테이블 `WPF_POPUP_DELIVERY`(WPF 단건 조회 전달 건·재노출 유예, 사용자당 OPEN 1건 함수 기반 유니크 인덱스), 증분 스크립트 `db/oracle/15_wpf_popup_delivery_oracle.sql`. 조회·후속 후보 확인은 `PopupMapper.xml`의 `eligiblePopupCte` 조각을 공유 |
 | 수정 (popup 소스 — 자유 수정 범위) | `PopupMapper.xml` 27개 구문 Oracle 변환(ID 유지), `PopupMapper.java`, `PopupEntity`(contentJson → 콘텐츠 컬럼 6개), `PopupService`(contentAssembler 사용, `parseContentJson` 제거), `PopupQuestionDatabaseTest`(Oracle 대상) |
 | 수정 (프레임워크 — 최소) | `JndiResource` 접속 값, `app/build.gradle.kts`·`service/core/build.gradle.kts` 드라이버 토글 |
 | 삭제 | 없음 |

@@ -109,6 +109,7 @@ class WpfApiOracleHttpTest {
 
     private static void cleanup(JdbcTemplate jdbc) {
         jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", USER);
+        jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "WPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = ?", USER);
         jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_VALUE WHERE RESPONSE_ANSWER_ID IN (SELECT RESPONSE_ANSWER_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?))", USER);
         jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE_ANSWER WHERE RESPONSE_ID IN (SELECT RESPONSE_ID FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?)", USER);
         jdbc.update("DELETE FROM " + SCHEMA_PREFIX + "POPUP_RESPONSE WHERE EMPLOYEE_NO = ?", USER);
@@ -141,94 +142,115 @@ class WpfApiOracleHttpTest {
         cleanupJdbc = jdbc;
         cleanup(jdbc);
 
-        ResponseEntity<String> noHeader = exchange(HttpMethod.GET, "/p/api/wpf/popups", null, null);
-        assertEquals(HttpStatus.UNAUTHORIZED, noHeader.getStatusCode());
-        assertEquals("WPF_UNAUTHORIZED", json.readTree(noHeader.getBody()).get("code").asText());
+        ResponseEntity<String> noHeader = exchange(HttpMethod.POST, "/p/api/wpf/popups", null, "{}");
+        assertEquals(HttpStatus.UNAUTHORIZED, noHeader.getStatusCode(), noHeader.getBody());
+        // JDK HttpURLConnection(RestTemplate 기본)은 본문이 있는 POST의 401 응답 본문을 읽지 못한다. 본문 코드는 MockMvc 테스트에서 확인한다.
+        if (noHeader.getBody() != null && !noHeader.getBody().isBlank()) {
+            assertEquals("WPF_UNAUTHORIZED", json.readTree(noHeader.getBody()).get("code").asText());
+        }
 
-        ResponseEntity<String> unknown = exchange(HttpMethod.GET, "/p/api/wpf/popups", "E9999", null);
-        assertEquals(HttpStatus.FORBIDDEN, unknown.getStatusCode());
+        ResponseEntity<String> unknown = exchange(HttpMethod.POST, "/p/api/wpf/popups", "E9999", "{}");
+        assertEquals(HttpStatus.FORBIDDEN, unknown.getStatusCode(), unknown.getBody());
+        assertNotNull(json.readTree(unknown.getBody()).get("code"), unknown.getBody());
         assertEquals("WPF_USER_INACTIVE", json.readTree(unknown.getBody()).get("code").asText());
     }
 
+    /** [설계 35] 조회는 POST 단건: {pollingIntervalSeconds, popup(deliveryId 포함)}. 응답 유실 후 재조회는 같은 전달 건. */
     @Test @Order(2)
-    void listReturnsServerJudgedPopupsWithIsoDatesAndNoAnswers() throws Exception {
-        ResponseEntity<String> res = exchange(HttpMethod.GET, "/p/api/wpf/popups", USER, null);
+    void nextPopupReturnsOneServerJudgedPopupWithDelivery() throws Exception {
+        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, "{}");
         assertEquals(HttpStatus.OK, res.getStatusCode(), res.getBody());
         JsonNode root = json.readTree(res.getBody());
-        assertEquals(USER, root.get("userId").asText());
         assertEquals(1800, root.get("pollingIntervalSeconds").asInt());
-        assertTrue(root.get("serverTime").asText().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+09:00"), "ISO 8601 (전역 epoch 설정 무시)");
+        for (String removed : List.of("userId", "serverTime", "popups", "nextStatus")) assertFalse(root.has(removed), removed);
 
-        List<String> ids = root.get("popups").findValuesAsText("popupId");
-        assertEquals(List.of("SAMPLE-TEXT-001", "SAMPLE-VIDEO-002", "SAMPLE-SURVEY-004"), ids);
+        JsonNode popup = root.get("popup");
+        assertEquals("SAMPLE-TEXT-001", popup.get("popupId").asText());
+        assertFalse(popup.get("deliveryId").asText().isBlank());
+        assertFalse(popup.has("displayOrder"));
+        assertFalse(popup.has("displayStartAt"));
+        assertEquals("서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
+                popup.get("content").get("plainText").asText());
 
-        JsonNode survey = root.get("popups").get(2);
-        assertEquals(2, survey.get("questions").size());
-        assertFalse(survey.get("content").has("questions"));
-        assertFalse(survey.has("passingScore"));
-        assertFalse(survey.has("questionTemplateId"));
-        assertFalse(res.getBody().contains("correctAnswer"));
-        assertFalse(res.getBody().contains("isCorrect"));
-        assertTrue(survey.get("displayStartAt").asText().endsWith("+09:00"));
-        assertEquals("9월 21일(일) 02:00~06:00 점검 예정입니다.", root.get("popups").get(0).get("content").get("plainText").asText());
+        JsonNode again = json.readTree(exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, null).getBody()).get("popup");
+        assertEquals(popup.get("deliveryId").asText(), again.get("deliveryId").asText(), "OPEN 전달 건 재사용");
     }
 
+    private JsonNode next() throws Exception {
+        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, "{}");
+        assertEquals(HttpStatus.OK, res.getStatusCode(), res.getBody());
+        return json.readTree(res.getBody());
+    }
+
+    private JsonNode result(String body) throws Exception {
+        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups/results", USER, body);
+        assertEquals(HttpStatus.OK, res.getStatusCode(), res.getBody());
+        return json.readTree(res.getBody());
+    }
+
+    /** [설계 35] 결과 1건씩 처리하고 커밋하며 nextStatus로 다음 조회 여부를 알린다. 마지막엔 popup=null. */
     @Test @Order(3)
-    void resultsAreProcessedPerItemAndCommitted() throws Exception {
-        JsonNode list = json.readTree(exchange(HttpMethod.GET, "/p/api/wpf/popups", USER, null).getBody());
-        JsonNode survey = list.get("popups").get(2);
+    void resultsAreProcessedOneByOneWithNextStatus() throws Exception {
+        JsonNode text = next().get("popup");
+        String hiddenId = UUID.randomUUID().toString();
+        String hiddenBody = """
+                {"resultId":"%s","deliveryId":"%s","popupId":"SAMPLE-TEXT-001","resultType":"HIDDEN",
+                 "displayedAt":"2026-09-19T09:00:05+09:00","closedAt":"2026-09-19T09:00:40+09:00","hideDays":7}
+                """.formatted(hiddenId, text.get("deliveryId").asText());
+        JsonNode hidden = result(hiddenBody);
+        assertEquals("ACCEPTED", hidden.get("status").asText(), hidden.toString());
+        assertEquals("AVAILABLE", hidden.get("nextStatus").asText());
+        assertEquals(hiddenId, hidden.get("resultId").asText());
+        for (String removed : List.of("results", "popup", "popupStatus", "hiddenUntil")) assertFalse(hidden.has(removed), removed);
+        JsonNode duplicate = result(hiddenBody);
+        assertEquals("DUPLICATE", duplicate.get("status").asText(), "같은 resultId 재전송");
+        assertEquals("AVAILABLE", duplicate.get("nextStatus").asText());
+
+        JsonNode video = next().get("popup");
+        assertEquals("SAMPLE-VIDEO-002", video.get("popupId").asText());
+        JsonNode watched = result("""
+                {"resultId":"%s","deliveryId":"%s","popupId":"SAMPLE-VIDEO-002","resultType":"VIDEO_WATCHED",
+                 "video":{"durationSeconds":540,"positionSeconds":540,"maximumPositionSeconds":540,"watchedSeconds":531.5}}
+                """.formatted(UUID.randomUUID(), video.get("deliveryId").asText()));
+        assertEquals("ACCEPTED", watched.get("status").asText(), watched.toString());
+        assertEquals("AVAILABLE", watched.get("nextStatus").asText());
+
+        ResponseEntity<String> surveyRes = exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, "{}");
+        assertFalse(surveyRes.getBody().contains("correctAnswer"));
+        assertFalse(surveyRes.getBody().contains("isCorrect"));
+        JsonNode survey = json.readTree(surveyRes.getBody()).get("popup");
+        assertEquals("SAMPLE-SURVEY-004", survey.get("popupId").asText());
+        assertEquals(2, survey.get("questions").size());
+        assertFalse(survey.has("passingScore"));
         long q1 = survey.get("questions").get(0).get("questionId").asLong();
         long o1 = survey.get("questions").get(0).get("options").get(0).get("optionId").asLong();
         long q2 = survey.get("questions").get(1).get("questionId").asLong();
+        JsonNode submitted = result("""
+                {"resultId":"%s","deliveryId":"%s","popupId":"SAMPLE-SURVEY-004","resultType":"SUBMITTED",
+                 "answers":[{"questionId":%d,"optionIds":[%d]},{"questionId":%d,"textAnswer":"HTTP 연동 확인"}]}
+                """.formatted(UUID.randomUUID(), survey.get("deliveryId").asText(), q1, o1, q2));
+        assertEquals("ACCEPTED", submitted.get("status").asText(), submitted.toString());
+        assertEquals("EMPTY", submitted.get("nextStatus").asText(), "완료·숨김 후 남은 후보 없음");
 
-        String hiddenId = UUID.randomUUID().toString();
-        String body = """
-                {"clientRequestId":"http-test","sentAt":"2026-09-19T09:12:30+09:00","results":[
-                  {"resultId":"%s","popupId":"SAMPLE-TEXT-001","resultType":"HIDDEN",
-                   "displayedAt":"2026-09-19T09:00:05+09:00","closedAt":"2026-09-19T09:00:40+09:00","hideDays":7},
-                  {"resultId":"%s","popupId":"SAMPLE-SURVEY-004","resultType":"SUBMITTED",
-                   "answers":[{"questionId":%d,"optionIds":[%d]},{"questionId":%d,"textAnswer":"HTTP 연동 확인"}]},
-                  {"resultId":"%s","popupId":"SAMPLE-VIDEO-002","resultType":"VIDEO_WATCHED",
-                   "video":{"durationSeconds":540,"positionSeconds":540,"maximumPositionSeconds":540,"watchedSeconds":531.5}},
-                  {"resultId":"%s","popupId":"SAMPLE-QUIZ-003","resultType":"SUBMITTED",
-                   "answers":[{"questionId":1,"optionIds":[1]}]},
-                  {"resultId":"%s","popupId":"SAMPLE-TEXT-001","resultType":"HIDDEN","hideDays":7}
-                ]}
-                """.formatted(hiddenId, UUID.randomUUID(), q1, o1, q2, UUID.randomUUID(), UUID.randomUUID(), hiddenId);
+        ResponseEntity<String> empty = exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, "{}");
+        assertTrue(empty.getBody().contains("\"popup\":null"), empty.getBody());
 
-        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups/results", USER, body);
-        assertEquals(HttpStatus.OK, res.getStatusCode(), res.getBody());
-        JsonNode results = json.readTree(res.getBody()).get("results");
-        assertEquals(5, results.size());
-        assertEquals("ACCEPTED", results.get(0).get("status").asText());
-        assertEquals("HIDDEN", results.get(0).get("popupStatus").asText());
-        assertTrue(results.get(0).get("hiddenUntil").asText().endsWith("+09:00"));
-        assertEquals("ACCEPTED", results.get(1).get("status").asText(), results.get(1).toString());
-        assertTrue(results.get(1).get("completed").asBoolean(), "SURVEY 즉시 완료");
-        assertFalse(results.get(1).has("totalScore"), "SURVEY 채점 결과 없음");
-        assertEquals("ACCEPTED", results.get(2).get("status").asText(), results.get(2).toString());
-        assertEquals(0.9842, results.get(2).get("watchedRatio").asDouble(), 0.0001);
-        assertTrue(results.get(2).get("completed").asBoolean());
-        assertEquals("REJECTED", results.get(3).get("status").asText(), "E1002는 QUIZ 대상이 아님");
-        assertEquals("WPF_NOT_ELIGIBLE", results.get(3).get("code").asText());
-        assertEquals("DUPLICATE", results.get(4).get("status").asText());
+        JsonNode foreign = result("""
+                {"resultId":"%s","deliveryId":"NO-SUCH-DELIVERY","popupId":"SAMPLE-QUIZ-003","resultType":"CLOSED"}
+                """.formatted(UUID.randomUUID()));
+        assertEquals("REJECTED", foreign.get("status").asText());
+        assertEquals("WPF_INVALID_DELIVERY", foreign.get("code").asText());
+        assertFalse(foreign.has("nextStatus"));
 
-        // 항목별 REQUIRES_NEW 커밋 확인 — 거절된 QUIZ 항목과 무관하게 나머지가 DB에 남아 있다
-        Integer receipts = jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", Integer.class, USER);
-        assertEquals(3, receipts);
-        Integer logs = jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "API_REQUEST_LOG WHERE EMPLOYEE_NO = ? AND CLIENT_REQUEST_ID = 'http-test'", Integer.class, USER);
-        assertEquals(1, logs);
-
-        // 완료·숨김 반영 후 목록은 비어야 한다 (기준 2)
-        JsonNode after = json.readTree(exchange(HttpMethod.GET, "/p/api/wpf/popups", USER, null).getBody());
-        assertEquals(0, after.get("popups").size());
+        // 결과별 REQUIRES_NEW 커밋 — 영수증 3건, 전달 건 3건 종료, 요청 로그는 결과 요청마다 1건
+        assertEquals(3, jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "WPF_RESULT_RECEIPT WHERE EMPLOYEE_NO = ?", Integer.class, USER));
+        assertEquals(3, jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "WPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = ? AND DELIVERY_STATUS = 'DONE'", Integer.class, USER));
+        assertEquals(5, jdbc.queryForObject("SELECT COUNT(*) FROM " + SCHEMA_PREFIX + "API_REQUEST_LOG WHERE EMPLOYEE_NO = ? AND API_PATH LIKE '%/results'", Integer.class, USER));
     }
 
     @Test @Order(4)
     void invalidBodyIsBadRequestWithWpfCode() throws Exception {
-        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups/results", USER,
-                "{\"clientRequestId\":\"x\",\"results\":[]}");
+        ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups/results", USER, "[1,2]");
         assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
         assertEquals("WPF_BAD_REQUEST", json.readTree(res.getBody()).get("code").asText());
-    }
-}
+    }}

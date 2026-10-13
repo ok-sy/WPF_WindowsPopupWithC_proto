@@ -46,6 +46,7 @@ namespace Popup.Factories
             return new PopupOptions
             {
                 PopupId = popupDto.PopupId,
+                DeliveryId = popupDto.DeliveryId ?? string.Empty,
                 // [기준 3] 결과 항목 조립(HIDDEN hideDays)과 제출 결과 안내(QUIZ 분기)에 필요한 값
                 PopupType = popupDto.PopupType.Trim().ToUpperInvariant(),
                 HideDays = popupDto.HideDays,

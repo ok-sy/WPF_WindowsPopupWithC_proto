@@ -25,6 +25,9 @@ namespace Popup.Dtos
          */
         public string PopupId { get; set; } = string.Empty;
 
+        /* [설계 35] 조회 API가 발급한 전달 건 ID. 결과 수신 요청에 그대로 돌려준다(Demo 샘플은 비어 있을 수 있음). */
+        public string DeliveryId { get; set; } = string.Empty;
+
         /*
          * 팝업 종류
          *

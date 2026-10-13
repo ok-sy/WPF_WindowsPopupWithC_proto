@@ -44,10 +44,11 @@ namespace Popup.Services
             _scheduledAttempts = 0;
         }
 
-        public static TimeSpan NormalDelay(int intervalSeconds, TimeSpan elapsed)
-        {
-            long ticks = TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1800, 3600)).Ticks;
-            return TimeSpan.FromTicks(ticks - elapsed.Ticks % ticks);
-        }
+        /// <summary>
+        /// [설계 35] 표시할 팝업이 없을 때(popup=null·nextStatus=EMPTY)의 대기 시간: 가장 최근 조회 간격(30~60분)만큼 기다린다.
+        /// 이전에는 기동 시점 기준 반복 경계에 맞췄으나, 단건 순차 흐름에서는 결과 저장·빈 조회 시점부터 간격을 센다.
+        /// </summary>
+        public static TimeSpan NormalDelay(int intervalSeconds)
+            => TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1800, 3600));
     }
 }

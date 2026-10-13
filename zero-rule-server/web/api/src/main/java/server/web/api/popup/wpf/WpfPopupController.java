@@ -3,15 +3,13 @@ package server.web.api.popup.wpf;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import server.domain.popup.wpf.WpfPopupListResponse;
+import server.domain.popup.wpf.WpfNextPopupResponse;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
 import server.domain.popup.wpf.WpfResultResponse;
@@ -24,8 +22,8 @@ import java.time.ZoneId;
 /**
  * 신규 WPF 팝업 클라이언트 API 2개.
  * <pre>
- *   GET  /p/api/wpf/popups          — 사용자에게 지금 표시해야 할 최종 팝업 목록(공통 옵션·content·문항·선택지 포함)
- *   POST /p/api/wpf/popups/results  — 팝업 처리 결과(닫기·숨김·제출·영상 시청) 일괄 수신
+ *   POST /p/api/wpf/popups          — [설계 35] 지금 표시할 팝업 최대 1건 + deliveryId(공통 옵션·content·문항·선택지 포함)
+ *   POST /p/api/wpf/popups/results  — [설계 35] 팝업 처리 결과(닫기·숨김·제출·영상 시청) 1건 수신 + nextStatus
  * </pre>
  *
  * <p>[추가 이유]</p>
@@ -59,81 +57,55 @@ public class WpfPopupController {
         this.wpfUserResolver = wpfUserResolver;
     }
 
-    /** 인증된 사용자의 최종 팝업 목록. 사번은 WpfUserResolver에서 얻는다(요청 파라미터 사용 금지). */
-    @Operation(summary = "WPF 표시 대상 팝업 목록 조회 (공통 옵션·콘텐츠·문항 포함, 완료·숨김 제외)")
-    @GetMapping
-    public WpfPopupListResponse getPopups(HttpServletRequest request) {
+    /**
+     * [설계 35] 지금 표시할 팝업 최대 1건(popup)과 폴링 간격. 대상이 없으면 popup=null.
+     * 전달 건(deliveryId)을 만들거나 재사용하므로 POST다. 요청 본문은 비어 있거나 {}이며 내용은 쓰지 않는다.
+     * 사번은 WpfUserResolver에서 얻는다(요청 파라미터 사용 금지).
+     */
+    @Operation(summary = "WPF 표시 대상 팝업 1건 조회 (전달 건 발급·재사용, 완료·숨김·재노출 유예 제외)")
+    @PostMapping
+    public WpfNextPopupResponse nextPopup(HttpServletRequest request) {
         String employeeNo = wpfUserResolver.resolveEmployeeNo(request);   // 실패 → 401 WPF_UNAUTHORIZED
-        return wpfPopupService.getPopupsForUser(employeeNo);              // 비활성 → 403 WPF_USER_INACTIVE
+        return wpfPopupService.getNextPopup(employeeNo);                  // 비활성 → 403 WPF_USER_INACTIVE
     }
 
     /**
-     * 결과 항목 일괄 수신. 항목 단위로 독립 처리하며 한 항목의 실패가 다른 항목에 영향을 주지 않는다.
-     * 요청 전체가 잘못된 경우(envelope 검증 실패·인증 없음)만 HTTP 오류이고, 항목 실패는 본문 status로 알린다.
-     * [설계 34 — 검토 보완] 항목 형식 오류는 그 항목만 REJECTED(WPF_INVALID_RESULT)로 돌려주고 나머지는 정상 처리한다.
-     * 응답은 요청 항목 순서를 유지한다.
-     * 요청 단위 로그는 처리 결과와 무관하게 남기되, 로그 실패가 응답을 막지 않도록 예외를 삼킨다.
+     * [설계 35] 결과 1건 수신. 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다(WPF가 반복 재전송하지 않도록).
+     * 검증 통과 후 예상하지 못한 변환 예외는 INTERNAL_ERROR(WPF_INTERNAL)로 돌려 WPF가 결과를 보관·재시도하게 한다.
+     * 저장 성공(ACCEPTED·DUPLICATE)이면 후속 후보 유무 nextStatus(AVAILABLE/EMPTY)를 함께 준다.
+     * 요청 단위 로그는 처리 결과와 무관하게 남기되(clientRequestId = resultId), 로그 실패가 응답을 막지 않도록 예외를 삼킨다.
      */
-    /**
-     * 항목별로 검증·변환한 뒤 정상 항목만 서비스에 넘기고, 요청 순서대로 응답을 합친다.
-     * <ul>
-     *   <li>validationError()로 확인한 입력 오류 → REJECTED / WPF_INVALID_RESULT (영구, WPF 큐에서 제거)</li>
-     *   <li>[설계 34 — 검토 보완] 검증 통과 후 예상하지 못한 변환 예외 → INTERNAL_ERROR / WPF_INTERNAL.
-     *       서버 결함일 수 있으므로 영구 오류로 돌리지 않아 WPF가 결과를 보관·재시도한다(상세는 로그만).</li>
-     * </ul>
-     */
-    java.util.List<WpfResultItemResponse> processItems(String employeeNo, java.util.List<WpfResultRequest.Item> items) {
-        java.util.List<WpfResultCommand> commands = new java.util.ArrayList<>();
-        java.util.List<WpfResultItemResponse> failures = new java.util.ArrayList<>(items.size());   // null = 서비스 처리 대상
-        for (WpfResultRequest.Item item : items) {
-            String error = item == null ? "결과 항목이 비어 있습니다." : item.validationError();
-            if (error != null) {
-                failures.add(new WpfResultItemResponse(item == null ? null : item.resultId(), item == null ? null : item.popupId(),
-                        item == null ? null : item.type(), WpfResultItemResponse.Status.REJECTED,
-                        "WPF_INVALID_RESULT", "결과 항목 형식 오류: " + error));
-                continue;
-            }
-            try {
-                commands.add(item.toCommand());
-                failures.add(null);
-            } catch (RuntimeException ex) {
-                log.error("WPF 결과 항목 변환 중 예상하지 못한 오류 resultId={}", item.resultId(), ex);
-                failures.add(new WpfResultItemResponse(item.resultId(), item.popupId(), item.type(),
-                        WpfResultItemResponse.Status.INTERNAL_ERROR, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."));
-            }
-        }
-        java.util.Iterator<WpfResultItemResponse> processed =
-                wpfPopupService.processResults(employeeNo, commands).results().iterator();
-        java.util.List<WpfResultItemResponse> merged = new java.util.ArrayList<>(items.size());
-        for (WpfResultItemResponse failure : failures) {
-            merged.add(failure != null ? failure : processed.next());
-        }
-        return merged;
-    }
-
-    @Operation(summary = "WPF 팝업 처리 결과 일괄 전송 (닫기·숨김·제출·영상)")
+    @Operation(summary = "WPF 팝업 처리 결과 1건 수신 (닫기·숨김·제출·영상) + 후속 후보 유무")
     @PostMapping("/results")
-    public WpfResultResponse postResults(@Valid @RequestBody WpfResultRequest body, HttpServletRequest request) {
+    public WpfResultResponse postResult(@RequestBody WpfResultRequest body, HttpServletRequest request) {
         OffsetDateTime receivedAt = OffsetDateTime.now(KST);
         String employeeNo = wpfUserResolver.resolveEmployeeNo(request);
-        WpfResultResponse response = new WpfResultResponse(processItems(employeeNo, body.results()));
-
-        // [설계 34-19] 상태별 건수를 그대로 센다(일시·미확정 오류를 DUPLICATE로 잘못 세지 않도록).
-        java.util.Map<WpfResultItemResponse.Status, Long> counts = response.results().stream()
-                .collect(java.util.stream.Collectors.groupingBy(WpfResultItemResponse::status,
-                        () -> new java.util.EnumMap<>(WpfResultItemResponse.Status.class), java.util.stream.Collectors.counting()));
-        boolean allSettledWithoutError = counts.keySet().stream()
-                .allMatch(s -> s == WpfResultItemResponse.Status.ACCEPTED || s == WpfResultItemResponse.Status.DUPLICATE);
-        String summary = java.util.Arrays.stream(WpfResultItemResponse.Status.values())
-                .map(s -> s.name().toLowerCase(java.util.Locale.ROOT) + "=" + counts.getOrDefault(s, 0L))
-                .collect(java.util.stream.Collectors.joining(","));
+        WpfResultResponse response = process(employeeNo, body);
         try {
-            wpfPopupService.logRequest(body.clientRequestId(), employeeNo, request.getRequestURI(), "POST",
-                    request.getRemoteAddr(), receivedAt, 200, allSettledWithoutError,
-                    "items=" + body.results().size(), summary);
+            wpfPopupService.logRequest(body.resultId(), employeeNo, request.getRequestURI(), "POST",
+                    request.getRemoteAddr(), receivedAt, 200, response.saved(),
+                    "popupId=" + body.popupId() + ",type=" + body.resultType(),
+                    "status=" + response.status() + ",next=" + response.nextStatus());
         } catch (RuntimeException ex) {
-            log.warn("WPF 결과 API 요청 로그 저장 실패 clientRequestId={}", body.clientRequestId(), ex);
+            log.warn("WPF 결과 API 요청 로그 저장 실패 resultId={}", body.resultId(), ex);
         }
         return response;
     }
-}
+
+    WpfResultResponse process(String employeeNo, WpfResultRequest body) {
+        String error = body.validationError();
+        if (error != null) {
+            wpfPopupService.requireActiveUser(employeeNo);
+            return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.REJECTED, null,
+                    "WPF_INVALID_RESULT", "결과 형식 오류: " + error);
+        }
+        WpfResultCommand command;
+        try {
+            command = body.toCommand();
+        } catch (RuntimeException ex) {
+            log.error("WPF 결과 변환 중 예상하지 못한 오류 resultId={}", body.resultId(), ex);
+            return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR, null,
+                    "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.");
+        }
+        return wpfPopupService.processResult(employeeNo, command);
+    }}

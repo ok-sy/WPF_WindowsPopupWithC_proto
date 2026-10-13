@@ -67,7 +67,7 @@ namespace Popup
             _gateway.Reload();
             foreach (var popup in _configuredPopups.Values) _gateway.ConfigurePopup(popup);
             UpdateServerState();
-            AppendLog("--- 서버 상태 초기화 (숨김·완료·영수증 삭제) ---");
+            AppendLog("--- 서버 상태 초기화 (숨김·완료·유예·전달 건·영수증 삭제) ---");
         }
 
         private void ClearLogButton_Click(object sender, RoutedEventArgs e)
@@ -79,10 +79,22 @@ namespace Popup
         }
 
         /// <summary>
-        /// 실제 모드의 MainWindow.LoadAndShowAvailablePopupsAsync와 같은 순서:
-        /// 미전송 큐 flush → 목록 조회(숨김·완료 제외) → PopupOptions 변환 → 결과 훅 연결 → 표시.
+        /// 실제 모드의 MainWindow.LoadAndShowAvailablePopupsAsync와 같은 순서([설계 35] 단건 순차):
+        /// 미전송 큐 flush → 1건 조회(숨김·완료·유예 제외, deliveryId 발급) → PopupOptions 변환 → 결과 훅 연결 → 표시
+        /// → 닫힘 → 결과 전송 → nextStatus=AVAILABLE이면 같은 샘플 유형으로 다음 1건을 이어서 표시.
         /// </summary>
-        public async void ShowDemoPopups(string? popupType = null)
+        public void ShowDemoPopups(string? popupType = null) => ShowNextDemoPopup(popupType, showEmptyMessage: true);
+
+        /// <summary>[설계 35] 창이 닫히면 결과를 보내고 AVAILABLE이면 같은 유형의 다음 1건을 표시한다(EMPTY·거절·실패면 멈춤).</summary>
+        private async void ContinueAfterResult(string? popupType)
+        {
+            ResultFlushOutcome outcome = await _resultQueue.FlushAsync();
+            UpdateServerState();
+            if (!outcome.Blocked && string.Equals(outcome.LastSaved?.NextStatus, "AVAILABLE", StringComparison.OrdinalIgnoreCase))
+                ShowNextDemoPopup(popupType, showEmptyMessage: false);
+        }
+
+        private async void ShowNextDemoPopup(string? popupType, bool showEmptyMessage)
         {
             if (_isLoading) return;
             try
@@ -96,26 +108,25 @@ namespace Popup
 
                 _isLoading = true;
                 await _resultQueue.FlushAsync();
-                WpfPopupListResponseDto response = await _gateway.GetWpfPopupsAsync(popupType);
-                LogListQuery(popupType, response);
-                if (response.Popups.Count == 0)
+                WpfNextPopupResponseDto response = await _gateway.GetNextPopupAsync(popupType);
+                LogNextQuery(popupType, response);
+                if (response.Popup == null)
                 {
-                    MessageBox.Show(
-                        "표시할 팝업이 없습니다. (숨김·완료 상태이면 '서버 상태 초기화'를 누르세요)",
-                        "Demo Mode", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (showEmptyMessage)
+                    {
+                        MessageBox.Show(
+                            "표시할 팝업이 없습니다. (숨김·완료·재노출 유예 상태이면 '서버 상태 초기화'를 누르세요)",
+                            "Demo Mode", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                     return;
                 }
 
-
-                List<PopupOptions> popupOptions = _popupService.CreatePopupOptions(response.Popups);
-                foreach (PopupOptions options in popupOptions)
-                {
-                    // [설계 12] 운영 코드(MainWindow)와 같은 훅: 로컬 큐 저장 → 창 닫기 → 백그라운드 전송(데모 게이트웨이)
-                    options.EnqueueResult = _resultQueue.Enqueue;
-                    options.RetainResultForExit = _resultQueue.RetainForExit;
-                    options.FlushResultsInBackground = _resultQueue.FlushInBackground;
-                }
-                _popupManager.ShowRange(popupOptions);
+                PopupOptions options = _popupService.CreatePopupOptions(new List<PopupResponseDto> { response.Popup }).Single();
+                // [설계 12·35] 운영 코드(MainWindow)와 같은 훅: 로컬 큐 저장 → 창 닫기 → 결과 전송 후 nextStatus에 따라 다음 1건
+                options.EnqueueResult = _resultQueue.Enqueue;
+                options.RetainResultForExit = _resultQueue.RetainForExit;
+                options.FlushResultsInBackground = () => ContinueAfterResult(popupType);
+                _popupManager.ShowRange(new[] { options });
             }
             catch (Exception exception)
             {
@@ -129,7 +140,7 @@ namespace Popup
             }
         }
 
-        private void Gateway_ResultProcessed(object? sender, (WpfResultItemDto Item, WpfResultItemResponseDto Response) e)
+        private void Gateway_ResultProcessed(object? sender, (WpfResultItemDto Item, WpfResultResponseDto Response) e)
         {
             Dispatcher.Invoke(() =>
             {
@@ -138,7 +149,8 @@ namespace Popup
                 int firstIndex = ResultLogList.Items.Count;
                 _resultDetails[firstIndex] = (request, response);
                 AppendLog($"[{DateTime.Now:HH:mm:ss}] {e.Item.ResultType,-13} {e.Item.PopupId} → {e.Response.Status}"
-                          + (e.Response.Code != null ? $" {e.Response.Code}" : string.Empty));
+                          + (e.Response.Code != null ? $" {e.Response.Code}" : string.Empty)
+                          + (e.Response.NextStatus != null ? $" · next {e.Response.NextStatus}" : string.Empty));
                 ResultLogList.SelectedIndex = firstIndex;
                 if (e.Item.Score is double score)
                     QuizScoreText.Text = $"{e.Item.PopupId} · score: {score:0.##} · passed: {e.Item.Passed?.ToString().ToLowerInvariant()}";
@@ -147,25 +159,25 @@ namespace Popup
         }
 
         /// <summary>
-        /// 목록 조회도 결과 전송처럼 로그 항목으로 남긴다. Header·Footer·폰트·content 등 서버가 내려주는
-        /// 팝업 설정은 목록 응답에만 있으므로 응답 탭에서 확인·복사할 수 있게 한다.
-        /// 요청은 실제 모드(PopupApiService)와 같은 GET /api/wpf/popups이며 본문이 없다.
+        /// 조회도 결과 전송처럼 로그 항목으로 남긴다. Header·Footer·폰트·content 등 서버가 내려주는
+        /// 팝업 설정은 조회 응답에만 있으므로 응답 탭에서 확인·복사할 수 있게 한다.
+        /// 요청은 실제 모드(PopupApiService)와 같은 POST /api/wpf/popups이며 본문은 {}다(설계 35).
         /// Demo에는 인증 토큰이 없어 Authorization·X-Dev-User-Id 헤더는 기록하지 않는다.
         /// 샘플 유형 선택은 Demo 화면 전용 필터라 요청 JSON이 아니라 로그 줄에만 표시한다.
         /// </summary>
-        private void LogListQuery(string? popupType, WpfPopupListResponseDto response)
+        private void LogNextQuery(string? popupType, WpfNextPopupResponseDto response)
         {
             string request = JsonSerializer.Serialize(new
             {
-                method = "GET",
+                method = "POST",
                 url = "/api/wpf/popups",
                 headers = new Dictionary<string, string> { [ClientVersion.HeaderName] = ClientVersion.Value },
-                body = (object?)null
+                body = new { }
             });
             int index = ResultLogList.Items.Count;
             _resultDetails[index] = (request, JsonSerializer.Serialize(response, LogJsonOptions));
-            string ids = response.Popups.Count == 0 ? "표시할 팝업 없음" : string.Join(", ", response.Popups.Select(p => p.PopupId));
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] 목록 조회{(popupType == null ? string.Empty : $" ({popupType})")} → {ids}");
+            string ids = response.Popup == null ? "표시할 팝업 없음" : $"{response.Popup.PopupId} ({response.Popup.DeliveryId})";
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] 조회{(popupType == null ? string.Empty : $" ({popupType})")} → {ids}");
             ResultLogList.SelectedIndex = index;
             DetailTabs.SelectedIndex = 1;
         }
@@ -216,7 +228,7 @@ namespace Popup
 
         private void UpdateServerState()
         {
-            ServerStateText.Text = $"숨김 {_gateway.HiddenCount} · 완료 {_gateway.CompletedCount}";
+            ServerStateText.Text = $"숨김 {_gateway.HiddenCount} · 완료 {_gateway.CompletedCount} · 유예 {_gateway.DeferredCount}";
         }
     }
 }
