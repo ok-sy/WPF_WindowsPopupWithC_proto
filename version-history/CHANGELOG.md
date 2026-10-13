@@ -2,6 +2,13 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-11 — TODO26 Header/Footer 분리 설계 폐기 상태 동기화
+
+- 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.
+- 변경: 설계26을 Trello와 동일한 폐기로 명시. 과거 체크리스트는 이력으로 보존하며 이미 구현된 PerMonitorV2·Win32 모서리 DPI/드래그 보완은 유지. 주요 파일: docs/design/26_VIDEO_팝업_HWND_구조_개선_TODO.md, version-history/CHANGELOG.md.
+- 검증: 최신 main과 Trello 카드 대조, VideoPopupView.xaml의 CompositionControl 및 OpaqueWindowCorners.cs의 UpdateLayeredWindow 확인. ALL/MINIMAL 현행 구현 설명 확인, 기능 계약 변경 없어 유지.
+- 상태: 문서·카드 정리. 실행 코드 변경·빌드·런타임 테스트 미실행.
+
 ## 2026-10-13-10 — TODO25 모서리 구현 설명 및 완료 이력 분류 정정
 
 - 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.

@@ -1,6 +1,10 @@
 # 26. VIDEO 팝업 HWND 구조 개선 TODO
 
-> **상태 기록 (2026-10-12)**: 이 문서의 구조 재검토(모서리 창 제거·Popup Host 분리)는 착수하지 않았고 아래 체크리스트는 미진행이다.
+> **폐기 확정 (2026-10-13 문서 동기화)**: Header/Footer와 영상 Host를 분리하고 현행 모서리 창을 제거하는 이 설계는 폐기했다. 아래 목표·체크리스트는 당시 검토 기록이며 진행 대상이 아니다. 현행 `OpaqueWindowCorners` 및 이미 반영된 DPI·드래그 보완은 유지한다.
+>
+> Trello: [TODO26 — Header/Footer 분리 설계 폐기](https://trello.com/c/kAc0ZWYl).
+
+> **과거 상태 기록 (2026-10-12)**: 이 문서의 구조 재검토(모서리 창 제거·Popup Host 분리)는 착수하지 않았고 아래 체크리스트는 미진행이다.
 > 같은 TODO26 번호로 커밋된 `21c4f1f`(`dev: 26_PerMonitorV2매니페스트_추가`)·`227f182`(`dev: 26_VIDEO모서리DPI드래그동기화_수정`, CHANGELOG 2026-10-07-13)는 이 목표가 아니라 현행 모서리 구조의 DPI·드래그 결함을 고친 선행 보완이다.
 > 그 결과 모서리 창은 WPF `HwndSource`가 아니라 순수 Win32 레이어드 창(`UpdateLayeredWindow`) 4개이며(`popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs`), 아래의 "모서리 `HwndSource` 4개"는 작성 당시 구조다.
 
