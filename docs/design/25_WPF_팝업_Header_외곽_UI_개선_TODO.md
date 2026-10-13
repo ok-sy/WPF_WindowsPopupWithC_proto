@@ -1,6 +1,8 @@
 # WPF 팝업 Header / 외곽 UI 개선 TODO
 
-## 현재 상태 — 2026-10-07
+## 현재 상태 — 2026-10-13
+
+완료 이력과 현재 구현을 분리해 정정했다. TODO26의 Header/Footer 분리 설계는 폐기했지만, 그 번호로 반영된 PerMonitorV2 및 현행 모서리 DPI·드래그 보완은 유지한다.
 
 설계 25의 코드 구현은 완료했다. 현재 남은 작업은 **최종 로고 확정과 Horizon/저사양 PC 실환경 검증**이다.
 
@@ -22,10 +24,10 @@
 - [x] DWM rounded-corner 구현 제거
 - [x] `CreateRoundRectRgn` 방식 대신 `OpaqueWindowCorners` 방식 적용
 - [x] 본 HWND에서 네 모서리 `s × s` 물리 픽셀 영역을 직사각형 Region으로 제거
-- [x] 제거한 영역에 작은 per-pixel-alpha `HwndSource` 4개를 배치
+- [x] 제거한 영역에 순수 Win32 레이어드 모서리 창 4개 배치. 초기 WPF `HwndSource` 구현은 대체됨
 - [x] 기존 `bodySize = size * 4` Border Clip 방식을 제거하고 quarter-circle Geometry로 직접 렌더링
 - [x] Region 절단 크기와 Corner HWND/Geometry를 물리 픽셀 기준으로 대응
-- [x] DPI 변경 후 지연 재생성하여 새 DPI 기준으로 Region/Corner를 다시 맞춤
+- [x] 본 창 DPI 기준 물리 픽셀 비트맵을 생성하고 `UpdateLayeredWindow`로 모서리 위치·크기·내용 갱신. HWND 재사용
 - [x] 드래그 중 Corner를 숨기지 않고 본 창 위치를 추적
 - [x] 이동 종료 시 HWND를 불필요하게 재생성하지 않고 위치 갱신
 - [x] 로컬 PC에서 이전 흰색 돌출/고양이귀 문제가 크게 개선된 것을 확인
@@ -58,9 +60,9 @@ Main HWND
   네 모서리 s × s 직사각형 Region 제거
   ↓
 OpaqueWindowCorners
-  작은 HwndSource 4개
-  UsesPerPixelTransparency = true
-  quarter-circle Geometry 직접 렌더링
+  Win32 레이어드 창 4개
+  본 창 DPI 기준 quarter-circle 비트맵
+  UpdateLayeredWindow로 위치·크기·내용 적용
   ↓
 Fullscreen
   Radius = 0 / OpaqueWindowCorners 미적용
@@ -117,7 +119,7 @@ Corner HWND의 s × s 물리 픽셀
 quarter-circle Geometry
 ```
 
-가 직접 대응하도록 변경했고 DPI 변경 후 새 좌표계로 재생성한다.
+가 직접 대응한다. 현재는 본 창 DPI 기준 비트맵을 다시 그리고 HWND를 재사용한다. 드래그 시 본 창과 모서리를 묶음 이동한다.
 
 ## 재시도하지 않을 항목
 
@@ -142,8 +144,6 @@ quarter-circle Geometry
 
 조건을 만족하지 못하고 추가 복잡도가 과도해지면 VIDEO Radius 0 사각형 정책을 최종 fallback으로 검토한다.
 
-## 향후 별도 검토
+## WebView2 적용 상태
 
-`WebView2CompositionControl`은 WPF WebView2의 airspace 문제를 해결하는 대체 컨트롤이지만, 최상위 WPF Layered Window의 VIDEO 합성 비용까지 제거한다고 현재 판단할 근거는 없다.
-
-따라서 지금 제품 코드에는 적용하지 않는다. WebView2 Runtime/SDK 또는 Horizon 그래픽 환경이 바뀐 경우에만 기존 WebView2와 동일 조건 CPU 비교 후 별도 검토한다.
+현재 `VideoPopupView.xaml`은 `WebView2CompositionControl`을 사용한다(TODO19 공통 Overlay). 기존 미적용 문구를 정정한다. 이 컨트롤의 airspace 대응과 최상위 Window의 투명 합성 비용은 별개이며, VIDEO 본 창의 `AllowsTransparency=false` 정책은 유지한다.

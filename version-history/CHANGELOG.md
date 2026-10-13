@@ -2,6 +2,13 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-10 — TODO25 모서리 구현 설명 및 완료 이력 분류 정정
+
+- 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.
+- 변경: 설계25의 WPF HwndSource·지연 재생성·CompositionControl 미적용 설명을 현행 Win32 레이어드 창·HWND 재사용·적용 상태로 수정. docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md에 완료 카드의 대체·통합·부분 제거 구분 기록. 주요 파일: 설계25, 대조 문서, version-history/CHANGELOG.md.
+- 검증: 최신 main과 Trello 카드 대조, VideoPopupView.xaml의 CompositionControl 및 OpaqueWindowCorners.cs의 UpdateLayeredWindow 확인. ALL/MINIMAL 현행 구현 설명 확인, 기능 계약 변경 없어 유지.
+- 상태: 문서·카드 정리. 실행 코드 변경·빌드·런타임 테스트 미실행.
+
 ## 2026-10-13-09 — TODO38 WPF 기울임 글자 잘림 TODO 추가
 
 - 이유: WPF 서식 텍스트 표시 오류 추적 필요.
