@@ -1,7 +1,7 @@
 # 35. 단건 팝업 조회·결과 수신 API 흐름 TODO
 
 기준일: 2026-10-13 (KST).  
-상태: **진행중 · 정상 흐름 구현 완료(2026-10-13), 장애 복구 정책 결정 대기 · 원격 개발 DB DDL 미적용**.
+상태: **진행중 · 정상 흐름 구현 완료(2026-10-13), 장애 복구 정책 결정 대기 · 원격 개발 DB DDL 적용 완료**.
 
 2026-10-13: 진행협의중에서 진행중으로 전환한다. 정상 API 흐름 개발을 진행하며, 아직 선택값이 전달되지 않은 장애 복구 세부 정책은 §4에서 별도로 관리한다.
 
@@ -110,4 +110,5 @@ status는 기존 RESULT 계약(ACCEPTED·DUPLICATE·REJECTED·RETRYABLE_ERROR·I
 
 - 서버 `gradlew test --offline`(로컬 XE, `POPUP_TEST_DB_PASSWORD` 설정) 120건 통과·skip 0: 단위(전달 건 생성·재사용·만료·동시 조회, nextStatus·후보 확인 실패, 거절 코드, 전달 건 검증, TEXT·IMAGE 닫기 완료), 실DB 롤백 테스트(TEXT 닫기 완료 → 영상 미완료 닫기 유예 1800초 → QUIZ → SURVEY → EMPTY → popup=null, 다른 사용자 전달 건 거절), 실서버 HTTP 통합 테스트(POST 단건 조회·재사용, 결과 1건 순차·DUPLICATE·popup=null·영수증·전달 건·요청 로그 커밋).
 - WPF BehaviorTests 955건: 실제 `MainWindow`를 가짜 HTTP 서버에 연결해 1건 표시 → 닫힘 → deliveryId 포함 결과 → AVAILABLE 즉시 다음 조회 → EMPTY 2700초 대기, 결과 전송 실패 시 조회 보류·10초 복구 예약 확인. RecoveryTests 153건(POST 401 재전송, 순차 전송·미종결 멈춤·400 격리·INTERNAL_ERROR 상한).
-- 미실행: 원격 개발 DB DDL 적용, 실제 서버+WPF 화면 연동, 폐쇄망 반입.
+- 원격 개발 DB(11g XE, ZERO-RULE)에 15 스크립트 적용 완료(2026-10-13, 테이블·인덱스 생성, 행 0).
+- 미실행: 원격 개발 DB에 새 서버 반영 후 실제 서버+WPF 화면 연동, 폐쇄망 반입.

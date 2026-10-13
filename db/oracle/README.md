@@ -200,6 +200,6 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 배경: WPF 조회 API를 단건 순차 전달(`POST /p/api/wpf/popups` → popup 1건 또는 null)로 바꿨다. 조회 API가 전달 건(`deliveryId`)을 만들거나 재사용하고, 결과 수신 API가 소유·팝업 일치·미종료를 확인한 뒤 전달 건을 종료한다. `DEFER_UNTIL_AT`(결과 저장 시각 + pollingIntervalSeconds)으로 미완료로 닫힌 팝업의 재노출을 유예하며, 조회와 후속 후보 확인(nextStatus)이 같은 조건을 쓴다.
 - 순서: **서버 반영 전에 실행.** 새 서버는 조회·결과 처리에서 이 테이블을 사용하므로 없으면 ORA-00942로 실패한다. 이전 서버는 이 테이블을 쓰지 않아 실행 후에도 동작한다. 팝업 테이블 소유 계정과 앱 계정이 다르면(방식 A) `03_grant_zero_rule_oracle.sql`을 다시 실행해 권한을 준다.
-- 적용 현황: 로컬 XE(POPUP) 2026-10-13 실행 — 테이블·인덱스 생성 OK, 재실행 시 SKIP 확인. `03`을 다시 실행해 로컬 `ZERO_RULE`에 권한 부여. 실행 후 실DB 테스트(`WpfPopupDatabaseTest` 롤백 전용, `WpfApiOracleHttpTest`) 통과. **원격 개발 DB 미적용.**
+- 적용 현황: 로컬 XE(POPUP) 2026-10-13 실행 — 테이블·인덱스 생성 OK, 재실행 시 SKIP 확인. `03`을 다시 실행해 로컬 `ZERO_RULE`에 권한 부여. 실행 후 실DB 테스트(`WpfPopupDatabaseTest` 롤백 전용, `WpfApiOracleHttpTest`) 통과. 원격 개발 DB(11g XE, `ZERO-RULE` 스키마) 2026-10-13 실행 — 테이블·인덱스 2개·주석 생성 OK, 행 0. 앱 계정 소유라 권한 부여 불필요.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @15_wpf_popup_delivery_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @15_wpf_popup_delivery_oracle.sql ""`
