@@ -12,6 +12,8 @@
 
 ## 2026-10-13-03 — TODO35 단건 팝업 API 흐름 및 응답 상태 정리
 
+- Trello 대조 보완: 진행협의중 카드 `목록 조회,결과저장,결과수신 세단계`(https://trello.com/c/z0xv8TnE)를 TODO35에 연결. 실제 API 구분은 로그인·조회·결과 수신이며 결과 저장은 결과 수신 책임임을 명시. 카드 상태와 미결 정책을 유지하고 문서 링크·중복 과제 여부를 확인.
+
 - 이유: 로그인·조회·결과 수신을 세 API로 분리하고 단건 순차 처리하는 합의 사항과 결과 후속 조회 상태를 구현 전 기준으로 보존할 필요.
 - 변경: TODO35 추가. 조회 응답의 매 조회 pollingIntervalSeconds, 단건 nextPopup/null, userId·nextStatus 제외 및 C# 단건 DTO를 기록. 결과 응답의 처리 status와 nextStatus(AVAILABLE/EMPTY)를 구분하고 저장 후 후보 유무 확인 및 회의 미결 복구 정책을 분리.
 - 주요 파일: docs/design/35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md, version-history/CHANGELOG.md.
