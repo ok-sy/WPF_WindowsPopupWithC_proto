@@ -116,11 +116,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 | 옵션 | 형식 | 설명 |
 |---|---|---|
-| `contentTitle` | string | 콘텐츠 내부 제목 |
-| `description` | string | 콘텐츠 제목 아래 설명 |
-| `showContentHeader` | bool | 콘텐츠 제목/설명 영역 사용 여부 |
 | `plainText` | string | 일반 텍스트 본문. `textBlocks`가 있으면 서버가 서식 본문에서 만든 값 |
-| `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시 |
+| `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시. 콘텐츠 제목·설명도 앞 문단으로 포함 |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
 | `highlightText` | string | 강조 문구 |
 | `showHighlight` | bool | 강조 영역 표시 여부. 없으면 false |
@@ -129,6 +126,8 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `showBottomDescription` | bool | 하단 설명 표시 여부. 없으면 false |
 
 > Markdown 모드(`markdownMode`/`markdownContent`)는 2026-09-21 제거했다. 값이 남아 있어도 WPF·웹 모두 무시한다.
+>
+> `contentTitle`·`description`·`showContentHeader`는 2026-10-13 제거했다(설계 37). 콘텐츠 제목·설명은 서식 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 본문 앞 문단(제목: 굵게·크기 24)으로 합쳐 보낸다.
 
 ---
 

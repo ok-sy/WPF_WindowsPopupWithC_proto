@@ -107,6 +107,62 @@ final class PopupRichText {
         return plain.toString();
     }
 
+    /**
+     * [설계 37] TEXT content의 콘텐츠 제목(contentTitle)·설명(description)은 서식 본문(textBlocks)으로 통합했다.
+     * 통합 전에 저장된 행의 CONTENT_TITLE·DESCRIPTION 값은 조회 시 본문 앞 문단(제목: 굵게·24, 설명: 기본)으로 합쳐
+     * DB 변환 없이 계속 표시한다. showContentHeader=false였던 행은 표시하지 않던 값이므로 합치지 않는다.
+     * 관리자가 다시 저장하면 합쳐진 본문이 textBlocks로 저장되고 두 컬럼은 비워진다.
+     * plainText도 같은 순서로 앞에 붙여 서식 본문과 어긋나지 않게 한다.
+     */
+    static void mergeLegacyHeader(Map<String, Object> content, String title, String description) {
+        boolean showHeader = !Boolean.FALSE.equals(content.remove("showContentHeader"));
+        List<String> header = new java.util.ArrayList<>();
+        if (showHeader) {
+            if (title != null && !title.isBlank()) header.add(normalizeLineBreaks(title.strip()));
+            if (description != null && !description.isBlank()) header.add(normalizeLineBreaks(description));
+        }
+        if (header.isEmpty()) {
+            return;
+        }
+        List<Object> blocks = new java.util.ArrayList<>();
+        for (int i = 0; i < header.size(); i++) {
+            Map<String, Object> run = new java.util.LinkedHashMap<>();
+            run.put("text", header.get(i));
+            if (i == 0 && title != null && !title.isBlank()) {
+                run.put("bold", true);
+                run.put("size", 24);
+            }
+            blocks.add(paragraph(List.of(run)));
+        }
+        Object existing = content.get(KEY);
+        String plain = content.get("plainText") instanceof String s ? s : "";
+        boolean hasBody;
+        if (existing instanceof List<?> list) {
+            blocks.addAll(list);
+            hasBody = !list.isEmpty();
+        } else {
+            hasBody = !plain.isEmpty();
+            if (hasBody) {
+                for (String line : normalizeLineBreaks(plain).split("\n", -1)) {
+                    blocks.add(paragraph(line.isEmpty() ? List.of() : List.of(Map.of("text", line))));
+                }
+            }
+        }
+        content.put(KEY, blocks);
+        content.put("plainText", String.join("\n", header) + (hasBody ? "\n" + plain : ""));
+    }
+
+    private static Map<String, Object> paragraph(List<?> runs) {
+        Map<String, Object> block = new java.util.LinkedHashMap<>();
+        block.put("alignment", "LEFT");
+        block.put("runs", runs);
+        return block;
+    }
+
+    private static String normalizeLineBreaks(String value) {
+        return value.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
     private static void requireKnownKeys(Map<?, ?> map, Set<String> allowed, String label) {
         for (Object key : map.keySet()) {
             if (!(key instanceof String k) || !allowed.contains(k)) {

@@ -302,7 +302,6 @@ function PopupBody({
     return survey ? <SurveyPreview {...survey} description={description} /> : null;
   }
 
-  const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
   const richBlocks = readTextBlocks(content.textBlocks);
   // [설계 18 L-4 — C-23] WPF TextPopupContentDto와 같이 플래그가 없으면 숨김(과거 행 fallback 삭제).
@@ -344,7 +343,6 @@ function PopupBody({
 
   return (
     <Stack spacing={2}>
-      {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
       {showPlainText && (richBlocks
         ? <Box>{richBlocks.map((block, index) => (
             /* [설계 28] 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
@@ -523,7 +521,8 @@ export default function PopupPreview({
   const bodyFontSize = fontSize(popup, 'bodyFontSize');
   const footerFontSize = fontSize(popup, 'footerFontSize');
   const showContentTitle =
-    !imageFill && Boolean(contentTitle.trim()) && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
+    // [설계 37] TEXT는 콘텐츠 제목·설명이 본문(textBlocks)에 포함되어 별도 제목을 그리지 않는다.
+    !imageFill && popup.popupType !== 'TEXT' && Boolean(contentTitle.trim());
 
   return (
     <Box

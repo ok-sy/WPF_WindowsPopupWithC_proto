@@ -12,7 +12,7 @@ namespace Popup
     {
         private static readonly Dictionary<string, string> Labels = new()
         {
-            ["contentTitle"]="콘텐츠 제목", ["description"]="설명", ["showContentHeader"]="콘텐츠 제목·설명 표시",
+            ["description"]="설명",
             ["plainText"]="본문 · 서식 본문이 있으면 저장 시 서식 본문에서 다시 만듦", ["textBlocks"]="서식 본문 (textBlocks JSON) · 있으면 본문 대신 표시, 비우면 본문 사용", ["showPlainText"]="본문 표시", ["highlightText"]="강조 문구", ["showHighlight"]="강조 문구 표시",
             ["bottomDescription"]="하단 안내", ["bottomDescriptionUrl"]="하단 안내 링크", ["showBottomDescription"]="하단 안내 표시",
             ["imageTitle"]="이미지 제목", ["imageUrl"]="이미지 경로 또는 URL", ["imageSizeMode"]="이미지 표시 방식",

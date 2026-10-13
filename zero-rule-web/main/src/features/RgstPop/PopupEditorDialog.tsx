@@ -59,7 +59,7 @@ function createDefaultPopup(): AdminPopupDetail {
     completionRatio: null, passingScore: null, allowCloseBeforeComplete: true,
     questions: [],
     content: {
-      contentTitle: '', description: '', showContentHeader: true, plainText: '',
+      description: '', plainText: '',
       showPlainText: true,
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
@@ -150,7 +150,7 @@ function normalizeImageSizeMode(value: unknown): string {
 const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
   'headerFontSize', 'bodyFontSize', 'footerFontSize', 'footerAction', 'footerLinkUrl'];
 const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
-  TEXT: ['contentTitle', 'description', 'showContentHeader', 'plainText', 'textBlocks', 'showPlainText', 'highlightText',
+  TEXT: ['plainText', 'textBlocks', 'showPlainText', 'highlightText',
     'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'width', 'height', 'keepAspectRatio'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
@@ -372,7 +372,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const imageFillMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'ORIGINAL';
   // [설계 18 L-4 — C-23] 표시 플래그 없는 과거 행 fallback 삭제(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
   const showTextHighlight = popup.content.showHighlight === true;
-  const showTextContentHeader = popup.content.showContentHeader !== false;
   const showTextPlainText = popup.content.showPlainText !== false;
   const showTextBottomDescription = popup.content.showBottomDescription === true;
   const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
@@ -423,11 +422,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Box>
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
-            {!imageFillMode && <><TextField label="콘텐츠 제목" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {/* [설계 37] TEXT는 콘텐츠 제목·설명을 본문 서식 편집기로 작성한다. */}
+            {!imageFillMode && popup.popupType !== 'TEXT' && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
             {imageFillMode && <Typography variant="caption" color="text.secondary">이 모드는 이미지만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
-              {/* TEXT는 일반 텍스트·강조 문구·하단 설명만 편집한다. */}
+              {/* TEXT는 본문(제목·설명 포함)·강조 문구·하단 설명만 편집한다. */}
               {/* [설계 28] 본문은 서식 편집기로 입력하고 textBlocks(기준)와 파생 plainText를 함께 갱신한다. */}
               {<PopupRichTextEditor key={bodyEditorKey} label="일반 텍스트" disabled={!showTextPlainText}
                 initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
@@ -598,7 +598,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 {popup.popupType === 'TEXT' && <>
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>텍스트 표시</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
-                <FormControlLabel control={<Switch size="small" checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
                 <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />
                 <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />
                 <FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />

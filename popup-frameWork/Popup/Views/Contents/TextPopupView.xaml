@@ -38,31 +38,6 @@
             
         </Style>
 
-        <!--
-        제목용 TextBlock Style
-
-        x:Key는 Style의 이름이다.
-        다른 TextBlock에서
-        Style="{StaticResource TitleTextStyle}"
-        형태로 사용한다.
-        -->
-        <Style x:Key="TitleTextStyle"
-       TargetType="TextBlock"
-       BasedOn="{StaticResource CommonContentTitleStyle}">
-
-            <Setter Property="FontSize"
-            Value="24"/>
-
-            <Setter Property="FontWeight"
-            Value="SemiBold"/>
-
-            <Setter Property="Foreground"
-            Value="{StaticResource PopupTextPrimaryBrush}"/>
-
-            <Setter Property="Margin"
-            Value="0,0,0,8"/>
-        </Style>
-
        
         
         <Style TargetType="Hyperlink">
@@ -93,20 +68,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 텍스트 팝업 전용 제목/설명 영역 -->
-        <StackPanel x:Name="ContentHeaderPanel"
-                    Grid.Row="0"
-                Margin="0,0,0,20">
-
-            <TextBlock x:Name="ContentTitleText"
-                        Style="{StaticResource TitleTextStyle}"
-                        Text="서비스 이용 안내"/>
-
-            <TextBlock x:Name="ContentDescriptionText"
-           Style="{StaticResource BodyTextStyle}"
-           Text="이 팝업은 WPF 화면 구성 예제를 보여주기 위해 만든 화면입니다."/>
-
-        </StackPanel>
+        <!-- [설계 37] 텍스트 팝업 전용 제목/설명 영역(ContentHeaderPanel) 삭제. 제목·설명은 서식 본문으로 작성한다. 0행은 비워 둔다. -->
 
         <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"

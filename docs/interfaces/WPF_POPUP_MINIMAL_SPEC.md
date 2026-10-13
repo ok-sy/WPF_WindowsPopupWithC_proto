@@ -1,7 +1,7 @@
 # WPF 팝업 최소 기능 버전 정의서
 
 - 문서 성격: Minimal Feature Specification / External Open Scope
-- 작성 기준: 2026-10-12 (KST)
+- 작성 기준: 2026-10-13 (KST)
 - 기준 소스: 현재 `main` 코드 재검토 반영
 
 ## 1. 문서 목적
@@ -62,12 +62,9 @@
 
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PlainText | 지원 | Y | `""` | 일반 본문 텍스트 |
+| PlainText | 지원 | Y | `""` | 일반 본문 텍스트. 콘텐츠 제목·설명이 있으면 앞 줄로 포함 |
 | ShowPlainText | 지원 | N | `true` | PlainText 표시 여부 |
 | TextBlocks | 미제공 | N | 없음 | 서식 본문. 최소 제공 범위에서는 PlainText만 사용 |
-| ContentTitle | 지원 | N | `""` | TEXT 콘텐츠 내부 제목 |
-| ShowContentHeader | 지원 | N | `true` | 콘텐츠 내부 제목 영역 표시 |
-| Description | 지원 | N | `""` | 콘텐츠 설명 |
 | HighlightText | 미제공 | N | `""` | 강조 텍스트 |
 | ShowHighlight | 미제공 | N | `false` | 강조 영역 표시 |
 | BottomDescription | 미제공 | N | `""` | 하단 설명 |
@@ -76,6 +73,7 @@
 | HeaderFontSize / BodyFontSize / FooterFontSize | 미제공 | N | `null` | 공통 옵션 사용. TextStyle이라는 별도 객체/필드는 없음 |
 
 TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한다.
+ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. 콘텐츠 제목·설명은 PlainText의 첫 줄·다음 줄로 전달된다.
 
 ### 4.2 IMAGE
 
@@ -197,11 +195,8 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showDoNotShowAgain": false,
   "questions": [],
   "content": {
-    "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
-    "showPlainText": true,
-    "contentTitle": "점검 공지",
-    "showContentHeader": true,
-    "description": "안내 내용을 확인해 주세요."
+    "plainText": "점검 공지\n안내 내용을 확인해 주세요.\n10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+    "showPlainText": true
   }
 }
 ```

@@ -19,11 +19,8 @@
       "showDoNotShowAgain": false,
       "questions": [],
       "content": {
-        "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
-        "showPlainText": true,
-        "contentTitle": "점검 공지",
-        "showContentHeader": true,
-        "description": "안내 내용을 확인해 주세요."
+        "plainText": "점검 공지\n안내 내용을 확인해 주세요.\n10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+        "showPlainText": true
       }
     },
     {

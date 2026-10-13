@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-15 — TODO37 TEXT 콘텐츠 제목·설명을 서식 본문(textBlocks)으로 통합
+
+- 이유: 서식 본문으로 제목·설명 역할까지 표현할 수 있어 TEXT.content의 별도 제목·설명 영역을 본문으로 통합(진행 확정 과제). textBlocks 이름 유지, plainText는 서버 파생값으로 유지하기로 결정.
+- 변경:
+  - 서버: TEXT 저장 시 CONTENT_TITLE·DESCRIPTION을 NULL로 저장하고 `showContentHeader`를 저장하지 않음(`PopupService`). 조회 시 통합 전 행의 제목·설명을 본문 앞 문단(제목 굵게·24, 설명 기본)으로 합치고 plainText도 같은 순서로 앞에 붙임. textBlocks가 없던 행은 plainText 줄을 문단으로 변환. showContentHeader=false 행의 숨긴 값은 합치지 않음(`PopupRichText.mergeLegacyHeader`, `PopupContentAssembler`). DB 변환 스크립트·DDL 변경 없음(컬럼은 다른 유형이 계속 사용).
+  - 관리자 웹: TEXT 편집의 콘텐츠 제목·설명 입력과 `콘텐츠 제목·설명` 스위치 제거, 미리보기의 TEXT 제목·설명 영역 제거.
+  - WPF: `TextPopupContentDto`의 ContentTitle·Description·ShowContentHeader, TEXT 화면 제목·설명 영역과 미사용 TitleTextStyle 제거. Demo TEXT 샘플의 제목·설명을 본문 앞 두 문단으로 이동.
+  - 문서·샘플: POPUP_INTERFACE_SPEC(3.7 변경 이력에 설계 37 추가, 버전 유지), WPF_POPUP_ALL_SPEC·WPF_POPUP_MINIMAL_SPEC(최소 범위는 세 필드 삭제만, textBlocks 미추가), 옵션 가이드 2종, 미리보기 대응 문서, 예제 JSON 3종, DB 샘플 SQL(SAMPLE-TEXT-001), 설계05 메모, Excel 정의서 TEXT 시트 3행 삭제·메모·Sample 갱신(XML 수준 편집), Word/PDF v3.7 재생성. 설계37 결정·구현·검증 기록 및 카드 대응표 상태 갱신.
+- 주요 파일: zero-rule-server/service/core/.../popup/(PopupRichText.java, PopupContentAssembler.java, PopupService.java, PopupContentAssemblerTest.java), zero-rule-web/main/src/features/RgstPop/(PopupEditorDialog.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/TextPopupContentDto.cs, Factories/PopupFactory.cs, Views/Contents/TextPopupView.xaml(.cs), Services/DemoPopupDataService.cs, DemoOptionsWindow.Fields.cs), docs/interfaces/*, docs/(POPUP_OPTION_GUIDE.md, POPUP_USER_OPTION_GUIDE.md), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/(05_Oracle_DB_설계.md, 37_TEXT_EDITOR_BODY_통합검토_TODO.md), api/examples/wpf-popups-response.json, db/oracle/02_popup_sample_oracle.sql, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline` 성공(최근 실행 112건, Oracle 연동 6건 skip) — 통합 전 행 합침(여러 줄·빈 줄·기존 textBlocks), 합친 본문의 저장 검증 통과·파생 plainText 일치, 숨김 행 미병합, 저장 옵션 정리 포함. 관리자 웹 `tsc --noEmit`·eslint(변경 파일)·`npm run build` 성공. WPF BehaviorTests 938건·RecoveryTests 146건 통과(로컬, 테스트 프로젝트는 .gitignore 대상), 렌더링 이미지에서 제목이 첫 문단으로 표시됨 확인. 예제 JSON·명세 예제·SQL 옵션 JSON 파싱, Excel TEXT 시트·Sample JSON, docx 본문 확인. 미실행: 브라우저 화면 확인, 실제 서버 연동 재편집 저장, 원격 개발 DB 기존 TEXT 행 조회·샘플 SQL 실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-13-14 — TODO35 착수 전 현행 대조 및 구현 보류 사유 기록
 
 - 이유: 단건 조회·결과 수신 흐름 구현 전 현행 코드 대조에서 결정이 필요한 항목이 확인되어 구현 보류.

@@ -1,7 +1,7 @@
 # 37. TEXT EDITOR BODY 통합 검토 TODO
 
 기준일: 2026-10-13 (KST).  
-상태: **진행중 · TEXT BODY 통합 진행 확정**.
+상태: **구현 완료 · 제목·설명을 textBlocks로 통합(2026-10-13), 브라우저·원격 DB 확인 남음**.
 
 Trello: [TEXT EDITOR BODY 통합](https://trello.com/c/M7zvelWc).
 
@@ -16,14 +16,33 @@ TEXT 편집 본문에서 제목·설명 역할까지 표현할 수 있으므로,
 
 ## TODO
 
-- [ ] TEXT.content의 현재 필드와 웹·서버·WPF 사용처를 대조하여 통합할 필드와 유지할 필드를 확정한다.
-- [ ] content 내부 title·description 등을 편집 본문으로 대체하는 구체적 필드 계약을 정한다. emphasis·footerDescription 등 다른 필드까지 자동으로 삭제 범위를 넓히지 않는다.
-- [ ] 기존 textBlocks를 통합 본문으로 사용할지, API 명칭을 바꿀지 결정한다. 동일 본문을 여러 필드에서 독립 편집하지 않도록 원본을 하나로 정한다.
-- [ ] plainText의 검색·기존 표시 fallback 등 사용처를 확인하고, 유지한다면 서식 본문에서 일관되게 파생되도록 정한다.
-- [ ] 관리자 등록·수정 화면과 미리보기, 서버 저장·조회, WPF 표시, Demo 입력의 변경 범위를 정리한다.
-- [ ] 기존 샘플·등록 데이터의 제목과 설명을 합치는 순서·문단·서식 보존 방식을 정한다. 기존 데이터 유지 필요성부터 확인하고 필요한 경우에만 변환 절차를 마련한다.
-- [ ] 빈 본문, 제목만 있는 본문, 여러 문단, 재편집 후 저장 시 내용 보존을 확인할 검증 기준을 정한다.
-- [ ] 구현 시 TODO28 및 MINIMAL/ALL 명세·유형별 계약·샘플·Excel/Word 정의서를 함께 갱신한다.
+- [x] TEXT.content의 현재 필드와 웹·서버·WPF 사용처를 대조하여 통합할 필드와 유지할 필드를 확정한다. → §결정
+- [x] content 내부 title·description 등을 편집 본문으로 대체하는 구체적 필드 계약을 정한다. emphasis·footerDescription 등 다른 필드까지 자동으로 삭제 범위를 넓히지 않는다. → `contentTitle`·`description`·`showContentHeader` 삭제. highlightText·bottomDescription*·showPlainText 유지
+- [x] 기존 textBlocks를 통합 본문으로 사용할지, API 명칭을 바꿀지 결정한다. → textBlocks를 유일한 본문 원본으로 사용, 이름 유지
+- [x] plainText의 검색·기존 표시 fallback 등 사용처를 확인하고, 유지한다면 서식 본문에서 일관되게 파생되도록 정한다. → 검색 사용처 없음. textBlocks 없는 기존 데이터 표시·최소 범위 클라이언트용으로 유지하며 서버가 textBlocks에서 파생(설계 28 규칙 그대로)
+- [x] 관리자 등록·수정 화면과 미리보기, 서버 저장·조회, WPF 표시, Demo 입력의 변경 범위를 정리한다. → §구현
+- [x] 기존 샘플·등록 데이터의 제목과 설명을 합치는 순서·문단·서식 보존 방식을 정한다. 기존 데이터 유지 필요성부터 확인하고 필요한 경우에만 변환 절차를 마련한다. → DB 변환 스크립트 없이 서버 조회 시 합침(§구현)
+- [x] 빈 본문, 제목만 있는 본문, 여러 문단, 재편집 후 저장 시 내용 보존을 확인할 검증 기준을 정한다. → §검증
+- [x] 구현 시 TODO28 및 MINIMAL/ALL 명세·유형별 계약·샘플·Excel/Word 정의서를 함께 갱신한다. → §구현 문서 항목
+
+## 결정 (2026-10-13)
+
+- TEXT.content에서 `contentTitle`·`description`·`showContentHeader`를 삭제한다. 콘텐츠 제목·설명은 서식 본문(`textBlocks`) 앞 문단으로 작성한다.
+- `textBlocks` 이름은 유지한다(body로 바꾸지 않음). `plainText`는 서버 파생값으로 유지한다.
+- 다른 유형의 제목·설명(imageTitle·videoTitle·surveyTitle·description)과 공통 `title`(헤더)은 변경하지 않는다. DB 컬럼(CONTENT_TITLE·DESCRIPTION)은 다른 유형이 계속 사용하므로 DDL 변경 없음.
+
+## 구현 (2026-10-13)
+
+- 서버: TEXT 저장 시 CONTENT_TITLE·DESCRIPTION을 NULL로 저장하고 `showContentHeader`를 저장하지 않는다(`PopupService`). 조회 시 통합 전 행에 제목·설명이 있고 showContentHeader가 false가 아니면 본문 앞 문단으로 합친다 — 제목은 굵게·24, 설명은 기본 서식, textBlocks가 없던 행은 plainText 줄을 문단으로 바꿔 뒤에 둔다. plainText도 같은 순서로 앞에 붙인다(`PopupRichText.mergeLegacyHeader`, `PopupContentAssembler`). showContentHeader=false였던 행의 숨긴 제목·설명은 합치지 않는다. 관리자가 다시 저장하면 합친 본문이 저장되고 컬럼은 비워진다.
+- 관리자 웹: TEXT 편집에서 콘텐츠 제목·설명 입력과 `콘텐츠 제목·설명` 표시 스위치를 제거하고, 미리보기에서 TEXT 제목·설명 영역을 제거했다.
+- WPF: `TextPopupContentDto`의 세 속성, TEXT 화면의 제목·설명 영역(ContentHeaderPanel)과 미사용 TitleTextStyle을 제거했다. Demo TEXT 샘플은 제목·설명을 본문 앞 두 문단으로 옮겼다.
+- 문서·샘플: POPUP_INTERFACE_SPEC·ALL/MINIMAL 명세·옵션 가이드·예제 JSON·DB 샘플 SQL·Excel 정의서 TEXT/Sample 시트 갱신.
+
+## 검증 (2026-10-13)
+
+- 서버 `PopupContentAssemblerTest`: 제목·설명 없는 일반 본문은 그대로, plainText만 있던 행(여러 줄·빈 줄 포함)·textBlocks가 있던 행의 합침 결과, 합친 본문이 저장 검증을 통과하고 파생 plainText와 같음(재저장 시 내용 보존), showContentHeader=false 행 미병합, TEXT 저장 옵션에서 showContentHeader 제거.
+- WPF BehaviorTests: Demo 샘플 첫 문단이 굵게·24 제목, 제목 영역 요소 없음, 샘플에 삭제 키 없음.
+- 미실행: 관리자 웹 브라우저 화면·실제 서버 연동 재편집 저장, 원격 개발 DB의 기존 TEXT 행 확인.
 
 ## Trello 진행중 ↔ 저장소 TODO 대조
 
@@ -31,9 +50,9 @@ TEXT 편집 본문에서 제목·설명 역할까지 표현할 수 있으므로,
 
 | 카드 | 저장소 과제 | 상태 |
 |---|---|---|
-| [목록 조회,결과저장,결과수신 세단계](https://trello.com/c/z0xv8TnE) | [TODO35](35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md) | 진행중 · 복구 세부값 확인 필요 |
-| [TEXT EDITOR 화이트리스트 CS쪽 제거 여부 체크](https://trello.com/c/e9oWww78) | [TODO36](36_TEXT_서식변환_타입검사_중복검토_TODO.md) | 진행중 · 제거 범위 검토 |
-| [TEXT EDITOR BODY 통합](https://trello.com/c/M7zvelWc) | TODO37(이 문서) | 진행중 · BODY 통합 진행 확정 |
+| [목록 조회,결과저장,결과수신 세단계](https://trello.com/c/z0xv8TnE) | [TODO35](35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md) | 진행중 · 구현 보류(닫기 재노출·결과 요청 형식 미결) |
+| [TEXT EDITOR 화이트리스트 CS쪽 제거 여부 체크](https://trello.com/c/e9oWww78) | [TODO36](36_TEXT_서식변환_타입검사_중복검토_TODO.md) | 검토 완료 · C# 검사 유지 |
+| [TEXT EDITOR BODY 통합](https://trello.com/c/M7zvelWc) | TODO37(이 문서) | 구현 완료 · 화면·원격 DB 확인 남음 |
 
 ## 완료 기준
 

@@ -1065,8 +1065,9 @@ public class PopupService {
                 toBigDecimal(popup.completionRatio()),
                 "QUIZ".equals(popupType) ? toBigDecimal(popup.passingScore()) : null,
                 toYn(popup.allowCloseBeforeComplete()),
-                contentText(content, contentTitleKey(popupType)),
-                contentText(content, "description"),
+                // [설계 37] TEXT의 제목·설명은 본문(textBlocks)으로 통합해 정규 컬럼을 비운다.
+                "TEXT".equals(popupType) ? null : contentText(content, contentTitleKey(popupType)),
+                "TEXT".equals(popupType) ? null : contentText(content, "description"),
                 bodyText(content),
                 contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
                         ? "videoUrl" : mediaUrlKey(popupType)),
@@ -1077,6 +1078,8 @@ public class PopupService {
     /** CONTENT_OPTIONS 저장 형태. 정규 컬럼 사본을 빼고 [설계 30] Footer 동작을 저장 정규형으로 맞춘다. */
     static Map<String, Object> storedOptions(String popupType, Map<String, Object> content) {
         Map<String, Object> options = PopupContentAssembler.withoutStoredCopies(content);
+        // [설계 37] TEXT는 콘텐츠 제목·설명 영역이 없어 표시 여부도 저장하지 않는다.
+        if ("TEXT".equals(popupType)) options.remove("showContentHeader");
         PopupFooterAction.normalizeStored(popupType, options);
         return options;
     }

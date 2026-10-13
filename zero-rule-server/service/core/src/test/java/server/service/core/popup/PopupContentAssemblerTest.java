@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import server.domain.popup.PopupEntity;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,13 +67,53 @@ class PopupContentAssemblerTest {
     }
 
     @Test void textUsesPlainTextAndColumnWinsOverStaleOptionCopy() {
-        Map<String, Object> content = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null,
+        Map<String, Object> content = assembler.assemble(entity("TEXT", null, null, "본문", null,
                 "{\"showPlainText\":true,\"description\":\"오래된 사본\",\"plainText\":\"오래된 본문\"}", null, null, "Y"));
-        assertEquals("안내", content.get("contentTitle"));
         assertEquals("본문", content.get("plainText"), "[설계 18 L-3] 정규 컬럼이 옵션 JSON의 사본보다 우선");
-        assertEquals("설명", content.get("description"), "[설계 18 L-3] 정규 컬럼이 옵션 JSON의 사본보다 우선");
+        assertFalse(content.containsKey("description"), "[설계 37] TEXT는 설명 필드를 제공하지 않고 옵션 사본도 싣지 않는다");
+        assertFalse(content.containsKey("contentTitle"));
+        assertFalse(content.containsKey("textBlocks"), "제목·설명이 없는 기존 일반 본문은 그대로 둔다");
         assertEquals(true, content.get("showPlainText"));
         assertFalse(content.containsKey("imageUrl"));
+    }
+
+    @Test void legacyTextTitleAndDescriptionBecomeLeadingParagraphs() {
+        // [설계 37] 통합 전 행: 서식 본문 없이 plainText만 있는 경우
+        Map<String, Object> plain = assembler.assemble(entity("TEXT", "안내", "설명\r\n둘째 줄", "본문1\n\n본문2", null,
+                "{\"showContentHeader\":true}", null, null, "Y"));
+        assertEquals(List.of(
+                block(Map.of("text", "안내", "bold", true, "size", 24)),
+                block(Map.of("text", "설명\n둘째 줄")),
+                block(Map.of("text", "본문1")),
+                Map.of("alignment", "LEFT", "runs", List.of()),
+                block(Map.of("text", "본문2"))), plain.get("textBlocks"));
+        assertEquals("안내\n설명\n둘째 줄\n본문1\n\n본문2", plain.get("plainText"));
+        assertEquals(plain.get("plainText"), PopupRichText.validateAndDerivePlainText(plain.get("textBlocks")),
+                "합친 본문은 저장 검증을 통과하고 파생 plainText와 같다");
+        assertFalse(plain.containsKey("showContentHeader") || plain.containsKey("contentTitle") || plain.containsKey("description"));
+
+        // 서식 본문이 이미 있는 경우: 앞에 붙이고 기존 문단은 유지
+        Map<String, Object> rich = assembler.assemble(entity("TEXT", "안내", null, "기존", null,
+                "{\"textBlocks\":[{\"alignment\":\"CENTER\",\"runs\":[{\"text\":\"기존\",\"italic\":true}]}]}", null, null, "Y"));
+        assertEquals(2, ((List<?>) rich.get("textBlocks")).size());
+        assertEquals(Map.of("alignment", "CENTER", "runs", List.of(Map.of("text", "기존", "italic", true))),
+                ((List<?>) rich.get("textBlocks")).get(1));
+        assertEquals("안내\n기존", rich.get("plainText"));
+
+        // 제목·설명을 숨겼던 행은 표시하지 않던 값이므로 합치지 않는다
+        Map<String, Object> hidden = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null,
+                "{\"showContentHeader\":false}", null, null, "Y"));
+        assertFalse(hidden.containsKey("textBlocks") || hidden.containsKey("showContentHeader"));
+        assertEquals("본문", hidden.get("plainText"));
+    }
+
+    private static Map<String, Object> block(Map<String, Object> run) {
+        return Map.of("alignment", "LEFT", "runs", List.of(run));
+    }
+
+    @Test void textSaveDropsContentHeaderToggle() {
+        assertFalse(PopupService.storedOptions("TEXT", Map.of("showContentHeader", true, "showHighlight", true))
+                .containsKey("showContentHeader"));
     }
 
     @Test void storedCopiesAndDerivedKeysAreIgnored() {

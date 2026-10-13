@@ -103,6 +103,7 @@ WHEN NOT MATCHED THEN INSERT
 
 - 매퍼: `CONTENT_TITLE, DESCRIPTION, CONTENT_BODY, MEDIA_URL, LINK_URL, CONTENT_OPTIONS`를 개별 컬럼으로 반환 (resultMap `PopupEntity`에 6개 필드 추가 — 기존 `contentJson` 필드는 유지하되 null).
 - Java: `PopupContentAssembler.assemble(popupType, entity)`(신규 클래스)가 현행 SQL과 동일한 키 매핑(TEXT→`contentTitle/plainText`, IMAGE→`imageTitle/imageUrl/linkUrl`, VIDEO→`videoTitle/videoUrl`, SURVEY/QUIZ→`surveyTitle`)으로 `Map`을 만든 뒤 `content_options`를 덮어쓰기 병합한다.
+  - 후속 변경(2026-10-13, 설계 37): TEXT는 `CONTENT_TITLE`·`DESCRIPTION`을 더 이상 사용하지 않는다(저장 시 NULL, `contentTitle`·`description`·`showContentHeader` 미출력). 제목·설명은 본문(`textBlocks`/`CONTENT_BODY`) 앞 문단으로 저장하며, 두 컬럼에 값이 남은 기존 행은 조회 시 본문 앞 문단으로 합친다. 컬럼 자체는 IMAGE·VIDEO·SURVEY·QUIZ가 계속 사용하므로 DDL 변경은 없다.
 - 기존 `PopupService.parseContentJson`은 `entity.contentJson()`이 null이면 `PopupContentAssembler`를 호출하도록 **1개 분기 추가** (수정 최소).
 
 ### 4.4 노출 대상 조회 — 재귀 CTE·`BOOL_AND` 변환

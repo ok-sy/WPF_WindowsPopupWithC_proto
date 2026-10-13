@@ -21,7 +21,7 @@ import java.util.Map;
  * <pre>
  *   1) CONTENT_OPTIONS의 키를 먼저 넣는다. 단, 정규 컬럼 사본과 서버 파생 키({@link #STORED_COPY_KEYS})는 버린다.
  *   2) 유형별 정규 컬럼 값을 넣는다 — 컬럼이 기준 값이며 옵션 JSON의 같은 키를 덮어쓴다.
- *      TEXT   : contentTitle, description, plainText(=CONTENT_BODY)
+ *      TEXT   : plainText(=CONTENT_BODY). [설계 37] 통합 전 행의 CONTENT_TITLE·DESCRIPTION은 textBlocks 앞 문단으로 합친다.
  *      IMAGE  : imageTitle, imageUrl(=MEDIA_URL), description
  *      VIDEO  : videoTitle, videoUrl(=MEDIA_URL), description
  *      SURVEY / QUIZ : surveyTitle, description
@@ -66,9 +66,9 @@ public class PopupContentAssembler {
         String type = popup.popupType() == null ? "" : popup.popupType().toUpperCase();
         switch (type) {
             case "TEXT" -> {
-                content.put("contentTitle", popup.contentTitle());
-                content.put("description", popup.description());
+                // [설계 37] 제목·설명은 본문(textBlocks)으로 통합. 통합 전 행의 컬럼 값은 본문 앞 문단으로 합친다.
                 content.put("plainText", popup.contentBody());
+                PopupRichText.mergeLegacyHeader(content, popup.contentTitle(), popup.description());
             }
             case "IMAGE" -> {
                 // Read old storage into the new contract; new requests must use only new fields.

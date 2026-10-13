@@ -4,9 +4,7 @@ namespace Popup.Dtos
 {
     public class TextPopupContentDto
     {
-        public string ContentTitle { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool ShowContentHeader { get; set; } = true;
+        // [설계 37] ContentTitle·Description·ShowContentHeader 삭제 — 콘텐츠 제목·설명은 서식 본문(TextBlocks) 앞 문단으로 작성한다.
         public string PlainText { get; set; } = string.Empty;
         // [설계 28] 서식 본문. 있으면 PlainText 대신 표시하고, 없으면(기존 데이터) PlainText를 표시한다.
         public List<PopupTextBlockDto>? TextBlocks { get; set; }

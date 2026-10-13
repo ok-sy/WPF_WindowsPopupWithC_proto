@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-10-12 (KST)
+- 최신화: 2026-10-13 (KST)
+- 3.7 변경(2026-10-13, 설계 37): TEXT content에서 `contentTitle`·`description`·`showContentHeader` 제거. 콘텐츠 제목·설명은 서식 본문 `textBlocks`의 앞 문단으로 작성하며 `plainText`도 같은 순서의 일반 문자열이다. 서버는 TEXT 저장 시 받은 제목·설명을 사용하지 않고, 통합 전 저장 데이터는 조회 시 본문 앞 문단으로 합쳐 보낸다(제목 문단: 굵게·크기 24, `showContentHeader=false`였던 행은 제외). WPF는 TEXT content의 세 키를 읽지 않는다. IMAGE·VIDEO·SURVEY·QUIZ의 제목·설명과 공통 `title`은 변경 없음.
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
 - 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 ROOT `receivedAt`과 `popupStatus`·`completed`·`completedAt`·`responseId` 제거(WPF·로그 미사용). 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
 - 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
@@ -385,11 +386,10 @@ BOTTOM_RIGHT
 
 ```json
 {
-  "contentTitle": "서비스 안내",
-  "description": "공지 내용을 확인해 주세요.",
-  "showContentHeader": true,
-  "plainText": "서비스 점검 안내입니다.",
+  "plainText": "서비스 안내\n공지 내용을 확인해 주세요.\n서비스 점검 안내입니다.",
   "textBlocks": [
+    { "alignment": "LEFT", "runs": [ { "text": "서비스 안내", "bold": true, "size": 24 } ] },
+    { "alignment": "LEFT", "runs": [ { "text": "공지 내용을 확인해 주세요." } ] },
     { "alignment": "LEFT", "runs": [ { "text": "서비스 " }, { "text": "점검", "bold": true, "color": "#DC2626" }, { "text": " 안내입니다." } ] }
   ],
   "showPlainText": true,
@@ -403,11 +403,8 @@ BOTTOM_RIGHT
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| contentTitle | string | 선택 | `""` | 콘텐츠 내부 제목 |
-| description | string | 선택 | `""` | 콘텐츠 설명 |
-| showContentHeader | boolean | 선택 | `true` | 콘텐츠 제목/설명 영역 표시 여부 |
-| plainText | string | 선택 | `""` | 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열 |
-| textBlocks | array | 선택 | 없음 | 서식 본문. 있으면 plainText 대신 표시(아래 표) |
+| plainText | string | 선택 | `""` | 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열(Run 글자 연결, 문단 사이 `\n`) |
+| textBlocks | array | 선택 | 없음 | 서식 본문. 콘텐츠 제목·설명도 앞 문단으로 포함한다. 있으면 plainText 대신 표시(아래 표) |
 | showPlainText | boolean | 선택 | `true` | 본문 표시 여부 |
 | highlightText | string | 선택 | `""` | 강조 문구 |
 | showHighlight | boolean | 선택 | `false` | 강조 영역 표시 여부 |
@@ -416,6 +413,8 @@ BOTTOM_RIGHT
 | showBottomDescription | boolean | 선택 | `false` | 하단 설명 영역 표시 |
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
+
+TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `contentTitle`·`description`·`showContentHeader` 제거). 제목·설명은 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 제목 문단(`LEFT`, 굵게, 크기 24) → 설명 문단(`LEFT`) → 기존 본문 순으로 합쳐 보낸다. textBlocks가 없던 행은 기존 plainText 줄을 문단으로 바꿔 뒤에 붙인다. 창 Header의 공통 `title`은 별도다.
 
 ### textBlocks (서식 본문, 설계 28)
 
@@ -1184,11 +1183,10 @@ INTERNAL_ERROR
   "allowCloseBeforeComplete": true,
   "questions": [],
   "content": {
-    "contentTitle": "점검 공지",
-    "description": "안내 내용을 확인해주세요.",
-    "showContentHeader": true,
-    "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+    "plainText": "점검 공지\n안내 내용을 확인해주세요.\n10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
     "textBlocks": [
+      { "alignment": "LEFT", "runs": [ { "text": "점검 공지", "bold": true, "size": 24 } ] },
+      { "alignment": "LEFT", "runs": [ { "text": "안내 내용을 확인해주세요." } ] },
       { "alignment": "LEFT", "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
     ],
     "showPlainText": true,

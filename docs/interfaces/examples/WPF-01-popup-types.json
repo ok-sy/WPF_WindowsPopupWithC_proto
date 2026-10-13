@@ -23,11 +23,10 @@
       "allowCloseBeforeComplete": true,
       "questions": [],
       "content": {
-        "contentTitle": "점검 공지",
-        "description": "안내 내용을 확인해주세요.",
-        "showContentHeader": true,
-        "plainText": "10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
+        "plainText": "점검 공지\n안내 내용을 확인해주세요.\n10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
         "textBlocks": [
+          { "alignment": "LEFT", "runs": [ { "text": "점검 공지", "bold": true, "size": 24 } ] },
+          { "alignment": "LEFT", "runs": [ { "text": "안내 내용을 확인해주세요." } ] },
           { "alignment": "LEFT", "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
         ],
         "showPlainText": true,

@@ -12,14 +12,14 @@ namespace Popup.Views.Contents
     {
         /*
          * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
-         * TEXT 팝업의 본문 = 설명·일반 텍스트·강조 문구·하단 설명(BodyTextStyle, 기본 15).
-         * 제목(TitleTextStyle 26)은 본문이 아니므로 그대로 둔다. LineHeight(기본 24 = 15 × 1.6)는 같은 비율로 맞춘다.
+         * TEXT 팝업의 본문 = 일반 텍스트·서식 본문·강조 문구·하단 설명(BodyTextStyle, 기본 15).
+         * LineHeight(기본 24 = 15 × 1.6)는 같은 비율로 맞춘다.
          */
         public void ApplyBodyFontSize(double fontSize)
         {
             double lineHeight = Math.Round(fontSize * 1.6);
             // [설계 28] 서식 본문 문단도 기본 크기를 따른다. 구간에 지정한 크기(Run.FontSize)는 그대로 유지된다.
-            foreach (TextBlock textBlock in new[] { ContentDescriptionText, PlainTextBlock, HighlightTextBlock, BottomDescriptionText }
+            foreach (TextBlock textBlock in new[] { PlainTextBlock, HighlightTextBlock, BottomDescriptionText }
                          .Concat(RichTextPanel.Children.OfType<TextBlock>()))
             {
                 textBlock.FontSize = fontSize;
@@ -50,13 +50,10 @@ namespace Popup.Views.Contents
          * 관련 매개변수·렌더링 코드를 삭제했다. TEXT 팝업은 plainText·highlightText·bottomDescription만 표시한다.
          */
         public TextPopupView(
-            string contentTitle,
-            string description,
             string highlightText,
             bool showHighlight,
             string bottomDescription,
             string bottomDescriptionUrl,
-            bool showContentHeader,
             bool showPlainText,
             string plainText,
             bool showBottomDescription,
@@ -75,16 +72,7 @@ namespace Popup.Views.Contents
                  * DTO에서 전달받은 값을
                  * 화면의 각 TextBlock에 표시한다.
                  */
-                ContentTitleText.Text =
-                    contentTitle;
-
-                ContentDescriptionText.Text =
-                    description;
-
-                ContentHeaderPanel.Visibility = showContentHeader
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
+                // [설계 37] 콘텐츠 제목·설명 영역은 삭제했다. 제목·설명은 서식 본문 앞 문단으로 표시된다.
                 PlainTextBlock.Text = plainText;
                 PlainTextBlock.Visibility = showPlainText
                     ? Visibility.Visible

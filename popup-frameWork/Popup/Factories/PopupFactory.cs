@@ -134,13 +134,10 @@ namespace Popup.Factories
                 ?? throw new InvalidOperationException("TEXT 팝업 content 변환에 실패했습니다.");
 
             return new TextPopupView(
-                contentDto.ContentTitle,
-                contentDto.Description,
                 contentDto.HighlightText,
                 contentDto.ShowHighlight,
                 contentDto.BottomDescription,
                 contentDto.BottomDescriptionUrl,
-                contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
                 contentDto.ShowBottomDescription,

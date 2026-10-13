@@ -40,11 +40,27 @@ namespace Popup.Services
                     "showFooter": true,
                     "showDoNotShowAgain": false,
                     "content": {
-                      "contentTitle": "사내 업무시스템 정기 점검 안내",
-                      "description": "IT운영팀 — 안정적인 서비스 제공과 보안 강화를 위한 정기 점검",
-                      "showContentHeader": true,
                       "showPlainText": true,
                       "textBlocks": [
+                        {
+                          "alignment": "LEFT",
+                          "runs": [
+                            {
+                              "text": "사내 업무시스템 정기 점검 안내",
+                              "bold": true,
+                              "size": 24
+                            }
+                          ]
+                        },
+                        {
+                          "alignment": "LEFT",
+                          "runs": [
+                            {
+                              "text": "IT운영팀 — 안정적인 서비스 제공과 보안 강화를 위한 정기 점검",
+                              "color": "#6B7280"
+                            }
+                          ]
+                        },
                         {
                           "alignment": "LEFT",
                           "runs": [
@@ -159,7 +175,7 @@ namespace Popup.Services
                           ]
                         }
                       ],
-                      "plainText": "점검 일정: 2026년 9월 12일 22:00 ~ 9월 13일 02:00 (한국시간)\n대상: 사내 포털, 전자결재, 문서관리 시스템\n영향: 점검 시간 동안 서비스 접속 및 이용이 일시 중단됩니다.\n\n주요 작업\n- 서버 보안 업데이트 및 안정화\n- 전자결재 조회 성능 개선\n- 문서 저장소 백업 및 복구 상태 확인\n\n문의: IT운영팀 서비스데스크 (사내 포털 IT 지원 요청 메뉴)",
+                      "plainText": "사내 업무시스템 정기 점검 안내\nIT운영팀 — 안정적인 서비스 제공과 보안 강화를 위한 정기 점검\n점검 일정: 2026년 9월 12일 22:00 ~ 9월 13일 02:00 (한국시간)\n대상: 사내 포털, 전자결재, 문서관리 시스템\n영향: 점검 시간 동안 서비스 접속 및 이용이 일시 중단됩니다.\n\n주요 작업\n- 서버 보안 업데이트 및 안정화\n- 전자결재 조회 성능 개선\n- 문서 저장소 백업 및 복구 상태 확인\n\n문의: IT운영팀 서비스데스크 (사내 포털 IT 지원 요청 메뉴)",
                       "showHighlight": true,
                       "highlightText": "작업 중인 문서와 결재 내용은 점검 시작 전 반드시 저장해 주세요.",
                       "showBottomDescription": true,

@@ -1,7 +1,7 @@
 # WPF 팝업 전체 기능 버전 정의서
 
 - 문서 성격: All Feature Specification / Implemented WPF Scope
-- 작성 기준: 2026-10-12 (KST)
+- 작성 기준: 2026-10-13 (KST)
 - 기준 소스: `PopupResponseDto`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
 - 대응 문서: [최소 기능 버전 정의서](WPF_POPUP_MINIMAL_SPEC.md)
 
@@ -104,10 +104,8 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
 | PlainText | 지원 | 본문 사용 시 Y | `""` | 일반 문자열 본문. TextBlocks가 있으면 서버 파생 값 |
-| TextBlocks | 지원 | N | 없음 | 문단·Run 서식 본문(굵게·기울임·밑줄, 허용 색·크기·글꼴, 문단 정렬). 있으면 PlainText 대신 표시. 상세는 인터페이스 계약 8.1 |
+| TextBlocks | 지원 | N | 없음 | 문단·Run 서식 본문(굵게·기울임·밑줄, 허용 색·크기·글꼴, 문단 정렬). 콘텐츠 제목·설명도 앞 문단으로 포함. 있으면 PlainText 대신 표시. 상세는 인터페이스 계약 8.1 |
 | ShowPlainText | 지원 | N | `true` | 본문 영역 표시 |
-| ContentTitle / Description | 지원 | N | `""` | 콘텐츠 내부 제목·설명 |
-| ShowContentHeader | 지원 | N | `true` | 내부 제목 영역 표시 |
 | HighlightText | 지원 | N | `""` | 강조 문구 |
 | ShowHighlight | 지원 | N | `false` | 문구 존재로 자동 추정하지 않음 |
 | BottomDescription | 지원 | N | `""` | 하단 설명 |
@@ -115,6 +113,7 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | ShowBottomDescription | 지원 | N | `false` | 하단 설명 표시 |
 
 창 크기는 공통 Width/Height를 사용한다. MarkdownMode·MarkdownContent는 삭제된 기능이다.
+ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 설계 37에서 삭제했다. 콘텐츠 제목·설명은 본문(TextBlocks/PlainText)의 앞 문단으로 전달된다.
 
 ### 4.2 IMAGE
 
@@ -216,7 +215,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 유형 | 전체 제공 기능 | 최소 버전과의 주요 차이 |
 |---|---|---|
 | 공통 | 표시 순서·동시 표시·크기 모드·9개 위치·폰트·Footer 링크·숨김·Overlay | 최소는 기본 표시 방식·위치·폰트 및 FIXED 중심 |
-| TEXT | 본문·내부 제목·설명·강조·하단 설명 및 링크 | 최소는 본문·내부 제목·설명 중심 |
+| TEXT | 서식 본문(제목·설명 문단 포함)·강조·하단 설명 및 링크 | 최소는 일반 본문(PlainText) 중심 |
 | IMAGE | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL, 이미지 치수·비율·설명·화면 상한 | 최소는 ORIGINAL 및 공통 창 크기 |
 | VIDEO | 공통 컨트롤·시청량·음량·전체화면·배속·자동 및 반복 재생 | 최소는 기본 컨트롤·음량·전체화면·완료 비율 중심 |
 | SURVEY | 문항 설명·필수 검증·선택 Row/Chip·주관식 | 최소 제공 범위와 공통 기능 확장 구분 |
