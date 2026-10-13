@@ -64,6 +64,18 @@
         )
     </update>
 
+    <!--
+        [설계 39-4·39-5] 사용자 단위 직렬화. 조회(전달 건 발급)와 결과 처리(완료·유예·전달 건 종료)가 같은 사용자 행을
+        트랜잭션 시작에 먼저 잠근다. 결과 커밋 전에 조회가 오래된 후보로 새 OPEN 건을 만들거나, 같은 결과의 동시 제출이
+        영수증 확인을 함께 통과하는 경합을 막는다. 다른 사용자와는 독립이며 잠금 순서는 항상 사용자 → 전달 건이다.
+        비활성·없는 사용자면 null.
+    -->
+    <select id="lockActiveUser" resultType="string">
+        SELECT EMPLOYEE_NO FROM ${popupSchemaPrefix}APP_USER
+        WHERE EMPLOYEE_NO = #{userId} AND ACTIVE_YN = 'Y'
+        FOR UPDATE
+    </select>
+
     <select id="countActiveUser" resultType="int">
         SELECT COUNT(*) FROM ${popupSchemaPrefix}APP_USER WHERE EMPLOYEE_NO = #{userId} AND ACTIVE_YN = 'Y'
     </select>

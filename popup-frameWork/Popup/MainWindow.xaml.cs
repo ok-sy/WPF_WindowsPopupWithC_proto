@@ -399,8 +399,9 @@ namespace Popup
          * [설계 35] 자동 실행·수동 버튼·주기 조회가 함께 사용하는 단건 조회 메서드다.
          *
          * 순서:
-         *  1. 미전송 결과 전송(순서대로 1건씩). 미종결 결과가 남으면 조회하지 않고 복구 간격 뒤 다시 시도한다
-         *     — 미전송 결과를 건너뛰고 다음 팝업으로 가지 않는다(장애 복구 정책 확정 전 임시 기준, 설계 35 §4).
+         *  1. 미전송 결과 전송(순서대로 1건씩). 미종결 결과가 남거나 큐 파일을 읽을 수 없으면 조회하지 않고 복구 간격 뒤
+         *     다시 시도한다 — 미전송 결과를 건너뛰고 다음 팝업으로 가지 않는다(임시 기준, 설계 35 §4·39-1).
+         *     이번에 저장한 결과의 nextStatus가 EMPTY면 조회하지 않고 조회 간격을 기다린다(설계 39-2 — 닫힘 직후·복구 재전송 공통).
          *  2. POST /p/api/wpf/popups — 서버가 판정·정렬한 팝업 최대 1건(deliveryId 포함). 최신 조회 간격 적용.
          *  3. popup=null이면 조회 간격 뒤 다시 조회. 있으면 1건을 표시하고, 표시 중에는 다른 조회를 하지 않는다.
          *  4. 창이 닫히면 OnPopupFinished가 결과를 보내고 nextStatus로 다음 단계를 정한다.
@@ -430,6 +431,19 @@ namespace Popup
             {
                 ResultFlushOutcome flushed = await _resultQueue.FlushAsync();
                 if (_isClosed || _clientVersionRejected) return;
+                if (!flushed.Blocked && string.Equals(flushed.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
+                {
+                    // [설계 39-2] 방금 저장한 결과(닫힘 직후·복구 재전송 모두)가 EMPTY면 조회하지 않고 최신 조회 간격을 기다린다.
+                    // 저장한 결과가 없는 정상 최초 조회·빈 큐는 그대로 조회한다.
+                    _pollingRecovery.Reset();
+                    _nextRecoveryDelay = null;
+                    if (showEmptyMessage)
+                    {
+                        MessageBox.Show("현재 표시할 팝업이 없습니다.", "팝업 조회",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    return;
+                }
                 if (flushed.Blocked)
                 {
                     _nextRecoveryDelay = _pollingRecovery.NextDelay();
@@ -518,30 +532,8 @@ namespace Popup
         private async void OnPopupFinished()
         {
             _popupShowing = false;
-            if (_isClosed || _clientVersionRejected || _resultQueue == null) return;
-            ResultFlushOutcome outcome;
-            try
-            {
-                outcome = await _resultQueue.FlushAsync();
-            }
-            catch (WpfClientVersionException exception)
-            {
-                HandleClientVersionRejected(exception);
-                return;
-            }
-            if (_isClosed || _clientVersionRejected || _popupShowing || _isLoadingPopups) return;
-            if (outcome.Blocked)
-            {
-                _nextRecoveryDelay = _pollingRecovery.NextDelay();
-                StartPeriodicPolling();
-                return;
-            }
-            if (string.Equals(outcome.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
-            {
-                _nextRecoveryDelay = null;
-                StartPeriodicPolling();
-                return;
-            }
+            if (_isClosed || _clientVersionRejected || _resultQueue == null || _isLoadingPopups) return;
+            // [설계 39-2] 결과 전송·nextStatus 판단은 복구 재전송과 같은 경로(LoadAndShowAvailablePopupsAsync)에서 한다.
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
         }    }
 }

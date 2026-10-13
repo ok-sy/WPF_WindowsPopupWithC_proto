@@ -561,7 +561,7 @@ LoadAndShowAvailablePopupsAsync(...)
 7. 창 닫힘 → OnPopupFinished()     — 결과 전송 후 nextStatus로 다음 단계 결정
 ```
 
-[설계 35] 팝업이 표시 중이면 주기·수동 조회를 하지 않는다. 창이 닫혀 결과가 저장되면 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY면 가장 최근 조회 간격만큼 기다린다. `nextStatus`가 없으면(후보 확인 실패 등) 즉시 조회하며 `popup=null`은 정상 처리한다. REJECTED 결과는 종결이므로 다음 조회를 막지 않는다. 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 서버가 완료·재노출 유예로 판단하므로 삭제했다. 미전송 결과를 먼저 보내고 다음 조회를 미루는 동작은 주간회의 결정 전 임시 기준이다.
+[설계 35] 팝업이 표시 중이면 주기·수동 조회를 하지 않는다. 창이 닫혀 결과가 저장되면 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY면 가장 최근 조회 간격만큼 기다린다. `nextStatus`가 없으면(후보 확인 실패 등) 즉시 조회하며 `popup=null`은 정상 처리한다. REJECTED 결과는 종결이므로 다음 조회를 막지 않는다. [설계 39] 닫힘 직후와 복구 타이머 경로가 같은 메서드(`LoadAndShowAvailablePopupsAsync`)에서 결과를 보내고 nextStatus를 판단하며, 결과 큐 파일을 읽을 수 없으면 조회를 보류한다. 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 서버가 완료·재노출 유예로 판단하므로 삭제했다. 미전송 결과를 먼저 보내고 다음 조회를 미루는 동작은 주간회의 결정 전 임시 기준이다.
 
 ---
 

@@ -107,6 +107,48 @@ class PopupContentAssemblerTest {
         assertEquals("본문", hidden.get("plainText"));
     }
 
+    /** [설계 39-3] 헤더 표시·본문 숨김이던 행은 "헤더만 보이기": 보이던 제목·설명만 문단으로, 숨긴 본문은 응답에서 제외. */
+    @Test void legacyVisibleHeaderWithHiddenBodyShowsHeaderOnly() {
+        for (String options : List.of(
+                "{\"showContentHeader\":true,\"showPlainText\":false}",
+                "{\"showPlainText\":false,\"textBlocks\":[{\"alignment\":\"LEFT\",\"runs\":[{\"text\":\"숨긴 본문\"}]}]}")) {
+            Map<String, Object> content = assembler.assemble(entity("TEXT", "안내", "설명", "숨긴 본문", null, options, null, null, "Y"));
+            assertEquals(List.of(
+                    block(Map.of("text", "안내", "bold", true, "size", 24)),
+                    block(Map.of("text", "설명"))), content.get("textBlocks"), options);
+            assertEquals("안내\n설명", content.get("plainText"), "숨긴 본문은 plainText에도 없다");
+            assertEquals(true, content.get("showPlainText"), "합친 헤더가 보이도록 본문 표시로 바꾼다");
+            assertEquals(content.get("plainText"), PopupRichText.validateAndDerivePlainText(content.get("textBlocks")),
+                    "재저장해도 같은 본문(숨긴 본문은 삭제)");
+        }
+        // 제목만 / 설명만
+        Map<String, Object> titleOnly = assembler.assemble(entity("TEXT", "안내", null, "숨김", null, "{\"showPlainText\":false}", null, null, "Y"));
+        assertEquals("안내", titleOnly.get("plainText"));
+        Map<String, Object> descriptionOnly = assembler.assemble(entity("TEXT", null, "설명", "숨김", null, "{\"showPlainText\":false}", null, null, "Y"));
+        assertEquals(List.of(block(Map.of("text", "설명"))), descriptionOnly.get("textBlocks"));
+        // 헤더도 본문도 숨김: 아무것도 합치지 않고 숨김 유지
+        Map<String, Object> allHidden = assembler.assemble(entity("TEXT", "안내", "설명", "본문", null,
+                "{\"showContentHeader\":false,\"showPlainText\":false}", null, null, "Y"));
+        assertFalse(allHidden.containsKey("textBlocks"));
+        assertEquals(false, allHidden.get("showPlainText"));
+        assertEquals("본문", allHidden.get("plainText"));
+        // 헤더 표시·본문 표시는 기존과 같이 헤더 + 본문
+        Map<String, Object> bothShown = assembler.assemble(entity("TEXT", "안내", null, "본문", null, "{\"showPlainText\":true}", null, null, "Y"));
+        assertEquals("안내\n본문", bothShown.get("plainText"));
+        // 이미 변환된 행(컬럼 비움)을 다시 읽어도 문단이 중복되지 않는다
+        Map<String, Object> resaved = assembler.assemble(entity("TEXT", null, null, "안내\n설명", null,
+                "{\"showPlainText\":true,\"textBlocks\":" + json(titleOnly.get("textBlocks")) + "}", null, null, "Y"));
+        assertEquals(titleOnly.get("textBlocks"), resaved.get("textBlocks"));
+    }
+
+    private static String json(Object value) {
+        try {
+            return new ObjectMapper().writeValueAsString(value);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static Map<String, Object> block(Map<String, Object> run) {
         return Map.of("alignment", "LEFT", "runs", List.of(run));
     }

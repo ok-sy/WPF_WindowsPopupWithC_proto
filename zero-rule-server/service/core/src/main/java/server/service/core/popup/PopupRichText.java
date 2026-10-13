@@ -113,6 +113,8 @@ final class PopupRichText {
      * DB 변환 없이 계속 표시한다. showContentHeader=false였던 행은 표시하지 않던 값이므로 합치지 않는다.
      * 관리자가 다시 저장하면 합쳐진 본문이 textBlocks로 저장되고 두 컬럼은 비워진다.
      * plainText도 같은 순서로 앞에 붙여 서식 본문과 어긋나지 않게 한다.
+     * [설계 39-3] 헤더는 보이고 본문은 숨겼던 행(showPlainText=false)은 "헤더만 보이기"로 변환한다 — 보이던 제목·설명만 본문 문단으로
+     * 만들고 숨겨져 있던 본문은 응답에서 뺀 뒤 showPlainText=true로 바꾼다. 관리자가 다시 저장하면 숨겼던 본문은 삭제된다(허용).
      */
     static void mergeLegacyHeader(Map<String, Object> content, String title, String description) {
         boolean showHeader = !Boolean.FALSE.equals(content.remove("showContentHeader"));
@@ -134,8 +136,12 @@ final class PopupRichText {
             }
             blocks.add(paragraph(List.of(run)));
         }
-        Object existing = content.get(KEY);
-        String plain = content.get("plainText") instanceof String s ? s : "";
+        boolean bodyHidden = Boolean.FALSE.equals(content.get("showPlainText"));
+        Object existing = bodyHidden ? List.of() : content.get(KEY);
+        String plain = !bodyHidden && content.get("plainText") instanceof String s ? s : "";
+        if (bodyHidden) {
+            content.put("showPlainText", true);
+        }
         boolean hasBody;
         if (existing instanceof List<?> list) {
             blocks.addAll(list);

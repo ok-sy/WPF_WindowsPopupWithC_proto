@@ -2,6 +2,19 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-18 — TODO39 단건 API 복구·동시성·TEXT 정합성 보완 구현
+
+- 이유: TODO39에서 확인한 5개 보완(큐 파일 읽기 실패 시 조회 허용, 복구 재전송 결과의 EMPTY 무시, 헤더 표시·본문 숨김 TEXT 행의 헤더 소실, 조회와 결과 커밋 경합, 동일 결과 동시 제출 판정) 구현. 39-3 규칙은 "헤더만 보이기"로 확정(보이던 제목·설명만 본문 문단으로, 숨긴 본문은 표시 응답에서 제외, 관리자 재저장 시 숨긴 본문 삭제 허용).
+- 변경:
+  - 39-1 WPF: `PopupResultQueue.FlushAsync`가 큐 파일을 읽거나 보존할 수 없으면 메모리 보관분 전송 후에도 Blocked 반환(파일 원본 유지).
+  - 39-2 WPF: `MainWindow.LoadAndShowAvailablePopupsAsync`가 이번에 저장한 결과의 nextStatus=EMPTY면 조회 없이 최신 조회 간격 대기, `OnPopupFinished`는 같은 메서드로 위임(닫힘 직후·복구 경로 공통). AVAILABLE·nextStatus 생략·빈 큐 최초 조회는 즉시 조회 유지.
+  - 39-3 서버: `PopupRichText.mergeLegacyHeader`에서 헤더 표시 + `showPlainText=false` 행은 헤더 문단만 보내고 `showPlainText=true`로 변경.
+  - 39-4·39-5 서버: `WpfPopupMapper.lockActiveUser`(APP_USER 행 FOR UPDATE)를 조회 시작·결과 처리 시작에서 먼저 잡아 사용자 단위 직렬화. 결과 처리는 잠금 후 영수증 확인으로 동시 제출의 뒤 요청이 DUPLICATE. 잠금 순서 사용자 → 전달 건, 다른 사용자와 독립.
+  - 39-6 문서: POPUP_INTERFACE_SPEC(3.7 이력에 설계 39, TEXT 변환 규칙, §12.1 임시 기준에 39-1·39-2 및 예외 이후 재표시·큐 비누적 설명), ALL/MINIMAL, popup-frameWork README, 설계35·37·39 갱신, Word/PDF v3.7 재생성. API 필드 계약 변경 없음(Excel 유지).
+- 주요 파일: popup-frameWork/Popup/(MainWindow.xaml.cs, Services/PopupResultQueue.cs), zero-rule-server/(service/core .../popup/PopupRichText.java·wpf/WpfPopupService.java·wpf/WpfResultProcessor.java, repo/core mappers/popup/WpfPopupMapper.xml·WpfPopupMapper.java, 테스트 PopupContentAssemblerTest·WpfPopupServiceTest·WpfResultProcessorTest·WpfPopupDatabaseTest), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md, WPF_Popup_API_Interface_v3.7.docx·pdf), popup-frameWork/README.md, docs/design/(35_*, 37_*, 39_*), version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline --continue`(로컬 XE) 124건 통과·skip 0 — 신규 Oracle 동시성 테스트(두 연결·실제 커밋: 결과 커밋 전 조회 잠금 대기 후 TEXT 완료·SURVEY 유예 각각 새 OPEN 미발급, 다른 사용자 즉시 처리, 동시 조회 OPEN 1건 재사용, 동일 결과 동시 제출 ACCEPTED 1·DUPLICATE 1·영수증 1·표시 횟수 1), TEXT 표시 조합 변환 테스트, 잠금 순서 단위 테스트. WPF BehaviorTests 960건(복구 ACCEPTED/EMPTY·DUPLICATE/EMPTY 조회 0회·2700초 예약, AVAILABLE·nextStatus 생략 즉시 조회, 빈 큐 최초 조회), RecoveryTests 158건(큐 파일 배타 잠금 시 조회 보류·잠금 해제 후 같은 resultId 전송). 첫 Oracle 테스트 실행에서 MyBatis `commit()`이 쓰기 없는 세션의 커밋을 건너뛰어 FOR UPDATE 잠금이 남아 대기하는 테스트 하네스 문제를 확인, `commit(true)`로 수정(운영 코드는 Spring 트랜잭션 관리자가 커밋해 해당 없음). 중단된 실행이 남긴 로컬 테스트 데이터(E1003)는 정리. 미실행: 원격 개발 환경 새 서버 반영 후 실제 서버+WPF 화면, 원격 DB 동시성, 폐쇄망 반입.
+- 상태: 커밋에 포함. 원격 반영.
+
 ## 2026-10-13-17 — TODO39 단건 API 복구·동시성·TEXT 후속 보완 계획 추가
 
 - 이유: 7e7a56f 포함부터 76d50e6까지 TODO35·37 구현 검토의 복구 분기·동시성·기존 TEXT 표시 보존 누락을 후속 과제로 관리하고 문서 상태를 맞춤.

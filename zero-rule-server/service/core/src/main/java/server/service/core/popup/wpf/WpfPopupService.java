@@ -80,12 +80,15 @@ public class WpfPopupService {
      *       (유니크 인덱스 위반) 그 건을 재사용한다.</li>
      * </ol>
      * 전달 자체는 읽음·완료로 처리하지 않는다. 문항은 고른 팝업 1건만 읽는다.
+     * [설계 39-4] 시작할 때 사용자 행을 잠가(결과 처리와 같은 잠금) 진행 중인 결과 커밋 이후의 상태로 후보를 고른다.
      *
      * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ는 정답 키·통과 점수를 포함하고, 그 밖의 유형은 정답 키를 뺀다.</p>
      */
     @Transactional
     public WpfNextPopupResponse getNextPopup(String employeeNo) {
-        requireActiveUser(employeeNo);
+        if (employeeNo == null || employeeNo.isBlank() || wpfMapper.lockActiveUser(employeeNo.trim()) == null) {
+            throw new WpfUserInactiveException(employeeNo);
+        }
         String userId = employeeNo.trim();
         List<PopupEntity> eligible = popupMapper.selectAvailablePopups(userId, true);
 

@@ -47,6 +47,7 @@ class WpfPopupServiceTest {
         props.setPollingIntervalSeconds(1800);
         service = new WpfPopupService(popupService, popupMapper, wpfMapper, processor, props);
         when(wpfMapper.countActiveUser("E1001")).thenReturn(1);
+        when(wpfMapper.lockActiveUser("E1001")).thenReturn("E1001");
     }
 
     private PopupResponseDto quizDto(List<PopupQuestionDto> questions) {
@@ -123,6 +124,16 @@ class WpfPopupServiceTest {
         // 완료·숨김·재노출 유예 제외 플래그로 호출됐는지 (기준 2)
         verify(popupMapper).selectAvailablePopups("E1001", true);
         verify(popupMapper, never()).selectAvailablePopups("E1001", false);
+    }
+
+    /** [설계 39-4] 조회는 후보를 읽기 전에 사용자 행을 잠근다(결과 처리와 같은 잠금). */
+    @Test void nextPopupLocksUserBeforeReadingCandidates() {
+        when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of());
+        service.getNextPopup("E1001");
+        var order = inOrder(wpfMapper, popupMapper);
+        order.verify(wpfMapper).lockActiveUser("E1001");
+        order.verify(popupMapper).selectAvailablePopups("E1001", true);
+        order.verify(wpfMapper).selectOpenDelivery("E1001");
     }
 
     @Test void openDeliveryIsReusedWhileStillEligible() {

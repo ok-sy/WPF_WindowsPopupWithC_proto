@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
+- 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
 - 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
 - 3.7 변경(2026-10-13, 설계 37): TEXT content에서 `contentTitle`·`description`·`showContentHeader` 제거. 콘텐츠 제목·설명은 서식 본문 `textBlocks`의 앞 문단으로 작성하며 `plainText`도 같은 순서의 일반 문자열이다. 서버는 TEXT 저장 시 받은 제목·설명을 사용하지 않고, 통합 전 저장 데이터는 조회 시 본문 앞 문단으로 합쳐 보낸다(제목 문단: 굵게·크기 24, `showContentHeader=false`였던 행은 제외). WPF는 TEXT content의 세 키를 읽지 않는다. IMAGE·VIDEO·SURVEY·QUIZ의 제목·설명과 공통 `title`은 변경 없음.
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
@@ -448,7 +449,7 @@ BOTTOM_RIGHT
 
 Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
 
-TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `contentTitle`·`description`·`showContentHeader` 제거). 제목·설명은 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 제목 문단(`LEFT`, 굵게, 크기 24) → 설명 문단(`LEFT`) → 기존 본문 순으로 합쳐 보낸다. textBlocks가 없던 행은 기존 plainText 줄을 문단으로 바꿔 뒤에 붙인다. 창 Header의 공통 `title`은 별도다.
+TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `contentTitle`·`description`·`showContentHeader` 제거). 제목·설명은 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 제목 문단(`LEFT`, 굵게, 크기 24) → 설명 문단(`LEFT`) → 기존 본문 순으로 합쳐 보낸다. textBlocks가 없던 행은 기존 plainText 줄을 문단으로 바꿔 뒤에 붙인다. [설계 39-3] 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 헤더만 보이기 — 제목·설명 문단만 보내고 숨긴 본문은 빼며 `showPlainText=true`로 바꾼다(관리자 재저장 시 숨긴 본문 삭제). 제목·설명을 숨겼던 행(`showContentHeader=false`)은 합치지 않는다. 창 Header의 공통 `title`은 별도다.
 
 ### textBlocks (서식 본문, 설계 28)
 
@@ -1097,6 +1098,9 @@ REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무
 - 미종결 결과(전송 실패·응답 없음·RETRYABLE_ERROR·재시도 횟수가 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …, §13의 조회 장애 복구 간격과 같음) 뒤 다시 시도한다.
 - HTTP 400인 결과는 이번 실행에서만 제외(파일 보관)해 뒤 결과·조회를 막지 않는다. INTERNAL_ERROR는 실행당 최대 3회 시도 후 이번 실행에서는 조회를 막지 않는다. 두 경우 모두 파일에서 삭제하지 않아 다음 실행에서 다시 보낸다.
 - REJECTED는 종결이므로 다음 조회를 막지 않는다.
+- [설계 39-1] 큐 파일을 읽거나 보존할 수 없으면 디스크에 미전송 결과가 남았는지 알 수 없으므로 메모리 보관분만 보낸 뒤에도 조회를 보류하고 복구 간격으로 재시도한다(파일 원본은 건드리지 않음).
+- [설계 39-2] 닫힘 직후와 복구 재전송 모두, 이번에 저장한 결과의 nextStatus가 EMPTY면 조회하지 않고 최신 pollingIntervalSeconds를 기다린다. AVAILABLE·nextStatus 생략은 즉시 조회, 저장한 결과가 없는 최초 조회·빈 큐는 바로 조회한다.
+- 예외 이후(400 격리·INTERNAL_ERROR 소진) 조회가 허용되면 결과가 저장되지 않은 같은 OPEN 전달 건이 다시 표시될 수 있다. 다시 닫으면 새 resultId로 저장되고, 남은 이전 결과는 다음 실행에서 WPF_DELIVERY_COMPLETED로 거절·종결되어 큐에서 빠진다(누적되지 않음). 이 동작도 임시 기준이다.
 
 ---
 

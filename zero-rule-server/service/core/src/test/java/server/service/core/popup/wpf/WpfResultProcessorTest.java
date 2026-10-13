@@ -49,6 +49,7 @@ class WpfResultProcessorTest {
         processor = new WpfResultProcessor(popupService, popupMapper, wpfMapper, props);
         delivery("VIDEO");
         when(wpfMapper.countReceipt(anyString())).thenReturn(0);
+        when(wpfMapper.lockActiveUser(anyString())).thenAnswer(inv -> inv.getArgument(0));
         when(wpfMapper.mergeDisplayAndClose(anyString(), anyString(), any(), any())).thenReturn(1);
         when(popupMapper.countActiveUserAndPopup(anyString(), anyString())).thenReturn(1);
     }
@@ -185,6 +186,20 @@ class WpfResultProcessorTest {
         when(wpfMapper.selectDeliveryForUpdate("D-1")).thenReturn(new WpfPopupDelivery("D-1", "E1001", "P1", "EXPIRED", "VIDEO"));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED,
                 processor.processOne("E1001", item(WpfResultType.CLOSED, null, null, null)).status());
+    }
+
+    /** [설계 39-4·39-5] 사용자 행 잠금 후 영수증을 확인한다. 잠금 대기 뒤 앞 요청이 저장했으면 DUPLICATE. */
+    @Test void userLockPrecedesReceiptCheck() {
+        when(wpfMapper.countReceipt("r-1")).thenReturn(1);   // 잠금을 기다리는 동안 앞 요청이 커밋한 상황
+        assertEquals(WpfResultItemResponse.Status.DUPLICATE,
+                processor.processOne("E1001", item(WpfResultType.CLOSED, null, null, null)).status());
+        var order = inOrder(wpfMapper);
+        order.verify(wpfMapper).lockActiveUser("E1001");
+        order.verify(wpfMapper).countReceipt("r-1");
+        verify(wpfMapper, never()).selectDeliveryForUpdate(any());
+
+        when(wpfMapper.lockActiveUser("E9999")).thenReturn(null);
+        assertThrows(IllegalArgumentException.class, () -> processor.processOne("E9999", item(WpfResultType.CLOSED, null, null, null)));
     }
 
     @Test void businessRejectionPropagatesWithoutReceipt() {

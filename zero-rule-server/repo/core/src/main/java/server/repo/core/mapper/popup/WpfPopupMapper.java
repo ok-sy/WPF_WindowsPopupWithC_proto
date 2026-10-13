@@ -29,6 +29,9 @@ public interface WpfPopupMapper {
             @Param("displayedAt") OffsetDateTime displayedAt,
             @Param("closedAt") OffsetDateTime closedAt);
 
+    /** [설계 39-4·39-5] 활성 사용자 행을 잠근다(트랜잭션 끝까지). 조회·결과 처리를 사용자 단위로 직렬화한다. 비활성이면 null. */
+    String lockActiveUser(@Param("userId") String userId);
+
     /** 사번이 APP_USER에 활성(ACTIVE_YN=Y) 상태로 존재하면 1. 목록·결과 API 진입 시 403 판정에 쓴다. */
     int countActiveUser(@Param("userId") String userId);
 

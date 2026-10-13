@@ -190,6 +190,8 @@ namespace Popup.Services
         /// 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)를 만나면 순서를 지키기 위해 거기서 멈추고
         /// <see cref="ResultFlushOutcome.Blocked"/>로 알린다. 호출자(MainWindow)는 이 경우 다음 팝업을 조회하지 않는다
         /// (미전송 결과 우선 — 장애 복구 정책 확정 전 임시 기준, 설계 35 §4).
+        /// [설계 39-1] 큐 파일을 읽거나 보존할 수 없으면 디스크에 미전송 결과가 남았는지 확인할 수 없으므로, 메모리 보관분을
+        /// 보낸 뒤에도 Blocked로 알린다(정상 빈 큐와 구분). 파일 원본은 건드리지 않는다.
         /// </summary>
         public async Task<ResultFlushOutcome> FlushAsync()
         {
@@ -270,7 +272,7 @@ namespace Popup.Services
                         }
                     }
                 }
-                return new ResultFlushOutcome(false, lastSaved);
+                return new ResultFlushOutcome(!fileAvailable, lastSaved);
             }
             finally
             {

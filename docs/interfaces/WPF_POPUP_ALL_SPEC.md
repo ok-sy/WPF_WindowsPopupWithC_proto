@@ -200,7 +200,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | API | 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) (설계 35) | 요청·응답·경로는 인터페이스 계약서 참조 |
 | 조회 | 한 번에 팝업 1건 표시. 표시 중에는 다른 조회 없음. 결과 저장 응답 `nextStatus`=AVAILABLE이면 즉시 조회, EMPTY·`popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분) 대기, `nextStatus` 없음은 즉시 조회. 조회 실패 후 재조회 복구 | 팝업 content의 옵션이 아님. 대기는 기동 시점 기준이 아니라 해당 응답 시점부터 계산 |
 | 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
-| 미전송 결과 복구 | 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도. 400 결과는 이번 실행에서 제외, 배열 일괄 재전송 없음 | 주간회의 결정 전 **임시 기준**(설계 35 §4). 확정 계약 아님 |
+| 미전송 결과 복구 | 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도. 400 결과는 이번 실행에서 제외, 배열 일괄 재전송 없음. 큐 파일을 읽을 수 없어도 조회 보류(설계 39-1), 복구 재전송 결과의 EMPTY도 조회 간격 대기(설계 39-2) | 주간회의 결정 전 **임시 기준**(설계 35 §4). 확정 계약 아님 |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 JSON 제어 필드 없음 |
 | 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시 | Demo 결과는 실제 서버·DB 저장과 구분. Demo 요청 JSON에는 인증 헤더가 없고 샘플 유형 선택은 로그 줄에만 표시 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |

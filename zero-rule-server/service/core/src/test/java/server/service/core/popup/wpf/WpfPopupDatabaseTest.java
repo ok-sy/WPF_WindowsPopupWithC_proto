@@ -180,4 +180,129 @@ class WpfPopupDatabaseTest {
             }
         }
     }
-}
+    /*
+     * [설계 39-4·39-5] 실제 Oracle 커밋 경계에서 사용자 행 잠금으로 조회·결과 처리가 직렬화되는지 확인한다.
+     * 두 세션(연결)을 쓰고 앞 세션의 결과 처리를 커밋하기 전에 뒤 세션을 시작해, 뒤 세션이 잠금을 기다렸다가
+     * 커밋 후 상태로 처리하는지 본다. 이 테스트만 실제 커밋하므로 E1003·E1002의 WPF 상태를 앞뒤로 지운다.
+     */
+    @Test void queryAndResultAreSerializedPerUserOnOracle() throws Exception {
+        String password = System.getenv("POPUP_TEST_DB_PASSWORD");
+        assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the database concurrency test.");
+        var dataSource = new UnpooledDataSource("oracle.jdbc.OracleDriver",
+                System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:oracle:thin:@//localhost:1521/XEPDB1"),
+                System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"), password);
+        var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
+        config.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
+        config.setMapUnderscoreToCamelCase(true);
+        config.setJdbcTypeForNull(JdbcType.NULL);
+        for (String resource : List.of("mappers/popup/PopupMapper.xml", "mappers/popup/WpfPopupMapper.xml")) {
+            try (var stream = getClass().getClassLoader().getResourceAsStream(resource)) {
+                new XMLMapperBuilder(stream, config, resource, config.getSqlFragments()).parse();
+            }
+        }
+        var factory = new SqlSessionFactoryBuilder().build(config);
+        String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
+                .getProperty("popupSchemaPrefix");
+        Runnable cleanup = () -> {
+            try (SqlSession s = factory.openSession(false); var st = s.getConnection().createStatement()) {
+                for (String table : List.of("WPF_RESULT_RECEIPT", "WPF_POPUP_DELIVERY", "USER_POPUP_STATUS")) {
+                    st.executeUpdate("DELETE FROM " + prefix + table + " WHERE EMPLOYEE_NO IN ('E1003', 'E1002')");
+                }
+                s.commit(true);
+            } catch (Exception ex) {
+                throw new IllegalStateException(ex);
+            }
+        };
+        // MyBatis commit()은 쓰기가 없으면 커밋을 건너뛰어 SELECT … FOR UPDATE 잠금이 남는다. 테스트는 commit(true)로 강제한다
+        // (운영은 Spring 트랜잭션 관리자가 커밋).
+        record Stack(SqlSession session, WpfPopupService service, WpfResultProcessor processor) { }
+        java.util.function.Supplier<Stack> open = () -> {
+            SqlSession s = factory.openSession(false);
+            PopupMapper pm = s.getMapper(PopupMapper.class);
+            WpfPopupMapper wm = s.getMapper(WpfPopupMapper.class);
+            PopupService ps = new PopupService(pm, new ObjectMapper().findAndRegisterModules());
+            WpfPopupProps props = new WpfPopupProps();
+            WpfResultProcessor processor = new WpfResultProcessor(ps, pm, wm, props);
+            return new Stack(s, new WpfPopupService(ps, pm, wm, processor, props), processor);
+        };
+        var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        cleanup.run();
+        Stack a = open.get();
+        Stack b = open.get();
+        try {
+            java.util.function.BiFunction<String, WpfPopupItem, WpfResultCommand> close = (resultId, popup) ->
+                    new WpfResultCommand(resultId, popup.deliveryId(), popup.popupId(), WpfResultType.CLOSED,
+                            OffsetDateTime.parse("2026-09-19T09:00:05+09:00"), null, null, null, null, null, null);
+            java.util.function.BiFunction<String, String, Integer> count = (sql, param) -> {
+                try (SqlSession s = factory.openSession(false)) {
+                    return countOf(s, prefix, sql, param);
+                } catch (Exception ex) {
+                    throw new IllegalStateException(ex);
+                }
+            };
+
+            // ---- 39-5: 같은 결과 동시 제출 → 앞 ACCEPTED, 뒤는 잠금 대기 후 DUPLICATE ----
+            WpfPopupItem text = a.service().getNextPopup("E1003").popup();
+            assertEquals("SAMPLE-TEXT-001", text.popupId());
+            a.session().commit(true);
+            String r1 = UUID.randomUUID().toString();
+            assertEquals(WpfResultItemResponse.Status.ACCEPTED, a.processor().processOne("E1003", close.apply(r1, text)).status());
+            var duplicate = executor.submit(() -> b.processor().processOne("E1003", close.apply(r1, text)));
+            Thread.sleep(700);
+            assertFalse(duplicate.isDone(), "뒤 요청은 앞 결과 커밋까지 사용자 잠금을 기다린다");
+            a.session().commit(true);
+            assertEquals(WpfResultItemResponse.Status.DUPLICATE, duplicate.get(10, java.util.concurrent.TimeUnit.SECONDS).status(),
+                    "잠금 후 영수증을 보고 DUPLICATE(WPF_DELIVERY_COMPLETED 아님)");
+            b.session().commit(true);
+            assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", r1));
+            assertEquals(1, count.apply("SELECT DISPLAY_COUNT FROM %sUSER_POPUP_STATUS WHERE EMPLOYEE_NO = 'E1003' AND POPUP_ID = ?", "SAMPLE-TEXT-001"),
+                    "표시 횟수 1회만 반영");
+
+            // ---- 39-4(미완료 유예): SURVEY 닫기 커밋 전 조회 → 잠금 대기 후 유예 반영(새 OPEN 없음) ----
+            WpfPopupItem survey = a.service().getNextPopup("E1003").popup();
+            assertEquals("SAMPLE-SURVEY-004", survey.popupId());
+            a.session().commit(true);
+            a.processor().processOne("E1003", close.apply(UUID.randomUUID().toString(), survey));
+            var afterDefer = executor.submit(() -> b.service().getNextPopup("E1003"));
+            Thread.sleep(700);
+            assertFalse(afterDefer.isDone(), "조회는 진행 중인 결과 처리의 커밋을 기다린다");
+            a.session().commit(true);
+            assertNull(afterDefer.get(10, java.util.concurrent.TimeUnit.SECONDS).popup(), "유예된 SURVEY를 오래된 후보로 다시 발급하지 않는다");
+            b.session().commit(true);
+            assertEquals(0, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = 'E1003' AND DELIVERY_STATUS = 'OPEN' AND POPUP_ID = ?", "SAMPLE-SURVEY-004"));
+
+            // ---- 39-4(완료): TEXT 닫기 커밋 전 조회 → 커밋 후 TEXT가 아닌 다음 후보 ----
+            cleanup.run();
+            WpfPopupItem text2 = a.service().getNextPopup("E1003").popup();
+            a.session().commit(true);
+            a.processor().processOne("E1003", close.apply(UUID.randomUUID().toString(), text2));
+            var afterComplete = executor.submit(() -> b.service().getNextPopup("E1003"));
+            Thread.sleep(700);
+            assertFalse(afterComplete.isDone());
+            // 다른 사용자는 E1003 잠금과 무관하게 바로 처리된다
+            Stack c = open.get();
+            try {
+                assertNotNull(java.util.concurrent.CompletableFuture.supplyAsync(() -> c.service().getNextPopup("E1002"))
+                        .get(5, java.util.concurrent.TimeUnit.SECONDS).popup(), "다른 사용자는 독립 처리");
+                c.session().commit(true);
+            } finally {
+                c.session().close();
+            }
+            a.session().commit(true);
+            WpfPopupItem next = afterComplete.get(10, java.util.concurrent.TimeUnit.SECONDS).popup();
+            assertEquals("SAMPLE-SURVEY-004", next.popupId(), "완료된 TEXT 대신 다음 후보");
+            b.session().commit(true);
+            assertEquals(0, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = 'E1003' AND DELIVERY_STATUS = 'OPEN' AND POPUP_ID = ?", "SAMPLE-TEXT-001"));
+            // 동시 조회는 OPEN 1건을 재사용한다
+            assertEquals(next.deliveryId(), a.service().getNextPopup("E1003").popup().deliveryId());
+            a.session().commit(true);
+            assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = ? AND DELIVERY_STATUS = 'OPEN'", "E1003"));
+        } finally {
+            a.session().rollback(true);
+            b.session().rollback(true);
+            a.session().close();
+            b.session().close();
+            executor.shutdownNow();
+            cleanup.run();
+        }
+    }}

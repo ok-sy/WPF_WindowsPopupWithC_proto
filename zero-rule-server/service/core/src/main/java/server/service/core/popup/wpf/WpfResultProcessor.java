@@ -60,6 +60,11 @@ public class WpfResultProcessor {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public WpfResultItemResponse processOne(String employeeNo, WpfResultCommand item) {
+        // [설계 39-4·39-5] 사용자 행 잠금 후 영수증을 확인한다. 같은 결과의 동시 제출은 뒤 요청이 앞 커밋을 기다렸다가
+        // DUPLICATE가 되고, 조회의 전달 건 발급은 이 결과의 완료·유예 커밋 이후 상태를 본다.
+        if (wpfMapper.lockActiveUser(employeeNo) == null) {
+            throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다. userId=" + employeeNo);
+        }
         if (wpfMapper.countReceipt(item.resultId()) > 0) {
             return WpfResultItemResponse.duplicate(item);
         }

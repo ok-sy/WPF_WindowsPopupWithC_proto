@@ -166,7 +166,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 
 - API는 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) 세 가지다(설계 35). 조회 응답은 `pollingIntervalSeconds`와 팝업 1건 `popup`(없으면 `null`)이며 결과 요청에는 `popup.deliveryId`를 넣는다. 상세는 [인터페이스 계약서](POPUP_INTERFACE_SPEC.md) 6·10·11절을 따른다.
 - 로그인/기동 직후 최초 조회한다. 서버만 활성·기간·대상·숨김·완료·재노출 유예를 판단하고 표시 순서상 첫 1건을 내려주며 WPF는 받은 1건을 바로 표시한다. 표시 중에는 다른 조회를 하지 않는다. 결과 응답 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY 또는 조회 결과 `popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분)만큼 기다린 뒤 조회한다. 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다.
-- 보내지 못한 결과가 남아 있으면 다음 팝업을 조회하지 않고 같은 resultId로 1건씩 재전송한다. 이 복구 동작은 주간회의 결정 전 임시 기준이다.
+- 보내지 못한 결과가 남아 있거나 결과 큐 파일을 읽을 수 없으면 다음 팝업을 조회하지 않고 같은 resultId로 1건씩 재전송한다. 재전송한 결과의 nextStatus가 EMPTY면 조회 간격을 기다린다. 이 복구 동작은 주간회의 결정 전 임시 기준이다.
 - 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 WPF Overlay 컨트롤을 사용한다. 재생 중 무입력·마우스 이탈 시 숨기고 진입·이동 시 표시하며 일시정지·조작 중에는 유지한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen을 두 재생 방식에 적용한다. 음량·음소거는 현재 Windows Master Volume/Mute와 동기화하며 내부 영상 음량은 1.0으로 유지한다. DefaultVolume은 시스템 연결 전/실패 시 초기 음량이다. Windows 값 변경은 다른 프로그램에도 영향을 주며 종료 시 이전 값으로 복원하지 않는다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
 - VIDEO+QUIZ는 영상·전체 문항·제출 영역을 단일 세로 스크롤로 이동하고 공통 Footer는 창 하단에 고정한다. 단독 SURVEY/QUIZ 스크롤은 유지한다.
 
