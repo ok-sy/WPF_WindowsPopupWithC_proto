@@ -2,6 +2,78 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-11 — TODO26 Header/Footer 분리 설계 폐기 상태 동기화
+
+- 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.
+- 변경: 설계26을 Trello와 동일한 폐기로 명시. 과거 체크리스트는 이력으로 보존하며 이미 구현된 PerMonitorV2·Win32 모서리 DPI/드래그 보완은 유지. 주요 파일: docs/design/26_VIDEO_팝업_HWND_구조_개선_TODO.md, version-history/CHANGELOG.md.
+- 검증: 최신 main과 Trello 카드 대조, VideoPopupView.xaml의 CompositionControl 및 OpaqueWindowCorners.cs의 UpdateLayeredWindow 확인. ALL/MINIMAL 현행 구현 설명 확인, 기능 계약 변경 없어 유지.
+- 상태: 문서·카드 정리. 실행 코드 변경·빌드·런타임 테스트 미실행.
+
+## 2026-10-13-10 — TODO25 모서리 구현 설명 및 완료 이력 분류 정정
+
+- 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.
+- 변경: 설계25의 WPF HwndSource·지연 재생성·CompositionControl 미적용 설명을 현행 Win32 레이어드 창·HWND 재사용·적용 상태로 수정. docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md에 완료 카드의 대체·통합·부분 제거 구분 기록. 주요 파일: 설계25, 대조 문서, version-history/CHANGELOG.md.
+- 검증: 최신 main과 Trello 카드 대조, VideoPopupView.xaml의 CompositionControl 및 OpaqueWindowCorners.cs의 UpdateLayeredWindow 확인. ALL/MINIMAL 현행 구현 설명 확인, 기능 계약 변경 없어 유지.
+- 상태: 문서·카드 정리. 실행 코드 변경·빌드·런타임 테스트 미실행.
+
+## 2026-10-13-09 — TODO38 WPF 기울임 글자 잘림 TODO 추가
+
+- 이유: WPF 서식 텍스트 표시 오류 추적 필요.
+- 변경: WPF 팝업 우측 끝 italic 글자 잘림 증상·원인 가설·재현 및 회귀 검증 과제 등록.
+- 주요 파일: docs/design/38_WPF_TEXT_기울임_우측잘림_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO 번호·카드 대응 및 문서 상태 확인. 실행 코드 변경 없이 빌드·테스트 미실행.
+- 상태: TODO만 등록, 진행예정. 세부 미전달 선택값은 임의 확정하지 않음.
+
+## 2026-10-13-08 — TODO37 TEXT BODY 통합 진행 확정
+
+- 이유: 협의 과제의 진행 확정을 저장소와 Trello에 일치시킬 필요.
+- 변경: BODY 통합을 진행중으로 전환하고 개발 여부 보류 문구 및 세 카드 대응표 갱신.
+- 주요 파일: docs/design/37_TEXT_EDITOR_BODY_통합검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO 번호·카드 대응 및 문서 상태 확인. 실행 코드 변경 없이 빌드·테스트 미실행.
+- 상태: 과제 진행 확정, 구현 완료 아님. 세부 미전달 선택값은 임의 확정하지 않음.
+
+## 2026-10-13-07 — TODO36 C# 화이트리스트 정리 진행 확정
+
+- 이유: 협의 과제의 진행 확정을 저장소와 Trello에 일치시킬 필요.
+- 변경: 화이트리스트 검토·정리 과제를 진행중으로 전환하고 제거 범위와 표시 방어 책임 구분 유지.
+- 주요 파일: docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO 번호·카드 대응 및 문서 상태 확인. 실행 코드 변경 없이 빌드·테스트 미실행.
+- 상태: 과제 진행 확정, 구현 완료 아님. 세부 미전달 선택값은 임의 확정하지 않음.
+
+## 2026-10-13-06 — TODO35 API 흐름 진행 확정
+
+- 이유: 협의 과제의 진행 확정을 저장소와 Trello에 일치시킬 필요.
+- 변경: API 흐름 과제를 진행중으로 전환하고 복구 정책의 미전달 선택값을 분리.
+- 주요 파일: docs/design/35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO 번호·카드 대응 및 문서 상태 확인. 실행 코드 변경 없이 빌드·테스트 미실행.
+- 상태: 과제 진행 확정, 구현 완료 아님. 세부 미전달 선택값은 임의 확정하지 않음.
+
+## 2026-10-13-05 — TODO37 TEXT BODY 통합 및 Trello 협의 과제 대조
+
+- 이유: Trello 진행협의중의 TEXT BODY 통합 논의가 저장소 TODO에서 독립적으로 추적되지 않아 보완.
+- 변경: TODO37 추가. TEXT.content 내부의 제목·설명 통합 검토, 공통 헤더와 다른 유형의 범위 구분, 서식 원본·파생 문자열·데이터 보존 검토를 기록. 진행협의중 세 카드와 TODO35~37의 대응표 및 원본 링크 추가.
+- 주요 파일: docs/design/37_TEXT_EDITOR_BODY_통합검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 진행협의중 카드 3건과 TODO35~37을 대조해 누락·중복 없음 확인. 카드 상세 설명·체크리스트 없음 확인. 문서 내부 링크 대상 확인.
+- 상태: 문서 반영. BODY 통합·화이트리스트 제거 개발 결정 보류, 실행 코드 변경·빌드·테스트 미실행. Trello 카드 상태 유지.
+
+## 2026-10-13-04 — TODO36 TEXT 서식 변환·C# 화이트리스트 중복 검토
+
+- 이유: 서버와 C#의 서식 정책 중복 여부 및 표시 변환·오류 방어 책임을 구분할 필요.
+- 변경: 진행협의중 카드 `TEXT EDITOR 화이트리스트 CS쪽 제거 여부 체크`(https://trello.com/c/e9oWww78)를 연결. 기존 popupType 중복 분기 중심 설명을 실제 색상·크기 허용 검사와 글꼴 매핑 검토로 정정.
+- 주요 파일: docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 최신 원격 main의 popup-frameWork/Popup/Views/Contents/PopupRichText.cs에서 IsAllowedColor, Sizes.Contains, Fonts.TryGetValue 및 nullable 값 확인을 확인. 파일을 찾지 못했다는 기존 작업본 기준 기록을 정정.
+- 상태: 검토 TODO만 수정. 화이트리스트 제거 여부 미결정, 코드 변경·실행 테스트 미실행.
+
+## 2026-10-13-03 — TODO35 단건 팝업 API 흐름 및 응답 상태 정리
+
+- Trello 대조 보완: 진행협의중 카드 `목록 조회,결과저장,결과수신 세단계`(https://trello.com/c/z0xv8TnE)를 TODO35에 연결. 실제 API 구분은 로그인·조회·결과 수신이며 결과 저장은 결과 수신 책임임을 명시. 카드 상태와 미결 정책을 유지하고 문서 링크·중복 과제 여부를 확인.
+
+- 이유: 로그인·조회·결과 수신을 세 API로 분리하고 단건 순차 처리하는 합의 사항과 결과 후속 조회 상태를 구현 전 기준으로 보존할 필요.
+- 변경: TODO35 추가. 조회 응답의 매 조회 pollingIntervalSeconds, 단건 nextPopup/null, userId·nextStatus 제외 및 C# 단건 DTO를 기록. 결과 응답의 처리 status와 nextStatus(AVAILABLE/EMPTY)를 구분하고 저장 후 후보 유무 확인 및 회의 미결 복구 정책을 분리.
+- 주요 파일: docs/design/35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO29~34 확인 후 번호 중복 없음. 설계 문서 추가만으로 실행 테스트 대상 없음.
+- 상태: 요구사항·계약 TODO만 추가. 구현·계약 정의서 갱신·빌드·테스트 미실행.
+
 ## 2026-10-13-02 — 20261013 폐쇄망 반입본 생성
 
 - 이유: 20261012 반입 이후의 Demo SSO·로그인 분리 테스트(2026-10-13-01)와 설계 17 폐기 문서(2026-10-12-25)를 폐쇄망에 반입하기 위해 새 반입본 필요.
