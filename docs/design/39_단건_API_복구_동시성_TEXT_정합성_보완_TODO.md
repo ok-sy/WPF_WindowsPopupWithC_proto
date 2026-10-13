@@ -7,7 +7,7 @@
 
 ## 연결 및 범위
 
-- Trello: [TODO39 단건 API 복구·동시성·TEXT 정합성 보완](https://trello.com/c/eexcAkJ7), **진행 확정** 목록. TODO 문서가 Git에 반영된 개발 대기 단계이며 구현 완료를 뜻하지 않는다.
+- Trello: [TODO39 단건 API 복구·동시성·TEXT 정합성 보완](https://trello.com/c/eexcAkJ7), **검증대기** 목록(2026-10-13 이동). 구현·자동 검증 완료, 실제 서버+WPF 화면·원격 DB 확인 대기.
 - 연계: [TODO35](35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md) / [Trello TODO35](https://trello.com/c/z0xv8TnE), [TODO37](37_TEXT_EDITOR_BODY_통합검토_TODO.md) / [Trello TODO37](https://trello.com/c/M7zvelWc).
 - 기존 재전송 정책·API 계약·팝업 유효성 카드의 전체 범위를 복제하지 않고 이번 검토의 구체적인 5개 보완을 관리한다.
 - 프로토타입 기준이며 이전 배포 버전 호환·단계적 반영은 추가하지 않는다. TEXT 기존 행 보존은 TODO37이 이미 선택한 조회 시 변환 범위에서 다룬다.
@@ -86,7 +86,7 @@
 | 39-1 | `PopupResultQueue.FlushAsync`가 큐 파일을 읽거나 보존할 수 없으면 메모리 보관분 전송 후에도 `Blocked=true`. 파일 원본은 그대로 | RecoveryTests: 배타 잠금 파일 + 빈 메모리에서 전송 0·조회 보류, 메모리 보관분은 전송하되 보류 유지, 잠금 해제 후 같은 resultId 전송·보류 해제, 정상 빈 큐는 보류 없음, 손상 파일 보존 실패도 보류 |
 | 39-2 | `LoadAndShowAvailablePopupsAsync`가 이번에 저장한 결과의 nextStatus=EMPTY면 조회하지 않고 최신 간격 대기. `OnPopupFinished`는 같은 메서드로 위임(닫힘 직후·복구 경로 공통) | BehaviorTests(실제 MainWindow + 가짜 HTTP): 복구 ACCEPTED/EMPTY·DUPLICATE/EMPTY 조회 0회·2700초 예약, AVAILABLE·nextStatus 생략은 즉시 조회, 빈 큐 최초 조회는 바로 조회 |
 | 39-3 | `PopupRichText.mergeLegacyHeader`: 헤더 표시 + `showPlainText=false`면 헤더 문단만, 숨긴 본문(plainText·textBlocks) 제외, `showPlainText=true`. 관리자 웹·WPF는 서버 응답을 그대로 써 추가 변경 없음 | `PopupContentAssemblerTest`: plainText·textBlocks 행 각각, 제목만·설명만, 헤더·본문 모두 숨김(미병합·숨김 유지), 헤더·본문 모두 표시, 파생 plainText 일치, 변환된 행 재조회 시 문단 중복 없음 |
-| 39-4 | `WpfPopupMapper.lockActiveUser`(APP_USER 행 `FOR UPDATE`)를 조회(`getNextPopup` 시작)와 결과 처리(`processOne` 시작)가 같은 순서로 먼저 잡는다. 사용자 단위 잠금이라 다른 사용자와 독립, 잠금 순서는 사용자 → 전달 건 | `WpfPopupDatabaseTest.queryAndResultAreSerializedPerUserOnOracle`(두 연결, 실제 커밋): 결과 커밋 전 조회가 잠금 대기 → 커밋 후 TEXT 완료·SURVEY 유예 각각 새 OPEN 미발급, 다른 사용자 즉시 처리, 동시 조회 OPEN 1건 재사용. 단위: 조회가 잠금 후 후보 조회 |
+| 39-4 | `WpfPopupMapper.lockActiveUser`(APP_USER 행 `FOR UPDATE`)를 조회(`getNextPopup` 시작)와 결과 처리(`processOne` 시작)가 같은 순서로 먼저 잡는다. 사용자 단위 잠금이라 다른 사용자와 독립, 잠금 순서는 사용자 → 전달 건 | `WpfPopupDatabaseTest.queryAndResultAreSerializedPerUserOnOracle`(두 연결, 실제 커밋. 대기 확인은 작업 진입 latch + 제3 연결 `FOR UPDATE NOWAIT`의 ORA-00054로 잠금 보유 확인 + 해제 전 미완료. 동시 조회는 두 조회를 시작 latch로 같은 시점에 출발시켜 5회 반복 — 같은 deliveryId·전달 건 1건. 순차 재조회 재사용은 별도 확인): 결과 커밋 전 조회가 잠금 대기 → 커밋 후 TEXT 완료·SURVEY 유예 각각 새 OPEN 미발급, 다른 사용자 즉시 처리, 동시 조회 전달 건 1건·같은 deliveryId, 순차 재조회 같은 deliveryId. 단위: 조회가 잠금 후 후보 조회 |
 | 39-5 | 같은 잠금 뒤에 영수증 확인 → 동시 제출의 뒤 요청은 앞 커밋을 보고 DUPLICATE. 다른 resultId는 기존대로 WPF_DELIVERY_COMPLETED | 같은 Oracle 테스트: ACCEPTED 1 + DUPLICATE 1, 영수증 1건·표시 횟수 1회. 단위: 잠금 → 영수증 순서 |
 | 39-6 | 인터페이스 명세(3.7 이력·TEXT 변환·§12.1)·ALL/MINIMAL·popup-frameWork README·TODO35/37 갱신, Word/PDF 재생성. API 필드 계약 변경 없음(Excel 변경 없음). 예외 이후 재표시는 §12.1에 임시 동작으로 기록 | 문서 대조 |
 

@@ -225,7 +225,7 @@ class WpfPopupDatabaseTest {
             WpfResultProcessor processor = new WpfResultProcessor(ps, pm, wm, props);
             return new Stack(s, new WpfPopupService(ps, pm, wm, processor, props), processor);
         };
-        var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
         cleanup.run();
         Stack a = open.get();
         Stack b = open.get();
@@ -241,17 +241,39 @@ class WpfPopupDatabaseTest {
                 }
             };
 
+            // 작업 진입을 latch로 확인하고, 앞 세션이 사용자 행 잠금을 쥐고 있음을 제3 연결의 NOWAIT(ORA-00054)로 확인한 뒤
+            // 진입한 작업이 잠금 해제 전에는 끝나지 않음을 본다(시간만으로 대기를 추정하지 않음).
+            java.util.function.BiFunction<String, java.util.concurrent.Callable<Object>, java.util.concurrent.Future<Object>> startWaiting = (user, call) -> {
+                var entered = new java.util.concurrent.CountDownLatch(1);
+                var future = executor.submit(() -> { entered.countDown(); return call.call(); });
+                try {
+                    assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS), "작업 진입");
+                    try (SqlSession probe = factory.openSession(false);
+                         var st = probe.getConnection().prepareStatement(
+                                 "SELECT EMPLOYEE_NO FROM " + prefix + "APP_USER WHERE EMPLOYEE_NO = ? FOR UPDATE NOWAIT")) {
+                        st.setString(1, user);
+                        var locked = assertThrows(java.sql.SQLException.class, st::executeQuery, "앞 세션이 사용자 행 잠금을 쥐고 있다");
+                        assertEquals(54, locked.getErrorCode(), "ORA-00054 resource busy");
+                    }
+                    assertThrows(java.util.concurrent.TimeoutException.class, () -> future.get(500, java.util.concurrent.TimeUnit.MILLISECONDS),
+                            "진입한 작업은 잠금 해제 전까지 끝나지 않는다");
+                } catch (InterruptedException ex) {
+                    throw new IllegalStateException(ex);
+                } catch (Exception ex) {
+                    if (ex instanceof RuntimeException rt) throw rt;
+                    throw new IllegalStateException(ex);
+                }
+                return future;
+            };
             // ---- 39-5: 같은 결과 동시 제출 → 앞 ACCEPTED, 뒤는 잠금 대기 후 DUPLICATE ----
             WpfPopupItem text = a.service().getNextPopup("E1003").popup();
             assertEquals("SAMPLE-TEXT-001", text.popupId());
             a.session().commit(true);
             String r1 = UUID.randomUUID().toString();
             assertEquals(WpfResultItemResponse.Status.ACCEPTED, a.processor().processOne("E1003", close.apply(r1, text)).status());
-            var duplicate = executor.submit(() -> b.processor().processOne("E1003", close.apply(r1, text)));
-            Thread.sleep(700);
-            assertFalse(duplicate.isDone(), "뒤 요청은 앞 결과 커밋까지 사용자 잠금을 기다린다");
+            var duplicate = startWaiting.apply("E1003", () -> b.processor().processOne("E1003", close.apply(r1, text)));
             a.session().commit(true);
-            assertEquals(WpfResultItemResponse.Status.DUPLICATE, duplicate.get(10, java.util.concurrent.TimeUnit.SECONDS).status(),
+            assertEquals(WpfResultItemResponse.Status.DUPLICATE, ((WpfResultItemResponse) duplicate.get(10, java.util.concurrent.TimeUnit.SECONDS)).status(),
                     "잠금 후 영수증을 보고 DUPLICATE(WPF_DELIVERY_COMPLETED 아님)");
             b.session().commit(true);
             assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", r1));
@@ -263,11 +285,9 @@ class WpfPopupDatabaseTest {
             assertEquals("SAMPLE-SURVEY-004", survey.popupId());
             a.session().commit(true);
             a.processor().processOne("E1003", close.apply(UUID.randomUUID().toString(), survey));
-            var afterDefer = executor.submit(() -> b.service().getNextPopup("E1003"));
-            Thread.sleep(700);
-            assertFalse(afterDefer.isDone(), "조회는 진행 중인 결과 처리의 커밋을 기다린다");
+            var afterDefer = startWaiting.apply("E1003", () -> b.service().getNextPopup("E1003"));
             a.session().commit(true);
-            assertNull(afterDefer.get(10, java.util.concurrent.TimeUnit.SECONDS).popup(), "유예된 SURVEY를 오래된 후보로 다시 발급하지 않는다");
+            assertNull(((server.domain.popup.wpf.WpfNextPopupResponse) afterDefer.get(10, java.util.concurrent.TimeUnit.SECONDS)).popup(), "유예된 SURVEY를 오래된 후보로 다시 발급하지 않는다");
             b.session().commit(true);
             assertEquals(0, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = 'E1003' AND DELIVERY_STATUS = 'OPEN' AND POPUP_ID = ?", "SAMPLE-SURVEY-004"));
 
@@ -276,9 +296,7 @@ class WpfPopupDatabaseTest {
             WpfPopupItem text2 = a.service().getNextPopup("E1003").popup();
             a.session().commit(true);
             a.processor().processOne("E1003", close.apply(UUID.randomUUID().toString(), text2));
-            var afterComplete = executor.submit(() -> b.service().getNextPopup("E1003"));
-            Thread.sleep(700);
-            assertFalse(afterComplete.isDone());
+            var afterComplete = startWaiting.apply("E1003", () -> b.service().getNextPopup("E1003"));
             // 다른 사용자는 E1003 잠금과 무관하게 바로 처리된다
             Stack c = open.get();
             try {
@@ -289,15 +307,37 @@ class WpfPopupDatabaseTest {
                 c.session().close();
             }
             a.session().commit(true);
-            WpfPopupItem next = afterComplete.get(10, java.util.concurrent.TimeUnit.SECONDS).popup();
+            WpfPopupItem next = ((server.domain.popup.wpf.WpfNextPopupResponse) afterComplete.get(10, java.util.concurrent.TimeUnit.SECONDS)).popup();
             assertEquals("SAMPLE-SURVEY-004", next.popupId(), "완료된 TEXT 대신 다음 후보");
             b.session().commit(true);
             assertEquals(0, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = 'E1003' AND DELIVERY_STATUS = 'OPEN' AND POPUP_ID = ?", "SAMPLE-TEXT-001"));
-            // 동시 조회는 OPEN 1건을 재사용한다
+            // 순차 재조회는 같은 OPEN 전달 건을 재사용한다(응답 유실 복구)
             assertEquals(next.deliveryId(), a.service().getNextPopup("E1003").popup().deliveryId());
             a.session().commit(true);
-            assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = ? AND DELIVERY_STATUS = 'OPEN'", "E1003"));
-        } finally {
+
+            // ---- 동시 조회: OPEN 건이 없을 때 두 조회를 같은 시점에 시작 → OPEN 1건만 생기고 두 응답이 같은 deliveryId ----
+            for (int round = 0; round < 5; round++) {
+                cleanup.run();
+                var ready = new java.util.concurrent.CountDownLatch(2);
+                var start = new java.util.concurrent.CountDownLatch(1);
+                java.util.function.Function<Stack, java.util.concurrent.Future<WpfPopupItem>> query = stack -> executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    WpfPopupItem item = stack.service().getNextPopup("E1003").popup();
+                    stack.session().commit(true);   // 커밋해야 다른 조회가 사용자 잠금을 얻는다
+                    return item;
+                });
+                var first = query.apply(a);
+                var second = query.apply(b);
+                assertTrue(ready.await(5, java.util.concurrent.TimeUnit.SECONDS), "두 조회 모두 시작 대기");
+                start.countDown();
+                WpfPopupItem p1 = first.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                WpfPopupItem p2 = second.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                assertEquals(p1.deliveryId(), p2.deliveryId(), "동시 조회도 같은 전달 건(round " + round + ")");
+                assertEquals(p1.popupId(), p2.popupId());
+                assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE EMPLOYEE_NO = ?", "E1003"),
+                        "전달 건은 1건만 생성(round " + round + ")");
+            }        } finally {
             a.session().rollback(true);
             b.session().rollback(true);
             a.session().close();
