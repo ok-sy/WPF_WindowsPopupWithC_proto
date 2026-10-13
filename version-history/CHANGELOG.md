@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-28 — TODO43 passingScore와 completionRatio 버튼 활성화 UX 진행 확정 정정
+
+- 이유: passingScore와 completionRatio 버튼 활성화 UX를 보류 과제로 분류한 상태를 개발 진행 확정으로 정정할 필요.
+- 변경: TODO43 문서를 다시 추가하고 구현 범위·기존 과제 대조·검증 기준을 기록. Trello 카드의 보류 표기를 제거하고 TODO 번호·Git 문서 링크 연결 후 진행 확정으로 이동.
+- 주요 파일: docs/design/43_완료조건_버튼활성화_UX_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 Trello 카드와 대응 번호 대조. 이전 TODO43/44 번호 유지, 다른 보류 3건은 Git에 추가하지 않음. 문서 변경으로 빌드·실행 테스트 대상 없음.
+- 상태: 개발 과제 확정·TODO 등록. 기능 코드·DB 변경 및 실행 테스트 미수행.
+
 ## 2026-10-13-27 — 보류 과제 Git 제외 및 Trello 단계 구분 정정
 
 - 이유: 보류·미확정 과제는 Trello TODO 구체화까지만 관리하고 확정된 과제만 Git에서 관리하는 기준 반영.
