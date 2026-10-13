@@ -2,6 +2,26 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-31 — TODO46 API·WPF·관리자 웹 계약 대조 및 불일치 수정
+
+- 이유: 단건 계약·유형별 저장/표시/결과가 서버·WPF·Demo·관리자 웹·명세·예제·Excel·Word·제안서 0.3 사이에서 일치하는지 대조하고 불일치를 정리.
+- 변경:
+  - 서버: 관리자 저장 시 hideDays를 1~3650으로 제한(`PopupService`, 기존은 1 이상만 — 3650 초과 저장 시 WPF HIDDEN 결과가 REJECTED로 종결되어 숨김 미적용). 단건 구조에 맞게 주석 정정(WpfPopupItem·PopupFooterAction·PopupWindowOptions·WpfPopupService·WpfResultItemResponse).
+  - WPF·Demo: Demo 게이트웨이가 거절 시 영수증을 지워 서버 롤백 동작과 같게 하고 HIDDEN hideDays 3650 상한 검사. DisplayOrder를 Demo 정렬 전용(서버 응답에 없음)으로 주석·Demo 옵션 라벨 정정, Demo VIDEO+QUIZ videoTitle을 surveyTitle과 같게. 목록·popups[] 주석 정정.
+  - 문서: POPUP_INTERFACE_SPEC(설계 35 이전 3.7 이력에 대체 표기, §6.4 날짜, §10.9 제안서 0.3과 구현 계약 차이 표, HIDDEN 우선·시청 기록 미저장 명시, VIDEO+QUIZ 제목 1개 저장, plainText 조건부, hideDays 1~3650), ALL/MINIMAL(hideDays·plainText·TextBlocks 최소 범위 의미·HIDDEN 우선), 옵션 가이드(TEXT 통합 규칙·hideDays), 예제 JSON 2종(VIDEO+QUIZ videoTitle), 설계34 sentAt 종결 표기, Excel(RESULT_REQUEST·RESPONSE G열 어긋난 비고 정정, 개요 버전·기준일·조회 API 문구, 공통 hideDays 범위, TEXT 통합 규칙, Sample 전 유형 deliveryId·VIDEO+QUIZ 제목), Word 생성 스크립트 날짜·부록 문구 수정 후 Word/PDF v3.7 재생성. 설계46 대조 결과 기록.
+- 주요 파일: zero-rule-server/(service/core .../PopupService.java·wpf/WpfPopupService.java, domain .../PopupFooterAction.java·PopupWindowOptions.java·wpf/WpfPopupItem.java·wpf/WpfResultItemResponse.java, 테스트 PopupAdminQuestionsTest.java), popup-frameWork/Popup/(Services/DemoPopupGateway.cs·DemoPopupDataService.cs, Dtos/PopupResponseDto.cs·WpfResultDtos.cs, Models/PopupOptions.cs, Factories/PopupFactory.cs, DemoOptionsWindow.Fields.cs), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/design/(34_*, 46_*), scripts/export-interface-word.cjs, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline --continue`(로컬 XE) 125건 통과·skip 0(hideDays 범위 테스트 추가). WPF BehaviorTests 962건(Demo 거절 후 같은 resultId 재처리, HIDDEN 3651 거절 추가)·RecoveryTests 158건(로컬). 명세 json 블록·예제 JSON 37건, Excel 예시 JSON 파싱, docx 본문 반영 확인. 관리자 웹 코드는 변경 없음. 미실행: 관리자 웹 등록·수정·미리보기 화면 왕복(로그인 필요), 원격 개발 서버 배포 후 확인.
+- 상태: 커밋에 포함. 원격 반영.
+
+## 2026-10-13-30 — TODO45·47 결정 기록 및 실환경 검증(로컬 새 서버 + 원격 개발 DB + WPF)
+
+- 이유: 단건 RESULT 재전송·오류 정책(TODO45)과 팝업 유효성·전달 상태(TODO47)의 결정값을 기록하고 실제 서버·DB·WPF 연동 증거를 남길 필요.
+- 결정: 45-3·45-4·47-7(최종 장애 복구 정책, resultId 본문 비교·보존 기간·전달 건 만료)은 현행 동작을 임시 기준으로 유지하고 주간회의까지 명시적 보류 — 검증 통과를 정책 확정으로 표시하지 않음. 47-4 이미 열린 팝업 강제 회수·긴급 공지 끼어들기는 범위 밖 확정(게시중단 전 표시 건 결과는 수용). 47-5 진행 단위는 사번 단위 유지(한 PC에서 완료하면 다른 PC 조회에서도 제외), 다중 PC 동시 표시 허용 여부와 다른 PC에 열린 팝업의 결과 수신 기준은 보류.
+- 검증(실환경): 이 PC에서 새 서버(local 프로파일, 프로토타입 로그인)를 원격 개발 DB(11g XE)에 연결. HTTP 시나리오 21건 통과 — POST 조회 단건 구조, 원격 기존 TEXT 행 제목·설명 병합, 결과 전 재조회 같은 deliveryId, TEXT 닫기 ACCEPTED/AVAILABLE·완료, 같은 resultId DUPLICATE(+nextStatus), 같은 전달 건 다른 resultId WPF_DELIVERY_COMPLETED, VIDEO 미완료 닫기 유예 1800초, AVAILABLE 뒤 게시중단 시 popup=null, SURVEY 제출 EMPTY→null, OPEN 건 게시중단 시 EXPIRED 후 다음 후보, EXPIRED 건 결과 수용, 원격 DB 같은 결과 동시 제출 ACCEPTED 1·DUPLICATE 1, 401·426·400·WPF_INVALID_RESULT·WPF_INVALID_DELIVERY, 요청 로그. 실제 WPF exe(API 모드, 가짜 SSO, 사용자 E1003): 원격 TEXT 표시(합친 본문)→UI 자동화로 닫기→결과 저장(완료)→설문 즉시 표시, 표시 중 조회 요청 없음, 강제 종료·재실행 시 같은 OPEN 전달 건 재표시. 검증 스크립트의 SQL*Plus 한 줄 다중 문장 오류로 게시중단 UPDATE가 실행되지 않아 처음 2건이 실패했으나 스크립트 수정 후 통과(서버 문제 아님). 테스트 사용자 E1002·E1003의 기록과 게시 상태는 검증 후 정리(잔여 0), E1001 기존 기록은 미변경.
+- 주요 파일: docs/design/(45_단건_RESULT_재전송오류_정책검증_TODO.md, 47_팝업유효성_게시중단_전달상태_정책검증_TODO.md), version-history/CHANGELOG.md.
+- 미실행: 원격 개발 서버 배포, 실제 WPF의 401 재로그인·426 안내·5xx 복구 화면, 원격 DB의 조회·결과 경합 재현, 다중 PC, 폐쇄망.
+- 상태: 커밋에 포함. 원격 반영.
+
 ## 2026-10-13-29 — TODO44 Background Overlay 키보드와 종료 동작 검토 진행 확정 정정
 
 - 이유: Background Overlay 키보드와 종료 동작 검토를 보류 과제로 분류한 상태를 개발 진행 확정으로 정정할 필요.
@@ -49,26 +69,6 @@
 - 주요 파일: docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md, version-history/CHANGELOG.md.
 - 검증: 최신 main 221e9ff의 TODO1~39·Trello 두 목록의 열린 카드 8건과 대조해 번호 중복 없음. TODO35·39 구현/자동검증 완료 범위와 남은 정책·실환경 검증 분리. Astra 추가 검토로 상시 개념 미확정·제출버튼 교착·대상/로그 표현 구분 확인. 문서 변경만으로 빌드·테스트 대상 없음.
 - 상태: TODO 문서 등록. Git 반영 후 카드에 TODO 번호·문서 링크를 연결하고 진행 확정으로 이동할 대상. 기능 코드 변경·새 DB 적용·실행 테스트 미수행.
-
-## 2026-10-13-20 — TODO46 API·WPF·관리자 웹 계약 대조 및 불일치 수정
-
-- 이유: 단건 계약·유형별 저장/표시/결과가 서버·WPF·Demo·관리자 웹·명세·예제·Excel·Word·제안서 0.3 사이에서 일치하는지 대조하고 불일치를 정리.
-- 변경:
-  - 서버: 관리자 저장 시 hideDays를 1~3650으로 제한(`PopupService`, 기존은 1 이상만 — 3650 초과 저장 시 WPF HIDDEN 결과가 REJECTED로 종결되어 숨김 미적용). 단건 구조에 맞게 주석 정정(WpfPopupItem·PopupFooterAction·PopupWindowOptions·WpfPopupService·WpfResultItemResponse).
-  - WPF·Demo: Demo 게이트웨이가 거절 시 영수증을 지워 서버 롤백 동작과 같게 하고 HIDDEN hideDays 3650 상한 검사. DisplayOrder를 Demo 정렬 전용(서버 응답에 없음)으로 주석·Demo 옵션 라벨 정정, Demo VIDEO+QUIZ videoTitle을 surveyTitle과 같게. 목록·popups[] 주석 정정.
-  - 문서: POPUP_INTERFACE_SPEC(설계 35 이전 3.7 이력에 대체 표기, §6.4 날짜, §10.9 제안서 0.3과 구현 계약 차이 표, HIDDEN 우선·시청 기록 미저장 명시, VIDEO+QUIZ 제목 1개 저장, plainText 조건부, hideDays 1~3650), ALL/MINIMAL(hideDays·plainText·TextBlocks 최소 범위 의미·HIDDEN 우선), 옵션 가이드(TEXT 통합 규칙·hideDays), 예제 JSON 2종(VIDEO+QUIZ videoTitle), 설계34 sentAt 종결 표기, Excel(RESULT_REQUEST·RESPONSE G열 어긋난 비고 정정, 개요 버전·기준일·조회 API 문구, 공통 hideDays 범위, TEXT 통합 규칙, Sample 전 유형 deliveryId·VIDEO+QUIZ 제목), Word 생성 스크립트 날짜·부록 문구 수정 후 Word/PDF v3.7 재생성. 설계46 대조 결과 기록.
-- 주요 파일: zero-rule-server/(service/core .../PopupService.java·wpf/WpfPopupService.java, domain .../PopupFooterAction.java·PopupWindowOptions.java·wpf/WpfPopupItem.java·wpf/WpfResultItemResponse.java, 테스트 PopupAdminQuestionsTest.java), popup-frameWork/Popup/(Services/DemoPopupGateway.cs·DemoPopupDataService.cs, Dtos/PopupResponseDto.cs·WpfResultDtos.cs, Models/PopupOptions.cs, Factories/PopupFactory.cs, DemoOptionsWindow.Fields.cs), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/design/(34_*, 46_*), scripts/export-interface-word.cjs, version-history/CHANGELOG.md.
-- 검증: 서버 `gradlew test --offline --continue`(로컬 XE) 125건 통과·skip 0(hideDays 범위 테스트 추가). WPF BehaviorTests 962건(Demo 거절 후 같은 resultId 재처리, HIDDEN 3651 거절 추가)·RecoveryTests 158건(로컬). 명세 json 블록·예제 JSON 37건, Excel 예시 JSON 파싱, docx 본문 반영 확인. 관리자 웹 코드는 변경 없음. 미실행: 관리자 웹 등록·수정·미리보기 화면 왕복(로그인 필요), 원격 개발 서버 배포 후 확인.
-- 상태: 커밋에 포함. 원격 반영.
-
-## 2026-10-13-19 — TODO45·47 결정 기록 및 실환경 검증(로컬 새 서버 + 원격 개발 DB + WPF)
-
-- 이유: 단건 RESULT 재전송·오류 정책(TODO45)과 팝업 유효성·전달 상태(TODO47)의 결정값을 기록하고 실제 서버·DB·WPF 연동 증거를 남길 필요.
-- 결정: 45-3·45-4·47-7(최종 장애 복구 정책, resultId 본문 비교·보존 기간·전달 건 만료)은 현행 동작을 임시 기준으로 유지하고 주간회의까지 명시적 보류 — 검증 통과를 정책 확정으로 표시하지 않음. 47-4 이미 열린 팝업 강제 회수·긴급 공지 끼어들기는 범위 밖 확정(게시중단 전 표시 건 결과는 수용). 47-5 진행 단위는 사번 단위 유지(한 PC에서 완료하면 다른 PC 조회에서도 제외), 다중 PC 동시 표시 허용 여부와 다른 PC에 열린 팝업의 결과 수신 기준은 보류.
-- 검증(실환경): 이 PC에서 새 서버(local 프로파일, 프로토타입 로그인)를 원격 개발 DB(11g XE)에 연결. HTTP 시나리오 21건 통과 — POST 조회 단건 구조, 원격 기존 TEXT 행 제목·설명 병합, 결과 전 재조회 같은 deliveryId, TEXT 닫기 ACCEPTED/AVAILABLE·완료, 같은 resultId DUPLICATE(+nextStatus), 같은 전달 건 다른 resultId WPF_DELIVERY_COMPLETED, VIDEO 미완료 닫기 유예 1800초, AVAILABLE 뒤 게시중단 시 popup=null, SURVEY 제출 EMPTY→null, OPEN 건 게시중단 시 EXPIRED 후 다음 후보, EXPIRED 건 결과 수용, 원격 DB 같은 결과 동시 제출 ACCEPTED 1·DUPLICATE 1, 401·426·400·WPF_INVALID_RESULT·WPF_INVALID_DELIVERY, 요청 로그. 실제 WPF exe(API 모드, 가짜 SSO, 사용자 E1003): 원격 TEXT 표시(합친 본문)→UI 자동화로 닫기→결과 저장(완료)→설문 즉시 표시, 표시 중 조회 요청 없음, 강제 종료·재실행 시 같은 OPEN 전달 건 재표시. 검증 스크립트의 SQL*Plus 한 줄 다중 문장 오류로 게시중단 UPDATE가 실행되지 않아 처음 2건이 실패했으나 스크립트 수정 후 통과(서버 문제 아님). 테스트 사용자 E1002·E1003의 기록과 게시 상태는 검증 후 정리(잔여 0), E1001 기존 기록은 미변경.
-- 주요 파일: docs/design/(45_단건_RESULT_재전송오류_정책검증_TODO.md, 47_팝업유효성_게시중단_전달상태_정책검증_TODO.md), version-history/CHANGELOG.md.
-- 미실행: 원격 개발 서버 배포, 실제 WPF의 401 재로그인·426 안내·5xx 복구 화면, 원격 DB의 조회·결과 경합 재현, 다중 PC, 폐쇄망.
-- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-13-18 — TODO39 단건 API 복구·동시성·TEXT 정합성 보완 구현
 
