@@ -191,6 +191,27 @@ class PopupAdminQuestionsTest {
         verify(mapper, times(1)).upsertAdminPopupNotice(any());
     }
 
+    // [설계 46] 숨김 일수는 WPF HIDDEN 결과 허용 범위(1~3650)와 같아야 한다.
+    @Test void hideDaysMustMatchResultRange() {
+        java.util.function.IntFunction<PopupResponseDto> withHideDays = days -> {
+            var base = imagePopup("ADAPTIVE");
+            return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                    base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                    base.width(), base.height(), base.widthRatio(), base.heightRatio(),
+                    base.minimumWidth(), base.minimumHeight(), base.maximumWidth(), base.maximumHeight(),
+                    base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(),
+                    base.questionTemplateId(), base.periodMode(), base.repeatInterval(), base.repeatDayOfWeek(),
+                    base.repeatDayOfMonth(), days, base.completionRatio(), base.passingScore(),
+                    base.allowCloseBeforeComplete(), base.questions(), base.content());
+        };
+        for (int days : new int[]{0, 3651}) {
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withHideDays.apply(days), false, List.of(), "admin"));
+        }
+        service.saveAdminPopup(withHideDays.apply(3650), false, List.of(), "admin");
+        service.saveAdminPopup(withHideDays.apply(1), false, List.of(), "admin");
+        verify(mapper, times(2)).upsertAdminPopupNotice(any());
+    }
+
     // [설계 18 L-3] 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다.
     @Test void saveStoresColumnValuesOutsideContentOptions() {
         service.saveAdminPopup(imagePopup("ADAPTIVE"), false, List.of(), "admin");

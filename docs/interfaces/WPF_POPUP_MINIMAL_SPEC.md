@@ -39,7 +39,7 @@
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
-| HideDays | 기본값 사용 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과(HIDDEN)의 숨김 일수. 최소 버전은 생략해 30일 사용. 코드는 1 이상 값 지정 지원 |
+| HideDays | 기본값 사용 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과(HIDDEN)의 숨김 일수. 최소 버전은 생략해 30일 사용. 코드는 1~3650 값 지정 지원(관리자 저장 시 서버 검증) |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`. 배경 Overlay 사용 |
 | BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위 `backgroundOverlayOpacity`. Overlay 불투명도(0~1) |
 | DragMove | 지원(고정 동작) | N | 설정 필드 없음 | 드래그 이동은 별도 API 옵션이 아닌 Window 동작 |
@@ -63,9 +63,9 @@
 
 | 항목 | 최소 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PlainText | 지원 | Y | `""` | 일반 본문 텍스트. 콘텐츠 제목·설명이 있으면 앞 줄로 포함 |
+| PlainText | 지원 | 조건부(Y) | `""` | 일반 본문 텍스트. TextBlocks가 없을 때 표시하는 본문이며 최소 제공 범위는 TextBlocks를 쓰지 않으므로 본문을 표시하려면 제공. 콘텐츠 제목·설명이 있으면 앞 줄로 포함. 이 저장소 서버는 TEXT 응답에 항상 키를 채움(저장 본문이 없으면 `null` 가능) |
 | ShowPlainText | 지원 | N | `true` | PlainText 표시 여부 |
-| TextBlocks | 미제공 | N | 없음 | 서식 본문. 최소 제공 범위에서는 PlainText만 사용 |
+| TextBlocks | 미제공 | N | 없음 | 서식 본문. 최소 제공 범위는 외부 클라이언트가 PlainText만 사용하면 된다는 뜻이다. 이 저장소 서버는 서식 본문이 있으면 textBlocks도 함께 보내며(plainText는 같은 내용의 파생 문자열), 최소 범위 클라이언트는 textBlocks를 무시해도 된다 |
 | HighlightText | 미제공 | N | `""` | 강조 텍스트 |
 | ShowHighlight | 미제공 | N | `false` | 강조 영역 표시 |
 | BottomDescription | 미제공 | N | `""` | 하단 설명 |
@@ -410,7 +410,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "content": {
     "videoEnabled": true,
     "videoUrl": "https://example.com/media/security.mp4",
-    "videoTitle": "보안 교육",
+    "videoTitle": "영상 확인 퀴즈",
     "showControls": true,
     "defaultVolume": 0.7,
     "allowFullScreen": true,
@@ -419,6 +419,8 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   }
 }
 ```
+
+> VIDEO+QUIZ의 콘텐츠 제목은 저장 컬럼 1개(CONTENT_TITLE = `surveyTitle`)에 저장하므로 이 저장소 서버는 `videoTitle`을 `surveyTitle`과 같은 값으로 내려준다.
 
 > 최소 QUIZ 예시에는 TEXT 문항을 넣지 않는다. TEXT QUIZ 자동 채점은 전체 기능에는 구현되어 있지만 최소 외부 오픈 범위에서는 제외한다.
 

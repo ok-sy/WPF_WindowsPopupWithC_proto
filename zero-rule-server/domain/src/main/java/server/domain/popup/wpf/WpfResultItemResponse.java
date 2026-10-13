@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * <p>[설계 33·34] 응답은 "그 항목의 처리가 종결됐는지"만 알린다. WPF가 쓰지 않는 값은 모두 뺐다.
  * totalScore/passed(설계 33), hiddenUntil·watchedRatio·requiredRatio(34-05),
  * popupStatus·completed·completedAt·responseId(34-03 — WPF 미사용·로그 미사용). 완료·숨김·시청·응답 저장은 서버 내부에서
- * 그대로 처리하며 결과는 다음 목록 조회에 반영된다. popupId·resultType은 WPF 거절 로그 진단용으로 유지한다.</p>
+ * 그대로 처리하며 결과는 다음 조회에 반영된다. [설계 35] 서비스 내부 처리 결과이며 HTTP 응답은 {@link WpfResultResponse}(resultId·status·nextStatus·code·message)로 옮겨 보낸다.</p>
  */
 // [기준 3] 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
 @JsonInclude(JsonInclude.Include.NON_NULL)

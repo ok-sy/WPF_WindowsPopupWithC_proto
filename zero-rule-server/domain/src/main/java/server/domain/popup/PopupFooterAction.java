@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * [설계 30] 공통 Footer 버튼 동작. PopupWindow 공통 영역의 동작이므로 WPF 응답에서는 {@code popups[]} 최상위
+ * [설계 30] 공통 Footer 버튼 동작. PopupWindow 공통 영역의 동작이므로 WPF 응답에서는 {@code popup} 최상위
  * {@code footerAction}/{@code footerLinkUrl}로 내려준다. 관리자 API·DB는 기존처럼 content(CONTENT_OPTIONS)에 둔다.
  *
  * <ul>

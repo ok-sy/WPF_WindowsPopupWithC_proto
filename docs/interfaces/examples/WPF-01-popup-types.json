@@ -340,7 +340,7 @@
       ],
       "passingScore": 80,
       "content": {
-        "videoTitle": "보안 교육",
+        "videoTitle": "영상 확인 퀴즈",
         "videoUrl": "https://example.com/media/security.mp4",
         "description": "영상의 80% 이상을 시청해주세요.",
         "showDescription": true,

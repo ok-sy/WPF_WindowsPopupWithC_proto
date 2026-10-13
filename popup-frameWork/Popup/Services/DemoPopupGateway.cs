@@ -15,10 +15,11 @@ namespace Popup.Services
      *   새 구조(기준 3·4)에서는 "창이 닫힐 때 결과 항목 1개 전송"이 핵심이므로, 데모에서도 그 흐름
      *   (PopupResultBuilder → PopupResultQueue → 게이트웨이 → 항목 응답 → 안내)을 실제 코드로 통과시킨다.
      *   서버 규칙을 최대한 그대로 재현한다:
-     *     - HIDDEN : hideDays 동안 숨김 → 다음 목록에서 제외
+     *     - HIDDEN : hideDays(1~3650) 동안 숨김 → 다음 조회에서 제외
      *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(설계 12 — 서버 재채점 없음, 실제 서버는 참고·로그).
      *                   score/passed가 빠진 항목은 불합격으로 기록한다(설계 18 L-0 — C-18, 구 클라이언트용 Grade() 삭제).
-     *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 목록에서 제외
+     *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
+     *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
      *     - [설계 35] 조회마다 전달 건(deliveryId)을 발급하고 결과에서 일치·미종료를 검사한다. 일반 안내(TEXT·IMAGE) 닫기는 완료,
@@ -112,6 +113,8 @@ namespace Popup.Services
         {
             ArgumentNullException.ThrowIfNull(item);
             WpfResultResponseDto response = ProcessOne(item);
+            // 서버는 거절 시 REQUIRES_NEW 트랜잭션이 롤백되어 영수증이 남지 않는다. Demo도 같게 영수증을 지운다.
+            if (response.IsRejected) _receipts.Remove(item.ResultId);
             if (response.IsSaved) response.NextStatus = Candidates(null).Count > 0 ? "AVAILABLE" : "EMPTY";
             ResultProcessed?.Invoke(this, (item, response));
             return Task.FromResult(response);
@@ -127,17 +130,14 @@ namespace Popup.Services
             }
             if (!_popups.TryGetValue(item.PopupId, out PopupResponseDto? popup))
             {
-                _receipts.Remove(item.ResultId);
                 return Reject(response, "WPF_NOT_ELIGIBLE", "데모 목록에 없는 팝업입니다.");
             }
             if (!_deliveries.TryGetValue(item.DeliveryId ?? string.Empty, out var delivery) || delivery.PopupId != item.PopupId)
             {
-                _receipts.Remove(item.ResultId);
                 return Reject(response, "WPF_INVALID_DELIVERY", "유효한 전달 건이 아닙니다.");
             }
             if (delivery.Done)
             {
-                _receipts.Remove(item.ResultId);
                 return Reject(response, "WPF_DELIVERY_COMPLETED", "이미 결과가 저장된 전달 건입니다.");
             }
 
@@ -152,9 +152,9 @@ namespace Popup.Services
                     break;
 
                 case WpfResultType.Hidden:
-                    if (item.HideDays is null or < 1)
+                    if (item.HideDays is null or < 1 or > 3650)
                     {
-                        return Reject(response, "WPF_INVALID_HIDE_DAYS", "숨김 일수는 1 이상이어야 합니다.");
+                        return Reject(response, "WPF_INVALID_HIDE_DAYS", "숨김 일수는 1~3650일이어야 합니다.");
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
                     break;

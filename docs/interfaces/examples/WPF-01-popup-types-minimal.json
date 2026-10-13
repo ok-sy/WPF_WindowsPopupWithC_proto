@@ -204,7 +204,7 @@
       "content": {
         "videoEnabled": true,
         "videoUrl": "https://example.com/media/security.mp4",
-        "videoTitle": "보안 교육",
+        "videoTitle": "영상 확인 퀴즈",
         "showControls": true,
         "defaultVolume": 0.7,
         "allowFullScreen": true,

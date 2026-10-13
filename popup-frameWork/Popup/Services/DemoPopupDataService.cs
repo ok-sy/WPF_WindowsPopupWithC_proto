@@ -595,7 +595,8 @@ namespace Popup.Services
             videoQuiz["showFooter"] = true;
             videoQuiz["showFooterButton"] = true;
             videoQuiz["content"]!["videoEnabled"] = true;
-            videoQuiz["content"]!["videoTitle"] = "교육 영상";
+            // [설계 46] 서버는 VIDEO+QUIZ 제목을 1개(CONTENT_TITLE = surveyTitle)만 저장하고 videoTitle을 같은 값으로 내려준다.
+            videoQuiz["content"]!["videoTitle"] = "교육 영상 이해도 평가";
             videoQuiz["content"]!["autoPlay"] = false;
             videoQuiz["content"]!["allowSeek"] = true;
             videoQuiz["content"]!["surveyTitle"] = "교육 영상 이해도 평가";
@@ -607,7 +608,7 @@ namespace Popup.Services
             linked["title"] = "바로가기 버튼 데모";
             linked["showFooter"] = true;
             linked["showFooterButton"] = true;
-            // [설계 30] Footer 동작은 content가 아니라 popups[] 최상위 값이다.
+            // [설계 30] Footer 동작은 content가 아니라 popup 최상위 값이다.
             linked["footerAction"] = "LINK_AND_CLOSE";
             linked["footerLinkUrl"] = "https://example.com/";
             demoPopups.Add(linked);

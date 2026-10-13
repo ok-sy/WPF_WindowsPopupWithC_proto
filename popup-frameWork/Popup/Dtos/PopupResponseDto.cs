@@ -56,10 +56,8 @@ namespace Popup.Dtos
             "SEQUENTIAL";
 
         /*
-         * 팝업 표시 우선순위
-         *
-         * 숫자가 작을수록 먼저 표시한다.
-         * 같은 숫자는 하나의 표시 그룹으로 처리한다.
+         * 팝업 표시 우선순위 — [설계 35] 서버 조회 응답에는 없다(서버가 정렬해 1건만 보냄, 기본값 100 유지).
+         * Demo 샘플·Demo 옵션 편집에서만 값이 있으며 Demo 게이트웨이가 후보 정렬에 쓴다.
          */
         public int DisplayOrder { get; set; } =
             100;
@@ -134,7 +132,7 @@ namespace Popup.Dtos
             true;
 
         /*
-         * [설계 30] 공통 Footer 버튼 동작. content가 아니라 popups[] 최상위로 받는다.
+         * [설계 30] 공통 Footer 버튼 동작. content가 아니라 popup 최상위로 받는다.
          * CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출, SURVEY·QUIZ 고정).
          * 생략·미지원 값은 PopupFactory가 유형별 기본값(CLOSE 또는 SUBMIT)으로 처리한다.
          */
@@ -144,7 +142,7 @@ namespace Popup.Dtos
         public string FooterLinkUrl { get; set; } = string.Empty;
 
         /*
-         * [설계 31] PopupWindow 공통 UI 옵션. content가 아니라 popups[] 최상위로 받는다.
+         * [설계 31] PopupWindow 공통 UI 옵션. content가 아니라 popup 최상위로 받는다.
          * Overlay 기본 true / 0.45(0~1 보정), 위치 기본 CENTER(미지원 값도 CENTER),
          * 폰트 크기는 null이면 XAML 기본 크기이며 값이 있으면 PopupWindow가 10~40으로 보정한다.
          */

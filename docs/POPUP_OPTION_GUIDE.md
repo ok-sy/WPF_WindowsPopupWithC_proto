@@ -101,7 +101,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 | 옵션 | 필수 여부 | Default | 설명 |
 |---|---|---|---|
-| `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용 |
+| `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용. 1~3650(관리자 저장 시 서버 검증) |
 | `completionRatio` | VIDEO/동영상+퀴즈 | 1.0 | 누적 시청 완료 기준 0~1 |
 | `passingScore` | QUIZ | 없음 | WPF 로컬 채점 통과 점수 |
 | `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 Alt+F4 허용 여부 |
@@ -127,7 +127,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 
 > Markdown 모드(`markdownMode`/`markdownContent`)는 2026-09-21 제거했다. 값이 남아 있어도 WPF·웹 모두 무시한다.
 >
-> `contentTitle`·`description`·`showContentHeader`는 2026-10-13 제거했다(설계 37). 콘텐츠 제목·설명은 서식 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 본문 앞 문단(제목: 굵게·크기 24)으로 합쳐 보낸다.
+> `contentTitle`·`description`·`showContentHeader`는 2026-10-13 제거했다(설계 37). 콘텐츠 제목·설명은 서식 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 제목 문단(`LEFT`, 굵게, 크기 24) → 설명 문단(`LEFT`) → 기존 본문 순으로 합쳐 보낸다(textBlocks가 없던 행은 기존 plainText 줄을 문단으로 바꿔 뒤에 붙임). 제목·설명을 숨겼던 행(`showContentHeader=false`)은 합치지 않는다. [설계 39-3] 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 헤더만 보이기 — 제목·설명 문단만 보내고 숨긴 본문은 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제).
 
 ---
 

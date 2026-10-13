@@ -837,8 +837,10 @@ public class PopupService {
                 || popup.maximumHeight() < popup.minimumHeight())) {
             throw new IllegalArgumentException("최대 크기는 최소 크기보다 작을 수 없습니다.");
         }
-        if (popup.hideDays() != null && popup.hideDays() < 1) {
-            throw new IllegalArgumentException("숨김 일수는 1일 이상이어야 합니다.");
+        // [설계 46] WPF 결과 HIDDEN의 hideDays 허용 범위(1~3650)와 같게 저장 단계에서 막는다. 초과 값이 저장되면
+        // "다시 보지 않기" 결과가 REJECTED로 종결되어 숨김이 적용되지 않는다.
+        if (popup.hideDays() != null && (popup.hideDays() < 1 || popup.hideDays() > 3650)) {
+            throw new IllegalArgumentException("숨김 일수는 1~3650일이어야 합니다.");
         }
         if (popup.completionRatio() != null
                 && (!Double.isFinite(popup.completionRatio()) || popup.completionRatio() < 0 || popup.completionRatio() > 1)) {

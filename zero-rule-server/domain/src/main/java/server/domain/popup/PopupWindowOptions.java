@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * [설계 31] PopupWindow 전체에 적용되는 공통 UI 옵션. 관리자 API·DB는 기존처럼 content(CONTENT_OPTIONS)에 저장하고,
- * WPF 응답에서는 {@code popups[]} 최상위 필드로 승격한다(content에서는 제거).
+ * WPF 응답에서는 {@code popup} 최상위 필드로 승격한다(content에서는 제거).
  *
  * <ul>
  *   <li>useBackgroundOverlay: 배경 Overlay 사용. 기본 true</li>

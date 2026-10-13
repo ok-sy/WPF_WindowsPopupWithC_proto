@@ -5,13 +5,13 @@
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
 - 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
 - 3.7 변경(2026-10-13, 설계 37): TEXT content에서 `contentTitle`·`description`·`showContentHeader` 제거. 콘텐츠 제목·설명은 서식 본문 `textBlocks`의 앞 문단으로 작성하며 `plainText`도 같은 순서의 일반 문자열이다. 서버는 TEXT 저장 시 받은 제목·설명을 사용하지 않고, 통합 전 저장 데이터는 조회 시 본문 앞 문단으로 합쳐 보낸다(제목 문단: 굵게·크기 24, `showContentHeader=false`였던 행은 제외). WPF는 TEXT content의 세 키를 읽지 않는다. IMAGE·VIDEO·SURVEY·QUIZ의 제목·설명과 공통 `title`은 변경 없음.
-- 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지.
+- 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지. (설계 35에서 단건 구조로 대체)
 - 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 ROOT `receivedAt`과 `popupStatus`·`completed`·`completedAt`·`responseId` 제거(WPF·로그 미사용). 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
-- 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정.
-- 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다.
-- 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용.
+- 3.7 변경(2026-10-12, 설계 31): PopupWindow 공통 UI 옵션 `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`headerFontSize`·`bodyFontSize`·`footerFontSize`를 `content`에서 `popups[]` 최상위로 이동. WPF는 content의 같은 키를 읽지 않는다. Overlay 불투명도 범위(0~1)는 서버가 저장 시 검증하고 WPF도 0~1로 보정. (설계 35에서 단건 구조로 대체)
+- 3.7 변경(2026-10-12, 설계 30): Footer 동작 `footerAction`·`footerLinkUrl`을 `content`에서 `popups[]` 최상위로 이동하고 `footerAction`을 CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출) 3값으로 정의. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정이며 제출 후 링크 열기 동작을 제거. WPF는 content의 두 키를 읽지 않는다. (설계 35에서 단건 구조로 대체)
+- 3.7 변경(2026-10-12, 설계 33): 결과 응답 `results[]`에서 `totalScore`·`passed` 제거. QUIZ 판정은 WPF 책임이며 요청의 `score`·`passed`(QUIZ 필수, 없으면 REJECTED)를 서버가 그대로 저장·완료 판정에 사용. (설계 35에서 단건 구조로 대체)
 - 3.7 변경(2026-10-12): IMAGE content `linkUrl`(이미지 클릭 시 URL 열기) 삭제. 모든 imageSizeMode에서 이미지 클릭 동작이 없으며 WPF는 이 키를 읽지 않는다.
-- 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`.
+- 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`. (설계 35에서 단건 구조로 대체)
 - 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
 - 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
 - 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
@@ -300,7 +300,7 @@ X-Client-Version: 1.0.0
 | bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
 | footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
-| hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기 결과에 사용 |
+| hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
 | allowCloseBeforeComplete | boolean | VIDEO / 동영상+퀴즈 | `true` | 완료 전 닫기 허용 여부 |
 | passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
@@ -321,7 +321,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 ---
 
-## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03, 2026-10-12 갱신)
+## 6.4 최신 코드 기준 필수값·누락 처리 점검 (2026-10-03, 2026-10-12, 2026-10-13 갱신)
 
 기준: 최초 점검은 2026-10-03 `main` 코드이며, 이후 설계 29~34 변경(목록 필드 정리·결과 status 확장 등)을 2026-10-12 `main` 기준으로, 설계 35 단건 조회·결과 구조를 2026-10-13 기준으로 같은 절에 반영했다. 아래는 WPF 수신 코드와 같은 저장소의 Java 서버 저장 검증을 함께 대조한 결과다. 표의 필수 여부는 백엔드가 보장할 계약이며, C#이 JSON 누락을 모두 거부한다는 의미는 아니다. 현재 응답 DTO에는 required/JsonRequired 선언이 없고 별도의 전체 응답 검증 단계도 없다. 관리자 저장 API와 WPF 조회 응답은 서로 다른 계약이므로 이 예시를 관리자 저장 요청으로 사용하지 않는다.
 
@@ -438,7 +438,7 @@ BOTTOM_RIGHT
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| plainText | string | 선택 | `""` | 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열(Run 글자 연결, 문단 사이 `\n`) |
+| plainText | string | 조건부 | `""` | textBlocks가 없을 때 표시하는 일반 문자열 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열(Run 글자 연결, 문단 사이 `\n`)이며 표시는 textBlocks가 우선한다. 이 저장소 서버는 TEXT 응답에 저장 본문(CONTENT_BODY)으로 항상 키를 채우며 저장 본문이 없으면 `null`일 수 있다 |
 | textBlocks | array | 선택 | 없음 | 서식 본문. 콘텐츠 제목·설명도 앞 문단으로 포함한다. 있으면 plainText 대신 표시(아래 표) |
 | showPlainText | boolean | 선택 | `true` | 본문 표시 여부 |
 | highlightText | string | 선택 | `""` | 강조 문구 |
@@ -710,7 +710,7 @@ passingScore 이상
   "content": {
     "videoEnabled": true,
     "videoUrl": "https://example.com/training.mp4",
-    "videoTitle": "교육 영상",
+    "videoTitle": "이해도 확인",
     "surveyTitle": "이해도 확인",
     "description": "영상을 시청한 뒤 퀴즈에 응답하세요.",
     "autoPlay": false,
@@ -719,7 +719,7 @@ passingScore 이상
 }
 ```
 
-위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다.
+위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다. 동영상+퀴즈의 콘텐츠 제목은 저장 컬럼 1개(CONTENT_TITLE = `surveyTitle`)에 저장하므로 이 저장소 서버는 `videoTitle`을 `surveyTitle`과 같은 값으로 내려준다. 두 제목을 다르게 보내는 계약은 없다.
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
 - SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 종료 경로는 `allowCloseBeforeComplete` 등 기존 종료 정책을 따른다.
@@ -818,13 +818,13 @@ X-Client-Version: 1.0.0
 | resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정 |
 | displayedAt | string(ISO) | 선택 | `null` 가능 |
 | closedAt | string(ISO) | 선택 | `null` 가능 |
-| hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 조회 응답 popup의 hideDays(1 이상), 없으면 30. 1~3650(§10.4) |
+| hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 조회 응답 popup의 hideDays(1~3650), 없으면 30. 1~3650(§10.4) |
 | answers[] | array | SUBMITTED(SURVEY·QUIZ·VIDEO+QUIZ) 필수 | `null`. 1개 이상. `questionId`·`optionIds[]`(TEXT는 [])·`textAnswer`(TEXT 문항). null 요소 금지(§10.5·10.6) |
 | score | number | QUIZ SUBMITTED 필수 | `null`. WPF 최종 채점 점수, 0 이상. SURVEY는 보내지 않음(§10.6) |
 | passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 최종 통과 여부(§10.6) |
 | video | object | VIDEO_WATCHED·VIDEO+QUIZ SUBMITTED 필수 | `null`. 영상 시청 정보(§10.7) |
 
-유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 결과를 `REJECTED`로 응답한다(§11). 제안서 v0.3의 `action`·`completedAt` 이름은 채택하지 않고 기존 `resultType`·`closedAt` 등 필드 이름을 유지한다.
+유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 결과를 `REJECTED`로 응답한다(§11). 제안서 v0.3의 `action`·`completedAt` 이름은 채택하지 않고 기존 `resultType`·`closedAt` 등 필드 이름을 유지한다(그 밖의 차이는 §10.9).
 
 > `closedAt - displayedAt`은 팝업 표시부터 종료·제출까지의 **화면 체류·처리 시간**이며, 첫 입력부터의 실제 응답 시간은 아니다(설계 34-09). 서버는 두 시각을 사용자·팝업 단위 상태(USER_POPUP_STATUS의 표시·닫기 시각)에 최신값으로 반영하므로, 결과 건별 체류 시간 통계가 필요하면 별도 보존 경로를 정해야 한다. 별도 응답 시작 시각(`responseStartedAt`)은 displayedAt과 같은 값이라 제거했다(설계 32). 보내더라도 서버는 무시한다.
 
@@ -870,6 +870,7 @@ VIDEO_WATCHED
 
 - `hideDays`: 1~3650
 - 서버가 해당 사용자/팝업에 대한 숨김 만료 시각을 계산·저장한다.
+- **HIDDEN 우선**: "다시 보지 않기"를 체크하고 닫으면 영상을 시청했더라도 결과는 `HIDDEN`이다. 이때 `video` 블록은 보내지 않으며 서버도 HIDDEN 결과에서 영상 시청 정보를 기록하지 않는다. 따라서 끝까지 시청한 VIDEO를 숨김으로 닫으면 시청 완료로 기록되지 않는다.
 
 ---
 
@@ -952,6 +953,8 @@ VIDEO_WATCHED
 | maximumPositionSeconds | number | O | `0` | 초, 최대 도달 위치 |
 | watchedSeconds | number | O | `0` | 초, 누적 시청 시간 |
 
+VIDEO를 닫을 때 "다시 보지 않기"가 체크되어 있으면 `VIDEO_WATCHED` 대신 `HIDDEN`을 보낸다(§10.4 HIDDEN 우선). 이 경우 시청 정보는 전송·기록되지 않는다.
+
 ---
 
 ## 10.8 결과 저장 후 서버 처리와 재노출 기준
@@ -969,11 +972,25 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | 결과 | 이후 조회 |
 |---|---|
 | TEXT·IMAGE `CLOSED`(Footer 닫기·바로가기 `LINK_AND_CLOSE` 포함) | 완료 처리. 노출 기간 안에서 다시 표시하지 않음 |
-| `HIDDEN` | 기존 숨김 정책. `hideDays` 동안 제외 |
+| `HIDDEN` | 기존 숨김 정책. `hideDays` 동안 제외. 영상 시청 정보는 기록하지 않음(§10.4) |
 | SURVEY·QUIZ `SUBMITTED`, VIDEO 시청 기준 충족 | 기존 완료 조건대로 완료 처리 |
 | 미완료로 끝난 SURVEY·QUIZ·VIDEO(완료 전 닫기, QUIZ 미통과, 시청 기준 미달) | 저장 시각부터 `pollingIntervalSeconds` 동안 조회·`nextStatus` 후보에서 제외. 이후에도 표시 조건을 만족하면 다시 표시 |
 
 `nextStatus`는 같은 제외 기준으로 남은 후보가 있는지를 뜻한다. 방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.
+
+## 10.9 제안서 0.3과 구현 계약 차이
+
+구현 계약은 이 문서다. 제안서 v0.3은 요구사항 출처로만 참고하며, 아래 차이가 있는 항목은 이 문서의 이름·형식·응답 방식을 따른다.
+
+| 구분 | 제안서 v0.3 | 구현 계약(이 문서) |
+|---|---|---|
+| 경로 | `/api/v1/auth/login`, `/api/v1/popups/next`, `/api/v1/popups/results` | `/api/wpf/auth/login`, `POST /api/wpf/popups`, `POST /api/wpf/popups/results`(§3) |
+| 결과 종류·종료 시각 | `action`, `completedAt` | `resultType`, `closedAt`(§10.2에서 채택하지 않음으로 명시) |
+| 답안 필드 | `answers[].selectedOptionIds`, `answers[].answerText` | `answers[].optionIds`, `answers[].textAnswer`(§10.5·10.6) |
+| 시각 필수 여부 | `displayedAt`·`completedAt` 필수 | `displayedAt`·`closedAt` 선택(`null` 가능) |
+| answers 필수 여부 | 항상 필수(없으면 빈 배열) | SUBMITTED일 때만 필수(1개 이상). 그 밖의 결과에는 보내지 않음 |
+| 오류 응답 | HTTP 409·422·429 등 상태 코드로 구분 | 업무 오류는 HTTP 200 + `status: REJECTED` + `code`(§11). 요청 처리 자체 실패만 HTTP 오류(§13) |
+| 같은 resultId·다른 본문 | 충돌(conflict)로 거절 | 본문 비교 없이 `DUPLICATE`(§12). 본문 비교 여부는 정책 보류(설계 45) |
 
 ---
 
@@ -1631,7 +1648,7 @@ EMPTY
   ],
   "passingScore": 80,
   "content": {
-    "videoTitle": "보안 교육",
+    "videoTitle": "영상 확인 퀴즈",
     "videoUrl": "https://example.com/media/security.mp4",
     "description": "영상의 80% 이상을 시청해주세요.",
     "showDescription": true,
@@ -1649,7 +1666,7 @@ EMPTY
 }
 ```
 
-QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 60점을 얻으며 부분 점수는 없다. VIDEO+QUIZ는 영상 시청 80% 완료 후 문항 제출이 가능하다. TEXT 자동 채점은 최소 외부 제공 범위에 포함하지 않아 예시에서는 선택형 채점만 사용한다.
+QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 60점을 얻으며 부분 점수는 없다. VIDEO+QUIZ는 영상 시청 80% 완료 후 문항 제출이 가능하다. `videoTitle`은 `surveyTitle`과 같은 값이다(§8.6). TEXT 자동 채점은 최소 외부 제공 범위에 포함하지 않아 예시에서는 선택형 채점만 사용한다.
 
 ---
 

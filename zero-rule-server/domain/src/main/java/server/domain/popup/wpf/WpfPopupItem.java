@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * WPF 목록 API(GET /p/api/wpf/popups)의 팝업 항목.
+ * WPF 조회 API(POST /p/api/wpf/popups, 설계 35)의 응답 popup 항목(1건).
  *
  * <p>[추가 이유 — 기준 2·3] 기존 {@link PopupResponseDto}와 같은 평면 구조를 유지해 WPF DTO 변경을 최소화하되,
  * WPF에 불필요하거나 노출하면 안 되는 필드를 뺀다.</p>

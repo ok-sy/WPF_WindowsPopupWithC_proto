@@ -51,7 +51,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
-| HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과의 숨김 일수 |
+| HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증) |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`(설계 31). 별도 Overlay 창 사용 |
@@ -104,7 +104,7 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| PlainText | 지원 | 본문 사용 시 Y | `""` | 일반 문자열 본문. TextBlocks가 있으면 서버 파생 값 |
+| PlainText | 지원 | 조건부 | `""` | TextBlocks가 없을 때 표시하는 일반 문자열 본문. TextBlocks가 있으면 서버가 TextBlocks에서 만든 파생 값이며 표시는 TextBlocks 우선. 이 저장소 서버는 TEXT 응답에 항상 키를 채움(저장 본문이 없으면 `null` 가능) |
 | TextBlocks | 지원 | N | 없음 | 문단·Run 서식 본문(굵게·기울임·밑줄, 허용 색·크기·글꼴, 문단 정렬). 콘텐츠 제목·설명도 앞 문단으로 포함. 있으면 PlainText 대신 표시. 상세는 인터페이스 계약 8.1 |
 | ShowPlainText | 지원 | N | `true` | 본문 영역 표시 |
 | HighlightText | 지원 | N | `""` | 강조 문구 |
@@ -199,7 +199,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 인증 | SSO XML → 로그인 → Bearer, 토큰 만료 시 재로그인·재시도 | 인증 URL·실환경 통합 정책은 별도 연동 조건 |
 | API | 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) (설계 35) | 요청·응답·경로는 인터페이스 계약서 참조 |
 | 조회 | 한 번에 팝업 1건 표시. 표시 중에는 다른 조회 없음. 결과 저장 응답 `nextStatus`=AVAILABLE이면 즉시 조회, EMPTY·`popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분) 대기, `nextStatus` 없음은 즉시 조회. 조회 실패 후 재조회 복구 | 팝업 content의 옵션이 아님. 대기는 기동 시점 기준이 아니라 해당 응답 시점부터 계산 |
-| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
+| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함. "다시 보지 않기"를 체크하고 닫으면 영상을 시청했어도 HIDDEN이 우선하며 video 블록을 보내지 않아 시청 정보·시청 완료가 기록되지 않음 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
 | 미전송 결과 복구 | 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도. 400 결과는 이번 실행에서 제외, 배열 일괄 재전송 없음. 큐 파일을 읽을 수 없어도 조회 보류(설계 39-1), 복구 재전송 결과의 EMPTY도 조회 간격 대기(설계 39-2) | 주간회의 결정 전 **임시 기준**(설계 35 §4). 확정 계약 아님 |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지 | 별도 JSON 제어 필드 없음 |
 | 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시 | Demo 결과는 실제 서버·DB 저장과 구분. Demo 요청 JSON에는 인증 헤더가 없고 샘플 유형 선택은 로그 줄에만 표시 |

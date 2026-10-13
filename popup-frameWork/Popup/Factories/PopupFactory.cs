@@ -62,7 +62,7 @@ namespace Popup.Factories
                 ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
 
                 /*
-                 * [설계 31] PopupWindow 공통 UI 옵션은 popups[] 최상위 값을 쓴다(content 키는 읽지 않는다).
+                 * [설계 31] PopupWindow 공통 UI 옵션은 popup 최상위 값을 쓴다(content 키는 읽지 않는다).
                  * 관리자 설정은 서버 DB의 CONTENT_OPTIONS에 저장되지만 서버가 WPF 응답 조립 시 최상위로 승격한다.
                  * Overlay 불투명도는 서버가 저장 시 0~1을 검증하고 WPF도 0~1로 한 번 더 보정한다.
                  * 폰트 크기 null → PopupWindow·View가 XAML 기본 크기 유지. 범위 보정(10~40)은 PopupWindow.ApplyFontSizes()가 한다.

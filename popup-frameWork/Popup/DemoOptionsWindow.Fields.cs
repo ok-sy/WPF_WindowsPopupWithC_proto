@@ -41,7 +41,7 @@ namespace Popup
                 AddField(panel, _draft, key, label, type, choices, min, max);
             Field("title", "창 제목", typeof(string));
             Field("displayMode", "여러 팝업 표시 방식", typeof(string), new[] { "SEQUENTIAL", "SIMULTANEOUS" });
-            Field("displayOrder", "표시 순서 · 같은 순서는 하나의 그룹", typeof(int), min: 0);
+            Field("displayOrder", "표시 순서(Demo 정렬용, 서버 응답에는 없음)", typeof(int), min: 0);
             panel = Group("창 크기", false);
             if (popup.PopupType == "IMAGE")
                 panel.Children.Add(new TextBlock { Text = "이미지 창 최대는 현재 모니터 작업 영역의 90%로 계산합니다. 고정 최대 픽셀값은 사용하지 않습니다. 지정한 이미지 크기는 유지하며 화면을 넘는 부분은 모드별 정책으로 처리합니다.",

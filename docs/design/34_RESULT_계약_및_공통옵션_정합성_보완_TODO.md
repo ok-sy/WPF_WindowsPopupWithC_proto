@@ -69,7 +69,7 @@ TODO 29~33의 후속 검토 결과와 확정 요건을 통합한다.
 | 필드 | WPF 생성 | 서버 사용 | 상태 |
 |---|---|---|---|
 | clientRequestId | 전송마다 새 GUID | WPF_API_REQUEST_LOG 요청 로그 | 유지(진단) |
-| sentAt | 전송 시각 | 수신만 하고 업무 미사용 | 유지 여부 결정 필요(진단용, 서버 미사용) |
+| sentAt | 전송 시각 | 수신만 하고 업무 미사용 | 유지 여부 결정 필요(진단용, 서버 미사용) → 설계 35에서 결과 envelope(sentAt 포함) 삭제로 종결 |
 | resultId | 결과 생성 시 GUID, 재전송 시 유지 | WPF_RESULT_RECEIPT 멱등 키, POPUP_RESPONSE.CLIENT_REQUEST_ID | 유지 |
 | popupId / resultType | 팝업 ID·유형 | 처리 분기·대상 확인 | 유지 |
 | displayedAt / closedAt | 표시·종료(제출) 시각 | USER_POPUP_STATUS 표시 횟수·닫기 시각 | 유지 |

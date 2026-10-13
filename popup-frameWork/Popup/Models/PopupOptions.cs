@@ -111,7 +111,7 @@ namespace Popup.Models
         /*
          * [설계 14 §5] Header / 본문 / Footer 폰트 크기.
          * 관리자 웹이 content(CONTENT_OPTIONS JSON)의 headerFontSize/bodyFontSize/footerFontSize로 저장하고
-         * [설계 31] 서버가 WPF 목록 응답의 popups[] 최상위 필드로 승격해 내려준다(별도 DB 컬럼 없음 — Overlay 옵션과 같은 경로).
+         * [설계 31] 서버가 WPF 조회 응답의 popup 최상위 필드로 승격해 내려준다(별도 DB 컬럼 없음 — Overlay 옵션과 같은 경로).
          * null이면 "관리자가 설정하지 않음"이며 PopupWindow·각 콘텐츠 View는 기존 XAML 기본 크기를 그대로 쓴다(기존 데이터 호환 §5.8).
          * 값이 있어도 PopupWindow가 FontSizeMin~FontSizeMax로 최종 Clamp 하므로 서버 값을 그대로 신뢰하지 않는다(§5.7).
          */

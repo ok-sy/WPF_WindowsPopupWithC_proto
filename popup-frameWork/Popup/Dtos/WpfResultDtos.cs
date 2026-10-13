@@ -10,7 +10,7 @@ namespace Popup.Dtos
      * 4개 API 호출을 "결과 항목" 하나로 합쳐 팝업이 닫힐 때 1회만 보낸다. 요청에는 userId가 없다(서버가 인증 정보로 식별, 기준 6).
      * 항목마다 resultId(GUID)가 멱등 키이며, 서버는 같은 resultId를 다시 받으면 DUPLICATE로 응답하고 재처리하지 않는다.
      *
-     * [설계 18 L-0 — C-4] WPF Client API 계약 v3.0이 WPF API를 3개(로그인·목록·결과)로 통일하면서 구 동작별 API DTO를
+     * [설계 18 L-0 — C-4] WPF Client API 계약 v3.0이 WPF API를 3개(로그인·조회·결과, 설계 35에서 단건)로 통일하면서 구 동작별 API DTO를
      * 모아 두던 PopupInteractionDtos.cs(제출·영상 진행률·이벤트·상태 조회 요청/응답 7개 클래스)를 삭제했다.
      * 그중 결과 항목 answers에 계속 쓰이는 PopupSubmitAnswerRequestDto만 이 파일로 옮겼다.
      */
