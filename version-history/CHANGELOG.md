@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-17 — TODO39 단건 API 복구·동시성·TEXT 후속 보완 계획 추가
+
+- 이유: 7e7a56f 포함부터 76d50e6까지 TODO35·37 구현 검토의 복구 분기·동시성·기존 TEXT 표시 보존 누락을 후속 과제로 관리하고 문서 상태를 맞춤.
+- 변경: TODO39에 큐 파일 읽기 실패 시 조회 보류, 복구 EMPTY 대기, TEXT 헤더 표시/본문 숨김 조합 보존, 조회·결과 커밋 경합 보호, 동일 결과 동시 요청 DUPLICATE 판정의 재현 조건·보완 방향·검증 기준 추가. TODO35의 기존 400 격리·INTERNAL_ERROR 상한 이후 조회 차단 해제 예외를 임시 동작으로 명시. TODO37의 TODO35 상태·popup 명칭 갱신 및 후속 검증 연결. Trello TODO39 진행 확정 등록·구현/회귀 체크리스트 연결.
+- 주요 파일: docs/design/(39_단건_API_복구_동시성_TEXT_정합성_보완_TODO.md, 35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md, 37_TEXT_EDITOR_BODY_통합검토_TODO.md), version-history/CHANGELOG.md.
+- 검증: 검토 기준 및 최신 main 804cc00 대조(후속 변경은 원격 DB 적용 기록). TEXT 실제 Java 변환 메서드로 헤더 병합 후 showPlainText=false 유지 확인. 검토 범위 JSON/XML 파싱·diff 공백 검사 통과. 큐·복구·동시성은 코드 검토이며 Oracle 동시 요청·WPF 화면 재현·전체 테스트는 미실행(Gradle 다운로드 접근 불가·WPF 환경 없음). TODO 링크·체크리스트와 Git diff 확인.
+- 상태: 계획·문서 보완만 반영. 코드 수정·새 검증 시나리오 실행 대기. TODO 문서와 변경 이력을 커밋에 함께 포함.
+
 ## 2026-10-13-16 — TODO35 단건 순차 조회·결과 1건 수신 API 구현(제안 0.3 기준)
 
 - 이유: 팝업 순차 전달 API 제안 0.3(`docs/interfaces/popup_api_proposal_v0.3.docx`)의 정상 흐름(로그인 → 단건 조회 → 표시 → 결과 1건 수신 → nextStatus에 따른 다음 조회) 구현. 결정값: 기존 조회 경로를 POST로 교체, 전달 건(deliveryId) 포함, 결과 요청은 기존 필드 유지 + deliveryId, TEXT·IMAGE 닫기는 완료 처리, 설문·퀴즈·영상 미완료 결과는 저장 시각부터 pollingIntervalSeconds 동안 사용자·팝업 단위 재노출 유예(조회·nextStatus 공통 조건).
