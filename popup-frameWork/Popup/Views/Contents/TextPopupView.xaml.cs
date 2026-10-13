@@ -25,6 +25,8 @@ namespace Popup.Views.Contents
                 textBlock.FontSize = fontSize;
                 textBlock.LineHeight = lineHeight;
             }
+            // [설계 38] 기본 크기를 따르는 기울임 구간이 커졌을 수 있으므로 오른쪽 여유를 다시 맞춘다.
+            foreach (TextBlock paragraph in RichTextPanel.Children.OfType<TextBlock>()) PopupRichText.ReserveItalicOverhang(paragraph);
         }
 
         /*

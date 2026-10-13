@@ -1,4 +1,5 @@
 using Popup.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -54,9 +55,25 @@ namespace Popup.Views.Contents
                 }
                 // 빈 문단도 한 줄 높이를 차지해야 저장된 문단 간격이 유지된다.
                 if (paragraph.Inlines.Count == 0) paragraph.Inlines.Add(new Run(" "));
+                ReserveItalicOverhang(paragraph);
                 paragraphs.Add(paragraph);
             }
             return paragraphs;
+        }
+
+        /*
+         * [설계 38] 기울임 글자는 획이 글자 폭(advance)보다 오른쪽으로 기울어 나가는데, TextBlock은 글자 폭으로 줄을 배치한다.
+         * 줄 끝(오른쪽 정렬·꽉 찬 줄)의 기울어진 획이 문단 경계 = ScrollViewer 표시 영역 밖으로 나가 잘리므로,
+         * 기울임 구간이 있는 문단만 가장 큰 기울임 글자 크기에 비례한 오른쪽 여유를 둔다. 외곽 클리핑은 그대로 유지한다.
+         * 본문 기본 크기가 바뀌면(ApplyBodyFontSize) 다시 호출해 여유 폭을 맞춘다.
+         */
+        private const double ItalicOverhangRatio = 0.35;
+
+        internal static void ReserveItalicOverhang(TextBlock paragraph)
+        {
+            double size = paragraph.Inlines.OfType<Run>().Where(r => r.FontStyle == FontStyles.Italic)
+                .Select(r => r.FontSize).DefaultIfEmpty(0).Max();
+            paragraph.Padding = size > 0 ? new Thickness(0, 0, Math.Ceiling(size * ItalicOverhangRatio), 0) : new Thickness(0);
         }
 
         private static Run CreateRun(string text, PopupTextRunDto format)

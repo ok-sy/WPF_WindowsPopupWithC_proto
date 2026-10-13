@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-13-12 — TODO38 WPF TEXT 기울임 글자 우측 잘림 수정
+
+- 이유: WPF 팝업 서식 본문에서 줄 끝 기울임 글자의 오른쪽 획이 잘리는 표시 오류 수정.
+- 변경: 원인을 문단 TextBlock이 ScrollViewer 표시 영역 폭과 같아 기울어진 획 돌출분(글자 크기의 최대 약 33%)이 표시 영역 클리핑에 걸리는 것으로 확인. 외곽 클리핑은 유지하고 기울임 구간이 있는 문단에만 가장 큰 기울임 글자 크기 × 0.35(올림)의 오른쪽 Padding을 두는 `PopupRichText.ReserveItalicOverhang` 추가. 본문 기본 크기 적용(ApplyBodyFontSize) 후 다시 계산. 기울임이 없는 문단은 배치 변화 없음. 기울임 문단의 오른쪽 정렬 줄 끝·줄바꿈 위치가 여유 폭만큼 안쪽으로 이동.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/(PopupRichText.cs, TextPopupView.xaml.cs), docs/design/38_WPF_TEXT_기울임_우측잘림_TODO.md, version-history/CHANGELOG.md.
+- 검증: BehaviorTests에 `CheckItalicOverhang38` 추가(로컬, .gitignore 대상이라 미커밋) — 폭 300px 오른쪽 정렬 기울임 문단을 경계 밖까지 렌더링해 잉크 위치 측정. 수정 전 실패(잉크 301px) 재현, 수정 후 글꼴 4종 × 크기 2종 × 문자열 3종·본문 크기 32 변경 모두 경계 안, 비기울임 문단 Padding 0. 전체 936건 통과. 실제 팝업 화면·고DPI·사용자 재현 문자열 확인은 미실행.
+- 상태: 커밋에 포함. 미푸시. 실제 화면 회귀 확인 남음. MINIMAL/ALL 명세는 표시 보정으로 계약 변경이 없어 유지.
+
 ## 2026-10-13-11 — TODO26 Header/Footer 분리 설계 폐기 상태 동기화
 
 - 이유: Trello 상태와 현행 코드·설계 문서 정합성 보완.
