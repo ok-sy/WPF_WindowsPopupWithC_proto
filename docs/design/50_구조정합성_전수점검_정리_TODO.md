@@ -71,3 +71,4 @@ TODO 1~49를 거치며 목록 → 단건 조회(설계 35), TEXT 콘텐츠 제�
 ## 진행 기록
 
 - ② 2026-10-15: 설계 28·38·48·49 WPF 회귀 검증(서식 표시, 기울임 여유, 관용 변환기·표시 방어, 들여쓰기)을 로컬 전용 `Popup.BehaviorTests`에서 저장소 추적 `scripts/RichTextTests`로 옮김. 실행 `dotnet run --project scripts/RichTextTests` → 85건 통과. 로컬 전용 원본은 그대로 둔다.
+- ③ 2026-10-15 (S1): 원격 개발 DB 비밀번호 평문이 `application-dev_db.yml` 주석뿐 아니라 `JndiResource.java`의 하드코딩 기본값에도 있음을 확인해 두 곳 모두 제거. 비밀번호는 환경변수 `ZERO_RULE_DB_PASSWORD`로만 받으며(없으면 빈 값 → 접속 인증 오류), README·`shell/start-dev.ps1`(미설정 경고)에 반영. 저장소 최신본 추적 파일에서 해당 값 0건 확인. **자격 증명 교체는 미실행**(DB 측 작업, Git 이력 `913387d`·`fe90271`·`0294d1e` 등에 값이 남아 있으므로 교체 필요). 이력 재작성은 하지 않음.

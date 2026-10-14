@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-04 — TODO50-S1 원격 개발 DB 평문 비밀번호 제거
+
+- 이유: 원격 개발 DB 비밀번호가 저장소 추적 파일에 평문으로 있어(설정 주석, 서버 JNDI 기본값) 우선 정리.
+- 변경: `application-dev_db.yml`의 주석 처리된 비밀번호 줄 삭제. `JndiResource`의 비밀번호 하드코딩 기본값을 빈 값으로 바꾸고 환경변수 `ZERO_RULE_DB_PASSWORD`로만 받도록 정리(URL·계정 기본값은 유지). README 원격 개발 DB 실행 절차에 환경변수 설정 추가, `shell/start-dev.ps1`은 원격 DB 모드에서 미설정 시 경고.
+- 주요 파일: zero-rule-server/app/src/main/(java/server/app/config/JndiResource.java, resources/application-dev_db.yml), shell/start-dev.ps1, README.md, docs/design/50_*, version-history/CHANGELOG.md.
+- 검증: `:app:compileJava` 성공. 저장소 추적 파일에서 해당 비밀번호 문자열 0건 확인. 원격 개발 DB 실제 기동 확인은 미실행(환경변수 설정 필요).
+- 상태: 커밋에 포함. 미푸시. 자격 증명 교체는 미실행(값이 Git 이력에 남아 있어 DB 측 교체 필요), 이력 재작성 안 함.
+
 ## 2026-10-15-03 — TODO50-② TEXT 서식 WPF 회귀 검증 저장소 추적화
 
 - 이유: 설계 48·49의 WPF 검증(981·994건 기록)이 Git 제외 로컬 전용 `Popup.BehaviorTests`에만 있어 다른 환경에서 관용 변환기·들여쓰기 회귀를 재현할 수 없음.

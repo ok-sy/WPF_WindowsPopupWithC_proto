@@ -44,12 +44,14 @@ public class JndiResource {
         resource.setProperty("driverClassName", "net.sf.log4jdbc.sql.jdbcapi.DriverSpy");
         resource.setProperty("url", envOrDefault("ZERO_RULE_DB_URL", "jdbc:log4jdbc:oracle:thin:@//192.168.114.71:4004/XE"));
         resource.setProperty("username", envOrDefault("ZERO_RULE_DB_USER", "zero-rule"));
-        resource.setProperty("password", envOrDefault("ZERO_RULE_DB_PASSWORD", "Zerorule4321!"));
+        // [설계 50 S1] DB 비밀번호는 저장소에 두지 않는다(업스트림의 하드코딩 기본값 제거). 원격 개발 DB로 띄울 때도
+        // 환경변수 ZERO_RULE_DB_PASSWORD를 설정해야 하며, 없으면 빈 값으로 두어 접속 시 인증 오류가 난다.
+        resource.setProperty("password", envOrDefault("ZERO_RULE_DB_PASSWORD", ""));
 
         return resource;
     }
 
-    /** [WPF 팝업 — 추가] 환경변수가 비어 있지 않으면 그 값을, 아니면 업스트림 기본값을 돌려준다. */
+    /** [WPF 팝업 — 추가] 환경변수가 비어 있지 않으면 그 값을, 아니면 기본값(업스트림 값, 비밀번호는 빈 값)을 돌려준다. */
     private static String envOrDefault(String name, String defaultValue) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? defaultValue : value;
