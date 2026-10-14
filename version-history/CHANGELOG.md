@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-12 — TODO43·44 완료 조건 버튼 UX와 Background Overlay 키보드 종료 차단(WPF)
+
+- 이유: 완료 조건 미달 상태가 버튼에서 드러나지 않고(일반 VIDEO는 누른 뒤 MessageBox), 화면에 닫을 수단이 없는 상태가 있으며, Background Overlay를 켜도 Alt+F4 등으로 바로 닫혀 강제 표시 의미가 약했음. 또 앱 종료·로그오프 중 미완료 VIDEO 결과가 사라지고, 팝업 생성 실패 시 Overlay가 남는 결함이 있었음. 결정: 버튼은 비활성 + 사유 표시, 보조 닫기는 정책상 허용될 때만, Overlay=true일 때 키보드 강제 종료 차단, Esc는 무시.
+- 변경:
+  - TODO43: `PopupWindow.RefreshFooterState()`로 푸터 상태 일원화. 일반 VIDEO(`allowCloseBeforeComplete=false`) 미달 시 닫기 버튼 비활성 + "영상 N% 시청 · 기준 M% 이상 시청하면 닫을 수 있습니다"(내림 표시), 도달·재생 실패 시 활성, MessageBox 삭제. VIDEO+QUIZ 잠금 중 제출·다시 보지 않기만 비활성하고 시청 사유 문구 표시, 해제 후 첫 문항 포커스. 사유 HelpText·LiveSetting. QUIZ 미달 안내에 틀린 문항 번호(`QuizGrader.Result.IncorrectQuestionNumbers`, 결과 계약 변경 없음). 보조 닫기 버튼(VIDEO+QUIZ는 완료 전 닫기 허용 또는 재생 실패, 영상 없는 QUIZ는 미달 1회 후 Overlay 꺼짐일 때, `showFooter=false`면 숨김).
+  - TODO44: 앱이 시작한 닫기(`CloseByApp`)와 앱 종료만 허용하고 Overlay 켜짐에서는 Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소. 화면에 닫기·제출 수단이 없으면 키보드 닫기를 막지 않음(교착 방지). Esc 무시 확정. 앱 종료·로그오프(`OnSessionEnding` → `BeginExit`) 중에는 취소하지 않고 결과(VIDEO_WATCHED·시청량 포함)를 저장, Closed 시점 재확인. 팝업 생성·표시 실패 시 Overlay 정리 후 예외 재전파. 창 Title을 팝업 제목으로, 첫 포커스를 본문 입력에(푸터 주 버튼 기본 포커스·IsDefault는 다른 작업 중 Enter 오입력 위험으로 미적용). 오래된 주석 정정.
+  - 문서: 설계 43·44(결정·구현·검증·남은 항목), ALL 정의서 설계 43·44 절, 계약서 동작 설명, 옵션·사용자 가이드, MINIMAL의 Alt+F4 문장 정정(범위 확장 없음).
+- 주요 파일: popup-frameWork/Popup/(Views/Windows/PopupWindow.xaml(.cs), Views/Windows/PopupStyles.xaml, Views/Contents/(VideoPopupView.xaml.cs, VideoQuizPopupView.cs, SurveyPopupView.xaml.cs), Services/QuizGrader.cs, Models/SurveySubmission.cs, Managers/PopupManager.cs, App.xaml.cs), scripts/PopupWindowTests/, docs/design/(43_*, 44_*), docs/interfaces/(WPF_POPUP_ALL_SPEC.md, POPUP_INTERFACE_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md), docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. `scripts/PopupWindowTests` 97건 통과(74건 추가 — 비활성·사유·보조 닫기 규칙, Overlay 켜짐 Alt+F4 키·SendMessage WM_CLOSE/SC_CLOSE·외부 Close 취소, 출구 없을 때 허용, Esc 무시, 종료 중 결과 저장(PopupManager 연결), Overlay 정리 — 결함 1·2 보완을 되돌리면 실패 확인). `scripts/RichTextTests` 85건, 로컬 행동 검증 1014건(새 동작에 맞춰 기대 수정)·복구 검증 158건 통과. 실제 Windows 화면·Alt+Space 메뉴·다중 모니터·실제 로그오프·스크린리더 확인은 미실행.
+- 상태: 커밋에 포함. 원격 반영.
+
 ## 2026-10-15-11 — TODO50-C 문서·계약 정합 정리
 
 - 이유: 설계 25·35·37·48·49와 계약 3.7 이후 바뀐 동작이 일부 설계·가이드·명세에 반영되지 않았거나 문서끼리 다르게 적혀 있어 코드 기준으로 정합성 보완.

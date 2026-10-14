@@ -43,7 +43,10 @@ namespace Popup
 
         private bool _isExiting;
 
-        /// <summary>[설계 34-23] 앱 종료(트레이 종료·426 안내 종료·Windows 세션 종료) 중인지. 이때는 팝업 닫기를 취소하지 않는다.</summary>
+        /// <summary>
+        /// [설계 34-23·44] 앱 종료 중인지. 트레이 종료·426 안내 종료(ExitAgent)와 Windows 로그오프·종료(OnSessionEnding)에서 true가 된다.
+        /// 이때는 팝업 닫기를 취소하지 않고(영상 완료 전 제한·Overlay 키보드 닫기 차단 미적용) 결과 저장 실패도 메모리에 남긴다.
+        /// </summary>
         public bool IsExiting => _isExiting;
 
         /*
@@ -387,6 +390,31 @@ namespace Popup
         public void ExitAgent()
         {
             if (_isExiting) return;
+            BeginExit();
+
+            _mainWindow?.Close();
+            _demoWindow?.Close();
+            Shutdown();
+        }
+
+        /*
+         * [설계 44] Windows 로그오프·종료. 예전에는 처리기가 없어 _isExiting이 false인 채로 종료되어
+         * 팝업 닫기 제한이 그대로 적용됐고, 취소된 닫기의 결과가 저장되지 않았다.
+         * 취소하지 않으면 WPF가 이어서 Application.Shutdown을 호출하므로 여기서는 종료 플래그와 트레이 정리만 한다
+         * (ExitAgent와 같은 종료 상태, Shutdown은 WPF가 수행).
+         */
+        protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+        {
+            base.OnSessionEnding(e);
+            if (!e.Cancel)
+            {
+                BeginExit();
+            }
+        }
+
+        // 종료 플래그를 세우고 트레이 아이콘을 정리한다. ExitAgent와 OnSessionEnding이 함께 쓴다.
+        private void BeginExit()
+        {
             _isExiting =
                 true;
 
@@ -408,10 +436,6 @@ namespace Popup
                 _trayIcon =
                     null;
             }
-
-            _mainWindow?.Close();
-            _demoWindow?.Close();
-            Shutdown();
         }
 
         /*

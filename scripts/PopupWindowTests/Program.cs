@@ -14,7 +14,11 @@ using Popup.Views.Windows;
  * A10 일반 VIDEO도 allowCloseBeforeComplete=false면 창 닫기(Alt+F4 등)가 시청 기준 전에는 취소되고
  *     시청 후·재생 실패·앱 종료(Application.Shutdown과 같은 InternalClose(shutdown, ignoreCancel))에서는 닫히는지
  * 50-B displayMode(효과 없는 계약 필드)가 모르는 값·null이어도 팝업 생성이 실패하지 않는지
- * 실제 PopupFactory·PopupWindow 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
+ * 43  완료 조건 버튼 표현: VIDEO 미달 닫기 비활성·사유 문구·도달/재생 실패 후 활성, VIDEO+QUIZ 잠금 사유 문구,
+ *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
+ * 44  Background Overlay 켜짐: Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소, 앱 닫기 경로 허용, 화면 출구가 없으면 허용,
+ *     Overlay 꺼짐 기존 동작, Esc 무시, 창 제목, 앱 종료 시 결과 저장(결함 1), 생성 실패 시 Overlay 정리(결함 2)
+ * 실제 PopupFactory·PopupWindow·PopupManager 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
  * 다른 환경에서도 같은 명령으로 재현할 수 있게 둔다. 실제 창을 잠깐 띄운다.
  *   실행: dotnet run --project scripts/PopupWindowTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다.
@@ -46,7 +50,14 @@ internal static class Program
         CheckHideDaysLabel50();
         CheckVideoClose50();
         CheckDisplayModeIgnored50();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B)");
+        CheckVideoFooter43();
+        CheckVideoQuizFooter43();
+        CheckAuxClose43();
+        CheckQuizFailedMessage43();
+        CheckOverlayKeyboardClose44();
+        CheckShutdownSavesResult44();
+        CheckOverlayCleanupOnFailure44();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -147,5 +158,408 @@ internal static class Program
             internalClose!.Invoke(exiting.Window, new object[] { true, true });
             Check(exiting.Closed(), $"[설계 50 A10] {type} closes on application shutdown before watching");
         }
+    }
+
+    /* ───────────────────────── [설계 43·44] 공통 도우미 ───────────────────────── */
+
+    private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    private const uint WM_CLOSE = 0x0010;
+    private const uint WM_SYSCOMMAND = 0x0112;
+    private static readonly IntPtr SC_CLOSE = new(0xF060);
+
+    private sealed record Opened(PopupWindow Window, PopupOptions Options, Func<bool> Closed)
+    {
+        public T Find<T>(string name) => (T)Window.FindName(name);
+        public VideoPopupView? Video => Options.Content as VideoPopupView ?? (Options.Content as VideoQuizPopupView)?.Video;
+    }
+
+    private static Opened OpenPopup(string type, Action<Popup.Dtos.PopupResponseDto>? configure = null, bool overlay = false)
+    {
+        var dto = DemoPopups(type).Single();
+        configure?.Invoke(dto);
+        var options = PopupFactory.Create(dto);
+        options.UseBackgroundOverlay = overlay;   // PopupWindow 단독 검증이라 실제 Overlay 창은 띄우지 않는다(정책 판단만 이 값을 본다)
+        var window = new PopupWindow(options);
+        bool closed = false;
+        window.Closed += (_, _) => closed = true;
+        window.Show();
+        var opened = new Opened(window, options, () => closed);
+        if (opened.Video != null) SetPlaybackFailed(opened.Video, false);
+        return opened;
+    }
+
+    private static void SetPlaybackFailed(VideoPopupView video, bool failed) =>
+        typeof(VideoPopupView).GetProperty("HasPlaybackFailed")!.SetValue(video, failed);
+
+    /* 재생 진행 틱과 같은 경로: 마지막 스냅샷을 바꾸고 ProgressUpdated 구독자(VideoQuizPopupView·PopupWindow)를 부른다. */
+    private static void Report(VideoPopupView video, VideoProgressSnapshot progress)
+    {
+        typeof(VideoPopupView).GetField("_latestProgress", Flags)!.SetValue(video, progress);
+        var callback = (EventHandler<VideoProgressSnapshot>?)typeof(VideoPopupView).GetField("ProgressUpdated", Flags)!.GetValue(video);
+        callback?.Invoke(video, progress);
+    }
+
+    /* 재생 실패 경로(ShowVideoError가 HasPlaybackFailed를 세우고 PlaybackFailed를 올린다). */
+    private static void FailPlayback(VideoPopupView video)
+    {
+        SetPlaybackFailed(video, true);
+        var callback = (EventHandler?)typeof(VideoPopupView).GetField("PlaybackFailed", Flags)!.GetValue(video);
+        callback?.Invoke(video, EventArgs.Empty);
+    }
+
+    private static void Click(PopupWindow window, Button button) =>
+        typeof(PopupWindow).GetMethod("CloseButton_Click", Flags)!
+            .Invoke(window, new object[] { button, new RoutedEventArgs(Button.ClickEvent) });
+
+    /* Application.Shutdown이 남은 창을 닫는 경로와 같은 InternalClose(shutdown, ignoreCancel). */
+    private static void ShutdownClose(Window window) =>
+        typeof(Window).GetMethod("InternalClose", Flags, null, new[] { typeof(bool), typeof(bool) }, null)!
+            .Invoke(window, new object[] { true, true });
+
+    private static IntPtr Hwnd(Window window) => new System.Windows.Interop.WindowInteropHelper(window).Handle;
+
+    private static System.Windows.Input.KeyEventArgs Key(Window window, System.Windows.Input.Key key, RoutedEvent routedEvent) =>
+        new(System.Windows.Input.Keyboard.PrimaryDevice, PresentationSource.FromVisual(window)!, 0, key) { RoutedEvent = routedEvent };
+
+    /* Alt+F4 키 입력(Key.System + SystemKey F4)을 창에 올리고 PopupWindow가 처리(Handled)했는지 돌려준다. */
+    private static bool AltF4Handled(Window window)
+    {
+        var args = Key(window, System.Windows.Input.Key.F4, System.Windows.Input.Keyboard.PreviewKeyDownEvent);
+        var markSystem = typeof(System.Windows.Input.KeyEventArgs).GetMethod("MarkSystem", Flags);
+        if (markSystem != null) markSystem.Invoke(args, null);
+        else typeof(System.Windows.Input.KeyEventArgs).GetField("_key", Flags)!.SetValue(args, System.Windows.Input.Key.System);
+        Check(args.Key == System.Windows.Input.Key.System && args.SystemKey == System.Windows.Input.Key.F4,
+            "[설계 44] simulated key event is Alt+F4 (Key.System + SystemKey F4)");
+        window.RaiseEvent(args);
+        return args.Handled;
+    }
+
+    private static void PressEscape(Window window)
+    {
+        window.RaiseEvent(Key(window, System.Windows.Input.Key.Escape, System.Windows.Input.Keyboard.PreviewKeyDownEvent));
+        window.RaiseEvent(Key(window, System.Windows.Input.Key.Escape, System.Windows.Input.Keyboard.KeyDownEvent));
+    }
+
+    private static HashSet<PopupWindow> OpenWindows(Popup.Managers.PopupManager manager) =>
+        (HashSet<PopupWindow>)typeof(Popup.Managers.PopupManager).GetField("_openWindows", Flags)!.GetValue(manager)!;
+
+    private static Popup.Managers.BackgroundOverlayManager Overlay(Popup.Managers.PopupManager manager) =>
+        (Popup.Managers.BackgroundOverlayManager)typeof(Popup.Managers.PopupManager).GetField("_backgroundOverlayManager", Flags)!.GetValue(manager)!;
+
+    private static Window NewOwner()
+    {
+        var owner = new Window { Width = 10, Height = 10, ShowInTaskbar = false, WindowStyle = WindowStyle.None };
+        owner.Show();
+        return owner;
+    }
+
+    /* ───────────────────────── [설계 43] 완료 조건 버튼 표현 ───────────────────────── */
+
+    /* 일반 VIDEO(완료 전 닫기 금지): 미달이면 닫기 비활성 + 시청 %·기준 사유, 도달·재생 실패면 활성. 허용이면 기존처럼 활성·문구 없음. */
+    private static void CheckVideoFooter43()
+    {
+        void Configure(Popup.Dtos.PopupResponseDto dto)
+        {
+            dto.AllowCloseBeforeComplete = false;
+            dto.CompletionRatio = 0.8;
+            dto.ShowFooter = true;
+            dto.ShowFooterButton = true;
+        }
+        var watching = OpenPopup("VIDEO", Configure);
+        var button = watching.Find<Button>("FooterCloseButton");
+        var reason = watching.Find<TextBlock>("FooterResponseProgressText");
+        Check(!button.IsEnabled && reason.Visibility == Visibility.Visible
+            && reason.Text == "영상 0% 시청 · 기준 80% 이상 시청하면 닫을 수 있습니다",
+            $"[설계 43] VIDEO before watching: close disabled with reason ({reason.Text})");
+        Check(System.Windows.Automation.AutomationProperties.GetLiveSetting(reason) == System.Windows.Automation.AutomationLiveSetting.Polite
+            && System.Windows.Automation.AutomationProperties.GetHelpText(button) == reason.Text,
+            "[설계 43] reason text is a polite live region and the disabled button carries it as HelpText");
+        Report(watching.Video!, Snapshot(50));
+        Check(!button.IsEnabled && reason.Text.StartsWith("영상 50% 시청"), $"[설계 43] reason follows progress ({reason.Text})");
+        Report(watching.Video!, Snapshot(79.99m));
+        Check(!button.IsEnabled && reason.Text.StartsWith("영상 79% 시청"),
+            $"[설계 43] shown percent is floored so a disabled button never shows the threshold ({reason.Text})");
+        Click(watching.Window, button);   // 방어 가드: 안내창 없이 창 유지(예전 '필수 영상 시청' MessageBox 제거)
+        Check(!watching.Closed() && watching.Window.IsVisible, "[설계 43] click guard keeps the window without a modal");
+        Report(watching.Video!, Snapshot(80));
+        Check(button.IsEnabled && reason.Text == "시청 기준을 충족했습니다. 닫을 수 있습니다."
+            && System.Windows.Automation.AutomationProperties.GetHelpText(button) == string.Empty,
+            $"[설계 43] reaching the ratio enables close ({reason.Text})");
+        Click(watching.Window, button);
+        Check(watching.Closed(), "[설계 43] footer close works after reaching the ratio");
+
+        var failed = OpenPopup("VIDEO", Configure);
+        var failedButton = failed.Find<Button>("FooterCloseButton");
+        var failedReason = failed.Find<TextBlock>("FooterResponseProgressText");
+        Check(!failedButton.IsEnabled, "[설계 43] VIDEO starts disabled before playback failure");
+        FailPlayback(failed.Video!);
+        Check(failedButton.IsEnabled && failedReason.Text == "영상을 재생할 수 없어 시청 기준과 관계없이 닫을 수 있습니다.",
+            $"[설계 43] playback failure enables close with a reason ({failedReason.Text})");
+        Click(failed.Window, failedButton);
+        Check(failed.Closed(), "[설계 43] VIDEO with playback failure closes from the footer");
+
+        var allowed = OpenPopup("VIDEO", dto => { Configure(dto); dto.AllowCloseBeforeComplete = true; });
+        Check(allowed.Find<Button>("FooterCloseButton").IsEnabled
+            && allowed.Find<TextBlock>("FooterResponseProgressText").Visibility == Visibility.Collapsed,
+            "[설계 43] allowCloseBeforeComplete=true VIDEO keeps an enabled close without reason text");
+        Click(allowed.Window, allowed.Find<Button>("FooterCloseButton"));
+        Check(allowed.Closed(), "[설계 43] allowCloseBeforeComplete=true VIDEO closes");
+    }
+
+    /* VIDEO+QUIZ 잠금 중: 제출·'보지 않기' 비활성(기존 계약) + 시청 사유 문구, 해제 뒤에는 문항 진행 문구. */
+    private static void CheckVideoQuizFooter43()
+    {
+        var locked = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
+        var view = (VideoQuizPopupView)locked.Options.Content!;
+        var submit = locked.Find<Button>("FooterCloseButton");
+        var reason = locked.Find<TextBlock>("FooterResponseProgressText");
+        var aux = locked.Find<Button>("FooterAuxCloseButton");
+        var hide = locked.Find<CheckBox>("DoNotShowAgainCheckBox");
+        Report(view.Video, Snapshot(30));
+        Check(!view.IsUnlocked && !submit.IsEnabled && !hide.IsEnabled && aux.Visibility == Visibility.Collapsed
+            && reason.Text == "영상 30% 시청 · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다",
+            $"[설계 43] locked VIDEO+QUIZ shows the watch reason ({reason.Text})");
+        Check(System.Windows.Automation.AutomationProperties.GetHelpText(submit) == reason.Text,
+            "[설계 43] locked submit carries the watch reason as HelpText");
+        Report(view.Video, Snapshot(80));
+        Check(view.IsUnlocked && hide.IsEnabled && reason.Text == view.Quiz.ResponseProgressText && reason.Text.StartsWith("필수 문항"),
+            $"[설계 43] unlocking switches back to the question progress text ({reason.Text})");
+        ShutdownClose(locked.Window);
+
+        // 잠금 중 재생 실패: 보조 닫기가 보이고(제출 전 이탈 허용) 누르면 닫힌다.
+        var failed = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
+        var failedAux = failed.Find<Button>("FooterAuxCloseButton");
+        Check(failedAux.Visibility == Visibility.Collapsed, "[설계 43] aux close hidden while watching (allowCloseBeforeComplete=false)");
+        FailPlayback(failed.Video!);
+        Check(failedAux.Visibility == Visibility.Visible && failedAux.IsEnabled
+            && failed.Find<TextBlock>("FooterResponseProgressText").Text.Contains("닫기 버튼으로 닫을 수 있습니다"),
+            "[설계 43] playback failure shows the aux close for locked VIDEO+QUIZ");
+        Click(failed.Window, failedAux);
+        Check(failed.Closed(), "[설계 43] aux close closes locked VIDEO+QUIZ after playback failure");
+
+        // 완료 전 닫기 허용: 잠금 여부와 관계없이 보조 닫기 표시. showFooter=false면 숨김.
+        var allowed = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = true; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
+        var allowedView = (VideoQuizPopupView)allowed.Options.Content!;
+        var allowedAux = allowed.Find<Button>("FooterAuxCloseButton");
+        Check(!allowedView.IsUnlocked && allowedAux.Visibility == Visibility.Visible && allowedAux.IsEnabled
+            && !allowed.Find<Button>("FooterCloseButton").IsEnabled,
+            "[설계 43] allowCloseBeforeComplete=true VIDEO+QUIZ shows an enabled aux close while submit stays locked");
+        Report(allowedView.Video, Snapshot(100));
+        Check(allowedView.IsUnlocked && allowedAux.Visibility == Visibility.Visible, "[설계 43] aux close stays after unlocking");
+        Click(allowed.Window, allowedAux);
+        Check(allowed.Closed(), "[설계 43] aux close closes VIDEO+QUIZ without submitting");
+        var noFooter = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = true; dto.ShowFooter = false; });
+        Check(noFooter.Find<Button>("FooterAuxCloseButton").Visibility == Visibility.Collapsed, "[설계 43] showFooter=false hides the aux close");
+        ShutdownClose(noFooter.Window);
+    }
+
+    /* 보조 닫기: QUIZ는 미달 1회 이후 + Overlay 꺼짐 + 푸터 표시일 때만, SURVEY·TEXT는 표시하지 않는다. */
+    private static void CheckAuxClose43()
+    {
+        var notifyFailed = typeof(PopupWindow).GetMethod("NotifyQuizFailed", Flags)!;
+        foreach ((bool overlay, bool showFooter, bool expected) in new[] { (false, true, true), (true, true, false), (false, false, false) })
+        {
+            var quiz = OpenPopup("QUIZ", dto => dto.ShowFooter = showFooter, overlay);
+            var aux = quiz.Find<Button>("FooterAuxCloseButton");
+            Check(aux.Visibility == Visibility.Collapsed, $"[설계 43] QUIZ aux close hidden before a failed attempt (overlay {overlay}, footer {showFooter})");
+            notifyFailed.Invoke(quiz.Window, null);
+            Check((aux.Visibility == Visibility.Visible) == expected,
+                $"[설계 43] QUIZ aux close after failure is {(expected ? "shown" : "hidden")} (overlay {overlay}, footer {showFooter})");
+            if (expected)
+            {
+                Click(quiz.Window, aux);
+                Check(quiz.Closed(), "[설계 43] QUIZ aux close closes the window (CLOSED path)");
+            }
+            else
+            {
+                ShutdownClose(quiz.Window);
+            }
+        }
+        foreach (string type in new[] { "SURVEY", "TEXT" })
+        {
+            var other = OpenPopup(type, dto => dto.ShowFooter = true);
+            notifyFailed.Invoke(other.Window, null);
+            Check(other.Find<Button>("FooterAuxCloseButton").Visibility == Visibility.Collapsed, $"[설계 43] {type} never shows the aux close");
+            ShutdownClose(other.Window);
+        }
+    }
+
+    /* QUIZ 미달 안내의 틀린 문항 번호(화면 번호). 결과 항목에는 담지 않는다. */
+    private static void CheckQuizFailedMessage43()
+    {
+        var dto = DemoPopups("QUIZ").Single();
+        var options = PopupFactory.Create(dto);
+        var view = (SurveyPopupView)options.Content!;
+        var questions = (List<SurveyQuestion>)typeof(SurveyPopupView).GetField("_questions", Flags)!.GetValue(view)!;
+        var scoredNumbers = questions.Select((question, index) => (question, index)).Where(x => x.question.IsScored)
+            .Select(x => x.index + 1).ToList();
+        Check(scoredNumbers.Count >= 2, "[설계 43] demo QUIZ has at least two scored questions");
+
+        var none = QuizGrader.Grade(questions, new List<SurveyAnswer>(), dto.PassingScore);
+        Check(!none.Passed && none.IncorrectQuestionNumbers.SequenceEqual(scoredNumbers),
+            "[설계 43] unanswered scored questions are all listed as incorrect");
+
+        var first = questions.First(question => question.IsScored);
+        var correct = new SurveyAnswer { QuestionId = first.QuestionId };
+        if (first.QuestionType == SurveyQuestionType.Text) correct.TextAnswer = first.CorrectAnswer ?? string.Empty;
+        else correct.SelectedOptionIds.AddRange(first.Options.Where(option => option.IsCorrect == true).Select(option => option.OptionId));
+        var answers = new List<SurveyAnswer> { correct };
+        var graded = QuizGrader.Grade(questions, answers, dto.PassingScore);
+        var expectedWrong = scoredNumbers.Skip(1).ToList();
+        Check(graded.IncorrectQuestionNumbers.SequenceEqual(expectedWrong), "[설계 43] a correct answer is removed from the incorrect list");
+
+        var submission = new SurveySubmission
+        {
+            Answers = answers, Score = graded.Score, Passed = graded.Passed, PassingScore = graded.PassingScore,
+            IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers
+        };
+        var build = typeof(Popup.Managers.PopupManager).GetMethod("BuildQuizFailedMessage", BindingFlags.Static | BindingFlags.NonPublic)!;
+        string noAux = (string)build.Invoke(null, new object[] { submission, false })!;
+        Check(noAux.Contains($"틀린 문항: {string.Join(", ", expectedWrong)}번") && noAux.Contains("다시 제출해 주세요")
+            && !noAux.Contains("'닫기'"), $"[설계 43] failed QUIZ notice lists wrong question numbers ({noAux})");
+        string withAux = (string)build.Invoke(null, new object[] { submission, true })!;
+        Check(withAux.Contains("하단 '닫기'로 닫을 수 있습니다"), "[설계 43] the notice mentions the aux close only when it is shown");
+
+        // 안내의 보조 닫기 문장은 창의 실제 표시 조건(HasAuxClose)을 따른다: Overlay 꺼진 QUIZ는 표시, 완료 전 닫기 금지 VIDEO+QUIZ는 미표시.
+        var hasAux = typeof(PopupWindow).GetProperty("HasAuxClose", Flags)!;
+        var notifyFailed = typeof(PopupWindow).GetMethod("NotifyQuizFailed", Flags)!;
+        var quiz = OpenPopup("QUIZ", d => d.ShowFooter = true, overlay: false);
+        notifyFailed.Invoke(quiz.Window, null);
+        var videoQuiz = OpenPopup("VIDEO_QUIZ", d => { d.ShowFooter = true; d.AllowCloseBeforeComplete = false; }, overlay: false);
+        notifyFailed.Invoke(videoQuiz.Window, null);
+        Check((bool)hasAux.GetValue(quiz.Window)! && !(bool)hasAux.GetValue(videoQuiz.Window)!,
+            "[설계 43] aux close notice follows the window's actual aux close state");
+        ShutdownClose(quiz.Window);
+        ShutdownClose(videoQuiz.Window);
+
+        var item = new PopupResultBuilder("Q43", null).BuildSubmitted(submission, DateTimeOffset.Now);
+        string json = System.Text.Json.JsonSerializer.Serialize(item);
+        Check(!json.Contains("ncorrect", StringComparison.OrdinalIgnoreCase) && item.Score == graded.Score && item.Passed == graded.Passed,
+            "[설계 43] result contract (score·passed) is unchanged and carries no wrong-question list");
+    }
+
+    /* ───────────────────────── [설계 44] Background Overlay 키보드 종료 ───────────────────────── */
+
+    private static void CheckOverlayKeyboardClose44()
+    {
+        var closeByApp = typeof(PopupWindow).GetMethod("CloseByApp", Flags)!;
+
+        // Overlay 켜짐 + 화면에 닫기 버튼: 앱 닫기만 허용
+        var text = OpenPopup("TEXT", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; dto.Title = "공지 제목 44"; }, overlay: true);
+        Check(text.Window.Title == "공지 제목 44", $"[설계 44] window title is the popup title ({text.Window.Title})");
+        Check(AltF4Handled(text.Window), "[설계 44] Overlay on: Alt+F4 is swallowed at the key level");
+        SendMessage(Hwnd(text.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(!text.Closed() && text.Window.IsVisible, "[설계 44] Overlay on: external WM_CLOSE (Alt+F4 path) is cancelled");
+        SendMessage(Hwnd(text.Window), WM_SYSCOMMAND, SC_CLOSE, IntPtr.Zero);
+        Check(!text.Closed(), "[설계 44] Overlay on: system menu close (SC_CLOSE) is cancelled");
+        text.Window.Close();
+        Check(!text.Closed(), "[설계 44] Overlay on: external Window.Close is cancelled");
+        PressEscape(text.Window);
+        Check(!text.Closed(), "[설계 44] Esc does nothing");
+        Click(text.Window, text.Find<Button>("FooterCloseButton"));
+        Check(text.Closed(), "[설계 44] Overlay on: footer close (app path) is allowed");
+
+        var direct = OpenPopup("TEXT", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; }, overlay: true);
+        closeByApp.Invoke(direct.Window, null);
+        Check(direct.Closed(), "[설계 44] Overlay on: CloseByApp (submit/flow close) is allowed");
+
+        // 화면에 닫기 수단이 없으면(showFooter=false 또는 showFooterButton=false) 키보드 닫기를 막지 않는다(교착 방지).
+        foreach ((bool footer, bool button) in new[] { (false, true), (true, false) })
+        {
+            var bare = OpenPopup("TEXT", dto => { dto.ShowFooter = footer; dto.ShowFooterButton = button; }, overlay: true);
+            Check(!AltF4Handled(bare.Window), $"[설계 44] no visible exit (footer {footer}, button {button}): Alt+F4 is not swallowed");
+            SendMessage(Hwnd(bare.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            Check(bare.Closed(), $"[설계 44] no visible exit (footer {footer}, button {button}): keyboard close is allowed");
+        }
+
+        // VIDEO는 화면 출구가 없어도 완료 전 닫기 제한(A10)이 그대로 적용된다.
+        var video = OpenPopup("VIDEO", dto => { dto.ShowFooter = false; dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        SendMessage(Hwnd(video.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(!video.Closed(), "[설계 44] Overlay on VIDEO without footer still keeps the completion rule before watching");
+        Report(video.Video!, Snapshot(80));
+        SendMessage(Hwnd(video.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(video.Closed(), "[설계 44] Overlay on VIDEO without footer closes by keyboard after watching");
+
+        // QUIZ Overlay 켜짐: 제출 버튼이 보이므로 키보드 닫기 차단(통과해야 닫힘).
+        var quiz = OpenPopup("QUIZ", null, overlay: true);
+        SendMessage(Hwnd(quiz.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(!quiz.Closed(), "[설계 44] Overlay on QUIZ blocks keyboard close (submit is visible)");
+        ShutdownClose(quiz.Window);
+
+        // VIDEO+QUIZ 잠금 + 푸터 없음 + 재생 실패: 제출에 도달할 수 없으므로 키보드 닫기를 허용한다.
+        var stuck = OpenPopup("VIDEO_QUIZ", dto => { dto.ShowFooter = false; dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        SendMessage(Hwnd(stuck.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(!stuck.Closed(), "[설계 44] locked VIDEO+QUIZ blocks keyboard close while the video can play");
+        FailPlayback(stuck.Video!);
+        SendMessage(Hwnd(stuck.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(stuck.Closed(), "[설계 44] locked VIDEO+QUIZ without a reachable exit allows keyboard close after playback failure");
+
+        // Overlay 꺼짐: 기존 동작(Alt+F4·WM_CLOSE 허용), Esc는 무시.
+        var off = OpenPopup("TEXT", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; }, overlay: false);
+        Check(!AltF4Handled(off.Window), "[설계 44] Overlay off: Alt+F4 is not swallowed");
+        PressEscape(off.Window);
+        Check(!off.Closed(), "[설계 44] Overlay off: Esc does nothing");
+        SendMessage(Hwnd(off.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(off.Closed(), "[설계 44] Overlay off: keyboard close is allowed");
+    }
+
+    /* [설계 44 결함 1] 앱 종료(InternalClose(true, true))로 닫히면 사용자 닫기가 취소되는 상태여도 PopupManager가 결과를 저장한다. */
+    private static void CheckShutdownSavesResult44()
+    {
+        var owner = NewOwner();
+        try
+        {
+            foreach ((string type, bool overlay) in new[] { ("VIDEO", false), ("VIDEO_QUIZ", false), ("VIDEO", true) })
+            {
+                var manager = new Popup.Managers.PopupManager(owner);
+                var dto = DemoPopups(type).Single();
+                dto.AllowCloseBeforeComplete = false;
+                dto.CompletionRatio = 0.8;
+                var options = PopupFactory.Create(dto);
+                options.UseBackgroundOverlay = overlay;
+                var saved = new List<Popup.Dtos.WpfResultItemDto>();
+                options.EnqueueResult = saved.Add;
+                manager.Show(options);
+                var window = OpenWindows(manager).Single();
+                var video = options.Content as VideoPopupView ?? ((VideoQuizPopupView)options.Content!).Video;
+                SetPlaybackFailed(video, false);
+                Report(video, Snapshot(30, 30));
+                window.Close();
+                Check(saved.Count == 0 && window.IsVisible, $"[설계 44] {type} (overlay {overlay}) user close before watching saves nothing");
+                ShutdownClose(window);
+                Check(saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
+                    $"[설계 44 결함 1] {type} (overlay {overlay}) shutdown close saves VIDEO_WATCHED with watched seconds ({saved.Count})");
+                Check(!manager.HasOpenPopups && !Overlay(manager).IsVisible, $"[설계 44] {type} (overlay {overlay}) shutdown cleans up window and overlay");
+            }
+        }
+        finally { owner.Close(); }
+    }
+
+    /* [설계 44 결함 2] Overlay를 띄운 뒤 팝업 생성이 실패하면 Overlay를 닫고 예외를 그대로 올린다. */
+    private static void CheckOverlayCleanupOnFailure44()
+    {
+        var owner = NewOwner();
+        try
+        {
+            var manager = new Popup.Managers.PopupManager(owner);
+            var broken = PopupFactory.Create(DemoPopups("TEXT").Single());
+            broken.UseBackgroundOverlay = true;
+            broken.SizeMode = (PopupSizeMode)999;   // PopupWindow 생성자(ApplyWindowSize)가 예외를 던진다
+            Exception? error = null;
+            try { manager.Show(broken); } catch (Exception exception) { error = exception; }
+            Check(error is InvalidOperationException && !Overlay(manager).IsVisible && !manager.HasOpenPopups,
+                $"[설계 44 결함 2] creation failure rethrows and closes the overlay ({error?.GetType().Name})");
+
+            var ok = PopupFactory.Create(DemoPopups("TEXT").Single());
+            ok.UseBackgroundOverlay = true;
+            manager.Show(ok);
+            Check(Overlay(manager).IsVisible && manager.HasOpenPopups, "[설계 44] the next popup shows with its overlay");
+            ShutdownClose(OpenWindows(manager).Single());
+            Check(!Overlay(manager).IsVisible, "[설계 44] overlay closes with the popup");
+        }
+        finally { owner.Close(); }
     }
 }

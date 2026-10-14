@@ -60,11 +60,29 @@ namespace Popup.Managers
 
             ConfigureBackgroundOverlay(popupOptions);
 
-            PopupWindow popupWindow = CreatePopupWindow(popupOptions);
-            popupWindow.Closed += PopupWindow_Closed;
-            if (_owner.IsVisible) popupWindow.Owner = _owner;
-            popupWindow.ApplyPosition();
-            popupWindow.Show();
+            /*
+             * [설계 44 결함 2] Overlay를 먼저 띄운 뒤 팝업 생성·표시가 예외로 끝나면 Overlay가 남아
+             * 모든 모니터의 클릭을 계속 삼켰다. 실패하면 Overlay를 닫고 열린 창 목록에서 빼낸 뒤 예외를 그대로 올린다.
+             */
+            PopupWindow? popupWindow = null;
+            try
+            {
+                popupWindow = CreatePopupWindow(popupOptions);
+                popupWindow.Closed += PopupWindow_Closed;
+                if (_owner.IsVisible) popupWindow.Owner = _owner;
+                popupWindow.ApplyPosition();
+                popupWindow.Show();
+            }
+            catch
+            {
+                if (popupWindow != null)
+                {
+                    popupWindow.Closed -= PopupWindow_Closed;
+                    _openWindows.Remove(popupWindow);
+                }
+                _backgroundOverlayManager.Close();
+                throw;
+            }
         }
 
         private void ConfigureBackgroundOverlay(PopupOptions popupOptions)
@@ -152,16 +170,19 @@ namespace Popup.Managers
             if (videoPopupView != null)
             {
                 // 닫히기 직전 누적 시청량을 한 번만 읽는다(예전의 10초 주기 저장 대체).
-                // 시청 완료 판정(closable 여부)은 PopupWindow.CloseButton_Click이 로컬 HasReachedCompletion으로 한다(설계 12 §5).
+                // 시청 완료 판정(closable 여부)은 PopupWindow가 로컬 HasReachedCompletion으로 한다(설계 12 §5, 버튼 표시는 설계 43).
                 popupWindow.Closing += (sender, eventArgs) =>
                     builder.SetVideoProgress(videoPopupView.GetFinalProgress());
             }
 
             // 영상 시청량 기록(위 Closing 핸들러) 뒤에 실행된다. PopupWindow.OnClosing이 취소를 먼저 결정하고
             // "다시 보지 않기" 선택을 기록한 뒤 Closing 이벤트를 올린다.
+            // [설계 44 결함 1] 앱 종료 중에는 PopupWindow가 닫기를 취소하지 않지만, 취소가 남아 있어도 WPF는 종료 시 창을 닫으므로
+            // 취소 여부와 관계없이 결과를 저장한다(예전에는 취소를 보고 돌아가 VIDEO 미완료·VIDEO+QUIZ 잠금 결과가 사라졌다).
             popupWindow.Closing += (sender, eventArgs) =>
             {
-                if (eventArgs.Cancel || builder.IsFinalized) return;   // 닫기 취소 또는 제출 항목을 이미 큐에 넣음
+                if (builder.IsFinalized) return;   // 제출 항목을 이미 큐에 넣음
+                if (eventArgs.Cancel && !PopupWindow.IsApplicationExiting()) return;   // 사용자 닫기 취소
                 WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
                 if (!TryEnqueueBeforeClose(popupWindow, popupOptions, item))
                 {
@@ -170,6 +191,26 @@ namespace Popup.Managers
                 }
                 builder.MarkFinalized();
             };
+            /*
+             * [설계 44 결함 1] 취소된 Closing 뒤에도 창이 실제로 닫힌 경우(App 종료 플래그 없이 Application.Shutdown,
+             * 소유자 창 종료 등 WPF가 취소를 무시하는 경로)를 Closed에서 한 번 더 확인해 결과를 남긴다.
+             * 영상 시청량은 위 Closing 핸들러가 이미 기록했다. 창이 닫힌 뒤라 저장 실패는 RetainResultForExit로 넘긴다.
+             */
+            popupWindow.Closed += (sender, eventArgs) =>
+            {
+                if (builder.IsFinalized) return;
+                WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
+                builder.MarkFinalized();
+                try
+                {
+                    popupOptions.EnqueueResult?.Invoke(item);
+                }
+                catch (Exception exception)
+                {
+                    Debug.WriteLine($"팝업 결과 로컬 저장 실패(닫힌 뒤) (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                    popupOptions.RetainResultForExit?.Invoke(item);
+                }
+            };
             popupWindow.Closed += (sender, eventArgs) => popupOptions.FlushResultsInBackground?.Invoke();
         }
 
@@ -177,7 +218,9 @@ namespace Popup.Managers
          * [설계 12 §2·§4] 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 창을 닫는다.
          *  1. QUIZ 미통과(passed=false)면 점수·통과 점수를 안내하고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다.
          *     사용자는 답안을 고쳐 "제출"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다(2026-09-22 사용자 지시).
-         *     닫기 버튼으로 나가면 SUBMITTED 없이 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
+         *     [설계 43] 안내에 틀린 문항 번호를 함께 보여 준다(결과 계약 score·passed는 그대로).
+         *     QUIZ의 푸터 버튼은 '제출'이라 닫기 버튼이 없다. Background Overlay가 꺼져 있으면 미달 1회 뒤 보조 '닫기'가 보이고,
+         *     켜져 있으면 통과해야 닫힌다(Alt+F4도 막힘 — 설계 44). 제출 없이 나가면 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
          *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(pending-results.json 저장).
          *     이 시점부터 결과는 유실되지 않는다.
          *  3. QUIZ 통과 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
@@ -193,9 +236,8 @@ namespace Popup.Managers
 
             if (isQuiz && submission.Passed == false)
             {
-                PopupAlert.Show(popupWindow,
-                    $"점수: {submission.Score ?? 0:0.##}점{passingText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 제출해 주세요.",
-                    "다시 도전해 주세요", "답안 수정");
+                popupWindow.NotifyQuizFailed();
+                PopupAlert.Show(popupWindow, BuildQuizFailedMessage(submission, popupWindow.HasAuxClose), "다시 도전해 주세요", "답안 수정");
                 return;   // 창 유지, 제출 없음
             }
 
@@ -210,7 +252,22 @@ namespace Popup.Managers
                     "평가를 통과했어요", "완료");
             }
 
-            popupWindow.Close();   // Closed 핸들러가 백그라운드 전송을 시작한다
+            popupWindow.CloseByApp();   // 앱이 시작한 닫기(설계 44). Closed 핸들러가 백그라운드 전송을 시작한다
+        }
+
+        /*
+         * [설계 43] QUIZ 미달 안내 문구. 점수·통과 점수에 틀린 채점 문항 번호(화면 번호)를 더한다.
+         * 보조 닫기가 실제로 보이는 경우(PopupWindow.HasAuxClose)에는 제출 없이 닫을 수 있다는 안내를 붙인다.
+         */
+        internal static string BuildQuizFailedMessage(SurveySubmission submission, bool auxCloseVisible)
+        {
+            string passingText = submission.PassingScore is double passing && passing > 0
+                ? $" (통과 점수 {passing:0.##}점)" : string.Empty;
+            string incorrectText = submission.IncorrectQuestionNumbers.Count > 0
+                ? $"\n틀린 문항: {string.Join(", ", submission.IncorrectQuestionNumbers)}번" : string.Empty;
+            string closeText = auxCloseVisible
+                ?"\n다시 제출하지 않으려면 하단 '닫기'로 닫을 수 있습니다." : string.Empty;
+            return $"점수: {submission.Score ?? 0:0.##}점{passingText}{incorrectText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 제출해 주세요.{closeText}";
         }
 
 
@@ -247,9 +304,7 @@ namespace Popup.Managers
             catch (Exception exception)
             {
                 Debug.WriteLine($"팝업 결과 로컬 저장 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
-                bool exiting = (Application.Current is App app && app.IsExiting)
-                    || Application.Current?.Dispatcher.HasShutdownStarted == true;
-                if (exiting)
+                if (PopupWindow.IsApplicationExiting())
                 {
                     popupOptions.RetainResultForExit?.Invoke(item);
                     return true;

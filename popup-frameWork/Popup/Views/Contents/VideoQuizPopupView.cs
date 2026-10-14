@@ -13,6 +13,8 @@ namespace Popup.Views.Contents
         public bool IsUnlocked { get; private set; }
         public event EventHandler? Unlocked;
         private readonly double _requiredRatio;
+        /// <summary>[설계 43] 잠금 해제 기준(0~1). PopupWindow가 푸터 잠금 사유 문구에 쓴다.</summary>
+        public double RequiredRatio => _requiredRatio;
         private readonly TextBlock _notice;
 
         public VideoQuizPopupView(VideoPopupView video, SurveyPopupView quiz, double requiredRatio)

@@ -23,7 +23,13 @@ namespace Popup.Services
      */
     public static class QuizGrader
     {
-        public sealed record Result(double Score, bool Passed, double PassingScore);
+        /// <summary>
+        /// [설계 43] IncorrectQuestionNumbers: 틀린 채점 문항의 화면 번호(문항 목록 순서 1부터). 미달 안내에만 쓰며 결과 계약(score·passed)에는 담지 않는다.
+        /// </summary>
+        public sealed record Result(double Score, bool Passed, double PassingScore)
+        {
+            public IReadOnlyList<int> IncorrectQuestionNumbers { get; init; } = Array.Empty<int>();
+        }
 
         public static Result Grade(IReadOnlyList<SurveyQuestion> questions, IReadOnlyList<SurveyAnswer> answers, double? passingScore)
         {
@@ -38,18 +44,22 @@ namespace Popup.Services
             }
 
             double total = 0;
-            foreach (SurveyQuestion question in scored)
+            List<int> incorrect = new();
+            for (int index = 0; index < questions.Count; index++)
             {
+                SurveyQuestion question = questions[index];
+                if (!question.IsScored) continue;
                 SurveyAnswer? answer = answers.FirstOrDefault(item => item.QuestionId == question.QuestionId);
                 if (answer == null || !IsCorrect(question, answer))
                 {
+                    incorrect.Add(index + 1);   // SurveyPopupView 문항 카드 번호(index + 1)와 같다
                     continue;
                 }
                 total += question.QuestionScore is double score && double.IsFinite(score) ? score : 0;
             }
 
             total = Math.Round(total, 2);
-            return new Result(total, total >= passing, passing);
+            return new Result(total, total >= passing, passing) { IncorrectQuestionNumbers = incorrect };
         }
 
         /// <summary>문항 하나의 정오답. 선택형은 선택지 집합 비교, 서술형은 문자열 일치 모드 비교.</summary>

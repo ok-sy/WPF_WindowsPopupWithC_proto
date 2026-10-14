@@ -21,5 +21,8 @@ namespace Popup.Models
 
         /// <summary>QUIZ 통과 점수(안내 문구용). SURVEY면 null.</summary>
         public double? PassingScore { get; init; }
+
+        /// <summary>[설계 43] QUIZ 미달 안내용 틀린 문항 번호(화면 번호). 결과 항목(WpfResultItemDto)에는 담지 않는다.</summary>
+        public IReadOnlyList<int> IncorrectQuestionNumbers { get; init; } = new List<int>();
     }
 }

@@ -82,6 +82,8 @@ namespace Popup.Views.Contents
         /* 가장 최근에 계산한 진행 스냅샷. 창이 닫힐 때 결과 항목(VIDEO_WATCHED)에 담긴다. */
         private VideoProgressSnapshot? _latestProgress;
         public event EventHandler<VideoProgressSnapshot>? ProgressUpdated;
+        /* [설계 43] 재생 실패로 닫기 제한이 풀릴 때 PopupWindow가 푸터 버튼·사유 문구를 다시 계산한다. */
+        public event EventHandler? PlaybackFailed;
         /*
          * 현재 영상이 재생 중인지 나타낸다.
          */
@@ -909,10 +911,28 @@ namespace Popup.Views.Contents
         /// </summary>
         public bool HasReachedCompletion(double requiredRatio)
         {
-            VideoProgressSnapshot? progress = GetFinalProgress();
+            return IsCompletionReached(GetFinalProgress(), requiredRatio);
+        }
+
+        /// <summary>
+        /// [설계 43] 마지막 스냅샷(재생 상태를 다시 읽지 않음). PopupWindow가 ProgressUpdated마다 푸터 사유 문구를 갱신할 때 쓴다.
+        /// GetFinalProgress()는 ProgressUpdated를 다시 올리므로 그 이벤트 처리 중에는 이 값을 읽는다.
+        /// </summary>
+        public VideoProgressSnapshot? LatestProgress => _latestProgress;
+
+        /// <summary>[설계 43] HasReachedCompletion과 같은 판정식(누적 시청 / 길이 ≥ 기준). 판정 공식은 설계 50 D4에서 따로 다룬다.</summary>
+        public static bool IsCompletionReached(VideoProgressSnapshot? progress, double requiredRatio)
+        {
             if (progress == null || progress.DurationSeconds <= 0) return false;
             double ratio = (double)(progress.WatchedSeconds / progress.DurationSeconds);
             return ratio >= Math.Clamp(requiredRatio, 0.0, 1.0);
+        }
+
+        /// <summary>[설계 43] 화면 표시용 시청 %. 내림으로 계산해 판정 전(비활성)인데 표시가 기준 이상이 되는 일이 없게 한다.</summary>
+        public static int DisplayWatchedPercent(VideoProgressSnapshot? progress)
+        {
+            if (progress == null || progress.DurationSeconds <= 0) return 0;
+            return (int)Math.Clamp(decimal.Floor(progress.WatchedSeconds / progress.DurationSeconds * 100), 0, 100);
         }
 
         private void ProgressSlider_PreviewMouseLeftButtonDown(
@@ -2076,6 +2096,7 @@ namespace Popup.Views.Contents
              * 실패 상태만 기록하며 시청 완료 상태나 진행률은 변경하지 않는다.
              */
             HasPlaybackFailed = true;
+            PlaybackFailed?.Invoke(this, EventArgs.Empty);
             _controlsHideTimer.Stop();
             _feedbackTimer.Stop();
             PlaybackFeedback.Visibility = Visibility.Collapsed;

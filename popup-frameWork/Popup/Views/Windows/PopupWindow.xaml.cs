@@ -1,6 +1,9 @@
 ﻿using Popup.Models;
 using System;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Popup.Views.Contents;
 using Popup.Services;
@@ -53,33 +56,42 @@ namespace Popup.Views.Windows
                 ApplyVideoWindowSurface();
             }
             FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "닫기";
-            var survey = _options.Content as SurveyPopupView ?? (_options.Content as VideoQuizPopupView)?.Quiz;
+            var survey = SurveyContent;
             if (survey != null)
             {
                 FooterCloseButton.Content = "제출";
                 // 닫기 숨김 옵션으로 필수 제출 경로까지 사라지지 않도록 한다.
                 FooterCloseButton.Visibility = Visibility.Visible;
                 FooterCloseButton.Style = (Style)survey.FindResource("SurveySubmitButtonStyle");
-                FooterResponseProgressText.Visibility = Visibility.Visible;
-                void RefreshSurveyFooter()
-                {
-                    FooterCloseButton.IsEnabled = survey.CanSubmit;
-                    FooterResponseProgressText.Text = survey.ResponseProgressText;
-                    FooterResponseProgressText.Foreground = (System.Windows.Media.Brush)survey.FindResource("SurveyMutedText");
-                }
-                survey.ResponseProgressChanged += (_, _) => RefreshSurveyFooter();
-                RefreshSurveyFooter();
+                FooterResponseProgressText.Foreground = (System.Windows.Media.Brush)survey.FindResource("SurveyMutedText");
+                survey.ResponseProgressChanged += (_, _) => RefreshFooterState();
                 if (_options.ShowFooter)
                 {
                     FooterRow.Height = GridLength.Auto;
                     survey.UseFooterSubmission();
                 }
             }
+            /*
+             * [설계 43] 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시는 RefreshFooterState 한 곳에서 계산한다.
+             * VIDEO+QUIZ 잠금 해제, 영상 진행(ProgressUpdated), 재생 실패 때 다시 계산한다.
+             */
             if (_options.Content is VideoQuizPopupView videoQuiz)
             {
-                FooterArea.IsEnabled = videoQuiz.IsUnlocked;
-                videoQuiz.Unlocked += (_, _) => FooterArea.IsEnabled = true;
+                videoQuiz.Unlocked += (_, _) =>
+                {
+                    RefreshFooterState();
+                    // 잠금 해제 후 키보드 사용자가 바로 응답할 수 있게 첫 문항으로 포커스를 옮긴다(창이 활성일 때만).
+                    if (IsActive) videoQuiz.Quiz.FocusFirstAnswer();
+                };
             }
+            if (VideoContent is VideoPopupView hostedVideo)
+            {
+                hostedVideo.ProgressUpdated += (_, _) => RefreshFooterState();
+                hostedVideo.PlaybackFailed += (_, _) => RefreshFooterState();
+            }
+            RefreshFooterState();
+            PreviewKeyDown += PopupWindow_PreviewKeyDown;
+            Loaded += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(SetInitialFocus));
             ApplyPosition();
             Loaded += (_, _) => ApplyPosition();
             SizeChanged += (_, _) => ApplyPosition();
@@ -125,6 +137,8 @@ namespace Popup.Views.Windows
         }
 
         private bool HostsVideo => _options.Content is VideoPopupView or VideoQuizPopupView;
+        private SurveyPopupView? SurveyContent => _options.Content as SurveyPopupView ?? (_options.Content as VideoQuizPopupView)?.Quiz;
+        private VideoPopupView? VideoContent => _options.Content as VideoPopupView ?? (_options.Content as VideoQuizPopupView)?.Video;
 
         /*
          * [설계 24 §3·§4] VIDEO / VIDEO+QUIZ 창은 불투명 창으로 만들고 영상 부모의 그림자를 뺀다.
@@ -200,6 +214,11 @@ namespace Popup.Views.Windows
              * 팝업 상단 제목을 설정한다.
              */
             PopupTitleText.Text = _options.Title;
+            /*
+             * [설계 44] 창 제목도 팝업 제목으로 둔다. WindowStyle=None·ShowInTaskbar=false라 화면에는 보이지 않지만
+             * Alt+Tab·스크린리더가 창 이름으로 읽는다(예전에는 XAML 기본값 "PopupWindow" 고정).
+             */
+            Title = string.IsNullOrWhiteSpace(_options.Title) ? "팝업" : _options.Title;
 
             /*
              * 전달받은 UserControl을
@@ -738,6 +757,7 @@ namespace Popup.Views.Windows
             {
                 DoNotShowAgainCheckBox.FontSize = footerFontSize;
                 FooterCloseButton.FontSize = footerFontSize;
+                FooterAuxCloseButton.FontSize = footerFontSize;
             }
 
             if (TryClampFontSize(_options.BodyFontSize, out double bodyFontSize)
@@ -890,28 +910,16 @@ namespace Popup.Views.Windows
              * [기준 4] 실시간 진행률 API가 없어졌으므로 VideoPopupView의 로컬 추정(HasReachedCompletion)을 쓴다.
              * 최종 완료 판정은 창이 닫힐 때 보내는 결과 항목으로 서버가 한다.
              *
-             * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는
-             * 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
+             * [설계 43] 예전에는 활성 버튼을 누르면 '필수 영상 시청' MessageBox를 띄웠다. 이제 버튼을 비활성으로 두고
+             * 푸터에 시청 %·기준 사유를 표시하므로(RefreshFooterState) 여기서는 안내 없이 막는 방어 가드만 남긴다.
+             * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
              */
             if (_options.Content is VideoPopupView videoPopupView &&
                 !_options.AllowCloseBeforeComplete &&
                 !videoPopupView.HasReachedCompletion(_options.CompletionRatio) &&
                 !videoPopupView.HasPlaybackFailed)
             {
-                double requiredPercent =
-                    Math.Clamp(
-                        _options.CompletionRatio,
-                        0,
-                        1)
-                    * 100;
-
-                MessageBox.Show(this,
-                    $"이 영상은 {requiredPercent:0.##}% 이상 시청해야 " +
-                    "닫을 수 있습니다.",
-                    "필수 영상 시청",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
+                RefreshFooterState();
                 return;
             }
 
@@ -954,8 +962,9 @@ namespace Popup.Views.Windows
                 /*
                  * 현재 팝업을 닫는다. 결과 항목 저장은 Closing 핸들러(PopupManager)가 하며,
                  * 저장에 실패하면 그쪽에서 안내하고 닫기를 취소한다.
+                 * [설계 44] 앱이 시작한 닫기이므로 Background Overlay의 키보드 닫기 차단 대상이 아니다.
                  */
-                Close();
+                CloseByApp();
             }
             catch (Exception exception)
             {
@@ -982,26 +991,226 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * 닫기 버튼 외의 경로(ESC, Alt+F4, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
-         * Closing 시점에 한 번 더 기록한다.
+         * [설계 44] 앱이 시작한 닫기인지. 푸터 닫기·보조 닫기·LINK_AND_CLOSE(CloseButton_Click)와
+         * 제출 완료 후 닫기(PopupManager)가 CloseByApp으로 닫는 동안만 true다.
+         * Background Overlay가 켜진 팝업은 이 경로와 앱 종료만 허용하고 Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 취소한다.
+         */
+        private bool _closeRequestedByApp;
+
+        /* [설계 43] QUIZ 미달 판정을 한 번 받았는지. Overlay가 꺼진 QUIZ의 보조 닫기 표시 조건이다. */
+        private bool _quizFailedOnce;
+
+        /* [설계 43] 마지막 푸터 상태. 상태가 바뀔 때만 스크린리더에 알린다(시청 % 변화마다 알리지 않는다). */
+        private string? _footerState;
+
+        /// <summary>[설계 44] 앱 내부 닫기 경로의 공통 진입점. Overlay 키보드 닫기 차단을 거치지 않는다(영상 완료 전 닫기 제한은 그대로 적용).</summary>
+        internal void CloseByApp()
+        {
+            _closeRequestedByApp = true;
+            try
+            {
+                Close();
+            }
+            finally
+            {
+                _closeRequestedByApp = false;
+            }
+        }
+
+        /// <summary>[설계 43] PopupManager가 QUIZ 미달 안내 뒤 호출한다. Overlay가 꺼진 QUIZ는 이때부터 보조 닫기를 보여 준다.</summary>
+        internal void NotifyQuizFailed()
+        {
+            _quizFailedOnce = true;
+            RefreshFooterState();
+        }
+
+        /// <summary>[설계 44] 앱 종료(트레이 종료·426 안내 종료·로그오프 SessionEnding → App.IsExiting, Dispatcher 종료) 중인지.</summary>
+        internal static bool IsApplicationExiting() =>
+            (Application.Current is App app && app.IsExiting)
+            || Application.Current?.Dispatcher.HasShutdownStarted == true;
+
+        private bool IsQuizPopup => string.Equals(_options.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
+
+        /*
+         * [설계 43] 보조 닫기 표시 조건. showFooter=false면 숨긴다. SURVEY·TEXT·IMAGE·VIDEO는 표시하지 않는다.
+         *  - VIDEO+QUIZ: 완료 전 닫기 허용(잠금 여부 무관, 제출 전 이탈 허용 정책) 또는 재생 실패
+         *  - QUIZ(영상 없음): 미달 판정을 한 번 받은 뒤 + Background Overlay 꺼짐.
+         *    Overlay가 켜져 있으면 통과해야 닫힌다(강제 완료). 꺼져 있으면 Alt+F4로도 나갈 수 있으므로 화면에 보이게만 한다.
+         */
+        private bool ShouldShowAuxClose()
+        {
+            if (!_options.ShowFooter) return false;
+            if (_options.Content is VideoQuizPopupView combined)
+                return _options.AllowCloseBeforeComplete || combined.Video.HasPlaybackFailed;
+            return _options.Content is SurveyPopupView && IsQuizPopup && _quizFailedOnce && !_options.UseBackgroundOverlay;
+        }
+
+        /// <summary>[설계 43] 보조 닫기가 지금 표시 조건을 만족하는지. QUIZ 미달 안내 문구가 보조 닫기 안내를 붙일지 정한다.</summary>
+        internal bool HasAuxClose => ShouldShowAuxClose();
+
+        private static string RequiredPercentText(double ratio) =>
+            (Math.Clamp(double.IsFinite(ratio) ? ratio : 1, 0, 1) * 100).ToString("0.##");
+
+        /*
+         * [설계 43] 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시를 계산한다.
+         *  - VIDEO+QUIZ 잠금 중: 제출·'보지 않기'는 비활성(기존 계약), 문구는 시청 %·기준 사유. 해제 뒤에는 문항 진행 문구.
+         *  - SURVEY/QUIZ: 필수 미응답이면 제출 비활성 + 진행 문구. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
+         *  - 일반 VIDEO(완료 전 닫기 금지): 기준 미달이면 닫기 비활성 + 시청 %·기준 사유, 기준 도달·재생 실패면 활성.
+         * 표시 %는 내림이라 비활성인데 기준 이상으로 보이는 일이 없다. 재생 중 매 진행 틱마다 불리므로 같은 문구는 다시 쓰지 않는다.
+         */
+        private void RefreshFooterState()
+        {
+            string? text = null;
+            string state = string.Empty;
+            bool primaryEnabled = true;
+            bool optionEnabled = true;
+            SurveyPopupView? survey = SurveyContent;
+            if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked)
+            {
+                primaryEnabled = false;
+                optionEnabled = false;
+                if (combined.Video.HasPlaybackFailed)
+                {
+                    state = "failed";
+                    text = ShouldShowAuxClose()
+                        ? "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다. 닫기 버튼으로 닫을 수 있습니다."
+                        : "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다.";
+                }
+                else
+                {
+                    state = "watching";
+                    text = $"영상 {VideoPopupView.DisplayWatchedPercent(combined.Video.LatestProgress)}% 시청 · "
+                        + $"기준 {RequiredPercentText(combined.RequiredRatio)}% 이상 시청하면 퀴즈와 제출이 활성화됩니다";
+                }
+            }
+            else if (survey != null)
+            {
+                primaryEnabled = survey.CanSubmit;
+                text = survey.ResponseProgressText;
+                state = text;
+            }
+            else if (_options.Content is VideoPopupView video && !_options.AllowCloseBeforeComplete
+                && FooterCloseButton.Visibility == Visibility.Visible)
+            {
+                if (video.HasPlaybackFailed)
+                {
+                    state = "failed";
+                    text = "영상을 재생할 수 없어 시청 기준과 관계없이 닫을 수 있습니다.";
+                }
+                else if (VideoPopupView.IsCompletionReached(video.LatestProgress, _options.CompletionRatio))
+                {
+                    state = "reached";
+                    text = "시청 기준을 충족했습니다. 닫을 수 있습니다.";
+                }
+                else
+                {
+                    primaryEnabled = false;
+                    state = "watching";
+                    text = $"영상 {VideoPopupView.DisplayWatchedPercent(video.LatestProgress)}% 시청 · "
+                        + $"기준 {RequiredPercentText(_options.CompletionRatio)}% 이상 시청하면 닫을 수 있습니다";
+                }
+            }
+
+            FooterCloseButton.IsEnabled = primaryEnabled;
+            DoNotShowAgainCheckBox.IsEnabled = optionEnabled;
+            AutomationProperties.SetHelpText(FooterCloseButton, primaryEnabled ? string.Empty : text ?? string.Empty);
+            FooterAuxCloseButton.Visibility = ShouldShowAuxClose() ? Visibility.Visible : Visibility.Collapsed;
+            FooterResponseProgressText.Visibility = text == null ? Visibility.Collapsed : Visibility.Visible;
+            if (text != null && FooterResponseProgressText.Text != text) FooterResponseProgressText.Text = text;
+            if (_footerState != null && _footerState != state && text != null && _options.ShowFooter)
+                UIElementAutomationPeer.FromElement(FooterResponseProgressText)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+            _footerState = state;
+        }
+
+        /*
+         * [설계 44] Background Overlay가 켜진 팝업의 키보드·외부 닫기 차단 여부.
+         * 화면에 닫기·제출 수단이 하나라도 보일 때만 막는다. 보이는 수단이 없으면(예: TEXT/IMAGE/VIDEO에서
+         * showFooter=false 또는 showFooterButton=false) 막지 않아 사용자가 갇히지 않게 한다.
+         * 이때 VIDEO의 완료 전 닫기 제한(allowCloseBeforeComplete)은 OnClosing에서 그대로 적용된다.
+         */
+        internal bool BlocksExternalClose => _options.UseBackgroundOverlay && HasVisibleExit();
+
+        private bool HasVisibleExit()
+        {
+            if (ShouldShowAuxClose()) return true;
+            if (SurveyContent != null)
+            {
+                // 제출 버튼은 푸터 또는 본문에 항상 보인다. 단 VIDEO+QUIZ가 잠긴 채 재생에 실패하면 제출에 도달할 수 없다.
+                return !(_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked && combined.Video.HasPlaybackFailed);
+            }
+            return _options.ShowFooter && FooterCloseButton.Visibility == Visibility.Visible;
+        }
+
+        private bool ShouldCancelExternalClose() =>
+            !_closeRequestedByApp && !IsApplicationExiting() && BlocksExternalClose;
+
+        /*
+         * [설계 44] Alt+F4는 Overlay 차단 대상이면 키 단계에서 처리해 닫기 요청 자체를 만들지 않는다(OnClosing도 같은 조건으로 취소).
+         * Esc는 팝업 창에서 아무 동작도 하지 않는다(닫기 아님). 영상 전체화면 해제·PopupAlert의 Esc는 각 창이 따로 처리한다.
+         */
+        private void PopupWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.System && e.SystemKey == Key.F4 && ShouldCancelExternalClose())
+            {
+                e.Handled = true;
+            }
+        }
+
+        /*
+         * [설계 44] 첫 포커스. SURVEY/QUIZ(잠금 해제 상태)는 첫 문항의 입력, 그 밖에는 본문의 첫 포커스 가능 요소로 옮긴다.
+         * 푸터 닫기 버튼에는 일부러 두지 않는다. 팝업이 뜰 때 다른 작업 중이던 Enter·Space 입력으로 바로 닫히는 것을 막기 위해서다
+         * (같은 이유로 푸터 주 버튼 IsDefault도 적용하지 않는다).
+         */
+        private void SetInitialFocus()
+        {
+            if (!IsActive) return;
+            if (SurveyContent?.FocusFirstAnswer() == true) return;
+            FindFirstFocusable(PopupContent)?.Focus();
+        }
+
+        private static Control? FindFirstFocusable(DependencyObject root)
+        {
+            for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(root, index);
+                if (child is Control control && control is not ScrollViewer && control.Focusable && control.IsTabStop
+                    && control.IsEnabled && control.IsVisible)
+                    return control;
+                if (FindFirstFocusable(child) is Control nested) return nested;
+            }
+            return null;
+        }
+
+        /*
+         * 닫기 버튼 외의 경로(Alt+F4, 시스템 메뉴 닫기, 외부 WM_CLOSE, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
+         * Closing 시점에 한 번 더 기록한다. Esc는 팝업을 닫지 않는다(설계 44 — 처리하지 않음).
          *
          * 완료 전 닫기 금지(allowCloseBeforeComplete=false)는 VIDEO+QUIZ와 일반 VIDEO에 같이 적용한다.
-         * 두 유형이 같은 계약 필드를 쓰므로 창 닫기(Alt+F4 등)로 시청 기준 전에 닫히지 않게 조용히 취소한다
-         * (VIDEO+QUIZ와 같은 방식 — 창 닫기 경로는 안내 없이 취소하고, 일반 VIDEO의 '필수 영상 시청' 안내는 푸터 버튼 경로에서만 띄운다).
-         * 재생 실패 시에는 닫기를 막지 않는다.
-         * 앱 종료(Application.Shutdown)·로그오프(SessionEnding 후 종료)는 WPF가 취소를 무시하고 닫으므로
-         * 별도 예외 플래그 없이 두 유형 모두 그대로 닫힌다.
+         * 두 유형이 같은 계약 필드를 쓰므로 창 닫기(Alt+F4 등)로 시청 기준 전에 닫히지 않게 조용히 취소한다.
+         * 일반 VIDEO의 푸터 닫기 버튼은 기준 전에는 비활성이고 사유를 푸터에 표시한다(설계 43). 재생 실패 시에는 닫기를 막지 않는다.
+         *
+         * [설계 44] Background Overlay가 켜진 팝업은 앱이 시작한 닫기(CloseByApp)만 허용하고
+         * Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 취소한다. 화면에 닫기·제출 수단이 없으면 막지 않는다(BlocksExternalClose).
+         *
+         * 앱 종료(트레이 종료·426 안내 종료·로그오프 SessionEnding → App.IsExiting)에는 위 제한을 적용하지 않는다.
+         * App 플래그 없이 Application.Shutdown이 창을 닫으면 WPF가 취소를 무시하고 닫으므로,
+         * PopupManager가 Closed 시점에 결과(CLOSED/VIDEO_WATCHED·시청량)를 저장한다(설계 44 결함 1).
          */
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            if (!_options.AllowCloseBeforeComplete)
+            if (!IsApplicationExiting())
             {
-                if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
-                    && !combined.Video.HasPlaybackFailed)
-                    e.Cancel = true;
-                else if (_options.Content is VideoPopupView video
-                    && !video.HasReachedCompletion(_options.CompletionRatio)
-                    && !video.HasPlaybackFailed)
+                if (!_options.AllowCloseBeforeComplete)
+                {
+                    if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
+                        && !combined.Video.HasPlaybackFailed)
+                        e.Cancel = true;
+                    else if (_options.Content is VideoPopupView video
+                        && !video.HasReachedCompletion(_options.CompletionRatio)
+                        && !video.HasPlaybackFailed)
+                        e.Cancel = true;
+                }
+                if (!e.Cancel && ShouldCancelExternalClose())
                     e.Cancel = true;
             }
             RecordDoNotShowAgainChoice();

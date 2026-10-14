@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- [설계 50] PopupWindow 숨김 문구(A1)·일반 VIDEO 종료 제한(A10) 회귀 검증. 실행 방법은 Program.cs 상단 주석 참고. -->
+  <!-- [설계 50·43·44] PopupWindow 숨김 문구(A1)·일반 VIDEO 종료 제한(A10)·완료 조건 버튼 표현(43)·Overlay 키보드 종료(44) 회귀 검증. 실행 방법은 Program.cs 상단 주석 참고. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>

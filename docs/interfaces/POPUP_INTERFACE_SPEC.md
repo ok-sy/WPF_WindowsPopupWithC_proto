@@ -393,9 +393,9 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 
 `content` 안에 같은 이름의 키가 있어도 WPF는 읽지 않는다. 관리자 저장 위치(CONTENT_OPTIONS)와 WPF 응답 위치는 달라도 된다. 서버가 응답 조립 시 최상위로 옮긴다.
 
-Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **닫기**로 표시하고 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
+Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **닫기**로 표시하고 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. `useBackgroundOverlay=true`이면 Alt+F4·시스템 메뉴 닫기·외부 닫기 요청은 무시하고 하단 버튼(닫기·바로가기·제출)과 앱 종료로만 닫는다. 화면에 닫기·제출 수단이 없으면 막지 않는다(설계 44). Esc는 팝업을 닫지 않는다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
-SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며, 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
+SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며(불합격 안내에는 점수와 틀린 문항 번호를 표시한다. 설계 43), 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 
 ### popupPosition ENUM
 
@@ -560,6 +560,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 | defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |
 
 VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
+`allowCloseBeforeComplete=false`이면 시청 기준 전에는 하단 닫기 버튼을 비활성으로 두고 하단에 현재 시청 %(내림)와 기준을 사유로 표시한다. 기준에 도달하거나 재생에 실패하면 버튼을 활성화한다(설계 43).
 
 로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 
@@ -724,9 +725,9 @@ passingScore 이상
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
 - SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 종료 경로는 `allowCloseBeforeComplete` 등 기존 종료 정책을 따른다.
-- 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 **푸터 전체**를 활성화한다. 미설정 기준은 1.0이다.
+- 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 푸터의 제출·다시 보지 않기를 활성화한다. 잠금 중 푸터에는 현재 시청 %와 기준을 사유로 표시한다(설계 43). 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
-- `allowCloseBeforeComplete: true`면 Alt+F4 등으로 중단할 수 있지만 푸터는 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며 퀴즈를 자동 활성화하지 않는다.
+- `allowCloseBeforeComplete: true`면 푸터에 보조 **닫기**를 표시해 제출 없이 중단할 수 있고(배경 Overlay가 꺼져 있으면 Alt+F4도 가능) 제출은 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며(푸터가 있으면 보조 닫기 표시) 퀴즈를 자동 활성화하지 않는다.
 - 이 모드는 로컬 영상 파일 경로 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
 - 영상만 보고 닫으면 `VIDEO_WATCHED`를 보내되 **퀴즈 완료로 처리하지 않는다**. 퀴즈 통과 후에만 `SUBMITTED`로 완료한다. 숨김 선택 시에는 기존 HIDDEN 정책을 따른다.
 - 새 모드를 사용하려면 WPF와 백엔드를 함께 갱신해야 한다. 기존 클라이언트는 `videoEnabled`를 이해하지 못한다.

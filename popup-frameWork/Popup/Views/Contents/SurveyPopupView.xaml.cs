@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Automation.Peers;
 using System.Windows.Media;
 
 
@@ -687,10 +688,29 @@ namespace Popup.Views.Contents
             ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
                 : completed == required ? $"필수 문항 {completed}/{required} 응답 완료"
                 : $"필수 문항 {completed}/{required} 응답 · 남은 {required - completed}문항";
+            bool changed = RequiredProgressText.Text != ResponseProgressText;
             RequiredProgressText.Text = ResponseProgressText;
             RequiredProgressText.Foreground = (Brush)FindResource("SurveyMutedText");
             SubmitButton.IsEnabled = CanSubmit;
+            // [설계 43] 제출 비활성 사유(필수 미응답)를 스크린리더에도 알린다. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
+            System.Windows.Automation.AutomationProperties.SetHelpText(SubmitButton, CanSubmit ? string.Empty : ResponseProgressText);
+            System.Windows.Automation.AutomationProperties.SetLiveSetting(RequiredProgressText, System.Windows.Automation.AutomationLiveSetting.Polite);
+            if (changed && SubmissionArea.Visibility == Visibility.Visible)
+                UIElementAutomationPeer.FromElement(RequiredProgressText)?.RaiseAutomationEvent(System.Windows.Automation.Peers.AutomationEvents.LiveRegionChanged);
             ResponseProgressChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>[설계 44] 초기 포커스: 첫 문항의 첫 입력 컨트롤. 잠긴 상태(비활성)면 옮기지 않는다.</summary>
+        internal bool FocusFirstAnswer()
+        {
+            if (!IsEnabled) return false;
+            foreach (SurveyQuestion question in _questions)
+            {
+                if (!_answerControls.TryGetValue(question.QuestionId, out FrameworkElement? control)) continue;
+                Control? target = control is Panel panel ? panel.Children.OfType<Control>().FirstOrDefault() : control as Control;
+                if (target != null && target.IsEnabled && target.Focusable) return target.Focus();
+            }
+            return false;
         }
 
         public void Submit()
@@ -732,7 +752,8 @@ namespace Popup.Views.Contents
                     Answers = answers,
                     Score = graded.Score,
                     Passed = graded.Passed,
-                    PassingScore = graded.PassingScore
+                    PassingScore = graded.PassingScore,
+                    IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers
                 };
             }
             else

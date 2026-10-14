@@ -55,7 +55,7 @@
 | `showDoNotShowAgain` | `false` | 다시 보지 않기 체크박스 표시. Footer가 있어야 화면에 보임 |
 | `footerAction` | `CLOSE` | Footer 버튼 동작. `CLOSE`(닫기) / `LINK_AND_CLOSE`(바로가기) / `SUBMIT`(제출, SURVEY·QUIZ 고정). 생략·미지원 값은 유형별 기본값 |
 | `footerLinkUrl` | 빈 문자열 | `LINK_AND_CLOSE`일 때 열 절대 HTTP/HTTPS URL |
-| `useBackgroundOverlay` | `true` | 팝업 표시 중 배경 클릭 차단·어둡게 표시 |
+| `useBackgroundOverlay` | `true` | 팝업 표시 중 배경 클릭 차단·어둡게 표시. 켜면 Alt+F4 등 키보드·외부 닫기를 막고 화면의 닫기·제출로만 닫힌다. 닫기·제출 수단이 화면에 없으면 막지 않는다(설계 44) |
 | `backgroundOverlayOpacity` | `0.45` | 배경 어둡기 0~1(범위 밖 값은 보정) |
 | `popupPosition` | `CENTER` | 주 모니터 작업 영역 기준 9방향 위치(`TOP_LEFT`~`BOTTOM_RIGHT`). 미지원 값은 `CENTER`. FULLSCREEN에서는 사용하지 않음 |
 | `headerFontSize` / `bodyFontSize` / `footerFontSize` | 없음(null) | 영역별 글자 크기. 없으면 XAML 기본 크기, 값이 있으면 10~40으로 보정 |
@@ -104,7 +104,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용. 1~3650(관리자 저장 시 서버 검증) |
 | `completionRatio` | VIDEO/동영상+퀴즈 | 1.0 | 누적 시청 완료 기준 0~1 |
 | `passingScore` | QUIZ | 없음 | WPF 로컬 채점 통과 점수 |
-| `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 Alt+F4 허용 여부 |
+| `allowCloseBeforeComplete` | VIDEO/동영상+퀴즈 | true | 완료 기준 전 닫기(푸터 닫기·Alt+F4) 허용 여부. false인 VIDEO는 기준 전 푸터 닫기를 비활성으로 두고 시청 %·기준 사유를 표시, true인 동영상+퀴즈는 보조 닫기 표시(설계 43) |
 
 기간·반복 정책 자체는 서버 내부 책임이며 WPF 응답 DTO에는 별도 반복 정책 필드를 두지 않는다.
 
