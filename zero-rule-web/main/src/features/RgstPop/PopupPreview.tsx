@@ -11,6 +11,8 @@ import {
   adaptiveMaximum,
   fitToImageLayout,
   imageSizeMode,
+  POPUP_FOOTER_HEIGHT,
+  POPUP_HEADER_HEIGHT,
   type FitToImageLayout,
   type Size,
 } from './imagePreviewLayout';
@@ -432,13 +434,15 @@ export default function PopupPreview({
           .filter((option) => option.isCorrect)
           .map((option) => option.optionId);
         const correctText = question.correctAnswer?.trim();
+        // 편집기와 같이 일치 방식이 비어 있으면 EXACT로 본다.
+        const matchMode = question.answerMatchMode ?? 'EXACT';
         const correct =
           question.questionType === 'TEXT'
             ? Boolean(
                 correctText &&
-                (question.answerMatchMode === 'CONTAINS'
+                (matchMode === 'CONTAINS'
                   ? answer?.text.trim().includes(correctText)
-                  : question.answerMatchMode === 'EXACT' && answer?.text.trim() === correctText),
+                  : matchMode === 'EXACT' && answer?.text.trim() === correctText),
               )
             : Boolean(
                 answer &&
@@ -566,7 +570,8 @@ export default function PopupPreview({
           overflow: 'hidden',
           borderRadius: 2,
           bgcolor: 'white',
-          ...(popup.popupType === 'IMAGE' ? {border: '1px solid #E5E7EB', boxSizing: 'border-box'} : {}),
+          // WPF PopupBodyBorder BorderThickness=0(설계 25)과 같이 IMAGE 창 테두리를 그리지 않는다.
+          ...(popup.popupType === 'IMAGE' ? {boxSizing: 'border-box'} : {}),
         }}
       >
         {isSurvey && (
@@ -599,13 +604,28 @@ export default function PopupPreview({
           </Box>
         )}
         {popup.showHeader && (
-          <Stack direction="row" alignItems="center" sx={{ height: popup.popupType === 'IMAGE' ? 48 : undefined, minHeight: popup.popupType === 'IMAGE' ? 48 : 52, px: 2, flexShrink: 0 }}>
+          // WPF PopupWindow.xaml HeaderRow(Height=40)는 유형과 관계없는 공통 행이다. 제목은 TextTrimming처럼 한 줄 말줄임으로 그린다.
+          // 미리보기 Header는 흰색이라 IMAGE 외 유형은 구분선을 Header 높이 안(border-box)에 둔다.
+          <Stack
+            direction="row"
+            alignItems="center"
+            sx={{
+              height: POPUP_HEADER_HEIGHT,
+              boxSizing: 'border-box',
+              pl: '18px',
+              pr: 2,
+              flexShrink: 0,
+              ...(popup.popupType !== 'IMAGE' ? { borderBottom: 1, borderColor: 'divider' } : {}),
+            }}
+          >
             <Typography
               fontWeight={700}
               sx={{
                 flex: 1,
                 minWidth: 0,
-                overflowWrap: 'anywhere',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
                 fontSize: headerFontSize ?? undefined,
               }}
             >
@@ -623,7 +643,6 @@ export default function PopupPreview({
             />
           </Stack>
         )}
-        {popup.showHeader && popup.popupType !== 'IMAGE' && <Divider />}
         <Box
           sx={{
             flex: 1,
@@ -738,7 +757,7 @@ export default function PopupPreview({
               sx={{
                 px: 2,
                 py: 1.5,
-                ...(popup.popupType === 'IMAGE' ? {height: 80, boxSizing: 'border-box'} : {}),
+                ...(popup.popupType === 'IMAGE' ? {height: POPUP_FOOTER_HEIGHT, boxSizing: 'border-box'} : {}),
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 1,

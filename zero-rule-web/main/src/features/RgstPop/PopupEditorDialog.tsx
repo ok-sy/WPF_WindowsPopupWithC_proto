@@ -23,7 +23,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import PopupPreview from './PopupPreview';
 import { displayImageSize, type Size } from './imagePreviewLayout';
-import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEditor';
+import PopupQuestionEditor, { validatePopupQuestions, withDefaultAnswerMatchMode } from './PopupQuestionEditor';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from './PopupRichTextEditor';
@@ -243,7 +243,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
-        setPopup(withNormalizedImageSizeMode({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 }));
+        setPopup(withNormalizedImageSizeMode({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100,
+          questions: withDefaultAnswerMatchMode(body.popup.questions ?? []) }));
         setBodyEditorKey((key) => key + 1);
         setTargetGroups(body.targetGroups ?? []);
       }
@@ -390,7 +391,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       </DialogTitle>
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
-          setPopup((current) => withNormalizedImageSizeMode({ ...template, popupId: current.popupId, questionTemplateId: null }));
+          setPopup((current) => withNormalizedImageSizeMode({ ...template, popupId: current.popupId, questionTemplateId: null,
+            questions: withDefaultAnswerMatchMode(template.questions ?? []) }));
           setBodyEditorKey((key) => key + 1);
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
@@ -404,9 +406,16 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField required label="팝업 제목" value={popup.title} inputProps={{ maxLength: 200 }} onChange={(e) => updatePopup('title', e.target.value)} />
               <TextField select label="팝업 유형" value={isVideoQuiz ? 'VIDEO_QUIZ' : popup.popupType} onChange={(e) => {
                 const combined = e.target.value === 'VIDEO_QUIZ';
-                setPopup((previous) => ({ ...previous, popupType: combined ? 'QUIZ' : e.target.value as PopupType,
+                const nextType = combined ? 'QUIZ' : e.target.value as PopupType;
+                setPopup((previous) => ({ ...previous, popupType: nextType,
                   content: { ...previous.content, videoEnabled: combined },
-                  completionRatio: combined ? previous.completionRatio ?? 0.8 : previous.completionRatio }));
+                  // 일반 IMAGE는 서버 응답의 width/height가 null이다. 이미지 크기 모드 변경과 같은 방식으로 보정해
+                  // 다른 유형으로 바꿔 저장할 때 "팝업 너비와 높이는 필수" 거절을 막는다.
+                  width: previous.width ?? Number(previous.content.width ?? 560),
+                  height: previous.height ?? Number(previous.content.height ?? 420),
+                  // 동영상+퀴즈 기본 0.8, 일반 VIDEO는 입력값 유지(비우면 1.0), 동영상이 없는 유형은 저장 요청에 남지 않게 비운다.
+                  completionRatio: combined ? previous.completionRatio ?? 0.8 : nextType === 'VIDEO' ? previous.completionRatio : null,
+                  questions: nextType === 'QUIZ' ? withDefaultAnswerMatchMode(previous.questions) : previous.questions }));
               }}>
                 {popupTypes.map((type) => <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>)}
                 <MenuItem value="VIDEO_QUIZ">동영상 + 퀴즈</MenuItem>
@@ -477,7 +486,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Stack>}
 
             {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
-              onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions, questionTemplateId: templateId }))} />}
+              onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions: withDefaultAnswerMatchMode(questions), questionTemplateId: templateId }))} />}
             {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>

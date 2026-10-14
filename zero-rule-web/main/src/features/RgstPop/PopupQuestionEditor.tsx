@@ -30,6 +30,16 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
   return null;
 }
 
+/**
+ * 주관식 문항의 비어 있는 정답 비교 방식을 실제 값 'EXACT'로 채운다.
+ * 서버(PopupQuestionRules)는 QUIZ 주관식에 answerMatchMode를 요구하므로 화면 표시(?? 'EXACT')만으로는 저장이 거절된다.
+ * 서버 응답·문항 템플릿·SURVEY→QUIZ 전환처럼 값이 null로 들어오는 경로에서 사용한다.
+ */
+export function withDefaultAnswerMatchMode(questions: PopupQuestion[]): PopupQuestion[] {
+  if (!questions.some((q) => q.questionType === 'TEXT' && !q.answerMatchMode)) return questions;
+  return questions.map((q) => q.questionType === 'TEXT' && !q.answerMatchMode ? { ...q, answerMatchMode: 'EXACT' } : q);
+}
+
 export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? 0) * 100), 0) / 100;

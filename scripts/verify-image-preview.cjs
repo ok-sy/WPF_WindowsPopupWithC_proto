@@ -4,13 +4,16 @@ const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-v
 const compiled = require('../zero-rule-web/node_modules/next/dist/compiled/webpack/webpack');
 const WebSocket = require('../zero-rule-web/node_modules/next/dist/compiled/ws');
 compiled.init(); fs.mkdirSync(output, {recursive: true});
+// PopupPreview가 Header 로고 경로에 쓰는 Next 전용 모듈을 하네스용으로 대체한다(verify-rich-text-49.cjs와 같은 방식).
+fs.writeFileSync(path.join(output, 'urls-shim.js'), 'exports.routerUrlOf = (url) => url;');
 let browser, socket, server, checks = 0;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 (async () => {
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-image-preview-entry.tsx'), output: {path: output, filename: 'bundle.js'},
-    resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules']},
+    resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
+      alias: {'@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
   server = http.createServer((req, res) => {res.setHeader('Content-Type', req.url === '/bundle.js' ? 'application/javascript' : 'text/html; charset=utf-8');
@@ -61,6 +64,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run("(()=>{const i=document.querySelector('img'),r=i.getBoundingClientRect();return r.width<=344 && r.height<=250 && getComputedStyle(i).objectFit==='contain';})()"), 'Adaptive contains full image within fixed window');
   await run("window.scenario('FIT_TO_IMAGE', false, 900, 300, '긴 설명 '.repeat(300), 100, 400, true)"); await pause(150);
   check(await run("(()=>{const img=document.querySelector('img');const text=Array.from(document.querySelectorAll('p')).find(e=>e.textContent.startsWith('긴 설명'));let p=text;while(p && getComputedStyle(p).overflowY!=='auto')p=p.parentElement;return !!p && p.scrollHeight>p.clientHeight && p.getBoundingClientRect().top>img.parentElement.getBoundingClientRect().top && Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='닫기');})()"), 'Bottom description scrolls while footer stays available');
+  // WPF PopupWindow 크롬: 가로 28+28+24+24+0=104, 세로 24+24+24+24+0=96, HeaderRow 40, FooterRow 80, 이미지 테두리 1+1.
+  check(await run('JSON.stringify(window.chromeLayout(false,false).window)') === JSON.stringify({width: 506, height: 298}), 'FIT_TO_IMAGE chrome matches WPF without header/footer');
+  check(await run('JSON.stringify(window.chromeLayout(true,false).window)') === JSON.stringify({width: 506, height: 338}), 'FIT_TO_IMAGE header adds WPF HeaderRow 40');
+  check(await run('JSON.stringify(window.chromeLayout(true,true).window)') === JSON.stringify({width: 506, height: 418}), 'FIT_TO_IMAGE header/footer add 40+80');
+  check(await run('window.chromeLayout(false,false,2000,100).window.width') === 900, 'Recommended width is clamped to 90% work area');
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'clipped-with-description.png'), Buffer.from(shot.data, 'base64'));
+  for (const type of ['IMAGE', 'TEXT']) {
+    await run(`window.renderChrome('${type}')`); await pause(150);
+    const chrome = await run(`(()=>{const t=Array.from(document.querySelectorAll('p')).find(e=>e.textContent==='헤더');const h=t.parentElement.getBoundingClientRect();const paper=document.querySelector('.MuiPaper-root');const cs=getComputedStyle(paper);return {header:h.height, border:cs.borderTopWidth+'/'+cs.borderLeftWidth, dividers:document.querySelectorAll('hr').length};})()`);
+    check(chrome.header === 40, type + ' header height matches WPF HeaderRow 40: ' + chrome.header);
+    if (type === 'IMAGE') check(chrome.border === '0px/0px', 'IMAGE paper has no border like WPF PopupBodyBorder 0: ' + chrome.border);
+  }
   console.log('PASS: ' + checks + ' IMAGE preview checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

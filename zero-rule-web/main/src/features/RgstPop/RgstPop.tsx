@@ -106,12 +106,17 @@ export default function RgstPop() {
       const activeMatched = activeFilter === 'ALL' || popup.activeYn === activeFilter;
       return keywordMatched && typeMatched && activeMatched;
     });
-    const sorted = [...filtered].sort((left, right) => {
+    // '최근 생성 10개'는 우선순위와 무관하게 생성 시각 내림차순(최신 먼저)으로 10개를 고른다.
+    if (recentOnly) {
+      return [...filtered]
+        .sort((left, right) => dateValue(right.createdAt) - dateValue(left.createdAt))
+        .slice(0, 10);
+    }
+    return [...filtered].sort((left, right) => {
       const orderDifference = (left.displayOrder ?? 100) - (right.displayOrder ?? 100);
       if (orderDifference !== 0) return orderDifference;
       return dateValue(right.createdAt) - dateValue(left.createdAt);
     });
-    return recentOnly ? sorted.slice(0, 10) : sorted;
   }, [activeFilter, keyword, popupType, popups, recentOnly]);
 
   const updateActive = async (popup: AdminPopupListItem, active: boolean) => {
@@ -153,6 +158,7 @@ export default function RgstPop() {
                 startIcon={<HistoryIcon />}
                 onClick={() => {
                   setRecentOnly((value) => !value);
+                  // 토글 때 서버 목록을 다시 조회해 그 사이 생성된 팝업도 '최근 생성'에 반영한다(기존 동작 유지).
                   setRefreshToken(Date.now());
                 }}
               >

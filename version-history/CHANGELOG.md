@@ -2,6 +2,20 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-05 — TODO50-A 관리자 웹 동작 불일치 수정(A2·A3·A6·A7·A8)
+
+- 이유: 전수 점검에서 관리자 웹 미리보기·편집 값이 WPF·서버 계약과 어긋난 경로 확인(정합성 보완).
+- 변경:
+  - A2 `imagePreviewLayout.ts`: IMAGE 크롬 상수를 WPF `PopupWindow` 실측과 일치(가로 28+28+24+24 = 104, 세로 24×4 = 96 + Header 40 + Footer 80, 본문 테두리 0, 이미지 테두리 2). 측정 폭·추천 폭이 같은 상수 사용(기존 106/108 불일치 해소). `PopupPreview.tsx` Header를 모든 유형 40(제목 한 줄 말줄임), IMAGE Paper 테두리 제거.
+  - A3 `PopupEditorDialog.tsx`: 유형 변경 시 width/height가 비면 content 크기 또는 560×420으로 보정(일반 IMAGE를 불러와 다른 유형으로 바꿀 때 저장 거절 해소).
+  - A6 `PopupQuestionEditor.tsx`·`PopupEditorDialog.tsx`·`PopupPreview.tsx`: QUIZ 주관식 `answerMatchMode` 미지정 시 EXACT를 실제 값으로 채움(상세 조회·팝업 템플릿·문항 템플릿·QUIZ 전환), 미리보기 채점도 같은 기본값.
+  - A7 `RgstPop.tsx`: '최근 생성 10개'를 생성 시각 내림차순으로 선택·표시.
+  - A8 `PopupEditorDialog.tsx`: 동영상 없는 유형으로 바꾸면 완료 비율 비움.
+  - 검증 스크립트 `verify-image-preview.cjs`·entry: `@/lib/urls` alias 보완, 크롬 수치 4건·Header/테두리 DOM 3건 추가. 미리보기 대조 문서 Header·IMAGE 크롬 설명 보완.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/(imagePreviewLayout.ts, PopupPreview.tsx, PopupEditorDialog.tsx, PopupQuestionEditor.tsx, RgstPop.tsx), scripts/(verify-image-preview.cjs, verify-image-preview-entry.tsx), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/50_*, version-history/CHANGELOG.md.
+- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 통과, `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과(로컬 headless Edge). A3·A6·A8은 실제 관리자 화면 저장 미확인.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-04 — TODO50-S1 원격 개발 DB 평문 비밀번호 처리(제거 후 원복)
 
 - 이유: 전수 점검에서 원격 개발 DB 비밀번호가 저장소 추적 파일(설정 주석, 서버 JNDI 기본값)에 평문으로 있음을 확인해 정리 대상으로 분류.
