@@ -86,10 +86,6 @@ if (-not $SkipBackend) {
         $dbLabel = "local XE ($LocalDbUrl, popup schema=$LocalPopupSchema)"
     } else {
         $dbLabel = 'remote dev DB 192.168.114.71:4004/XE (VPN required, popup tables in app schema)'
-        # [설계 50 S1] 원격 개발 DB 비밀번호는 저장소에 없다. 현재 세션의 ZERO_RULE_DB_PASSWORD를 백엔드 창이 물려받는다.
-        if ([string]::IsNullOrWhiteSpace($env:ZERO_RULE_DB_PASSWORD)) {
-            Write-Warning 'ZERO_RULE_DB_PASSWORD is not set. The backend cannot log in to the remote dev DB until it is set.'
-        }
     }
     if ($TokenTtl) {
         # WpfAuthPrototypeProps.tokenTtlMinutes (Duration, 단위 없는 숫자=분) — Spring relaxed binding으로 환경변수가 yml 값을 덮어쓴다
