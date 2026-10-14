@@ -37,9 +37,9 @@
 ## 2026-10-15-08 — TODO50-B 관리자 웹 불필요 코드 정리
 
 - 이유: 설계 18·23·37·49 이후 쓰이지 않게 된 분기·인자·export와 중복 구현이 남아 있어 정리(삭제 전 호출부·스크립트·계약 필드 참조 확인).
-- 변경: `PopupPreview` `previewSize()`·`fitContainer` 미지정 경로 삭제(항상 부모 영역 채움), FILL 잔재 이름 정리·도달 불가 분기 삭제, `adaptiveMaximum` 인라인, QUIZ 저장 키 `videoTitle` 삭제, TEXT 콘텐츠 제목 분기 삭제, `applyFormat` `focusEditor` 인자 삭제, 파일 밖 미사용 export(`isAllowedColor`·`RichAlignment`·`positive`·`FORMAT_KEYS`·`FormatKey`) 제거, 문항 템플릿 선택을 유형 전환 시 초기화, 공용 `popupCommon.ts`(epoch 판별 `popupDateMillis`, `POPUP_TYPE_LABELS`, 글자 크기 10~40 `popupFontSize`) 추가 후 중복 3곳씩 대체(FIT_TO_IMAGE 설명 높이 계산에도 같은 보정), `PopupAdminApi` 수정 이력성 주석 정리. 계약 필드는 유지.
+- 변경: `PopupPreview` `previewSize()`·`fitContainer` 미지정 경로 삭제(항상 부모 영역 채움), FILL 잔재 이름 정리·도달 불가 분기 삭제, `adaptiveMaximum` 인라인, QUIZ 저장 키 `videoTitle` 삭제, TEXT 콘텐츠 제목 분기 삭제, `applyFormat` `focusEditor` 인자 삭제, 파일 밖 미사용 export(`isAllowedColor`·`RichAlignment`·`positive`·`FORMAT_KEYS`·`FormatKey`) 제거, 문항 템플릿 선택을 유형 전환 시 초기화(후속 보완: 최초 구현은 선택을 고른 유형과 함께 보관해 다른 유형에서만 숨겨, SURVEY 선택 → QUIZ → SURVEY 복귀 시 이전 선택이 되살아났음 — 유형이 바뀌면 렌더 중 선택 상태를 실제로 비우도록 수정, 목록 재조회가 없도록 다시 마운트 방식은 쓰지 않음), 공용 `popupCommon.ts`(epoch 판별 `popupDateMillis`, `POPUP_TYPE_LABELS`, 글자 크기 10~40 `popupFontSize`) 추가 후 중복 3곳씩 대체(FIT_TO_IMAGE 설명 높이 계산에도 같은 보정), `PopupAdminApi` 수정 이력성 주석 정리. 계약 필드는 유지.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/(PopupPreview.tsx, PopupEditorDialog.tsx, PopupQuestionTemplatePicker.tsx, PopupRichTextEditor.tsx, PopupTemplateDialog.tsx, RgstPop.tsx, imagePreviewLayout.ts, popupRichText.ts, popupRichTextFormat.ts, popupCommon.ts), zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts, scripts/(verify-image-preview-entry.tsx, verify-rich-text-49-entry.tsx), docs/design/50_*, version-history/CHANGELOG.md.
-- 검증: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0(기존 경고 3건), `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과. 실제 관리자 화면 저장·템플릿 선택 초기화는 미확인.
+- 검증: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0(기존 경고 3건), `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과. 후속 보완 후 신규 `scripts/verify-question-template-picker.cjs`(headless Edge, 실제 MUI Select 조작) 7건 통과 — 보완 전 코드에서는 "SURVEY 복귀 시 이전 선택 복원"으로 실패함을 확인. 실제 관리자 화면 저장은 미확인.
 - 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-07 — TODO50-A 서버 게시중단 후 결과 수용(A9)·계약 sizeMode AUTO 표기(A5)
