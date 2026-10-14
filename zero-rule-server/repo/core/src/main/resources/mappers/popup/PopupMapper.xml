@@ -689,7 +689,12 @@
           AND POPUP_ID = #{popupId}
     </select>
 
-    <!-- 활성 사용자와 제출 기간을 함께 확인하고 채점 설정을 조회한다. 별칭은 대소문자 무관하게 레코드 필드에 매핑된다. -->
+    <!--
+        활성 사용자를 확인하고 채점 설정을 조회한다. 별칭은 대소문자 무관하게 레코드 필드에 매핑된다.
+        requirePublished=true면 팝업 활성·게시 기간(신규 조회의 게시 조건)도 함께 확인한다.
+        [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은 requirePublished=false로 호출해 게시중단(활성 해제·기간 종료)
+        뒤에도 popupId로 설정을 읽는다. 팝업 행이 없으면(삭제) 결과가 없다.
+    -->
     <select id="selectSubmissionContext"
             resultType="server.domain.popup.PopupSubmissionContext">
         SELECT
@@ -702,8 +707,10 @@
           ON u.EMPLOYEE_NO = #{userId}
          AND u.ACTIVE_YN = 'Y'
         WHERE n.POPUP_ID = #{popupId}
+        <if test="requirePublished">
           AND n.ACTIVE_YN = 'Y'
           AND <include refid="nowKst"/> BETWEEN n.DISPLAY_START_AT AND n.DISPLAY_END_AT
+        </if>
     </select>
 
     <!--
@@ -816,6 +823,7 @@
         )
     </update>
 
+    <!-- 영상 완료 기준 조회. requirePublished의 의미는 selectSubmissionContext와 같다(결과 수용은 false). -->
     <select id="selectVideoPopupContext"
             resultType="server.domain.popup.VideoPopupContext">
         SELECT
@@ -831,8 +839,10 @@
               SELECT 1 FROM ${popupSchemaPrefix}POPUP_CONTENT vc
               WHERE vc.POPUP_ID = n.POPUP_ID AND vc.MEDIA_URL IS NOT NULL
           )))
+        <if test="requirePublished">
           AND n.ACTIVE_YN = 'Y'
           AND <include refid="nowKst"/> BETWEEN n.DISPLAY_START_AT AND n.DISPLAY_END_AT
+        </if>
     </select>
 
     <!-- 낮은 재생값으로 다시 전송돼도 누적 최대값과 완료 상태는 되돌리지 않는다 (GREATEST + CASE 유지). -->
@@ -882,6 +892,11 @@
           AND POPUP_ID = #{popupId}
     </select>
 
+    <!--
+        WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자와 팝업 행 존재만 본다.
+        [설계 47-4] 게시중단 전에 표시된 전달 건(EXPIRED 포함)의 결과를 받기 위해 팝업 ACTIVE_YN은 확인하지 않는다
+        (활성 해제로 게시중단해도 수용). 팝업 행이 삭제됐으면 0.
+    -->
     <select id="countActiveUserAndPopup" resultType="int">
         SELECT COUNT(*)
         FROM ${popupSchemaPrefix}APP_USER u
@@ -889,7 +904,6 @@
         WHERE u.EMPLOYEE_NO = #{userId}
           AND u.ACTIVE_YN = 'Y'
           AND n.POPUP_ID = #{popupId}
-          AND n.ACTIVE_YN = 'Y'
     </select>
 
     <select id="selectAdminQuestionTemplates" resultType="server.domain.popup.AdminQuestionTemplate">

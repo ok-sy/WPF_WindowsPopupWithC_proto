@@ -2,6 +2,17 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-07 — TODO50-A 서버 게시중단 후 결과 수용(A9)·계약 sizeMode AUTO 표기(A5)
+
+- 이유: 설계 47-4는 게시중단 전에 표시된 팝업의 결과(EXPIRED 전달 건 포함)를 수용하기로 확정했으나, 결과 처리가 신규 조회와 같은 게시 조건을 다시 검사해 활성 해제·기간 종료·대상 변경 후 결과를 거절하는 경로가 있었음(확정 정책과 구현 불일치). 계약서 sizeMode ENUM의 `AUTO`는 서버가 내려주지 않는 값인데 구분 표기가 없었음.
+- 변경:
+  - A9 서버: `PopupMapper.selectSubmissionContext`·`selectVideoPopupContext`에 `requirePublished` 매개변수 추가(true일 때만 활성·기간 조건). `countActiveUserAndPopup`에서 팝업 `ACTIVE_YN` 조건 제거(활성 사용자·팝업 행 존재만 확인). `PopupService`에 전달 건 결과용 `submitDeliveredResponse`·`saveDeliveredVideoProgress` 추가(노출 자격 재검사 없음, 문항·채점·저장 규칙은 공통), `WpfResultProcessor`가 제출·시청·VIDEO+QUIZ 판별을 이 경로로 처리. 전달 건 소유권·popupId 일치·DONE 거절·영수증 DUPLICATE·사용자 잠금은 유지, 신규 조회·nextStatus 쿼리는 변경 없음.
+  - A5 계약서: sizeMode `AUTO`를 WPF 전용 값(서버·관리자 웹 미저장, 응답에 나오지 않음)으로 명시.
+  - 계약서 WPF_NOT_ELIGIBLE 설명을 전달 건 기준 수용 규칙으로 보완, 설계 47-4에 당시 구현 불일치와 50 A9 수정 연결 기록.
+- 주요 파일: zero-rule-server/repo/core/src/main/(java/server/repo/core/mapper/popup/PopupMapper.java, resources/mappers/popup/PopupMapper.xml), zero-rule-server/service/core/src/main/java/server/service/core/popup/(PopupService.java, wpf/WpfResultProcessor.java), 테스트(WpfResultProcessorTest, PopupMapperOracleStatementTest, PopupSubmitScoreTest, PopupActionOptionsTest, 신규 PopupDeliveredResultTest, 신규 WpfDeliveredResultDatabaseTest), docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(47_*, 50_*), version-history/CHANGELOG.md.
+- 검증: `:service:core:test --tests "server.service.core.popup.*"` 97건 중 93 통과·실패 0·skip 4(DB 환경변수 미설정). 로컬 XE에서 `WpfDeliveredResultDatabaseTest`(게시중단 3방식 × 결과 6종 18조합, 세이브포인트·롤백 전용)와 `WpfPopupDatabaseTest` 왕복 통과. `compileJava compileTestJava` 성공. 원격 개발 DB 실행·실제 WPF 왕복은 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-06 — TODO50-A WPF 동작 불일치 수정(A1·A4·A10)
 
 - 이유: 숨김 체크박스 문구가 실제 숨김 일수와 다르고, 결과 큐에 호출되지 않는 경로와 실제와 다른 종료 전송 주석이 남아 있으며, 일반 VIDEO는 `allowCloseBeforeComplete=false`여도 창 닫기(Alt+F4)로 시청 기준 전에 닫혀 계약과 불일치.

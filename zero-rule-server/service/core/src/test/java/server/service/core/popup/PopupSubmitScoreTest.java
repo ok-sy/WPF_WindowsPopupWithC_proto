@@ -39,7 +39,7 @@ class PopupSubmitScoreTest {
     }
 
     private void context(String type, BigDecimal passingScore) {
-        when(mapper.selectSubmissionContext("E1001", "Q1"))
+        when(mapper.selectSubmissionContext("E1001", "Q1", true))
                 .thenReturn(new PopupSubmissionContext("Q1", type, 20L, passingScore));
     }
 

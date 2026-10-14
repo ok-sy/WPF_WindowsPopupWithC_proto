@@ -279,7 +279,7 @@ X-Client-Version: 1.0.0
 | popupType | string | O | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | title | string | O | `""` | 공통 Header 제목 |
 | displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 동시에 열리는 다른 서버 팝업은 없다 |
-| sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO |
+| sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN. `AUTO`는 WPF만 지원하는 값으로 서버·관리자 웹은 저장하지 않아(서버 검증·DB 제약 `CK_POPUP_SIZE_MODE`) 현재 응답에 나오지 않는다 |
 | width | number | IMAGE 일반 모드 외 | `900` | 일반 IMAGE는 생략하고 content.width 사용, ORIGINAL 및 다른 유형은 창 크기 |
 | height | number | IMAGE 일반 모드 외 | `620` | 일반 IMAGE는 생략하고 content.height 사용 |
 | widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
@@ -316,7 +316,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - FIXED: 작업 영역 95% 이내로 최종 제한. IMAGE는 고정 최대값을 사용하지 않고 작업 영역 90% 적용
 - RATIO: 작업 영역 비율 사용
 - FULLSCREEN: 주 모니터 전체
-- AUTO: 콘텐츠 기준 자동 크기
+- AUTO: 콘텐츠 기준 자동 크기(WPF 전용 — 서버 응답에는 나오지 않음)
 - 잘못된 값은 일부 모드에서 기본값/보정값으로 처리되지만, 백엔드는 정상 범위 값을 제공해야 한다.
 
 ---
@@ -1056,7 +1056,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | REJECTED | WPF_INVALID_RESULT | 결과 형식 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
 | REJECTED | WPF_INVALID_DELIVERY | 유효한 전달 건이 아님(존재하지 않는 deliveryId, 다른 사용자의 전달 건, 전달 건의 팝업과 popupId 불일치) |
 | REJECTED | WPF_DELIVERY_COMPLETED | 다른 resultId의 결과가 이미 저장된 전달 건(같은 resultId 재전송은 DUPLICATE) |
-| REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(대상 아님, 유효한 영상 팝업 아님, 사용자·팝업 확인 실패) |
+| REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(비활성 사용자, 팝업 행 없음, 유효한 영상 팝업 아님). 결과 수용은 유효한 전달 건(`deliveryId`의 사용자·popupId 일치, 미완료)을 기준으로 하며 팝업의 현재 활성·게시 기간·대상 여부는 다시 보지 않는다 — 게시중단 전에 표시된 건(EXPIRED 전달 건 포함)의 결과는 수용(설계 47-4·50 A9) |
 | REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
 | REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지 등) |
 | REJECTED | WPF_INVALID_HIDE_DAYS | 숨김 일수 업무 검증 실패 |
@@ -1199,7 +1199,7 @@ SIMULTANEOUS
 FIXED
 RATIO
 FULLSCREEN
-AUTO
+AUTO      # WPF 전용. 서버·관리자 웹은 저장하지 않아 응답에 나오지 않는다
 ```
 
 ## popupPosition

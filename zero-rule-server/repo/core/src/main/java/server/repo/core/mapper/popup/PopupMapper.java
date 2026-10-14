@@ -150,9 +150,16 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId);
 
+    /**
+     * 설문·퀴즈 채점 설정. 활성 사용자는 항상 확인한다.
+     *
+     * @param requirePublished true면 팝업 활성·게시 기간도 확인한다. [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은
+     *                         false로 호출해 게시중단 뒤에도 popupId로 읽는다(팝업 행이 없으면 null).
+     */
     PopupSubmissionContext selectSubmissionContext(
             @Param("userId") String userId,
-            @Param("popupId") String popupId);
+            @Param("popupId") String popupId,
+            @Param("requirePublished") boolean requirePublished);
 
     /**
      * XML 바인딩용. MERGE 후 {@code <selectKey order="AFTER">}가 사용자·팝업의 RESPONSE_ID를
@@ -206,9 +213,13 @@ public interface PopupMapper {
             @Param("popupId") String popupId,
             @Param("passedYn") String passedYn);
 
+    /**
+     * 영상(VIDEO·동영상+퀴즈) 완료 기준. requirePublished의 의미는 {@link #selectSubmissionContext(String, String, boolean)}와 같다.
+     */
     VideoPopupContext selectVideoPopupContext(
             @Param("userId") String userId,
-            @Param("popupId") String popupId);
+            @Param("popupId") String popupId,
+            @Param("requirePublished") boolean requirePublished);
 
     int upsertVideoProgress(
             @Param("userId") String userId,
@@ -224,6 +235,10 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId);
 
+    /**
+     * WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자이고 팝업 행이 있으면 1 이상.
+     * [설계 47-4] 게시중단 전에 표시된 전달 건의 결과를 받기 위해 팝업 활성 여부는 보지 않는다.
+     */
     int countActiveUserAndPopup(
             @Param("userId") String userId,
             @Param("popupId") String popupId);

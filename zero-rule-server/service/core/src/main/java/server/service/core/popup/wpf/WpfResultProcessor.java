@@ -20,7 +20,8 @@ import server.service.core.popup.PopupService;
  *
  * <p>[추가 이유 — 기준 3·4] 기존에는 hide / responses / video-progress / events 4개 API가 각각 처리하던 일을
  * 한 진입점에서 분배한다. 검증·채점·완료 판정 규칙은 기존 {@link PopupService}의 공개 메서드
- * (hidePopup, submitResponse, saveVideoProgress)를 그대로 호출해 두 API 계약이 어긋나지 않게 한다.
+ * (hidePopup, submitDeliveredResponse, saveDeliveredVideoProgress — submitResponse·saveVideoProgress와 같은 검증·저장 규칙이며
+ * 게시 조건 재검사만 없다)를 호출해 두 API 계약이 어긋나지 않게 한다.
  * 이 클래스가 새로 하는 일은 (1) 표시·닫기 정보를 결과와 함께 1회 반영, (2) resultId 멱등 처리다.</p>
  *
  * <p>[트랜잭션] {@link #processOne}은 REQUIRES_NEW다. 항목 하나의 실패(예외)는 그 항목만 롤백하고
@@ -36,6 +37,10 @@ import server.service.core.popup.PopupService;
  * 전달 건을 종료하며 재노출 유예(저장 시각 + pollingIntervalSeconds)를 기록한다. 일반 안내(TEXT·IMAGE)의 닫기(CLOSED,
  * Footer 닫기·바로가기 포함)는 완료로 처리해 이후 조회에서 제외한다. 설문·퀴즈·영상은 기존 제출·통과·시청 완료 조건을 유지하고,
  * 미완료로 닫으면 유예 기간 동안만 제외된다.</p>
+ *
+ * <p>[설계 47-4] 게시중단 전에 표시된 팝업의 결과는 수용한다(재조회로 EXPIRED가 된 전달 건 포함). 결과 수용 조건은
+ * 유효한 전달 건(소유 사번·팝업 일치·미종료)과 활성 사용자·팝업 행 존재이며, 신규 조회의 게시 조건(팝업 활성·게시 기간·대상)은
+ * 다시 따지지 않는다. 다음 후보 유무(nextStatus)는 호출자가 신규 조회 조건 그대로 계산한다.</p>
  */
 @Service
 public class WpfResultProcessor {
@@ -85,7 +90,7 @@ public class WpfResultProcessor {
     }
 
     /**
-     * CLOSED: 활성 사용자·팝업 확인 후 표시·닫기 정보를 반영한다.
+     * CLOSED: 활성 사용자·팝업 존재 확인 후 표시·닫기 정보를 반영한다.
      * [설계 35] 일반 안내(TEXT·IMAGE)는 닫기가 곧 확인이므로 완료로 처리한다. 그 밖의 유형(설문·퀴즈·영상)의 닫기는
      * 완료 전 닫기라 완료 상태를 건드리지 않는다(전달 건 재노출 유예만 적용).
      */
@@ -134,7 +139,8 @@ public class WpfResultProcessor {
     }
 
     /**
-     * SUBMITTED: 기존 submitResponse에 위임한다(노출 자격 재검사·문항 검증·응답 upsert·완료 표시).
+     * SUBMITTED: submitDeliveredResponse에 위임한다(문항 검증·응답 upsert·완료 표시). [설계 47-4] 전달 건을 이미 확인했으므로
+     * 게시 조건(활성·기간·대상)을 다시 검사하지 않는다.
      * resultId를 clientRequestId로 넘겨 POPUP_RESPONSE.CLIENT_REQUEST_ID에 남긴다.
      * SURVEY는 passingScore=null → 0점 기준 통과로 완료 처리하므로 제출 즉시 COMPLETED가 된다.
      *
@@ -146,22 +152,22 @@ public class WpfResultProcessor {
         if (item.answers().isEmpty()) {
             throw new IllegalArgumentException("SUBMITTED 결과에는 answers가 1개 이상 필요합니다.");
         }
-        var videoContext = popupMapper.selectVideoPopupContext(employeeNo, item.popupId());
+        var videoContext = popupMapper.selectVideoPopupContext(employeeNo, item.popupId(), false);
         if (videoContext != null && "QUIZ".equals(videoContext.popupType())) {
             WpfVideoProgress video = item.video();
             if (video == null) throw new IllegalArgumentException("동영상+퀴즈 제출에는 영상 시청 정보가 필요합니다.");
-            VideoProgressResponseDto progress = popupService.saveVideoProgress(item.popupId(), employeeNo,
+            VideoProgressResponseDto progress = popupService.saveDeliveredVideoProgress(item.popupId(), employeeNo,
                     video.durationSeconds(), video.positionSeconds(), video.maximumPositionSeconds(), video.watchedSeconds());
             if (!progress.completed()) throw new IllegalArgumentException("영상 시청 완료 비율을 충족해야 퀴즈를 제출할 수 있습니다.");
         }
-        PopupSubmitResponseDto submitted = popupService.submitResponse(
+        PopupSubmitResponseDto submitted = popupService.submitDeliveredResponse(
                 item.popupId(), item.resultId(), employeeNo, item.answers(), item.score(), item.passed());
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
         return WpfResultItemResponse.accepted(item);
     }
 
     /**
-     * VIDEO_WATCHED: 기존 saveVideoProgress에 위임한다(비율 계산·완료 판정·최대값 유지).
+     * VIDEO_WATCHED: saveDeliveredVideoProgress에 위임한다(비율 계산·완료 판정·최대값 유지, 게시 조건 재검사 없음).
      * 실시간 진행률 대신 종료 시 1회 누적값이 들어오지만 판정 규칙은 같다.
      */
     private WpfResultItemResponse handleVideo(String employeeNo, WpfResultCommand item) {
@@ -170,7 +176,7 @@ public class WpfResultProcessor {
             throw new IllegalArgumentException("VIDEO_WATCHED 결과에는 video 블록이 필요합니다.");
         }
         // 시청 비율 계산·완료 판정·최대값 유지는 서버 내부 처리이며 [설계 34-05] 비율은 응답에 싣지 않는다.
-        popupService.saveVideoProgress(
+        popupService.saveDeliveredVideoProgress(
                 item.popupId(), employeeNo, video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds());
         recordDisplayAndClose(employeeNo, item);
@@ -184,7 +190,10 @@ public class WpfResultProcessor {
         }
     }
 
-    /** CLOSED/HIDDEN은 노출 자격을 다시 따지지 않고(기존 이벤트 API와 동일) 활성 사용자·팝업 존재만 확인한다. */
+    /**
+     * CLOSED/HIDDEN은 노출 자격을 다시 따지지 않고(기존 이벤트 API와 동일) 활성 사용자·팝업 존재만 확인한다.
+     * [설계 47-4] 팝업 활성 여부도 보지 않아 활성 해제로 게시중단한 뒤에도 결과를 받는다. 팝업 행이 없으면 거절.
+     */
     private void requireActiveUserAndPopup(String employeeNo, String popupId) {
         if (popupMapper.countActiveUserAndPopup(employeeNo, popupId) == 0) {
             throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다. popupId=" + popupId);

@@ -55,7 +55,9 @@ import java.util.stream.Collectors;
  * 통합되어, 구 WPF-01~06 전용이던 {@code getPopups(userId)}, {@code recordPopupEvent}, {@code getPopupStatuses},
  * 정답 제외 문항 조회 {@code loadPublicQuestions}와 그 보조 오버로드를 삭제했다. 목록은 WpfPopupService,
  * 결과는 WpfResultProcessor가 담당하며, 이 클래스의 {@code hidePopup}·{@code submitResponse}·
- * {@code saveVideoProgress}는 WpfResultProcessor가 위임 호출하므로 유지한다.</p>
+ * {@code saveVideoProgress}는 WpfResultProcessor가 위임 호출하므로 유지한다.
+ * [설계 47-4] WPF 결과는 전달 건 기준으로 받으므로 WpfResultProcessor는 게시 조건을 다시 따지지 않는
+ * {@code submitDeliveredResponse}·{@code saveDeliveredVideoProgress}를 호출한다.</p>
  */
 @Service
 public class PopupService {
@@ -396,6 +398,37 @@ public class PopupService {
             List<PopupSubmitAnswer> answers,
             Double clientScore,
             Boolean clientPassed) {
+        return submitResponse(popupId, clientRequestId, userId, answers, clientScore, clientPassed, true);
+    }
+
+    /**
+     * [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 제출 결과를 저장한다. 호출자(WpfResultProcessor)가 전달 건의 소유 사번·
+     * 팝업 일치·미종료를 먼저 확인한 경우에만 쓴다.
+     *
+     * <p>게시중단 전에 표시된 팝업의 결과는 수용하므로 신규 조회의 게시 조건(팝업 활성·게시 기간·대상)을 다시 따지지 않고,
+     * 활성 사용자와 popupId의 채점 설정만 확인한다. 팝업 행이 없으면(삭제) 거절한다. 문항·선택지 검증과 저장 규칙은
+     * {@link #submitResponse(String, String, String, List, Double, Boolean)}과 같다.</p>
+     */
+    @Transactional
+    public PopupSubmitResponseDto submitDeliveredResponse(
+            String popupId,
+            String clientRequestId,
+            String userId,
+            List<PopupSubmitAnswer> answers,
+            Double clientScore,
+            Boolean clientPassed) {
+        return submitResponse(popupId, clientRequestId, userId, answers, clientScore, clientPassed, false);
+    }
+
+    /** @param requirePublished true면 신규 조회와 같은 노출 자격(활성·기간·대상·숨김)을 제출 시점에 다시 검사한다. */
+    private PopupSubmitResponseDto submitResponse(
+            String popupId,
+            String clientRequestId,
+            String userId,
+            List<PopupSubmitAnswer> answers,
+            Double clientScore,
+            Boolean clientPassed,
+            boolean requirePublished) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
         }
@@ -413,16 +446,23 @@ public class PopupService {
         String normalizedRequestId = clientRequestId.trim();
         String normalizedUserId = userId.trim();
 
-        // 화면을 연 뒤 기간이나 대상 설정이 바뀔 수 있으므로 제출 시점에 다시 검사한다.
-        boolean eligible = popupMapper.selectAvailablePopups(normalizedUserId).stream()
-                .anyMatch(popup -> normalizedPopupId.equals(popup.popupId()));
-        if (!eligible) {
-            throw new IllegalArgumentException(
-                    "현재 사용자에게 제출 가능한 팝업이 아닙니다.");
+        if (requirePublished) {
+            // 화면을 연 뒤 기간이나 대상 설정이 바뀔 수 있으므로 제출 시점에 다시 검사한다.
+            boolean eligible = popupMapper.selectAvailablePopups(normalizedUserId).stream()
+                    .anyMatch(popup -> normalizedPopupId.equals(popup.popupId()));
+            if (!eligible) {
+                throw new IllegalArgumentException(
+                        "현재 사용자에게 제출 가능한 팝업이 아닙니다.");
+            }
         }
 
         PopupSubmissionContext context = popupMapper.selectSubmissionContext(
-                normalizedUserId, normalizedPopupId);
+                normalizedUserId, normalizedPopupId, requirePublished);
+        if (context == null && !requirePublished) {
+            // 전달 건 결과 수용: 비활성 사용자 또는 삭제된 팝업
+            throw new IllegalArgumentException(
+                    "현재 사용자에게 제출 가능한 팝업이 아닙니다.");
+        }
         if (context == null
                 || !("SURVEY".equalsIgnoreCase(context.popupType())
                 || "QUIZ".equalsIgnoreCase(context.popupType()))
@@ -657,6 +697,37 @@ public class PopupService {
             BigDecimal positionSeconds,
             BigDecimal maximumPositionSeconds,
             BigDecimal watchedSeconds) {
+        return saveVideoProgress(popupId, userId, durationSeconds, positionSeconds,
+                maximumPositionSeconds, watchedSeconds, true);
+    }
+
+    /**
+     * [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 영상 시청 결과를 저장한다. 호출자(WpfResultProcessor)가 전달 건을
+     * 먼저 확인한 경우에만 쓴다. 팝업 활성·게시 기간을 다시 따지지 않고 활성 사용자와 popupId의 완료 기준만 확인한다
+     * (팝업 행이 없으면 거절). 비율·완료 판정 규칙은 {@link #saveVideoProgress(String, String, BigDecimal, BigDecimal,
+     * BigDecimal, BigDecimal)}과 같다.
+     */
+    @Transactional
+    public VideoProgressResponseDto saveDeliveredVideoProgress(
+            String popupId,
+            String userId,
+            BigDecimal durationSeconds,
+            BigDecimal positionSeconds,
+            BigDecimal maximumPositionSeconds,
+            BigDecimal watchedSeconds) {
+        return saveVideoProgress(popupId, userId, durationSeconds, positionSeconds,
+                maximumPositionSeconds, watchedSeconds, false);
+    }
+
+    /** @param requirePublished true면 팝업 활성·게시 기간도 확인한다. */
+    private VideoProgressResponseDto saveVideoProgress(
+            String popupId,
+            String userId,
+            BigDecimal durationSeconds,
+            BigDecimal positionSeconds,
+            BigDecimal maximumPositionSeconds,
+            BigDecimal watchedSeconds,
+            boolean requirePublished) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
         }
@@ -679,7 +750,7 @@ public class PopupService {
         String normalizedPopupId = popupId.trim();
         String normalizedUserId = userId.trim();
         VideoPopupContext context = popupMapper.selectVideoPopupContext(
-                normalizedUserId, normalizedPopupId);
+                normalizedUserId, normalizedPopupId, requirePublished);
         if (context == null) {
             throw new IllegalArgumentException(
                     "현재 사용자에게 유효한 영상 팝업이 아닙니다.");

@@ -122,14 +122,14 @@ class PopupActionOptionsTest {
     @Test void watchingQuizVideoDoesNotCompleteTheQuiz() {
         PopupMapper mapper = mock(PopupMapper.class);
         PopupService service = new PopupService(mapper, new ObjectMapper());
-        when(mapper.selectVideoPopupContext("E1", "P1"))
+        when(mapper.selectVideoPopupContext("E1", "P1", true))
                 .thenReturn(new VideoPopupContext("P1", "QUIZ", new BigDecimal("0.8")));
         when(mapper.upsertVideoProgress(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(1);
         var response = service.saveVideoProgress("P1", "E1", new BigDecimal("100"), new BigDecimal("80"),
                 new BigDecimal("80"), new BigDecimal("80"));
         assertTrue(response.completed());
         verify(mapper, never()).markPopupCompleted(any(), any(), any());
-        when(mapper.selectVideoPopupContext("E1", "P1"))
+        when(mapper.selectVideoPopupContext("E1", "P1", true))
                 .thenReturn(new VideoPopupContext("P1", "VIDEO", new BigDecimal("0.8")));
         service.saveVideoProgress("P1", "E1", new BigDecimal("100"), new BigDecimal("80"),
                 new BigDecimal("80"), new BigDecimal("80"));

@@ -140,6 +140,36 @@ class PopupMapperOracleStatementTest {
         assertFalse(withoutCompleted.contains("COMPLETED_YN = 'Y'"), "기존 WPF-01 계약: 완료 제외 없음");
     }
 
+    /**
+     * [설계 47-4] 결과 수용용 문맥 조회는 requirePublished=false면 팝업 활성·게시 기간 조건이 빠지고 활성 사용자 조건은 남는다.
+     * CLOSED·HIDDEN 수용 확인(countActiveUserAndPopup)은 팝업 활성 여부를 보지 않는다.
+     */
+    @Test void deliveredResultStatementsDropPublishConditions() throws Exception {
+        var configuration = parse();
+        for (String id : List.of("selectSubmissionContext", "selectVideoPopupContext")) {
+            Map<String, Object> params = new HashMap<>();
+            params.put("userId", "E1001");
+            params.put("popupId", "P1");
+            params.put("requirePublished", true);
+            String published = configuration.getMappedStatement(NS + id).getBoundSql(params).getSql();
+            assertTrue(published.contains("n.ACTIVE_YN = 'Y'"), id + " 게시 조건(활성)");
+            assertTrue(published.contains("BETWEEN n.DISPLAY_START_AT AND n.DISPLAY_END_AT"), id + " 게시 조건(기간)");
+            params.put("requirePublished", false);
+            String delivered = configuration.getMappedStatement(NS + id).getBoundSql(params).getSql();
+            assertFalse(delivered.contains("n.ACTIVE_YN"), id + " 결과 수용은 팝업 활성 무관");
+            assertFalse(delivered.contains("DISPLAY_START_AT"), id + " 결과 수용은 게시 기간 무관");
+            assertTrue(delivered.contains("u.ACTIVE_YN = 'Y'"), id + " 활성 사용자 조건 유지");
+            assertTrue(delivered.contains("n.POPUP_ID = ?"), id + " popupId로 조회");
+        }
+        Map<String, Object> params = new HashMap<>();
+        params.put("userId", "E1001");
+        params.put("popupId", "P1");
+        String count = configuration.getMappedStatement(NS + "countActiveUserAndPopup").getBoundSql(params).getSql();
+        assertFalse(count.contains("n.ACTIVE_YN"), "CLOSED·HIDDEN 수용은 팝업 활성 무관");
+        assertTrue(count.contains("u.ACTIVE_YN = 'Y'"));
+        assertTrue(count.contains("n.POPUP_ID = ?"), "팝업 행 존재는 확인");
+    }
+
     @Test void noPostgresOnlySyntaxRemains() throws Exception {
         String xml;
         try (var stream = getClass().getClassLoader().getResourceAsStream(RESOURCE)) {
