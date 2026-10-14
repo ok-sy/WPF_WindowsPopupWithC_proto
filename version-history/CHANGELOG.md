@@ -18,7 +18,7 @@
   - 검증 스크립트: `scripts/verify-rich-text-49.cjs`(+entry) — 실제 관리자 편집기 빌드를 headless Edge에서 띄워 들여쓰기·패널·미리보기를 확인.
 - 주요 파일: zero-rule-server/.../popup/(PopupRichText.java, PopupRichTextTest.java), zero-rule-web/main/src/features/RgstPop/(popupRichText.ts, popupRichTextFormat.ts, PopupRichTextEditor.tsx, PopupRichTextMenu.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/PopupTextBlockDto.cs, Views/Contents/PopupRichText.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow.cs), scripts/(verify-rich-text-49.cjs, verify-rich-text-49-entry.tsx), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/(28_*, 49_*), version-history/CHANGELOG.md.
 - 검증: 서버 popup 패키지 테스트 86건 통과(들여쓰기 허용·거부 추가, DB 의존 3건은 로컬 XE 미기동으로 skip). WPF 빌드 경고·오류 0, 행동 검증 994건 통과(설계 49 전용 13건 — 단계 × 40·정렬·빈 문단·기울임 여유 공존·본문 크기 변경 후 유지·줄바꿈 모든 줄 시작 위치·표시 방어 범위·Demo 검증, 설계 38 기울임 잘림 검증 포함). 관리자 웹 `tsc --noEmit` 통과. 실제 편집기 하네스 40건 통과(변환 왕복, 저장값 재편집, 첫 들여쓰기 40px, 5단계 정지·명령 비활성, 내어쓰기, 서식 지우기 후 들여쓰기 유지, 실행 취소, 붙여넣기 정규화, 패널 8×5 격자·구성·포커스, 색 적용 후 유지·선택 구간만 적용·선택 유지, 굵게·크기·글꼴·기울임·밑줄·색 초기화·서식 지우기, 방향키·Enter·Esc, 혼합 표시, 바깥 클릭, 커서만 있을 때, '서식' 버튼·키보드 진입, Shift+우클릭, 화면 가장자리, 읽기 전용, 미리보기 줄바꿈 줄 여백). 하네스가 구현 중 결함 2건(v34에 없는 `getRoots()` 사용, `removeFormat`이 들여쓰기 삭제)을 발견해 수정 후 통과. 미실행: 로그인한 실제 관리자 화면 수동 확인(마우스·한글 IME), 실제 저장 → 원격 개발 DB → WPF 실화면 육안 확인, Word·Excel 인터페이스 산출물 재생성.
-- 상태: 문단 들여쓰기·우클릭 패널 두 커밋에 나눠 포함. 미푸시.
+- 상태: 문단 들여쓰기·우클릭 패널 두 커밋에 나눠 포함. 원격 반영.
 
 ## 2026-10-14-03 — TODO48 TEXT 서버 정책과 C# 표시 방어 분리 구현
 
@@ -30,7 +30,7 @@
   - 문서·주석: 설계 48 구현 결과, 설계 36 상태, 설계 28 WPF 설명, 인터페이스 계약 8.1, ALL 정의서, 서버 `PopupRichText.java`·관리자 웹 `popupRichText.ts` 주석을 서버 정책 검증과 WPF 표시 방어로 구분해 갱신. MINIMAL 범위 변경 없음.
 - 주요 파일: popup-frameWork/Popup/(Views/Contents/PopupRichText.cs, Dtos/PopupTextBlockDto.cs, Dtos/TextPopupContentDto.cs, DemoOptionsWindow.cs), zero-rule-server/.../popup/PopupRichText.java(주석), zero-rule-web/main/src/features/RgstPop/popupRichText.ts(주석), docs/design/(28_*, 36_*, 48_*), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md), version-history/CHANGELOG.md.
 - 검증: WPF 빌드 경고·오류 0. 행동 검증 981건 통과(로컬, 설계 48 전용 19건 추가 — 서버 목록 밖·안전 범위 안 크기 표시, 비정상 크기·색·글꼴·정렬 기본값, 타입 오류 값별 기본값, 구조 오류 8종 plainText 대체, 서버·관리자 웹 글꼴 ID와 WPF 매핑 원본 대조. 기존 설계 28 검증의 소문자 색·허용 밖 크기 무시 기대를 새 방향으로 변경). 복구 검증 158건 통과. 서버·관리자 웹은 주석만 변경해 빌드·테스트 미실행. 실제 Windows 팝업 육안 확인·원격 개발 DB 데이터 표시 확인·Word/Excel 산출물 재생성 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-14-02 — TODO49 TEXT 들여쓰기와 우클릭 펼침 팔레트 요구사항 등록
 
