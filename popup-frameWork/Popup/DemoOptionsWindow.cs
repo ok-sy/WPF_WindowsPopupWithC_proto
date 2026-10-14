@@ -197,7 +197,7 @@ namespace Popup
             row.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6), TextWrapping = TextWrapping.Wrap });
             row.Children.Add(new TextBlock
             {
-                Text = "문단: { alignment: LEFT|CENTER|RIGHT, runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
+                Text = "문단: { alignment: LEFT|CENTER|RIGHT, indent: 0~5(1단계 40), runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
                     + "색 #RRGGBB(대문자) · 크기 "
                     + string.Join(" ", ServerRichSizes) + " · 글꼴 " + string.Join(" ", ServerRichFonts),
                 TextWrapping = TextWrapping.Wrap, Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 6),
@@ -229,6 +229,7 @@ namespace Popup
          */
         private static readonly double[] ServerRichSizes = { 12, 14, 16, 18, 20, 24, 28, 32 };
         private static readonly string[] ServerRichFonts = { "MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG" };
+        private const int ServerRichMaxIndent = 5;
         private static bool IsServerRichColor(string value) =>
             value.Length == 7 && value[0] == '#' && value.Skip(1).All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
 
@@ -240,8 +241,11 @@ namespace Popup
             if (blocks.Count > 500) throw new ArgumentException("서식 본문: 문단은 500개 이하여야 합니다.");
             for (int i = 0; i < blocks.Count; i++)
             {
-                if (blocks[i] is not JsonObject block || block.Any(p => p.Key is not ("alignment" or "runs")))
-                    throw new ArgumentException("서식 본문: 문단에는 alignment, runs만 사용할 수 있습니다.");
+                if (blocks[i] is not JsonObject block || block.Any(p => p.Key is not ("alignment" or "indent" or "runs")))
+                    throw new ArgumentException("서식 본문: 문단에는 alignment, indent, runs만 사용할 수 있습니다.");
+                if (block["indent"] is JsonNode indent && !(indent.GetValueKind() == JsonValueKind.Number && indent.GetValue<double>() is double level
+                        && level == Math.Floor(level) && level >= 0 && level <= ServerRichMaxIndent))
+                    throw new ArgumentException($"서식 본문: 들여쓰기는 0~{ServerRichMaxIndent} 사이의 정수여야 합니다.");
                 if (block["alignment"] is JsonNode alignment && alignment.GetValueKind() != JsonValueKind.Null
                     && !(alignment.GetValueKind() == JsonValueKind.String && alignment.GetValue<string>() is "LEFT" or "CENTER" or "RIGHT"))
                     throw new ArgumentException("서식 본문: 정렬은 LEFT, CENTER, RIGHT 중 하나여야 합니다.");

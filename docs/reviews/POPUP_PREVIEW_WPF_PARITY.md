@@ -17,7 +17,7 @@
 | 헤더·푸터 | `Views/Windows/PopupWindow.xaml` | 헤더 제목, 푸터, 다시 보지 않기, Footer 버튼(`닫기`/`바로가기`, SURVEY·QUIZ는 `제출`) |
 | 폰트 크기 | `PopupWindow`, 콘텐츠 View | `content.headerFontSize` / `bodyFontSize` / `footerFontSize`, 10~40 보정, 비우면 기본 크기 |
 | 배경 | `PopupWindow` | `useBackgroundOverlay`, `backgroundOverlayOpacity`(기본 0.45) |
-| TEXT | `TextPopupView` | 카드 없이 일반 텍스트(콘텐츠 제목·설명은 본문 앞 문단, 설계 37), 강조 문구, 하단 설명(+연결 URL)을 각 표시 스위치대로 표시. `textBlocks`(설계 28 서식 본문)가 있으면 문단 정렬과 Run별 굵게·기울임·밑줄·색·크기·글꼴을 React 요소로 그린다(`innerHTML` 미사용) |
+| TEXT | `TextPopupView` | 카드 없이 일반 텍스트(콘텐츠 제목·설명은 본문 앞 문단, 설계 37), 강조 문구, 하단 설명(+연결 URL)을 각 표시 스위치대로 표시. `textBlocks`(설계 28 서식 본문)가 있으면 문단 정렬·들여쓰기(설계 49, 단계 × 40px = WPF 40 DIP)와 Run별 굵게·기울임·밑줄·색·크기·글꼴을 React 요소로 그린다(`innerHTML` 미사용) |
 | IMAGE | `ImagePopupView` / `ImageFillPopupView` | `imageSizeMode` ORIGINAL / ADAPTIVE / FIT_TO_IMAGE. ORIGINAL은 `ImageFillPopupView`에 대응하며 좌상단 원본 크기·클리핑·무스크롤을 재현한다 |
 | VIDEO | `VideoPopupView` | 설명, 컨트롤 표시, 배속·전체화면·재생 위치 변경(`allowSeek`) 허용 여부, 기본 음량, 완료 비율(실제 재생은 하지 않음) |
 | 동영상+퀴즈 | `VideoQuizPopupView` | 시청 비율 슬라이더로 잠금/해제 상태, 퀴즈·푸터 활성화 조건을 미리보기 |

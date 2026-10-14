@@ -117,7 +117,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | 옵션 | 형식 | 설명 |
 |---|---|---|
 | `plainText` | string | 일반 텍스트 본문. `textBlocks`가 있으면 서버가 서식 본문에서 만든 값 |
-| `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시. 콘텐츠 제목·설명도 앞 문단으로 포함 |
+| `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시. 콘텐츠 제목·설명도 앞 문단으로 포함. 문단 `indent`(0~5, 1단계 40)는 문단 전체 왼쪽 들여쓰기(설계 49) |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
 | `highlightText` | string | 강조 문구 |
 | `showHighlight` | bool | 강조 영역 표시 여부. 없으면 false |

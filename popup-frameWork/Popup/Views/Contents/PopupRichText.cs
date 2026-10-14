@@ -29,6 +29,17 @@ namespace Popup.Views.Contents
         internal const double MinFontSize = 1;
         internal const double MaxFontSize = 200;
 
+        /*
+         * [설계 49] 문단 들여쓰기. 웹 CSS px와 WPF DIP는 96 DPI 기준 같은 크기이므로 1단계 = 40 DIP로 표시한다.
+         * 서버 허용 단계(0~5)를 복제하지 않고(설계 48) 정수이며 왼쪽 여백이 MaxIndent 이하인 값만 적용, 밖이면 0이다.
+         * 400 DIP는 FIXED 기본 폭(560)에서 본문이 남는 레이아웃 한계다. 서버가 10단계를 넘게 허용하면 함께 확인한다.
+         */
+        internal const double IndentStep = 40;
+        internal const double MaxIndent = 400;
+
+        internal static double SafeIndent(double level) =>
+            double.IsFinite(level) && level >= 0 && level == Math.Floor(level) && level * IndentStep <= MaxIndent ? level * IndentStep : 0;
+
         /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다(설계 28 §5). */
         internal static readonly Dictionary<string, string> Fonts = new()
         {
@@ -67,6 +78,8 @@ namespace Popup.Views.Contents
                     TextAlignment = block.Alignment switch { "CENTER" => TextAlignment.Center, "RIGHT" => TextAlignment.Right, _ => TextAlignment.Left },
                     // 구간 크기가 기본 줄 높이보다 커도 줄이 겹치지 않도록 가장 큰 글자에 맞춰 줄 높이를 늘린다.
                     LineStackingStrategy = LineStackingStrategy.MaxHeight,
+                    // [설계 49] 왼쪽 여백은 줄바꿈된 모든 줄에 같게 적용된다(첫 줄 들여쓰기 아님). 오른쪽은 기울임 여유가 쓴다.
+                    Padding = new Thickness(SafeIndent(block.Indent), 0, 0, 0),
                 };
                 foreach (PopupTextRunDto run in (block.Runs ?? new()).Where(r => r != null && !string.IsNullOrEmpty(r.Text)))
                 {
@@ -97,7 +110,8 @@ namespace Popup.Views.Contents
         {
             double size = paragraph.Inlines.OfType<Run>().Where(r => r.FontStyle == FontStyles.Italic)
                 .Select(r => r.FontSize).DefaultIfEmpty(0).Max();
-            paragraph.Padding = size > 0 ? new Thickness(0, 0, Math.Ceiling(size * ItalicOverhangRatio), 0) : new Thickness(0);
+            // 문단 들여쓰기(왼쪽 여백)는 유지하고 오른쪽 여유만 바꾼다.
+            paragraph.Padding = new Thickness(paragraph.Padding.Left, 0, size > 0 ? Math.Ceiling(size * ItalicOverhangRatio) : 0, 0);
         }
 
         private static Run CreateRun(string text, PopupTextRunDto format)

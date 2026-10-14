@@ -25,7 +25,7 @@
         "textBlocks": [
           { "alignment": "LEFT", "runs": [ { "text": "점검 공지", "bold": true, "size": 24 } ] },
           { "alignment": "LEFT", "runs": [ { "text": "안내 내용을 확인해주세요." } ] },
-          { "alignment": "LEFT", "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
+          { "alignment": "LEFT", "indent": 1, "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
         ],
         "showPlainText": true,
         "highlightText": "작업 내용을 미리 저장해주세요.",

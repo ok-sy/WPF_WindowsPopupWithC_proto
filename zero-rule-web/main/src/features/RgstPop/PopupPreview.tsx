@@ -6,7 +6,7 @@ import SurveyPreview, {
 } from './SurveyPreview';
 import popupDemoQuestions from './popupDemoQuestions';
 import normalizePopupLink from './normalizePopupLink';
-import { readTextBlocks, richFontCss } from './popupRichText';
+import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import {
   adaptiveMaximum,
   fitToImageLayout,
@@ -346,7 +346,9 @@ function PopupBody({
       {showPlainText && (richBlocks
         ? <Box>{richBlocks.map((block, index) => (
             /* [설계 28] 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
-            <Typography key={index} component="div" sx={{ whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em' }}>
+            /* [설계 49] 들여쓰기는 문단 전체 왼쪽 여백(줄바꿈된 줄 포함). WPF 40 DIP와 같은 40px 단위. */
+            <Typography key={index} component="div" sx={{ whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em',
+              pl: `${(block.indent ?? 0) * RICH_INDENT_STEP}px` }}>
               {block.runs.map((run, runIndex) => (
                 <Box key={runIndex} component="span" sx={{
                   fontWeight: run.bold ? 700 : undefined, fontStyle: run.italic ? 'italic' : undefined,

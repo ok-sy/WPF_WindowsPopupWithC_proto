@@ -2,6 +2,19 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-14-04 — TODO49 TEXT 문단 들여쓰기와 우클릭 펼침 서식 패널 구현
+
+- 이유: TEXT 본문 문단 들여쓰기를 편집·저장·미리보기·WPF 팝업까지 같은 값으로 유지하고, 우클릭 서식 메뉴를 색 격자를 펼친 한 패널로 개편하는 TODO49 요건 반영. 구현 전 확인 항목은 단계 누적·최대 5단계, 색상 명도 단계 격자 확장, 적용 후 패널 유지로 확정.
+- 변경(문단 들여쓰기):
+  - 계약: 문단 필드 `textBlocks[].indent` 0~5 정수(1단계 = 40, 누락 0). 글자 서식(Run)과 분리된 문단 속성이며 plainText에 공백·탭을 넣지 않음.
+  - 서버: `PopupRichText.java` 문단 키에 indent 추가·0~5 정수 검증(임의 CSS 키는 계속 거부).
+  - 관리자 웹: 툴바 들여쓰기 늘리기·줄이기(IndentBlock 40px), `limitIndent`로 최대 5단계 제한(5단계에서 명령 비활성, 붙여넣기 여백을 40px 배수·200px 이하로 정규화, px 외 단위 제거), 서식 지우기가 들여쓰기를 지우지 않도록 `blockIndent`를 문단 속성으로 등록. `htmlToBlocks`·`blocksToHtml`·`readTextBlocks` 왕복, 미리보기 문단 왼쪽 여백.
+  - WPF: `PopupTextBlockDto.Indent`, 렌더러 문단 왼쪽 여백 단계 × 40 DIP(줄바꿈된 모든 줄), 기울임 오른쪽 여유와 공존. 설계 48에 따라 서버 단계 목록은 복제하지 않고 정수·최대 400 DIP만 적용(밖이면 0), 타입 오류는 0. Demo 샘플 목록 문단 3개 1단계, Demo 검증에 indent 추가.
+  - 문서: 인터페이스 계약 8.1(indent 행·WPF 표시 방어), ALL 정의서, 옵션 가이드, 미리보기 대조 문서, 예제 JSON(WPF-01). MINIMAL 범위 변경 없음.
+- 주요 파일: zero-rule-server/.../popup/(PopupRichText.java, PopupRichTextTest.java), zero-rule-web/main/src/features/RgstPop/(popupRichText.ts, popupRichTextFormat.ts, PopupRichTextEditor.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/PopupTextBlockDto.cs, Views/Contents/PopupRichText.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow.cs), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, version-history/CHANGELOG.md.
+- 검증: 서버 popup 패키지 테스트 86건 통과(들여쓰기 허용·거부 추가, DB 의존 3건은 로컬 XE 미기동으로 skip). WPF 빌드 경고·오류 0, 행동 검증 994건 통과(설계 49 전용 13건 — 단계 × 40·정렬·빈 문단·기울임 여유 공존·본문 크기 변경 후 유지·줄바꿈 모든 줄 시작 위치·표시 방어 범위·Demo 검증, 설계 38 기울임 잘림 검증 포함). 관리자 웹 `tsc --noEmit` 통과. 실제 편집기 빌드 하네스 검증은 패널 커밋과 함께 기록.
+- 상태: 문단 들여쓰기 커밋에 포함. 미푸시.
+
 ## 2026-10-14-03 — TODO48 TEXT 서버 정책과 C# 표시 방어 분리 구현
 
 - 이유: 서버·C#이 같은 서식 허용 목록을 각각 관리하면 한쪽 변경 누락으로 정상 저장한 서식이 WPF에서 조용히 무시될 수 있어, 정책 검증은 서버에 두고 WPF는 표시 변환·최소 방어만 맡도록 분리.

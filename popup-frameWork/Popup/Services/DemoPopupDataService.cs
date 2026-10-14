@@ -129,6 +129,7 @@ namespace Popup.Services
                         },
                         {
                           "alignment": "LEFT",
+                          "indent": 1,
                           "runs": [
                             {
                               "text": "- 서버 보안 업데이트 및 안정화"
@@ -137,6 +138,7 @@ namespace Popup.Services
                         },
                         {
                           "alignment": "LEFT",
+                          "indent": 1,
                           "runs": [
                             {
                               "text": "- 전자결재 조회 성능 개선"
@@ -145,6 +147,7 @@ namespace Popup.Services
                         },
                         {
                           "alignment": "LEFT",
+                          "indent": 1,
                           "runs": [
                             {
                               "text": "- 문서 저장소 백업 및 복구 상태 확인"

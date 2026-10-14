@@ -12,6 +12,8 @@ namespace Popup.Dtos
     public class PopupTextBlockDto
     {
         public string Alignment { get; set; } = "LEFT";
+        /* [설계 49] 문단 왼쪽 들여쓰기 단계(1단계 = 40). 누락 = 0. */
+        public double Indent { get; set; }
         public List<PopupTextRunDto> Runs { get; set; } = new();
     }
 
@@ -32,7 +34,7 @@ namespace Popup.Dtos
     /*
      * [설계 48-5] textBlocks 역직렬화 경계. 일반 역직렬화는 서식 값 하나의 JSON 타입 오류(예: size가 문자열)로
      * content 전체 변환을 실패시켜 팝업이 표시되지 않으므로, 이 속성만 직접 읽는다.
-     *   - 서식 값 타입 오류(alignment·bold·italic·underline·color·size·font): 그 값만 기본값으로 둔다.
+     *   - 서식 값 타입 오류(alignment·indent·bold·italic·underline·color·size·font): 그 값만 기본값으로 둔다.
      *   - null 문단·null 구간: 글자가 없으므로 건너뛴다.
      *   - 글자를 읽을 수 없는 구조 오류(textBlocks가 배열이 아님, 문단·구간이 객체가 아님, runs가 배열이 아님,
      *     text가 문자열이 아님): 일부 글자만 빠진 서식 본문 대신 서식 본문 전체를 쓰지 않고(null)
@@ -59,7 +61,11 @@ namespace Popup.Dtos
                 if (block.ValueKind == JsonValueKind.Null) continue;
                 if (block.ValueKind != JsonValueKind.Object || !TryGet(block, "runs", out JsonElement runs) || runs.ValueKind != JsonValueKind.Array)
                     return null;
-                var dto = new PopupTextBlockDto { Alignment = String(block, "alignment") ?? "LEFT" };
+                var dto = new PopupTextBlockDto
+                {
+                    Alignment = String(block, "alignment") ?? "LEFT",
+                    Indent = Number(block, "indent") ?? 0,
+                };
                 foreach (JsonElement run in runs.EnumerateArray())
                 {
                     if (run.ValueKind == JsonValueKind.Null) continue;
@@ -72,7 +78,7 @@ namespace Popup.Dtos
                         Italic = True(run, "italic"),
                         Underline = True(run, "underline"),
                         Color = String(run, "color"),
-                        Size = TryGet(run, "size", out JsonElement size) && size.ValueKind == JsonValueKind.Number && size.TryGetDouble(out double value) ? value : null,
+                        Size = Number(run, "size"),
                         Font = String(run, "font"),
                     });
                 }
@@ -98,6 +104,9 @@ namespace Popup.Dtos
 
         private static string? String(JsonElement element, string name) =>
             TryGet(element, name, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+        private static double? Number(JsonElement element, string name) =>
+            TryGet(element, name, out JsonElement value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number) ? number : null;
 
         private static bool True(JsonElement element, string name) =>
             TryGet(element, name, out JsonElement value) && value.ValueKind == JsonValueKind.True;
