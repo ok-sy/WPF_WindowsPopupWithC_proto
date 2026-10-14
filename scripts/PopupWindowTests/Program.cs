@@ -13,6 +13,7 @@ using Popup.Views.Windows;
  * A1  '{N}일간 보지 않기' 문구가 실제 숨김 일수(서버 hideDays, 없으면 30)와 같은지,
  * A10 일반 VIDEO도 allowCloseBeforeComplete=false면 창 닫기(Alt+F4 등)가 시청 기준 전에는 취소되고
  *     시청 후·재생 실패·앱 종료(Application.Shutdown과 같은 InternalClose(shutdown, ignoreCancel))에서는 닫히는지
+ * 50-B displayMode(효과 없는 계약 필드)가 모르는 값·null이어도 팝업 생성이 실패하지 않는지
  * 실제 PopupFactory·PopupWindow 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
  * 다른 환경에서도 같은 명령으로 재현할 수 있게 둔다. 실제 창을 잠깐 띄운다.
  *   실행: dotnet run --project scripts/PopupWindowTests
@@ -20,6 +21,13 @@ using Popup.Views.Windows;
  */
 internal static class Program
 {
+    /* [설계 50-B] DemoPopupDataService.CreatePopups의 유형 필터를 삭제해 테스트에서 같은 기준(DemoPopupGateway.Candidates와 동일)으로 고른다. */
+    private static List<Popup.Dtos.PopupResponseDto> DemoPopups(string type) => DemoPopupDataService.CreatePopups()
+        .Where(p => type == "VIDEO_QUIZ" ? p.PopupId == "DEMO-VIDEO-QUIZ"
+            : type == "FOOTER_LINK" ? p.PopupId == "DEMO-FOOTER-LINK"
+            : p.PopupType.Equals(type, StringComparison.OrdinalIgnoreCase) && p.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK"))
+        .ToList();
+
     private static int _checks;
     private static void Check(bool condition, string message)
     {
@@ -37,7 +45,21 @@ internal static class Program
     {
         CheckHideDaysLabel50();
         CheckVideoClose50();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10)");
+        CheckDisplayModeIgnored50();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B)");
+    }
+
+    /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
+    private static void CheckDisplayModeIgnored50()
+    {
+        foreach (string? mode in new[] { "SEQUENTIAL", "SIMULTANEOUS", "UNKNOWN", "", null })
+        {
+            var dto = DemoPopups("TEXT").Single();
+            dto.DisplayMode = mode!;
+            Exception? error = null;
+            try { PopupFactory.Create(dto); } catch (Exception exception) { error = exception; }
+            Check(error == null, $"[설계 50-B] displayMode '{mode ?? "null"}' does not fail popup creation: {error?.Message}");
+        }
     }
 
     /* [설계 50 A1] 체크박스 문구와 HIDDEN 결과의 hideDays가 같은 값(서버 값, 없으면 30)이다. */
@@ -45,7 +67,7 @@ internal static class Program
     {
         foreach ((int? days, int expected) in new (int?, int)[] { (7, 7), (null, 30) })
         {
-            var dto = DemoPopupDataService.CreatePopups("TEXT").Single();
+            var dto = DemoPopups("TEXT").Single();
             dto.HideDays = days;
             dto.ShowFooter = true;
             dto.ShowDoNotShowAgain = true;
@@ -70,7 +92,7 @@ internal static class Program
         var latest = typeof(VideoPopupView).GetField("_latestProgress", flags)!;
         (PopupWindow Window, VideoPopupView Video, Func<bool> Closed) Open(string type, bool allowClose = false)
         {
-            var dto = DemoPopupDataService.CreatePopups(type).Single();
+            var dto = DemoPopups(type).Single();
             dto.AllowCloseBeforeComplete = allowClose;
             dto.CompletionRatio = 0.8;
             var options = PopupFactory.Create(dto);

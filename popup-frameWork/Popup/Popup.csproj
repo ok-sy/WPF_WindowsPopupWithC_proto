@@ -29,7 +29,8 @@
 
 	<ItemGroup>
 		<!--
-  API 설정 파일을 실행 및 배포 폴더에 복사한다.
+  API 설정 파일(appsettings.json)을 어셈블리 내장 리소스(Popup.appsettings.json)로 포함한다.
+  실행·배포 폴더에 파일로 복사하지 않는다. EXE 옆에 appsettings.json이 있으면 MainWindow가 그 파일을 먼저 읽고, 없으면 내장 리소스를 읽는다.
   -->
 		<EmbeddedResource Include="appsettings.json">
 			<LogicalName>Popup.appsettings.json</LogicalName>

@@ -40,7 +40,7 @@ namespace Popup.Services
      *   - RETRYABLE_ERROR(확인된 일시 장애)는 보관하고 다음 Flush에서 같은 resultId로 재전송한다.
      *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
      *     횟수를 소진해도 삭제하지 않으며 다음 실행에서 다시 시도한다. 재시도 간격·최대 횟수 정책은 별도 확정 대상이다.
-     *   - 알 수 없는 상태, 응답 누락 항목, 이번 batch에 없는 resultId 응답은 종결로 보지 않는다(보관).
+     *   - 알 수 없는 상태, 응답 누락, 이번에 보낸 항목과 resultId가 다른 응답은 종결로 보지 않는다(보관).
      *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 형식 오류)인 결과는 이번 실행에서만
      *     제외(파일 보관)해 나머지 전송을 막지 않는다.
      *   항목의 resultId는 생성 시 확정되어 재전송 시 서버가 DUPLICATE로 걸러낸다.

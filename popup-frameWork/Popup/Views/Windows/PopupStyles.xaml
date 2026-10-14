@@ -8,9 +8,6 @@
     -->
     <SolidColorBrush x:Key="PopupTextPrimaryBrush" Color="#111827"/>
     <SolidColorBrush x:Key="PopupTextSecondaryBrush" Color="#6B7280"/>
-    <SolidColorBrush x:Key="PopupBorderBrush" Color="#E5E7EB"/>
-    <SolidColorBrush x:Key="PopupSoftBorderBrush" Color="#EEF0F3"/>
-    <SolidColorBrush x:Key="PopupSurfaceBrush" Color="#FAFAFB"/>
     <SolidColorBrush x:Key="PopupAccentBrush" Color="#171717"/>
 
     <Style x:Key="CommonContentTitleStyle" TargetType="TextBlock">
@@ -26,14 +23,6 @@
         <Setter Property="Foreground" Value="{StaticResource PopupTextSecondaryBrush}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="LineHeight" Value="22"/>
-    </Style>
-
-    <Style x:Key="CommonSurfaceCardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource PopupSurfaceBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource PopupSoftBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Padding" Value="20"/>
     </Style>
 
     <!-- 공통 Primary Action. 기존 두꺼운 검정 외곽선 대신 면으로 계층을 만든다. -->

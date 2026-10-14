@@ -27,6 +27,8 @@ namespace Popup.Factories
              *   → PopupManager가 PopupOptions를 받아 PopupWindow 생성
              *
              * 여기서는 노출 대상 여부를 판단하지 않는다.
+             * [설계 50-B] displayMode(계약 필드)는 읽지 않는다. 조회 응답이 1건이라 표시 방식에 효과가 없으므로
+             * 모르는 값이 와도 팝업 생성을 실패시키지 않는다(항상 1건 순차 표시).
              */
             if (popupDto == null) throw new ArgumentNullException(nameof(popupDto));
 
@@ -52,8 +54,6 @@ namespace Popup.Factories
                 HideDays = popupDto.HideDays,
                 Title = popupDto.Title,
                 Content = content,
-                DisplayMode = ConvertPopupDisplayMode(popupDto.DisplayMode),
-                DisplayOrder = popupDto.DisplayOrder,
                 ShowHeader = popupDto.ShowHeader,
                 ShowFooterButton = popupDto.ShowFooterButton,
                 ShowFooter = popupDto.ShowFooter,
@@ -227,7 +227,6 @@ namespace Popup.Factories
                     question.Options.Add(new SurveyOption
                     {
                         OptionId = optionDto.OptionId,
-                        Value = optionDto.Value,
                         Text = optionDto.Text,
                         IsCorrect = optionDto.IsCorrect
                     });
@@ -258,14 +257,6 @@ namespace Popup.Factories
                 "ADAPTIVE" => ImagePopupSizeMode.Adaptive,
                 "FIT_TO_IMAGE" => ImagePopupSizeMode.FitToImage,
                 _ => throw new ArgumentException($"지원하지 않는 이미지 크기 방식입니다: {imageSizeMode}")
-            };
-
-        private static PopupDisplayMode ConvertPopupDisplayMode(string displayMode) =>
-            displayMode.Trim().ToUpperInvariant() switch
-            {
-                "SEQUENTIAL" => PopupDisplayMode.Sequential,
-                "SIMULTANEOUS" => PopupDisplayMode.Simultaneous,
-                _ => throw new ArgumentException($"지원하지 않는 팝업 표시 방식입니다: {displayMode}")
             };
 
         private static PopupSizeMode ConvertPopupSizeMode(string sizeMode) =>

@@ -42,16 +42,10 @@ namespace Popup.Dtos
             string.Empty;
 
         /*
-       * 팝업 표시 방식
-       *
-       * 서버 JSON 예:
-       *
-       * SEQUENTIAL
-       * → 앞 팝업이 닫힌 뒤 표시
-       *
-       * SIMULTANEOUS
-       * → 같은 표시 우선순위의 팝업들과 동시에 표시
-       */
+         * 팝업 표시 방식(계약 필드 SEQUENTIAL / SIMULTANEOUS).
+         * [설계 35·50-B] 조회 응답이 1건이라 WPF는 이 값을 읽지 않고 항상 1건씩 순차 표시한다.
+         * 계약·Demo 편집기(표시 문구) 호환을 위해 필드는 유지하며, 모르는 값이 와도 팝업 생성을 실패시키지 않는다.
+         */
         public string DisplayMode { get; set; } =
             "SEQUENTIAL";
 

@@ -2,7 +2,6 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
-using System.Threading.Tasks;
 using Popup.Views.Contents;
 using Popup.Services;
 using System.Windows.Interop;
@@ -693,7 +692,7 @@ namespace Popup.Views.Windows
         public void ApplyPosition()
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
-            // WPF logical units; WorkArea always refers to the primary monitor.
+            // WPF 논리 단위(DIP). CurrentWorkArea()는 창이 놓인 모니터의 작업 영역이다(창 핸들 전에는 주 모니터 WorkArea).
             Rect area = CurrentWorkArea();
             if (_options.SizeMode == PopupSizeMode.Fullscreen)
             {
@@ -725,7 +724,7 @@ namespace Popup.Views.Windows
          * - null(설정 없음)이면 아무것도 바꾸지 않아 XAML 기본값(Header 17, Footer 14, 본문은 View별)이 유지된다(§5.8).
          * - 값이 있으면 FontSizeMin~FontSizeMax로 최종 Clamp 한다(§5.7 — 서버 값을 그대로 신뢰하지 않음).
          * - Header: PopupTitleText.  Footer: "다시 보지 않기" 체크박스와 하단 닫기 버튼(§5.5 — Footer 공통 FontSize 하나).
-         *   상단 X 버튼은 아이콘 성격이라 제외한다.
+         *   (Header의 상단 X 버튼은 설계 25에서 삭제했다.)
          * - 본문: 콘텐츠 View가 IBodyFontSizeAware를 구현하면 그 View에 위임한다(§5.6 — 유형별 본문 정의는 View가 안다).
          */
         private void ApplyFontSizes()
@@ -846,8 +845,8 @@ namespace Popup.Views.Windows
 
 
         /*
- * 팝업의 닫기 버튼 또는 Header 닫기 버튼을 처리한다.
- */
+         * 팝업 하단 Footer 버튼(닫기·바로가기·제출)을 처리한다. Header 상단 X 버튼은 설계 25에서 삭제했다.
+         */
         private void CloseButton_Click(
             object sender,
             RoutedEventArgs e)
@@ -896,7 +895,6 @@ namespace Popup.Views.Windows
              */
             if (_options.Content is VideoPopupView videoPopupView &&
                 !_options.AllowCloseBeforeComplete &&
-                !_options.IsCompleted &&
                 !videoPopupView.HasReachedCompletion(_options.CompletionRatio) &&
                 !videoPopupView.HasPlaybackFailed)
             {
@@ -918,8 +916,8 @@ namespace Popup.Views.Windows
             }
 
             /*
-             * 저장 중 버튼을 다시 클릭해서
-             * API가 중복 호출되는 것을 방지한다.
+             * 닫기 처리 중 버튼을 다시 클릭해
+             * 같은 처리가 중복 실행되는 것을 방지한다.
              */
             clickedControl.IsEnabled =
                 false;
@@ -954,16 +952,16 @@ namespace Popup.Views.Windows
                 RecordDoNotShowAgainChoice();
 
                 /*
-                 * 저장이 성공했거나 저장할 필요가 없으면
-                 * 현재 팝업을 닫는다.
+                 * 현재 팝업을 닫는다. 결과 항목 저장은 Closing 핸들러(PopupManager)가 하며,
+                 * 저장에 실패하면 그쪽에서 안내하고 닫기를 취소한다.
                  */
                 Close();
             }
             catch (Exception exception)
             {
                 /*
-                 * 서버 저장에 실패하면
-                 * 팝업을 닫지 않고 오류를 표시한다.
+                 * 서버 호출은 없다(/hide API 삭제). Close() 중 Closing·Closed 핸들러 예외나
+                 * 닫기 재진입(InvalidOperationException) 등이 올라오면 창을 유지하고 오류를 표시한다.
                  */
                 MessageBox.Show(this,
                     "다시 보지 않기 설정을 저장하지 못했습니다.\n\n" +
@@ -975,7 +973,7 @@ namespace Popup.Views.Windows
             finally
             {
                 /*
-                 * 저장 실패로 창이 남아 있을 경우
+                 * 닫기가 취소되거나 실패해 창이 남아 있을 경우
                  * 사용자가 다시 시도할 수 있도록 버튼을 활성화한다.
                  */
                 clickedControl.IsEnabled =
@@ -1002,7 +1000,6 @@ namespace Popup.Views.Windows
                     && !combined.Video.HasPlaybackFailed)
                     e.Cancel = true;
                 else if (_options.Content is VideoPopupView video
-                    && !_options.IsCompleted
                     && !video.HasReachedCompletion(_options.CompletionRatio)
                     && !video.HasPlaybackFailed)
                     e.Cancel = true;

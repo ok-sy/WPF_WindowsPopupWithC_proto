@@ -1,7 +1,6 @@
 ﻿using Popup.Dtos;
 using System.Windows;
 using System;
-using System.Threading.Tasks;
 
 
 namespace Popup.Models
@@ -13,13 +12,6 @@ namespace Popup.Models
         ViewportRatio,
         Fullscreen,
         Auto
-    }
-
-    /* 여러 팝업이 조회됐을 때 팝업을 표시하는 방식이다. */
-    public enum PopupDisplayMode
-    {
-        Sequential,
-        Simultaneous
     }
 
     public enum PopupPosition { Center, TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight }
@@ -80,13 +72,9 @@ namespace Popup.Models
 
         public double CompletionRatio { get; set; } = 1.0;
         public bool AllowCloseBeforeComplete { get; set; } = true;
-        public bool IsCompleted { get; set; }
 
         public string Title { get; set; } = string.Empty;
         public FrameworkElement? Content { get; set; }
-
-        public PopupDisplayMode DisplayMode { get; set; } = PopupDisplayMode.Sequential;
-        public int DisplayOrder { get; set; } = 100;
 
         public bool ShowHeader { get; set; } = true;
         public bool ShowFooterButton { get; set; } = true;

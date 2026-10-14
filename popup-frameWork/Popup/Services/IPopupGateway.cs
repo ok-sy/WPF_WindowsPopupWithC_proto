@@ -8,8 +8,9 @@ namespace Popup.Services
      *
      * [추가 이유 — 기준 3·4 + Demo Mode]
      *   실제 구현은 PopupApiService(HTTP, /p/api/wpf/**)이고, Demo Mode는 DemoPopupGateway(인메모리 서버 시뮬레이션)다.
-     *   PopupResultQueue·MainWindow·DemoWindow가 이 인터페이스만 보도록 해 서버 없이도 결과 흐름
+     *   PopupResultQueue가 이 인터페이스만 보도록 해 서버 없이도 결과 흐름
      *   (창 닫힘 → 결과 항목 조립 → 큐 → 전송 → 응답 안내)을 그대로 검증할 수 있다.
+     *   MainWindow·DemoWindow는 각각 구체 타입(PopupApiService·DemoPopupGateway)을 보관해 조회를 직접 호출한다.
      */
     public interface IPopupGateway
     {

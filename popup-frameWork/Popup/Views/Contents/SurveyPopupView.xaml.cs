@@ -57,7 +57,7 @@ namespace Popup.Views.Contents
         private readonly bool _isQuizMode;
 
         /*
-         * [설계 12 §4] QUIZ 통과 점수. 서버 목록 응답(content.passingScore / 최상위 passingScore)에서 온다.
+         * [설계 12 §4] QUIZ 통과 점수. 서버 조회 응답의 최상위 passingScore에서 온다(content.passingScore는 C-15에서 삭제).
          * 기준 3 구현에서는 서버 채점으로 바뀌며 제거했으나, 설계 12로 로컬 채점이 다시 WPF 책임이 되어 복원했다.
          */
         private readonly double? _passingScore;
@@ -135,8 +135,7 @@ namespace Popup.Views.Contents
             _passingScore = passingScore;
 
             /*
-             * QuizMode일 경우
-             * 제출 버튼 문구를 채점 의미에 맞게 변경한다.
+             * QuizMode도 제출 버튼 문구는 XAML 기본값과 같은 "제출"이다(채점은 제출 시 로컬에서 함께 한다).
              */
             if (_isQuizMode)
             {
@@ -506,7 +505,7 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// 단일 선택 또는 5점 평가 문항의
+        /// 단일 선택 문항의
         /// 선택값 하나를 수집한다.
         /// </summary>
         private void CollectSingleChoiceAnswer(

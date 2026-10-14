@@ -160,8 +160,6 @@ namespace Popup
             // [설계 28] 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
             if (draft["popupType"]!.GetValue<string>() == "TEXT" && content["textBlocks"] is JsonArray textBlocks)
                 content["plainText"] = ValidateTextBlocks(textBlocks);
-            // Questions live at the top level in the current contract.
-            content.Remove("questions"); content.Remove("passingScore");
         }
 
         private void AddObjectFields(StackPanel panel, JsonObject target, Type dtoType, bool quiz, bool videoSection = false)

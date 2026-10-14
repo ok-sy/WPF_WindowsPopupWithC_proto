@@ -23,8 +23,9 @@ namespace Popup
      *     DevUserId를 X-Dev-User-Id 헤더로 보낸다.
      *   - /statuses 조회와 클라이언트 완료 필터, PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
      *     서버 단건 조회(POST /p/api/wpf/popups, 설계 35)가 표시할 1건을 정한다.
-     *   - 팝업 결과는 PopupResultQueue를 통해 종료 시점에 1회 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
-     *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). 열린 팝업도 조회를 막지 않는다.
+     *   - 팝업 결과는 PopupResultQueue에 저장한 뒤 팝업이 닫힐 때마다(OnPopupFinished) 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
+     *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). [설계 35] 팝업 표시 중에는 조회하지 않고,
+     *     창이 닫혀 결과를 보낸 뒤 nextStatus에 따라 다음 조회를 이어 간다.
      *
      * [설계 10 — SSO·토큰 프로토타입]
      *   - Auth.Mode=SsoPrototype 이면 SsoAuthHeaderProvider(사내 SSO Negotiate → 서버 로그인 API → 메모리 토큰)를 쓴다.
@@ -247,7 +248,7 @@ namespace Popup
              *     → PopupResultQueue.FlushAsync()
              *     → PopupApiService.GetNextPopupAsync()   (팝업 1건 또는 null)
              *     → PopupService.CreatePopupOptions()
-             *     → PopupManager.ShowRange()             (1건 표시)
+             *     → PopupManager.Show()                  (1건 표시)
              *     → 창 닫힘 → 결과 1건 전송 → nextStatus AVAILABLE이면 즉시 다음 조회, EMPTY면 조회 간격 대기
              *
              * 즉 이 메서드부터 "서버에서 팝업을 받아 실제 화면에 띄우는" 작업이 시작된다.
@@ -481,7 +482,7 @@ namespace Popup
                 popupOptions.FlushResultsInBackground = OnPopupFinished;
                 _popupShowing = true;
                 shown = true;
-                _popupManager.ShowRange(new[] { popupOptions });
+                _popupManager.Show(popupOptions);
             }
             catch (OperationCanceledException) when (_isClosed || _clientVersionRejected)
             {

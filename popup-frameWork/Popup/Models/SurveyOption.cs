@@ -8,11 +8,8 @@
         /// <summary>서버 POPUP_OPTION의 고유 ID다.</summary>
         public long OptionId { get; set; }
 
-        /// <summary>
-        /// 서버나 프로그램에서 사용하는 실제 값이다.
-        /// 예: "1", "M", "EMAIL"
-        /// </summary>
-        public string Value { get; set; } = string.Empty;
+        // [설계 50-B] 계약 필드 options[].value는 SurveyOptionDto.Value로 받기만 하고 화면·결과에서 쓰지 않아
+        // 모델 복사본(Value)은 삭제했다. 응답은 OptionId로 보낸다.
 
         /// <summary>
         /// 화면에서 사용자에게 보여줄 문구다.

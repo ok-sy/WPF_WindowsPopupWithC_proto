@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-09 — TODO50-B WPF 불필요 코드 정리와 주석 정정
+
+- 이유: 설계 25·35·18 이후 동작하지 않는 그룹·동시 표시 경로, 값을 넣지 않는 옵션, 참조 없는 리소스·멤버와 목록 시절 주석이 남아 있어 정리(삭제 전 리플렉션·로컬 검증·XAML 문자열·계약 필드 참조 확인).
+- 변경:
+  - `PopupManager`: 그룹 큐·동시 표시·정렬 경로를 삭제하고 `Show(PopupOptions)` 1건 표시로 단순화, 미사용 생성자 매개변수와 중복 위치 메서드 삭제. `PopupOptions.DisplayMode`·`DisplayOrder`, `PopupDisplayMode`, `PopupFactory.ConvertPopupDisplayMode` 삭제 — 모르는 displayMode 값으로 팝업 생성이 실패하던 경로 제거(DTO `displayMode`는 계약 필드라 유지).
+  - 삭제: `PopupOptions.IsCompleted`(설정 0건), XAML 리소스 `PopupButtonStyle`·`CommonSurfaceCardStyle`·`PopupBorderBrush`와 이에만 쓰이던 `PopupSurfaceBrush`·`PopupSoftBorderBrush`, `SurveyOption.Value`(모델), Demo의 삭제 필드 정리 코드, `DemoPopupDataService.CreatePopups` 유형 필터, `SsoAuthHeaderProvider.ExpiresAt`, 미사용 using. `PopupPollingRecovery.IsRecovering`은 로컬 복구 검증이 읽어 유지.
+  - 주석 정정: 표시 중 조회 안 함·`_shownPopupIds` 삭제, 단건 조회·결과 응답, 삭제된 X 버튼·Header 48 → 40, 창이 놓인 모니터 WorkArea, TEXT 제목·FILL·RATING5·passingScore, 결과 전송 시점(닫힐 때마다), appsettings EmbeddedResource, `ImageFillPopupView`(ORIGINAL 뷰, 이름 유지), WPF README PopupManager 설명.
+  - `scripts/PopupWindowTests`: Demo 후보 헬퍼로 교체, displayMode 무시 검증 5건 추가.
+- 주요 파일: popup-frameWork/Popup/(Managers/PopupManager.cs, Models/PopupOptions.cs, Models/SurveyOption.cs, Factories/PopupFactory.cs, Dtos/PopupResponseDto.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, DemoOptionsWindow.cs, Services/*, Views/Windows/PopupWindow.xaml(.cs), Views/Windows/PopupStyles.xaml, Views/Contents/(SurveyPopupView.xaml.cs, IBodyFontSizeAware.cs, ImageFillPopupView.xaml.cs), Popup.csproj, Properties/PublishProfiles/FolderProfile.pubxml), popup-frameWork/README.md, scripts/PopupWindowTests/Program.cs, docs/design/50_*, version-history/CHANGELOG.md. ALL·MINIMAL 정의서 DisplayMode 행은 문서 정리 커밋에 포함.
+- 검증: WPF 빌드 경고·오류 0. `scripts/RichTextTests` 85건, `scripts/PopupWindowTests` 23건, 로컬 전용 행동 검증 1012건(호출 변경에 맞춰 수정)·복구 검증 158건 통과, `scripts/CornerWindowTests` 빌드 성공. 실제 Windows 화면 육안 확인은 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-08 — TODO50-B 관리자 웹 불필요 코드 정리
 
 - 이유: 설계 18·23·37·49 이후 쓰이지 않게 된 분기·인자·export와 중복 구현이 남아 있어 정리(삭제 전 호출부·스크립트·계약 필드 참조 확인).

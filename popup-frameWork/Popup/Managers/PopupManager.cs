@@ -4,40 +4,33 @@ using Popup.Services;
 using Popup.Views.Windows;
 using System.Collections.Generic;
 using System.Windows;
-using System.Linq;
 using Popup.Views.Contents;
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace Popup.Managers
 {
-    /* 표시 우선순위(DisplayOrder) 단위로 팝업과 공통 배경 Overlay를 관리한다. */
+    /*
+     * 팝업 창 1건과 공통 배경 Overlay를 관리한다.
+     * [설계 35·50-B] 서버 조회 응답이 1건이고 MainWindow·DemoWindow 모두 표시 중에는 다음 팝업을 요청하지 않으므로
+     * 표시 우선순위(DisplayOrder) 정렬·그룹 큐·동시 표시(SIMULTANEOUS) 경로를 삭제하고 1건 표시 경로만 둔다.
+     */
     public class PopupManager
     {
-        private readonly Queue<List<PopupOptions>> _popupGroupQueue = new();
-        private readonly Queue<PopupOptions> _sequentialGroupQueue = new();
-        private readonly HashSet<PopupWindow> _activeGroupWindows = new();
-        /* 현재 열려 있는 모든 팝업 창(순차·동시 공통). 배경 클릭 시 다시 맨 앞으로 올리는 데 쓴다. */
+        /* 현재 열려 있는 팝업 창. 배경 클릭 시 다시 맨 앞으로 올리는 데 쓴다(단건 표시라 최대 1개). */
         private readonly HashSet<PopupWindow> _openWindows = new();
         private readonly Window _owner;
         private readonly BackgroundOverlayManager _backgroundOverlayManager = new();
-        private readonly double _defaultBackgroundOverlayOpacity;
-        private bool _isGroupActive;
 
         /// <summary>
-        /// 팝업 그룹이 표시 중이거나 대기 중인지. DemoWindow의 데모 재실행 제한에 사용한다.
-        /// API 모드의 주기 조회는 열린 팝업과 무관하게 수행하고 표시한 ID로 중복을 제외한다.
+        /// 팝업 창이 열려 있는지. DemoWindow의 데모 재실행 제한에 사용한다.
+        /// API 모드(MainWindow)는 자체 표시 상태(_popupShowing)로 표시 중 조회를 하지 않는다.
         /// </summary>
-        public bool HasOpenPopups => _isGroupActive || _popupGroupQueue.Count > 0;
+        public bool HasOpenPopups => _openWindows.Count > 0;
 
-        public PopupManager(
-            Window owner,
-            bool useBackgroundOverlay = true,
-            double backgroundOverlayOpacity = 0.45)
+        public PopupManager(Window owner)
         {
             _owner = owner;
-            _defaultBackgroundOverlayOpacity = Math.Clamp(backgroundOverlayOpacity, 0.0, 1.0);
             // [시연 피드백] Overlay를 소유자 창 아래 두어 앱 창 목록에 잡히지 않게 하고, 배경 클릭 시 팝업을 다시 맨 앞으로.
             _backgroundOverlayManager.Owner = owner;
             _backgroundOverlayManager.BackgroundClicked += (sender, eventArgs) => BringPopupsToFront();
@@ -45,139 +38,52 @@ namespace Popup.Managers
 
         /*
          * [설계 18 L-0 — C-9 삭제] 호출부가 없던 단건·별칭 진입점 Enqueue/Show/EnqueueRange를 삭제했다.
-         * MainWindow·DemoWindow 모두 ShowRange만 사용하므로 표시 진입점을 이 메서드 하나로 둔다.
+         * [설계 50-B] 목록을 받던 ShowRange도 호출부가 모두 1건만 넘겨 단건 진입점 Show로 바꿨다.
          */
-        public void ShowRange(IEnumerable<PopupOptions> popupOptionsList)
+        public void Show(PopupOptions popupOptions)
         {
             /*
              * [실행 순서 6/6]
              * 화면 표시의 최종 진입점.
              *
-             * PopupOptions 목록
-             *   → DisplayOrder 정렬/그룹화
-             *   → SIMULTANEOUS 또는 SEQUENTIAL 결정
+             * PopupOptions 1건
+             *   → 배경 Overlay 설정
              *   → PopupWindow 생성
              *   → Show()
              *
              * 창이 만들어질 때 AttachResultCollection()도 연결되어
              * 닫기/숨김/설문/영상 결과가 PopupResultBuilder → PopupResultQueue로 이어진다.
              */
-            if (popupOptionsList == null) return;
+            if (popupOptions == null) throw new ArgumentNullException(nameof(popupOptions));
+            if (HasOpenPopups)
+                throw new InvalidOperationException("이미 표시 중인 팝업이 있습니다. 표시 중에는 다음 팝업을 열지 않습니다.");
 
-            List<List<PopupOptions>> groups = popupOptionsList
-                .Where(option => option != null)
-                .OrderBy(option => option.DisplayOrder)
-                .ThenBy(option => option.PopupId)
-                .GroupBy(option => option.DisplayOrder)
-                .Select(group => group.ToList())
-                .ToList();
+            ConfigureBackgroundOverlay(popupOptions);
 
-            if (groups.Count == 0) return;
-            foreach (List<PopupOptions> group in groups) _popupGroupQueue.Enqueue(group);
-            ShowNextGroup();
-        }
-
-        private void ShowNextGroup()
-        {
-            if (_isGroupActive || _popupGroupQueue.Count == 0) return;
-
-            List<PopupOptions> group = _popupGroupQueue.Dequeue();
-            if (group.Count == 0)
-            {
-                ShowNextGroup();
-                return;
-            }
-
-            ConfigureBackgroundOverlay(group);
-            _isGroupActive = true;
-
-            bool showSimultaneously = group.All(option =>
-                option.DisplayMode == PopupDisplayMode.Simultaneous);
-
-            if (showSimultaneously)
-            {
-                ShowSimultaneousGroup(group);
-                return;
-            }
-
-            foreach (PopupOptions popupOptions in group) _sequentialGroupQueue.Enqueue(popupOptions);
-            ShowNextSequentialPopup();
-        }
-
-        private void ConfigureBackgroundOverlay(IReadOnlyList<PopupOptions> group)
-        {
-            List<PopupOptions> overlayOptions = group
-                .Where(option => option.UseBackgroundOverlay)
-                .ToList();
-
-            if (overlayOptions.Count == 0)
-            {
-                _backgroundOverlayManager.Close();
-                return;
-            }
-
-            /* 같은 표시 그룹에서는 Overlay를 한 세트만 띄우고 가장 높은 불투명도를 사용한다. */
-            double opacity = overlayOptions
-                .Select(option => Math.Clamp(option.BackgroundOverlayOpacity, 0.0, 1.0))
-                .DefaultIfEmpty(_defaultBackgroundOverlayOpacity)
-                .Max();
-
-            _backgroundOverlayManager.Opacity = opacity;
-            _backgroundOverlayManager.Show();
-        }
-
-        private void ShowSimultaneousGroup(IReadOnlyList<PopupOptions> group)
-        {
-            foreach (PopupOptions popupOptions in group)
-            {
-                PopupWindow popupWindow = CreatePopupWindow(popupOptions);
-                _activeGroupWindows.Add(popupWindow);
-                popupWindow.Closed += SimultaneousPopupWindow_Closed;
-                PositionSimultaneousPopup(popupWindow, _activeGroupWindows.Count - 1);
-                popupWindow.Show();
-            }
-        }
-
-        private void SimultaneousPopupWindow_Closed(object? sender, EventArgs e)
-        {
-            if (sender is not PopupWindow popupWindow) return;
-            popupWindow.Closed -= SimultaneousPopupWindow_Closed;
-            _activeGroupWindows.Remove(popupWindow);
-            if (_activeGroupWindows.Count > 0) return;
-            CompleteCurrentGroup();
-        }
-
-        private void ShowNextSequentialPopup()
-        {
-            if (_sequentialGroupQueue.Count == 0)
-            {
-                CompleteCurrentGroup();
-                return;
-            }
-
-            PopupOptions popupOptions = _sequentialGroupQueue.Dequeue();
             PopupWindow popupWindow = CreatePopupWindow(popupOptions);
-            popupWindow.Closed += SequentialPopupWindow_Closed;
-            PositionSequentialPopup(popupWindow, popupOptions);
+            popupWindow.Closed += PopupWindow_Closed;
+            if (_owner.IsVisible) popupWindow.Owner = _owner;
+            popupWindow.ApplyPosition();
             popupWindow.Show();
         }
 
-        private void SequentialPopupWindow_Closed(object? sender, EventArgs e)
+        private void ConfigureBackgroundOverlay(PopupOptions popupOptions)
         {
-            if (sender is PopupWindow popupWindow)
-                popupWindow.Closed -= SequentialPopupWindow_Closed;
-            ShowNextSequentialPopup();
-        }
-
-        private void CompleteCurrentGroup()
-        {
-            _isGroupActive = false;
-            if (_popupGroupQueue.Count == 0)
+            if (!popupOptions.UseBackgroundOverlay)
             {
                 _backgroundOverlayManager.Close();
                 return;
             }
-            ShowNextGroup();
+
+            _backgroundOverlayManager.Opacity = Math.Clamp(popupOptions.BackgroundOverlayOpacity, 0.0, 1.0);
+            _backgroundOverlayManager.Show();
+        }
+
+        private void PopupWindow_Closed(object? sender, EventArgs e)
+        {
+            if (sender is PopupWindow popupWindow)
+                popupWindow.Closed -= PopupWindow_Closed;
+            _backgroundOverlayManager.Close();
         }
 
         private PopupWindow CreatePopupWindow(PopupOptions popupOptions)
@@ -192,17 +98,6 @@ namespace Popup.Managers
             return popupWindow;
         }
 
-        private void PositionSequentialPopup(PopupWindow popupWindow, PopupOptions popupOptions)
-        {
-            if (_owner.IsVisible) popupWindow.Owner = _owner;
-            popupWindow.ApplyPosition();
-        }
-
-        private void PositionSimultaneousPopup(PopupWindow popupWindow, int openedPopupIndex)
-        {
-            if (_owner.IsVisible) popupWindow.Owner = _owner;
-            popupWindow.ApplyPosition();
-        }
         /*
          * [기준 3·4] 기존 AttachContentEvents/AttachLifecycleEvents는
          *   설문 제출 → SubmitSurveyAsync, 영상 진행 → SaveVideoProgressAsync(10초 주기),
@@ -281,7 +176,7 @@ namespace Popup.Managers
         /*
          * [설계 12 §2·§4] 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 창을 닫는다.
          *  1. QUIZ 미통과(passed=false)면 점수·통과 점수를 안내하고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다.
-         *     사용자는 답안을 고쳐 "채점"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다(2026-09-22 사용자 지시).
+         *     사용자는 답안을 고쳐 "제출"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다(2026-09-22 사용자 지시).
          *     닫기 버튼으로 나가면 SUBMITTED 없이 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
          *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(pending-results.json 저장).
          *     이 시점부터 결과는 유실되지 않는다.

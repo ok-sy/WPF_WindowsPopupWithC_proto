@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 namespace Popup.Views.Contents
 {
     /// <summary>
-    /// IMAGE ORIGINAL 전용 모드. ORIGINAL은 원본 픽셀 크기를 유지하고 왼쪽 위에서 자른다.
+    /// IMAGE ORIGINAL 모드 뷰(이름은 삭제된 FILL 모드 시절 이름을 유지). ORIGINAL은 원본 픽셀 크기를 유지하고 왼쪽 위에서 자른다.
     /// </summary>
     public partial class ImageFillPopupView : UserControl
     {

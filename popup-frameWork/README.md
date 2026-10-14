@@ -557,7 +557,7 @@ LoadAndShowAvailablePopupsAsync(...)
 3. pollingIntervalSeconds 적용      — 가장 최근 값
 4. popup=null이면 조회 간격 대기
 5. PopupService.CreatePopupOptions()
-6. PopupManager.ShowRange()        — 1건 표시
+6. PopupManager.Show()             — 1건 표시
 7. 창 닫힘 → OnPopupFinished()     — 결과 전송 후 nextStatus로 다음 단계 결정
 ```
 
@@ -603,7 +603,7 @@ TEXT
 
 IMAGE
   → ImagePopupView (ADAPTIVE / FIT_TO_IMAGE)
-  → ImageFillPopupView (ORIGINAL: 원본 크기·왼쪽 위 잘림·클릭 링크)
+  → ImageFillPopupView (ORIGINAL: 원본 크기·왼쪽 위 잘림. 이미지 클릭 링크는 계약 3.7에서 삭제, 클래스명은 FILL 시절 이름 유지)
 
 VIDEO
   → VideoPopupView
@@ -623,8 +623,6 @@ QUIZ
 PopupId
 DeliveryId
 Title
-DisplayMode
-DisplayOrder (서버 조회 응답에는 없음)
 ShowHeader
 ShowFooterButton
 ShowFooter
@@ -651,36 +649,18 @@ Popup/Managers/PopupManager.cs
 역할:
 
 ```text
-PopupOptions 목록
+PopupOptions 1건
 ↓
-DisplayOrder 정렬
-↓
-같은 DisplayOrder 그룹화
-↓
-SIMULTANEOUS / SEQUENTIAL 결정
+배경 Overlay 설정
 ↓
 PopupWindow 생성
 ↓
 화면 표시
+↓
+Closed → Overlay 닫기 → 결과 처리 훅(FlushResultsInBackground)
 ```
 
-### 동시 표시
-
-```text
-SIMULTANEOUS
-→ 같은 그룹 팝업을 동시에 Show()
-```
-
-### 순차 표시
-
-```text
-SEQUENTIAL
-→ 첫 팝업 Show()
-→ Closed
-→ 다음 팝업 Show()
-```
-
-[설계 35] API 모드에서는 서버 조회 결과 1건만 `ShowRange()`로 넘기므로 서버 팝업의 그룹화·동시 표시는 일어나지 않는다. 표시 순서는 서버가 `DISPLAY_ORDER`로 정렬해 정하며 조회 응답에는 `displayOrder`가 없다.
+[설계 35·50-B] 서버 조회 응답이 1건이고 MainWindow·DemoWindow 모두 표시 중에는 다음 팝업을 요청하지 않으므로 `PopupManager.Show()`는 1건만 받는다(표시 중 다시 부르면 예외). DisplayOrder 정렬·그룹 큐·동시 표시(SIMULTANEOUS) 경로는 삭제했다. 계약 필드 `displayMode`는 DTO에 남지만 WPF는 읽지 않으며 모르는 값이 와도 팝업 생성을 실패시키지 않는다. 표시 순서는 서버가 `DISPLAY_ORDER`로 정렬해 정하며 조회 응답에는 `displayOrder`가 없다(Demo는 DemoPopupGateway가 후보 정렬에 사용).
 
 Overlay도 이 클래스에서 관리한다.
 
@@ -936,7 +916,7 @@ MainWindow.LoadAndShowAvailablePopupsAsync()
 ### 4단계 — 화면 표시만 보기
 
 ```text
-PopupManager.ShowRange()
+PopupManager.Show()
 → PopupWindow
 → Text/Image/Video/Survey View
 ```

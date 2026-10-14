@@ -19,7 +19,7 @@ namespace Popup.Services
      *
      * 1. Java 서버에 HTTP 요청을 보낸다.
      * 2. 서버가 반환한 JSON을 받는다.
-     * 3. JSON을 PopupResponseDto 목록으로 변환한다.
+     * 3. JSON을 단건 조회 응답(WpfNextPopupResponseDto)·결과 응답(WpfResultResponseDto)으로 변환한다.
      *
      * PopupWindow를 만들거나 화면에 표시하는 역할은
      * PopupService와 PopupManager가 담당한다.
@@ -45,8 +45,16 @@ namespace Popup.Services
             _baseUrl;
 
 
+        private readonly CancellationTokenSource _requestLifetime = new();
+
+        /* 이 인스턴스가 쓰는 HttpClient. 생성자에서 주입받지 않으면 아래 공용 static HttpClient를 쓴다. */
+        private readonly HttpClient _httpClient;
+
+        // 426/종료 이후 새 요청과 진행 중 HTTP·재인증을 함께 취소한다.
+        public void StopRequests() => _requestLifetime.Cancel();
+
         /*
-         * 서버에 HTTP 요청을 보내는 객체다.
+         * 서버에 HTTP 요청을 보내는 공용 객체다.
          *
          * HttpClient를 요청마다 새로 만들면
          * 네트워크 연결이 불필요하게 계속 생성될 수 있다.
@@ -54,12 +62,6 @@ namespace Popup.Services
          * 따라서 프로그램 전체에서 같은 객체를
          * 재사용할 수 있도록 static으로 선언한다.
          */
-        private readonly CancellationTokenSource _requestLifetime = new();
-        private readonly HttpClient _httpClient;
-
-        // 426/종료 이후 새 요청과 진행 중 HTTP·재인증을 함께 취소한다.
-        public void StopRequests() => _requestLifetime.Cancel();
-
         private static readonly HttpClient HttpClient =
             new HttpClient
             {
@@ -132,8 +134,8 @@ namespace Popup.Services
              * 변경:
              * http://localhost:8080/zero-rule-server/p
              *
-             * 이후 /api/popups를 붙였을 때
-             * //api/popups가 되는 것을 방지한다.
+             * 이후 /api/wpf/popups 등을 붙였을 때
+             * //api/wpf/popups가 되는 것을 방지한다.
              */
             _baseUrl =
                 baseUrl

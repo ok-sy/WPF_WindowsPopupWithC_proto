@@ -29,12 +29,12 @@ namespace Popup.Services.Auth
      *   ※ [설계 10 §14.1 확정] SSO GET은 프로세스 시작 후 최초 1회만. 사용자 정보도 메모리에만 두고 파일에 저장하지 않는다.
      *
      * [추가 이유] 서버 프로토타입 토큰은 10분 뒤 만료된다. 만료를 클라이언트가 미리 계산해 갱신하면 "401 → 재로그인 → 원 요청
-     * 재전송" 경로가 실제로 검증되지 않으므로, 이 구현은 만료 시각을 진단용으로만 기억하고 갱신은 401 또는 정기 주기에만 한다.
+     * 재전송" 경로가 실제로 검증되지 않으므로, 이 구현은 만료 시각을 보관하지 않고(로그·테스트 결과에만 표시) 갱신은 401 또는 정기 주기에만 한다.
      *
      * [동시성 — T5] 여러 요청이 동시에 401을 받아도 실제 SSO·로그인은 한 번만 한다. SemaphoreSlim으로 직렬화하고,
      * 잠금 안에서 "현재 토큰이 401을 받은 그 토큰과 여전히 같은가"를 비교해 이미 갱신됐으면 건너뛴다.
      *
-     * [규칙] 토큰·만료·사용자 정보는 이 객체의 필드에만 있다(파일·Registry·appsettings 저장 금지). 로그인 UI 없음.
+     * [규칙] 토큰·사용자 정보는 이 객체의 필드에만 있다(파일·Registry·appsettings 저장 금지). 로그인 UI 없음.
      * 토큰 값을 로그에 남기지 않는다.
      */
     public sealed class SsoAuthHeaderProvider : IAuthHeaderProvider, IDisposable
@@ -52,7 +52,6 @@ namespace Popup.Services.Auth
 
         /* 메모리 상태. _loginGate 안에서만 쓰고, 읽기는 Volatile로 최신 값을 본다. */
         private string? _accessToken;
-        private DateTimeOffset? _expiresAt;
         private SsoUserInfo? _lastUser;
         private Task? _periodicLoop;
 
@@ -61,9 +60,6 @@ namespace Popup.Services.Auth
             _ssoClient = ssoClient ?? throw new ArgumentNullException(nameof(ssoClient));
             _loginClient = loginClient ?? throw new ArgumentNullException(nameof(loginClient));
         }
-
-        /// <summary>진단용. 서버가 알려준 현재 토큰 만료 시각(없으면 null). 갱신 판단에는 쓰지 않는다.</summary>
-        public DateTimeOffset? ExpiresAt => _expiresAt;
 
         // 정기 로그인에서 받은 426도 다음 polling까지 기다리지 않고 즉시 종료 안내한다.
         public event EventHandler<WpfClientVersionException>? ClientVersionRejected;
@@ -145,7 +141,6 @@ namespace Popup.Services.Auth
                 loginWatch.Stop();
 
                 _lastUser = user;
-                _expiresAt = login.ExpiresAt;
                 Volatile.Write(ref _accessToken, login.AccessToken);
 
                 return new SsoLoginTestResult(
@@ -244,7 +239,6 @@ namespace Popup.Services.Auth
                 }
                 WpfLoginResponseDto login = await _loginClient.LoginAsync(user, linked.Token);
 
-                _expiresAt = login.ExpiresAt;
                 Volatile.Write(ref _accessToken, login.AccessToken);
                 Debug.WriteLine($"[SSO-AUTH] 토큰 갱신 logonId={user.LogonId} expiresAt={login.ExpiresAt:O} (SSO {(ssoCalled ? "호출" : "재호출 없음")}, 이전 토큰 {(current == null ? "없음" : "교체")})");
                 return login.AccessToken;
@@ -296,7 +290,6 @@ namespace Popup.Services.Auth
                 _lifetime.Cancel();
             }
             Volatile.Write(ref _accessToken, null);
-            _expiresAt = null;
             // _lifetime 은 Dispose 하지 않는다: 진행 중인 LoginAsync가 CreateLinkedTokenSource로 아직 참조할 수 있다(앱 종료 직전에만 호출됨).
         }
     }

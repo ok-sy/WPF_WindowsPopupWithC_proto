@@ -126,7 +126,7 @@ namespace Popup
                 options.EnqueueResult = _resultQueue.Enqueue;
                 options.RetainResultForExit = _resultQueue.RetainForExit;
                 options.FlushResultsInBackground = () => ContinueAfterResult(popupType);
-                _popupManager.ShowRange(new[] { options });
+                _popupManager.Show(options);
             }
             catch (Exception exception)
             {

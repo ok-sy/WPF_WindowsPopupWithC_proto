@@ -17,8 +17,11 @@ namespace Popup.Services
                 PropertyNameCaseInsensitive = true
             };
 
-        public static List<PopupResponseDto> CreatePopups(
-            string? requestedPopupType = null)
+        /*
+         * Demo 샘플 전체(7건)를 만든다. 유형별 선택은 DemoPopupGateway가 후보를 고를 때 한다.
+         * [설계 50-B] 호출부가 모두 인자 없이 부르던 유형 필터 매개변수(requestedPopupType)와 분기를 삭제했다.
+         */
+        public static List<PopupResponseDto> CreatePopups()
         {
             const string demoJson =
                 """
@@ -617,39 +620,9 @@ namespace Popup.Services
             demoPopups.Add(linked);
 
             /*
-             * 개별 버튼으로 실행했다면 선택한 종류만 먼저 남긴다.
-             * 따라서 TEXT나 SURVEY를 확인할 때 이미지·동영상 파일이 없어도 된다.
-             */
-            if (!string.IsNullOrWhiteSpace(
-                    requestedPopupType))
-            {
-                for (int index = demoPopups.Count - 1;
-                     index >= 0;
-                     index--)
-                {
-                    string popupType =
-                        demoPopups[index]?["popupType"]?.GetValue<string>()
-                        ?? string.Empty;
-
-                    bool selected = requestedPopupType == "VIDEO_QUIZ"
-                        ? demoPopups[index]?["popupId"]?.GetValue<string>() == "DEMO-VIDEO-QUIZ"
-                        : requestedPopupType == "FOOTER_LINK"
-                        ? demoPopups[index]?["popupId"]?.GetValue<string>() == "DEMO-FOOTER-LINK"
-                        : popupType.Equals(
-                            requestedPopupType,
-                            StringComparison.OrdinalIgnoreCase)
-                            && demoPopups[index]?["popupId"]?.GetValue<string>() is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK");
-                    if (!selected)
-                    {
-                        demoPopups.RemoveAt(
-                            index);
-                    }
-                }
-            }
-
-            /*
              * JSON에 특정 PC의 절대경로를 하드코딩하지 않고,
              * 실행 중인 EXE 옆 Media 폴더의 실제 절대경로를 넣는다.
+             * EXE 옆 Media 파일이 없으면 DemoMediaPathService가 내장 리소스를 사용자 캐시에 풀어 그 경로를 쓴다.
              */
             foreach (JsonNode? popupNode
                      in demoPopups)

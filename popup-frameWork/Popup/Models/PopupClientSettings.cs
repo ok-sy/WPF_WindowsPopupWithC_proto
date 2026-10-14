@@ -29,7 +29,7 @@ namespace Popup.Models
             true;
 
         /// <summary>
-        /// 주기 조회 간격(초). 서버 목록 응답의 pollingIntervalSeconds가 있으면 그 값이 우선한다.
+        /// 주기 조회 간격(초). 서버 단건 조회 응답의 pollingIntervalSeconds가 있으면 그 값이 우선한다.
         /// 서버 값과 로컬 fallback 모두 1800~3600초로 제한한다.
         /// </summary>
         public int PollingIntervalSeconds { get; set; } =

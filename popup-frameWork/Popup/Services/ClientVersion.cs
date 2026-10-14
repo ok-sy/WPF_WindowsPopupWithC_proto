@@ -14,7 +14,7 @@ namespace Popup.Services
      *   빌드용 AssemblyVersion 정책과 분리되므로 설계 13 §3 권장대로 InformationalVersion을 쓴다.
      *   "+커밋해시" 같은 접미어가 붙어 있으면 잘라 숫자 버전만 보낸다.
      *
-     * [적용 위치] PopupApiService.SendWithAuthAsync(목록·결과), WpfLoginClient.LoginAsync(로그인). 화면 코드는 모른다.
+     * [적용 위치] PopupApiService.SendWithAuthAsync(단건 조회·결과), WpfLoginClient.LoginAsync(로그인). 화면 코드는 모른다.
      */
     public static class ClientVersion
     {
