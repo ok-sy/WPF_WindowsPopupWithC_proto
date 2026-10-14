@@ -58,7 +58,7 @@ export class PopupAdminApi {
   ): Promise<ApiResponseWithData<{ adminQuestions: AdminPopupQuestion[] }>> =>
     this.withData.postJson(POPUP_ADMIN_API_URL.questionTemplate, ...splitParams(params));
 
-  /** 팝업의 다른 내용은 유지하고 활성 여부만 변경한다. (설계 18 L-0 W-7: 주석 위치를 이 메서드로 바로잡음) */
+  /** 팝업의 다른 내용은 유지하고 활성 여부만 변경한다. */
   updateActive = (
     params: { popupId: string; active: boolean } & BaseRequest,
   ): Promise<ApiResponseWithData<{ popup: AdminPopupDetail }>> => {

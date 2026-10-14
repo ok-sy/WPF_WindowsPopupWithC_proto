@@ -3,8 +3,7 @@ import { useApi } from '@/provider';
 import type { AdminPopupInfo, AdminPopupListItem } from '@local/domain';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, List, ListItemButton, ListItemText, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-
-const types: Record<string, string> = { TEXT: '텍스트', IMAGE: '이미지', VIDEO: '영상', SURVEY: '설문', QUIZ: '퀴즈' };
+import { POPUP_TYPE_LABELS } from './popupCommon';
 
 export default function PopupTemplateDialog({ open, onClose, onSelect }: {
   open: boolean;
@@ -50,12 +49,12 @@ export default function PopupTemplateDialog({ open, onClose, onSelect }: {
         <Stack direction="row" spacing={1}>
           <TextField fullWidth label="제목 / 팝업 ID 검색" value={query} onChange={(e) => setQuery(e.target.value)} />
           <TextField select label="유형" value={type} sx={{ minWidth: 110 }} onChange={(e) => setType(e.target.value)}>
-            <MenuItem value="">전체</MenuItem>{Object.entries(types).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
+            <MenuItem value="">전체</MenuItem>{Object.entries(POPUP_TYPE_LABELS).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
           </TextField>
         </Stack>
         {failed ? <Button onClick={() => setRetry((n) => n + 1)}>목록 다시 불러오기</Button> : !loading && !filtered.length && <Typography>불러올 팝업이 없습니다.</Typography>}
         <List>{filtered.map((item) => <ListItemButton key={item.popupId} disabled={loading} onClick={() => void select(item.popupId)}>
-          <ListItemText primary={item.title} secondary={`${types[item.popupType]} · ${item.popupId}`} />
+          <ListItemText primary={item.title} secondary={`${POPUP_TYPE_LABELS[item.popupType]} · ${item.popupId}`} />
         </ListItemButton>)}</List>
       </Stack>
     </DialogContent>

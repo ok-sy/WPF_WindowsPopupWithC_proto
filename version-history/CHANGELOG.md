@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-08 — TODO50-B 관리자 웹 불필요 코드 정리
+
+- 이유: 설계 18·23·37·49 이후 쓰이지 않게 된 분기·인자·export와 중복 구현이 남아 있어 정리(삭제 전 호출부·스크립트·계약 필드 참조 확인).
+- 변경: `PopupPreview` `previewSize()`·`fitContainer` 미지정 경로 삭제(항상 부모 영역 채움), FILL 잔재 이름 정리·도달 불가 분기 삭제, `adaptiveMaximum` 인라인, QUIZ 저장 키 `videoTitle` 삭제, TEXT 콘텐츠 제목 분기 삭제, `applyFormat` `focusEditor` 인자 삭제, 파일 밖 미사용 export(`isAllowedColor`·`RichAlignment`·`positive`·`FORMAT_KEYS`·`FormatKey`) 제거, 문항 템플릿 선택을 유형 전환 시 초기화, 공용 `popupCommon.ts`(epoch 판별 `popupDateMillis`, `POPUP_TYPE_LABELS`, 글자 크기 10~40 `popupFontSize`) 추가 후 중복 3곳씩 대체(FIT_TO_IMAGE 설명 높이 계산에도 같은 보정), `PopupAdminApi` 수정 이력성 주석 정리. 계약 필드는 유지.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/(PopupPreview.tsx, PopupEditorDialog.tsx, PopupQuestionTemplatePicker.tsx, PopupRichTextEditor.tsx, PopupTemplateDialog.tsx, RgstPop.tsx, imagePreviewLayout.ts, popupRichText.ts, popupRichTextFormat.ts, popupCommon.ts), zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts, scripts/(verify-image-preview-entry.tsx, verify-rich-text-49-entry.tsx), docs/design/50_*, version-history/CHANGELOG.md.
+- 검증: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0(기존 경고 3건), `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과. 실제 관리자 화면 저장·템플릿 선택 초기화는 미확인.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-07 — TODO50-A 서버 게시중단 후 결과 수용(A9)·계약 sizeMode AUTO 표기(A5)
 
 - 이유: 설계 47-4는 게시중단 전에 표시된 팝업의 결과(EXPIRED 전달 건 포함)를 수용하기로 확정했으나, 결과 처리가 신규 조회와 같은 게시 조건을 다시 검사해 활성 해제·기간 종료·대상 변경 후 결과를 거절하는 경로가 있었음(확정 정책과 구현 불일치). 계약서 sizeMode ENUM의 `AUTO`는 서버가 내려주지 않는 값인데 구분 표기가 없었음.

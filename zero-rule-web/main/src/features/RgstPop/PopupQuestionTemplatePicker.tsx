@@ -30,7 +30,9 @@ export default function PopupQuestionTemplatePicker({
 }: Props) {
   const api = useApi();
   const [templates, setTemplates] = useState<AdminQuestionTemplate[]>([]);
-  const [selected, setSelected] = useState('');
+  // 선택은 고른 시점의 팝업 유형과 함께 둔다. SURVEY↔QUIZ로 바뀌면 걸러진 이전 템플릿이 남지 않게 선택 없음으로 본다.
+  const [selection, setSelection] = useState<{ popupType: PopupType; templateId: string }>({ popupType, templateId: '' });
+  const selected = selection.popupType === popupType ? selection.templateId : '';
   useEffect(() => {
     let canceled = false;
     api.popupAdmin
@@ -67,7 +69,7 @@ export default function PopupQuestionTemplatePicker({
             size="small"
             label="기존 템플릿"
             value={selected}
-            onChange={(e) => setSelected(e.target.value)}
+            onChange={(e) => setSelection({ popupType, templateId: e.target.value })}
           >
             <MenuItem value="">선택 안 함</MenuItem>
             {templates

@@ -1,10 +1,11 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
+import { popupFontSize } from './popupCommon';
 export interface Size { width: number; height: number; }
 export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'ORIGINAL' {
   const mode = String(popup.content.imageSizeMode ?? '').trim().toUpperCase();
   return mode === 'FIT_TO_IMAGE' || mode === 'ORIGINAL' ? mode : 'ADAPTIVE';
 }
-export function positive(value: unknown): number | null {
+function positive(value: unknown): number | null {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
@@ -17,10 +18,6 @@ export function displayImageSize(popup: AdminPopupDetail, natural: Size): Size {
   if (width) return { width, height: width / ratio };
   if (height) return { width: height * ratio, height };
   return natural;
-}
-// ADAPTIVE retains the original no-upscale rule, without a separate image size limit.
-export function adaptiveMaximum(_popup: AdminPopupDetail, natural: Size | null): Partial<Size> {
-  return natural ?? {};
 }
 export interface FitToImageLayout { image: Size; window: Size; }
 // Browser text measurement uses the same target width, padding and font sizes as the preview.
@@ -63,7 +60,7 @@ export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workAre
   const title = textHeight(String(popup.content.imageTitle ?? ''), measureWidth, 22, 27);
   const descriptionText = String(popup.content.description ?? '');
   const description = popup.content.showDescription !== false && descriptionText.trim()
-    ? Math.min(textHeight(descriptionText, Math.max(1, measureWidth - 34), Number(popup.content.bodyFontSize ?? 14), 23) + 34, Math.max(1, Math.min(image.height, maxHeight - chrome) * 0.3)) + 14 : 0;
+    ? Math.min(textHeight(descriptionText, Math.max(1, measureWidth - 34), popupFontSize(popup, 'bodyFontSize') ?? 14, 23) + 34, Math.max(1, Math.min(image.height, maxHeight - chrome) * 0.3)) + 14 : 0;
   const recommended = { width: image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH, height: image.height + IMAGE_FRAME + (title ? title + 16 : 0) + description + chrome };
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
   return { image, window: {

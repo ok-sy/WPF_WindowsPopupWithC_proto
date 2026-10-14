@@ -5,7 +5,7 @@
  * 표시 방어만 한다(설계 48). 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
-export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
+type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
 export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
 export interface RichRun {
   text: string;
@@ -63,7 +63,7 @@ export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
   { id: 'BATANG', css: '바탕, Batang, serif', label: '바탕' },
 ];
 /** 서버와 같은 색 규칙: 대문자 #RRGGBB. */
-export const isAllowedColor = (value: unknown): value is string =>
+const isAllowedColor = (value: unknown): value is string =>
   typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value);
 const ALIGN_FROM_CSS: Record<string, RichAlignment> = { left: 'LEFT', center: 'CENTER', right: 'RIGHT' };
 const FLAG_KEYS = ['bold', 'italic', 'underline', 'color', 'size', 'font'] as const;

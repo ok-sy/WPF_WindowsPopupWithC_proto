@@ -21,7 +21,7 @@ w.mount = (blocks: RichBlock[], disabled = false, previewBlocks: RichBlock[] | n
     {previewBlocks && <div id="preview" style={{ width: 300, padding: 16 }}>
       <PopupPreview popup={{ popupId: 'TEXT', popupType: 'TEXT', title: 'TEXT', sizeMode: 'FIXED', width: 300, height: 600, showHeader: false,
         showFooter: false, questions: [], content: { showPlainText: true, textBlocks: previewBlocks, plainText: blocksToPlainText(previewBlocks) } } as any}
-        fitContainer showBackground={false} />
+        showBackground={false} />
     </div>}
     <button id="outside" style={{ marginLeft: 16 }}>바깥</button>
   </ThemeProvider>);

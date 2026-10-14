@@ -7,8 +7,8 @@ import SurveyPreview, {
 import popupDemoQuestions from './popupDemoQuestions';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
+import { popupFontSize } from './popupCommon';
 import {
-  adaptiveMaximum,
   fitToImageLayout,
   imageSizeMode,
   POPUP_FOOTER_HEIGHT,
@@ -34,10 +34,9 @@ import {
 } from '@mui/material';
 
 // [설계 18 L-0 W-2] 새 창 미리보기 페이지(pages/popup-preview.tsx)를 여는 코드가 없어 페이지와 함께
-// standalone prop·분기를 삭제했다. 미리보기는 편집기 내 패널(fitContainer)과 "실제 크기로 보기" 모달만 사용한다.
+// standalone prop·분기를 삭제했다. 미리보기는 편집기 내 패널과 "실제 크기로 보기" 모달만 사용하며 둘 다 부모 영역을 채운다.
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
-  fitContainer?: boolean;
   showBackground?: boolean;
   onClose?: () => void;
   /** [설계 18 L-5 — W-10] IMAGE FIT_TO_IMAGE에서 WPF가 다시 계산할 팝업 창 크기. 그 외에는 null. */
@@ -53,29 +52,12 @@ function doNotShowAgainLabel(hideDays?: number | null): string {
   return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
 }
 
-function titleKey(type: AdminPopupDetail['popupType']): string {
-  if (type === 'IMAGE') return 'imageTitle';
-  if (type === 'VIDEO') return 'videoTitle';
-  if (type === 'SURVEY' || type === 'QUIZ') return 'surveyTitle';
-  return 'contentTitle';
-}
-
-function previewSize(popup: AdminPopupDetail, recommended?: Size) {
-  if (popup.sizeMode === 'FULLSCREEN') return { width: '100%', height: 520 };
-  if (popup.sizeMode === 'RATIO') {
-    return {
-      width: `${Math.max(25, Math.min(100, popup.widthRatio * 100))}%`,
-      height: Math.max(280, Math.min(520, popup.heightRatio * 520)),
-    };
-  }
-
-  const width = recommended?.width ?? (popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' ? Number(popup.content.width ?? 560) : (popup.width ?? 560));
-  const height = recommended?.height ?? (popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' ? Number(popup.content.height ?? 420) : (popup.height ?? 420));
-  const scale = Math.min(1, 760 / Math.max(width, 1), 520 / Math.max(height, 1));
-  return {
-    width: Math.max(320, width * scale),
-    height: Math.max(260, height * scale),
-  };
+/** [설계 37] TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
+function contentTitle(popup: AdminPopupDetail): string {
+  const content = popup.content;
+  if (popup.popupType === 'TEXT') return '';
+  if (popup.popupType === 'IMAGE') return String(content.imageTitle ?? '');
+  return text(popup.popupType === 'VIDEO' ? content.videoTitle : content.surveyTitle, '콘텐츠 제목');
 }
 
 interface PopupBodyProps {
@@ -135,11 +117,11 @@ function PopupBody({
     const imageUrl = text(content.imageUrl, '');
     const mode = imageSizeMode(popup);
     const original = mode === 'ORIGINAL';
-    const imageFill = original;
-    const showDescription = !imageFill && content.showDescription !== false && Boolean(String(content.description ?? '').trim());
+    const showDescription = !original && content.showDescription !== false && Boolean(String(content.description ?? '').trim());
 
     const fixedImage = mode === 'FIT_TO_IMAGE' ? fitLayout?.image : undefined;
-    const maximum = mode === 'ADAPTIVE' ? adaptiveMaximum(popup, naturalImageSize) : {};
+    // ADAPTIVE는 원본보다 확대하지 않는다(별도 이미지 크기 상한 없음).
+    const maximum: Partial<Size> = mode === 'ADAPTIVE' ? (naturalImageSize ?? {}) : {};
 
     const image = imageUrl ? (
       <Box
@@ -188,7 +170,7 @@ function PopupBody({
       </Box>
     );
 
-    if (imageFill) {
+    if (original) {
       return (
         <Box
           sx={{
@@ -387,7 +369,6 @@ function PopupBody({
 
 export default function PopupPreview({
   popup: configuredPopup,
-  fitContainer = false,
   showBackground = true,
   onClose,
   onRecommendedSize,
@@ -520,29 +501,23 @@ export default function PopupPreview({
   const overlayOpacity = Number.isFinite(requestedOpacity)
     ? Math.max(0, Math.min(1, requestedOpacity))
     : 0.45;
-  const size = fitContainer
-    ? { width: '100%', height: '100%' }
-    : previewSize(popup, recommendedWidth != null && recommendedHeight != null
-        ? {width: recommendedWidth, height: recommendedHeight} : undefined);
-  const imageFill =
+  const originalImage =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
-  const contentTitle = popup.popupType === 'IMAGE' ? String(contentValue(popup, 'imageTitle') ?? '') : text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
+  const title = contentTitle(popup);
   // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
-  const headerFontSize = fontSize(popup, 'headerFontSize');
-  const bodyFontSize = fontSize(popup, 'bodyFontSize');
-  const footerFontSize = fontSize(popup, 'footerFontSize');
-  const showContentTitle =
-    // [설계 37] TEXT는 콘텐츠 제목·설명이 본문(textBlocks)에 포함되어 별도 제목을 그리지 않는다.
-    !imageFill && popup.popupType !== 'TEXT' && Boolean(contentTitle.trim());
+  const headerFontSize = popupFontSize(popup, 'headerFontSize');
+  const bodyFontSize = popupFontSize(popup, 'bodyFontSize');
+  const footerFontSize = popupFontSize(popup, 'footerFontSize');
+  const showContentTitle = !originalImage && Boolean(title.trim());
 
   return (
     <Box
       sx={{
-        minHeight: fitContainer ? 0 : 570,
-        height: fitContainer ? '100%' : undefined,
+        minHeight: 0,
+        height: '100%',
         p: showBackground ? 2 : 0,
         ...(popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN' ? {p: '24px'} : {}),
-        flex: fitContainer ? 1 : undefined,
+        flex: 1,
         boxSizing: 'border-box',
         position: 'relative',
         isolation: 'isolate',
@@ -567,7 +542,8 @@ export default function PopupPreview({
       <Paper
         elevation={isSurvey ? 0 : 8}
         sx={{
-          ...size,
+          width: '100%',
+          height: '100%',
           maxWidth: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -657,8 +633,8 @@ export default function PopupPreview({
             ...(popup.popupType === 'IMAGE' ? {display: 'flex', flexDirection: 'column'} : {}),
             overflowX: 'hidden',
             overflowWrap: 'anywhere',
-            p: imageFill ? 0 : 3,
-            ...(popup.popupType === 'IMAGE' && !imageFill ? {px: '28px', py: '24px'} : {}),
+            p: originalImage ? 0 : 3,
+            ...(popup.popupType === 'IMAGE' && !originalImage ? {px: '28px', py: '24px'} : {}),
             ...(isSurvey
               ? {
                   scrollbarWidth: 'thin',
@@ -683,7 +659,7 @@ export default function PopupPreview({
                 ...(isSurvey ? { fontSize: 25, color: surveyColors.text } : {}),
               }}
             >
-              {contentTitle}
+              {title}
             </Typography>
           )}
           {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
@@ -800,19 +776,4 @@ export default function PopupPreview({
       </Paper>
     </Box>
   );
-}
-
-function contentValue(popup: AdminPopupDetail, key: string): unknown {
-  return popup.content[key];
-}
-
-/** [설계 14 §5.7] content의 폰트 크기 값을 읽어 10~40으로 보정한다. 없거나 숫자가 아니면 null(기본 크기). */
-function fontSize(
-  popup: AdminPopupDetail,
-  key: 'headerFontSize' | 'bodyFontSize' | 'footerFontSize',
-): number | null {
-  const value = popup.content[key];
-  if (value == null || value === '') return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(10, Math.min(40, number)) : null;
 }

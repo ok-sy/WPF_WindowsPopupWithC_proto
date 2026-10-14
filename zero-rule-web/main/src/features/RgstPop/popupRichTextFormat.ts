@@ -1,11 +1,11 @@
 /*
- * [설계 28 §11] 서식 메뉴(우클릭·'서식' 버튼)의 상태 읽기와 적용. React와 분리해 실제 편집기로 검증할 수 있게 둔다.
+ * [설계 28 §11] 서식 패널(우클릭·'서식' 버튼)의 상태 읽기와 적용. React와 분리해 실제 편집기로 검증할 수 있게 둔다.
  * 선택 구간이 있으면 그 구간에만, 없으면(커서만 있으면) 이후 입력할 글자에 적용한다(CKEditor 선택 속성).
  */
 import { RICH_FONTS, RICH_INDENT_STEP, RICH_MAX_INDENT, type RichFontId } from './popupRichText';
 
-export type FormatKey = 'bold' | 'italic' | 'underline' | 'fontColor' | 'fontSize' | 'fontFamily';
-export const FORMAT_KEYS: FormatKey[] = ['bold', 'italic', 'underline', 'fontColor', 'fontSize', 'fontFamily'];
+type FormatKey = 'bold' | 'italic' | 'underline' | 'fontColor' | 'fontSize' | 'fontFamily';
+const FORMAT_KEYS: FormatKey[] = ['bold', 'italic', 'underline', 'fontColor', 'fontSize', 'fontFamily'];
 
 /** value는 선택 전체가 같을 때의 값, mixed는 선택 안에 서로 다른 값이 섞였는지. */
 export type FormatState = Record<FormatKey, { value: string | boolean | null; mixed: boolean }>;
@@ -45,8 +45,8 @@ export const sizeFromModel = (value: unknown) => (typeof value === 'string' && v
 export const fontIdFromModel = (value: unknown) =>
   typeof value === 'string' ? RICH_FONTS.find((font) => normalizeFontCss(font.css) === normalizeFontCss(value))?.id ?? null : null;
 
-/** focusEditor=false면 포커스를 옮기지 않는다(열린 서식 패널에서 키보드로 연속 적용할 때). */
-export function applyFormat(editor: any, action: FormatAction, focusEditor = true): void {
+/** 편집기로 포커스를 옮기지 않는다(열린 서식 패널에서 키보드로 연속 적용할 수 있게). */
+export function applyFormat(editor: any, action: FormatAction): void {
   switch (action.type) {
     case 'toggle': {
       // 섞여 있거나 꺼져 있으면 모두 켜고, 모두 켜져 있을 때만 끈다.
@@ -70,7 +70,6 @@ export function applyFormat(editor: any, action: FormatAction, focusEditor = tru
       editor.execute('removeFormat');
       break;
   }
-  if (focusEditor) editor.editing.view.focus();
 }
 
 /*

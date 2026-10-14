@@ -13,7 +13,7 @@ import {displayImageSize, fitToImageLayout} from '../zero-rule-web/main/src/feat
     minimumWidth: 100, minimumHeight: 100, maximumWidth: 1600, maximumHeight: 900, showHeader: true, showCloseButton: true, showFooter: true,
     showDoNotShowAgain: true, questions: [], content: popupType === 'IMAGE' ? {imageSizeMode: 'ADAPTIVE', imageUrl: '', width: 560, height: 420} : {plainText: '본문'}} as any;
   root.render(<ThemeProvider theme={theme}><CssBaseline/><div style={{width: 560, height: 420}}>
-    <PopupPreview key={'chrome-' + popupType} popup={popup} fitContainer showBackground={false}/>
+    <PopupPreview key={'chrome-' + popupType} popup={popup} showBackground={false}/>
   </div></ThemeProvider>);
 };
 const root = createRoot(document.getElementById('root')!);
@@ -31,7 +31,7 @@ const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, san
   const size = mode === 'FIT_TO_IMAGE' ? layout.window : {width: Number(width ?? 560), height: Number(height ?? 420)};
   (window as any).imageState = {popup, layout, display: displayImageSize(popup, natural)};
   root.render(<ThemeProvider theme={theme}><CssBaseline/><div style={{width: size.width, height: size.height}}>
-    <PopupPreview key={JSON.stringify(popup.content) + minimumWidth + maximumWidth + footer} popup={popup} fitContainer showBackground={false}/>
+    <PopupPreview key={JSON.stringify(popup.content) + minimumWidth + maximumWidth + footer} popup={popup} showBackground={false}/>
   </div></ThemeProvider>);
 };
 (window as any).scenario();

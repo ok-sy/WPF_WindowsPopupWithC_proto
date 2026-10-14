@@ -27,14 +27,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PopupEditorDialog from './PopupEditorDialog';
-
-const popupTypeLabels: Record<string, string> = {
-  TEXT: '텍스트',
-  IMAGE: '이미지',
-  VIDEO: '영상',
-  SURVEY: '설문',
-  QUIZ: '퀴즈',
-};
+import { POPUP_TYPE_LABELS, popupDateMillis } from './popupCommon';
 
 const displayModeLabels: Record<string, string> = {
   SEQUENTIAL: '순차',
@@ -42,11 +35,7 @@ const displayModeLabels: Record<string, string> = {
 };
 
 function formatPopupDate(value: PopupDateValue): string {
-  const numericValue = typeof value === 'number' ? value : Number.NaN;
-  const date = Number.isFinite(numericValue)
-    ? new Date(numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue)
-    : new Date(value);
-
+  const date = new Date(popupDateMillis(value));
   return Number.isNaN(date.getTime())
     ? '-'
     : new Intl.DateTimeFormat('ko-KR', {
@@ -202,7 +191,7 @@ export default function RgstPop() {
             />
             <Select size="small" value={popupType} onChange={(event) => setPopupType(event.target.value)}>
               <MenuItem value="ALL">전체 유형</MenuItem>
-              {Object.entries(popupTypeLabels).map(([value, label]) => (
+              {Object.entries(POPUP_TYPE_LABELS).map(([value, label]) => (
                 <MenuItem key={value} value={value}>
                   {label}
                 </MenuItem>
@@ -250,7 +239,7 @@ export default function RgstPop() {
                     <TableCell>{displayModeLabels[popup.displayMode] ?? popup.displayMode}</TableCell>
                     <TableCell>{popup.popupId}</TableCell>
                     <TableCell>
-                      <Chip size="small" label={popupTypeLabels[popup.popupType] ?? popup.popupType} />
+                      <Chip size="small" label={POPUP_TYPE_LABELS[popup.popupType] ?? popup.popupType} />
                     </TableCell>
                     <TableCell>{popup.title}</TableCell>
                     <TableCell>{formatPopupDate(popup.displayStartAt)}</TableCell>
@@ -306,11 +295,6 @@ export default function RgstPop() {
 }
 
 function dateValue(value: PopupDateValue): number {
-  const numericValue = typeof value === 'number' ? value : Number.NaN;
-  const date = Number.isFinite(numericValue)
-    ? numericValue < 1_000_000_000_000
-      ? numericValue * 1000
-      : numericValue
-    : new Date(value).getTime();
+  const date = popupDateMillis(value);
   return Number.isNaN(date) ? 0 : date;
 }

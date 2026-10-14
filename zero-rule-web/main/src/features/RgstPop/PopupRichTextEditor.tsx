@@ -51,7 +51,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
   const applyMenu = (action: FormatAction) => {
     const editor = editorRef.current;
     if (!editor || disabledRef.current) return;
-    applyFormat(editor, action, false);
+    applyFormat(editor, action);
     setFormatState(readFormatState(editor));
   };
   /* 키보드(메뉴 키·Shift+F10)로 연 경우 마우스 좌표가 없으므로 커서·선택 위치 아래에 연다. */
