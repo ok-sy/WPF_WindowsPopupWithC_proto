@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-14-03 — TODO48 TEXT 서버 정책과 C# 표시 방어 분리 구현
+
+- 이유: 서버·C#이 같은 서식 허용 목록을 각각 관리하면 한쪽 변경 누락으로 정상 저장한 서식이 WPF에서 조용히 무시될 수 있어, 정책 검증은 서버에 두고 WPF는 표시 변환·최소 방어만 맡도록 분리.
+- 변경:
+  - WPF 렌더러(`PopupRichText.cs`): 크기 목록 검사(`Sizes`)와 대문자 색 검사(`IsAllowedColor`) 제거. 크기는 유한값·안전 범위 1~200 DIP만 적용하고 밖이면 기본 크기, 색은 `#RRGGBB` 대소문자 무관을 예외 없이 변환하고 실패한 구간만 기본 색. 글꼴 ID 매핑·정렬 변환·null 처리는 유지.
+  - 입력 경계(`PopupTextBlockDto.cs`·`TextPopupContentDto.cs`): textBlocks 전용 `LenientTextBlocksConverter` 추가. 서식 값의 JSON 타입 오류는 그 값만 기본값으로 두고(이전에는 content 변환 예외로 팝업 전체 미표시), 글자를 읽을 수 없는 구조 오류는 서식 본문 대신 서버 파생 plainText 표시. plainText 자체의 타입 오류는 기존 content 변환 오류 경로 유지.
+  - Demo: 저장 검증용 크기·글꼴·대문자 색 목록을 `DemoOptionsWindow`의 Demo 전용 사본으로 이동(운영 시점 Demo와 함께 제거 대상).
+  - 문서·주석: 설계 48 구현 결과, 설계 36 상태, 설계 28 WPF 설명, 인터페이스 계약 8.1, ALL 정의서, 서버 `PopupRichText.java`·관리자 웹 `popupRichText.ts` 주석을 서버 정책 검증과 WPF 표시 방어로 구분해 갱신. MINIMAL 범위 변경 없음.
+- 주요 파일: popup-frameWork/Popup/(Views/Contents/PopupRichText.cs, Dtos/PopupTextBlockDto.cs, Dtos/TextPopupContentDto.cs, DemoOptionsWindow.cs), zero-rule-server/.../popup/PopupRichText.java(주석), zero-rule-web/main/src/features/RgstPop/popupRichText.ts(주석), docs/design/(28_*, 36_*, 48_*), docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md), version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. 행동 검증 981건 통과(로컬, 설계 48 전용 19건 추가 — 서버 목록 밖·안전 범위 안 크기 표시, 비정상 크기·색·글꼴·정렬 기본값, 타입 오류 값별 기본값, 구조 오류 8종 plainText 대체, 서버·관리자 웹 글꼴 ID와 WPF 매핑 원본 대조. 기존 설계 28 검증의 소문자 색·허용 밖 크기 무시 기대를 새 방향으로 변경). 복구 검증 158건 통과. 서버·관리자 웹은 주석만 변경해 빌드·테스트 미실행. 실제 Windows 팝업 육안 확인·원격 개발 DB 데이터 표시 확인·Word/Excel 산출물 재생성 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-14-02 — TODO49 TEXT 들여쓰기와 우클릭 펼침 팔레트 요구사항 등록
 
 - 이유: TEXT 문단 들여쓰기의 편집·저장·팝업 표시 일관성과 우클릭 서식 패널 배치 요구사항을 정리할 필요.

@@ -199,7 +199,7 @@ namespace Popup
             {
                 Text = "문단: { alignment: LEFT|CENTER|RIGHT, runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
                     + "색 #RRGGBB(대문자) · 크기 "
-                    + string.Join(" ", Popup.Views.Contents.PopupRichText.Sizes) + " · 글꼴 " + string.Join(" ", Popup.Views.Contents.PopupRichText.Fonts.Keys),
+                    + string.Join(" ", ServerRichSizes) + " · 글꼴 " + string.Join(" ", ServerRichFonts),
                 TextWrapping = TextWrapping.Wrap, Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 6),
             });
             var text = new TextBox
@@ -222,6 +222,15 @@ namespace Popup
                 target["textBlocks"] = node;
             });
         }
+
+        /*
+         * [설계 48] 서버 PopupRichText.java의 저장 허용 값. Demo는 서버 없이 저장 검증을 흉내 내므로 이 사본을 Demo 안에만 둔다
+         * (WPF 렌더러는 정책 목록을 갖지 않는다). 운영 시점에 Demo와 함께 제거한다.
+         */
+        private static readonly double[] ServerRichSizes = { 12, 14, 16, 18, 20, 24, 28, 32 };
+        private static readonly string[] ServerRichFonts = { "MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG" };
+        private static bool IsServerRichColor(string value) =>
+            value.Length == 7 && value[0] == '#' && value.Skip(1).All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
 
         /* 서버 PopupRichText.validateAndDerivePlainText와 같은 규칙. 통과하면 파생 plainText를 돌려준다. */
         internal static string ValidateTextBlocks(JsonArray blocks)
@@ -250,11 +259,11 @@ namespace Popup
                     foreach (string flag in new[] { "bold", "italic", "underline" })
                         if (run[flag] is JsonNode f && f.GetValueKind() is not (JsonValueKind.True or JsonValueKind.False))
                             throw new ArgumentException($"서식 본문: {flag}는 true/false여야 합니다.");
-                    if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.IsAllowedColor(color.GetValue<string>())))
+                    if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && IsServerRichColor(color.GetValue<string>())))
                         throw new ArgumentException("서식 본문: 글자 색은 #RRGGBB(대문자) 형식이어야 합니다.");
-                    if (run["size"] is JsonNode size && !(size.GetValueKind() == JsonValueKind.Number && Popup.Views.Contents.PopupRichText.Sizes.Contains(size.GetValue<double>())))
+                    if (run["size"] is JsonNode size && !(size.GetValueKind() == JsonValueKind.Number && ServerRichSizes.Contains(size.GetValue<double>())))
                         throw new ArgumentException("서식 본문: 허용되지 않은 글자 크기입니다.");
-                    if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && Popup.Views.Contents.PopupRichText.Fonts.ContainsKey(font.GetValue<string>())))
+                    if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && ServerRichFonts.Contains(font.GetValue<string>())))
                         throw new ArgumentException("서식 본문: 허용되지 않은 글꼴입니다.");
                     plain.Append(text);
                 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Popup.Dtos
 {
@@ -7,6 +8,8 @@ namespace Popup.Dtos
         // [설계 37] ContentTitle·Description·ShowContentHeader 삭제 — 콘텐츠 제목·설명은 서식 본문(TextBlocks) 앞 문단으로 작성한다.
         public string PlainText { get; set; } = string.Empty;
         // [설계 28] 서식 본문. 있으면 PlainText 대신 표시하고, 없으면(기존 데이터) PlainText를 표시한다.
+        // [설계 48-5] 서식 값 타입 오류는 그 값만 기본값으로, 글자를 읽을 수 없는 구조 오류는 plainText 표시로 처리한다.
+        [JsonConverter(typeof(LenientTextBlocksConverter))]
         public List<PopupTextBlockDto>? TextBlocks { get; set; }
         public bool ShowPlainText { get; set; } = true;
         public string HighlightText { get; set; } = string.Empty;

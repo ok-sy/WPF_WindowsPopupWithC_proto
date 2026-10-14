@@ -1,7 +1,8 @@
 /*
  * [설계 28] TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
  * 저장·전달 기준은 문단·Run JSON이며 HTML은 CKEditor 입출력에서만 다룬다.
- * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java, WPF PopupRichText.cs와 같아야 한다.
+ * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java와 같아야 한다. WPF PopupRichText.cs는 목록을 복제하지 않고
+ * 표시 방어만 한다(설계 48). 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
 export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';

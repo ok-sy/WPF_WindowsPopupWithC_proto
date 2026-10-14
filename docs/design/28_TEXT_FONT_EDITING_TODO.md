@@ -224,7 +224,7 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 - 계약: content.textBlocks = [{ alignment, runs: [{ text, bold, italic, underline, color, size, font }] }]. 허용 값: 색은 대문자 #RRGGBB 형식이면 모두 허용(팔레트 제한 없음, 편집기 팔레트 8색 #111827 #6B7280 #DC2626 #EA580C #CA8A04 #16A34A #2563EB #7C3AED는 선택지), 크기 12·14·16·18·20·24·28·32px, 글꼴 ID MALGUN_GOTHIC·GULIM·DOTUM·BATANG, 정렬 LEFT·CENTER·RIGHT. 최대 500문단·2000구간·20000자. 상세는 인터페이스 계약 8.1.
 - 서버: `PopupRichText.java`가 구조·허용 값·제한을 검증하고(허용 밖 값은 저장 거부, TEXT 외 유형의 textBlocks 거부) plainText를 textBlocks에서 파생해 CONTENT_BODY에 저장한다. textBlocks는 CONTENT_OPTIONS에 저장되며 DB 변경은 없다.
 - 관리자 웹: `PopupRichTextEditor.tsx`(팝업 전용 CKEditor 툴바: 굵게·기울임·밑줄·글자색·크기·글꼴·정렬·서식 지우기·실행 취소/다시 실행)와 `popupRichText.ts`(HTML↔Run 변환, 허용 값, 붙여넣기 정리). 변경 시 textBlocks와 파생 plainText를 함께 갱신. 서식 본문이 없는 기존 데이터는 plainText를 서식 없는 문단으로 열어 편집한다. 미리보기는 React 요소로 표시한다(innerHTML 미사용).
-- WPF: `PopupTextBlockDto`·`PopupRichText.cs`가 문단별 TextBlock Inlines로 표시. 허용 밖 서식 값은 무시하고 글자만 표시, 빈 문단은 한 줄 높이 유지, 큰 글자 구간은 줄 높이를 늘림. bodyFontSize는 문단 기본 크기에 적용되고 구간 크기가 우선한다. textBlocks가 없으면 기존 plainText 표시.
+- WPF: `PopupTextBlockDto`·`PopupRichText.cs`가 문단별 TextBlock Inlines로 표시. 허용 밖 서식 값은 무시하고 글자만 표시(→ 설계 48에서 정책 목록 검사를 제거하고 표시 방어로 변경), 빈 문단은 한 줄 높이 유지, 큰 글자 구간은 줄 높이를 늘림. bodyFontSize는 문단 기본 크기에 적용되고 구간 크기가 우선한다. textBlocks가 없으면 기존 plainText 표시.
 - Demo: TEXT 샘플에 서식 본문(10문단) 추가, 옵션 창에서 textBlocks JSON 편집(서버와 같은 검증·plainText 파생, 비우면 일반 본문 사용), 시나리오 요약에 서식 본문 문단 수 표시.
 - 검증: 서버 PopupRichTextTest 6건 등 popup 테스트 통과, WPF 행동 검증 847건 통과(서식 표시·허용 밖 값 무시·대체·기본 크기·Demo 편집/거부/요약), HTML5 브리지 95건, 관리자 웹 tsc 통과, 실제 편집기 빌드에서 변환 모듈 왕복·툴바 제한·붙여넣기 정리·읽기 전용 확인(저장소 밖 하네스).
 - 우클릭 서식 메뉴: §11.1에 구현. 미완료: §9.4·§11.1·§12의 관리자 화면 수동 확인(한글 IME·복사/붙여넣기·실제 저장→재편집), §6 라이선스 배포 조건·보안 권고 확인.

@@ -10,18 +10,25 @@ using System.Windows.Media;
 namespace Popup.Views.Contents
 {
     /*
-     * [설계 28] 문단·Run JSON을 WPF TextBlock Inlines로 만든다.
-     * HTML/XAML 문자열을 로드하지 않고, 허용 목록 밖의 서식 값은 무시하고 글자만 표시한다.
-     * 크기·글꼴 허용 값과 색 규칙은 서버 PopupRichText.java, 관리자 웹 popupRichText.ts와 같아야 한다.
-     * 글자 색은 팔레트가 아니라 #RRGGBB(대문자) 형식만 확인한다.
-     * [설계 36] 서버는 저장 시에만 검증하고 조회 응답·Demo 내장 샘플은 재검증하지 않으므로, 이 표시 단계 검사는
-     * 중복 정책이 아니라 마지막 방어선으로 유지한다(색 파싱 예외·비정상 크기 방지). Demo 옵션 검증도 같은 목록을 쓴다.
+     * [설계 28] 문단·Run JSON을 WPF TextBlock Inlines로 만든다. HTML/XAML 문자열은 로드하지 않는다.
+     * [설계 48] 서식 허용 정책(크기 목록·색 형식·글꼴 ID·정렬 값)은 서버 PopupRichText.java가 저장 시 검증한다.
+     * 이 렌더러는 정책 목록을 복제하지 않고 WPF 변환과 표시 방어만 맡는다 — 서버 목록과 어긋나 정상 저장한 서식이
+     * 조용히 무시되는 것을 막기 위해서다(설계 36의 화이트리스트 유지 결론은 설계 48이 대체).
+     *   크기: 유한값이고 WPF·레이아웃 안전 범위(MinFontSize~MaxFontSize) 안이면 적용, 밖이면 본문 기본 크기.
+     *   색: #RRGGBB(대소문자 무관)를 예외 없이 변환, 실패하면 그 구간만 기본 색.
+     *   글꼴: ID → WPF 글꼴명 매핑(표현 의존성). 서버에 새 ID를 추가하면 매핑도 추가해야 하며, 없는 ID는 기본 글꼴.
+     *   정렬: LEFT·CENTER·RIGHT 변환, 그 밖의 값은 왼쪽.
      */
     internal static class PopupRichText
     {
-        internal static bool IsAllowedColor(string? value) =>
-            value is { Length: 7 } && value[0] == '#' && value.Skip(1).All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
-        internal static readonly HashSet<double> Sizes = new() { 12, 14, 16, 18, 20, 24, 28, 32 };
+        /*
+         * 크기 안전 범위. 0·음수·NaN·Infinity는 WPF FontSize 예외이고, 200 DIP를 넘으면 팝업 최대 폭에서 한 줄에
+         * 몇 글자도 배치되지 않아 레이아웃이 무너진다. 서버 허용 크기(현재 12~32)를 복제한 값이 아니며,
+         * 서버가 이 범위를 넘는 크기를 허용하도록 계약을 넓힐 때는 이 범위의 영향도 함께 확인한다.
+         */
+        internal const double MinFontSize = 1;
+        internal const double MaxFontSize = 200;
+
         /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다(설계 28 §5). */
         internal static readonly Dictionary<string, string> Fonts = new()
         {
@@ -30,6 +37,21 @@ namespace Popup.Views.Contents
             ["DOTUM"] = "Dotum",
             ["BATANG"] = "Batang",
         };
+
+        /// <summary>#RRGGBB(대소문자 무관)를 색으로 바꾼다. 다른 형식이면 false(예외 없음).</summary>
+        internal static bool TryParseColor(string? value, out Color color)
+        {
+            color = default;
+            if (value is not { Length: 7 } || value[0] != '#' || !uint.TryParse(value.AsSpan(1),
+                    System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out uint rgb))
+                return false;
+            color = Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+            return true;
+        }
+
+        /// <summary>표시에 쓸 크기. 안전 범위 밖이면 null(본문 기본 크기).</summary>
+        internal static double? SafeFontSize(double? size) =>
+            size is double value && double.IsFinite(value) && value >= MinFontSize && value <= MaxFontSize ? value : null;
 
         /// <summary>서식 본문이 있으면 문단마다 TextBlock을 만든다. 표시할 문단이 없으면 빈 목록이다.</summary>
         internal static List<TextBlock> CreateParagraphs(IReadOnlyList<PopupTextBlockDto>? blocks, Style? style)
@@ -84,9 +106,8 @@ namespace Popup.Views.Contents
             if (format.Bold) run.FontWeight = FontWeights.Bold;
             if (format.Italic) run.FontStyle = FontStyles.Italic;
             if (format.Underline) run.TextDecorations = TextDecorations.Underline;
-            if (IsAllowedColor(format.Color))
-                run.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(format.Color));
-            if (format.Size is double size && Sizes.Contains(size)) run.FontSize = size;
+            if (TryParseColor(format.Color, out Color color)) run.Foreground = new SolidColorBrush(color);
+            if (SafeFontSize(format.Size) is double size) run.FontSize = size;
             if (format.Font != null && Fonts.TryGetValue(format.Font, out string? family)) run.FontFamily = new FontFamily(family);
             return run;
         }

@@ -13,7 +13,8 @@ import java.util.Set;
  * (관리자 편집기는 허용 값만 만들므로 거부는 API 직접 입력 방어다).</p>
  *
  * <p>글자 색은 팔레트로 제한하지 않고 {@code #RRGGBB}(대문자) 형식만 검사한다. 가독성은 작성자가 판단한다.
- * 크기·글꼴·정렬 허용 값과 색 규칙은 관리자 웹 {@code popupRichText.ts}, WPF {@code PopupRichText.cs}와 같아야 한다.</p>
+ * 크기·글꼴·정렬 허용 값과 색 규칙은 관리자 웹 {@code popupRichText.ts}와 같아야 한다. [설계 48] WPF {@code PopupRichText.cs}는
+ * 이 목록을 복제하지 않고 표시 방어만 하므로, 허용 값의 정책 기준은 이 클래스다. 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.</p>
  */
 final class PopupRichText {
 
