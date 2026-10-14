@@ -52,6 +52,11 @@ function doNotShowAgainLabel(hideDays?: number | null): string {
   return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
 }
 
+/** WPF `{ratio * 100:0.##}`와 같이 비율을 소수 둘째 자리까지의 % 문자열로 바꾼다(0~1 보정). */
+function percentText(ratio: number): string {
+  return String(Math.round(Math.max(0, Math.min(1, ratio)) * 10000) / 100);
+}
+
 /** [설계 37] TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
 function contentTitle(popup: AdminPopupDetail): string {
   const content = popup.content;
@@ -90,10 +95,11 @@ function PopupBody({
           onImageLoad={onImageLoad}
           survey={survey}
         />
+        {/* WPF VideoQuizPopupView 안내 문구와 같다(기준 비율 포함). */}
         <Typography variant="body2" sx={{ color: surveyColors.muted }}>
           {videoUnlocked
             ? '시청 기준을 충족했습니다. 퀴즈에 응답해 주세요.'
-            : '시청 기준에 도달하면 퀴즈와 하단 버튼이 활성화됩니다.'}
+            : `영상을 ${percentText(popup.completionRatio ?? 1)}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.`}
         </Typography>
         <Box
           component="fieldset"
@@ -387,9 +393,12 @@ export default function PopupPreview({
         }
       : configuredPopup;
   const questionSignature = JSON.stringify(popup.questions);
+  // [설계 43] QUIZ 미달 판정을 한 번이라도 받았는지(보조 닫기 버튼 표시 조건). 답을 고쳐도 유지한다.
+  const [quizFailed, setQuizFailed] = useState(false);
   useEffect(() => {
     setAnswers({});
     setSubmissionStatus('');
+    setQuizFailed(false);
   }, [configuredPopup.popupId, questionSignature]);
   const onAnswer = (id: number, answer: PreviewAnswer) => {
     setAnswers((previous) => ({ ...previous, [id]: answer }));
@@ -412,9 +421,11 @@ export default function PopupPreview({
       setSubmissionStatus('미리보기: 제출 완료');
       return;
     }
+    // [설계 43] WPF 미달 안내와 같이 틀린 채점 문항의 화면 번호(1부터)를 모은다.
+    const wrongNumbers: number[] = [];
     const score = popup.questions
-      .filter((question) => question.isScored)
-      .reduce((total, question) => {
+      .reduce((total, question, index) => {
+        if (!question.isScored) return total;
         const answer = answers[question.questionId];
         const correctIds = question.options
           .filter((option) => option.isCorrect)
@@ -435,24 +446,46 @@ export default function PopupPreview({
                 answer.optionIds.length === correctIds.length &&
                 correctIds.every((id) => answer.optionIds.includes(id)),
               );
+        if (!correct) wrongNumbers.push(index + 1);
         return total + (correct ? (question.questionScore ?? 0) : 0);
       }, 0);
     const rounded = Math.round(score * 100) / 100;
+    const passed = rounded >= (popup.passingScore ?? 0);
+    if (!passed) setQuizFailed(true);
     setSubmissionStatus(
-      `미리보기: ${rounded}점 · ${rounded >= (popup.passingScore ?? 0) ? '통과' : '미통과'}`,
+      `미리보기: ${rounded}점 · ${passed ? '통과' : '미통과'}` +
+        (!passed && wrongNumbers.length ? ` · 틀린 문항: ${wrongNumbers.join(', ')}번` : ''),
     );
   };
   const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
-  const [previewWatchRatio, setPreviewWatchRatio] = useState(0);
+  const isPlainVideo = popup.popupType === 'VIDEO';
+  // 미리보기 시청 비율은 슬라이더의 정수 %로 둔다(실제 재생 없음).
+  const [previewWatchPercent, setPreviewWatchPercent] = useState(0);
   useEffect(
-    () => setPreviewWatchRatio(0),
-    [popup.popupId, popup.content.videoUrl, popup.completionRatio, isVideoQuiz],
+    () => setPreviewWatchPercent(0),
+    [popup.popupId, popup.popupType, popup.content.videoUrl, popup.completionRatio, isVideoQuiz],
   );
-  const videoUnlocked = !isVideoQuiz || previewWatchRatio >= (popup.completionRatio ?? 1);
+  const requiredRatio = Math.max(0, Math.min(1, popup.completionRatio ?? 1));
+  const requiredPercent = percentText(requiredRatio);
+  /*
+   * [설계 43] WPF는 누적 시청 비율을 소수점 4자리에서 내림한 뒤 완료 기준 이상인지 본다.
+   * 미리보기 시청 비율은 정수 %(p/100)라 4자리 내림이 값을 바꾸지 않으므로 그대로 비교한다
+   * (부동소수 곱셈으로 내림을 흉내 내면 0.29*10000 = 2899.99…처럼 오히려 결과가 달라진다).
+   */
+  const watchReached = previewWatchPercent / 100 >= requiredRatio;
+  const videoUnlocked = !isVideoQuiz || watchReached;
+  // [설계 43] 일반 VIDEO는 allowCloseBeforeComplete=false이고 시청 기준 미달이면 Footer 버튼을 비활성화한다.
+  const videoCloseBlocked = isPlainVideo && !popup.allowCloseBeforeComplete && !watchReached;
   const linkAction = popup.content.footerAction === 'LINK_AND_CLOSE';
   const footerLink = normalizePopupLink(String(popup.content.footerLinkUrl ?? ''));
+  const resetPreview = () => {
+    setAnswers({});
+    setSubmissionStatus('');
+    setQuizFailed(false);
+    setPreviewWatchPercent(0);
+  };
   const handleFooter = () => {
-    if (!videoUnlocked) return;
+    if (!videoUnlocked || videoCloseBlocked) return;
     if (linkAction) {
       if (!footerLink) return;
       window.open(footerLink, '_blank', 'noopener,noreferrer');
@@ -509,6 +542,30 @@ export default function PopupPreview({
   const bodyFontSize = popupFontSize(popup, 'bodyFontSize');
   const footerFontSize = popupFontSize(popup, 'footerFontSize');
   const showContentTitle = !originalImage && Boolean(title.trim());
+  // [설계 43] 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
+  const reasonId = `${namePrefix}-completion-reason`;
+  const surveyProgress =
+    isVideoQuiz && !videoUnlocked
+      ? `영상 ${previewWatchPercent}% · 기준 ${requiredPercent}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`
+      : progress;
+  const videoReason =
+    isPlainVideo && !popup.allowCloseBeforeComplete
+      ? watchReached
+        ? '시청 기준을 충족했습니다'
+        : `영상 ${previewWatchPercent}% 시청 · 기준 ${requiredPercent}% 이상 시청하면 닫을 수 있습니다`
+      : '';
+  /*
+   * [설계 43] 보조 "닫기" 버튼: VIDEO+QUIZ는 완료 전 닫기 허용일 때(WPF의 재생 실패 조건은 미리보기에 없어 생략),
+   * QUIZ(영상 없음)는 미달 판정을 한 번 받은 뒤 배경 어둡기를 쓰지 않을 때만. SURVEY는 없고 showFooter=false면 숨긴다.
+   * 미리보기에서는 응답·시청 비율을 초기화하고 "실제 크기로 보기" 모달이면 닫는다.
+   */
+  const showSecondaryClose =
+    popup.showFooter &&
+    (isVideoQuiz
+      ? popup.allowCloseBeforeComplete
+      : popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled);
+  const submitDisabled = !videoUnlocked || remaining > 0 || !popup.questions.length;
+  const footerButtonDisabled = videoCloseBlocked || (linkAction && !footerLink);
 
   return (
     <Box
@@ -567,19 +624,20 @@ export default function PopupPreview({
             )}
           </Box>
         )}
-        {isVideoQuiz && (
+        {(isVideoQuiz || isPlainVideo) && (
           <Box sx={{ px: 2, pt: 1, bgcolor: surveyColors.card, flexShrink: 0 }}>
             <Typography variant="caption">
-              미리보기 시청 비율: {Math.round(previewWatchRatio * 100)}% (완료 기준{' '}
-              {Math.round((popup.completionRatio ?? 1) * 100)}%)
+              미리보기 시청 비율: {previewWatchPercent}% (완료 기준 {requiredPercent}%
+              {isPlainVideo && popup.allowCloseBeforeComplete ? ' · 완료 전 닫기 허용' : ''})
             </Typography>
             <Slider
               size="small"
               aria-label="미리보기 시청 비율"
-              value={previewWatchRatio * 100}
+              value={previewWatchPercent}
               min={0}
               max={100}
-              onChange={(_, value) => setPreviewWatchRatio(Number(value) / 100)}
+              step={1}
+              onChange={(_, value) => setPreviewWatchPercent(Number(value))}
               sx={{ color: surveyColors.focus }}
             />
           </Box>
@@ -693,11 +751,16 @@ export default function PopupPreview({
           >
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 13 }}>
-                  {progress}
+                <Typography
+                  id={reasonId}
+                  role="status"
+                  aria-live="polite"
+                  sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 13 }}
+                >
+                  {surveyProgress}
                 </Typography>
                 {submissionStatus && (
-                  <Typography role="status" sx={{ color: surveyColors.muted, fontSize: 13 }}>
+                  <Typography role="status" aria-live="polite" sx={{ color: surveyColors.muted, fontSize: 13 }}>
                     {submissionStatus}
                   </Typography>
                 )}
@@ -717,14 +780,32 @@ export default function PopupPreview({
                   />
                 )}
               </Box>
-              <Button
-                variant="contained"
-                sx={{ ...surveySubmitSx, fontSize: footerFontSize ?? 14 }}
-                disabled={!videoUnlocked || remaining > 0 || !popup.questions.length}
-                onClick={submitPreview}
-              >
-                제출
-              </Button>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
+                {showSecondaryClose && (
+                  <Button
+                    variant="text"
+                    color="inherit"
+                    sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14 }}
+                    onClick={() => {
+                      resetPreview();
+                      onClose?.();
+                    }}
+                  >
+                    닫기
+                  </Button>
+                )}
+                {/* 문항 0개는 편집기 저장 검증("문항을 한 개 이상 추가해 주세요.")이 막으므로 미리보기에서도 비활성으로 둔다.
+                    필수 문항이 0개(선택 문항만)이면 WPF와 같이 바로 제출할 수 있다. */}
+                <Button
+                  variant="contained"
+                  sx={{ ...surveySubmitSx, fontSize: footerFontSize ?? 14 }}
+                  disabled={submitDisabled}
+                  aria-describedby={submitDisabled ? reasonId : undefined}
+                  onClick={submitPreview}
+                >
+                  제출
+                </Button>
+              </Stack>
             </Stack>
           </Box>
         )}
@@ -750,21 +831,35 @@ export default function PopupPreview({
                   : {}),
               }}
             >
-              {popup.showDoNotShowAgain ? (
-                <FormControlLabel
-                  disabled={!videoUnlocked}
-                  control={<Checkbox size="small" />}
-                  label={doNotShowAgainLabel(popup.hideDays)}
-                />
-              ) : (
-                <span />
-              )}
+              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+                {popup.showDoNotShowAgain ? (
+                  <FormControlLabel
+                    control={<Checkbox size="small" />}
+                    label={doNotShowAgainLabel(popup.hideDays)}
+                  />
+                ) : (
+                  <span />
+                )}
+                {videoReason && (
+                  <Typography
+                    id={reasonId}
+                    role="status"
+                    aria-live="polite"
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: footerFontSize ?? undefined }}
+                  >
+                    {videoReason}
+                  </Typography>
+                )}
+              </Stack>
               {popup.showCloseButton && (
                 <Button
                   variant="contained"
                   color="inherit"
                   sx={{ minWidth: 92 }}
-                  disabled={!videoUnlocked || (linkAction && !footerLink)}
+                  disabled={footerButtonDisabled}
+                  aria-describedby={videoCloseBlocked ? reasonId : undefined}
                   onClick={handleFooter}
                 >
                   {linkAction ? '바로가기' : '닫기'}

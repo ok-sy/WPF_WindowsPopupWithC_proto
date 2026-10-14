@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-13 — TODO43 관리자 미리보기 완료 조건 버튼 UX 정합
+
+- 이유: 관리자 미리보기가 일반 VIDEO 완료 전 닫기 차단·사유 문구, VIDEO+QUIZ 잠금 기준 %, QUIZ 오답 번호, 보조 닫기 규칙을 재현하지 않아 WPF(설계 43)와 다름.
+- 변경: `PopupPreview.tsx`에 일반 VIDEO 시청 비율 슬라이더(정수 %)를 두어 `allowCloseBeforeComplete=false` 미달 시 Footer 버튼 비활성·사유 문구·도달 후 활성 재현, VIDEO+QUIZ 잠금 문구·본문 안내를 WPF와 같은 형식(기준 % 포함), QUIZ 미달 표시에 틀린 문항 번호, 보조 닫기 표시 규칙(VIDEO+QUIZ 완료 전 닫기 허용, QUIZ 미달 후 Overlay 꺼짐, `showFooter=false` 숨김), 사유 문구 `role="status"`·`aria-live`, 비활성 버튼 `aria-describedby`. 미리보기 대조 문서 갱신. 검증 하네스 `scripts/verify-completion-ux-43.cjs`(+entry) 추가.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, scripts/(verify-completion-ux-43.cjs, verify-completion-ux-43-entry.tsx), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/43_*, version-history/CHANGELOG.md.
+- 검증: `tsc --noEmit` 통과, eslint 오류 없음, `verify-completion-ux-43.cjs` 27건·`verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건·`verify-question-template-picker.cjs` 7건 통과(headless Edge). 실제 관리자 화면 확인은 미실행.
+- 상태: 커밋에 포함. 원격 반영.
+
 ## 2026-10-15-12 — TODO43·44 완료 조건 버튼 UX와 Background Overlay 키보드 종료 차단(WPF)
 
 - 이유: 완료 조건 미달 상태가 버튼에서 드러나지 않고(일반 VIDEO는 누른 뒤 MessageBox), 화면에 닫을 수단이 없는 상태가 있으며, Background Overlay를 켜도 Alt+F4 등으로 바로 닫혀 강제 표시 의미가 약했음. 또 앱 종료·로그오프 중 미완료 VIDEO 결과가 사라지고, 팝업 생성 실패 시 Overlay가 남는 결함이 있었음. 결정: 버튼은 비활성 + 사유 표시, 보조 닫기는 정책상 허용될 때만, Overlay=true일 때 키보드 강제 종료 차단, Esc는 무시.

@@ -19,9 +19,9 @@
 | 배경 | `PopupWindow` | `useBackgroundOverlay`, `backgroundOverlayOpacity`(기본 0.45) |
 | TEXT | `TextPopupView` | 카드 없이 일반 텍스트(콘텐츠 제목·설명은 본문 앞 문단, 설계 37), 강조 문구, 하단 설명(+연결 URL)을 각 표시 스위치대로 표시. `textBlocks`(설계 28 서식 본문)가 있으면 문단 정렬·들여쓰기(설계 49, 단계 × 40px = WPF 40 DIP)와 Run별 굵게·기울임·밑줄·색·크기·글꼴을 React 요소로 그린다(`innerHTML` 미사용) |
 | IMAGE | `ImagePopupView` / `ImageFillPopupView` | `imageSizeMode` ORIGINAL / ADAPTIVE / FIT_TO_IMAGE. ORIGINAL은 `ImageFillPopupView`에 대응하며 좌상단 원본 크기·클리핑·무스크롤을 재현한다 |
-| VIDEO | `VideoPopupView` | 설명, 컨트롤 표시, 배속·전체화면·재생 위치 변경(`allowSeek`) 허용 여부, 기본 음량, 완료 비율(실제 재생은 하지 않음) |
-| 동영상+퀴즈 | `VideoQuizPopupView` | 시청 비율 슬라이더로 잠금/해제 상태, 퀴즈·푸터 활성화 조건을 미리보기 |
-| SURVEY/QUIZ | `SurveyPopupView` | 문항·설명·필수 여부·보기, 문항별 `optionLayout` VERTICAL / HORIZONTAL, QUIZ 총점·통과 점수 |
+| VIDEO | `VideoPopupView` | 설명, 컨트롤 표시, 배속·전체화면·재생 위치 변경(`allowSeek`) 허용 여부, 기본 음량, 완료 비율(실제 재생은 하지 않음). 설계 43: 미리보기용 시청 비율 슬라이더로 `allowCloseBeforeComplete=false`일 때 기준 미달 Footer 버튼(닫기·바로가기) 비활성 + 사유 문구("영상 {현재}% 시청 · 기준 {기준}% 이상 시청하면 닫을 수 있습니다"), 도달 후 활성 + "시청 기준을 충족했습니다"를 재현한다. `true`면 항상 활성 |
+| 동영상+퀴즈 | `VideoQuizPopupView` | 시청 비율 슬라이더로 잠금/해제 상태, 퀴즈·푸터 활성화 조건을 미리보기. 잠금 중 본문 안내는 "영상을 {기준}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.", 푸터 진행 문구는 "영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다"이고 해제 후 문항 진행 문구로 바뀐다(설계 43) |
+| SURVEY/QUIZ | `SurveyPopupView` | 문항·설명·필수 여부·보기, 문항별 `optionLayout` VERTICAL / HORIZONTAL, QUIZ 총점·통과 점수. QUIZ 미달 시 점수와 틀린 채점 문항 번호("틀린 문항: 2, 4번", 문항 목록 순서 1부터)를 표시한다(설계 43) |
 
 ## 알려진 차이
 
@@ -32,7 +32,10 @@
   - FIT_TO_IMAGE: `content.width/height`(없으면 원본)는 이미지 표시 크기이며 팝업 창 크기를 다시 계산한다. 창 크롬은 WPF `PopupWindow`와 같이 가로 104(콘텐츠 여백 28+28, 외곽 여백 24+24, 본문 테두리 0), 세로 96(24+24, 24+24)에 Header 40·Footer 80을 더하고 이미지 테두리 1+1을 포함한다. 편집기 패널에 그 값을 안내하고 **실제 크기로 보기** 모달이 그 크기로 열린다.
   - 창 최대는 작업 영역의 90%다. 미리보기는 모니터 작업 영역 대신 브라우저 창 크기(`window.innerWidth/innerHeight`)를 쓰므로 실제 PC와 차이가 날 수 있다.
 - VIDEO 컨트롤: WPF는 로컬/HTTP(S) HTML5 영상 모두 영상 하단에 겹치는 WPF Overlay 컨트롤바를 사용하고 WebView2 네이티브 controls는 표시하지 않는다. 웹 미리보기는 영상 영역 아래에 한 줄 텍스트 모형(시간·탐색 제한·배속·전체화면)만 그리며 실제 재생·탐색·버퍼링·전체화면·시청량 동기화를 검증하지 않는다.
-- 동영상+퀴즈 미리보기의 시청 비율 슬라이더는 실제 영상 재생 시간이 아니라 UI 상태 확인용이다.
+- 일반 VIDEO·동영상+퀴즈 미리보기의 시청 비율 슬라이더는 실제 영상 재생 시간이 아니라 UI 상태 확인용이다(정수 %). WPF는 누적 시청 비율을 소수점 4자리에서 내림해 완료 기준과 비교하는데, 정수 % 값은 4자리 내림으로 바뀌지 않으므로 미리보기는 그대로 비교한다(판정 결과 동일).
+- 완료 조건 버튼 UX(설계 43): 미달 시 버튼은 숨기지 않고 비활성 + 사유 표시다. 미리보기는 사유 문구(Footer 진행 문구)에 `role="status"`·`aria-live="polite"`를 두고 비활성 버튼의 `aria-describedby`로 연결한다. WPF 일반 VIDEO의 '필수 영상 시청' 메시지 상자는 버튼이 비활성이라 미리보기에서 재현하지 않는다.
+- 보조 "닫기" 버튼(설계 43): 동영상+퀴즈는 `allowCloseBeforeComplete=true`일 때, QUIZ(영상 없음)는 미달 판정을 한 번 받은 뒤 `useBackgroundOverlay=false`일 때만 표시하며 SURVEY는 없다. `showFooter=false`면 숨긴다. WPF의 재생 실패 시 표시 조건은 미리보기에 재생 실패 상태가 없어 생략한다. 미리보기의 보조 닫기는 응답·시청 비율·미달 상태를 초기화하고 **실제 크기로 보기** 모달이면 모달을 닫는다.
+- 문항 0개: 편집기 저장 검증("문항을 한 개 이상 추가해 주세요.")이 막아 저장될 수 없으므로 미리보기는 제출을 비활성으로 둔다. 필수 문항이 0개(선택 문항만)면 WPF와 같이 바로 제출할 수 있다.
 - WPF 동영상+퀴즈는 내부 Quiz ScrollViewer를 제거해 영상·전체 문항·제출 영역을 단일 스크롤로 이동하고 공통 푸터를 고정한다. 웹 미리보기는 문항/잠금 상태를 근사하며 실제 WPF의 측정 높이·입력 스크롤 동작은 수동 비교한다.
 - 글꼴 메트릭, 창 테두리, DPI 반올림은 WPF와 조금 다를 수 있다.
 
@@ -42,5 +45,9 @@
 2. 유형별 팝업을 편집기에서 열고 **실제 크기로 보기**로 캡처한다.
 3. 같은 사용자 ID로 WPF 클라이언트를 실행해 팝업을 캡처한다(숨김 상태면 결과 행을 정리한다).
 4. 헤더·푸터 표시, 콘텐츠 순서, 스크롤, 창 크기·위치를 비교한다.
+
+## 자동 검증
+
+- `node scripts/verify-completion-ux-43.cjs`(저장소 루트, headless Edge): 일반 VIDEO 비활성·사유·도달 후 활성, 동영상+퀴즈 잠금 문구, QUIZ 오답 번호·보조 닫기 표시 규칙을 실제 DOM으로 확인한다.
 
 관련 문서: [IMAGE 크기 모드 단순화(설계 23)](../design/23_IMAGE_크기모드_단순화_TODO.md), [TEXT 서식 편집(설계 28)](../design/28_TEXT_FONT_EDITING_TODO.md), [옵션 가이드](../POPUP_OPTION_GUIDE.md).
