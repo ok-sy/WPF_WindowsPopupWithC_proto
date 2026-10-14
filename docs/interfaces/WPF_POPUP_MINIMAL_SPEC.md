@@ -47,7 +47,7 @@
 | BodyFontSize | 미제공 | N | `null` | TextStyle이라는 통합 필드는 없음 |
 | FooterFontSize | 미제공 | N | `null` | Footer 글자 크기 |
 | SizeMode | FIXED만 사용 | N | `FIXED` | 코드는 FIXED/RATIO/FULLSCREEN/AUTO 지원 |
-| DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 코드는 SEQUENTIAL/SIMULTANEOUS 지원. 조회 응답이 1건이라 서버 팝업이 동시에 열리지 않음 |
+| DisplayMode | 기본값 사용 | N | `SEQUENTIAL` | 계약 값은 SEQUENTIAL/SIMULTANEOUS. 조회 응답이 1건이라 WPF는 값을 읽지 않고 항상 1건씩 표시 |
 | DisplayOrder | 응답 필드 아님(설계 35) | - | - | 표시 순서는 서버가 정렬해 첫 1건만 내려주므로 조회 응답에 싣지 않음 |
 | Position | 기본값 사용 | N | `CENTER` | 최상위 `popupPosition`. 최소 버전은 CENTER 고정 |
 
@@ -115,10 +115,10 @@ ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. �
 | QuestionId | 지원 | Y | `0` | 양수·팝업 내 고유 ID를 서버가 보장 |
 | Title | 지원 | Y | `""` | 공백 아닌 문항 제목 |
 | QuestionType | 지원 | Y | `""` | SURVEY: SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. 최소 QUIZ: SINGLE_CHOICE / MULTIPLE_CHOICE |
-| IsRequired | 지원 | Y(계약) | `false` | true/false를 서버가 명시. 누락 시 false가 되어 필수 검증이 사라짐 |
+| IsRequired | 지원 | Y(서버가 항상 true/false 제공) | `false` | 누락 시 false가 되어 필수 검증이 사라짐 |
 | Options | 선택형에서 지원 | Y(선택형) | `[]` | 선택형 2개 이상. SURVEY TEXT는 빈 배열 |
 | OptionId | 선택형에서 지원 | Y(선택형) | `0` | 양수·해당 문항 내 고유 ID |
-| Value / Text | 선택형에서 지원 | Y(선택형) | `""` | 전달 값 / 화면 문구. 응답 식별은 OptionId 사용 |
+| Value / Text | 선택형에서 지원 | Value N · Text Y(선택형) | `""` | 업무 값(선택) / 화면 문구. 응답 식별은 OptionId 사용 |
 | IsCorrect | 최소 QUIZ 선택형에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시 |
 | OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 사용 |
@@ -139,7 +139,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 |---|---|
 | TextStyle | 해당 필드 없음. HeaderFontSize / BodyFontSize / FooterFontSize로 분리 |
 | 공통 Width/Height vs IMAGE Width/Height | 공통값은 PopupWindow 크기, 일반 IMAGE content.width/height는 ADAPTIVE 창 크기 / FIT_TO_IMAGE 이미지 표시 크기 |
-| ORIGINAL + ImageWidth/ImageHeight | ORIGINAL 모드에서는 ImageWidth/ImageHeight가 적용되지 않으므로 최소 버전에서 사용하지 않음 |
+| ORIGINAL + content.width/height | ORIGINAL 모드에서는 content.width/height(이미지 크기)를 쓰지 않으므로 최소 버전에서 사용하지 않음. 구 키 `imageWidth/imageHeight`는 v3.6에서 폐기 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |

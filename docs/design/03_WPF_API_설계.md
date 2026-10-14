@@ -1,11 +1,12 @@
 # 03. WPF API 설계 — 조회 1개 + 결과 1개
 
-> **대체됨 (2026-10-12)**: 현행 구현 계약은 [인터페이스 v3.7](../interfaces/POPUP_INTERFACE_SPEC.md)과 설계 [12](12_WPF_결과제출_UX_및_로컬판정_수정계획.md)·[18](18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md)·[29](29_WPF_목록_API_응답_계약_정리_TODO.md)~[34](34_RESULT_계약_및_공통옵션_정합성_보완_TODO.md)를 따른다. 아래는 최초 설계 기록이며 주요 차이는 다음과 같다.
+> **대체됨 (2026-10-12)**: 현행 구현 계약은 [인터페이스 v3.7](../interfaces/POPUP_INTERFACE_SPEC.md)과 설계 [12](12_WPF_결과제출_UX_및_로컬판정_수정계획.md)·[18](18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md)·[29](29_WPF_목록_API_응답_계약_정리_TODO.md)~[34](34_RESULT_계약_및_공통옵션_정합성_보완_TODO.md)·[35](35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md)를 따른다. 아래는 최초 설계 기록이며 주요 차이는 다음과 같다.
 > - 구 `/p/api/popups/**` WPF-01~06 API와 WPF `PopupApiService` 구 메서드는 삭제(설계 18 L-0, 2026-09-28). 영상 스트리밍 `GET /p/api/popups/video`만 유지.
 > - 목록 `popups[]`에서 기간·반복 판정 값(`displayStartAt`·`displayEndAt`·`periodMode`·`repeat*`) 제거, Footer 표시 이름은 `showFooterButton`으로 통일(설계 29).
 > - `footerAction`·`footerLinkUrl`과 PopupWindow 공통 옵션(Overlay·`popupPosition`·글꼴 크기)은 `content`가 아닌 `popups[]` 최상위(설계 30·31).
 > - 결과 요청의 `responseStartedAt` 제거(설계 32). QUIZ는 WPF가 채점한 `score`·`passed`를 서버가 그대로 저장(설계 12·33).
 > - 결과 응답은 `resultId`·`popupId`·`resultType`·`status`·`code`·`message`만 남기고, status에 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 추가(설계 33·34).
+> - **설계 35(2026-10-13)**: 목록 `popups[]` 조회와 일괄 결과(`results[]`)를 폐기하고 단건 구조로 전환. 조회 응답은 `popup` 1건 또는 `null`(전달 건 `deliveryId` 포함), 결과는 1건씩 보내며 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message`(`popupId`·`resultType` 제외). 아래 목록·일괄 설명은 이력이다.
 
 기준 항목 3(단일 조회·단일 결과 API), 4(통신 시점), 6(헤더 기반 사용자 식별)을 다룬다. JSON 예제 파일은 [api/examples](../../api/examples)에 있다. 인증 토큰 자체는 타 팀이 개발하는 통합 토큰을 사용한다 (04 문서).
 

@@ -748,7 +748,7 @@ passingScore 이상
 | description | string | 선택 | `""` | 부가 설명 |
 | questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
-| isRequired | boolean | 선택 | `false` | 필수 응답 여부 |
+| isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
 | isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
 | questionScore | number | 채점 QUIZ | `null` → C# 계산상 0점 | 문항 배점 |
 | correctAnswer | string | QUIZ TEXT 채점 문항 | `null` | TEXT 정답 |
@@ -949,7 +949,7 @@ VIDEO_WATCHED
 
 | 필드 | 형식 | 필수 여부 | Default | 단위/의미 |
 |---|---|---|---|---|
-| durationSeconds | number | O | `0` | 초, 전체 길이 |
+| durationSeconds | number | O(video 블록이 있을 때) | 없음 | 초, 전체 길이. 서버는 0.001 이상만 받는다(0이면 REJECTED). WPF는 영상 길이가 확인된 경우에만 video 블록을 보낸다(VIDEO_WATCHED는 길이 > 0, VIDEO+QUIZ 제출은 시청 기준 도달 후) |
 | positionSeconds | number | O | `0` | 초, 현재 위치 |
 | maximumPositionSeconds | number | O | `0` | 초, 최대 도달 위치 |
 | watchedSeconds | number | O | `0` | 초, 누적 시청 시간 |
@@ -1309,7 +1309,7 @@ EMPTY
     "textBlocks": [
       { "alignment": "LEFT", "runs": [ { "text": "점검 공지", "bold": true, "size": 24 } ] },
       { "alignment": "LEFT", "runs": [ { "text": "안내 내용을 확인해주세요." } ] },
-      { "alignment": "LEFT", "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
+      { "alignment": "LEFT", "indent": 1, "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
     ],
     "showPlainText": true,
     "highlightText": "작업 내용을 미리 저장해주세요.",

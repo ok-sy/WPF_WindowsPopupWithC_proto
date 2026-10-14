@@ -10,6 +10,7 @@
 | [reviews/POPUP_PREVIEW_WPF_PARITY.md](reviews/POPUP_PREVIEW_WPF_PARITY.md) | 관리자 미리보기와 WPF 표시 정합성·알려진 차이 |
 | [reviews/20261007_저사양_PC_VIDEO_측정_가이드.md](reviews/20261007_저사양_PC_VIDEO_측정_가이드.md) | 저사양 PC / Horizon VIDEO 측정 절차 |
 | [reviews/20261002_WPF_TODO_변경_라인별_설명.md](reviews/20261002_WPF_TODO_변경_라인별_설명.md) | 2026-10-02 WPF TODO 변경 소스 줄별 설명(당시 기록) |
+| [reviews/20261013_TRELLO_완료이력_현행구조_대조.md](reviews/20261013_TRELLO_완료이력_현행구조_대조.md) | 2026-10-13 Trello 완료 카드와 현행 구조 대조(당시 기록) |
 | [POPUP_OPTION_GUIDE.md](POPUP_OPTION_GUIDE.md) | WPF·서버·관리자 웹 옵션 및 연동 |
 | [POPUP_USER_OPTION_GUIDE.md](POPUP_USER_OPTION_GUIDE.md) | 화면에서 사용하는 옵션 설명(Footer 바로가기·동영상+퀴즈 포함) |
 | [../db/oracle/README.md](../db/oracle/README.md) | Oracle DDL·샘플·이관 스크립트 실행 순서 |

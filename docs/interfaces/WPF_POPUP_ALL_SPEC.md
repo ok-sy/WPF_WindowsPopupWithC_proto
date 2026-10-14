@@ -45,7 +45,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |
 | Title | 지원 | Y(계약) | `""` | 공통 Header 제목. Header 숨김 여부와 별개로 백엔드 응답 계약상 제공 |
 | DisplayStartAt / DisplayEndAt | 삭제(설계 29) | - | - | 기간·대상·숨김·완료 판정은 서버 책임. 조회 응답·DTO에 없음 |
-| DisplayMode | 지원 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 서버 팝업이 동시에 여러 개 열리지 않음 |
+| DisplayMode | 계약 필드만 유지 | N | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 WPF는 값을 읽지 않고 항상 1건씩 표시(동시 표시 경로 삭제, 모르는 값도 팝업 실패 없음) |
 | DisplayOrder | 응답에서 삭제(설계 35) | - | - | 관리자 표시 순서는 서버 정렬 기준으로만 사용하고 조회 응답에 싣지 않음. 서버가 순서상 첫 1건을 내려줌 |
 | ShowHeader | 지원 | N | `true` | 제목·고정 로고 및 Header 영역 |
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
@@ -86,7 +86,7 @@ LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL �
 
 위치 값: CENTER, TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER_LEFT, CENTER_RIGHT,
 BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니터의 DPI와
-작업 영역을 사용하며 FULLSCREEN은 전체 모니터 영역을 사용한다.
+작업 영역을 사용하며 FULLSCREEN은 주 모니터 전체 영역을 사용한다.
 
 ### 3.3 공통 외형
 
@@ -162,12 +162,14 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 
 | 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
+| SurveyTitle | 지원 | N | `""` | content 안 설문·퀴즈 제목. 공통 Header 제목과 별개. VIDEO+QUIZ는 영상 제목과 같은 값 |
+| Description | 지원 | N | `""` | content 안 제목 아래 설명 |
 | Questions | 지원 | Y | `[]` | 최상위 문항 목록 |
 | questions[].QuestionId | 지원 | Y | `0` | 실제 ID는 서버가 보장 |
 | questions[].Title | 지원 | Y | `""` | 문항 제목 |
 | questions[].Description | 지원 | N | `""` | 문항 설명 |
 | questions[].QuestionType | 지원 | Y | `""` | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
-| questions[].IsRequired | 지원 | 계약상 Y | `false` | 기본값과 계약상 제공 의무 구분 |
+| questions[].IsRequired | 지원 | Y(서버가 항상 true/false 제공) | `false` | 누락 시 false로 보아 필수 검증 없음 |
 | questions[].Options | 선택형에서 지원 | 조건부 | `[]` | TEXT는 빈 배열 |
 | questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | questions[].IsScored | QUIZ에서 지원 | Y(QUIZ 계약) | `false` | 채점 문항은 true 명시. 현재 서버 저장 규칙은 최소 1개 true 존재까지는 보장하지 않으므로 응답 검증 필요 |
@@ -175,7 +177,7 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | questions[].CorrectAnswer | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | 공백 아닌 주관식 정답. 최소 버전에서는 TEXT QUIZ 미제공 |
 | questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | EXACT / CONTAINS |
 | options[].OptionId | 지원 | Y(선택형) | `0` | 응답 OPTION_ID 연결. 양수·문항 내 고유 ID를 서버가 보장 |
-| options[].Value / Text | 지원 | Y(선택형) | `""` | 전달 값·화면 문구 |
+| options[].Value / Text | 지원 | Value N · Text Y(선택형) | `""` | 업무 값(선택)·화면 문구. 응답 식별은 OptionId |
 | options[].IsCorrect | QUIZ에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시. SURVEY는 채점하지 않음 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 최상위 합격점. 0~총점 범위 |
 
@@ -188,6 +190,10 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 
 별도 PopupType이 아니라 `PopupType=QUIZ + content.videoEnabled=true` 조합이다.
 VideoEnabled 기본값은 false이며 4.3의 영상 content와 4.4의 최상위 Questions를 함께 사용한다.
+
+| 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
+|---|---|---:|---|---|
+| VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 |
 CompletionRatio 도달 전에는 QUIZ 및 제출을 잠그고 도달 후 활성화한다.
 영상·문항을 부모의 단일 세로 스크롤로 표시한다. 제출 결과 한 항목에 answers와 video를 포함한다.
 VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.

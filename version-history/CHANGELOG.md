@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-11 — TODO50-C 문서·계약 정합 정리
+
+- 이유: 설계 25·35·37·48·49와 계약 3.7 이후 바뀐 동작이 일부 설계·가이드·명세에 반영되지 않았거나 문서끼리 다르게 적혀 있어 코드 기준으로 정합성 보완.
+- 변경: 설계 03·09·19·29에 설계 35(단건 조회·결과) 대체 표기와 뒤집힌 결정(serverTime·userId 제거) 연결, 설계 28 상태 줄과 WPF 표시 규칙(설계 48) 표기. 옵션 가이드 Header 높이 48 → 40, TEXT·IMAGE 구성 설명(이미지 클릭 링크 삭제), FULLSCREEN을 주 모니터 기준으로 통일(ALL·사용자 가이드 포함). 사용자 가이드 ORIGINAL 설명과 과거 FIXED 값 처리(관리자 화면만 ADAPTIVE로 불러오며 DB는 06 스크립트로 정리). MINIMAL의 폐기 키 `ImageWidth/ImageHeight` 정정, ALL 4.4에 SurveyTitle·Description, 4.5에 VideoEnabled 행 추가. 문항 isRequired(서버가 항상 제공)·선택지 value(선택) 필수 여부를 계약서·ALL·MINIMAL에서 통일, 계약서 durationSeconds를 서버 검증(0.001 이상)과 일치, §15.1 TEXT 예시에 indent 반영. README 설계 범위 01~50·검토 문서 목록, 오프라인 빌드 Demo 미디어(저장소 포함·EXE 내장) 안내, 10-13 검토 문서의 TODO35 상태 보완. 설계 50 상태를 `정리 구현 완료 · 실화면 확인 대기`로 갱신하고 남은 항목 정리. 이번 날짜 항목의 상태를 원격 반영으로 갱신.
+- 주요 파일: docs/design/(03_*, 09_*, 19_*, 28_*, 29_*, 50_*), docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/interfaces/(POPUP_INTERFACE_SPEC.md, WPF_POPUP_ALL_SPEC.md, WPF_POPUP_MINIMAL_SPEC.md), docs/reviews/20261013_*, docs/README.md, README.md, OFFLINE_WPF_BUILD.md, version-history/CHANGELOG.md.
+- 검증: 문서 변경만 수행. 각 정정 값은 코드(PopupWindow.xaml HeaderRow 40, PopupWindow FULLSCREEN 주 모니터 우선, PopupQuestionDto `boolean isRequired`, WpfResultRequest `@DecimalMin("0.001")`, SurveyPopupContentDto 필드)와 대조. Word·Excel 산출물 재생성은 미실행.
+- 상태: 커밋에 포함. 원격 반영.
+
 ## 2026-10-15-10 — TODO50-B 서버 불필요 코드 정리와 주석 정정
 
 - 이유: 설계 18·35·37 이후 도달하지 않는 분기, 읽지 않는 필드·보조 조회, 이관이 끝난 일회성 도구와 목록 시절 주석이 남아 있어 정리(삭제 전 MyBatis XML·리플렉션·HTTP 직렬화·다른 모듈 참조 확인, DB 스키마 변경 없음).
@@ -12,7 +20,7 @@
   - 주석·문서 정정: 목록·WPF-01 표현, LINK_URL 삭제 후 컬럼 수, 결과 유형 설명, QUIZ 정답 키 전달, 컨트롤러 날짜 설명, API_REQUEST_LOG 실제 기록 범위, 02 샘플 SQL 조회 방식, db/oracle README 실DB 테스트 명령(커밋하는 테스트 구분), 11 이관 문서에 도구 제거·복원 커밋, 이중 인코딩으로 깨진 한글 주석 7개 파일 복원.
 - 주요 파일: zero-rule-server/(service/core, domain, repo/core, base, web/api, app/src/test), db/oracle/(02_popup_sample_oracle.sql, 10_zero_rule_common_schema_oracle.sql, 11_IMAGE_CONTRACT_TRANSITION.md, README.md), popup-frameWork/Popup/Services/DemoPopupGateway.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/50_*, version-history/CHANGELOG.md.
 - 검증: `compileJava compileTestJava` 성공. `:service:core:test` popup 95건 중 91 통과·실패 0·skip 4(DB 환경변수 미설정), `:web:api:test` popup 35건 통과, 로컬 XE 롤백 전용 DB 테스트 3건(`WpfPopupDatabaseTest` 왕복, `WpfDeliveredResultDatabaseTest`, `PopupQuestionDatabaseTest`) 통과. 커밋하는 동시성 테스트·HTTP 왕복 테스트는 미실행. Demo 변경 후 로컬 행동 검증 1012건 통과.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-09 — TODO50-B WPF 불필요 코드 정리와 주석 정정
 
@@ -24,7 +32,7 @@
   - `scripts/PopupWindowTests`: Demo 후보 헬퍼로 교체, displayMode 무시 검증 5건 추가.
 - 주요 파일: popup-frameWork/Popup/(Managers/PopupManager.cs, Models/PopupOptions.cs, Models/SurveyOption.cs, Factories/PopupFactory.cs, Dtos/PopupResponseDto.cs, MainWindow.xaml.cs, DemoWindow.xaml.cs, DemoOptionsWindow.cs, Services/*, Views/Windows/PopupWindow.xaml(.cs), Views/Windows/PopupStyles.xaml, Views/Contents/(SurveyPopupView.xaml.cs, IBodyFontSizeAware.cs, ImageFillPopupView.xaml.cs), Popup.csproj, Properties/PublishProfiles/FolderProfile.pubxml), popup-frameWork/README.md, scripts/PopupWindowTests/Program.cs, docs/design/50_*, version-history/CHANGELOG.md. ALL·MINIMAL 정의서 DisplayMode 행은 문서 정리 커밋에 포함.
 - 검증: WPF 빌드 경고·오류 0. `scripts/RichTextTests` 85건, `scripts/PopupWindowTests` 23건, 로컬 전용 행동 검증 1012건(호출 변경에 맞춰 수정)·복구 검증 158건 통과, `scripts/CornerWindowTests` 빌드 성공. 실제 Windows 화면 육안 확인은 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-08 — TODO50-B 관리자 웹 불필요 코드 정리
 
@@ -32,7 +40,7 @@
 - 변경: `PopupPreview` `previewSize()`·`fitContainer` 미지정 경로 삭제(항상 부모 영역 채움), FILL 잔재 이름 정리·도달 불가 분기 삭제, `adaptiveMaximum` 인라인, QUIZ 저장 키 `videoTitle` 삭제, TEXT 콘텐츠 제목 분기 삭제, `applyFormat` `focusEditor` 인자 삭제, 파일 밖 미사용 export(`isAllowedColor`·`RichAlignment`·`positive`·`FORMAT_KEYS`·`FormatKey`) 제거, 문항 템플릿 선택을 유형 전환 시 초기화, 공용 `popupCommon.ts`(epoch 판별 `popupDateMillis`, `POPUP_TYPE_LABELS`, 글자 크기 10~40 `popupFontSize`) 추가 후 중복 3곳씩 대체(FIT_TO_IMAGE 설명 높이 계산에도 같은 보정), `PopupAdminApi` 수정 이력성 주석 정리. 계약 필드는 유지.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/(PopupPreview.tsx, PopupEditorDialog.tsx, PopupQuestionTemplatePicker.tsx, PopupRichTextEditor.tsx, PopupTemplateDialog.tsx, RgstPop.tsx, imagePreviewLayout.ts, popupRichText.ts, popupRichTextFormat.ts, popupCommon.ts), zero-rule-web/sub/domain/src/user-apis/PopupAdminApi.ts, scripts/(verify-image-preview-entry.tsx, verify-rich-text-49-entry.tsx), docs/design/50_*, version-history/CHANGELOG.md.
 - 검증: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0(기존 경고 3건), `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과. 실제 관리자 화면 저장·템플릿 선택 초기화는 미확인.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-07 — TODO50-A 서버 게시중단 후 결과 수용(A9)·계약 sizeMode AUTO 표기(A5)
 
@@ -43,7 +51,7 @@
   - 계약서 WPF_NOT_ELIGIBLE 설명을 전달 건 기준 수용 규칙으로 보완, 설계 47-4에 당시 구현 불일치와 50 A9 수정 연결 기록.
 - 주요 파일: zero-rule-server/repo/core/src/main/(java/server/repo/core/mapper/popup/PopupMapper.java, resources/mappers/popup/PopupMapper.xml), zero-rule-server/service/core/src/main/java/server/service/core/popup/(PopupService.java, wpf/WpfResultProcessor.java), 테스트(WpfResultProcessorTest, PopupMapperOracleStatementTest, PopupSubmitScoreTest, PopupActionOptionsTest, 신규 PopupDeliveredResultTest, 신규 WpfDeliveredResultDatabaseTest), docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(47_*, 50_*), version-history/CHANGELOG.md.
 - 검증: `:service:core:test --tests "server.service.core.popup.*"` 97건 중 93 통과·실패 0·skip 4(DB 환경변수 미설정). 로컬 XE에서 `WpfDeliveredResultDatabaseTest`(게시중단 3방식 × 결과 6종 18조합, 세이브포인트·롤백 전용)와 `WpfPopupDatabaseTest` 왕복 통과. `compileJava compileTestJava` 성공. 원격 개발 DB 실행·실제 WPF 왕복은 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-06 — TODO50-A WPF 동작 불일치 수정(A1·A4·A10)
 
@@ -55,7 +63,7 @@
   - 저장소 추적 검증 `scripts/PopupWindowTests` 추가(A1 4건·A10 14건), `.gitignore` bin/obj 추가. ALL 정의서 HideDays·AllowCloseBeforeComplete, 사용자 옵션 가이드 숨김 일수 설명 보완.
 - 주요 파일: popup-frameWork/Popup/(Services/PopupResultBuilder.cs, Services/PopupResultQueue.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, Views/Windows/PopupWindow.xaml, Views/Windows/PopupWindow.xaml.cs), popup-frameWork/README.md, zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, scripts/PopupWindowTests/, .gitignore, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/design/50_*, version-history/CHANGELOG.md.
 - 검증: WPF 빌드 경고·오류 0. `scripts/PopupWindowTests` 18건 통과. 로컬 전용 행동 검증 1012건(같은 18건 포함, 기존 모달 정리 경로는 닫기 허용 후 정리로 조정)·복구 검증 158건 통과. 관리자 웹 `tsc` 통과. 실제 Windows 화면 육안 확인은 미실행.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-05 — TODO50-A 관리자 웹 동작 불일치 수정(A2·A3·A6·A7·A8)
 
@@ -69,7 +77,7 @@
   - 검증 스크립트 `verify-image-preview.cjs`·entry: `@/lib/urls` alias 보완, 크롬 수치 4건·Header/테두리 DOM 3건 추가. 미리보기 대조 문서 Header·IMAGE 크롬 설명 보완.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/(imagePreviewLayout.ts, PopupPreview.tsx, PopupEditorDialog.tsx, PopupQuestionEditor.tsx, RgstPop.tsx), scripts/(verify-image-preview.cjs, verify-image-preview-entry.tsx), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/50_*, version-history/CHANGELOG.md.
 - 검증: `tsc --noEmit` 통과, 변경 파일 eslint 통과, `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과(로컬 headless Edge). A3·A6·A8은 실제 관리자 화면 저장 미확인.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-04 — TODO50-S1 원격 개발 DB 평문 비밀번호 처리(제거 후 원복)
 
@@ -77,7 +85,7 @@
 - 변경: `application-dev_db.yml` 비밀번호 주석 삭제, `JndiResource` 하드코딩 기본값 제거(환경변수 `ZERO_RULE_DB_PASSWORD`만 사용), README·`shell/start-dev.ps1` 안내를 한 번 적용. 이후 대상이 검증계(원격 개발) DB 계정이라 현행 유지로 결정해 네 파일을 이전 상태로 원복. 설계 50 S1을 "유지로 결정"으로 기록.
 - 주요 파일: zero-rule-server/app/src/main/(java/server/app/config/JndiResource.java, resources/application-dev_db.yml), shell/start-dev.ps1, README.md, docs/design/50_*, version-history/CHANGELOG.md.
 - 검증: 제거 적용 시 `:app:compileJava` 성공. 원복 후 네 파일이 제거 전 커밋과 동일함을 확인.
-- 상태: 제거·원복 두 커밋에 포함(최종 결과는 변경 없음). 미푸시. 자격 증명 교체·이력 재작성 없음.
+- 상태: 제거·원복 두 커밋에 포함(최종 결과는 변경 없음). 원격 반영. 자격 증명 교체·이력 재작성 없음.
 
 ## 2026-10-15-03 — TODO50-② TEXT 서식 WPF 회귀 검증 저장소 추적화
 
@@ -85,7 +93,7 @@
 - 변경: `scripts/RichTextTests`(콘솔 검증 프로젝트, Popup.csproj 참조, Demo Media 복사) 추가. 설계 28 서식 표시·Demo 옵션 검증, 설계 38 기울임 오른쪽 여유, 설계 48 표시 방어·JSON 타입 오류 경계·구조 오류 plainText 대체·서버/웹 글꼴 ID 대조, 설계 49 들여쓰기(단계 × 40, 정렬·빈 문단, 기울임 여유 공존, 줄바꿈 모든 줄 시작 위치, 표시 방어, Demo 검증)를 로컬 전용 검증에서 옮김. `.gitignore`에 bin/obj 추가. 설계 48·49 문서의 검증 위치 갱신.
 - 주요 파일: scripts/RichTextTests/(RichTextTests.csproj, Program.cs), .gitignore, docs/design/(48_*, 49_*, 50_*), version-history/CHANGELOG.md.
 - 검증: `dotnet run --project scripts/RichTextTests` 85건 통과(로컬).
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-02 — TODO48·49 검증 상태 구분과 TODO50 재분류
 
@@ -96,7 +104,7 @@
   - 설계 50: D1(게시중단 후 결과 수용)을 A9, D2(일반 VIDEO 창 닫기 우회)를 A10 수정 대상으로 재분류하고 A9 수정 원칙(전달 건 소유권·popupId 일치·종료 여부 검증 유지, 신규 조회 게시 조건과 기전달 결과 수용 조건 분리) 기록. D6 평문 비밀번호를 50-S 보안 정리로 분리(현재 파일 정리와 자격 증명 교체 구분, Git 이력 잔존 명시). 50-B에 종류별 삭제 전 확인 기준(내부 모델·외부 DTO·공개 메서드·XAML 문자열·MyBatis) 추가. 진행 순서와 완료 기준(48·49 WPF 회귀 검증 저장소 추적화 포함) 갱신.
 - 주요 파일: docs/design/(48_*, 49_*, 50_*), version-history/CHANGELOG.md.
 - 검증: 문서 변경만 수행. 코드 수정·테스트 재실행 없음.
-- 상태: 커밋에 포함. 미푸시.
+- 상태: 커밋에 포함. 원격 반영.
 
 ## 2026-10-15-01 — TODO50 구조 정합성 전수 점검 결과 등록
 

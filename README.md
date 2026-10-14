@@ -17,7 +17,7 @@
 
 | 경로 | 내용 | 출처 |
 |---|---|---|
-| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~34(삭제·통합으로 일부 번호 결번) | 신규 |
+| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~50(삭제·통합으로 일부 번호 결번) | 신규 |
 | `db/oracle/` | Oracle DDL·샘플 (`POPUP` 스키마) | 신규 |
 | `api/examples/` | 신규 WPF API JSON 예제 | 신규 |
 | `zero-rule-server/` | 주 서버 (Spring Boot 3.4.1, MyBatis, Oracle) | 업스트림 zero-rule-server @56bb0c5 (2026-09-20 교체) |
@@ -25,7 +25,7 @@
 | `popup-frameWork/` | WPF 클라이언트 (.NET 10) | 베이스라인 |
 | `ERD/` | PostgreSQL 기준 DDL·검토 문서 (Oracle 전환 원본 참조용) | 베이스라인 |
 | `docs/interfaces/` | WPF Client API 계약서 `POPUP_INTERFACE_SPEC.md`(v3.7)·Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`·최소/전체 기능 정의서·예제 JSON. 구버전 Word/PDF는 Git 제외 로컬 폴더 `docs/interfaces/OLD/`에만 둔다 | 신규(베이스라인 문서 대체) |
-| `docs/reviews/` | 미리보기·WPF 정합성, 저사양 PC VIDEO 측정 가이드, TODO 변경 라인별 설명 | 신규 |
+| `docs/reviews/` | 미리보기·WPF 정합성, 저사양 PC VIDEO 측정 가이드, TODO 변경 라인별 설명, Trello 완료 이력·현행 구조 대조 | 신규 |
 | `scripts/`, `shell/`, `OFFLINE_WPF_BUILD.md` | 빌드·실행 스크립트 | 베이스라인 |
 
 ## 베이스라인에서 제외한 항목

@@ -13,8 +13,8 @@
 
 | popupType | 설명 |
 |---|---|
-| `TEXT` | 일반 텍스트, 카드, 강조 문구 |
-| `IMAGE` | 이미지, 설명, 링크 |
+| `TEXT` | 일반 텍스트·서식 본문(textBlocks), 강조 문구 |
+| `IMAGE` | 이미지, 제목·설명(ORIGINAL은 이미지만). 이미지 클릭 링크는 계약 3.7에서 삭제 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
 | `SURVEY` | 객관식/주관식 설문 |
 | `QUIZ` | 정답, 배점, 통과 점수가 있는 퀴즈. `content.videoEnabled=true`이면 동영상+퀴즈 |
@@ -79,7 +79,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 |---|---|---|
 | `Fixed` | `FIXED` | `width`, `height` 사용 |
 | `ViewportRatio` | `RATIO` | 모니터 작업영역 × `widthRatio`, `heightRatio` |
-| `Fullscreen` | `FULLSCREEN` | 대상 모니터 전체 영역 사용 |
+| `Fullscreen` | `FULLSCREEN` | 주 모니터 전체 영역 사용(주 모니터를 얻지 못하면 창이 있는 모니터) |
 | `Auto` | `AUTO` | 콘텐츠 크기에 맞춘 뒤 최소/최대 범위 적용 |
 
 공통 크기 필드는 다음과 같다.
@@ -165,7 +165,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 - 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
 - IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. content.width/height의 지정 픽셀/DIP 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
-- 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(48)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
+- 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(40)·Footer(80) 행(창 Border·본문 테두리는 0)을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
 - WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
 - FILL, imageWidth/imageHeight, descriptionPosition, imageAreaRatio는 새 입력에서 제거했다. 서버 저장은 해당 키·모드와 중복 최상위 크기를 거절한다. 기존 DB는 조회 변환 또는 전환 계획 스크립트를 통해 새 계약으로 제공한다.
 
