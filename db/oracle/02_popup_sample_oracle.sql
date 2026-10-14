@@ -120,7 +120,7 @@ VALUES (SEQ_POPUP_TARGET_CONDITION.NEXTVAL, SEQ_POPUP_TARGET_GROUP.CURRVAL, 'EMP
 
 COMMIT;
 
--- 기대 결과 (GET /p/api/wpf/popups)
+-- 기대 노출 후보 (POST /p/api/wpf/popups는 이 중 1건씩 표시 순서대로 전달하고, 결과 처리 후 다음 건을 준다)
 --  E1001 (개발팀·사원·2024 입사): TEXT, VIDEO, QUIZ, SURVEY
 --  E1002 (개발팀·팀장·2018 입사): TEXT, VIDEO, SURVEY(사번 지정)
 --  E1003 (본사·사원·2026 입사)  : TEXT, SURVEY

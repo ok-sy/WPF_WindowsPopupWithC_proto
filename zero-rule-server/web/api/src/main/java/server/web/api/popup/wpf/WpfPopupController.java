@@ -37,7 +37,8 @@ import java.time.ZoneId;
  *
  * <p>[기존 구조와의 관계] 구 WPF 개별 API {@code PopupController}(/p/api/popups/**)는 설계 18 L-0에서 삭제했다.
  * 같은 접두어의 {@code PopupVideoController}(GET /p/api/popups/video)는 영상 스트리밍 URL이라 유지한다.
- * 응답 날짜는 WPF DTO 필드의 {@code @JsonFormat}(ISO 8601)으로 직렬화하며 전역 ObjectMapper 설정은 건드리지 않는다.
+ * 조회·결과 응답에는 날짜 필드가 없다. 날짜를 내리는 WPF DTO(오류 응답 {@code WpfErrorResponse.timestamp} 등)는 필드의
+ * {@code @JsonFormat}(ISO 8601)으로 직렬화하며 전역 ObjectMapper 설정은 건드리지 않는다.
  * SecurityConfig·CustomAuthenticationFilter·DefaultPublicUrls도 수정하지 않는다(/p/**는 이미 공개 경로이며,
  * 통합 토큰 필터 등록은 타 팀 작업).</p>
  */
@@ -73,7 +74,9 @@ public class WpfPopupController {
      * [설계 35] 결과 1건 수신. 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다(WPF가 반복 재전송하지 않도록).
      * 검증 통과 후 예상하지 못한 변환 예외는 INTERNAL_ERROR(WPF_INTERNAL)로 돌려 WPF가 결과를 보관·재시도하게 한다.
      * 저장 성공(ACCEPTED·DUPLICATE)이면 후속 후보 유무 nextStatus(AVAILABLE/EMPTY)를 함께 준다.
-     * 요청 단위 로그는 처리 결과와 무관하게 남기되(clientRequestId = resultId), 로그 실패가 응답을 막지 않도록 예외를 삼킨다.
+     * 요청 단위 로그는 200으로 응답하는 결과 요청마다 처리 상태(ACCEPTED·REJECTED·오류 등)와 무관하게 남기되(clientRequestId = resultId),
+     * 로그 실패가 응답을 막지 않도록 예외를 삼킨다. 인증 실패(401)·비활성 사용자(403)는 로그 전에 예외로 끝나 기록하지 않는다.
+     * POPUP_ID 컬럼은 비워 두고 popupId·resultType은 요청 요약에 남긴다.
      */
     @Operation(summary = "WPF 팝업 처리 결과 1건 수신 (닫기·숨김·제출·영상) + 후속 후보 유무")
     @PostMapping("/results")

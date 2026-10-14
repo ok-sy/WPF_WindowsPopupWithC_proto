@@ -30,15 +30,15 @@ import java.util.UUID;
  *
  * <p>[추가 이유]</p>
  * <ul>
- *   <li>기준 2: 노출 판단(활성·기간·대상·숨김·<b>완료</b>)을 SQL 한 번({@code selectAvailablePopups(userId, true)})으로
- *       끝내고 WPF는 렌더링만 한다. 기존 WPF-01은 완료 제외를 클라이언트가 하던 계약이라 그대로 두었다.</li>
+ *   <li>기준 2: 노출 판단(활성·기간·대상·숨김·<b>완료</b>·재노출 유예)을 SQL 한 번({@code selectAvailablePopups(userId, true)})으로
+ *       끝내고 WPF는 렌더링만 한다.</li>
  *   <li>기준 3: 조회 1개 + 결과 1개 API. 결과는 유형별로 {@link WpfResultProcessor}에 위임한다.</li>
  *   <li>기준 4: 결과는 팝업 종료 시점 1회, 1건씩 들어오며 결과마다 독립 트랜잭션으로 처리한다.</li>
  *   <li>기준 6: 사용자 ID는 컨트롤러가 인증 정보에서 얻어 인자로 넘긴다. 요청 본문의 값은 없다.</li>
  * </ul>
  *
  * <p>기존 {@link PopupService}는 문항 조립·채점 규칙의 단일 원천으로 재사용하며 구조를 바꾸지 않는다.
- * 목록 항목은 {@code PopupService.toPublicResponseDto}로 만든 공용 DTO를 {@link WpfPopupItem#from}으로 변환한다.
+ * 조회 응답의 팝업 1건은 {@code PopupService.toPublicResponseDto}로 만든 공용 DTO를 {@link WpfPopupItem#from}으로 변환한다.
  * QUIZ가 아닌 팝업은 {@link WpfPopupItem#withoutAnswerKey}로 정답 키를 제거한다.</p>
  */
 @Service
@@ -209,6 +209,8 @@ public class WpfPopupService {
     /**
      * 업무 예외 메시지를 WPF 코드로 분류한다. 기존 PopupService의 한국어 메시지를 기준으로 하며,
      * 매핑되지 않으면 WPF_INVALID_RESULT.
+     * 범위 밖 hideDays는 요청 형식 검사({@code @Min(1) @Max(3650)})에서 WPF_INVALID_RESULT로 먼저 거절되고 누락은
+     * 결과 처리의 "hideDays가 필요" 메시지로 WPF_INVALID_RESULT가 되어, 별도 숨김 일수 코드는 두지 않는다.
      */
     private static String codeOf(WpfResultCommand item, IllegalArgumentException ex) {
         String message = ex.getMessage() == null ? "" : ex.getMessage();
@@ -227,9 +229,6 @@ public class WpfPopupService {
         }
         if (message.contains("문항") || message.contains("선택지") || message.contains("답안")) {
             return "WPF_INVALID_ANSWER";
-        }
-        if (message.contains("숨김 일수")) {
-            return "WPF_INVALID_HIDE_DAYS";
         }
         if (message.contains("영상")) {
             return "WPF_INVALID_VIDEO";

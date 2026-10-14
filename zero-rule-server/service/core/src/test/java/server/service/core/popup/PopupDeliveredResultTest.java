@@ -53,7 +53,6 @@ class PopupDeliveredResultTest {
             when(mapper.selectSubmissionContext("E1001", "Q1", false))
                     .thenReturn(new PopupSubmissionContext("Q1", type, 20L, BigDecimal.TEN));
             var result = service.submitDeliveredResponse("Q1", "r-1", "E1001", answers, 10.0, true);
-            assertEquals("SUBMITTED", result.responseStatus(), type);
             assertTrue(result.passed(), type);
             verify(mapper).markPopupCompleted("E1001", "Q1", "Y");
             verify(mapper, never()).selectAvailablePopups(anyString());

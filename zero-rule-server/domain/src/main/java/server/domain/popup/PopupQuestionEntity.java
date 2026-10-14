@@ -17,10 +17,4 @@ public record PopupQuestionEntity(
         String answerMatchMode,
         String optionLayout
 ) {
-    public PopupQuestionEntity(Long questionId, Long questionTemplateId, String questionType,
-            String questionTitle, String questionDescription, String requiredYn, String scoredYn,
-            BigDecimal questionScore, Integer sortOrder, String correctAnswer, String answerMatchMode) {
-        this(questionId, questionTemplateId, questionType, questionTitle, questionDescription,
-                requiredYn, scoredYn, questionScore, sortOrder, correctAnswer, answerMatchMode, "VERTICAL");
-    }
 }

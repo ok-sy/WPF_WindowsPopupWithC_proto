@@ -38,14 +38,14 @@ TODO 1~49를 거치며 목록 → 단건 조회(설계 35), TEXT 콘텐츠 제�
 - MyBatis 구문·resultMap: XML id와 매퍼 인터페이스 메서드 대응.
 
 - [x] WPF: 그룹·동시 표시(SIMULTANEOUS) 경로와 미사용 매개변수, 값을 넣는 곳 없는 `PopupOptions.IsCompleted`, 참조 0건 XAML 리소스(`PopupButtonStyle`·`CommonSurfaceCardStyle`·`PopupBorderBrush`), `SurveyOption.Value`(모델), Demo의 삭제 필드 정리 코드, Demo 데이터 서비스의 미사용 유형 필터.
-- [ ] 서버: 도달 불가 분기(`WPF_INVALID_HIDE_DAYS` 판정, `loadQuestions(admin=false)`, `contentTitleKey` default), 미사용 `PopupEntity.useYn`·`WpfPopupDelivery.open()`.
+- [x] 서버: 도달 불가 분기(`WPF_INVALID_HIDE_DAYS` 판정, `loadQuestions(admin=false)`, `contentTitleKey` default), 미사용 `PopupEntity.useYn`·`WpfPopupDelivery.open()`.
 - [x] 관리자 웹: `PopupPreview.previewSize()` 등 `fitContainer` 미지정 분기, FILL 잔재(`imageFillMode`·`imageFill`), 항등 함수 `adaptiveMaximum`, QUIZ 저장 키 `videoTitle`, TEXT 제목 대체 분기, `applyFormat`의 항상 false인 `focusEditor` 인자.
 
 ## 50-C 주석·문서 정합 (정정)
 
 - [ ] 목록·일괄·WPF-01·`_shownPopupIds`·X 버튼·FILL·RATING5·passingScore 시절 주석(WPF·서버·DB 샘플).
 - [ ] 설계 03·19·29·09·28의 대체 표기·상태 줄, 옵션 가이드 헤더 높이(48 → 40), IMAGE 클릭 링크 잔재(두 가이드·WPF README), MINIMAL의 폐기 키 `ImageWidth/ImageHeight`, ALL 4.4의 SURVEY/QUIZ `surveyTitle`·`description`, 계약서 §15.1 예시 indent, README 설계 범위(01~49), `OFFLINE_WPF_BUILD.md` Demo 미디어 안내, 10-13 검토 문서의 TODO35 상태.
-- [ ] 서버 테스트·SQL 주석의 깨진 한글(이중 인코딩) 복원.
+- [x] 서버 테스트·SQL 주석의 깨진 한글(이중 인코딩) 복원.
 
 ## 50-D 재현 후 판단 (이번 범위에서 코드 변경 안 함)
 
@@ -74,3 +74,4 @@ TODO 1~49를 거치며 목록 → 단건 조회(설계 35), TEXT 콘텐츠 제�
 - ④ 2026-10-15 (서버 A9·계약 A5): 결과 처리의 거절 원인 — CLOSED·HIDDEN은 `countActiveUserAndPopup`의 팝업 `ACTIVE_YN='Y'`, SUBMITTED는 `submitResponse`의 `selectAvailablePopups` 재검사·`selectSubmissionContext` 게시 조건, VIDEO_WATCHED는 `selectVideoPopupContext` 게시 조건, VIDEO+QUIZ 제출은 영상 판별 쿼리의 게시 조건. 결과 경로는 `submitDeliveredResponse`·`saveDeliveredVideoProgress`와 `requirePublished=false` 문맥 조회로 분리하고 `countActiveUserAndPopup`은 활성 사용자·팝업 행 존재만 확인. 전달 건 소유권·popupId 일치·DONE 거절·영수증 DUPLICATE·사용자 잠금 유지, 신규 조회·nextStatus 쿼리는 변경 없음. 템플릿 비활성·사용자 숨김도 기전달 결과에서는 다시 보지 않는다(같은 전달 건 두 번째 결과는 DONE으로 거절). 서버 popup 테스트 97건 중 93 통과·skip 4(DB 미설정), 로컬 XE에서 신규 `WpfDeliveredResultDatabaseTest`(게시중단 3방식 × 결과 6종 18조합, 롤백 전용)·`WpfPopupDatabaseTest` 왕복 통과.
 - ⑤ 2026-10-15 (관리자 웹 50-B): `previewSize()`·`fitContainer` 분기 삭제(호출부 4곳 모두 지정, 스크립트 entry 포함 확인), FILL 잔재 정리(`imageFillMode` → `originalImageMode`, 도달 불가 분기·중복 조건 삭제), `adaptiveMaximum` 인라인, QUIZ 저장 키 `videoTitle` 삭제(서버 저장 키에서 제거되는 값), TEXT 제목 분기 삭제, `applyFormat` `focusEditor` 인자 삭제, 파일 밖 미사용 export 5개 제거(심볼 유지), 문항 템플릿 선택을 SURVEY↔QUIZ 전환 시 초기화, epoch 판별·유형 라벨·글자 크기 10~40 보정을 `popupCommon.ts`로 공용화, 수정 이력성 주석 정리. 계약 필드(`periodMode`·`questionTemplateId`·`repeat*`)는 유지. `tsc` 오류 0, eslint 오류 0(기존 경고 3), `verify-image-preview.cjs` 34건·`verify-rich-text-49.cjs` 40건 통과. 템플릿 선택 초기화는 브라우저 미확인.
 - ⑤ 2026-10-15 (WPF 50-B·50-C 주석): `PopupManager` 그룹·동시 표시 경로 삭제 → `Show(PopupOptions)` 1건 표시로 단순화(로컬 검증이 리플렉션으로 읽는 `_openWindows`는 유지), `PopupOptions.DisplayMode`·`DisplayOrder`·`PopupDisplayMode`·`ConvertPopupDisplayMode` 삭제로 모르는 displayMode 값에도 팝업 생성이 실패하지 않음(DTO `displayMode`는 계약 필드라 유지), `useBackgroundOverlay` 등 미사용 매개변수·중복 위치 메서드, 값 설정 없는 `IsCompleted`, 참조 0건 XAML 리소스 5개, `SurveyOption.Value`(모델), Demo 삭제 필드 정리 코드, `CreatePopups` 유형 필터, `SsoAuthHeaderProvider.ExpiresAt` 삭제. `PopupPollingRecovery.IsRecovering`은 로컬 복구 검증이 읽어 유지. 목록·X 버튼·FILL·RATING5·passingScore 시절 주석과 WPF README 정정. `scripts/PopupWindowTests`에 displayMode 무시 검증 5건 추가(23건). 빌드 경고·오류 0, RichTextTests 85·PopupWindowTests 23·로컬 행동 1012·복구 158건 통과.
+- ⑤ 2026-10-15 (서버 50-B·50-C 주석): 도달 불가 `WPF_INVALID_HIDE_DAYS` 판정 삭제(범위 밖·누락 hideDays는 요청 검증에서 `WPF_INVALID_RESULT`, 계약서 code 표 정정, Demo 게이트웨이도 같은 code로 맞춤), `loadQuestions` admin 인자·`contentTitleKey` 도달 불가 분기·`PopupEntity.useYn`(매퍼 매핑 포함)·`WpfPopupDelivery.open()`·`PopupQuestionEntity` 호환 생성자 삭제, HTTP 응답으로 나가지 않는 결과 DTO 축소(`PopupHideResponseDto` 삭제, 보조 조회 `selectHiddenUntil`·`selectVideoCompletedAt` 삭제 — 스키마 변경 없음), `WpfResultItemResponse` 미사용 필드·직렬화 표기 정리, 일회성 `ImageContractMigration`·전용 테스트·gradle 태스크 삭제(조회 변환은 유지, 복원 커밋 `cd65c94`), 관리자 크기 검사의 popupType 대소문자 일관화. `selectStatus`는 테스트 검증용으로 유지하고 주석 정정. 목록·WPF-01·LINK_URL·결과 유형·정답 키·API_REQUEST_LOG 주석 정정, 깨진 한글 7개 파일 복원. 컴파일 성공, popup 테스트 95건 중 91 통과·skip 4, `web:api` popup 35건 통과, 로컬 XE 롤백 전용 DB 테스트 3건 통과.

@@ -6,7 +6,8 @@
 <!--
     팝업 매퍼 — Oracle 판 (기준 5: PostgreSQL popup 스키마 → Oracle 전환)
 
-    [역할] 관리자 편집(/apis/popup/**)과 WPF 결과 처리(WpfResultProcessor → PopupService 위임)가 사용하는 POPUP 스키마 SQL.
+    [역할] 관리자 편집(/apis/popup/**), WPF 단건 조회의 노출 후보 판정(WpfPopupService — selectAvailablePopups·countAvailablePopups),
+           WPF 결과 처리(WpfResultProcessor → PopupService 위임)가 사용하는 POPUP 스키마 SQL.
            구 WPF-01~06(/p/api/popups/** 개별 API)은 설계 18 L-0에서 삭제했다.
            구문 ID·파라미터·반환 구조는 PostgreSQL 판과 같아 PopupService 호출부는 바뀌지 않는다.
 
@@ -138,8 +139,8 @@
     </select>
 
     <!--
-        popup_notice + popup_content 공통 SELECT 목록. 관리자 상세와 WPF 목록이 함께 사용한다.
-        콘텐츠는 JSON으로 조립하지 않고 정규 컬럼 5개 + CONTENT_OPTIONS(CLOB)를 그대로 내린다.
+        popup_notice + popup_content 공통 SELECT 목록. 관리자 상세와 WPF 단건 조회의 노출 후보(selectAvailablePopups)가 함께 사용한다.
+        콘텐츠는 JSON으로 조립하지 않고 정규 컬럼 4개 + CONTENT_OPTIONS(CLOB)를 그대로 내린다.
         [설계 18 L-4] DISPLAY_MODE는 CK_POPUP_DISPLAY_MODE(08 스크립트)로 보장하므로 CASE 보정을 두지 않는다.
     -->
     <sql id="popupEntityColumns">
@@ -168,7 +169,6 @@
             ct.MEDIA_URL,
             ct.CONTENT_OPTIONS         AS CONTENT_OPTIONS_JSON,
             n.DISPLAY_ORDER,
-            n.ACTIVE_YN                AS USE_YN,
             n.QUESTION_TEMPLATE_ID,
             n.PERIOD_MODE,
             n.REPEAT_INTERVAL,
@@ -369,7 +369,7 @@
          결과 매핑 (팝업·문항·선택지)
          =================================================================== -->
 
-    <!-- [Oracle 전환] CONTENT_JSON 대신 콘텐츠 컬럼 6개를 PopupEntity에 담는다. 순서는 레코드 생성자와 같다. -->
+    <!-- [Oracle 전환] CONTENT_JSON 대신 콘텐츠 컬럼 5개(정규 4개 + CONTENT_OPTIONS)를 PopupEntity에 담는다. 순서는 레코드 생성자와 같다. -->
     <resultMap id="popupEntityResultMap"
                type="server.domain.popup.PopupEntity">
         <constructor>
@@ -398,7 +398,6 @@
             <arg column="MEDIA_URL" javaType="java.lang.String"/>
             <arg column="CONTENT_OPTIONS_JSON" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="DISPLAY_ORDER" javaType="_int"/>
-            <arg column="USE_YN" javaType="java.lang.String"/>
             <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
             <arg column="PERIOD_MODE" javaType="java.lang.String"/>
             <arg column="REPEAT_INTERVAL" javaType="java.lang.Integer"/>
@@ -653,7 +652,7 @@
     </select>
 
     <!-- ===================================================================
-         사용자 상태·응답·영상 (기존 WPF API용)
+         사용자 상태·응답·영상 (WPF 결과 처리용 — WpfResultProcessor → PopupService)
          =================================================================== -->
 
     <!-- 사용자와 팝업 조합이 없으면 생성하고, 있으면 숨김 기간을 갱신한다. 만료 시각은 서버(KST) 기준. -->
@@ -680,14 +679,6 @@
             'N', #{userId}, #{userId}
         )
     </update>
-
-    <select id="selectHiddenUntil"
-            resultType="java.time.OffsetDateTime">
-        SELECT FROM_TZ(HIDDEN_UNTIL_AT, 'Asia/Seoul')
-        FROM ${popupSchemaPrefix}USER_POPUP_STATUS
-        WHERE EMPLOYEE_NO = #{userId}
-          AND POPUP_ID = #{popupId}
-    </select>
 
     <!--
         활성 사용자를 확인하고 채점 설정을 조회한다. 별칭은 대소문자 무관하게 레코드 필드에 매핑된다.
@@ -883,14 +874,6 @@
             #{userId}, #{userId}
         )
     </update>
-
-    <select id="selectVideoCompletedAt"
-            resultType="java.time.OffsetDateTime">
-        SELECT FROM_TZ(COMPLETED_AT, 'Asia/Seoul')
-        FROM ${popupSchemaPrefix}VIDEO_VIEW_STATUS
-        WHERE EMPLOYEE_NO = #{userId}
-          AND POPUP_ID = #{popupId}
-    </select>
 
     <!--
         WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자와 팝업 행 존재만 본다.

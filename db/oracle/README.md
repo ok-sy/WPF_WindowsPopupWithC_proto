@@ -1,6 +1,6 @@
 # POPUP 스키마 — Oracle 스크립트
 
-IMAGE 계약 v3.6의 대상 조회·전환 및 복원 SQL 생성은 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md)를 따른다. 2026-10-06 로컬·원격 개발 DB에서 실행 완료(IMAGE 대상 0행)했으며 서버 조회 변환은 정리 전 저장 행도 새 계약으로 제공한다.
+IMAGE 계약 v3.6의 대상 조회·전환 및 복원 SQL 생성은 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md)를 따른다. 2026-10-06 로컬·원격 개발 DB에서 실행 완료(IMAGE 대상 0행)했으며 서버 조회 변환은 정리 전 저장 행도 새 계약으로 제공한다. 계획 생성 도구(`ImageContractMigration`)는 2026-10-15 서버 소스에서 제거했다(복원 방법은 같은 문서).
 
 기준 5(PostgreSQL popup 스키마 → Oracle). 검증 환경: **로컬 Oracle 21c XE `XEPDB1`**(2026-09-19, POPUP 계정) 및 **원격 개발 DB Oracle 11g XE 11.2.0.2 `192.168.114.71:4004/XE`**(2026-09-20, `zero-rule` 계정 스키마). DDL은 11g 호환으로 작성되어 있다(식별자 30자 이하, `IS JSON` 체크 없음).
 
@@ -70,12 +70,13 @@ $env:POPUP_TEST_DB_URL = "jdbc:oracle:thin:@//localhost:1521/XEPDB1"   # 기본�
 $env:POPUP_TEST_DB_USER = "POPUP"
 $env:POPUP_TEST_DB_SCHEMA = "POPUP"   # 방식 B(원격, 앱 계정 스키마)면 "" — 매퍼의 ${popupSchemaPrefix}. 원격 예: URL=...@//192.168.114.71:4004/XE, USER=zero-rule, SCHEMA=""
 cd zero-rule-server
-.\gradlew :service:core:test --tests "server.service.core.popup.PopupQuestionDatabaseTest" --tests "server.service.core.popup.wpf.WpfPopupDatabaseTest"
+.\gradlew :service:core:test --tests "server.service.core.popup.PopupQuestionDatabaseTest" --tests "server.service.core.popup.wpf.WpfPopupDatabaseTest.nextPopupAndResultRoundTripOnOracle" --tests "server.service.core.popup.wpf.WpfDeliveredResultDatabaseTest"
 ```
 
-- `PopupQuestionDatabaseTest`: 관리자 저장(템플릿·문항·MERGE·selectKey) → 재조회 → 기존 WPF 조회 → 제출·채점·재제출 왕복
-- `WpfPopupDatabaseTest`: 신규 WPF 목록(사용자 3명 기대 목록) → 결과 HIDDEN/SUBMITTED(QUIZ·SURVEY)/VIDEO_WATCHED/DUPLICATE → 완료·숨김 제외 → 대상 외 REJECTED → 요청 로그
-- 두 테스트 모두 `session.rollback(true)`로 끝나 샘플 외 행을 남기지 않는다.
+- `PopupQuestionDatabaseTest`: 관리자 저장(템플릿·문항·MERGE·selectKey) → 재조회 → 노출 후보 조회(매퍼)·비QUIZ 정답 키 제거 → 제출·채점·재제출 왕복
+- `WpfPopupDatabaseTest.nextPopupAndResultRoundTripOnOracle`: 단건 조회(사용자별 첫 후보·OPEN 전달 건 재사용) → 결과 CLOSED(TEXT 완료)/DUPLICATE/VIDEO 미완료 닫기(재노출 유예)/SUBMITTED(QUIZ·SURVEY)/HIDDEN → nextStatus·완료·숨김 제외 → 전달 건 불일치 REJECTED → 요청 로그
+- `WpfDeliveredResultDatabaseTest`: 게시중단 3방식(활성 해제·기간 종료·대상 변경) 뒤 이미 전달한 건의 결과 수용(설계 47-4). 조합마다 savepoint로 되돌린다.
+- 위 세 테스트는 `session.rollback(true)`로 끝나 샘플 외 행을 남기지 않는다. 같은 클래스의 `WpfPopupDatabaseTest.queryAndResultAreSerializedPerUserOnOracle`(설계 39-4·39-5 동시성)은 두 세션의 잠금 대기를 확인하려고 **실제 커밋**하며, 앞뒤로 E1002·E1003의 WPF 상태(영수증·전달 건·USER_POPUP_STATUS)를 지운다. 클래스 이름만 지정하면 함께 실행되므로 롤백 전용만 돌릴 때는 위처럼 메서드를 지정한다.
 
 ## 실DB에서 확인된 Oracle 특이사항 (DDL·매퍼에 반영됨)
 

@@ -13,7 +13,6 @@ import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.VideoPopupContext;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,7 +129,7 @@ public interface PopupMapper {
      */
     int countAvailablePopups(@Param("userId") String userId, @Param("excludeCompleted") boolean excludeCompleted);
 
-    /** 기존 호출부 호환(완료 제외 없음). */
+    /** 완료 제외 없는 조회. 답안 제출 재검증(submitResponse, 게시 조건 확인 경로)과 테스트가 쓴다. */
     default List<PopupEntity> selectAvailablePopups(String userId) {
         return selectAvailablePopups(userId, false);
     }
@@ -145,10 +144,6 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId,
             @Param("hideDays") int hideDays);
-
-    OffsetDateTime selectHiddenUntil(
-            @Param("userId") String userId,
-            @Param("popupId") String popupId);
 
     /**
      * 설문·퀴즈 채점 설정. 활성 사용자는 항상 확인한다.
@@ -230,10 +225,6 @@ public interface PopupMapper {
             @Param("watchedSeconds") BigDecimal watchedSeconds,
             @Param("watchedRatio") BigDecimal watchedRatio,
             @Param("completedYn") String completedYn);
-
-    OffsetDateTime selectVideoCompletedAt(
-            @Param("userId") String userId,
-            @Param("popupId") String popupId);
 
     /**
      * WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자이고 팝업 행이 있으면 1 이상.

@@ -154,7 +154,7 @@ namespace Popup.Services
                 case WpfResultType.Hidden:
                     if (item.HideDays is null or < 1 or > 3650)
                     {
-                        return Reject(response, "WPF_INVALID_HIDE_DAYS", "숨김 일수는 1~3650일이어야 합니다.");
+                        return Reject(response, "WPF_INVALID_RESULT", "숨김 일수는 1~3650일이어야 합니다."); // 서버와 같이 요청 검증 오류(설계 50)
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
                     break;

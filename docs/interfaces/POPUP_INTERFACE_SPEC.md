@@ -1059,7 +1059,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(비활성 사용자, 팝업 행 없음, 유효한 영상 팝업 아님). 결과 수용은 유효한 전달 건(`deliveryId`의 사용자·popupId 일치, 미완료)을 기준으로 하며 팝업의 현재 활성·게시 기간·대상 여부는 다시 보지 않는다 — 게시중단 전에 표시된 건(EXPIRED 전달 건 포함)의 결과는 수용(설계 47-4·50 A9) |
 | REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
 | REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지 등) |
-| REJECTED | WPF_INVALID_HIDE_DAYS | 숨김 일수 업무 검증 실패 |
+| REJECTED | WPF_INVALID_HIDE_DAYS | 현재 서버에서는 발생하지 않음(범위 밖 hideDays는 요청 형식 검사에서 WPF_INVALID_RESULT, 누락도 WPF_INVALID_RESULT) |
 | REJECTED | WPF_INVALID_VIDEO | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
 | RETRYABLE_ERROR | WPF_RETRYABLE | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
 | INTERNAL_ERROR | WPF_INTERNAL | 원인 미확정 내부 오류. 검증 통과 후 변환 단계의 예상하지 못한 예외 포함 |

@@ -47,7 +47,7 @@ class PopupContentAssemblerTest {
                 null, null, null, null, null, null, null, null,
                 "Y", "Y", "Y", "N",
                 title, description, body, media, options,
-                100, "Y", null, "FIXED", null, null, null, null,
+                100, null, "FIXED", null, null, null, null,
                 completionRatio, passingScore, allowClose);
     }
 

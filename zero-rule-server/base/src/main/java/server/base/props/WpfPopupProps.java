@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>[추가 이유 — 기준 3·4·6] 기존 custom.* 설정 클래스는 수정하지 않고 WPF 전용 접두어를 새로 둔다.</p>
  * <ul>
- *   <li>{@code polling-interval-seconds}: 목록 응답에 실어 WPF 주기 조회 간격을 서버가 통제 (기본 1800초, 기준 4)</li>
+ *   <li>{@code polling-interval-seconds}: 조회 응답에 실어 WPF 주기 조회 간격을 서버가 통제하고, 미완료로 닫힌 전달 건의 재노출 유예 시간으로도 쓴다
+ *       (기본 1800초, 응답값 1800~3600초로 제한, 기준 4·설계 35)</li>
  *   <li>{@code dev-user-header}: true면 {@code X-Dev-User-Id} 헤더로 사번을 지정하는 개발용 사용자 식별기를 활성화.
  *       운영 프로파일에서는 반드시 false. 통합 토큰 필터(타 팀)가 적용되면 SecurityContext 기반 식별기가 쓰인다 (기준 6)</li>
  * </ul>

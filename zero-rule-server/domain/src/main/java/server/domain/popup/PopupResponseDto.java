@@ -4,7 +4,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-/** 기존 WPF 계약을 유지하는 팝업 목록 응답 DTO다. */
+/**
+ * 팝업 1건 공용 DTO. 관리자 상세 조회 응답·저장 요청에 쓰고, WPF 단건 조회 응답은 이 DTO를 {@code WpfPopupItem.from}으로 변환해 만든다.
+ */
 public record PopupResponseDto(
         String popupId,
         String popupType,

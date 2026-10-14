@@ -4,8 +4,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import server.base.props.WpfPopupProps;
-import server.domain.popup.PopupHideResponseDto;
-import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoProgressResponseDto;
 import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfResultCommand;
@@ -123,7 +121,7 @@ public class WpfResultProcessor {
 
     /**
      * HIDDEN: 표시·닫기 반영 후 기존 hidePopup으로 숨김 기간을 설정한다.
-     * 만료 시각은 서버(KST) 시각 기준으로 저장하며 [설계 34-05] 응답으로 돌려주지 않는다.
+     * 만료 시각은 서버(KST) 시각 기준으로 저장하며 [설계 34-05] 응답으로 돌려주지 않는다(저장 후 재조회도 하지 않는다).
      */
     private WpfResultItemResponse handleHidden(String employeeNo, WpfResultCommand item) {
         if (item.hideDays() == null) {
@@ -131,10 +129,7 @@ public class WpfResultProcessor {
         }
         requireActiveUserAndPopup(employeeNo, item.popupId());
         recordDisplayAndClose(employeeNo, item);
-        PopupHideResponseDto hidden = popupService.hidePopup(item.popupId(), employeeNo, item.hideDays());
-        if (hidden.hiddenUntil() == null) {
-            throw new IllegalStateException("숨김 만료 시각을 확인할 수 없습니다. popupId=" + item.popupId());
-        }
+        popupService.hidePopup(item.popupId(), employeeNo, item.hideDays());
         return WpfResultItemResponse.accepted(item);
     }
 
@@ -160,7 +155,7 @@ public class WpfResultProcessor {
                     video.durationSeconds(), video.positionSeconds(), video.maximumPositionSeconds(), video.watchedSeconds());
             if (!progress.completed()) throw new IllegalArgumentException("영상 시청 완료 비율을 충족해야 퀴즈를 제출할 수 있습니다.");
         }
-        PopupSubmitResponseDto submitted = popupService.submitDeliveredResponse(
+        popupService.submitDeliveredResponse(
                 item.popupId(), item.resultId(), employeeNo, item.answers(), item.score(), item.passed());
         recordDisplayAndClose(employeeNo, item);   // 완료 상태는 MERGE가 유지한다
         return WpfResultItemResponse.accepted(item);

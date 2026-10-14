@@ -43,7 +43,6 @@ public record PopupEntity(
         String mediaUrl,
         String contentOptionsJson,
         int displayOrder,
-        String useYn,
         Long questionTemplateId,
         String periodMode,
         Integer repeatInterval,

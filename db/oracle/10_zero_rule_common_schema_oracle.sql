@@ -1,8 +1,8 @@
 -- =====================================================================
---  ZERO_RULE ê³µíµ ì¤í¤ë§ â Oracle DDL (ERD/01_schema.sql ì zero_rule ë¶ë¶ì tools/convert-zero-rule-ddl.pl ë¡ ë³í)
---  ì©ë : ê°ë° ìë²(zeroserver) ê¸°ëÂ·WPF ì°ë ê²ì¦. ì´ìì ê¸°ì¡´ Oracle ê³µíµ ì¤í¤ë§ ì¬ì©.
---  ì¤í : sqlplus zero_rule/<pw>@//host:1521/XEPDB1 @10_zero_rule_common_schema_oracle.sql
---  ìì± : Sat Sep 19 17:44:11 2026
+--  ZERO_RULE 공통 스키마 — Oracle DDL (ERD/01_schema.sql 의 zero_rule 부분을 tools/convert-zero-rule-ddl.pl 로 변환)
+--  용도 : 개발 서버(zeroserver) 기동·WPF 연동 검증. 운영은 기존 Oracle 공통 스키마 사용.
+--  실행 : sqlplus zero_rule/<pw>@//host:1521/XEPDB1 @10_zero_rule_common_schema_oracle.sql
+--  생성 : Sat Sep 19 17:44:11 2026
 -- =====================================================================
 
 -- 1. TABLES (53)

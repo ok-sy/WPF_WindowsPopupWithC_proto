@@ -84,7 +84,7 @@ class WpfApiOracleHttpTest {
         registry.add("spring.datasource.username", () -> System.getenv().getOrDefault("POPUP_TEST_DB_USER", "POPUP"));
         registry.add("spring.datasource.password", () -> System.getenv("POPUP_TEST_DB_PASSWORD"));
         registry.add("spring.datasource.driver-class-name", () -> "oracle.jdbc.OracleDriver");
-        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] íì ë§¤í¼ì ${popupSchemaPrefix} â mybatis-spring-boot ìëêµ¬ì± ê²½ë¡ë¡ ê°ì ë³ìë¥¼ ê³µê¸íë¤.
+        // [스키마 분리 설정화] 팝업 매퍼의 ${popupSchemaPrefix} — mybatis-spring-boot 자동구성 경로로 같은 변수를 공급한다.
         registry.add("mybatis.configuration-properties." + PopupSchema.PROPERTY, () -> SCHEMA_PREFIX);
     }
 
@@ -92,7 +92,7 @@ class WpfApiOracleHttpTest {
     @Autowired JdbcTemplate jdbc;
     private final RestTemplate rest = new RestTemplate();
     private final ObjectMapper json = new ObjectMapper();
-    // ì ë¦¬Â·ê²ì¦ SQLì ì°ë ì¤í¤ë§ ì ëì´ (íê²½ë³ì POPUP_TEST_DB_SCHEMA, ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+    // 정리·검증 SQL에 쓰는 스키마 접두어 (환경변수 POPUP_TEST_DB_SCHEMA, 기본 POPUP, 빈 값 = 접속 계정 스키마)
     private static final String SCHEMA_PREFIX = PopupSchema.prefix(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA));
 
     private static JdbcTemplate cleanupJdbc;

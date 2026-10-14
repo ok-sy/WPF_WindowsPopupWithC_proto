@@ -3,7 +3,6 @@ package server.service.core.popup.wpf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import server.base.props.WpfPopupProps;
-import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.PopupSubmitResponseDto;
@@ -85,8 +84,6 @@ class WpfResultProcessorTest {
     }
 
     @Test void hiddenDelegatesToExistingHidePopup() {
-        when(popupService.hidePopup("P1", "E1001", 7))
-                .thenReturn(new PopupHideResponseDto("E1001", "P1", "UNTIL", CLOSED.plusDays(7)));
         var res = processor.processOne("E1001", item(WpfResultType.HIDDEN, 7, null, null));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
         // [설계 34-05] 숨김 만료 시각은 저장하지만 응답에는 없다.
@@ -103,7 +100,7 @@ class WpfResultProcessorTest {
     @Test void submittedPassesWpfScoreAndResponseOmitsScore() {
         var answers = List.of(new PopupSubmitAnswer(1L, null, List.of(10L)));
         when(popupService.submitDeliveredResponse(eq("P1"), eq("r-1"), eq("E1001"), eq(answers), any(), any()))
-                .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
+                .thenReturn(new PopupSubmitResponseDto(10, true));
 
         var quizItem = new WpfResultCommand("r-1", "D-1", "P1", WpfResultType.SUBMITTED, DISPLAYED, CLOSED, null,
                 answers, null, 80.0, true);
@@ -124,7 +121,7 @@ class WpfResultProcessorTest {
                 new BigDecimal("540"), new BigDecimal("531.5"));
         when(popupService.saveDeliveredVideoProgress("P1", "E1001", video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds()))
-                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.9842, 0.9, true, CLOSED));
+                .thenReturn(new VideoProgressResponseDto(true));
         var res = processor.processOne("E1001", item(WpfResultType.VIDEO_WATCHED, null, null, video));
         // [설계 34-05] 시청 비율은 저장 계층(saveVideoProgress)에서 계산하고 응답에는 없다.
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
@@ -139,16 +136,16 @@ class WpfResultProcessorTest {
                 item(WpfResultType.SUBMITTED, null, answers, null)));
         var video = new WpfVideoProgress(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ONE);
         when(popupService.saveDeliveredVideoProgress(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.1, 0.8, false, null));
+                .thenReturn(new VideoProgressResponseDto(false));
         assertThrows(IllegalArgumentException.class, () -> processor.processOne("E1001",
                 item(WpfResultType.SUBMITTED, null, answers, video)));
         verify(popupService, never()).submitDeliveredResponse(any(), any(), any(), any(), any(), any());
         verify(wpfMapper, never()).insertReceipt(any(), any(), any(), any(), any(), any());
 
         when(popupService.saveDeliveredVideoProgress(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 0.8, 0.8, true, CLOSED));
+                .thenReturn(new VideoProgressResponseDto(true));
         when(popupService.submitDeliveredResponse(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
+                .thenReturn(new PopupSubmitResponseDto(10, true));
         var result = processor.processOne("E1001", item(WpfResultType.SUBMITTED, null, answers, video));
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, result.status());
         verify(popupService).submitDeliveredResponse("P1", "r-1", "E1001", answers, null, null);
@@ -196,12 +193,10 @@ class WpfResultProcessorTest {
     @Test void expiredDeliveryResultsAreAcceptedForEveryResultType() {
         var answers = List.of(new PopupSubmitAnswer(1L, null, List.of(10L)));
         var video = new WpfVideoProgress(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN, BigDecimal.TEN);
-        when(popupService.hidePopup("P1", "E1001", 7))
-                .thenReturn(new PopupHideResponseDto("E1001", "P1", "UNTIL", CLOSED.plusDays(7)));
         when(popupService.submitDeliveredResponse(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new PopupSubmitResponseDto(5001L, "r-1", "E1001", "P1", "SUBMITTED", 10, true, CLOSED));
+                .thenReturn(new PopupSubmitResponseDto(10, true));
         when(popupService.saveDeliveredVideoProgress(any(), any(), any(), any(), any(), any()))
-                .thenReturn(new VideoProgressResponseDto("E1001", "P1", 1.0, 1.0, true, CLOSED));
+                .thenReturn(new VideoProgressResponseDto(true));
         record Case(String popupType, WpfResultCommand item) { }
         for (Case c : List.of(
                 new Case("TEXT", item(WpfResultType.CLOSED, null, null, null)),

@@ -16,10 +16,6 @@ public record WpfPopupDelivery(
         String deliveryStatus,
         String popupType
 ) {
-    public boolean open() {
-        return "OPEN".equals(deliveryStatus);
-    }
-
     public boolean done() {
         return "DONE".equals(deliveryStatus);
     }

@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-10 — TODO50-B 서버 불필요 코드 정리와 주석 정정
+
+- 이유: 설계 18·35·37 이후 도달하지 않는 분기, 읽지 않는 필드·보조 조회, 이관이 끝난 일회성 도구와 목록 시절 주석이 남아 있어 정리(삭제 전 MyBatis XML·리플렉션·HTTP 직렬화·다른 모듈 참조 확인, DB 스키마 변경 없음).
+- 변경:
+  - 삭제: `WpfPopupService`의 도달 불가 `WPF_INVALID_HIDE_DAYS` 판정(계약서 code 표를 "현재 발생하지 않음"으로 정정, Demo 게이트웨이도 `WPF_INVALID_RESULT`로 맞춤), `PopupService.loadQuestions` admin 인자, `contentTitleKey` 도달 불가 분기, `PopupEntity.useYn`과 매퍼 `ACTIVE_YN AS USE_YN`, `WpfPopupDelivery.open()`, `PopupQuestionEntity` 11인자 생성자, `PopupHideResponseDto`와 `selectHiddenUntil`·`selectVideoCompletedAt` 보조 조회(결과 DTO는 HTTP 응답이 아니라 필요한 값만 유지), `WpfResultItemResponse` 미사용 필드, `ImageContractMigration`·전용 테스트·gradle 태스크(이관 완료, 조회 변환은 유지).
+  - 보정: 관리자 크기 검사의 popupType 비교를 `normalizeUpper`로 일관화.
+  - 유지·주석 정정: `selectStatus`·`WpfUserPopupStatus`(테스트 검증용).
+  - 주석·문서 정정: 목록·WPF-01 표현, LINK_URL 삭제 후 컬럼 수, 결과 유형 설명, QUIZ 정답 키 전달, 컨트롤러 날짜 설명, API_REQUEST_LOG 실제 기록 범위, 02 샘플 SQL 조회 방식, db/oracle README 실DB 테스트 명령(커밋하는 테스트 구분), 11 이관 문서에 도구 제거·복원 커밋, 이중 인코딩으로 깨진 한글 주석 7개 파일 복원.
+- 주요 파일: zero-rule-server/(service/core, domain, repo/core, base, web/api, app/src/test), db/oracle/(02_popup_sample_oracle.sql, 10_zero_rule_common_schema_oracle.sql, 11_IMAGE_CONTRACT_TRANSITION.md, README.md), popup-frameWork/Popup/Services/DemoPopupGateway.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/50_*, version-history/CHANGELOG.md.
+- 검증: `compileJava compileTestJava` 성공. `:service:core:test` popup 95건 중 91 통과·실패 0·skip 4(DB 환경변수 미설정), `:web:api:test` popup 35건 통과, 로컬 XE 롤백 전용 DB 테스트 3건(`WpfPopupDatabaseTest` 왕복, `WpfDeliveredResultDatabaseTest`, `PopupQuestionDatabaseTest`) 통과. 커밋하는 동시성 테스트·HTTP 왕복 테스트는 미실행. Demo 변경 후 로컬 행동 검증 1012건 통과.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-09 — TODO50-B WPF 불필요 코드 정리와 주석 정정
 
 - 이유: 설계 25·35·18 이후 동작하지 않는 그룹·동시 표시 경로, 값을 넣지 않는 옵션, 참조 없는 리소스·멤버와 목록 시절 주석이 남아 있어 정리(삭제 전 리플렉션·로컬 검증·XAML 문자열·계약 필드 참조 확인).

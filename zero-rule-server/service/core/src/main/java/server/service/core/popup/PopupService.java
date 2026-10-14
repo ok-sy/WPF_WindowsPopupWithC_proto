@@ -13,7 +13,6 @@ import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.AdminPopupTargetCondition;
 import server.domain.popup.AdminPopupTargetGroup;
 import server.domain.popup.AdminPopupTargetRow;
-import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionDto;
@@ -27,7 +26,6 @@ import server.domain.popup.VideoProgressResponseDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.time.LocalDate;
 import java.math.RoundingMode;
 import java.util.LinkedHashMap;
@@ -116,7 +114,7 @@ public class PopupService {
 
         List<PopupQuestionDto> questions = popup.questionTemplateId() == null
                 ? List.of()
-                : loadQuestions(List.of(popup.questionTemplateId()), true)
+                : loadQuestions(List.of(popup.questionTemplateId()))
                         .getOrDefault(popup.questionTemplateId(), List.of());
 
         return toResponseDto(popup, questions);
@@ -210,7 +208,7 @@ public class PopupService {
         PopupEntity existing = popupMapper.selectAdminPopupById(popup.popupId().trim());
         if (existing != null && type.equals(existing.popupType())
                 && existing.questionTemplateId() != null
-                && popup.questions().equals(loadQuestions(List.of(existing.questionTemplateId()), true)
+                && popup.questions().equals(loadQuestions(List.of(existing.questionTemplateId()))
                         .getOrDefault(existing.questionTemplateId(), List.of()))) {
             return existing.questionTemplateId();
         }
@@ -338,11 +336,11 @@ public class PopupService {
     }
 
     /**
-     * 사용자가 선택한 기간 동안 팝업을 숨긴다.
-     * 상태 저장과 저장 결과 재조회를 하나의 트랜잭션으로 묶는다.
+     * 사용자가 선택한 기간 동안 팝업을 숨긴다. 만료 시각은 DB가 서버(KST) 시각 기준으로 계산해 저장한다.
+     * 호출자(WpfResultProcessor)는 만료 시각을 응답에 싣지 않으므로 저장 후 재조회하지 않는다.
      */
     @Transactional
-    public PopupHideResponseDto hidePopup(
+    public void hidePopup(
             String popupId,
             String userId,
             Integer hideDays) {
@@ -366,18 +364,6 @@ public class PopupService {
                     "팝업 숨김 상태 저장에 실패했습니다. userId="
                             + normalizedUserId + ", popupId=" + normalizedPopupId);
         }
-
-        // DB가 계산한 실제 만료 일시를 반환하여 클라이언트와 서버의 시간 차이를 피한다.
-        OffsetDateTime hiddenUntil = popupMapper.selectHiddenUntil(
-                normalizedUserId, normalizedPopupId);
-        if (hiddenUntil == null) {
-            throw new IllegalStateException(
-                    "팝업 숨김 만료 일시를 조회할 수 없습니다. userId="
-                            + normalizedUserId + ", popupId=" + normalizedPopupId);
-        }
-
-        return new PopupHideResponseDto(
-                normalizedUserId, normalizedPopupId, "UNTIL", hiddenUntil);
     }
 
     /**
@@ -566,10 +552,7 @@ public class PopupService {
 
         popupMapper.markPopupCompleted(
                 normalizedUserId, normalizedPopupId, passedYn);
-        return new PopupSubmitResponseDto(
-                responseId, normalizedRequestId, normalizedUserId,
-                normalizedPopupId, "SUBMITTED", totalScore.doubleValue(),
-                "Y".equals(passedYn), OffsetDateTime.now());
+        return new PopupSubmitResponseDto(totalScore.doubleValue(), "Y".equals(passedYn));
     }
 
     /**
@@ -775,15 +758,7 @@ public class PopupService {
         if ("VIDEO".equals(context.popupType())) {
             popupMapper.markPopupCompleted(normalizedUserId, normalizedPopupId, completedYn);
         }
-        OffsetDateTime completedAt = completed
-                ? popupMapper.selectVideoCompletedAt(
-                        normalizedUserId, normalizedPopupId)
-                : null;
-
-        return new VideoProgressResponseDto(
-                normalizedUserId, normalizedPopupId,
-                watchedRatio.doubleValue(), requiredRatio.doubleValue(),
-                completed, completedAt);
+        return new VideoProgressResponseDto(completed);
     }
 
     @Transactional(readOnly = true)
@@ -794,7 +769,7 @@ public class PopupService {
     @Transactional(readOnly = true)
     public List<server.domain.popup.AdminPopupQuestion> getAdminQuestions(Long templateId) {
         if (templateId == null) return List.of();
-        return loadQuestions(List.of(templateId), true).getOrDefault(templateId, List.of()).stream()
+        return loadQuestions(List.of(templateId)).getOrDefault(templateId, List.of()).stream()
                 .map(server.domain.popup.AdminPopupQuestion::new)
                 .toList();
     }
@@ -802,17 +777,19 @@ public class PopupService {
     /**
      * [설계 12 §4 — WPF 로컬 채점] 정답 정보(선택지 isCorrect·서술형 correctAnswer·answerMatchMode)를 포함한 문항.
      * WPF가 QUIZ 제출 시 서버 응답을 기다리지 않고 즉시 점수·통과 여부를 계산하려면 정답 키가 필요하다.
-     * WpfPopupService가 QUIZ 팝업의 문항에만 사용하고, SURVEY 등 나머지는 정답 없는 형태로 내려준다.
-     * 기존 관리자 상세(admin=true)와 같은 loadQuestions를 재사용한다.
+     * WpfPopupService가 모든 유형의 문항을 이 메서드로 읽은 뒤 QUIZ가 아니면 {@code WpfPopupItem.withoutAnswerKey}로 정답 키를 뺀다.
+     * 관리자 상세와 같은 loadQuestions를 재사용한다.
      */
     @Transactional(readOnly = true)
     public Map<Long, List<PopupQuestionDto>> loadQuestionsWithAnswerKey(List<Long> templateIds) {
-        return loadQuestions(templateIds, true);
+        return loadQuestions(templateIds);
     }
 
     /**
-     * [WPF API 추가 — 기준 2·3] 노출 판정이 끝난 엔티티와 정답 제외 문항을 공용 응답 DTO로 변환하는 공개 진입점.
-     * 기존 WPF-01·관리자 상세와 같은 toResponseDto를 사용해 content 조립 규칙이 한 곳에만 있게 한다.
+     * [WPF API 추가 — 기준 2·3] 노출 판정이 끝난 엔티티와 호출자가 고른 문항을 공용 응답 DTO로 변환하는 공개 진입점.
+     * 문항의 정답 키는 그대로 옮긴다. WpfPopupService는 QUIZ면 정답 키를 포함한 문항(WPF 로컬 채점용)을,
+     * 그 밖의 유형이면 {@code WpfPopupItem.withoutAnswerKey}로 정답 키를 뺀 문항을 넘긴다.
+     * 관리자 상세와 같은 toResponseDto를 사용해 content 조립 규칙이 한 곳에만 있게 한다.
      */
     public PopupResponseDto toPublicResponseDto(PopupEntity popup, List<PopupQuestionDto> questions) {
         return toResponseDto(popup, questions);
@@ -820,10 +797,10 @@ public class PopupService {
 
     /**
      * 템플릿들의 문항과 선택지를 각각 일괄 조회한 뒤 템플릿 ID별로 묶는다.
-     * 빈 ID 목록에는 쿼리를 실행하지 않는다. admin 플래그는 응답에 정답 정보를
-     * 포함할지 결정하며 사용자 조회의 기본값은 false다.
+     * 빈 ID 목록에는 쿼리를 실행하지 않는다. 정답 정보(선택지 isCorrect·서술형 correctAnswer·answerMatchMode)를
+     * 항상 포함하며, WPF에 정답 키를 빼고 내릴 때는 호출자가 {@code WpfPopupItem.withoutAnswerKey}로 제거한다.
      */
-    private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds, boolean admin) {
+    private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
         if (templateIds.isEmpty()) {
             return Map.of();
         }
@@ -848,7 +825,7 @@ public class PopupService {
                         question -> toQuestionDto(
                                 question,
                                 optionsByQuestion.getOrDefault(
-                                        question.questionId(), List.of()), admin),
+                                        question.questionId(), List.of())),
                         Collectors.toList())));
     }
 
@@ -904,7 +881,7 @@ public class PopupService {
         validatePositiveNumber(popup.minimumHeight(), "최소 높이");
         validatePositiveNumber(popup.maximumWidth(), "최대 너비");
         validatePositiveNumber(popup.maximumHeight(), "최대 높이");
-        if (!"IMAGE".equals(popup.popupType()) && (popup.maximumWidth() < popup.minimumWidth()
+        if (!"IMAGE".equals(normalizeUpper(popup.popupType())) && (popup.maximumWidth() < popup.minimumWidth()
                 || popup.maximumHeight() < popup.minimumHeight())) {
             throw new IllegalArgumentException("최대 크기는 최소 크기보다 작을 수 없습니다.");
         }
@@ -1095,7 +1072,7 @@ public class PopupService {
 
     /**
      * API 값을 DB 저장 형식(대문자 코드, Y/N, BigDecimal)으로 변환한다.
-     * 유형별 제목·설명·본문·미디어 URL·링크 URL은 개별 컬럼으로 추출한다.
+     * 유형별 제목·설명·본문·미디어 URL은 개별 컬럼으로 추출한다(TEXT는 [설계 37] 제목·설명 컬럼을 비운다).
      * [설계 18 L-3] CONTENT_OPTIONS에는 컬럼 사본과 서버 파생 키(문항·완료 비율·통과 점수 등)를 빼고
      * 나머지 확장 옵션만 보관한다. 사본을 저장하면 조회 시 컬럼 값과 어긋날 수 있다.
      */
@@ -1167,12 +1144,12 @@ public class PopupService {
         }
     }
 
+    /** TEXT는 호출 전에 제외되고 유형은 validateAdminPopup에서 검증되므로 나머지(SURVEY·QUIZ)는 surveyTitle이다. */
     private static String contentTitleKey(String popupType) {
         return switch (popupType) {
             case "IMAGE" -> "imageTitle";
             case "VIDEO" -> "videoTitle";
-            case "SURVEY", "QUIZ" -> "surveyTitle";
-            default -> "contentTitle";
+            default -> "surveyTitle";
         };
     }
 
@@ -1206,20 +1183,18 @@ public class PopupService {
     }
 
     /**
-     * 문항과 선택지를 API 구조로 조립한다. 관리자에게만 선택지 정답 여부,
-     * 서술형 정답 및 일치 모드를 제공하고 사용자 응답에는 해당 값을 null로 내려준다.
+     * 문항과 선택지를 API 구조로 조립한다. 선택지 정답 여부, 서술형 정답 및 일치 모드를 포함한다.
      */
     private PopupQuestionDto toQuestionDto(
             PopupQuestionEntity question,
-            List<PopupOptionEntity> options,
-            boolean admin) {
+            List<PopupOptionEntity> options) {
         List<PopupOptionDto> optionDtos = options.stream()
                 .map(option -> new PopupOptionDto(
                         option.optionId(),
                         option.optionValue(),
                         option.optionText(),
                         option.sortOrder(),
-                        admin ? isYes(option.correctYn()) : null))
+                        isYes(option.correctYn())))
                 .toList();
 
         return new PopupQuestionDto(
@@ -1232,8 +1207,8 @@ public class PopupService {
                 question.questionScore(),
                 question.sortOrder(),
                 optionDtos,
-                admin ? question.correctAnswer() : null,
-                admin ? question.answerMatchMode() : null,
+                question.correctAnswer(),
+                question.answerMatchMode(),
                 question.optionLayout());
     }
 

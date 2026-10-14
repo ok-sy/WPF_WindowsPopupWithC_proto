@@ -4,6 +4,8 @@
 
 ## 대상 확인과 SQL 생성
 
+> 2026-10-15 (설계 50-B): 아래 계획 생성 도구(`ImageContractMigration`, Gradle `:service:core:planImageContractMigration`)는 알려진 DB(로컬 XE·원격 개발 DB) 적용을 마쳐(대상 0행) 서버 소스에서 제거했다. 구 저장 행은 서버 조회 변환(`PopupContentAssembler`의 FILL → ADAPTIVE, imageWidth/imageHeight → content.width/height)이 새 계약으로 제공하므로 도구 없이도 동작한다. 다른 기존 DB의 물리 저장 옵션을 정리해야 하면 도구가 남아 있는 커밋(예: `cd65c94`)의 `ImageContractMigration.java`·Gradle 태스크를 복원해 아래 절차를 따른다. 대상 조회 SQL(`11_image_contract_candidates_oracle.sql`)은 그대로 둔다.
+
 Oracle 11g에는 JSON 변환 함수가 없어 문자열 정규식으로 JSON을 수정하지 않는다. `11_image_contract_candidates_oracle.sql`은 IMAGE 행과 현재 옵션을 조회한다. Java 도구는 Jackson으로 옵션을 변환하고 전환·복원 SQL 및 원문 백업 JSON을 생성한다. 도구 자체는 DB에 SELECT만 실행한다.
 
 접속 정보는 환경변수 `POPUP_MIGRATION_JDBC_URL`, `POPUP_MIGRATION_USER`, `POPUP_MIGRATION_PASSWORD`로 제공한다. 접속 비밀번호를 명령행 인자나 생성 SQL에 포함하지 않는다. 저장소의 `zero-rule-server`에서 다음처럼 실행한다.

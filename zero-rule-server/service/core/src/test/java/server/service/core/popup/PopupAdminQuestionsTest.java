@@ -50,7 +50,7 @@ class PopupAdminQuestionsTest {
     private void existingQuestions() {
         when(mapper.selectQuestionsByTemplateIds(List.of(10L))).thenReturn(List.of(
                 new PopupQuestionEntity(1L, 10L, "SINGLE_CHOICE", "Question", null,
-                        "Y", "Y", new BigDecimal("2.00"), 1, null, null)));
+                        "Y", "Y", new BigDecimal("2.00"), 1, null, null, "VERTICAL")));
         when(mapper.selectOptionsByQuestionIds(List.of(1L))).thenReturn(List.of(
                 new PopupOptionEntity(2L, 1L, "1", "A", "Y", 1),
                 new PopupOptionEntity(3L, 1L, "2", "B", "N", 2)));
@@ -229,7 +229,7 @@ class PopupAdminQuestionsTest {
     @Test void mergedMapperHasNoDuplicateStatements() throws Exception {
         String resource = "mappers/popup/PopupMapper.xml";
         var configuration = new Configuration();
-        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        // [스키마 분리 설정화] 매퍼의 ${popupSchemaPrefix} 변수. 환경변수 POPUP_TEST_DB_SCHEMA(기본 POPUP, 빈 값 = 접속 계정 스키마)
         configuration.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         try (var stream = getClass().getClassLoader().getResourceAsStream(resource)) {
             assertNotNull(stream);

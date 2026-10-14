@@ -6,7 +6,8 @@
 <!--
     신규 WPF API 전용 매퍼 — Oracle (기준 3·4)
 
-    [역할] POST /p/api/wpf/popups/results 처리에 필요한 표시·닫기 합본 MERGE, 상태 조회, 결과 영수증, 요청 로그.
+    [역할] WPF 단건 조회(POST /p/api/wpf/popups)의 사용자 잠금·전달 건과 결과 처리(POST /p/api/wpf/popups/results)의
+           표시·닫기 합본 MERGE, 결과 영수증, 요청 로그. 상태 조회(selectStatus)는 테스트 검증용.
     [규칙] 날짜 처리·시간대·MERGE 변환 규칙은 PopupMapper.xml 헤더와 동일하다. KST 현재 시각은 PopupMapper의
            공통 조각 nowKst를 네임스페이스 한정자로 include 한다.
     [재사용] 숨김(upsertPopupHide)·응답(upsertPopupResponse 등)·영상(upsertVideoProgress)·완료(markPopupCompleted)는
@@ -80,7 +81,7 @@
         SELECT COUNT(*) FROM ${popupSchemaPrefix}APP_USER WHERE EMPLOYEE_NO = #{userId} AND ACTIVE_YN = 'Y'
     </select>
 
-    <!-- 결과 응답용 상태 1행. completed는 1/0 → boolean. -->
+    <!-- 사용자×팝업 상태 1행(테스트 검증용 — 설계 34-03 이후 운영 코드는 호출하지 않음). completed는 1/0 → boolean. -->
     <select id="selectStatus" resultType="server.domain.popup.wpf.WpfUserPopupStatus">
         SELECT
             s.POPUP_STATUS                                   AS popupStatus,
@@ -157,7 +158,11 @@
            AND DELIVERY_STATUS &lt;&gt; 'DONE'
     </update>
 
-    <!-- 요청 단위 로그. 요약은 CLOB. POPUP_ID는 일괄 요청이라 NULL. 사용자 미확인(401/403) 요청은 EMPLOYEE_NO NULL, 작성자 'WPF'. -->
+    <!--
+        요청 단위 로그. 요약은 CLOB. POPUP_ID 컬럼은 NULL로 두고 popupId는 REQUEST_SUMMARY(popupId=…,type=…)에 남긴다.
+        현재 호출은 결과 API(WpfPopupController.postResult)뿐이며 사용자 확인을 통과해 200으로 응답한 요청만 기록한다.
+        인증 실패(401)·비활성 사용자(403)·본문 오류(400)는 기록하지 않으므로 EMPLOYEE_NO NULL·작성자 'WPF' 분기는 방어용이다.
+    -->
     <insert id="insertApiRequestLog">
         INSERT INTO ${popupSchemaPrefix}API_REQUEST_LOG
             (API_REQUEST_LOG_ID, CLIENT_REQUEST_ID, EMPLOYEE_NO, POPUP_ID, API_PATH, HTTP_METHOD, CLIENT_IP,

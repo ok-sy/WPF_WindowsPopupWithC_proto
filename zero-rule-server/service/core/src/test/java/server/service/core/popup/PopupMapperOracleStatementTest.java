@@ -39,7 +39,7 @@ class PopupMapperOracleStatementTest {
 
     private Configuration parse() throws Exception {
         var configuration = new Configuration();
-        // [ì¤í¤ë§ ë¶ë¦¬ ì¤ì í] ë§¤í¼ì ${popupSchemaPrefix} ë³ì. íê²½ë³ì POPUP_TEST_DB_SCHEMA(ê¸°ë³¸ POPUP, ë¹ ê° = ì ì ê³ì  ì¤í¤ë§)
+        // [스키마 분리 설정화] 매퍼의 ${popupSchemaPrefix} 변수. 환경변수 POPUP_TEST_DB_SCHEMA(기본 POPUP, 빈 값 = 접속 계정 스키마)
         configuration.setVariables(PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA)));
         try (var stream = getClass().getClassLoader().getResourceAsStream(RESOURCE)) {
             assertNotNull(stream, RESOURCE + " 리소스가 없습니다.");
@@ -137,7 +137,7 @@ class PopupMapperOracleStatementTest {
         assertTrue(withCompleted.contains("COMPLETED_YN = 'Y'"));
         listParams.put("excludeCompleted", false);
         String withoutCompleted = configuration.getMappedStatement(NS + "selectAvailablePopups").getBoundSql(listParams).getSql();
-        assertFalse(withoutCompleted.contains("COMPLETED_YN = 'Y'"), "기존 WPF-01 계약: 완료 제외 없음");
+        assertFalse(withoutCompleted.contains("COMPLETED_YN = 'Y'"), "excludeCompleted=false(답안 제출 재검증 경로): 완료 제외 없음");
     }
 
     /**
