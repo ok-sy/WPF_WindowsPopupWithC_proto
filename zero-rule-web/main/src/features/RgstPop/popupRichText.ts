@@ -27,12 +27,32 @@ export interface RichBlock {
 export const RICH_INDENT_STEP = 40;
 export const RICH_MAX_INDENT = 5;
 
-export const RICH_COLORS = [
-  { color: '#111827', label: '검정' }, { color: '#6B7280', label: '회색' },
-  { color: '#DC2626', label: '빨강' }, { color: '#EA580C', label: '주황' },
-  { color: '#CA8A04', label: '노랑' }, { color: '#16A34A', label: '초록' },
-  { color: '#2563EB', label: '파랑' }, { color: '#7C3AED', label: '보라' },
+/*
+ * [설계 49] 편집기 색 팔레트. 8계열(열) × 밝기 5단계(행, 밝음 → 어두움)를 펼친 격자로 보여 준다.
+ * 기존 8색(검정·회색·빨강·주황·노랑·초록·파랑·보라)은 모두 포함하며 이름도 유지한다.
+ * 저장 규칙은 팔레트가 아니라 #RRGGBB 형식이므로 팔레트를 바꿔도 서버·WPF 계약은 바뀌지 않는다.
+ */
+const PALETTE_FAMILIES: { name: string; shades: string[] }[] = [
+  { name: '회색', shades: ['#9CA3AF', '#6B7280', '#4B5563', '#374151', '#111827'] },
+  { name: '빨강', shades: ['#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B'] },
+  { name: '주황', shades: ['#FB923C', '#F97316', '#EA580C', '#C2410C', '#9A3412'] },
+  { name: '노랑', shades: ['#FACC15', '#EAB308', '#CA8A04', '#A16207', '#854D0E'] },
+  { name: '초록', shades: ['#4ADE80', '#22C55E', '#16A34A', '#15803D', '#166534'] },
+  { name: '청록', shades: ['#22D3EE', '#06B6D4', '#0891B2', '#0E7490', '#155E75'] },
+  { name: '파랑', shades: ['#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF'] },
+  { name: '보라', shades: ['#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6'] },
 ];
+const SHADE_NAMES = ['아주 밝은', '밝은', '', '어두운', '아주 어두운'];
+/* 기존 선택지 이름을 유지한다(회색 계열의 #6B7280 = 회색, #111827 = 검정). */
+const FIXED_COLOR_LABELS: Record<string, string> = { '#6B7280': '회색', '#111827': '검정' };
+export const RICH_COLOR_COLUMNS = PALETTE_FAMILIES.length;
+/** 행 우선 순서(밝기 행마다 8계열). CKEditor 색 드롭다운도 같은 순서·열 수를 쓴다. */
+export const RICH_COLORS: { color: string; label: string }[] = SHADE_NAMES.flatMap((shade, row) =>
+  PALETTE_FAMILIES.map((family) => {
+    const color = family.shades[row];
+    const label = FIXED_COLOR_LABELS[color] ?? (family.name === '회색' && row === 2 ? '진한 회색' : [shade, family.name].filter(Boolean).join(' '));
+    return { color, label };
+  }));
 export const RICH_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
 /* css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
  * 정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다(설계 28 §9.3). */
@@ -55,7 +75,7 @@ const REMOVED_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'IMG', 'IFRAME', 'O
 /** CKEditor가 쓰는 툴바·허용 값 설정. 소스 편집·표·이미지 등은 툴바에 두지 않는다. */
 export const richEditorConfig = {
   toolbar: { items: ['bold', 'italic', 'underline', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'removeFormat', '|', 'undo', 'redo'] },
-  fontColor: { colors: RICH_COLORS, columns: 4, documentColors: 0 },
+  fontColor: { colors: RICH_COLORS, columns: RICH_COLOR_COLUMNS, documentColors: 0 },
   /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 최대 단계는 popupRichTextFormat.limitIndent가 지킨다. */
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },
   /* 'default'는 크기 서식 없음 = 본문 기본 크기(bodyFontSize). */

@@ -11,9 +11,14 @@
   - 관리자 웹: 툴바 들여쓰기 늘리기·줄이기(IndentBlock 40px), `limitIndent`로 최대 5단계 제한(5단계에서 명령 비활성, 붙여넣기 여백을 40px 배수·200px 이하로 정규화, px 외 단위 제거), 서식 지우기가 들여쓰기를 지우지 않도록 `blockIndent`를 문단 속성으로 등록. `htmlToBlocks`·`blocksToHtml`·`readTextBlocks` 왕복, 미리보기 문단 왼쪽 여백.
   - WPF: `PopupTextBlockDto.Indent`, 렌더러 문단 왼쪽 여백 단계 × 40 DIP(줄바꿈된 모든 줄), 기울임 오른쪽 여유와 공존. 설계 48에 따라 서버 단계 목록은 복제하지 않고 정수·최대 400 DIP만 적용(밖이면 0), 타입 오류는 0. Demo 샘플 목록 문단 3개 1단계, Demo 검증에 indent 추가.
   - 문서: 인터페이스 계약 8.1(indent 행·WPF 표시 방어), ALL 정의서, 옵션 가이드, 미리보기 대조 문서, 예제 JSON(WPF-01). MINIMAL 범위 변경 없음.
-- 주요 파일: zero-rule-server/.../popup/(PopupRichText.java, PopupRichTextTest.java), zero-rule-web/main/src/features/RgstPop/(popupRichText.ts, popupRichTextFormat.ts, PopupRichTextEditor.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/PopupTextBlockDto.cs, Views/Contents/PopupRichText.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow.cs), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, version-history/CHANGELOG.md.
-- 검증: 서버 popup 패키지 테스트 86건 통과(들여쓰기 허용·거부 추가, DB 의존 3건은 로컬 XE 미기동으로 skip). WPF 빌드 경고·오류 0, 행동 검증 994건 통과(설계 49 전용 13건 — 단계 × 40·정렬·빈 문단·기울임 여유 공존·본문 크기 변경 후 유지·줄바꿈 모든 줄 시작 위치·표시 방어 범위·Demo 검증, 설계 38 기울임 잘림 검증 포함). 관리자 웹 `tsc --noEmit` 통과. 실제 편집기 빌드 하네스 검증은 패널 커밋과 함께 기록.
-- 상태: 문단 들여쓰기 커밋에 포함. 미푸시.
+- 변경(우클릭 펼침 서식 패널):
+  - `PopupRichTextMenu`를 MUI Menu에서 비모달 Popper 패널로 개편. 색 격자(8계열 × 밝기 5단계 = 40색, 기존 8색·이름 유지)를 항상 펼쳐 두고 현재 색·혼합 표시, 색 초기화, 글꼴·크기 선택, 굵게·기울임·밑줄(혼합은 `aria-pressed=mixed`), 서식 지우기를 한 패널에 배치. CKEditor 색 드롭다운도 같은 팔레트·8열.
+  - 적용 후 패널 유지(서식 상태 재조회), Esc(포커스 위치 무관)·바깥 클릭으로 닫으면 편집기 선택으로 복귀. 우클릭·'서식' 버튼·메뉴 키/Shift+F10 진입, Shift+우클릭 브라우저 메뉴, 화면 경계 보정, 색 격자 방향키·Home/End 이동, 읽기 전용 전환 시 닫힘. `applyFormat`에 편집기 포커스 이동 여부 인자 추가.
+  - 문서: 설계 49 확정 결과·구현 결과·검증, 설계 28 §11에 후속 링크, 사용자 옵션 가이드 서식 편집 설명.
+  - 검증 스크립트: `scripts/verify-rich-text-49.cjs`(+entry) — 실제 관리자 편집기 빌드를 headless Edge에서 띄워 들여쓰기·패널·미리보기를 확인.
+- 주요 파일: zero-rule-server/.../popup/(PopupRichText.java, PopupRichTextTest.java), zero-rule-web/main/src/features/RgstPop/(popupRichText.ts, popupRichTextFormat.ts, PopupRichTextEditor.tsx, PopupRichTextMenu.tsx, PopupPreview.tsx), popup-frameWork/Popup/(Dtos/PopupTextBlockDto.cs, Views/Contents/PopupRichText.cs, Services/DemoPopupDataService.cs, DemoOptionsWindow.cs), scripts/(verify-rich-text-49.cjs, verify-rich-text-49-entry.tsx), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/(28_*, 49_*), version-history/CHANGELOG.md.
+- 검증: 서버 popup 패키지 테스트 86건 통과(들여쓰기 허용·거부 추가, DB 의존 3건은 로컬 XE 미기동으로 skip). WPF 빌드 경고·오류 0, 행동 검증 994건 통과(설계 49 전용 13건 — 단계 × 40·정렬·빈 문단·기울임 여유 공존·본문 크기 변경 후 유지·줄바꿈 모든 줄 시작 위치·표시 방어 범위·Demo 검증, 설계 38 기울임 잘림 검증 포함). 관리자 웹 `tsc --noEmit` 통과. 실제 편집기 하네스 40건 통과(변환 왕복, 저장값 재편집, 첫 들여쓰기 40px, 5단계 정지·명령 비활성, 내어쓰기, 서식 지우기 후 들여쓰기 유지, 실행 취소, 붙여넣기 정규화, 패널 8×5 격자·구성·포커스, 색 적용 후 유지·선택 구간만 적용·선택 유지, 굵게·크기·글꼴·기울임·밑줄·색 초기화·서식 지우기, 방향키·Enter·Esc, 혼합 표시, 바깥 클릭, 커서만 있을 때, '서식' 버튼·키보드 진입, Shift+우클릭, 화면 가장자리, 읽기 전용, 미리보기 줄바꿈 줄 여백). 하네스가 구현 중 결함 2건(v34에 없는 `getRoots()` 사용, `removeFormat`이 들여쓰기 삭제)을 발견해 수정 후 통과. 미실행: 로그인한 실제 관리자 화면 수동 확인(마우스·한글 IME), 실제 저장 → 원격 개발 DB → WPF 실화면 육안 확인, Word·Excel 인터페이스 산출물 재생성.
+- 상태: 문단 들여쓰기·우클릭 패널 두 커밋에 나눠 포함. 미푸시.
 
 ## 2026-10-14-03 — TODO48 TEXT 서버 정책과 C# 표시 방어 분리 구현
 

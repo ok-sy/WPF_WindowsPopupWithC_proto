@@ -45,7 +45,8 @@ export const sizeFromModel = (value: unknown) => (typeof value === 'string' && v
 export const fontIdFromModel = (value: unknown) =>
   typeof value === 'string' ? RICH_FONTS.find((font) => normalizeFontCss(font.css) === normalizeFontCss(value))?.id ?? null : null;
 
-export function applyFormat(editor: any, action: FormatAction): void {
+/** focusEditor=false면 포커스를 옮기지 않는다(열린 서식 패널에서 키보드로 연속 적용할 때). */
+export function applyFormat(editor: any, action: FormatAction, focusEditor = true): void {
   switch (action.type) {
     case 'toggle': {
       // 섞여 있거나 꺼져 있으면 모두 켜고, 모두 켜져 있을 때만 끈다.
@@ -69,7 +70,7 @@ export function applyFormat(editor: any, action: FormatAction): void {
       editor.execute('removeFormat');
       break;
   }
-  editor.editing.view.focus();
+  if (focusEditor) editor.editing.view.focus();
 }
 
 /*

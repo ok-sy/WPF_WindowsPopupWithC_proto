@@ -27,7 +27,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [initialHtml] = useState(() => blocksToHtml(initialBlocks));
-  /* [설계 28 §11] 우클릭·'서식' 버튼 서식 메뉴 */
+  /* [설계 28 §11·설계 49] 우클릭·'서식' 버튼·키보드로 여는 펼침 서식 패널 */
   const [menuPosition, setMenuPosition] = useState<PopoverPosition | null>(null);
   const [formatState, setFormatState] = useState<FormatState | null>(null);
   const disabledRef = useRef(disabled);
@@ -47,8 +47,12 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
     // Esc·바깥 클릭으로 닫아도 원래 선택 범위·커서로 돌아간다.
     editorRef.current?.editing.view.focus();
   };
+  /* [설계 49] 적용 후에도 패널을 유지하므로 포커스는 패널에 두고, 바뀐 서식 상태를 다시 읽어 표시한다. */
   const applyMenu = (action: FormatAction) => {
-    if (editorRef.current) applyFormat(editorRef.current, action);
+    const editor = editorRef.current;
+    if (!editor || disabledRef.current) return;
+    applyFormat(editor, action, false);
+    setFormatState(readFormatState(editor));
   };
   /* 키보드(메뉴 키·Shift+F10)로 연 경우 마우스 좌표가 없으므로 커서·선택 위치 아래에 연다. */
   const caretPosition = (fallback: HTMLElement): PopoverPosition => {
@@ -70,13 +74,15 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
   };
   useEffect(() => {
     if (editorRef.current) applyReadOnly(editorRef.current, Boolean(disabled));
+    // 읽기 전용으로 바뀌면 열린 서식 패널을 닫는다.
+    if (disabled) setMenuPosition(null);
   }, [disabled]);
 
   return (
     <Box sx={{ opacity: disabled ? 0.6 : 1 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="caption" color="text.secondary">{label} · 글자를 선택하고 우클릭하면 서식 메뉴가 열립니다</Typography>
-        <Button size="small" disabled={disabled} aria-haspopup="menu"
+        <Typography variant="caption" color="text.secondary">{label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다</Typography>
+        <Button size="small" disabled={disabled} aria-haspopup="dialog"
           // 버튼을 눌러도 편집기의 선택 범위가 풀리지 않게 한다.
           onMouseDown={(event) => event.preventDefault()}
           onClick={(event) => {
