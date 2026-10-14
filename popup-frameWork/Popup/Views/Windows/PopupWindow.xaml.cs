@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using Popup.Views.Contents;
+using Popup.Services;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Forms = System.Windows.Forms;
@@ -290,9 +291,12 @@ namespace Popup.Views.Windows
             : new GridLength(0);
 
             /*
-             * '30일간 보지 않기' 체크박스
-             * 표시 여부를 설정한다.
+             * '{N}일간 보지 않기' 체크박스
+             * 문구와 표시 여부를 설정한다.
+             * N은 HIDDEN 결과에 실제로 담기는 숨김 일수(서버 hideDays, 없으면 기본 30일)와 같다.
              */
+            DoNotShowAgainCheckBox.Content =
+                $"{PopupResultBuilder.EffectiveHideDays(_options.HideDays)}일간 보지 않기";
             DoNotShowAgainCheckBox.Visibility =
                 _options.ShowFooter && _options.ShowDoNotShowAgain
                     ? Visibility.Visible
@@ -982,12 +986,27 @@ namespace Popup.Views.Windows
         /*
          * 닫기 버튼 외의 경로(ESC, Alt+F4, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
          * Closing 시점에 한 번 더 기록한다.
+         *
+         * 완료 전 닫기 금지(allowCloseBeforeComplete=false)는 VIDEO+QUIZ와 일반 VIDEO에 같이 적용한다.
+         * 두 유형이 같은 계약 필드를 쓰므로 창 닫기(Alt+F4 등)로 시청 기준 전에 닫히지 않게 조용히 취소한다
+         * (VIDEO+QUIZ와 같은 방식 — 창 닫기 경로는 안내 없이 취소하고, 일반 VIDEO의 '필수 영상 시청' 안내는 푸터 버튼 경로에서만 띄운다).
+         * 재생 실패 시에는 닫기를 막지 않는다.
+         * 앱 종료(Application.Shutdown)·로그오프(SessionEnding 후 종료)는 WPF가 취소를 무시하고 닫으므로
+         * 별도 예외 플래그 없이 두 유형 모두 그대로 닫힌다.
          */
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
-                && !_options.AllowCloseBeforeComplete && !combined.Video.HasPlaybackFailed)
-                e.Cancel = true;
+            if (!_options.AllowCloseBeforeComplete)
+            {
+                if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
+                    && !combined.Video.HasPlaybackFailed)
+                    e.Cancel = true;
+                else if (_options.Content is VideoPopupView video
+                    && !_options.IsCompleted
+                    && !video.HasReachedCompletion(_options.CompletionRatio)
+                    && !video.HasPlaybackFailed)
+                    e.Cancel = true;
+            }
             RecordDoNotShowAgainChoice();
             base.OnClosing(e);
         }

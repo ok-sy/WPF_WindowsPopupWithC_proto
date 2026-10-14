@@ -48,6 +48,11 @@ function text(value: unknown, fallback: string): string {
   return value == null || String(value).trim() === '' ? fallback : String(value);
 }
 
+/* [설계 50 A1] WPF 체크박스와 같이 실제 숨김 일수(서버 hideDays, 비우면 WPF 기본 30일)를 표시한다. */
+function doNotShowAgainLabel(hideDays?: number | null): string {
+  return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
+}
+
 function titleKey(type: AdminPopupDetail['popupType']): string {
   if (type === 'IMAGE') return 'imageTitle';
   if (type === 'VIDEO') return 'videoTitle';
@@ -732,7 +737,7 @@ export default function PopupPreview({
                         }}
                       />
                     }
-                    label="다시 보지 않기"
+                    label={doNotShowAgainLabel(popup.hideDays)}
                   />
                 )}
               </Box>
@@ -773,7 +778,7 @@ export default function PopupPreview({
                 <FormControlLabel
                   disabled={!videoUnlocked}
                   control={<Checkbox size="small" />}
-                  label="다시 보지 않기"
+                  label={doNotShowAgainLabel(popup.hideDays)}
                 />
               ) : (
                 <span />

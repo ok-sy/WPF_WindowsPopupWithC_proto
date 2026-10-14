@@ -21,13 +21,16 @@ namespace Popup.Services
      *   파일에 기록하고, 서버가 처리를 종결한 항목(ACCEPTED/DUPLICATE/REJECTED)만 제거한다.
      *
      * [설계 12 §7·§8 — 역할 분리] 사용자 화면(창 닫기)과 서버 전송을 분리한다.
-     *   - Enqueue(Async) : 파일에 저장만 하고 즉시 반환. 이 메서드가 끝나면 결과는 로컬에 안전하게 보존된 것이므로
+     *   - Enqueue        : 파일에 저장만 하고 즉시 반환. 이 메서드가 끝나면 결과는 로컬에 안전하게 보존된 것이므로
      *                      호출자(PopupManager)는 서버 응답을 기다리지 않고 바로 창을 닫아도 된다.
      *   - FlushAsync     : [설계 35] 보관된 결과를 순서대로 1건씩 전송. 종결 결과 제거, 미종결에서 멈추고 Blocked로 알림.
-     *                      WPF 시작 직후·조회 직전·팝업 닫힘 직후·종료 직전에 호출한다.
-     *   - FlushInBackground : FlushAsync를 기다리지 않고 실행하며 예외를 안에서 삼킨다(UI에 영향 없음).
+     *                      조회 직전(MainWindow.LoadAndShowAvailablePopupsAsync)과 팝업 닫힘 직후(MainWindow.OnPopupFinished,
+     *                      Demo는 DemoWindow.ContinueAfterResult)에 호출한다. 앱 종료 시에는 호출하지 않는다 —
+     *                      종료 경로(MainWindow.StopServerRequests)는 StopTransmission으로 전송을 멈추고 파일 보관분은 다음 실행에서 보낸다.
      *   예전 EnqueueAndSendAsync(저장 후 전송 완료까지 대기)·SendImmediateAsync(제출 응답 대기)는 제거했다.
      *   설문·퀴즈 제출도 이제 로컬 판정 후 같은 경로로 간다.
+     *   [설계 50 A4] 호출부가 없던 EnqueueAsync(Task 형태)·FlushInBackground(백그라운드 Flush)와 그 426 알림 이벤트
+     *   ClientVersionRejected도 삭제했다. 426은 FlushAsync가 예외로 전파하고 호출자(MainWindow)가 직접 처리한다.
      *
      * [설계 13 §11 — 426] 서버가 클라이언트 버전 미지원(426)으로 거절하면 전송을 중단하고 항목을 그대로 보관한다.
      *   업데이트된 버전에서 다시 Flush 되며, 예외는 호출자에게 전파해 업데이트 안내에 쓰게 한다.
@@ -46,7 +49,8 @@ namespace Popup.Services
      *   임시 파일에 쓴 뒤 교체해 쓰기 도중 종료돼도 기존 파일이 깨지지 않게 한다. 읽을 수 없는 파일은 버리지 않고
      *   pending-results.corrupt-시각.json으로 옮겨 보존한다. 새 결과의 디스크 저장 실패는 호출자에게 알리고 큐에 남기지 않는다
      *   (창이 열린 채 상태를 유지). 이미 확정되어 파일에 있던 항목의 재기록 실패와 앱 종료 중 결과(RetainForExit)만
-     *   이번 실행 동안 메모리에 보관해 다시 기록·전송한다(프로세스가 종료되면 메모리 보관분은 남지 않는다).
+     *   이번 실행 동안 메모리에 보관해 다음 저장·FlushAsync 때 다시 기록·전송한다(프로세스가 종료되면 메모리 보관분은 남지 않는다).
+     *   앱 종료 중 결과는 종료 경로가 이미 전송을 멈춘 뒤라 보통 그대로 사라진다(다음 실행에 전달되지 않음).
      * [동시성] 파일 접근(_fileLock)과 전송(_flushGate)을 분리한다. 전송 중에도 Enqueue는 짧게 끝난다.
      */
     /// <summary>
@@ -92,12 +96,6 @@ namespace Popup.Services
                 "Popup", "pending-results.json");
         }
 
-        /// <summary>
-        /// [설계 13 §8] 백그라운드 Flush가 426(클라이언트 버전 미지원)을 받았을 때 알린다.
-        /// MainWindow가 구독해 주기 조회를 멈추고 업데이트 안내를 띄운다. UI 스레드가 아닐 수 있다.
-        /// </summary>
-        public event EventHandler<WpfClientVersionException>? ClientVersionRejected;
-
         /*
          * [설계 18 L-0 — C-10 삭제] 화면 표시·진단용으로 두었던 PendingCount 속성은 호출부가 없어 삭제했다.
          * 보관 건수 확인이 다시 필요하면 pending-results.json을 직접 보거나 그때 진단 경로를 추가한다.
@@ -132,8 +130,9 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 34-23] 앱 종료 중이라 닫기를 막을 수 없을 때만 쓴다. 디스크 저장을 다시 시도하고, 실패해도 이번 실행 동안
-        /// 메모리에 보관해 종료 직전 전송에 포함한다. 프로세스가 끝나면 메모리 보관분은 남지 않는다. 예외를 던지지 않는다.
+        /// [설계 34-23] 앱 종료 중이라 닫기를 막을 수 없을 때만 쓴다. 디스크 저장을 한 번 더 시도하고, 실패하면 이번 실행 동안
+        /// 메모리에만 보관한다. 종료 경로는 이미 전송을 멈췄고(StopTransmission) 종료 직전 Flush도 하지 않으므로, 메모리 보관분은
+        /// 프로세스가 끝나면 서버에 보내지 못한 채 사라진다. 예외를 던지지 않는다.
         /// </summary>
         public void RetainForExit(WpfResultItemDto item)
         {
@@ -151,37 +150,6 @@ namespace Popup.Services
                     Debug.WriteLine($"종료 중 결과 파일 저장 실패, 메모리 보관 resultId={item.ResultId}: {exception.Message}");
                 }
             }
-        }
-
-        /// <summary><see cref="Enqueue"/>의 Task 형태(기존 훅 시그니처 유지).</summary>
-        public Task EnqueueAsync(WpfResultItemDto item)
-        {
-            Enqueue(item);
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// [설계 12 §8] FlushAsync를 기다리지 않고 실행한다. 모든 예외를 안에서 처리하므로 UI 흐름에 영향이 없다.
-        /// 종결되지 않은 항목은 파일에 그대로 남아 다음 Flush에서 재전송된다.
-        /// </summary>
-        public void FlushInBackground()
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await FlushAsync();
-                }
-                catch (WpfClientVersionException exception)
-                {
-                    Debug.WriteLine($"결과 전송 중단(426, 보관 유지): {exception.Message}");
-                    ClientVersionRejected?.Invoke(this, exception);
-                }
-                catch (Exception exception)
-                {
-                    Debug.WriteLine($"백그라운드 결과 전송 실패(보관 유지): {exception.Message}");
-                }
-            });
         }
 
         /// <summary>
@@ -344,7 +312,7 @@ namespace Popup.Services
                 string corrupt = Path.Combine(Path.GetDirectoryName(_queueFilePath) ?? ".",
                     $"{Path.GetFileNameWithoutExtension(_queueFilePath)}.corrupt-{DateTime.Now:yyyyMMddHHmmssfff}.json");
                 // [검토 보완] 보존(이동)에 실패하면 원본을 덮어쓰거나 지우지 않도록 예외를 던진다.
-                //   Enqueue는 저장 실패를 호출자에게 알리고(항목은 메모리 보관), Flush는 파일을 건드리지 않고 메모리분만 전송한다.
+                //   Enqueue는 저장 실패를 호출자에게 알리고(새 항목은 큐에 남기지 않음), Flush는 파일을 건드리지 않고 메모리분만 전송한다.
                 try
                 {
                     File.Move(_queueFilePath, corrupt);

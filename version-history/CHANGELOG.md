@@ -2,6 +2,18 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-06 — TODO50-A WPF 동작 불일치 수정(A1·A4·A10)
+
+- 이유: 숨김 체크박스 문구가 실제 숨김 일수와 다르고, 결과 큐에 호출되지 않는 경로와 실제와 다른 종료 전송 주석이 남아 있으며, 일반 VIDEO는 `allowCloseBeforeComplete=false`여도 창 닫기(Alt+F4)로 시청 기준 전에 닫혀 계약과 불일치.
+- 변경:
+  - A1: `PopupResultBuilder.EffectiveHideDays`(서버 hideDays, 없으면 30)를 HIDDEN 결과와 `PopupWindow` 체크박스 문구(`{N}일간 보지 않기`)가 함께 사용. 관리자 미리보기 문구도 같은 규칙.
+  - A4: `PopupResultQueue.EnqueueAsync`·`FlushInBackground`·큐 `ClientVersionRejected` 이벤트와 `MainWindow` 구독 삭제(426은 기존대로 `FlushAsync` 예외 → 조회 catch에서 처리). 큐·`PopupOptions`·`popup-frameWork/README.md`의 종료 직전 전송·RetainForExit 주석을 실제 동작(종료 시 전송 중단, 메모리 보관분은 유실 가능)으로 정정. 동작 변경 없음.
+  - A10: `PopupWindow.OnClosing`이 일반 VIDEO도 푸터 버튼과 같은 조건(시청 기준 미달·재생 실패 아님)이면 닫기를 취소. 앱 종료(`Application.Shutdown`)는 취소를 무시하므로 기존 VIDEO+QUIZ와 같이 닫힌다.
+  - 저장소 추적 검증 `scripts/PopupWindowTests` 추가(A1 4건·A10 14건), `.gitignore` bin/obj 추가. ALL 정의서 HideDays·AllowCloseBeforeComplete, 사용자 옵션 가이드 숨김 일수 설명 보완.
+- 주요 파일: popup-frameWork/Popup/(Services/PopupResultBuilder.cs, Services/PopupResultQueue.cs, Models/PopupOptions.cs, MainWindow.xaml.cs, Views/Windows/PopupWindow.xaml, Views/Windows/PopupWindow.xaml.cs), popup-frameWork/README.md, zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, scripts/PopupWindowTests/, .gitignore, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/design/50_*, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. `scripts/PopupWindowTests` 18건 통과. 로컬 전용 행동 검증 1012건(같은 18건 포함, 기존 모달 정리 경로는 닫기 허용 후 정리로 조정)·복구 검증 158건 통과. 관리자 웹 `tsc` 통과. 실제 Windows 화면 육안 확인은 미실행.
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-05 — TODO50-A 관리자 웹 동작 불일치 수정(A2·A3·A6·A7·A8)
 
 - 이유: 전수 점검에서 관리자 웹 미리보기·편집 값이 WPF·서버 계약과 어긋난 경로 확인(정합성 보완).

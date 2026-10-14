@@ -49,18 +49,20 @@ namespace Popup.Models
         /// <summary>
         /// 결과 항목을 로컬 큐(pending-results.json)에 저장한다(동기). PopupResultQueue.Enqueue에 연결된다.
         /// 반환 시점에 결과가 파일에 보존되므로 그 뒤에 창을 닫아도 유실되지 않는다. 서버 전송은 하지 않는다.
-        /// [설계 34-23] 창 닫기(Closing) 중에도 호출하므로 동기 저장이다. 디스크 저장 실패 시 예외를 던지며 항목은 큐 메모리에 남는다.
+        /// [설계 34-23] 창 닫기(Closing) 중에도 호출하므로 동기 저장이다. 디스크 저장 실패 시 예외를 던지며 항목은 큐에 남기지 않는다
+        /// (호출자가 창을 유지하고 다음 닫기·제출 때 결과를 다시 만들어 저장한다).
         /// </summary>
         public Action<WpfResultItemDto>? EnqueueResult { get; set; }
 
         /// <summary>
-        /// [설계 34-23] 앱 종료 중 저장에 실패한 닫힘 결과를 메모리에 남겨 종료 직전 전송에 포함한다. PopupResultQueue.RetainForExit에 연결된다.
+        /// [설계 34-23] 앱 종료 중 저장에 실패한 닫힘 결과를 이번 실행 동안 메모리에 남긴다. PopupResultQueue.RetainForExit에 연결된다.
+        /// 종료 경로는 이미 전송을 멈춘 상태라 이 결과는 서버에 보내지 못한 채 프로세스 종료와 함께 사라질 수 있다.
         /// </summary>
         public Action<WpfResultItemDto>? RetainResultForExit { get; set; }
 
         /// <summary>
-        /// 보관된 결과를 백그라운드로 서버에 전송한다(예외는 안에서 처리). PopupResultQueue.FlushInBackground에 연결된다.
-        /// 창을 닫은 뒤 호출하며 UI는 기다리지 않는다.
+        /// 창이 닫힌 뒤(Closed) 호출되는 후속 처리 훅. API 모드는 MainWindow.OnPopupFinished, Demo는 DemoWindow.ContinueAfterResult에
+        /// 연결되며, 보관된 결과를 FlushAsync로 전송하고 nextStatus에 따라 다음 조회를 정한다. 창 닫기는 이 처리를 기다리지 않는다.
         /// </summary>
         public Action? FlushResultsInBackground { get; set; }
 

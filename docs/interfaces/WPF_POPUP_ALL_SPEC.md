@@ -51,7 +51,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
-| HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증) |
+| HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증). 체크박스 문구도 같은 값으로 `{N}일간 보지 않기` 표시 |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`(설계 31). 별도 Overlay 창 사용 |
@@ -60,7 +60,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | BodyFontSize | 지원 | N | `null` | 최상위. 미지정 시 View 기본. 지원 View에 본문 크기 전달 |
 | FooterFontSize | 지원 | N | `null` | 최상위. 미지정 시 Footer 14. 지정 시 10~40 보정 |
 | CompletionRatio | 지원 | N | `null` → `1.0` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준 |
-| AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음 |
+| AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음. `false`면 VIDEO·VIDEO+QUIZ 모두 시청 기준 전 푸터 버튼·Alt+F4 닫기를 막는다(재생 실패·앱 종료는 예외) |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
 
 Footer 버튼 표시는 서버 응답(Java `WpfPopupItem`)과 C# 모두 `showFooterButton` 하나만 사용한다. legacy `showCloseButton` 수신 별칭은 삭제했다(설계 29-11). 관리자 API·DB는 기존 이름(showCloseButton·SHOW_CLOSE_BUTTON_YN)을 유지하고 WPF 응답 조립 시 변환한다.

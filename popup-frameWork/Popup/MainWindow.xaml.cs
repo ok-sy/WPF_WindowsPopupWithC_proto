@@ -110,9 +110,8 @@ namespace Popup
                     settings.BaseUrl,
                     authHeaderProvider,
                     ResolveDevUserId(settings.DevUserId));
+                // [설계 13 §11] 결과 전송의 426은 FlushAsync가 예외로 전파하고 LoadAndShowAvailablePopupsAsync가 처리한다.
                 _resultQueue = new PopupResultQueue(_popupApiService);
-                // [설계 13 §11] 백그라운드 결과 전송이 426을 받으면 주기 조회를 멈추고 업데이트 안내
-                _resultQueue.ClientVersionRejected += (sender, exception) => HandleClientVersionRejected(exception);
             }
             else
             {

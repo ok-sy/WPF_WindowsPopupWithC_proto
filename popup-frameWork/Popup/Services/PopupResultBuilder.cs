@@ -25,6 +25,13 @@ namespace Popup.Services
     {
         private const int DefaultHideDays = 30;
 
+        /// <summary>
+        /// 실제 적용할 숨김 일수. 서버 hideDays가 없거나 0 이하면 기본 30일.
+        /// HIDDEN 결과 항목과 PopupWindow의 '{N}일간 보지 않기' 문구가 같은 값을 쓰도록 이 한 곳에서 정한다.
+        /// </summary>
+        internal static int EffectiveHideDays(int? configuredHideDays) =>
+            configuredHideDays is > 0 ? configuredHideDays.Value : DefaultHideDays;
+
         private readonly string _popupId;
         private readonly string _deliveryId;
         private readonly int? _configuredHideDays;
@@ -118,7 +125,7 @@ namespace Popup.Services
             if (doNotShowAgain)
             {
                 item.ResultType = WpfResultType.Hidden;
-                item.HideDays = _configuredHideDays is > 0 ? _configuredHideDays : DefaultHideDays;
+                item.HideDays = EffectiveHideDays(_configuredHideDays);
                 return item;
             }
 
