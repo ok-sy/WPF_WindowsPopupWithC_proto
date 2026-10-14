@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-15-03 — TODO50-② TEXT 서식 WPF 회귀 검증 저장소 추적화
+
+- 이유: 설계 48·49의 WPF 검증(981·994건 기록)이 Git 제외 로컬 전용 `Popup.BehaviorTests`에만 있어 다른 환경에서 관용 변환기·들여쓰기 회귀를 재현할 수 없음.
+- 변경: `scripts/RichTextTests`(콘솔 검증 프로젝트, Popup.csproj 참조, Demo Media 복사) 추가. 설계 28 서식 표시·Demo 옵션 검증, 설계 38 기울임 오른쪽 여유, 설계 48 표시 방어·JSON 타입 오류 경계·구조 오류 plainText 대체·서버/웹 글꼴 ID 대조, 설계 49 들여쓰기(단계 × 40, 정렬·빈 문단, 기울임 여유 공존, 줄바꿈 모든 줄 시작 위치, 표시 방어, Demo 검증)를 로컬 전용 검증에서 옮김. `.gitignore`에 bin/obj 추가. 설계 48·49 문서의 검증 위치 갱신.
+- 주요 파일: scripts/RichTextTests/(RichTextTests.csproj, Program.cs), .gitignore, docs/design/(48_*, 49_*, 50_*), version-history/CHANGELOG.md.
+- 검증: `dotnet run --project scripts/RichTextTests` 85건 통과(로컬).
+- 상태: 커밋에 포함. 미푸시.
+
 ## 2026-10-15-02 — TODO48·49 검증 상태 구분과 TODO50 재분류
 
 - 이유: TODO48·49 완료 표시가 실제 검증 범위보다 넓었고(서버 저장 → 재조회 → WPF 왕복 미실행, DB 의존 테스트 skip, 독립 하네스·로컬 전용 WPF 검증), TODO50의 일부 항목이 확정 정책·계약과 구현의 불일치인데 정책 보류로 분류돼 정합성 보완.
