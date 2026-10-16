@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-16-01 — TODO51 API 호출형 Demo 수동 요청·응답 검증 등록
+
+- 이유: 개발계/검증계의 실제 API 요청·응답을 Demo 화면에서 확인하고 기존 WPF 팝업·결과 전송 경로로 샘플을 검증할 필요.
+- 변경: -Demo -Api 진입, 요청 JSON·URL·인증 입력, HTTP 요청/응답 표시, 실제 단건 팝업 렌더링·결과 전송, 수동 조회·자동 폴링 OFF, ID 재사용·실패 복구·기존 Demo 회귀 및 WPF 담당 범위의 검증 기준을 TODO51로 등록. Trello 진행 확정 카드와 구현 체크리스트 연결.
+- 주요 파일: docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md, version-history/CHANGELOG.md.
+- 검증: 최신 main의 TODO 번호·작업 규칙·App/MainWindow/DemoWindow·IPopupGateway 구조 및 Trello 열린 카드 대조, 문서 내용·공백 확인. 문서 등록으로 빌드·실행 테스트 미수행.
+- 상태: TODO 등록·구현 대기. 기능 코드·API·DB 변경 없음. 커밋에 포함.
+
 ## 2026-10-15-13 — TODO43 관리자 미리보기 완료 조건 버튼 UX 정합
 
 - 이유: 관리자 미리보기가 일반 VIDEO 완료 전 닫기 차단·사유 문구, VIDEO+QUIZ 잠금 기준 %, QUIZ 오답 번호, 보조 닫기 규칙을 재현하지 않아 WPF(설계 43)와 다름.
