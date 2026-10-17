@@ -24,7 +24,7 @@
 - 변경: Excel — TEXT 시트에 `textBlocks[].indent` 행 추가, textBlocks 한도·`runs[].color` 표시 방어·동작 메모(`popups[]`→`popup`, 설계 48 표시 방어 요약) 보완, VIDEO 메모 `popup` 최상위로 정정, 공통 `sizeMode` AUTO는 WPF 전용 명시, SURVEY_QUIZ `isRequired`를 `Y(서버가 항상 true/false 제공)`로 정정, RESULT_REQUEST `durationSeconds` 기본값 없음·0.001 이상, RESULT_RESPONSE code 비고를 status별 전체 code로 보완, Sample TEXT에 `textBlocks`(indent 1) 추가. 삭제 이력으로 남긴 개요 `popups[]`는 유지. 계약서 머리에 2026-10-14~15 보완 항목 추가(버전 번호 3.7 유지), Word 표지 문서 편집일 갱신 후 docx·PDF 재생성. TODO45-7·48·49·50의 산출물 재생성 남은 항목 표기를 정리하고 TODO53 53-1~3 결과·상태 기록.
 - 주요 파일: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/interfaces/WPF_Popup_API_Interface_v3.7.docx, docs/interfaces/WPF_Popup_API_Interface_v3.7.pdf, docs/interfaces/POPUP_INTERFACE_SPEC.md, scripts/export-interface-word.cjs, docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, docs/design/45·48·49·50 TODO, version-history/CHANGELOG.md.
 - 검증: 서버 Java code 상수와 계약서 code 표 대조(`WPF_INVALID_HIDE_DAYS`는 서버 미발생으로 계약서와 일치). Excel 변경 셀 재확인, JSON 예제 셀 8개 파싱 통과, 패키지 파트 비교로 손실 없음 확인(Excel 앱 렌더링은 Excel 미설치로 미실행). Word 생성 표 44·제목 120개, Word 자동화로 필드·목차 갱신 후 PDF 79→80쪽 출력. Windows PDF 렌더러로 전 쪽 이미지화해 표지·목차·문서 안내·TEXT indent 표·결과 code 표·부록 예제를 확인, 잘림 없음. ALL/MINIMAL은 기능 변경이 없어 내용 변경 없음.
-- 상태: 문서·산출물 동기화 완료. 커밋에 포함, 미푸시. 기능 코드·API·DB 변경 없음.
+- 상태: 문서·산출물 동기화 완료. 커밋에 포함, 원격 반영. 기능 코드·API·DB 변경 없음.
 
 ## 2026-10-17-04 — TODO53-3 미결 사항·TODO 상태 표기 정정
 
@@ -32,7 +32,7 @@
 - 변경: 설계09 미결 13(WebView2 SDK 버전 불일치)을 해소로 정정 — csproj·`OFFLINE_WPF_BUILD.md`·오프라인 캐시/반입 nupkg 모두 `1.0.3124.44`. 미결 4·19(반복/기간 노출)를 확정 요건 TODO52-1·TODO53-4로 연결. TODO52 상태를 52-4 반영·나머지 상세 계약 대기로 정정. TODO51 구현 전 구조 설명에 당시 기록임을 명시. 체크가 모두 끝났으나 실서버 HTTP·실화면 확인이 남은 TODO32·33에 상태 줄 추가.
 - 주요 파일: docs/design/09_전환계획_및_미결사항.md, docs/design/32_RESULT_responseStartedAt_제거_TODO.md, docs/design/33_RESULT_응답_score판정값_제거_TODO.md, docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md, docs/design/52_회의확정요건_게시반복_나중에보기_공통동작_TODO.md, version-history/CHANGELOG.md.
 - 검증: csproj·빌드 가이드·`.offline-cache`·`offline-export` nupkg 버전 대조. 전체 체크 완료 TODO(27·32·33·36·37·43·48·50)의 상태 줄과 남은 확인 항목을 대조. 문서 공백 검사 수행. 문서 작업으로 빌드·테스트 재실행 없음.
-- 상태: 커밋에 포함, 미푸시. TODO53 기록은 2026-10-17-05 커밋에 포함.
+- 상태: 커밋에 포함, 원격 반영. TODO53 기록은 2026-10-17-05 커밋에 포함.
 
 ## 2026-10-17-03 — TODO53 프로젝트 검증 후속 작업 등록
 
@@ -42,7 +42,7 @@
 - 주요 파일: docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md, OFFLINE_WPF_BUILD.md, docs/README.md, README.md, version-history/CHANGELOG.md.
 - 검증: 기존 TODO·현재 코드 기준 5242f7d의 점검 결과와 대조. 등록 전 기준선은 WPF 빌드 경고·오류 0, WPF 회귀 122/85/48건, 웹 타입 검사 및 하네스 27/34/40/7건, 서버 서비스 91건 통과·DB 의존 4건 건너뜀, 서버 API 35건 통과. 문서 등록 후 링크·항목 번호·공백 검사 수행. 문서 작업으로 빌드·테스트 재실행 없음. 실제 서버/DB/화면 후속 검증은 미실행.
 - 검증 보완: WPF 폐쇄망 검증 완료 상태는 개발자 확인에 근거해 기록. 이번 작업에서 폐쇄망 restore/build를 재실행하지 않았으며 서버·웹·SSO·재부팅 검증 완료로 확대하지 않음. 문서 공백 검사 수행.
-- 상태: TODO 등록 완료(커밋 `c360b2c`, 미푸시). 후속 진행은 2026-10-17-04·05 참고. 기능 코드·API·DB 변경 없음.
+- 상태: TODO 등록 완료(커밋 `c360b2c`, 원격 반영). 후속 진행은 2026-10-17-04·05 참고. 기능 코드·API·DB 변경 없음.
 
 ## 2026-10-17-02 — TODO52-4 배경 차단 기본값 확인
 
@@ -50,7 +50,7 @@
 - 변경: 코드 변경 없음(WPF DTO·PopupOptions·서버 `DEFAULT_USE_OVERLAY`·관리자 웹 기본값이 모두 true). 명시 `false`는 정상 명시값으로 유지. `scripts/PopupWindowTests`에 필드 생략 응답의 유형별 Overlay 표시·해제와 명시 false 유지 검사 추가. 설계 52의 52-4에 범위·대조 결과 기록.
 - 주요 파일: scripts/PopupWindowTests/Program.cs, docs/design/52_*, version-history/CHANGELOG.md.
 - 검증: `scripts/PopupWindowTests` 122건 통과(25건 추가, DTO 기본값을 false로 바꾸면 실패 확인 후 원복). WPF 빌드 경고·오류 0. 서버 기본값은 기존 `PopupActionOptionsTest` 근거(이번에 재실행하지 않음). 실화면 다중 모니터 확인은 미실행.
-- 상태: 커밋에 포함, 미푸시.
+- 상태: 커밋에 포함, 원격 반영.
 
 ## 2026-10-17-01 — TODO51 API 호출형 Demo 구현
 
@@ -64,9 +64,9 @@
   - 문서: 설계 51 상태·구현 결과, `popup-frameWork/README.md` "API Demo", 루트 README, ALL 정의서 5절 실행 행. MINIMAL은 검토 결과 변경 없음(개발 검증 도구, 외부 제공 범위 유지).
 - 주요 파일: popup-frameWork/Popup/(Services/LaunchArguments.cs, Services/HttpExchangeRecorder.cs, Services/Auth/DemoApiAuthHeaderProvider.cs, Services/Auth/WpfLoginClient.cs, Services/PopupApiService.cs, Services/PopupResultQueue.cs, Models/PopupClientSettings.cs, MainWindow.xaml.cs, App.xaml.cs, DemoWindow.xaml(.cs), DemoWindow.Api.cs), scripts/ApiDemoTests/, .gitignore, docs/design/51_*, docs/interfaces/WPF_POPUP_ALL_SPEC.md, popup-frameWork/README.md, README.md, version-history/CHANGELOG.md.
 - 검증: WPF 빌드 경고·오류 0. `scripts/ApiDemoTests` 48건 통과(조회 본문 오버로드를 되돌리면 실패 확인). 회귀: `scripts/PopupWindowTests` 97건, `scripts/RichTextTests` 85건, 로컬 행동 검증 1014건·복구 검증 158건 통과. API Demo 화면은 오프스크린 렌더링으로 배치 확인. 개발계/검증계 실제 서버 호출·실제 화면 조작 확인은 미실행.
-- 상태: 개발계/검증계 확인(51-9) 대기. 커밋에 포함, 미푸시.
+- 상태: 개발계/검증계 확인(51-9) 대기. 커밋에 포함, 원격 반영.
 
-## 2026-10-16-02 — TODO52 회의 확정 요건 반영 계획
+-16-02 — TODO52 회의 확정 요건 반영 계획
 
 - 이유: 최종 회의 요건의 미확정 분류를 정정하고 기존 Trello 제안과 중복 없이 구현 작업을 연결.
 - 변경: 게시 시간·매일/요일 반복·다음 조회 주기 나중에 보기·닫기와 제출 동일 취급·전체 팝업 백그라운드 차단·선택지 개수 제어 및 TEXT 우선 인계를 진행 확정 TODO52로 등록. 요건 승인과 API 상세 계약 수신을 구분하고 WPF/Front/Server 책임을 명시.
