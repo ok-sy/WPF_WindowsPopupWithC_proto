@@ -18,6 +18,14 @@
 - 검증: 최신 main TODO 번호·작업 규칙 및 Trello 카드 중복 확인. TODO 문서 등록으로 코드 변경·빌드·화면 테스트 미수행.
 - 상태: 진행 확정·구현 대기. 커밋에 포함.
 
+## 2026-10-17-08 — 20261017 폐쇄망 반입본 생성
+
+- 이유: 20261013 반입 이후의 단건 조회·결과 API(설계 35)와 TEXT 통합·복구 동시성·완료 조건 UX·Overlay 키보드 종료·TEXT 들여쓰기·구조 정합성 정리·API 호출형 Demo(설계 37~53)를 폐쇄망에 반입하기 위해 새 반입본 필요. 서버·웹·WPF 계약이 함께 바뀌어 네 묶음을 모두 새로 만듦.
+- 변경: main(9924a52 소스 기준)에서 scripts/export-offline-package.ps1(-IncludeMockSso -NoZip)로 offline-export/20261017 생성 후 기존 번호 체계(1-zero-rule-server·2-zero-rule-web·3-popup-frameWork·4-docs)로 정리. 서버 A 88·M 7, 웹 A 9·M 11·D 2, WPF 소스 91, 문서 91 파일. MockSso 개인 launchSettings 제외, DELETE-SINCE-20260930.txt 누적 삭제 목록 갱신(20261013 이후 신규 삭제 5건). README-IMPORT.md에 20261013 이후 변경·DB 15 적용 순서(서버 교체 전)·동시 배포 필요성, 서버·웹·WPF 묶음별 TODO 패치노트(README-PATCH-*.md) 작성. 묶음별 TAR·통합 TGZ·SHA256 생성.
+- 주요 파일: offline-export/20261017/ (Git 제외), .offline-verify/package-20261017.ps1·finalize-20261017.ps1 (Git 제외), version-history/CHANGELOG.md.
+- 검증: 반입본 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,682,638바이트). TAR별 파일 수·경로 대조, 제외 대상(bin·obj·publish·node_modules·EXE/DLL/PDB·검증 하네스·개인 launchSettings) 누출 검사, TGZ 해제 후 TAR 체크섬 대조, 데모 영상 해시 대조. 소스 내 개인 PC 절대경로 없음. 폐쇄망 기존 소스 병합·빌드, 폐쇄망 DB 스크립트 적용, 폐쇄망 PC 실행은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-10-17-07 — TODO53-10 서버·Oracle DB 의존 테스트 로컬 실행
 
 - 이유: 등록 전 기준선에서 건너뛴 DB 의존 테스트(서비스 4건)와 Oracle HTTP 통합 테스트를 준비된 로컬 개발 DB에서 실행해 게시중단 후 결과 수용·동시성·중복 제출·거절 롤백 동작을 확인할 필요.
