@@ -401,8 +401,8 @@ WebView2 NuGet/Runtime (실제 사용 기능이 있을 경우)
 
 ### 4.5 반입 전 체크
 
-- [ ] `dotnet restore`가 외부 인터넷 없이 가능한 패키지 구성 확인
-- [ ] `dotnet build` 폐쇄망 성공 확인
+- [x] `dotnet restore`가 외부 인터넷 없이 가능한 패키지 구성 확인 — `net10.0-windows10.0.17763.0` 대상 폐쇄망 검증 완료 확인 반영(2026-10-17, 개발자 확인 기준).
+- [x] `dotnet build` 폐쇄망 성공 확인 — 같은 대상 프레임워크의 검증 완료 확인 반영(2026-10-17). 이번 문서 정리에서 재실행한 결과는 아님.
 - [ ] DemoMode=true 구동 확인
 - [ ] 실제 API Mode 구동 확인
 - [ ] appsettings의 외부망 주소 제거/변경
@@ -743,7 +743,7 @@ VSIX
 - [x] Server 팝업 변경 파일 목록 확정 — `scripts/export-offline-package.ps1` 이 `git diff 0294d1e..HEAD -- zero-rule-server` 로 MANIFEST-B-server.txt(A=신규/M=수정) 생성. 공통 파일 수정분(M)은 7개: app/build.gradle.kts, JndiResource, MyBatisConfig, application-common/local/dev_db.yml, service/core/build.gradle.kts
 - [x] Web 팝업 변경 파일 목록 확정 — 같은 스크립트가 `git diff f66e8ed..HEAD -- zero-rule-web` 로 MANIFEST-C-web.txt 생성(RgstPop 2개 + package.json/pnpm-lock.yaml)
 - [x] WPF 소스-only 반입 패키지 생성 — 같은 스크립트 D-wpf(bin/obj/publish/.exe/.dll/.pdb 제외, 산출물 누출 검사 포함, `-IncludeMockSso` 선택). 로컬 실행 확인: A 34 / B 87 / C 4 / D 79(+MockSso 2) 파일
-- [ ] 폐쇄망 빌드 의존 패키지 확인 — `-IncludeDevDependencies` 로 E 묶음 생성 가능. 실제 폐쇄망 PC에서 `dotnet restore/build` 성공 여부는 미확인
+- [x] WPF 폐쇄망 빌드 의존 패키지 확인 — `net10.0-windows10.0.17763.0` 대상 폐쇄망 검증 완료 확인 반영(2026-10-17, §4.5). `-IncludeDevDependencies` 로 E 묶음 생성 가능. 서버·웹 의존성 및 실제 API/SSO 연동 검증과는 별도.
 - [ ] appsettings / URL / 환경별 설정 확인 — 반입 직전 작업(BaseUrl·SsoUrl·DevUserId 비우기, 서버 dev-user-header/prototype false, wpf-client 버전)
 
 ### P1 — 기능 보완 후 반입 권장

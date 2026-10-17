@@ -5,6 +5,7 @@
 | 위치 | 내용 |
 |---|---|
 | [design/](design) | 설계 기준·기능별 TODO·구현 및 확인 상태. 미결 항목은 [09_전환계획_및_미결사항.md](design/09_전환계획_및_미결사항.md) |
+| [design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md](design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) | 프로젝트 검증 후속 작업: 문서 정합·TODO52 구현 연결·실제 연동/화면 검증·미결 정책. 폐쇄망 검증 제외 |
 | [interfaces/](interfaces) | WPF Client API 계약서 [POPUP_INTERFACE_SPEC.md](interfaces/POPUP_INTERFACE_SPEC.md)(v3.7), Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`, 최소/전체 기능 정의서, [examples/](interfaces/examples) JSON 예제 |
 | [reviews/](reviews) | 구현 검토·측정 절차 |
 | [reviews/POPUP_PREVIEW_WPF_PARITY.md](reviews/POPUP_PREVIEW_WPF_PARITY.md) | 관리자 미리보기와 WPF 표시 정합성·알려진 차이 |

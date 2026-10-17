@@ -17,7 +17,7 @@
 
 | 경로 | 내용 | 출처 |
 |---|---|---|
-| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~52(삭제·통합으로 일부 번호 결번) | 신규 |
+| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~53(삭제·통합으로 일부 번호 결번) | 신규 |
 | `db/oracle/` | Oracle DDL·샘플 (`POPUP` 스키마) | 신규 |
 | `api/examples/` | 신규 WPF API JSON 예제 | 신규 |
 | `zero-rule-server/` | 주 서버 (Spring Boot 3.4.1, MyBatis, Oracle) | 업스트림 zero-rule-server @56bb0c5 (2026-09-20 교체) |
