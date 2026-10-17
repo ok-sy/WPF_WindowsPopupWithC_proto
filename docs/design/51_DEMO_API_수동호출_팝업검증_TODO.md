@@ -18,6 +18,8 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ## 현재 구조와 변경 지점
 
+> 아래는 구현 전(main `6b743d6`) 구조 기록이다. 구현 후 구조는 아래 '구현 결과 (2026-10-17)'를 따른다(`-Demo -Api` 인자 처리, DemoWindow API 패널, `PopupApiService`·결과 큐 연결).
+
 - `App.xaml.cs`는 MainWindow.IsDemoMode에 따라 DemoWindow 또는 일반 API 화면으로 진입한다.
 - `MainWindow.xaml.cs`는 현재 `--demo`만 인자로 읽고, 실제 API 모드에서 PopupApiService·인증 공급자·결과 큐·폴링을 구성한다.
 - `DemoWindow.xaml.cs`는 DemoPopupGateway에 고정되어 있다. UI만 열어도 실제 API를 사용하도록 전환되는 구조가 아니므로 실행 모드·초기화·조회 및 결과 경로 연결을 함께 변경해야 한다.
