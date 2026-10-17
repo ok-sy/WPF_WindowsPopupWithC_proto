@@ -1,4 +1,5 @@
 using Popup.Models;
+using Popup.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,7 @@ namespace Popup.Views.Contents
             _requiredRatio = double.IsFinite(requiredRatio) ? Math.Clamp(requiredRatio, 0, 1) : 1;
             Quiz.IsEnabled = false;
             Quiz.UseParentScrolling();
+            Quiz.CollapseHeaderShownAbove(video.ShownTitle, video.ShownDescription);
             _notice = new TextBlock
             {
                 Text = $"영상을 {_requiredRatio * 100:0.##}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.",
@@ -55,8 +57,7 @@ namespace Popup.Views.Contents
 
         private void UpdateProgress(VideoProgressSnapshot progress)
         {
-            if (progress.DurationSeconds > 0
-                && (double)(decimal.Floor(progress.WatchedSeconds / progress.DurationSeconds * 10000) / 10000) >= _requiredRatio)
+            if (VideoCompletion.IsReached(progress.WatchedSeconds, progress.DurationSeconds, _requiredRatio))
                 Unlock();
         }
 

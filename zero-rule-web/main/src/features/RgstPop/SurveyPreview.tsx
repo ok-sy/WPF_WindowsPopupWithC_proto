@@ -61,9 +61,11 @@ export default function SurveyPreview({
 }: SurveyPreviewProps) {
   return (
     <Stack spacing={1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
-      <Typography sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
-        {description}
-      </Typography>
+      {description && (
+        <Typography sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
+          {description}
+        </Typography>
+      )}
       {!questions.length && (
         <Typography sx={{ color: surveyColors.muted, fontSize: 14 }}>
           문항을 추가하거나 예제 문항을 확인해주세요.

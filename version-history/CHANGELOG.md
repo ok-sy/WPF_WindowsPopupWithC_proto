@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-17-06 — TODO50-D3·D4 VIDEO+QUIZ 머리말 중복·시청 비율 판정식 통일 (TODO53-16)
+
+- 이유: 재현 결과 VIDEO+QUIZ에서 서버가 같은 제목·설명을 videoTitle·surveyTitle·description으로 보내 WPF는 제목·설명이, 관리자 미리보기는 설명이 두 번 표시됨. 일반 VIDEO만 시청 비율을 double로 비교해 decimal 비율이 기준 바로 아래일 때 서버(4자리 내림, 미완료)와 달리 닫기를 허용하는 경계 불일치가 있음.
+- 변경: WPF 공통 `VideoCompletion`(서버 `PopupService`와 같은 `min(watched,duration)/duration` 4자리 내림, 1 상한, 기준 0~1 보정)을 추가해 일반 VIDEO 닫기 판정·VIDEO+QUIZ 잠금 해제·Demo 결과 판정에 사용. Demo의 VIDEO+QUIZ 시청 미달 code를 서버와 같은 `WPF_INVALID_VIDEO`로 정정. VIDEO+QUIZ 퀴즈 머리말은 영상 영역에 보인 제목·설명과 같으면 생략하고 값이 다르거나 영상 설명이 숨김이면 표시. 관리자 미리보기도 같은 설명 생략 규칙 적용(SurveyPreview는 빈 설명이면 줄을 그리지 않음). 계약서·ALL·미리보기 정합 문서·Excel 메모에 반영하고 Word/PDF 재생성(JSON 필드 변경 없음). TODO50 D3·D4 판단 결과와 TODO53-16 기록.
+- 주요 파일: popup-frameWork/Popup/Services/VideoCompletion.cs, popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs, popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs, popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs, popup-frameWork/Popup/Services/DemoPopupGateway.cs, zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx, scripts/PopupWindowTests/Program.cs, scripts/verify-completion-ux-43.cjs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/interfaces/WPF_Popup_API_Interface_v3.7.docx·.pdf, scripts/export-interface-word.cjs, docs/design/50·53 TODO.
+- 검증: WPF 빌드 경고·오류 0. `scripts/PopupWindowTests` 156건(신규 34: 경계 10케이스×공통 식·일반 VIDEO, VIDEO+QUIZ 잠금·Demo 판정/code, 머리말 3가지·단독 QUIZ), RichTextTests 85건, ApiDemoTests 48건, 로컬 BehaviorTests 1014건·RecoveryTests 158건 통과. 관리자 웹 `tsc --noEmit` 오류 0, 하네스 완료 UX 30(신규 3)/IMAGE 34/TEXT 40/문항 템플릿 7건 통과. 변이 확인: 일반 VIDEO를 double 비교로 되돌리면·WPF 머리말 생략을 빼면·미리보기 설명 생략을 빼면 각각 실패. Word 재생성 후 PDF 80쪽 렌더링 확인. MINIMAL은 해당 동작 서술이 없어 변경 없음. 실제 Windows 화면 육안 확인은 미실행(TODO53-12·53-13).
+- 상태: 커밋에 포함, 원격 반영.
+
 ## 2026-10-17-05 — TODO53-1·53-2 Excel·Word/PDF 인터페이스 산출물 동기화
 
 - 이유: Excel 정의서와 Word/PDF 산출물이 2026-10-13 생성본에 머물러 이후 설계 43·44·48·49·50의 계약 보완(`textBlocks[].indent`, 표시 방어, `isRequired`, `durationSeconds` 최소값, 결과 code)과 어긋남.

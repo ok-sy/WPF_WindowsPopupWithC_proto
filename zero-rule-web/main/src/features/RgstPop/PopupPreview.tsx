@@ -71,6 +71,8 @@ interface PopupBodyProps {
   fitLayout: FitToImageLayout | null;
   onImageLoad: (size: Size) => void;
   videoUnlocked?: boolean;
+  /** [설계 53-16] VIDEO+QUIZ에서 위 영상 영역에 이미 보인 설명을 퀴즈 머리말에서 반복하지 않는다(WPF VideoQuizPopupView와 같음). */
+  hideSurveyDescription?: boolean;
   survey?: Omit<SurveyPreviewProps, 'description'>;
 }
 
@@ -80,6 +82,7 @@ function PopupBody({
   fitLayout,
   onImageLoad,
   videoUnlocked = false,
+  hideSurveyDescription = false,
   survey,
 }: PopupBodyProps) {
   const content = popup.content;
@@ -111,6 +114,7 @@ function PopupBody({
             naturalImageSize={null}
             fitLayout={null}
             onImageLoad={onImageLoad}
+            hideSurveyDescription={content.showDescription !== false}
             survey={survey}
           />
         </Box>
@@ -294,7 +298,7 @@ function PopupBody({
   }
 
   if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-    return survey ? <SurveyPreview {...survey} description={description} /> : null;
+    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description} /> : null;
   }
 
   const showPlainText = content.showPlainText !== false;

@@ -920,13 +920,15 @@ namespace Popup.Views.Contents
         /// </summary>
         public VideoProgressSnapshot? LatestProgress => _latestProgress;
 
-        /// <summary>[설계 43] HasReachedCompletion과 같은 판정식(누적 시청 / 길이 ≥ 기준). 판정 공식은 설계 50 D4에서 따로 다룬다.</summary>
+        /// <summary>[설계 53-16] 화면에 보이는 콘텐츠 제목(빈 값 가능). VIDEO+QUIZ 결합 화면의 중복 머리말 판단에 쓴다.</summary>
+        internal string ShownTitle => TitleTextBlock.Text;
+
+        /// <summary>[설계 53-16] 설명이 표시 중일 때만 그 값, 숨김이면 null.</summary>
+        internal string? ShownDescription => DescriptionTextBlock.Visibility == Visibility.Visible ? DescriptionTextBlock.Text : null;
+
+        /// <summary>[설계 43] HasReachedCompletion과 같은 판정식. [설계 53-16] 서버·VIDEO+QUIZ와 같은 4자리 내림 비교(VideoCompletion).</summary>
         public static bool IsCompletionReached(VideoProgressSnapshot? progress, double requiredRatio)
-        {
-            if (progress == null || progress.DurationSeconds <= 0) return false;
-            double ratio = (double)(progress.WatchedSeconds / progress.DurationSeconds);
-            return ratio >= Math.Clamp(requiredRatio, 0.0, 1.0);
-        }
+            => progress != null && VideoCompletion.IsReached(progress.WatchedSeconds, progress.DurationSeconds, requiredRatio);
 
         /// <summary>[설계 43] 화면 표시용 시청 %. 내림으로 계산해 판정 전(비활성)인데 표시가 기준 이상이 되는 일이 없게 한다.</summary>
         public static int DisplayWatchedPercent(VideoProgressSnapshot? progress)

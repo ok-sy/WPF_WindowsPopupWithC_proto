@@ -86,6 +86,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run('window.closeCount') === 2 && (await button('제출')).reason.startsWith('영상 0%'), 'Secondary close resets the preview and runs onClose');
   await render('QUIZ', {allowCloseBeforeComplete: true, showFooter: false}, {videoEnabled: true});
   check(await button('닫기') === null, 'showFooter=false hides the secondary close');
+  // [설계 53-16·50-D3] 영상 영역에 보인 설명은 퀴즈 머리말에서 반복하지 않는다. 영상 설명을 숨기면 퀴즈 쪽에 한 번 보인다.
+  const countText = t => run(`document.body.innerText.split(${JSON.stringify(t)}).length - 1`);
+  await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명'});
+  check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ shows the shared description once');
+  await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명', showDescription: false});
+  check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ with hidden video description shows it in the quiz header');
+  await render('QUIZ', {}, {description: '퀴즈 설명'});
+  check(await countText('퀴즈 설명') === 1, 'plain QUIZ keeps its description');
 
   // 4. QUIZ(영상 없음): 오답 번호 표시, 미달 판정 후 배경 어둡기 미사용일 때만 보조 닫기.
   const answerQuiz = () => run(`(()=>{for (const t of ['정답 1','오답 2','정답 3','오답 4'])

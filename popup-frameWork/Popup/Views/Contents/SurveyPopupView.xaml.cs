@@ -29,6 +29,19 @@ namespace Popup.Views.Contents
             host.Children.Add(QuestionListPanel);
         }
 
+        /// <summary>
+        /// [설계 53-16·50-D3] 결합 화면에서 위쪽 영상 영역에 이미 보이는 제목·설명과 같은 값이면 퀴즈 머리말에서 숨긴다.
+        /// 서버는 VIDEO+QUIZ 제목을 1개만 저장해 videoTitle·surveyTitle과 description을 같은 값으로 내려준다. 값이 다르면 그대로 둔다.
+        /// </summary>
+        internal void CollapseHeaderShownAbove(string? shownTitle, string? shownDescription)
+        {
+            if (SameText(SurveyTitleText.Text, shownTitle)) SurveyTitleText.Visibility = Visibility.Collapsed;
+            if (SameText(SurveyDescriptionText.Text, shownDescription)) SurveyDescriptionText.Visibility = Visibility.Collapsed;
+
+            static bool SameText(string? text, string? shown)
+                => !string.IsNullOrWhiteSpace(shown) && string.Equals(text?.Trim(), shown.Trim(), StringComparison.Ordinal);
+        }
+
         internal FrameworkElement DetachSubmissionArea()
         {
             if (SubmissionArea.Parent is Panel host) host.Children.Remove(SubmissionArea);

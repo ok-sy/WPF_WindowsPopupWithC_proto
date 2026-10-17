@@ -162,9 +162,10 @@ namespace Popup.Services
                 case WpfResultType.Submitted:
                     if (popup.Content.TryGetProperty("videoEnabled", out var enabled) && enabled.ValueKind == System.Text.Json.JsonValueKind.True)
                     {
-                        if (item.Video == null || item.Video.DurationSeconds <= 0
-                            || (double)(decimal.Floor(item.Video.WatchedSeconds / item.Video.DurationSeconds * 10000) / 10000) < (popup.CompletionRatio ?? 1))
-                            return Reject(response, "WPF_VIDEO_INCOMPLETE", "영상 시청 완료 비율을 충족해야 합니다.");
+                        // [설계 53-16] 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 WPF_INVALID_VIDEO).
+                        if (item.Video == null
+                            || !VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? 1.0))
+                            return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 완료 비율을 충족해야 합니다.");
                     }
                     if (item.Answers == null || item.Answers.Count == 0)
                     {
@@ -200,9 +201,8 @@ namespace Popup.Services
                     {
                         return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 정보가 없습니다.");
                     }
-                    double ratio = Math.Min(1.0, Math.Floor((double)(item.Video.WatchedSeconds / item.Video.DurationSeconds) * 10000) / 10000);
-                    double required = popup.CompletionRatio ?? 1.0;
-                    if (ratio >= required && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
+                    if (VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? 1.0)
+                        && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
                     {
                         _completed.Add(item.PopupId);
                     }

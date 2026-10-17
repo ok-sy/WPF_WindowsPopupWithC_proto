@@ -166,6 +166,7 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 | IsLoop | 지원 | N | `false` | 반복 재생 |
 
 CompletionRatio와 AllowCloseBeforeComplete는 최상위 필드다. content 안에 중복 정의하지 않는다.
+시청 기준 도달은 일반 VIDEO·VIDEO+QUIZ·Demo 모두 서버와 같은 식(누적 시청/길이를 소수점 4자리에서 내림, 1 상한 ≥ CompletionRatio)으로 판정한다(설계 53-16). VIDEO+QUIZ는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않는다.
 시청량은 단순 재생 위치와 구분해 누적하며 완료 기준은 콘텐츠·결과에 연결한다.
 로컬 MediaElement와 WebView2 HTML5 경로의 공통 컨트롤·진행바·버퍼 표시·hover 표시를 지원한다.
 `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.

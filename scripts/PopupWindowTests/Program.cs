@@ -17,6 +17,7 @@ using Popup.Views.Windows;
  * 43  완료 조건 버튼 표현: VIDEO 미달 닫기 비활성·사유 문구·도달/재생 실패 후 활성, VIDEO+QUIZ 잠금 사유 문구,
  *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
+ * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
  * 44  Background Overlay 켜짐: Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소, 앱 닫기 경로 허용, 화면 출구가 없으면 허용,
  *     Overlay 꺼짐 기존 동작, Esc 무시, 창 제목, 앱 종료 시 결과 저장(결함 1), 생성 실패 시 Overlay 정리(결함 2)
  * 실제 PopupFactory·PopupWindow·PopupManager 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
@@ -59,7 +60,8 @@ internal static class Program
         CheckShutdownSavesResult44();
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-4)");
+        CheckVideoCompletion53();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-4, 53-16)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -603,5 +605,101 @@ internal static class Program
             Check(!Overlay(manager).IsVisible, "[설계 44] overlay closes with the popup");
         }
         finally { owner.Close(); }
+    }
+
+    /*
+     * [설계 53-16 · 50-D3/D4] VIDEO+QUIZ 중복 머리말과 시청 비율 경계.
+     * D4: 일반 VIDEO·VIDEO+QUIZ·Demo 결과 판정이 서버(PopupService: min(watched,duration)/duration 4자리 내림)와 같은 식을 쓴다.
+     * D3: 서버가 videoTitle=surveyTitle·같은 description을 내려주면 퀴즈 머리말에서 반복하지 않는다.
+     */
+    private static void CheckVideoCompletion53()
+    {
+        // 기준 바로 아래 decimal 비율(double 변환 시 0.8로 올라가던 값), 정확한 도달, 직후, 상한·비정상 기준.
+        decimal justBelow = 0.7999999999999999999999999999m * 100m;
+        var cases = new (decimal Watched, decimal Duration, double Required, bool Expected, string Label)[]
+        {
+            (justBelow, 100m, 0.8, false, "decimal 0.79999… just below 0.8"),
+            (79.99m, 100m, 0.8, false, "0.7999 below 0.8"),
+            (80m, 100m, 0.8, true, "exactly 0.8"),
+            (80.01m, 100m, 0.8, true, "0.8001 above 0.8"),
+            (5.6m, 7m, 0.8, true, "5.6/7 = 0.8 exact"),
+            (80.009m, 100m, 0.80005, false, "5-digit required: floor 0.8000 < 0.80005"),
+            (150m, 100m, 1.0, true, "watched over duration is clamped to 1"),
+            (99.99m, 100m, double.NaN, false, "NaN required falls back to 1.0"),
+            (10m, 100m, -1, true, "negative required clamps to 0"),
+            (10m, 0m, 0, false, "zero duration never completes"),
+        };
+        foreach (var c in cases)
+        {
+            bool helper = VideoCompletion.IsReached(c.Watched, c.Duration, c.Required);
+            Check(helper == c.Expected, $"[설계 53-16 D4] VideoCompletion {c.Label}: {helper}");
+            var snapshot = new VideoProgressSnapshot { DurationSeconds = c.Duration, PositionSeconds = 0, MaximumPositionSeconds = 0, WatchedSeconds = c.Watched };
+            Check(VideoPopupView.IsCompletionReached(snapshot, c.Required) == c.Expected,
+                $"[설계 53-16 D4] plain VIDEO close rule matches server formula: {c.Label}");
+        }
+        Check(VideoCompletion.WatchedRatio(justBelow, 100m) == 0.7999m, "[설계 53-16 D4] watched ratio floors to 4 digits like the server");
+
+        // VIDEO+QUIZ 잠금 해제와 Demo 결과 판정(서버 code)이 같은 경계를 쓴다.
+        var owner = NewOwner();
+        try
+        {
+            foreach (var (watched, unlocked) in new[] { (justBelow, false), (80m, true) })
+            {
+                var dto = DemoPopups("VIDEO_QUIZ").Single();
+                dto.CompletionRatio = 0.8;
+                var view = (VideoQuizPopupView)PopupFactory.Create(dto).Content!;
+                typeof(VideoQuizPopupView).GetMethod("UpdateProgress", Flags)!.Invoke(view,
+                    new object[] { new VideoProgressSnapshot { DurationSeconds = 100, PositionSeconds = 100, MaximumPositionSeconds = 100, WatchedSeconds = watched } });
+                Check(view.IsUnlocked == unlocked, $"[설계 53-16 D4] VIDEO+QUIZ unlock at {watched}/100 is {unlocked}");
+                Check(VideoPopupView.IsCompletionReached(new VideoProgressSnapshot { DurationSeconds = 100, WatchedSeconds = watched }, 0.8) == view.IsUnlocked,
+                    $"[설계 53-16 D4] VIDEO and VIDEO+QUIZ agree at {watched}/100");
+
+                var gateway = new DemoPopupGateway();
+                var source = DemoPopups("VIDEO_QUIZ").Single();
+                source.CompletionRatio = 0.8;
+                gateway.ConfigurePopup(source);
+                var delivered = gateway.GetNextPopupAsync("VIDEO_QUIZ").Result.Popup!;
+                var question = delivered.Questions.First();
+                var response = gateway.PostResultAsync(new Popup.Dtos.WpfResultItemDto
+                {
+                    DeliveryId = delivered.DeliveryId, PopupId = delivered.PopupId, ResultType = Popup.Dtos.WpfResultType.Submitted,
+                    Answers = new() { new Popup.Dtos.PopupSubmitAnswerRequestDto { QuestionId = question.QuestionId, OptionIds = new() { question.Options.First().OptionId } } },
+                    Score = 100, Passed = true,
+                    Video = new Popup.Dtos.WpfVideoProgressDto { DurationSeconds = 100, PositionSeconds = 100, MaximumPositionSeconds = 100, WatchedSeconds = watched }
+                }).Result;
+                Check(unlocked ? response.Status == "ACCEPTED" : response.Status == "REJECTED" && response.Code == "WPF_INVALID_VIDEO",
+                    $"[설계 53-16 D4] Demo VIDEO+QUIZ submit at {watched}/100 → {response.Status}/{response.Code} (server code WPF_INVALID_VIDEO)");
+            }
+
+            // D3: 서버 형태(같은 제목·설명)는 퀴즈 머리말을 숨기고, 다른 값·영상 설명 숨김은 그대로 보인다.
+            (string Label, Action<Popup.Dtos.PopupResponseDto> Edit, bool TitleShown, bool DescriptionShown)[] headers =
+            {
+                ("server shape (same title/description)", _ => { }, false, false),
+                ("video description hidden", d => d.Content = WithContent(d, "showDescription", false), false, true),
+                ("different survey title", d => d.Content = WithContent(d, "surveyTitle", "퀴즈 별도 제목"), true, false),
+            };
+            foreach (var h in headers)
+            {
+                var dto = DemoPopups("VIDEO_QUIZ").Single();
+                h.Edit(dto);
+                var view = (VideoQuizPopupView)PopupFactory.Create(dto).Content!;
+                var title = (TextBlock)view.Quiz.FindName("SurveyTitleText");
+                var description = (TextBlock)view.Quiz.FindName("SurveyDescriptionText");
+                Check((title.Visibility == Visibility.Visible) == h.TitleShown, $"[설계 53-16 D3] {h.Label}: quiz title visible={title.Visibility}");
+                Check((description.Visibility == Visibility.Visible) == h.DescriptionShown, $"[설계 53-16 D3] {h.Label}: quiz description visible={description.Visibility}");
+            }
+            var quizOnly = (SurveyPopupView)PopupFactory.Create(DemoPopups("QUIZ").First()).Content!;
+            Check(((TextBlock)quizOnly.FindName("SurveyTitleText")).Visibility == Visibility.Visible
+                && ((TextBlock)quizOnly.FindName("SurveyDescriptionText")).Visibility == Visibility.Visible,
+                "[설계 53-16 D3] plain QUIZ keeps its title and description");
+        }
+        finally { owner.Close(); }
+    }
+
+    private static System.Text.Json.JsonElement WithContent(Popup.Dtos.PopupResponseDto dto, string key, System.Text.Json.Nodes.JsonNode value)
+    {
+        var node = System.Text.Json.Nodes.JsonNode.Parse(dto.Content.GetRawText())!.AsObject();
+        node[key] = value;
+        return System.Text.Json.JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
     }
 }
