@@ -16,6 +16,7 @@ using Popup.Views.Windows;
  * 50-B displayMode(효과 없는 계약 필드)가 모르는 값·null이어도 팝업 생성이 실패하지 않는지
  * 43  완료 조건 버튼 표현: VIDEO 미달 닫기 비활성·사유 문구·도달/재생 실패 후 활성, VIDEO+QUIZ 잠금 사유 문구,
  *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
+ * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 44  Background Overlay 켜짐: Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소, 앱 닫기 경로 허용, 화면 출구가 없으면 허용,
  *     Overlay 꺼짐 기존 동작, Esc 무시, 창 제목, 앱 종료 시 결과 저장(결함 1), 생성 실패 시 Overlay 정리(결함 2)
  * 실제 PopupFactory·PopupWindow·PopupManager 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
@@ -57,7 +58,8 @@ internal static class Program
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
         CheckOverlayCleanupOnFailure44();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44)");
+        CheckOverlayDefault52();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-4)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -539,6 +541,46 @@ internal static class Program
     }
 
     /* [설계 44 결함 2] Overlay를 띄운 뒤 팝업 생성이 실패하면 Overlay를 닫고 예외를 그대로 올린다. */
+    /*
+     * [설계 52-4] 모든 팝업은 백그라운드 동작을 차단한다 — useBackgroundOverlay 기본값 true를 보장한다.
+     * 서버 응답 JSON에서 필드를 뺐을 때(PopupApiService와 같은 역직렬화 옵션) DTO·PopupOptions가 true이고
+     * PopupManager가 실제로 Overlay를 띄우는지 유형별로 확인한다. 명시 false는 정상 명시값이라 그대로 따른다.
+     */
+    private static void CheckOverlayDefault52()
+    {
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        Popup.Dtos.PopupResponseDto FromServerJson(Popup.Dtos.PopupResponseDto dto, bool? overlay)
+        {
+            var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(dto, json))!.AsObject();
+            node.Remove("useBackgroundOverlay");
+            if (overlay is bool value) node["useBackgroundOverlay"] = value;
+            return System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
+        }
+        var owner = NewOwner();
+        try
+        {
+            var closeByApp = typeof(PopupWindow).GetMethod("CloseByApp", Flags)!;
+            foreach (string type in new[] { "TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ", "VIDEO_QUIZ" })
+            {
+                var dto = FromServerJson(DemoPopups(type).First(), overlay: null);
+                Check(dto.UseBackgroundOverlay, $"[설계 52-4] {type}: omitted useBackgroundOverlay deserializes as true");
+                var options = PopupFactory.Create(dto);
+                Check(options.UseBackgroundOverlay, $"[설계 52-4] {type}: PopupOptions default keeps the overlay on");
+                var manager = new Popup.Managers.PopupManager(owner);
+                manager.Show(options);
+                Check(Overlay(manager).IsVisible, $"[설계 52-4] {type}: PopupManager shows the background overlay by default");
+                closeByApp.Invoke(OpenWindows(manager).Single(), null);
+                Check(!Overlay(manager).IsVisible && !manager.HasOpenPopups, $"[설계 52-4] {type}: overlay closes with the popup");
+            }
+            var explicitOff = PopupFactory.Create(FromServerJson(DemoPopups("TEXT").Single(), overlay: false));
+            Check(!explicitOff.UseBackgroundOverlay, "[설계 52-4] explicit false is a valid value and is kept");
+        }
+        finally
+        {
+            owner.Close();
+        }
+    }
+
     private static void CheckOverlayCleanupOnFailure44()
     {
         var owner = NewOwner();

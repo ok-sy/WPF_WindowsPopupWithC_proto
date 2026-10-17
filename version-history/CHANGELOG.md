@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-17-02 — TODO52-4 배경 차단 기본값 확인
+
+- 이유: 확정 요건 '모든 팝업은 백그라운드 동작을 차단'을 `useBackgroundOverlay` 기본값 true 보장으로 반영하기로 범위를 확정해, 계층별 기본값을 대조하고 회귀 검증을 추가.
+- 변경: 코드 변경 없음(WPF DTO·PopupOptions·서버 `DEFAULT_USE_OVERLAY`·관리자 웹 기본값이 모두 true). 명시 `false`는 정상 명시값으로 유지. `scripts/PopupWindowTests`에 필드 생략 응답의 유형별 Overlay 표시·해제와 명시 false 유지 검사 추가. 설계 52의 52-4에 범위·대조 결과 기록.
+- 주요 파일: scripts/PopupWindowTests/Program.cs, docs/design/52_*, version-history/CHANGELOG.md.
+- 검증: `scripts/PopupWindowTests` 122건 통과(25건 추가, DTO 기본값을 false로 바꾸면 실패 확인 후 원복). WPF 빌드 경고·오류 0. 서버 기본값은 기존 `PopupActionOptionsTest` 근거(이번에 재실행하지 않음). 실화면 다중 모니터 확인은 미실행.
+- 상태: 커밋에 포함, 미푸시.
+
 ## 2026-10-17-01 — TODO51 API 호출형 Demo 구현
 
 - 이유: 개발계/검증계 실제 API의 요청·응답을 Demo 화면에서 확인하고 기존 WPF 팝업·결과 전송 경로로 샘플을 검증하기 위해 설계 51 구현.
