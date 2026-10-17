@@ -22,6 +22,12 @@ namespace Popup.Models
          */
         public bool DemoSsoLoginTest { get; set; }
 
+        /*
+         * [설계 51-1] 실행 인자 -Demo -Api일 때 true(API Demo). Demo 화면에서 BaseUrl·인증·요청 JSON을 입력해 실제 API를 수동 호출한다.
+         * appsettings 항목이 아니라 실행 인자로만 켠다. DemoMode가 false이면 항상 false.
+         */
+        public bool DemoApi { get; set; }
+
         public string BaseUrl { get; set; } =
             string.Empty;
 

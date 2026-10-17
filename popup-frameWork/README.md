@@ -225,7 +225,7 @@ Popup/appsettings.json
 | 설정 | 역할 |
 |---|---|
 | `DemoMode` | Java 서버 없이 WPF 화면만 테스트 |
-| `DemoSsoLoginTest` | `DemoMode`에서 Demo 화면에 SSO 테스트·로그인 테스트 버튼을 따로 표시(기본 false). `Auth.SsoUrl`·`BaseUrl`+`Auth.LoginPath` 사용 |
+| `DemoSsoLoginTest` | `DemoMode`에서 Demo 화면에 SSO 테스트·로그인 테스트 버튼을 따로 표시(기본 false). `Auth.SsoUrl`·`BaseUrl`+`Auth.LoginPath` 사용. API Demo(`-Demo -Api`)에서는 표시하지 않음 |
 | `BaseUrl` | Zero Spring 서버 주소 |
 | `AutoLoadOnStartup` | 프로그램 시작 시 자동 팝업 조회 |
 | `PollingIntervalSeconds` | 기본 팝업 재조회 간격 |
@@ -966,7 +966,7 @@ Java API와 DB 없이 WPF 화면만 시연할 수 있다.
 }
 ```
 
-Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(실행 인자 `--demo`로도 켤 수 있다).
+Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(실행 인자 `--demo`·`-Demo`로도 켤 수 있다. 실제 API를 수동 호출하는 `-Demo -Api`는 아래 "API Demo" 참고).
 `시연할 샘플` 목록에서 텍스트·이미지·동영상·설문·퀴즈·동영상 + 퀴즈·푸터 바로가기 7종 중 하나를 골라
 `선택한 샘플 실행`으로 열거나, `전체 실행`으로 모두 확인할 수 있다. 세부 버튼은 아래 "Demo 관리 화면"을 참고한다.
 
@@ -980,6 +980,35 @@ Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(�
 - `SSO 테스트`: `Auth.SsoUrl`을 Windows 통합 인증으로 GET 해 `MAIN_USER_ID`·`MAIN_USER_CLASSI_CODE`를 읽고 입력칸에 채운다.
 - `로그인 테스트`: 입력칸의 사번·사용자 구분 코드로 `BaseUrl`+`Auth.LoginPath`(`POST /p/api/wpf/auth/login`)를 호출한다. SSO 없이 값을 직접 입력해 단독으로 호출할 수 있다.
 - 결과칸에 호출 주소·값·소요 시간 또는 실패 예외를 표시한다. 발급 토큰은 길이만 표시하고 보관하지 않는다.
+
+### API Demo (`-Demo -Api`, 설계 51)
+
+개발계/검증계 실제 API를 Demo 화면에서 **수동으로** 호출해 요청·응답과 실제 팝업·결과 전송을 확인한다.
+실제 전달 건·결과 데이터가 서버에 생성되므로 개발계/검증계에서만 쓴다.
+
+```text
+popupSample.exe -Demo -Api
+```
+
+- 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
+  `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
+- 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 / 인증 헤더 없음 — 초기 선택은 `Auth.Mode`),
+  `로그인 경로`·`로그인 요청 JSON`(`{"logonId","classCode","linkYn"}` 그대로 전송), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
+  `X-Dev-User-Id`(선택, 서버 dev-user-header 전용), `단건 조회 요청 JSON`(기본 `{}`).
+- 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
+  → 창 닫기·제출 → 결과를 `POST /api/wpf/popups/results`로 실제 전송 → `status`·`nextStatus`를 로그에 표시.
+  **자동 폴링은 없고** `nextStatus=AVAILABLE`이어도 다음 조회는 버튼으로 실행한다. `pollingIntervalSeconds`는 로그·상태줄에만 표시한다.
+  `popup=null`은 정상적인 표시 대상 없음으로 기록한다. 호출 중·팝업 표시 중에는 조회·연결 변경 버튼이 잠긴다.
+- 로그: 실제로 보낸 method·URL·헤더·본문과 HTTP 상태·본문·소요 시간·오류가 한 줄씩 남고, 선택하면 Request·Response JSON으로 볼 수 있다.
+  실패는 `HTTP 오류 N`·`통신 실패`·`시간 초과`·`클라이언트 버전 차단(426)`·`응답 해석 실패(빈 응답/잘못된 JSON/구조 불일치)`·`팝업 생성` 단계로 구분한다.
+  `Authorization` 헤더와 응답의 `accessToken`은 기본 마스킹하며 `토큰 평문 표시(화면만)`로만 볼 수 있다. 토큰은 메모리에만 두고 파일 로그에 남기지 않는다.
+- 인증: 로그인 방식은 첫 요청 직전 로그인하고, 401이면 같은 로그인 본문으로 1회 재로그인 후 같은 요청을 재전송한다. 토큰 직접 입력은 재로그인하지 않는다. `로그인` 버튼은 지금 로그인해 토큰을 교체한다.
+- 재시도: 결과의 `resultId`는 생성 시 확정되며 `미전송 결과 재전송`(또는 다음 조회 전 자동 전송)은 같은 ID·본문으로 보낸다. 종결(ACCEPTED·DUPLICATE·REJECTED) 판정·400 제외·INTERNAL_ERROR 재시도 상한은 일반 실행의 결과 큐와 같다.
+- 연결 경계: 미전송 결과는 `Base URL·인증 방식·인증 대상(로그인 본문 또는 토큰)·X-Dev-User-Id` 조합별 파일
+  `%TEMP%/Popup/api-demo/pending-<해시>.json`에 보관한다. 연결을 바꾸면 이전 결과는 그 파일에 남고 같은 연결을 다시 적용할 때만 전송된다(미전송이 있으면 변경 전 확인). 일반 실행의 `pending-results.json`과 섞이지 않는다.
+- 트레이 `팝업 다시 조회`는 API Demo에서 `팝업 조회`와 같은 실제 조회로 동작한다. 이 모드의 관리 화면(MainWindow)은 API 서비스·주기 조회를 만들지 않아 자동 조회 루프와 겹치지 않는다.
+- 인메모리 전용 조작(샘플 선택·옵션 설정·상태 초기화·전체 실행·SSO·로그인 테스트)은 API Demo에서 숨긴다.
+- 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움).
 
 ### 폐쇄망 Demo 미디어
 

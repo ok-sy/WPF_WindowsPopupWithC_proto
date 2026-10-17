@@ -96,10 +96,18 @@ namespace Popup.Services
                 "Popup", "pending-results.json");
         }
 
-        /*
-         * [설계 18 L-0 — C-10 삭제] 화면 표시·진단용으로 두었던 PendingCount 속성은 호출부가 없어 삭제했다.
-         * 보관 건수 확인이 다시 필요하면 pending-results.json을 직접 보거나 그때 진단 경로를 추가한다.
-         */
+        /// <summary>
+        /// [설계 51-7] 보관 중인 미종결 결과 건수(파일 + 메모리 보관분). API Demo가 화면 표시와 연결 변경 확인에 쓴다.
+        /// 파일을 읽을 수 없으면 예외를 그대로 던진다(건수를 0으로 오인하지 않게).
+        /// (설계 18 L-0에서 호출부가 없어 삭제했던 PendingCount를 API Demo 호출부와 함께 메서드로 다시 둔다.)
+        /// </summary>
+        public int CountPending()
+        {
+            lock (_fileLock)
+            {
+                return LoadPendingUnlocked().Count;
+            }
+        }
 
         /// <summary>
         /// [설계 12 §8.1·설계 34-23] 확정된 결과 항목을 pending-results.json에 저장하고 반환한다(동기). 서버 전송은 하지 않는다.

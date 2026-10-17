@@ -75,7 +75,23 @@ namespace Popup.Services.Auth
                 ClassCode = user.ClassCode,
                 LinkYn = "N"
             };
+            return await SendLoginAsync(request, user.LogonId, cancellationToken);
+        }
 
+        /// <summary>
+        /// [설계 51-2] API Demo 전용. 입력한 로그인 요청 JSON 객체를 본문으로 그대로 보낸다. 버전 헤더·426·응답 검증은 위와 같다.
+        /// </summary>
+        public Task<WpfLoginResponseDto> LoginAsync(JsonElement requestBody, CancellationToken cancellationToken = default)
+        {
+            if (requestBody.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException("로그인 요청 본문은 JSON 객체여야 합니다.", nameof(requestBody));
+            string logonId = requestBody.TryGetProperty("logonId", out JsonElement value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() ?? string.Empty : "(미입력)";
+            return SendLoginAsync(requestBody, logonId, cancellationToken);
+        }
+
+        private async Task<WpfLoginResponseDto> SendLoginAsync(object request, string logonIdForLog, CancellationToken cancellationToken)
+        {
             Stopwatch stopwatch = Stopwatch.StartNew();
             /*
              * [설계 13 §9] 로그인(최초 서버 접점)에도 X-Client-Version을 보낸다. 지원 종료 버전이면 토큰 발급 전에 426으로
@@ -108,7 +124,7 @@ namespace Popup.Services.Auth
                 throw new InvalidOperationException("WPF 로그인 API 응답에 accessToken이 없습니다.");
             }
 
-            Debug.WriteLine($"[WPF-LOGIN] logonId={user.LogonId} expiresAt={body.ExpiresAt:O} ({stopwatch.ElapsedMilliseconds}ms)");
+            Debug.WriteLine($"[WPF-LOGIN] logonId={logonIdForLog} expiresAt={body.ExpiresAt:O} ({stopwatch.ElapsedMilliseconds}ms)");
             return body;
         }
     }

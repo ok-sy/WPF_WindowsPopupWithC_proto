@@ -17,7 +17,7 @@
 
 | 경로 | 내용 | 출처 |
 |---|---|---|
-| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~50(삭제·통합으로 일부 번호 결번) | 신규 |
+| `docs/design/` | 설계 기준(`기준0.1.txt`)과 설계·TODO 문서 01~52(삭제·통합으로 일부 번호 결번) | 신규 |
 | `db/oracle/` | Oracle DDL·샘플 (`POPUP` 스키마) | 신규 |
 | `api/examples/` | 신규 WPF API JSON 예제 | 신규 |
 | `zero-rule-server/` | 주 서버 (Spring Boot 3.4.1, MyBatis, Oracle) | 업스트림 zero-rule-server @56bb0c5 (2026-09-20 교체) |
@@ -87,6 +87,7 @@
 ## WPF 실행·빌드
 
 - **Demo Mode** (서버·DB 없이 시연): `popupSample.exe --demo` 또는 `appsettings.json`의 `PopupApi.DemoMode: true`. 샘플 7종(텍스트·이미지·동영상·설문·퀴즈·동영상+퀴즈·푸터 바로가기) 중 하나를 골라 "선택한 샘플 실행"하거나 "전체 실행"하고, "옵션 설정"으로 샘플별 옵션을 바꾼다. 창이 닫힐 때 만들어지는 결과 항목과 인메모리 서버(`DemoPopupGateway`)의 응답을 화면 오른쪽 로그에 JSON으로 보여 준다. 숨김·완료는 실서버처럼 다음 조회에서 제외되며 "상태 초기화"로 되돌린다.
+- **API Demo** (개발계/검증계 수동 호출, 설계 51): `popupSample.exe -Demo -Api`. Demo 화면에서 Base URL·인증(로그인 JSON 또는 토큰)·조회 요청 JSON을 입력해 실제 API를 버튼으로 호출하고, 응답 팝업 표시·결과 실제 전송과 HTTP 요청·응답(토큰 마스킹)을 확인한다. 자동 폴링 없음. 상세는 `popup-frameWork/README.md`의 "API Demo".
 - **실서버 모드**: `appsettings.json`의 `BaseUrl`(예: `http://localhost:8080/zero-rule-server/p`), 개발 단계에서는 `DevUserId`(서버 `custom.wpf-popup.dev-user-header=true` 필요).
 - **단일 exe 게시** (self-contained, win-x64. 2026-10-12 오프라인 `-SingleFile` 빌드 기준 91,631,438바이트 — `OFFLINE_WPF_BUILD.md`):
   ```powershell

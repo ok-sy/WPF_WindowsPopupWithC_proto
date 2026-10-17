@@ -59,8 +59,11 @@ namespace Popup
         /* App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다. Demo Mode에서는 선택 화면을 계속 표시한다. */
         public bool IsDemoMode => _demoMode;
 
-        /* [Demo SSO·로그인 테스트] DemoMode이고 DemoSsoLoginTest=true일 때만 설정을 넘긴다(그 밖에는 null → 버튼 숨김). */
+        /* [Demo SSO·로그인 테스트] 인메모리 DemoMode이고 DemoSsoLoginTest=true일 때만 설정을 넘긴다(그 밖에는 null → 버튼 숨김). */
         public PopupClientSettings? DemoAuthTestSettings { get; }
+
+        /* [설계 51] -Demo -Api일 때만 설정을 넘긴다(그 밖에는 null → 인메모리 Demo). 이 창은 Demo와 같이 서버를 호출하지 않는다. */
+        public PopupClientSettings? ApiDemoSettings { get; }
 
         public MainWindow()
         {
@@ -71,7 +74,8 @@ namespace Popup
 
             PopupClientSettings settings = LoadPopupClientSettings();
             _demoMode = settings.DemoMode;
-            DemoAuthTestSettings = settings.DemoMode && settings.DemoSsoLoginTest ? settings : null;
+            DemoAuthTestSettings = settings.DemoMode && !settings.DemoApi && settings.DemoSsoLoginTest ? settings : null;
+            ApiDemoSettings = settings.DemoApi ? settings : null;
             _autoLoadOnStartup = settings.AutoLoadOnStartup;
             _pollingIntervalSeconds = settings.PollingIntervalSeconds;
 
@@ -116,6 +120,7 @@ namespace Popup
             }
             else
             {
+                // [설계 51-8] 인메모리·API Demo 모두 이 창은 API 서비스·결과 큐·주기 조회를 만들지 않는다(조회는 DemoWindow가 수동으로만).
                 Title = "Popup 관리 화면 - Demo Mode";
             }
 
@@ -162,14 +167,20 @@ namespace Popup
                 throw new InvalidOperationException("appsettings.json에 PopupApi 설정이 없습니다.");
             }
 
-            // [Demo Mode] appsettings의 DemoMode 외에 실행 인자 --demo 로도 켤 수 있다.
+            // [Demo Mode] appsettings의 DemoMode 외에 실행 인자 -Demo(--demo)로도 켤 수 있다.
             // 배포한 exe를 설정 파일 수정 없이 시연할 때 쓴다: Popup.exe --demo
-            bool demoByArgument = Environment.GetCommandLineArgs().Skip(1)
-                .Any(argument => argument.Equals("--demo", StringComparison.OrdinalIgnoreCase));
+            // [설계 51-1] Demo에 -Api를 더하면 API Demo(수동 호출). 인자 규칙은 LaunchArguments 참고.
+            LaunchArguments arguments = LaunchArguments.Current;
+            bool demoMode = arguments.Demo || GetBoolean(api, "DemoMode", false);
+            if (arguments.Api && !demoMode)
+            {
+                System.Diagnostics.Debug.WriteLine("[ARGS] -Api는 -Demo와 함께일 때만 의미가 있어 무시합니다(일반 실행).");
+            }
 
             PopupClientSettings settings = new()
             {
-                DemoMode = demoByArgument || GetBoolean(api, "DemoMode", false),
+                DemoMode = demoMode,
+                DemoApi = demoMode && arguments.Api,
                 DemoSsoLoginTest = GetBoolean(api, "DemoSsoLoginTest", false),
                 BaseUrl = GetString(api, "BaseUrl").Trim(),
                 AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
@@ -219,7 +230,7 @@ namespace Popup
          * 둘 다 없으면 null → 헤더를 보내지 않는다(운영: 통합 토큰 필터가 사용자를 식별).
          * 예전의 POPUP_USER_ID / PopupApi.UserId(요청 파라미터용)는 더 이상 읽지 않는다.
          */
-        private static string? ResolveDevUserId(string configuredDevUserId)
+        internal static string? ResolveDevUserId(string configuredDevUserId)
         {
             string? fromEnvironment = Environment.GetEnvironmentVariable("POPUP_DEV_USER_ID");
             if (!string.IsNullOrWhiteSpace(fromEnvironment)) return fromEnvironment.Trim();
@@ -535,5 +546,6 @@ namespace Popup
             if (_isClosed || _clientVersionRejected || _resultQueue == null || _isLoadingPopups) return;
             // [설계 39-2] 결과 전송·nextStatus 판단은 복구 재전송과 같은 경로(LoadAndShowAvailablePopupsAsync)에서 한다.
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
-        }    }
+        }
+    }
 }

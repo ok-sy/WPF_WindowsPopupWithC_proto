@@ -2,6 +2,20 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-17-01 — TODO51 API 호출형 Demo 구현
+
+- 이유: 개발계/검증계 실제 API의 요청·응답을 Demo 화면에서 확인하고 기존 WPF 팝업·결과 전송 경로로 샘플을 검증하기 위해 설계 51 구현.
+- 변경:
+  - 실행 모드: `LaunchArguments` 추가(`-`/`--`·대소문자 무시). `-Demo -Api`는 API Demo, `-Demo`/`--demo`는 기존 인메모리 Demo, `-Api` 단독은 무시. `PopupClientSettings.DemoApi`(인자 전용), `MainWindow.ApiDemoSettings`, App의 `--show-main` 판정도 같은 파서 사용.
+  - API Demo 화면(`DemoWindow.Api.cs`, `DemoWindow.xaml` `ApiPanel`): Base URL·인증 방식(로그인 JSON 후 토큰/토큰 직접 입력/헤더 없음)·X-Dev-User-Id·단건 조회 요청 JSON 입력, `연결 적용`·`로그인`·`팝업 조회`·`미전송 결과 재전송`. 수동 조회만 하고 자동 폴링·nextStatus 연속 조회 없음, 호출 중·표시 중 버튼 잠금. 인메모리 전용 조작은 숨김. 트레이 `팝업 다시 조회`를 `RefreshFromTray`로 실제 조회에 연결.
+  - HTTP 관찰: `HttpExchangeRecorder`(HttpClient 안쪽 DelegatingHandler)로 실제 요청·응답·소요 시간·오류 기록, 응답 본문 종류와 오류 단계(HTTP·통신·시간 초과·426·응답 해석·팝업 생성) 구분, Authorization·accessToken 기본 마스킹(화면 평문 표시 선택), 파일 로그 없음.
+  - 공통 경로 재사용: `PopupApiService.GetNextPopupAsync(JsonElement)`·`BaseUrl`, `WpfLoginClient.LoginAsync(JsonElement)` 오버로드, `DemoApiAuthHeaderProvider`(로그인 방식 401 시 같은 본문으로 1회 재로그인), `PopupResultQueue.CountPending()` 추가. 결과 큐 파일을 연결(Base URL·인증 방식·인증 대상·X-Dev-User-Id) 해시별로 분리하고 미전송이 있으면 연결 변경 전 확인.
+  - 검증 프로젝트 `scripts/ApiDemoTests` 추가(로컬 모의 HTTP 서버), `.gitignore`에 빌드 결과 제외.
+  - 문서: 설계 51 상태·구현 결과, `popup-frameWork/README.md` "API Demo", 루트 README, ALL 정의서 5절 실행 행. MINIMAL은 검토 결과 변경 없음(개발 검증 도구, 외부 제공 범위 유지).
+- 주요 파일: popup-frameWork/Popup/(Services/LaunchArguments.cs, Services/HttpExchangeRecorder.cs, Services/Auth/DemoApiAuthHeaderProvider.cs, Services/Auth/WpfLoginClient.cs, Services/PopupApiService.cs, Services/PopupResultQueue.cs, Models/PopupClientSettings.cs, MainWindow.xaml.cs, App.xaml.cs, DemoWindow.xaml(.cs), DemoWindow.Api.cs), scripts/ApiDemoTests/, .gitignore, docs/design/51_*, docs/interfaces/WPF_POPUP_ALL_SPEC.md, popup-frameWork/README.md, README.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. `scripts/ApiDemoTests` 48건 통과(조회 본문 오버로드를 되돌리면 실패 확인). 회귀: `scripts/PopupWindowTests` 97건, `scripts/RichTextTests` 85건, 로컬 행동 검증 1014건·복구 검증 158건 통과. API Demo 화면은 오프스크린 렌더링으로 배치 확인. 개발계/검증계 실제 서버 호출·실제 화면 조작 확인은 미실행.
+- 상태: 개발계/검증계 확인(51-9) 대기. 커밋에 포함, 미푸시.
+
 ## 2026-10-16-02 — TODO52 회의 확정 요건 반영 계획
 
 - 이유: 최종 회의 요건의 미확정 분류를 정정하고 기존 Trello 제안과 중복 없이 구현 작업을 연결.

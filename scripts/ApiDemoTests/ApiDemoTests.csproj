@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- [설계 51] API Demo(-Demo -Api) 회귀 검증. 로컬 모의 HTTP 서버로 실제 DemoWindow·PopupApiService·결과 큐 경로를 확인한다. 실행 방법은 Program.cs 상단 주석 참고. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../popup-frameWork/Popup/Popup.csproj" />
+  </ItemGroup>
+</Project>

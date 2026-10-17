@@ -20,6 +20,9 @@ namespace Popup
     ///   <see cref="DemoPopupGateway"/>(인메모리)로 바꾼다. 팝업이 닫힐 때 만들어지는 결과 항목과
     ///   "서버" 응답을 오른쪽 로그에 JSON으로 보여 주므로 실제 전송 본문을 그대로 검토할 수 있다.
     ///   결과 큐 파일은 실제 모드와 섞이지 않도록 임시 폴더의 demo 전용 파일을 쓴다.
+    ///
+    /// [설계 51 — API Demo] -Demo -Api로 시작하면 같은 창에서 인메모리 서버 대신 실제 개발계/검증계 API를 수동 호출한다
+    ///   (DemoWindow.Api.cs). 인메모리 전용 조작(샘플·옵션·상태 초기화·인증 테스트)은 숨긴다.
     /// </summary>
     public partial class DemoWindow : Window
     {
@@ -46,7 +49,7 @@ namespace Popup
         private const string EmptyScoreText = "퀴즈 완료 후 점수와 통과 여부가 표시됩니다.";
         private const string EmptyDetailText = "로그를 선택하면 요청·응답 JSON을 확인하고 복사할 수 있습니다.";
 
-        public DemoWindow()
+        public DemoWindow(PopupClientSettings? apiDemoSettings = null)
         {
             InitializeComponent();
             _popupManager = new PopupManager(this);
@@ -58,6 +61,16 @@ namespace Popup
                 Path.Combine(Path.GetTempPath(), "Popup", "demo-pending-results.json"));
             InitializeDemoSettings();
             UpdateServerState();
+            if (apiDemoSettings != null) InitializeApiDemo(apiDemoSettings);
+        }
+
+        /// <summary>
+        /// [설계 51-8] 트레이 "팝업 다시 조회". API Demo는 실제 단건 조회 경로(수동 조회와 같은 처리)로, 인메모리 Demo는 기존 샘플 실행으로 연결한다.
+        /// </summary>
+        public void RefreshFromTray()
+        {
+            if (IsApiDemo) _ = QueryApiAsync();
+            else ShowDemoPopups();
         }
 
         private void OpenAllPopupsButton_Click(object sender, RoutedEventArgs e) => ShowDemoPopups();
@@ -74,6 +87,7 @@ namespace Popup
         {
             ResultLogList.Items.Clear();
             _resultDetails.Clear();
+            _httpDetails.Clear();
             ShowResultDetails(null);
             QuizScoreText.Text = EmptyScoreText;
         }
@@ -184,7 +198,9 @@ namespace Popup
 
         private void ResultLogList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_resultDetails.TryGetValue(ResultLogList.SelectedIndex, out var details))
+            if (_httpDetails.TryGetValue(ResultLogList.SelectedIndex, out HttpExchangeRecord? record))
+                ShowResultDetails(record.ToDisplayJson(ApiRevealSecrets));
+            else if (_resultDetails.TryGetValue(ResultLogList.SelectedIndex, out var details))
                 ShowResultDetails(details);
             else
                 ShowResultDetails(null);

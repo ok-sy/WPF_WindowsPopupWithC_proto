@@ -1,7 +1,7 @@
 # 51. API 호출형 Demo와 수동 요청·응답 팝업 검증 TODO
 
 기준일: 2026-10-16 (KST).  
-상태: **진행 확정 · 구현 대기**. 이번 변경은 TODO 등록이며 기능 구현 완료가 아니다.
+상태: **WPF 구현 완료 · 개발계/검증계 실제 확인 대기** (2026-10-17). 로컬 모의 HTTP 서버 검증까지 완료, 실제 서버 확인(51-9)은 미실행.
 
 Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
@@ -25,16 +25,34 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ## 구현 TODO
 
-- [ ] **51-1 실행 모드 분리**: `Popup.exe -Demo -Api`로 API Demo에 진입한다. 기존 `--demo`를 유지하고 단일/이중 하이픈·대소문자 처리 및 인자 우선순위를 명시한다. 일반 실행·기존 인메모리 Demo·API Demo를 구분하고 `-Api` 단독 및 설정값 충돌 처리를 정의한다.
-- [ ] **51-2 요청 입력 화면**: 대상 Base URL, 로그인/조회 요청 JSON, 필요한 인증 헤더를 입력하고 수동 호출한다. endpoint·method는 현행 로그인/단건 조회/결과 API 계약에 맞춘다. 조회 기본 본문은 {}이며 임의의 범용 HTTP 도구로 확장하지 않는다. 토큰을 직접 입력하는 경로와 로그인 후 토큰을 사용하는 경로를 구분한다.
-- [ ] **51-3 HTTP 요청·응답 표시**: 실제로 전송한 method·URL·업무 헤더·본문과 응답 HTTP 상태·본문·소요 시간·오류를 화면에서 확인한다. JSON 복사 및 로그 초기화를 지원하고 빈 응답·잘못된 JSON·비정상 HTTP 응답을 팝업 생성 오류와 구분한다. 인증 토큰은 기본 마스킹하고 평문을 파일 로그에 남기지 않는다.
-- [ ] **51-4 공통 API·팝업 경로 재사용**: 실제 API 모드의 PopupApiService·인증 공급자·DTO 역직렬화·PopupFactory/PopupManager·결과 DTO 생성 경로를 재사용한다. 입력 JSON을 실제 요청 본문으로 보내는 경계와 HTTP 관찰 지점을 설계하고, Demo용 응답 구조 재작성·별도 렌더러·가짜 deliveryId 생성은 하지 않는다.
-- [ ] **51-5 단건 조회·표시**: 정상 응답의 popup 단일 객체로 기존 WPF 팝업을 표시한다. popup=null은 정상적인 표시 대상 없음으로 안내한다. pollingIntervalSeconds 등 응답값을 표시하되 기본 수동 모드에서는 타이머를 시작하지 않는다. 표시 중/호출 중 중복 조회를 막는다.
-- [ ] **51-6 결과 실제 전송**: 팝업 닫기·숨김·설문/퀴즈 제출·영상 결과를 현행 계약에 따라 실제 결과 API로 전송한다. 생성된 request와 response를 함께 표시한다. response nextStatus는 화면에 보여주고, AVAILABLE이어도 다음 조회는 기본적으로 수동 버튼으로 실행한다. 새 결과 유형이나 업무 정책을 이 과제로 추가하지 않는다.
-- [ ] **51-7 ID·실패·재시도**: 서버의 popupId/deliveryId를 그대로 사용한다. 결과 생성 시 resultId를 한 번 확정하고 같은 결과 재시도는 같은 ID·본문으로 전송한다. 실패 결과 보관·중복 클릭 차단·인증 만료/401 재로그인·DUPLICATE/REJECTED 및 통신 실패 동작은 기존 API 흐름을 재사용하고 관찰 가능하게 한다. 환경·계정 변경 시 미전송 결과가 다른 대상으로 전송되지 않게 경계를 정한다.
-- [ ] **51-8 Demo 전용 동작 구분**: 현재 Demo의 인메모리 초기화·유형 필터·샘플 옵션 편집·인증 테스트와 API Demo의 적용 범위를 구분한다. 트레이의 팝업 다시 조회도 API Demo에서는 실제 조회 경로로 연결한다. 수동 UI와 일반 API 자동 조회 루프가 동시에 실행되지 않게 한다.
-- [ ] **51-9 WPF 검증**: 개발계/검증계에서 로그인 또는 토큰 입력→수동 조회→유형별 실제 팝업 표시→결과 실제 전송→다음 수동 조회를 확인한다. popup=null·잘못된 JSON·401·통신 실패·결과 재전송·반복 클릭도 확인하고 WPF 검증 방법과 샘플 요청을 남긴다. 서버 내부 정합성과 관리자 웹 전체 검증은 각 담당 범위로 구분한다.
-- [ ] **51-10 문서·샘플 전달**: 실행 명령·입력 항목·수동 흐름·인증 방식·오류 확인·재시도 방법을 Demo 가이드와 README에 반영한다. ALL/MINIMAL 및 인터페이스 명세를 검토하되 개발 검증 도구 추가로 최소 외부 제공 범위를 확대하지 않는다. 필요 패키지 추가 여부·폐쇄망 빌드 영향을 확인한다.
+- [x] **51-1 실행 모드 분리**: `Popup.exe -Demo -Api`로 API Demo에 진입한다. 기존 `--demo`를 유지하고 단일/이중 하이픈·대소문자 처리 및 인자 우선순위를 명시한다. 일반 실행·기존 인메모리 Demo·API Demo를 구분하고 `-Api` 단독 및 설정값 충돌 처리를 정의한다.
+- [x] **51-2 요청 입력 화면**: 대상 Base URL, 로그인/조회 요청 JSON, 필요한 인증 헤더를 입력하고 수동 호출한다. endpoint·method는 현행 로그인/단건 조회/결과 API 계약에 맞춘다. 조회 기본 본문은 {}이며 임의의 범용 HTTP 도구로 확장하지 않는다. 토큰을 직접 입력하는 경로와 로그인 후 토큰을 사용하는 경로를 구분한다.
+- [x] **51-3 HTTP 요청·응답 표시**: 실제로 전송한 method·URL·업무 헤더·본문과 응답 HTTP 상태·본문·소요 시간·오류를 화면에서 확인한다. JSON 복사 및 로그 초기화를 지원하고 빈 응답·잘못된 JSON·비정상 HTTP 응답을 팝업 생성 오류와 구분한다. 인증 토큰은 기본 마스킹하고 평문을 파일 로그에 남기지 않는다.
+- [x] **51-4 공통 API·팝업 경로 재사용**: 실제 API 모드의 PopupApiService·인증 공급자·DTO 역직렬화·PopupFactory/PopupManager·결과 DTO 생성 경로를 재사용한다. 입력 JSON을 실제 요청 본문으로 보내는 경계와 HTTP 관찰 지점을 설계하고, Demo용 응답 구조 재작성·별도 렌더러·가짜 deliveryId 생성은 하지 않는다.
+- [x] **51-5 단건 조회·표시**: 정상 응답의 popup 단일 객체로 기존 WPF 팝업을 표시한다. popup=null은 정상적인 표시 대상 없음으로 안내한다. pollingIntervalSeconds 등 응답값을 표시하되 기본 수동 모드에서는 타이머를 시작하지 않는다. 표시 중/호출 중 중복 조회를 막는다.
+- [x] **51-6 결과 실제 전송**: 팝업 닫기·숨김·설문/퀴즈 제출·영상 결과를 현행 계약에 따라 실제 결과 API로 전송한다. 생성된 request와 response를 함께 표시한다. response nextStatus는 화면에 보여주고, AVAILABLE이어도 다음 조회는 기본적으로 수동 버튼으로 실행한다. 새 결과 유형이나 업무 정책을 이 과제로 추가하지 않는다.
+- [x] **51-7 ID·실패·재시도**: 서버의 popupId/deliveryId를 그대로 사용한다. 결과 생성 시 resultId를 한 번 확정하고 같은 결과 재시도는 같은 ID·본문으로 전송한다. 실패 결과 보관·중복 클릭 차단·인증 만료/401 재로그인·DUPLICATE/REJECTED 및 통신 실패 동작은 기존 API 흐름을 재사용하고 관찰 가능하게 한다. 환경·계정 변경 시 미전송 결과가 다른 대상으로 전송되지 않게 경계를 정한다.
+- [x] **51-8 Demo 전용 동작 구분**: 현재 Demo의 인메모리 초기화·유형 필터·샘플 옵션 편집·인증 테스트와 API Demo의 적용 범위를 구분한다. 트레이의 팝업 다시 조회도 API Demo에서는 실제 조회 경로로 연결한다. 수동 UI와 일반 API 자동 조회 루프가 동시에 실행되지 않게 한다.
+- [ ] **51-9 WPF 검증** (로컬 모의 서버 검증 완료, 개발계/검증계 실제 확인 미실행): 개발계/검증계에서 로그인 또는 토큰 입력→수동 조회→유형별 실제 팝업 표시→결과 실제 전송→다음 수동 조회를 확인한다. popup=null·잘못된 JSON·401·통신 실패·결과 재전송·반복 클릭도 확인하고 WPF 검증 방법과 샘플 요청을 남긴다. 서버 내부 정합성과 관리자 웹 전체 검증은 각 담당 범위로 구분한다.
+- [x] **51-10 문서·샘플 전달**: 실행 명령·입력 항목·수동 흐름·인증 방식·오류 확인·재시도 방법을 Demo 가이드와 README에 반영한다. ALL/MINIMAL 및 인터페이스 명세를 검토하되 개발 검증 도구 추가로 최소 외부 제공 범위를 확대하지 않는다. 필요 패키지 추가 여부·폐쇄망 빌드 영향을 확인한다.
+
+## 구현 결과 (2026-10-17)
+
+| 항목 | 구현 |
+|---|---|
+| 51-1 | `Services/LaunchArguments`: `-`/`--`·대소문자 무시, 순서 무관. Demo = `-Demo` 인자 또는 appsettings `DemoMode`, API Demo = Demo이면서 `-Api`. `-Api` 단독은 무시(일반 실행 유지, Debug 로그). `PopupClientSettings.DemoApi`는 인자로만 켬. `--show-main`도 같은 파서 사용 |
+| 51-2 | DemoWindow `ApiPanel`: Base URL, 인증 방식(로그인 API 후 토큰 / 토큰 직접 입력 / 헤더 없음 — 초기 선택은 `Auth.Mode`), 로그인 경로·로그인 요청 JSON, 토큰(PasswordBox), X-Dev-User-Id, 단건 조회 요청 JSON(기본 `{}`). 입력은 JSON 객체만 허용하고 형식 오류는 요청 없이 기록. endpoint·method는 현행 계약 고정 |
+| 51-3 | `HttpExchangeRecorder`(HttpClient 안쪽 DelegatingHandler)가 실제 method·URL·헤더·본문, HTTP 상태·본문·소요 시간·오류를 메모리 이벤트로 기록. 로그 선택 시 Request·Response JSON(기존 복사·로그 지우기 재사용). `bodyKind`(JSON·EMPTY·INVALID_JSON·NO_RESPONSE)와 오류 단계(HTTP 오류·통신 실패·시간 초과·426·응답 해석 실패·팝업 생성)를 구분. Authorization·accessToken 기본 마스킹, `토큰 평문 표시(화면만)`. 파일 로그 없음 |
+| 51-4 | `PopupApiService`(인증 헤더·401 1회 재시도·426·역직렬화)·`PopupResultQueue`·`PopupService`/`PopupManager`·`PopupResultBuilder` 재사용. 추가는 입력 JSON 본문 오버로드(`GetNextPopupAsync(JsonElement)`, `WpfLoginClient.LoginAsync(JsonElement)`), 관찰 핸들러, `DemoApiAuthHeaderProvider`뿐. IPopupGateway는 변경 없음 |
+| 51-5 | 응답 popup 1건을 일반 경로로 표시, `popup=null`은 정상 안내, `pollingIntervalSeconds`는 로그·상태줄만(타이머 없음). 호출 중·표시 중 조회·연결 변경 버튼 잠금, 표시 중 트레이 조회는 안내 |
+| 51-6 | 결과 훅은 일반 실행과 동일(Enqueue→닫기→전송). 닫힘 후 실제 결과 API 전송, status·nextStatus 표시. AVAILABLE이어도 다음 조회는 버튼 |
+| 51-7 | resultId는 결과 생성 시 확정, 재전송은 큐 파일의 같은 본문. 조회 전 미전송 전송·남으면 조회 보류(일반 실행 규칙), `미전송 결과 재전송` 버튼. 로그인 방식 401은 같은 로그인 본문으로 1회 재로그인(동시 401 중복 방지), 토큰 직접 입력은 재로그인 없음. 결과 큐 파일을 Base URL·인증 방식·인증 대상·X-Dev-User-Id 해시별로 분리(`%TEMP%/Popup/api-demo/pending-<해시>.json`), 미전송이 있으면 연결 변경 전 확인. 426은 결과 전송 중단·항목 보관(연결 재적용 시 재개) |
+| 51-8 | 인메모리 전용 조작(샘플·옵션·상태 초기화·전체 실행·SSO·로그인 테스트) 숨김. 트레이 `팝업 다시 조회`는 `DemoWindow.RefreshFromTray`로 API Demo에서 실제 조회. MainWindow는 Demo에서 API 서비스·주기 조회를 만들지 않음 |
+| 51-10 | `popup-frameWork/README.md` "API Demo", 루트 README, ALL 정의서 5절 실행 행. MINIMAL은 검토만(개발 검증 도구라 외부 제공 범위 변경 없음). 추가 NuGet 없음(폐쇄망 빌드 영향 없음) |
+
+검증: `scripts/ApiDemoTests`(로컬 HttpListener 모의 서버, 실제 DemoWindow 경로) 48건 — 인자 해석, 마스킹·bodyKind, 연결 키 분리, 로그인 JSON·조회 본문 그대로 전송, 토큰·버전 헤더, 표시·버튼 잠금, CLOSED 결과 실제 전송(popupId·deliveryId), AVAILABLE 후 자동 조회 없음, 401 재로그인·재전송, 결과 500 보관·같은 본문 재전송·조회 보류·수동 재전송 종결, popup=null·빈 응답·잘못된 JSON·HTTP 500·팝업 생성 오류 구분, 비객체 입력 미전송, 연결 변경 시 새 큐·새 토큰·X-Dev-User-Id. 조회 본문 오버로드를 되돌리면 실패함을 확인.
+
+남은 항목(51-9): 개발계/검증계에서 로그인 또는 토큰 입력→수동 조회→유형별(TEXT/IMAGE/VIDEO/SURVEY/QUIZ) 실제 팝업→결과 실제 전송→다음 수동 조회, 실제 401·통신 실패 확인. 실제 Windows 화면에서 API Demo 조작 육안 확인.
 
 ## 완료 기준
 

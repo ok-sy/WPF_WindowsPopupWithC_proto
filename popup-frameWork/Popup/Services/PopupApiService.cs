@@ -203,6 +203,21 @@ namespace Popup.Services
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", new { });
 
         /// <summary>
+        /// [설계 51-2·51-4] API Demo 전용. 입력한 JSON 객체를 단건 조회 요청 본문으로 그대로 보낸다(기본은 {}).
+        /// 인증 헤더·401 재시도·426·응답 역직렬화는 위 기본 조회와 같은 경로를 쓴다.
+        /// </summary>
+        public Task<WpfNextPopupResponseDto> GetNextPopupAsync(JsonElement requestBody)
+        {
+            if (requestBody.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException("단건 조회 요청 본문은 JSON 객체여야 합니다.", nameof(requestBody));
+            return SendWithAuthAsync<WpfNextPopupResponseDto>(
+                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", requestBody);
+        }
+
+        /// <summary>[설계 51] 이 인스턴스가 요청하는 서버 기본 주소(끝 슬래시 제거). API Demo 로그의 경로 표시에 쓴다.</summary>
+        public string BaseUrl => _baseUrl;
+
+        /// <summary>
         /// [설계 35] 팝업 처리 결과(닫기·숨김·제출·영상 시청) 1건을 전송한다. PopupResultQueue가 순서대로 호출한다.
         /// HTTP 성공만으로 저장 성공을 판단하지 않고 응답 status를 보며, 저장 성공이면 nextStatus로 다음 조회 여부를 정한다.
         /// </summary>

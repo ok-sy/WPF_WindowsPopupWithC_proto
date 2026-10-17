@@ -129,7 +129,8 @@ namespace Popup
              */
             if (_mainWindow.IsDemoMode)
             {
-                _demoWindow = new DemoWindow();
+                // [설계 51] -Demo -Api면 API Demo 설정을 넘긴다(null이면 인메모리 Demo).
+                _demoWindow = new DemoWindow(_mainWindow.ApiDemoSettings);
                 if (_mainWindow.DemoAuthTestSettings is { } authTestSettings)
                 {
                     _demoWindow.EnableAuthTest(authTestSettings);
@@ -149,7 +150,7 @@ namespace Popup
                  * "SSO 로그인 테스트"·"팝업 다시 조회" 버튼을 트레이 메뉴 없이 바로 누를 수 있어 SSO/로그인 확인에 쓴다.
                  * 인자가 없으면 기존과 같이 한 번 표시 후 트레이로 숨긴다.
                  */
-                bool showMain = e.Args.Any(a => a.Equals("--show-main", StringComparison.OrdinalIgnoreCase));
+                bool showMain = LaunchArguments.Parse(e.Args).ShowMain;
                 if (!showMain)
                 {
                     _mainWindow.Hide();
@@ -314,7 +315,7 @@ namespace Popup
         {
             if (_demoWindow != null)
             {
-                _demoWindow.ShowDemoPopups();
+                _demoWindow.RefreshFromTray();
                 return;
             }
 
