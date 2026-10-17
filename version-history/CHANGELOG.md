@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-17-07 — TODO53-10 서버·Oracle DB 의존 테스트 로컬 실행
+
+- 이유: 등록 전 기준선에서 건너뛴 DB 의존 테스트(서비스 4건)와 Oracle HTTP 통합 테스트를 준비된 로컬 개발 DB에서 실행해 게시중단 후 결과 수용·동시성·중복 제출·거절 롤백 동작을 확인할 필요.
+- 변경: 코드 변경 없음. `db/oracle/README.md` 실DB 테스트 절차대로 로컬 XE(`XEPDB1`, `POPUP` 스키마)에서 실행하고 TODO53-10에 결과·커밋 범위·정리 결과를 기록.
+- 주요 파일: docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, version-history/CHANGELOG.md.
+- 검증: 롤백 전용 `PopupQuestionDatabaseTest`·`WpfPopupDatabaseTest.nextPopupAndResultRoundTripOnOracle`·`WpfDeliveredResultDatabaseTest` 통과. 실제 커밋하는 `WpfPopupDatabaseTest.queryAndResultAreSerializedPerUserOnOracle`·`WpfApiOracleHttpTest` 4건 통과. 서버 팝업 범위 `:service:core:test` 95건(건너뜀 0)·`:web:api:test` 35건 통과. 커밋 테스트는 E1002·E1003의 WPF 상태만 앞뒤로 정리하며, 실행 전후 사용자별 상태·전달 건·영수증 행 수와 팝업 수가 같음을 조회로 확인. DDL 재적용 없음. 원격 개발 DB 재실행은 미실행.
+- 상태: 로컬 검증 완료. 커밋에 포함, 원격 반영.
+
 ## 2026-10-17-06 — TODO50-D3·D4 VIDEO+QUIZ 머리말 중복·시청 비율 판정식 통일 (TODO53-16)
 
 - 이유: 재현 결과 VIDEO+QUIZ에서 서버가 같은 제목·설명을 videoTitle·surveyTitle·description으로 보내 WPF는 제목·설명이, 관리자 미리보기는 설명이 두 번 표시됨. 일반 VIDEO만 시청 비율을 double로 비교해 decimal 비율이 기준 바로 아래일 때 서버(4자리 내림, 미완료)와 달리 닫기를 허용하는 경계 불일치가 있음.
