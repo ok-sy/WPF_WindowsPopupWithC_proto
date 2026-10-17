@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-17-05 — TODO53-1·53-2 Excel·Word/PDF 인터페이스 산출물 동기화
+
+- 이유: Excel 정의서와 Word/PDF 산출물이 2026-10-13 생성본에 머물러 이후 설계 43·44·48·49·50의 계약 보완(`textBlocks[].indent`, 표시 방어, `isRequired`, `durationSeconds` 최소값, 결과 code)과 어긋남.
+- 변경: Excel — TEXT 시트에 `textBlocks[].indent` 행 추가, textBlocks 한도·`runs[].color` 표시 방어·동작 메모(`popups[]`→`popup`, 설계 48 표시 방어 요약) 보완, VIDEO 메모 `popup` 최상위로 정정, 공통 `sizeMode` AUTO는 WPF 전용 명시, SURVEY_QUIZ `isRequired`를 `Y(서버가 항상 true/false 제공)`로 정정, RESULT_REQUEST `durationSeconds` 기본값 없음·0.001 이상, RESULT_RESPONSE code 비고를 status별 전체 code로 보완, Sample TEXT에 `textBlocks`(indent 1) 추가. 삭제 이력으로 남긴 개요 `popups[]`는 유지. 계약서 머리에 2026-10-14~15 보완 항목 추가(버전 번호 3.7 유지), Word 표지 문서 편집일 갱신 후 docx·PDF 재생성. TODO45-7·48·49·50의 산출물 재생성 남은 항목 표기를 정리하고 TODO53 53-1~3 결과·상태 기록.
+- 주요 파일: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/interfaces/WPF_Popup_API_Interface_v3.7.docx, docs/interfaces/WPF_Popup_API_Interface_v3.7.pdf, docs/interfaces/POPUP_INTERFACE_SPEC.md, scripts/export-interface-word.cjs, docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, docs/design/45·48·49·50 TODO, version-history/CHANGELOG.md.
+- 검증: 서버 Java code 상수와 계약서 code 표 대조(`WPF_INVALID_HIDE_DAYS`는 서버 미발생으로 계약서와 일치). Excel 변경 셀 재확인, JSON 예제 셀 8개 파싱 통과, 패키지 파트 비교로 손실 없음 확인(Excel 앱 렌더링은 Excel 미설치로 미실행). Word 생성 표 44·제목 120개, Word 자동화로 필드·목차 갱신 후 PDF 79→80쪽 출력. Windows PDF 렌더러로 전 쪽 이미지화해 표지·목차·문서 안내·TEXT indent 표·결과 code 표·부록 예제를 확인, 잘림 없음. ALL/MINIMAL은 기능 변경이 없어 내용 변경 없음.
+- 상태: 문서·산출물 동기화 완료. 커밋에 포함, 미푸시. 기능 코드·API·DB 변경 없음.
+
 ## 2026-10-17-04 — TODO53-3 미결 사항·TODO 상태 표기 정정
 
 - 이유: 설계09 미결 표와 일부 TODO 상태 줄이 현재 코드·확정 요건과 달라 남은 작업 판단을 흐림.
@@ -18,7 +26,7 @@
 - 주요 파일: docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md, OFFLINE_WPF_BUILD.md, docs/README.md, README.md, version-history/CHANGELOG.md.
 - 검증: 기존 TODO·현재 코드 기준 5242f7d의 점검 결과와 대조. 등록 전 기준선은 WPF 빌드 경고·오류 0, WPF 회귀 122/85/48건, 웹 타입 검사 및 하네스 27/34/40/7건, 서버 서비스 91건 통과·DB 의존 4건 건너뜀, 서버 API 35건 통과. 문서 등록 후 링크·항목 번호·공백 검사 수행. 문서 작업으로 빌드·테스트 재실행 없음. 실제 서버/DB/화면 후속 검증은 미실행.
 - 검증 보완: WPF 폐쇄망 검증 완료 상태는 개발자 확인에 근거해 기록. 이번 작업에서 폐쇄망 restore/build를 재실행하지 않았으며 서버·웹·SSO·재부팅 검증 완료로 확대하지 않음. 문서 공백 검사 수행.
-- 상태: TODO 등록 완료(커밋 `c360b2c`, 미푸시). 후속 진행은 2026-10-17-04 참고. 기능 코드·API·DB 변경 없음.
+- 상태: TODO 등록 완료(커밋 `c360b2c`, 미푸시). 후속 진행은 2026-10-17-04·05 참고. 기능 코드·API·DB 변경 없음.
 
 ## 2026-10-17-02 — TODO52-4 배경 차단 기본값 확인
 
