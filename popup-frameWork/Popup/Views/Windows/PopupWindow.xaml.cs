@@ -51,6 +51,12 @@ namespace Popup.Views.Windows
              * 실제 화면에 적용한다.
              */
             ApplyOptions();
+            // SURVEY·QUIZ(VIDEO+QUIZ 포함)는 본문 여백·푸터까지 설문 콘텐츠 배경(옅은 회색)으로 칠한다.
+            // 영상 창 표면(ApplyVideoWindowSurface)이 본문 배경을 창 배경으로 복사하므로 그 전에 바꾼다.
+            if (SurveyContent?.TryFindResource("SurveyContentBackground") is Brush surveyBackground)
+            {
+                PopupBodyBorder.Background = surveyBackground;
+            }
             if (HostsVideo)
             {
                 ApplyVideoWindowSurface();
@@ -1259,12 +1265,12 @@ namespace Popup.Views.Windows
          * [기준 3·4] "다시 보지 않기" 처리. 예전에는 닫기 직전에 숨김 API(/hide)를 직접 호출해 성공해야 창을 닫았다.
          * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
          * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
-         * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로).
+         * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로), PopupManager Closed(Closing 없이 닫힌 소유자 종료 경로).
          *
          * [설계 30] SURVEY/QUIZ의 '제출 후 링크 열기'(TryOpenSubmissionLink)는 삭제했다. 설문·퀴즈 Footer 동작은 SUBMIT 고정이며
          * 바로가기(LINK_AND_CLOSE)는 일반 콘텐츠(TEXT/IMAGE/VIDEO)의 Footer 버튼에서만 실행한다.
          */
-        private void RecordDoNotShowAgainChoice()
+        internal void RecordDoNotShowAgainChoice()
         {
             _options.DoNotShowAgainChecked =
                 _options.ShowDoNotShowAgain

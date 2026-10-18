@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,10 +60,12 @@ internal static class Program
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
+        CheckOwnerCloseSavesResult();
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
         CheckLater52();
+        CheckSurveyColors();
         Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-2, 52-4, 53-16)");
     }
 
@@ -543,6 +545,89 @@ internal static class Program
             }
         }
         finally { owner.Close(); }
+    }
+
+    /*
+     * SURVEY·QUIZ 색 규칙: 콘텐츠 배경 #F5F6F8(본문 여백·푸터 포함), 문항 카드 흰색, 선택지 흰색 + 연한 회색 테두리,
+     * 선택 = 공통 강조 #171717 테두리 + 체크 표시(세로형·가로형 모두), 기본 글자 #222222.
+     */
+    private static void CheckSurveyColors()
+    {
+        static string Hex(System.Windows.Media.Brush? brush) => ((System.Windows.Media.SolidColorBrush)brush!).Color.ToString();
+        static IEnumerable<DependencyObject> Visuals(DependencyObject root)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                yield return child;
+                foreach (DependencyObject nested in Visuals(child)) yield return nested;
+            }
+        }
+        foreach (string type in new[] { "SURVEY", "QUIZ" })
+        {
+            var opened = OpenPopup(type);
+            opened.Window.UpdateLayout();
+            var view = (SurveyPopupView)opened.Options.Content!;
+            Check(Hex(opened.Find<Border>("PopupBodyBorder").Background) == "#FFF5F6F8" && Hex(((Grid)view.Content).Background) == "#FFF5F6F8",
+                $"[survey colors] {type} body and content background is #F5F6F8");
+            Border card = Visuals(view).OfType<Border>().First(b => b.Style == view.FindResource("SurveyQuestionCardStyle"));
+            Check(Hex(card.Background) == "#FFFFFFFF", $"[survey colors] {type} question card is white");
+            foreach (var choice in Visuals(view).OfType<System.Windows.Controls.Primitives.ToggleButton>().GroupBy(c => c.Parent is StackPanel).Select(g => g.First()).ToList())
+            {
+                choice.ApplyTemplate();
+                var cardBorder = (Border)choice.Template.FindName("Card", choice);
+                var check = (System.Windows.Shapes.Path)choice.Template.FindName("CheckMark", choice);
+                string layout = choice.Parent is StackPanel ? "vertical" : "horizontal";
+                Check(Hex(cardBorder.Background) == "#FFFFFFFF" && Hex(cardBorder.BorderBrush) == "#FFE5E5E5" && Hex(choice.Foreground) == "#FF222222",
+                    $"[survey colors] {type} {layout} choice is white with a light border and #222222 text");
+                choice.IsChecked = true;
+                choice.UpdateLayout();
+                Check(Hex(cardBorder.BorderBrush) == "#FF171717" && Hex(check.Stroke) == "#FF171717" && check.Visibility == Visibility.Visible
+                      && Hex(cardBorder.Background) == "#FFFFFFFF",
+                    $"[survey colors] {type} selected {layout} choice shows the accent border and check mark");
+            }
+            ShutdownClose(opened.Window);
+        }
+    }
+
+    /*
+     * 소유자 창이 닫히면 Win32가 소유 창을 함께 파괴해 팝업의 Closing 없이 Closed만 온다.
+     * 이 경로에서도 Closing에서 읽던 영상 시청량·다시 보지 않기 체크가 결과에 실려야 한다.
+     */
+    private static void CheckOwnerCloseSavesResult()
+    {
+        foreach (string type in new[] { "VIDEO", "TEXT" })
+        {
+            var owner = NewOwner();
+            var manager = new Popup.Managers.PopupManager(owner);
+            var dto = DemoPopups(type).Single();
+            dto.ShowFooter = true;
+            dto.ShowDoNotShowAgain = type == "TEXT";
+            var options = PopupFactory.Create(dto);
+            options.UseBackgroundOverlay = false;
+            var saved = new List<Popup.Dtos.WpfResultItemDto>();
+            options.EnqueueResult = saved.Add;
+            bool closing = false;
+            manager.Show(options);
+            var window = OpenWindows(manager).Single();
+            window.Closing += (_, _) => closing = true;
+            Check(window.Owner == owner, $"[owner close] {type} popup is owned by the owner window");
+            if (options.Content is VideoPopupView video)
+            {
+                SetPlaybackFailed(video, false);
+                Report(video, Snapshot(30, 30));
+            }
+            else
+                ((CheckBox)window.FindName("DoNotShowAgainCheckBox")).IsChecked = true;
+            owner.Close();
+            Check(!manager.HasOpenPopups && saved.Count == 1, $"[owner close] {type} popup closes with its owner and saves one result (closing raised: {closing})");
+            if (type == "VIDEO")
+                Check(saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
+                    $"[owner close] VIDEO keeps the watched seconds ({saved[0].ResultType}, {saved[0].Video?.WatchedSeconds})");
+            else
+                Check(saved[0].ResultType == Popup.Dtos.WpfResultType.Hidden && saved[0].HideDays > 0,
+                    $"[owner close] TEXT keeps the do-not-show-again choice ({saved[0].ResultType})");
+        }
     }
 
     /*

@@ -617,7 +617,8 @@ export default function PopupPreview({
           position: 'relative',
           overflow: 'hidden',
           borderRadius: 2,
-          bgcolor: 'white',
+          // SURVEY·QUIZ(VIDEO+QUIZ 포함)는 WPF와 같이 본문·푸터까지 설문 콘텐츠 배경(옅은 회색)이다.
+          bgcolor: isSurvey ? surveyColors.content : 'white',
           // WPF PopupBodyBorder BorderThickness=0(설계 25)과 같이 IMAGE 창 테두리를 그리지 않는다.
           ...(popup.popupType === 'IMAGE' ? {boxSizing: 'border-box'} : {}),
         }}

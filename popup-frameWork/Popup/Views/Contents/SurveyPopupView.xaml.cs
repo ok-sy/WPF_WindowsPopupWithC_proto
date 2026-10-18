@@ -1,4 +1,4 @@
-using Popup.Dtos;
+﻿using Popup.Dtos;
 using Popup.Models;
 using Popup.Services;
 using System;
@@ -60,6 +60,8 @@ namespace Popup.Views.Contents
          */
         private readonly List<TextBlock> _questionTitleTexts = new();
         private readonly List<TextBlock> _questionDescriptionTexts = new();
+        // [TODO55] 서식 선택지 문단. 크기는 선택지에서 상속하므로 본문 크기가 바뀌면 기울임 여유만 다시 맞춘다.
+        private readonly List<TextBlock> _optionParagraphs = new();
 
         /*
          * 현재 화면이 일반 설문인지
@@ -328,10 +330,10 @@ namespace Popup.Views.Contents
                 foreach (FrameworkElement child in panel.Children)
                 {
                     child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
-                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다.
+                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다. 체크 표시 폭: 세로형 오른쪽 28, 가로형 왼쪽 22.
                     if (child is ContentControl control && control.Content is FrameworkElement label)
                         label.MaxWidth = Math.Max(0, child.MaxWidth - control.Padding.Left - control.Padding.Right
-                            - control.BorderThickness.Left - control.BorderThickness.Right - (question.HorizontalOptions ? 0 : 28));
+                            - control.BorderThickness.Left - control.BorderThickness.Right - (question.HorizontalOptions ? 22 : 28));
                 }
             };
             return panel;
@@ -377,20 +379,27 @@ namespace Popup.Views.Contents
         /*
          * [TODO55] 서식 문단 공통 처리. 일반 문자열 TextBlock(template)의 기본 글꼴·크기·굵기·색·줄 높이를 문단에 옮기고,
          * 구간(Run)에 지정된 서식은 그대로 우선한다. 표시할 글자가 없으면 빈 목록(일반 문자열 사용).
+         * inheritFont=true(선택지)는 글꼴·크기·굵기·색을 고정하지 않는다. 일반 선택지처럼 본문 크기(ApplyBodyFontSize)와
+         * 선택 강조(굵기·색 트리거)를 선택지 컨트롤에서 상속해야 하기 때문이다.
+         * 상속 크기는 화면에 붙은 뒤 정해지므로 기울임 여유는 Loaded에서 다시 맞춘다.
          */
-        private static List<TextBlock> CreateRichParagraphs(IReadOnlyList<PopupTextBlockDto>? blocks, TextBlock template)
+        private static List<TextBlock> CreateRichParagraphs(IReadOnlyList<PopupTextBlockDto>? blocks, TextBlock template, bool inheritFont = false)
         {
             List<TextBlock> paragraphs = PopupRichText.CreateParagraphs(blocks, null);
             if (paragraphs.All(p => p.Inlines.OfType<System.Windows.Documents.Run>().All(r => string.IsNullOrWhiteSpace(r.Text))))
                 return new List<TextBlock>();
             foreach (TextBlock paragraph in paragraphs)
             {
-                paragraph.FontFamily = template.FontFamily;
-                paragraph.FontSize = template.FontSize;
-                paragraph.FontWeight = template.FontWeight;
-                paragraph.Foreground = template.Foreground;
+                if (!inheritFont)
+                {
+                    paragraph.FontFamily = template.FontFamily;
+                    paragraph.FontSize = template.FontSize;
+                    paragraph.FontWeight = template.FontWeight;
+                    paragraph.Foreground = template.Foreground;
+                }
                 if (!double.IsNaN(template.LineHeight)) paragraph.LineHeight = template.LineHeight;
                 PopupRichText.ReserveItalicOverhang(paragraph);
+                paragraph.Loaded += (_, _) => PopupRichText.ReserveItalicOverhang(paragraph);
             }
             return paragraphs;
         }
@@ -414,10 +423,11 @@ namespace Popup.Views.Contents
         }
 
         /* [TODO55] 선택지 표시: 서식이 있으면 문단 패널, 없으면 기존 일반 문구. 접근성 이름은 호출부에서 일반 문구(Text)로 둔다. */
-        private static FrameworkElement CreateOptionContent(SurveyOption option, bool horizontal)
+        private FrameworkElement CreateOptionContent(SurveyOption option, bool horizontal)
         {
             TextBlock plain = CreateOptionText(option.Text, horizontal);
-            List<TextBlock> paragraphs = CreateRichParagraphs(option.TextBlocks, plain);
+            List<TextBlock> paragraphs = CreateRichParagraphs(option.TextBlocks, plain, inheritFont: true);
+            _optionParagraphs.AddRange(paragraphs);
             return paragraphs.Count == 0 ? plain : StackOf(paragraphs, option.Text);
         }
 
@@ -740,6 +750,9 @@ namespace Popup.Views.Contents
             {
                 descriptionText.FontSize = fontSize + 1;
             }
+            // [TODO55] 크기가 바뀐 서식 문단의 기울임 여유를 다시 맞춘다(TextPopupView와 같음). 일반 문자열 TextBlock은 영향 없음.
+            foreach (TextBlock paragraph in _questionTitleTexts.Concat(_questionDescriptionTexts).Concat(_optionParagraphs))
+                PopupRichText.ReserveItalicOverhang(paragraph);
         }
 
         /*

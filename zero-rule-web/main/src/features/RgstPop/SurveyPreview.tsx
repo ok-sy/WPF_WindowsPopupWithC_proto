@@ -1,21 +1,23 @@
 import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
 
+// WPF SurveyStyles.xaml과 같은 색: 콘텐츠 배경 옅은 회색, 문항 카드·선택지 흰색, 선택 = 공통 강조 테두리 + 체크, 기본 글자 #222222.
 export const surveyColors = {
   page: '#FFFFFF',
-  card: '#F8F8F8',
+  content: '#F5F6F8',
+  card: '#FFFFFF',
   border: '#E5E5E5',
-  text: '#18181B',
-  choice: '#27272A',
+  text: '#222222',
+  choice: '#222222',
   muted: '#737373',
   placeholder: '#A3A3A3',
   check: '#D4D4D4',
   focus: '#737373',
   rowHover: '#F5F5F5',
-  rowSelected: '#ECECEC',
+  rowSelected: '#FFFFFF',
   chipHover: '#F1F1F1',
-  chipSelected: '#EAEAEA',
-  selectedBorder: '#AFAFAF',
+  chipSelected: '#FFFFFF',
+  selectedBorder: '#171717',
   pressed: '#E2E2E2',
   button: '#4A4A4F',
   buttonHover: '#3D3D42',
@@ -49,6 +51,31 @@ export interface SurveyPreviewProps {
   onAnswer: (id: number, answer: PreviewAnswer) => void;
   disabled: boolean;
   namePrefix: string;
+}
+
+// 체크 표시는 선택 전에도 자리를 차지해(옅은 색) 선택 시 선택지 폭이 바뀌지 않는다. 세로형은 오른쪽, 가로형은 왼쪽.
+function CheckMark({ selected, disabled, align }: { selected: boolean; disabled: boolean; align: 'start' | 'end' }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 16 12"
+      width={16}
+      height={12}
+      aria-hidden="true"
+      focusable="false"
+      sx={{ justifySelf: align, overflow: 'visible' }}
+    >
+      <path
+        className="survey-check"
+        d="M 1,5 L 5,9 L 13,1"
+        fill="none"
+        stroke={selected && !disabled ? surveyColors.selectedBorder : surveyColors.check}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Box>
+  );
 }
 
 export default function SurveyPreview({
@@ -220,7 +247,7 @@ export default function SurveyPreview({
                         sx={{
                           display: 'grid',
                           gridTemplateColumns: horizontal
-                            ? 'minmax(0, 1fr)'
+                            ? '22px minmax(0, 1fr)'
                             : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
@@ -238,6 +265,7 @@ export default function SurveyPreview({
                           opacity: disabled ? 0.45 : 1,
                         }}
                       >
+                        {horizontal && <CheckMark selected={selected} disabled={disabled} align="start" />}
                         <Box
                           sx={{
                             display: 'grid',
@@ -261,29 +289,7 @@ export default function SurveyPreview({
                             {option.text}
                           </Box>
                         </Box>
-                        {!horizontal && (
-                          <Box
-                            component="svg"
-                            viewBox="0 0 16 12"
-                            width={16}
-                            height={12}
-                            aria-hidden="true"
-                            focusable="false"
-                            sx={{ justifySelf: 'end', overflow: 'visible' }}
-                          >
-                            <path
-                              className="survey-check"
-                              d="M 1,5 L 5,9 L 13,1"
-                              fill="none"
-                              stroke={
-                                selected && !disabled ? surveyColors.text : surveyColors.check
-                              }
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </Box>
-                        )}
+                        {!horizontal && <CheckMark selected={selected} disabled={disabled} align="end" />}
                       </Box>
                     </Box>
                   );

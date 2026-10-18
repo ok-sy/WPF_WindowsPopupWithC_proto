@@ -167,6 +167,8 @@ namespace Popup.Managers
                 };
             }
 
+            bool closingRaised = false;
+            popupWindow.Closing += (sender, eventArgs) => closingRaised = true;
             if (videoPopupView != null)
             {
                 // 닫히기 직전 누적 시청량을 한 번만 읽는다(예전의 10초 주기 저장 대체).
@@ -195,10 +197,17 @@ namespace Popup.Managers
              * [설계 44 결함 1] 취소된 Closing 뒤에도 창이 실제로 닫힌 경우(App 종료 플래그 없이 Application.Shutdown,
              * 소유자 창 종료 등 WPF가 취소를 무시하는 경로)를 Closed에서 한 번 더 확인해 결과를 남긴다.
              * 영상 시청량은 위 Closing 핸들러가 이미 기록했다. 창이 닫힌 뒤라 저장 실패는 RetainResultForExit로 넘긴다.
+             * 소유자 창이 닫히면 Win32가 소유 창을 함께 파괴해 Closing 없이 Closed만 온다. 이때는 Closing에서 하던
+             * 영상 시청량·"다시 보지 않기" 기록을 여기서 한다(없으면 VIDEO_WATCHED·HIDDEN이 CLOSED로 바뀐다).
              */
             popupWindow.Closed += (sender, eventArgs) =>
             {
                 if (builder.IsFinalized) return;
+                if (!closingRaised)
+                {
+                    popupWindow.RecordDoNotShowAgainChoice();
+                    if (videoPopupView != null) builder.SetVideoProgress(videoPopupView.GetFinalProgress());
+                }
                 WpfResultItemDto item = builder.BuildOnClose(DateTimeOffset.Now, popupOptions.LaterRequested, popupOptions.DoNotShowAgainChecked);
                 builder.MarkFinalized();
                 try

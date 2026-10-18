@@ -1,6 +1,22 @@
-# 변경 이력
+﻿# 변경 이력
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
+
+## 2026-10-18-09 — SURVEY·QUIZ 화면 색 규칙 변경(콘텐츠 배경·문항·선택지·선택 강조)
+
+- 이유: 설문·퀴즈 화면 영역별 색 규칙 정리. 콘텐츠 배경 옅은 회색 #F5F6F8, 문항 영역 흰색, 선택지 기본 흰색 + 연한 회색 테두리, 선택된 선택지 강조색 테두리 + 체크 표시, 기본 글자색 #222222. 강조색은 팝업 공통 강조색 #171717, 적용 범위는 SurveyPopupView를 쓰는 SURVEY·QUIZ·VIDEO+QUIZ로 결정.
+- 변경: SurveyStyles.xaml 색 토큰(콘텐츠 배경 추가, 문항 카드 #FFFFFF, 글자 #222222, 선택 배경 흰색, 선택 테두리·체크 #171717). 가로형 Chip에 세로형과 같은 체크 표시 추가(선택 전에도 옅게 자리를 차지해 선택 시 폭 변화 없음), 서식 선택지 폭 계산에 Chip 체크 폭 22 반영. PopupWindow가 설문 콘텐츠면 본문 테두리 배경(여백·푸터 포함)을 콘텐츠 배경으로 칠함(영상 창 표면 복사 전). 관리자 웹 미리보기(SurveyPreview·PopupPreview)도 같은 색·Chip 체크로 맞춤. popup-frameWork README 설명 갱신(설계 20·22 문서는 당시 기록으로 유지).
+- 주요 파일: popup-frameWork/Popup/Views/Contents/SurveyStyles.xaml, SurveyPopupView.xaml(.cs), popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx·PopupPreview.tsx, scripts/PopupWindowTests/Program.cs, popup-frameWork/README.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 215건 통과(신규 12: SURVEY·QUIZ 본문·콘텐츠 배경, 문항 카드, 세로·가로 선택지 기본/선택 색·체크). RichTextTests 101건, ApiDemoTests 69건 통과. 웹 tsc 오류 0, verify-completion-ux-43 50건 통과. Demo 설문 샘플 실화면 캡처로 기본·선택 상태 확인. VIDEO+QUIZ 실화면, 웹 미리보기 브라우저 화면은 미확인.
+- 상태: 커밋에 포함(커밋 직전 기록).
+
+## 2026-10-18-08 — 소유자 창 종료 시 팝업 결과의 시청량·다시 보지 않기 누락 수정
+
+- 이유: 소유자 창(MainWindow·DemoWindow)이 닫히면 Win32가 소유 팝업을 함께 파괴해 팝업의 Closing 없이 Closed만 발생. Closing에서 하던 영상 시청량 기록과 "다시 보지 않기" 체크 기록이 빠져 VIDEO_WATCHED·HIDDEN이 CLOSED로 저장되었다(설계 44 결함 1 후속, 이번 변경 이전부터 있던 결함).
+- 변경: PopupManager가 Closing 발생 여부를 기록하고, Closing 없이 Closed만 온 경우 Closed 대체 저장 전에 시청량(GetFinalProgress)과 다시 보지 않기 체크(PopupWindow.RecordDoNotShowAgainChoice, internal로 변경)를 읽는다. Closing을 거친 기존 경로는 그대로.
+- 주요 파일: popup-frameWork/Popup/Managers/PopupManager.cs, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, scripts/PopupWindowTests/Program.cs, version-history/CHANGELOG.md.
+- 검증: PopupWindowTests 203건 통과(소유자 종료 VIDEO 시청량 30초·TEXT HIDDEN 신규). 수정 전 VIDEO가 CLOSED(시청량 없음)로 저장되어 실패함을 확인, 체크 기록 호출만 빼도 TEXT가 CLOSED로 실패(변이 확인). ApiDemoTests 69건 통과, WPF 빌드 경고·오류 0. 실제 앱 종료 화면 확인은 미실행.
+- 상태: 커밋에 포함(커밋 직전 기록).
 
 ## 2026-10-18-07 — TODO55 설문·퀴즈 서식 계약 초안·WPF 표시
 
@@ -10,6 +26,7 @@
 - 주요 파일: popup-frameWork/Popup/Dtos/Survey*Dto.cs, Models/SurveyQuestion.cs·SurveyOption.cs, Factories/PopupFactory.cs, Views/Contents/SurveyPopupView.xaml(.cs), Services/DemoPopupDataService.cs, DemoOptionsWindow(.Fields).cs, scripts/RichTextTests/Program.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md, version-history/CHANGELOG.md.
 - 검증: WPF 빌드 경고·오류 0. RichTextTests 97건(신규 12), ApiDemoTests 69건, PopupWindowTests 197건 통과. 변이 확인(선택지 서식 표시 제거 시 실패). 처음 넣은 VIDEO+QUIZ 머리말 조건은 변이로도 결과가 같아 불필요함을 확인하고 제거(숨김 대상이 일반 문자열 TextBlock뿐). Demo 앱 설문 샘플 실화면 캡처 확인. 서버·관리자 웹·미리보기 미변경, Excel/Word/PDF 미반영(확정 후), MINIMAL 변경 없음.
 - 상태: 커밋에 포함(커밋 직전 기록). 55-3·55-4 Front/Server 인계 대기.
+- 보완(리뷰 반영): 서식 선택지가 문단에 기본 글꼴·크기·굵기·색을 고정해 bodyFontSize와 선택 강조(굵기·색 트리거)를 상속하지 못하던 문제 수정 — 선택지 문단은 글꼴 속성을 고정하지 않고 Run 지정 서식만 우선. ApplyBodyFontSize 후 문항 제목·설명·선택지 서식 문단의 기울임 여유를 다시 계산하고, 상속 크기가 정해지는 Loaded에서도 재계산. 검증: RichTextTests 101건 통과(신규 4: 크기 상속, 기울임 여유 재계산, 선택 강조 상속·Run 서식 유지, 제목 +4 유지), 변이 확인(상속 해제·재계산 제거 시 각각 실패). 실제 잘림 여부 Windows 화면 확인은 미실행. 커밋에 포함.
 
 ## 2026-10-18-06 — TODO54-6~11 Demo 연결·로그·실행 상태·초기화 구분
 

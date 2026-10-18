@@ -15,7 +15,7 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Background="{StaticResource SurveySurfaceBrush}">
+    <Grid Background="{StaticResource SurveyContentBackground}">
 
         <Grid.RowDefinitions>
             <!-- 설문 제목과 설명 -->

@@ -126,7 +126,31 @@ internal static class Program
               && ((TextBlock)plainOnly.FindName("SurveyTitleText")).Visibility == Visibility.Collapsed,
             "[55-8] a formatted quiz header stays visible while plain duplicates are still collapsed");
 
-        // 7) Demo 저장: 서식에서 일반 문자열 파생, 필드별 길이 상한
+        // 7) 서식 선택지는 본문 크기·선택 강조를 상속하고 Run 지정 서식만 우선한다. 크기가 바뀌면 기울임 여유도 다시 맞춘다.
+        var inherit = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(Sample(), jsonOptions))!.AsObject();
+        inherit["questions"]![0]!["options"]![0]!["textBlocks"] = System.Text.Json.Nodes.JsonNode.Parse(
+            "[{\"runs\":[{\"text\":\"색만 지정\",\"color\":\"#B42318\"},{\"text\":\" 기울임\",\"italic\":true},{\"text\":\" 굵게\",\"bold\":true}]}]");
+        SurveyPopupView sized = ViewOf(inherit.Deserialize<PopupResponseDto>(jsonOptions)!);
+        sized.ApplyBodyFontSize(40);
+        var sizedControls = (System.Collections.IDictionary)typeof(SurveyPopupView).GetField("_answerControls", flags)!.GetValue(sized)!;
+        RadioButton colored = ((Panel)sizedControls[1001L]!).Children.OfType<RadioButton>().First();
+        RadioButton plainOption = ((Panel)sizedControls[1001L]!).Children.OfType<RadioButton>().Single(r => ((Popup.Models.SurveyOption)r.Tag).OptionId == 1012);
+        TextBlock coloredParagraph = (TextBlock)((StackPanel)colored.Content).Children[0];
+        List<Run> coloredRuns = coloredParagraph.Inlines.OfType<Run>().ToList();
+        Check(coloredRuns.All(r => r.FontSize == 40) && ((TextBlock)plainOption.Content).FontSize == 40,
+            "[55-6] formatted option without size follows bodyFontSize like a plain option");
+        Check(coloredParagraph.Padding.Right == Math.Ceiling(40 * 0.35),
+            "[55-6] italic overhang is recalculated for the inherited body font size");
+        colored.ApplyTemplate();
+        colored.IsChecked = true;
+        Check(coloredRuns[1].FontWeight == FontWeights.SemiBold && coloredRuns[2].FontWeight == FontWeights.Bold
+              && coloredRuns[1].Foreground == colored.Foreground && ((SolidColorBrush)coloredRuns[0].Foreground).Color == Color.FromRgb(0xB4, 0x23, 0x18),
+            "[55-6] selected formatted option inherits the selection weight/color and keeps run-specified formatting");
+        StackPanel sizedTitle = Logical(sized).OfType<StackPanel>()
+            .Single(p => System.Windows.Automation.AutomationProperties.GetName(p) == "화면 구성이 이해하기 쉬웠나요?");
+        Check(((TextBlock)sizedTitle.Children[0]).FontSize == 44, "[55-5] formatted question title still follows bodyFontSize + 4");
+
+        // 8) Demo 저장: 서식에서 일반 문자열 파생, 필드별 길이 상한
         var demoJson = (JsonSerializerOptions)typeof(Popup.DemoOptionsWindow).GetField("JsonOptions", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         var normalize = typeof(Popup.DemoOptionsWindow).GetMethod("NormalizeAndValidate", BindingFlags.Static | BindingFlags.NonPublic)!;
         void Normalize(System.Text.Json.Nodes.JsonObject value)
