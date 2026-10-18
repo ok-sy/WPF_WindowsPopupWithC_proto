@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-02 — TODO55 SURVEY·QUIZ FONT EDIT 확장 등록
+
+- 이유: TEXT 전용 서식 편집을 설문·퀴즈의 제목·설명·문항·선택지 표시까지 확장할 필요.
+- 변경: 문단·Run 공통 모델/변환/팔레트 재사용, 필드별 계약, WPF 표시·선택지 레이아웃·답변/채점 분리·VIDEO+QUIZ 회귀·Demo/문서 갱신을 TODO55로 등록. Front/Server 인계와 WPF 검증 책임을 구분하고 과거 DB 컬럼 신설 가정을 최신 콘텐츠 JSON 계약으로 재검토하도록 명시.
+- 주요 파일: docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md, version-history/CHANGELOG.md.
+- 검증: 최신 main 및 Trello 중복 확인, TODO28 §10 확장 기록과 대조. 계획 등록으로 기능 코드·DDL 변경 및 실행 테스트 없음.
+- 상태: 진행 확정·구현 대기. 커밋에 포함.
+
 ## 2026-10-18-01 — TODO54 Demo UI/UX 및 상세옵션 정리 계획
 
 - 이유: Demo 기능 증가에 따라 로컬 샘플·실제 API 작업 흐름과 상세옵션 탐색·입력 UX를 정리할 필요.
