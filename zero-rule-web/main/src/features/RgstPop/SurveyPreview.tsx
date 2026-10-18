@@ -2,19 +2,20 @@ import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
 
 /*
- * 문항 디자인 버전. WPF SurveyDesigns/SurveyStyles.Vn.xaml과 같은 값이며, 지난 버전은 고치지 않고 새 버전을 추가한다.
- *   V1: 무채색(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경, 가로형 체크 없음)
- *   V2: 콘텐츠 #F5F6F8, 문항·선택지 흰색, 선택 = 공통 강조 #171717 테두리 + 체크(가로형 포함), 기본 글자 #222222
- * WPF는 appsettings PopupApi.SurveyDesignVersion으로 고르므로, 바꿀 때 SURVEY_DESIGN_VERSION도 같은 값으로 맞춘다.
- * TODO56(V2 선택 UX: 흰 본문·문항 카드 없이 구분선, 라운드 6, 제목 끝 선택 안내, 선택 전 체크 숨김, 선택 2px 링 + 세로형만 체크, 굵게 없음, 선택 방식 안내, "필수 응답" 문구)은 WPF만 반영했고 이 미리보기는 Front 인계 대기다.
+ * 문항 디자인 버전. WPF SurveyDesigns/SurveyStyles.Vn.xaml과 같은 값이다. WPF는 appsettings PopupApi.SurveyDesignVersion으로
+ * 고르므로, 바꿀 때 SURVEY_DESIGN_VERSION도 같은 값으로 맞춘다.
+ *   V1: 무채색 카드형(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경·SemiBold, 세로형은 옅은 체크 상시 표시, 가로형 체크 없음)
+ *   V2(TODO56): 흰 본문, 문항 카드 없이 간격·구분선(마지막 문항 제외), 선택지 라운드 6, 라디오·체크박스 표시 없음,
+ *       선택 = #171717 2px 테두리(크기 불변) + 세로형만 오른쪽 체크, 선택해도 굵기·글자색 불변, 포커스 점선,
+ *       제목 끝 "하나 선택"/"여러 개 선택 가능" 안내, 기본 글자 #222222.
  */
 const commonSurveyColors = {
   page: '#FFFFFF',
+  content: '#FFFFFF',
   border: '#E5E5E5',
   muted: '#737373',
   placeholder: '#A3A3A3',
   check: '#D4D4D4',
-  focus: '#737373',
   rowHover: '#F5F5F5',
   chipHover: '#F1F1F1',
   pressed: '#E2E2E2',
@@ -25,13 +26,19 @@ const commonSurveyColors = {
 
 export const surveyDesigns = {
   V1: {
-    chipCheck: false,
+    flatQuestions: false,
+    choiceRadius: 11,
+    selectedBold: true,
+    selectedRing: false,
+    rowCheckAlways: true,
+    choiceHint: false,
     colors: {
       ...commonSurveyColors,
-      content: '#FFFFFF',
       card: '#F8F8F8',
       text: '#18181B',
       choice: '#27272A',
+      focus: '#737373',
+      hoverBorder: '#D4D4D4',
       rowSelected: '#ECECEC',
       chipSelected: '#EAEAEA',
       selectedBorder: '#AFAFAF',
@@ -39,13 +46,19 @@ export const surveyDesigns = {
     },
   },
   V2: {
-    chipCheck: true,
+    flatQuestions: true,
+    choiceRadius: 6,
+    selectedBold: false,
+    selectedRing: true,
+    rowCheckAlways: false,
+    choiceHint: true,
     colors: {
       ...commonSurveyColors,
-      content: '#F5F6F8',
-      card: '#FFFFFF',
+      card: 'transparent',
       text: '#222222',
       choice: '#222222',
+      focus: '#171717',
+      hoverBorder: '#8C8C8C',
       rowSelected: '#FFFFFF',
       chipSelected: '#FFFFFF',
       selectedBorder: '#171717',
@@ -88,8 +101,9 @@ export interface SurveyPreviewProps {
   namePrefix: string;
 }
 
-// 체크 표시는 선택 전에도 자리를 차지해(옅은 색) 선택 시 선택지 폭이 바뀌지 않는다. 세로형은 오른쪽, 가로형은 왼쪽.
-function CheckMark({ selected, disabled, align }: { selected: boolean; disabled: boolean; align: 'start' | 'end' }) {
+// 세로형 오른쪽 체크(28px 열 예약). V1은 선택 전에도 옅게 보이고, V2는 선택했을 때만 보인다.
+function CheckMark({ selected, disabled }: { selected: boolean; disabled: boolean }) {
+  if (!surveyDesign.rowCheckAlways && !selected) return <Box aria-hidden="true" />;
   return (
     <Box
       component="svg"
@@ -98,7 +112,7 @@ function CheckMark({ selected, disabled, align }: { selected: boolean; disabled:
       height={12}
       aria-hidden="true"
       focusable="false"
-      sx={{ justifySelf: align, overflow: 'visible' }}
+      sx={{ justifySelf: 'end', overflow: 'visible' }}
     >
       <path
         className="survey-check"
@@ -122,7 +136,7 @@ export default function SurveyPreview({
   namePrefix,
 }: SurveyPreviewProps) {
   return (
-    <Stack spacing={1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
+    <Stack spacing={surveyDesign.flatQuestions ? 0 : 1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
       {description && (
         <Typography sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
           {description}
@@ -138,19 +152,26 @@ export default function SurveyPreview({
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
         const titleId = `${namePrefix}-question-${question.questionId}`;
+        const hint = !surveyDesign.choiceHint || question.questionType === 'TEXT'
+          ? null
+          : multiple ? '여러 개 선택 가능' : '하나 선택';
+        const last = index === questions.length - 1;
         return (
           <Box
             component="fieldset"
             key={question.questionId}
             disabled={disabled}
             aria-labelledby={titleId}
+            aria-describedby={hint ? `${titleId}-hint` : undefined}
             sx={{
               minWidth: 0,
               m: 0,
-              p: '20px 20px 18px',
               border: 0,
-              borderRadius: '11px',
               bgcolor: surveyColors.card,
+              // V2: 카드 표면 없이 간격과 문항 사이 구분선(마지막 문항 제외). V1: 둥근 회색 카드.
+              ...(surveyDesign.flatQuestions
+                ? { p: '20px 0 22px', borderRadius: 0, borderBottom: last ? 0 : `1px solid ${surveyColors.border}` }
+                : { p: '20px 20px 18px', borderRadius: '11px' }),
             }}
           >
             <Stack direction="row" alignItems="center" spacing={2}>
@@ -166,6 +187,16 @@ export default function SurveyPreview({
               >
                 {question.title}
                 {question.isRequired ? ' *' : ''}
+                {hint && (
+                  // 제목 끝 보조 안내(WPF와 같이 12·보통 굵기·보조색). 긴 제목이면 글자 흐름대로 다음 줄로 넘어간다.
+                  <Box
+                    component="span"
+                    id={`${titleId}-hint`}
+                    sx={{ ml: 1.5, fontSize: 12, fontWeight: 400, color: surveyColors.muted, whiteSpace: 'nowrap' }}
+                  >
+                    {hint}
+                  </Box>
+                )}
               </Typography>
             </Stack>
             {question.description && (
@@ -235,11 +266,10 @@ export default function SurveyPreview({
                         maxWidth: '100%',
                         width: horizontal ? 'auto' : '100%',
                         cursor: disabled ? 'default' : 'pointer',
-                        '& input:focus-visible + .survey-option': {
-                          borderColor: surveyColors.focus,
-                          outline: `1px dashed ${surveyColors.focus}`,
-                          outlineOffset: 3,
-                        },
+                        // V2 포커스는 선택 테두리를 덮지 않고 바깥 점선으로만 표시한다.
+                        '& input:focus-visible + .survey-option': surveyDesign.selectedRing
+                          ? { outline: `1.5px dashed ${surveyColors.focus}`, outlineOffset: 4 }
+                          : { borderColor: surveyColors.focus, outline: `1px dashed ${surveyColors.focus}`, outlineOffset: 3 },
                         '&:hover .survey-option': !disabled
                           ? {
                               bgcolor: selected
@@ -251,7 +281,7 @@ export default function SurveyPreview({
                                   : surveyColors.rowHover,
                               borderColor: selected
                                 ? surveyColors.selectedBorder
-                                : surveyColors.check,
+                                : surveyColors.hoverBorder,
                             }
                           : {},
                         '&:hover .survey-check':
@@ -281,30 +311,27 @@ export default function SurveyPreview({
                         className="survey-option"
                         sx={{
                           display: 'grid',
-                          gridTemplateColumns: horizontal
-                            ? surveyDesign.chipCheck
-                              ? '22px minmax(0, 1fr)'
-                              : 'minmax(0, 1fr)'
-                            : 'minmax(0, 1fr) 28px',
+                          gridTemplateColumns: horizontal ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
                           minHeight: horizontal ? 44 : 48,
                           p: horizontal ? '10px 14px' : '12px 16px',
                           border: '1px solid',
-                          borderRadius: '11px',
+                          borderRadius: `${surveyDesign.choiceRadius}px`,
+                          // V2 선택: 1px 테두리 안쪽에 1px를 더 그려 2px로 보이게 한다(크기 불변).
+                          boxShadow: selected && surveyDesign.selectedRing
+                            ? `inset 0 0 0 1px ${surveyColors.selectedBorder}`
+                            : 'none',
                           bgcolor: selected
                             ? horizontal
                               ? surveyColors.chipSelected
                               : surveyColors.rowSelected
                             : surveyColors.page,
                           borderColor: selected ? surveyColors.selectedBorder : surveyColors.border,
-                          color: selected ? surveyColors.text : surveyColors.choice,
+                          color: selected && surveyDesign.selectedBold ? surveyColors.text : surveyColors.choice,
                           opacity: disabled ? 0.45 : 1,
                         }}
                       >
-                        {horizontal && surveyDesign.chipCheck && (
-                          <CheckMark selected={selected} disabled={disabled} align="start" />
-                        )}
                         <Box
                           sx={{
                             display: 'grid',
@@ -314,21 +341,24 @@ export default function SurveyPreview({
                             overflowWrap: 'anywhere',
                           }}
                         >
+                          {surveyDesign.selectedBold && (
+                            // V1: 선택 시 굵게 바뀌어도 줄바꿈 높이가 변하지 않도록 굵은 글자 높이를 미리 확보한다.
+                            <Box
+                              component="span"
+                              aria-hidden="true"
+                              sx={{ gridArea: '1 / 1', fontWeight: 600, visibility: 'hidden' }}
+                            >
+                              {option.text}
+                            </Box>
+                          )}
                           <Box
                             component="span"
-                            aria-hidden="true"
-                            sx={{ gridArea: '1 / 1', fontWeight: 600, visibility: 'hidden' }}
-                          >
-                            {option.text}
-                          </Box>
-                          <Box
-                            component="span"
-                            sx={{ gridArea: '1 / 1', fontWeight: selected ? 600 : 400 }}
+                            sx={{ gridArea: '1 / 1', fontWeight: selected && surveyDesign.selectedBold ? 600 : 400 }}
                           >
                             {option.text}
                           </Box>
                         </Box>
-                        {!horizontal && <CheckMark selected={selected} disabled={disabled} align="end" />}
+                        {!horizontal && <CheckMark selected={selected} disabled={disabled} />}
                       </Box>
                     </Box>
                   );

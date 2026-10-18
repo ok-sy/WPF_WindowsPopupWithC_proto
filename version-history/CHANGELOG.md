@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-14 — TODO56 관리자 웹 미리보기 V2 반영
+
+- 이유: 반입본 생성 전에 관리자 웹 미리보기도 WPF 디자인 V2(TODO56)와 같은 화면으로 맞추기로 결정(인계 대신 직접 반영).
+- 변경: SurveyPreview.tsx 디자인 버전 객체에 V1·V2 동작 플래그(flatQuestions·choiceRadius·selectedBold·selectedRing·rowCheckAlways·choiceHint)와 색 추가. V2: 흰 본문, 문항 카드 없이 구분선(마지막 제외), 선택지 라운드 6, 라디오·체크박스 표시 없음, 선택 = #171717 2px 테두리(inset, 크기 불변) + 세로형만 선택 시 체크, 선택해도 굵기·색 불변, 포커스 바깥 점선, 제목 끝 "하나 선택"/"여러 개 선택 가능"(aria-describedby). V1은 기존 카드형 동작 유지. PopupPreview.tsx 필수 응답 문구를 WPF와 같게 변경. verify-completion-ux-43에 TODO56 V2 검증 6건 추가·문구 기대값 갱신. TODO56 진행 기록 갱신.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx, zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, scripts/verify-completion-ux-43.cjs, docs/design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, eslint 경고 없음, headless Edge 하네스 56건 통과(신규 6), 하네스 캡처로 미리보기 화면 확인. 실제 관리자 웹(브라우저·Next 개발 서버) 화면은 미확인.
+- 상태: 커밋에 포함(커밋 직전 기록).
+
 ## 2026-10-18-13 — TODO56 설문·퀴즈 선택 상태·응답 안내 UX(WPF, 디자인 V2 반영)
 
 - 이유: 미선택 체크가 선택처럼 보이고 단일/복수 선택 외형이 같아 혼동(TODO56). 새 버전을 만들지 않고 최신 디자인 V2에 직접 반영하기로 결정, V1은 원복용으로 보존. 원/사각형 표시기를 1차 구현했으나 라디오·체크박스 표시기 없이 선택 후에만 체크를 보이는 방식으로 결정.

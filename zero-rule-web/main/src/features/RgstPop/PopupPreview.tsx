@@ -416,9 +416,9 @@ export default function PopupPreview({
   ).length;
   const remaining = required.length - completed;
   const progress = remaining
-    ? `필수 문항 ${completed}/${required.length} 응답 · 남은 ${remaining}문항`
+    ? `필수 응답 ${completed}/${required.length} · ${remaining}문항 남음`
     : required.length
-      ? `필수 문항 ${completed}/${required.length} 응답 완료`
+      ? `필수 응답 ${completed}/${required.length} 완료`
       : '선택 문항에 자유롭게 응답해주세요.';
   const submitPreview = () => {
     if (popup.popupType !== 'QUIZ') {

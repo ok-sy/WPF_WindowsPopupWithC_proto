@@ -77,7 +77,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await button('닫기') === null, 'VIDEO+QUIZ without allow-close has no secondary close');
   await watch(50); b = await button('제출'); check(b.reason.startsWith('영상 50% · 기준 80%'), 'VIDEO+QUIZ lock progress follows the slider');
   await watch(80); b = await button('제출');
-  check(b.disabled && b.reason === '필수 문항 0/4 응답 · 남은 4문항', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
+  check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
   check((await bodyText()).includes('시청 기준을 충족했습니다. 퀴즈에 응답해 주세요.'), 'VIDEO+QUIZ unlocked notice');
   // allowCloseBeforeComplete=true면 보조 닫기 표시, showFooter=false면 숨김.
   await render('QUIZ', {allowCloseBeforeComplete: true}, {videoEnabled: true});
@@ -122,7 +122,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 5. SURVEY: 보조 닫기 없음. 필수 미응답이면 제출 비활성 + 진행 문구 연결.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: true, sortOrder: 1, options: []}]}, {useBackgroundOverlay: false});
   b = await button('제출');
-  check(b.disabled && b.reason === '필수 문항 0/1 응답 · 남은 1문항' && await button('닫기') === null, 'SURVEY submit reason and no secondary close: ' + JSON.stringify(b));
+  check(b.disabled && b.reason === '필수 응답 0/1 · 1문항 남음' && await button('닫기') === null, 'SURVEY submit reason and no secondary close: ' + JSON.stringify(b));
   // 필수 문항이 0개(선택 문항만)면 바로 제출할 수 있다.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 1, options: []}]});
   b = await button('제출'); check(!b.disabled, 'SURVEY with no required question can submit: ' + JSON.stringify(b));
@@ -138,5 +138,36 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const before = await run('window.closeCount ?? 0'); await click('나중에 보기');
     check(await run('window.closeCount') === before + 1, `${label} later runs onClose`);
   }
+  // 7. [TODO56] 설문 디자인 V2: 흰 본문, 문항 카드 없이 구분선(마지막 제외), 제목 끝 선택 안내, 라운드 6,
+  //    라디오·체크박스 표시 없음, 선택 = 2px 테두리(크기 불변) + 세로형만 체크, 선택해도 굵기 불변.
+  const opt = (id, text) => ({optionId: id, value: String(id), text, sortOrder: id});
+  await render('SURVEY', {questions: [
+    {questionId: 1, title: '전반적으로 만족하셨나요?', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: true, sortOrder: 1, options: [opt(11, '만족'), opt(12, '보통')]},
+    {questionId: 2, title: '교육 시간은 적절했나요?', questionType: 'SINGLE_CHOICE', optionLayout: 'HORIZONTAL', isRequired: true, sortOrder: 2, options: [opt(21, '짧았다'), opt(22, '적절했다')]},
+    {questionId: 3, title: '도움이 된 부분을 모두 선택해주세요.', questionType: 'MULTIPLE_CHOICE', optionLayout: 'VERTICAL', isRequired: false, sortOrder: 3, options: [opt(31, '실습'), opt(32, '자료')]},
+    {questionId: 4, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 4, options: []}]}, {useBackgroundOverlay: false});
+  const v2 = () => run(`(()=>{const fs=[...document.querySelectorAll('fieldset')];
+    const opt=t=>{const i=document.querySelector('input[aria-label="'+t+'"]'), o=i.nextElementSibling, s=getComputedStyle(o), r=o.getBoundingClientRect();
+      return {shadow:s.boxShadow, border:s.borderTopColor, radius:s.borderTopLeftRadius, weight:getComputedStyle(o.querySelector('span')).fontWeight, svg:o.querySelectorAll('svg').length, w:r.width, h:r.height};};
+    return {borders: fs.map(f=>getComputedStyle(f).borderBottomWidth), bgs: fs.map(f=>getComputedStyle(f).backgroundColor), radii: fs.map(f=>getComputedStyle(f).borderTopLeftRadius),
+      hints: fs.map(f=>{const h=f.getAttribute('aria-describedby'); return h ? document.getElementById(h).textContent : null;}),
+      row: opt('만족'), chip: opt('적절했다'), multi: opt('실습')};})()`);
+  let s = await v2();
+  check(s.borders.join() === '1px,1px,1px,0px' && s.bgs.every(c => c === 'rgba(0, 0, 0, 0)') && s.radii.every(r => r === '0px'),
+    'TODO56 V2 questions have no card surface and a separator except the last: ' + JSON.stringify(s));
+  check(JSON.stringify(s.hints) === JSON.stringify(['하나 선택', '하나 선택', '여러 개 선택 가능', null]),
+    'TODO56 V2 choice hint follows choice titles only: ' + JSON.stringify(s.hints));
+  check([s.row, s.chip, s.multi].every(o => o.radius === '6px' && o.shadow === 'none' && o.svg === 0 && o.weight === '400'),
+    'TODO56 V2 unselected choices have radius 6, no indicator or check: ' + JSON.stringify(s));
+  const before56 = {row: [s.row.w, s.row.h], chip: [s.chip.w, s.chip.h]};
+  await run(`(()=>{for (const t of ['만족','적절했다','실습']) document.querySelector('input[aria-label="'+t+'"]').click();})()`); await pause(200);
+  s = await v2();
+  check([s.row, s.chip, s.multi].every(o => o.shadow.includes('inset') && o.border === 'rgb(23, 23, 23)' && o.weight === '400'),
+    'TODO56 V2 selection draws the #171717 2px ring without bold: ' + JSON.stringify(s));
+  check(s.row.svg === 1 && s.multi.svg === 1 && s.chip.svg === 0, 'TODO56 V2 check appears on selected vertical rows only: ' + JSON.stringify(s));
+  check(s.row.w === before56.row[0] && s.row.h === before56.row[1] && s.chip.w === before56.chip[0] && s.chip.h === before56.chip[1],
+    'TODO56 V2 selection keeps choice size: ' + JSON.stringify({before56, after: s}));
+  const shot = await send('Page.captureScreenshot', {format: 'png'});
+  fs.writeFileSync(path.join(output, 'survey-v2.png'), Buffer.from(shot.data, 'base64'));
   console.log(`PASS: ${checks} completion UX 43 checks`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {socket?.close(); browser?.kill(); server?.close();});
