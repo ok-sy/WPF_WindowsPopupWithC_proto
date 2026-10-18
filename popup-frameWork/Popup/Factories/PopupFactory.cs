@@ -214,6 +214,8 @@ namespace Popup.Factories
                     QuestionId = questionDto.QuestionId,
                     Title = questionDto.Title,
                     Description = questionDto.Description,
+                    TitleBlocks = questionDto.TitleBlocks,
+                    DescriptionBlocks = questionDto.DescriptionBlocks,
                     QuestionType = ConvertSurveyQuestionType(questionDto.QuestionType),
                     HorizontalOptions = string.Equals(questionDto.OptionLayout, "HORIZONTAL", StringComparison.Ordinal),
                     IsRequired = questionDto.IsRequired,
@@ -229,6 +231,7 @@ namespace Popup.Factories
                     {
                         OptionId = optionDto.OptionId,
                         Text = optionDto.Text,
+                        TextBlocks = optionDto.TextBlocks,
                         IsCorrect = optionDto.IsCorrect
                     });
                 }
@@ -240,7 +243,9 @@ namespace Popup.Factories
                 contentDto.Description,
                 questions,
                 isQuizMode,
-                popupDto.PassingScore);
+                popupDto.PassingScore,
+                contentDto.SurveyTitleBlocks,
+                contentDto.DescriptionBlocks);
         }
 
         private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>

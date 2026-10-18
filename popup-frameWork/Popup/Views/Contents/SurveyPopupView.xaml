@@ -40,12 +40,16 @@
                            Style="{StaticResource CommonContentTitleStyle}"
                            FontSize="25" Foreground="{StaticResource SurveySelectedText}"
                            TextWrapping="Wrap"/>
+                <!-- [TODO55] 제목 서식(surveyTitleBlocks)이 있으면 위 일반 문자열 대신 문단으로 표시한다. -->
+                <StackPanel x:Name="SurveyTitleRich" Visibility="Collapsed"/>
 
                 <!-- 설문 설명 -->
                 <TextBlock x:Name="SurveyDescriptionText"
                            Margin="0,2,0,0"
                            Text="아래 문항에 응답해주세요."
                            Style="{StaticResource CommonDescriptionTextStyle}" Foreground="{StaticResource SurveyMutedText}"/>
+                <!-- [TODO55] 설명 서식(descriptionBlocks) -->
+                <StackPanel x:Name="SurveyDescriptionRich" Margin="0,2,0,0" Visibility="Collapsed"/>
 
             </StackPanel>
         </Border>

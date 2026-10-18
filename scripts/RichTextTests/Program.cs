@@ -16,6 +16,8 @@ using Popup.Views.Contents;
  * 설계 28 서식 표시, 설계 38 기울임 오른쪽 여유, 설계 48 관용 변환기·표시 방어, 설계 49 문단 들여쓰기를
  * 실제 PopupFactory·TextPopupView 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
  * 다른 환경에서도 같은 명령으로 재현할 수 있게 둔다.
+ * TODO55 설문·퀴즈 서식(surveyTitleBlocks·descriptionBlocks·titleBlocks·options[].textBlocks) 표시, 일반 문자열 대체,
+ *   접근성 이름·답변 ID 불변, VIDEO+QUIZ 머리말 숨김 예외, Demo 저장 시 일반 문자열 파생·길이 상한
  *   실행: dotnet run --project scripts/RichTextTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다.
  */
@@ -35,7 +37,116 @@ internal static class Program
         CheckRichTextDisplayDefense48();
         CheckParagraphIndent49();
         CheckItalicOverhang38();
-        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49)");
+        CheckSurveyRichText55();
+        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO55)");
+    }
+
+    private static IEnumerable<DependencyObject> Logical(DependencyObject root)
+    {
+        foreach (object child in LogicalTreeHelper.GetChildren(root))
+        {
+            if (child is not DependencyObject node) continue;
+            yield return node;
+            foreach (DependencyObject nested in Logical(node)) yield return nested;
+        }
+    }
+
+    private static string Plain(TextBlock block) => string.Concat(block.Inlines.OfType<Run>().Select(r => r.Text));
+
+    /* [TODO55] 설문·퀴즈 서식 표시. 데모 SURVEY 샘플에 제목·설명·문항 제목·선택지(세로·가로) 서식이 있다. */
+    private static void CheckSurveyRichText55()
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        PopupResponseDto Sample() => DemoPopupDataService.CreatePopups().Single(p => p.PopupId == "DEMO-SURVEY-001");
+        SurveyPopupView ViewOf(PopupResponseDto dto) => (SurveyPopupView)PopupFactory.Create(dto).Content!;
+
+        // 1) 머리말: 서식 문단 표시, 일반 문자열은 숨긴 채 유지
+        SurveyPopupView view = ViewOf(Sample());
+        var titleRich = (StackPanel)view.FindName("SurveyTitleRich");
+        var titlePlain = (TextBlock)view.FindName("SurveyTitleText");
+        Check(titleRich.Visibility == Visibility.Visible && titlePlain.Visibility == Visibility.Collapsed && titlePlain.Text == "교육 만족도 설문"
+              && ((TextBlock)titleRich.Children[0]).Inlines.OfType<Run>().Any(r => r.Text == "만족도" && r.FontWeight == FontWeights.Bold),
+            "[55-5] survey title shows the formatted paragraph and keeps the plain text hidden");
+        var descriptionRich = (StackPanel)view.FindName("SurveyDescriptionRich");
+        Check(descriptionRich.Children.Count == 2 && ((TextBlock)descriptionRich.Children[1]).Padding.Left == 40,
+            "[55-2] description keeps every paragraph and its indent");
+
+        // 2) 문항 제목: 필수 표시는 마지막 문단 끝, 접근성 이름은 일반 문자열
+        StackPanel questionTitle = Logical(view).OfType<StackPanel>()
+            .Single(p => System.Windows.Automation.AutomationProperties.GetName(p) == "화면 구성이 이해하기 쉬웠나요?");
+        Check(Plain((TextBlock)questionTitle.Children[^1]).EndsWith(" *")
+              && ((TextBlock)questionTitle.Children[0]).Inlines.OfType<Run>().Any(r => r.Text == "화면 구성" && r.TextDecorations == TextDecorations.Underline),
+            "[55-5] question title shows formatting and the required mark after the last paragraph");
+
+        // 3) 선택지: 세로·가로 서식, 접근성 이름은 일반 문구, 서식 없는 선택지는 기존 문구
+        var answerControls = (System.Collections.IDictionary)typeof(SurveyPopupView).GetField("_answerControls", flags)!.GetValue(view)!;
+        var first = ((Panel)answerControls[1001L]!).Children.OfType<RadioButton>().ToList();
+        RadioButton help = first.Single(r => ((Popup.Models.SurveyOption)r.Tag).OptionId == 1013);
+        RadioButton easy = first.Single(r => ((Popup.Models.SurveyOption)r.Tag).OptionId == 1011);
+        Check(help.Content is StackPanel helpPanel && helpPanel.Children.Count == 2 && ((TextBlock)helpPanel.Children[1]).Padding.Left == 40
+              && ((TextBlock)helpPanel.Children[1]).Inlines.OfType<Run>().All(r => r.FontStyle == FontStyles.Italic && r.FontSize == 12)
+              && System.Windows.Automation.AutomationProperties.GetName(help) == ((Popup.Models.SurveyOption)help.Tag).Text
+              && easy.Content is TextBlock,
+            "[55-6] vertical option shows formatted paragraphs, keeps the plain accessible name, plain options are unchanged");
+        RadioButton chip = ((Panel)answerControls[1002L]!).Children.OfType<RadioButton>().Single(r => ((Popup.Models.SurveyOption)r.Tag).OptionId == 1102);
+        Check(chip.Content is StackPanel chipPanel && ((TextBlock)chipPanel.Children[0]).Inlines.OfType<Run>().Single().FontSize == 16,
+            "[55-6] horizontal chip option shows its formatting");
+
+        // 4) 답변·채점 불변: 서식 선택지를 골라도 응답은 OptionId
+        help.IsChecked = true;
+        var collect = typeof(SurveyPopupView).GetMethod("CollectAnswers", flags)!;
+        var answers = ((System.Collections.IEnumerable)collect.Invoke(view, null)!).Cast<object>().ToList();
+        Check(answers.Any(a => (long)a.GetType().GetProperty("QuestionId")!.GetValue(a)! == 1001
+              && ((IEnumerable<long>)a.GetType().GetProperty("SelectedOptionIds")!.GetValue(a)!).SequenceEqual(new[] { 1013L })),
+            "[55-7] answering a formatted option still records its option id");
+
+        // 5) 일반 문자열 대체: 빈 배열·깨진 구조·글자 없는 문단이면 기존 문자열
+        foreach ((string label, string blocks) in new[] { ("empty", "[]"), ("broken", "[{\"runs\":5}]"), ("blank", "[{\"runs\":[{\"text\":\"  \"}]}]") })
+        {
+            var node = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(Sample(), jsonOptions))!.AsObject();
+            node["questions"]![0]!["titleBlocks"] = System.Text.Json.Nodes.JsonNode.Parse(blocks);
+            node["content"]!["surveyTitleBlocks"] = System.Text.Json.Nodes.JsonNode.Parse(blocks);
+            SurveyPopupView fallback = ViewOf(node.Deserialize<PopupResponseDto>(jsonOptions)!);
+            Check(((TextBlock)fallback.FindName("SurveyTitleText")).Visibility == Visibility.Visible
+                  && ((StackPanel)fallback.FindName("SurveyTitleRich")).Visibility == Visibility.Collapsed
+                  && Logical(fallback).OfType<TextBlock>().Any(t => t.Text == "화면 구성이 이해하기 쉬웠나요? *"),
+                $"[55-1] {label} formatting falls back to the plain strings");
+        }
+
+        // 6) VIDEO+QUIZ 머리말: 서식이 있으면 같은 문자열이어도 숨기지 않는다
+        var blocksOnly = new List<PopupTextBlockDto> { new() { Runs = new() { new() { Text = "영상 퀴즈", Bold = true } } } };
+        var collapse = typeof(SurveyPopupView).GetMethod("CollapseHeaderShownAbove", flags)!;
+        var withRich = new SurveyPopupView("영상 퀴즈", "설명", new(), titleBlocks: blocksOnly);
+        collapse.Invoke(withRich, new object[] { "영상 퀴즈", "설명" });
+        var plainOnly = new SurveyPopupView("영상 퀴즈", "설명", new());
+        collapse.Invoke(plainOnly, new object[] { "영상 퀴즈", "설명" });
+        Check(((StackPanel)withRich.FindName("SurveyTitleRich")).Visibility == Visibility.Visible
+              && ((TextBlock)withRich.FindName("SurveyDescriptionText")).Visibility == Visibility.Collapsed
+              && ((TextBlock)plainOnly.FindName("SurveyTitleText")).Visibility == Visibility.Collapsed,
+            "[55-8] a formatted quiz header stays visible while plain duplicates are still collapsed");
+
+        // 7) Demo 저장: 서식에서 일반 문자열 파생, 필드별 길이 상한
+        var demoJson = (JsonSerializerOptions)typeof(Popup.DemoOptionsWindow).GetField("JsonOptions", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var normalize = typeof(Popup.DemoOptionsWindow).GetMethod("NormalizeAndValidate", BindingFlags.Static | BindingFlags.NonPublic)!;
+        void Normalize(System.Text.Json.Nodes.JsonObject value)
+        {
+            try { normalize.Invoke(null, new object[] { value }); }
+            catch (TargetInvocationException exception) when (exception.InnerException != null) { throw exception.InnerException; }
+        }
+        var draft = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(Sample(), demoJson))!.AsObject();
+        draft["questions"]![0]!["titleBlocks"] = System.Text.Json.Nodes.JsonNode.Parse("[{\"runs\":[{\"text\":\"새 \"},{\"text\":\"제목\",\"bold\":true}]},{\"runs\":[{\"text\":\"둘째 줄\"}]}]");
+        Normalize(draft);
+        Check(draft["questions"]![0]!["title"]!.GetValue<string>() == "새 제목\n둘째 줄", "[55-4] demo save derives the plain title from its formatting");
+        draft["questions"]![0]!["options"]![0]!["textBlocks"] = System.Text.Json.Nodes.JsonNode.Parse(
+            "[{\"runs\":[{\"text\":\"" + new string('가', 1001) + "\"}]}]");
+        Check(Throws(() => Normalize(draft)), "[55-4] option formatting longer than 1000 characters is rejected");
+    }
+
+    private static bool Throws(Action action)
+    {
+        try { action(); return false; }
+        catch (ArgumentException) { return true; }
     }
 
     private static void CheckItalicOverhang38()

@@ -24,6 +24,10 @@ namespace Popup.Models
         /// </summary>
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>[TODO55] 문항 제목·설명 서식. 있으면 Title·Description 대신 표시한다.</summary>
+        public List<Popup.Dtos.PopupTextBlockDto>? TitleBlocks { get; set; }
+        public List<Popup.Dtos.PopupTextBlockDto>? DescriptionBlocks { get; set; }
+
         /// <summary>
         /// 질문의 입력 방식을 지정한다.
         /// SingleChoice, MultipleChoice, Text 중 하나다.

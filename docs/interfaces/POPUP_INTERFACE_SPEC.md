@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
+- 2026-10-18 초안(TODO55, 확정 전 · 서버 미반영): SURVEY·QUIZ 서식 필드 `content.surveyTitleBlocks`·`content.descriptionBlocks`·`questions[].titleBlocks`·`questions[].descriptionBlocks`·`options[].textBlocks`(§8.4.1). WPF 표시만 구현했으며 서버 저장·관리자 편집은 인계 대기. 산출물(Excel·Word·PDF)에는 확정 후 반영.
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
@@ -612,6 +613,40 @@ VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRati
 
 SURVEY는 정답 키가 필요하지 않다.
 
+### 8.4.1 설문·퀴즈 서식 필드 (TODO55 초안, 확정 전)
+
+TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문자열 필드 옆에 둔다. QUIZ·VIDEO+QUIZ도 같다.
+
+| 서식 필드 | 대응 일반 문자열 | 일반 문자열 상한 |
+|---|---|---|
+| `content.surveyTitleBlocks` | `content.surveyTitle` | 200 |
+| `content.descriptionBlocks` | `content.description` | 2000 |
+| `questions[].titleBlocks` | `questions[].title` | 1000 |
+| `questions[].descriptionBlocks` | `questions[].description` | 2000 |
+| `questions[].options[].textBlocks` | `options[].text` | 1000 |
+
+- 서식이 유효하고 글자가 있으면 서식으로 표시하고, `null`·누락·`[]`·글자 없는 문단만·구조 오류이면 일반 문자열로 표시한다(기존 데이터 그대로 동작).
+- 서식이 있으면 서버가 일반 문자열을 서식에서 파생해 함께 보낸다(문단 사이 줄바꿈). WPF는 일반 문자열을 접근성 이름·VIDEO+QUIZ 머리말 비교·대체 표시에 쓴다.
+- 여러 문단·들여쓰기 허용, 첫 문단만 쓰지 않는다. 필수 표시 `*`는 문항 제목 마지막 문단 끝에 붙는다.
+- `questionId`·`optionId`·`value`·정답·배점·필수/복수 선택과 결과 `answers`는 서식과 무관하다. 주관식 답변·`correctAnswer`는 서식 대상이 아니다.
+- VIDEO+QUIZ에서 퀴즈 머리말이 서식이면 영상 영역과 문자열이 같아도 숨기지 않는다(일반 문자열이 같을 때만 숨김, 설계 53-16).
+- 저장 위치(문항·선택지 서식)는 서버가 정한다(TODO55-4). 예:
+
+```json
+{
+  "questionId": 1001,
+  "title": "화면 구성이 이해하기 쉬웠나요?",
+  "titleBlocks": [ { "runs": [ { "text": "화면 구성", "underline": true }, { "text": "이 이해하기 쉬웠나요?" } ] } ],
+  "questionType": "SINGLE_CHOICE",
+  "isRequired": true,
+  "options": [
+    { "optionId": 1011, "value": "EASY", "text": "쉽게 이해할 수 있었습니다" },
+    { "optionId": 1102, "value": "IMAGE", "text": "이미지",
+      "textBlocks": [ { "runs": [ { "text": "이미지", "color": "#B42318", "size": 16 } ] } ] }
+  ]
+}
+```
+
 ---
 
 ## 8.5 QUIZ
@@ -750,7 +785,9 @@ passingScore 이상
 |---|---|---|---|---|
 | questionId | integer | O | `0` | 결과 answers의 참조 ID. 실제 서버는 유효 ID 제공 |
 | title | string | O | `""` | 질문 제목 |
+| titleBlocks | array | 선택(초안) | `null` | 질문 제목 서식(§8.4.1) |
 | description | string | 선택 | `""` | 부가 설명 |
+| descriptionBlocks | array | 선택(초안) | `null` | 부가 설명 서식(§8.4.1) |
 | questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT |
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
 | isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
@@ -767,6 +804,7 @@ passingScore 이상
 | optionId | integer | O | `0` | 제출 시 optionIds에 사용. 실제 서버는 유효 ID 제공 |
 | value | string | 선택 | `""` | 선택지 업무 값 |
 | text | string | O | `""` | 화면 표시 문구 |
+| textBlocks | array | 선택(초안) | `null` | 표시 문구 서식(§8.4.1). 접근성 이름·응답은 `text`·`optionId` 그대로 |
 | isCorrect | boolean | QUIZ 선택형 채점 문항 | `null` | 정답 여부. SURVEY에서는 생략 가능 |
 
 ---

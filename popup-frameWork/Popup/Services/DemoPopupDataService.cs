@@ -250,13 +250,23 @@ namespace Popup.Services
                     "showFooter": false,
                     "content": {
                       "surveyTitle": "교육 만족도 설문",
-                      "description": "가로·세로 단일/복수 선택과 주관식을 확인할 수 있는 설문입니다. 필수 문항에 답하고 추가 의견은 자유롭게 남겨주세요."
+                      "surveyTitleBlocks": [
+                        { "runs": [ { "text": "교육 " }, { "text": "만족도", "bold": true, "color": "#1F4E8C" }, { "text": " 설문" } ] }
+                      ],
+                      "description": "가로·세로 단일/복수 선택과 주관식을 확인할 수 있는 설문입니다.\n필수 문항에 답하고 추가 의견은 자유롭게 남겨주세요.",
+                      "descriptionBlocks": [
+                        { "runs": [ { "text": "가로·세로 단일/복수 선택과 주관식을 확인할 수 있는 설문입니다." } ] },
+                        { "indent": 1, "runs": [ { "text": "필수 문항", "bold": true }, { "text": "에 답하고 추가 의견은 자유롭게 남겨주세요.", "italic": true } ] }
+                      ]
                     },
                     "questions": [
                       {
                         "questionId": 1001,
                         "optionLayout": "VERTICAL",
                         "title": "화면 구성이 이해하기 쉬웠나요?",
+                        "titleBlocks": [
+                          { "runs": [ { "text": "화면 구성", "underline": true }, { "text": "이 이해하기 쉬웠나요?" } ] }
+                        ],
                         "questionType": "SINGLE_CHOICE",
                         "isRequired": true,
                         "options": [
@@ -273,7 +283,11 @@ namespace Popup.Services
                           {
                             "optionId": 1013,
                             "value": "HELP",
-                            "text": "추가 안내가 필요합니다. 화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다."
+                            "text": "추가 안내가 필요합니다.\n화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다.",
+                            "textBlocks": [
+                              { "runs": [ { "text": "추가 안내가 필요합니다.", "bold": true } ] },
+                              { "indent": 1, "runs": [ { "text": "화면의 문항과 선택지를 자세히 설명하는 긴 안내 문구가 팝업의 오른쪽 영역을 넘어가지 않고 다음 줄로 이어지는지 확인합니다.", "italic": true, "size": 12 } ] }
+                            ]
                           },
                           {
                             "optionId": 1014,
@@ -297,7 +311,8 @@ namespace Popup.Services
                           {
                             "optionId": 1102,
                             "value": "IMAGE",
-                            "text": "이미지"
+                            "text": "이미지",
+                            "textBlocks": [ { "runs": [ { "text": "이미지", "color": "#B42318", "size": 16 } ] } ]
                           },
                           {
                             "optionId": 1103,

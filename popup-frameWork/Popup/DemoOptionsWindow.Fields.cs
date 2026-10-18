@@ -24,7 +24,10 @@ namespace Popup
             ["surveyTitle"]="설문·퀴즈 제목", ["title"]="문항 제목", ["optionLayout"]="선택지 배치",
             ["questionType"]="문항 유형", ["isRequired"]="필수 응답", ["isScored"]="채점 대상", ["questionScore"]="문항 배점",
             ["correctAnswer"]="주관식 정답", ["answerMatchMode"]="주관식 정답 일치 방식", ["value"]="선택지 값",
-            ["text"]="선택지 문구", ["isCorrect"]="정답 선택지"
+            ["text"]="선택지 문구", ["isCorrect"]="정답 선택지",
+            // [TODO55] 설문·퀴즈 서식(JSON). 있으면 저장 시 옆 일반 문자열을 서식에서 다시 만든다.
+            ["surveyTitleBlocks"]="설문·퀴즈 제목 서식 (JSON) · 있으면 제목 대신 표시", ["descriptionBlocks"]="설명 서식 (JSON) · 있으면 설명 대신 표시",
+            ["titleBlocks"]="문항 제목 서식 (JSON) · 있으면 문항 제목 대신 표시"
         };
 
         /*

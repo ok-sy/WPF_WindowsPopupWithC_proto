@@ -1,4 +1,7 @@
-﻿namespace Popup.Dtos
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace Popup.Dtos
 {
     /*
      * 설문 또는 퀴즈의 선택지 하나를 담는 DTO
@@ -30,6 +33,10 @@
          */
         public string Text { get; set; } =
             string.Empty;
+
+        // [TODO55] 선택지 표시 문구 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Text 대신 표시하고, 없거나 비었거나 깨졌으면 Text을 표시한다.
+        [JsonConverter(typeof(LenientTextBlocksConverter))]
+        public List<PopupTextBlockDto>? TextBlocks { get; set; }
 
         /*
          * [설계 12 §4 — 로컬 채점] 정답 선택지 여부.

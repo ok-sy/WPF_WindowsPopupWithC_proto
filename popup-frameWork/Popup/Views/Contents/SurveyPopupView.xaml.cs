@@ -1,3 +1,4 @@
+using Popup.Dtos;
 using Popup.Models;
 using Popup.Services;
 using System;
@@ -35,6 +36,8 @@ namespace Popup.Views.Contents
         /// </summary>
         internal void CollapseHeaderShownAbove(string? shownTitle, string? shownDescription)
         {
+            // [TODO55-8] 숨기는 대상은 일반 문자열 TextBlock뿐이다. 서식 머리말(SurveyTitleRich·SurveyDescriptionRich)은
+            // 영상 영역(일반 문자열)과 표시가 다르므로 문자열이 같아도 그대로 둔다.
             if (SameText(SurveyTitleText.Text, shownTitle)) SurveyTitleText.Visibility = Visibility.Collapsed;
             if (SameText(SurveyDescriptionText.Text, shownDescription)) SurveyDescriptionText.Visibility = Visibility.Collapsed;
 
@@ -128,12 +131,17 @@ namespace Popup.Views.Contents
         string description,
         List<SurveyQuestion> questions,
         bool isQuizMode = false,
-        double? passingScore = null)
+        double? passingScore = null,
+        IReadOnlyList<PopupTextBlockDto>? titleBlocks = null,
+        IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null)
         {
             InitializeComponent();
 
             SurveyTitleText.Text = title;
             SurveyDescriptionText.Text = description;
+            // [TODO55] 서식이 있으면 문단으로 표시하고, 일반 문자열 TextBlock은 숨긴 채 비교·접근성용으로 유지한다.
+            ShowRichInstead(SurveyTitleText, SurveyTitleRich, titleBlocks);
+            ShowRichInstead(SurveyDescriptionText, SurveyDescriptionRich, descriptionBlocks);
 
             _questions =
                 questions ?? new List<SurveyQuestion>();
@@ -216,6 +224,15 @@ namespace Popup.Views.Contents
                 : string.Empty;
 
             titleText.Text = $"{question.Title}{requiredMark}";
+            // [TODO55] 문항 제목 서식: 문단마다 같은 기본 글꼴로 표시하고 필수 표시는 마지막 문단 끝에 붙인다.
+            FrameworkElement titleElement = titleText;
+            List<TextBlock> titleParagraphs = CreateRichParagraphs(question.TitleBlocks, titleText);
+            if (titleParagraphs.Count > 0)
+            {
+                if (requiredMark.Length > 0) titleParagraphs[^1].Inlines.Add(new System.Windows.Documents.Run(requiredMark));
+                titleElement = StackOf(titleParagraphs, question.Title);
+                _questionTitleTexts.AddRange(titleParagraphs);
+            }
             Grid titleRow = new Grid();
             titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -228,13 +245,22 @@ namespace Popup.Views.Contents
                 FontWeight = FontWeights.SemiBold,
                 Foreground = (Brush)FindResource("SurveyMutedText")
             });
-            Grid.SetColumn(titleText, 1);
-            titleText.VerticalAlignment = VerticalAlignment.Center;
-            titleRow.Children.Add(titleText);
+            Grid.SetColumn(titleElement, 1);
+            titleElement.VerticalAlignment = VerticalAlignment.Center;
+            titleRow.Children.Add(titleElement);
             cardPanel.Children.Add(titleRow);
-            _questionTitleTexts.Add(titleText);
+            if (titleElement == titleText) _questionTitleTexts.Add(titleText);
 
-            if (!string.IsNullOrWhiteSpace(question.Description))
+            var descriptionTemplate = new TextBlock { FontSize = 13, Foreground = (Brush)FindResource("SurveyMutedText") };
+            List<TextBlock> descriptionParagraphs = CreateRichParagraphs(question.DescriptionBlocks, descriptionTemplate);
+            if (descriptionParagraphs.Count > 0)
+            {
+                StackPanel descriptionPanel = StackOf(descriptionParagraphs, question.Description);
+                descriptionPanel.Margin = new Thickness(0, 6, 0, 0);
+                cardPanel.Children.Add(descriptionPanel);
+                _questionDescriptionTexts.AddRange(descriptionParagraphs);
+            }
+            else if (!string.IsNullOrWhiteSpace(question.Description))
             {
                 TextBlock descriptionText = new TextBlock
                 {
@@ -302,7 +328,8 @@ namespace Popup.Views.Contents
                 foreach (FrameworkElement child in panel.Children)
                 {
                     child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
-                    if (child is ContentControl control && control.Content is TextBlock label)
+                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다.
+                    if (child is ContentControl control && control.Content is FrameworkElement label)
                         label.MaxWidth = Math.Max(0, child.MaxWidth - control.Padding.Left - control.Padding.Right
                             - control.BorderThickness.Left - control.BorderThickness.Right - (question.HorizontalOptions ? 0 : 28));
                 }
@@ -347,6 +374,53 @@ namespace Popup.Views.Contents
             }
         }
 
+        /*
+         * [TODO55] 서식 문단 공통 처리. 일반 문자열 TextBlock(template)의 기본 글꼴·크기·굵기·색·줄 높이를 문단에 옮기고,
+         * 구간(Run)에 지정된 서식은 그대로 우선한다. 표시할 글자가 없으면 빈 목록(일반 문자열 사용).
+         */
+        private static List<TextBlock> CreateRichParagraphs(IReadOnlyList<PopupTextBlockDto>? blocks, TextBlock template)
+        {
+            List<TextBlock> paragraphs = PopupRichText.CreateParagraphs(blocks, null);
+            if (paragraphs.All(p => p.Inlines.OfType<System.Windows.Documents.Run>().All(r => string.IsNullOrWhiteSpace(r.Text))))
+                return new List<TextBlock>();
+            foreach (TextBlock paragraph in paragraphs)
+            {
+                paragraph.FontFamily = template.FontFamily;
+                paragraph.FontSize = template.FontSize;
+                paragraph.FontWeight = template.FontWeight;
+                paragraph.Foreground = template.Foreground;
+                if (!double.IsNaN(template.LineHeight)) paragraph.LineHeight = template.LineHeight;
+                PopupRichText.ReserveItalicOverhang(paragraph);
+            }
+            return paragraphs;
+        }
+
+        private static StackPanel StackOf(IEnumerable<TextBlock> paragraphs, string plainText)
+        {
+            var panel = new StackPanel();
+            foreach (TextBlock paragraph in paragraphs) panel.Children.Add(paragraph);
+            System.Windows.Automation.AutomationProperties.SetName(panel, plainText);
+            return panel;
+        }
+
+        private static void ShowRichInstead(TextBlock plain, StackPanel host, IReadOnlyList<PopupTextBlockDto>? blocks)
+        {
+            List<TextBlock> paragraphs = CreateRichParagraphs(blocks, plain);
+            if (paragraphs.Count == 0) return;
+            foreach (TextBlock paragraph in paragraphs) host.Children.Add(paragraph);
+            System.Windows.Automation.AutomationProperties.SetName(host, plain.Text);
+            host.Visibility = Visibility.Visible;
+            plain.Visibility = Visibility.Collapsed;
+        }
+
+        /* [TODO55] 선택지 표시: 서식이 있으면 문단 패널, 없으면 기존 일반 문구. 접근성 이름은 호출부에서 일반 문구(Text)로 둔다. */
+        private static FrameworkElement CreateOptionContent(SurveyOption option, bool horizontal)
+        {
+            TextBlock plain = CreateOptionText(option.Text, horizontal);
+            List<TextBlock> paragraphs = CreateRichParagraphs(option.TextBlocks, plain);
+            return paragraphs.Count == 0 ? plain : StackOf(paragraphs, option.Text);
+        }
+
         private static TextBlock CreateOptionText(string text, bool horizontal)
         {
             TextBlock label = horizontal ? new TextBlock() : new StableChoiceText();
@@ -371,7 +445,7 @@ namespace Popup.Views.Contents
                 {
                     Style = (Style)FindResource(question.HorizontalOptions ? "SurveyChoiceChipStyle" : "SurveyRadioButtonStyle"),
                     Margin = GetOptionMargin(question.HorizontalOptions, isLast),
-                    Content = CreateOptionText(option.Text, question.HorizontalOptions),
+                    Content = CreateOptionContent(option, question.HorizontalOptions),
                     Tag = option,
                     GroupName = $"Question_{question.QuestionId}"
                 };
@@ -413,7 +487,7 @@ namespace Popup.Views.Contents
                             : "SurveyCheckBoxRowStyle"),
                     HorizontalAlignment = question.HorizontalOptions ? HorizontalAlignment.Left : HorizontalAlignment.Stretch,
                     Margin = GetOptionMargin(question.HorizontalOptions, isLast),
-                    Content = CreateOptionText(option.Text, question.HorizontalOptions),
+                    Content = CreateOptionContent(option, question.HorizontalOptions),
                     Tag = option
                 };
 

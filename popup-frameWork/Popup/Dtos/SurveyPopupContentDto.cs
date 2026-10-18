@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Popup.Dtos
 {
@@ -25,6 +26,14 @@ namespace Popup.Dtos
          */
         public string Description { get; set; } =
             string.Empty;
+
+        // [TODO55] 콘텐츠 제목 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 SurveyTitle 대신 표시하고, 없거나 비었거나 깨졌으면 SurveyTitle을 표시한다.
+        [JsonConverter(typeof(LenientTextBlocksConverter))]
+        public List<PopupTextBlockDto>? SurveyTitleBlocks { get; set; }
+
+        // [TODO55] 콘텐츠 설명 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Description 대신 표시하고, 없거나 비었거나 깨졌으면 Description을 표시한다.
+        [JsonConverter(typeof(LenientTextBlocksConverter))]
+        public List<PopupTextBlockDto>? DescriptionBlocks { get; set; }
 
         /*
          * [설계 18 L-0 — C-8 삭제] 읽는 곳이 없던 ValidateRequiredQuestions 플래그를 삭제했다.

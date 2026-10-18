@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-07 — TODO55 설문·퀴즈 서식 계약 초안·WPF 표시
+
+- 이유: TEXT 서식을 설문·퀴즈의 제목·설명·문항·선택지로 확장(TODO55). 서버 저장 경로 결정 전이라 계약 초안과 WPF 표시를 먼저 진행.
+- 결정: 필드 이름 `<필드>Blocks`(surveyTitleBlocks·descriptionBlocks·titleBlocks·descriptionBlocks·options[].textBlocks), TEXT와 같은 문단·구간 구조. 서식이 없거나 깨지면 일반 문자열. 명세에는 초안으로 표시.
+- 변경: 55-1 필드 매핑·우선순위·상한·저장 경로 인계를 TODO55에 기록. WPF DTO·모델·Factory·SurveyPopupView 서식 표시(머리말·문항 제목/설명·선택지, 필수 표시 위치, 접근성 이름 유지, 선택지 폭 제한). Demo 설문 샘플 서식 추가, 옵션 창 `*Blocks` JSON 편집과 저장 시 일반 문자열 파생·상한 검사. 인터페이스 명세 §8.4.1·§9 표(초안), ALL 명세 행 추가.
+- 주요 파일: popup-frameWork/Popup/Dtos/Survey*Dto.cs, Models/SurveyQuestion.cs·SurveyOption.cs, Factories/PopupFactory.cs, Views/Contents/SurveyPopupView.xaml(.cs), Services/DemoPopupDataService.cs, DemoOptionsWindow(.Fields).cs, scripts/RichTextTests/Program.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. RichTextTests 97건(신규 12), ApiDemoTests 69건, PopupWindowTests 197건 통과. 변이 확인(선택지 서식 표시 제거 시 실패). 처음 넣은 VIDEO+QUIZ 머리말 조건은 변이로도 결과가 같아 불필요함을 확인하고 제거(숨김 대상이 일반 문자열 TextBlock뿐). Demo 앱 설문 샘플 실화면 캡처 확인. 서버·관리자 웹·미리보기 미변경, Excel/Word/PDF 미반영(확정 후), MINIMAL 변경 없음.
+- 상태: 커밋에 포함(커밋 직전 기록). 55-3·55-4 Front/Server 인계 대기.
+
 ## 2026-10-18-06 — TODO54-6~11 Demo 연결·로그·실행 상태·초기화 구분
 
 - 이유: API 모드 연결 입력이 작업 영역을 차지하고 현재 대상·인증 상태가 한눈에 보이지 않음. 로그 종류 구분과 실행 중 상태 표시가 없고 로컬 모드는 진행 중 버튼이 막히지 않음.

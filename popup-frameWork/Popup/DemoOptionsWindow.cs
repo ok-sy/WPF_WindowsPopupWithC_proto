@@ -316,7 +316,7 @@ namespace Popup
             foreach (Field field in _fields.Where(f => f.Applicable))
             {
                 JsonNode? node = field.Parse();
-                if (node is null && field.Key == "textBlocks") field.Target.Remove("textBlocks");
+                if (node is null && field.Key.EndsWith("Blocks", StringComparison.Ordinal)) field.Target.Remove(field.Key);
                 else field.Target[field.Key] = node;
             }
             NormalizeAndValidate(_draft);
@@ -347,6 +347,38 @@ namespace Popup
             // [설계 28] 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
             if (draft["popupType"]!.GetValue<string>() == "TEXT" && content["textBlocks"] is JsonArray textBlocks)
                 content["plainText"] = ValidateTextBlocks(textBlocks);
+            // [TODO55] 설문·퀴즈 서식도 서버와 같이 검증하고 일반 문자열을 서식에서 다시 만든다(독립 편집 금지). 상한은 저장소 컬럼 길이.
+            if (draft["popupType"]!.GetValue<string>() is "SURVEY" or "QUIZ")
+            {
+                DeriveFromBlocks(content, "surveyTitleBlocks", "surveyTitle", "콘텐츠 제목", 200);
+                DeriveFromBlocks(content, "descriptionBlocks", "description", "콘텐츠 설명", 2000);
+                if (draft["questions"] is JsonArray questions)
+                    for (int i = 0; i < questions.Count; i++)
+                    {
+                        var question = questions[i]!.AsObject();
+                        DeriveFromBlocks(question, "titleBlocks", "title", $"{i + 1}번 문항 제목", 1000);
+                        DeriveFromBlocks(question, "descriptionBlocks", "description", $"{i + 1}번 문항 설명", 2000);
+                        if (question["options"] is JsonArray options)
+                            for (int j = 0; j < options.Count; j++)
+                                DeriveFromBlocks(options[j]!.AsObject(), "textBlocks", "text", $"{i + 1}번 문항 {j + 1}번 선택지", 1000);
+                    }
+            }
+        }
+
+        /* [TODO55] 서식이 있고 글자가 있으면 일반 문자열을 파생한다. 빈 서식([] 또는 글자 없는 문단만)은 서식 없음으로 지운다. */
+        private static void DeriveFromBlocks(JsonObject target, string blocksKey, string plainKey, string label, int maxLength)
+        {
+            if (target[blocksKey] is not JsonArray blocks) return;
+            string plain;
+            try { plain = ValidateTextBlocks(blocks); }
+            catch (ArgumentException exception) { throw new ArgumentException(label + " " + exception.Message); }
+            if (plain.Trim().Length == 0)
+            {
+                target.Remove(blocksKey);
+                return;
+            }
+            if (plain.Length > maxLength) throw new ArgumentException($"{label} 서식: 글자는 {maxLength}자 이하여야 합니다.");
+            target[plainKey] = plain;
         }
 
         private void AddObjectFields(StackPanel panel, JsonObject target, Type dtoType, bool quiz, bool videoSection = false)
@@ -357,7 +389,14 @@ namespace Popup
                 if (videoSection && key == "description") continue; // Combined quiz and video share this description.
                 if (key is "questionId" or "optionId" or "options") continue;
                 if (!quiz && key is "isScored" or "questionScore" or "correctAnswer" or "answerMatchMode" or "isCorrect") continue;
-                if (key == "textBlocks") { AddTextBlocksField(panel, target, Labels.GetValueOrDefault(key, property.Name)); continue; }
+                // [TODO55] *Blocks(서식 JSON)는 모두 같은 편집기로 다룬다. 선택지의 textBlocks는 TEXT 본문과 뜻이 달라 라벨을 따로 둔다.
+                if (key.EndsWith("Blocks", StringComparison.Ordinal))
+                {
+                    string blocksLabel = dtoType == typeof(SurveyOptionDto) && key == "textBlocks"
+                        ? "선택지 문구 서식 (textBlocks JSON) · 있으면 선택지 문구 대신 표시" : Labels.GetValueOrDefault(key, property.Name);
+                    AddTextBlocksField(panel, target, blocksLabel, key);
+                    continue;
+                }
                 string[]? choices = key switch
                 {
                     "imageSizeMode" => new[] { "ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL" },
@@ -375,7 +414,7 @@ namespace Popup
         /*
          * [설계 28] Demo는 서식 편집기 대신 textBlocks JSON을 직접 편집한다. 빈 값이면 서식 본문을 쓰지 않는다.
          */
-        private void AddTextBlocksField(StackPanel panel, JsonObject target, string label)
+        private void AddTextBlocksField(StackPanel panel, JsonObject target, string label, string key = "textBlocks")
         {
             var row = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
             panel.Children.Add(row);
@@ -394,7 +433,7 @@ namespace Popup
             var pretty = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
             var text = new TextBox
             {
-                Text = target["textBlocks"] is JsonArray array ? array.ToJsonString(pretty) : "",
+                Text = target[key] is JsonArray array ? array.ToJsonString(pretty) : "",
                 Padding = new Thickness(8), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Malgun Gothic"),
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MinHeight = 120, MaxHeight = 280,
             };
@@ -402,7 +441,7 @@ namespace Popup
             row.Children.Add(text);
             var note = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Collapsed };
             row.Children.Add(note);
-            Register(target, "textBlocks", label, row, text, changed, note,
+            Register(target, key, label, row, text, changed, note,
                 () =>
                 {
                     string input = text.Text.Trim();

@@ -51,6 +51,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
+| SurveyTitleBlocks · DescriptionBlocks · questions[].TitleBlocks · DescriptionBlocks · options[].TextBlocks | 지원(초안, TODO55) | N | `null` | 설문·퀴즈 서식(TEXT textBlocks 구조). 있으면 일반 문자열 대신 표시, 없거나 깨졌으면 일반 문자열. 답변·채점은 ID 그대로 |
 | ShowLater | 지원 | N | `false` | "나중에 보기" 버튼 표시(TODO52-2). `ShowFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 LATER |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증). 체크박스 문구도 같은 값으로 `{N}일간 보지 않기` 표시 |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
