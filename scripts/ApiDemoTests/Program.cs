@@ -23,6 +23,8 @@ using Popup.Views.Windows;
  *       401 재로그인 1회 후 같은 요청 재전송, 결과 전송 실패 시 같은 resultId·본문 재전송·미전송 시 조회 보류,
  *       popup=null·빈 응답·잘못된 JSON·HTTP 500·팝업 생성 오류의 구분 기록, 연결별 결과 큐 파일 분리
  *  51-8 인메모리 Demo 화면 구성 유지
+ *  54-2 모드 표시·모드별 하단 고정 실행 영역, 54-3~5 상세옵션 그룹 탭·조건부 표시(숨김/비활성+사유)·즉시 검증·변경 표시·탭별 기본값 복원,
+ *       숨김 입력은 적용하지 않고 값 보존, 복사본 편집(원본 DTO 불변)
  * 개발계/검증계 실제 서버 확인은 이 검증의 범위가 아니다(설계 51-9 수동 확인 항목).
  *   실행: dotnet run --project scripts/ApiDemoTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다. 실제 창을 잠깐 띄운다.
@@ -47,9 +49,10 @@ internal static class Program
         CheckRecordMasking();
         CheckConnectionKey();
         CheckInMemoryDemoLayout();
+        CheckDemoOptions54();
         using MockServer server = new();
         CheckApiDemoFlow(server);
-        Console.WriteLine($"PASS: {_checks} API demo checks (design 51)");
+        Console.WriteLine($"PASS: {_checks} API demo checks (design 51, TODO54)");
     }
 
     private static void CheckLaunchArguments()
@@ -104,7 +107,85 @@ internal static class Program
         Check(((FrameworkElement)window.FindName("ApiPanel")).Visibility == Visibility.Collapsed
               && ((FrameworkElement)window.FindName("InMemoryPanel")).Visibility == Visibility.Visible,
             "[51-8] in-memory demo keeps its panel and hides the API panel");
+        Check(((FrameworkElement)window.FindName("InMemoryActionBar")).Visibility == Visibility.Visible
+              && ((FrameworkElement)window.FindName("ApiActionBar")).Visibility == Visibility.Collapsed
+              && ((TextBlock)window.FindName("ModeBadgeText")).Text == "로컬 샘플",
+            "[54-2] in-memory demo shows its fixed action bar and the local mode badge");
         window.Close();
+    }
+
+    /* [TODO54-3~5] 상세옵션 창: 그룹 탭, 조건부 표시, 즉시 검증, 변경 표시, 탭별 복원, 복사본 편집. */
+    private static void CheckDemoOptions54()
+    {
+        PopupResponseDto Sample(string id) => DemoPopupDataService.CreatePopups().Single(p => p.PopupId == id);
+        string[] Tabs(DemoOptionsWindow editor) => ((TabControl)typeof(DemoOptionsWindow).GetField("_tabs", Flags)!.GetValue(editor)!)
+            .Items.Cast<TabItem>().Select(t => (string)t.Header).ToArray();
+        Check(Tabs(new DemoOptionsWindow(Sample("DEMO-TEXT-001"))).SequenceEqual(new[] { "창·배치", "헤더·푸터", "콘텐츠", "완료·동작", "고급" }),
+            "[54-3] TEXT options are grouped into tabs");
+        Check(Tabs(new DemoOptionsWindow(Sample("DEMO-QUIZ-001"))).SequenceEqual(new[] { "창·배치", "헤더·푸터", "콘텐츠", "완료·동작", "문항·선택지", "고급" }),
+            "[54-3] QUIZ adds the question tab");
+
+        PopupResponseDto sample = Sample("DEMO-TEXT-001");
+        var editor = new DemoOptionsWindow(sample, Sample("DEMO-TEXT-001"));
+        var draft = (System.Text.Json.Nodes.JsonObject)typeof(DemoOptionsWindow).GetField("_draft", Flags)!.GetValue(editor)!;
+        var inputs = (System.Collections.IDictionary)typeof(DemoOptionsWindow).GetField("_inputs", Flags)!.GetValue(editor)!;
+        Control Input(string key) => (Control)inputs[(draft, key)]!;
+        StackPanel Row(string key) => (StackPanel)Input(key).Parent;
+        TextBlock Note(string key) => (TextBlock)Row(key).Children[^1];
+        TextBlock Changed(string key) => (TextBlock)((DockPanel)Row(key).Children[0]).Children[0];
+        PopupResponseDto Read() => (PopupResponseDto)typeof(DemoOptionsWindow).GetMethod("ReadResult", Flags)!.Invoke(editor, null)!;
+        bool ReadFails()
+        {
+            try { Read(); return false; }
+            catch (TargetInvocationException exception) when (exception.InnerException is ArgumentException) { return true; }
+        }
+
+        // 같은 탭 상위 옵션 → 하위 숨김, 창 크기 방식 → 비활성 + 사유
+        Check(Row("hideDays").Visibility == Visibility.Collapsed, "[54-4] hide days is hidden while do-not-show-again is off");
+        Check(!Row("width").IsEnabled && Note("width").Visibility == Visibility.Visible && Note("width").Text.Contains("FIXED"),
+            "[54-4] fixed width is disabled with a reason under RATIO");
+        ((ComboBox)Input("sizeMode")).SelectedItem = "FIXED";
+        Check(Row("width").IsEnabled && !Row("widthRatio").IsEnabled && Note("width").Visibility == Visibility.Collapsed,
+            "[54-4] switching to FIXED enables width and disables the ratio");
+        ((CheckBox)Input("showDoNotShowAgain")).IsChecked = true;
+        Check(Row("hideDays").Visibility == Visibility.Visible, "[54-4] hide days appears right under do-not-show-again");
+
+        // 즉시 검증·변경 표시
+        ((TextBox)Input("hideDays")).Text = "0";
+        Check(Note("hideDays").Visibility == Visibility.Visible && Note("hideDays").Text.Contains("1~3650") && ReadFails(),
+            "[54-5] invalid hide days is reported while typing and blocks apply");
+        ((TextBox)Input("hideDays")).Text = "9";
+        Check(Note("hideDays").Visibility == Visibility.Collapsed && Changed("hideDays").Visibility == Visibility.Visible
+              && Changed("sizeMode").Visibility == Visibility.Visible && Changed("title").Visibility == Visibility.Collapsed,
+            "[54-5] valid input clears the error and changed fields are marked");
+
+        // 숨긴 입력은 적용하지 않지만 값은 보존
+        ((CheckBox)Input("showDoNotShowAgain")).IsChecked = false;
+        PopupResponseDto hidden = Read();
+        Check(hidden.HideDays == sample.HideDays && !hidden.ShowDoNotShowAgain && hidden.SizeMode == "FIXED",
+            "[54-4] a hidden child input is not applied");
+        ((CheckBox)Input("showDoNotShowAgain")).IsChecked = true;
+        Check(((TextBox)Input("hideDays")).Text == "9", "[54-4] hiding keeps the typed child value");
+
+        // 다른 탭 설정 → 비활성 + 사유, 같은 탭 하위 → 숨김
+        ((CheckBox)Input("showFooter")).IsChecked = false;
+        Check(!Row("showLater").IsEnabled && Note("showLater").Text.Contains("푸터 표시") && Row("footerAction").Visibility == Visibility.Collapsed,
+            "[54-4] footer off disables cross-tab footer actions with a reason and hides same-tab footer inputs");
+        ((CheckBox)Input("showFooter")).IsChecked = true;
+
+        // 탭별 기본값 복원: 완료·동작만 되돌리고 창·배치 변경은 유지
+        var tabs = (TabControl)typeof(DemoOptionsWindow).GetField("_tabs", Flags)!.GetValue(editor)!;
+        TabItem completion = tabs.Items.Cast<TabItem>().Single(t => (string)t.Header == "완료·동작");
+        typeof(DemoOptionsWindow).GetMethod("ResetTab", Flags)!.Invoke(editor, new object[] { completion });
+        Check(((CheckBox)Input("showDoNotShowAgain")).IsChecked == sample.ShowDoNotShowAgain
+              && ((TextBox)Input("hideDays")).Text == (sample.HideDays?.ToString() ?? "")
+              && Changed("showDoNotShowAgain").Visibility == Visibility.Collapsed
+              && (string)((ComboBox)Input("sizeMode")).SelectedItem == "FIXED",
+            "[54-5] tab reset restores only that tab's fields");
+
+        // 복사본 편집: 원본 DTO는 그대로
+        Check(sample.SizeMode == "RATIO" && !sample.ShowDoNotShowAgain, "[54-5] editing never touches the original sample");
+        editor.Close();
     }
 
     private static void CheckApiDemoFlow(MockServer server)
@@ -118,6 +199,10 @@ internal static class Program
         Check(((FrameworkElement)window.FindName("ApiPanel")).Visibility == Visibility.Visible
               && ((FrameworkElement)window.FindName("InMemoryPanel")).Visibility == Visibility.Collapsed,
             "[51-8] API demo shows the API panel and hides in-memory controls");
+        Check(((FrameworkElement)window.FindName("ApiActionBar")).Visibility == Visibility.Visible
+              && ((FrameworkElement)window.FindName("InMemoryActionBar")).Visibility == Visibility.Collapsed
+              && ((TextBlock)window.FindName("ModeBadgeText")).Text == "API 연결",
+            "[54-2] API demo shows the query action bar outside the scroll area and the API mode badge");
         ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"logonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         ((TextBox)window.FindName("ApiDevUserIdText")).Text = string.Empty;
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{\"probe\":1}";

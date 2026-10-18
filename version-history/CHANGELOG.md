@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-05 — TODO54-1~5 Demo 화면 구조·상세옵션 UX 정리
+
+- 이유: Demo 기능 증가로 API 모드 주 실행이 스크롤 아래에 묻히고, 상세옵션이 섞인 그룹·비활성만으로 된 조건 표시·기본값/변경값 구분 부재로 탐색과 입력이 어려움.
+- 결정: 모드는 실행 인자 유지 + 화면 표시. 상세옵션은 모달 유지·그룹 탭 정리. 복사본 편집 후 설정 적용 때만 반영, 취소 시 원본 유지. API 수신 원문은 편집하지 않음.
+- 변경: 54-1 현행 기능 19개를 유지/통합/접기/이동으로 분류하고 옵션 창 문제·작은 창 문제를 TODO54에 기록. DemoWindow — 모드 배지·전환 안내, 왼쪽 패널 하단 고정 실행 영역(로컬: 샘플 실행·전체 실행·상태 초기화, API: 팝업 조회·미전송 재전송), 안내 문구 정정. DemoOptionsWindow — 그룹 탭 6종, 같은 탭 하위 입력 숨김·다른 탭/모드 의존 입력 비활성+사유, 범위·샘플 기본값 안내, 입력 즉시 검증·오류 위치 이동, 변경됨 표시·변경 개수, 탭별 기본값 복원, 숨김·비활성 입력 미적용. 기본값 기준으로 샘플 원본을 전달.
+- 주요 파일: popup-frameWork/Popup/DemoWindow.xaml, DemoWindow.Api.cs, DemoWindow.Settings.cs, DemoOptionsWindow.cs, DemoOptionsWindow.Fields.cs, scripts/ApiDemoTests/Program.cs, docs/design/54_Demo_UI_UX_상세옵션_정리_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. ApiDemoTests 63건(신규 15), RichTextTests 85건, PopupWindowTests 197건 통과. 변이 확인(숨김 일수 조건부 표시 제거 시 실패). 빌드한 앱을 --demo/--demo --api로 실행해 기본 크기 메인·옵션 창, API 최소 크기(820×600) 화면 캡처 확인 — 처음 캡처에서 최소 크기 상단 문구 겹침을 발견해 모드 안내를 부제 아래로 옮김. Visual Studio가 프로젝트를 열고 있어 테스트·앱은 별도 중간 폴더(obj\cli·bin\cli)로 빌드. DPI·Tab 순서·키보드·실제 팝업 표시 왕복 화면 점검은 54-10에 남김.
+- 상태: 커밋에 포함(커밋 직전 기록). 54-6~54-11 남음. 원격 푸시는 별도 확인.
+
 ## 2026-10-18-04 — TODO52-2 나중에 보기(showLater·결과 LATER) 추가
 
 - 이유: 회의 확정 요건(나중에 보기는 다음 조회 주기에 다시 조회) 구현. 정합성 검토 결과 TEXT·IMAGE의 CLOSED는 완료 처리라 재표시가 되지 않고, HIDDEN은 hideDays 숨김이라 기존 결과 유형을 재사용할 수 없어 별도 결과 유형과 표시 필드가 필요함.

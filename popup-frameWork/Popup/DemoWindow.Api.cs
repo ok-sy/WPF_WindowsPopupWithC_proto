@@ -72,9 +72,13 @@ namespace Popup
             Title = "Popup Demo Mode — API";
             HeaderSubtitleText.Text = "개발계/검증계 API를 수동으로 호출해 실제 응답 팝업과 결과 전송을 확인합니다. 자동 조회는 하지 않습니다.";
             LeftPanelTitle.Text = "API 호출";
-            InMemoryHeaderButtons.Visibility = Visibility.Collapsed;
-            InMemoryPanel.Visibility = Visibility.Collapsed;
-            ApiPanel.Visibility = Visibility.Visible;
+            InMemoryPanel.Visibility = InMemoryActionBar.Visibility = Visibility.Collapsed;
+            ApiPanel.Visibility = ApiActionBar.Visibility = Visibility.Visible;
+            // [TODO54-2] 현재 모드 표시
+            ModeBadgeText.Text = "API 연결";
+            ModeBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE7, 0xEE, 0xF8));
+            ModeBadgeText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1F, 0x4E, 0x8C));
+            ModeHintText.Text = "로컬 샘플로 확인하려면 popupSample.exe --demo 로 실행";
             QuizScoreText.Text = "결과 전송 후 status·nextStatus가 로그에 표시됩니다. 다음 조회는 '팝업 조회' 버튼으로 실행합니다.";
 
             ApiBaseUrlText.Text = settings.BaseUrl;

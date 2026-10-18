@@ -49,19 +49,23 @@
         <Grid Margin="0,0,0,20">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <StackPanel>
-                <TextBlock Text="Popup Demo" FontSize="24" FontWeight="SemiBold"/>
-                <TextBlock x:Name="HeaderSubtitleText" Text="서버 없이 팝업과 결과 전송을 확인합니다." Foreground="#68707C" Margin="0,6,0,0"/>
-            </StackPanel>
-            <StackPanel x:Name="InMemoryHeaderButtons" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="상태 초기화" Margin="0,0,8,0" Click="ResetServerButton_Click" ToolTip="숨김·완료 상태와 처리한 결과를 초기화합니다."/>
-                <Button Content="전체 실행" Margin="0" Style="{StaticResource PrimaryButton}" Click="OpenAllPopupsButton_Click"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Popup Demo" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <!-- [TODO54-2] 모드는 실행 인자로 정한다(demo 로컬 샘플, demo + api API 연결). 창 안 전환은 하지 않고 현재 모드만 표시한다. -->
+                    <Border x:Name="ModeBadge" Background="#E8F1EC" CornerRadius="10" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="ModeBadgeText" Text="로컬 샘플" Foreground="#1F6B45" FontWeight="SemiBold" FontSize="12"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock x:Name="HeaderSubtitleText" Text="서버 없이 팝업과 결과 전송을 확인합니다." Foreground="#68707C" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                <TextBlock x:Name="ModeHintText" Foreground="#8A919C" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                           Text="API 연결로 확인하려면 popupSample.exe --demo --api 로 실행"/>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Border Background="White" BorderBrush="#E0E3E8" BorderThickness="1" CornerRadius="8" Padding="5" Grid.ColumnSpan="2" Margin="0,0,10,0">
                 <Grid>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <TextBlock x:Name="LeftPanelTitle" Text="팝업 실행" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14"/>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"  HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
@@ -77,14 +81,14 @@
                                 <ComboBoxItem Content="동영상 + 퀴즈" Tag="DEMO-VIDEO-QUIZ"/>
                                 <ComboBoxItem Content="푸터 바로가기" Tag="DEMO-FOOTER-LINK"/>
                             </ComboBox>
-                            <Button Content="선택한 샘플 실행" Style="{StaticResource PrimaryButton}" Click="OpenSelectedPopupButton_Click"/>
                             <Button Content="옵션 설정" Click="EditOptionsButton_Click"/>
-                            <Button Content="선택한 옵션 기본값 복원" Click="ResetOptionsButton_Click"/>
+                            <Button Content="선택한 샘플 옵션 전체 기본값 복원" Click="ResetOptionsButton_Click"
+                                    ToolTip="이 샘플의 모든 옵션을 처음 값으로 되돌립니다. 그룹별 복원은 옵션 설정 창의 각 탭에서 합니다."/>
                             <Border Background="#F5F6F8" Padding="12" CornerRadius="6" Margin="0,12,0,16">
                                 <TextBlock x:Name="ScenarioSummaryText" TextWrapping="Wrap" Foreground="#374151" LineHeight="22"/>
                             </Border>
-                            <TextBlock Text="설정창에서 공통 창·콘텐츠·문항 옵션을 편집하세요. 샘플별 설정은 다음 실행에 적용되며 앱 종료 시 초기화됩니다." Style="{StaticResource Hint}"/>
-                            <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 상단의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
+                            <TextBlock Text="옵션 설정 창에서 탭별로 옵션을 편집하세요. 샘플별 설정은 다음 실행에 적용되며 앱 종료 시 초기화됩니다." Style="{StaticResource Hint}"/>
+                            <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 아래의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
                             <!-- [Demo SSO·로그인 테스트] appsettings PopupApi.DemoSsoLoginTest=true일 때만 표시. SSO와 로그인 API를 따로 호출한다. -->
                             <StackPanel x:Name="AuthTestPanel" Visibility="Collapsed">
                                 <TextBlock Text="SSO · 로그인 테스트" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
@@ -133,9 +137,6 @@
                             <TextBlock Text="단건 조회 요청 JSON" Style="{StaticResource Label}" Margin="0,8,0,6"/>
                             <TextBox x:Name="ApiQueryBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" Text="{}{}"/>
-                            <Button x:Name="ApiQueryButton" Content="팝업 조회 (POST /api/wpf/popups)" Style="{StaticResource PrimaryButton}" Click="ApiQueryButton_Click"/>
-                            <Button x:Name="ApiFlushButton" Content="미전송 결과 재전송" Click="ApiFlushButton_Click"
-                                    ToolTip="보관 중인 결과를 같은 resultId·본문으로 다시 보냅니다."/>
                             <CheckBox x:Name="ApiRevealSecretsCheck" Content="토큰 평문 표시 (화면만)" Margin="0,4,0,12"
                                       Checked="ApiRevealSecretsCheck_Changed" Unchecked="ApiRevealSecretsCheck_Changed"/>
                             <TextBlock Style="{StaticResource Hint}"
@@ -145,7 +146,24 @@
                         </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
-                    <Border Grid.Row="2" BorderBrush="#E0E3E8" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,12,0,0">
+                    <!-- [TODO54-2·54-8] 주 실행 버튼은 스크롤 영역 밖 하단에 고정해 작은 창에서도 항상 보이게 한다. -->
+                    <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                        <StackPanel x:Name="InMemoryActionBar">
+                            <Button Content="선택한 샘플 실행" Style="{StaticResource PrimaryButton}" Click="OpenSelectedPopupButton_Click"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Button Content="전체 실행" Click="OpenAllPopupsButton_Click" ToolTip="모든 유형의 샘플을 서버 순서대로 이어서 표시합니다."/>
+                                <Button Grid.Column="2" Content="상태 초기화" Click="ResetServerButton_Click"
+                                        ToolTip="숨김·완료·유예·전달 건·영수증을 초기화합니다. 편집한 옵션과 로그는 유지합니다."/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel x:Name="ApiActionBar" Visibility="Collapsed">
+                            <Button x:Name="ApiQueryButton" Content="팝업 조회 (POST /api/wpf/popups)" Style="{StaticResource PrimaryButton}" Click="ApiQueryButton_Click"/>
+                            <Button x:Name="ApiFlushButton" Content="미전송 결과 재전송" Click="ApiFlushButton_Click"
+                                    ToolTip="보관 중인 결과를 같은 resultId·본문으로 다시 보냅니다."/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Border Grid.Row="3" BorderBrush="#E0E3E8" BorderThickness="0,1,0,0" Margin="0,4,0,0" Padding="0,12,0,0">
                         <TextBlock x:Name="ServerStateText" Foreground="#68707C" Text="숨김 0 · 완료 0"/>
                     </Border>
                 </Grid>

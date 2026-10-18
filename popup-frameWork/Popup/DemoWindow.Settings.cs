@@ -63,7 +63,9 @@ namespace Popup
         private void EditOptionsButton_Click(object sender, RoutedEventArgs e)
         {
             if (!CanEditOptions()) return;
-            var editor = new DemoOptionsWindow(_configuredPopups[SelectedPopupId]) { Owner = this };
+            // [TODO54-5] 기본값 기준은 샘플 원본이다(탭별 복원·변경 표시). 편집은 복사본에서만 하고 적용할 때만 반영한다.
+            PopupResponseDto original = DemoPopupDataService.CreatePopups().Single(p => p.PopupId == SelectedPopupId);
+            var editor = new DemoOptionsWindow(_configuredPopups[SelectedPopupId], original) { Owner = this };
             if (editor.ShowDialog() != true || editor.Result == null) return;
             _configuredPopups[SelectedPopupId] = editor.Result;
             _gateway.ConfigurePopup(editor.Result);
