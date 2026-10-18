@@ -215,6 +215,7 @@ namespace Popup
                 }
                 catch (Exception exception)
                 {
+                    _lastApiFailure = "팝업 생성";
                     AppendLog($"[오류] 팝업 생성 — 응답은 정상 수신했지만 WPF 팝업을 만들지 못했습니다: {exception.GetType().Name}: {exception.Message}");
                 }
             });
@@ -224,6 +225,8 @@ namespace Popup
         private async Task OnApiPopupClosedAsync(PopupResultQueue queue)
         {
             _apiBusyCount++;
+            _lastApiFailure = null;
+            SetRunState("결과 전송 중…");
             UpdateApiControls();
             try
             {
@@ -238,6 +241,7 @@ namespace Popup
                 _apiBusyCount--;
                 UpdateApiControls();
                 UpdateApiState();
+                SetApiIdleState();
             }
         }
 
@@ -261,6 +265,7 @@ namespace Popup
             AppendLog($"[결과 전송 · {stage}] 보관 {Describe(before)} → {Describe(after)}"
                       + (outcome.LastSaved is { } saved ? $" · 마지막 저장 {saved.Status} nextStatus={saved.NextStatus ?? "(없음)"}" : string.Empty)
                       + (outcome.Blocked ? " · 미종결 결과 있음(보관, 같은 resultId로 재전송 가능)" : string.Empty));
+            if (outcome.Blocked) _lastApiFailure = $"결과 전송({stage}) — 미종결 결과 보관";
             return outcome;
         }
 
@@ -280,6 +285,7 @@ namespace Popup
             string baseUrl = ApiBaseUrlText.Text.Trim().TrimEnd('/');
             if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
+                ApiConnectionExpander.IsExpanded = true;   // [TODO54-6] 연결 입력 오류는 설정을 펼쳐 보여 준다
                 AppendLog("[입력 오류] Base URL은 http:// 또는 https://로 시작하는 절대 주소여야 합니다.");
                 return false;
             }
@@ -292,13 +298,14 @@ namespace Popup
             switch (mode)
             {
                 case "LOGIN":
-                    if (!TryParseJsonObject(ApiLoginBodyText.Text, "로그인 요청 JSON", out loginBody)) return false;
+                    if (!TryParseJsonObject(ApiLoginBodyText.Text, "로그인 요청 JSON", out loginBody)) { ApiConnectionExpander.IsExpanded = true; return false; }
                     identity = loginPath + "\n" + loginBody.GetRawText();
                     break;
                 case "TOKEN":
                     token = DemoApiAuthHeaderProvider.NormalizeAuthorization(ApiTokenBox.Password);
                     if (token == null)
                     {
+                        ApiConnectionExpander.IsExpanded = true;
                         AppendLog("[입력 오류] 토큰 직접 입력 방식에는 Authorization 토큰이 필요합니다.");
                         return false;
                     }
@@ -344,6 +351,7 @@ namespace Popup
             }
             catch (ArgumentException exception)
             {
+                ApiConnectionExpander.IsExpanded = true;
                 AppendLog("[입력 오류] " + exception.Message);
                 return false;
             }
@@ -356,6 +364,7 @@ namespace Popup
             _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", _ => "인증 헤더 없음" };
             _lastNextStatus = null;
             _lastPollingIntervalSeconds = null;
+            ApiConnectionExpander.IsExpanded = false;   // [TODO54-6] 적용한 연결은 요약만 남기고 접는다
             AppendLog($"--- 연결 적용: {baseUrl} · {_apiAuthModeLabel}"
                       + (string.IsNullOrEmpty(devUserId) ? string.Empty : $" · X-Dev-User-Id={devUserId}")
                       + $" · 이 연결의 미전송 {Describe(SafeCountPending(_apiQueue))} ---");
@@ -375,6 +384,8 @@ namespace Popup
         {
             if (IsApiBusy) return;
             _apiBusyCount++;
+            _lastApiFailure = null;
+            SetRunState("요청 중…");
             UpdateApiControls();
             try
             {
@@ -389,7 +400,17 @@ namespace Popup
                 _apiBusyCount--;
                 UpdateApiControls();
                 UpdateApiState();
+                SetApiIdleState();
             }
+        }
+
+        /* [TODO54-8] 요청이 끝난 뒤 상태: 실패 > 팝업 표시 중 > 대기 */
+        private string? _lastApiFailure;
+        private void SetApiIdleState()
+        {
+            if (_lastApiFailure != null) SetRunState("실패 · " + _lastApiFailure, failed: true);
+            else if (_popupManager.HasOpenPopups) SetRunState("팝업 표시 중 — 닫으면 결과를 전송합니다(다음 조회는 버튼으로)");
+            else SetRunState("대기");
         }
 
         /*
@@ -411,6 +432,7 @@ namespace Popup
                 _ => $"{exception.GetType().Name}: {exception.Message}"
             };
             AppendLog($"[오류] {stage} — {detail}");
+            _lastApiFailure = stage;
         }
 
         private string ResponseParseFailure(JsonException exception)
@@ -425,11 +447,21 @@ namespace Popup
             };
         }
 
+        /// <summary>[TODO54-7] 로그 구분: 조회·결과 저장·로그인을 경로로 나눈다(그 밖은 HTTP).</summary>
+        internal static string HttpCategory(string url)
+        {
+            string path = Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) ? uri.AbsolutePath.TrimEnd('/') : url;
+            if (path.EndsWith("/popups/results", StringComparison.OrdinalIgnoreCase)) return "[결과]";
+            if (path.EndsWith("/popups", StringComparison.OrdinalIgnoreCase)) return "[조회]";
+            if (path.Contains("/auth/", StringComparison.OrdinalIgnoreCase)) return "[로그인]";
+            return "[HTTP]";
+        }
+
         private void AppendHttpLog(HttpExchangeRecord record)
         {
             int index = ResultLogList.Items.Count;
             _httpDetails[index] = record;
-            AppendLog($"[{record.StartedAt:HH:mm:ss}] HTTP {record.Summary(_apiService?.BaseUrl ?? string.Empty)}");
+            AppendLog($"[{record.StartedAt:HH:mm:ss}] {HttpCategory(record.Url)} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}");
             ResultLogList.SelectedIndex = index;
             DetailTabs.SelectedIndex = 1;
         }
@@ -468,9 +500,15 @@ namespace Popup
             if (_apiService == null || _apiQueue == null)
             {
                 ServerStateText.Text = "연결 미적용 · 수동 모드(자동 폴링 OFF)";
+                ApiConnectionSummaryText.Text = "연결 미적용 · 아래 설정을 입력하고 '연결 적용' 또는 '팝업 조회'를 누르세요.";
                 return;
             }
             string token = _apiAuth?.UsesLogin == true ? (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)") : string.Empty;
+            // [TODO54-6] 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
+            string devUser = ApiDevUserIdText.Text.Trim();
+            ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"
+                + (devUser.Length == 0 ? string.Empty : $" · X-Dev-User-Id {devUser}")
+                + $"\n미전송 {Describe(SafeCountPending(_apiQueue))}";
             ServerStateText.Text = $"{_apiService.BaseUrl} · {_apiAuthModeLabel}{token} · 미전송 {Describe(SafeCountPending(_apiQueue))}"
                 + $" · nextStatus {_lastNextStatus ?? "-"} · pollingIntervalSeconds {_lastPollingIntervalSeconds?.ToString() ?? "-"}(미사용)";
             UpdateApiControls();

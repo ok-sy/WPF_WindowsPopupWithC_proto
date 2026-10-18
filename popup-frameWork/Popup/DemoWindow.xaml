@@ -91,7 +91,9 @@
                             <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 아래의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
                             <!-- [Demo SSO·로그인 테스트] appsettings PopupApi.DemoSsoLoginTest=true일 때만 표시. SSO와 로그인 API를 따로 호출한다. -->
                             <StackPanel x:Name="AuthTestPanel" Visibility="Collapsed">
-                                <TextBlock Text="SSO · 로그인 테스트" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
+                                <!-- [TODO54-6] 인증 확인 도구는 샘플 작업과 분리해 접어 둔다. -->
+                                <Expander Header="SSO · 로그인 테스트" IsExpanded="False" Margin="0,4,0,12">
+                                <StackPanel Margin="0,8,0,0">
                                 <Button x:Name="SsoTestButton" Content="SSO 테스트" Click="SsoTestButton_Click"
                                         ToolTip="Auth.SsoUrl을 Windows 통합 인증으로 호출해 MAIN_USER_ID·MAIN_USER_CLASSI_CODE를 읽습니다."/>
                                 <TextBlock Text="사번 (logonId)" Style="{StaticResource Label}"/>
@@ -101,39 +103,50 @@
                                 <Button x:Name="LoginTestButton" Content="로그인 테스트" Click="LoginTestButton_Click"
                                         ToolTip="입력한 사번·구분 코드로 서버 로그인 API를 호출합니다. SSO 테스트에 성공하면 값이 자동으로 채워집니다."/>
                                 <TextBox x:Name="AuthTestResultText" Style="{StaticResource JsonText}" MinHeight="120" Margin="0,4,0,16" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                </Expander>
                             </StackPanel>
                         </StackPanel>
                         <!-- [설계 51-2] API Demo(-Demo -Api) 전용. 연결·인증·요청 본문을 입력하고 수동으로 호출한다. 자동 조회 없음. -->
                         <StackPanel x:Name="ApiPanel" Visibility="Collapsed">
-                            <TextBlock Text="Base URL" Style="{StaticResource Label}"/>
-                            <TextBox x:Name="ApiBaseUrlText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                     ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)"/>
-                            <TextBlock Text="인증 방식" Style="{StaticResource Label}"/>
-                            <ComboBox x:Name="ApiAuthModeCombo" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="ApiAuthModeCombo_SelectionChanged">
-                                <ComboBoxItem Content="로그인 API 호출 후 토큰 사용" Tag="LOGIN"/>
-                                <ComboBoxItem Content="토큰 직접 입력" Tag="TOKEN"/>
-                                <ComboBoxItem Content="인증 헤더 없음" Tag="NONE"/>
-                            </ComboBox>
-                            <StackPanel x:Name="ApiLoginPanel">
-                                <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
-                                <TextBox x:Name="ApiLoginPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
-                                <TextBlock Text="로그인 요청 JSON" Style="{StaticResource Label}"/>
-                                <TextBox x:Name="ApiLoginBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
-                                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"/>
-                            </StackPanel>
-                            <StackPanel x:Name="ApiTokenPanel" Visibility="Collapsed">
-                                <TextBlock Text="Authorization 토큰" Style="{StaticResource Label}"/>
-                                <PasswordBox x:Name="ApiTokenBox" MinHeight="30" Padding="6,4" Margin="0,0,0,4" VerticalContentAlignment="Center"
-                                             ToolTip="토큰만 넣으면 'Bearer '를 붙입니다. 'Bearer xxx'처럼 스킴까지 넣어도 됩니다."/>
-                                <TextBlock Text="토큰만 넣으면 'Bearer '를 붙입니다. 401이어도 재로그인하지 않습니다." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
-                            </StackPanel>
-                            <TextBlock Text="X-Dev-User-Id (선택)" Style="{StaticResource Label}"/>
-                            <TextBox x:Name="ApiDevUserIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                     ToolTip="서버 dev-user-header 프로파일 전용. 비우면 헤더를 보내지 않습니다."/>
-                            <Button x:Name="ApiApplyButton" Content="연결 적용" Click="ApiApplyButton_Click"
-                                    ToolTip="입력한 Base URL·인증·사용자로 API 서비스와 결과 큐를 만듭니다. 조회·로그인 때도 바뀐 값이 있으면 자동 적용합니다."/>
-                            <Button x:Name="ApiLoginButton" Content="로그인" Click="ApiLoginButton_Click"
-                                    ToolTip="로그인 요청 JSON으로 로그인 API를 지금 호출하고 토큰을 교체합니다."/>
+                            <!-- [TODO54-6] 현재 대상·인증 상태는 항상 보이고, 연결·인증 입력은 접을 수 있다(연결 적용 성공 시 자동 접힘, 입력 오류 시 펼침). -->
+                            <Border Background="#F5F6F8" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                                <TextBlock x:Name="ApiConnectionSummaryText" TextWrapping="Wrap" Foreground="#374151" LineHeight="20"
+                                           Text="연결 미적용 · 아래 설정을 입력하고 '연결 적용' 또는 '팝업 조회'를 누르세요."/>
+                            </Border>
+                            <Expander x:Name="ApiConnectionExpander" Header="연결·인증 설정" IsExpanded="True" Margin="0,0,0,10">
+                                <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="Base URL" Style="{StaticResource Label}"/>
+                                <TextBox x:Name="ApiBaseUrlText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
+                                         ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)"/>
+                                <TextBlock Text="인증 방식" Style="{StaticResource Label}"/>
+                                <ComboBox x:Name="ApiAuthModeCombo" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="ApiAuthModeCombo_SelectionChanged">
+                                    <ComboBoxItem Content="로그인 API 호출 후 토큰 사용" Tag="LOGIN"/>
+                                    <ComboBoxItem Content="토큰 직접 입력" Tag="TOKEN"/>
+                                    <ComboBoxItem Content="인증 헤더 없음" Tag="NONE"/>
+                                </ComboBox>
+                                <StackPanel x:Name="ApiLoginPanel">
+                                    <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
+                                    <TextBox x:Name="ApiLoginPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
+                                    <TextBlock Text="로그인 요청 JSON" Style="{StaticResource Label}"/>
+                                    <TextBox x:Name="ApiLoginBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
+                                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"/>
+                                </StackPanel>
+                                <StackPanel x:Name="ApiTokenPanel" Visibility="Collapsed">
+                                    <TextBlock Text="Authorization 토큰" Style="{StaticResource Label}"/>
+                                    <PasswordBox x:Name="ApiTokenBox" MinHeight="30" Padding="6,4" Margin="0,0,0,4" VerticalContentAlignment="Center"
+                                                 ToolTip="토큰만 넣으면 'Bearer '를 붙입니다. 'Bearer xxx'처럼 스킴까지 넣어도 됩니다."/>
+                                    <TextBlock Text="토큰만 넣으면 'Bearer '를 붙입니다. 401이어도 재로그인하지 않습니다." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
+                                </StackPanel>
+                                <TextBlock Text="X-Dev-User-Id (선택)" Style="{StaticResource Label}"/>
+                                <TextBox x:Name="ApiDevUserIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
+                                         ToolTip="서버 dev-user-header 프로파일 전용. 비우면 헤더를 보내지 않습니다."/>
+                                <Button x:Name="ApiApplyButton" Content="연결 적용" Click="ApiApplyButton_Click"
+                                        ToolTip="입력한 Base URL·인증·사용자로 API 서비스와 결과 큐를 만듭니다. 조회·로그인 때도 바뀐 값이 있으면 자동 적용합니다."/>
+                                <Button x:Name="ApiLoginButton" Content="로그인" Click="ApiLoginButton_Click"
+                                        ToolTip="로그인 요청 JSON으로 로그인 API를 지금 호출하고 토큰을 교체합니다."/>
+                                </StackPanel>
+                            </Expander>
                             <TextBlock Text="단건 조회 요청 JSON" Style="{StaticResource Label}" Margin="0,8,0,6"/>
                             <TextBox x:Name="ApiQueryBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" Text="{}{}"/>
@@ -148,12 +161,15 @@
                     </ScrollViewer>
                     <!-- [TODO54-2·54-8] 주 실행 버튼은 스크롤 영역 밖 하단에 고정해 작은 창에서도 항상 보이게 한다. -->
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                        <!-- [TODO54-8] 현재 실행 상태(대기·조회/요청 중·팝업 표시 중·결과 전송 중·실패). 진행 중에는 실행 버튼을 막는다. -->
+                        <TextBlock x:Name="RunStateText" Text="대기" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,8" TextWrapping="Wrap"
+                                   AutomationProperties.LiveSetting="Polite"/>
                         <StackPanel x:Name="InMemoryActionBar">
-                            <Button Content="선택한 샘플 실행" Style="{StaticResource PrimaryButton}" Click="OpenSelectedPopupButton_Click"/>
+                            <Button x:Name="LocalRunButton" Content="선택한 샘플 실행" Style="{StaticResource PrimaryButton}" Click="OpenSelectedPopupButton_Click"/>
                             <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <Button Content="전체 실행" Click="OpenAllPopupsButton_Click" ToolTip="모든 유형의 샘플을 서버 순서대로 이어서 표시합니다."/>
-                                <Button Grid.Column="2" Content="상태 초기화" Click="ResetServerButton_Click"
+                                <Button x:Name="LocalRunAllButton" Content="전체 실행" Click="OpenAllPopupsButton_Click" ToolTip="모든 유형의 샘플을 서버 순서대로 이어서 표시합니다."/>
+                                <Button x:Name="LocalResetStateButton" Grid.Column="2" Content="상태 초기화" Click="ResetServerButton_Click"
                                         ToolTip="숨김·완료·유예·전달 건·영수증을 초기화합니다. 편집한 옵션과 로그는 유지합니다."/>
                             </Grid>
                         </StackPanel>
@@ -175,10 +191,12 @@
                         <RowDefinition Height="8"/><RowDefinition Height="1.3*"/><RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,12">
-                        <Button DockPanel.Dock="Right" Content="로그 지우기" Margin="12,0,0,0" Padding="10,6" Click="ClearLogButton_Click"/>
+                        <Button DockPanel.Dock="Right" Content="로그 지우기" Margin="12,0,0,0" Padding="10,6" Click="ClearLogButton_Click"
+                                ToolTip="화면 로그와 요청·응답 상세만 지웁니다. 샘플 옵션·서버 상태·미전송 결과는 그대로입니다."/>
                         <TextBlock Text="조회 · 결과 전송 로그" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
-                    <Border Grid.Row="1" Background="#F5F6F8" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+                    <!-- [TODO54-7] 퀴즈 점수는 결과 로그 줄에도 남기고, 이 상자는 점수가 생겼을 때만 보인다(로컬 샘플). -->
+                    <Border x:Name="QuizScoreBorder" Grid.Row="1" Background="#F5F6F8" CornerRadius="6" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
                         <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 점수와 통과 여부가 표시됩니다." TextWrapping="Wrap" Foreground="#374151"/>
                     </Border>
                     <ListBox Grid.Row="2" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12" BorderBrush="#E0E3E8"

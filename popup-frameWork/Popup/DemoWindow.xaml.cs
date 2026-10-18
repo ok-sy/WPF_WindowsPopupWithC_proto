@@ -90,6 +90,7 @@ namespace Popup
             _httpDetails.Clear();
             ShowResultDetails(null);
             QuizScoreText.Text = EmptyScoreText;
+            QuizScoreBorder.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>
@@ -102,8 +103,10 @@ namespace Popup
         /// <summary>[설계 35] 창이 닫히면 결과를 보내고 AVAILABLE이면 같은 유형의 다음 1건을 표시한다(EMPTY·거절·실패면 멈춤).</summary>
         private async void ContinueAfterResult(string? popupType)
         {
+            SetRunState("결과 전송 중…");
             ResultFlushOutcome outcome = await _resultQueue.FlushAsync();
             UpdateServerState();
+            SetRunState(outcome.Blocked ? "실패 · 미종결 결과가 남았습니다(다음 실행 때 다시 보냄)" : "대기", outcome.Blocked);
             if (!outcome.Blocked && string.Equals(outcome.LastSaved?.NextStatus, "AVAILABLE", StringComparison.OrdinalIgnoreCase))
                 ShowNextDemoPopup(popupType, showEmptyMessage: false);
         }
@@ -121,6 +124,7 @@ namespace Popup
                 }
 
                 _isLoading = true;
+                SetRunState("조회 중…");
                 await _resultQueue.FlushAsync();
                 WpfNextPopupResponseDto response = await _gateway.GetNextPopupAsync(popupType);
                 LogNextQuery(popupType, response);
@@ -132,6 +136,8 @@ namespace Popup
                             "표시할 팝업이 없습니다. (숨김·완료·재노출 유예 상태이면 '서버 상태 초기화'를 누르세요)",
                             "Demo Mode", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
+                    _isLoading = false;
+                    SetRunState("대기 · 표시할 팝업 없음");
                     return;
                 }
 
@@ -141,9 +147,13 @@ namespace Popup
                 options.RetainResultForExit = _resultQueue.RetainForExit;
                 options.FlushResultsInBackground = () => ContinueAfterResult(popupType);
                 _popupManager.Show(options);
+                _isLoading = false;
+                SetRunState($"팝업 표시 중 · {response.Popup.PopupId} — 닫으면 결과를 전송합니다");
             }
             catch (Exception exception)
             {
+                _isLoading = false;
+                SetRunState("실패 · 팝업 생성 오류", failed: true);
                 MessageBox.Show(
                     "Demo Mode 팝업을 만드는 중 오류가 발생했습니다.\n\n" + exception.Message,
                     "Demo Mode 오류", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -162,12 +172,16 @@ namespace Popup
                 string response = JsonSerializer.Serialize(e.Response, LogJsonOptions);
                 int firstIndex = ResultLogList.Items.Count;
                 _resultDetails[firstIndex] = (request, response);
-                AppendLog($"[{DateTime.Now:HH:mm:ss}] {e.Item.ResultType,-13} {e.Item.PopupId} → {e.Response.Status}"
+                AppendLog($"[{DateTime.Now:HH:mm:ss}] [결과] {e.Item.ResultType,-13} {e.Item.PopupId} → {e.Response.Status}"
                           + (e.Response.Code != null ? $" {e.Response.Code}" : string.Empty)
-                          + (e.Response.NextStatus != null ? $" · next {e.Response.NextStatus}" : string.Empty));
+                          + (e.Response.NextStatus != null ? $" · next {e.Response.NextStatus}" : string.Empty)
+                          + (e.Item.Score is double logged ? $" · score {logged:0.##} · passed {e.Item.Passed?.ToString().ToLowerInvariant()}" : string.Empty));
                 ResultLogList.SelectedIndex = firstIndex;
                 if (e.Item.Score is double score)
+                {
+                    QuizScoreBorder.Visibility = Visibility.Visible;
                     QuizScoreText.Text = $"{e.Item.PopupId} · score: {score:0.##} · passed: {e.Item.Passed?.ToString().ToLowerInvariant()}";
+                }
                 UpdateServerState();
             });
         }
@@ -191,7 +205,7 @@ namespace Popup
             int index = ResultLogList.Items.Count;
             _resultDetails[index] = (request, JsonSerializer.Serialize(response, LogJsonOptions));
             string ids = response.Popup == null ? "표시할 팝업 없음" : $"{response.Popup.PopupId} ({response.Popup.DeliveryId})";
-            AppendLog($"[{DateTime.Now:HH:mm:ss}] 조회{(popupType == null ? string.Empty : $" ({popupType})")} → {ids}");
+            AppendLog($"[{DateTime.Now:HH:mm:ss}] [조회]{(popupType == null ? string.Empty : $" ({popupType})")} → {ids}");
             ResultLogList.SelectedIndex = index;
             DetailTabs.SelectedIndex = 1;
         }
@@ -199,7 +213,12 @@ namespace Popup
         private void ResultLogList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_httpDetails.TryGetValue(ResultLogList.SelectedIndex, out HttpExchangeRecord? record))
+            {
                 ShowResultDetails(record.ToDisplayJson(ApiRevealSecrets));
+                // [TODO54-7] 선택한 요청의 응답 상태·시간·오류를 상세 영역에 함께 보여 준다.
+                CopyStatusText.Text = $"{HttpCategory(record.Url)} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}"
+                    + (ApiRevealSecrets ? " · 토큰 평문 표시 중" : " · 토큰 가림");
+            }
             else if (_resultDetails.TryGetValue(ResultLogList.SelectedIndex, out var details))
                 ShowResultDetails(details);
             else
@@ -240,6 +259,25 @@ namespace Popup
         {
             ResultLogList.Items.Add(line);
             ResultLogList.ScrollIntoView(line);
+        }
+
+        /*
+         * [TODO54-8] 실행 상태 표시. 로컬 샘플은 조회 중·팝업 표시 중에 실행·초기화 버튼을 막는다(API는 UpdateApiControls).
+         * 실패 상태는 다음 실행을 시작할 때까지 유지한다.
+         */
+        private void SetRunState(string text, bool failed = false)
+        {
+            RunStateText.Text = text;
+            RunStateText.Foreground = failed ? System.Windows.Media.Brushes.Firebrick
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x37, 0x41, 0x51));
+            UpdateLocalControls();
+        }
+
+        private void UpdateLocalControls()
+        {
+            if (IsApiDemo) return;
+            bool idle = !_isLoading && !_popupManager.HasOpenPopups;
+            LocalRunButton.IsEnabled = LocalRunAllButton.IsEnabled = LocalResetStateButton.IsEnabled = idle;
         }
 
         private void UpdateServerState()

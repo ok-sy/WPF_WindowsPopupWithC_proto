@@ -25,6 +25,7 @@ using Popup.Views.Windows;
  *  51-8 인메모리 Demo 화면 구성 유지
  *  54-2 모드 표시·모드별 하단 고정 실행 영역, 54-3~5 상세옵션 그룹 탭·조건부 표시(숨김/비활성+사유)·즉시 검증·변경 표시·탭별 기본값 복원,
  *       숨김 입력은 적용하지 않고 값 보존, 복사본 편집(원본 DTO 불변)
+ *  54-6 연결 적용 후 연결 설정 접힘·대상/인증 요약, 54-7 로그 구분([조회]/[결과]/[로그인]), 54-8 실행 상태 표시
  * 개발계/검증계 실제 서버 확인은 이 검증의 범위가 아니다(설계 51-9 수동 확인 항목).
  *   실행: dotnet run --project scripts/ApiDemoTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다. 실제 창을 잠깐 띄운다.
@@ -48,6 +49,7 @@ internal static class Program
         CheckLaunchArguments();
         CheckRecordMasking();
         CheckConnectionKey();
+        CheckHttpCategory54();
         CheckInMemoryDemoLayout();
         CheckDemoOptions54();
         using MockServer server = new();
@@ -89,6 +91,14 @@ internal static class Program
     private static string? DemoApiAuthHeaderProviderNormalize(string value)
         => (string?)typeof(DemoApiAuthHeaderProvider).GetMethod("NormalizeAuthorization", Flags)!.Invoke(null, new object?[] { value });
 
+    private static void CheckHttpCategory54()
+    {
+        string Category(string url) => (string)typeof(DemoWindow).GetMethod("HttpCategory", Flags)!.Invoke(null, new object[] { url })!;
+        Check(Category("http://h/p/api/wpf/popups") == "[조회]" && Category("http://h/p/api/wpf/popups/results") == "[결과]"
+              && Category("http://h/p/api/wpf/auth/login") == "[로그인]" && Category("http://h/p/other") == "[HTTP]",
+            "[54-7] request kind is derived from the path");
+    }
+
     private static void CheckConnectionKey()
     {
         string Key(string url, string mode, string identity, string dev)
@@ -111,6 +121,8 @@ internal static class Program
               && ((FrameworkElement)window.FindName("ApiActionBar")).Visibility == Visibility.Collapsed
               && ((TextBlock)window.FindName("ModeBadgeText")).Text == "로컬 샘플",
             "[54-2] in-memory demo shows its fixed action bar and the local mode badge");
+        Check(((TextBlock)window.FindName("RunStateText")).Text == "대기" && ((Button)window.FindName("LocalRunButton")).IsEnabled,
+            "[54-8] local demo starts idle with the run button enabled");
         window.Close();
     }
 
@@ -220,6 +232,14 @@ internal static class Program
         Check(Logs(window).Any(l => l.Contains("deliveryId=DLV-1") && l.Contains("pollingIntervalSeconds=1800") && l.Contains("타이머 미시작")),
             "[51-5] query log shows ids and pollingIntervalSeconds without starting a timer");
         Check(TokenMaskedInDetails(window), "[51-3] login response token is masked in the HTTP log details");
+        Check(!((Expander)window.FindName("ApiConnectionExpander")).IsExpanded
+              && ((TextBlock)window.FindName("ApiConnectionSummaryText")).Text.Contains(server.BaseUrl)
+              && ((TextBlock)window.FindName("ApiConnectionSummaryText")).Text.Contains("토큰 보관")
+              && !((TextBlock)window.FindName("ApiConnectionSummaryText")).Text.Contains("tok-1"),
+            "[54-6] applied connection collapses its settings and the summary shows target and auth state without the token");
+        Check(((TextBlock)window.FindName("RunStateText")).Text.StartsWith("팝업 표시 중"), "[54-8] run state shows the popup is open");
+        Check(Logs(window).Any(l => l.Contains("[로그인] POST")) && Logs(window).Any(l => l.Contains("[조회] POST")),
+            "[54-7] HTTP log lines are labeled by request kind");
 
         // 2) 닫기 → 결과 실제 전송, nextStatus=AVAILABLE이어도 자동 다음 조회 없음
         CloseShownPopup(window);
@@ -235,6 +255,8 @@ internal static class Program
         Pump(() => false, 800);
         Check(server.PopupRequests.Count == 1, "[51-6] AVAILABLE does not start an automatic next query");
         Check(((Button)window.FindName("ApiQueryButton")).IsEnabled, "[51-5] query button is enabled again after close");
+        Check(Logs(window).Any(l => l.Contains("[결과] POST")) && ((TextBlock)window.FindName("RunStateText")).Text == "대기",
+            "[54-7·8] result request is labeled and the run state returns to idle");
 
         // 3) 401 → 같은 로그인 본문으로 재로그인 1회 → 같은 요청 재전송
         server.InvalidateToken();
