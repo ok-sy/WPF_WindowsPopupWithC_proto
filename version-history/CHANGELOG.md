@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-15 — 20261018 폐쇄망 반입본 생성
+
+- 이유: 20261017 반입 이후의 나중에 보기(TODO52-2, DB 16 포함)·Demo UI(TODO54)·설문·퀴즈 서식 표시(TODO55 초안)·설문 디자인 버전과 V2 화면(TODO56, WPF·관리자 웹 미리보기)·소유자 창 종료 결과 수정을 폐쇄망에 반입하기 위해 새 반입본 필요. 서버·웹·WPF가 모두 바뀌어 네 묶음을 모두 새로 만듦.
+- 변경: main 62b755d를 깨끗한 worktree(.offline-verify/wt-20261018)로 꺼내 scripts/export-offline-package.ps1(-IncludeMockSso -NoZip)로 offline-export/20261018 생성(작업 트리의 개발 PC 전용 미커밋 application-local.yml 제외 목적). 기존 번호 체계(1-zero-rule-server·2-zero-rule-web·3-popup-frameWork·4-docs)로 정리. 서버 A 88·M 7, 웹 A 9·M 11·D 2, WPF 소스 93, 문서 95 파일. MockSso 개인 launchSettings 제외. DELETE-SINCE-20260930.txt 누적 목록 갱신과 함께 20260930 기준에 잡히지 않는 20261017 이후 삭제(Views/Contents/SurveyStyles.xaml)를 별도 구역으로 추가. README-IMPORT.md(DB 16 → 서버 → 웹·WPF 순서, 호환성, 설계 52~56 변경)와 묶음별 패치노트(README-PATCH-1·2·3) 작성. 묶음별 TAR·통합 TGZ·SHA256 생성.
+- 주요 파일: offline-export/20261018/ (Git 제외), .offline-verify/package-20261018.ps1·finalize-20261018.ps1 (Git 제외), version-history/CHANGELOG.md.
+- 검증: 반입본 WPF 소스와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,721,038바이트). 반입 소스 개인 PC 절대경로 검사 통과. TAR별 파일 수·경로 대조, 제외 대상 누출 검사, TGZ 해제 후 TAR 체크섬 대조, 데모 영상 해시 대조. 폐쇄망 기존 소스 병합·빌드, 폐쇄망 DB 16 적용, 폐쇄망 PC 실행은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함.
+
 ## 2026-10-18-14 — TODO56 관리자 웹 미리보기 V2 반영
 
 - 이유: 반입본 생성 전에 관리자 웹 미리보기도 WPF 디자인 V2(TODO56)와 같은 화면으로 맞추기로 결정(인계 대신 직접 반영).
