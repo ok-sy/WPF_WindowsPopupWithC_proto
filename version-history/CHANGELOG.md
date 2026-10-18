@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-11 — SURVEY·QUIZ 문항 디자인 버전 관리(V1·V2, 설정으로 선택)
+
+- 이유: 문항 디자인이 다시 바뀌거나 원복될 수 있어 디자인을 버전별로 보존하고 코드 수정 없이 고를 수 있게 함. 선택 위치는 WPF 설정 파일(앱 전체)로 결정, API 계약은 변경하지 않음.
+- 변경: SurveyStyles.xaml을 버전별 완결 사본 Views/Contents/SurveyDesigns/SurveyStyles.V1.xaml(8a1db82 시점 무채색, 콘텐츠 배경 흰색·Chip 체크 폭 0 키만 추가)·V2.xaml(2026-10-18-09 색 규칙)로 분리. SurveyDesign.cs(버전 목록·Latest=V2·Current·Normalize·CreateResources) 추가, SurveyPopupView는 XAML 리소스 대신 생성자에서 InitializeComponent 전에 버전 리소스를 넣음. 가로형 서식 선택지 폭 계산은 버전 키 SurveyChipCheckWidth 사용. appsettings.json PopupApi.SurveyDesignVersion(기본 V2, 없거나 모르는 값은 최신 + Debug 로그) 추가, PopupClientSettings·MainWindow 설정 읽기 반영. 관리자 웹 미리보기 SurveyPreview.tsx에 surveyDesigns(V1·V2)와 SURVEY_DESIGN_VERSION 상수, 버전별 Chip 체크 표시. popup-frameWork README 설정 표·디자인 설명 갱신.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/SurveyDesign.cs, Views/Contents/SurveyDesigns/SurveyStyles.V1.xaml·V2.xaml(구 SurveyStyles.xaml), SurveyPopupView.xaml(.cs), Models/PopupClientSettings.cs, MainWindow.xaml.cs, appsettings.json, zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx, scripts/PopupWindowTests/Program.cs, popup-frameWork/README.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 219건 통과(신규 4: 기본 버전 V2, 설정 값 정규화, V1 본문·문항 카드 색, V1 선택 색·Chip 체크 없음). RichTextTests 101건, ApiDemoTests 69건 통과. 웹 tsc 오류 0, verify-completion-ux-43 50건 통과. EXE 옆 appsettings.json에 V1을 지정해 Demo 설문 실화면이 기존 무채색으로 돌아오는 것 확인(확인 후 파일 삭제). 웹 미리보기 V1 브라우저 화면은 미확인.
+- 상태: 커밋에 포함(커밋 직전 기록).
+
 ## 2026-10-18-10 — TODO56 설문·퀴즈 선택 상태 및 응답 안내 UX 등록
 
 - 이유: 미선택 체크 표시와 단일/복수 선택의 공통 외형으로 인한 혼동을 줄이고 FONT EDIT 적용 후 선택·포커스·응답 안내를 명확하게 할 필요.

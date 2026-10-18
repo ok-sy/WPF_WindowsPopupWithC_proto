@@ -208,6 +208,7 @@ Popup/appsettings.json
     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
     "AutoLoadOnStartup": true,
     "PollingIntervalSeconds": 1800,
+    "SurveyDesignVersion": "V2",
     "Auth": {
       "Mode": "SsoPrototype",
       "StaticHeader": "",
@@ -229,6 +230,7 @@ Popup/appsettings.json
 | `BaseUrl` | Zero Spring 서버 주소 |
 | `AutoLoadOnStartup` | 프로그램 시작 시 자동 팝업 조회 |
 | `PollingIntervalSeconds` | 기본 팝업 재조회 간격 |
+| `SurveyDesignVersion` | SURVEY·QUIZ(VIDEO+QUIZ 포함) 문항 디자인 버전. `V1` 무채색, `V2` 색 규칙(기본·최신). 없거나 모르는 값이면 최신. 다시 빌드하지 않고 바꾸려면 EXE 옆 `appsettings.json`에 지정 |
 | `Auth.Mode` | None / Static / SsoPrototype |
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
 | `Auth.LoginPath` | Zero WPF 로그인 API |
@@ -867,7 +869,7 @@ Timer Tick
 
 WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03부터 로컬 전용으로 관리하며 Git·소스 반입 대상에서 제외한다. 저장소의 일반 빌드에는 필요하지 않다. 실행한 검증 결과는 `version-history/CHANGELOG.md`와 설계 19에 기록한다.
 
-SURVEY·QUIZ(VIDEO+QUIZ 포함)는 본문 여백·푸터까지 옅은 회색(#F5F6F8) 콘텐츠 배경 위에 흰색(#FFFFFF) 문항 카드(radius 11·padding 20/18·간격 14)를 두고 세로 선택 Row와 가로 Choice Chip을 배치한다. 기본 글자색은 #222222다. RadioButton·CheckBox 기능은 유지하고 선택지는 흰 배경·연한 회색 테두리(#E5E5E5)와 항상 보이는 옅은 체크 Path(세로형 오른쪽, 가로형 왼쪽 — 선택 시 폭 변화 없음)로 표시한다. 선택한 선택지는 흰 배경에 팝업 공통 강조색 #171717 테두리·체크와 SemiBold로 강조한다. 배경 없는 01 번호·제목 25·줄바꿈·포커스 outline을 적용하며 세로형 MinHeight는 48이다. Normal/SemiBold 텍스트 높이를 미리 확보해 선택 시 줄바꿈 높이 변화를 방지한다. 주관식은 radius 10·placeholder·약한 테두리·focus 강조를 사용하고 96~180 높이에서 입력을 스크롤한다. 필수 응답 상태와 #4A4A4F Submit은 하단에 고정하고 VIDEO+QUIZ의 내부 제출 영역도 공통 푸터를 끈 상태에서 고정한다. 스크롤바 폭은 8이며 본문과 10 간격을 둔다. 상세 구현·검증 범위는 `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`에 기록한다. Demo SURVEY 6문항·QUIZ/VIDEO+QUIZ 5문항과 정답·배점은 설계 20 §6, 웹 미리보기 정합성은 설계 22를 참조한다.
+문항 디자인은 버전별 완결 사본(`Views/Contents/SurveyDesigns/SurveyStyles.V1.xaml`·`V2.xaml`)으로 관리하고 `SurveyDesignVersion`으로 고른다(`SurveyDesign.cs`). 지난 버전 파일은 고치지 않고 새 버전을 추가하며, 관리자 웹 미리보기는 `SurveyPreview.tsx`의 `SURVEY_DESIGN_VERSION`을 같은 값으로 맞춘다. 아래는 V2 기준이며 V1은 흰 콘텐츠·#F8F8F8 문항 카드·#ECECEC 선택 배경·#AFAFAF 선택 테두리·체크 없는 가로형 Chip이다. SURVEY·QUIZ(VIDEO+QUIZ 포함)는 본문 여백·푸터까지 옅은 회색(#F5F6F8) 콘텐츠 배경 위에 흰색(#FFFFFF) 문항 카드(radius 11·padding 20/18·간격 14)를 두고 세로 선택 Row와 가로 Choice Chip을 배치한다. 기본 글자색은 #222222다. RadioButton·CheckBox 기능은 유지하고 선택지는 흰 배경·연한 회색 테두리(#E5E5E5)와 항상 보이는 옅은 체크 Path(세로형 오른쪽, 가로형 왼쪽 — 선택 시 폭 변화 없음)로 표시한다. 선택한 선택지는 흰 배경에 팝업 공통 강조색 #171717 테두리·체크와 SemiBold로 강조한다. 배경 없는 01 번호·제목 25·줄바꿈·포커스 outline을 적용하며 세로형 MinHeight는 48이다. Normal/SemiBold 텍스트 높이를 미리 확보해 선택 시 줄바꿈 높이 변화를 방지한다. 주관식은 radius 10·placeholder·약한 테두리·focus 강조를 사용하고 96~180 높이에서 입력을 스크롤한다. 필수 응답 상태와 #4A4A4F Submit은 하단에 고정하고 VIDEO+QUIZ의 내부 제출 영역도 공통 푸터를 끈 상태에서 고정한다. 스크롤바 폭은 8이며 본문과 10 간격을 둔다. 상세 구현·검증 범위는 `docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md`에 기록한다. Demo SURVEY 6문항·QUIZ/VIDEO+QUIZ 5문항과 정답·배점은 설계 20 §6, 웹 미리보기 정합성은 설계 22를 참조한다.
 
 ## 19. 프로그램 종료
 

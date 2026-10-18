@@ -7,14 +7,7 @@
              d:DesignHeight="650"
              d:DesignWidth="700" FontSize="14" MaxWidth="760">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/popupSample;component/Views/Windows/PopupStyles.xaml"/>
-                <ResourceDictionary Source="/popupSample;component/Views/Contents/SurveyStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+    <!-- 리소스(PopupStyles + 문항 디자인 버전별 SurveyDesigns/SurveyStyles.Vn)는 생성자에서 InitializeComponent 전에 넣는다(SurveyDesign.CreateResources). -->
     <Grid Background="{StaticResource SurveyContentBackground}">
 
         <Grid.RowDefinitions>

@@ -34,6 +34,10 @@ namespace Popup.Models
         public bool AutoLoadOnStartup { get; set; } =
             true;
 
+        /// <summary>SURVEY·QUIZ 문항 디자인 버전(V1·V2, 기본 최신). Views/Contents/SurveyDesign.cs 참고.</summary>
+        public string SurveyDesignVersion { get; set; } =
+            Popup.Views.Contents.SurveyDesign.Latest;
+
         /// <summary>
         /// 주기 조회 간격(초). 서버 단건 조회 응답의 pollingIntervalSeconds가 있으면 그 값이 우선한다.
         /// 서버 값과 로컬 fallback 모두 1800~3600초로 제한한다.

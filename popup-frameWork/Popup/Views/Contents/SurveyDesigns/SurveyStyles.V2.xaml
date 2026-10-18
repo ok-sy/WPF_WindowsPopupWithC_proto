@@ -1,8 +1,13 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- Survey design V2 (2026-10-18): color rule below. Version files are self-contained snapshots:
+         change the newest one or add a new version instead of editing an old one.
+         Selected by appsettings PopupApi.SurveyDesignVersion (see SurveyDesign.cs). -->
     <!-- Survey-only monochrome tokens; outlined rows and compact chips retain separate templates. -->
     <!-- Color rule: gray content background, white question cards, white choices with a light border,
          selected choice = accent border (popup common accent #171717) + check mark, base text #222222. -->
     <SolidColorBrush x:Key="SurveyContentBackground" Color="#F5F6F8" />
+    <!-- Width taken by the chip check mark column (22). Used for rich option wrapping width. -->
+    <sys:Double x:Key="SurveyChipCheckWidth">22</sys:Double>
     <SolidColorBrush x:Key="SurveyCardBackground" Color="#FFFFFF" />
     <SolidColorBrush x:Key="SurveyCardBorder" Color="#E5E5E5" />
     <SolidColorBrush x:Key="SurveySurfaceBrush" Color="White" />

@@ -1,28 +1,62 @@
 import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
 
-// WPF SurveyStyles.xaml과 같은 색: 콘텐츠 배경 옅은 회색, 문항 카드·선택지 흰색, 선택 = 공통 강조 테두리 + 체크, 기본 글자 #222222.
-export const surveyColors = {
+/*
+ * 문항 디자인 버전. WPF SurveyDesigns/SurveyStyles.Vn.xaml과 같은 값이며, 지난 버전은 고치지 않고 새 버전을 추가한다.
+ *   V1: 무채색(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경, 가로형 체크 없음)
+ *   V2: 콘텐츠 #F5F6F8, 문항·선택지 흰색, 선택 = 공통 강조 #171717 테두리 + 체크(가로형 포함), 기본 글자 #222222
+ * WPF는 appsettings PopupApi.SurveyDesignVersion으로 고르므로, 바꿀 때 SURVEY_DESIGN_VERSION도 같은 값으로 맞춘다.
+ */
+const commonSurveyColors = {
   page: '#FFFFFF',
-  content: '#F5F6F8',
-  card: '#FFFFFF',
   border: '#E5E5E5',
-  text: '#222222',
-  choice: '#222222',
   muted: '#737373',
   placeholder: '#A3A3A3',
   check: '#D4D4D4',
   focus: '#737373',
   rowHover: '#F5F5F5',
-  rowSelected: '#FFFFFF',
   chipHover: '#F1F1F1',
-  chipSelected: '#FFFFFF',
-  selectedBorder: '#171717',
   pressed: '#E2E2E2',
   button: '#4A4A4F',
   buttonHover: '#3D3D42',
   buttonPressed: '#303035',
 };
+
+export const surveyDesigns = {
+  V1: {
+    chipCheck: false,
+    colors: {
+      ...commonSurveyColors,
+      content: '#FFFFFF',
+      card: '#F8F8F8',
+      text: '#18181B',
+      choice: '#27272A',
+      rowSelected: '#ECECEC',
+      chipSelected: '#EAEAEA',
+      selectedBorder: '#AFAFAF',
+      selectedCheck: '#18181B',
+    },
+  },
+  V2: {
+    chipCheck: true,
+    colors: {
+      ...commonSurveyColors,
+      content: '#F5F6F8',
+      card: '#FFFFFF',
+      text: '#222222',
+      choice: '#222222',
+      rowSelected: '#FFFFFF',
+      chipSelected: '#FFFFFF',
+      selectedBorder: '#171717',
+      selectedCheck: '#171717',
+    },
+  },
+} as const;
+
+export type SurveyDesignVersion = keyof typeof surveyDesigns;
+export const SURVEY_DESIGN_VERSION: SurveyDesignVersion = 'V2';
+const surveyDesign = surveyDesigns[SURVEY_DESIGN_VERSION];
+export const surveyColors = surveyDesign.colors;
 
 export const surveySubmitSx = {
   minWidth: 132,
@@ -69,7 +103,7 @@ function CheckMark({ selected, disabled, align }: { selected: boolean; disabled:
         className="survey-check"
         d="M 1,5 L 5,9 L 13,1"
         fill="none"
-        stroke={selected && !disabled ? surveyColors.selectedBorder : surveyColors.check}
+        stroke={selected && !disabled ? surveyColors.selectedCheck : surveyColors.check}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -247,7 +281,9 @@ export default function SurveyPreview({
                         sx={{
                           display: 'grid',
                           gridTemplateColumns: horizontal
-                            ? '22px minmax(0, 1fr)'
+                            ? surveyDesign.chipCheck
+                              ? '22px minmax(0, 1fr)'
+                              : 'minmax(0, 1fr)'
                             : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
@@ -265,7 +301,9 @@ export default function SurveyPreview({
                           opacity: disabled ? 0.45 : 1,
                         }}
                       >
-                        {horizontal && <CheckMark selected={selected} disabled={disabled} align="start" />}
+                        {horizontal && surveyDesign.chipCheck && (
+                          <CheckMark selected={selected} disabled={disabled} align="start" />
+                        )}
                         <Box
                           sx={{
                             display: 'grid',

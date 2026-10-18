@@ -3,6 +3,7 @@ using Popup.Models;
 using Popup.Managers;
 using Popup.Services;
 using Popup.Services.Auth;
+using Popup.Views.Contents;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -137,12 +138,14 @@ namespace Popup
          *     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
          *     "AutoLoadOnStartup": true,
          *     "PollingIntervalSeconds": 1800,
+         *     "SurveyDesignVersion": "V2",
          *     "Auth": { "Mode": "None", "StaticHeader": "",
          *               "SsoUrl": "https://SSO_URL/encriptloginprocess.aspx", "LoginPath": "/api/wpf/auth/login", "PeriodicLoginMinutes": 60 },
          *     "DevUserId": ""
          *   }
          * }
          * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype(설계 10)에서만 쓴다.
+         * SurveyDesignVersion 은 SURVEY·QUIZ 문항 디자인 버전(SurveyDesign). 없거나 모르는 값이면 최신 버전.
          */
         private static PopupClientSettings LoadPopupClientSettings()
         {
@@ -187,6 +190,14 @@ namespace Popup
                 PollingIntervalSeconds = Math.Clamp(GetInt32(api, "PollingIntervalSeconds", 1800), 1800, 3600),
                 DevUserId = GetString(api, "DevUserId").Trim()
             };
+
+            string configuredDesign = GetString(api, "SurveyDesignVersion");
+            settings.SurveyDesignVersion = SurveyDesign.Normalize(configuredDesign) ?? SurveyDesign.Latest;
+            if (configuredDesign.Length > 0 && SurveyDesign.Normalize(configuredDesign) == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[설정] SurveyDesignVersion '{configuredDesign}'을 알 수 없어 {SurveyDesign.Latest}로 표시합니다.");
+            }
+            SurveyDesign.Current = settings.SurveyDesignVersion;
 
             if (api.TryGetProperty("Auth", out JsonElement auth) && auth.ValueKind == JsonValueKind.Object)
             {

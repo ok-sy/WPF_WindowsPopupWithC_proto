@@ -588,6 +588,30 @@ internal static class Program
             }
             ShutdownClose(opened.Window);
         }
+
+        // 문항 디자인 버전: 기본은 최신(V2). V1로 바꾸면 이후 만드는 설문 화면이 지난 무채색 디자인으로 돌아간다.
+        Check(SurveyDesign.Current == "V2" && SurveyDesign.Latest == "V2", "[survey design] default design version is the latest (V2)");
+        Check(SurveyDesign.Normalize("v1") == "V1" && SurveyDesign.Normalize("V9") == null && SurveyDesign.Normalize(null) == null,
+            "[survey design] version setting is case-insensitive and unknown values are rejected");
+        SurveyDesign.Current = "V1";
+        try
+        {
+            var v1 = OpenPopup("SURVEY");
+            v1.Window.UpdateLayout();
+            var v1View = (SurveyPopupView)v1.Options.Content!;
+            Check(Hex(v1.Find<Border>("PopupBodyBorder").Background) == "#FFFFFFFF"
+                  && Hex(Visuals(v1View).OfType<Border>().First(b => b.Style == v1View.FindResource("SurveyQuestionCardStyle")).Background) == "#FFF8F8F8",
+                "[survey design] V1 restores the white body and #F8F8F8 question cards");
+            var row = Visuals(v1View).OfType<System.Windows.Controls.Primitives.ToggleButton>().First(c => c.Parent is StackPanel);
+            var chip = Visuals(v1View).OfType<System.Windows.Controls.Primitives.ToggleButton>().First(c => c.Parent is WrapPanel);
+            row.ApplyTemplate(); chip.ApplyTemplate();
+            row.IsChecked = true; row.UpdateLayout();
+            Check(Hex(((Border)row.Template.FindName("Card", row)).BorderBrush) == "#FFAFAFAF" && Hex(((Border)row.Template.FindName("Card", row)).Background) == "#FFECECEC"
+                  && chip.Template.FindName("CheckMark", chip) == null,
+                "[survey design] V1 selected row is gray (#ECECEC/#AFAFAF) and chips have no check mark");
+            ShutdownClose(v1.Window);
+        }
+        finally { SurveyDesign.Current = SurveyDesign.Latest; }
     }
 
     /*

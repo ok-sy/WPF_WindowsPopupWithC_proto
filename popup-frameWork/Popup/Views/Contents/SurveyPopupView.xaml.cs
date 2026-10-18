@@ -114,6 +114,7 @@ namespace Popup.Views.Contents
         /// </summary>
         public SurveyPopupView()
         {
+            Resources = SurveyDesign.CreateResources();
             InitializeComponent();
 
             /*
@@ -137,6 +138,8 @@ namespace Popup.Views.Contents
         IReadOnlyList<PopupTextBlockDto>? titleBlocks = null,
         IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null)
         {
+            // 문항 디자인 버전(SurveyDesign.Current)의 스타일을 XAML의 StaticResource보다 먼저 넣는다.
+            Resources = SurveyDesign.CreateResources();
             InitializeComponent();
 
             SurveyTitleText.Text = title;
@@ -330,10 +333,11 @@ namespace Popup.Views.Contents
                 foreach (FrameworkElement child in panel.Children)
                 {
                     child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
-                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다. 체크 표시 폭: 세로형 오른쪽 28, 가로형 왼쪽 22.
+                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다. 체크 표시 폭: 세로형 오른쪽 28, 가로형은 디자인 버전 값.
                     if (child is ContentControl control && control.Content is FrameworkElement label)
                         label.MaxWidth = Math.Max(0, child.MaxWidth - control.Padding.Left - control.Padding.Right
-                            - control.BorderThickness.Left - control.BorderThickness.Right - (question.HorizontalOptions ? 22 : 28));
+                            - control.BorderThickness.Left - control.BorderThickness.Right
+                            - (question.HorizontalOptions ? (double)FindResource("SurveyChipCheckWidth") : 28));
                 }
             };
             return panel;
