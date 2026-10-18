@@ -163,6 +163,7 @@
             n.SHOW_CLOSE_BUTTON_YN,
             n.SHOW_FOOTER_YN,
             n.SHOW_DO_NOT_SHOW_AGAIN_YN AS SHOW_DONT_SHOW_YN,
+            n.SHOW_LATER_YN,
             ct.CONTENT_TITLE,
             ct.DESCRIPTION,
             ct.CONTENT_BODY,
@@ -225,6 +226,7 @@
             n.SHOW_CLOSE_BUTTON_YN           = #{showCloseButtonYn},
             n.SHOW_FOOTER_YN                 = #{showFooterYn},
             n.SHOW_DO_NOT_SHOW_AGAIN_YN      = #{showDoNotShowAgainYn},
+            n.SHOW_LATER_YN                  = #{showLaterYn},
             n.HIDE_DAYS                      = #{hideDays},
             n.COMPLETION_RATIO               = #{completionRatio},
             n.PASSING_SCORE                  = #{passingScore},
@@ -238,7 +240,7 @@
             REPEAT_INTERVAL, REPEAT_DAY_OF_WEEK, REPEAT_DAY_OF_MONTH, ACTIVE_YN, SIZE_MODE,
             POPUP_WIDTH, POPUP_HEIGHT, WIDTH_RATIO, HEIGHT_RATIO,
             MINIMUM_WIDTH, MINIMUM_HEIGHT, MAXIMUM_WIDTH, MAXIMUM_HEIGHT,
-            SHOW_HEADER_YN, SHOW_CLOSE_BUTTON_YN, SHOW_FOOTER_YN, SHOW_DO_NOT_SHOW_AGAIN_YN,
+            SHOW_HEADER_YN, SHOW_CLOSE_BUTTON_YN, SHOW_FOOTER_YN, SHOW_DO_NOT_SHOW_AGAIN_YN, SHOW_LATER_YN,
             HIDE_DAYS, COMPLETION_RATIO, PASSING_SCORE, ALLOW_CLOSE_BEFORE_COMPLETE_YN,
             CREATED_BY, UPDATED_BY
         )
@@ -251,7 +253,7 @@
             #{repeatInterval}, #{repeatDayOfWeek}, #{repeatDayOfMonth}, #{activeYn}, #{sizeMode},
             #{popupWidth}, #{popupHeight}, #{widthRatio}, #{heightRatio},
             #{minimumWidth}, #{minimumHeight}, #{maximumWidth}, #{maximumHeight},
-            #{showHeaderYn}, #{showCloseButtonYn}, #{showFooterYn}, #{showDoNotShowAgainYn},
+            #{showHeaderYn}, #{showCloseButtonYn}, #{showFooterYn}, #{showDoNotShowAgainYn}, #{showLaterYn},
             #{hideDays}, #{completionRatio}, #{passingScore}, #{allowCloseBeforeCompleteYn},
             #{auditUser}, #{auditUser}
         )
@@ -392,6 +394,7 @@
             <arg column="SHOW_CLOSE_BUTTON_YN" javaType="java.lang.String"/>
             <arg column="SHOW_FOOTER_YN" javaType="java.lang.String"/>
             <arg column="SHOW_DONT_SHOW_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_LATER_YN" javaType="java.lang.String"/>
             <arg column="CONTENT_TITLE" javaType="java.lang.String"/>
             <arg column="DESCRIPTION" javaType="java.lang.String"/>
             <arg column="CONTENT_BODY" javaType="java.lang.String" jdbcType="CLOB"/>

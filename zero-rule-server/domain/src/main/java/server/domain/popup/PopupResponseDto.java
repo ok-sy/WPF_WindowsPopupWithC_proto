@@ -28,6 +28,8 @@ public record PopupResponseDto(
         boolean showCloseButton,
         boolean showFooter,
         boolean showDoNotShowAgain,
+        // [TODO52-2] Footer "나중에 보기" 버튼 표시. 요청에 없으면 false
+        boolean showLater,
         Long questionTemplateId,
         String periodMode,
         Integer repeatInterval,

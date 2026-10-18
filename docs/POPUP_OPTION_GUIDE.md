@@ -53,6 +53,7 @@
 | `showFooterButton` | `true` | Footer 버튼 표시(닫기·제출·바로가기). Header에는 고정 로고 표시 |
 | `showFooter` | `true` | Footer 표시 |
 | `showDoNotShowAgain` | `false` | 다시 보지 않기 체크박스 표시. Footer가 있어야 화면에 보임 |
+| `showLater` | `false` | 나중에 보기 버튼 표시(모든 유형, TODO52-2). Footer가 있어야 화면에 보임. 누르면 결과 LATER로 닫히고 다음 조회 주기에 다시 표시(9.1) |
 | `footerAction` | `CLOSE` | Footer 버튼 동작. `CLOSE`(닫기) / `LINK_AND_CLOSE`(바로가기) / `SUBMIT`(제출, SURVEY·QUIZ 고정). 생략·미지원 값은 유형별 기본값 |
 | `footerLinkUrl` | 빈 문자열 | `LINK_AND_CLOSE`일 때 열 절대 HTTP/HTTPS URL |
 | `useBackgroundOverlay` | `true` | 팝업 표시 중 배경 클릭 차단·어둡게 표시. 켜면 Alt+F4 등 키보드·외부 닫기를 막고 화면의 닫기·제출로만 닫힌다. 닫기·제출 수단이 화면에 없으면 막지 않는다(설계 44) |
@@ -249,7 +250,7 @@ WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서�
 |---|---|---|---|
 | `WpfLoginClient.LoginAsync` | POST | `/api/wpf/auth/login` | 로그인(토큰 발급, SSO 프로토타입) |
 | `PopupApiService.GetNextPopupAsync` | POST | `/api/wpf/popups` | 서버가 노출 판정·정렬을 끝낸 팝업 1건(`popup`, 없으면 null) + `deliveryId`·공통 옵션·content·문항 |
-| `PopupApiService.PostResultAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 1건(CLOSED·HIDDEN·SUBMITTED·VIDEO_WATCHED, `deliveryId` 포함) 전송. 응답 `nextStatus`로 다음 조회 시점 결정. `PopupResultQueue`가 실패 시 보관·순서대로 재전송 |
+| `PopupApiService.PostResultAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 1건(CLOSED·HIDDEN·LATER·SUBMITTED·VIDEO_WATCHED, `deliveryId` 포함) 전송. 응답 `nextStatus`로 다음 조회 시점 결정. `PopupResultQueue`가 실패 시 보관·순서대로 재전송 |
 
 ---
 
@@ -264,6 +265,21 @@ AND showDoNotShowAgain = true
 → 창이 닫히면 HIDDEN 결과 항목(hideDays: 팝업 hideDays, 없으면 30) 생성
 → POST /api/wpf/popups/results
 ```
+
+### 9.1 나중에 보기 (TODO52-2)
+
+```text
+showFooter = true
+AND showLater = true
+→ Footer에 "나중에 보기" 버튼 표시(모든 유형)
+→ 사용자가 버튼 클릭(완료 전 닫기 잠금·Background Overlay 중에도 가능)
+→ PopupWindow가 LaterRequested 기록 후 닫기
+→ 창이 닫히면 LATER 결과 항목 생성(다시 보지 않기 체크·영상 시청량보다 우선, hideDays·video 미포함)
+→ POST /api/wpf/popups/results
+→ 서버: 완료·숨김 없이 전달 건 유예(pollingIntervalSeconds) → 다음 조회 주기에 다시 표시
+```
+
+DB 컬럼은 `POPUP_NOTICE.SHOW_LATER_YN`(기본 'N')이며 기존 DB는 `db/oracle/16_popup_later_oracle.sql`을 서버 반영 전에 실행한다.
 
 ---
 

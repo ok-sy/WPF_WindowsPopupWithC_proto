@@ -37,6 +37,7 @@ public record PopupEntity(
         String showCloseButtonYn,
         String showFooterYn,
         String showDontShowYn,
+        String showLaterYn,
         String contentTitle,
         String description,
         String contentBody,

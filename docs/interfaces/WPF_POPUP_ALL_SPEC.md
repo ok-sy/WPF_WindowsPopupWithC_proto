@@ -51,6 +51,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | ShowFooterButton | 지원 | N | `true` | `showFooterButton`. 일반 콘텐츠 Footer 버튼 표시 |
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
+| ShowLater | 지원 | N | `false` | "나중에 보기" 버튼 표시(TODO52-2). `ShowFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 LATER |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증). 체크박스 문구도 같은 값으로 `{N}일간 보지 않기` 표시 |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
@@ -76,6 +77,7 @@ Footer가 있으면 공통 제출 버튼, 없으면 콘텐츠 내부 제출 버�
 - VIDEO+QUIZ 잠금 중: 제출·다시 보지 않기 비활성(기존 계약) + `영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`. 해제 뒤에는 필수 문항 진행 문구로 바뀌고 첫 문항으로 포커스를 옮긴다.
 - SURVEY/QUIZ 제출은 필수 미응답일 때만 비활성이다. 통과 점수로 제출을 막지 않는다(채점 전 교착 방지). QUIZ 불합격 안내에는 점수와 틀린 채점 문항 번호(예: `틀린 문항: 2, 4번`)를 표시한다. 결과 계약(`score`·`passed`)은 바뀌지 않는다.
 - 보조 닫기(제출 버튼과 구분되는 밝은 버튼)는 정책상 제출 전 이탈이 허용될 때만 Footer에 표시한다. VIDEO+QUIZ는 `AllowCloseBeforeComplete=true`(잠금 여부 무관) 또는 재생 실패, QUIZ(영상 없음)는 불합격 1회 이후이면서 Background Overlay가 꺼진 경우다. SURVEY·TEXT·IMAGE·VIDEO와 `ShowFooter=false`에서는 표시하지 않는다. 결과는 Alt+F4 닫기와 같은 CLOSED(영상은 VIDEO_WATCHED)다.
+- 나중에 보기(TODO52-2): `ShowFooter`·`ShowLater`가 모두 true면 Footer에 "나중에 보기" 버튼을 둔다. 누르면 결과 LATER로 닫히며 다시 보지 않기 체크·영상 시청량보다 우선한다(hideDays·video 미포함). 완료 전 닫기 잠금(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)과 Background Overlay 중에도 누를 수 있고, Overlay의 화면 출구로 인정한다. 서버는 완료 처리 없이 다음 조회 주기까지 유예한다.
 
 Background Overlay와 닫기 경로(설계 44, 고정 동작·관리자 옵션 없음):
 
@@ -222,14 +224,14 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 인증 | SSO XML → 로그인 → Bearer, 토큰 만료 시 재로그인·재시도 | 인증 URL·실환경 통합 정책은 별도 연동 조건 |
 | API | 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) (설계 35) | 요청·응답·경로는 인터페이스 계약서 참조 |
 | 조회 | 한 번에 팝업 1건 표시. 표시 중에는 다른 조회 없음. 결과 저장 응답 `nextStatus`=AVAILABLE이면 즉시 조회, EMPTY·`popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분) 대기, `nextStatus` 없음은 즉시 조회. 조회 실패 후 재조회 복구 | 팝업 content의 옵션이 아님. 대기는 기동 시점 기준이 아니라 해당 응답 시점부터 계산 |
-| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함. "다시 보지 않기"를 체크하고 닫으면 영상을 시청했어도 HIDDEN이 우선하며 video 블록을 보내지 않아 시청 정보·시청 완료가 기록되지 않음 | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
+| 결과 | 닫기·숨김·제출 및 영상 정보, 로컬 pending-results 큐에 저장 후 1건씩 순서대로 전송. 결과에 조회 응답의 `deliveryId` 포함. "다시 보지 않기"를 체크하고 닫으면 영상을 시청했어도 HIDDEN이 우선하며 video 블록을 보내지 않아 시청 정보·시청 완료가 기록되지 않음. "나중에 보기" 버튼으로 닫으면 LATER(체크 여부 무관, video 미포함) | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 저장 |
 | 미전송 결과 복구 | 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도. 400 결과는 이번 실행에서 제외, 배열 일괄 재전송 없음. 큐 파일을 읽을 수 없어도 조회 보류(설계 39-1), 복구 재전송 결과의 EMPTY도 조회 간격 대기(설계 39-2) | 주간회의 결정 전 **임시 기준**(설계 35 §4). 확정 계약 아님 |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지. QUIZ 불합격 안내에 틀린 문항 번호 표시(설계 43) | 별도 JSON 제어 필드 없음 |
 | 실행 | 트레이·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시. API Demo(`-Demo -Api`, 설계 51)는 Demo 화면에서 Base URL·인증·조회 요청 JSON을 입력해 실제 단건 조회·결과 API를 수동 호출하고 실제 HTTP 요청·응답(토큰 마스킹)을 기록하며 자동 폴링·nextStatus 연속 조회를 하지 않음 | 인메모리 Demo 결과는 실제 서버·DB 저장과 구분(요청 JSON에 인증 헤더 없음, 샘플 유형 선택은 로그 줄에만 표시). API Demo는 개발계/검증계 검증 도구로 실제 전달 건·결과를 생성하며 계약 필드·외부 제공 범위를 바꾸지 않음 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |
 | 자동 업데이트 | 구현 기능으로 포함하지 않음 | 설계 17은 폐기(2026-10-12) |
 
-서버가 기간·대상·숨김·완료·재노출 유예를 판정하고 WPF에는 표시 순서상 첫 1건을 내려준다. TEXT·IMAGE 닫기(CLOSED)는 서버에서 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 조회에서 제외된다.
+서버가 기간·대상·숨김·완료·재노출 유예를 판정하고 WPF에는 표시 순서상 첫 1건을 내려준다. TEXT·IMAGE 닫기(CLOSED)는 서버에서 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO와 나중에 보기(LATER, 모든 유형)는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 조회에서 제외된다.
 서버 DB·관리자 API·웹 입력 범위는 이 전체 WPF 기능 정의서의 지원 판정과 구분한다.
 전체 기능 지원 표시는 모든 영상 엔진·Horizon·DPI 조합의 실환경 검증 완료를 뜻하지 않는다.
 현재 남은 실측은 [설계 25](../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)와

@@ -173,6 +173,37 @@ class WpfPopupDatabaseTest {
                 assertEquals("HIDDEN", wpfMapper.selectStatus("E1003", "SAMPLE-TEXT-001").popupStatus());
                 assertEquals("SAMPLE-SURVEY-004", service.getNextPopup("E1003").popup().popupId());
 
+                // ---- [TODO52-2] 나중에 보기(LATER): TEXT도 완료·숨김 아님, 유예 중 같은 팝업 제외, 유예가 끝나면 다시 표시 ----
+                WpfPopupItem laterText = service.getNextPopup("E1002").popup();
+                assertEquals("SAMPLE-TEXT-001", laterText.popupId());
+                assertFalse(laterText.showLater(), "SHOW_LATER_YN 기본 N");
+                String laterId = UUID.randomUUID().toString();
+                WpfResultResponse later = service.processResult("E1002", new WpfResultCommand(laterId, laterText.deliveryId(),
+                        "SAMPLE-TEXT-001", WpfResultType.LATER, displayedAt, closedAt, 7, null, null, null, null));
+                assertEquals(WpfResultItemResponse.Status.ACCEPTED, later.status(), later.message());
+                assertFalse(wpfMapper.selectStatus("E1002", "SAMPLE-TEXT-001").completed(), "LATER는 TEXT도 완료가 아님");
+                assertNotEquals("HIDDEN", wpfMapper.selectStatus("E1002", "SAMPLE-TEXT-001").popupStatus(), "hideDays를 보내도 숨김 아님");
+                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ? "
+                        + "AND RESULT_TYPE = 'LATER'", laterId), "CK_WPF_RESULT_TYPE이 LATER 영수증을 허용");
+                assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_POPUP_DELIVERY WHERE DELIVERY_ID = ? "
+                        + "AND DELIVERY_STATUS = 'DONE' AND RESULT_TYPE = 'LATER' AND DEFER_UNTIL_AT > CAST(SYSTIMESTAMP AT TIME ZONE "
+                        + "'Asia/Seoul' AS TIMESTAMP) + NUMTODSINTERVAL(1700, 'SECOND')", laterText.deliveryId()), "LATER 유예 = 저장 시각 + 1800초");
+                WpfPopupItem duringDefer = service.getNextPopup("E1002").popup();
+                assertTrue(duringDefer == null || !"SAMPLE-TEXT-001".equals(duringDefer.popupId()), "유예 중 같은 팝업 즉시 재표시 없음");
+                if (duringDefer != null) {   // 다른 후보의 OPEN 전달 건도 LATER로 닫아 TEXT 재선정만 본다
+                    service.processResult("E1002", new WpfResultCommand(UUID.randomUUID().toString(), duringDefer.deliveryId(),
+                            duringDefer.popupId(), WpfResultType.LATER, null, null, null, null, null, null, null));
+                }
+                try (var expire = session.getConnection().prepareStatement(("UPDATE %sWPF_POPUP_DELIVERY SET DEFER_UNTIL_AT = "
+                        + "CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP) - NUMTODSINTERVAL(1, 'SECOND') "
+                        + "WHERE DELIVERY_ID = ?").formatted(prefix == null ? "" : prefix))) {
+                    expire.setString(1, laterText.deliveryId());
+                    assertEquals(1, expire.executeUpdate());   // 다음 조회 주기 도래(롤백되는 세션 안에서만)
+                }
+                WpfPopupItem again2 = service.getNextPopup("E1002").popup();
+                assertEquals("SAMPLE-TEXT-001", again2.popupId(), "유예가 끝나면 나중에 보기한 팝업을 다시 표시");
+                assertNotEquals(laterText.deliveryId(), again2.deliveryId(), "새 전달 건 발급");
+
                 // 요청 로그
                 service.logRequest(closeId, "E1001", "/p/api/wpf/popups/results", "POST", "127.0.0.1",
                         OffsetDateTime.now(), 200, true, "popupId=SAMPLE-TEXT-001,type=CLOSED", "status=ACCEPTED,next=AVAILABLE");            } finally {

@@ -176,14 +176,14 @@ namespace Popup.Managers
             }
 
             // 영상 시청량 기록(위 Closing 핸들러) 뒤에 실행된다. PopupWindow.OnClosing이 취소를 먼저 결정하고
-            // "다시 보지 않기" 선택을 기록한 뒤 Closing 이벤트를 올린다.
+            // "다시 보지 않기" 선택을 기록한 뒤 Closing 이벤트를 올린다. [TODO52-2] 나중에 보기로 닫으면 LATER 항목을 만든다.
             // [설계 44 결함 1] 앱 종료 중에는 PopupWindow가 닫기를 취소하지 않지만, 취소가 남아 있어도 WPF는 종료 시 창을 닫으므로
             // 취소 여부와 관계없이 결과를 저장한다(예전에는 취소를 보고 돌아가 VIDEO 미완료·VIDEO+QUIZ 잠금 결과가 사라졌다).
             popupWindow.Closing += (sender, eventArgs) =>
             {
                 if (builder.IsFinalized) return;   // 제출 항목을 이미 큐에 넣음
                 if (eventArgs.Cancel && !PopupWindow.IsApplicationExiting()) return;   // 사용자 닫기 취소
-                WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
+                WpfResultItemDto item = builder.BuildOnClose(DateTimeOffset.Now, popupOptions.LaterRequested, popupOptions.DoNotShowAgainChecked);
                 if (!TryEnqueueBeforeClose(popupWindow, popupOptions, item))
                 {
                     eventArgs.Cancel = true;   // [설계 34-23] 영속 저장 전에는 닫지 않는다. 다시 닫으면 같은 resultId로 재시도한다.
@@ -199,7 +199,7 @@ namespace Popup.Managers
             popupWindow.Closed += (sender, eventArgs) =>
             {
                 if (builder.IsFinalized) return;
-                WpfResultItemDto item = builder.BuildClosed(DateTimeOffset.Now, popupOptions.DoNotShowAgainChecked);
+                WpfResultItemDto item = builder.BuildOnClose(DateTimeOffset.Now, popupOptions.LaterRequested, popupOptions.DoNotShowAgainChecked);
                 builder.MarkFinalized();
                 try
                 {

@@ -34,6 +34,7 @@ public record AdminPopupSaveCommand(
         String showCloseButtonYn,
         String showFooterYn,
         String showDoNotShowAgainYn,
+        String showLaterYn,
         Integer hideDays,
         BigDecimal completionRatio,
         BigDecimal passingScore,

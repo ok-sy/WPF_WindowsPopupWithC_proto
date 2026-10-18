@@ -70,6 +70,8 @@ export interface AdminPopupDetail {
   showCloseButton: boolean;
   showFooter: boolean;
   showDoNotShowAgain: boolean;
+  /** [TODO52-2] Footer "나중에 보기" 버튼 표시. 이전 저장 데이터·응답에 없으면 false로 본다. */
+  showLater?: boolean;
   questionTemplateId?: number | null;
   periodMode: string;
   repeatInterval?: number | null;

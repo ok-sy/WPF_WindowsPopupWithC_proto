@@ -135,6 +135,20 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.repeatDayOfMonth").doesNotExist());
     }
 
+    /** [TODO52-2] showLater는 최상위 boolean으로 나가며 요청 값이 없으면 false다. showDoNotShowAgain과 섞이지 않는다. */
+    @Test void popupCarriesShowLaterSeparatelyFromDoNotShowAgain() throws Exception {
+        String base = """
+                {"popupId":"TEXT-52","popupType":"TEXT","title":"TEXT","sizeMode":"FIXED","width":500,"height":300,
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":900,"maximumHeight":700,%s
+                 "content":{"plainText":"본문"}}
+                """;
+        next(item(base.formatted("\"showLater\":true,\"showDoNotShowAgain\":false,"), false))
+                .andExpect(jsonPath("$.popup.showLater").value(true))
+                .andExpect(jsonPath("$.popup.showDoNotShowAgain").value(false));
+        next(item(base.formatted(""), false))
+                .andExpect(jsonPath("$.popup.showLater").value(false));
+    }
+
     /** [설계 30] Footer 동작은 content에서 빼 최상위로 내려주고, SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다. */
     @Test void footerActionIsPromotedToTopLevel() throws Exception {
         String base = """
@@ -207,6 +221,21 @@ class WpfPopupControllerTest {
                     .andExpect(jsonPath("$.nextStatus").doesNotExist());
         }
         verify(service, never()).processResult(any(), any());
+    }
+
+    /** [TODO52-2] 나중에 보기 결과 LATER는 형식 검사를 통과해 서비스에 LATER로 전달된다(대소문자 무시). */
+    @Test void laterResultIsAcceptedAsLaterCommand() throws Exception {
+        when(service.processResult(eq("E1001"), any())).thenAnswer(inv -> {
+            WpfResultCommand command = inv.getArgument(1);
+            assertEquals(WpfResultType.LATER, command.resultType());
+            return WpfResultResponse.of(WpfResultItemResponse.accepted(command), WpfResultResponse.NextStatus.EMPTY);
+        });
+        mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resultId\":\"later-1\",\"deliveryId\":\"D-1\",\"popupId\":\"P1\",\"resultType\":\"later\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+        verify(service).processResult(eq("E1001"), any());
     }
 
     /** [설계 34 — 검토 보완] 검증 통과 후 변환 예외는 영구 오류(REJECTED)가 아니라 INTERNAL_ERROR다. */

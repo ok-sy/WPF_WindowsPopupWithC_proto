@@ -45,7 +45,7 @@ class PopupContentAssemblerTest {
                                String allowClose) {
         return new PopupEntity("P1", type, "제목", null, null, "SEQUENTIAL", "FIXED",
                 null, null, null, null, null, null, null, null,
-                "Y", "Y", "Y", "N",
+                "Y", "Y", "Y", "N", "N",
                 title, description, body, media, options,
                 100, null, "FIXED", null, null, null, null,
                 completionRatio, passingScore, allowClose);

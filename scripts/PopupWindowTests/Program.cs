@@ -18,6 +18,8 @@ using Popup.Views.Windows;
  *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
+ * 52-2 나중에 보기: showFooter·showLater 표시 규칙, 버튼으로 닫으면 LATER(다시 보지 않기·영상 시청량보다 우선),
+ *      완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ) 중에도 닫힘, Overlay 출구로 인정
  * 44  Background Overlay 켜짐: Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소, 앱 닫기 경로 허용, 화면 출구가 없으면 허용,
  *     Overlay 꺼짐 기존 동작, Esc 무시, 창 제목, 앱 종료 시 결과 저장(결함 1), 생성 실패 시 Overlay 정리(결함 2)
  * 실제 PopupFactory·PopupWindow·PopupManager 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
@@ -61,7 +63,8 @@ internal static class Program
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-4, 53-16)");
+        CheckLater52();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-2, 52-4, 53-16)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -537,6 +540,72 @@ internal static class Program
                 Check(saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
                     $"[설계 44 결함 1] {type} (overlay {overlay}) shutdown close saves VIDEO_WATCHED with watched seconds ({saved.Count})");
                 Check(!manager.HasOpenPopups && !Overlay(manager).IsVisible, $"[설계 44] {type} (overlay {overlay}) shutdown cleans up window and overlay");
+            }
+        }
+        finally { owner.Close(); }
+    }
+
+    /*
+     * [TODO52-2] 나중에 보기. 모든 유형에서 showFooter·showLater가 모두 true일 때만 버튼이 보이고, 누르면 결과 LATER로 닫힌다.
+     * 다시 보지 않기 체크·영상 시청량이 있어도 LATER이며 hideDays·video를 싣지 않는다. 완료 전 닫기 잠금 중에도 닫힌다.
+     */
+    private static void CheckLater52()
+    {
+        foreach (string type in new[] { "TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ", "VIDEO_QUIZ", "FOOTER_LINK" })
+        {
+            foreach ((bool footer, bool showLater, bool expected) in new[] { (true, true, true), (true, false, false), (false, true, false) })
+            {
+                var opened = OpenPopup(type, dto => { dto.ShowFooter = footer; dto.ShowLater = showLater; });
+                Check((opened.Find<Button>("FooterLaterButton").Visibility == Visibility.Visible) == expected,
+                    $"[52-2] {type} later button {(expected ? "shown" : "hidden")} (footer {footer}, showLater {showLater})");
+                ShutdownClose(opened.Window);
+            }
+        }
+        Check(!new Popup.Dtos.PopupResponseDto().ShowLater, "[52-2] ShowLater defaults to false");
+
+        var builder = new PopupResultBuilder("P1", 7, "D-1");
+        builder.SetVideoProgress(Snapshot(30));
+        var later = builder.BuildOnClose(DateTimeOffset.Now, true, true);
+        Check(later.ResultType == Popup.Dtos.WpfResultType.Later && later.HideDays == null && later.Video == null && later.DeliveryId == "D-1",
+            $"[52-2] later wins over do-not-show-again and video ({later.ResultType})");
+        Check(builder.BuildOnClose(DateTimeOffset.Now, false, true).ResultType == Popup.Dtos.WpfResultType.Hidden,
+            "[52-2] without later the do-not-show-again choice still produces HIDDEN");
+
+        var owner = NewOwner();
+        try
+        {
+            foreach ((string type, bool overlay) in new[] { ("TEXT", false), ("VIDEO", false), ("VIDEO_QUIZ", false), ("QUIZ", true), ("VIDEO", true) })
+            {
+                var manager = new Popup.Managers.PopupManager(owner);
+                var dto = DemoPopups(type).Single();
+                dto.ShowFooter = true;
+                dto.ShowLater = true;
+                dto.ShowDoNotShowAgain = true;
+                dto.AllowCloseBeforeComplete = false;
+                dto.CompletionRatio = 0.8;
+                var options = PopupFactory.Create(dto);
+                options.UseBackgroundOverlay = overlay;
+                var saved = new List<Popup.Dtos.WpfResultItemDto>();
+                options.EnqueueResult = saved.Add;
+                manager.Show(options);
+                var window = OpenWindows(manager).Single();
+                var video = options.Content as VideoPopupView ?? (options.Content as VideoQuizPopupView)?.Video;
+                if (video != null)
+                {
+                    SetPlaybackFailed(video, false);
+                    Report(video, Snapshot(30, 30));
+                }
+                ((CheckBox)window.FindName("DoNotShowAgainCheckBox")).IsChecked = true;
+                if (overlay)
+                    Check((bool)typeof(PopupWindow).GetProperty("BlocksExternalClose", Flags)!.GetValue(window)!, $"[52-2] {type} overlay counts the later button as a visible exit");
+                var button = (Button)window.FindName("FooterLaterButton");
+                Check(button.IsEnabled, $"[52-2] {type} later button stays enabled while closing is locked");
+                typeof(PopupWindow).GetMethod("LaterButton_Click", Flags)!
+                    .Invoke(window, new object[] { button, new RoutedEventArgs(Button.ClickEvent) });
+                Check(!window.IsVisible && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Later
+                    && saved[0].HideDays == null && saved[0].Video == null,
+                    $"[52-2] {type} (overlay {overlay}) later closes a locked popup and saves LATER only ({saved.Count}, {saved.FirstOrDefault()?.ResultType})");
+                Check(!manager.HasOpenPopups, $"[52-2] {type} (overlay {overlay}) later cleans up the window");
             }
         }
         finally { owner.Close(); }

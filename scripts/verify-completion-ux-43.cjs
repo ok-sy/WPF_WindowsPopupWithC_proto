@@ -126,5 +126,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 필수 문항이 0개(선택 문항만)면 바로 제출할 수 있다.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 1, options: []}]});
   b = await button('제출'); check(!b.disabled, 'SURVEY with no required question can submit: ' + JSON.stringify(b));
+  // 6. [TODO52-2] 나중에 보기: showFooter·showLater일 때만 표시, 완료 전 잠금(VIDEO 시청·VIDEO+QUIZ)과 관계없이 활성이며 누르면 닫힌다.
+  for (const [type, content] of [['TEXT', {}], ['VIDEO', {}], ['QUIZ', {videoEnabled: true}], ['QUIZ', {}], ['SURVEY', {}]]) {
+    const label = type + (content.videoEnabled ? '+VIDEO' : '');
+    await render(type, {}, content);
+    check(await button('나중에 보기') === null, `${label} hides later by default`);
+    await render(type, {showLater: true, showFooter: false}, content);
+    check(await button('나중에 보기') === null, `${label} hides later without footer`);
+    await render(type, {showLater: true}, content);
+    b = await button('나중에 보기'); check(b && !b.disabled, `${label} shows an enabled later button: ` + JSON.stringify(b));
+    const before = await run('window.closeCount ?? 0'); await click('나중에 보기');
+    check(await run('window.closeCount') === before + 1, `${label} later runs onClose`);
+  }
   console.log(`PASS: ${checks} completion UX 43 checks`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {socket?.close(); browser?.kill(); server?.close();});

@@ -17,6 +17,11 @@ public enum WpfResultType {
     /** "다시 보지 않기". 닫기 정보 + 숨김 기간(hideDays) 기록. */
     HIDDEN,
     /**
+     * [TODO52-2] "나중에 보기". 모든 유형에서 표시·닫기 정보만 기록하고 완료 처리하지 않는다(TEXT·IMAGE 포함).
+     * 전달 건 재노출 유예(저장 시각 + pollingIntervalSeconds)로 다음 조회 주기에 다시 표시된다. hideDays·answers·video는 보내도 무시한다.
+     */
+    LATER,
+    /**
      * 설문·퀴즈 답안 제출. 서버가 문항·답안을 검증하고 저장한다. QUIZ 점수·통과 여부는 WPF 로컬 채점값(score·passed)을
      * 그대로 저장해 완료 판정에 쓰며(설계 12·33, 서버 계산값과 다르면 경고 로그만), SURVEY는 제출 즉시 완료한다.
      */

@@ -569,6 +569,12 @@ export default function PopupPreview({
       ? popup.allowCloseBeforeComplete
       : popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled);
   const submitDisabled = !videoUnlocked || remaining > 0 || !popup.questions.length;
+  // [TODO52-2] "나중에 보기"는 푸터가 보일 때 showLater로만 표시하고, 완료 전 닫기 잠금(시청·제출 조건)과 관계없이 누를 수 있다.
+  const showLaterButton = popup.showFooter && Boolean(popup.showLater);
+  const laterPreview = () => {
+    resetPreview();
+    onClose?.();
+  };
   const footerButtonDisabled = videoCloseBlocked || (linkAction && !footerLink);
 
   return (
@@ -785,6 +791,16 @@ export default function PopupPreview({
                 )}
               </Box>
               <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
+                {showLaterButton && (
+                  <Button
+                    variant="text"
+                    color="inherit"
+                    sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14 }}
+                    onClick={laterPreview}
+                  >
+                    나중에 보기
+                  </Button>
+                )}
                 {showSecondaryClose && (
                   <Button
                     variant="text"
@@ -857,18 +873,25 @@ export default function PopupPreview({
                   </Typography>
                 )}
               </Stack>
-              {popup.showCloseButton && (
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  sx={{ minWidth: 92 }}
-                  disabled={footerButtonDisabled}
-                  aria-describedby={videoCloseBlocked ? reasonId : undefined}
-                  onClick={handleFooter}
-                >
-                  {linkAction ? '바로가기' : '닫기'}
-                </Button>
-              )}
+              <Stack direction="row" alignItems="center" spacing={1}>
+                {showLaterButton && (
+                  <Button variant="text" color="inherit" onClick={laterPreview}>
+                    나중에 보기
+                  </Button>
+                )}
+                {popup.showCloseButton && (
+                  <Button
+                    variant="contained"
+                    color="inherit"
+                    sx={{ minWidth: 92 }}
+                    disabled={footerButtonDisabled}
+                    aria-describedby={videoCloseBlocked ? reasonId : undefined}
+                    onClick={handleFooter}
+                  >
+                    {linkAction ? '바로가기' : '닫기'}
+                  </Button>
+                )}
+              </Stack>
             </Stack>
           </>
         )}

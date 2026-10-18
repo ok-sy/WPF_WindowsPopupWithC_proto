@@ -60,6 +60,7 @@ namespace Popup.Factories
                 FooterAction = ConvertFooterAction(popupDto.PopupType, popupDto.FooterAction),
                 FooterLinkUrl = popupDto.FooterLinkUrl ?? string.Empty,
                 ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
+                ShowLater = popupDto.ShowLater,
 
                 /*
                  * [설계 31] PopupWindow 공통 UI 옵션은 popup 최상위 값을 쓴다(content 키는 읽지 않는다).

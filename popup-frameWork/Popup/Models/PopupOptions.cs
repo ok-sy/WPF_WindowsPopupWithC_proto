@@ -64,6 +64,12 @@ namespace Popup.Models
         /// </summary>
         public bool DoNotShowAgainChecked { get; set; }
 
+        /// <summary>
+        /// [TODO52-2] "나중에 보기" 버튼으로 닫는 중인지. PopupWindow가 닫기 직전에 기록하고 PopupManager가 LATER 항목을 만든다.
+        /// 다시 보지 않기 체크보다 우선한다(버튼이 명시적 선택이므로).
+        /// </summary>
+        public bool LaterRequested { get; set; }
+
         /// <summary>서버가 내려준 숨김 일수(hideDays). null이면 PopupResultBuilder 기본값 30일.</summary>
         public int? HideDays { get; set; }
 
@@ -83,6 +89,8 @@ namespace Popup.Models
         public bool OpenFooterLinkAndClose => FooterAction == PopupFooterAction.LinkAndClose;
         public string FooterLinkUrl { get; set; } = string.Empty;
         public bool ShowDoNotShowAgain { get; set; } = true;
+        /// <summary>[TODO52-2] Footer "나중에 보기" 버튼 표시(ShowFooter와 함께 true일 때). 기본 false.</summary>
+        public bool ShowLater { get; set; }
 
         /*
          * 팝업이 표시되는 동안 모든 모니터에 배경 Overlay를 표시할지 결정한다.

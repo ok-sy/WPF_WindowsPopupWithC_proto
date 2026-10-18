@@ -17,6 +17,7 @@ namespace Popup.Services
      *
      * [유형 결정 규칙]
      *   - 제출 항목을 이미 만들어 큐에 넣었으면(IsFinalized) 닫힘 시 다시 만들지 않는다.
+     *   - [TODO52-2] "나중에 보기" 버튼 → LATER (다시 보지 않기·영상 시청량보다 우선, hideDays·video 미포함)
      *   - "다시 보지 않기" 체크 → HIDDEN (hideDays: 팝업 설정값, 없으면 30)
      *   - 영상 팝업이고 스냅샷이 있으면 → VIDEO_WATCHED
      *   - 그 외 → CLOSED
@@ -109,6 +110,24 @@ namespace Popup.Services
                 }
             };
         }
+
+        /// <summary>
+        /// [TODO52-2] 나중에 보기 항목. 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
+        /// 영상 시청량은 싣지 않는다(서버의 기존 시청 기록은 그대로 유지).
+        /// </summary>
+        public WpfResultItemDto BuildLater(DateTimeOffset closedAt) => new()
+        {
+            ResultId = ResultId,
+            DeliveryId = _deliveryId,
+            PopupId = _popupId,
+            ResultType = WpfResultType.Later,
+            DisplayedAt = _displayedAt,
+            ClosedAt = closedAt
+        };
+
+        /// <summary>창 닫힘 시 만들 항목. 나중에 보기를 눌렀으면 LATER, 아니면 BuildClosed 규칙을 따른다.</summary>
+        public WpfResultItemDto BuildOnClose(DateTimeOffset closedAt, bool later, bool doNotShowAgain) =>
+            later ? BuildLater(closedAt) : BuildClosed(closedAt, doNotShowAgain);
 
         /// <summary>닫힘 항목. doNotShowAgain이면 HIDDEN, 영상 스냅샷이 있으면 VIDEO_WATCHED, 아니면 CLOSED.</summary>
         public WpfResultItemDto BuildClosed(DateTimeOffset closedAt, bool doNotShowAgain)

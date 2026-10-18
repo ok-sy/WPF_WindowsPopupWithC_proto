@@ -14,7 +14,7 @@ import server.repo.core.mapper.popup.WpfPopupMapper;
 import server.service.core.popup.PopupService;
 
 /**
- * WPF 결과 항목 1건을 유형(CLOSED/HIDDEN/SUBMITTED/VIDEO_WATCHED)에 따라 처리한다.
+ * WPF 결과 항목 1건을 유형(CLOSED/HIDDEN/LATER/SUBMITTED/VIDEO_WATCHED)에 따라 처리한다.
  *
  * <p>[추가 이유 — 기준 3·4] 기존에는 hide / responses / video-progress / events 4개 API가 각각 처리하던 일을
  * 한 진입점에서 분배한다. 검증·채점·완료 판정 규칙은 기존 {@link PopupService}의 공개 메서드
@@ -34,7 +34,7 @@ import server.service.core.popup.PopupService;
  * <p>[설계 35] 전달 건(deliveryId): 영수증 확인 뒤 전달 건의 소유(사번)·팝업 일치·미종료를 확인하고, 처리 성공 시 같은 트랜잭션에서
  * 전달 건을 종료하며 재노출 유예(저장 시각 + pollingIntervalSeconds)를 기록한다. 일반 안내(TEXT·IMAGE)의 닫기(CLOSED,
  * Footer 닫기·바로가기 포함)는 완료로 처리해 이후 조회에서 제외한다. 설문·퀴즈·영상은 기존 제출·통과·시청 완료 조건을 유지하고,
- * 미완료로 닫으면 유예 기간 동안만 제외된다.</p>
+ * 미완료로 닫으면 유예 기간 동안만 제외된다. [TODO52-2] 나중에 보기(LATER)는 유형과 관계없이 완료 처리하지 않아 유예 후 다시 표시된다.</p>
  *
  * <p>[설계 47-4] 게시중단 전에 표시된 팝업의 결과는 수용한다(재조회로 EXPIRED가 된 전달 건 포함). 결과 수용 조건은
  * 유효한 전달 건(소유 사번·팝업 일치·미종료)과 활성 사용자·팝업 행 존재이며, 신규 조회의 게시 조건(팝업 활성·게시 기간·대상)은
@@ -76,6 +76,7 @@ public class WpfResultProcessor {
         WpfResultItemResponse response = switch (item.resultType()) {
             case CLOSED -> handleClosed(employeeNo, item, delivery.popupType());
             case HIDDEN -> handleHidden(employeeNo, item);
+            case LATER -> handleLater(employeeNo, item);
             case SUBMITTED -> handleSubmitted(employeeNo, item);
             case VIDEO_WATCHED -> handleVideo(employeeNo, item);
         };
@@ -98,6 +99,16 @@ public class WpfResultProcessor {
         if ("TEXT".equals(popupType) || "IMAGE".equals(popupType)) {
             popupMapper.markPopupCompleted(employeeNo, item.popupId(), "Y");
         }
+        return WpfResultItemResponse.accepted(item);
+    }
+
+    /**
+     * [TODO52-2] LATER(나중에 보기): 표시·닫기 정보만 반영하고 완료·숨김 상태를 바꾸지 않는다.
+     * 재노출은 processOne의 전달 건 유예(다음 조회 주기)로만 막는다. 영상 시청 정보는 기록하지 않는다(기존 기록은 유지).
+     */
+    private WpfResultItemResponse handleLater(String employeeNo, WpfResultCommand item) {
+        requireActiveUserAndPopup(employeeNo, item.popupId());
+        recordDisplayAndClose(employeeNo, item);
         return WpfResultItemResponse.accepted(item);
     }
 

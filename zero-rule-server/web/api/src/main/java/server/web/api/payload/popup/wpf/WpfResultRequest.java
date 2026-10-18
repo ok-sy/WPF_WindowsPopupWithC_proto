@@ -60,7 +60,7 @@ public record WpfResultRequest(
                     .collect(java.util.stream.Collectors.joining(", "));
         }
         if (type() == null) {
-            return "resultType은 CLOSED, HIDDEN, SUBMITTED, VIDEO_WATCHED 중 하나여야 합니다: " + resultType;
+            return "resultType은 CLOSED, HIDDEN, LATER, SUBMITTED, VIDEO_WATCHED 중 하나여야 합니다: " + resultType;
         }
         if (score != null && !Double.isFinite(score)) {
             return "score는 유한한 숫자여야 합니다.";

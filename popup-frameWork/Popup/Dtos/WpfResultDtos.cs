@@ -31,6 +31,8 @@ namespace Popup.Dtos
     {
         public const string Closed = "CLOSED";
         public const string Hidden = "HIDDEN";
+        /// <summary>[TODO52-2] 나중에 보기. 완료 없이 다음 조회 주기까지 재노출 유예(hideDays·video 미포함).</summary>
+        public const string Later = "LATER";
         public const string Submitted = "SUBMITTED";
         public const string VideoWatched = "VIDEO_WATCHED";
     }

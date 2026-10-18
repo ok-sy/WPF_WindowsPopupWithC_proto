@@ -32,6 +32,7 @@ import java.util.Map;
  *       싣지 않는 것은 PopupContentAssembler가 보장하므로 여기서 따로 제거하지 않는다.</li>
  *   <li>[설계 35] 단건 순차 전달: 조회 API가 발급한 전달 건 ID {@code deliveryId}를 맨 앞에 둔다(결과 수신 시 그대로 반환).
  *       표시 순서는 서버가 정해 1건씩 내려주므로 {@code displayOrder}는 WPF 계약에서 뺐다.</li>
+ *   <li>[TODO52-2] {@code showLater}: Footer "나중에 보기" 버튼 표시(기본 false). 누르면 결과 LATER(완료 없이 다음 조회 주기까지 유예).</li>
  * </ul>
  *
  * <p>[설계 12 §4 — 변경] 기준 3에서는 채점이 서버 책임이라 {@code passingScore}와 정답 키를 WPF에 내려주지 않았다.
@@ -67,6 +68,7 @@ public record WpfPopupItem(
         Double bodyFontSize,
         Double footerFontSize,
         boolean showDoNotShowAgain,
+        boolean showLater,
         Integer hideDays,
         boolean allowCloseBeforeComplete,
         Double completionRatio,
@@ -100,7 +102,7 @@ public record WpfPopupItem(
                 dto.minimumWidth(), dto.minimumHeight(), dto.maximumWidth(), dto.maximumHeight(),
                 dto.showHeader(), dto.showCloseButton(), dto.showFooter(), footerAction, footerLinkUrl,
                 useOverlay, overlayOpacity, position, headerFontSize, bodyFontSize, footerFontSize,
-                dto.showDoNotShowAgain(),
+                dto.showDoNotShowAgain(), dto.showLater(),
                 dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
                 dto.questions(), content);
@@ -112,7 +114,7 @@ public record WpfPopupItem(
                 widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
                 showHeader, showFooterButton, showFooter, footerAction, footerLinkUrl,
                 useBackgroundOverlay, backgroundOverlayOpacity, popupPosition, headerFontSize, bodyFontSize, footerFontSize,
-                showDoNotShowAgain, hideDays, allowCloseBeforeComplete, completionRatio, passingScore, questions, content);
+                showDoNotShowAgain, showLater, hideDays, allowCloseBeforeComplete, completionRatio, passingScore, questions, content);
     }
 
     /**

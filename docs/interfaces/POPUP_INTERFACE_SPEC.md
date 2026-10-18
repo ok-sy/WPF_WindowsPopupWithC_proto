@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
+- 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
@@ -302,6 +303,7 @@ X-Client-Version: 1.0.0
 | bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
 | footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
+| showLater | boolean | 선택 | `false` | 나중에 보기 버튼 표시(TODO52-2). `showFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 `LATER`(§10.4.1)로 닫힌다. 완료 전 닫기 잠금(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전) 중에도 누를 수 있다 |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
 | allowCloseBeforeComplete | boolean | VIDEO / 동영상+퀴즈 | `true` | 완료 전 닫기 허용 여부 |
@@ -819,7 +821,7 @@ X-Client-Version: 1.0.0
 | resultId | string(GUID) | O | 팝업 결과 생성 시 GUID 생성, 재전송 시 유지. 64자 이하 |
 | deliveryId | string | O | 조회 응답 `popup.deliveryId` 그대로. 64자 이하. 서버가 전달 건 소유·팝업 일치·미종료를 검증 |
 | popupId | string | O | 원 팝업의 popupId. 전달 건의 팝업과 같아야 함 |
-| resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정 |
+| resultType | string | O | 기본 객체값은 CLOSED이나 실제 동작에 따라 타입 결정. 나중에 보기 버튼으로 닫으면 `LATER`(다시 보지 않기 체크·영상 시청량보다 우선) |
 | displayedAt | string(ISO) | 선택 | `null` 가능 |
 | closedAt | string(ISO) | 선택 | `null` 가능 |
 | hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 조회 응답 popup의 hideDays(1~3650), 없으면 30. 1~3650(§10.4) |
@@ -837,6 +839,7 @@ X-Client-Version: 1.0.0
 ```text
 CLOSED
 HIDDEN
+LATER
 SUBMITTED
 VIDEO_WATCHED
 ```
@@ -874,7 +877,26 @@ VIDEO_WATCHED
 
 - `hideDays`: 1~3650
 - 서버가 해당 사용자/팝업에 대한 숨김 만료 시각을 계산·저장한다.
-- **HIDDEN 우선**: "다시 보지 않기"를 체크하고 닫으면 영상을 시청했더라도 결과는 `HIDDEN`이다. 이때 `video` 블록은 보내지 않으며 서버도 HIDDEN 결과에서 영상 시청 정보를 기록하지 않는다. 따라서 끝까지 시청한 VIDEO를 숨김으로 닫으면 시청 완료로 기록되지 않는다.
+- **HIDDEN 우선**: "다시 보지 않기"를 체크하고 닫으면 영상을 시청했더라도 결과는 `HIDDEN`이다. 이때 `video` 블록은 보내지 않으며 서버도 HIDDEN 결과에서 영상 시청 정보를 기록하지 않는다. 따라서 끝까지 시청한 VIDEO를 숨김으로 닫으면 시청 완료로 기록되지 않는다. 단 "나중에 보기" 버튼으로 닫으면 체크 여부와 관계없이 `LATER`다(§10.4.1).
+
+### 10.4.1 LATER (나중에 보기, TODO52-2)
+
+```json
+{
+  "resultId": "GUID",
+  "deliveryId": "d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e15",
+  "popupId": "NOTICE-001",
+  "resultType": "LATER",
+  "displayedAt": "2026-09-28T15:34:00+09:00",
+  "closedAt": "2026-09-28T15:35:00+09:00"
+}
+```
+
+- 조회 응답 `showLater=true`이고 `showFooter=true`인 팝업의 "나중에 보기" 버튼으로 닫을 때 보낸다. 모든 popupType에 허용한다.
+- 서버는 표시·닫기 정보만 기록하고 **완료·숨김 상태를 바꾸지 않는다**(TEXT·IMAGE도 완료 아님). 전달 건 재노출 유예로 저장 시각부터 `pollingIntervalSeconds` 동안 제외되고, 이후 조회에서 표시 조건을 만족하면 다시 표시된다.
+- `hideDays`·`answers`·`video`·`score`·`passed`는 보내지 않는다. 보내더라도 서버는 무시하며, 영상 시청 정보는 새로 기록하지 않는다(이미 저장된 시청 기록은 유지).
+- 서버는 팝업의 `showLater` 설정을 다시 검사하지 않는다(HIDDEN과 같은 기준). 문자열은 대소문자를 구분하지 않는다.
+- 완료 전 닫기 잠금 중에도 보낼 수 있다. 잠금 중 연기 허용은 현재 정책이며, 바뀌면 이 절과 WPF 버튼 활성 조건을 함께 고친다.
 
 ---
 
@@ -977,6 +999,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 |---|---|
 | TEXT·IMAGE `CLOSED`(Footer 닫기·바로가기 `LINK_AND_CLOSE` 포함) | 완료 처리. 노출 기간 안에서 다시 표시하지 않음 |
 | `HIDDEN` | 기존 숨김 정책. `hideDays` 동안 제외. 영상 시청 정보는 기록하지 않음(§10.4) |
+| `LATER`(모든 유형) | 완료·숨김 없음. 저장 시각부터 `pollingIntervalSeconds` 동안 제외 후 다시 표시(§10.4.1) |
 | SURVEY·QUIZ `SUBMITTED`, VIDEO 시청 기준 충족 | 기존 완료 조건대로 완료 처리 |
 | 미완료로 끝난 SURVEY·QUIZ·VIDEO(완료 전 닫기, QUIZ 미통과, 시청 기준 미달) | 저장 시각부터 `pollingIntervalSeconds` 동안 조회·`nextStatus` 후보에서 제외. 이후에도 표시 조건을 만족하면 다시 표시 |
 
@@ -1247,6 +1270,7 @@ CONTAINS
 ```text
 CLOSED
 HIDDEN
+LATER
 SUBMITTED
 VIDEO_WATCHED
 ```
@@ -1305,6 +1329,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
   "content": {
@@ -1342,6 +1367,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": true,
   "questions": [],
   "content": {
@@ -1376,6 +1402,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": false,
   "questions": [],
   "completionRatio": 0.8,
@@ -1415,6 +1442,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": true,
   "questions": [
     {
@@ -1507,6 +1535,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": true,
   "questions": [
     {
@@ -1593,6 +1622,7 @@ EMPTY
   "backgroundOverlayOpacity": 0.45,
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
+  "showLater": false,
   "allowCloseBeforeComplete": false,
   "questions": [
     {

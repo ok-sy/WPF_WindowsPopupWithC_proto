@@ -63,6 +63,7 @@ namespace Popup
             Field("showFooterButton", "Footer 버튼 표시", typeof(bool));
             Field("showFooter", "푸터 표시", typeof(bool));
             Field("showDoNotShowAgain", "다시 보지 않기 표시", typeof(bool));
+            Field("showLater", "나중에 보기 표시", typeof(bool));
             Field("hideDays", "숨김 일수 · 비우면 30일", typeof(int?), min: 1);
             Field("allowCloseBeforeComplete", "완료 전 닫기 허용", typeof(bool));
             if (popup.PopupType == "VIDEO" || HasVideo(popup))

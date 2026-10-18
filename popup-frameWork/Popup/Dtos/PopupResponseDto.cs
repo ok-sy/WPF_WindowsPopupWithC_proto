@@ -149,6 +149,9 @@ namespace Popup.Dtos
 
         public bool ShowDoNotShowAgain { get; set; }
 
+        /// <summary>[TODO52-2] Footer "나중에 보기" 버튼 표시. 응답에 없으면 false.</summary>
+        public bool ShowLater { get; set; }
+
         /*
          * 숨김·완료 정책 값
          *

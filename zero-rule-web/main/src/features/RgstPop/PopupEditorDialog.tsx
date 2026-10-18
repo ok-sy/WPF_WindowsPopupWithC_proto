@@ -48,7 +48,7 @@ function createDefaultPopup(): AdminPopupDetail {
     displayMode: 'SEQUENTIAL', displayOrder: 100, sizeMode: 'FIXED',
     width: 560, height: 420, widthRatio: 0.7, heightRatio: 0.75,
     minimumWidth: 480, minimumHeight: 320, maximumWidth: 1200, maximumHeight: 900,
-    showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false,
+    showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false, showLater: false,
     questionTemplateId: null, periodMode: 'FIXED', repeatInterval: null,
     repeatDayOfWeek: null, repeatDayOfMonth: null, hideDays: null,
     completionRatio: null, passingScore: null, allowCloseBeforeComplete: true,
@@ -248,6 +248,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   }));
   const updateFooter = (showFooter: boolean) => setPopup((previous) => ({
     ...previous, showFooter, showDoNotShowAgain: showFooter ? previous.showDoNotShowAgain : false,
+    showLater: showFooter ? Boolean(previous.showLater) : false,
   }));
 
   const addTargetGroup = () => setTargetGroups((groups) => [...groups, {
@@ -536,6 +537,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <FormControlLabel control={<Switch size="small" checked={popup.showCloseButton} onChange={(_, value) => updatePopup('showCloseButton', value)} />} label="닫기 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
+              {/* [TODO52-2] 나중에 보기: 누르면 완료 없이 닫히고 다음 조회 주기에 다시 표시된다(모든 유형, 완료 전 닫기 잠금 중에도 가능). */}
+              <FormControlLabel control={<Switch size="small" checked={Boolean(popup.showLater)} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showLater', value)} />} label="나중에 보기" />
             </Box>
             {isSurvey ? (
               <TextField select size="small" label="푸터 버튼 동작" value="SUBMIT" disabled

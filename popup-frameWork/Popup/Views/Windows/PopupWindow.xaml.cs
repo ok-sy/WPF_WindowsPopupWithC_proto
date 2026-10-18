@@ -325,6 +325,12 @@ namespace Popup.Views.Windows
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
+            // [TODO52-2] "나중에 보기"는 Footer가 보이고 showLater=true일 때만 표시한다(유형 무관).
+            FooterLaterButton.Visibility =
+                _options.ShowFooter && _options.ShowLater
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
             /*
              * [설계 14 §5] 관리자 설정 폰트 크기(Header/Footer/본문)를 적용한다.
              */
@@ -758,6 +764,7 @@ namespace Popup.Views.Windows
                 DoNotShowAgainCheckBox.FontSize = footerFontSize;
                 FooterCloseButton.FontSize = footerFontSize;
                 FooterAuxCloseButton.FontSize = footerFontSize;
+                FooterLaterButton.FontSize = footerFontSize;
             }
 
             if (TryClampFontSize(_options.BodyFontSize, out double bodyFontSize)
@@ -991,6 +998,35 @@ namespace Popup.Views.Windows
         }
 
         /*
+         * [TODO52-2] "나중에 보기". 결과 LATER로 닫고, 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
+         * 완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ 시청 기준, QUIZ 통과)과 다시 보지 않기 체크보다 우선한다(OnClosing·PopupResultBuilder).
+         * 결과 저장 실패 등으로 닫기가 취소되면 플래그를 되돌려, 이후 다른 닫기 경로가 LATER로 저장되지 않게 한다.
+         */
+        private void LaterButton_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            FooterLaterButton.IsEnabled = false;
+            _options.LaterRequested = true;
+            try
+            {
+                CloseByApp();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(this, "팝업을 닫지 못했습니다.\n\n" + exception.Message, "나중에 보기",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (IsVisible)
+                {
+                    _options.LaterRequested = false;
+                    FooterLaterButton.IsEnabled = true;
+                }
+            }
+        }
+
+        /*
          * [설계 44] 앱이 시작한 닫기인지. 푸터 닫기·보조 닫기·LINK_AND_CLOSE(CloseButton_Click)와
          * 제출 완료 후 닫기(PopupManager)가 CloseByApp으로 닫는 동안만 true다.
          * Background Overlay가 켜진 팝업은 이 경로와 앱 종료만 허용하고 Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 취소한다.
@@ -1133,6 +1169,7 @@ namespace Popup.Views.Windows
         private bool HasVisibleExit()
         {
             if (ShouldShowAuxClose()) return true;
+            if (FooterLaterButton.Visibility == Visibility.Visible) return true;   // [TODO52-2] 나중에 보기도 나가는 수단
             if (SurveyContent != null)
             {
                 // 제출 버튼은 푸터 또는 본문에 항상 보인다. 단 VIDEO+QUIZ가 잠긴 채 재생에 실패하면 제출에 도달할 수 없다.
@@ -1200,7 +1237,8 @@ namespace Popup.Views.Windows
         {
             if (!IsApplicationExiting())
             {
-                if (!_options.AllowCloseBeforeComplete)
+                // [TODO52-2] 나중에 보기는 완료 전 닫기 잠금을 적용하지 않는다(완료로 기록하지 않고 미루는 동작).
+                if (!_options.AllowCloseBeforeComplete && !_options.LaterRequested)
                 {
                     if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
                         && !combined.Video.HasPlaybackFailed)

@@ -90,6 +90,33 @@ class WpfResultProcessorTest {
         verify(popupService).hidePopup("P1", "E1001", 7);
     }
 
+    /**
+     * [TODO52-2] LATER는 모든 유형에서 완료·숨김 없이 표시·닫기만 기록하고 전달 건 유예로 다음 조회 주기에 다시 표시된다.
+     * TEXT·IMAGE의 CLOSED(완료)와 달리 완료 처리하지 않으며, 함께 온 hideDays·video는 무시한다.
+     */
+    @Test void laterDefersWithoutCompletionForEveryType() {
+        var video = new WpfVideoProgress(new BigDecimal("540"), new BigDecimal("540"),
+                new BigDecimal("540"), new BigDecimal("540"));
+        for (String type : List.of("TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ")) {
+            setup();
+            delivery(type);
+            var res = processor.processOne("E1001", item(WpfResultType.LATER, 7, null, video));
+            assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status(), type);
+            verify(wpfMapper).mergeDisplayAndClose("E1001", "P1", DISPLAYED, CLOSED);
+            verify(wpfMapper).completeDelivery("D-1", "r-1", "LATER", 2700);
+            verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "LATER", "ACCEPTED", null);
+            verify(popupMapper, never()).markPopupCompleted(any(), any(), any());
+            verifyNoInteractions(popupService);   // hidePopup·saveDeliveredVideoProgress 미호출
+        }
+    }
+
+    /** 대조: 같은 TEXT 전달 건의 CLOSED는 완료 처리한다(LATER와 구분). */
+    @Test void textClosedCompletesButLaterDoesNot() {
+        delivery("TEXT");
+        processor.processOne("E1001", item(WpfResultType.CLOSED, null, null, null));
+        verify(popupMapper).markPopupCompleted("E1001", "P1", "Y");
+    }
+
     @Test void hiddenWithoutHideDaysIsRejectedBeforeAnyWrite() {
         assertThrows(IllegalArgumentException.class,
                 () -> processor.processOne("E1001", item(WpfResultType.HIDDEN, null, null, null)));

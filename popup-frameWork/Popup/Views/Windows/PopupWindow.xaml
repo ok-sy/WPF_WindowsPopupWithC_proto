@@ -266,7 +266,17 @@
                     [설계 43] FooterAuxCloseButton: 정책상 제출 전 이탈이 허용될 때만 보이는 보조 닫기.
                     VIDEO+QUIZ(완료 전 닫기 허용 또는 재생 실패), QUIZ(미달 1회 이후 + Overlay 꺼짐)에서만 표시한다.
                     -->
+                    <!--
+                    [TODO52-2] FooterLaterButton: "나중에 보기". showFooter·showLater가 모두 true일 때만 보인다.
+                    누르면 결과 LATER로 닫고 다음 조회 주기에 다시 표시된다. 완료 전 닫기 잠금(VIDEO·QUIZ) 중에도 누를 수 있다.
+                    -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="FooterLaterButton"
+                                Style="{StaticResource SecondaryActionButtonStyle}"
+                                Content="나중에 보기"
+                                Margin="0,0,10,0"
+                                Visibility="Collapsed"
+                                Click="LaterButton_Click"/>
                         <Button x:Name="FooterAuxCloseButton"
                                 Style="{StaticResource SecondaryActionButtonStyle}"
                                 Content="닫기"

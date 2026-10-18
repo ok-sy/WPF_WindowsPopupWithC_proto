@@ -151,6 +151,10 @@ namespace Popup.Services
                         || popup.PopupType.Equals("IMAGE", StringComparison.OrdinalIgnoreCase)) _completed.Add(item.PopupId);
                     break;
 
+                case WpfResultType.Later:
+                    // [TODO52-2] 나중에 보기: 유형과 관계없이 완료 처리하지 않는다. 아래 공통 처리로 조회 간격 동안만 유예된다.
+                    break;
+
                 case WpfResultType.Hidden:
                     if (item.HideDays is null or < 1 or > 3650)
                     {
