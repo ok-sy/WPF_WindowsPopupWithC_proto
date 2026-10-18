@@ -634,6 +634,34 @@ namespace Popup.Services
             linked["footerLinkUrl"] = "https://example.com/";
             demoPopups.Add(linked);
 
+            // [TODO56-13] 디자인 평가용 설문: 실제 교육 만족도 문구, 기본 글자색, 서식(FONT EDIT) 없음.
+            // 서식·긴 문자열 스트레스 검증은 DEMO-SURVEY-001이 계속 맡는다. 단일/복수 × 세로/가로와 선택 문항을 모두 포함한다.
+            JsonObject plainSurvey = demoPopups.First(node => node?["popupId"]?.GetValue<string>() == "DEMO-SURVEY-001")!.DeepClone().AsObject();
+            plainSurvey["popupId"] = "DEMO-SURVEY-PLAIN";
+            plainSurvey["title"] = "교육 만족도 조사";
+            plainSurvey["content"] = JsonNode.Parse("""
+                { "surveyTitle": "교육 만족도 조사", "description": "더 나은 교육을 위해 의견을 들려주세요. 응답에는 약 2분이 걸립니다." }
+                """);
+            plainSurvey["questions"] = JsonNode.Parse("""
+                [
+                  { "questionId": 5001, "optionLayout": "VERTICAL", "title": "이번 교육에 전반적으로 만족하셨나요?", "questionType": "SINGLE_CHOICE", "isRequired": true,
+                    "options": [ { "optionId": 5101, "value": "5", "text": "매우 만족" }, { "optionId": 5102, "value": "4", "text": "만족" },
+                                 { "optionId": 5103, "value": "3", "text": "보통" }, { "optionId": 5104, "value": "2", "text": "불만족" },
+                                 { "optionId": 5105, "value": "1", "text": "매우 불만족" } ] },
+                  { "questionId": 5002, "optionLayout": "HORIZONTAL", "title": "교육 시간은 적절했나요?", "questionType": "SINGLE_CHOICE", "isRequired": true,
+                    "options": [ { "optionId": 5201, "value": "SHORT", "text": "짧았다" }, { "optionId": 5202, "value": "FIT", "text": "적절했다" },
+                                 { "optionId": 5203, "value": "LONG", "text": "길었다" } ] },
+                  { "questionId": 5003, "optionLayout": "VERTICAL", "title": "도움이 된 부분을 모두 선택해주세요.", "questionType": "MULTIPLE_CHOICE", "isRequired": true,
+                    "options": [ { "optionId": 5301, "value": "LECTURE", "text": "강의 내용" }, { "optionId": 5302, "value": "PRACTICE", "text": "실습" },
+                                 { "optionId": 5303, "value": "MATERIAL", "text": "교재와 참고 자료" }, { "optionId": 5304, "value": "QNA", "text": "질의응답" } ] },
+                  { "questionId": 5004, "optionLayout": "HORIZONTAL", "title": "다음 교육에서 다루었으면 하는 주제가 있나요?", "questionType": "MULTIPLE_CHOICE", "isRequired": false,
+                    "options": [ { "optionId": 5401, "value": "SECURITY", "text": "정보 보안" }, { "optionId": 5402, "value": "COLLAB", "text": "협업 도구" },
+                                 { "optionId": 5403, "value": "DATA", "text": "데이터 분석" }, { "optionId": 5404, "value": "AUTO", "text": "업무 자동화" } ] },
+                  { "questionId": 5005, "title": "교육에 대한 의견을 자유롭게 남겨주세요.", "questionType": "TEXT", "isRequired": false }
+                ]
+                """);
+            demoPopups.Add(plainSurvey);
+
             /*
              * JSON에 특정 PC의 절대경로를 하드코딩하지 않고,
              * 실행 중인 EXE 옆 Media 폴더의 실제 절대경로를 넣는다.

@@ -198,6 +198,9 @@ namespace Popup.Views.Contents
 
                 QuestionListPanel.Children.Add(questionCard);
             }
+            // [TODO56-10] 문항 구분선(디자인 V2의 아래 테두리)은 문항 사이에만 둔다. V1 카드는 테두리가 없어 영향 없음.
+            if (QuestionListPanel.Children.Count > 0 && QuestionListPanel.Children[^1] is Border lastCard)
+                lastCard.BorderThickness = new Thickness(0);
             UpdateResponseProgress();
         }
 
@@ -229,15 +232,20 @@ namespace Popup.Views.Contents
                 : string.Empty;
 
             titleText.Text = $"{question.Title}{requiredMark}";
+            // [TODO56-12] 선택 방식 안내는 제목 끝(필수 표시 뒤)에 작은 보조 글자로 이어 붙인다. 제목이 길거나 창이 좁으면
+            // 글자 흐름대로 다음 줄로 넘어가 잘리지 않는다. 표시 전용이며 제목 데이터(Title·TitleBlocks)는 바꾸지 않는다.
+            string? choiceHint = ChoiceHintOf(question);
             // [TODO55] 문항 제목 서식: 문단마다 같은 기본 글꼴로 표시하고 필수 표시는 마지막 문단 끝에 붙인다.
             FrameworkElement titleElement = titleText;
             List<TextBlock> titleParagraphs = CreateRichParagraphs(question.TitleBlocks, titleText);
             if (titleParagraphs.Count > 0)
             {
                 if (requiredMark.Length > 0) titleParagraphs[^1].Inlines.Add(new System.Windows.Documents.Run(requiredMark));
+                if (choiceHint != null) titleParagraphs[^1].Inlines.Add(ChoiceHintRun(choiceHint));
                 titleElement = StackOf(titleParagraphs, question.Title);
                 _questionTitleTexts.AddRange(titleParagraphs);
             }
+            if (titleElement == titleText && choiceHint != null) titleText.Inlines.Add(ChoiceHintRun(choiceHint));
             Grid titleRow = new Grid();
             titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -282,6 +290,7 @@ namespace Popup.Views.Contents
 
             FrameworkElement answerControl =
             CreateAnswerControl(question);
+            if (choiceHint != null) System.Windows.Automation.AutomationProperties.SetHelpText(answerControl, choiceHint);
 
             /*
              * 제출 시 응답을 읽을 수 있도록
@@ -426,6 +435,31 @@ namespace Popup.Views.Contents
             plain.Visibility = Visibility.Collapsed;
         }
 
+        /*
+         * [TODO56-5] 선택 방식 안내. 계약에 선택 개수 제한이 없으므로 단일·복수만 구분한다. 주관식은 안내하지 않는다.
+         * 디자인 버전에 SurveyShowChoiceHint=true가 있을 때만 표시한다(V1은 키가 없어 표시하지 않음).
+         */
+        private string? ChoiceHintOf(SurveyQuestion question)
+        {
+            if (TryFindResource("SurveyShowChoiceHint") is not true) return null;
+            return question.QuestionType switch
+            {
+                SurveyQuestionType.SingleChoice => "하나 선택",
+                SurveyQuestionType.MultipleChoice => "여러 개 선택 가능",
+                _ => null
+            };
+        }
+
+        // 제목 글자 크기(본문 크기 +4)와 관계없이 문항 번호와 같은 12 크기·보통 굵기·보조색으로 둔다(우선순위를 제목보다 낮게).
+        private System.Windows.Documents.Run ChoiceHintRun(string hint) => new("   " + hint)
+        {
+            FontSize = 12,
+            FontWeight = FontWeights.Normal,
+            FontStyle = FontStyles.Normal,
+            TextDecorations = null,
+            Foreground = (Brush)FindResource("SurveyMutedText")
+        };
+
         /* [TODO55] 선택지 표시: 서식이 있으면 문단 패널, 없으면 기존 일반 문구. 접근성 이름은 호출부에서 일반 문구(Text)로 둔다. */
         private FrameworkElement CreateOptionContent(SurveyOption option, bool horizontal)
         {
@@ -435,9 +469,11 @@ namespace Popup.Views.Contents
             return paragraphs.Count == 0 ? plain : StackOf(paragraphs, option.Text);
         }
 
-        private static TextBlock CreateOptionText(string text, bool horizontal)
+        private TextBlock CreateOptionText(string text, bool horizontal)
         {
-            TextBlock label = horizontal ? new TextBlock() : new StableChoiceText();
+            // 선택 시 굵게 바뀌는 디자인(V1)만 굵은 글자 높이를 미리 확보한다. TODO56 이후 V2는 선택해도 굵기가 그대로다.
+            bool reserveSelectedBold = TryFindResource("SurveyReserveSelectedBold") is not false;
+            TextBlock label = horizontal || !reserveSelectedBold ? new TextBlock() : new StableChoiceText();
             label.Text = text;
             label.LineHeight = 22;
             label.TextWrapping = TextWrapping.Wrap;
@@ -789,9 +825,10 @@ namespace Popup.Views.Contents
             int completed = _questions.Count(question => question.IsRequired && answers.Any(answer =>
                 answer.QuestionId == question.QuestionId && (answer.SelectedOptionIds.Count > 0 || !string.IsNullOrWhiteSpace(answer.TextAnswer))));
             CanSubmit = IsEnabled && completed == required;
+            // [TODO56-6] 필수 문항 단위로 센다(복수선택 선택지 수·선택 문항 응답은 세지 않음). 필수 0개면 수치를 표시하지 않는다.
             ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
-                : completed == required ? $"필수 문항 {completed}/{required} 응답 완료"
-                : $"필수 문항 {completed}/{required} 응답 · 남은 {required - completed}문항";
+                : completed == required ? $"필수 응답 {completed}/{required} 완료"
+                : $"필수 응답 {completed}/{required} · {required - completed}문항 남음";
             bool changed = RequiredProgressText.Text != ResponseProgressText;
             RequiredProgressText.Text = ResponseProgressText;
             RequiredProgressText.Foreground = (Brush)FindResource("SurveyMutedText");

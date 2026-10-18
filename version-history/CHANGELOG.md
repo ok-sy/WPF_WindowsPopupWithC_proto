@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-18-13 — TODO56 설문·퀴즈 선택 상태·응답 안내 UX(WPF, 디자인 V2 반영)
+
+- 이유: 미선택 체크가 선택처럼 보이고 단일/복수 선택 외형이 같아 혼동(TODO56). 새 버전을 만들지 않고 최신 디자인 V2에 직접 반영하기로 결정, V1은 원복용으로 보존. 원/사각형 표시기를 1차 구현했으나 라디오·체크박스 표시기 없이 선택 후에만 체크를 보이는 방식으로 결정.
+- 변경: SurveyStyles.V2.xaml 선택지 템플릿을 행·Chip 2개로 정리(단일·복수 공용, 표시기 없음). 선택 전 체크 숨김(행 오른쪽 28 자리 예약), 선택 = 2px 링 층(크기 불변) + 행만 #171717 체크(가로형 Chip은 체크 자리를 비우면 왼쪽 여백이 어색해 체크 없이 링만, 좌우 여백 동일, SurveyChipCheckWidth 0), 선택 시 SemiBold·Foreground 변경 제거, 포커스는 링 바깥 점선 FocusVisualStyle, 비활성은 선택 표시 유지. 디자인 키 SurveyReserveSelectedBold(V2 False — 굵은 글자 높이 예약 해제)·SurveyShowChoiceHint(V2 True)·SurveyIndicatorBorder 추가(V1은 키 없음 = 기존 동작). SurveyPopupView: 단일 "하나 선택"/복수 "여러 개 선택 가능" 안내 줄과 HelpText, 필수 응답 문구 "필수 응답 n/m · k문항 남음"/"필수 응답 m/m 완료"(버전 공통). TODO56 진행 기록, popup-frameWork README, 웹 SurveyPreview 인계 주석 갱신.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/SurveyDesigns/SurveyStyles.V2.xaml, Views/Contents/SurveyPopupView.xaml.cs, scripts/PopupWindowTests/Program.cs, scripts/RichTextTests/Program.cs, docs/design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md, popup-frameWork/README.md, zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx(주석), version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 260건 통과(SURVEY·QUIZ × 단일/복수 × 세로/가로 표시기 없음·선택 전 체크 없음·선택 체크·링·굵기/색/크기 불변·비활성·안내, V1 안내 없음). RichTextTests 102건(서식 선택지 선택 시 Run 서식 유지, V1 상속 경로), ApiDemoTests 69건 통과. Demo 설문 실화면으로 미선택·선택·키보드 포커스 동시 표시 확인. 방향키·Space 실조작, 화면 읽기 프로그램, DPI 125~200%, 최소 창, VIDEO+QUIZ 실화면은 미확인. 웹 미리보기는 미변경(Front 인계 — 현재 TODO56 이전 V2 표시·"필수 문항" 문구, verify-completion-ux-43은 웹 문구 기준이라 영향 없음).
+- 보완(56-10~13, V2에 반영): 원격 후속 TODO(2026-10-18-12)의 별도 버전 제안 대신 V2를 수정. V2 본문 흰색, 문항 카드 표면·라운드·좌우 Padding 제거와 문항 사이 구분선(마지막 제외, BuildQuestions에서 제거), 선택지·링 라운드 6·포커스 9, 선택 방식 안내를 제목 끝 12 크기 보조색 Run으로 이동, Demo "설문 (디자인 평가)"(DEMO-SURVEY-PLAIN, 실제 문구·서식 없음) 추가와 Demo 화면·게이트웨이·테스트 유형 필터(SURVEY_PLAIN) 반영. 주요 파일 추가: Services/DemoPopupDataService.cs, Services/DemoPopupGateway.cs, DemoWindow.xaml, DemoWindow.Settings.cs. 검증: WPF 빌드 경고·오류 0, PopupWindowTests 298건·RichTextTests 102건·ApiDemoTests 69건 통과, 디자인 평가 샘플 실화면 캡처 확인. 웹 미리보기 미변경(Front 인계).
+- 상태: 커밋에 포함(커밋 직전 기록). 웹 미리보기 Front 인계 대기.
+
 ## 2026-10-18-12 — TODO56 문항 카드 중첩 축소 및 디자인 비교 후속 등록
 
 - 이유: 선택 UX 개선 후 반복되는 둥근 카드 구성과 서식 검증용 데이터가 실제 설문 화면 평가를 어렵게 해 후속 디자인 범위를 구체화.

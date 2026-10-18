@@ -77,6 +77,7 @@
                                 <ComboBoxItem Content="이미지" Tag="DEMO-IMAGE-001"/>
                                 <ComboBoxItem Content="동영상" Tag="DEMO-VIDEO-001"/>
                                 <ComboBoxItem Content="설문" Tag="DEMO-SURVEY-001"/>
+                                <ComboBoxItem Content="설문 (디자인 평가)" Tag="DEMO-SURVEY-PLAIN"/>
                                 <ComboBoxItem Content="퀴즈" Tag="DEMO-QUIZ-001"/>
                                 <ComboBoxItem Content="동영상 + 퀴즈" Tag="DEMO-VIDEO-QUIZ"/>
                                 <ComboBoxItem Content="푸터 바로가기" Tag="DEMO-FOOTER-LINK"/>

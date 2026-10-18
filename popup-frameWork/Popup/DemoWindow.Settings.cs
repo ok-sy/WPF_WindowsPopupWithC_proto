@@ -87,7 +87,7 @@ namespace Popup
         {
             string type = SelectedPopupId switch
             {
-                "DEMO-VIDEO-QUIZ" => "VIDEO_QUIZ", "DEMO-FOOTER-LINK" => "FOOTER_LINK",
+                "DEMO-VIDEO-QUIZ" => "VIDEO_QUIZ", "DEMO-FOOTER-LINK" => "FOOTER_LINK", "DEMO-SURVEY-PLAIN" => "SURVEY_PLAIN",
                 _ => _configuredPopups[SelectedPopupId].PopupType
             };
             ShowDemoPopups(type);

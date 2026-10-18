@@ -81,8 +81,9 @@ namespace Popup.Services
         private List<PopupResponseDto> Candidates(string? popupType) => _popups.Values
             .Where(popup => popupType == null || (popupType == "VIDEO_QUIZ" ? popup.PopupId == "DEMO-VIDEO-QUIZ"
                 : popupType == "FOOTER_LINK" ? popup.PopupId == "DEMO-FOOTER-LINK"
+                : popupType == "SURVEY_PLAIN" ? popup.PopupId == "DEMO-SURVEY-PLAIN"
                 : popup.PopupType.Equals(popupType, StringComparison.OrdinalIgnoreCase)
-                    && popup.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK")))
+                    && popup.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK" or "DEMO-SURVEY-PLAIN")))
             .Where(popup => !_completed.Contains(popup.PopupId))
             .Where(popup => !_hiddenUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)
             .Where(popup => !_deferredUntil.TryGetValue(popup.PopupId, out DateTimeOffset until) || until <= DateTimeOffset.Now)

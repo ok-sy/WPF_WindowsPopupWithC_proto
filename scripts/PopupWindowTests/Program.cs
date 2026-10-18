@@ -33,7 +33,8 @@ internal static class Program
     private static List<Popup.Dtos.PopupResponseDto> DemoPopups(string type) => DemoPopupDataService.CreatePopups()
         .Where(p => type == "VIDEO_QUIZ" ? p.PopupId == "DEMO-VIDEO-QUIZ"
             : type == "FOOTER_LINK" ? p.PopupId == "DEMO-FOOTER-LINK"
-            : p.PopupType.Equals(type, StringComparison.OrdinalIgnoreCase) && p.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK"))
+            : type == "SURVEY_PLAIN" ? p.PopupId == "DEMO-SURVEY-PLAIN"
+            : p.PopupType.Equals(type, StringComparison.OrdinalIgnoreCase) && p.PopupId is not ("DEMO-VIDEO-QUIZ" or "DEMO-FOOTER-LINK" or "DEMO-SURVEY-PLAIN"))
         .ToList();
 
     private static int _checks;
@@ -334,7 +335,7 @@ internal static class Program
         Check(System.Windows.Automation.AutomationProperties.GetHelpText(submit) == reason.Text,
             "[설계 43] locked submit carries the watch reason as HelpText");
         Report(view.Video, Snapshot(80));
-        Check(view.IsUnlocked && hide.IsEnabled && reason.Text == view.Quiz.ResponseProgressText && reason.Text.StartsWith("필수 문항"),
+        Check(view.IsUnlocked && hide.IsEnabled && reason.Text == view.Quiz.ResponseProgressText && reason.Text.StartsWith("필수 응답"),
             $"[설계 43] unlocking switches back to the question progress text ({reason.Text})");
         ShutdownClose(locked.Window);
 
@@ -548,8 +549,10 @@ internal static class Program
     }
 
     /*
-     * SURVEY·QUIZ 색 규칙: 콘텐츠 배경 #F5F6F8(본문 여백·푸터 포함), 문항 카드 흰색, 선택지 흰색 + 연한 회색 테두리,
-     * 선택 = 공통 강조 #171717 테두리 + 체크 표시(세로형·가로형 모두), 기본 글자 #222222.
+     * SURVEY·QUIZ 디자인 V2: 흰 본문(여백·푸터 포함), 문항 카드 없이 간격·구분선(마지막 문항 제외), 선택지 흰색 + 연한 테두리·라운드 6,
+     * 기본 글자 #222222(TODO56-10·11).
+     * [TODO56] 라디오·체크박스 표시기 없음. 선택 전에는 체크 없음(자리만 예약), 선택 = 체크 + #171717 2px 링(크기 불변),
+     * 선택해도 굵기·글자색 불변, 단일/복수는 선택 방식 안내로 구분.
      */
     private static void CheckSurveyColors()
     {
@@ -563,29 +566,64 @@ internal static class Program
                 foreach (DependencyObject nested in Visuals(child)) yield return nested;
             }
         }
-        foreach (string type in new[] { "SURVEY", "QUIZ" })
+        foreach (string type in new[] { "SURVEY", "QUIZ", "SURVEY_PLAIN" })
         {
             var opened = OpenPopup(type);
             opened.Window.UpdateLayout();
             var view = (SurveyPopupView)opened.Options.Content!;
-            Check(Hex(opened.Find<Border>("PopupBodyBorder").Background) == "#FFF5F6F8" && Hex(((Grid)view.Content).Background) == "#FFF5F6F8",
-                $"[survey colors] {type} body and content background is #F5F6F8");
-            Border card = Visuals(view).OfType<Border>().First(b => b.Style == view.FindResource("SurveyQuestionCardStyle"));
-            Check(Hex(card.Background) == "#FFFFFFFF", $"[survey colors] {type} question card is white");
-            foreach (var choice in Visuals(view).OfType<System.Windows.Controls.Primitives.ToggleButton>().GroupBy(c => c.Parent is StackPanel).Select(g => g.First()).ToList())
+            Check(Hex(opened.Find<Border>("PopupBodyBorder").Background) == "#FFFFFFFF" && Hex(((Grid)view.Content).Background) == "#FFFFFFFF",
+                $"[56-10] {type} body and content background is white");
+            var cards = Visuals(view).OfType<Border>().Where(b => b.Style == view.FindResource("SurveyQuestionCardStyle")).ToList();
+            Check(cards.All(c => Hex(c.Background) == "#00FFFFFF" && c.CornerRadius.TopLeft == 0 && c.Padding.Left == 0)
+                  && cards.Take(cards.Count - 1).All(c => c.BorderThickness == new Thickness(0, 0, 0, 1) && Hex(c.BorderBrush) == "#FFE5E5E5")
+                  && cards[^1].BorderThickness == new Thickness(0),
+                $"[56-10] {type} questions have no card surface and a separator only between questions ({cards.Count})");
+            var choices = Visuals(view).OfType<System.Windows.Controls.Primitives.ToggleButton>()
+                .GroupBy(c => (c is RadioButton, c.Parent is StackPanel)).Select(g => g.First()).ToList();
+            Check(choices.Count == 4, $"[56] {type} sample has single/multiple x vertical/horizontal choices ({choices.Count})");
+            foreach (var choice in choices)
             {
                 choice.ApplyTemplate();
                 var cardBorder = (Border)choice.Template.FindName("Card", choice);
-                var check = (System.Windows.Shapes.Path)choice.Template.FindName("CheckMark", choice);
-                string layout = choice.Parent is StackPanel ? "vertical" : "horizontal";
+                var ring = (Border)choice.Template.FindName("SelectionRing", choice);
+                bool chip = choice.Parent is WrapPanel;
+                var mark = (System.Windows.Shapes.Path?)choice.Template.FindName("CheckMark", choice);
+                string kind = $"{(choice is RadioButton ? "single" : "multiple")} {(choice.Parent is StackPanel ? "vertical" : "horizontal")}";
+                Check(cardBorder.CornerRadius.TopLeft == 6 && ring.CornerRadius.TopLeft == 6, $"[56-11] {type} {kind} choice corner radius is 6");
                 Check(Hex(cardBorder.Background) == "#FFFFFFFF" && Hex(cardBorder.BorderBrush) == "#FFE5E5E5" && Hex(choice.Foreground) == "#FF222222",
-                    $"[survey colors] {type} {layout} choice is white with a light border and #222222 text");
+                    $"[survey colors] {type} {kind} choice is white with a light border and #222222 text");
+                Check((chip ? mark == null : mark!.Visibility == Visibility.Hidden) && ring.Visibility == Visibility.Hidden
+                      && choice.Template.FindName("IndicatorFrame", choice) == null,
+                    $"[56-2] {type} {kind} shows no radio/checkbox indicator and no check before selection");
+                if (chip)
+                {
+                    var presenter = Visuals(choice).OfType<ContentPresenter>().First();
+                    double left = presenter.TranslatePoint(new Point(0, 0), cardBorder).X;
+                    double right = cardBorder.ActualWidth - left - presenter.ActualWidth;
+                    Check(Math.Abs(left - right) < 1, $"[56-2] {type} {kind} chip has equal left/right padding ({left:0.#}/{right:0.#})");
+                }
+                choice.UpdateLayout();
+                Size before = choice.RenderSize;
                 choice.IsChecked = true;
                 choice.UpdateLayout();
-                Check(Hex(cardBorder.BorderBrush) == "#FF171717" && Hex(check.Stroke) == "#FF171717" && check.Visibility == Visibility.Visible
-                      && Hex(cardBorder.Background) == "#FFFFFFFF",
-                    $"[survey colors] {type} selected {layout} choice shows the accent border and check mark");
+                Check((chip || (mark!.Visibility == Visibility.Visible && Hex(mark.Stroke) == "#FF171717")) && ring.Visibility == Visibility.Visible
+                      && Hex(ring.BorderBrush) == "#FF171717" && ring.BorderThickness.Left == 2 && Hex(cardBorder.Background) == "#FFFFFFFF",
+                    $"[56-3] {type} selected {kind} shows the #171717 ring{(chip ? "" : " and check")}");
+                Check(choice.FontWeight == FontWeights.Normal && Hex(choice.Foreground) == "#FF222222" && choice.RenderSize == before,
+                    $"[56-4] {type} selecting {kind} keeps weight, color and size ({before} -> {choice.RenderSize})");
+                choice.IsEnabled = false;
+                Check(ring.Visibility == Visibility.Visible && (chip || mark!.Visibility == Visibility.Visible),
+                    $"[56-3] {type} disabled {kind} still shows its selection");
+                choice.IsEnabled = true;
             }
+            // [TODO56-5·12] 선택 방식 안내는 제목 끝(필수 표시 뒤)에 12 크기 보조색 Run으로 붙는다. 주관식은 없음.
+            var hintRuns = Visuals(view).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>()
+                .Where(r => r.Text.Trim() is "하나 선택" or "여러 개 선택 가능").Select(r => (Block: t, Run: r))).ToList();
+            int choiceQuestions = opened.Options.Content is SurveyPopupView sv ? cards.Count(c => Visuals(c).OfType<System.Windows.Controls.Primitives.ToggleButton>().Any()) : 0;
+            Check(hintRuns.Count == choiceQuestions && hintRuns.Any(h => h.Run.Text.Trim() == "하나 선택") && hintRuns.Any(h => h.Run.Text.Trim() == "여러 개 선택 가능")
+                  && hintRuns.All(h => h.Run.FontSize == 12 && h.Run.FontWeight == FontWeights.Normal && Hex(h.Run.Foreground) == "#FF737373"
+                                       && h.Block.Inlines.LastInline == h.Run),
+                $"[56-12] {type} the single/multiple hint follows each choice title as a small muted run ({hintRuns.Count}/{choiceQuestions})");
             ShutdownClose(opened.Window);
         }
 
@@ -607,8 +645,11 @@ internal static class Program
             row.ApplyTemplate(); chip.ApplyTemplate();
             row.IsChecked = true; row.UpdateLayout();
             Check(Hex(((Border)row.Template.FindName("Card", row)).BorderBrush) == "#FFAFAFAF" && Hex(((Border)row.Template.FindName("Card", row)).Background) == "#FFECECEC"
-                  && chip.Template.FindName("CheckMark", chip) == null,
+                  && chip.Template.FindName("CheckMark", chip) == null && chip.Template.FindName("IndicatorFrame", chip) == null,
                 "[survey design] V1 selected row is gray (#ECECEC/#AFAFAF) and chips have no check mark");
+            Check(!Visuals(v1View).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>())
+                    .Any(r => r.Text.Trim() is "하나 선택" or "여러 개 선택 가능"),
+                "[survey design] V1 does not show the TODO56 choice hints");
             ShutdownClose(v1.Window);
         }
         finally { SurveyDesign.Current = SurveyDesign.Latest; }

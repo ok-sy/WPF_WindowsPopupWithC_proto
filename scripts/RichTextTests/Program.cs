@@ -75,7 +75,9 @@ internal static class Program
         // 2) 문항 제목: 필수 표시는 마지막 문단 끝, 접근성 이름은 일반 문자열
         StackPanel questionTitle = Logical(view).OfType<StackPanel>()
             .Single(p => System.Windows.Automation.AutomationProperties.GetName(p) == "화면 구성이 이해하기 쉬웠나요?");
-        Check(Plain((TextBlock)questionTitle.Children[^1]).EndsWith(" *")
+        // 마지막 문단: ... 서식 구간 → 필수 표시 " *" → (V2) 선택 방식 안내 "   하나 선택"(TODO56-12)
+        List<Run> lastTitleRuns = ((TextBlock)questionTitle.Children[^1]).Inlines.OfType<Run>().ToList();
+        Check(lastTitleRuns[^2].Text == " *" && lastTitleRuns[^1].Text.Trim() == "하나 선택" && Plain((TextBlock)questionTitle.Children[^1]).StartsWith("화면 구성")
               && ((TextBlock)questionTitle.Children[0]).Inlines.OfType<Run>().Any(r => r.Text == "화면 구성" && r.TextDecorations == TextDecorations.Underline),
             "[55-5] question title shows formatting and the required mark after the last paragraph");
 
@@ -143,9 +145,26 @@ internal static class Program
             "[55-6] italic overhang is recalculated for the inherited body font size");
         colored.ApplyTemplate();
         colored.IsChecked = true;
-        Check(coloredRuns[1].FontWeight == FontWeights.SemiBold && coloredRuns[2].FontWeight == FontWeights.Bold
-              && coloredRuns[1].Foreground == colored.Foreground && ((SolidColorBrush)coloredRuns[0].Foreground).Color == Color.FromRgb(0xB4, 0x23, 0x18),
-            "[55-6] selected formatted option inherits the selection weight/color and keeps run-specified formatting");
+        // [TODO56-4] V2는 선택해도 굵기·글자색을 바꾸지 않는다: 지정 없는 구간은 기본 굵기·#222222, Run 지정 굵게·색은 유지.
+        Check(coloredRuns[1].FontWeight == FontWeights.Normal && coloredRuns[2].FontWeight == FontWeights.Bold
+              && ((SolidColorBrush)coloredRuns[1].Foreground).Color == Color.FromRgb(0x22, 0x22, 0x22)
+              && ((SolidColorBrush)coloredRuns[0].Foreground).Color == Color.FromRgb(0xB4, 0x23, 0x18),
+            "[56-4] selecting a formatted option keeps run formatting and does not bold or recolor it");
+        // 선택 시 굵게 바뀌는 V1에서는 지정 없는 구간이 선택 강조를 상속한다(TODO55 상속 경로 유지).
+        SurveyDesign.Current = "V1";
+        try
+        {
+            SurveyPopupView v1 = ViewOf(inherit.Deserialize<PopupResponseDto>(jsonOptions)!);
+            var v1Controls = (System.Collections.IDictionary)typeof(SurveyPopupView).GetField("_answerControls", flags)!.GetValue(v1)!;
+            RadioButton v1Colored = ((Panel)v1Controls[1001L]!).Children.OfType<RadioButton>().First();
+            List<Run> v1Runs = ((TextBlock)((StackPanel)v1Colored.Content).Children[0]).Inlines.OfType<Run>().ToList();
+            v1Colored.ApplyTemplate();
+            v1Colored.IsChecked = true;
+            Check(v1Runs[1].FontWeight == FontWeights.SemiBold && v1Runs[2].FontWeight == FontWeights.Bold
+                  && v1Runs[1].Foreground == v1Colored.Foreground && ((SolidColorBrush)v1Runs[0].Foreground).Color == Color.FromRgb(0xB4, 0x23, 0x18),
+                "[55-6] (V1) selected formatted option inherits the selection weight/color and keeps run-specified formatting");
+        }
+        finally { SurveyDesign.Current = SurveyDesign.Latest; }
         StackPanel sizedTitle = Logical(sized).OfType<StackPanel>()
             .Single(p => System.Windows.Automation.AutomationProperties.GetName(p) == "화면 구성이 이해하기 쉬웠나요?");
         Check(((TextBlock)sizedTitle.Children[0]).FontSize == 44, "[55-5] formatted question title still follows bodyFontSize + 4");

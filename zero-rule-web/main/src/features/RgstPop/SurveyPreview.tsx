@@ -6,6 +6,7 @@ import { Box, Stack, Typography } from '@mui/material';
  *   V1: 무채색(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경, 가로형 체크 없음)
  *   V2: 콘텐츠 #F5F6F8, 문항·선택지 흰색, 선택 = 공통 강조 #171717 테두리 + 체크(가로형 포함), 기본 글자 #222222
  * WPF는 appsettings PopupApi.SurveyDesignVersion으로 고르므로, 바꿀 때 SURVEY_DESIGN_VERSION도 같은 값으로 맞춘다.
+ * TODO56(V2 선택 UX: 흰 본문·문항 카드 없이 구분선, 라운드 6, 제목 끝 선택 안내, 선택 전 체크 숨김, 선택 2px 링 + 세로형만 체크, 굵게 없음, 선택 방식 안내, "필수 응답" 문구)은 WPF만 반영했고 이 미리보기는 Front 인계 대기다.
  */
 const commonSurveyColors = {
   page: '#FFFFFF',
