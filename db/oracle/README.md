@@ -211,6 +211,16 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 배경: SURVEY·QUIZ의 문항 제목·설명과 선택지 표시 문구에 TEXT와 같은 문단·구간 서식(JSON 배열)을 둔다. 문항 템플릿은 변경 시 새 버전 행으로 저장되므로 서식도 같은 행에 두어 버전과 함께 보존한다. 일반 문자열 컬럼은 서버가 서식에서 파생해 함께 저장한다. 콘텐츠 제목·설명 서식은 기존 `CONTENT_OPTIONS`에 저장하므로 DDL이 없다.
 - 순서: **서버 반영 전에 실행.** 새 서버는 세 컬럼을 조회·저장하므로 없으면 ORA-00904로 실패한다. 이전 서버는 이 컬럼을 쓰지 않아 실행 후에도 동작한다(서식은 저장·반환되지 않음).
-- 적용 현황: 로컬 XE(POPUP) 2026-10-19 실행 — 컬럼 3·주석 3 OK, 재실행 시 컬럼 SKIP 확인. 실DB 테스트 `PopupQuestionDatabaseTest`(서식 저장·재조회·템플릿 재사용, 롤백 전용) 통과. 원격 개발 DB는 미실행.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-19 실행 — 컬럼 3·주석 3 OK, 재실행 시 컬럼 SKIP 확인. 실DB 테스트 `PopupQuestionDatabaseTest`(서식 저장·재조회·템플릿 재사용, 롤백 전용) 통과. 원격 개발 DB(11g XE, `ZERO-RULE` 스키마) 2026-10-19 실행 — 컬럼 3·주석 3 OK, 같은 테스트 2건을 원격 개발 DB 대상(`POPUP_TEST_DB_SCHEMA=""`)으로 실행해 통과(롤백 전용, 잔여 행 없음).
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @17_question_rich_text_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @17_question_rich_text_oracle.sql ""`
+    또는 `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 17_question_rich_text_oracle.sql`
+
+## 원격 개발 DB 적용 도구 (2026-10-19)
+
+`tools/apply-dev-db.ps1 <NN_..._oracle.sql>` — 원격 개발 DB(192.168.114.71 XE, 앱 계정 `zero-rule`, 방식 B 빈 스키마 접두어)에 이관 스크립트 1개를 실행한다.
+
+- 비밀번호는 `zero-rule-server/app/src/main/resources/application-dev_db.yml`의 주석 줄(`#password:`)에서 읽고 출력하지 않는다.
+- `db/oracle` 아래 `NN_*_oracle.sql` 이름만 받는다(경로·다른 파일 실행 방지).
+- PowerShell 5.1은 빈 인자(`""`)를 네이티브 프로그램에 넘기지 못하고 파이프 입력에는 BOM이 붙어 첫 줄을 sqlplus가 알아보지 못한다(SP2-0734). 그래서 `DEFINE 1 = ''`과 스크립트 호출만 담은 임시 래퍼(BOM 없음)를 만들어 실행하고 지운다.
+- 실DB 테스트를 원격으로 돌릴 때 `POPUP_TEST_DB_SCHEMA=""`는 PowerShell에서 빈 값 설정이 변수 삭제가 되어 기본 `POPUP.`로 돌아간다(ORA-00942). Git Bash 등 빈 값을 넘길 수 있는 셸에서 실행한다.
