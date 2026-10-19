@@ -73,12 +73,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   b = await button('제출');
   check(b.disabled && b.reason === '영상 0% · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다' && b.role === 'status',
     'VIDEO+QUIZ lock progress: ' + JSON.stringify(b));
-  check((await bodyText()).includes('영상을 80% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.'), 'VIDEO+QUIZ body notice includes the ratio');
+  // [TODO59] 영상과 퀴즈 사이 중간 안내는 없다(사유는 제출 영역 진행 문구 한 곳).
+  check(!(await bodyText()).includes('하단 버튼이 활성화됩니다'), 'VIDEO+QUIZ has no middle notice (TODO59)');
   check(await button('닫기') === null, 'VIDEO+QUIZ without allow-close has no secondary close');
   await watch(50); b = await button('제출'); check(b.reason.startsWith('영상 50% · 기준 80%'), 'VIDEO+QUIZ lock progress follows the slider');
   await watch(80); b = await button('제출');
   check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
-  check((await bodyText()).includes('시청 기준을 충족했습니다. 퀴즈에 응답해 주세요.'), 'VIDEO+QUIZ unlocked notice');
+  check(!(await bodyText()).includes('퀴즈에 응답해 주세요'), 'VIDEO+QUIZ has no unlocked middle notice (TODO59)');
   // allowCloseBeforeComplete=true면 보조 닫기 표시, showFooter=false면 숨김.
   await render('QUIZ', {allowCloseBeforeComplete: true}, {videoEnabled: true});
   b = await button('닫기'); check(b && !b.disabled, 'VIDEO+QUIZ allow-close shows secondary close');

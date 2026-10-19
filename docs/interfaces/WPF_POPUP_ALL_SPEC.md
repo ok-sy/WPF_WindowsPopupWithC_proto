@@ -214,7 +214,7 @@ VideoEnabled 기본값은 false이며 4.3의 영상 content와 4.4의 최상위 
 | 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
 | VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 |
-CompletionRatio 도달 전에는 QUIZ 및 제출을 잠그고 도달 후 활성화한다.
+CompletionRatio 도달 전에는 QUIZ 및 제출을 잠그고 도달 후 활성화한다. 영상과 퀴즈 사이에는 시스템 안내를 두지 않고(TODO59), 잠금 사유는 Footer 진행 문구(Footer를 숨기면 본문 제출 영역)에만 표시한다.
 영상·문항을 부모의 단일 세로 스크롤로 표시한다. 제출 결과 한 항목에 answers와 video를 포함한다.
 VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 

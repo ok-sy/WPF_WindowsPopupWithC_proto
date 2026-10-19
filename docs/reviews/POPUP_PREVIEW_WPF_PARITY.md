@@ -20,7 +20,7 @@
 | TEXT | `TextPopupView` | 카드 없이 일반 텍스트(콘텐츠 제목·설명은 본문 앞 문단, 설계 37), 강조 문구, 하단 설명(+연결 URL)을 각 표시 스위치대로 표시. `textBlocks`(설계 28 서식 본문)가 있으면 문단 정렬·들여쓰기(설계 49, 단계 × 40px = WPF 40 DIP)와 Run별 굵게·기울임·밑줄·색·크기·글꼴을 React 요소로 그린다(`innerHTML` 미사용) |
 | IMAGE | `ImagePopupView` / `ImageFillPopupView` | `imageSizeMode` ORIGINAL / ADAPTIVE / FIT_TO_IMAGE. ORIGINAL은 `ImageFillPopupView`에 대응하며 좌상단 원본 크기·클리핑·무스크롤을 재현한다 |
 | VIDEO | `VideoPopupView` | 설명, 컨트롤 표시, 배속·전체화면·재생 위치 변경(`allowSeek`) 허용 여부, 기본 음량, 완료 비율(실제 재생은 하지 않음). 설계 43: 미리보기용 시청 비율 슬라이더로 `allowCloseBeforeComplete=false`일 때 기준 미달 Footer 버튼(닫기·바로가기) 비활성 + 사유 문구("영상 {현재}% 시청 · 기준 {기준}% 이상 시청하면 닫을 수 있습니다"), 도달 후 활성 + "시청 기준을 충족했습니다"를 재현한다. `true`면 항상 활성 |
-| 동영상+퀴즈 | `VideoQuizPopupView` | 시청 비율 슬라이더로 잠금/해제 상태, 퀴즈·푸터 활성화 조건을 미리보기. 잠금 중 본문 안내는 "영상을 {기준}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.", 푸터 진행 문구는 "영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다"이고 해제 후 문항 진행 문구로 바뀐다(설계 43) |
+| 동영상+퀴즈 | `VideoQuizPopupView` | 시청 비율 슬라이더로 잠금/해제 상태, 퀴즈·푸터 활성화 조건을 미리보기. 영상과 퀴즈 사이 본문 안내는 두지 않고(TODO59), 푸터 진행 문구는 "영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다"이고 해제 후 문항 진행 문구로 바뀐다(설계 43) |
 | SURVEY/QUIZ | `SurveyPopupView` | 문항·설명·필수 여부·보기, 문항별 `optionLayout` VERTICAL / HORIZONTAL, QUIZ 총점·통과 점수. QUIZ 미달 시 점수와 틀린 채점 문항 번호("틀린 문항: 2, 4번", 문항 목록 순서 1부터)를 표시한다(설계 43) |
 
 ## 알려진 차이

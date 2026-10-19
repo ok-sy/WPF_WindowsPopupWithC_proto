@@ -829,16 +829,36 @@ namespace Popup.Views.Contents
             ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
                 : completed == required ? $"필수 응답 {completed}/{required} 완료"
                 : $"필수 응답 {completed}/{required} · {required - completed}문항 남음";
-            bool changed = RequiredProgressText.Text != ResponseProgressText;
-            RequiredProgressText.Text = ResponseProgressText;
+            bool changed = ShowProgressText();
             RequiredProgressText.Foreground = (Brush)FindResource("SurveyMutedText");
             SubmitButton.IsEnabled = CanSubmit;
-            // [설계 43] 제출 비활성 사유(필수 미응답)를 스크린리더에도 알린다. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
-            System.Windows.Automation.AutomationProperties.SetHelpText(SubmitButton, CanSubmit ? string.Empty : ResponseProgressText);
             System.Windows.Automation.AutomationProperties.SetLiveSetting(RequiredProgressText, System.Windows.Automation.AutomationLiveSetting.Polite);
             if (changed && SubmissionArea.Visibility == Visibility.Visible)
                 UIElementAutomationPeer.FromElement(RequiredProgressText)?.RaiseAutomationEvent(System.Windows.Automation.Peers.AutomationEvents.LiveRegionChanged);
             ResponseProgressChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /*
+         * [TODO59-5] 영상 결합 QUIZ가 잠긴 동안 본문 제출 영역에 보일 잠금 사유. null이면 필수 응답 진행 문구를 쓴다.
+         * 영상과 퀴즈 사이 안내(_notice)를 없앴으므로, 공통 푸터를 숨긴 조합(showFooter=false)에서는 이 영역이 잠금 사유를 보여 준다.
+         * 푸터를 쓰는 조합은 제출 영역이 접혀 있고 사유는 PopupWindow 푸터가 표시한다.
+         */
+        private string? _lockedReason;
+
+        internal void SetLockedReason(string? reason)
+        {
+            _lockedReason = reason;
+            ShowProgressText();
+        }
+
+        private bool ShowProgressText()
+        {
+            string text = !IsEnabled && _lockedReason != null ? _lockedReason : ResponseProgressText;
+            bool changed = RequiredProgressText.Text != text;
+            if (changed) RequiredProgressText.Text = text;
+            // [설계 43] 제출 비활성 사유(필수 미응답·영상 잠금)를 스크린리더에도 알린다. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
+            System.Windows.Automation.AutomationProperties.SetHelpText(SubmitButton, CanSubmit ? string.Empty : text);
+            return changed;
         }
 
         /// <summary>[설계 44] 초기 포커스: 첫 문항의 첫 입력 컨트롤. 잠긴 상태(비활성)면 옮기지 않는다.</summary>

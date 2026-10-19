@@ -18,6 +18,7 @@ using Popup.Views.Windows;
  *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
+ * 59  VIDEO+QUIZ 영상·퀴즈 사이 시스템 안내 제거(전용 행 없음), 푸터 숨김 시 본문 제출 영역의 잠금 사유
  * 52-2 나중에 보기: showFooter·showLater 표시 규칙, 버튼으로 닫으면 LATER(다시 보지 않기·영상 시청량보다 우선),
  *      완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ) 중에도 닫힘, Overlay 출구로 인정
  * 44  Background Overlay 켜짐: Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE 취소, 앱 닫기 경로 허용, 화면 출구가 없으면 허용,
@@ -57,6 +58,7 @@ internal static class Program
         CheckDisplayModeIgnored50();
         CheckVideoFooter43();
         CheckVideoQuizFooter43();
+        CheckVideoQuizNotice59();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
@@ -67,7 +69,7 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-2, 52-4, 53-16)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-2, 52-4, 53-16, 59)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -364,6 +366,48 @@ internal static class Program
         var noFooter = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = true; dto.ShowFooter = false; });
         Check(noFooter.Find<Button>("FooterAuxCloseButton").Visibility == Visibility.Collapsed, "[설계 43] showFooter=false hides the aux close");
         ShutdownClose(noFooter.Window);
+    }
+
+    /* [TODO59] 영상과 퀴즈 사이 시스템 안내가 없고, 푸터를 숨기면 본문 제출 영역이 잠금 사유 → 필수 응답 진행 문구를 보여 준다. */
+    private static void CheckVideoQuizNotice59()
+    {
+        foreach (bool showFooter in new[] { true, false })
+        {
+            var opened = OpenPopup("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = showFooter; });
+            var view = (VideoQuizPopupView)opened.Options.Content!;
+            var scroll = ((Grid)view.Content).Children.OfType<ScrollViewer>().Single();
+            var body = (Grid)scroll.Content;
+            Check(body.RowDefinitions.Count == 2 && body.Children.Count == 2
+                && body.Children.Contains(view.Video) && body.Children.Contains(view.Quiz) && Grid.GetRow(view.Quiz) == 1,
+                $"[TODO59] VIDEO+QUIZ body has only video and quiz rows without a notice (footer {showFooter})");
+            var inline = (TextBlock)view.Quiz.FindName("RequiredProgressText");
+            var area = (FrameworkElement)view.Quiz.FindName("SubmissionArea");
+            Report(view.Video, Snapshot(30));
+            if (showFooter)
+            {
+                Check(area.Visibility == Visibility.Collapsed
+                    && opened.Find<TextBlock>("FooterResponseProgressText").Text.StartsWith("영상 30% 시청"),
+                    "[TODO59] footer ON: the footer alone shows the watch reason");
+            }
+            else
+            {
+                Check(area.Visibility == Visibility.Visible
+                    && inline.Text == "영상 30% 시청 · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다",
+                    $"[TODO59] footer OFF: the inline submission area shows the watch reason ({inline.Text})");
+                Check(System.Windows.Automation.AutomationProperties.GetHelpText((Button)view.Quiz.FindName("SubmitButton")) == inline.Text,
+                    "[TODO59] footer OFF: the locked inline submit carries the watch reason as HelpText");
+                Report(view.Video, Snapshot(80));
+                Check(view.IsUnlocked && inline.Text == view.Quiz.ResponseProgressText && inline.Text.StartsWith("필수 응답"),
+                    $"[TODO59] footer OFF: unlocking switches the inline text to the question progress ({inline.Text})");
+            }
+            ShutdownClose(opened.Window);
+        }
+        var failed = OpenPopup("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = false; });
+        var failedView = (VideoQuizPopupView)failed.Options.Content!;
+        FailPlayback(failedView.Video);
+        Check(((TextBlock)failedView.Quiz.FindName("RequiredProgressText")).Text == "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다.",
+            "[TODO59] footer OFF: playback failure shows the failure reason in the inline area");
+        ShutdownClose(failed.Window);
     }
 
     /* 보조 닫기: QUIZ는 미달 1회 이후 + Overlay 꺼짐 + 푸터 표시일 때만, SURVEY·TEXT는 표시하지 않는다. */

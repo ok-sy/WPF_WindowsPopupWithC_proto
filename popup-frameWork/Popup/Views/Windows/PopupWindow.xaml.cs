@@ -1111,19 +1111,10 @@ namespace Popup.Views.Windows
             {
                 primaryEnabled = false;
                 optionEnabled = false;
-                if (combined.Video.HasPlaybackFailed)
-                {
-                    state = "failed";
-                    text = ShouldShowAuxClose()
-                        ? "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다. 닫기 버튼으로 닫을 수 있습니다."
-                        : "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다.";
-                }
-                else
-                {
-                    state = "watching";
-                    text = $"영상 {VideoPopupView.DisplayWatchedPercent(combined.Video.LatestProgress)}% 시청 · "
-                        + $"기준 {RequiredPercentText(combined.RequiredRatio)}% 이상 시청하면 퀴즈와 제출이 활성화됩니다";
-                }
+                state = combined.Video.HasPlaybackFailed ? "failed" : "watching";
+                text = combined.Video.HasPlaybackFailed && ShouldShowAuxClose()
+                    ? combined.LockedReason + " 닫기 버튼으로 닫을 수 있습니다."
+                    : combined.LockedReason;
             }
             else if (survey != null)
             {

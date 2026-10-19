@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-06 — TODO59 VIDEO+QUIZ 중간 notice 제거
+
+- 이유: 영상 설명 아래·퀴즈 위의 시스템 안내가 하단 시청/제출 안내와 중복돼 제거(TODO59).
+- 변경: VideoQuizPopupView의 _notice와 전용 행 제거(본문 영상·퀴즈 2행). 잠금 사유 문구를 VideoQuizPopupView.LockedReason으로 모아 PopupWindow 푸터가 사용. 푸터 숨김(showFooter=false) 조합은 본문 제출 영역 진행 문구·제출 HelpText에 잠금 사유를 표시하고 해제 후 필수 응답 문구로 복귀(SurveyPopupView.SetLockedReason). 잠금·해제·제출 로직은 유지. 관리자 웹 미리보기의 같은 중간 안내도 제거. ALL 명세·미리보기 정합 문서·TODO59 구현 기록 갱신.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs, Views/Contents/SurveyPopupView.xaml.cs, Views/Windows/PopupWindow.xaml.cs, scripts/PopupWindowTests/Program.cs, zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx, scripts/verify-completion-ux-43.cjs, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/59_VIDEO_QUIZ_중간안내제거_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0, PopupWindowTests 305건 통과(TODO59 신규 포함), 웹 tsc 오류 0, verify-completion-ux-43 56건 통과. WPF 실화면·실제 관리자 웹 화면 확인은 미실행.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-19-05 — TODO60 VIDEO+QUIZ 원본 비율 영역 할당 등록
 
 - 이유: 영상 결합 화면의 고정 300 DIP 영역을 원본 영상 비율·실제 가용 너비에 맞추고 관리자 미리보기와 일치시킬 필요.

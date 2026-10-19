@@ -98,12 +98,7 @@ function PopupBody({
           onImageLoad={onImageLoad}
           survey={survey}
         />
-        {/* WPF VideoQuizPopupView 안내 문구와 같다(기준 비율 포함). */}
-        <Typography variant="body2" sx={{ color: surveyColors.muted }}>
-          {videoUnlocked
-            ? '시청 기준을 충족했습니다. 퀴즈에 응답해 주세요.'
-            : `영상을 ${percentText(popup.completionRatio ?? 1)}% 이상 시청하면 퀴즈와 하단 버튼이 활성화됩니다.`}
-        </Typography>
+        {/* [TODO59] 영상과 퀴즈 사이 시스템 안내는 WPF와 같이 두지 않는다. 시청 %·기준 사유는 제출 영역 진행 문구에만 표시한다. */}
         <Box
           component="fieldset"
           disabled={!videoUnlocked}
