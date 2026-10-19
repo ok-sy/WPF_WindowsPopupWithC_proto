@@ -11,8 +11,9 @@ namespace Popup.Views.Contents
     {
         private readonly string _imagePath;
         private readonly ImagePopupSizeMode _sizeMode;
-        private readonly double? _requestedImageWidth;
-        private readonly double? _requestedImageHeight;
+        /* [TODO58] 공통 popup.width/height. ADAPTIVE는 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기. */
+        private readonly double? _requestedWidth;
+        private readonly double? _requestedHeight;
         private readonly bool _keepAspectRatio;
         private readonly bool _showDescription;
         private BitmapSource? _bitmap;
@@ -21,9 +22,9 @@ namespace Popup.Views.Contents
         private Size _lastRecommendation;
         public event Action<double, double>? RecommendedSizeChanged;
         public bool NeedsNaturalWindowSize => _sizeMode == ImagePopupSizeMode.FitToImage
-            || !_requestedImageWidth.HasValue || !_requestedImageHeight.HasValue;
-        public double? RequestedWindowWidth => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedImageWidth : null;
-        public double? RequestedWindowHeight => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedImageHeight : null;
+            || !_requestedWidth.HasValue || !_requestedHeight.HasValue;
+        public double? RequestedWindowWidth => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedWidth : null;
+        public double? RequestedWindowHeight => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedHeight : null;
 
         public void SetAvailableBounds(double width, double height)
         {
@@ -35,16 +36,16 @@ namespace Popup.Views.Contents
 
         public ImagePopupView(string imageTitle, string imagePath, string imageDescription,
             bool showDescription = true, ImagePopupSizeMode sizeMode = ImagePopupSizeMode.Adaptive,
-            double? imageWidth = null, double? imageHeight = null, bool keepAspectRatio = true)
+            double? width = null, double? height = null, bool keepAspectRatio = true)
         {
             InitializeComponent();
             if (string.IsNullOrWhiteSpace(imagePath)) throw new ArgumentException("이미지 경로가 비어 있습니다.", nameof(imagePath));
-            ValidateDimension(imageWidth, nameof(imageWidth));
-            ValidateDimension(imageHeight, nameof(imageHeight));
+            ValidateDimension(width, nameof(width));
+            ValidateDimension(height, nameof(height));
             _imagePath = imagePath;
             _sizeMode = sizeMode;
-            _requestedImageWidth = imageWidth;
-            _requestedImageHeight = imageHeight;
+            _requestedWidth = width;
+            _requestedHeight = height;
             _keepAspectRatio = keepAspectRatio;
             _showDescription = showDescription;
             ImageTitleText.Text = imageTitle;
@@ -102,14 +103,21 @@ namespace Popup.Views.Contents
             UpdateLayoutForImage();
         }
 
-        // Locked input is normalized using width first, including inconsistent two-axis API input.
-        // BitmapSource.Width/Height are original DIP dimensions, respecting embedded DPI.
-        public static Size ResolveDisplaySize(Size natural, double? width, double? height, bool keepAspectRatio)
+        /*
+         * [TODO58] FIT_TO_IMAGE 이미지 콘텐츠 영역(이미지가 배치되는 공간) 크기. 이 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산한다.
+         *  - 두 축 지정: 그대로 영역 크기. 비율 고정이면 영역 안에 원본 비율로 맞춰(Uniform) 남는 쪽에 여백이 생기고,
+         *    해제면 영역을 채운다(Fill). 예전(TODO23)에는 비율 고정 시 너비 우선으로 높이를 다시 계산했다.
+         *  - 한 축 지정: 비율 고정이면 원본 비율로 반대 축을 계산, 해제면 반대 축은 원본 DIP 길이.
+         *  - 미지정: 원본 DIP 크기.
+         * BitmapSource.Width/Height는 내장 DPI를 반영한 원본 DIP 크기다.
+         */
+        public static Size ResolveContentArea(Size natural, double? width, double? height, bool keepAspectRatio)
         {
             ValidateDimension(width, nameof(width));
             ValidateDimension(height, nameof(height));
             if (!double.IsFinite(natural.Width) || !double.IsFinite(natural.Height) || natural.Width <= 0 || natural.Height <= 0)
                 throw new ArgumentOutOfRangeException(nameof(natural));
+            if (width.HasValue && height.HasValue) return new Size(width.Value, height.Value);
             if (!keepAspectRatio) return new Size(width ?? natural.Width, height ?? natural.Height);
             double ratio = natural.Width / natural.Height;
             if (width.HasValue) return new Size(width.Value, width.Value / ratio);
@@ -125,7 +133,7 @@ namespace Popup.Views.Contents
                 ? Visibility.Visible : Visibility.Collapsed;
             var natural = new Size(_bitmap.Width, _bitmap.Height);
             Size display = _sizeMode == ImagePopupSizeMode.FitToImage
-                ? ResolveDisplaySize(natural, _requestedImageWidth, _requestedImageHeight, _keepAspectRatio)
+                ? ResolveContentArea(natural, _requestedWidth, _requestedHeight, _keepAspectRatio)
                 : natural;
             if (_sizeMode == ImagePopupSizeMode.FitToImage)
             {

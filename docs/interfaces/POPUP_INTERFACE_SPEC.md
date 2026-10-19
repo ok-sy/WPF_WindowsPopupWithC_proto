@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
+- 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
 - 2026-10-18 초안(TODO55, 확정 전 · 서버 미반영): SURVEY·QUIZ 서식 필드 `content.surveyTitleBlocks`·`content.descriptionBlocks`·`questions[].titleBlocks`·`questions[].descriptionBlocks`·`options[].textBlocks`(§8.4.1). WPF 표시만 구현했으며 서버 저장·관리자 편집은 인계 대기. 산출물(Excel·Word·PDF)에는 확정 후 반영.
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
@@ -284,8 +285,8 @@ X-Client-Version: 1.0.0
 | title | string | O | `""` | 공통 Header 제목 |
 | displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 동시에 열리는 다른 서버 팝업은 없다 |
 | sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN. `AUTO`는 WPF만 지원하는 값으로 서버·관리자 웹은 저장하지 않아(서버 검증·DB 제약 `CK_POPUP_SIZE_MODE`) 현재 응답에 나오지 않는다 |
-| width | number | IMAGE 일반 모드 외 | `900` | 일반 IMAGE는 생략하고 content.width 사용, ORIGINAL 및 다른 유형은 창 크기 |
-| height | number | IMAGE 일반 모드 외 | `620` | 일반 IMAGE는 생략하고 content.height 사용 |
+| width | number | 선택(일반 IMAGE는 축별 생략 가능) | `900`(IMAGE는 원본 기준) | 창 너비. IMAGE는 imageSizeMode에 따라 ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 너비(TODO58) |
+| height | number | 선택(일반 IMAGE는 축별 생략 가능) | `620`(IMAGE는 원본 기준) | 창 높이. IMAGE는 ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 높이(TODO58) |
 | widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
 | heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
 | minimumWidth | number | 선택 | `480` | 최소 창 너비 |
@@ -485,13 +486,11 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
   "imageUrl": "https://example.com/notice.png",
   "description": "이미지 설명",
   "showDescription": true,
-  "imageSizeMode": "ADAPTIVE",
-  "width": 640,
-  "height": 480
+  "imageSizeMode": "ADAPTIVE"
 }
 ```
 
-위 예시는 일반 모드(ADAPTIVE)다.
+위 예시는 일반 모드(ADAPTIVE) content다. 크기는 content가 아니라 최상위 `popup.width/height`로 보낸다(TODO58, §15.2 예시).
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
@@ -500,8 +499,6 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 | description | string | 선택 | `""` | 이미지 설명 |
 | showDescription | boolean | 선택 | `true` | 설명 표시 여부 |
 | imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL |
-| width | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 너비, FIT_TO_IMAGE 실제 이미지 너비, 양수·유한값 |
-| height | number | 선택 | 원본 기반 계산 | ADAPTIVE 창 높이, FIT_TO_IMAGE 실제 이미지 높이, 양수·유한값 |
 | keepAspectRatio | boolean | FIT_TO_IMAGE 전용 | `true` | 원본 비율 고정/해제 |
 
 ### imageSizeMode
@@ -509,22 +506,35 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 | 값 | 의미 |
 |---|---|
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
-| FIT_TO_IMAGE | content.width/height 이미지 크기 기준, 없으면 원본 DIP. 최대 창 초과 시 축소 없이 Clip |
+| FIT_TO_IMAGE | popup.width/height가 이미지 콘텐츠 영역 크기, 없으면 원본 DIP. 헤더·푸터·제목·설명·여백을 더해 창 계산. 최대 창 초과 시 축소 없이 Clip |
 | ORIGINAL | 팝업 크기는 유지. 원본 이미지를 왼쪽 위에 확대·축소 없이 표시하고 오른쪽·아래 초과 부분을 자름 |
 
 필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
 
-ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·content.width/height·keepAspectRatio는 사용하지 않는다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. 이미지 클릭 동작은 없다(3.7에서 `linkUrl` 삭제). 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
+ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·keepAspectRatio는 사용하지 않는다. 창 크기는 popup.width/height다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. 이미지 클릭 동작은 없다(3.7에서 `linkUrl` 삭제). 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
 
 관리자 신규 등록 기본 선택은 ADAPTIVE이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
 
-### 비율 및 창 경계 (v3.6 / 설계 23)
+### 크기 필드 (2026-10-19 / TODO58)
 
-- 일반 IMAGE의 크기는 content.width/height 한 쌍만 전달한다. 최상위 width/height는 생략한다. ORIGINAL은 기존 최상위 창 크기를 사용한다.
-- ADAPTIVE: content 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
-- FIT_TO_IMAGE: content 크기는 실제 이미지 표시 DIP 크기. keepAspectRatio 기본 true. 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 **너비 우선으로 높이를 정규화**한다. 편집기 연동값은 소수 둘째 자리로 반올림하되, 렌더링은 원본 비율로 다시 계산하므로 별도 오차 거부 기준은 없다.
-- 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
-- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. content.width/height의 지정 픽셀/DIP 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
+| 모드 | popup.width / height 의미 | 영역 계산 | 이미지 표시 |
+|---|---|---|---|
+| ADAPTIVE | 팝업 창 전체 크기 | 창에서 표시 중인 헤더·푸터·제목·설명·여백을 빼고 이미지 영역 할당 | 배정 영역에 비율 유지(원본보다 확대 안 함) |
+| FIT_TO_IMAGE | 이미지 콘텐츠 영역 크기 | 지정 영역을 먼저 확보하고 헤더·푸터·제목·설명·여백을 더해 창 계산 | keepAspectRatio=true면 영역 안에 원본 비율로 맞춤(여백 가능), false면 영역을 채움 |
+| ORIGINAL | 팝업 창 전체 크기 | 헤더·푸터를 뺀 본문 전체 | 원본 크기 왼쪽 위 배치, 넘치는 부분 Clip |
+
+- `content.width/height`는 응답에서 제거했고 등록 요청에서도 거절한다(이중 지시 금지). 다른 유형의 공통 width/height 의미는 그대로다.
+- 같은 600×400이라도 ADAPTIVE·ORIGINAL은 창 전체가 그 크기이고, FIT_TO_IMAGE는 이미지 콘텐츠 영역이 그 크기다(최소·최대 제한 적용 전).
+- 생략: 일반 IMAGE는 축별로 생략할 수 있다(JSON에서 키 없음). ADAPTIVE의 생략 축은 원본과 측정한 제목·설명으로 산정하고, FIT_TO_IMAGE는 비율 고정이면 원본 비율로 나머지 축을, 해제면 원본 길이를, 둘 다 없으면 원본 DIP 크기를 쓴다. ORIGINAL은 필수다. 다른 유형은 생략 시 900×620.
+- 전환: 새 WPF는 최상위 값이 없는 축에 한해 구 서버의 `content.width/height`를 임시로 읽는다(최상위 우선). 구 WPF는 `content.width/height`만 읽으므로 새 서버보다 새 WPF를 먼저 배포한다. DB 저장 구조는 바꾸지 않았다(일반 IMAGE 크기는 기존처럼 CONTENT_OPTIONS width/height에 저장하고 응답에서 최상위로 옮김).
+- FULLSCREEN은 공통 sizeMode이며 창 크기를 모니터 전체로 우선한다. imageSizeMode와 합치지 않는다.
+
+### 비율 및 창 경계 (v3.6 / 설계 23, TODO58로 크기 위치 갱신)
+
+- ADAPTIVE: popup 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
+- FIT_TO_IMAGE: popup 크기는 이미지 콘텐츠 영역 DIP 크기. keepAspectRatio 기본 true. 등록 화면에서 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 그 영역 안에 원본 비율로 맞추고 남는 쪽을 여백으로 둔다(TODO58 — 설계 23의 너비 우선 높이 정규화를 대체).
+- 해제(false)는 영역을 그대로 채워 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
+- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. FIT_TO_IMAGE의 지정 콘텐츠 영역 크기는 유지하며 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
 - 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(40)·Footer(80) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
 - WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
@@ -1395,6 +1405,8 @@ EMPTY
   "title": "교육 안내",
   "displayMode": "SEQUENTIAL",
   "sizeMode": "FIXED",
+  "width": 900,
+  "height": 620,
   "showHeader": true,
   "showFooterButton": true,
   "showFooter": true,
@@ -1410,9 +1422,7 @@ EMPTY
     "imageUrl": "https://example.com/media/training.png",
     "description": "이미지에서 교육 일정을 확인해주세요.",
     "showDescription": true,
-    "imageSizeMode": "ADAPTIVE",
-    "width": 900,
-    "height": 620
+    "imageSizeMode": "ADAPTIVE"
   }
 }
 ```

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-09 — TODO58 IMAGE 공통 크기 필드 통합 및 모드별 크기 기준
+
+- 이유: IMAGE 크기 입력을 공통 popup.width/height 한 쌍으로 통합하고 ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역으로 해석을 명확히 하기 위한 계약 변경(TODO58).
+- 변경: WPF — PopupResponseDto Width/Height를 nullable로 바꿔 생략을 구분(IMAGE 외 900×620 유지), ImagePopupContentDto 크기 제거, Factory가 최상위 값을 모드별로 매핑(구 서버 content.width/height는 최상위 축이 없을 때만 임시로 읽음), ImagePopupView.ResolveContentArea로 FIT_TO_IMAGE 두 축 지정을 그대로 콘텐츠 영역으로 사용(비율 고정 Uniform·해제 Fill). Demo 샘플·상세옵션·요약 갱신. 서버 — 일반 IMAGE도 popup.width/height(축별 생략 가능)로 검증하고 content.width/height는 거절, 저장은 기존 CONTENT_OPTIONS width/height 그대로, 응답에서 최상위로 이동. 관리자 웹 — 모델 주석, 등록 화면 모드별 라벨·도움말, ORIGINAL 포함 같은 입력, 미리보기·레이아웃 계산을 최상위 크기와 새 영역 규칙으로 변경, 구 응답 content 크기 이관. 인터페이스 명세(§8.2 크기 필드 표·§15.2·필드 표·변경 요약), ALL/MINIMAL, 옵션 가이드 2종, 미리보기 정합 문서, 예제 JSON, Excel(개요·공통·IMAGE), Word 재생성·PDF 재출력(TODO59·60 문구 포함), TODO23 상단 참조·TODO58 구현 기록 갱신. DB 변경 없음.
+- 주요 파일: popup-frameWork/Popup/Dtos/PopupResponseDto.cs·ImagePopupContentDto.cs, Factories/PopupFactory.cs, Views/Contents/ImagePopupView.xaml.cs, DemoOptionsWindow(.Fields).cs, DemoWindow.Settings.cs, Services/DemoPopupDataService.cs, scripts/PopupWindowTests/Program.cs, zero-rule-server/service/core/.../PopupService.java(+PopupAdminQuestionsTest), web/api/.../WpfPopupControllerTest.java, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx·PopupPreview.tsx·imagePreviewLayout.ts, scripts/verify-image-preview(.cjs·-entry.tsx), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/23·58, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 365건(영역 계산·매핑·구 값 호환·IMAGE 외 기본값·TEXT/ADAPTIVE/ORIGINAL 실창 크기 동일·FIT_TO_IMAGE 영역 유지와 설명 가산·Uniform/Fill), ApiDemoTests 69건, RichTextTests 102건 통과, CornerWindowTests 761건(첫 실행은 실제 모니터 배율 왕복 단계에서 1회 실패, 재실행 통과). 서버 `gradlew test --offline --continue` 140건 통과(Oracle 연동 8건 skip, 작성 중 응답 매핑의 Double 언박싱 NPE를 테스트로 발견해 수정). 웹 tsc 오류 0·변경 파일 eslint 통과, verify-image-preview 34건·verify-completion-ux-43 60건·verify-rich-text-49 40건(첫 실행 1회 타이밍 실패, 재실행 통과)·verify-question-template-picker 7건 통과. 명세 JSON 블록 37개·예제 JSON 3개 파싱, Excel 패키지 파트 손실 없음. 미실행: DPI·다중 모니터·FULLSCREEN 실화면, 실제 관리자 웹 저장·재조회, 원격 개발 서버 반영과 구 WPF 조합 확인.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시. 배포 순서: 새 WPF → 서버.
+
 ## 2026-10-19-08 — TODO60 VIDEO+QUIZ 원본 비율 기반 영상 영역 할당
 
 - 이유: 영상 결합 화면이 제목·설명을 포함한 영상 뷰 전체를 300 DIP로 고정해 실제 재생 공간이 줄고 원본 비율과 맞지 않아, WPF와 관리자 미리보기에서 원본 비율·실제 가용 너비로 재생 영역을 배정(TODO60).

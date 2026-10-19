@@ -26,7 +26,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | 구분 | 전체 버전 원칙 |
 |---|---|
 | 기능 노출 | 구현된 기능을 기록하되 최초 외부 제공 여부는 MINIMAL에서 별도 관리 |
-| 창 크기 | 일반 콘텐츠는 최상위 Width/Height. 일반 IMAGE는 content.width/height 사용 |
+| 창 크기 | 최상위 Width/Height. IMAGE FIT_TO_IMAGE만 이미지 콘텐츠 영역 크기로 해석(TODO58) |
 | IMAGE 예외 | ORIGINAL은 공통 창 크기, FULLSCREEN은 모니터 전체 영역 우선 |
 | 기본값 | 응답 DTO·Factory 기본값과 Demo·관리자 화면의 초기값을 구분 |
 | 고정 동작 | UI·드래그·결과 큐 등의 동작을 가상의 API 필드로 만들지 않음 |
@@ -144,13 +144,13 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 | ImageSizeMode | 지원 | N | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL. 필드 생략 시 ADAPTIVE이며 관리자 신규 등록 기본 선택도 ADAPTIVE |
 | ImageTitle | 일반 모드에서 지원 | N | `""` | ORIGINAL View는 내부 제목을 표시하지 않음 |
 | Description / ShowDescription | 일반 모드에서 지원 | N | `""` / `true` | 하단 설명·스크롤. ORIGINAL View에는 전달하지 않음 |
-| Width / Height | 일반 모드에서 지원 | N | `null` | ADAPTIVE 창 크기, FIT_TO_IMAGE 이미지 표시 크기. ORIGINAL에서는 사용하지 않음 |
-| KeepAspectRatio | FIT_TO_IMAGE에서 지원 | N | `true` | false면 지정한 두 축 크기로 왜곡 허용 |
+| (최상위) Width / Height | 지원 | 일반 모드 N, ORIGINAL Y | 원본 기준 | content가 아니라 최상위 값(TODO58). ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역. 일반 모드는 축별 생략 시 원본 기준. 새 WPF는 구 서버의 content.width/height를 최상위 값이 없을 때만 임시로 읽음 |
+| KeepAspectRatio | FIT_TO_IMAGE에서 지원 | N | `true` | true면 콘텐츠 영역 안에 원본 비율로 맞춤(여백 가능), false면 영역을 채워 왜곡 허용 |
 
 - ADAPTIVE: 창 우선, 비율을 유지해 이미지 표시.
-- FIT_TO_IMAGE: 이미지 표시 크기 우선. 치수 생략 시 원본 DIP 크기 사용.
+- FIT_TO_IMAGE: 이미지 콘텐츠 영역 우선. 지정 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산하며 설명은 영역을 침범하지 않는다. 치수 생략 시 원본 DIP 크기 사용.
 - ORIGINAL: 최상위 공통 창 크기를 사용하고 원본을 왼쪽 위에서 표시·Clip.
-- 일반 모드는 최상위 중복 Width/Height 대신 content.width/height를 사용한다.
+- 세 모드 모두 최상위 Width/Height 한 쌍을 사용하고 content.width/height는 쓰지 않는다(TODO58). 같은 값에서 TEXT·ADAPTIVE·ORIGINAL 창 크기는 같다.
 - 최대 창 크기는 현재 모니터 작업 영역의 90%. 지정 이미지가 넘치면 축소하지 않고 중앙 Clip.
 - FULLSCREEN은 전체 모니터 크기가 우선이다. FILL 및 과거 IMAGE FIXED는 삭제된 값이다.
 

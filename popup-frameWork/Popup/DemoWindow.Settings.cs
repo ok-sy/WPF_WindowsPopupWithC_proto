@@ -32,9 +32,11 @@ namespace Popup
         {
             if (!_configuredPopups.TryGetValue(SelectedPopupId, out var popup)) return;
             string dimensions = popup.SizeMode == "RATIO" ? $"{popup.WidthRatio:P0} × {popup.HeightRatio:P0}"
-                : popup.SizeMode == "FULLSCREEN" ? "전체화면" : $"{popup.Width:0.##} × {popup.Height:0.##}";
-            if (popup.PopupType == "IMAGE" && popup.Content.GetProperty("imageSizeMode").GetString() != "ORIGINAL")
-                dimensions = "콘텐츠의 이미지 설정 사용";
+                : popup.SizeMode == "FULLSCREEN" ? "전체화면" : $"{popup.Width ?? 900:0.##} × {popup.Height ?? 620:0.##}";
+            // [TODO58] IMAGE는 같은 너비·높이를 모드별로 해석한다(FIT_TO_IMAGE는 이미지 콘텐츠 영역, 생략 축은 원본 기준).
+            if (popup.PopupType == "IMAGE" && popup.SizeMode != "FULLSCREEN")
+                dimensions = $"{popup.Width?.ToString("0.##") ?? "원본"} × {popup.Height?.ToString("0.##") ?? "원본"}"
+                    + (popup.Content.GetProperty("imageSizeMode").GetString() == "FIT_TO_IMAGE" ? " (이미지 콘텐츠 영역)" : " (팝업 창)");
             ScenarioSummaryText.Text = $"{popup.Title}\n창: {popup.SizeMode} · {dimensions}\n"
                 + $"헤더 {(popup.ShowHeader ? "표시" : "숨김")} · 푸터 {(popup.ShowFooter ? "표시" : "숨김")}\n"
                 + $"표시 방식: {popup.DisplayMode} · 순서 {popup.DisplayOrder}";

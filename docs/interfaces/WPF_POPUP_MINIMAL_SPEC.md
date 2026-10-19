@@ -86,7 +86,7 @@ ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. �
 | Description | 미제공 | N | `""` | 이미지 설명 |
 | ShowDescription | 미제공 | N | `true` | 설명 표시 여부 |
 
-최소 IMAGE는 ORIGINAL 표시 + 공통 Width/Height만 사용한다. 일반 모드는 content.width/height만 사용하며 ORIGINAL에 적용하지 않는다. keepAspectRatio는 FIT_TO_IMAGE 전용이다.
+최소 IMAGE는 ORIGINAL 표시 + 공통 Width/Height만 사용한다. 전체 구현의 일반 모드도 같은 공통 Width/Height를 쓰며(TODO58, FIT_TO_IMAGE는 이미지 콘텐츠 영역으로 해석) content.width/height는 폐기했다. keepAspectRatio는 FIT_TO_IMAGE 전용이다.
 
 ### 4.3 VIDEO
 
@@ -138,8 +138,8 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | 문서에서 혼동하기 쉬운 표현 | 실제 코드 기준 정리 |
 |---|---|
 | TextStyle | 해당 필드 없음. HeaderFontSize / BodyFontSize / FooterFontSize로 분리 |
-| 공통 Width/Height vs IMAGE Width/Height | 공통값은 PopupWindow 크기, 일반 IMAGE content.width/height는 ADAPTIVE 창 크기 / FIT_TO_IMAGE 이미지 표시 크기 |
-| ORIGINAL + content.width/height | ORIGINAL 모드에서는 content.width/height(이미지 크기)를 쓰지 않으므로 최소 버전에서 사용하지 않음. 구 키 `imageWidth/imageHeight`는 v3.6에서 폐기 |
+| 공통 Width/Height와 IMAGE | IMAGE도 공통 Width/Height 한 쌍만 쓴다(TODO58). ORIGINAL·ADAPTIVE는 창 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기 |
+| content.width/height | 폐기(TODO58). 최소 버전(ORIGINAL)은 원래 사용하지 않음. 구 키 `imageWidth/imageHeight`는 v3.6에서 폐기 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
@@ -153,7 +153,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 |---|---|
 | 공통 | PopupId/PopupType + 공통 Width/Height + 제목/Header + 닫기 + Footer + 다시 보지 않기 + Overlay + 드래그 이동 + Footer 바로가기(URL 열기 후 닫기) |
 | TEXT | PlainText 중심. 별도 TextStyle 없음. 공통 Width/Height 사용 |
-| IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. content.width/height 및 keepAspectRatio는 사용하지 않음 |
+| IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. keepAspectRatio는 사용하지 않음(content.width/height는 TODO58에서 폐기) |
 | VIDEO | VideoUrl + 기본 Controls/음량 + 영상 FullScreen + CompletionRatio + 공통 Width/Height |
 | SURVEY | 단일/복수 선택 + 주관식 + 필수값 검증 + 선택지 VERTICAL/HORIZONTAL. 채점 없음 |
 | QUIZ | SINGLE_CHOICE / MULTIPLE_CHOICE 채점 + 배점/정답/합격점 + 미통과 시 창 유지 + VIDEO+QUIZ. TEXT 자동 채점은 최소 버전 미제공 |

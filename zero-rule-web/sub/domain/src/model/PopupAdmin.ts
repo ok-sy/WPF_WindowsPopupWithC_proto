@@ -57,7 +57,10 @@ export interface AdminPopupDetail {
   displayMode: PopupDisplayMode;
   displayOrder: number;
   sizeMode: PopupSizeMode;
-  /** IMAGE 일반 모드는 content.width/height만 전송한다. */
+  /**
+   * [TODO58] IMAGE도 이 한 쌍을 쓴다(content.width/height 없음). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기,
+   * FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기(헤더·푸터·제목·설명은 더해서 창 계산). 일반 IMAGE는 축별로 생략할 수 있다.
+   */
   width?: number;
   height?: number;
   widthRatio: number;

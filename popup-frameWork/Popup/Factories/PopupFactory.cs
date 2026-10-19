@@ -35,7 +35,7 @@ namespace Popup.Factories
             FrameworkElement content = popupDto.PopupType.Trim().ToUpperInvariant() switch
             {
                 "TEXT" => CreateTextPopupView(popupDto.Content),
-                "IMAGE" => CreateImagePopupView(popupDto.Content),
+                "IMAGE" => CreateImagePopupView(popupDto),
                 "VIDEO" => CreateVideoPopupView(popupDto.Content),
                 "SURVEY" => CreateSurveyPopupView(popupDto, false),
                 "QUIZ" when GetContentBoolean(popupDto.Content, "videoEnabled", false) =>
@@ -79,8 +79,8 @@ namespace Popup.Factories
                 Position = ConvertPopupPosition(popupDto.PopupPosition),
                 SizeMode = content is ImagePopupView && !string.Equals(popupDto.SizeMode, "FULLSCREEN", StringComparison.OrdinalIgnoreCase)
                     ? PopupSizeMode.Fixed : ConvertPopupSizeMode(popupDto.SizeMode),
-                Width = content is ImagePopupView imageWidthView ? imageWidthView.RequestedWindowWidth ?? 560 : popupDto.Width,
-                Height = content is ImagePopupView imageHeightView ? imageHeightView.RequestedWindowHeight ?? 420 : popupDto.Height,
+                Width = content is ImagePopupView imageWidthView ? imageWidthView.RequestedWindowWidth ?? 560 : popupDto.Width ?? 900,
+                Height = content is ImagePopupView imageHeightView ? imageHeightView.RequestedWindowHeight ?? 420 : popupDto.Height ?? 620,
                 WidthRatio = popupDto.WidthRatio,
                 HeightRatio = popupDto.HeightRatio,
                 MinimumWidth = popupDto.MinimumWidth,
@@ -145,8 +145,19 @@ namespace Popup.Factories
                 contentDto.TextBlocks);
         }
 
-        private static FrameworkElement CreateImagePopupView(JsonElement contentJson)
+        /*
+         * [TODO58] 일반 IMAGE 크기는 최상위 popup.width/height 한 쌍이다. ADAPTIVE는 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역으로
+         * ImagePopupView에 넘기고(내부 창/이미지 모델은 그대로 구분), ORIGINAL은 공통 창 크기(PopupOptions.Width/Height)로 쓴다.
+         * 임시 호환: 구 서버는 일반 모드 크기를 content.width/height로 보내고 최상위 값을 생략한다. 최상위 축이 없을 때만 그 값을 읽는다
+         * (최상위 우선). 새 서버 반영과 구 서버 미사용을 확인한 뒤 이 호환 읽기를 삭제한다.
+         */
+        private static double? LegacyContentDimension(JsonElement content, string name) =>
+            content.ValueKind == JsonValueKind.Object && content.TryGetProperty(name, out JsonElement value)
+                && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number) ? number : null;
+
+        private static FrameworkElement CreateImagePopupView(PopupResponseDto popupDto)
         {
+            JsonElement contentJson = popupDto.Content;
             ImagePopupContentDto contentDto = contentJson.Deserialize<ImagePopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("IMAGE 팝업 content 변환에 실패했습니다.");
 
@@ -162,8 +173,8 @@ namespace Popup.Factories
                 contentDto.Description,
                 contentDto.ShowDescription,
                 ConvertImagePopupSizeMode(contentDto.ImageSizeMode),
-                contentDto.Width,
-                contentDto.Height,
+                popupDto.Width ?? LegacyContentDimension(contentJson, "width"),
+                popupDto.Height ?? LegacyContentDimension(contentJson, "height"),
                 contentDto.KeepAspectRatio);
         }
 

@@ -34,20 +34,23 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   for (const locked of [true, false]) {
     await run(`window.scenario('FIT_TO_IMAGE', ${locked}, 900, 300)`); await pause(250);
     const sizes = await run(`(()=>{const i=document.querySelector('img'), r=i.getBoundingClientRect(), p=i.closest('a')?.parentElement ?? i.parentElement, c=p.getBoundingClientRect();return {w:r.width,h:r.height,clip:c.width,fit:getComputedStyle(i).objectFit,overflow:getComputedStyle(p).overflow};})()`);
-    check(sizes.w === 900 && sizes.h === (locked ? 450 : 300), 'Actual bitmap display size survives maximum window');
+    // [TODO58] 두 축을 지정하면 비율 고정이어도 그 크기가 콘텐츠 영역이다(고정은 contain으로 영역 안에 맞춤).
+    check(sizes.w === 900 && sizes.h === 300, 'Content area size survives maximum window (TODO58)');
     check(sizes.clip < sizes.w && sizes.overflow === 'hidden', 'Image viewport clips oversized bitmap');
     check(sizes.fit === (locked ? 'contain' : 'fill'), 'Unlocked image is stretched to explicit dimensions');
   }
   for (const locked of [true, false]) for (const width of [null, 120]) for (const height of [null, 90]) {
     await run(`window.scenario('FIT_TO_IMAGE', ${locked}, ${width}, ${height})`); await pause(70);
     const display = await run('window.imageState.display');
-    check(locked ? Math.abs(display.width / display.height - 2) < 1e-6 : display.width === (width ?? 800) && display.height === (height ?? 400), 'Missing axes and original ratio are consistent');
+    check(width && height ? display.width === width && display.height === height
+      : locked ? Math.abs(display.width / display.height - 2) < 1e-6 : display.width === (width ?? 800) && display.height === (height ?? 400),
+      'Missing axes and original ratio are consistent; two axes are the content area (TODO58)');
   }
   for (const [naturalWidth, naturalHeight] of [[800, 400], [200, 600], [100, 100]]) for (const locked of [true, false]) {
     await run(`window.scenario('FIT_TO_IMAGE', ${locked}, 120, 90, '', 100, 600, false, ${naturalWidth}, ${naturalHeight})`); await pause(150);
-    const rendered = await run("(()=>{const r=document.querySelector('img').getBoundingClientRect();return {width:r.width,height:r.height};})()");
-    check(Math.abs(rendered.width - 120) < 1 && Math.abs(rendered.height - (locked ? 120 * naturalHeight / naturalWidth : 90)) < 1,
-      'Landscape, portrait and square bitmaps render using actual original ratio or explicit unlocked size');
+    const rendered = await run("(()=>{const i=document.querySelector('img'),r=i.getBoundingClientRect();return {width:r.width,height:r.height,fit:getComputedStyle(i).objectFit};})()");
+    check(Math.abs(rendered.width - 120) < 1 && Math.abs(rendered.height - 90) < 1 && rendered.fit === (locked ? 'contain' : 'fill'),
+      'Landscape, portrait and square bitmaps use the 120x90 content area, contained with the original ratio or filled when unlocked (TODO58)');
   }
   await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 100, 400)"); await pause(150);
   check(await run('window.imageState.layout.window.width===900 && window.imageState.layout.window.height===810'),

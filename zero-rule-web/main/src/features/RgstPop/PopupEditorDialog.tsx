@@ -59,7 +59,7 @@ function createDefaultPopup(): AdminPopupDetail {
       highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false,
-      showDescription: true, imageSizeMode: 'ADAPTIVE', width: 560, height: 420,
+      showDescription: true, imageSizeMode: 'ADAPTIVE',
       showControls: true, allowFullScreen: true,
       allowPlaybackRateChange: true, allowSeek: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
@@ -140,7 +140,7 @@ const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity',
 const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
   TEXT: ['plainText', 'textBlocks', 'showPlainText', 'highlightText',
     'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
-  IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'width', 'height', 'keepAspectRatio'],
+  IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'keepAspectRatio'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
     'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
   SURVEY: ['surveyTitle', 'description'],
@@ -162,8 +162,12 @@ function withNormalizedFooter(popupType: string, content: AdminPopupDetail['cont
 }
 function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail {
   if (popup.popupType !== 'IMAGE') return popup;
-  return { ...popup, sizeMode: popup.content.imageSizeMode !== 'ORIGINAL' && popup.sizeMode !== 'FULLSCREEN' ? 'FIXED' : popup.sizeMode, content: {
-    ...popup.content,
+  // [TODO58] 크기는 popup.width/height 한 쌍이다. 구 서버 응답의 content.width/height는 최상위 값이 없을 때만 옮기고 content에서는 뺀다.
+  const { width: legacyWidth, height: legacyHeight, ...content } = popup.content;
+  const legacy = (value: unknown) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : undefined);
+  return { ...popup, width: popup.width ?? legacy(legacyWidth), height: popup.height ?? legacy(legacyHeight),
+    sizeMode: popup.content.imageSizeMode !== 'ORIGINAL' && popup.sizeMode !== 'FULLSCREEN' ? 'FIXED' : popup.sizeMode, content: {
+    ...content,
     imageSizeMode: normalizeImageSizeMode(popup.content.imageSizeMode),
 
   } };
@@ -210,12 +214,13 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     image.src = imageUrl;
     return () => { canceled = true; };
   }, [imageUrl]);
+  // [TODO58] IMAGE 크기 입력은 popup.width/height다. FIT_TO_IMAGE 비율 고정이면 원본 비율로 반대 축을 연동한다.
   const updateImageDimension = (key: 'width' | 'height', input: string) => setPopup(previous => {
-    const value = input === '' ? null : Number(input);
-    const content = {...previous.content, [key]: value};
-    if (naturalSize && content.imageSizeMode === 'FIT_TO_IMAGE' && content.keepAspectRatio !== false && value != null && value > 0)
-      content[key === 'width' ? 'height' : 'width'] = Math.round((key === 'width' ? value * naturalSize.height / naturalSize.width : value * naturalSize.width / naturalSize.height) * 100) / 100;
-    return {...previous, content};
+    const value = input === '' ? undefined : Number(input);
+    const next = {...previous, [key]: value};
+    if (naturalSize && previous.content.imageSizeMode === 'FIT_TO_IMAGE' && previous.content.keepAspectRatio !== false && value != null && value > 0)
+      next[key === 'width' ? 'height' : 'width'] = Math.round((key === 'width' ? value * naturalSize.height / naturalSize.width : value * naturalSize.width / naturalSize.height) * 100) / 100;
+    return next;
   });
   const [templateOpen, setTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -286,12 +291,14 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       || (popup.popupType !== 'IMAGE' && (popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight))) {
       toast.warn('창 최소·최대 크기는 양수이며 최소가 최대보다 작거나 같아야 합니다.'); return;
     }
-    if (popup.popupType === 'IMAGE' && popup.content.imageSizeMode !== 'ORIGINAL') {
-      for (const key of ['width', 'height']) {
-        const value = popup.content[key];
+    if (popup.popupType === 'IMAGE') {
+      for (const value of [popup.width, popup.height]) {
         if (value != null && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
           toast.warn('크기는 양수로 입력하거나 비워 두세요.'); return;
         }
+      }
+      if (popup.content.imageSizeMode === 'ORIGINAL' && popup.sizeMode === 'FIXED' && (popup.width == null || popup.height == null)) {
+        toast.warn('원본 그대로 모드는 팝업 너비·높이를 입력해 주세요.'); return;
       }
     }
     const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
@@ -322,8 +329,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       if (requestPopup.popupType === 'IMAGE') {
         const mode = requestPopup.content.imageSizeMode;
         if (mode !== 'FIT_TO_IMAGE') delete requestPopup.content.keepAspectRatio;
-        if (mode === 'ORIGINAL') { delete requestPopup.content.width; delete requestPopup.content.height; }
-        else { delete requestPopup.width; delete requestPopup.height; }
+        // [TODO58] 모든 모드에서 popup.width/height만 보낸다(content 크기는 서버가 거절).
+        delete requestPopup.content.width; delete requestPopup.content.height;
       }
       const hasInvalidTarget = targetGroups.some((group) => group.conditions.length === 0
         || group.conditions.some((condition) => !condition.value.trim()));
@@ -341,9 +348,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       return { width: Math.round(Math.min(availableWidth * 0.96, fitWindow.width)), height: Math.round(Math.min(availableHeight * 0.96, fitWindow.height)) };
     }
     const requestedWidth = popup.sizeMode === 'FULLSCREEN' ? availableWidth
-      : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : popup.popupType === 'IMAGE' && !originalImageMode ? Number(popup.content.width ?? 560) : (popup.width ?? 560);
+      : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : (popup.width ?? 560);
     const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
-      : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : popup.popupType === 'IMAGE' && !originalImageMode ? Number(popup.content.height ?? 420) : (popup.height ?? 420);
+      : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : (popup.height ?? 420);
     if (popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN') {
       const maximumWidth = availableWidth * .90, maximumHeight = availableHeight * .90;
       return {width: Math.round(Math.max(Math.min(popup.minimumWidth, maximumWidth), Math.min(maximumWidth, requestedWidth))),
@@ -398,10 +405,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 const nextType = combined ? 'QUIZ' : e.target.value as PopupType;
                 setPopup((previous) => ({ ...previous, popupType: nextType,
                   content: { ...previous.content, videoEnabled: combined },
-                  // 일반 IMAGE는 서버 응답의 width/height가 null이다. 이미지 크기 모드 변경과 같은 방식으로 보정해
-                  // 다른 유형으로 바꿔 저장할 때 "팝업 너비와 높이는 필수" 거절을 막는다.
-                  width: previous.width ?? Number(previous.content.width ?? 560),
-                  height: previous.height ?? Number(previous.content.height ?? 420),
+                  // 일반 IMAGE는 width/height를 생략할 수 있다(TODO58). 다른 유형으로 바꿔 저장할 때 "팝업 너비와 높이는 필수" 거절을 막는다.
+                  width: previous.width ?? 560,
+                  height: previous.height ?? 420,
                   // 동영상+퀴즈 기본 0.8, 일반 VIDEO는 입력값 유지(비우면 1.0), 동영상이 없는 유형은 저장 요청에 남지 않게 비운다.
                   completionRatio: combined ? previous.completionRatio ?? 0.8 : nextType === 'VIDEO' ? previous.completionRatio : null,
                   questions: nextType === 'QUIZ' ? withDefaultAnswerMatchMode(previous.questions) : previous.questions }));
@@ -439,36 +445,39 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
             {popup.popupType === 'IMAGE' && <Stack spacing={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: originalImageMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
                 <TextField select label="이미지 크기 모드" value={normalizeImageSizeMode(popup.content.imageSizeMode)} onChange={(e) => {
                     const mode = e.target.value;
                     setPopup(previous => {
                       const content = {...previous.content, imageSizeMode: mode, ...(mode === 'FIT_TO_IMAGE' ? {keepAspectRatio: previous.content.keepAspectRatio ?? true} : {})};
-                      const size = mode === 'FIT_TO_IMAGE' && naturalSize && content.keepAspectRatio !== false
-                        ? displayImageSize({...previous, content}, naturalSize) : null;
-                      return {...previous, width: previous.width ?? Number(previous.content.width ?? 560), height: previous.height ?? Number(previous.content.height ?? 420),
-                        sizeMode: previous.sizeMode === 'FULLSCREEN' ? 'FULLSCREEN' : 'FIXED', content: {...content, ...(size ?? {})}};
+                      // [TODO58] 같은 숫자를 유지하고 의미만 바뀐다(ADAPTIVE·ORIGINAL 창 전체 ↔ FIT_TO_IMAGE 콘텐츠 영역). 라벨·도움말이 함께 바뀐다.
+                      return {...previous, width: previous.width ?? (mode === 'ORIGINAL' ? 560 : undefined), height: previous.height ?? (mode === 'ORIGINAL' ? 420 : undefined),
+                        sizeMode: previous.sizeMode === 'FULLSCREEN' ? 'FULLSCREEN' : 'FIXED', content};
                     });
                   }}>
                   <MenuItem value="ORIGINAL">원본 그대로 (넘치는 부분 자르기)</MenuItem><MenuItem value="FIT_TO_IMAGE">이미지 우선</MenuItem><MenuItem value="ADAPTIVE">창 우선</MenuItem>
                 </TextField>
-                {!originalImageMode && <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '이미지 표시 너비' : '팝업 창 너비'} value={contentValue(popup, 'width')} onChange={(e) => updateImageDimension('width', e.target.value)} />}
-                {!originalImageMode && <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '이미지 표시 높이' : '팝업 창 높이'} value={contentValue(popup, 'height')} onChange={(e) => updateImageDimension('height', e.target.value)} />}
+                {/* [TODO58] 공통 popup.width/height. 모드에 따라 라벨·도움말만 바뀌고 같은 숫자의 적용 기준이 달라진다. */}
+                <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width ?? ''}
+                  disabled={popup.sizeMode === 'FULLSCREEN' || (originalImageMode && popup.sizeMode !== 'FIXED')} onChange={(e) => updateImageDimension('width', e.target.value)} />
+                <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height ?? ''}
+                  disabled={popup.sizeMode === 'FULLSCREEN' || (originalImageMode && popup.sizeMode !== 'FIXED')} onChange={(e) => updateImageDimension('height', e.target.value)} />
               </Box>
-              {/* [설계 18 L-5 — W-10] 모드별 크기 기준 안내(설계 15 §6 남은 항목)와 설명 배치 옵션 편집 */}
+              {/* [설계 18 L-5 — W-10·TODO58] 모드별 크기 기준 안내 */}
               <Typography variant="caption" color="text.secondary">
-                {originalImageMode ? '왼쪽 위에 원본 크기로 표시하고 넘치는 부분을 자릅니다. 이미지가 작아도 확대하지 않습니다.'
+                {originalImageMode ? '창 전체 크기입니다. 이미지는 남은 영역에 원본 크기로 표시되며 넘치는 부분은 잘립니다.'
                   : normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'
-                    ? `이미지 표시 크기를 유지합니다. 창 최대를 넘으면 중앙에서 잘립니다. 비우면 원본 크기를 사용합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
-                    : '입력 크기는 팝업 창 크기입니다. 이미지는 원본 비율을 유지해 전체 표시하며 원본보다 확대하지 않습니다.'}
+                    ? `이미지 영역 크기입니다. 헤더·푸터·설명 공간이 추가되어 실제 창은 더 커질 수 있습니다. 최대 창 크기를 넘는 부분은 잘립니다. 비우면 원본 크기를 사용합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
+                    : '창 전체 크기입니다. 이미지는 헤더·푸터·설명 등을 제외한 영역에 맞춰 표시됩니다(원본보다 확대하지 않음).'}
               </Typography>
               {popup.content.imageSizeMode === 'FIT_TO_IMAGE' && <>
                 <FormControlLabel control={<Switch checked={popup.content.keepAspectRatio !== false} onChange={(_, value) => {
-                  const size = naturalSize ? displayImageSize({...popup, content: {...popup.content, keepAspectRatio: value}}, naturalSize) : null;
-                  setPopup(previous => ({...previous, content: {...previous.content, keepAspectRatio: value, ...(size ?? {})}}));
+                  // 비율 고정을 켜면 너비 기준으로 높이를 원본 비율에 다시 맞춘다(입력 연동). 끄면 숫자를 그대로 둔다.
+                  setPopup(previous => ({...previous, content: {...previous.content, keepAspectRatio: value},
+                    ...(value && naturalSize && previous.width ? {height: Math.round(previous.width * naturalSize.height / naturalSize.width * 100) / 100} : {})}));
                 }} />} label="원본 비율 고정" />
-                <Typography variant="caption" color="text.secondary">{popup.content.keepAspectRatio === false ? '너비·높이를 독립 입력합니다. 원본 비율과 다르면 이미지가 늘어나거나 눌립니다.' : '너비·높이를 원본 비율로 연동합니다. 양쪽 값이 맞지 않으면 너비를 기준으로 높이를 계산합니다.'}
-                  {naturalSize ? ` 계산 표시 크기 ${Math.round(displayImageSize(popup, naturalSize).width)}×${Math.round(displayImageSize(popup, naturalSize).height)}` : ' 원본 로딩 후 크기를 계산합니다.'}</Typography>
+                <Typography variant="caption" color="text.secondary">{popup.content.keepAspectRatio === false ? '콘텐츠 영역을 이미지로 채웁니다. 원본 비율과 다르면 이미지가 늘어나거나 눌립니다.' : '너비·높이를 원본 비율로 연동합니다. 두 값이 비율과 다르면 영역 안에 원본 비율로 맞추고 남는 쪽은 여백으로 둡니다.'}
+                  {naturalSize ? ` 콘텐츠 영역 ${Math.round(displayImageSize(popup, naturalSize).width)}×${Math.round(displayImageSize(popup, naturalSize).height)}` : ' 원본 로딩 후 크기를 계산합니다.'}</Typography>
               </>}
               {!originalImageMode && <Typography variant="caption" color="text.secondary">설명은 하단에 표시합니다. 미리보기와 실제 PC는 작업 영역·DPI·글꼴에 따라 창 크기가 달라질 수 있습니다.</Typography>}
             </Stack>}
@@ -638,7 +647,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>
                 <MenuItem value="FIXED">고정 크기</MenuItem>{(popup.popupType !== 'IMAGE' || originalImageMode) && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
-              {popup.sizeMode === 'FIXED' && (popup.popupType !== 'IMAGE' || originalImageMode) && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popup.minimumWidth} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popup.minimumHeight} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
+              {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popup.minimumWidth} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popup.minimumHeight} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
               {popup.sizeMode === 'RATIO' && (popup.popupType !== 'IMAGE' || originalImageMode) && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
             </Box>
             {/* WPF PopupWindow.ApplyWindowSize: MinimumWidth/Height는 FIXED·RATIO 모두 적용(IMAGE 포함, 작업 영역 상한 이하로 보정),

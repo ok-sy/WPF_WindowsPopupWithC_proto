@@ -20,6 +20,8 @@ using Popup.Views.Windows;
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
  * 57  완료 전 닫기 옵션 폐기: 화면 버튼은 completionRatio, 외부 닫기는 Overlay, 완료 전 연기는 showLater
+ * 58  IMAGE 공통 popup.width/height: ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(부가 영역은 더함),
+ *     생략 축·구 서버 content.width/height 임시 호환(최상위 우선), 다른 유형 기본 900×620 유지
  * 60  VIDEO+QUIZ 재생 영역 = 원본 비율 × 실제 너비(메타데이터 전 16:9, 세로 영상 상한, 잘못된 크기·이전 문서 메시지 무시,
  *     크기 갱신이 시청량·잠금에 영향 없음, 단독 VIDEO는 기존 * 행)
  * 59  VIDEO+QUIZ 영상·퀴즈 사이 시스템 안내 제거(전용 행 없음), 푸터 숨김 시 본문 제출 영역의 잠금 사유
@@ -73,6 +75,7 @@ internal static class Program
         CheckVideoQuizFooter43();
         CheckVideoQuizNotice59();
         CheckVideoQuizAspect60();
+        CheckImageSize58();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
@@ -83,7 +86,7 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 59, 60)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 58, 59, 60)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -435,6 +438,109 @@ internal static class Program
         Check(((TextBlock)failedView.Quiz.FindName("RequiredProgressText")).Text == "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다.",
             "[TODO59] footer OFF: playback failure shows the failure reason in the inline area");
         ShutdownClose(failed.Window);
+    }
+
+    /* [TODO58] IMAGE 크기는 최상위 popup.width/height 한 쌍이며 imageSizeMode에 따라 창 전체 또는 이미지 콘텐츠 영역이다. */
+    private static void CheckImageSize58()
+    {
+        // 콘텐츠 영역 계산: 두 축 지정은 그대로(비율 고정이어도 영역은 지정 크기), 한 축은 비율 또는 원본 길이, 미지정은 원본.
+        var natural = new Size(400, 200);
+        Check(ImagePopupView.ResolveContentArea(natural, 300, 300, true) == new Size(300, 300), "[TODO58] two axes are the content area even when the ratio is kept");
+        Check(ImagePopupView.ResolveContentArea(natural, 300, null, true) == new Size(300, 150), "[TODO58] one axis with a kept ratio derives the other axis");
+        Check(ImagePopupView.ResolveContentArea(natural, null, 100, true) == new Size(200, 100), "[TODO58] height only with a kept ratio derives the width");
+        Check(ImagePopupView.ResolveContentArea(natural, 300, null, false) == new Size(300, 200), "[TODO58] unlocked missing axis uses the original length");
+        Check(ImagePopupView.ResolveContentArea(natural, null, null, true) == natural, "[TODO58] no size uses the original DIP size");
+
+        Popup.Dtos.PopupResponseDto Image(string mode, double? width, double? height, Action<System.Text.Json.Nodes.JsonObject>? content = null)
+        {
+            var dto = DemoPopups("IMAGE").Single();
+            var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+            var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(dto, json))!.AsObject();
+            var body = node["content"]!.AsObject();
+            body["imageSizeMode"] = mode;
+            body.Remove("width"); body.Remove("height");
+            content?.Invoke(body);
+            node.Remove("width"); node.Remove("height");
+            if (width is double w) node["width"] = w;
+            if (height is double h) node["height"] = h;
+            return System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
+        }
+        double? Requested(PopupOptions options, string field) =>
+            (double?)typeof(ImagePopupView).GetField(field, Flags)!.GetValue((ImagePopupView)options.Content!);
+
+        // 매핑: ADAPTIVE·ORIGINAL은 창 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역(창은 로딩 후 부가 영역을 더해 계산, 그 전 임시 560×420).
+        var adaptive = PopupFactory.Create(Image("ADAPTIVE", 600, 400));
+        Check(adaptive.Width == 600 && adaptive.Height == 400, "[TODO58] ADAPTIVE popup.width/height is the window size");
+        var original = PopupFactory.Create(Image("ORIGINAL", 600, 400));
+        Check(original.Width == 600 && original.Height == 400 && original.Content is ImageFillPopupView, "[TODO58] ORIGINAL popup.width/height is the window size");
+        var fit = PopupFactory.Create(Image("FIT_TO_IMAGE", 600, 400));
+        Check(fit.Width == 560 && fit.Height == 420 && Requested(fit, "_requestedWidth") == 600 && Requested(fit, "_requestedHeight") == 400,
+            "[TODO58] FIT_TO_IMAGE popup.width/height goes to the image content area, not the window");
+        // 임시 호환: 구 서버의 content.width/height는 최상위 축이 없을 때만 읽는다(최상위 우선).
+        var legacy = PopupFactory.Create(Image("ADAPTIVE", null, null, c => { c["width"] = 500; c["height"] = 300; }));
+        Check(legacy.Width == 500 && legacy.Height == 300, "[TODO58] legacy content.width/height is read when the top-level size is missing");
+        var mixed = PopupFactory.Create(Image("ADAPTIVE", 600, null, c => { c["width"] = 500; c["height"] = 300; }));
+        Check(mixed.Width == 600 && mixed.Height == 300, "[TODO58] top-level size wins over legacy content size per axis");
+        var none = PopupFactory.Create(Image("FIT_TO_IMAGE", null, null));
+        Check(Requested(none, "_requestedWidth") == null && Requested(none, "_requestedHeight") == null, "[TODO58] omitted size stays unspecified (original size)");
+        // 다른 유형은 생략 시 예전 기본 900×620을 유지한다.
+        var text = DemoPopups("TEXT").Single();
+        text.SizeMode = "FIXED"; text.Width = null; text.Height = null;
+        var textOptions = PopupFactory.Create(text);
+        Check(textOptions.Width == 900 && textOptions.Height == 620, "[TODO58] non-image types keep the 900x620 default when the size is omitted");
+
+        // 실제 창: 같은 600×400에서 TEXT·ADAPTIVE·ORIGINAL 창 크기가 같다.
+        Opened Show(Popup.Dtos.PopupResponseDto dto)
+        {
+            var options = PopupFactory.Create(dto);
+            options.UseBackgroundOverlay = false;
+            var window = new PopupWindow(options);
+            bool closed = false;
+            window.Closed += (_, _) => closed = true;
+            window.Show();
+            window.UpdateLayout();
+            return new Opened(window, options, () => closed);
+        }
+        var sameText = DemoPopups("TEXT").Single();
+        sameText.SizeMode = "FIXED"; sameText.Width = 600; sameText.Height = 400; sameText.MinimumWidth = 100; sameText.MinimumHeight = 100;
+        var t = Show(sameText);
+        foreach (string mode in new[] { "ADAPTIVE", "ORIGINAL" })
+        {
+            var dto = Image(mode, 600, 400); dto.MinimumWidth = 100; dto.MinimumHeight = 100;
+            var w = Show(dto);
+            Check(Math.Abs(w.Window.ActualWidth - t.Window.ActualWidth) < 1 && Math.Abs(w.Window.ActualHeight - t.Window.ActualHeight) < 1,
+                $"[TODO58] {mode} window equals TEXT with the same width/height ({w.Window.ActualWidth}x{w.Window.ActualHeight} vs {t.Window.ActualWidth}x{t.Window.ActualHeight})");
+            ShutdownClose(w.Window);
+        }
+        ShutdownClose(t.Window);
+
+        // FIT_TO_IMAGE: 이미지 콘텐츠 영역은 설명 ON/OFF와 관계없이 지정 크기, 설명은 창에 더해진다(영역을 줄이지 않음).
+        (double Area, double AreaHeight, Size Image, double WindowHeight, System.Windows.Media.Stretch Stretch) Fit(bool description, bool keep)
+        {
+            var dto = Image("FIT_TO_IMAGE", 320, 200, c => { c["showDescription"] = description; c["keepAspectRatio"] = keep; });
+            dto.MinimumWidth = 100; dto.MinimumHeight = 100;
+            var w = Show(dto);
+            for (int i = 0; i < 5; i++) { w.Window.UpdateLayout(); System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background); }
+            var view = (ImagePopupView)w.Options.Content!;
+            var image = (System.Windows.Controls.Image)view.FindName("PopupImage");
+            var container = (System.Windows.Controls.Border)view.FindName("ImageContainer");
+            // 콘텐츠 영역 = 이미지 테두리 안쪽(ImageContainer − 테두리). 실제 이미지는 비율 유지 시 그 안에서 더 작을 수 있다.
+            var result = (container.ActualWidth - 2, container.ActualHeight - 2, new Size(image.ActualWidth, image.ActualHeight), w.Window.ActualHeight, image.Stretch);
+            ShutdownClose(w.Window);
+            return result;
+        }
+        var plain = Fit(false, true);
+        var described = Fit(true, true);
+        Check(Math.Abs(plain.Area - 320) < 0.6 && Math.Abs(plain.AreaHeight - 200) < 0.6 && Math.Abs(described.Area - 320) < 0.6 && Math.Abs(described.AreaHeight - 200) < 0.6,
+            $"[TODO58] FIT_TO_IMAGE content area keeps 320x200 with or without a description ({plain.Area}x{plain.AreaHeight}, {described.Area}x{described.AreaHeight})");
+        Check(described.WindowHeight > plain.WindowHeight + 10, $"[TODO58] the description adds to the window instead of shrinking the area ({plain.WindowHeight} -> {described.WindowHeight})");
+        // Demo 이미지(750×1030 세로)는 비율 고정 시 320×200 영역 안에서 약 145.6×200으로 표시되고 좌우 여백이 생긴다.
+        Check(plain.Stretch == System.Windows.Media.Stretch.Uniform && plain.Image.Width < 320 && Math.Abs(plain.Image.Height - 200) < 0.6
+            && Math.Abs(plain.Image.Width / plain.Image.Height - 750.0 / 1030) < 0.01,
+            $"[TODO58] kept ratio fits the image inside the area with margins ({plain.Image})");
+        var filled = Fit(false, false);
+        Check(filled.Stretch == System.Windows.Media.Stretch.Fill && Math.Abs(filled.Image.Width - 320) < 0.6 && Math.Abs(filled.Image.Height - 200) < 0.6,
+            $"[TODO58] unlocked ratio fills the content area ({filled.Image})");
     }
 
     /* [TODO60] 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */

@@ -153,18 +153,54 @@ class PopupAdminQuestionsTest {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(imagePopup("FILL"), false, List.of(), "admin"));
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 imageWithContent("ADAPTIVE", Map.of("width", 600), 600.0), false, List.of(), "admin"));
+        // [TODO58] 공통 popup.width도 양수·유한값이어야 하고, content.width/height는 단독으로도 거절한다(이중 지시 금지).
+        for (double value : new double[]{0, -1, Double.NaN, Double.POSITIVE_INFINITY})
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                    imageWithContent("FIT_TO_IMAGE", Map.of(), value), false, List.of(), "admin"));
+        for (String key : List.of("width", "height"))
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
+                    imageWithContent("ADAPTIVE", Map.of(key, 600), null), false, List.of(), "admin"));
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
-    @Test void image23StoresOversizedUnlockedImageAndOmitsTopLevelDimensions() throws Exception {
-        var popup = imageWithContent("FIT_TO_IMAGE", Map.of("width", 5000, "height", 3000, "keepAspectRatio", false), null);
+    // [TODO58] 일반 IMAGE의 공통 popup.width/height는 CONTENT_OPTIONS(width/height)에 저장하고 WPF 응답은 최상위로만 보낸다.
+    @Test void image58StoresTopLevelDimensionsInOptionsAndSendsThemAtTopLevel() throws Exception {
+        var popup = imageWithContent("FIT_TO_IMAGE", Map.of("keepAspectRatio", false), 5000.0);
+        popup = new PopupResponseDto(popup.popupId(), popup.popupType(), popup.title(), popup.displayStartAt(),
+                popup.displayEndAt(), popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
+                5000.0, 3000.0, popup.widthRatio(), popup.heightRatio(), popup.minimumWidth(), popup.minimumHeight(),
+                popup.maximumWidth(), popup.maximumHeight(), popup.showHeader(), popup.showCloseButton(), popup.showFooter(),
+                popup.showDoNotShowAgain(), popup.showLater(), null, popup.periodMode(), null, null, null, null, null, null,
+                List.of(), popup.content());
         service.saveAdminPopup(popup, false, List.of(), "admin");
-        verify(mapper).upsertAdminPopupContent(argThat(c -> c.contentOptionsJson().contains("5000")
+        verify(mapper).upsertAdminPopupContent(argThat(c -> c.contentOptionsJson().contains("\"width\":5000")
+                && c.contentOptionsJson().contains("\"height\":3000")
                 && c.contentOptionsJson().contains("\"keepAspectRatio\":false")));
         var json = new ObjectMapper().findAndRegisterModules().valueToTree(server.domain.popup.wpf.WpfPopupItem.from(popup, false));
-        assertFalse(json.has("width"));
-        assertFalse(json.has("height"));
-        assertEquals(5000, json.path("content").path("width").asInt());
+        assertEquals(5000, json.path("width").asInt());
+        assertEquals(3000, json.path("height").asInt());
+        assertFalse(json.path("content").has("width"));
+        assertFalse(json.path("content").has("height"));
+    }
+
+    // [TODO58] 조회: 저장된 CONTENT_OPTIONS width/height(또는 구 ADAPTIVE 컬럼 값)를 최상위로 옮기고 content에서는 뺀다. 생략 축은 null.
+    @Test void image58ResponseMovesStoredDimensionsToTopLevel() {
+        java.util.function.BiFunction<String, String, PopupEntity> entity = (mode, options) -> new PopupEntity("P1", "IMAGE", "제목", null, null,
+                "SEQUENTIAL", "FIXED", new BigDecimal("560"), new BigDecimal("420"), new BigDecimal(".7"), new BigDecimal(".75"),
+                new BigDecimal("100"), new BigDecimal("100"), new BigDecimal("1200"), new BigDecimal("900"),
+                "Y", "Y", "Y", "N", "N", "이미지", null, null, "https://x/a.png", options,
+                100, null, "FIXED", null, null, null, null, null, null);
+        var fit = service.toPublicResponseDto(entity.apply("FIT_TO_IMAGE", "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"width\":600}"), List.of());
+        assertEquals(600.0, fit.width());
+        assertNull(fit.height());
+        assertFalse(fit.content().containsKey("width"));
+        assertFalse(fit.content().containsKey("height"));
+        var adaptive = service.toPublicResponseDto(entity.apply("ADAPTIVE", "{\"imageSizeMode\":\"ADAPTIVE\",\"width\":640,\"height\":480}"), List.of());
+        assertEquals(640.0, adaptive.width());
+        assertEquals(480.0, adaptive.height());
+        var original = service.toPublicResponseDto(entity.apply("ORIGINAL", "{\"imageSizeMode\":\"ORIGINAL\"}"), List.of());
+        assertEquals(560.0, original.width());
+        assertEquals(420.0, original.height());
     }
 
     // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.
@@ -186,7 +222,7 @@ class PopupAdminQuestionsTest {
                 withContent.apply(Map.of("descriptionPosition", "LEFT")), false, List.of(), "admin"));
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 withContent.apply(Map.of("imageAreaRatio", 0.95)), false, List.of(), "admin"));
-        service.saveAdminPopup(withContent.apply(Map.of("width", 600, "height", 400)),
+        service.saveAdminPopup(withContent.apply(Map.of("showDescription", false)),
                 false, List.of(), "admin");
         verify(mapper, times(1)).upsertAdminPopupNotice(any());
     }

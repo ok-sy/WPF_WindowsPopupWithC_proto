@@ -16,7 +16,6 @@ namespace Popup
             ["plainText"]="본문 · 서식 본문이 있으면 저장 시 서식 본문에서 다시 만듦", ["textBlocks"]="서식 본문 (textBlocks JSON) · 있으면 본문 대신 표시, 비우면 본문 사용", ["showPlainText"]="본문 표시", ["highlightText"]="강조 문구", ["showHighlight"]="강조 문구 표시",
             ["bottomDescription"]="하단 안내", ["bottomDescriptionUrl"]="하단 안내 링크", ["showBottomDescription"]="하단 안내 표시",
             ["imageTitle"]="이미지 제목", ["imageUrl"]="이미지 경로 또는 URL", ["imageSizeMode"]="이미지 표시 방식",
-            ["width"]="너비 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지", ["height"]="높이 · ADAPTIVE는 창 / FIT_TO_IMAGE는 이미지",
             ["keepAspectRatio"]="이미지 비율 고정", ["showDescription"]="설명 표시",
             ["videoTitle"]="영상 제목", ["videoUrl"]="영상 경로 또는 URL", ["showControls"]="재생 컨트롤 표시",
             ["allowFullScreen"]="영상 전체화면 허용", ["allowPlaybackRateChange"]="배속 변경 허용", ["allowSeek"]="재생 위치 변경 허용", ["autoPlay"]="자동 재생",
@@ -48,10 +47,13 @@ namespace Popup
         {
             var panel = AddTab("창·배치", "창 크기·위치와 배경 Overlay입니다.");
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "이미지 창 최대는 현재 모니터 작업 영역의 90%로 계산합니다. 고정 최대 픽셀값은 사용하지 않습니다. 지정한 이미지 크기는 유지하며 화면을 넘는 부분은 모드별 정책으로 처리합니다.");
+                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(TODO58). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
             AddField(panel, _draft, "sizeMode", "창 크기 방식", typeof(string), new[] { "FIXED", "RATIO", "FULLSCREEN" });
-            AddField(panel, _draft, "width", "고정 창 너비(px) · ORIGINAL 포함", typeof(double), min: 1, indent: true);
-            AddField(panel, _draft, "height", "고정 창 높이(px) · ORIGINAL 포함", typeof(double), min: 1, indent: true);
+            // [TODO58] 생략(null)을 구분한다. IMAGE 외 유형은 비우면 900×620.
+            AddField(panel, _draft, "width", popup.PopupType == "IMAGE" ? "너비(px) · FIT_TO_IMAGE는 콘텐츠 너비, 그 밖에는 팝업 너비" : "고정 창 너비(px)",
+                typeof(double?), min: 1, indent: true);
+            AddField(panel, _draft, "height", popup.PopupType == "IMAGE" ? "높이(px) · FIT_TO_IMAGE는 콘텐츠 높이, 그 밖에는 팝업 높이" : "고정 창 높이(px)",
+                typeof(double?), min: 1, indent: true);
             AddField(panel, _draft, "widthRatio", "작업 영역 대비 너비 비율", typeof(double), min: .01, max: 1, indent: true);
             AddField(panel, _draft, "heightRatio", "작업 영역 대비 높이 비율", typeof(double), min: .01, max: 1, indent: true);
             AddField(panel, _draft, "minimumWidth", "최소 창 너비(px)", typeof(double), min: 1);
@@ -130,7 +132,7 @@ namespace Popup
             }
             AddDefaults(type);
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "일반 이미지 크기는 아래 너비·높이만 사용합니다. 비우면 원본 크기로 계산합니다. 비율 고정 시 너비를 우선하고, 해제하면 지정한 크기로 표시합니다. ORIGINAL은 창·배치 탭의 창 크기를 사용합니다.");
+                AddNote(panel, "이미지 크기는 창·배치 탭의 너비·높이를 씁니다(TODO58). FIT_TO_IMAGE 비율 고정은 지정 영역 안에 원본 비율로 맞추고(여백 가능), 해제는 영역을 채웁니다. 한 축만 지정하면 원본 비율 또는 원본 길이로 나머지를 채웁니다.");
             AddField(panel, _draft, "bodyFontSize", "본문 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
             AddObjectFields(panel, content, type, popup.PopupType == "QUIZ");
             if (HasVideo(popup))

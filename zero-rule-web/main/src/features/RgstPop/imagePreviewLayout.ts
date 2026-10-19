@@ -9,9 +9,15 @@ function positive(value: unknown): number | null {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
+/**
+ * [TODO58] FIT_TO_IMAGE 이미지 콘텐츠 영역(WPF ImagePopupView.ResolveContentArea와 같은 규칙). 크기는 popup.width/height다.
+ * 두 축 지정은 그대로 영역이며, 비율 고정이면 영역 안에 원본 비율로 맞춰(contain) 여백이 생길 수 있다.
+ * 한 축은 비율 고정 시 원본 비율, 해제 시 원본 길이로 나머지를 채우고, 미지정은 원본 크기다.
+ */
 export function displayImageSize(popup: AdminPopupDetail, natural: Size): Size {
-  const width = positive(popup.content.width);
-  const height = positive(popup.content.height);
+  const width = positive(popup.width);
+  const height = positive(popup.height);
+  if (width && height) return { width, height };
   if (popup.content.keepAspectRatio === false)
     return { width: width ?? natural.width, height: height ?? natural.height };
   const ratio = natural.width / natural.height;

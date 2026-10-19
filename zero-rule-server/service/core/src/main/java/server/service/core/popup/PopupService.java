@@ -872,8 +872,11 @@ public class PopupService {
             if (popup.width() == null || popup.height() == null) throw new IllegalArgumentException("팝업 너비와 높이는 필수입니다.");
             validatePositiveNumber(popup.width(), "팝업 너비");
             validatePositiveNumber(popup.height(), "팝업 높이");
-        } else if (popup.width() != null || popup.height() != null) {
-            throw new IllegalArgumentException("IMAGE 크기는 content.width/height만 지정해야 합니다.");
+        } else {
+            // [TODO58] 일반 IMAGE도 공통 popup.width/height 한 쌍을 쓴다(ADAPTIVE 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
+            // 생략 축은 기존 규칙대로 원본 기준이라 선택 값이다. content.width/height는 validateImageLayoutOptions가 거절한다.
+            if (popup.width() != null) validatePositiveNumber(popup.width(), "팝업 너비");
+            if (popup.height() != null) validatePositiveNumber(popup.height(), "팝업 높이");
         }
         validatePositiveNumber(popup.widthRatio(), "너비 비율");
         validatePositiveNumber(popup.heightRatio(), "높이 비율");
@@ -995,16 +998,33 @@ public class PopupService {
         for (String key : List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio")) {
             if (content.containsKey(key)) throw new IllegalArgumentException("폐기된 IMAGE 필드: " + key);
         }
+        // [TODO58] 크기는 popup.width/height로 옮겼다. content 쪽 크기는 이중 지시가 되므로 받지 않는다.
+        for (String key : List.of("width", "height")) {
+            if (content.containsKey(key))
+                throw new IllegalArgumentException("폐기된 IMAGE 필드: content." + key + " (popup.width/height를 사용하세요)");
+        }
         boolean fit = "FIT_TO_IMAGE".equals(normalizeUpper(contentText(content, "imageSizeMode")));
         if (content.containsKey("keepAspectRatio") && (!fit || !(content.get("keepAspectRatio") instanceof Boolean)))
             throw new IllegalArgumentException("keepAspectRatio는 FIT_TO_IMAGE 전용 boolean입니다.");
-        for (String key : List.of("width", "height")) {
-            Object value = content.get(key);
-            if (value == null) continue;
-            if (!isOrdinaryImage(popup) || !(value instanceof Number))
-                throw new IllegalArgumentException("IMAGE content 크기는 일반 모드의 숫자여야 합니다.");
-            validatePositiveNumber(((Number)value).doubleValue(), key);
-        }
+    }
+
+    /*
+     * [TODO58] 일반 IMAGE의 popup.width/height는 저장 구조를 바꾸지 않고 기존처럼 CONTENT_OPTIONS의 width/height(축별 생략 가능)에 둔다.
+     * 조회 시 toResponseDto가 다시 최상위 popup.width/height로 꺼낸다. ORIGINAL과 다른 유형은 POPUP_WIDTH/HEIGHT 컬럼을 쓴다.
+     */
+    private static Map<String, Object> withImageSize(PopupResponseDto popup, Map<String, Object> content) {
+        if (!isOrdinaryImage(popup)) return content;
+        Map<String, Object> options = new LinkedHashMap<>(content);
+        options.remove("width");
+        options.remove("height");
+        if (popup.width() != null) options.put("width", popup.width());
+        if (popup.height() != null) options.put("height", popup.height());
+        return options;
+    }
+
+    private static Double positiveDimension(Object value) {
+        return value instanceof Number number && Double.isFinite(number.doubleValue()) && number.doubleValue() > 0
+                ? number.doubleValue() : null;
     }
 
     private static void validatePositiveNumber(double value, String fieldName) {
@@ -1121,7 +1141,7 @@ public class PopupService {
                 bodyText(content),
                 contentText(content, "QUIZ".equals(popupType) && Boolean.TRUE.equals(content.get("videoEnabled"))
                         ? "videoUrl" : mediaUrlKey(popupType)),
-                writeContentJson(popup.popupId(), storedOptions(popupType, content)),
+                writeContentJson(popup.popupId(), storedOptions(popupType, withImageSize(popup, content))),
                 auditUser);
     }
 
@@ -1223,13 +1243,17 @@ public class PopupService {
             PopupEntity popup,
             List<PopupQuestionDto> questions) {
         Map<String, Object> content = contentAssembler.assemble(popup);
+        // [TODO58] 일반 IMAGE 크기는 content.width/height가 아니라 최상위 popup.width/height로 내려준다(생략 축은 null → JSON에서 빠짐).
+        boolean ordinaryImage = "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode"));
+        Double width = ordinaryImage ? positiveDimension(content.remove("width")) : Double.valueOf(popup.popupWidth().doubleValue());
+        Double height = ordinaryImage ? positiveDimension(content.remove("height")) : Double.valueOf(popup.popupHeight().doubleValue());
 
         return new PopupResponseDto(
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
                 popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
-                "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode")) ? null : popup.popupWidth().doubleValue(),
-                "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode")) ? null : popup.popupHeight().doubleValue(),
+                width,
+                height,
                 popup.widthRatio().doubleValue(),
                 popup.heightRatio().doubleValue(),
                 popup.minimumWidth().doubleValue(),

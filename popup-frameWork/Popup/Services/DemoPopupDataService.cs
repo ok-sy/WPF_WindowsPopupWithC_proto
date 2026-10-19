@@ -194,6 +194,8 @@ namespace Popup.Services
                     "title": "이미지 팝업 시연",
                     "displayMode": "SEQUENTIAL",
                     "sizeMode": "FIXED",
+                    "width": 400,
+                    "height": 1200,
                     "showHeader": false,
                     "showFooterButton": true,
                     "showFooter": true,
@@ -203,9 +205,7 @@ namespace Popup.Services
                       "imageUrl": "LOCAL_DEMO_IMAGE",
                       "description": "폐쇄망 Media 폴더의 로컬 이미지를 표시하는 팝업입니다.",
                       "showDescription": true,
-                      "imageSizeMode": "ADAPTIVE",
-                      "width": 400,
-                      "height": 1200
+                      "imageSizeMode": "ADAPTIVE"
                     }
                   },
                   {

@@ -42,6 +42,8 @@
       "title": "교육 안내",
       "displayMode": "SEQUENTIAL",
       "sizeMode": "FIXED",
+      "width": 900,
+      "height": 620,
       "showHeader": true,
       "showFooterButton": true,
       "showFooter": true,
@@ -57,9 +59,7 @@
         "imageUrl": "https://example.com/media/training.png",
         "description": "이미지에서 교육 일정을 확인해주세요.",
         "showDescription": true,
-        "imageSizeMode": "ADAPTIVE",
-        "width": 900,
-        "height": 620
+        "imageSizeMode": "ADAPTIVE"
       }
     },
     {

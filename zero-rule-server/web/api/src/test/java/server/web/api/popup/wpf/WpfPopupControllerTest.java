@@ -101,17 +101,18 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.questions").isArray());
     }
 
-    @Test void image23HttpResponseUsesSingleContentDimensionPair() throws Exception {
+    /** [TODO58] IMAGE 크기는 최상위 popup.width/height 한 쌍이다(FIT_TO_IMAGE는 이미지 콘텐츠 영역). content에는 없다. */
+    @Test void image58HttpResponseUsesTopLevelDimensionPair() throws Exception {
         next(item("""
-                {"popupId":"IMAGE-23","popupType":"IMAGE","title":"IMAGE","sizeMode":"FIXED",
+                {"popupId":"IMAGE-23","popupType":"IMAGE","title":"IMAGE","sizeMode":"FIXED","width":900,"height":600,
                  "minimumWidth":100,"minimumHeight":100,"maximumWidth":400,"maximumHeight":300,
                  "content":{"imageUrl":"https://example.com/a.png","imageSizeMode":"FIT_TO_IMAGE",
-                            "width":900,"height":600,"keepAspectRatio":false}}
+                            "keepAspectRatio":false}}
                 """, false))
-                .andExpect(jsonPath("$.popup.width").doesNotExist())
-                .andExpect(jsonPath("$.popup.height").doesNotExist())
-                .andExpect(jsonPath("$.popup.content.width").value(900))
-                .andExpect(jsonPath("$.popup.content.height").value(600))
+                .andExpect(jsonPath("$.popup.width").value(900))
+                .andExpect(jsonPath("$.popup.height").value(600))
+                .andExpect(jsonPath("$.popup.content.width").doesNotExist())
+                .andExpect(jsonPath("$.popup.content.height").doesNotExist())
                 .andExpect(jsonPath("$.popup.content.keepAspectRatio").value(false))
                 .andExpect(jsonPath("$.popup.content.imageWidth").doesNotExist());
     }

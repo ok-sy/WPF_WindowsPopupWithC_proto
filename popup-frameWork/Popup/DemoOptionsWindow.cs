@@ -338,10 +338,11 @@ namespace Popup
             }
             if (draft["popupType"]!.GetValue<string>() == "IMAGE")
             {
+                // [TODO58] IMAGE 크기는 모든 모드에서 창·배치 탭의 너비·높이(최상위) 한 쌍이다. content 쪽 크기는 쓰지 않는다.
                 string mode = content["imageSizeMode"]!.GetValue<string>();
-                if (mode == "ORIGINAL") { content.Remove("width"); content.Remove("height"); }
-                else if (draft["sizeMode"]!.GetValue<string>() == "RATIO")
-                    throw new ArgumentException("일반 이미지의 창 크기는 고정 또는 전체화면을 선택하세요. 이미지 탭의 너비·높이를 사용합니다.");
+                content.Remove("width"); content.Remove("height");
+                if (mode != "ORIGINAL" && draft["sizeMode"]!.GetValue<string>() == "RATIO")
+                    throw new ArgumentException("일반 이미지의 창 크기는 고정 또는 전체화면을 선택하세요. 창·배치 탭의 너비·높이를 사용합니다.");
                 if (mode != "FIT_TO_IMAGE") content.Remove("keepAspectRatio");
             }
             // [설계 28] 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
@@ -541,9 +542,10 @@ namespace Popup
             string imageMode = Choice(content, "imageSizeMode", "ADAPTIVE");
             bool image = _draft["popupType"]!.GetValue<string>() == "IMAGE";
             bool ordinaryImage = image && imageMode != "ORIGINAL";
-            string? sizeReason = ordinaryImage ? "일반 이미지는 콘텐츠 탭의 이미지 너비·높이를 사용합니다." : null;
-            Enable(_draft, "width", sizeMode == "FIXED" && !ordinaryImage, sizeReason ?? "창 크기 방식이 FIXED일 때 사용합니다.");
-            Enable(_draft, "height", sizeMode == "FIXED" && !ordinaryImage, sizeReason ?? "창 크기 방식이 FIXED일 때 사용합니다.");
+            string? sizeReason = ordinaryImage ? "일반 이미지는 비율 창 크기를 쓰지 않습니다. 너비·높이를 사용합니다." : null;
+            // [TODO58] IMAGE는 모든 모드에서 같은 너비·높이를 쓴다(ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
+            Enable(_draft, "width", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
+            Enable(_draft, "height", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
             Enable(_draft, "widthRatio", sizeMode == "RATIO" && !ordinaryImage, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
             Enable(_draft, "heightRatio", sizeMode == "RATIO" && !ordinaryImage, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
             Show(_draft, "backgroundOverlayOpacity", On(_draft, "useBackgroundOverlay", true));
@@ -565,9 +567,7 @@ namespace Popup
             Show(content, "bottomDescriptionUrl", !_byKey.ContainsKey((content, "showBottomDescription")) || On(content, "showBottomDescription"));
             if (image)
             {
-                const string originalReason = "이미지 표시 방식이 ORIGINAL이면 창·배치 탭의 창 크기를 사용합니다.";
-                Enable(content, "width", ordinaryImage, originalReason);
-                Enable(content, "height", ordinaryImage, originalReason);
+                const string originalReason = "이미지 표시 방식이 ORIGINAL이면 제목·설명 없이 원본 크기로 표시합니다.";
                 Show(content, "keepAspectRatio", imageMode == "FIT_TO_IMAGE");
                 Enable(content, "imageTitle", ordinaryImage, originalReason);
                 Enable(content, "description", ordinaryImage, originalReason);

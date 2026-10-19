@@ -513,18 +513,18 @@ export default function PopupPreview({
       ? fitToImageLayout(popup, naturalImageSize, workArea)
       : null;
   const naturalLayout = popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ADAPTIVE' && naturalImageSize
-    && (popup.content.width == null || popup.content.height == null)
-    ? fitToImageLayout({...popup, content: {...popup.content, width: null, height: null, keepAspectRatio: true}}, naturalImageSize, workArea)
+    && (popup.width == null || popup.height == null)
+    ? fitToImageLayout({...popup, width: undefined, height: undefined, content: {...popup.content, keepAspectRatio: true}}, naturalImageSize, workArea)
     : null;
   const clampWindowAxis = (value: unknown, fallback: number, minimum: number, available: number) =>
     Math.max(Math.min(minimum, available * .90), Math.min(available * .90, Number(value ?? fallback)));
   // WPF와 같이 FULLSCREEN 팝업은 창 크기를 바꾸지 않는다.
   const recommendedWidth =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.width ?? (naturalLayout
-      ? clampWindowAxis(popup.content.width, naturalLayout.window.width, popup.minimumWidth, workArea.width) : null);
+      ? clampWindowAxis(popup.width, naturalLayout.window.width, popup.minimumWidth, workArea.width) : null);
   const recommendedHeight =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.height ?? (naturalLayout
-      ? clampWindowAxis(popup.content.height, naturalLayout.window.height, popup.minimumHeight, workArea.height) : null);
+      ? clampWindowAxis(popup.height, naturalLayout.window.height, popup.minimumHeight, workArea.height) : null);
   useEffect(() => {
     onRecommendedSize?.(
       recommendedWidth != null && recommendedHeight != null
