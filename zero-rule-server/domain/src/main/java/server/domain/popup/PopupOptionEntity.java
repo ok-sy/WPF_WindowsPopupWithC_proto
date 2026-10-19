@@ -7,6 +7,13 @@ public record PopupOptionEntity(
         String optionValue,
         String optionText,
         String correctYn,
-        Integer sortOrder
+        Integer sortOrder,
+        // [TODO55] 선택지 표시 문구 서식 JSON 배열 문자열(CLOB). NULL = 서식 없음.
+        String textBlocksJson
 ) {
+    /** [TODO55] 서식 컬럼 도입 전 생성자(테스트용). 서식 없음으로 만든다. */
+    public PopupOptionEntity(Long optionId, Long questionId, String optionValue, String optionText,
+            String correctYn, Integer sortOrder) {
+        this(optionId, questionId, optionValue, optionText, correctYn, sortOrder, null);
+    }
 }

@@ -18,7 +18,12 @@ public record PopupQuestionDto(
         String correctAnswer,
         @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
         String answerMatchMode,
-        String optionLayout
+        String optionLayout,
+        // [TODO55] 문항 제목·설명 서식(textBlocks 스키마 문단 배열). 없으면 null로 JSON에서 생략하고 title·description만 쓴다.
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        List<Object> titleBlocks,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        List<Object> descriptionBlocks
 ) {
     /**
      * [설계 18 L-0] optionLayout 도입 전 호출부 호환용 11인자 생성자는 삭제했다(테스트에서만 사용).
@@ -27,5 +32,13 @@ public record PopupQuestionDto(
      */
     public PopupQuestionDto {
         options = options == null ? List.of() : List.copyOf(options);
+    }
+
+    /** [TODO55] 서식 도입 전 생성자. 서식 없는 문항(titleBlocks·descriptionBlocks = null)을 만든다. */
+    public PopupQuestionDto(Long questionId, String title, String description, String questionType,
+            boolean isRequired, boolean isScored, BigDecimal questionScore, int sortOrder,
+            List<PopupOptionDto> options, String correctAnswer, String answerMatchMode, String optionLayout) {
+        this(questionId, title, description, questionType, isRequired, isScored, questionScore, sortOrder,
+                options, correctAnswer, answerMatchMode, optionLayout, null, null);
     }
 }

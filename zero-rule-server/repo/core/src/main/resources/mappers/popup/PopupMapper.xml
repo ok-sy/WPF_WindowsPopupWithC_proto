@@ -68,7 +68,7 @@
         INSERT INTO ${popupSchemaPrefix}POPUP_QUESTION
             (QUESTION_ID, QUESTION_TEMPLATE_ID, QUESTION_TYPE, QUESTION_TITLE, QUESTION_DESCRIPTION,
              REQUIRED_YN, SCORED_YN, QUESTION_SCORE, SORT_ORDER, CORRECT_ANSWER,
-             ANSWER_MATCH_MODE, OPTION_LAYOUT, CREATED_BY, UPDATED_BY)
+             ANSWER_MATCH_MODE, OPTION_LAYOUT, TITLE_BLOCKS, DESCRIPTION_BLOCKS, CREATED_BY, UPDATED_BY)
         VALUES (#{questionId}, #{templateId}, #{question.questionType}, #{question.title}, #{question.description},
                 CASE WHEN #{question.isRequired} = 1 THEN 'Y' ELSE 'N' END,
                 CASE WHEN #{quiz} = 1 THEN 'Y' ELSE 'N' END,
@@ -78,16 +78,18 @@
                      THEN #{question.correctAnswer, jdbcType=CLOB} ELSE NULL END,
                 CASE WHEN #{quiz} = 1 AND #{question.questionType} = 'TEXT'
                      THEN #{question.answerMatchMode} ELSE NULL END,
-                #{question.optionLayout}, #{auditUser}, #{auditUser})
+                #{question.optionLayout},
+                #{titleBlocksJson, jdbcType=CLOB}, #{descriptionBlocksJson, jdbcType=CLOB},
+                #{auditUser}, #{auditUser})
     </insert>
 
-    <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. -->
+    <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. [TODO55] 서식은 TEXT_BLOCKS(CLOB JSON 배열). -->
     <insert id="insertAdminOption">
         INSERT INTO ${popupSchemaPrefix}POPUP_OPTION
-            (OPTION_ID, QUESTION_ID, OPTION_VALUE, OPTION_TEXT, CORRECT_YN, SORT_ORDER, CREATED_BY, UPDATED_BY)
+            (OPTION_ID, QUESTION_ID, OPTION_VALUE, OPTION_TEXT, CORRECT_YN, SORT_ORDER, TEXT_BLOCKS, CREATED_BY, UPDATED_BY)
         VALUES (${popupSchemaPrefix}SEQ_POPUP_OPTION.NEXTVAL, #{questionId}, TO_CHAR(#{sortOrder}), #{option.text},
                 CASE WHEN #{quiz} = 1 AND COALESCE(#{option.isCorrect}, 0) = 1 THEN 'Y' ELSE 'N' END,
-                #{sortOrder}, #{auditUser}, #{auditUser})
+                #{sortOrder}, #{textBlocksJson, jdbcType=CLOB}, #{auditUser}, #{auditUser})
     </insert>
 
     <!-- ===================================================================
@@ -426,6 +428,8 @@
             <arg column="CORRECT_ANSWER" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="ANSWER_MATCH_MODE" javaType="java.lang.String"/>
             <arg column="OPTION_LAYOUT" javaType="java.lang.String"/>
+            <arg column="TITLE_BLOCKS" javaType="java.lang.String" jdbcType="CLOB"/>
+            <arg column="DESCRIPTION_BLOCKS" javaType="java.lang.String" jdbcType="CLOB"/>
         </constructor>
     </resultMap>
 
@@ -438,6 +442,7 @@
             <arg column="OPTION_TEXT" javaType="java.lang.String"/>
             <arg column="CORRECT_YN" javaType="java.lang.String"/>
             <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+            <arg column="TEXT_BLOCKS" javaType="java.lang.String" jdbcType="CLOB"/>
         </constructor>
     </resultMap>
 
@@ -622,7 +627,9 @@
             CORRECT_ANSWER,
             ANSWER_MATCH_MODE,
             OPTION_LAYOUT,
-            SORT_ORDER
+            SORT_ORDER,
+            TITLE_BLOCKS,
+            DESCRIPTION_BLOCKS
         FROM ${popupSchemaPrefix}POPUP_QUESTION
         WHERE QUESTION_TEMPLATE_ID IN
         <foreach collection="templateIds"
@@ -641,7 +648,8 @@
             OPTION_VALUE,
             OPTION_TEXT,
             CORRECT_YN,
-            SORT_ORDER
+            SORT_ORDER,
+            TEXT_BLOCKS
         FROM ${popupSchemaPrefix}POPUP_OPTION
         WHERE QUESTION_ID IN
         <foreach collection="questionIds"

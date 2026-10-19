@@ -155,6 +155,8 @@ public class PopupService {
             Boolean active,
             List<AdminPopupTargetGroup> targetGroups,
             String auditUser) {
+        // [TODO55-4] SURVEY·QUIZ 서식을 검증하고 일반 문자열을 서식에서 파생한 값으로 이후 검증·저장한다.
+        popup = PopupSurveyRichText.normalize(popup);
         validateAdminPopup(popup, active, auditUser);
         List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
         if (Boolean.TRUE.equals(active) && normalizedGroups.isEmpty()) {
@@ -217,16 +219,41 @@ public class PopupService {
         if (templateId == null) throw new IllegalStateException("문항 템플릿 저장에 실패했습니다.");
         for (int i = 0; i < popup.questions().size(); i++) {
             PopupQuestionDto question = popup.questions().get(i);
-            Long questionId = popupMapper.insertAdminQuestion(templateId, question, quiz, i + 1, auditUser);
+            Long questionId = popupMapper.insertAdminQuestion(templateId, question,
+                    richTextJson(question.titleBlocks()), richTextJson(question.descriptionBlocks()), quiz, i + 1, auditUser);
             if (questionId == null) throw new IllegalStateException("문항 저장에 실패했습니다.");
             if (!"TEXT".equals(question.questionType())) {
                 for (int j = 0; j < question.options().size(); j++) {
-                    if (popupMapper.insertAdminOption(questionId, question.options().get(j), quiz,
+                    PopupOptionDto option = question.options().get(j);
+                    if (popupMapper.insertAdminOption(questionId, option, richTextJson(option.textBlocks()), quiz,
                             j + 1, auditUser) != 1) throw new IllegalStateException("선택지 저장에 실패했습니다.");
                 }
             }
         }
         return templateId;
+    }
+
+    /** [TODO55] 문항·선택지 서식을 CLOB에 넣을 JSON 배열 문자열로 바꾼다. 서식 없음은 NULL로 저장한다. */
+    private String richTextJson(List<Object> blocks) {
+        if (blocks == null) return null;
+        try {
+            return objectMapper.writeValueAsString(blocks);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("문항 서식을 JSON으로 변환할 수 없습니다.", exception);
+        }
+    }
+
+    /**
+     * [TODO55] 저장된 문항·선택지 서식 JSON을 배열로 읽는다. 손상된 값은 빈 값으로 숨기지 않고 ID와 함께 실패시킨다
+     * (CONTENT_OPTIONS 해석 실패와 같은 정책).
+     */
+    private List<Object> parseRichText(String json, String owner) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<List<Object>>() { });
+        } catch (Exception exception) {
+            throw new IllegalStateException("저장된 서식 JSON을 읽을 수 없습니다. " + owner, exception);
+        }
     }
 
     /**
@@ -1214,7 +1241,8 @@ public class PopupService {
                         option.optionValue(),
                         option.optionText(),
                         option.sortOrder(),
-                        isYes(option.correctYn())))
+                        isYes(option.correctYn()),
+                        parseRichText(option.textBlocksJson(), "optionId=" + option.optionId())))
                 .toList();
 
         return new PopupQuestionDto(
@@ -1229,7 +1257,9 @@ public class PopupService {
                 optionDtos,
                 question.correctAnswer(),
                 question.answerMatchMode(),
-                question.optionLayout());
+                question.optionLayout(),
+                parseRichText(question.titleBlocksJson(), "questionId=" + question.questionId()),
+                parseRichText(question.descriptionBlocksJson(), "questionId=" + question.questionId()));
     }
 
     /**

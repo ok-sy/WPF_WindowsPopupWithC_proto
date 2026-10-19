@@ -27,8 +27,8 @@ class PopupAdminQuestionsTest {
         when(mapper.upsertAdminPopupNotice(any())).thenReturn(1);
         when(mapper.upsertAdminPopupContent(any())).thenReturn(1);
         when(mapper.insertQuestionTemplate(anyString(), anyString(), anyString())).thenReturn(20L);
-        when(mapper.insertAdminQuestion(eq(20L), any(), eq(true), anyInt(), anyString())).thenReturn(30L);
-        when(mapper.insertAdminOption(anyLong(), any(), eq(true), anyInt(), anyString())).thenReturn(1);
+        when(mapper.insertAdminQuestion(eq(20L), any(), any(), any(), eq(true), anyInt(), anyString())).thenReturn(30L);
+        when(mapper.insertAdminOption(anyLong(), any(), any(), eq(true), anyInt(), anyString())).thenReturn(1);
     }
 
     private PopupResponseDto popup(List<PopupQuestionDto> questions) {
@@ -59,8 +59,8 @@ class PopupAdminQuestionsTest {
     @Test void changedQuestionsCreateTemplateAndPersistCorrectAnswer() {
         service.saveAdminPopup(popup(List.of(question(false, true))), false, List.of(), "admin");
         verify(mapper).insertQuestionTemplate("Quiz", "QUIZ", "admin");
-        verify(mapper).insertAdminOption(eq(30L), argThat(o -> Boolean.FALSE.equals(o.isCorrect())), eq(true), eq(1), eq("admin"));
-        verify(mapper).insertAdminOption(eq(30L), argThat(o -> Boolean.TRUE.equals(o.isCorrect())), eq(true), eq(2), eq("admin"));
+        verify(mapper).insertAdminOption(eq(30L), argThat(o -> Boolean.FALSE.equals(o.isCorrect())), isNull(), eq(true), eq(1), eq("admin"));
+        verify(mapper).insertAdminOption(eq(30L), argThat(o -> Boolean.TRUE.equals(o.isCorrect())), isNull(), eq(true), eq(2), eq("admin"));
         verify(mapper).upsertAdminPopupNotice(argThat(c -> c.questionTemplateId().equals(20L)));
         verify(mapper).upsertAdminPopupContent(argThat(c -> c.contentOptionsJson().contains("backgroundOverlayOpacity")));
     }

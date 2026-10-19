@@ -31,7 +31,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`~`16` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서). 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`17` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4). 상세·적용 현황은 아래 각 절 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
 | 참고 | `10_zero_rule_common_schema_oracle.sql` | 로컬 `ZERO_RULE` | 공통 스키마 변환본(로컬 XE에서 전체 서버 기동용, 정식 DDL 아님) |
 
@@ -204,3 +204,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 로컬 XE(POPUP) 2026-10-13 실행 — 테이블·인덱스 생성 OK, 재실행 시 SKIP 확인. `03`을 다시 실행해 로컬 `ZERO_RULE`에 권한 부여. 실행 후 실DB 테스트(`WpfPopupDatabaseTest` 롤백 전용, `WpfApiOracleHttpTest`) 통과. 원격 개발 DB(11g XE, `ZERO-RULE` 스키마) 2026-10-13 실행 — 테이블·인덱스 2개·주석 생성 OK, 행 0. 앱 계정 소유라 권한 부여 불필요.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @15_wpf_popup_delivery_oracle.sql POPUP.`
   - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @15_wpf_popup_delivery_oracle.sql ""`
+
+## 문항·선택지 서식 컬럼 추가 (2026-10-19, TODO55-4)
+
+`17_question_rich_text_oracle.sql <스키마접두어>` — `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`, `POPUP_OPTION.TEXT_BLOCKS`(CLOB, NULL = 서식 없음)를 추가한다. 이미 있으면 SKIP(멱등). `01_popup_schema_oracle.sql` §4에도 같은 정의를 넣었다.
+
+- 배경: SURVEY·QUIZ의 문항 제목·설명과 선택지 표시 문구에 TEXT와 같은 문단·구간 서식(JSON 배열)을 둔다. 문항 템플릿은 변경 시 새 버전 행으로 저장되므로 서식도 같은 행에 두어 버전과 함께 보존한다. 일반 문자열 컬럼은 서버가 서식에서 파생해 함께 저장한다. 콘텐츠 제목·설명 서식은 기존 `CONTENT_OPTIONS`에 저장하므로 DDL이 없다.
+- 순서: **서버 반영 전에 실행.** 새 서버는 세 컬럼을 조회·저장하므로 없으면 ORA-00904로 실패한다. 이전 서버는 이 컬럼을 쓰지 않아 실행 후에도 동작한다(서식은 저장·반환되지 않음).
+- 적용 현황: 로컬 XE(POPUP) 2026-10-19 실행 — 컬럼 3·주석 3 OK, 재실행 시 컬럼 SKIP 확인. 실DB 테스트 `PopupQuestionDatabaseTest`(서식 저장·재조회·템플릿 재사용, 롤백 전용) 통과. 원격 개발 DB는 미실행.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @17_question_rich_text_oracle.sql POPUP.`
+  - 원격: `sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @17_question_rich_text_oracle.sql ""`

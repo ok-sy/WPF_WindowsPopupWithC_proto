@@ -130,9 +130,10 @@ public record WpfPopupItem(
                         question.isRequired(), question.isScored(), question.questionScore(), question.sortOrder(),
                         question.options().stream()
                                 .map(option -> new PopupOptionDto(
-                                        option.optionId(), option.value(), option.text(), option.sortOrder(), null))
+                                        option.optionId(), option.value(), option.text(), option.sortOrder(), null,
+                                        option.textBlocks()))
                                 .toList(),
-                        null, null, question.optionLayout()))
+                        null, null, question.optionLayout(), question.titleBlocks(), question.descriptionBlocks()))
                 .toList();
     }
 }

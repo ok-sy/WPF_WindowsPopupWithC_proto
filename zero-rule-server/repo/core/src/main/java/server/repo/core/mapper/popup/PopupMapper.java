@@ -47,13 +47,19 @@ public interface PopupMapper {
     /** XML 바인딩용. selectKey가 {@code questionId}를 Map에 채운다. */
     void insertAdminQuestion(Map<String, Object> params);
 
-    /** PopupService 호출용. 시퀀스로 발급한 QUESTION_ID를 반환한다. */
+    /**
+     * PopupService 호출용. 시퀀스로 발급한 QUESTION_ID를 반환한다.
+     * [TODO55] 제목·설명 서식은 PopupService가 JSON 배열 문자열로 바꿔 넘긴다(서식 없음 = null).
+     */
     default Long insertAdminQuestion(Long templateId,
             server.domain.popup.PopupQuestionDto question,
+            String titleBlocksJson, String descriptionBlocksJson,
             boolean quiz, int sortOrder, String auditUser) {
         Map<String, Object> params = new HashMap<>();
         params.put("templateId", templateId);
         params.put("question", question);
+        params.put("titleBlocksJson", titleBlocksJson);
+        params.put("descriptionBlocksJson", descriptionBlocksJson);
         params.put("quiz", quiz);
         params.put("sortOrder", sortOrder);
         params.put("auditUser", auditUser);
@@ -61,8 +67,10 @@ public interface PopupMapper {
         return (Long) params.get("questionId");
     }
 
+    /** [TODO55] 선택지 표시 문구 서식은 JSON 배열 문자열(textBlocksJson, 서식 없음 = null)로 받는다. */
     int insertAdminOption(@Param("questionId") Long questionId,
             @Param("option") server.domain.popup.PopupOptionDto option,
+            @Param("textBlocksJson") String textBlocksJson,
             @Param("quiz") boolean quiz, @Param("sortOrder") int sortOrder,
             @Param("auditUser") String auditUser);
 

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-11 — TODO55-4 설문·퀴즈 서식 서버 저장·API 반영
+
+- 이유: SURVEY·QUIZ 서식(FONT EDIT)은 WPF 표시만 구현되어 있고 서버가 TEXT 외 유형의 서식을 저장·반환하지 않아, 관리자 저장부터 WPF 응답까지 서식이 이어지지 않았다. 55-1 초안의 필드 이름·위치를 확정해 서버 저장 경로를 구현.
+- 변경: DB — `17_question_rich_text_oracle.sql`로 `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`, `POPUP_OPTION.TEXT_BLOCKS`(CLOB, NULL = 서식 없음) 추가(멱등), `01` 신규 스키마·README 반영. 콘텐츠 제목·설명 서식은 기존 CONTENT_OPTIONS 저장(DDL 없음). 서버 — `PopupSurveyRichText`가 저장 전에 콘텐츠·문항·선택지 서식을 TEXT와 같은 규칙으로 검증하고 일반 문자열을 서식에서 파생, 필드별 상한(200·2000·1000·2000·1000) 검사, 빈 서식 제거, SURVEY·QUIZ 외 유형의 콘텐츠 서식 키 거부. 정규화 결과로 문항 템플릿 재사용을 비교해 서식만 바뀌어도 새 템플릿 생성. DTO·Entity에 서식 필드 추가(서식 없으면 JSON 키 생략, 기존 생성자 유지), 매퍼 insert·resultMap·select에 세 컬럼 추가, 저장 시 JSON 배열 문자열로 변환·조회 시 배열로 복원(손상 JSON은 문항·선택지 ID와 함께 실패). WPF 응답 정답 키 제거 사본에도 서식 유지.
+- 주요 파일: db/oracle/17_question_rich_text_oracle.sql(신규)·01_popup_schema_oracle.sql·README.md, zero-rule-server/domain/.../PopupQuestionDto.java·PopupOptionDto.java·PopupQuestionEntity.java·PopupOptionEntity.java·PopupResponseDto.java·wpf/WpfPopupItem.java, repo/core/.../PopupMapper.java·PopupMapper.xml, service/core/.../PopupSurveyRichText.java(신규)·PopupService.java, 테스트 PopupSurveyRichTextTest(신규)·PopupQuestionDatabaseTest·PopupAdminQuestionsTest, version-history/CHANGELOG.md.
+- 검증: 로컬 XE(POPUP)에 17 스크립트 실행 — 컬럼 3 생성, 재실행 시 SKIP. 서버 `gradlew cleanTest test --offline` 149건 중 140 통과·9 skip(Oracle 연동, 실패 0). `POPUP_TEST_DB_PASSWORD`로 실DB 실행 시 신규 서식 왕복 포함 `PopupQuestionDatabaseTest` 2건 통과. 같은 실DB 실행에서 `WpfPopupDatabaseTest` 2건·`WpfApiOracleHttpTest` 2건은 조회 결과 popup=null로 실패 — `WpfPopupDatabaseTest`는 변경 전 HEAD(5879822) 별도 작업 트리에서도 같은 2건이 같은 원인으로 실패해 로컬 샘플 데이터 상태 문제로 판단(HTTP 테스트 2건은 HEAD 대조 미실행). 미실행: 원격 개발 DB 17 스크립트 실행, 원격 서버 반영.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시. 배포 순서: DB 17 → 서버.
+
 ## 2026-10-19-10 — TODO60 VIDEO+QUIZ 스크롤바 경계 진동 방지 보완
 
 - 이유: 코드 검토에서 TODO60-5 진동 방지 분기가 실행되지 않는 문제 확인. 너비 이력(_lastAspectWidth·_previousAspectWidth)이 NaN으로 시작해 `Math.Abs(width - NaN) >= 0.5`가 항상 false였고, 이력이 갱신되지 않아 본문 높이가 스크롤바 표시 경계에 걸리면 스크롤바 등장 → 영상 너비·높이 감소 → 스크롤바 사라짐 → 높이 증가가 반복될 수 있었다.

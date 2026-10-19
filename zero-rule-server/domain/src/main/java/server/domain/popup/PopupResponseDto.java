@@ -47,4 +47,13 @@ public record PopupResponseDto(
         questions = questions == null ? List.of() : List.copyOf(questions);
         content = content == null ? Map.of() : content;
     }
+
+    /** [TODO55] 문항·콘텐츠만 바꾼 사본(저장 전 서식 정규화용). */
+    public PopupResponseDto withQuestionsAndContent(List<PopupQuestionDto> newQuestions, Map<String, Object> newContent) {
+        return new PopupResponseDto(popupId, popupType, title, displayStartAt, displayEndAt, displayMode, displayOrder,
+                sizeMode, width, height, widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
+                showHeader, showCloseButton, showFooter, showDoNotShowAgain, showLater, questionTemplateId, periodMode,
+                repeatInterval, repeatDayOfWeek, repeatDayOfMonth, hideDays, completionRatio, passingScore,
+                newQuestions, newContent);
+    }
 }

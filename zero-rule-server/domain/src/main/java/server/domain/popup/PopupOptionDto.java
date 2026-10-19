@@ -10,6 +10,13 @@ public record PopupOptionDto(
         String text,
         int sortOrder,
         @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        Boolean isCorrect
+        Boolean isCorrect,
+        // [TODO55] 선택지 표시 문구 서식(textBlocks 스키마 문단 배열). 없으면 null로 JSON에서 생략하고 text만 쓴다.
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        java.util.List<Object> textBlocks
 ) {
+    /** [TODO55] 서식 도입 전 생성자. 서식 없는 선택지(textBlocks = null)를 만든다. */
+    public PopupOptionDto(Long optionId, String value, String text, int sortOrder, Boolean isCorrect) {
+        this(optionId, value, text, sortOrder, isCorrect, null);
+    }
 }
