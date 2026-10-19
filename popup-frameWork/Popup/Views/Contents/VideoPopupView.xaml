@@ -382,11 +382,12 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid x:Name="VideoLayoutRoot">
 
+        <!-- [TODO60] VideoRow는 단독 VIDEO에서 *, 영상 결합 QUIZ에서는 원본 비율 높이(VideoPopupView.AspectSizing.cs)다. -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition x:Name="VideoRow" Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 

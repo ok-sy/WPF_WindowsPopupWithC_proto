@@ -5,6 +5,7 @@ import SurveyPreview, {
   type SurveyPreviewProps,
 } from './SurveyPreview';
 import popupDemoQuestions from './popupDemoQuestions';
+import AspectVideoArea from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import { popupFontSize } from './popupCommon';
@@ -73,6 +74,8 @@ interface PopupBodyProps {
   videoUnlocked?: boolean;
   /** [설계 53-16] VIDEO+QUIZ에서 위 영상 영역에 이미 보인 설명을 퀴즈 머리말에서 반복하지 않는다(WPF VideoQuizPopupView와 같음). */
   hideSurveyDescription?: boolean;
+  /** [TODO60] VIDEO+QUIZ의 영상 영역을 원본 비율 × 실제 너비 높이로 그린다(단독 VIDEO는 기존 영역). */
+  aspectVideo?: boolean;
   survey?: Omit<SurveyPreviewProps, 'description'>;
 }
 
@@ -83,6 +86,7 @@ function PopupBody({
   onImageLoad,
   videoUnlocked = false,
   hideSurveyDescription = false,
+  aspectVideo = false,
   survey,
 }: PopupBodyProps) {
   const content = popup.content;
@@ -96,6 +100,7 @@ function PopupBody({
           naturalImageSize={null}
           fitLayout={null}
           onImageLoad={onImageLoad}
+          aspectVideo
           survey={survey}
         />
         {/* [TODO59] 영상과 퀴즈 사이 시스템 안내는 WPF와 같이 두지 않는다. 시청 %·기준 사유는 제출 영역 진행 문구에만 표시한다. */}
@@ -257,9 +262,9 @@ function PopupBody({
     const showControls = content.showControls !== false;
     const defaultVolume = Number(content.defaultVolume);
     return (
-      <Stack spacing={1.5} sx={{ height: '100%' }}>
+      <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
         {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        <Box
+        {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <Box
           sx={{
             flex: 1,
             minHeight: 170,
@@ -274,7 +279,7 @@ function PopupBody({
             <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
             <Typography variant="caption">영상 재생 영역</Typography>
           </Stack>
-        </Box>
+        </Box>}
         {showControls && (
           <Stack direction="row" justifyContent="space-between" color="text.secondary">
             <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>

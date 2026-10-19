@@ -128,6 +128,8 @@ namespace Popup.Views.Contents
  * 전체화면 영상을 표시하는 별도 Window다.
  */
         private Window? _fullScreenWindow;
+        /* [TODO60] WebView2 문서 로드 ID. 이 값이 다른 메시지(이전 문서의 지연 이벤트)는 무시한다. */
+        private readonly string _webLoadId = Guid.NewGuid().ToString("N");
 
         /*
          * 전체화면 전 VideoContainer가 들어 있던 부모다.
@@ -470,8 +472,11 @@ namespace Popup.Views.Contents
                     const video = document.getElementById('video');
                     video.volume = {{defaultVolumeJs}};
                     // 영상 클릭은 CompositionControl 위의 공통 WPF 입력 레이어에서 처리한다.
+                    // [TODO60] 원본 표시 크기(videoWidth/Height)와 이 문서의 로드 ID를 함께 보낸다. 크기는 재생 상태 계산에 쓰지 않는다.
+                    const loadId = '{{_webLoadId}}';
                     const send = (type) => chrome.webview.postMessage({
-                      type,
+                      type, loadId,
+                      videoWidth: video.videoWidth || 0, videoHeight: video.videoHeight || 0,
                       duration: Number.isFinite(video.duration) ? video.duration : 0,
                       position: Number.isFinite(video.currentTime) ? video.currentTime : 0,
                       paused: video.paused, seeking: video.seeking,
@@ -486,6 +491,7 @@ namespace Popup.Views.Contents
                     let autoplayPending = {{(_autoPlay ? "true" : "false")}};
                     video.addEventListener('loadstart', () => send('loading'));
                     video.addEventListener('loadedmetadata', () => send('opened'));
+                    video.addEventListener('resize', () => send('resize'));
                     video.addEventListener('canplay', () => {
                       send('ready');
                       if (autoplayPending) { autoplayPending = false; startPlayback(); }
@@ -556,6 +562,12 @@ namespace Popup.Views.Contents
         private void ApplyWebPlaybackState(JsonElement root)
         {
             string type = root.GetProperty("type").GetString() ?? string.Empty;
+            // [TODO60] 다른 문서(이전 로드)의 지연 메시지는 무시한다. 크기 갱신은 재생 상태·시청량 계산과 분리한다.
+            if (root.TryGetProperty("loadId", out JsonElement loadId) && loadId.GetString() != _webLoadId) return;
+            if (root.TryGetProperty("videoWidth", out JsonElement videoWidth) && root.TryGetProperty("videoHeight", out JsonElement videoHeight)
+                && videoWidth.TryGetDouble(out double naturalWidth) && videoHeight.TryGetDouble(out double naturalHeight))
+                UpdateNaturalVideoSize(naturalWidth, naturalHeight);
+            if (type == "resize") return;
             _webDurationSeconds = root.GetProperty("duration").GetDouble();
             _webPositionSeconds = root.GetProperty("position").GetDouble();
             if (root.TryGetProperty("buffered", out JsonElement buffered) && buffered.ValueKind == JsonValueKind.Array)
@@ -666,6 +678,7 @@ namespace Popup.Views.Contents
         {
             _isMediaOpened = true;
             HideVideoMessage();
+            UpdateNaturalVideoSize(PopupVideo.NaturalVideoWidth, PopupVideo.NaturalVideoHeight);   // [TODO60]
 
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
@@ -1671,6 +1684,9 @@ namespace Popup.Views.Contents
 
             _fullScreenWindow =
                 null;
+
+            // [TODO60] 전체화면 중 받은 원본 크기·너비 변화를 복귀 후 반영한다.
+            RefreshAspectHeight();
 
             FullScreenIcon.Text =
                 "⛶";

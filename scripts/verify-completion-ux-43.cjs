@@ -16,7 +16,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       alias: {'@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
-  server = http.createServer((req, res) => {res.setHeader('Content-Type', req.url === '/bundle.js' ? 'application/javascript' : 'text/html; charset=utf-8');
+  // [TODO60] 실제 영상 메타데이터(videoWidth/Height) 확인용으로 WPF Demo 영상을 Range 요청과 함께 제공한다.
+  const demoVideo = path.join(root, 'popup-frameWork/Popup/Media/demo-video.mp4');
+  server = http.createServer((req, res) => {
+    if (req.url === '/demo-video.mp4') {
+      const size = fs.statSync(demoVideo).size, range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+      const start = range && range[1] ? Number(range[1]) : 0, end = range && range[2] ? Number(range[2]) : size - 1;
+      res.writeHead(range ? 206 : 200, {'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1,
+        ...(range ? {'Content-Range': `bytes ${start}-${end}/${size}`} : {})});
+      fs.createReadStream(demoVideo, {start, end}).pipe(res); return;
+    }
+    res.setHeader('Content-Type', req.url === '/bundle.js' ? 'application/javascript' : 'text/html; charset=utf-8');
     res.end(req.url === '/bundle.js' ? fs.readFileSync(path.join(output, 'bundle.js')) : '<!doctype html><div id="root"></div><script src="/bundle.js"></script>');});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run',
@@ -92,6 +102,27 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ shows the shared description once');
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명', showDescription: false});
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ with hidden video description shows it in the quiz header');
+  // [TODO60] VIDEO+QUIZ 영상 영역 = 실제 너비 × 원본 비율(메타데이터 전·실패 16:9, 세로 영상 상한 70%, 하한 180), 단독 VIDEO는 기존 영역.
+  const area = () => run(`(()=>{const a=document.querySelector('[data-testid=aspect-video-area]'); if(!a) return null;
+    let s=a.parentElement; while(s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s=s.parentElement;
+    return {width: a.clientWidth, height: a.getBoundingClientRect().height, natural: a.dataset.natural, available: s ? s.clientHeight : 0};})()`);
+  const waitArea = async predicate => { let a; for (let i = 0; i < 60; i++) { a = await area(); if (a && predicate(a)) return a; await pause(100); } return a; };
+  await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/missing.mp4'});
+  let a = await waitArea(x => x.width > 0);
+  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16, a.available * .7))) < 1,
+    'VIDEO+QUIZ uses 16:9 before metadata or after a failed load (TODO60): ' + JSON.stringify(a));
+  await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/demo-video.mp4'});
+  a = await waitArea(x => x.natural);
+  // 브라우저는 표시 종횡비를 반영한 593x252를, WPF MediaElement는 592x252를 보고한다(같은 원칙, 값은 엔진별).
+  const [nw, nh] = (a?.natural || '0x0').split('x').map(Number);
+  check(a && /^59[23]x252$/.test(a.natural) && Math.abs(a.height - Math.max(180, Math.min(a.width * nh / nw, a.available * .7))) < 1,
+    'VIDEO+QUIZ sizes the video area from the real metadata (TODO60): ' + JSON.stringify(a));
+  await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/missing.mp4'});
+  a = await waitArea(x => x.width > 0);
+  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16, a.available * .7))) < 1,
+    'Changing the URL drops the previous video ratio (TODO60): ' + JSON.stringify(a));
+  await render('VIDEO', {}, {videoUrl: '/demo-video.mp4'});
+  check(await area() === null, 'Single VIDEO keeps the existing video area (TODO60)');
   await render('QUIZ', {}, {description: '퀴즈 설명'});
   check(await countText('퀴즈 설명') === 1, 'plain QUIZ keeps its description');
 

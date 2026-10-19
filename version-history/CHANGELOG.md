@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-08 — TODO60 VIDEO+QUIZ 원본 비율 기반 영상 영역 할당
+
+- 이유: 영상 결합 화면이 제목·설명을 포함한 영상 뷰 전체를 300 DIP로 고정해 실제 재생 공간이 줄고 원본 비율과 맞지 않아, WPF와 관리자 미리보기에서 원본 비율·실제 가용 너비로 재생 영역을 배정(TODO60).
+- 변경: WPF — VideoQuizPopupView의 고정 300 행을 Auto로 바꾸고 VideoPopupView 재생 행(VideoRow)만 W × h / w로 계산(VideoPopupView.AspectSizing.cs, 메타데이터 전·실패 16:9, 상한 = 부모 스크롤 높이 × 0.7, 하한 180, 스크롤바 진동 방지, 전체화면 중 계산 보류). WebView2 HTML 메시지에 videoWidth/videoHeight·문서 loadId와 resize 이벤트 추가(다른 문서 메시지 무시, resize는 재생 상태 계산 전 반환), MediaElement는 NaturalVideoWidth/Height 사용. 단독 VIDEO는 기존 * 행 유지. 관리자 웹 — VIDEO+QUIZ 미리보기 자리표시자를 AspectVideoArea(HTML video 메타데이터 + ResizeObserver, URL 변경 시 비율 초기화)로 교체. ALL 명세·미리보기 정합 문서·TODO60에 확정 초기값과 구현 기록 추가. API 필드 변경 없음.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs(신규), Views/Contents/VideoPopupView.xaml(.cs), Views/Contents/VideoQuizPopupView.cs, scripts/PopupWindowTests/Program.cs, zero-rule-web/main/src/features/RgstPop/AspectVideoArea.tsx(신규)·PopupPreview.tsx, scripts/verify-completion-ux-43.cjs, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 347건 통과(계산 예시 4종·상한·하한, 실창 16:9→4:3→9:16 전환, 잘못된 크기·다른 loadId 무시, 창 너비 재계산, 시청량·잠금 불변, 단독 VIDEO 유지), ApiDemoTests 69건·CornerWindowTests 761건·RichTextTests 102건 통과. Demo VIDEO+QUIZ 실창 캡처(푸터 ON/OFF)로 592×252 영상의 재생 행 348.93(너비 817)·레터박스 없음·제목/설명 분리 확인. 웹 tsc 오류 0·변경 파일 eslint 통과, verify-completion-ux-43 60건 통과(Demo 영상 실제 메타데이터 — Edge는 593×252 보고). 미실행: HTTP 영상(WebView2) 실재생 메타데이터 수신, 세로·정사각·회전 영상 파일, DPI·전체화면 왕복 실조작, 실제 관리자 웹 화면.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시. 상한·하한은 초기값으로 실제 세로 영상 비교 후 조정 가능.
+
 ## 2026-10-19-07 — TODO57 완료 전 닫기 옵션 폐기 및 Overlay·완료·나중에 보기 역할 분리
 
 - 이유: 완료 전 이탈 허용(allowCloseBeforeComplete)과 나중에 보기의 역할 중복을 정리하고, 화면 버튼은 완료 기준, 외부 닫기는 Overlay, 완료 전 연기는 showLater로 판단하도록 책임 분리(TODO57).

@@ -31,8 +31,10 @@ namespace Popup.Views.Contents
             Quiz.CollapseHeaderShownAbove(video.ShownTitle, video.ShownDescription);
             // [TODO59] 영상과 퀴즈 사이의 시스템 안내(_notice)와 전용 행을 없앴다. 시청 %·기준 사유는 푸터
             // (또는 푸터 숨김 시 본문 제출 영역, SetLockedReason)에만 표시해 같은 안내가 두 번 나오지 않게 한다.
+            // [TODO60] 영상 행은 Auto다. 제목·설명은 영상 뷰 안의 Auto 행, 재생 화면은 원본 비율 높이(VideoPopupView.EnableAspectSizing)로
+            // 예전 고정 300 DIP(제목·설명 포함) 행을 대체한다. 영상과 퀴즈는 부모 세로 스크롤을 공유한다.
             var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(300) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetRow(Quiz, 1);
             grid.Children.Add(Video);
@@ -40,9 +42,12 @@ namespace Popup.Views.Contents
             var host = new Grid();
             host.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            host.Children.Add(new ScrollViewer { Content = grid, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            var scroll = new ScrollViewer { Content = grid, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                Style = (Style)Quiz.FindResource("SurveyScrollViewerStyle") });
+                Style = (Style)Quiz.FindResource("SurveyScrollViewerStyle") };
+            host.Children.Add(scroll);
+            Video.EnableAspectSizing(() => scroll.ActualHeight);
+            scroll.SizeChanged += (_, args) => { if (args.HeightChanged) Video.RefreshAspectHeight(); };
             // Keep submission fixed even when the popup's common footer is disabled.
             var submission = Quiz.DetachSubmissionArea();
             Grid.SetRow(submission, 1);

@@ -20,6 +20,8 @@ using Popup.Views.Windows;
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
  * 57  완료 전 닫기 옵션 폐기: 화면 버튼은 completionRatio, 외부 닫기는 Overlay, 완료 전 연기는 showLater
+ * 60  VIDEO+QUIZ 재생 영역 = 원본 비율 × 실제 너비(메타데이터 전 16:9, 세로 영상 상한, 잘못된 크기·이전 문서 메시지 무시,
+ *     크기 갱신이 시청량·잠금에 영향 없음, 단독 VIDEO는 기존 * 행)
  * 59  VIDEO+QUIZ 영상·퀴즈 사이 시스템 안내 제거(전용 행 없음), 푸터 숨김 시 본문 제출 영역의 잠금 사유
  * 52-2 나중에 보기: showFooter·showLater 표시 규칙, 버튼으로 닫으면 LATER(다시 보지 않기·영상 시청량보다 우선),
  *      완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ) 중에도 닫힘, Overlay 출구로 인정
@@ -70,6 +72,7 @@ internal static class Program
         CheckVideoFooter43();
         CheckVideoQuizFooter43();
         CheckVideoQuizNotice59();
+        CheckVideoQuizAspect60();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
@@ -80,7 +83,7 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 59)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 59, 60)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -432,6 +435,85 @@ internal static class Program
         Check(((TextBlock)failedView.Quiz.FindName("RequiredProgressText")).Text == "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다.",
             "[TODO59] footer OFF: playback failure shows the failure reason in the inline area");
         ShutdownClose(failed.Window);
+    }
+
+    /* [TODO60] 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */
+    private static void CheckVideoQuizAspect60()
+    {
+        var calc = typeof(VideoPopupView).GetMethod("CalculateAspectHeight", BindingFlags.Static | BindingFlags.NonPublic)!;
+        double Calc(double width, Size? natural, double available) =>
+            (double)calc.Invoke(null, new object?[] { width, new Thickness(1), natural, available })!;
+        // TODO60 검증 예시(가용 너비 640 + 테두리 2): 16:9 360, 4:3 480, 정사각 640, 세로 9:16은 상한 전 약 1137.8.
+        Check(Math.Abs(Calc(642, new Size(1920, 1080), 0) - 362) < 0.01, "[TODO60] 1920x1080 at width 640 is 360 (+border)");
+        Check(Math.Abs(Calc(642, new Size(1440, 1080), 0) - 482) < 0.01, "[TODO60] 1440x1080 at width 640 is 480 (+border)");
+        Check(Math.Abs(Calc(642, new Size(1080, 1080), 0) - 642) < 0.01, "[TODO60] 1080x1080 at width 640 is 640 (+border)");
+        Check(Math.Abs(Calc(642, new Size(1080, 1920), 0) - (640 * 1920 / 1080.0 + 2)) < 0.01, "[TODO60] 1080x1920 without a cap is about 1137.8 (+border)");
+        Check(Math.Abs(Calc(642, new Size(1080, 1920), 800) - 560) < 0.01, "[TODO60] tall video is capped at 70% of the available height");
+        Check(Math.Abs(Calc(642, null, 0) - 362) < 0.01, "[TODO60] before metadata the default ratio is 16:9");
+        Check(Calc(100, new Size(1920, 1080), 0) == 180, "[TODO60] a narrow area keeps the minimum video height");
+
+        var opened = OpenPopup("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = true; dto.Width = 760; dto.Height = 860; });
+        var view = (VideoQuizPopupView)opened.Options.Content!;
+        var video = view.Video;
+        var row = (RowDefinition)video.FindName("VideoRow");
+        var root = (FrameworkElement)video.FindName("VideoLayoutRoot");
+        var container = (FrameworkElement)video.FindName("VideoContainer");
+        var title = (FrameworkElement)video.FindName("TitleTextBlock");
+        var scroll = ((Grid)view.Content).Children.OfType<ScrollViewer>().Single();
+        var update = typeof(VideoPopupView).GetMethod("UpdateNaturalVideoSize", Flags)!;
+        void Natural(double w, double h) { update.Invoke(video, new object[] { w, h }); opened.Window.UpdateLayout(); }
+        double Expected(Size? natural) => Calc(root.ActualWidth, natural, scroll.ActualHeight);
+        opened.Window.UpdateLayout();
+        Check(root.ActualWidth > 0 && row.Height.IsAbsolute && Math.Abs(row.Height.Value - Expected(null)) < 0.6,
+            $"[TODO60] before metadata the video row uses 16:9 of the real width ({row.Height}, width {root.ActualWidth})");
+        Check(Math.Abs(container.ActualHeight - row.Height.Value) < 0.6 && Grid.GetRow(title) == 0 && Grid.GetRow(container) == 1,
+            "[TODO60] title is a separate row and does not take the playback height");
+
+        Report(video, Snapshot(30));
+        var before = video.LatestProgress;
+        Natural(1440, 1080);
+        Check(Math.Abs(row.Height.Value - Expected(new Size(1440, 1080))) < 0.6, $"[TODO60] 4:3 metadata resizes the video row ({row.Height})");
+        Check(ReferenceEquals(before, video.LatestProgress) && !view.IsUnlocked && video.LatestProgress!.WatchedSeconds == 30,
+            "[TODO60] a size update does not change the watched progress or unlock the quiz");
+        Natural(1080, 1920);
+        Check(Math.Abs(row.Height.Value - Expected(new Size(1080, 1920))) < 0.6 && row.Height.Value <= Math.Max(180, scroll.ActualHeight * 0.7) + 0.6,
+            $"[TODO60] a tall video is capped by the available height ({row.Height}, viewport {scroll.ActualHeight})");
+        double capped = row.Height.Value;
+        Natural(0, 1080);
+        Natural(double.NaN, 720);
+        Check(Math.Abs(row.Height.Value - capped) < 0.01, "[TODO60] zero or invalid sizes keep the last valid size");
+
+        // WebView2 메시지: 다른 문서(loadId 불일치)의 크기는 무시, 현재 문서의 resize만 반영한다.
+        var apply = typeof(VideoPopupView).GetMethod("ApplyWebPlaybackState", Flags)!;
+        string loadId = (string)typeof(VideoPopupView).GetField("_webLoadId", Flags)!.GetValue(video)!;
+        void Web(string id, int w, int h)
+        {
+            using var json = System.Text.Json.JsonDocument.Parse($"{{\"type\":\"resize\",\"loadId\":\"{id}\",\"videoWidth\":{w},\"videoHeight\":{h}}}");
+            apply.Invoke(video, new object[] { json.RootElement });
+            opened.Window.UpdateLayout();
+        }
+        Web("stale", 1920, 1080);
+        Check(Math.Abs(row.Height.Value - capped) < 0.01, "[TODO60] a late message from another document does not resize the video");
+        Web(loadId, 1920, 1080);
+        Check(Math.Abs(row.Height.Value - Expected(new Size(1920, 1080))) < 0.6 && ReferenceEquals(before, video.LatestProgress),
+            $"[TODO60] the current document's resize message updates only the size ({row.Height})");
+
+        // 창 너비가 바뀌면 실제 가용 너비로 다시 계산한다.
+        double oldWidth = root.ActualWidth;
+        opened.Window.Width -= 120;
+        opened.Window.UpdateLayout();
+        Check(root.ActualWidth < oldWidth && Math.Abs(row.Height.Value - Expected(new Size(1920, 1080))) < 0.6,
+            $"[TODO60] a narrower window recalculates the height from the real width ({row.Height}, width {root.ActualWidth})");
+        Report(video, Snapshot(80));
+        Check(view.IsUnlocked, "[TODO60] the completion ratio still unlocks the quiz");
+        ShutdownClose(opened.Window);
+
+        var single = OpenPopup("VIDEO", dto => dto.ShowFooter = true);
+        var singleRow = (RowDefinition)single.Video!.FindName("VideoRow");
+        update.Invoke(single.Video, new object[] { 1080.0, 1920.0 });
+        single.Window.UpdateLayout();
+        Check(singleRow.Height.IsStar, "[TODO60] a single VIDEO keeps the star video row");
+        ShutdownClose(single.Window);
     }
 
     /* 보조 닫기: QUIZ는 미달 1회 이후 + Overlay 꺼짐 + 푸터 표시일 때만, SURVEY·TEXT는 표시하지 않는다. */
