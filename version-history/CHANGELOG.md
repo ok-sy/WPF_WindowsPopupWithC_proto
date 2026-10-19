@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-14 — 2026-10-19 문서 전용 커밋 메시지 접두어 정리
+
+- 이유: TODO 문서와 변경 이력만 바꾼 커밋이 `dev:` 접두어로 올라가 있어, 코드 변경 커밋과 구분되도록 `docs:`로 정리.
+- 변경: 2026-10-19 커밋 중 TODO 문서·CHANGELOG만 바꾼 5건(57 TODO 추가, 58 TODO 추가, 57-58 상태 수정, 59 TODO 추가, 60 TODO 추가)의 메시지 접두어를 `dev:` → `docs:`로 바꾸도록 이력을 다시 쓰고 main에 강제 푸시(`--force-with-lease`). 파일 내용은 그대로이며 이후 커밋 ID가 모두 바뀌었다. 새 ID: 563e064·0255766·a8dd4fe·f6d5986·f9f6a91(문서), 27efb51(59)·b4e15b5(57)·6136498(60)·06f0c83(58)·b333eed(60-5)·0b2fd8f(55-4)·849a096(55-3)·85a949e(원격 DB). 문서에 남은 이전 ID(TODO58 기준 커밋, 변경 이력의 대조 HEAD)를 새 ID로 고쳤다. Trello TODO55·57·58·59·60 진행 기록의 커밋 ID도 새 값으로 교체.
+- 주요 파일: docs/design/58_IMAGE_공통크기필드_모드별기준_TODO.md, version-history/CHANGELOG.md.
+- 검증: 재작성 전 상태를 로컬 백업 브랜치 `backup/before-msg-rewrite-20261019`로 보존, 재작성 후 백업과 트리 차이 없음 확인, 강제 푸시 후 로컬·원격 일치.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-19-13 — TODO55-4 원격 개발 DB 17 스크립트 적용 및 적용 도구 추가
 
 - 이유: TODO55-4 서버는 문항·선택지 서식 컬럼을 조회·저장하므로 원격 개발 DB에 17 스크립트가 먼저 있어야 함. 이후 이관 스크립트를 원격 개발 DB에 바로 적용할 수 있도록 실행 경로를 하나로 고정.
@@ -23,7 +31,7 @@
 - 이유: SURVEY·QUIZ 서식(FONT EDIT)은 WPF 표시만 구현되어 있고 서버가 TEXT 외 유형의 서식을 저장·반환하지 않아, 관리자 저장부터 WPF 응답까지 서식이 이어지지 않았다. 55-1 초안의 필드 이름·위치를 확정해 서버 저장 경로를 구현.
 - 변경: DB — `17_question_rich_text_oracle.sql`로 `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`, `POPUP_OPTION.TEXT_BLOCKS`(CLOB, NULL = 서식 없음) 추가(멱등), `01` 신규 스키마·README 반영. 콘텐츠 제목·설명 서식은 기존 CONTENT_OPTIONS 저장(DDL 없음). 서버 — `PopupSurveyRichText`가 저장 전에 콘텐츠·문항·선택지 서식을 TEXT와 같은 규칙으로 검증하고 일반 문자열을 서식에서 파생, 필드별 상한(200·2000·1000·2000·1000) 검사, 빈 서식 제거, SURVEY·QUIZ 외 유형의 콘텐츠 서식 키 거부. 정규화 결과로 문항 템플릿 재사용을 비교해 서식만 바뀌어도 새 템플릿 생성. DTO·Entity에 서식 필드 추가(서식 없으면 JSON 키 생략, 기존 생성자 유지), 매퍼 insert·resultMap·select에 세 컬럼 추가, 저장 시 JSON 배열 문자열로 변환·조회 시 배열로 복원(손상 JSON은 문항·선택지 ID와 함께 실패). WPF 응답 정답 키 제거 사본에도 서식 유지.
 - 주요 파일: db/oracle/17_question_rich_text_oracle.sql(신규)·01_popup_schema_oracle.sql·README.md, zero-rule-server/domain/.../PopupQuestionDto.java·PopupOptionDto.java·PopupQuestionEntity.java·PopupOptionEntity.java·PopupResponseDto.java·wpf/WpfPopupItem.java, repo/core/.../PopupMapper.java·PopupMapper.xml, service/core/.../PopupSurveyRichText.java(신규)·PopupService.java, 테스트 PopupSurveyRichTextTest(신규)·PopupQuestionDatabaseTest·PopupAdminQuestionsTest, version-history/CHANGELOG.md.
-- 검증: 로컬 XE(POPUP)에 17 스크립트 실행 — 컬럼 3 생성, 재실행 시 SKIP. 서버 `gradlew cleanTest test --offline` 149건 중 140 통과·9 skip(Oracle 연동, 실패 0). `POPUP_TEST_DB_PASSWORD`로 실DB 실행 시 신규 서식 왕복 포함 `PopupQuestionDatabaseTest` 2건 통과. 같은 실DB 실행에서 `WpfPopupDatabaseTest` 2건·`WpfApiOracleHttpTest` 2건은 조회 결과 popup=null로 실패 — `WpfPopupDatabaseTest`는 변경 전 HEAD(5879822) 별도 작업 트리에서도 같은 2건이 같은 원인으로 실패해 로컬 샘플 데이터 상태 문제로 판단(HTTP 테스트 2건은 HEAD 대조 미실행). 미실행: 원격 개발 DB 17 스크립트 실행, 원격 서버 반영.
+- 검증: 로컬 XE(POPUP)에 17 스크립트 실행 — 컬럼 3 생성, 재실행 시 SKIP. 서버 `gradlew cleanTest test --offline` 149건 중 140 통과·9 skip(Oracle 연동, 실패 0). `POPUP_TEST_DB_PASSWORD`로 실DB 실행 시 신규 서식 왕복 포함 `PopupQuestionDatabaseTest` 2건 통과. 같은 실DB 실행에서 `WpfPopupDatabaseTest` 2건·`WpfApiOracleHttpTest` 2건은 조회 결과 popup=null로 실패 — `WpfPopupDatabaseTest`는 변경 전 HEAD(a88bd22) 별도 작업 트리에서도 같은 2건이 같은 원인으로 실패해 로컬 샘플 데이터 상태 문제로 판단(HTTP 테스트 2건은 HEAD 대조 미실행). 미실행: 원격 개발 DB 17 스크립트 실행, 원격 서버 반영.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. 배포 순서: DB 17 → 서버.
 
 ## 2026-10-19-10 — TODO60 VIDEO+QUIZ 스크롤바 경계 진동 방지 보완
