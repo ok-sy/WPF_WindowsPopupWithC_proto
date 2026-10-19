@@ -60,6 +60,14 @@ internal static class Program
         return System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
     }
 
+    private static Popup.Dtos.PopupResponseDto WithContent(Popup.Dtos.PopupResponseDto dto, Action<System.Text.Json.Nodes.JsonObject> change)
+    {
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(dto, json))!.AsObject();
+        change(node["content"]!.AsObject());
+        return System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
+    }
+
     private static VideoProgressSnapshot Snapshot(decimal watched, decimal position = 100) => new()
     {
         DurationSeconds = 100, PositionSeconds = position, MaximumPositionSeconds = position, WatchedSeconds = watched
@@ -610,9 +618,16 @@ internal static class Program
         opened.Window.UpdateLayout();
         Check(root.ActualWidth < oldWidth && Math.Abs(row.Height.Value - Expected(new Size(1920, 1080))) < 0.6,
             $"[TODO60] a narrower window recalculates the height from the real width ({row.Height}, width {root.ActualWidth})");
+        // 창을 원래 너비로 되돌리면(스크롤바 폭보다 큰 왕복) 진동 방지에 걸리지 않고 다시 계산한다.
+        opened.Window.Width += 120;
+        opened.Window.UpdateLayout();
+        Check(Math.Abs(root.ActualWidth - oldWidth) < 0.6 && Math.Abs(row.Height.Value - Expected(new Size(1920, 1080))) < 0.6,
+            $"[TODO60] restoring the window width recalculates instead of holding ({row.Height}, width {root.ActualWidth})");
         Report(video, Snapshot(80));
         Check(view.IsUnlocked, "[TODO60] the completion ratio still unlocks the quiz");
         ShutdownClose(opened.Window);
+
+        CheckVideoQuizScrollBarBoundary60();
 
         var single = OpenPopup("VIDEO", dto => dto.ShowFooter = true);
         var singleRow = (RowDefinition)single.Video!.FindName("VideoRow");
@@ -620,6 +635,77 @@ internal static class Program
         single.Window.UpdateLayout();
         Check(singleRow.Height.IsStar, "[TODO60] a single VIDEO keeps the star video row");
         ShutdownClose(single.Window);
+    }
+
+    /*
+     * [TODO60-5] 본문 높이가 스크롤바 표시 경계에 걸리는 창 높이에서 재생 행 높이·스크롤바 표시가 한 값으로 수렴한다
+     * (스크롤바 등장 → 너비·높이 감소 → 스크롤바 사라짐 → 높이 증가를 반복하지 않는다).
+     * 줄바꿈 변화가 영상 높이 변화를 상쇄하지 않도록 짧은 문항 1개·설명 없음으로 두고, 원본 비율별로 경계 주변을 1 DIP 간격으로 훑는다.
+     */
+    private static void CheckVideoQuizScrollBarBoundary60()
+    {
+        // 너비 이력: 첫 유효 너비로 초기화, 스크롤바 폭 이내 왕복만 높이 유지, 창 크기 조절 왕복은 다시 계산.
+        // 단독 VIDEO는 비율 높이를 쓰지 않아 너비 이력이 초기 상태(NaN)로 남아 있다.
+        var single = OpenPopup("VIDEO");
+        var record = typeof(VideoPopupView).GetMethod("RecordAspectWidth", Flags)!;
+        bool Record(double width) => (bool)record.Invoke(single.Video, new object[] { width })!;
+        double bar = (double)typeof(VideoPopupView).GetProperty("ScrollBarWidthTolerance", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)! - 6;
+        Check(!Record(800), "[TODO60-5] the first valid width only initializes the history");
+        Check(!Record(800 - bar), "[TODO60-5] the scrollbar appearing (narrower) recalculates once");
+        Check(Record(800), "[TODO60-5] returning to the previous width within the scrollbar width holds the height");
+        Check(Record(800 - bar), "[TODO60-5] the repeated scrollbar toggle keeps holding");
+        Check(!Record(680) && !Record(800 - bar), "[TODO60-5] a window resize round trip larger than the scrollbar recalculates");
+        Check(!Record(800 - bar + 0.2), "[TODO60-5] a sub-pixel width change keeps the history");
+        ShutdownClose(single.Window);
+
+        var update = typeof(VideoPopupView).GetMethod("UpdateNaturalVideoSize", Flags)!;
+        foreach (Size natural in new[] { new Size(1920, 1080), new Size(1500, 1000) })
+        {
+            var opened = OpenPopup("VIDEO_QUIZ", dto =>
+            {
+                dto.CompletionRatio = 0.8; dto.ShowFooter = true; dto.Width = 760; dto.Height = 700;
+                dto.Questions.RemoveRange(1, dto.Questions.Count - 1);
+                dto.Questions[0].Title = "Q"; dto.Questions[0].Description = ""; dto.Questions[0].TitleBlocks = null; dto.Questions[0].DescriptionBlocks = null;
+            }, transform: dto => WithContent(dto, content => { content["description"] = ""; content["videoTitle"] = "T"; content["surveyTitle"] = "T"; }));
+            var view = (VideoQuizPopupView)opened.Options.Content!;
+            var row = (RowDefinition)view.Video.FindName("VideoRow");
+            var scroll = ((Grid)view.Content).Children.OfType<ScrollViewer>().Single();
+            update.Invoke(view.Video, new object[] { natural.Width, natural.Height });
+            (double Row, Visibility Bar) Settle()
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    opened.Window.UpdateLayout();
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+                }
+                return (row.Height.Value, scroll.ComputedVerticalScrollBarVisibility);
+            }
+            // 스크롤바가 사라지는 창 높이를 찾아 그 주변을 1 DIP 간격으로 훑는다.
+            double boundary = double.NaN;
+            for (double height = 300; height <= opened.Window.MaxHeight; height += 10)
+            {
+                opened.Window.Height = height;
+                if (Settle().Bar != Visibility.Visible) { boundary = height; break; }
+            }
+            Check(!double.IsNaN(boundary), $"[TODO60-5] {natural}: a window height without the quiz scrollbar exists");
+            int unstable = 0, checkedHeights = 0;
+            string detail = "";
+            for (double h = boundary - 40; h <= boundary + 20; h += 1)
+            {
+                opened.Window.Height = h;
+                var first = Settle();
+                var second = Settle();
+                var third = Settle();
+                checkedHeights++;
+                if (Math.Abs(first.Row - second.Row) >= 0.5 || Math.Abs(second.Row - third.Row) >= 0.5 || first.Bar != second.Bar || second.Bar != third.Bar)
+                {
+                    unstable++;
+                    if (detail.Length == 0) detail = $"; height {h}: {first} -> {second} -> {third}";
+                }
+            }
+            Check(unstable == 0, $"[TODO60-5] {natural}: row height and scrollbar settle near the scrollbar boundary ({unstable}/{checkedHeights} unstable{detail})");
+            ShutdownClose(opened.Window);
+        }
     }
 
     /* 보조 닫기: QUIZ는 미달 1회 이후 + Overlay 꺼짐 + 푸터 표시일 때만, SURVEY·TEXT는 표시하지 않는다. */

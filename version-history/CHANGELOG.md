@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-10 — TODO60 VIDEO+QUIZ 스크롤바 경계 진동 방지 보완
+
+- 이유: 코드 검토에서 TODO60-5 진동 방지 분기가 실행되지 않는 문제 확인. 너비 이력(_lastAspectWidth·_previousAspectWidth)이 NaN으로 시작해 `Math.Abs(width - NaN) >= 0.5`가 항상 false였고, 이력이 갱신되지 않아 본문 높이가 스크롤바 표시 경계에 걸리면 스크롤바 등장 → 영상 너비·높이 감소 → 스크롤바 사라짐 → 높이 증가가 반복될 수 있었다.
+- 변경: 너비 이력 갱신을 RecordAspectWidth로 분리해 첫 유효 너비로 초기화. 직전 너비로 스크롤바 폭 이내(시스템 세로 스크롤바 폭 + 16, 설문 스크롤바 실측 차이 27)만큼 되돌아온 경우에만 마지막 높이를 유지하고, 그보다 큰 왕복(창 크기 조절 후 원래 너비 복귀)은 다시 계산해 이력 수정 후 정상 크기 변경이 막히지 않게 함. TODO60 문서 60-5 구현 기록·검증 항목 보완.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs, scripts/PopupWindowTests/Program.cs, docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md, version-history/CHANGELOG.md.
+- 검증: 수정 전 코드에 스크롤바 경계 테스트(짧은 문항 1개·설명 없음, 16:9·3:2, 경계 주변 창 높이 61개를 1 DIP 간격)를 적용해 3:2·창 높이 791 등 12개 높이에서 행 높이 348.93(스크롤바 표시) ↔ 360.42(숨김) 반복 재현. 수정 후 PopupWindowTests 376건 통과(너비 이력 단위 6건, 원래 너비 복귀 재계산, 두 비율 경계 수렴 포함), WPF 빌드 경고·오류 0. 미실행: 실제 Windows 화면에서 창 크기를 손으로 조절하는 재현, DPI 125~200%에서의 스크롤바 폭 차이.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-19-09 — TODO58 IMAGE 공통 크기 필드 통합 및 모드별 크기 기준
 
 - 이유: IMAGE 크기 입력을 공통 popup.width/height 한 쌍으로 통합하고 ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역으로 해석을 명확히 하기 위한 계약 변경(TODO58).

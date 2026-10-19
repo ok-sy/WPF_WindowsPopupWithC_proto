@@ -14,7 +14,9 @@ namespace Popup.Views.Contents
      *   서버 API·파일 분석은 쓰지 않는다. 크기 갱신은 재생 상태·시청량 계산 경로와 분리한다.
      * - 메타데이터 전·읽기 실패·0 크기: 마지막 유효 크기, 없으면 16:9.
      * - 상한: 세로 영상이 퀴즈를 지나치게 밀지 않도록 부모 스크롤 가용 높이의 MaxHeightRatio로 제한하고, 영상은 기존처럼 비율 유지(contain)로 표시한다.
-     * - 진동 방지: 높이 변경 → 스크롤바 표시/숨김 → 너비 변경이 같은 두 너비 사이를 오가면 마지막 높이를 유지한다.
+     * - 진동 방지: 높이 변경 → 스크롤바 표시/숨김 → 너비 변경이 같은 두 너비 사이를 스크롤바 폭 이내로 오가면 마지막 높이를 유지한다.
+     *   너비 이력은 첫 유효 너비로 초기화한다(NaN과의 비교는 항상 false라 이력이 갱신되지 않던 문제 수정).
+     *   스크롤바 폭보다 큰 왕복(창 크기 조절 후 원래 너비 복귀)은 다시 계산한다.
      * - 전체화면 중에는 VideoContainer가 이 Grid 밖에 있으므로 행 높이를 바꾸지 않고, 복귀 후 다시 계산한다.
      * 단독 VIDEO는 EnableAspectSizing을 부르지 않으므로 기존 * 행 그대로다.
      */
@@ -64,22 +66,30 @@ namespace Popup.Views.Contents
             double width = VideoLayoutRoot.ActualWidth;
             if (!(width > 0)) return;
             // 같은 두 너비를 오가는(스크롤바 표시/숨김) 경우 높이를 다시 바꾸지 않는다.
-            if (Math.Abs(width - _previousAspectWidth) < 0.5 && Math.Abs(width - _lastAspectWidth) >= 0.5
-                && VideoRow.Height.IsAbsolute)
-            {
-                _previousAspectWidth = _lastAspectWidth;
-                _lastAspectWidth = width;
-                return;
-            }
-            if (Math.Abs(width - _lastAspectWidth) >= 0.5)
-            {
-                _previousAspectWidth = _lastAspectWidth;
-                _lastAspectWidth = width;
-            }
+            if (RecordAspectWidth(width) && VideoRow.Height.IsAbsolute) return;
             double height = CalculateAspectHeight(width, VideoContainer.BorderThickness, _naturalVideoSize, _availableHeight?.Invoke() ?? 0);
             if (!VideoRow.Height.IsAbsolute || Math.Abs(VideoRow.Height.Value - height) >= 0.5)
                 VideoRow.Height = new GridLength(height);
         }
+
+        /*
+         * 너비 이력을 갱신하고, 직전 너비로 스크롤바 폭 이내만큼 되돌아온 경우 true(높이 유지)를 돌려준다.
+         * 첫 유효 너비는 이력만 채운다. 같은 너비(0.5 미만 차이)는 이력을 바꾸지 않는다.
+         */
+        internal bool RecordAspectWidth(double width)
+        {
+            if (double.IsNaN(_lastAspectWidth)) { _lastAspectWidth = width; return false; }
+            double change = Math.Abs(width - _lastAspectWidth);
+            if (change < 0.5) return false;
+            bool returning = !double.IsNaN(_previousAspectWidth) && Math.Abs(width - _previousAspectWidth) < 0.5
+                && change <= ScrollBarWidthTolerance;
+            _previousAspectWidth = _lastAspectWidth;
+            _lastAspectWidth = width;
+            return returning;
+        }
+
+        /* 스크롤바 표시/숨김으로 생기는 너비 차이 상한. 설문 스크롤바 스타일은 시스템 폭 + 왼쪽 여백 10(실측 27)이라 여유를 둔다. */
+        internal static double ScrollBarWidthTolerance => SystemParameters.VerticalScrollBarWidth + 16;
 
         /* 재생 영역 높이 = 테두리 안쪽 너비 × h / w + 테두리. 상한(가용 높이 × MaxHeightRatio)과 하한(MinVideoHeight)을 적용한다. */
         internal static double CalculateAspectHeight(double width, Thickness border, Size? natural, double availableHeight)
