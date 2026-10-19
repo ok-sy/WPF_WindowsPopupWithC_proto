@@ -76,7 +76,6 @@ namespace Popup.Factories
                 FooterFontSize = popupDto.FooterFontSize,
 
                 CompletionRatio = popupDto.CompletionRatio ?? 1.0,
-                AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
                 Position = ConvertPopupPosition(popupDto.PopupPosition),
                 SizeMode = content is ImagePopupView && !string.Equals(popupDto.SizeMode, "FULLSCREEN", StringComparison.OrdinalIgnoreCase)
                     ? PopupSizeMode.Fixed : ConvertPopupSizeMode(popupDto.SizeMode),

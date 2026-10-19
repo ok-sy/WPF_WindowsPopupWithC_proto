@@ -98,7 +98,6 @@ namespace Popup
             AddField(panel, _draft, "showDoNotShowAgain", "다시 보지 않기 표시", typeof(bool));
             AddField(panel, _draft, "hideDays", "숨김 일수 · 비우면 30일", typeof(int?), min: 1, max: 3650, indent: true);
             AddField(panel, _draft, "showLater", "나중에 보기 표시", typeof(bool));
-            AddField(panel, _draft, "allowCloseBeforeComplete", "완료 전 닫기 허용", typeof(bool));
             if (popup.PopupType == "VIDEO" || HasVideo(popup))
                 AddField(panel, _draft, "completionRatio", "영상 시청 완료 비율 · 비우면 1.0", typeof(double?), min: 0, max: 1);
             if (popup.PopupType == "QUIZ") AddField(panel, _draft, "passingScore", "퀴즈 통과 점수", typeof(double?), min: 0);

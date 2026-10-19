@@ -80,7 +80,6 @@ export interface AdminPopupDetail {
   hideDays?: number | null;
   completionRatio?: number | null;
   passingScore?: number | null;
-  allowCloseBeforeComplete: boolean;
   questions: PopupQuestion[];
   content: Record<string, unknown>;
 }

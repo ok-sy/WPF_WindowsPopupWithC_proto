@@ -304,10 +304,10 @@ X-Client-Version: 1.0.0
 | bodyFontSize | number | 선택 | 유형별 XAML 기본값 | 값이 있으면 10~40으로 보정 |
 | footerFontSize | number | 선택 | XAML 기본값(현재 Footer 14) | 값이 있으면 10~40으로 보정 |
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
-| showLater | boolean | 선택 | `false` | 나중에 보기 버튼 표시(TODO52-2). `showFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 `LATER`(§10.4.1)로 닫힌다. 완료 전 닫기 잠금(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전) 중에도 누를 수 있다 |
+| showLater | boolean | 선택 | `false` | 나중에 보기 버튼 표시(TODO52-2). `showFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 `LATER`(§10.4.1)로 닫힌다. 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)에도 누를 수 있으며, 완료 기준 전 화면 이탈 버튼은 이것뿐이다(TODO57) |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
-| allowCloseBeforeComplete | boolean | VIDEO / 동영상+퀴즈 | `true` | 완료 전 닫기 허용 여부 |
+| ~~allowCloseBeforeComplete~~ | - | 폐기(TODO57) | - | 응답에서 제거. 새 WPF는 보내도 무시한다. 화면 버튼은 `completionRatio`, 외부 닫기는 `content.useBackgroundOverlay`, 완료 전 연기는 `showLater`. 구 WPF는 필드가 없으면 `true`로 동작하므로 새 WPF 배포 후 제거한다 |
 | passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
@@ -564,8 +564,8 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 | isLoop | boolean | 선택 | `false` | 반복 재생 |
 | defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |
 
-VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRatio` / `allowCloseBeforeComplete`**를 기준으로 한다.
-`allowCloseBeforeComplete=false`이면 시청 기준 전에는 하단 닫기 버튼을 비활성으로 두고 하단에 현재 시청 %(내림)와 기준을 사유로 표시한다. 기준에 도달하거나 재생에 실패하면 버튼을 활성화한다(설계 43). 도달 판정은 동영상+퀴즈·서버와 같은 식이다: `min(watchedSeconds, durationSeconds) / durationSeconds`를 소수점 4자리에서 내린 비율 ≥ `completionRatio`(설계 53-16).
+VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRatio`**를 기준으로 한다(`allowCloseBeforeComplete`는 TODO57에서 폐기).
+시청 기준 전에는 하단 닫기 버튼을 항상 비활성으로 두고 하단에 현재 시청 %(내림)와 기준을 사유로 표시한다. 기준에 도달하거나 재생에 실패하면 버튼을 활성화한다(설계 43). 도달 판정은 동영상+퀴즈·서버와 같은 식이다: `min(watchedSeconds, durationSeconds) / durationSeconds`를 소수점 4자리에서 내린 비율 ≥ `completionRatio`(설계 53-16).
 
 로컬 영상은 MediaElement, 직접 재생 가능한 HTTP/HTTPS URL은 WebView2 내부 HTML5 video로 재생하지만 두 방식 모두 영상 하단에 겹치는 **공통 WPF Overlay 컨트롤바**를 사용한다. 컨트롤은 별도 높이를 차지하지 않으며 재생 중 일반 화면 3초·영상 전체화면 2초 무입력 또는 마우스 이탈 시 숨기고 진입·이동 시 표시한다. 일시정지·조작 중에는 표시를 유지한다. URL 영상의 Chromium 기본 controls는 표시하지 않는다. `showControls=false`이면 공통 컨트롤을 숨기며 영상 클릭으로 재생/일시정지를 전환할 수 있다. `allowFullScreen=false`이면 WPF 전체화면 버튼을 숨기고 진입을 금지한다. HTML5 자체 전체화면 대신 WPF의 옵션을 검사하는 전체화면을 사용한다. `allowPlaybackRateChange=false`이면 배속 버튼을 숨기고 HTML5 영상도 1.0배로 제한한다. `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다.
 
@@ -747,7 +747,6 @@ passingScore 이상
   "popupType": "QUIZ",
   "completionRatio": 0.8,
   "passingScore": 80,
-  "allowCloseBeforeComplete": true,
   "content": {
     "videoEnabled": true,
     "videoUrl": "https://example.com/training.mp4",
@@ -763,10 +762,10 @@ passingScore 이상
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다. 동영상+퀴즈의 콘텐츠 제목은 저장 컬럼 1개(CONTENT_TITLE = `surveyTitle`)에 저장하므로 이 저장소 서버는 `videoTitle`을 `surveyTitle`과 같은 값으로 내려준다. 두 제목을 다르게 보내는 계약은 없다. WPF는 영상 영역에 이미 보인 제목·설명과 같은 값이면 퀴즈 머리말에서 다시 표시하지 않는다(값이 다르거나 영상 설명이 숨김이면 퀴즈 머리말에 표시, 설계 53-16).
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
-- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 종료 경로는 `allowCloseBeforeComplete` 등 기존 종료 정책을 따른다.
+- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 외부 종료는 `content.useBackgroundOverlay` 정책을 따른다(TODO57).
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 푸터의 제출·다시 보지 않기를 활성화한다. 잠금 중 푸터에는 현재 시청 %와 기준을 사유로 표시한다(설계 43). 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
-- `allowCloseBeforeComplete: true`면 푸터에 보조 **닫기**를 표시해 제출 없이 중단할 수 있고(배경 Overlay가 꺼져 있으면 Alt+F4도 가능) 제출은 시청 기준까지 비활성화한다. Header에는 X 버튼이 없다. false면 시청 기준 전 종료를 차단한다. 영상 재생 실패 시에는 종료를 허용하며(푸터가 있으면 보조 닫기 표시) 퀴즈를 자동 활성화하지 않는다.
+- 제출은 시청 기준까지 비활성이다. 제출 없이 중단하려면 `showLater`(나중에 보기)를 쓴다. 배경 Overlay가 꺼져 있으면 Alt+F4로도 닫히고 켜져 있으면 막힌다(TODO57 — `allowCloseBeforeComplete` 기반 보조 닫기 폐기). Header에는 X 버튼이 없다. 영상 재생 실패 시에는 종료를 허용하며(푸터가 있으면 보조 닫기 표시) 퀴즈를 자동 활성화하지 않는다.
 - 이 모드는 로컬 영상 파일 경로 또는 직접 재생 가능한 HTTP(S) 영상 URL을 사용한다.
 - 영상만 보고 닫으면 `VIDEO_WATCHED`를 보내되 **퀴즈 완료로 처리하지 않는다**. 퀴즈 통과 후에만 `SUBMITTED`로 완료한다. 숨김 선택 시에는 기존 HIDDEN 정책을 따른다.
 - 새 모드를 사용하려면 WPF와 백엔드를 함께 갱신해야 한다. 기존 클라이언트는 `videoEnabled`를 이해하지 못한다.
@@ -934,7 +933,7 @@ VIDEO_WATCHED
 - 서버는 표시·닫기 정보만 기록하고 **완료·숨김 상태를 바꾸지 않는다**(TEXT·IMAGE도 완료 아님). 전달 건 재노출 유예로 저장 시각부터 `pollingIntervalSeconds` 동안 제외되고, 이후 조회에서 표시 조건을 만족하면 다시 표시된다.
 - `hideDays`·`answers`·`video`·`score`·`passed`는 보내지 않는다. 보내더라도 서버는 무시하며, 영상 시청 정보는 새로 기록하지 않는다(이미 저장된 시청 기록은 유지).
 - 서버는 팝업의 `showLater` 설정을 다시 검사하지 않는다(HIDDEN과 같은 기준). 문자열은 대소문자를 구분하지 않는다.
-- 완료 전 닫기 잠금 중에도 보낼 수 있다. 잠금 중 연기 허용은 현재 정책이며, 바뀌면 이 절과 WPF 버튼 활성 조건을 함께 고친다.
+- 완료 기준 전에도 보낼 수 있다. 완료 기준 전 화면 이탈은 이 버튼뿐이며(TODO57), 정책이 바뀌면 이 절과 WPF 버튼 활성 조건을 함께 고친다.
 
 ---
 
@@ -1039,7 +1038,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | `HIDDEN` | 기존 숨김 정책. `hideDays` 동안 제외. 영상 시청 정보는 기록하지 않음(§10.4) |
 | `LATER`(모든 유형) | 완료·숨김 없음. 저장 시각부터 `pollingIntervalSeconds` 동안 제외 후 다시 표시(§10.4.1) |
 | SURVEY·QUIZ `SUBMITTED`, VIDEO 시청 기준 충족 | 기존 완료 조건대로 완료 처리 |
-| 미완료로 끝난 SURVEY·QUIZ·VIDEO(완료 전 닫기, QUIZ 미통과, 시청 기준 미달) | 저장 시각부터 `pollingIntervalSeconds` 동안 조회·`nextStatus` 후보에서 제외. 이후에도 표시 조건을 만족하면 다시 표시 |
+| 미완료로 끝난 SURVEY·QUIZ·VIDEO(Overlay 꺼짐 외부 닫기·보조 닫기, QUIZ 미통과, 시청 기준 미달) | 저장 시각부터 `pollingIntervalSeconds` 동안 조회·`nextStatus` 후보에서 제외. 이후에도 표시 조건을 만족하면 다시 표시 |
 
 `nextStatus`는 같은 제외 기준으로 남은 후보가 있는지를 뜻한다. 방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.
 
@@ -1368,7 +1367,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": true,
   "questions": [],
   "content": {
     "plainText": "점검 공지\n안내 내용을 확인해주세요.\n10월 5일 22시부터 23시까지 서비스 점검이 진행됩니다.",
@@ -1406,7 +1404,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": true,
   "questions": [],
   "content": {
     "imageTitle": "교육 일정",
@@ -1441,7 +1438,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": false,
   "questions": [],
   "completionRatio": 0.8,
   "content": {
@@ -1481,7 +1477,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": true,
   "questions": [
     {
       "questionId": 101,
@@ -1574,7 +1569,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": true,
   "questions": [
     {
       "questionId": 201,
@@ -1661,7 +1655,6 @@ EMPTY
   "popupPosition": "CENTER",
   "showDoNotShowAgain": false,
   "showLater": false,
-  "allowCloseBeforeComplete": false,
   "questions": [
     {
       "questionId": 301,

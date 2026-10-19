@@ -11,13 +11,15 @@ using Popup.Views.Windows;
 /*
  * [설계 50] PopupWindow 회귀 검증(저장소 추적).
  * A1  '{N}일간 보지 않기' 문구가 실제 숨김 일수(서버 hideDays, 없으면 30)와 같은지,
- * A10 일반 VIDEO도 allowCloseBeforeComplete=false면 창 닫기(Alt+F4 등)가 시청 기준 전에는 취소되고
- *     시청 후·재생 실패·앱 종료(Application.Shutdown과 같은 InternalClose(shutdown, ignoreCancel))에서는 닫히는지
+ * A10 → TODO57 외부 닫기(Alt+F4 등)는 시청 기준이 아니라 Overlay로만 판단: Overlay 꺼짐이면 시청 전에도 닫히고,
+ *     켜짐이면 시청 후에도 막히며 앱 종료(Application.Shutdown과 같은 InternalClose(shutdown, ignoreCancel))는 항상 닫히는지.
+ *     구 서버가 보낸 allowCloseBeforeComplete는 무시되는지
  * 50-B displayMode(효과 없는 계약 필드)가 모르는 값·null이어도 팝업 생성이 실패하지 않는지
  * 43  완료 조건 버튼 표현: VIDEO 미달 닫기 비활성·사유 문구·도달/재생 실패 후 활성, VIDEO+QUIZ 잠금 사유 문구,
  *     보조 닫기 표시 규칙, QUIZ 미달 안내의 틀린 문항 번호
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
+ * 57  완료 전 닫기 옵션 폐기: 화면 버튼은 completionRatio, 외부 닫기는 Overlay, 완료 전 연기는 showLater
  * 59  VIDEO+QUIZ 영상·퀴즈 사이 시스템 안내 제거(전용 행 없음), 푸터 숨김 시 본문 제출 영역의 잠금 사유
  * 52-2 나중에 보기: showFooter·showLater 표시 규칙, 버튼으로 닫으면 LATER(다시 보지 않기·영상 시청량보다 우선),
  *      완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ) 중에도 닫힘, Overlay 출구로 인정
@@ -45,6 +47,15 @@ internal static class Program
         _checks++;
     }
 
+    /* [TODO57] 구 서버 응답처럼 폐기된 allowCloseBeforeComplete를 넣은 JSON을 실제 조회와 같은 옵션으로 역직렬화한다(무시되어야 한다). */
+    private static Popup.Dtos.PopupResponseDto WithLegacyAllowClose(Popup.Dtos.PopupResponseDto dto, bool allowClose)
+    {
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(dto, json))!.AsObject();
+        node["allowCloseBeforeComplete"] = allowClose;
+        return System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
+    }
+
     private static VideoProgressSnapshot Snapshot(decimal watched, decimal position = 100) => new()
     {
         DurationSeconds = 100, PositionSeconds = position, MaximumPositionSeconds = position, WatchedSeconds = watched
@@ -69,7 +80,7 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·A10·B, 43, 44, 52-2, 52-4, 53-16, 59)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 59)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -105,21 +116,29 @@ internal static class Program
         }
     }
 
-    /* [설계 50 A10] 일반 VIDEO의 창 닫기 제한과 VIDEO·VIDEO+QUIZ 공통 앱 종료 예외. */
+    /*
+     * [TODO57] 외부 닫기(Alt+F4·Window.Close 등 OnClosing 경로)는 시청 기준이 아니라 Background Overlay로만 판단한다.
+     * (설계 50 A10의 allowCloseBeforeComplete=false 시청 전 창 닫기 취소를 대체한다.)
+     *  - Overlay 꺼짐: VIDEO·VIDEO+QUIZ 모두 시청 전에도 닫힌다.
+     *  - Overlay 켜짐(화면 출구 있음): 시청 전·후, 재생 실패 모두 외부 닫기를 막는다(시청을 마쳐도 Alt+F4 자동 허용 없음).
+     *  - 앱 종료는 항상 닫힌다. 구 서버의 allowCloseBeforeComplete 값은 결과를 바꾸지 않는다.
+     */
     private static void CheckVideoClose50()
     {
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var onClosing = typeof(PopupWindow).GetMethod("OnClosing", flags)!;
         var internalClose = typeof(Window).GetMethod("InternalClose", flags, null, new[] { typeof(bool), typeof(bool) }, null);
-        Check(internalClose != null, "[설계 50 A10] WPF Window.InternalClose(shutdown, ignoreCancel) is available for the shutdown check");
+        Check(internalClose != null, "[TODO57] WPF Window.InternalClose(shutdown, ignoreCancel) is available for the shutdown check");
         var latest = typeof(VideoPopupView).GetField("_latestProgress", flags)!;
-        (PopupWindow Window, VideoPopupView Video, Func<bool> Closed) Open(string type, bool allowClose = false)
+        (PopupWindow Window, VideoPopupView Video, Func<bool> Closed) Open(string type, bool overlay, bool? legacyAllowClose = null)
         {
             var dto = DemoPopups(type).Single();
-            dto.AllowCloseBeforeComplete = allowClose;
             dto.CompletionRatio = 0.8;
+            dto.ShowFooter = true;
+            dto.ShowLater = false;
+            if (legacyAllowClose is bool allow) dto = WithLegacyAllowClose(dto, allow);
             var options = PopupFactory.Create(dto);
-            options.UseBackgroundOverlay = false;
+            options.UseBackgroundOverlay = overlay;
             var video = options.Content as VideoPopupView ?? ((VideoQuizPopupView)options.Content!).Video;
             var window = new PopupWindow(options);
             bool closed = false;
@@ -135,41 +154,39 @@ internal static class Program
             return args.Cancel;
         }
 
-        // 시청 전: Alt+F4와 같은 창 닫기(OnClosing·Close)는 취소되고 창이 남는다.
-        var before = Open("VIDEO");
-        Check(CancelledByOnClosing(before.Window), "[설계 50 A10] VIDEO close before watching is cancelled (Alt+F4)");
-        before.Window.Close();
-        Check(!before.Closed() && before.Window.IsVisible, "[설계 50 A10] VIDEO Window.Close before watching keeps the window");
-        // 시청 기준 도달 후에는 같은 경로로 닫힌다.
-        latest.SetValue(before.Video, Snapshot(80));
-        Check(!CancelledByOnClosing(before.Window), "[설계 50 A10] VIDEO close is allowed after reaching the ratio");
-        before.Window.Close();
-        Check(before.Closed(), "[설계 50 A10] VIDEO window closes after watching");
-
-        // 기준 미만(79.9%)은 계속 취소된다.
-        var below = Open("VIDEO");
-        latest.SetValue(below.Video, Snapshot(79.9m));
-        Check(CancelledByOnClosing(below.Window), "[설계 50 A10] VIDEO below the ratio stays blocked");
-        // 재생 실패면 VIDEO+QUIZ와 같이 닫기를 막지 않는다.
-        typeof(VideoPopupView).GetProperty("HasPlaybackFailed")!.SetValue(below.Video, true);
-        Check(!CancelledByOnClosing(below.Window), "[설계 50 A10] VIDEO playback failure does not block closing");
-        below.Window.Close();
-        Check(below.Closed(), "[설계 50 A10] VIDEO with playback failure closes");
-
-        // 완료 전 닫기 허용(기본값)은 기존처럼 바로 닫힌다.
-        var allowed = Open("VIDEO", allowClose: true);
-        Check(!CancelledByOnClosing(allowed.Window), "[설계 50 A10] allowCloseBeforeComplete=true VIDEO is not blocked");
-        allowed.Window.Close();
-        Check(allowed.Closed(), "[설계 50 A10] allowCloseBeforeComplete=true VIDEO closes");
-
-        // 앱 종료(Application.Shutdown → InternalClose(true, true))는 VIDEO·VIDEO+QUIZ 모두 시청 전이어도 닫힌다.
         foreach (string type in new[] { "VIDEO", "VIDEO_QUIZ" })
         {
-            var exiting = Open(type);
-            Check(CancelledByOnClosing(exiting.Window), $"[설계 50 A10] {type} user close before watching is cancelled");
-            internalClose!.Invoke(exiting.Window, new object[] { true, true });
-            Check(exiting.Closed(), $"[설계 50 A10] {type} closes on application shutdown before watching");
+            // Overlay 꺼짐: 시청 전에도 외부 닫기가 된다(구 allowCloseBeforeComplete=false를 보내도 같다).
+            foreach (bool? legacy in new bool?[] { null, false })
+            {
+                var off = Open(type, overlay: false, legacy);
+                latest.SetValue(off.Video, Snapshot(10));
+                Check(!CancelledByOnClosing(off.Window), $"[TODO57] {type} overlay off: external close before watching is allowed (legacy {legacy?.ToString() ?? "none"})");
+                off.Window.Close();
+                Check(off.Closed(), $"[TODO57] {type} overlay off: Window.Close before watching closes (legacy {legacy?.ToString() ?? "none"})");
+            }
+
+            // Overlay 켜짐: 시청 전·후 모두 외부 닫기를 막는다(구 allowCloseBeforeComplete=true여도 같다).
+            foreach (bool? legacy in new bool?[] { null, true })
+            {
+                var on = Open(type, overlay: true, legacy);
+                Check(CancelledByOnClosing(on.Window), $"[TODO57] {type} overlay on: external close before watching is cancelled (legacy {legacy?.ToString() ?? "none"})");
+                on.Window.Close();
+                Check(!on.Closed() && on.Window.IsVisible, $"[TODO57] {type} overlay on: Window.Close before watching keeps the window");
+                Report(on.Video, Snapshot(80));
+                Check(CancelledByOnClosing(on.Window), $"[TODO57] {type} overlay on: watching does not auto-allow external close");
+                // 앱 종료(Application.Shutdown → InternalClose(true, true))는 Overlay·시청과 관계없이 닫힌다.
+                internalClose!.Invoke(on.Window, new object[] { true, true });
+                Check(on.Closed(), $"[TODO57] {type} overlay on: application shutdown closes");
+            }
         }
+
+        // Overlay 켜짐 + 재생 실패: 화면 닫기 수단이 생기므로 외부 닫기는 계속 막고 버튼으로 닫는다.
+        var failed = Open("VIDEO", overlay: true);
+        FailPlayback(failed.Video);
+        Check(CancelledByOnClosing(failed.Window), "[TODO57] VIDEO overlay on: playback failure keeps the overlay rule for external close");
+        Click(failed.Window, (Button)failed.Window.FindName("FooterCloseButton"));
+        Check(failed.Closed(), "[TODO57] VIDEO overlay on: playback failure closes from the enabled footer button");
     }
 
     /* ───────────────────────── [설계 43·44] 공통 도우미 ───────────────────────── */
@@ -188,10 +205,12 @@ internal static class Program
         public VideoPopupView? Video => Options.Content as VideoPopupView ?? (Options.Content as VideoQuizPopupView)?.Video;
     }
 
-    private static Opened OpenPopup(string type, Action<Popup.Dtos.PopupResponseDto>? configure = null, bool overlay = false)
+    private static Opened OpenPopup(string type, Action<Popup.Dtos.PopupResponseDto>? configure = null, bool overlay = false,
+        Func<Popup.Dtos.PopupResponseDto, Popup.Dtos.PopupResponseDto>? transform = null)
     {
         var dto = DemoPopups(type).Single();
         configure?.Invoke(dto);
+        if (transform != null) dto = transform(dto);
         var options = PopupFactory.Create(dto);
         options.UseBackgroundOverlay = overlay;   // PopupWindow 단독 검증이라 실제 Overlay 창은 띄우지 않는다(정책 판단만 이 값을 본다)
         var window = new PopupWindow(options);
@@ -270,12 +289,11 @@ internal static class Program
 
     /* ───────────────────────── [설계 43] 완료 조건 버튼 표현 ───────────────────────── */
 
-    /* 일반 VIDEO(완료 전 닫기 금지): 미달이면 닫기 비활성 + 시청 %·기준 사유, 도달·재생 실패면 활성. 허용이면 기존처럼 활성·문구 없음. */
+    /* 일반 VIDEO: 미달이면 닫기 비활성 + 시청 %·기준 사유, 도달·재생 실패면 활성. [TODO57] 구 allowCloseBeforeComplete=true여도 같다. */
     private static void CheckVideoFooter43()
     {
         void Configure(Popup.Dtos.PopupResponseDto dto)
         {
-            dto.AllowCloseBeforeComplete = false;
             dto.CompletionRatio = 0.8;
             dto.ShowFooter = true;
             dto.ShowFooterButton = true;
@@ -313,18 +331,23 @@ internal static class Program
         Click(failed.Window, failedButton);
         Check(failed.Closed(), "[설계 43] VIDEO with playback failure closes from the footer");
 
-        var allowed = OpenPopup("VIDEO", dto => { Configure(dto); dto.AllowCloseBeforeComplete = true; });
-        Check(allowed.Find<Button>("FooterCloseButton").IsEnabled
-            && allowed.Find<TextBlock>("FooterResponseProgressText").Visibility == Visibility.Collapsed,
-            "[설계 43] allowCloseBeforeComplete=true VIDEO keeps an enabled close without reason text");
-        Click(allowed.Window, allowed.Find<Button>("FooterCloseButton"));
-        Check(allowed.Closed(), "[설계 43] allowCloseBeforeComplete=true VIDEO closes");
+        // [TODO57] 구 서버가 allowCloseBeforeComplete=true를 보내도 무시하고 시청 기준 전 닫기는 비활성이다.
+        var legacy = OpenLegacy("VIDEO", Configure, allowClose: true);
+        var legacyButton = legacy.Find<Button>("FooterCloseButton");
+        Check(!legacyButton.IsEnabled && legacy.Find<TextBlock>("FooterResponseProgressText").Text.StartsWith("영상 0% 시청"),
+            "[TODO57] legacy allowCloseBeforeComplete=true VIDEO still disables close before watching");
+        Click(legacy.Window, legacyButton);
+        Check(!legacy.Closed(), "[TODO57] legacy allowCloseBeforeComplete=true VIDEO click guard keeps the window");
+        ShutdownClose(legacy.Window);
     }
+
+    private static Opened OpenLegacy(string type, Action<Popup.Dtos.PopupResponseDto> configure, bool allowClose, bool overlay = false) =>
+        OpenPopup(type, null, overlay, dto => { configure(dto); return WithLegacyAllowClose(dto, allowClose); });
 
     /* VIDEO+QUIZ 잠금 중: 제출·'보지 않기' 비활성(기존 계약) + 시청 사유 문구, 해제 뒤에는 문항 진행 문구. */
     private static void CheckVideoQuizFooter43()
     {
-        var locked = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
+        var locked = OpenPopup("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
         var view = (VideoQuizPopupView)locked.Options.Content!;
         var submit = locked.Find<Button>("FooterCloseButton");
         var reason = locked.Find<TextBlock>("FooterResponseProgressText");
@@ -342,9 +365,9 @@ internal static class Program
         ShutdownClose(locked.Window);
 
         // 잠금 중 재생 실패: 보조 닫기가 보이고(제출 전 이탈 허용) 누르면 닫힌다.
-        var failed = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
+        var failed = OpenPopup("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
         var failedAux = failed.Find<Button>("FooterAuxCloseButton");
-        Check(failedAux.Visibility == Visibility.Collapsed, "[설계 43] aux close hidden while watching (allowCloseBeforeComplete=false)");
+        Check(failedAux.Visibility == Visibility.Collapsed, "[설계 43] aux close hidden while watching");
         FailPlayback(failed.Video!);
         Check(failedAux.Visibility == Visibility.Visible && failedAux.IsEnabled
             && failed.Find<TextBlock>("FooterResponseProgressText").Text.Contains("닫기 버튼으로 닫을 수 있습니다"),
@@ -352,18 +375,19 @@ internal static class Program
         Click(failed.Window, failedAux);
         Check(failed.Closed(), "[설계 43] aux close closes locked VIDEO+QUIZ after playback failure");
 
-        // 완료 전 닫기 허용: 잠금 여부와 관계없이 보조 닫기 표시. showFooter=false면 숨김.
-        var allowed = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = true; dto.CompletionRatio = 0.8; dto.ShowFooter = true; });
-        var allowedView = (VideoQuizPopupView)allowed.Options.Content!;
-        var allowedAux = allowed.Find<Button>("FooterAuxCloseButton");
-        Check(!allowedView.IsUnlocked && allowedAux.Visibility == Visibility.Visible && allowedAux.IsEnabled
-            && !allowed.Find<Button>("FooterCloseButton").IsEnabled,
-            "[설계 43] allowCloseBeforeComplete=true VIDEO+QUIZ shows an enabled aux close while submit stays locked");
-        Report(allowedView.Video, Snapshot(100));
-        Check(allowedView.IsUnlocked && allowedAux.Visibility == Visibility.Visible, "[설계 43] aux close stays after unlocking");
-        Click(allowed.Window, allowedAux);
-        Check(allowed.Closed(), "[설계 43] aux close closes VIDEO+QUIZ without submitting");
-        var noFooter = OpenPopup("VIDEO_QUIZ", dto => { dto.AllowCloseBeforeComplete = true; dto.ShowFooter = false; });
+        // [TODO57] 완료 전 닫기 허용 기반 보조 닫기는 폐기: 구 allowCloseBeforeComplete=true여도 정상 재생 중에는 잠금 전·후 모두 숨김.
+        var legacy = OpenLegacy("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = true; }, allowClose: true);
+        var legacyView = (VideoQuizPopupView)legacy.Options.Content!;
+        var legacyAux = legacy.Find<Button>("FooterAuxCloseButton");
+        Check(!legacyView.IsUnlocked && legacyAux.Visibility == Visibility.Collapsed && !legacy.Find<Button>("FooterCloseButton").IsEnabled,
+            "[TODO57] legacy allowCloseBeforeComplete=true VIDEO+QUIZ shows no aux close while locked");
+        Click(legacy.Window, legacyAux);
+        Check(!legacy.Closed(), "[TODO57] a bypassed aux close click does not close a locked VIDEO+QUIZ during normal playback");
+        Report(legacyView.Video, Snapshot(100));
+        Check(legacyView.IsUnlocked && legacyAux.Visibility == Visibility.Collapsed, "[TODO57] aux close stays hidden after unlocking");
+        ShutdownClose(legacy.Window);
+        var noFooter = OpenPopup("VIDEO_QUIZ", dto => { dto.ShowFooter = false; });
+        FailPlayback(noFooter.Video!);
         Check(noFooter.Find<Button>("FooterAuxCloseButton").Visibility == Visibility.Collapsed, "[설계 43] showFooter=false hides the aux close");
         ShutdownClose(noFooter.Window);
     }
@@ -477,12 +501,12 @@ internal static class Program
         string withAux = (string)build.Invoke(null, new object[] { submission, true })!;
         Check(withAux.Contains("하단 '닫기'로 닫을 수 있습니다"), "[설계 43] the notice mentions the aux close only when it is shown");
 
-        // 안내의 보조 닫기 문장은 창의 실제 표시 조건(HasAuxClose)을 따른다: Overlay 꺼진 QUIZ는 표시, 완료 전 닫기 금지 VIDEO+QUIZ는 미표시.
+        // 안내의 보조 닫기 문장은 창의 실제 표시 조건(HasAuxClose)을 따른다: Overlay 꺼진 QUIZ는 표시, 정상 재생 중 VIDEO+QUIZ는 미표시.
         var hasAux = typeof(PopupWindow).GetProperty("HasAuxClose", Flags)!;
         var notifyFailed = typeof(PopupWindow).GetMethod("NotifyQuizFailed", Flags)!;
         var quiz = OpenPopup("QUIZ", d => d.ShowFooter = true, overlay: false);
         notifyFailed.Invoke(quiz.Window, null);
-        var videoQuiz = OpenPopup("VIDEO_QUIZ", d => { d.ShowFooter = true; d.AllowCloseBeforeComplete = false; }, overlay: false);
+        var videoQuiz = OpenPopup("VIDEO_QUIZ", d => { d.ShowFooter = true; }, overlay: false);
         notifyFailed.Invoke(videoQuiz.Window, null);
         Check((bool)hasAux.GetValue(quiz.Window)! && !(bool)hasAux.GetValue(videoQuiz.Window)!,
             "[설계 43] aux close notice follows the window's actual aux close state");
@@ -529,13 +553,28 @@ internal static class Program
             Check(bare.Closed(), $"[설계 44] no visible exit (footer {footer}, button {button}): keyboard close is allowed");
         }
 
-        // VIDEO는 화면 출구가 없어도 완료 전 닫기 제한(A10)이 그대로 적용된다.
-        var video = OpenPopup("VIDEO", dto => { dto.ShowFooter = false; dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        // [TODO57] VIDEO도 화면 출구가 없으면 Overlay 예외로 키보드 닫기를 허용한다(시청 기준으로 다시 막지 않는다).
+        var video = OpenPopup("VIDEO", dto => { dto.ShowFooter = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        Check(!AltF4Handled(video.Window), "[TODO57] Overlay on VIDEO without a visible exit: Alt+F4 is not swallowed");
         SendMessage(Hwnd(video.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-        Check(!video.Closed(), "[설계 44] Overlay on VIDEO without footer still keeps the completion rule before watching");
-        Report(video.Video!, Snapshot(80));
-        SendMessage(Hwnd(video.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-        Check(video.Closed(), "[설계 44] Overlay on VIDEO without footer closes by keyboard after watching");
+        Check(video.Closed(), "[TODO57] Overlay on VIDEO without a visible exit closes by keyboard before watching");
+
+        // [TODO57] Overlay 켜짐 + 푸터 닫기 표시 VIDEO: 시청 전·후 모두 Alt+F4·WM_CLOSE를 막고 화면 버튼은 시청 기준을 따른다.
+        var guarded = OpenPopup("VIDEO", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; dto.ShowLater = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        Check(AltF4Handled(guarded.Window), "[TODO57] Overlay on VIDEO with a footer: Alt+F4 is swallowed before watching");
+        SendMessage(Hwnd(guarded.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(!guarded.Closed(), "[TODO57] Overlay on VIDEO with a footer: WM_CLOSE is cancelled before watching");
+        Report(guarded.Video!, Snapshot(80));
+        Check(AltF4Handled(guarded.Window), "[TODO57] Overlay on VIDEO with a footer: Alt+F4 stays swallowed after watching");
+        Click(guarded.Window, guarded.Find<Button>("FooterCloseButton"));
+        Check(guarded.Closed(), "[TODO57] Overlay on VIDEO with a footer: the footer close works after watching");
+
+        // [TODO57] Overlay 꺼짐 VIDEO: 시청 전에도 Alt+F4·WM_CLOSE가 닫는다(화면 닫기 버튼은 계속 비활성).
+        var loose = OpenPopup("VIDEO", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; dto.CompletionRatio = 0.8; }, overlay: false);
+        Check(!loose.Find<Button>("FooterCloseButton").IsEnabled && !AltF4Handled(loose.Window),
+            "[TODO57] Overlay off VIDEO before watching: close button disabled but Alt+F4 is not swallowed");
+        SendMessage(Hwnd(loose.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        Check(loose.Closed(), "[TODO57] Overlay off VIDEO before watching closes by WM_CLOSE");
 
         // QUIZ Overlay 켜짐: 제출 버튼이 보이므로 키보드 닫기 차단(통과해야 닫힘).
         var quiz = OpenPopup("QUIZ", null, overlay: true);
@@ -544,7 +583,7 @@ internal static class Program
         ShutdownClose(quiz.Window);
 
         // VIDEO+QUIZ 잠금 + 푸터 없음 + 재생 실패: 제출에 도달할 수 없으므로 키보드 닫기를 허용한다.
-        var stuck = OpenPopup("VIDEO_QUIZ", dto => { dto.ShowFooter = false; dto.AllowCloseBeforeComplete = false; dto.CompletionRatio = 0.8; }, overlay: true);
+        var stuck = OpenPopup("VIDEO_QUIZ", dto => { dto.ShowFooter = false; dto.CompletionRatio = 0.8; }, overlay: true);
         SendMessage(Hwnd(stuck.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
         Check(!stuck.Closed(), "[설계 44] locked VIDEO+QUIZ blocks keyboard close while the video can play");
         FailPlayback(stuck.Video!);
@@ -566,12 +605,13 @@ internal static class Program
         var owner = NewOwner();
         try
         {
-            foreach ((string type, bool overlay) in new[] { ("VIDEO", false), ("VIDEO_QUIZ", false), ("VIDEO", true) })
+            foreach ((string type, bool overlay) in new[] { ("VIDEO", false), ("VIDEO_QUIZ", false), ("VIDEO", true), ("VIDEO_QUIZ", true) })
             {
                 var manager = new Popup.Managers.PopupManager(owner);
                 var dto = DemoPopups(type).Single();
-                dto.AllowCloseBeforeComplete = false;
                 dto.CompletionRatio = 0.8;
+                dto.ShowFooter = true;
+                dto.ShowLater = false;
                 var options = PopupFactory.Create(dto);
                 options.UseBackgroundOverlay = overlay;
                 var saved = new List<Popup.Dtos.WpfResultItemDto>();
@@ -582,6 +622,14 @@ internal static class Program
                 SetPlaybackFailed(video, false);
                 Report(video, Snapshot(30, 30));
                 window.Close();
+                if (!overlay)
+                {
+                    // [TODO57] Overlay 꺼짐: 시청 전 외부 닫기가 허용되고 기존 결과 생성기의 시청 기록으로 남는다(LATER로 바꾸지 않음).
+                    Check(saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
+                        $"[TODO57] {type} overlay off: external close before watching saves VIDEO_WATCHED with watched seconds ({saved.Count})");
+                    Check(!manager.HasOpenPopups, $"[TODO57] {type} overlay off: external close cleans up the window");
+                    continue;
+                }
                 Check(saved.Count == 0 && window.IsVisible, $"[설계 44] {type} (overlay {overlay}) user close before watching saves nothing");
                 ShutdownClose(window);
                 Check(saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
@@ -775,7 +823,6 @@ internal static class Program
                 dto.ShowFooter = true;
                 dto.ShowLater = true;
                 dto.ShowDoNotShowAgain = true;
-                dto.AllowCloseBeforeComplete = false;
                 dto.CompletionRatio = 0.8;
                 var options = PopupFactory.Create(dto);
                 options.UseBackgroundOverlay = overlay;

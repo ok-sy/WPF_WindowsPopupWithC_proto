@@ -1115,7 +1115,6 @@ public class PopupService {
                 popup.hideDays(),
                 toBigDecimal(popup.completionRatio()),
                 "QUIZ".equals(popupType) ? toBigDecimal(popup.passingScore()) : null,
-                toYn(popup.allowCloseBeforeComplete()),
                 // [설계 37] TEXT의 제목·설명은 본문(textBlocks)으로 통합해 정규 컬럼을 비운다.
                 "TEXT".equals(popupType) ? null : contentText(content, contentTitleKey(popupType)),
                 "TEXT".equals(popupType) ? null : contentText(content, "description"),
@@ -1247,7 +1246,6 @@ public class PopupService {
                 popup.repeatDayOfMonth(), popup.hideDays(),
                 toNullableDouble(popup.completionRatio()),
                 toNullableDouble(popup.passingScore()),
-                isYes(popup.allowCloseBeforeCompleteYn()),
                 questions, content);
     }
 

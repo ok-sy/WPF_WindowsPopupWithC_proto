@@ -77,7 +77,6 @@ namespace Popup.Models
         public string PopupType { get; set; } = string.Empty;
 
         public double CompletionRatio { get; set; } = 1.0;
-        public bool AllowCloseBeforeComplete { get; set; } = true;
 
         public string Title { get; set; } = string.Empty;
         public FrameworkElement? Content { get; set; }

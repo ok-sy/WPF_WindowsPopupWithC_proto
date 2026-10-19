@@ -95,6 +95,7 @@
          * [설계 18 L-0 — C-7 삭제] content 안의 CompletionRatio·AllowCloseBeforeCompletion을 삭제했다.
          * 완료 비율과 완료 전 닫기 허용 여부는 계약 v3.0 §8.3대로 팝업 최상위 값
          * (PopupResponseDto.CompletionRatio·AllowCloseBeforeComplete)만 읽으며, content 쪽 값은 읽는 곳이 없었다.
+         * [TODO57] 최상위 AllowCloseBeforeComplete도 폐기했다(CompletionRatio만 남음).
          */
     }
 }

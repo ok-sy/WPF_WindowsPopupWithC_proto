@@ -906,7 +906,7 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// [기준 4] 로컬 추정 완료 여부. 실시간 서버 판정이 없어졌으므로 "완료 전 닫기 금지" 안내에만 쓴다.
+        /// [기준 4] 로컬 추정 완료 여부. 실시간 서버 판정이 없어졌으므로 화면 닫기 버튼의 시청 기준 가드에만 쓴다(TODO57).
         /// 최종 완료 판정은 결과 API 응답(서버)이 한다.
         /// </summary>
         public bool HasReachedCompletion(double requiredRatio)

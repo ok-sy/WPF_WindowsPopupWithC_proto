@@ -45,7 +45,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const bodyText = () => run('document.body.innerText');
   const click = label => run(`[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()===${JSON.stringify(label)}).pop().click()`);
 
-  // 1. 일반 VIDEO · allowCloseBeforeComplete=false: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구.
+  // 1. 일반 VIDEO: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구(TODO57 — 완료 전 닫기 허용 옵션 폐기로 항상 적용).
   await render('VIDEO');
   let b = await button('닫기');
   check(b && b.disabled && b.reason === '영상 0% 시청 · 기준 80% 이상 시청하면 닫을 수 있습니다' && b.role === 'status' && b.live === 'polite',
@@ -64,29 +64,28 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('닫기');
   check(b.disabled && b.reason.includes('기준 80.5%'), 'Fractional ratio text and judgment: ' + JSON.stringify(b));
 
-  // 2. 일반 VIDEO · allowCloseBeforeComplete=true: 항상 활성, 사유 없음.
+  // 2. [TODO57] 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
   await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('닫기');
-  check(!b.disabled && b.reason === null && !(await bodyText()).includes('닫을 수 있습니다'), 'VIDEO allow-close stays enabled: ' + JSON.stringify(b));
+  check(b.disabled && b.reason.startsWith('영상 0% 시청'), 'Legacy allow-close VIDEO stays blocked (TODO57): ' + JSON.stringify(b));
+  check(!(await bodyText()).includes('완료 전 닫기 허용'), 'Preview no longer mentions the removed allow-close option (TODO57)');
 
-  // 3. VIDEO+QUIZ 잠금: 진행 문구에 기준 % 포함, 제출 비활성 + 사유 연결, 보조 닫기 없음(완료 전 닫기 금지).
+  // 3. VIDEO+QUIZ 잠금: 진행 문구에 기준 % 포함, 제출 비활성 + 사유 연결, 보조 닫기 없음.
   await render('QUIZ', {}, {videoEnabled: true});
   b = await button('제출');
   check(b.disabled && b.reason === '영상 0% · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다' && b.role === 'status',
     'VIDEO+QUIZ lock progress: ' + JSON.stringify(b));
   // [TODO59] 영상과 퀴즈 사이 중간 안내는 없다(사유는 제출 영역 진행 문구 한 곳).
   check(!(await bodyText()).includes('하단 버튼이 활성화됩니다'), 'VIDEO+QUIZ has no middle notice (TODO59)');
-  check(await button('닫기') === null, 'VIDEO+QUIZ without allow-close has no secondary close');
+  check(await button('닫기') === null, 'VIDEO+QUIZ has no secondary close');
   await watch(50); b = await button('제출'); check(b.reason.startsWith('영상 50% · 기준 80%'), 'VIDEO+QUIZ lock progress follows the slider');
   await watch(80); b = await button('제출');
   check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
   check(!(await bodyText()).includes('퀴즈에 응답해 주세요'), 'VIDEO+QUIZ has no unlocked middle notice (TODO59)');
-  // allowCloseBeforeComplete=true면 보조 닫기 표시, showFooter=false면 숨김.
+  // [TODO57] 구 allowCloseBeforeComplete=true여도 VIDEO+QUIZ 보조 닫기는 없다(완료 전 이탈은 나중에 보기).
   await render('QUIZ', {allowCloseBeforeComplete: true}, {videoEnabled: true});
-  b = await button('닫기'); check(b && !b.disabled, 'VIDEO+QUIZ allow-close shows secondary close');
-  await watch(40); await click('닫기');
-  check(await run('window.closeCount') === 2 && (await button('제출')).reason.startsWith('영상 0%'), 'Secondary close resets the preview and runs onClose');
-  await render('QUIZ', {allowCloseBeforeComplete: true, showFooter: false}, {videoEnabled: true});
-  check(await button('닫기') === null, 'showFooter=false hides the secondary close');
+  check(await button('닫기') === null, 'Legacy allow-close VIDEO+QUIZ shows no secondary close (TODO57)');
+  await render('QUIZ', {showLater: true}, {videoEnabled: true});
+  b = await button('나중에 보기'); check(b && !b.disabled && (await button('제출')).disabled, 'Locked VIDEO+QUIZ leaves only the later button as an exit (TODO57)');
   // [설계 53-16·50-D3] 영상 영역에 보인 설명은 퀴즈 머리말에서 반복하지 않는다. 영상 설명을 숨기면 퀴즈 쪽에 한 번 보인다.
   const countText = t => run(`document.body.innerText.split(${JSON.stringify(t)}).length - 1`);
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명'});

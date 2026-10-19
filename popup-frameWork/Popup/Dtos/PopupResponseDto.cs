@@ -163,7 +163,8 @@ namespace Popup.Dtos
         public int? HideDays { get; set; }
         public double? CompletionRatio { get; set; }
         public double? PassingScore { get; set; }
-        public bool AllowCloseBeforeComplete { get; set; } = true;
+        /* [TODO57] allowCloseBeforeComplete를 폐기했다. 화면 버튼은 completionRatio, 외부 닫기는 useBackgroundOverlay,
+         * 완료 전 연기는 showLater로 판단한다. 구 서버가 필드를 보내도 System.Text.Json이 모르는 속성으로 무시한다. */
 
         /* 설문 제출 시 사용할 서버 문항 목록 */
         public System.Collections.Generic.List<SurveyQuestionDto> Questions

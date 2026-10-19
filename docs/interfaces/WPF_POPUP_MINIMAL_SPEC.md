@@ -104,7 +104,7 @@ ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. �
 | AllowSeek | 미제공 | N | `true` | 재생 위치 변경 허용. 생략 시 기존 탐색 가능 동작 |
 | AutoPlay | 미제공 | N | `false` | 자동 재생 |
 | IsLoop | 미제공 | N | `false` | 반복 재생 |
-| AllowCloseBeforeComplete | 미제공 | N | `true` | 팝업 최상위 값. 완료 전 닫기 허용 |
+| ~~AllowCloseBeforeComplete~~ | 폐기(TODO57) | - | - | 미제공 항목이었고 전체 구현에서도 폐기. 새 WPF는 읽지 않는다 |
 | SizeMode=FULLSCREEN | 지원 가능 | N | `FIXED` | 팝업 Window 자체 전체화면. AllowFullScreen과 별개 |
 
 ### 4.4 SURVEY / QUIZ

@@ -36,7 +36,7 @@ class PopupAdminQuestionsTest {
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
                 560.0, 420.0, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, false, 10L, "FIXED",
-                null, null, null, null, null, 2.0, true, questions,
+                null, null, null, null, null, 2.0, questions,
                 Map.of("useBackgroundOverlay", true, "backgroundOverlayOpacity", .45));
     }
 
@@ -98,7 +98,7 @@ class PopupAdminQuestionsTest {
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
                 ("ORIGINAL".equals(imageSizeMode) ? 560.0 : null), ("ORIGINAL".equals(imageSizeMode) ? 420.0 : null), .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, false, null, "FIXED",
-                null, null, null, null, null, null, true, List.of(),
+                null, null, null, null, null, null, List.of(),
                 Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
     }
 
@@ -125,7 +125,7 @@ class PopupAdminQuestionsTest {
                 topWidth, base.height(), base.widthRatio(), base.heightRatio(), base.minimumWidth(), base.minimumHeight(),
                 base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
                 base.showDoNotShowAgain(), base.showLater(), null, base.periodMode(), null, null, null, null, null, null,
-                true, List.of(), content);
+                List.of(), content);
     }
 
     @Test void imageScreenPolicyAllowsMinimumAboveStoredLegacyMaximum() {
@@ -134,7 +134,7 @@ class PopupAdminQuestionsTest {
                 base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
                 base.width(), base.height(), base.widthRatio(), base.heightRatio(), 2000, 1500,
                 1200, 900, base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(), base.showLater(),
-                null, base.periodMode(), null, null, null, null, null, null, true, List.of(), base.content());
+                null, base.periodMode(), null, null, null, null, null, null, List.of(), base.content());
         service.saveAdminPopup(large, false, List.of(), "admin");
         verify(mapper).upsertAdminPopupNotice(any());
     }
@@ -180,7 +180,7 @@ class PopupAdminQuestionsTest {
                     base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(), base.showLater(),
                     base.questionTemplateId(), base.periodMode(), base.repeatInterval(), base.repeatDayOfWeek(),
                     base.repeatDayOfMonth(), base.hideDays(), base.completionRatio(), base.passingScore(),
-                    base.allowCloseBeforeComplete(), base.questions(), content);
+                    base.questions(), content);
         };
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 withContent.apply(Map.of("descriptionPosition", "LEFT")), false, List.of(), "admin"));
@@ -202,7 +202,7 @@ class PopupAdminQuestionsTest {
                     base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(), base.showLater(),
                     base.questionTemplateId(), base.periodMode(), base.repeatInterval(), base.repeatDayOfWeek(),
                     base.repeatDayOfMonth(), days, base.completionRatio(), base.passingScore(),
-                    base.allowCloseBeforeComplete(), base.questions(), base.content());
+                    base.questions(), base.content());
         };
         for (int days : new int[]{0, 3651}) {
             assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withHideDays.apply(days), false, List.of(), "admin"));

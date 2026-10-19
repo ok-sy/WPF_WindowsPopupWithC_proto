@@ -51,7 +51,7 @@ function createDefaultPopup(): AdminPopupDetail {
     showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false, showLater: false,
     questionTemplateId: null, periodMode: 'FIXED', repeatInterval: null,
     repeatDayOfWeek: null, repeatDayOfMonth: null, hideDays: null,
-    completionRatio: null, passingScore: null, allowCloseBeforeComplete: true,
+    completionRatio: null, passingScore: null,
     questions: [],
     content: {
       description: '', plainText: '',
@@ -478,7 +478,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)} />
+                {/* [TODO57] 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
+                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)}
+                  helperText={isVideoQuiz ? '시청 기준 전에는 퀴즈 입력·제출이 잠깁니다.' : '시청 기준 전에는 닫기 버튼이 비활성입니다.'} />
                 <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
               </Box>
             </Stack>}
@@ -537,9 +539,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <FormControlLabel control={<Switch size="small" checked={popup.showCloseButton} onChange={(_, value) => updatePopup('showCloseButton', value)} />} label="닫기 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
               <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
-              {/* [TODO52-2] 나중에 보기: 누르면 완료 없이 닫히고 다음 조회 주기에 다시 표시된다(모든 유형, 완료 전 닫기 잠금 중에도 가능). */}
+              {/* [TODO52-2] 나중에 보기: 누르면 완료 없이 닫히고 다음 조회 주기에 다시 표시된다(모든 유형, 완료 기준 전에도 가능).
+                  [TODO57] 완료 전 닫기 허용 옵션을 폐기해 완료 기준 전 화면 이탈 버튼은 이것뿐이다. */}
               <FormControlLabel control={<Switch size="small" checked={Boolean(popup.showLater)} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showLater', value)} />} label="나중에 보기" />
             </Box>
+            {popup.showFooter && <Typography variant="caption" color="text.secondary">나중에 보기는 완료 처리 없이 닫고 다음 조회 주기에 다시 표시합니다. 완료 기준(영상 시청·퀴즈 통과) 전에 화면 버튼으로 나갈 수 있는 유일한 방법입니다.</Typography>}
             {isSurvey ? (
               <TextField select size="small" label="푸터 버튼 동작" value="SUBMIT" disabled
                 helperText="설문·퀴즈는 제출 버튼으로 고정됩니다.">
@@ -568,7 +572,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" fontWeight={700}>배경 클릭 차단</Typography>
-                <Typography variant="caption" color="text.secondary">팝업이 열려 있는 동안 모든 모니터의 배경 클릭을 막고 배경을 어둡게 표시합니다. 키보드 전환은 차단하지 않습니다.</Typography>
+                <Typography variant="caption" color="text.secondary">팝업이 열려 있는 동안 모든 모니터의 배경 클릭을 막고 배경을 어둡게 표시합니다. 화면에 닫기·제출 버튼이 있으면 Alt+F4 등 키보드·외부 닫기도 막습니다(완료 기준 충족 후에도 동일). 끄면 완료 기준 전이라도 Alt+F4로 닫을 수 있고 시청 기록은 그대로 저장됩니다. 키보드 전환은 차단하지 않습니다.</Typography>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <FormControlLabel control={<Switch size="small" checked={useBackgroundOverlay} onChange={(_, value) => updateContent('useBackgroundOverlay', value)} />} label="사용" />
                   <TextField size="small" type="number" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} disabled={!useBackgroundOverlay}
@@ -613,7 +617,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   ['showDescription', '영상 설명 표시'], ['showControls', '컨트롤 표시'], ['allowFullScreen', '전체화면 허용'],
                   ['allowPlaybackRateChange', '배속 변경 허용'], ['allowSeek', '재생 위치 변경 허용'], ['autoPlay', '자동 재생'], ['isLoop', '반복 재생'],
                 ].map(([key, label]) => <FormControlLabel key={key} control={<Switch size="small" checked={popup.content[key] == null ? key !== 'autoPlay' && key !== 'isLoop' : popup.content[key] === true} onChange={(_, value) => updateContent(key, value)} />} label={label} />)}
-                <FormControlLabel control={<Switch size="small" checked={popup.allowCloseBeforeComplete} onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)} />} label="완료 전 닫기 허용" />
               </Box>
                 </>}
             <Divider /><Typography variant="subtitle1" fontWeight={700}>위치 설정</Typography>

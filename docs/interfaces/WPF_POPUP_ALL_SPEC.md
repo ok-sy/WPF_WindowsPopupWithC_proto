@@ -62,7 +62,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | BodyFontSize | 지원 | N | `null` | 최상위. 미지정 시 View 기본. 지원 View에 본문 크기 전달 |
 | FooterFontSize | 지원 | N | `null` | 최상위. 미지정 시 Footer 14. 지정 시 10~40 보정 |
 | CompletionRatio | 지원 | N | `null` → `1.0` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준 |
-| AllowCloseBeforeComplete | 지원 | N | `true` | 영상 완료 전 종료 허용 정책. Header X는 없음. `false`면 VIDEO·VIDEO+QUIZ 모두 시청 기준 전 푸터 버튼·Alt+F4 닫기를 막는다(재생 실패·앱 종료는 예외). 일반 VIDEO 푸터 닫기는 비활성으로 두고 시청 %·기준 사유를 표시한다(설계 43). `true`인 VIDEO+QUIZ는 푸터에 보조 닫기를 표시한다 |
+| ~~AllowCloseBeforeComplete~~ | 폐기(TODO57) | - | - | 새 WPF는 읽지 않는다(구 서버가 보내도 무시). 화면 버튼은 `CompletionRatio`, Alt+F4 등 외부 닫기는 `UseBackgroundOverlay`, 완료 전 연기는 `ShowLater`로 판단한다. 구 WPF는 필드가 없으면 기본 `true`(완료 전 닫기 허용)로 동작하므로 서버 필드 제거 전 새 WPF 배포를 확인한다 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
 
 Footer 버튼 표시는 서버 응답(Java `WpfPopupItem`)과 C# 모두 `showFooterButton` 하나만 사용한다. legacy `showCloseButton` 수신 별칭은 삭제했다(설계 29-11). 관리자 API·DB는 기존 이름(showCloseButton·SHOW_CLOSE_BUTTON_YN)을 유지하고 WPF 응답 조립 시 변환한다.
@@ -74,17 +74,18 @@ Footer가 있으면 공통 제출 버튼, 없으면 콘텐츠 내부 제출 버�
 완료 조건 버튼 표현(설계 43, 계약 필드 추가 없음):
 
 - 버튼은 숨기지 않고 **비활성 + 사유 표시**로 표현한다. 사유 문구는 Footer 진행 문구 위치에 표시하며 스크린리더 Live Region(Polite)이고, 비활성 버튼의 HelpText에도 같은 사유를 둔다.
-- 일반 VIDEO(`AllowCloseBeforeComplete=false`): 기준 미달이면 닫기 비활성 + `영상 {현재}% 시청 · 기준 {기준}% 이상 시청하면 닫을 수 있습니다`. 표시 %는 내림이라 비활성인데 기준 이상으로 보이지 않는다. 기준 도달·재생 실패 시 활성. 예전 '필수 영상 시청' 안내창은 없앴다.
+- 일반 VIDEO(TODO57 — 항상 적용): 기준 미달이면 닫기 비활성 + `영상 {현재}% 시청 · 기준 {기준}% 이상 시청하면 닫을 수 있습니다`. 표시 %는 내림이라 비활성인데 기준 이상으로 보이지 않는다. 기준 도달·재생 실패 시 활성. 예전 '필수 영상 시청' 안내창은 없앴다.
 - VIDEO+QUIZ 잠금 중: 제출·다시 보지 않기 비활성(기존 계약) + `영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`. 해제 뒤에는 필수 문항 진행 문구로 바뀌고 첫 문항으로 포커스를 옮긴다.
 - SURVEY/QUIZ 제출은 필수 미응답일 때만 비활성이다. 통과 점수로 제출을 막지 않는다(채점 전 교착 방지). QUIZ 불합격 안내에는 점수와 틀린 채점 문항 번호(예: `틀린 문항: 2, 4번`)를 표시한다. 결과 계약(`score`·`passed`)은 바뀌지 않는다.
-- 보조 닫기(제출 버튼과 구분되는 밝은 버튼)는 정책상 제출 전 이탈이 허용될 때만 Footer에 표시한다. VIDEO+QUIZ는 `AllowCloseBeforeComplete=true`(잠금 여부 무관) 또는 재생 실패, QUIZ(영상 없음)는 불합격 1회 이후이면서 Background Overlay가 꺼진 경우다. SURVEY·TEXT·IMAGE·VIDEO와 `ShowFooter=false`에서는 표시하지 않는다. 결과는 Alt+F4 닫기와 같은 CLOSED(영상은 VIDEO_WATCHED)다.
-- 나중에 보기(TODO52-2): `ShowFooter`·`ShowLater`가 모두 true면 Footer에 "나중에 보기" 버튼을 둔다. 누르면 결과 LATER로 닫히며 다시 보지 않기 체크·영상 시청량보다 우선한다(hideDays·video 미포함). 완료 전 닫기 잠금(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)과 Background Overlay 중에도 누를 수 있고, Overlay의 화면 출구로 인정한다. 서버는 완료 처리 없이 다음 조회 주기까지 유예한다.
+- 보조 닫기(제출 버튼과 구분되는 밝은 버튼)는 정책상 제출 전 이탈이 허용될 때만 Footer에 표시한다. VIDEO+QUIZ는 재생 실패(TODO57 — 완료 전 닫기 허용 기반 표시 폐기), QUIZ(영상 없음)는 불합격 1회 이후이면서 Background Overlay가 꺼진 경우다. SURVEY·TEXT·IMAGE·VIDEO와 `ShowFooter=false`에서는 표시하지 않는다. 결과는 Alt+F4 닫기와 같은 CLOSED(영상은 VIDEO_WATCHED)다.
+- 나중에 보기(TODO52-2): `ShowFooter`·`ShowLater`가 모두 true면 Footer에 "나중에 보기" 버튼을 둔다. 누르면 결과 LATER로 닫히며 다시 보지 않기 체크·영상 시청량보다 우선한다(hideDays·video 미포함). 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)과 Background Overlay 중에도 누를 수 있고, Overlay의 화면 출구로 인정한다. 서버는 완료 처리 없이 다음 조회 주기까지 유예한다. 완료 기준 전 화면 버튼으로 나가는 수단은 이 버튼뿐이다(TODO57).
 
 Background Overlay와 닫기 경로(설계 44, 고정 동작·관리자 옵션 없음):
 
 - `UseBackgroundOverlay=true`: Footer 닫기·보조 닫기·바로가기·제출 완료 후 닫기 등 앱이 시작한 닫기와 앱 종료(트레이 종료·426 종료·Windows 로그오프)만 허용하고 Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 무시한다.
-- 교착 방지: 화면에 닫기·제출 수단이 하나도 없으면(TEXT/IMAGE/VIDEO의 `ShowFooter=false` 또는 `ShowFooterButton=false`, 푸터 없는 VIDEO+QUIZ가 잠긴 채 재생 실패) 키보드 닫기를 막지 않는다. VIDEO의 완료 전 닫기 제한은 그대로 적용한다. SURVEY/QUIZ는 제출 버튼이 항상 보이므로 제출로 닫는다(QUIZ는 통과해야 닫힘).
-- `UseBackgroundOverlay=false`: 기존 동작(Alt+F4 허용, VIDEO 제한은 `AllowCloseBeforeComplete`).
+- 교착 방지: 화면에 닫기·제출 수단이 하나도 없으면(TEXT/IMAGE/VIDEO의 `ShowFooter=false` 또는 `ShowFooterButton=false`, 푸터 없는 VIDEO+QUIZ가 잠긴 채 재생 실패) 키보드 닫기를 막지 않는다. 시청 기준으로 다시 막지 않는다(TODO57). SURVEY/QUIZ는 제출 버튼이 항상 보이므로 제출로 닫는다(QUIZ는 통과해야 닫힘).
+- `UseBackgroundOverlay=false`: Alt+F4 등 외부 닫기를 허용한다. 시청 기준 전 VIDEO·VIDEO+QUIZ도 닫히며 결과는 시청 기록(VIDEO_WATCHED)으로 남고 LATER로 바꾸지 않는다(TODO57).
+- `UseBackgroundOverlay=true`는 시청 기준을 채운 뒤에도 Alt+F4를 자동 허용하지 않는다. 강제 시청은 Overlay 켜짐 + 정상 푸터 + `ShowLater=false` 조합이며 재생 실패·앱 종료 예외는 남는다(TODO57).
 - Esc는 팝업을 닫지 않는다(아무 동작 없음). 영상 전체화면 해제·공통 안내창의 Esc는 그대로다.
 - 앱 종료 중에는 닫기 제한을 적용하지 않으며 결과(CLOSED/VIDEO_WATCHED·시청량)를 큐에 저장한다. 창 제목은 팝업 제목이며(Alt+Tab·스크린리더) 첫 포커스는 SURVEY/QUIZ의 첫 입력 또는 본문의 첫 포커스 가능 요소다. Enter·Space로 의도치 않게 닫히지 않도록 Footer 버튼에는 첫 포커스와 IsDefault를 두지 않는다.
 Footer 버튼 이름은 CLOSE '닫기', LINK_AND_CLOSE '바로가기', SUBMIT '제출'이다.
@@ -168,7 +169,7 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 | AutoPlay | 지원 | N | `false` | 자동 재생 |
 | IsLoop | 지원 | N | `false` | 반복 재생 |
 
-CompletionRatio와 AllowCloseBeforeComplete는 최상위 필드다. content 안에 중복 정의하지 않는다.
+CompletionRatio는 최상위 필드다(AllowCloseBeforeComplete는 TODO57에서 폐기). content 안에 중복 정의하지 않는다.
 시청 기준 도달은 일반 VIDEO·VIDEO+QUIZ·Demo 모두 서버와 같은 식(누적 시청/길이를 소수점 4자리에서 내림, 1 상한 ≥ CompletionRatio)으로 판정한다(설계 53-16). VIDEO+QUIZ는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않는다.
 시청량은 단순 재생 위치와 구분해 누적하며 완료 기준은 콘텐츠·결과에 연결한다.
 로컬 MediaElement와 WebView2 HTML5 경로의 공통 컨트롤·진행바·버퍼 표시·hover 표시를 지원한다.

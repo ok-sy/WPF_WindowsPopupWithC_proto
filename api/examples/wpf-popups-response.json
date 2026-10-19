@@ -25,7 +25,6 @@
     "popupPosition": "CENTER",
     "showDoNotShowAgain": true,
     "hideDays": 7,
-    "allowCloseBeforeComplete": true,
     "questions": [],
     "content": {
       "plainText": "서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",

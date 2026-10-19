@@ -51,7 +51,6 @@ public record PopupEntity(
         Integer repeatDayOfMonth,
         Integer hideDays,
         BigDecimal completionRatio,
-        BigDecimal passingScore,
-        String allowCloseBeforeCompleteYn
+        BigDecimal passingScore
 ) {
 }

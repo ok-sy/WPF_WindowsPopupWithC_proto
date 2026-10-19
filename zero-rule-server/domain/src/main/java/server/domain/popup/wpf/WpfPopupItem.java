@@ -70,7 +70,6 @@ public record WpfPopupItem(
         boolean showDoNotShowAgain,
         boolean showLater,
         Integer hideDays,
-        boolean allowCloseBeforeComplete,
         Double completionRatio,
         Double passingScore,
         List<PopupQuestionDto> questions,
@@ -103,7 +102,7 @@ public record WpfPopupItem(
                 dto.showHeader(), dto.showCloseButton(), dto.showFooter(), footerAction, footerLinkUrl,
                 useOverlay, overlayOpacity, position, headerFontSize, bodyFontSize, footerFontSize,
                 dto.showDoNotShowAgain(), dto.showLater(),
-                dto.hideDays(), dto.allowCloseBeforeComplete(), dto.completionRatio(),
+                dto.hideDays(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
                 dto.questions(), content);
     }
@@ -114,7 +113,7 @@ public record WpfPopupItem(
                 widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
                 showHeader, showFooterButton, showFooter, footerAction, footerLinkUrl,
                 useBackgroundOverlay, backgroundOverlayOpacity, popupPosition, headerFontSize, bodyFontSize, footerFontSize,
-                showDoNotShowAgain, showLater, hideDays, allowCloseBeforeComplete, completionRatio, passingScore, questions, content);
+                showDoNotShowAgain, showLater, hideDays, completionRatio, passingScore, questions, content);
     }
 
     /**

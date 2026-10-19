@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-07 — TODO57 완료 전 닫기 옵션 폐기 및 Overlay·완료·나중에 보기 역할 분리
+
+- 이유: 완료 전 이탈 허용(allowCloseBeforeComplete)과 나중에 보기의 역할 중복을 정리하고, 화면 버튼은 완료 기준, 외부 닫기는 Overlay, 완료 전 연기는 showLater로 판단하도록 책임 분리(TODO57).
+- 변경: WPF — DTO·PopupOptions·Factory에서 필드 제거(구 JSON 필드는 무시). 일반 VIDEO 닫기 버튼은 시청 기준 전 항상 비활성, VIDEO+QUIZ 보조 닫기는 재생 실패 때만 표시. OnClosing의 시청 기준 창 닫기 취소를 없애 외부 닫기는 Overlay 정책(출구 없음·앱 종료 예외 유지)으로만 판단 — Overlay 꺼짐은 시청 전에도 닫히고 VIDEO_WATCHED로 기록, 켜짐은 시청 후에도 Alt+F4 차단. Demo 상세옵션 항목 삭제, VIDEO·VIDEO+QUIZ 샘플에 showLater 적용. 서버 — PopupResponseDto·WpfPopupItem·AdminPopupSaveCommand·PopupEntity·PopupService·PopupMapper에서 필드 제거, DB 컬럼 ALLOW_CLOSE_BEFORE_COMPLETE_YN은 존치·미사용(DROP 없음). 관리자 웹 — 모델·편집 스위치 삭제, 완료 비율·나중에 보기·배경 클릭 차단 설명을 새 역할로 변경, 미리보기 VIDEO 잠금 항상 적용·VIDEO+QUIZ 보조 닫기 제거. 명세(인터페이스·ALL·MINIMAL)·옵션 가이드 2종·미리보기 정합 문서·예제 JSON·Excel 정의서(폐기 표기·Sample JSON) 갱신, Word 재생성·PDF 재출력. TODO57에 영향 경로·구 클라이언트 호환(구 WPF는 필드 누락 시 true로 동작 → 새 WPF 배포 후 서버 반영) 기록.
+- 주요 파일: popup-frameWork/Popup/Dtos/PopupResponseDto.cs, Models/PopupOptions.cs, Factories/PopupFactory.cs, Views/Windows/PopupWindow.xaml(.cs), Views/Contents/VideoPopupView.xaml.cs(주석), DemoOptionsWindow.Fields.cs, Services/DemoPopupDataService.cs, scripts/PopupWindowTests/Program.cs, zero-rule-server/domain/.../PopupResponseDto.java·PopupEntity.java·AdminPopupSaveCommand.java·wpf/WpfPopupItem.java, service/core/.../PopupService.java(+테스트 3종), repo/core/.../PopupMapper.xml, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx·PopupPreview.tsx, scripts/verify-completion-ux-43(.cjs·-entry.tsx), docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, api/examples/wpf-popups-response.json, docs/design/57_완료전닫기옵션_폐기_역할분리_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 경고·오류 0. PopupWindowTests 329건 통과(VIDEO·VIDEO+QUIZ × Overlay ON/OFF × 시청 전/후, 구 필드 true/false 무시, 재생 실패, 출구 없음, 앱 종료, Overlay 꺼짐 외부 닫기 결과 VIDEO_WATCHED, LATER 회귀), ApiDemoTests 69건·RichTextTests 102건·CornerWindowTests 761건 통과. 서버 `gradlew test --offline --continue` 139건 통과(Oracle 연동 8건 skip — DB 접속 정보 미설정). 웹 tsc 오류 0·변경 파일 eslint 통과, verify-completion-ux-43 56건 통과. 예제 JSON·Excel Sample JSON 파싱, Excel 패키지 파트 손실 없음 확인. 미실행: 실제 Windows 버튼·Alt+F4·시스템 메뉴 실조작, 관리자 웹 실화면 저장·재조회, 원격 개발 서버·DB 반영과 구 WPF 조합 확인, 로컬 전용 BehaviorTests 갱신.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-19-06 — TODO59 VIDEO+QUIZ 중간 notice 제거
 
 - 이유: 영상 설명 아래·퀴즈 위의 시스템 안내가 하단 시청/제출 안내와 중복돼 제거(TODO59).

@@ -38,7 +38,8 @@ public record PopupResponseDto(
         Integer hideDays,
         Double completionRatio,
         Double passingScore,
-        boolean allowCloseBeforeComplete,
+        // [TODO57] allowCloseBeforeComplete 폐기: 화면 버튼은 completionRatio, 외부 닫기는 useBackgroundOverlay, 연기는 showLater.
+        // 구 관리자 웹이 보내는 같은 이름 필드는 알 수 없는 속성으로 무시된다. DB 컬럼(ALLOW_CLOSE_BEFORE_COMPLETE_YN)은 존치·미사용.
         List<PopupQuestionDto> questions,
         Map<String, Object> content
 ) {

@@ -11,7 +11,7 @@ const quizQuestions = [1, 2, 3, 4].map(n => ({questionId: n, title: `문항 ${n}
 (window as any).renderPopup = (popupType: string, overrides: Record<string, unknown> = {}, content: Record<string, unknown> = {}) => {
   const popup = {popupId: 'P43', popupType, title: '완료 조건', sizeMode: 'FIXED', width: 640, height: 600, widthRatio: .7, heightRatio: .75,
     minimumWidth: 100, minimumHeight: 100, maximumWidth: 1600, maximumHeight: 900, showHeader: true, showCloseButton: true, showFooter: true,
-    showDoNotShowAgain: false, completionRatio: .8, passingScore: 100, allowCloseBeforeComplete: false,
+    showDoNotShowAgain: false, completionRatio: .8, passingScore: 100,
     questions: popupType === 'QUIZ' ? quizQuestions : [],
     ...overrides,
     content: {videoTitle: '영상', surveyTitle: '퀴즈', videoUrl: 'https://example.com/a.mp4', ...content}} as any;

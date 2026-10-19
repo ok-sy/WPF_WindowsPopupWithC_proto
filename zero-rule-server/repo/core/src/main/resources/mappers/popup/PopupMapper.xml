@@ -177,8 +177,7 @@
             n.REPEAT_DAY_OF_MONTH,
             n.HIDE_DAYS,
             n.COMPLETION_RATIO,
-            n.PASSING_SCORE,
-            n.ALLOW_CLOSE_BEFORE_COMPLETE_YN
+            n.PASSING_SCORE
     </sql>
 
     <!--
@@ -196,6 +195,7 @@
     </select>
 
     <!-- popupId가 이미 존재하면 생성 정보는 유지하고 수정 정보만 갱신한다 (원본 ON CONFLICT → MERGE). -->
+    <!-- [TODO57] ALLOW_CLOSE_BEFORE_COMPLETE_YN은 폐기 옵션이라 읽고 쓰지 않는다(컬럼 존치, 신규 행은 DB 기본값 'Y'). -->
     <update id="upsertAdminPopupNotice">
         MERGE INTO ${popupSchemaPrefix}POPUP_NOTICE n
         USING (SELECT #{popupId} AS POPUP_ID FROM DUAL) src
@@ -230,7 +230,6 @@
             n.HIDE_DAYS                      = #{hideDays},
             n.COMPLETION_RATIO               = #{completionRatio},
             n.PASSING_SCORE                  = #{passingScore},
-            n.ALLOW_CLOSE_BEFORE_COMPLETE_YN = #{allowCloseBeforeCompleteYn},
             n.UPDATED_BY                     = #{auditUser},
             n.UPDATED_AT                     = <include refid="nowKst"/>
         WHEN NOT MATCHED THEN INSERT
@@ -241,7 +240,7 @@
             POPUP_WIDTH, POPUP_HEIGHT, WIDTH_RATIO, HEIGHT_RATIO,
             MINIMUM_WIDTH, MINIMUM_HEIGHT, MAXIMUM_WIDTH, MAXIMUM_HEIGHT,
             SHOW_HEADER_YN, SHOW_CLOSE_BUTTON_YN, SHOW_FOOTER_YN, SHOW_DO_NOT_SHOW_AGAIN_YN, SHOW_LATER_YN,
-            HIDE_DAYS, COMPLETION_RATIO, PASSING_SCORE, ALLOW_CLOSE_BEFORE_COMPLETE_YN,
+            HIDE_DAYS, COMPLETION_RATIO, PASSING_SCORE,
             CREATED_BY, UPDATED_BY
         )
         VALUES
@@ -254,7 +253,7 @@
             #{popupWidth}, #{popupHeight}, #{widthRatio}, #{heightRatio},
             #{minimumWidth}, #{minimumHeight}, #{maximumWidth}, #{maximumHeight},
             #{showHeaderYn}, #{showCloseButtonYn}, #{showFooterYn}, #{showDoNotShowAgainYn}, #{showLaterYn},
-            #{hideDays}, #{completionRatio}, #{passingScore}, #{allowCloseBeforeCompleteYn},
+            #{hideDays}, #{completionRatio}, #{passingScore},
             #{auditUser}, #{auditUser}
         )
     </update>
@@ -409,7 +408,6 @@
             <arg column="HIDE_DAYS" javaType="java.lang.Integer"/>
             <arg column="COMPLETION_RATIO" javaType="java.math.BigDecimal"/>
             <arg column="PASSING_SCORE" javaType="java.math.BigDecimal"/>
-            <arg column="ALLOW_CLOSE_BEFORE_COMPLETE_YN" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 

@@ -224,7 +224,7 @@ namespace Popup.Services
                     "showFooterButton": true,
                     "showFooter": true,
                     "showDoNotShowAgain": false,
-                    "allowCloseBeforeComplete": true,
+                    "showLater": true,
                     "content": {
                       "videoTitle": "Demo Mode 교육 영상",
                       "videoUrl": "LOCAL_DEMO_VIDEO",
@@ -612,7 +612,8 @@ namespace Popup.Services
             videoQuiz["title"] = "동영상 + 퀴즈";
             videoQuiz["height"] = 850;
             videoQuiz["completionRatio"] = 0.8;
-            videoQuiz["allowCloseBeforeComplete"] = true;
+            // [TODO57] 완료 전 닫기 허용을 폐기했다. 시청 기준 전 이탈은 나중에 보기로 확인한다.
+            videoQuiz["showLater"] = true;
             videoQuiz["showFooter"] = true;
             videoQuiz["showFooterButton"] = true;
             videoQuiz["content"]!["videoEnabled"] = true;

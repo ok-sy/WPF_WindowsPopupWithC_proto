@@ -473,8 +473,8 @@ export default function PopupPreview({
    */
   const watchReached = previewWatchPercent / 100 >= requiredRatio;
   const videoUnlocked = !isVideoQuiz || watchReached;
-  // [설계 43] 일반 VIDEO는 allowCloseBeforeComplete=false이고 시청 기준 미달이면 Footer 버튼을 비활성화한다.
-  const videoCloseBlocked = isPlainVideo && !popup.allowCloseBeforeComplete && !watchReached;
+  // [설계 43·TODO57] 일반 VIDEO는 시청 기준 미달이면 Footer 버튼을 비활성화한다(완료 전 닫기 허용 옵션 폐기로 항상 적용).
+  const videoCloseBlocked = isPlainVideo && !watchReached;
   const linkAction = popup.content.footerAction === 'LINK_AND_CLOSE';
   const footerLink = normalizePopupLink(String(popup.content.footerLinkUrl ?? ''));
   const resetPreview = () => {
@@ -548,21 +548,19 @@ export default function PopupPreview({
       ? `영상 ${previewWatchPercent}% · 기준 ${requiredPercent}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`
       : progress;
   const videoReason =
-    isPlainVideo && !popup.allowCloseBeforeComplete
+    isPlainVideo
       ? watchReached
         ? '시청 기준을 충족했습니다'
         : `영상 ${previewWatchPercent}% 시청 · 기준 ${requiredPercent}% 이상 시청하면 닫을 수 있습니다`
       : '';
   /*
-   * [설계 43] 보조 "닫기" 버튼: VIDEO+QUIZ는 완료 전 닫기 허용일 때(WPF의 재생 실패 조건은 미리보기에 없어 생략),
+   * [설계 43] 보조 "닫기" 버튼: VIDEO+QUIZ는 WPF에서 재생 실패 때만 보이므로 미리보기에는 없다(TODO57 — 완료 전 닫기 허용 폐기),
    * QUIZ(영상 없음)는 미달 판정을 한 번 받은 뒤 배경 어둡기를 쓰지 않을 때만. SURVEY는 없고 showFooter=false면 숨긴다.
    * 미리보기에서는 응답·시청 비율을 초기화하고 "실제 크기로 보기" 모달이면 닫는다.
    */
   const showSecondaryClose =
     popup.showFooter &&
-    (isVideoQuiz
-      ? popup.allowCloseBeforeComplete
-      : popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled);
+    !isVideoQuiz && popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled;
   const submitDisabled = !videoUnlocked || remaining > 0 || !popup.questions.length;
   // [TODO52-2] "나중에 보기"는 푸터가 보일 때 showLater로만 표시하고, 완료 전 닫기 잠금(시청·제출 조건)과 관계없이 누를 수 있다.
   const showLaterButton = popup.showFooter && Boolean(popup.showLater);
@@ -633,8 +631,7 @@ export default function PopupPreview({
         {(isVideoQuiz || isPlainVideo) && (
           <Box sx={{ px: 2, pt: 1, bgcolor: surveyColors.card, flexShrink: 0 }}>
             <Typography variant="caption">
-              미리보기 시청 비율: {previewWatchPercent}% (완료 기준 {requiredPercent}%
-              {isPlainVideo && popup.allowCloseBeforeComplete ? ' · 완료 전 닫기 허용' : ''})
+              미리보기 시청 비율: {previewWatchPercent}% (완료 기준 {requiredPercent}%)
             </Typography>
             <Slider
               size="small"

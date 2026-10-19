@@ -38,7 +38,6 @@ public record AdminPopupSaveCommand(
         Integer hideDays,
         BigDecimal completionRatio,
         BigDecimal passingScore,
-        String allowCloseBeforeCompleteYn,
         String contentTitle,
         String description,
         String contentBody,
