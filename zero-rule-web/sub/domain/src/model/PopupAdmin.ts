@@ -11,6 +11,8 @@ export interface PopupOption {
   text: string;
   sortOrder: number;
   isCorrect?: boolean | null;
+  /** [TODO55] 선택지 표시 문구 서식(TEXT textBlocks와 같은 문단·구간 배열). 있으면 서버가 text를 여기서 파생한다. */
+  textBlocks?: unknown[] | null;
 }
 
 export interface PopupQuestion {
@@ -26,6 +28,9 @@ export interface PopupQuestion {
   options: PopupOption[];
   correctAnswer?: string | null;
   answerMatchMode?: 'EXACT' | 'CONTAINS' | null;
+  /** [TODO55] 문항 제목·설명 서식. 있으면 서버가 title·description을 여기서 파생한다. */
+  titleBlocks?: unknown[] | null;
+  descriptionBlocks?: unknown[] | null;
 }
 
 /** 관리자 목록 그리드 한 행에서 사용하는 요약 정보다. */

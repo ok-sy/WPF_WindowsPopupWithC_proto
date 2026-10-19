@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-10-13 (KST)
 - 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
+- 2026-10-19 보완(버전 번호 3.7 유지, TODO55-3·55-4): §8.4.1 설문·퀴즈 서식 필드를 서버 저장·관리자 편집까지 반영. 서식이 있으면 서버가 일반 문자열을 서식에서 파생하고(독립 편집 금지), 빈 서식은 저장하지 않는다. 문항·선택지 서식은 문항 템플릿 행(DB 17 스크립트)에, 콘텐츠 제목·설명 서식은 CONTENT_OPTIONS에 저장. 필드 이름·위치는 초안과 같다. 산출물(Excel·Word·PDF)은 아직 반영하지 않았다.
 - 2026-10-18 초안(TODO55, 확정 전 · 서버 미반영): SURVEY·QUIZ 서식 필드 `content.surveyTitleBlocks`·`content.descriptionBlocks`·`questions[].titleBlocks`·`questions[].descriptionBlocks`·`options[].textBlocks`(§8.4.1). WPF 표시만 구현했으며 서버 저장·관리자 편집은 인계 대기. 산출물(Excel·Word·PDF)에는 확정 후 반영.
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
@@ -623,7 +624,7 @@ VIDEO의 완료 기준은 content가 아니라 **popup 최상위 `completionRati
 
 SURVEY는 정답 키가 필요하지 않다.
 
-### 8.4.1 설문·퀴즈 서식 필드 (TODO55 초안, 확정 전)
+### 8.4.1 설문·퀴즈 서식 필드 (TODO55)
 
 TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문자열 필드 옆에 둔다. QUIZ·VIDEO+QUIZ도 같다.
 
@@ -640,7 +641,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
 - 여러 문단·들여쓰기 허용, 첫 문단만 쓰지 않는다. 필수 표시 `*`는 문항 제목 마지막 문단 끝에 붙는다.
 - `questionId`·`optionId`·`value`·정답·배점·필수/복수 선택과 결과 `answers`는 서식과 무관하다. 주관식 답변·`correctAnswer`는 서식 대상이 아니다.
 - VIDEO+QUIZ에서 퀴즈 머리말이 서식이면 영상 영역과 문자열이 같아도 숨기지 않는다(일반 문자열이 같을 때만 숨김, 설계 53-16).
-- 저장 위치(문항·선택지 서식)는 서버가 정한다(TODO55-4). 예:
+- 서버 저장(TODO55-4, 2026-10-19): 관리자 저장 요청의 같은 필드를 TEXT `textBlocks`와 같은 규칙(정렬·들여쓰기 0~5·색 `#RRGGBB`·크기·글꼴 허용 값, 문단·구간 수 상한)으로 검증하고 위 표의 상한으로 파생 문자열 길이를 검사한다. 오류 메시지는 필드 이름으로 시작한다(예: `선택지 내용 서식: ...`). 서식은 SURVEY·QUIZ에서만 받으며 다른 유형의 `surveyTitleBlocks`·`descriptionBlocks`는 거부한다. 응답에서 서식이 없으면 키를 생략한다. 예:
 
 ```json
 {

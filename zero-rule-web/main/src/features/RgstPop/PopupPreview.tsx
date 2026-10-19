@@ -8,6 +8,7 @@ import popupDemoQuestions from './popupDemoQuestions';
 import AspectVideoArea from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
+import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { popupFontSize } from './popupCommon';
 import {
   fitToImageLayout,
@@ -114,7 +115,8 @@ function PopupBody({
             naturalImageSize={null}
             fitLayout={null}
             onImageLoad={onImageLoad}
-            hideSurveyDescription={content.showDescription !== false}
+            // [TODO55-8] 서식 설명은 영상 영역(일반 문자열)과 표시가 달라 숨기지 않는다(WPF CollapseHeaderShownAbove와 같음).
+            hideSurveyDescription={content.showDescription !== false && !richBlocksOrNull(content.descriptionBlocks)}
             survey={survey}
           />
         </Box>
@@ -298,7 +300,8 @@ function PopupBody({
   }
 
   if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description} /> : null;
+    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description}
+      descriptionBlocks={hideSurveyDescription ? null : content.descriptionBlocks} /> : null;
   }
 
   const showPlainText = content.showPlainText !== false;
@@ -541,6 +544,8 @@ export default function PopupPreview({
   const originalImage =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
   const title = contentTitle(popup);
+  // [TODO55] 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
+  const richSurveyTitle = isSurvey ? richBlocksOrNull(popup.content.surveyTitleBlocks) : null;
   // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
   const headerFontSize = popupFontSize(popup, 'headerFontSize');
   const bodyFontSize = popupFontSize(popup, 'bodyFontSize');
@@ -725,7 +730,7 @@ export default function PopupPreview({
                 ...(isSurvey ? { fontSize: 25, color: surveyColors.text } : {}),
               }}
             >
-              {title}
+              {richSurveyTitle ? <PopupRichBlocks blocks={richSurveyTitle} /> : title}
             </Typography>
           )}
           {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}

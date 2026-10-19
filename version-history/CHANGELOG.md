@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-19-12 — TODO55-3 설문·퀴즈 서식 관리자 편집·미리보기 반영
+
+- 이유: 서버가 설문·퀴즈 서식을 저장하게 되어(2026-10-19-11) 관리자 웹에서 콘텐츠 제목·설명, 문항 제목·설명, 선택지 문구를 TEXT와 같은 서식 편집기로 작성하고 미리보기로 확인할 수 있어야 함.
+- 변경: `PopupRichTextEditor`에 `compact` 모드(툴바 숨김·낮은 높이, 서식은 우클릭·'서식' 버튼 펼침 패널)와 placeholder 추가. `PopupQuestionEditor`의 문항 제목·설명·선택지 입력과 `PopupEditorDialog`의 설문·퀴즈 콘텐츠 제목·설명을 서식 편집기로 교체(편집기별 선택 범위·패널 분리, 선택지 key를 optionId로 바꿔 삭제 후 내용 섞임 방지, 새 문항·선택지 임시 ID 순번 추가, 문항 템플릿 불러오기 시 편집기 재생성, 글자가 없으면 서식 미전송, 저장 전 서버와 같은 길이 상한 검사). 저장 대상 content 키에 `surveyTitleBlocks`·`descriptionBlocks` 추가. 공용 `PopupRichBlocks`로 미리보기의 콘텐츠 제목·설명, 문항 제목(필수 `*`·선택 안내는 마지막 문단 끝)·설명, 선택지(접근 가능한 이름은 일반 문구) 서식 표시, VIDEO+QUIZ는 WPF와 같이 서식 설명을 퀴즈 머리말에서 숨기지 않음. 도메인 모델에 서식 필드 추가. TODO55 문서(상태·55-1/55-3/55-4 완료·반영 기록·남은 55-10), 인터페이스 명세 §8.4.1(초안 표기 제거·서버 저장 규칙), ALL 명세 갱신. MINIMAL 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupRichBlocks.tsx(신규)·PopupRichTextEditor.tsx·PopupQuestionEditor.tsx·PopupEditorDialog.tsx·SurveyPreview.tsx·PopupPreview.tsx, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, scripts/verify-survey-rich-text-55(.cjs·-entry.tsx, 신규), docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0(기존 CKEditor require 경고 1). 신규 verify-survey-rich-text-55 23건 통과(headless Edge에서 실제 CKEditor 5개 동시 편집 분리, 펼침 패널 색이 선택한 선택지 범위에만 적용, 선택지 삭제 후 ID 유지, 빈 서식 미전송, 제목 빈 값·1000자 초과 차단, 다중 문단, 임시 ID 중복 없음, 미리보기 서식·문단 정렬·들여쓰기·필수 표시 위치·접근성 이름, VIDEO+QUIZ 머리말 규칙). 기존 verify-completion-ux-43 60건·verify-question-template-picker 7건·verify-rich-text-49 40건·verify-image-preview 34건 통과. 미리보기 캡처 확인. 미실행: 실제 관리자 웹 로그인 화면 저장→재조회→WPF 표시 왕복, 인터페이스 Excel·Word·PDF 반영, WPF DPI·창 폭·키보드 실화면.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-19-11 — TODO55-4 설문·퀴즈 서식 서버 저장·API 반영
 
 - 이유: SURVEY·QUIZ 서식(FONT EDIT)은 WPF 표시만 구현되어 있고 서버가 TEXT 외 유형의 서식을 저장·반환하지 않아, 관리자 저장부터 WPF 응답까지 서식이 이어지지 않았다. 55-1 초안의 필드 이름·위치를 확정해 서버 저장 경로를 구현.

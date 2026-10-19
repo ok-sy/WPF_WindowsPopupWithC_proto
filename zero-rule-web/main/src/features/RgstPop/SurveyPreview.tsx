@@ -1,5 +1,6 @@
 import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
+import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 
 /*
  * 문항 디자인 버전. WPF SurveyDesigns/SurveyStyles.Vn.xaml과 같은 값이다. WPF는 appsettings PopupApi.SurveyDesignVersion으로
@@ -95,6 +96,8 @@ export interface PreviewAnswer {
 export interface SurveyPreviewProps {
   questions: PopupQuestion[];
   description: string;
+  /** [TODO55] 콘텐츠 설명 서식(content.descriptionBlocks). 글자가 있으면 description 대신 표시한다. */
+  descriptionBlocks?: unknown;
   answers: Record<number, PreviewAnswer>;
   onAnswer: (id: number, answer: PreviewAnswer) => void;
   disabled: boolean;
@@ -130,16 +133,18 @@ function CheckMark({ selected, disabled }: { selected: boolean; disabled: boolea
 export default function SurveyPreview({
   questions,
   description,
+  descriptionBlocks,
   answers,
   onAnswer,
   disabled,
   namePrefix,
 }: SurveyPreviewProps) {
+  const richDescription = richBlocksOrNull(descriptionBlocks);
   return (
     <Stack spacing={surveyDesign.flatQuestions ? 0 : 1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
-      {description && (
-        <Typography sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
-          {description}
+      {(description || richDescription) && (
+        <Typography component="div" sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
+          {richDescription ? <PopupRichBlocks blocks={richDescription} /> : description}
         </Typography>
       )}
       {!questions.length && (
@@ -156,6 +161,22 @@ export default function SurveyPreview({
           ? null
           : multiple ? '여러 개 선택 가능' : '하나 선택';
         const last = index === questions.length - 1;
+        // [TODO55] 서식이 있으면 서식으로 표시(WPF와 같이 필수 표시·선택 안내는 마지막 문단 끝).
+        const richTitle = richBlocksOrNull(question.titleBlocks);
+        const richQuestionDescription = richBlocksOrNull(question.descriptionBlocks);
+        const titleSuffix = <>
+          {question.isRequired ? ' *' : ''}
+          {hint && (
+            // 제목 끝 보조 안내(WPF와 같이 12·보통 굵기·보조색). 긴 제목이면 글자 흐름대로 다음 줄로 넘어간다.
+            <Box
+              component="span"
+              id={`${titleId}-hint`}
+              sx={{ ml: 1.5, fontSize: 12, fontWeight: 400, color: surveyColors.muted, whiteSpace: 'nowrap' }}
+            >
+              {hint}
+            </Box>
+          )}
+        </>;
         return (
           <Box
             component="fieldset"
@@ -183,25 +204,15 @@ export default function SurveyPreview({
               </Typography>
               <Typography
                 id={titleId}
+                component="div"
                 sx={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', minWidth: 0 }}
               >
-                {question.title}
-                {question.isRequired ? ' *' : ''}
-                {hint && (
-                  // 제목 끝 보조 안내(WPF와 같이 12·보통 굵기·보조색). 긴 제목이면 글자 흐름대로 다음 줄로 넘어간다.
-                  <Box
-                    component="span"
-                    id={`${titleId}-hint`}
-                    sx={{ ml: 1.5, fontSize: 12, fontWeight: 400, color: surveyColors.muted, whiteSpace: 'nowrap' }}
-                  >
-                    {hint}
-                  </Box>
-                )}
+                {richTitle ? <PopupRichBlocks blocks={richTitle} trailing={titleSuffix} /> : <>{question.title}{titleSuffix}</>}
               </Typography>
             </Stack>
-            {question.description && (
-              <Typography sx={{ fontSize: 13, color: surveyColors.muted, mt: 0.75 }}>
-                {question.description}
+            {(question.description || richQuestionDescription) && (
+              <Typography component="div" sx={{ fontSize: 13, color: surveyColors.muted, mt: 0.75 }}>
+                {richQuestionDescription ? <PopupRichBlocks blocks={richQuestionDescription} /> : question.description}
               </Typography>
             )}
             <Box
@@ -246,6 +257,9 @@ export default function SurveyPreview({
               ) : (
                 question.options.map((option) => {
                   const selected = answer.optionIds.includes(option.optionId);
+                  const richOption = richBlocksOrNull(option.textBlocks);
+                  // 서식 선택지도 접근 가능한 이름은 일반 문구(text)다(WPF AutomationProperties.Name과 같음).
+                  const optionLabel = richOption ? <PopupRichBlocks blocks={richOption} /> : option.text;
                   const select = () =>
                     onAnswer(question.questionId, {
                       text: '',
@@ -348,14 +362,14 @@ export default function SurveyPreview({
                               aria-hidden="true"
                               sx={{ gridArea: '1 / 1', fontWeight: 600, visibility: 'hidden' }}
                             >
-                              {option.text}
+                              {optionLabel}
                             </Box>
                           )}
                           <Box
                             component="span"
                             sx={{ gridArea: '1 / 1', fontWeight: selected && surveyDesign.selectedBold ? 600 : 400 }}
                           >
-                            {option.text}
+                            {optionLabel}
                           </Box>
                         </Box>
                         {!horizontal && <CheckMark selected={selected} disabled={disabled} />}

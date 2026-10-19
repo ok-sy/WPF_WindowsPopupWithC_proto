@@ -28,6 +28,7 @@ import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from './PopupRichTextEditor';
 import { plainTextToBlocks, readTextBlocks } from './popupRichText';
+import { richBlocksOrNull } from './PopupRichBlocks';
 import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_TYPE_LABELS, popupDateMillis, type PopupFontSizeKey } from './popupCommon';
 
 interface PopupEditorDialogProps {
@@ -143,8 +144,9 @@ const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'keepAspectRatio'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
     'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
-  SURVEY: ['surveyTitle', 'description'],
-  QUIZ: ['surveyTitle', 'description', 'videoEnabled', 'videoUrl', 'showDescription', 'showControls', 'allowFullScreen', 'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
+  // [TODO55] 콘텐츠 제목·설명 서식(surveyTitleBlocks·descriptionBlocks). 서버가 surveyTitle·description을 서식에서 파생한다.
+  SURVEY: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks'],
+  QUIZ: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks', 'videoEnabled', 'videoUrl', 'showDescription', 'showControls', 'allowFullScreen', 'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
 };
 function contentForType(popupType: string, content: AdminPopupDetail['content']): AdminPopupDetail['content'] {
   const keys = [...COMMON_CONTENT_KEYS, ...(CONTENT_KEYS_BY_TYPE[popupType] ?? [])];
@@ -427,7 +429,20 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
             {/* [설계 37] TEXT는 콘텐츠 제목·설명을 본문 서식 편집기로 작성한다. */}
-            {!originalImageMode && titleKey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {!originalImageMode && titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {/* [TODO55-3] 설문·퀴즈(동영상+퀴즈 포함)의 콘텐츠 제목·설명은 서식 편집기로 입력한다. 글자가 없으면 서식을 보내지 않는다. */}
+            {isSurvey && <>
+              <PopupRichTextEditor key={`survey-title-${bodyEditorKey}`} compact label="콘텐츠 제목" placeholder="콘텐츠 제목"
+                initialBlocks={richBlocksOrNull(popup.content.surveyTitleBlocks) ?? plainTextToBlocks(contentValue(popup, 'surveyTitle'))}
+                onChange={(blocks, plainText) => setPopup((previous) => ({
+                  ...previous, content: { ...previous.content, surveyTitle: plainText, surveyTitleBlocks: richBlocksOrNull(blocks) },
+                }))} />
+              <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact label="설명" placeholder="설명(선택)"
+                initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
+                onChange={(blocks, plainText) => setPopup((previous) => ({
+                  ...previous, content: { ...previous.content, description: plainText, descriptionBlocks: richBlocksOrNull(blocks) },
+                }))} />
+            </>}
             {originalImageMode && <Typography variant="caption" color="text.secondary">이 모드는 이미지만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
@@ -483,8 +498,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Stack>}
 
             {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
-              onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions: withDefaultAnswerMatchMode(questions), questionTemplateId: templateId }))} />}
-            {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
+              onChange={(questions, templateId) => {
+                setPopup((current) => ({ ...current, questions: withDefaultAnswerMatchMode(questions), questionTemplateId: templateId }));
+                // [TODO55] 서식 편집기는 처음 값만 받으므로 문항을 통째로 바꾸면 다시 연다.
+                setBodyEditorKey((key) => key + 1);
+              }} />}
+            {isSurvey && <PopupQuestionEditor key={`questions-${bodyEditorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* [TODO57] 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}

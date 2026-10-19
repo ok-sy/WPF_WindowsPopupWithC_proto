@@ -13,6 +13,12 @@ type Props = {
   /** 처음 열 때의 본문. 편집 중에는 다시 넣지 않는다(커서 위치 보존). 바꾸려면 key로 다시 마운트한다. */
   initialBlocks: RichBlock[];
   disabled?: boolean;
+  /**
+   * [TODO55] 문항·선택지처럼 여러 개를 나란히 쓰는 짧은 입력. 상단 툴바를 숨기고 높이를 줄인다.
+   * 서식은 우클릭·'서식' 버튼의 펼침 패널로 지정한다. 편집기마다 선택 범위·패널 상태를 따로 가진다.
+   */
+  compact?: boolean;
+  placeholder?: string;
   onChange: (blocks: RichBlock[], plainText: string) => void;
 };
 
@@ -20,7 +26,7 @@ type Props = {
  * [설계 28] TEXT 본문 서식 편집기. 공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 사용한다.
  * 편집기 HTML은 변경될 때마다 문단·Run JSON으로 바꿔 올려 보내며 HTML 자체는 저장하지 않는다.
  */
-export default function PopupRichTextEditor({ label, initialBlocks, disabled, onChange }: Props) {
+export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, placeholder, onChange }: Props) {
   const [Editor, setEditor] = useState<any>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
@@ -81,7 +87,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
   return (
     <Box sx={{ opacity: disabled ? 0.6 : 1 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="caption" color="text.secondary">{label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다</Typography>
+        <Typography variant="caption" color="text.secondary">{compact ? label : `${label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다`}</Typography>
         <Button size="small" disabled={disabled} aria-haspopup="dialog"
           // 버튼을 눌러도 편집기의 선택 범위가 풀리지 않게 한다.
           onMouseDown={(event) => event.preventDefault()}
@@ -90,12 +96,13 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, on
             openMenu({ top: box.bottom + 4, left: box.left });
           }}>서식</Button>
       </Stack>
-      <Box ref={toolbarRef} className="ck-reset_all" sx={{ border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0' }} />
-      <Box sx={{ border: '1px solid #c4c4c4', borderRadius: '0 0 4px 4px', minHeight: 140, '& .ck-editor__editable': { minHeight: 140, px: 1.5 } }}>
+      <Box ref={toolbarRef} className="ck-reset_all" sx={{ display: compact ? 'none' : undefined, border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0' }} />
+      <Box sx={{ border: '1px solid #c4c4c4', borderRadius: compact ? '4px' : '0 0 4px 4px', minHeight: compact ? 40 : 140,
+        '& .ck-editor__editable': { minHeight: compact ? 40 : 140, px: 1.5 }, '& .ck-editor__editable p': compact ? { my: 0.75 } : {} }}>
         {Editor && (
           <CKEditor
             editor={Editor}
-            config={{ ...richEditorConfig, placeholder: '본문을 입력하고 글자를 선택해 서식을 지정하세요.' }}
+            config={{ ...richEditorConfig, placeholder: placeholder ?? '본문을 입력하고 글자를 선택해 서식을 지정하세요.' }}
             data={initialHtml}
             onReady={(editor) => {
               editorRef.current = editor;
