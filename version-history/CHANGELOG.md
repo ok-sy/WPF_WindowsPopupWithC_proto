@@ -8,7 +8,7 @@
 - 변경: `PopupRichTextEditor`에 `compact` 모드(툴바 숨김·낮은 높이, 서식은 우클릭·'서식' 버튼 펼침 패널)와 placeholder 추가. `PopupQuestionEditor`의 문항 제목·설명·선택지 입력과 `PopupEditorDialog`의 설문·퀴즈 콘텐츠 제목·설명을 서식 편집기로 교체(편집기별 선택 범위·패널 분리, 선택지 key를 optionId로 바꿔 삭제 후 내용 섞임 방지, 새 문항·선택지 임시 ID 순번 추가, 문항 템플릿 불러오기 시 편집기 재생성, 글자가 없으면 서식 미전송, 저장 전 서버와 같은 길이 상한 검사). 저장 대상 content 키에 `surveyTitleBlocks`·`descriptionBlocks` 추가. 공용 `PopupRichBlocks`로 미리보기의 콘텐츠 제목·설명, 문항 제목(필수 `*`·선택 안내는 마지막 문단 끝)·설명, 선택지(접근 가능한 이름은 일반 문구) 서식 표시, VIDEO+QUIZ는 WPF와 같이 서식 설명을 퀴즈 머리말에서 숨기지 않음. 도메인 모델에 서식 필드 추가. TODO55 문서(상태·55-1/55-3/55-4 완료·반영 기록·남은 55-10), 인터페이스 명세 §8.4.1(초안 표기 제거·서버 저장 규칙), ALL 명세 갱신. MINIMAL 변경 없음.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupRichBlocks.tsx(신규)·PopupRichTextEditor.tsx·PopupQuestionEditor.tsx·PopupEditorDialog.tsx·SurveyPreview.tsx·PopupPreview.tsx, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, scripts/verify-survey-rich-text-55(.cjs·-entry.tsx, 신규), docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md.
 - 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0(기존 CKEditor require 경고 1). 신규 verify-survey-rich-text-55 23건 통과(headless Edge에서 실제 CKEditor 5개 동시 편집 분리, 펼침 패널 색이 선택한 선택지 범위에만 적용, 선택지 삭제 후 ID 유지, 빈 서식 미전송, 제목 빈 값·1000자 초과 차단, 다중 문단, 임시 ID 중복 없음, 미리보기 서식·문단 정렬·들여쓰기·필수 표시 위치·접근성 이름, VIDEO+QUIZ 머리말 규칙). 기존 verify-completion-ux-43 60건·verify-question-template-picker 7건·verify-rich-text-49 40건·verify-image-preview 34건 통과. 미리보기 캡처 확인. 미실행: 실제 관리자 웹 로그인 화면 저장→재조회→WPF 표시 왕복, 인터페이스 Excel·Word·PDF 반영, WPF DPI·창 폭·키보드 실화면.
-- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
 
 ## 2026-10-19-11 — TODO55-4 설문·퀴즈 서식 서버 저장·API 반영
 
@@ -16,7 +16,7 @@
 - 변경: DB — `17_question_rich_text_oracle.sql`로 `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`, `POPUP_OPTION.TEXT_BLOCKS`(CLOB, NULL = 서식 없음) 추가(멱등), `01` 신규 스키마·README 반영. 콘텐츠 제목·설명 서식은 기존 CONTENT_OPTIONS 저장(DDL 없음). 서버 — `PopupSurveyRichText`가 저장 전에 콘텐츠·문항·선택지 서식을 TEXT와 같은 규칙으로 검증하고 일반 문자열을 서식에서 파생, 필드별 상한(200·2000·1000·2000·1000) 검사, 빈 서식 제거, SURVEY·QUIZ 외 유형의 콘텐츠 서식 키 거부. 정규화 결과로 문항 템플릿 재사용을 비교해 서식만 바뀌어도 새 템플릿 생성. DTO·Entity에 서식 필드 추가(서식 없으면 JSON 키 생략, 기존 생성자 유지), 매퍼 insert·resultMap·select에 세 컬럼 추가, 저장 시 JSON 배열 문자열로 변환·조회 시 배열로 복원(손상 JSON은 문항·선택지 ID와 함께 실패). WPF 응답 정답 키 제거 사본에도 서식 유지.
 - 주요 파일: db/oracle/17_question_rich_text_oracle.sql(신규)·01_popup_schema_oracle.sql·README.md, zero-rule-server/domain/.../PopupQuestionDto.java·PopupOptionDto.java·PopupQuestionEntity.java·PopupOptionEntity.java·PopupResponseDto.java·wpf/WpfPopupItem.java, repo/core/.../PopupMapper.java·PopupMapper.xml, service/core/.../PopupSurveyRichText.java(신규)·PopupService.java, 테스트 PopupSurveyRichTextTest(신규)·PopupQuestionDatabaseTest·PopupAdminQuestionsTest, version-history/CHANGELOG.md.
 - 검증: 로컬 XE(POPUP)에 17 스크립트 실행 — 컬럼 3 생성, 재실행 시 SKIP. 서버 `gradlew cleanTest test --offline` 149건 중 140 통과·9 skip(Oracle 연동, 실패 0). `POPUP_TEST_DB_PASSWORD`로 실DB 실행 시 신규 서식 왕복 포함 `PopupQuestionDatabaseTest` 2건 통과. 같은 실DB 실행에서 `WpfPopupDatabaseTest` 2건·`WpfApiOracleHttpTest` 2건은 조회 결과 popup=null로 실패 — `WpfPopupDatabaseTest`는 변경 전 HEAD(5879822) 별도 작업 트리에서도 같은 2건이 같은 원인으로 실패해 로컬 샘플 데이터 상태 문제로 판단(HTTP 테스트 2건은 HEAD 대조 미실행). 미실행: 원격 개발 DB 17 스크립트 실행, 원격 서버 반영.
-- 상태: 커밋에 포함(커밋 직전 기록). 미푸시. 배포 순서: DB 17 → 서버.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. 배포 순서: DB 17 → 서버.
 
 ## 2026-10-19-10 — TODO60 VIDEO+QUIZ 스크롤바 경계 진동 방지 보완
 
