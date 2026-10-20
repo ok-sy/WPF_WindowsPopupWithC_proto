@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-20-02 — TODO61 관리자 인라인·실제 크기 미리보기 컴포넌트 분리
+
+- 이유: 등록 화면 우측 미리보기와 '실제 크기로 보기' 모달이 PopupEditorDialog의 state·계산에 묶여 있어 다른 등록 화면에서 재사용할 수 없었다(TODO61).
+- 변경: `InlinePopupPreview`(제목·확대 버튼·PopupPreview)와 `PopupPreviewDialog`(크기 모드·9개 위치·가장자리 여백·Overlay·배경 클릭 차단·Esc/종료 버튼) 추가. 모달 크기·위치·여백·Overlay 계산을 `popupPreviewDialogLayout.ts` 순수 함수로 이동(계산식 동일). 모달은 자체 PopupPreview의 IMAGE 권장 크기를 받아 단독 사용 가능하고(인라인 값은 첫 표시용 선택 props), 브라우저 창 resize 시 다시 계산. PopupEditorDialog는 두 컴포넌트로 교체하고 다시 열 때 모달 열림 상태 초기화. 공통 렌더러 PopupPreview는 변경 없음. 등록 화면 없이 샘플 객체로 두 컴포넌트를 쓰는 최소 호스트 하네스 추가. 사용·이식 안내 문서(props·예시·상태 규칙·의존성) 추가, 미리보기 정합 문서의 컴포넌트 이름 갱신, TODO61 구현·검증 기록. JSON 변환 분리·서버·DB·WPF 변경 없음. WPF 명세(ALL·MINIMAL)는 WPF 기능 변경이 없어 검토만 하고 수정하지 않음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/InlinePopupPreview.tsx·PopupPreviewDialog.tsx·popupPreviewDialogLayout.ts(신규)·PopupEditorDialog.tsx, scripts/verify-popup-preview-61(.cjs·-entry.tsx, 신규), docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md(신규), docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, docs/design/61_관리자_미리보기_컴포넌트화_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0. 신규 verify-popup-preview-61 42건 통과(headless Edge — FIXED 중앙 560×420, TOP_LEFT 24px·VIDEO BOTTOM_RIGHT 0px 여백, 종료 버튼 위치, Overlay 0.45 배경·배경 클릭 무시·Esc 종료, Overlay 꺼짐 투명·배경 클릭 종료, RATIO와 창 크기 변경 재계산, FULLSCREEN, IMAGE FIT_TO_IMAGE 모달 크기가 인라인 값 전달 여부와 관계없이 동일, 설문 응답 모달·인라인 분리와 재열기 초기화, VIDEO+QUIZ 영상 영역 2개·종료 시 정리, 동결 popup 불변, 런타임 오류 0). 기존 verify-image-preview 34건·verify-completion-ux-43 60건·verify-survey-rich-text-55 23건·verify-question-template-picker 7건 통과. verify-rich-text-49는 처음 두 번 서식 메뉴 선택 상태 검사('Mixed bold selection is shown as mixed')에서 실패하고 세 번째 실행에서 40건 통과(미리보기 분리와 무관한 편집기 검사). 미실행: 실제 관리자 웹 로그인 화면에서 신규·수정·템플릿 적용 후 미리보기 확인, 다른 등록 화면 실제 이식.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-20-01 — TODO61 관리자 등록 화면 미리보기 컴포넌트화 계획
 
 - 이유: 우측 인라인 미리보기와 실제 크기 모달을 다른 등록 화면에서 재사용할 수 있도록 화면 책임과 의존성을 정리.

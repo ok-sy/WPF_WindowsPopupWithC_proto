@@ -13,7 +13,6 @@ import type {
 } from '@local/domain';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import PreviewIcon from '@mui/icons-material/Preview';
 import {
   Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
   FormControlLabel, IconButton, LinearProgress, MenuItem, Stack, Switch,
@@ -21,7 +20,9 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import PopupPreview from './PopupPreview';
+import InlinePopupPreview from './InlinePopupPreview';
+import PopupPreviewDialog from './PopupPreviewDialog';
+import { previewOverlay } from './popupPreviewDialogLayout';
 import { displayImageSize, type Size } from './imagePreviewLayout';
 import PopupQuestionEditor, { validatePopupQuestions, withDefaultAnswerMatchMode } from './PopupQuestionEditor';
 import PopupTemplateDialog from './PopupTemplateDialog';
@@ -189,14 +190,6 @@ function PopupDimensionField({ label, value, minimum, maximum, helperText, onCha
     }} onBlur={() => setDraft(null)} />;
 }
 
-/* [설계 31] WPF PopupWindow.ApplyPosition과 같은 9개 위치. 작업 영역(미리보기에서는 브라우저 창) 가장자리에 붙이고,
- * 모르는 값은 WPF PopupFactory와 같이 중앙으로 본다. 반환값은 [가로, 세로] flex 정렬값이다. */
-const PREVIEW_POSITION_ALIGN: Record<string, [string, string]> = {
-  TOP_LEFT: ['flex-start', 'flex-start'], TOP_CENTER: ['center', 'flex-start'], TOP_RIGHT: ['flex-end', 'flex-start'],
-  CENTER_LEFT: ['flex-start', 'center'], CENTER: ['center', 'center'], CENTER_RIGHT: ['flex-end', 'center'],
-  BOTTOM_LEFT: ['flex-start', 'flex-end'], BOTTOM_CENTER: ['center', 'flex-end'], BOTTOM_RIGHT: ['flex-end', 'flex-end'],
-};
-
 export default function PopupEditorDialog({ open, popupId, initialActive, onClose, onSaved }: PopupEditorDialogProps) {
   const api = useApi();
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
@@ -232,7 +225,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
   useEffect(() => {
     if (!open) return;
-    setActive(initialActive); setTemplateOpen(false); setLoading(false);
+    setActive(initialActive); setTemplateOpen(false); setPreviewOpen(false); setLoading(false);
     setBodyEditorKey((key) => key + 1);
     if (popupId == null) { setPopup(createDefaultPopup()); setTargetGroups([]); return; }
     let canceled = false; setLoading(true);
@@ -343,26 +336,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     } catch (error) { handleError(error); } finally { setLoading(false); }
   };
 
-  const previewDialogSize = () => {
-    const availableWidth = window.innerWidth, availableHeight = window.innerHeight;
-    // IMAGE는 고정 최대 픽셀값 대신 화면 작업 영역 90%로 창 크기를 제한한다.
-    if (fitWindow) {
-      return { width: Math.round(Math.min(availableWidth * 0.96, fitWindow.width)), height: Math.round(Math.min(availableHeight * 0.96, fitWindow.height)) };
-    }
-    const requestedWidth = popup.sizeMode === 'FULLSCREEN' ? availableWidth
-      : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : (popup.width ?? 560);
-    const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
-      : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : (popup.height ?? 420);
-    if (popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN') {
-      const maximumWidth = availableWidth * .90, maximumHeight = availableHeight * .90;
-      return {width: Math.round(Math.max(Math.min(popup.minimumWidth, maximumWidth), Math.min(maximumWidth, requestedWidth))),
-        height: Math.round(Math.max(Math.min(popup.minimumHeight, maximumHeight), Math.min(maximumHeight, requestedHeight)))};
-    }
-    const width = popup.sizeMode === 'FULLSCREEN' ? requestedWidth : Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, requestedWidth));
-    const height = popup.sizeMode === 'FULLSCREEN' ? requestedHeight : Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, requestedHeight));
-    return { width: Math.round(Math.max(320, Math.min(availableWidth * 0.96, width))), height: Math.round(Math.max(260, Math.min(availableHeight * 0.96, height))) };
-  };
-
   const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
   const hasVideo = popup.popupType === 'VIDEO' || isVideoQuiz;
   const isMedia = popup.popupType === 'IMAGE' || hasVideo;
@@ -373,13 +346,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const showTextHighlight = popup.content.showHighlight === true;
   const showTextPlainText = popup.content.showPlainText !== false;
   const showTextBottomDescription = popup.content.showBottomDescription === true;
-  const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
-  const backgroundOverlayOpacity = Math.max(0, Math.min(1, Number(popup.content.backgroundOverlayOpacity ?? 0.45)));
-  /* [설계 31] 실제 크기 미리보기 위치: WPF와 같이 FULLSCREEN은 위치를 무시하고, 그 밖에는 9개 위치에 맞춰 가장자리에 붙인다.
-   * WPF 일반 창은 그림자용 투명 여백 24px(PopupOuterGrid.Margin)이 있어 본문이 가장자리에서 24px 떨어지고, 영상 창은 여백이 없다. */
-  const [previewAlignX, previewAlignY] = PREVIEW_POSITION_ALIGN[contentValue(popup, 'popupPosition').toUpperCase()] ?? PREVIEW_POSITION_ALIGN.CENTER;
-  const previewEdgeMargin = hasVideo ? 0 : 24;
-  const modalPreviewSize = previewOpen && typeof window !== 'undefined' ? previewDialogSize() : { width: popup.width, height: popup.height };
+  const { enabled: useBackgroundOverlay, opacity: backgroundOverlayOpacity } = previewOverlay(popup);
 
   return (
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
@@ -550,13 +517,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
           <Box sx={{ minWidth: 0, minHeight: 0, p: 2, bgcolor: '#f3f5f9', borderLeft: { lg: '1px solid' }, borderColor: 'divider',
             display: 'grid', gridTemplateRows: { xs: '360px auto', lg: 'minmax(220px, 1fr) minmax(200px, 1fr)' }, gap: 2 }}>
-            <Stack spacing={1.5} sx={{ minHeight: 0 }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="subtitle1" fontWeight={700}>팝업 미리보기</Typography>
-                <Button size="small" variant="outlined" startIcon={<PreviewIcon />} onClick={() => setPreviewOpen(true)}>실제 크기로 보기</Button>
-              </Stack>
-              <PopupPreview popup={popup} onRecommendedSize={setFitWindow} />
-            </Stack>
+            {/* [TODO61] 인라인·실제 크기 미리보기는 같은 popup(편집 원본)을 읽기만 한다. 시연 상태는 각 PopupPreview 안에 있다. */}
+            <InlinePopupPreview popup={popup} onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
             <Box sx={{ minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, bgcolor: 'background.paper', borderRadius: 1, p: 2,
               '& .MuiFormControlLabel-root': { m: 0 }, '& .MuiFormControlLabel-label': { fontSize: 13 } }}>
               <Stack spacing={1.5}>
@@ -693,20 +655,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
         </Box>
       </DialogContent>
       <DialogActions><Button onClick={onClose} disabled={loading}>취소</Button><Button variant="contained" onClick={savePopup} disabled={loading}>저장</Button></DialogActions>
-      <Dialog open={previewOpen} onClose={(_, reason) => {
-        if (reason !== 'backdropClick' || !useBackgroundOverlay) setPreviewOpen(false);
-      }} BackdropProps={{ sx: { backgroundColor: useBackgroundOverlay ? `rgba(0, 0, 0, ${backgroundOverlayOpacity})` : 'transparent' } }} fullScreen={popup.sizeMode === 'FULLSCREEN'} maxWidth={false}
-        sx={popup.sizeMode === 'FULLSCREEN' ? undefined : { '& .MuiDialog-container': { justifyContent: previewAlignX, alignItems: previewAlignY } }}
-        PaperProps={popup.sizeMode === 'FULLSCREEN' ? undefined : { sx: { width: modalPreviewSize.width, height: modalPreviewSize.height,
-          maxWidth: `min(96vw, calc(100vw - ${previewEdgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${previewEdgeMargin * 2}px))`, m: `${previewEdgeMargin}px`, overflow: 'hidden' } }}>
-        {/* 헤더 닫기 버튼이 없으므로(WPF와 동일) 푸터를 숨겨도 이 버튼과 Esc로 미리보기를 닫는다. 위쪽 배치 팝업과 겹치지 않게 아래로 옮긴다. */}
-        <Button variant="contained" color="primary" aria-label="실제 크기 미리보기 종료"
-          onClick={() => setPreviewOpen(false)}
-          sx={{ position: 'fixed', ...(popup.sizeMode !== 'FULLSCREEN' && previewAlignY === 'flex-start' ? { bottom: 12 } : { top: 12 }), right: 12, zIndex: (theme) => theme.zIndex.modal + 1, boxShadow: 3 }}>
-          미리보기 종료 (Esc)
-        </Button>
-        <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} showBackground={false} onClose={() => setPreviewOpen(false)} /></DialogContent>
-      </Dialog>
+      <PopupPreviewDialog popup={popup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />
     </Dialog>
   );
 }
