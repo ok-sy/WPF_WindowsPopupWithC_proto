@@ -119,7 +119,15 @@ namespace Popup.Views.Contents
             var run = new Run(text);
             if (format.Bold) run.FontWeight = FontWeights.Bold;
             if (format.Italic) run.FontStyle = FontStyles.Italic;
-            if (format.Underline) run.TextDecorations = TextDecorations.Underline;
+            if (format.Underline && format.Strikethrough)
+            {
+                // 정적 TextDecorations 컬렉션은 공유되므로 복제 후 합친다. 다른 Run의 밑줄에 영향을 주지 않는다.
+                var decorations = TextDecorations.Underline.Clone();
+                foreach (TextDecoration decoration in TextDecorations.Strikethrough) decorations.Add(decoration);
+                run.TextDecorations = decorations;
+            }
+            else if (format.Underline) run.TextDecorations = TextDecorations.Underline;
+            else if (format.Strikethrough) run.TextDecorations = TextDecorations.Strikethrough;
             if (TryParseColor(format.Color, out Color color)) run.Foreground = new SolidColorBrush(color);
             if (SafeFontSize(format.Size) is double size) run.FontSize = size;
             if (format.Font != null && Fonts.TryGetValue(format.Font, out string? family)) run.FontFamily = new FontFamily(family);

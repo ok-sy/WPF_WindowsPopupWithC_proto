@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * [설계 28] TEXT 본문 서식 데이터(content.textBlocks) 검증과 일반 문자열(plainText) 파생.
  *
- * <p>구조: {@code textBlocks = [{ alignment, indent?, runs: [{ text, bold?, italic?, underline?, color?, size?, font? }] }]}.
+ * <p>구조: {@code textBlocks = [{ alignment, indent?, runs: [{ text, bold?, italic?, underline?, strikethrough?, color?, size?, font? }] }]}.
  * [설계 49] indent는 문단 왼쪽 들여쓰기 단계(0~5 정수, 1단계 = 40px, 누락 = 0)이며 글자 서식(Run)과 분리된 문단 속성이다.
  * 문단 안 Run의 text를 순서대로 이어 붙인 것이 문단 본문이고, 문단은 줄바꿈(\n)으로 구분한다.
  * 문단 내부 줄바꿈은 Run text의 \n이다. HTML은 저장하지 않으며, 허용 목록 밖의 키·값은 저장을 거부한다
@@ -30,7 +30,7 @@ final class PopupRichText {
     static final int MAX_TEXT_LENGTH = 20000;
 
     private static final Set<String> BLOCK_KEYS = Set.of("alignment", "indent", "runs");
-    private static final Set<String> RUN_KEYS = Set.of("text", "bold", "italic", "underline", "color", "size", "font");
+    private static final Set<String> RUN_KEYS = Set.of("text", "bold", "italic", "underline", "strikethrough", "color", "size", "font");
 
     private PopupRichText() {
     }
@@ -87,7 +87,7 @@ final class PopupRichText {
                 if (text.chars().anyMatch(c -> c < 0x20 && c != '\n' && c != '\t')) {
                     throw invalid("본문에 사용할 수 없는 제어 문자가 있습니다.");
                 }
-                for (String flag : List.of("bold", "italic", "underline")) {
+                for (String flag : List.of("bold", "italic", "underline", "strikethrough")) {
                     Object v = run.get(flag);
                     if (v != null && !(v instanceof Boolean)) {
                         throw invalid(flag + "는 boolean이어야 합니다.");

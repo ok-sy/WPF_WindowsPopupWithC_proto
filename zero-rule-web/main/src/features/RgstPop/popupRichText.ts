@@ -5,13 +5,14 @@
  * 표시 방어만 한다(설계 48). 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
-type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
+export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
 export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
 export interface RichRun {
   text: string;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strikethrough?: boolean;
   color?: string;
   size?: number;
   font?: RichFontId;
@@ -66,7 +67,7 @@ export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
 const isAllowedColor = (value: unknown): value is string =>
   typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value);
 const ALIGN_FROM_CSS: Record<string, RichAlignment> = { left: 'LEFT', center: 'CENTER', right: 'RIGHT' };
-const FLAG_KEYS = ['bold', 'italic', 'underline', 'color', 'size', 'font'] as const;
+const FLAG_KEYS = ['bold', 'italic', 'underline', 'strikethrough', 'color', 'size', 'font'] as const;
 /* 글자는 보존하고 일반 문단으로 바꾸는 블록. 그 외 블록(표·이미지 등)은 제거한다. */
 const TEXT_BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'DIV', 'LI', 'PRE']);
 const CONTAINER_TAGS = new Set(['UL', 'OL', 'FIGURE', 'TABLE', 'TBODY', 'THEAD', 'TR', 'TD', 'TH']);
@@ -74,7 +75,7 @@ const REMOVED_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'IMG', 'IFRAME', 'O
 
 /** CKEditor가 쓰는 툴바·허용 값 설정. 소스 편집·표·이미지 등은 툴바에 두지 않는다. */
 export const richEditorConfig = {
-  toolbar: { items: ['bold', 'italic', 'underline', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'removeFormat', '|', 'undo', 'redo'] },
+  toolbar: { items: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'removeFormat', '|', 'undo', 'redo'] },
   fontColor: { colors: RICH_COLORS, columns: RICH_COLOR_COLUMNS, documentColors: 0 },
   /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 최대 단계는 popupRichTextFormat.limitIndent가 지킨다. */
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },
@@ -130,6 +131,7 @@ export function htmlToBlocks(html: string): RichBlock[] {
       if (tag === 'STRONG' || tag === 'B') next.bold = true;
       else if (tag === 'I' || tag === 'EM') next.italic = true;
       else if (tag === 'U') next.underline = true;
+      else if (tag === 'S' || tag === 'DEL' || tag === 'STRIKE') next.strikethrough = true;
       if (element.style) {
         const color = element.style.color ? toHexColor(element.style.color) : '';
         // 붙여넣은 색(rgb·hsl은 브라우저가 rgb로 계산)도 hex로 바꿔 유지한다.
@@ -182,6 +184,7 @@ export function blocksToHtml(blocks: RichBlock[]): string {
       const css = [run.color && `color:${run.color};`, run.size && `font-size:${run.size}px;`, font && `font-family:${font.css};`].filter(Boolean).join('');
       if (css) html = `<span style="${escapeHtml(css)}">${html}</span>`;
       if (run.underline) html = `<u>${html}</u>`;
+      if (run.strikethrough) html = `<s>${html}</s>`;
       if (run.italic) html = `<i>${html}</i>`;
       if (run.bold) html = `<strong>${html}</strong>`;
       return html;
@@ -208,6 +211,7 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
       if (run.bold === true) clean.bold = true;
       if (run.italic === true) clean.italic = true;
       if (run.underline === true) clean.underline = true;
+      if (run.strikethrough === true) clean.strikethrough = true;
       if (isAllowedColor(run.color)) clean.color = run.color;
       if (typeof run.size === 'number' && RICH_SIZES.includes(run.size)) clean.size = run.size;
       if (RICH_FONTS.some((item) => item.id === run.font)) clean.font = run.font;

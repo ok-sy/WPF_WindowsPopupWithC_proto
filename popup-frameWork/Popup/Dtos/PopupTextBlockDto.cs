@@ -26,6 +26,7 @@ namespace Popup.Dtos
         public bool Bold { get; set; }
         public bool Italic { get; set; }
         public bool Underline { get; set; }
+        public bool Strikethrough { get; set; }
         public string? Color { get; set; }
         public double? Size { get; set; }
         public string? Font { get; set; }
@@ -34,7 +35,7 @@ namespace Popup.Dtos
     /*
      * [설계 48-5] textBlocks 역직렬화 경계. 일반 역직렬화는 서식 값 하나의 JSON 타입 오류(예: size가 문자열)로
      * content 전체 변환을 실패시켜 팝업이 표시되지 않으므로, 이 속성만 직접 읽는다.
-     *   - 서식 값 타입 오류(alignment·indent·bold·italic·underline·color·size·font): 그 값만 기본값으로 둔다.
+     *   - 서식 값 타입 오류(alignment·indent·bold·italic·underline·strikethrough·color·size·font): 그 값만 기본값으로 둔다.
      *   - null 문단·null 구간: 글자가 없으므로 건너뛴다.
      *   - 글자를 읽을 수 없는 구조 오류(textBlocks가 배열이 아님, 문단·구간이 객체가 아님, runs가 배열이 아님,
      *     text가 문자열이 아님): 일부 글자만 빠진 서식 본문 대신 서식 본문 전체를 쓰지 않고(null)
@@ -77,6 +78,7 @@ namespace Popup.Dtos
                         Bold = True(run, "bold"),
                         Italic = True(run, "italic"),
                         Underline = True(run, "underline"),
+                        Strikethrough = True(run, "strikethrough"),
                         Color = String(run, "color"),
                         Size = Number(run, "size"),
                         Font = String(run, "font"),

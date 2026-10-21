@@ -50,6 +50,22 @@ class PopupRichTextTest {
         assertNull(PopupRichText.validateAndDerivePlainText(null));
     }
 
+    @Test void strikethroughKeepsTextAndCombinesWithUnderlineAndParagraphFormat() {
+        Map<String, Object> paragraph = block("RIGHT", run("변경 전", "strikethrough", true, "underline", true),
+                run(" 변경 후", "strikethrough", false));
+        paragraph.put("indent", 1);
+        assertEquals("변경 전 변경 후", PopupRichText.validateAndDerivePlainText(List.of(paragraph)));
+        assertEquals(true, ((Map<?, ?>) ((List<?>) paragraph.get("runs")).get(0)).get("strikethrough"));
+        assertEquals("기존", PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run("기존")))));
+    }
+
+    @Test void rejectsNonBooleanStrikethrough() {
+        for (Object value : List.of("true", 1, List.of(), Map.of())) {
+            assertThrows(IllegalArgumentException.class, () -> PopupRichText.validateAndDerivePlainText(
+                    List.of(block("LEFT", run("본문", "strikethrough", value)))));
+        }
+    }
+
     @Test void savedBodyComesFromTextBlocksNotClientPlainText() {
         Map<String, Object> content = new HashMap<>(Map.of("plainText", "클라이언트가 보낸 다른 값", "textBlocks", sample()));
         assertEquals("확인 후 다시 확인하세요\n\n줄1\n  <b>&  ", PopupService.bodyText(content));

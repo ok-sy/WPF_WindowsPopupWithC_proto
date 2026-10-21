@@ -426,7 +426,7 @@ namespace Popup
             row.Children.Add(header);
             row.Children.Add(new TextBlock
             {
-                Text = "문단: { alignment: LEFT|CENTER|RIGHT, indent: 0~5(1단계 40), runs: [...] }, 구간: { text, bold, italic, underline, color, size, font }. "
+                Text = "문단: { alignment: LEFT|CENTER|RIGHT, indent: 0~5(1단계 40), runs: [...] }, 구간: { text, bold, italic, underline, strikethrough, color, size, font }. "
                     + "색 #RRGGBB(대문자) · 크기 "
                     + string.Join(" ", ServerRichSizes) + " · 글꼴 " + string.Join(" ", ServerRichFonts),
                 TextWrapping = TextWrapping.Wrap, Foreground = HintBrush, Margin = new Thickness(0, 0, 0, 6),
@@ -488,13 +488,13 @@ namespace Popup
                 foreach (JsonNode? runNode in runArray)
                 {
                     if (++runs > 2000) throw new ArgumentException("서식 본문: 구간은 2000개 이하여야 합니다.");
-                    if (runNode is not JsonObject run || run.Any(p => p.Key is not ("text" or "bold" or "italic" or "underline" or "color" or "size" or "font")))
+                    if (runNode is not JsonObject run || run.Any(p => p.Key is not ("text" or "bold" or "italic" or "underline" or "strikethrough" or "color" or "size" or "font")))
                         throw new ArgumentException("서식 본문: 구간에 허용되지 않은 항목이 있습니다.");
                     if (run["text"] is not JsonValue textValue || textValue.GetValueKind() != JsonValueKind.String || textValue.GetValue<string>().Length == 0)
                         throw new ArgumentException("서식 본문: 구간 text는 빈 값이 아닌 문자열이어야 합니다.");
                     string text = textValue.GetValue<string>();
                     if (text.Any(c => c < 0x20 && c != '\n' && c != '\t')) throw new ArgumentException("서식 본문: 사용할 수 없는 제어 문자가 있습니다.");
-                    foreach (string flag in new[] { "bold", "italic", "underline" })
+                    foreach (string flag in new[] { "bold", "italic", "underline", "strikethrough" })
                         if (run[flag] is JsonNode f && f.GetValueKind() is not (JsonValueKind.True or JsonValueKind.False))
                             throw new ArgumentException($"서식 본문: {flag}는 true/false여야 합니다.");
                     if (run["color"] is JsonNode color && !(color.GetValueKind() == JsonValueKind.String && IsServerRichColor(color.GetValue<string>())))

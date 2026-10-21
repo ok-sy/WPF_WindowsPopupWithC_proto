@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-01 — TODO62 취소선과 문단 서식 편집 메뉴
+
+- 이유: 팝업 공용 서식 편집기의 취소선을 저장·표시 경로까지 지원하고, 툴바에만 있던 문단 들여쓰기·정렬을 우클릭 패널에서도 사용할 필요.
+- 변경: TODO62 작성 및 구현. CKEditor 기존 빌드의 취소선 명령을 툴바·패널에 연결, 공용 Run `strikethrough` boolean 추가(누락/false = 없음), HTML↔Blocks·서버 검증·TEXT/설문/퀴즈 미리보기·WPF DTO/관용 변환기/밑줄 동시 표시·Demo 검증 반영. 우클릭에 문단 내어쓰기/들여쓰기(기존 40px씩 최대 5단계)·왼쪽/가운데/오른쪽 정렬·혼합/비활성 상태 제공. 서식 초기화를 별도 하단 행으로 이동하고 CKEditor Alignment의 초기화 제외 보완으로 글자 서식만 제거(문단 정렬·들여쓰기 유지). 글로벌 CSS·DB DDL·의존성 변경 없음. Markdown 계약·ALL/MINIMAL·가이드 갱신, 최소 제공 범위 확장 없음.
+- 주요 파일: docs/design/62_취소선_문단서식_편집메뉴_TODO.md(신규), web RgstPop/popupRichText.ts·popupRichTextFormat.ts·PopupRichTextMenu.tsx·PopupRichBlocks.tsx·PopupPreview.tsx, 서버 PopupRichText.java·PopupRichTextTest.java, WPF PopupTextBlockDto.cs·PopupRichText.cs·DemoOptionsWindow.cs, scripts/verify-rich-text-49(.cjs·-entry.tsx)·RichTextTests/Program.cs·RichText62ServerTest.java(신규), docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md·WPF_POPUP_MINIMAL_SPEC.md, docs/POPUP_OPTION_GUIDE.md·POPUP_USER_OPTION_GUIDE.md.
+- 검증: 실제 CKEditor·우클릭·미리보기 Chromium 하네스 59건 통과(기존 40·신규 19), 변경 공용 TS/TSX 4파일 strict 타입 검사 오류 0, 실제 서버 공용 검증 클래스 Java17+ECJ 컴파일·독립 검사 12건 통과, diff 검사 통과. WPF 회귀 10건·서버 JUnit 2건 작성. 미실행: Windows/.NET SDK가 없어 WPF 빌드·회귀 실행, Gradle 다운로드 네트워크 오류로 전체 서버/JUnit, 전체 웹 빌드, 실제 관리자 저장→재조회→WPF 왕복·한글 IME, Word/Excel/PDF 재생성. Linux 캡처는 한글 글꼴 형상 검증 제외.
+- 상태: 커밋에 포함(커밋 직전 기록). 코드 구현 완료·Windows 및 통합 검증 대기. Trello TODO62는 검증대기.
+
 ## 2026-10-20-02 — TODO61 관리자 인라인·실제 크기 미리보기 컴포넌트 분리
 
 - 이유: 등록 화면 우측 미리보기와 '실제 크기로 보기' 모달이 PopupEditorDialog의 state·계산에 묶여 있어 다른 등록 화면에서 재사용할 수 없었다(TODO61).

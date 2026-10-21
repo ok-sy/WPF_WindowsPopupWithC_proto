@@ -2,11 +2,17 @@ import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatClearIcon from '@mui/icons-material/FormatClear';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
+import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
+import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
+import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
+import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
+import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
+import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
 import {
   Box, Button, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Tooltip, Typography, type PopoverPosition,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, type RichFontId } from './popupRichText';
+import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, RICH_MAX_INDENT, type RichFontId } from './popupRichText';
 import { fontIdFromModel, sizeFromModel, type FormatAction, type FormatState } from './popupRichTextFormat';
 
 type Props = {
@@ -17,9 +23,15 @@ type Props = {
   onClose: () => void;
 };
 
+const ALIGNMENTS = [
+  { value: 'left', label: '왼쪽 정렬', Icon: FormatAlignLeftIcon },
+  { value: 'center', label: '가운데 정렬', Icon: FormatAlignCenterIcon },
+  { value: 'right', label: '오른쪽 정렬', Icon: FormatAlignRightIcon },
+] as const;
+
 /*
  * [설계 49] 우클릭·'서식' 버튼·키보드 공통 서식 패널(설계 28 §11 메뉴를 펼침 팔레트로 개편).
- * 색 격자를 항상 펼쳐 두고 같은 패널에서 글꼴·크기·굵게·기울임·밑줄·색 초기화·서식 지우기를 고른다.
+ * 색 격자를 항상 펼쳐 두고 글꼴·크기·글자 서식·문단 서식·색 초기화·서식 초기화를 고른다(TODO62).
  * 서식을 적용해도 패널은 열린 채로 남아 연속 적용할 수 있고, 적용 대상은 편집기 모델의 선택 범위다(패널 조작 중에도 유지).
  * Esc·바깥 클릭으로 닫으면 편집기 커서·선택으로 돌아간다. 화면 경계 보정은 Popper(flip·preventOverflow)가 한다.
  * 키보드: 열리면 색 격자로 포커스, 격자 안은 방향키·Home/End로 이동, Tab으로 다음 묶음, Enter/Space로 적용.
@@ -28,7 +40,7 @@ type Props = {
 export default function PopupRichTextMenu({ position, state, onApply, onClose }: Props) {
   const open = position != null;
   const paperRef = useRef<HTMLDivElement | null>(null);
-  const mixed = (key: keyof FormatState) => Boolean(state?.[key].mixed);
+  const mixed = (key: keyof Omit<FormatState, 'paragraph'>) => Boolean(state?.[key].mixed);
   const color = state && !state.fontColor.mixed ? ((state.fontColor.value as string | null) ?? null) : undefined;
   const size = state && !state.fontSize.mixed ? sizeFromModel(state.fontSize.value) : undefined;
   const font = state && !state.fontFamily.mixed ? fontIdFromModel(state.fontFamily.value) : undefined;
@@ -76,7 +88,7 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
     paperRef.current?.querySelectorAll<HTMLButtonElement>('[data-color-cell]')[next]?.focus();
   };
 
-  const toggle = (key: 'bold' | 'italic' | 'underline', label: string, icon: ReactNode) => {
+  const toggle = (key: 'bold' | 'italic' | 'underline' | 'strikethrough', label: string, icon: ReactNode) => {
     const on = state?.[key].value === true && !mixed(key);
     return (
       <Tooltip title={`${label}${mixed(key) ? ' (혼합)' : ''}`} disableInteractive>
@@ -89,6 +101,17 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
       </Tooltip>
     );
   };
+  const paragraph = state?.paragraph;
+  const paragraphButton = (label: string, icon: ReactNode, action: FormatAction, enabled: boolean, selected?: boolean | 'mixed') => (
+    <Tooltip title={`${label}${selected === 'mixed' ? ' (혼합)' : ''}`} describeChild disableInteractive>
+      <span><IconButton size="small" aria-label={label} disabled={!enabled} aria-pressed={selected}
+        onClick={() => onApply(action)}
+        sx={{ borderRadius: 1, border: '1px solid', borderColor: selected === true ? 'primary.main' : 'divider',
+          bgcolor: selected === true ? 'action.selected' : undefined }}>
+        {icon}
+      </IconButton></span>
+    </Tooltip>
+  );
   const selectSx = { fontSize: 13, '& select': { py: 0.5 } };
 
   return (
@@ -142,12 +165,28 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
             {toggle('bold', '굵게', <FormatBoldIcon fontSize="small" />)}
             {toggle('italic', '기울임', <FormatItalicIcon fontSize="small" />)}
             {toggle('underline', '밑줄', <FormatUnderlinedIcon fontSize="small" />)}
-            <Box sx={{ flex: 1 }} />
-            <Button size="small" color="inherit" startIcon={<FormatClearIcon fontSize="small" />} onClick={() => onApply({ type: 'clear' })}
-              sx={{ fontSize: 12 }}>
-              서식 지우기
-            </Button>
+            {toggle('strikethrough', '취소선', <StrikethroughSIcon fontSize="small" />)}
           </Stack>
+          <Typography variant="caption" component="p" color="text.secondary" sx={{ mt: 1, mb: 0.5, fontSize: 11 }}>
+            문단 · 들여쓰기 {paragraph?.indent.mixed ? '혼합' : `${paragraph?.indent.value ?? 0} / ${RICH_MAX_INDENT}`}
+          </Typography>
+          <Stack direction="row" spacing={0.75} alignItems="center" role="group" aria-label="문단 서식">
+            {paragraphButton('내어쓰기', <FormatIndentDecreaseIcon fontSize="small" />, { type: 'indent', direction: 'out' }, Boolean(paragraph?.canOutdent))}
+            {paragraphButton('들여쓰기', <FormatIndentIncreaseIcon fontSize="small" />, { type: 'indent', direction: 'in' }, Boolean(paragraph?.canIndent))}
+            <Divider orientation="vertical" flexItem />
+            {ALIGNMENTS.map(({ value, label, Icon }) => (
+              <Box key={value}>
+                {paragraphButton(label, <Icon fontSize="small" />,
+                  { type: 'alignment', value }, Boolean(paragraph?.canAlign),
+                  paragraph?.alignment.mixed ? 'mixed' : paragraph?.alignment.value === value)}
+              </Box>
+            ))}
+          </Stack>
+          <Divider sx={{ my: 1 }} />
+          <Button size="small" fullWidth color="inherit" startIcon={<FormatClearIcon fontSize="small" />} onClick={() => onApply({ type: 'clear' })}
+            sx={{ fontSize: 12 }}>
+            서식 초기화
+          </Button>
           <Typography variant="caption" component="p" color="text.secondary" sx={{ mt: 1, fontSize: 11, lineHeight: 1.5 }}>
             Esc·바깥 클릭으로 닫기 · 복사·붙여넣기는 Ctrl+C / Ctrl+V, 브라우저 기본 메뉴는 Shift+우클릭
           </Typography>

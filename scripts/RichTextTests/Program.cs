@@ -38,7 +38,47 @@ internal static class Program
         CheckParagraphIndent49();
         CheckItalicOverhang38();
         CheckSurveyRichText55();
-        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO55)");
+        CheckStrikethrough62();
+        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO55·62)");
+    }
+
+    private static void CheckStrikethrough62()
+    {
+        // 실제 DTO 관용 변환 → Factory → WPF Run 표시 경로. 누락·잘못된 타입이 본문을 없애지 않아야 한다.
+        var sample = DemoPopupDataService.CreatePopups().Single(p => p.PopupId == "DEMO-TEXT-001");
+        var content = System.Text.Json.Nodes.JsonNode.Parse(sample.Content.GetRawText())!.AsObject();
+        content["textBlocks"] = System.Text.Json.Nodes.JsonNode.Parse("""
+            [{"alignment":"RIGHT","indent":1,"runs":[
+                {"text":"취소","strikethrough":true},
+                {"text":"둘 다","strikethrough":true,"underline":true},
+                {"text":"밑줄","underline":true},
+                {"text":"기존"},{"text":"해제","strikethrough":false},
+                {"text":"타입 오류","strikethrough":"true"}]}]
+            """);
+        sample.Content = JsonSerializer.SerializeToElement(content);
+        var view = (TextPopupView)PopupFactory.Create(sample).Content!;
+        var paragraph = ((StackPanel)view.FindName("RichTextPanel")).Children.OfType<TextBlock>().Single();
+        var runs = paragraph.Inlines.OfType<Run>().ToList();
+        Check(runs.Count == 6 && paragraph.Padding.Left == 40 && paragraph.TextAlignment == TextAlignment.Right,
+            "[62] strikethrough preserves text, indent and alignment through the factory");
+        Check(runs[0].TextDecorations.Count == 1 && runs[0].TextDecorations[0].Location == TextDecorationLocation.Strikethrough,
+            "[62] strikethrough maps to WPF decoration");
+        Check(runs[1].TextDecorations.Count == 2 && runs[1].TextDecorations.Any(d => d.Location == TextDecorationLocation.Underline)
+            && runs[1].TextDecorations.Any(d => d.Location == TextDecorationLocation.Strikethrough),
+            "[62] underline and strikethrough are displayed together");
+        Check(runs[2].TextDecorations == TextDecorations.Underline && TextDecorations.Underline.Count == 1,
+            "[62] combining decorations does not mutate the shared underline collection");
+        Check(runs.Skip(3).All(r => r.TextDecorations == null || r.TextDecorations.Count == 0),
+            "[62] omitted, false and invalid-type strikethrough use the normal style");
+        var validate = typeof(Popup.DemoOptionsWindow).GetMethod("ValidateTextBlocks", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var valid = System.Text.Json.Nodes.JsonNode.Parse("[{\"runs\":[{\"text\":\"본문\",\"strikethrough\":true,\"underline\":true}]}]")!.AsArray();
+        Check((string)validate.Invoke(null, new object[] { valid })! == "본문", "[62] Demo accepts strikethrough without changing plain text");
+        foreach (string invalid in new[] { "\"true\"", "1", "[]", "{}" })
+        {
+            var blocks = System.Text.Json.Nodes.JsonNode.Parse("[{\"runs\":[{\"text\":\"본문\",\"strikethrough\":" + invalid + "}]}]")!.AsArray();
+            try { validate.Invoke(null, new object[] { blocks }); throw new Exception("Expected invalid strikethrough rejection"); }
+            catch (TargetInvocationException e) when (e.InnerException is ArgumentException) { Check(true, "[62] Demo rejects strikethrough " + invalid); }
+        }
     }
 
     private static IEnumerable<DependencyObject> Logical(DependencyObject root)

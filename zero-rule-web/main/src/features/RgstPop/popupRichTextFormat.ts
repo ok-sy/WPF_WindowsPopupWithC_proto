@@ -4,17 +4,27 @@
  */
 import { RICH_FONTS, RICH_INDENT_STEP, RICH_MAX_INDENT, type RichFontId } from './popupRichText';
 
-type FormatKey = 'bold' | 'italic' | 'underline' | 'fontColor' | 'fontSize' | 'fontFamily';
-const FORMAT_KEYS: FormatKey[] = ['bold', 'italic', 'underline', 'fontColor', 'fontSize', 'fontFamily'];
+type FormatKey = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'fontColor' | 'fontSize' | 'fontFamily';
+const FORMAT_KEYS: FormatKey[] = ['bold', 'italic', 'underline', 'strikethrough', 'fontColor', 'fontSize', 'fontFamily'];
 
 /** value는 선택 전체가 같을 때의 값, mixed는 선택 안에 서로 다른 값이 섞였는지. */
-export type FormatState = Record<FormatKey, { value: string | boolean | null; mixed: boolean }>;
+export type FormatState = Record<FormatKey, { value: string | boolean | null; mixed: boolean }> & {
+  paragraph: {
+    alignment: { value: string | null; mixed: boolean };
+    indent: { value: number | null; mixed: boolean };
+    canIndent: boolean;
+    canOutdent: boolean;
+    canAlign: boolean;
+  };
+};
 
 export type FormatAction =
-  | { type: 'toggle'; key: 'bold' | 'italic' | 'underline' }
+  | { type: 'toggle'; key: 'bold' | 'italic' | 'underline' | 'strikethrough' }
   | { type: 'color'; value: string | null }
   | { type: 'size'; value: number | null }
   | { type: 'font'; value: RichFontId | null }
+  | { type: 'alignment'; value: 'left' | 'center' | 'right' }
+  | { type: 'indent'; direction: 'in' | 'out' }
   | { type: 'clear' };
 
 const normalizeFontCss = (value: string) => value.replace(/["']/g, '').replace(/\s*,\s*/g, ',').trim().toLowerCase();
@@ -36,6 +46,17 @@ export function readFormatState(editor: any): FormatState {
     const [first] = values;
     state[key] = { value: values.size === 1 ? first ?? null : null, mixed: values.size > 1 };
   }
+  // 문단 서식은 글자 속성이 아니라 선택 범위에 걸친 문단에서 읽는다. 빈 문단·커서만 있는 경우도 포함한다.
+  const blocks = Array.from(selection.getSelectedBlocks()) as any[];
+  const alignments = new Set(blocks.map((block) => block.getAttribute('alignment') ?? 'left'));
+  const indents = new Set(blocks.map((block) => (Number.parseFloat(block.getAttribute('blockIndent') ?? '0') || 0) / RICH_INDENT_STEP));
+  state.paragraph = {
+    alignment: { value: alignments.size === 1 ? [...alignments][0] : null, mixed: alignments.size > 1 },
+    indent: { value: indents.size === 1 ? [...indents][0] : null, mixed: indents.size > 1 },
+    canIndent: editor.commands.get('indent')?.isEnabled === true,
+    canOutdent: editor.commands.get('outdent')?.isEnabled === true,
+    canAlign: editor.commands.get('alignment')?.isEnabled === true,
+  };
   return state;
 }
 
@@ -65,6 +86,12 @@ export function applyFormat(editor: any, action: FormatAction): void {
       editor.execute('fontFamily', font ? { value: font.css } : {});
       break;
     }
+    case 'alignment':
+      editor.execute('alignment', { value: action.value });
+      break;
+    case 'indent':
+      editor.execute(action.direction === 'in' ? 'indent' : 'outdent');
+      break;
     case 'clear':
       // 글자는 보존하고 서식만 기본값으로 되돌린다.
       editor.execute('removeFormat');
@@ -76,12 +103,14 @@ export function applyFormat(editor: any, action: FormatAction): void {
  * [설계 49] 문단 들여쓰기 최대 단계. CKEditor IndentBlock은 40px씩 제한 없이 누적하므로
  *  - 선택한 문단이 모두 최대 단계면 들여쓰기 명령(툴바 'indent'도 함께)을 비활성화하고,
  *  - 붙여넣기 등으로 들어온 값은 모델에서 40px 배수·최대 단계 안으로 맞추고 px 외 단위는 지운다.
- * 내어쓰기·실행 취소는 CKEditor 기본 동작을 그대로 쓴다. 서식 지우기(removeFormat)는 글자 서식만 지우고 문단 들여쓰기는 유지한다.
+ * 내어쓰기·실행 취소는 CKEditor 기본 동작을 그대로 쓴다. 서식 초기화(removeFormat)는 글자 서식만 지우고 문단 들여쓰기·정렬은 유지한다.
  */
 export function limitIndent(editor: any): void {
   const max = RICH_MAX_INDENT * RICH_INDENT_STEP;
   // IndentBlock은 blockIndent를 서식 속성(isFormatting)으로 등록해 removeFormat이 들여쓰기까지 지우므로 문단 속성으로 되돌린다.
   editor.model.schema.setAttributeProperties('blockIndent', { isFormatting: false });
+  // [TODO62] Alignment도 기본 빌드에서는 지워지는 서식이다. 글자 서식 초기화가 문단 정렬을 바꾸지 않도록 제외한다.
+  editor.model.schema.setAttributeProperties('alignment', { isFormatting: false });
   const px = (value: unknown) => (typeof value === 'string' && /^\d+(\.\d+)?px$/.test(value) ? Number.parseFloat(value) : null);
   editor.model.document.registerPostFixer((writer: any) => {
     let changed = false;

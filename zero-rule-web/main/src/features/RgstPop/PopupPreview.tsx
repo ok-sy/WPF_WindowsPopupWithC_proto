@@ -354,7 +354,7 @@ function PopupBody({
               {block.runs.map((run, runIndex) => (
                 <Box key={runIndex} component="span" sx={{
                   fontWeight: run.bold ? 700 : undefined, fontStyle: run.italic ? 'italic' : undefined,
-                  textDecoration: run.underline ? 'underline' : undefined, color: run.color,
+                  textDecoration: [run.underline && 'underline', run.strikethrough && 'line-through'].filter(Boolean).join(' ') || undefined, color: run.color,
                   fontSize: run.size ? `${run.size}px` : undefined, fontFamily: richFontCss(run.font),
                 }}>{run.text}</Box>
               ))}

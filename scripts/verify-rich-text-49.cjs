@@ -1,4 +1,5 @@
-// [설계 49] TEXT 문단 들여쓰기·우클릭 펼침 서식 패널을 실제 관리자 편집기 빌드로 확인한다(Windows headless Edge).
+// [설계 49·62] 문단·글자 서식과 우클릭 패널을 실제 관리자 편집기 빌드로 확인한다.
+// 기본 Windows Edge. 다른 Chromium은 BROWSER_PATH로 지정한다(예: Linux headless Chromium).
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-rich-text-49.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/rich49');
@@ -27,10 +28,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     res.setHeader('Content-Type', script ? 'application/javascript' : 'text/html; charset=utf-8');
     res.end(script ? fs.readFileSync(path.join(output, req.url.slice(1))) : '<!doctype html><div id="root"></div><script src="/bundle.js"></script>');});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run',
+  browser = spawn(process.env.BROWSER_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run',
+    ...(process.getuid?.() === 0 ? ['--no-sandbox'] : []),
     '--remote-debugging-port=9339', '--user-data-dir=' + path.join(output, 'edge-profile'), 'about:blank'], {windowsHide: true, stdio: 'ignore'});
+  let browserError; browser.on('error', error => { browserError = error; });
   let targets;
   for (let i = 0; i < 100; i++) {try {targets = await (await fetch('http://127.0.0.1:9339/json/list')).json(); if (targets.length) break;} catch {} await pause(100);}
+  if (!targets?.length) throw browserError || Error('Chromium did not start; set BROWSER_PATH to its executable');
   socket = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl); await new Promise(resolve => socket.once('open', resolve));
   let id = 0; const waiting = new Map();
   socket.on('message', raw => {const m = JSON.parse(raw); if (waiting.has(m.id)) {const p = waiting.get(m.id); waiting.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result);}});
@@ -110,7 +114,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const rows=new Set(Array.from(cells).map(c=>Math.round(c.getBoundingClientRect().top)));
     return {cells:cells.length,rows:rows.size,font:!!p.querySelector('select[aria-label^="글꼴"]'),size:!!p.querySelector('select[aria-label^="크기"]'),
       b:!!p.querySelector('[aria-label^="굵게"]'),i:!!p.querySelector('[aria-label^="기울임"]'),u:!!p.querySelector('[aria-label^="밑줄"]'),
-      reset:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('색 초기화')),clear:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('서식 지우기')),
+      reset:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('색 초기화')),clear:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('서식 초기화')),
       focus:document.activeElement?.hasAttribute('data-color-cell'),labels:Array.from(cells).every(c=>c.getAttribute('aria-label').startsWith('글자 색 '))};})()`);
   check(layout.cells === 40 && layout.rows === 5 && layout.font && layout.size && layout.b && layout.i && layout.u && layout.reset && layout.clear && layout.labels,
     'Panel shows the expanded 8x5 color grid with font, size, B/I/U, color reset and format clear: ' + JSON.stringify(layout));
@@ -133,7 +137,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(first.italic === true && first.underline === true, 'Italic and underline toggle from the panel');
   await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('색 초기화')).click()`); await pause(80);
   check((await blocks())[0].runs[0].color === undefined && (await blocks())[0].runs[0].bold === true, 'Color reset removes only color');
-  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('서식 지우기')).click()`); await pause(80);
+  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('서식 초기화')).click()`); await pause(80);
   check(JSON.stringify((await blocks())[0].runs) === JSON.stringify([{text: '가나다라마바사'}, {text: '굵은글자', bold: true}]), 'Format clear keeps the existing meaning for the selection');
   // 키보드: 방향키 이동·Enter 적용·Esc 닫기 후 편집기 포커스 복귀
   await run(`document.querySelector('[data-color-cell]').focus()`);
@@ -188,5 +192,78 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const span=ps[0].querySelector('span');const rects=Array.from(span.getClientRects());const base=ps[0].getBoundingClientRect().left, lines=new Map();for(const r of rects){const top=Math.round(r.top);lines.set(top,Math.min(lines.get(top)??Infinity,Math.round(r.left-base)));}return {pad:ps.map(p=>getComputedStyle(p).paddingLeft),lines:lines.size,lefts:[...new Set(lines.values())]};})()`);
   check(preview.pad.join() === '40px,0px,200px' && preview.lines >= 3 && preview.lefts.length === 1 && preview.lefts[0] === 40,
     'Preview indents the whole paragraph including wrapped lines: ' + JSON.stringify(preview));
-  console.log('PASS: ' + checks + ' rich text 49 checks');
+  // ── 5. TODO62: 취소선 왕복·문단 메뉴·서식 초기화 ──
+  check(await run(`(()=>{const b=htmlToBlocks('<p><s>취소</s><del>삭제</del><strike>구형</strike>일반</p>');
+    return b[0].runs.length===2&&b[0].runs[0].text==='취소삭제구형'&&b[0].runs[0].strikethrough===true&&!b[0].runs[1].strikethrough;})()`),
+    '[62] s/del/strike become strikethrough and adjacent runs with different styles stay separate');
+  check(await run(`(()=>{const b=[{alignment:'RIGHT',indent:1,runs:[{text:'<기존> & 새 값',underline:true,strikethrough:true}]}];
+    const restored=htmlToBlocks(blocksToHtml(b));return blocksToHtml(restored)===blocksToHtml(b)
+      &&restored[0].runs[0].underline&&restored[0].runs[0].strikethrough&&blocksToPlainText(restored)==='<기존> & 새 값';})()`),
+    '[62] combined underline/strikethrough round trip escapes text and preserves paragraph properties/plainText');
+  check(await run(`(()=>{const b=readTextBlocks([{runs:[{text:'a',strikethrough:true},{text:'b',strikethrough:false},{text:'c',strikethrough:'true'},{text:'d'}]}]);
+    return b[0].runs[0].strikethrough===true&&b[0].runs.slice(1).every(r=>r.strikethrough===undefined);})()`),
+    '[62] stored run reader keeps only true boolean and supports older data');
+
+  await run(`window.mount([{alignment:'LEFT',runs:[{text:'가나다라마바사'}]},{alignment:'RIGHT',indent:1,runs:[{text:'둘째 문단'}]}])`);
+  await waitEditor(); await pause(200);
+  check(await run(`!!window.editor().commands.get('strikethrough')&&Array.from(window.editor().ui.view.toolbar.items).some(i=>/Strikethrough|취소선/i.test(i.label??''))`),
+    '[62] existing editor build supports strikethrough and the toolbar exposes it');
+  await run('window.editor().editing.view.focus();window.select(0,0,3)');
+  await click('button[aria-haspopup="dialog"]');
+  check(await run(`(()=>{const p=document.querySelector('[role=dialog][aria-label="서식"]');
+    const clear=Array.from(p.querySelectorAll('button')).find(b=>b.textContent.includes('서식 초기화'));
+    return p.querySelector('[aria-label="취소선"]')&&['내어쓰기','들여쓰기','왼쪽 정렬','가운데 정렬','오른쪽 정렬'].every(l=>p.querySelector('[aria-label="'+l+'"]'))
+      &&clear.getBoundingClientRect().top>p.querySelector('[aria-label="들여쓰기"]').getBoundingClientRect().bottom;})()`),
+    '[62] menu contains all added controls and clear is below paragraph controls');
+  await click('[aria-label="취소선"]');
+  check((await blocks())[0].runs[0].strikethrough===true && (await blocks())[0].runs[0].text==='가나다'
+    && !(await blocks())[0].runs[1].strikethrough && await run(`window.selectionText()==='가나다'`),
+    '[62] strikethrough applies only to selection without losing it');
+  await click('[aria-label="밑줄"]');
+  check((await blocks())[0].runs[0].underline===true && (await blocks())[0].runs[0].strikethrough===true,
+    '[62] panel can combine underline and strikethrough');
+  await click('[aria-label="가운데 정렬"]'); await click('[aria-label="들여쓰기"]');
+  check((await blocks())[0].alignment==='CENTER' && (await blocks())[0].indent===1
+    && (await blocks())[1].alignment==='RIGHT' && await panelOpen(), '[62] paragraph actions affect selected paragraph only and keep panel open');
+  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('서식 초기화')).click()`); await pause(80);
+  check((await blocks())[0].alignment==='CENTER' && (await blocks())[0].indent===1
+    && JSON.stringify((await blocks())[0].runs)===JSON.stringify([{text:'가나다라마바사'}]),
+    '[62] clear removes all selected character formatting while keeping alignment and indent');
+  await click('[aria-label="내어쓰기"]');
+  check(!(await blocks())[0].indent && await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),
+    '[62] outdent reaches zero and becomes disabled: '+JSON.stringify({blocks:await blocks(),disabled:await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),command:await run(`window.editor().commands.get('outdent').isEnabled`)}));
+  for(let i=0;i<5;i++) await click('[aria-label="들여쓰기"]');
+  check((await blocks())[0].indent===5 && await run(`document.querySelector('[aria-label="들여쓰기"]').disabled`),
+    '[62] menu indent reaches five and becomes disabled');
+  await key('Escape', 'Escape', 27);
+  await run(`window.select(0,0,2,1)`); await click('button[aria-haspopup="dialog"]');
+  check(await run(`['왼쪽 정렬','가운데 정렬','오른쪽 정렬'].every(l=>document.querySelector('[aria-label="'+l+'"]').getAttribute('aria-pressed')==='mixed')
+    &&document.querySelector('[aria-label="문단 서식"]').previousElementSibling.textContent.includes('혼합')`),
+    '[62] multi-paragraph mixed alignment and indent are represented as mixed');
+  await click('[aria-label="오른쪽 정렬"]'); await click('[aria-label="내어쓰기"]');
+  check(JSON.stringify((await blocks()).map(b=>[b.alignment,b.indent??0]))==='[["RIGHT",4],["RIGHT",0]]',
+    '[62] paragraph actions apply to every selected paragraph and preserve independent indent levels');
+  await key('Escape', 'Escape', 27);
+  await run(`window.editor().execute('undo')`); await pause(80);
+  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[5,1]', '[62] undo restores multi-paragraph indent');
+  await run(`window.editor().execute('redo')`); await pause(80);
+  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[4,0]', '[62] redo reapplies multi-paragraph indent');
+  await run(`window.select(1,0)`); await click('button[aria-haspopup="dialog"]'); await click('[aria-label="취소선"]');
+  check(await run(`window.editor().model.document.selection.isCollapsed&&window.editor().model.document.selection.getAttribute('strikethrough')===true`),
+    '[62] collapsed cursor toggles strikethrough for the next typing');
+  await key('Escape', 'Escape', 27);
+  await run(`window.editor().model.change(w=>w.insertText('새',{strikethrough:true},window.editor().model.document.selection.getFirstPosition()))`); await pause(80);
+  const saved = await blocks();
+  await run(`window.mount(${JSON.stringify(saved)}, false, ${JSON.stringify(saved)})`); await waitEditor(); await pause(250);
+  check(await run(`htmlToBlocks(window.editor().getData())[1].runs.some(r=>r.text==='새'&&r.strikethrough===true)`),
+    '[62] saved strikethrough reloads into the editor');
+  const decorated = [{alignment:'RIGHT',indent:1,runs:[{text:'밑줄 취소선',underline:true,strikethrough:true}]}];
+  await run(`window.mount([],false,${JSON.stringify(decorated)})`); await waitEditor(); await pause(250);
+  check(await run(`['#preview','#rich-blocks-preview'].every(s=>{const e=Array.from(document.querySelectorAll(s+' span')).find(e=>e.children.length===0&&e.textContent==='밑줄 취소선');
+    const d=getComputedStyle(e).textDecorationLine;return d.includes('underline')&&d.includes('line-through');})`),
+    '[62] TEXT and shared survey/quiz preview display both decorations together');
+  check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
+  const finalShot = await send('Page.captureScreenshot', {format:'png'});
+  fs.writeFileSync(path.join(output,'preview-62.png'),Buffer.from(finalShot.data,'base64'));
+  console.log('PASS: ' + checks + ' rich text 49/62 checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

@@ -12,6 +12,8 @@
 
 백엔드 전달 시 함께 확인할 자료: [유형별 최소 JSON 예시](#8-백엔드-전달용-유형별-최소-json-예시), [복사·테스트용 최소 JSON 파일](examples/WPF-01-popup-types-minimal.json), [유형별 전체 JSON 예시](POPUP_INTERFACE_SPEC.md#15-유형별-전체-json-예시), [유형별 전체 popup 예시 파일](examples/WPF-01-popup-types.json), 전체 인터페이스 6.4절의 필수값·누락 처리 점검. 필수 여부는 계약이며 현재 C#이 모든 누락을 거부하는 것은 아니다. 특히 deliveryId, popupId, content, 문항/선택지 ID, isRequired, QUIZ의 isScored·배점·정답·passingScore는 서버가 보장해야 한다. 선택 필드 생략과 명시적 null을 혼동하지 않는다.
 
+2026-10-21 TODO62 검토: 취소선과 문단 서식 메뉴는 전체 기능 확장이다. 최소 제공 범위에 `textBlocks`·취소선 설정을 새로 추가하지 않는다.
+
 ## 2. 최소 기능 적용 원칙
 
 | 구분 | 최소 버전 원칙 |
