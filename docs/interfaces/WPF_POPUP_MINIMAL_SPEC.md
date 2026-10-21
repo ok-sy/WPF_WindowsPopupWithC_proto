@@ -131,7 +131,7 @@ ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. �
 | CorrectAnswer | 미제공 | N | `null` | TEXT QUIZ 정답. 최소 버전의 QUIZ에서는 TEXT 자동 채점 자체를 오픈하지 않음 |
 | AnswerMatchMode | 미제공 | N | `null` | EXACT / CONTAINS. 최소 버전의 QUIZ에서는 미사용 |
 
-SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. **최소 QUIZ는 SINGLE_CHOICE / MULTIPLE_CHOICE만 제공하며 TEXT 자동 채점은 최초 오픈 범위에서 제외한다.** QUIZ는 `isScored=true`, `questionScore`, 선택지별 `isCorrect`, 최상위 `passingScore`를 서버가 반드시 제공한다. 미통과 시에는 별도 `CloseOnFail` JSON 필드 없이 WPF가 창을 유지하고 답 수정 후 재채점한다.
+SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않는다. **최소 QUIZ는 SINGLE_CHOICE / MULTIPLE_CHOICE만 제공하며 TEXT 자동 채점은 최초 오픈 범위에서 제외한다.** QUIZ는 `isScored=true`, `questionScore`, 선택지별 `isCorrect`, 최상위 `passingScore`를 서버가 반드시 제공한다. QUIZ MULTIPLE_CHOICE는 `isCorrect=true` 선택지 수까지만 선택할 수 있다(TODO52-5 고정 동작, 추가 필드 없음). 미통과 시에는 별도 `CloseOnFail` JSON 필드 없이 WPF가 창을 유지하고 답 수정 후 재채점한다.
 
 단일/복수 선택의 VERTICAL은 전체 폭 Row·우측 체크 Path, HORIZONTAL은 공통 Chip으로 표시한다. 무채색 상태·긴 문장 줄바꿈·필수 응답 진행 상태는 UI 구현이며 추가 계약 필드가 없다. 제출 영역은 스크롤 밖 하단에 고정하고 필수 미응답 또는 영상 시청 잠금 시 비활성화한다. 공통 Footer가 있는 SURVEY/QUIZ의 버튼은 제출로 동작한다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 완료 전 종료 정책을 적용하고, 배경 Overlay가 켜져 있으면 화면에 닫기·제출 수단이 있는 동안 키보드 닫기를 막는다. Demo·웹 미리보기의 예제/응답은 실제 API 데이터와 구분한다.
 

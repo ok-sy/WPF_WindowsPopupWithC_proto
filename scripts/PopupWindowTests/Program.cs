@@ -94,7 +94,8 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 53-16, 57, 58, 59, 60)");
+        CheckQuizSelectionLimit();
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -983,10 +984,12 @@ internal static class Program
                 choice.IsEnabled = true;
             }
             // [TODO56-5·12] 선택 방식 안내는 제목 끝(필수 표시 뒤)에 12 크기 보조색 Run으로 붙는다. 주관식은 없음.
+            // [TODO52-5] 정답 수로 제한된 QUIZ 복수 선택은 "최대 N개 선택"이다.
+            static bool MultipleHint(string text) => text == "여러 개 선택 가능" || System.Text.RegularExpressions.Regex.IsMatch(text, "^최대 [0-9]+개 선택$");
             var hintRuns = Visuals(view).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>()
-                .Where(r => r.Text.Trim() is "하나 선택" or "여러 개 선택 가능").Select(r => (Block: t, Run: r))).ToList();
+                .Where(r => r.Text.Trim() == "하나 선택" || MultipleHint(r.Text.Trim())).Select(r => (Block: t, Run: r))).ToList();
             int choiceQuestions = opened.Options.Content is SurveyPopupView sv ? cards.Count(c => Visuals(c).OfType<System.Windows.Controls.Primitives.ToggleButton>().Any()) : 0;
-            Check(hintRuns.Count == choiceQuestions && hintRuns.Any(h => h.Run.Text.Trim() == "하나 선택") && hintRuns.Any(h => h.Run.Text.Trim() == "여러 개 선택 가능")
+            Check(hintRuns.Count == choiceQuestions && hintRuns.Any(h => h.Run.Text.Trim() == "하나 선택") && hintRuns.Any(h => MultipleHint(h.Run.Text.Trim()))
                   && hintRuns.All(h => h.Run.FontSize == 12 && h.Run.FontWeight == FontWeights.Normal && Hex(h.Run.Foreground) == "#FF737373"
                                        && h.Block.Inlines.LastInline == h.Run),
                 $"[56-12] {type} the single/multiple hint follows each choice title as a small muted run ({hintRuns.Count}/{choiceQuestions})");
@@ -1019,6 +1022,63 @@ internal static class Program
             ShutdownClose(v1.Window);
         }
         finally { SurveyDesign.Current = SurveyDesign.Latest; }
+    }
+
+    /*
+     * [TODO52-5] QUIZ 복수 선택은 정답 수만큼만 고를 수 있다. 한도에 닿으면 남은 선택지가 비활성화되고 해제하면 풀린다.
+     * SURVEY 복수 선택(정답 없음)은 제한이 없다.
+     */
+    private static void CheckQuizSelectionLimit()
+    {
+        static IEnumerable<DependencyObject> Visuals(DependencyObject root)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                yield return child;
+                foreach (DependencyObject nested in Visuals(child)) yield return nested;
+            }
+        }
+        var quiz = OpenPopup("QUIZ");
+        quiz.Window.UpdateLayout();
+        var view = (SurveyPopupView)quiz.Options.Content!;
+        var all = Visuals(view).OfType<CheckBox>().ToList();
+        var two = all.Where(b => ((Popup.Models.SurveyOption)b.Tag).OptionId is >= 2401 and <= 2499).ToList();
+        var other = all.Where(b => ((Popup.Models.SurveyOption)b.Tag).OptionId is >= 2201 and <= 2299).ToList();
+        Check(two.Count >= 3 && other.Count >= 3, $"[52-5] QUIZ demo has two multiple-choice questions with 2 correct answers ({two.Count}/{other.Count})");
+        two[0].IsChecked = true;
+        Check(two.All(b => b.IsEnabled), "[52-5] below the limit every option stays enabled");
+        two[1].IsChecked = true;
+        Check(two.Where(b => b.IsChecked != true).All(b => !b.IsEnabled) && two.Where(b => b.IsChecked == true).All(b => b.IsEnabled),
+            "[52-5] reaching 2 correct answers disables the remaining options, selected ones stay enabled to uncheck");
+        two[2].IsChecked = true;
+        Check(two[2].IsChecked != true && two.Count(b => b.IsChecked == true) == 2, "[52-5] a programmatic third check is reverted");
+        two[1].IsChecked = false;
+        Check(two.All(b => b.IsEnabled), "[52-5] unchecking one re-enables the options");
+        other[0].IsChecked = true;
+        Check(other.All(b => b.IsEnabled), "[52-5] the limit is counted per question");
+        Check(Visuals(view).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>()).Select(r => r.Text.Trim())
+                .Where(t => t.StartsWith("최대 ")).SequenceEqual(new[] { "최대 2개 선택", "최대 2개 선택" }),
+            "[52-5] limited questions show the maximum selection hint");
+        static Popup.Models.SurveyQuestion Question(global::SurveyQuestionType type, params bool?[] correct) => new()
+        {
+            QuestionType = type,
+            Options = correct.Select((c, i) => new Popup.Models.SurveyOption { OptionId = i + 1, Text = "o" + i, IsCorrect = c }).ToList()
+        };
+        var M = global::SurveyQuestionType.MultipleChoice;
+        Check(Question(M, true, false, false).MaxSelections == 1 && Question(M, true, true, false).MaxSelections == 2
+              && Question(M, null, null).MaxSelections == null && Question(M, false, false).MaxSelections == null
+              && Question(global::SurveyQuestionType.SingleChoice, true, false).MaxSelections == null,
+            "[52-5] MaxSelections = correct option count for multiple choice; no correct keys (SURVEY) or single choice = no limit");
+        ShutdownClose(quiz.Window);
+
+        var survey = OpenPopup("SURVEY");
+        survey.Window.UpdateLayout();
+        var surveyBoxes = Visuals((SurveyPopupView)survey.Options.Content!).OfType<CheckBox>()
+            .GroupBy(b => b.Parent).OrderByDescending(g => g.Count()).First().ToList();
+        foreach (CheckBox box in surveyBoxes) box.IsChecked = true;
+        Check(surveyBoxes.Count >= 3 && surveyBoxes.All(b => b.IsChecked == true && b.IsEnabled), "[52-5] SURVEY multiple choice has no selection limit");
+        ShutdownClose(survey.Window);
     }
 
     /*

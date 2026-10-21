@@ -77,5 +77,21 @@ namespace Popup.Models
          */
         public string? CorrectAnswer { get; set; }
         public string? AnswerMatchMode { get; set; }
+
+        /*
+         * [TODO52-5] 복수 선택 문항의 최대 선택 수 = 정답 선택지 수. 서버가 QUIZ에만 options[].isCorrect를 내려주므로
+         * SURVEY·정답 없는 문항은 null(제한 없음)이다. 별도 필드를 받지 않고 기존 정답 키로 계산한다.
+         */
+        public int? MaxSelections
+        {
+            get
+            {
+                if (QuestionType != SurveyQuestionType.MultipleChoice) return null;
+                int correct = 0;
+                foreach (SurveyOption option in Options)
+                    if (option.IsCorrect == true) correct++;
+                return correct > 0 ? correct : null;
+            }
+        }
     }
 }

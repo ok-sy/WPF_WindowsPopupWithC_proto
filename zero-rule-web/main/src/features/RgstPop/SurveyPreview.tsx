@@ -102,6 +102,18 @@ export interface SurveyPreviewProps {
   onAnswer: (id: number, answer: PreviewAnswer) => void;
   disabled: boolean;
   namePrefix: string;
+  /** [TODO52-5] QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
+  quiz?: boolean;
+}
+
+/**
+ * [TODO52-5] 복수 선택 최대 개수 = 정답 선택지 수. WPF는 QUIZ에만 정답 키를 받으므로 SURVEY·정답 없는 문항은 null(제한 없음).
+ * WPF SurveyQuestion.MaxSelections와 같은 규칙이다.
+ */
+export function maxSelectionsOf(question: PopupQuestion, quiz: boolean): number | null {
+  if (!quiz || question.questionType !== 'MULTIPLE_CHOICE') return null;
+  const correct = question.options.filter((option) => option.isCorrect === true).length;
+  return correct > 0 ? correct : null;
 }
 
 // 세로형 오른쪽 체크(28px 열 예약). V1은 선택 전에도 옅게 보이고, V2는 선택했을 때만 보인다.
@@ -138,6 +150,7 @@ export default function SurveyPreview({
   onAnswer,
   disabled,
   namePrefix,
+  quiz = false,
 }: SurveyPreviewProps) {
   const richDescription = richBlocksOrNull(descriptionBlocks);
   return (
@@ -157,9 +170,11 @@ export default function SurveyPreview({
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
         const titleId = `${namePrefix}-question-${question.questionId}`;
+        const maxSelections = maxSelectionsOf(question, quiz);
+        const full = maxSelections != null && answer.optionIds.length >= maxSelections;
         const hint = !surveyDesign.choiceHint || question.questionType === 'TEXT'
           ? null
-          : multiple ? '여러 개 선택 가능' : '하나 선택';
+          : multiple ? (maxSelections != null ? `최대 ${maxSelections}개 선택` : '여러 개 선택 가능') : '하나 선택';
         const last = index === questions.length - 1;
         // [TODO55] 서식이 있으면 서식으로 표시(WPF와 같이 필수 표시·선택 안내는 마지막 문단 끝).
         const richTitle = richBlocksOrNull(question.titleBlocks);
@@ -257,10 +272,13 @@ export default function SurveyPreview({
               ) : (
                 question.options.map((option) => {
                   const selected = answer.optionIds.includes(option.optionId);
+                  // [TODO52-5] 한도만큼 고르면 남은 선택지는 비활성화한다. 고른 선택지는 해제할 수 있게 둔다.
+                  const optionDisabled = disabled || (full && !selected);
                   const richOption = richBlocksOrNull(option.textBlocks);
                   // 서식 선택지도 접근 가능한 이름은 일반 문구(text)다(WPF AutomationProperties.Name과 같음).
                   const optionLabel = richOption ? <PopupRichBlocks blocks={richOption} /> : option.text;
-                  const select = () =>
+                  const select = () => {
+                    if (optionDisabled) return;
                     onAnswer(question.questionId, {
                       text: '',
                       optionIds: multiple
@@ -269,6 +287,7 @@ export default function SurveyPreview({
                           : [...answer.optionIds, option.optionId]
                         : [option.optionId],
                     });
+                  };
                   return (
                     <Box
                       component="label"
@@ -279,12 +298,12 @@ export default function SurveyPreview({
                         minWidth: 0,
                         maxWidth: '100%',
                         width: horizontal ? 'auto' : '100%',
-                        cursor: disabled ? 'default' : 'pointer',
+                        cursor: optionDisabled ? 'default' : 'pointer',
                         // V2 포커스는 선택 테두리를 덮지 않고 바깥 점선으로만 표시한다.
                         '& input:focus-visible + .survey-option': surveyDesign.selectedRing
                           ? { outline: `1.5px dashed ${surveyColors.focus}`, outlineOffset: 4 }
                           : { borderColor: surveyColors.focus, outline: `1px dashed ${surveyColors.focus}`, outlineOffset: 3 },
-                        '&:hover .survey-option': !disabled
+                        '&:hover .survey-option': !optionDisabled
                           ? {
                               bgcolor: selected
                                 ? horizontal
@@ -299,8 +318,8 @@ export default function SurveyPreview({
                             }
                           : {},
                         '&:hover .survey-check':
-                          !disabled && !selected ? { stroke: surveyColors.placeholder } : {},
-                        '&:active .survey-option': !disabled
+                          !optionDisabled && !selected ? { stroke: surveyColors.placeholder } : {},
+                        '&:active .survey-option': !optionDisabled
                           ? { bgcolor: surveyColors.pressed }
                           : {},
                       }}
@@ -310,7 +329,7 @@ export default function SurveyPreview({
                         type={multiple ? 'checkbox' : 'radio'}
                         name={`${namePrefix}-${question.questionId}`}
                         checked={selected}
-                        disabled={disabled}
+                        disabled={optionDisabled}
                         aria-label={option.text}
                         onChange={select}
                         onKeyDown={(event) => {
@@ -343,7 +362,7 @@ export default function SurveyPreview({
                             : surveyColors.page,
                           borderColor: selected ? surveyColors.selectedBorder : surveyColors.border,
                           color: selected && surveyDesign.selectedBold ? surveyColors.text : surveyColors.choice,
-                          opacity: disabled ? 0.45 : 1,
+                          opacity: optionDisabled ? 0.45 : 1,
                         }}
                       >
                         <Box
@@ -372,7 +391,7 @@ export default function SurveyPreview({
                             {optionLabel}
                           </Box>
                         </Box>
-                        {!horizontal && <CheckMark selected={selected} disabled={disabled} />}
+                        {!horizontal && <CheckMark selected={selected} disabled={optionDisabled} />}
                       </Box>
                     </Box>
                   );

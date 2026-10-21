@@ -1,7 +1,7 @@
 # 52. 2026-10-16 회의 확정 요건 반영 TODO
 
 기준일: 2026-10-16 (KST).
-상태: **진행 확정 · 52-4 반영(2026-10-17, `5242f7d`) · 52-2 반영(2026-10-18) · 52-1·52-3·52-5~8 상세 계약 대기**. 후속 실행 관리는 [TODO53](53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) 53-4~7.
+상태: **진행 확정 · 52-4 반영(2026-10-17, `5242f7d`) · 52-2 반영(2026-10-18) · 52-5 반영(2026-10-21) · 52-1·52-3·52-6~8 상세 계약 대기**. 후속 실행 관리는 [TODO53](53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) 53-4~7.
 Trello: https://trello.com/c/Op9dEocp
 근거: 20261016_개발팀회의.docx 및 회의록은 답변까지 반영한 최종 확정사항이라는 확인.
 기존 '질의' 표제를 미확정으로 해석한 비교 기록을 정정한다. 요건 승인을 다시 요청하지 않으며, 미제공된 세부 API 값은 구현 계약 수신 작업으로 관리한다.
@@ -37,7 +37,10 @@ Trello: https://trello.com/c/Op9dEocp
   - 범위 확정(2026-10-17): `useBackgroundOverlay` **기본값 true 보장**으로 반영한다. 명시 `false`는 정상 명시값으로 유지하며 WPF가 강제로 켜지 않는다. `useBackgroundOverlay=false` 경로·관리자 설정 UI·Demo 옵션·관리자 미리보기는 변경하지 않는다.
   - 기본값 대조: WPF `PopupResponseDto`·`PopupOptions` 초기값 true, 서버 `PopupWindowOptions.DEFAULT_USE_OVERLAY=true`(누락·null·빈 값 → true, 기존 `PopupActionOptionsTest`), 관리자 웹 신규 기본 true·미리보기/편집 `!== false`, 계약서·ALL·MINIMAL 기본값 `true`. 코드 변경 없음.
   - 검증: `scripts/PopupWindowTests`에 서버 응답 JSON에서 필드를 뺐을 때 TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ 모두 DTO·PopupOptions true, PopupManager Overlay 표시·닫힘 시 해제, 명시 false 유지 검사 25건 추가(DTO 기본값을 false로 바꾸면 실패 확인). 다중 모니터·영상 전체화면 등 실화면 확인은 설계 44 남은 항목을 따른다.
-- [ ] **52-5 선택지 개수 컨트롤**: 기존 제안 카드와 통합한다. API가 정한 제어 대상(선택지 표시 수, 선택 가능한 답변 수, 배치 수)에 따라 DTO·화면·제출 검증을 구현한다. 표시 개수만 의미한다면 options 배열과 중복 count의 필요성을 검토한다. 필드명·값·기본값·최소/최대 및 유형별 예제를 담당자로부터 받는다.
+- [x] **52-5 선택지 개수 컨트롤**: 기존 제안 카드와 통합한다. API가 정한 제어 대상(선택지 표시 수, 선택 가능한 답변 수, 배치 수)에 따라 DTO·화면·제출 검증을 구현한다. 표시 개수만 의미한다면 options 배열과 중복 count의 필요성을 검토한다. 필드명·값·기본값·최소/최대 및 유형별 예제를 담당자로부터 받는다.
+  - 확정(2026-10-21): 제어 대상은 **정답 개수만큼의 선택 가능 수**다. QUIZ `MULTIPLE_CHOICE`에서 정답 선택지(`isCorrect=true`)가 N개면 관리자 미리보기와 WPF 모두 N개까지만 선택할 수 있다. 별도 count 필드는 두지 않고 이미 QUIZ에 전달되는 `options[].isCorrect`로 계산한다(서버 API·DB 변경 없음). SURVEY 복수 선택은 정답이 없어 제한하지 않는다.
+  - 구현(2026-10-21): WPF `SurveyQuestion.MaxSelections`(정답 수, 없으면 null)와 `SurveyPopupView.ApplySelectionLimit` — 한도 도달 시 남은 CheckBox 비활성, 해제 시 복구, 코드로 한도를 넘긴 체크는 되돌림, Enter 토글도 비활성 선택지는 무시. 안내 `최대 N개 선택`. 관리자 미리보기 `SurveyPreview.maxSelectionsOf`(QUIZ만, WPF와 같은 규칙)로 같은 비활성·안내, 편집기 복수 선택 문항에 `정답 N개 · 응답자는 정답 수만큼만 선택` 안내. 인터페이스 명세·ALL·MINIMAL(QUIZ 복수 선택 고정 동작)·옵션 가이드 2종·WPF README 갱신.
+  - 검증: PopupWindowTests 385건 통과(신규 52-5: 2개 한도 도달 시 비활성·선택 항목 해제 가능·세 번째 체크 되돌림·해제 후 복구·문항별 한도·안내 문구·MaxSelections 규칙·SURVEY 무제한), verify-completion-ux-43 65건 통과(신규 5건: 안내·비활성·비활성 선택지 클릭 무시·해제 복구·SURVEY 무제한). 미실행: 실제 관리자 저장→WPF 실화면 조작, 서버 결과 제출 시 초과 선택 거부(서버 채점은 정답 집합 일치 규칙 그대로).
 - [ ] **52-6 API·식별자·샘플 인계**: 로그인/단건 조회/결과 저장의 endpoint·method·인증·필수값·null·오류와 후속 동작을 반영한다. popupId/deliveryId 수신 및 반환 위치, resultId와 팝업제출결과번호 대응을 계약으로 매핑한다. 성공·대상 없음·중복 수신·재시도·인증 만료 예제를 정리한다. 서버 내부 중복 처리 방식은 WPF 구현 범위에 넣지 않는다.
 - [ ] **52-7 TEXT 우선 검증**: TEXT 템플릿/게시 등록 담당과 API 샘플 인계 순서를 맞춘다. WPF는 TEXT 표시 → 닫기/나중에 보기 → 결과 응답 처리부터 검증한다. TODO51 API Demo를 이용하고 이후 나머지 유형을 확인한다.
 - [ ] **52-8 문서·회귀**: 구현 단계에서 ALL/MINIMAL·인터페이스·예제·Demo 및 관련 TODO35·43·44를 갱신한다. 최소 제공 범위는 따로 대조한다. WPF 검증 결과와 Front/Server 인계 항목을 분리 기록한다.

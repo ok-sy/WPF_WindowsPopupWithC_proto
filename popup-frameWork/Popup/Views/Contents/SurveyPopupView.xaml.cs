@@ -436,7 +436,7 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO56-5] 선택 방식 안내. 계약에 선택 개수 제한이 없으므로 단일·복수만 구분한다. 주관식은 안내하지 않는다.
+         * [TODO56-5] 선택 방식 안내. 주관식은 안내하지 않는다. [TODO52-5] 정답 수로 선택 수가 제한된 복수 선택은 최대 개수를 안내한다.
          * 디자인 버전에 SurveyShowChoiceHint=true가 있을 때만 표시한다(V1은 키가 없어 표시하지 않음).
          */
         private string? ChoiceHintOf(SurveyQuestion question)
@@ -445,7 +445,7 @@ namespace Popup.Views.Contents
             return question.QuestionType switch
             {
                 SurveyQuestionType.SingleChoice => "하나 선택",
-                SurveyQuestionType.MultipleChoice => "여러 개 선택 가능",
+                SurveyQuestionType.MultipleChoice => question.MaxSelections is int max ? $"최대 {max}개 선택" : "여러 개 선택 가능",
                 _ => null
             };
         }
@@ -525,6 +525,7 @@ namespace Popup.Views.Contents
             SurveyQuestion question)
         {
             Panel optionPanel = CreateOptionPanel(question);
+            var checkBoxes = new List<CheckBox>();
 
             foreach (SurveyOption option in question.Options)
             {
@@ -541,6 +542,9 @@ namespace Popup.Views.Contents
                     Tag = option
                 };
 
+                // [TODO52-5] 한도 확인을 응답 갱신보다 먼저 연결해 초과 선택이 응답·진행률에 남지 않게 한다.
+                checkBox.Checked += (_, _) => ApplySelectionLimit(question.MaxSelections, checkBoxes, checkBox);
+                checkBox.Unchecked += (_, _) => ApplySelectionLimit(question.MaxSelections, checkBoxes, null);
                 checkBox.Checked += AnswerSelectionChanged;
                 checkBox.Unchecked += AnswerSelectionChanged;
                 System.Windows.Automation.AutomationProperties.SetName(checkBox, option.Text);
@@ -548,15 +552,35 @@ namespace Popup.Views.Contents
                 {
                     if (e.Key == System.Windows.Input.Key.Enter)
                     {
-                        checkBox.IsChecked = checkBox.IsChecked != true;
+                        if (checkBox.IsEnabled) checkBox.IsChecked = checkBox.IsChecked != true;
                         e.Handled = true;
                     }
                 };
 
+                checkBoxes.Add(checkBox);
                 optionPanel.Children.Add(checkBox);
             }
 
             return optionPanel;
+        }
+
+        /*
+         * [TODO52-5] 복수 선택 한도(정답 수). 한도만큼 고르면 남은 선택지를 비활성화하고, 하나를 해제하면 다시 활성화한다.
+         * 코드로 한도를 넘겨 체크된 경우에는 방금 체크한 선택지를 해제한다. 한도가 없으면(null) 아무것도 하지 않는다.
+         * 문항 전체 잠금(VIDEO+QUIZ 시청 전 등)은 부모 IsEnabled로 걸리므로 여기서 활성화해도 잠금이 풀리지 않는다.
+         */
+        internal static void ApplySelectionLimit(int? maxSelections, IReadOnlyList<CheckBox> checkBoxes, CheckBox? justChecked)
+        {
+            if (maxSelections is not int max) return;
+            int selected = checkBoxes.Count(box => box.IsChecked == true);
+            if (selected > max && justChecked != null)
+            {
+                justChecked.IsChecked = false;
+                return;
+            }
+            bool full = selected >= max;
+            foreach (CheckBox box in checkBoxes)
+                box.IsEnabled = !full || box.IsChecked == true;
         }
 
         private static Thickness GetOptionMargin(bool horizontal, bool isLast)

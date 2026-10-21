@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-06 — TODO52-5 QUIZ 복수 선택 정답 수 제한
+
+- 이유: 52-5 선택지 개수 제어의 대상을 '정답 개수만큼만 선택 가능'으로 확정. 정답이 2개면 관리자 미리보기와 WPF에서 두 개까지만 선택할 수 있어야 함.
+- 변경: 별도 필드 없이 QUIZ에 이미 전달되는 `options[].isCorrect` 개수로 한도를 계산(서버 API·DB·채점 변경 없음, SURVEY는 무제한). WPF — `SurveyQuestion.MaxSelections`, `SurveyPopupView.ApplySelectionLimit`(한도 도달 시 남은 CheckBox 비활성·해제 시 복구·코드로 넘긴 체크 되돌림·비활성 선택지 Enter 무시), 안내 `최대 N개 선택`. 관리자 웹 — `SurveyPreview.maxSelectionsOf`와 `quiz` prop으로 같은 비활성·안내, `PopupPreview`가 QUIZ 여부 전달, 문항 편집기 QUIZ 복수 선택에 정답 수 안내. 테스트 추가(WPF 52-5 검사, 미리보기 하네스 5건)와 기존 안내 문구 검사 갱신. 인터페이스 명세·ALL·MINIMAL(QUIZ 복수 선택 고정 동작 한 줄)·옵션 가이드 2종·WPF README·TODO52·53 갱신.
+- 주요 파일: popup-frameWork/Popup/Models/SurveyQuestion.cs·Views/Contents/SurveyPopupView.xaml.cs, zero-rule-web/main/src/features/RgstPop/SurveyPreview.tsx·PopupPreview.tsx·PopupQuestionEditor.tsx, scripts/PopupWindowTests/Program.cs·verify-completion-ux-43.cjs, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md·WPF_POPUP_MINIMAL_SPEC.md, docs/POPUP_OPTION_GUIDE.md·POPUP_USER_OPTION_GUIDE.md, popup-frameWork/README.md, docs/design/52_회의확정요건_게시반복_나중에보기_공통동작_TODO.md·53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF PopupWindowTests 385건 통과(신규 52-5 포함). 웹 tsc 오류 0, 변경 파일 eslint 오류 0, verify-completion-ux-43 65건(신규 5)·survey-rich-text-55 23건·popup-transform-64 71건 통과. verify-popup-preview-61은 대화상자 닫힘·창 크기 재계산 타이밍 검사에서 간헐 실패(5회 중 2회 통과) — 변경 전 미리보기 파일로 되돌려도 3회 모두 같은 종류로 실패해 기존 하네스 타이밍 문제로 판단. 미실행: 실제 관리자 저장→WPF 실화면 조작, 서버 결과 제출 시 초과 선택 거부(서버는 정답 집합 일치 채점 그대로), 인터페이스 Excel·Word·PDF 재생성.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. Trello TODO52-5는 검증대기.
+
 ## 2026-10-21-05 — TODO64 팝업 데이터 변환 함수 분리와 에디터·미리보기 이식 안내
 
 - 이유: 신규 콘텐츠·팝업 등록 화면에서 에디터와 우측/모달 미리보기를 재사용하려면 부모 `PopupEditorDialog`에 묶인 편집값 구성·저장 요청 조립을 화면과 분리할 필요(TODO64).

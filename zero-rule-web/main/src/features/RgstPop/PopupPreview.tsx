@@ -754,6 +754,7 @@ export default function PopupPreview({
                 onAnswer,
                 disabled: !videoUnlocked,
                 namePrefix,
+                quiz: popup.popupType === 'QUIZ',
               }}
             />
           </Box>

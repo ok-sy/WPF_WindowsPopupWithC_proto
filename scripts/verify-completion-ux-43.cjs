@@ -200,5 +200,24 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'TODO56 V2 selection keeps choice size: ' + JSON.stringify({before56, after: s}));
   const shot = await send('Page.captureScreenshot', {format: 'png'});
   fs.writeFileSync(path.join(output, 'survey-v2.png'), Buffer.from(shot.data, 'base64'));
+  // 8. [TODO52-5] QUIZ 복수 선택은 정답 수만큼만 선택(남은 선택지 비활성, 해제하면 복구). SURVEY는 제한 없음.
+  const multi = [{questionId: 9, title: '복수', questionType: 'MULTIPLE_CHOICE', isRequired: true, isScored: true, questionScore: 100, sortOrder: 1,
+    optionLayout: 'VERTICAL', options: [1, 2, 3, 4].map(n => ({optionId: 90 + n, text: `선택 ${n}`, isCorrect: n <= 2, sortOrder: n}))}];
+  const boxes = () => run(`Array.from(document.querySelectorAll('input[type=checkbox]')).map(i=>({checked:i.checked,disabled:i.disabled}))`);
+  const clickBox = n => run(`document.querySelectorAll('input[type=checkbox]')[${n}].click()`).then(() => pause(80));
+  await render('QUIZ', {questions: multi});
+  check(await run(`document.body.textContent.includes('최대 2개 선택')`), '[52-5] QUIZ multiple choice shows the maximum selection hint');
+  await clickBox(0); await clickBox(2);
+  let picked = await boxes();
+  check(picked.filter(x => x.checked).length === 2 && picked.filter(x => !x.checked).every(x => x.disabled) && picked.filter(x => x.checked).every(x => !x.disabled),
+    '[52-5] reaching the correct count disables remaining options: ' + JSON.stringify(picked));
+  await run(`document.querySelectorAll('label')[3].click()`); await pause(80);
+  check((await boxes()).filter(x => x.checked).length === 2, '[52-5] clicking a disabled option does not add a third answer');
+  await clickBox(2);
+  check((await boxes()).every(x => !x.disabled), '[52-5] unchecking re-enables the options');
+  await render('SURVEY', {questions: multi.map(q => ({...q, isScored: false}))});
+  for (let n = 0; n < 4; n++) await clickBox(n);
+  picked = await boxes();
+  check(picked.every(x => x.checked && !x.disabled) && await run(`document.body.textContent.includes('여러 개 선택 가능')`), '[52-5] SURVEY multiple choice has no limit');
   console.log(`PASS: ${checks} completion UX 43 checks`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {socket?.close(); browser?.kill(); server?.close();});
