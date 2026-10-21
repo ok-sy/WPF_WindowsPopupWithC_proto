@@ -40,6 +40,7 @@ changePopupType(previous, selection: PopupTypeSelection): AdminPopupDetail  // �
 toSaveRequestPopup(popup: AdminPopupDetail): AdminPopupDetail      // 편집값 → 저장 요청 popup
 toSaveRequest(popup, active, targetGroups): PopupSaveRequest       // 저장 API body
 // 보조: toDateTimeLocal, contentValue, isSubmitPopupType, normalizeImageSizeMode, withDefaultAnswerMatchMode
+// [TODO52-1] 일정: WEEKDAYS, parseWeekdays('1,3,5'), describeSchedule(periodMode, repeatDayOfWeek, displayTimes | 요약 문자열)
 ```
 
 모든 함수는 입력 객체를 바꾸지 않고 새 객체를 돌려준다(동결 입력으로 검증). 입력 검증(필수값·범위·URL 오류 안내)은 하지 않으므로 부모가 `toSaveRequest` 호출 전에 검사한다.

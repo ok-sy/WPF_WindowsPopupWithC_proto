@@ -11,12 +11,15 @@ import {
   changePopupType, contentValue, createDefaultPopup, toEditorPopup, toEditorPopupFromTemplate, toSaveRequest, toSaveRequestPopup,
 } from '../zero-rule-web/main/src/features/RgstPop/popupEditorTransform';
 import { legacyChangeType, legacyDefault, legacyLoad, legacySave, legacyTemplate } from './verify-popup-transform-64-legacy';
+import PopupScheduleFields, { validatePopupSchedule } from '../zero-rule-web/main/src/features/RgstPop/PopupScheduleFields';
+import { describeSchedule, parseWeekdays } from '../zero-rule-web/main/src/features/RgstPop/popupEditorTransform';
 
 /*
  * [TODO64] 1) 변환 함수와 분리 전 코드(legacy)의 결과 비교, 2) 전체 등록 화면 없이 편집기·우측/모달 미리보기·변환 함수를
  * 연결한 최소 호스트. 저장 API는 호출하지 않고 저장 요청 객체만 화면과 window.saveRequest()로 확인한다.
  */
 const w = window as any;
+Object.assign(w, { validatePopupSchedule, describeSchedule, parseWeekdays });
 Object.assign(w, { changePopupType, createDefaultPopup, toEditorPopup, toEditorPopupFromTemplate, toSaveRequest, toSaveRequestPopup,
   legacyChangeType, legacyDefault, legacyLoad, legacySave, legacyTemplate });
 w.deepFreeze = <T,>(value: T): T => {
@@ -63,5 +66,15 @@ let mountKey = 0;
 w.mountHost = (initial: AdminPopupDetail) => {
   mountKey++;
   root.render(<ThemeProvider theme={theme}><CssBaseline /><TransformHost key={mountKey} initial={initial} /></ThemeProvider>);
+};
+/* [TODO52-1] 노출 일정 입력 단독 호스트. 변경 패치를 누적해 window.schedule로 확인한다. */
+function ScheduleHost({ initial }: { initial: Pick<AdminPopupDetail, 'periodMode' | 'repeatDayOfWeek' | 'displayTimes'> }) {
+  const [value, setValue] = useState(initial);
+  w.schedule = value;
+  return <div id="schedule" style={{ width: 640, padding: 16 }}><PopupScheduleFields popup={value} onChange={(patch) => setValue((v) => ({ ...v, ...patch }))} /></div>;
+}
+w.mountSchedule = (initial: Pick<AdminPopupDetail, 'periodMode' | 'repeatDayOfWeek' | 'displayTimes'>) => {
+  mountKey++;
+  root.render(<ThemeProvider theme={theme}><CssBaseline /><ScheduleHost key={mountKey} initial={initial} /></ThemeProvider>);
 };
 w.editor = () => (document.querySelector('.ck-editor__editable') as any)?.ckeditorInstance;

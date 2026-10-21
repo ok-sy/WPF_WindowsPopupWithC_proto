@@ -50,6 +50,16 @@ export interface AdminPopupListItem {
   createdAt: PopupDateValue;
   updatedBy: string;
   updatedAt: PopupDateValue;
+  /** [TODO52-1] SCHEDULE 요일(ISO 번호 '1,3,5', 1=월). null = 매일. */
+  repeatDayOfWeek?: string | null;
+  /** [TODO52-1] SCHEDULE 시간대 요약('09:00~12:00, 22:00~02:00'). null = 하루 종일. */
+  displayTimesText?: string | null;
+}
+
+/** [TODO52-1] 게시 기간 안 노출 시간대(KST, HH:mm). 시작 포함·종료 미포함, 종료 < 시작이면 자정 초과(요일은 시작 기준). */
+export interface PopupDisplayTime {
+  startTime: string;
+  endTime: string;
 }
 
 /** WPF 출력과 관리자 편집·CSS 미리보기가 함께 사용하는 전체 팝업 정보다. */
@@ -81,10 +91,14 @@ export interface AdminPopupDetail {
   /** [TODO52-2] Footer "나중에 보기" 버튼 표시. 이전 저장 데이터·응답에 없으면 false로 본다. */
   showLater?: boolean;
   questionTemplateId?: number | null;
+  /** [TODO52-1] FIXED = 게시 기간 내 상시, SCHEDULE = 게시 기간 안 요일·시간대 지정. */
   periodMode: string;
   repeatInterval?: number | null;
+  /** [TODO52-1] SCHEDULE 노출 요일(ISO 번호 '1,3,5', 1=월). 비우면 매일. */
   repeatDayOfWeek?: string | null;
   repeatDayOfMonth?: number | null;
+  /** [TODO52-1] SCHEDULE 노출 시간대(개수 제한 없음). 비우면 하루 종일. */
+  displayTimes?: PopupDisplayTime[];
   hideDays?: number | null;
   completionRatio?: number | null;
   passingScore?: number | null;

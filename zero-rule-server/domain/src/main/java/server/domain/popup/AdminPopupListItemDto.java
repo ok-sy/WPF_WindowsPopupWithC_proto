@@ -23,6 +23,9 @@ public record AdminPopupListItemDto(
         String createdBy,
         OffsetDateTime createdAt,
         String updatedBy,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        // [TODO52-1] 목록 일정 요약용. SCHEDULE 요일(ISO 번호, null = 매일)과 시간대 문자열("09:00~12:00, 22:00~02:00", 없으면 null = 종일)
+        String repeatDayOfWeek,
+        String displayTimesText
 ) {
 }

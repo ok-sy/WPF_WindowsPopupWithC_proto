@@ -117,7 +117,12 @@ public class PopupService {
                 : loadQuestions(List.of(popup.questionTemplateId()))
                         .getOrDefault(popup.questionTemplateId(), List.of());
 
-        return toResponseDto(popup, questions);
+        PopupResponseDto response = toResponseDto(popup, questions);
+        // [TODO52-1] SCHEDULE 팝업의 노출 시간대를 붙인다(WPF 응답 경로 toPublicResponseDto에는 붙이지 않는다).
+        return PopupDisplaySchedule.SCHEDULE.equals(response.periodMode())
+                ? response.withSchedule(response.periodMode(), response.repeatDayOfWeek(),
+                        popupMapper.selectDisplayTimes(normalizedPopupId))
+                : response;
     }
 
     /**
@@ -157,6 +162,8 @@ public class PopupService {
             String auditUser) {
         // [TODO55-4] SURVEY·QUIZ 서식을 검증하고 일반 문자열을 서식에서 파생한 값으로 이후 검증·저장한다.
         popup = PopupSurveyRichText.normalize(popup);
+        // [TODO52-1] 기간 모드·요일·시간대 정규화(FIXED는 비우고 SCHEDULE은 검증). 매월·간격 반복 값은 저장하지 않는다.
+        popup = PopupDisplaySchedule.normalize(popup);
         validateAdminPopup(popup, active, auditUser);
         List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
         if (Boolean.TRUE.equals(active) && normalizedGroups.isEmpty()) {
@@ -170,6 +177,16 @@ public class PopupService {
         int contentRows = popupMapper.upsertAdminPopupContent(command);
         if (noticeRows <= 0 || contentRows <= 0) {
             throw new IllegalStateException("팝업 저장에 실패했습니다.");
+        }
+
+        // [TODO52-1] 노출 시간대도 요청 목록 전체로 교체한다(FIXED는 빈 목록).
+        popupMapper.deleteDisplayTimes(command.popupId());
+        for (int i = 0; i < popup.displayTimes().size(); i++) {
+            var time = popup.displayTimes().get(i);
+            if (popupMapper.insertDisplayTime(command.popupId(), i + 1, PopupDisplaySchedule.toMinute(time.startTime()),
+                    PopupDisplaySchedule.toMinute(time.endTime()), command.auditUser()) <= 0) {
+                throw new IllegalStateException("팝업 노출 시간대 저장에 실패했습니다.");
+            }
         }
 
         // 대상 조건은 부분 수정하지 않고 요청 목록 전체로 교체한다.

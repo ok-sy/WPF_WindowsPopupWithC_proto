@@ -8,6 +8,7 @@
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
+- 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
@@ -1774,6 +1775,7 @@ QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 6
 - [ ] 결과 API는 결과 1건 객체를 받고 `deliveryId`의 소유·팝업 일치·미종료를 검증한다.
 - [ ] status를 ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR 중 하나로 반환한다.
 - [ ] ACCEPTED·DUPLICATE에는 `nextStatus`(AVAILABLE/EMPTY)를 넣고, 후보 확인 실패는 EMPTY 대신 생략과 `WPF_NEXT_STATUS_UNKNOWN`으로 알린다.
+- [ ] [TODO52-1] 노출 요일·시간대(`periodMode=SCHEDULE`)는 서버 KST로 후보 선정에서만 거르고, 완료·숨김·재노출 유예는 일정과 관계없이 그대로 적용한다. 결과 수신 재검증에는 일정을 적용하지 않는다.
 - [ ] TEXT·IMAGE CLOSED는 완료로, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 `pollingIntervalSeconds` 동안 재노출 유예로 처리한다.
 - [ ] REJECTED는 WPF가 재전송하지 않는 종결 상태이므로 영구 업무 오류에만 쓰고, 일시 장애·미확정 오류는 RETRYABLE_ERROR·INTERNAL_ERROR로 반환한다.
 - [ ] 네트워크/서버 장애 시 WPF가 같은 결과를 재전송할 수 있음을 고려한다.

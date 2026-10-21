@@ -128,6 +128,7 @@ table(['Method', '경로', '기능'], [
 body += p('기존 WPF 조회·숨김·응답·이벤트 API는 제거되었습니다. 현재 로그인·조회·결과 수신 API 3개를 사용합니다. 영상 스트리밍 `GET /p/api/popups/video`는 유지합니다.');
 body += p('**IMAGE 기본값 구분**\n관리자 신규 등록 기본 선택은 ADAPTIVE입니다. WPF 계약에서 imageSizeMode가 생략되어도 ADAPTIVE를 사용합니다. 최소 기능 범위는 ORIGINAL을 명시해 전달합니다.', 'Callout');
 body += p('Footer 버튼 표시는 관리자 API·DB에서 `showCloseButton`(SHOW_CLOSE_BUTTON_YN)으로 저장하고, WPF 조회 응답(popup) 조립 시 `showFooterButton`으로 변환합니다. WPF 응답에는 `showCloseButton`을 넣지 않습니다.');
+body += p('[TODO52-1] 게시 기간 안 노출 일정은 관리자 API의 `periodMode`(`FIXED` 상시 / `SCHEDULE`), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과)로 저장합니다(DB `POPUP_DISPLAY_TIME`). 서버가 KST로 판단하며 WPF 조회 응답에는 넣지 않습니다.');
 body += p('동영상+퀴즈는 `QUIZ`와 `content.videoEnabled=true`로 저장합니다. 새 기능을 사용할 때 WPF와 서버를 함께 갱신합니다.');
 body += p('SURVEY·QUIZ 미리보기는 세로형 전체 폭 Row·우측 체크 Path와 가로형 공통 Chip, 무채색 상태 및 스크롤 밖 고정 제출 영역을 사용합니다. 실제 컨트롤의 단일/복수 선택·필수 검증·응답 OPTION_ID 계약은 유지합니다.');
 body += p('관리자 미리보기의 예제 문항은 WPF Demo와 동일한 가로/세로·단일/복수·짧은/긴 보기 사례입니다. 예제·응답·로컬 미리보기 점수는 편집 데이터나 서버 결과 API에 저장하지 않습니다. 상세 케이스·검증은 설계 20 §6·22를 참조합니다.');

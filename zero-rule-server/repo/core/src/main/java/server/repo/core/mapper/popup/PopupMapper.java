@@ -90,6 +90,18 @@ public interface PopupMapper {
 
     int deleteAdminPopupTargets(@Param("popupId") String popupId);
 
+    /** [TODO52-1] 노출 시간대(HH:mm, 저장 순서). */
+    List<server.domain.popup.PopupDisplayTimeDto> selectDisplayTimes(@Param("popupId") String popupId);
+
+    int deleteDisplayTimes(@Param("popupId") String popupId);
+
+    int insertDisplayTime(
+            @Param("popupId") String popupId,
+            @Param("sortOrder") int sortOrder,
+            @Param("startMinute") int startMinute,
+            @Param("endMinute") int endMinute,
+            @Param("auditUser") String auditUser);
+
     int countAdminPopupTargetGroups(@Param("popupId") String popupId);
 
     /** XML 바인딩용. selectKey가 {@code targetGroupId}를 Map에 채운다. */

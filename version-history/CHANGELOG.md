@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-10 — TODO52-1 게시 기간 안 요일·시간대 노출 일정 구현
+
+- 이유: 52-1 확정 정책(반복 = 미완료 팝업의 노출 가능 일정, 게시 기간 필수 + 기간 안 요일·시간대 지정, 시간대 개수·자정 초과 제한 없음, 요일 미지정 = 매일, 서버 KST, 결과 응답 후 재조회로 지나간 시간대는 놓침 허용, 기존 컬럼 재활용)을 서버 노출 판단과 관리자 입력에 반영.
+- 변경: DB — `18_popup_display_time_oracle.sql`로 `POPUP_DISPLAY_TIME`(분 단위, 복합 키, 11g 호환) 추가, `PERIOD_MODE`(FIXED/SCHEDULE)·`REPEAT_DAY_OF_WEEK`(ISO 번호) 의미 주석, `01` 반영. 서버 — `PopupDisplaySchedule` 정규화·검증, `PopupDisplayTimeDto`, `PopupResponseDto.displayTimes`(기존 생성자 유지)·`withSchedule`, 저장 시 시간대 교체·상세 조회 첨부, 관리자 목록 요일·시간대 요약, WPF 후보 SQL(`eligiblePopupCte`)에 KST 요일·시간대 조건(자정 이후 부분은 어제 요일, WPF 조회·후속 후보 확인에만 적용, 결과 제출 재검증 제외). 매월·간격 반복 값은 저장 시 NULL. 관리자 웹 — `PopupScheduleFields`(스위치·요일 토글·시간대 행·자정 초과·놓침 안내·요약)와 저장 전 검증, 목록 '노출 일정' 열, 일정 요약 함수·기본값, 도메인 타입. WPF 코드·조회/결과 계약 변경 없음(ALL/MINIMAL 검토만, 수정 없음). 인터페이스 명세(변경 기록·백엔드 체크리스트), Word 부록 A·Excel 개요 메모, 옵션 가이드 2종, 이식 안내, DB README, TODO52·53·설계 09 갱신, Word·PDF 재생성.
+- 주요 파일: db/oracle/18_popup_display_time_oracle.sql(신규)·01_popup_schema_oracle.sql·README.md, zero-rule-server/domain/.../PopupDisplayTimeDto.java(신규)·PopupResponseDto.java·AdminPopupListItemDto.java, repo/core/.../PopupMapper.java·PopupMapper.xml, service/core/.../PopupDisplaySchedule.java(신규)·PopupService.java, 테스트 PopupDisplayScheduleTest(신규)·PopupQuestionDatabaseTest, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, zero-rule-web/main/src/features/RgstPop/PopupScheduleFields.tsx(신규)·PopupEditorDialog.tsx·RgstPop.tsx·popupEditorTransform.ts, scripts/verify-popup-transform-64(.cjs·-entry.tsx)·export-interface-word.cjs, docs/interfaces/POPUP_INTERFACE_SPEC.md·ADMIN_POPUP_EDITOR_TRANSFORM.md·WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx·WPF_Popup_API_Interface_v3.7.docx·.pdf, docs/POPUP_OPTION_GUIDE.md·POPUP_USER_OPTION_GUIDE.md, docs/design/09·52·53, version-history/CHANGELOG.md.
+- 검증: 로컬 XE·원격 개발 DB에 18 실행(재실행 SKIP 확인, 원격 첫 시도 ORA-12170 후 재시도 성공), 로컬 03 재실행. 서버 `PopupDisplayScheduleTest` 5건, 실DB `PopupQuestionDatabaseTest` 4건(신규 일정 테스트: 요일 4종 × 시간대 5종 20조합을 Java 기준 판단과 비교·결과 재검증 경로 일정 무관·FIXED 전환·목록 요약)을 로컬 XE와 원격 개발 DB에서 각각 통과(롤백 전용), 서버 전체 159건 중 148 통과·11 skip·실패 0. 웹 tsc·eslint 오류 0, verify-popup-transform-64 77건 통과. 미실행: 실제 관리자 화면 저장→WPF 실조회 왕복(관리자 웹 서버는 PostgreSQL 전용 프레임워크), 원격 서버 배포, Excel 앱·PDF 쪽별 확인.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. 배포 순서: DB 18 → 서버·관리자 웹.
+
 ## 2026-10-21-09 — TODO52-1 반복 일정의 완료·숨김·나중에 보기 정책 확정 기록
 
 - 이유: 52-1 게시 시간·반복 요건 중 완료·숨김·나중에 보기 정책이 확정되어 구현 전 기준으로 기록할 필요.

@@ -109,9 +109,39 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const p=toSaveRequestPopup(deepFreeze(${JSON.stringify(cases.SURVEY)}));return !('footerAction' in p.content)&&!!p.content.surveyTitleBlocks&&!!p.content.descriptionBlocks
     &&p.questions[0].titleBlocks[0].runs[0].italic&&p.questions[0].options[0].textBlocks[0].runs[0].underline;})()`),
     'SURVEY save keeps content/question/option blocks and drops footer action');
-  check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>({...p,displayStartAt:0,displayEndAt:0});
+  check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>{const {displayTimes,...rest}=p;return {...rest,displayStartAt:0,displayEndAt:0};};
     return canonical(strip(a))===canonical(strip(b))&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
-    'Default editor value equals pre-split defaults and returns a new object');
+    'Default editor value equals pre-split defaults (except TODO52-1 displayTimes) and returns a new object');
+  check(await run(`JSON.stringify(createDefaultPopup().displayTimes)==='[]'&&createDefaultPopup().periodMode==='FIXED'`), '[52-1] default schedule is FIXED with no display times');
+
+  // ── 1-1. [TODO52-1] 노출 일정 요약·검증·입력 ──
+  check(await run(`[describeSchedule('FIXED','1,3',[{startTime:'09:00',endTime:'10:00'}]),describeSchedule('SCHEDULE',null,[]),
+    describeSchedule('SCHEDULE','5,1,3',[{startTime:'09:00',endTime:'12:00'},{startTime:'22:00',endTime:'02:00'}]),
+    describeSchedule('SCHEDULE','1,2,3,4,5,6,7','14:00~18:00')].join('|')==='상시|매일 · 종일|월·수·금 · 09:00~12:00, 22:00~02:00|매일 · 14:00~18:00'`),
+    '[52-1] schedule summary: FIXED = 상시, no days = 매일, no times = 종일, midnight crossing kept');
+  check(await run(`[validatePopupSchedule({periodMode:'FIXED',displayTimes:[{startTime:'',endTime:''}]}),
+    validatePopupSchedule({periodMode:'SCHEDULE',displayTimes:[{startTime:'22:00',endTime:'02:00'},{startTime:'09:00',endTime:'11:00'},{startTime:'10:00',endTime:'12:00'}]})].every(v=>v===null)
+    &&/같을 수 없습니다/.test(validatePopupSchedule({periodMode:'SCHEDULE',displayTimes:[{startTime:'10:00',endTime:'10:00'}]}))
+    &&/이미 있습니다/.test(validatePopupSchedule({periodMode:'SCHEDULE',displayTimes:[{startTime:'09:00',endTime:'10:00'},{startTime:'09:00',endTime:'10:00'}]}))
+    &&/입력해 주세요/.test(validatePopupSchedule({periodMode:'SCHEDULE',displayTimes:[{startTime:'',endTime:'10:00'}]}))`),
+    '[52-1] schedule validation allows midnight crossing and overlaps, rejects same start/end, duplicates and empty times');
+  await run(`window.mountSchedule({periodMode:'FIXED',repeatDayOfWeek:null,displayTimes:[]})`); await pause(300);
+  check(await run(`!document.querySelector('[aria-label="노출 요일"]')&&document.querySelector('#schedule').textContent.includes('노출 일정: 상시')`), '[52-1] FIXED hides weekday/time inputs');
+  await run(`document.querySelector('#schedule input[type=checkbox]').click()`); await pause(200);
+  await run(`document.querySelector('[aria-label="수요일"]').click()`); await pause(100);
+  await run(`document.querySelector('[aria-label="월요일"]').click()`); await pause(100);
+  await run(`Array.from(document.querySelectorAll('#schedule button')).find(b=>b.textContent.includes('시간대 추가')).click()`); await pause(200);
+  const setTime = async (label, value) => run(`(()=>{const i=Array.from(document.querySelectorAll('#schedule input[type=time]')).find(x=>x.closest('.MuiFormControl-root').textContent.includes(${JSON.stringify(label)}));
+    const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));})()`).then(() => pause(150));
+  await setTime('시작 1', '22:00'); await setTime('종료 1', '02:00');
+  const schedule = await run('window.schedule');
+  check(schedule.periodMode === 'SCHEDULE' && schedule.repeatDayOfWeek === '1,3' && JSON.stringify(schedule.displayTimes) === JSON.stringify([{startTime: '22:00', endTime: '02:00'}])
+    && await run(`document.querySelector('#schedule').textContent.includes('노출 일정: 월·수 · 22:00~02:00')&&document.querySelector('#schedule').textContent.includes('다음 날까지(자정 초과)')`),
+    '[52-1] schedule inputs set SCHEDULE, sorted weekdays and a midnight-crossing window: ' + JSON.stringify(schedule));
+  await run(`document.querySelector('[aria-label="노출 시간대 1 삭제"]').click()`); await pause(150);
+  await run(`document.querySelector('[aria-label="월요일"]').click()`); await pause(100); await run(`document.querySelector('[aria-label="수요일"]').click()`); await pause(150);
+  check(JSON.stringify(await run('window.schedule')) === JSON.stringify({periodMode: 'SCHEDULE', repeatDayOfWeek: null, displayTimes: []})
+    && await run(`document.querySelector('#schedule').textContent.includes('노출 일정: 매일 · 종일')`), '[52-1] clearing weekdays/times means every day, all day');
 
   // ── 2. 최소 호스트: 편집기 → 부모 state → 우측·모달 미리보기, 저장 요청 객체 ──
   await run('window.mountHost(createDefaultPopup())'); await waitEditor(); await pause(200);

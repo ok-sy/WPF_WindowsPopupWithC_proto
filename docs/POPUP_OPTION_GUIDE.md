@@ -284,7 +284,7 @@ DB 컬럼은 `POPUP_NOTICE.SHOW_LATER_YN`(기본 'N')이며 기존 DB는 `db/ora
 
 ## 10. 표시 완료 및 중복 방지
 
-기간·대상·숨김·완료·재노출 유예 판정은 서버가 조회 시 끝낸다(설계 35). TEXT·IMAGE 닫기(Footer 닫기·바로가기 포함)는 서버가 완료로 처리해 노출 기간 안에 다시 내려주지 않는다. 미완료로 끝난 SURVEY·QUIZ·VIDEO는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 제외한 뒤 조건을 만족하면 다시 내려준다. WPF는 팝업 표시 중에 다른 조회를 하지 않으며, 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 삭제했다.
+기간·노출 요일·시간대(TODO52-1, `periodMode=SCHEDULE`)·대상·숨김·완료·재노출 유예 판정은 서버가 조회 시 KST 기준으로 끝낸다(설계 35). 요일·시간대는 WPF 응답에 싣지 않는다. TEXT·IMAGE 닫기(Footer 닫기·바로가기 포함)는 서버가 완료로 처리해 노출 기간 안에 다시 내려주지 않는다. 미완료로 끝난 SURVEY·QUIZ·VIDEO는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 제외한 뒤 조건을 만족하면 다시 내려준다. WPF는 팝업 표시 중에 다른 조회를 하지 않으며, 이전의 실행 중 표시 ID 기억(`_shownPopupIds`)은 삭제했다.
 
 ---
 

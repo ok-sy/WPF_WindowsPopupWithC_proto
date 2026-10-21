@@ -189,6 +189,97 @@ class PopupQuestionDatabaseTest {
         }
     }
 
+    /**
+     * [TODO52-1] 노출 일정(요일·시간대, 자정 초과 포함)을 실DB에 저장·재조회하고, WPF 후보 SQL이 KST 현재 시각 기준으로
+     * 같은 규칙(Java 기준 판단과 비교)으로 거르는지 확인한다. 시간대 경계는 현재 시각에서 30분 이상 떨어지게 잡는다.
+     * 18_popup_display_time_oracle.sql 적용이 필요하다. 롤백 전용.
+     */
+    @Test void displayScheduleRoundTripAndCandidateFilter() throws Exception {
+        try (var session = openSession()) {
+            try {
+                var mapper = session.getMapper(PopupMapper.class);
+                var json = new ObjectMapper().findAndRegisterModules();
+                var service = new PopupService(mapper, json);
+                var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
+                        new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
+                ObjectNode base = json.valueToTree(service.getAdminPopup("SAMPLE-SURVEY-004"));
+                base.put("popupType", "TEXT").put("title", "일정 검증").put("displayMode", "SEQUENTIAL").putNull("passingScore")
+                        .put("displayStartAt", OffsetDateTime.now().minusDays(2).toString())
+                        .put("displayEndAt", OffsetDateTime.now().plusDays(2).toString())
+                        .set("questions", json.createArrayNode());
+                ObjectNode content = json.createObjectNode();
+                content.put("plainText", "일정").put("showPlainText", true);
+                base.set("content", content);
+
+                var now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
+                int minute = now.getHour() * 60 + now.getMinute();
+                int today = now.getDayOfWeek().getValue();
+                int yesterday = (today + 5) % 7 + 1;
+                int other = today % 7 + 1 == yesterday ? (today + 2) % 7 + 1 : today % 7 + 1;
+                java.util.function.IntFunction<String> at = offset -> PopupDisplaySchedule.toTime(Math.floorMod(minute + offset, 1440));
+                List<List<String>> windows = List.of(
+                        List.of(), List.of(at.apply(-60), at.apply(60)), List.of(at.apply(60), at.apply(120)),
+                        List.of(at.apply(-30), at.apply(-60)), List.of(at.apply(60), at.apply(30)));
+                java.util.List<String> days = new java.util.ArrayList<>(java.util.Arrays.asList(null, String.valueOf(today),
+                        String.valueOf(yesterday), String.valueOf(other)));
+                int checked = 0;
+                for (List<String> window : windows) {
+                    for (String day : days) {
+                        ObjectNode draft = base.deepCopy();
+                        String popupId = "TEST-" + UUID.randomUUID();
+                        draft.put("popupId", popupId).put("periodMode", "SCHEDULE");
+                        if (day == null) draft.putNull("repeatDayOfWeek"); else draft.put("repeatDayOfWeek", day);
+                        var times = json.createArrayNode();
+                        if (!window.isEmpty()) times.addObject().put("startTime", window.get(0)).put("endTime", window.get(1));
+                        draft.set("displayTimes", times);
+                        var saved = service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
+                        assertEquals("SCHEDULE", saved.periodMode());
+                        assertEquals(day, saved.repeatDayOfWeek());
+                        assertEquals(window.isEmpty() ? List.of() : List.of(new PopupDisplayTimeDto(window.get(0), window.get(1))), saved.displayTimes());
+                        boolean expected = expectedVisible(minute, today, yesterday, day, window);
+                        boolean actual = mapper.selectAvailablePopups("E1001", true).stream().anyMatch(p -> popupId.equals(p.popupId()));
+                        assertEquals(expected, actual, "window=" + window + " day=" + day + " now=" + now);
+                        // 답안 제출 재검증(excludeCompleted=false)은 일정과 무관하다.
+                        assertTrue(mapper.selectAvailablePopups("E1001", false).stream().anyMatch(p -> popupId.equals(p.popupId())));
+                        checked++;
+                    }
+                }
+                assertEquals(20, checked);
+
+                // FIXED로 바꾸면 요일·시간대를 비우고 게시 기간 내 상시 노출한다.
+                ObjectNode fixed = base.deepCopy();
+                String fixedId = "TEST-" + UUID.randomUUID();
+                fixed.put("popupId", fixedId).put("periodMode", "SCHEDULE").put("repeatDayOfWeek", String.valueOf(other));
+                fixed.set("displayTimes", json.createArrayNode().add(json.createObjectNode().put("startTime", at.apply(60)).put("endTime", at.apply(120))));
+                var scheduled = service.saveAdminPopup(json.treeToValue(fixed, PopupResponseDto.class), true, targets, "SYSTEM");
+                assertFalse(mapper.selectAvailablePopups("E1001", true).stream().anyMatch(p -> fixedId.equals(p.popupId())));
+                var listed = mapper.selectAdminPopups().stream().filter(p -> fixedId.equals(p.popupId())).findFirst().orElseThrow();
+                assertEquals(at.apply(60) + "~" + at.apply(120), listed.displayTimesText());
+                assertEquals(String.valueOf(other), listed.repeatDayOfWeek());
+                ObjectNode toFixed = json.valueToTree(scheduled);
+                toFixed.put("periodMode", "FIXED");
+                var savedFixed = service.saveAdminPopup(json.treeToValue(toFixed, PopupResponseDto.class), true, targets, "SYSTEM");
+                assertEquals("FIXED", savedFixed.periodMode());
+                assertNull(savedFixed.repeatDayOfWeek());
+                assertTrue(savedFixed.displayTimes().isEmpty());
+                assertTrue(mapper.selectDisplayTimes(fixedId).isEmpty());
+                assertTrue(mapper.selectAvailablePopups("E1001", true).stream().anyMatch(p -> fixedId.equals(p.popupId())));
+            } finally {
+                session.rollback(true);
+            }
+        }
+    }
+
+    /** [TODO52-1] 서버 SQL과 같은 규칙의 Java 기준 판단. 자정 초과 시간대의 자정 이후 부분은 어제 요일로 본다. */
+    private static boolean expectedVisible(int minute, int today, int yesterday, String days, List<String> window) {
+        java.util.function.IntPredicate dayOk = d -> days == null || java.util.Arrays.asList(days.split(",")).contains(String.valueOf(d));
+        if (window.isEmpty()) return dayOk.test(today);
+        int start = PopupDisplaySchedule.toMinute(window.get(0));
+        int end = PopupDisplaySchedule.toMinute(window.get(1));
+        if (start < end) return minute >= start && minute < end && dayOk.test(today);
+        return (minute >= start && dayOk.test(today)) || (minute < end && dayOk.test(yesterday));
+    }
+
     private org.apache.ibatis.session.SqlSession openSession() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");

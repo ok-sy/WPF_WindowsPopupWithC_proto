@@ -31,7 +31,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`~`17` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4). 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`17` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4), `18` 노출 시간대 `POPUP_DISPLAY_TIME`(서버 반영 전 실행, TODO52-1). 상세·적용 현황은 아래 각 절 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
 | 참고 | `10_zero_rule_common_schema_oracle.sql` | 로컬 `ZERO_RULE` | 공통 스키마 변환본(로컬 XE에서 전체 서버 기동용, 정식 DDL 아님) |
 
@@ -224,3 +224,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - `db/oracle` 아래 `NN_*_oracle.sql` 이름만 받는다(경로·다른 파일 실행 방지).
 - PowerShell 5.1은 빈 인자(`""`)를 네이티브 프로그램에 넘기지 못하고 파이프 입력에는 BOM이 붙어 첫 줄을 sqlplus가 알아보지 못한다(SP2-0734). 그래서 `DEFINE 1 = ''`과 스크립트 호출만 담은 임시 래퍼(BOM 없음)를 만들어 실행하고 지운다.
 - 실DB 테스트를 원격으로 돌릴 때 `POPUP_TEST_DB_SCHEMA=""`는 PowerShell에서 빈 값 설정이 변수 삭제가 되어 기본 `POPUP.`로 돌아간다(ORA-00942). Git Bash 등 빈 값을 넘길 수 있는 셸에서 실행한다.
+
+## 노출 시간대 테이블 추가 (2026-10-21, TODO52-1)
+
+`18_popup_display_time_oracle.sql <스키마접두어>` — `POPUP_DISPLAY_TIME`(PK `POPUP_ID`+`SORT_ORDER`, `START_MINUTE`·`END_MINUTE` 0~1439, 시작≠종료, `POPUP_NOTICE` 삭제 시 함께 삭제)을 만들고 `PERIOD_MODE`·`REPEAT_DAY_OF_WEEK` 주석을 새 의미로 바꾼다. 이미 있으면 SKIP(멱등). `01_popup_schema_oracle.sql` §12 뒤에도 같은 정의를 넣었다.
+
+- 배경: 게시 기간 안에서 요일·시간대를 지정해 미완료 팝업의 노출 가능 일정을 정한다. `PERIOD_MODE`는 `FIXED`(기간 내 상시)·`SCHEDULE`(요일·시간대 지정)로, 요일은 기존 `REPEAT_DAY_OF_WEEK`(ISO 번호 `1,3,5`, NULL=매일)를 재사용한다. 시간대는 개수 제한이 없어 하위 테이블에 분 단위로 둔다(END < START는 자정 초과, 요일은 시작 기준, 행 없음 = 종일). 기존 데이터는 모두 `FIXED`라 이관이 없다. `REPEAT_INTERVAL`·`REPEAT_DAY_OF_MONTH`는 사용하지 않고 저장 시 NULL로 둔다. 11g 호환을 위해 시퀀스·IDENTITY 없이 복합 키를 쓴다.
+- 순서: **서버 반영 전에 실행.** 새 서버는 저장·상세 조회·목록·WPF 후보 선정에서 이 테이블을 쓰므로 없으면 ORA-00942로 실패한다. 이전 서버는 쓰지 않아 실행 후에도 동작한다. 방식 A면 `03_grant_zero_rule_oracle.sql`을 다시 실행한다.
+- 적용 현황: 로컬 XE(POPUP) 2026-10-21 실행 — 테이블 생성 OK, 재실행 시 SKIP 확인, `03` 재실행으로 로컬 `ZERO_RULE` 권한 부여. 원격 개발 DB(11g XE, `zero-rule`) 2026-10-21 `tools/apply-dev-db.ps1`로 실행 — 테이블 생성 OK(첫 시도는 ORA-12170 접속 시간 초과, 재시도 성공). 두 DB에서 `PopupQuestionDatabaseTest` 4건(롤백 전용) 통과.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @18_popup_display_time_oracle.sql POPUP.`
+  - 원격: `powershell -NoProfile -File db/oracle/tools/apply-dev-db.ps1 18_popup_display_time_oracle.sql`

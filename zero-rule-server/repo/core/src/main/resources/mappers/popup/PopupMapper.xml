@@ -42,6 +42,10 @@
 
     <!-- 세션 시간대에 의존하지 않는 KST 현재 시각(TIMESTAMP). 저장 컬럼이 모두 KST 로컬 시각이므로 비교·기록에 이 값을 쓴다. -->
     <sql id="nowKst">CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</sql>
+    <!-- [TODO52-1] KST 오늘·어제의 ISO 요일(1=월, NLS 무관)과 현재 분(0~1439). 노출 일정 판단에 쓴다. -->
+    <sql id="todayIsoKst">(TRUNC(<include refid="nowKst"/>) - TRUNC(<include refid="nowKst"/>, 'IW') + 1)</sql>
+    <sql id="yesterdayIsoKst">(MOD(TRUNC(<include refid="nowKst"/>) - TRUNC(<include refid="nowKst"/>, 'IW') + 6, 7) + 1)</sql>
+    <sql id="minuteKst">(EXTRACT(HOUR FROM <include refid="nowKst"/>) * 60 + EXTRACT(MINUTE FROM <include refid="nowKst"/>))</sql>
 
     <!-- ===================================================================
          문항 템플릿·문항·선택지 저장 (관리자 저장 시 PopupService.saveAdminQuestions)
@@ -114,6 +118,8 @@
             <arg column="CREATED_AT" javaType="java.time.OffsetDateTime"/>
             <arg column="UPDATED_BY" javaType="java.lang.String"/>
             <arg column="UPDATED_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="REPEAT_DAY_OF_WEEK" javaType="java.lang.String"/>
+            <arg column="DISPLAY_TIMES_TEXT" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
@@ -135,7 +141,15 @@
             n.CREATED_BY,
             FROM_TZ(n.CREATED_AT, 'Asia/Seoul')       AS CREATED_AT,
             n.UPDATED_BY,
-            FROM_TZ(n.UPDATED_AT, 'Asia/Seoul')       AS UPDATED_AT
+            FROM_TZ(n.UPDATED_AT, 'Asia/Seoul')       AS UPDATED_AT,
+            n.REPEAT_DAY_OF_WEEK,
+            (
+                SELECT LISTAGG(LPAD(TRUNC(dt.START_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(dt.START_MINUTE, 60), 2, '0') || '~'
+                               || LPAD(TRUNC(dt.END_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(dt.END_MINUTE, 60), 2, '0'), ', ')
+                       WITHIN GROUP (ORDER BY dt.SORT_ORDER)
+                FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME dt
+                WHERE dt.POPUP_ID = n.POPUP_ID
+            ) AS DISPLAY_TIMES_TEXT
         FROM ${popupSchemaPrefix}POPUP_NOTICE n
         ORDER BY n.DISPLAY_ORDER, n.CREATED_AT DESC, n.POPUP_ID
     </select>
@@ -331,6 +345,31 @@
     </select>
 
     <!-- 조건 행은 FK ON DELETE CASCADE로 함께 삭제된다. -->
+    <!-- [TODO52-1] 노출 시간대. 분(0~1439)을 HH:mm으로 돌려준다. -->
+    <resultMap id="displayTimeResultMap" type="server.domain.popup.PopupDisplayTimeDto">
+        <constructor>
+            <arg column="START_TIME" javaType="java.lang.String"/>
+            <arg column="END_TIME" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectDisplayTimes" resultMap="displayTimeResultMap">
+        SELECT LPAD(TRUNC(START_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(START_MINUTE, 60), 2, '0') AS START_TIME,
+               LPAD(TRUNC(END_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(END_MINUTE, 60), 2, '0') AS END_TIME
+        FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME
+        WHERE POPUP_ID = #{popupId}
+        ORDER BY SORT_ORDER
+    </select>
+
+    <delete id="deleteDisplayTimes">
+        DELETE FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME WHERE POPUP_ID = #{popupId}
+    </delete>
+
+    <insert id="insertDisplayTime">
+        INSERT INTO ${popupSchemaPrefix}POPUP_DISPLAY_TIME (POPUP_ID, SORT_ORDER, START_MINUTE, END_MINUTE, CREATED_BY)
+        VALUES (#{popupId}, #{sortOrder}, #{startMinute}, #{endMinute}, #{auditUser})
+    </insert>
+
     <delete id="deleteAdminPopupTargets">
         DELETE FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
     </delete>
@@ -577,6 +616,40 @@
                   WHERE d.EMPLOYEE_NO = u.EMPLOYEE_NO
                     AND d.POPUP_ID = n.POPUP_ID
                     AND d.DEFER_UNTIL_AT &gt; <include refid="nowKst"/>
+              )
+              <!-- [TODO52-1] 노출 일정: SCHEDULE이면 요일(REPEAT_DAY_OF_WEEK, 비면 매일)과 시간대(POPUP_DISPLAY_TIME, 없으면 종일)를
+                   KST 현재 시각이 만족해야 한다. 자정 초과 시간대(START > END)의 자정 이후 부분은 시작한 날(어제)의 요일로 본다.
+                   WPF 조회·후속 후보 확인에만 적용하고 답안 제출 재검증(excludeCompleted=false)에는 적용하지 않아,
+                   시간대가 끝난 뒤 닫힌 팝업의 결과도 정상 처리한다. -->
+              AND
+              (
+                  n.PERIOD_MODE &lt;&gt; 'SCHEDULE'
+                  OR
+                  (
+                      NOT EXISTS (SELECT 1 FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME dt WHERE dt.POPUP_ID = n.POPUP_ID)
+                      AND (n.REPEAT_DAY_OF_WEEK IS NULL
+                           OR INSTR(',' || n.REPEAT_DAY_OF_WEEK || ',', ',' || <include refid="todayIsoKst"/> || ',') &gt; 0)
+                  )
+                  OR EXISTS
+                  (
+                      SELECT 1
+                      FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME dt
+                      WHERE dt.POPUP_ID = n.POPUP_ID
+                        AND (
+                            (dt.START_MINUTE &lt; dt.END_MINUTE
+                             AND <include refid="minuteKst"/> &gt;= dt.START_MINUTE AND <include refid="minuteKst"/> &lt; dt.END_MINUTE
+                             AND (n.REPEAT_DAY_OF_WEEK IS NULL
+                                  OR INSTR(',' || n.REPEAT_DAY_OF_WEEK || ',', ',' || <include refid="todayIsoKst"/> || ',') &gt; 0))
+                            OR (dt.START_MINUTE &gt; dt.END_MINUTE
+                                AND <include refid="minuteKst"/> &gt;= dt.START_MINUTE
+                                AND (n.REPEAT_DAY_OF_WEEK IS NULL
+                                     OR INSTR(',' || n.REPEAT_DAY_OF_WEEK || ',', ',' || <include refid="todayIsoKst"/> || ',') &gt; 0))
+                            OR (dt.START_MINUTE &gt; dt.END_MINUTE
+                                AND <include refid="minuteKst"/> &lt; dt.END_MINUTE
+                                AND (n.REPEAT_DAY_OF_WEEK IS NULL
+                                     OR INSTR(',' || n.REPEAT_DAY_OF_WEEK || ',', ',' || <include refid="yesterdayIsoKst"/> || ',') &gt; 0))
+                        )
+                  )
               )
               </if>
         ),

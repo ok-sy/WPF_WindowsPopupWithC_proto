@@ -10,7 +10,7 @@
  * 규칙: 입력 객체를 바꾸지 않고 새 객체를 돌려준다. React state·API 호출·toast·라우팅·입력 검증 메시지는 넣지 않는다.
  * 이 모듈은 UI 모듈(PopupEditorDialog·MUI·React)을 참조하지 않는다. 글자 서식(HTML↔Blocks) 변환은 popupRichText.ts가 맡는다.
  */
-import type { AdminPopupDetail, PopupDateValue, PopupQuestion, PopupTargetGroup, PopupType } from '@local/domain';
+import type { AdminPopupDetail, PopupDateValue, PopupDisplayTime, PopupQuestion, PopupTargetGroup, PopupType } from '@local/domain';
 import normalizePopupLink from './normalizePopupLink';
 import { popupDateMillis } from './popupCommon';
 
@@ -37,7 +37,7 @@ export function createDefaultPopup(now: Date = new Date()): AdminPopupDetail {
     minimumWidth: 480, minimumHeight: 320, maximumWidth: 1200, maximumHeight: 900,
     showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false, showLater: false,
     questionTemplateId: null, periodMode: 'FIXED', repeatInterval: null,
-    repeatDayOfWeek: null, repeatDayOfMonth: null, hideDays: null,
+    repeatDayOfWeek: null, repeatDayOfMonth: null, displayTimes: [], hideDays: null,
     completionRatio: null, passingScore: null,
     questions: [],
     content: {
@@ -187,4 +187,22 @@ export function toSaveRequestPopup(popup: AdminPopupDetail): AdminPopupDetail {
 /** 편집값·활성 여부·대상 그룹 → 저장 API 요청 body. */
 export function toSaveRequest(popup: AdminPopupDetail, active: boolean, targetGroups: PopupTargetGroup[]): PopupSaveRequest {
   return { popup: toSaveRequestPopup(popup), active, targetGroups };
+}
+
+/* [TODO52-1] 노출 일정 표시. 요일은 ISO 번호(1=월). 판단은 서버(KST)가 하며 여기서는 요약 문구만 만든다. */
+export const WEEKDAYS: { value: number; label: string }[] = ['월', '화', '수', '목', '금', '토', '일'].map((label, index) => ({ value: index + 1, label }));
+
+/** '1,3,5' → [1, 3, 5]. 비었거나 형식 밖 값은 무시한다(서버가 저장 시 검증). */
+export function parseWeekdays(value: string | null | undefined): number[] {
+  return [...new Set(String(value ?? '').split(',').map((part) => Number(part.trim())).filter((day) => Number.isInteger(day) && day >= 1 && day <= 7))].sort();
+}
+
+/** 일정 요약. FIXED = '상시', SCHEDULE = '월·수·금 · 09:00~12:00, 22:00~02:00'(요일 없음 = 매일, 시간대 없음 = 종일). */
+export function describeSchedule(periodMode: string | null | undefined, repeatDayOfWeek: string | null | undefined,
+  times: PopupDisplayTime[] | string | null | undefined): string {
+  if (periodMode !== 'SCHEDULE') return '상시';
+  const days = parseWeekdays(repeatDayOfWeek);
+  const dayText = days.length === 0 || days.length === 7 ? '매일' : days.map((day) => WEEKDAYS[day - 1].label).join('·');
+  const timeText = typeof times === 'string' ? times : (times ?? []).map((time) => `${time.startTime}~${time.endTime}`).join(', ');
+  return `${dayText} · ${timeText || '종일'}`;
 }

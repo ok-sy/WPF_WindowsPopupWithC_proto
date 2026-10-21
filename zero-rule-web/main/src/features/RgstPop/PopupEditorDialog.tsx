@@ -27,6 +27,7 @@ import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEdit
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from './PopupRichTextEditor';
+import PopupScheduleFields, { validatePopupSchedule } from './PopupScheduleFields';
 import { plainTextToBlocks, readTextBlocks } from './popupRichText';
 import { richBlocksOrNull } from './PopupRichBlocks';
 import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_TYPE_LABELS, type PopupFontSizeKey } from './popupCommon';
@@ -182,6 +183,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       if (error) { toast.warn(error); return; }
     }
     if (!popup.popupId.trim() || !popup.title.trim()) { toast.warn('팝업 ID와 제목을 입력해 주세요.'); return; }
+    const scheduleError = validatePopupSchedule(popup);
+    if (scheduleError) { toast.warn(scheduleError); return; }
     if (!Number.isInteger(popup.displayOrder) || popup.displayOrder < 1) { toast.warn('표시 우선순위는 1 이상의 정수로 입력해 주세요.'); return; }
     // 서버(PopupService.validateAdminPopup)가 hideDays < 1 을 거절하고 WPF 숨김 API 는 1~3650 일만 받는다.
     if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || popup.hideDays < 1 || popup.hideDays > 3650)) {
@@ -272,6 +275,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <Box />
               <TextField type="datetime-local" label="노출 시작" value={toDateTimeLocal(popup.displayStartAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayStartAt', e.target.value)} />
               <TextField type="datetime-local" label="노출 종료" value={toDateTimeLocal(popup.displayEndAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayEndAt', e.target.value)} />
+              {/* [TODO52-1] 게시 기간 안 요일·시간대. 노출 판단은 서버(KST). */}
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <PopupScheduleFields popup={popup} onChange={(patch) => setPopup((previous) => ({ ...previous, ...patch }))} />
+              </Box>
             </Box>
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>

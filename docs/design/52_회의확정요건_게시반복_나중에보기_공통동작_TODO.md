@@ -24,7 +24,7 @@ Trello: https://trello.com/c/Op9dEocp
 - 이번 변경은 TODO 문서 등록이다. 기존 코드·ALL/MINIMAL 명세를 이미 구현된 것처럼 바꾸지 않는다.
 
 ## 구현 TODO
-- [ ] **52-1 게시 시간·반복 계약 연결**: 서버가 시간·요일·반복 조건에 맞는 단건 팝업을 선정하는 계약을 받는다. WPF는 조회 결과를 표시하며 임의 일정 필터를 복제하지 않는다. 시간 기준·반복 회차의 식별자 샘플과 정확한 시각 표시 관련 클라이언트 동작이 있다면 명세에 기록한다.
+- [x] **52-1 게시 시간·반복 계약 연결**: 서버가 시간·요일·반복 조건에 맞는 단건 팝업을 선정하는 계약을 받는다. WPF는 조회 결과를 표시하며 임의 일정 필터를 복제하지 않는다. 시간 기준·반복 회차의 식별자 샘플과 정확한 시각 표시 관련 클라이언트 동작이 있다면 명세에 기록한다.
   - 정책 확정(2026-10-21): 반복 설정은 **미완료 팝업의 노출 가능 일정**이다. 반복일마다 새로 응답받는 구조가 아니다.
     1. 완료 처리된 팝업은 이후 반복일에도 다시 표시하지 않는다.
     2. 다시 보지 않기(HIDDEN)는 `hideDays` 동안 해당 팝업을 제외하며, 그 기간의 반복 일정에도 표시하지 않는다.
@@ -42,6 +42,9 @@ Trello: https://trello.com/c/Op9dEocp
     7. 관리자 입력 항목·기존 컬럼 재사용은 상세 설계안 피드백 후 확정한다.
   - 확인 필요(2026-10-21): (a) 2번의 '제한 없음'에 자정 초과 시간대(예: 22:00~02:00) 허용이 포함되는지 — 설계안은 허용하고 시작 시각의 요일을 기준으로 본다. (b) 2분 지연 허용은 현재 조회 주기 1800~3600초 제한(서버 `WpfPopupProps`·WPF `MainWindow` 양쪽)을 바꿔야 하며, 미완료·나중에 보기 재노출 유예가 같은 `pollingIntervalSeconds`를 쓰므로 조회 주기만 줄이면 나중에 보기도 2분 뒤 다시 뜬다. 조회 주기와 재노출 유예를 분리할지 결정 필요.
   - 3차 확정(2026-10-21): (a) 자정 초과 시간대를 허용한다. 시간대는 막지 않고 모든 시간대를 설정할 수 있게 하며 세부 제한은 추후 피드백으로 정한다. (b) 2분 지연 요건은 서버 부하를 고려해 폐기하고 표시 지연 허용 요건을 두지 않는다. 조회 주기 1800~3600초와 재노출 유예(`pollingIntervalSeconds`) 공유 구조는 그대로 유지한다.
+  - 4차 확정(2026-10-21): 조회 주기 때문에 시간대를 놓치는 것을 허용한다. 예: 9·10·11시 시간대 팝업이 있을 때 9시 팝업을 12시에 닫아 결과를 저장하면 10·11시 건은 놓친다. 관리자 입력·컬럼은 설계안대로 진행(`FIXED` 재사용 + `SCHEDULE`, `REPEAT_DAY_OF_WEEK` ISO 번호, 시간대 하위 테이블, 매월·간격 컬럼 미사용, 목록 일정 요약).
+  - 구현(2026-10-21): DB `18_popup_display_time_oracle.sql`(`POPUP_DISPLAY_TIME`, 01 반영). 서버 — `PopupDisplaySchedule`(모드 대문자·FIXED는 요일·시간대·매월·간격 비움, SCHEDULE은 요일 정렬·중복 제거·7일=매일, 시간 HH:mm·시작=종료·같은 시간대 중복 거부), `PopupResponseDto.displayTimes`(기존 생성자 유지)·`withSchedule`, 저장 시 시간대 전체 교체·상세 조회 시 첨부, 목록에 요일·시간대 요약(`LISTAGG`), WPF 후보 SQL에 KST 요일·시간대 조건(자정 이후 부분은 어제 요일, `excludeCompleted=true`에만 적용해 결과 제출 재검증은 일정과 무관). 관리자 웹 — `PopupScheduleFields`(요일·시간대 지정 스위치, 월~일 토글, 시간대 추가·삭제, 자정 초과 안내, 놓칠 수 있음 안내, 요약), 저장 전 `validatePopupSchedule`, 목록 '노출 일정' 열, `describeSchedule`·`parseWeekdays`·기본값 `displayTimes: []`. WPF 변경 없음(응답에 일정 미포함).
+  - 검증: 서버 `PopupDisplayScheduleTest` 5건, 실DB `PopupQuestionDatabaseTest.displayScheduleRoundTripAndCandidateFilter`(요일 4종 × 시간대 5종 = 20조합을 Java 기준 판단과 비교, 자정 초과·종일·매일 포함, 결과 재검증 경로는 일정 무관, FIXED 전환 시 비움, 목록 요약) — 로컬 XE·원격 개발 DB 각각 4건 통과, 서버 전체 `gradlew test` 159건 중 148 통과·11 skip·실패 0. 웹 tsc·eslint 오류 0, verify-popup-transform-64 77건(신규 6: 요약·검증·입력 동작) 통과. 미실행: 실제 관리자 화면 저장→WPF 실조회(관리자 웹 서버는 PostgreSQL 전용 프레임워크), 원격 서버 배포.
 - [x] **52-2 나중에 보기 UI·결과 전송**: 다음 조회 주기 기준으로 버튼과 결과 전송을 추가한다. 적용 유형·결과 코드·서버 응답 후 조회 동작을 매핑한다. 즉시 같은 팝업을 다시 표시하지 않도록 서버 선정 결과와 연결하고 WPF가 자체 재노출 대상을 보관하지 않는다. 기존 hideDays와 결과를 혼동하지 않는다.
   - 결정(2026-10-18): 결과는 신규 `resultType=LATER`(HIDDEN·hideDays 의미 유지). 버튼 표시는 신규 필드 `showLater`(기본 false, `showFooter=true`일 때). 모든 유형 적용. 완료 전 닫기 잠금(VIDEO·VIDEO+QUIZ·QUIZ) 중에도 누를 수 있음. LATER에는 영상 시청량을 싣지 않으며 서버의 기존 시청 기록은 유지. 버튼으로 닫으면 다시 보지 않기 체크보다 LATER가 우선.
   - 반영: 서버는 LATER에서 표시·닫기만 기록하고 완료·숨김 없이 기존 전달 건 유예(`pollingIntervalSeconds`)로 같은 팝업의 즉시 재표시를 막는다(TEXT·IMAGE 포함). DB `POPUP_NOTICE.SHOW_LATER_YN`·`CK_WPF_RESULT_TYPE`에 LATER(`db/oracle/16_popup_later_oracle.sql`). WPF Footer 버튼·결과 생성·Demo, 관리자 웹 토글·미리보기, 인터페이스 명세 §6.3·§10.4.1·§10.8·ALL·옵션 가이드 반영. MINIMAL은 최소 제공 범위라 변경하지 않음.

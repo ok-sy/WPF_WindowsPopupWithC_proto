@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PopupEditorDialog from './PopupEditorDialog';
 import { POPUP_TYPE_LABELS, popupDateMillis } from './popupCommon';
+import { describeSchedule } from './popupEditorTransform';
 
 const displayModeLabels: Record<string, string> = {
   SEQUENTIAL: '순차',
@@ -219,6 +220,7 @@ export default function RgstPop() {
                   <TableCell>제목</TableCell>
                   <TableCell>노출 시작</TableCell>
                   <TableCell>노출 종료</TableCell>
+                  <TableCell>노출 일정</TableCell>
                   <TableCell>크기</TableCell>
                   <TableCell align="center">활성</TableCell>
                   <TableCell>생성일</TableCell>
@@ -244,6 +246,8 @@ export default function RgstPop() {
                     <TableCell>{popup.title}</TableCell>
                     <TableCell>{formatPopupDate(popup.displayStartAt)}</TableCell>
                     <TableCell>{formatPopupDate(popup.displayEndAt)}</TableCell>
+                    {/* [TODO52-1] 상시 / 요일·시간대 요약 */}
+                    <TableCell>{describeSchedule(popup.periodMode, popup.repeatDayOfWeek, popup.displayTimesText)}</TableCell>
                     <TableCell>{popup.sizeMode}</TableCell>
                     <TableCell align="center">
                       <Switch
@@ -269,7 +273,7 @@ export default function RgstPop() {
                 ))}
                 {!loading && filteredPopups.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={12} align="center" sx={{ py: 5 }}>
                       조회된 팝업이 없습니다.
                     </TableCell>
                   </TableRow>
