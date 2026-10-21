@@ -46,4 +46,4 @@
 - 웹: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0(기존 경고 2). `verify-rich-text-49` 59건 통과 — 툴바 7단계(280px)·11단계(440px), 우클릭 6단계(240px)·버튼 활성·`6단계` 표기, 10→11 내어쓰기/서식 초기화/실행 취소, 붙여넣기 300px→8단계·과대 값 제거, 미리보기 11단계 440px, 다중 문단 혼합·undo/redo. `verify-survey-rich-text-55` 23건 통과.
 - 서버: `PopupRichTextTest`(6·7·11·100·int 최대 허용, 음수·소수·NaN·Infinity·int 초과·BigInteger 거부)·`PopupSurveyRichTextTest`(문항 제목 6단계·선택지 11단계 유지, 음수 거부) 포함 `gradlew test --offline` 152건 중 143 통과·9 skip(Oracle 연동), 실패 0.
 - WPF: `scripts/RichTextTests` 113건 통과 — 6·10·11단계 240·400·440 DIP, 범위 밖 0, 20단계(800 DIP) 여백이 560 폭에서 예외 없이 측정, Demo 11단계 허용·`2147483648` 거부.
-- 미실행: 실제 관리자 웹 저장→서버 재조회→에디터 재편집→WPF 실화면 왕복, 한글 IME, 좁은 팝업 실화면 캡처, 인터페이스 Excel·Word·PDF 재생성.
+- 미실행: 실제 관리자 웹 저장→서버 재조회→에디터 재편집→WPF 실화면 왕복, 한글 IME, 좁은 팝업 실화면 캡처, 인터페이스 Excel·Word·PDF 재생성(2026-10-21 반영 완료, CHANGELOG 2026-10-21-07).

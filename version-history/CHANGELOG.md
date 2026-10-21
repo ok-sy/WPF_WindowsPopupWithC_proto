@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-07 — 인터페이스 Excel·Word·PDF 산출물 TODO63·52-5 동기화
+
+- 이유: TODO63(문단 들여쓰기 5단계 제한 해제)과 TODO52-5(QUIZ 복수 선택 정답 수 제한)가 Markdown 계약에만 반영되어 제공 산출물(Excel·Word·PDF)과 불일치(TODO53-1·53-2 후속).
+- 변경: Excel `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx` — TEXT `textBlocks[].indent` 설명·비고(0 이상 정수, 서버 0 이상 허용), TEXT 동작 메모의 표시 방어(400 상한 → 소수·음수·범위 초과만 0), SURVEY_QUIZ `questionType`·`isCorrect` 비고와 채점/제출 동작 메모에 정답 수 제한, 개요 핵심 변경에 TODO63·52-5 추가. openpyxl로 수정(기존 방식). Word — 표지 계약 보완·편집일 2026-10-21로 갱신 후 `export-interface-word.cjs`로 docx 재생성, `export-interface-pdf.vbs`로 필드·목차 갱신 후 PDF 출력.
+- 주요 파일: docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, docs/interfaces/WPF_Popup_API_Interface_v3.7.docx·.pdf, scripts/export-interface-word.cjs, docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md·63_문단들여쓰기_5회제한해제_TODO.md, version-history/CHANGELOG.md.
+- 검증: 수정 전 사본과 대조해 값 변경은 의도한 7셀뿐, 모든 셀 서식 ID 동일, 행·열 수와 패키지 파트 구성 동일. docx 표 46·제목 123, 본문에 TODO63·TODO52-5 반영 확인(남은 `0~5` 1건은 2026-10-14~15 보완 이력 문장). PDF 출력 성공(페이지 객체 85개). 미실행: Excel 앱 렌더링, PDF 쪽별 화면 확인.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-21-06 — TODO52-5 QUIZ 복수 선택 정답 수 제한
 
 - 이유: 52-5 선택지 개수 제어의 대상을 '정답 개수만큼만 선택 가능'으로 확정. 정답이 2개면 관리자 미리보기와 WPF에서 두 개까지만 선택할 수 있어야 함.
