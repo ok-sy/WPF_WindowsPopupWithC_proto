@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-05 — TODO64 팝업 데이터 변환 함수 분리와 에디터·미리보기 이식 안내
+
+- 이유: 신규 콘텐츠·팝업 등록 화면에서 에디터와 우측/모달 미리보기를 재사용하려면 부모 `PopupEditorDialog`에 묶인 편집값 구성·저장 요청 조립을 화면과 분리할 필요(TODO64).
+- 변경: `popupEditorTransform.ts` 추가 — 기본 편집값, 조회 응답·템플릿 → 편집값, 유형 변경, 편집값 → 저장 요청(`toSaveRequestPopup`·`toSaveRequest`)을 입력 불변 일반 함수로 정의(React·MUI·API 미참조). 부모는 state·key·모달·검증 메시지·API 호출만 남기고 함수 호출로 교체. `withDefaultAnswerMatchMode`를 `PopupQuestionEditor`에서 이동. 저장 요청의 IMAGE 키 정리를 `delete` 대신 새 객체 생성으로 변경(결과 동일). 미리보기는 편집값을 그대로 받으므로 변환 함수를 추가하지 않음. 이식 안내 `ADMIN_POPUP_EDITOR_TRANSFORM.md` 신규(객체 구분·함수·에디터 key 규칙·최소 부모 예시·의존성), 미리보기 안내에서 연결. 분리 전 코드 비교·최소 호스트 하네스 추가. API·DB·WPF 계약 변경 없음으로 ALL/MINIMAL 검토만 하고 수정하지 않음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/popupEditorTransform.ts(신규)·PopupEditorDialog.tsx·PopupQuestionEditor.tsx, scripts/verify-popup-transform-64.cjs·-entry.tsx·-legacy.ts(신규), docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md(신규)·ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/64_팝업데이터변환_함수분리_이식가이드_TODO.md, version-history/CHANGELOG.md.
+- 검증: verify-popup-transform-64 71건 통과(모듈 단독 번들, 대표 10건 저장·불러오기·템플릿·유형 변경 결과가 분리 전 코드와 동일, 동결 입력 불변, 실제 CKEditor 연속 입력 커서 유지·두 미리보기·저장 요청 반영, 불러오기 재마운트, 모달 설문 응답 분리). 웹 tsc 오류 0, 변경 파일 eslint 오류 0. 기존 하네스 preview-61 42·survey-55 23·rich-text-49 59·completion-ux-43 60·image-preview 34·template-picker 7건 통과. 미실행: 실제 관리자 화면 저장→재조회 왕복, 다른 등록 화면·폐쇄망 프론트 실제 이식.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. Trello TODO64는 검증대기.
+
 ## 2026-10-21-04 — TODO63 문단 들여쓰기 5단계 제한 해제
 
 - 이유: 공용 RichText 문단 들여쓰기를 5단계 이후에도 쓸 수 있도록 편집기·변환·서버 검증·WPF 표시 방어의 상한을 제거(TODO63).

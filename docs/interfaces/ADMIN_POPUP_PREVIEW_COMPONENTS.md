@@ -77,6 +77,8 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 | 앱 모듈 | `@/lib/urls`의 `routerUrlOf`(헤더 로고 경로). 다른 앱에서는 같은 이름의 함수로 대체하거나 로고 경로를 바꾼다 |
 | 리소스 | `zero-rule-web/main/public/images/popup-header-logo.png` |
 | 패키지 | `react`·`react-dom` 18, `@mui/material` 6, `@mui/icons-material` 6(`Preview`, `PlayCircleOutline`) |
-| 사용하지 않음 | 저장 요청 정규화·JSON 변환(`PopupEditorDialog`의 `contentForType` 등), CKEditor 편집기, 관리자 API 클라이언트 |
+| 사용하지 않음 | 저장 요청 정규화·JSON 변환(`popupEditorTransform.ts`, TODO64), CKEditor 편집기, 관리자 API 클라이언트 |
 
 `normalizePopupLink`는 푸터 바로가기 URL 확인에만 쓰며 이번 분리에서 URL 정책은 바꾸지 않았다.
+
+편집값 구성·저장 요청 변환과 에디터 연결은 `ADMIN_POPUP_EDITOR_TRANSFORM.md`(TODO64)를 함께 본다. 미리보기에는 편집값을 그대로 전달하며 별도 변환 함수가 없다.
