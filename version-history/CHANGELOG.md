@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-08 — TODO63·52-5 실DB 저장·재조회 검증 추가(TODO53-11 부분)
+
+- 이유: TODO63(6단계 이상 들여쓰기)과 TODO52-5(정답 수 기반 선택 한도)가 실제 Oracle 저장·재조회에서도 유지되는지 확인할 필요. 관리자 웹 전체 서버는 PostgreSQL 전용 프레임워크라 로컬 Oracle로 화면 왕복을 할 수 없어 서비스·매퍼 수준으로 검증.
+- 변경: `PopupQuestionDatabaseTest`에 롤백 전용 `deepIndentAndMultipleChoiceAnswerCountRoundTrip` 추가 — TEXT 본문 textBlocks 6·11단계, QUIZ 문항 제목 서식 7단계, MULTIPLE_CHOICE 정답 2개를 저장 후 관리자 재조회와 WPF 정답 키 포함 문항(`loadQuestionsWithAnswerKey`)에서 확인. TODO53-11·TODO63 문서에 부분 결과 기록.
+- 주요 파일: zero-rule-server/service/core/src/test/java/server/service/core/popup/PopupQuestionDatabaseTest.java, docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md·63_문단들여쓰기_5회제한해제_TODO.md, version-history/CHANGELOG.md.
+- 검증: 로컬 XE(XEPDB1/POPUP)에서 `PopupQuestionDatabaseTest` 3건 통과(신규 1, skip 0, 롤백). 미실행: 원격 개발 DB 실행, 실제 관리자 화면·IME·WPF 실화면 왕복.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-21-07 — 인터페이스 Excel·Word·PDF 산출물 TODO63·52-5 동기화
 
 - 이유: TODO63(문단 들여쓰기 5단계 제한 해제)과 TODO52-5(QUIZ 복수 선택 정답 수 제한)가 Markdown 계약에만 반영되어 제공 산출물(Excel·Word·PDF)과 불일치(TODO53-1·53-2 후속).

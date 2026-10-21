@@ -135,6 +135,60 @@ class PopupQuestionDatabaseTest {
         }
     }
 
+    /**
+     * [TODO63·52-5] 6단계 이상 들여쓰기(TEXT 본문·문항 서식)와 QUIZ 복수 선택 정답 2개를 실DB에 저장·재조회한다.
+     * WPF는 정답 수(isCorrect=true)로 선택 한도를 계산하므로 QUIZ 정답 키가 재조회 후에도 그대로인지 확인한다. 롤백 전용.
+     */
+    @Test void deepIndentAndMultipleChoiceAnswerCountRoundTrip() throws Exception {
+        try (var session = openSession()) {
+            try {
+                var mapper = session.getMapper(PopupMapper.class);
+                var json = new ObjectMapper().findAndRegisterModules();
+                var service = new PopupService(mapper, json);
+                var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
+                        new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
+                ObjectNode base = json.valueToTree(service.getAdminPopup("SAMPLE-SURVEY-004"));
+                base.put("displayMode", "SEQUENTIAL")
+                        .put("displayStartAt", OffsetDateTime.now().minusDays(1).toString())
+                        .put("displayEndAt", OffsetDateTime.now().plusDays(1).toString());
+
+                // TEXT 본문 11단계(440px) 들여쓰기
+                ObjectNode text = base.deepCopy();
+                text.put("popupId", "TEST-" + UUID.randomUUID()).put("popupType", "TEXT").put("title", "들여쓰기 검증")
+                        .putNull("passingScore").set("questions", json.createArrayNode());
+                List<Object> textBlocks = json.readValue("""
+                        [{"alignment":"LEFT","indent":6,"runs":[{"text":"여섯"}]},{"alignment":"LEFT","indent":11,"runs":[{"text":"열하나"}]}]""", RICH_TEXT);
+                ObjectNode textContent = json.createObjectNode();
+                textContent.put("plainText", "client").put("showPlainText", true).set("textBlocks", json.valueToTree(textBlocks));
+                text.set("content", textContent);
+                var savedText = service.saveAdminPopup(json.treeToValue(text, PopupResponseDto.class), true, targets, "SYSTEM");
+                var reloadedText = service.getAdminPopup(savedText.popupId());
+                assertEquals(json.valueToTree(textBlocks), json.valueToTree(reloadedText.content().get("textBlocks")));
+                assertEquals("여섯\n열하나", reloadedText.content().get("plainText"));
+
+                // QUIZ 복수 선택 정답 2개 + 문항 제목 7단계 들여쓰기
+                ObjectNode quiz = base.deepCopy();
+                quiz.put("popupId", "TEST-" + UUID.randomUUID()).put("popupType", "QUIZ").put("title", "정답 수 검증").put("passingScore", 10);
+                List<Object> titleBlocks = json.readValue("""
+                        [{"alignment":"LEFT","indent":7,"runs":[{"text":"모두 고르세요"}]}]""", RICH_TEXT);
+                var multiple = new PopupQuestionDto(-1L, "client", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1,
+                        List.of(new PopupOptionDto(-1L, "1", "가", 1, true), new PopupOptionDto(-2L, "2", "나", 2, false),
+                                new PopupOptionDto(-3L, "3", "다", 3, true), new PopupOptionDto(-4L, "4", "라", 4, false)),
+                        null, null, "VERTICAL", titleBlocks, null);
+                quiz.set("questions", json.valueToTree(List.of(multiple)));
+                var savedQuiz = service.saveAdminPopup(json.treeToValue(quiz, PopupResponseDto.class), true, targets, "SYSTEM");
+                var question = service.getAdminPopup(savedQuiz.popupId()).questions().get(0);
+                assertEquals(json.valueToTree(titleBlocks), json.valueToTree(question.titleBlocks()));
+                assertEquals(2, question.options().stream().filter(o -> Boolean.TRUE.equals(o.isCorrect())).count());
+                // WPF QUIZ 응답(정답 키 포함 문항)에도 정답 2개가 그대로 실린다.
+                var answerKeyed = service.loadQuestionsWithAnswerKey(List.of(savedQuiz.questionTemplateId())).get(savedQuiz.questionTemplateId());
+                assertEquals(2, answerKeyed.get(0).options().stream().filter(o -> Boolean.TRUE.equals(o.isCorrect())).count());
+            } finally {
+                session.rollback(true);
+            }
+        }
+    }
+
     private org.apache.ibatis.session.SqlSession openSession() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
