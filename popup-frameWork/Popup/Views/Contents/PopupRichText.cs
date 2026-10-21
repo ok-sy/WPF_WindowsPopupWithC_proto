@@ -31,14 +31,14 @@ namespace Popup.Views.Contents
 
         /*
          * [설계 49] 문단 들여쓰기. 웹 CSS px와 WPF DIP는 96 DPI 기준 같은 크기이므로 1단계 = 40 DIP로 표시한다.
-         * 서버 허용 단계(0~5)를 복제하지 않고(설계 48) 정수이며 왼쪽 여백이 MaxIndent 이하인 값만 적용, 밖이면 0이다.
-         * 400 DIP는 FIXED 기본 폭(560)에서 본문이 남는 레이아웃 한계다. 서버가 10단계를 넘게 허용하면 함께 확인한다.
+         * [TODO63] 단계 수 제한은 없다(설계 48: 서버 정책을 복제하지 않음). 0 이상 정수이고 서버가 읽을 수 있는 숫자 범위
+         * (int 이하)면 그대로 적용하고, 소수·음수·NaN·Infinity·범위 초과만 0이다. 여백이 본문 폭을 넘으면 TextBlock이
+         * 남은 폭에서 줄바꿈하고 높이가 늘어나며, 본문 영역의 기존 세로 스크롤로 확인한다.
          */
         internal const double IndentStep = 40;
-        internal const double MaxIndent = 400;
 
         internal static double SafeIndent(double level) =>
-            double.IsFinite(level) && level >= 0 && level == Math.Floor(level) && level * IndentStep <= MaxIndent ? level * IndentStep : 0;
+            double.IsFinite(level) && level >= 0 && level == Math.Floor(level) && level <= int.MaxValue ? level * IndentStep : 0;
 
         /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다(설계 28 §5). */
         internal static readonly Dictionary<string, string> Fonts = new()

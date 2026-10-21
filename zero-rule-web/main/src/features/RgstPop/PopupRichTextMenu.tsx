@@ -12,7 +12,7 @@ import {
   Box, Button, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Tooltip, Typography, type PopoverPosition,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, RICH_MAX_INDENT, type RichFontId } from './popupRichText';
+import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, type RichFontId } from './popupRichText';
 import { fontIdFromModel, sizeFromModel, type FormatAction, type FormatState } from './popupRichTextFormat';
 
 type Props = {
@@ -168,7 +168,7 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
             {toggle('strikethrough', '취소선', <StrikethroughSIcon fontSize="small" />)}
           </Stack>
           <Typography variant="caption" component="p" color="text.secondary" sx={{ mt: 1, mb: 0.5, fontSize: 11 }}>
-            문단 · 들여쓰기 {paragraph?.indent.mixed ? '혼합' : `${paragraph?.indent.value ?? 0} / ${RICH_MAX_INDENT}`}
+            문단 · 들여쓰기 {paragraph?.indent.mixed ? '혼합' : `${paragraph?.indent.value ?? 0}단계`}
           </Typography>
           <Stack direction="row" spacing={0.75} alignItems="center" role="group" aria-label="문단 서식">
             {paragraphButton('내어쓰기', <FormatIndentDecreaseIcon fontSize="small" />, { type: 'indent', direction: 'out' }, Boolean(paragraph?.canOutdent))}

@@ -19,14 +19,15 @@ export interface RichRun {
 }
 export interface RichBlock {
   alignment: RichAlignment;
-  /** [설계 49] 문단 왼쪽 들여쓰기 단계(1~RICH_MAX_INDENT). 0이면 키를 생략한다. */
+  /** [설계 49·TODO63] 문단 왼쪽 들여쓰기 단계(1 이상 정수, 단계 수 제한 없음). 0이면 키를 생략한다. */
   indent?: number;
   runs: RichRun[];
 }
 
-/* [설계 49] 들여쓰기 1단계 = 40px(CKEditor IndentBlock offset과 같음), 최대 5단계. 서버 PopupRichText.MAX_INDENT와 같아야 한다. */
+/* [설계 49] 들여쓰기 1단계 = 40px(CKEditor IndentBlock offset과 같음).
+ * [TODO63] 단계 수 제한은 없다. RICH_INDENT_LIMIT은 횟수 제한이 아니라 서버가 정수(Java int)로 읽을 수 있는 숫자 범위다. */
 export const RICH_INDENT_STEP = 40;
-export const RICH_MAX_INDENT = 5;
+export const RICH_INDENT_LIMIT = 2147483647;
 
 /*
  * [설계 49] 편집기 색 팔레트. 8계열(열) × 밝기 5단계(행, 밝음 → 어두움)를 펼친 격자로 보여 준다.
@@ -77,7 +78,7 @@ const REMOVED_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'IMG', 'IFRAME', 'O
 export const richEditorConfig = {
   toolbar: { items: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'removeFormat', '|', 'undo', 'redo'] },
   fontColor: { colors: RICH_COLORS, columns: RICH_COLOR_COLUMNS, documentColors: 0 },
-  /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 최대 단계는 popupRichTextFormat.limitIndent가 지킨다. */
+  /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 40px 단위 정규화는 popupRichTextFormat.normalizeIndent가 한다. */
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },
   /* 'default'는 크기 서식 없음 = 본문 기본 크기(bodyFontSize). */
   fontSize: { options: ['default', ...RICH_SIZES], supportAllValues: false },
@@ -92,14 +93,15 @@ function toHexColor(value: string): string {
   return value.trim().toUpperCase();
 }
 const sameFormat = (a: RichRun, b: RichRun) => FLAG_KEYS.every((key) => (a[key] ?? null) === (b[key] ?? null));
-/** 들여쓰기 단계 값이 계약(0~RICH_MAX_INDENT 정수)인지. */
-const isIndentLevel = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= RICH_MAX_INDENT;
-/** [설계 49] 문단 margin-left(px)를 단계로 바꾼다. px 외 단위·음수는 0, 최대 단계를 넘으면 최대 단계. */
+/** 들여쓰기 단계 값이 계약(0 이상 정수, 숫자 범위 RICH_INDENT_LIMIT 이하)인지. NaN·Infinity·소수·음수는 아니다. */
+export const isIndentLevel = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= RICH_INDENT_LIMIT;
+/** [설계 49·TODO63] 문단 margin-left(px)를 단계로 바꾼다. px 외 단위·음수·숫자 범위를 넘는 값은 0. */
 export function indentFromCss(marginLeft: string | undefined | null): number {
   const match = /^(\d+(?:\.\d+)?)px$/.exec((marginLeft ?? '').trim());
   if (!match) return 0;
-  return Math.min(RICH_MAX_INDENT, Math.round(Number.parseFloat(match[1]) / RICH_INDENT_STEP));
+  const level = Math.round(Number.parseFloat(match[1]) / RICH_INDENT_STEP);
+  return isIndentLevel(level) ? level : 0;
 }
 
 /** 편집기 HTML을 허용 서식만 남긴 문단·Run JSON으로 바꾼다. 허용 밖 서식은 버리고 글자는 보존한다. */

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-04 — TODO63 문단 들여쓰기 5단계 제한 해제
+
+- 이유: 공용 RichText 문단 들여쓰기를 5단계 이후에도 쓸 수 있도록 편집기·변환·서버 검증·WPF 표시 방어의 상한을 제거(TODO63).
+- 변경: 웹 — `RICH_MAX_INDENT` 제거, `RICH_INDENT_LIMIT`(서버 int 표현 범위, 횟수 제한 아님) 도입, `limitIndent`를 `normalizeIndent`로 바꾸고 최대 단계 clamp·`indentBlock` 비활성화 제거(40px 정규화·px 외 단위/범위 초과 제거·서식 초기화 시 정렬·들여쓰기 보존 유지), `indentFromCss`·`readTextBlocks`는 범위 밖 값을 0으로 처리, 우클릭 표기 `n / 5` → `n단계`. 서버 — `PopupRichText.MAX_INDENT` 제거, int로 손실 없이 바뀌는 0 이상 정수만 허용, 오류 문구 갱신(설문·퀴즈 공용). WPF — Demo `ServerRichMaxIndent` 제거·검증/도움말 갱신, `PopupRichText.MaxIndent=400` 제거로 11단계 이상이 0으로 돌아가던 표시 방어 수정(0 이상 정수·int 이하 적용). 테스트 기대값을 새 계약으로 바꾸고 6·7·11단계·범위 초과 사례 추가. 인터페이스 명세·ALL·옵션 가이드 2종 갱신, MINIMAL은 해당 항목 없음(최소 제공 범위 확장 없음). DB DDL·의존성 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/popupRichText.ts·popupRichTextFormat.ts·PopupRichTextMenu.tsx·PopupRichTextEditor.tsx, zero-rule-server/service/core/.../PopupRichText.java·PopupRichTextTest.java·PopupSurveyRichTextTest.java, popup-frameWork/Popup/Views/Contents/PopupRichText.cs·DemoOptionsWindow.cs, scripts/verify-rich-text-49.cjs·RichTextTests/Program.cs, docs/design/63_문단들여쓰기_5회제한해제_TODO.md, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md, docs/POPUP_OPTION_GUIDE.md·POPUP_USER_OPTION_GUIDE.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0(기존 경고 2). verify-rich-text-49 59건(툴바 7·11단계, 우클릭 6단계 240px·버튼 활성, 10→11단계 왕복·서식 초기화·실행 취소, 붙여넣기 정규화, 미리보기 440px, 다중 문단 undo/redo)·verify-survey-rich-text-55 23건 통과. 서버 `gradlew test --offline` 152건 중 143 통과·9 skip(Oracle 연동)·실패 0. WPF RichTextTests 113건 통과(11단계 440 DIP, 20단계 여백 예외 없음, Demo 11단계 허용·int 초과 거부). 미실행: 실제 관리자 저장→재조회→WPF 실화면 왕복, 한글 IME, 좁은 팝업 실화면 캡처, 인터페이스 Excel·Word·PDF 재생성.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영. Trello TODO63은 검증대기.
+
 ## 2026-10-21-03 — TODO64 팝업 데이터 변환 분리와 이식 안내 계획
 
 - 이유: 에디터와 우측/모달 미리보기를 신규 등록 화면에 이식할 때 부모에 묶인 데이터 구성 로직과 통합 사용 안내가 필요.

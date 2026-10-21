@@ -91,6 +91,22 @@ class PopupSurveyRichTextTest {
         }
     }
 
+    /** [TODO63] 공용 검증을 쓰는 문항·선택지 서식도 6단계 이상 들여쓰기를 그대로 유지한다. */
+    @SuppressWarnings("unchecked")
+    @Test void questionAndOptionIndentAboveFiveIsKept() {
+        Map<String, Object> title = new LinkedHashMap<>((Map<String, Object>) blocks("제목", false).get(0));
+        title.put("indent", 6);
+        Map<String, Object> option = new LinkedHashMap<>((Map<String, Object>) blocks("선택지", false).get(0));
+        option.put("indent", 11);
+        PopupQuestionDto normalized = PopupSurveyRichText.normalizeQuestion(question("t", List.of(title), List.of(option)));
+        assertEquals(6, ((Map<?, ?>) normalized.titleBlocks().get(0)).get("indent"));
+        assertEquals(11, ((Map<?, ?>) normalized.options().get(0).textBlocks().get(0)).get("indent"));
+        Map<String, Object> negative = new LinkedHashMap<>(option);
+        negative.put("indent", -1);
+        assertThrows(IllegalArgumentException.class,
+                () -> PopupSurveyRichText.normalizeQuestion(question("t", null, List.of(negative))));
+    }
+
     @Test void invalidOrTooLongBlocksAreRejectedWithFieldName() {
         List<Object> badColor = List.of(Map.of("alignment", "LEFT",
                 "runs", List.of(Map.of("text", "A", "color", "red"))));

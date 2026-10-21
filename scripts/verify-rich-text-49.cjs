@@ -70,14 +70,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const b=[{alignment:'LEFT',indent:1,runs:[{text:'하나'}]},{alignment:'CENTER',indent:5,runs:[{text:'다섯',bold:true}]},{alignment:'RIGHT',runs:[]},{alignment:'LEFT',runs:[{text:'일반'}]}];
     const html=blocksToHtml(b);return html.includes('<p style="margin-left:40px;">')&&html.includes('text-align:center;margin-left:200px;')&&JSON.stringify(htmlToBlocks(html))===JSON.stringify(b)
       &&blocksToPlainText(b)==='하나\\n다섯\\n\\n일반';})()`), 'blocks ↔ HTML round trip keeps indent; plainText has no indent spaces');
-  check(await run(`[indentFromCss('40px'),indentFromCss('80px'),indentFromCss('60px'),indentFromCss('400px'),indentFromCss('2em'),indentFromCss('-40px'),indentFromCss(''),indentFromCss(undefined)].join()==='1,2,2,5,0,0,0,0'`),
-    'margin-left px maps to level (rounded, clamped 0~5); other units ignored');
-  check(await run(`JSON.stringify(readTextBlocks([{alignment:'LEFT',indent:2,runs:[]},{alignment:'LEFT',indent:6,runs:[]},{alignment:'LEFT',indent:1.5,runs:[]},{alignment:'LEFT',indent:'1',runs:[]},{alignment:'LEFT',indent:0,runs:[]}]).map(b=>b.indent??0))==='[2,0,0,0,0]'`),
-    'readTextBlocks keeps only contract indent levels');
+  check(await run(`[indentFromCss('40px'),indentFromCss('80px'),indentFromCss('60px'),indentFromCss('400px'),indentFromCss('440px'),indentFromCss('2em'),indentFromCss('-40px'),indentFromCss(''),indentFromCss(undefined),indentFromCss('99999999999999999999px')].join()==='1,2,2,10,11,0,0,0,0,0'`),
+    '[63] margin-left px maps to level without a level limit (rounded); other units and out-of-range numbers are 0');
+  check(await run(`JSON.stringify(readTextBlocks([{alignment:'LEFT',indent:2,runs:[]},{alignment:'LEFT',indent:6,runs:[]},{alignment:'LEFT',indent:11,runs:[]},{alignment:'LEFT',indent:1.5,runs:[]},{alignment:'LEFT',indent:'1',runs:[]},{alignment:'LEFT',indent:0,runs:[]},{alignment:'LEFT',indent:-1,runs:[]},{alignment:'LEFT',indent:Infinity,runs:[]},{alignment:'LEFT',indent:2147483648,runs:[]}]).map(b=>b.indent??0))==='[2,6,11,0,0,0,0,0,0]'`),
+    '[63] readTextBlocks keeps levels above 5 and drops non-integer, negative, non-finite and out-of-range values');
   check(await run(`JSON.stringify(htmlToBlocks('<ul><li style="margin-left:40px">목록</li></ul><p style="margin-left:80px; text-indent:20px">문단</p>').map(b=>b.indent??0))==='[0,2]'`),
     'List item margin is not paragraph indent; text-indent is not read');
 
-  // ── 2. 실제 편집기: 기존 데이터 재편집·들여쓰기 명령·최대 단계·내어쓰기·서식 지우기·실행 취소 ──
+  // ── 2. 실제 편집기: 기존 데이터 재편집·들여쓰기 명령(단계 수 제한 없음, TODO63)·내어쓰기·서식 지우기·실행 취소 ──
   await run(`window.mount([{alignment:'LEFT',runs:[{text:'첫 문단 글자',bold:true}]},{alignment:'LEFT',indent:2,runs:[{text:'둘째'}]},{alignment:'CENTER',runs:[{text:'셋째'}]}])`);
   await waitEditor(); await pause(200);
   check((await data()).includes('<p style="margin-left:80px;">둘째</p>'), 'Saved indent reloads into editor as margin-left 80px');
@@ -89,20 +89,20 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(JSON.stringify((await blocks()).map(b => b.indent ?? 0)) === '[1,2,0]' && (await run('window.lastChange.plainText')) === '첫 문단 글자\n둘째\n셋째',
     'Editor change emits paragraph indent and unchanged plainText');
   for (let i = 0; i < 6; i++) await run(`window.editor().execute('indent')`);
-  check((await blocks())[0].indent === 5 && (await data()).startsWith('<p style="margin-left:200px;">'), 'Repeated indent stops at level 5 (200px)');
-  check(await run(`!window.editor().commands.get('indent').isEnabled && !window.editor().commands.get('indentBlock').isEnabled && window.editor().commands.get('outdent').isEnabled`),
-    'Indent command is disabled at max level, outdent stays enabled');
-  await run(`window.select(0, 0, 1, 1)`); await pause(50);
-  check(await run(`window.editor().commands.get('indent').isEnabled`), 'Indent is enabled again when a selected paragraph is below max');
+  check((await blocks())[0].indent === 7 && (await data()).startsWith('<p style="margin-left:280px;">'), '[63] Repeated indent continues past level 5 (7 = 280px)');
+  check(await run(`window.editor().commands.get('indent').isEnabled && window.editor().commands.get('indentBlock').isEnabled && window.editor().commands.get('outdent').isEnabled`),
+    '[63] Indent command stays enabled above level 5, outdent stays enabled');
+  for (let i = 0; i < 4; i++) await run(`window.editor().execute('indent')`);
+  check((await blocks())[0].indent === 11 && (await data()).startsWith('<p style="margin-left:440px;">'), '[63] Level 10 → 11 (440px) keeps 40px steps without clamp');
   await run('window.select(0, 0)'); await run(`window.editor().execute('outdent')`); await pause(50);
-  check((await blocks())[0].indent === 4, 'Outdent decreases one level');
+  check((await blocks())[0].indent === 10, 'Outdent decreases one level');
   await run('window.select(0, 0, 3)'); await run(`window.editor().execute('removeFormat')`); await pause(50);
-  check((await blocks())[0].indent === 4 && (await blocks())[0].runs[0].bold === undefined, 'Format clear removes text format but keeps paragraph indent');
+  check((await blocks())[0].indent === 10 && (await blocks())[0].runs[0].bold === undefined, 'Format clear removes text format but keeps paragraph indent');
   await run(`window.editor().execute('undo')`); await run(`window.editor().execute('undo')`); await pause(50);
-  check((await blocks())[0].indent === 5, 'Undo restores previous indent');
-  await run(`window.editor().setData('<p style="margin-left:300px">붙여넣음</p><p style="margin-left:2em">em</p><p style="margin-left:60px">육십</p>')`); await pause(100);
-  check(JSON.stringify((await blocks()).map(b => b.indent ?? 0)) === '[5,0,2]' && (await data()).includes('margin-left:200px'),
-    'Loaded/pasted margins are normalized in the model (max 200px, 40px steps, non-px removed)');
+  check((await blocks())[0].indent === 11, 'Undo restores previous indent');
+  await run(`window.editor().setData('<p style="margin-left:300px">붙여넣음</p><p style="margin-left:2em">em</p><p style="margin-left:60px">육십</p><p style="margin-left:99999999999999999999px">과대</p>')`); await pause(100);
+  check(JSON.stringify((await blocks()).map(b => b.indent ?? 0)) === '[8,0,2,0]' && (await data()).includes('margin-left:320px'),
+    '[63] Loaded/pasted margins are normalized in the model (40px steps, no level limit, non-px and out-of-range removed)');
 
   // ── 3. 우클릭 펼침 서식 패널 ──
   await run(`window.mount([{alignment:'LEFT',runs:[{text:'가나다라마바사'},{text:'굵은글자',bold:true}]},{alignment:'LEFT',indent:1,runs:[{text:'둘째 문단'}]}])`);
@@ -187,10 +187,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 
   // ── 4. 미리보기: 문단 전체 왼쪽 여백(줄바꿈 줄 포함) ──
   const long = '가나다라마 '.repeat(30);
-  await run(`window.mount([], false, [{alignment:'LEFT',indent:1,runs:[{text:${JSON.stringify(long)}}]},{alignment:'LEFT',runs:[{text:'일반'}]},{alignment:'CENTER',indent:5,runs:[{text:'가운데'}]}])`); await pause(300);
+  await run(`window.mount([], false, [{alignment:'LEFT',indent:1,runs:[{text:${JSON.stringify(long)}}]},{alignment:'LEFT',runs:[{text:'일반'}]},{alignment:'CENTER',indent:11,runs:[{text:'가운데'}]}])`); await pause(300);
   const preview = await run(`(()=>{const ps=Array.from(document.querySelectorAll('#preview .MuiTypography-root')).filter(e=>e.querySelector('span'));
     const span=ps[0].querySelector('span');const rects=Array.from(span.getClientRects());const base=ps[0].getBoundingClientRect().left, lines=new Map();for(const r of rects){const top=Math.round(r.top);lines.set(top,Math.min(lines.get(top)??Infinity,Math.round(r.left-base)));}return {pad:ps.map(p=>getComputedStyle(p).paddingLeft),lines:lines.size,lefts:[...new Set(lines.values())]};})()`);
-  check(preview.pad.join() === '40px,0px,200px' && preview.lines >= 3 && preview.lefts.length === 1 && preview.lefts[0] === 40,
+  check(preview.pad.join() === '40px,0px,440px' && preview.lines >= 3 && preview.lefts.length === 1 && preview.lefts[0] === 40,
     'Preview indents the whole paragraph including wrapped lines: ' + JSON.stringify(preview));
   // ── 5. TODO62: 취소선 왕복·문단 메뉴·서식 초기화 ──
   check(await run(`(()=>{const b=htmlToBlocks('<p><s>취소</s><del>삭제</del><strike>구형</strike>일반</p>');
@@ -232,22 +232,23 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await click('[aria-label="내어쓰기"]');
   check(!(await blocks())[0].indent && await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),
     '[62] outdent reaches zero and becomes disabled: '+JSON.stringify({blocks:await blocks(),disabled:await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),command:await run(`window.editor().commands.get('outdent').isEnabled`)}));
-  for(let i=0;i<5;i++) await click('[aria-label="들여쓰기"]');
-  check((await blocks())[0].indent===5 && await run(`document.querySelector('[aria-label="들여쓰기"]').disabled`),
-    '[62] menu indent reaches five and becomes disabled');
+  for(let i=0;i<6;i++) await click('[aria-label="들여쓰기"]');
+  check((await blocks())[0].indent===6 && (await data()).includes('margin-left:240px') && !(await run(`document.querySelector('[aria-label="들여쓰기"]').disabled`))
+    && await run(`document.querySelector('[aria-label="문단 서식"]').previousElementSibling.textContent.includes('6단계')&&!document.querySelector('[aria-label="문단 서식"]').previousElementSibling.textContent.includes('/')`),
+    '[63] menu indent passes five (6 = 240px), stays enabled and shows the level without a maximum');
   await key('Escape', 'Escape', 27);
   await run(`window.select(0,0,2,1)`); await click('button[aria-haspopup="dialog"]');
   check(await run(`['왼쪽 정렬','가운데 정렬','오른쪽 정렬'].every(l=>document.querySelector('[aria-label="'+l+'"]').getAttribute('aria-pressed')==='mixed')
     &&document.querySelector('[aria-label="문단 서식"]').previousElementSibling.textContent.includes('혼합')`),
     '[62] multi-paragraph mixed alignment and indent are represented as mixed');
   await click('[aria-label="오른쪽 정렬"]'); await click('[aria-label="내어쓰기"]');
-  check(JSON.stringify((await blocks()).map(b=>[b.alignment,b.indent??0]))==='[["RIGHT",4],["RIGHT",0]]',
+  check(JSON.stringify((await blocks()).map(b=>[b.alignment,b.indent??0]))==='[["RIGHT",5],["RIGHT",0]]',
     '[62] paragraph actions apply to every selected paragraph and preserve independent indent levels');
   await key('Escape', 'Escape', 27);
   await run(`window.editor().execute('undo')`); await pause(80);
-  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[5,1]', '[62] undo restores multi-paragraph indent');
+  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[6,1]', '[62] undo restores multi-paragraph indent');
   await run(`window.editor().execute('redo')`); await pause(80);
-  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[4,0]', '[62] redo reapplies multi-paragraph indent');
+  check(JSON.stringify((await blocks()).map(b=>b.indent??0))==='[5,0]', '[62] redo reapplies multi-paragraph indent');
   await run(`window.select(1,0)`); await click('button[aria-haspopup="dialog"]'); await click('[aria-label="취소선"]');
   check(await run(`window.editor().model.document.selection.isCollapsed&&window.editor().model.document.selection.getAttribute('strikethrough')===true`),
     '[62] collapsed cursor toggles strikethrough for the next typing');

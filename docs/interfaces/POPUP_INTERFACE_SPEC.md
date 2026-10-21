@@ -8,6 +8,7 @@
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
+- 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
 - 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
@@ -468,7 +469,7 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 |---|---|---|---|---|
 | textBlocks[] | array | 선택 | 최대 500문단 | 문단 목록. 문단 사이는 줄바꿈 |
 | textBlocks[].alignment | string | 선택 | `LEFT`(기본)·`CENTER`·`RIGHT` | 문단 정렬 |
-| textBlocks[].indent | number | 선택 | 0~5 정수(기본·누락 0) | 문단 왼쪽 들여쓰기 단계(설계 49). 1단계 = 40(웹 CSS px·WPF DIP), 단계마다 누적. 줄바꿈된 모든 줄에 같은 왼쪽 여백을 적용하며(첫 줄만 들여쓰는 방식 아님) plainText에는 공백·탭을 넣지 않는다 |
+| textBlocks[].indent | number | 선택 | 0 이상 정수(기본·누락 0, 단계 수 제한 없음·2147483647 이하, TODO63) | 문단 왼쪽 들여쓰기 단계(설계 49). 1단계 = 40(웹 CSS px·WPF DIP), 단계마다 누적. 줄바꿈된 모든 줄에 같은 왼쪽 여백을 적용하며(첫 줄만 들여쓰는 방식 아님) plainText에는 공백·탭을 넣지 않는다 |
 | textBlocks[].runs[] | array | O | 전체 최대 2000개 | 같은 서식의 글자 묶음. 빈 배열 = 빈 문단 |
 | runs[].text | string | O | 빈 값 불가, `\n`·`\t` 외 제어 문자 불가 | 글자. `\n`은 문단 내부 줄바꿈 |
 | runs[].bold / italic / underline / strikethrough | boolean | 선택 | `true`·`false`(누락 false) | 굵게·기울임·밑줄·취소선. 밑줄과 취소선 동시 적용 가능(TODO62) |
@@ -484,7 +485,7 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 
 HTML은 편집기 경계에서만 사용하며 취소선은 `<s>`로 복원한다. 붙여넣기의 `<del>`·`<strike>`도 취소선으로 읽는다. 일반 문자열은 `변경 전 변경 후`이며 서식용 기호를 넣지 않는다. 서식 초기화는 취소선을 포함한 글자 서식만 제거하고 문단 정렬·들여쓰기는 유지한다.
 
-본문 전체(파생 plainText)는 20000자 이하이다. 허용 밖 키·값은 저장 API가 거부한다. 허용 정책은 서버가 검증하며 WPF는 같은 목록을 다시 검사하지 않고 표시 방어만 한다(설계 48): 크기는 유한값 1~200만 적용하고 밖이면 기본 크기, 들여쓰기는 정수이고 왼쪽 여백 400 이하(10단계)만 적용하고 밖이면 0, 색은 `#RRGGBB`(대소문자 무관)를 변환하고 실패한 구간만 기본 색, 매핑이 없는 글꼴 ID·알 수 없는 정렬은 기본값이다. 서식 값의 JSON 타입 오류는 그 값만 기본값으로 두고, 글자를 읽을 수 없는 구조 오류(배열·객체가 아니거나 text가 문자열이 아님)는 서식 본문 대신 plainText를 표시한다. 1차 적용 대상은 TEXT 본문뿐이며 다른 유형의 content에 textBlocks를 넣으면 저장을 거부한다.
+본문 전체(파생 plainText)는 20000자 이하이다. 허용 밖 키·값은 저장 API가 거부한다. 허용 정책은 서버가 검증하며 WPF는 같은 목록을 다시 검사하지 않고 표시 방어만 한다(설계 48): 크기는 유한값 1~200만 적용하고 밖이면 기본 크기, 들여쓰기는 0 이상 정수(2147483647 이하)면 단계 × 40을 그대로 적용하고 소수·음수·비유한값·범위 초과는 0(TODO63, 여백이 본문 폭을 넘으면 남은 폭에서 줄바꿈하고 본문 세로 스크롤로 표시), 색은 `#RRGGBB`(대소문자 무관)를 변환하고 실패한 구간만 기본 색, 매핑이 없는 글꼴 ID·알 수 없는 정렬은 기본값이다. 서식 값의 JSON 타입 오류는 그 값만 기본값으로 두고, 글자를 읽을 수 없는 구조 오류(배열·객체가 아니거나 text가 문자열이 아님)는 서식 본문 대신 plainText를 표시한다. 1차 적용 대상은 TEXT 본문뿐이며 다른 유형의 content에 textBlocks를 넣으면 저장을 거부한다.
 
 ---
 
@@ -650,7 +651,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
 - 여러 문단·들여쓰기 허용, 첫 문단만 쓰지 않는다. 필수 표시 `*`는 문항 제목 마지막 문단 끝에 붙는다.
 - `questionId`·`optionId`·`value`·정답·배점·필수/복수 선택과 결과 `answers`는 서식과 무관하다. 주관식 답변·`correctAnswer`는 서식 대상이 아니다.
 - VIDEO+QUIZ에서 퀴즈 머리말이 서식이면 영상 영역과 문자열이 같아도 숨기지 않는다(일반 문자열이 같을 때만 숨김, 설계 53-16).
-- 서버 저장(TODO55-4, 2026-10-19): 관리자 저장 요청의 같은 필드를 TEXT `textBlocks`와 같은 규칙(정렬·들여쓰기 0~5·색 `#RRGGBB`·크기·글꼴 허용 값, 문단·구간 수 상한)으로 검증하고 위 표의 상한으로 파생 문자열 길이를 검사한다. 오류 메시지는 필드 이름으로 시작한다(예: `선택지 내용 서식: ...`). 서식은 SURVEY·QUIZ에서만 받으며 다른 유형의 `surveyTitleBlocks`·`descriptionBlocks`는 거부한다. 응답에서 서식이 없으면 키를 생략한다. 예:
+- 서버 저장(TODO55-4, 2026-10-19): 관리자 저장 요청의 같은 필드를 TEXT `textBlocks`와 같은 규칙(정렬·들여쓰기 0 이상 정수(TODO63)·색 `#RRGGBB`·크기·글꼴 허용 값, 문단·구간 수 상한)으로 검증하고 위 표의 상한으로 파생 문자열 길이를 검사한다. 오류 메시지는 필드 이름으로 시작한다(예: `선택지 내용 서식: ...`). 서식은 SURVEY·QUIZ에서만 받으며 다른 유형의 `surveyTitleBlocks`·`descriptionBlocks`는 거부한다. 응답에서 서식이 없으면 키를 생략한다. 예:
 
 ```json
 {

@@ -8,7 +8,7 @@ import java.util.Set;
  * [설계 28] TEXT 본문 서식 데이터(content.textBlocks) 검증과 일반 문자열(plainText) 파생.
  *
  * <p>구조: {@code textBlocks = [{ alignment, indent?, runs: [{ text, bold?, italic?, underline?, strikethrough?, color?, size?, font? }] }]}.
- * [설계 49] indent는 문단 왼쪽 들여쓰기 단계(0~5 정수, 1단계 = 40px, 누락 = 0)이며 글자 서식(Run)과 분리된 문단 속성이다.
+ * [설계 49] indent는 문단 왼쪽 들여쓰기 단계(0 이상 정수·단계 수 제한 없음(TODO63), 1단계 = 40px, 누락 = 0)이며 글자 서식(Run)과 분리된 문단 속성이다.
  * 문단 안 Run의 text를 순서대로 이어 붙인 것이 문단 본문이고, 문단은 줄바꿈(\n)으로 구분한다.
  * 문단 내부 줄바꿈은 Run text의 \n이다. HTML은 저장하지 않으며, 허용 목록 밖의 키·값은 저장을 거부한다
  * (관리자 편집기는 허용 값만 만들므로 거부는 API 직접 입력 방어다).</p>
@@ -24,7 +24,6 @@ final class PopupRichText {
     private static final java.util.regex.Pattern HEX_COLOR = java.util.regex.Pattern.compile("^#[0-9A-F]{6}$");
     static final Set<Integer> SIZES = Set.of(12, 14, 16, 18, 20, 24, 28, 32);
     static final Set<String> FONTS = Set.of("MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG");
-    static final int MAX_INDENT = 5;
     static final int MAX_BLOCKS = 500;
     static final int MAX_RUNS = 2000;
     static final int MAX_TEXT_LENGTH = 20000;
@@ -62,9 +61,10 @@ final class PopupRichText {
                 throw invalid("문단 정렬은 LEFT, CENTER, RIGHT 중 하나여야 합니다.");
             }
             Object indent = block.get("indent");
+            // [TODO63] 단계 수 제한은 없다. int로 손실 없이 바뀌는 0 이상 정수만 허용한다(소수·음수·NaN·범위 초과 거부).
             if (indent != null && !(indent instanceof Number n && n.doubleValue() == n.intValue()
-                    && n.intValue() >= 0 && n.intValue() <= MAX_INDENT)) {
-                throw invalid("문단 들여쓰기는 0~" + MAX_INDENT + " 사이의 정수여야 합니다.");
+                    && n.intValue() >= 0)) {
+                throw invalid("문단 들여쓰기는 0 이상의 정수여야 합니다.");
             }
             Object runsValue = block.get("runs");
             if (!(runsValue instanceof List<?> runs)) {

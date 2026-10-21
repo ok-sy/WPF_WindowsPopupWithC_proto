@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import PopupRichTextMenu from './PopupRichTextMenu';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
-import { applyFormat, limitIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
+import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
 
 const CKEditor = dynamic(() => import('@ckeditor/ckeditor5-react').then((m) => m.CKEditor), { ssr: false });
 
@@ -112,8 +112,8 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
                 container.appendChild(editor.ui.view.toolbar.element);
               }
               applyReadOnly(editor, Boolean(disabled));
-              // [설계 49] 문단 들여쓰기 최대 단계(5단계 = 200px) 제한.
-              limitIndent(editor);
+              // [설계 49·TODO63] 문단 들여쓰기 40px 단위 정규화(단계 수 제한 없음).
+              normalizeIndent(editor);
               // 서식 편집 영역 안에서만 사용자 정의 메뉴를 쓰고, Shift+우클릭은 브라우저 기본 메뉴(복사·붙여넣기 등)를 연다.
               const editable: HTMLElement = editor.ui.getEditableElement();
               const onContextMenu = (event: MouseEvent) => {

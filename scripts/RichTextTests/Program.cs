@@ -534,10 +534,15 @@ internal static class Program
         for (TextPointer? line = start; line != null; line = line.GetLineStartPosition(1)) lineLefts.Add(line.GetCharacterRect(LogicalDirection.Forward).Left);
         Check(lineLefts.Count >= 3 && lineLefts.All(left => Math.Abs(left - 80) < 0.5), "Every wrapped line starts at the indent: " + string.Join(",", lineLefts));
 
-        // 표시 방어: 서버 단계 목록(0~5)을 복제하지 않고 정수·최대 400 DIP(10단계)만 적용, 밖이면 0. 타입 오류도 0.
+        // [TODO63] 표시 방어: 단계 수 제한 없이 0 이상 정수(int 범위)면 그대로 적용, 소수·음수·범위 초과·타입 오류만 0.
         var defended = Paragraphs("[{\"indent\":6,\"runs\":[{\"text\":\"a\"}]},{\"indent\":10,\"runs\":[{\"text\":\"b\"}]},{\"indent\":11,\"runs\":[{\"text\":\"c\"}]},"
-            + "{\"indent\":-1,\"runs\":[{\"text\":\"d\"}]},{\"indent\":1.5,\"runs\":[{\"text\":\"e\"}]},{\"indent\":\"1\",\"runs\":[{\"text\":\"f\"}]},{\"indent\":1e308,\"runs\":[{\"text\":\"g\"}]},{\"indent\":null,\"runs\":[{\"text\":\"h\"}]}]");
-        Check(defended.Select(p => p.Padding.Left).SequenceEqual(new double[] { 240, 400, 0, 0, 0, 0, 0, 0 }), "Indent display defense uses layout range, not server list");
+            + "{\"indent\":-1,\"runs\":[{\"text\":\"d\"}]},{\"indent\":1.5,\"runs\":[{\"text\":\"e\"}]},{\"indent\":\"1\",\"runs\":[{\"text\":\"f\"}]},{\"indent\":1e308,\"runs\":[{\"text\":\"g\"}]},{\"indent\":null,\"runs\":[{\"text\":\"h\"}]},"
+            + "{\"indent\":2147483648,\"runs\":[{\"text\":\"i\"}]}]");
+        Check(defended.Select(p => p.Padding.Left).SequenceEqual(new double[] { 240, 400, 440, 0, 0, 0, 0, 0, 0 }), "Indent above level 10 keeps 40 DIP steps; invalid values fall back to 0");
+        // 본문 폭보다 큰 여백: 예외 없이 남은 폭에서 줄바꿈하고 높이가 늘어난다.
+        var deep = Paragraphs("[{\"alignment\":\"LEFT\",\"indent\":20,\"runs\":[{\"text\":\"깊은 들여쓰기 문단\"}]}]").Single();
+        deep.Measure(new Size(560, double.PositiveInfinity)); deep.Arrange(new Rect(deep.DesiredSize));
+        Check(deep.Padding.Left == 800 && double.IsFinite(deep.DesiredSize.Height) && deep.DesiredSize.Height > 0, "Indent wider than the content measures without exception");
 
         // Demo 옵션 창: 서버와 같은 indent 검증.
         TextBox Box(Popup.DemoOptionsWindow editor)
@@ -548,9 +553,9 @@ internal static class Program
         }
         PopupResponseDto Read(Popup.DemoOptionsWindow editor) => (PopupResponseDto)typeof(Popup.DemoOptionsWindow).GetMethod("ReadResult", flags)!.Invoke(editor, null)!;
         var demoEditor = new Popup.DemoOptionsWindow(sample);
-        Box(demoEditor).Text = "[{\"alignment\":\"LEFT\",\"indent\":5,\"runs\":[{\"text\":\"a\"}]},{\"alignment\":\"LEFT\",\"indent\":0,\"runs\":[{\"text\":\"b\"}]}]";
-        Check(Read(demoEditor).Content.GetProperty("plainText").GetString() == "a\nb", "Demo accepts indent 0~5");
-        foreach (string bad in new[] { "6", "-1", "1.5", "\"1\"", "true" })
+        Box(demoEditor).Text = "[{\"alignment\":\"LEFT\",\"indent\":11,\"runs\":[{\"text\":\"a\"}]},{\"alignment\":\"LEFT\",\"indent\":0,\"runs\":[{\"text\":\"b\"}]}]";
+        Check(Read(demoEditor).Content.GetProperty("plainText").GetString() == "a\nb", "Demo accepts indent above 5 (11)");
+        foreach (string bad in new[] { "-1", "1.5", "\"1\"", "true", "2147483648" })
         {
             Box(demoEditor).Text = "[{\"alignment\":\"LEFT\",\"indent\":" + bad + ",\"runs\":[{\"text\":\"a\"}]}]";
             try { Read(demoEditor); throw new Exception("Expected demo indent rejection: " + bad); }

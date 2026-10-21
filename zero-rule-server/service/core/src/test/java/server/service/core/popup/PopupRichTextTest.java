@@ -92,15 +92,16 @@ class PopupRichTextTest {
         }
     }
 
-    /** [설계 49] 문단 들여쓰기 단계: 0~5 정수, 누락 = 0. plainText에는 공백·탭을 넣지 않는다. */
-    @Test void paragraphIndentIsLevelZeroToFive() {
-        for (Object level : new Object[]{0, 1, 5, 2L, 3.0}) {
+    /** [설계 49·TODO63] 문단 들여쓰기 단계: 0 이상 정수(단계 수 제한 없음), 누락 = 0. plainText에는 공백·탭을 넣지 않는다. */
+    @Test void paragraphIndentIsNonNegativeIntegerWithoutLevelLimit() {
+        for (Object level : new Object[]{0, 1, 5, 6, 7, 11, 100, Integer.MAX_VALUE, 2L, 3.0, 11.0}) {
             Map<String, Object> indented = new LinkedHashMap<>(block("LEFT", run("들여쓴 문단")));
             indented.put("indent", level);
             assertEquals("들여쓴 문단\n일반", PopupRichText.validateAndDerivePlainText(List.of(indented, block("LEFT", run("일반")))),
                     String.valueOf(level));
         }
-        for (Object level : new Object[]{-1, 6, 1.5, "1", true, "40px", Double.NaN}) {
+        for (Object level : new Object[]{-1, 1.5, 6.5, "1", true, "40px", Double.NaN, Double.POSITIVE_INFINITY,
+                (long) Integer.MAX_VALUE + 1, 1e20, new java.math.BigInteger("99999999999999999999")}) {
             Map<String, Object> indented = new LinkedHashMap<>(block("LEFT", run("a")));
             indented.put("indent", level);
             assertThrows(IllegalArgumentException.class, () -> PopupRichText.validateAndDerivePlainText(List.of(indented)), String.valueOf(level));
