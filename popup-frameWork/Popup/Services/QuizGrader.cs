@@ -17,12 +17,14 @@ namespace Popup.Services
      *   - 선택형(SINGLE/MULTIPLE): 선택한 선택지 집합 == 정답(IsCorrect=true) 선택지 집합 이면 문항 배점 전부, 아니면 0. 부분 점수 없음.
      *   - 서술형(TEXT): 정답 문자열과 일치 모드 EXACT(trim 후 완전 일치) / CONTAINS(trim 후 포함) 로 비교. 모드가 없으면 오답.
      *   - 총점 = 정답 문항 배점 합. 통과 = 총점 >= 통과 점수(없으면 0 → 항상 통과).
-     *   - 배점(QuestionScore)이 없으면 0점이다. 서버는 QUIZ 저장 시 배점을 필수로 검증한다.
+     *   - 배점(QuestionScore)이 없으면 기본 1점이다(서버가 배점 미입력 문항을 1점으로 저장하는 기본값과 같음). 모두 1점이면 총점 = 문항 수.
      *
      * [설계 18 L-2 — C-16·C-17] 구 데모 JSON 호환(보기 value 목록 CorrectAnswers 비교, 배점 없을 때 100/문항 수)을 삭제했다.
      */
     public static class QuizGrader
     {
+        /// <summary>배점이 없을 때의 기본 배점(서버 PopupQuestionRules.DEFAULT_QUESTION_SCORE와 같음).</summary>
+        public const double DefaultQuestionScore = 1;
         /// <summary>
         /// [설계 43] IncorrectQuestionNumbers: 틀린 채점 문항의 화면 번호(문항 목록 순서 1부터). 미달 안내에만 쓰며 결과 계약(score·passed)에는 담지 않는다.
         /// </summary>
@@ -55,7 +57,7 @@ namespace Popup.Services
                     incorrect.Add(index + 1);   // SurveyPopupView 문항 카드 번호(index + 1)와 같다
                     continue;
                 }
-                total += question.QuestionScore is double score && double.IsFinite(score) ? score : 0;
+                total += question.QuestionScore is double score && double.IsFinite(score) ? score : DefaultQuestionScore;
             }
 
             total = Math.Round(total, 2);

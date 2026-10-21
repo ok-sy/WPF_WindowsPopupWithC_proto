@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-21-11 — QUIZ 배점 기본값 1점(총점 = 문항 수)
+
+- 이유: 배점 기본값을 1점으로 두어 별도 입력 없이 총점을 문항 수로 맞출 수 있게 하는 요구사항 반영. 기존에는 편집기 새 문항 10점, 서버는 배점 미입력 거부, WPF·미리보기는 누락 시 0점으로 기본값이 서로 달랐다.
+- 변경: 서버 — `PopupQuestionRules.DEFAULT_QUESTION_SCORE = 1`, `withDefaultScores`로 QUIZ 저장 시 배점이 없는 문항을 1점으로 채운 뒤 검증·템플릿 비교(설문·입력값은 그대로), `PopupQuestionDto.withQuestionScore`. 관리자 웹 — 새 퀴즈 문항 기본 1점, 배점 입력 비움 허용(placeholder '기본 1', 입력한 값만 양수 검사), 총점 계산 시 비움 = 1점, '배점 모두 1점' 버튼과 총점 옆 '(문항 N개 × 1점)' 표시, 미리보기 채점 누락 = 1점. WPF — `QuizGrader.DefaultQuestionScore = 1`(누락/비유한 배점 = 1점). 채점 규칙(정답 집합 일치, 부분 점수 없음)과 API 필드 변경 없음. 인터페이스 명세(변경 기록·값 규칙·문항 표)·ALL 명세 기본값 갱신. MINIMAL은 서버가 배점을 반드시 제공하는 계약이라 수정 없음.
+- 주요 파일: zero-rule-server/domain/.../PopupQuestionDto.java, service/core/.../PopupQuestionRules.java·PopupService.java·PopupQuestionRulesTest.java, zero-rule-web/main/src/features/RgstPop/PopupQuestionEditor.tsx·PopupPreview.tsx, popup-frameWork/Popup/Services/QuizGrader.cs, scripts/PopupWindowTests/Program.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline` 전체 실패 0(신규 `quizMissingScoreDefaultsToOnePointSoTotalEqualsQuestionCount`: 미입력 2문항 + 2.5점 = 총점 4.5, 모두 미입력이면 총점 = 문항 수, 설문 불변). WPF PopupWindowTests 386건 통과(신규: 배점 없는 3문항 전부 정답 = 3점·통과, 2문항 정답 = 2점·미통과, 1점 + 2.5점 = 3.5점). 웹 tsc·eslint 오류 0, verify-completion-ux-43 65·survey-rich-text-55 23·question-template-picker 7·popup-transform-64 77건 통과. 미실행: 실제 관리자 화면 저장→WPF 채점 실화면, 인터페이스 Word·PDF·Excel 재생성.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-21-10 — TODO52-1 게시 기간 안 요일·시간대 노출 일정 구현
 
 - 이유: 52-1 확정 정책(반복 = 미완료 팝업의 노출 가능 일정, 게시 기간 필수 + 기간 안 요일·시간대 지정, 시간대 개수·자정 초과 제한 없음, 요일 미지정 = 매일, 서버 KST, 결과 응답 후 재조회로 지나간 시간대는 놓침 허용, 기존 컬럼 재활용)을 서버 노출 판단과 관리자 입력에 반영.

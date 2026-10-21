@@ -41,4 +41,10 @@ public record PopupQuestionDto(
         this(questionId, title, description, questionType, isRequired, isScored, questionScore, sortOrder,
                 options, correctAnswer, answerMatchMode, optionLayout, null, null);
     }
+
+    /** 배점만 바꾼 사본(QUIZ 기본 배점 1점 적용용). */
+    public PopupQuestionDto withQuestionScore(BigDecimal newQuestionScore) {
+        return new PopupQuestionDto(questionId, title, description, questionType, isRequired, isScored, newQuestionScore,
+                sortOrder, options, correctAnswer, answerMatchMode, optionLayout, titleBlocks, descriptionBlocks);
+    }
 }

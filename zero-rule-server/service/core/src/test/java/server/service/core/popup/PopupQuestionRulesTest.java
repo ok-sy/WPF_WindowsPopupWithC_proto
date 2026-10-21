@@ -60,4 +60,17 @@ class PopupQuestionRulesTest {
         var multiple = new PopupQuestionDto(1L, "문항", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null, "VERTICAL");
         assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(multiple), true, 10.0));
     }
+
+    /** 배점을 비운 QUIZ 문항은 기본 1점이 되어 총점 = 문항 수로 맞출 수 있다. 설문·입력한 배점은 그대로다. */
+    @Test void quizMissingScoreDefaultsToOnePointSoTotalEqualsQuestionCount() {
+        var questions = List.of(text("a", "EXACT", null), text("b", "EXACT", null), text("c", "EXACT", "2.5"));
+        var quiz = PopupQuestionRules.withDefaultScores(questions, true);
+        assertEquals(List.of(new BigDecimal("1"), new BigDecimal("1"), new BigDecimal("2.5")), quiz.stream().map(PopupQuestionDto::questionScore).toList());
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(quiz, true, 4.5));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(quiz, true, 4.6), "total is 4.5");
+        var allDefault = PopupQuestionRules.withDefaultScores(List.of(text("a", "EXACT", null), text("b", "EXACT", null)), true);
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(allDefault, true, 2.0), "total = question count");
+        assertSame(questions, PopupQuestionRules.withDefaultScores(questions, false), "survey keeps questions as is");
+        assertNull(PopupQuestionRules.withDefaultScores(questions, false).get(0).questionScore());
+    }
 }

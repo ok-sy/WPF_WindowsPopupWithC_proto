@@ -1070,6 +1070,19 @@ internal static class Program
               && Question(M, null, null).MaxSelections == null && Question(M, false, false).MaxSelections == null
               && Question(global::SurveyQuestionType.SingleChoice, true, false).MaxSelections == null,
             "[52-5] MaxSelections = correct option count for multiple choice; no correct keys (SURVEY) or single choice = no limit");
+        // 배점이 없으면 기본 1점: 모두 비우면 총점 = 문항 수(서버 기본값과 같음). 입력한 배점은 그대로.
+        static Popup.Models.SurveyQuestion Scored(long id, double? score) => new()
+        {
+            QuestionId = id, QuestionType = global::SurveyQuestionType.MultipleChoice, IsScored = true, QuestionScore = score,
+            Options = new() { new Popup.Models.SurveyOption { OptionId = id * 10, Text = "o", IsCorrect = true }, new Popup.Models.SurveyOption { OptionId = id * 10 + 1, Text = "x", IsCorrect = false } }
+        };
+        static SurveyAnswer Right(long id) => new() { QuestionId = id, SelectedOptionIds = new() { id * 10 } };
+        var defaults = new List<Popup.Models.SurveyQuestion> { Scored(1, null), Scored(2, null), Scored(3, null) };
+        var full = QuizGrader.Grade(defaults, defaults.Select(q => Right(q.QuestionId)).ToList(), 3);
+        var partial = QuizGrader.Grade(defaults, new List<SurveyAnswer> { Right(1), Right(2) }, 3);
+        var mixed = QuizGrader.Grade(new List<Popup.Models.SurveyQuestion> { Scored(1, null), Scored(2, 2.5) }, new List<SurveyAnswer> { Right(1), Right(2) }, null);
+        Check(QuizGrader.DefaultQuestionScore == 1 && full.Score == 3 && full.Passed && partial.Score == 2 && !partial.Passed && mixed.Score == 3.5,
+            "[score default] missing question score counts as 1 point so total = question count; explicit scores are kept");
         ShutdownClose(quiz.Window);
 
         var survey = OpenPopup("SURVEY");

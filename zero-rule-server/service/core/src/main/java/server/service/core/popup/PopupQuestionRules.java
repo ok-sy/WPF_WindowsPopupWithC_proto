@@ -19,6 +19,15 @@ final class PopupQuestionRules {
         };
     }
 
+    /** 퀴즈 기본 배점. 배점을 비우면 1점으로 저장해 총점이 문항 수와 같아진다. */
+    static final BigDecimal DEFAULT_QUESTION_SCORE = BigDecimal.ONE;
+
+    /** QUIZ에서 배점이 없는(null) 문항을 기본 1점으로 채운다. 설문이거나 이미 값이 있으면 그대로 둔다(잘못된 값은 validate가 거부). */
+    static List<PopupQuestionDto> withDefaultScores(List<PopupQuestionDto> questions, boolean quiz) {
+        if (!quiz || questions == null || questions.stream().noneMatch(q -> q != null && q.questionScore() == null)) return questions;
+        return questions.stream().map(q -> q != null && q.questionScore() == null ? q.withQuestionScore(DEFAULT_QUESTION_SCORE) : q).toList();
+    }
+
     static void validate(List<PopupQuestionDto> questions, boolean quiz, Double passingScore) {
         if (questions == null || questions.isEmpty()) fail("문항을 한 개 이상 추가해 주세요.");
         BigDecimal total = BigDecimal.ZERO;

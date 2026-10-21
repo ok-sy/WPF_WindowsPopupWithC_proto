@@ -8,6 +8,7 @@
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
+- 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
@@ -356,7 +357,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | options | 선택형은 2개 이상, TEXT는 [] | 생략은 빈 목록, null은 변환 실패. 기본 선택지를 자동 생성하지 않음 |
 | 필수 문항 isRequired | 반드시 true를 명시 | 누락은 false이므로 필수 응답 검증이 적용되지 않음 |
 | 채점 QUIZ isScored | 채점할 문항에 true, 최소 1개 이상 | 누락은 false. 채점 문항이 하나도 없으면 passingScore와 무관하게 score=0, passed=true |
-| 채점 QUIZ questionScore | 유한 양수 배점. 서버 저장은 소수점 2자리, 최대 99999999.99 검증 | 누락/null은 0점으로 계산 |
+| 채점 QUIZ questionScore | 유한 양수 배점. 서버 저장은 소수점 2자리, 최대 99999999.99 검증. 관리자 저장 시 비우면 기본 1점 | 누락/null은 기본 1점으로 계산(모두 1점이면 총점 = 문항 수) |
 | 채점 QUIZ passingScore | 최상위에 명시, 0~총점. 0점 통과가 의도되지 않았다면 양수 | 누락/null/0 이하는 통과 기준 0으로 계산되어 0점도 통과 가능 |
 | 채점 선택형 options[].isCorrect | 정답은 true, 오답은 false 권장. 단일 정답 1개, 복수 정답 1개 이상 | 누락/null은 정답 아님. 정답 키가 없으면 해당 문항은 정답 처리되지 않음 |
 | 채점 TEXT correctAnswer / answerMatchMode | 비어 있지 않은 정답, EXACT 또는 CONTAINS | 누락 시 해당 문항 오답. 구현은 지원하나 최소 외부 오픈 범위에서는 TEXT 자동 채점 제외 |
@@ -814,7 +815,7 @@ passingScore 이상
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
 | isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
 | isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
-| questionScore | number | 채점 QUIZ | `null` → C# 계산상 0점 | 문항 배점 |
+| questionScore | number | 채점 QUIZ | `null` → 기본 1점 | 문항 배점. 관리자 저장 시 비우면 서버가 1점으로 저장한다. 모두 1점이면 총점 = 문항 수 |
 | correctAnswer | string | QUIZ TEXT 채점 문항 | `null` | TEXT 정답 |
 | answerMatchMode | string | QUIZ TEXT 채점 문항 | `null` | EXACT / CONTAINS |
 | options | array | 선택형 문항 | `[]` | 선택형 보기. TEXT는 빈 배열 |

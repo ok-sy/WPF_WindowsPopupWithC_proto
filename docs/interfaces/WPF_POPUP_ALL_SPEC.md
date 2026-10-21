@@ -194,7 +194,7 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | questions[].Options | 선택형에서 지원 | 조건부 | `[]` | TEXT는 빈 배열 |
 | questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | questions[].IsScored | QUIZ에서 지원 | Y(QUIZ 계약) | `false` | 채점 문항은 true 명시. 현재 서버 저장 규칙은 최소 1개 true 존재까지는 보장하지 않으므로 응답 검증 필요 |
-| questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` | 양수 배점. 누락/null이면 WPF 로컬 점수 0 |
+| questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` → 1 | 양수 배점. 누락/null이면 WPF 로컬 점수 기본 1점(서버도 미입력 시 1점 저장, 모두 1점이면 총점 = 문항 수) |
 | questions[].CorrectAnswer | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | 공백 아닌 주관식 정답. 최소 버전에서는 TEXT QUIZ 미제공 |
 | questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | EXACT / CONTAINS |
 | options[].OptionId | 지원 | Y(선택형) | `0` | 응답 OPTION_ID 연결. 양수·문항 내 고유 ID를 서버가 보장 |

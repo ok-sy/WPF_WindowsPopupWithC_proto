@@ -164,6 +164,10 @@ public class PopupService {
         popup = PopupSurveyRichText.normalize(popup);
         // [TODO52-1] 기간 모드·요일·시간대 정규화(FIXED는 비우고 SCHEDULE은 검증). 매월·간격 반복 값은 저장하지 않는다.
         popup = PopupDisplaySchedule.normalize(popup);
+        // QUIZ 배점을 비운 문항은 기본 1점으로 저장한다(총점 = 문항 수로 맞출 수 있게).
+        if ("QUIZ".equals(normalizeUpper(popup.popupType()))) {
+            popup = popup.withQuestionsAndContent(PopupQuestionRules.withDefaultScores(popup.questions(), true), popup.content());
+        }
         validateAdminPopup(popup, active, auditUser);
         List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
         if (Boolean.TRUE.equals(active) && normalizedGroups.isEmpty()) {

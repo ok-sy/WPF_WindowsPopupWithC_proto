@@ -454,7 +454,8 @@ export default function PopupPreview({
                 correctIds.every((id) => answer.optionIds.includes(id)),
               );
         if (!correct) wrongNumbers.push(index + 1);
-        return total + (correct ? (question.questionScore ?? 0) : 0);
+        // 배점이 없으면 기본 1점(서버·WPF와 같음).
+        return total + (correct ? (question.questionScore ?? 1) : 0);
       }, 0);
     const rounded = Math.round(score * 100) / 100;
     const passed = rounded >= (popup.passingScore ?? 0);
