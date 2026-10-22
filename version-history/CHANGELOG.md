@@ -5,7 +5,7 @@
 ## 2026-10-22-03 — TODO67 MUI deprecated 속성과 미리보기 호환 검증 계획
 
 - 이유: 폐쇄망 미리보기 이식 중 BackdropProps deprecated 안내가 확인되어 버전별 대체 API와 전환 후 표시·종료 동작 검증 필요.
-- 변경: TODO67 작성. 실제 MUI 버전 대조, 관련 속성 조사, slotProps 병합/전환 및 Overlay·모달 크기/위치·종료·인라인 표시·에디터 패널 회귀 기준 정의. 패키지 업그레이드와 앱 전체 전환은 제외.
+- 변경: TODO67 작성. 실제 MUI 버전 대조, 관련 속성 조사, slotProps 병합/전환 및 Overlay·모달 크기/위치·종료·인라인 표시·에디터 패널 회귀 기준 정의. PaperProps→slotProps.paper를 별도 67-6으로 명시하고 fullScreen 조건 및 Paper 크기·최대 크기·여백·overflow 보존 검증 추가. 패키지 업그레이드와 앱 전체 전환은 제외.
 - 주요 파일: docs/design/67_MUIdeprecated속성_미리보기호환검증_TODO.md, version-history/CHANGELOG.md.
 - 검증: 제시된 ts6385 안내와 현행 미리보기 구성에 맞춰 점검 범위 검토. 문서 전용 변경이며 코드 전환·타입/빌드/브라우저 실행 검증 미실행.
 - 상태: 진행 프로세스 구체화 완료. 점검·구현 미착수. 문서 전용 커밋에 포함.

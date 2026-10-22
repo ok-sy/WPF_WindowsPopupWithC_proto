@@ -15,9 +15,11 @@ deprecated는 현재 버전의 즉시 실행 오류와 구분해 기록한다. �
 
 - [ ] 67-1. 저장소와 폐쇄망의 @mui/material·@mui/system·@mui/icons-material·Emotion·React 실제 설치 버전 및 lockfile 차이를 기록한다. 실제 설치 타입 선언과 해당 버전 공식 문서로 대체 속성 지원 여부를 확인한다.
 - [ ] 67-2. PopupPreviewDialog 및 관련 팝업 컴포넌트에서 BackdropProps, PaperProps 등 deprecated 가능성이 있는 사용처를 조사한다. 발견 항목별 파일·현재 속성·대체 API·사용 버전·수정 필요 여부를 정리하며 미확인 항목을 확정 오류로 취급하지 않는다.
-- [ ] 67-3. BackdropProps의 배경 sx를 slotProps.backdrop으로 옮기는 변경을 확인/반영한다. 기존 slotProps가 있으면 합치고 덮어써 잃지 않도록 한다. PaperProps 등도 설치 버전에서 실제 deprecated로 확인된 경우 해당 슬롯으로 전환한다.
+- [ ] 67-3. BackdropProps의 배경 sx를 slotProps.backdrop으로 옮기는 변경을 확인/반영한다. 기존 slotProps가 있으면 합치고 덮어써 잃지 않도록 한다.
 - [ ] 67-4. slotProps 병합 시 스타일·이벤트·ref·조건부 props가 보존되는지 확인한다. 전체화면과 일반 모달의 조건 분기, 기존 배경 투명도·크기·위치·여백 계산을 유지한다.
 - [ ] 67-5. 이식 안내에 검증한 MUI 버전과 변경 예시를 기록하고 폐쇄망 확인 결과를 별도로 남긴다. API/DB/WPF 계약은 변경하지 않는다.
+
+- [ ] 67-6. PaperProps → slotProps.paper 전환을 별도 점검한다. PopupPreviewDialog.tsx의 일반 모달 Paper sx(width/height/maxWidth/maxHeight/margin/overflow)와 fullScreen 시 undefined 분기를 보존한다. backdrop과 paper를 하나의 slotProps 객체로 합치며 기존 설정을 덮어쓰지 않는다. 설치 버전 지원 확인 후 적용하고 기존 PaperProps를 중복으로 남기지 않는다.
 
 ## 검증 체크리스트
 
