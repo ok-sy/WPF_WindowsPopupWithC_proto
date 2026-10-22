@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-29 — 20261022 폐쇄망 반입본 생성
+
+- 이유: 20261018 반입 이후의 게시 일정(TODO52-1, DB 18)·설문·퀴즈 서식 저장(TODO55-3·4, DB 17)·퀴즈 점수 규칙·옵션 정리(TODO57~68)·공통 팝업 컴포넌트(TODO69)·서버 인계 샘플(TODO65·70·72)·정책 색인과 주석 정리(TODO71)를 폐쇄망에 반입하기 위해 새 반입본 필요. 서버·웹·WPF·문서가 모두 바뀌어 네 묶음을 모두 새로 만듦.
+- 변경: 정비한 `scripts/export-offline-package.ps1`로 main c1acde9를 깨끗한 worktree에서 꺼내 offline-export/20261022 생성(-VerifyBuild, 변경 요약 -NotesFile, 이 기록을 담은 CHANGELOG -UseWorkingChangelog). 서버 A 128·M 8, 웹 A 27·M 11·D 5, WPF 소스 93, 문서 145 파일. DELETE-SINCE-20260930.txt 누적 21개(20261018 이후 새로 삭제 11개 — RgstPop 공통 폴더 이전분 등). README-IMPORT.md에 DB 17·18 → 서버 → 웹·WPF 순서와 20261018 이후 변경 요약 작성. 같은 날 먼저 만든 zip 형식 반입본은 형식이 달라 삭제 후 재생성.
+- 주요 파일: offline-export/20261022/ (Git 제외), version-history/CHANGELOG.md.
+- 검증: 반입본 3-popup-frameWork와 20261006 오프라인 NuGet만으로 외부 feed 없는 restore·폴더형 publish와 -SingleFile publish 성공(popupSample.exe 1개, 91,725,646바이트). 코드·설정 개인 PC 절대경로 검사, TAR 4개 파일 수·경로 대조, 제외 대상 누출 검사, TGZ 해제 후 TAR 체크섬 대조 통과. 반입본 application-local.yml은 커밋 버전. 폐쇄망 기존 소스 병합·빌드, 폐쇄망 DB 17·18 적용, 폐쇄망 PC 실행은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-10-22-28 — 폐쇄망 반입 스크립트 현행 반입 형식으로 정비
 
 - 이유: `scripts/export-offline-package.ps1`이 초기 형식(A-docs·B-server·C-web·D-wpf, 묶음별 zip, 작업 트리 복사)으로 남아 있어, 2026-10-07 이후 반입본(번호 묶음·TAR·통합 TGZ·SHA256·삭제 목록, 깨끗한 사본 기준)과 형식이 달랐음. 실제 반입본은 Git 제외 보조 스크립트(.offline-verify/package-*·finalize-*)로 따로 정리하고 있었고, 작업 트리를 복사해 개발 PC 전용 미커밋 설정(application-local.yml)이 섞일 수 있었음.
