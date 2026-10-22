@@ -24,6 +24,8 @@ import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
 import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
 import { displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
+import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
+import { QUIZ_QUESTION_SCORE, usePopupQuizRule } from '../PopupcommonComponent/popupQuizRule';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
@@ -97,6 +99,16 @@ function PopupDimensionField({ label, value, minimum, maximum, helperText, onCha
     }} onBlur={() => setDraft(null)} />;
 }
 
+/**
+ * POL-07-01 : 부모의 데이터 소유
+ * POL-07-03 : 저장 경계
+ * POL-06-02 : 선택·제출
+ * ■ 팝업 등록·수정 편집기(공통 컴포넌트 테스트 화면)
+ * - in : open(boolean) 열림 · popupId(string | null) 수정할 팝업 ID(null = 신규) · initialActive(boolean) 활성 여부 초기값
+ * - out: onClose() 닫기 · onSaved(popupId) 저장 성공 / api.popupAdmin.info·save 호출 · 화면: 입력 폼·우측 미리보기·실제 크기 모달
+ * - 팝업 상세를 받아 공통 에디터·문항 편집기·퀴즈유형 입력으로 편집하고, 규칙을 적용한 값을 두 미리보기에 보여 준 뒤 저장 요청을 보낸다.
+ *   퀴즈는 전달 샘플과 같은 공통 규칙(popupQuizRule: 문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점, 실패 시 제출 불가)을 쓴다.
+ */
 export default function PopupEditorDialog({ open, popupId, initialActive, onClose, onSaved }: PopupEditorDialogProps) {
   const api = useApi();
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
@@ -129,6 +141,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   /* [설계 28] 본문 편집기는 커서 보존을 위해 처음 값만 받는다. 불러오기·템플릿 적용 시 key를 바꿔 다시 연다. */
   const [bodyEditorKey, setBodyEditorKey] = useState(0);
   const editing = popupId != null;
+  /* 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점). 편집값을 새로 채울 때(bodyEditorKey)마다 저장된 통과 점수로 유형을 복원한다.
+   * 미리보기·저장에는 규칙을 적용한 previewPopup을 보낸다(전달 샘플 IS063M02와 같은 공통 코드). */
+  const quiz = usePopupQuizRule(popup, bodyEditorKey);
+  const previewPopup = quiz.effective ?? popup;
 
   useEffect(() => {
     if (!open) return;
@@ -178,8 +194,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       ? { ...group, conditions: group.conditions.filter((_, j) => j !== conditionIndex) } : group));
 
   const savePopup = async () => {
-    if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-      const error = validatePopupQuestions(popup.questions, popup.popupType === 'QUIZ', popup.passingScore);
+    if (quiz.error) { toast.warn(quiz.error); return; }
+    const target = previewPopup;
+    if (target.popupType === 'SURVEY' || target.popupType === 'QUIZ') {
+      const error = validatePopupQuestions(target.questions, target.popupType === 'QUIZ', target.passingScore);
       if (error) { toast.warn(error); return; }
     }
     if (!popup.popupId.trim() || !popup.title.trim()) { toast.warn('팝업 ID와 제목을 입력해 주세요.'); return; }
@@ -227,7 +245,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       if (active && targetGroups.length === 0) { toast.warn('활성 팝업은 대상 조건 그룹을 한 개 이상 추가해 주세요.'); return; }
       if (hasInvalidTarget) { toast.warn('대상 그룹의 모든 조건 값을 입력해 주세요.'); return; }
       // [TODO64] 저장 요청 구성(유형별 content·URL·Footer·날짜·IMAGE 크기 정리)은 popupEditorTransform이 맡는다.
-      const { body } = await api.popupAdmin.save(toSaveRequest(popup, active, targetGroups));
+      const { body } = await api.popupAdmin.save(toSaveRequest(target, active, targetGroups));
       toast.success('팝업을 저장했습니다.'); onSaved(body.popup.popupId);
     } catch (error) { handleError(error); } finally { setLoading(false); }
   };
@@ -359,7 +377,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 // [TODO55] 서식 편집기는 처음 값만 받으므로 문항을 통째로 바꾸면 다시 연다.
                 setBodyEditorKey((key) => key + 1);
               }} />}
-            {isSurvey && <PopupQuestionEditor key={`questions-${bodyEditorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
+            {popup.popupType === 'QUIZ' && <PopupQuizRuleFields questionCount={popup.questions.length} rule={quiz.rule} count={quiz.count}
+              passingScore={previewPopup.passingScore} onRuleChange={quiz.setRule} onCountChange={quiz.setCount} />}
+            {isSurvey && <PopupQuestionEditor key={`questions-${bodyEditorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={previewPopup.passingScore}
+              fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* [TODO57] 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
@@ -407,7 +428,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
           <Box sx={{ minWidth: 0, minHeight: 0, p: 2, bgcolor: '#f3f5f9', borderLeft: { lg: '1px solid' }, borderColor: 'divider',
             display: 'grid', gridTemplateRows: { xs: '360px auto', lg: 'minmax(220px, 1fr) minmax(200px, 1fr)' }, gap: 2 }}>
             {/* [TODO61] 인라인·실제 크기 미리보기는 같은 popup(편집 원본)을 읽기만 한다. 시연 상태는 각 PopupPreview 안에 있다. */}
-            <InlinePopupPreview popup={popup} onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
+            <InlinePopupPreview popup={previewPopup} onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
             <Box sx={{ minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, bgcolor: 'background.paper', borderRadius: 1, p: 2,
               '& .MuiFormControlLabel-root': { m: 0 }, '& .MuiFormControlLabel-label': { fontSize: 13 } }}>
               <Stack spacing={1.5}>
@@ -545,7 +566,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
         </Box>
       </DialogContent>
       <DialogActions><Button onClick={onClose} disabled={loading}>취소</Button><Button variant="contained" onClick={savePopup} disabled={loading}>저장</Button></DialogActions>
-      <PopupPreviewDialog popup={popup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />
+      <PopupPreviewDialog popup={previewPopup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />
     </Dialog>
   );
 }

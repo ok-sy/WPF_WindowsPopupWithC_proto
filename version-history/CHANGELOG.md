@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-21 — TODO69 퀴즈 점수 규칙 공통화 및 RgstPop 등록 화면 적용
+
+- 이유: RgstPop은 전달 공통 컴포넌트를 검증하는 내부 테스트 화면이라, 전달 샘플(IS063M02)에 확정한 퀴즈 규칙을 같은 코드로 등록 화면에도 적용할 필요.
+- 변경: 공통 `popupQuizRule.ts`(readQuizRule·withQuizRule·validateQuizRule·usePopupQuizRule)와 `PopupQuizRuleFields.tsx`(퀴즈유형·통과 기준 개수 입력) 추가, index.ts export. IS063M02 샘플의 중복 규칙 코드를 공통 모듈로 교체. RgstPop `PopupEditorDialog`에 퀴즈유형 입력·문항 1점 고정(배점·통과 점수 직접 입력 숨김)·규칙 적용값 미리보기/저장·유형 미선택·범위 밖 저장 거절 적용, 불러오기·템플릿 적용 시 통과 점수로 유형 복원. RgstPop 편집기를 가짜 관리자 API로 띄우는 검증 호스트 추가. 인계 가이드에 PopupQuizRuleFields 행 추가. 서버 저장 검증·WPF 채점·API 계약 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupQuizRule.ts·PopupQuizRuleFields.tsx·index.ts·sample/IS063M02Sample.tsx, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, scripts/verify-rgstpop-quiz-rule(-entry), scripts/verify-popup-common-sample-69.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc·eslint 오류 0. 신규 verify-rgstpop-quiz-rule 11건(기존 배점 5점·통과 2 → 커트라인 2 복원·전 문항 1점 저장, 배점·통과 점수 입력 숨김, 만점 = 문항 수, 범위 밖 거절, 커트라인 1, 통과/실패 안내·N 저장, 통과 점수 없음 → 유형 미선택 거절). verify-popup-common-sample-69 32건 등 웹 검증 통과. 미실행: 실제 관리자 서버 연결 저장 왕복.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-20 — TODO69 공통 컴포넌트 주석 인계 형식·정책 번호 정리
 
 - 이유: PopupcommonComponent는 외부 인계 대상이고 설계·TODO 번호는 내부 관리용이라, 받는 개발자가 번호 없이 이해하도록 주석을 정리하고 현행 정책 색인(docs/policies)과 연결할 필요.

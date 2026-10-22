@@ -151,7 +151,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await run(`Array.from(document.querySelectorAll('[role=option]')).find(o=>o.textContent===${JSON.stringify(label)}).click()`); await pause(300);
   };
   await pickRule('만점 통과');
-  check(await run(`document.querySelector('[data-testid=is063-quiz-score]').textContent.includes('통과 점수 ${count}점')`), '[IS063] Full-score pass shows passing score = question count');
+  check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 ${count}점')`), '[IS063] Full-score pass shows passing score = question count');
   await clickButton('저장');
   let rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
   check(rule.popup.passingScore === count, `[IS063] Full-score pass saves passingScore ${count} for ${count} questions`);

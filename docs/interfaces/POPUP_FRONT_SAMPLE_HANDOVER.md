@@ -1,4 +1,4 @@
-# 팝업 공통 컴포넌트 프론트 샘플 인수인계 가이드 (TODO69)
+# 팝업 공통 컴포넌트 프론트 샘플 인수인계 가이드
 
 기준일: 2026-10-22 (KST) · 대상 폴더: `zero-rule-web/main/src/features/PopupcommonComponent/`
 관련 문서: 미리보기 이식 안내 `ADMIN_POPUP_PREVIEW_COMPONENTS.md`, 변환 함수 `ADMIN_POPUP_EDITOR_TRANSFORM.md`, 서버 샘플 `SERVER_SAMPLE_SINGLE_QUERY_API.md`·`SERVER_SAMPLE_BACKEND_RELAY_API.md`
@@ -51,13 +51,14 @@
 | `InlinePopupPreview` | `popup`, `onOpenPreview?`, `onRecommendedSize?`, `title?` | `onOpenPreview`가 있으면 "실제 크기로 보기" 버튼 표시. `title` 기본 "팝업 미리보기" |
 | `PopupPreviewDialog` | `popup`, `open`, `onClose`, `recommendedSize?` | `recommendedSize`는 인라인이 계산한 IMAGE 권장 창 크기(첫 표시용, 선택) |
 | `PopupQuestionEditor` | `questions`, `quiz`, `passingScore?`, `onChange`, `onPassingScoreChange`, `fixedQuestionScore?`, `hidePassingScore?` | `quiz=true`면 정답·배점·통과 점수 입력 표시. `fixedQuestionScore`(예: 1)면 배점 입력을 숨기고 새 문항도 그 배점, `hidePassingScore`면 통과 점수 입력을 숨김(부모가 계산) |
-| `PopupScheduleFields` | `popup`, `onChange` | 게시 기간 안 노출 일정(TODO52-1). 샘플에는 넣지 않았다 |
+| `PopupQuizRuleFields` | `questionCount`, `rule`, `count`, `passingScore`, `onRuleChange`, `onCountChange`, `className?`, `titlePrefix?` | 퀴즈유형(만점 통과/커트라인 통과/통과·실패 제출)과 통과 기준 개수 입력. 계산은 `popupQuizRule`(`usePopupQuizRule`·`withQuizRule`·`validateQuizRule`)이 한다. 문항 1점 고정, 만점 = 문항 수, 커트라인·통과/실패 = N점, 실패 시 제출 불가. 전달 샘플(IS063M02Sample)과 내부 등록 화면(RgstPop)이 같은 코드를 쓴다 |
+| `PopupScheduleFields` | `popup`, `onChange` | 게시 기간 안 노출 일정(요일·시간대). 샘플에는 넣지 않았다 |
 
 ### 3.2 값으로 조절하는 옵션(편집값 `AdminPopupDetail`)
 
 | 위치 | 키 | 비고 |
 |---|---|---|
-| 최상위 | `title`, `popupType`, `sizeMode`, `width`/`height`, `widthRatio`/`heightRatio`, `minimumWidth`/`minimumHeight`(300 이상, TODO68), `maximumWidth`/`maximumHeight`, `showHeader`, `showCloseButton`(푸터 버튼 표시), `showFooter`, `showDoNotShowAgain`, `showLater`, `hideDays`, `completionRatio`, `passingScore`, `questions` | 기본값은 `createDefaultPopup()` |
+| 최상위 | `title`, `popupType`, `sizeMode`, `width`/`height`, `widthRatio`/`heightRatio`, `minimumWidth`/`minimumHeight`(300 이상), `maximumWidth`/`maximumHeight`, `showHeader`, `showCloseButton`(푸터 버튼 표시), `showFooter`, `showDoNotShowAgain`, `showLater`, `hideDays`, `completionRatio`, `passingScore`, `questions` | 기본값은 `createDefaultPopup()` |
 | `content` 공통 | `useBackgroundOverlay`, `backgroundOverlayOpacity`, `popupPosition`, `headerFontSize`/`bodyFontSize`/`footerFontSize`, `footerAction`, `footerLinkUrl` | |
 | `content` 유형별 | `CONTENT_KEYS_BY_TYPE`(popupEditorTransform.ts) 참조. 예: TEXT `plainText`·`textBlocks`·`highlightText`…, IMAGE `imageUrl`·`imageSizeMode`…, QUIZ `videoEnabled`·`videoUrl`… | **이 목록에 없는 키는 저장 요청에서 빠진다** |
 
@@ -65,7 +66,7 @@
 
 | 상수 | 파일 | 함께 맞춰야 하는 곳 |
 |---|---|---|
-| `richEditorConfig.toolbar.items` | `popupRichText.ts` | 없음(화면 전용). TODO66으로 `removeFormat` 제거됨 |
+| `richEditorConfig.toolbar.items` | `popupRichText.ts` | 없음(화면 전용). 일괄 서식 초기화(`removeFormat`)는 두지 않는다 |
 | `RICH_SIZES`(12~32) | `popupRichText.ts` | 서버 `PopupRichText.SIZES`, WPF 표시·Demo(`DemoOptionsWindow.ServerRichSizes`). 웹만 바꾸면 서버 저장 검증에서 거절된다 |
 | `RICH_FONTS`(4종) | `popupRichText.ts` | 서버 `PopupRichText.FONTS`, WPF 글꼴 매핑 |
 | `RICH_COLORS`(8계열×5단계) | `popupRichText.ts` | 서버 색 규칙(대문자 `#RRGGBB`)만 맞으면 됨 |
