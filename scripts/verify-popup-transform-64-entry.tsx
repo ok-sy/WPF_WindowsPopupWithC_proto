@@ -2,17 +2,17 @@ import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import type { AdminPopupDetail } from '@local/domain';
-import PopupRichTextEditor from '../zero-rule-web/main/src/features/RgstPop/PopupRichTextEditor';
-import InlinePopupPreview from '../zero-rule-web/main/src/features/RgstPop/InlinePopupPreview';
-import PopupPreviewDialog from '../zero-rule-web/main/src/features/RgstPop/PopupPreviewDialog';
-import type { Size } from '../zero-rule-web/main/src/features/RgstPop/imagePreviewLayout';
-import { plainTextToBlocks, readTextBlocks } from '../zero-rule-web/main/src/features/RgstPop/popupRichText';
+import PopupRichTextEditor from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor';
+import InlinePopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview';
+import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog';
+import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
+import { plainTextToBlocks, readTextBlocks } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 import {
   changePopupType, contentValue, createDefaultPopup, toEditorPopup, toEditorPopupFromTemplate, toSaveRequest, toSaveRequestPopup,
-} from '../zero-rule-web/main/src/features/RgstPop/popupEditorTransform';
+} from '../zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform';
 import { legacyChangeType, legacyDefault, legacyLoad, legacySave, legacyTemplate } from './verify-popup-transform-64-legacy';
-import PopupScheduleFields, { validatePopupSchedule } from '../zero-rule-web/main/src/features/RgstPop/PopupScheduleFields';
-import { describeSchedule, parseWeekdays } from '../zero-rule-web/main/src/features/RgstPop/popupEditorTransform';
+import PopupScheduleFields, { validatePopupSchedule } from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupScheduleFields';
+import { describeSchedule, parseWeekdays } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform';
 
 /*
  * [TODO64] 1) 변환 함수와 분리 전 코드(legacy)의 결과 비교, 2) 전체 등록 화면 없이 편집기·우측/모달 미리보기·변환 함수를

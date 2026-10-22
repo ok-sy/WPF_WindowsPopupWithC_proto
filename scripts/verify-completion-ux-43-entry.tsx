@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import PopupPreview from '../zero-rule-web/main/src/features/RgstPop/PopupPreview';
+import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
 // [설계 43] 완료 조건 버튼 UX 하네스: 유형·옵션만 바꾼 PopupPreview를 그린다.
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, sans-serif'}});

@@ -1,9 +1,9 @@
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import PopupRichTextEditor from '../zero-rule-web/main/src/features/RgstPop/PopupRichTextEditor';
-import PopupPreview from '../zero-rule-web/main/src/features/RgstPop/PopupPreview';
-import PopupRichBlocks from '../zero-rule-web/main/src/features/RgstPop/PopupRichBlocks';
-import { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, readTextBlocks, RICH_COLORS, type RichBlock } from '../zero-rule-web/main/src/features/RgstPop/popupRichText';
+import PopupRichTextEditor from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor';
+import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
+import PopupRichBlocks from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks';
+import { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, readTextBlocks, RICH_COLORS, type RichBlock } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 
 /* [설계 49] 실제 관리자 편집기(CKEditor 커스텀 빌드)·서식 패널·미리보기를 브라우저에서 띄우는 검증 진입점. */
 const root = createRoot(document.getElementById('root')!);

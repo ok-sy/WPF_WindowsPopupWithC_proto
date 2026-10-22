@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-13 — TODO69 PopupcommonComponent 공통 폴더 정리·목록 기반 샘플 구현(1차)
+
+- 이유: 다른 프론트 화면에 에디터·우측/모달 미리보기를 이식할 수 있도록 공통 코드를 한 폴더로 모으고 서버 없이 확인 가능한 연결 예제 제공.
+- 변경: RgstPop의 API 비의존 공통 파일 18개를 `features/PopupcommonComponent/`로 이동(git mv)하고 RgstPop·검증 호스트·가이드 경로 갱신, `index.ts` 진입점 추가. `sample/` 아래 목록 기반 샘플(PopupListSample·PopupSampleEditor·popupSampleData)과 라우트 `/popup-common-sample` 추가(기존 `/rgst-pop` 유지). 이식 가이드에 폴더 구성·타입/API 역할·데이터 흐름·단독 사용 예 추가. IS063M02 연동 샘플(69-5~7)은 복원본 파일 미보유로 미착수. 서버/DB/WPF 계약 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/**, zero-rule-web/main/src/features/RgstPop/*.tsx, zero-rule-web/main/src/scene/scene-router.tsx, scripts/verify-popup-common-sample-69(-entry), scripts/verify-*-entry.tsx·verify-popup-transform-64.cjs, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md·ADMIN_POPUP_EDITOR_TRANSFORM.md, docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, eslint 오류 0. 신규 verify-popup-common-sample-69 15건, 기존 웹 검증 7종(49·55·61·image·64·43·template-picker) 모두 통과. 미실행: next build, 실제 관리자 화면 진입, 폐쇄망, IS063M02 연동.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-12 — TODO70 DB 없는 백엔드 HTTP 중계 조회 샘플 구현(서버 모듈 편입)
 
 - 이유: 테이블을 직접 쓰지 않고 담당 백엔드 API를 호출해 조회 결과를 WPF 계약으로 전달하는 예제를 web-server 담당자 패키지로 제공할 필요.

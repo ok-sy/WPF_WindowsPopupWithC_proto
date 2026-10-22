@@ -29,7 +29,7 @@
 ## 3. 함수
 
 ```ts
-// zero-rule-web/main/src/features/RgstPop/popupEditorTransform.ts
+// zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts
 type PopupTypeSelection = PopupType | 'VIDEO_QUIZ';                // 동영상+퀴즈 = QUIZ + content.videoEnabled=true
 interface PopupSaveRequest { popup: AdminPopupDetail; active: boolean; targetGroups: PopupTargetGroup[] }
 
@@ -86,12 +86,12 @@ toSaveRequest(popup, active, targetGroups): PopupSaveRequest       // 저장 API
 ```tsx
 import { useState } from 'react';
 import type { AdminPopupDetail, PopupTargetGroup } from '@local/domain';
-import PopupRichTextEditor from '@/features/RgstPop/PopupRichTextEditor';
-import InlinePopupPreview from '@/features/RgstPop/InlinePopupPreview';
-import PopupPreviewDialog from '@/features/RgstPop/PopupPreviewDialog';
-import type { Size } from '@/features/RgstPop/imagePreviewLayout';
-import { plainTextToBlocks, readTextBlocks } from '@/features/RgstPop/popupRichText';
-import { contentValue, createDefaultPopup, toEditorPopup, toSaveRequest } from '@/features/RgstPop/popupEditorTransform';
+import PopupRichTextEditor from '@/features/PopupcommonComponent/PopupRichTextEditor';
+import InlinePopupPreview from '@/features/PopupcommonComponent/InlinePopupPreview';
+import PopupPreviewDialog from '@/features/PopupcommonComponent/PopupPreviewDialog';
+import type { Size } from '@/features/PopupcommonComponent/imagePreviewLayout';
+import { plainTextToBlocks, readTextBlocks } from '@/features/PopupcommonComponent/popupRichText';
+import { contentValue, createDefaultPopup, toEditorPopup, toSaveRequest } from '@/features/PopupcommonComponent/popupEditorTransform';
 
 export default function MyTextPopupForm({ api }: { api: any }) {
   const [popup, setPopup] = useState<AdminPopupDetail>(() => createDefaultPopup());

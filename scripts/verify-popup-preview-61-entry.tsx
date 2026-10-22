@@ -1,11 +1,11 @@
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import InlinePopupPreview from '../zero-rule-web/main/src/features/RgstPop/InlinePopupPreview';
-import PopupPreviewDialog from '../zero-rule-web/main/src/features/RgstPop/PopupPreviewDialog';
-import type { Size } from '../zero-rule-web/main/src/features/RgstPop/imagePreviewLayout';
-import { fitToImageLayout } from '../zero-rule-web/main/src/features/RgstPop/imagePreviewLayout';
-import { previewDialogSize } from '../zero-rule-web/main/src/features/RgstPop/popupPreviewDialogLayout';
+import InlinePopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview';
+import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog';
+import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
+import { fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
+import { previewDialogSize } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
 // [TODO61] 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, sans-serif'}});

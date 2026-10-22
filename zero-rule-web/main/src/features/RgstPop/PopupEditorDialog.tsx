@@ -1,4 +1,4 @@
-import normalizePopupLink from './normalizePopupLink';
+import normalizePopupLink from '../PopupcommonComponent/normalizePopupLink';
 import handleError from '@/lib/handle-error';
 import { useApi } from '@/provider';
 import type {
@@ -19,22 +19,22 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import InlinePopupPreview from './InlinePopupPreview';
-import PopupPreviewDialog from './PopupPreviewDialog';
-import { previewOverlay } from './popupPreviewDialogLayout';
-import { displayImageSize, type Size } from './imagePreviewLayout';
-import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEditor';
+import InlinePopupPreview from '../PopupcommonComponent/InlinePopupPreview';
+import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
+import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
+import { displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
+import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
-import PopupRichTextEditor from './PopupRichTextEditor';
-import PopupScheduleFields, { validatePopupSchedule } from './PopupScheduleFields';
-import { plainTextToBlocks, readTextBlocks } from './popupRichText';
-import { richBlocksOrNull } from './PopupRichBlocks';
-import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from './popupCommon';
+import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
+import PopupScheduleFields, { validatePopupSchedule } from '../PopupcommonComponent/PopupScheduleFields';
+import { plainTextToBlocks, readTextBlocks } from '../PopupcommonComponent/popupRichText';
+import { richBlocksOrNull } from '../PopupcommonComponent/PopupRichBlocks';
+import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from '../PopupcommonComponent/popupCommon';
 import {
   changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, normalizeImageSizeMode, toDateTimeLocal, toEditorPopup,
   toEditorPopupFromTemplate, toSaveRequest, withDefaultAnswerMatchMode, type PopupTypeSelection,
-} from './popupEditorTransform';
+} from '../PopupcommonComponent/popupEditorTransform';
 
 interface PopupEditorDialogProps {
   open: boolean;

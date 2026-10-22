@@ -1,8 +1,8 @@
 // [TODO64] 변환 분리 전(497c4c8) PopupEditorDialog의 데이터 구성 코드를 그대로 옮긴 비교 기준. 수정하지 않는다.
 /* eslint-disable */
 import type { AdminPopupDetail, PopupDateValue, PopupQuestion, PopupType } from '@local/domain';
-import normalizePopupLink from '../zero-rule-web/main/src/features/RgstPop/normalizePopupLink';
-import { popupDateMillis } from '../zero-rule-web/main/src/features/RgstPop/popupCommon';
+import normalizePopupLink from '../zero-rule-web/main/src/features/PopupcommonComponent/normalizePopupLink';
+import { popupDateMillis } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupCommon';
 function withDefaultAnswerMatchMode(questions: PopupQuestion[]): PopupQuestion[] {
   if (!questions.some((q) => q.questionType === 'TEXT' && !q.answerMatchMode)) return questions;
   return questions.map((q) => q.questionType === 'TEXT' && !q.answerMatchMode ? { ...q, answerMatchMode: 'EXACT' } : q);

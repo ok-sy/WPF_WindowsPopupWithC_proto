@@ -8,7 +8,7 @@
 
 ## 1. 구성
 
-| 파일(`zero-rule-web/main/src/features/RgstPop/`) | 역할 |
+| 파일(`zero-rule-web/main/src/features/PopupcommonComponent/`) | 역할 |
 |---|---|
 | `InlinePopupPreview.tsx` | 제목 + "실제 크기로 보기" 버튼 + `PopupPreview`. 부모 영역의 남은 높이를 채운다 |
 | `PopupPreviewDialog.tsx` | 실제 크기 모달. 크기 모드·브라우저 창 크기 변경·9개 위치·배경 Overlay·배경 클릭 차단·Esc/종료 버튼 |
@@ -37,9 +37,9 @@ interface PopupPreviewDialogProps {
 ```tsx
 import { useState } from 'react';
 import type { AdminPopupDetail } from '@local/domain';
-import InlinePopupPreview from '@/features/RgstPop/InlinePopupPreview';
-import PopupPreviewDialog from '@/features/RgstPop/PopupPreviewDialog';
-import type { Size } from '@/features/RgstPop/imagePreviewLayout';
+import InlinePopupPreview from '@/features/PopupcommonComponent/InlinePopupPreview';
+import PopupPreviewDialog from '@/features/PopupcommonComponent/PopupPreviewDialog';
+import type { Size } from '@/features/PopupcommonComponent/imagePreviewLayout';
 
 export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -74,7 +74,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 
 ## 4. 이식 시 필요한 의존성
 
-`RgstPop` 폴더 중 미리보기 관련 파일만 복사하면 부족하다. 아래를 함께 확인한다.
+`PopupcommonComponent` 폴더(TODO69, 기존 `RgstPop`에서 이동) 중 미리보기 관련 파일만 복사하면 부족하다. 아래를 함께 확인한다.
 
 | 구분 | 항목 |
 |---|---|
@@ -89,3 +89,23 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 `normalizePopupLink`는 푸터 바로가기 URL 확인에만 쓰며 이번 분리에서 URL 정책은 바꾸지 않았다.
 
 편집값 구성·저장 요청 변환과 에디터 연결은 `ADMIN_POPUP_EDITOR_TRANSFORM.md`(TODO64)를 함께 본다. 미리보기에는 편집값을 그대로 전달하며 별도 변환 함수가 없다.
+
+## 5. 공통 폴더와 샘플 페이지 (TODO69)
+
+경로: `zero-rule-web/main/src/features/PopupcommonComponent/` (폴더명 대소문자 그대로).
+
+| 구분 | 파일 | 비고 |
+|---|---|---|
+| 에디터 | `PopupRichTextEditor.tsx`, `PopupRichTextMenu.tsx`, `popupRichText.ts`, `popupRichTextFormat.ts`, `PopupQuestionEditor.tsx`, `PopupScheduleFields.tsx` | CKEditor 커스텀 빌드 필요(`next/dynamic` 동적 import) |
+| 표시·미리보기 | `PopupRichBlocks.tsx`, `InlinePopupPreview.tsx`, `PopupPreviewDialog.tsx`, `PopupPreview.tsx`, `SurveyPreview.tsx`, `AspectVideoArea.tsx`, `popupPreviewDialogLayout.ts`, `imagePreviewLayout.ts` | |
+| 변환·공용 | `popupEditorTransform.ts`(TODO64), `popupCommon.ts`, `normalizePopupLink.ts`, `popupDemoQuestions.ts`, `index.ts`(진입점) | |
+| 샘플 | `sample/PopupListSample.tsx`(목록 기반), `sample/PopupSampleEditor.tsx`(공통 컴포넌트만으로 만든 편집 화면), `sample/popupSampleData.ts`(로컬 편집값 6종) | 서버·인증 없이 동작 |
+
+- 공통 폴더는 관리자 API(`@/provider`)·등록 부모(`features/RgstPop`)·`sample`을 참조하지 않는다. 실제 등록 화면(`RgstPop.tsx`, `PopupEditorDialog.tsx`, 관리자 API를 쓰는 `PopupTemplateDialog.tsx`·`PopupQuestionTemplatePicker.tsx`)은 `features/RgstPop`에 남고 공통 폴더를 import한다. 복제본·임시 re-export는 두지 않았다.
+- 타입과 HTTP 클라이언트 구분: 공통 컴포넌트는 `@local/domain`의 **타입**(`AdminPopupDetail` 등)만 쓴다. 관리자 서버 호출(`api.popupAdmin.*`, `@/provider` `useApi`)은 부모 화면 책임이다.
+- 라우트: `scene-router.tsx`에 `/popup-common-sample`(팝업 공통 컴포넌트 샘플)을 추가했다. 기존 `/rgst-pop`은 그대로다. sample 폴더의 TSX만으로 URL이 생기지 않으며, 메뉴 노출이 필요하면 기존 메뉴 등록 절차를 따른다(메뉴 DB 등록은 이번 범위 밖).
+- 데이터 흐름(목록 샘플): `createSamplePopups()` → 행 `수정` → `PopupSampleEditor`(state 하나) → 같은 객체를 `InlinePopupPreview`·`PopupPreviewDialog`에 전달 → `저장` 시 `toSaveRequest(popup, true, [])` 결과를 화면에 표시하고 메모리 목록만 갱신(서버 미전송). 실제 연결은 목록 `api.popupAdmin.list`, 편집 시작 `api.popupAdmin.info → toEditorPopup`, 저장 `api.popupAdmin.save(toSaveRequest(...))`로 바꾼다.
+- 단독 사용 최소 예: 에디터만은 `PopupRichTextEditor`(initialBlocks·onChange), 우측 미리보기만은 `InlinePopupPreview popup={...}`, 모달만은 `PopupPreviewDialog popup open onClose`. 어느 것도 등록 부모·API를 요구하지 않는다(`scripts/verify-*-entry.tsx`가 각각의 단독 호스트 예시).
+- TODO66(서식/색 초기화 버튼 없음)·TODO67(Dialog `slotProps`)·TODO68(최소 300×300)은 같은 공통 파일을 쓰므로 샘플에도 그대로 적용된다. 샘플 편집 Dialog도 `slotProps.paper`·`slotProps.htmlInput`을 쓴다.
+- IS063M02 연동 샘플(69-5~69-7)은 사진 복원본 `IS063M02.tsx` 수령 후 `sample/IS063M02Sample.tsx`로 추가한다(현재 미착수).
+- 검증: `node scripts/verify-popup-common-sample-69.cjs`(목록 6종·수정·제목/본문 → 우측·모달 반영·편집기 재마운트 없음·저장 요청 일치·설문 시연 응답 미혼입·유형 전환·영상+퀴즈).

@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import PopupPreview from '../zero-rule-web/main/src/features/RgstPop/PopupPreview';
-import {displayImageSize, fitToImageLayout} from '../zero-rule-web/main/src/features/RgstPop/imagePreviewLayout';
+import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
+import {displayImageSize, fitToImageLayout} from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 // WPF PopupWindow 크롬 수치 검증용: 헤더·푸터 표시 여부만 바꾼 FIT_TO_IMAGE 레이아웃을 돌려준다.
 (window as any).chromeLayout = (showHeader: boolean, showFooter: boolean, naturalWidth = 400, naturalHeight = 200, screenWidth = 1000, screenHeight = 900) =>
   fitToImageLayout({popupId: 'C', popupType: 'IMAGE', title: 'C', sizeMode: 'FIXED', widthRatio: .7, heightRatio: .75,

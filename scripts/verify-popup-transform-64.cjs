@@ -49,7 +49,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 
   // ── 0. 변환 모듈 의존성: UI·API 모듈 없이 번들된다 ──
   const deps = await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
-    entry: path.join(root, 'zero-rule-web/main/src/features/RgstPop/popupEditorTransform.ts'), output: {path: path.join(output, 'deps'), filename: 'deps.js'},
+    entry: path.join(root, 'zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts'), output: {path: path.join(output, 'deps'), filename: 'deps.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules']},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve(stats.toJson({modules: true}).modules.map(m => m.name))));
