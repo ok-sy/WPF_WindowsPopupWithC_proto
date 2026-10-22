@@ -96,9 +96,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check((await blocks())[0].indent === 11 && (await data()).startsWith('<p style="margin-left:440px;">'), '[63] Level 10 → 11 (440px) keeps 40px steps without clamp');
   await run('window.select(0, 0)'); await run(`window.editor().execute('outdent')`); await pause(50);
   check((await blocks())[0].indent === 10, 'Outdent decreases one level');
-  await run('window.select(0, 0, 3)'); await run(`window.editor().execute('removeFormat')`); await pause(50);
-  check((await blocks())[0].indent === 10 && (await blocks())[0].runs[0].bold === undefined, 'Format clear removes text format but keeps paragraph indent');
-  await run(`window.editor().execute('undo')`); await run(`window.editor().execute('undo')`); await pause(50);
+  check(!toolbarLabels.some(l => /^(Remove Format|서식 지우기|서식 제거)$/i.test(l)), '[66] Toolbar has no bulk remove-format button');
+  check(await run(`(()=>{const sep=Array.from(window.editor().ui.view.toolbar.items).map(i=>i.element.classList.contains('ck-toolbar__separator'));
+    return !sep[0]&&!sep[sep.length-1]&&sep.every((v,i)=>!(v&&sep[i+1]));})()`), '[66] Toolbar has no leading/trailing/consecutive separators');
+  await run(`window.editor().execute('undo')`); await pause(50);
   check((await blocks())[0].indent === 11, 'Undo restores previous indent');
   await run(`window.editor().setData('<p style="margin-left:300px">붙여넣음</p><p style="margin-left:2em">em</p><p style="margin-left:60px">육십</p><p style="margin-left:99999999999999999999px">과대</p>')`); await pause(100);
   check(JSON.stringify((await blocks()).map(b => b.indent ?? 0)) === '[8,0,2,0]' && (await data()).includes('margin-left:320px'),
@@ -116,8 +117,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       b:!!p.querySelector('[aria-label^="굵게"]'),i:!!p.querySelector('[aria-label^="기울임"]'),u:!!p.querySelector('[aria-label^="밑줄"]'),
       reset:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('색 초기화')),clear:Array.from(p.querySelectorAll('button')).some(b=>b.textContent.includes('서식 초기화')),
       focus:document.activeElement?.hasAttribute('data-color-cell'),labels:Array.from(cells).every(c=>c.getAttribute('aria-label').startsWith('글자 색 '))};})()`);
-  check(layout.cells === 40 && layout.rows === 5 && layout.font && layout.size && layout.b && layout.i && layout.u && layout.reset && layout.clear && layout.labels,
-    'Panel shows the expanded 8x5 color grid with font, size, B/I/U, color reset and format clear: ' + JSON.stringify(layout));
+  check(layout.cells === 40 && layout.rows === 5 && layout.font && layout.size && layout.b && layout.i && layout.u && !layout.reset && !layout.clear && layout.labels,
+    '[66] Panel shows the expanded 8x5 color grid with font, size, B/I/U and no color reset / format clear: ' + JSON.stringify(layout));
   check(layout.focus, 'Opening the panel focuses the color grid');
   check(await run(`['#111827','#6B7280','#DC2626','#EA580C','#CA8A04','#16A34A','#2563EB','#7C3AED'].every(c=>RICH_COLORS.some(x=>x.color===c))`), 'Existing 8 colors stay in the palette');
   await click('[data-color-cell][aria-label="글자 색 빨강"]');
@@ -135,10 +136,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await click('[aria-label^="기울임"]'); await click('[aria-label^="밑줄"]');
   first = (await blocks())[0].runs[0];
   check(first.italic === true && first.underline === true, 'Italic and underline toggle from the panel');
-  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('색 초기화')).click()`); await pause(80);
-  check((await blocks())[0].runs[0].color === undefined && (await blocks())[0].runs[0].bold === true, 'Color reset removes only color');
-  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('서식 초기화')).click()`); await pause(80);
-  check(JSON.stringify((await blocks())[0].runs) === JSON.stringify([{text: '가나다라마바사'}, {text: '굵은글자', bold: true}]), 'Format clear keeps the existing meaning for the selection');
+  // [66] 초기화 버튼 대신 기능별 버튼·기본값 선택으로 되돌린다.
+  await click('[aria-label^="굵게"]'); await click('[aria-label^="기울임"]'); await click('[aria-label^="밑줄"]');
+  await run(`(()=>{for(const l of ['크기','글꼴']){const s=document.querySelector('select[aria-label^="'+l+'"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'');s.dispatchEvent(new Event('change',{bubbles:true}));}})()`); await pause(100);
+  check(JSON.stringify((await blocks())[0].runs) === JSON.stringify([{text: '가나다', color: '#DC2626'}, {text: '라마바사'}, {text: '굵은글자', bold: true}]) && await panelOpen(),
+    '[66] Individual toggles and default font/size selection revert formats without a clear button: ' + JSON.stringify((await blocks())[0].runs));
+  await run(`window.editor().execute('undo')`); await pause(50);
+  check((await blocks())[0].runs[0].font === 'BATANG', '[66] Undo restores the last individual format change');
+  await run(`window.editor().execute('redo')`); await pause(50);
   // 키보드: 방향키 이동·Enter 적용·Esc 닫기 후 편집기 포커스 복귀
   await run(`document.querySelector('[data-color-cell]').focus()`);
   await key('ArrowRight', 'ArrowRight', 39); await key('ArrowDown', 'ArrowDown', 40);
@@ -192,7 +197,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const span=ps[0].querySelector('span');const rects=Array.from(span.getClientRects());const base=ps[0].getBoundingClientRect().left, lines=new Map();for(const r of rects){const top=Math.round(r.top);lines.set(top,Math.min(lines.get(top)??Infinity,Math.round(r.left-base)));}return {pad:ps.map(p=>getComputedStyle(p).paddingLeft),lines:lines.size,lefts:[...new Set(lines.values())]};})()`);
   check(preview.pad.join() === '40px,0px,440px' && preview.lines >= 3 && preview.lefts.length === 1 && preview.lefts[0] === 40,
     'Preview indents the whole paragraph including wrapped lines: ' + JSON.stringify(preview));
-  // ── 5. TODO62: 취소선 왕복·문단 메뉴·서식 초기화 ──
+  // ── 5. TODO62: 취소선 왕복·문단 메뉴(서식 초기화는 TODO66에서 삭제) ──
   check(await run(`(()=>{const b=htmlToBlocks('<p><s>취소</s><del>삭제</del><strike>구형</strike>일반</p>');
     return b[0].runs.length===2&&b[0].runs[0].text==='취소삭제구형'&&b[0].runs[0].strikethrough===true&&!b[0].runs[1].strikethrough;})()`),
     '[62] s/del/strike become strikethrough and adjacent runs with different styles stay separate');
@@ -211,10 +216,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run('window.editor().editing.view.focus();window.select(0,0,3)');
   await click('button[aria-haspopup="dialog"]');
   check(await run(`(()=>{const p=document.querySelector('[role=dialog][aria-label="서식"]');
-    const clear=Array.from(p.querySelectorAll('button')).find(b=>b.textContent.includes('서식 초기화'));
+    const texts=Array.from(p.querySelectorAll('button')).map(b=>b.textContent);
     return p.querySelector('[aria-label="취소선"]')&&['내어쓰기','들여쓰기','왼쪽 정렬','가운데 정렬','오른쪽 정렬'].every(l=>p.querySelector('[aria-label="'+l+'"]'))
-      &&clear.getBoundingClientRect().top>p.querySelector('[aria-label="들여쓰기"]').getBoundingClientRect().bottom;})()`),
-    '[62] menu contains all added controls and clear is below paragraph controls');
+      &&!texts.some(t=>t.includes('초기화'))&&p.querySelectorAll('.MuiDivider-root').length===2;})()`),
+    '[62·66] menu contains paragraph controls, no reset buttons and no leftover divider');
   await click('[aria-label="취소선"]');
   check((await blocks())[0].runs[0].strikethrough===true && (await blocks())[0].runs[0].text==='가나다'
     && !(await blocks())[0].runs[1].strikethrough && await run(`window.selectionText()==='가나다'`),
@@ -225,10 +230,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await click('[aria-label="가운데 정렬"]'); await click('[aria-label="들여쓰기"]');
   check((await blocks())[0].alignment==='CENTER' && (await blocks())[0].indent===1
     && (await blocks())[1].alignment==='RIGHT' && await panelOpen(), '[62] paragraph actions affect selected paragraph only and keep panel open');
-  await run(`Array.from(document.querySelectorAll('[role=dialog] button')).find(b=>b.textContent.includes('서식 초기화')).click()`); await pause(80);
+  await click('[aria-label="취소선"]'); await click('[aria-label="밑줄"]');
   check((await blocks())[0].alignment==='CENTER' && (await blocks())[0].indent===1
     && JSON.stringify((await blocks())[0].runs)===JSON.stringify([{text:'가나다라마바사'}]),
-    '[62] clear removes all selected character formatting while keeping alignment and indent');
+    '[66] individual toggles remove character formatting while keeping alignment and indent');
   await click('[aria-label="내어쓰기"]');
   check(!(await blocks())[0].indent && await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),
     '[62] outdent reaches zero and becomes disabled: '+JSON.stringify({blocks:await blocks(),disabled:await run(`document.querySelector('[aria-label="내어쓰기"]').disabled`),command:await run(`window.editor().commands.get('outdent').isEnabled`)}));

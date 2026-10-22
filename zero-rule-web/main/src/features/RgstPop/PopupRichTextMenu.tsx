@@ -1,5 +1,4 @@
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatClearIcon from '@mui/icons-material/FormatClear';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
@@ -9,7 +8,7 @@ import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
 import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
 import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
 import {
-  Box, Button, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Tooltip, Typography, type PopoverPosition,
+  Box, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Tooltip, Typography, type PopoverPosition,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, type RichFontId } from './popupRichText';
@@ -31,7 +30,7 @@ const ALIGNMENTS = [
 
 /*
  * [설계 49] 우클릭·'서식' 버튼·키보드 공통 서식 패널(설계 28 §11 메뉴를 펼침 팔레트로 개편).
- * 색 격자를 항상 펼쳐 두고 글꼴·크기·글자 서식·문단 서식·색 초기화·서식 초기화를 고른다(TODO62).
+ * 색 격자를 항상 펼쳐 두고 글꼴·크기·글자 서식·문단 서식을 고른다(TODO62). 색 초기화·서식 초기화 버튼은 두지 않는다(TODO66).
  * 서식을 적용해도 패널은 열린 채로 남아 연속 적용할 수 있고, 적용 대상은 편집기 모델의 선택 범위다(패널 조작 중에도 유지).
  * Esc·바깥 클릭으로 닫으면 편집기 커서·선택으로 돌아간다. 화면 경계 보정은 Popper(flip·preventOverflow)가 한다.
  * 키보드: 열리면 색 격자로 포커스, 격자 안은 방향키·Home/End로 이동, Tab으로 다음 묶음, Enter/Space로 적용.
@@ -140,10 +139,6 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
               );
             })}
           </Box>
-          <Button size="small" fullWidth variant={color === null ? 'contained' : 'outlined'} color="inherit" aria-pressed={color === null}
-            onClick={() => onApply({ type: 'color', value: null })} sx={{ mt: 1, fontSize: 12, py: 0.25 }}>
-            색 초기화(기본 색)
-          </Button>
           <Divider sx={{ my: 1.25 }} />
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <NativeSelect fullWidth value={font === undefined ? 'mixed' : font ?? ''} sx={{ ...selectSx, flex: 3 }}
@@ -182,11 +177,6 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
               </Box>
             ))}
           </Stack>
-          <Divider sx={{ my: 1 }} />
-          <Button size="small" fullWidth color="inherit" startIcon={<FormatClearIcon fontSize="small" />} onClick={() => onApply({ type: 'clear' })}
-            sx={{ fontSize: 12 }}>
-            서식 초기화
-          </Button>
           <Typography variant="caption" component="p" color="text.secondary" sx={{ mt: 1, fontSize: 11, lineHeight: 1.5 }}>
             Esc·바깥 클릭으로 닫기 · 복사·붙여넣기는 Ctrl+C / Ctrl+V, 브라우저 기본 메뉴는 Shift+우클릭
           </Typography>

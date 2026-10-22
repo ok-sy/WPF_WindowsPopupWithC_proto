@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-07 — TODO66 서식 초기화·색 초기화 버튼 삭제 구현
+
+- 이유: 글자 서식만 지우는 일괄 초기화가 이름과 동작이 달라 혼동되어, 개별 서식 조작만 남기는 편집 UI 단순화 요건 반영.
+- 변경: 팝업 공용 CKEditor 툴바의 `removeFormat`과 남는 구분자 제거. 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼과 전용 import·Divider 제거. `FormatAction.clear` 제거, 색 액션은 팔레트 색만 받도록 축소, removeFormat 방어용 `blockIndent`·`alignment` isFormatting 해제 코드 정리(붙여넣기 들여쓰기 정규화 유지). 옵션 가이드·인터페이스 명세(3.7 보완 TODO66) 정정, 검증 스크립트 기대값 갱신. JSON·서버·WPF 변경 없음, ALL/MINIMAL 명세는 해당 내용 없음을 확인.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/popupRichText.ts·popupRichTextFormat.ts·PopupRichTextMenu.tsx, scripts/verify-rich-text-49.cjs, docs/POPUP_USER_OPTION_GUIDE.md, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/66_서식초기화_버튼삭제_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0(기존 경고 1). verify-rich-text-49 60건·verify-survey-rich-text-55 23건 통과. 미실행: 실제 관리자 화면·폐쇄망 확인, 인터페이스 Word·PDF·Excel 재생성.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-22-06 — TODO70 DB 없는 백엔드 HTTP 조회 샘플 계획
 
 - 이유: 테이블을 직접 사용하지 않고 백엔드와 통신해 조회 결과를 확인·전달하는 Java API 인계 예제 필요.

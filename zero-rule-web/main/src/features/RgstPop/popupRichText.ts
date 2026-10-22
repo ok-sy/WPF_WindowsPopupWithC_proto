@@ -76,7 +76,7 @@ const REMOVED_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'IMG', 'IFRAME', 'O
 
 /** CKEditor가 쓰는 툴바·허용 값 설정. 소스 편집·표·이미지 등은 툴바에 두지 않는다. */
 export const richEditorConfig = {
-  toolbar: { items: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'removeFormat', '|', 'undo', 'redo'] },
+  toolbar: { items: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'undo', 'redo'] },
   fontColor: { colors: RICH_COLORS, columns: RICH_COLOR_COLUMNS, documentColors: 0 },
   /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 40px 단위 정규화는 popupRichTextFormat.normalizeIndent가 한다. */
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },

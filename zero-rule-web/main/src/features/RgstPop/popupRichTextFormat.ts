@@ -20,12 +20,11 @@ export type FormatState = Record<FormatKey, { value: string | boolean | null; mi
 
 export type FormatAction =
   | { type: 'toggle'; key: 'bold' | 'italic' | 'underline' | 'strikethrough' }
-  | { type: 'color'; value: string | null }
+  | { type: 'color'; value: string }
   | { type: 'size'; value: number | null }
   | { type: 'font'; value: RichFontId | null }
   | { type: 'alignment'; value: 'left' | 'center' | 'right' }
-  | { type: 'indent'; direction: 'in' | 'out' }
-  | { type: 'clear' };
+  | { type: 'indent'; direction: 'in' | 'out' };
 
 const normalizeFontCss = (value: string) => value.replace(/["']/g, '').replace(/\s*,\s*/g, ',').trim().toLowerCase();
 
@@ -76,7 +75,7 @@ export function applyFormat(editor: any, action: FormatAction): void {
       break;
     }
     case 'color':
-      editor.execute('fontColor', action.value ? { value: action.value } : {});
+      editor.execute('fontColor', { value: action.value });
       break;
     case 'size':
       editor.execute('fontSize', action.value ? { value: `${action.value}px` } : {});
@@ -92,23 +91,16 @@ export function applyFormat(editor: any, action: FormatAction): void {
     case 'indent':
       editor.execute(action.direction === 'in' ? 'indent' : 'outdent');
       break;
-    case 'clear':
-      // 글자는 보존하고 서식만 기본값으로 되돌린다.
-      editor.execute('removeFormat');
-      break;
   }
 }
 
 /*
  * [설계 49·TODO63] 문단 들여쓰기 정규화. CKEditor IndentBlock은 40px씩 누적하며 단계 수 제한은 두지 않는다.
  *  - 붙여넣기 등으로 들어온 값은 모델에서 40px 배수로 맞추고 px 외 단위·숫자 범위를 넘는 값은 지운다.
- * 들여쓰기·내어쓰기(0에서 멈춤)·실행 취소는 CKEditor 기본 동작을 그대로 쓴다. 서식 초기화(removeFormat)는 글자 서식만 지우고 문단 들여쓰기·정렬은 유지한다.
+ * 들여쓰기·내어쓰기(0에서 멈춤)·실행 취소는 CKEditor 기본 동작을 그대로 쓴다.
+ * [TODO66] 일괄 서식 초기화(removeFormat) 진입점을 없애 blockIndent·alignment의 초기화 제외(isFormatting 해제) 설정도 함께 정리했다.
  */
 export function normalizeIndent(editor: any): void {
-  // IndentBlock은 blockIndent를 서식 속성(isFormatting)으로 등록해 removeFormat이 들여쓰기까지 지우므로 문단 속성으로 되돌린다.
-  editor.model.schema.setAttributeProperties('blockIndent', { isFormatting: false });
-  // [TODO62] Alignment도 기본 빌드에서는 지워지는 서식이다. 글자 서식 초기화가 문단 정렬을 바꾸지 않도록 제외한다.
-  editor.model.schema.setAttributeProperties('alignment', { isFormatting: false });
   const px = (value: unknown) => (typeof value === 'string' && /^\d+(\.\d+)?px$/.test(value) ? Number.parseFloat(value) : null);
   editor.model.document.registerPostFixer((writer: any) => {
     let changed = false;
