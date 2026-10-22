@@ -30,7 +30,7 @@
 | POL-02-02 | `db/oracle/01_popup_schema_oracle.sql` 175·201줄 | allowCloseBeforeComplete 폐기 | 신규 DDL이 `ALLOW_CLOSE_BEFORE_COMPLETE_YN`(DEFAULT 'Y'·CHECK)을 계속 만든다. 서버 매퍼·DTO는 읽고 쓰지 않음(주석에 "컬럼 존치" 명시) | 낮음. 신규 DDL에서 컬럼을 뺄지(구 데이터 호환 유지 여부) 결정 필요 |
 | POL-04-02 | `db/oracle/06_image_size_mode_adaptive_oracle.sql` 5줄 | IMAGE 모드 ADAPTIVE·FIT_TO_IMAGE·ORIGINAL | 과거 이관 스크립트 배경 설명에 "ADAPTIVE / FIT_TO_IMAGE / FILL"(실행 SQL은 ADAPTIVE 변환만) | 동작 영향 없음. 적용 완료된 과거 스크립트의 이력 문구로 유지(정정 시 문구만) |
 
-참고(충돌 아님): 재노출 유예(DEFER_UNTIL_AT)는 LATER뿐 아니라 미완료로 닫힌 CLOSED(SURVEY·QUIZ·VIDEO)에도 적용된다. POL-11-02·POL-10-03 문구는 LATER만 적고 있어 정책 문서 보완을 검토할 수 있다.
+참고(충돌 아님, 정책 문서 반영 완료): 재노출 유예(DEFER_UNTIL_AT)는 LATER뿐 아니라 미완료로 닫힌 CLOSED(SURVEY·QUIZ·VIDEO)·미완료 VIDEO_WATCHED에도 적용된다(`WpfResultProcessor.processOne` → `completeDelivery`). 강제종료로 결과가 없으면 OPEN 전달 건이 유예 없이 같은 deliveryId로 재사용된다(`WpfPopupService.getNextPopup`). POL-10-03·POL-11-02에 반영했다(2026-10-22).
 
 ## 4. 주석이 실제와 달라 주석만 바로잡은 곳
 

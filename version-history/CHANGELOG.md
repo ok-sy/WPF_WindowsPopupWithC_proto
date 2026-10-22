@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-23 — TODO71 미완료 닫기 재노출 유예·강제종료 구분 정책 문서 보완
+
+- 이유: 정합성 점검에서 재노출 유예가 LATER뿐 아니라 미완료 닫기에도 적용되는 것이 확인됐으나 정책 문서에는 LATER만 기재돼 있어, 미완료 닫기(CLOSED)와 결과가 남지 않는 강제종료를 구분해 정리할 필요.
+- 변경: POL-10-03에 SURVEY·QUIZ·VIDEO의 미완료 CLOSED와 미완료 VIDEO_WATCHED도 완료·숨김을 바꾸지 않고 pollingIntervalSeconds 유예를 받는다는 점, 강제종료로 결과가 없으면 OPEN 전달 건이 유예 없이 같은 deliveryId로 다시 내려간다는 점 추가. POL-11-02 반복 유예 문구에 미완료 닫기 반영. CODE_CONSISTENCY.md 참고 항목을 반영 완료로 갱신. 코드 변경 없음.
+- 주요 파일: docs/policies/POL-10.md, docs/policies/POL-11.md, docs/reviews/TODO71/CODE_CONSISTENCY.md, version-history/CHANGELOG.md.
+- 검증: 근거 코드 대조(WpfResultProcessor.processOne의 completeDelivery 유예, WpfPopupService.getNextPopup의 OPEN 건 재사용, PopupManager Closing/Closed 결과 저장, PopupResultBuilder.BuildClosed 결과 분기). audit-policy-docs-71.py 810건 통과(링크 오류 0). 미실행: 실화면 강제종료 재현.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-22 — TODO71 전 파일 주석 정책 번호 반영 및 코드 정합성 점검
 
 - 이유: 코드 주석이 내부 TODO·설계 번호를 근거로 하고 있어, 현행 정책 색인(docs/policies) 기준으로 주석을 통일하고 코드가 정책과 맞는지 점검할 필요.
