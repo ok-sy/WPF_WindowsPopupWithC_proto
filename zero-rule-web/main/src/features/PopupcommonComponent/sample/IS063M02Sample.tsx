@@ -29,8 +29,8 @@ import { createSamplePopups, newSamplePopup } from './popupSampleData';
  *  - 크기 placeholder '최소 200' → 공통 최소 300(TODO68).
  * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 둔다(서버 확정 필요).
  * [확정 2026-10-22] 퀴즈 점수: 문항은 무조건 1점(총점 = 문항 수). 만점 통과 = 통과 점수 문항 수(10문항 → 10점),
- * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수는 N이지만, 현재 WPF 계약은 미통과 시 제출하지 않고
- * 창을 유지해 다시 채점하므로 "실패도 제출" 동작은 미지원(확인 필요)으로 표시한다.
+ * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수 N이며, [확정] 미달(실패)이면 제출하지 못한다
+ * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 세 유형 모두 저장 값은 passingScore 하나다.
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
  * 저장은 toSaveRequest 결과를 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
  * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
@@ -302,8 +302,8 @@ export default function IS063M02Sample() {
                       문항 {popup.questions.length}개 × {QUIZ_QUESTION_SCORE}점 = 총점 {popup.questions.length}점 · 통과 점수 {effective?.passingScore ?? '-'}점
                     </Typography>
                     {quizRule === 'PASS_FAIL' && (
-                      <Typography variant="caption" color="warning.main" sx={{ width: '100%' }}>
-                        확인 필요: 현재 WPF는 미통과 시 제출하지 않고 다시 채점합니다. 실패 결과 제출은 계약 변경이 필요합니다(통과 점수만 저장).
+                      <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
+                        미달(실패)이면 제출되지 않고 점수 안내 후 다시 풀어 통과해야 제출됩니다.
                       </Typography>
                     )}
                   </Stack>

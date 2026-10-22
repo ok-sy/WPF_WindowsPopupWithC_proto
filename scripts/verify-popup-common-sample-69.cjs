@@ -162,7 +162,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('통과 기준')`), '[IS063] Cutoff above the question count is rejected');
   await setInput('input[aria-label="통과 기준 개수"]', '1');
   await pickRule('통과/실패 제출');
-  check(await run(`document.querySelector('[data-testid=is063-mid]').textContent.includes('실패 결과 제출은 계약 변경이 필요')`), '[IS063] Pass/fail submit warns that failed submission is not in the contract');
+  check(await run(`document.querySelector('[data-testid=is063-mid]').textContent.includes('미달(실패)이면 제출되지 않고')`), '[IS063] Pass/fail submit explains that a failed quiz cannot be submitted');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));

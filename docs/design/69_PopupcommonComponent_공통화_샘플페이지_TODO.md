@@ -50,7 +50,7 @@ IS063M02의 기준 입력은 사진 15장 및 추가 IMG_1445.jpeg 대조를 반
 - 69-4: `sample/PopupListSample.tsx`(목록 6종 → 신규/수정 → `PopupSampleEditor` → 우측·모달 미리보기 → `toSaveRequest` 요청 객체 표시, 메모리 목록만 갱신·서버 미전송 표시), `sample/popupSampleData.ts`.
 - 69-8·9: 타입(`@local/domain`)과 HTTP 클라이언트(`api.popupAdmin`) 역할, 이식 의존성, 단독 사용 최소 예, 데이터 흐름·실서버 교체 지점을 `docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md` §5에 정리. 라우트 `/popup-common-sample` 추가(기존 `/rgst-pop` 유지, 메뉴 DB 등록은 범위 밖).
 - 69-10: TODO66·67·68 구현이 같은 공통 파일이라 샘플에도 적용됨을 확인. 샘플 편집 Dialog도 `slotProps`(paper·htmlInput) 사용.
-- 69-5~7(2차): 수령한 복원본 `sample/IS063M02.tsx`를 대조용 원본으로 보존(첫 줄 `// @ts-nocheck`만 추가 — 저장소에 없는 `IS035Info`·폐쇄망 `n*` CSS 의존). `sample/IS063M02Sample.tsx`에 원본 레이아웃·클래스를 유지하고 BbsCKEditor 자리에 공통 에디터, 우측에 인라인 미리보기, 버튼에 모달 미리보기, 문항 영역에 공통 문항 편집기, 저장에 `toSaveRequest`를 연결. 공유 `inputData`·공유 라디오 state·숫자/문자열 Select 불일치·단독 label·미연결 버튼·최소 200 표기를 정리. '컨텐츠 명'(저장 계약 필드 없음)은 확인 필요로 표시. [확정 2026-10-22] 퀴즈 점수: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 통과 점수 문항 수(10문항 → 10점), 커트라인 통과 = N개 이상(7개 → 7점), 통과/실패 제출도 통과 점수 N('통과/실패 제출'의 실패 결과 제출은 현재 WPF 계약 밖이라 경고 표시). 라우트 `/popup-common-sample/is063m02`.
+- 69-5~7(2차): 수령한 복원본 `sample/IS063M02.tsx`를 대조용 원본으로 보존(첫 줄 `// @ts-nocheck`만 추가 — 저장소에 없는 `IS035Info`·폐쇄망 `n*` CSS 의존). `sample/IS063M02Sample.tsx`에 원본 레이아웃·클래스를 유지하고 BbsCKEditor 자리에 공통 에디터, 우측에 인라인 미리보기, 버튼에 모달 미리보기, 문항 영역에 공통 문항 편집기, 저장에 `toSaveRequest`를 연결. 공유 `inputData`·공유 라디오 state·숫자/문자열 Select 불일치·단독 label·미연결 버튼·최소 200 표기를 정리. '컨텐츠 명'(저장 계약 필드 없음)은 확인 필요로 표시. [확정 2026-10-22] 퀴즈 점수: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 통과 점수 문항 수(10문항 → 10점), 커트라인 통과 = N개 이상(7개 → 7점), 통과/실패 제출도 통과 점수 N('통과/실패 제출'도 미달이면 제출 불가 — 현재 WPF 동작과 같음, 확정). 라우트 `/popup-common-sample/is063m02`.
 
 ## 검증 결과
 
