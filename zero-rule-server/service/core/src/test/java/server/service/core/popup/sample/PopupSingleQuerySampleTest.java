@@ -5,9 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -238,5 +243,108 @@ class PopupSingleQuerySampleTest {
         assertEquals(PopupSampleException.Reason.INVALID_COLUMN,
                 assertThrows(PopupSampleException.class, () -> service(badLink).nextPopup("E1001", null, null)).reason());
         assertTrue(issued.isEmpty(), "데이터 오류 응답에는 전달 건을 발급하지 않는다");
+    }
+    /** 인계용 INSERT SQL(DTIY3111_sample_insert_oracle.sql) 6건이 유형별로 정상 응답으로 조립된다. 문항은 QuestionPort 대역으로 붙인다. */
+    @Test
+    void sampleInsertSqlRowsAssembleForEveryType() throws Exception {
+        List<Map<String, String>> rows = parseInserts(readResource("/sample/single-query/DTIY3111_sample_insert_oracle.sql"));
+        assertEquals(6, rows.size());
+        ArrayNode questions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"q\",\"questionType\":\"SINGLE_CHOICE\",\"isScored\":true,"
+                + "\"options\":[{\"optionId\":11,\"text\":\"O\",\"isCorrect\":true}]}]");
+        Map<String, String> expected = Map.of("SMP-TEXT-001", "TEXT", "SMP-IMAGE-001", "IMAGE", "SMP-VIDEO-001", "VIDEO",
+                "SMP-SURVEY-001", "SURVEY", "SMP-QUIZ-001", "QUIZ", "SMP-VQUIZ-001", "QUIZ");
+        for (Map<String, String> values : rows) {
+            String id = values.get("POPU_CNTN_ID");
+            assertTrue(values.get("CNTN_CN").getBytes(StandardCharsets.UTF_8).length <= 4000, id + " CLOB 리터럴 4000바이트 이하");
+            JsonNode popup = service(toRow(values), (r, type) -> questions).nextPopup("E1001", id, null).get("popup");
+            assertEquals(id, popup.get("popupId").asText());
+            assertEquals(expected.get(id), popup.get("popupType").asText(), id);
+        }
+        JsonNode image = service(toRow(rows.get(1))).nextPopup("E1001", null, null).get("popup");
+        assertEquals("https://files.example.com/popup/popup/sample/image/notice.png", image.get("content").get("imageUrl").asText());
+        assertFalse(image.has("width"), "IMAGE 크기 NULL이면 생략");
+        JsonNode text = service(toRow(rows.get(0))).nextPopup("E1001", null, null).get("popup");
+        assertEquals("TOP_RIGHT", text.get("popupPosition").asText());
+        assertEquals("시스템 점검 안내\n02:00~06:00", text.get("content").get("plainText").asText());
+        JsonNode videoQuiz = service(toRow(rows.get(5)), (r, type) -> questions).nextPopup("E1001", null, null).get("popup");
+        assertTrue(videoQuiz.get("content").get("videoEnabled").booleanValue());
+        assertEquals(1.0, videoQuiz.get("completionRatio").doubleValue());
+        assertEquals(PopupSampleException.Reason.QUESTIONS_NOT_CONNECTED,
+                assertThrows(PopupSampleException.class, () -> service(toRow(rows.get(3))).nextPopup("E1001", null, null)).reason(),
+                "문항 미연결 상태의 SURVEY는 오류가 정상");
+    }
+
+    private static String readResource(String path) throws IOException {
+        try (InputStream in = PopupSingleQuerySampleTest.class.getResourceAsStream(path)) {
+            assertTrue(in != null, path);
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    /** 샘플 SQL 형식(컬럼 목록 + 문자열 리터럴·NULL·숫자·|| 연결)만 읽는 간이 파서. 블록 주석·줄 주석은 건너뛴다. */
+    private static List<Map<String, String>> parseInserts(String sql) {
+        String body = sql.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)^\\s*--.*$", "");
+        List<Map<String, String>> rows = new ArrayList<>();
+        int at = 0;
+        while ((at = body.indexOf("INSERT INTO DTIY3111", at)) >= 0) {
+            int open = body.indexOf('(', at), close = body.indexOf(')', open);
+            String[] columns = body.substring(open + 1, close).replaceAll("\\s", "").split(",");
+            int i = body.indexOf('(', body.indexOf("VALUES", close)) + 1;
+            List<String> values = new ArrayList<>();
+            StringBuilder current = null;
+            boolean isNull = false;
+            while (true) {
+                char c = body.charAt(i);
+                if (c == '\'') {
+                    int k = i + 1;
+                    StringBuilder literal = new StringBuilder();
+                    while (true) {
+                        if (body.charAt(k) == '\'') {
+                            if (body.charAt(k + 1) == '\'') { literal.append('\''); k += 2; continue; }
+                            break;
+                        }
+                        literal.append(body.charAt(k++));
+                    }
+                    current = current == null ? literal : current.append(literal);
+                    i = k + 1;
+                } else if (c == ',' || c == ')') {
+                    values.add(isNull ? null : current == null ? null : current.toString());
+                    current = null; isNull = false;
+                    i++;
+                    if (c == ')') break;
+                } else if (body.startsWith("NULL", i)) {
+                    isNull = true; i += 4;
+                } else if (Character.isDigit(c)) {
+                    int k = i;
+                    while (Character.isDigit(body.charAt(k)) || body.charAt(k) == '.') k++;
+                    current = new StringBuilder(body.substring(i, k));
+                    i = k;
+                } else {
+                    i++;   // 공백·줄바꿈·|| 연결 연산자
+                }
+            }
+            assertEquals(columns.length, values.size(), "컬럼·값 개수");
+            Map<String, String> row = new LinkedHashMap<>();
+            for (int c = 0; c < columns.length; c++) row.put(columns[c], values.get(c));
+            rows.add(row);
+            at = i;
+        }
+        return rows;
+    }
+
+    private static PopupContentRow toRow(Map<String, String> v) {
+        PopupContentRow row = new PopupContentRow();
+        row.setContentId(v.get("POPU_CNTN_ID"));
+        row.setContentTypeCode(v.get("POPU_CNTN_TP_CD"));
+        row.setHeaderTitle(v.get("HDR_TITL"));
+        row.setWidth(v.get("POPU_WDTH_SZ") == null ? null : new BigDecimal(v.get("POPU_WDTH_SZ")));
+        row.setHeight(v.get("POPU_LNTH_SZ") == null ? null : new BigDecimal(v.get("POPU_LNTH_SZ")));
+        row.setAfterConfirmYn(v.get("AFTR_CNFM_OBJ_YN"));
+        row.setFooterButtonTypeCode(v.get("FTR_BTN_TP_CD"));
+        row.setFooterUrl(v.get("FTR_URL"));
+        row.setFilePath(v.get("ATCH_FILE_PATH"));
+        row.setFileName(v.get("ATCH_FILE_NM"));
+        row.setContentJson(v.get("CNTN_CN"));
+        return row;
     }
 }

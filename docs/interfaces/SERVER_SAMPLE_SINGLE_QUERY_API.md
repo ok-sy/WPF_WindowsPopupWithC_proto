@@ -27,6 +27,7 @@ POST /p/api/sample/wpf/popups/single  (본문 {}, 사용자 = WpfUserResolver)
 | repo/core | `resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml` | Oracle 11g 단건 SQL·resultMap(기존 `mappers/**/*.xml`로 자동 로드) |
 | service/core | `server/service/core/popup/sample/` | `PopupSingleQuerySampleConfig`(조건부 Bean)·Service·Parser·Assembler·CodeTable·Ports·Exception |
 | web/api | `server/web/api/popup/sample/PopupSingleQuerySampleController.java`·`...ExceptionHandler.java` | API·샘플 한정 오류 응답 |
+| service/core(test) | `src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql` | 유형별 샘플 콘텐츠 INSERT 6건(§4.1). 테스트가 같은 파일로 응답 조립을 확인 |
 
 ## 2. 실행 설정
 
@@ -104,6 +105,23 @@ SELECT *
 - 정렬은 내부 쿼리, `ROWNUM = 1`은 바깥에만 둔다(안에 두면 정렬 전에 잘린다). `FETCH FIRST`는 11g에 없어 쓰지 않는다.
 - 값은 `#{}` 바인딩만 쓴다. **SQL 주석 안에도 `#{}`를 쓰면 바인딩으로 잡혀 파라미터 수가 어긋난다**(검증 중 확인해 제거).
 - 0건이면 매퍼가 null → 200 `{"pollingIntervalSeconds":1800,"popup":null}`.
+
+### 4.1 유형별 샘플 INSERT
+
+`zero-rule-server/service/core/src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql`에 매퍼가 읽는 컬럼만 채운 콘텐츠 6건이 있다. 다시 넣을 때는 스크립트 첫 `DELETE ... LIKE 'SMP-%'`부터 실행한다.
+
+| POPU_CNTN_ID | 유형 코드 | 확인 포인트 |
+|---|---|---|
+| SMP-TEXT-001 | 10 TEXT | textBlocks 서식 본문·강조 문구·하단 설명, 푸터 02 링크 후 닫기, content의 창 옵션(배경 없음·TOP_RIGHT·bodyFontSize)이 최상위로 이동 |
+| SMP-IMAGE-001 | 20 IMAGE | 파일 컬럼 → `file-base-url/popup/sample/image/notice.png`, 크기 NULL이면 width/height 생략 |
+| SMP-VIDEO-001 | 30 VIDEO | 파일 컬럼 → videoUrl, 나중에 보기(AFTR_CNFM_OBJ_YN=Y), 배속·탐색 금지 |
+| SMP-SURVEY-001 | 40 SURVEY | 푸터 코드 NULL이어도 SUBMIT. 문항은 QuestionPort |
+| SMP-QUIZ-001 | 50 QUIZ | 영상 없는 퀴즈. 문항·정답 키는 QuestionPort |
+| SMP-VQUIZ-001 | 50 QUIZ | `videoEnabled=true` 영상+퀴즈. 파일 컬럼은 IMAGE·VIDEO 유형만 적용하므로 content.videoUrl 사용, completionRatio 1.0 |
+
+- 확인할 행은 `?contentId=SMP-TEXT-001`처럼 지정한다. 정렬이 `POPU_CNTN_ID DESC`라 지정하지 않으면 SMP-VQUIZ-001이 먼저 잡힌다.
+- 기본 `UnconnectedQuestionPort` 상태에서 SURVEY·QUIZ 3건은 `QUESTIONS_NOT_CONNECTED`(500)가 정상이다. 문항 형태는 `web/api/src/test/resources/sample/relay/survey.json`·`quiz.json`·`video-quiz.json`의 `questions`를 따른다.
+- [미확인] DTIY3111 확정 정의가 없어 등록자·등록일시 등 다른 NOT NULL 컬럼, ID 채번 규칙, 코드값(PopupCodeTable 예시)은 실제 값으로 바꾼다. CLOB 리터럴은 4000바이트 이하로 둔다.
 
 ## 5. 응답 예시 (65-7)
 
@@ -192,5 +210,5 @@ popup.put("showDoNotShowAgain", doNotShow != null && doNotShow);
 
 ## 7. 검증 상태
 
-- DB 없이: repo/core `PopupSingleQuerySampleMapperXmlTest` 3건(XML 파싱, 정렬 후 ROWNUM 1, 바인딩 수, CLOB→String), service/core `PopupSingleQuerySampleTest` 6건(없음, 컬럼 매핑·중첩·false/0 보존·중복 키 제거, 기본값, IMAGE 파일 URL·크기 생략, SURVEY SUBMIT, 데이터 오류 11종·전달 건 미발급), web/api `PopupSingleQuerySampleControllerTest` 3건(200·null popup, 500, 401·400).
-- 미실행: 실제 DTIY3111 테이블 대상 SQL 실행(테이블·확정 정의 미보유), 확정 코드표 대조, 전체 서버에서 `enabled=true` 기동 확인.
+- DB 없이: repo/core `PopupSingleQuerySampleMapperXmlTest` 3건(XML 파싱, 정렬 후 ROWNUM 1, 바인딩 수, CLOB→String), service/core `PopupSingleQuerySampleTest` 8건(없음, 컬럼 매핑·중첩·false/0 보존·중복 키 제거, 기본값, 전체 옵션 키, IMAGE 파일 URL·크기 생략, SURVEY SUBMIT, 데이터 오류 11종·전달 건 미발급, §4.1 INSERT SQL 6건 유형별 조립·CLOB 4000바이트 이하), web/api `PopupSingleQuerySampleControllerTest` 3건(200·null popup, 500, 401·400).
+- 미실행: 실제 DTIY3111 테이블 대상 SQL·샘플 INSERT 실행(테이블·확정 정의 미보유), 확정 코드표 대조, 전체 서버에서 `enabled=true` 기동 확인.

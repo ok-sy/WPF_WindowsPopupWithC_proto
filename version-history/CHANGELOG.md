@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-24 — TODO65 단건 조회 샘플 유형별 INSERT SQL 추가
+
+- 이유: 실테이블 단건 조회 샘플을 유형별로 바로 확인할 수 있도록 DTIY3111에 넣을 샘플 데이터가 필요.
+- 변경: TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈 6건의 Oracle 11g INSERT 스크립트 추가(재실행용 DELETE, SET DEFINE OFF, 컬럼→응답 대응·미확인 교체 지점·문항 QuestionPort 안내 주석). 같은 파일을 읽어 유형별 응답 조립·IMAGE 파일 URL·창 옵션 이동·영상+퀴즈 completionRatio·문항 미연결 오류·CLOB 4000바이트 이하를 확인하는 테스트 추가. 인계 문서에 §4.1 유형별 샘플 INSERT와 파일 위치·검증 건수 반영.
+- 주요 파일: zero-rule-server/service/core/src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql, zero-rule-server/service/core/src/test/java/server/service/core/popup/sample/PopupSingleQuerySampleTest.java, docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md, version-history/CHANGELOG.md.
+- 검증: `gradlew :service:core:test --offline --tests server.service.core.popup.sample.*` 8건 통과(신규 1건 포함). 미실행: 실제 DTIY3111 대상 INSERT·조회(테이블·확정 정의 미보유).
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-23 — TODO71 미완료 닫기 재노출 유예·강제종료 구분 정책 문서 보완
 
 - 이유: 정합성 점검에서 재노출 유예가 LATER뿐 아니라 미완료 닫기에도 적용되는 것이 확인됐으나 정책 문서에는 LATER만 기재돼 있어, 미완료 닫기(CLOSED)와 결과가 남지 않는 강제종료를 구분해 정리할 필요.
