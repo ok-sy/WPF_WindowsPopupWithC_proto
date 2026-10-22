@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-09 — TODO67 미리보기 Dialog deprecated 속성 slotProps 전환
+
+- 이유: 폐쇄망 이식 중 PopupPreviewDialog의 BackdropProps 사용 중단 예정(ts6385) 안내가 확인되어 설치 버전이 지원하는 대체 API로 전환하고 표시·종료 동작 유지 검증 필요.
+- 변경: 저장소 MUI 버전(선언 ^6.4.1, lock 6.5.0)과 Dialog slots 도입 버전(6.4.1) 확인. TS 언어 서비스 ts6385 진단으로 RgstPop 사용처 25건 조사 — PopupPreviewDialog `BackdropProps`·`PaperProps`를 하나의 `slotProps`(backdrop·paper, FULLSCREEN은 paper 미지정)로 전환, 편집 폼 TextField/Checkbox `inputProps`·`InputLabelProps` 23건은 현 버전 정상 동작하는 deprecated로 목록화하고 미전환. 미리보기 이식 안내에 검증 버전·최소 버전·변경 예시 추가. API/DB/WPF 계약 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/PopupPreviewDialog.tsx, scripts/verify-popup-preview-61.cjs, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/67_MUIdeprecated속성_미리보기호환검증_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc·변경 파일 eslint 오류 0, PopupPreviewDialog ts6385 0건. verify-popup-preview-61 52건 통과(신규 Paper 슬롯 스타일·FULLSCREEN 분기 2건, 기존 Overlay ON/OFF·Esc·위치·크기 모드·resize 회귀 포함). 연속 실행 중 닫힘 대기 타이밍 간헐 실패 2회 후 3회 연속 통과. 미실행: next build, 폐쇄망 설치 버전 대조·IDE 안내 해소 확인, 실제 관리자 화면.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-22-08 — TODO68 팝업 최소 크기 300×300 공통화 구현
 
 - 이유: 관리자 설정·미리보기·WPF 실제 팝업의 창 최소 크기 기준이 서로 달라(웹 1px/모달 320×260, 서버 0 초과, WPF 하한 없음·누락 480×320) 같은 기준 300×300으로 통일 필요.

@@ -39,14 +39,19 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   const [alignX, alignY] = previewPositionAlign(popup);
   const edgeMargin = previewEdgeMargin(popup);
   const size = previewDialogSize(popup, measuredSize ?? recommendedSize, viewport);
+  /* [TODO67] MUI 6.4.1+ Dialog slotProps(backdrop·paper). deprecated BackdropProps·PaperProps를 한 객체로 합쳐 옮겼다.
+   * FULLSCREEN은 기존처럼 Paper 크기를 지정하지 않는다(paper: undefined). */
+  const slotProps = {
+    backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
+    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height,
+      maxWidth: `min(96vw, calc(100vw - ${edgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${edgeMargin * 2}px))`, m: `${edgeMargin}px`, overflow: 'hidden' } },
+  };
 
   return (
     <Dialog open={open} onClose={(_, reason) => {
       if (reason !== 'backdropClick' || !overlay.enabled) onClose();
-    }} BackdropProps={{ sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } }} fullScreen={fullScreen} maxWidth={false}
-      sx={fullScreen ? undefined : { '& .MuiDialog-container': { justifyContent: alignX, alignItems: alignY } }}
-      PaperProps={fullScreen ? undefined : { sx: { width: size.width, height: size.height,
-        maxWidth: `min(96vw, calc(100vw - ${edgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${edgeMargin * 2}px))`, m: `${edgeMargin}px`, overflow: 'hidden' } }}>
+    }} slotProps={slotProps} fullScreen={fullScreen} maxWidth={false}
+      sx={fullScreen ? undefined : { '& .MuiDialog-container': { justifyContent: alignX, alignItems: alignY } }}>
       {/* 헤더 닫기 버튼이 없으므로(WPF와 동일) 푸터를 숨겨도 이 버튼과 Esc로 미리보기를 닫는다. 위쪽 배치 팝업과 겹치지 않게 아래로 옮긴다. */}
       <Button variant="contained" color="primary" aria-label="실제 크기 미리보기 종료"
         onClick={onClose}

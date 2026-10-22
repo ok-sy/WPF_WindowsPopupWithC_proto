@@ -61,6 +61,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   let rect = await paper();
   check(rect.width === 560 && rect.height === 420 && Math.abs(rect.left - 220) < 1 && Math.abs(rect.top - 240) < 1, 'FIXED dialog is 560x420 at the center: ' + JSON.stringify(rect));
   check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity');
+  // [TODO67] slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
+  const paperStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return {margin:s.margin,overflow:s.overflow,maxWidth:s.maxWidth,maxHeight:s.maxHeight,radius:s.borderRadius};})()");
+  check(paperStyle.margin === '24px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '952px' && paperStyle.maxHeight === '852px' && paperStyle.radius === '4px',
+    '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
   check(await run("Array.from(document.querySelectorAll('.MuiDialog-root button')).some(b=>b.getAttribute('aria-label')==='실제 크기 미리보기 종료')"), 'Dialog has its own exit button');
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'text-dialog.png'), Buffer.from(shot.data, 'base64'));
   await clickAt(5, 5);
@@ -89,6 +93,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await escape(); await viewport(1000, 900); await pause(200);
   await render('TEXT', {sizeMode: 'FULLSCREEN'}, {popupPosition: 'TOP_LEFT'}); await openPreview(); rect = await paper();
   check(rect.width === 1000 && rect.height === 900 && rect.left === 0 && rect.top === 0, 'FULLSCREEN ignores position and fills the viewport');
+  check(await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return s.margin==='0px'&&s.overflowY!=='hidden'&&getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor==='rgba(0, 0, 0, 0.45)';})()"),
+    '[TODO67] FULLSCREEN leaves the Paper slot unset and keeps the backdrop slot');
   await escape();
   // 6) IMAGE FIT_TO_IMAGE: 모달이 스스로 권장 창 크기를 계산하고, 인라인 계산값 전달(hint) 여부와 결과가 같다.
   for (const hint of [false, true]) {

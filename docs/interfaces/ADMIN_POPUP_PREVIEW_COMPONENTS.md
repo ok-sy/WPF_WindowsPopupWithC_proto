@@ -64,6 +64,12 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 - 모달을 닫으면 내용이 언마운트되어 다시 열 때 시연 상태가 초기화된다. 문항·팝업 ID가 바뀌어도 초기화된다.
 - 두 미리보기가 동시에 열려 있으면 VIDEO+QUIZ 영상 영역(`AspectVideoArea`)이 각각 메타데이터만 읽는다(`preload="metadata"`, 음소거, 자동 재생 없음).
 - 등록 화면(`PopupEditorDialog`)은 다시 열 때 모달 열림 상태를 닫힘으로 초기화한다.
+- [TODO67] `PopupPreviewDialog`는 deprecated `BackdropProps`·`PaperProps` 대신 Dialog `slotProps` 한 객체에 `backdrop`(Overlay 배경 sx)과 `paper`(일반 모달 크기·최대 크기·여백·overflow, FULLSCREEN은 `undefined`)를 함께 넘긴다. 6.4.1 미만 MUI에서는 Dialog `slotProps.paper`가 없으므로 이식 전 설치 버전을 확인한다.
+
+```tsx
+// 변경 전(ts6385): BackdropProps={{ sx: backdropSx }} PaperProps={fullScreen ? undefined : { sx: paperSx }}
+<Dialog slotProps={{ backdrop: { sx: backdropSx }, paper: fullScreen ? undefined : { sx: paperSx } }} />
+```
 - [TODO68] 실제 크기 모달과 IMAGE 권장 창 크기는 `popupCommon.ts`의 `POPUP_MIN_WINDOW_SIZE`(300)·`popupMinimumSize`로 최종 창 하한 300×300을 WPF와 같은 순서(하한 → 설정 최대값 → 화면 상한)로 적용한다. 인라인 축소 표시의 외형 크기는 300 이상으로 강제하지 않는다. 이전 모달 전용 하한(320×260)은 제거했다.
 
 ## 4. 이식 시 필요한 의존성
@@ -77,7 +83,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 | 경로 별칭 | `@/` → `zero-rule-web/main/src/`, `@local/domain` → workspace 패키지 `sub/domain` |
 | 앱 모듈 | `@/lib/urls`의 `routerUrlOf`(헤더 로고 경로). 다른 앱에서는 같은 이름의 함수로 대체하거나 로고 경로를 바꾼다 |
 | 리소스 | `zero-rule-web/main/public/images/popup-header-logo.png` |
-| 패키지 | `react`·`react-dom` 18, `@mui/material` 6, `@mui/icons-material` 6(`Preview`, `PlayCircleOutline`) |
+| 패키지 | `react`·`react-dom` 18, `@mui/material` **6.4.1 이상**(Dialog `slotProps.backdrop`·`slotProps.paper`, TODO67), `@mui/icons-material` 6(`Preview`, `PlayCircleOutline`). 저장소 검증 버전: lockfile 기준 `@mui/material`·`@mui/system`·`@mui/icons-material` 6.5.0, `@emotion/react` 11.14.0, `react` 18.3.1 |
 | 사용하지 않음 | 저장 요청 정규화·JSON 변환(`popupEditorTransform.ts`, TODO64), CKEditor 편집기, 관리자 API 클라이언트 |
 
 `normalizePopupLink`는 푸터 바로가기 URL 확인에만 쓰며 이번 분리에서 URL 정책은 바꾸지 않았다.
