@@ -4,6 +4,8 @@
 
 | 위치 | 내용 |
 |---|---|
+| [policies/](policies/README.md) | 현행 정책 16개·원본 TODO 역추적·[활성 작업/보류](policies/ACTIVE_TASKS.md). TODO71 정적 대조, 미확정·실환경 검증은 분리 |
+| [reviews/TODO71/](reviews/TODO71/INVENTORY.md) | 01~70 전수 목록·대체/충돌·주석·링크 점검. 원본 TODO 경로 보존 |
 | [design/](design) | 설계 기준·기능별 TODO·구현 및 확인 상태. 미결 항목은 [09_전환계획_및_미결사항.md](design/09_전환계획_및_미결사항.md) |
 | [design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md](design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) | 프로젝트 검증 후속 작업: 문서 정합·TODO52 구현 연결·실제 연동/화면 검증·미결 정책. 폐쇄망 검증 제외 |
 | [interfaces/](interfaces) | WPF Client API 계약서 [POPUP_INTERFACE_SPEC.md](interfaces/POPUP_INTERFACE_SPEC.md)(v3.7), Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`, 최소/전체 기능 정의서, [examples/](interfaces/examples) JSON 예제 |

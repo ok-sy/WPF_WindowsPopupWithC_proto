@@ -10,7 +10,7 @@ using System.Windows.Media;
 namespace Popup.Views.Contents
 {
     /*
-     * [설계 28] 문단·Run JSON을 WPF TextBlock Inlines로 만든다. HTML/XAML 문자열은 로드하지 않는다.
+     * [POL-03-01; 근거 설계 28·48] 문단·Run JSON을 WPF TextBlock Inlines로 만든다. HTML/XAML 문자열은 로드하지 않는다.
      * [설계 48] 서식 허용 정책(크기 목록·색 형식·글꼴 ID·정렬 값)은 서버 PopupRichText.java가 저장 시 검증한다.
      * 이 렌더러는 정책 목록을 복제하지 않고 WPF 변환과 표시 방어만 맡는다 — 서버 목록과 어긋나 정상 저장한 서식이
      * 조용히 무시되는 것을 막기 위해서다(설계 36의 화이트리스트 유지 결론은 설계 48이 대체).
@@ -31,7 +31,7 @@ namespace Popup.Views.Contents
 
         /*
          * [설계 49] 문단 들여쓰기. 웹 CSS px와 WPF DIP는 96 DPI 기준 같은 크기이므로 1단계 = 40 DIP로 표시한다.
-         * [TODO63] 단계 수 제한은 없다(설계 48: 서버 정책을 복제하지 않음). 0 이상 정수이고 서버가 읽을 수 있는 숫자 범위
+         * [POL-03-02; 근거 TODO63] 단계 수 제한은 없다(설계 48: 서버 정책을 복제하지 않음). 0 이상 정수이고 서버가 읽을 수 있는 숫자 범위
          * (int 이하)면 그대로 적용하고, 소수·음수·NaN·Infinity·범위 초과만 0이다. 여백이 본문 폭을 넘으면 TextBlock이
          * 남은 폭에서 줄바꿈하고 높이가 늘어나며, 본문 영역의 기존 세로 스크롤로 확인한다.
          */

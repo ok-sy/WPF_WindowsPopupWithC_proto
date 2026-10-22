@@ -67,7 +67,7 @@ namespace Popup.Services
             WriteIndented = true
         };
 
-        /* [설계 34-19] INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
+        /* [POL-12-02; 근거 설계 34·45] INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
         public const int MaxInternalErrorAttemptsPerSession = 3;
 
         private static readonly HashSet<string> SettledStatuses = new(StringComparer.OrdinalIgnoreCase)

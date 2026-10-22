@@ -1,0 +1,2035 @@
+{
+  "baseline": "9a8ec4eb8695e2be150e2de92da7338c34170d52",
+  "date": "2026-10-22 KST",
+  "records": [
+    {
+      "number": 1,
+      "path": "docs/design/01_현행분석.md",
+      "title": "01. 현행 분석 — 참조 저장소 기준",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-09-19T13:57:58+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-16",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 2,
+      "path": "docs/design/02_목표아키텍처.md",
+      "title": "02. 목표 아키텍처 및 통신 정책",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-09",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfNextPopupResponse.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java",
+        "popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/interfaces/examples/WPF-01-popup-types.json"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 3,
+      "path": "docs/design/03_WPF_API_설계.md",
+      "title": "03. WPF API 설계 — 조회 1개 + 결과 1개",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-15T01:10:31+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-09",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "12·18·29~35: 최초 목록/일괄 API 대체",
+      "sources": [
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfNextPopupResponse.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java",
+        "popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/interfaces/examples/WPF-01-popup-types.json"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 4,
+      "path": "docs/design/04_인증설계.md",
+      "title": "04. 인증 연동 설계 — WPF 헤더 전송 형태만 준비",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-09-21T20:00:21+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-15",
+      "related": [
+        "POL-09"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Popup.csproj",
+        "scripts/build-wpf-offline.ps1",
+        "scripts/export-offline-package.ps1"
+      ],
+      "contracts": [
+        "OFFLINE_WPF_BUILD.md",
+        "popup-frameWork/README.md",
+        "AGENTS.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 5,
+      "path": "docs/design/05_Oracle_DB_설계.md",
+      "title": "05. Oracle DB 설계 — PostgreSQL popup 스키마 변환",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-13T21:22:40+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-13",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/sample/PopupContentRow.java"
+      ],
+      "contracts": [
+        "db/oracle/README.md",
+        "db/oracle/01_popup_schema_oracle.sql",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 6,
+      "path": "docs/design/06_서버_변경설계.md",
+      "title": "06. 서버(zeroserver) 변경 설계 — 구현 반영 (2026-09-19 단계 3~5 완료, 2026-09-20 업스트림 Oracle 서버 위로 재적용)",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-13",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/sample/PopupContentRow.java"
+      ],
+      "contracts": [
+        "db/oracle/README.md",
+        "db/oracle/01_popup_schema_oracle.sql",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 7,
+      "path": "docs/design/07_WPF_변경설계.md",
+      "title": "07. WPF 클라이언트 변경 설계 — 구현 반영",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 8,
+      "path": "docs/design/08_관리자웹_변경설계.md",
+      "title": "08_관리자웹_변경설계",
+      "present": false,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "문서 통합",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-07",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "e65f88c: 설계09 단계7 흡수; 관리자 기능 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts",
+        "zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupContentAssembler.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java"
+      ],
+      "contracts": [
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md",
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 9,
+      "path": "docs/design/09_전환계획_및_미결사항.md",
+      "title": "09. 전환 계획 및 미결 사항",
+      "present": true,
+      "first_git_change": "2026-09-19T13:57:58+09:00",
+      "last_git_change": "2026-10-21T23:17:55+09:00",
+      "status": "**진행 상태 (2026-09-19)**: 단계 1(Oracle 21c XE `XEPDB1`에 `db/oracle/00~03` 적용)·2·3·4·5·6 완료, 단계 7은 베이스라인에서 이미 충족. 서버 매퍼와 신규 WPF API는 **실DB 롤백 테스트로 검증**(`PopupQuestionDatabaseTest`, `WpfPopupDatabaseTest`). **WPF↔서버 HTTP 실연동 완료**(팝업 슬라이스 개발 서버 `:app:wpfDevServer` + Oracle: 목록 조회 → 팝업 표시 → 닫기 → 결과 API → USER_POPUP_STATUS/영수증/로그 기록 확인, `WpfApiOracleHttpTest` 4건). 미수행: 단계 0의 SSO/통합 토큰 확정, **전체 zeroserver 기동**(공통 프레임워크 clover-* POSTGRE 빌드·공통 매퍼 13개가 PostgreSQL 전용 — 미결 15), 단계 8.",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-16",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 10,
+      "path": "docs/design/10_WPF_SSO_토큰_프로토타입_계획.md",
+      "title": "10. WPF SSO·토큰 프로토타입 구현 계획",
+      "present": true,
+      "first_git_change": "2026-09-21T19:37:47+09:00",
+      "last_git_change": "2026-09-22T19:27:47+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-15",
+      "related": [
+        "POL-09"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Popup.csproj",
+        "scripts/build-wpf-offline.ps1",
+        "scripts/export-offline-package.ps1"
+      ],
+      "contracts": [
+        "OFFLINE_WPF_BUILD.md",
+        "popup-frameWork/README.md",
+        "AGENTS.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 11,
+      "path": "docs/design/11_WPF_FIXED_화면초과_방어_수정계획.md",
+      "title": "11. WPF FIXED 크기 화면 초과 방어 수정 계획",
+      "present": true,
+      "first_git_change": "2026-09-22T11:22:12+09:00",
+      "last_git_change": "2026-09-22T19:27:47+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 12,
+      "path": "docs/design/12_WPF_결과제출_UX_및_로컬판정_수정계획.md",
+      "title": "12. WPF 결과 제출 UX 및 로컬 판정 구조 변경 계획",
+      "present": true,
+      "first_git_change": "2026-09-22T13:47:41+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-10",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupResultBuilder.cs",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/15_wpf_popup_delivery_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 13,
+      "path": "docs/design/13_WPF_클라이언트_버전_서버검증_계획.md",
+      "title": "13. WPF 클라이언트 버전 서버 검증 계획",
+      "present": true,
+      "first_git_change": "2026-09-22T14:33:18+09:00",
+      "last_git_change": "2026-09-22T19:27:47+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-15",
+      "related": [
+        "POL-09",
+        "POL-12"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Popup.csproj",
+        "scripts/build-wpf-offline.ps1",
+        "scripts/export-offline-package.ps1"
+      ],
+      "contracts": [
+        "OFFLINE_WPF_BUILD.md",
+        "popup-frameWork/README.md",
+        "AGENTS.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 14,
+      "path": "docs/design/14_폐쇄망_반입_및_UI_보완_TODO.md",
+      "title": "14. 폐쇄망 반입 준비 및 WPF UI 보완 TODO",
+      "present": true,
+      "first_git_change": "2026-09-22T16:40:16+09:00",
+      "last_git_change": "2026-10-17T16:09:01+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 29,
+      "unchecked": 34,
+      "primary": "POL-15",
+      "related": [
+        "POL-01",
+        "POL-14"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Popup.csproj",
+        "scripts/build-wpf-offline.ps1",
+        "scripts/export-offline-package.ps1"
+      ],
+      "contracts": [
+        "OFFLINE_WPF_BUILD.md",
+        "popup-frameWork/README.md",
+        "AGENTS.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 15,
+      "path": "docs/design/15_IMAGE_팝업_크기모드_정리.md",
+      "title": "설계 15 — 기존 IMAGE 크기 계약 (설계 23으로 대체)",
+      "present": true,
+      "first_git_change": "2026-09-23T22:18:35+09:00",
+      "last_git_change": "2026-10-06T00:38:33+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 0,
+      "primary": "POL-04",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "23→58: IMAGE 크기 계약 대체",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/ImagePopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/ImageFillPopupView.xaml.cs",
+        "popup-frameWork/Popup/Factories/PopupFactory.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 16,
+      "path": "docs/design/16_popup_position.md",
+      "title": "16_popup_position",
+      "present": false,
+      "first_git_change": "2026-09-23T22:56:48+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "문서 삭제·기능 유지",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "e65f88c: popupPosition 공통 옵션으로 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 17,
+      "path": "docs/design/17_WPF_단일_EXE_자동업데이트_TODO.md",
+      "title": "17. WPF 단일 EXE 자동 업데이트 TODO",
+      "present": true,
+      "first_git_change": "2026-09-23T22:56:48+09:00",
+      "last_git_change": "2026-10-12T23:59:57+09:00",
+      "status": "- 상태: **폐기 (2026-10-12)**. 자동 업데이트 과제는 진행하지 않기로 확정했다. 코드·스크립트·API·DB 구현은 없으며, 아래 내용은 설계 초안 기록으로만 남긴다. 배포는 기존 수동 EXE 교체 방식을 유지한다.",
+      "checked": 0,
+      "unchecked": 15,
+      "primary": "POL-15",
+      "related": [],
+      "judgment": "폐기",
+      "successor": "자동 업데이트 폐기; 수동 교체 유지",
+      "sources": [
+        "popup-frameWork/Popup/Popup.csproj",
+        "scripts/build-wpf-offline.ps1",
+        "scripts/export-offline-package.ps1"
+      ],
+      "contracts": [
+        "OFFLINE_WPF_BUILD.md",
+        "popup-frameWork/README.md",
+        "AGENTS.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 18,
+      "path": "docs/design/18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md",
+      "title": "18. 팝업 구버전 분기 및 미사용 소스 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-09-28T21:19:07+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "- 상태: **조사·목록화 완료, L-0(동작 변화 없는 삭제) 코드 반영 완료(2026-09-28), L-1(imageSizeMode FIXED 제거)·L-3(content 중복 키)·L-4(과거 데이터 분기) 코드 반영 완료(2026-09-28), L-2·L-5(W-10 포함) 반영. DB 스크립트 04·05·06·07·08·09는 로컬 XE·원격 개발 DB 모두 적용 완료(2026-09-28). 남은 것은 화면 실행 검증(`--demo`, 서버 기동, 관리자 브라우저)**. L-0 실행 검증(`--demo`, 서버 기동 후 HTTP 확인)은 미실행. 아래 목록은 HEAD `5bfa543` 기준 정적 조사(참조 grep, 호출 경로 추적, CHANGELOG·설계 문서 대조) 결과다. 빌드·실행 검증은 하지 않았다. 줄 번호는 조사 시점 기준이므로 착수 시 다시 확인한다.",
+      "checked": 34,
+      "unchecked": 5,
+      "primary": "POL-16",
+      "related": [
+        "POL-13",
+        "POL-15"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 19,
+      "path": "docs/design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md",
+      "title": "19. WPF 운영 조회 및 VIDEO UI 보완 TODO",
+      "present": true,
+      "first_git_change": "2026-09-30T19:12:50+09:00",
+      "last_git_change": "2026-10-15T01:10:31+09:00",
+      "status": "- 상태: **§1~3 및 §6~7 구현·자동 검증 완료 / §9 Overlay 및 §9.8 시스템 볼륨 구현·자동 검증 완료 / 2026-10-03 WPF 동작 292건·HTML5 89건 통과 / 실제 GUI·장치 교체·원격 DB 검증 대기**",
+      "checked": 80,
+      "unchecked": 12,
+      "primary": "POL-11",
+      "related": [
+        "POL-05"
+      ],
+      "judgment": "부분 유지",
+      "successor": "35: 목록 큐/주기 대체; 영상 UI는 유지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupDisplaySchedule.java",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/18_popup_display_time_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 20,
+      "path": "docs/design/20_SURVEY_QUIZ_UI_개선_TODO.md",
+      "title": "20. SURVEY·QUIZ UI 최종 기준 및 TODO",
+      "present": true,
+      "first_git_change": "2026-10-03T17:21:31+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 43,
+      "unchecked": 3,
+      "primary": "POL-06",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 21,
+      "path": "docs/design/21_DEMO_SURVEY_QUIZ_QA.md",
+      "title": "21_DEMO_SURVEY_QUIZ_QA",
+      "present": false,
+      "first_git_change": "2026-10-03T17:21:31+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "문서 통합",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-06",
+      "related": [
+        "POL-14"
+      ],
+      "judgment": "후속 대체",
+      "successor": "e65f88c: TODO20 §6 통합; DEMO QA 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 22,
+      "path": "docs/design/22_WEB_SURVEY_QUIZ_UI.md",
+      "title": "22. 웹 Survey·Quiz 미리보기 정합성",
+      "present": true,
+      "first_git_change": "2026-10-03T17:21:31+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 17,
+      "unchecked": 1,
+      "primary": "POL-08",
+      "related": [
+        "POL-06"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 23,
+      "path": "docs/design/23_IMAGE_크기모드_단순화_TODO.md",
+      "title": "23. IMAGE 크기 모드·비율 옵션 최종 계약 및 TODO",
+      "present": true,
+      "first_git_change": "2026-10-05T23:18:15+09:00",
+      "last_git_change": "2026-10-19T19:52:21+09:00",
+      "status": "기준일: 2026-10-05 (KST). 상태: 2026-10-06 로컬 구현·자동 검증 완료. 로컬·원격 개발 DB 전환 SQL 실행 완료(IMAGE 대상 0행). 물리 다중 모니터 확인은 미실행.",
+      "checked": 26,
+      "unchecked": 1,
+      "primary": "POL-04",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "58: 최상위 크기·FIT_TO_IMAGE 영역 기준 대체",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/ImagePopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/ImageFillPopupView.xaml.cs",
+        "popup-frameWork/Popup/Factories/PopupFactory.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 24,
+      "path": "docs/design/24_VIDEO_저사양_PC_CPU_개선_TODO.md",
+      "title": "24. VIDEO 저사양 PC CPU 개선 TODO",
+      "present": true,
+      "first_git_change": "2026-10-06T20:26:54+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "기준일: 2026-10-06 (KST). 상태: §2~§5 코드 반영·로컬 자동 검증 완료(변경 이력 2026-10-06-06), 저사양 PC 실측(§6)·외형 확인 미실행.",
+      "checked": 19,
+      "unchecked": 14,
+      "primary": "POL-05",
+      "related": [
+        "POL-15"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs",
+        "popup-frameWork/Popup/Services/VideoCompletion.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/reviews/20261007_저사양_PC_VIDEO_측정_가이드.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 25,
+      "path": "docs/design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md",
+      "title": "WPF 팝업 Header / 외곽 UI 개선 TODO",
+      "present": true,
+      "first_git_change": "2026-10-07T15:12:19+09:00",
+      "last_git_change": "2026-10-13T17:14:35+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 30,
+      "unchecked": 11,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 26,
+      "path": "docs/design/26_VIDEO_팝업_HWND_구조_개선_TODO.md",
+      "title": "26. VIDEO 팝업 HWND 구조 개선 TODO",
+      "present": true,
+      "first_git_change": "2026-10-07T21:24:50+09:00",
+      "last_git_change": "2026-10-13T17:14:37+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 0,
+      "unchecked": 56,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "폐기",
+      "successor": "Header/Footer 분리안 폐기; 기존 DPI·드래그 보완 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 27,
+      "path": "docs/design/27_VIDEO_SEEK_ON_OFF_TODO.md",
+      "title": "27. VIDEO 진행바 SEEK ON/OFF TODO",
+      "present": true,
+      "first_git_change": "2026-10-09T09:36:22+09:00",
+      "last_git_change": "2026-10-09T10:10:25+09:00",
+      "status": "기준일: 2026-10-08 (KST). 소스 확인: main 4a90327. 상태: 2026-10-09 구현·자동 검증·실제 Windows 화면 검증 완료.",
+      "checked": 20,
+      "unchecked": 0,
+      "primary": "POL-05",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs",
+        "popup-frameWork/Popup/Services/VideoCompletion.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/reviews/20261007_저사양_PC_VIDEO_측정_가이드.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 28,
+      "path": "docs/design/28_TEXT_FONT_EDITING_TODO.md",
+      "title": "28. TEXT 본문 서식 편집 TODO",
+      "present": true,
+      "first_git_change": "2026-10-09T09:36:33+09:00",
+      "last_git_change": "2026-10-15T01:10:31+09:00",
+      "status": "상태: **1차(TEXT 본문) 구현 — 서버·관리자 웹·WPF·Demo 반영, 자동 검증 완료 · 우클릭 메뉴(§11) 구현 완료(설계 49에서 펼침 패널로 개편) · 관리자 화면 수동 확인 미완료**. WPF 표시 규칙은 설계 48(서버 정책 검증·WPF 표시 방어 분리)이 대체한다.",
+      "checked": 39,
+      "unchecked": 16,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "부분 유지",
+      "successor": "37 본문 통합·48 표시 방어·49/62/63/66 편집 확장",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 29,
+      "path": "docs/design/29_WPF_목록_API_응답_계약_정리_TODO.md",
+      "title": "29. WPF 목록 API 응답 계약 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T15:15:09+09:00",
+      "last_git_change": "2026-10-15T01:10:31+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 17,
+      "unchecked": 1,
+      "primary": "POL-09",
+      "related": [
+        "POL-11"
+      ],
+      "judgment": "부분 유지",
+      "successor": "35: ROOT userId/serverTime/popups[] 제거; 노출 판단 서버 소유 유지",
+      "sources": [
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfNextPopupResponse.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java",
+        "popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/interfaces/examples/WPF-01-popup-types.json"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 30,
+      "path": "docs/design/30_Footer_Action_최상위_계약_TODO.md",
+      "title": "30. Footer Action 최상위 계약 및 3모드 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T15:15:12+09:00",
+      "last_git_change": "2026-10-12T23:12:54+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 25,
+      "unchecked": 1,
+      "primary": "POL-01",
+      "related": [
+        "POL-02",
+        "POL-09"
+      ],
+      "judgment": "부분 유지",
+      "successor": "35: popups[]→popup; 푸터 역할 유지",
+      "sources": [
+        "popup-frameWork/Popup/Dtos/PopupResponseDto.cs",
+        "popup-frameWork/Popup/Models/PopupOptions.cs",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupWindowOptions.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 31,
+      "path": "docs/design/31_PopupWindow_공통_UI_옵션_최상위_계약_TODO.md",
+      "title": "31. PopupWindow 공통 UI 옵션 최상위 계약 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T15:17:16+09:00",
+      "last_git_change": "2026-10-12T22:36:51+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 21,
+      "unchecked": 2,
+      "primary": "POL-01",
+      "related": [
+        "POL-09"
+      ],
+      "judgment": "부분 유지",
+      "successor": "35 단건화·57 폐기 옵션·68 최소 크기 후속 반영",
+      "sources": [
+        "popup-frameWork/Popup/Dtos/PopupResponseDto.cs",
+        "popup-frameWork/Popup/Models/PopupOptions.cs",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupWindowOptions.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 32,
+      "path": "docs/design/32_RESULT_responseStartedAt_제거_TODO.md",
+      "title": "32. RESULT responseStartedAt 제거 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T17:12:37+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **구현·DB 적용 완료(2026-10-12) · 실제 서버 HTTP 결과 전송 확인 대기**. 체크 항목은 모두 완료이나 32-09의 실제 서버 HTTP 왕복은 미실행이며 [TODO53](53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) 53-8·53-9에서 확인한다.",
+      "checked": 9,
+      "unchecked": 0,
+      "primary": "POL-09",
+      "related": [
+        "POL-13"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfNextPopupResponse.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java",
+        "popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/interfaces/examples/WPF-01-popup-types.json"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 33,
+      "path": "docs/design/33_RESULT_응답_score판정값_제거_TODO.md",
+      "title": "33. RESULT 응답 totalScore / passed 제거 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T17:12:41+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **구현 완료(2026-10-12) · 실제 Windows 화면 확인 대기**. 체크 항목은 모두 완료이나 33-10의 QUIZ 로컬 판정 후 UX 유지는 로컬 행동 검증 기준이며 실제 화면 확인은 [TODO53](53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) 53-12에서 수행한다.",
+      "checked": 11,
+      "unchecked": 0,
+      "primary": "POL-10",
+      "related": [
+        "POL-09"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupResultBuilder.cs",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/15_wpf_popup_delivery_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 34,
+      "path": "docs/design/34_RESULT_계약_및_공통옵션_정합성_보완_TODO.md",
+      "title": "34. RESULT 계약 및 공통 옵션 정합성 보완 TODO",
+      "present": true,
+      "first_git_change": "2026-10-12T20:14:41+09:00",
+      "last_git_change": "2026-10-13T22:59:25+09:00",
+      "status": "상태 선언 없음 — 본문·이력 참조",
+      "checked": 45,
+      "unchecked": 2,
+      "primary": "POL-09",
+      "related": [
+        "POL-01",
+        "POL-12"
+      ],
+      "judgment": "부분 유지",
+      "successor": "35 단건 결과; 복구 최종값은45 보류",
+      "sources": [
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfNextPopupResponse.java",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java",
+        "popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/interfaces/examples/WPF-01-popup-types.json"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 35,
+      "path": "docs/design/35_WPF_단건_팝업_조회_결과_API_흐름_TODO.md",
+      "title": "35. 단건 팝업 조회·결과 수신 API 흐름 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T16:41:07+09:00",
+      "last_git_change": "2026-10-13T22:04:55+09:00",
+      "status": "상태: **진행중 · 정상 흐름 구현 완료(2026-10-13), 장애 복구 정책 결정 대기 · 원격 개발 DB DDL 적용 완료**.",
+      "checked": 20,
+      "unchecked": 6,
+      "primary": "POL-10",
+      "related": [
+        "POL-09",
+        "POL-11",
+        "POL-12",
+        "POL-13"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupResultBuilder.cs",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/15_wpf_popup_delivery_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 36,
+      "path": "docs/design/36_TEXT_서식변환_타입검사_중복검토_TODO.md",
+      "title": "36. TEXT 서식 변환·C# 화이트리스트 중복 검토 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T16:41:22+09:00",
+      "last_git_change": "2026-10-14T21:22:57+09:00",
+      "status": "상태: **당시 검토·구현 완료 · 유지 결정은 TODO48에서 변경**(2026-10-14).",
+      "checked": 8,
+      "unchecked": 0,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "후속 대체",
+      "successor": "48: 중복 정책 검사 유지 결론 대체",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 37,
+      "path": "docs/design/37_TEXT_EDITOR_BODY_통합검토_TODO.md",
+      "title": "37. TEXT EDITOR BODY 통합 검토 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T16:53:54+09:00",
+      "last_git_change": "2026-10-13T22:04:55+09:00",
+      "status": "상태: **구현 완료 · 제목·설명을 textBlocks로 통합(2026-10-13), 브라우저·원격 DB 확인 남음**.",
+      "checked": 8,
+      "unchecked": 0,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 38,
+      "path": "docs/design/38_WPF_TEXT_기울임_우측잘림_TODO.md",
+      "title": "38. WPF TEXT 기울임 글자 우측 잘림 수정 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T17:07:12+09:00",
+      "last_git_change": "2026-10-13T20:05:01+09:00",
+      "status": "상태: 진행중 · 코드 수정·자동 측정 검증 완료, 실제 화면 확인 대기",
+      "checked": 4,
+      "unchecked": 1,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 39,
+      "path": "docs/design/39_단건_API_복구_동시성_TEXT_정합성_보완_TODO.md",
+      "title": "39. 단건 API 복구·동시성·TEXT 정합성 보완 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T21:40:45+09:00",
+      "last_git_change": "2026-10-13T22:16:45+09:00",
+      "status": "상태: **구현·자동 검증 완료(2026-10-13) · 실제 서버+WPF 화면 확인 대기**. 우선순위: P2 후속 보완.",
+      "checked": 21,
+      "unchecked": 1,
+      "primary": "POL-12",
+      "related": [
+        "POL-10",
+        "POL-16"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Services/PopupResultQueue.cs",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 40,
+      "path": "docs/design/40_나중에보기_1시간_연기_TODO.md",
+      "title": "40_나중에보기_1시간_연기_TODO",
+      "present": false,
+      "first_git_change": "2026-10-13T22:26:26+09:00",
+      "last_git_change": "2026-10-13T22:28:22+09:00",
+      "status": "Git 계획 삭제·보류",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-11",
+      "related": [],
+      "judgment": "판정 보류",
+      "successor": "b2626d7: 고정 1시간안; 확정 LATER는 TODO52-2",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupDisplaySchedule.java",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/18_popup_display_time_oracle.sql"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 41,
+      "path": "docs/design/41_나중에보기_횟수제한_안내_TODO.md",
+      "title": "41_나중에보기_횟수제한_안내_TODO",
+      "present": false,
+      "first_git_change": "2026-10-13T22:26:29+09:00",
+      "last_git_change": "2026-10-13T22:28:22+09:00",
+      "status": "Git 계획 삭제·보류",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-11",
+      "related": [],
+      "judgment": "판정 보류",
+      "successor": "b2626d7: 횟수 제한 미확정; LATER에 자동 적용 금지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupDisplaySchedule.java",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/18_popup_display_time_oracle.sql"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 42,
+      "path": "docs/design/42_상시팝업_응답률대상로그_분리검토_TODO.md",
+      "title": "42_상시팝업_응답률대상로그_분리검토_TODO",
+      "present": false,
+      "first_git_change": "2026-10-13T22:26:33+09:00",
+      "last_git_change": "2026-10-13T22:28:22+09:00",
+      "status": "Git 계획 삭제·보류",
+      "checked": null,
+      "unchecked": null,
+      "primary": "POL-11",
+      "related": [],
+      "judgment": "판정 보류",
+      "successor": "b2626d7: 상시 재노출안; 게시 반복 일정과 별개",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupDisplaySchedule.java",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/18_popup_display_time_oracle.sql"
+      ],
+      "validation": "Git 삭제 내역·20261013 대조/CHANGELOG 근거; 기능 삭제 추론 안 함",
+      "handling": "Git 이력 보존; 현행 정책 또는 보류 목록 연결"
+    },
+    {
+      "number": 43,
+      "path": "docs/design/43_완료조건_버튼활성화_UX_TODO.md",
+      "title": "43. passingScore와 completionRatio 버튼 활성화 UX TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T22:26:36+09:00",
+      "last_git_change": "2026-10-15T02:04:59+09:00",
+      "status": "상태: **코드 구현 완료 · 실화면 확인 대기**.",
+      "checked": 6,
+      "unchecked": 0,
+      "primary": "POL-06",
+      "related": [
+        "POL-05"
+      ],
+      "judgment": "부분 유지",
+      "successor": "57: allowCloseBeforeComplete 폐기; 완료 조건 UX 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 44,
+      "path": "docs/design/44_BackgroundOverlay_키보드종료_동작검토_TODO.md",
+      "title": "44. Background Overlay 키보드와 종료 동작 검토 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T22:26:38+09:00",
+      "last_git_change": "2026-10-15T02:04:59+09:00",
+      "status": "상태: **코드 구현 완료 · 실화면 확인 대기**.",
+      "checked": 4,
+      "unchecked": 2,
+      "primary": "POL-02",
+      "related": [],
+      "judgment": "부분 유지",
+      "successor": "57: 외부 닫기 Overlay 책임 확정",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 45,
+      "path": "docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md",
+      "title": "45. 단건 RESULT 재전송과 오류 분류 후속 정책 검증 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T22:26:40+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **진행중 · 실환경 검증 수행, 최종 장애 정책은 주간회의까지 명시적 보류**(2026-10-13).",
+      "checked": 3,
+      "unchecked": 4,
+      "primary": "POL-12",
+      "related": [
+        "POL-10"
+      ],
+      "judgment": "부분 유지 / 판정 보류",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Services/PopupResultQueue.cs",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 46,
+      "path": "docs/design/46_API_WPF_관리자웹_계약통합검증_TODO.md",
+      "title": "46. API WPF 관리자웹 계약 통합 검증 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T22:26:43+09:00",
+      "last_git_change": "2026-10-13T22:59:25+09:00",
+      "status": "상태: **진행중 · 계약 대조·불일치 수정 완료(2026-10-13), 관리자 웹 화면 왕복 확인 남음**.",
+      "checked": 7,
+      "unchecked": 1,
+      "primary": "POL-16",
+      "related": [
+        "POL-09"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 47,
+      "path": "docs/design/47_팝업유효성_게시중단_전달상태_정책검증_TODO.md",
+      "title": "47. 팝업 유효성 게시중단과 전달 상태 후속 검증 TODO",
+      "present": true,
+      "first_git_change": "2026-10-13T22:26:45+09:00",
+      "last_git_change": "2026-10-15T00:51:41+09:00",
+      "status": "상태: **진행중 · 실환경 검증 수행, 다중 PC 일부·전달 건 보존 정책은 명시적 보류**(2026-10-13).",
+      "checked": 5,
+      "unchecked": 3,
+      "primary": "POL-10",
+      "related": [
+        "POL-11",
+        "POL-12",
+        "POL-13"
+      ],
+      "judgment": "부분 유지 / 판정 보류",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupResultBuilder.cs",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/15_wpf_popup_delivery_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 48,
+      "path": "docs/design/48_TEXT_서버정책_CSharp_표시방어_분리_TODO.md",
+      "title": "48. TEXT 서버 정책과 C# 표시 방어 분리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-14T06:53:20+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **코드 구현 완료 · 통합 검증 대기**(2026-10-15 정정). 로컬 자동 검증 기준이며 원격 개발 DB 데이터·Windows 화면 육안 확인은 아래 남은 항목 참고.",
+      "checked": 7,
+      "unchecked": 0,
+      "primary": "POL-03",
+      "related": [
+        "POL-16"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 49,
+      "path": "docs/design/49_TEXT_들여쓰기_우클릭팔레트_TODO.md",
+      "title": "49. TEXT 문단 들여쓰기와 우클릭 펼침 팔레트 TODO",
+      "present": true,
+      "first_git_change": "2026-10-14T18:05:55+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **코드 구현 완료 · 통합 검증 대기**(2026-10-15 정정). 단위 검증과 독립 편집기 하네스 기준으로 구현을 확인했다. 실제 관리자 화면(편집 Dialog 안)의 조작 확인과 서버 저장 → 재조회 → WPF 왕복 확인은 아직 하지 않았다(아래 완료 기준·남은 항목).",
+      "checked": 19,
+      "unchecked": 2,
+      "primary": "POL-03",
+      "related": [
+        "POL-16"
+      ],
+      "judgment": "부분 유지",
+      "successor": "62 서식 확장·63 5단계 해제·66 초기화 삭제",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 50,
+      "path": "docs/design/50_구조정합성_전수점검_정리_TODO.md",
+      "title": "50. 구조 정합성 전수 점검과 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-15T00:11:29+09:00",
+      "last_git_change": "2026-10-17T17:18:33+09:00",
+      "status": "상태: **정리 구현 완료 · 실화면 확인 대기**(2026-10-15). 50-A·50-B·50-C와 회귀 검증 저장소 추적화를 반영했다(아래 진행 기록). 50-D(재현 후 판단)와 실제 관리자 화면·WPF 화면 확인, 원격 개발 DB 왕복은 남은 항목이다.",
+      "checked": 17,
+      "unchecked": 0,
+      "primary": "POL-16",
+      "related": [],
+      "judgment": "부분 유지",
+      "successor": "53-16에서 D3/D4 수정; D5는 미결",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 51,
+      "path": "docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md",
+      "title": "51. API 호출형 Demo와 수동 요청·응답 팝업 검증 TODO",
+      "present": true,
+      "first_git_change": "2026-10-16T10:05:12+09:00",
+      "last_git_change": "2026-10-17T16:18:46+09:00",
+      "status": "상태: **WPF 구현 완료 · 개발계/검증계 실제 확인 대기** (2026-10-17). 로컬 모의 HTTP 서버 검증까지 완료, 실제 서버 확인(51-9)은 미실행.",
+      "checked": 9,
+      "unchecked": 1,
+      "primary": "POL-14",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx",
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md",
+        "docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 52,
+      "path": "docs/design/52_회의확정요건_게시반복_나중에보기_공통동작_TODO.md",
+      "title": "52. 2026-10-16 회의 확정 요건 반영 TODO",
+      "present": true,
+      "first_git_change": "2026-10-16T16:44:01+09:00",
+      "last_git_change": "2026-10-21T23:17:55+09:00",
+      "status": "상태: **진행 확정 · 52-4 반영(2026-10-17, `5242f7d`) · 52-2 반영(2026-10-18) · 52-5 반영(2026-10-21) · 52-1·52-3·52-6~8 상세 계약 대기**. 후속 실행 관리는 [TODO53](53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) 53-4~7.",
+      "checked": 4,
+      "unchecked": 4,
+      "primary": "POL-11",
+      "related": [
+        "POL-02",
+        "POL-06",
+        "POL-07",
+        "POL-10",
+        "POL-13"
+      ],
+      "judgment": "부분 유지 / 미구현·계약 대기 혼재",
+      "successor": "52-1·2·4·5 구현; 3·6~8 상세 계약·통합 확인 대기",
+      "sources": [
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupDisplaySchedule.java",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java",
+        "popup-frameWork/Popup/Services/PopupPollingRecovery.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "db/oracle/18_popup_display_time_oracle.sql"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 53,
+      "path": "docs/design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md",
+      "title": "53. 프로젝트 검증 후속 구현·문서 정합·통합 검증 TODO",
+      "present": true,
+      "first_git_change": "2026-10-17T16:09:01+09:00",
+      "last_git_change": "2026-10-21T23:17:55+09:00",
+      "status": "상태: **53-1~3·53-10·53-16 완료(2026-10-17, 로컬) · 나머지 실행 대기**. 기존 과제의 명시적 보류는 유지한다.",
+      "checked": 7,
+      "unchecked": 11,
+      "primary": "POL-16",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "scripts/RichTextTests/Program.cs",
+        "scripts/PopupWindowTests/Program.cs",
+        "scripts/verify-rich-text-49.cjs",
+        "scripts/verify-popup-common-sample-69.cjs"
+      ],
+      "contracts": [
+        "AGENTS.md",
+        "docs/reviews/20261013_TRELLO_완료이력_현행구조_대조.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 54,
+      "path": "docs/design/54_Demo_UI_UX_상세옵션_정리_TODO.md",
+      "title": "54. Demo 전체 UI 및 상세옵션 UX 정리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-18T15:07:36+09:00",
+      "last_git_change": "2026-10-18T16:54:13+09:00",
+      "status": "상태: **진행 중 · 54-1~54-9·54-11 반영(2026-10-18) · 54-10 실화면 점검 일부 남음(DPI·Tab 순서·키보드)**.",
+      "checked": 10,
+      "unchecked": 1,
+      "primary": "POL-14",
+      "related": [],
+      "judgment": "유지 / 문서 상태 충돌",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx",
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md",
+        "docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 55,
+      "path": "docs/design/55_SURVEY_QUIZ_FONT_EDIT_확장_TODO.md",
+      "title": "55. SURVEY·QUIZ FONT EDIT 확장 TODO",
+      "present": true,
+      "first_git_change": "2026-10-18T15:29:30+09:00",
+      "last_git_change": "2026-10-19T22:52:42+09:00",
+      "status": "상태: **개발 완료 · 55-1~55-9 반영(WPF 2026-10-18, 서버·관리자 웹 2026-10-19) · 55-10 일부(실화면·인터페이스 산출물·원격 개발 DB 미실행)**.",
+      "checked": 9,
+      "unchecked": 1,
+      "primary": "POL-06",
+      "related": [
+        "POL-13"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 56,
+      "path": "docs/design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md",
+      "title": "56. SURVEY·QUIZ 선택 상태 및 응답 안내 UX 개선 TODO",
+      "present": true,
+      "first_git_change": "2026-10-18T22:54:15+09:00",
+      "last_git_change": "2026-10-18T23:41:54+09:00",
+      "status": "상태: **WPF·관리자 웹 미리보기 구현(디자인 V2에 반영) · 56-10~14 후속 반영 · 실화면 일부 확인**",
+      "checked": 0,
+      "unchecked": 60,
+      "primary": "POL-06",
+      "related": [],
+      "judgment": "유지 / 문서 상태 충돌",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 57,
+      "path": "docs/design/57_완료전닫기옵션_폐기_역할분리_TODO.md",
+      "title": "57. 완료 전 닫기 옵션 폐기 및 Overlay·완료·나중에 보기 역할 분리 TODO",
+      "present": true,
+      "first_git_change": "2026-10-19T13:34:12+09:00",
+      "last_git_change": "2026-10-19T19:27:19+09:00",
+      "status": "상태: **구현 완료(WPF·서버·관리자 웹·문서, 자동 검증) · 실화면·원격 개발 환경 확인 대기**",
+      "checked": 32,
+      "unchecked": 4,
+      "primary": "POL-02",
+      "related": [
+        "POL-01",
+        "POL-05"
+      ],
+      "judgment": "부분 유지 / 문서 상태 충돌",
+      "successor": "기존 옵션 폐기 구현; 완료/Overlay/LATER 분리",
+      "sources": [
+        "popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs",
+        "popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs",
+        "popup-frameWork/Popup/Managers/PopupManager.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 58,
+      "path": "docs/design/58_IMAGE_공통크기필드_모드별기준_TODO.md",
+      "title": "58. IMAGE 공통 크기 필드 통합 및 모드별 크기 기준 TODO",
+      "present": true,
+      "first_git_change": "2026-10-19T13:57:05+09:00",
+      "last_git_change": "2026-10-19T23:23:31+09:00",
+      "status": "상태: **구현 완료(WPF·서버·관리자 웹·Demo·문서, 자동 검증) · 실화면 DPI·다중 모니터·원격 개발 환경 확인 대기**",
+      "checked": 30,
+      "unchecked": 6,
+      "primary": "POL-04",
+      "related": [],
+      "judgment": "부분 유지 / 문서 상태 충돌",
+      "successor": "68: 최소 300 추가; 모드별 크기 의미 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/ImagePopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/ImageFillPopupView.xaml.cs",
+        "popup-frameWork/Popup/Factories/PopupFactory.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 59,
+      "path": "docs/design/59_VIDEO_QUIZ_중간안내제거_TODO.md",
+      "title": "59. VIDEO+QUIZ 중간 notice 제거 TODO",
+      "present": true,
+      "first_git_change": "2026-10-19T16:00:37+09:00",
+      "last_git_change": "2026-10-19T19:15:36+09:00",
+      "status": "상태: **구현 완료(코드·자동 검증) · 실화면 확인 대기**",
+      "checked": 6,
+      "unchecked": 1,
+      "primary": "POL-05",
+      "related": [],
+      "judgment": "유지 / 문서 상태 충돌",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs",
+        "popup-frameWork/Popup/Services/VideoCompletion.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/reviews/20261007_저사양_PC_VIDEO_측정_가이드.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 60,
+      "path": "docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md",
+      "title": "60. 관리자 미리보기·WPF VIDEO+QUIZ 원본 비율 기반 영상 영역 할당 TODO",
+      "present": true,
+      "first_git_change": "2026-10-19T16:38:06+09:00",
+      "last_git_change": "2026-10-19T22:27:57+09:00",
+      "status": "상태: **구현 완료(WPF·관리자 웹 미리보기, 자동 검증·Demo 캡처) · HTTP(WebView2) 실영상·실제 관리자 화면 확인 대기**",
+      "checked": 10,
+      "unchecked": 2,
+      "primary": "POL-05",
+      "related": [
+        "POL-08"
+      ],
+      "judgment": "유지 / 문서 상태 충돌",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs",
+        "popup-frameWork/Popup/Views/Contents/VideoQuizPopupView.cs",
+        "popup-frameWork/Popup/Services/VideoCompletion.cs",
+        "zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/reviews/20261007_저사양_PC_VIDEO_측정_가이드.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 61,
+      "path": "docs/design/61_관리자_미리보기_컴포넌트화_TODO.md",
+      "title": "61. 관리자 등록 화면 인라인·모달 미리보기 컴포넌트화 TODO",
+      "present": true,
+      "first_git_change": "2026-10-20T18:39:56+09:00",
+      "last_git_change": "2026-10-20T19:17:41+09:00",
+      "status": "상태: **구현 완료(61-1~61-11) · 실제 관리자 웹 로그인 화면 회귀 미실행**",
+      "checked": 11,
+      "unchecked": 0,
+      "primary": "POL-08",
+      "related": [
+        "POL-14"
+      ],
+      "judgment": "부분 유지",
+      "successor": "69: 공통 폴더 이동; 두 미리보기 API 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 62,
+      "path": "docs/design/62_취소선_문단서식_편집메뉴_TODO.md",
+      "title": "62. 취소선과 문단 서식 편집 메뉴 TODO",
+      "present": true,
+      "first_git_change": "2026-10-21T13:43:36+09:00",
+      "last_git_change": "2026-10-21T13:43:36+09:00",
+      "status": "상태: **코드 구현 완료 · Windows 및 통합 검증 대기**.",
+      "checked": 5,
+      "unchecked": 5,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "부분 유지",
+      "successor": "63 횟수 제한 제거·66 초기화 삭제; 서식 기능 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 63,
+      "path": "docs/design/63_문단들여쓰기_5회제한해제_TODO.md",
+      "title": "TODO63 — 문단 들여쓰기 5회 제한 해제",
+      "present": true,
+      "first_git_change": "2026-10-21T19:40:44+09:00",
+      "last_git_change": "2026-10-21T22:37:03+09:00",
+      "status": "- 상태: 구현 완료 / 실제 관리자 저장→재조회→WPF 실화면 왕복 검증 대기",
+      "checked": 12,
+      "unchecked": 1,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "부분 유지",
+      "successor": "66: 초기화 방어 주석/설정은 후속 삭제",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 64,
+      "path": "docs/design/64_팝업데이터변환_함수분리_이식가이드_TODO.md",
+      "title": "TODO64 — 팝업 데이터 변환 함수 분리 및 프론트 이식 가이드",
+      "present": true,
+      "first_git_change": "2026-10-21T20:59:41+09:00",
+      "last_git_change": "2026-10-21T22:10:20+09:00",
+      "status": "- 상태: 구현 완료 / 실제 관리자 화면 저장 왕복·다른 화면 실제 이식 검증 대기",
+      "checked": 13,
+      "unchecked": 0,
+      "primary": "POL-07",
+      "related": [
+        "POL-14"
+      ],
+      "judgment": "부분 유지",
+      "successor": "69: 공통 폴더 이동; 변환 역할 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts",
+        "zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupContentAssembler.java",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java"
+      ],
+      "contracts": [
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md",
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 65,
+      "path": "docs/design/65_단건조회_공통매핑_CLOB파싱_샘플API_TODO.md",
+      "title": "TODO65 — 실테이블 연계 단건 조회 샘플 API",
+      "present": true,
+      "first_git_change": "2026-10-22T09:01:45+09:00",
+      "last_git_change": "2026-10-22T19:47:38+09:00",
+      "status": "- 상태: 서버 모듈 편입 샘플 구현 완료 / 실제 DTIY3111 SQL 실행·확정 코드표 대조·전체 서버 enabled 기동 확인 대기",
+      "checked": 13,
+      "unchecked": 1,
+      "primary": "POL-13",
+      "related": [
+        "POL-14"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml",
+        "zero-rule-server/repo/core/src/main/resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/sample/PopupContentRow.java"
+      ],
+      "contracts": [
+        "db/oracle/README.md",
+        "db/oracle/01_popup_schema_oracle.sql",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 66,
+      "path": "docs/design/66_서식초기화_버튼삭제_TODO.md",
+      "title": "TODO66 — 공용 RichText 서식 초기화 버튼 삭제",
+      "present": true,
+      "first_git_change": "2026-10-22T10:08:54+09:00",
+      "last_git_change": "2026-10-22T19:06:26+09:00",
+      "status": "- 상태: 구현 완료 / 실제 관리자 화면·폐쇄망 확인 대기",
+      "checked": 10,
+      "unchecked": 0,
+      "primary": "POL-03",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupRichTextFormat.ts",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx",
+        "zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java",
+        "popup-frameWork/Popup/Views/Contents/PopupRichText.cs"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 67,
+      "path": "docs/design/67_MUIdeprecated속성_미리보기호환검증_TODO.md",
+      "title": "TODO67 — MUI deprecated 속성 및 미리보기 호환 검증",
+      "present": true,
+      "first_git_change": "2026-10-22T14:34:13+09:00",
+      "last_git_change": "2026-10-22T19:24:05+09:00",
+      "status": "- 상태: 저장소 기준 점검·전환·검증 완료 / 폐쇄망 설치 버전·IDE 안내 해소 확인 대기",
+      "checked": 13,
+      "unchecked": 1,
+      "primary": "POL-08",
+      "related": [
+        "POL-16"
+      ],
+      "judgment": "부분 유지",
+      "successor": "69: 공통 폴더 이동; slotProps 전환 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/reviews/POPUP_PREVIEW_WPF_PARITY.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 68,
+      "path": "docs/design/68_팝업최소크기_300x300_공통화_TODO.md",
+      "title": "TODO68 — 팝업 최소 크기 300×300 공통화",
+      "present": true,
+      "first_git_change": "2026-10-22T16:34:31+09:00",
+      "last_git_change": "2026-10-22T19:18:29+09:00",
+      "status": "- 상태: 구현 완료 / 실제 Windows DPI·작은 모니터·폐쇄망 실화면 확인 대기",
+      "checked": 8,
+      "unchecked": 3,
+      "primary": "POL-01",
+      "related": [
+        "POL-04",
+        "POL-08"
+      ],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "popup-frameWork/Popup/Dtos/PopupResponseDto.cs",
+        "popup-frameWork/Popup/Models/PopupOptions.cs",
+        "zero-rule-server/domain/src/main/java/server/domain/popup/PopupWindowOptions.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_INTERFACE_SPEC.md",
+        "docs/interfaces/WPF_POPUP_ALL_SPEC.md",
+        "docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 69,
+      "path": "docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md",
+      "title": "TODO69 — PopupcommonComponent 공통화 및 샘플 페이지 2종",
+      "present": true,
+      "first_git_change": "2026-10-22T17:05:22+09:00",
+      "last_git_change": "2026-10-22T20:11:59+09:00",
+      "status": "- 상태: 구현 완료(69-1~69-10) / next build·실제 관리자 화면·폐쇄망 확인 대기",
+      "checked": 16,
+      "unchecked": 1,
+      "primary": "POL-14",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx",
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md",
+        "docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    },
+    {
+      "number": 70,
+      "path": "docs/design/70_DB없는_백엔드통신_Java조회API_TODO.md",
+      "title": "TODO70 — 테이블 없이 백엔드와 통신하는 Java 조회 샘플 API",
+      "present": true,
+      "first_git_change": "2026-10-22T18:53:46+09:00",
+      "last_git_change": "2026-10-22T19:47:48+09:00",
+      "status": "- 상태: 서버 모듈 편입 샘플 구현 완료(mock 검증) / 실제 개발·검증계 백엔드 연계 대기",
+      "checked": 12,
+      "unchecked": 1,
+      "primary": "POL-14",
+      "related": [],
+      "judgment": "유지",
+      "successor": "대체 근거 없음; 원본 유지",
+      "sources": [
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample.tsx",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx",
+        "zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java",
+        "zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx"
+      ],
+      "contracts": [
+        "docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md",
+        "docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md",
+        "docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md",
+        "docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md"
+      ],
+      "validation": "이번 정적 대조; 과거 실행 건수는 원문 기록(재실행 아님)",
+      "handling": "정책 연결·원본 경로 보존; 잔여 체크는 ACTIVE_TASKS 참조"
+    }
+  ]
+}

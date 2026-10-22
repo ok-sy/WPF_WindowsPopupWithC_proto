@@ -1,5 +1,5 @@
 /*
- * [TODO64] 팝업 등록 화면의 데이터 구성·변환 함수. 화면을 그리지 않으므로 React 컴포넌트가 아니라 일반 함수다.
+ * [POL-07-01·POL-07-02; 근거 TODO64] 팝업 등록 화면의 데이터 구성·변환 함수. 화면을 그리지 않으므로 React 컴포넌트가 아니라 일반 함수다.
  *
  * 객체 구분(모두 JavaScript 객체이며 JSON 문자열 parse/stringify는 API 클라이언트 경계에서만 한다):
  *  - 조회 응답 래퍼  AdminPopupInfo { popup, targetGroups }  ← api.popupAdmin.info / 템플릿 조회

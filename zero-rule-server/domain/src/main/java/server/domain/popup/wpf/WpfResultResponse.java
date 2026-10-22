@@ -3,7 +3,7 @@ package server.domain.popup.wpf;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * [설계 35] POST /p/api/wpf/popups/results 응답. 결과 1건의 처리 상태와 후속 후보 유무를 돌려준다(팝업 콘텐츠는 없음).
+ * [POL-09-03; 근거 설계 35] POST /p/api/wpf/popups/results 응답. 결과 1건의 처리 상태와 후속 후보 유무를 돌려준다(팝업 콘텐츠는 없음).
  *
  * <ul>
  *   <li>{@code status}: 저장 처리 상태(ACCEPTED·DUPLICATE·REJECTED·RETRYABLE_ERROR·INTERNAL_ERROR, 기존 RESULT 계약).</li>
