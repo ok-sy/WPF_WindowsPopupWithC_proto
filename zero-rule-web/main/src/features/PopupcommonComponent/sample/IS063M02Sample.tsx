@@ -27,8 +27,10 @@ import { createSamplePopups, newSamplePopup } from './popupSampleData';
  *  - 숫자 Select 값(1~7)과 문자열 비교('2') 불일치 → 유형·푸터 Select 모두 계약 문자열 값 사용.
  *  - FormControlLabel 단독 label(boolean) 타입 오류는 문항 편집기 대체로 제거.
  *  - 크기 placeholder '최소 200' → 공통 최소 300(TODO68).
- * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 두고(서버 확정 필요),
- * '퀴즈유형(만점/커트라인/통과·실패)'은 공통 문항 편집기의 통과 점수로 입력한다(유형 → 점수 환산 규칙 미확정).
+ * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 둔다(서버 확정 필요).
+ * [확정 2026-10-22] 퀴즈 점수: 문항은 무조건 1점(총점 = 문항 수). 만점 통과 = 통과 점수 문항 수(10문항 → 10점),
+ * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수는 N이지만, 현재 WPF 계약은 미통과 시 제출하지 않고
+ * 창을 유지해 다시 채점하므로 "실패도 제출" 동작은 미지원(확인 필요)으로 표시한다.
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
  * 저장은 toSaveRequest 결과를 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
  * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
@@ -44,6 +46,35 @@ const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[
   { value: 'SURVEY', label: '설문조사 팝업', title: '설문조사 컨텐츠' },
   { value: 'VIDEO_QUIZ', label: '동영상 + 퀴즈 팝업', title: '동영상 + 퀴즈 컨텐츠' },
 ];
+
+/* [옵션] 퀴즈 통과 유형. 원본 퍼블리싱의 '퀴즈유형' 선택지와 같다. */
+type QuizRule = '' | 'FULL' | 'CUTOFF' | 'PASS_FAIL';
+const QUIZ_RULES: { value: Exclude<QuizRule, ''>; label: string }[] = [
+  { value: 'FULL', label: '만점 통과' },
+  { value: 'CUTOFF', label: '커트라인 통과' },
+  { value: 'PASS_FAIL', label: '통과/실패 제출' },
+];
+/** [확정] 퀴즈 문항 배점. 모든 문항 1점이라 총점 = 문항 수. */
+const QUIZ_QUESTION_SCORE = 1;
+
+/** 불러온 퀴즈의 통과 점수로 유형을 되살린다(통과 점수 = 문항 수면 만점, 그 밖에는 커트라인 N개). */
+function readQuizRule(popup: AdminPopupDetail): { rule: QuizRule; count: number } {
+  const total = popup.questions.length;
+  const score = popup.passingScore;
+  if (popup.popupType !== 'QUIZ' || score == null) return { rule: '', count: 1 };
+  return score >= total ? { rule: 'FULL', count: total } : { rule: 'CUTOFF', count: Math.max(1, Math.round(score)) };
+}
+
+/**
+ * [확정 규칙 적용] 편집값 → 미리보기·저장에 쓰는 값. 모든 문항을 1점·채점 대상으로 맞추고 통과 점수를 유형에서 계산한다.
+ * 편집 state(popup)는 그대로 두고 화면에 보낼 때마다 계산하므로 문항을 추가·삭제해도 만점 통과 점수가 따라간다.
+ */
+function withQuizRule(popup: AdminPopupDetail, rule: QuizRule, count: number): AdminPopupDetail {
+  if (popup.popupType !== 'QUIZ') return popup;
+  const questions = popup.questions.map((question) => ({ ...question, isScored: true, questionScore: QUIZ_QUESTION_SCORE }));
+  const passingScore = rule === 'FULL' ? questions.length : rule ? Math.min(count, questions.length) : null;
+  return { ...popup, questions, passingScore };
+}
 
 const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
@@ -67,9 +98,15 @@ export default function IS063M02Sample() {
   const [loadAnchor, setLoadAnchor] = useState<HTMLElement | null>(null);
   const [saved, setSaved] = useState<PopupSaveRequest | null>(null);
   const [error, setError] = useState('');
+  const [quizRule, setQuizRule] = useState<QuizRule>('');
+  const [quizCount, setQuizCount] = useState(1);
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
-  const start = (next: AdminPopupDetail) => { setPopup(next); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError(''); };
+  const start = (next: AdminPopupDetail) => {
+    setPopup(next); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError('');
+    const restored = readQuizRule(next);
+    setQuizRule(restored.rule); setQuizCount(restored.count);
+  };
   const update = <K extends keyof AdminPopupDetail>(key: K, value: AdminPopupDetail[K]) =>
     setPopup((previous) => (previous ? { ...previous, [key]: value } : previous));
   const updateContent = (key: string, value: unknown) =>
@@ -80,6 +117,9 @@ export default function IS063M02Sample() {
   const isQuestion = popup?.popupType === 'SURVEY' || popup?.popupType === 'QUIZ';
   const hasVideo = popup?.popupType === 'VIDEO' || popup?.content.videoEnabled === true;
   const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentValue(popup, 'footerAction')) || 'CLOSE';
+  const isQuiz = popup?.popupType === 'QUIZ';
+  /* 미리보기·저장에는 확정 점수 규칙을 적용한 값을 보낸다. */
+  const effective = popup ? withQuizRule(popup, quizRule, quizCount) : null;
 
   const attach = (file: File | undefined) => {
     if (!file || !popup) return;
@@ -97,9 +137,14 @@ export default function IS063M02Sample() {
     if ((popup.width ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE || (popup.height ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE) {
       setError(`크기는 가로·세로 ${POPUP_MIN_WINDOW_SIZE}px 이상이어야 합니다.`); return;
     }
-    const { attachedFileName: _file, ...content } = popup.content;
+    if (isQuiz && !quizRule) { setError('퀴즈유형을 선택해 주세요.'); return; }
+    if (isQuiz && quizRule !== 'FULL' && (!Number.isInteger(quizCount) || quizCount < 1 || quizCount > popup.questions.length)) {
+      setError(`통과 기준은 1~${popup.questions.length}개 사이의 정수로 입력해 주세요.`); return;
+    }
+    const target = withQuizRule(popup, quizRule, quizCount);
+    const { attachedFileName: _file, ...content } = target.content;
     setError('');
-    setSaved(toSaveRequest({ ...popup, content }, true, []));
+    setSaved(toSaveRequest({ ...target, content }, true, []));
   };
 
   const sizeField = (label: string, key: 'width' | 'height') => (
@@ -240,10 +285,34 @@ export default function IS063M02Sample() {
                     initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
                     onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
                 </Stack>
+                {isQuiz && (
+                  <Stack className="nConSectionDiv" direction="row" alignItems="center" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                    <Typography className="nConSectionTitle"><Required />퀴즈유형</Typography>
+                    <Select value={quizRule} displayEmpty inputProps={{ 'aria-label': '퀴즈유형' }} onChange={(event) => setQuizRule(event.target.value as QuizRule)}>
+                      <MenuItem value="">선택하세요</MenuItem>
+                      {QUIZ_RULES.map((rule) => <MenuItem key={rule.value} value={rule.value}>{rule.label}</MenuItem>)}
+                    </Select>
+                    {(quizRule === 'CUTOFF' || quizRule === 'PASS_FAIL') && <>
+                      <TextField type="number" sx={{ width: 64, textAlign: 'center' }} value={quizCount}
+                        slotProps={{ htmlInput: { 'aria-label': '통과 기준 개수', min: 1, max: popup.questions.length } }}
+                        onChange={(event) => setQuizCount(Number(event.target.value))} />
+                      <Typography component="span">{quizRule === 'CUTOFF' ? '개 이상 통과' : '개 이상 통과 / 미만 실패'}</Typography>
+                    </>}
+                    <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }} data-testid="is063-quiz-score">
+                      문항 {popup.questions.length}개 × {QUIZ_QUESTION_SCORE}점 = 총점 {popup.questions.length}점 · 통과 점수 {effective?.passingScore ?? '-'}점
+                    </Typography>
+                    {quizRule === 'PASS_FAIL' && (
+                      <Typography variant="caption" color="warning.main" sx={{ width: '100%' }}>
+                        확인 필요: 현재 WPF는 미통과 시 제출하지 않고 다시 채점합니다. 실패 결과 제출은 계약 변경이 필요합니다(통과 점수만 저장).
+                      </Typography>
+                    )}
+                  </Stack>
+                )}
                 {/* 원본의 문항별 하드코딩 블록·공유 라디오 state 대신 공통 문항 편집기가 문항·선택지·정답을 각각 관리한다.
-                    확인 필요: 원본 '퀴즈유형(만점/커트라인/통과·실패 제출)'은 점수 환산 규칙 미확정이라 편집기의 통과 점수로 입력한다. */}
+                    [확정] 퀴즈 배점은 1점 고정이라 배점 입력을 숨기고(fixedQuestionScore), 통과 점수는 퀴즈유형에서 계산한다(hidePassingScore). */}
                 <Box className="nQuizBox" sx={{ mt: 1 }}>
-                  <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore}
+                  <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={effective?.passingScore}
+                    fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore
                     onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />
                 </Box>
               </>
@@ -254,7 +323,7 @@ export default function IS063M02Sample() {
           <Box className="nDevider" data-testid="is063-right" sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 560 }}>
             <Box component="h4" className="nConTitle">미리보기</Box>
             {popup
-              ? <InlinePopupPreview popup={popup} title="" onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
+              ? <InlinePopupPreview popup={effective ?? popup} title="" onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
               : <Typography color="text.secondary">폼을 만들면 미리보기가 표시됩니다.</Typography>}
           </Box>
         </Box>
@@ -264,7 +333,7 @@ export default function IS063M02Sample() {
           <Button variant="contained" className="nWhiteBtn" onClick={() => { setPopup(null); setPendingType(''); setContentName(''); setSaved(null); setError(''); }}>취소</Button>
         </Box>
       </Box>
-      {popup && <PopupPreviewDialog popup={popup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
+      {effective && <PopupPreviewDialog popup={effective} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
       <Dialog open={Boolean(saved)} onClose={() => setSaved(null)} maxWidth="md" fullWidth>
         <DialogTitle>저장 요청 객체 (서버 미전송)</DialogTitle>
         <DialogContent dividers>

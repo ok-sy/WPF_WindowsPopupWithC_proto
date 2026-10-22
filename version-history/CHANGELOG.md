@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-17 — TODO69 IS063M02 퀴즈 점수 규칙 확정 반영
+
+- 이유: 퀴즈유형 → 점수 환산 규칙 확정(문항은 무조건 1점, 10문항 만점 10점, 7개 통과 = 7점)에 따라 샘플의 "확인 필요" 처리를 실제 규칙으로 교체.
+- 변경: IS063M02 샘플에 퀴즈유형(만점 통과/커트라인 통과/통과·실패 제출)과 통과 기준 개수 입력 연결. `withQuizRule`이 미리보기·저장 값에 모든 문항 questionScore=1·isScored=true, passingScore(만점 = 문항 수, 커트라인·통과/실패 = N)를 적용하고, 불러온 퀴즈의 통과 점수로 유형을 복원. 유형 미선택·N 범위 밖 저장 거절. '통과/실패 제출'은 현재 WPF 계약상 미통과 시 제출하지 않고 재채점하므로 실패 결과 제출 미지원 경고 표시. 공통 `PopupQuestionEditor`에 선택 props `fixedQuestionScore`·`hidePassingScore` 추가(기존 등록 화면 동작 변경 없음). 인계 가이드·이식 안내·TODO69 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx·sample/IS063M02Sample.tsx, scripts/verify-popup-common-sample-69.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md·ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc·eslint 오류 0. verify-popup-common-sample-69 32건(신규 점수 규칙 7건: 배점·통과 점수 입력 숨김, 불러온 커트라인 2 유지·전 문항 1점, 만점 = 문항 수, 커트라인 1, 문항 수 초과 거절, 통과/실패 경고), verify-survey-rich-text-55 23·verify-completion-ux-43 65·verify-popup-transform-64 77건 통과. 미실행: 실제 관리자 화면, 실패 결과 제출 계약 결정.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-16 — TODO65·69·70 샘플 JSON 전체 옵션 포함
 
 - 이유: 인계용 샘플은 응답·편집값 하나로 사용할 수 있는 옵션 전체를 확인할 수 있어야 해서, 저장된 값에 없던 옵션 키도 계약 기본값으로 채워 싣도록 보완.

@@ -140,6 +140,29 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(first.popup.questions.length >= 2 && JSON.stringify(first.popup.questions[0]) !== JSON.stringify(second.popup.questions[0])
     && JSON.stringify(first.popup.questions[1]) === JSON.stringify(second.popup.questions[1]) && !('footerAction' in second.popup.content),
     '[IS063] Per-question answer selection is independent; quiz save omits footerAction (SUBMIT is fixed by the server)');
+  // [확정 점수 규칙] 문항 1점 고정·총점 = 문항 수, 만점 통과 = 문항 수, 커트라인 N개 = N점.
+  check(await run(`!document.querySelector('[data-testid=is063-mid]').textContent.includes('배점 모두 1점') && !Array.from(document.querySelectorAll('[data-testid=is063-mid] label')).some(l=>l.textContent==='배점' || l.textContent==='통과 점수')`),
+    '[IS063] Quiz score is fixed at 1 point: no per-question score or passing score input');
+  const count = second.popup.questions.length;
+  check(second.popup.questions.every(q => q.questionScore === 1 && q.isScored === true) && second.popup.passingScore === 2,
+    '[IS063] Loaded quiz keeps cutoff 2 and saves every question as 1 point: ' + JSON.stringify(second.popup.questions.map(q => q.questionScore)) + ' / ' + second.popup.passingScore);
+  const pickRule = async label => {
+    await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.querySelector('[role=combobox]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`); await pause(300);
+    await run(`Array.from(document.querySelectorAll('[role=option]')).find(o=>o.textContent===${JSON.stringify(label)}).click()`); await pause(300);
+  };
+  await pickRule('만점 통과');
+  check(await run(`document.querySelector('[data-testid=is063-quiz-score]').textContent.includes('통과 점수 ${count}점')`), '[IS063] Full-score pass shows passing score = question count');
+  await clickButton('저장');
+  let rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  check(rule.popup.passingScore === count, `[IS063] Full-score pass saves passingScore ${count} for ${count} questions`);
+  await pickRule('커트라인 통과'); await setInput('input[aria-label="통과 기준 개수"]', '1'); await clickButton('저장');
+  rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  check(rule.popup.passingScore === 1 && rule.popup.questions.every(q => q.questionScore === 1), '[IS063] Cutoff 1 saves passingScore 1');
+  await setInput('input[aria-label="통과 기준 개수"]', String(count + 1)); await clickButton('저장');
+  check(await run(`document.querySelector('[role=alert]')?.textContent.includes('통과 기준')`), '[IS063] Cutoff above the question count is rejected');
+  await setInput('input[aria-label="통과 기준 개수"]', '1');
+  await pickRule('통과/실패 제출');
+  check(await run(`document.querySelector('[data-testid=is063-mid]').textContent.includes('실패 결과 제출은 계약 변경이 필요')`), '[IS063] Pass/fail submit warns that failed submission is not in the contract');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));

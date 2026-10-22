@@ -12,6 +12,13 @@ interface Props {
   passingScore?: number | null;
   onChange: (questions: PopupQuestion[]) => void;
   onPassingScoreChange: (score: number | null) => void;
+  /**
+   * [TODO69] 배점 고정(예: 1). 지정하면 문항별 배점 입력·'배점 모두 1점' 버튼을 숨기고 새 문항도 이 배점으로 만든다.
+   * 부모가 모든 문항의 questionScore를 이 값으로 맞춘다(IS063M02 샘플: 문항 1점 고정, 총점 = 문항 수). 생략하면 기존 동작.
+   */
+  fixedQuestionScore?: number;
+  /** [TODO69] 통과 점수 입력을 숨긴다(부모가 퀴즈 유형 등 다른 입력으로 passingScore를 정할 때). */
+  hidePassingScore?: boolean;
 }
 
 /* [TODO55] 서식 편집기는 글자 수 제한 입력을 둘 수 없어 저장 전에 서버(PopupSurveyRichText)와 같은 상한을 확인한다. */
@@ -55,7 +62,7 @@ const initialRich = (blocks: unknown, plain: string | null | undefined): RichBlo
 /** [TODO55] 편집 결과: 글자가 없으면 서식을 보내지 않는다(null). 일반 문자열은 서버와 같은 규칙으로 서식에서 파생한다. */
 const richValue = (blocks: RichBlock[], plain: string) => ({ blocks: richBlocksOrNull(blocks), plain });
 
-export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange }: Props) {
+export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const updateOption = (index: number, optionId: number, patch: Partial<PopupOption>) =>
     update(index, { options: questions[index].options.map((o) => o.optionId === optionId ? { ...o, ...patch } : o) });
@@ -63,7 +70,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
   const add = () => onChange([...questions, {
     questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
     // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
-    isRequired: quiz, isScored: quiz, questionScore: quiz ? DEFAULT_QUESTION_SCORE : null,
+    isRequired: quiz, isScored: quiz, questionScore: quiz ? fixedQuestionScore ?? DEFAULT_QUESTION_SCORE : null,
     sortOrder: questions.length + 1, answerMatchMode: 'EXACT', correctAnswer: '',
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
@@ -73,12 +80,12 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
       <Typography sx={{ flex: 1 }} fontWeight={700}>
         총점 {total}점{questions.length > 0 && total === questions.length ? ` (문항 ${questions.length}개 × 1점)` : ''}
       </Typography>
-      <Button size="small" variant="outlined" disabled={!questions.length}
+      {fixedQuestionScore == null && <Button size="small" variant="outlined" disabled={!questions.length}
         onClick={() => onChange(questions.map((q) => ({ ...q, questionScore: DEFAULT_QUESTION_SCORE, isScored: true })))}>
         배점 모두 1점
-      </Button>
-      <TextField label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }}
-        onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />
+      </Button>}
+      {!hidePassingScore && <TextField label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }}
+        onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Stack>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
     {questions.map((q, index) => <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
@@ -105,7 +112,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             <MenuItem value="MULTIPLE_CHOICE">객관식 · 복수 선택</MenuItem>
             <MenuItem value="TEXT">주관식</MenuItem>
           </TextField>
-          {quiz && <TextField label="배점" type="number" value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} InputLabelProps={{ shrink: true }} inputProps={{ min: 0.01, step: 0.01, max: 99999999.99 }}
+          {quiz && fixedQuestionScore == null && <TextField label="배점" type="number" value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} InputLabelProps={{ shrink: true }} inputProps={{ min: 0.01, step: 0.01, max: 99999999.99 }}
             onChange={(e) => update(index, { questionScore: e.target.value === '' ? null : Number(e.target.value), isScored: true })} />}
         </Stack>
         {q.questionType !== 'TEXT' && <TextField select label="선택지 배치" value={q.optionLayout ?? 'VERTICAL'} onChange={(e) => update(index, { optionLayout: e.target.value as 'VERTICAL' | 'HORIZONTAL' })}>
