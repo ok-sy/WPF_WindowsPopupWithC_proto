@@ -1,9 +1,10 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-10-13 (KST)
+- 최신화: 2026-10-22 (KST)
+- 산출물 동기화(2026-10-22, TODO71): Word·PDF·Excel에 현행 v3.7 보완(최소 창 300×300, 초기화 버튼 삭제, 취소선·문단 서식, SURVEY·QUIZ 서식·선택 제한·배점, IMAGE 공통 크기)을 반영. 버전 번호·API 계약 변경 없음.
 - 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
-- 2026-10-19 보완(버전 번호 3.7 유지, TODO55-3·55-4): §8.4.1 설문·퀴즈 서식 필드를 서버 저장·관리자 편집까지 반영. 서식이 있으면 서버가 일반 문자열을 서식에서 파생하고(독립 편집 금지), 빈 서식은 저장하지 않는다. 문항·선택지 서식은 문항 템플릿 행(DB 17 스크립트)에, 콘텐츠 제목·설명 서식은 CONTENT_OPTIONS에 저장. 필드 이름·위치는 초안과 같다. 산출물(Excel·Word·PDF)은 아직 반영하지 않았다.
+- 2026-10-19 보완(버전 번호 3.7 유지, TODO55-3·55-4): §8.4.1 설문·퀴즈 서식 필드를 서버 저장·관리자 편집까지 반영. 서식이 있으면 서버가 일반 문자열을 서식에서 파생하고(독립 편집 금지), 빈 서식은 저장하지 않는다. 문항·선택지 서식은 문항 템플릿 행(DB 17 스크립트)에, 콘텐츠 제목·설명 서식은 CONTENT_OPTIONS에 저장. 필드 이름·위치는 초안과 같다. 산출물(Excel·Word·PDF)은 당시 미반영이며 2026-10-22에 동기화했다.
 - 2026-10-18 초안(TODO55, 확정 전 · 서버 미반영): SURVEY·QUIZ 서식 필드 `content.surveyTitleBlocks`·`content.descriptionBlocks`·`questions[].titleBlocks`·`questions[].descriptionBlocks`·`options[].textBlocks`(§8.4.1). WPF 표시만 구현했으며 서버 저장·관리자 편집은 인계 대기. 산출물(Excel·Word·PDF)에는 확정 후 반영.
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
@@ -12,8 +13,8 @@
 - 3.7 보완(2026-10-22, TODO66): 관리자 공용 서식 편집기(TEXT·SURVEY·QUIZ)의 CKEditor 툴바 `서식 지우기`와 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼 삭제. 글자·문단 서식은 개별 버튼과 글꼴/크기 기본값 선택으로 되돌린다. JSON 필드·저장값·WPF 표시 변경 없음.
 - 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
-- 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
-- 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 아직 반영하지 않았다.
+- 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
+- 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
 - 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
@@ -316,7 +317,7 @@ X-Client-Version: 1.0.0
 | showLater | boolean | 선택 | `false` | 나중에 보기 버튼 표시(TODO52-2). `showFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 `LATER`(§10.4.1)로 닫힌다. 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)에도 누를 수 있으며, 완료 기준 전 화면 이탈 버튼은 이것뿐이다(TODO57) |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
-| ~~allowCloseBeforeComplete~~ | - | 폐기(TODO57) | - | 응답에서 제거. 새 WPF는 보내도 무시한다. 화면 버튼은 `completionRatio`, 외부 닫기는 `content.useBackgroundOverlay`, 완료 전 연기는 `showLater`. 구 WPF는 필드가 없으면 `true`로 동작하므로 새 WPF 배포 후 제거한다 |
+| ~~allowCloseBeforeComplete~~ | - | 폐기(TODO57) | - | 응답에서 제거. 새 WPF는 보내도 무시한다. 화면 버튼은 `completionRatio`, 외부 닫기는 `popup.useBackgroundOverlay`, 완료 전 연기는 `showLater`. 구 WPF는 필드가 없으면 `true`로 동작하므로 새 WPF 배포 후 제거한다 |
 | passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
@@ -788,7 +789,7 @@ passingScore 이상
 위 예시는 관련 필드만 발췌했다. 공통 필드와 최상위 `questions`·정답·문항 배점은 일반 QUIZ와 같다. 영상 재생 옵션은 §8.3 VIDEO와 같다. 동영상+퀴즈의 콘텐츠 제목은 저장 컬럼 1개(CONTENT_TITLE = `surveyTitle`)에 저장하므로 이 저장소 서버는 `videoTitle`을 `surveyTitle`과 같은 값으로 내려준다. 두 제목을 다르게 보내는 계약은 없다. WPF는 영상 영역에 이미 보인 제목·설명과 같은 값이면 퀴즈 머리말에서 다시 표시하지 않는다(값이 다르거나 영상 설명이 숨김이면 퀴즈 머리말에 표시, 설계 53-16).
 
 - 영상 아래 퀴즈를 함께 표시한다. 영상·전체 문항은 부모 단일 세로 스크롤로 이동하고 제출 영역은 스크롤 밖 창 하단에 고정한다. 공통 푸터를 켜면 공통 푸터의 제출 버튼만 표시하고, 끄면 내부 제출 영역을 하단에 고정한다. 결합 모드의 내부 Quiz ScrollViewer는 제거하지만 단독 SURVEY/QUIZ는 자체 스크롤을 유지한다. 현재 영상 결합은 QUIZ에만 지원하며 VIDEO+SURVEY 유형은 없다.
-- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 외부 종료는 `content.useBackgroundOverlay` 정책을 따른다(TODO57).
+- SURVEY/QUIZ 및 결합 QUIZ의 공통 푸터 버튼은 `footerAction=SUBMIT`(제출) 고정이다. 서버가 다른 값을 보내도 WPF는 제출로 동작하며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며(고정 로고만 표시) Alt+F4 등 외부 종료는 `popup.useBackgroundOverlay` 정책을 따른다(TODO57).
 - 영상 길이가 확인되고 `watchedSeconds / durationSeconds`를 소수점 4자리에서 내린 비율이 최상위 `completionRatio` 이상일 때 퀴즈 입력·제출 버튼과 푸터의 제출·다시 보지 않기를 활성화한다. 잠금 중 푸터에는 현재 시청 %와 기준을 사유로 표시한다(설계 43). 미설정 기준은 1.0이다.
 - 현재 재생 위치나 최대 도달 위치로 활성화하지 않는다. 활성화한 뒤 되감기·반복 재생을 해도 다시 잠그지 않는다.
 - 제출은 시청 기준까지 비활성이다. 제출 없이 중단하려면 `showLater`(나중에 보기)를 쓴다. 배경 Overlay가 꺼져 있으면 Alt+F4로도 닫히고 켜져 있으면 막힌다(TODO57 — `allowCloseBeforeComplete` 기반 보조 닫기 폐기). Header에는 X 버튼이 없다. 영상 재생 실패 시에는 종료를 허용하며(푸터가 있으면 보조 닫기 표시) 퀴즈를 자동 활성화하지 않는다.

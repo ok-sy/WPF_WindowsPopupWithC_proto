@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-19 — TODO71 Word PDF Excel 현행 계약 동기화
+
+- 이유: 정책 통합 후 남은 생성 산출물을 현행 v3.7 Markdown 보완과 일치시킬 필요.
+- 변경: Word 표지·헤더 동기화 날짜 및 생성 스크립트를 2026-10-22로 갱신, 현행 계약·MINIMAL·ALL을 포함한 Word와 PDF 재생성. Excel 기존 9개 시트 유지, minimumWidth/Height 300, 초기화 UI 삭제·취소선·SURVEY/QUIZ Blocks 필드·배점 1 기본값·IMAGE 크기 잔재 정정, TEXT 예시 취소선 추가. Markdown의 산출물 미반영 상태 갱신, Overlay 위치 오기 content.useBackgroundOverlay→popup.useBackgroundOverlay 정정. POL-06의 richText 객체 설명은 실제 계약의 평문 옆 Blocks 배열로 정정. TODO71·C10·POL-09에 동기화 완료와 실행 검증 잔여를 구분.
+- 주요 파일: docs/interfaces/WPF_Popup_API_Interface_v3.7.docx·pdf, WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx, POPUP_INTERFACE_SPEC.md, scripts/export-interface-word.cjs, docs/policies/POL-06.md·POL-09.md, docs/reviews/TODO71/CONFLICTS.md, docs/design/71_기존TODO_정책통폐합_정합성_주석정리_TODO.md.
+- 검증: Word 생성(46개 표·123개 제목) 및 LibreOffice 렌더 PDF 85쪽, 전체 페이지 배치·수정 페이지 확인. Excel Artifact Tool 편집·재계산·오류 검색 0, 변경 영역 렌더, OOXML 재읽기로 기존 시트 순서·기존 병합 보존, 기존 셀 삭제 0·미수정 RESULT_REQUEST/RESULT_RESPONSE 값 불변 확인. Word/PDF/XLSX의 최소 크기·서식 필드·ENUM 및 예시 JSON 대조. PDF는 동일 Word에서 출력. git diff --check 통과. 미실행: Microsoft Word/Excel 앱에서 직접 열기, WPF/서버/브라우저 실행, Oracle·폐쇄망 검증.
+- 상태: 산출물 동기화 완료. 71-7 실환경 검증과 보류 정책 유지. 기능·API 계약·DB 변경 없음. 커밋에 포함(커밋 직전 기록).
+
 ## 2026-10-22-18 — TODO69 IS063M02 퀴즈 점수 규칙 확정 반영
 
 - 이유: 퀴즈유형 → 점수 환산 규칙 확정(문항은 무조건 1점, 10문항 만점 10점, 7개 통과 = 7점)에 따라 샘플의 "확인 필요" 처리를 실제 규칙으로 교체.
