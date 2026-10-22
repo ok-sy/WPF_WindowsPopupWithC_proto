@@ -2,7 +2,7 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
-## 2026-10-22-11 — TODO70 DB 없는 백엔드 HTTP 중계 조회 샘플 구현(서버 모듈 편입)
+## 2026-10-22-12 — TODO70 DB 없는 백엔드 HTTP 중계 조회 샘플 구현(서버 모듈 편입)
 
 - 이유: 테이블을 직접 쓰지 않고 담당 백엔드 API를 호출해 조회 결과를 WPF 계약으로 전달하는 예제를 web-server 담당자 패키지로 제공할 필요.
 - 변경: web/api `server.web.api.popup.sample.relay`에 설정(base-url·path·timeout·인증 헤더·전달 헤더·응답 구조), RestClient 호출(재시도 없음·민감값 미로그), 응답 파싱·검증·ENVELOPE 매핑, 컨트롤러 한정 오류 처리(400/401/403·426 전달, 그 밖 500 WPF_INTERNAL + 진단 헤더) 추가. 기본 비활성(`popup.sample.relay.enabled`). 테스트 소스에 mock 백엔드·DB 없는 최소 부트 구성·DevServer main. WPF PopupWindowTests에 mock 응답 WPF DTO 역직렬화 검사 추가. 작성 초기의 독립 Gradle 빌드(samples/)는 서버 모듈 편입 후 삭제. 인계 문서 작성.
@@ -10,7 +10,7 @@
 - 검증: web/api 중계 통합 9·단위 3건 통과(DataSource·MyBatis 없이 기동, mock 실제 HTTP). 서버 전체 테스트 실패 0. WPF PopupWindowTests 399건 통과. 독립 빌드 단계에서 bootJar + mock 실기동 호출 200 확인. 미실행: 실제 백엔드 연계, 이전 후 DevServer IDE 실행, WPF 실화면 연결.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
 
-## 2026-10-22-10 — TODO65 실테이블 단건 조회 샘플 API 구현(서버 모듈 편입)
+## 2026-10-22-11 — TODO65 실테이블 단건 조회 샘플 API 구현(서버 모듈 편입)
 
 - 이유: web-server 담당자가 실제 조회 API를 구현할 때 참고할 SQL·매핑·CLOB 파싱·기본값·응답 조립 샘플을 담당자 패키지 구조로 제공할 필요.
 - 변경: domain VO, repo/core 매퍼 인터페이스·XML(정렬 후 ROWNUM 1, PK 보조 정렬, `#{}` 바인딩, CLOB→String), service/core 파서·조립기(컬럼 기준 매핑, 창 옵션 승격, 누락값 기본값·false/0 보존, 유형별 필수 콘텐츠 검증)·예시 코드표·전달 건/문항/파일 URL 포트·조건부 Bean 구성, web/api 샘플 API·한정 오류 처리(500 WPF_INTERNAL) 추가. 기본 비활성(`popup.sample.single-query.enabled`), 기존 WPF API·DB 변경 없음. 인계 문서 작성.
@@ -18,7 +18,7 @@
 - 검증: DB 없이 매퍼 XML 3·서비스 6·컨트롤러 3건 통과(SQL 주석 안 바인딩 결함 발견·수정). 서버 `gradlew test --offline` 185건 실패 0·skip 11. 미실행: 실제 DTIY3111 SQL 실행, 확정 코드표 대조, 전체 서버 enabled 기동.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
 
-## 2026-10-22-09 — TODO67 미리보기 Dialog deprecated 속성 slotProps 전환
+## 2026-10-22-10 — TODO67 미리보기 Dialog deprecated 속성 slotProps 전환
 
 - 이유: 폐쇄망 이식 중 PopupPreviewDialog의 BackdropProps 사용 중단 예정(ts6385) 안내가 확인되어 설치 버전이 지원하는 대체 API로 전환하고 표시·종료 동작 유지 검증 필요.
 - 변경: 저장소 MUI 버전(선언 ^6.4.1, lock 6.5.0)과 Dialog slots 도입 버전(6.4.1) 확인. TS 언어 서비스 ts6385 진단으로 RgstPop 사용처 25건 조사 — PopupPreviewDialog `BackdropProps`·`PaperProps`를 하나의 `slotProps`(backdrop·paper, FULLSCREEN은 paper 미지정)로 전환, 편집 폼 TextField/Checkbox `inputProps`·`InputLabelProps` 23건은 현 버전 정상 동작하는 deprecated로 목록화하고 미전환. 미리보기 이식 안내에 검증 버전·최소 버전·변경 예시 추가. API/DB/WPF 계약 변경 없음.
@@ -26,7 +26,7 @@
 - 검증: 웹 tsc·변경 파일 eslint 오류 0, PopupPreviewDialog ts6385 0건. verify-popup-preview-61 52건 통과(신규 Paper 슬롯 스타일·FULLSCREEN 분기 2건, 기존 Overlay ON/OFF·Esc·위치·크기 모드·resize 회귀 포함). 연속 실행 중 닫힘 대기 타이밍 간헐 실패 2회 후 3회 연속 통과. 미실행: next build, 폐쇄망 설치 버전 대조·IDE 안내 해소 확인, 실제 관리자 화면.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
 
-## 2026-10-22-08 — TODO68 팝업 최소 크기 300×300 공통화 구현
+## 2026-10-22-09 — TODO68 팝업 최소 크기 300×300 공통화 구현
 
 - 이유: 관리자 설정·미리보기·WPF 실제 팝업의 창 최소 크기 기준이 서로 달라(웹 1px/모달 320×260, 서버 0 초과, WPF 하한 없음·누락 480×320) 같은 기준 300×300으로 통일 필요.
 - 변경: 웹·서버·WPF에 공통 상수 300 도입. 관리자 입력·저장 검증과 서버 저장 검증은 축별 300 미만 거절, 신규 편집·WPF 누락 기본 최소값 300×300. WPF `PopupWindow`와 미리보기 모달·IMAGE 권장 창 계산에 하한 300 → 설정 최대값(하한 미만이면 하한) → 작업 영역 상한 → 최소값 보정 순서 적용(기존 데이터 방어, min>max 예외 방지, RATIO 비IMAGE Clamp 예외 제거). IMAGE FIT_TO_IMAGE width/height 콘텐츠 의미·FULLSCREEN·기본 창 크기 유지. Demo 옵션 창 입력 하한 300. 인터페이스 명세·ALL·MINIMAL(고정 동작만, 필드 노출 없음)·옵션 가이드·미리보기 이식 안내 갱신. JSON 필드·DB DDL 변경 없음.
@@ -34,13 +34,20 @@
 - 검증: WPF PopupWindowTests 396건 통과(신규 10), Popup Release 빌드 오류 0. 서버 `gradlew test --offline` 161건 중 실패 0·skip 11(신규 300 경계). 웹 tsc·eslint 오류 0, verify-popup-preview-61 50·verify-image-preview 34·verify-popup-transform-64 77·verify-completion-ux-43 65·verify-question-template-picker 7건 통과. Popup.BehaviorTests는 기존 TODO58 API 변경으로 컴파일 불가 상태라 미실행. 미실행: Windows DPI 배율·작은 작업 영역 실화면, 최소 창 버튼 접근 실화면, 관리자 저장 왕복, 폐쇄망, 인터페이스 Word·PDF·Excel 재생성.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
 
-## 2026-10-22-07 — TODO66 서식 초기화·색 초기화 버튼 삭제 구현
+## 2026-10-22-08 — TODO66 서식 초기화·색 초기화 버튼 삭제 구현
 
 - 이유: 글자 서식만 지우는 일괄 초기화가 이름과 동작이 달라 혼동되어, 개별 서식 조작만 남기는 편집 UI 단순화 요건 반영.
 - 변경: 팝업 공용 CKEditor 툴바의 `removeFormat`과 남는 구분자 제거. 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼과 전용 import·Divider 제거. `FormatAction.clear` 제거, 색 액션은 팔레트 색만 받도록 축소, removeFormat 방어용 `blockIndent`·`alignment` isFormatting 해제 코드 정리(붙여넣기 들여쓰기 정규화 유지). 옵션 가이드·인터페이스 명세(3.7 보완 TODO66) 정정, 검증 스크립트 기대값 갱신. JSON·서버·WPF 변경 없음, ALL/MINIMAL 명세는 해당 내용 없음을 확인.
 - 주요 파일: zero-rule-web/main/src/features/RgstPop/popupRichText.ts·popupRichTextFormat.ts·PopupRichTextMenu.tsx, scripts/verify-rich-text-49.cjs, docs/POPUP_USER_OPTION_GUIDE.md, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/66_서식초기화_버튼삭제_TODO.md, version-history/CHANGELOG.md.
 - 검증: 웹 tsc 오류 0, 변경 파일 eslint 오류 0(기존 경고 1). verify-rich-text-49 60건·verify-survey-rich-text-55 23건 통과. 미실행: 실제 관리자 화면·폐쇄망 확인, 인터페이스 Word·PDF·Excel 재생성.
 - 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+## 2026-10-22-07 — TODO71 기존 TODO 정책 통폐합·정합성 검증 계획
+
+- 이유: 누적된 TODO를 사실상 정책으로 참조하는 구조에서 후속 대체·부분 폐기·미구현 이력과 현행 계약의 혼동을 방지하고 정책별 관리 체계로 정리할 필요.
+- 변경: TODO71 계획 등록. 01~70 번호별 전수조사, 16개 정책 카테고리 잠정 분류, 웹·Java·WPF·DB·인터페이스 정합성 검증, 정책 문서 16~18개 잠정 통합, 원본 TODO 이력 보존, 주석·링크·회귀 검증을 단계별로 정의. 71-1~71-3은 조사 전용이며 기존 코드·계약·TODO 변경 금지.
+- 주요 파일: docs/design/71_기존TODO_정책통폐합_정합성_주석정리_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기존 TODO70 이후 번호 중복 검색, AGENTS.md 및 기존 정책·이식 문서 검토. 문서 계획 등록만 수행했으며 TODO 전수조사·정합성 판정·코드/실행 검증 미실행.
+- 상태: TODO 문서 등록 완료. 실제 조사·통폐합·주석 정리 미착수.
 
 ## 2026-10-22-06 — TODO70 DB 없는 백엔드 HTTP 조회 샘플 계획
 
