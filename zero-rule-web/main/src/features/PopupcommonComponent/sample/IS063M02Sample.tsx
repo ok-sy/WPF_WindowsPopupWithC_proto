@@ -31,7 +31,11 @@ import { createSamplePopups } from './popupSampleData';
  * '퀴즈유형(만점/커트라인/통과·실패)'은 공통 문항 편집기의 통과 점수로 입력한다(유형 → 점수 환산 규칙 미확정).
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
  * 저장은 toSaveRequest 결과를 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
+ * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
+ * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  */
+/* [옵션] 컨텐츠 유형 선택지·중간 영역 제목. 줄을 지우면 선택지에서만 빠진다(기존 데이터는 불러오기로 계속 편집 가능, 가이드 §4.3).
+ * 새 유형을 추가하려면 서버·WPF 계약 변경이 먼저 필요하다. */
 const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[] = [
   { value: 'TEXT', label: '텍스트 팝업', title: '텍스트 컨텐츠' },
   { value: 'IMAGE', label: '이미지 팝업', title: '이미지 컨텐츠' },
@@ -44,6 +48,7 @@ const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[
 const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
 
+// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 기본값은 createDefaultPopup().
 const newPopup = (selection: PopupTypeSelection): AdminPopupDetail =>
   changePopupType({ ...createDefaultPopup(), popupId: 'N2609001' }, selection);
 
@@ -54,6 +59,7 @@ function Required({ not = false }: { not?: boolean }) {
 export default function IS063M02Sample() {
   const [pendingType, setPendingType] = useState<PopupTypeSelection | ''>('');
   const [popup, setPopup] = useState<AdminPopupDetail | null>(null);
+  // 확인 필요: '컨텐츠 명'은 저장 계약(AdminPopupDetail)에 대응 필드가 없어 화면 state로만 둔다. 필드가 확정되면 popup으로 옮긴다.
   const [contentName, setContentName] = useState('');
   const [editorKey, setEditorKey] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -77,11 +83,14 @@ export default function IS063M02Sample() {
 
   const attach = (file: File | undefined) => {
     if (!file || !popup) return;
-    // 브라우저 미리보기용 임시 URL. [교체 지점] 서버 업로드 후 서버 경로 URL로 바꾼다.
+    // 브라우저 미리보기용 임시 URL. [실연동] 서버 업로드 API 호출 → 응답의 서버 경로 URL(영상은 popup-video-range 규칙)을 넣는다.
+    // attachedFileName은 화면 표시용이라 저장 요청에서 뺀다(save 참고).
     updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', URL.createObjectURL(file));
     updateContent('attachedFileName', file.name);
   };
 
+  // [실연동] 검증 통과 후 api.popupAdmin.save(toSaveRequest(popup, active, targetGroups)) 호출, 성공/실패 처리(toast·handleError)를 붙인다.
+  // [옵션] 필수 입력 규칙은 이 함수에서 추가·삭제한다(예: 문항 검증 validatePopupQuestions(popup.questions, popup.popupType === 'QUIZ', popup.passingScore)).
   const save = () => {
     if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
     if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
@@ -231,6 +240,8 @@ export default function IS063M02Sample() {
                     initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
                     onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
                 </Stack>
+                {/* 원본의 문항별 하드코딩 블록·공유 라디오 state 대신 공통 문항 편집기가 문항·선택지·정답을 각각 관리한다.
+                    확인 필요: 원본 '퀴즈유형(만점/커트라인/통과·실패 제출)'은 점수 환산 규칙 미확정이라 편집기의 통과 점수로 입력한다. */}
                 <Box className="nQuizBox" sx={{ mt: 1 }}>
                   <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore}
                     onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />

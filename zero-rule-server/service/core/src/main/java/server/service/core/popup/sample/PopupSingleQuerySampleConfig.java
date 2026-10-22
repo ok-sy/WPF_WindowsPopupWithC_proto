@@ -15,6 +15,9 @@ import server.repo.core.mapper.popup.sample.PopupSingleQuerySampleMapper;
  *
  * <p>전달 건·문항 포트는 {@link ConditionalOnMissingBean}이라 실제 구현 Bean을 등록하면 샘플 구현 대신 사용된다.</p>
  *
+ * <p>인수인계 문서: docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md — 클래스별 선언 이유(6-1), 조절 옵션·필드 추가/삭제 예시(6-2),
+ * 교체 지점(6). 코드 안 표식: [교체 지점]·[담당 구현]·[샘플 조건]·[미확인].</p>
+ *
  * <pre>
  * popup:
  *   sample:

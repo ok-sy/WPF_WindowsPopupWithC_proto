@@ -5,7 +5,8 @@ import { plainTextToBlocks } from '../popupRichText';
 
 /*
  * [TODO69] 서버 없이 샘플 페이지를 확인하기 위한 편집값(AdminPopupDetail) 목록.
- * 관리자 API 조회 응답이 아니라 공통 컴포넌트에 바로 넣는 편집값이다. 실제 연결 시 api.popupAdmin.info → toEditorPopup으로 교체한다.
+ * 관리자 API 조회 응답이 아니라 공통 컴포넌트에 바로 넣는 편집값이다. [실연동] api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup)으로 교체한다.
+ * [옵션] 샘플을 늘리려면 createSamplePopups() 배열에 sample(...)을 추가한다(가이드 §4.5). 날짜는 결과가 일정하도록 고정했다.
  */
 const IMAGE_DATA = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#2563EB"/>'

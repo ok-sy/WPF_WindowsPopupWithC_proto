@@ -30,12 +30,17 @@ const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
  * 왼쪽 입력값(state 하나)을 우측 InlinePopupPreview와 "실제 크기로 보기" PopupPreviewDialog에 같은 객체로 넘긴다.
  * 실제 등록 화면(RgstPop/PopupEditorDialog)의 일정·대상 그룹·템플릿 등은 넣지 않는다.
  * 본문 편집기는 key로 마운트한다: 유형 전환·다른 팝업 열기에서만 다시 만들고, 입력 중에는 커서를 유지한다.
+ * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
+ * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
+ * [옵션] 입력 필드를 더하려면 update(최상위 키) 또는 updateContent(content 키)로 연결한다. 새 content 키는
+ *        popupEditorTransform.ts의 COMMON_CONTENT_KEYS/CONTENT_KEYS_BY_TYPE에도 넣어야 저장 요청에 남는다(가이드 §4.2).
  */
 export default function PopupSampleEditor({ initial, open, onClose, onSave }: Props) {
   const [popup, setPopup] = useState<AdminPopupDetail>(initial);
   const [editorKey, setEditorKey] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [fitWindow, setFitWindow] = useState<Size | null>(null);
+  // 편집값은 항상 새 객체로 바꾼다(미리보기는 같은 객체를 받기만 하고 수정하지 않는다).
   const update = <K extends keyof AdminPopupDetail>(key: K, value: AdminPopupDetail[K]) => setPopup((previous) => ({ ...previous, [key]: value }));
   const updateContent = (key: string, value: unknown) => setPopup((previous) => ({ ...previous, content: { ...previous.content, [key]: value } }));
   const isQuestion = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
@@ -96,6 +101,7 @@ export default function PopupSampleEditor({ initial, open, onClose, onSave }: Pr
           저장은 부모 화면이 정한다(이 샘플 목록은 브라우저 메모리에만 보관하며 서버에 저장하지 않는다).
         </Typography>
         <Button onClick={onClose}>취소</Button>
+        {/* [실연동] 저장 전 입력 검증(validatePopupQuestions·validatePopupSchedule·크기 범위 등)은 PopupEditorDialog.save를 참고해 부모에서 수행한다. */}
         <Button variant="contained" onClick={() => onSave(popup)}>저장</Button>
       </DialogActions>
       <PopupPreviewDialog popup={popup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />

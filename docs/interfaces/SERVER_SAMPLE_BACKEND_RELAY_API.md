@@ -80,6 +80,54 @@ mock 시나리오는 `-Dpopup.sample.relay.path=/api/wpf/popups?scenario=<이름
 - deliveryId·popupId 등 백엔드가 준 ID를 바꾸거나 새로 만들지 않는다. 전달 건 생성·대상/일정/완료/숨김·결과 중복 처리는 백엔드 책임이며 이 샘플에 복제하지 않는다.
 - 입출력 매핑(70-1): 요청 `POST {path}` 본문 `{}` + `Authorization`·`X-Client-Version`(+선택 서비스 인증 헤더) → 응답 `{pollingIntervalSeconds, popup}`. 실제 백엔드 URL·Method·envelope는 미확정이라 예시값이며 위 [교체] 항목만 바꾼다.
 
+## 5-1. 클래스별 선언 이유
+
+| 클래스 | 선언 이유 |
+|---|---|
+| `RelaySampleConfig` | 기본 비활성. `enabled=true`일 때만 설정 바인딩·Bean 등록해 기존 서버 기동에 영향이 없게 한다 |
+| `RelayBackendProperties` | URL·경로·timeout·인증 헤더·전달 헤더·응답 구조를 코드가 아니라 설정으로 바꾸게 한다(비밀값은 환경 변수) |
+| `BackendPopupClient` | HTTP 호출·timeout·실패 분류만 담당. 재시도하지 않는 이유(조회가 전달 건을 만들 수 있음)를 한 곳에 고정한다 |
+| `BackendResponseMapper` | 백엔드 응답 구조 차이를 이 클래스(특히 `unwrapEnvelope`)에만 모아, 백엔드 계약이 바뀌어도 다른 클래스를 고치지 않게 한다 |
+| `PopupRelayService`·`PopupRelayController` | 호출 1회 → 매핑만 하는 얇은 계층. 기존 WPF API와 겹치지 않는 별도 경로 |
+| `RelayExceptionHandler` | 이 컨트롤러 한정 오류 처리. 통신 실패를 정상 `popup:null`로 덮지 않고 기존 WPF 오류 계약으로 응답한다 |
+| (테스트) `MockBackendServer`·`RelaySampleBootConfig`·`PopupRelaySampleDevServer` | 실제 백엔드·DB 없이 HTTP 실통신으로 확인하기 위한 도구. 운영 코드에 포함되지 않는다 |
+
+## 5-2. 옵션 추가·삭제 예시
+
+전달 헤더 추가 — 백엔드가 `X-Request-Id`를 요구하는 경우(코드 변경 없음):
+
+```yaml
+popup.sample.relay.forward-headers: [Authorization, X-Client-Version, X-Request-Id]
+```
+
+서비스 인증 헤더 빼기: `api-key-header`를 비우면 보내지 않는다.
+
+백엔드 응답 구조가 다른 경우 — 예: `{ "result": "OK", "payload": { ... } }`:
+
+```java
+// BackendResponseMapper: 새 구조를 꺼내는 함수 추가 후 toWpfResponse에서 선택
+JsonNode unwrapPayload(JsonNode root) {
+    if (!root.isObject() || !root.path("payload").isObject()) throw invalid("payload 객체가 없습니다.");
+    return root.get("payload");
+}
+// RelayBackendProperties.ResponseShape에 PAYLOAD 추가 → response-shape: PAYLOAD
+```
+
+요청 본문 바꾸기: `BackendPopupClient.fetch`의 `.body("{}")`([교체 지점])를 백엔드 계약 본문으로 바꾼다. 요청 Method가 GET이면 `restClient.post()` → `restClient.get()`으로 바꾸고 `.body(...)`를 지운다.
+
+오류 매핑 바꾸기: `RelayExceptionHandler.PASS_THROUGH`에 상태를 더하거나 빼서 그대로 전달할 상태를 정한다(그 밖은 500 WPF_INTERNAL). 진단 헤더 `X-Sample-Upstream-Error`가 필요 없으면 `error(...)`에서 헤더 추가 줄을 지운다.
+
+## 5-3. 실제 연동할 때 바뀌는 부분
+
+| 항목 | 샘플 | 실제 연동 |
+|---|---|---|
+| 백엔드 주소·경로 | mock `127.0.0.1:18090/api/wpf/popups` | 개발/검증계 실제 주소(`base-url`·`path`) |
+| 인증 | 클라이언트 `Authorization` 그대로 전달 + 선택 API 키 | 백엔드가 요구하는 방식(토큰 교환·서비스 계정 등)으로 `BackendPopupClient` 헤더 구성 |
+| 요청 본문·Method | `POST {}` | 백엔드 계약 |
+| 응답 구조 | WPF 구조 그대로 | 다르면 `BackendResponseMapper`에 매핑 함수 추가 |
+| 기동 | DB 없는 최소 부트 구성(테스트) | 전체 서버에 `enabled: true` 설정(서버 자체 DB·인증 설정 필요) |
+| 진단 헤더 | 응답에 포함 | 유지 여부 결정 |
+
 ## 6. 검증 상태
 
 - web/api `PopupRelayIntegrationTest` 9건: 최소 부트 구성으로 DataSource·MyBatis 없이 기동, mock 백엔드 실제 HTTP 호출로 Method·경로·본문·전달 헤더·서비스 인증 헤더·미전달 헤더·1회 호출 확인, 정상 JSON 동일·중첩/false/0/null 보존·ID 보존, SURVEY 문항, 없음, 401/403/400 전달, 426 본문 유지, 5xx·404·잘못된 JSON·객체 아님·pollingIntervalSeconds 누락·timeout의 500 및 분류 헤더·재시도 없음, 잘못된 요청 본문 400.

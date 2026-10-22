@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-15 — TODO65·69·70 샘플 인수인계 문서·주석 보강
+
+- 이유: 샘플을 받는 개발자가 바로 사용·수정·실연동할 수 있도록 선언 이유·로직·조절 옵션·옵션 추가/삭제 예시·실연동 교체 지점을 문서와 코드 주석으로 남길 필요.
+- 변경: 프론트 인수인계 가이드 `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md` 신규(파일별 선언 이유, 편집 state→두 미리보기→toSaveRequest 흐름·editor key 정책·저장 정규화, 컴포넌트 props·편집값·코드 상수 옵션과 서버/WPF 동기화 대상, 입력 추가·content 키 추가 절차·유형 선택지 삭제·툴바/글자 크기 변경·샘플 데이터 추가 예시, 실연동 교체표). 샘플 TSX 4종에 가이드 링크와 `[옵션]`·`[실연동]` 표식 주석 추가(동작 변경 없음). 서버 샘플 문서 2종에 클래스별 선언 이유·옵션 추가/삭제 예시(컬럼 추가, 전달 헤더, 응답 구조, 오류 매핑)·실연동 교체표 추가, 샘플 Config Javadoc에 문서 링크 추가.
+- 주요 파일: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md·SERVER_SAMPLE_BACKEND_RELAY_API.md, zero-rule-web/main/src/features/PopupcommonComponent/sample/*.ts(x), zero-rule-server/service/core/.../PopupSingleQuerySampleConfig.java, web/api/.../RelaySampleConfig.java, version-history/CHANGELOG.md.
+- 검증: 문서의 API 호출 형태(`api.popupAdmin.list({ ctx })`·`info({ popupId })`·`save(...)`)와 상수 위치(서버 SIZES·FONTS, WPF Demo 목록)를 소스와 대조. 웹 tsc·eslint 오류 0, verify-popup-common-sample-69 25건 재통과, 서버 변경 모듈 컴파일 통과. 문서 예시 코드는 적용해 실행하지 않음.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-14 — TODO69 IS063M02 연동 샘플 구현(2차)
 
 - 이유: 복원 퍼블리싱 IS063M02(컨텐츠 등록) 화면에 공통 에디터·미리보기·변환 기능을 연결한 이식 예제 필요(복원본 파일 수령).

@@ -128,6 +128,45 @@ SELECT *
 
 실제 대상/일정/완료/숨김/전달 건 정책의 일괄 검증은 담당 서버 개발 범위다. 포트는 `@ConditionalOnMissingBean`이라 실제 구현 Bean을 등록하면 샘플 구현 대신 쓰인다.
 
+## 6-1. 클래스별 선언 이유
+
+| 클래스 | 선언 이유 |
+|---|---|
+| `PopupContentRow`(domain) | SQL 컬럼명과 응답 필드명이 달라 resultMap으로 한 번 받아 두는 중간 VO. 컬럼이 바뀌면 이 VO와 XML만 고친다 |
+| `PopupSingleQuerySampleMapper`(+XML) | 기존 서버 규칙(`@MapperScan(server.repo)`·`mappers/**/*.xml`)대로 자동 등록되도록 repo/core에 둔다. SQL만 담당하고 변환은 하지 않는다 |
+| `PopupContentJsonParser` | CLOB 문자열 → JSON 객체 변환과 "객체가 아닌 JSON" 거절을 한 곳에 모은다(이중 직렬화 방지) |
+| `PopupCodeTable` | 공통 코드 → ENUM 변환을 한 클래스에 모아, 확정 코드표를 받으면 이 파일만 교체하게 한다 |
+| `PopupSingleResponseAssembler` | 컬럼 매핑·창 옵션 승격·기본값·필수 콘텐츠 검증 규칙을 응답 조립 한 곳에 모은다(규칙 변경 시 이 클래스만 수정) |
+| `PopupPorts`(DeliveryPort·QuestionPort·FileUrlResolver) | 샘플이 구현하면 안 되는 업무(전달 건·문항 조회·파일 URL 규칙)를 인터페이스로 분리해 실제 구현으로 갈아 끼우게 한다 |
+| `PopupSingleQuerySampleConfig` | 기본 비활성. 켰을 때만 Bean을 만들고, 포트는 `@ConditionalOnMissingBean`이라 실제 구현 Bean이 있으면 그것을 쓴다 |
+| `PopupSingleQuerySampleController`·`...ExceptionHandler`(web/api) | 기존 WPF API를 건드리지 않는 별도 경로·별도 오류 처리(이 컨트롤러 한정). 사용자는 기존 `WpfUserResolver`로 정한다 |
+
+## 6-2. 조절 가능한 옵션과 추가·삭제 예시
+
+설정 키: `popup.sample.single-query.enabled`(기본 false), `file-base-url`, `polling-interval-seconds`(§2).
+
+응답 필드 추가 예 — 콘텐츠 테이블에 `USE_DO_NOT_SHOW_YN`(다시 보지 않기) 컬럼이 생긴 경우:
+
+```xml
+<!-- PopupSingleQuerySampleMapper.xml: resultMap과 SELECT에 추가 -->
+<result property="doNotShowYn" column="USE_DO_NOT_SHOW_YN"/>
+     , C.USE_DO_NOT_SHOW_YN
+```
+
+```java
+// PopupContentRow: 필드·getter/setter 추가
+private String doNotShowYn;
+// PopupSingleResponseAssembler.assemble: 고정값 대신 컬럼 사용(null이면 기본 false)
+Boolean doNotShow = PopupCodeTable.yn(row.getDoNotShowYn(), "USE_DO_NOT_SHOW_YN", id);
+popup.put("showDoNotShowAgain", doNotShow != null && doNotShow);
+```
+
+필드 빼기 예 — 푸터 URL 컬럼을 쓰지 않게 된 경우: `putFooter`에서 `LINK_AND_CLOSE` 분기를 지우고 `PopupCodeTable.FOOTER_BUTTON`에서 `02`를 지운다. 응답 계약에서 필드를 없애는 것은 WPF·인터페이스 명세 변경이 함께 필요하다.
+
+코드값 바꾸기: `PopupCodeTable.CONTENT_TYPE`·`FOOTER_BUTTON`의 예시 코드를 확정 코드로 교체한다. 모르는 코드는 기본값이 아니라 오류가 되므로 누락 코드가 바로 드러난다.
+
+기본값 바꾸기: `PopupSingleResponseAssembler`의 `DEFAULT_WIDTH`/`DEFAULT_HEIGHT`·고정값(`displayMode`·`minimumWidth` 300 등). 최소 300은 WPF·관리자 웹 하한(TODO68)과 같아야 한다.
+
 ## 7. 검증 상태
 
 - DB 없이: repo/core `PopupSingleQuerySampleMapperXmlTest` 3건(XML 파싱, 정렬 후 ROWNUM 1, 바인딩 수, CLOB→String), service/core `PopupSingleQuerySampleTest` 6건(없음, 컬럼 매핑·중첩·false/0 보존·중복 키 제거, 기본값, IMAGE 파일 URL·크기 생략, SURVEY SUBMIT, 데이터 오류 11종·전달 건 미발급), web/api `PopupSingleQuerySampleControllerTest` 3건(200·null popup, 500, 401·400).

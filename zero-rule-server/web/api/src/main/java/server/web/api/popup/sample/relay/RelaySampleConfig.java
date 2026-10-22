@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
  * 기존 서버에 넣어 실행하면 서버 자체의 DB 설정은 그대로 필요하고, DB 없이 단독 확인할 때는
  * 테스트 소스의 {@code PopupRelaySampleDevServer}(최소 부트 구성 + mock 백엔드)를 쓴다.</p>
  *
+ * <p>인수인계 문서: docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md — 클래스별 선언 이유(5-1), 옵션 추가/삭제 예시(5-2),
+ * 실제 연동 시 바뀌는 부분(5-3). 코드 안 표식: [교체 지점].</p>
+ *
  * <pre>
  * popup:
  *   sample:
