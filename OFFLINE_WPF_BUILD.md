@@ -90,14 +90,18 @@ Media\demo-video.mp4       저장소에 포함(위와 같음). 다른 파일로 
 
 ## 4. 반입 묶음 만들기
 
-외부망 PC의 저장소 루트에서 실행한다. 서버·웹 변경분은 커밋된 상태여야 `git diff`에 잡힌다.
+외부망 PC의 저장소 루트에서 실행한다. 반입본은 **HEAD 커밋을 깨끗한 worktree로 꺼내** 만들므로 반입할 변경은 먼저 커밋한다(작업 트리의 미커밋 변경은 들어가지 않는다).
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\export-offline-package.ps1                          # offline-export\<날짜시각>
-.\scripts\export-offline-package.ps1 -IncludeDevDependencies  # E-dev-deps(offline-packages·offline-sdk)도 생성
+.\scripts\export-offline-package.ps1                                   # offline-export\<오늘 날짜>
+.\scripts\export-offline-package.ps1 -NotesFile notes.md -PatchNotesDir patch\   # README-IMPORT 변경 요약·묶음별 패치노트
+.\scripts\export-offline-package.ps1 -UseWorkingChangelog -VerifyBuild -Force     # 생성 기록을 적은 CHANGELOG 반영·오프라인 빌드 확인·같은 날짜 재생성
+.\scripts\export-offline-package.ps1 -IncludeDevDependencies          # 6-offline-packages(offline-packages·offline-sdk)도 생성
 ```
 
-- 묶음: `A-docs`(docs·db·api·README 등), `B-server`·`C-web`(베이스라인 대비 변경분), `D-wpf`(WPF 소스만, EXE/DLL/PDB 제외), 선택 `E-dev-deps`.
-- 묶음별 `MANIFEST-*.txt`와 `README-IMPORT.md`(반입 전 확인 항목)를 함께 만든다. `-IncludeMockSso`로 임시 SSO 프로그램을, `-NoZip`으로 압축 생략을 선택한다.
+- 묶음: `1-zero-rule-server`·`2-zero-rule-web`(베이스라인 대비 변경분), `3-popup-frameWork`(WPF·MockSso 소스, EXE/DLL/PDB·검증 하네스·MockSso 개인 launchSettings 제외), `4-docs`(docs·db·api·README·변경 이력), 선택 `6-offline-packages`.
+- 묶음별 TAR, 통합 `<날짜>.tgz`(+`.sha256`), `MANIFEST-*.txt`, `DELETE-SINCE-20260930.txt`(누적 삭제 + 직전 반입본 이후 생겼다가 지워진 파일), `SHA256SUMS.txt`(TAR)·`SOURCE-SHA256SUMS.txt`(파일별), `README-IMPORT.md`를 만든다.
+- 직전 반입본은 `offline-export` 아래 가장 최근 반입본의 README에서 기준 커밋을 읽는다(`-PreviousExport`·`-PreviousCommit`로 지정 가능).
+- 생성 중 검사: 코드·설정 파일의 개인 PC 절대경로, TAR 파일 수·경로 대조, 제외 대상 누출, TGZ 해제 후 TAR 체크섬 대조. `-VerifyBuild`는 20261006 NuGet 반입본과 3-popup-frameWork만으로 폴더형·단일 EXE publish를 확인한다.
 - `offline-export/`는 Git 제외 대상이다.

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-28 — 폐쇄망 반입 스크립트 현행 반입 형식으로 정비
+
+- 이유: `scripts/export-offline-package.ps1`이 초기 형식(A-docs·B-server·C-web·D-wpf, 묶음별 zip, 작업 트리 복사)으로 남아 있어, 2026-10-07 이후 반입본(번호 묶음·TAR·통합 TGZ·SHA256·삭제 목록, 깨끗한 사본 기준)과 형식이 달랐음. 실제 반입본은 Git 제외 보조 스크립트(.offline-verify/package-*·finalize-*)로 따로 정리하고 있었고, 작업 트리를 복사해 개발 PC 전용 미커밋 설정(application-local.yml)이 섞일 수 있었음.
+- 변경: HEAD를 `.offline-verify/wt-<날짜>` worktree로 꺼내 그 사본에서 묶음을 만들도록 변경(미커밋 변경 미포함). 묶음 이름을 1-zero-rule-server·2-zero-rule-web·3-popup-frameWork·4-docs(선택 6-offline-packages)로 바꾸고 MockSso를 기본 포함(개인 launchSettings 제외). 누적 삭제 목록(DELETE-SINCE-20260930.txt)과 직전 반입본 이후 생겼다가 지워진 파일 구역 생성, 직전 반입본·기준 커밋 자동 인식. README-IMPORT.md 생성(묶음별 A/M/D·파일 수, 변경 요약 -NotesFile, 반입 절차), 묶음별 패치노트 -PatchNotesDir. 코드·설정 파일 개인 PC 절대경로 검사, 묶음별 TAR·파일 수·경로 대조·제외 대상 누출 검사, SHA256SUMS·SOURCE-SHA256SUMS, 통합 TGZ·체크섬과 해제 후 TAR 체크섬 대조, -VerifyBuild(20261006 NuGet 반입본만으로 폴더형·단일 EXE publish), -UseWorkingChangelog, -Force. zip 생성·-IncludeMockSso·-NoZip 제거. PowerShell 5.1에서 git 진행 메시지(stderr)를 오류로 처리하던 문제, git(UTF-8)·tar(CP949) 출력 인코딩 차이로 한글 경로가 깨질 수 있던 문제, -LiteralPath에서 -Include가 무시돼 문서까지 경로 검사하던 문제를 처리. OFFLINE_WPF_BUILD.md §4 사용법 갱신.
+- 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md, version-history/CHANGELOG.md.
+- 검증: 3988835 기준 시험 실행 — 서버 A 128·M 8, 웹 A 27·M 11·D 5, WPF 93, 문서 145 파일, TAR 4개 파일 수·경로 대조·누출 검사·TGZ 해제 후 체크섬 대조 통과. 반입본의 application-local.yml이 커밋 버전(`root: D:/popup-videos`)인 것 확인, MockSso launchSettings 미포함, 한글 파일명 TAR 대조 통과. -VerifyBuild는 반입본 생성 항목에서 실행.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-27 — TODO72 DTIY3111 사진 스키마 기준 단건 조회 샘플 구현
 
 - 이유: 단건 조회 샘플의 가정 파일 컬럼·ID 길이·등록 필수값이 DTIY3111 사진 정의와 달라 인계 전에 SQL·VO·INSERT·문서를 사진 정의에 맞출 필요.
