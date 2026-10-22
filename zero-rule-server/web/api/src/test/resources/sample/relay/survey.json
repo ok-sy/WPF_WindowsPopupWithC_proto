@@ -1,0 +1,42 @@
+{
+  "pollingIntervalSeconds": 600,
+  "popup": {
+    "deliveryId": "d-survey-1",
+    "popupId": "SAMPLE-SURVEY-001",
+    "popupType": "SURVEY",
+    "title": "만족도 조사",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 640,
+    "height": 560,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 300,
+    "minimumHeight": 300,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "SUBMIT",
+    "showDoNotShowAgain": false,
+    "showLater": false,
+    "questions": [
+      {
+        "questionId": 11,
+        "title": "서비스에 만족하십니까?",
+        "questionType": "SINGLE_CHOICE",
+        "isRequired": true,
+        "isScored": false,
+        "questionScore": 0,
+        "sortOrder": 1,
+        "optionLayout": "VERTICAL",
+        "options": [
+          { "optionId": 111, "text": "예", "isCorrect": false, "sortOrder": 1 },
+          { "optionId": 112, "text": "아니오", "isCorrect": false, "sortOrder": 2 }
+        ]
+      }
+    ],
+    "content": { "surveyTitle": "만족도 조사", "description": "" }
+  }
+}

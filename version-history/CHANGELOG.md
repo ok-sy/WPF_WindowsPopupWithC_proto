@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-11 — TODO70 DB 없는 백엔드 HTTP 중계 조회 샘플 구현(서버 모듈 편입)
+
+- 이유: 테이블을 직접 쓰지 않고 담당 백엔드 API를 호출해 조회 결과를 WPF 계약으로 전달하는 예제를 web-server 담당자 패키지로 제공할 필요.
+- 변경: web/api `server.web.api.popup.sample.relay`에 설정(base-url·path·timeout·인증 헤더·전달 헤더·응답 구조), RestClient 호출(재시도 없음·민감값 미로그), 응답 파싱·검증·ENVELOPE 매핑, 컨트롤러 한정 오류 처리(400/401/403·426 전달, 그 밖 500 WPF_INTERNAL + 진단 헤더) 추가. 기본 비활성(`popup.sample.relay.enabled`). 테스트 소스에 mock 백엔드·DB 없는 최소 부트 구성·DevServer main. WPF PopupWindowTests에 mock 응답 WPF DTO 역직렬화 검사 추가. 작성 초기의 독립 Gradle 빌드(samples/)는 서버 모듈 편입 후 삭제. 인계 문서 작성.
+- 주요 파일: zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/*, web/api/src/test/java/server/web/api/popup/sample/relay/*, web/api/src/test/resources/sample/relay/ok.json·survey.json, scripts/PopupWindowTests/Program.cs, docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md, docs/design/70_DB없는_백엔드통신_Java조회API_TODO.md, version-history/CHANGELOG.md.
+- 검증: web/api 중계 통합 9·단위 3건 통과(DataSource·MyBatis 없이 기동, mock 실제 HTTP). 서버 전체 테스트 실패 0. WPF PopupWindowTests 399건 통과. 독립 빌드 단계에서 bootJar + mock 실기동 호출 200 확인. 미실행: 실제 백엔드 연계, 이전 후 DevServer IDE 실행, WPF 실화면 연결.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-22-10 — TODO65 실테이블 단건 조회 샘플 API 구현(서버 모듈 편입)
 
 - 이유: web-server 담당자가 실제 조회 API를 구현할 때 참고할 SQL·매핑·CLOB 파싱·기본값·응답 조립 샘플을 담당자 패키지 구조로 제공할 필요.

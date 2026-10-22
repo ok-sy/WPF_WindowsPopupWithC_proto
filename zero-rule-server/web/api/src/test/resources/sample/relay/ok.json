@@ -1,0 +1,38 @@
+{
+  "pollingIntervalSeconds": 1800,
+  "popup": {
+    "deliveryId": "6b1d2c3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+    "popupId": "SAMPLE-TEXT-001",
+    "popupType": "TEXT",
+    "title": "9월 시스템 점검 안내",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 560,
+    "height": 420,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 300,
+    "minimumHeight": 300,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "CLOSE",
+    "useBackgroundOverlay": false,
+    "backgroundOverlayOpacity": 0,
+    "popupPosition": "CENTER",
+    "showDoNotShowAgain": false,
+    "showLater": false,
+    "hideDays": null,
+    "questions": [],
+    "content": {
+      "plainText": "점검 안내\n02:00~06:00",
+      "showPlainText": true,
+      "textBlocks": [
+        { "alignment": "LEFT", "indent": 0, "runs": [{ "text": "점검 안내", "bold": true, "italic": false }] },
+        { "alignment": "CENTER", "runs": [{ "text": "02:00~06:00", "color": "#DC2626", "size": 0 }] }
+      ]
+    }
+  }
+}

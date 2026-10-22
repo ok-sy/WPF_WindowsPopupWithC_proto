@@ -85,6 +85,7 @@ internal static class Program
         CheckVideoQuizAspect60();
         CheckImageSize58();
         CheckMinimumSize68();
+        CheckServerSampleResponses();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
@@ -96,7 +97,7 @@ internal static class Program
         CheckLater52();
         CheckSurveyColors();
         CheckQuizSelectionLimit();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 68)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -606,6 +607,24 @@ internal static class Program
             && (double?)typeof(ImagePopupView).GetField("_requestedHeight", Flags)!.GetValue(options.Content) == 50,
             "[TODO68] FIT_TO_IMAGE width/height stays the 50 x 50 content size");
         ShutdownClose(window);
+    }
+
+    /* [TODO65·70] 서버 샘플이 내려주는 단건 조회 JSON(web/api 테스트 자원)이 실제 WPF 조회 DTO·Factory로 열린다. */
+    private static void CheckServerSampleResponses()
+    {
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "zero-rule-server", "web", "api", "src", "test", "resources", "sample", "relay"));
+        foreach (var (file, type, questions) in new[] { ("ok.json", "TEXT", 0), ("survey.json", "SURVEY", 1) })
+        {
+            var response = System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.WpfNextPopupResponseDto>(System.IO.File.ReadAllText(System.IO.Path.Combine(dir, file)), json)!;
+            var popup = response.Popup!;
+            var options = PopupFactory.Create(popup);
+            Check(response.PollingIntervalSeconds > 0 && popup.PopupType == type && popup.Questions.Count == questions && !string.IsNullOrEmpty(popup.DeliveryId)
+                && options.Content != null, $"[TODO70] {file} deserializes into the WPF DTO and PopupFactory creates {type}");
+        }
+        var text = System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.WpfNextPopupResponseDto>(System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "ok.json")), json)!.Popup!;
+        Check(!text.UseBackgroundOverlay && text.BackgroundOverlayOpacity == 0 && !text.ShowLater, "[TODO70] explicit false/0 survive WPF deserialization");
     }
 
     /* [TODO60] 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */
