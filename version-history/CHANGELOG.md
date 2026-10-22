@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-10 — TODO65 실테이블 단건 조회 샘플 API 구현(서버 모듈 편입)
+
+- 이유: web-server 담당자가 실제 조회 API를 구현할 때 참고할 SQL·매핑·CLOB 파싱·기본값·응답 조립 샘플을 담당자 패키지 구조로 제공할 필요.
+- 변경: domain VO, repo/core 매퍼 인터페이스·XML(정렬 후 ROWNUM 1, PK 보조 정렬, `#{}` 바인딩, CLOB→String), service/core 파서·조립기(컬럼 기준 매핑, 창 옵션 승격, 누락값 기본값·false/0 보존, 유형별 필수 콘텐츠 검증)·예시 코드표·전달 건/문항/파일 URL 포트·조건부 Bean 구성, web/api 샘플 API·한정 오류 처리(500 WPF_INTERNAL) 추가. 기본 비활성(`popup.sample.single-query.enabled`), 기존 WPF API·DB 변경 없음. 인계 문서 작성.
+- 주요 파일: zero-rule-server/domain/.../popup/sample/PopupContentRow.java, repo/core/.../mapper/popup/sample/PopupSingleQuerySampleMapper.java·resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml, service/core/.../popup/sample/*, web/api/.../popup/sample/PopupSingleQuerySample*.java, 각 모듈 테스트, docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md, docs/design/65_단건조회_공통매핑_CLOB파싱_샘플API_TODO.md, version-history/CHANGELOG.md.
+- 검증: DB 없이 매퍼 XML 3·서비스 6·컨트롤러 3건 통과(SQL 주석 안 바인딩 결함 발견·수정). 서버 `gradlew test --offline` 185건 실패 0·skip 11. 미실행: 실제 DTIY3111 SQL 실행, 확정 코드표 대조, 전체 서버 enabled 기동.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-22-09 — TODO67 미리보기 Dialog deprecated 속성 slotProps 전환
 
 - 이유: 폐쇄망 이식 중 PopupPreviewDialog의 BackdropProps 사용 중단 예정(ts6385) 안내가 확인되어 설치 버전이 지원하는 대체 API로 전환하고 표시·종료 동작 유지 검증 필요.

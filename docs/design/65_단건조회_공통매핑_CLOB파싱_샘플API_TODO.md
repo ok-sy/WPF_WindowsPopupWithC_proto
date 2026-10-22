@@ -1,7 +1,7 @@
 # TODO65 — 실테이블 연계 단건 조회 샘플 API
 
 - 작성일: 2026-10-22 (KST)
-- 상태: 진행 프로세스 구체화 완료 / 구현 미착수
+- 상태: 서버 모듈 편입 샘플 구현 완료 / 실제 DTIY3111 SQL 실행·확정 코드표 대조·전체 서버 enabled 기동 확인 대기
 - 목적: 서버 개발 담당자가 실제 조회 API를 구현할 때 참고할 SQL·매핑·파싱·기본값 처리 샘플 제공.
 
 ## 확정 범위
@@ -12,24 +12,38 @@
 
 ## 구현 TODO
 
-- [ ] 65-1. 제공 테이블 정의와 현재 WPF 조회 계약을 대조해 컬럼→응답 필드 매핑표 작성. 사진에 제시된 팝업콘텐츠기본 DTIY3111의 POPU_CNTN_ID, POPU_CNTN_TP_CD, HDR_TITL, POPU_WDTH_SZ, POPU_LNTH_SZ, AFTR_CNFM_OBJ_YN, FTR_BTN_TP_CD, FTR_URL, 파일 경로/이름, CNTN_CN을 시작점으로 실제 최신 정의·공통 코드·게시 테이블 연결 키를 확인한다. 확인되지 않은 테이블·코드값을 실제 확정값처럼 작성하지 않는다.
-- [ ] 65-2. Oracle 11g 호환 단건 SELECT 예시 작성. 내부 쿼리에서 후보 정렬 후 외부 WHERE ROWNUM = 1 적용. 동순위의 결정적 보조 정렬 키, 파라미터 바인딩, 조회 결과 0/1건 처리를 포함한다. 업무 후보 필터는 실제 담당자가 넣을 위치와 샘플 조건을 명확히 구분하며 임의 1건 조회를 업무 완료 API로 설명하지 않는다.
-- [ ] 65-3. Java/MyBatis 조회 결과 VO 또는 DTO와 매핑 예시 작성. 콘텐츠 ID와 게시 ID를 구분해 popupId가 무엇을 식별하는지 명시한다. deliveryId와 pollingIntervalSeconds 등 기존 조회 계약의 공통 값은 기존 서비스 연결 지점을 표시하고 콘텐츠 ID에서 임의 파생하지 않는다.
-- [ ] 65-4. 공통 헤더·옵션 조립 예시 작성. 컬럼의 제목/창 크기/나중에 보기/푸터 코드·URL을 기존 응답 타입에 매핑한다. Y/N→boolean 및 유형/푸터 공통 코드→ENUM 변환은 확정 코드표를 사용한다. 파일 경로·파일명은 WPF에서 접근 가능한 URL/지원 경로로 만드는 위치를 제시한다.
-- [ ] 65-5. CNTN_CN CLOB을 JDBC/MyBatis에서 문자열로 읽고 ObjectMapper로 콘텐츠 객체(JsonNode/Map 또는 기존 유형별 DTO)에 파싱하는 예시 작성. 응답 content는 JSON 객체로 조립하고 JSON 문자열의 이중 직렬화를 피한다. TEXT의 문단·Run 등 중첩 구조 보존, SURVEY/QUIZ의 별도 문항·선택지 조회 및 questions 조립 연결 지점을 안내한다.
-- [ ] 65-6. 기본값 적용 함수와 항목표 작성. 계약상 선택 필드의 누락/null 정책에 맞춰 기본값을 채우고 명시적 false·0·빈 문자열을 무조건 덮지 않는다. 공통 컬럼과 콘텐츠 JSON에 중복된 값이 있다면 기준 원본/우선순위와 정규화 위치를 명시한다.
-- [ ] 65-7. 정상 단건 응답, 조회 결과 없음(popup:null 등 기존 계약), 잘못된 JSON/객체가 아닌 JSON/유형별 필수 콘텐츠 누락의 오류 예시 작성. 파싱 실패를 빈 content나 기본값으로 덮어 정상처럼 반환하지 않는다. 실제 HTTP 상태·오류 코드는 기존 계약을 재사용한다.
-- [ ] 65-8. 전달 문서에 SQL→VO→공통 매핑→CLOB 파싱→기본값→응답 DTO 흐름, 요청/응답 샘플, 실행 방법·필요 설정 및 실제 개발자가 교체할 지점을 정리한다. 샘플은 기존 전체 서버 구현과 구분된 최소 경로로 제공하되 경로·패키지 위치는 기존 구성 조사 후 정한다.
+- [x] 65-1. 제공 테이블 정의와 현재 WPF 조회 계약을 대조해 컬럼→응답 필드 매핑표 작성. 사진에 제시된 팝업콘텐츠기본 DTIY3111의 POPU_CNTN_ID, POPU_CNTN_TP_CD, HDR_TITL, POPU_WDTH_SZ, POPU_LNTH_SZ, AFTR_CNFM_OBJ_YN, FTR_BTN_TP_CD, FTR_URL, 파일 경로/이름, CNTN_CN을 시작점으로 실제 최신 정의·공통 코드·게시 테이블 연결 키를 확인한다. 확인되지 않은 테이블·코드값을 실제 확정값처럼 작성하지 않는다.
+- [x] 65-2. Oracle 11g 호환 단건 SELECT 예시 작성. 내부 쿼리에서 후보 정렬 후 외부 WHERE ROWNUM = 1 적용. 동순위의 결정적 보조 정렬 키, 파라미터 바인딩, 조회 결과 0/1건 처리를 포함한다. 업무 후보 필터는 실제 담당자가 넣을 위치와 샘플 조건을 명확히 구분하며 임의 1건 조회를 업무 완료 API로 설명하지 않는다.
+- [x] 65-3. Java/MyBatis 조회 결과 VO 또는 DTO와 매핑 예시 작성. 콘텐츠 ID와 게시 ID를 구분해 popupId가 무엇을 식별하는지 명시한다. deliveryId와 pollingIntervalSeconds 등 기존 조회 계약의 공통 값은 기존 서비스 연결 지점을 표시하고 콘텐츠 ID에서 임의 파생하지 않는다.
+- [x] 65-4. 공통 헤더·옵션 조립 예시 작성. 컬럼의 제목/창 크기/나중에 보기/푸터 코드·URL을 기존 응답 타입에 매핑한다. Y/N→boolean 및 유형/푸터 공통 코드→ENUM 변환은 확정 코드표를 사용한다. 파일 경로·파일명은 WPF에서 접근 가능한 URL/지원 경로로 만드는 위치를 제시한다.
+- [x] 65-5. CNTN_CN CLOB을 JDBC/MyBatis에서 문자열로 읽고 ObjectMapper로 콘텐츠 객체(JsonNode/Map 또는 기존 유형별 DTO)에 파싱하는 예시 작성. 응답 content는 JSON 객체로 조립하고 JSON 문자열의 이중 직렬화를 피한다. TEXT의 문단·Run 등 중첩 구조 보존, SURVEY/QUIZ의 별도 문항·선택지 조회 및 questions 조립 연결 지점을 안내한다.
+- [x] 65-6. 기본값 적용 함수와 항목표 작성. 계약상 선택 필드의 누락/null 정책에 맞춰 기본값을 채우고 명시적 false·0·빈 문자열을 무조건 덮지 않는다. 공통 컬럼과 콘텐츠 JSON에 중복된 값이 있다면 기준 원본/우선순위와 정규화 위치를 명시한다.
+- [x] 65-7. 정상 단건 응답, 조회 결과 없음(popup:null 등 기존 계약), 잘못된 JSON/객체가 아닌 JSON/유형별 필수 콘텐츠 누락의 오류 예시 작성. 파싱 실패를 빈 content나 기본값으로 덮어 정상처럼 반환하지 않는다. 실제 HTTP 상태·오류 코드는 기존 계약을 재사용한다.
+- [x] 65-8. 전달 문서에 SQL→VO→공통 매핑→CLOB 파싱→기본값→응답 DTO 흐름, 요청/응답 샘플, 실행 방법·필요 설정 및 실제 개발자가 교체할 지점을 정리한다. 샘플은 기존 전체 서버 구현과 구분된 최소 경로로 제공하되 경로·패키지 위치는 기존 구성 조사 후 정한다.
 
 ## 검증 기준과 인계 산출물
 
 - [ ] 정렬 후 1건/0건 조회와 동순위 결과가 의도한 순서인지 확인한다. 실제 DB 실행 여부는 구분해 기록한다.
-- [ ] 제목·크기·푸터·나중에 보기 매핑, 누락 기본값 및 false/0 보존을 확인한다.
-- [ ] CLOB JSON 중첩 구조가 객체로 반환되고 이중 인코딩되지 않으며 잘못된 JSON은 오류로 처리되는지 확인한다.
-- [ ] 대표 TEXT·IMAGE·VIDEO 및 설문/퀴즈 응답 조립 예제를 WPF DTO 역직렬화/Demo API 연결로 확인한다. 모든 유형을 한꺼번에 완성할 필요 없이 공통 경로와 유형별 연결 범위를 명시한다.
-- [ ] SQL, Java/MyBatis 매핑·조립 샘플, 필드/기본값 매핑표, 정상·없음·오류 응답, 책임 범위·교체 지점을 전달한다.
-- [ ] 실제 대상/일정/완료/숨김/전달 건 정책의 일괄 검증은 담당 서버 개발 범위임을 인계 문서에 표시한다.
+- [x] 제목·크기·푸터·나중에 보기 매핑, 누락 기본값 및 false/0 보존을 확인한다.
+- [x] CLOB JSON 중첩 구조가 객체로 반환되고 이중 인코딩되지 않으며 잘못된 JSON은 오류로 처리되는지 확인한다.
+- [x] 대표 TEXT·IMAGE·VIDEO 및 설문/퀴즈 응답 조립 예제를 WPF DTO 역직렬화/Demo API 연결로 확인한다. 모든 유형을 한꺼번에 완성할 필요 없이 공통 경로와 유형별 연결 범위를 명시한다.
+- [x] SQL, Java/MyBatis 매핑·조립 샘플, 필드/기본값 매핑표, 정상·없음·오류 응답, 책임 범위·교체 지점을 전달한다.
+- [x] 실제 대상/일정/완료/숨김/전달 건 정책의 일괄 검증은 담당 서버 개발 범위임을 인계 문서에 표시한다.
 
-## 이번 반영
+## 구현 결과 (2026-10-22)
 
-TODO·변경 이력만 작성한다. API 구현·DB DDL 적용·실제 조회 실행은 미착수다. API 계약과 WPF 동작은 이 TODO 작성으로 변경하지 않는다.
+인계 문서: `docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md`(흐름·매핑표·SQL·응답 예시·교체 지점·검증 상태).
+
+- 위치(65-8): web-server 담당자 전달을 위해 기존 zero-rule-server 모듈 구조에 편입. VO `domain`(server.domain.popup.sample), 매퍼 인터페이스·XML `repo/core`(server.repo.core.mapper.popup.sample, `mappers/popup/sample/`), 서비스·파서·조립·코드표·포트 `service/core`(server.service.core.popup.sample), Controller·오류 처리 `web/api`(server.web.api.popup.sample). `popup.sample.single-query.enabled=true`일 때만 Bean·API(`POST /p/api/sample/wpf/popups/single`) 등록, 기존 WpfPopupService 경로는 변경 없음.
+- 65-1: DTIY3111 컬럼 → 응답 매핑표 작성. 게시 ID·파일 경로/이름 컬럼명·공통 코드값은 미확인으로 표시하고 예시값(`PopupCodeTable`)·교체 위치를 명시. popupId = 콘텐츠 ID, 게시 ID는 전달 건 포트 입력.
+- 65-2: 내부 정렬 + 외부 `ROWNUM = 1`, PK 보조 정렬, `#{}` 바인딩, 0건 = null → `popup:null`. 검증 중 SQL 주석 안 `#{userId}`가 실제 바인딩으로 잡히는 결함을 발견해 제거.
+- 65-3·4: resultMap VO, deliveryId·pollingIntervalSeconds는 `DeliveryPort`(샘플은 무작위 UUID, 업무 전달 건 아님), Y/N → boolean, 코드 → ENUM, 파일 → URL 위치(`FileUrlResolver`).
+- 65-5: CLOB → String(jdbcType CLOB) → `ObjectMapper.readTree` 1회 → ObjectNode를 content에 그대로 사용(이중 직렬화 없음). SURVEY·QUIZ는 `QuestionPort` 연결 지점(샘플은 미연결 오류).
+- 65-6: 누락/null에만 기본값, 명시적 false·0 보존. 제목·크기·나중에 보기·푸터는 컬럼 기준(content 중복 키 제거), 창 공통 옵션은 설계 31대로 최상위 승격.
+- 65-7: 정상·없음·오류(500 WPF_INTERNAL, 로그 reason) 예시. 오류 시 전달 건 미발급.
+
+## 검증 결과
+
+- repo/core `PopupSingleQuerySampleMapperXmlTest` 3건, service/core `PopupSingleQuerySampleTest` 6건, web/api `PopupSingleQuerySampleControllerTest` 3건 통과(모두 DB 없이). 서버 `gradlew test --offline` 185건 중 실패 0·skip 11(Oracle 연동).
+- 대표 유형: TEXT·IMAGE·SURVEY 조립과 VIDEO 필수 콘텐츠 오류를 단위 검증. WPF DTO 역직렬화는 같은 응답 계약 파일(TODO70 mock 응답)로 확인.
+- 미실행(검증대기): 실제 DTIY3111 테이블 대상 SQL 실행·정렬 결과 확인(테이블·확정 정의 미보유), 확정 코드표 대조, 전체 서버에서 `enabled=true` 기동.

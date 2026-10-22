@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  [TODO65] 실테이블 연계 단건 조회 샘플 SQL (Oracle 11g 호환).
+
+  - 내부 쿼리: 후보 필터 + 정렬. 외부 쿼리: WHERE ROWNUM = 1 (정렬 후 1건). ROWNUM을 내부 WHERE에 두면 정렬 전에 1건이 잘리므로 쓰지 않는다.
+  - 동순위 보조 정렬 키: 콘텐츠 PK(POPU_CNTN_ID)로 항상 같은 결과가 나오게 한다.
+  - 파라미터는 #{...} 바인딩만 사용한다(${...} 문자열 치환 금지).
+  - [미확인] 표시 컬럼·테이블은 최신 정의 확인 후 교체한다. 확인되지 않은 값을 확정값처럼 쓰지 않는다.
+  - [담당 구현] 대상자·게시 일정·완료·숨김·나중에 보기 후보 판단, 전달 건 생성/재사용은 서버 담당자가 구현한다.
+    이 SQL의 샘플 조건만으로 "다음 표시 팝업" 업무 API가 완성되지 않는다.
+-->
+<mapper namespace="server.repo.core.mapper.popup.sample.PopupSingleQuerySampleMapper">
+
+    <resultMap id="popupContentRow" type="server.domain.popup.sample.PopupContentRow">
+        <result property="postId" column="POST_ID" javaType="java.lang.String"/>
+        <result property="contentId" column="POPU_CNTN_ID"/>
+        <result property="contentTypeCode" column="POPU_CNTN_TP_CD"/>
+        <result property="headerTitle" column="HDR_TITL"/>
+        <result property="width" column="POPU_WDTH_SZ" javaType="java.math.BigDecimal"/>
+        <result property="height" column="POPU_LNTH_SZ" javaType="java.math.BigDecimal"/>
+        <result property="afterConfirmYn" column="AFTR_CNFM_OBJ_YN"/>
+        <result property="footerButtonTypeCode" column="FTR_BTN_TP_CD"/>
+        <result property="footerUrl" column="FTR_URL"/>
+        <result property="filePath" column="ATCH_FILE_PATH"/>
+        <result property="fileName" column="ATCH_FILE_NM"/>
+        <!-- CLOB → String. 파싱은 Java(PopupContentJsonParser)에서 ObjectMapper로 한 번만 한다. -->
+        <result property="contentJson" column="CNTN_CN" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+
+    <select id="selectNextCandidate" resultMap="popupContentRow">
+        SELECT *
+          FROM (
+                SELECT NULL                AS POST_ID          /* [미확인·담당] 게시 테이블 ID(조인 후 교체) */
+                     , C.POPU_CNTN_ID
+                     , C.POPU_CNTN_TP_CD
+                     , C.HDR_TITL
+                     , C.POPU_WDTH_SZ
+                     , C.POPU_LNTH_SZ
+                     , C.AFTR_CNFM_OBJ_YN
+                     , C.FTR_BTN_TP_CD
+                     , C.FTR_URL
+                     , C.ATCH_FILE_PATH                       /* [미확인] 파일 경로 컬럼명 */
+                     , C.ATCH_FILE_NM                         /* [미확인] 파일명 컬럼명 */
+                     , C.CNTN_CN
+                  FROM DTIY3111 C
+                 /* [담당 구현] 게시·대상자·완료/숨김/나중에 보기 이력 테이블 조인 위치. 예: JOIN 게시테이블 P ON P.POPU_CNTN_ID = C.POPU_CNTN_ID */
+                 WHERE 1 = 1
+                   /* [담당 구현] 대상자(파라미터 userId)·게시 일정·완료·숨김 조건 위치. 주석 안에는 바인딩 표기를 쓰지 않는다 */
+                <if test="contentId != null and contentId != ''">
+                   /* [샘플 조건] 확인용 단건 지정 */
+                   AND C.POPU_CNTN_ID = #{contentId, jdbcType=VARCHAR}
+                </if>
+                <if test="contentTypeCode != null and contentTypeCode != ''">
+                   /* [샘플 조건] 유형 지정 */
+                   AND C.POPU_CNTN_TP_CD = #{contentTypeCode, jdbcType=VARCHAR}
+                </if>
+                 ORDER BY /* [담당 확인] 실제 우선순위 컬럼(게시 순서·등록일 등)을 앞에 둔다 */
+                          C.POPU_CNTN_ID DESC                   /* 동순위 보조 정렬 키(PK) */
+               )
+         WHERE ROWNUM = 1
+    </select>
+</mapper>
