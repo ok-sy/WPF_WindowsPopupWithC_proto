@@ -13,12 +13,15 @@ using System.Windows.Media;
 namespace Popup
 {
     /*
-     * Demo 샘플 상세옵션 편집 창(모달).
+     * POL-14-02 : Demo 모드
+     * ■ Demo 샘플 상세옵션 편집 창(모달)
+     * - in : popup(PopupResponseDto) 편집할 현재 샘플 · defaults(PopupResponseDto?) 기본값 기준(샘플 원본)
+     * - out: Result(PopupResponseDto?) "설정 적용" 시 검증된 복사본, 취소 시 null
      * - 샘플의 복사본(_draft)만 편집하고 "설정 적용"에서 검증 후 Result로 돌려준다. 취소하면 원본·실행 중 Demo 게이트웨이는 그대로다.
-     * - [TODO54-3] 옵션을 그룹 탭(창·배치 / 헤더·푸터 / 콘텐츠 / 완료·동작 / 문항·선택지 / 고급)으로 나눈다.
-     * - [TODO54-4] 같은 탭의 상위 옵션이 꺼지면 하위 입력을 숨기고, 다른 탭 설정이나 모드 때문에 쓰지 않는 입력은 비활성 + 사유로 표시한다.
+     * - 옵션을 그룹 탭(창·배치 / 헤더·푸터 / 콘텐츠 / 완료·동작 / 문항·선택지 / 고급)으로 나눈다.
+     * - 같은 탭의 상위 옵션이 꺼지면 하위 입력을 숨기고, 다른 탭 설정이나 모드 때문에 쓰지 않는 입력은 비활성 + 사유로 표시한다.
      *   숨김·비활성 입력은 적용 시 읽지 않아 기존 값이 유지되고, 입력 중이던 값도 컨트롤에 남는다.
-     * - [TODO54-5] 범위·기본값 안내, 입력 즉시 검증, 기본값과 다른 항목 표시, 탭(그룹)별 기본값 복원.
+     * - 범위·기본값 안내, 입력 즉시 검증, 기본값과 다른 항목 표시, 탭(그룹)별 기본값 복원.
      * - API Demo의 수신 원문은 이 창으로 편집하지 않는다(인메모리 샘플 전용).
      */
     public sealed partial class DemoOptionsWindow : Window
@@ -323,6 +326,12 @@ namespace Popup
             return _draft.Deserialize<PopupResponseDto>(JsonOptions)!;
         }
 
+        /*
+         * ■ 편집 결과 정규화·검증
+         * - in : draft(JsonObject) 편집 중인 팝업 JSON
+         * - out: 없음(draft를 제자리에서 정규화) · 예외: ArgumentException(검증 실패 사유)
+         * - 크기·서식 본문·설문/퀴즈 서식을 서버 저장 규칙과 같이 검증하고 일반 문자열을 서식에서 다시 만든다.
+         */
         internal static void NormalizeAndValidate(JsonObject draft)
         {
             var content = draft["content"]!.AsObject();
@@ -338,17 +347,17 @@ namespace Popup
             }
             if (draft["popupType"]!.GetValue<string>() == "IMAGE")
             {
-                // [TODO58] IMAGE 크기는 모든 모드에서 창·배치 탭의 너비·높이(최상위) 한 쌍이다. content 쪽 크기는 쓰지 않는다.
+                // POL-04-01 : 공통 크기 입력 — IMAGE 크기는 모든 모드에서 창·배치 탭의 너비·높이(최상위) 한 쌍이다. content 쪽 크기는 쓰지 않는다.
                 string mode = content["imageSizeMode"]!.GetValue<string>();
                 content.Remove("width"); content.Remove("height");
                 if (mode != "ORIGINAL" && draft["sizeMode"]!.GetValue<string>() == "RATIO")
                     throw new ArgumentException("일반 이미지의 창 크기는 고정 또는 전체화면을 선택하세요. 창·배치 탭의 너비·높이를 사용합니다.");
                 if (mode != "FIT_TO_IMAGE") content.Remove("keepAspectRatio");
             }
-            // [설계 28] 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
+            // POL-03-01 : 저장·표시 경계 — 서버와 같이 서식 본문을 검증하고 plainText를 서식 본문에서 다시 만든다.
             if (draft["popupType"]!.GetValue<string>() == "TEXT" && content["textBlocks"] is JsonArray textBlocks)
                 content["plainText"] = ValidateTextBlocks(textBlocks);
-            // [TODO55] 설문·퀴즈 서식도 서버와 같이 검증하고 일반 문자열을 서식에서 다시 만든다(독립 편집 금지). 상한은 저장소 컬럼 길이.
+            // POL-06-01 : 문항·서식 — 설문·퀴즈 서식도 서버와 같이 검증하고 일반 문자열을 서식에서 다시 만든다(독립 편집 금지). 상한은 저장소 컬럼 길이.
             if (draft["popupType"]!.GetValue<string>() is "SURVEY" or "QUIZ")
             {
                 DeriveFromBlocks(content, "surveyTitleBlocks", "surveyTitle", "콘텐츠 제목", 200);
@@ -366,7 +375,7 @@ namespace Popup
             }
         }
 
-        /* [TODO55] 서식이 있고 글자가 있으면 일반 문자열을 파생한다. 빈 서식([] 또는 글자 없는 문단만)은 서식 없음으로 지운다. */
+        /* POL-06-01 : 문항·서식 — 서식이 있고 글자가 있으면 일반 문자열을 파생한다. 빈 서식([] 또는 글자 없는 문단만)은 서식 없음으로 지운다. */
         private static void DeriveFromBlocks(JsonObject target, string blocksKey, string plainKey, string label, int maxLength)
         {
             if (target[blocksKey] is not JsonArray blocks) return;
@@ -390,7 +399,7 @@ namespace Popup
                 if (videoSection && key == "description") continue; // Combined quiz and video share this description.
                 if (key is "questionId" or "optionId" or "options") continue;
                 if (!quiz && key is "isScored" or "questionScore" or "correctAnswer" or "answerMatchMode" or "isCorrect") continue;
-                // [TODO55] *Blocks(서식 JSON)는 모두 같은 편집기로 다룬다. 선택지의 textBlocks는 TEXT 본문과 뜻이 달라 라벨을 따로 둔다.
+                // POL-06-01 : 문항·서식 — *Blocks(서식 JSON)는 모두 같은 편집기로 다룬다. 선택지의 textBlocks는 TEXT 본문과 뜻이 달라 라벨을 따로 둔다.
                 if (key.EndsWith("Blocks", StringComparison.Ordinal))
                 {
                     string blocksLabel = dtoType == typeof(SurveyOptionDto) && key == "textBlocks"
@@ -413,7 +422,8 @@ namespace Popup
         }
 
         /*
-         * [설계 28] Demo는 서식 편집기 대신 textBlocks JSON을 직접 편집한다. 빈 값이면 서식 본문을 쓰지 않는다.
+         * POL-03-01 : 저장·표시 경계
+         * Demo는 서식 편집기 대신 textBlocks JSON을 직접 편집한다. 빈 값이면 서식 본문을 쓰지 않는다.
          */
         private void AddTextBlocksField(StackPanel panel, JsonObject target, string label, string key = "textBlocks")
         {
@@ -458,7 +468,8 @@ namespace Popup
         }
 
         /*
-         * [설계 48] 서버 PopupRichText.java의 저장 허용 값. Demo는 서버 없이 저장 검증을 흉내 내므로 이 사본을 Demo 안에만 둔다
+         * POL-03-02 : 문단·글자 서식
+         * 서버 PopupRichText.java의 저장 허용 값. Demo는 서버 없이 저장 검증을 흉내 내므로 이 사본을 Demo 안에만 둔다
          * (WPF 렌더러는 정책 목록을 갖지 않는다). 운영 시점에 Demo와 함께 제거한다.
          */
         private static readonly double[] ServerRichSizes = { 12, 14, 16, 18, 20, 24, 28, 32 };
@@ -466,7 +477,11 @@ namespace Popup
         private static bool IsServerRichColor(string value) =>
             value.Length == 7 && value[0] == '#' && value.Skip(1).All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
 
-        /* 서버 PopupRichText.validateAndDerivePlainText와 같은 규칙. 통과하면 파생 plainText를 돌려준다. */
+        /*
+         * POL-03-01 : 저장·표시 경계
+         * ■ 서식 본문 검증 — in : blocks(JsonArray) textBlocks · out: string 파생 plainText · 예외: ArgumentException(허용 밖 값)
+         * 서버 PopupRichText.validateAndDerivePlainText와 같은 규칙. 통과하면 파생 plainText를 돌려준다.
+         */
         internal static string ValidateTextBlocks(JsonArray blocks)
         {
             var plain = new System.Text.StringBuilder();
@@ -510,7 +525,8 @@ namespace Popup
         }
 
         /*
-         * [TODO54-4] 조건부 표시. 같은 탭의 상위 옵션이 꺼지면 하위 입력을 숨기고(Show),
+         * POL-14-02 : Demo 모드
+         * 조건부 표시. 같은 탭의 상위 옵션이 꺼지면 하위 입력을 숨기고(Show),
          * 다른 탭 설정·창 크기 방식·문항 유형 때문에 쓰지 않는 입력은 비활성 + 사유(Enable)로 둔다.
          */
         private void UpdateFieldAvailability()
@@ -542,7 +558,7 @@ namespace Popup
             bool image = _draft["popupType"]!.GetValue<string>() == "IMAGE";
             bool ordinaryImage = image && imageMode != "ORIGINAL";
             string? sizeReason = ordinaryImage ? "일반 이미지는 비율 창 크기를 쓰지 않습니다. 너비·높이를 사용합니다." : null;
-            // [TODO58] IMAGE는 모든 모드에서 같은 너비·높이를 쓴다(ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
+            // POL-04-01 : 공통 크기 입력 — IMAGE는 모든 모드에서 같은 너비·높이를 쓴다(ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
             Enable(_draft, "width", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
             Enable(_draft, "height", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
             Enable(_draft, "widthRatio", sizeMode == "RATIO" && !ordinaryImage, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");

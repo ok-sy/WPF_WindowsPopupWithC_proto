@@ -7,11 +7,22 @@ using Popup.Models;
 
 namespace Popup.Views.Contents
 {
+    /*
+     * POL-04-01 : 공통 크기 입력
+     * POL-04-02 : 모드별 기준
+     * POL-04-03 : 비율·상한
+     * ■ IMAGE ADAPTIVE / FIT_TO_IMAGE 모드 뷰
+     * - in : imageTitle·imagePath·imageDescription(string) · showDescription(bool) · sizeMode(ImagePopupSizeMode)
+     *        · width/height(double?) 공통 popup.width/height · keepAspectRatio(bool) · 예외: ArgumentException(빈 경로), ArgumentOutOfRangeException(0 이하·비유한 크기)
+     * - out: RecommendedSizeChanged(width, height) 콘텐츠 권장 크기 · RequestedWindowWidth/Height(ADAPTIVE 창 크기) · 화면: 제목·이미지·설명
+     * - ADAPTIVE는 요청 크기를 창 크기로 쓰고 이미지는 원본보다 키우지 않고 남은 영역에 맞춘다(Uniform).
+     *   FIT_TO_IMAGE는 요청 크기를 이미지 콘텐츠 영역으로 쓰고 제목·설명 높이를 더한 권장 크기를 PopupWindow에 알린다.
+     */
     public partial class ImagePopupView : UserControl, IBodyFontSizeAware
     {
         private readonly string _imagePath;
         private readonly ImagePopupSizeMode _sizeMode;
-        /* [TODO58] 공통 popup.width/height. ADAPTIVE는 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기. */
+        /* POL-04-01 : 공통 크기 입력 — 공통 popup.width/height. ADAPTIVE는 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기. */
         private readonly double? _requestedWidth;
         private readonly double? _requestedHeight;
         private readonly bool _keepAspectRatio;
@@ -26,6 +37,11 @@ namespace Popup.Views.Contents
         public double? RequestedWindowWidth => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedWidth : null;
         public double? RequestedWindowHeight => _sizeMode == ImagePopupSizeMode.Adaptive ? _requestedHeight : null;
 
+        /*
+         * ■ 콘텐츠 가용 크기 설정
+         * - in : width/height(double) PopupWindow가 계산한 콘텐츠 최대 크기(DIP, 1 미만은 1)
+         * - out: 없음 · 권장 크기를 다시 계산해 바뀌면 RecommendedSizeChanged를 올린다.
+         */
         public void SetAvailableBounds(double width, double height)
         {
             _maximumContentWidth = Math.Max(1, width);
@@ -71,6 +87,7 @@ namespace Popup.Views.Contents
                 throw new ArgumentOutOfRangeException(name, "크기는 0보다 큰 유한한 값이어야 합니다.");
         }
 
+        /* POL-01-01 : 공통 옵션의 위치 — 본문 폰트 크기는 이미지 설명에만 적용한다(제목 22는 유지). */
         public void ApplyBodyFontSize(double fontSize)
         {
             ImageDescriptionText.FontSize = fontSize;
@@ -104,9 +121,14 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO58] FIT_TO_IMAGE 이미지 콘텐츠 영역(이미지가 배치되는 공간) 크기. 이 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산한다.
+         * POL-04-02 : 모드별 기준
+         * POL-04-03 : 비율·상한
+         * ■ FIT_TO_IMAGE 이미지 콘텐츠 영역 계산
+         * - in : natural(Size) 원본 DIP 크기 · width/height(double?) 요청 크기 · keepAspectRatio(bool)
+         * - out: Size 이미지 콘텐츠 영역 · 예외: ArgumentOutOfRangeException(요청 크기 0 이하·비유한, 원본 크기 비정상)
+         * - FIT_TO_IMAGE 이미지 콘텐츠 영역(이미지가 배치되는 공간) 크기. 이 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산한다.
          *  - 두 축 지정: 그대로 영역 크기. 비율 고정이면 영역 안에 원본 비율로 맞춰(Uniform) 남는 쪽에 여백이 생기고,
-         *    해제면 영역을 채운다(Fill). 예전(TODO23)에는 비율 고정 시 너비 우선으로 높이를 다시 계산했다.
+         *    해제면 영역을 채운다(Fill). 너비 우선으로 높이를 다시 계산하지 않는다.
          *  - 한 축 지정: 비율 고정이면 원본 비율로 반대 축을 계산, 해제면 반대 축은 원본 DIP 길이.
          *  - 미지정: 원본 DIP 크기.
          * BitmapSource.Width/Height는 내장 DPI를 반영한 원본 DIP 크기다.
@@ -145,7 +167,7 @@ namespace Popup.Views.Contents
             }
             else
             {
-                // Preserve no-upscale behavior; legacy image size limits no longer apply.
+                // 원본보다 키우지 않는다(이미지 자체의 크기 상한은 없고 원본 크기까지만 표시).
                 PopupImage.MaxWidth = natural.Width;
                 PopupImage.MaxHeight = natural.Height;
                 PopupImage.Stretch = Stretch.Uniform;
@@ -156,7 +178,7 @@ namespace Popup.Views.Contents
             double availableHeight = ActualHeight > 0 ? ActualHeight : display.Height + titleHeight;
             DescriptionContainer.MaxHeight = Math.Max(1, Math.Min(display.Height, availableHeight - titleHeight) * 0.3);
             if (!NeedsNaturalWindowSize) return;
-            // Measure at target width; current window size must not feed back into recommendations.
+            // 목표 너비로 측정한다. 현재 창 크기가 권장 크기 계산에 다시 반영되면 안 된다.
             double targetWidth = display.Width + ImageContainer.BorderThickness.Left + ImageContainer.BorderThickness.Right;
             double measurementWidth = Math.Min(_maximumContentWidth, RequestedWindowWidth ?? targetWidth);
             ImageTitleText.Measure(new Size(measurementWidth, double.PositiveInfinity));

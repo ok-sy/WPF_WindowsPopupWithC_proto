@@ -4,7 +4,13 @@ using System.Windows.Media;
 
 namespace Popup.Views.Windows;
 
-/// <summary>팝업의 제출·채점 안내에 사용하는 공통 모달.</summary>
+/*
+ * POL-06-02 : 선택·제출
+ * ■ 팝업 공통 안내 모달
+ * - in : owner(Window?) 표시 중이면 가운데 기준 창 · message·title(string) · buttonText(string, 기본 "확인")
+ * - out: 없음(Show는 닫힐 때까지 대기) · CreateDialog는 표시 전 Window를 돌려준다.
+ * - 팝업의 제출·채점 안내에 사용하는 공통 모달. 테두리 없는 최상위 창이며 확인 버튼(Enter/Esc)으로 닫는다.
+ */
 public static class PopupAlert
 {
     public static void Show(Window? owner, string message, string title, string buttonText = "확인")

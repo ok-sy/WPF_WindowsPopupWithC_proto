@@ -9,7 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * [TODO70] 백엔드 응답 본문 → WPF 단건 조회 응답 {@code {pollingIntervalSeconds, popup}}.
+ * POL-14-03 : 서버 인계 예제
+ * POL-09-02 : 조회 응답
+ * ■ 백엔드 응답 본문 → WPF 단건 조회 응답 매퍼
+ * - in : 백엔드 응답 본문 문자열 · responseShape(WPF | ENVELOPE)
+ * - out: ObjectNode {@code {pollingIntervalSeconds, popup}} · 실패는 BackendCallException(INVALID_JSON·INVALID_RESPONSE)
  *
  * <p>본문은 {@link ObjectMapper#readTree}로 한 번만 파싱해 {@link JsonNode}로 다룬다. content·questions 같은 중첩 객체,
  * boolean false·숫자 0·null 값을 그대로 보존하며 객체를 문자열로 다시 감싸는 이중 직렬화를 하지 않는다.</p>
@@ -35,6 +39,13 @@ public class BackendResponseMapper {
         this.properties = properties;
     }
 
+    /**
+     * POL-14-03 : 서버 인계 예제
+     * ■ 백엔드 응답을 WPF 조회 응답으로 변환
+     * - in : body(String) 백엔드 2xx 응답 본문
+     * - out: ObjectNode 검증된 조회 응답 · 예외: BackendCallException(INVALID_JSON·INVALID_RESPONSE)
+     * - 한 번 파싱해 ENVELOPE면 data를 꺼내고 조회 계약을 검사한다. 구조는 바꾸지 않는다.
+     */
     public ObjectNode toWpfResponse(String body) {
         JsonNode root;
         try {

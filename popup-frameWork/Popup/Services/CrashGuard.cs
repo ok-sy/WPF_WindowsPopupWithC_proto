@@ -9,9 +9,12 @@ using System.Windows.Threading;
 namespace Popup.Services
 {
     /*
-     * [역할] 프로그램이 예외로 "뻗는" 상황에 대한 방어 로직.
+     * ■ 비정상 종료 방어
+     * - in : Install(application) App.OnStartup 맨 앞에서 1회
+     * - out: 예외 로그(%LOCALAPPDATA%\Popup\logs) · UI/비동기 예외는 프로세스 유지 · 치명적 예외는 자동 재시작
+     * - [역할] 프로그램이 예외로 "뻗는" 상황에 대한 방어 로직.
      *
-     * [추가 이유 — 사용자 요청 "프로그램 뻗었을 때 방어로직"]
+     * [추가 이유]
      *   WPF 팝업 클라이언트는 사용자 PC에서 트레이로 상시 실행된다. 처리되지 않은 예외 하나로 프로세스가 죽으면
      *   이후 팝업이 전혀 뜨지 않고, 미전송 결과 큐도 다음 실행까지 멈춘다. 다음 세 층으로 방어한다.
      *
@@ -41,7 +44,7 @@ namespace Popup.Services
 
         private static bool _installed;
 
-        /// <summary>App.OnStartup 맨 앞에서 한 번 호출한다.</summary>
+        /// <summary>■ 예외 처리기 설치. App.OnStartup 맨 앞에서 한 번 호출한다(중복 호출은 무시).</summary>
         public static void Install(Application application)
         {
             if (_installed) return;

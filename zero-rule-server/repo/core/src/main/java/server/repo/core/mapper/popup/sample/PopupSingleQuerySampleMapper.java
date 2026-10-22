@@ -6,7 +6,12 @@ import org.apache.ibatis.annotations.Param;
 import server.domain.popup.sample.PopupContentRow;
 
 /**
- * [TODO65] 단건 조회 매퍼. SQL은 {@code src/main/resources/sample/mapper/PopupSingleQueryMapper.xml}.
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 단건 조회 샘플 매퍼
+ * - in : userId·contentId·contentTypeCode(String, 아래 @param)
+ * - out: PopupContentRow 표시 후보 1건 또는 null
+ * - SQL은 {@code src/main/resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml}.
  *
  * <p>내부 쿼리에서 후보를 정렬하고 외부에서 {@code ROWNUM = 1}로 1건만 받는다(Oracle 11g 호환, FETCH FIRST 미사용).
  * 결과가 없으면 null이다.</p>

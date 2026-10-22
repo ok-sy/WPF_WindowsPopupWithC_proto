@@ -1,4 +1,5 @@
-// [TODO69] PopupcommonComponent 목록 기반 샘플: 목록 → 수정 → 편집(공통 에디터) → 우측/모달 미리보기 → 저장 요청 객체를 headless Edge로 확인한다.
+// POL-14-01 : 공통 프론트 경계
+// ■ PopupcommonComponent 목록 기반 샘플: 목록 → 수정 → 편집(공통 에디터) → 우측/모달 미리보기 → 저장 요청 객체를 headless Edge로 확인한다.
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-popup-common-sample-69.cjs (다른 Chromium은 BROWSER_PATH)
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/common-sample69');

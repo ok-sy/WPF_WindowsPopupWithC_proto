@@ -5,6 +5,12 @@ namespace Popup.Services;
 
 public readonly record struct MasterVolumeState(double Volume, bool Muted);
 
+/*
+ * POL-05-01 : 재생 경로
+ * ■ Windows 마스터 볼륨 추상화(VideoPopupView 음량 슬라이더·음소거 연동)
+ * - in : SetVolume(volume 0~1) · SetMute(muted)
+ * - out: State(현재 음량·음소거, 장치 없으면 null) · Changed 이벤트 · Set* 성공 여부(bool)
+ */
 public interface IMasterVolume : IDisposable
 {
     event Action<MasterVolumeState?>? Changed;
@@ -13,6 +19,13 @@ public interface IMasterVolume : IDisposable
     bool SetMute(bool muted);
 }
 
+/*
+ * POL-05-01 : 재생 경로
+ * ■ Windows 기본 출력 장치 마스터 볼륨
+ * - in : dispatcher(Dispatcher) COM 객체를 소유할 WPF 디스패처
+ * - out: IMasterVolume 구현 · 2초 주기로 기본 장치 교체·장치 없음 상태를 다시 확인한다
+ * - 음량을 올리면 음소거를 해제한다. Dispose 시 장치 값을 되돌리지 않는다(마지막 사용자 설정 유지).
+ */
 // All COM ownership stays on the WPF dispatcher. The native callback only queues a refresh.
 public sealed class WindowsMasterVolume : IMasterVolume
 {

@@ -13,29 +13,33 @@ using System.Threading.Tasks;
 namespace Popup.Services
 {
     /*
-     * [역할] 팝업 결과 항목을 로컬 파일 큐에 보관하고 서버(POST /p/api/wpf/popups/results)로 전송한다.
+     * POL-12-01 : 종결과 보관
+     * POL-12-02 : 현행 임시 복구
+     * POL-10-01 : 전달과 제출 식별
+     * ■ 결과 로컬 큐
+     * - in : apiService(IPopupGateway) 결과 전송 대상 · queueFilePath(string?, 기본 %LOCALAPPDATA%\Popup\pending-results.json)
+     * - out: Enqueue 파일 저장(실패 시 예외) · FlushAsync → ResultFlushOutcome(Blocked, LastSaved) · 예외: WpfClientVersionException(426)만 전파
+     * - [역할] 팝업 결과 항목을 로컬 파일 큐에 보관하고 서버(POST /p/api/wpf/popups/results)로 전송한다.
      *
-     * [추가 이유 — 기준 4]
-     *   실시간 이벤트·진행률 전송을 없애고 "팝업 종료 시점 1회 전송"으로 바꿨으므로, 그 1회가 유실되면
+     * [추가 이유]
+     *   실시간 이벤트·진행률 전송 없이 "팝업 종료 시점 1회 전송"을 하므로, 그 1회가 유실되면
      *   완료·숨김 상태가 서버에 남지 않는다. 네트워크 오류·서버 점검 중에도 결과를 잃지 않도록 전송 전에
      *   파일에 기록하고, 서버가 처리를 종결한 항목(ACCEPTED/DUPLICATE/REJECTED)만 제거한다.
      *
-     * [설계 12 §7·§8 — 역할 분리] 사용자 화면(창 닫기)과 서버 전송을 분리한다.
+     * [역할 분리] 사용자 화면(창 닫기)과 서버 전송을 분리한다.
      *   - Enqueue        : 파일에 저장만 하고 즉시 반환. 이 메서드가 끝나면 결과는 로컬에 안전하게 보존된 것이므로
      *                      호출자(PopupManager)는 서버 응답을 기다리지 않고 바로 창을 닫아도 된다.
-     *   - FlushAsync     : [설계 35] 보관된 결과를 순서대로 1건씩 전송. 종결 결과 제거, 미종결에서 멈추고 Blocked로 알림.
+     *   - FlushAsync     : 보관된 결과를 순서대로 1건씩 전송. 종결 결과 제거, 미종결에서 멈추고 Blocked로 알림.
      *                      조회 직전(MainWindow.LoadAndShowAvailablePopupsAsync)과 팝업 닫힘 직후(MainWindow.OnPopupFinished,
      *                      Demo는 DemoWindow.ContinueAfterResult)에 호출한다. 앱 종료 시에는 호출하지 않는다 —
      *                      종료 경로(MainWindow.StopServerRequests)는 StopTransmission으로 전송을 멈추고 파일 보관분은 다음 실행에서 보낸다.
-     *   예전 EnqueueAndSendAsync(저장 후 전송 완료까지 대기)·SendImmediateAsync(제출 응답 대기)는 제거했다.
-     *   설문·퀴즈 제출도 이제 로컬 판정 후 같은 경로로 간다.
-     *   [설계 50 A4] 호출부가 없던 EnqueueAsync(Task 형태)·FlushInBackground(백그라운드 Flush)와 그 426 알림 이벤트
-     *   ClientVersionRejected도 삭제했다. 426은 FlushAsync가 예외로 전파하고 호출자(MainWindow)가 직접 처리한다.
+     *   저장 후 전송 완료나 제출 응답을 기다리는 경로는 두지 않는다. 설문·퀴즈 제출도 로컬 판정 후 같은 경로로 간다.
+     *   백그라운드 Flush·426 알림 이벤트는 두지 않는다. 426은 FlushAsync가 예외로 전파하고 호출자(MainWindow)가 직접 처리한다.
      *
-     * [설계 13 §11 — 426] 서버가 클라이언트 버전 미지원(426)으로 거절하면 전송을 중단하고 항목을 그대로 보관한다.
+     * POL-15-02 : 인증·버전 — 서버가 클라이언트 버전 미지원(426)으로 거절하면 전송을 중단하고 항목을 그대로 보관한다.
      *   업데이트된 버전에서 다시 Flush 되며, 예외는 호출자에게 전파해 업데이트 안내에 쓰게 한다.
      *
-     * [응답 처리 — 설계 34-19~24] "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"가 삭제 기준이다.
+     * [응답 처리] "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"가 삭제 기준이다.
      *   - ACCEPTED / DUPLICATE / REJECTED(영구 업무 오류)만 큐에서 제거한다. REJECTED는 사유를 로그로 남긴다.
      *   - RETRYABLE_ERROR(확인된 일시 장애)는 보관하고 다음 Flush에서 같은 resultId로 재전송한다.
      *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
@@ -45,7 +49,7 @@ namespace Popup.Services
      *     제외(파일 보관)해 나머지 전송을 막지 않는다.
      *   항목의 resultId는 생성 시 확정되어 재전송 시 서버가 DUPLICATE로 걸러낸다.
      *
-     * [파일 — 설계 34-24] %LOCALAPPDATA%\Popup\pending-results.json — 사용자 프로필 단위. 토큰·사번은 저장하지 않는다.
+     * [파일] %LOCALAPPDATA%\Popup\pending-results.json — 사용자 프로필 단위. 토큰·사번은 저장하지 않는다.
      *   임시 파일에 쓴 뒤 교체해 쓰기 도중 종료돼도 기존 파일이 깨지지 않게 한다. 읽을 수 없는 파일은 버리지 않고
      *   pending-results.corrupt-시각.json으로 옮겨 보존한다. 새 결과의 디스크 저장 실패는 호출자에게 알리고 큐에 남기지 않는다
      *   (창이 열린 채 상태를 유지). 이미 확정되어 파일에 있던 항목의 재기록 실패와 앱 종료 중 결과(RetainForExit)만
@@ -54,7 +58,7 @@ namespace Popup.Services
      * [동시성] 파일 접근(_fileLock)과 전송(_flushGate)을 분리한다. 전송 중에도 Enqueue는 짧게 끝난다.
      */
     /// <summary>
-    /// [설계 35] <see cref="PopupResultQueue.FlushAsync"/> 결과. Blocked=true면 미종결 결과가 남아 다음 조회를 미룬다.
+    /// POL-12-02 : 현행 임시 복구 — <see cref="PopupResultQueue.FlushAsync"/> 결과. Blocked=true면 미종결 결과가 남아 다음 조회를 미룬다.
     /// LastSaved는 이번에 저장된(ACCEPTED·DUPLICATE) 마지막 결과 응답이며 NextStatus로 다음 조회 시점을 정한다.
     /// </summary>
     public sealed record ResultFlushOutcome(bool Blocked, WpfResultResponseDto? LastSaved);
@@ -67,7 +71,7 @@ namespace Popup.Services
             WriteIndented = true
         };
 
-        /* [POL-12-02; 근거 설계 34·45] INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
+        /* POL-12-02 : 현행 임시 복구 — INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
         public const int MaxInternalErrorAttemptsPerSession = 3;
 
         private static readonly HashSet<string> SettledStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -81,7 +85,7 @@ namespace Popup.Services
         private readonly SemaphoreSlim _flushGate = new(1, 1);
         private readonly List<WpfResultItemDto> _unsaved = new();
         private readonly Dictionary<string, int> _internalErrorAttempts = new(StringComparer.OrdinalIgnoreCase);
-        /* [설계 34 — 검토 보완] 단독으로 보내도 400인 항목. 이번 실행에서만 전송에서 빼고 파일에는 남긴다. */
+        /* POL-12-02 : 현행 임시 복구 — 단독으로 보내도 400인 항목. 이번 실행에서만 전송에서 빼고 파일에는 남긴다. */
         private readonly HashSet<string> _quarantined = new(StringComparer.OrdinalIgnoreCase);
         private volatile bool _transmissionStopped;
 
@@ -97,9 +101,8 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 51-7] 보관 중인 미종결 결과 건수(파일 + 메모리 보관분). API Demo가 화면 표시와 연결 변경 확인에 쓴다.
+        /// POL-14-02 : Demo 모드 — 보관 중인 미종결 결과 건수(파일 + 메모리 보관분). API Demo가 화면 표시와 연결 변경 확인에 쓴다.
         /// 파일을 읽을 수 없으면 예외를 그대로 던진다(건수를 0으로 오인하지 않게).
-        /// (설계 18 L-0에서 호출부가 없어 삭제했던 PendingCount를 API Demo 호출부와 함께 메서드로 다시 둔다.)
         /// </summary>
         public int CountPending()
         {
@@ -110,9 +113,10 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 12 §8.1·설계 34-23] 확정된 결과 항목을 pending-results.json에 저장하고 반환한다(동기). 서버 전송은 하지 않는다.
+        /// POL-12-01 : 종결과 보관
+        /// ■ 결과 저장 — 확정된 결과 항목을 pending-results.json에 저장하고 반환한다(동기). 서버 전송은 하지 않는다.
         /// 전송 중에도 파일 잠금만 짧게 잡으므로 창 닫기(Closing) 경로에서 호출해도 된다.
-        /// [검토 보완] 디스크 저장에 실패하면 항목을 큐(메모리 포함)에 남기지 않고 예외를 던진다. 호출자는 창을 유지한 채
+        /// 디스크 저장에 실패하면 항목을 큐(메모리 포함)에 남기지 않고 예외를 던진다. 호출자는 창을 유지한 채
         /// 상태를 들고 있다가 다음 닫기·제출 때 결과를 다시 만들어 저장한다. 미확정 결과가 먼저 전송되어 최종 결과가
         /// 같은 resultId의 DUPLICATE로 무시되는 일을 막기 위해서다. 앱 종료 중에는 <see cref="RetainForExit"/>를 쓴다.
         /// </summary>
@@ -123,7 +127,7 @@ namespace Popup.Services
              * PopupManager에서 닫기/숨김/영상/제출 결과가 만들어지면 여기로 들어온다.
              *
              * 반드시 "파일에 먼저 저장"한다. 창을 먼저 닫고 메모리에서만 전송하면
-             * 프로세스 종료·네트워크 오류 때 결과가 사라진다(설계 12 §7).
+             * 프로세스 종료·네트워크 오류 때 결과가 사라진다.
              *
              * 이 파일 큐는 로그가 아니라 업무 결과 유실 방지 장치다.
              */
@@ -138,7 +142,7 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 34-23] 앱 종료 중이라 닫기를 막을 수 없을 때만 쓴다. 디스크 저장을 한 번 더 시도하고, 실패하면 이번 실행 동안
+        /// POL-12-01 : 종결과 보관 — 앱 종료 중이라 닫기를 막을 수 없을 때만 쓴다. 디스크 저장을 한 번 더 시도하고, 실패하면 이번 실행 동안
         /// 메모리에만 보관한다. 종료 경로는 이미 전송을 멈췄고(StopTransmission) 종료 직전 Flush도 하지 않으므로, 메모리 보관분은
         /// 프로세스가 끝나면 서버에 보내지 못한 채 사라진다. 예외를 던지지 않는다.
         /// </summary>
@@ -161,12 +165,13 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 35] 보관된 결과를 저장된 순서대로 1건씩 전송하고 종결된 결과만 제거한다.
+        /// POL-12-02 : 현행 임시 복구
+        /// ■ 결과 전송 — 보관된 결과를 저장된 순서대로 1건씩 전송하고 종결된 결과만 제거한다.
         /// 네트워크·서버 오류는 조용히 넘기고 보관한다. 426(<see cref="WpfClientVersionException"/>)만 호출자에게 전파한다(보관 유지).
         /// 미종결 결과(전송 실패·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)를 만나면 순서를 지키기 위해 거기서 멈추고
         /// <see cref="ResultFlushOutcome.Blocked"/>로 알린다. 호출자(MainWindow)는 이 경우 다음 팝업을 조회하지 않는다
-        /// (미전송 결과 우선 — 장애 복구 정책 확정 전 임시 기준, 설계 35 §4).
-        /// [설계 39-1] 큐 파일을 읽거나 보존할 수 없으면 디스크에 미전송 결과가 남았는지 확인할 수 없으므로, 메모리 보관분을
+        /// (미전송 결과 우선 — 장애 복구 정책 확정 전 임시 기준).
+        /// POL-12-01 : 종결과 보관 — 큐 파일을 읽거나 보존할 수 없으면 디스크에 미전송 결과가 남았는지 확인할 수 없으므로, 메모리 보관분을
         /// 보낸 뒤에도 Blocked로 알린다(정상 빈 큐와 구분). 파일 원본은 건드리지 않는다.
         /// </summary>
         public async Task<ResultFlushOutcome> FlushAsync()
@@ -210,12 +215,12 @@ namespace Popup.Services
                     catch (WpfClientVersionException)
                     {
                         StopTransmission();
-                        // [설계 13 §11] 버전 차단 — 항목을 지우지 않고 전송을 멈춘다. 업데이트 후 재전송.
+                        // POL-15-02 : 인증·버전 — 버전 차단 — 항목을 지우지 않고 전송을 멈춘다. 업데이트 후 재전송.
                         throw;
                     }
                     catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
                     {
-                        // [설계 34 — 검토 보완] 요청 본문 자체가 400인 결과는 이번 실행에서만 제외(파일 보관)해 뒤 결과 전송을 막지 않는다.
+                        // POL-12-02 : 현행 임시 복구 — 요청 본문 자체가 400인 결과는 이번 실행에서만 제외(파일 보관)해 뒤 결과 전송을 막지 않는다.
                         _quarantined.Add(item.ResultId);
                         Debug.WriteLine($"결과 전송 400 — 이번 실행에서 제외(파일 보관) popupId={item.PopupId} " +
                             $"type={item.ResultType}: {exception.Message}");
@@ -257,7 +262,7 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 34-19~21·35] 이번에 보낸 결과의 종결 여부. ACCEPTED/DUPLICATE/REJECTED면 true(제거).
+        /// POL-12-01 : 종결과 보관 — 이번에 보낸 결과의 종결 여부. ACCEPTED/DUPLICATE/REJECTED면 true(제거).
         /// INTERNAL_ERROR는 재시도 횟수를 세고, 그 밖의 상태·다른 resultId 응답은 보관(false)한다.
         /// </summary>
         private bool Settle(WpfResultItemDto item, WpfResultResponseDto? response)
@@ -316,10 +321,10 @@ namespace Popup.Services
             }
             catch (JsonException exception)
             {
-                // [설계 34-24] 손상된 큐 파일은 버리지 않고 옆으로 옮겨 보존한다(수동 복구용).
+                // POL-12-01 : 종결과 보관 — 손상된 큐 파일은 버리지 않고 옆으로 옮겨 보존한다(수동 복구용).
                 string corrupt = Path.Combine(Path.GetDirectoryName(_queueFilePath) ?? ".",
                     $"{Path.GetFileNameWithoutExtension(_queueFilePath)}.corrupt-{DateTime.Now:yyyyMMddHHmmssfff}.json");
-                // [검토 보완] 보존(이동)에 실패하면 원본을 덮어쓰거나 지우지 않도록 예외를 던진다.
+                // 보존(이동)에 실패하면 원본을 덮어쓰거나 지우지 않도록 예외를 던진다.
                 //   Enqueue는 저장 실패를 호출자에게 알리고(새 항목은 큐에 남기지 않음), Flush는 파일을 건드리지 않고 메모리분만 전송한다.
                 try
                 {

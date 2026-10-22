@@ -6,9 +6,14 @@ using System.Windows.Media.Imaging;
 
 namespace Popup.Views.Contents
 {
-    /// <summary>
-    /// IMAGE ORIGINAL 모드 뷰(이름은 삭제된 FILL 모드 시절 이름을 유지). ORIGINAL은 원본 픽셀 크기를 유지하고 왼쪽 위에서 자른다.
-    /// </summary>
+    /*
+     * POL-04-02 : 모드별 기준
+     * ■ IMAGE ORIGINAL 모드 뷰
+     * - in : imagePath(string) 이미지 경로·URL 또는 data:image Base64 · 예외: ArgumentException(빈 경로)
+     * - out: 화면: 원본 픽셀 크기 이미지(왼쪽 위 기준, 넘침은 잘림) · 불러오기 실패 시 경고 MessageBox
+     * - 이름은 삭제된 FILL 모드 시절 이름을 유지한다. 창 크기는 PopupWindow가 popup.width/height로 정하고
+     *   이 뷰는 원본 1px = 1 DIP로 배치해 넘치는 부분을 자른다. 본문 텍스트가 없어 본문 폰트 크기 적용 대상이 아니다.
+     */
     public partial class ImageFillPopupView : UserControl
     {
         private readonly string _imagePath;
@@ -32,6 +37,7 @@ namespace Popup.Views.Contents
             LoadImage(_imagePath);
         }
 
+        /* 경로 또는 data:image Base64에서 비트맵을 만들어 원본 픽셀 크기로 표시한다. 다운로드 중이면 완료 후 적용한다. */
         private void LoadImage(string imagePath)
         {
             try

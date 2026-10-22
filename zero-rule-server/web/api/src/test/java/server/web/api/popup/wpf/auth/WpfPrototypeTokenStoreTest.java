@@ -11,7 +11,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * [설계 10 §6.2] 프로토타입 토큰 저장소 — 발급·조회·TTL 만료·만료 정리를 고정 시계로 검증한다.
+ * POL-15-02 : 인증·버전
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 프로토타입 토큰 저장소 테스트
+ * - 발급·조회·TTL 만료·만료 정리를 고정 시계로 검증한다.
  */
 class WpfPrototypeTokenStoreTest {
 

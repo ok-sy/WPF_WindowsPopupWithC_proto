@@ -9,6 +9,10 @@ using System.Windows.Controls;
 
 namespace Popup
 {
+    /*
+     * POL-14-02 : Demo 모드
+     * ■ Demo 상세옵션 입력 항목 구성(라벨·그룹 탭·필드)
+     */
     public sealed partial class DemoOptionsWindow
     {
         private static readonly Dictionary<string, string> Labels = new()
@@ -25,13 +29,14 @@ namespace Popup
             ["questionType"]="문항 유형", ["isRequired"]="필수 응답", ["isScored"]="채점 대상", ["questionScore"]="문항 배점",
             ["correctAnswer"]="주관식 정답", ["answerMatchMode"]="주관식 정답 일치 방식", ["value"]="선택지 값",
             ["text"]="선택지 문구", ["isCorrect"]="정답 선택지",
-            // [TODO55] 설문·퀴즈 서식(JSON). 있으면 저장 시 옆 일반 문자열을 서식에서 다시 만든다.
+            // POL-06-01 : 문항·서식 — 설문·퀴즈 서식(JSON). 있으면 저장 시 옆 일반 문자열을 서식에서 다시 만든다.
             ["surveyTitleBlocks"]="설문·퀴즈 제목 서식 (JSON) · 있으면 제목 대신 표시", ["descriptionBlocks"]="설명 서식 (JSON) · 있으면 설명 대신 표시",
             ["titleBlocks"]="문항 제목 서식 (JSON) · 있으면 문항 제목 대신 표시"
         };
 
         /*
-         * [TODO54-3] 그룹 탭. 자주 쓰는 창·헤더/푸터·콘텐츠를 앞에 두고, 효과 없는 계약 필드와 Demo 전용 값은 고급 탭으로 뺀다.
+         * POL-14-02 : Demo 모드
+         * 그룹 탭. 자주 쓰는 창·헤더/푸터·콘텐츠를 앞에 두고, 효과 없는 계약 필드와 Demo 전용 값은 고급 탭으로 뺀다.
          */
         private void BuildTabs(PopupResponseDto popup)
         {
@@ -48,16 +53,16 @@ namespace Popup
         {
             var panel = AddTab("창·배치", "창 크기·위치와 배경 Overlay입니다.");
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(TODO58). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
+                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(POL-04-01). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
             AddField(panel, _draft, "sizeMode", "창 크기 방식", typeof(string), new[] { "FIXED", "RATIO", "FULLSCREEN" });
-            // [TODO58] 생략(null)을 구분한다. IMAGE 외 유형은 비우면 900×620.
+            // POL-04-01 : 공통 크기 입력 — 생략(null)을 구분한다. IMAGE 외 유형은 비우면 900×620.
             AddField(panel, _draft, "width", popup.PopupType == "IMAGE" ? "너비(px) · FIT_TO_IMAGE는 콘텐츠 너비, 그 밖에는 팝업 너비" : "고정 창 너비(px)",
                 typeof(double?), min: 1, indent: true);
             AddField(panel, _draft, "height", popup.PopupType == "IMAGE" ? "높이(px) · FIT_TO_IMAGE는 콘텐츠 높이, 그 밖에는 팝업 높이" : "고정 창 높이(px)",
                 typeof(double?), min: 1, indent: true);
             AddField(panel, _draft, "widthRatio", "작업 영역 대비 너비 비율", typeof(double), min: .01, max: 1, indent: true);
             AddField(panel, _draft, "heightRatio", "작업 영역 대비 높이 비율", typeof(double), min: .01, max: 1, indent: true);
-            // [TODO68] 최종 창 최소 300 x 300. 더 작은 값은 저장 서버와 같이 받지 않는다.
+            // POL-01-03 : 최소 크기 — 최종 창 최소 300 x 300. 더 작은 값은 저장 서버와 같이 받지 않는다.
             AddField(panel, _draft, "minimumWidth", "최소 창 너비(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
             AddField(panel, _draft, "minimumHeight", "최소 창 높이(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
             if (popup.PopupType != "IMAGE")
@@ -67,7 +72,7 @@ namespace Popup
             }
             AddField(panel, _draft, "popupPosition", "창 위치", typeof(string), new[] {
                 "CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT", "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT" });
-            // [설계 31] 위치·Overlay·글자 크기는 PopupWindow 공통 옵션이라 content가 아니라 최상위 값이다.
+            // POL-01-01 : 공통 옵션의 위치 — 위치·Overlay·글자 크기는 PopupWindow 공통 옵션이라 content가 아니라 최상위 값이다.
             AddField(panel, _draft, "useBackgroundOverlay", "배경 Overlay 사용", typeof(bool));
             AddField(panel, _draft, "backgroundOverlayOpacity", "배경 불투명도", typeof(double), min: 0, max: 1, indent: true);
         }
@@ -80,7 +85,7 @@ namespace Popup
             AddField(panel, _draft, "headerFontSize", "헤더 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40, indent: true);
             AddField(panel, _draft, "showFooter", "푸터 표시", typeof(bool));
             AddField(panel, _draft, "showFooterButton", "푸터 버튼 표시", typeof(bool), indent: true);
-            // [설계 30] Footer 동작은 최상위 값. 설문·퀴즈는 제출(SUBMIT) 고정이라 선택 항목을 두지 않는다.
+            // POL-02-03 : 푸터 역할 — Footer 동작은 최상위 값. 설문·퀴즈는 제출(SUBMIT) 고정이라 선택 항목을 두지 않는다.
             if (survey)
             {
                 _draft["footerAction"] = "SUBMIT";
@@ -111,7 +116,7 @@ namespace Popup
         {
             var panel = AddTab("고급", "효과가 제한된 값입니다. 보통은 바꿀 필요가 없습니다.");
             AddField(panel, _draft, "displayOrder", "표시 순서 · Demo 정렬용, 서버 응답에는 없음", typeof(int), min: 0);
-            AddField(panel, _draft, "displayMode", "여러 팝업 표시 방식 · WPF는 읽지 않는 계약 필드(설계 50-B)", typeof(string), new[] { "SEQUENTIAL", "SIMULTANEOUS" });
+            AddField(panel, _draft, "displayMode", "여러 팝업 표시 방식 · WPF는 읽지 않는 계약 필드(POL-09-02)", typeof(string), new[] { "SEQUENTIAL", "SIMULTANEOUS" });
         }
 
         private static bool HasVideo(PopupResponseDto popup) => popup.Content.TryGetProperty("videoEnabled", out var enabled)
@@ -134,7 +139,7 @@ namespace Popup
             }
             AddDefaults(type);
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "이미지 크기는 창·배치 탭의 너비·높이를 씁니다(TODO58). FIT_TO_IMAGE 비율 고정은 지정 영역 안에 원본 비율로 맞추고(여백 가능), 해제는 영역을 채웁니다. 한 축만 지정하면 원본 비율 또는 원본 길이로 나머지를 채웁니다.");
+                AddNote(panel, "이미지 크기는 창·배치 탭의 너비·높이를 씁니다(POL-04-01). FIT_TO_IMAGE 비율 고정은 지정 영역 안에 원본 비율로 맞추고(여백 가능), 해제는 영역을 채웁니다. 한 축만 지정하면 원본 비율 또는 원본 길이로 나머지를 채웁니다.");
             AddField(panel, _draft, "bodyFontSize", "본문 글자 크기 · 비우면 기본", typeof(double?), min: 10, max: 40);
             AddObjectFields(panel, content, type, popup.PopupType == "QUIZ");
             if (HasVideo(popup))

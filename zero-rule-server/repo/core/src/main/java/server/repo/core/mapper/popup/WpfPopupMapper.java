@@ -8,9 +8,14 @@ import server.domain.popup.wpf.WpfUserPopupStatus;
 import java.time.OffsetDateTime;
 
 /**
- * 신규 WPF API(/p/api/wpf/**) 전용 SQL. mappers/popup/WpfPopupMapper.xml(Oracle).
+ * POL-10-02 : 검증·원자성
+ * POL-13-02 : 전달·영수증
+ * ■ WPF API 전용 매퍼
+ * - in : 사번·팝업 ID·전달 건 ID·resultId·표시/닫기 시각 등(메서드별 @Param)
+ * - out: 사용자 잠금·전달 건·영수증 조회 결과, 반영 건수
+ * - 신규 WPF API(/p/api/wpf/**) 전용 SQL. mappers/popup/WpfPopupMapper.xml(Oracle).
  *
- * <p>[추가 이유 — 기준 3·4] 결과 API는 팝업 종료 시점에 표시·닫기 정보를 한 번에 받고,
+ * <p>추가 이유: 결과 API는 팝업 종료 시점에 표시·닫기 정보를 한 번에 받고,
  * 항목 멱등 처리(WPF_RESULT_RECEIPT)와 요청 로그(API_REQUEST_LOG)가 필요하다. 기존 PopupMapper에는
  * 이벤트를 1건씩 기록하는 upsertPopupEvent만 있어 별도 구문을 둔다. 숨김·응답·영상·완료 처리는
  * 기존 PopupMapper/PopupService 구문을 재사용하므로 여기 두지 않는다.</p>
@@ -29,14 +34,14 @@ public interface WpfPopupMapper {
             @Param("displayedAt") OffsetDateTime displayedAt,
             @Param("closedAt") OffsetDateTime closedAt);
 
-    /** [설계 39-4·39-5] 활성 사용자 행을 잠근다(트랜잭션 끝까지). 조회·결과 처리를 사용자 단위로 직렬화한다. 비활성이면 null. */
+    /** POL-12-03 : 진행 단위 — 활성 사용자 행을 잠근다(트랜잭션 끝까지). 조회·결과 처리를 사용자 단위로 직렬화한다. 비활성이면 null. */
     String lockActiveUser(@Param("userId") String userId);
 
     /** 사번이 APP_USER에 활성(ACTIVE_YN=Y) 상태로 존재하면 1. 결과 API 진입 시 403 판정에 쓴다(조회 API는 lockActiveUser). */
     int countActiveUser(@Param("userId") String userId);
 
     /**
-     * 사용자×팝업 상태 1행(테스트 검증용). 없으면 null. [설계 34-03] 결과 응답에 상태를 싣지 않아 운영 코드는 호출하지 않으며
+     * 사용자×팝업 상태 1행(테스트 검증용). 없으면 null. 결과 응답에 상태를 싣지 않아 운영 코드는 호출하지 않으며
      * 실DB 테스트(WpfPopupDatabaseTest·WpfDeliveredResultDatabaseTest)가 완료·숨김 저장 결과를 확인할 때 쓴다.
      */
     WpfUserPopupStatus selectStatus(
@@ -55,19 +60,19 @@ public interface WpfPopupMapper {
             @Param("resultStatus") String resultStatus,
             @Param("resultCode") String resultCode);
 
-    /** [설계 35] 사용자의 미완료(OPEN) 전달 건. 없으면 null. */
+    /** POL-11-01 : 노출 판단 소유 — 사용자의 미완료(OPEN) 전달 건. 없으면 null. */
     WpfPopupDelivery selectOpenDelivery(@Param("userId") String userId);
 
-    /** [설계 35] 결과 처리용 전달 건(행 잠금). 없으면 null. */
+    /** POL-10-02 : 검증·원자성 — 결과 처리용 전달 건(행 잠금). 없으면 null. */
     WpfPopupDelivery selectDeliveryForUpdate(@Param("deliveryId") String deliveryId);
 
-    /** [설계 35] OPEN 전달 건 생성. 사용자에게 OPEN 건이 있으면 DuplicateKeyException. */
+    /** POL-12-03 : 진행 단위 — OPEN 전달 건 생성. 사용자에게 OPEN 건이 있으면 DuplicateKeyException. */
     int insertDelivery(@Param("deliveryId") String deliveryId, @Param("userId") String userId, @Param("popupId") String popupId);
 
-    /** [설계 35] 노출 대상이 아니게 된 OPEN 전달 건을 EXPIRED로 종료. */
+    /** POL-13-02 : 전달·영수증 — 노출 대상이 아니게 된 OPEN 전달 건을 EXPIRED로 종료. */
     int expireDelivery(@Param("deliveryId") String deliveryId);
 
-    /** [설계 35] 결과 저장 시 전달 건 종료와 재노출 유예(저장 시각 + deferSeconds). 이미 DONE이면 0. */
+    /** POL-10-03 : 완료·숨김·연기 — 결과 저장 시 전달 건 종료와 재노출 유예(저장 시각 + deferSeconds). 이미 DONE이면 0. */
     int completeDelivery(@Param("deliveryId") String deliveryId, @Param("resultId") String resultId,
                          @Param("resultType") String resultType, @Param("deferSeconds") int deferSeconds);
 

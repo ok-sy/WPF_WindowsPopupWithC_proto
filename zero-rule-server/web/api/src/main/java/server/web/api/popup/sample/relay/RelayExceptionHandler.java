@@ -21,13 +21,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * [TODO70] 오류를 기존 WPF 오류 계약 {@code {code, message, timestamp}}로 응답한다(서버 WpfApiExceptionHandler와 같은 코드 체계).
+ * POL-14-03 : 서버 인계 예제
+ * POL-15-02 : 인증·버전
+ * ■ 중계 샘플 한정 오류 응답
+ * - in : PopupRelayController에서 던진 예외
+ * - out: 기존 WPF 오류 계약 {@code {code, message, timestamp}} · 426은 백엔드 본문 그대로
+ * - 서버 WpfApiExceptionHandler와 같은 코드 체계를 쓴다.
  *
  * <table>
  *   <tr><th>상황</th><th>HTTP</th><th>code</th></tr>
  *   <tr><td>요청 본문 오류</td><td>400</td><td>WPF_BAD_REQUEST</td></tr>
  *   <tr><td>백엔드 400·401·403</td><td>같은 상태</td><td>백엔드 본문의 WPF 코드(없으면 상태별 기본 코드)</td></tr>
- *   <tr><td>백엔드 426(클라이언트 버전 미지원)</td><td>426</td><td>백엔드 본문 그대로(CLIENT_VERSION_NOT_SUPPORTED·버전 값, 설계 13)</td></tr>
+ *   <tr><td>백엔드 426(클라이언트 버전 미지원)</td><td>426</td><td>백엔드 본문 그대로(CLIENT_VERSION_NOT_SUPPORTED·버전 값, 클라이언트 최소 버전 거절 계약)</td></tr>
  *   <tr><td>백엔드 그 밖의 4xx·5xx, 연결 실패, timeout, JSON 오류, 계약 불일치</td><td>500</td><td>WPF_INTERNAL(메시지 비노출)</td></tr>
  * </table>
  *
@@ -51,6 +56,7 @@ public class RelayExceptionHandler {
         this.objectMapper = objectMapper;
     }
 
+    /** 백엔드 실패를 위 표대로 426 원문·400/401/403 전달·500 WPF_INTERNAL로 변환한다. */
     @ExceptionHandler(BackendCallException.class)
     public ResponseEntity<Map<String, Object>> backend(BackendCallException ex) {
         log.warn("relay failed kind={} status={} reason={}", ex.kind(), ex.status(), ex.getMessage());
@@ -72,6 +78,7 @@ public class RelayExceptionHandler {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.", ex.kind());
     }
 
+    /** 요청 본문 오류 → 400 WPF_BAD_REQUEST. */
     @ExceptionHandler({HttpMessageNotReadableException.class, IllegalArgumentException.class})
     public ResponseEntity<Map<String, Object>> badRequest(Exception ex) {
         String message = ex instanceof HttpMessageNotReadableException ? "요청 본문을 해석할 수 없습니다." : ex.getMessage();

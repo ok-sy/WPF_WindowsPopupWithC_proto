@@ -7,27 +7,32 @@ using System.Threading.Tasks;
 namespace Popup.Services
 {
     /*
-     * [역할] Demo Mode의 인메모리 "서버". IPopupGateway를 구현해 Java 서버·DB 없이도
+     * POL-14-02 : Demo 모드
+     * POL-10-02 : 검증·원자성
+     * POL-10-03 : 완료·숨김·연기
+     * ■ Demo 인메모리 게이트웨이
+     * - in : GetNextPopupAsync(popupType?) 조회 · PostResultAsync(item) 결과 1건
+     * - out: WpfNextPopupResponseDto(popup 1건 또는 null) · WpfResultResponseDto(status/code/message, 저장 시 nextStatus) · ResultProcessed 이벤트
+     * - [역할] Demo Mode의 인메모리 "서버". IPopupGateway를 구현해 Java 서버·DB 없이도
      *        단건 조회(POST /p/api/wpf/popups)와 결과 1건 전송(POST /p/api/wpf/popups/results)의 동작을 흉내 낸다.
      *
      * [추가 이유 — Demo Mode]
-     *   예전 Demo Mode는 샘플 팝업을 띄우기만 하고 결과(닫기·숨김·제출·영상)는 버렸다.
-     *   새 구조(기준 3·4)에서는 "창이 닫힐 때 결과 항목 1개 전송"이 핵심이므로, 데모에서도 그 흐름
+     *   결과 구조는 "창이 닫힐 때 결과 항목 1개 전송"이 핵심이므로, 데모에서도 그 흐름
      *   (PopupResultBuilder → PopupResultQueue → 게이트웨이 → 항목 응답 → 안내)을 실제 코드로 통과시킨다.
      *   서버 규칙을 최대한 그대로 재현한다:
      *     - HIDDEN : hideDays(1~3650) 동안 숨김 → 다음 조회에서 제외
-     *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(설계 12 — 서버 재채점 없음, 실제 서버는 참고·로그).
-     *                   score/passed가 빠진 항목은 불합격으로 기록한다(설계 18 L-0 — C-18, 구 클라이언트용 Grade() 삭제).
+     *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(서버 재채점 없음, 실제 서버는 참고·로그).
+     *                   score/passed가 빠진 QUIZ 항목은 WPF_INVALID_RESULT로 거절한다(데모 채점기 없음).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
      *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
-     *     - [설계 35] 조회마다 전달 건(deliveryId)을 발급하고 결과에서 일치·미종료를 검사한다. 일반 안내(TEXT·IMAGE) 닫기는 완료,
+     *     - 조회마다 전달 건(deliveryId)을 발급하고 결과에서 일치·미종료를 검사한다. 일반 안내(TEXT·IMAGE) 닫기는 완료,
      *       설문·퀴즈·영상의 미완료 결과는 조회 간격(DeferSeconds) 동안 재노출 유예. 저장 후 남은 후보로 nextStatus를 돌려준다.
      *   처리한 항목은 ResultProcessed 이벤트로 DemoWindow의 결과 로그에 보여 준다.
      *
      * [주의] 데모 샘플 JSON은 계약서 v3 형태(최상위 questions·passingScore, options[].isCorrect, questionScore)다
-     *        (설계 18 L-2). 이 게이트웨이는 채점하지 않고 WPF 화면 쪽 QuizGrader가 채점한다.
+     *        이 게이트웨이는 채점하지 않고 WPF 화면 쪽 QuizGrader가 채점한다.
      *        운영 코드(PopupApiService)와 혼동하지 않도록 이 클래스는 Demo Mode에서만 생성된다.
      */
     public sealed class DemoPopupGateway : IPopupGateway
@@ -37,10 +42,10 @@ namespace Popup.Services
         private readonly HashSet<string> _completed = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _receipts = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTimeOffset> _deferredUntil = new(StringComparer.OrdinalIgnoreCase);
-        /* [설계 35] 전달 건: deliveryId → (popupId, 결과 저장 여부) */
+        /* POL-10-01 : 전달과 제출 식별 — 전달 건: deliveryId → (popupId, 결과 저장 여부) */
         private readonly Dictionary<string, (string PopupId, bool Done)> _deliveries = new(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>[설계 35] 미완료 결과의 재노출 유예(서버 pollingIntervalSeconds 최솟값과 같은 30분).</summary>
+        /// <summary>POL-11-02 : 반복의 의미 — 미완료 결과의 재노출 유예(서버 pollingIntervalSeconds 최솟값과 같은 30분).</summary>
         public const int DeferSeconds = 1800;
 
         /// <summary>결과 1건이 처리될 때마다 (요청, 응답) 쌍으로 알린다. DemoWindow가 로그로 표시한다.</summary>
@@ -91,7 +96,7 @@ namespace Popup.Services
             .ToList();
 
         /// <summary>
-        /// [설계 35] 후보 첫 팝업 1건에 새 전달 건을 붙여 돌려준다(없으면 Popup=null). popupType을 주면 그 유형만(Demo 화면 필터).
+        /// POL-11-01 : 노출 판단 소유 — 후보 첫 팝업 1건에 새 전달 건을 붙여 돌려준다(없으면 Popup=null). popupType을 주면 그 유형만(Demo 화면 필터).
         /// 원본 샘플은 바꾸지 않고 사본에 deliveryId를 넣는다.
         /// </summary>
         public Task<WpfNextPopupResponseDto> GetNextPopupAsync(string? popupType)
@@ -147,19 +152,19 @@ namespace Popup.Services
             switch (item.ResultType)
             {
                 case WpfResultType.Closed:
-                    // [설계 35] 일반 안내(TEXT·IMAGE)의 닫기는 확인 완료. 그 밖의 유형은 완료 전 닫기라 유예만 적용한다.
+                    // POL-10-03 : 완료·숨김·연기 — 일반 안내(TEXT·IMAGE)의 닫기는 확인 완료. 그 밖의 유형은 완료 전 닫기라 유예만 적용한다.
                     if (popup.PopupType.Equals("TEXT", StringComparison.OrdinalIgnoreCase)
                         || popup.PopupType.Equals("IMAGE", StringComparison.OrdinalIgnoreCase)) _completed.Add(item.PopupId);
                     break;
 
                 case WpfResultType.Later:
-                    // [TODO52-2] 나중에 보기: 유형과 관계없이 완료 처리하지 않는다. 아래 공통 처리로 조회 간격 동안만 유예된다.
+                    // POL-10-03 : 완료·숨김·연기 — 나중에 보기: 유형과 관계없이 완료 처리하지 않는다. 아래 공통 처리로 조회 간격 동안만 유예된다.
                     break;
 
                 case WpfResultType.Hidden:
                     if (item.HideDays is null or < 1 or > 3650)
                     {
-                        return Reject(response, "WPF_INVALID_RESULT", "숨김 일수는 1~3650일이어야 합니다."); // 서버와 같이 요청 검증 오류(설계 50)
+                        return Reject(response, "WPF_INVALID_RESULT", "숨김 일수는 1~3650일이어야 합니다."); // 서버와 같이 요청 검증 오류
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
                     break;
@@ -167,7 +172,7 @@ namespace Popup.Services
                 case WpfResultType.Submitted:
                     if (popup.Content.TryGetProperty("videoEnabled", out var enabled) && enabled.ValueKind == System.Text.Json.JsonValueKind.True)
                     {
-                        // [설계 53-16] 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 WPF_INVALID_VIDEO).
+                        // POL-05-02 : 완료·화면 이탈 — 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 WPF_INVALID_VIDEO).
                         if (item.Video == null
                             || !VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? 1.0))
                             return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 완료 비율을 충족해야 합니다.");
@@ -184,9 +189,10 @@ namespace Popup.Services
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
                         /*
-                         * [설계 12·33] WPF가 로컬 채점한 score/passed를 그대로 저장한다(서버와 같이 QUIZ 필수, 없으면 REJECTED).
-                         * [설계 18 L-0 — C-18] score/passed 없이 오는 "구 클라이언트" 제출을 위한 데모 채점기 Grade()는 삭제했다.
-                         * [설계 33] 응답에는 totalScore/passed를 다시 내려주지 않는다.
+                         * POL-06-02 : 선택·제출
+                         * WPF가 로컬 채점한 score/passed를 그대로 저장한다(서버와 같이 QUIZ 필수, 없으면 REJECTED).
+                         * score/passed 없이 오는 제출을 채점하는 데모 채점기는 두지 않는다.
+                         * 응답에는 totalScore/passed를 다시 내려주지 않는다.
                          */
                         if (!item.Score.HasValue || item.Passed == null)
                         {

@@ -26,15 +26,21 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 신규 WPF API(/p/api/wpf/**)의 업무 진입점: [설계 35] 표시할 팝업 1건 선정(전달 건 발급)과 결과 1건 처리·후속 후보 확인.
+ * POL-09-01 : 3 API 순서
+ * POL-11-01 : 노출 판단 소유
+ * POL-10-01 : 전달과 제출 식별
+ * ■ WPF 조회·결과 업무 서비스
+ * - in : 인증 정보에서 얻은 사번, 결과 요청(WpfResultCommand)
+ * - out: WpfNextPopupResponse 단건 조회 응답 · WpfResultResponse 결과 응답 · 예외: WpfUserInactiveException(403)
+ * - 신규 WPF API(/p/api/wpf/**)의 업무 진입점: 표시할 팝업 1건 선정(전달 건 발급)과 결과 1건 처리·후속 후보 확인.
  *
  * <p>[추가 이유]</p>
  * <ul>
- *   <li>기준 2: 노출 판단(활성·기간·대상·숨김·<b>완료</b>·재노출 유예)을 SQL 한 번({@code selectAvailablePopups(userId, true)})으로
+ *   <li>POL-11-01 : 노출 판단 소유 — 노출 판단(활성·기간·대상·숨김·<b>완료</b>·재노출 유예)을 SQL 한 번({@code selectAvailablePopups(userId, true)})으로
  *       끝내고 WPF는 렌더링만 한다.</li>
- *   <li>기준 3: 조회 1개 + 결과 1개 API. 결과는 유형별로 {@link WpfResultProcessor}에 위임한다.</li>
- *   <li>기준 4: 결과는 팝업 종료 시점 1회, 1건씩 들어오며 결과마다 독립 트랜잭션으로 처리한다.</li>
- *   <li>기준 6: 사용자 ID는 컨트롤러가 인증 정보에서 얻어 인자로 넘긴다. 요청 본문의 값은 없다.</li>
+ *   <li>POL-09-01 : 3 API 순서 — 조회 1개 + 결과 1개 API. 결과는 유형별로 {@link WpfResultProcessor}에 위임한다.</li>
+ *   <li>POL-10-02 : 검증·원자성 — 결과는 팝업 종료 시점 1회, 1건씩 들어오며 결과마다 독립 트랜잭션으로 처리한다.</li>
+ *   <li>POL-15-02 : 인증·버전 — 사용자 ID는 컨트롤러가 인증 정보에서 얻어 인자로 넘긴다. 요청 본문의 값은 없다.</li>
  * </ul>
  *
  * <p>기존 {@link PopupService}는 문항 조립·채점 규칙의 단일 원천으로 재사용하며 구조를 바꾸지 않는다.
@@ -53,6 +59,7 @@ public class WpfPopupService {
     private final WpfResultProcessor resultProcessor;
     private final WpfPopupProps props;
 
+    /** ■ 생성 - in : PopupService·PopupMapper·WpfPopupMapper·WpfResultProcessor·WpfPopupProps - out: 서비스 인스턴스 */
     public WpfPopupService(PopupService popupService, PopupMapper popupMapper, WpfPopupMapper wpfMapper,
                            WpfResultProcessor resultProcessor, WpfPopupProps props) {
         this.popupService = popupService;
@@ -62,7 +69,13 @@ public class WpfPopupService {
         this.props = props;
     }
 
-    /** 사번이 활성 사용자가 아니면 403(WpfUserInactiveException). 목록·결과 API 공통 선행 검사. */
+    /**
+     * POL-15-02 : 인증·버전
+     * ■ 활성 사용자 확인
+     * - in : employeeNo(String) 인증된 사번
+     * - out: 없음 · 예외: WpfUserInactiveException(403)
+     * - 사번이 활성 사용자가 아니면 403(WpfUserInactiveException). 목록·결과 API 공통 선행 검사.
+     */
     @Transactional(readOnly = true)
     public void requireActiveUser(String employeeNo) {
         if (employeeNo == null || employeeNo.isBlank() || wpfMapper.countActiveUser(employeeNo.trim()) == 0) {
@@ -71,7 +84,12 @@ public class WpfPopupService {
     }
 
     /**
-     * [설계 35] 지금 표시할 팝업 최대 1건과 전달 건 ID. 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)은 SQL에서 끝낸다.
+     * POL-11-01 : 노출 판단 소유
+     * POL-12-03 : 진행 단위
+     * ■ 다음 팝업 1건 조회(전달 건 발급·재사용)
+     * - in : employeeNo(String) 인증된 사번
+     * - out: WpfNextPopupResponse {pollingIntervalSeconds, popup(없으면 null)} · 예외: WpfUserInactiveException(403)
+     * - 지금 표시할 팝업 최대 1건과 전달 건 ID. 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)은 SQL에서 끝낸다.
      *
      * <ol>
      *   <li>사용자의 OPEN 전달 건이 있고 그 팝업이 아직 노출 대상이면 같은 deliveryId로 다시 준다(조회 응답 유실 복구).</li>
@@ -80,9 +98,9 @@ public class WpfPopupService {
      *       (유니크 인덱스 위반) 그 건을 재사용한다.</li>
      * </ol>
      * 전달 자체는 읽음·완료로 처리하지 않는다. 문항은 고른 팝업 1건만 읽는다.
-     * [설계 39-4] 시작할 때 사용자 행을 잠가(결과 처리와 같은 잠금) 진행 중인 결과 커밋 이후의 상태로 후보를 고른다.
+     * POL-12-03 : 진행 단위 — 시작할 때 사용자 행을 잠가(결과 처리와 같은 잠금) 진행 중인 결과 커밋 이후의 상태로 후보를 고른다.
      *
-     * <p>[설계 12 §4 — WPF 로컬 채점] QUIZ는 정답 키·통과 점수를 포함하고, 그 밖의 유형은 정답 키를 뺀다.</p>
+     * <p>POL-06-02 : 선택·제출 — WPF 로컬 채점을 위해 QUIZ는 정답 키·통과 점수를 포함하고, 그 밖의 유형은 정답 키를 뺀다.</p>
      */
     @Transactional
     public WpfNextPopupResponse getNextPopup(String employeeNo) {
@@ -118,10 +136,12 @@ public class WpfPopupService {
                 chosen == null ? null : toItem(chosen).withDeliveryId(deliveryId));
     }
 
+    /** 후보 목록에서 popupId가 같은 팝업을 찾는다(없으면 null). */
     private static PopupEntity find(List<PopupEntity> popups, String popupId) {
         return popups.stream().filter(p -> p.popupId().equals(popupId)).findFirst().orElse(null);
     }
 
+    /** 고른 팝업 1건의 문항을 읽어 WPF 응답 항목으로 바꾼다(QUIZ 외에는 정답 키 제거). */
     private WpfPopupItem toItem(PopupEntity popup) {
         boolean quiz = "QUIZ".equalsIgnoreCase(popup.popupType());
         List<PopupQuestionDto> questions = popup.questionTemplateId() == null
@@ -135,12 +155,17 @@ public class WpfPopupService {
     }
 
     /**
-     * [설계 35] 결과 1건 처리 후 후속 후보 유무(nextStatus)를 돌려준다. 결과 처리는 REQUIRES_NEW 트랜잭션이며
+     * POL-09-03 : 저장 응답
+     * POL-10-02 : 검증·원자성
+     * ■ 결과 1건 처리
+     * - in : employeeNo(String) 인증된 사번 · item(WpfResultCommand) 결과 요청
+     * - out: WpfResultResponse resultId·status·nextStatus·code·message · 예외: WpfUserInactiveException(403)
+     * - 결과 1건 처리 후 후속 후보 유무(nextStatus)를 돌려준다. 결과 처리는 REQUIRES_NEW 트랜잭션이며
      * 이 메서드 자체는 트랜잭션이 아니다(후보 확인이 저장 커밋 후 상태를 보도록).
      *
      * <ul>
      *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·전달 건 불일치·문항 불일치 등) → REJECTED + 코드(영구)</li>
-     *   <li>[설계 34-19] 확인된 일시 장애 → RETRYABLE_ERROR, 그 밖의 RuntimeException → INTERNAL_ERROR</li>
+     *   <li>POL-09-03 : 저장 응답 — 확인된 일시 장애 → RETRYABLE_ERROR, 그 밖의 RuntimeException → INTERNAL_ERROR</li>
      *   <li>ACCEPTED·DUPLICATE: 저장 후 노출 후보(완료·숨김·재노출 유예 제외)가 있으면 AVAILABLE, 없으면 EMPTY.
      *       후보 확인이 실패하면 EMPTY로 바꾸지 않고 nextStatus를 생략하며 code=WPF_NEXT_STATUS_UNKNOWN을 준다.
      *       방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.</li>
@@ -177,7 +202,11 @@ public class WpfPopupService {
         }
     }
     /**
-     * [설계 34-19] 재시도하면 성공할 수 있는 일시 장애인지 예외 형식(원인 체인 포함)으로 판단한다.
+     * POL-09-03 : 저장 응답
+     * ■ 일시 장애 판정
+     * - in : ex(Throwable) 결과 처리 예외
+     * - out: boolean 일시 장애(RETRYABLE_ERROR 대상) 여부
+     * - 재시도하면 성공할 수 있는 일시 장애인지 예외 형식(원인 체인 포함)으로 판단한다.
      * Spring 일시 장애 계열(TransientDataAccessException: 데드락·잠금 대기·쿼리 타임아웃 등), 복구 가능 오류,
      * DB 자원 접근 실패(연결 불가), 트랜잭션 시작 실패, JDBC 일시·복구 가능 예외를 일시 장애로 본다.
      */
@@ -196,7 +225,12 @@ public class WpfPopupService {
         return false;
     }
 
-    /** 요청 단위 로그. 본 처리와 분리된 트랜잭션이라 로그 실패가 결과 처리에 영향을 주지 않도록 호출자가 예외를 잡는다. */
+    /**
+     * ■ API 요청 로그 저장
+     * - in : clientRequestId · employeeNo · apiPath · httpMethod · clientIp · receivedAt · httpStatus · success · 요청/응답 요약
+     * - out: 없음(경과 시간을 계산해 요청 로그 1행 저장)
+     * - 요청 단위 로그. 본 처리와 분리된 트랜잭션이라 로그 실패가 결과 처리에 영향을 주지 않도록 호출자가 예외를 잡는다.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logRequest(String clientRequestId, String employeeNo, String apiPath, String httpMethod,
                            String clientIp, OffsetDateTime receivedAt, int httpStatus, boolean success,
@@ -207,7 +241,7 @@ public class WpfPopupService {
     }
 
     /**
-     * 업무 예외 메시지를 WPF 코드로 분류한다. 기존 PopupService의 한국어 메시지를 기준으로 하며,
+     * POL-09-03 : 저장 응답 — 업무 예외 메시지를 WPF 코드로 분류한다. 기존 PopupService의 한국어 메시지를 기준으로 하며,
      * 매핑되지 않으면 WPF_INVALID_RESULT.
      * 범위 밖 hideDays는 요청 형식 검사({@code @Min(1) @Max(3650)})에서 WPF_INVALID_RESULT로 먼저 거절되고 누락은
      * 결과 처리의 "hideDays가 필요" 메시지로 WPF_INVALID_RESULT가 되어, 별도 숨김 일수 코드는 두지 않는다.

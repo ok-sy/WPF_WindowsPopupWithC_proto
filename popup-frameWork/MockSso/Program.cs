@@ -3,7 +3,10 @@ using System.Security.Principal;
 using System.Text;
 
 /*
- * [설계 10 — 로컬 검증용] 사내 SSO 임시(모의) 서버.
+ * POL-15-02 : 인증·버전
+ * ■ MockSSO — 로컬 검증용 사내 SSO 임시(모의) 서버.
+ * - in : 실행 인자 --port · --user · --class · --anonymous · --fail
+ * - out: HTTP 응답(MAIN_USER_ID·MAIN_USER_CLASSI_CODE XML, 또는 401)
  *
  * 역할: WPF SsoClient(HttpClientHandler.UseDefaultCredentials = true)가 GET 하는 SSO 주소를 흉내 낸다.
  *   1) 기본은 실제 SSO처럼 Windows 통합 인증(Negotiate) 도전을 한다 → WPF가 현재 로그인 계정으로 응답하는 경로까지 검증.

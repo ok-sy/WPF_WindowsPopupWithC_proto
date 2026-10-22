@@ -12,11 +12,17 @@ using Popup.Services;
 using Popup.Views.Contents;
 
 /*
- * [설계 50] TEXT 서식 본문 WPF 회귀 검증(저장소 추적).
- * 설계 28 서식 표시, 설계 38 기울임 오른쪽 여유, 설계 48 관용 변환기·표시 방어, 설계 49 문단 들여쓰기를
+ * POL-03-01 : 저장·표시 경계
+ * POL-03-02 : 문단·글자 서식
+ * POL-06-01 : 문항·서식
+ * POL-16-02 : 재현 가능한 검증
+ * ■ TEXT 서식 본문 WPF 회귀 검증(저장소 추적)
+ * - in : 없음
+ * - out: 콘솔 PASS 검사 건수 · 실패 시 Exception(메시지)
+ * - 서식 표시, 기울임 오른쪽 여유, 관용 변환기·표시 방어, 문단 들여쓰기를
  * 실제 PopupFactory·TextPopupView 경로로 확인한다. 로컬 전용 Popup.BehaviorTests의 같은 검증을 옮겨
  * 다른 환경에서도 같은 명령으로 재현할 수 있게 둔다.
- * TODO55 설문·퀴즈 서식(surveyTitleBlocks·descriptionBlocks·titleBlocks·options[].textBlocks) 표시, 일반 문자열 대체,
+ * 설문·퀴즈 서식(surveyTitleBlocks·descriptionBlocks·titleBlocks·options[].textBlocks) 표시, 일반 문자열 대체,
  *   접근성 이름·답변 ID 불변, VIDEO+QUIZ 머리말 숨김 예외, Demo 저장 시 일반 문자열 파생·길이 상한
  *   실행: dotnet run --project scripts/RichTextTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다.
@@ -93,7 +99,7 @@ internal static class Program
 
     private static string Plain(TextBlock block) => string.Concat(block.Inlines.OfType<Run>().Select(r => r.Text));
 
-    /* [TODO55] 설문·퀴즈 서식 표시. 데모 SURVEY 샘플에 제목·설명·문항 제목·선택지(세로·가로) 서식이 있다. */
+    /* POL-06-01 : 문항·서식 — 설문·퀴즈 서식 표시. 데모 SURVEY 샘플에 제목·설명·문항 제목·선택지(세로·가로) 서식이 있다. */
     private static void CheckSurveyRichText55()
     {
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -115,7 +121,7 @@ internal static class Program
         // 2) 문항 제목: 필수 표시는 마지막 문단 끝, 접근성 이름은 일반 문자열
         StackPanel questionTitle = Logical(view).OfType<StackPanel>()
             .Single(p => System.Windows.Automation.AutomationProperties.GetName(p) == "화면 구성이 이해하기 쉬웠나요?");
-        // 마지막 문단: ... 서식 구간 → 필수 표시 " *" → (V2) 선택 방식 안내 "   하나 선택"(TODO56-12)
+        // 마지막 문단: ... 서식 구간 → 필수 표시 " *" → (V2) 선택 방식 안내 "   하나 선택"
         List<Run> lastTitleRuns = ((TextBlock)questionTitle.Children[^1]).Inlines.OfType<Run>().ToList();
         Check(lastTitleRuns[^2].Text == " *" && lastTitleRuns[^1].Text.Trim() == "하나 선택" && Plain((TextBlock)questionTitle.Children[^1]).StartsWith("화면 구성")
               && ((TextBlock)questionTitle.Children[0]).Inlines.OfType<Run>().Any(r => r.Text == "화면 구성" && r.TextDecorations == TextDecorations.Underline),
@@ -185,12 +191,12 @@ internal static class Program
             "[55-6] italic overhang is recalculated for the inherited body font size");
         colored.ApplyTemplate();
         colored.IsChecked = true;
-        // [TODO56-4] V2는 선택해도 굵기·글자색을 바꾸지 않는다: 지정 없는 구간은 기본 굵기·#222222, Run 지정 굵게·색은 유지.
+        // POL-06-03 : 표현·수명 — V2는 선택해도 굵기·글자색을 바꾸지 않는다: 지정 없는 구간은 기본 굵기·#222222, Run 지정 굵게·색은 유지.
         Check(coloredRuns[1].FontWeight == FontWeights.Normal && coloredRuns[2].FontWeight == FontWeights.Bold
               && ((SolidColorBrush)coloredRuns[1].Foreground).Color == Color.FromRgb(0x22, 0x22, 0x22)
               && ((SolidColorBrush)coloredRuns[0].Foreground).Color == Color.FromRgb(0xB4, 0x23, 0x18),
             "[56-4] selecting a formatted option keeps run formatting and does not bold or recolor it");
-        // 선택 시 굵게 바뀌는 V1에서는 지정 없는 구간이 선택 강조를 상속한다(TODO55 상속 경로 유지).
+        // 선택 시 굵게 바뀌는 V1에서는 지정 없는 구간이 선택 강조를 상속한다(설문·퀴즈 서식 상속 경로 유지).
         SurveyDesign.Current = "V1";
         try
         {
@@ -305,7 +311,7 @@ internal static class Program
             && ((SolidColorBrush)first[1].Foreground).Color == (Color)ColorConverter.ConvertFromString("#DC2626"), "Run bold and color reach WPF");
         Check(first[2].FontSize == 12, "Run size reaches WPF");
         Check(paragraphs[5].Inlines.OfType<System.Windows.Documents.Run>().Single().Text == " ", "Empty paragraph keeps one line");
-        // [설계 37] 콘텐츠 제목·설명은 본문 앞 문단이며 별도 제목 영역은 없다.
+        // POL-03-01 : 저장·표시 경계 — 콘텐츠 제목·설명은 본문 앞 문단이며 별도 제목 영역은 없다.
         var titleRun = paragraphs[0].Inlines.OfType<System.Windows.Documents.Run>().Single();
         Check(titleRun.Text == "사내 업무시스템 정기 점검 안내" && titleRun.FontWeight == FontWeights.Bold && titleRun.FontSize == 24
             && view.FindName("ContentHeaderPanel") == null && view.FindName("ContentTitleText") == null, "Content title is the first rich paragraph");
@@ -395,7 +401,7 @@ internal static class Program
         demo.Close();
     }
 
-    // [설계 48] WPF는 서버 정책 목록을 복제하지 않고 표시 방어(안전 범위·변환 실패 기본값·JSON 타입 오류 경계)만 한다.
+    // POL-03-01 : 저장·표시 경계 — WPF는 서버 정책 목록을 복제하지 않고 표시 방어(안전 범위·변환 실패 기본값·JSON 타입 오류 경계)만 한다.
     private static void CheckRichTextDisplayDefense48()
     {
         PopupResponseDto WithContent(Action<System.Text.Json.Nodes.JsonObject> change)
@@ -489,7 +495,7 @@ internal static class Program
             "Every server font id has a WPF mapping and matches admin editor ids: " + string.Join(",", serverFonts));
     }
 
-    // [설계 49] 문단 들여쓰기(indent 단계 × 40 DIP): 왼쪽 여백·모든 줄 적용·정렬·기울임 여유·plainText 무영향·표시 방어.
+    // POL-03-02 : 문단·글자 서식 — 문단 들여쓰기(indent 단계 × 40 DIP): 왼쪽 여백·모든 줄 적용·정렬·기울임 여유·plainText 무영향·표시 방어.
     private static void CheckParagraphIndent49()
     {
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -534,7 +540,7 @@ internal static class Program
         for (TextPointer? line = start; line != null; line = line.GetLineStartPosition(1)) lineLefts.Add(line.GetCharacterRect(LogicalDirection.Forward).Left);
         Check(lineLefts.Count >= 3 && lineLefts.All(left => Math.Abs(left - 80) < 0.5), "Every wrapped line starts at the indent: " + string.Join(",", lineLefts));
 
-        // [TODO63] 표시 방어: 단계 수 제한 없이 0 이상 정수(int 범위)면 그대로 적용, 소수·음수·범위 초과·타입 오류만 0.
+        // POL-03-02 : 문단·글자 서식 — 표시 방어: 단계 수 제한 없이 0 이상 정수(int 범위)면 그대로 적용, 소수·음수·범위 초과·타입 오류만 0.
         var defended = Paragraphs("[{\"indent\":6,\"runs\":[{\"text\":\"a\"}]},{\"indent\":10,\"runs\":[{\"text\":\"b\"}]},{\"indent\":11,\"runs\":[{\"text\":\"c\"}]},"
             + "{\"indent\":-1,\"runs\":[{\"text\":\"d\"}]},{\"indent\":1.5,\"runs\":[{\"text\":\"e\"}]},{\"indent\":\"1\",\"runs\":[{\"text\":\"f\"}]},{\"indent\":1e308,\"runs\":[{\"text\":\"g\"}]},{\"indent\":null,\"runs\":[{\"text\":\"h\"}]},"
             + "{\"indent\":2147483648,\"runs\":[{\"text\":\"i\"}]}]");

@@ -1,7 +1,8 @@
 -- =====================================================================================================
--- 13_normalize_footer_action_oracle.sql — CONTENT_OPTIONS의 Footer 동작 키 저장 정규화 (2026-10-12, 설계 30)
+-- 13_normalize_footer_action_oracle.sql — CONTENT_OPTIONS의 Footer 동작 키 저장 정규화 (2026-10-12)
+-- POL-02-03 : 푸터 역할
 -- -----------------------------------------------------------------------------------------------------
--- 배경: 설계 30으로 Footer 동작을 CLOSE / LINK_AND_CLOSE / SUBMIT 3값으로 정리했다. SURVEY/QUIZ(동영상+퀴즈 포함)는
+-- 배경: Footer 동작을 CLOSE / LINK_AND_CLOSE / SUBMIT 3값으로 정리했다. SURVEY/QUIZ(동영상+퀴즈 포함)는
 --       SUBMIT 고정이고, 그 밖의 유형은 CLOSE가 기본값이다. 서버는 저장 시 다음 정규형만 남긴다.
 --         - SURVEY/QUIZ                  : footerAction·footerLinkUrl 저장 안 함
 --         - TEXT/IMAGE/VIDEO, LINK_AND_CLOSE : footerAction·footerLinkUrl 저장

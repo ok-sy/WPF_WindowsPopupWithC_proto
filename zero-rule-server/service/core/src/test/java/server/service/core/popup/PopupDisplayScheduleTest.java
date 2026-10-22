@@ -11,7 +11,11 @@ import org.junit.jupiter.api.Test;
 import server.domain.popup.PopupDisplayTimeDto;
 import server.domain.popup.PopupResponseDto;
 
-/** [TODO52-1] 노출 일정(기간 모드·요일·시간대) 정규화와 검증. */
+/**
+ * POL-11-02 : 반복의 의미
+ * POL-11-03 : 시간 경계
+ * ■ 노출 일정(기간 모드·요일·시간대) 정규화와 검증 테스트
+ */
 class PopupDisplayScheduleTest {
 
     private static PopupResponseDto popup(String mode, String days, List<PopupDisplayTimeDto> times) {
@@ -24,6 +28,7 @@ class PopupDisplayScheduleTest {
         return new PopupDisplayTimeDto(start, end);
     }
 
+    /** FIXED는 요일·시간대·매월 반복 값을 비운다. */
     @Test void fixedClearsDaysTimesAndMonthlyRepeat() {
         var normalized = PopupDisplaySchedule.normalize(popup(" fixed ", "1,3", List.of(t("09:00", "10:00"))));
         assertEquals("FIXED", normalized.periodMode());
@@ -33,6 +38,7 @@ class PopupDisplayScheduleTest {
         assertNull(normalized.repeatDayOfMonth());
     }
 
+    /** SCHEDULE은 요일을 정렬·중복 제거하고 자정 초과를 포함한 시간대를 개수 제한 없이 유지한다. */
     @Test void scheduleNormalizesDaysAndKeepsAnyNumberOfWindowsIncludingMidnight() {
         var normalized = PopupDisplaySchedule.normalize(popup("schedule", " 5,1, 3,1 ",
                 List.of(t("09:00", "12:00"), t("22:00", "02:00"), t("14:00", "18:00"), t("00:00", "23:59"))));
@@ -43,6 +49,7 @@ class PopupDisplayScheduleTest {
         assertNull(normalized.repeatDayOfMonth());
     }
 
+    /** 요일이 비거나 7일 전부면 매일, 시간대가 없으면 종일이다. */
     @Test void emptyOrAllDaysMeanEveryDayAndNoWindowsMeansAllDay() {
         assertNull(PopupDisplaySchedule.normalize(popup("SCHEDULE", null, List.of())).repeatDayOfWeek());
         assertNull(PopupDisplaySchedule.normalize(popup("SCHEDULE", "", null)).repeatDayOfWeek());
@@ -50,6 +57,7 @@ class PopupDisplayScheduleTest {
         assertTrue(PopupDisplaySchedule.normalize(popup("SCHEDULE", "2", null)).displayTimes().isEmpty());
     }
 
+    /** 잘못된 모드·요일·시간 형식, 시작=종료, 같은 시간대 중복을 거부한다. */
     @Test void rejectsInvalidModeDaysTimesSameStartEndAndDuplicates() {
         for (String mode : new String[]{null, " ", "DAILY"}) {
             assertThrows(IllegalArgumentException.class, () -> PopupDisplaySchedule.normalize(popup(mode, null, List.of())), String.valueOf(mode));
@@ -66,6 +74,7 @@ class PopupDisplayScheduleTest {
         assertEquals(2, PopupDisplaySchedule.normalize(popup("SCHEDULE", null, List.of(t("09:00", "11:00"), t("10:00", "12:00")))).displayTimes().size());
     }
 
+    /** HH:mm ↔ 분 변환이 왕복 일치한다. */
     @Test void minuteConversionRoundTrips() {
         assertEquals(0, PopupDisplaySchedule.toMinute("00:00"));
         assertEquals(1439, PopupDisplaySchedule.toMinute("23:59"));

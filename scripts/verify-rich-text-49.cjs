@@ -1,4 +1,6 @@
-// [설계 49·62] 문단·글자 서식과 우클릭 패널을 실제 관리자 편집기 빌드로 확인한다.
+// POL-03-02 : 문단·글자 서식
+// POL-03-03 : 편집 UI
+// ■ 문단·글자 서식과 우클릭 패널을 실제 관리자 편집기 빌드로 확인한다.
 // 기본 Windows Edge. 다른 Chromium은 BROWSER_PATH로 지정한다(예: Linux headless Chromium).
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-rich-text-49.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
@@ -77,7 +79,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`JSON.stringify(htmlToBlocks('<ul><li style="margin-left:40px">목록</li></ul><p style="margin-left:80px; text-indent:20px">문단</p>').map(b=>b.indent??0))==='[0,2]'`),
     'List item margin is not paragraph indent; text-indent is not read');
 
-  // ── 2. 실제 편집기: 기존 데이터 재편집·들여쓰기 명령(단계 수 제한 없음, TODO63)·내어쓰기·서식 지우기·실행 취소 ──
+  // ── 2. 실제 편집기: 기존 데이터 재편집·들여쓰기 명령(단계 수 제한 없음)·내어쓰기·서식 지우기·실행 취소 ──
   await run(`window.mount([{alignment:'LEFT',runs:[{text:'첫 문단 글자',bold:true}]},{alignment:'LEFT',indent:2,runs:[{text:'둘째'}]},{alignment:'CENTER',runs:[{text:'셋째'}]}])`);
   await waitEditor(); await pause(200);
   check((await data()).includes('<p style="margin-left:80px;">둘째</p>'), 'Saved indent reloads into editor as margin-left 80px');
@@ -197,7 +199,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const span=ps[0].querySelector('span');const rects=Array.from(span.getClientRects());const base=ps[0].getBoundingClientRect().left, lines=new Map();for(const r of rects){const top=Math.round(r.top);lines.set(top,Math.min(lines.get(top)??Infinity,Math.round(r.left-base)));}return {pad:ps.map(p=>getComputedStyle(p).paddingLeft),lines:lines.size,lefts:[...new Set(lines.values())]};})()`);
   check(preview.pad.join() === '40px,0px,440px' && preview.lines >= 3 && preview.lefts.length === 1 && preview.lefts[0] === 40,
     'Preview indents the whole paragraph including wrapped lines: ' + JSON.stringify(preview));
-  // ── 5. TODO62: 취소선 왕복·문단 메뉴(서식 초기화는 TODO66에서 삭제) ──
+  // ── 5. POL-03-03 : 편집 UI — 취소선 왕복·문단 메뉴(일괄 서식 초기화 버튼은 없다) ──
   check(await run(`(()=>{const b=htmlToBlocks('<p><s>취소</s><del>삭제</del><strike>구형</strike>일반</p>');
     return b[0].runs.length===2&&b[0].runs[0].text==='취소삭제구형'&&b[0].runs[0].strikethrough===true&&!b[0].runs[1].strikethrough;})()`),
     '[62] s/del/strike become strikethrough and adjacent runs with different styles stay separate');

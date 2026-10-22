@@ -8,7 +8,7 @@
 --  주의 : 앱 계정(zero-rule)에는 CREATE USER 권한이 없으므로 이 스크립트는 DBA가 실행해야 한다.
 --  비밀번호는 개발 기본값이다. 운영에서는 반드시 바꾸고 소스에 적지 않는다.
 --
---  [기준 5] PostgreSQL의 `CREATE SCHEMA popup` 에 대응한다. Oracle은 스키마 = 사용자이므로 사용자를 만든다.
+--  POL-13-03 : 적용·샘플 구분 — PostgreSQL의 `CREATE SCHEMA popup` 에 대응한다. Oracle은 스키마 = 사용자이므로 사용자를 만든다.
 --  애플리케이션(zeroserver)은 ZERO_RULE 계정으로 접속하고 팝업 매퍼는 POPUP. 한정자를 쓰므로,
 --  ZERO_RULE이 있으면 POPUP 객체에 대한 DML/시퀀스 권한을 준다(01 실행 후 03_grant 로 처리).
 -- =====================================================================

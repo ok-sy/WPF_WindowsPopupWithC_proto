@@ -17,7 +17,12 @@ namespace Popup.Services.Auth
         long LoginElapsedMs);
 
     /*
-     * [역할 — 설계 10 §5.3·§5.4] IAuthHeaderProvider의 SSO 프로토타입 구현체.
+     * POL-15-02 : 인증·버전
+     * POL-09-01 : 3 API 순서
+     * ■ SSO 인증 헤더 공급자
+     * - in : ssoClient(SsoClient) 사내 SSO 조회 · loginClient(WpfLoginClient) 서버 로그인 API
+     * - out: "Bearer {token}" 헤더 값 · ClientVersionRejected 이벤트(정기 로그인 426) · 예외: 426·일시 통신 오류는 전파
+     * - IAuthHeaderProvider의 SSO 프로토타입 구현체.
      *
      *   WPF 시작
      *     → GetAuthorizationHeaderAsync(): 토큰이 없으면 SsoClient(Negotiate) → WpfLoginClient → 토큰 메모리 보관
@@ -26,12 +31,12 @@ namespace Popup.Services.Auth
      *     → OnUnauthorizedAsync(실패한 헤더): 메모리 _lastUser로 로그인 API만 → 새 토큰 (PopupApiService가 같은 요청을 1회 재전송)
      *   1시간 주기 (StartPeriodicLogin)
      *     → PeriodicTimer → 메모리 _lastUser로 로그인 API만 → 토큰 교체 (실패해도 현재 토큰을 지우지 않음)
-     *   ※ [설계 10 §14.1 확정] SSO GET은 프로세스 시작 후 최초 1회만. 사용자 정보도 메모리에만 두고 파일에 저장하지 않는다.
+     *   ※ SSO GET은 프로세스 시작 후 최초 1회만. 사용자 정보도 메모리에만 두고 파일에 저장하지 않는다.
      *
      * [추가 이유] 서버 프로토타입 토큰은 10분 뒤 만료된다. 만료를 클라이언트가 미리 계산해 갱신하면 "401 → 재로그인 → 원 요청
      * 재전송" 경로가 실제로 검증되지 않으므로, 이 구현은 만료 시각을 보관하지 않고(로그·테스트 결과에만 표시) 갱신은 401 또는 정기 주기에만 한다.
      *
-     * [동시성 — T5] 여러 요청이 동시에 401을 받아도 실제 SSO·로그인은 한 번만 한다. SemaphoreSlim으로 직렬화하고,
+     * [동시성] 여러 요청이 동시에 401을 받아도 실제 SSO·로그인은 한 번만 한다. SemaphoreSlim으로 직렬화하고,
      * 잠금 안에서 "현재 토큰이 401을 받은 그 토큰과 여전히 같은가"를 비교해 이미 갱신됐으면 건너뛴다.
      *
      * [규칙] 토큰·사용자 정보는 이 객체의 필드에만 있다(파일·Registry·appsettings 저장 금지). 로그인 UI 없음.
@@ -65,8 +70,7 @@ namespace Popup.Services.Auth
         public event EventHandler<WpfClientVersionException>? ClientVersionRejected;
 
         /*
-         * [설계 18 L-0 — C-10 삭제] 호출부가 없던 진단용 공개 속성 LastUser·HasToken을 삭제했다.
-         * _lastUser·_accessToken 필드는 재로그인·헤더 생성에 그대로 쓰며 외부에 노출하지 않는다.
+         * _lastUser·_accessToken 필드는 재로그인·헤더 생성에만 쓰며 외부에 노출하지 않는다(진단용 공개 속성 없음).
          */
 
         /// <summary>
@@ -113,7 +117,7 @@ namespace Popup.Services.Auth
              * 동시에 여러 요청이 401이어도 이미 다른 요청이 토큰을 갱신했다면
              * 불필요한 중복 로그인을 건너뛸 수 있다.
              *
-             * [설계 10 §14.1] 재로그인은 최초 SSO GET에서 얻은 _lastUser로 로그인 API만 다시 호출한다(SSO 재호출 없음).
+             * 재로그인은 최초 SSO GET에서 얻은 _lastUser로 로그인 API만 다시 호출한다(SSO 재호출 없음).
              * LoginAsync() 참고.
              */
             string? failedToken = StripBearer(failedAuthorizationHeader);
@@ -154,7 +158,7 @@ namespace Popup.Services.Auth
         }
 
         /// <summary>
-        /// [설계 10 §4.2·§5.4] 정기 재로그인 루프를 시작한다. interval이 0 이하이면 시작하지 않는다.
+        /// 정기 재로그인 루프를 시작한다. interval이 0 이하이면 시작하지 않는다.
         /// 루프 안의 실패는 무시한다(현재 토큰 유지, 다음 API 요청의 401이 즉시 재인증을 유도).
         /// </summary>
         public void StartPeriodicLogin(TimeSpan interval)
@@ -224,7 +228,7 @@ namespace Popup.Services.Auth
                 }
 
                 /*
-                 * [설계 10 §14.1 — 2026-09-21 확정] SSO GET은 프로세스 시작 후 최초 1회만.
+                 * SSO GET은 프로세스 시작 후 최초 1회만.
                  * 얻은 MAIN_USER_ID/MAIN_USER_CLASSI_CODE는 _lastUser(메모리)에 두고, 401 재로그인·1시간 정기 갱신은
                  * 그 값으로 로그인 API만 다시 호출한다. 프로세스가 끝나면 _lastUser도 사라져 다음 실행에서 SSO GET 1회.
                  * (관리 화면 "SSO 로그인 테스트"는 SSO 통신 확인용이라 TestLoginAsync에서 매번 SSO를 호출한다.)
@@ -249,7 +253,7 @@ namespace Popup.Services.Auth
             }
             catch (WpfClientVersionException)
             {
-                // [설계 13 §9] 로그인 단계에서 버전 차단(426): 삼키지 않고 그대로 올려 호출자(MainWindow)가 업데이트 안내를 하게 한다.
+                // POL-15-02 : 인증·버전 — 로그인 단계에서 버전 차단(426): 삼키지 않고 그대로 올려 호출자(MainWindow)가 업데이트 안내를 하게 한다.
                 //   토큰이 없는 상태로 조회를 계속해도 서버 인터셉터가 다시 426을 주므로 재시도 의미가 없다.
                 throw;
             }
@@ -260,7 +264,7 @@ namespace Popup.Services.Auth
             }
             catch (Exception exception)
             {
-                // [T7] SSO 인증 거절·필수 태그 없음 등: UI를 띄우지 않고 기존 상태를 유지한다.
+                // SSO 인증 거절·필수 태그 없음 등: UI를 띄우지 않고 기존 상태를 유지한다.
                 Debug.WriteLine($"[SSO-AUTH] 로그인 실패: {exception.GetType().Name}: {exception.Message}");
                 return _accessToken;
             }

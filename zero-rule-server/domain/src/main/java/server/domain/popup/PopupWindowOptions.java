@@ -6,7 +6,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * [설계 31] PopupWindow 전체에 적용되는 공통 UI 옵션. 관리자 API·DB는 기존처럼 content(CONTENT_OPTIONS)에 저장하고,
+ * POL-01-01 : 공통 옵션의 위치
+ * POL-01-02 : 기본값의 적용
+ * ■ PopupWindow 공통 UI 옵션 읽기
+ * - in : content(Map) 콘텐츠 옵션 · key(String) 폰트 크기 키
+ * - out: Overlay 사용 여부·불투명도·위치·폰트 크기(기본값·보정 적용)
+ * - PopupWindow 전체에 적용되는 공통 UI 옵션. 관리자 API·DB는 기존처럼 content(CONTENT_OPTIONS)에 저장하고,
  * WPF 응답에서는 {@code popup} 최상위 필드로 승격한다(content에서는 제거).
  *
  * <ul>
@@ -35,15 +40,18 @@ public final class PopupWindowOptions {
     private PopupWindowOptions() {
     }
 
+    /** Overlay 사용 여부. Boolean 값이 아니거나 없으면 기본 true. */
     public static boolean useBackgroundOverlay(Map<String, Object> content) {
         return content != null && content.get(USE_OVERLAY_KEY) instanceof Boolean value ? value : DEFAULT_USE_OVERLAY;
     }
 
+    /** Overlay 불투명도. 숫자가 아니면 기본 0.45, 범위 밖이면 0~1로 보정한다. */
     public static double backgroundOverlayOpacity(Map<String, Object> content) {
         Double value = number(content == null ? null : content.get(OVERLAY_OPACITY_KEY));
         return value == null ? DEFAULT_OVERLAY_OPACITY : Math.max(0.0, Math.min(1.0, value));
     }
 
+    /** 팝업 위치(대문자 정규화). 없거나 미지원 값이면 CENTER. */
     public static String popupPosition(Map<String, Object> content) {
         Object value = content == null ? null : content.get(POSITION_KEY);
         String position = value instanceof String text ? text.trim().toUpperCase(Locale.ROOT) : "";

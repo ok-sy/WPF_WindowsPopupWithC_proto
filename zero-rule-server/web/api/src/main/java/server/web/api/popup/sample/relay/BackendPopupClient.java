@@ -16,7 +16,11 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 /**
- * [TODO70] 백엔드 HTTP 호출만 담당한다(파싱·매핑은 {@link BackendResponseMapper}).
+ * POL-14-03 : 서버 인계 예제
+ * ■ 중계 샘플 백엔드 HTTP 호출기
+ * - in : RelayBackendProperties(baseUrl·path·timeout·서비스 간 인증 헤더)
+ * - out: 백엔드 2xx 응답 본문 문자열 · 실패는 BackendCallException
+ * - 백엔드 HTTP 호출만 담당한다(파싱·매핑은 {@link BackendResponseMapper}).
  *
  * <p>Spring 6.1 {@link RestClient} + JDK HttpClient. 연결·응답 timeout은 설정값을 쓴다.
  * 조회가 전달 건 생성 같은 부작용을 가질 수 있으므로 <b>자동 재시도하지 않는다</b>.
@@ -43,9 +47,11 @@ public class BackendPopupClient {
     }
 
     /**
-     * 백엔드 조회 API를 한 번 호출하고 2xx 응답 본문 문자열을 돌려준다.
-     *
-     * @param forwarded 클라이언트에서 넘길 헤더(설정 {@code forward-headers}에 있는 것만)
+     * POL-14-03 : 서버 인계 예제
+     * ■ 백엔드 조회 API 1회 호출
+     * - in : forwarded(Map) 클라이언트에서 넘길 헤더(설정 {@code forward-headers}에 있는 것만)
+     * - out: String 2xx 응답 본문 · 예외: BackendCallException(CONNECT·TIMEOUT·HTTP_4XX·HTTP_5XX·INVALID_RESPONSE)
+     * - 본문 {}로 POST하고 재시도하지 않는다. 성공·실패 모두 상태·소요 시간·분류만 로그에 남긴다.
      */
     public String fetch(Map<String, String> forwarded) {
         long started = System.nanoTime();
@@ -85,6 +91,7 @@ public class BackendPopupClient {
         }
     }
 
+    /** 원인 사슬에서 응답 대기 timeout인지 판단한다(연결 timeout·연결 거부는 false). */
     private static boolean isTimeout(Throwable ex) {
         for (Throwable t = ex; t != null; t = t.getCause()) {
             // 연결 단계 timeout은 연결 실패로 분류한다(응답 대기 timeout과 구분).

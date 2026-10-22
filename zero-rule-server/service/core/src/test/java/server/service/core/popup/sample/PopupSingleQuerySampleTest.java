@@ -19,7 +19,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import server.domain.popup.sample.PopupContentRow;
 import server.repo.core.mapper.popup.sample.PopupSingleQuerySampleMapper;
 
-/** [TODO65] SQL 결과(가짜 매퍼) → 공통 매핑 → CLOB JSON 파싱 → 기본값 → 응답 조립. DB 없이 실행한다. */
+/**
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 단건 조회 샘플 흐름 테스트
+ * - SQL 결과(가짜 매퍼) → 공통 매핑 → CLOB JSON 파싱 → 기본값 → 응답 조립. DB 없이 실행한다.
+ */
 class PopupSingleQuerySampleTest {
 
     private final ObjectMapper json = new ObjectMapper();
@@ -59,6 +64,7 @@ class PopupSingleQuerySampleTest {
         return service(result, new PopupPorts.UnconnectedQuestionPort());
     }
 
+    /** 후보가 없으면 popup=null을 유지하고 전달 건을 발급하지 않는다. */
     @Test
     void emptyResultKeepsPopupNull() {
         ObjectNode response = service(null).nextPopup("E1001", null, null);
@@ -67,6 +73,7 @@ class PopupSingleQuerySampleTest {
         assertTrue(issued.isEmpty(), "결과 없음이면 전달 건을 발급하지 않는다");
     }
 
+    /** TEXT 컬럼을 매핑하고 중첩 content와 명시적 false·0 값을 유지한다. */
     @Test
     void textMapsColumnsKeepsNestedContentAndExplicitFalseZero() {
         String content = """
@@ -100,6 +107,7 @@ class PopupSingleQuerySampleTest {
         assertTrue(popup.get("questions").isArray() && popup.get("questions").isEmpty());
     }
 
+    /** POL-01-02 : 기본값의 적용 — 누락된 선택 값에는 계약 기본값을 채운다. */
     @Test
     void missingOptionalValuesGetContractDefaults() {
         PopupContentRow row = row("10", "{\"plainText\":\"x\"}");
@@ -175,6 +183,7 @@ class PopupSingleQuerySampleTest {
         return list;
     }
 
+    /** IMAGE는 파일 컬럼 URL을 우선하고 없는 크기 축은 생략한다. */
     @Test
     void imageUsesFileColumnsAndOmitsMissingSize() {
         PopupContentRow row = row("20", "{\"imageUrl\":\"https://old.example.com/a.png\",\"imageSizeMode\":\"FIT_TO_IMAGE\"}");
@@ -189,6 +198,7 @@ class PopupSingleQuerySampleTest {
         assertEquals(420.5, popup.get("height").doubleValue());
     }
 
+    /** SURVEY는 QuestionPort 문항을 싣고 footerAction은 항상 SUBMIT이다. */
     @Test
     void surveyUsesQuestionPortAndAlwaysSubmit() throws Exception {
         ArrayNode questions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"만족?\",\"questionType\":\"SINGLE_CHOICE\",\"options\":[]}]");
@@ -199,6 +209,7 @@ class PopupSingleQuerySampleTest {
         assertEquals(1, popup.get("questions").size());
     }
 
+    /** 잘못된 JSON·객체 아님·필수 콘텐츠 누락 등 데이터 오류는 정상 응답으로 돌려주지 않는다. */
     @Test
     void dataErrorsAreNotReturnedAsNormalResponses() {
         Object[][] cases = {

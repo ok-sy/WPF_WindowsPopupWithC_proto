@@ -31,7 +31,7 @@ const RuleDeployHome = dynamic(() => import('@/features/RuleDeployHome'), {
 });
 const EmailTransInfoHome = dynamic(() => import('@/features/EmailTransInfoHome'), { ssr: false });
 const RgstPop = dynamic(() => import('@/features/RgstPop'), { ssr: false });
-// [TODO69] 공통 팝업 컴포넌트 샘플(서버 없이 목록→편집→우측/모달 미리보기). 기존 '/rgst-pop' 경로는 그대로 둔다.
+// POL-14-01 : 공통 프론트 경계 — 공통 팝업 컴포넌트 샘플(서버 없이 목록→편집→우측/모달 미리보기). 기존 '/rgst-pop' 경로는 그대로 둔다.
 const PopupListSample = dynamic(() => import('@/features/PopupcommonComponent/sample/PopupListSample'), { ssr: false });
 const IS063M02Sample = dynamic(() => import('@/features/PopupcommonComponent/sample/IS063M02Sample'), { ssr: false });
 
@@ -42,8 +42,11 @@ export interface ISceneComponent {
 }
 
 /**
- * 배열을 받아 키가 url 이고 값이 {url, title, component} 인 객체를 리턴한다
- * reduce가 사용됐기 때문에 한 객체안에 전체 키와 값이 들어감 (배열아님)
+ * ■ 화면 목록 객체 생성
+ * - in : scenes(Array<[url, title, component]>) 화면 정의 배열
+ * - out: Record<string, ISceneComponent> url을 키로 한 화면 객체
+ * - 배열을 받아 키가 url 이고 값이 {url, title, component} 인 객체를 리턴한다
+ * - reduce가 사용됐기 때문에 한 객체안에 전체 키와 값이 들어감 (배열아님)
  */
 function createScenes(
   scenes: Array<[string, string, React.ComponentType]>,

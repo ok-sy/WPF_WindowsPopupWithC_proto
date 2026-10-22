@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /// <summary>
-    /// [설계 35] POST /p/api/wpf/popups 응답 — 지금 표시할 팝업 최대 1건.
+    /// POL-09-02 : 조회 응답
+    /// ■ POST /p/api/wpf/popups 응답 — 지금 표시할 팝업 최대 1건.
     ///
     /// 서버가 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)과 정렬을 끝내고 1건만 내려준다.
     /// <see cref="Popup"/>이 null이면 표시할 팝업이 없으므로 <see cref="PollingIntervalSeconds"/> 뒤에 다시 조회한다.

@@ -1,5 +1,6 @@
 -- =====================================================================================================
--- 17_question_rich_text_oracle.sql — 문항·선택지 서식(FONT EDIT) 저장 컬럼 추가 (2026-10-19, TODO55-4)
+-- 17_question_rich_text_oracle.sql — 문항·선택지 서식(FONT EDIT) 저장 컬럼 추가 (2026-10-19)
+-- POL-06-01 : 문항·서식
 -- -----------------------------------------------------------------------------------------------------
 -- 배경: SURVEY·QUIZ의 문항 제목·설명과 선택지 표시 문구에 TEXT와 같은 문단·구간 서식(textBlocks 스키마)을 둔다.
 --       콘텐츠 제목·설명 서식(surveyTitleBlocks·descriptionBlocks)은 기존 POPUP_CONTENT.CONTENT_OPTIONS(CLOB JSON)에

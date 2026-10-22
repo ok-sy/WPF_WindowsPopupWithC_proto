@@ -1,5 +1,6 @@
 -- =====================================================================================================
--- 07_cleanup_content_option_copies_oracle.sql — CONTENT_OPTIONS의 정규 컬럼 사본·서버 파생 키 제거 (2026-09-28, 설계 18 L-3 / D-5②)
+-- 07_cleanup_content_option_copies_oracle.sql — CONTENT_OPTIONS의 정규 컬럼 사본·서버 파생 키 제거 (2026-09-28)
+-- POL-13-01 : 콘텐츠와 관리 상태
 -- -----------------------------------------------------------------------------------------------------
 -- 배경: 관리자 저장 시 content 전체가 POPUP_CONTENT.CONTENT_OPTIONS에 들어가, 정규 컬럼 값(제목·설명·본문·미디어 URL·
 --       링크 URL)의 사본과 서버가 조회 때 덧붙이던 파생 키(completionRatio·allowCloseBeforeCompletion·passingScore·

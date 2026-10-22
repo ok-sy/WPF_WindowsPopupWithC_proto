@@ -51,7 +51,7 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Popup Demo" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <!-- [TODO54-2] 모드는 실행 인자로 정한다(demo 로컬 샘플, demo + api API 연결). 창 안 전환은 하지 않고 현재 모드만 표시한다. -->
+                    <!-- POL-14-02 : Demo 모드 — 모드는 실행 인자로 정한다(demo 로컬 샘플, demo + api API 연결). 창 안 전환은 하지 않고 현재 모드만 표시한다. -->
                     <Border x:Name="ModeBadge" Background="#E8F1EC" CornerRadius="10" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
                         <TextBlock x:Name="ModeBadgeText" Text="로컬 샘플" Foreground="#1F6B45" FontWeight="SemiBold" FontSize="12"/>
                     </Border>
@@ -69,7 +69,7 @@
                     <TextBlock x:Name="LeftPanelTitle" Text="팝업 실행" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14"/>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"  HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                        <!-- [설계 51-8] 인메모리 Demo 전용(샘플·옵션·상태 초기화·인증 테스트). API Demo에서는 숨긴다. -->
+                        <!-- POL-14-02 : Demo 모드 — 인메모리 Demo 전용(샘플·옵션·상태 초기화·인증 테스트). API Demo에서는 숨긴다. -->
                         <StackPanel x:Name="InMemoryPanel">
                             <TextBlock Text="시연할 샘플" Style="{StaticResource Label}" />
                             <ComboBox x:Name="ScenarioCombo" SelectedIndex="0" SelectionChanged="ScenarioCombo_SelectionChanged">
@@ -92,7 +92,7 @@
                             <TextBlock Text="숨김·완료된 팝업은 다음 실행에서 제외됩니다. 다시 보려면 아래의 상태 초기화를 누르세요. 상태 초기화는 편집한 옵션을 유지합니다." Style="{StaticResource Hint}"/>
                             <!-- [Demo SSO·로그인 테스트] appsettings PopupApi.DemoSsoLoginTest=true일 때만 표시. SSO와 로그인 API를 따로 호출한다. -->
                             <StackPanel x:Name="AuthTestPanel" Visibility="Collapsed">
-                                <!-- [TODO54-6] 인증 확인 도구는 샘플 작업과 분리해 접어 둔다. -->
+                                <!-- POL-14-02 : Demo 모드 — 인증 확인 도구는 샘플 작업과 분리해 접어 둔다. -->
                                 <Expander Header="SSO · 로그인 테스트" IsExpanded="False" Margin="0,4,0,12">
                                 <StackPanel Margin="0,8,0,0">
                                 <Button x:Name="SsoTestButton" Content="SSO 테스트" Click="SsoTestButton_Click"
@@ -108,9 +108,9 @@
                                 </Expander>
                             </StackPanel>
                         </StackPanel>
-                        <!-- [설계 51-2] API Demo(-Demo -Api) 전용. 연결·인증·요청 본문을 입력하고 수동으로 호출한다. 자동 조회 없음. -->
+                        <!-- POL-14-02 : Demo 모드 — API Demo(-Demo -Api) 전용. 연결·인증·요청 본문을 입력하고 수동으로 호출한다. 자동 조회 없음. -->
                         <StackPanel x:Name="ApiPanel" Visibility="Collapsed">
-                            <!-- [TODO54-6] 현재 대상·인증 상태는 항상 보이고, 연결·인증 입력은 접을 수 있다(연결 적용 성공 시 자동 접힘, 입력 오류 시 펼침). -->
+                            <!-- POL-14-02 : Demo 모드 — 현재 대상·인증 상태는 항상 보이고, 연결·인증 입력은 접을 수 있다(연결 적용 성공 시 자동 접힘, 입력 오류 시 펼침). -->
                             <Border Background="#F5F6F8" CornerRadius="6" Padding="10" Margin="0,0,0,10">
                                 <TextBlock x:Name="ApiConnectionSummaryText" TextWrapping="Wrap" Foreground="#374151" LineHeight="20"
                                            Text="연결 미적용 · 아래 설정을 입력하고 '연결 적용' 또는 '팝업 조회'를 누르세요."/>
@@ -160,9 +160,9 @@
                         </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
-                    <!-- [TODO54-2·54-8] 주 실행 버튼은 스크롤 영역 밖 하단에 고정해 작은 창에서도 항상 보이게 한다. -->
+                    <!-- POL-14-02 : Demo 모드 — 주 실행 버튼은 스크롤 영역 밖 하단에 고정해 작은 창에서도 항상 보이게 한다. -->
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
-                        <!-- [TODO54-8] 현재 실행 상태(대기·조회/요청 중·팝업 표시 중·결과 전송 중·실패). 진행 중에는 실행 버튼을 막는다. -->
+                        <!-- POL-14-02 : Demo 모드 — 현재 실행 상태(대기·조회/요청 중·팝업 표시 중·결과 전송 중·실패). 진행 중에는 실행 버튼을 막는다. -->
                         <TextBlock x:Name="RunStateText" Text="대기" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,8" TextWrapping="Wrap"
                                    AutomationProperties.LiveSetting="Polite"/>
                         <StackPanel x:Name="InMemoryActionBar">
@@ -196,7 +196,7 @@
                                 ToolTip="화면 로그와 요청·응답 상세만 지웁니다. 샘플 옵션·서버 상태·미전송 결과는 그대로입니다."/>
                         <TextBlock Text="조회 · 결과 전송 로그" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
-                    <!-- [TODO54-7] 퀴즈 점수는 결과 로그 줄에도 남기고, 이 상자는 점수가 생겼을 때만 보인다(로컬 샘플). -->
+                    <!-- POL-14-02 : Demo 모드 — 퀴즈 점수는 결과 로그 줄에도 남기고, 이 상자는 점수가 생겼을 때만 보인다(로컬 샘플). -->
                     <Border x:Name="QuizScoreBorder" Grid.Row="1" Background="#F5F6F8" CornerRadius="6" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
                         <TextBlock x:Name="QuizScoreText" Text="퀴즈 완료 후 점수와 통과 여부가 표시됩니다." TextWrapping="Wrap" Foreground="#374151"/>
                     </Border>

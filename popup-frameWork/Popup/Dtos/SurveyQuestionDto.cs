@@ -4,10 +4,11 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /*
-     * 설문 또는 퀴즈의 질문 하나를 담는 DTO
-     *
-     * 서버 JSON의 questions 배열 안에 들어가는
-     * 문항 한 건과 대응한다.
+     * POL-06-01 : 문항·서식
+     * POL-06-02 : 선택·제출
+     * ■ 설문·퀴즈 문항 DTO
+     * - 서버 JSON의 questions 배열 안에 들어가는 문항 한 건과 대응한다.
+     * - QUIZ 로컬 채점용 정답·배점(QuestionScore·CorrectAnswer·AnswerMatchMode)을 함께 받는다.
      */
     public class SurveyQuestionDto
     {
@@ -19,6 +20,7 @@ namespace Popup.Dtos
          */
         public long QuestionId { get; set; }
 
+        /* 선택지 배치(VERTICAL 등). 기본 VERTICAL */
         public string? OptionLayout { get; set; } = "VERTICAL";
 
         /*
@@ -33,11 +35,11 @@ namespace Popup.Dtos
         public string Description { get; set; } =
             string.Empty;
 
-        // [TODO55] 문항 제목 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Title 대신 표시하고, 없거나 비었거나 깨졌으면 Title을 표시한다.
+        // POL-06-01 : 문항·서식 — 문항 제목 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Title 대신 표시하고, 없거나 비었거나 깨졌으면 Title을 표시한다.
         [JsonConverter(typeof(LenientTextBlocksConverter))]
         public List<PopupTextBlockDto>? TitleBlocks { get; set; }
 
-        // [TODO55] 문항 설명 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Description 대신 표시하고, 없거나 비었거나 깨졌으면 Description을 표시한다.
+        // POL-06-01 : 문항·서식 — 문항 설명 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Description 대신 표시하고, 없거나 비었거나 깨졌으면 Description을 표시한다.
         [JsonConverter(typeof(LenientTextBlocksConverter))]
         public List<PopupTextBlockDto>? DescriptionBlocks { get; set; }
 
@@ -73,19 +75,21 @@ namespace Popup.Dtos
         public bool IsScored { get; set; }
 
         /*
-         * [설계 18 L-2 — C-16 삭제] 구 데모 JSON의 정답 값 목록(correctAnswers)을 삭제했다.
-         * 정답은 options[].isCorrect / correctAnswer / answerMatchMode 로만 받는다.
+         * POL-06-02 : 선택·제출
+         * 정답은 options[].isCorrect / correctAnswer / answerMatchMode 로만 받는다(정답 값 목록 correctAnswers는 받지 않음).
          */
 
         /*
-         * [설계 12 §4 — 로컬 채점] 문항 배점.
+         * POL-06-02 : 선택·제출
+         * 문항 배점(WPF 로컬 채점용).
          * 서버 PopupQuestionDto.questionScore. 정답이면 이 점수를 전부 얻고 부분 점수는 없다(서버 gradeAnswer와 같은 규칙).
-         * null이면 0점으로 계산한다(설계 18 L-2 — C-17. 서버는 QUIZ 저장 시 배점을 필수로 검증한다).
+         * null이면 0점으로 계산한다(서버는 QUIZ 저장 시 배점을 필수로 검증한다).
          */
         public double? QuestionScore { get; set; }
 
         /*
-         * [설계 12 §4 — 로컬 채점] 서술형(TEXT) 문항의 정답 문자열과 일치 모드(EXACT / CONTAINS).
+         * POL-06-02 : 선택·제출
+         * 로컬 채점용 서술형(TEXT) 문항의 정답 문자열과 일치 모드(EXACT / CONTAINS).
          * 서버가 QUIZ 팝업에만 내려주며(WpfPopupService), SURVEY·비채점 문항에서는 null이다.
          */
         public string? CorrectAnswer { get; set; }

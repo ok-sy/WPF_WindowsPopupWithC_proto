@@ -21,7 +21,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * [Oracle 전환 — 기준 5] DB 없이 검증할 수 있는 매퍼 XML 정적 검사.
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-16-02 : 재현 가능한 검증
+ * ■ Oracle 매퍼 XML 정적 검사 테스트
+ * - Oracle 전환 후 DB 없이 검증할 수 있는 매퍼 XML 정적 검사.
  *
  * <p>Oracle 판 PopupMapper.xml은 RETURNING을 Map 파라미터 + selectKey로 바꾸고 인터페이스에 같은 이름의
  * default 오버로드를 두었다. 실DB가 없는 환경에서도 다음을 보장한다.</p>
@@ -48,6 +51,7 @@ class PopupMapperOracleStatementTest {
         return configuration;
     }
 
+    /** 매퍼 인터페이스의 모든 추상 메서드에 XML 구문이 있다. */
     @Test void everyAbstractMapperMethodHasStatement() throws Exception {
         var configuration = parse();
         List<String> missing = Arrays.stream(PopupMapper.class.getMethods())
@@ -59,6 +63,7 @@ class PopupMapperOracleStatementTest {
         assertTrue(missing.isEmpty(), "XML 구문이 없는 매퍼 메서드: " + missing);
     }
 
+    /** 키를 돌려주는 구문은 selectKey를 쓰고 keyProperty가 default 메서드가 읽는 키와 같다. */
     @Test void keyReturningStatementsUseSelectKeyWithExpectedProperty() throws Exception {
         var configuration = parse();
         Map<String, String> expected = Map.of(
@@ -77,6 +82,7 @@ class PopupMapperOracleStatementTest {
         });
     }
 
+    /** 레코드 타입 속성 경로를 MyBatis가 읽을 수 있다. */
     @Test void recordPropertyPathsAreReadableByMyBatis() throws Exception {
         var configuration = parse();
         Map<String, Object> params = new HashMap<>();
@@ -100,7 +106,7 @@ class PopupMapperOracleStatementTest {
     }
 
     /**
-     * [WPF API — 기준 3·4] WpfPopupMapper.xml은 PopupMapper.xml의 nowKst 조각을 네임스페이스 한정자로 include 한다.
+     * POL-09-01 : 3 API 순서 — WpfPopupMapper.xml은 PopupMapper.xml의 nowKst 조각을 네임스페이스 한정자로 include 한다.
      * 두 XML을 함께 파싱해 모든 WpfPopupMapper 메서드가 구문과 바인딩되고 include가 해석되는지 확인한다.
      */
     @Test void wpfMapperBindsAllMethodsAndResolvesCrossNamespaceInclude() throws Exception {
@@ -129,7 +135,7 @@ class PopupMapperOracleStatementTest {
         assertTrue(sql.contains("SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul'"), "nowKst include 미해석");
         assertFalse(sql.contains("<include"), "include 태그가 남아 있음");
 
-        // excludeCompleted 동적 조건: true일 때만 COMPLETED_YN 조건이 들어간다 (기준 2)
+        // POL-11-01 : 노출 판단 소유 — excludeCompleted 동적 조건: true일 때만 COMPLETED_YN 조건이 들어간다
         Map<String, Object> listParams = new HashMap<>();
         listParams.put("userId", "E1001");
         listParams.put("excludeCompleted", true);
@@ -141,7 +147,7 @@ class PopupMapperOracleStatementTest {
     }
 
     /**
-     * [설계 47-4] 결과 수용용 문맥 조회는 requirePublished=false면 팝업 활성·게시 기간 조건이 빠지고 활성 사용자 조건은 남는다.
+     * POL-10-02 : 검증·원자성 — 결과 수용용 문맥 조회는 requirePublished=false면 팝업 활성·게시 기간 조건이 빠지고 활성 사용자 조건은 남는다.
      * CLOSED·HIDDEN 수용 확인(countActiveUserAndPopup)은 팝업 활성 여부를 보지 않는다.
      */
     @Test void deliveredResultStatementsDropPublishConditions() throws Exception {
@@ -170,6 +176,7 @@ class PopupMapperOracleStatementTest {
         assertTrue(count.contains("n.POPUP_ID = ?"), "팝업 행 존재는 확인");
     }
 
+    /** PostgreSQL 전용 문법이 매퍼 XML에 남아 있지 않다. */
     @Test void noPostgresOnlySyntaxRemains() throws Exception {
         String xml;
         try (var stream = getClass().getClassLoader().getResourceAsStream(RESOURCE)) {

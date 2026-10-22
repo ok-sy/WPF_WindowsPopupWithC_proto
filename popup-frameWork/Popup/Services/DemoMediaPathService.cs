@@ -4,7 +4,11 @@ using System.Security.Cryptography;
 namespace Popup.Services
 {
     /// <summary>
-    /// 폐쇄망 Demo Mode에서 사용하는 로컬 이미지와 동영상 경로를 관리한다.
+    /// POL-14-02 : Demo 모드
+    /// ■ Demo 미디어 경로
+    /// - in : 없음(파일 이름 상수 demo-image.jpg / demo-video.mp4)
+    /// - out: GetImagePath/GetVideoPath → 로컬 파일 경로 · 예외: FileNotFoundException(내장 리소스 없음)
+    /// - 폐쇄망 Demo Mode에서 사용하는 로컬 이미지와 동영상 경로를 관리한다.
     /// EXE 옆 Media 파일이 있으면 우선 사용하고, 없으면 내장 리소스를 사용자 캐시에 추출한다.
     /// </summary>
     public static class DemoMediaPathService

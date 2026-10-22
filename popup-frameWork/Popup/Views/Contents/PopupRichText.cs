@@ -10,10 +10,15 @@ using System.Windows.Media;
 namespace Popup.Views.Contents
 {
     /*
-     * [POL-03-01; 근거 설계 28·48] 문단·Run JSON을 WPF TextBlock Inlines로 만든다. HTML/XAML 문자열은 로드하지 않는다.
-     * [설계 48] 서식 허용 정책(크기 목록·색 형식·글꼴 ID·정렬 값)은 서버 PopupRichText.java가 저장 시 검증한다.
+     * POL-03-01 : 저장·표시 경계
+     * POL-03-02 : 문단·글자 서식
+     * ■ 서식 본문(문단·Run JSON) WPF 렌더러
+     * - in : blocks(IReadOnlyList<PopupTextBlockDto>?) 문단·Run 목록 · style(Style?) 문단 기본 스타일
+     * - out: List<TextBlock> 문단별 TextBlock(Inlines = Run·LineBreak)
+     * - 문단·Run JSON을 WPF TextBlock Inlines로 만든다. HTML/XAML 문자열은 로드하지 않는다.
+     * 서식 허용 정책(크기 목록·색 형식·글꼴 ID·정렬 값)은 서버 PopupRichText.java가 저장 시 검증한다.
      * 이 렌더러는 정책 목록을 복제하지 않고 WPF 변환과 표시 방어만 맡는다 — 서버 목록과 어긋나 정상 저장한 서식이
-     * 조용히 무시되는 것을 막기 위해서다(설계 36의 화이트리스트 유지 결론은 설계 48이 대체).
+     * 조용히 무시되는 것을 막기 위해서다(WPF 쪽 화이트리스트는 두지 않는다).
      *   크기: 유한값이고 WPF·레이아웃 안전 범위(MinFontSize~MaxFontSize) 안이면 적용, 밖이면 본문 기본 크기.
      *   색: #RRGGBB(대소문자 무관)를 예외 없이 변환, 실패하면 그 구간만 기본 색.
      *   글꼴: ID → WPF 글꼴명 매핑(표현 의존성). 서버에 새 ID를 추가하면 매핑도 추가해야 하며, 없는 ID는 기본 글꼴.
@@ -30,8 +35,9 @@ namespace Popup.Views.Contents
         internal const double MaxFontSize = 200;
 
         /*
-         * [설계 49] 문단 들여쓰기. 웹 CSS px와 WPF DIP는 96 DPI 기준 같은 크기이므로 1단계 = 40 DIP로 표시한다.
-         * [POL-03-02; 근거 TODO63] 단계 수 제한은 없다(설계 48: 서버 정책을 복제하지 않음). 0 이상 정수이고 서버가 읽을 수 있는 숫자 범위
+         * POL-03-02 : 문단·글자 서식
+         * 문단 들여쓰기. 웹 CSS px와 WPF DIP는 96 DPI 기준 같은 크기이므로 1단계 = 40 DIP로 표시한다.
+         * 단계 수 제한은 없다(서버 정책을 복제하지 않음). 0 이상 정수이고 서버가 읽을 수 있는 숫자 범위
          * (int 이하)면 그대로 적용하고, 소수·음수·NaN·Infinity·범위 초과만 0이다. 여백이 본문 폭을 넘으면 TextBlock이
          * 남은 폭에서 줄바꿈하고 높이가 늘어나며, 본문 영역의 기존 세로 스크롤로 확인한다.
          */
@@ -40,7 +46,7 @@ namespace Popup.Views.Contents
         internal static double SafeIndent(double level) =>
             double.IsFinite(level) && level >= 0 && level == Math.Floor(level) && level <= int.MaxValue ? level * IndentStep : 0;
 
-        /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다(설계 28 §5). */
+        /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다. */
         internal static readonly Dictionary<string, string> Fonts = new()
         {
             ["MALGUN_GOTHIC"] = "Malgun Gothic",
@@ -64,7 +70,13 @@ namespace Popup.Views.Contents
         internal static double? SafeFontSize(double? size) =>
             size is double value && double.IsFinite(value) && value >= MinFontSize && value <= MaxFontSize ? value : null;
 
-        /// <summary>서식 본문이 있으면 문단마다 TextBlock을 만든다. 표시할 문단이 없으면 빈 목록이다.</summary>
+        /*
+         * POL-03-01 : 저장·표시 경계
+         * ■ 서식 문단 생성
+         * - in : blocks(IReadOnlyList<PopupTextBlockDto>?) 문단 목록(null·null 항목 허용) · style(Style?) 문단 기본 스타일
+         * - out: List<TextBlock> 문단마다 TextBlock 하나. blocks가 null이면 빈 목록
+         * - 서식 본문이 있으면 문단마다 TextBlock을 만든다. 빈 문단은 공백 Run으로 한 줄 높이를 유지한다.
+         */
         internal static List<TextBlock> CreateParagraphs(IReadOnlyList<PopupTextBlockDto>? blocks, Style? style)
         {
             var paragraphs = new List<TextBlock>();
@@ -78,7 +90,7 @@ namespace Popup.Views.Contents
                     TextAlignment = block.Alignment switch { "CENTER" => TextAlignment.Center, "RIGHT" => TextAlignment.Right, _ => TextAlignment.Left },
                     // 구간 크기가 기본 줄 높이보다 커도 줄이 겹치지 않도록 가장 큰 글자에 맞춰 줄 높이를 늘린다.
                     LineStackingStrategy = LineStackingStrategy.MaxHeight,
-                    // [설계 49] 왼쪽 여백은 줄바꿈된 모든 줄에 같게 적용된다(첫 줄 들여쓰기 아님). 오른쪽은 기울임 여유가 쓴다.
+                    // POL-03-02 : 문단·글자 서식 — 왼쪽 여백은 줄바꿈된 모든 줄에 같게 적용된다(첫 줄 들여쓰기 아님). 오른쪽은 기울임 여유가 쓴다.
                     Padding = new Thickness(SafeIndent(block.Indent), 0, 0, 0),
                 };
                 foreach (PopupTextRunDto run in (block.Runs ?? new()).Where(r => r != null && !string.IsNullOrEmpty(r.Text)))
@@ -99,7 +111,8 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [설계 38] 기울임 글자는 획이 글자 폭(advance)보다 오른쪽으로 기울어 나가는데, TextBlock은 글자 폭으로 줄을 배치한다.
+         * POL-03-01 : 저장·표시 경계 — 기울임 글자 표시 방어.
+         * 기울임 글자는 획이 글자 폭(advance)보다 오른쪽으로 기울어 나가는데, TextBlock은 글자 폭으로 줄을 배치한다.
          * 줄 끝(오른쪽 정렬·꽉 찬 줄)의 기울어진 획이 문단 경계 = ScrollViewer 표시 영역 밖으로 나가 잘리므로,
          * 기울임 구간이 있는 문단만 가장 큰 기울임 글자 크기에 비례한 오른쪽 여유를 둔다. 외곽 클리핑은 그대로 유지한다.
          * 본문 기본 크기가 바뀌면(ApplyBodyFontSize) 다시 호출해 여유 폭을 맞춘다.

@@ -11,6 +11,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * POL-02-03 : 푸터 역할
+ * POL-01-01 : 공통 옵션의 위치
+ * POL-01-02 : 기본값의 적용
+ * ■ 푸터 동작·창 공통 옵션·영상 결합 옵션 저장 검증 테스트
+ * - PopupService의 validateActionOptions·validateWindowOptions·저장 정규화를 DB 없이 확인한다.
+ */
 class PopupActionOptionsTest {
     private PopupResponseDto popup(String type, Map<String, Object> content) {
         PopupResponseDto dto = mock(PopupResponseDto.class);
@@ -19,6 +26,7 @@ class PopupActionOptionsTest {
         return dto;
     }
 
+    /** LINK_AND_CLOSE 바로가기 URL은 http/https만 받고 실행형·누락 URL은 거부한다. */
     @Test void footerLinkAcceptsWebUrlsAndRejectsExecutableOrMissingUrls() {
         for (String url : new String[]{"http://intranet/training", "https://example.com/path?q=1"}) {
             assertDoesNotThrow(() -> PopupService.validateActionOptions(popup("TEXT",
@@ -33,7 +41,7 @@ class PopupActionOptionsTest {
                 Map.of("footerAction", "UNKNOWN"))));
     }
 
-    /** [설계 30·34-35] SUBMIT은 설문·퀴즈 전용이고, 설문·퀴즈에 CLOSE·LINK_AND_CLOSE를 명시하면 거부한다. 저장 시 키는 남기지 않는다. */
+    /** POL-02-03 : 푸터 역할 — SUBMIT은 설문·퀴즈 전용이고, 설문·퀴즈에 CLOSE·LINK_AND_CLOSE를 명시하면 거부한다. 저장 시 키는 남기지 않는다. */
     @Test void footerActionPolicyByPopupType() {
         assertThrows(IllegalArgumentException.class, () -> PopupService.validateActionOptions(popup("TEXT",
                 Map.of("footerAction", "SUBMIT"))));
@@ -60,7 +68,7 @@ class PopupActionOptionsTest {
         assertFalse(close.containsKey("footerAction") || close.containsKey("footerLinkUrl"), "CLOSE는 기본값이라 저장하지 않는다");
     }
 
-    /** [설계 31] Overlay·위치 저장 검증. 값이 없으면 통과하고 WPF 응답에서 기본값을 쓴다. */
+    /** POL-01-01 : 공통 옵션의 위치 — Overlay·위치 저장 검증. 값이 없으면 통과하고 WPF 응답에서 기본값을 쓴다. */
     @Test void windowOptionsValidation() {
         assertDoesNotThrow(() -> PopupService.validateWindowOptions(Map.of()));
         assertDoesNotThrow(() -> PopupService.validateWindowOptions(Map.of("useBackgroundOverlay", false,
@@ -74,7 +82,7 @@ class PopupActionOptionsTest {
         }
     }
 
-    /** [설계 34-31·32] false·0은 명시값으로 유지하고, null·빈 문자열은 생략(유형별 기본값)으로 본다. */
+    /** POL-01-02 : 기본값의 적용 — false·0은 명시값으로 유지하고, null·빈 문자열은 생략(유형별 기본값)으로 본다. */
     @Test void blankMeansOmittedAndFalseOrZeroIsKept() {
         var blank = new java.util.HashMap<String, Object>();
         blank.put("footerAction", "");
@@ -98,6 +106,7 @@ class PopupActionOptionsTest {
         assertEquals(0.0, server.domain.popup.PopupWindowOptions.backgroundOverlayOpacity(explicit), "0은 누락이 아니다");
     }
 
+    /** 동영상+퀴즈(videoEnabled)는 QUIZ 유형과 영상 URL이 있어야 저장된다. */
     @Test void combinedQuizRequiresTrackableVideoAndQuizType() {
         assertDoesNotThrow(() -> PopupService.validateActionOptions(popup("QUIZ",
                 Map.of("videoEnabled", true, "videoUrl", "https://example.com/training.mp4"))));
@@ -107,6 +116,7 @@ class PopupActionOptionsTest {
                 Map.of("videoEnabled", true))));
     }
 
+    /** POL-05-01 : 재생 경로 — allowSeek는 boolean만 받고 CONTENT_OPTIONS 확장 옵션으로 저장한다. */
     @Test void allowSeekAcceptsOnlyBooleanAndIsStoredAsContentOption() {
         for (String type : new String[]{"VIDEO", "QUIZ"}) {
             assertDoesNotThrow(() -> PopupService.validateActionOptions(popup(type, Map.of("allowSeek", false))));
@@ -119,6 +129,7 @@ class PopupActionOptionsTest {
         assertEquals(false, PopupContentAssembler.withoutStoredCopies(Map.of("allowSeek", false)).get("allowSeek"));
     }
 
+    /** POL-06-03 : 표현·수명 — 동영상+퀴즈의 영상 시청 완료만으로는 팝업을 완료 처리하지 않는다. */
     @Test void watchingQuizVideoDoesNotCompleteTheQuiz() {
         PopupMapper mapper = mock(PopupMapper.class);
         PopupService service = new PopupService(mapper, new ObjectMapper());

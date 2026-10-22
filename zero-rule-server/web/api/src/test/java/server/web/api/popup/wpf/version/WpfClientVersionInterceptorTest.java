@@ -17,7 +17,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * [설계 13 §13] 클라이언트 버전 인터셉터의 HTTP 계약을 MockMvc(standalone)로 검증한다.
+ * POL-15-02 : 인증·버전
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 클라이언트 버전 인터셉터 HTTP 계약 테스트
+ * - 클라이언트 버전 인터셉터의 HTTP 계약을 MockMvc(standalone)로 검증한다(T번호는 시험 항목 구분).
  * T1 동일 버전 허용 / T2 상위 허용 / T3 하위 426 / T4 1.10.0 > 1.9.0 숫자 비교 / T5 헤더 누락 426 /
  * T7 실행 중 최소 버전 변경 즉시 반영 / 검증 비활성(minimum 비움) / WPF 외 경로 미적용.
  */

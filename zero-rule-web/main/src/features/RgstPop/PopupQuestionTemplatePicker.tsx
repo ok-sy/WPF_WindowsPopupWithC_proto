@@ -38,7 +38,7 @@ export default function PopupQuestionTemplatePicker({
   const api = useApi();
   const [templates, setTemplates] = useState<AdminQuestionTemplate[]>([]);
   const [selected, setSelected] = useState('');
-  // [설계 50] 팝업 유형이 SURVEY↔QUIZ로 바뀌면 선택을 실제로 비운다(목록에서 걸러진 이전 템플릿이 남거나, 원래 유형으로
+  // POL-06-01 : 문항·서식 — 팝업 유형이 SURVEY↔QUIZ로 바뀌면 선택을 실제로 비운다(목록에서 걸러진 이전 템플릿이 남거나, 원래 유형으로
   // 돌아왔을 때 이전 선택이 되살아나지 않게). 목록을 다시 받지 않도록 다시 마운트하지 않고 렌더 중에 상태를 맞춘다.
   const [selectedType, setSelectedType] = useState(popupType);
   if (selectedType !== popupType) {

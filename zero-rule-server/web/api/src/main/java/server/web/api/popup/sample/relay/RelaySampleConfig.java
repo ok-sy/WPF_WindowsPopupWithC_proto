@@ -5,7 +5,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * [TODO70] 테이블 없이 백엔드 HTTP API를 호출해 WPF 단건 조회 응답을 전달하는 샘플. 기본 비활성.
+ * POL-14-03 : 서버 인계 예제
+ * ■ 조회 중계 샘플 설정 진입점
+ * - in : {@code popup.sample.relay.enabled=true}일 때만 활성(기본 비활성)
+ * - out: RelayBackendProperties 바인딩
+ * - 테이블 없이 백엔드 HTTP API를 호출해 WPF 단건 조회 응답을 전달하는 샘플이다.
  *
  * <p>흐름: 클라이언트 → {@link PopupRelayController} → {@link PopupRelayService} → {@link BackendPopupClient}(HTTP)
  * → {@link BackendResponseMapper}(파싱·필요한 매핑) → 클라이언트. 이 패키지의 클래스는 DataSource·MyBatis를 쓰지 않는다.

@@ -1,4 +1,6 @@
-// [TODO64] 팝업 데이터 변환 함수(popupEditorTransform.ts)를 분리 전 코드와 비교하고, 편집기·우측/모달 미리보기·변환 함수 최소 호스트를 확인한다.
+// POL-07-02 : 변환 책임 분리
+// POL-11-03 : 시간 경계
+// ■ 팝업 데이터 변환 함수(popupEditorTransform.ts)를 분리 전 코드와 비교하고, 편집기·우측/모달 미리보기·변환 함수 최소 호스트를 확인한다.
 // 기본 Windows Edge. 다른 Chromium은 BROWSER_PATH로 지정한다. 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-popup-transform-64.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/transform64');
@@ -114,7 +116,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'Default editor value equals pre-split defaults (except TODO52-1 displayTimes, TODO68 minimum 300x300) and returns a new object');
   check(await run(`JSON.stringify(createDefaultPopup().displayTimes)==='[]'&&createDefaultPopup().periodMode==='FIXED'`), '[52-1] default schedule is FIXED with no display times');
 
-  // ── 1-1. [TODO52-1] 노출 일정 요약·검증·입력 ──
+  // ── 1-1. POL-11-03 : 시간 경계 — 노출 일정 요약·검증·입력 ──
   check(await run(`[describeSchedule('FIXED','1,3',[{startTime:'09:00',endTime:'10:00'}]),describeSchedule('SCHEDULE',null,[]),
     describeSchedule('SCHEDULE','5,1,3',[{startTime:'09:00',endTime:'12:00'},{startTime:'22:00',endTime:'02:00'}]),
     describeSchedule('SCHEDULE','1,2,3,4,5,6,7','14:00~18:00')].join('|')==='상시|매일 · 종일|월·수·금 · 09:00~12:00, 22:00~02:00|매일 · 14:00~18:00'`),

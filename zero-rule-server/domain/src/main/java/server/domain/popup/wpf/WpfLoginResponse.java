@@ -5,9 +5,13 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.OffsetDateTime;
 
 /**
- * POST /p/api/wpf/auth/login 응답 (프로토타입).
+ * POL-15-02 : 인증·버전
+ * POL-09-01 : 3 API 순서
+ * ■ POST /p/api/wpf/auth/login 응답(프로토타입)
+ * - in : accessToken·tokenType(String) · expiresAt(OffsetDateTime)
+ * - out: 로그인 응답 JSON
  *
- * <p>[추가 이유 — 설계 10 §5.2] WPF가 메모리에만 보관할 토큰과 만료 시각. 토큰은 서버 메모리 저장소에서만
+ * <p>추가 이유: WPF가 메모리에만 보관할 토큰과 만료 시각. 토큰은 서버 메모리 저장소에서만
  * 유효한 opaque hash이며, WPF는 이후 요청에 {@code Authorization: Bearer {accessToken}}으로 붙인다.
  * 날짜는 다른 WPF DTO와 같이 ISO 8601 문자열로 고정한다(전역 ObjectMapper의 epoch 설정과 무관).</p>
  *

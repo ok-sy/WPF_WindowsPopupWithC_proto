@@ -9,7 +9,12 @@ using Forms = System.Windows.Forms;
 namespace Popup.Managers
 {
     /*
-     * 팝업이 표시되는 동안 모든 모니터의 배경을 덮는 Overlay를 관리한다.
+     * POL-02-02 : 종료 제어
+     * POL-01-02 : 기본값의 적용
+     * ■ 배경 Overlay 관리
+     * - in : Opacity(double, 기본 0.45, 0~1 보정) · Owner(Window?) 소유자 창
+     * - out: 모니터별 Overlay 창 표시/닫기 · BackgroundClicked 이벤트(배경 클릭 시)
+     * - 팝업이 표시되는 동안 모든 모니터의 배경을 덮는 Overlay를 관리한다.
      *
      * 목적
      * 1. 팝업 바깥쪽 배경을 반투명하게 어둡게 표시한다.
@@ -19,14 +24,14 @@ namespace Popup.Managers
      *
      * Overlay는 팝업마다 만들지 않고 PopupManager가 한 세트만 유지한다.
      *
-     * [2026-09-19 수정 — 사용자 시연 피드백]
-     *  - "배경을 눌러도 팝업이 뒤로 가리면 안 된다": Overlay가 클릭으로 활성화되면 Topmost 창끼리 z-순서가 바뀌어
+     * POL-02-01 : 창 구조 — 창 활성화·작업 표시줄·다중 모니터(DPI) 보완
+     *  - 배경을 눌러도 팝업이 뒤로 가리지 않게 한다: Overlay가 클릭으로 활성화되면 Topmost 창끼리 z-순서가 바뀌어
      *    팝업이 Overlay 뒤로 갈 수 있었다. WS_EX_NOACTIVATE + WM_MOUSEACTIVATE → MA_NOACTIVATEANDEAT 로
      *    Overlay는 절대 활성화되지 않고 클릭을 삼킨다(배경 차단은 그대로). 클릭 시 BackgroundClicked 이벤트로
      *    PopupManager가 팝업 창을 다시 맨 앞으로 올린다.
-     *  - "작업 관리자·작업 표시줄에 창이 여러 개": ShowInTaskbar=false(WS_EX_TOOLWINDOW)에 더해 제목을 비우고
+     *  - 작업 관리자·작업 표시줄에 Overlay 창이 잡히지 않게 한다: ShowInTaskbar=false(WS_EX_TOOLWINDOW)에 더해 제목을 비우고
      *    소유자(owner)를 팝업 창의 소유자로 두어 앱 창 목록에 잡히지 않게 한다.
-     *  - "특정 모니터에 Overlay가 안 생긴다": WPF가 Show 과정에서 창 크기·위치를 다시 적용해 SourceInitialized의
+     *  - 모든 모니터에 Overlay가 생기게 한다: WPF가 Show 과정에서 창 크기·위치를 다시 적용해 SourceInitialized의
      *    SetWindowPos 결과가 덮일 수 있다. Show 뒤와 Loaded 뒤에 모니터 물리 영역으로 다시 맞춘다.
      */
     public sealed class BackgroundOverlayManager
@@ -44,7 +49,12 @@ namespace Popup.Managers
 
         public bool IsVisible => _overlayWindows.Count > 0;
 
-        /* 현재 Windows가 인식한 모든 모니터에 Overlay를 하나씩 생성한다. */
+        /*
+         * ■ Overlay 표시
+         * - in : 없음(Opacity·Owner 속성 사용)
+         * - out: 없음 · 이미 표시 중이면 아무것도 하지 않는다
+         * - 현재 Windows가 인식한 모든 모니터에 Overlay를 하나씩 생성한다.
+         */
         public void Show()
         {
             if (IsVisible)
@@ -66,8 +76,8 @@ namespace Popup.Managers
                     ShowActivated = false,
                     Focusable = false,
                     Topmost = true,
-                    // Window.Opacity는 AllowsTransparency=true일 때만 적용된다. 원본은 이 설정이 없어 Overlay가
-                    // 설정값과 무관하게 완전 불투명(검정)으로 떴다. 실행 캡처(2026-09-19)로 확인해 수정.
+                    // Window.Opacity는 AllowsTransparency=true일 때만 적용된다. 없으면 Overlay가
+                    // 설정값과 무관하게 완전 불투명(검정)으로 뜬다.
                     AllowsTransparency = true,
                     Background = Brushes.Black,
                     Opacity = overlayOpacity,
@@ -108,7 +118,12 @@ namespace Popup.Managers
             }
         }
 
-        /* 생성했던 모든 모니터 Overlay를 닫는다. */
+        /*
+         * ■ Overlay 닫기
+         * - in : 없음
+         * - out: 없음
+         * - 생성했던 모든 모니터 Overlay를 닫는다.
+         */
         public void Close()
         {
             foreach (Window overlayWindow in _overlayWindows)

@@ -1,10 +1,10 @@
 ﻿namespace Popup.Dtos
 {
     /*
-     * VIDEO 팝업의 content 영역을 담는 DTO
-     *
-     * 서버 JSON의 영상 관련 값을
-     * VideoPopupView 생성에 필요한 형태로 전달한다.
+     * POL-05-01 : 재생 경로
+     * ■ VIDEO 팝업 content DTO
+     * - 서버 JSON의 영상 관련 값을 VideoPopupView 생성에 필요한 형태로 전달한다.
+     * - 완료 비율은 content가 아니라 최상위 PopupResponseDto.CompletionRatio로 받는다.
      */
     public class VideoPopupContentDto
     {
@@ -41,9 +41,9 @@
         /*
          * 영상 컨트롤바 표시 여부
          *
-         * [관리자 웹 옵션 정합성 — 2026-09-20] 아래 ShowControls·AllowFullScreen·AllowPlaybackRateChange·
+         * 아래 ShowControls·AllowFullScreen·AllowPlaybackRateChange·
          * AutoPlay·IsLoop·DefaultVolume 는 관리자 웹 "영상 재생" 섹션의 값이며, PopupFactory 가
-         * VideoPopupView 생성자로 전달해 실제 재생 동작에 적용한다(이전에는 DTO 에만 보관되고 무시됐다).
+         * VideoPopupView 생성자로 전달해 실제 재생 동작에 적용한다.
          * JSON 에 키가 없을 때의 기본값은 웹 편집기의 기본 표시(autoPlay·isLoop 꺼짐, 나머지 켜짐)와 같다.
          */
         public bool ShowControls { get; set; } =
@@ -63,7 +63,8 @@
             true;
 
         /*
-         * [설계 27] 진행바로 재생 위치를 변경(Seek)할 수 있는지 여부
+         * POL-05-01 : 재생 경로
+         * 진행바로 재생 위치를 변경(Seek)할 수 있는지 여부
          * false여도 진행률·시간 표시는 유지하고 앞/뒤 이동만 막는다.
          */
         public bool AllowSeek { get; set; } =
@@ -92,10 +93,9 @@
             0.7;
 
         /*
-         * [설계 18 L-0 — C-7 삭제] content 안의 CompletionRatio·AllowCloseBeforeCompletion을 삭제했다.
-         * 완료 비율과 완료 전 닫기 허용 여부는 계약 v3.0 §8.3대로 팝업 최상위 값
-         * (PopupResponseDto.CompletionRatio·AllowCloseBeforeComplete)만 읽으며, content 쪽 값은 읽는 곳이 없었다.
-         * [TODO57] 최상위 AllowCloseBeforeComplete도 폐기했다(CompletionRatio만 남음).
+         * POL-05-02 : 완료·화면 이탈
+         * content 안의 CompletionRatio·AllowCloseBeforeCompletion은 읽지 않는다.
+         * 완료 비율은 팝업 최상위 PopupResponseDto.CompletionRatio만 읽는다. 완료 전 닫기 허용 옵션(AllowCloseBeforeComplete)은 없다.
          */
     }
 }

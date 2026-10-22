@@ -10,9 +10,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * [TODO55-4] SURVEY·QUIZ 서식(FONT EDIT) 필드의 저장 전 검증과 일반 문자열 파생.
+ * POL-06-01 : 문항·서식
+ * ■ SURVEY·QUIZ 서식 검증·파생
+ * - in : PopupResponseDto(콘텐츠·문항·선택지 Blocks와 일반 문자열)
+ * - out: 일반 문자열을 서식에서 파생한 PopupResponseDto 사본 · 예외: IllegalArgumentException
+ * - SURVEY·QUIZ 서식(FONT EDIT) 필드의 저장 전 검증과 일반 문자열 파생.
  *
- * <p>필드(55-1 계약): 콘텐츠 {@code surveyTitleBlocks}·{@code descriptionBlocks}, 문항 {@code titleBlocks}·
+ * <p>필드(인터페이스 계약): 콘텐츠 {@code surveyTitleBlocks}·{@code descriptionBlocks}, 문항 {@code titleBlocks}·
  * {@code descriptionBlocks}, 선택지 {@code textBlocks}. 구조와 허용 값은 TEXT 본문({@link PopupRichText})과 같다.</p>
  *
  * <ul>
@@ -37,7 +41,13 @@ final class PopupSurveyRichText {
     private PopupSurveyRichText() {
     }
 
-    /** 요청 팝업의 콘텐츠·문항 서식을 검증하고 일반 문자열을 서식에서 파생한 사본을 돌려준다. */
+    /**
+     * POL-06-01 : 문항·서식
+     * ■ 팝업 서식 정규화
+     * - in : popup(PopupResponseDto) 저장 요청 팝업
+     * - out: PopupResponseDto 정규화 사본(SURVEY·QUIZ 외 유형은 그대로) · 예외: IllegalArgumentException
+     * - 요청 팝업의 콘텐츠·문항 서식을 검증하고 일반 문자열을 서식에서 파생한 사본을 돌려준다.
+     */
     static PopupResponseDto normalize(PopupResponseDto popup) {
         if (popup == null) {
             return null;
@@ -62,6 +72,13 @@ final class PopupSurveyRichText {
         return popup.withQuestionsAndContent(questions, normalized);
     }
 
+    /**
+     * POL-06-01 : 문항·서식
+     * ■ 문항 서식 정규화
+     * - in : question(PopupQuestionDto) 문항
+     * - out: PopupQuestionDto 제목·설명·선택지 문구를 서식에서 파생한 문항(null은 null)
+     * - 문항 제목·설명과 선택지 문구 서식을 검증하고 일반 문자열을 서식에서 파생한다.
+     */
     static PopupQuestionDto normalizeQuestion(PopupQuestionDto question) {
         if (question == null) {
             return null;
@@ -84,6 +101,7 @@ final class PopupSurveyRichText {
                 title.blocks(), description.blocks());
     }
 
+    /** 콘텐츠 서식 필드 하나를 검증해 서식이 있으면 일반 문자열을 덮고, 없으면 서식 키를 지운다. */
     private static void applyContentField(Map<String, Object> content, String key, String plainKey, String label, int max) {
         Object plainValue = content.get(plainKey);
         Field field = field(content.get(key), plainValue == null ? null : String.valueOf(plainValue), label, max);
@@ -99,6 +117,7 @@ final class PopupSurveyRichText {
     private record Field(List<Object> blocks, String plain) {
     }
 
+    /** 서식을 검증하고 상한을 확인해 서식·파생 문자열 쌍을 만든다. 서식이 없으면 요청 문자열을 쓴다. */
     private static Field field(Object blocks, String plain, String label, int max) {
         String derived;
         try {

@@ -8,6 +8,10 @@ import server.domain.popup.wpf.WpfPopupItem;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * POL-06-01 : 문항·서식
+ * ■ 문항 선택지 배치(optionLayout) 테스트
+ */
 class PopupQuestionLayoutTest {
     private PopupQuestionDto question(long id, String layout) {
         return new PopupQuestionDto(id, "Question", null, "SINGLE_CHOICE", true, false,
@@ -15,6 +19,7 @@ class PopupQuestionLayoutTest {
                 new PopupOptionDto(2L, "2", "B", 2, false)), null, null, layout);
     }
 
+    /** 문항별 배치가 JSON 직렬화와 정답 키 제거 뒤에도 유지된다. */
     @Test void mixedLayoutsSurviveJsonAndAnswerKeyRemoval() throws Exception {
         var questions = List.of(question(1, "HORIZONTAL"), question(2, "VERTICAL"));
         var json = new ObjectMapper();
@@ -27,7 +32,7 @@ class PopupQuestionLayoutTest {
         assertDoesNotThrow(() -> PopupQuestionRules.validate(restored, false, null));
     }
 
-    // [설계 18 L-4 — S-16] 누락된 배치를 VERTICAL로 바꾸지 않고 저장 검증에서 거부한다.
+    /** POL-06-01 : 문항·서식 — 누락된 배치를 VERTICAL로 바꾸지 않고 저장 검증에서 거부한다. */
     @Test void omittedOrUnknownLayoutIsRejected() throws Exception {
         var json = new ObjectMapper();
         var node = json.valueToTree(question(1, "HORIZONTAL"));

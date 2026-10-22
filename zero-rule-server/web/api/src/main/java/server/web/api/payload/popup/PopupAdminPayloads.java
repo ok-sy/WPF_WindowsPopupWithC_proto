@@ -12,7 +12,13 @@ import server.domain.popup.PopupResponseDto;
 
 import java.util.List;
 
-/** 관리자 팝업 API의 요청·응답 형식을 모아 둔다. */
+/**
+ * POL-07-03 : 저장 경계
+ * ■ 관리자 팝업 API 요청·응답 형식 모음
+ * - in : 없음(형식 정의)
+ * - out: 목록·상세·저장·활성 변경 요청/응답 클래스
+ * - 관리자 웹은 객체를 그대로 보내고 서버가 Jackson으로 매핑·검증한다. 팝업 본문은 PopupResponseDto를 공유한다.
+ */
 public final class PopupAdminPayloads {
 
     private PopupAdminPayloads() {

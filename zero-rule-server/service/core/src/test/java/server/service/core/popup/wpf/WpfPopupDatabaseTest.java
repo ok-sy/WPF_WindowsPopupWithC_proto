@@ -30,7 +30,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * [기준 2·3·4·5] 신규 WPF API를 Oracle 실DB(db/oracle/01·02 적용 상태)로 검증하는 롤백 전용 테스트.
+ * POL-09-01 : 3 API 순서
+ * POL-11-01 : 노출 판단 소유
+ * POL-13-02 : 전달·영수증
+ * ■ WPF 조회·결과 API Oracle 실DB 테스트(롤백 전용)
+ * - 신규 WPF API를 Oracle 실DB(db/oracle/01·02 적용 상태)로 검증하는 롤백 전용 테스트.
  * POPUP_TEST_DB_PASSWORD가 있을 때만 실행된다. 샘플 기대값(02_popup_sample_oracle.sql 주석):
  *   E1001(개발팀·사원·2024 입사): TEXT, VIDEO, QUIZ, SURVEY
  *   E1002(개발팀·팀장·2018 입사): TEXT, VIDEO, SURVEY
@@ -50,6 +54,7 @@ class WpfPopupDatabaseTest {
         }
     }
 
+    /** 단건 조회·결과 저장·재조회 흐름을 Oracle 실DB에서 확인한다. */
     @Test void nextPopupAndResultRoundTripOnOracle() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
@@ -81,14 +86,14 @@ class WpfPopupDatabaseTest {
                 OffsetDateTime displayedAt = OffsetDateTime.parse("2026-09-19T09:00:05+09:00");
                 OffsetDateTime closedAt = OffsetDateTime.parse("2026-09-19T09:03:10+09:00");
 
-                // ---- [설계 35] 단건 조회: 대상 조건(부서 하위 포함·직급·사번·입사일)을 SQL에서 판정하고 서버 정렬 첫 팝업 1건 ----
+                // ---- POL-11-01 : 노출 판단 소유 — 단건 조회: 대상 조건(부서 하위 포함·직급·사번·입사일)을 SQL에서 판정하고 서버 정렬 첫 팝업 1건 ----
                 assertThrows(WpfUserInactiveException.class, () -> service.getNextPopup("E9999"));
                 assertEquals("SAMPLE-TEXT-001", service.getNextPopup("E1002").popup().popupId());
                 WpfPopupItem text = service.getNextPopup("E1001").popup();
                 assertEquals("SAMPLE-TEXT-001", text.popupId());
                 assertNotNull(text.deliveryId());
                 assertEquals(text.deliveryId(), service.getNextPopup("E1001").popup().deliveryId(), "OPEN 전달 건 재사용");
-                // [설계 37] 통합 전 제목·설명은 본문 앞 줄로 합쳐 내려간다
+                // POL-03-01 : 저장·표시 경계 — 통합 전 제목·설명은 본문 앞 줄로 합쳐 내려간다
                 assertEquals("서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
                         text.content().get("plainText"));
                 assertEquals(true, text.content().get("showHighlight"), "CONTENT_OPTIONS JSON 병합");
@@ -173,7 +178,7 @@ class WpfPopupDatabaseTest {
                 assertEquals("HIDDEN", wpfMapper.selectStatus("E1003", "SAMPLE-TEXT-001").popupStatus());
                 assertEquals("SAMPLE-SURVEY-004", service.getNextPopup("E1003").popup().popupId());
 
-                // ---- [TODO52-2] 나중에 보기(LATER): TEXT도 완료·숨김 아님, 유예 중 같은 팝업 제외, 유예가 끝나면 다시 표시 ----
+                // ---- POL-10-03 : 완료·숨김·연기 — 나중에 보기(LATER): TEXT도 완료·숨김 아님, 유예 중 같은 팝업 제외, 유예가 끝나면 다시 표시 ----
                 WpfPopupItem laterText = service.getNextPopup("E1002").popup();
                 assertEquals("SAMPLE-TEXT-001", laterText.popupId());
                 assertFalse(laterText.showLater(), "SHOW_LATER_YN 기본 N");
@@ -212,7 +217,7 @@ class WpfPopupDatabaseTest {
         }
     }
     /*
-     * [설계 39-4·39-5] 실제 Oracle 커밋 경계에서 사용자 행 잠금으로 조회·결과 처리가 직렬화되는지 확인한다.
+     * POL-12-03 : 진행 단위 — 실제 Oracle 커밋 경계에서 사용자 행 잠금으로 조회·결과 처리가 직렬화되는지 확인한다.
      * 두 세션(연결)을 쓰고 앞 세션의 결과 처리를 커밋하기 전에 뒤 세션을 시작해, 뒤 세션이 잠금을 기다렸다가
      * 커밋 후 상태로 처리하는지 본다. 이 테스트만 실제 커밋하므로 E1003·E1002의 WPF 상태를 앞뒤로 지운다.
      */

@@ -1,3 +1,9 @@
+/**
+ * ■ 데이터를 실어 새 창 열기
+ * - in : url(string) 열 주소 · widthAndHeight(string) window.open 창 기능 문자열 · sendDataName(string) 데이터 이름(현재 사용 안 함) · sendData(any) 전달 데이터
+ * - out: 없음 · 팝업 차단 시 alert 표시
+ * - sendData를 JSON 문자열로 만들어 sendData 쿼리 파라미터로 붙인 뒤 새 창(_blank)으로 연다.
+ */
 export const openNextPageStorageSetData = (
   url: string,
   widthAndHeight: string,

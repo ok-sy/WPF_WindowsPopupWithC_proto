@@ -13,10 +13,13 @@ import server.web.api.popup.wpf.WpfUnauthorizedException;
 import server.web.api.popup.wpf.WpfUserResolver;
 
 /**
- * 프로토타입 사용자 식별기: {@code Authorization: Bearer {token}}을 {@link WpfPrototypeTokenStore}에서 찾아
- * 토큰에 연결된 logonId(사번)를 돌려준다.
+ * POL-15-02 : 인증·버전
+ * POL-09-01 : 3 API 순서
+ * ■ 프로토타입 토큰 사용자 식별기
+ * - in : 요청 헤더 {@code Authorization: Bearer {token}}
+ * - out: {@link WpfPrototypeTokenStore}에서 찾은 토큰의 logonId(사번) · 실패는 WpfUnauthorizedException(401)
  *
- * <p>[추가 이유 — 설계 10 §6.3] WPF API({@code GET /p/api/wpf/popups}, {@code POST /p/api/wpf/popups/results})가
+ * <p>WPF API({@code POST /p/api/wpf/popups}, {@code POST /p/api/wpf/popups/results})가
  * 프로토타입 토큰을 검사해야 만료 후 401과 재로그인 흐름을 검증할 수 있다. 검사 순서:</p>
  * <ol>
  *   <li>{@code Authorization} 헤더가 {@code Bearer } 로 시작하는가</li>

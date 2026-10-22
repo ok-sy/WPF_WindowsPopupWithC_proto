@@ -12,7 +12,11 @@ namespace Popup.Services.Auth
     public sealed record SsoUserInfo(string LogonId, string ClassCode);
 
     /*
-     * [역할 — 설계 10 §5.1] 사내 SSO 주소를 Windows 통합 인증(Negotiate/Kerberos·NTLM)으로 GET 하고,
+     * POL-15-02 : 인증·버전
+     * ■ 사내 SSO 사용자 조회
+     * - in : ssoUrl(string) SSO 절대 URL · timeout(TimeSpan?, 기본 10초)
+     * - out: GetUserAsync → SsoUserInfo(LogonId, ClassCode) · 예외: HttpRequestException(비성공 응답), InvalidOperationException(본문·XML·태그 오류)
+     * - [역할] 사내 SSO 주소를 Windows 통합 인증(Negotiate/Kerberos·NTLM)으로 GET 하고,
      * 응답 XML에서 MAIN_USER_ID(사번)·MAIN_USER_CLASSI_CODE(사용자 구분)를 꺼낸다.
      *
      * [추가 이유] curl.exe --negotiate -u : SSO_URL 이 정상 동작함을 확인했으므로 브라우저 쿠키·WebView2 로그인 화면

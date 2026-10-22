@@ -13,15 +13,16 @@ using System.Windows.Controls;
 namespace Popup
 {
     /// <summary>
-    /// Java API·DB 없이 샘플 팝업과 결과 전송 흐름을 확인하는 Demo Mode 화면이다.
+    /// POL-14-02 : Demo 모드
+    /// ■ Demo Mode 화면 — Java API·DB 없이 샘플 팝업과 결과 전송 흐름을 확인한다.
     ///
-    /// [Demo Mode — 기준 3·4 흐름 재현]
+    /// [Demo Mode — 결과 항목 1건 전송 흐름 재현]
     ///   실제 모드와 같은 PopupResultQueue·PopupResultBuilder·PopupManager를 쓰고, 서버만
     ///   <see cref="DemoPopupGateway"/>(인메모리)로 바꾼다. 팝업이 닫힐 때 만들어지는 결과 항목과
     ///   "서버" 응답을 오른쪽 로그에 JSON으로 보여 주므로 실제 전송 본문을 그대로 검토할 수 있다.
     ///   결과 큐 파일은 실제 모드와 섞이지 않도록 임시 폴더의 demo 전용 파일을 쓴다.
     ///
-    /// [설계 51 — API Demo] -Demo -Api로 시작하면 같은 창에서 인메모리 서버 대신 실제 개발계/검증계 API를 수동 호출한다
+    /// [API Demo] -Demo -Api로 시작하면 같은 창에서 인메모리 서버 대신 실제 개발계/검증계 API를 수동 호출한다
     ///   (DemoWindow.Api.cs). 인메모리 전용 조작(샘플·옵션·상태 초기화·인증 테스트)은 숨긴다.
     /// </summary>
     public partial class DemoWindow : Window
@@ -49,6 +50,11 @@ namespace Popup
         private const string EmptyScoreText = "퀴즈 완료 후 점수와 통과 여부가 표시됩니다.";
         private const string EmptyDetailText = "로그를 선택하면 요청·응답 JSON을 확인하고 복사할 수 있습니다.";
 
+        /*
+         * ■ Demo 화면 생성
+         * - in : apiDemoSettings(PopupClientSettings?) -Demo -Api일 때 API Demo 설정, null이면 인메모리 Demo
+         * - out: 없음(인메모리 게이트웨이·demo 전용 결과 큐 준비)
+         */
         public DemoWindow(PopupClientSettings? apiDemoSettings = null)
         {
             InitializeComponent();
@@ -65,7 +71,7 @@ namespace Popup
         }
 
         /// <summary>
-        /// [설계 51-8] 트레이 "팝업 다시 조회". API Demo는 실제 단건 조회 경로(수동 조회와 같은 처리)로, 인메모리 Demo는 기존 샘플 실행으로 연결한다.
+        /// POL-14-02 : Demo 모드 — 트레이 "팝업 다시 조회". API Demo는 실제 단건 조회 경로(수동 조회와 같은 처리)로, 인메모리 Demo는 기존 샘플 실행으로 연결한다.
         /// </summary>
         public void RefreshFromTray()
         {
@@ -94,13 +100,15 @@ namespace Popup
         }
 
         /// <summary>
-        /// 실제 모드의 MainWindow.LoadAndShowAvailablePopupsAsync와 같은 순서([설계 35] 단건 순차):
+        /// POL-09-01 : 3 API 순서
+        /// ■ 인메모리 Demo 실행 — in : popupType(string?) 샘플 유형 필터 · out: 없음
+        /// 실제 모드의 MainWindow.LoadAndShowAvailablePopupsAsync와 같은 순서(단건 순차):
         /// 미전송 큐 flush → 1건 조회(숨김·완료·유예 제외, deliveryId 발급) → PopupOptions 변환 → 결과 훅 연결 → 표시
         /// → 닫힘 → 결과 전송 → nextStatus=AVAILABLE이면 같은 샘플 유형으로 다음 1건을 이어서 표시.
         /// </summary>
         public void ShowDemoPopups(string? popupType = null) => ShowNextDemoPopup(popupType, showEmptyMessage: true);
 
-        /// <summary>[설계 35] 창이 닫히면 결과를 보내고 AVAILABLE이면 같은 유형의 다음 1건을 표시한다(EMPTY·거절·실패면 멈춤).</summary>
+        /// <summary>POL-09-03 : 저장 응답 — 창이 닫히면 결과를 보내고 AVAILABLE이면 같은 유형의 다음 1건을 표시한다(EMPTY·거절·실패면 멈춤).</summary>
         private async void ContinueAfterResult(string? popupType)
         {
             SetRunState("결과 전송 중…");
@@ -142,7 +150,7 @@ namespace Popup
                 }
 
                 PopupOptions options = _popupService.CreatePopupOptions(new List<PopupResponseDto> { response.Popup }).Single();
-                // [설계 12·35] 운영 코드(MainWindow)와 같은 훅: 로컬 큐 저장 → 창 닫기 → 결과 전송 후 nextStatus에 따라 다음 1건
+                // POL-12-02 : 현행 임시 복구 — 운영 코드(MainWindow)와 같은 훅: 로컬 큐 저장 → 창 닫기 → 결과 전송 후 nextStatus에 따라 다음 1건
                 options.EnqueueResult = _resultQueue.Enqueue;
                 options.RetainResultForExit = _resultQueue.RetainForExit;
                 options.FlushResultsInBackground = () => ContinueAfterResult(popupType);
@@ -189,7 +197,7 @@ namespace Popup
         /// <summary>
         /// 조회도 결과 전송처럼 로그 항목으로 남긴다. Header·Footer·폰트·content 등 서버가 내려주는
         /// 팝업 설정은 조회 응답에만 있으므로 응답 탭에서 확인·복사할 수 있게 한다.
-        /// 요청은 실제 모드(PopupApiService)와 같은 POST /api/wpf/popups이며 본문은 {}다(설계 35).
+        /// 요청은 실제 모드(PopupApiService)와 같은 POST /api/wpf/popups이며 본문은 {}다.
         /// Demo에는 인증 토큰이 없어 Authorization·X-Dev-User-Id 헤더는 기록하지 않는다.
         /// 샘플 유형 선택은 Demo 화면 전용 필터라 요청 JSON이 아니라 로그 줄에만 표시한다.
         /// </summary>
@@ -215,7 +223,7 @@ namespace Popup
             if (_httpDetails.TryGetValue(ResultLogList.SelectedIndex, out HttpExchangeRecord? record))
             {
                 ShowResultDetails(record.ToDisplayJson(ApiRevealSecrets));
-                // [TODO54-7] 선택한 요청의 응답 상태·시간·오류를 상세 영역에 함께 보여 준다.
+                // POL-14-02 : Demo 모드 — 선택한 요청의 응답 상태·시간·오류를 상세 영역에 함께 보여 준다.
                 CopyStatusText.Text = $"{HttpCategory(record.Url)} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}"
                     + (ApiRevealSecrets ? " · 토큰 평문 표시 중" : " · 토큰 가림");
             }
@@ -262,7 +270,8 @@ namespace Popup
         }
 
         /*
-         * [TODO54-8] 실행 상태 표시. 로컬 샘플은 조회 중·팝업 표시 중에 실행·초기화 버튼을 막는다(API는 UpdateApiControls).
+         * POL-14-02 : Demo 모드
+         * 실행 상태 표시. 로컬 샘플은 조회 중·팝업 표시 중에 실행·초기화 버튼을 막는다(API는 UpdateApiControls).
          * 실패 상태는 다음 실행을 시작할 때까지 유지한다.
          */
         private void SetRunState(string text, bool failed = false)

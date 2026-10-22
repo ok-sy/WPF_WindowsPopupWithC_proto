@@ -15,7 +15,9 @@ import PopupScheduleFields, { validatePopupSchedule } from '../zero-rule-web/mai
 import { describeSchedule, parseWeekdays } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform';
 
 /*
- * [TODO64] 1) 변환 함수와 분리 전 코드(legacy)의 결과 비교, 2) 전체 등록 화면 없이 편집기·우측/모달 미리보기·변환 함수를
+ * POL-07-02 : 변환 책임 분리
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 1) 변환 함수와 분리 전 코드(legacy)의 결과 비교, 2) 전체 등록 화면 없이 편집기·우측/모달 미리보기·변환 함수를
  * 연결한 최소 호스트. 저장 API는 호출하지 않고 저장 요청 객체만 화면과 window.saveRequest()로 확인한다.
  */
 const w = window as any;
@@ -67,7 +69,7 @@ w.mountHost = (initial: AdminPopupDetail) => {
   mountKey++;
   root.render(<ThemeProvider theme={theme}><CssBaseline /><TransformHost key={mountKey} initial={initial} /></ThemeProvider>);
 };
-/* [TODO52-1] 노출 일정 입력 단독 호스트. 변경 패치를 누적해 window.schedule로 확인한다. */
+/* POL-11-03 : 시간 경계 — 노출 일정 입력 단독 호스트. 변경 패치를 누적해 window.schedule로 확인한다. */
 function ScheduleHost({ initial }: { initial: Pick<AdminPopupDetail, 'periodMode' | 'repeatDayOfWeek' | 'displayTimes'> }) {
   const [value, setValue] = useState(initial);
   w.schedule = value;

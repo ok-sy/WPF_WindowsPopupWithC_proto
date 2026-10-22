@@ -17,7 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** [설계 33] QUIZ 제출은 WPF가 판정한 score/passed를 저장·완료 판정에 쓰고, SURVEY는 기존 저장을 유지한다. */
+/**
+ * POL-06-02 : 선택·제출
+ * ■ QUIZ·SURVEY 제출 점수 저장 테스트
+ * - QUIZ 제출은 WPF가 판정한 score/passed를 저장·완료 판정에 쓰고, SURVEY는 기존 저장을 유지한다.
+ */
 class PopupSubmitScoreTest {
     private PopupMapper mapper;
     private PopupService service;
@@ -43,6 +47,7 @@ class PopupSubmitScoreTest {
                 .thenReturn(new PopupSubmissionContext("Q1", type, 20L, passingScore));
     }
 
+    /** 서버 계산값과 달라도 QUIZ는 WPF score/passed를 저장·완료 판정에 쓴다. */
     @Test void quizStoresWpfScoreAndPassedEvenWhenServerCalculationDiffers() {
         context("QUIZ", BigDecimal.TEN);
         // 서버 계산은 10점·통과지만 WPF 판정(4점·불합격)을 그대로 저장한다(불일치는 로그만).
@@ -53,6 +58,7 @@ class PopupSubmitScoreTest {
         verify(mapper).markPopupCompleted("E1001", "Q1", "N");
     }
 
+    /** WPF 채점값이 없는 QUIZ 제출은 저장 전에 거부한다. */
     @Test void quizWithoutWpfScoreIsRejectedBeforeSave() {
         context("QUIZ", BigDecimal.TEN);
         assertThrows(IllegalArgumentException.class, () -> service.submitResponse("Q1", "r-1", "E1001", answers, null, true));
@@ -62,6 +68,7 @@ class PopupSubmitScoreTest {
         verify(mapper, never()).upsertPopupResponse(any(), any(), any(), any(), any(), any());
     }
 
+    /** SURVEY는 클라이언트 점수 값을 무시하고 제출 즉시 완료한다. */
     @Test void surveyIgnoresClientValuesAndCompletesAsBefore() {
         context("SURVEY", null);
         var result = service.submitResponse("Q1", "r-1", "E1001", answers, 99.0, false);

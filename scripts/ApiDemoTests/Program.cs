@@ -15,7 +15,12 @@ using Popup.Services.Auth;
 using Popup.Views.Windows;
 
 /*
- * [설계 51] API Demo(-Demo -Api) 회귀 검증(저장소 추적).
+ * POL-14-02 : Demo 모드
+ * POL-16-02 : 재현 가능한 검증
+ * ■ API Demo(-Demo -Api) 회귀 검증(저장소 추적)
+ * - in : 없음(실행 인자 사용 안 함)
+ * - out: 콘솔 PASS 검사 건수 · 실패 시 Exception("FAIL: 메시지")
+ * - 검사 항목(앞 번호는 검사 메시지의 태그와 같다):
  *  51-1 실행 인자 해석(-Demo·--demo·-Api 단독·대소문자·순서·모르는 인자)
  *  51-3 HTTP 기록 마스킹(Authorization·accessToken)·응답 본문 종류(EMPTY·INVALID_JSON·JSON·NO_RESPONSE)
  *  51-4~7 로컬 모의 HTTP 서버(HttpListener, localhost 임의 포트)에 실제 DemoWindow·PopupApiService·PopupResultQueue 경로로
@@ -26,7 +31,7 @@ using Popup.Views.Windows;
  *  54-2 모드 표시·모드별 하단 고정 실행 영역, 54-3~5 상세옵션 그룹 탭·조건부 표시(숨김/비활성+사유)·즉시 검증·변경 표시·탭별 기본값 복원,
  *       숨김 입력은 적용하지 않고 값 보존, 복사본 편집(원본 DTO 불변)
  *  54-6 연결 적용 후 연결 설정 접힘·대상/인증 요약, 54-7 로그 구분([조회]/[결과]/[로그인]), 54-8 실행 상태 표시
- * 개발계/검증계 실제 서버 확인은 이 검증의 범위가 아니다(설계 51-9 수동 확인 항목).
+ * 개발계/검증계 실제 서버 확인은 이 검증의 범위가 아니다(수동 확인 항목).
  *   실행: dotnet run --project scripts/ApiDemoTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다. 실제 창을 잠깐 띄운다.
  */
@@ -126,7 +131,7 @@ internal static class Program
         window.Close();
     }
 
-    /* [TODO54-3~5] 상세옵션 창: 그룹 탭, 조건부 표시, 즉시 검증, 변경 표시, 탭별 복원, 복사본 편집. */
+    /* POL-14-02 : Demo 모드 — 상세옵션 창: 그룹 탭, 조건부 표시, 즉시 검증, 변경 표시, 탭별 복원, 복사본 편집. */
     private static void CheckDemoOptions54()
     {
         PopupResponseDto Sample(string id) => DemoPopupDataService.CreatePopups().Single(p => p.PopupId == id);

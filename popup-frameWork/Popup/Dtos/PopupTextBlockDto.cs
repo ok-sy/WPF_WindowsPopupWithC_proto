@@ -6,19 +6,25 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /*
-     * [설계 28] TEXT 본문 서식(content.textBlocks)의 문단.
-     * runs의 text를 순서대로 이으면 문단 본문이 되고, 문단 사이는 줄바꿈이다. 문단 내부 줄바꿈은 text의 \n이다.
+     * POL-03-01 : 저장·표시 경계
+     * ■ 서식 본문 문단 DTO(content.textBlocks)
+     * - runs의 text를 순서대로 이으면 문단 본문이 되고, 문단 사이는 줄바꿈이다. 문단 내부 줄바꿈은 text의 \n이다.
      */
     public class PopupTextBlockDto
     {
+        /* POL-03-02 : 문단·글자 서식 — 정렬 LEFT/CENTER/RIGHT. 기본 LEFT */
         public string Alignment { get; set; } = "LEFT";
-        /* [설계 49] 문단 왼쪽 들여쓰기 단계(1단계 = 40). 누락 = 0. */
+        /* POL-03-02 : 문단·글자 서식 — 문단 왼쪽 들여쓰기 단계(1단계 = 40). 누락 = 0. */
         public double Indent { get; set; }
         public List<PopupTextRunDto> Runs { get; set; } = new();
     }
 
     /*
-     * 같은 서식이 이어진 글자 묶음. 서식 허용 정책은 서버가 검증하고, WPF는 표시 가능한 값만 반영한다(설계 48, PopupRichText.cs).
+     * POL-03-01 : 저장·표시 경계
+     * POL-03-02 : 문단·글자 서식
+     * ■ 서식 구간(Run) DTO
+     * - 같은 서식이 이어진 글자 묶음. 서식 허용 정책은 서버가 검증하고, WPF는 표시 가능한 값만 반영한다(PopupRichText.cs).
+     * - Bold·Italic·Underline·Strikethrough·Color(#RRGGBB)·Size·Font는 구간 속성이며 null은 본문 스타일을 따른다.
      */
     public class PopupTextRunDto
     {
@@ -33,7 +39,11 @@ namespace Popup.Dtos
     }
 
     /*
-     * [설계 48-5] textBlocks 역직렬화 경계. 일반 역직렬화는 서식 값 하나의 JSON 타입 오류(예: size가 문자열)로
+     * POL-03-01 : 저장·표시 경계
+     * ■ 관용 textBlocks 변환기
+     * - in : reader(Utf8JsonReader) textBlocks 배열 JSON
+     * - out: List<PopupTextBlockDto>? · 구조 오류면 null(plainText 대체 표시)
+     * - textBlocks 역직렬화 경계. 일반 역직렬화는 서식 값 하나의 JSON 타입 오류(예: size가 문자열)로
      * content 전체 변환을 실패시켜 팝업이 표시되지 않으므로, 이 속성만 직접 읽는다.
      *   - 서식 값 타입 오류(alignment·indent·bold·italic·underline·strikethrough·color·size·font): 그 값만 기본값으로 둔다.
      *   - null 문단·null 구간: 글자가 없으므로 건너뛴다.

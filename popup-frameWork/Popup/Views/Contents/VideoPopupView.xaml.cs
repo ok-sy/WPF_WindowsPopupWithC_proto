@@ -14,10 +14,20 @@ using Forms = System.Windows.Forms;
 
 namespace Popup.Views.Contents
 {
+    /*
+     * POL-05-01 : 재생 경로
+     * POL-05-02 : 완료·화면 이탈
+     * ■ VIDEO 콘텐츠 뷰(재생기 + 컨트롤바 + 시청량 계산)
+     * - in : videoTitle·videoPath·videoDescription(string) · showDescription · 재생 옵션(showControls·allowFullScreen·
+     *        allowPlaybackRateChange·autoPlay·isLoop·defaultVolume·allowSeek)
+     * - out: ProgressUpdated(VideoProgressSnapshot) · PlaybackFailed · HasPlaybackFailed · GetFinalProgress() 닫힐 때 결과용 스냅샷
+     * - HTTP/HTTPS 영상은 WebView2 HTML5 video, 그 외 로컬 경로는 MediaElement로 재생한다.
+     *   누적 시청·최대 도달 위치를 로컬에서 계산하고, 창이 닫힐 때 PopupManager가 스냅샷을 한 번 읽어 결과에 담는다.
+     */
     public partial class VideoPopupView : UserControl, IBodyFontSizeAware
     {
         /*
-         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * POL-01-01 : 공통 옵션의 위치 — 관리자 본문 폰트 크기 적용.
          * VIDEO 팝업의 본문 = 영상 설명(DescriptionTextBlock, 기본 14). 제목(22)·재생 컨트롤 글자는 그대로 둔다.
          */
         public void ApplyBodyFontSize(double fontSize)
@@ -71,7 +81,8 @@ namespace Popup.Views.Contents
         private readonly DispatcherTimer _progressTimer;
 
         /*
-         * [기준 4] 서버 저장용 10초 주기 타이머(_progressSaveTimer)와 VideoProgressSaveRequested 이벤트를 제거했다.
+         * POL-05-02 : 완료·화면 이탈
+         * 재생 중 서버로 진행률을 주기 저장하지 않는다(주기 저장 타이머·이벤트 없음).
          * 재생 중에는 누적 시청·최대 도달 위치만 로컬에서 계산하고, 팝업이 닫힐 때 PopupManager가
          * GetFinalProgress()로 한 번 읽어 결과 API에 담는다. 완료 판정은 서버가 한다.
          */
@@ -82,7 +93,7 @@ namespace Popup.Views.Contents
         /* 가장 최근에 계산한 진행 스냅샷. 창이 닫힐 때 결과 항목(VIDEO_WATCHED)에 담긴다. */
         private VideoProgressSnapshot? _latestProgress;
         public event EventHandler<VideoProgressSnapshot>? ProgressUpdated;
-        /* [설계 43] 재생 실패로 닫기 제한이 풀릴 때 PopupWindow가 푸터 버튼·사유 문구를 다시 계산한다. */
+        /* POL-05-02 : 완료·화면 이탈 — 재생 실패로 닫기 제한이 풀릴 때 PopupWindow가 푸터 버튼·사유 문구를 다시 계산한다. */
         public event EventHandler? PlaybackFailed;
         /*
          * 현재 영상이 재생 중인지 나타낸다.
@@ -128,7 +139,7 @@ namespace Popup.Views.Contents
  * 전체화면 영상을 표시하는 별도 Window다.
  */
         private Window? _fullScreenWindow;
-        /* [TODO60] WebView2 문서 로드 ID. 이 값이 다른 메시지(이전 문서의 지연 이벤트)는 무시한다. */
+        /* POL-05-03 : 결합 화면 — WebView2 문서 로드 ID. 이 값이 다른 메시지(이전 문서의 지연 이벤트)는 무시한다. */
         private readonly string _webLoadId = Guid.NewGuid().ToString("N");
 
         /*
@@ -162,9 +173,9 @@ namespace Popup.Views.Contents
             _originalBorderThickness;
 
         /*
-         * [관리자 웹 옵션 정합성 — 2026-09-20] 관리자 웹(PopupEditorDialog "영상 재생" 섹션)이 저장하는
-         * 재생 옵션 6개. 서버는 content_options_json 으로 그대로 내려주고 VideoPopupContentDto 가 파싱하지만
-         * 이전에는 PopupFactory 가 View 에 넘기지 않아 전부 무시됐다. 이제 생성자로 받아 실제 재생 동작에 적용한다.
+         * POL-05-01 : 재생 경로
+         * 관리자 웹(PopupEditorDialog "영상 재생" 섹션)이 저장하는 재생 옵션. 서버는 content_options_json 으로
+         * 그대로 내려주고 VideoPopupContentDto 가 파싱하며, PopupFactory 가 생성자로 넘겨 실제 재생 동작에 적용한다.
          *
          *   _showControls              : 컨트롤바 표시 (false 면 컨트롤바를 절대 띄우지 않고 영상 클릭으로 재생/일시정지)
          *   _allowFullScreen           : 전체화면 버튼 표시 / 웹 플레이어 전체화면 허용
@@ -172,7 +183,7 @@ namespace Popup.Views.Contents
          *   _autoPlay                  : 영상이 열리면 바로 재생할지 (false 면 첫 프레임에서 일시정지)
          *   _isLoop                    : 끝나면 처음부터 다시 재생
          *   _defaultVolume             : 시작 음량 (0~1). 웹 플레이어(HTML5 video)에도 적용
-         *   _allowSeek                 : [설계 27] 진행바로 재생 위치 변경 허용. false 여도 진행률·시간 표시는 유지
+         *   _allowSeek                 : 진행바로 재생 위치 변경 허용. false 여도 진행률·시간 표시는 유지
          */
         private readonly bool _showControls;
         private readonly bool _allowFullScreen;
@@ -186,6 +197,12 @@ namespace Popup.Views.Contents
         private static readonly double[] PlaybackRates = { 0.5, 0.75, 1.0, 1.25, 1.5, 2.0 };
         private int _playbackRateIndex = 2; // 1.0x
 
+        /*
+         * ■ VIDEO 뷰 생성자
+         * - in : videoTitle·videoPath·videoDescription(string) · showDescription(bool) · showControls·allowFullScreen·
+         *        allowPlaybackRateChange·autoPlay·isLoop(bool) · defaultVolume(double, 0~1) · allowSeek(bool)
+         * - out: 없음 · 재생기(WebView2 또는 MediaElement)와 컨트롤바를 옵션대로 구성한다.
+         */
         public VideoPopupView(
             string videoTitle,
             string videoPath,
@@ -234,7 +251,7 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * [설계 27] 탐색 금지: 진행바는 표시만 하고 마우스·키보드·UI Automation(RangeValue) 입력을 받지 않는다.
+             * POL-05-01 : 재생 경로 — 탐색 금지: 진행바는 표시만 하고 마우스·키보드·UI Automation(RangeValue) 입력을 받지 않는다.
              * 비활성 요소는 hit test 대상이 아니므로 마우스 이동은 컨트롤바로 전달되어 자동 숨김 동작은 그대로다.
              * 실제 위치 변경 경로(FinishSeeking·HTML5 seek 명령)에서도 한 번 더 막는다.
              */
@@ -472,7 +489,7 @@ namespace Popup.Views.Contents
                     const video = document.getElementById('video');
                     video.volume = {{defaultVolumeJs}};
                     // 영상 클릭은 CompositionControl 위의 공통 WPF 입력 레이어에서 처리한다.
-                    // [TODO60] 원본 표시 크기(videoWidth/Height)와 이 문서의 로드 ID를 함께 보낸다. 크기는 재생 상태 계산에 쓰지 않는다.
+                    // POL-05-03 : 결합 화면 — 원본 표시 크기(videoWidth/Height)와 이 문서의 로드 ID를 함께 보낸다. 크기는 재생 상태 계산에 쓰지 않는다.
                     const loadId = '{{_webLoadId}}';
                     const send = (type) => chrome.webview.postMessage({
                       type, loadId,
@@ -562,7 +579,7 @@ namespace Popup.Views.Contents
         private void ApplyWebPlaybackState(JsonElement root)
         {
             string type = root.GetProperty("type").GetString() ?? string.Empty;
-            // [TODO60] 다른 문서(이전 로드)의 지연 메시지는 무시한다. 크기 갱신은 재생 상태·시청량 계산과 분리한다.
+            // POL-05-03 : 결합 화면 — 다른 문서(이전 로드)의 지연 메시지는 무시한다. 크기 갱신은 재생 상태·시청량 계산과 분리한다.
             if (root.TryGetProperty("loadId", out JsonElement loadId) && loadId.GetString() != _webLoadId) return;
             if (root.TryGetProperty("videoWidth", out JsonElement videoWidth) && root.TryGetProperty("videoHeight", out JsonElement videoHeight)
                 && videoWidth.TryGetDouble(out double naturalWidth) && videoHeight.TryGetDouble(out double naturalHeight))
@@ -678,7 +695,7 @@ namespace Popup.Views.Contents
         {
             _isMediaOpened = true;
             HideVideoMessage();
-            UpdateNaturalVideoSize(PopupVideo.NaturalVideoWidth, PopupVideo.NaturalVideoHeight);   // [TODO60]
+            UpdateNaturalVideoSize(PopupVideo.NaturalVideoWidth, PopupVideo.NaturalVideoHeight);   // POL-05-03 : 결합 화면
 
             LocalVideoControlArea.Visibility =
                 ControlBarVisibility(true);
@@ -841,10 +858,9 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [기준 4] 현재 재생 상태로 진행 스냅샷을 갱신한다. 예전에는 이 시점마다 서버(/video-progress)를 호출했지만
-         * 이제 로컬 _latestProgress만 갱신하고, 서버 전송은 창이 닫힐 때 GetFinalProgress()를 통해 1회만 한다.
-         * [설계 18 L-0 — C-21] 구 RequestProgressSave(bool force)의 force 인자는 구 /video-progress 즉시 저장용으로
-         * 이미 동작 차이가 없는 인자였으므로 제거하고, 실제 역할에 맞게 UpdateProgressSnapshot으로 이름을 바꿨다.
+         * POL-05-02 : 완료·화면 이탈
+         * 현재 재생 상태로 진행 스냅샷을 갱신한다. 이 시점마다 서버를 호출하지 않고
+         * 로컬 _latestProgress만 갱신하며, 서버 전송은 창이 닫힐 때 GetFinalProgress()를 통해 1회만 한다.
          */
         private void UpdateProgressSnapshot()
         {
@@ -909,7 +925,9 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// [기준 4] 창이 닫힐 때 PopupManager가 호출한다. 현재 재생 상태로 스냅샷을 갱신한 뒤 돌려준다.
+        /// POL-05-02 : 완료·화면 이탈
+        /// ■ 최종 시청 스냅샷 · in: 없음 · out: VideoProgressSnapshot?(영상이 열린 적 없으면 null)
+        /// 창이 닫힐 때 PopupManager가 호출한다. 현재 재생 상태로 스냅샷을 갱신한 뒤 돌려준다.
         /// 영상이 한 번도 열리지 않았으면(재생 실패 등) null이며, 이 경우 VIDEO_WATCHED 대신 CLOSED로 보고한다.
         /// </summary>
         public VideoProgressSnapshot? GetFinalProgress()
@@ -919,7 +937,9 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// [기준 4] 로컬 추정 완료 여부. 실시간 서버 판정이 없어졌으므로 화면 닫기 버튼의 시청 기준 가드에만 쓴다(TODO57).
+        /// POL-05-02 : 완료·화면 이탈
+        /// ■ 로컬 추정 완료 여부 · in: requiredRatio(double) 완료 기준 비율 · out: bool
+        /// 실시간 서버 판정이 없으므로 화면 닫기 버튼의 시청 기준 가드에만 쓴다(외부 닫기 판단에는 쓰지 않음).
         /// 최종 완료 판정은 결과 API 응답(서버)이 한다.
         /// </summary>
         public bool HasReachedCompletion(double requiredRatio)
@@ -928,22 +948,22 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// [설계 43] 마지막 스냅샷(재생 상태를 다시 읽지 않음). PopupWindow가 ProgressUpdated마다 푸터 사유 문구를 갱신할 때 쓴다.
+        /// POL-05-02 : 완료·화면 이탈 — 마지막 스냅샷(재생 상태를 다시 읽지 않음). PopupWindow가 ProgressUpdated마다 푸터 사유 문구를 갱신할 때 쓴다.
         /// GetFinalProgress()는 ProgressUpdated를 다시 올리므로 그 이벤트 처리 중에는 이 값을 읽는다.
         /// </summary>
         public VideoProgressSnapshot? LatestProgress => _latestProgress;
 
-        /// <summary>[설계 53-16] 화면에 보이는 콘텐츠 제목(빈 값 가능). VIDEO+QUIZ 결합 화면의 중복 머리말 판단에 쓴다.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 화면에 보이는 콘텐츠 제목(빈 값 가능). VIDEO+QUIZ 결합 화면의 중복 머리말 판단에 쓴다.</summary>
         internal string ShownTitle => TitleTextBlock.Text;
 
-        /// <summary>[설계 53-16] 설명이 표시 중일 때만 그 값, 숨김이면 null.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 설명이 표시 중일 때만 그 값, 숨김이면 null.</summary>
         internal string? ShownDescription => DescriptionTextBlock.Visibility == Visibility.Visible ? DescriptionTextBlock.Text : null;
 
-        /// <summary>[설계 43] HasReachedCompletion과 같은 판정식. [설계 53-16] 서버·VIDEO+QUIZ와 같은 4자리 내림 비교(VideoCompletion).</summary>
+        /// <summary>POL-05-02 : 완료·화면 이탈 — HasReachedCompletion과 같은 판정식. 서버·VIDEO+QUIZ와 같은 4자리 내림 비교(VideoCompletion). in: progress(null이면 false)·requiredRatio · out: bool</summary>
         public static bool IsCompletionReached(VideoProgressSnapshot? progress, double requiredRatio)
             => progress != null && VideoCompletion.IsReached(progress.WatchedSeconds, progress.DurationSeconds, requiredRatio);
 
-        /// <summary>[설계 43] 화면 표시용 시청 %. 내림으로 계산해 판정 전(비활성)인데 표시가 기준 이상이 되는 일이 없게 한다.</summary>
+        /// <summary>POL-05-02 : 완료·화면 이탈 — 화면 표시용 시청 %(0~100 정수). 내림으로 계산해 판정 전(비활성)인데 표시가 기준 이상이 되는 일이 없게 한다.</summary>
         public static int DisplayWatchedPercent(VideoProgressSnapshot? progress)
         {
             if (progress == null || progress.DurationSeconds <= 0) return 0;
@@ -954,7 +974,7 @@ namespace Popup.Views.Contents
         object sender,
         MouseButtonEventArgs e)
         {
-            // [설계 27] 탐색 금지면 캡처·일시정지·_isSeeking 설정 전에 반환한다.
+            // POL-05-01 : 재생 경로 — 탐색 금지면 캡처·일시정지·_isSeeking 설정 전에 반환한다.
             if (!_isMediaOpened || !_allowSeek)
             {
                 return;
@@ -1685,7 +1705,7 @@ namespace Popup.Views.Contents
             _fullScreenWindow =
                 null;
 
-            // [TODO60] 전체화면 중 받은 원본 크기·너비 변화를 복귀 후 반영한다.
+            // POL-05-03 : 결합 화면 — 전체화면 중 받은 원본 크기·너비 변화를 복귀 후 반영한다.
             RefreshAspectHeight();
 
             FullScreenIcon.Text =
@@ -1917,6 +1937,7 @@ namespace Popup.Views.Contents
             else PopupVideo.Volume = volume;
         }
 
+        /* 시스템 마스터 음량 연동 객체를 붙인다. 이전 연동은 이벤트 해제 후 Dispose한다. */
         internal void AttachMasterVolume(IMasterVolume masterVolume)
         {
             if (_masterVolume != null)
@@ -2036,7 +2057,7 @@ namespace Popup.Views.Contents
             _progressTimer.Stop();
 
             /*
-             * [설계 24 §2] 진행 타이머가 멈추면 버퍼링 안내를 닫을 경로가 없으므로
+             * POL-05-01 : 재생 경로 — 진행 타이머가 멈추면 버퍼링 안내를 닫을 경로가 없으므로
              * 일시정지 시점에 함께 닫아 숨겨진/남은 로딩 애니메이션이 없게 한다.
              */
             if (!HasPlaybackFailed)
@@ -2072,7 +2093,7 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [설계 24 §2] 로딩 회전 애니메이션의 유일한 시작/중지 지점.
+         * POL-05-01 : 재생 경로 — 로딩 회전 애니메이션의 유일한 시작/중지 지점.
          *
          * 예전에는 Path의 Loaded 트리거로 RepeatBehavior=Forever 애니메이션을 무조건 시작해,
          * 안내가 Collapsed여도 animation clock이 계속 돌며 WPF 렌더 루프를 깨웠다.

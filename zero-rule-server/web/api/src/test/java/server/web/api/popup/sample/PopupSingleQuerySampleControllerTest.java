@@ -23,7 +23,12 @@ import server.service.core.popup.sample.PopupSingleQuerySampleService;
 import server.web.api.popup.wpf.WpfUnauthorizedException;
 import server.web.api.popup.wpf.WpfUserResolver;
 
-/** [TODO65] 샘플 API의 HTTP 계약: 정상·없음(popup:null)·데이터 오류 500·인증 401·본문 400. */
+/**
+ * POL-14-03 : 서버 인계 예제
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 단건 조회 샘플 API의 HTTP 계약 테스트
+ * - 정상·없음(popup:null)·데이터 오류 500·인증 401·본문 400을 확인한다.
+ */
 class PopupSingleQuerySampleControllerTest {
 
     private final PopupSingleQuerySampleService service = mock(PopupSingleQuerySampleService.class);

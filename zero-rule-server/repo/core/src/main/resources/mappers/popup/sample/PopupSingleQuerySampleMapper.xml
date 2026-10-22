@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
-  [TODO65] 실테이블 연계 단건 조회 샘플 SQL (Oracle 11g 호환).
+  POL-13-03 : 적용·샘플 구분
+  POL-14-03 : 서버 인계 예제
+  실테이블 연계 단건 조회 샘플 SQL (Oracle 11g 호환).
 
   - 내부 쿼리: 후보 필터 + 정렬. 외부 쿼리: WHERE ROWNUM = 1 (정렬 후 1건). ROWNUM을 내부 WHERE에 두면 정렬 전에 1건이 잘리므로 쓰지 않는다.
   - 동순위 보조 정렬 키: 콘텐츠 PK(POPU_CNTN_ID)로 항상 같은 결과가 나오게 한다.
@@ -28,6 +30,7 @@
         <result property="contentJson" column="CNTN_CN" jdbcType="CLOB" javaType="java.lang.String"/>
     </resultMap>
 
+    <!-- 샘플 조건으로 표시 후보를 정렬한 뒤 1건만 조회한다. -->
     <select id="selectNextCandidate" resultMap="popupContentRow">
         SELECT *
           FROM (

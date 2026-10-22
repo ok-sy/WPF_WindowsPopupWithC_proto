@@ -1,7 +1,8 @@
 -- =====================================================================================================
--- 06_image_size_mode_adaptive_oracle.sql — IMAGE 크기 모드 과거 값 FIXED 정리 (2026-09-28, 설계 18 L-1 / D-5①)
+-- 06_image_size_mode_adaptive_oracle.sql — IMAGE 크기 모드 과거 값 FIXED 정리 (2026-09-28)
+-- POL-04-02 : 모드별 기준
 -- -----------------------------------------------------------------------------------------------------
--- 배경: IMAGE content.imageSizeMode 는 ADAPTIVE / FIT_TO_IMAGE / FILL 세 값만 쓴다(설계 15, 계약서 v3.0).
+-- 배경: IMAGE content.imageSizeMode 는 ADAPTIVE / FIT_TO_IMAGE / FILL 세 값만 쓴다(계약서 v3.0).
 --       관리자 웹이 신규 팝업 기본값으로 FIXED 를 저장해 왔고, WPF 는 L-1 이후 FIXED 를 지원하지 않는 값으로
 --       오류 처리한다(한 건이라도 남아 있으면 해당 사용자의 팝업 목록 변환이 실패). 따라서 WPF 반영 전에 실행한다.
 --       모든 팝업 유형의 content 에 imageSizeMode 키가 들어 있으므로(웹 createDefaultPopup) 유형과 무관하게 정리한다.

@@ -6,7 +6,7 @@
 --  대상   : Oracle 11g XE(11.2.0.2, 개발 DB 192.168.114.71 실측 2026-09-20) 이상. 19c 이상에서도 동일하게 동작한다.
 --  실행자 : 팝업 테이블을 소유할 계정 (POPUP 계정 또는, 계정을 만들 수 없으면 앱 계정 zero-rule)
 --  원칙   : 테이블·컬럼 구성은 원본과 동일하게 유지하고 Oracle 문법으로만 변환한다.
---           신설은 §11 결과 수신 영수증, §12 팝업 전달 건(설계 35) 두 테이블이다.
+--           신설은 §11 결과 수신 영수증, §12 팝업 전달 건(POL-13-02 : 전달·영수증) 두 테이블이다.
 --           (인증 토큰 테이블은 두지 않는다. 토큰 인증은 타 팀이 웹·WPF 통합 토큰으로 개발 — docs/04)
 --
 --  변환 규칙 요약 (상세: docs/05_Oracle_DB_설계.md)
@@ -132,7 +132,7 @@ CREATE TABLE QUESTION_TEMPLATE
     CONSTRAINT PK_QUESTION_TEMPLATE PRIMARY KEY (QUESTION_TEMPLATE_ID),
     CONSTRAINT CK_QUESTION_TEMPLATE_ACTIVE  CHECK (ACTIVE_YN IN ('Y', 'N'))
 );
--- [설계 18 L-5 — D-6] 버전 관리 컬럼(TEMPLATE_GROUP_ID·TEMPLATE_VERSION·CURRENT_YN)과 UK_QTEMPLATE_GROUP_VERSION·
+-- POL-13-01 : 콘텐츠와 관리 상태 — 버전 관리 컬럼(TEMPLATE_GROUP_ID·TEMPLATE_VERSION·CURRENT_YN)과 UK_QTEMPLATE_GROUP_VERSION·
 -- UX_QUESTION_TEMPLATE_CURRENT를 삭제했다. 관리자 저장은 문항이 바뀔 때마다 새 템플릿 행을 만들고,
 -- 기존 팝업은 자신이 가리키는 템플릿 행을 그대로 유지한다(기존 DB는 09 스크립트).
 COMMENT ON TABLE  QUESTION_TEMPLATE IS '문항 템플릿. 문항이 바뀌면 새 행을 만들고 팝업이 QUESTION_TEMPLATE_ID로 참조';
@@ -200,7 +200,7 @@ CREATE TABLE POPUP_NOTICE
          AND SHOW_LATER_YN IN ('Y', 'N')
          AND ALLOW_CLOSE_BEFORE_COMPLETE_YN IN ('Y', 'N'))
 );
--- [설계 18 L-5 — D-6] 쓰기 전용이던 SHOW_ON_LOGIN_YN·SHOW_ON_SCHEDULE_YN·SCHEDULED_AT(+CK_POPUP_SCHEDULED_AT)을 삭제했다.
+-- POL-13-01 : 콘텐츠와 관리 상태 — 쓰기 전용이던 SHOW_ON_LOGIN_YN·SHOW_ON_SCHEDULE_YN·SCHEDULED_AT(+CK_POPUP_SCHEDULED_AT)을 삭제했다.
 COMMENT ON TABLE  POPUP_NOTICE IS '팝업 공통 설정. WPF 목록 응답의 평면 필드 원본';
 COMMENT ON COLUMN POPUP_NOTICE.POPUP_TYPE IS 'TEXT / IMAGE / VIDEO / SURVEY / QUIZ';
 COMMENT ON COLUMN POPUP_NOTICE.DISPLAY_MODE IS 'SEQUENTIAL / SIMULTANEOUS';
@@ -567,7 +567,7 @@ CREATE INDEX IX_API_LOG_RECEIVED_AT    ON API_REQUEST_LOG (REQUEST_RECEIVED_AT);
 -- ---------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------
--- §11. [신설] WPF 결과 수신 영수증 — 기준 3·4 (결과 API 멱등 처리)
+-- §11. [신설] WPF 결과 수신 영수증 — POL-13-02 : 전달·영수증 (결과 API 멱등 처리)
 -- ---------------------------------------------------------------------
 -- 결과 항목(resultId)이 재전송되어도 한 번만 처리하기 위한 키 저장소.
 -- POPUP_RESPONSE.CLIENT_REQUEST_ID는 제출(SUBMITTED)만 다루므로
@@ -592,7 +592,7 @@ COMMENT ON TABLE  WPF_RESULT_RECEIPT IS 'WPF 결과 항목 멱등 키. 같은 RE
 COMMENT ON COLUMN WPF_RESULT_RECEIPT.RESULT_STATUS IS '최초 처리 결과. 재수신 응답은 DUPLICATE로 별도 표기';
 
 -- ---------------------------------------------------------------------
--- §12. [신설] WPF 팝업 전달 건 — 설계 35 (단건 순차 조회·결과 수신)
+-- §12. [신설] WPF 팝업 전달 건 — POL-13-02 : 전달·영수증 (단건 순차 조회·결과 수신)
 -- ---------------------------------------------------------------------
 -- 조회 API가 표시할 팝업 1건을 정하면 전달 건(DELIVERY_ID)을 만들고, 결과 수신 API가 그 전달 건을 종료한다.
 -- 사용자당 미완료(OPEN) 전달 건은 1건이며(함수 기반 유니크 인덱스), 조회 응답 유실 시 같은 건을 재사용한다.
@@ -617,7 +617,7 @@ COMMENT ON TABLE  WPF_POPUP_DELIVERY IS 'WPF 팝업 전달 건. 조회 API가 �
 COMMENT ON COLUMN WPF_POPUP_DELIVERY.DELIVERY_STATUS IS 'OPEN(표시 중·결과 대기) / DONE(결과 저장) / EXPIRED(재조회 시 대상 아님)';
 COMMENT ON COLUMN WPF_POPUP_DELIVERY.DEFER_UNTIL_AT IS '결과 저장 시각 + 폴링 간격. 이 시각 전에는 같은 사용자·팝업을 다시 선정하지 않음';
 -- ---------------------------------------------------------------------
--- [TODO52-1] 게시 기간 안 노출 시간대(18_popup_display_time_oracle.sql과 같은 정의)
+-- POL-11-03 : 시간 경계 — 게시 기간 안 노출 시간대(18_popup_display_time_oracle.sql과 같은 정의)
 -- PERIOD_MODE=SCHEDULE일 때 요일(REPEAT_DAY_OF_WEEK)과 함께 쓴다. 행이 없으면 하루 종일. 분 단위 KST, END < START는 자정 초과.
 CREATE TABLE POPUP_DISPLAY_TIME
 (

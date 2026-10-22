@@ -6,7 +6,16 @@ using System.Windows.Controls;
 
 namespace Popup.Views.Contents
 {
-    /// <summary>영상 누적 시청 기준에 도달하면 퀴즈 입력과 공통 푸터를 활성화한다.</summary>
+    /*
+     * POL-05-02 : 완료·화면 이탈
+     * POL-05-03 : 결합 화면
+     * POL-06-03 : 표현·수명
+     * ■ VIDEO+QUIZ 결합 콘텐츠 뷰
+     * - in : video(VideoPopupView) · quiz(SurveyPopupView) · requiredRatio(double) 완료 기준 비율(비유한이면 1, 0~1로 보정)
+     * - out: IsUnlocked · Unlocked 이벤트 · 화면: 영상 + 퀴즈(부모 세로 스크롤 공유) + 고정 제출 영역
+     * - 영상 누적 시청 기준에 도달하면 퀴즈 입력과 공통 푸터를 활성화한다. 기준 전에는 퀴즈를 잠그고 잠금 사유를 표시한다.
+     *   시청 완료는 퀴즈 잠금 해제일 뿐 퀴즈 완료가 아니며, 제출 조건은 SurveyPopupView가 그대로 적용한다.
+     */
     public sealed class VideoQuizPopupView : UserControl, IBodyFontSizeAware
     {
         public VideoPopupView Video { get; }
@@ -15,7 +24,7 @@ namespace Popup.Views.Contents
         public event EventHandler? Unlocked;
         private readonly double _requiredRatio;
 
-        /// <summary>[TODO59] 잠금 중 사유 문구. 푸터(PopupWindow)와 푸터 숨김 시 본문 제출 영역이 같은 문구를 쓴다.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 잠금 중 사유 문구. 푸터(PopupWindow)와 푸터 숨김 시 본문 제출 영역이 같은 문구를 쓴다.</summary>
         internal string LockedReason => Video.HasPlaybackFailed
             ? "영상을 재생할 수 없어 퀴즈를 진행할 수 없습니다."
             : $"영상 {VideoPopupView.DisplayWatchedPercent(Video.LatestProgress)}% 시청 · "
@@ -29,9 +38,9 @@ namespace Popup.Views.Contents
             Quiz.IsEnabled = false;
             Quiz.UseParentScrolling();
             Quiz.CollapseHeaderShownAbove(video.ShownTitle, video.ShownDescription);
-            // [TODO59] 영상과 퀴즈 사이의 시스템 안내(_notice)와 전용 행을 없앴다. 시청 %·기준 사유는 푸터
+            // POL-05-03 : 결합 화면 — 영상과 퀴즈 사이의 시스템 안내 행은 두지 않는다. 시청 %·기준 사유는 푸터
             // (또는 푸터 숨김 시 본문 제출 영역, SetLockedReason)에만 표시해 같은 안내가 두 번 나오지 않게 한다.
-            // [TODO60] 영상 행은 Auto다. 제목·설명은 영상 뷰 안의 Auto 행, 재생 화면은 원본 비율 높이(VideoPopupView.EnableAspectSizing)로
+            // POL-05-03 : 결합 화면 — 영상 행은 Auto다. 제목·설명은 영상 뷰 안의 Auto 행, 재생 화면은 원본 비율 높이(VideoPopupView.EnableAspectSizing)로
             // 예전 고정 300 DIP(제목·설명 포함) 행을 대체한다. 영상과 퀴즈는 부모 세로 스크롤을 공유한다.
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -75,6 +84,7 @@ namespace Popup.Views.Contents
             Unlocked?.Invoke(this, EventArgs.Empty);
         }
 
+        /* POL-01-01 : 공통 옵션의 위치 — 본문 폰트 크기를 영상 뷰와 퀴즈 뷰에 함께 적용한다. */
         public void ApplyBodyFontSize(double fontSize)
         {
             Video.ApplyBodyFontSize(fontSize);

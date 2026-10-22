@@ -10,7 +10,12 @@ import server.domain.popup.sample.PopupContentRow;
 import server.repo.core.mapper.popup.sample.PopupSingleQuerySampleMapper;
 
 /**
- * [TODO65] 실테이블 연계 단건 조회 샘플 흐름: SQL(정렬 후 ROWNUM 1) → VO → 공통 헤더/옵션 매핑 → CLOB JSON 파싱
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 실테이블 연계 단건 조회 샘플 서비스
+ * - in : 사번·샘플 조건(콘텐츠 ID·유형 코드)
+ * - out: WPF 단건 조회 응답 ObjectNode · 예외: PopupSampleException(데이터 오류)
+ * - 실테이블 연계 단건 조회 샘플 흐름: SQL(정렬 후 ROWNUM 1) → VO → 공통 헤더/옵션 매핑 → CLOB JSON 파싱
  * → 기본값 → 기존 WPF 단건 응답 {@code {pollingIntervalSeconds, popup}}.
  *
  * <p>Bean 등록은 {@link PopupSingleQuerySampleConfig}({@code popup.sample.single-query.enabled=true})에서만 한다.
@@ -29,6 +34,7 @@ public class PopupSingleQuerySampleService {
     private final PopupPorts.DeliveryPort deliveryPort;
     private final PopupPorts.QuestionPort questionPort;
 
+    /** ■ 생성 - in : 매퍼·파서·조립기·전달 건 포트·문항 포트 - out: 샘플 서비스 인스턴스 */
     public PopupSingleQuerySampleService(PopupSingleQuerySampleMapper mapper, PopupContentJsonParser parser,
                                          PopupSingleResponseAssembler assembler, PopupPorts.DeliveryPort deliveryPort,
                                          PopupPorts.QuestionPort questionPort) {
@@ -40,6 +46,12 @@ public class PopupSingleQuerySampleService {
     }
 
     /**
+     * POL-09-02 : 조회 응답
+     * ■ 다음 팝업 1건 조회(샘플)
+     * - in : userId(String) 인증된 사번 · contentId(String) 샘플 조건 · contentTypeCode(String) 샘플 조건
+     * - out: ObjectNode {pollingIntervalSeconds, popup}(후보 없으면 popup null) · 예외: PopupSampleException
+     * - 후보 1행을 읽어 content 파싱·문항 조회·응답 조립을 마친 뒤에만 전달 건 ID를 발급해 넣는다.
+     *
      * @param userId          인증된 사번(요청 본문 값을 쓰지 않는다)
      * @param contentId       [샘플 조건] 확인용 콘텐츠 ID(null = 조건 없음)
      * @param contentTypeCode [샘플 조건] 유형 코드(null = 조건 없음)

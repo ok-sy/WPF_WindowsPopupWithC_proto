@@ -8,9 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * WPF 연동 개발 서버 — 팝업·WPF API 빈만 올려 8080에서 실제 HTTP로 서비스한다.
+ * POL-16-02 : 재현 가능한 검증
+ * ■ WPF 연동 개발 서버
+ * - in : args(String[]) 미사용 · 환경변수 WPF_DEV_SERVER_PORT, POPUP_TEST_DB_URL/USER/PASSWORD
+ * - out: 없음(팝업·WPF API 빈만 올린 서버 기동)
+ * - 팝업·WPF API 빈만 올려 8080에서 실제 HTTP로 서비스한다.
  *
- * <p>[추가 이유] 이 저장소의 zero 프레임워크(clover-* POSTGRE 빌드)와 공통 매퍼는 PostgreSQL 전용이라
+ * <p>추가 이유: 이 저장소의 zero 프레임워크(clover-* POSTGRE 빌드)와 공통 매퍼는 PostgreSQL 전용이라
  * Oracle에서는 전체 zeroserver가 기동되지 않는다(공통 프레임워크의 Oracle 빌드는 타 팀/운영 소관).
  * WPF 클라이언트를 실제 HTTP로 붙여 보기 위해 {@link WpfApiOracleHttpTest.TestApp}(팝업 슬라이스)을
  * 운영과 같은 경로(/zero-rule-server/p/api/wpf/**)·포트(8080)로 실행한다. 테스트 소스에만 두며 배포하지 않는다.</p>

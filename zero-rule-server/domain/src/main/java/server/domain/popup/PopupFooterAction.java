@@ -5,7 +5,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * [설계 30] 공통 Footer 버튼 동작. PopupWindow 공통 영역의 동작이므로 WPF 응답에서는 {@code popup} 최상위
+ * POL-02-03 : 푸터 역할
+ * POL-01-01 : 공통 옵션의 위치
+ * ■ 공통 Footer 버튼 동작 규칙
+ * - in : popupType(String) 팝업 유형 · action(Object) footerAction 값 · content(Map) 콘텐츠 옵션
+ * - out: 유형별 실제 동작·링크·허용 여부, 저장 정규형이 적용된 content
+ * - 공통 Footer 버튼 동작. PopupWindow 공통 영역의 동작이므로 WPF 응답에서는 {@code popup} 최상위
  * {@code footerAction}/{@code footerLinkUrl}로 내려준다. 관리자 API·DB는 기존처럼 content(CONTENT_OPTIONS)에 둔다.
  *
  * <ul>
@@ -34,7 +39,7 @@ public final class PopupFooterAction {
         return "SURVEY".equals(type) || "QUIZ".equals(type);
     }
 
-    /** [설계 34-32] null·빈 문자열은 생략으로 본다(유형별 기본값). 그 밖의 값은 그대로 돌려준다. */
+    /** POL-01-02 : 기본값의 적용 — null·빈 문자열은 생략으로 본다(유형별 기본값). 그 밖의 값은 그대로 돌려준다. */
     public static Object explicitValue(Object action) {
         return action instanceof String value && value.isBlank() ? null : action;
     }

@@ -5,7 +5,15 @@ using System.Threading.Tasks;
 
 namespace Popup.Services
 {
-    // 설계 19 §7: 타이머는 MainWindow 하나만 사용하고, 이 클래스는 다음 대기 시간만 계산한다.
+    /*
+     * POL-12-02 : 현행 임시 복구
+     * POL-09-03 : 저장 응답
+     * ■ 조회 대기 시간 계산
+     * - in : IsTransient(exception) 판정할 예외 · NormalDelay(intervalSeconds) 서버 조회 간격
+     * - out: 다음 대기 시간(TimeSpan) · IsRecovering 복구 중 여부
+     * - 타이머는 MainWindow 하나만 사용하고, 이 클래스는 다음 대기 시간만 계산한다.
+     *   일시 오류는 10초 간격 3회를 1주기로 최대 5주기(주기 사이 30분 휴식), 그 뒤에는 1시간 간격으로 기다린다.
+     */
     public sealed class PopupPollingRecovery
     {
         private const int AttemptsPerCycle = 3;
@@ -45,8 +53,8 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 35] 표시할 팝업이 없을 때(popup=null·nextStatus=EMPTY)의 대기 시간: 가장 최근 조회 간격(30~60분)만큼 기다린다.
-        /// 이전에는 기동 시점 기준 반복 경계에 맞췄으나, 단건 순차 흐름에서는 결과 저장·빈 조회 시점부터 간격을 센다.
+        /// POL-09-03 : 저장 응답 — 표시할 팝업이 없을 때(popup=null·nextStatus=EMPTY)의 대기 시간: 가장 최근 조회 간격(30~60분으로 보정)만큼 기다린다.
+        /// 기동 시점 기준 반복 경계가 아니라 결과 저장·빈 조회 시점부터 간격을 센다.
         /// </summary>
         public static TimeSpan NormalDelay(int intervalSeconds)
             => TimeSpan.FromSeconds(Math.Clamp(intervalSeconds, 1800, 3600));

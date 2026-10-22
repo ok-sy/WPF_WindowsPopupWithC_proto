@@ -1,4 +1,5 @@
-// [설계 50] 문항 템플릿 선택 초기화 검증(Windows headless Edge). 저장소 루트에서 웹 의존성 설치 후 실행.
+// POL-06-01 : 문항·서식
+// ■ 문항 템플릿 선택 초기화 검증(Windows headless Edge). 저장소 루트에서 웹 의존성 설치 후 실행.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/question-template-picker');
 const compiled = require('../zero-rule-web/node_modules/next/dist/compiled/webpack/webpack');

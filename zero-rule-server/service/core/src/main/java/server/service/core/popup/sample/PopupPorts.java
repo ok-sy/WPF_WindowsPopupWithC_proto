@@ -13,7 +13,12 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
- * [TODO65] 샘플이 직접 구현하지 않는 연결 지점. 실제 서버에서는 기존 서비스 구현으로 교체한다.
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 샘플 연결 지점 모음
+ * - in : 조회 행(PopupContentRow)·사번·유형·파일 경로
+ * - out: 전달 건 ID·폴링 주기·문항 배열·파일 URL
+ * - 샘플이 직접 구현하지 않는 연결 지점. 실제 서버에서는 기존 서비스 구현으로 교체한다.
  */
 public final class PopupPorts {
 
@@ -25,8 +30,10 @@ public final class PopupPorts {
      * deliveryId를 콘텐츠 ID에서 파생하지 않는다.
      */
     public interface DeliveryPort {
+        /** POL-10-01 : 전달과 제출 식별 — 조회 행·사번으로 전달 건 ID를 발급하거나 재사용한다. */
         String issueDeliveryId(PopupContentRow row, String userId);
 
+        /** POL-09-02 : 조회 응답 — 응답에 실을 폴링 주기(초). */
         int pollingIntervalSeconds();
     }
 
@@ -35,6 +42,7 @@ public final class PopupPorts {
      * (QUIZ만 정답 키 포함, SURVEY는 정답 키 제거 — 기존 WpfPopupItem.withoutAnswerKey 규칙).
      */
     public interface QuestionPort {
+        /** POL-06-02 : 선택·제출 — 조회 행·유형의 문항 배열(SURVEY·QUIZ 외 유형은 null 가능). */
         ArrayNode questions(PopupContentRow row, String popupType);
     }
 
@@ -45,10 +53,16 @@ public final class PopupPorts {
     public static class FileUrlResolver {
         private final String baseUrl;
 
+        /** ■ 생성 - in : baseUrl(String) 파일 URL 기준 주소(끝 / 제거) - out: 변환기 인스턴스 */
         public FileUrlResolver(String baseUrl) {
             this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         }
 
+        /**
+         * ■ 파일 URL 생성
+         * - in : path(String) 파일 경로 · name(String) 파일 이름
+         * - out: String 인코딩된 URL(둘 다 비면 null)
+         */
         public String resolve(String path, String name) {
             if ((path == null || path.isBlank()) && (name == null || name.isBlank())) return null;
             String joined = ((path == null ? "" : path.replace('\\', '/')) + "/" + (name == null ? "" : name)).replaceAll("/+", "/");

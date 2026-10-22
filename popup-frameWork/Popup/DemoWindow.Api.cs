@@ -19,21 +19,23 @@ using System.Windows.Controls;
 namespace Popup
 {
     /*
-     * [설계 51] API Demo(-Demo -Api). Demo 화면에서 개발계/검증계 실제 API를 수동으로 호출한다.
+     * POL-14-02 : Demo 모드
+     * POL-09-01 : 3 API 순서
+     * ■ API Demo(-Demo -Api). Demo 화면에서 개발계/검증계 실제 API를 수동으로 호출한다.
      *
      *   팝업 조회 버튼 → (바뀐 연결 입력 적용) → 미전송 결과 전송 → POST /api/wpf/popups(입력한 JSON 본문)
      *     → popup 1건을 일반 실행과 같은 PopupService·PopupManager 경로로 표시
      *     → 창 닫힘 → PopupResultBuilder 결과가 결과 큐에 저장 → 실제 결과 API로 전송 → nextStatus 표시
      *     → 다음 조회는 다시 버튼으로(자동 폴링·nextStatus 기반 연속 조회 없음)
      *
-     * [재사용 — 51-4] PopupApiService(인증 헤더·401 1회 재시도·426·DTO 역직렬화), PopupResultQueue(resultId 고정·재전송·종결 판정),
+     * [재사용] PopupApiService(인증 헤더·401 1회 재시도·426·DTO 역직렬화), PopupResultQueue(resultId 고정·재전송·종결 판정),
      *   PopupService/PopupFactory/PopupManager, PopupResultBuilder를 그대로 쓴다. Demo 전용으로 추가한 것은
      *   입력 JSON 본문을 보내는 오버로드, HttpClient 안쪽의 관찰 지점(HttpExchangeRecorder), 입력값 기반 인증 공급자뿐이다.
      *   응답 구조 재작성·별도 렌더러·가짜 deliveryId 생성은 하지 않는다.
      *
-     * [경계 — 51-7] 결과 큐 파일을 "Base URL·인증 방식·인증 대상·X-Dev-User-Id" 조합별로 나눈다. 연결을 바꾸면 이전 연결의 미전송 결과는
+     * [경계] 결과 큐 파일을 "Base URL·인증 방식·인증 대상·X-Dev-User-Id" 조합별로 나눈다. 연결을 바꾸면 이전 연결의 미전송 결과는
      *   그 연결 전용 파일에 남고, 같은 연결을 다시 적용했을 때만 전송된다. 일반 실행의 pending-results.json과도 섞이지 않는다.
-     * [동시 실행 — 51-8] 이 모드에서 MainWindow는 API 서비스·주기 조회를 만들지 않으므로 자동 조회 루프와 겹치지 않는다.
+     * [동시 실행] 이 모드에서 MainWindow는 API 서비스·주기 조회를 만들지 않으므로 자동 조회 루프와 겹치지 않는다.
      */
     public partial class DemoWindow
     {
@@ -55,7 +57,7 @@ namespace Popup
         private bool IsApiBusy => _apiBusyCount > 0;
         private bool ApiRevealSecrets => ApiRevealSecretsCheck.IsChecked == true;
 
-        /// <summary>[설계 51] 이번 API Demo가 쓰는 결과 큐 파일 경로(연결 미적용이면 null). 검증용.</summary>
+        /// <summary>이번 API Demo가 쓰는 결과 큐 파일 경로(연결 미적용이면 null). 검증용.</summary>
         internal string? ApiQueueFilePath { get; private set; }
 
         private void InitializeApiDemo(PopupClientSettings settings)
@@ -74,7 +76,7 @@ namespace Popup
             LeftPanelTitle.Text = "API 호출";
             InMemoryPanel.Visibility = InMemoryActionBar.Visibility = Visibility.Collapsed;
             ApiPanel.Visibility = ApiActionBar.Visibility = Visibility.Visible;
-            // [TODO54-2] 현재 모드 표시
+            // POL-14-02 : Demo 모드 — 현재 모드 표시
             ModeBadgeText.Text = "API 연결";
             ModeBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE7, 0xEE, 0xF8));
             ModeBadgeText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1F, 0x4E, 0x8C));
@@ -151,7 +153,9 @@ namespace Popup
         }
 
         /// <summary>
-        /// [설계 51-5] 단건 조회 1회. 호출 중·표시 중에는 중복 조회하지 않는다. 미전송 결과가 남으면 일반 실행과 같이 조회하지 않는다.
+        /// POL-12-02 : 현행 임시 복구
+        /// ■ API Demo 단건 조회 1회 — in : 없음(화면 입력값 사용) · out: Task(결과·오류는 로그에 기록)
+        /// 단건 조회 1회. 호출 중·표시 중에는 중복 조회하지 않는다. 미전송 결과가 남으면 일반 실행과 같이 조회하지 않는다.
         /// </summary>
         internal async Task QueryApiAsync()
         {
@@ -203,7 +207,7 @@ namespace Popup
                 AppendLog($"[조회] {response.Popup.PopupId} · {response.Popup.PopupType} · deliveryId={response.Popup.DeliveryId} · "
                           + $"pollingIntervalSeconds={response.PollingIntervalSeconds} (수동 모드, 타이머 미시작)");
 
-                // [설계 51-3] 팝업 생성·표시 실패는 HTTP·응답 해석 오류와 구분해 기록한다.
+                // 팝업 생성·표시 실패는 HTTP·응답 해석 오류와 구분해 기록한다.
                 try
                 {
                     PopupOptions options = _popupService.CreatePopupOptions(new List<PopupResponseDto> { response.Popup }).Single();
@@ -221,7 +225,7 @@ namespace Popup
             });
         }
 
-        /// <summary>[설계 51-6] 창이 닫히면(결과는 이미 큐에 저장됨) 실제 결과 API로 보내고 nextStatus를 보여 준다. 다음 조회는 하지 않는다.</summary>
+        /// <summary>POL-09-03 : 저장 응답 — 창이 닫히면(결과는 이미 큐에 저장됨) 실제 결과 API로 보내고 nextStatus를 보여 준다. 다음 조회는 하지 않는다.</summary>
         private async Task OnApiPopupClosedAsync(PopupResultQueue queue)
         {
             _apiBusyCount++;
@@ -270,7 +274,7 @@ namespace Popup
         }
 
         /*
-         * [설계 51-7] 입력한 연결 값이 바뀌었으면 API 서비스·인증 공급자·결과 큐를 새로 만든다. 같으면 그대로 쓴다.
+         * 입력한 연결 값이 바뀌었으면 API 서비스·인증 공급자·결과 큐를 새로 만든다. 같으면 그대로 쓴다.
          * 현재 연결에 미전송 결과가 있으면 확인을 받는다(그 결과는 현재 연결 전용 파일에 남아 다른 연결로 보내지 않는다).
          */
         private bool EnsureApiConnection(bool forceLog)
@@ -285,7 +289,7 @@ namespace Popup
             string baseUrl = ApiBaseUrlText.Text.Trim().TrimEnd('/');
             if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
-                ApiConnectionExpander.IsExpanded = true;   // [TODO54-6] 연결 입력 오류는 설정을 펼쳐 보여 준다
+                ApiConnectionExpander.IsExpanded = true;   // POL-14-02 : Demo 모드 — 연결 입력 오류는 설정을 펼쳐 보여 준다
                 AppendLog("[입력 오류] Base URL은 http:// 또는 https://로 시작하는 절대 주소여야 합니다.");
                 return false;
             }
@@ -364,7 +368,7 @@ namespace Popup
             _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", _ => "인증 헤더 없음" };
             _lastNextStatus = null;
             _lastPollingIntervalSeconds = null;
-            ApiConnectionExpander.IsExpanded = false;   // [TODO54-6] 적용한 연결은 요약만 남기고 접는다
+            ApiConnectionExpander.IsExpanded = false;   // POL-14-02 : Demo 모드 — 적용한 연결은 요약만 남기고 접는다
             AppendLog($"--- 연결 적용: {baseUrl} · {_apiAuthModeLabel}"
                       + (string.IsNullOrEmpty(devUserId) ? string.Empty : $" · X-Dev-User-Id={devUserId}")
                       + $" · 이 연결의 미전송 {Describe(SafeCountPending(_apiQueue))} ---");
@@ -372,7 +376,8 @@ namespace Popup
             return true;
         }
 
-        /// <summary>Base URL·인증 방식·인증 대상·X-Dev-User-Id 조합의 해시. 토큰 원문은 남기지 않고 해시만 파일 이름에 쓴다.</summary>
+        /// <summary>■ 연결 키 계산 — in : baseUrl·mode·identity·devUserId(string) · out: string SHA-256 소문자 16진수.
+        /// Base URL·인증 방식·인증 대상·X-Dev-User-Id 조합의 해시. 토큰 원문은 남기지 않고 해시만 파일 이름에 쓴다.</summary>
         internal static string ComputeConnectionKey(string baseUrl, string mode, string identity, string devUserId)
         {
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(
@@ -404,7 +409,7 @@ namespace Popup
             }
         }
 
-        /* [TODO54-8] 요청이 끝난 뒤 상태: 실패 > 팝업 표시 중 > 대기 */
+        /* POL-14-02 : Demo 모드 — 요청이 끝난 뒤 상태: 실패 > 팝업 표시 중 > 대기 */
         private string? _lastApiFailure;
         private void SetApiIdleState()
         {
@@ -414,7 +419,7 @@ namespace Popup
         }
 
         /*
-         * [설계 51-3] 실패 단계를 구분해 남긴다. HTTP 오류(상태 코드)·통신 실패·시간 초과·버전 차단(426)·
+         * 실패 단계를 구분해 남긴다. HTTP 오류(상태 코드)·통신 실패·시간 초과·버전 차단(426)·
          * 응답 해석 실패(빈 응답 / 잘못된 JSON / 응답 구조 불일치)는 팝업 생성 오류와 다른 줄로 보인다.
          */
         private void LogApiError(string stage, Exception exception)
@@ -447,7 +452,8 @@ namespace Popup
             };
         }
 
-        /// <summary>[TODO54-7] 로그 구분: 조회·결과 저장·로그인을 경로로 나눈다(그 밖은 HTTP).</summary>
+        /// <summary>POL-14-02 : Demo 모드 — in : url(string) · out: string 로그 구분.
+        /// 로그 구분: 조회·결과 저장·로그인을 경로로 나눈다(그 밖은 HTTP).</summary>
         internal static string HttpCategory(string url)
         {
             string path = Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) ? uri.AbsolutePath.TrimEnd('/') : url;
@@ -504,7 +510,7 @@ namespace Popup
                 return;
             }
             string token = _apiAuth?.UsesLogin == true ? (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)") : string.Empty;
-            // [TODO54-6] 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
+            // POL-14-02 : Demo 모드 — 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
             string devUser = ApiDevUserIdText.Text.Trim();
             ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"
                 + (devUser.Length == 0 ? string.Empty : $" · X-Dev-User-Id {devUser}")

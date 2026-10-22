@@ -3,7 +3,11 @@ package server.web.api.popup.sample.relay;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /**
- * [TODO70] DB 없이 mock 백엔드(127.0.0.1:18090)와 중계 샘플(127.0.0.1:8090)을 함께 띄우는 로컬 확인용 main(IDE 실행).
+ * POL-14-03 : 서버 인계 예제
+ * ■ 중계 샘플 로컬 확인용 실행 진입점
+ * - in : 시스템 속성(-Dpopup.sample.relay.base-url, -Dmock.enabled 등)
+ * - out: mock 백엔드(127.0.0.1:18090)와 중계 샘플(127.0.0.1:8090) 기동
+ * - DB 없이 둘을 함께 띄우는 로컬 확인용 main(IDE 실행)이다.
  *
  * <p>실제 백엔드로 바꾸려면 시스템 속성 {@code -Dpopup.sample.relay.base-url=...}(그때 mock은 {@code -Dmock.enabled=false}).
  * 시나리오는 {@code -Dpopup.sample.relay.path=/api/wpf/popups?scenario=empty} 등으로 고른다(MockBackendServer 참조).</p>

@@ -14,9 +14,15 @@ import server.repo.core.mapper.popup.WpfPopupMapper;
 import server.service.core.popup.PopupService;
 
 /**
- * WPF 결과 항목 1건을 유형(CLOSED/HIDDEN/LATER/SUBMITTED/VIDEO_WATCHED)에 따라 처리한다.
+ * POL-10-02 : 검증·원자성
+ * POL-10-03 : 완료·숨김·연기
+ * POL-13-02 : 전달·영수증
+ * ■ WPF 결과 1건 처리기
+ * - in : 인증된 사번 · WpfResultCommand(resultId·deliveryId·popupId·resultType 등)
+ * - out: WpfResultItemResponse(ACCEPTED/DUPLICATE) · 예외: IllegalArgumentException(업무 검증 실패, 호출자가 REJECTED로 변환)
+ * - WPF 결과 항목 1건을 유형(CLOSED/HIDDEN/LATER/SUBMITTED/VIDEO_WATCHED)에 따라 처리한다.
  *
- * <p>[추가 이유 — 기준 3·4] 기존에는 hide / responses / video-progress / events 4개 API가 각각 처리하던 일을
+ * <p>[추가 이유] POL-09-01 : 3 API 순서 — 기존에는 hide / responses / video-progress / events 4개 API가 각각 처리하던 일을
  * 한 진입점에서 분배한다. 검증·채점·완료 판정 규칙은 기존 {@link PopupService}의 공개 메서드
  * (hidePopup, submitDeliveredResponse, saveDeliveredVideoProgress — submitResponse·saveVideoProgress와 같은 검증·저장 규칙이며
  * 게시 조건 재검사만 없다)를 호출해 두 API 계약이 어긋나지 않게 한다.
@@ -31,12 +37,12 @@ import server.service.core.popup.PopupService;
  * <p>[멱등성] WPF_RESULT_RECEIPT.RESULT_ID(UNIQUE). 이미 있으면 DUPLICATE를 돌려주고 아무것도 하지 않는다.
  * 영수증은 성공 처리와 같은 트랜잭션에서 기록되어, 처리 도중 실패하면 영수증도 남지 않아 재전송 시 재처리된다.</p>
  *
- * <p>[설계 35] 전달 건(deliveryId): 영수증 확인 뒤 전달 건의 소유(사번)·팝업 일치·미종료를 확인하고, 처리 성공 시 같은 트랜잭션에서
+ * <p>POL-10-01 : 전달과 제출 식별 — 전달 건(deliveryId): 영수증 확인 뒤 전달 건의 소유(사번)·팝업 일치·미종료를 확인하고, 처리 성공 시 같은 트랜잭션에서
  * 전달 건을 종료하며 재노출 유예(저장 시각 + pollingIntervalSeconds)를 기록한다. 일반 안내(TEXT·IMAGE)의 닫기(CLOSED,
  * Footer 닫기·바로가기 포함)는 완료로 처리해 이후 조회에서 제외한다. 설문·퀴즈·영상은 기존 제출·통과·시청 완료 조건을 유지하고,
- * 미완료로 닫으면 유예 기간 동안만 제외된다. [TODO52-2] 나중에 보기(LATER)는 유형과 관계없이 완료 처리하지 않아 유예 후 다시 표시된다.</p>
+ * 미완료로 닫으면 유예 기간 동안만 제외된다. POL-10-03 : 완료·숨김·연기 — 나중에 보기(LATER)는 유형과 관계없이 완료 처리하지 않아 유예 후 다시 표시된다.</p>
  *
- * <p>[설계 47-4] 게시중단 전에 표시된 팝업의 결과는 수용한다(재조회로 EXPIRED가 된 전달 건 포함). 결과 수용 조건은
+ * <p>POL-10-02 : 검증·원자성 — 게시중단 전에 표시된 팝업의 결과는 수용한다(재조회로 EXPIRED가 된 전달 건 포함). 결과 수용 조건은
  * 유효한 전달 건(소유 사번·팝업 일치·미종료)과 활성 사용자·팝업 행 존재이며, 신규 조회의 게시 조건(팝업 활성·게시 기간·대상)은
  * 다시 따지지 않는다. 다음 후보 유무(nextStatus)는 호출자가 신규 조회 조건 그대로 계산한다.</p>
  */
@@ -48,6 +54,7 @@ public class WpfResultProcessor {
     private final WpfPopupMapper wpfMapper;
     private final WpfPopupProps props;
 
+    /** ■ 생성 - in : PopupService·PopupMapper·WpfPopupMapper·WpfPopupProps - out: 처리기 인스턴스 */
     public WpfResultProcessor(PopupService popupService, PopupMapper popupMapper, WpfPopupMapper wpfMapper,
                               WpfPopupProps props) {
         this.popupService = popupService;
@@ -57,13 +64,17 @@ public class WpfResultProcessor {
     }
 
     /**
-     * 항목 1건 처리. 업무 검증 실패는 IllegalArgumentException으로 전파된다(호출자가 REJECTED로 변환).
+     * POL-10-02 : 검증·원자성
+     * ■ 결과 항목 1건 처리(REQUIRES_NEW)
+     * - in : employeeNo(String) 인증된 사번 · item(WpfResultCommand) 결과 요청
+     * - out: WpfResultItemResponse ACCEPTED 또는 DUPLICATE · 예외: IllegalArgumentException(업무 검증 실패)
+     * - 항목 1건 처리. 업무 검증 실패는 IllegalArgumentException으로 전파된다(호출자가 REJECTED로 변환).
      *
-     * @param employeeNo 인증 정보에서 얻은 사번 (요청 본문의 값이 아님 — 기준 6)
+     * @param employeeNo 인증 정보에서 얻은 사번 (요청 본문의 값이 아님 — POL-15-02 : 인증·버전)
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public WpfResultItemResponse processOne(String employeeNo, WpfResultCommand item) {
-        // [설계 39-4·39-5] 사용자 행 잠금 후 영수증을 확인한다. 같은 결과의 동시 제출은 뒤 요청이 앞 커밋을 기다렸다가
+        // POL-12-03 : 진행 단위 — 사용자 행 잠금 후 영수증을 확인한다. 같은 결과의 동시 제출은 뒤 요청이 앞 커밋을 기다렸다가
         // DUPLICATE가 되고, 조회의 전달 건 발급은 이 결과의 완료·유예 커밋 이후 상태를 본다.
         if (wpfMapper.lockActiveUser(employeeNo) == null) {
             throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다. userId=" + employeeNo);
@@ -90,7 +101,7 @@ public class WpfResultProcessor {
 
     /**
      * CLOSED: 활성 사용자·팝업 존재 확인 후 표시·닫기 정보를 반영한다.
-     * [설계 35] 일반 안내(TEXT·IMAGE)는 닫기가 곧 확인이므로 완료로 처리한다. 그 밖의 유형(설문·퀴즈·영상)의 닫기는
+     * POL-10-03 : 완료·숨김·연기 — 일반 안내(TEXT·IMAGE)는 닫기가 곧 확인이므로 완료로 처리한다. 그 밖의 유형(설문·퀴즈·영상)의 닫기는
      * 완료 전 닫기라 완료 상태를 건드리지 않는다(전달 건 재노출 유예만 적용).
      */
     private WpfResultItemResponse handleClosed(String employeeNo, WpfResultCommand item, String popupType) {
@@ -103,7 +114,7 @@ public class WpfResultProcessor {
     }
 
     /**
-     * [TODO52-2] LATER(나중에 보기): 표시·닫기 정보만 반영하고 완료·숨김 상태를 바꾸지 않는다.
+     * POL-10-03 : 완료·숨김·연기 — LATER(나중에 보기): 표시·닫기 정보만 반영하고 완료·숨김 상태를 바꾸지 않는다.
      * 재노출은 processOne의 전달 건 유예(다음 조회 주기)로만 막는다. 영상 시청 정보는 기록하지 않는다(기존 기록은 유지).
      */
     private WpfResultItemResponse handleLater(String employeeNo, WpfResultCommand item) {
@@ -113,7 +124,7 @@ public class WpfResultProcessor {
     }
 
     /**
-     * [설계 35] 전달 건 확인: 존재·소유 사번·팝업 일치·미종료. 같은 전달 건의 동시 결과는 행 잠금으로 직렬화한다.
+     * POL-10-02 : 검증·원자성 — 전달 건 확인: 존재·소유 사번·팝업 일치·미종료. 같은 전달 건의 동시 결과는 행 잠금으로 직렬화한다.
      * 재조회로 EXPIRED가 된 건(표시 중 게시 중단 등)의 결과는 기존과 같이 받는다.
      */
     private WpfPopupDelivery requireDelivery(String employeeNo, WpfResultCommand item) {
@@ -132,7 +143,7 @@ public class WpfResultProcessor {
 
     /**
      * HIDDEN: 표시·닫기 반영 후 기존 hidePopup으로 숨김 기간을 설정한다.
-     * 만료 시각은 서버(KST) 시각 기준으로 저장하며 [설계 34-05] 응답으로 돌려주지 않는다(저장 후 재조회도 하지 않는다).
+     * 만료 시각은 서버(KST) 시각 기준으로 저장하며 응답으로 돌려주지 않는다(POL-09-03 : 저장 응답)(저장 후 재조회도 하지 않는다).
      */
     private WpfResultItemResponse handleHidden(String employeeNo, WpfResultCommand item) {
         if (item.hideDays() == null) {
@@ -145,12 +156,12 @@ public class WpfResultProcessor {
     }
 
     /**
-     * SUBMITTED: submitDeliveredResponse에 위임한다(문항 검증·응답 upsert·완료 표시). [설계 47-4] 전달 건을 이미 확인했으므로
+     * SUBMITTED: submitDeliveredResponse에 위임한다(문항 검증·응답 upsert·완료 표시). POL-10-02 : 검증·원자성 — 전달 건을 이미 확인했으므로
      * 게시 조건(활성·기간·대상)을 다시 검사하지 않는다.
      * resultId를 clientRequestId로 넘겨 POPUP_RESPONSE.CLIENT_REQUEST_ID에 남긴다.
      * SURVEY는 passingScore=null → 0점 기준 통과로 완료 처리하므로 제출 즉시 COMPLETED가 된다.
      *
-     * <p>[설계 12 §4·§6·§10 / 설계 33] QUIZ 점수·통과 판정은 WPF가 로컬에서 먼저 하고 사용자에게 즉시 보여 준 뒤,
+     * <p>POL-06-02 : 선택·제출 — QUIZ 점수·통과 판정은 WPF가 로컬에서 먼저 하고 사용자에게 즉시 보여 준 뒤,
      * 결과 항목의 score/passed로 함께 보낸다. 서버는 그 값을 그대로 저장하고 완료 판정에 쓴다(submitResponse).
      * 서버 계산값과 다르면 경고 로그만 남긴다. 응답은 처리 상태 중심이며 totalScore/passed를 다시 내려주지 않는다.</p>
      */
@@ -181,7 +192,7 @@ public class WpfResultProcessor {
         if (video == null) {
             throw new IllegalArgumentException("VIDEO_WATCHED 결과에는 video 블록이 필요합니다.");
         }
-        // 시청 비율 계산·완료 판정·최대값 유지는 서버 내부 처리이며 [설계 34-05] 비율은 응답에 싣지 않는다.
+        // 시청 비율 계산·완료 판정·최대값 유지는 서버 내부 처리이며 비율은 응답에 싣지 않는다(POL-09-03 : 저장 응답).
         popupService.saveDeliveredVideoProgress(
                 item.popupId(), employeeNo, video.durationSeconds(), video.positionSeconds(),
                 video.maximumPositionSeconds(), video.watchedSeconds());
@@ -198,7 +209,7 @@ public class WpfResultProcessor {
 
     /**
      * CLOSED/HIDDEN은 노출 자격을 다시 따지지 않고(기존 이벤트 API와 동일) 활성 사용자·팝업 존재만 확인한다.
-     * [설계 47-4] 팝업 활성 여부도 보지 않아 활성 해제로 게시중단한 뒤에도 결과를 받는다. 팝업 행이 없으면 거절.
+     * POL-10-02 : 검증·원자성 — 팝업 활성 여부도 보지 않아 활성 해제로 게시중단한 뒤에도 결과를 받는다. 팝업 행이 없으면 거절.
      */
     private void requireActiveUserAndPopup(String employeeNo, String popupId) {
         if (popupMapper.countActiveUserAndPopup(employeeNo, popupId) == 0) {

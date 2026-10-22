@@ -13,6 +13,17 @@ using Forms = System.Windows.Forms;
 namespace Popup.Views.Windows
 
 {
+    /*
+     * POL-01-01 : 공통 옵션의 위치
+     * POL-02-01 : 창 구조
+     * POL-02-02 : 종료 제어
+     * POL-02-03 : 푸터 역할
+     * ■ 팝업 공통 창(Header·본문·Footer)
+     * - in : options(PopupOptions) 창·헤더·푸터·Overlay 옵션과 콘텐츠 UserControl · 예외: ArgumentNullException(options null)
+     * - out: 화면: 팝업 창 · 결과 판단용 상태(PopupOptions.DoNotShowAgainChecked·LaterRequested) · 닫기 경로(CloseByApp)
+     * - 콘텐츠 View를 담아 크기 모드·위치·폰트 크기·푸터 버튼(닫기·바로가기·제출·보조 닫기·나중에 보기)을 적용한다.
+     *   푸터 버튼 활성·사유 문구는 RefreshFooterState 한 곳에서 계산하고, 외부 닫기(Alt+F4 등)는 Background Overlay 정책으로만 막는다.
+     */
     public partial class PopupWindow : Window
     {
         /*
@@ -25,11 +36,10 @@ namespace Popup.Views.Windows
         private Rect _lastImageWorkArea;
 
         /*
-         * PopupWindow 생성자
-         *
-         * options
-         * 팝업 제목, 내용, 버튼 표시 여부 등
-         * 팝업 생성에 필요한 설정 정보를 전달받는다.
+         * ■ PopupWindow 생성자
+         * - in : options(PopupOptions) 팝업 제목, 내용, 버튼 표시 여부 등 팝업 생성에 필요한 설정 정보
+         * - out: 없음 · 예외: ArgumentNullException(options null)
+         * - 옵션을 화면에 적용하고 SURVEY·VIDEO 콘텐츠의 진행 이벤트를 푸터 상태 계산에 연결한다.
          */
         public PopupWindow(PopupOptions options)
         {
@@ -78,7 +88,8 @@ namespace Popup.Views.Windows
                 }
             }
             /*
-             * [설계 43] 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시는 RefreshFooterState 한 곳에서 계산한다.
+             * POL-05-02 : 완료·화면 이탈
+             * 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시는 RefreshFooterState 한 곳에서 계산한다.
              * VIDEO+QUIZ 잠금 해제, 영상 진행(ProgressUpdated), 재생 실패 때 다시 계산한다.
              */
             if (_options.Content is VideoQuizPopupView videoQuiz)
@@ -147,7 +158,8 @@ namespace Popup.Views.Windows
         private VideoPopupView? VideoContent => _options.Content as VideoPopupView ?? (_options.Content as VideoQuizPopupView)?.Video;
 
         /*
-         * [설계 24 §3·§4] VIDEO / VIDEO+QUIZ 창은 불투명 창으로 만들고 영상 부모의 그림자를 뺀다.
+         * POL-02-01 : 창 구조
+         * VIDEO / VIDEO+QUIZ 창은 불투명 창으로 만들고 영상 부모의 그림자를 뺀다.
          *
          * 저사양 PC 비교에서 영상을 자식으로 둔 Border.Effect(DropShadowEffect)와
          * AllowsTransparency=True(레이어드 창)가 재생 중 CPU 부하의 대부분을 차지했다.
@@ -178,7 +190,8 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 25] 불투명 창의 둥근 모서리는 OpaqueWindowCorners가 담당한다.
+         * POL-02-01 : 창 구조
+         * 불투명 창의 둥근 모서리는 OpaqueWindowCorners가 담당한다.
          *
          * DWM rounded corner는 Horizon 환경에서 보장되지 않고, SetWindowRgn 둥근 Region은
          * 곡선에 계단이 생긴다. 모서리 정사각형만 Region으로 잘라내고 그 자리에
@@ -221,7 +234,7 @@ namespace Popup.Views.Windows
              */
             PopupTitleText.Text = _options.Title;
             /*
-             * [설계 44] 창 제목도 팝업 제목으로 둔다. WindowStyle=None·ShowInTaskbar=false라 화면에는 보이지 않지만
+             * POL-02-02 : 종료 제어 — 창 제목도 팝업 제목으로 둔다. WindowStyle=None·ShowInTaskbar=false라 화면에는 보이지 않지만
              * Alt+Tab·스크린리더가 창 이름으로 읽는다(예전에는 XAML 기본값 "PopupWindow" 고정).
              */
             Title = string.IsNullOrWhiteSpace(_options.Title) ? "팝업" : _options.Title;
@@ -233,12 +246,11 @@ namespace Popup.Views.Windows
             PopupContent.Content = _options.Content;
 
             /*
-             * [2026-09-23-03] IMAGE 팝업의 FIT_TO_IMAGE 크기 계산 결과를 받는다.
+             * POL-04-02 : 모드별 기준
+             * IMAGE 팝업의 FIT_TO_IMAGE 크기 계산 결과를 받는다.
              *
-             * ImagePopupView는 이미지를 불러온 뒤 content.width/height 또는
+             * ImagePopupView는 이미지를 불러온 뒤 공통 popup.width/height 또는
              * 원본 크기를 기준으로 팝업 추천 크기를 계산해 이 이벤트로 알린다.
-             * 그동안 이 이벤트를 구독하는 곳이 없어 FIT_TO_IMAGE로 설정해도
-             * 팝업 크기는 PopupOptions 값 그대로였다.
              *
              * ADAPTIVE에서 두 축을 모두 지정하면 팝업 크기가 기준이므로
              * 여기서 모드를 다시 확인할 필요는 없다.
@@ -331,14 +343,14 @@ namespace Popup.Views.Windows
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-            // [TODO52-2] "나중에 보기"는 Footer가 보이고 showLater=true일 때만 표시한다(유형 무관).
+            // POL-02-03 : 푸터 역할 — "나중에 보기"는 Footer가 보이고 showLater=true일 때만 표시한다(유형 무관).
             FooterLaterButton.Visibility =
                 _options.ShowFooter && _options.ShowLater
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
             /*
-             * [설계 14 §5] 관리자 설정 폰트 크기(Header/Footer/본문)를 적용한다.
+             * POL-01-01 : 공통 옵션의 위치 — 관리자 설정 폰트 크기(Header/Footer/본문)를 적용한다.
              */
             ApplyFontSizes();
 
@@ -380,10 +392,11 @@ namespace Popup.Views.Windows
                 /*
                  * 기존 고정 크기 방식
                  *
-                 * [설계 11 §4·§5·§6] 예전에는 서버 Width/Height를 그대로 적용해, 작업 영역보다 큰 값
-                 * (예: 5000 x 3000)이 내려오면 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
-                 * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있었다.
-                 * 이제 RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
+                 * POL-02-01 : 창 구조
+                 * 서버 Width/Height를 그대로 적용하면 작업 영역보다 큰 값
+                 * (예: 5000 x 3000)에서 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
+                 * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있다.
+                 * 그래서 RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
                  * 최종 상한을 두고, IMAGE는 작업 영역 90%만으로 최대값을 정하고, 다른 유형은 기존 95%와 설정 최대값을 적용한다.
                  *
                  * 순서:
@@ -492,7 +505,7 @@ namespace Popup.Views.Windows
                             EffectiveMaximumHeight(workArea, 1.0);
 
                         /*
-                         * [TODO68] 작업 영역이 최소 300보다 작은 모니터에서도 Math.Clamp(min > max) 예외 없이
+                         * POL-01-03 : 최소 크기 — 작업 영역이 최소 300보다 작은 모니터에서도 Math.Clamp(min > max) 예외 없이
                          * 화면 안에 두도록 모든 유형에서 최소값을 최대값 이하로 보정한다.
                          */
                         double minimumWidth =
@@ -602,7 +615,7 @@ namespace Popup.Views.Windows
                     }
 
                 /*
-                 * [설계 18 L-0 — C-26] 예전에는 정의되지 않은 값을 Fixed 분기로 보냈지만(goto case Fixed),
+                 * 정의되지 않은 값은 Fixed로 처리하지 않는다.
                  * PopupFactory가 sizeMode 문자열을 네 enum 값 중 하나로만 매핑하고 모르는 값은 ArgumentException으로
                  * 거부하므로 이 분기에는 도달할 수 없다. 조용히 Fixed로 처리하는 대신 코드 오류로 드러나도록 예외를 던진다.
                  */
@@ -613,7 +626,7 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 11 §4] FIXED 크기의 화면 안전 여백. 작업 영역의 95%를 최대 크기로 쓴다.
+         * POL-02-01 : 창 구조 — FIXED 크기의 화면 안전 여백. 작업 영역의 95%를 최대 크기로 쓴다.
          * (1920 x 1080 작업 영역이면 약 1824 x 1026)
          */
         private const double FixedSizeSafeAreaRatio = 0.95;
@@ -627,7 +640,8 @@ namespace Popup.Views.Windows
             ? area.Height * ImageSafeAreaRatio : Math.Min(RequestedMaximumHeight, area.Height * otherRatio);
 
         /*
-         * [TODO68] 팝업 창 최소 크기 300 x 300(DIP, 관리자 미리보기 CSS px와 같은 수치). 서버는 300 미만을 저장하지 않고,
+         * POL-01-03 : 최소 크기
+         * 팝업 창 최소 크기 300 x 300(DIP, 관리자 미리보기 CSS px와 같은 수치). 서버는 300 미만을 저장하지 않고,
          * 기존 데이터·Demo 입력은 이 하한으로 올린다. IMAGE FIT_TO_IMAGE도 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.
          * 비IMAGE 설정 최대값이 하한보다 작은 모순 데이터는 최대값을 하한까지 올려 min > max를 막는다.
          * 순서: 하한 300 → 설정 최대값 → 작업 영역 상한(작업 영역이 300보다 작으면 화면 안 배치 우선) → 최소값을 상한 이하로 보정.
@@ -639,7 +653,9 @@ namespace Popup.Views.Windows
 
 
         /*
-         * [2026-09-23-03] IMAGE 팝업 FIT_TO_IMAGE의 추천 크기를 창에 적용한다.
+         * POL-04-02 : 모드별 기준
+         * POL-04-03 : 비율·상한
+         * IMAGE 팝업 FIT_TO_IMAGE의 추천 크기를 창에 적용한다.
          *
          * 이미지 크기가 먼저 정해지고 팝업 크기가 그 결과로 나오는 모드이므로,
          * 여기서 서버가 준 Width/Height 대신 계산된 크기를 쓴다.
@@ -734,6 +750,12 @@ namespace Popup.Views.Windows
             return new Rect(origin, new Size(size.X, size.Y));
         }
 
+        /*
+         * ■ 창 위치 적용
+         * - in : 없음(PopupOptions.Position·SizeMode, 현재 창 크기)
+         * - out: 없음 · Left/Top 변경. FULLSCREEN은 창 핸들 전 작업 영역 왼쪽 위만 맞춘다.
+         * - 창이 놓인 모니터 작업 영역(DIP) 안에서 9개 위치(가로·세로 0/0.5/1 비율)로 배치한다. 창이 더 크면 왼쪽 위에 붙인다.
+         */
         public void ApplyPosition()
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -764,13 +786,15 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 14 §5] 관리자가 설정한 Header/Footer/본문 폰트 크기를 적용한다.
+         * POL-01-01 : 공통 옵션의 위치
+         * POL-01-02 : 기본값의 적용
+         * 관리자가 설정한 Header/Footer/본문 폰트 크기를 적용한다.
          *
-         * - null(설정 없음)이면 아무것도 바꾸지 않아 XAML 기본값(Header 17, Footer 14, 본문은 View별)이 유지된다(§5.8).
-         * - 값이 있으면 FontSizeMin~FontSizeMax로 최종 Clamp 한다(§5.7 — 서버 값을 그대로 신뢰하지 않음).
-         * - Header: PopupTitleText.  Footer: "다시 보지 않기" 체크박스와 하단 닫기 버튼(§5.5 — Footer 공통 FontSize 하나).
-         *   (Header의 상단 X 버튼은 설계 25에서 삭제했다.)
-         * - 본문: 콘텐츠 View가 IBodyFontSizeAware를 구현하면 그 View에 위임한다(§5.6 — 유형별 본문 정의는 View가 안다).
+         * - null(설정 없음)이면 아무것도 바꾸지 않아 XAML 기본값(Header 17, Footer 14, 본문은 View별)이 유지된다.
+         * - 값이 있으면 FontSizeMin~FontSizeMax로 최종 Clamp 한다(서버 값을 그대로 신뢰하지 않음).
+         * - Header: PopupTitleText.  Footer: "다시 보지 않기" 체크박스와 하단 버튼들(Footer 공통 FontSize 하나).
+         *   (Header에 상단 X 버튼은 없다.)
+         * - 본문: 콘텐츠 View가 IBodyFontSizeAware를 구현하면 그 View에 위임한다(유형별 본문 정의는 View가 안다).
          */
         private void ApplyFontSizes()
         {
@@ -892,7 +916,9 @@ namespace Popup.Views.Windows
 
 
         /*
-         * 팝업 하단 Footer 버튼(닫기·바로가기·제출)을 처리한다. Header 상단 X 버튼은 설계 25에서 삭제했다.
+         * POL-02-03 : 푸터 역할
+         * POL-05-02 : 완료·화면 이탈
+         * 팝업 하단 Footer 버튼(닫기·바로가기·제출)과 보조 닫기를 처리한다. Header 상단 X 버튼은 없다.
          */
         private void CloseButton_Click(
             object sender,
@@ -916,7 +942,7 @@ namespace Popup.Views.Windows
             e.Handled =
                 true;
 
-            // [TODO57] 잠긴 VIDEO+QUIZ는 제출을 막고, 보조 닫기는 재생 실패 때만 허용한다(완료 전 닫기 허용 옵션 폐기).
+            // POL-05-02 : 완료·화면 이탈 — 잠긴 VIDEO+QUIZ는 제출을 막고, 보조 닫기는 재생 실패 때만 허용한다(완료 전 닫기 허용 옵션 없음).
             if (_options.Content is VideoQuizPopupView combined && !combined.IsUnlocked
                 && (ReferenceEquals(sender, FooterCloseButton) || !combined.Video.HasPlaybackFailed))
                 return;
@@ -933,11 +959,12 @@ namespace Popup.Views.Windows
 
             /*
              * VIDEO 팝업의 화면 닫기 버튼은 누적 시청 비율이 완료 기준에 도달하기 전까지 닫지 않는다.
-             * [TODO57] 완료 전 닫기 허용(allowCloseBeforeComplete)을 폐기해 항상 적용한다. 완료 전 이탈은 나중에 보기로 한다.
-             * [기준 4] 실시간 진행률 API가 없어졌으므로 VideoPopupView의 로컬 추정(HasReachedCompletion)을 쓴다.
+             * POL-05-02 : 완료·화면 이탈
+             * 완료 전 닫기 허용(allowCloseBeforeComplete) 옵션은 없으며 항상 적용한다. 완료 전 이탈은 나중에 보기로 한다.
+             * 실시간 진행률 API가 없으므로 VideoPopupView의 로컬 추정(HasReachedCompletion)을 쓴다.
              * 최종 완료 판정은 창이 닫힐 때 보내는 결과 항목으로 서버가 한다.
              *
-             * [설계 43] 예전에는 활성 버튼을 누르면 '필수 영상 시청' MessageBox를 띄웠다. 이제 버튼을 비활성으로 두고
+             * 기준 전에는 버튼을 비활성으로 두고
              * 푸터에 시청 %·기준 사유를 표시하므로(RefreshFooterState) 여기서는 안내 없이 막는 방어 가드만 남긴다.
              * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
              */
@@ -980,15 +1007,14 @@ namespace Popup.Views.Windows
                 /*
                  * "다시 보지 않기" 체크 여부만 PopupOptions에 기록한다(서버 호출 없음).
                  * 창이 닫히면 PopupManager가 HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다.
-                 * [설계 18 L-0 — C-20] 구 /hide 호출 흐름을 유지하려고 두었던 껍데기
-                 * SaveDoNotShowAgainAsync()를 인라인하고 삭제했다(동작 동일). 그래서 이 핸들러에서 async도 뺐다.
+                 * POL-10-03 : 완료·숨김·연기 — 숨김 API를 직접 호출하지 않으므로 이 핸들러는 동기 처리다.
                  */
                 RecordDoNotShowAgainChoice();
 
                 /*
                  * 현재 팝업을 닫는다. 결과 항목 저장은 Closing 핸들러(PopupManager)가 하며,
                  * 저장에 실패하면 그쪽에서 안내하고 닫기를 취소한다.
-                 * [설계 44] 앱이 시작한 닫기이므로 Background Overlay의 키보드 닫기 차단 대상이 아니다.
+                 * POL-02-02 : 종료 제어 — 앱이 시작한 닫기이므로 Background Overlay의 키보드 닫기 차단 대상이 아니다.
                  */
                 CloseByApp();
             }
@@ -1017,9 +1043,11 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [TODO52-2] "나중에 보기". 결과 LATER로 닫고, 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
+         * POL-02-03 : 푸터 역할
+         * POL-10-03 : 완료·숨김·연기
+         * "나중에 보기". 결과 LATER로 닫고, 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
          * 완료 기준(VIDEO·VIDEO+QUIZ 시청, QUIZ 통과)과 관계없이 누를 수 있고 다시 보지 않기 체크보다 우선한다(PopupResultBuilder).
-         * [TODO57] 완료 전 화면 이탈 수단은 이 버튼뿐이다(완료 전 닫기 허용 옵션 폐기).
+         * 완료 전 화면 이탈 수단은 이 버튼뿐이다(완료 전 닫기 허용 옵션 없음).
          * 결과 저장 실패 등으로 닫기가 취소되면 플래그를 되돌려, 이후 다른 닫기 경로가 LATER로 저장되지 않게 한다.
          */
         private void LaterButton_Click(object sender, RoutedEventArgs e)
@@ -1047,19 +1075,19 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 44] 앱이 시작한 닫기인지. 푸터 닫기·보조 닫기·LINK_AND_CLOSE(CloseButton_Click)와
+         * POL-02-02 : 종료 제어 — 앱이 시작한 닫기인지. 푸터 닫기·보조 닫기·LINK_AND_CLOSE(CloseButton_Click)와
          * 제출 완료 후 닫기(PopupManager)가 CloseByApp으로 닫는 동안만 true다.
          * Background Overlay가 켜진 팝업은 이 경로와 앱 종료만 허용하고 Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 취소한다.
          */
         private bool _closeRequestedByApp;
 
-        /* [설계 43] QUIZ 미달 판정을 한 번 받았는지. Overlay가 꺼진 QUIZ의 보조 닫기 표시 조건이다. */
+        /* POL-05-02 : 완료·화면 이탈 — QUIZ 미달 판정을 한 번 받았는지. Overlay가 꺼진 QUIZ의 보조 닫기 표시 조건이다. */
         private bool _quizFailedOnce;
 
-        /* [설계 43] 마지막 푸터 상태. 상태가 바뀔 때만 스크린리더에 알린다(시청 % 변화마다 알리지 않는다). */
+        /* POL-05-02 : 완료·화면 이탈 — 마지막 푸터 상태. 상태가 바뀔 때만 스크린리더에 알린다(시청 % 변화마다 알리지 않는다). */
         private string? _footerState;
 
-        /// <summary>[설계 44] 앱 내부 닫기 경로의 공통 진입점. Overlay 키보드 닫기 차단을 거치지 않는다. 시청 기준 가드는 각 버튼 핸들러가 한다.</summary>
+        /// <summary>POL-02-02 : 종료 제어 — ■ 앱 내부 닫기 · in: 없음 · out: 없음(Close 호출, 예외는 호출부로 전달). 앱 내부 닫기 경로의 공통 진입점. Overlay 키보드 닫기 차단을 거치지 않는다. 시청 기준 가드는 각 버튼 핸들러가 한다.</summary>
         internal void CloseByApp()
         {
             _closeRequestedByApp = true;
@@ -1073,14 +1101,14 @@ namespace Popup.Views.Windows
             }
         }
 
-        /// <summary>[설계 43] PopupManager가 QUIZ 미달 안내 뒤 호출한다. Overlay가 꺼진 QUIZ는 이때부터 보조 닫기를 보여 준다.</summary>
+        /// <summary>POL-05-02 : 완료·화면 이탈 — PopupManager가 QUIZ 미달 안내 뒤 호출한다. Overlay가 꺼진 QUIZ는 이때부터 보조 닫기를 보여 준다.</summary>
         internal void NotifyQuizFailed()
         {
             _quizFailedOnce = true;
             RefreshFooterState();
         }
 
-        /// <summary>[설계 44] 앱 종료(트레이 종료·426 안내 종료·로그오프 SessionEnding → App.IsExiting, Dispatcher 종료) 중인지.</summary>
+        /// <summary>POL-02-02 : 종료 제어 — 앱 종료(트레이 종료·426 안내 종료·로그오프 SessionEnding → App.IsExiting, Dispatcher 종료) 중인지.</summary>
         internal static bool IsApplicationExiting() =>
             (Application.Current is App app && app.IsExiting)
             || Application.Current?.Dispatcher.HasShutdownStarted == true;
@@ -1088,8 +1116,8 @@ namespace Popup.Views.Windows
         private bool IsQuizPopup => string.Equals(_options.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
 
         /*
-         * [설계 43] 보조 닫기 표시 조건. showFooter=false면 숨긴다. SURVEY·TEXT·IMAGE·VIDEO는 표시하지 않는다.
-         *  - VIDEO+QUIZ: 재생 실패(퀴즈에 도달할 수 없을 때의 종료 수단). [TODO57] 완료 전 닫기 허용 기반 표시는 폐기했다.
+         * POL-05-02 : 완료·화면 이탈 — 보조 닫기 표시 조건. showFooter=false면 숨긴다. SURVEY·TEXT·IMAGE·VIDEO는 표시하지 않는다.
+         *  - VIDEO+QUIZ: 재생 실패(퀴즈에 도달할 수 없을 때의 종료 수단). 완료 전 닫기 허용 옵션에 따른 표시는 없다.
          *  - QUIZ(영상 없음): 미달 판정을 한 번 받은 뒤 + Background Overlay 꺼짐.
          *    Overlay가 켜져 있으면 통과해야 닫힌다(강제 완료). 꺼져 있으면 Alt+F4로도 나갈 수 있으므로 화면에 보이게만 한다.
          */
@@ -1101,17 +1129,19 @@ namespace Popup.Views.Windows
             return _options.Content is SurveyPopupView && IsQuizPopup && _quizFailedOnce && !_options.UseBackgroundOverlay;
         }
 
-        /// <summary>[설계 43] 보조 닫기가 지금 표시 조건을 만족하는지. QUIZ 미달 안내 문구가 보조 닫기 안내를 붙일지 정한다.</summary>
+        /// <summary>POL-05-02 : 완료·화면 이탈 — 보조 닫기가 지금 표시 조건을 만족하는지. QUIZ 미달 안내 문구가 보조 닫기 안내를 붙일지 정한다.</summary>
         internal bool HasAuxClose => ShouldShowAuxClose();
 
         private static string RequiredPercentText(double ratio) =>
             (Math.Clamp(double.IsFinite(ratio) ? ratio : 1, 0, 1) * 100).ToString("0.##");
 
         /*
-         * [설계 43] 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시를 계산한다.
+         * POL-05-02 : 완료·화면 이탈
+         * POL-06-02 : 선택·제출
+         * 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시를 계산한다.
          *  - VIDEO+QUIZ 잠금 중: 제출·'보지 않기'는 비활성(기존 계약), 문구는 시청 %·기준 사유. 해제 뒤에는 문항 진행 문구.
          *  - SURVEY/QUIZ: 필수 미응답이면 제출 비활성 + 진행 문구. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
-         *  - 일반 VIDEO: 기준 미달이면 닫기 비활성 + 시청 %·기준 사유, 기준 도달·재생 실패면 활성(TODO57 — 항상 적용).
+         *  - 일반 VIDEO: 기준 미달이면 닫기 비활성 + 시청 %·기준 사유, 기준 도달·재생 실패면 활성(항상 적용).
          * 표시 %는 내림이라 비활성인데 기준 이상으로 보이는 일이 없다. 재생 중 매 진행 틱마다 불리므로 같은 문구는 다시 쓰지 않는다.
          */
         private void RefreshFooterState()
@@ -1169,17 +1199,19 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 44] Background Overlay가 켜진 팝업의 키보드·외부 닫기 차단 여부.
+         * POL-02-02 : 종료 제어
+         * ■ 외부 닫기 차단 여부 · out: bool
+         * Background Overlay가 켜진 팝업의 키보드·외부 닫기 차단 여부.
          * 화면에 닫기·제출 수단이 하나라도 보일 때만 막는다. 보이는 수단이 없으면(예: TEXT/IMAGE/VIDEO에서
          * showFooter=false 또는 showFooterButton=false) 막지 않아 사용자가 갇히지 않게 한다.
-         * [TODO57] 외부 닫기는 이 Overlay 정책으로만 판단한다. 시청 기준은 화면 버튼에만 적용한다.
+         * 외부 닫기는 이 Overlay 정책으로만 판단한다. 시청 기준은 화면 버튼에만 적용한다.
          */
         internal bool BlocksExternalClose => _options.UseBackgroundOverlay && HasVisibleExit();
 
         private bool HasVisibleExit()
         {
             if (ShouldShowAuxClose()) return true;
-            if (FooterLaterButton.Visibility == Visibility.Visible) return true;   // [TODO52-2] 나중에 보기도 나가는 수단
+            if (FooterLaterButton.Visibility == Visibility.Visible) return true;   // POL-02-03 : 푸터 역할 — 나중에 보기도 나가는 수단
             if (SurveyContent != null)
             {
                 // 제출 버튼은 푸터 또는 본문에 항상 보인다. 단 VIDEO+QUIZ가 잠긴 채 재생에 실패하면 제출에 도달할 수 없다.
@@ -1192,7 +1224,7 @@ namespace Popup.Views.Windows
             !_closeRequestedByApp && !IsApplicationExiting() && BlocksExternalClose;
 
         /*
-         * [설계 44] Alt+F4는 Overlay 차단 대상이면 키 단계에서 처리해 닫기 요청 자체를 만들지 않는다(OnClosing도 같은 조건으로 취소).
+         * POL-02-02 : 종료 제어 — Alt+F4는 Overlay 차단 대상이면 키 단계에서 처리해 닫기 요청 자체를 만들지 않는다(OnClosing도 같은 조건으로 취소).
          * Esc는 팝업 창에서 아무 동작도 하지 않는다(닫기 아님). 영상 전체화면 해제·PopupAlert의 Esc는 각 창이 따로 처리한다.
          */
         private void PopupWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -1204,7 +1236,7 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [설계 44] 첫 포커스. SURVEY/QUIZ(잠금 해제 상태)는 첫 문항의 입력, 그 밖에는 본문의 첫 포커스 가능 요소로 옮긴다.
+         * POL-02-02 : 종료 제어 — 첫 포커스. SURVEY/QUIZ(잠금 해제 상태)는 첫 문항의 입력, 그 밖에는 본문의 첫 포커스 가능 요소로 옮긴다.
          * 푸터 닫기 버튼에는 일부러 두지 않는다. 팝업이 뜰 때 다른 작업 중이던 Enter·Space 입력으로 바로 닫히는 것을 막기 위해서다
          * (같은 이유로 푸터 주 버튼 IsDefault도 적용하지 않는다).
          */
@@ -1230,18 +1262,19 @@ namespace Popup.Views.Windows
 
         /*
          * 닫기 버튼 외의 경로(Alt+F4, 시스템 메뉴 닫기, 외부 WM_CLOSE, 프로그램 종료)로 닫혀도 체크 상태가 결과에 반영되도록
-         * Closing 시점에 한 번 더 기록한다. Esc는 팝업을 닫지 않는다(설계 44 — 처리하지 않음).
+         * Closing 시점에 한 번 더 기록한다. Esc는 팝업을 닫지 않는다(처리하지 않음).
          *
-         * [TODO57] 완료 전 닫기 허용(allowCloseBeforeComplete)을 폐기하고 시청 기준에 따른 창 닫기 취소를 없앴다.
+         * POL-02-02 : 종료 제어
+         * 완료 전 닫기 허용(allowCloseBeforeComplete) 옵션은 없고 시청 기준에 따른 창 닫기 취소도 하지 않는다.
          * 시청 기준은 화면 버튼(일반 VIDEO 닫기·VIDEO+QUIZ 제출)에만 적용하고, Alt+F4 등 외부 닫기는 아래 Overlay 정책으로만 판단한다.
          * Overlay가 꺼져 있으면 시청 기준 전이어도 닫히며, 결과는 기존 결과 생성기의 시청 기록(VIDEO_WATCHED)으로 남는다(LATER로 바꾸지 않음).
          *
-         * [설계 44] Background Overlay가 켜진 팝업은 앱이 시작한 닫기(CloseByApp)만 허용하고
+         * Background Overlay가 켜진 팝업은 앱이 시작한 닫기(CloseByApp)만 허용하고
          * Alt+F4·시스템 메뉴 닫기·외부 WM_CLOSE는 취소한다. 화면에 닫기·제출 수단이 없으면 막지 않는다(BlocksExternalClose).
          *
          * 앱 종료(트레이 종료·426 안내 종료·로그오프 SessionEnding → App.IsExiting)에는 위 제한을 적용하지 않는다.
          * App 플래그 없이 Application.Shutdown이 창을 닫으면 WPF가 취소를 무시하고 닫으므로,
-         * PopupManager가 Closed 시점에 결과(CLOSED/VIDEO_WATCHED·시청량)를 저장한다(설계 44 결함 1).
+         * PopupManager가 Closed 시점에 결과(CLOSED/VIDEO_WATCHED·시청량)를 저장한다.
          */
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
@@ -1252,12 +1285,14 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * [기준 3·4] "다시 보지 않기" 처리. 예전에는 닫기 직전에 숨김 API(/hide)를 직접 호출해 성공해야 창을 닫았다.
-         * 이제 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
+         * POL-10-03 : 완료·숨김·연기
+         * ■ "다시 보지 않기" 선택 기록 · in: 없음(체크박스 상태) · out: 없음(PopupOptions.DoNotShowAgainChecked 갱신)
+         * 서버 호출은 하지 않고 체크 여부만 PopupOptions에 기록한다. 창이 닫히면 PopupManager가
          * HIDDEN 결과 항목을 만들어 결과 API로 1회 전송한다(전송 실패는 큐가 보관·재전송).
          * 호출 위치: CloseButton_Click(닫기 버튼), OnClosing(그 밖의 닫기 경로), PopupManager Closed(Closing 없이 닫힌 소유자 종료 경로).
          *
-         * [설계 30] SURVEY/QUIZ의 '제출 후 링크 열기'(TryOpenSubmissionLink)는 삭제했다. 설문·퀴즈 Footer 동작은 SUBMIT 고정이며
+         * POL-02-03 : 푸터 역할
+         * SURVEY/QUIZ에는 '제출 후 링크 열기'가 없다. 설문·퀴즈 Footer 동작은 SUBMIT 고정이며
          * 바로가기(LINK_AND_CLOSE)는 일반 콘텐츠(TEXT/IMAGE/VIDEO)의 Footer 버튼에서만 실행한다.
          */
         internal void RecordDoNotShowAgainChoice()

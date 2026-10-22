@@ -8,10 +8,14 @@ using System.Text.Json.Serialization;
 namespace Popup.Services
 {
     /*
-     * [역할 — 설계 13 §3·§4] WPF 실행 버전을 한 곳에서 읽어 모든 서버 요청에 X-Client-Version 헤더로 붙인다.
+     * POL-15-02 : 인증·버전
+     * ■ 클라이언트 버전 헤더
+     * - in : 실행 어셈블리의 AssemblyInformationalVersion(없으면 AssemblyVersion 3자리)
+     * - out: HeaderName("X-Client-Version") · Value(숫자 버전 문자열, 읽을 수 없으면 "0.0.0")
+     * - [역할] WPF 실행 버전을 한 곳에서 읽어 모든 서버 요청에 X-Client-Version 헤더로 붙인다.
      *
      * [버전 기준] csproj의 <Version>(= AssemblyInformationalVersion, 예: 1.0.0). 배포 버전을 관리하기 쉽고
-     *   빌드용 AssemblyVersion 정책과 분리되므로 설계 13 §3 권장대로 InformationalVersion을 쓴다.
+     *   빌드용 AssemblyVersion 정책과 분리되므로 InformationalVersion을 쓴다.
      *   "+커밋해시" 같은 접미어가 붙어 있으면 잘라 숫자 버전만 보낸다.
      *
      * [적용 위치] PopupApiService.SendWithAuthAsync(단건 조회·결과), WpfLoginClient.LoginAsync(로그인). 화면 코드는 모른다.
@@ -40,7 +44,11 @@ namespace Popup.Services
     }
 
     /*
-     * [설계 13 §7·§8] 서버가 426 Upgrade Required 로 요청을 차단했을 때 던지는 예외.
+     * POL-15-02 : 인증·버전
+     * ■ 클라이언트 버전 차단 예외
+     * - in : message(string) · detail(WpfClientVersionErrorDto?) 426 응답 본문
+     * - out: HttpRequestException(StatusCode 426) · UserMessage 사용자 안내 문구 · TryCreate(응답, 본문) 426이 아니면 null
+     * - 서버가 426 Upgrade Required 로 요청을 차단했을 때 던지는 예외.
      *
      * [추가 이유] 426은 401(재로그인 후 1회 재전송)·네트워크 오류(다음 주기에 재시도)와 구분해야 한다.
      *   - 재로그인하지 않는다.
@@ -58,7 +66,7 @@ namespace Popup.Services
 
         public WpfClientVersionErrorDto? Detail { get; }
 
-        /// <summary>사용자 안내 문구(설계 13 §8 예시 형식).</summary>
+        /// <summary>사용자 안내 문구(현재·최소 지원·최신 버전 표시).</summary>
         public string UserMessage =>
             "현재 프로그램 버전은 더 이상 지원되지 않습니다.\n최신 버전으로 업데이트 후 다시 실행해주세요.\n\n" +
             $"현재 버전: {Detail?.ClientVersion ?? ClientVersion.Value}\n" +
@@ -89,8 +97,7 @@ namespace Popup.Services
 
     /// <summary>
     /// 426 응답 본문. 서버 WpfClientVersionInterceptor가 만든다.
-    /// [설계 18 L-0 — C-10 삭제] 호출부가 없던 IsVersionError(Code 비교) 계산 속성을 삭제했다.
-    /// 426 판정은 HTTP 상태 코드로 하므로(WpfClientVersionException.TryCreate) 본문 코드 비교가 필요 없다.
+    /// 426 판정은 HTTP 상태 코드로 하므로(WpfClientVersionException.TryCreate) 본문 코드를 비교하지 않는다.
     /// </summary>
     public sealed class WpfClientVersionErrorDto
     {

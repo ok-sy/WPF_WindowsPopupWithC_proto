@@ -1,4 +1,7 @@
-// [설계 43] 관리자 미리보기 완료 조건 버튼 UX 검증(Windows headless Edge). 저장소 루트에서 웹 의존성 설치 후 실행.
+// POL-05-02 : 완료·화면 이탈
+// POL-08-02 : 미리보기 상태
+// ■ 관리자 미리보기 완료 조건 버튼 UX 검증(Windows headless Edge). 나중에 보기·설문 V2·QUIZ 복수 선택 제한도 함께 확인한다.
+// 저장소 루트에서 웹 의존성 설치 후 실행.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/completion-ux-43');
 const compiled = require('../zero-rule-web/node_modules/next/dist/compiled/webpack/webpack');
@@ -16,7 +19,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       alias: {'@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
-  // [TODO60] 실제 영상 메타데이터(videoWidth/Height) 확인용으로 WPF Demo 영상을 Range 요청과 함께 제공한다.
+  // POL-05-03 : 결합 화면 — 실제 영상 메타데이터(videoWidth/Height) 확인용으로 WPF Demo 영상을 Range 요청과 함께 제공한다.
   const demoVideo = path.join(root, 'popup-frameWork/Popup/Media/demo-video.mp4');
   server = http.createServer((req, res) => {
     if (req.url === '/demo-video.mp4') {
@@ -55,7 +58,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const bodyText = () => run('document.body.innerText');
   const click = label => run(`[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()===${JSON.stringify(label)}).pop().click()`);
 
-  // 1. 일반 VIDEO: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구(TODO57 — 완료 전 닫기 허용 옵션 폐기로 항상 적용).
+  // 1. 일반 VIDEO: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구(완료 전 닫기 허용 옵션이 없으므로 항상 적용).
   await render('VIDEO');
   let b = await button('닫기');
   check(b && b.disabled && b.reason === '영상 0% 시청 · 기준 80% 이상 시청하면 닫을 수 있습니다' && b.role === 'status' && b.live === 'polite',
@@ -68,13 +71,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 바로가기 라벨도 같은 기준으로 막는다.
   await render('VIDEO', {}, {footerAction: 'LINK_AND_CLOSE', footerLinkUrl: 'https://example.com'});
   b = await button('바로가기'); check(b.disabled && b.reason.includes('닫을 수 있습니다'), 'VIDEO link button is blocked too: ' + JSON.stringify(b));
-  // 4자리 내림 의도: 정수 % 슬라이더에서 29% = 기준 0.29는 도달로 본다.
+  // 4자리 내림 의도: 정수 % 슬라이더에서 29% = 기준값 0.29는 도달로 본다.
   await render('VIDEO', {completionRatio: .29}); await watch(29); b = await button('닫기');
   check(!b.disabled, 'Integer slider reaches 0.29 exactly: ' + JSON.stringify(b));
   await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('닫기');
   check(b.disabled && b.reason.includes('기준 80.5%'), 'Fractional ratio text and judgment: ' + JSON.stringify(b));
 
-  // 2. [TODO57] 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
+  // 2. POL-02-02 : 종료 제어 — 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
   await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('닫기');
   check(b.disabled && b.reason.startsWith('영상 0% 시청'), 'Legacy allow-close VIDEO stays blocked (TODO57): ' + JSON.stringify(b));
   check(!(await bodyText()).includes('완료 전 닫기 허용'), 'Preview no longer mentions the removed allow-close option (TODO57)');
@@ -84,25 +87,25 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   b = await button('제출');
   check(b.disabled && b.reason === '영상 0% · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다' && b.role === 'status',
     'VIDEO+QUIZ lock progress: ' + JSON.stringify(b));
-  // [TODO59] 영상과 퀴즈 사이 중간 안내는 없다(사유는 제출 영역 진행 문구 한 곳).
+  // POL-05-03 : 결합 화면 — 영상과 퀴즈 사이 중간 안내는 없다(사유는 제출 영역 진행 문구 한 곳).
   check(!(await bodyText()).includes('하단 버튼이 활성화됩니다'), 'VIDEO+QUIZ has no middle notice (TODO59)');
   check(await button('닫기') === null, 'VIDEO+QUIZ has no secondary close');
   await watch(50); b = await button('제출'); check(b.reason.startsWith('영상 50% · 기준 80%'), 'VIDEO+QUIZ lock progress follows the slider');
   await watch(80); b = await button('제출');
   check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
   check(!(await bodyText()).includes('퀴즈에 응답해 주세요'), 'VIDEO+QUIZ has no unlocked middle notice (TODO59)');
-  // [TODO57] 구 allowCloseBeforeComplete=true여도 VIDEO+QUIZ 보조 닫기는 없다(완료 전 이탈은 나중에 보기).
+  // POL-02-02 : 종료 제어 — 구 allowCloseBeforeComplete=true여도 VIDEO+QUIZ 보조 닫기는 없다(완료 전 이탈은 나중에 보기).
   await render('QUIZ', {allowCloseBeforeComplete: true}, {videoEnabled: true});
   check(await button('닫기') === null, 'Legacy allow-close VIDEO+QUIZ shows no secondary close (TODO57)');
   await render('QUIZ', {showLater: true}, {videoEnabled: true});
   b = await button('나중에 보기'); check(b && !b.disabled && (await button('제출')).disabled, 'Locked VIDEO+QUIZ leaves only the later button as an exit (TODO57)');
-  // [설계 53-16·50-D3] 영상 영역에 보인 설명은 퀴즈 머리말에서 반복하지 않는다. 영상 설명을 숨기면 퀴즈 쪽에 한 번 보인다.
+  // POL-05-03 : 결합 화면 — 영상 영역에 보인 설명은 퀴즈 머리말에서 반복하지 않는다. 영상 설명을 숨기면 퀴즈 쪽에 한 번 보인다.
   const countText = t => run(`document.body.innerText.split(${JSON.stringify(t)}).length - 1`);
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명'});
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ shows the shared description once');
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명', showDescription: false});
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ with hidden video description shows it in the quiz header');
-  // [TODO60] VIDEO+QUIZ 영상 영역 = 실제 너비 × 원본 비율(메타데이터 전·실패 16:9, 세로 영상 상한 70%, 하한 180), 단독 VIDEO는 기존 영역.
+  // POL-05-03 : 결합 화면 — VIDEO+QUIZ 영상 영역 = 실제 너비 × 원본 비율(메타데이터 전·실패 16:9, 세로 영상 상한 70%, 하한 180), 단독 VIDEO는 기존 영역.
   const area = () => run(`(()=>{const a=document.querySelector('[data-testid=aspect-video-area]'); if(!a) return null;
     let s=a.parentElement; while(s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s=s.parentElement;
     return {width: a.clientWidth, height: a.getBoundingClientRect().height, natural: a.dataset.natural, available: s ? s.clientHeight : 0};})()`);
@@ -157,7 +160,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 필수 문항이 0개(선택 문항만)면 바로 제출할 수 있다.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 1, options: []}]});
   b = await button('제출'); check(!b.disabled, 'SURVEY with no required question can submit: ' + JSON.stringify(b));
-  // 6. [TODO52-2] 나중에 보기: showFooter·showLater일 때만 표시, 완료 전 잠금(VIDEO 시청·VIDEO+QUIZ)과 관계없이 활성이며 누르면 닫힌다.
+  // 6. POL-02-03 : 푸터 역할 — 나중에 보기: showFooter·showLater일 때만 표시, 완료 전 잠금(VIDEO 시청·VIDEO+QUIZ)과 관계없이 활성이며 누르면 닫힌다.
   for (const [type, content] of [['TEXT', {}], ['VIDEO', {}], ['QUIZ', {videoEnabled: true}], ['QUIZ', {}], ['SURVEY', {}]]) {
     const label = type + (content.videoEnabled ? '+VIDEO' : '');
     await render(type, {}, content);
@@ -169,7 +172,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const before = await run('window.closeCount ?? 0'); await click('나중에 보기');
     check(await run('window.closeCount') === before + 1, `${label} later runs onClose`);
   }
-  // 7. [TODO56] 설문 디자인 V2: 흰 본문, 문항 카드 없이 구분선(마지막 제외), 제목 끝 선택 안내, 라운드 6,
+  // 7. POL-06-03 : 표현·수명 — 설문 디자인 V2: 흰 본문, 문항 카드 없이 구분선(마지막 제외), 제목 끝 선택 안내, 라운드 6,
   //    라디오·체크박스 표시 없음, 선택 = 2px 테두리(크기 불변) + 세로형만 체크, 선택해도 굵기 불변.
   const opt = (id, text) => ({optionId: id, value: String(id), text, sortOrder: id});
   await render('SURVEY', {questions: [
@@ -200,7 +203,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'TODO56 V2 selection keeps choice size: ' + JSON.stringify({before56, after: s}));
   const shot = await send('Page.captureScreenshot', {format: 'png'});
   fs.writeFileSync(path.join(output, 'survey-v2.png'), Buffer.from(shot.data, 'base64'));
-  // 8. [TODO52-5] QUIZ 복수 선택은 정답 수만큼만 선택(남은 선택지 비활성, 해제하면 복구). SURVEY는 제한 없음.
+  // 8. POL-06-02 : 선택·제출 — QUIZ 복수 선택은 정답 수만큼만 선택(남은 선택지 비활성, 해제하면 복구). SURVEY는 제한 없음.
   const multi = [{questionId: 9, title: '복수', questionType: 'MULTIPLE_CHOICE', isRequired: true, isScored: true, questionScore: 100, sortOrder: 1,
     optionLayout: 'VERTICAL', options: [1, 2, 3, 4].map(n => ({optionId: 90 + n, text: `선택 ${n}`, isCorrect: n <= 2, sortOrder: n}))}];
   const boxes = () => run(`Array.from(document.querySelectorAll('input[type=checkbox]')).map(i=>({checked:i.checked,disabled:i.disabled}))`);

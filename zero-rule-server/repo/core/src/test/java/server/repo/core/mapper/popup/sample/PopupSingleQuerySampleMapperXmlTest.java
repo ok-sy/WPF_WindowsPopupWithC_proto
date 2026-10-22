@@ -16,7 +16,14 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 import org.junit.jupiter.api.Test;
 
-/** [TODO65] 매퍼 XML을 DB 없이 파싱해 SQL 구조(정렬 후 ROWNUM 1)·바인딩·CLOB 매핑을 확인한다. 실제 Oracle 실행은 아니다. */
+/**
+ * POL-13-03 : 적용·샘플 구분
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 단건 조회 샘플 매퍼 XML 파싱 테스트
+ * - in : 없음(클래스패스의 매퍼 XML)
+ * - out: 없음(JUnit 검증)
+ * - 매퍼 XML을 DB 없이 파싱해 SQL 구조(정렬 후 ROWNUM 1)·바인딩·CLOB 매핑을 확인한다. 실제 Oracle 실행은 아니다.
+ */
 class PopupSingleQuerySampleMapperXmlTest {
 
     private static final String RESOURCE = "mappers/popup/sample/PopupSingleQuerySampleMapper.xml";

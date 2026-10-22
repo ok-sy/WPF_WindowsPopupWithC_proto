@@ -5,7 +5,9 @@ import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponen
 import PopupRichBlocks from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, readTextBlocks, RICH_COLORS, type RichBlock } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 
-/* [설계 49] 실제 관리자 편집기(CKEditor 커스텀 빌드)·서식 패널·미리보기를 브라우저에서 띄우는 검증 진입점. */
+/* POL-03-02 : 문단·글자 서식
+ * POL-03-03 : 편집 UI
+ * ■ 실제 관리자 편집기(CKEditor 커스텀 빌드)·서식 패널·미리보기를 브라우저에서 띄우는 검증 진입점. */
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, sans-serif' } });
 const w = window as any;

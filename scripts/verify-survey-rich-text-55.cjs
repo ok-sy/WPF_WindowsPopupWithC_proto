@@ -1,4 +1,5 @@
-// [TODO55-3] 설문·퀴즈 문항·선택지 서식 편집(여러 CKEditor 분리)과 미리보기 서식 표시를 실제 관리자 편집기 빌드로 확인한다(Windows headless Edge).
+// POL-06-01 : 문항·서식
+// ■ 설문·퀴즈 문항·선택지 서식 편집(여러 CKEditor 분리)과 미리보기 서식 표시를 실제 관리자 편집기 빌드로 확인한다(Windows headless Edge).
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-survey-rich-text-55.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/survey-rich55');

@@ -10,7 +10,7 @@
                        TextAlignment="Center" Margin="0,0,0,20"/>
             <Button Content="팝업 다시 조회" Width="160" Height="42"
                     HorizontalAlignment="Center" Click="OpenPopupButton_Click"/>
-            <!-- [설계 10] SSO GET → XML 파싱 → 서버 로그인 API 까지만 수행해 단계별 결과를 보여준다 (Auth.Mode=SsoPrototype 전용) -->
+            <!-- POL-15-02 : 인증·버전 — SSO GET → XML 파싱 → 서버 로그인 API 까지만 수행해 단계별 결과를 보여준다 (Auth.Mode=SsoPrototype 전용) -->
             <Button x:Name="SsoLoginTestButton" Content="SSO 로그인 테스트" Width="160" Height="32" Margin="0,10,0,0"
                     HorizontalAlignment="Center" Click="SsoLoginTestButton_Click"/>
         </StackPanel>

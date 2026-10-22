@@ -13,6 +13,13 @@ import java.util.Arrays;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * POL-05-01 : 재생 경로
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 팝업 영상 스트리밍 컨트롤러 테스트
+ * - in : 임시 폴더의 영상·비영상 파일(MockMvc standalone)
+ * - out: 전체·Range 응답, root 밖·없는 파일·미지원 확장자 거절을 확인
+ */
 class PopupVideoControllerTest {
     @TempDir Path temp;
     private MockMvc mvc;

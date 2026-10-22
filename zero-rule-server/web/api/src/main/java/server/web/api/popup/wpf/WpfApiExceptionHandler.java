@@ -16,13 +16,17 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 /**
- * WPF 컨트롤러({@link WpfPopupController}, 프로토타입 로그인 {@link WpfAuthController}) 한정 예외 → {@code {code, message, timestamp}} JSON 변환.
+ * POL-09-01 : 3 API 순서
+ * POL-15-02 : 인증·버전
+ * ■ WPF API 한정 예외 변환
+ * - in : {@link WpfPopupController}, 프로토타입 로그인 {@link WpfAuthController}에서 던진 예외
+ * - out: WpfErrorResponse {@code {code, message, timestamp}} JSON
  *
- * <p>[추가 이유 — 기준 3] 관리자 웹은 CLNewApiResponse/msgId 체계를 쓰고, 현재 팝업 API에는 통일된 오류 JSON이 없다.
+ * <p>관리자 웹은 CLNewApiResponse/msgId 체계를 쓰고, 현재 팝업 API에는 통일된 오류 JSON이 없다.
  * WPF는 단순 코드 체계가 필요하며, 전역 예외 처리를 바꾸면 다른 업무 API 응답이 달라지므로
  * {@code assignableTypes}로 범위를 WPF 컨트롤러에 한정한 별도 어드바이스를 둔다.
  * 토큰 검증 실패(401)는 통합 토큰 필터(타 팀)가 컨트롤러 진입 전에 응답하므로 여기서는 다루지 않는다.
- * [설계 10] SSO·토큰 프로토타입에서는 {@code PrototypeTokenWpfUserResolver}가 토큰 없음·만료를 {@link WpfUnauthorizedException}으로
+ * SSO·토큰 프로토타입에서는 {@code PrototypeTokenWpfUserResolver}가 토큰 없음·만료를 {@link WpfUnauthorizedException}으로
  * 던지므로 그 401도 이 어드바이스가 같은 JSON으로 응답한다. 로그인 API의 검증 실패(400)도 함께 다룬다.</p>
  *
  * <table>

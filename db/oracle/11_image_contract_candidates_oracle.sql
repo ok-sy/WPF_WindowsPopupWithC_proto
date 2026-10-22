@@ -1,4 +1,4 @@
--- TODO 23 migration audit; Oracle 11g compatible. Read-only.
+-- POL-04-01 : 공통 크기 입력 — IMAGE 크기 계약 이관 점검; Oracle 11g compatible. Read-only.
 -- SQL*Plus: @11_image_contract_candidates_oracle.sql POPUP.  (or "" for current schema)
 SET PAGESIZE 200 LINESIZE 250 LONG 10000 TRIMSPOOL ON
 COLUMN schema_prefix NEW_VALUE S NOPRINT

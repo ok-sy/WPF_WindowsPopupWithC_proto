@@ -3,9 +3,12 @@ package server.web.api.popup.wpf;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * 현재 요청의 인증된 사용자 사번(POPUP.APP_USER.EMPLOYEE_NO)을 돌려주는 어댑터.
+ * POL-15-02 : 인증·버전
+ * ■ 인증된 사용자 사번 어댑터
+ * - in : 현재 요청(HttpServletRequest)
+ * - out: 사번(POPUP.APP_USER.EMPLOYEE_NO)
  *
- * <p>[추가 이유 — 기준 6] 서버 토큰 인증(웹·WPF 통합 토큰)은 다른 팀이 개발한다. WPF API(WpfPopupController)가
+ * <p>서버 토큰 인증(웹·WPF 통합 토큰)은 다른 팀이 개발한다. WPF API(WpfPopupController)가
  * 그 구현 세부(Authentication 타입, principal 필드명)에 의존하지 않도록 "사번 읽기"만 인터페이스로 분리한다.
  * 통합 토큰 필터가 완성되면 {@link SecurityContextWpfUserResolver}의 매핑만 맞추면 되고, 그 전까지 개발
  * 프로파일에서는 {@link DevHeaderWpfUserResolver}가 요청 헤더로 사번을 지정한다.

@@ -27,7 +27,11 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * [WPF 조회·결과 API — 기준 2·3·6, 설계 35] 단건 조회(전달 건 생성·재사용·만료, WPF 비노출 필드 제거)와
+ * POL-11-01 : 노출 판단 소유
+ * POL-09-02 : 조회 응답
+ * POL-09-03 : 저장 응답
+ * ■ WpfPopupService 조회·결과 처리 테스트
+ * - 단건 조회(전달 건 생성·재사용·만료, WPF 비노출 필드 제거)와
  * 결과 1건 처리의 코드 매핑·후속 후보 상태(nextStatus)를 DB 없이 검증한다.
  */
 class WpfPopupServiceTest {
@@ -54,7 +58,7 @@ class WpfPopupServiceTest {
         return new PopupResponseDto("Q1", "QUIZ", "퀴즈", OffsetDateTime.now(), OffsetDateTime.now().plusDays(1),
                 "SEQUENTIAL", 10, "FIXED", 600.0, 480.0, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, false, 20L, "FIXED", null, null, null, null, null, 10.0, questions,
-                // [설계 18 L-3] PopupContentAssembler는 content에 문항·통과 점수 등 파생 키를 넣지 않는다.
+                // POL-13-01 : 콘텐츠와 관리 상태 — PopupContentAssembler는 content에 문항·통과 점수 등 파생 키를 넣지 않는다.
                 Map.of("surveyTitle", "보안", "useBackgroundOverlay", true));
     }
 
@@ -70,6 +74,7 @@ class WpfPopupServiceTest {
         return entity;
     }
 
+    /** 비활성 사용자는 403으로 거절하고 후보 조회·전달 건 생성을 하지 않는다. */
     @Test void inactiveUserIsForbidden() {
         when(wpfMapper.countActiveUser("E9999")).thenReturn(0);
         assertThrows(WpfUserInactiveException.class, () -> service.getNextPopup("E9999"));
@@ -78,6 +83,7 @@ class WpfPopupServiceTest {
         verify(wpfMapper, never()).insertDelivery(any(), any(), any());
     }
 
+    /** 폴링 주기는 설정값과 무관하게 1800~3600초 범위로 응답한다. */
     @Test void pollingResponseAlwaysRespectsThirtyToSixtyMinutePolicy() {
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of());
         int[] configured = {-1, 0, 300, 1800, 2700, 3600, 7200};
@@ -93,8 +99,9 @@ class WpfPopupServiceTest {
         verify(wpfMapper, never()).insertDelivery(any(), any(), any());
     }
 
+    /** 첫 노출 후보에 새 전달 건을 발급하고 WPF 비노출 필드를 뺀다. */
     @Test void firstEligiblePopupGetsNewDeliveryAndHidesInternalFields() {
-        PopupEntity first = entity("Q1", "QUIZ", 20L);   // [설계 12] QUIZ만 정답 키·통과 점수 포함
+        PopupEntity first = entity("Q1", "QUIZ", 20L);   // POL-06-02 : 선택·제출 — QUIZ만 정답 키·통과 점수 포함
         PopupEntity second = entity("T2", "TEXT", null);
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(first, second));
         var question = new PopupQuestionDto(1L, "Q", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1,
@@ -115,18 +122,18 @@ class WpfPopupServiceTest {
         assertFalse(item.content().containsKey("passingScore"), "content에는 두지 않고 최상위로");
         assertEquals(10.0, item.passingScore(), "[설계 12] QUIZ는 통과 점수를 최상위로 내려줌");
         assertEquals("보안", item.content().get("surveyTitle"));
-        // [설계 31] PopupWindow 공통 UI 옵션은 content에서 빼 최상위로 내려준다(없는 값은 기본값).
+        // POL-01-01 : 공통 옵션의 위치 — PopupWindow 공통 UI 옵션은 content에서 빼 최상위로 내려준다(없는 값은 기본값).
         assertTrue(item.useBackgroundOverlay());
         assertFalse(item.content().containsKey("useBackgroundOverlay"));
         assertEquals(0.45, item.backgroundOverlayOpacity());
         assertEquals("CENTER", item.popupPosition());
         assertNull(item.headerFontSize());
-        // 완료·숨김·재노출 유예 제외 플래그로 호출됐는지 (기준 2)
+        // POL-11-01 : 노출 판단 소유 — 완료·숨김·재노출 유예 제외 플래그로 호출됐는지
         verify(popupMapper).selectAvailablePopups("E1001", true);
         verify(popupMapper, never()).selectAvailablePopups("E1001", false);
     }
 
-    /** [설계 39-4] 조회는 후보를 읽기 전에 사용자 행을 잠근다(결과 처리와 같은 잠금). */
+    /** POL-12-03 : 진행 단위 — 조회는 후보를 읽기 전에 사용자 행을 잠근다(결과 처리와 같은 잠금). */
     @Test void nextPopupLocksUserBeforeReadingCandidates() {
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of());
         service.getNextPopup("E1001");
@@ -136,6 +143,7 @@ class WpfPopupServiceTest {
         order.verify(wpfMapper).selectOpenDelivery("E1001");
     }
 
+    /** OPEN 전달 건의 팝업이 아직 대상이면 같은 deliveryId를 재사용한다. */
     @Test void openDeliveryIsReusedWhileStillEligible() {
         PopupEntity first = entity("T1", "TEXT", null);
         PopupEntity reused = entity("T2", "TEXT", null);
@@ -150,6 +158,7 @@ class WpfPopupServiceTest {
         verify(wpfMapper, never()).expireDelivery(any());
     }
 
+    /** OPEN 전달 건의 팝업이 대상이 아니면 EXPIRED로 닫고 다음 후보를 고른다. */
     @Test void openDeliveryNoLongerEligibleIsExpiredAndNextIsChosen() {
         PopupEntity next = entity("T1", "TEXT", null);
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(next));
@@ -163,6 +172,7 @@ class WpfPopupServiceTest {
         verify(wpfMapper).insertDelivery(item.deliveryId(), "E1001", "T1");
     }
 
+    /** 동시 조회로 다른 요청이 먼저 만든 OPEN 전달 건을 재사용한다. */
     @Test void concurrentQueryReusesDeliveryCreatedByOtherRequest() {
         PopupEntity first = entity("T1", "TEXT", null);
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(first));
@@ -175,6 +185,7 @@ class WpfPopupServiceTest {
         assertEquals("D-OTHER", service.getNextPopup("E1001").popup().deliveryId());
     }
 
+    /** ACCEPTED·DUPLICATE 결과는 후속 후보 유무(nextStatus)를 알려 준다. */
     @Test void savedResultReportsNextCandidate() {
         var ok = result("r-ok", "P1", WpfResultType.CLOSED);
         var dup = result("r-dup", "P1", WpfResultType.CLOSED);
@@ -193,6 +204,7 @@ class WpfPopupServiceTest {
         assertEquals(WpfResultResponse.NextStatus.EMPTY, duplicate.nextStatus(), "중복 처리 성공도 후속 후보를 알려준다");
     }
 
+    /** 후보 확인 실패는 EMPTY로 바꾸지 않고 nextStatus 생략 + WPF_NEXT_STATUS_UNKNOWN이다. */
     @Test void candidateCheckFailureIsNotReportedAsEmpty() {
         var ok = result("r-ok", "P1", WpfResultType.CLOSED);
         when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
@@ -205,6 +217,7 @@ class WpfPopupServiceTest {
         assertEquals("WPF_NEXT_STATUS_UNKNOWN", response.code());
     }
 
+    /** 업무 거절은 WPF 코드로 매핑하고 nextStatus를 싣지 않는다. */
     @Test void rejectionCodesAreMappedAndNoNextStatus() {
         var cases = Map.of(
                 "현재 사용자에게 제출 가능한 팝업이 아닙니다.", "WPF_NOT_ELIGIBLE",
@@ -224,7 +237,7 @@ class WpfPopupServiceTest {
         verify(popupMapper, never()).countAvailablePopups(anyString(), anyBoolean());
     }
 
-    /** [설계 34-19] 일시 장애는 예외 형식(원인 체인 포함)으로 RETRYABLE_ERROR, 그 밖은 INTERNAL_ERROR. 메시지로 판단하지 않는다. */
+    /** POL-09-03 : 저장 응답 — 일시 장애는 예외 형식(원인 체인 포함)으로 RETRYABLE_ERROR, 그 밖은 INTERNAL_ERROR. 메시지로 판단하지 않는다. */
     @Test void transientFailuresAreRetryableAndOthersInternal() {
         var failures = new java.util.LinkedHashMap<RuntimeException, WpfResultItemResponse.Status>();
         failures.put(new org.springframework.dao.CannotAcquireLockException("ORA-00060"), WpfResultItemResponse.Status.RETRYABLE_ERROR);
@@ -244,6 +257,7 @@ class WpfPopupServiceTest {
         }
     }
 
+    /** SURVEY 문항은 정답 키와 통과 점수를 빼고 내려준다. */
     @Test void surveyQuestionsAreStrippedOfAnswerKeyAndPassingScore() {
         PopupEntity survey = entity("S1", "SURVEY", 20L);
         when(popupMapper.selectAvailablePopups("E1001", true)).thenReturn(List.of(survey));

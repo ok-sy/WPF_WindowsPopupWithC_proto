@@ -255,7 +255,7 @@ export default function RgstPop() {
                     <TableCell>{popup.title}</TableCell>
                     <TableCell>{formatPopupDate(popup.displayStartAt)}</TableCell>
                     <TableCell>{formatPopupDate(popup.displayEndAt)}</TableCell>
-                    {/* [TODO52-1] 상시 / 요일·시간대 요약 */}
+                    {/* POL-11-03 : 시간 경계 — 상시 / 요일·시간대 요약 */}
                     <TableCell>{describeSchedule(popup.periodMode, popup.repeatDayOfWeek, popup.displayTimesText)}</TableCell>
                     <TableCell>{popup.sizeMode}</TableCell>
                     <TableCell align="center">

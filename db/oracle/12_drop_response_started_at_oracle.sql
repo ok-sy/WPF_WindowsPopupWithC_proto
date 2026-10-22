@@ -1,10 +1,11 @@
 -- =====================================================================================================
--- 12_drop_response_started_at_oracle.sql — POPUP_RESPONSE.RESPONSE_STARTED_AT 삭제 (2026-10-12, 설계 32)
+-- 12_drop_response_started_at_oracle.sql — POPUP_RESPONSE.RESPONSE_STARTED_AT 삭제 (2026-10-12)
+-- POL-13-01 : 콘텐츠와 관리 상태
 -- -----------------------------------------------------------------------------------------------------
 -- 배경: WPF가 SUBMITTED 결과의 responseStartedAt에 displayedAt을 그대로 복사해 보내 표시 시각과 중복이었다.
---       설계 32로 결과 요청·서버 저장에서 해당 값을 제거했고 이 컬럼을 읽는 곳도 없다(통계·관리자 조회 미사용).
+--       결과 계약 정리로 결과 요청·서버 저장에서 해당 값을 제거했고 이 컬럼을 읽는 곳도 없다(통계·관리자 조회 미사용).
 --       응답·처리 소요 시간은 USER_POPUP_STATUS의 표시·닫기 시각(closedAt - displayedAt)으로 계산한다.
--- 순서: 설계 32 서버 배포 후 실행. 새 서버는 이 컬럼을 쓰지 않으므로 실행 전후 모두 동작한다.
+-- 순서: responseStartedAt을 쓰지 않는 서버 배포 후 실행. 새 서버는 이 컬럼을 쓰지 않으므로 실행 전후 모두 동작한다.
 --       실행 후에는 이전 서버의 응답 저장(MERGE)이 ORA-00904로 실패한다.
 -- 실행: 팝업 테이블이 있는 계정으로 SQL*Plus 실행 (NLS_LANG=KOREAN_KOREA.AL32UTF8).
 --       - 로컬 XE(POPUP 계정 스키마)      : @12_drop_response_started_at_oracle.sql POPUP.

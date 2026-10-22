@@ -18,7 +18,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * [TODO65] 조회 행 + 파싱한 content → 기존 WPF 단건 조회 응답 {@code {pollingIntervalSeconds, popup}}.
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-01-01 : 공통 옵션의 위치
+ * POL-01-02 : 기본값의 적용
+ * ■ 샘플 단건 응답 조립기
+ * - in : 조회 행(PopupContentRow)·파싱한 content·문항 배열·전달 건 ID·폴링 주기
+ * - out: WPF 단건 조회 응답 ObjectNode · 예외: PopupSampleException(계약 위반)
+ * - 조회 행 + 파싱한 content → 기존 WPF 단건 조회 응답 {@code {pollingIntervalSeconds, popup}}.
  *
  * <p>흐름: 공통 헤더/옵션(컬럼) 매핑 → content 창 옵션 승격 → 선택값 기본값 → 유형별 필수 콘텐츠 검증.
  * "popupHeader"는 역할 이름일 뿐이며 별도 JSON 필드를 만들지 않는다. 출력 필드명·위치는 서버 WpfPopupItem과 같다.</p>
@@ -42,7 +48,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *
  * <h3>중복 값 우선순위</h3>
  * <p>제목·창 크기·나중에 보기·푸터 동작/URL은 <b>컬럼이 기준 원본</b>이다. content JSON에 같은 키가 있으면 응답에서 제거한다.
- * 창 공통 옵션(Overlay·위치·폰트)은 기존 설계 31과 같이 content에 저장된 값을 최상위로 옮기고 content에서는 뺀다.
+ * 창 공통 옵션(Overlay·위치·폰트)은 서버 WPF 응답(POL-01-01 : 공통 옵션의 위치)과 같이 content에 저장된 값을 최상위로 옮기고 content에서는 뺀다.
  * IMAGE·VIDEO 파일은 파일 컬럼이 있으면 그 URL이 content.imageUrl/videoUrl보다 우선한다.</p>
  *
  * <h3>샘플 응답은 가능한 옵션 키를 모두 싣는다</h3>
@@ -77,12 +83,19 @@ public class PopupSingleResponseAssembler {
     private final ObjectMapper objectMapper;
     private final PopupPorts.FileUrlResolver fileUrlResolver;
 
+    /** ■ 생성 - in : objectMapper(ObjectMapper) · fileUrlResolver(FileUrlResolver) - out: 조립기 인스턴스 */
     public PopupSingleResponseAssembler(ObjectMapper objectMapper, PopupPorts.FileUrlResolver fileUrlResolver) {
         this.objectMapper = objectMapper;
         this.fileUrlResolver = fileUrlResolver;
     }
 
-    /** 조회 결과 없음: 기존 계약대로 popup 키를 null로 유지한다. */
+    /**
+     * POL-09-02 : 조회 응답
+     * ■ 빈 응답 생성
+     * - in : pollingIntervalSeconds(int) 폴링 주기
+     * - out: ObjectNode {pollingIntervalSeconds, popup: null}
+     * - 조회 결과 없음: 기존 계약대로 popup 키를 null로 유지한다.
+     */
     public ObjectNode empty(int pollingIntervalSeconds) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("pollingIntervalSeconds", pollingIntervalSeconds);
@@ -90,6 +103,14 @@ public class PopupSingleResponseAssembler {
         return response;
     }
 
+    /**
+     * POL-01-01 : 공통 옵션의 위치
+     * ■ 단건 응답 조립
+     * - in : row(PopupContentRow) 조회 행 · parsedContent(ObjectNode) 파싱한 content · questions(ArrayNode) 문항
+     *        · deliveryId(String) 전달 건 ID · pollingIntervalSeconds(int) 폴링 주기
+     * - out: ObjectNode {pollingIntervalSeconds, popup} · 예외: PopupSampleException(코드·컬럼·필수 콘텐츠 오류)
+     * - 컬럼 기준 키를 content에서 빼고 공통 헤더/옵션 매핑 → 창 옵션 승격 → 필수 콘텐츠 검증 → 기본값 순서로 조립한다.
+     */
     public ObjectNode assemble(PopupContentRow row, ObjectNode parsedContent, ArrayNode questions, String deliveryId, int pollingIntervalSeconds) {
         String id = row.getContentId();
         String type = PopupCodeTable.popupType(row.getContentTypeCode(), id);
@@ -140,9 +161,10 @@ public class PopupSingleResponseAssembler {
         return response;
     }
 
+    /** POL-04-01 : 공통 크기 입력 — 창 크기 한 축을 싣는다(양수만 허용). */
     private static void putSize(ObjectNode popup, String key, BigDecimal value, String type, double fallback, String id) {
         if (value == null) {
-            // IMAGE는 축을 생략하면 원본 크기 기준(TODO58)이라 기본값을 채우지 않는다.
+            // POL-04-01 : 공통 크기 입력 — IMAGE는 축을 생략하면 원본 크기 기준이라 기본값을 채우지 않는다.
             if (!"IMAGE".equals(type)) popup.put(key, fallback);
             return;
         }
@@ -150,6 +172,7 @@ public class PopupSingleResponseAssembler {
         popup.put(key, value.doubleValue());
     }
 
+    /** POL-02-03 : 푸터 역할 — 푸터 동작·바로가기 URL을 싣는다(SURVEY·QUIZ는 SUBMIT 고정). */
     private static void putFooter(ObjectNode popup, PopupContentRow row, String type) {
         String id = row.getContentId();
         boolean questionType = "SURVEY".equals(type) || "QUIZ".equals(type);
@@ -173,6 +196,7 @@ public class PopupSingleResponseAssembler {
         }
     }
 
+    /** 절대 http/https URL인지 확인한다. */
     private static boolean isAbsoluteHttp(String url) {
         if (url == null || url.isBlank()) return false;
         try {
@@ -183,7 +207,7 @@ public class PopupSingleResponseAssembler {
         }
     }
 
-    /** 설계 31: content의 창 공통 옵션을 최상위로 옮긴다. 값이 없을 때만 기본값, 잘못된 값은 기본값 대신 오류. */
+    /** POL-01-01 : 공통 옵션의 위치 — content의 창 공통 옵션을 최상위로 옮긴다. 값이 없을 때만 기본값, 잘못된 값은 기본값 대신 오류. */
     private static void promoteWindowOptions(ObjectNode popup, ObjectNode content, String id) {
         JsonNode overlay = content.remove("useBackgroundOverlay");
         if (overlay != null && !overlay.isNull() && !overlay.isBoolean()) invalid(id, "useBackgroundOverlay는 boolean이어야 합니다.");
@@ -211,6 +235,7 @@ public class PopupSingleResponseAssembler {
         }
     }
 
+    /** IMAGE·VIDEO 파일 컬럼이 있으면 파일 URL로 content.imageUrl/videoUrl을 덮는다. */
     private void applyFile(ObjectNode content, PopupContentRow row, String type) {
         String key = "IMAGE".equals(type) ? "imageUrl" : "VIDEO".equals(type) ? "videoUrl" : null;
         if (key == null) return;
@@ -218,6 +243,7 @@ public class PopupSingleResponseAssembler {
         if (url != null) content.put(key, url);
     }
 
+    /** 유형별 필수 콘텐츠(본문·이미지 URL·영상 URL·문항)가 없으면 거부한다. */
     private static void validateRequiredContent(String type, ObjectNode content, JsonNode questions, String id) {
         boolean ok = switch (type) {
             case "TEXT" -> !content.path("plainText").asText("").isBlank() || (content.path("textBlocks").isArray() && !content.path("textBlocks").isEmpty());
@@ -267,6 +293,7 @@ public class PopupSingleResponseAssembler {
         }
     }
 
+    /** VIDEO 재생 옵션 기본값 표. */
     private static Map<String, Object> videoDefaults() {
         return ordered("videoTitle", "", "videoUrl", "", "description", "", "showDescription", true, "showControls", true,
                 "allowFullScreen", true, "allowPlaybackRateChange", true, "allowSeek", true, "autoPlay", false, "isLoop", false,
@@ -292,6 +319,7 @@ public class PopupSingleResponseAssembler {
         });
     }
 
+    /** content 값 오류로 거부한다. */
     private static void invalid(String id, String message) {
         throw new PopupSampleException(PopupSampleException.Reason.INVALID_CONTENT_JSON, id, message);
     }

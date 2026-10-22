@@ -18,7 +18,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * [TODO55-4] SURVEY·QUIZ 서식 필드(콘텐츠 제목·설명, 문항 제목·설명, 선택지 문구)의 검증·일반 문자열 파생·저장·재조회.
+ * POL-06-01 : 문항·서식
+ * ■ SURVEY·QUIZ 서식 필드 테스트
+ * - SURVEY·QUIZ 서식 필드(콘텐츠 제목·설명, 문항 제목·설명, 선택지 문구)의 검증·일반 문자열 파생·저장·재조회.
  */
 class PopupSurveyRichTextTest {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -70,6 +72,7 @@ class PopupSurveyRichTextTest {
                 null, null, null, null, null, null, questions, content);
     }
 
+    /** 문항 제목·선택지 문구의 일반 문자열은 서식에서 파생한다. */
     @Test void questionAndOptionPlainTextIsDerivedFromBlocks() {
         PopupQuestionDto normalized = PopupSurveyRichText.normalizeQuestion(
                 question("client title", blocks("만족", true, "도", false), blocks("매우 ", false, "그렇다", true)));
@@ -81,6 +84,7 @@ class PopupSurveyRichTextTest {
         assertEquals("B", normalized.options().get(1).text());
     }
 
+    /** 빈 배열·빈 문단만 있는 서식은 서식 없음으로 보고 요청 문자열을 쓴다. */
     @Test void emptyOrBlankBlocksMeanNoFormatting() {
         for (List<Object> none : java.util.Arrays.asList(null, List.of(), emptyParagraph())) {
             PopupQuestionDto normalized = PopupSurveyRichText.normalizeQuestion(question("원래 제목", none, none));
@@ -91,7 +95,7 @@ class PopupSurveyRichTextTest {
         }
     }
 
-    /** [TODO63] 공용 검증을 쓰는 문항·선택지 서식도 6단계 이상 들여쓰기를 그대로 유지한다. */
+    /** POL-03-02 : 문단·글자 서식 — 공용 검증을 쓰는 문항·선택지 서식도 6단계 이상 들여쓰기를 그대로 유지한다. */
     @SuppressWarnings("unchecked")
     @Test void questionAndOptionIndentAboveFiveIsKept() {
         Map<String, Object> title = new LinkedHashMap<>((Map<String, Object>) blocks("제목", false).get(0));
@@ -107,6 +111,7 @@ class PopupSurveyRichTextTest {
                 () -> PopupSurveyRichText.normalizeQuestion(question("t", null, List.of(negative))));
     }
 
+    /** 잘못되거나 너무 긴 서식은 필드 이름을 담은 메시지로 거부한다. */
     @Test void invalidOrTooLongBlocksAreRejectedWithFieldName() {
         List<Object> badColor = List.of(Map.of("alignment", "LEFT",
                 "runs", List.of(Map.of("text", "A", "color", "red"))));
@@ -118,6 +123,7 @@ class PopupSurveyRichTextTest {
         assertTrue(length.getMessage().contains("1000자"), length.getMessage());
     }
 
+    /** 콘텐츠 제목·설명은 서식에서 파생하고 SURVEY·QUIZ 외 유형의 콘텐츠 서식은 거부한다. */
     @Test void contentTitleAndDescriptionAreDerivedAndOtherTypesAreRejected() {
         Map<String, Object> content = new LinkedHashMap<>();
         content.put("surveyTitle", "old");
@@ -132,6 +138,7 @@ class PopupSurveyRichTextTest {
                 popup("IMAGE", List.of(), Map.of("descriptionBlocks", blocks("x", false)))));
     }
 
+    /** 저장 시 파생 문자열과 서식 JSON을 함께 저장한다. */
     @Test void saveStoresDerivedTextAndBlocksJson() throws Exception {
         Map<String, Object> content = new LinkedHashMap<>(Map.of("surveyTitle", "old"));
         content.put("surveyTitleBlocks", blocks("교육 ", false, "만족도", true));
@@ -148,6 +155,7 @@ class PopupSurveyRichTextTest {
                 && c.contentOptionsJson().contains("surveyTitleBlocks")));
     }
 
+    /** 저장된 서식을 그대로 돌려주고 서식이 같으면 문항 템플릿을 재사용한다. */
     @Test void storedBlocksAreReturnedAndUnchangedFormattingReusesTemplate() throws Exception {
         List<Object> titleBlocks = blocks("문항", true);
         List<Object> optionBlocks = blocks("매우 ", false, "그렇다", true);
@@ -184,6 +192,7 @@ class PopupSurveyRichTextTest {
         verify(mapper).insertQuestionTemplate(anyString(), anyString(), anyString());
     }
 
+    /** 손상된 저장 서식은 문항 ID를 담은 예외로 실패한다. */
     @Test void corruptStoredBlocksFailWithId() {
         when(mapper.selectQuestionsByTemplateIds(List.of(10L))).thenReturn(List.of(
                 new PopupQuestionEntity(7L, 10L, "TEXT", "문항", null, "N", "N", null, 1, null, null,
@@ -193,6 +202,7 @@ class PopupSurveyRichTextTest {
         assertTrue(error.getMessage().contains("questionId=7"), error.getMessage());
     }
 
+    /** 요청 JSON의 서식 배열을 DTO로 역직렬화한다. */
     @Test void requestJsonDeserializesBlocks() throws Exception {
         PopupQuestionDto parsed = JSON.readValue("""
                 {"questionId":1,"title":"t","questionType":"SINGLE_CHOICE","isRequired":true,"isScored":false,

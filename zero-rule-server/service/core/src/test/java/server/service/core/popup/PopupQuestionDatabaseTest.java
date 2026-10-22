@@ -20,9 +20,16 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+/**
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 문항·서식·노출 일정 Oracle 실DB 저장·재조회 테스트(롤백 전용)
+ * - POPUP_TEST_DB_PASSWORD가 없으면 건너뛴다. 관리자 저장·채점·후보 SQL을 실DB에서 확인한다.
+ */
 class PopupQuestionDatabaseTest {
     private static final com.fasterxml.jackson.core.type.TypeReference<List<Object>> RICH_TEXT = new com.fasterxml.jackson.core.type.TypeReference<>() { };
 
+    /** 관리자 편집 저장·재조회·채점과 과거 답안 보존을 실DB로 확인한다. */
     @Test void editorRoundTripGradingAndHistoricalAnswers() throws Exception {
         try (var session = openSession()) {
             try {
@@ -55,7 +62,7 @@ class PopupQuestionDatabaseTest {
                 assertEquals("CONTAINS", saved.questions().get(1).answerMatchMode());
                 assertTrue(saved.questions().get(2).options().get(0).isCorrect());
                 assertEquals(saved.questionTemplateId(), service.saveAdminPopup(saved, true, targets, "SYSTEM").questionTemplateId());
-                // [설계 18 L-0] 구 WPF-01 getPopups 삭제. 노출 대상 포함은 매퍼로, 정답 제거는 비QUIZ WPF 경로의 withoutAnswerKey로 확인한다.
+                // POL-09-01 : 3 API 순서 — 구 WPF-01 getPopups 삭제. 노출 대상 포함은 매퍼로, 정답 제거는 비QUIZ WPF 경로의 withoutAnswerKey로 확인한다.
                 assertTrue(mapper.selectAvailablePopups("E1001", false).stream().anyMatch(p -> popupId.equals(p.popupId())));
                 String publicJson = json.writeValueAsString(WpfPopupItem.withoutAnswerKey(saved.questions()));
                 assertFalse(publicJson.contains("correctAnswer"));
@@ -86,7 +93,7 @@ class PopupQuestionDatabaseTest {
     }
 
     /**
-     * [TODO55-4] 문항·선택지 서식(TITLE_BLOCKS·TEXT_BLOCKS CLOB)과 콘텐츠 제목 서식(CONTENT_OPTIONS)을 실DB에 저장·재조회한다.
+     * POL-06-01 : 문항·서식 — 문항·선택지 서식(TITLE_BLOCKS·TEXT_BLOCKS CLOB)과 콘텐츠 제목 서식(CONTENT_OPTIONS)을 실DB에 저장·재조회한다.
      * 17_question_rich_text_oracle.sql 적용이 필요하다. 롤백 전용.
      */
     @Test void surveyRichTextRoundTrip() throws Exception {
@@ -136,7 +143,9 @@ class PopupQuestionDatabaseTest {
     }
 
     /**
-     * [TODO63·52-5] 6단계 이상 들여쓰기(TEXT 본문·문항 서식)와 QUIZ 복수 선택 정답 2개를 실DB에 저장·재조회한다.
+     * POL-03-02 : 문단·글자 서식
+     * POL-06-02 : 선택·제출
+     * 6단계 이상 들여쓰기(TEXT 본문·문항 서식)와 QUIZ 복수 선택 정답 2개를 실DB에 저장·재조회한다.
      * WPF는 정답 수(isCorrect=true)로 선택 한도를 계산하므로 QUIZ 정답 키가 재조회 후에도 그대로인지 확인한다. 롤백 전용.
      */
     @Test void deepIndentAndMultipleChoiceAnswerCountRoundTrip() throws Exception {
@@ -190,7 +199,7 @@ class PopupQuestionDatabaseTest {
     }
 
     /**
-     * [TODO52-1] 노출 일정(요일·시간대, 자정 초과 포함)을 실DB에 저장·재조회하고, WPF 후보 SQL이 KST 현재 시각 기준으로
+     * POL-11-03 : 시간 경계 — 노출 일정(요일·시간대, 자정 초과 포함)을 실DB에 저장·재조회하고, WPF 후보 SQL이 KST 현재 시각 기준으로
      * 같은 규칙(Java 기준 판단과 비교)으로 거르는지 확인한다. 시간대 경계는 현재 시각에서 30분 이상 떨어지게 잡는다.
      * 18_popup_display_time_oracle.sql 적용이 필요하다. 롤백 전용.
      */
@@ -270,7 +279,7 @@ class PopupQuestionDatabaseTest {
         }
     }
 
-    /** [TODO52-1] 서버 SQL과 같은 규칙의 Java 기준 판단. 자정 초과 시간대의 자정 이후 부분은 어제 요일로 본다. */
+    /** POL-11-03 : 시간 경계 — 서버 SQL과 같은 규칙의 Java 기준 판단. 자정 초과 시간대의 자정 이후 부분은 어제 요일로 본다. */
     private static boolean expectedVisible(int minute, int today, int yesterday, String days, List<String> window) {
         java.util.function.IntPredicate dayOk = d -> days == null || java.util.Arrays.asList(days.split(",")).contains(String.valueOf(d));
         if (window.isEmpty()) return dayOk.test(today);
@@ -280,10 +289,11 @@ class PopupQuestionDatabaseTest {
         return (minute >= start && dayOk.test(today)) || (minute < end && dayOk.test(yesterday));
     }
 
+    /** 롤백 전용 Oracle 테스트 세션을 연다(환경변수로 접속 정보 지정). */
     private org.apache.ibatis.session.SqlSession openSession() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");
-        // [Oracle 전환 — 기준 5] 롤백 전용 실DB 테스트. 대상 DB를 PostgreSQL popup_db에서 Oracle POPUP 스키마로 바꾼다.
+        // POL-13-01 : 콘텐츠와 관리 상태 — 롤백 전용 실DB 테스트. 대상 DB를 PostgreSQL popup_db에서 Oracle POPUP 스키마로 바꾼다.
         // 샘플(db/oracle/02_popup_sample_oracle.sql)의 SAMPLE-SURVEY-004 / E1001을 사용한다.
         var dataSource = new UnpooledDataSource("oracle.jdbc.OracleDriver",
                 System.getenv().getOrDefault("POPUP_TEST_DB_URL", "jdbc:oracle:thin:@//localhost:1521/XEPDB1"),

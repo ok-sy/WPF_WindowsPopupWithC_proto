@@ -5,7 +5,8 @@ import type { PopupQuestion } from '@local/domain';
 import PopupQuestionEditor, { validatePopupQuestions } from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor';
 import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
 
-/* [TODO55-3] 실제 문항 편집기(CKEditor 커스텀 빌드 여러 개)·설문 미리보기를 브라우저에서 띄우는 검증 진입점. */
+/* POL-06-01 : 문항·서식
+ * ■ 실제 문항 편집기(CKEditor 커스텀 빌드 여러 개)·설문 미리보기를 브라우저에서 띄우는 검증 진입점. */
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, sans-serif' } });
 const w = window as any;

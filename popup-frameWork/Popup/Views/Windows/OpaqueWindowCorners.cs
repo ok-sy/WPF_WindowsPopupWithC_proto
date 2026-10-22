@@ -6,7 +6,11 @@ using System.Windows.Media;
 namespace Popup.Views.Windows
 {
     /*
-     * [설계 25] 불투명 창(VIDEO / VIDEO+QUIZ)의 둥근 모서리.
+     * POL-02-01 : 창 구조
+     * ■ 불투명 창 둥근 모서리
+     * - in : window(Window) 대상 불투명 팝업 창 · radius(double) 모서리 반지름(DIP) · topFill/bottomFill(Brush?) 위·아래 모서리 채움색
+     * - out: 본 창 Region 변경 + 모서리 Win32 레이어드 창 4개(Dispose 또는 본 창 Closed에서 해제)
+     * - 불투명 창(VIDEO / VIDEO+QUIZ)의 둥근 모서리.
      *
      * DWM rounded corner는 Horizon(VMware) 환경에서 동작하지 않고,
      * CreateRoundRectRgn + SetWindowRgn은 Region이 픽셀 단위 on/off라 곡선에 계단이 생긴다.
@@ -17,13 +21,13 @@ namespace Popup.Views.Windows
      * 2. 모서리 창 4개: 잘라낸 자리에 per-pixel alpha 레이어드 창을 띄워
      *    안티앨리어싱된 quarter-circle을 그린다.
      *
-     * [설계 26] 모서리 창은 WPF HwndSource가 아니라 순수 Win32 레이어드 창이다.
+     * 모서리 창은 WPF HwndSource가 아니라 순수 Win32 레이어드 창이다.
      * HwndSource 모서리는 다른 배율 모니터를 오가면 WPF의 레이어드 렌더 상태가 창 DPI와 어긋나
      * 6px 칸에 4px 모서리가 그려지는 등 깨졌다(150%→100% 실모니터 재현, 이전 숨김·재생성 방식도 동일).
      * 지금은 본 창 DPI로 정한 물리 픽셀 비트맵을 직접 만들어 UpdateLayeredWindow로 위치·크기·내용을
      * 한 번에 적용한다. 모서리 창은 WM_DPICHANGED를 DefWindowProc에 맡기므로 OS·WPF가 크기를 바꾸지 않는다.
      *
-     * 모서리 비트맵은 Radius 크기(100% DPI 기준 6px)의 정적 이미지라 물리 크기가 바뀔 때만 다시 만든다.
+     * 모서리 비트맵은 Radius 크기(100% DPI에서 6px)의 정적 이미지라 물리 크기가 바뀔 때만 다시 만든다.
      * 영상 프레임은 여전히 불투명 본 창에서만 갱신되므로 AllowsTransparency=false의 성능 이점은 유지된다.
      * 팝업 콘텐츠는 바깥 여백(28/24) 안쪽에 있어 모서리 아래는 항상 Header/본문 단색이므로,
      * 모서리 창이 그 색을 그대로 그려도 본 창과 이음새가 생기지 않는다.
@@ -65,7 +69,11 @@ namespace Popup.Views.Windows
             _bottomFill = bottomFill;
         }
 
-        // SourceInitialized 이후(본 창 HWND 생성 후)에 호출한다.
+        /*
+         * ■ 모서리 연결
+         * - in : 없음(SourceInitialized 이후, 본 창 HWND 생성 후 호출)
+         * - out: 없음 · WndProc 훅·표시 변경 처리 등록 후 현재 DPI로 모서리를 만든다. HwndSource가 없으면 아무것도 하지 않는다.
+         */
         public void Attach()
         {
             _source = PresentationSource.FromVisual(_window) as HwndSource;
@@ -379,6 +387,7 @@ namespace Popup.Views.Windows
             _regionHeight = height;
         }
 
+        /* 훅·이벤트를 해제하고 모서리 창·비트맵을 정리한다. 여러 번 불러도 한 번만 처리한다. */
         public void Dispose()
         {
             if (_disposed)

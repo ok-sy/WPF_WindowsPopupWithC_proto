@@ -5,7 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO62 공용 서버 RichText 검증을 JDK17만으로 재현한다(Gradle·DB 불필요).
+ * POL-03-01 : 저장·표시 경계
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 공용 서버 RichText(취소선·문단 서식) 검증
+ * - in : 없음
+ * - out: 콘솔 PASS 검사 건수 · 실패 시 AssertionError
+ * - 공용 서버 RichText 검증을 JDK17만으로 재현한다(Gradle·DB 불필요).
  * 저장소 루트:
  * javac -encoding UTF-8 -d .offline-verify/rich62-server
  *   zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java scripts/RichText62ServerTest.java

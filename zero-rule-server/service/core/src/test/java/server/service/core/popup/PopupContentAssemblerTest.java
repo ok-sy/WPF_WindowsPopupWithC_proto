@@ -11,13 +11,17 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * [Oracle 전환 — 기준 5] content 조립 규칙 확인. [설계 18 L-3] 정규 컬럼이 CONTENT_OPTIONS 사본보다 우선하고,
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-03-01 : 저장·표시 경계
+ * ■ PopupContentAssembler content 조립 규칙 테스트
+ * - Oracle 전환으로 Java에서 하는 content 조립 규칙을 확인한다. 정규 컬럼이 CONTENT_OPTIONS 사본보다 우선하고,
  * 완료 비율·통과 점수·문항 같은 파생 키는 content에 싣지 않는다.
  */
 class PopupContentAssemblerTest {
 
     private final PopupContentAssembler assembler = new PopupContentAssembler(new ObjectMapper());
 
+    /** POL-04-01 : 공통 크기 입력 — 구 IMAGE 저장 형태를 중복 크기 없이 현재 계약으로 변환한다. */
     @Test void image23ConvertsLegacyStorageWithoutDuplicateDimensions() {
         var content = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
                 "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"imageWidth\":600,\"imageHeight\":400,\"descriptionPosition\":\"RIGHT\",\"imageAreaRatio\":0.75}", null, null));
@@ -50,6 +54,7 @@ class PopupContentAssemblerTest {
                 completionRatio, passingScore);
     }
 
+    /** 동영상+퀴즈는 저장·조립을 거쳐도 영상·푸터 옵션을 유지한다. */
     @Test void videoQuizKeepsVideoAndFooterOptionsThroughStorage() {
         var content = assembler.assemble(entity("QUIZ", "교육", "설명", null, "https://example.com/lesson.mp4",
                 "{\"videoEnabled\":true,\"footerAction\":\"LINK_AND_CLOSE\",\"footerLinkUrl\":\"https://example.com/\"}",
@@ -65,6 +70,7 @@ class PopupContentAssemblerTest {
         assertEquals("https://example.com/", stored.get("footerLinkUrl"));
     }
 
+    /** TEXT는 plainText 컬럼을 쓰고 옵션 JSON의 오래된 사본보다 컬럼 값이 우선한다. */
     @Test void textUsesPlainTextAndColumnWinsOverStaleOptionCopy() {
         Map<String, Object> content = assembler.assemble(entity("TEXT", null, null, "본문", null,
                 "{\"showPlainText\":true,\"description\":\"오래된 사본\",\"plainText\":\"오래된 본문\"}", null, null));
@@ -76,8 +82,9 @@ class PopupContentAssemblerTest {
         assertFalse(content.containsKey("imageUrl"));
     }
 
+    /** POL-03-01 : 저장·표시 경계 — 통합 전 TEXT의 제목·설명은 본문 앞 문단이 된다. */
     @Test void legacyTextTitleAndDescriptionBecomeLeadingParagraphs() {
-        // [설계 37] 통합 전 행: 서식 본문 없이 plainText만 있는 경우
+        // 통합 전 행: 서식 본문 없이 plainText만 있는 경우
         Map<String, Object> plain = assembler.assemble(entity("TEXT", "안내", "설명\r\n둘째 줄", "본문1\n\n본문2", null,
                 "{\"showContentHeader\":true}", null, null));
         assertEquals(List.of(
@@ -106,7 +113,7 @@ class PopupContentAssemblerTest {
         assertEquals("본문", hidden.get("plainText"));
     }
 
-    /** [설계 39-3] 헤더 표시·본문 숨김이던 행은 "헤더만 보이기": 보이던 제목·설명만 문단으로, 숨긴 본문은 응답에서 제외. */
+    /** POL-03-01 : 저장·표시 경계 — 헤더 표시·본문 숨김이던 행은 "헤더만 보이기": 보이던 제목·설명만 문단으로, 숨긴 본문은 응답에서 제외. */
     @Test void legacyVisibleHeaderWithHiddenBodyShowsHeaderOnly() {
         for (String options : List.of(
                 "{\"showContentHeader\":true,\"showPlainText\":false}",
@@ -152,11 +159,13 @@ class PopupContentAssemblerTest {
         return Map.of("alignment", "LEFT", "runs", List.of(run));
     }
 
+    /** TEXT 저장 시 showContentHeader 표시 여부는 저장하지 않는다. */
     @Test void textSaveDropsContentHeaderToggle() {
         assertFalse(PopupService.storedOptions("TEXT", Map.of("showContentHeader", true, "showHighlight", true))
                 .containsKey("showContentHeader"));
     }
 
+    /** 옵션 JSON에 남은 정규 컬럼 사본·서버 파생 키는 조회 content에 싣지 않는다. */
     @Test void storedCopiesAndDerivedKeysAreIgnored() {
         Map<String, Object> content = assembler.assemble(entity("VIDEO", "영상", null, null, "http://x/v.mp4",
                 "{\"completionRatio\":0.5,\"allowCloseBeforeCompletion\":true,\"passingScore\":1,"
@@ -169,6 +178,7 @@ class PopupContentAssemblerTest {
         assertEquals(true, content.get("autoPlay"));
     }
 
+    /** 저장 시 CONTENT_OPTIONS에는 확장 옵션만 남긴다. */
     @Test void saveKeepsOnlyExtensionOptions() {
         Map<String, Object> options = PopupContentAssembler.withoutStoredCopies(Map.of(
                 "contentTitle", "t", "description", "d", "plainText", "p", "linkUrl", "l",
@@ -176,6 +186,7 @@ class PopupContentAssemblerTest {
         assertEquals(Map.of("showHighlight", true), options);
     }
 
+    /** IMAGE·VIDEO는 제목·미디어 URL·설명을 정규 컬럼에서 채운다. */
     @Test void imageAndVideoMapMediaColumns() {
         Map<String, Object> image = assembler.assemble(entity("IMAGE", "이미지", null, null,
                 "https://x/img.png", "{\"linkUrl\":\"https://x/link\"}", null, null));
@@ -192,6 +203,7 @@ class PopupContentAssemblerTest {
         assertEquals(true, video.get("autoPlay"));
     }
 
+    /** SURVEY·QUIZ는 surveyTitle을 쓰고 파생 키(문항·통과 점수)를 content에 싣지 않는다. */
     @Test void surveyAndQuizShareSurveyTitleWithoutDerivedKeys() {
         for (String type : new String[]{"SURVEY", "QUIZ"}) {
             Map<String, Object> content = assembler.assemble(entity(type, "설문", "설명", null, null,
@@ -203,12 +215,14 @@ class PopupContentAssemblerTest {
         }
     }
 
+    /** 손상된 CONTENT_OPTIONS는 팝업 ID를 담은 예외로 실패한다. */
     @Test void corruptedOptionsFailWithPopupId() {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 assembler.assemble(entity("TEXT", "a", null, null, null, "{not json", null, null)));
         assertTrue(ex.getMessage().contains("P1"));
     }
 
+    /** 알 수 없는 유형은 확장 옵션만 돌려준다. */
     @Test void unknownTypeReturnsOnlyOptions() {
         Map<String, Object> content = assembler.assemble(entity("OTHER", "a", "b", null, null,
                 "{\"k\":1}", null, null));

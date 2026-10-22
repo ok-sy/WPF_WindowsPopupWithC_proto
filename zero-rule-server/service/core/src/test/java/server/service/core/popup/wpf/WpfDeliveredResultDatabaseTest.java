@@ -38,7 +38,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * [설계 47-3·47-4] 게시중단 전에 전달한 팝업의 결과 수용을 Oracle 실DB(db/oracle/01·02 샘플 적용)로 검증하는 롤백 전용 테스트.
+ * POL-10-02 : 검증·원자성
+ * POL-11-03 : 시간 경계
+ * ■ 게시중단 뒤 전달 건 결과 수용 Oracle 실DB 테스트(롤백 전용)
+ * - 게시중단 전에 전달한 팝업의 결과 수용을 Oracle 실DB(db/oracle/01·02 샘플 적용)로 검증하는 롤백 전용 테스트.
  * POPUP_TEST_DB_PASSWORD가 있을 때만 실행된다.
  *
  * <p>게시중단 방식(활성 해제·기간 종료·대상 변경) × 결과 유형(CLOSED·HIDDEN·SUBMITTED(SURVEY·QUIZ)·VIDEO_WATCHED)마다
@@ -88,6 +91,7 @@ class WpfDeliveredResultDatabaseTest {
         }).toList();
     }
 
+    /** 게시중단으로 EXPIRED가 된 전달 건의 결과가 Oracle에서 ACCEPTED로 저장된다. */
     @Test void resultsOfDeliveriesExpiredByUnpublishAreAcceptedOnOracle() throws Exception {
         String password = System.getenv("POPUP_TEST_DB_PASSWORD");
         assumeTrue(password != null, "Set POPUP_TEST_DB_PASSWORD to run the rollback-only database test.");

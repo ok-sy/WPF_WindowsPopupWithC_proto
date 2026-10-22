@@ -18,7 +18,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * [설계 47-4] 이미 전달한 건의 제출·시청 결과 수용 경로(submitDeliveredResponse·saveDeliveredVideoProgress)를 DB 없이 검증한다.
+ * POL-10-02 : 검증·원자성
+ * ■ 전달 건 결과 수용 경로 테스트
+ * - 이미 전달한 건의 제출·시청 결과 수용 경로(submitDeliveredResponse·saveDeliveredVideoProgress)를 DB 없이 검증한다.
  *
  * <p>게시중단(활성 해제·기간 종료·대상 변경) 뒤에는 신규 조회의 노출 후보(selectAvailablePopups)에서 팝업이 빠지고,
  * 활성 해제·기간 종료는 게시 조건을 확인하는 문맥 조회(requirePublished=true)도 비게 된다. mock은 이 상태를 그대로 재현하고
@@ -47,6 +49,7 @@ class PopupDeliveredResultTest {
         when(mapper.upsertVideoProgress(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(1);
     }
 
+    /** 게시중단 뒤에도 전달 건 제출은 노출 자격 재검사 없이 저장한다. */
     @Test void deliveredSubmissionIsAcceptedAfterUnpublishWithoutEligibilityCheck() {
         for (String type : List.of("SURVEY", "QUIZ")) {
             setup();   // 유형마다 새 mock
@@ -89,6 +92,7 @@ class PopupDeliveredResultTest {
                 .getMessage().contains("설문형 팝업만"));
     }
 
+    /** 게시중단 뒤에도 전달 건 영상 시청 결과를 저장한다. */
     @Test void deliveredVideoProgressIsAcceptedAfterUnpublish() {
         when(mapper.selectVideoPopupContext("E1001", "V1", false))
                 .thenReturn(new VideoPopupContext("V1", "VIDEO", new BigDecimal("0.9")));
@@ -103,6 +107,7 @@ class PopupDeliveredResultTest {
                 new BigDecimal("100"), new BigDecimal("100"), new BigDecimal("100"), new BigDecimal("95")));
     }
 
+    /** 팝업 행이 삭제됐으면 전달 건 영상 시청 결과를 거절한다. */
     @Test void deliveredVideoProgressRejectsDeletedPopup() {
         assertTrue(assertThrows(IllegalArgumentException.class, () -> service.saveDeliveredVideoProgress("V1", "E1001",
                 new BigDecimal("100"), new BigDecimal("100"), new BigDecimal("100"), new BigDecimal("95")))

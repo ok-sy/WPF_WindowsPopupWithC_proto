@@ -1,3 +1,7 @@
+// POL-04-01 : 공통 크기 입력
+// POL-04-03 : 비율·상한
+// POL-01-03 : 최소 크기
+// ■ IMAGE 관리자 미리보기 크기 모드·콘텐츠 영역·창 최소 300 보정 검증.
 // Windows headless Edge checks; run from repo root after web dependency installation.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/image23');
@@ -34,7 +38,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   for (const locked of [true, false]) {
     await run(`window.scenario('FIT_TO_IMAGE', ${locked}, 900, 300)`); await pause(250);
     const sizes = await run(`(()=>{const i=document.querySelector('img'), r=i.getBoundingClientRect(), p=i.closest('a')?.parentElement ?? i.parentElement, c=p.getBoundingClientRect();return {w:r.width,h:r.height,clip:c.width,fit:getComputedStyle(i).objectFit,overflow:getComputedStyle(p).overflow};})()`);
-    // [TODO58] 두 축을 지정하면 비율 고정이어도 그 크기가 콘텐츠 영역이다(고정은 contain으로 영역 안에 맞춤).
+    // POL-04-03 : 비율·상한 — 두 축을 지정하면 비율 고정이어도 그 크기가 콘텐츠 영역이다(고정은 contain으로 영역 안에 맞춤).
     check(sizes.w === 900 && sizes.h === 300, 'Content area size survives maximum window (TODO58)');
     check(sizes.clip < sizes.w && sizes.overflow === 'hidden', 'Image viewport clips oversized bitmap');
     check(sizes.fit === (locked ? 'contain' : 'fill'), 'Unlocked image is stretched to explicit dimensions');
@@ -68,7 +72,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run("window.scenario('FIT_TO_IMAGE', false, 900, 300, '긴 설명 '.repeat(300), 100, 400, true)"); await pause(150);
   check(await run("(()=>{const img=document.querySelector('img');const text=Array.from(document.querySelectorAll('p')).find(e=>e.textContent.startsWith('긴 설명'));let p=text;while(p && getComputedStyle(p).overflowY!=='auto')p=p.parentElement;return !!p && p.scrollHeight>p.clientHeight && p.getBoundingClientRect().top>img.parentElement.getBoundingClientRect().top && Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='닫기');})()"), 'Bottom description scrolls while footer stays available');
   // WPF PopupWindow 크롬: 가로 28+28+24+24+0=104, 세로 24+24+24+24+0=96, HeaderRow 40, FooterRow 80, 이미지 테두리 1+1.
-  // [TODO68] 크롬 합 298은 최종 창 최소 300 미만이라 300으로 올라간다(WPF RequestedMinimumHeight와 같다).
+  // POL-01-03 : 최소 크기 — 크롬 합 298은 최종 창 최소 300 미만이라 300으로 올라간다(WPF RequestedMinimumHeight와 같다).
   check(await run('JSON.stringify(window.chromeLayout(false,false).window)') === JSON.stringify({width: 506, height: 300}), '[TODO68] FIT_TO_IMAGE without header/footer is raised to the 300 window floor');
   check(await run('JSON.stringify(window.chromeLayout(true,false).window)') === JSON.stringify({width: 506, height: 338}), 'FIT_TO_IMAGE header adds WPF HeaderRow 40');
   check(await run('JSON.stringify(window.chromeLayout(true,true).window)') === JSON.stringify({width: 506, height: 418}), 'FIT_TO_IMAGE header/footer add 40+80');

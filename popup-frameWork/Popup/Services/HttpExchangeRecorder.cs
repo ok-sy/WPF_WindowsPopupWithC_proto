@@ -12,7 +12,11 @@ using System.Threading.Tasks;
 namespace Popup.Services
 {
     /// <summary>
-    /// [설계 51-3] 실제로 주고받은 HTTP 요청·응답 1건. 값은 원문 그대로 두고, 화면 표시 때 <see cref="ToDisplayJson"/>가 마스킹한다.
+    /// POL-14-02 : Demo 모드
+    /// ■ HTTP 교환 기록 1건
+    /// - in : 요청 시각·메서드·URL·헤더·본문, 응답 상태·본문, 소요 시간, 통신 오류
+    /// - out: Summary(baseUrl) 한 줄 요약 · ToDisplayJson(revealSecrets) 마스킹된 표시 JSON
+    /// - 실제로 주고받은 HTTP 요청·응답 1건. 값은 원문 그대로 두고, 화면 표시 때 <see cref="ToDisplayJson"/>가 마스킹한다.
     /// StatusCode가 null이면 응답을 받지 못한 경우(연결 실패·시간 초과·취소)이며 Error에 원인이 있다.
     /// </summary>
     public sealed record HttpExchangeRecord(
@@ -74,7 +78,7 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [설계 51-3] 응답 본문 종류. 빈 응답·잘못된 JSON을 팝업 생성 오류와 구분해 화면에 보이기 위한 값이다.
+        /// 응답 본문 종류(NO_RESPONSE/EMPTY/JSON/INVALID_JSON). 빈 응답·잘못된 JSON을 팝업 생성 오류와 구분해 화면에 보이기 위한 값이다.
         /// </summary>
         public static string BodyKind(string? body, int? statusCode)
         {
@@ -135,7 +139,11 @@ namespace Popup.Services
     }
 
     /*
-     * [설계 51-3·51-4] API Demo의 HTTP 관찰 지점. PopupApiService·WpfLoginClient가 받는 HttpClient 안쪽에 끼워
+     * POL-14-02 : Demo 모드
+     * ■ HTTP 관찰 핸들러
+     * - in : innerHandler(HttpMessageHandler) 실제 전송 핸들러
+     * - out: Recorded 이벤트(HttpExchangeRecord) · 응답/예외는 호출자에게 그대로 전달
+     * - API Demo의 HTTP 관찰 지점. PopupApiService·WpfLoginClient가 받는 HttpClient 안쪽에 끼워
      * 기존 요청 경로(헤더 부착·401 재시도·426 처리·DTO 역직렬화)를 바꾸지 않고 실제로 전송한 요청과 받은 응답을 그대로 기록한다.
      * 응답 본문은 버퍼에 읽어 둔 뒤 호출자가 다시 읽을 수 있게 한다. 기록은 메모리 이벤트로만 넘기고 파일에 쓰지 않는다(토큰 평문 보호).
      */

@@ -9,7 +9,10 @@ using System.Windows.Controls;
 namespace Popup
 {
     /*
-     * [Demo SSO·로그인 테스트] appsettings PopupApi.DemoSsoLoginTest=true일 때 Demo 화면에서
+     * POL-14-02 : Demo 모드
+     * POL-15-02 : 인증·버전
+     * ■ Demo SSO·로그인 테스트
+     * appsettings PopupApi.DemoSsoLoginTest=true일 때 Demo 화면에서
      * SSO 호출과 서버 로그인 API 호출을 각각 따로 확인한다.
      *   - SSO 테스트  : Auth.SsoUrl GET(Windows 통합 인증) → MAIN_USER_ID·MAIN_USER_CLASSI_CODE를 입력칸에 채운다.
      *   - 로그인 테스트: 입력칸의 사번·구분 코드로 BaseUrl+Auth.LoginPath에 POST → 토큰 발급 결과만 보여 준다.
@@ -19,6 +22,11 @@ namespace Popup
     {
         private PopupClientSettings? _authTestSettings;
 
+        /*
+         * ■ 인증 테스트 패널 활성화
+         * - in : settings(PopupClientSettings) SsoUrl·BaseUrl·LoginPath를 담은 설정
+         * - out: 없음 · 예외: ArgumentNullException(settings가 null)
+         */
         public void EnableAuthTest(PopupClientSettings settings)
         {
             _authTestSettings = settings ?? throw new ArgumentNullException(nameof(settings));

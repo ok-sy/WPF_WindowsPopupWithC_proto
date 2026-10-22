@@ -15,7 +15,11 @@ import server.service.core.popup.sample.PopupSampleException;
 import server.web.api.popup.wpf.WpfUnauthorizedException;
 
 /**
- * [TODO65] 샘플 컨트롤러 한정 오류 응답. 기존 WPF 오류 계약 {@code {code, message, timestamp}}·코드를 재사용한다.
+ * POL-14-03 : 서버 인계 예제
+ * ■ 단건 조회 샘플 컨트롤러 한정 오류 응답
+ * - in : PopupSingleQuerySampleController에서 던진 예외
+ * - out: WpfErrorResponse {@code {code, message, timestamp}}
+ * - 기존 WPF 오류 계약·코드를 재사용한다.
  *
  * <table>
  *   <tr><th>상황</th><th>HTTP</th><th>code</th></tr>

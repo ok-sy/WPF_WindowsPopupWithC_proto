@@ -31,7 +31,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * [WPF API — 기준 3·6] 컨트롤러·예외 어드바이스·개발용 사용자 식별기의 HTTP 계약을 MockMvc(standalone)로 검증한다.
+ * POL-09-01 : 3 API 순서
+ * POL-15-02 : 인증·버전
+ * POL-16-02 : 재현 가능한 검증
+ * ■ WPF 조회·결과 API HTTP 계약 테스트
+ * - 컨트롤러·예외 어드바이스·개발용 사용자 식별기의 HTTP 계약을 MockMvc(standalone)로 검증한다.
  * ObjectMapper는 운영 설정(BasicConfig)과 같이 WRITE_DATES_AS_TIMESTAMPS를 켜서, WPF DTO의 @JsonFormat이
  * 전역 설정을 이기고 ISO 8601 문자열로 직렬화되는지 함께 확인한다.
  */
@@ -56,7 +60,7 @@ class WpfPopupControllerTest {
         return server.domain.popup.wpf.WpfPopupItem.from(dto, grading).withDeliveryId("D-1");
     }
 
-    /** [설계 35] 조회는 POST 단건 응답 {pollingIntervalSeconds, popup}. 대상이 없으면 popup 키를 null로 유지한다. */
+    /** POL-09-02 : 조회 응답 — 조회는 POST 단건 응답 {pollingIntervalSeconds, popup}. 대상이 없으면 popup 키를 null로 유지한다. */
     private org.springframework.test.web.servlet.ResultActions next(server.domain.popup.wpf.WpfPopupItem popup) throws Exception {
         when(service.getNextPopup("E1001")).thenReturn(new WpfNextPopupResponse(1800, popup));
         return mvc.perform(post("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001")
@@ -101,7 +105,7 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.questions").isArray());
     }
 
-    /** [TODO58] IMAGE 크기는 최상위 popup.width/height 한 쌍이다(FIT_TO_IMAGE는 이미지 콘텐츠 영역). content에는 없다. */
+    /** POL-04-01 : 공통 크기 입력 — IMAGE 크기는 최상위 popup.width/height 한 쌍이다(FIT_TO_IMAGE는 이미지 콘텐츠 영역). content에는 없다. */
     @Test void image58HttpResponseUsesTopLevelDimensionPair() throws Exception {
         next(item("""
                 {"popupId":"IMAGE-23","popupType":"IMAGE","title":"IMAGE","sizeMode":"FIXED","width":900,"height":600,
@@ -117,7 +121,11 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.content.imageWidth").doesNotExist());
     }
 
-    /** [설계 29] 노출 판정 값은 WPF 응답에 없고, Footer 버튼 표시는 showFooterButton 하나로 나간다. */
+    /**
+     * POL-11-03 : 시간 경계
+     * POL-02-03 : 푸터 역할
+     * 서버 노출 판정 값(게시 기간·반복 설정)은 WPF 응답에 없고, Footer 버튼 표시는 showFooterButton 하나로 나간다.
+     */
     @Test void popupOmitsServerSideScheduleFieldsAndUsesShowFooterButton() throws Exception {
         next(item("""
                 {"popupId":"TEXT-29","popupType":"TEXT","title":"TEXT","sizeMode":"FIXED","width":500,"height":300,
@@ -136,7 +144,7 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.repeatDayOfMonth").doesNotExist());
     }
 
-    /** [TODO52-2] showLater는 최상위 boolean으로 나가며 요청 값이 없으면 false다. showDoNotShowAgain과 섞이지 않는다. */
+    /** POL-02-03 : 푸터 역할 — showLater는 최상위 boolean으로 나가며 요청 값이 없으면 false다. showDoNotShowAgain과 섞이지 않는다. */
     @Test void popupCarriesShowLaterSeparatelyFromDoNotShowAgain() throws Exception {
         String base = """
                 {"popupId":"TEXT-52","popupType":"TEXT","title":"TEXT","sizeMode":"FIXED","width":500,"height":300,
@@ -150,7 +158,7 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.showLater").value(false));
     }
 
-    /** [설계 30] Footer 동작은 content에서 빼 최상위로 내려주고, SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다. */
+    /** POL-02-03 : 푸터 역할 — Footer 동작은 content에서 빼 최상위로 내려주고, SURVEY/QUIZ는 저장 값과 무관하게 SUBMIT이다. */
     @Test void footerActionIsPromotedToTopLevel() throws Exception {
         String base = """
                 {"popupId":"%s","popupType":"%s","title":"t","sizeMode":"FIXED","width":500,"height":300,
@@ -173,7 +181,11 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.content.footerAction").doesNotExist());
     }
 
-    /** [설계 31] PopupWindow 공통 UI 옵션은 최상위로 승격하고 content에서 뺀다. 범위 밖·미지원 값은 기본값으로 보정한다. */
+    /**
+     * POL-01-01 : 공통 옵션의 위치
+     * POL-01-02 : 기본값의 적용
+     * PopupWindow 공통 UI 옵션은 최상위로 승격하고 content에서 뺀다. 범위 밖·미지원 값은 기본값으로 보정한다.
+     */
     @Test void windowOptionsArePromotedToTopLevel() throws Exception {
         next(item("""
                 {"popupId":"TEXT-31","popupType":"TEXT","title":"t","sizeMode":"FIXED","width":500,"height":300,
@@ -204,7 +216,7 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.headerFontSize").doesNotExist());
     }
 
-    /** [설계 34·35] 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)이며 서비스로 넘기지 않는다. */
+    /** POL-09-03 : 저장 응답 — 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)이며 서비스로 넘기지 않는다. */
     @Test void invalidResultIsRejectedWithoutProcessing() throws Exception {
         for (String body : List.of(
                 "{\"resultId\":\"bad-type\",\"deliveryId\":\"D-1\",\"popupId\":\"P1\",\"resultType\":\"OPENED\"}",
@@ -224,7 +236,7 @@ class WpfPopupControllerTest {
         verify(service, never()).processResult(any(), any());
     }
 
-    /** [TODO52-2] 나중에 보기 결과 LATER는 형식 검사를 통과해 서비스에 LATER로 전달된다(대소문자 무시). */
+    /** POL-10-03 : 완료·숨김·연기 — 나중에 보기 결과 LATER는 형식 검사를 통과해 서비스에 LATER로 전달된다(대소문자 무시). */
     @Test void laterResultIsAcceptedAsLaterCommand() throws Exception {
         when(service.processResult(eq("E1001"), any())).thenAnswer(inv -> {
             WpfResultCommand command = inv.getArgument(1);
@@ -239,7 +251,11 @@ class WpfPopupControllerTest {
         verify(service).processResult(eq("E1001"), any());
     }
 
-    /** [설계 34 — 검토 보완] 검증 통과 후 변환 예외는 영구 오류(REJECTED)가 아니라 INTERNAL_ERROR다. */
+    /**
+     * POL-09-03 : 저장 응답
+     * POL-12-02 : 현행 임시 복구
+     * 검증 통과 후 변환 예외는 영구 오류(REJECTED)가 아니라 INTERNAL_ERROR다(WPF가 보관·재시도).
+     */
     @Test void unexpectedConversionFailureIsInternalErrorNotRejected() {
         var controller = new WpfPopupController(service, new DevHeaderWpfUserResolver());
         WpfResultRequest broken = mock(WpfResultRequest.class);
@@ -277,7 +293,7 @@ class WpfPopupControllerTest {
             assertEquals(OffsetDateTime.parse("2026-09-19T09:00:05+09:00").toInstant(), command.displayedAt().toInstant());
             assertEquals(2, command.answers().size());
             assertEquals(List.of(10L), command.answers().get(0).optionIds());
-            // [설계 12] WPF 로컬 채점값이 커맨드까지 전달된다
+            // POL-06-02 : 선택·제출 — WPF 로컬 채점값(score·passed)이 커맨드까지 전달된다
             assertEquals(80.0, command.score());
             assertEquals(Boolean.TRUE, command.passed());
             return WpfResultResponse.of(WpfResultItemResponse.accepted(command), WpfResultResponse.NextStatus.AVAILABLE);

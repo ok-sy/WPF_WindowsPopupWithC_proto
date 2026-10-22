@@ -18,9 +18,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * POPUP 스키마의 팝업 표시 데이터를 조회·저장한다. SQL은 mappers/popup/PopupMapper.xml(Oracle)에 있다.
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-11-01 : 노출 판단 소유
+ * ■ 팝업 조회·저장 매퍼
+ * - in : 사번·팝업 ID·관리자 저장 모델·문항/선택지·결과 값(메서드별 @Param)
+ * - out: 팝업·문항·선택지·대상·시간대 조회 결과, 저장 건수·발급 키
+ * - POPUP 스키마의 팝업 표시 데이터를 조회·저장한다. SQL은 mappers/popup/PopupMapper.xml(Oracle)에 있다.
  *
- * <p>[Oracle 전환 — 기준 5] PostgreSQL 매퍼는 {@code INSERT ... RETURNING id}를 {@code <select>}로 실행해
+ * <p>Oracle 전환: PostgreSQL 매퍼는 {@code INSERT ... RETURNING id}를 {@code <select>}로 실행해
  * 생성된 대리키를 바로 반환했다. Oracle에는 그런 구문이 없으므로 시퀀스 {@code SEQ_<TABLE>.NEXTVAL}을
  * {@code <selectKey order="BEFORE">}로 먼저 뽑아 파라미터 Map에 채우는 방식을 쓴다. MyBatis는 여러 @Param
  * 인자로는 selectKey 결과를 호출자에게 돌려줄 수 없어, 키가 필요한 5개 구문은 Map 파라미터를 받는
@@ -49,7 +54,7 @@ public interface PopupMapper {
 
     /**
      * PopupService 호출용. 시퀀스로 발급한 QUESTION_ID를 반환한다.
-     * [TODO55] 제목·설명 서식은 PopupService가 JSON 배열 문자열로 바꿔 넘긴다(서식 없음 = null).
+     * POL-06-01 : 문항·서식 — 제목·설명 서식은 PopupService가 JSON 배열 문자열로 바꿔 넘긴다(서식 없음 = null).
      */
     default Long insertAdminQuestion(Long templateId,
             server.domain.popup.PopupQuestionDto question,
@@ -67,7 +72,7 @@ public interface PopupMapper {
         return (Long) params.get("questionId");
     }
 
-    /** [TODO55] 선택지 표시 문구 서식은 JSON 배열 문자열(textBlocksJson, 서식 없음 = null)로 받는다. */
+    /** POL-06-01 : 문항·서식 — 선택지 표시 문구 서식은 JSON 배열 문자열(textBlocksJson, 서식 없음 = null)로 받는다. */
     int insertAdminOption(@Param("questionId") Long questionId,
             @Param("option") server.domain.popup.PopupOptionDto option,
             @Param("textBlocksJson") String textBlocksJson,
@@ -90,7 +95,7 @@ public interface PopupMapper {
 
     int deleteAdminPopupTargets(@Param("popupId") String popupId);
 
-    /** [TODO52-1] 노출 시간대(HH:mm, 저장 순서). */
+    /** POL-11-03 : 시간 경계 — 노출 시간대(HH:mm, 저장 순서). */
     List<server.domain.popup.PopupDisplayTimeDto> selectDisplayTimes(@Param("popupId") String popupId);
 
     int deleteDisplayTimes(@Param("popupId") String popupId);
@@ -137,14 +142,14 @@ public interface PopupMapper {
      * 사용자에게 노출 가능한 팝업. 활성·기간·대상 조건·숨김을 SQL에서 판정한다.
      *
      * @param excludeCompleted true면 USER_POPUP_STATUS.COMPLETED_YN='Y'인 팝업도 제외한다.
-     *                         [기준 2] 신규 WPF API는 완료 판단까지 서버가 끝내므로 true,
+     *                         POL-11-01 : 노출 판단 소유 — 신규 WPF API는 완료 판단까지 서버가 끝내므로 true,
      *                         false는 답안 제출(submitResponse) 재검증처럼 완료 팝업도 허용해야 하는 경우에 쓴다.
      */
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId,
             @Param("excludeCompleted") boolean excludeCompleted);
 
     /**
-     * [설계 35] WPF 후속 후보 유무(0 또는 1). selectAvailablePopups(userId, true)와 같은 조건(완료·숨김·재노출 유예 제외)이며
+     * POL-09-03 : 저장 응답 — WPF 후속 후보 유무(0 또는 1). selectAvailablePopups(userId, true)와 같은 조건(완료·숨김·재노출 유예 제외)이며
      * 콘텐츠는 읽지 않는다.
      */
     int countAvailablePopups(@Param("userId") String userId, @Param("excludeCompleted") boolean excludeCompleted);
@@ -168,7 +173,7 @@ public interface PopupMapper {
     /**
      * 설문·퀴즈 채점 설정. 활성 사용자는 항상 확인한다.
      *
-     * @param requirePublished true면 팝업 활성·게시 기간도 확인한다. [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은
+     * @param requirePublished true면 팝업 활성·게시 기간도 확인한다. POL-10-02 : 검증·원자성 — 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은
      *                         false로 호출해 게시중단 뒤에도 popupId로 읽는다(팝업 행이 없으면 null).
      */
     PopupSubmissionContext selectSubmissionContext(
@@ -248,12 +253,12 @@ public interface PopupMapper {
 
     /**
      * WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자이고 팝업 행이 있으면 1 이상.
-     * [설계 47-4] 게시중단 전에 표시된 전달 건의 결과를 받기 위해 팝업 활성 여부는 보지 않는다.
+     * POL-10-02 : 검증·원자성 — 게시중단 전에 표시된 전달 건의 결과를 받기 위해 팝업 활성 여부는 보지 않는다.
      */
     int countActiveUserAndPopup(
             @Param("userId") String userId,
             @Param("popupId") String popupId);
 
-    // [설계 18 L-0] 구 WPF-04(/events)·WPF-06(/statuses) 전용 upsertPopupEvent·selectPopupStatuses 삭제.
+    // 구 개별 API(/events·/statuses) 전용 구문은 두지 않는다.
     // 표시·닫기 기록은 WpfPopupMapper의 합본 구문, 완료 제외는 selectAvailablePopups(userId, true)가 대체한다.
 }

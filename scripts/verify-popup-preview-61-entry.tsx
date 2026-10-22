@@ -6,7 +6,8 @@ import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonCo
 import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { previewDialogSize } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
-// [TODO61] 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
+// POL-08-01 : 공통 렌더러
+// ■ 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, sans-serif'}});
 const deepFreeze = <T,>(value: T): T => {
@@ -43,7 +44,7 @@ function Host({popup, hint}: {popup: any; hint: boolean}) {
   </ThemeProvider>);
 };
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);
-// [TODO68] 샘플 popup 값만 바꿔 실제 크기 모달 크기를 계산한다(렌더링 없음).
+// POL-01-03 : 최소 크기 — 샘플 popup 값만 바꿔 실제 크기 모달 크기를 계산한다(렌더링 없음).
 (window as any).dialogSize = (overrides: Record<string, unknown>, available: Size) => previewDialogSize(samplePopup('TEXT', overrides), null, available);
 (window as any).fitLayout = (natural: Size, workArea: Size) => fitToImageLayout((window as any).currentPopup, natural, workArea);
 (window as any).renderHost('TEXT');

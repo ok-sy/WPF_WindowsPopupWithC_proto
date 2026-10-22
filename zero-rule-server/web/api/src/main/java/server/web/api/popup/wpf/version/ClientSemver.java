@@ -4,9 +4,12 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * WPF 클라이언트 버전 문자열({@code major.minor.patch})의 숫자 비교.
+ * POL-15-02 : 인증·버전
+ * ■ WPF 클라이언트 버전 문자열({@code major.minor.patch})의 숫자 비교
+ * - in : parse(raw) 버전 문자열
+ * - out: ClientSemver 자리별 정수 · 해석 불가면 Optional.empty()
  *
- * <p>[추가 이유 — 설계 13 §6] 문자열 비교는 {@code "1.10.0" < "1.9.0"}처럼 잘못된 결과를 내므로
+ * <p>문자열 비교는 {@code "1.10.0" < "1.9.0"}처럼 잘못된 결과를 내므로
  * 자리별 정수로 비교한다. 자리 수가 다르면 부족한 자리는 0으로 본다({@code 1.3 == 1.3.0}).
  * {@code 1.4.2+abc12} 같은 빌드 메타데이터(+ 이후)와 {@code -beta} 같은 프리릴리스 접미어는 잘라내고 비교한다.</p>
  */
@@ -53,6 +56,7 @@ public record ClientSemver(int[] parts) implements Comparable<ClientSemver> {
         return 0;
     }
 
+    /** 이 버전이 minimum 이상이면 true. */
     public boolean isAtLeast(ClientSemver minimum) {
         return compareTo(minimum) >= 0;
     }

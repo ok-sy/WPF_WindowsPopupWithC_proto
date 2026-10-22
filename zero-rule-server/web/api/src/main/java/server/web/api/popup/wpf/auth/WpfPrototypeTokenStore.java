@@ -21,9 +21,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 프로토타입 WPF 토큰의 서버 메모리 저장소.
+ * POL-15-02 : 인증·버전
+ * ■ 프로토타입 WPF 토큰의 서버 메모리 저장소
+ * - in : WpfAuthPrototypeProps(token-ttl-minutes, 기본 10분) · Clock
+ * - out: issue()로 발급한 Entry · find()로 유효 Entry 조회
  *
- * <p>[추가 이유 — 설계 10 §6.2] WPF가 {@code 401 → 재로그인 → 원 요청 재전송}을 검증하려면 서버가 "발급한 토큰의
+ * <p>WPF가 {@code 401 → 재로그인 → 원 요청 재전송}을 검증하려면 서버가 "발급한 토큰의
  * 존재 여부"와 "만료 시각"만은 실제로 검사해야 한다. 그 최소 상태를 DB 없이 JVM 메모리에 둔다.
  * 서버 재시작 시 모두 사라지며(설계상 허용), 운영 토큰(타 팀 통합 토큰)과는 무관하다.</p>
  *
@@ -103,10 +106,12 @@ public class WpfPrototypeTokenStore {
         return Optional.of(entry);
     }
 
+    /** 현재 저장된 토큰 수(만료 정리 전 항목 포함). */
     public int size() {
         return tokens.size();
     }
 
+    /** 발급 토큰 유효기간. */
     public Duration ttl() {
         return ttl;
     }

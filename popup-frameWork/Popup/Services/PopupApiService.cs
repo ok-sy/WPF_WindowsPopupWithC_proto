@@ -13,7 +13,12 @@ using System.Threading.Tasks;
 namespace Popup.Services
 {
     /*
-     * Java Spring Boot 팝업 API와 통신하는 서비스다.
+     * POL-09-01 : 3 API 순서
+     * POL-15-02 : 인증·버전
+     * ■ 팝업 API 클라이언트
+     * - in : baseUrl(string) 계약 BaseUrl(/p 포함) · authHeaderProvider(IAuthHeaderProvider?) · devUserId(string?) 개발용 사번 · httpClient(HttpClient?)
+     * - out: GetNextPopupAsync → WpfNextPopupResponseDto · PostResultAsync → WpfResultResponseDto · 예외: WpfClientVersionException(426), HttpRequestException(비성공)
+     * - Java Spring Boot 팝업 API와 통신하는 서비스다.
      *
      * 이 클래스는 다음 역할만 담당한다.
      *
@@ -24,13 +29,9 @@ namespace Popup.Services
      * PopupWindow를 만들거나 화면에 표시하는 역할은
      * PopupService와 PopupManager가 담당한다.
      *
-     * [설계 18 L-0 — C-2·C-3 삭제] WPF Client API 계약 v3.0이 WPF가 쓰는 API를
-     * 로그인·조회·결과 수신 3개로 통일했다(설계 35 단건 순차, docs/interfaces/POPUP_INTERFACE_SPEC.md).
-     * 그래서 호출부가 없던 구 동작별 API 메서드(GetAvailablePopupsAsync, HidePopupAsync,
-     * SubmitResponseAsync, SaveVideoProgressAsync, RecordPopupEventAsync, GetPopupStatusesAsync —
-     * /api/popups?userId= 계열)와 그 전용 헬퍼(PostAsync, EnsureSuccessAsync, BuildPopupUrl,
-     * ValidatePopupAndUser), "구 서버 호환용" 안내 주석을 삭제했다. 남은 공개 메서드는
-     * GetNextPopupAsync·PostResultAsync 두 개이며(설계 35 단건 순차) 로그인 API는 SsoAuthHeaderProvider가 호출한다.
+     * WPF Client API 계약은 WPF가 쓰는 API를 로그인·단건 조회·결과 수신 3개로 둔다
+     * (docs/interfaces/POPUP_INTERFACE_SPEC.md). 구 동작별 API(/api/popups?userId= 계열)는 두지 않는다.
+     * 공개 메서드는 GetNextPopupAsync·PostResultAsync 두 개이며 로그인 API는 SsoAuthHeaderProvider가 호출한다.
      */
     public class PopupApiService : IPopupGateway
     {
@@ -90,7 +91,7 @@ namespace Popup.Services
  * https://zero-rule.company.com/zero-rule-server/p
  */
         /*
-         * [추가 — 기준 6] Authorization 헤더 값을 공급하는 확장 지점이다.
+         * POL-15-02 : 인증·버전 — Authorization 헤더 값을 공급하는 확장 지점이다.
          * 통합 토큰(타 팀)·사내 SSO 규격이 확정되면 구현체만 교체한다. 이 클래스는 토큰 획득 방법을 모른다.
          */
         private readonly IAuthHeaderProvider _authHeaderProvider;
@@ -177,8 +178,8 @@ namespace Popup.Services
                 };
 
             /*
-             * WPF API(계약서 v3.x)의 날짜는 ISO 8601(+오프셋) 문자열이다.
-             * [설계 18 L-5 — C-22] 서버 교체기의 epoch 초 숫자 허용은 삭제했다.
+             * POL-09-01 : 3 API 순서
+             * WPF API(계약서 v3.x)의 날짜는 ISO 8601(+오프셋) 문자열이다. epoch 초 숫자는 받지 않는다.
              */
             _jsonOptions.Converters.Add(
                 new IsoDateTimeOffsetJsonConverter());
@@ -186,7 +187,8 @@ namespace Popup.Services
 
         /*
          * =====================================================================
-         * [WPF API — 기준 2·3·4·6] /p/api/wpf/**
+         * POL-09-01 : 3 API 순서
+         * [WPF API] /p/api/wpf/**
          *
          * 아래 두 메서드가 WPF 클라이언트가 호출하는 팝업 API의 전부다(로그인 API는 SsoAuthHeaderProvider).
          * 사용자 ID를 보내지 않는다. 서버가 인증 헤더(IAuthHeaderProvider가 준 값)로 사용자를 식별한다.
@@ -194,7 +196,9 @@ namespace Popup.Services
          */
 
         /// <summary>
-        /// [설계 35] 서버가 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)과 정렬을 끝낸 팝업 최대 1건을 조회한다.
+        /// POL-09-02 : 조회 응답
+        /// POL-11-01 : 노출 판단 소유
+        /// ■ 단건 조회 — 서버가 노출 판단(활성·기간·대상·숨김·완료·재노출 유예)과 정렬을 끝낸 팝업 최대 1건을 조회한다.
         /// 서버가 전달 건(deliveryId)을 만들거나 재사용하므로 POST이며 본문은 {}다.
         /// 공통 옵션·content·문항·선택지가 한 응답에 들어 있어 추가 호출이 없다. 대상이 없으면 Popup=null(정상).
         /// </summary>
@@ -203,7 +207,8 @@ namespace Popup.Services
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", new { });
 
         /// <summary>
-        /// [설계 51-2·51-4] API Demo 전용. 입력한 JSON 객체를 단건 조회 요청 본문으로 그대로 보낸다(기본은 {}).
+        /// POL-14-02 : Demo 모드
+        /// ■ API Demo 단건 조회 — 입력한 JSON 객체를 단건 조회 요청 본문으로 그대로 보낸다(기본은 {}).
         /// 인증 헤더·401 재시도·426·응답 역직렬화는 위 기본 조회와 같은 경로를 쓴다.
         /// </summary>
         public Task<WpfNextPopupResponseDto> GetNextPopupAsync(JsonElement requestBody)
@@ -214,11 +219,13 @@ namespace Popup.Services
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", requestBody);
         }
 
-        /// <summary>[설계 51] 이 인스턴스가 요청하는 서버 기본 주소(끝 슬래시 제거). API Demo 로그의 경로 표시에 쓴다.</summary>
+        /// <summary>이 인스턴스가 요청하는 서버 기본 주소(끝 슬래시 제거). API Demo 로그의 경로 표시에 쓴다.</summary>
         public string BaseUrl => _baseUrl;
 
         /// <summary>
-        /// [설계 35] 팝업 처리 결과(닫기·숨김·제출·영상 시청) 1건을 전송한다. PopupResultQueue가 순서대로 호출한다.
+        /// POL-09-03 : 저장 응답
+        /// POL-10-01 : 전달과 제출 식별
+        /// ■ 결과 1건 전송 — 팝업 처리 결과(닫기·숨김·제출·영상 시청) 1건을 전송한다. PopupResultQueue가 순서대로 호출한다.
         /// HTTP 성공만으로 저장 성공을 판단하지 않고 응답 status를 보며, 저장 성공이면 nextStatus로 다음 조회 여부를 정한다.
         /// </summary>
         public Task<WpfResultResponseDto> PostResultAsync(WpfResultItemDto item)
@@ -229,12 +236,12 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [기준 6] 공통 전송 경로. 인증 헤더 부착과 401 재시도를 한 곳에서 처리한다.
+        /// POL-15-02 : 인증·버전 — 공통 전송 경로. 인증 헤더 부착과 401 재시도를 한 곳에서 처리한다.
         ///  1. IAuthHeaderProvider.GetAuthorizationHeaderAsync() 값이 있으면 Authorization 헤더로 붙인다.
         ///  2. 개발용 사번(_devUserId)이 설정되어 있으면 X-Dev-User-Id 헤더를 붙인다.
         ///  3. 401이면 OnUnauthorizedAsync(실패한 헤더)로 토큰 갱신 기회를 준 뒤 같은 method/url/body로 1회만 재시도한다.
-        ///     [설계 10 §5.6] body 객체(예: WpfResultItemDto)를 그대로 다시 직렬화하므로 resultId·deliveryId가 유지된다.
-        ///     실패한 헤더 값을 넘기는 이유: 동시 401에서 구현체가 "이미 갱신된 토큰인지" 비교해 재로그인을 1회로 줄인다(T5).
+        ///     body 객체(예: WpfResultItemDto)를 그대로 다시 직렬화하므로 resultId·deliveryId가 유지된다.
+        ///     실패한 헤더 값을 넘기는 이유: 동시 401에서 구현체가 "이미 갱신된 토큰인지" 비교해 재로그인을 1회로 줄인다.
         /// 응답 본문이 WPF 오류 JSON({code,message})이면 메시지에 코드를 포함해 예외를 만든다.
         /// </summary>
         private async Task<TResponse> SendWithAuthAsync<TResponse>(
@@ -266,7 +273,8 @@ namespace Popup.Services
             }
 
             /*
-             * [설계 13 §2·§4] 모든 WPF → 서버 요청에 실행 버전을 붙인다. 서버 인터셉터가 최소 지원 버전과 비교해
+             * POL-15-02 : 인증·버전
+             * 모든 WPF → 서버 요청에 실행 버전을 붙인다. 서버 인터셉터가 최소 지원 버전과 비교해
              * 미달이면 426으로 차단한다(Authorization 확인과 별개). 화면 코드는 이 헤더를 모른다.
              */
             request.Headers.TryAddWithoutValidation(ClientVersion.HeaderName, ClientVersion.Value);
@@ -284,7 +292,8 @@ namespace Popup.Services
             using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
 
             /*
-             * [설계 13 §8] 426은 401 재로그인 경로에 넣지 않는다. 재시도 없이 전용 예외로 올려
+             * POL-15-02 : 인증·버전
+             * 426은 401 재로그인 경로에 넣지 않는다. 재시도 없이 전용 예외로 올려
              * 호출자(MainWindow·PopupResultQueue)가 업데이트 안내·전송 중단(pending 보존)을 하게 한다.
              */
             if (response.StatusCode == HttpStatusCode.UpgradeRequired)

@@ -6,10 +6,12 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * [TODO70] 연계 백엔드 설정({@code popup.sample.relay.*}, 기본 비활성 {@code enabled=false}).
- *
- * <p>실제 URL·경로·인증 헤더는 확정 전이라 예시값이다. 비밀값({@code apiKey})은 소스에 고정하지 않고
- * 환경 변수 {@code RELAY_BACKEND_API_KEY} 등으로 주입한다.</p>
+ * POL-14-03 : 서버 인계 예제
+ * ■ 중계 샘플 연계 백엔드 설정({@code popup.sample.relay.*}, 기본 비활성 {@code enabled=false})
+ * - in : 아래 @param 설정값
+ * - out: 기본값 보정된 설정(path /api/wpf/popups, 연결 3초, 응답 5초, forward-headers Authorization·X-Client-Version, responseShape WPF)
+ * - 실제 URL·경로·인증 헤더는 확정 전이라 예시값이다. 비밀값({@code apiKey})은 소스에 고정하지 않고
+ *   환경 변수 {@code POPUP_SAMPLE_RELAY_API_KEY} 등으로 주입한다(RelaySampleConfig 설정 예시). baseUrl은 필수다.
  *
  * @param baseUrl        백엔드 기준 URL. 예: {@code http://127.0.0.1:18090}(mock). [교체 지점] 실제 개발/검증계 주소
  * @param path           조회 경로. 예: {@code /api/wpf/popups}. [교체 지점] 실제 경로(쿼리 포함 가능)

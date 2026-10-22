@@ -1,4 +1,7 @@
-// [TODO61] InlinePopupPreview·PopupPreviewDialog를 등록 화면 없이 최소 호스트에서 headless Edge로 확인한다.
+// POL-08-01 : 공통 렌더러
+// POL-08-03 : Dialog 호환
+// POL-01-03 : 최소 크기
+// ■ InlinePopupPreview·PopupPreviewDialog를 등록 화면 없이 최소 호스트에서 headless Edge로 확인한다.
 // Windows headless Edge checks; run from repo root after web dependency installation.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/preview61');
@@ -61,7 +64,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   let rect = await paper();
   check(rect.width === 560 && rect.height === 420 && Math.abs(rect.left - 220) < 1 && Math.abs(rect.top - 240) < 1, 'FIXED dialog is 560x420 at the center: ' + JSON.stringify(rect));
   check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity');
-  // [TODO67] slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
+  // POL-08-03 : Dialog 호환 — slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
   const paperStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return {margin:s.margin,overflow:s.overflow,maxWidth:s.maxWidth,maxHeight:s.maxHeight,radius:s.borderRadius};})()");
   check(paperStyle.margin === '24px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '952px' && paperStyle.maxHeight === '852px' && paperStyle.radius === '4px',
     '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
@@ -126,7 +129,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await escape();
   check(await run("document.querySelectorAll('[data-testid=aspect-video-area]').length") === 1, 'Closing the dialog unmounts its video area');
   await unchanged('VIDEO+QUIZ');
-  // [TODO68] 실제 크기 모달도 WPF와 같은 300 x 300 하한: 299/300/301 경계, 기존 최소 100, 최대 200 모순, RATIO, 작은 화면.
+  // POL-01-03 : 최소 크기 — 실제 크기 모달도 WPF와 같은 300 x 300 하한: 299/300/301 경계, 기존 최소 100, 최대 200 모순, RATIO, 작은 화면.
   const size = async (o, a = {width: 1600, height: 1000}) => run(`JSON.stringify(window.dialogSize(${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
   for (const axis of [299, 300, 301]) {
     const expected = Math.max(300, axis);

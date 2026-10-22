@@ -10,10 +10,11 @@ using Forms = System.Windows.Forms;
 namespace Popup
 {
     /*
-     * WPF 프로그램 전체의 시작과 종료를 관리한다.
-     *
-     * MainWindow를 직접 시작 화면으로 사용하지 않고,
-     * Windows 트레이 아이콘을 프로그램의 기본 진입점으로 사용한다.
+     * ■ WPF 앱 진입점(시작·트레이·종료)
+     * - in : 실행 인자(-Demo / -Api / --show-main / --restarted)
+     * - out: 없음(단일 실행 잠금·트레이 아이콘·MainWindow 또는 DemoWindow 표시)
+     * - WPF 프로그램 전체의 시작과 종료를 관리한다.
+     *   MainWindow를 직접 시작 화면으로 사용하지 않고, Windows 트레이 아이콘을 프로그램의 기본 진입점으로 사용한다.
      */
     public partial class App : Application
     {
@@ -44,7 +45,9 @@ namespace Popup
         private bool _isExiting;
 
         /// <summary>
-        /// [설계 34-23·44] 앱 종료 중인지. 트레이 종료·426 안내 종료(ExitAgent)와 Windows 로그오프·종료(OnSessionEnding)에서 true가 된다.
+        /// POL-02-02 : 종료 제어
+        /// POL-12-01 : 종결과 보관
+        /// 앱 종료 중인지. 트레이 종료·426 안내 종료(ExitAgent)와 Windows 로그오프·종료(OnSessionEnding)에서 true가 된다.
         /// 이때는 팝업 닫기를 취소하지 않고(영상 완료 전 제한·Overlay 키보드 닫기 차단 미적용) 결과 저장 실패도 메모리에 남긴다.
         /// </summary>
         public bool IsExiting => _isExiting;
@@ -129,7 +132,7 @@ namespace Popup
              */
             if (_mainWindow.IsDemoMode)
             {
-                // [설계 51] -Demo -Api면 API Demo 설정을 넘긴다(null이면 인메모리 Demo).
+                // POL-14-02 : Demo 모드 — -Demo -Api면 API Demo 설정을 넘긴다(null이면 인메모리 Demo).
                 _demoWindow = new DemoWindow(_mainWindow.ApiDemoSettings);
                 if (_mainWindow.DemoAuthTestSettings is { } authTestSettings)
                 {
@@ -146,7 +149,8 @@ namespace Popup
                 MainWindow = _mainWindow;
                 _mainWindow.Show();
                 /*
-                 * [설계 10 — 로그인 테스트] 실행 인자 --show-main 이면 관리 화면을 숨기지 않고 띄운 채 시작한다.
+                 * POL-15-02 : 인증·버전
+                 * [로그인 테스트] 실행 인자 --show-main 이면 관리 화면을 숨기지 않고 띄운 채 시작한다.
                  * "SSO 로그인 테스트"·"팝업 다시 조회" 버튼을 트레이 메뉴 없이 바로 누를 수 있어 SSO/로그인 확인에 쓴다.
                  * 인자가 없으면 기존과 같이 한 번 표시 후 트레이로 숨긴다.
                  */
@@ -263,12 +267,12 @@ namespace Popup
             if (_demoWindow != null)
             {
                 /*
-                 * [2026-09-23-03] 작업 표시줄 표시를 함께 되돌린다.
+                 * POL-14-02 : Demo 모드 — 작업 표시줄 표시를 함께 되돌린다.
                  *
                  * DemoWindow_Closing이 창을 숨기면서 ShowInTaskbar를 false로 두기 때문에,
                  * 여기서 복구하지 않으면 X로 닫았다 다시 연 Demo Mode 창은
                  * 화면에는 보이지만 작업 표시줄에 버튼이 없는 상태가 된다.
-                 * 아래 API 모드 분기에는 같은 복구가 이미 들어 있었다.
+                 * 아래 API 모드 분기에도 같은 복구가 있다.
                  */
                 _demoWindow.ShowInTaskbar =
                     true;
@@ -387,7 +391,12 @@ namespace Popup
             ExitAgent();
         }
 
-        // 트레이 종료와 426 안내 닫기가 같은 정상 종료 경로를 사용한다.
+        /*
+         * POL-15-02 : 인증·버전
+         * ■ 앱 정상 종료
+         * - in : 없음 · out: 없음(종료 플래그·트레이 정리 후 Shutdown)
+         * - 트레이 종료와 426(클라이언트 최소 버전 거절) 안내 닫기가 같은 정상 종료 경로를 사용한다.
+         */
         public void ExitAgent()
         {
             if (_isExiting) return;
@@ -399,8 +408,9 @@ namespace Popup
         }
 
         /*
-         * [설계 44] Windows 로그오프·종료. 예전에는 처리기가 없어 _isExiting이 false인 채로 종료되어
-         * 팝업 닫기 제한이 그대로 적용됐고, 취소된 닫기의 결과가 저장되지 않았다.
+         * POL-02-02 : 종료 제어
+         * Windows 로그오프·종료. 종료 플래그를 세워 팝업 닫기 제한을 풀고 닫힘 결과를 저장·보관하게 한다
+         * (처리하지 않으면 닫기 제한이 그대로 적용되고 취소된 닫기의 결과가 저장되지 않는다).
          * 취소하지 않으면 WPF가 이어서 Application.Shutdown을 호출하므로 여기서는 종료 플래그와 트레이 정리만 한다
          * (ExitAgent와 같은 종료 상태, Shutdown은 WPF가 수행).
          */

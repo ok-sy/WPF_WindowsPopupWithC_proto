@@ -18,21 +18,23 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * POST /p/api/wpf/popups/results 요청 본문 — 결과 1건.
- *
- * <p>[추가 이유 — 기준 3·4·6] 구 WPF 개별 API의 숨김·제출·영상 진행률·이벤트 4개 요청을 결과 하나로 합쳤다.
- * 사용자 ID 필드는 없다(인증 정보에서 얻음).</p>
- *
- * <p>[설계 35] 단건 순차 처리: 이전 일괄 envelope(clientRequestId·sentAt·results 1~50개)를 없애고 결과 객체 1건을 받는다.
- * 기존 결과 필드(resultType 4종·closedAt·hideDays·answers·video·score·passed)는 유지하고 조회 응답의 {@code deliveryId}를 추가했다.
- * 형식 검사는 {@link #validationError()}로 하며 실패하면 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다
- * (WPF가 같은 요청을 반복 재전송하지 않도록 기존 항목 단위 규칙 유지). 유형별 필수 블록(hideDays/answers/video)은 서비스가 검사한다.</p>
+ * POL-09-01 : 3 API 순서
+ * POL-10-01 : 전달과 제출 식별
+ * POL-10-03 : 완료·숨김·연기
+ * ■ WPF 결과 저장 요청 본문 — 결과 1건 (POST /p/api/wpf/popups/results)
+ * - in : resultId · deliveryId · popupId · resultType · displayedAt · closedAt · hideDays · answers · video · score · passed
+ * - out: toCommand() → WpfResultCommand · validationError() → 형식 오류 설명(정상이면 null)
+ * - 숨김·제출·영상 진행률·이벤트를 결과 하나로 받는다. 사용자 ID 필드는 없다(인증 정보에서 얻음).
+ * - 결과 객체 1건만 받는다(일괄 envelope 없음). resultType은 CLOSED·HIDDEN·LATER·SUBMITTED·VIDEO_WATCHED,
+ *   hideDays는 1~3650이며 조회 응답의 {@code deliveryId}를 함께 보낸다.
+ * - 형식 검사는 {@link #validationError()}로 하며 실패하면 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다
+ *   (WPF가 같은 요청을 반복 재전송하지 않도록 항목 단위로 판정). 유형별 필수 블록(hideDays/answers/video)은 서비스가 검사한다.
  *
  * @param resultId   결과 멱등 키(UUID). 재전송 시 유지
  * @param deliveryId 조회 응답 popup.deliveryId
  * @param popupId    대상 팝업. 전달 건의 팝업과 같아야 한다
  */
-// 알 수 없는 필드(예: 구 클라이언트가 보내는 userId)는 무시한다. 사용자 식별은 인증 정보만 사용한다(기준 6).
+// POL-15-02 : 인증·버전 — 알 수 없는 필드(예: 구 클라이언트가 보내는 userId)는 무시한다. 사용자 식별은 인증 정보만 사용한다.
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WpfResultRequest(
         @NotBlank @Size(max = 64) String resultId,
@@ -68,6 +70,7 @@ public record WpfResultRequest(
         return null;
     }
 
+    /** resultType 문자열을 대소문자·앞뒤 공백 무시로 해석한다. 모르는 값이면 null. */
     public WpfResultType type() {
         if (resultType == null) return null;
         try {
@@ -77,6 +80,7 @@ public record WpfResultRequest(
         }
     }
 
+    /** 형식 검사를 통과한 요청을 서비스 커맨드로 바꾼다. 문자열 식별자는 trim, answers 누락은 빈 목록. */
     public WpfResultCommand toCommand() {
         return new WpfResultCommand(
                 resultId.trim(), deliveryId.trim(), popupId.trim(), type(), displayedAt, closedAt, hideDays,
@@ -84,6 +88,7 @@ public record WpfResultRequest(
                 video == null ? null : video.toProgress(),
                 score, passed);
     }
+    /** POL-06-02 : 선택·제출 — 문항 답변 1건(주관식 textAnswer 또는 선택지 optionIds). */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Answer(
             @NotNull Long questionId,

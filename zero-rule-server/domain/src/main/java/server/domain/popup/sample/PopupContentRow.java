@@ -3,7 +3,12 @@ package server.domain.popup.sample;
 import java.math.BigDecimal;
 
 /**
- * [TODO65] 단건 조회 결과 VO(MyBatis resultMap {@code popupContentRow}). 한 행 = 표시 후보 1건.
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 단건 조회 결과 VO(샘플)
+ * - in : MyBatis resultMap {@code popupContentRow} 컬럼(아래 표)
+ * - out: 표시 후보 1건(getter/setter)
+ * - 단건 조회 결과 VO(MyBatis resultMap {@code popupContentRow}). 한 행 = 표시 후보 1건.
  *
  * <p>컬럼은 제공된 팝업콘텐츠기본 DTIY3111 정의를 시작점으로 한다. <b>미확인</b> 표시가 있는 컬럼은 최신 정의에서
  * 이름·타입을 확인해 교체한다.</p>

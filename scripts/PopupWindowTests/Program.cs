@@ -9,9 +9,18 @@ using Popup.Views.Contents;
 using Popup.Views.Windows;
 
 /*
- * [설계 50] PopupWindow 회귀 검증(저장소 추적).
+ * POL-02-02 : 종료 제어
+ * POL-05-02 : 완료·화면 이탈
+ * POL-05-03 : 결합 화면
+ * POL-04-01 : 공통 크기 입력
+ * POL-01-03 : 최소 크기
+ * POL-16-02 : 재현 가능한 검증
+ * ■ PopupWindow 회귀 검증(저장소 추적)
+ * - in : 없음
+ * - out: 콘솔 PASS 검사 건수 · 실패 시 Exception(메시지)
+ * - 검사 항목(앞 표식은 검사 메시지 태그와 대응한다):
  * A1  '{N}일간 보지 않기' 문구가 실제 숨김 일수(서버 hideDays, 없으면 30)와 같은지,
- * A10 → TODO57 외부 닫기(Alt+F4 등)는 시청 기준이 아니라 Overlay로만 판단: Overlay 꺼짐이면 시청 전에도 닫히고,
+ * A10 외부 닫기(Alt+F4 등)는 시청 기준이 아니라 Overlay로만 판단: Overlay 꺼짐이면 시청 전에도 닫히고,
  *     켜짐이면 시청 후에도 막히며 앱 종료(Application.Shutdown과 같은 InternalClose(shutdown, ignoreCancel))는 항상 닫히는지.
  *     구 서버가 보낸 allowCloseBeforeComplete는 무시되는지
  * 50-B displayMode(효과 없는 계약 필드)가 모르는 값·null이어도 팝업 생성이 실패하지 않는지
@@ -36,7 +45,7 @@ using Popup.Views.Windows;
  */
 internal static class Program
 {
-    /* [설계 50-B] DemoPopupDataService.CreatePopups의 유형 필터를 삭제해 테스트에서 같은 기준(DemoPopupGateway.Candidates와 동일)으로 고른다. */
+    /* POL-14-02 : Demo 모드 — DemoPopupDataService.CreatePopups의 유형 필터를 삭제해 테스트에서 같은 기준(DemoPopupGateway.Candidates와 동일)으로 고른다. */
     private static List<Popup.Dtos.PopupResponseDto> DemoPopups(string type) => DemoPopupDataService.CreatePopups()
         .Where(p => type == "VIDEO_QUIZ" ? p.PopupId == "DEMO-VIDEO-QUIZ"
             : type == "FOOTER_LINK" ? p.PopupId == "DEMO-FOOTER-LINK"
@@ -51,7 +60,7 @@ internal static class Program
         _checks++;
     }
 
-    /* [TODO57] 구 서버 응답처럼 폐기된 allowCloseBeforeComplete를 넣은 JSON을 실제 조회와 같은 옵션으로 역직렬화한다(무시되어야 한다). */
+    /* POL-02-02 : 종료 제어 — 구 서버 응답처럼 폐기된 allowCloseBeforeComplete를 넣은 JSON을 실제 조회와 같은 옵션으로 역직렬화한다(무시되어야 한다). */
     private static Popup.Dtos.PopupResponseDto WithLegacyAllowClose(Popup.Dtos.PopupResponseDto dto, bool allowClose)
     {
         var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
@@ -100,7 +109,7 @@ internal static class Program
         Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68)");
     }
 
-    /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
+    /* POL-09-02 : 조회 응답 — displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
     private static void CheckDisplayModeIgnored50()
     {
         foreach (string? mode in new[] { "SEQUENTIAL", "SIMULTANEOUS", "UNKNOWN", "", null })
@@ -113,7 +122,7 @@ internal static class Program
         }
     }
 
-    /* [설계 50 A1] 체크박스 문구와 HIDDEN 결과의 hideDays가 같은 값(서버 값, 없으면 30)이다. */
+    /* POL-10-03 : 완료·숨김·연기 — 체크박스 문구와 HIDDEN 결과의 hideDays가 같은 값(서버 값, 없으면 30)이다. */
     private static void CheckHideDaysLabel50()
     {
         foreach ((int? days, int expected) in new (int?, int)[] { (7, 7), (null, 30) })
@@ -134,8 +143,9 @@ internal static class Program
     }
 
     /*
-     * [TODO57] 외부 닫기(Alt+F4·Window.Close 등 OnClosing 경로)는 시청 기준이 아니라 Background Overlay로만 판단한다.
-     * (설계 50 A10의 allowCloseBeforeComplete=false 시청 전 창 닫기 취소를 대체한다.)
+     * POL-02-02 : 종료 제어
+     * 외부 닫기(Alt+F4·Window.Close 등 OnClosing 경로)는 시청 기준이 아니라 Background Overlay로만 판단한다.
+     * (이전의 allowCloseBeforeComplete=false 시청 전 창 닫기 취소 동작을 대체한다.)
      *  - Overlay 꺼짐: VIDEO·VIDEO+QUIZ 모두 시청 전에도 닫힌다.
      *  - Overlay 켜짐(화면 출구 있음): 시청 전·후, 재생 실패 모두 외부 닫기를 막는다(시청을 마쳐도 Alt+F4 자동 허용 없음).
      *  - 앱 종료는 항상 닫힌다. 구 서버의 allowCloseBeforeComplete 값은 결과를 바꾸지 않는다.
@@ -206,7 +216,7 @@ internal static class Program
         Check(failed.Closed(), "[TODO57] VIDEO overlay on: playback failure closes from the enabled footer button");
     }
 
-    /* ───────────────────────── [설계 43·44] 공통 도우미 ───────────────────────── */
+    /* ───────────────────────── 공통 도우미(완료 조건 버튼·Overlay 키보드 종료) ───────────────────────── */
 
     private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
 
@@ -304,9 +314,9 @@ internal static class Program
         return owner;
     }
 
-    /* ───────────────────────── [설계 43] 완료 조건 버튼 표현 ───────────────────────── */
+    /* ───────────────────────── POL-05-02 : 완료·화면 이탈 — 완료 조건 버튼 표현 ───────────────────────── */
 
-    /* 일반 VIDEO: 미달이면 닫기 비활성 + 시청 %·기준 사유, 도달·재생 실패면 활성. [TODO57] 구 allowCloseBeforeComplete=true여도 같다. */
+    /* 일반 VIDEO: 미달이면 닫기 비활성 + 시청 %·기준 사유, 도달·재생 실패면 활성. 구 allowCloseBeforeComplete=true여도 같다(POL-02-02 : 종료 제어). */
     private static void CheckVideoFooter43()
     {
         void Configure(Popup.Dtos.PopupResponseDto dto)
@@ -348,7 +358,7 @@ internal static class Program
         Click(failed.Window, failedButton);
         Check(failed.Closed(), "[설계 43] VIDEO with playback failure closes from the footer");
 
-        // [TODO57] 구 서버가 allowCloseBeforeComplete=true를 보내도 무시하고 시청 기준 전 닫기는 비활성이다.
+        // POL-02-02 : 종료 제어 — 구 서버가 allowCloseBeforeComplete=true를 보내도 무시하고 시청 기준 전 닫기는 비활성이다.
         var legacy = OpenLegacy("VIDEO", Configure, allowClose: true);
         var legacyButton = legacy.Find<Button>("FooterCloseButton");
         Check(!legacyButton.IsEnabled && legacy.Find<TextBlock>("FooterResponseProgressText").Text.StartsWith("영상 0% 시청"),
@@ -392,7 +402,7 @@ internal static class Program
         Click(failed.Window, failedAux);
         Check(failed.Closed(), "[설계 43] aux close closes locked VIDEO+QUIZ after playback failure");
 
-        // [TODO57] 완료 전 닫기 허용 기반 보조 닫기는 폐기: 구 allowCloseBeforeComplete=true여도 정상 재생 중에는 잠금 전·후 모두 숨김.
+        // POL-02-02 : 종료 제어 — 완료 전 닫기 허용 기반 보조 닫기는 없다: 구 allowCloseBeforeComplete=true여도 정상 재생 중에는 잠금 전·후 모두 숨김.
         var legacy = OpenLegacy("VIDEO_QUIZ", dto => { dto.CompletionRatio = 0.8; dto.ShowFooter = true; }, allowClose: true);
         var legacyView = (VideoQuizPopupView)legacy.Options.Content!;
         var legacyAux = legacy.Find<Button>("FooterAuxCloseButton");
@@ -409,7 +419,7 @@ internal static class Program
         ShutdownClose(noFooter.Window);
     }
 
-    /* [TODO59] 영상과 퀴즈 사이 시스템 안내가 없고, 푸터를 숨기면 본문 제출 영역이 잠금 사유 → 필수 응답 진행 문구를 보여 준다. */
+    /* POL-05-03 : 결합 화면 — 영상과 퀴즈 사이 시스템 안내가 없고, 푸터를 숨기면 본문 제출 영역이 잠금 사유 → 필수 응답 진행 문구를 보여 준다. */
     private static void CheckVideoQuizNotice59()
     {
         foreach (bool showFooter in new[] { true, false })
@@ -451,7 +461,7 @@ internal static class Program
         ShutdownClose(failed.Window);
     }
 
-    /* [TODO58] IMAGE 크기는 최상위 popup.width/height 한 쌍이며 imageSizeMode에 따라 창 전체 또는 이미지 콘텐츠 영역이다. */
+    /* POL-04-01 : 공통 크기 입력 — IMAGE 크기는 최상위 popup.width/height 한 쌍이며 imageSizeMode에 따라 창 전체 또는 이미지 콘텐츠 영역이다. */
     private static void CheckImageSize58()
     {
         // 콘텐츠 영역 계산: 두 축 지정은 그대로(비율 고정이어도 영역은 지정 크기), 한 축은 비율 또는 원본 길이, 미지정은 원본.
@@ -554,7 +564,7 @@ internal static class Program
             $"[TODO58] unlocked ratio fills the content area ({filled.Image})");
     }
 
-    /* [TODO68] 팝업 창 최소 300 x 300: 누락 기본값, 299/300/301 경계, 기존 데이터(최소 100·최대 200 모순) 방어, IMAGE 최종 창 하한. */
+    /* POL-01-03 : 최소 크기 — 팝업 창 최소 300 x 300: 누락 기본값, 299/300/301 경계, 기존 데이터(최소 100·최대 200 모순) 방어, IMAGE 최종 창 하한. */
     private static void CheckMinimumSize68()
     {
         var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
@@ -609,7 +619,7 @@ internal static class Program
         ShutdownClose(window);
     }
 
-    /* [TODO65·70] 서버 샘플이 내려주는 단건 조회 JSON(web/api 테스트 자원)이 실제 WPF 조회 DTO·Factory로 열린다. */
+    /* POL-14-03 : 서버 인계 예제 — 서버 샘플이 내려주는 단건 조회 JSON(web/api 테스트 자원)이 실제 WPF 조회 DTO·Factory로 열린다. */
     private static void CheckServerSampleResponses()
     {
         var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
@@ -628,13 +638,13 @@ internal static class Program
         Check(!text.UseBackgroundOverlay && text.BackgroundOverlayOpacity == 0 && !text.ShowLater, "[TODO70] explicit false/0 survive WPF deserialization");
     }
 
-    /* [TODO60] 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */
+    /* POL-05-03 : 결합 화면 — 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */
     private static void CheckVideoQuizAspect60()
     {
         var calc = typeof(VideoPopupView).GetMethod("CalculateAspectHeight", BindingFlags.Static | BindingFlags.NonPublic)!;
         double Calc(double width, Size? natural, double available) =>
             (double)calc.Invoke(null, new object?[] { width, new Thickness(1), natural, available })!;
-        // TODO60 검증 예시(가용 너비 640 + 테두리 2): 16:9 360, 4:3 480, 정사각 640, 세로 9:16은 상한 전 약 1137.8.
+        // POL-05-03 : 결합 화면 — 검증 예시(가용 너비 640 + 테두리 2): 16:9 360, 4:3 480, 정사각 640, 세로 9:16은 상한 전 약 1137.8.
         Check(Math.Abs(Calc(642, new Size(1920, 1080), 0) - 362) < 0.01, "[TODO60] 1920x1080 at width 640 is 360 (+border)");
         Check(Math.Abs(Calc(642, new Size(1440, 1080), 0) - 482) < 0.01, "[TODO60] 1440x1080 at width 640 is 480 (+border)");
         Check(Math.Abs(Calc(642, new Size(1080, 1080), 0) - 642) < 0.01, "[TODO60] 1080x1080 at width 640 is 640 (+border)");
@@ -715,7 +725,8 @@ internal static class Program
     }
 
     /*
-     * [TODO60-5] 본문 높이가 스크롤바 표시 경계에 걸리는 창 높이에서 재생 행 높이·스크롤바 표시가 한 값으로 수렴한다
+     * POL-05-03 : 결합 화면
+     * 본문 높이가 스크롤바 표시 경계에 걸리는 창 높이에서 재생 행 높이·스크롤바 표시가 한 값으로 수렴한다
      * (스크롤바 등장 → 너비·높이 감소 → 스크롤바 사라짐 → 높이 증가를 반복하지 않는다).
      * 줄바꿈 변화가 영상 높이 변화를 상쇄하지 않도록 짧은 문항 1개·설명 없음으로 두고, 원본 비율별로 경계 주변을 1 DIP 간격으로 훑는다.
      */
@@ -870,7 +881,7 @@ internal static class Program
             "[설계 43] result contract (score·passed) is unchanged and carries no wrong-question list");
     }
 
-    /* ───────────────────────── [설계 44] Background Overlay 키보드 종료 ───────────────────────── */
+    /* ───────────────────────── POL-02-02 : 종료 제어 — Background Overlay 키보드 종료 ───────────────────────── */
 
     private static void CheckOverlayKeyboardClose44()
     {
@@ -904,13 +915,13 @@ internal static class Program
             Check(bare.Closed(), $"[설계 44] no visible exit (footer {footer}, button {button}): keyboard close is allowed");
         }
 
-        // [TODO57] VIDEO도 화면 출구가 없으면 Overlay 예외로 키보드 닫기를 허용한다(시청 기준으로 다시 막지 않는다).
+        // POL-02-02 : 종료 제어 — VIDEO도 화면 출구가 없으면 Overlay 예외로 키보드 닫기를 허용한다(시청 기준으로 다시 막지 않는다).
         var video = OpenPopup("VIDEO", dto => { dto.ShowFooter = false; dto.CompletionRatio = 0.8; }, overlay: true);
         Check(!AltF4Handled(video.Window), "[TODO57] Overlay on VIDEO without a visible exit: Alt+F4 is not swallowed");
         SendMessage(Hwnd(video.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
         Check(video.Closed(), "[TODO57] Overlay on VIDEO without a visible exit closes by keyboard before watching");
 
-        // [TODO57] Overlay 켜짐 + 푸터 닫기 표시 VIDEO: 시청 전·후 모두 Alt+F4·WM_CLOSE를 막고 화면 버튼은 시청 기준을 따른다.
+        // POL-02-02 : 종료 제어 — Overlay 켜짐 + 푸터 닫기 표시 VIDEO: 시청 전·후 모두 Alt+F4·WM_CLOSE를 막고 화면 버튼은 시청 기준을 따른다.
         var guarded = OpenPopup("VIDEO", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; dto.ShowLater = false; dto.CompletionRatio = 0.8; }, overlay: true);
         Check(AltF4Handled(guarded.Window), "[TODO57] Overlay on VIDEO with a footer: Alt+F4 is swallowed before watching");
         SendMessage(Hwnd(guarded.Window), WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
@@ -920,7 +931,7 @@ internal static class Program
         Click(guarded.Window, guarded.Find<Button>("FooterCloseButton"));
         Check(guarded.Closed(), "[TODO57] Overlay on VIDEO with a footer: the footer close works after watching");
 
-        // [TODO57] Overlay 꺼짐 VIDEO: 시청 전에도 Alt+F4·WM_CLOSE가 닫는다(화면 닫기 버튼은 계속 비활성).
+        // POL-02-02 : 종료 제어 — Overlay 꺼짐 VIDEO: 시청 전에도 Alt+F4·WM_CLOSE가 닫는다(화면 닫기 버튼은 계속 비활성).
         var loose = OpenPopup("VIDEO", dto => { dto.ShowFooter = true; dto.ShowFooterButton = true; dto.CompletionRatio = 0.8; }, overlay: false);
         Check(!loose.Find<Button>("FooterCloseButton").IsEnabled && !AltF4Handled(loose.Window),
             "[TODO57] Overlay off VIDEO before watching: close button disabled but Alt+F4 is not swallowed");
@@ -950,7 +961,7 @@ internal static class Program
         Check(off.Closed(), "[설계 44] Overlay off: keyboard close is allowed");
     }
 
-    /* [설계 44 결함 1] 앱 종료(InternalClose(true, true))로 닫히면 사용자 닫기가 취소되는 상태여도 PopupManager가 결과를 저장한다. */
+    /* POL-02-02 : 종료 제어 — (결함 1) 앱 종료(InternalClose(true, true))로 닫히면 사용자 닫기가 취소되는 상태여도 PopupManager가 결과를 저장한다. */
     private static void CheckShutdownSavesResult44()
     {
         var owner = NewOwner();
@@ -975,7 +986,7 @@ internal static class Program
                 window.Close();
                 if (!overlay)
                 {
-                    // [TODO57] Overlay 꺼짐: 시청 전 외부 닫기가 허용되고 기존 결과 생성기의 시청 기록으로 남는다(LATER로 바꾸지 않음).
+                    // POL-02-02 : 종료 제어 — Overlay 꺼짐: 시청 전 외부 닫기가 허용되고 기존 결과 생성기의 시청 기록으로 남는다(LATER로 바꾸지 않음).
                     Check(saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched && saved[0].Video?.WatchedSeconds == 30,
                         $"[TODO57] {type} overlay off: external close before watching saves VIDEO_WATCHED with watched seconds ({saved.Count})");
                     Check(!manager.HasOpenPopups, $"[TODO57] {type} overlay off: external close cleans up the window");
@@ -993,8 +1004,8 @@ internal static class Program
 
     /*
      * SURVEY·QUIZ 디자인 V2: 흰 본문(여백·푸터 포함), 문항 카드 없이 간격·구분선(마지막 문항 제외), 선택지 흰색 + 연한 테두리·라운드 6,
-     * 기본 글자 #222222(TODO56-10·11).
-     * [TODO56] 라디오·체크박스 표시기 없음. 선택 전에는 체크 없음(자리만 예약), 선택 = 체크 + #171717 2px 링(크기 불변),
+     * 기본 글자 #222222.
+     * POL-06-03 : 표현·수명 — 라디오·체크박스 표시기 없음. 선택 전에는 체크 없음(자리만 예약), 선택 = 체크 + #171717 2px 링(크기 불변),
      * 선택해도 굵기·글자색 불변, 단일/복수는 선택 방식 안내로 구분.
      */
     private static void CheckSurveyColors()
@@ -1059,8 +1070,8 @@ internal static class Program
                     $"[56-3] {type} disabled {kind} still shows its selection");
                 choice.IsEnabled = true;
             }
-            // [TODO56-5·12] 선택 방식 안내는 제목 끝(필수 표시 뒤)에 12 크기 보조색 Run으로 붙는다. 주관식은 없음.
-            // [TODO52-5] 정답 수로 제한된 QUIZ 복수 선택은 "최대 N개 선택"이다.
+            // POL-06-03 : 표현·수명 — 선택 방식 안내는 제목 끝(필수 표시 뒤)에 12 크기 보조색 Run으로 붙는다. 주관식은 없음.
+            // POL-06-02 : 선택·제출 — 정답 수로 제한된 QUIZ 복수 선택은 "최대 N개 선택"이다.
             static bool MultipleHint(string text) => text == "여러 개 선택 가능" || System.Text.RegularExpressions.Regex.IsMatch(text, "^최대 [0-9]+개 선택$");
             var hintRuns = Visuals(view).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>()
                 .Where(r => r.Text.Trim() == "하나 선택" || MultipleHint(r.Text.Trim())).Select(r => (Block: t, Run: r))).ToList();
@@ -1101,7 +1112,8 @@ internal static class Program
     }
 
     /*
-     * [TODO52-5] QUIZ 복수 선택은 정답 수만큼만 고를 수 있다. 한도에 닿으면 남은 선택지가 비활성화되고 해제하면 풀린다.
+     * POL-06-02 : 선택·제출
+     * QUIZ 복수 선택은 정답 수만큼만 고를 수 있다. 한도에 닿으면 남은 선택지가 비활성화되고 해제하면 풀린다.
      * SURVEY 복수 선택(정답 없음)은 제한이 없다.
      */
     private static void CheckQuizSelectionLimit()
@@ -1211,7 +1223,8 @@ internal static class Program
     }
 
     /*
-     * [TODO52-2] 나중에 보기. 모든 유형에서 showFooter·showLater가 모두 true일 때만 버튼이 보이고, 누르면 결과 LATER로 닫힌다.
+     * POL-02-03 : 푸터 역할
+     * 나중에 보기. 모든 유형에서 showFooter·showLater가 모두 true일 때만 버튼이 보이고, 누르면 결과 LATER로 닫힌다.
      * 다시 보지 않기 체크·영상 시청량이 있어도 LATER이며 hideDays·video를 싣지 않는다. 완료 전 닫기 잠금 중에도 닫힌다.
      */
     private static void CheckLater52()
@@ -1275,9 +1288,10 @@ internal static class Program
         finally { owner.Close(); }
     }
 
-    /* [설계 44 결함 2] Overlay를 띄운 뒤 팝업 생성이 실패하면 Overlay를 닫고 예외를 그대로 올린다. */
+    /* POL-02-02 : 종료 제어 — (결함 2) Overlay를 띄운 뒤 팝업 생성이 실패하면 Overlay를 닫고 예외를 그대로 올린다. */
     /*
-     * [설계 52-4] 모든 팝업은 백그라운드 동작을 차단한다 — useBackgroundOverlay 기본값 true를 보장한다.
+     * POL-01-02 : 기본값의 적용
+     * 모든 팝업은 백그라운드 동작을 차단한다 — useBackgroundOverlay 기본값 true를 보장한다.
      * 서버 응답 JSON에서 필드를 뺐을 때(PopupApiService와 같은 역직렬화 옵션) DTO·PopupOptions가 true이고
      * PopupManager가 실제로 Overlay를 띄우는지 유형별로 확인한다. 명시 false는 정상 명시값이라 그대로 따른다.
      */
@@ -1341,7 +1355,9 @@ internal static class Program
     }
 
     /*
-     * [설계 53-16 · 50-D3/D4] VIDEO+QUIZ 중복 머리말과 시청 비율 경계.
+     * POL-05-02 : 완료·화면 이탈
+     * POL-05-03 : 결합 화면
+     * VIDEO+QUIZ 중복 머리말(D3)과 시청 비율 경계(D4).
      * D4: 일반 VIDEO·VIDEO+QUIZ·Demo 결과 판정이 서버(PopupService: min(watched,duration)/duration 4자리 내림)와 같은 식을 쓴다.
      * D3: 서버가 videoTitle=surveyTitle·같은 description을 내려주면 퀴즈 머리말에서 반복하지 않는다.
      */

@@ -14,7 +14,12 @@ import org.springframework.web.client.RestClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-/** [TODO70] 연결 실패 분류와 envelope 매핑 함수(Spring 컨텍스트 없이). */
+/**
+ * POL-14-03 : 서버 인계 예제
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 중계 샘플 단위 테스트
+ * - 연결 실패 분류와 envelope 매핑 함수를 Spring 컨텍스트 없이 확인한다.
+ */
 class BackendUnitTest {
 
     private static RelayBackendProperties properties(String baseUrl, RelayBackendProperties.ResponseShape shape) {

@@ -5,9 +5,17 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 설문·퀴즈 문항 공통 규칙
+ * - in : 문항 목록(PopupQuestionDto)·퀴즈 여부·통과 점수
+ * - out: 검증 통과 또는 IllegalArgumentException · 기본 배점 채운 문항 · 주관식 정답 일치 여부
+ * - 관리자 저장 검증과 서버 채점이 같은 문항 규칙(유형·배치·배점·정답·통과 점수 범위)을 쓰도록 모은다.
+ */
 final class PopupQuestionRules {
     private PopupQuestionRules() {}
 
+    /** 주관식 답을 정답과 비교한다(앞뒤 공백 제거, EXACT 완전 일치·CONTAINS 포함, 그 밖의 모드는 불일치). */
     static boolean matchesText(String answer, String expected, String mode) {
         if (answer == null || answer.isBlank() || expected == null || expected.isBlank()) return false;
         String actual = answer.trim();
@@ -28,6 +36,14 @@ final class PopupQuestionRules {
         return questions.stream().map(q -> q != null && q.questionScore() == null ? q.withQuestionScore(DEFAULT_QUESTION_SCORE) : q).toList();
     }
 
+    /**
+     * POL-06-02 : 선택·제출
+     * ■ 문항 저장 검증
+     * - in : questions(List&lt;PopupQuestionDto&gt;) 문항 · quiz(boolean) 퀴즈 여부 · passingScore(Double) 통과 점수
+     * - out: 없음 · 예외: IllegalArgumentException(규칙 위반 메시지)
+     * - 문항 수·제목/설명 길이·유형·선택지 배치·배점(양수, 소수 둘째 자리)·주관식 정답/비교 방식·객관식 선택지 2개 이상과
+     *   정답 지정(단일 선택은 1개)·통과 점수(0~총점)를 검사한다.
+     */
     static void validate(List<PopupQuestionDto> questions, boolean quiz, Double passingScore) {
         if (questions == null || questions.isEmpty()) fail("문항을 한 개 이상 추가해 주세요.");
         BigDecimal total = BigDecimal.ZERO;

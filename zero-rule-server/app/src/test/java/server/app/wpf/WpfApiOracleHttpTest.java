@@ -43,7 +43,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * [기준 2·3·4·6 + Oracle] 신규 WPF API 2개를 **실제 HTTP + 실제 Oracle + 실제 트랜잭션**으로 검증한다.
+ * POL-16-02 : 재현 가능한 검증
+ * POL-09-01 : 3 API 순서
+ * ■ WPF API Oracle HTTP 통합 테스트
+ * - in : 환경변수 POPUP_TEST_DB_PASSWORD(필수), POPUP_TEST_DB_URL/USER(선택)
+ * - out: 없음(JUnit 검증)
+ * - 서버 노출 판단·WPF 오류 코드·통신 시점·인증 사용자 식별 기준으로 신규 WPF API 2개를 **실제 HTTP + 실제 Oracle + 실제 트랜잭션**으로 검증한다.
  *
  * <p>왜 전체 zeroserver 대신 부분 컨텍스트인가: 이 저장소의 zero 프레임워크(clover-* 0.0.1-POSTGRE-SNAPSHOT)와
  * 공통 매퍼 13개는 PostgreSQL 전용 SQL(nextval 등)이라 Oracle에서는 앱이 기동되지 않는다(공통 프레임워크의
@@ -155,7 +160,7 @@ class WpfApiOracleHttpTest {
         assertEquals("WPF_USER_INACTIVE", json.readTree(unknown.getBody()).get("code").asText());
     }
 
-    /** [설계 35] 조회는 POST 단건: {pollingIntervalSeconds, popup(deliveryId 포함)}. 응답 유실 후 재조회는 같은 전달 건. */
+    /** POL-09-02 : 조회 응답 — 조회는 POST 단건: {pollingIntervalSeconds, popup(deliveryId 포함)}. 응답 유실 후 재조회는 같은 전달 건. */
     @Test @Order(2)
     void nextPopupReturnsOneServerJudgedPopupWithDelivery() throws Exception {
         ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups", USER, "{}");
@@ -188,7 +193,7 @@ class WpfApiOracleHttpTest {
         return json.readTree(res.getBody());
     }
 
-    /** [설계 35] 결과 1건씩 처리하고 커밋하며 nextStatus로 다음 조회 여부를 알린다. 마지막엔 popup=null. */
+    /** POL-09-03 : 저장 응답 — 결과 1건씩 처리하고 커밋하며 nextStatus로 다음 조회 여부를 알린다. 마지막엔 popup=null. */
     @Test @Order(3)
     void resultsAreProcessedOneByOneWithNextStatus() throws Exception {
         JsonNode text = next().get("popup");

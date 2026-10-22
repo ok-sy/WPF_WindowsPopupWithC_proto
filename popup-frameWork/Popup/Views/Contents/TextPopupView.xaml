@@ -68,7 +68,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- [설계 37] 텍스트 팝업 전용 제목/설명 영역(ContentHeaderPanel) 삭제. 제목·설명은 서식 본문으로 작성한다. 0행은 비워 둔다. -->
+        <!-- POL-03-01 : 저장·표시 경계 — 텍스트 팝업 전용 제목/설명 영역(ContentHeaderPanel)은 없다. 제목·설명은 서식 본문으로 작성한다. 0행은 비워 둔다. -->
 
         <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
@@ -81,7 +81,7 @@
                        TextWrapping="Wrap"
                        Visibility="Collapsed"/>
 
-            <!-- [설계 28] 서식 본문(textBlocks). 문단마다 TextBlock을 넣으며, 있으면 PlainTextBlock 대신 표시한다. -->
+            <!-- POL-03-01 : 저장·표시 경계 — 서식 본문(textBlocks). 문단마다 TextBlock을 넣으며, 있으면 PlainTextBlock 대신 표시한다. -->
             <StackPanel x:Name="RichTextPanel"
                         Margin="0,0,0,16"
                         Visibility="Collapsed"/>

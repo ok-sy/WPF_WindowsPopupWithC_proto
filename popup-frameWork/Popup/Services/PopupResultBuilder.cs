@@ -7,17 +7,22 @@ using System.Linq;
 namespace Popup.Services
 {
     /*
-     * [역할] 팝업 창 하나의 생명주기 동안 일어난 사실(표시 시각, 닫힘 시각, 다시 보지 않기, 제출 답안, 영상 시청량)을
+     * POL-10-01 : 전달과 제출 식별
+     * POL-10-03 : 완료·숨김·연기
+     * ■ 결과 항목 조립기
+     * - in : popupId(string) · configuredHideDays(int?) 팝업 hideDays · deliveryId(string?) 전달 건 ID
+     * - out: WpfResultItemDto 1건(SUBMITTED/LATER/HIDDEN/VIDEO_WATCHED/CLOSED) · ResultId 창 단위 멱등 키
+     * - [역할] 팝업 창 하나의 생명주기 동안 일어난 사실(표시 시각, 닫힘 시각, 다시 보지 않기, 제출 답안, 영상 시청량)을
      *        모아 결과 API 항목(WpfResultItemDto) 하나로 만든다.
      *
-     * [추가 이유 — 기준 3·4]
-     *   기존에는 표시(DISPLAYED)·닫기(CLOSED)·숨김·제출·영상 진행률을 각각 별도 API로 즉시 호출했다.
-     *   이제 창이 닫힐 때 항목 1개만 보내므로, 창이 열려 있는 동안의 사실을 여기 기록해 두었다가 닫힘 시점에 조립한다.
+     * [추가 이유]
+     *   표시·닫기·숨김·제출·영상 진행률을 각각 별도 API로 즉시 호출하지 않는다.
+     *   창이 닫힐 때 항목 1개만 보내므로, 창이 열려 있는 동안의 사실을 여기 기록해 두었다가 닫힘 시점에 조립한다.
      *   resultId는 빌더가 만들어질 때(=창이 열릴 때) 확정되어, 전송 실패 후 재전송해도 서버가 같은 항목으로 인식한다.
      *
      * [유형 결정 규칙]
      *   - 제출 항목을 이미 만들어 큐에 넣었으면(IsFinalized) 닫힘 시 다시 만들지 않는다.
-     *   - [TODO52-2] "나중에 보기" 버튼 → LATER (다시 보지 않기·영상 시청량보다 우선, hideDays·video 미포함)
+     *   - "나중에 보기" 버튼 → LATER (다시 보지 않기·영상 시청량보다 우선, hideDays·video 미포함)
      *   - "다시 보지 않기" 체크 → HIDDEN (hideDays: 팝업 설정값, 없으면 30)
      *   - 영상 팝업이고 스냅샷이 있으면 → VIDEO_WATCHED
      *   - 그 외 → CLOSED
@@ -39,7 +44,7 @@ namespace Popup.Services
         private DateTimeOffset? _displayedAt;
         private VideoProgressSnapshot? _videoProgress;
 
-        /// <param name="deliveryId">[설계 35] 조회 응답의 전달 건 ID. 결과 항목에 그대로 담는다(Demo·테스트는 생략 가능).</param>
+        /// <param name="deliveryId">조회 응답의 전달 건 ID. 결과 항목에 그대로 담는다(Demo·테스트는 생략 가능).</param>
         public PopupResultBuilder(string popupId, int? configuredHideDays, string? deliveryId = null)
         {
             if (string.IsNullOrWhiteSpace(popupId))
@@ -75,7 +80,7 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// 설문·퀴즈 제출 항목. [설계 12] 로컬 큐에 저장된 뒤 창이 닫히고 백그라운드로 전송된다. 이후 닫힘 항목은 만들지 않는다.
+        /// POL-06-02 : 선택·제출 — 설문·퀴즈 제출 항목. 로컬 큐에 저장된 뒤 창이 닫히고 백그라운드로 전송된다. 이후 닫힘 항목은 만들지 않는다.
         /// QUIZ는 WPF가 채점한 score/passed를 함께 담는다(SURVEY는 null).
         /// </summary>
         public WpfResultItemDto BuildSubmitted(SurveySubmission submission, DateTimeOffset submittedAt)
@@ -112,7 +117,7 @@ namespace Popup.Services
         }
 
         /// <summary>
-        /// [TODO52-2] 나중에 보기 항목. 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
+        /// POL-10-03 : 완료·숨김·연기 — 나중에 보기 항목. 서버가 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다.
         /// 영상 시청량은 싣지 않는다(서버의 기존 시청 기록은 그대로 유지).
         /// </summary>
         public WpfResultItemDto BuildLater(DateTimeOffset closedAt) => new()

@@ -3,12 +3,16 @@ package server.repo.core.mapper.popup;
 import java.util.Properties;
 
 /**
- * 팝업 테이블·시퀀스의 스키마 한정자 계산 — [추가, 2026-09-20 스키마 분리 설정화, 기준 5]
+ * POL-13-03 : 적용·샘플 구분
+ * ■ 팝업 테이블·시퀀스의 스키마 한정자 계산
+ * - in : schema(String) 설정 custom.popup.schema 값
+ * - out: MyBatis 구성 변수 popupSchemaPrefix 값("POPUP." 또는 "")
+ * - 스키마 분리를 설정으로 바꾸기 위해 추가했다.
  *
  * <p>[역할] 팝업 매퍼 XML(PopupMapper.xml·WpfPopupMapper.xml)은 테이블·시퀀스 앞에 MyBatis 구성 변수
  * {@code ${popupSchemaPrefix}}를 붙인다. 이 클래스는 설정값(스키마 이름)을 그 변수 값("POPUP." 또는 "")으로 바꾼다.
  *
- * <p>[추가 이유] 설계(docs/design/05)는 팝업 테이블을 별도 POPUP 스키마(=계정)에 두지만, 원격 개발 DB(Oracle 11g XE)의
+ * <p>[추가 이유] 설계 문서(docs/design/05_Oracle_DB_설계.md)는 팝업 테이블을 별도 POPUP 스키마(=계정)에 두지만, 원격 개발 DB(Oracle 11g XE)의
  * 앱 계정 zero-rule에는 CREATE USER 권한이 없어 POPUP 계정을 만들 수 없다. 그래서 스키마 한정자를 설정으로 빼서
  * <ul>
  *   <li>POPUP 계정이 있는 환경(로컬 XE 21c): {@code custom.popup.schema=POPUP} → "POPUP."(설계 그대로)</li>

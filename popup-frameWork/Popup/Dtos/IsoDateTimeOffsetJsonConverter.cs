@@ -6,12 +6,12 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /*
-     * WPF API 날짜(ISO 8601 문자열)를 DateTimeOffset으로 변환한다.
-     *
-     * [설계 18 L-5 — C-22] 예전 이름은 FlexibleDateTimeOffsetJsonConverter였고, 서버 교체기에
-     * zero-server가 내리던 Unix epoch 초 숫자도 받았다. WPF API 3개는 모두 ISO 문자열
-     * (서버 WpfJson.DATE_TIME)로 내리고 계약서도 string(ISO)로 정의하므로 숫자 분기를 삭제했다.
-     * 요청 본문에 쓰는 형식(ISO "O")은 그대로다.
+     * POL-09-01 : 3 API 순서
+     * ■ ISO 날짜 JSON 변환기
+     * - in : reader(Utf8JsonReader) 날짜 문자열 토큰 · value(DateTimeOffset) 직렬화 값
+     * - out: DateTimeOffset · 예외: JsonException(문자열이 아니거나 형식 오류)
+     * - WPF API 날짜(ISO 8601 문자열, 서버 WpfJson.DATE_TIME)를 DateTimeOffset으로 읽고, 요청 본문에는 ISO "O" 형식으로 쓴다.
+     *   Unix epoch 숫자 입력은 받지 않는다(계약이 string(ISO)이므로 숫자 분기는 두지 않는다).
      */
     public class IsoDateTimeOffsetJsonConverter
         : JsonConverter<DateTimeOffset>

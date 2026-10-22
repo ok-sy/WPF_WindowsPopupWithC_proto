@@ -6,9 +6,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 
 /**
- * WPF 클라이언트 버전 미지원(426 Upgrade Required) 응답 본문.
+ * POL-15-02 : 인증·버전
+ * ■ WPF 클라이언트 버전 미지원(426 Upgrade Required) 응답 본문
+ * - in : code·message·clientVersion·minimumSupportedVersion·latestVersion(String) · timestamp(OffsetDateTime)
+ * - out: 426 응답 JSON(값 없는 필드 생략)
  *
- * <p>[추가 이유 — 설계 13 §7] 기존 {@link WpfErrorResponse}{@code {code, message, timestamp}}에 WPF가 안내 문구에
+ * <p>추가 이유: 기존 {@link WpfErrorResponse}{@code {code, message, timestamp}}에 WPF가 안내 문구에
  * 쓸 세 버전 값을 더한 형태다. 기존 오류 DTO는 바꾸지 않고 별도 레코드로 둔다.</p>
  * <pre>
  * { "code": "CLIENT_VERSION_NOT_SUPPORTED", "message": "...", "clientVersion": "1.2.9",

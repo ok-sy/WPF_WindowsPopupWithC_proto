@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-22 — TODO71 전 파일 주석 정책 번호 반영 및 코드 정합성 점검
+
+- 이유: 코드 주석이 내부 TODO·설계 번호를 근거로 하고 있어, 현행 정책 색인(docs/policies) 기준으로 주석을 통일하고 코드가 정책과 맞는지 점검할 필요.
+- 변경: 팝업 관련 소스 243개 파일(WPF·서버 팝업/WPF/샘플·관리자 웹·scripts·db/oracle)의 주석에서 `[TODO..]`·`[설계 ..]`·`기준 N`·설계 절 번호를 `POL-xx-yy : 항목명` + 현재 동작 설명으로 대체하고, 클래스·컴포넌트·공개 진입점에 `■ / in / out / 설명` 머리 주석 적용. 사실과 달랐던 주석 10건 정정(GET→POST, resultType 5종, FIT_TO_IMAGE·ADAPTIVE 크기 기준, Demo QUIZ 거절, 환경 변수명, 매퍼 경로 등). Demo 상세옵션 안내 문구 3곳·WebView2 HTML 안 JS 주석 1곳의 내부 번호를 정책 번호로 교체. 주석 정리 중 빠졌던 공백 1곳(popupRichText.ts) 복원. 주석 외 코드 불변 검사 스크립트 `scripts/check-comment-only-71.py` 추가, 감사 스크립트에 진행 중 원본(TODO69) 후속 갱신 허용·UTF-8 읽기 보완. comments.csv 현 상태로 재작성(남은 218건은 문자열 리터럴 유지), 코드-정책 정합성 보고서 CODE_CONSISTENCY.md 작성, 정책 README·TODO71 갱신.
+- 주요 파일: popup-frameWork/**, zero-rule-server/**(팝업·WPF·샘플), zero-rule-web/main/src/features/RgstPop/**·sub/domain(PopupAdmin·PopupAdminApi)·lib/popup-handle.ts·scene-router.tsx, scripts/**, db/oracle/*.sql, scripts/check-comment-only-71.py·audit-policy-docs-71.py, docs/reviews/TODO71/CODE_CONSISTENCY.md·comments.csv, docs/policies/README.md, docs/design/71_기존TODO_정책통폐합_정합성_주석정리_TODO.md, version-history/CHANGELOG.md.
+- 검증: check-comment-only-71.py 243개 파일 일치(엄격 모드 240개 일치 + 의도한 문자열 변경 2개 파일, ps1 블록 주석은 diff 확인), audit-policy-docs-71.py 810건 통과. WPF Release 빌드 경고·오류 0, PopupWindowTests 403건, 서버 `gradlew test --offline` 187건 실패 0·skip 11, 웹 tsc·eslint 오류 0, 웹 검증 9종(49·55·61·image·64·43·template-picker·69·RgstPop 퀴즈 규칙) 통과. 코드-정책 어긋남 6건은 코드 미수정·결정 필요로 기록. 미실행: 실화면·원격 개발 DB·폐쇄망, Excel·Word·PDF(별도 진행).
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-21 — TODO69 퀴즈 점수 규칙 공통화 및 RgstPop 등록 화면 적용
 
 - 이유: RgstPop은 전달 공통 컴포넌트를 검증하는 내부 테스트 화면이라, 전달 샘플(IS063M02)에 확정한 퀴즈 규칙을 같은 코드로 등록 화면에도 적용할 필요.

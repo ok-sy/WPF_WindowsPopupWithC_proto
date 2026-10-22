@@ -26,7 +26,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 /**
- * [TODO70] DB 드라이버·접속 정보 없이 샘플을 기동하고, mock 백엔드의 실제 HTTP 응답을 중계 API로 받는다.
+ * POL-14-03 : 서버 인계 예제
+ * POL-16-02 : 재현 가능한 검증
+ * ■ 조회 중계 샘플 통합 테스트
+ * - DB 드라이버·접속 정보 없이 샘플을 기동하고, mock 백엔드의 실제 HTTP 응답을 중계 API로 받는다.
  */
 @SpringBootTest(classes = RelaySampleBootConfig.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "popup.sample.relay.enabled=true")

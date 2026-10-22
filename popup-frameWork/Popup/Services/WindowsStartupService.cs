@@ -3,7 +3,11 @@
 namespace Popup.Services
 {
     /*
-     * 현재 Windows 사용자의 로그인 자동 실행 등록을 관리한다.
+     * POL-15 : 배포·실행 환경
+     * ■ Windows 로그인 자동 실행 등록
+     * - in : SetEnabled(enabled) 등록/해제
+     * - out: IsEnabled() 현재 실행 파일 경로로 등록되어 있는지(bool) · 예외: InvalidOperationException(Run 키를 열 수 없음)
+     * - 현재 Windows 사용자의 로그인 자동 실행 등록을 관리한다.
      *
      * HKCU를 사용하므로 관리자 권한이 필요하지 않고,
      * 다른 Windows 사용자에게는 영향을 주지 않는다.

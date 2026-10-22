@@ -4,9 +4,13 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * POPUP.POPUP_NOTICE와 POPUP.POPUP_CONTENT를 조합한 내부 조회 모델이다.
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * ■ 팝업 내부 조회 모델
+ * - in : POPUP_NOTICE·POPUP_CONTENT 조회 컬럼
+ * - out: 팝업 1건(record). 콘텐츠는 정규 컬럼 4개 + 확장 옵션 JSON 문자열
+ * - POPUP.POPUP_NOTICE와 POPUP.POPUP_CONTENT를 조합한 내부 조회 모델이다.
  *
- * <p>[Oracle 전환 — 기준 5] PostgreSQL 매퍼는 {@code JSONB_BUILD_OBJECT(...) || content_options}로
+ * <p>Oracle 전환: PostgreSQL 매퍼는 {@code JSONB_BUILD_OBJECT(...) || content_options}로
  * 콘텐츠 JSON 문자열({@code contentJson})을 SQL에서 조립해 내려주었다. Oracle에서는 JSON 함수가
  * 버전(12.2/18c/19c)에 따라 지원 범위가 달라 SQL 조립을 버리고, 콘텐츠 정규 컬럼 4개와
  * 확장 옵션 JSON(CLOB)을 그대로 읽어 Java {@link server.service.core.popup.PopupContentAssembler}가

@@ -5,11 +5,15 @@ using System.Windows;
 namespace Popup.Views.Contents
 {
     /*
-     * SURVEY·QUIZ(VIDEO+QUIZ 포함) 문항 디자인 버전.
+     * POL-06-03 : 표현·수명
+     * ■ 설문 디자인 버전 선택
+     * - in : Current(string) 적용 버전 · Normalize(value) 설정 문자열
+     * - out: CreateResources() 공통 스타일 + 선택 버전 SurveyStyles.Vn.xaml을 합친 ResourceDictionary
+     * - SURVEY·QUIZ(VIDEO+QUIZ 포함) 문항 디자인 버전. 표현만 바꾸며 답변 계약은 바꾸지 않는다.
      * 디자인이 바뀌거나 원복될 수 있어 버전마다 SurveyDesigns/SurveyStyles.Vn.xaml을 완결된 사본으로 둔다.
      * 지난 버전 파일은 고치지 않고, 바꿀 때는 최신 버전을 고치거나 새 버전을 추가한다.
      *   V1: 무채색(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경, 가로형 체크 없음)
-     *   V2: 색 규칙(콘텐츠 #F5F6F8, 문항 흰색, 선택 = 공통 강조 #171717 테두리 + 체크, 글자 #222222)
+     *   V2: 색 규칙(흰 콘텐츠, 문항 카드 없이 아래 구분선, 선택 = 공통 강조 #171717 테두리(세로형 행은 + 체크), 글자 #222222)
      * 고르는 곳은 appsettings.json PopupApi.SurveyDesignVersion(앱 전체, 없거나 모르는 값이면 Latest)이다.
      * API 계약 필드가 아니며 관리자 웹 미리보기는 SurveyPreview.tsx의 SURVEY_DESIGN_VERSION으로 맞춘다.
      * 버전마다 반드시 정의할 키: SurveyContentBackground(본문·푸터 배경, PopupWindow도 읽음), SurveyChipCheckWidth.

@@ -19,9 +19,12 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 /**
- * WPF 전용 API({@code /p/api/wpf/**})의 클라이언트 버전 검증 인터셉터.
+ * POL-15-02 : 인증·버전
+ * ■ WPF 전용 API({@code /p/api/wpf/**})의 클라이언트 버전 검증 인터셉터
+ * - in : 요청 헤더 {@code X-Client-Version} · WpfClientVersionProps(enabled·minimum-supported-version·require-header·latest-version)
+ * - out: 통과 true · 미달/헤더 문제면 426 + WpfClientVersionErrorResponse JSON 후 false
  *
- * <p>[추가 이유 — 설계 13 §5·§7·§9·§10] 컨트롤러 비즈니스 처리 전에 요청 헤더 {@code X-Client-Version}을
+ * <p>컨트롤러 비즈니스 처리 전에 요청 헤더 {@code X-Client-Version}을
  * 서버 최소 지원 버전({@link WpfClientVersionProps})과 숫자 비교해, 미달이면 {@code 426 Upgrade Required}와
  * {@link WpfClientVersionErrorResponse} JSON으로 차단한다. 각 컨트롤러에 반복 구현하지 않도록 공통 계층에 두었고,
  * 로그인 API(최초 접점)부터 목록·결과 API까지 모든 WPF 요청에 요청마다 적용되어 실행 중 서버 기준이 바뀌어도
@@ -34,7 +37,7 @@ import java.util.Optional;
  * <p>[정책]</p>
  * <ul>
  *   <li>{@code minimum-supported-version}이 비어 있으면 검증하지 않는다(모두 통과).</li>
- *   <li>헤더 없음/해석 불가: {@code require-header=true}(기본)면 426(T5 — 구 클라이언트가 우회 못 함), false면 통과.</li>
+ *   <li>헤더 없음/해석 불가: {@code require-header=true}(기본)면 426(헤더를 보내지 않는 구 클라이언트가 우회하지 못함), false면 통과.</li>
  *   <li>{@code client >= minimum}이면 통과(최신이 아니어도 허용). 미만이면 426.</li>
  * </ul>
  */

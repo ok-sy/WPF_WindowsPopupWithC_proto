@@ -4,7 +4,11 @@ using System.Windows;
 namespace Popup.Views.Contents
 {
     /*
-     * [TODO60] 영상 결합(VIDEO+QUIZ) 화면의 재생 영역 높이를 원본 영상 비율과 실제 가용 너비로 정한다.
+     * POL-05-03 : 결합 화면
+     * ■ VIDEO+QUIZ 재생 영역 원본 비율 높이(VideoPopupView partial)
+     * - in : EnableAspectSizing(availableHeight) 부모 스크롤 가용 높이 · UpdateNaturalVideoSize(width, height) 원본 표시 크기
+     * - out: VideoRow.Height 변경 · NaturalVideoSizeChanged 이벤트
+     * - 영상 결합(VIDEO+QUIZ) 화면의 재생 영역 높이를 원본 영상 비율과 실제 가용 너비로 정한다.
      *
      * 예전에는 VideoQuizPopupView가 영상 뷰 전체(제목·영상·설명) 행을 300 DIP로 고정해 제목·설명이 재생 공간을 차지했다.
      * 이제 제목·설명은 각자 Auto 행이고, 재생 행(VideoRow) 높이만 H = W × h / w로 계산한다(W = 재생 영역 실제 너비).
@@ -23,7 +27,7 @@ namespace Popup.Views.Contents
     public partial class VideoPopupView
     {
         internal const double DefaultAspectRatio = 16.0 / 9.0;
-        /* 상한·하한 초기값. 실화면 비교 후 TODO60 문서에 최종값을 기록한다. */
+        /* 상한·하한 초기값. 실화면 비교 후 docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md에 최종값을 기록한다. */
         internal const double MaxHeightRatio = 0.7;
         internal const double MinVideoHeight = 180;
 
@@ -33,13 +37,13 @@ namespace Popup.Views.Contents
         private double _lastAspectWidth = double.NaN;
         private double _previousAspectWidth = double.NaN;
 
-        /// <summary>[TODO60] 메타데이터로 확인한 원본 영상 표시 크기. 아직 모르면 null.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 메타데이터로 확인한 원본 영상 표시 크기. 아직 모르면 null.</summary>
         internal Size? NaturalVideoSize => _naturalVideoSize;
 
-        /// <summary>[TODO60] 원본 영상 크기가 처음 확인되거나 바뀌었을 때.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 원본 영상 크기가 처음 확인되거나 바뀌었을 때.</summary>
         public event EventHandler? NaturalVideoSizeChanged;
 
-        /// <summary>[TODO60] 재생 행을 원본 비율 높이로 바꾼다. availableHeight는 상한 계산에 쓸 부모 스크롤 가용 높이.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 재생 행을 원본 비율 높이로 바꾼다. availableHeight는 상한 계산에 쓸 부모 스크롤 가용 높이.</summary>
         internal void EnableAspectSizing(Func<double> availableHeight)
         {
             _aspectSizing = true;
@@ -59,7 +63,7 @@ namespace Popup.Views.Contents
             RefreshAspectHeight();
         }
 
-        /// <summary>[TODO60] 너비·가용 높이·원본 크기가 바뀌면 재생 행 높이를 다시 계산한다.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 너비·가용 높이·원본 크기가 바뀌면 재생 행 높이를 다시 계산한다.</summary>
         internal void RefreshAspectHeight()
         {
             if (!_aspectSizing || _fullScreenWindow != null) return;

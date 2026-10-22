@@ -29,7 +29,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * [설계 10 §6·§10] SSO·토큰 프로토타입의 HTTP 계약을 MockMvc(standalone)로 검증한다.
+ * POL-15-02 : 인증·버전
+ * POL-09-01 : 3 API 순서
+ * POL-16-02 : 재현 가능한 검증
+ * ■ SSO·토큰 프로토타입 HTTP 계약 테스트
+ * - SSO·토큰 프로토타입의 HTTP 계약을 MockMvc(standalone)로 검증한다(T번호는 시험 항목 구분).
  * <ul>
  *   <li>T1: 로그인 → {accessToken, tokenType=Bearer, expiresAt(ISO)} → 그 토큰으로 팝업 API 200</li>
  *   <li>T2: TTL 경과 → 같은 토큰으로 팝업 API 401 WPF_UNAUTHORIZED → 재로그인 → 새 토큰으로 200</li>

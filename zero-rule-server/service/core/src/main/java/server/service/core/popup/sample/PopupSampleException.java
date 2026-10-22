@@ -3,7 +3,12 @@ package server.service.core.popup.sample;
 
 
 /**
- * [TODO65] 저장 데이터가 응답 계약을 만족하지 않을 때(잘못된 JSON·객체가 아닌 JSON·필수 콘텐츠 누락·모르는 코드).
+ * POL-13-03 : 적용·샘플 구분
+ * POL-12-02 : 현행 임시 복구
+ * ■ 샘플 데이터 계약 위반 예외
+ * - in : reason(Reason) 원인 · contentId(String) 콘텐츠 ID · message · cause
+ * - out: RuntimeException(reason()·contentId() 조회)
+ * - 저장 데이터가 응답 계약을 만족하지 않을 때(잘못된 JSON·객체가 아닌 JSON·필수 콘텐츠 누락·모르는 코드).
  * 서버 데이터 문제이므로 WPF에는 500 WPF_INTERNAL(메시지 비노출)로 응답하고, 원인은 로그에 콘텐츠 ID와 함께 남긴다.
  * 빈 content·기본값으로 덮어 정상처럼 반환하지 않는다.
  */

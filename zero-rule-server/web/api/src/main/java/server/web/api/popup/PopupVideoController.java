@@ -21,8 +21,11 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * File-backed video streaming on Spring MVC / embedded Tomcat.
- * Enable explicitly and point root at a directory containing public popup videos.
+ * POL-05-01 : 재생 경로
+ * ■ 팝업 영상 파일 스트리밍 (GET /p/api/popups/video)
+ * - in : popup.video.root 공개 영상 폴더(생성자) · 요청 path
+ * - out: Resource 영상 본문(Range 요청 시 206/416은 Spring MVC가 처리)
+ * - 파일 기반 HTTP 영상 재생 경로다. popup.video.enabled=true일 때만 등록되며 root 밖 파일은 403으로 막는다.
  */
 @RestController
 @ConditionalOnProperty(name = "popup.video.enabled", havingValue = "true")
@@ -43,6 +46,12 @@ public class PopupVideoController {
         }
     }
 
+    /**
+     * ■ 쿼리 경로로 영상 스트리밍 (GET /p/api/popups/video?path=)
+     * - in : path(String) root 기준 상대 경로 또는 root 안의 절대 경로
+     * - out: ResponseEntity<Resource> 200(전체)·206(Range) · 400/403/404/415
+     * - 확장자(mp4·m4v·webm·ogv)로 Content-Type을 정하고 캐시하지 않는다(no-store).
+     */
     @GetMapping("/p/api/popups/video")
     public ResponseEntity<Resource> video(@RequestParam("path") String path) {
         Path file = resolveVideo(path);
@@ -53,9 +62,9 @@ public class PopupVideoController {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         }
 
-        // Keep status 200 here: Spring MVC converts Resource + Range to 206/416.
-        // Do not use InputStreamResource, readAllBytes, or set a full-file Content-Length:
-        // the converters stream the requested region(s) and compute their lengths.
+        // 여기서는 200을 유지한다: Spring MVC가 Resource + Range를 206/416으로 바꾼다.
+        // InputStreamResource·readAllBytes·전체 파일 Content-Length 지정은 쓰지 않는다:
+        // 변환기가 요청 구간만 스트리밍하고 길이를 계산한다.
         return ResponseEntity.ok()
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
@@ -66,22 +75,28 @@ public class PopupVideoController {
     }
 
 
+    /**
+     * ■ URL 경로로 영상 스트리밍 (GET /p/api/popups/video/{*path})
+     * - in : path(String) URL 경로에 붙인 root 기준 상대 경로
+     * - out: {@link #video(String)}와 같다
+     */
     @GetMapping("/p/api/popups/video/{*path}")
     public ResponseEntity<Resource> videoByPath(
             @org.springframework.web.bind.annotation.PathVariable("path") String path) {
-        // The catch-all path variable includes its leading slash.
+        // catch-all 경로 변수는 앞의 슬래시를 포함한다.
         return video(path.startsWith("/") ? path.substring(1) : path);
     }
 
+    /** 요청 경로를 실제 경로로 정규화하고 root 안의 읽을 수 있는 일반 파일인지 확인한다. */
     private Path resolveVideo(String value) {
         if (value.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         try {
             Path requested = Path.of(value);
-            // Accept either a root-relative path or an absolute path inside root.
+            // root 기준 상대 경로와 root 안의 절대 경로를 모두 받는다.
             Path candidate = root.resolve(requested).normalize();
-            // Canonicalize Windows short names and symlinks/junctions before containment checks.
+            // 포함 여부 검사 전에 Windows 짧은 이름·심볼릭 링크/정션을 실제 경로로 바꾼다.
             Path real = candidate.toRealPath();
             if (!real.startsWith(root)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN);

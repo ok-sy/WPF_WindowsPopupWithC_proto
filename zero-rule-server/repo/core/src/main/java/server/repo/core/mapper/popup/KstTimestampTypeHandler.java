@@ -14,9 +14,14 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 /**
- * OffsetDateTime 파라미터를 KST 로컬 시각의 TIMESTAMP로 바인딩하는 MyBatis 타입 핸들러.
+ * POL-11-03 : 시간 경계
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * ■ KST TIMESTAMP 바인딩 타입 핸들러
+ * - in : OffsetDateTime 파라미터(임의 오프셋, null 허용)
+ * - out: KST 벽시계 시각의 TIMESTAMP 바인딩. 조회 시 KST 오프셋을 붙인 OffsetDateTime
+ * - OffsetDateTime 파라미터를 KST 로컬 시각의 TIMESTAMP로 바인딩하는 MyBatis 타입 핸들러.
  *
- * <p>[추가 이유 — 기준 5] POPUP 스키마의 TIMESTAMP 컬럼은 시간대 없이 KST 로컬 시각을 저장한다.
+ * <p>추가 이유(Oracle 전환): POPUP 스키마의 TIMESTAMP 컬럼은 시간대 없이 KST 로컬 시각을 저장한다.
  * PostgreSQL에서는 timestamptz 바인드가 세션 시간대로 자동 변환됐지만, Oracle은 TIMESTAMP WITH TIME ZONE
  * 바인드를 TIMESTAMP 컬럼에 넣을 때 시간대만 버리므로 클라이언트가 +00:00으로 보낸 값이 9시간 어긋난다.
  * 이 핸들러는 어떤 오프셋으로 들어와도 KST 벽시계 시각으로 바꿔 {@code setTimestamp}로 바인딩한다.

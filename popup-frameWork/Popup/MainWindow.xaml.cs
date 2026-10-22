@@ -16,19 +16,22 @@ using System.Windows.Threading;
 namespace Popup
 {
     /*
-     * 관리 화면 창. 팝업 조회·표시 흐름의 진입점이다.
-     *
-     * [기준 2·4·6 — 이 파일에서 바뀐 것]
-     *   - appsettings의 UserId를 제거했다. 사용자는 서버가 인증 헤더로 식별한다.
+     * POL-09-01 : 3 API 순서
+     * POL-11-01 : 노출 판단 소유
+     * POL-12-02 : 현행 임시 복구
+     * POL-15-02 : 인증·버전
+     * ■ 관리 화면 창(API 모드 조회·표시 흐름의 진입점)
+     * - in : appsettings.json PopupApi 설정 · 실행 인자(-Demo / -Api)
+     * - out: 없음(주기·수동 조회, 팝업 1건 표시, 결과 큐 전송)
+     *   - 요청에 사용자 ID를 싣지 않는다. 사용자는 서버가 인증 헤더로 식별한다.
      *     인증 헤더는 IAuthHeaderProvider(확장 지점)가 공급하고, 통합 토큰 필터 적용 전 개발 단계에서는
      *     DevUserId를 X-Dev-User-Id 헤더로 보낸다.
-     *   - /statuses 조회와 클라이언트 완료 필터, PopupPolicyService(기간·숨김 로컬 판단)를 제거했다.
-     *     서버 단건 조회(POST /p/api/wpf/popups, 설계 35)가 표시할 1건을 정한다.
+     *   - 기간·숨김·완료를 로컬에서 판단하지 않는다. 서버 단건 조회(POST /p/api/wpf/popups)가 표시할 1건을 정한다.
      *   - 팝업 결과는 PopupResultQueue에 저장한 뒤 팝업이 닫힐 때마다(OnPopupFinished) 전송한다. 시작·조회 직전에 미전송 큐를 먼저 보낸다.
-     *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). [설계 35] 팝업 표시 중에는 조회하지 않고,
+     *   - 조회 주기는 서버 응답 pollingIntervalSeconds가 우선한다(30~60분). 팝업 표시 중에는 조회하지 않고,
      *     창이 닫혀 결과를 보낸 뒤 nextStatus에 따라 다음 조회를 이어 간다.
      *
-     * [설계 10 — SSO·토큰 프로토타입]
+     * [SSO·토큰 프로토타입]
      *   - Auth.Mode=SsoPrototype 이면 SsoAuthHeaderProvider(사내 SSO Negotiate → 서버 로그인 API → 메모리 토큰)를 쓴다.
      *     토큰 갱신은 서버 401(PopupApiService 재시도)과 정기 주기(Auth.PeriodicLoginMinutes, 기본 60분)로만 일어난다.
      *     창이 닫힐 때(앱 종료) 정기 루프를 멈추고 메모리 토큰을 지운다.
@@ -39,7 +42,7 @@ namespace Popup
         private readonly PopupService _popupService;
         private readonly PopupApiService? _popupApiService;
         private readonly PopupResultQueue? _resultQueue;
-        /* [설계 10] SsoPrototype 모드의 인증 공급자. 정기 재로그인 루프 정지·토큰 폐기를 위해 보관한다(다른 모드는 null). */
+        /* POL-15-02 : 인증·버전 — SsoPrototype 모드의 인증 공급자. 정기 재로그인 루프 정지·토큰 폐기를 위해 보관한다(다른 모드는 null). */
         private readonly SsoAuthHeaderProvider? _ssoAuthHeaderProvider;
         private readonly bool _demoMode;
         private readonly bool _autoLoadOnStartup;
@@ -51,21 +54,28 @@ namespace Popup
         private TimeSpan? _nextRecoveryDelay;
 
         /*
-         * [설계 35] 단건 순차 표시: 지금 화면에 서버 팝업 1건이 떠 있으면 true. 표시 중에는 주기·수동 조회를 하지 않고
+         * POL-11-01 : 노출 판단 소유
+         * 단건 순차 표시: 지금 화면에 서버 팝업 1건이 떠 있으면 true. 표시 중에는 주기·수동 조회를 하지 않고
          * (중복 조회·표시 방지), 창이 닫혀 결과가 처리된 뒤 nextStatus에 따라 다음 조회를 이어 간다.
-         * 이전의 실행 중 표시 ID 기억(_shownPopupIds)은 서버가 완료·재노출 유예로 판단하므로 삭제했다.
+         * 이미 표시한 팝업 ID를 로컬에 기억하지 않는다(서버가 완료·재노출 유예로 판단).
          */
         private bool _popupShowing;
 
         /* App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다. Demo Mode에서는 선택 화면을 계속 표시한다. */
         public bool IsDemoMode => _demoMode;
 
-        /* [Demo SSO·로그인 테스트] 인메모리 DemoMode이고 DemoSsoLoginTest=true일 때만 설정을 넘긴다(그 밖에는 null → 버튼 숨김). */
+        /* POL-14-02 : Demo 모드 — [Demo SSO·로그인 테스트] 인메모리 DemoMode이고 DemoSsoLoginTest=true일 때만 설정을 넘긴다(그 밖에는 null → 버튼 숨김). */
         public PopupClientSettings? DemoAuthTestSettings { get; }
 
-        /* [설계 51] -Demo -Api일 때만 설정을 넘긴다(그 밖에는 null → 인메모리 Demo). 이 창은 Demo와 같이 서버를 호출하지 않는다. */
+        /* POL-14-02 : Demo 모드 — -Demo -Api일 때만 설정을 넘긴다(그 밖에는 null → 인메모리 Demo). 이 창은 Demo와 같이 서버를 호출하지 않는다. */
         public PopupClientSettings? ApiDemoSettings { get; }
 
+        /*
+         * ■ 관리 화면 생성
+         * - in : 없음(appsettings.json·실행 인자를 직접 읽음)
+         * - out: 없음 · 예외: InvalidOperationException(appsettings 누락)
+         * - 설정을 읽어 API 모드면 인증 공급자·PopupApiService·결과 큐를 만들고, Demo 모드면 서버 객체를 만들지 않는다.
+         */
         public MainWindow()
         {
             InitializeComponent();
@@ -86,10 +96,11 @@ namespace Popup
             if (!_demoMode)
             {
                 /*
-                 * [기준 6] 인증 헤더 공급자 선택. PopupApiService는 헤더 값만 받는다.
+                 * POL-15-02 : 인증·버전
+                 * 인증 헤더 공급자 선택. PopupApiService는 헤더 값만 받는다.
                  *   None         : 헤더 없음(서버 dev-user-header 모드에서는 X-Dev-User-Id 로 사용자 지정)
                  *   Static       : appsettings 고정 문자열
-                 *   SsoPrototype : [설계 10] 사내 SSO(Windows 통합 인증) → 서버 프로토타입 로그인 → 메모리 토큰, 401 시 재로그인
+                 *   SsoPrototype : 사내 SSO(Windows 통합 인증) → 서버 프로토타입 로그인 → 메모리 토큰, 401 시 재로그인
                  * 통합 토큰(타 팀) 규격이 확정되면 여기에 구현체를 하나 더 고르면 된다.
                  */
                 IAuthHeaderProvider authHeaderProvider;
@@ -99,7 +110,7 @@ namespace Popup
                         _ssoAuthHeaderProvider = new SsoAuthHeaderProvider(
                             new SsoClient(settings.AuthSsoUrl),
                             new WpfLoginClient(settings.BaseUrl, settings.AuthLoginPath));
-                        // [설계 10 §4.2] 1시간(설정값) 주기 선제 재로그인. 0 이하이면 401 기반 재로그인만 사용.
+                        // POL-15-02 : 인증·버전 — 1시간(설정값) 주기 선제 재로그인. 0 이하이면 401 기반 재로그인만 사용.
                         _ssoAuthHeaderProvider.ClientVersionRejected += (_, exception) => HandleClientVersionRejected(exception);
                         _ssoAuthHeaderProvider.StartPeriodicLogin(TimeSpan.FromMinutes(settings.AuthPeriodicLoginMinutes));
                         authHeaderProvider = _ssoAuthHeaderProvider;
@@ -116,12 +127,12 @@ namespace Popup
                     settings.BaseUrl,
                     authHeaderProvider,
                     ResolveDevUserId(settings.DevUserId));
-                // [설계 13 §11] 결과 전송의 426은 FlushAsync가 예외로 전파하고 LoadAndShowAvailablePopupsAsync가 처리한다.
+                // POL-15-02 : 인증·버전 — 결과 전송의 426은 FlushAsync가 예외로 전파하고 LoadAndShowAvailablePopupsAsync가 처리한다.
                 _resultQueue = new PopupResultQueue(_popupApiService);
             }
             else
             {
-                // [설계 51-8] 인메모리·API Demo 모두 이 창은 API 서비스·결과 큐·주기 조회를 만들지 않는다(조회는 DemoWindow가 수동으로만).
+                // POL-14-02 : Demo 모드 — 인메모리·API Demo 모두 이 창은 API 서비스·결과 큐·주기 조회를 만들지 않는다(조회는 DemoWindow가 수동으로만).
                 Title = "Popup 관리 화면 - Demo Mode";
             }
 
@@ -144,7 +155,7 @@ namespace Popup
          *     "DevUserId": ""
          *   }
          * }
-         * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype(설계 10)에서만 쓴다.
+         * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype에서만 쓴다.
          * SurveyDesignVersion 은 SURVEY·QUIZ 문항 디자인 버전(SurveyDesign). 없거나 모르는 값이면 최신 버전.
          */
         private static PopupClientSettings LoadPopupClientSettings()
@@ -172,7 +183,7 @@ namespace Popup
 
             // [Demo Mode] appsettings의 DemoMode 외에 실행 인자 -Demo(--demo)로도 켤 수 있다.
             // 배포한 exe를 설정 파일 수정 없이 시연할 때 쓴다: Popup.exe --demo
-            // [설계 51-1] Demo에 -Api를 더하면 API Demo(수동 호출). 인자 규칙은 LaunchArguments 참고.
+            // POL-14-02 : Demo 모드 — Demo에 -Api를 더하면 API Demo(수동 호출). 인자 규칙은 LaunchArguments 참고.
             LaunchArguments arguments = LaunchArguments.Current;
             bool demoMode = arguments.Demo || GetBoolean(api, "DemoMode", false);
             if (arguments.Api && !demoMode)
@@ -237,9 +248,12 @@ namespace Popup
                 : defaultValue;
 
         /*
-         * [개발 전용] X-Dev-User-Id 헤더로 보낼 사번. 1순위 환경변수 POPUP_DEV_USER_ID, 2순위 appsettings DevUserId.
+         * POL-15-02 : 인증·버전
+         * ■ 개발용 사번 결정
+         * - in : configuredDevUserId(string) appsettings DevUserId · out: string? 사번(없으면 null)
+         * - [개발 전용] X-Dev-User-Id 헤더로 보낼 사번. 1순위 환경변수 POPUP_DEV_USER_ID, 2순위 appsettings DevUserId.
          * 둘 다 없으면 null → 헤더를 보내지 않는다(운영: 통합 토큰 필터가 사용자를 식별).
-         * 예전의 POPUP_USER_ID / PopupApi.UserId(요청 파라미터용)는 더 이상 읽지 않는다.
+         * POPUP_USER_ID / PopupApi.UserId(요청 파라미터용)는 읽지 않는다.
          */
         internal static string? ResolveDevUserId(string configuredDevUserId)
         {
@@ -249,7 +263,8 @@ namespace Popup
         }
 
         /*
-         * [설계 10] 앱 종료(트레이 종료 → Close)에서 정기 재로그인 루프를 멈추고 메모리 토큰을 지운다.
+         * POL-15-02 : 인증·버전
+         * 앱 종료(트레이 종료 → Close)에서 정기 재로그인 루프를 멈추고 메모리 토큰을 지운다.
          * API 모드의 X 버튼은 App.MainWindow_Closing이 취소하고 트레이로 숨기므로 여기까지 오지 않는다.
          */
         protected override void OnClosed(EventArgs e)
@@ -298,14 +313,15 @@ namespace Popup
             _pollingTimer.Start();
         }
 
-        // [설계 35] 빈 조회·EMPTY 이후 가장 최근 조회 간격만큼 기다린다(30~60분으로 제한).
+        // POL-09-03 : 저장 응답 — 빈 조회·EMPTY 이후 가장 최근 조회 간격만큼 기다린다(30~60분으로 제한).
         private static TimeSpan GetPollingDelay(int intervalSeconds)
         {
             return PopupPollingRecovery.NormalDelay(intervalSeconds);
         }
 
         /*
-         * [기준 4] 서버가 응답으로 내려준 조회 간격을 적용한다. 서버 값이 있으면 appsettings 값보다 우선한다.
+         * POL-09-02 : 조회 응답
+         * 서버가 응답으로 내려준 조회 간격을 적용한다. 서버 값이 있으면 appsettings 값보다 우선한다.
          */
         private void ApplyPollingInterval(int serverIntervalSeconds)
         {
@@ -323,7 +339,8 @@ namespace Popup
         }
 
         /*
-         * [설계 13 §8·§10·§11] 서버 426(클라이언트 버전 미지원) 처리 — 조회·로그인·결과 전송 공통.
+         * POL-15-02 : 인증·버전
+         * 서버 426(클라이언트 버전 미지원) 처리 — 조회·로그인·결과 전송 공통.
          *   - 401 재로그인 경로에 들어가지 않는다(WpfClientVersionException은 별도 타입).
          *   - 같은 API를 무한 재시도하지 않도록 주기 조회 타이머를 멈춘다(프로그램을 업데이트 후 다시 실행해야 한다).
          *   - pending 결과는 PopupResultQueue가 지우지 않았으므로 새 버전에서 재전송된다.
@@ -362,7 +379,8 @@ namespace Popup
         }
 
         /*
-         * [설계 10 — 로그인 테스트] 팝업 조회와 무관하게 "SSO GET → XML(MAIN_USER_ID·MAIN_USER_CLASSI_CODE) 파싱 → 로그인 API → 토큰"
+         * POL-15-02 : 인증·버전
+         * [로그인 테스트] 팝업 조회와 무관하게 "SSO GET → XML(MAIN_USER_ID·MAIN_USER_CLASSI_CODE) 파싱 → 로그인 API → 토큰"
          * 까지만 수행하고 단계별 결과를 보여준다. 실제 사내 SSO 또는 임시 SSO 프로그램(popup-frameWork/MockSso)에 붙여
          * 로그인 흐름을 눈으로 확인하는 용도. 성공하면 얻은 토큰이 현재 토큰으로 교체된다(이후 조회에 사용).
          */
@@ -411,19 +429,26 @@ namespace Popup
             }
         }
 
-        /* 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는 공개 팝업 재조회 메서드다. */
+        /*
+         * POL-09-01 : 3 API 순서
+         * ■ 팝업 수동 재조회
+         * - in : 없음 · out: Task(빈 결과·오류는 메시지 상자로 안내)
+         * - 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는 공개 팝업 재조회 메서드다.
+         */
         public async Task RefreshPopupsAsync()
         {
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: true, showErrorMessage: true);
         }
 
         /*
-         * [설계 35] 자동 실행·수동 버튼·주기 조회가 함께 사용하는 단건 조회 메서드다.
+         * POL-09-01 : 3 API 순서
+         * POL-12-02 : 현행 임시 복구
+         * 자동 실행·수동 버튼·주기 조회가 함께 사용하는 단건 조회 메서드다.
          *
          * 순서:
          *  1. 미전송 결과 전송(순서대로 1건씩). 미종결 결과가 남거나 큐 파일을 읽을 수 없으면 조회하지 않고 복구 간격 뒤
-         *     다시 시도한다 — 미전송 결과를 건너뛰고 다음 팝업으로 가지 않는다(임시 기준, 설계 35 §4·39-1).
-         *     이번에 저장한 결과의 nextStatus가 EMPTY면 조회하지 않고 조회 간격을 기다린다(설계 39-2 — 닫힘 직후·복구 재전송 공통).
+         *     다시 시도한다 — 미전송 결과를 건너뛰고 다음 팝업으로 가지 않는다(현행 임시 복구 기준).
+         *     이번에 저장한 결과의 nextStatus가 EMPTY면 조회하지 않고 조회 간격을 기다린다(닫힘 직후·복구 재전송 공통).
          *  2. POST /p/api/wpf/popups — 서버가 판정·정렬한 팝업 최대 1건(deliveryId 포함). 최신 조회 간격 적용.
          *  3. popup=null이면 조회 간격 뒤 다시 조회. 있으면 1건을 표시하고, 표시 중에는 다른 조회를 하지 않는다.
          *  4. 창이 닫히면 OnPopupFinished가 결과를 보내고 nextStatus로 다음 단계를 정한다.
@@ -455,7 +480,7 @@ namespace Popup
                 if (_isClosed || _clientVersionRejected) return;
                 if (!flushed.Blocked && string.Equals(flushed.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
                 {
-                    // [설계 39-2] 방금 저장한 결과(닫힘 직후·복구 재전송 모두)가 EMPTY면 조회하지 않고 최신 조회 간격을 기다린다.
+                    // POL-09-03 : 저장 응답 — 방금 저장한 결과(닫힘 직후·복구 재전송 모두)가 EMPTY면 조회하지 않고 최신 조회 간격을 기다린다.
                     // 저장한 결과가 없는 정상 최초 조회·빈 큐는 그대로 조회한다.
                     _pollingRecovery.Reset();
                     _nextRecoveryDelay = null;
@@ -496,8 +521,9 @@ namespace Popup
 
                 PopupOptions popupOptions = _popupService.CreatePopupOptions(new List<PopupResponseDto> { response.Popup }).Single();
                 /*
-                 * [기준 3·4] PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을 큐로 넘기는 훅만 연결한다.
-                 * [설계 12·35] 결과: 로컬 큐 저장(Enqueue) → 창 닫기 → OnPopupFinished(전송 후 nextStatus에 따라 다음 조회).
+                 * POL-12-02 : 현행 임시 복구
+                 * PopupWindow·View는 서버를 모른다. 창이 닫힐 때 만들어지는 결과 항목을 큐로 넘기는 훅만 연결한다.
+                 * 결과: 로컬 큐 저장(Enqueue) → 창 닫기 → OnPopupFinished(전송 후 nextStatus에 따라 다음 조회).
                  */
                 popupOptions.EnqueueResult = _resultQueue.Enqueue;
                 popupOptions.RetainResultForExit = _resultQueue.RetainForExit;
@@ -544,7 +570,8 @@ namespace Popup
         }
 
         /*
-         * [설계 35] 표시한 팝업 창이 닫히면(결과는 이미 큐에 저장됨) 결과를 보내고 nextStatus로 다음 단계를 정한다.
+         * POL-09-03 : 저장 응답
+         * 표시한 팝업 창이 닫히면(결과는 이미 큐에 저장됨) 결과를 보내고 nextStatus로 다음 단계를 정한다.
          *   - 미종결 결과가 남음(전송 실패 등) → 조회하지 않고 복구 간격 뒤 재시도
          *   - EMPTY → 가장 최근 조회 간격만큼 대기
          *   - AVAILABLE, 또는 확인 불가(후보 확인 실패·이번 저장 결과 없음) → 즉시 조회.
@@ -555,7 +582,7 @@ namespace Popup
         {
             _popupShowing = false;
             if (_isClosed || _clientVersionRejected || _resultQueue == null || _isLoadingPopups) return;
-            // [설계 39-2] 결과 전송·nextStatus 판단은 복구 재전송과 같은 경로(LoadAndShowAvailablePopupsAsync)에서 한다.
+            // POL-12-02 : 현행 임시 복구 — 결과 전송·nextStatus 판단은 복구 재전송과 같은 경로(LoadAndShowAvailablePopupsAsync)에서 한다.
             await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false);
         }
     }

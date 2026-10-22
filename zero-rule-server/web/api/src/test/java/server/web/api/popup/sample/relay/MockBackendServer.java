@@ -16,7 +16,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 /**
- * [TODO70] 테이블·실제 백엔드 없이 확인하는 고정 응답 mock 백엔드(JDK 내장 HttpServer, 추가 의존성 없음).
+ * POL-14-03 : 서버 인계 예제
+ * ■ 중계 샘플 확인용 mock 백엔드
+ * - in : host·port(0이면 임의 포트) · 요청 쿼리 scenario
+ * - out: 시나리오별 고정 응답 · requests()에 받은 요청 기록
+ * - 테이블·실제 백엔드 없이 확인하는 고정 응답 mock 백엔드(JDK 내장 HttpServer, 추가 의존성 없음).
  *
  * <p>{@code POST /api/wpf/popups?scenario=...}. 시나리오: {@code ok}(기본, TEXT), {@code image}·{@code video}·{@code survey}·{@code quiz}·{@code video-quiz}
  * (유형별로 계약 옵션 키를 모두 담은 응답, 파일 web/api/src/test/resources/sample/relay/*.json),

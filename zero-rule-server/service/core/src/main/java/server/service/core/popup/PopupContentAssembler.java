@@ -9,32 +9,39 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 팝업 유형별 content JSON(Map)을 DB 컬럼에서 조립한다.
+ * POL-13-01 : 콘텐츠와 관리 상태
+ * POL-03-01 : 저장·표시 경계
+ * ■ 팝업 content 조립기
+ * - in : PopupEntity(정규 컬럼 + CONTENT_OPTIONS JSON)
+ * - out: 유형별 content Map(순서 보존·가변)
+ * - 팝업 유형별 content JSON(Map)을 DB 컬럼에서 조립한다.
  *
  * <p>[역할] POPUP_CONTENT의 정규 컬럼(제목·설명·본문·미디어URL)과 확장 옵션 JSON(CONTENT_OPTIONS)을
  * 합쳐 WPF·관리자 웹이 소비하는 {@code content} 객체를 만든다.</p>
  *
- * <p>[추가 이유 — 기준 5] PostgreSQL 매퍼는 SQL 안에서 JSONB_BUILD_OBJECT로 조립했다. Oracle은 JSON 함수 지원 범위가
+ * <p>POL-13-01 : 콘텐츠와 관리 상태 — PostgreSQL 매퍼는 SQL 안에서 JSONB_BUILD_OBJECT로 조립했다. Oracle은 JSON 함수 지원 범위가
  * 버전별로 달라 Java에서 조립한다.</p>
  *
- * <p>[조립 규칙 — 설계 18 L-3]</p>
+ * <p>[조립 규칙] POL-13-01 : 콘텐츠와 관리 상태</p>
  * <pre>
  *   1) CONTENT_OPTIONS의 키를 먼저 넣는다. 단, 정규 컬럼 사본과 서버 파생 키({@link #STORED_COPY_KEYS})는 버린다.
  *   2) 유형별 정규 컬럼 값을 넣는다 — 컬럼이 기준 값이며 옵션 JSON의 같은 키를 덮어쓴다.
- *      TEXT   : plainText(=CONTENT_BODY). [설계 37] 통합 전 행의 CONTENT_TITLE·DESCRIPTION은 textBlocks 앞 문단으로 합친다.
+ *      TEXT   : plainText(=CONTENT_BODY). 통합 전 행의 CONTENT_TITLE·DESCRIPTION은 textBlocks 앞 문단으로 합친다.
  *      IMAGE  : imageTitle, imageUrl(=MEDIA_URL), description
  *      VIDEO  : videoTitle, videoUrl(=MEDIA_URL), description
  *      SURVEY / QUIZ : surveyTitle, description
  * </pre>
  * 예전에는 옵션 JSON이 마지막에 병합되어, 저장 때 함께 들어간 오래된 사본이 컬럼 값을 가렸다.
- * 완료 비율·닫기 허용·통과 점수는 응답 최상위 필드로만 제공하고 content에 중복하지 않는다.
+ * 완료 비율·통과 점수는 응답 최상위 필드로만 제공하고 content에 중복하지 않는다.
+ * POL-02-02 : 종료 제어 — 폐기된 완료 전 닫기 허용 키(allowCloseBeforeCompletion)는 저장·응답 어디에도 싣지 않는다.
  * 문항은 응답 최상위 {@code questions}로만 제공한다. null 값도 키로 포함한다(응답 직렬화 시 NON_NULL로 생략).
  * 스프링 빈이 아니라 PopupService가 자신의 ObjectMapper로 직접 생성한다(기존 생성자 시그니처와 테스트 유지).
  */
 public class PopupContentAssembler {
 
     /**
-     * [설계 18 L-3] CONTENT_OPTIONS에 두지 않는 키. 정규 컬럼에 저장되는 값과, 다른 컬럼·테이블에서 파생되어
+     * POL-13-01 : 콘텐츠와 관리 상태
+     * CONTENT_OPTIONS에 두지 않는 키. 정규 컬럼에 저장되는 값과, 다른 컬럼·테이블에서 파생되어
      * 예전 응답 content에 중복으로 실리던 값이다. 저장 시 제거하고({@link #withoutStoredCopies}), 조회 시에도 무시한다.
      * 폐기된 키도 여기에 두어 요청에 남아 있어도 저장하지 않고, 예전 행의 사본도 응답에 싣지 않는다.
      */
@@ -50,12 +57,17 @@ public class PopupContentAssembler {
 
     private final ObjectMapper objectMapper;
 
+    /** ■ 생성 - in : objectMapper(ObjectMapper) CONTENT_OPTIONS 파싱용 - out: 조립기 인스턴스 */
     public PopupContentAssembler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     /**
-     * 엔티티의 콘텐츠 컬럼으로 content Map을 만든다. 결과는 순서가 보존되는 가변 Map이다.
+     * POL-13-01 : 콘텐츠와 관리 상태
+     * ■ content 조립
+     * - in : popup(PopupEntity) 콘텐츠 컬럼·CONTENT_OPTIONS를 가진 팝업 행
+     * - out: Map&lt;String, Object&gt; 유형별 content · 예외: IllegalStateException(CONTENT_OPTIONS 해석 실패)
+     * - 엔티티의 콘텐츠 컬럼으로 content Map을 만든다. 결과는 순서가 보존되는 가변 Map이다.
      *
      * @throws IllegalStateException CONTENT_OPTIONS가 JSON 객체로 해석되지 않을 때. 손상 데이터를 빈 값으로
      *                               숨기지 않고 팝업 ID와 함께 실패시켜 추적 가능하게 한다 (원본 parseContentJson 정책).
@@ -66,7 +78,7 @@ public class PopupContentAssembler {
         String type = popup.popupType() == null ? "" : popup.popupType().toUpperCase();
         switch (type) {
             case "TEXT" -> {
-                // [설계 37] 제목·설명은 본문(textBlocks)으로 통합. 통합 전 행의 컬럼 값은 본문 앞 문단으로 합친다.
+                // POL-03-01 : 저장·표시 경계 — 제목·설명은 본문(textBlocks)으로 통합. 통합 전 행의 컬럼 값은 본문 앞 문단으로 합친다.
                 content.put("plainText", popup.contentBody());
                 PopupRichText.mergeLegacyHeader(content, popup.contentTitle(), popup.description());
             }

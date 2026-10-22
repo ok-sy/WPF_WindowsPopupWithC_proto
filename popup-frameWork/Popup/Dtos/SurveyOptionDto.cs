@@ -4,12 +4,10 @@ using System.Text.Json.Serialization;
 namespace Popup.Dtos
 {
     /*
-     * 설문 또는 퀴즈의 선택지 하나를 담는 DTO
-     *
-     * SingleChoice
-     * MultipleChoice
-     *
-     * 문항에서 공통으로 사용한다.
+     * POL-06-01 : 문항·서식
+     * ■ 설문·퀴즈 선택지 DTO
+     * - SingleChoice / MultipleChoice 문항에서 공통으로 사용하는 선택지 하나.
+     * - 식별자(OptionId)·답변 값(Value)과 표시 서식(TextBlocks)을 구분한다.
      */
     public class SurveyOptionDto
     {
@@ -34,12 +32,13 @@ namespace Popup.Dtos
         public string Text { get; set; } =
             string.Empty;
 
-        // [TODO55] 선택지 표시 문구 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Text 대신 표시하고, 없거나 비었거나 깨졌으면 Text을 표시한다.
+        // POL-06-01 : 문항·서식 — 선택지 표시 문구 서식(TEXT textBlocks와 같은 문단·구간 구조). 있으면 Text 대신 표시하고, 없거나 비었거나 깨졌으면 Text을 표시한다.
         [JsonConverter(typeof(LenientTextBlocksConverter))]
         public List<PopupTextBlockDto>? TextBlocks { get; set; }
 
         /*
-         * [설계 12 §4 — 로컬 채점] 정답 선택지 여부.
+         * POL-06-02 : 선택·제출
+         * 정답 선택지 여부(WPF 로컬 채점용).
          * 서버 PopupOptionDto.isCorrect. QUIZ 팝업에만 내려오며 그 외에는 null(필드 생략)이다.
          * 선택형 문항은 선택한 선택지 집합이 isCorrect=true 집합과 정확히 같을 때만 정답이다.
          */

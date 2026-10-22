@@ -14,7 +14,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/** [설계 28] TEXT 본문 서식(textBlocks) 검증·plainText 파생·저장 경로. */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * POL-03-02 : 문단·글자 서식
+ * ■ TEXT 본문 서식(textBlocks) 검증·plainText 파생·저장 경로 테스트
+ */
 class PopupRichTextTest {
 
     private static Map<String, Object> run(String text, Object... pairs) {
@@ -45,11 +49,13 @@ class PopupRichTextTest {
         return dto;
     }
 
+    /** plainText 파생은 공백·줄바꿈·빈 문단을 유지하고 null이면 null이다. */
     @Test void derivesPlainTextPreservingSpacesLineBreaksAndEmptyParagraphs() {
         assertEquals("확인 후 다시 확인하세요\n\n줄1\n  <b>&  ", PopupRichText.validateAndDerivePlainText(sample()));
         assertNull(PopupRichText.validateAndDerivePlainText(null));
     }
 
+    /** 취소선은 글자를 유지하며 밑줄·문단 서식과 함께 쓸 수 있다. */
     @Test void strikethroughKeepsTextAndCombinesWithUnderlineAndParagraphFormat() {
         Map<String, Object> paragraph = block("RIGHT", run("변경 전", "strikethrough", true, "underline", true),
                 run(" 변경 후", "strikethrough", false));
@@ -59,6 +65,7 @@ class PopupRichTextTest {
         assertEquals("기존", PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run("기존")))));
     }
 
+    /** boolean이 아닌 strikethrough는 거부한다. */
     @Test void rejectsNonBooleanStrikethrough() {
         for (Object value : List.of("true", 1, List.of(), Map.of())) {
             assertThrows(IllegalArgumentException.class, () -> PopupRichText.validateAndDerivePlainText(
@@ -66,12 +73,14 @@ class PopupRichTextTest {
         }
     }
 
+    /** 저장 본문은 클라이언트 plainText가 아니라 textBlocks에서 파생한다. */
     @Test void savedBodyComesFromTextBlocksNotClientPlainText() {
         Map<String, Object> content = new HashMap<>(Map.of("plainText", "클라이언트가 보낸 다른 값", "textBlocks", sample()));
         assertEquals("확인 후 다시 확인하세요\n\n줄1\n  <b>&  ", PopupService.bodyText(content));
         assertEquals("기존 본문", PopupService.bodyText(new HashMap<>(Map.of("plainText", "기존 본문"))));
     }
 
+    /** 허용 목록 밖의 키·정렬·크기·글꼴·색 값을 거부한다. */
     @Test void rejectsValuesOutsideAllowList() {
         List<Object> bad = List.of(
                 List.of(block("JUSTIFY", run("a"))),
@@ -92,7 +101,7 @@ class PopupRichTextTest {
         }
     }
 
-    /** [설계 49·TODO63] 문단 들여쓰기 단계: 0 이상 정수(단계 수 제한 없음), 누락 = 0. plainText에는 공백·탭을 넣지 않는다. */
+    /** POL-03-02 : 문단·글자 서식 — 문단 들여쓰기 단계: 0 이상 정수(단계 수 제한 없음), 누락 = 0. plainText에는 공백·탭을 넣지 않는다. */
     @Test void paragraphIndentIsNonNegativeIntegerWithoutLevelLimit() {
         for (Object level : new Object[]{0, 1, 5, 6, 7, 11, 100, Integer.MAX_VALUE, 2L, 3.0, 11.0}) {
             Map<String, Object> indented = new LinkedHashMap<>(block("LEFT", run("들여쓴 문단")));
@@ -111,6 +120,7 @@ class PopupRichTextTest {
         assertThrows(IllegalArgumentException.class, () -> PopupRichText.validateAndDerivePlainText(List.of(margin)), "임의 CSS 키 거부");
     }
 
+    /** 글자 색은 팔레트 제한 없이 대문자 #RRGGBB 형식만 검사한다. */
     @Test void colorsAreAnyUppercaseHexNotPalette() {
         for (String color : new String[]{"#0891B2", "#FFFFFF", "#FDE047", "#000000"}) {
             assertDoesNotThrow(() -> PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run("a", "color", color)))), color);
@@ -121,6 +131,7 @@ class PopupRichTextTest {
         }
     }
 
+    /** 문단 수·본문 길이 상한을 넘으면 거부한다. */
     @Test void enforcesSizeLimits() {
         List<Object> tooMany = new ArrayList<>();
         for (int i = 0; i <= PopupRichText.MAX_BLOCKS; i++) tooMany.add(block("LEFT"));
@@ -130,6 +141,7 @@ class PopupRichTextTest {
                 () -> PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run(longText)))));
     }
 
+    /** textBlocks는 TEXT 팝업에서만 허용한다. */
     @Test void textBlocksAllowedOnlyForText() {
         assertDoesNotThrow(() -> PopupService.validateRichText(popup("TEXT", Map.of("textBlocks", sample()))));
         assertDoesNotThrow(() -> PopupService.validateRichText(popup("TEXT", Map.of("plainText", "기존"))));
@@ -139,6 +151,7 @@ class PopupRichTextTest {
         }
     }
 
+    /** textBlocks는 CONTENT_OPTIONS에 저장되고 저장된 plainText와 함께 조회된다. */
     @Test void textBlocksAreKeptInContentOptionsAndReturnedWithStoredPlainText() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> options = PopupContentAssembler.withoutStoredCopies(

@@ -68,7 +68,7 @@
         </Setter>
     </Style>
 
-    <!-- [설계 43] 보조 닫기. ActionButtonStyle의 크기·글꼴을 그대로 쓰고 면 색만 밝게 바꿔 주 버튼(제출)과 구분한다. -->
+    <!-- POL-05-02 : 완료·화면 이탈 — 보조 닫기. ActionButtonStyle의 크기·글꼴을 그대로 쓰고 면 색만 밝게 바꿔 주 버튼(제출)과 구분한다. -->
     <Style x:Key="SecondaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
         <Setter Property="Foreground" Value="#111827"/>
         <Setter Property="Background" Value="#F3F4F6"/>

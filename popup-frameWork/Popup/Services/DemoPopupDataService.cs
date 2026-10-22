@@ -5,9 +5,13 @@ using System.Text.Json.Nodes;
 namespace Popup.Services
 {
     /// <summary>
-    /// Java API와 DB 없이 화면 시연에 사용할 WPF 전용 샘플 데이터를 만든다.
-    /// 서버 응답과 같은 DTO 구조를 사용하므로 실제 PopupFactory와 화면을 그대로 검증한다.
-    /// [2026-09-21] TEXT 시연 데이터를 markdown 모드에서 plainText/highlight 구성으로 바꿨다(markdown 모드 제거).
+    /// POL-14-02 : Demo 모드
+    /// ■ Demo 샘플 데이터
+    /// - in : 없음(내장 샘플 JSON · DemoMediaPathService 로컬 미디어 경로)
+    /// - out: CreatePopups → List&lt;PopupResponseDto&gt; · 예외: InvalidOperationException(샘플 JSON 해석 실패)
+    /// - Java API와 DB 없이 화면 시연에 사용할 WPF 전용 샘플 데이터를 만든다.
+    ///   서버 응답과 같은 DTO 구조를 사용하므로 실제 PopupFactory와 화면을 그대로 검증한다.
+    ///   TEXT 시연 데이터는 plainText/highlight 구성이다(markdown 모드 없음).
     /// </summary>
     public static class DemoPopupDataService
     {
@@ -18,8 +22,10 @@ namespace Popup.Services
             };
 
         /*
-         * Demo 샘플 전체(7건)를 만든다. 유형별 선택은 DemoPopupGateway가 후보를 고를 때 한다.
-         * [설계 50-B] 호출부가 모두 인자 없이 부르던 유형 필터 매개변수(requestedPopupType)와 분기를 삭제했다.
+         * ■ Demo 샘플 전체 생성
+         * - in : 없음
+         * - out: List<PopupResponseDto> 샘플 전체(7건)
+         * - 유형 필터 매개변수는 두지 않는다. 유형별 선택은 DemoPopupGateway가 후보를 고를 때 한다.
          */
         public static List<PopupResponseDto> CreatePopups()
         {
@@ -612,12 +618,12 @@ namespace Popup.Services
             videoQuiz["title"] = "동영상 + 퀴즈";
             videoQuiz["height"] = 850;
             videoQuiz["completionRatio"] = 0.8;
-            // [TODO57] 완료 전 닫기 허용을 폐기했다. 시청 기준 전 이탈은 나중에 보기로 확인한다.
+            // POL-02-02 : 종료 제어 — 완료 전 닫기 허용 옵션은 없다. 시청 기준 전 이탈은 나중에 보기로 확인한다.
             videoQuiz["showLater"] = true;
             videoQuiz["showFooter"] = true;
             videoQuiz["showFooterButton"] = true;
             videoQuiz["content"]!["videoEnabled"] = true;
-            // [설계 46] 서버는 VIDEO+QUIZ 제목을 1개(CONTENT_TITLE = surveyTitle)만 저장하고 videoTitle을 같은 값으로 내려준다.
+            // POL-05-03 : 결합 화면 — 서버는 VIDEO+QUIZ 제목을 1개(CONTENT_TITLE = surveyTitle)만 저장하고 videoTitle을 같은 값으로 내려준다.
             videoQuiz["content"]!["videoTitle"] = "교육 영상 이해도 평가";
             videoQuiz["content"]!["autoPlay"] = false;
             videoQuiz["content"]!["allowSeek"] = true;
@@ -630,12 +636,12 @@ namespace Popup.Services
             linked["title"] = "바로가기 버튼 데모";
             linked["showFooter"] = true;
             linked["showFooterButton"] = true;
-            // [설계 30] Footer 동작은 content가 아니라 popup 최상위 값이다.
+            // POL-02-03 : 푸터 역할 — Footer 동작은 content가 아니라 popup 최상위 값이다.
             linked["footerAction"] = "LINK_AND_CLOSE";
             linked["footerLinkUrl"] = "https://example.com/";
             demoPopups.Add(linked);
 
-            // [TODO56-13] 디자인 평가용 설문: 실제 교육 만족도 문구, 기본 글자색, 서식(FONT EDIT) 없음.
+            // POL-06-03 : 표현·수명 — 디자인 평가용 설문: 실제 교육 만족도 문구, 기본 글자색, 서식(FONT EDIT) 없음.
             // 서식·긴 문자열 스트레스 검증은 DEMO-SURVEY-001이 계속 맡는다. 단일/복수 × 세로/가로와 선택 문항을 모두 포함한다.
             JsonObject plainSurvey = demoPopups.First(node => node?["popupId"]?.GetValue<string>() == "DEMO-SURVEY-001")!.DeepClone().AsObject();
             plainSurvey["popupId"] = "DEMO-SURVEY-PLAIN";

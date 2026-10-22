@@ -16,6 +16,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * POL-07-03 : 저장 경계
+ * POL-06-02 : 선택·제출
+ * ■ 관리자 팝업 저장 검증 테스트(문항 템플릿·IMAGE 크기·숨김 일수·CONTENT_OPTIONS)
+ * - PopupService.saveAdminPopup의 검증·저장 규칙을 mock 매퍼로 확인한다.
+ */
 class PopupAdminQuestionsTest {
     private PopupMapper mapper;
     private PopupService service;
@@ -56,6 +62,7 @@ class PopupAdminQuestionsTest {
                 new PopupOptionEntity(3L, 1L, "2", "B", "N", 2)));
     }
 
+    /** 문항이 바뀌면 새 템플릿을 만들고 정답 정보를 저장한다. */
     @Test void changedQuestionsCreateTemplateAndPersistCorrectAnswer() {
         service.saveAdminPopup(popup(List.of(question(false, true))), false, List.of(), "admin");
         verify(mapper).insertQuestionTemplate("Quiz", "QUIZ", "admin");
@@ -65,6 +72,7 @@ class PopupAdminQuestionsTest {
         verify(mapper).upsertAdminPopupContent(argThat(c -> c.contentOptionsJson().contains("backgroundOverlayOpacity")));
     }
 
+    /** 문항이 같으면 기존 문항 템플릿을 재사용한다. */
     @Test void unchangedQuestionsReuseExistingTemplate() {
         existingQuestions();
         PopupEntity existing = mock(PopupEntity.class);
@@ -76,6 +84,7 @@ class PopupAdminQuestionsTest {
         verify(mapper).upsertAdminPopupNotice(argThat(c -> c.questionTemplateId().equals(10L)));
     }
 
+    /** 정답이 없는 퀴즈 문항은 거부하고 아무것도 저장하지 않는다. */
     @Test void missingCorrectAnswerDoesNotWriteAnything() {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 popup(List.of(question(false, false))), false, List.of(), "admin"));
@@ -83,11 +92,13 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).insertQuestionTemplate(anyString(), anyString(), anyString());
     }
 
+    /** 단일 선택 문항에 정답이 둘 이상이면 거부한다. */
     @Test void singleChoiceRejectsMultipleCorrectAnswers() {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 popup(List.of(question(true, true))), false, List.of(), "admin"));
     }
 
+    /** 문항 없는 퀴즈는 공통 문항 규칙으로 거부한다. */
     @Test void emptyQuizIsRejectedByCurrentQuestionRules() {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(popup(List.of()), false, List.of(), "admin"));
         verify(mapper, never()).upsertAdminPopupNotice(any());
@@ -102,7 +113,7 @@ class PopupAdminQuestionsTest {
                 base.passingScore(), base.questions(), base.content());
     }
 
-    /** [TODO68] 창 최소 크기는 축별 300 이상만 저장한다(299 거절, 300·301 허용, IMAGE 포함). */
+    /** POL-01-03 : 최소 크기 — 창 최소 크기는 축별 300 이상만 저장한다(299 거절, 300·301 허용, IMAGE 포함). */
     @Test void minimumWindowSizeIsAtLeast300PerAxis() {
         var quiz = popup(List.of(question(true, false)));
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withMinimum(quiz, 299, 300), false, List.of(), "admin"));
@@ -124,13 +135,14 @@ class PopupAdminQuestionsTest {
                 Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
     }
 
-    // [설계 18 L-1] 과거 IMAGE 크기 모드 FIXED는 저장하지 않는다.
+    /** POL-04-02 : 모드별 기준 — 과거 IMAGE 크기 모드 FIXED는 저장하지 않는다. */
     @Test void imagePopupRejectsLegacyFixedImageSizeMode() {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 imagePopup("FIXED"), false, List.of(), "admin"));
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
+    /** POL-04-02 : 모드별 기준 — IMAGE 크기 모드 ADAPTIVE·FIT_TO_IMAGE·ORIGINAL은 저장한다. */
     @Test void imagePopupAcceptsCurrentImageSizeModes() {
         for (String mode : List.of("ADAPTIVE", "fit_to_image", "ORIGINAL")) {
             service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
@@ -150,6 +162,7 @@ class PopupAdminQuestionsTest {
                 List.of(), content);
     }
 
+    /** IMAGE는 최소 크기가 기존 저장 최대 크기보다 커도 저장한다(최대≥최소 검사 제외). */
     @Test void imageScreenPolicyAllowsMinimumAboveStoredLegacyMaximum() {
         var base = imagePopup("ADAPTIVE");
         var large = new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
@@ -161,6 +174,7 @@ class PopupAdminQuestionsTest {
         verify(mapper).upsertAdminPopupNotice(any());
     }
 
+    /** POL-04-01 : 공통 크기 입력 — 폐기 IMAGE 필드·잘못된 크기·content 쪽 중복 크기 지시를 거부한다. */
     @Test void image23RejectsRetiredFieldsInvalidDimensionsAndDuplicateInstructions() {
         for (String key : List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio"))
             assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
@@ -175,7 +189,7 @@ class PopupAdminQuestionsTest {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(imagePopup("FILL"), false, List.of(), "admin"));
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                 imageWithContent("ADAPTIVE", Map.of("width", 600), 600.0), false, List.of(), "admin"));
-        // [TODO58] 공통 popup.width도 양수·유한값이어야 하고, content.width/height는 단독으로도 거절한다(이중 지시 금지).
+        // POL-04-01 : 공통 크기 입력 — 공통 popup.width도 양수·유한값이어야 하고, content.width/height는 단독으로도 거절한다(이중 지시 금지).
         for (double value : new double[]{0, -1, Double.NaN, Double.POSITIVE_INFINITY})
             assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(
                     imageWithContent("FIT_TO_IMAGE", Map.of(), value), false, List.of(), "admin"));
@@ -185,7 +199,7 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
-    // [TODO58] 일반 IMAGE의 공통 popup.width/height는 CONTENT_OPTIONS(width/height)에 저장하고 WPF 응답은 최상위로만 보낸다.
+    /** POL-04-01 : 공통 크기 입력 — 일반 IMAGE의 공통 popup.width/height는 CONTENT_OPTIONS(width/height)에 저장하고 WPF 응답은 최상위로만 보낸다. */
     @Test void image58StoresTopLevelDimensionsInOptionsAndSendsThemAtTopLevel() throws Exception {
         var popup = imageWithContent("FIT_TO_IMAGE", Map.of("keepAspectRatio", false), 5000.0);
         popup = new PopupResponseDto(popup.popupId(), popup.popupType(), popup.title(), popup.displayStartAt(),
@@ -205,7 +219,7 @@ class PopupAdminQuestionsTest {
         assertFalse(json.path("content").has("height"));
     }
 
-    // [TODO58] 조회: 저장된 CONTENT_OPTIONS width/height(또는 구 ADAPTIVE 컬럼 값)를 최상위로 옮기고 content에서는 뺀다. 생략 축은 null.
+    // POL-04-01 : 공통 크기 입력 — 조회: 저장된 CONTENT_OPTIONS width/height(또는 구 ADAPTIVE 컬럼 값)를 최상위로 옮기고 content에서는 뺀다. 생략 축은 null.
     @Test void image58ResponseMovesStoredDimensionsToTopLevel() {
         java.util.function.BiFunction<String, String, PopupEntity> entity = (mode, options) -> new PopupEntity("P1", "IMAGE", "제목", null, null,
                 "SEQUENTIAL", "FIXED", new BigDecimal("560"), new BigDecimal("420"), new BigDecimal(".7"), new BigDecimal(".75"),
@@ -225,7 +239,7 @@ class PopupAdminQuestionsTest {
         assertEquals(420.0, original.height());
     }
 
-    // [설계 18 L-5 — W-10] 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다.
+    /** POL-04-02 : 모드별 기준 — 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다. */
     @Test void imagePopupValidatesDescriptionLayoutOptions() {
         java.util.function.Function<Map<String, Object>, PopupResponseDto> withContent = extra -> {
             var base = imagePopup("ADAPTIVE");
@@ -249,7 +263,7 @@ class PopupAdminQuestionsTest {
         verify(mapper, times(1)).upsertAdminPopupNotice(any());
     }
 
-    // [설계 46] 숨김 일수는 WPF HIDDEN 결과 허용 범위(1~3650)와 같아야 한다.
+    /** POL-10-03 : 완료·숨김·연기 — 숨김 일수는 WPF HIDDEN 결과 허용 범위(1~3650)와 같아야 한다. */
     @Test void hideDaysMustMatchResultRange() {
         java.util.function.IntFunction<PopupResponseDto> withHideDays = days -> {
             var base = imagePopup("ADAPTIVE");
@@ -270,7 +284,7 @@ class PopupAdminQuestionsTest {
         verify(mapper, times(2)).upsertAdminPopupNotice(any());
     }
 
-    // [설계 18 L-3] 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다.
+    /** POL-13-01 : 콘텐츠와 관리 상태 — 정규 컬럼 값은 컬럼에만 저장하고 CONTENT_OPTIONS에는 확장 옵션만 남긴다. */
     @Test void saveStoresColumnValuesOutsideContentOptions() {
         service.saveAdminPopup(imagePopup("ADAPTIVE"), false, List.of(), "admin");
         verify(mapper).upsertAdminPopupContent(argThat(c -> "https://example.com/a.png".equals(c.mediaUrl())
@@ -278,12 +292,14 @@ class PopupAdminQuestionsTest {
                 && c.contentOptionsJson().contains("imageSizeMode")));
     }
 
+    /** 관리자 템플릿 문항 조회는 편집용으로 정답 정보를 유지한다. */
     @Test void templateLookupRetainsCorrectAnswersForEditor() {
         existingQuestions();
         var entries = service.getAdminQuestions(10L);
         assertTrue(entries.get(0).question().options().get(0).isCorrect());
     }
 
+    /** 병합된 매퍼 XML에 중복 구문 ID가 없다. */
     @Test void mergedMapperHasNoDuplicateStatements() throws Exception {
         String resource = "mappers/popup/PopupMapper.xml";
         var configuration = new Configuration();

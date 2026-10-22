@@ -1,16 +1,18 @@
 ﻿
 <#
-[역할 — 설계 14 §2·§3·§4·§7] 폐쇄망 반입 패키지를 소스 기준으로 만든다.
+POL-15-01 : 배포 범위
+■ 폐쇄망 반입 패키지 생성
+- 폐쇄망 반입 패키지를 소스 기준으로 만든다.
 
   A. 문서        docs 전체(옵션 가이드·설계·인터페이스·검토), db/oracle, api/examples, README, 변경 이력
   B. Server      zero-rule-server — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정된 파일만 (git diff)
   C. Web         zero-rule-web    — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정된 파일만 (git diff)
   D. WPF         popup-frameWork  — 소스만 (bin/obj/publish/*.exe/*.dll/*.pdb 제외)
-  E. 개발 의존   offline-packages/nuget, offline-sdk, global.json, NuGet.config 은 별도 묶음(소스와 분리 — §7 E)
+  E. 개발 의존   offline-packages/nuget, offline-sdk, global.json, NuGet.config 은 별도 묶음(소스와 분리)
 
-[추가 이유] 폐쇄망에는 zero-rule-server/zero-rule-web 전체가 이미 있으므로 팝업 관련 변경분만 반입해야 하고(§2.1·§3.1),
-WPF는 외부망 산출물(EXE)이 아니라 폐쇄망에서 직접 빌드할 수 있게 소스만 가져간다(§4.1).
-각 묶음마다 파일 목록(manifest, A=신규/M=수정)을 함께 만들어 폐쇄망 기존 프로젝트와의 충돌 파일 확인(§2.4·§3.4)에 쓴다.
+이유: 폐쇄망에는 zero-rule-server/zero-rule-web 전체가 이미 있으므로 팝업 관련 변경분만 반입해야 하고,
+WPF는 외부망 산출물(EXE)이 아니라 폐쇄망에서 직접 빌드할 수 있게 소스만 가져간다.
+각 묶음마다 파일 목록(manifest, A=신규/M=수정)을 함께 만들어 폐쇄망 기존 프로젝트와의 충돌 파일 확인에 쓴다.
 
 [사용] 저장소 루트에서 (변경분은 커밋된 상태여야 git diff에 잡힌다)
   .\scripts\export-offline-package.ps1                       # 기본: 저장소 루트\offline-export\<날짜>

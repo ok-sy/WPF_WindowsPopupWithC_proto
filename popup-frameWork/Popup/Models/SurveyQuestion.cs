@@ -3,7 +3,9 @@
 namespace Popup.Models
 {
     /// <summary>
-    /// 설문 질문 하나의 정보를 저장한다.
+    /// POL-06-01 : 문항·서식
+    /// POL-06-02 : 선택·제출
+    /// ■ 설문 질문 하나의 정보를 저장한다(PopupFactory가 SurveyQuestionDto에서 변환).
     /// </summary>
     public class SurveyQuestion
     {
@@ -24,7 +26,7 @@ namespace Popup.Models
         /// </summary>
         public string Description { get; set; } = string.Empty;
 
-        /// <summary>[TODO55] 문항 제목·설명 서식. 있으면 Title·Description 대신 표시한다.</summary>
+        /// <summary>POL-06-01 : 문항·서식 — 문항 제목·설명 서식. 있으면 Title·Description 대신 표시한다.</summary>
         public List<Popup.Dtos.PopupTextBlockDto>? TitleBlocks { get; set; }
         public List<Popup.Dtos.PopupTextBlockDto>? DescriptionBlocks { get; set; }
 
@@ -34,6 +36,7 @@ namespace Popup.Models
         /// </summary>
         public SurveyQuestionType QuestionType { get; set; }
 
+        /* 선택지 가로 배치 여부(optionLayout에서 변환) */
         public bool HorizontalOptions { get; set; }
 
         /// <summary>
@@ -63,23 +66,24 @@ namespace Popup.Models
         public List<SurveyOption> Options { get; set; } = new();
 
         /*
-         * [설계 18 L-2 — C-16] 보기 value 목록으로 정답을 담던 CorrectAnswers를 삭제했다.
-         * 선택형 정답은 Options[].IsCorrect로만 판단한다.
+         * POL-06-02 : 선택·제출
+         * 선택형 정답은 Options[].IsCorrect로만 판단한다(보기 value 목록으로 정답을 담지 않음).
          */
 
         /*
-         * [설계 12 §4 — 로컬 채점] 서버 문항 배점(questionScore). null이면 0점(설계 18 L-2 — C-17).
+         * POL-06-02 : 선택·제출 — 로컬 채점용 서버 문항 배점(questionScore). null이면 0점.
          */
         public double? QuestionScore { get; set; }
 
         /*
-         * [설계 12 §4 — 로컬 채점] 서술형 문항 정답과 일치 모드(EXACT/CONTAINS). 서버 규칙(PopupQuestionRules.matchesText)과 같다.
+         * POL-06-02 : 선택·제출 — 로컬 채점용 서술형 문항 정답과 일치 모드(EXACT/CONTAINS). 서버 규칙(PopupQuestionRules.matchesText)과 같다.
          */
         public string? CorrectAnswer { get; set; }
         public string? AnswerMatchMode { get; set; }
 
         /*
-         * [TODO52-5] 복수 선택 문항의 최대 선택 수 = 정답 선택지 수. 서버가 QUIZ에만 options[].isCorrect를 내려주므로
+         * POL-06-02 : 선택·제출
+         * 복수 선택 문항의 최대 선택 수 = 정답 선택지 수. 서버가 QUIZ에만 options[].isCorrect를 내려주므로
          * SURVEY·정답 없는 문항은 null(제한 없음)이다. 별도 필드를 받지 않고 기존 정답 키로 계산한다.
          */
         public int? MaxSelections

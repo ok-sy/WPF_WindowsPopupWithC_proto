@@ -11,7 +11,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import server.repo.core.mapper.popup.sample.PopupSingleQuerySampleMapper;
 
 /**
- * [TODO65] 단건 조회 샘플 Bean 구성. 기본 비활성이며 {@code popup.sample.single-query.enabled=true}일 때만 등록한다.
+ * POL-14-03 : 서버 인계 예제
+ * POL-13-03 : 적용·샘플 구분
+ * ■ 단건 조회 샘플 Bean 구성
+ * - in : popup.sample.single-query.* 설정(enabled·file-base-url·polling-interval-seconds)
+ * - out: 파서·조립기·포트·샘플 서비스 Bean
+ * - 단건 조회 샘플 Bean 구성. 기본 비활성이며 {@code popup.sample.single-query.enabled=true}일 때만 등록한다.
  *
  * <p>전달 건·문항 포트는 {@link ConditionalOnMissingBean}이라 실제 구현 Bean을 등록하면 샘플 구현 대신 사용된다.</p>
  *

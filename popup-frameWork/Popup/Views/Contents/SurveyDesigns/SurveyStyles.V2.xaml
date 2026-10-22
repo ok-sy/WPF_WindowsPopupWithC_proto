@@ -1,18 +1,18 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <!-- Survey design V2 (2026-10-18): color rule below, plus TODO56 selection UX (no radio/checkbox indicator,
+    <!-- POL-06-03 : 표현·수명 — Survey design V2 (2026-10-18): color rule below, plus selection UX (no radio/checkbox indicator,
          check + accent ring only after selection, no bold/color change on selection, separate focus outline, choice hints).
          Version files are self-contained snapshots: change the newest one or add a new version instead of editing an old one.
          Selected by appsettings PopupApi.SurveyDesignVersion (see SurveyDesign.cs). -->
     <!-- Survey-only monochrome tokens; outlined rows and compact chips retain separate templates. -->
-    <!-- Color rule: gray content background, white question cards, white choices with a light border,
-         selected choice = accent border (popup common accent #171717) + check mark, base text #222222. -->
-    <!-- [TODO56-10] White body (was #F5F6F8 with white question cards). PopupWindow paints the body/footer with this too. -->
+    <!-- Color rule: white content background, no question card surface, white choices with a light border,
+         selected choice = accent border (popup common accent #171717) + check mark on rows, base text #222222. -->
+    <!-- POL-06-03 : 표현·수명 — White body (was #F5F6F8 with white question cards). PopupWindow paints the body/footer with this too. -->
     <SolidColorBrush x:Key="SurveyContentBackground" Color="White" />
-    <!-- [TODO56] Chips have no check column (selection = accent ring only), so nothing is reserved. Used for rich option wrapping width. -->
+    <!-- POL-06-03 : 표현·수명 — Chips have no check column (selection = accent ring only), so nothing is reserved. Used for rich option wrapping width. -->
     <sys:Double x:Key="SurveyChipCheckWidth">0</sys:Double>
-    <!-- [TODO56] No bold on selection, so the selected-bold height reservation (StableChoiceText) is off. Missing key = on (V1). -->
+    <!-- POL-06-03 : 표현·수명 — No bold on selection, so the selected-bold height reservation (StableChoiceText) is off. Missing key = on (V1). -->
     <sys:Boolean x:Key="SurveyReserveSelectedBold">False</sys:Boolean>
-    <!-- [TODO56] Show "하나 선택" / "여러 개 선택 가능" under choice questions. Missing key = off (V1). -->
+    <!-- POL-06-03 : 표현·수명 — Show "하나 선택" / "여러 개 선택 가능" under choice questions. Missing key = off (V1). -->
     <sys:Boolean x:Key="SurveyShowChoiceHint">True</sys:Boolean>
     <!-- Hover border of choices. -->
     <SolidColorBrush x:Key="SurveyIndicatorBorder" Color="#8C8C8C" />
@@ -42,7 +42,7 @@
     <Thickness x:Key="SurveyChoicePadding">14,10</Thickness>
     <Thickness x:Key="SurveyChoiceFocusPadding">13,9</Thickness>
     <CornerRadius x:Key="SurveyCardRadius">0</CornerRadius>
-    <!-- [TODO56-10] No question card surface: questions are separated by vertical spacing and a thin bottom line
+    <!-- POL-06-03 : 표현·수명 — No question card surface: questions are separated by vertical spacing and a thin bottom line
          (the code removes the line under the last question). No horizontal padding, so the number/title/choices
          start at the same line as the survey title; the window content margin keeps the side gutter. -->
     <Style x:Key="SurveyQuestionCardStyle" TargetType="Border">
@@ -57,7 +57,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Control">
-                    <!-- [TODO56] Focus is a dashed outline outside the selection ring, so focus and selection are visible together. -->
+                    <!-- POL-06-03 : 표현·수명 — Focus is a dashed outline outside the selection ring, so focus and selection are visible together. -->
                     <Rectangle Margin="-4" Stroke="{StaticResource SurveySelectedBorder}" StrokeThickness="1.5" StrokeDashArray="2 2" RadiusX="9" RadiusY="9" />
                 </ControlTemplate>
             </Setter.Value>
@@ -84,8 +84,9 @@
         <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
     <!--
-        [TODO56-11] Choice corner radius 6 (was 11).
-        [TODO56] Choice templates (single and multiple share them; the "하나 선택" / "여러 개 선택 가능" hint tells them apart).
+        POL-06-03 : 표현·수명
+        Choice corner radius 6 (was 11).
+        Choice templates (single and multiple share them; the "하나 선택" / "여러 개 선택 가능" hint tells them apart).
         Before selection nothing is drawn but the light border. Rows reserve a right check column (28) so text never moves;
         chips reserve nothing (equal left/right padding) and show selection with the ring only, because a check would change the chip width.
         Selection = 2px accent ring drawn over the 1px border (no size change) + #171717 check on rows. Selection does not change

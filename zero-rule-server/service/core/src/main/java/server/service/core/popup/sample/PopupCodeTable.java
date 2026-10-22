@@ -5,7 +5,12 @@ package server.service.core.popup.sample;
 import java.util.Map;
 
 /**
- * [TODO65] 공통 코드 → WPF ENUM 변환.
+ * POL-13-03 : 적용·샘플 구분
+ * POL-14-03 : 서버 인계 예제
+ * ■ 공통 코드 → WPF ENUM 변환표(샘플)
+ * - in : 실테이블 코드값(POPU_CNTN_TP_CD·FTR_BTN_TP_CD·Y/N 컬럼)
+ * - out: popupType·footerAction·Boolean · 예외: PopupSampleException(UNKNOWN_CODE·INVALID_COLUMN)
+ * - 공통 코드 → WPF ENUM 변환.
  *
  * <p><b>아래 코드값은 예시다(확정 코드표 미수령).</b> [교체 지점] 실제 공통 코드표(POPU_CNTN_TP_CD·FTR_BTN_TP_CD)로 바꾼다.
  * 모르는 코드는 기본값으로 바꾸지 않고 {@link PopupSampleException}(UNKNOWN_CODE)으로 처리한다.</p>
@@ -29,13 +34,24 @@ public final class PopupCodeTable {
     private PopupCodeTable() {
     }
 
+    /**
+     * ■ 콘텐츠 유형 코드 변환
+     * - in : code(String) POPU_CNTN_TP_CD · contentId(String) 오류 추적용 콘텐츠 ID
+     * - out: String popupType · 예외: PopupSampleException(UNKNOWN_CODE)
+     */
     public static String popupType(String code, String contentId) {
         String type = code == null ? null : CONTENT_TYPE.get(code.trim());
         if (type == null) throw new PopupSampleException(PopupSampleException.Reason.UNKNOWN_CODE, contentId, "알 수 없는 콘텐츠 유형 코드: " + code);
         return type;
     }
 
-    /** null이면 null(호출자가 유형별 기본값 적용). 값이 있는데 모르는 코드면 오류. */
+    /**
+     * POL-02-03 : 푸터 역할
+     * ■ 푸터 버튼 코드 변환
+     * - in : code(String) FTR_BTN_TP_CD · contentId(String) 콘텐츠 ID
+     * - out: String footerAction(null이면 null) · 예외: PopupSampleException(UNKNOWN_CODE)
+     * - null이면 null(호출자가 유형별 기본값 적용). 값이 있는데 모르는 코드면 오류.
+     */
     public static String footerAction(String code, String contentId) {
         if (code == null || code.isBlank()) return null;
         String action = FOOTER_BUTTON.get(code.trim());
@@ -43,7 +59,13 @@ public final class PopupCodeTable {
         return action;
     }
 
-    /** Y/N → boolean. null이면 null(기본값 적용), 그 밖의 값은 오류. */
+    /**
+     * POL-01-02 : 기본값의 적용
+     * ■ Y/N 컬럼 변환
+     * - in : value(String) 컬럼 값 · column(String) 컬럼명 · contentId(String) 콘텐츠 ID
+     * - out: Boolean(null이면 null) · 예외: PopupSampleException(INVALID_COLUMN)
+     * - Y/N → boolean. null이면 null(기본값 적용), 그 밖의 값은 오류.
+     */
     public static Boolean yn(String value, String column, String contentId) {
         if (value == null || value.isBlank()) return null;
         return switch (value.trim().toUpperCase()) {

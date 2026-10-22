@@ -11,7 +11,12 @@ import server.domain.popup.PopupDisplayTimeDto;
 import server.domain.popup.PopupResponseDto;
 
 /**
- * [TODO52-1] 게시 기간 안 노출 일정(요일·시간대) 정규화와 검증.
+ * POL-11-02 : 반복의 의미
+ * POL-11-03 : 시간 경계
+ * ■ 노출 일정 정규화·검증
+ * - in : PopupResponseDto(periodMode·repeatDayOfWeek·displayTimes)
+ * - out: 정규화된 PopupResponseDto · 예외: IllegalArgumentException(형식 오류)
+ * - 게시 기간 안 노출 일정(요일·시간대)을 정규화하고 검증한다.
  *
  * <p>반복 설정은 미완료 팝업의 노출 가능 일정이다(반복일마다 새 응답 아님). 게시 기간은 필수이며, 그 안에서
  * {@code PERIOD_MODE=SCHEDULE}이면 요일({@code REPEAT_DAY_OF_WEEK}, ISO 번호 1=월, 비면 매일)과 시간대
@@ -30,7 +35,11 @@ final class PopupDisplaySchedule {
     }
 
     /**
-     * 기간 모드를 대문자로 맞추고, FIXED면 요일·시간대를 비우고, SCHEDULE이면 요일을 정렬·중복 제거하고 시간대를 검증한다.
+     * POL-11-02 : 반복의 의미
+     * ■ 노출 일정 정규화
+     * - in : popup(PopupResponseDto) 저장 요청 팝업
+     * - out: PopupResponseDto 일정이 정규화된 팝업 · 예외: IllegalArgumentException
+     * - 기간 모드를 대문자로 맞추고, FIXED면 요일·시간대를 비우고, SCHEDULE이면 요일을 정렬·중복 제거하고 시간대를 검증한다.
      *
      * @throws IllegalArgumentException 모드·요일·시간 형식이 잘못되었거나 시작=종료·같은 시간대 중복인 경우
      */
@@ -92,6 +101,7 @@ final class PopupDisplaySchedule {
         return Integer.parseInt(value.substring(0, 2)) * 60 + Integer.parseInt(value.substring(3));
     }
 
+    /** 0~1439분 → {@code HH:mm}. */
     static String toTime(int minute) {
         return String.format("%02d:%02d", minute / 60, minute % 60);
     }

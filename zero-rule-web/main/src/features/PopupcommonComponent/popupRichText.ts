@@ -316,4 +316,4 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
  * - out: string | undefined CSS font-family 값(없거나 모르는 ID면 undefined)
  * - 글꼴 ID를 받아 화면 표시에 쓸 CSS 글꼴 목록을 돌려준다.
  */
-export const richFontCss =(id?: RichFontId) => RICH_FONTS.find((font) => font.id === id)?.css;
+export const richFontCss = (id?: RichFontId) => RICH_FONTS.find((font) => font.id === id)?.css;

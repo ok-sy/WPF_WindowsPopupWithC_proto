@@ -8,9 +8,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 /**
- * 기본 사용자 식별기: 통합 토큰 필터(타 팀)가 SecurityContext에 넣은 Authentication에서 사번을 읽는다.
+ * POL-15-02 : 인증·버전
+ * ■ 기본 사용자 식별기(SecurityContext)
+ * - in : 통합 토큰 필터(타 팀)가 SecurityContext에 넣은 Authentication
+ * - out: 사번(trim) · 인증 없음/익명/식별자 없음이면 WpfUnauthorizedException(401)
  *
- * <p>[추가 이유 — 기준 6] 운영에서 쓰이는 구현이다. 통합 토큰이 어떤 principal을 넣을지 아직 확정되지 않아
+ * <p>운영에서 쓰이는 구현이다. 통합 토큰이 어떤 principal을 넣을지 아직 확정되지 않아
  * 아래 순서로 넓게 시도한다. 규격이 확정되면 이 클래스의 매핑만 고친다(컨트롤러·서비스 영향 없음).</p>
  * <ol>
  *   <li>principal이 {@link UserDetails}(기존 CustomUserDetails 포함)면 {@code getUsername()} — 로그인 ID를 사번으로 쓰는 경우</li>

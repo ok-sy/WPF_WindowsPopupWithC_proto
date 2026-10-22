@@ -384,7 +384,7 @@
 
     <Grid x:Name="VideoLayoutRoot">
 
-        <!-- [TODO60] VideoRow는 단독 VIDEO에서 *, 영상 결합 QUIZ에서는 원본 비율 높이(VideoPopupView.AspectSizing.cs)다. -->
+        <!-- POL-05-03 : 결합 화면 — VideoRow는 단독 VIDEO에서 *, 영상 결합 QUIZ에서는 원본 비율 높이(VideoPopupView.AspectSizing.cs)다. -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition x:Name="VideoRow" Height="*"/>
@@ -452,7 +452,7 @@
                     <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid x:Name="VideoLoadingProgress" Width="36" Height="36" Margin="0,0,0,10">
                         <Ellipse Stroke="#55FFFFFF" StrokeThickness="3"/>
-                        <!-- [설계 24 §2] 회전은 Loaded 트리거 대신 SetLoadingAnimation이 로딩·버퍼링 동안만 실행한다. -->
+                        <!-- POL-05-01 : 재생 경로 — 저사양 PC CPU 부담을 줄이려고 회전은 Loaded 트리거 대신 SetLoadingAnimation이 로딩·버퍼링 동안만 실행한다. -->
                         <Path Stroke="White" StrokeThickness="3" Data="M18,1 A17,17 0 0 1 35,18"
                               RenderTransformOrigin="0.5,0.5">
                             <Path.RenderTransform><RotateTransform x:Name="LoadingSpinnerRotate"/></Path.RenderTransform>

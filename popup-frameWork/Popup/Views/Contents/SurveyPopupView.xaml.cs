@@ -13,12 +13,20 @@ using System.Windows.Media;
 
 namespace Popup.Views.Contents
 {
-    /// <summary>
-    /// 설문 질문을 화면에 표시하는 사용자 컨트롤
-    /// </summary>
+    /*
+     * POL-06-01 : 문항·서식
+     * POL-06-02 : 선택·제출
+     * POL-06-03 : 표현·수명
+     * ■ SURVEY / QUIZ 문항 화면
+     * - in : title·description(string) · questions(List<SurveyQuestion>) · isQuizMode(bool) · passingScore(double?)
+     *        · titleBlocks/descriptionBlocks(IReadOnlyList<PopupTextBlockDto>?) 머리말 서식
+     * - out: SurveySubmitted(SurveySubmission) 답안·점수·통과 여부 · ResponseProgressChanged · CanSubmit · ResponseProgressText
+     * - 설문 질문을 화면에 표시하고 필수 응답 진행을 계산한다. 제출 시 필수 응답을 검증하고 QUIZ면 로컬에서 채점해 이벤트로 넘긴다.
+     *   서버 응답을 기다리지 않는다. 서식(Blocks)은 표시에만 쓰고 문항·선택지 ID와 답변 값은 바꾸지 않는다.
+     */
     public partial class SurveyPopupView : UserControl, IBodyFontSizeAware
     {
-        /// <summary>결합 화면은 부모 스크롤이 전체 문항과 제출 영역을 담당한다.</summary>
+        /// <summary>POL-05-03 : 결합 화면 — 결합 화면은 부모 스크롤이 전체 문항과 제출 영역을 담당한다.</summary>
         internal void UseParentScrolling()
         {
             if (QuestionScrollViewer.Parent is not Grid host) return;
@@ -31,12 +39,12 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// [설계 53-16·50-D3] 결합 화면에서 위쪽 영상 영역에 이미 보이는 제목·설명과 같은 값이면 퀴즈 머리말에서 숨긴다.
+        /// POL-05-03 : 결합 화면 — 결합 화면에서 위쪽 영상 영역에 이미 보이는 제목·설명과 같은 값이면 퀴즈 머리말에서 숨긴다.
         /// 서버는 VIDEO+QUIZ 제목을 1개만 저장해 videoTitle·surveyTitle과 description을 같은 값으로 내려준다. 값이 다르면 그대로 둔다.
         /// </summary>
         internal void CollapseHeaderShownAbove(string? shownTitle, string? shownDescription)
         {
-            // [TODO55-8] 숨기는 대상은 일반 문자열 TextBlock뿐이다. 서식 머리말(SurveyTitleRich·SurveyDescriptionRich)은
+            // POL-06-01 : 문항·서식 — 숨기는 대상은 일반 문자열 TextBlock뿐이다. 서식 머리말(SurveyTitleRich·SurveyDescriptionRich)은
             // 영상 영역(일반 문자열)과 표시가 다르므로 문자열이 같아도 그대로 둔다.
             if (SameText(SurveyTitleText.Text, shownTitle)) SurveyTitleText.Visibility = Visibility.Collapsed;
             if (SameText(SurveyDescriptionText.Text, shownDescription)) SurveyDescriptionText.Visibility = Visibility.Collapsed;
@@ -45,6 +53,7 @@ namespace Popup.Views.Contents
                 => !string.IsNullOrWhiteSpace(shown) && string.Equals(text?.Trim(), shown.Trim(), StringComparison.Ordinal);
         }
 
+        /* POL-05-03 : 결합 화면 — 본문 제출 영역을 떼어 돌려준다. VIDEO+QUIZ가 스크롤 밖 고정 행에 붙인다. */
         internal FrameworkElement DetachSubmissionArea()
         {
             if (SubmissionArea.Parent is Panel host) host.Children.Remove(SubmissionArea);
@@ -55,12 +64,12 @@ namespace Popup.Views.Contents
         private readonly List<SurveyQuestion> _questions = new();
 
         /*
-         * [설계 14 §5.6] 문항 카드의 제목·설명 TextBlock을 보관한다.
+         * POL-01-01 : 공통 옵션의 위치 — 문항 카드의 제목·설명 TextBlock을 보관한다.
          * ApplyBodyFontSize()가 화면을 다시 만들지 않고 글자 크기만 바꾸기 위해 쓴다.
          */
         private readonly List<TextBlock> _questionTitleTexts = new();
         private readonly List<TextBlock> _questionDescriptionTexts = new();
-        // [TODO55] 서식 선택지 문단. 크기는 선택지에서 상속하므로 본문 크기가 바뀌면 기울임 여유만 다시 맞춘다.
+        // POL-06-01 : 문항·서식 — 서식 선택지 문단. 크기는 선택지에서 상속하므로 본문 크기가 바뀌면 기울임 여유만 다시 맞춘다.
         private readonly List<TextBlock> _optionParagraphs = new();
 
         /*
@@ -76,8 +85,9 @@ namespace Popup.Views.Contents
         private readonly bool _isQuizMode;
 
         /*
-         * [설계 12 §4] QUIZ 통과 점수. 서버 조회 응답의 최상위 passingScore에서 온다(content.passingScore는 C-15에서 삭제).
-         * 기준 3 구현에서는 서버 채점으로 바뀌며 제거했으나, 설계 12로 로컬 채점이 다시 WPF 책임이 되어 복원했다.
+         * POL-06-02 : 선택·제출
+         * QUIZ 통과 점수. 서버 조회 응답의 최상위 passingScore에서 온다(content.passingScore는 쓰지 않는다).
+         * 채점은 WPF 로컬 책임이며 서버 채점 결과를 기다리지 않는다.
          */
         private readonly double? _passingScore;
 
@@ -98,9 +108,10 @@ namespace Popup.Views.Contents
         _answerControls = new();
 
         /*
-         * [설계 12 §2·§4] 설문 제출이 정상적으로 완료됐을 때(필수 응답 검증 통과, QUIZ면 로컬 채점 완료)
+         * POL-06-02 : 선택·제출
+         * 설문 제출이 정상적으로 완료됐을 때(필수 응답 검증 통과, QUIZ면 로컬 채점 완료)
          * 답안 목록과 점수·통과 여부(SurveySubmission)를 외부(PopupManager)로 전달하는 이벤트다.
-         * 예전에는 답안 목록만 넘기고 점수는 서버 응답으로 받았다.
+         * 점수는 서버 응답이 아니라 이 화면의 로컬 채점값이다.
          */
         public event EventHandler<SurveySubmission>?
             SurveySubmitted;
@@ -126,9 +137,13 @@ namespace Popup.Views.Contents
             UpdateResponseProgress();
         }
 
-        /// <summary>
-        /// 실제 설문 데이터를 받아 화면을 만드는 생성자
-        /// </summary>
+        /*
+         * ■ 설문 화면 생성자
+         * - in : title·description(string) · questions(List<SurveyQuestion>, null이면 빈 목록) · isQuizMode(bool)
+         *        · passingScore(double?) · titleBlocks/descriptionBlocks(서식 머리말, 선택)
+         * - out: 없음 · 문항 카드를 만들고 필수 응답 진행을 계산한다.
+         * - 실제 설문 데이터를 받아 화면을 만드는 생성자. 디자인 버전 리소스를 InitializeComponent 전에 넣는다.
+         */
         public SurveyPopupView(
         string title,
         string description,
@@ -144,7 +159,7 @@ namespace Popup.Views.Contents
 
             SurveyTitleText.Text = title;
             SurveyDescriptionText.Text = description;
-            // [TODO55] 서식이 있으면 문단으로 표시하고, 일반 문자열 TextBlock은 숨긴 채 비교·접근성용으로 유지한다.
+            // POL-06-01 : 문항·서식 — 서식이 있으면 문단으로 표시하고, 일반 문자열 TextBlock은 숨긴 채 비교·접근성용으로 유지한다.
             ShowRichInstead(SurveyTitleText, SurveyTitleRich, titleBlocks);
             ShowRichInstead(SurveyDescriptionText, SurveyDescriptionRich, descriptionBlocks);
 
@@ -157,7 +172,7 @@ namespace Popup.Views.Contents
             _isQuizMode = isQuizMode;
 
             /*
-             * [설계 12 §4] QUIZ 통과 점수. 로컬 채점(QuizGrader)의 통과 기준으로 쓴다. 없으면 0(항상 통과).
+             * POL-06-02 : 선택·제출 — QUIZ 통과 점수. 로컬 채점(QuizGrader)의 통과 기준으로 쓴다. 없으면 0(항상 통과).
              */
             _passingScore = passingScore;
 
@@ -198,7 +213,7 @@ namespace Popup.Views.Contents
 
                 QuestionListPanel.Children.Add(questionCard);
             }
-            // [TODO56-10] 문항 구분선(디자인 V2의 아래 테두리)은 문항 사이에만 둔다. V1 카드는 테두리가 없어 영향 없음.
+            // POL-06-03 : 표현·수명 — 문항 구분선(디자인 V2의 아래 테두리)은 문항 사이에만 둔다. V1 카드는 테두리가 없어 영향 없음.
             if (QuestionListPanel.Children.Count > 0 && QuestionListPanel.Children[^1] is Border lastCard)
                 lastCard.BorderThickness = new Thickness(0);
             UpdateResponseProgress();
@@ -232,10 +247,10 @@ namespace Popup.Views.Contents
                 : string.Empty;
 
             titleText.Text = $"{question.Title}{requiredMark}";
-            // [TODO56-12] 선택 방식 안내는 제목 끝(필수 표시 뒤)에 작은 보조 글자로 이어 붙인다. 제목이 길거나 창이 좁으면
+            // POL-06-03 : 표현·수명 — 선택 방식 안내는 제목 끝(필수 표시 뒤)에 작은 보조 글자로 이어 붙인다. 제목이 길거나 창이 좁으면
             // 글자 흐름대로 다음 줄로 넘어가 잘리지 않는다. 표시 전용이며 제목 데이터(Title·TitleBlocks)는 바꾸지 않는다.
             string? choiceHint = ChoiceHintOf(question);
-            // [TODO55] 문항 제목 서식: 문단마다 같은 기본 글꼴로 표시하고 필수 표시는 마지막 문단 끝에 붙인다.
+            // POL-06-01 : 문항·서식 — 문항 제목 서식: 문단마다 같은 기본 글꼴로 표시하고 필수 표시는 마지막 문단 끝에 붙인다.
             FrameworkElement titleElement = titleText;
             List<TextBlock> titleParagraphs = CreateRichParagraphs(question.TitleBlocks, titleText);
             if (titleParagraphs.Count > 0)
@@ -342,7 +357,7 @@ namespace Popup.Views.Contents
                 foreach (FrameworkElement child in panel.Children)
                 {
                     child.MaxWidth = Math.Max(0, panel.ActualWidth - child.Margin.Left - child.Margin.Right);
-                    // [TODO55-6] 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다. 체크 표시 폭: 세로형 오른쪽 28, 가로형은 디자인 버전 값.
+                    // POL-06-01 : 문항·서식 — 서식 선택지(문단 패널)도 일반 문구와 같은 폭 제한으로 줄바꿈한다. 체크 표시 폭: 세로형 오른쪽 28, 가로형은 디자인 버전 값.
                     if (child is ContentControl control && control.Content is FrameworkElement label)
                         label.MaxWidth = Math.Max(0, child.MaxWidth - control.Padding.Left - control.Padding.Right
                             - control.BorderThickness.Left - control.BorderThickness.Right
@@ -390,7 +405,8 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO55] 서식 문단 공통 처리. 일반 문자열 TextBlock(template)의 기본 글꼴·크기·굵기·색·줄 높이를 문단에 옮기고,
+         * POL-06-01 : 문항·서식
+         * 서식 문단 공통 처리. 일반 문자열 TextBlock(template)의 기본 글꼴·크기·굵기·색·줄 높이를 문단에 옮기고,
          * 구간(Run)에 지정된 서식은 그대로 우선한다. 표시할 글자가 없으면 빈 목록(일반 문자열 사용).
          * inheritFont=true(선택지)는 글꼴·크기·굵기·색을 고정하지 않는다. 일반 선택지처럼 본문 크기(ApplyBodyFontSize)와
          * 선택 강조(굵기·색 트리거)를 선택지 컨트롤에서 상속해야 하기 때문이다.
@@ -436,7 +452,9 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO56-5] 선택 방식 안내. 주관식은 안내하지 않는다. [TODO52-5] 정답 수로 선택 수가 제한된 복수 선택은 최대 개수를 안내한다.
+         * POL-06-02 : 선택·제출
+         * POL-06-03 : 표현·수명
+         * 선택 방식 안내. 주관식은 안내하지 않는다. 정답 수로 선택 수가 제한된 복수 선택은 최대 개수를 안내한다.
          * 디자인 버전에 SurveyShowChoiceHint=true가 있을 때만 표시한다(V1은 키가 없어 표시하지 않음).
          */
         private string? ChoiceHintOf(SurveyQuestion question)
@@ -460,7 +478,7 @@ namespace Popup.Views.Contents
             Foreground = (Brush)FindResource("SurveyMutedText")
         };
 
-        /* [TODO55] 선택지 표시: 서식이 있으면 문단 패널, 없으면 기존 일반 문구. 접근성 이름은 호출부에서 일반 문구(Text)로 둔다. */
+        /* POL-06-01 : 문항·서식 — 선택지 표시: 서식이 있으면 문단 패널, 없으면 기존 일반 문구. 접근성 이름은 호출부에서 일반 문구(Text)로 둔다. */
         private FrameworkElement CreateOptionContent(SurveyOption option, bool horizontal)
         {
             TextBlock plain = CreateOptionText(option.Text, horizontal);
@@ -471,7 +489,7 @@ namespace Popup.Views.Contents
 
         private TextBlock CreateOptionText(string text, bool horizontal)
         {
-            // 선택 시 굵게 바뀌는 디자인(V1)만 굵은 글자 높이를 미리 확보한다. TODO56 이후 V2는 선택해도 굵기가 그대로다.
+            // 선택 시 굵게 바뀌는 디자인(V1)만 굵은 글자 높이를 미리 확보한다. V2는 선택해도 굵기가 그대로다.
             bool reserveSelectedBold = TryFindResource("SurveyReserveSelectedBold") is not false;
             TextBlock label = horizontal || !reserveSelectedBold ? new TextBlock() : new StableChoiceText();
             label.Text = text;
@@ -542,7 +560,7 @@ namespace Popup.Views.Contents
                     Tag = option
                 };
 
-                // [TODO52-5] 한도 확인을 응답 갱신보다 먼저 연결해 초과 선택이 응답·진행률에 남지 않게 한다.
+                // POL-06-02 : 선택·제출 — 한도 확인을 응답 갱신보다 먼저 연결해 초과 선택이 응답·진행률에 남지 않게 한다.
                 checkBox.Checked += (_, _) => ApplySelectionLimit(question.MaxSelections, checkBoxes, checkBox);
                 checkBox.Unchecked += (_, _) => ApplySelectionLimit(question.MaxSelections, checkBoxes, null);
                 checkBox.Checked += AnswerSelectionChanged;
@@ -565,7 +583,11 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO52-5] 복수 선택 한도(정답 수). 한도만큼 고르면 남은 선택지를 비활성화하고, 하나를 해제하면 다시 활성화한다.
+         * POL-06-02 : 선택·제출
+         * ■ 복수 선택 한도 적용
+         * - in : maxSelections(int?) 한도(QUIZ 정답 수, null이면 제한 없음) · checkBoxes 문항의 CheckBox 목록 · justChecked(CheckBox?) 방금 체크한 항목
+         * - out: 없음 · 초과 체크 해제, 남은 선택지 IsEnabled 변경
+         * - 복수 선택 한도(정답 수). 한도만큼 고르면 남은 선택지를 비활성화하고, 하나를 해제하면 다시 활성화한다.
          * 코드로 한도를 넘겨 체크된 경우에는 방금 체크한 선택지를 해제한다. 한도가 없으면(null) 아무것도 하지 않는다.
          * 문항 전체 잠금(VIDEO+QUIZ 시청 전 등)은 부모 IsEnabled로 걸리므로 여기서 활성화해도 잠금이 풀리지 않는다.
          */
@@ -720,8 +742,8 @@ namespace Popup.Views.Contents
 
         /// <summary>
         /// 선택한 보기의 서버 OptionId를 SurveyAnswer에 추가한다.
-        /// [설계 18 L-0 — C-19] 보기 컨트롤(RadioButton·CheckBox)의 Tag는 항상 SurveyOption으로 만들므로
-        /// "구 커스텀 컨트롤" 호환용 문자열 Tag 분기는 도달할 수 없어 삭제했다. SurveyOption이 아니면 무시한다.
+        /// POL-06-01 : 문항·서식 — 보기 컨트롤(RadioButton·CheckBox)의 Tag는 항상 SurveyOption으로 만든다.
+        /// 문자열 Tag 호환 분기는 없으며 SurveyOption이 아니면 무시한다.
         /// </summary>
         private static void AddSelectedOption(
             SurveyAnswer answer,
@@ -797,7 +819,10 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [설계 14 §5.6] 관리자 본문 폰트 크기 적용.
+         * POL-01-01 : 공통 옵션의 위치
+         * ■ 관리자 본문 폰트 크기 적용
+         * - in : fontSize(double) PopupWindow가 10~40으로 보정한 크기
+         * - out: 없음 · 선택지·주관식(상속)·문항 제목(+4)·문항 설명(+1) 크기 변경
          * SURVEY/QUIZ의 본문 = 선택지(RadioButton/CheckBox)·주관식 TextBox. 이들은 FontSize를 직접 지정하지 않아
          * UserControl의 FontSize를 상속하므로 this.FontSize를 바꾸면 함께 바뀐다(기본 14).
          * 문항 제목(기본 16)·문항 설명(기본 13)은 기존 상대 계층을 유지하도록 각각 +4, +1 로 맞춘다.
@@ -814,18 +839,19 @@ namespace Popup.Views.Contents
             {
                 descriptionText.FontSize = fontSize + 1;
             }
-            // [TODO55] 크기가 바뀐 서식 문단의 기울임 여유를 다시 맞춘다(TextPopupView와 같음). 일반 문자열 TextBlock은 영향 없음.
+            // POL-06-01 : 문항·서식 — 크기가 바뀐 서식 문단의 기울임 여유를 다시 맞춘다(TextPopupView와 같음). 일반 문자열 TextBlock은 영향 없음.
             foreach (TextBlock paragraph in _questionTitleTexts.Concat(_questionDescriptionTexts).Concat(_optionParagraphs))
                 PopupRichText.ReserveItalicOverhang(paragraph);
         }
 
         /*
-         * [설계 12 §3·§4] 제출 처리 — 서버를 기다리지 않는다.
+         * POL-06-02 : 선택·제출
+         * 제출 처리 — 서버를 기다리지 않는다.
          *   1. 화면 답안 수집
          *   2. 필수 문항 검증(WPF 즉시, 누락 시 안내 후 중단)
          *   3. QUIZ면 QuizGrader로 즉시 채점(점수·통과 여부)
          *   4. SurveySubmitted 이벤트로 PopupManager에 전달 → 로컬 큐 저장 → 결과 안내 → 창 닫기 → 백그라운드 전송
-         * 기준 3 구현(서버 채점·응답 대기)에서 설계 12로 되돌린 지점이다.
+         * 서버 채점·응답 대기 방식은 쓰지 않는다.
          */
         private void SubmitButton_Click(
     object sender,
@@ -834,6 +860,7 @@ namespace Popup.Views.Contents
             Submit();
         }
 
+        /* POL-02-03 : 푸터 역할 — 공통 푸터가 제출을 맡을 때 본문 제출 버튼·영역을 숨긴다. */
         public void UseFooterSubmission()
         {
             SubmitButton.Visibility = Visibility.Collapsed;
@@ -849,7 +876,7 @@ namespace Popup.Views.Contents
             int completed = _questions.Count(question => question.IsRequired && answers.Any(answer =>
                 answer.QuestionId == question.QuestionId && (answer.SelectedOptionIds.Count > 0 || !string.IsNullOrWhiteSpace(answer.TextAnswer))));
             CanSubmit = IsEnabled && completed == required;
-            // [TODO56-6] 필수 문항 단위로 센다(복수선택 선택지 수·선택 문항 응답은 세지 않음). 필수 0개면 수치를 표시하지 않는다.
+            // POL-06-03 : 표현·수명 — 필수 문항 단위로 센다(복수선택 선택지 수·선택 문항 응답은 세지 않음). 필수 0개면 수치를 표시하지 않는다.
             ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
                 : completed == required ? $"필수 응답 {completed}/{required} 완료"
                 : $"필수 응답 {completed}/{required} · {required - completed}문항 남음";
@@ -863,8 +890,9 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * [TODO59-5] 영상 결합 QUIZ가 잠긴 동안 본문 제출 영역에 보일 잠금 사유. null이면 필수 응답 진행 문구를 쓴다.
-         * 영상과 퀴즈 사이 안내(_notice)를 없앴으므로, 공통 푸터를 숨긴 조합(showFooter=false)에서는 이 영역이 잠금 사유를 보여 준다.
+         * POL-05-03 : 결합 화면
+         * 영상 결합 QUIZ가 잠긴 동안 본문 제출 영역에 보일 잠금 사유. null이면 필수 응답 진행 문구를 쓴다.
+         * 영상과 퀴즈 사이 안내 행이 없으므로, 공통 푸터를 숨긴 조합(showFooter=false)에서는 이 영역이 잠금 사유를 보여 준다.
          * 푸터를 쓰는 조합은 제출 영역이 접혀 있고 사유는 PopupWindow 푸터가 표시한다.
          */
         private string? _lockedReason;
@@ -880,12 +908,12 @@ namespace Popup.Views.Contents
             string text = !IsEnabled && _lockedReason != null ? _lockedReason : ResponseProgressText;
             bool changed = RequiredProgressText.Text != text;
             if (changed) RequiredProgressText.Text = text;
-            // [설계 43] 제출 비활성 사유(필수 미응답·영상 잠금)를 스크린리더에도 알린다. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
+            // POL-06-02 : 선택·제출 — 제출 비활성 사유(필수 미응답·영상 잠금)를 스크린리더에도 알린다. 통과 점수는 제출 조건이 아니다(채점 전 교착 방지).
             System.Windows.Automation.AutomationProperties.SetHelpText(SubmitButton, CanSubmit ? string.Empty : text);
             return changed;
         }
 
-        /// <summary>[설계 44] 초기 포커스: 첫 문항의 첫 입력 컨트롤. 잠긴 상태(비활성)면 옮기지 않는다.</summary>
+        /// <summary>POL-02-02 : 종료 제어 — 키보드 접근용 초기 포커스: 첫 문항의 첫 입력 컨트롤. 잠긴 상태(비활성)면 옮기지 않는다.</summary>
         internal bool FocusFirstAnswer()
         {
             if (!IsEnabled) return false;
@@ -898,6 +926,13 @@ namespace Popup.Views.Contents
             return false;
         }
 
+        /*
+         * POL-06-02 : 선택·제출
+         * ■ 설문 제출
+         * - in : 없음(화면에 입력된 답안)
+         * - out: SurveySubmitted 이벤트(SurveySubmission) · 필수 미응답이면 안내 모달만 띄우고 이벤트 없음
+         * - 답안을 모아 필수 응답을 검증하고, QUIZ면 QuizGrader로 즉시 채점해 점수·통과 여부를 함께 넘긴다.
+         */
         public void Submit()
         {
             /*
@@ -923,7 +958,7 @@ namespace Popup.Views.Contents
             }
 
             /*
-             * [설계 12 §4] QUIZ는 여기서 즉시 채점한다. 서버가 QUIZ 팝업에 한해 정답 정보
+             * POL-06-02 : 선택·제출 — QUIZ는 여기서 즉시 채점한다. 서버가 QUIZ 팝업에 한해 정답 정보
              * (options[].isCorrect / correctAnswer / answerMatchMode / questionScore)를 내려준다.
              * SURVEY는 채점하지 않으므로 점수·통과 여부가 null이다.
              * 미통과면 PopupManager가 안내만 하고 창을 유지한다(제출 없음, 답안 수정 후 재채점). 통과 시에만 SUBMITTED가 만들어진다.

@@ -4,11 +4,12 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <!--
-    팝업 매퍼 — Oracle 판 (기준 5: PostgreSQL popup 스키마 → Oracle 전환)
+    POL-13-01 : 콘텐츠와 관리 상태
+    팝업 매퍼 — Oracle 판 (PostgreSQL popup 스키마 → Oracle 전환)
 
     [역할] 관리자 편집(/apis/popup/**), WPF 단건 조회의 노출 후보 판정(WpfPopupService — selectAvailablePopups·countAvailablePopups),
            WPF 결과 처리(WpfResultProcessor → PopupService 위임)가 사용하는 POPUP 스키마 SQL.
-           구 WPF-01~06(/p/api/popups/** 개별 API)은 설계 18 L-0에서 삭제했다.
+           구 WPF-01~06(/p/api/popups/** 개별 API) 전용 구문은 두지 않는다.
            구문 ID·파라미터·반환 구조는 PostgreSQL 판과 같아 PopupService 호출부는 바뀌지 않는다.
 
     [PostgreSQL → Oracle 변환 규칙] (상세: docs/design/05_Oracle_DB_설계.md)
@@ -42,7 +43,7 @@
 
     <!-- 세션 시간대에 의존하지 않는 KST 현재 시각(TIMESTAMP). 저장 컬럼이 모두 KST 로컬 시각이므로 비교·기록에 이 값을 쓴다. -->
     <sql id="nowKst">CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Seoul' AS TIMESTAMP)</sql>
-    <!-- [TODO52-1] KST 오늘·어제의 ISO 요일(1=월, NLS 무관)과 현재 분(0~1439). 노출 일정 판단에 쓴다. -->
+    <!-- POL-11-03 : 시간 경계 — KST 오늘·어제의 ISO 요일(1=월, NLS 무관)과 현재 분(0~1439). 노출 일정 판단에 쓴다. -->
     <sql id="todayIsoKst">(TRUNC(<include refid="nowKst"/>) - TRUNC(<include refid="nowKst"/>, 'IW') + 1)</sql>
     <sql id="yesterdayIsoKst">(MOD(TRUNC(<include refid="nowKst"/>) - TRUNC(<include refid="nowKst"/>, 'IW') + 6, 7) + 1)</sql>
     <sql id="minuteKst">(EXTRACT(HOUR FROM <include refid="nowKst"/>) * 60 + EXTRACT(MINUTE FROM <include refid="nowKst"/>))</sql>
@@ -51,7 +52,7 @@
          문항 템플릿·문항·선택지 저장 (관리자 저장 시 PopupService.saveAdminQuestions)
          =================================================================== -->
 
-    <!-- 새 템플릿 행을 만든다. [설계 18 L-5 — D-6] 쓰이지 않던 그룹·버전·현재 여부 컬럼은 삭제했다. -->
+    <!-- 새 템플릿 행을 만든다. 그룹·버전·현재 여부 컬럼은 두지 않는다. -->
     <insert id="insertQuestionTemplate" parameterType="map">
         <selectKey keyProperty="templateId" resultType="java.lang.Long" order="BEFORE">
             SELECT ${popupSchemaPrefix}SEQ_QUESTION_TEMPLATE.NEXTVAL FROM DUAL
@@ -87,7 +88,7 @@
                 #{auditUser}, #{auditUser})
     </insert>
 
-    <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. [TODO55] 서식은 TEXT_BLOCKS(CLOB JSON 배열). -->
+    <!-- 선택지 저장. 저장값(OPTION_VALUE)은 원본과 같이 순번 문자열이다. POL-06-01 : 문항·서식 — 서식은 TEXT_BLOCKS(CLOB JSON 배열). -->
     <insert id="insertAdminOption">
         INSERT INTO ${popupSchemaPrefix}POPUP_OPTION
             (OPTION_ID, QUESTION_ID, OPTION_VALUE, OPTION_TEXT, CORRECT_YN, SORT_ORDER, TEXT_BLOCKS, CREATED_BY, UPDATED_BY)
@@ -157,7 +158,7 @@
     <!--
         popup_notice + popup_content 공통 SELECT 목록. 관리자 상세와 WPF 단건 조회의 노출 후보(selectAvailablePopups)가 함께 사용한다.
         콘텐츠는 JSON으로 조립하지 않고 정규 컬럼 4개 + CONTENT_OPTIONS(CLOB)를 그대로 내린다.
-        [설계 18 L-4] DISPLAY_MODE는 CK_POPUP_DISPLAY_MODE(08 스크립트)로 보장하므로 CASE 보정을 두지 않는다.
+        DISPLAY_MODE는 CK_POPUP_DISPLAY_MODE(08 스크립트)로 보장하므로 CASE 보정을 두지 않는다.
     -->
     <sql id="popupEntityColumns">
             n.POPUP_ID,
@@ -211,7 +212,7 @@
     </select>
 
     <!-- popupId가 이미 존재하면 생성 정보는 유지하고 수정 정보만 갱신한다 (원본 ON CONFLICT → MERGE). -->
-    <!-- [TODO57] ALLOW_CLOSE_BEFORE_COMPLETE_YN은 폐기 옵션이라 읽고 쓰지 않는다(컬럼 존치, 신규 행은 DB 기본값 'Y'). -->
+    <!-- POL-02-02 : 종료 제어 — ALLOW_CLOSE_BEFORE_COMPLETE_YN은 폐기 옵션이라 읽고 쓰지 않는다(컬럼 존치, 신규 행은 DB 기본값 'Y'). -->
     <update id="upsertAdminPopupNotice">
         MERGE INTO ${popupSchemaPrefix}POPUP_NOTICE n
         USING (SELECT #{popupId} AS POPUP_ID FROM DUAL) src
@@ -296,6 +297,7 @@
              #{auditUser}, #{auditUser})
     </update>
 
+    <!-- 목록에서 팝업 활성 여부(ACTIVE_YN)만 바꾼다. -->
     <update id="updateAdminPopupActive">
         UPDATE ${popupSchemaPrefix}POPUP_NOTICE
         SET
@@ -323,6 +325,7 @@
         </constructor>
     </resultMap>
 
+    <!-- POL-11-01 : 노출 판단 소유 — 대상 그룹과 조건을 한 행씩 읽는다(서비스가 그룹 구조로 조립). -->
     <select id="selectAdminPopupTargets"
             resultMap="adminPopupTargetRowResultMap">
         SELECT g.TARGET_GROUP_ID,
@@ -344,8 +347,7 @@
         ORDER BY g.GROUP_ORDER, c.CONDITION_ORDER
     </select>
 
-    <!-- 조건 행은 FK ON DELETE CASCADE로 함께 삭제된다. -->
-    <!-- [TODO52-1] 노출 시간대. 분(0~1439)을 HH:mm으로 돌려준다. -->
+    <!-- POL-11-03 : 시간 경계 — 노출 시간대. 분(0~1439)을 HH:mm으로 돌려준다. -->
     <resultMap id="displayTimeResultMap" type="server.domain.popup.PopupDisplayTimeDto">
         <constructor>
             <arg column="START_TIME" javaType="java.lang.String"/>
@@ -353,6 +355,7 @@
         </constructor>
     </resultMap>
 
+    <!-- 팝업의 노출 시간대를 저장 순서로 조회한다. -->
     <select id="selectDisplayTimes" resultMap="displayTimeResultMap">
         SELECT LPAD(TRUNC(START_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(START_MINUTE, 60), 2, '0') AS START_TIME,
                LPAD(TRUNC(END_MINUTE / 60), 2, '0') || ':' || LPAD(MOD(END_MINUTE, 60), 2, '0') AS END_TIME
@@ -361,23 +364,28 @@
         ORDER BY SORT_ORDER
     </select>
 
+    <!-- 저장 전 기존 노출 시간대를 지운다. -->
     <delete id="deleteDisplayTimes">
         DELETE FROM ${popupSchemaPrefix}POPUP_DISPLAY_TIME WHERE POPUP_ID = #{popupId}
     </delete>
 
+    <!-- 노출 시간대 1건을 분 단위로 저장한다. -->
     <insert id="insertDisplayTime">
         INSERT INTO ${popupSchemaPrefix}POPUP_DISPLAY_TIME (POPUP_ID, SORT_ORDER, START_MINUTE, END_MINUTE, CREATED_BY)
         VALUES (#{popupId}, #{sortOrder}, #{startMinute}, #{endMinute}, #{auditUser})
     </insert>
 
+    <!-- 대상 그룹을 지운다. 조건 행은 FK ON DELETE CASCADE로 함께 삭제된다. -->
     <delete id="deleteAdminPopupTargets">
         DELETE FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
     </delete>
 
+    <!-- 팝업의 대상 그룹 수. -->
     <select id="countAdminPopupTargetGroups" resultType="int">
         SELECT COUNT(*) FROM ${popupSchemaPrefix}POPUP_TARGET_GROUP WHERE POPUP_ID = #{popupId}
     </select>
 
+    <!-- 대상 그룹 저장. 시퀀스로 targetGroupId를 먼저 발급한다. -->
     <insert id="insertAdminTargetGroup" parameterType="map">
         <selectKey keyProperty="targetGroupId" resultType="java.lang.Long" order="BEFORE">
             SELECT ${popupSchemaPrefix}SEQ_POPUP_TARGET_GROUP.NEXTVAL FROM DUAL
@@ -495,7 +503,7 @@
         CASE 안의 EXISTS는 Oracle SQL에서 허용된다.
         완료(COMPLETED_YN) 제외는 excludeCompleted=true일 때만 적용한다. WPF 목록(WpfPopupService)은 true,
         답안 제출 재검증(PopupService.submitResponse)은 false로 호출한다.
-        [설계 35] excludeCompleted=true(WPF 조회·후속 후보 확인)는 재노출 유예 중(WPF_POPUP_DELIVERY.DEFER_UNTIL_AT)인
+        POL-11-02 : 반복의 의미 — excludeCompleted=true(WPF 조회·후속 후보 확인)는 재노출 유예 중(WPF_POPUP_DELIVERY.DEFER_UNTIL_AT)인
         사용자·팝업도 제외한다. 조회(selectAvailablePopups)와 후보 확인(countAvailablePopups)이 같은 조각을 써서 기준이 같다.
     -->
     <sql id="eligiblePopupCte">
@@ -601,7 +609,7 @@
                     AND s.POPUP_ID = n.POPUP_ID
                     AND (
                         s.HIDDEN_UNTIL_AT &gt; <include refid="nowKst"/>
-                        <!-- [기준 2] 신규 WPF API: 완료(SURVEY/QUIZ 통과·VIDEO 완료) 팝업 제외까지 서버가 판정한다.
+                        <!-- POL-11-01 : 노출 판단 소유 — 신규 WPF API: 완료(SURVEY/QUIZ 통과·VIDEO 완료) 팝업 제외까지 서버가 판정한다.
                              답안 제출 재검증은 excludeCompleted=false로 호출되어 숨김만 제외한다. -->
                         <if test="excludeCompleted">
                         OR s.COMPLETED_YN = 'Y'
@@ -617,7 +625,7 @@
                     AND d.POPUP_ID = n.POPUP_ID
                     AND d.DEFER_UNTIL_AT &gt; <include refid="nowKst"/>
               )
-              <!-- [TODO52-1] 노출 일정: SCHEDULE이면 요일(REPEAT_DAY_OF_WEEK, 비면 매일)과 시간대(POPUP_DISPLAY_TIME, 없으면 종일)를
+              <!-- POL-11-03 : 시간 경계 — 노출 일정: SCHEDULE이면 요일(REPEAT_DAY_OF_WEEK, 비면 매일)과 시간대(POPUP_DISPLAY_TIME, 없으면 종일)를
                    KST 현재 시각이 만족해야 한다. 자정 초과 시간대(START > END)의 자정 이후 부분은 시작한 날(어제)의 요일로 본다.
                    WPF 조회·후속 후보 확인에만 적용하고 답안 제출 재검증(excludeCompleted=false)에는 적용하지 않아,
                    시간대가 끝난 뒤 닫힌 팝업의 결과도 정상 처리한다. -->
@@ -662,6 +670,7 @@
         )
     </sql>
 
+    <!-- POL-11-01 : 노출 판단 소유 — 노출 후보 팝업을 표시 순서(DISPLAY_ORDER·생성 시각·ID)로 조회한다. -->
     <select id="selectAvailablePopups"
             resultMap="popupEntityResultMap">
         <include refid="eligiblePopupCte"/>
@@ -679,7 +688,7 @@
         ORDER BY n.DISPLAY_ORDER, n.CREATED_AT, n.POPUP_ID
     </select>
 
-    <!-- [설계 35] 결과 저장 후 후속 후보 유무. 콘텐츠를 읽지 않고 첫 행만 확인한다(전체 COUNT 집계 대신 ROWNUM 1). -->
+    <!-- POL-09-03 : 저장 응답 — 결과 저장 후 후속 후보 유무. 콘텐츠를 읽지 않고 첫 행만 확인한다(전체 COUNT 집계 대신 ROWNUM 1). -->
     <select id="countAvailablePopups" resultType="int">
         <include refid="eligiblePopupCte"/>
         SELECT COUNT(*) FROM ELIGIBLE_POPUP WHERE ROWNUM = 1
@@ -713,6 +722,7 @@
         ORDER BY QUESTION_TEMPLATE_ID, SORT_ORDER
     </select>
 
+    <!-- 문항 ID 목록의 선택지를 조회한다. -->
     <select id="selectOptionsByQuestionIds"
             resultMap="optionEntityResultMap">
         SELECT
@@ -765,7 +775,7 @@
     <!--
         활성 사용자를 확인하고 채점 설정을 조회한다. 별칭은 대소문자 무관하게 레코드 필드에 매핑된다.
         requirePublished=true면 팝업 활성·게시 기간(신규 조회의 게시 조건)도 함께 확인한다.
-        [설계 47-4] 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은 requirePublished=false로 호출해 게시중단(활성 해제·기간 종료)
+        POL-10-02 : 검증·원자성 — 이미 전달한 건(OPEN·EXPIRED)의 결과 수용은 requirePublished=false로 호출해 게시중단(활성 해제·기간 종료)
         뒤에도 popupId로 설정을 읽는다. 팝업 행이 없으면(삭제) 결과가 없다.
     -->
     <select id="selectSubmissionContext"
@@ -831,6 +841,7 @@
         WHERE RESPONSE_ID = #{responseId}
     </delete>
 
+    <!-- 문항 답안 저장. 시퀀스로 responseAnswerId를 먼저 발급한다. -->
     <insert id="insertResponseAnswer" parameterType="map">
         <selectKey keyProperty="responseAnswerId" resultType="java.lang.Long" order="BEFORE">
             SELECT ${popupSchemaPrefix}SEQ_POPUP_RESPONSE_ANSWER.NEXTVAL FROM DUAL
@@ -847,6 +858,7 @@
         )
     </insert>
 
+    <!-- 객관식 답안의 선택값 1건을 저장한다. -->
     <insert id="insertResponseValue">
         INSERT INTO ${popupSchemaPrefix}POPUP_RESPONSE_VALUE
         (
@@ -959,7 +971,7 @@
 
     <!--
         WPF 결과(CLOSED·HIDDEN) 수용 확인: 활성 사용자와 팝업 행 존재만 본다.
-        [설계 47-4] 게시중단 전에 표시된 전달 건(EXPIRED 포함)의 결과를 받기 위해 팝업 ACTIVE_YN은 확인하지 않는다
+        POL-10-02 : 검증·원자성 — 게시중단 전에 표시된 전달 건(EXPIRED 포함)의 결과를 받기 위해 팝업 ACTIVE_YN은 확인하지 않는다
         (활성 해제로 게시중단해도 수용). 팝업 행이 삭제됐으면 0.
     -->
     <select id="countActiveUserAndPopup" resultType="int">
@@ -971,6 +983,7 @@
           AND n.POPUP_ID = #{popupId}
     </select>
 
+    <!-- 활성 문항 템플릿 목록(이름순). -->
     <select id="selectAdminQuestionTemplates" resultType="server.domain.popup.AdminQuestionTemplate">
         SELECT QUESTION_TEMPLATE_ID AS templateId, TEMPLATE_NAME AS templateName, TEMPLATE_TYPE AS templateType
         FROM ${popupSchemaPrefix}QUESTION_TEMPLATE
