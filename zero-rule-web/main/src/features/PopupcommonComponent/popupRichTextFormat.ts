@@ -95,10 +95,9 @@ export function applyFormat(editor: any, action: FormatAction): void {
 }
 
 /*
- * [설계 49·TODO63] 문단 들여쓰기 정규화. CKEditor IndentBlock은 40px씩 누적하며 단계 수 제한은 두지 않는다.
+ * [POL-03-02; 근거 설계 49·TODO63] 문단 들여쓰기 정규화. CKEditor IndentBlock은 40px씩 누적하며 단계 수 제한은 두지 않는다.
  *  - 붙여넣기 등으로 들어온 값은 모델에서 40px 배수로 맞추고 px 외 단위·숫자 범위를 넘는 값은 지운다.
  * 들여쓰기·내어쓰기(0에서 멈춤)·실행 취소는 CKEditor 기본 동작을 그대로 쓴다.
- * [TODO66] 일괄 서식 초기화(removeFormat) 진입점을 없애 blockIndent·alignment의 초기화 제외(isFormatting 해제) 설정도 함께 정리했다.
  */
 export function normalizeIndent(editor: any): void {
   const px = (value: unknown) => (typeof value === 'string' && /^\d+(\.\d+)?px$/.test(value) ? Number.parseFloat(value) : null);

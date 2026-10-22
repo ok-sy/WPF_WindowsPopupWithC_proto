@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-17 — TODO71 정책 통합·원본 역추적·주석 정리
+
+- 이유: 누적 설계의 대체·부분 폐기·미검증 상태를 현행 정책과 분리하고 Front/Server/WPF 인계 시 참조 기준을 명확히 할 필요.
+- 변경: TODO01~70 전수 목록(현존 64개, 삭제·흡수/보류 번호 6개), Git 최초/최종 변경·체크 상태·대표 구현/계약·주/연관 정책 매핑, 요건/이력 색인 1,898행 작성. 기존 결정·코드·계약·DDL·CHANGELOG 및 저장소 Trello 대조 이력을 검토해 16개 정책/48개 경계 ID로 정리하고 대체·문구 충돌·정책 보류·산출물 미동기화 14건을 분리. 원본 TODO01~70의 내용·경로는 보존, 활성 작업 색인과 README 연결. 소스 주석 871행 분류(검색 결과 및 제거 이력 포함), 7개 파일의 계약 경계에 정책 ID 연결, 중복 완료 이력 문장 1개 제거. 기능·API·DB·기본값 변경 없음.
+- 주요 파일: docs/policies/{README,ACTIVE_TASKS,POL-01~16}.md, docs/reviews/TODO71/{INVENTORY,CONFLICTS,LINKS}.md·inventory.json·requirements.csv·comments.csv, docs/design/71_기존TODO_정책통폐합_정합성_주석정리_TODO.md, docs/README.md, scripts/audit-policy-docs-71.py, WPF PopupRichText.cs·PopupResultQueue.cs, 웹 popupRichText.ts·popupRichTextFormat.ts·popupEditorTransform.ts, 서버 WpfNextPopupResponse.java·WpfResultResponse.java.
+- 검증: `python3 scripts/audit-policy-docs-71.py` 통과 — 70개 번호/16개 정책/48개 ID·원본 불변·대표 근거 경로·주석 외 변경 줄 없음·신규 링크 오류 0 확인. 기존 docs Markdown 파일 링크 오류도 검사 범위 내 0. `git diff --check` 통과. WPF ALL/MINIMAL은 기능·계약 변경이 없어 내용 변경 없음. 미실행: WPF/웹/Java 빌드·동작 테스트, 실제 관리자 UI·Windows·Oracle·폐쇄망·현재 Trello 상태 조회, Word/PDF/Excel 재생성. 과거 테스트 수는 이번 수행 수로 재사용하지 않음.
+- 병합 대조: 작업 중 반영된 `8f2346d`(TODO65·69·70 샘플 전체 옵션)는 보존. 샘플의 기본값 키 보완은 기존 정책 책임 경계를 바꾸지 않음을 관련 문서·diff로 확인. 전수 조사 기준 커밋은 원래 SHA로 유지.
+- 상태: 71-1~6 정적 조사·문서 통합·색인·주석 정리 완료. 71-7 정적 검증 완료, 실환경·생성 산출물 대조는 미완료로 유지. 명시적 보류 정책 유지. 커밋에 포함(커밋 직전 기록).
+
 ## 2026-10-22-16 — TODO65·69·70 샘플 JSON 전체 옵션 포함
 
 - 이유: 인계용 샘플은 응답·편집값 하나로 사용할 수 있는 옵션 전체를 확인할 수 있어야 해서, 저장된 값에 없던 옵션 키도 계약 기본값으로 채워 싣도록 보완.
