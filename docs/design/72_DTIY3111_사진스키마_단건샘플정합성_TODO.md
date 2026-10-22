@@ -20,7 +20,9 @@
 |---|---|---|---|
 | 콘텐츠 ID | POPU_CNTN_ID VARCHAR2 SIZE 10 | SMP-* ID 12~14자 | 10자 이내 샘플 ID와 관련 테스트·예시 동시 변경 |
 | 이미지 경로/이름 | IMG_FILE_PATH_CN / IMG_FILE_NM | ATCH_FILE_PATH / ATCH_FILE_NM | 실제 컬럼 SELECT 및 VO 별칭 매핑 |
-| 영상 경로/이름 | VDO_FILE_PATH_CN / VDO_FILE_NM | 이미지와 같은 가정 컬럼 | 유형별 영상 매핑, 영상+퀴즈 적용 범위 명시 |
+| 영상 경로/이름 | VDO_FILE_PATH_CN / VDO_FILE_NM | 이미지와 같은 가정 컬럼 | VO 별도 필드로 분리, VIDEO·영상+퀴즈가 영상 컬럼 사용 |
+| 첨부파일 ID | APND_FILE_ID VARCHAR2 SIZE 16 | 파일 URL 생성에 미사용 | 첨부 ID 방식이면 FileUrlResolver가 교체 지점 |
+| 크기 소수 | NUMBER SIZE 5(정밀도·스케일 미확인) | 인계 응답 예시 height 420.5 | 샘플 예시는 정수로 통일, 실제 스케일 확인 |
 | 필수 등록값 | REG_USER_ID, REG_DTTM NULLABLE=N | INSERT 생략 | 샘플 등록자·일시 명시, 실제 DEFAULT는 별도 확인 |
 | 콘텐츠명·삭제여부 | POPU_CNTN_NM, DEL_YN 존재 | INSERT에서 생략 | 샘플 포함 여부·유효 코드 확인. 후보 정책은 서버 담당 |
 | 타입·푸터 코드 | 오른쪽 코드 설명 일부 잘림 | 예시 코드 10~50 / 01~03 | 사진으로 확정하지 않고 실제 코드표 교체 지점 유지 |
@@ -28,13 +30,25 @@
 ## 작업 TODO
 
 - [x] 72-1. DTIY3111의 20개 컬럼 OCR을 별도 문서로 보관하고, 사진 판독과 검토 의견을 분리한다. 빈 셀·잘린 비고·BYTE/CHAR·NUMBER 정밀도 불확실성을 표시한다.
-- [ ] 72-2. 매퍼 XML·VO·파일 URL 조립의 ATCH_FILE_PATH/ATCH_FILE_NM 가정을 사진의 이미지·영상 컬럼에 맞춘다. 유형별 컬럼을 VO 공통 별칭으로 받을지 별도 필드로 받을지 기존 구조에 맞춰 정하고 매핑표에 기록한다.
-- [ ] 72-3. 영상+퀴즈의 파일 원본을 명시한다. 영상 컬럼과 content.videoUrl이 모두 있으면 어느 값이 우선인지 IMAGE/VIDEO와 일관되게 정리하고, 파일 컬럼을 쓰지 않는다면 샘플 제한으로 명시한다.
+- [ ] 72-2. 매퍼 XML·VO·파일 URL 조립의 ATCH_FILE_PATH/ATCH_FILE_NM 가정을 사진의 이미지·영상 컬럼에 맞춘다. VO에 이미지 경로/파일명과 영상 경로/파일명을 별도 필드로 두고 유형별로 선택한다. APND_FILE_ID(16자)는 현재 파일 URL 생성에 미사용임을 매핑표에 기록한다. 실제 시스템이 첨부 ID로 URL을 만드는 경우 FileUrlResolver를 교체하고, 필요한 첨부 ID가 그 경계까지 전달되도록 VO·포트 시그니처를 함께 조정한다.
+- [ ] 72-3. IMAGE는 이미지 컬럼, VIDEO와 영상+퀴즈(QUIZ + videoEnabled=true)는 영상 컬럼으로 파일 URL을 만든다. 유효한 파일 컬럼에서 생성한 URL이 content.imageUrl/videoUrl보다 우선하고, 파일 컬럼이 없으면 content URL을 유지한다. 영상 없는 QUIZ에는 영상 컬럼을 적용하지 않는다. 경로만 또는 파일명만 있는 경우의 처리도 FileUrlResolver 계약에 명시하고 검증한다.
 - [ ] 72-4. 샘플 INSERT 6건의 ID를 10자 이내로 변경하고 요청 예시·기대값·정리 DELETE 조건을 함께 갱신한다. DELETE는 해당 샘플 ID만 대상으로 하여 범용 접두사에 속한 다른 데이터까지 지우지 않게 한다.
-- [ ] 72-5. INSERT에 REG_USER_ID와 REG_DTTM을 포함한다. 등록자 값은 6자 제한에 맞추고 등록일시는 SYSDATE 등 명시값을 사용한다. POPU_CNTN_NM·DEL_YN의 입력 여부와 코드는 실제 정의에 맞춰 정하며, 사진의 빈 셀을 근거로 필수값·기본값을 지어내지 않는다.
+- [ ] 72-5. INSERT에 REG_USER_ID='SAMPLE'(정확히 6자)와 REG_DTTM=SYSDATE를 명시한다. POPU_CNTN_NM·DEL_YN의 입력 여부와 코드는 실제 정의에 맞춰 정하며, 사진의 빈 셀을 근거로 필수값·기본값을 지어내지 않는다. DEL_YN 필터 위치는 샘플 SQL에 실행되지 않는 주석으로 표시한다(아래 참고). 코드값과 NULL 의미가 확정되기 전에는 실행 조건으로 추가하지 않는다.
 - [ ] 72-6. 미사용 선택 옵션의 기본값은 서버 응답 조립기가 적용하고 프론트는 신규 입력·미리보기 초기값을 가진다는 역할을 인계 문서에 명시한다. 누락/null 처리와 false·유효한 0 보존을 유지한다. 샘플의 전체 옵션 출력과 실제 API 필수 필드 범위를 구분한다.
-- [ ] 72-7. 사진 기반의 컬럼 이름·ID 길이·필수 INSERT 값과 SQL/VO 매핑을 확인하는 범위 검증을 추가한다. CLOB 객체 파싱·기본값·false/0 보존·TEXT/IMAGE/VIDEO/영상+퀴즈 파일 조립 회귀 검증을 수행한다. DB 없는 검증으로 실제 Oracle 실행 성공을 주장하지 않는다.
-- [ ] 72-8. SERVER_SAMPLE_SINGLE_QUERY_API.md의 매핑표·실행 예시·교체 지점과 관련 샘플 테스트를 동기화하고, 실제 DB·확정 코드표 대조 여부를 구분해 기록한다.
+- [ ] 72-7. 사진 기반의 컬럼 이름·ID 길이·필수 INSERT 값과 SQL/VO 매핑을 확인하는 범위 검증을 추가한다. CLOB 객체 파싱·기본값·false/0 보존·TEXT/IMAGE/VIDEO/영상+퀴즈 파일 조립 회귀 검증을 수행한다. NUMBER SIZE 5의 실제 정밀도·스케일을 확인하고, NUMBER(5,0)이면 소수가 저장 시 반올림된다는 점을 인계한다. 해당 스키마 샘플의 크기 테스트는 정수로 통일하되, 공통 WPF/API의 소수 입력을 일괄 금지하지 않는다. VARCHAR2의 BYTE/CHAR와 DB 문자셋을 확인해 실제 정의에 맞는 길이 검증을 적용한다. DB 없는 검증으로 실제 Oracle 실행 성공을 주장하지 않는다.
+- [ ] 72-8. SERVER_SAMPLE_SINGLE_QUERY_API.md의 매핑표·실행 예시·교체 지점과 관련 샘플 테스트를 동기화한다. 해당 테이블을 전제로 한 응답 예시의 height:420.5 등은 정수로 변경한다. APND_FILE_ID 미사용·FileUrlResolver 교체, 이미지/영상별 VO, 파일 우선순위, SAMPLE 등록자, 삭제 조건의 확인 상태와 길이 단위도 명시하고 실제 DB·확정 코드표 대조 여부를 구분해 기록한다.
+
+## 구현 시 참고
+
+삭제 조건 위치 예시(코드값 및 NULL 의미 미확정, 주석만 추가):
+
+```sql
+/* [샘플 조건·담당 확인] 삭제 코드와 NULL 의미 확인 후 적용
+   AND NVL(C.DEL_YN, 'N') = 'N'
+*/
+```
+
+문자열 길이는 실제 컬럼의 BYTE/CHAR와 DB 문자셋에 따른다. 예를 들어 AL32UTF8에서 VARCHAR2(200 BYTE)는 일반적인 한글 음절(3바이트)만으로 약 66자가 들어가지만, 문자 조합·문자셋에 따라 달라진다. 무조건 66자로 제한하거나 CHAR 정의에 바이트 제한을 강제하지 않는다.
 
 ## 완료 기준
 
