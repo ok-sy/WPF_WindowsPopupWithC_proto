@@ -4,9 +4,9 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { POPUP_TYPE_LABELS } from '../popupCommon';
-import { createDefaultPopup, toSaveRequest, type PopupSaveRequest } from '../popupEditorTransform';
+import { toSaveRequest, type PopupSaveRequest } from '../popupEditorTransform';
 import PopupSampleEditor from './PopupSampleEditor';
-import { createSamplePopups } from './popupSampleData';
+import { createSamplePopups, newSamplePopup } from './popupSampleData';
 
 /*
  * [TODO69] 기존 목록 기반 샘플(RgstPop 목록 → 신규/수정 → 편집기·두 미리보기 흐름). 관리자 API·인증 없이 동작한다.
@@ -39,9 +39,9 @@ export default function PopupListSample() {
     <Box sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
         <Typography variant="h6" fontWeight={700}>팝업 공통 컴포넌트 샘플 — 목록</Typography>
-        {/* [옵션] 신규 기본값은 createDefaultPopup()(창 560×420·최소 300×300 등). [실연동] popupId는 서버 채번/입력 규칙으로 바꾼다. */}
+        {/* [옵션] 신규 기본값은 newSamplePopup() = createDefaultPopup()(창 560×420·최소 300×300 등) + 전체 content 옵션. [실연동] popupId는 서버 채번/입력 규칙으로 바꾼다. */}
         <Button variant="contained" size="small"
-          onClick={() => open({ ...createDefaultPopup(), popupId: `LOCAL-${popups.length + 1}`, title: '새 팝업' })}>신규</Button>
+          onClick={() => open(newSamplePopup(`LOCAL-${popups.length + 1}`, '새 팝업'))}>신규</Button>
       </Stack>
       <Alert severity="info" sx={{ mb: 1.5 }}>서버 없이 확인하는 샘플입니다. 저장은 이 화면 메모리에만 반영되고 DB에는 저장되지 않습니다.</Alert>
       <Paper variant="outlined">

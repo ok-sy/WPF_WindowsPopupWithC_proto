@@ -1,0 +1,72 @@
+{
+  "pollingIntervalSeconds": 1800,
+  "popup": {
+    "deliveryId": "d-video-quiz-1",
+    "popupId": "SAMPLE-VIDEO-QUIZ-001",
+    "popupType": "QUIZ",
+    "title": "영상 + 퀴즈",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 760,
+    "height": 860,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 300,
+    "minimumHeight": 300,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "SUBMIT",
+    "useBackgroundOverlay": true,
+    "backgroundOverlayOpacity": 0.45,
+    "popupPosition": "CENTER",
+    "headerFontSize": null,
+    "bodyFontSize": null,
+    "footerFontSize": null,
+    "showDoNotShowAgain": false,
+    "showLater": true,
+    "hideDays": null,
+    "completionRatio": 0.8,
+    "passingScore": 1,
+    "questions": [
+      {
+        "questionId": 301,
+        "title": "영상에서 강조한 내용은?",
+        "titleBlocks": null,
+        "description": "",
+        "descriptionBlocks": null,
+        "questionType": "SINGLE_CHOICE",
+        "optionLayout": "VERTICAL",
+        "isRequired": true,
+        "isScored": true,
+        "questionScore": 1,
+        "correctAnswer": null,
+        "answerMatchMode": null,
+        "sortOrder": 1,
+        "options": [
+          { "optionId": 3001, "value": "A", "text": "자리 비움 시 화면 잠금", "textBlocks": null, "isCorrect": true, "sortOrder": 1 },
+          { "optionId": 3002, "value": "B", "text": "비밀번호 메모 부착", "textBlocks": null, "isCorrect": false, "sortOrder": 2 }
+        ]
+      }
+    ],
+    "content": {
+      "surveyTitle": "영상 확인 퀴즈",
+      "surveyTitleBlocks": null,
+      "description": "영상을 시청한 뒤 퀴즈에 응답하세요.",
+      "descriptionBlocks": null,
+      "videoEnabled": true,
+      "videoTitle": "보안 수칙",
+      "videoUrl": "https://example.com/training.mp4",
+      "showDescription": true,
+      "showControls": true,
+      "allowFullScreen": true,
+      "allowPlaybackRateChange": true,
+      "allowSeek": false,
+      "autoPlay": false,
+      "isLoop": false,
+      "defaultVolume": 0.7
+    }
+  }
+}

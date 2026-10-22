@@ -1,0 +1,42 @@
+{
+  "pollingIntervalSeconds": 1800,
+  "popup": {
+    "deliveryId": "d-image-1",
+    "popupId": "SAMPLE-IMAGE-001",
+    "popupType": "IMAGE",
+    "title": "이미지 공지",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 640,
+    "height": 480,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 300,
+    "minimumHeight": 300,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "CLOSE",
+    "useBackgroundOverlay": true,
+    "backgroundOverlayOpacity": 0.45,
+    "popupPosition": "CENTER",
+    "headerFontSize": null,
+    "bodyFontSize": null,
+    "footerFontSize": null,
+    "showDoNotShowAgain": false,
+    "showLater": false,
+    "hideDays": null,
+    "completionRatio": null,
+    "questions": [],
+    "content": {
+      "imageTitle": "이미지 안내",
+      "imageUrl": "https://example.com/notice.png",
+      "description": "이미지 설명",
+      "showDescription": true,
+      "imageSizeMode": "ADAPTIVE",
+      "keepAspectRatio": true
+    }
+  }
+}

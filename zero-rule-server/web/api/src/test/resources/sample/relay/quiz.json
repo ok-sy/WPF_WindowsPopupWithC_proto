@@ -1,0 +1,98 @@
+{
+  "pollingIntervalSeconds": 1800,
+  "popup": {
+    "deliveryId": "d-quiz-1",
+    "popupId": "SAMPLE-QUIZ-001",
+    "popupType": "QUIZ",
+    "title": "보안 퀴즈",
+    "displayMode": "SEQUENTIAL",
+    "sizeMode": "FIXED",
+    "width": 640,
+    "height": 640,
+    "widthRatio": 0.7,
+    "heightRatio": 0.75,
+    "minimumWidth": 300,
+    "minimumHeight": 300,
+    "maximumWidth": 1200,
+    "maximumHeight": 900,
+    "showHeader": true,
+    "showFooterButton": true,
+    "showFooter": true,
+    "footerAction": "SUBMIT",
+    "useBackgroundOverlay": true,
+    "backgroundOverlayOpacity": 0.45,
+    "popupPosition": "CENTER",
+    "headerFontSize": null,
+    "bodyFontSize": null,
+    "footerFontSize": null,
+    "showDoNotShowAgain": false,
+    "showLater": false,
+    "hideDays": null,
+    "completionRatio": null,
+    "passingScore": 2,
+    "questions": [
+      {
+        "questionId": 201,
+        "title": "비밀번호는 주기적으로 변경해야 한다.",
+        "titleBlocks": null,
+        "description": "",
+        "descriptionBlocks": null,
+        "questionType": "SINGLE_CHOICE",
+        "optionLayout": "HORIZONTAL",
+        "isRequired": true,
+        "isScored": true,
+        "questionScore": 1,
+        "correctAnswer": null,
+        "answerMatchMode": null,
+        "sortOrder": 1,
+        "options": [
+          { "optionId": 2001, "value": "O", "text": "O", "textBlocks": null, "isCorrect": true, "sortOrder": 1 },
+          { "optionId": 2002, "value": "X", "text": "X", "textBlocks": null, "isCorrect": false, "sortOrder": 2 }
+        ]
+      },
+      {
+        "questionId": 202,
+        "title": "피싱 메일의 특징을 모두 고르세요.",
+        "titleBlocks": null,
+        "description": "정답 2개",
+        "descriptionBlocks": null,
+        "questionType": "MULTIPLE_CHOICE",
+        "optionLayout": "VERTICAL",
+        "isRequired": true,
+        "isScored": true,
+        "questionScore": 1,
+        "correctAnswer": null,
+        "answerMatchMode": null,
+        "sortOrder": 2,
+        "options": [
+          { "optionId": 2011, "value": "A", "text": "긴급 요구", "textBlocks": null, "isCorrect": true, "sortOrder": 1 },
+          { "optionId": 2012, "value": "B", "text": "낯선 발신자", "textBlocks": null, "isCorrect": true, "sortOrder": 2 },
+          { "optionId": 2013, "value": "C", "text": "사내 공지 게시판", "textBlocks": null, "isCorrect": false, "sortOrder": 3 }
+        ]
+      },
+      {
+        "questionId": 203,
+        "title": "보안 담당 부서 이름을 입력하세요.",
+        "titleBlocks": null,
+        "description": "",
+        "descriptionBlocks": null,
+        "questionType": "TEXT",
+        "optionLayout": "VERTICAL",
+        "isRequired": false,
+        "isScored": true,
+        "questionScore": 1,
+        "correctAnswer": "정보보호팀",
+        "answerMatchMode": "CONTAINS",
+        "sortOrder": 3,
+        "options": []
+      }
+    ],
+    "content": {
+      "surveyTitle": "보안 퀴즈",
+      "surveyTitleBlocks": null,
+      "description": "정답을 고르세요.",
+      "descriptionBlocks": null,
+      "videoEnabled": false
+    }
+  }
+}

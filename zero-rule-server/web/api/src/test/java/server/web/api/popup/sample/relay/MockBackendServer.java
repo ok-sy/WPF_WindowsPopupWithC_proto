@@ -18,7 +18,8 @@ import com.sun.net.httpserver.HttpServer;
 /**
  * [TODO70] 테이블·실제 백엔드 없이 확인하는 고정 응답 mock 백엔드(JDK 내장 HttpServer, 추가 의존성 없음).
  *
- * <p>{@code POST /api/wpf/popups?scenario=...}. 시나리오: {@code ok}(기본, TEXT 1건), {@code survey}(문항 포함),
+ * <p>{@code POST /api/wpf/popups?scenario=...}. 시나리오: {@code ok}(기본, TEXT), {@code image}·{@code video}·{@code survey}·{@code quiz}·{@code video-quiz}
+ * (유형별로 계약 옵션 키를 모두 담은 응답, 파일 web/api/src/test/resources/sample/relay/*.json),
  * {@code empty}(popup:null), {@code envelope}({@code {resultCode, data}} 형태), {@code e400}·{@code e401}·{@code e403}·{@code e426}·{@code e404}·{@code e500},
  * {@code slow}(3초 지연), {@code badjson}, {@code notobject}, {@code nopolling}.
  * 받은 요청(메서드·경로·헤더·본문)은 {@link #requests()}에 남겨 테스트가 전송 내용을 확인한다.</p>
@@ -39,6 +40,8 @@ public final class MockBackendServer implements AutoCloseable {
     public static final String OK_BODY = resource("sample/relay/ok.json");
     /** 문항·선택지를 포함한 SURVEY 응답(sample/relay/survey.json). */
     public static final String SURVEY_BODY = resource("sample/relay/survey.json");
+    /** 유형별 전체 옵션 응답(모든 계약 옵션 키 포함). scenario 이름 = 파일 이름. */
+    public static final java.util.List<String> FULL_OPTION_SCENARIOS = java.util.List.of("ok", "image", "video", "survey", "quiz", "video-quiz");
     public static final String EMPTY_BODY = "{\"pollingIntervalSeconds\":1800,\"popup\":null}";
 
     private static String resource(String name) {
@@ -80,6 +83,7 @@ public final class MockBackendServer implements AutoCloseable {
             String scenario = scenario(exchange.getRequestURI().getRawQuery(), defaultScenario);
             switch (scenario) {
                 case "survey" -> send(exchange, 200, SURVEY_BODY);
+                case "image", "video", "quiz", "video-quiz" -> send(exchange, 200, resource("sample/relay/" + scenario + ".json"));
                 case "empty" -> send(exchange, 200, EMPTY_BODY);
                 case "envelope" -> send(exchange, 200, "{\"resultCode\":\"0000\",\"data\":" + OK_BODY + "}");
                 case "e400" -> send(exchange, 400, "{\"code\":\"WPF_BAD_REQUEST\",\"message\":\"요청 형식 오류\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");

@@ -4,7 +4,9 @@ import server.domain.popup.sample.PopupContentRow;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -30,7 +32,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *   <tr><td>footerAction</td><td>FTR_BTN_TP_CD</td><td>CLOSE(SURVEY·QUIZ는 항상 SUBMIT)</td></tr>
  *   <tr><td>footerLinkUrl</td><td>FTR_URL</td><td>LINK_AND_CLOSE일 때만, 절대 http/https 필수</td></tr>
  *   <tr><td>useBackgroundOverlay / backgroundOverlayOpacity / popupPosition</td><td>content</td><td>true / 0.45 / CENTER</td></tr>
- *   <tr><td>header/body/footerFontSize</td><td>content</td><td>생략(WPF 기본 크기)</td></tr>
+ *   <tr><td>header/body/footerFontSize</td><td>content</td><td>null(키는 항상 포함, null = WPF XAML 기본 크기)</td></tr>
+ *   <tr><td>hideDays / completionRatio / passingScore</td><td>(컬럼 없음)</td><td>null / VIDEO·영상+퀴즈 1.0, 그 밖 null / QUIZ만 키 포함 null</td></tr>
+ *   <tr><td>content 유형별 옵션</td><td>CNTN_CN</td><td>{@link #CONTENT_DEFAULTS} 표(명세 §8·WPF 콘텐츠 DTO 기본값과 같음)</td></tr>
+ *   <tr><td>questions[]·options[] 선택 필드</td><td>QuestionPort</td><td>applyQuestionDefaults</td></tr>
  *   <tr><td>displayMode·sizeMode·widthRatio·heightRatio·minimum*·maximum*·showHeader·showFooter·showFooterButton·showDoNotShowAgain</td>
  *       <td>(컬럼 없음, 고정)</td><td>SEQUENTIAL·FIXED·0.7·0.75·300·300·1200·900·true·true·true·false</td></tr>
  * </table>
@@ -39,6 +44,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * <p>제목·창 크기·나중에 보기·푸터 동작/URL은 <b>컬럼이 기준 원본</b>이다. content JSON에 같은 키가 있으면 응답에서 제거한다.
  * 창 공통 옵션(Overlay·위치·폰트)은 기존 설계 31과 같이 content에 저장된 값을 최상위로 옮기고 content에서는 뺀다.
  * IMAGE·VIDEO 파일은 파일 컬럼이 있으면 그 URL이 content.imageUrl/videoUrl보다 우선한다.</p>
+ *
+ * <h3>샘플 응답은 가능한 옵션 키를 모두 싣는다</h3>
+ * <p>인계 받는 개발자가 응답 하나로 쓸 수 있는 옵션 전체를 볼 수 있도록 유형별 content 옵션·선택 필드를 빠짐없이 채운다.
+ * 값이 없던 키는 계약 기본값으로 채우므로 WPF 표시 결과는 키를 생략했을 때와 같다. 예외: {@code footerLinkUrl}은 계약상
+ * LINK_AND_CLOSE일 때만 보내고, SURVEY는 정답 키(isCorrect·correctAnswer·answerMatchMode)를 싣지 않는다.
+ * 필수 콘텐츠 검증은 기본값을 채우기 <b>전</b> 원본 값으로 한다(빈 기본값이 필수 누락을 가리지 않게).</p>
  */
 public class PopupSingleResponseAssembler {
 
@@ -48,6 +59,18 @@ public class PopupSingleResponseAssembler {
     static final double MIN_WINDOW_SIZE = 300;
     private static final Set<String> COLUMN_OWNED_KEYS = Set.of("title", "width", "height", "showLater", "footerAction", "footerLinkUrl");
     private static final List<String> FONT_KEYS = List.of("headerFontSize", "bodyFontSize", "footerFontSize");
+    /**
+     * [옵션] 유형별 content 옵션 기본값(키가 없거나 null일 때만 채움). 옵션을 추가·삭제하면 이 표와 명세 §8·WPF DTO를 함께 맞춘다.
+     * Blocks 키(textBlocks·surveyTitleBlocks·descriptionBlocks)는 null = 서식 없음(일반 문자열 표시)이다.
+     */
+    static final Map<String, Map<String, Object>> CONTENT_DEFAULTS = Map.of(
+            "TEXT", ordered("plainText", "", "textBlocks", null, "showPlainText", true, "highlightText", "", "showHighlight", false,
+                    "bottomDescription", "", "bottomDescriptionUrl", "", "showBottomDescription", false),
+            "IMAGE", ordered("imageTitle", "", "imageUrl", "", "description", "", "showDescription", true, "imageSizeMode", "ADAPTIVE",
+                    "keepAspectRatio", true),
+            "VIDEO", videoDefaults(),
+            "SURVEY", ordered("surveyTitle", "", "surveyTitleBlocks", null, "description", "", "descriptionBlocks", null),
+            "QUIZ", ordered("surveyTitle", "", "surveyTitleBlocks", null, "description", "", "descriptionBlocks", null, "videoEnabled", false));
     private static final Set<String> POSITIONS = Set.of("CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT",
             "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT");
 
@@ -98,9 +121,17 @@ public class PopupSingleResponseAssembler {
         popup.put("showDoNotShowAgain", false);
         Boolean showLater = PopupCodeTable.yn(row.getAfterConfirmYn(), "AFTR_CNFM_OBJ_YN", id);
         popup.put("showLater", showLater != null && showLater);
+        boolean video = "VIDEO".equals(type) || ("QUIZ".equals(type) && content.path("videoEnabled").asBoolean(false));
+        // [교체 지점] 숨김 일수·완료 비율·통과 점수는 DTIY3111에 컬럼이 없어 계약 기본값을 싣는다. 컬럼이 확정되면 row 값으로 바꾼다.
+        popup.putNull("hideDays");
+        if (video) popup.put("completionRatio", 1.0); else popup.putNull("completionRatio");
+        if ("QUIZ".equals(type)) popup.putNull("passingScore");
         applyFile(content, row, type);
-        popup.set("questions", questions == null ? objectMapper.createArrayNode() : questions);
-        validateRequiredContent(type, content, popup.get("questions"), id);
+        ArrayNode questionList = questions == null ? objectMapper.createArrayNode() : questions.deepCopy();
+        validateRequiredContent(type, content, questionList, id);
+        applyContentDefaults(type, video, content);
+        applyQuestionDefaults(type, questionList);
+        popup.set("questions", questionList);
         popup.set("content", content);
 
         ObjectNode response = objectMapper.createObjectNode();
@@ -171,7 +202,10 @@ public class PopupSingleResponseAssembler {
 
         for (String key : FONT_KEYS) {
             JsonNode size = content.remove(key);
-            if (size == null || size.isNull()) continue;
+            if (size == null || size.isNull()) {
+                popup.putNull(key); // 키는 싣고 null = WPF 기본 크기
+                continue;
+            }
             if (!size.isNumber() || size.doubleValue() < 10 || size.doubleValue() > 40) invalid(id, key + "는 10~40 숫자여야 합니다.");
             popup.put(key, size.doubleValue());
         }
@@ -186,7 +220,7 @@ public class PopupSingleResponseAssembler {
 
     private static void validateRequiredContent(String type, ObjectNode content, JsonNode questions, String id) {
         boolean ok = switch (type) {
-            case "TEXT" -> content.path("plainText").isTextual() || (content.path("textBlocks").isArray() && !content.path("textBlocks").isEmpty());
+            case "TEXT" -> !content.path("plainText").asText("").isBlank() || (content.path("textBlocks").isArray() && !content.path("textBlocks").isEmpty());
             case "IMAGE" -> !content.path("imageUrl").asText("").isBlank();
             case "VIDEO" -> !content.path("videoUrl").asText("").isBlank();
             case "SURVEY", "QUIZ" -> questions.isArray() && !questions.isEmpty();
@@ -195,6 +229,67 @@ public class PopupSingleResponseAssembler {
         if (!ok) {
             throw new PopupSampleException(PopupSampleException.Reason.MISSING_REQUIRED_CONTENT, id, type + " 필수 콘텐츠가 없습니다.");
         }
+    }
+
+    /** 유형별 content 기본값. 영상+퀴즈(QUIZ + videoEnabled)는 VIDEO 재생 옵션도 채운다. */
+    private static void applyContentDefaults(String type, boolean video, ObjectNode content) {
+        fill(content, CONTENT_DEFAULTS.getOrDefault(type, Map.of()));
+        if (video && "QUIZ".equals(type)) fill(content, videoDefaults());
+    }
+
+    /**
+     * [옵션] 문항·선택지 선택 필드 기본값(명세 §9). SURVEY는 정답 키를 제거한다(기존 WpfPopupItem.withoutAnswerKey와 같은 규칙).
+     * QUIZ 채점 문항의 배점이 없으면 1점(관리자 저장 기본값과 같음).
+     */
+    private static void applyQuestionDefaults(String type, ArrayNode questions) {
+        boolean quiz = "QUIZ".equals(type);
+        for (JsonNode node : questions) {
+            if (!(node instanceof ObjectNode question)) continue;
+            fill(question, ordered("description", "", "titleBlocks", null, "descriptionBlocks", null, "optionLayout", "VERTICAL",
+                    "isRequired", false, "isScored", false));
+            if (!question.has("options") || question.get("options").isNull()) question.set("options", question.arrayNode());
+            if (quiz) {
+                boolean scored = question.path("isScored").asBoolean(false);
+                if (!question.has("questionScore") || question.get("questionScore").isNull()) {
+                    if (scored) question.put("questionScore", 1); else question.putNull("questionScore");
+                }
+                boolean text = "TEXT".equals(question.path("questionType").asText());
+                fill(question, ordered("correctAnswer", null, "answerMatchMode", text ? "EXACT" : null));
+            } else {
+                question.remove(List.of("correctAnswer", "answerMatchMode"));
+                fill(question, ordered("questionScore", null));
+            }
+            for (JsonNode optionNode : question.get("options")) {
+                if (!(optionNode instanceof ObjectNode option)) continue;
+                fill(option, ordered("value", "", "textBlocks", null));
+                if (quiz) fill(option, ordered("isCorrect", false)); else option.remove("isCorrect");
+            }
+        }
+    }
+
+    private static Map<String, Object> videoDefaults() {
+        return ordered("videoTitle", "", "videoUrl", "", "description", "", "showDescription", true, "showControls", true,
+                "allowFullScreen", true, "allowPlaybackRateChange", true, "allowSeek", true, "autoPlay", false, "isLoop", false,
+                "defaultVolume", 0.7);
+    }
+
+    /** 키 순서를 유지하는 기본값 표(null 값 허용). */
+    private static Map<String, Object> ordered(Object... pairs) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i < pairs.length; i += 2) map.put((String) pairs[i], pairs[i + 1]);
+        return map;
+    }
+
+    /** 키가 없거나 null일 때만 기본값을 넣는다(명시적 false·0·빈 문자열은 유지). 기본값이 null이면 키만 null로 싣는다. */
+    private static void fill(ObjectNode target, Map<String, Object> defaults) {
+        defaults.forEach((key, value) -> {
+            if (target.hasNonNull(key)) return;
+            if (value == null) target.putNull(key);
+            else if (value instanceof Boolean b) target.put(key, b);
+            else if (value instanceof Integer n) target.put(key, n);
+            else if (value instanceof Double d) target.put(key, d);
+            else target.put(key, value.toString());
+        });
     }
 
     private static void invalid(String id, String message) {

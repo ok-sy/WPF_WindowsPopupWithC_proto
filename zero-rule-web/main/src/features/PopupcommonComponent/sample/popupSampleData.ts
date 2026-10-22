@@ -12,9 +12,35 @@ const IMAGE_DATA = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#2563EB"/>'
   + '<text x="320" y="190" font-size="36" text-anchor="middle" fill="#fff">SAMPLE IMAGE</text></svg>');
 
+/*
+ * [옵션] 샘플은 계약상 가능한 content 옵션 키를 모두 싣는다(명세 §6.3·§8 기본값). 저장 요청(toSaveRequest)에서는 유형별 키만 남는다.
+ * createDefaultPopup()에 없는 키(위치·푸터·이미지/영상/설문 제목·URL·비율 고정·영상 사용)를 샘플에서만 보충한다(실제 등록 화면 기본값은 변경 없음).
+ */
+export const SAMPLE_FULL_CONTENT_OPTIONS: Record<string, unknown> = {
+  popupPosition: 'CENTER', footerAction: 'CLOSE', footerLinkUrl: '',
+  headerFontSize: null, bodyFontSize: null, footerFontSize: null,
+  useBackgroundOverlay: true, backgroundOverlayOpacity: 0.45,
+  // TEXT
+  plainText: '', textBlocks: null, showPlainText: true, highlightText: '', showHighlight: false,
+  bottomDescription: '', bottomDescriptionUrl: '', showBottomDescription: false,
+  // IMAGE
+  imageTitle: '', imageUrl: '', description: '', showDescription: true, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true,
+  // VIDEO · 영상+퀴즈
+  videoTitle: '', videoUrl: '', showControls: true, allowFullScreen: true, allowPlaybackRateChange: true, allowSeek: true,
+  autoPlay: false, isLoop: false, defaultVolume: 0.7,
+  // SURVEY · QUIZ
+  surveyTitle: '', surveyTitleBlocks: null, descriptionBlocks: null, videoEnabled: false,
+};
+
 function sample(popupId: string, title: string, patch: Partial<AdminPopupDetail>, content: Record<string, unknown> = {}): AdminPopupDetail {
   const base = createDefaultPopup(new Date('2026-10-22T00:00:00+09:00'));
-  return { ...base, popupId, title, ...patch, content: { ...base.content, ...content } };
+  return { ...base, popupId, title, ...patch, content: { ...base.content, ...SAMPLE_FULL_CONTENT_OPTIONS, ...content } };
+}
+
+/** 신규 작성용 샘플 편집값. 실제 등록 화면의 createDefaultPopup()에 샘플 전체 content 옵션을 더한 값이다. */
+export function newSamplePopup(popupId: string, title: string): AdminPopupDetail {
+  const base = createDefaultPopup();
+  return { ...base, popupId, title, content: { ...base.content, ...SAMPLE_FULL_CONTENT_OPTIONS } };
 }
 
 export function createSamplePopups(): AdminPopupDetail[] {

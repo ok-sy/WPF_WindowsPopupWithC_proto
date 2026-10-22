@@ -18,21 +18,31 @@
     "showHeader": true,
     "showFooterButton": true,
     "showFooter": true,
-    "footerAction": "CLOSE",
+    "footerAction": "LINK_AND_CLOSE",
+    "footerLinkUrl": "https://intranet.example.com/notice/1",
     "useBackgroundOverlay": false,
     "backgroundOverlayOpacity": 0,
     "popupPosition": "CENTER",
+    "headerFontSize": null,
+    "bodyFontSize": 16,
+    "footerFontSize": null,
     "showDoNotShowAgain": false,
     "showLater": false,
     "hideDays": null,
+    "completionRatio": null,
     "questions": [],
     "content": {
       "plainText": "점검 안내\n02:00~06:00",
-      "showPlainText": true,
       "textBlocks": [
         { "alignment": "LEFT", "indent": 0, "runs": [{ "text": "점검 안내", "bold": true, "italic": false }] },
         { "alignment": "CENTER", "runs": [{ "text": "02:00~06:00", "color": "#DC2626", "size": 0 }] }
-      ]
+      ],
+      "showPlainText": true,
+      "highlightText": "작업 중인 내용을 저장해 주세요.",
+      "showHighlight": true,
+      "bottomDescription": "자세히 보기",
+      "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
+      "showBottomDescription": false
     }
   }
 }

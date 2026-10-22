@@ -615,7 +615,8 @@ internal static class Program
         var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
         string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
             "zero-rule-server", "web", "api", "src", "test", "resources", "sample", "relay"));
-        foreach (var (file, type, questions) in new[] { ("ok.json", "TEXT", 0), ("survey.json", "SURVEY", 1) })
+        foreach (var (file, type, questions) in new[] { ("ok.json", "TEXT", 0), ("image.json", "IMAGE", 0), ("video.json", "VIDEO", 0),
+            ("survey.json", "SURVEY", 3), ("quiz.json", "QUIZ", 3), ("video-quiz.json", "QUIZ", 1) })
         {
             var response = System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.WpfNextPopupResponseDto>(System.IO.File.ReadAllText(System.IO.Path.Combine(dir, file)), json)!;
             var popup = response.Popup!;

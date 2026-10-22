@@ -14,7 +14,7 @@
 | `sample/PopupSampleEditor.tsx` | 공통 컴포넌트만으로 만든 최소 편집 Dialog. 실제 `PopupEditorDialog`는 일정·대상 그룹·템플릿·API까지 섞여 있어 이식 예제로 읽기 어렵기 때문에, **편집값(state) 하나 → 두 미리보기** 구조만 남긴 축소판을 따로 뒀다 |
 | `sample/IS063M02.tsx` | 사진 복원 퍼블리싱 원본. **대조용으로만 보존**(첫 줄 `// @ts-nocheck`만 추가). 저장소에 없는 `IS035Info` 타입·폐쇄망 전역 `n*` CSS에 의존해 그대로는 컴파일되지 않는다 |
 | `sample/IS063M02Sample.tsx` | 원본 레이아웃·클래스를 유지하고 공통 기능을 연결한 실제 이식 예제. 원본과 나란히 비교하며 무엇이 바뀌었는지 볼 수 있게 별도 파일로 뒀다 |
-| `sample/popupSampleData.ts` | 서버 대신 공급하는 **편집값(AdminPopupDetail)** 6종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈). 조회 응답 형태가 아니라 화면에 바로 넣는 값이라는 점을 분리해 두려고 별도 파일로 뒀다 |
+| `sample/popupSampleData.ts` | 서버 대신 공급하는 **편집값(AdminPopupDetail)** 6종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈). 조회 응답 형태가 아니라 화면에 바로 넣는 값이라는 점을 분리해 두려고 별도 파일로 뒀다. 샘플이므로 `SAMPLE_FULL_CONTENT_OPTIONS`로 계약상 가능한 content 옵션 키를 모두 싣고, 신규 작성도 `newSamplePopup()`(= `createDefaultPopup()` + 전체 옵션)을 쓴다. 실제 등록 화면 기본값(`createDefaultPopup`)은 바꾸지 않았다 |
 | 공통 폴더 나머지 | 에디터(`PopupRichTextEditor`·`PopupRichTextMenu`·`PopupQuestionEditor`·`PopupScheduleFields`), 표시·미리보기(`InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`·`SurveyPreview`·`AspectVideoArea`·`PopupRichBlocks`), 변환·계산(`popupEditorTransform`·`popupRichText`·`popupRichTextFormat`·`popupPreviewDialogLayout`·`imagePreviewLayout`·`popupCommon`·`normalizePopupLink`·`popupDemoQuestions`). **관리자 API·등록 부모·sample을 참조하지 않는다**(그래서 다른 화면에 복사해도 따라오는 의존이 없다) |
 
 라우트(`scene/scene-router.tsx`): `/popup-common-sample`(목록 샘플), `/popup-common-sample/is063m02`(IS063M02 샘플). 기존 `/rgst-pop`은 그대로다. 메뉴 노출은 기존 메뉴 등록 절차가 따로 필요하다.
@@ -72,7 +72,7 @@
 | `POPUP_MIN_WINDOW_SIZE`(300) | `popupCommon.ts` | 서버 `PopupService.POPUP_MIN_WINDOW_SIZE`, WPF `PopupOptions.MinWindowSize` |
 | `FONT_SIZE_MIN/MAX`(10~40) | `popupCommon.ts` | 서버 `validateFontSizeOptions`, WPF `PopupOptions.FontSizeMin/Max` |
 | `TYPE_OPTIONS` | `sample/IS063M02Sample.tsx` | 화면 선택지만. 유형 자체를 추가하려면 서버·WPF 계약 변경이 필요 |
-| `createSamplePopups()` | `sample/popupSampleData.ts` | 샘플 전용 |
+| `createSamplePopups()`, `newSamplePopup()`, `SAMPLE_FULL_CONTENT_OPTIONS` | `sample/popupSampleData.ts` | 샘플 전용. 옵션 키를 더하면 `CONTENT_KEYS_BY_TYPE`(저장 화이트리스트)과 서버 샘플 `CONTENT_DEFAULTS`도 함께 맞춘다 |
 
 ## 4. 옵션을 추가·삭제하는 예시
 

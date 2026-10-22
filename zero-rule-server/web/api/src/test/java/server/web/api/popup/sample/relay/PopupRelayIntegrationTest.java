@@ -111,6 +111,18 @@ class PopupRelayIntegrationTest {
     }
 
     @Test
+    void relaysEveryFullOptionSampleUnchanged() throws Exception {
+        for (String scenario : MockBackendServer.FULL_OPTION_SCENARIOS) {
+            BACKEND.setDefaultScenario(scenario);
+            HttpResponse<String> response = call();
+            assertEquals(200, response.statusCode(), scenario);
+            String file = scenario.equals("ok") ? MockBackendServer.OK_BODY
+                    : new String(getClass().getClassLoader().getResourceAsStream("sample/relay/" + scenario + ".json").readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(JSON.readTree(file), JSON.readTree(response.body()), scenario + " 전체 옵션 응답이 변환 없이 전달된다");
+        }
+    }
+
+    @Test
     void relaysQuestions() throws Exception {
         BACKEND.setDefaultScenario("survey");
         JsonNode popup = JSON.readTree(call().body()).get("popup");

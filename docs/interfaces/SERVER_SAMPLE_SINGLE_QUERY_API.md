@@ -61,7 +61,25 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 | (미확인) ATCH_FILE_PATH / ATCH_FILE_NM | `content.imageUrl` / `content.videoUrl` | `file-base-url` + 세그먼트별 URL 인코딩. 컬럼 값이 content 값보다 우선 |
 | CNTN_CN (CLOB) | `content` | JSON 객체만 허용. 객체 그대로(이중 직렬화 없음) |
 | (컬럼 없음) | `displayMode`·`sizeMode`·`widthRatio`·`heightRatio`·`minimum*`·`maximum*`·`showHeader`·`showFooter`·`showFooterButton`·`showDoNotShowAgain` | SEQUENTIAL·FIXED·0.7·0.75·300·300·1200·900·true·true·true·false |
-| content `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`*FontSize` | 최상위 같은 이름 | 설계 31처럼 최상위로 옮기고 content에서 제거. 누락 시 true·0.45·CENTER·(폰트 생략). 명시적 false·0 유지, 범위 밖 값은 오류 |
+| content `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`*FontSize` | 최상위 같은 이름 | 설계 31처럼 최상위로 옮기고 content에서 제거. 누락 시 true·0.45·CENTER·폰트 `null`(키 포함, WPF 기본 크기). 명시적 false·0 유지, 범위 밖 값은 오류 |
+| (컬럼 없음) | `hideDays` / `completionRatio` / `passingScore` | `null` / VIDEO·영상+퀴즈 `1.0`, 그 밖 `null` / QUIZ만 키 포함 `null`. 컬럼이 확정되면 row 값으로 교체 |
+
+### 3.1 샘플 응답은 가능한 옵션 키를 모두 싣는다
+
+인계용 샘플이므로 응답 하나에서 쓸 수 있는 옵션 전체가 보이도록, 저장된 JSON에 없던 키도 계약 기본값으로 채워 싣는다(값이 있으면 그대로 유지). 기본값이므로 WPF 표시 결과는 키를 생략했을 때와 같다. 표는 `PopupSingleResponseAssembler.CONTENT_DEFAULTS`·`applyQuestionDefaults`와 같다.
+
+| 유형 | content 옵션(기본값) |
+|---|---|
+| TEXT | `plainText` "", `textBlocks` null, `showPlainText` true, `highlightText` "", `showHighlight` false, `bottomDescription` "", `bottomDescriptionUrl` "", `showBottomDescription` false |
+| IMAGE | `imageTitle` "", `imageUrl`(필수), `description` "", `showDescription` true, `imageSizeMode` ADAPTIVE, `keepAspectRatio` true |
+| VIDEO | `videoTitle` "", `videoUrl`(필수), `description` "", `showDescription` true, `showControls` true, `allowFullScreen` true, `allowPlaybackRateChange` true, `allowSeek` true, `autoPlay` false, `isLoop` false, `defaultVolume` 0.7 |
+| SURVEY | `surveyTitle` "", `surveyTitleBlocks` null, `description` "", `descriptionBlocks` null |
+| QUIZ | SURVEY 항목 + `videoEnabled` false. `videoEnabled=true`(영상+퀴즈)면 VIDEO 재생 옵션 전체도 채움 |
+| questions[] | `description` "", `titleBlocks`·`descriptionBlocks` null, `optionLayout` VERTICAL, `isRequired`·`isScored` false, `questionScore`(QUIZ 채점 문항 1, 그 밖 null), QUIZ만 `correctAnswer` null·`answerMatchMode`(TEXT 문항 EXACT) |
+| options[] | `value` "", `textBlocks` null, QUIZ만 `isCorrect` false |
+
+예외(계약 유지): `footerLinkUrl`은 LINK_AND_CLOSE일 때만 보낸다. SURVEY는 정답 키(`isCorrect`·`correctAnswer`·`answerMatchMode`)를 지운다. 필수 콘텐츠 검증은 기본값을 채우기 **전** 원본으로 하므로 빈 기본값("")이 필수 누락을 가리지 않는다.
+옵션을 추가·삭제할 때는 `CONTENT_DEFAULTS` 표와 명세 §8·WPF 콘텐츠 DTO 기본값을 함께 맞춘다.
 
 중복 값 우선순위: 제목·창 크기·나중에 보기·푸터 동작/URL은 **컬럼 기준**이며 content의 같은 키는 응답에서 제거한다.
 코드표·미확인 컬럼명은 확정본을 받으면 `PopupCodeTable`과 매퍼 XML만 교체한다.
@@ -89,7 +107,7 @@ SELECT *
 
 ## 5. 응답 예시 (65-7)
 
-정상(TEXT, 일부):
+정상(TEXT, 전체 키). CNTN_CN에는 `plainText`·`showPlainText`·`textBlocks`와 창 옵션만 있었고 나머지는 기본값으로 채운 결과다:
 
 ```json
 {"pollingIntervalSeconds":1800,
@@ -98,10 +116,15 @@ SELECT *
   "minimumWidth":300.0,"minimumHeight":300.0,"maximumWidth":1200,"maximumHeight":900,
   "showHeader":true,"showFooterButton":true,"showFooter":true,
   "footerAction":"LINK_AND_CLOSE","footerLinkUrl":"https://intranet.example.com/notice/1",
-  "useBackgroundOverlay":false,"backgroundOverlayOpacity":0.0,"popupPosition":"TOP_RIGHT","bodyFontSize":18.0,
-  "showDoNotShowAgain":false,"showLater":true,"questions":[],
-  "content":{"plainText":"점검 안내","showPlainText":false,"textBlocks":[{"alignment":"LEFT","indent":0,"runs":[{"text":"점검","bold":true,"italic":false}]}]}}}
+  "useBackgroundOverlay":false,"backgroundOverlayOpacity":0.0,"popupPosition":"TOP_RIGHT",
+  "headerFontSize":null,"bodyFontSize":18.0,"footerFontSize":null,
+  "showDoNotShowAgain":false,"showLater":true,"hideDays":null,"completionRatio":null,"questions":[],
+  "content":{"plainText":"점검 안내","showPlainText":false,
+   "textBlocks":[{"alignment":"LEFT","indent":0,"runs":[{"text":"점검","bold":true,"italic":false}]}],
+   "highlightText":"","showHighlight":false,"bottomDescription":"","bottomDescriptionUrl":"","showBottomDescription":false}}}
 ```
+
+유형별 전체 옵션 예시 JSON(IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈 포함)은 `zero-rule-server/web/api/src/test/resources/sample/relay/*.json`에 있고, WPF 조회 DTO로 역직렬화되는지 `scripts/PopupWindowTests`가 확인한다.
 
 없음: `{"pollingIntervalSeconds":1800,"popup":null}`
 

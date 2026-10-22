@@ -53,7 +53,7 @@ curl -X POST http://127.0.0.1:8090/p/api/sample/relay/wpf/popups -H 'Content-Typ
   -H 'Authorization: Bearer <token>' -H 'X-Client-Version: 1.4.2' -d '{}'
 ```
 
-mock 시나리오는 `-Dpopup.sample.relay.path=/api/wpf/popups?scenario=<이름>`으로 고른다: `ok`·`survey`·`empty`·`envelope`·`e400`·`e401`·`e403`·`e404`·`e426`·`e500`·`slow`(3초)·`badjson`·`notobject`·`nopolling`.
+mock 시나리오는 `-Dpopup.sample.relay.path=/api/wpf/popups?scenario=<이름>`으로 고른다: `ok`(TEXT)·`image`·`video`·`survey`·`quiz`·`video-quiz`(유형별로 계약 옵션 키를 모두 담은 응답, `web/api/src/test/resources/sample/relay/<이름>.json`; ok는 `ok.json`)·`empty`·`envelope`·`e400`·`e401`·`e403`·`e404`·`e426`·`e500`·`slow`(3초)·`badjson`·`notobject`·`nopolling`.
 실제 백엔드로 바꿀 때는 `-Dmock.enabled=false -Dpopup.sample.relay.base-url=<주소>`.
 전체 서버(app)에 넣어 실행하면 `enabled: true`와 위 설정을 추가한다. 이때 서버 자체의 DB·인증 설정은 그대로 필요하다.
 
@@ -130,7 +130,7 @@ JsonNode unwrapPayload(JsonNode root) {
 
 ## 6. 검증 상태
 
-- web/api `PopupRelayIntegrationTest` 9건: 최소 부트 구성으로 DataSource·MyBatis 없이 기동, mock 백엔드 실제 HTTP 호출로 Method·경로·본문·전달 헤더·서비스 인증 헤더·미전달 헤더·1회 호출 확인, 정상 JSON 동일·중첩/false/0/null 보존·ID 보존, SURVEY 문항, 없음, 401/403/400 전달, 426 본문 유지, 5xx·404·잘못된 JSON·객체 아님·pollingIntervalSeconds 누락·timeout의 500 및 분류 헤더·재시도 없음, 잘못된 요청 본문 400.
+- web/api `PopupRelayIntegrationTest` 10건: 유형별 전체 옵션 응답 6종이 변환 없이 그대로 전달됨, 최소 부트 구성으로 DataSource·MyBatis 없이 기동, mock 백엔드 실제 HTTP 호출로 Method·경로·본문·전달 헤더·서비스 인증 헤더·미전달 헤더·1회 호출 확인, 정상 JSON 동일·중첩/false/0/null 보존·ID 보존, SURVEY 문항, 없음, 401/403/400 전달, 426 본문 유지, 5xx·404·잘못된 JSON·객체 아님·pollingIntervalSeconds 누락·timeout의 500 및 분류 헤더·재시도 없음, 잘못된 요청 본문 400.
 - `BackendUnitTest` 3건: 닫힌 포트 연결 실패 분류, ENVELOPE 매핑, popupId 누락·잘못된 폴링 값 거절.
-- WPF `scripts/PopupWindowTests`: mock 응답 `ok.json`·`survey.json`이 실제 WPF 조회 DTO(`WpfNextPopupResponseDto`)로 역직렬화되고 PopupFactory가 TEXT/SURVEY를 생성, false·0 보존.
+- WPF `scripts/PopupWindowTests`: mock 응답 6종(`ok`·`image`·`video`·`survey`·`quiz`·`video-quiz`.json)이 실제 WPF 조회 DTO(`WpfNextPopupResponseDto`)로 역직렬화되고 PopupFactory가 유형별 옵션을 생성, false·0 보존.
 - 미실행: 실제 개발/검증계 백엔드 연계(주소·계약 미확정), 실제 WPF 클라이언트를 중계 API에 연결한 실화면. mock 검증만으로 실연계 완료로 보지 않는다.

@@ -19,24 +19,71 @@
     "showFooterButton": true,
     "showFooter": true,
     "footerAction": "SUBMIT",
-    "showDoNotShowAgain": false,
-    "showLater": false,
+    "useBackgroundOverlay": true,
+    "backgroundOverlayOpacity": 0.45,
+    "popupPosition": "CENTER",
+    "headerFontSize": null,
+    "bodyFontSize": null,
+    "footerFontSize": null,
+    "showDoNotShowAgain": true,
+    "showLater": true,
+    "hideDays": 7,
+    "completionRatio": null,
     "questions": [
       {
         "questionId": 11,
         "title": "서비스에 만족하십니까?",
+        "titleBlocks": null,
+        "description": "",
+        "descriptionBlocks": null,
         "questionType": "SINGLE_CHOICE",
+        "optionLayout": "VERTICAL",
         "isRequired": true,
         "isScored": false,
-        "questionScore": 0,
+        "questionScore": null,
         "sortOrder": 1,
-        "optionLayout": "VERTICAL",
         "options": [
-          { "optionId": 111, "text": "예", "isCorrect": false, "sortOrder": 1 },
-          { "optionId": 112, "text": "아니오", "isCorrect": false, "sortOrder": 2 }
+          { "optionId": 111, "value": "YES", "text": "예", "textBlocks": null, "sortOrder": 1 },
+          { "optionId": 112, "value": "NO", "text": "아니오", "textBlocks": null, "sortOrder": 2 }
         ]
+      },
+      {
+        "questionId": 12,
+        "title": "개선이 필요한 항목을 모두 고르세요.",
+        "titleBlocks": null,
+        "description": "복수 선택",
+        "descriptionBlocks": null,
+        "questionType": "MULTIPLE_CHOICE",
+        "optionLayout": "HORIZONTAL",
+        "isRequired": false,
+        "isScored": false,
+        "questionScore": null,
+        "sortOrder": 2,
+        "options": [
+          { "optionId": 121, "value": "SPEED", "text": "속도", "textBlocks": null, "sortOrder": 1 },
+          { "optionId": 122, "value": "UI", "text": "화면", "textBlocks": null, "sortOrder": 2 }
+        ]
+      },
+      {
+        "questionId": 13,
+        "title": "기타 의견",
+        "titleBlocks": null,
+        "description": "",
+        "descriptionBlocks": null,
+        "questionType": "TEXT",
+        "optionLayout": "VERTICAL",
+        "isRequired": false,
+        "isScored": false,
+        "questionScore": null,
+        "sortOrder": 3,
+        "options": []
       }
     ],
-    "content": { "surveyTitle": "만족도 조사", "description": "" }
+    "content": {
+      "surveyTitle": "만족도 조사",
+      "surveyTitleBlocks": null,
+      "description": "문항에 응답해 주세요.",
+      "descriptionBlocks": null
+    }
   }
 }

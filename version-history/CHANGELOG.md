@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-16 — TODO65·69·70 샘플 JSON 전체 옵션 포함
+
+- 이유: 인계용 샘플은 응답·편집값 하나로 사용할 수 있는 옵션 전체를 확인할 수 있어야 해서, 저장된 값에 없던 옵션 키도 계약 기본값으로 채워 싣도록 보완.
+- 변경: TODO65 `PopupSingleResponseAssembler`에 유형별 content 기본값 표(`CONTENT_DEFAULTS`, 명세 §8·WPF 콘텐츠 DTO와 같음)와 문항·선택지 선택 필드 기본값 추가, 폰트 크기·`hideDays`·`completionRatio`(VIDEO·영상+퀴즈 1.0)·`passingScore`(QUIZ) 키를 null 포함으로 항상 싣도록 변경. SURVEY 정답 키 제거, `footerLinkUrl`은 LINK_AND_CLOSE만(계약 유지). 필수 콘텐츠 검증을 기본값 적용 전으로 옮기고 TEXT 빈 plainText를 누락으로 판정. TODO70 mock 응답 `ok`·`survey`를 전체 옵션으로 확장하고 `image`·`video`·`quiz`·`video-quiz` 응답·시나리오 추가. TODO69 샘플 데이터에 `SAMPLE_FULL_CONTENT_OPTIONS`·`newSamplePopup()` 추가(실제 등록 화면 기본값 변경 없음). 서버 샘플 문서 2종·프론트 인계 가이드 갱신.
+- 주요 파일: zero-rule-server/service/core/.../popup/sample/PopupSingleResponseAssembler.java·PopupSingleQuerySampleTest.java, zero-rule-server/web/api/src/test/.../sample/relay/MockBackendServer.java·PopupRelayIntegrationTest.java, web/api/src/test/resources/sample/relay/*.json, scripts/PopupWindowTests/Program.cs, zero-rule-web/main/src/features/PopupcommonComponent/sample/*, docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md·SERVER_SAMPLE_BACKEND_RELAY_API.md·POPUP_FRONT_SAMPLE_HANDOVER.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline` 186건 실패 0·skip 11(신규 전체 옵션 키 검사). web/api 중계 통합 10건(전체 옵션 응답 6종 무변환 전달). WPF PopupWindowTests 403건(6종 JSON WPF DTO 역직렬화·Factory 생성). 웹 tsc·eslint 오류 0, verify-popup-common-sample-69 25건 통과.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-15 — TODO65·69·70 샘플 인수인계 문서·주석 보강
 
 - 이유: 샘플을 받는 개발자가 바로 사용·수정·실연동할 수 있도록 선언 이유·로직·조절 옵션·옵션 추가/삭제 예시·실연동 교체 지점을 문서와 코드 주석으로 남길 필요.

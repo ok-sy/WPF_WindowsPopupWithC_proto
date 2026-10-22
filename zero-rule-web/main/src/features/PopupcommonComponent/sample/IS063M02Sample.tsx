@@ -12,10 +12,10 @@ import PopupRichTextEditor from '../PopupRichTextEditor';
 import type { Size } from '../imagePreviewLayout';
 import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
 import {
-  changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, toSaveRequest, type PopupSaveRequest, type PopupTypeSelection,
+  changePopupType, contentValue, isSubmitPopupType, toSaveRequest, type PopupSaveRequest, type PopupTypeSelection,
 } from '../popupEditorTransform';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
-import { createSamplePopups } from './popupSampleData';
+import { createSamplePopups, newSamplePopup } from './popupSampleData';
 
 /*
  * [TODO69] 복원 퍼블리싱 IS063M02(컨텐츠 등록)에 공통 팝업 기능을 연결한 샘플. 원본은 같은 폴더 IS063M02.tsx(대조용, 변경 없음).
@@ -48,9 +48,9 @@ const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[
 const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
 
-// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 기본값은 createDefaultPopup().
+// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 기본값은 newSamplePopup()(createDefaultPopup + 전체 content 옵션).
 const newPopup = (selection: PopupTypeSelection): AdminPopupDetail =>
-  changePopupType({ ...createDefaultPopup(), popupId: 'N2609001' }, selection);
+  changePopupType(newSamplePopup('N2609001', ''), selection);
 
 function Required({ not = false }: { not?: boolean }) {
   return <Typography component="span" className={not ? 'required not' : 'required'}>*&nbsp;</Typography>;

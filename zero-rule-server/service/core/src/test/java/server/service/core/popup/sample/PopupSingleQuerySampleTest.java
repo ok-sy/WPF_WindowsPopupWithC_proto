@@ -88,7 +88,7 @@ class PopupSingleQuerySampleTest {
         assertEquals(0, popup.get("backgroundOverlayOpacity").doubleValue(), "명시적 0 유지");
         assertEquals("TOP_RIGHT", popup.get("popupPosition").asText());
         assertEquals(18, popup.get("bodyFontSize").doubleValue());
-        assertFalse(popup.has("headerFontSize"));
+        assertTrue(popup.has("headerFontSize") && popup.get("headerFontSize").isNull(), "미설정 폰트 키는 null로 포함");
         assertEquals(300, popup.get("minimumWidth").doubleValue());
         JsonNode body = popup.get("content");
         assertTrue(body.isObject(), "content는 문자열이 아니라 객체(이중 직렬화 없음)");
@@ -118,6 +118,61 @@ class PopupSingleQuerySampleTest {
         assertTrue(popup.get("useBackgroundOverlay").booleanValue());
         assertEquals(0.45, popup.get("backgroundOverlayOpacity").doubleValue());
         assertEquals("CENTER", popup.get("popupPosition").asText());
+    }
+
+    /** 샘플 응답은 계약상 가능한 옵션 키를 모두 싣는다(없던 키 = 계약 기본값, 명시값 유지). */
+    @Test
+    void sampleResponseCarriesEveryOptionKey() throws Exception {
+        JsonNode text = service(row("10", "{\"plainText\":\"본문\",\"showHighlight\":true}")).nextPopup("E1001", null, null).get("popup");
+        for (String key : List.of("headerFontSize", "bodyFontSize", "footerFontSize", "hideDays", "completionRatio")) {
+            assertTrue(text.has(key) && text.get(key).isNull(), "최상위 선택 키 null로 포함: " + key);
+        }
+        assertFalse(text.has("passingScore"), "passingScore는 QUIZ만");
+        JsonNode body = text.get("content");
+        assertEquals(List.of("plainText", "showHighlight", "textBlocks", "showPlainText", "highlightText", "bottomDescription",
+                "bottomDescriptionUrl", "showBottomDescription"), iterableToList(body.fieldNames()));
+        assertTrue(body.get("showHighlight").booleanValue(), "명시값 유지");
+        assertTrue(body.get("showPlainText").booleanValue() && !body.get("showBottomDescription").booleanValue() && body.get("textBlocks").isNull());
+
+        JsonNode image = service(row("20", "{\"imageUrl\":\"https://x/a.png\",\"keepAspectRatio\":false}")).nextPopup("E1001", null, null).get("popup").get("content");
+        assertEquals("ADAPTIVE", image.get("imageSizeMode").asText());
+        assertFalse(image.get("keepAspectRatio").booleanValue(), "명시적 false 유지");
+        assertTrue(image.get("showDescription").booleanValue() && image.has("imageTitle") && image.has("description"));
+
+        JsonNode video = service(row("30", "{\"videoUrl\":\"https://x/v.mp4\",\"defaultVolume\":0}")).nextPopup("E1001", null, null).get("popup");
+        assertEquals(1.0, video.get("completionRatio").doubleValue());
+        for (String key : List.of("videoTitle", "description", "showDescription", "showControls", "allowFullScreen", "allowPlaybackRateChange",
+                "allowSeek", "autoPlay", "isLoop")) {
+            assertTrue(video.get("content").has(key), "VIDEO 옵션 포함: " + key);
+        }
+        assertEquals(0, video.at("/content/defaultVolume").doubleValue(), "명시적 0 유지");
+
+        ArrayNode quizQuestions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"Q\",\"questionType\":\"SINGLE_CHOICE\",\"isScored\":true,"
+                + "\"options\":[{\"optionId\":1,\"text\":\"A\",\"isCorrect\":true},{\"optionId\":2,\"text\":\"B\"}]}]");
+        JsonNode quiz = service(row("50", "{\"surveyTitle\":\"퀴즈\",\"videoEnabled\":true,\"videoUrl\":\"https://x/v.mp4\"}"), (r, t) -> quizQuestions)
+                .nextPopup("E1001", null, null).get("popup");
+        assertTrue(quiz.has("passingScore") && quiz.get("passingScore").isNull());
+        assertEquals(1.0, quiz.get("completionRatio").doubleValue(), "영상+퀴즈 완료 비율 기본 1.0");
+        assertTrue(quiz.at("/content/allowSeek").booleanValue() && quiz.at("/content/descriptionBlocks").isNull(), "영상+퀴즈는 VIDEO 옵션도 포함");
+        JsonNode question = quiz.at("/questions/0");
+        assertEquals(1, question.get("questionScore").intValue(), "채점 문항 배점 기본 1");
+        assertEquals("VERTICAL", question.get("optionLayout").asText());
+        assertTrue(question.has("correctAnswer") && question.has("answerMatchMode") && question.has("titleBlocks"));
+        assertFalse(question.at("/options/1/isCorrect").booleanValue(), "선택지 isCorrect 기본 false");
+        assertTrue(question.at("/options/0/isCorrect").booleanValue() && question.at("/options/0").has("value"));
+
+        ArrayNode surveyQuestions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"S\",\"questionType\":\"SINGLE_CHOICE\",\"correctAnswer\":\"x\","
+                + "\"options\":[{\"optionId\":1,\"text\":\"A\",\"isCorrect\":true}]}]");
+        JsonNode survey = service(row("40", "{\"surveyTitle\":\"설문\"}"), (r, t) -> surveyQuestions).nextPopup("E1001", null, null).get("popup");
+        assertFalse(survey.at("/questions/0").has("correctAnswer") || survey.at("/questions/0/options/0").has("isCorrect"), "SURVEY는 정답 키 제거");
+        assertFalse(survey.has("passingScore"));
+        assertTrue(surveyQuestions.get(0).has("correctAnswer"), "포트가 준 원본 객체는 바꾸지 않는다");
+    }
+
+    private static List<String> iterableToList(java.util.Iterator<String> names) {
+        List<String> list = new ArrayList<>();
+        names.forEachRemaining(list::add);
+        return list;
     }
 
     @Test
