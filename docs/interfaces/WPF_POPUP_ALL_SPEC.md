@@ -99,7 +99,7 @@ LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL �
 | Width / Height | 지원 | N | `900` / `620` | FIXED 공통 창 크기. 일반 IMAGE 예외는 4.2 참조 |
 | SizeMode | 지원 | N | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO. AUTO는 WPF 지원이며 서버·웹 허용과 구분 |
 | WidthRatio / HeightRatio | 지원 | N | `0.7` / `0.75` | RATIO 모니터 작업 영역 비율 |
-| MinimumWidth / MinimumHeight | 지원 | N | `480` / `320` | 화면 상한과 함께 보정 |
+| MinimumWidth / MinimumHeight | 지원 | N | `300` / `300` | 최종 창 하한 300 x 300(TODO68). 300 미만 값은 300으로 올리고 화면 작업 영역 상한과 함께 보정. IMAGE는 헤더·푸터 포함 최종 창 기준 |
 | MaximumWidth / MaximumHeight | 지원 | N | `1200` / `900` | 일반 콘텐츠 상한. IMAGE는 현재 작업 영역의 90% 적용 |
 | PopupPosition | 지원 | N | `CENTER` | 최상위 `popupPosition`(설계 31). 9개 위치. 알 수 없는 값은 CENTER |
 | DragMove | 고정 동작 | 해당 없음 | 설정 필드 없음 | Header 또는 Header 없는 상단 이동 영역 사용 |

@@ -364,16 +364,16 @@ namespace Popup.Views.Windows
              * 실제 창에 적용되지 않는다.
              */
             MinWidth =
-                _options.MinimumWidth;
+                RequestedMinimumWidth;
 
             MinHeight =
-                _options.MinimumHeight;
+                RequestedMinimumHeight;
 
             MaxWidth =
-                IsImagePopup ? CurrentWorkArea().Width * ImageSafeAreaRatio : _options.MaximumWidth;
+                IsImagePopup ? CurrentWorkArea().Width * ImageSafeAreaRatio : RequestedMaximumWidth;
 
             MaxHeight =
-                IsImagePopup ? CurrentWorkArea().Height * ImageSafeAreaRatio : _options.MaximumHeight;
+                IsImagePopup ? CurrentWorkArea().Height * ImageSafeAreaRatio : RequestedMaximumHeight;
 
             switch (_options.SizeMode)
             {
@@ -411,12 +411,12 @@ namespace Popup.Views.Windows
 
                         double safeMinWidth =
                             Math.Min(
-                                _options.MinimumWidth,
+                                RequestedMinimumWidth,
                                 safeMaxWidth);
 
                         double safeMinHeight =
                             Math.Min(
-                                _options.MinimumHeight,
+                                RequestedMinimumHeight,
                                 safeMaxHeight);
 
                         MinWidth =
@@ -491,23 +491,32 @@ namespace Popup.Views.Windows
                         double maximumHeight =
                             EffectiveMaximumHeight(workArea, 1.0);
 
+                        /*
+                         * [TODO68] 작업 영역이 최소 300보다 작은 모니터에서도 Math.Clamp(min > max) 예외 없이
+                         * 화면 안에 두도록 모든 유형에서 최소값을 최대값 이하로 보정한다.
+                         */
+                        double minimumWidth =
+                            Math.Min(RequestedMinimumWidth, maximumWidth);
+
+                        double minimumHeight =
+                            Math.Min(RequestedMinimumHeight, maximumHeight);
+
                         Width =
                             Math.Clamp(
                                 calculatedWidth,
-                                IsImagePopup ? Math.Min(_options.MinimumWidth, maximumWidth) : _options.MinimumWidth,
+                                minimumWidth,
                                 maximumWidth);
 
                         Height =
                             Math.Clamp(
                                 calculatedHeight,
-                                IsImagePopup ? Math.Min(_options.MinimumHeight, maximumHeight) : _options.MinimumHeight,
+                                minimumHeight,
                                 maximumHeight);
 
-                        if (IsImagePopup)
-                        {
-                            MinWidth = Math.Min(_options.MinimumWidth, maximumWidth);
-                            MinHeight = Math.Min(_options.MinimumHeight, maximumHeight);
-                        }
+                        MinWidth = minimumWidth;
+                        MinHeight = minimumHeight;
+                        MaxWidth = maximumWidth;
+                        MaxHeight = maximumHeight;
 
                         break;
                     }
@@ -577,23 +586,17 @@ namespace Popup.Views.Windows
                         SizeToContent =
                             SizeToContent.WidthAndHeight;
 
-                        MinWidth =
-                            _options.MinimumWidth;
-
-                        MinHeight =
-                            _options.MinimumHeight;
-
                         MaxWidth =
                             EffectiveMaximumWidth(workArea, 0.9);
 
                         MaxHeight =
                             EffectiveMaximumHeight(workArea, 0.9);
 
-                        if (IsImagePopup)
-                        {
-                            MinWidth = Math.Min(MinWidth, MaxWidth);
-                            MinHeight = Math.Min(MinHeight, MaxHeight);
-                        }
+                        MinWidth =
+                            Math.Min(RequestedMinimumWidth, MaxWidth);
+
+                        MinHeight =
+                            Math.Min(RequestedMinimumHeight, MaxHeight);
 
                         break;
                     }
@@ -619,9 +622,20 @@ namespace Popup.Views.Windows
         private bool IsImagePopup => _options.PopupType == "IMAGE" || _options.Content is ImagePopupView or ImageFillPopupView;
 
         private double EffectiveMaximumWidth(Rect area, double otherRatio) => IsImagePopup
-            ? area.Width * ImageSafeAreaRatio : Math.Min(_options.MaximumWidth, area.Width * otherRatio);
+            ? area.Width * ImageSafeAreaRatio : Math.Min(RequestedMaximumWidth, area.Width * otherRatio);
         private double EffectiveMaximumHeight(Rect area, double otherRatio) => IsImagePopup
-            ? area.Height * ImageSafeAreaRatio : Math.Min(_options.MaximumHeight, area.Height * otherRatio);
+            ? area.Height * ImageSafeAreaRatio : Math.Min(RequestedMaximumHeight, area.Height * otherRatio);
+
+        /*
+         * [TODO68] 팝업 창 최소 크기 300 x 300(DIP, 관리자 미리보기 CSS px와 같은 수치). 서버는 300 미만을 저장하지 않고,
+         * 기존 데이터·Demo 입력은 이 하한으로 올린다. IMAGE FIT_TO_IMAGE도 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.
+         * 비IMAGE 설정 최대값이 하한보다 작은 모순 데이터는 최대값을 하한까지 올려 min > max를 막는다.
+         * 순서: 하한 300 → 설정 최대값 → 작업 영역 상한(작업 영역이 300보다 작으면 화면 안 배치 우선) → 최소값을 상한 이하로 보정.
+         */
+        private double RequestedMinimumWidth => Math.Max(PopupOptions.MinWindowSize, _options.MinimumWidth);
+        private double RequestedMinimumHeight => Math.Max(PopupOptions.MinWindowSize, _options.MinimumHeight);
+        private double RequestedMaximumWidth => Math.Max(_options.MaximumWidth, RequestedMinimumWidth);
+        private double RequestedMaximumHeight => Math.Max(_options.MaximumHeight, RequestedMinimumHeight);
 
 
         /*
@@ -670,12 +684,12 @@ namespace Popup.Views.Windows
 
             double safeMinWidth =
                 Math.Min(
-                    _options.MinimumWidth,
+                    RequestedMinimumWidth,
                     safeMaxWidth);
 
             double safeMinHeight =
                 Math.Min(
-                    _options.MinimumHeight,
+                    RequestedMinimumHeight,
                     safeMaxHeight);
 
             /*

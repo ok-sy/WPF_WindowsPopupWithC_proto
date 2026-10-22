@@ -93,6 +93,28 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
+    private PopupResponseDto withMinimum(PopupResponseDto base, double minimumWidth, double minimumHeight) {
+        return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                base.width(), base.height(), base.widthRatio(), base.heightRatio(), minimumWidth, minimumHeight,
+                base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
+                base.showDoNotShowAgain(), base.showLater(), base.questionTemplateId(), base.periodMode(), null, null, null, null, null,
+                base.passingScore(), base.questions(), base.content());
+    }
+
+    /** [TODO68] 창 최소 크기는 축별 300 이상만 저장한다(299 거절, 300·301 허용, IMAGE 포함). */
+    @Test void minimumWindowSizeIsAtLeast300PerAxis() {
+        var quiz = popup(List.of(question(true, false)));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withMinimum(quiz, 299, 300), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withMinimum(quiz, 300, 299), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(withMinimum(imagePopup("FIT_TO_IMAGE"), 100, 100), false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+        service.saveAdminPopup(withMinimum(quiz, 300, 300), false, List.of(), "admin");
+        service.saveAdminPopup(withMinimum(quiz, 301, 301), false, List.of(), "admin");
+        service.saveAdminPopup(withMinimum(imagePopup("FIT_TO_IMAGE"), 300, 300), false, List.of(), "admin");
+        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+    }
+
     private PopupResponseDto imagePopup(String imageSizeMode) {
         return new PopupResponseDto("TEST", "IMAGE", "Image", OffsetDateTime.now(),
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",

@@ -26,3 +26,13 @@ export function popupFontSize(popup: AdminPopupDetail, key: PopupFontSizeKey): n
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, number)) : null;
 }
+
+/* [TODO68] 팝업 창 최소 크기(px). 서버 PopupService.POPUP_MIN_WINDOW_SIZE·WPF PopupOptions.MinWindowSize와 같다.
+ * 관리자 미리보기는 CSS px, WPF는 논리 단위(DIP) 기준이라 DPI 배율에 따라 실제 물리 픽셀 수는 다를 수 있다. */
+export const POPUP_MIN_WINDOW_SIZE = 300;
+
+/** 저장값 minimumWidth/Height에 300 하한을 적용한 창 최소 크기(기존 저장 데이터 방어, WPF RequestedMinimumWidth/Height와 같다). */
+export function popupMinimumSize(popup: Pick<AdminPopupDetail, 'minimumWidth' | 'minimumHeight'>): { width: number; height: number } {
+  const floor = (value: number) => Math.max(POPUP_MIN_WINDOW_SIZE, Number.isFinite(value) ? value : 0);
+  return { width: floor(popup.minimumWidth), height: floor(popup.minimumHeight) };
+}

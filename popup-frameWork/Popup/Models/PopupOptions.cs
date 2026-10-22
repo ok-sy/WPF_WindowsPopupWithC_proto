@@ -127,8 +127,10 @@ namespace Popup.Models
         public double Height { get; set; } = 620;
         public double WidthRatio { get; set; } = 0.7;
         public double HeightRatio { get; set; } = 0.75;
-        public double MinimumWidth { get; set; } = 480;
-        public double MinimumHeight { get; set; } = 320;
+        /// <summary>[TODO68] 팝업 창 최소 크기(DIP). 관리자 웹 POPUP_MIN_WINDOW_SIZE·서버 PopupService.POPUP_MIN_WINDOW_SIZE와 같다.</summary>
+        public const double MinWindowSize = 300;
+        public double MinimumWidth { get; set; } = MinWindowSize;
+        public double MinimumHeight { get; set; } = MinWindowSize;
         public double MaximumWidth { get; set; } = 1200;
         public double MaximumHeight { get; set; } = 900;
     }

@@ -1,5 +1,6 @@
 import type { AdminPopupDetail } from '@local/domain';
 import type { Size } from './imagePreviewLayout';
+import { popupMinimumSize } from './popupCommon';
 
 /* [설계 31] WPF PopupWindow.ApplyPosition과 같은 9개 위치. 작업 영역(미리보기에서는 브라우저 창) 가장자리에 붙이고,
  * 모르는 값은 WPF PopupFactory와 같이 중앙으로 본다. 반환값은 [가로, 세로] flex 정렬값이다. */
@@ -32,6 +33,7 @@ export function previewOverlay(popup: AdminPopupDetail): { enabled: boolean; opa
 /**
  * 실제 크기 미리보기 창 크기. fitWindow는 PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값)다.
  * IMAGE는 고정 최대 픽셀값 대신 화면 작업 영역 90%로 창 크기를 제한한다.
+ * [TODO68] 최소 300 x 300(popupMinimumSize)을 WPF와 같은 순서로 적용한다: 하한 → 설정 최대값(하한보다 작으면 하한까지) → 화면 상한.
  */
 export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | null, available: Size): Size {
   const { width: availableWidth, height: availableHeight } = available;
@@ -42,12 +44,14 @@ export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | nul
     : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : (popup.width ?? 560);
   const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
     : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : (popup.height ?? 420);
+  const minimum = popupMinimumSize(popup);
   if (popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN') {
     const maximumWidth = availableWidth * .90, maximumHeight = availableHeight * .90;
-    return {width: Math.round(Math.max(Math.min(popup.minimumWidth, maximumWidth), Math.min(maximumWidth, requestedWidth))),
-      height: Math.round(Math.max(Math.min(popup.minimumHeight, maximumHeight), Math.min(maximumHeight, requestedHeight)))};
+    return {width: Math.round(Math.max(Math.min(minimum.width, maximumWidth), Math.min(maximumWidth, requestedWidth))),
+      height: Math.round(Math.max(Math.min(minimum.height, maximumHeight), Math.min(maximumHeight, requestedHeight)))};
   }
-  const width = popup.sizeMode === 'FULLSCREEN' ? requestedWidth : Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, requestedWidth));
-  const height = popup.sizeMode === 'FULLSCREEN' ? requestedHeight : Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, requestedHeight));
-  return { width: Math.round(Math.max(320, Math.min(availableWidth * 0.96, width))), height: Math.round(Math.max(260, Math.min(availableHeight * 0.96, height))) };
+  const maximumWidth = Math.max(popup.maximumWidth, minimum.width), maximumHeight = Math.max(popup.maximumHeight, minimum.height);
+  const width = popup.sizeMode === 'FULLSCREEN' ? requestedWidth : Math.max(minimum.width, Math.min(maximumWidth, requestedWidth));
+  const height = popup.sizeMode === 'FULLSCREEN' ? requestedHeight : Math.max(minimum.height, Math.min(maximumHeight, requestedHeight));
+  return { width: Math.round(Math.min(availableWidth * 0.96, width)), height: Math.round(Math.min(availableHeight * 0.96, height)) };
 }

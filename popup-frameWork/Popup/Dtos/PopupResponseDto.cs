@@ -98,13 +98,13 @@ namespace Popup.Dtos
             0.75;
 
         /*
-         * 동적 계산 결과에 적용할 최소 크기
+         * 동적 계산 결과에 적용할 최소 크기. [TODO68] 누락 시 공통 하한 300 x 300.
          */
         public double MinimumWidth { get; set; } =
-            480;
+            Models.PopupOptions.MinWindowSize;
 
         public double MinimumHeight { get; set; } =
-            320;
+            Models.PopupOptions.MinWindowSize;
 
         /*
          * 동적 계산 결과에 적용할 최대 크기

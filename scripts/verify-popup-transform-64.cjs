@@ -109,9 +109,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const p=toSaveRequestPopup(deepFreeze(${JSON.stringify(cases.SURVEY)}));return !('footerAction' in p.content)&&!!p.content.surveyTitleBlocks&&!!p.content.descriptionBlocks
     &&p.questions[0].titleBlocks[0].runs[0].italic&&p.questions[0].options[0].textBlocks[0].runs[0].underline;})()`),
     'SURVEY save keeps content/question/option blocks and drops footer action');
-  check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>{const {displayTimes,...rest}=p;return {...rest,displayStartAt:0,displayEndAt:0};};
-    return canonical(strip(a))===canonical(strip(b))&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
-    'Default editor value equals pre-split defaults (except TODO52-1 displayTimes) and returns a new object');
+  check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>{const {displayTimes,...rest}=p;return {...rest,displayStartAt:0,displayEndAt:0};};b.minimumWidth=300;b.minimumHeight=300;
+    return canonical(strip(a))===canonical(strip(b))&&a.minimumWidth===300&&a.minimumHeight===300&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
+    'Default editor value equals pre-split defaults (except TODO52-1 displayTimes, TODO68 minimum 300x300) and returns a new object');
   check(await run(`JSON.stringify(createDefaultPopup().displayTimes)==='[]'&&createDefaultPopup().periodMode==='FIXED'`), '[52-1] default schedule is FIXED with no display times');
 
   // ── 1-1. [TODO52-1] 노출 일정 요약·검증·입력 ──

@@ -64,6 +64,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 - 모달을 닫으면 내용이 언마운트되어 다시 열 때 시연 상태가 초기화된다. 문항·팝업 ID가 바뀌어도 초기화된다.
 - 두 미리보기가 동시에 열려 있으면 VIDEO+QUIZ 영상 영역(`AspectVideoArea`)이 각각 메타데이터만 읽는다(`preload="metadata"`, 음소거, 자동 재생 없음).
 - 등록 화면(`PopupEditorDialog`)은 다시 열 때 모달 열림 상태를 닫힘으로 초기화한다.
+- [TODO68] 실제 크기 모달과 IMAGE 권장 창 크기는 `popupCommon.ts`의 `POPUP_MIN_WINDOW_SIZE`(300)·`popupMinimumSize`로 최종 창 하한 300×300을 WPF와 같은 순서(하한 → 설정 최대값 → 화면 상한)로 적용한다. 인라인 축소 표시의 외형 크기는 300 이상으로 강제하지 않는다. 이전 모달 전용 하한(320×260)은 제거했다.
 
 ## 4. 이식 시 필요한 의존성
 

@@ -71,6 +71,11 @@ public class PopupService {
     /** [설계 18 L-1] IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
     private static final Set<String> IMAGE_SIZE_MODES =
             Set.of("ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL");
+    /**
+     * [TODO68] 팝업 창 최소 크기(px). 관리자 웹 POPUP_MIN_WINDOW_SIZE·WPF PopupOptions.MinWindowSize와 같다.
+     * minimumWidth/Height는 이 값 이상만 저장한다(최대값은 기존대로 최소값 이상).
+     */
+    static final double POPUP_MIN_WINDOW_SIZE = 300;
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
@@ -930,6 +935,9 @@ public class PopupService {
         validatePositiveNumber(popup.heightRatio(), "높이 비율");
         validatePositiveNumber(popup.minimumWidth(), "최소 너비");
         validatePositiveNumber(popup.minimumHeight(), "최소 높이");
+        if (popup.minimumWidth() < POPUP_MIN_WINDOW_SIZE || popup.minimumHeight() < POPUP_MIN_WINDOW_SIZE) {
+            throw new IllegalArgumentException("창 최소 크기는 300 x 300 이상이어야 합니다.");
+        }
         validatePositiveNumber(popup.maximumWidth(), "최대 너비");
         validatePositiveNumber(popup.maximumHeight(), "최대 높이");
         if (!"IMAGE".equals(normalizeUpper(popup.popupType())) && (popup.maximumWidth() < popup.minimumWidth()

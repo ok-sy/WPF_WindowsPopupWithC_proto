@@ -84,6 +84,7 @@ internal static class Program
         CheckVideoQuizNotice59();
         CheckVideoQuizAspect60();
         CheckImageSize58();
+        CheckMinimumSize68();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckOverlayKeyboardClose44();
@@ -95,7 +96,7 @@ internal static class Program
         CheckLater52();
         CheckSurveyColors();
         CheckQuizSelectionLimit();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 68)");
     }
 
     /* [설계 50-B] displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -550,6 +551,61 @@ internal static class Program
         var filled = Fit(false, false);
         Check(filled.Stretch == System.Windows.Media.Stretch.Fill && Math.Abs(filled.Image.Width - 320) < 0.6 && Math.Abs(filled.Image.Height - 200) < 0.6,
             $"[TODO58] unlocked ratio fills the content area ({filled.Image})");
+    }
+
+    /* [TODO68] 팝업 창 최소 300 x 300: 누락 기본값, 299/300/301 경계, 기존 데이터(최소 100·최대 200 모순) 방어, IMAGE 최종 창 하한. */
+    private static void CheckMinimumSize68()
+    {
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        var missing = System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>("{}", json)!;
+        Check(missing.MinimumWidth == 300 && missing.MinimumHeight == 300 && new PopupOptions().MinimumWidth == 300,
+            "[TODO68] missing minimumWidth/Height defaults to 300 x 300");
+        (double Width, double Height, double MinWidth, double MinHeight) Fixed(double width, double height, double min, double maxWidth = 1200, string mode = "FIXED")
+        {
+            var opened = OpenPopup("TEXT", dto =>
+            {
+                dto.SizeMode = mode; dto.Width = width; dto.Height = height; dto.WidthRatio = 0.01; dto.HeightRatio = 0.01;
+                dto.MinimumWidth = min; dto.MinimumHeight = min; dto.MaximumWidth = maxWidth; dto.MaximumHeight = maxWidth;
+            });
+            opened.Window.UpdateLayout();
+            var result = (opened.Window.ActualWidth, opened.Window.ActualHeight, opened.Window.MinWidth, opened.Window.MinHeight);
+            ShutdownClose(opened.Window);
+            return result;
+        }
+        foreach (double axis in new[] { 299.0, 300.0, 301.0 })
+        {
+            var size = Fixed(axis, axis, 300);
+            double expected = Math.Max(300, axis);
+            Check(Math.Abs(size.Width - expected) < 0.6 && Math.Abs(size.Height - expected) < 0.6,
+                $"[TODO68] FIXED {axis} x {axis} becomes {expected} x {expected} ({size.Width} x {size.Height})");
+        }
+        var legacy = Fixed(200, 200, 100);
+        Check(Math.Abs(legacy.Width - 300) < 0.6 && Math.Abs(legacy.Height - 300) < 0.6 && legacy.MinWidth == 300 && legacy.MinHeight == 300,
+            $"[TODO68] stored minimum 100 is raised to the 300 floor ({legacy})");
+        var contradictory = Fixed(250, 250, 100, maxWidth: 200);
+        Check(Math.Abs(contradictory.Width - 300) < 0.6 && Math.Abs(contradictory.Height - 300) < 0.6,
+            $"[TODO68] a stored maximum below 300 is raised to the floor without a min > max exception ({contradictory})");
+        var ratio = Fixed(0, 0, 100, maxWidth: 200, mode: "RATIO");
+        Check(Math.Abs(ratio.Width - 300) < 0.6 && Math.Abs(ratio.Height - 300) < 0.6, $"[TODO68] RATIO result below 300 uses the floor ({ratio})");
+        var larger = Fixed(640, 480, 300);
+        Check(Math.Abs(larger.Width - 640) < 0.6 && Math.Abs(larger.Height - 480) < 0.6, "[TODO68] sizes above the floor are unchanged");
+
+        // IMAGE FIT_TO_IMAGE: 콘텐츠 50 x 50이어도 헤더·푸터를 더한 최종 창은 300 이상이고 width/height는 콘텐츠 영역 의미를 유지한다.
+        var image = DemoPopups("IMAGE").Single();
+        var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(image, json))!.AsObject();
+        node["content"]!["imageSizeMode"] = "FIT_TO_IMAGE"; node["content"]!.AsObject().Remove("width"); node["content"]!.AsObject().Remove("height");
+        node["width"] = 50; node["height"] = 50; node["minimumWidth"] = 100; node["minimumHeight"] = 100; node["showFooter"] = false;
+        var options = PopupFactory.Create(System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!);
+        options.UseBackgroundOverlay = false;
+        var window = new PopupWindow(options);
+        window.Show();
+        for (int i = 0; i < 5; i++) { window.UpdateLayout(); System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background); }
+        Check(window.ActualWidth >= 299.5 && window.ActualHeight >= 299.5 && window.MinWidth == 300,
+            $"[TODO68] FIT_TO_IMAGE final window keeps the 300 floor ({window.ActualWidth} x {window.ActualHeight})");
+        Check((double?)typeof(ImagePopupView).GetField("_requestedWidth", Flags)!.GetValue(options.Content) == 50
+            && (double?)typeof(ImagePopupView).GetField("_requestedHeight", Flags)!.GetValue(options.Content) == 50,
+            "[TODO68] FIT_TO_IMAGE width/height stays the 50 x 50 content size");
+        ShutdownClose(window);
     }
 
     /* [TODO60] 영상 결합 화면의 재생 행 높이는 원본 비율과 실제 가용 너비로 정해지고 제목·설명은 별도 행이다. */

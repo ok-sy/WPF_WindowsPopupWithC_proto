@@ -1,4 +1,5 @@
 using Popup.Dtos;
+using Popup.Models;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -56,12 +57,13 @@ namespace Popup
                 typeof(double?), min: 1, indent: true);
             AddField(panel, _draft, "widthRatio", "작업 영역 대비 너비 비율", typeof(double), min: .01, max: 1, indent: true);
             AddField(panel, _draft, "heightRatio", "작업 영역 대비 높이 비율", typeof(double), min: .01, max: 1, indent: true);
-            AddField(panel, _draft, "minimumWidth", "최소 창 너비(px)", typeof(double), min: 1);
-            AddField(panel, _draft, "minimumHeight", "최소 창 높이(px)", typeof(double), min: 1);
+            // [TODO68] 최종 창 최소 300 x 300. 더 작은 값은 저장 서버와 같이 받지 않는다.
+            AddField(panel, _draft, "minimumWidth", "최소 창 너비(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
+            AddField(panel, _draft, "minimumHeight", "최소 창 높이(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
             if (popup.PopupType != "IMAGE")
             {
-                AddField(panel, _draft, "maximumWidth", "최대 창 너비(px)", typeof(double), min: 1);
-                AddField(panel, _draft, "maximumHeight", "최대 창 높이(px)", typeof(double), min: 1);
+                AddField(panel, _draft, "maximumWidth", "최대 창 너비(px)", typeof(double), min: PopupOptions.MinWindowSize);
+                AddField(panel, _draft, "maximumHeight", "최대 창 높이(px)", typeof(double), min: PopupOptions.MinWindowSize);
             }
             AddField(panel, _draft, "popupPosition", "창 위치", typeof(string), new[] {
                 "CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT", "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT" });

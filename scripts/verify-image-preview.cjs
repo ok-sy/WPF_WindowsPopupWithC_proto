@@ -68,7 +68,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run("window.scenario('FIT_TO_IMAGE', false, 900, 300, '긴 설명 '.repeat(300), 100, 400, true)"); await pause(150);
   check(await run("(()=>{const img=document.querySelector('img');const text=Array.from(document.querySelectorAll('p')).find(e=>e.textContent.startsWith('긴 설명'));let p=text;while(p && getComputedStyle(p).overflowY!=='auto')p=p.parentElement;return !!p && p.scrollHeight>p.clientHeight && p.getBoundingClientRect().top>img.parentElement.getBoundingClientRect().top && Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='닫기');})()"), 'Bottom description scrolls while footer stays available');
   // WPF PopupWindow 크롬: 가로 28+28+24+24+0=104, 세로 24+24+24+24+0=96, HeaderRow 40, FooterRow 80, 이미지 테두리 1+1.
-  check(await run('JSON.stringify(window.chromeLayout(false,false).window)') === JSON.stringify({width: 506, height: 298}), 'FIT_TO_IMAGE chrome matches WPF without header/footer');
+  // [TODO68] 크롬 합 298은 최종 창 최소 300 미만이라 300으로 올라간다(WPF RequestedMinimumHeight와 같다).
+  check(await run('JSON.stringify(window.chromeLayout(false,false).window)') === JSON.stringify({width: 506, height: 300}), '[TODO68] FIT_TO_IMAGE without header/footer is raised to the 300 window floor');
   check(await run('JSON.stringify(window.chromeLayout(true,false).window)') === JSON.stringify({width: 506, height: 338}), 'FIT_TO_IMAGE header adds WPF HeaderRow 40');
   check(await run('JSON.stringify(window.chromeLayout(true,true).window)') === JSON.stringify({width: 506, height: 418}), 'FIT_TO_IMAGE header/footer add 40+80');
   check(await run('window.chromeLayout(false,false,2000,100).window.width') === 900, 'Recommended width is clamped to 90% work area');

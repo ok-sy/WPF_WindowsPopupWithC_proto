@@ -43,5 +43,7 @@ function Host({popup, hint}: {popup: any; hint: boolean}) {
   </ThemeProvider>);
 };
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);
+// [TODO68] 샘플 popup 값만 바꿔 실제 크기 모달 크기를 계산한다(렌더링 없음).
+(window as any).dialogSize = (overrides: Record<string, unknown>, available: Size) => previewDialogSize(samplePopup('TEXT', overrides), null, available);
 (window as any).fitLayout = (natural: Size, workArea: Size) => fitToImageLayout((window as any).currentPopup, natural, workArea);
 (window as any).renderHost('TEXT');

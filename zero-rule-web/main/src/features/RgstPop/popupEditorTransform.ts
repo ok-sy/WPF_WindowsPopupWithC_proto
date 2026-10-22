@@ -12,7 +12,7 @@
  */
 import type { AdminPopupDetail, PopupDateValue, PopupDisplayTime, PopupQuestion, PopupTargetGroup, PopupType } from '@local/domain';
 import normalizePopupLink from './normalizePopupLink';
-import { popupDateMillis } from './popupCommon';
+import { POPUP_MIN_WINDOW_SIZE, popupDateMillis } from './popupCommon';
 
 /** 팝업 유형 선택값. 동영상+퀴즈는 popupType QUIZ + content.videoEnabled=true로 저장한다. */
 export type PopupTypeSelection = PopupType | 'VIDEO_QUIZ';
@@ -34,7 +34,7 @@ export function createDefaultPopup(now: Date = new Date()): AdminPopupDetail {
     displayStartAt: startAt.toISOString(), displayEndAt: endAt.toISOString(),
     displayMode: 'SEQUENTIAL', displayOrder: 100, sizeMode: 'FIXED',
     width: 560, height: 420, widthRatio: 0.7, heightRatio: 0.75,
-    minimumWidth: 480, minimumHeight: 320, maximumWidth: 1200, maximumHeight: 900,
+    minimumWidth: POPUP_MIN_WINDOW_SIZE, minimumHeight: POPUP_MIN_WINDOW_SIZE, maximumWidth: 1200, maximumHeight: 900,
     showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false, showLater: false,
     questionTemplateId: null, periodMode: 'FIXED', repeatInterval: null,
     repeatDayOfWeek: null, repeatDayOfMonth: null, displayTimes: [], hideDays: null,

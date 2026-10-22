@@ -9,7 +9,7 @@ import AspectVideoArea from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
-import { popupFontSize } from './popupCommon';
+import { popupFontSize, popupMinimumSize } from './popupCommon';
 import {
   fitToImageLayout,
   imageSizeMode,
@@ -525,10 +525,10 @@ export default function PopupPreview({
   // WPF와 같이 FULLSCREEN 팝업은 창 크기를 바꾸지 않는다.
   const recommendedWidth =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.width ?? (naturalLayout
-      ? clampWindowAxis(popup.width, naturalLayout.window.width, popup.minimumWidth, workArea.width) : null);
+      ? clampWindowAxis(popup.width, naturalLayout.window.width, popupMinimumSize(popup).width, workArea.width) : null);
   const recommendedHeight =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.height ?? (naturalLayout
-      ? clampWindowAxis(popup.height, naturalLayout.window.height, popup.minimumHeight, workArea.height) : null);
+      ? clampWindowAxis(popup.height, naturalLayout.window.height, popupMinimumSize(popup).height, workArea.height) : null);
   useEffect(() => {
     onRecommendedSize?.(
       recommendedWidth != null && recommendedHeight != null

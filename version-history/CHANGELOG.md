@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-08 — TODO68 팝업 최소 크기 300×300 공통화 구현
+
+- 이유: 관리자 설정·미리보기·WPF 실제 팝업의 창 최소 크기 기준이 서로 달라(웹 1px/모달 320×260, 서버 0 초과, WPF 하한 없음·누락 480×320) 같은 기준 300×300으로 통일 필요.
+- 변경: 웹·서버·WPF에 공통 상수 300 도입. 관리자 입력·저장 검증과 서버 저장 검증은 축별 300 미만 거절, 신규 편집·WPF 누락 기본 최소값 300×300. WPF `PopupWindow`와 미리보기 모달·IMAGE 권장 창 계산에 하한 300 → 설정 최대값(하한 미만이면 하한) → 작업 영역 상한 → 최소값 보정 순서 적용(기존 데이터 방어, min>max 예외 방지, RATIO 비IMAGE Clamp 예외 제거). IMAGE FIT_TO_IMAGE width/height 콘텐츠 의미·FULLSCREEN·기본 창 크기 유지. Demo 옵션 창 입력 하한 300. 인터페이스 명세·ALL·MINIMAL(고정 동작만, 필드 노출 없음)·옵션 가이드·미리보기 이식 안내 갱신. JSON 필드·DB DDL 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/RgstPop/popupCommon.ts·PopupEditorDialog.tsx·PopupPreview.tsx·imagePreviewLayout.ts·popupPreviewDialogLayout.ts·popupEditorTransform.ts, zero-rule-server/service/core/.../PopupService.java·PopupAdminQuestionsTest.java, popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs·Models/PopupOptions.cs·Dtos/PopupResponseDto.cs·DemoOptionsWindow.Fields.cs, scripts/PopupWindowTests/Program.cs·verify-popup-preview-61(-entry)·verify-image-preview.cjs·verify-popup-transform-64.cjs, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md·WPF_POPUP_MINIMAL_SPEC.md·ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/POPUP_USER_OPTION_GUIDE.md, docs/design/68_팝업최소크기_300x300_공통화_TODO.md, version-history/CHANGELOG.md.
+- 검증: WPF PopupWindowTests 396건 통과(신규 10), Popup Release 빌드 오류 0. 서버 `gradlew test --offline` 161건 중 실패 0·skip 11(신규 300 경계). 웹 tsc·eslint 오류 0, verify-popup-preview-61 50·verify-image-preview 34·verify-popup-transform-64 77·verify-completion-ux-43 65·verify-question-template-picker 7건 통과. Popup.BehaviorTests는 기존 TODO58 API 변경으로 컴파일 불가 상태라 미실행. 미실행: Windows DPI 배율·작은 작업 영역 실화면, 최소 창 버튼 접근 실화면, 관리자 저장 왕복, 폐쇄망, 인터페이스 Word·PDF·Excel 재생성.
+- 상태: 커밋에 포함(커밋 직전 기록). 미푸시.
+
 ## 2026-10-22-07 — TODO66 서식 초기화·색 초기화 버튼 삭제 구현
 
 - 이유: 글자 서식만 지우는 일괄 초기화가 이름과 동작이 달라 혼동되어, 개별 서식 조작만 남기는 편집 UI 단순화 요건 반영.

@@ -1,5 +1,5 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
-import { popupFontSize } from './popupCommon';
+import { popupFontSize, popupMinimumSize } from './popupCommon';
 export interface Size { width: number; height: number; }
 export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'ORIGINAL' {
   const mode = String(popup.content.imageSizeMode ?? '').trim().toUpperCase();
@@ -69,8 +69,10 @@ export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workAre
     ? Math.min(textHeight(descriptionText, Math.max(1, measureWidth - 34), popupFontSize(popup, 'bodyFontSize') ?? 14, 23) + 34, Math.max(1, Math.min(image.height, maxHeight - chrome) * 0.3)) + 14 : 0;
   const recommended = { width: image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH, height: image.height + IMAGE_FRAME + (title ? title + 16 : 0) + description + chrome };
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
+  // [TODO68] 최소 300 x 300은 이미지 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.
+  const minimum = popupMinimumSize(popup);
   return { image, window: {
-    width: Math.round(clamp(recommended.width, popup.minimumWidth, maxWidth)),
-    height: Math.round(clamp(recommended.height, popup.minimumHeight, maxHeight)),
+    width: Math.round(clamp(recommended.width, minimum.width, maxWidth)),
+    height: Math.round(clamp(recommended.height, minimum.height, maxHeight)),
   } };
 }

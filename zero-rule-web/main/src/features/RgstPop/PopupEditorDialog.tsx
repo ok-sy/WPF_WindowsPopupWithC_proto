@@ -30,7 +30,7 @@ import PopupRichTextEditor from './PopupRichTextEditor';
 import PopupScheduleFields, { validatePopupSchedule } from './PopupScheduleFields';
 import { plainTextToBlocks, readTextBlocks } from './popupRichText';
 import { richBlocksOrNull } from './PopupRichBlocks';
-import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_TYPE_LABELS, type PopupFontSizeKey } from './popupCommon';
+import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from './popupCommon';
 import {
   changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, normalizeImageSizeMode, toDateTimeLocal, toEditorPopup,
   toEditorPopupFromTemplate, toSaveRequest, withDefaultAnswerMatchMode, type PopupTypeSelection,
@@ -190,9 +190,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || popup.hideDays < 1 || popup.hideDays > 3650)) {
       toast.warn('숨김 일수는 1~3650 사이의 정수로 입력하거나 비워 두세요.'); return;
     }
+    // [TODO68] 서버 PopupService와 같이 창 최소 크기는 축별 300 이상이다(기존 데이터의 더 작은 값은 저장 전에 고쳐야 한다).
     if (![popup.minimumWidth, popup.minimumHeight, popup.maximumWidth, popup.maximumHeight].every(v => Number.isFinite(v) && v > 0)
+      || popup.minimumWidth < POPUP_MIN_WINDOW_SIZE || popup.minimumHeight < POPUP_MIN_WINDOW_SIZE
       || (popup.popupType !== 'IMAGE' && (popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight))) {
-      toast.warn('창 최소·최대 크기는 양수이며 최소가 최대보다 작거나 같아야 합니다.'); return;
+      toast.warn(`창 최소 크기는 ${POPUP_MIN_WINDOW_SIZE}×${POPUP_MIN_WINDOW_SIZE}px 이상이며 최대 크기보다 작거나 같아야 합니다.`); return;
     }
     if (popup.popupType === 'IMAGE') {
       for (const value of [popup.width, popup.height]) {
@@ -515,17 +517,18 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>
                 <MenuItem value="FIXED">고정 크기</MenuItem>{(popup.popupType !== 'IMAGE' || originalImageMode) && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
-              {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popup.minimumWidth} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popup.minimumHeight} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
+              {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popupMinimumSize(popup).width} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popupMinimumSize(popup).height} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
               {popup.sizeMode === 'RATIO' && (popup.popupType !== 'IMAGE' || originalImageMode) && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
             </Box>
             {/* WPF PopupWindow.ApplyWindowSize: MinimumWidth/Height는 FIXED·RATIO 모두 적용(IMAGE 포함, 작업 영역 상한 이하로 보정),
                 MaximumWidth/Height는 IMAGE가 아닌 유형에만 적용(IMAGE는 작업 영역 90%). FULLSCREEN은 둘 다 쓰지 않는다.
-                서버 PopupService.validateAdminPopup: 모두 0보다 커야 하고, IMAGE가 아니면 최대 ≥ 최소. */}
+                서버 PopupService.validateAdminPopup: 최소는 축별 300 이상(TODO68), IMAGE가 아니면 최대 ≥ 최소.
+                IMAGE 최소는 FIT_TO_IMAGE 콘텐츠가 아니라 헤더·푸터를 포함한 최종 창 기준이다. */}
             {popup.sizeMode !== 'FULLSCREEN' && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
-              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={1} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumWidth}
-                helperText={popup.popupType === 'IMAGE' ? '화면 작업 영역 90%를 넘으면 그 값으로 보정됩니다.' : `1px 이상 · 최대 너비(${popup.maximumWidth}px) 이하`} onChange={(value) => updatePopup('minimumWidth', value)} />
-              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={1} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumHeight}
-                helperText={popup.popupType === 'IMAGE' ? '화면 작업 영역 90%를 넘으면 그 값으로 보정됩니다.' : `1px 이상 · 최대 높이(${popup.maximumHeight}px) 이하`} onChange={(value) => updatePopup('minimumHeight', value)} />
+              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumWidth}
+                helperText={popup.popupType === 'IMAGE' ? `${POPUP_MIN_WINDOW_SIZE}px 이상 · 헤더·푸터 포함 최종 창 기준 · 작업 영역 90%를 넘으면 그 값으로 보정` : `${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 너비(${popup.maximumWidth}px) 이하`} onChange={(value) => updatePopup('minimumWidth', value)} />
+              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumHeight}
+                helperText={popup.popupType === 'IMAGE' ? `${POPUP_MIN_WINDOW_SIZE}px 이상 · 헤더·푸터 포함 최종 창 기준 · 작업 영역 90%를 넘으면 그 값으로 보정` : `${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하`} onChange={(value) => updatePopup('minimumHeight', value)} />
               {popup.popupType !== 'IMAGE' && <>
                 <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.MAX_VALUE}
                   helperText={`최소 너비(${popup.minimumWidth}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 95%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />

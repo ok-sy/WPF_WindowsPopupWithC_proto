@@ -8,6 +8,7 @@
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
 - 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
+- 3.7 보완(2026-10-22, TODO68): 팝업 최종 창 최소 크기 300 x 300 공통화(웹 CSS px, WPF DIP — DPI 배율에 따라 물리 픽셀 수는 다름). 관리자 저장 시 `minimumWidth`·`minimumHeight`는 축별 300 이상만 허용(299 거절), WPF 누락 기본값 480/320 → 300/300. WPF·미리보기는 300 미만 기존 데이터를 300으로 올리고, 비IMAGE 최대값이 300보다 작은 모순 값은 하한까지 올려 계산한다. 작업 영역이 300보다 작으면 화면 안 배치를 우선한다. 기본 창 크기 width/height(900×620, 관리자 신규 560×420)·IMAGE width/height 의미·FULLSCREEN 동작은 변경 없음. JSON 필드 추가 없음.
 - 3.7 보완(2026-10-22, TODO66): 관리자 공용 서식 편집기(TEXT·SURVEY·QUIZ)의 CKEditor 툴바 `서식 지우기`와 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼 삭제. 글자·문단 서식은 개별 버튼과 글꼴/크기 기본값 선택으로 되돌린다. JSON 필드·저장값·WPF 표시 변경 없음.
 - 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
@@ -296,8 +297,8 @@ X-Client-Version: 1.0.0
 | height | number | 선택(일반 IMAGE는 축별 생략 가능) | `620`(IMAGE는 원본 기준) | 창 높이. IMAGE는 ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 높이(TODO58) |
 | widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
 | heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
-| minimumWidth | number | 선택 | `480` | 최소 창 너비 |
-| minimumHeight | number | 선택 | `320` | 최소 창 높이 |
+| minimumWidth | number | 선택 | `300` | 최소 창 너비. 300 이상만 저장(TODO68). WPF·미리보기는 300 미만 기존 값도 300으로 올리고 IMAGE는 헤더·푸터를 포함한 최종 창에 적용 |
+| minimumHeight | number | 선택 | `300` | 최소 창 높이. minimumWidth와 같은 규칙(TODO68) |
 | maximumWidth | number | 선택 | `1200` | 최대 창 너비. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
 | maximumHeight | number | 선택 | `900` | 최대 창 높이. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
