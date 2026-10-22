@@ -5,6 +5,13 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgre
 import { useEffect, useRef, useState } from 'react';
 import { POPUP_TYPE_LABELS } from '../PopupcommonComponent/popupCommon';
 
+/**
+ * POL-07-01 : 부모의 데이터 소유
+ * ■ 팝업 템플릿 불러오기
+ * - in : open(boolean) 열림 (api.popupAdmin.list로 목록, 선택 시 api.popupAdmin.info로 상세 조회)
+ * - out: onClose() 닫기 · onSelect(info: AdminPopupInfo) 고른 팝업의 상세(popup·targetGroups)
+ * - 기존 팝업 목록을 받아 유형·검색어로 고르게 하고, 고른 팝업의 상세를 편집기에 넘긴다(편집기가 toEditorPopupFromTemplate로 변환).
+ */
 export default function PopupTemplateDialog({ open, onClose, onSelect }: {
   open: boolean;
   onClose: () => void;

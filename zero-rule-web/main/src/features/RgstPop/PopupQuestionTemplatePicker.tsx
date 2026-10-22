@@ -22,6 +22,13 @@ interface Props {
   onChange: (questions: PopupQuestion[], templateId: number) => void;
 }
 
+/**
+ * POL-06-01 : 문항·서식
+ * ■ 문항 템플릿 선택
+ * - in : popupType(PopupType) 설문/퀴즈 구분 · disabled(boolean) · (api.popupAdmin.questionTemplates·questionTemplate 조회)
+ * - out: onBusy(busy) 조회 중 표시 · onChange(questions, templateId) 고른 템플릿의 문항과 템플릿 ID
+ * - 저장된 문항 템플릿 목록을 받아 하나를 고르면 그 문항 전체를 편집기에 넘긴다(편집기는 문항 편집기를 다시 마운트한다).
+ */
 export default function PopupQuestionTemplatePicker({
   popupType,
   disabled,

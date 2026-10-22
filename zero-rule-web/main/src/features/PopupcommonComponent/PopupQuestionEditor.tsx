@@ -7,28 +7,53 @@ import PopupRichTextEditor from './PopupRichTextEditor';
 import { plainTextToBlocks, type RichBlock } from './popupRichText';
 
 interface Props {
+  /** 편집할 문항 목록 */
   questions: PopupQuestion[];
+  /** true면 퀴즈(정답·배점·통과 점수 입력 표시), false면 설문 */
   quiz: boolean;
+  /** 퀴즈 통과 점수 */
   passingScore?: number | null;
+  /** 문항 목록이 바뀔 때마다 전체 목록을 돌려준다. */
   onChange: (questions: PopupQuestion[]) => void;
+  /** 통과 점수 입력이 바뀔 때(비우면 null) */
   onPassingScoreChange: (score: number | null) => void;
   /**
-   * [TODO69] 배점 고정(예: 1). 지정하면 문항별 배점 입력·'배점 모두 1점' 버튼을 숨기고 새 문항도 이 배점으로 만든다.
-   * 부모가 모든 문항의 questionScore를 이 값으로 맞춘다(IS063M02 샘플: 문항 1점 고정, 총점 = 문항 수). 생략하면 기존 동작.
+   * 배점 고정(예: 1). 지정하면 문항별 배점 입력·'배점 모두 1점' 버튼을 숨기고 새 문항도 이 배점으로 만든다.
+   * 부모가 모든 문항의 questionScore를 이 값으로 맞춘다(예: IS063M02 샘플은 문항 1점 고정, 총점 = 문항 수). 생략하면 문항별 배점을 입력한다.
    */
   fixedQuestionScore?: number;
-  /** [TODO69] 통과 점수 입력을 숨긴다(부모가 퀴즈 유형 등 다른 입력으로 passingScore를 정할 때). */
+  /** 통과 점수 입력을 숨긴다(부모가 퀴즈 유형 등 다른 입력으로 passingScore를 정할 때). */
   hidePassingScore?: boolean;
 }
 
-/* [TODO55] 서식 편집기는 글자 수 제한 입력을 둘 수 없어 저장 전에 서버(PopupSurveyRichText)와 같은 상한을 확인한다. */
+/**
+ * POL-06-01 : 문항·서식
+ * ■ 문항 글자 수 상한
+ * - in : 없음
+ * - out: QUESTION_TITLE_MAX(1000) 문항 제목 · QUESTION_DESCRIPTION_MAX(2000) 문항 설명 · OPTION_TEXT_MAX(1000) 선택지
+ * - 서식 편집기는 글자 수 제한 입력을 둘 수 없어 저장 전에 서버(PopupSurveyRichText)와 같은 상한으로 확인한다.
+ */
 export const QUESTION_TITLE_MAX = 1000;
 export const QUESTION_DESCRIPTION_MAX = 2000;
 export const OPTION_TEXT_MAX = 1000;
 
-/** 퀴즈 기본 배점. 서버(PopupQuestionRules.DEFAULT_QUESTION_SCORE)·WPF(QuizGrader)·미리보기와 같다. 모두 1점이면 총점 = 문항 수. */
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 퀴즈 기본 배점
+ * - in : 없음
+ * - out: number 1점
+ * - 배점을 비운 문항에 쓰는 값이다. 서버(PopupQuestionRules.DEFAULT_QUESTION_SCORE)·WPF(QuizGrader)·미리보기와 같다. 모두 1점이면 총점 = 문항 수.
+ */
 export const DEFAULT_QUESTION_SCORE = 1;
 
+/**
+ * POL-06-01 : 문항·서식
+ * POL-06-02 : 선택·제출
+ * ■ 설문·퀴즈 문항 저장 전 확인
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수
+ * - out: string | null 첫 번째 위반 안내 문구, 문제없으면 null
+ * - 문항 목록을 받아 제목·글자 수·선택지·정답·배점·통과 점수(0~총점)를 서버와 같은 기준으로 확인한다.
+ */
 export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean, passingScore?: number | null): string | null {
   if (!questions.length) return '문항을 한 개 이상 추가해 주세요.';
   for (const [index, q] of questions.entries()) {
@@ -56,12 +81,21 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
 let temporaryIdSequence = 0;
 const temporaryId = () => -(Date.now() * 1000 + (temporaryIdSequence++ % 1000));
 
-/** [TODO55] 편집기 초기값: 서식이 있으면 서식, 없으면 기존 일반 문자열을 서식 없는 문단으로. */
+/** 편집기 초기값: 서식이 있으면 서식, 없으면 기존 일반 문자열을 서식 없는 문단으로. */
 const initialRich = (blocks: unknown, plain: string | null | undefined): RichBlock[] =>
   richBlocksOrNull(blocks) ?? plainTextToBlocks(plain ?? '');
-/** [TODO55] 편집 결과: 글자가 없으면 서식을 보내지 않는다(null). 일반 문자열은 서버와 같은 규칙으로 서식에서 파생한다. */
+/** 편집 결과: 글자가 없으면 서식을 보내지 않는다(null). 일반 문자열은 서버와 같은 규칙으로 서식에서 파생한다. */
 const richValue = (blocks: RichBlock[], plain: string) => ({ blocks: richBlocksOrNull(blocks), plain });
 
+/**
+ * POL-06-01 : 문항·서식
+ * POL-06-02 : 선택·제출
+ * ■ 설문·퀴즈 문항 편집기
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김
+ * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
+ * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
+ *   제목·설명·선택지는 서식 편집기(compact)를 쓰며 편집기마다 선택 범위·패널 상태가 따로다. 저장 전 확인은 validatePopupQuestions로 한다.
+ */
 export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const updateOption = (index: number, optionId: number, patch: Partial<PopupOption>) =>
@@ -95,7 +129,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           <FormControlLabel label="필수문항" control={<Checkbox checked={q.isRequired} onChange={(_, checked) => update(index, { isRequired: checked })} />} />
           <IconButton aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon /></IconButton>
         </Stack>
-        {/* [TODO55-3] 문항 제목·설명은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 편집기마다 선택 범위·패널 상태가 따로다. */}
+        {/* 문항 제목·설명은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 편집기마다 선택 범위·패널 상태가 따로다. */}
         <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
@@ -140,7 +174,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             </Box>
             <IconButton aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon /></IconButton>
           </Stack>)}
-          {/* [TODO52-5] QUIZ 복수 선택은 정답 수만큼만 응답자가 고를 수 있다(미리보기·WPF 동일). */}
+          {/* QUIZ 복수 선택은 정답 수만큼만 응답자가 고를 수 있다(미리보기·WPF 동일). */}
           {quiz && q.questionType === 'MULTIPLE_CHOICE' && <Typography variant="caption" color="text.secondary">
             정답 {q.options.filter((o) => o.isCorrect).length}개 · 응답자는 정답 수만큼만 선택할 수 있습니다.
           </Typography>}

@@ -48,6 +48,15 @@ function formatPopupDate(value: PopupDateValue): string {
       }).format(date);
 }
 
+/**
+ * POL-07-01 : 부모의 데이터 소유
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 팝업 관리 목록(공통 컴포넌트 테스트 화면)
+ * - in : 없음(관리자 API api.popupAdmin.list로 목록 조회, 검색어·유형·활성 필터는 화면 상태)
+ * - out: 화면: 팝업 목록·검색·활성 전환·신규/수정 버튼, PopupEditorDialog 열기 / api.popupAdmin.updateActive 호출
+ * - 서버의 팝업 목록을 받아 걸러 보여 주고, 신규·수정 시 등록 편집기(PopupEditorDialog)를 연다.
+ *   전달용 공통 컴포넌트(PopupcommonComponent)를 실제 서버 데이터로 검증하는 내부 화면이며, 전달 샘플은 sample/PopupListSample이다.
+ */
 export default function RgstPop() {
   const api = useApi();
   const [popups, setPopups] = useState<AdminPopupListItem[]>([]);

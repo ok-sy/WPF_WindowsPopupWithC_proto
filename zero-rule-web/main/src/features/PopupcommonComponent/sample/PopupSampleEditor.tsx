@@ -25,8 +25,13 @@ type Props = {
 const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
 
-/*
- * [TODO69] 공통 컴포넌트만으로 만든 최소 편집 화면(관리자 API·인증 없음).
+/**
+ * POL-14-01 : 공통 프론트 경계
+ * POL-08-01 : 공통 렌더러
+ * ■ 팝업 편집 샘플 대화상자
+ * - in : initial(AdminPopupDetail) 편집 시작 값 · open(boolean) 열림 여부
+ * - out: onSave(popup: AdminPopupDetail) 저장 버튼 편집값 · onClose() 취소/닫기 · 화면: 왼쪽 입력 폼·우측 InlinePopupPreview·실제 크기 PopupPreviewDialog
+ * - 편집값을 받아 공통 컴포넌트만으로 만든 최소 편집 화면(관리자 API·인증 없음)에서 수정하게 하고, 저장 시 편집값을 부모에 돌려준다.
  * 왼쪽 입력값(state 하나)을 우측 InlinePopupPreview와 "실제 크기로 보기" PopupPreviewDialog에 같은 객체로 넘긴다.
  * 실제 등록 화면(RgstPop/PopupEditorDialog)의 일정·대상 그룹·템플릿 등은 넣지 않는다.
  * 본문 편집기는 key로 마운트한다: 유형 전환·다른 팝업 열기에서만 다시 만들고, 입력 중에는 커서를 유지한다.

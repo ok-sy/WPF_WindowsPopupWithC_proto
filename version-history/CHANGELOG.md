@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-20 — TODO69 공통 컴포넌트 주석 인계 형식·정책 번호 정리
+
+- 이유: PopupcommonComponent는 외부 인계 대상이고 설계·TODO 번호는 내부 관리용이라, 받는 개발자가 번호 없이 이해하도록 주석을 정리하고 현행 정책 색인(docs/policies)과 연결할 필요.
+- 변경: 공통 폴더·sample·RgstPop 컴포넌트의 주석만 수정. `[TODO..]`·`[설계 ..]`·설계 절 번호 등 내부 참조를 지우고 설명은 현재 동작 기준으로 다시 씀. 모든 export에 `정책번호 : 정책명`(docs/policies 항목명) 줄 + `■ 기능명 / - in / - out / - 무엇을 받아 무엇을 한다` 형식의 머리 주석(101개) 적용. 영어 주석 일부 한국어화. 인계 가이드 제목·본문의 TODO 번호 제거. RgstPop(내부 테스트 화면) 컴포넌트에도 같은 형식의 머리 주석을 추가(본문의 내부 TODO 참조는 유지).
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/**(index.ts·IS063M02Sample.tsx 제외 주석 변경), zero-rule-web/main/src/features/RgstPop/RgstPop.tsx·PopupTemplateDialog.tsx·PopupQuestionTemplatePicker.tsx, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, version-history/CHANGELOG.md.
+- 검증: TypeScript printer(removeComments)로 HEAD와 작업본을 비교해 25개 파일 모두 주석 외 코드 변경 없음 확인. 공통 폴더 grep `TODO[0-9]|설계 ?[0-9]|\[설계|\[TODO` 0건. 웹 tsc 오류 0, eslint 오류 0, 웹 검증 9종(49·55·61·image·64·43·template-picker·69·RgstPop 퀴즈 규칙) 통과. 서버 샘플(TODO65·70) Java 주석의 내부 번호는 이번 범위 밖.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-19 — TODO71 Word PDF Excel 현행 계약 동기화
 
 - 이유: 정책 통합 후 남은 생성 산출물을 현행 v3.7 Markdown 보완과 일치시킬 필요.

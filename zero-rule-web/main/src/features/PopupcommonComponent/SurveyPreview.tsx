@@ -6,7 +6,7 @@ import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
  * 문항 디자인 버전. WPF SurveyDesigns/SurveyStyles.Vn.xaml과 같은 값이다. WPF는 appsettings PopupApi.SurveyDesignVersion으로
  * 고르므로, 바꿀 때 SURVEY_DESIGN_VERSION도 같은 값으로 맞춘다.
  *   V1: 무채색 카드형(흰 콘텐츠, #F8F8F8 문항 카드, 회색 선택 배경·SemiBold, 세로형은 옅은 체크 상시 표시, 가로형 체크 없음)
- *   V2(TODO56): 흰 본문, 문항 카드 없이 간격·구분선(마지막 문항 제외), 선택지 라운드 6, 라디오·체크박스 표시 없음,
+ *   V2: 흰 본문, 문항 카드 없이 간격·구분선(마지막 문항 제외), 선택지 라운드 6, 라디오·체크박스 표시 없음,
  *       선택 = #171717 2px 테두리(크기 불변) + 세로형만 오른쪽 체크, 선택해도 굵기·글자색 불변, 포커스 점선,
  *       제목 끝 "하나 선택"/"여러 개 선택 가능" 안내, 기본 글자 #222222.
  */
@@ -25,6 +25,14 @@ const commonSurveyColors = {
   buttonPressed: '#303035',
 };
 
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 설문 문항 디자인 목록
+ * - in : 없음
+ * - out: { V1, V2 } 버전별 표시 규칙(flatQuestions·choiceRadius·selectedBold·selectedRing·rowCheckAlways·choiceHint)과 colors
+ * - WPF SurveyStyles.Vn.xaml과 같은 문항 디자인 값을 버전별로 제공한다.
+ */
 export const surveyDesigns = {
   V1: {
     flatQuestions: false,
@@ -69,10 +77,34 @@ export const surveyDesigns = {
 } as const;
 
 export type SurveyDesignVersion = keyof typeof surveyDesigns;
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 사용할 설문 디자인 버전 [옵션]
+ * - in : 없음
+ * - out: SurveyDesignVersion 현재 'V2'
+ * - 미리보기에 적용할 문항 디자인 버전을 정한다. WPF appsettings PopupApi.SurveyDesignVersion과 같은 값으로 맞춘다.
+ */
 export const SURVEY_DESIGN_VERSION: SurveyDesignVersion = 'V2';
 const surveyDesign = surveyDesigns[SURVEY_DESIGN_VERSION];
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 설문 색상
+ * - in : 없음
+ * - out: 현재 디자인 버전의 colors(본문·테두리·선택·포커스·버튼 색 등)
+ * - SURVEY_DESIGN_VERSION에 해당하는 설문 색상표를 제공한다.
+ */
 export const surveyColors = surveyDesign.colors;
 
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 설문 제출 버튼 스타일
+ * - in : 없음
+ * - out: MUI sx 객체(기본·hover·active·focus-visible·disabled 상태)
+ * - 설문 색상으로 만든 제출 버튼 스타일을 제공한다.
+ */
 export const surveySubmitSx = {
   minWidth: 132,
   height: 46,
@@ -89,26 +121,46 @@ export const surveySubmitSx = {
   '&.Mui-disabled': { bgcolor: surveyColors.border, color: surveyColors.placeholder },
 };
 
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 미리보기 문항 응답
+ * - in : optionIds(number[]) 고른 선택지 ID · text(string) 주관식 입력
+ * - out: 없음(형식 정의)
+ * - 문항 하나의 미리보기 응답을 담는다.
+ */
 export interface PreviewAnswer {
   optionIds: number[];
   text: string;
 }
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 설문 미리보기 입력값
+ * - in : questions · description · descriptionBlocks? · answers · disabled · namePrefix · quiz? (SurveyPreview 설명 참고)
+ * - out: onAnswer
+ * - SurveyPreview가 받는 props 형식을 정의한다.
+ */
 export interface SurveyPreviewProps {
   questions: PopupQuestion[];
   description: string;
-  /** [TODO55] 콘텐츠 설명 서식(content.descriptionBlocks). 글자가 있으면 description 대신 표시한다. */
+  /** 콘텐츠 설명 서식(content.descriptionBlocks). 글자가 있으면 description 대신 표시한다. */
   descriptionBlocks?: unknown;
   answers: Record<number, PreviewAnswer>;
   onAnswer: (id: number, answer: PreviewAnswer) => void;
   disabled: boolean;
   namePrefix: string;
-  /** [TODO52-5] QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
+  /** QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
   quiz?: boolean;
 }
 
 /**
- * [TODO52-5] 복수 선택 최대 개수 = 정답 선택지 수. WPF는 QUIZ에만 정답 키를 받으므로 SURVEY·정답 없는 문항은 null(제한 없음).
- * WPF SurveyQuestion.MaxSelections와 같은 규칙이다.
+ * POL-06-02 : 선택·제출
+ * ■ 복수 선택 최대 개수
+ * - in : question(PopupQuestion) 문항 · quiz(boolean) QUIZ 여부
+ * - out: number | null 정답 선택지 수, 제한이 없으면 null
+ * - 문항과 팝업 종류를 받아 복수 선택 한도를 구한다. 한도 = 정답 선택지 수.
+ *   WPF는 QUIZ에만 정답 키를 받으므로 SURVEY·단일 선택·정답 없는 문항은 null(제한 없음). WPF SurveyQuestion.MaxSelections와 같은 규칙이다.
  */
 export function maxSelectionsOf(question: PopupQuestion, quiz: boolean): number | null {
   if (!quiz || question.questionType !== 'MULTIPLE_CHOICE') return null;
@@ -142,6 +194,15 @@ function CheckMark({ selected, disabled }: { selected: boolean; disabled: boolea
   );
 }
 
+/**
+ * POL-06-03 : 표현·수명
+ * POL-08-02 : 미리보기 상태
+ * ■ 설문·퀴즈 문항 미리보기
+ * - in : questions(PopupQuestion[]) 문항 목록 · description(string) 콘텐츠 설명 · descriptionBlocks?(unknown) 설명 서식, 있으면 description 대신 표시 · answers(Record<number, PreviewAnswer>) 문항 ID별 현재 응답 · disabled(boolean) 전체 입력 잠금 · namePrefix(string) 입력 요소 name·id 접두사 · quiz?(boolean) QUIZ면 복수 선택을 정답 수까지만 허용, 기본 false
+ * - out: onAnswer(id: number, answer: PreviewAnswer) 선택·입력이 바뀔 때마다 해당 문항의 새 응답 · 화면: 설명, 번호·제목·필수 표시·선택 안내, 단일/복수 선택지 또는 주관식 입력란
+ * - 문항과 응답 상태를 받아 현재 디자인 버전(SURVEY_DESIGN_VERSION)으로 문항을 그리고, 응답 변경을 부모에게 알린다.
+ *   응답 상태는 부모가 가진다. 문항이 없으면 안내 문구를 보여준다.
+ */
 export default function SurveyPreview({
   questions,
   description,
@@ -176,7 +237,7 @@ export default function SurveyPreview({
           ? null
           : multiple ? (maxSelections != null ? `최대 ${maxSelections}개 선택` : '여러 개 선택 가능') : '하나 선택';
         const last = index === questions.length - 1;
-        // [TODO55] 서식이 있으면 서식으로 표시(WPF와 같이 필수 표시·선택 안내는 마지막 문단 끝).
+        // 서식이 있으면 서식으로 표시(WPF와 같이 필수 표시·선택 안내는 마지막 문단 끝).
         const richTitle = richBlocksOrNull(question.titleBlocks);
         const richQuestionDescription = richBlocksOrNull(question.descriptionBlocks);
         const titleSuffix = <>
@@ -272,7 +333,7 @@ export default function SurveyPreview({
               ) : (
                 question.options.map((option) => {
                   const selected = answer.optionIds.includes(option.optionId);
-                  // [TODO52-5] 한도만큼 고르면 남은 선택지는 비활성화한다. 고른 선택지는 해제할 수 있게 둔다.
+                  // 한도만큼 고르면 남은 선택지는 비활성화한다. 고른 선택지는 해제할 수 있게 둔다.
                   const optionDisabled = disabled || (full && !selected);
                   const richOption = richBlocksOrNull(option.textBlocks);
                   // 서식 선택지도 접근 가능한 이름은 일반 문구(text)다(WPF AutomationProperties.Name과 같음).

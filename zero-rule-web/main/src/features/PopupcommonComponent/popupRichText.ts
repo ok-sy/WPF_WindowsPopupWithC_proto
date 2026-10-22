@@ -1,12 +1,15 @@
 /*
- * [POL-03-01; 근거 설계 28·48] TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
+ * TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
  * 저장·전달 기준은 문단·Run JSON이며 HTML은 CKEditor 입출력에서만 다룬다.
  * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java와 같아야 한다. WPF PopupRichText.cs는 목록을 복제하지 않고
- * 표시 방어만 한다(설계 48). 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
+ * 표시 방어만 한다. 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
+/** 문단 정렬 값 */
 export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
+/** 허용 글꼴 ID(서버·WPF 글꼴 매핑과 같은 목록) */
 export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
+/** 같은 서식이 이어지는 글자 구간. 지정하지 않은 서식 키는 생략한다. */
 export interface RichRun {
   text: string;
   bold?: boolean;
@@ -17,21 +20,29 @@ export interface RichRun {
   size?: number;
   font?: RichFontId;
 }
+/** 서식 문단 한 개(content.textBlocks의 원소) */
 export interface RichBlock {
   alignment: RichAlignment;
-  /** [설계 49·TODO63] 문단 왼쪽 들여쓰기 단계(1 이상 정수, 단계 수 제한 없음). 0이면 키를 생략한다. */
+  /** 문단 왼쪽 들여쓰기 단계(1 이상 정수, 단계 수 제한 없음). 0이면 키를 생략한다. */
   indent?: number;
+  /** 빈 배열이면 빈 문단 */
   runs: RichRun[];
 }
 
-/* [설계 49] 들여쓰기 1단계 = 40px(CKEditor IndentBlock offset과 같음).
- * [TODO63] 단계 수 제한은 없다. RICH_INDENT_LIMIT은 횟수 제한이 아니라 서버가 정수(Java int)로 읽을 수 있는 숫자 범위다. */
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 들여쓰기 단위·상한
+ * - in : 없음
+ * - out: RICH_INDENT_STEP(number) 1단계 = 40px · RICH_INDENT_LIMIT(number) 단계 값의 숫자 상한
+ * - 문단 들여쓰기 단계와 px 사이 변환 기준을 정한다. 40px은 CKEditor IndentBlock offset과 같다.
+ *   단계 수 제한은 없다. RICH_INDENT_LIMIT은 횟수 제한이 아니라 서버가 정수(Java int)로 읽을 수 있는 숫자 범위다.
+ */
 export const RICH_INDENT_STEP = 40;
 export const RICH_INDENT_LIMIT = 2147483647;
 
 /*
- * [설계 49] 편집기 색 팔레트. 8계열(열) × 밝기 5단계(행, 밝음 → 어두움)를 펼친 격자로 보여 준다.
- * 기존 8색(검정·회색·빨강·주황·노랑·초록·파랑·보라)은 모두 포함하며 이름도 유지한다.
+ * 편집기 색 팔레트. 8계열(열) × 밝기 5단계(행, 밝음 → 어두움)를 펼친 격자로 보여 준다.
+ * 기본 8색(검정·회색·빨강·주황·노랑·초록·파랑·보라)은 모두 포함하며 이름도 유지한다.
  * 저장 규칙은 팔레트가 아니라 #RRGGBB 형식이므로 팔레트를 바꿔도 서버·WPF 계약은 바뀌지 않는다.
  */
 const PALETTE_FAMILIES: { name: string; shades: string[] }[] = [
@@ -45,19 +56,46 @@ const PALETTE_FAMILIES: { name: string; shades: string[] }[] = [
   { name: '보라', shades: ['#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6'] },
 ];
 const SHADE_NAMES = ['아주 밝은', '밝은', '', '어두운', '아주 어두운'];
-/* 기존 선택지 이름을 유지한다(회색 계열의 #6B7280 = 회색, #111827 = 검정). */
+/* 기본 8색 이름을 유지한다(회색 계열의 #6B7280 = 회색, #111827 = 검정). */
 const FIXED_COLOR_LABELS: Record<string, string> = { '#6B7280': '회색', '#111827': '검정' };
+/**
+ * POL-03-03 : 편집 UI
+ * ■ 색 격자 열 수
+ * - in : 없음
+ * - out: number 팔레트 계열 수(8)
+ * - 팔레트 계열 수를 받아 색 격자의 열 수로 쓴다. 서식 패널 격자·방향키 이동·CKEditor 색 드롭다운이 같이 쓴다.
+ */
 export const RICH_COLOR_COLUMNS = PALETTE_FAMILIES.length;
-/** 행 우선 순서(밝기 행마다 8계열). CKEditor 색 드롭다운도 같은 순서·열 수를 쓴다. */
+/**
+ * POL-03-03 : 편집 UI
+ * ■ 편집기 색 선택지
+ * - in : 없음(팔레트 계열·밝기 이름에서 만든다)
+ * - out: { color: string; label: string }[] 대문자 #RRGGBB 색과 한국어 이름
+ * - 팔레트 계열·밝기 단계를 받아 행 우선 순서(밝기 행마다 8계열)의 색 목록을 만든다. CKEditor 색 드롭다운도 같은 순서·열 수를 쓴다.
+ */
 export const RICH_COLORS: { color: string; label: string }[] = SHADE_NAMES.flatMap((shade, row) =>
   PALETTE_FAMILIES.map((family) => {
     const color = family.shades[row];
     const label = FIXED_COLOR_LABELS[color] ?? (family.name === '회색' && row === 2 ? '진한 회색' : [shade, family.name].filter(Boolean).join(' '));
     return { color, label };
   }));
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 허용 글자 크기
+ * - in : 없음
+ * - out: number[] px 단위 크기 목록
+ * - 편집기 크기 선택지이자 저장 허용 값이다. 서버 PopupRichText.java 목록과 같아야 한다.
+ */
 export const RICH_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
-/* css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
- * 정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다(설계 28 §9.3). */
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 허용 글꼴
+ * - in : 없음
+ * - out: { id: RichFontId; css: string; label: string }[] 글꼴 ID·CKEditor용 CSS 글꼴 목록·화면 이름
+ * - 글꼴 ID와 편집기 CSS 값을 짝지어 편집기 선택지·HTML 변환·표시에 쓴다.
+ *   css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
+ *   정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다.
+ */
 export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
   { id: 'MALGUN_GOTHIC', css: "'맑은 고딕', 'Malgun Gothic', sans-serif", label: '맑은 고딕' },
   { id: 'GULIM', css: '굴림, Gulim, sans-serif', label: '굴림' },
@@ -74,11 +112,17 @@ const TEXT_BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCK
 const CONTAINER_TAGS = new Set(['UL', 'OL', 'FIGURE', 'TABLE', 'TBODY', 'THEAD', 'TR', 'TD', 'TH']);
 const REMOVED_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'IMG', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'VIDEO', 'AUDIO']);
 
-/** CKEditor가 쓰는 툴바·허용 값 설정. 소스 편집·표·이미지 등은 툴바에 두지 않는다. */
+/**
+ * POL-03-03 : 편집 UI
+ * ■ 팝업 서식 편집기 설정
+ * - in : 없음(허용 색·크기·글꼴·들여쓰기 단위에서 만든다)
+ * - out: CKEditor config 객체(toolbar·fontColor·indentBlock·fontSize·fontFamily·alignment)
+ * - 허용 값 목록을 받아 CKEditor 툴바·선택지 설정을 만든다. 소스 편집·표·이미지 등은 툴바에 두지 않는다.
+ */
 export const richEditorConfig = {
   toolbar: { items: ['bold', 'italic', 'underline', 'strikethrough', '|', 'fontColor', 'fontSize', 'fontFamily', '|', 'alignment', 'outdent', 'indent', '|', 'undo', 'redo'] },
   fontColor: { colors: RICH_COLORS, columns: RICH_COLOR_COLUMNS, documentColors: 0 },
-  /* [설계 49] 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 40px 단위 정규화는 popupRichTextFormat.normalizeIndent가 한다. */
+  /* 문단 들여쓰기는 IndentBlock이 margin-left(px)로 표현한다. 40px 단위 정규화는 popupRichTextFormat.normalizeIndent가 한다. */
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },
   /* 'default'는 크기 서식 없음 = 본문 기본 크기(bodyFontSize). */
   fontSize: { options: ['default', ...RICH_SIZES], supportAllValues: false },
@@ -93,10 +137,22 @@ function toHexColor(value: string): string {
   return value.trim().toUpperCase();
 }
 const sameFormat = (a: RichRun, b: RichRun) => FLAG_KEYS.every((key) => (a[key] ?? null) === (b[key] ?? null));
-/** 들여쓰기 단계 값이 계약(0 이상 정수, 숫자 범위 RICH_INDENT_LIMIT 이하)인지. NaN·Infinity·소수·음수는 아니다. */
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 들여쓰기 단계 값 확인
+ * - in : value(unknown) 확인할 값
+ * - out: boolean 계약에 맞으면 true(타입 가드: number)
+ * - 값을 받아 0 이상 정수이고 RICH_INDENT_LIMIT 이하인지 확인한다. NaN·Infinity·소수·음수는 false.
+ */
 export const isIndentLevel = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= RICH_INDENT_LIMIT;
-/** [설계 49·TODO63] 문단 margin-left(px)를 단계로 바꾼다. px 외 단위·음수·숫자 범위를 넘는 값은 0. */
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 여백 → 들여쓰기 단계 변환
+ * - in : marginLeft(string | undefined | null) 문단 CSS margin-left
+ * - out: number 들여쓰기 단계(잘못된 값은 0)
+ * - 문단 margin-left(px)를 받아 40px 단위 단계로 반올림해 돌려준다. px 외 단위·음수·숫자 범위를 넘는 값은 0.
+ */
 export function indentFromCss(marginLeft: string | undefined | null): number {
   const match = /^(\d+(?:\.\d+)?)px$/.exec((marginLeft ?? '').trim());
   if (!match) return 0;
@@ -104,13 +160,20 @@ export function indentFromCss(marginLeft: string | undefined | null): number {
   return isIndentLevel(level) ? level : 0;
 }
 
-/** 편집기 HTML을 허용 서식만 남긴 문단·Run JSON으로 바꾼다. 허용 밖 서식은 버리고 글자는 보존한다. */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * ■ 편집기 HTML → 서식 본문 변환
+ * - in : html(string) CKEditor getData() 결과
+ * - out: RichBlock[] 문단·Run JSON
+ * - 편집기 HTML을 받아 허용 서식만 남긴 문단·Run JSON으로 바꾼다. 허용 밖 서식은 버리고 글자는 보존한다.
+ *   표·목록 등 블록은 글자만 일반 문단으로 남기고, 스크립트·이미지 등은 지운다.
+ */
 export function htmlToBlocks(html: string): RichBlock[] {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const blocks: RichBlock[] = [];
   const addBlock = (element: Element) => {
     const align = ALIGN_FROM_CSS[((element as HTMLElement).style?.textAlign || 'left').toLowerCase()] ?? 'LEFT';
-    // [설계 49] 문단 들여쓰기는 문단 속성으로 읽는다. 목록(LI) 들여쓰기는 문단 들여쓰기가 아니므로 읽지 않는다.
+    // 문단 들여쓰기는 문단 속성으로 읽는다. 목록(LI) 들여쓰기는 문단 들여쓰기가 아니므로 읽지 않는다.
     const indent = element.tagName === 'LI' ? 0 : indentFromCss((element as HTMLElement).style?.marginLeft);
     const runs: RichRun[] = [];
     const push = (text: string, format: Omit<RichRun, 'text'>) => {
@@ -173,7 +236,13 @@ function keepSpaces(value: string, atStart: boolean, atEnd: boolean): string {
     .replace(/^ /, atStart ? '&nbsp;' : ' ').replace(/ $/, atEnd ? '&nbsp;' : ' ');
 }
 
-/** 재편집용 HTML을 만든다. text는 항상 이스케이프한다. */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * ■ 서식 본문 → 편집기 HTML 변환
+ * - in : blocks(RichBlock[]) 문단·Run JSON
+ * - out: string CKEditor에 넣을 HTML
+ * - 서식 본문을 받아 재편집용 HTML을 만든다. text는 항상 이스케이프하고, 빈 문단은 &nbsp; 한 칸으로 유지한다.
+ */
 export function blocksToHtml(blocks: RichBlock[]): string {
   return blocks.map((block) => {
     const css = [block.alignment !== 'LEFT' && `text-align:${block.alignment.toLowerCase()};`,
@@ -195,14 +264,32 @@ export function blocksToHtml(blocks: RichBlock[]): string {
   }).join('');
 }
 
-/** 서버 파생 규칙과 같은 일반 문자열(문단은 \n으로 구분). */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * ■ 서식 본문 → 일반 문자열
+ * - in : blocks(RichBlock[]) 서식 본문
+ * - out: string 서식 없는 문자열(문단은 \n으로 구분)
+ * - 서식 본문을 받아 서버 파생 규칙과 같은 일반 문자열을 만든다.
+ */
 export const blocksToPlainText = (blocks: RichBlock[]) => blocks.map((block) => block.runs.map((run) => run.text).join('')).join('\n');
 
-/** 서식 본문이 없는 기존 plainText를 서식 없는 문단으로 바꾼다. */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * ■ 일반 문자열 → 서식 본문
+ * - in : plainText(string) 서식 없는 문자열
+ * - out: RichBlock[] 왼쪽 정렬·서식 없는 문단 배열(빈 문자열이면 [])
+ * - 서식 본문이 없는 기존 plainText를 받아 줄마다 서식 없는 문단으로 바꾼다.
+ */
 export const plainTextToBlocks = (plainText: string): RichBlock[] =>
   plainText === '' ? [] : plainText.split('\n').map((line) => ({ alignment: 'LEFT', runs: line ? [{ text: line }] : [] }));
 
-/** 서버 계약 밖 값이 섞인 저장 데이터(구버전·직접 입력)를 표시 전에 걸러 낸다. */
+/**
+ * POL-03-01 : 저장·표시 경계
+ * ■ 저장된 서식 본문 정리
+ * - in : value(unknown) 저장·수신한 textBlocks 값
+ * - out: RichBlock[] | null 계약에 맞게 걸러 낸 문단 배열(배열이 아니면 null)
+ * - 서버 계약 밖 값이 섞인 저장 데이터(구버전·직접 입력)를 받아 표시 전에 허용 정렬·서식·빈 글자 구간을 걸러 낸다.
+ */
 export function readTextBlocks(value: unknown): RichBlock[] | null {
   if (!Array.isArray(value)) return null;
   return value.filter((block) => block && Array.isArray(block.runs)).map((block) => ({
@@ -222,4 +309,11 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
   }));
 }
 
-export const richFontCss = (id?: RichFontId) => RICH_FONTS.find((font) => font.id === id)?.css;
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 글꼴 ID → CSS 글꼴 목록
+ * - in : id?(RichFontId) 글꼴 ID
+ * - out: string | undefined CSS font-family 값(없거나 모르는 ID면 undefined)
+ * - 글꼴 ID를 받아 화면 표시에 쓸 CSS 글꼴 목록을 돌려준다.
+ */
+export const richFontCss =(id?: RichFontId) => RICH_FONTS.find((font) => font.id === id)?.css;

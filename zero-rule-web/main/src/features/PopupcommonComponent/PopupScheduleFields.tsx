@@ -7,8 +7,13 @@ import { WEEKDAYS, describeSchedule, parseWeekdays } from './popupEditorTransfor
 type ScheduleFields = Pick<AdminPopupDetail, 'periodMode' | 'repeatDayOfWeek' | 'displayTimes'>;
 
 /**
- * [TODO52-1] 게시 기간 안 노출 일정 저장 전 확인. 서버(PopupDisplaySchedule)와 같은 규칙이며 위반 시 안내 문구를 돌려준다.
- * 시간대 개수·자정 초과는 제한하지 않는다(종료가 시작보다 이르면 다음 날까지).
+ * POL-11-02 : 반복의 의미
+ * POL-11-03 : 시간 경계
+ * ■ 노출 일정 저장 전 확인
+ * - in : popup(ScheduleFields) periodMode·repeatDayOfWeek·displayTimes
+ * - out: string | null 첫 번째 위반 안내 문구, 문제없으면 null(SCHEDULE이 아니면 항상 null)
+ * - 게시 기간 안 노출 시간대를 받아 서버(PopupDisplaySchedule)와 같은 규칙(HH:mm 형식, 시작≠종료, 중복 없음)으로 확인한다.
+ *   시간대 개수·자정 초과는 제한하지 않는다(종료가 시작보다 이르면 다음 날까지).
  */
 export function validatePopupSchedule(popup: ScheduleFields): string | null {
   if (popup.periodMode !== 'SCHEDULE') return null;
@@ -25,9 +30,14 @@ export function validatePopupSchedule(popup: ScheduleFields): string | null {
 }
 
 /**
- * [TODO52-1] 게시 기간 안 요일·시간대 입력. 끄면 FIXED(게시 기간 내 상시), 켜면 SCHEDULE.
- * 요일을 고르지 않으면 매일, 시간대가 없으면 하루 종일이다. 노출 판단은 서버가 KST로 하며 조회 주기(30~60분) 때문에
- * 짧은 시간대나 다른 팝업 표시 중에 지나간 시간대는 놓칠 수 있다(확정 정책).
+ * POL-11-02 : 반복의 의미
+ * POL-11-03 : 시간 경계
+ * ■ 노출 요일·시간대 입력
+ * - in : popup(ScheduleFields) periodMode·repeatDayOfWeek·displayTimes 현재 값
+ * - out: onChange(patch: Partial<ScheduleFields>) 바뀐 항목만 담은 부분 값 · 화면: 지정 스위치·일정 요약·요일 버튼·시간대 목록
+ * - 노출 일정 값을 받아 게시 기간 안 요일·시간대를 입력하게 한다. 스위치를 끄면 FIXED(게시 기간 내 상시), 켜면 SCHEDULE.
+ *   요일을 고르지 않으면 매일, 시간대가 없으면 하루 종일이다. 노출 판단은 서버가 KST로 하며 조회 주기(30~60분) 때문에
+ *   짧은 시간대나 다른 팝업 표시 중에 지나간 시간대는 놓칠 수 있다(확정 정책).
  */
 export default function PopupScheduleFields({ popup, onChange }: {
   popup: ScheduleFields;

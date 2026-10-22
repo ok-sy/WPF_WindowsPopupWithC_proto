@@ -1,6 +1,6 @@
 import type { PopupQuestion } from '@local/domain';
 
-// Preview-only examples matching WPF DemoPopupDataService.
+// 미리보기 전용 예시 문항. WPF DemoPopupDataService의 예시와 같은 내용이다.
 const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
   SURVEY: [
     {
@@ -371,6 +371,13 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
   ],
 };
 
+/**
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 예시 문항 생성
+ * - in : quiz(boolean) true면 퀴즈, false면 설문 예시
+ * - out: PopupQuestion[] 복사한 예시 문항 목록
+ * - 퀴즈 여부를 받아 미리보기·샘플용 예시 문항을 새 객체로 복사해 돌려준다(돌려받은 값을 고쳐도 원본 예시는 바뀌지 않는다).
+ */
 export default function popupDemoQuestions(quiz: boolean): PopupQuestion[] {
   return examples[quiz ? 'QUIZ' : 'SURVEY'].map((question) => ({
     ...question,

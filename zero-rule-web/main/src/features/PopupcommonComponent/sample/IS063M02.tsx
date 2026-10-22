@@ -1,4 +1,4 @@
-// @ts-nocheck -- [TODO69] 퍼블리싱 대조용 원본(사진 전사본). 저장소에 없는 IS035Info·폐쇄망 전역 n* CSS에 의존하므로 타입 검사에서 제외한다. 공통 기능 연결본은 IS063M02Sample.tsx.
+// @ts-nocheck -- 퍼블리싱 대조용 원본(사진 전사본). 저장소에 없는 IS035Info·폐쇄망 전역 n* CSS에 의존하므로 타입 검사에서 제외한다. 공통 기능 연결본은 IS063M02Sample.tsx.
 // 사진 15장 기반 전사본. 원본 동작을 유지했으며, 누락 구간은 OCR_RESTORE_NOTES.md 참고.
 import * as React from 'react';
 import { ThemeProvider } from '@emotion/react';

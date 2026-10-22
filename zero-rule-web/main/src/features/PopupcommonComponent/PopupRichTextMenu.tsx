@@ -17,8 +17,11 @@ import { fontIdFromModel, sizeFromModel, type FormatAction, type FormatState } f
 type Props = {
   /** 우클릭 위치 또는 '서식' 버튼·커서 아래. null이면 닫힘. */
   position: PopoverPosition | null;
+  /** 열 때 읽은 선택 범위의 서식 상태(혼합 여부 포함) */
   state: FormatState | null;
+  /** 고른 서식 적용 요청. 패널은 닫지 않는다. */
   onApply: (action: FormatAction) => void;
+  /** Esc·바깥 클릭으로 닫을 때 */
   onClose: () => void;
 };
 
@@ -28,13 +31,17 @@ const ALIGNMENTS = [
   { value: 'right', label: '오른쪽 정렬', Icon: FormatAlignRightIcon },
 ] as const;
 
-/*
- * [설계 49] 우클릭·'서식' 버튼·키보드 공통 서식 패널(설계 28 §11 메뉴를 펼침 팔레트로 개편).
- * 색 격자를 항상 펼쳐 두고 글꼴·크기·글자 서식·문단 서식을 고른다(TODO62). 색 초기화·서식 초기화 버튼은 두지 않는다(TODO66).
- * 서식을 적용해도 패널은 열린 채로 남아 연속 적용할 수 있고, 적용 대상은 편집기 모델의 선택 범위다(패널 조작 중에도 유지).
- * Esc·바깥 클릭으로 닫으면 편집기 커서·선택으로 돌아간다. 화면 경계 보정은 Popper(flip·preventOverflow)가 한다.
- * 키보드: 열리면 색 격자로 포커스, 격자 안은 방향키·Home/End로 이동, Tab으로 다음 묶음, Enter/Space로 적용.
- * 선택이 섞여 있으면 '혼합'으로 표시하고 어느 값도 선택 상태로 보이지 않는다.
+/**
+ * POL-03-03 : 편집 UI
+ * ■ 펼침 서식 패널
+ * - in : position(PopoverPosition | null) 패널을 열 화면 좌표, null이면 닫힘 · state(FormatState | null) 선택 범위의 현재 서식
+ * - out: onApply(action: FormatAction) 고른 서식 적용 요청 · onClose() 닫기 요청 · 화면: 글자 색 격자·글꼴·크기·글자 서식·문단 서식 패널
+ * - 선택 범위의 서식 상태를 받아 우클릭·'서식' 버튼·키보드 공통 패널을 띄우고, 고른 서식을 적용 요청으로 돌려준다.
+ *   색 격자를 항상 펼쳐 둔다. 색 초기화·서식 초기화 버튼은 두지 않는다.
+ *   적용해도 패널은 열린 채로 남아 연속 적용할 수 있고, 적용 대상은 편집기 모델의 선택 범위다(패널 조작 중에도 유지).
+ *   Esc·바깥 클릭으로 닫으면 편집기 커서·선택으로 돌아간다. 화면 경계 보정은 Popper(flip·preventOverflow)가 한다.
+ *   키보드: 열리면 색 격자로 포커스, 격자 안은 방향키·Home/End로 이동, Tab으로 다음 묶음, Enter/Space로 적용.
+ *   선택이 섞여 있으면 '혼합'으로 표시하고 어느 값도 선택 상태로 보이지 않는다.
  */
 export default function PopupRichTextMenu({ position, state, onApply, onClose }: Props) {
   const open = position != null;

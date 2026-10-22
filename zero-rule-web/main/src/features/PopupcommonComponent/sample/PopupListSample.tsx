@@ -8,8 +8,13 @@ import { toSaveRequest, type PopupSaveRequest } from '../popupEditorTransform';
 import PopupSampleEditor from './PopupSampleEditor';
 import { createSamplePopups, newSamplePopup } from './popupSampleData';
 
-/*
- * [TODO69] 기존 목록 기반 샘플(RgstPop 목록 → 신규/수정 → 편집기·두 미리보기 흐름). 관리자 API·인증 없이 동작한다.
+/**
+ * POL-14-01 : 공통 프론트 경계
+ * POL-07-01 : 부모의 데이터 소유
+ * ■ 팝업 목록 샘플 화면
+ * - in : 데이터 공급 createSamplePopups()(로컬 샘플 목록) · 신규 기본값 newSamplePopup()
+ * - out: 저장 요청 toSaveRequest(popup, true, []) 결과(서버 미전송, 화면에 표시) · 화면: 팝업 목록 표·신규/수정 버튼·PopupSampleEditor 편집 대화상자
+ * - 샘플 팝업 목록을 받아 신규/수정 → 편집기·두 미리보기 흐름(RgstPop 목록과 같은 흐름)을 관리자 API·인증 없이 보여 준다.
  * 데이터 공급 경계: 목록은 createSamplePopups()(로컬), 저장은 toSaveRequest로 요청 객체만 만들고 메모리 목록을 바꾼다.
  * 실제 서버에 연결할 때는 목록을 api.popupAdmin.list({ ctx }), 편집 시작을 api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup),
  * 저장을 api.popupAdmin.save(toSaveRequest(...))로 바꾼다(RgstPop.tsx·PopupEditorDialog.tsx가 실제 구현).

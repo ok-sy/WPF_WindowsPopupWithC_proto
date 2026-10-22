@@ -9,22 +9,32 @@ import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type 
 const CKEditor = dynamic(() => import('@ckeditor/ckeditor5-react').then((m) => m.CKEditor), { ssr: false });
 
 type Props = {
+  /** 입력 위 제목 */
   label: string;
   /** 처음 열 때의 본문. 편집 중에는 다시 넣지 않는다(커서 위치 보존). 바꾸려면 key로 다시 마운트한다. */
   initialBlocks: RichBlock[];
+  /** 읽기 전용(흐리게 표시, 서식 패널 닫힘) */
   disabled?: boolean;
   /**
-   * [TODO55] 문항·선택지처럼 여러 개를 나란히 쓰는 짧은 입력. 상단 툴바를 숨기고 높이를 줄인다.
+   * 문항·선택지처럼 여러 개를 나란히 쓰는 짧은 입력. 상단 툴바를 숨기고 높이를 줄인다.
    * 서식은 우클릭·'서식' 버튼의 펼침 패널로 지정한다. 편집기마다 선택 범위·패널 상태를 따로 가진다.
    */
   compact?: boolean;
+  /** 빈 편집기 안내 문구(생략 시 본문 기본 안내) */
   placeholder?: string;
+  /** 편집할 때마다 서식 본문과 서식 없는 문자열을 돌려준다. */
   onChange: (blocks: RichBlock[], plainText: string) => void;
 };
 
 /**
- * [설계 28] TEXT 본문 서식 편집기. 공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 사용한다.
- * 편집기 HTML은 변경될 때마다 문단·Run JSON으로 바꿔 올려 보내며 HTML 자체는 저장하지 않는다.
+ * POL-03-01 : 저장·표시 경계
+ * POL-03-03 : 편집 UI
+ * ■ 서식 편집기
+ * - in : label(string) 입력 제목 · initialBlocks(RichBlock[]) 처음 표시할 본문 · disabled?(boolean) 읽기 전용 · compact?(boolean) 툴바 없는 짧은 입력 · placeholder?(string) 빈 편집기 안내
+ * - out: onChange(blocks: RichBlock[], plainText: string) 편집할 때마다 서식 본문과 서식 없는 문자열 · 화면: 제목·'서식' 버튼·CKEditor·펼침 서식 패널
+ * - 서식 본문을 받아 CKEditor로 편집하게 하고, 바뀐 내용을 문단·Run JSON과 일반 문자열로 돌려준다.
+ *   공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 쓴다. HTML 자체는 저장하지 않는다.
+ *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
 export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, placeholder, onChange }: Props) {
   const [Editor, setEditor] = useState<any>(null);
@@ -33,7 +43,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [initialHtml] = useState(() => blocksToHtml(initialBlocks));
-  /* [설계 28 §11·설계 49] 우클릭·'서식' 버튼·키보드로 여는 펼침 서식 패널 */
+  /* 우클릭·'서식' 버튼·키보드로 여는 펼침 서식 패널 */
   const [menuPosition, setMenuPosition] = useState<PopoverPosition | null>(null);
   const [formatState, setFormatState] = useState<FormatState | null>(null);
   const disabledRef = useRef(disabled);
@@ -53,7 +63,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
     // Esc·바깥 클릭으로 닫아도 원래 선택 범위·커서로 돌아간다.
     editorRef.current?.editing.view.focus();
   };
-  /* [설계 49] 적용 후에도 패널을 유지하므로 포커스는 패널에 두고, 바뀐 서식 상태를 다시 읽어 표시한다. */
+  /* 적용 후에도 패널을 유지하므로 포커스는 패널에 두고, 바뀐 서식 상태를 다시 읽어 표시한다. */
   const applyMenu = (action: FormatAction) => {
     const editor = editorRef.current;
     if (!editor || disabledRef.current) return;
@@ -112,7 +122,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
                 container.appendChild(editor.ui.view.toolbar.element);
               }
               applyReadOnly(editor, Boolean(disabled));
-              // [설계 49·TODO63] 문단 들여쓰기 40px 단위 정규화(단계 수 제한 없음).
+              // 문단 들여쓰기 40px 단위 정규화(단계 수 제한 없음).
               normalizeIndent(editor);
               // 서식 편집 영역 안에서만 사용자 정의 메뉴를 쓰고, Shift+우클릭은 브라우저 기본 메뉴(복사·붙여넣기 등)를 연다.
               const editable: HTMLElement = editor.ui.getEditableElement();

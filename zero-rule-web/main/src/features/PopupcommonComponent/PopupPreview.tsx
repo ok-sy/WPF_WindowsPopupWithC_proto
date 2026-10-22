@@ -35,13 +35,12 @@ import {
   Typography,
 } from '@mui/material';
 
-// [설계 18 L-0 W-2] 새 창 미리보기 페이지(pages/popup-preview.tsx)를 여는 코드가 없어 페이지와 함께
-// standalone prop·분기를 삭제했다. 미리보기는 편집기 내 패널과 "실제 크기로 보기" 모달만 사용하며 둘 다 부모 영역을 채운다.
+// 미리보기는 편집기 내 패널과 "실제 크기로 보기" 모달에서만 사용하며 둘 다 부모 영역을 채운다(별도 새 창 미리보기 없음).
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
   showBackground?: boolean;
   onClose?: () => void;
-  /** [설계 18 L-5 — W-10] IMAGE FIT_TO_IMAGE에서 WPF가 다시 계산할 팝업 창 크기. 그 외에는 null. */
+  /** IMAGE 권장 창 크기(FIT_TO_IMAGE, 또는 크기 미지정 ADAPTIVE에서 WPF가 다시 계산할 팝업 창 크기). 그 외에는 null. */
   onRecommendedSize?: (size: Size | null) => void;
 }
 
@@ -49,7 +48,7 @@ function text(value: unknown, fallback: string): string {
   return value == null || String(value).trim() === '' ? fallback : String(value);
 }
 
-/* [설계 50 A1] WPF 체크박스와 같이 실제 숨김 일수(서버 hideDays, 비우면 WPF 기본 30일)를 표시한다. */
+/* WPF 체크박스와 같이 실제 숨김 일수(서버 hideDays, 비우면 WPF 기본 30일)를 표시한다. */
 function doNotShowAgainLabel(hideDays?: number | null): string {
   return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
 }
@@ -59,7 +58,7 @@ function percentText(ratio: number): string {
   return String(Math.round(Math.max(0, Math.min(1, ratio)) * 10000) / 100);
 }
 
-/** [설계 37] TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
+/** 콘텐츠 제목. TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
 function contentTitle(popup: AdminPopupDetail): string {
   const content = popup.content;
   if (popup.popupType === 'TEXT') return '';
@@ -73,9 +72,9 @@ interface PopupBodyProps {
   fitLayout: FitToImageLayout | null;
   onImageLoad: (size: Size) => void;
   videoUnlocked?: boolean;
-  /** [설계 53-16] VIDEO+QUIZ에서 위 영상 영역에 이미 보인 설명을 퀴즈 머리말에서 반복하지 않는다(WPF VideoQuizPopupView와 같음). */
+  /** VIDEO+QUIZ에서 위 영상 영역에 이미 보인 설명을 퀴즈 머리말에서 반복하지 않는다(WPF VideoQuizPopupView와 같음). */
   hideSurveyDescription?: boolean;
-  /** [TODO60] VIDEO+QUIZ의 영상 영역을 원본 비율 × 실제 너비 높이로 그린다(단독 VIDEO는 기존 영역). */
+  /** VIDEO+QUIZ의 영상 영역을 원본 비율 × 실제 너비 높이로 그린다(단독 VIDEO는 남은 높이를 채우는 고정 영역). */
   aspectVideo?: boolean;
   survey?: Omit<SurveyPreviewProps, 'description'>;
 }
@@ -104,7 +103,7 @@ function PopupBody({
           aspectVideo
           survey={survey}
         />
-        {/* [TODO59] 영상과 퀴즈 사이 시스템 안내는 WPF와 같이 두지 않는다. 시청 %·기준 사유는 제출 영역 진행 문구에만 표시한다. */}
+        {/* 영상과 퀴즈 사이 시스템 안내는 WPF와 같이 두지 않는다. 시청 %·기준 사유는 제출 영역 진행 문구에만 표시한다. */}
         <Box
           component="fieldset"
           disabled={!videoUnlocked}
@@ -115,7 +114,7 @@ function PopupBody({
             naturalImageSize={null}
             fitLayout={null}
             onImageLoad={onImageLoad}
-            // [TODO55-8] 서식 설명은 영상 영역(일반 문자열)과 표시가 달라 숨기지 않는다(WPF CollapseHeaderShownAbove와 같음).
+            // 서식 설명은 영상 영역(일반 문자열)과 표시가 달라 숨기지 않는다(WPF CollapseHeaderShownAbove와 같음).
             hideSurveyDescription={content.showDescription !== false && !richBlocksOrNull(content.descriptionBlocks)}
             survey={survey}
           />
@@ -125,7 +124,7 @@ function PopupBody({
   }
 
   if (popup.popupType === 'IMAGE') {
-    // [설계 18 L-5 — W-10] WPF ImagePopupView(설계 15)와 같은 규칙으로 크기 모드·설명 배치를 재현한다.
+    // WPF ImagePopupView와 같은 규칙으로 크기 모드(ADAPTIVE·FIT_TO_IMAGE·ORIGINAL)·설명 배치를 재현한다.
     const imageUrl = text(content.imageUrl, '');
     const mode = imageSizeMode(popup);
     const original = mode === 'ORIGINAL';
@@ -198,7 +197,7 @@ function PopupBody({
       );
     }
 
-    // The viewport flexes; FIT_TO_IMAGE bitmap dimensions remain fixed when the viewport clips.
+    // 이미지 영역은 남은 공간에 맞춰 늘고 줄며, FIT_TO_IMAGE 이미지 크기는 영역이 잘라도 고정이다.
     const imageArea = (
       <Box
         sx={{
@@ -306,7 +305,7 @@ function PopupBody({
 
   const showPlainText = content.showPlainText !== false;
   const richBlocks = readTextBlocks(content.textBlocks);
-  // [설계 18 L-4 — C-23] WPF TextPopupContentDto와 같이 플래그가 없으면 숨김(과거 행 fallback 삭제).
+  // WPF TextPopupContentDto와 같이 플래그가 없으면 숨김.
   const showHighlight = content.showHighlight === true;
   const showBottomDescription = content.showBottomDescription === true;
 
@@ -347,8 +346,8 @@ function PopupBody({
     <Stack spacing={2}>
       {showPlainText && (richBlocks
         ? <Box>{richBlocks.map((block, index) => (
-            /* [설계 28] 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
-            /* [설계 49] 들여쓰기는 문단 전체 왼쪽 여백(줄바꿈된 줄 포함). WPF 40 DIP와 같은 40px 단위. */
+            /* 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
+            /* 들여쓰기는 문단 전체 왼쪽 여백(줄바꿈된 줄 포함). WPF 40 DIP와 같은 40px 단위. */
             <Typography key={index} component="div" sx={{ whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em',
               pl: `${(block.indent ?? 0) * RICH_INDENT_STEP}px` }}>
               {block.runs.map((run, runIndex) => (
@@ -380,6 +379,15 @@ function PopupBody({
   );
 }
 
+/**
+ * POL-08-01 : 공통 렌더러
+ * POL-08-02 : 미리보기 상태
+ * ■ 팝업 미리보기
+ * - in : popup(AdminPopupDetail) 미리 볼 팝업 설정 · showBackground?(boolean) 배경 여백·Overlay를 미리보기 안에 그릴지, 기본 true(모달은 false)
+ * - out: onClose?() 푸터 버튼·나중에 보기·보조 닫기로 팝업을 닫을 때 · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기(없으면 null) · 화면: 헤더(제목·로고)·콘텐츠 제목·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터(다시 보지 않기·나중에 보기·제출·닫기) 미리보기
+ * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점·시청 비율 슬라이더로 완료 조건을 시연한다.
+ *   서버 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 시연 상태는 이 컴포넌트 안에만 있고 팝업 ID·문항이 바뀌면 초기화된다.
+ */
 export default function PopupPreview({
   popup: configuredPopup,
   showBackground = true,
@@ -400,7 +408,7 @@ export default function PopupPreview({
         }
       : configuredPopup;
   const questionSignature = JSON.stringify(popup.questions);
-  // [설계 43] QUIZ 미달 판정을 한 번이라도 받았는지(보조 닫기 버튼 표시 조건). 답을 고쳐도 유지한다.
+  // QUIZ 미달 판정을 한 번이라도 받았는지(보조 닫기 버튼 표시 조건). 답을 고쳐도 유지한다.
   const [quizFailed, setQuizFailed] = useState(false);
   useEffect(() => {
     setAnswers({});
@@ -428,7 +436,7 @@ export default function PopupPreview({
       setSubmissionStatus('미리보기: 제출 완료');
       return;
     }
-    // [설계 43] WPF 미달 안내와 같이 틀린 채점 문항의 화면 번호(1부터)를 모은다.
+    // WPF 미달 안내와 같이 틀린 채점 문항의 화면 번호(1부터)를 모은다.
     const wrongNumbers: number[] = [];
     const score = popup.questions
       .reduce((total, question, index) => {
@@ -476,13 +484,13 @@ export default function PopupPreview({
   const requiredRatio = Math.max(0, Math.min(1, popup.completionRatio ?? 1));
   const requiredPercent = percentText(requiredRatio);
   /*
-   * [설계 43] WPF는 누적 시청 비율을 소수점 4자리에서 내림한 뒤 완료 기준 이상인지 본다.
+   * WPF는 누적 시청 비율을 소수점 4자리에서 내림한 뒤 완료 기준 이상인지 본다.
    * 미리보기 시청 비율은 정수 %(p/100)라 4자리 내림이 값을 바꾸지 않으므로 그대로 비교한다
    * (부동소수 곱셈으로 내림을 흉내 내면 0.29*10000 = 2899.99…처럼 오히려 결과가 달라진다).
    */
   const watchReached = previewWatchPercent / 100 >= requiredRatio;
   const videoUnlocked = !isVideoQuiz || watchReached;
-  // [설계 43·TODO57] 일반 VIDEO는 시청 기준 미달이면 Footer 버튼을 비활성화한다(완료 전 닫기 허용 옵션 폐기로 항상 적용).
+  // 일반 VIDEO는 시청 기준 미달이면 Footer 버튼을 비활성화한다(완료 전 닫기 허용 옵션이 없어 항상 적용).
   const videoCloseBlocked = isPlainVideo && !watchReached;
   const linkAction = popup.content.footerAction === 'LINK_AND_CLOSE';
   const footerLink = normalizePopupLink(String(popup.content.footerLinkUrl ?? ''));
@@ -545,14 +553,14 @@ export default function PopupPreview({
   const originalImage =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
   const title = contentTitle(popup);
-  // [TODO55] 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
+  // 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
   const richSurveyTitle = isSurvey ? richBlocksOrNull(popup.content.surveyTitleBlocks) : null;
-  // [설계 14 §5] 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
+  // 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
   const headerFontSize = popupFontSize(popup, 'headerFontSize');
   const bodyFontSize = popupFontSize(popup, 'bodyFontSize');
   const footerFontSize = popupFontSize(popup, 'footerFontSize');
   const showContentTitle = !originalImage && Boolean(title.trim());
-  // [설계 43] 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
+  // 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
   const reasonId = `${namePrefix}-completion-reason`;
   const surveyProgress =
     isVideoQuiz && !videoUnlocked
@@ -565,7 +573,7 @@ export default function PopupPreview({
         : `영상 ${previewWatchPercent}% 시청 · 기준 ${requiredPercent}% 이상 시청하면 닫을 수 있습니다`
       : '';
   /*
-   * [설계 43] 보조 "닫기" 버튼: VIDEO+QUIZ는 WPF에서 재생 실패 때만 보이므로 미리보기에는 없다(TODO57 — 완료 전 닫기 허용 폐기),
+   * 보조 "닫기" 버튼: VIDEO+QUIZ는 WPF에서 재생 실패 때만 보이므로 미리보기에는 없다(완료 전 닫기 허용 옵션 없음),
    * QUIZ(영상 없음)는 미달 판정을 한 번 받은 뒤 배경 어둡기를 쓰지 않을 때만. SURVEY는 없고 showFooter=false면 숨긴다.
    * 미리보기에서는 응답·시청 비율을 초기화하고 "실제 크기로 보기" 모달이면 닫는다.
    */
@@ -573,7 +581,7 @@ export default function PopupPreview({
     popup.showFooter &&
     !isVideoQuiz && popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled;
   const submitDisabled = !videoUnlocked || remaining > 0 || !popup.questions.length;
-  // [TODO52-2] "나중에 보기"는 푸터가 보일 때 showLater로만 표시하고, 완료 전 닫기 잠금(시청·제출 조건)과 관계없이 누를 수 있다.
+  // "나중에 보기"는 푸터가 보일 때 showLater로만 표시하고, 완료 전 닫기 잠금(시청·제출 조건)과 관계없이 누를 수 있다.
   const showLaterButton = popup.showFooter && Boolean(popup.showLater);
   const laterPreview = () => {
     resetPreview();
@@ -623,7 +631,7 @@ export default function PopupPreview({
           borderRadius: 2,
           // SURVEY·QUIZ(VIDEO+QUIZ 포함)는 WPF와 같이 본문·푸터까지 설문 콘텐츠 배경(옅은 회색)이다.
           bgcolor: isSurvey ? surveyColors.content : 'white',
-          // WPF PopupBodyBorder BorderThickness=0(설계 25)과 같이 IMAGE 창 테두리를 그리지 않는다.
+          // WPF PopupBodyBorder BorderThickness=0과 같이 IMAGE 창 테두리를 그리지 않는다.
           ...(popup.popupType === 'IMAGE' ? {boxSizing: 'border-box'} : {}),
         }}
       >
