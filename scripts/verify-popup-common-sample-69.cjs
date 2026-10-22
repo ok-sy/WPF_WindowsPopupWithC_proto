@@ -97,6 +97,51 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('[data-testid=sample-inline-preview]')`, 'video quiz editor');
   check(await run(`${preview}.textContent.includes('영상')`), 'VIDEO+QUIZ sample opens in the shared preview');
   await clickButton('취소');
+  // ── IS063M02 연동 샘플(69-5~7) ──
+  await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063'}); await pause(300);
+  await run('location.reload()'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'is063');
+  const mid = "document.querySelector('[data-testid=is063-mid]')", right = "document.querySelector('[data-testid=is063-right]')";
+  const pickType = async label => {
+    await run(`document.querySelector('[data-testid=is063-left] [role=combobox]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`); await pause(300);
+    await run(`Array.from(document.querySelectorAll('[role=option]')).find(o=>o.textContent===${JSON.stringify(label)}).click()`); await pause(300);
+  };
+  check(await run(`document.querySelector('.nResultArea').children.length`) === 3 && await run(`['nContainer','nBreadArea','nConSection','nBtnWrap'].every(c=>document.querySelector('.'+c))`),
+    '[IS063] Publishing structure (n* classes, three columns) is kept');
+  await clickButton('저장');
+  check(await run(`document.querySelector('[role=alert]')?.textContent.includes('폼 생성')`), '[IS063] Save without a form is rejected instead of pretending success');
+  await pickType('텍스트 팝업'); await clickButton('폼 생성');
+  await until(`!!${mid}.querySelector('.ck-editor__editable')`, 'is063 editor');
+  check(await run(`${mid}.querySelector('h4').textContent==='텍스트 컨텐츠'`), '[IS063] Middle title follows the selected type');
+  await setInput('input[aria-label="헤더 제목"]', 'IS063 헤더'); await setInput('input[aria-label="컨텐츠 명"]', 'IS063 컨텐츠');
+  await run(`(()=>{const ed=${mid}.querySelector('.ck-editor__editable').ckeditorInstance;ed.model.change(w=>w.insertText('IS063 본문',ed.model.document.selection.getFirstPosition()));})()`); await pause(300);
+  check(await run(`${right}.textContent.includes('IS063 헤더') && ${right}.textContent.includes('IS063 본문')`), '[IS063] Shared editor and header title feed the right preview');
+  await clickButton('실제 크기로 보기');
+  await until(`!!document.querySelector('[aria-label="실제 크기 미리보기 종료"]')`, 'is063 modal');
+  check(await run(`Array.from(document.querySelectorAll('.MuiDialog-root')).at(-1).textContent.includes('IS063 본문')`), '[IS063] Preview button opens the shared modal with the same popup');
+  await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
+  await setInput('input[aria-label="가로"]', '299'); await clickButton('저장');
+  check(await run(`document.querySelector('[role=alert]')?.textContent.includes('300')`), '[IS063] Size below 300 is rejected (TODO68)');
+  await setInput('input[aria-label="가로"]', '640'); await clickButton('저장');
+  saved = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`));
+  check(saved.popup.popupType === 'TEXT' && saved.popup.title === 'IS063 헤더' && saved.popup.width === 640 && saved.popup.content.plainText.includes('IS063 본문')
+    && !('attachedFileName' in saved.popup.content) && !JSON.stringify(saved).includes('IS063 컨텐츠'), '[IS063] Save request matches the edit; content name is not invented into the contract');
+  await clickButton('닫기');
+  // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
+  await pickType('퀴즈 팝업'); await clickButton('폼 생성');
+  check(await run(`${mid}.textContent.includes('문항 추가') && document.querySelector('input[aria-label="헤더 제목"]').value==='IS063 헤더'`),
+    '[IS063] Type change rebuilds the question area and keeps common inputs');
+  // 불러오기 → 문항별 정답 선택이 서로 독립(원본의 공유 라디오 state 정리).
+  await clickButton('불러오기');
+  await run(`Array.from(document.querySelectorAll('[role=menuitem]')).find(o=>o.textContent.startsWith('SAMPLE-QUIZ')).click()`); await pause(500);
+  await setInput('input[aria-label="헤더 제목"]', '보안 퀴즈'); await clickButton('저장');
+  const first = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  await run(`document.querySelector('input[aria-label="1번 문항 2번 선택지 정답"]').click()`); await pause(200); await clickButton('저장');
+  const second = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  check(first.popup.questions.length >= 2 && JSON.stringify(first.popup.questions[0]) !== JSON.stringify(second.popup.questions[0])
+    && JSON.stringify(first.popup.questions[1]) === JSON.stringify(second.popup.questions[1]) && !('footerAction' in second.popup.content),
+    '[IS063] Per-question answer selection is independent; quiz save omits footerAction (SUBMIT is fixed by the server)');
+  await clickButton('취소');
+  check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'sample-list.png'), Buffer.from(shot.data, 'base64'));
   console.log('PASS: ' + checks + ' TODO69 common component sample checks');

@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-14 — TODO69 IS063M02 연동 샘플 구현(2차)
+
+- 이유: 복원 퍼블리싱 IS063M02(컨텐츠 등록) 화면에 공통 에디터·미리보기·변환 기능을 연결한 이식 예제 필요(복원본 파일 수령).
+- 변경: 복원본 `sample/IS063M02.tsx`를 대조용 원본으로 반입(첫 줄 `@ts-nocheck`만 추가). `sample/IS063M02Sample.tsx` 추가 — 원본 레이아웃·클래스 유지, BbsCKEditor 자리 공통 PopupRichTextEditor, 우측 InlinePopupPreview·모달 PopupPreviewDialog, 공통 문항 편집기, toSaveRequest 저장 요청 표시(서버 미전송). 공유 inputData·공유 라디오 state·숫자/문자열 Select 불일치·단독 label·미연결 버튼·최소 200 표기 정리. 컨텐츠 명·퀴즈유형 점수 환산은 정책 미확정으로 확인 필요 표시. 라우트 `/popup-common-sample/is063m02`. 이식 가이드·TODO69 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02.tsx·IS063M02Sample.tsx, zero-rule-web/main/src/scene/scene-router.tsx, scripts/verify-popup-common-sample-69(-entry), docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 tsc·eslint 오류 0, sample 폴더 ts6385 0건, verify-popup-common-sample-69 25건 통과(IS063M02 10건 신규). 미실행: next build, 실제 관리자 화면, 폐쇄망 전역 CSS 적용 상태의 원본 대비 시각 대조.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-13 — TODO69 PopupcommonComponent 공통 폴더 정리·목록 기반 샘플 구현(1차)
 
 - 이유: 다른 프론트 화면에 에디터·우측/모달 미리보기를 이식할 수 있도록 공통 코드를 한 폴더로 모으고 서버 없이 확인 가능한 연결 예제 제공.

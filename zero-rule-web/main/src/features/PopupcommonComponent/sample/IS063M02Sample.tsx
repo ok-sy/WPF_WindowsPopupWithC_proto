@@ -1,0 +1,269 @@
+import type { AdminPopupDetail } from '@local/domain';
+import { NavigateNext } from '@mui/icons-material';
+import {
+  Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, Menu, MenuItem, Select, Stack, Switch, TextField, Typography,
+} from '@mui/material';
+import { useState } from 'react';
+import InlinePopupPreview from '../InlinePopupPreview';
+import PopupPreviewDialog from '../PopupPreviewDialog';
+import PopupQuestionEditor from '../PopupQuestionEditor';
+import { richBlocksOrNull } from '../PopupRichBlocks';
+import PopupRichTextEditor from '../PopupRichTextEditor';
+import type { Size } from '../imagePreviewLayout';
+import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
+import {
+  changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, toSaveRequest, type PopupSaveRequest, type PopupTypeSelection,
+} from '../popupEditorTransform';
+import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
+import { createSamplePopups } from './popupSampleData';
+
+/*
+ * [TODO69] 복원 퍼블리싱 IS063M02(컨텐츠 등록)에 공통 팝업 기능을 연결한 샘플. 원본은 같은 폴더 IS063M02.tsx(대조용, 변경 없음).
+ *
+ * 원본 구조(n* 클래스·좌/중/우 3단·버튼 위치)는 유지하고 다음을 바꿨다.
+ *  - BbsCKEditor 자리에 공통 PopupRichTextEditor, 우측 '미리보기'에 InlinePopupPreview, 미리보기 버튼에 PopupPreviewDialog 연결.
+ *  - 모든 편집기가 하나의 inputData를 쓰던 구조 → 필드별(본문·콘텐츠 제목·설명) 편집값. 문항은 PopupQuestionEditor가 문항·선택지별로 관리하고,
+ *    원본의 공유 라디오 state(selectedValue)와 미연결 추가/삭제 버튼은 공통 문항 편집기의 문항별 정답 선택·추가/삭제로 대체.
+ *  - 숫자 Select 값(1~7)과 문자열 비교('2') 불일치 → 유형·푸터 Select 모두 계약 문자열 값 사용.
+ *  - FormControlLabel 단독 label(boolean) 타입 오류는 문항 편집기 대체로 제거.
+ *  - 크기 placeholder '최소 200' → 공통 최소 300(TODO68).
+ * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 두고(서버 확정 필요),
+ * '퀴즈유형(만점/커트라인/통과·실패)'은 공통 문항 편집기의 통과 점수로 입력한다(유형 → 점수 환산 규칙 미확정).
+ * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
+ * 저장은 toSaveRequest 결과를 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
+ */
+const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[] = [
+  { value: 'TEXT', label: '텍스트 팝업', title: '텍스트 컨텐츠' },
+  { value: 'IMAGE', label: '이미지 팝업', title: '이미지 컨텐츠' },
+  { value: 'VIDEO', label: '동영상 팝업', title: '동영상 컨텐츠' },
+  { value: 'QUIZ', label: '퀴즈 팝업', title: '퀴즈 컨텐츠' },
+  { value: 'SURVEY', label: '설문조사 팝업', title: '설문조사 컨텐츠' },
+  { value: 'VIDEO_QUIZ', label: '동영상 + 퀴즈 팝업', title: '동영상 + 퀴즈 컨텐츠' },
+];
+
+const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
+  popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
+
+const newPopup = (selection: PopupTypeSelection): AdminPopupDetail =>
+  changePopupType({ ...createDefaultPopup(), popupId: 'N2609001' }, selection);
+
+function Required({ not = false }: { not?: boolean }) {
+  return <Typography component="span" className={not ? 'required not' : 'required'}>*&nbsp;</Typography>;
+}
+
+export default function IS063M02Sample() {
+  const [pendingType, setPendingType] = useState<PopupTypeSelection | ''>('');
+  const [popup, setPopup] = useState<AdminPopupDetail | null>(null);
+  const [contentName, setContentName] = useState('');
+  const [editorKey, setEditorKey] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [fitWindow, setFitWindow] = useState<Size | null>(null);
+  const [loadAnchor, setLoadAnchor] = useState<HTMLElement | null>(null);
+  const [saved, setSaved] = useState<PopupSaveRequest | null>(null);
+  const [error, setError] = useState('');
+
+  /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
+  const start = (next: AdminPopupDetail) => { setPopup(next); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError(''); };
+  const update = <K extends keyof AdminPopupDetail>(key: K, value: AdminPopupDetail[K]) =>
+    setPopup((previous) => (previous ? { ...previous, [key]: value } : previous));
+  const updateContent = (key: string, value: unknown) =>
+    setPopup((previous) => (previous ? { ...previous, content: { ...previous.content, [key]: value } } : previous));
+
+  const selection = popup ? selectionOf(popup) : null;
+  const typeTitle = TYPE_OPTIONS.find((option) => option.value === selection)?.title ?? '컨텐츠';
+  const isQuestion = popup?.popupType === 'SURVEY' || popup?.popupType === 'QUIZ';
+  const hasVideo = popup?.popupType === 'VIDEO' || popup?.content.videoEnabled === true;
+  const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentValue(popup, 'footerAction')) || 'CLOSE';
+
+  const attach = (file: File | undefined) => {
+    if (!file || !popup) return;
+    // 브라우저 미리보기용 임시 URL. [교체 지점] 서버 업로드 후 서버 경로 URL로 바꾼다.
+    updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', URL.createObjectURL(file));
+    updateContent('attachedFileName', file.name);
+  };
+
+  const save = () => {
+    if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
+    if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
+    if ((popup.width ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE || (popup.height ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE) {
+      setError(`크기는 가로·세로 ${POPUP_MIN_WINDOW_SIZE}px 이상이어야 합니다.`); return;
+    }
+    const { attachedFileName: _file, ...content } = popup.content;
+    setError('');
+    setSaved(toSaveRequest({ ...popup, content }, true, []));
+  };
+
+  const sizeField = (label: string, key: 'width' | 'height') => (
+    <Box className="nConWid">
+      <Typography component="span">{label}</Typography>
+      <TextField placeholder={`최소 ${POPUP_MIN_WINDOW_SIZE}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key] ?? ''} disabled={!popup}
+        slotProps={{ htmlInput: { 'aria-label': label, min: POPUP_MIN_WINDOW_SIZE } }} type="number"
+        onChange={(event) => update(key, event.target.value === '' ? undefined : Number(event.target.value))} />
+      <Typography component="span">px</Typography>
+    </Box>
+  );
+
+  return (
+    <Box className="nContainer" sx={{ p: 2 }}>
+      <Box className="nContent">
+        <Box className="nBreadArea">
+          <Breadcrumbs className="nBreadNav" separator={<NavigateNext fontSize="small" />}>
+            <Link underline="hover">HOME</Link>
+            <Link underline="hover">관리/교육</Link>
+            <Link underline="hover">팝업관리</Link>
+            <Link underline="hover">컨텐츠 관리</Link>
+            <Typography>컨텐츠 등록</Typography>
+          </Breadcrumbs>
+        </Box>
+        <Box className="nResultArea" sx={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 0.8fr) minmax(320px, 1fr) minmax(360px, 1fr)', gap: 2, mt: 1 }}>
+          {/* nResultBox left : 컨텐츠 정보·팝업 설정 */}
+          <Box className="nDevider" data-testid="is063-left">
+            <Box className="nConSection">
+              <Box component="h4" className="nConTitle">컨텐츠 정보</Box>
+              <Box className="nConID">
+                <Typography className="nConSectionTitle">팝업ID</Typography>
+                <Typography className="nConSectionTitle">{popup?.popupId ?? 'N2609001'}</Typography>
+              </Box>
+              <Stack className="nConSectionDiv" spacing={1}>
+                <Typography className="nConSectionTitle"><Required />컨텐츠 유형</Typography>
+                <Select value={pendingType} displayEmpty inputProps={{ 'aria-label': '컨텐츠 유형' }}
+                  onChange={(event) => setPendingType(event.target.value as PopupTypeSelection | '')}>
+                  <MenuItem value="">선택하세요</MenuItem>
+                  {TYPE_OPTIONS.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+                </Select>
+                <Box className="nConBtnBox" sx={{ display: 'flex', gap: 1 }}>
+                  {/* 이미 편집 중이면 유형만 바꾸고 공통 입력값은 유지한다(changePopupType). */}
+                  <Button variant="contained" disabled={!pendingType}
+                    onClick={() => pendingType && start(popup ? changePopupType(popup, pendingType) : newPopup(pendingType))}>폼 생성</Button>
+                  <Button variant="contained" className="nWhiteBtn" onClick={(event) => setLoadAnchor(event.currentTarget)}>불러오기</Button>
+                  <Menu anchorEl={loadAnchor} open={Boolean(loadAnchor)} onClose={() => setLoadAnchor(null)}>
+                    {createSamplePopups().map((item) => (
+                      <MenuItem key={item.popupId} onClick={() => { setLoadAnchor(null); setPendingType(selectionOf(item)); setContentName(item.title); start(item); }}>
+                        {item.popupId} · {item.title}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
+              </Stack>
+            </Box>
+            <Box className="nConSection">
+              <Box component="h4" className="nConTitle">팝업 설정</Box>
+              <Stack className="nConSectionDiv">
+                <Typography className="nConSectionTitle"><Required />컨텐츠 명</Typography>
+                <TextField placeholder="컨텐츠명을 입력하세요" sx={{ width: '100%' }} value={contentName} disabled={!popup}
+                  slotProps={{ htmlInput: { 'aria-label': '컨텐츠 명' } }} onChange={(event) => setContentName(event.target.value)} />
+              </Stack>
+              <Stack className="nConSectionDiv">
+                <Typography className="nConSectionTitle"><Required />헤더 제목</Typography>
+                <TextField placeholder="제목을 입력하세요" sx={{ width: '100%' }} value={popup?.title ?? ''} disabled={!popup}
+                  slotProps={{ htmlInput: { 'aria-label': '헤더 제목' } }} onChange={(event) => update('title', event.target.value)} />
+              </Stack>
+              <Stack className="nConSectionDiv">
+                <Typography className="nConSectionTitle"><Required />크기 설정</Typography>
+                <Stack direction="row" alignItems="center">
+                  {sizeField('가로', 'width')}
+                  <Typography component="span" sx={{ marginX: 1 }}>/</Typography>
+                  {sizeField('세로', 'height')}
+                </Stack>
+              </Stack>
+              <Stack className="nConSectionDiv" direction="row" alignItems="center">
+                <Typography className="nConSectionTitle"><Required not />나중에 보기</Typography>
+                <Switch className="ios-switch" disableRipple checked={popup?.showLater ?? false} disabled={!popup}
+                  slotProps={{ input: { 'aria-label': '나중에 보기' } }} onChange={(event) => update('showLater', event.target.checked)} />
+              </Stack>
+              <Stack className="nConSectionDiv">
+                <Typography className="nConSectionTitle"><Required not />푸터버튼명</Typography>
+                {popup && isSubmitPopupType(popup.popupType)
+                  /* 퀴즈·설문·동영상+퀴즈는 제출 고정(원본 주석의 비활성 Select) */
+                  ? <Select value="SUBMIT" disabled><MenuItem value="SUBMIT">제출</MenuItem></Select>
+                  : <Select value={footerAction} disabled={!popup} inputProps={{ 'aria-label': '푸터버튼명' }}
+                    onChange={(event) => updateContent('footerAction', event.target.value)}>
+                    <MenuItem value="CLOSE">닫기</MenuItem>
+                    <MenuItem value="LINK_AND_CLOSE">바로가기</MenuItem>
+                  </Select>}
+              </Stack>
+              {footerAction === 'LINK_AND_CLOSE' && popup && (
+                <Stack className="nConSectionDiv">
+                  <Typography className="nConSectionTitle"><Required not />URL 링크</Typography>
+                  <TextField sx={{ width: '100%' }} value={contentValue(popup, 'footerLinkUrl')}
+                    slotProps={{ htmlInput: { 'aria-label': 'URL 링크' } }} onChange={(event) => updateContent('footerLinkUrl', event.target.value)} />
+                </Stack>
+              )}
+            </Box>
+          </Box>
+
+          {/* nResultBox mid : 유형별 컨텐츠 */}
+          <Box className="nDevider" data-testid="is063-mid" sx={{ minWidth: 0 }}>
+            <Box component="h4" className="nConTitle">{typeTitle}</Box>
+            {!popup && <Typography color="text.secondary">컨텐츠 유형을 선택하고 폼 생성을 누르세요.</Typography>}
+            {popup?.popupType === 'TEXT' && (
+              <PopupRichTextEditor key={`body-${editorKey}`} label="본문"
+                initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
+                onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))} />
+            )}
+            {popup && (popup.popupType === 'IMAGE' || hasVideo) && (
+              <Box className="nFormBox">
+                <Box className="nFormLine" sx={{ gap: '5px', display: 'flex', alignItems: 'center' }}>
+                  <Box className="nFileWrap" sx={{ flex: 1 }}>
+                    <Typography className="nFileList">{contentValue(popup, 'attachedFileName') || '첨부 파일 없음'}</Typography>
+                  </Box>
+                  <span className="nAddFile02">
+                    <label>
+                      파일첨부
+                      <input type="file" aria-label="파일첨부" accept={popup.popupType === 'IMAGE' ? '.bmp,.gif,.jpg,.jpeg,.png' : '.mp4'}
+                        onChange={(event) => attach(event.target.files?.[0])} />
+                    </label>
+                  </span>
+                </Box>
+                <TextField size="small" fullWidth sx={{ mt: 1 }} label={popup.popupType === 'IMAGE' ? '이미지 URL' : '동영상 URL'}
+                  value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')}
+                  onChange={(event) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', event.target.value)} />
+                <Typography component="span" sx={{ color: '#333' }}>
+                  {popup.popupType === 'IMAGE' ? '※ BMP, GIF, JPG, PNG 파일만 등록 가능합니다.' : '※ MP4 파일만 등록 가능합니다.'}
+                </Typography>
+              </Box>
+            )}
+            {popup && isQuestion && (
+              <>
+                <Stack className="nConSectionDiv" spacing={1} sx={{ mt: 1 }}>
+                  <Typography className="nConSectionTitle"><Required not />설명</Typography>
+                  <PopupRichTextEditor key={`description-${editorKey}`} compact label="설명" placeholder="설명(선택)"
+                    initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
+                    onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
+                </Stack>
+                <Box className="nQuizBox" sx={{ mt: 1 }}>
+                  <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore}
+                    onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />
+                </Box>
+              </>
+            )}
+          </Box>
+
+          {/* nResultBox right : 미리보기 */}
+          <Box className="nDevider" data-testid="is063-right" sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 560 }}>
+            <Box component="h4" className="nConTitle">미리보기</Box>
+            {popup
+              ? <InlinePopupPreview popup={popup} title="" onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
+              : <Typography color="text.secondary">폼을 만들면 미리보기가 표시됩니다.</Typography>}
+          </Box>
+        </Box>
+        {error && <Typography color="error" role="alert" sx={{ mt: 1 }}>{error}</Typography>}
+        <Box className="nBtnWrap" sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
+          <Button variant="contained" onClick={save}>저장</Button>
+          <Button variant="contained" className="nWhiteBtn" onClick={() => { setPopup(null); setPendingType(''); setContentName(''); setSaved(null); setError(''); }}>취소</Button>
+        </Box>
+      </Box>
+      {popup && <PopupPreviewDialog popup={popup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
+      <Dialog open={Boolean(saved)} onClose={() => setSaved(null)} maxWidth="md" fullWidth>
+        <DialogTitle>저장 요청 객체 (서버 미전송)</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="caption" color="text.secondary">
+            컨텐츠 명 &quot;{contentName}&quot;은 현재 저장 계약에 대응 필드가 없어 요청에 넣지 않았습니다(서버 확정 필요).
+          </Typography>
+          <Box component="pre" data-testid="is063-save-request" sx={{ m: 0, mt: 1, fontSize: 12, overflow: 'auto' }}>{JSON.stringify(saved, null, 2)}</Box>
+        </DialogContent>
+        <DialogActions><Button onClick={() => setSaved(null)}>닫기</Button></DialogActions>
+      </Dialog>
+    </Box>
+  );
+}

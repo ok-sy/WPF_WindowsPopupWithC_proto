@@ -107,5 +107,8 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 - 데이터 흐름(목록 샘플): `createSamplePopups()` → 행 `수정` → `PopupSampleEditor`(state 하나) → 같은 객체를 `InlinePopupPreview`·`PopupPreviewDialog`에 전달 → `저장` 시 `toSaveRequest(popup, true, [])` 결과를 화면에 표시하고 메모리 목록만 갱신(서버 미전송). 실제 연결은 목록 `api.popupAdmin.list`, 편집 시작 `api.popupAdmin.info → toEditorPopup`, 저장 `api.popupAdmin.save(toSaveRequest(...))`로 바꾼다.
 - 단독 사용 최소 예: 에디터만은 `PopupRichTextEditor`(initialBlocks·onChange), 우측 미리보기만은 `InlinePopupPreview popup={...}`, 모달만은 `PopupPreviewDialog popup open onClose`. 어느 것도 등록 부모·API를 요구하지 않는다(`scripts/verify-*-entry.tsx`가 각각의 단독 호스트 예시).
 - TODO66(서식/색 초기화 버튼 없음)·TODO67(Dialog `slotProps`)·TODO68(최소 300×300)은 같은 공통 파일을 쓰므로 샘플에도 그대로 적용된다. 샘플 편집 Dialog도 `slotProps.paper`·`slotProps.htmlInput`을 쓴다.
-- IS063M02 연동 샘플(69-5~69-7)은 사진 복원본 `IS063M02.tsx` 수령 후 `sample/IS063M02Sample.tsx`로 추가한다(현재 미착수).
-- 검증: `node scripts/verify-popup-common-sample-69.cjs`(목록 6종·수정·제목/본문 → 우측·모달 반영·편집기 재마운트 없음·저장 요청 일치·설문 시연 응답 미혼입·유형 전환·영상+퀴즈).
+- IS063M02 연동 샘플(69-5~69-7): `sample/IS063M02.tsx`는 사진 복원 퍼블리싱 원본(대조용, 첫 줄 `// @ts-nocheck`만 추가 — 저장소에 없는 `IS035Info` 타입·폐쇄망 전역 `n*` CSS 의존), `sample/IS063M02Sample.tsx`는 원본 레이아웃·클래스에 공통 기능을 연결한 샘플(라우트 `/popup-common-sample/is063m02`).
+  - 연결: BbsCKEditor 자리 → `PopupRichTextEditor`(본문·설명), 우측 '미리보기' → `InlinePopupPreview`, 미리보기 버튼 → `PopupPreviewDialog`, 문항 영역 → `PopupQuestionEditor`, 저장 → `toSaveRequest`(서버 미전송).
+  - 정리한 원본 연결 이슈: 모든 에디터가 공유하던 `inputData` → 필드별 편집값, 문항 간 공유되던 라디오 `selectedValue` → 문항별 정답 선택, 숫자 Select 값(1~7)과 문자열 `'2'` 비교 → 계약 문자열 값, `FormControlLabel` 단독 `label`·미연결 추가/삭제 버튼 → 문항 편집기 기능으로 대체, 크기 '최소 200' → 300(TODO68). 신규/불러오기/유형 전환에만 편집기 key를 바꿔 입력 중 커서를 유지한다.
+  - 정하지 않은 정책(확인 필요): '컨텐츠 명'은 현재 저장 계약에 필드가 없어 요청에 넣지 않는다. '퀴즈유형(만점/커트라인/통과·실패 제출)'은 점수 환산 규칙이 없어 문항 편집기의 통과 점수로 입력한다. 파일 첨부는 브라우저 object URL 미리보기만 하며 서버 업로드·서버 경로 URL 생성은 서버 구현이다.
+- 검증: `node scripts/verify-popup-common-sample-69.cjs` 25건(목록 샘플 15: 목록 6종·수정·제목/본문 → 우측·모달 반영·재마운트 없음·저장 요청·설문 시연 응답 미혼입·유형 전환·영상+퀴즈 / IS063M02 샘플 10: 원본 구조 유지·폼 없이 저장 거절·유형별 제목·우측/모달 반영·300 미만 거절·저장 요청 일치·컨텐츠 명 미주입·유형 전환 시 공통값 유지·문항별 정답 독립·취소 초기화).

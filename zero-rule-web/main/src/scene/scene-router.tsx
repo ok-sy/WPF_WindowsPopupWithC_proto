@@ -33,6 +33,7 @@ const EmailTransInfoHome = dynamic(() => import('@/features/EmailTransInfoHome')
 const RgstPop = dynamic(() => import('@/features/RgstPop'), { ssr: false });
 // [TODO69] 공통 팝업 컴포넌트 샘플(서버 없이 목록→편집→우측/모달 미리보기). 기존 '/rgst-pop' 경로는 그대로 둔다.
 const PopupListSample = dynamic(() => import('@/features/PopupcommonComponent/sample/PopupListSample'), { ssr: false });
+const IS063M02Sample = dynamic(() => import('@/features/PopupcommonComponent/sample/IS063M02Sample'), { ssr: false });
 
 export interface ISceneComponent {
   url: string;
@@ -89,6 +90,7 @@ export const SCENES: Record<string, ISceneComponent> = createScenes([
   ['/email-trans-info-home', '이메일송수신정보조회', EmailTransInfoHome],
   ['/rgst-pop', '팝업 등록', RgstPop],
   ['/popup-common-sample', '팝업 공통 컴포넌트 샘플', PopupListSample],
+  ['/popup-common-sample/is063m02', '컨텐츠 등록 샘플(IS063M02)', IS063M02Sample],
 ]);
 
 // url(키)로 값을 리턴해준다
