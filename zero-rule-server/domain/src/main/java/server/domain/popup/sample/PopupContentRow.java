@@ -10,8 +10,8 @@ import java.math.BigDecimal;
  * - out: 표시 후보 1건(getter/setter)
  * - 단건 조회 결과 VO(MyBatis resultMap {@code popupContentRow}). 한 행 = 표시 후보 1건.
  *
- * <p>컬럼은 제공된 팝업콘텐츠기본 DTIY3111 정의를 시작점으로 한다. <b>미확인</b> 표시가 있는 컬럼은 최신 정의에서
- * 이름·타입을 확인해 교체한다.</p>
+ * <p>컬럼은 팝업콘텐츠기본 DTIY3111 사진 정의(docs/interfaces/DTIY3111_SCHEMA_OCR.md)를 따른다. 사진 판독이며 확정 DDL이 아니므로
+ * <b>미확인</b> 표시는 최신 정의에서 이름·타입을 확인해 교체한다.</p>
  *
  * <table>
  *   <tr><th>필드</th><th>컬럼</th><th>의미</th></tr>
@@ -23,7 +23,9 @@ import java.math.BigDecimal;
  *   <tr><td>afterConfirmYn</td><td>AFTR_CNFM_OBJ_YN</td><td>나중에 확인 대상 여부 Y/N → {@code showLater}</td></tr>
  *   <tr><td>footerButtonTypeCode</td><td>FTR_BTN_TP_CD</td><td>푸터 버튼 공통 코드 → {@code footerAction}</td></tr>
  *   <tr><td>footerUrl</td><td>FTR_URL</td><td>바로가기 URL → {@code footerLinkUrl}</td></tr>
- *   <tr><td>filePath / fileName</td><td>(미확인) 첨부 파일 경로·이름</td><td>IMAGE·VIDEO 파일 → {@code content.imageUrl}/{@code videoUrl}</td></tr>
+ *   <tr><td>imageFilePath / imageFileName</td><td>IMG_FILE_PATH_CN / IMG_FILE_NM</td><td>IMAGE 파일 → {@code content.imageUrl}</td></tr>
+ *   <tr><td>videoFilePath / videoFileName</td><td>VDO_FILE_PATH_CN / VDO_FILE_NM</td><td>VIDEO·영상+퀴즈 파일 → {@code content.videoUrl}</td></tr>
+ *   <tr><td>attachFileId</td><td>APND_FILE_ID</td><td>첨부파일 ID. 현재 URL 생성에 미사용 — 첨부 ID 방식이면 FileUrlResolver 교체 시 사용</td></tr>
  *   <tr><td>contentJson</td><td>CNTN_CN (CLOB)</td><td>콘텐츠 JSON 객체 → {@code content}</td></tr>
  * </table>
  */
@@ -38,8 +40,11 @@ public class PopupContentRow {
     private String afterConfirmYn;
     private String footerButtonTypeCode;
     private String footerUrl;
-    private String filePath;
-    private String fileName;
+    private String imageFilePath;
+    private String imageFileName;
+    private String videoFilePath;
+    private String videoFileName;
+    private String attachFileId;
     /** CLOB을 MyBatis ClobTypeHandler(jdbcType=CLOB, javaType=String)로 문자열로 읽는다. */
     private String contentJson;
 
@@ -61,10 +66,16 @@ public class PopupContentRow {
     public void setFooterButtonTypeCode(String footerButtonTypeCode) { this.footerButtonTypeCode = footerButtonTypeCode; }
     public String getFooterUrl() { return footerUrl; }
     public void setFooterUrl(String footerUrl) { this.footerUrl = footerUrl; }
-    public String getFilePath() { return filePath; }
-    public void setFilePath(String filePath) { this.filePath = filePath; }
-    public String getFileName() { return fileName; }
-    public void setFileName(String fileName) { this.fileName = fileName; }
+    public String getImageFilePath() { return imageFilePath; }
+    public void setImageFilePath(String imageFilePath) { this.imageFilePath = imageFilePath; }
+    public String getImageFileName() { return imageFileName; }
+    public void setImageFileName(String imageFileName) { this.imageFileName = imageFileName; }
+    public String getVideoFilePath() { return videoFilePath; }
+    public void setVideoFilePath(String videoFilePath) { this.videoFilePath = videoFilePath; }
+    public String getVideoFileName() { return videoFileName; }
+    public void setVideoFileName(String videoFileName) { this.videoFileName = videoFileName; }
+    public String getAttachFileId() { return attachFileId; }
+    public void setAttachFileId(String attachFileId) { this.attachFileId = attachFileId; }
     public String getContentJson() { return contentJson; }
     public void setContentJson(String contentJson) { this.contentJson = contentJson; }
 }

@@ -12,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +54,7 @@ class PopupSingleQuerySampleTest {
         row.setContentTypeCode(type);
         row.setHeaderTitle("점검 안내");
         row.setWidth(new BigDecimal("560"));
-        row.setHeight(new BigDecimal("420.5"));
+        row.setHeight(new BigDecimal("420"));
         row.setAfterConfirmYn("Y");
         row.setFooterButtonTypeCode("02");
         row.setFooterUrl("https://intranet.example.com/notice/1");
@@ -92,7 +94,7 @@ class PopupSingleQuerySampleTest {
         assertEquals("TEXT", popup.get("popupType").asText());
         assertEquals("점검 안내", popup.get("title").asText(), "제목은 컬럼 기준");
         assertEquals(560, popup.get("width").doubleValue());
-        assertEquals(420.5, popup.get("height").doubleValue());
+        assertEquals(420.0, popup.get("height").doubleValue());
         assertTrue(popup.get("showLater").booleanValue());
         assertEquals("LINK_AND_CLOSE", popup.get("footerAction").asText());
         assertEquals("https://intranet.example.com/notice/1", popup.get("footerLinkUrl").asText());
@@ -194,13 +196,15 @@ class PopupSingleQuerySampleTest {
         PopupContentRow row = row("20", "{\"imageUrl\":\"https://old.example.com/a.png\",\"imageSizeMode\":\"FIT_TO_IMAGE\"}");
         row.setWidth(null);
         row.setFooterButtonTypeCode("01");
-        row.setFilePath("notice/2026 10");
-        row.setFileName("점검 안내.png");
+        row.setImageFilePath("notice/2026 10");
+        row.setImageFileName("점검 안내.png");
+        row.setVideoFilePath("ignored");
+        row.setVideoFileName("ignored.mp4");
         JsonNode popup = service(row).nextPopup("E1001", null, null).get("popup");
         assertEquals("https://files.example.com/popup/notice/2026%2010/%EC%A0%90%EA%B2%80%20%EC%95%88%EB%82%B4.png",
                 popup.at("/content/imageUrl").asText(), "파일 컬럼 URL이 content 값보다 우선");
         assertFalse(popup.has("width"), "IMAGE 축 생략 = 원본 기준");
-        assertEquals(420.5, popup.get("height").doubleValue());
+        assertEquals(420.0, popup.get("height").doubleValue());
     }
 
     /** SURVEY는 QuestionPort 문항을 싣고 footerAction은 항상 SUBMIT이다. */
@@ -251,8 +255,8 @@ class PopupSingleQuerySampleTest {
         assertEquals(6, rows.size());
         ArrayNode questions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"q\",\"questionType\":\"SINGLE_CHOICE\",\"isScored\":true,"
                 + "\"options\":[{\"optionId\":11,\"text\":\"O\",\"isCorrect\":true}]}]");
-        Map<String, String> expected = Map.of("SMP-TEXT-001", "TEXT", "SMP-IMAGE-001", "IMAGE", "SMP-VIDEO-001", "VIDEO",
-                "SMP-SURVEY-001", "SURVEY", "SMP-QUIZ-001", "QUIZ", "SMP-VQUIZ-001", "QUIZ");
+        Map<String, String> expected = Map.of("SMP-TXT-01", "TEXT", "SMP-IMG-01", "IMAGE", "SMP-VDO-01", "VIDEO",
+                "SMP-SVY-01", "SURVEY", "SMP-QIZ-01", "QUIZ", "SMP-VQZ-01", "QUIZ");
         for (Map<String, String> values : rows) {
             String id = values.get("POPU_CNTN_ID");
             assertTrue(values.get("CNTN_CN").getBytes(StandardCharsets.UTF_8).length <= 4000, id + " CLOB 리터럴 4000바이트 이하");
@@ -260,6 +264,8 @@ class PopupSingleQuerySampleTest {
             assertEquals(id, popup.get("popupId").asText());
             assertEquals(expected.get(id), popup.get("popupType").asText(), id);
         }
+        JsonNode video = service(toRow(rows.get(2))).nextPopup("E1001", null, null).get("popup");
+        assertEquals("https://files.example.com/popup/popup/sample/video/training.mp4", video.get("content").get("videoUrl").asText());
         JsonNode image = service(toRow(rows.get(1))).nextPopup("E1001", null, null).get("popup");
         assertEquals("https://files.example.com/popup/popup/sample/image/notice.png", image.get("content").get("imageUrl").asText());
         assertFalse(image.has("width"), "IMAGE 크기 NULL이면 생략");
@@ -268,10 +274,86 @@ class PopupSingleQuerySampleTest {
         assertEquals("시스템 점검 안내\n02:00~06:00", text.get("content").get("plainText").asText());
         JsonNode videoQuiz = service(toRow(rows.get(5)), (r, type) -> questions).nextPopup("E1001", null, null).get("popup");
         assertTrue(videoQuiz.get("content").get("videoEnabled").booleanValue());
+        assertEquals("https://files.example.com/popup/popup/sample/video/training.mp4", videoQuiz.get("content").get("videoUrl").asText(),
+                "영상+퀴즈도 영상 컬럼 URL이 content.videoUrl보다 우선");
         assertEquals(1.0, videoQuiz.get("completionRatio").doubleValue());
         assertEquals(PopupSampleException.Reason.QUESTIONS_NOT_CONNECTED,
                 assertThrows(PopupSampleException.class, () -> service(toRow(rows.get(3))).nextPopup("E1001", null, null)).reason(),
                 "문항 미연결 상태의 SURVEY는 오류가 정상");
+    }
+
+    /**
+     * DTIY3111 사진 정의(docs/interfaces/DTIY3111_SCHEMA_OCR.md) 기준 범위 검증. 실제 DB 실행이 아니다.
+     * 길이는 BYTE·AL32UTF8 가정(한글 3바이트)으로 본다 — CHAR 정의여도 이 기준을 통과하면 들어간다.
+     */
+    @Test
+    void sampleInsertSqlMatchesPhotoSchema() throws Exception {
+        String sql = readResource("/sample/single-query/DTIY3111_sample_insert_oracle.sql");
+        Map<String, Integer> varcharBytes = Map.ofEntries(Map.entry("POPU_CNTN_ID", 10), Map.entry("POPU_CNTN_TP_CD", 2),
+                Map.entry("POPU_CNTN_NM", 200), Map.entry("HDR_TITL", 200), Map.entry("AFTR_CNFM_OBJ_YN", 1),
+                Map.entry("FTR_BTN_TP_CD", 2), Map.entry("FTR_URL", 200), Map.entry("APND_FILE_ID", 16),
+                Map.entry("IMG_FILE_PATH_CN", 1000), Map.entry("IMG_FILE_NM", 200), Map.entry("VDO_FILE_PATH_CN", 2000),
+                Map.entry("VDO_FILE_NM", 200), Map.entry("DEL_YN", 1), Map.entry("REG_USER_ID", 6), Map.entry("CHNG_USER_ID", 6));
+        Set<String> photoColumns = new HashSet<>(varcharBytes.keySet());
+        photoColumns.addAll(List.of("POPU_WDTH_SZ", "POPU_LNTH_SZ", "CNTN_CN", "REG_DTTM", "CHNG_DTTM"));
+        assertEquals(20, photoColumns.size(), "사진 컬럼 20개");
+        List<Map<String, String>> rows = parseInserts(sql);
+        List<String> ids = new ArrayList<>();
+        for (Map<String, String> row : rows) {
+            String id = row.get("POPU_CNTN_ID");
+            ids.add(id);
+            assertTrue(photoColumns.containsAll(row.keySet()), id + " 사진에 없는 컬럼: " + row.keySet());
+            assertFalse(row.containsKey("DEL_YN"), "삭제 코드 미확정 — DEL_YN은 넣지 않는다");
+            assertEquals("SAMPLE", row.get("REG_USER_ID"), id + " 등록자(NULLABLE=N)");
+            assertEquals("SYSDATE", row.get("REG_DTTM"), id + " 등록일시(NULLABLE=N)");
+            for (Map.Entry<String, Integer> limit : varcharBytes.entrySet()) {
+                String value = row.get(limit.getKey());
+                if (value != null) {
+                    assertTrue(value.getBytes(StandardCharsets.UTF_8).length <= limit.getValue(), id + " " + limit.getKey() + " 길이: " + value);
+                }
+            }
+            for (String size : List.of("POPU_WDTH_SZ", "POPU_LNTH_SZ")) {
+                String value = row.get(size);
+                if (value != null) {
+                    BigDecimal number = new BigDecimal(value);
+                    assertTrue(number.scale() <= 0 && number.precision() <= 5, id + " " + size + " NUMBER(5) 정수: " + value);
+                }
+            }
+        }
+        assertEquals(6, new HashSet<>(ids).size(), "샘플 ID 중복 없음");
+        int deleteAt = sql.indexOf("DELETE FROM DTIY3111");
+        String delete = sql.substring(deleteAt, sql.indexOf(';', deleteAt));
+        assertFalse(delete.contains("LIKE"), "DELETE는 샘플 ID만 지정");
+        for (String id : ids) assertTrue(delete.contains("'" + id + "'"), "DELETE 대상: " + id);
+    }
+
+    /** 파일 URL은 유형별 컬럼으로 만들고(영상 없는 QUIZ 제외), 파일명이 없으면 content URL을 유지한다. */
+    @Test
+    void fileColumnsFollowTypeAndNeedFileName() throws Exception {
+        ArrayNode questions = (ArrayNode) json.readTree("[{\"questionId\":1,\"title\":\"q\",\"questionType\":\"SINGLE_CHOICE\",\"options\":[]}]");
+        PopupContentRow video = row("30", "{\"videoUrl\":\"https://old.example.com/v.mp4\"}");
+        video.setImageFilePath("img");
+        video.setImageFileName("a.png");
+        video.setVideoFilePath("vdo");
+        video.setVideoFileName("b.mp4");
+        assertEquals("https://files.example.com/popup/vdo/b.mp4",
+                service(video).nextPopup("E1001", null, null).get("popup").get("content").get("videoUrl").asText());
+
+        PopupContentRow quiz = row("50", "{\"surveyTitle\":\"q\",\"videoEnabled\":false}");
+        quiz.setVideoFilePath("vdo");
+        quiz.setVideoFileName("b.mp4");
+        assertEquals("", service(quiz, (r, type) -> questions).nextPopup("E1001", null, null).get("popup").get("content").path("videoUrl").asText(""),
+                "영상 없는 QUIZ에는 영상 컬럼을 적용하지 않는다");
+
+        PopupContentRow pathOnly = row("20", "{\"imageUrl\":\"https://old.example.com/a.png\"}");
+        pathOnly.setImageFilePath("img/only");
+        assertEquals("https://old.example.com/a.png",
+                service(pathOnly).nextPopup("E1001", null, null).get("popup").get("content").get("imageUrl").asText(), "경로만 있으면 content URL 유지");
+
+        PopupContentRow nameOnly = row("20", "{\"imageUrl\":\"https://old.example.com/a.png\"}");
+        nameOnly.setImageFileName("a b.png");
+        assertEquals("https://files.example.com/popup/a%20b.png",
+                service(nameOnly).nextPopup("E1001", null, null).get("popup").get("content").get("imageUrl").asText(), "파일명만 있으면 기준 주소 아래");
     }
 
     private static String readResource(String path) throws IOException {
@@ -281,7 +363,7 @@ class PopupSingleQuerySampleTest {
         }
     }
 
-    /** 샘플 SQL 형식(컬럼 목록 + 문자열 리터럴·NULL·숫자·|| 연결)만 읽는 간이 파서. 블록 주석·줄 주석은 건너뛴다. */
+    /** 샘플 SQL 형식(컬럼 목록 + 문자열 리터럴·NULL·숫자·식 이름·|| 연결)만 읽는 간이 파서. 블록 주석·줄 주석은 건너뛴다. */
     private static List<Map<String, String>> parseInserts(String sql) {
         String body = sql.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)^\\s*--.*$", "");
         List<Map<String, String>> rows = new ArrayList<>();
@@ -312,8 +394,12 @@ class PopupSingleQuerySampleTest {
                     current = null; isNull = false;
                     i++;
                     if (c == ')') break;
-                } else if (body.startsWith("NULL", i)) {
-                    isNull = true; i += 4;
+                } else if (Character.isLetter(c)) {
+                    int k = i;
+                    while (Character.isLetterOrDigit(body.charAt(k)) || body.charAt(k) == '_') k++;
+                    String word = body.substring(i, k);
+                    if ("NULL".equals(word)) isNull = true; else current = new StringBuilder(word);   // SYSDATE 등 식은 이름 그대로
+                    i = k;
                 } else if (Character.isDigit(c)) {
                     int k = i;
                     while (Character.isDigit(body.charAt(k)) || body.charAt(k) == '.') k++;
@@ -342,8 +428,11 @@ class PopupSingleQuerySampleTest {
         row.setAfterConfirmYn(v.get("AFTR_CNFM_OBJ_YN"));
         row.setFooterButtonTypeCode(v.get("FTR_BTN_TP_CD"));
         row.setFooterUrl(v.get("FTR_URL"));
-        row.setFilePath(v.get("ATCH_FILE_PATH"));
-        row.setFileName(v.get("ATCH_FILE_NM"));
+        row.setImageFilePath(v.get("IMG_FILE_PATH_CN"));
+        row.setImageFileName(v.get("IMG_FILE_NM"));
+        row.setVideoFilePath(v.get("VDO_FILE_PATH_CN"));
+        row.setVideoFileName(v.get("VDO_FILE_NM"));
+        row.setAttachFileId(v.get("APND_FILE_ID"));
         row.setContentJson(v.get("CNTN_CN"));
         return row;
     }

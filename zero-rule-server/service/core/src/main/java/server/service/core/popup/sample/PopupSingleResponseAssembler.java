@@ -49,7 +49,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * <h3>중복 값 우선순위</h3>
  * <p>제목·창 크기·나중에 보기·푸터 동작/URL은 <b>컬럼이 기준 원본</b>이다. content JSON에 같은 키가 있으면 응답에서 제거한다.
  * 창 공통 옵션(Overlay·위치·폰트)은 서버 WPF 응답(POL-01-01 : 공통 옵션의 위치)과 같이 content에 저장된 값을 최상위로 옮기고 content에서는 뺀다.
- * IMAGE·VIDEO 파일은 파일 컬럼이 있으면 그 URL이 content.imageUrl/videoUrl보다 우선한다.</p>
+ * 파일 URL은 IMAGE는 이미지 컬럼, VIDEO와 영상+퀴즈(QUIZ + videoEnabled=true)는 영상 컬럼으로 만들고, 만들어지면 content.imageUrl/videoUrl보다
+ * 우선한다. 파일명이 없으면 content의 URL을 유지한다. 영상 없는 QUIZ에는 영상 컬럼을 적용하지 않는다.</p>
  *
  * <h3>샘플 응답은 가능한 옵션 키를 모두 싣는다</h3>
  * <p>인계 받는 개발자가 응답 하나로 쓸 수 있는 옵션 전체를 볼 수 있도록 유형별 content 옵션·선택 필드를 빠짐없이 채운다.
@@ -235,11 +236,19 @@ public class PopupSingleResponseAssembler {
         }
     }
 
-    /** IMAGE·VIDEO 파일 컬럼이 있으면 파일 URL로 content.imageUrl/videoUrl을 덮는다. */
+    /** 유형별 파일 컬럼(IMAGE → 이미지, VIDEO·영상+퀴즈 → 영상)으로 URL을 만들면 content.imageUrl/videoUrl을 덮는다. */
     private void applyFile(ObjectNode content, PopupContentRow row, String type) {
-        String key = "IMAGE".equals(type) ? "imageUrl" : "VIDEO".equals(type) ? "videoUrl" : null;
-        if (key == null) return;
-        String url = fileUrlResolver.resolve(row.getFilePath(), row.getFileName());
+        String url;
+        String key;
+        if ("IMAGE".equals(type)) {
+            key = "imageUrl";
+            url = fileUrlResolver.resolve(row.getImageFilePath(), row.getImageFileName());
+        } else if ("VIDEO".equals(type) || ("QUIZ".equals(type) && content.path("videoEnabled").asBoolean(false))) {
+            key = "videoUrl";
+            url = fileUrlResolver.resolve(row.getVideoFilePath(), row.getVideoFileName());
+        } else {
+            return;
+        }
         if (url != null) content.put(key, url);
     }
 

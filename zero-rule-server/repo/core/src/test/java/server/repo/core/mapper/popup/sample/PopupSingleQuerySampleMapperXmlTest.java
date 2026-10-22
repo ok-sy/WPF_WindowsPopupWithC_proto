@@ -63,6 +63,24 @@ class PopupSingleQuerySampleMapperXmlTest {
         assertTrue(sql.contains("AND C.POPU_CNTN_ID = ?") && sql.contains("AND C.POPU_CNTN_TP_CD = ?"), sql);
     }
 
+    /** DTIY3111 사진 정의의 이미지·영상 파일 컬럼을 별도 필드로 받고, 삭제 조건은 주석으로만 둔다. */
+    @Test
+    void selectsPhotoSchemaFileColumns() throws Exception {
+        String sql = sql(null, null);
+        for (String column : new String[] {"C.IMG_FILE_PATH_CN", "C.IMG_FILE_NM", "C.VDO_FILE_PATH_CN", "C.VDO_FILE_NM", "C.APND_FILE_ID"}) {
+            assertTrue(sql.contains(column), column + ": " + sql);
+        }
+        assertFalse(sql.contains("ATCH_FILE"), "사진 정의에 없는 가정 컬럼 제거");
+        assertFalse(sql.contains("DEL_YN"), "삭제 조건은 코드 확정 전까지 실행 조건이 아니다");
+        Map<String, String> columns = new HashMap<>();
+        statement().getResultMaps().get(0).getResultMappings().forEach(m -> columns.put(m.getProperty(), m.getColumn()));
+        assertEquals("IMG_FILE_PATH_CN", columns.get("imageFilePath"));
+        assertEquals("IMG_FILE_NM", columns.get("imageFileName"));
+        assertEquals("VDO_FILE_PATH_CN", columns.get("videoFilePath"));
+        assertEquals("VDO_FILE_NM", columns.get("videoFileName"));
+        assertEquals("APND_FILE_ID", columns.get("attachFileId"));
+    }
+
     @Test
     void clobColumnMapsToStringContent() throws Exception {
         ResultMapping clob = statement().getResultMaps().get(0).getResultMappings().stream()

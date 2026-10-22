@@ -49,6 +49,9 @@ public final class PopupPorts {
     /**
      * 파일 경로·이름 → WPF가 접근할 URL. [교체 지점] 실제 파일 서버·영상 Range API(samples/popup-video-range) 주소 규칙.
      * 경로 구분자(/)는 유지하고 각 세그먼트를 URL 인코딩한다.
+     * 첨부 ID(APND_FILE_ID) 방식이면 이 클래스를 교체한다. 기존 서버의 첨부 URL 규칙은 {@code FileIdToUrlImpl.urlWithFileName}
+     * ({@code p/file/download2/{fileId}/{fileName}})이며, 첨부 ID는 {@code PopupContentRow.attachFileId}로 이미 조회된다.
+     * 계약: 파일명이 없으면(경로만 있어도) URL을 만들지 않고 null — 호출자는 content의 URL을 유지한다. 경로 없이 파일명만 있으면 기준 주소 바로 아래로 만든다.
      */
     public static class FileUrlResolver {
         private final String baseUrl;
@@ -61,10 +64,10 @@ public final class PopupPorts {
         /**
          * ■ 파일 URL 생성
          * - in : path(String) 파일 경로 · name(String) 파일 이름
-         * - out: String 인코딩된 URL(둘 다 비면 null)
+         * - out: String 인코딩된 URL(파일명이 비면 null)
          */
         public String resolve(String path, String name) {
-            if ((path == null || path.isBlank()) && (name == null || name.isBlank())) return null;
+            if (name == null || name.isBlank()) return null;
             String joined = ((path == null ? "" : path.replace('\\', '/')) + "/" + (name == null ? "" : name)).replaceAll("/+", "/");
             String encoded = Arrays.stream(joined.split("/"))
                     .filter(segment -> !segment.isEmpty())

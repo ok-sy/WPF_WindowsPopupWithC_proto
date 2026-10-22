@@ -59,7 +59,12 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 | AFTR_CNFM_OBJ_YN | `showLater` | Y/N → true/false, null → false, 그 밖의 값 오류 |
 | FTR_BTN_TP_CD | `footerAction` | **예시 코드** 01 CLOSE·02 LINK_AND_CLOSE·03 SUBMIT. null → CLOSE, SURVEY·QUIZ는 항상 SUBMIT |
 | FTR_URL | `footerLinkUrl` | LINK_AND_CLOSE일 때만, 절대 http/https 필수 |
-| (미확인) ATCH_FILE_PATH / ATCH_FILE_NM | `content.imageUrl` / `content.videoUrl` | `file-base-url` + 세그먼트별 URL 인코딩. 컬럼 값이 content 값보다 우선 |
+| IMG_FILE_PATH_CN / IMG_FILE_NM | IMAGE `content.imageUrl` | `file-base-url` + 세그먼트별 URL 인코딩. 만들어지면 content 값보다 우선 |
+| VDO_FILE_PATH_CN / VDO_FILE_NM | VIDEO·영상+퀴즈 `content.videoUrl` | 같은 규칙. 영상 없는 QUIZ에는 적용하지 않음 |
+| APND_FILE_ID | 응답 필드 없음 | VO `attachFileId`로 조회만 하고 URL 생성에는 미사용. 첨부 ID 방식이면 `FileUrlResolver` 교체(§6) |
+| POPU_CNTN_NM | 응답 필드 없음 | 관리용 콘텐츠명. 샘플 SQL은 읽지 않음 |
+| DEL_YN | 응답 필드 없음 | 삭제 코드·NULL 의미 미확정. 후보 SQL에 주석으로만 위치 표시(§4) |
+| REG_USER_ID / REG_DTTM | 응답 필드 없음 | 사진 NULLABLE=N. 샘플 INSERT는 `'SAMPLE'`·`SYSDATE` 명시(§4.1) |
 | CNTN_CN (CLOB) | `content` | JSON 객체만 허용. 객체 그대로(이중 직렬화 없음) |
 | (컬럼 없음) | `displayMode`·`sizeMode`·`widthRatio`·`heightRatio`·`minimum*`·`maximum*`·`showHeader`·`showFooter`·`showFooterButton`·`showDoNotShowAgain` | SEQUENTIAL·FIXED·0.7·0.75·300·300·1200·900·true·true·true·false |
 | content `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`*FontSize` | 최상위 같은 이름 | 설계 31처럼 최상위로 옮기고 content에서 제거. 누락 시 true·0.45·CENTER·폰트 `null`(키 포함, WPF 기본 크기). 명시적 false·0 유지, 범위 밖 값은 오류 |
@@ -85,6 +90,18 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 중복 값 우선순위: 제목·창 크기·나중에 보기·푸터 동작/URL은 **컬럼 기준**이며 content의 같은 키는 응답에서 제거한다.
 코드표·미확인 컬럼명은 확정본을 받으면 `PopupCodeTable`과 매퍼 XML만 교체한다.
 
+파일 URL 규칙(`FileUrlResolver`): 파일명이 있어야 URL을 만든다. 경로만 있으면 null(content URL 유지), 경로 없이 파일명만 있으면 `file-base-url` 바로 아래로 만든다.
+
+기본값의 역할: 저장하지 않은 선택 옵션의 기본값은 **서버 응답 조립기**(`CONTENT_DEFAULTS`·`applyQuestionDefaults`)가 채운다. 관리자 웹(프론트)의 기본값은 신규 입력·미리보기 초기값일 뿐 응답 기본값의 원본이 아니다. 누락·null만 채우고 명시적 false·유효한 0은 유지한다. 샘플이 옵션 키를 모두 싣는 것은 인계용 표시이며, 실제 API의 필수 필드 범위는 인터페이스 명세의 필수 표기를 따른다.
+
+### 3.2 DTIY3111 사진 정의 기준 길이·숫자
+
+컬럼 정의는 [DTIY3111 사진 OCR](DTIY3111_SCHEMA_OCR.md)이다(확정 DDL 아님).
+
+- `POPU_CNTN_ID` VARCHAR2(10): 샘플 ID는 10자(`SMP-TXT-01` 등).
+- `POPU_WDTH_SZ`/`POPU_LNTH_SZ` NUMBER(5): 정밀도·스케일 미확인. NUMBER(5,0)이면 소수는 저장 시 반올림되므로 이 테이블 기준 예시·테스트는 정수로 둔다. 공통 WPF/API의 소수 입력은 막지 않는다.
+- VARCHAR2 길이의 BYTE/CHAR 기준·DB 문자셋 미확인. 예: AL32UTF8에서 VARCHAR2(200 BYTE)는 일반 한글 약 66자. 샘플 값은 BYTE·AL32UTF8 가정으로도 들어가는 길이로 두고 테스트로 확인한다(실제 정의 확인 전 길이 제한을 코드에 강제하지 않음).
+
 ## 4. SQL (65-2)
 
 `PopupSingleQuerySampleMapper.xml` 요약:
@@ -92,10 +109,12 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 ```sql
 SELECT *
   FROM (SELECT NULL AS POST_ID, C.POPU_CNTN_ID, C.POPU_CNTN_TP_CD, C.HDR_TITL, C.POPU_WDTH_SZ, C.POPU_LNTH_SZ,
-               C.AFTR_CNFM_OBJ_YN, C.FTR_BTN_TP_CD, C.FTR_URL, C.ATCH_FILE_PATH, C.ATCH_FILE_NM, C.CNTN_CN
+               C.AFTR_CNFM_OBJ_YN, C.FTR_BTN_TP_CD, C.FTR_URL, C.IMG_FILE_PATH_CN, C.IMG_FILE_NM,
+               C.VDO_FILE_PATH_CN, C.VDO_FILE_NM, C.APND_FILE_ID, C.CNTN_CN
           FROM DTIY3111 C
          WHERE 1 = 1
            /* [담당 구현] 게시·대상자·일정·완료·숨김·나중에 보기 조건 */
+           /* [샘플 조건·담당 확인] 삭제 코드와 NULL 의미 확인 후 적용: AND NVL(C.DEL_YN, 'N') = 'N' */
            AND C.POPU_CNTN_ID = ?      -- [샘플 조건] contentId 있을 때만
            AND C.POPU_CNTN_TP_CD = ?   -- [샘플 조건] contentTypeCode 있을 때만
          ORDER BY /* [담당 확인] 우선순위 컬럼 */ C.POPU_CNTN_ID DESC)   -- 동순위 보조 키(PK)
@@ -108,20 +127,20 @@ SELECT *
 
 ### 4.1 유형별 샘플 INSERT
 
-`zero-rule-server/service/core/src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql`에 매퍼가 읽는 컬럼만 채운 콘텐츠 6건이 있다. 다시 넣을 때는 스크립트 첫 `DELETE ... LIKE 'SMP-%'`부터 실행한다.
+`zero-rule-server/service/core/src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql`에 DTIY3111 사진 정의 기준 콘텐츠 6건이 있다(콘텐츠명·파일 컬럼·등록자 `'SAMPLE'`·등록일시 `SYSDATE` 포함, `DEL_YN`·`APND_FILE_ID`는 미입력). 다시 넣을 때는 스크립트 첫 `DELETE`부터 실행한다. DELETE는 샘플 ID 6건만 `IN`으로 지정한다.
 
 | POPU_CNTN_ID | 유형 코드 | 확인 포인트 |
 |---|---|---|
-| SMP-TEXT-001 | 10 TEXT | textBlocks 서식 본문·강조 문구·하단 설명, 푸터 02 링크 후 닫기, content의 창 옵션(배경 없음·TOP_RIGHT·bodyFontSize)이 최상위로 이동 |
-| SMP-IMAGE-001 | 20 IMAGE | 파일 컬럼 → `file-base-url/popup/sample/image/notice.png`, 크기 NULL이면 width/height 생략 |
-| SMP-VIDEO-001 | 30 VIDEO | 파일 컬럼 → videoUrl, 나중에 보기(AFTR_CNFM_OBJ_YN=Y), 배속·탐색 금지 |
-| SMP-SURVEY-001 | 40 SURVEY | 푸터 코드 NULL이어도 SUBMIT. 문항은 QuestionPort |
-| SMP-QUIZ-001 | 50 QUIZ | 영상 없는 퀴즈. 문항·정답 키는 QuestionPort |
-| SMP-VQUIZ-001 | 50 QUIZ | `videoEnabled=true` 영상+퀴즈. 파일 컬럼은 IMAGE·VIDEO 유형만 적용하므로 content.videoUrl 사용, completionRatio 1.0 |
+| SMP-TXT-01 | 10 TEXT | textBlocks 서식 본문·강조 문구·하단 설명, 푸터 02 링크 후 닫기, content의 창 옵션(배경 없음·TOP_RIGHT·bodyFontSize)이 최상위로 이동 |
+| SMP-IMG-01 | 20 IMAGE | 이미지 컬럼 → `file-base-url/popup/sample/image/notice.png`, 크기 NULL이면 width/height 생략 |
+| SMP-VDO-01 | 30 VIDEO | 영상 컬럼 → videoUrl, 나중에 보기(AFTR_CNFM_OBJ_YN=Y), 배속·탐색 금지 |
+| SMP-SVY-01 | 40 SURVEY | 푸터 코드 NULL이어도 SUBMIT. 문항은 QuestionPort |
+| SMP-QIZ-01 | 50 QUIZ | 영상 없는 퀴즈. 문항·정답 키는 QuestionPort |
+| SMP-VQZ-01 | 50 QUIZ | `videoEnabled=true` 영상+퀴즈. 영상 컬럼 URL이 content.videoUrl보다 우선, completionRatio 1.0 |
 
-- 확인할 행은 `?contentId=SMP-TEXT-001`처럼 지정한다. 정렬이 `POPU_CNTN_ID DESC`라 지정하지 않으면 SMP-VQUIZ-001이 먼저 잡힌다.
+- 확인할 행은 `?contentId=SMP-TXT-01`처럼 지정한다. 정렬이 `POPU_CNTN_ID DESC`라 지정하지 않으면 SMP-VQZ-01이 먼저 잡힌다.
 - 기본 `UnconnectedQuestionPort` 상태에서 SURVEY·QUIZ 3건은 `QUESTIONS_NOT_CONNECTED`(500)가 정상이다. 문항 형태는 `web/api/src/test/resources/sample/relay/survey.json`·`quiz.json`·`video-quiz.json`의 `questions`를 따른다.
-- [미확인] DTIY3111 확정 정의가 없어 등록자·등록일시 등 다른 NOT NULL 컬럼, ID 채번 규칙, 코드값(PopupCodeTable 예시)은 실제 값으로 바꾼다. CLOB 리터럴은 4000바이트 이하로 둔다.
+- [미확인] 사진 정의는 확정 DDL이 아니다. `DEL_YN` 코드·DEFAULT, `REG_DTTM` DEFAULT 제약, ID 채번 규칙, 코드값(PopupCodeTable 예시)은 실제 정의로 바꾼다. CLOB 리터럴은 4000바이트 이하로 둔다.
 
 ## 5. 응답 예시 (65-7)
 
@@ -130,7 +149,7 @@ SELECT *
 ```json
 {"pollingIntervalSeconds":1800,
  "popup":{"deliveryId":"(DeliveryPort 발급)","popupId":"C-001","popupType":"TEXT","title":"점검 안내",
-  "displayMode":"SEQUENTIAL","sizeMode":"FIXED","width":560.0,"height":420.5,"widthRatio":0.7,"heightRatio":0.75,
+  "displayMode":"SEQUENTIAL","sizeMode":"FIXED","width":560.0,"height":420.0,"widthRatio":0.7,"heightRatio":0.75,
   "minimumWidth":300.0,"minimumHeight":300.0,"maximumWidth":1200,"maximumHeight":900,
   "showHeader":true,"showFooterButton":true,"showFooter":true,
   "footerAction":"LINK_AND_CLOSE","footerLinkUrl":"https://intranet.example.com/notice/1",
@@ -165,7 +184,7 @@ SELECT *
 | `DeliveryPort` | 무작위 UUID(업무 전달 건 아님), 설정 폴링 주기 | 전달 건 생성/재사용·소유권·중복 처리(기존 WpfPopupService 규칙) |
 | `QuestionPort` | 미연결(SURVEY·QUIZ는 오류) | 문항·선택지 테이블 조회, QUIZ만 정답 키 포함 |
 | `PopupCodeTable` | 예시 코드 | 확정 공통 코드표 |
-| 파일 URL | `file-base-url` + 경로 | 실제 파일 서버·영상 Range API(`samples/popup-video-range`) 규칙 |
+| 파일 URL | `file-base-url` + 유형별 경로·파일명(`FileUrlResolver`) | 실제 파일 서버·영상 Range API(`samples/popup-video-range`) 규칙. 첨부 ID(`APND_FILE_ID`) 방식이면 `FileUrlResolver`를 교체하고 `row.getAttachFileId()`를 쓴다(기존 서버 규칙 `FileIdToUrlImpl.urlWithFileName` → `p/file/download2/{fileId}/{fileName}`) |
 
 실제 대상/일정/완료/숨김/전달 건 정책의 일괄 검증은 담당 서버 개발 범위다. 포트는 `@ConditionalOnMissingBean`이라 실제 구현 Bean을 등록하면 샘플 구현 대신 쓰인다.
 
@@ -210,5 +229,5 @@ popup.put("showDoNotShowAgain", doNotShow != null && doNotShow);
 
 ## 7. 검증 상태
 
-- DB 없이: repo/core `PopupSingleQuerySampleMapperXmlTest` 3건(XML 파싱, 정렬 후 ROWNUM 1, 바인딩 수, CLOB→String), service/core `PopupSingleQuerySampleTest` 8건(없음, 컬럼 매핑·중첩·false/0 보존·중복 키 제거, 기본값, 전체 옵션 키, IMAGE 파일 URL·크기 생략, SURVEY SUBMIT, 데이터 오류 11종·전달 건 미발급, §4.1 INSERT SQL 6건 유형별 조립·CLOB 4000바이트 이하), web/api `PopupSingleQuerySampleControllerTest` 3건(200·null popup, 500, 401·400).
-- 미실행: 실제 DTIY3111 테이블 대상 SQL·샘플 INSERT 실행(테이블·확정 정의 미보유), 확정 코드표 대조, 전체 서버에서 `enabled=true` 기동 확인.
+- DB 없이: repo/core `PopupSingleQuerySampleMapperXmlTest` 4건(XML 파싱, 정렬 후 ROWNUM 1, 바인딩 수, CLOB→String, 사진 정의 파일 컬럼·DEL_YN 미적용), service/core `PopupSingleQuerySampleTest` 10건(없음, 컬럼 매핑·중첩·false/0 보존·중복 키 제거, 기본값, 전체 옵션 키, IMAGE 파일 URL·크기 생략, SURVEY SUBMIT, 데이터 오류 11종·전달 건 미발급, §4.1 INSERT SQL 6건 유형별 조립·CLOB 4000바이트 이하, 사진 정의 범위(20개 컬럼·길이 BYTE 가정·ID 10자·등록자/일시·NUMBER(5) 정수·DELETE 대상), 유형별 파일 컬럼·경로만/파일명만), web/api `PopupSingleQuerySampleControllerTest` 3건(200·null popup, 500, 401·400).
+- 미실행: 실제 DTIY3111 테이블 대상 SQL·샘플 INSERT 실행(확정 DDL·대상 DB 미보유, 사진 정의 기준까지만 확인), 확정 코드표 대조, 전체 서버에서 `enabled=true` 기동 확인.

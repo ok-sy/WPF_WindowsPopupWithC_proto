@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-22-27 — TODO72 DTIY3111 사진 스키마 기준 단건 조회 샘플 구현
+
+- 이유: 단건 조회 샘플의 가정 파일 컬럼·ID 길이·등록 필수값이 DTIY3111 사진 정의와 달라 인계 전에 SQL·VO·INSERT·문서를 사진 정의에 맞출 필요.
+- 변경: VO에 이미지·영상 파일 경로/파일명과 첨부파일 ID 필드 분리, 매퍼 SELECT·resultMap을 IMG_FILE_PATH_CN·IMG_FILE_NM·VDO_FILE_PATH_CN·VDO_FILE_NM·APND_FILE_ID로 교체, DEL_YN 조건은 주석으로만 표시. 조립기는 IMAGE → 이미지 컬럼, VIDEO·영상+퀴즈 → 영상 컬럼으로 URL 생성(영상 없는 QUIZ 제외). FileUrlResolver는 파일명이 있어야 URL을 만들도록 계약을 정하고 첨부 ID 교체 지점 명시. 샘플 INSERT를 ID 10자·POPU_CNTN_NM·REG_USER_ID 'SAMPLE'·REG_DTTM SYSDATE로 바꾸고 DELETE를 샘플 ID 6건 IN으로 한정. 사진 정의 범위 검증·유형별 파일 컬럼 테스트 추가, 샘플 크기 테스트 정수화. 인계 문서 매핑표·기본값 역할·§3.2 길이·숫자·SQL·ID·응답 예시·교체 지점·검증 건수, TODO72 매핑표 표현·수정 대상(PopupPorts.java)·구현 결과, OCR 문서 반영 상태, 활성 작업 색인 갱신.
+- 주요 파일: zero-rule-server/domain/.../popup/sample/PopupContentRow.java, zero-rule-server/repo/core/src/main/resources/mappers/popup/sample/PopupSingleQuerySampleMapper.xml, zero-rule-server/service/core/.../popup/sample/PopupPorts.java·PopupSingleResponseAssembler.java, zero-rule-server/service/core/src/test/resources/sample/single-query/DTIY3111_sample_insert_oracle.sql, PopupSingleQuerySampleTest.java, PopupSingleQuerySampleMapperXmlTest.java, docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md·DTIY3111_SCHEMA_OCR.md, docs/design/72_DTIY3111_사진스키마_단건샘플정합성_TODO.md, docs/policies/ACTIVE_TASKS.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test --offline` 191건 실패 0·skip 11(매퍼 XML 4건, 샘플 10건, 컨트롤러 3건 포함). 미실행: 실제 DTIY3111 대상 INSERT·SELECT, NUMBER(5) 스케일·BYTE/CHAR·DEFAULT·코드표 확인. 영상+퀴즈 videoUrl 필수 검증 누락·passingScore/completionRatio 원본 연결은 별도 보완 대상으로 미변경.
+- 상태: 커밋에 포함(커밋 직전 기록). 원격 반영.
+
 ## 2026-10-22-26 — TODO72 파일 매핑·숫자 및 길이 검증 계획 보완
 
 - 이유: 스키마 인계 계획에서 첨부 ID·파일 원본 선택·숫자 스케일·문자 길이 단위·등록 샘플 값의 기준을 구체화할 필요.
