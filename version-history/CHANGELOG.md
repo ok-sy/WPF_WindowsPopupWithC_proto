@@ -10,6 +10,14 @@
 - 검증: 사진·대화 범위 대조, 문서 상대 링크 및 git diff --check 확인. Java/C#/SQL 구현·DB/API/WPF 실행 없음.
 - 상태: 계획 문서 추가 / 구현 미착수 / 커밋에 포함(커밋 직전 기록). 기존 3111 프로그램 및 다른 작업의 변경 유지.
 
+### 2026-10-27 후속 보완 — 3117 전용 기본값 설정 확정
+
+- 이유: 신규 전체 JSON 조회에서 공통·유형별 기본값을 단일 설정으로 관리하고 적용 범위를 3117로 제한할 필요.
+- 변경: 공통 기본값 표와 유형별 content 표 추가. IMAGE·VIDEO showDescription=false, VIDEO allowPlaybackRateChange/allowSeek=false 및 영상 QUIZ 상속 확정. 설정을 기동 시 읽고 3117 Service 내부에서만 누락/null을 보정하는 TODO로 조정. false/0·IMAGE 크기 미지정 보존과 설정 원본 불변 검증 추가.
+- 주요 파일: docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md, version-history/CHANGELOG.md.
+- 검증: 확정값·서비스 내부 처리 방향 대조, git diff --check 확인. 실제 설정파일·Java/C# 구현 및 실행 검증 없음.
+- 상태: TODO 후속 보완 / 커밋에 포함(커밋 직전 기록). 기존 3111 구현·기본값 변경 없음.
+
 ## 2026-10-27-01 — DB 조회 최소 샘플·WPF 로그인 연동 TODO 가이드
 
 - 이유: 실환경 이식 중 중계 샘플의 불필요한 의존성과 실제 SSO 로그인 계약 차이를 확인해 최소 구성·검증 순서를 기록할 필요.
