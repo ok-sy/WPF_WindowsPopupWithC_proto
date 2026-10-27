@@ -2,7 +2,7 @@
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
-- [DTIY3117 전체 JSON 별도 조회 TODO — 기존 3111 보존](design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md)
+- [DTIY3117 전체 JSON 별도 조회 TODO — 기존 3111 보존](design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md) · 조회 샘플 인계: [SERVER_SAMPLE_FULL_JSON_API.md](interfaces/SERVER_SAMPLE_FULL_JSON_API.md)
 
 - [DB 조회 최소 샘플·WPF 로그인 연동 TODO 가이드](design/20261027_DB조회_최소샘플_WPF로그인_연동_TODO_GUIDE.md)
 

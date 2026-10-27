@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  POL-13-03 : 적용·샘플 구분
+  POL-14-03 : 서버 인계 예제
+  DTIY3117 전체 JSON 단건 조회 샘플 SQL (Oracle 11g 호환).
+
+  - POPU_ID(PK) 지정 조회라 정렬·ROWNUM이 필요 없다.
+  - 파라미터는 #{...} 바인딩만 사용한다(${...} 문자열 치환 금지).
+  - 컬럼은 DTIY3117 사진 판독(POPU_ID, POPU_BLTN_CN)이며 확정 DDL이 아니다. 철자를 실제 정의와 대조한 뒤 사용한다.
+  - [담당 구현] 사용자별 후보 선정·게시 상태·기간 조건은 관계 스키마 확인 후 추가한다. 이 SQL만으로 "다음 표시 팝업" 업무 API가 완성되지 않는다.
+  - 기존 DTIY3111 샘플 SQL(PopupSingleQuerySampleMapper.xml)은 수정하지 않는다.
+-->
+<mapper namespace="server.repo.core.mapper.popup.sample.fulljson.PopupFullJsonSampleMapper">
+
+    <resultMap id="popupBulletinRow" type="server.domain.popup.sample.fulljson.PopupBulletinRow">
+        <id property="popupId" column="POPU_ID"/>
+        <!-- CLOB → String. 파싱은 Java(PopupFullJsonSampleService)에서 ObjectMapper로 한 번만 한다. -->
+        <result property="popupJson" column="POPU_BLTN_CN" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+
+    <!-- 팝업 ID로 게시내용 1건을 조회한다. -->
+    <select id="selectByPopupId" resultMap="popupBulletinRow">
+        SELECT B.POPU_ID
+             , B.POPU_BLTN_CN                          /* 팝업 게시내용 JSON(popup 객체 본체) */
+          FROM DTIY3117 B
+         WHERE B.POPU_ID = #{popupId, jdbcType=VARCHAR}
+    </select>
+</mapper>

@@ -1,0 +1,66 @@
+# POL-01-02 : 기본값의 적용
+# POL-14-03 : 서버 인계 예제
+# ■ DTIY3117 전체 JSON 조회 전용 기본값 (docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md "3117 전용 기본값 확정")
+# - 서버 기동 시 PopupFullJsonSampleConfig가 한 번 읽어 PopupFullJsonDefaults로 유지한다(요청마다 읽지 않음, 핫리로드 없음).
+# - 저장 JSON에 키가 없거나 null일 때만 채운다. 명시한 true/false·유효한 0은 그대로 둔다.
+# - 기존 DTIY3111 샘플·WPF 자체 기본값에는 적용되지 않는다.
+# - 기동 시 키·타입·ENUM·범위를 검증한다. 모르는 키·빠진 키·잘못된 값이 있으면 기동이 실패한다(다른 값으로 대체하지 않음).
+# - 위치는 popup.sample.full-json.defaults-location(기본 classpath:popup/sample/popup-full-json-defaults.yml)으로 바꿀 수 있다.
+#
+# 코드에 고정된 조건부 규칙(이 파일로 바꾸지 않음)
+# - IMAGE: width/height가 없으면 채우지 않는다(크기 미지정 = 원본 기준). ORIGINAL은 width/height 필수.
+# - SURVEY·QUIZ: footerAction은 SUBMIT(없으면 SUBMIT, 다른 명시값은 거절).
+# - VIDEO·영상 QUIZ(videoEnabled=true): completionRatio가 없으면 1.0. 영상 QUIZ는 content.VIDEO 기본값도 채운다.
+
+# 응답 최상위(popup과 별도). 저장 JSON의 같은 키는 신뢰하지 않고 제거한다.
+response:
+  pollingIntervalSeconds: 1800
+
+# popup 최상위
+popup:
+  displayMode: SEQUENTIAL            # SEQUENTIAL / SIMULTANEOUS
+  sizeMode: FIXED                    # FIXED / RATIO / FULLSCREEN
+  width: 900                         # IMAGE 제외
+  height: 620                        # IMAGE 제외
+  widthRatio: 0.7
+  heightRatio: 0.75
+  minimumWidth: 300
+  minimumHeight: 300
+  maximumWidth: 1200
+  maximumHeight: 900
+  showHeader: true
+  showFooter: true
+  showFooterButton: true
+  footerAction: CLOSE                # 기본값은 CLOSE만 허용(SURVEY·QUIZ는 코드 규칙으로 SUBMIT)
+  showLater: false
+  showDoNotShowAgain: false
+  useBackgroundOverlay: true
+  backgroundOverlayOpacity: 0.45
+  popupPosition: CENTER
+  headerFontSize: null               # null = WPF 기본 크기
+  bodyFontSize: null
+  footerFontSize: null
+  hideDays: null
+
+# 유형별 content. 본문·파일 URL·문항·정답 같은 데이터는 넣지 않는다(옵션만).
+content:
+  TEXT:
+    showPlainText: true
+    showHighlight: false
+    showBottomDescription: false
+  IMAGE:
+    showDescription: false
+    imageSizeMode: ADAPTIVE          # ADAPTIVE / FIT_TO_IMAGE / ORIGINAL
+    keepAspectRatio: true
+  VIDEO:
+    showDescription: false
+    showControls: true
+    allowFullScreen: true
+    allowPlaybackRateChange: false
+    allowSeek: false
+    autoPlay: false
+    isLoop: false
+    defaultVolume: 0.7
+  SURVEY: {}
+  QUIZ:
+    videoEnabled: false

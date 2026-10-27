@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-27-03 — DTIY3117 전체 JSON 단건 조회 샘플 구현
+
+- 이유: 2026-10-27-02 계획에 따라 게시내용 CLOB의 popup 전체 JSON을 기존 WPF 단건 응답으로 돌려주는 별도 조회 프로그램이 필요. 기존 DTIY3111 샘플은 보존.
+- 변경: `popup/sample/fulljson` 패키지에 조회 VO `PopupBulletinRow`, 매퍼 `PopupFullJsonSampleMapper`(POPU_ID 바인딩 조회, CLOB→String), `PopupFullJsonSampleService`(파싱 → popupId=DB 기준·불일치 거절, deliveryId·pollingIntervalSeconds 저장값 제거, 계약 외 최상위 키 제거, content 안 창·푸터 옵션 최상위 승격, 명시값 타입·ENUM·범위 검증, 기본값 전 필수 콘텐츠 검증, 누락/null 기본값, IMAGE 크기 미지정 유지·ORIGINAL 크기 필수, SURVEY·QUIZ SUBMIT, 영상 completionRatio 1.0·영상 QUIZ VIDEO 기본값 상속, SURVEY 정답 키 제거, 응답 키 순서 WpfPopupItem 기준, 테스트 deliveryId UUID), 3117 전용 기본값 `popup-full-json-defaults.yml`과 `PopupFullJsonDefaults`(기동 시 1회 로드, 키·타입·범위·footerAction·min/max 검증, 요청마다 깊은 복사), 조건부 Bean `PopupFullJsonSampleConfig`(`popup.sample.full-json.enabled`, 기본 false), API `POST /p/api/sample/wpf/popups/full-json/single?popupId=`와 전용 오류 핸들러(기존 WPF 오류 코드 재사용) 추가. 유형별 샘플 INSERT 6건(S17-*)과 인계 문서 작성, TODO 체크·진행 기록·문서 색인 갱신. 기존 3111 소스·SQL·경로·`PopupSampleException`은 변경 없음. WPF 응답 계약이 같아 ALL/MINIMAL 명세와 WPF 코드는 검토 후 변경하지 않음.
+- 주요 파일: zero-rule-server/domain/.../popup/sample/fulljson/PopupBulletinRow.java, zero-rule-server/repo/core/.../popup/sample/fulljson/PopupFullJsonSampleMapper.java·mappers/popup/sample/fulljson/PopupFullJsonSampleMapper.xml, zero-rule-server/service/core/.../popup/sample/fulljson/(PopupFullJsonSampleService·PopupFullJsonDefaults·PopupFullJsonSampleConfig).java·resources/popup/sample/popup-full-json-defaults.yml, zero-rule-server/web/api/.../popup/sample/fulljson/(PopupFullJsonSampleController·PopupFullJsonSampleExceptionHandler).java, 테스트 3종·sample/full-json/DTIY3117_sample_insert_oracle.sql, docs/interfaces/SERVER_SAMPLE_FULL_JSON_API.md, docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 신규 22건(서비스 15·매퍼 XML 3·컨트롤러 4) 통과, service/core 144건(기존 DB 테스트 7건 건너뜀)·repo/core 7건·web/api 57건 전체 회귀 통과. 기본값 `allowSeek` true 변경·SURVEY `isCorrect` 제거 생략 변이를 각각 검출. 실제 Oracle DTIY3117 조회·DDL 대조, 서버 기동 후 HTTP 호출, API Demo·WPF 표시, 등록/수정·상세조회 왕복은 미실행.
+- 상태: 커밋에 포함(커밋 직전 기록), 원격 반영. 실환경 검증 대기.
+
 ## 2026-10-27-02 — DTIY3117 전체 JSON 별도 조회 프로그램 계획
 
 - 이유: 게시내용 CLOB 전체 JSON 조회 방식을 기존 DTIY3111 프로그램을 보존한 채 별도 추가할 필요.
