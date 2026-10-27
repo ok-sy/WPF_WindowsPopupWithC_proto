@@ -2,6 +2,8 @@
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
+- [DB 조회 최소 샘플·WPF 로그인 연동 TODO 가이드](design/20261027_DB조회_최소샘플_WPF로그인_연동_TODO_GUIDE.md)
+
 | 위치 | 내용 |
 |---|---|
 | [policies/](policies/README.md) | 현행 정책 16개·원본 TODO 역추적·[활성 작업/보류](policies/ACTIVE_TASKS.md). TODO71 정적 대조, 미확정·실환경 검증은 분리 |
