@@ -97,7 +97,7 @@
                                 <StackPanel Margin="0,8,0,0">
                                 <Button x:Name="SsoTestButton" Content="SSO 테스트" Click="SsoTestButton_Click"
                                         ToolTip="Auth.SsoUrl을 Windows 통합 인증으로 호출해 MAIN_USER_ID·MAIN_USER_CLASSI_CODE를 읽습니다."/>
-                                <TextBlock Text="사번 (logonId)" Style="{StaticResource Label}"/>
+                                <TextBlock Text="사번 (lgonId)" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="AuthLogonIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
                                 <TextBlock Text="사용자 구분 코드 (classCode)" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="AuthClassCodeText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>

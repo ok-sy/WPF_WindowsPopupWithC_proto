@@ -71,7 +71,7 @@ class WpfAuthPrototypeControllerTest {
                 .format(java.time.format.DateTimeFormatter.ofPattern(server.domain.popup.wpf.WpfJson.DATE_TIME));
         MvcResult result = mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}"))
+                        .content("{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.expiresAt").value(expectedExpiresAt))
@@ -121,19 +121,32 @@ class WpfAuthPrototypeControllerTest {
         verifyNoInteractions(popupService);
     }
 
+    /** 폐쇄망 p/api/ssoLogin과 같은 lgonId가 기준 키이고, 이전 WPF의 logonId도 별칭으로 받는다. */
+    @Test void legacyLogonIdKeyIsAcceptedAsAlias() throws Exception {
+        MvcResult result = mvc.perform(post("/p/api/wpf/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"logonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String token = json.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
+        mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        verify(popupService).getNextPopup("E1001");
+    }
+
     @Test void loginValidatesRequiredFields() throws Exception {
         mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logonId\":\"\",\"classCode\":\"A1\"}"))
+                        .content("{\"lgonId\":\"\",\"classCode\":\"A1\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("WPF_BAD_REQUEST"));
         mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logonId\":\"E1001\"}"))
+                        .content("{\"lgonId\":\"E1001\"}"))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"X\"}"))
+                        .content("{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"X\"}"))
                 .andExpect(status().isBadRequest());
         assertEquals(0, store.size());
     }

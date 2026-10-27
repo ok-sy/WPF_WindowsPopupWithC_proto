@@ -71,7 +71,7 @@ namespace Popup
                 WpfLoginResponseDto response = await client.LoginAsync(new SsoUserInfo(logonId, classCode));
                 return "로그인 테스트 — 성공\n"
                     + $"POST {client.LoginUrl}\n"
-                    + $"{{ logonId: {logonId}, classCode: {classCode}, linkYn: N }}\n"
+                    + $"{{ lgonId: {logonId}, classCode: {classCode}, linkYn: N }}\n"
                     + $"tokenType = {response.TokenType}, 토큰 {response.AccessToken.Length}자 (보관하지 않음)\n"
                     + $"expiresAt = {response.ExpiresAt.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}\n"
                     + $"{stopwatch.ElapsedMilliseconds} ms";

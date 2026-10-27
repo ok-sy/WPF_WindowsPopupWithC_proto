@@ -3,14 +3,19 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Popup.Services.Auth
 {
-    /// <summary>POST {BaseUrl}{LoginPath} 요청 본문. 필드명은 서버 WpfLoginRequest(camelCase)와 같다.</summary>
+    /// <summary>
+    /// POST {BaseUrl}{LoginPath} 요청 본문. 전송 키는 폐쇄망 로그인 API(p/api/ssoLogin) 요청 DTO와 같은
+    /// lgonId·classCode·linkYn이다. C# 속성 이름(LogonId)은 내부 이름이라 바꾸지 않고 전송 키만 지정한다.
+    /// </summary>
     public sealed class WpfLoginRequestDto
     {
+        [JsonPropertyName("lgonId")]
         public string LogonId { get; set; } = string.Empty;
         public string ClassCode { get; set; } = string.Empty;
         public string LinkYn { get; set; } = "N";
@@ -89,7 +94,7 @@ namespace Popup.Services.Auth
         {
             if (requestBody.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException("로그인 요청 본문은 JSON 객체여야 합니다.", nameof(requestBody));
-            string logonId = requestBody.TryGetProperty("logonId", out JsonElement value) && value.ValueKind == JsonValueKind.String
+            string logonId = requestBody.TryGetProperty("lgonId", out JsonElement value) && value.ValueKind == JsonValueKind.String
                 ? value.GetString() ?? string.Empty : "(미입력)";
             return SendLoginAsync(requestBody, logonId, cancellationToken);
         }
@@ -129,7 +134,7 @@ namespace Popup.Services.Auth
                 throw new InvalidOperationException("WPF 로그인 API 응답에 accessToken이 없습니다.");
             }
 
-            Debug.WriteLine($"[WPF-LOGIN] logonId={logonIdForLog} expiresAt={body.ExpiresAt:O} ({stopwatch.ElapsedMilliseconds}ms)");
+            Debug.WriteLine($"[WPF-LOGIN] lgonId={logonIdForLog} expiresAt={body.ExpiresAt:O} ({stopwatch.ElapsedMilliseconds}ms)");
             return body;
         }
     }

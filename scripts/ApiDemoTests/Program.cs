@@ -54,6 +54,7 @@ internal static class Program
         CheckLaunchArguments();
         CheckRecordMasking();
         CheckConnectionKey();
+        CheckLoginRequestKey();
         CheckHttpCategory54();
         CheckInMemoryDemoLayout();
         CheckDemoOptions54();
@@ -75,11 +76,19 @@ internal static class Program
         Check(Parse("-show-main").ShowMain && Parse("--show-main").ShowMain, "[51-1] show-main accepts single and double dash");
     }
 
+    /// <summary>일반 모드 로그인 본문은 폐쇄망 p/api/ssoLogin 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>
+    private static void CheckLoginRequestKey()
+    {
+        string body = JsonSerializer.Serialize(new WpfLoginRequestDto { LogonId = "E1001", ClassCode = "A1" },
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        Check(body == "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}", "[login] typed login body uses lgonId: " + body);
+    }
+
     private static void CheckRecordMasking()
     {
         HttpExchangeRecord record = new(DateTimeOffset.Now, "POST", "http://h/p/api/wpf/auth/login",
             new[] { new KeyValuePair<string, string>("Authorization", "Bearer secret-token-123") },
-            "{\"logonId\":\"E1\"}", 200, "OK", "{\"accessToken\":\"tok-SECRET\",\"tokenType\":\"Bearer\"}", 5, null);
+            "{\"lgonId\":\"E1\"}", 200, "OK", "{\"accessToken\":\"tok-SECRET\",\"tokenType\":\"Bearer\"}", 5, null);
         var (request, response) = record.ToDisplayJson(revealSecrets: false);
         Check(!request.Contains("secret-token-123") && request.Contains("마스킹"), "[51-3] Authorization header is masked by default");
         Check(!response.Contains("tok-SECRET") && response.Contains("마스킹"), "[51-3] accessToken in response body is masked by default");
@@ -220,7 +229,7 @@ internal static class Program
               && ((FrameworkElement)window.FindName("InMemoryActionBar")).Visibility == Visibility.Collapsed
               && ((TextBlock)window.FindName("ModeBadgeText")).Text == "API 연결",
             "[54-2] API demo shows the query action bar outside the scroll area and the API mode badge");
-        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"logonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
+        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         ((TextBox)window.FindName("ApiDevUserIdText")).Text = string.Empty;
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{\"probe\":1}";
 
@@ -228,7 +237,7 @@ internal static class Program
         Query(window);
         string queuePath = (string)typeof(DemoWindow).GetProperty("ApiQueueFilePath", Flags)!.GetValue(window)!;
         if (File.Exists(queuePath)) File.Delete(queuePath);
-        Check(server.LoginBodies.Count == 1 && server.LoginBodies[0].Contains("\"logonId\":\"E1001\""), "[51-2] login API receives the entered login JSON");
+        Check(server.LoginBodies.Count == 1 && server.LoginBodies[0].Contains("\"lgonId\":\"E1001\""), "[51-2] login API receives the entered login JSON");
         Check(server.PopupRequests.Count == 1 && server.PopupRequests[0].Body == "{\"probe\":1}", "[51-2] query sends the entered JSON body as-is");
         Check(server.PopupRequests[0].Authorization == "Bearer tok-1" && server.PopupRequests[0].ClientVersion == ClientVersion.Value,
             "[51-4] query uses the login token and the client version header");

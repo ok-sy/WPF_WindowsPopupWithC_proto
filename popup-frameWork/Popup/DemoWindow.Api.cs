@@ -85,7 +85,7 @@ namespace Popup
 
             ApiBaseUrlText.Text = settings.BaseUrl;
             ApiLoginPathText.Text = settings.AuthLoginPath;
-            ApiLoginBodyText.Text = "{\n  \"logonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
+            ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
             ApiDevUserIdText.Text = MainWindow.ResolveDevUserId(settings.DevUserId) ?? string.Empty;
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
             switch (settings.AuthMode.Trim().ToUpperInvariant())

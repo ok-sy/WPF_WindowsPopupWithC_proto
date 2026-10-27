@@ -406,7 +406,7 @@ namespace Popup
                     $"   {result.SsoElapsedMs} ms\n\n" +
                     "2. 로그인 API\n" +
                     $"   POST {result.LoginUrl}\n" +
-                    $"   {{ logonId: {result.User.LogonId}, classCode: {result.User.ClassCode}, linkYn: N }}\n" +
+                    $"   {{ lgonId: {result.User.LogonId}, classCode: {result.User.ClassCode}, linkYn: N }}\n" +
                     $"   tokenType = {result.TokenType}, 토큰 {result.TokenLength}자 (메모리 보관)\n" +
                     $"   expiresAt = {result.ExpiresAt:yyyy-MM-dd HH:mm:ss zzz}\n" +
                     $"   {result.LoginElapsedMs} ms",

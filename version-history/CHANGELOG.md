@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-27-04 — 로그인 요청 키 lgonId 정합
+
+- 이유: 폐쇄망은 로그인 API로 `p/api/ssoLogin`을 쓰며 요청 DTO의 사용자 식별 키가 `lgonId`라, WPF가 보내던 `logonId`와 맞지 않음(최소조회·로그인 연동 가이드 §4). 경로는 설정으로 바꿀 수 있어 키만 맞춤.
+- 변경: WPF `WpfLoginRequestDto.LogonId`에 `[JsonPropertyName("lgonId")]` 지정(C# 내부 이름 유지), API Demo 기본 로그인 JSON·로그 표기·SSO 테스트 화면 라벨을 `lgonId`로 변경, API Demo 로그 사번 추출 키를 `lgonId`로 변경. 로컬 프로토타입 서버 `WpfLoginRequest`는 `@JsonProperty("lgonId")`로 받고 이전 키는 `@JsonAlias("logonId")`로 계속 받음. 계약서 §5.1·개정 기록, popup-frameWork README, 가이드 체크 갱신, Word·PDF 재생성. 응답 토큰 처리(`x-custom-authorization` 헤더)·만료 처리는 이번 범위가 아님.
+- 주요 파일: popup-frameWork/Popup/Services/Auth/WpfLoginClient.cs, DemoWindow.Api.cs·DemoWindow.AuthTest.cs·DemoWindow.xaml·MainWindow.xaml.cs, scripts/ApiDemoTests/Program.cs, zero-rule-server/web/api/.../payload/popup/wpf/WpfLoginRequest.java·WpfAuthPrototypeControllerTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_Popup_API_Interface_v3.7.docx·pdf, popup-frameWork/README.md, docs/design/20261027_DB조회_최소샘플_WPF로그인_연동_TODO_GUIDE.md, version-history/CHANGELOG.md.
+- 검증: ApiDemoTests 70건(일반 모드 직렬화 `lgonId` 검사 신규, 모의 서버 수신 본문 `lgonId`), PopupWindowTests 403건, web/api 58건(`logonId` 별칭 로그인 테스트 신규, `lgonId` 로그인 후 사번 E1001 조회 확인) 통과. Word 재생성(표 46·제목 123), PDF 86쪽(직전 85쪽) 생성 — 페이지 렌더링 육안 확인은 미실행. 폐쇄망 `p/api/ssoLogin` 실제 호출·서버 DTO 바인딩은 미실행. ALL/MINIMAL 명세·Excel에는 로그인 키 표기가 없어 변경 없음.
+- 상태: 커밋에 포함(커밋 직전 기록), 원격 반영.
+
 ## 2026-10-27-03 — DTIY3117 전체 JSON 단건 조회 샘플 구현
 
 - 이유: 2026-10-27-02 계획에 따라 게시내용 CLOB의 popup 전체 JSON을 기존 WPF 단건 응답으로 돌려주는 별도 조회 프로그램이 필요. 기존 DTIY3111 샘플은 보존.

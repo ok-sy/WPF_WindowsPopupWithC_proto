@@ -66,9 +66,9 @@
 
 - [x] WpfLoginClient.SendLoginAsync에서 2xx 확인 후 응답 헤더 `x-custom-authorization`을 먼저 읽는 코드 적용 화면 확인. 기존 body.accessToken 방식은 헤더 미검출 시 fallback이다.
 - [ ] API Demo 로그인 방식도 WpfLoginClient를 사용하므로 재빌드한 EXE에서 헤더 토큰 추출이 적용되는지 검증한다. 직접 토큰 입력·일반 Demo SSO 조회는 별도 경로다.
-- [ ] 실제 요청 DTO와 대조해 로그인 키를 `logonId`에서 `lgonId`로 맞춘다. API Demo 입력 JSON 및 DemoWindow.Api.cs의 기본 JSON도 함께 변경한다.
-- [ ] 일반 모드 WpfLoginRequestDto의 LogonId에 `[JsonPropertyName("lgonId")]`를 지정한다. 익명 객체·직접 JSON 생성 경로가 있다면 실제 전송 키도 별도로 변경한다. C# 내부 변수 전체 치환은 하지 않는다.
-- [ ] 로그인 Request 패널에서 실제 body 키가 lgonId인지 확인하고 서버 요청 DTO 바인딩까지 검증한다.
+- [x] 실제 요청 DTO와 대조해 로그인 키를 `logonId`에서 `lgonId`로 맞춘다. API Demo 입력 JSON 및 DemoWindow.Api.cs의 기본 JSON도 함께 변경한다. (2026-10-27 저장소 반영. 폐쇄망은 `p/api/ssoLogin` 사용, 로컬 프로토타입 서버 `WpfLoginRequest`는 `lgonId` + 별칭 `logonId`)
+- [x] 일반 모드 WpfLoginRequestDto의 LogonId에 `[JsonPropertyName("lgonId")]`를 지정한다. 익명 객체·직접 JSON 생성 경로가 있다면 실제 전송 키도 별도로 변경한다. C# 내부 변수 전체 치환은 하지 않는다.
+- [ ] 로그인 Request 패널에서 실제 body 키가 lgonId인지 확인하고 서버 요청 DTO 바인딩까지 검증한다. (로컬: ApiDemoTests 모의 서버 수신 본문·일반 모드 직렬화 검사, 프로토타입 서버 바인딩 테스트 통과. 폐쇄망 `p/api/ssoLogin` 실제 확인은 미실행)
 - [ ] 응답 헤더 이름이 요청 인증 헤더 이름을 의미하지는 않는다. 서버 인증 필터의 getHeader 및 Bearer 접두사 규칙을 확인한 뒤 조회·결과 전송 클라이언트를 맞춘다.
 - [ ] 헤더 토큰 반환 코드가 ExpiresAt을 채우지 않는 문제를 해결한다. 기본값으로 인한 즉시 만료·반복 로그인 가능성을 확인하고 실제 만료 계약/JWT exp 및 기존 갱신 동작과 맞춘다. 임의 유효기간을 성공 계약으로 확정하지 않는다.
 - [ ] 헤더 우선 반환 시 기존 만료 처리·로그인 성공 로그·응답 오류 처리의 누락 여부를 검토한다.

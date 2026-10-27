@@ -363,7 +363,7 @@ POST /p/api/wpf/auth/login
 
 ```json
 {
-  "logonId": "E1001",
+  "lgonId": "E1001",
   "classCode": "A1",
   "linkYn": "N"
 }
@@ -996,7 +996,7 @@ popupSample.exe -Demo -Api
 - 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
 - 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 / 인증 헤더 없음 — 초기 선택은 `Auth.Mode`),
-  `로그인 경로`·`로그인 요청 JSON`(`{"logonId","classCode","linkYn"}` 그대로 전송), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
+  `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/ssoLogin` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
   `X-Dev-User-Id`(선택, 서버 dev-user-header 전용), `단건 조회 요청 JSON`(기본 `{}`).
 - 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
   → 창 닫기·제출 → 결과를 `POST /api/wpf/popups/results`로 실제 전송 → `status`·`nextStatus`를 로그에 표시.

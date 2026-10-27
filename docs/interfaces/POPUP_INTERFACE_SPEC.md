@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-10-22 (KST)
+- 최신화: 2026-10-27 (KST)
+- 3.7 보완(2026-10-27, 로그인 요청 키): WPF-00 로그인 요청의 사용자 식별 키를 `logonId` → `lgonId`로 변경. 폐쇄망 로그인 API(`p/api/ssoLogin`) 요청 DTO와 같은 키다. WPF 일반 모드·API Demo 기본 JSON이 `lgonId`를 보내며, 로컬 프로토타입 서버(`/api/wpf/auth/login`)는 `lgonId`를 받고 이전 키 `logonId`도 별칭으로 받는다. 응답·토큰 계약은 바뀌지 않는다.
 - 산출물 동기화(2026-10-22, TODO71): Word·PDF·Excel에 현행 v3.7 보완(최소 창 300×300, 초기화 버튼 삭제, 취소선·문단 서식, SURVEY·QUIZ 서식·선택 제한·배점, IMAGE 공통 크기)을 반영. 버전 번호·API 계약 변경 없음.
 - 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
 - 2026-10-19 보완(버전 번호 3.7 유지, TODO55-3·55-4): §8.4.1 설문·퀴즈 서식 필드를 서버 저장·관리자 편집까지 반영. 서식이 있으면 서버가 일반 문자열을 서식에서 파생하고(독립 편집 금지), 빈 서식은 저장하지 않는다. 문항·선택지 서식은 문항 템플릿 행(DB 17 스크립트)에, 콘텐츠 제목·설명 서식은 CONTENT_OPTIONS에 저장. 필드 이름·위치는 초안과 같다. 산출물(Excel·Word·PDF)은 당시 미반영이며 2026-10-22에 동기화했다.
@@ -163,7 +164,7 @@ Authorization: Bearer <accessToken>
 
 ```text
 프로세스 최초 인증
-→ 사내 SSO에서 logonId / classCode 확보
+→ 사내 SSO에서 사번(lgonId) / classCode 확보
 → 로그인 API 호출
 → accessToken 메모리 저장
 → 조회/결과 API에 Bearer 토큰 전달
@@ -189,7 +190,7 @@ X-Client-Version: 1.0.0
 
 ```json
 {
-  "logonId": "E1001",
+  "lgonId": "E1001",
   "classCode": "10",
   "linkYn": "N"
 }
@@ -197,7 +198,7 @@ X-Client-Version: 1.0.0
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| logonId | string | O | 없음 | SSO에서 얻은 사용자 식별값 |
+| lgonId | string | O | 없음 | SSO에서 얻은 사용자 식별값(SSO XML `MAIN_USER_ID`). 폐쇄망 `p/api/ssoLogin` 요청 DTO와 같은 키. 로컬 프로토타입 서버는 이전 키 `logonId`도 받는다 |
 | classCode | string | O | 없음 | SSO에서 얻은 사용자 분류 코드 |
 | linkYn | string | O | `"N"` | 현재 C#은 항상 `N` 전송 |
 
