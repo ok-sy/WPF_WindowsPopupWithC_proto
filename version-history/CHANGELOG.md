@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-28-01 — DTIY3117 사번 조회·최소 구성 후속 TODO
+
+- 이유: 대상자 테이블 조인·인증 사번 사용 및 기본값 적용 책임을 등록 단계로 정리하고 결과 저장 생략 테스트의 범위를 명시할 필요.
+- 변경: 3121 ENO JOIN·Mapper 매핑, RequestBody/popupId 입력 제거, @Service 구성·Default/Config/UserResolver 정리 조건, 기존 검증 보존, 관리자 왕복 범위·Orange CLOB 입력·결과 모의 응답·로컬 미전송 큐 확인 TODO 추가. 전일 문서에 대체 결정 안내와 색인 연결.
+- 주요 파일: docs/design/20261028_DTIY3117_사번조회_최소구성_후속TODO.md, docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 대화 및 확인한 코드의 결과 DTO/큐 종결 조건 대조, 상대 링크·git diff --check 확인. Java/C#/SQL 구현·빌드·DB/API/WPF 실행 없음.
+- 상태: 문서만 반영 / 구현·통합 검증 미완료 / 커밋에 포함(커밋 직전 기록).
+
 ## 2026-10-27-04 — 로그인 요청 키 lgonId 정합
 
 - 이유: 폐쇄망은 로그인 API로 `p/api/ssoLogin`을 쓰며 요청 DTO의 사용자 식별 키가 `lgonId`라, WPF가 보내던 `logonId`와 맞지 않음(최소조회·로그인 연동 가이드 §4). 경로는 설정으로 바꿀 수 있어 키만 맞춤.
