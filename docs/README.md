@@ -2,6 +2,8 @@
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
+- [결과 큐 메모리 전용 전환·파일 접근 제거 TODO](design/20261028_결과큐_메모리전용_파일접근제거_TODO.md) — 진행 확정, 구현 대기. 로그·캐시는 제외.
+
 - [2026-10-28 DTIY3117 사번 조회·최소 구성 후속 TODO](design/20261028_DTIY3117_사번조회_최소구성_후속TODO.md)
 
 - [DTIY3117 전체 JSON 별도 조회 TODO — 기존 3111 보존](design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md) · 조회 샘플 인계: [SERVER_SAMPLE_FULL_JSON_API.md](interfaces/SERVER_SAMPLE_FULL_JSON_API.md)
