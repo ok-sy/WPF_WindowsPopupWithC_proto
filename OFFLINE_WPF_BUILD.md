@@ -104,4 +104,11 @@ Set-ExecutionPolicy -Scope Process Bypass
 - 묶음별 TAR, 통합 `<날짜>.tgz`(+`.sha256`), `MANIFEST-*.txt`, `DELETE-SINCE-20260930.txt`(누적 삭제 + 직전 반입본 이후 생겼다가 지워진 파일), `SHA256SUMS.txt`(TAR)·`SOURCE-SHA256SUMS.txt`(파일별), `README-IMPORT.md`를 만든다.
 - 직전 반입본은 `offline-export` 아래 가장 최근 반입본의 README에서 기준 커밋을 읽는다(`-PreviousExport`·`-PreviousCommit`로 지정 가능).
 - 생성 중 검사: 코드·설정 파일의 개인 PC 절대경로, TAR 파일 수·경로 대조, 제외 대상 누출, TGZ 해제 후 TAR 체크섬 대조. `-VerifyBuild`는 20261006 NuGet 반입본과 3-popup-frameWork만으로 폴더형·단일 EXE publish를 확인한다.
+- Git for Windows 설치파일도 함께 반입하려면 공식 릴리스의 `Git-2.56.0.4-64-bit.exe`를 외부망 PC에 준비한 후 다음과 같이 실행한다. 다운로드는 스크립트가 수행하지 않으며 SHA-256을 검사한다. 파일은 묶음 TAR에 넣지 않고 통합 TGZ의 루트에 포함한다. 옵션 미지정 시 기존 결과는 유지된다.
+
+```powershell
+.\\scripts\\export-offline-package.ps1 -GitInstallerPath "C:\\installers\\Git-2.56.0.4-64-bit.exe"
+```
+
+- Git 설치파일 SHA-256: `4961a4a8cc778d8b6e00a5819e5fe4d078b754555aff7aedc2d77a5d74c2de80` (공식 2026-10-26 릴리스). TGZ 안 설치파일도 동일 해시로 검증한다. Git 설치파일은 Git 저장소에 커밋하지 않는다.
 - `offline-export/`는 Git 제외 대상이다.
