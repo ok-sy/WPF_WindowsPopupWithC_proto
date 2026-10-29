@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-13 — 가이드 공지 대상 정리(컴포넌트·함수 동작 변경만)
+
+- 이유: 가이드 공지는 공통 컴포넌트를 쓰는 화면이 알아야 할 동작·사용 흐름 변경만 전달하기로 정리. 가이드 화면 자체 변경·정책 정리·샘플 내부 변경·검증 예정 공지가 섞여 있었음.
+- 변경: 공지 5건 삭제(가이드 화면 정리, 공통 샘플 미설정 전환, 가이드 코드 실행기, 가이드 화면 추가, CKEditor 49 남은 검증). 'WEB/SERVER 책임 분리' 공지를 '미리보기 입력 값 만들기 withPreviewFallback 추가'(미리보기에 넘기는 방법·동영상+퀴즈 완료 비율 80% 표시)로 바꿈. 남은 공지 8건: onRecommendedSize 호출 변경, withPreviewFallback, pickPopupFields·PopupScheduleFields value, Footer CLOSE '확인', TEXT 강조 문구 삭제, 미리보기 Header, CKEditor 49 전환, SURVEY 복수 선택 수. `guideNotices.ts` 주석에 공지 대상 기준 명시, 등록 정적 검사에 가이드·정책 제목과 예정(PLANNED) 공지 금지 검사 추가, 렌더 하네스 공지 검사 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, scripts/verify-popup-guide-registry.cjs, scripts/verify-popup-guide-render.cjs, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, eslint 0, guide-registry 207건 통과(변이 확인: 공지 제목에 '가이드'를 넣으면 실패), guide-render 24건 통과.
+- 상태: 커밋·원격 반영. CKEditor 49 남은 검증(한글 IME·붙여넣기·폐쇄망 설치)은 2026-10-29-14 변경 이력의 미실행 항목으로 계속 관리.
+
 ## 2026-10-30-12 — 가이드 실습 독립 필드 추출: 추출 항목 선택·호출 코드 표시
 
 - 이유: 실습의 독립 필드 추출이 고정 키 목록(toSampleScreenValues)으로만 결과를 보여 줘, 어떤 키를 어떻게 넘겨 호출하는지 확인할 수 없었음.

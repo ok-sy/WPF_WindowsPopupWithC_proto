@@ -7,6 +7,8 @@
  * - 예정(PLANNED)이 반영되면 항목을 지우지 말고 status를 DONE으로 바꾸고 doneDate를 적는다(이력 유지).
  * - props 변경·삭제 공지는 action에 영향 화면과 바꾸는 방법을 적는다. 상세 정책은 docs/design TODO 링크로 두고 여기엔 요약만 쓴다.
  * - 이 파일이 공지의 단일 출처다(게시판 DB·API를 만들지 않는다).
+ * - 공지 대상: 컴포넌트·함수의 동작이나 사용 흐름(프로세스)이 바뀐 것만 적는다(예: 편집기 엔진 전환, 버튼 표시 이름 변경, 미리보기 Header 변경, 기능 추가·삭제).
+ *   가이드 화면 자체의 변경, 정책·설계 문서 정리, 샘플 내부 변경, 검증 예정 같은 작업 상태는 적지 않는다(변경 이력·TODO 문서에 둔다).
  */
 import type { GuideTabId } from './GuideUi';
 
@@ -61,32 +63,12 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     tab: 'component',
   },
   {
-    id: '2026-10-30-guide-restructure', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
-    title: '가이드 화면 정리 — 시작하기 탭, 범용/proto 전용 구분',
-    body: ['첫 탭으로 시작하기를 추가했습니다(가져오기·최소 사용 코드·공통/부모/서버 경계). 공지는 맨 뒤로 옮기고 최근 게시 수를 배지로 표시합니다.',
-      '프로세스·변환·유틸에 범용 / proto 전용 표시를 붙였습니다. `createDefaultPopup`·`changePopupType`·`toSaveRequest`는 proto(RgstPop) 전용이며 독립 화면의 필수 처리가 아닙니다.',
-      '실습 탭은 독립 필드 추출 실습을 먼저 보여 주고(추출할 키를 칩으로 고르면 실제 `pickPopupFields` 호출 코드와 결과가 바로 바뀜), proto 저장 변환 실습은 선택해서 봅니다.'],
-    components: ['createDefaultPopup', 'changePopupType', 'toSaveRequest', 'withPreviewFallback', 'pickPopupFields'],
-    action: '새 화면은 시작하기 탭의 최소 코드(입력한 값만 state, 미리보기는 withPreviewFallback, 저장은 pickPopupFields + 화면별 저장 경계)를 따르세요.',
-    tab: 'start',
-  },
-  {
-    id: '2026-10-30-sample-unset', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
-    title: '공통 샘플 state 미설정 기준 전환 · 동영상+퀴즈 미리보기 완료 비율 0.8',
-    body: ['목록 샘플·편집 샘플·IS063M02 샘플의 state가 입력한 값만 갖습니다(`newSamplePopup`은 ID·제목·TEXT만, 유형 전환 `changeSampleType`은 업무 기본값을 채우지 않음). 저장 값에는 입력하지 않은 창 크기·나중에 보기·푸터 동작 키가 없습니다.',
-      '`withPreviewFallback`은 동영상+퀴즈의 완료 비율이 미설정이면 미리보기에서 0.8(80%)로 표시합니다(state·저장 값에는 넣지 않음). 일반 VIDEO는 1.0 그대로입니다.'],
-    components: ['withPreviewFallback', 'usePopupQuizRule'],
-    action: '샘플을 복사해 쓰던 화면은 state에 createDefaultPopup 값을 넣지 말고 미리보기에만 withPreviewFallback을 쓰세요.',
-    tab: 'example',
-  },
-  {
     id: '2026-10-30-preview-fallback', date: '2026-10-30', category: 'ADDED', status: 'DONE', doneDate: '2026-10-30',
-    title: 'WEB/SERVER 책임 분리 — 미설정은 키 생략, 미리보기 fallback은 withPreviewFallback',
-    body: ['WEB은 입력·표시·미리보기, SERVER는 업무 기본값·최종 검증·정규화를 맡습니다. 미설정 값은 키를 생략하고(null은 현재 서버 기본값 적용 대상), false·0·빈 문자열은 명시값으로 그대로 보냅니다.',
-      '화면 state에는 사용자가 입력한 값만 두고, 미리보기에 넘길 때만 `withPreviewFallback(state)`로 표시용 값(창 크기·Header/Footer 표시 등)을 채웁니다. 업무 기본값(createDefaultPopup)은 신규 독립 화면 state에 넣지 않습니다.',
-      '가이드의 개요 탭을 없애고 예시 탭(IS063M02Sample)을 추가했습니다.'],
-    components: ['withPreviewFallback', 'pickPopupFields'],
-    action: '신규 독립 화면은 state를 미설정으로 시작하고 미리보기에 withPreviewFallback을 쓰세요. 기존 RgstPop(proto)은 서버 대응 후 점진 전환합니다.',
+    title: '미리보기 입력 값 만들기 withPreviewFallback 추가',
+    body: ['`withPreviewFallback(state)`는 입력한 값만 가진 state에 미리보기 표시용 값(창 크기·Header/Footer 표시 등)을 채운 새 객체를 돌려줍니다. `InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`에 넘길 때 씁니다(state는 바뀌지 않음).',
+      '동영상+퀴즈의 완료 비율을 비워 두면 미리보기에서 80%로 표시합니다. 일반 동영상은 100% 그대로입니다.'],
+    components: ['withPreviewFallback', 'InlinePopupPreview', 'PopupPreviewDialog', 'PopupPreview'],
+    action: '미리보기에 넘기려고 createDefaultPopup() 위에 state를 합치던 독립 화면은 withPreviewFallback(state)로 바꾸세요. proto 등록 화면(RgstPop)은 변경 없습니다.',
     tab: 'process',
   },
   {
@@ -98,16 +80,6 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     components: ['pickPopupFields', 'PopupScheduleFields'],
     action: '필드를 손으로 골라 담던 화면은 pickPopupFields로, 일정 입력은 value prop으로 바꾸세요. 기존 popup prop 호출은 그대로 동작합니다.',
     tab: 'saveParts',
-  },
-  {
-    id: '2026-10-29-runner', date: '2026-10-29', category: 'ADDED', status: 'DONE', doneDate: '2026-10-29',
-    title: '가이드 컴포넌트 코드 실행기',
-    body: ['가이드 컴포넌트 탭 오른쪽에서 입력(props JSON)을 고쳐 실행하고 출력(콜백 값)을 바로 볼 수 있습니다.'],
-  },
-  {
-    id: '2026-10-29-guide', date: '2026-10-29', category: 'ADDED', status: 'DONE', doneDate: '2026-10-29',
-    title: 'PopupcommonComponent 가이드 화면 추가',
-    body: ['컴포넌트별 값·props·재사용 방법, 프로세스별 변환 흐름, 실제 변환 함수를 직접 호출하는 실습, 변경 공지를 한 화면에서 제공합니다.'],
   },
   {
     id: '2026-10-29-footer-close-label', date: '2026-10-29', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-29',
@@ -145,11 +117,5 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     title: 'SURVEY 복수 선택 최소·최대 선택 수',
     body: ['SURVEY의 MULTIPLE_CHOICE 문항에 minSelections·maxSelections(비우면 제한 없음)를 입력할 수 있습니다. 미리보기는 한도·최소 판정과 안내 문구를 WPF와 같이 보여 줍니다.'],
     components: ['PopupQuestionEditor', 'PopupPreview'],
-  },
-  {
-    id: '2026-10-29-planned-ckeditor-verify', date: '2026-10-29', category: 'PLANNED', status: 'IN_PROGRESS',
-    title: 'CKEditor 49 남은 검증',
-    body: ['한글 IME 조합 입력, 붙여넣기 실조작, 폐쇄망 반입본 설치 확인이 남아 있습니다. 결과는 이 공지에 이어서 적습니다.'],
-    components: ['PopupRichTextEditor'],
   },
 ];

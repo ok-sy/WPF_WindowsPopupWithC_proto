@@ -111,7 +111,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'Function tab groups functions by scope (createDefaultPopup under proto-only)');
   // 공지: 배지·영향 컴포넌트 링크 → 컴포넌트 탭 선택
   await openTab('공지'); body = await text();
-  check(body.includes('가이드 화면 정리') && body.includes('최근 14일 안에 게시'), 'Notice tab lists the restructure notice and explains NEW as recent posting');
+  check(body.includes('CKEditor 5 공통 엔진 전환') && !body.includes('가이드 화면 정리') && !body.includes('가이드 컴포넌트 코드 실행기') && body.includes('최근 14일 안에 게시'),
+    'Notice tab lists component/process changes only (no guide-screen notices) and explains NEW as recent posting');
   await run(`Array.from(document.querySelectorAll('.MuiChip-root')).find(c=>c.textContent==='PopupRichTextEditor').click()`); await pause(1200);
   check(await run(`document.querySelector('[role=tab][aria-selected=true]').textContent.trim()`) === '컴포넌트'
     && await run(`Array.from(document.querySelectorAll('[role=tab][aria-selected=true]')).some(t=>t.textContent.trim()==='PopupRichTextEditor')`), 'Notice component chip opens that component in the component tab');

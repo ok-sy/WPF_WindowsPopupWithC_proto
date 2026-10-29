@@ -92,6 +92,9 @@ for (const m of notices.matchAll(/components: \[([^\]]*)\]/g)) {
   for (const name of m[1].split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean)) check(exported(name), `Notice component '${name}' is a public export`);
 }
 for (const m of notices.matchAll(/^\s{4}tab: '(\w+)'/gm)) check(tabIds.includes(m[1]), `Notice tab '${m[1]}' is a guide tab`);
+// 공지 대상은 컴포넌트·함수의 동작/사용 흐름 변경만이다. 가이드 화면·정책 정리·작업 예정(PLANNED) 공지는 두지 않는다.
+for (const m of notices.matchAll(/^\s{4}title: (['"])(.*)\1,$/gm)) check(!/가이드|정책|책임 분리/.test(m[2]), `Notice '${m[2]}' is a component/process change (not a guide-screen or policy notice)`);
+check(!/category: 'PLANNED'/.test(notices.slice(notices.indexOf('export const GUIDE_NOTICES'))), 'No planned/in-progress work notices');
 check(tabIds.length === 8 && tabIds[0] === 'start', 'Guide has 8 tabs and starts with 시작하기(start)');
 
 // 5) 공통 소스는 guide·sample을 참조하지 않는다(가이드 → 공통 단방향)
