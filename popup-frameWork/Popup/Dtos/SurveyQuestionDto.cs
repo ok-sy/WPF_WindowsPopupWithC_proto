@@ -94,5 +94,13 @@ namespace Popup.Dtos
          */
         public string? CorrectAnswer { get; set; }
         public string? AnswerMatchMode { get; set; }
+
+        /*
+         * POL-06-02 : 선택·제출
+         * SURVEY 복수 선택 최소·최대 선택 수. 서버가 값이 있을 때만 내려주며 null(생략) = 제한 없음.
+         * QUIZ 복수 선택은 이 값 대신 정답 선택지 수가 한도다(서버가 QUIZ에는 저장하지 않음).
+         */
+        public int? MinSelections { get; set; }
+        public int? MaxSelections { get; set; }
     }
 }

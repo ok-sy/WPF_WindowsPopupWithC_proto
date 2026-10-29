@@ -662,6 +662,7 @@ namespace Popup.Services
                     "options": [ { "optionId": 5301, "value": "LECTURE", "text": "강의 내용" }, { "optionId": 5302, "value": "PRACTICE", "text": "실습" },
                                  { "optionId": 5303, "value": "MATERIAL", "text": "교재와 참고 자료" }, { "optionId": 5304, "value": "QNA", "text": "질의응답" } ] },
                   { "questionId": 5004, "optionLayout": "HORIZONTAL", "title": "다음 교육에서 다루었으면 하는 주제가 있나요?", "questionType": "MULTIPLE_CHOICE", "isRequired": false,
+                    "minSelections": 2, "maxSelections": 3,
                     "options": [ { "optionId": 5401, "value": "SECURITY", "text": "정보 보안" }, { "optionId": 5402, "value": "COLLAB", "text": "협업 도구" },
                                  { "optionId": 5403, "value": "DATA", "text": "데이터 분석" }, { "optionId": 5404, "value": "AUTO", "text": "업무 자동화" } ] },
                   { "questionId": 5005, "title": "교육에 대한 의견을 자유롭게 남겨주세요.", "questionType": "TEXT", "isRequired": false }

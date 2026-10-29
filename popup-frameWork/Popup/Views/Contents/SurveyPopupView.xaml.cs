@@ -457,13 +457,26 @@ namespace Popup.Views.Contents
          * 선택 방식 안내. 주관식은 안내하지 않는다. 정답 수로 선택 수가 제한된 복수 선택은 최대 개수를 안내한다.
          * 디자인 버전에 SurveyShowChoiceHint=true가 있을 때만 표시한다(V1은 키가 없어 표시하지 않음).
          */
+        /*
+         * POL-06-02 : 선택·제출
+         * 복수 선택 안내: 최소·최대 `N~M개 선택`(같으면 `N개 선택`), 최소만 `최소 N개 선택`, 최대만 `최대 M개 선택`, 없으면 `여러 개 선택 가능`.
+         * 관리자 미리보기 multipleChoiceHint와 같은 문구다.
+         */
+        public static string MultipleChoiceHint(int? min, int? max) => (min, max) switch
+        {
+            (int a, int b) => a == b ? $"{b}개 선택" : $"{a}~{b}개 선택",
+            (int a, null) => $"최소 {a}개 선택",
+            (null, int b) => $"최대 {b}개 선택",
+            _ => "여러 개 선택 가능"
+        };
+
         private string? ChoiceHintOf(SurveyQuestion question)
         {
             if (TryFindResource("SurveyShowChoiceHint") is not true) return null;
             return question.QuestionType switch
             {
                 SurveyQuestionType.SingleChoice => "하나 선택",
-                SurveyQuestionType.MultipleChoice => question.MaxSelections is int max ? $"최대 {max}개 선택" : "여러 개 선택 가능",
+                SurveyQuestionType.MultipleChoice => MultipleChoiceHint(question.MinSelections, question.MaxSelections),
                 _ => null
             };
         }
@@ -797,12 +810,9 @@ namespace Popup.Views.Contents
                     item => item.QuestionId ==
                             question.QuestionId);
 
+                // POL-06-02 : 선택·제출 — 복수 선택은 최소 선택 수(없으면 1) 이상이어야 응답으로 본다.
                 bool hasAnswer = answer != null &&
-                (
-                    answer.SelectedOptionIds.Count > 0 ||
-                    !string.IsNullOrWhiteSpace(
-                        answer.TextAnswer)
-                );
+                    question.IsAnsweredBy(answer.SelectedOptionIds.Count, answer.TextAnswer);
 
                 if (!hasAnswer)
                 {
@@ -810,6 +820,17 @@ namespace Popup.Views.Contents
                         $"필수 문항을 입력해주세요.\n\n" +
                         $"{question.Title}";
 
+                    return false;
+                }
+            }
+
+            // 선택 문항도 고른 경우에는 최소 선택 수를 채워야 한다.
+            foreach (SurveyQuestion question in _questions)
+            {
+                SurveyAnswer? answer = answers.Find(item => item.QuestionId == question.QuestionId);
+                if (answer != null && question.IsBelowMinimum(answer.SelectedOptionIds.Count))
+                {
+                    message = $"최소 {question.MinSelections}개를 선택해주세요.\n\n{question.Title}";
                     return false;
                 }
             }
@@ -874,12 +895,16 @@ namespace Popup.Views.Contents
             var answers = CollectAnswers();
             int required = _questions.Count(question => question.IsRequired);
             int completed = _questions.Count(question => question.IsRequired && answers.Any(answer =>
-                answer.QuestionId == question.QuestionId && (answer.SelectedOptionIds.Count > 0 || !string.IsNullOrWhiteSpace(answer.TextAnswer))));
-            CanSubmit = IsEnabled && completed == required;
+                answer.QuestionId == question.QuestionId && question.IsAnsweredBy(answer.SelectedOptionIds.Count, answer.TextAnswer)));
+            // POL-06-02 : 선택·제출 — 선택했지만 최소 선택 수에 못 미친 문항(필수·선택 모두)이 있으면 제출할 수 없다.
+            int belowMinimum = _questions.FindIndex(question => answers.Any(answer =>
+                answer.QuestionId == question.QuestionId && question.IsBelowMinimum(answer.SelectedOptionIds.Count)));
+            CanSubmit = IsEnabled && completed == required && belowMinimum < 0;
             // POL-06-03 : 표현·수명 — 필수 문항 단위로 센다(복수선택 선택지 수·선택 문항 응답은 세지 않음). 필수 0개면 수치를 표시하지 않는다.
-            ResponseProgressText = required == 0 ? "선택 문항은 자유롭게 응답해주세요."
-                : completed == required ? $"필수 응답 {completed}/{required} 완료"
-                : $"필수 응답 {completed}/{required} · {required - completed}문항 남음";
+            ResponseProgressText = completed != required ? $"필수 응답 {completed}/{required} · {required - completed}문항 남음"
+                : belowMinimum >= 0 ? $"{belowMinimum + 1}번 문항은 최소 {_questions[belowMinimum].MinSelections}개를 선택해주세요."
+                : required == 0 ? "선택 문항은 자유롭게 응답해주세요."
+                : $"필수 응답 {completed}/{required} 완료";
             bool changed = ShowProgressText();
             RequiredProgressText.Foreground = (Brush)FindResource("SurveyMutedText");
             SubmitButton.IsEnabled = CanSubmit;

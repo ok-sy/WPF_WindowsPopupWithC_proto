@@ -83,8 +83,15 @@ namespace Popup.Models
 
         /*
          * POL-06-02 : 선택·제출
-         * 복수 선택 문항의 최대 선택 수 = 정답 선택지 수. 서버가 QUIZ에만 options[].isCorrect를 내려주므로
-         * SURVEY·정답 없는 문항은 null(제한 없음)이다. 별도 필드를 받지 않고 기존 정답 키로 계산한다.
+         * 서버 문항의 minSelections·maxSelections(SURVEY 복수 선택 전용, null = 제한 없음).
+         */
+        public int? ConfiguredMinSelections { get; set; }
+        public int? ConfiguredMaxSelections { get; set; }
+
+        /*
+         * POL-06-02 : 선택·제출
+         * 복수 선택 문항의 최대 선택 수. QUIZ는 정답 선택지 수(서버가 QUIZ에만 options[].isCorrect를 내려준다),
+         * 정답 키가 없는 SURVEY는 서버가 정한 maxSelections, 둘 다 없으면 null(제한 없음)이다.
          */
         public int? MaxSelections
         {
@@ -94,8 +101,34 @@ namespace Popup.Models
                 int correct = 0;
                 foreach (SurveyOption option in Options)
                     if (option.IsCorrect == true) correct++;
-                return correct > 0 ? correct : null;
+                return correct > 0 ? correct : ConfiguredMaxSelections;
             }
         }
+
+        /*
+         * POL-06-02 : 선택·제출
+         * 복수 선택 문항의 최소 선택 수. SURVEY의 minSelections만 쓰고 QUIZ(정답 키가 있는 문항)는 null이다.
+         * 필수 문항은 max(1, 최소)개 이상, 선택 문항은 0개 또는 최소 이상이어야 제출할 수 있다.
+         */
+        public int? MinSelections
+        {
+            get
+            {
+                if (QuestionType != SurveyQuestionType.MultipleChoice) return null;
+                foreach (SurveyOption option in Options)
+                    if (option.IsCorrect == true) return null;
+                return ConfiguredMinSelections;
+            }
+        }
+
+        /* POL-06-02 : 선택·제출 — 응답 완료 여부(선택 수 count 기준). 필수 판정에 쓴다. */
+        public bool IsAnsweredBy(int selectedCount, string? textAnswer) =>
+            QuestionType == SurveyQuestionType.Text
+                ? !string.IsNullOrWhiteSpace(textAnswer)
+                : selectedCount >= System.Math.Max(1, MinSelections ?? 1);
+
+        /* POL-06-02 : 선택·제출 — 선택했지만 최소 선택 수에 못 미쳤는지(필수·선택 문항 모두 제출 불가). */
+        public bool IsBelowMinimum(int selectedCount) =>
+            MinSelections is int min && selectedCount > 0 && selectedCount < min;
     }
 }

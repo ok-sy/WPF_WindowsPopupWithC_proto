@@ -262,7 +262,9 @@ namespace Popup.Factories
                     IsScored = questionDto.IsScored,
                     QuestionScore = questionDto.QuestionScore,
                     CorrectAnswer = questionDto.CorrectAnswer,
-                    AnswerMatchMode = questionDto.AnswerMatchMode
+                    AnswerMatchMode = questionDto.AnswerMatchMode,
+                    ConfiguredMinSelections = questionDto.MinSelections,
+                    ConfiguredMaxSelections = questionDto.MaxSelections
                 };
 
                 foreach (SurveyOptionDto optionDto in questionDto.Options)

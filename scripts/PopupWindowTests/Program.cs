@@ -1071,8 +1071,9 @@ internal static class Program
                 choice.IsEnabled = true;
             }
             // POL-06-03 : 표현·수명 — 선택 방식 안내는 제목 끝(필수 표시 뒤)에 12 크기 보조색 Run으로 붙는다. 주관식은 없음.
-            // POL-06-02 : 선택·제출 — 정답 수로 제한된 QUIZ 복수 선택은 "최대 N개 선택"이다.
-            static bool MultipleHint(string text) => text == "여러 개 선택 가능" || System.Text.RegularExpressions.Regex.IsMatch(text, "^최대 [0-9]+개 선택$");
+            // POL-06-02 : 선택·제출 — 정답 수로 제한된 QUIZ 복수 선택은 "최대 N개 선택", SURVEY 최소·최대 선택 수는 "N~M개 선택"·"최소 N개 선택"·"N개 선택"이다.
+            static bool MultipleHint(string text) => text == "여러 개 선택 가능"
+                || System.Text.RegularExpressions.Regex.IsMatch(text, "^((최대|최소) [0-9]+|[0-9]+~[0-9]+|[0-9]+)개 선택$");
             var hintRuns = Visuals(view).OfType<TextBlock>().SelectMany(t => t.Inlines.OfType<System.Windows.Documents.Run>()
                 .Where(r => r.Text.Trim() == "하나 선택" || MultipleHint(r.Text.Trim())).Select(r => (Block: t, Run: r))).ToList();
             int choiceQuestions = opened.Options.Content is SurveyPopupView sv ? cards.Count(c => Visuals(c).OfType<System.Windows.Controls.Primitives.ToggleButton>().Any()) : 0;
@@ -1180,6 +1181,51 @@ internal static class Program
         foreach (CheckBox box in surveyBoxes) box.IsChecked = true;
         Check(surveyBoxes.Count >= 3 && surveyBoxes.All(b => b.IsChecked == true && b.IsEnabled), "[52-5] SURVEY multiple choice has no selection limit");
         ShutdownClose(survey.Window);
+
+        // POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수(minSelections·maxSelections).
+        static Popup.Models.SurveyQuestion Limited(int? min, int? max, params bool?[] correct) => new()
+        {
+            QuestionType = global::SurveyQuestionType.MultipleChoice, ConfiguredMinSelections = min, ConfiguredMaxSelections = max,
+            Options = correct.Select((c, i) => new Popup.Models.SurveyOption { OptionId = i + 1, Text = "o" + i, IsCorrect = c }).ToList()
+        };
+        Check(Limited(2, 3, null, null, null, null).MaxSelections == 3 && Limited(2, 3, null, null, null, null).MinSelections == 2
+              && Limited(1, 3, true, true, false).MaxSelections == 2 && Limited(1, 3, true, true, false).MinSelections == null
+              && Limited(null, null, null, null).MaxSelections == null,
+            "[선택 수] SURVEY uses configured min/max; QUIZ (correct keys) keeps the correct-count limit and ignores min");
+        var optional = Limited(2, null, null, null, null);
+        Check(optional.IsAnsweredBy(2, null) && !optional.IsAnsweredBy(1, null) && optional.IsBelowMinimum(1)
+              && !optional.IsBelowMinimum(0) && !optional.IsBelowMinimum(2) && Limited(null, null, null, null).IsAnsweredBy(1, null),
+            "[선택 수] answered = count >= max(1, min); below minimum = 0 < count < min");
+        Check(SurveyPopupView.MultipleChoiceHint(2, 3) == "2~3개 선택" && SurveyPopupView.MultipleChoiceHint(3, 3) == "3개 선택"
+              && SurveyPopupView.MultipleChoiceHint(2, null) == "최소 2개 선택" && SurveyPopupView.MultipleChoiceHint(null, 3) == "최대 3개 선택"
+              && SurveyPopupView.MultipleChoiceHint(null, null) == "여러 개 선택 가능",
+            "[선택 수] multiple choice hint wording matches the admin preview");
+
+        foreach (bool required in new[] { true, false })
+        {
+            var limited = OpenPopup("SURVEY", transform: dto =>
+            {
+                var multi = dto.Questions.First(q => q.QuestionType == "MULTIPLE_CHOICE" && q.Options.Count >= 4);
+                multi.IsRequired = required;
+                multi.MinSelections = 2;
+                multi.MaxSelections = 3;
+                dto.Questions = new() { multi };
+                return dto;
+            });
+            limited.Window.UpdateLayout();
+            var limitedView = (SurveyPopupView)limited.Options.Content!;
+            var boxes = Visuals(limitedView).OfType<CheckBox>().ToList();
+            Check(required ? !limitedView.CanSubmit : limitedView.CanSubmit, $"[선택 수] no answer: required={required} → submit {(required ? "disabled" : "enabled")}");
+            boxes[0].IsChecked = true;
+            Check(!limitedView.CanSubmit && limitedView.ResponseProgressText.Contains(required ? "1문항 남음" : "최소 2개"),
+                $"[선택 수] one option below the minimum blocks submit (required={required}): {limitedView.ResponseProgressText}");
+            boxes[1].IsChecked = true;
+            Check(limitedView.CanSubmit, $"[선택 수] reaching the minimum enables submit (required={required})");
+            boxes[2].IsChecked = true;
+            Check(boxes.Count(b => b.IsChecked == true) == 3 && boxes.Where(b => b.IsChecked != true).All(b => !b.IsEnabled),
+                $"[선택 수] reaching the maximum disables remaining options (required={required})");
+            ShutdownClose(limited.Window);
+        }
     }
 
     /*
