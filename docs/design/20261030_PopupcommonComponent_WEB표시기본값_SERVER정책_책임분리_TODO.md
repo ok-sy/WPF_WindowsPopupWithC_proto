@@ -2,7 +2,7 @@
 
 작성: 2026-10-30 (KST)
 상태: **정책 확정(2026-10-30: 미설정 표현 규칙·F-3 분류) · WEB 이행 1단계 완료(withPreviewFallback·신규 독립 샘플·문구)** · RgstPop(proto)·기존 샘플 state 전환과 서버 항목은 미실행. 신규 숫자 TODO 번호는 임의 부여하지 않음.
-관련: [독립 재사용·선택 필드 추출 TODO](20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md)(공통 컴포넌트 계약 A~E) · [등록·수정 공통 JSON 검증 TODO](20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md)(서버 검증·기본값 구현) · [팝업 JSON 가공·요청 body 정책](20261029_팝업JSON_가공_요청body_정책정리.md)
+관련: [독립 재사용·선택 필드 추출 TODO](20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md)(공통 컴포넌트 계약 A~E) · [등록·수정 공통 JSON 검증 TODO](20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md)(서버 검증·기본값 구현) · [팝업 JSON 가공·요청 body 정책](20261029_팝업JSON_가공_요청body_정책정리.md)
 
 ## 원칙
 

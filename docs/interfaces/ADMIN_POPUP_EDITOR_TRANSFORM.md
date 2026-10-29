@@ -126,7 +126,7 @@ export default function MyTextPopupForm({ api }: { api: any }) {
 
 ## 5-1. 선택 필드 추출 (`pickPopupFields`, 2026-10-30)
 
-근거: [독립 재사용·선택 필드 추출 TODO](../design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md). 공통 모듈은 특정 테이블·API·저장 형식과 무관하며, `toSaveRequest()`는 proto 사용 사례 중 하나다.
+근거: [독립 재사용·선택 필드 추출 TODO](../design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md). 공통 모듈은 특정 테이블·API·저장 형식과 무관하며, `toSaveRequest()`는 proto 사용 사례 중 하나다.
 
 | 함수 | 입력 → 반환 | 설명 |
 |---|---|---|

@@ -152,7 +152,7 @@ export const PROCESSES: GuideProcess[] = [
       { actor: '화면별 저장 경계', description: '날짜 직렬화·키 이름·JSON 모양은 각 업무 화면이 정한다. proto 저장 기준이 필요할 때만 toSaveRequestPopup 결과를 넘긴다.' },
     ],
     parent: ['state 보관·저장 형식 변환·API 호출', '미리보기에는 createDefaultPopup() 위에 state를 얹어 전달'],
-    notes: ["'독립 재사용·필드 추출' 탭에 최소 입력·출력 표·키 표·샘플 4종·실행기가 있다. TODO: docs/design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md"],
+    notes: ["'독립 재사용·필드 추출' 탭에 최소 입력·출력 표·키 표·샘플 4종·실행기가 있다. TODO: docs/design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md"],
   },
 ];
 
