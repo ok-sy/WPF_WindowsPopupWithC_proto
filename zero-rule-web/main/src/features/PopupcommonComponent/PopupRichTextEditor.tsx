@@ -125,11 +125,12 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
       {/* 테두리는 바깥 두 Box만 그린다. CKEditor 49 기본 테마의 툴바·편집 영역 테두리·둥근 모서리·포커스 그림자는 끄고
           포커스 표시는 편집 영역을 감싼 Box 테두리 색으로 한다(겹치면 이중선·어긋남이 생김). */}
       <Box ref={toolbarRef} className="ck-reset_all" sx={{ display: compact ? 'none' : undefined, border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0',
-        '& .ck.ck-toolbar': { border: 0, borderRadius: 0 } }} />
+        // 안쪽 배경이 바깥 둥근 테두리를 덮지 않게 안쪽 곡률(4px - 테두리 1px)에 맞춘다. 툴바 드롭다운이 잘리므로 overflow: hidden은 쓰지 않는다.
+        '& .ck.ck-toolbar': { border: 0, borderRadius: '3px 3px 0 0' } }} />
       <Box sx={{ border: '1px solid #c4c4c4', borderRadius: compact ? '4px' : '0 0 4px 4px', minHeight: compact ? 40 : 140,
         '&:focus-within': { borderColor: 'primary.main' },
         '& .ck.ck-editor__editable:not(.ck-editor__nested-editable), & .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused':
-          { border: 0, borderRadius: 0, boxShadow: 'none' },
+          { border: 0, borderRadius: compact ? '3px' : '0 0 3px 3px', boxShadow: 'none' },
         '& .ck-editor__editable': { minHeight: compact ? 40 : 140, px: 1.5 }, '& .ck-editor__editable p': compact ? { my: 0.75 } : {} }}>
         {engine && config && (
           <CKEditor
