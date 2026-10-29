@@ -266,7 +266,7 @@ try {
     $npmCleanup = ""
     if ($npmCount -gt 0) {
         $npmRow = "| 5-npm-ckeditor.tar | 관리자 웹 npm 오프라인 캐시(pnpm store v3) — CKEditor 5 49.0.1·React 래퍼 12.0.0과 의존 패키지 $npmCount 개 | 2-zero-rule-web 반영 후 5-npm-ckeditor의 install-pnpm-store.ps1 실행(README-NPM.md) |`n"
-        $npmCleanup = "7. 정리(선택이지만 권장): 반입본을 푼 폴더에서 ``.\cleanup-after-import.ps1 -Root <반입 루트>``로 미리보기한 뒤 ``-Apply``로 실행한다. $deleteName 의 파일과 49.0.1 세트(CKEDITOR-KEEP.txt)가 아닌 이전 CKEditor를 node_modules·pnpm store에서 지운다.`n"
+        $npmCleanup = "7. 정리(선택이지만 권장): 반입본을 푼 폴더에서 ``.\cleanup-after-import.ps1 -Root <폐쇄망 최상위>``로 미리보기한 뒤 ``-Apply``로 실행한다. 1-*·8-dev\backend(서버), 2-*·8-dev\front(웹), 3-*(WPF, 3-csAgent)를 자동으로 찾아 $deleteName 의 파일을 모든 위치에서 지우고, 49.0.1 세트(CKEDITOR-KEEP.txt)가 아닌 이전 CKEditor를 웹 위치의 node_modules와 pnpm store에서 지운다. 미리보기 맨 위에 찾은 위치가 나오니 먼저 확인한다.`n"
         $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``로 pnpm store 추가와 ``pnpm install --offline``을 실행한다(사내 npm 저장소 불필요).`n"
     }
     $gitReadme = "Git for Windows 설치 파일 미동봉. 필요하면 -GitInstallerPath로 공식 x64 설치 파일을 지정하여 재생성."

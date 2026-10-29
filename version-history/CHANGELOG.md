@@ -8,6 +8,7 @@
   - `scripts/export-offline-package.ps1`: `-NpmBundleDir`가 있으면 정리 스크립트와 `CKEDITOR-KEEP.txt`(npm 묶음의 CKEditor 계열 62개)를 반입본 루트·통합 TGZ·SHA256SUMS에 넣고 README 반입 절차 7번에 실행 방법 추가.
 - 주요 파일: scripts/offline-import/cleanup-after-import.ps1, scripts/export-offline-package.ps1, version-history/CHANGELOG.md.
 - 검증: 가짜 반입 루트로 미리보기·실제 삭제·재실행 — 삭제 목록 파일 삭제와 빈 폴더 정리, `../` 경로 거부, node_modules 이전 패키지 4개(중첩 1개 포함) 삭제·49.0.1과 일반 패키지 유지, store에서 이전 색인과 단독 내용 파일(일반·exec)만 삭제·공유 내용 파일 유지, 재실행 시 0개. 이 PC 실제 pnpm store(D:\.pnpm-store3) 미리보기 — 이전 CKEditor 180개 패키지·내용 파일 8,589개 대상, 49.0.1 세트 미포함, 10초(삭제는 하지 않음). PowerShell 구문 검사 통과. 폐쇄망 실행은 미실행.
+- 후속 보완(폐쇄망 폴더 구조): 폐쇄망은 저장소 구조가 아니라 1-*(서버)·2-*(웹)·3-csAgent(WPF)·8-dev\backend(서버)·8-dev\front(웹) 구조라 위치 지정을 바꿈. `-Root` 하나로 저장소 구조(zero-rule-*)와 폐쇄망 구조를 자동 인식하고 있는 위치를 모두 사용(서버 zero-rule-server·1-*·8-dev\backend, 웹 zero-rule-web·2-*·8-dev\front, WPF popup-frameWork·3-*, 문서는 -Root 아래 docs가 있을 때만). `-ServerRoot`·`-WebRoot`·`-FrameworkRoot`·`-DocsRoot`는 여러 위치(쉼표) 지정 가능. 삭제 목록 앞부분(zero-rule-server/ 등)을 위치별로 바꿔 모든 위치에서 삭제, 웹 위치마다 node_modules 정리, store는 8-dev\front(없으면 첫 웹 위치)의 `pnpm store path` 사용, store를 못 찾으면 경고 후 그 단계만 건너뛰고 로그 저장. 상대 경로 허용. 검증: 가짜 폐쇄망 구조(1-server·2-web·3-csAgent·8-dev\front·8-dev\backend·대상 아닌 4-other)에서 `-Root` 하나로 위치 5곳 인식, 서버·웹 파일을 두 위치에서 각각 삭제, docs 항목 건너뜀, 2-web·8-dev\front node_modules의 이전 CKEditor 삭제, 유지 대상·4-other 보존. 저장소 구조·실제 store 미리보기(180개) 결과 동일.
 - 상태: 커밋·원격 반영.
 
 ## 2026-10-30-20 — 20261030 폐쇄망 반입본 생성(CKEditor npm 오프라인 캐시 포함)
