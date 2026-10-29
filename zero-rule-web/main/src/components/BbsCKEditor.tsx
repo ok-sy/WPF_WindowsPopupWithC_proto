@@ -51,6 +51,11 @@ export default function BbsCKEditor(props: Props) {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          // CKEditor 49 기본 테마의 둥근 모서리·편집 영역 테두리·포커스 그림자를 끄고 래퍼 테두리 하나로 맞춘다(겹치면 이중선).
+          '& .BbsCKEditor-toolbar .ck.ck-toolbar': { borderRadius: 0, borderColor: '#ddd', borderBottom: 0 },
+          '& .BbsCKEditor-wrapper:focus-within': { borderColor: 'primary.main' },
+          '& .ck.ck-editor__editable:not(.ck-editor__nested-editable), & .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused':
+            { border: 0, borderRadius: 0, boxShadow: 'none' },
         },
         sx,
       )}
