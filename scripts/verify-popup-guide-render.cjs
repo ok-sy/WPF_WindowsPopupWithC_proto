@@ -62,6 +62,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   let body = await text();
   check(body.includes('withPreviewFallback(state)') && body.includes('pickPopupFields') && body.includes('공통 / 부모 화면 / 서버 경계'), 'Start tab shows minimal code and the WEB/parent/SERVER boundary');
   check(body.includes('proto 등록 화면(RgstPop) 경로'), 'Start tab separates the proto path');
+  check(body.includes("useState<Partial<AdminPopupDetail>>({ popupType: 'TEXT' })") && !body.includes("title: '', content: {}, questions: []") && body.includes('[직접 구현]'),
+    'Start tab minimal state starts with popupType only and marks myApi/toMyRequest as functions to implement');
   // 시작하기 → 실습 링크 이동, 실습은 독립 필드 추출이 기본
   await clickButton('직접 해 보기(실습) →'); await pause(1500);
   check(await run(`document.querySelector('[role=tab][aria-selected=true]').textContent.trim()`) === '실습', 'Start tab link navigates to 실습');

@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-11 — 가이드 시작하기 최소 예제 미설정 기준 정리
+
+- 이유: 미설정 키 생략 정책을 보여 주는 첫 예제가 입력하지 않은 `title: ''`·`questions: []`를 초기 state에 넣고 있었고, 가상 함수(`myApi`·`toMyRequest`)가 실제 API처럼 보일 수 있었음.
+- 변경: 시작하기 최소 예제 초기 state를 `{ popupType: 'TEXT' }`(화면이 정한 필수 최소 구조)만으로 바꾸고 제목 입력·입력 전후 state·빈 문자열 명시값 설명 추가. `myApi`·`toMyRequest`를 [직접 구현] 가상 함수로 표시. 컴포넌트 탭 미리보기 예제(`PREVIEW_EXAMPLE`)·프로세스 ① 설명도 같은 기준으로 정리. 예제 흐름 타입 검사 `__typetests__/guideMinimalExample.typetest.ts`, 렌더 하네스 문구 검사 추가.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/GuideStartTab.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/__typetests__/guideMinimalExample.typetest.ts, scripts/verify-popup-guide-render.cjs, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0(타입 테스트 포함), eslint 0, guide-render 20건·guide-registry 211건 통과.
+- 상태: 커밋·원격 반영. 실화면 확인 미실행.
+
 ## 2026-10-30-10 — PopupPreview onRecommendedSize 무한 반복 호출 수정
 
 - 이유: 가이드 컴포넌트 탭 미리보기 실행기의 OUTPUT `onRecommendedSize` 호출 횟수가 계속 증가. 권장 크기 알림 effect가 콜백을 의존성에 두어, 부모가 인라인 콜백을 넘기고 그 안에서 state를 바꾸면 렌더 → 새 콜백 → effect 재실행 → 렌더가 무한 반복됨(등록 화면·샘플은 setState를 직접 넘겨 드러나지 않았음).

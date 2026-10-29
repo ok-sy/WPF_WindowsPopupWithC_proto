@@ -9,18 +9,28 @@ const IMPORT_CODE = `import {
 } from '@/features/PopupcommonComponent';`;
 
 const MINIMAL_CODE = `// 1) 화면 state: 입력한 값만 둔다(미설정 = 키 생략). createDefaultPopup()은 쓰지 않는다.
-const [state, setState] = useState({ popupType: 'TEXT', title: '', content: {}, questions: [] });
+//    필수 최소 구조는 popupType 하나(이 화면이 TEXT 팝업을 만든다는 화면의 선택값).
+//    title·content·questions는 사용자가 입력할 때 생긴다(빈 값으로 미리 넣지 않는다).
+const [state, setState] = useState<Partial<AdminPopupDetail>>({ popupType: 'TEXT' });
 
 // 2) 입력: 공통 컴포넌트는 필요한 값만 받고 바뀐 값을 돌려준다.
+<TextField label="제목" value={state.title ?? ''}                       // 화면 표시만 '' (state에는 넣지 않음)
+  onChange={(e) => setState((p) => ({ ...p, title: e.target.value }))} />
 <PopupRichTextEditor label="본문" initialBlocks={[]}
   onChange={(textBlocks, plainText) => setState((p) => ({ ...p, content: { ...p.content, textBlocks, plainText } }))} />
+// 입력 전 state: { popupType: 'TEXT' } → 제목 입력 후: { popupType: 'TEXT', title: '점검 안내' }
+// 사용자가 제목을 지워 ''가 되면 그것은 명시값이다(유효성은 서버가 판단).
 
-// 3) 미리보기: 넘길 때만 표시용 값을 채운다(state·저장 값은 그대로).
+// 3) 미리보기: 넘길 때만 표시용 값(title·questions·창 크기 등)을 채운다(state·저장 값은 그대로).
 <InlinePopupPreview popup={withPreviewFallback(state)} />
 
-// 4) 저장: 필요한 필드만 값 그대로 뽑고, 저장 형식(날짜·키 이름·API)은 이 화면이 정한다.
+// 4) 저장: 필요한 필드만 값 그대로 뽑는다. 입력하지 않은 키는 결과에도 없다.
 const picked = pickPopupFields(state, { topLevelKeys: ['popupType', 'title'], contentKeys: ['textBlocks', 'plainText'] });
-await myApi.save(toMyRequest(picked)); // 각 업무 화면의 저장 경계`;
+
+// ↓ [직접 구현] myApi·toMyRequest는 설명용 가상 함수다(이 모듈에 없음). 각 업무 화면에서 만든다.
+//   toMyRequest(picked): 이 화면 저장 API 형식으로 변환(날짜 직렬화·키 이름·JSON 모양)
+//   myApi.save(body):    이 화면의 저장 API 호출과 성공/실패 처리
+await myApi.save(toMyRequest(picked));`;
 
 const BOUNDARY: { area: string; common: string; parent: string; server: string }[] = [
   { area: '입력', common: '입력 UI·즉시 안내 검사(validate*)', parent: 'state 보관, 에디터 key 갱신', server: '최종 타입·범위 검증' },
@@ -48,7 +58,7 @@ export default function GuideStartTab({ onNavigate }: { onNavigate: GuideNavigat
         <CodeBlock>{IMPORT_CODE}</CodeBlock>
       </Section>
 
-      <Section title="2. 최소 사용 코드" description="화면 state → 입력 → 미리보기 → 선택 추출 → 화면별 저장 경계 순서입니다.">
+      <Section title="2. 최소 사용 코드" description={<>화면 state → 입력 → 미리보기 → 선택 추출 → 화면별 저장 경계 순서입니다. 초기 state는 화면이 정한 <C>popupType</C>만 두고, <C>myApi</C>·<C>toMyRequest</C>는 각 화면이 직접 구현하는 가상 함수입니다.</>}>
         <CodeBlock>{MINIMAL_CODE}</CodeBlock>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
           <TabLink label="흐름 자세히(프로세스)" onClick={() => onNavigate('process')} />

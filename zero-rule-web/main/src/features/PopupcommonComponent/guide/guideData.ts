@@ -78,7 +78,7 @@ export const PROCESSES: GuideProcess[] = [
   {
     id: 'state', scope: 'COMMON', title: '① 독립 입력 state', summary: '화면 state에는 입력한 값만 둔다(미설정 = 키 생략).',
     steps: [
-      { actor: '화면 state', description: '필요한 값만 useState로 보관한다. 예: 일정만(`PopupScheduleValue`), 본문만(`{ textBlocks, plainText }`), 문항만(`PopupQuestion[]`), 팝업 모양이 필요하면 `{ popupType, title, content: {}, questions: [] }`.' },
+      { actor: '화면 state', description: '필요한 값만 useState로 보관한다. 예: 일정만(`PopupScheduleValue`), 본문만(`{ textBlocks, plainText }`), 문항만(`PopupQuestion[]`), 팝업 모양이 필요하면 화면이 정한 `{ popupType }`만으로 시작하고 title·content·questions는 입력할 때 넣는다(빈 값으로 미리 채우지 않음).' },
       { actor: '미설정 / 명시값', description: '입력하지 않은 값은 키를 두지 않는다(서버 기본값 적용 대상). `null`은 현재 서버 기본값 적용 대상, `false`·`0`·빈 문자열은 사용자가 고른 명시값이다(빈 문자열 유효성은 필드별 서버 판단). `undefined`는 JSON 직렬화에서 빠진다.' },
       { actor: '유형 변경', description: '독립 화면은 `popupType`(영상+퀴즈면 `content.videoEnabled`)만 바꾸고 창 크기·완료 비율 같은 업무 기본값을 채우지 않는다. 샘플 구현: `sample/popupSampleData.ts`의 `changeSampleType`(공개 API 아님).' },
     ],
@@ -182,8 +182,8 @@ export const PROCESSES: GuideProcess[] = [
   },
 ];
 
-const PREVIEW_EXAMPLE = `// 화면 state는 입력한 값만(미설정 = 키 생략)
-const [state, setState] = useState({ popupType: 'TEXT', title: '', content: {}, questions: [] });
+const PREVIEW_EXAMPLE = `// 화면 state는 입력한 값만(미설정 = 키 생략). 필수 최소 구조는 화면이 정한 popupType 하나.
+const [state, setState] = useState<Partial<AdminPopupDetail>>({ popupType: 'TEXT' });
 const [open, setOpen] = useState(false);
 const [size, setSize] = useState<Size | null>(null);
 const preview = withPreviewFallback(state); // 미리보기 전용(state·저장 값은 그대로)
