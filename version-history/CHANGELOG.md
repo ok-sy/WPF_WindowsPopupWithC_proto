@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-04 — Demo JSON Validator 및 유형별 예시 창 추가
+
+- 이유: Popup 전체 JSON 붙여넣기 검증 시 오류·누락 기본값 경고를 구분하고 유형별 작성 예시를 한 화면에서 확인할 필요.
+- 변경: Demo 상단에 JSON Validator 진입 버튼 추가. 별도 창에서 WPF 수신/3117 저장 JSON 입력, Submit 로컬 검사, ERROR/WARNING/PASS 분류·필터, 경로별 항목 선택, 보정 JSON 보기·복사 및 예시 대화상자(유형별 최소/확장 JSON·복사·입력 적용) 지원. TEXT/IMAGE/VIDEO/SURVEY/QUIZ 및 영상 QUIZ를 구분하고 VIDEO_QUIZ 독립 타입은 사용하지 않음. 원본 입력은 보존하며 API/결과 큐를 호출하지 않음. 미리보기는 비활성(후속 구현).
+- 주요 파일: popup-frameWork/Popup/DemoWindow.xaml, popup-frameWork/Popup/DemoWindow.JsonValidator.cs, popup-frameWork/Popup/DemoJsonValidator.cs, version-history/CHANGELOG.md.
+- 검증: GitHub main 소스 및 화면 이벤트 정적 확인. Windows 빌드·실행·JSON 유형별 자동 테스트는 미실행. 현재 Validator는 계약 일부만 검사하며 모든 필드·채점·실제 렌더링을 보증하지 않음. 예시는 진단용 초안으로 계약 전체 필드 자동 생성과 대조 테스트는 후속 필요.
+- 상태: 초기 UI/검증 기능 반영, 통합 검증·계약 보완 대기.
+
 ## 2026-10-29-03 — Git for Windows 설치파일 오프라인 반입 옵션 추가
 
 - 이유: 폐쇄망 PC에서 사용할 Git for Windows 설치 프로그램을 기존 소스 반입 패키지에 선택적으로 동봉할 필요.
