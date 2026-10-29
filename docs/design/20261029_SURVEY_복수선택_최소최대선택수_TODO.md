@@ -1,6 +1,6 @@
 # SURVEY 복수 선택 최소·최대 선택 수 TODO
 
-기준일: 2026-10-29 (KST). 상태: **구현 완료 · 원격 개발 DB 적용·실화면 확인 대기**. 신규 숫자 TODO 번호는 임의 부여하지 않음.
+기준일: 2026-10-29 (KST). 상태: **구현 완료 · 원격 개발 DB 적용 완료 · 실화면 확인 대기**. 신규 숫자 TODO 번호는 임의 부여하지 않음.
 
 ## 확정 결정
 
@@ -23,7 +23,7 @@
 
 ## 작업
 
-- [x] DB: `19_question_selection_limit_oracle.sql` — `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS` NUMBER(4) NULL, 1 이상·최소 ≤ 최대 CHECK. `01` 스키마·README 반영. 로컬 XE 적용(원격 개발 DB는 접속 불가로 **미적용**, 아래 진행 기록).
+- [x] DB: `19_question_selection_limit_oracle.sql` — `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS` NUMBER(4) NULL, 1 이상·최소 ≤ 최대 CHECK. `01` 스키마·README 반영. 로컬 XE·원격 개발 DB 적용(아래 진행 기록).
 - [x] 서버: 엔티티·DTO·Mapper INSERT/SELECT, `PopupQuestionRules` 저장 검증, 관리자 상세·WPF 응답(SURVEY 정답 제거 경로 포함) 전달, 문항 템플릿 재사용 비교에 포함, 3117 등록 검증기 타입 검사.
 - [x] 관리자 웹: 모델, 편집기 입력(SURVEY 복수 선택만, 비우면 제한 없음)·저장 전 확인, 미리보기 한도·최소 판정·안내 문구.
 - [x] WPF: DTO·Factory·모델, 최대 한도·최소 판정(제출 가능·진행 문구)·안내 문구, Demo 샘플.
@@ -40,4 +40,8 @@
 - WPF: `SurveyQuestionDto`·`PopupFactory`·`SurveyQuestion`(`MaxSelections` QUIZ 정답 수 우선, `MinSelections`, `IsAnsweredBy`·`IsBelowMinimum`), `SurveyPopupView` 진행 문구·제출 가능·제출 시 검증·안내 문구, Demo `DEMO-SURVEY-PLAIN` 5004 문항(선택, 최소 2·최대 3).
 - 검증: 서버 `PopupQuestionRulesTest` 4건·`PopupJsonValidatorTest` 1건 추가, 로컬 XE 접속으로 Oracle 테스트까지 실행 — 실DB `PopupQuestionDatabaseTest` 통과. 웹 tsc 0·eslint 0, `verify-completion-ux-43` 71건(신규 6)·`verify-survey-rich-text-55` 23건. WPF 빌드 경고·오류 0, `PopupWindowTests` 385건(신규 선택 수 검사 포함), `ApiDemoTests` 70건.
 - 기존 실패(이번 변경 전 코드에서도 동일하게 재현): `WpfPopupDatabaseTest` 2건·`WpfApiOracleHttpTest` 2건(로컬 XE 데이터 상태로 조회 결과 없음), `PopupWindowTests` `CheckVideoQuizAspect60`(창 폭 복원 계산, 실행 시 임시 제외 후 원복), `RichTextTests`(TODO69에서 옮겨진 `RgstPop/popupRichText.ts` 경로 참조).
-- 미실행: 원격 개발 DB 적용, 관리자 웹 저장 → WPF 실화면 조작, Excel·Word·PDF 산출물 반영.
+- 미실행: 관리자 웹 저장 → WPF 실화면 조작, Excel·Word·PDF 산출물 반영.
+
+### 2026-10-29 원격 개발 DB 적용
+
+- 원격 개발 DB(192.168.114.71:4004/XE, zero-rule) 접속 복구 후 `db\oracle	oolspply-dev-db.ps1 19_question_selection_limit_oracle.sql` 실행: `MIN_SELECTIONS`·`MAX_SELECTIONS` 컬럼·`CK_QUESTION_SELECTION_RANGE` 제약·주석 OK, 확인 쿼리 컬럼 2·제약 1.
