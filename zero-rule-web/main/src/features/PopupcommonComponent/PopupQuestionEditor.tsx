@@ -71,9 +71,30 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
       const correct = q.options.filter((o) => o.isCorrect).length;
       if (quiz && (!correct || (q.questionType === 'SINGLE_CHOICE' && correct !== 1))) return prefix + '정답 선택지를 확인해 주세요.';
     }
+    const limitError = selectionLimitError(q, quiz);
+    if (limitError) return prefix + limitError;
   }
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
   if (quiz && (passingScore == null || !Number.isFinite(passingScore) || passingScore < 0 || passingScore > total)) return '통과 점수는 0~총점 사이로 입력해 주세요.';
+  return null;
+}
+
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 복수 선택 최소·최대 선택 수 확인
+ * - in : q(PopupQuestion) 문항 · quiz(boolean) 퀴즈 여부
+ * - out: string | null 위반 안내, 문제없으면 null
+ * - 서버(PopupQuestionRules.validateSelectionLimits)와 같은 규칙: SURVEY 복수 선택만, 정수 1~선택지 수, 최소 ≤ 최대. 비우면(null) 제한 없음.
+ */
+export function selectionLimitError(q: PopupQuestion, quiz: boolean): string | null {
+  const min = q.minSelections ?? null;
+  const max = q.maxSelections ?? null;
+  if (min == null && max == null) return null;
+  if (quiz || q.questionType !== 'MULTIPLE_CHOICE') return '최소·최대 선택 수는 설문의 복수 선택 문항에서만 지정할 수 있습니다.';
+  const count = q.options.length;
+  const outOfRange = (value: number | null) => value != null && (!Number.isInteger(value) || value < 1 || value > count);
+  if (outOfRange(min) || outOfRange(max)) return `최소·최대 선택 수는 1~선택지 수(${count}) 사이의 정수여야 합니다.`;
+  if (min != null && max != null && min > max) return '최소 선택 수는 최대 선택 수보다 클 수 없습니다.';
   return null;
 }
 
@@ -139,6 +160,8 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         <Stack direction="row" spacing={1}>
           <TextField select fullWidth label="문항 유형" value={q.questionType} onChange={(e) => update(index, {
             questionType: e.target.value,
+            // 선택 수는 복수 선택 전용이라 유형을 바꾸면 비운다(제한 없음).
+            minSelections: null, maxSelections: null,
             options: e.target.value === 'TEXT' ? [] : (q.options.length ? q.options.map((o) => ({ ...o, isCorrect: false })) : [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false }))),
             correctAnswer: '', answerMatchMode: 'EXACT',
           })}>
@@ -178,6 +201,18 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           {quiz && q.questionType === 'MULTIPLE_CHOICE' && <Typography variant="caption" color="text.secondary">
             정답 {q.options.filter((o) => o.isCorrect).length}개 · 응답자는 정답 수만큼만 선택할 수 있습니다.
           </Typography>}
+          {/* POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수. 비우면 제한 없음. */}
+          {!quiz && q.questionType === 'MULTIPLE_CHOICE' && <Stack direction="row" spacing={1} alignItems="center">
+            <TextField size="small" label="최소 선택" type="number" value={q.minSelections ?? ''} placeholder="제한 없음" InputLabelProps={{ shrink: true }}
+              inputProps={{ min: 1, max: q.options.length, step: 1, 'aria-label': `${index + 1}번 문항 최소 선택 수` }}
+              onChange={(e) => update(index, { minSelections: e.target.value === '' ? null : Number(e.target.value) })} />
+            <TextField size="small" label="최대 선택" type="number" value={q.maxSelections ?? ''} placeholder="제한 없음" InputLabelProps={{ shrink: true }}
+              inputProps={{ min: 1, max: q.options.length, step: 1, 'aria-label': `${index + 1}번 문항 최대 선택 수` }}
+              onChange={(e) => update(index, { maxSelections: e.target.value === '' ? null : Number(e.target.value) })} />
+            <Typography variant="caption" color={selectionLimitError(q, quiz) ? 'error' : 'text.secondary'}>
+              {selectionLimitError(q, quiz) ?? `선택지 ${q.options.length}개 · 비우면 제한 없음`}
+            </Typography>
+          </Stack>}
           <Button startIcon={<AddIcon />} onClick={() => update(index, { options: [...q.options, { optionId: temporaryId(), value: String(q.options.length + 1), text: '', sortOrder: q.options.length + 1, isCorrect: false }] })}>선택지 추가</Button>
         </Stack>}
       </Stack>

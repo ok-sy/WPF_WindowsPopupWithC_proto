@@ -31,6 +31,9 @@ export interface PopupQuestion {
   /** POL-06-01 : 문항·서식 — 문항 제목·설명 서식. 있으면 서버가 title·description을 여기서 파생한다. */
   titleBlocks?: unknown[] | null;
   descriptionBlocks?: unknown[] | null;
+  /** POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수. null·생략 = 제한 없음. QUIZ는 정답 수가 한도라 쓰지 않는다. */
+  minSelections?: number | null;
+  maxSelections?: number | null;
 }
 
 /** 관리자 목록 그리드 한 행에서 사용하는 요약 정보다. */

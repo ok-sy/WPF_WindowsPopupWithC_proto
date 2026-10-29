@@ -163,9 +163,49 @@ export interface SurveyPreviewProps {
  *   WPF는 QUIZ에만 정답 키를 받으므로 SURVEY·단일 선택·정답 없는 문항은 null(제한 없음). WPF SurveyQuestion.MaxSelections와 같은 규칙이다.
  */
 export function maxSelectionsOf(question: PopupQuestion, quiz: boolean): number | null {
-  if (!quiz || question.questionType !== 'MULTIPLE_CHOICE') return null;
+  if (question.questionType !== 'MULTIPLE_CHOICE') return null;
+  if (!quiz) return question.maxSelections ?? null;
   const correct = question.options.filter((option) => option.isCorrect === true).length;
   return correct > 0 ? correct : null;
+}
+
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 복수 선택 최소 개수
+ * - in : question(PopupQuestion) 문항 · quiz(boolean) QUIZ 여부
+ * - out: number | null SURVEY 복수 선택의 minSelections, 없으면 null
+ * - QUIZ는 최소 선택 수를 쓰지 않는다. WPF SurveyQuestion.MinSelections와 같은 규칙이다.
+ */
+export function minSelectionsOf(question: PopupQuestion, quiz: boolean): number | null {
+  return !quiz && question.questionType === 'MULTIPLE_CHOICE' ? question.minSelections ?? null : null;
+}
+
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 복수 선택 안내 문구
+ * - in : min·max(number | null) 최소·최대 선택 수
+ * - out: string `N~M개 선택` · `N개 선택`(같을 때) · `최소 N개 선택` · `최대 M개 선택` · `여러 개 선택 가능`(제한 없음)
+ * - WPF SurveyPopupView.ChoiceHintOf와 같은 문구다.
+ */
+export function multipleChoiceHint(min: number | null, max: number | null): string {
+  if (min != null && max != null) return min === max ? `${max}개 선택` : `${min}~${max}개 선택`;
+  if (min != null) return `최소 ${min}개 선택`;
+  if (max != null) return `최대 ${max}개 선택`;
+  return '여러 개 선택 가능';
+}
+
+/**
+ * POL-06-02 : 선택·제출
+ * ■ 문항 응답 상태
+ * - in : question(PopupQuestion) · answer(PreviewAnswer | undefined) · quiz(boolean)
+ * - out: { answered: 필수 응답 완료 여부, belowMinimum: 선택했지만 최소 선택 수 미만 }
+ * - 필수 문항은 max(1, 최소)개 이상, 선택 문항은 0개 또는 최소 이상이어야 제출할 수 있다(WPF와 같음).
+ */
+export function answerStateOf(question: PopupQuestion, answer: PreviewAnswer | undefined, quiz: boolean) {
+  if (question.questionType === 'TEXT') return { answered: Boolean(answer?.text.trim()), belowMinimum: false };
+  const count = answer?.optionIds.length ?? 0;
+  const min = minSelectionsOf(question, quiz) ?? 1;
+  return { answered: count >= min, belowMinimum: count > 0 && count < min };
 }
 
 // 세로형 오른쪽 체크(28px 열 예약). V1은 선택 전에도 옅게 보이고, V2는 선택했을 때만 보인다.
@@ -235,7 +275,7 @@ export default function SurveyPreview({
         const full = maxSelections != null && answer.optionIds.length >= maxSelections;
         const hint = !surveyDesign.choiceHint || question.questionType === 'TEXT'
           ? null
-          : multiple ? (maxSelections != null ? `최대 ${maxSelections}개 선택` : '여러 개 선택 가능') : '하나 선택';
+          : multiple ? multipleChoiceHint(minSelectionsOf(question, quiz), maxSelections) : '하나 선택';
         const last = index === questions.length - 1;
         // 서식이 있으면 서식으로 표시(WPF와 같이 필수 표시·선택 안내는 마지막 문단 끝).
         const richTitle = richBlocksOrNull(question.titleBlocks);

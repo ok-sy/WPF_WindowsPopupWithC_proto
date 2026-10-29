@@ -1,4 +1,5 @@
 import SurveyPreview, {
+  answerStateOf,
   surveyColors,
   surveySubmitSx,
   type PreviewAnswer,
@@ -420,17 +421,22 @@ export default function PopupPreview({
     setSubmissionStatus('');
   };
   const required = popup.questions.filter((question) => question.isRequired);
+  const quizPopup = popup.popupType === 'QUIZ';
+  // 필수 문항은 최소 선택 수(없으면 1) 이상이어야 완료(WPF와 같음).
   const completed = required.filter((question) =>
-    question.questionType === 'TEXT'
-      ? Boolean(answers[question.questionId]?.text.trim())
-      : Boolean(answers[question.questionId]?.optionIds.length),
+    answerStateOf(question, answers[question.questionId], quizPopup).answered,
   ).length;
   const remaining = required.length - completed;
+  // POL-06-02 : 선택·제출 — 선택했지만 최소 선택 수에 못 미친 문항(필수·선택 모두)은 제출을 막는다.
+  const belowMinimum = popup.questions.findIndex((question) =>
+    answerStateOf(question, answers[question.questionId], quizPopup).belowMinimum);
   const progress = remaining
     ? `필수 응답 ${completed}/${required.length} · ${remaining}문항 남음`
-    : required.length
-      ? `필수 응답 ${completed}/${required.length} 완료`
-      : '선택 문항에 자유롭게 응답해주세요.';
+    : belowMinimum >= 0
+      ? `${belowMinimum + 1}번 문항은 최소 ${popup.questions[belowMinimum].minSelections}개를 선택해주세요.`
+      : required.length
+        ? `필수 응답 ${completed}/${required.length} 완료`
+        : '선택 문항에 자유롭게 응답해주세요.';
   const submitPreview = () => {
     if (popup.popupType !== 'QUIZ') {
       setSubmissionStatus('미리보기: 제출 완료');
@@ -580,7 +586,7 @@ export default function PopupPreview({
   const showSecondaryClose =
     popup.showFooter &&
     !isVideoQuiz && popup.popupType === 'QUIZ' && quizFailed && !overlayEnabled;
-  const submitDisabled = !videoUnlocked || remaining > 0 || !popup.questions.length;
+  const submitDisabled = !videoUnlocked || remaining > 0 || belowMinimum >= 0 || !popup.questions.length;
   // "나중에 보기"는 푸터가 보일 때 showLater로만 표시하고, 완료 전 닫기 잠금(시청·제출 조건)과 관계없이 누를 수 있다.
   const showLaterButton = popup.showFooter && Boolean(popup.showLater);
   const laterPreview = () => {

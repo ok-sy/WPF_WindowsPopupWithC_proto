@@ -222,5 +222,22 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   for (let n = 0; n < 4; n++) await clickBox(n);
   picked = await boxes();
   check(picked.every(x => x.checked && !x.disabled) && await run(`document.body.textContent.includes('여러 개 선택 가능')`), '[52-5] SURVEY multiple choice has no limit');
+  // 9. POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수(minSelections 2 · maxSelections 3).
+  await render('SURVEY', {questions: multi.map(q => ({...q, isScored: false, minSelections: 2, maxSelections: 3}))});
+  check(await run(`document.body.textContent.includes('2~3개 선택')`), '[선택 수] SURVEY shows the min~max hint');
+  await clickBox(0);
+  b = await button('제출');
+  check(b.disabled, '[선택 수] required question below the minimum keeps submit disabled: ' + JSON.stringify(b));
+  await clickBox(1);
+  check(!(await button('제출')).disabled, '[선택 수] reaching the minimum enables submit');
+  await clickBox(2);
+  picked = await boxes();
+  check(picked.filter(x => x.checked).length === 3 && picked.filter(x => !x.checked).every(x => x.disabled), '[선택 수] reaching the maximum disables remaining options: ' + JSON.stringify(picked));
+  // 선택 문항: 미응답은 제출 가능, 최소 미만으로 고르면 제출 불가.
+  await render('SURVEY', {questions: multi.map(q => ({...q, isRequired: false, isScored: false, minSelections: 2, maxSelections: null}))});
+  check(await run(`document.body.textContent.includes('최소 2개 선택')`) && !(await button('제출')).disabled, '[선택 수] optional question with no answer can be submitted');
+  await clickBox(0);
+  b = await button('제출');
+  check(b.disabled && (b.reason ?? '').includes('최소 2개'), '[선택 수] optional question below the minimum blocks submit with a reason: ' + JSON.stringify(b));
   console.log(`PASS: ${checks} completion UX 43 checks`);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {socket?.close(); browser?.kill(); server?.close();});
