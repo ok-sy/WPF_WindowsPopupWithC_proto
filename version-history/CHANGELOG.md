@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-11 — CKEditor5 통합 A-2 의존 트리·번들·중복 오류 재현 조사
+
+- 이유: 공통 에디터와 팝업 서식 에디터를 같은 CKEditor 출처로 통일하기 전에 실제 설치 트리·운영 번들·로드 순서를 대조하고 `ckeditor-duplicated-modules` 발생 조건을 재현으로 확정할 필요. 목표 버전을 `ckeditor5` 44.3.0 + `@ckeditor/ckeditor5-react` 5.1.0으로 확정.
+- 변경: TODO에 목표 버전과 A-2 결과 기록. lockfile 분석으로 개별 48.4.0 패키지 49개가 모두 `@types/ckeditor__ckeditor5-core` 경유 설치임을 확인. 소스의 CKEditor 로드 지점은 `CommonCKEditor.tsx`·`PopupRichTextEditor.tsx` 두 곳뿐(둘 다 커스텀 빌드). 운영 빌드의 엔진 청크는 34.1.0 한 개를 두 에디터가 공유해 현행 main은 중복 오류가 나지 않는 구조. React 래퍼 5.1.0은 `CKEDITOR_VERSION`을 읽기만 함. Edge headless 재현에서 같은 탭에 엔진 사본이 두 번 평가되면(커스텀 빌드↔개별 48.4.0 양방향, 같은 커스텀 빌드 이중 평가) 두 번째에서 오류 발생, 단일 번들 공유 시 에디터 2개 생성·입력 정상. 두 에디터를 같은 커밋에서 함께 전환해야 한다는 조건과 44.3.0 `licenseKey` 필수, 래퍼 5.1.0 유지 시 호환성 검증 항목으로 E 보완.
+- 주요 파일: docs/design/20261029_CKEditor5_전체통합_TODO.md, version-history/CHANGELOG.md.
+- 검증: `next build` 성공 후 청크 대조, lockfile 스크립트 분석, Edge headless 4개 시나리오 재현(재현 스크립트는 작업 폴더 밖 임시 경로, 저장소 미포함). 로컬 pnpm 7.29가 lockfile 9.0을 읽지 못해 `pnpm why`는 실패.
+- 상태: 커밋·원격 반영. 개발 서버(HMR) 재현, 실제 앱 화면 이동 재현, 44.3.0 설치 후 `toolbarview-item-unavailable`·타이핑 불가 재현, 커스텀 빌드 플러그인 전수 조사는 미실행.
+
 ## 2026-10-29-10 — CKEditor5 Common·PopupRich 전체 통합 TODO 등록
 
 - 이유: 공통·팝업 에디터의 CKEditor 의존성 통일 필요. 모듈 중복, 툴바 플러그인 경고, 전환 시 입력 불가 증상에 대한 원인 조사와 기능 회귀 방지 계획 수립.
