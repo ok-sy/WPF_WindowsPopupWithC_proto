@@ -57,7 +57,7 @@
                     </Border>
                 </StackPanel>
                 <TextBlock x:Name="HeaderSubtitleText" Text="서버 없이 팝업과 결과 전송을 확인합니다." Foreground="#68707C" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                <TextBlock x:Name="ModeHintText" Foreground="#8A919C" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                <Button Content="JSON Validator · JSON 검증 / 유형별 예시" Click="JsonValidatorButton_Click" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,5" ToolTip="API 호출 없이 JSON 검증·예시 복사·보정 결과 확인"/>\n                <TextBlock x:Name="ModeHintText" Foreground="#8A919C" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
                            Text="API 연결로 확인하려면 popupSample.exe --demo --api 로 실행"/>
             </StackPanel>
         </Grid>
