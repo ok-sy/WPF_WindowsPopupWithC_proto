@@ -96,7 +96,7 @@ class WpfPopupDatabaseTest {
                 // POL-03-01 : 저장·표시 경계 — 통합 전 제목·설명은 본문 앞 줄로 합쳐 내려간다
                 assertEquals("서비스 점검 안내\n점검 시간 동안 접속이 제한됩니다.\n9월 21일(일) 02:00~06:00 점검 예정입니다.",
                         text.content().get("plainText"));
-                assertEquals(true, text.content().get("showHighlight"), "CONTENT_OPTIONS JSON 병합");
+                assertEquals(true, text.content().get("showBottomDescription"), "CONTENT_OPTIONS JSON 병합");
                 assertEquals(7, text.hideDays());
 
                 // ---- 일반 안내 닫기: 완료 처리, 후속 후보 AVAILABLE, 중복 재전송·같은 전달 건 재제출 ----

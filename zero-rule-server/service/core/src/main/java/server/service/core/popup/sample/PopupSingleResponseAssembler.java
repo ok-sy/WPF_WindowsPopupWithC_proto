@@ -71,7 +71,7 @@ public class PopupSingleResponseAssembler {
      * Blocks 키(textBlocks·surveyTitleBlocks·descriptionBlocks)는 null = 서식 없음(일반 문자열 표시)이다.
      */
     static final Map<String, Map<String, Object>> CONTENT_DEFAULTS = Map.of(
-            "TEXT", ordered("plainText", "", "textBlocks", null, "showPlainText", true, "highlightText", "", "showHighlight", false,
+            "TEXT", ordered("plainText", "", "textBlocks", null, "showPlainText", true,
                     "bottomDescription", "", "bottomDescriptionUrl", "", "showBottomDescription", false),
             "IMAGE", ordered("imageTitle", "", "imageUrl", "", "description", "", "showDescription", true, "imageSizeMode", "ADAPTIVE",
                     "keepAspectRatio", true),

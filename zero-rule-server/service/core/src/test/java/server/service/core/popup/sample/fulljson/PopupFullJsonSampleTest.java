@@ -148,7 +148,8 @@ class PopupFullJsonSampleTest {
         assertEquals("", popup.get("title").textValue());
         JsonNode content = popup.get("content");
         assertTrue(content.get("showPlainText").booleanValue());
-        assertFalse(content.get("showHighlight").booleanValue() || content.get("showBottomDescription").booleanValue());
+        assertFalse(content.get("showBottomDescription").booleanValue());
+        assertFalse(content.has("showHighlight"), "삭제된 강조 문구 기본값 없음");
     }
 
     /** 명시한 false·0은 유지하고, 잘못된 타입·범위는 기본값으로 바꾸지 않고 거절한다. */

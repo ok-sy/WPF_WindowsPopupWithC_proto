@@ -28,6 +28,8 @@ w.deepFreeze = <T,>(value: T): T => {
   if (value && typeof value === 'object') { Object.values(value).forEach(w.deepFreeze); Object.freeze(value); }
   return value;
 };
+/* 강조 문구(highlightText·showHighlight)는 2026-10-29 삭제 — 분리 전 코드(legacy)와의 비교에서만 제외하는 의도된 차이. */
+w.withoutHighlight = (value: unknown): unknown => JSON.parse(JSON.stringify(value ?? null), (key, v) => (key === 'highlightText' || key === 'showHighlight' ? undefined : v));
 /* JSON 키 순서는 비교에서 제외한다. */
 w.canonical = (value: unknown): string => JSON.stringify(value, (_key, v) => v && typeof v === 'object' && !Array.isArray(v)
   ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v);

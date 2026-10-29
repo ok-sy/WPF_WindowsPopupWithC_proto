@@ -143,7 +143,7 @@ public final class PopupFullJsonDefaults {
 
     /** 유형별 content 옵션 규칙(YAML content 절과 1:1). SURVEY는 기본값 옵션이 없다. */
     static final Map<String, Map<String, Rule>> CONTENT_RULES = Map.of(
-            "TEXT", ordered("showPlainText", bool(), "showHighlight", bool(), "showBottomDescription", bool()),
+            "TEXT", ordered("showPlainText", bool(), "showBottomDescription", bool()),
             "IMAGE", ordered("showDescription", bool(), "imageSizeMode", oneOf("ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL"), "keepAspectRatio", bool()),
             "VIDEO", ordered("showDescription", bool(), "showControls", bool(), "allowFullScreen", bool(),
                     "allowPlaybackRateChange", bool(), "allowSeek", bool(), "autoPlay", bool(), "isLoop", bool(),

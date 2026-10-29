@@ -13,7 +13,7 @@
 
 | popupType | 설명 |
 |---|---|
-| `TEXT` | 일반 텍스트·서식 본문(textBlocks), 강조 문구 |
+| `TEXT` | 일반 텍스트·서식 본문(textBlocks), 하단 설명 |
 | `IMAGE` | 이미지, 제목·설명(ORIGINAL은 이미지만). 이미지 클릭 링크는 계약 3.7에서 삭제 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
 | `SURVEY` | 객관식/주관식 설문 |
@@ -120,8 +120,6 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `plainText` | string | 일반 텍스트 본문. `textBlocks`가 있으면 서버가 서식 본문에서 만든 값 |
 | `textBlocks` | array | 서식 본문(문단·Run). 관리자 서식 편집기가 만들며 있으면 본문 대신 표시. 콘텐츠 제목·설명도 앞 문단으로 포함. Run `strikethrough`(boolean, 누락 false)는 취소선이며 밑줄과 동시 적용 가능(TODO62). 문단 `indent`(0 이상 정수, 1단계 40, 단계 수 제한 없음·TODO63)는 문단 전체 왼쪽 들여쓰기(설계 49) |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
-| `highlightText` | string | 강조 문구 |
-| `showHighlight` | bool | 강조 영역 표시 여부. 없으면 false |
 | `bottomDescription` | string | 본문 하단 설명 |
 | `bottomDescriptionUrl` | string | 하단 설명 클릭 시 열 HTTP/HTTPS URL. 비우면 일반 설명. 호버 시 색상·밑줄 변경 |
 | `showBottomDescription` | bool | 하단 설명 표시 여부. 없으면 false |

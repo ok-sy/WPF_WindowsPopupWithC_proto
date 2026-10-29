@@ -76,7 +76,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 
 | 유형 | content 옵션(기본값) |
 |---|---|
-| TEXT | `plainText` "", `textBlocks` null, `showPlainText` true, `highlightText` "", `showHighlight` false, `bottomDescription` "", `bottomDescriptionUrl` "", `showBottomDescription` false |
+| TEXT | `plainText` "", `textBlocks` null, `showPlainText` true, `bottomDescription` "", `bottomDescriptionUrl` "", `showBottomDescription` false |
 | IMAGE | `imageTitle` "", `imageUrl`(필수), `description` "", `showDescription` true, `imageSizeMode` ADAPTIVE, `keepAspectRatio` true |
 | VIDEO | `videoTitle` "", `videoUrl`(필수), `description` "", `showDescription` true, `showControls` true, `allowFullScreen` true, `allowPlaybackRateChange` true, `allowSeek` true, `autoPlay` false, `isLoop` false, `defaultVolume` 0.7 |
 | SURVEY | `surveyTitle` "", `surveyTitleBlocks` null, `description` "", `descriptionBlocks` null |
@@ -131,7 +131,7 @@ SELECT *
 
 | POPU_CNTN_ID | 유형 코드 | 확인 포인트 |
 |---|---|---|
-| SMP-TXT-01 | 10 TEXT | textBlocks 서식 본문·강조 문구·하단 설명, 푸터 02 링크 후 닫기, content의 창 옵션(배경 없음·TOP_RIGHT·bodyFontSize)이 최상위로 이동 |
+| SMP-TXT-01 | 10 TEXT | textBlocks 서식 본문·하단 설명, 푸터 02 링크 후 닫기, content의 창 옵션(배경 없음·TOP_RIGHT·bodyFontSize)이 최상위로 이동 |
 | SMP-IMG-01 | 20 IMAGE | 이미지 컬럼 → `file-base-url/popup/sample/image/notice.png`, 크기 NULL이면 width/height 생략 |
 | SMP-VDO-01 | 30 VIDEO | 영상 컬럼 → videoUrl, 나중에 보기(AFTR_CNFM_OBJ_YN=Y), 배속·탐색 금지 |
 | SMP-SVY-01 | 40 SURVEY | 푸터 코드 NULL이어도 SUBMIT. 문항은 QuestionPort |
@@ -158,7 +158,7 @@ SELECT *
   "showDoNotShowAgain":false,"showLater":true,"hideDays":null,"completionRatio":null,"questions":[],
   "content":{"plainText":"점검 안내","showPlainText":false,
    "textBlocks":[{"alignment":"LEFT","indent":0,"runs":[{"text":"점검","bold":true,"italic":false}]}],
-   "highlightText":"","showHighlight":false,"bottomDescription":"","bottomDescriptionUrl":"","showBottomDescription":false}}}
+   "bottomDescription":"","bottomDescriptionUrl":"","showBottomDescription":false}}}
 ```
 
 유형별 전체 옵션 예시 JSON(IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈 포함)은 `zero-rule-server/web/api/src/test/resources/sample/relay/*.json`에 있고, WPF 조회 DTO로 역직렬화되는지 `scripts/PopupWindowTests`가 확인한다.

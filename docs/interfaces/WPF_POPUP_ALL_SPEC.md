@@ -127,13 +127,11 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | PlainText | 지원 | 조건부 | `""` | TextBlocks가 없을 때 표시하는 일반 문자열 본문. TextBlocks가 있으면 서버가 TextBlocks에서 만든 파생 값이며 표시는 TextBlocks 우선. 이 저장소 서버는 TEXT 응답에 항상 키를 채움(저장 본문이 없으면 `null` 가능) |
 | TextBlocks | 지원 | N | 없음 | 문단·Run 서식 본문(굵게·기울임·밑줄·취소선(`runs[].strikethrough`, TODO62), 허용 색·크기·글꼴, 문단 정렬·들여쓰기 0 이상 정수 단계 × 40(단계 수 제한 없음, TODO63), 설계 49). 콘텐츠 제목·설명도 앞 문단으로 포함. 있으면 PlainText 대신 표시. 허용 값은 서버가 검증하고 WPF는 표시 방어(안전 범위·변환 실패 시 기본값·구조 오류 시 PlainText)만 한다(설계 48). 상세는 인터페이스 계약 8.1 |
 | ShowPlainText | 지원 | N | `true` | 본문 영역 표시 |
-| HighlightText | 지원 | N | `""` | 강조 문구 |
-| ShowHighlight | 지원 | N | `false` | 문구 존재로 자동 추정하지 않음 |
 | BottomDescription | 지원 | N | `""` | 하단 설명 |
 | BottomDescriptionUrl | 지원 | 링크 사용 시 제공 | `""` | 하단 설명 링크 |
 | ShowBottomDescription | 지원 | N | `false` | 하단 설명 표시 |
 
-창 크기는 공통 Width/Height를 사용한다. MarkdownMode·MarkdownContent는 삭제된 기능이다.
+창 크기는 공통 Width/Height를 사용한다. MarkdownMode·MarkdownContent는 삭제된 기능이다. 강조 문구 HighlightText·ShowHighlight도 삭제했다(2026-10-29, 서버 JSON에 남아 있어도 무시).
 ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 설계 37에서 삭제했다. 콘텐츠 제목·설명은 본문(TextBlocks/PlainText)의 앞 문단으로 전달된다.
 
 ### 4.2 IMAGE

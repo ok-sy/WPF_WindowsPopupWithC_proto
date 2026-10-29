@@ -46,7 +46,7 @@ SET DEFINE OFF;
 DELETE FROM DTIY3111
  WHERE POPU_CNTN_ID IN ('SMP-TXT-01', 'SMP-IMG-01', 'SMP-VDO-01', 'SMP-SVY-01', 'SMP-QIZ-01', 'SMP-VQZ-01');
 
--- 1) TEXT: 서식 본문(textBlocks)·강조 문구·링크 후 닫기, 배경 없음·우측 상단·본문 글자 크기 지정
+-- 1) TEXT: 서식 본문(textBlocks)·링크 후 닫기, 배경 없음·우측 상단·본문 글자 크기 지정
 INSERT INTO DTIY3111
     (POPU_CNTN_ID, POPU_CNTN_TP_CD, POPU_CNTN_NM, HDR_TITL, POPU_WDTH_SZ, POPU_LNTH_SZ, AFTR_CNFM_OBJ_YN,
      FTR_BTN_TP_CD, FTR_URL, IMG_FILE_PATH_CN, IMG_FILE_NM, VDO_FILE_PATH_CN, VDO_FILE_NM,
@@ -57,7 +57,7 @@ VALUES
      '{"plainText":"시스템 점검 안내\n02:00~06:00",'
      || '"textBlocks":[{"alignment":"LEFT","indent":0,"runs":[{"text":"시스템 점검 안내","bold":true,"italic":false}]},'
      || '{"alignment":"CENTER","runs":[{"text":"02:00~06:00","color":"#DC2626"}]}],'
-     || '"showPlainText":true,"highlightText":"작업 중인 문서를 저장해 주세요.","showHighlight":true,'
+     || '"showPlainText":true,'
      || '"bottomDescription":"자세히 보기","bottomDescriptionUrl":"https://intranet.example.com/notice/1","showBottomDescription":true,'
      || '"useBackgroundOverlay":false,"backgroundOverlayOpacity":0,"popupPosition":"TOP_RIGHT","bodyFontSize":16}',
      'SAMPLE', SYSDATE);

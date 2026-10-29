@@ -68,15 +68,13 @@
 | PlainText | 지원 | 조건부(Y) | `""` | 일반 본문 텍스트. TextBlocks가 없을 때 표시하는 본문이며 최소 제공 범위는 TextBlocks를 쓰지 않으므로 본문을 표시하려면 제공. 콘텐츠 제목·설명이 있으면 앞 줄로 포함. 이 저장소 서버는 TEXT 응답에 항상 키를 채움(저장 본문이 없으면 `null` 가능) |
 | ShowPlainText | 지원 | N | `true` | PlainText 표시 여부 |
 | TextBlocks | 미제공 | N | 없음 | 서식 본문. 최소 제공 범위는 외부 클라이언트가 PlainText만 사용하면 된다는 뜻이다. 이 저장소 서버는 서식 본문이 있으면 textBlocks도 함께 보내며(plainText는 같은 내용의 파생 문자열), 최소 범위 클라이언트는 textBlocks를 무시해도 된다 |
-| HighlightText | 미제공 | N | `""` | 강조 텍스트 |
-| ShowHighlight | 미제공 | N | `false` | 강조 영역 표시 |
 | BottomDescription | 미제공 | N | `""` | 하단 설명 |
 | BottomDescriptionUrl | 미제공 | N | `""` | 하단 설명 링크 |
 | ShowBottomDescription | 미제공 | N | `false` | 하단 설명 표시 |
 | HeaderFontSize / BodyFontSize / FooterFontSize | 미제공 | N | `null` | 공통 옵션 사용. TextStyle이라는 별도 객체/필드는 없음 |
 
 TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한다.
-ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. 콘텐츠 제목·설명은 PlainText의 첫 줄·다음 줄로 전달된다.
+강조 문구 HighlightText·ShowHighlight는 전체 구현에서도 삭제했다(2026-10-29). ContentTitle·Description·ShowContentHeader는 설계 37에서 삭제했다. 콘텐츠 제목·설명은 PlainText의 첫 줄·다음 줄로 전달된다.
 
 ### 4.2 IMAGE
 

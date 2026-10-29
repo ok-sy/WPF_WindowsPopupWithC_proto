@@ -38,8 +38,6 @@
         { "alignment": "CENTER", "runs": [{ "text": "02:00~06:00", "color": "#DC2626", "size": 0 }] }
       ],
       "showPlainText": true,
-      "highlightText": "작업 중인 내용을 저장해 주세요.",
-      "showHighlight": true,
       "bottomDescription": "자세히 보기",
       "bottomDescriptionUrl": "https://intranet.example.com/notice/1",
       "showBottomDescription": false

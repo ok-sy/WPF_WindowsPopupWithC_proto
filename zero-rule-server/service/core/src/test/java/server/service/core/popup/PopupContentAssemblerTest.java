@@ -161,7 +161,7 @@ class PopupContentAssemblerTest {
 
     /** TEXT 저장 시 showContentHeader 표시 여부는 저장하지 않는다. */
     @Test void textSaveDropsContentHeaderToggle() {
-        assertFalse(PopupService.storedOptions("TEXT", Map.of("showContentHeader", true, "showHighlight", true))
+        assertFalse(PopupService.storedOptions("TEXT", Map.of("showContentHeader", true, "showBottomDescription", true))
                 .containsKey("showContentHeader"));
     }
 
@@ -182,8 +182,8 @@ class PopupContentAssemblerTest {
     @Test void saveKeepsOnlyExtensionOptions() {
         Map<String, Object> options = PopupContentAssembler.withoutStoredCopies(Map.of(
                 "contentTitle", "t", "description", "d", "plainText", "p", "linkUrl", "l",
-                "completionRatio", 0.8, "questions", java.util.List.of(), "showHighlight", true));
-        assertEquals(Map.of("showHighlight", true), options);
+                "completionRatio", 0.8, "questions", java.util.List.of(), "showBottomDescription", true));
+        assertEquals(Map.of("showBottomDescription", true), options);
     }
 
     /** IMAGE·VIDEO는 제목·미디어 URL·설명을 정규 컬럼에서 채운다. */

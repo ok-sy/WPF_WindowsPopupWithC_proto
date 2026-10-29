@@ -133,7 +133,7 @@ namespace Popup
             }
             string cp = prefix + ".content";
             // Explicit wrong types (e.g. videoEnabled="videoEnabled") are errors, never hidden by defaults.
-            foreach (string k in new[] { "videoEnabled", "showPlainText", "showHighlight", "showBottomDescription", "showDescription",
+            foreach (string k in new[] { "videoEnabled", "showPlainText", "showBottomDescription", "showDescription",
                 "keepAspectRatio", "showControls", "allowFullScreen", "allowPlaybackRateChange", "allowSeek", "autoPlay", "isLoop" })
                 CheckType(content, k, cp, IsBool, "boolean", issues);
             CheckType(content, "defaultVolume", cp, IsNum, "number", issues);
@@ -143,7 +143,6 @@ namespace Popup
                     (content["textBlocks"] is not JsonArray blocks || blocks.Count == 0))
                     issues.Add(new("ERROR", cp, "plainText 또는 textBlocks 본문이 필요합니다."));
                 Default(content, "showPlainText", JsonValue.Create(true), cp, issues);
-                Default(content, "showHighlight", JsonValue.Create(false), cp, issues);
                 Default(content, "showBottomDescription", JsonValue.Create(false), cp, issues);
             }
             if (type == "IMAGE")

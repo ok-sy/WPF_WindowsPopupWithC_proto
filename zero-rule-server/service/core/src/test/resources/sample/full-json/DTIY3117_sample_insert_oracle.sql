@@ -31,7 +31,7 @@ SET DEFINE OFF;
 DELETE FROM DTIY3117
  WHERE POPU_ID IN ('S17-TXT-01', 'S17-IMG-01', 'S17-VDO-01', 'S17-SVY-01', 'S17-QIZ-01', 'S17-VQZ-01');
 
--- 1) TEXT: 서식 본문·강조 문구·링크 후 닫기, 배경 없음·우측 상단·본문 글자 크기 지정(명시 false 유지 확인)
+-- 1) TEXT: 서식 본문·링크 후 닫기, 배경 없음·우측 상단·본문 글자 크기 지정(명시 false 유지 확인)
 INSERT INTO DTIY3117 (POPU_ID, POPU_BLTN_CN, REG_USER_ID, REG_DTTM)
 VALUES
     ('S17-TXT-01',
@@ -40,8 +40,7 @@ VALUES
      || '"useBackgroundOverlay":false,"popupPosition":"TOP_RIGHT","bodyFontSize":16,'
      || '"content":{"plainText":"시스템 점검 안내\n02:00~06:00",'
      || '"textBlocks":[{"alignment":"LEFT","indent":0,"runs":[{"text":"시스템 점검 안내","bold":true}]},'
-     || '{"alignment":"CENTER","runs":[{"text":"02:00~06:00","color":"#DC2626"}]}],'
-     || '"highlightText":"작업 중인 문서를 저장해 주세요.","showHighlight":true},'
+     || '{"alignment":"CENTER","runs":[{"text":"02:00~06:00","color":"#DC2626"}]}]},'
      || '"questions":[]}',
      'SAMPLE', SYSDATE);
 

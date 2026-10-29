@@ -25,7 +25,7 @@ export const SAMPLE_FULL_CONTENT_OPTIONS: Record<string, unknown> = {
   headerFontSize: null, bodyFontSize: null, footerFontSize: null,
   useBackgroundOverlay: true, backgroundOverlayOpacity: 0.45,
   // TEXT
-  plainText: '', textBlocks: null, showPlainText: true, highlightText: '', showHighlight: false,
+  plainText: '', textBlocks: null, showPlainText: true,
   bottomDescription: '', bottomDescriptionUrl: '', showBottomDescription: false,
   // IMAGE
   imageTitle: '', imageUrl: '', description: '', showDescription: true, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true,

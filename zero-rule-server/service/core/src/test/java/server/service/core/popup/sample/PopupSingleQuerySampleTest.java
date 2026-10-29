@@ -138,16 +138,17 @@ class PopupSingleQuerySampleTest {
     /** 샘플 응답은 계약상 가능한 옵션 키를 모두 싣는다(없던 키 = 계약 기본값, 명시값 유지). */
     @Test
     void sampleResponseCarriesEveryOptionKey() throws Exception {
-        JsonNode text = service(row("10", "{\"plainText\":\"본문\",\"showHighlight\":true}")).nextPopup("E1001", null, null).get("popup");
+        JsonNode text = service(row("10", "{\"plainText\":\"본문\",\"showBottomDescription\":true,\"highlightText\":\"삭제된 키\"}")).nextPopup("E1001", null, null).get("popup");
         for (String key : List.of("headerFontSize", "bodyFontSize", "footerFontSize", "hideDays", "completionRatio")) {
             assertTrue(text.has(key) && text.get(key).isNull(), "최상위 선택 키 null로 포함: " + key);
         }
         assertFalse(text.has("passingScore"), "passingScore는 QUIZ만");
         JsonNode body = text.get("content");
-        assertEquals(List.of("plainText", "showHighlight", "textBlocks", "showPlainText", "highlightText", "bottomDescription",
-                "bottomDescriptionUrl", "showBottomDescription"), iterableToList(body.fieldNames()));
-        assertTrue(body.get("showHighlight").booleanValue(), "명시값 유지");
-        assertTrue(body.get("showPlainText").booleanValue() && !body.get("showBottomDescription").booleanValue() && body.get("textBlocks").isNull());
+        assertEquals(List.of("plainText", "showBottomDescription", "highlightText", "textBlocks", "showPlainText", "bottomDescription",
+                "bottomDescriptionUrl"), iterableToList(body.fieldNames()), "삭제된 highlightText는 기본값으로 채우지 않고 원본 값만 그대로 전달");
+        assertTrue(body.get("showBottomDescription").booleanValue(), "명시값 유지");
+        assertFalse(body.has("showHighlight"), "삭제된 showHighlight 기본값 없음");
+        assertTrue(body.get("showPlainText").booleanValue() && body.get("textBlocks").isNull());
 
         JsonNode image = service(row("20", "{\"imageUrl\":\"https://x/a.png\",\"keepAspectRatio\":false}")).nextPopup("E1001", null, null).get("popup").get("content");
         assertEquals("ADAPTIVE", image.get("imageSizeMode").asText());

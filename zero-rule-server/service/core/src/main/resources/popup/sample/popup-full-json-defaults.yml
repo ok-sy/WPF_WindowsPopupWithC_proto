@@ -46,7 +46,6 @@ popup:
 content:
   TEXT:
     showPlainText: true
-    showHighlight: false
     showBottomDescription: false
   IMAGE:
     showDescription: false

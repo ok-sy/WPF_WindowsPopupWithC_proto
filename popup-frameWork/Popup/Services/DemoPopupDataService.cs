@@ -11,7 +11,7 @@ namespace Popup.Services
     /// - out: CreatePopups → List&lt;PopupResponseDto&gt; · 예외: InvalidOperationException(샘플 JSON 해석 실패)
     /// - Java API와 DB 없이 화면 시연에 사용할 WPF 전용 샘플 데이터를 만든다.
     ///   서버 응답과 같은 DTO 구조를 사용하므로 실제 PopupFactory와 화면을 그대로 검증한다.
-    ///   TEXT 시연 데이터는 plainText/highlight 구성이다(markdown 모드 없음).
+    ///   TEXT 시연 데이터는 서식 본문(textBlocks)·plainText·하단 설명 구성이다(markdown 모드·강조 문구 없음).
     /// </summary>
     public static class DemoPopupDataService
     {
@@ -188,8 +188,6 @@ namespace Popup.Services
                         }
                       ],
                       "plainText": "사내 업무시스템 정기 점검 안내\nIT운영팀 — 안정적인 서비스 제공과 보안 강화를 위한 정기 점검\n점검 일정: 2026년 9월 12일 22:00 ~ 9월 13일 02:00 (한국시간)\n대상: 사내 포털, 전자결재, 문서관리 시스템\n영향: 점검 시간 동안 서비스 접속 및 이용이 일시 중단됩니다.\n\n주요 작업\n- 서버 보안 업데이트 및 안정화\n- 전자결재 조회 성능 개선\n- 문서 저장소 백업 및 복구 상태 확인\n\n문의: IT운영팀 서비스데스크 (사내 포털 IT 지원 요청 메뉴)",
-                      "showHighlight": true,
-                      "highlightText": "작업 중인 문서와 결재 내용은 점검 시작 전 반드시 저장해 주세요.",
                       "showBottomDescription": true,
                       "bottomDescription": "작업 상황에 따라 종료 시간이 변경될 수 있으며, 변경 시 별도 안내드리겠습니다."
                     }

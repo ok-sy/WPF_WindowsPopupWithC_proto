@@ -46,7 +46,6 @@
   "content" : {
     "plainText" : "본문(필수 입력값)",
     "showPlainText" : true,
-    "showHighlight" : false,
     "showBottomDescription" : false
   }
 }

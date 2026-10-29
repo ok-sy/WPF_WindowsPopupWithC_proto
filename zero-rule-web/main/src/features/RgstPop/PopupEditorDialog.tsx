@@ -259,7 +259,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const titleKey = popup.popupType === 'TEXT' ? null : contentTitleKey(popup.popupType);
   const originalImageMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'ORIGINAL';
   // POL-01-02 : 기본값의 적용 — 표시 플래그 없는 과거 행 fallback은 두지 않는다(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
-  const showTextHighlight = popup.content.showHighlight === true;
   const showTextPlainText = popup.content.showPlainText !== false;
   const showTextBottomDescription = popup.content.showBottomDescription === true;
   const { enabled: useBackgroundOverlay, opacity: backgroundOverlayOpacity } = previewOverlay(popup);
@@ -322,14 +321,13 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {originalImageMode && <Typography variant="caption" color="text.secondary">이 모드는 이미지만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
-              {/* TEXT는 본문(제목·설명 포함)·강조 문구·하단 설명만 편집한다. */}
+              {/* TEXT는 본문(제목·설명 포함)·하단 설명만 편집한다(강조 문구는 삭제). */}
               {/* POL-03-01 : 저장·표시 경계 — 본문은 서식 편집기로 입력하고 textBlocks(기준)와 파생 plainText를 함께 갱신한다. */}
               {<PopupRichTextEditor key={bodyEditorKey} label="일반 텍스트" disabled={!showTextPlainText}
                 initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
                 onChange={(blocks, plainText) => setPopup((previous) => ({
                   ...previous, content: { ...previous.content, textBlocks: blocks, plainText },
                 }))} />}
-              <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
               <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
               <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
             </Stack>}
@@ -504,7 +502,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>텍스트 표시</Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
                 <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />
-                <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />
                 <FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />
               </Box>
                 </>}

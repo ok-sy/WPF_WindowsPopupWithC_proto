@@ -94,7 +94,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   };
   const result = await run(`(()=>{const cases=${JSON.stringify(cases)};const out={};
     for(const [name,c] of Object.entries(cases)){const input=deepFreeze(JSON.parse(JSON.stringify(c)));const before=JSON.stringify(input);
-      const same=(a,b)=>canonical(a)===canonical(b);
+      const same=(a,b)=>canonical(withoutHighlight(a))===canonical(withoutHighlight(b));
       out[name]={save:same(toSaveRequestPopup(input),legacySave(input)),load:same(toEditorPopup(input),legacyLoad({popup:input})),
         template:same(toEditorPopupFromTemplate(input,'NEW-ID'),legacyTemplate(input,'NEW-ID')),
         types:['TEXT','IMAGE','VIDEO','SURVEY','QUIZ','VIDEO_QUIZ'].filter(t=>!same(changePopupType(input,t),legacyChangeType(input,t))),
@@ -110,13 +110,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(r.unchanged, `${name}: frozen input is not modified`);
   }
   check(await run(`(()=>{const p=toSaveRequestPopup(deepFreeze(${JSON.stringify(cases.TEXT)}));return p.popupId==='P64'&&p.content.bottomDescriptionUrl==='https://example.com/a'
-    &&p.content.footerLinkUrl==='https://naver.com/'&&!('imageUrl' in p.content)&&!('unknownKey' in p.content)&&p.content.textBlocks[1].indent===6;})()`),
-    'TEXT save keeps blocks/plainText, normalizes URLs and drops other-type keys');
+    &&p.content.footerLinkUrl==='https://naver.com/'&&!('imageUrl' in p.content)&&!('unknownKey' in p.content)&&p.content.textBlocks[1].indent===6
+    &&!('highlightText' in p.content)&&!('showHighlight' in p.content)&&!('highlightText' in createDefaultPopup().content);})()`),
+    'TEXT save keeps blocks/plainText, normalizes URLs and drops other-type keys and deleted highlightText/showHighlight');
   check(await run(`(()=>{const p=toSaveRequestPopup(deepFreeze(${JSON.stringify(cases.SURVEY)}));return !('footerAction' in p.content)&&!!p.content.surveyTitleBlocks&&!!p.content.descriptionBlocks
     &&p.questions[0].titleBlocks[0].runs[0].italic&&p.questions[0].options[0].textBlocks[0].runs[0].underline;})()`),
     'SURVEY save keeps content/question/option blocks and drops footer action');
   check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>{const {displayTimes,...rest}=p;return {...rest,displayStartAt:0,displayEndAt:0};};b.minimumWidth=300;b.minimumHeight=300;
-    return canonical(strip(a))===canonical(strip(b))&&a.minimumWidth===300&&a.minimumHeight===300&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
+    return canonical(withoutHighlight(strip(a)))===canonical(withoutHighlight(strip(b)))&&a.minimumWidth===300&&a.minimumHeight===300&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
     'Default editor value equals pre-split defaults (except TODO52-1 displayTimes, TODO68 minimum 300x300) and returns a new object');
   check(await run(`JSON.stringify(createDefaultPopup().displayTimes)==='[]'&&createDefaultPopup().periodMode==='FIXED'`), '[52-1] default schedule is FIXED with no display times');
 

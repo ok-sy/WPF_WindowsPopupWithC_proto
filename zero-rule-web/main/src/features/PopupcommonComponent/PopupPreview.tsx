@@ -306,8 +306,7 @@ function PopupBody({
 
   const showPlainText = content.showPlainText !== false;
   const richBlocks = readTextBlocks(content.textBlocks);
-  // WPF TextPopupContentDto와 같이 플래그가 없으면 숨김.
-  const showHighlight = content.showHighlight === true;
+  // WPF TextPopupContentDto와 같이 플래그가 없으면 숨김. 강조 문구(highlightText)는 삭제되어 기존 데이터에 남아 있어도 그리지 않는다.
   const showBottomDescription = content.showBottomDescription === true;
 
   const bottomUrl = normalizePopupLink(content.bottomDescriptionUrl);
@@ -361,19 +360,6 @@ function PopupBody({
             </Typography>
           ))}</Box>
         : <Typography sx={{ whiteSpace: 'pre-wrap' }}>{String(content.plainText ?? '')}</Typography>
-      )}
-      {showHighlight && (
-        <Box
-          sx={{
-            p: 1.5,
-            border: '1px solid #93c5fd',
-            borderRadius: 1,
-            bgcolor: '#eff6ff',
-            color: '#1d4ed8',
-          }}
-        >
-          {text(content.highlightText, '강조 문구')}
-        </Box>
       )}
       {bottomDescription}
     </Stack>

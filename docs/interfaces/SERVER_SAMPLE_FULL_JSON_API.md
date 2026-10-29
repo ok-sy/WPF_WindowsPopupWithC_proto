@@ -92,7 +92,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 |---|---|
 | 응답 | pollingIntervalSeconds 1800 |
 | popup | displayMode SEQUENTIAL · sizeMode FIXED · width/height 900/620(IMAGE 제외) · widthRatio/heightRatio 0.7/0.75 · minimum 300/300 · maximum 1200/900 · showHeader/showFooter/showFooterButton true · footerAction CLOSE · showLater/showDoNotShowAgain false · useBackgroundOverlay true · backgroundOverlayOpacity 0.45 · popupPosition CENTER · header/body/footerFontSize null · hideDays null |
-| TEXT | showPlainText true · showHighlight/showBottomDescription false |
+| TEXT | showPlainText true · showBottomDescription false |
 | IMAGE | **showDescription false** · imageSizeMode ADAPTIVE · keepAspectRatio true |
 | VIDEO | **showDescription false** · showControls/allowFullScreen true · **allowPlaybackRateChange/allowSeek false** · autoPlay/isLoop false · defaultVolume 0.7 |
 | QUIZ | videoEnabled false |

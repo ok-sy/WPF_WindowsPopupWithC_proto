@@ -6,7 +6,7 @@ namespace Popup.Dtos
     /*
      * POL-03-01 : 저장·표시 경계
      * ■ TEXT 팝업 content DTO
-     * - 서식 본문(TextBlocks)이 있으면 그것을, 없으면 PlainText를 표시한다. 강조 문구·하단 설명은 표시 플래그로 켠다.
+     * - 서식 본문(TextBlocks)이 있으면 그것을, 없으면 PlainText를 표시한다. 하단 설명은 표시 플래그로 켠다.
      */
     public class TextPopupContentDto
     {
@@ -17,13 +17,10 @@ namespace Popup.Dtos
         [JsonConverter(typeof(LenientTextBlocksConverter))]
         public List<PopupTextBlockDto>? TextBlocks { get; set; }
         public bool ShowPlainText { get; set; } = true;
-        public string HighlightText { get; set; } = string.Empty;
-        // POL-01-02 : 기본값의 적용 — 강조 문구 표시 여부. 값이 없으면 표시하지 않는다(문구 유무로 추정하지 않음).
-        // 표시 플래그가 없던 기존 행은 08 스크립트가 같은 규칙으로 플래그를 채웠다.
-        public bool ShowHighlight { get; set; }
         public string BottomDescription { get; set; } = string.Empty;
         public string BottomDescriptionUrl { get; set; } = string.Empty;
         public bool ShowBottomDescription { get; set; }
         // POL-03-01 : 저장·표시 경계 — MarkdownMode / MarkdownContent 필드는 없다(markdown 모드 미사용). 서버 JSON에 남아 있어도 무시된다.
+        // POL-03-01 : 저장·표시 경계 — 강조 문구 HighlightText / ShowHighlight 필드는 삭제했다(2026-10-29). 기존 데이터에 남아 있어도 무시된다.
     }
 }

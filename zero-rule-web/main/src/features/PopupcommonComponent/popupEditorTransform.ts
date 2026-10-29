@@ -63,7 +63,6 @@ export function createDefaultPopup(now: Date = new Date()): AdminPopupDetail {
     content: {
       description: '', plainText: '',
       showPlainText: true,
-      highlightText: '', showHighlight: false,
       bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false,
       showDescription: true, imageSizeMode: 'ADAPTIVE',
@@ -163,8 +162,7 @@ function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail 
 const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
   'headerFontSize', 'bodyFontSize', 'footerFontSize', 'footerAction', 'footerLinkUrl'];
 const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
-  TEXT: ['plainText', 'textBlocks', 'showPlainText', 'highlightText',
-    'showHighlight', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
+  TEXT: ['plainText', 'textBlocks', 'showPlainText', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'keepAspectRatio'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
     'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],

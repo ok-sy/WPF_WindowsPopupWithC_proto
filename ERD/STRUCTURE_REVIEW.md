@@ -67,7 +67,7 @@ P0는 요구사항 충돌/데이터 정책, P1은 기능 정합성, P2는 유지
 
 ### TEXT 카드·강조 제거
 
-2026-09-16 반영: 사용자 요청에 따라 좌우 카드와 추가 설명의 실행 코드를 제거하고 본문 컬럼을 plainText에 연결했다. 강조 문구는 유지한다. 하단 설명에 bottomDescriptionUrl 링크를 추가했다. 아래는 최초 검토안이며 기존 DB 카드 데이터 전환은 미실행이다.
+2026-09-16 반영: 사용자 요청에 따라 좌우 카드와 추가 설명의 실행 코드를 제거하고 본문 컬럼을 plainText에 연결했다. 강조 문구는 유지한다(2026-10-29 강조 문구 `highlightText`/`showHighlight`도 WPF·관리자 웹에서 삭제). 하단 설명에 bottomDescriptionUrl 링크를 추가했다. 아래는 최초 검토안이며 기존 DB 카드 데이터 전환은 미실행이다.
 
 제거 대상:
 - leftSectionTitle / leftSectionBody / showLeftSection

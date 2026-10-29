@@ -60,7 +60,7 @@
 |---|---|---|
 | 최상위 | `title`, `popupType`, `sizeMode`, `width`/`height`, `widthRatio`/`heightRatio`, `minimumWidth`/`minimumHeight`(300 이상), `maximumWidth`/`maximumHeight`, `showHeader`, `showCloseButton`(푸터 버튼 표시), `showFooter`, `showDoNotShowAgain`, `showLater`, `hideDays`, `completionRatio`, `passingScore`, `questions` | 기본값은 `createDefaultPopup()` |
 | `content` 공통 | `useBackgroundOverlay`, `backgroundOverlayOpacity`, `popupPosition`, `headerFontSize`/`bodyFontSize`/`footerFontSize`, `footerAction`, `footerLinkUrl` | |
-| `content` 유형별 | `CONTENT_KEYS_BY_TYPE`(popupEditorTransform.ts) 참조. 예: TEXT `plainText`·`textBlocks`·`highlightText`…, IMAGE `imageUrl`·`imageSizeMode`…, QUIZ `videoEnabled`·`videoUrl`… | **이 목록에 없는 키는 저장 요청에서 빠진다** |
+| `content` 유형별 | `CONTENT_KEYS_BY_TYPE`(popupEditorTransform.ts) 참조. 예: TEXT `plainText`·`textBlocks`·`bottomDescription`…, IMAGE `imageUrl`·`imageSizeMode`…, QUIZ `videoEnabled`·`videoUrl`… | **이 목록에 없는 키는 저장 요청에서 빠진다** |
 
 ### 3.3 코드 상수로 조절하는 옵션
 

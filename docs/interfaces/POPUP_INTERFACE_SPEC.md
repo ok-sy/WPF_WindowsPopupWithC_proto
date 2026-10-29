@@ -17,6 +17,7 @@
 - 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음. DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
+- 3.7 보완(2026-10-29): TEXT content에서 강조 문구 `highlightText`·`showHighlight` 제거. WPF·관리자 웹은 두 키를 읽거나 표시하지 않고(기존 데이터에 남아 있어도 무시), 관리자 웹은 저장 시 보내지 않는다. 서버 인계 샘플 기본값에서도 제거. DB DDL 변경 없음(CONTENT_OPTIONS JSON 키).
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
 - 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
@@ -377,7 +378,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다.
 - **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
-- completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showHighlight/showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
+- completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
 - pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
 - [설계 34-31·32] `footerAction`·`popupPosition`의 빈 문자열·null은 생략과 같이 유형별 기본값(CLOSE 또는 SUBMIT, CENTER)으로 처리하며 미지원 값도 기본값이다. 백엔드 등록 단계는 빈 문자열을 생략으로 받고 미지원 값·유형에 맞지 않는 Action은 거부한다. `useBackgroundOverlay=false`·`backgroundOverlayOpacity=0`은 누락이 아닌 정상 명시값이다. 두 값은 non-nullable이므로 null 대신 생략한다. 글자 크기는 null·생략이면 화면 기본 크기다.
 - **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.
@@ -445,8 +446,6 @@ BOTTOM_RIGHT
     { "alignment": "LEFT", "runs": [ { "text": "서비스 " }, { "text": "점검", "bold": true, "color": "#DC2626" }, { "text": " 안내입니다." } ] }
   ],
   "showPlainText": true,
-  "highlightText": "작업 중인 내용을 저장해 주세요.",
-  "showHighlight": true,
   "bottomDescription": "자세히 보기",
   "bottomDescriptionUrl": "https://example.com/notice",
   "showBottomDescription": true
@@ -458,13 +457,11 @@ BOTTOM_RIGHT
 | plainText | string | 조건부 | `""` | textBlocks가 없을 때 표시하는 일반 문자열 본문. textBlocks가 있으면 서버가 textBlocks에서 만든 일반 문자열(Run 글자 연결, 문단 사이 `\n`)이며 표시는 textBlocks가 우선한다. 이 저장소 서버는 TEXT 응답에 저장 본문(CONTENT_BODY)으로 항상 키를 채우며 저장 본문이 없으면 `null`일 수 있다 |
 | textBlocks | array | 선택 | 없음 | 서식 본문. 콘텐츠 제목·설명도 앞 문단으로 포함한다. 있으면 plainText 대신 표시(아래 표) |
 | showPlainText | boolean | 선택 | `true` | 본문 표시 여부 |
-| highlightText | string | 선택 | `""` | 강조 문구 |
-| showHighlight | boolean | 선택 | `false` | 강조 영역 표시 여부 |
 | bottomDescription | string | 선택 | `""` | 하단 설명 |
 | bottomDescriptionUrl | string | 선택 | `""` | 클릭 시 이동 URL |
 | showBottomDescription | boolean | 선택 | `false` | 하단 설명 영역 표시 |
 
-Markdown 필드는 현재 C# 화면에서 사용하지 않는다.
+Markdown 필드는 현재 C# 화면에서 사용하지 않는다. 강조 문구 `highlightText`·`showHighlight`는 2026-10-29 제거했다(보내도 무시).
 
 TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `contentTitle`·`description`·`showContentHeader` 제거). 제목·설명은 본문 앞 문단으로 작성하며, 통합 전 데이터는 서버가 조회 시 제목 문단(`LEFT`, 굵게, 크기 24) → 설명 문단(`LEFT`) → 기존 본문 순으로 합쳐 보낸다. textBlocks가 없던 행은 기존 plainText 줄을 문단으로 바꿔 뒤에 붙인다. [설계 39-3] 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 헤더만 보이기 — 제목·설명 문단만 보내고 숨긴 본문은 빼며 `showPlainText=true`로 바꾼다(관리자 재저장 시 숨긴 본문 삭제). 제목·설명을 숨겼던 행(`showContentHeader=false`)은 합치지 않는다. 창 Header의 공통 `title`은 별도다.
 
@@ -1407,8 +1404,6 @@ EMPTY
       { "alignment": "LEFT", "indent": 1, "runs": [ { "text": "10월 5일 22시부터 23시까지", "bold": true, "color": "#DC2626" }, { "text": " 서비스 점검이 진행됩니다." } ] }
     ],
     "showPlainText": true,
-    "highlightText": "작업 내용을 미리 저장해주세요.",
-    "showHighlight": true,
     "bottomDescription": "자세히 보기",
     "bottomDescriptionUrl": "https://example.com/notice",
     "showBottomDescription": true

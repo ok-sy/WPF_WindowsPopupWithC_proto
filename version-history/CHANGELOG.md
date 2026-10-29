@@ -1,5 +1,18 @@
 ﻿# 변경 이력
 
+## 2026-10-29-16 — TEXT 강조 문구(highlightText·showHighlight) 삭제
+
+- 이유: TEXT 팝업에서 강조 문구를 사용하지 않기로 확정해 WPF·관리자 웹 표시·편집과 계약에서 제거.
+- 변경:
+  - WPF: `TextPopupView` 강조 영역·생성자 인자, `TextPopupContentDto.HighlightText`·`ShowHighlight`, `PopupFactory` 전달, Demo TEXT 시연 데이터·Demo JSON Validator 기본값·옵션 편집기 라벨 삭제. 서버 JSON에 키가 남아 있어도 무시.
+  - 관리자 웹: 편집 Dialog '강조 문구' 입력란·'강조 문구 사용' 스위치, 미리보기 강조 영역, `popupEditorTransform` 기본값·TEXT 저장 키 목록(저장 시 기존 값도 보내지 않음), 샘플 기본 데이터 삭제.
+  - 서버 인계 샘플: 3111 단건 응답 TEXT 기본값, 3117 기본값 규칙·YAML에서 삭제. 샘플 INSERT SQL·relay 테스트 응답·`db/oracle/02` 샘플 데이터에서 키 제거. 운영 경로는 CONTENT_OPTIONS를 그대로 전달하는 구조라 코드 변경 없음, DB DDL 변경 없음.
+  - 테스트: 일반 content 옵션 예시로 쓰던 `showHighlight`를 `showBottomDescription`으로 교체(`PopupContentAssemblerTest`·`WpfPopupDatabaseTest`), 3111·3117 샘플 테스트에 삭제 키 미포함 검사 추가. `verify-popup-transform-64`는 분리 전 코드(legacy) 비교에서 두 키만 의도된 차이로 제외하고 저장 시 제거 검사 추가.
+  - 문서: 인터페이스 계약 3.7 보완 기록·8.1 표·예제, MINIMAL·ALL 명세(4.1 TEXT 행 삭제·삭제 기록), 옵션 가이드·사용자 가이드, 3111·3117 인계 문서, 프런트 인계 문서, 비교 문서, `DTIY3117-register-defaults-full.txt`·`WPF-01-popup-types.json`·`api/examples/wpf-popups-response.json`, DB README·ERD 검토 메모. 과거 설계 문서와 적용된 `08` 보정 스크립트는 기록으로 유지.
+- 주요 파일: popup-frameWork/Popup/Views/Contents/TextPopupView.xaml(.cs), popup-frameWork/Popup/Dtos/TextPopupContentDto.cs, popup-frameWork/Popup/Factories/PopupFactory.cs, popup-frameWork/Popup/Services/DemoPopupDataService.cs, popup-frameWork/Popup/DemoJsonValidator.cs, popup-frameWork/Popup/DemoOptionsWindow.Fields.cs, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts, zero-rule-web/main/src/features/PopupcommonComponent/sample/popupSampleData.ts, zero-rule-server/service/core/src/main/java/server/service/core/popup/sample/PopupSingleResponseAssembler.java, zero-rule-server/service/core/src/main/java/server/service/core/popup/sample/fulljson/PopupFullJsonDefaults.java, zero-rule-server/service/core/src/main/resources/popup/sample/popup-full-json-defaults.yml, scripts/verify-popup-transform-64.cjs, scripts/verify-popup-transform-64-entry.tsx, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md 외 테스트·예제·문서.
+- 검증: WPF 빌드 오류 0, `PopupWindowTests` 414건·`ApiDemoTests` 70건 통과(`RichTextTests`는 기존 경로 참조 실패로 미실행 상태 동일). 웹 `tsc` 0·eslint 오류 0, 하네스 transform-64 77건·preview-61 52건·common-sample-69 32건·completion-ux-43 71건 통과. 서버 popup 테스트(service:core·web:api) 224건 통과·건너뜀 7(DB 연결 필요). 로컬 관리자 웹 master 로그인 후 팝업 편집 Dialog에 강조 문구 입력·스위치 없음 확인. JSON 예제 2개 파싱 확인.
+- 상태: 커밋·원격 반영. 미실행: WPF Demo 실행 화면 육안 확인, 인터페이스 계약 Word·PDF·Excel 산출물 재생성, 원격 개발 DB 기존 행의 CONTENT_OPTIONS 키 정리(표시·저장 경로에서 무시하므로 필수 아님).
+
 ## 2026-10-29-15 — 팝업 Header 로고 흰 글자·관리자 미리보기 Header 검정
 
 - 이유: WPF Header는 검은 배경인데 고정 로고(CLOVER)의 글자가 검은색이라 심볼만 보였고, 관리자 웹 미리보기 Header는 흰색이라 WPF와 외형이 달랐음(설계 25 Header 정합성 보완).
