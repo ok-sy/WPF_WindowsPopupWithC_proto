@@ -1,5 +1,7 @@
 # 팝업 프로젝트 문서
 
+- [PopupcommonComponent 독립 재사용·선택적 필드 추출 TODO](design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md) — 독립 Props, 최상위/content/questions 선택, 저장 형식과의 분리, 샘플·가이드 및 회귀 검증(구현 대기).
+
 - [CKEditor 5 Common·PopupRich 전체 통합 TODO](design/20261029_CKEditor5_전체통합_TODO.md) — 현행 Common/Bbs/PopupRich 기능 전수 조사부터 단일 엔진 전환·중복 오류 해결·회귀 검증까지 포함(구현 대기).
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
