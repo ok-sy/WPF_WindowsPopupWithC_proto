@@ -1,5 +1,15 @@
 ﻿# 변경 이력
 
+## 2026-10-30-20 — 20261030 폐쇄망 반입본 생성(CKEditor npm 오프라인 캐시 포함)
+
+- 이유: 20261029 반입 이후의 CKEditor 5 공통 엔진 전환(npm 의존성 변경)·편집기 SourceEditing 수정·자료실 500 수정·팝업 미리보기/WPF 표시 변경·SURVEY 최소·최대 선택 수·가이드 화면을 폐쇄망에 반입하기 위해 새 반입본 필요. 폐쇄망에 사내 npm 저장소가 없어 pnpm store(오프라인 캐시)를 함께 넣음.
+- 변경: `scripts/prepare-offline-npm.cjs`로 npm 묶음을 만든 뒤 `scripts/export-offline-package.ps1 -NpmBundleDir .offline-cache
+pm-ckeditorundle -NotesFile <변경 요약>`로 offline-export/20261030 생성. 첫 생성(f1fcfbb, -VerifyBuild)에서 README 반입 절차의 npm 단계가 빠지고 3번 번호가 사라진 것을 확인해 스크립트를 고친 뒤(277c6af) 같은 날짜로 재생성(-Force). Git 설치 파일은 20261029 반입본에 동봉해 이번에는 미동봉.
+- 주요 파일: offline-export/20261030(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 151·M 10·D 0, 웹 A 48·M 17·D 5(baseline 누적, package.json·pnpm-lock.yaml 포함), WPF 소스 95, 문서 162 파일, 5-npm-ckeditor(pnpm store v3, 패키지 177개) 6 파일. DELETE-SINCE-20260930.txt 누적. README-IMPORT.md에 변경 요약과 적용 순서(DB 19→20 → 서버 → 관리자 웹 + install-pnpm-store.ps1 → WPF) 작성. 최종본 소스 커밋 277c6af. 최종 TGZ 36,476,998바이트, SHA256 `44b9fc6350f489e631f216e364282b7ad1509872fe3670100704deb63a8bd3d0`(첫 생성본 `774eb814…`는 재생성으로 대체).
+- 검증: TAR 5개 파일 수 대조 통과, TGZ 안 TAR 체크섬 대조 통과. 첫 생성에서 반입본 3-popup-frameWork + 20261006 NuGet 반입본만으로 restore·폴더형 publish·-SingleFile publish 성공(popupSample.exe 91,745,102바이트, 재생성은 WPF 소스 동일해 빌드 확인 생략). TGZ를 풀어 5-npm-ckeditor의 install-pnpm-store.ps1을 빈 store·최소 프로젝트로 실행해 오프라인 설치 성공(ckeditor5 49.0.1, pnpm 9.15.2). 반입본 application-local.yml은 커밋 버전(개발 PC 영상 경로 미포함). 폐쇄망 기존 소스 병합·pnpm store 병합·빌드·실행은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-10-30-19 — 폐쇄망 npm 오프라인 캐시(pnpm store) 묶음 스크립트
 
 - 이유: CKEditor 5 공통 엔진 전환(ckeditor5 49.0.1 + @ckeditor/ckeditor5-react 12.0.0)으로 lockfile이 바뀌어 폐쇄망 pnpm store에 없는 패키지가 생김. 폐쇄망에는 사내 npm 저장소가 없어 pnpm store(오프라인 캐시)를 반입해야 함.
@@ -9,6 +19,7 @@
   - `scripts/export-offline-package.ps1`: `-NpmBundleDir` 옵션 — 묶음을 `5-npm-ckeditor`로 복사·MANIFEST·TAR·체크섬·통합 TGZ에 포함하고 README-IMPORT.md에 묶음 행과 반입 절차 추가.
 - 주요 파일: scripts/prepare-offline-npm.cjs, scripts/offline-npm/install-pnpm-store.ps1, scripts/offline-npm/README-NPM.md, scripts/export-offline-package.ps1, version-history/CHANGELOG.md.
 - 검증: `prepare-offline-npm.cjs` 실행 — 177개 tarball 무결성 = lockfile integrity 모두 일치, 묶음 store만으로 오프라인 설치 성공(ckeditor5 49.0.1, 다운로드 0). `install-pnpm-store.ps1`을 빈 store·임시 프로젝트로 실행(pnpm 9.15.2) — store 추가·오프라인 설치 성공, 재실행 시 기존 파일 건너뜀. export 스크립트 PowerShell 구문 검사 통과. 폐쇄망 실제 store 병합·설치는 미실행.
+- 후속 보완: 반입본 README 반입 절차에서 `$npmStep` 뒤 `3.`이 붙어 `$npmStep3`로 해석돼 npm 단계와 번호가 빠지던 문제를 `$($npmStep)`·`$($npmRow)` 표기로 수정(커밋 277c6af).
 - 상태: 커밋·원격 반영.
 
 ## 2026-10-30-18 — 가이드 화면 문구·제목을 쉬운 말로 정리
