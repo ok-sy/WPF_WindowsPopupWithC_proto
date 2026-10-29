@@ -15,7 +15,7 @@ export { CODE_FONT };
 export type GuideTabId = 'start' | 'process' | 'component' | 'saveParts' | 'example' | 'function' | 'live' | 'notice';
 /** 탭 표시 이름(화면 순서). 첫 진입은 시작하기, 공지는 맨 뒤(배지로 최근 게시 수 표시). */
 export const GUIDE_TAB_LABELS: Record<GuideTabId, string> = {
-  start: '시작하기', process: '프로세스', component: '컴포넌트', saveParts: '독립 재사용·필드 추출', example: '예시', function: '변환·유틸', live: '실습', notice: '공지',
+  start: '시작하기', process: '사용 순서', component: '컴포넌트', saveParts: '다른 화면에서 사용하기', example: '예시', function: '데이터 처리 함수', live: '실습', notice: '공지',
 };
 /** 탭 이동 요청. component를 주면 컴포넌트 탭에서 해당 컴포넌트를 연다. */
 export type GuideNavigate = (tab: GuideTabId, component?: string) => void;
@@ -76,7 +76,7 @@ export function FieldTable({ fields, empty }: { fields: GuideField[]; empty: str
   if (fields.length === 0) return <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{empty}</Typography>;
   return (
     <Table size="small" sx={{ '& td, & th': { fontSize: 14, py: 1.25, verticalAlign: 'top' }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
-      <TableHead><TableRow><TableCell sx={{ width: 190 }}>이름</TableCell><TableCell sx={{ width: '38%' }}>형식</TableCell><TableCell>설명</TableCell></TableRow></TableHead>
+      <TableHead><TableRow><TableCell sx={{ width: 190 }}>이름</TableCell><TableCell sx={{ width: '38%' }}>타입</TableCell><TableCell>설명</TableCell></TableRow></TableHead>
       <TableBody>
         {fields.map((field) => (
           <TableRow key={field.name}>
@@ -90,11 +90,11 @@ export function FieldTable({ fields, empty }: { fields: GuideField[]; empty: str
   );
 }
 
-/** 범위 표시: 범용(어느 화면이든) / proto 전용(RgstPop 등록·저장 흐름). */
+/** 범위 표시: 공통 사용(어느 화면이든) / 기존 팝업 등록(RgstPop 화면에서 쓰는 방식). */
 export function ScopeChip({ scope }: { scope: GuideScope }) {
   return scope === 'COMMON'
-    ? <Chip size="small" color="success" variant="outlined" label="범용" sx={{ height: 20, fontSize: 11.5, fontWeight: 700 }} />
-    : <Chip size="small" color="warning" variant="outlined" label="proto 전용" sx={{ height: 20, fontSize: 11.5, fontWeight: 700 }} />;
+    ? <Chip size="small" color="success" variant="outlined" label="공통 사용" sx={{ height: 20, fontSize: 11.5, fontWeight: 700 }} />
+    : <Chip size="small" color="warning" variant="outlined" label="기존 팝업 등록" sx={{ height: 20, fontSize: 11.5, fontWeight: 700 }} />;
 }
 
 /** 다른 탭으로 이동하는 작은 버튼. */

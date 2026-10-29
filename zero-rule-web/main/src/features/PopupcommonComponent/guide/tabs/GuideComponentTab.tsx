@@ -32,10 +32,10 @@ export default function GuideComponentTab({ initial }: { initial?: string }) {
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>{component.file}</Typography>
             <Typography sx={{ fontSize: 15, lineHeight: 1.75, mt: 1.5 }}>{component.summary}</Typography>
           </Paper>
-          <Section title="입력 props" description="* 표시는 필수입니다."><FieldTable fields={component.props} empty="없음" /></Section>
-          <Section title="출력 (콜백·화면)"><FieldTable fields={component.outputs} empty="없음" /></Section>
-          <Section title="다루는 값"><Bullets items={component.values} /></Section>
-          <Section title="재사용 방법">
+          <Section title="받는 값" description="* 표시는 꼭 넘겨야 하는 값입니다."><FieldTable fields={component.props} empty="없음" /></Section>
+          <Section title="돌려주는 값"><FieldTable fields={component.outputs} empty="없음" /></Section>
+          <Section title="다루는 데이터"><Bullets items={component.values} /></Section>
+          <Section title="사용 방법">
             <Bullets items={component.reuse} />
             <Box sx={{ mt: 2 }}><CodeBlock>{`import { ${component.name} } from '@/features/PopupcommonComponent';\n\n${component.example}`}</CodeBlock></Box>
           </Section>
@@ -44,7 +44,7 @@ export default function GuideComponentTab({ initial }: { initial?: string }) {
         <Box sx={{ position: { lg: 'sticky' }, top: 0, minWidth: 0 }}>
           {runner
             ? <GuideCodeRunner key={component.name} definition={runner} title={`${component.name} 실행기`} />
-            : <Alert severity="info" sx={{ fontSize: 14, lineHeight: 1.7 }}>{RUNNER_NOTES[component.name] ?? '이 컴포넌트는 실행기가 없습니다.'}</Alert>}
+            : <Alert severity="info" sx={{ fontSize: 14, lineHeight: 1.7 }}>{RUNNER_NOTES[component.name] ?? '이 컴포넌트는 실행해 볼 수 없습니다.'}</Alert>}
         </Box>
       </Box>
     </Stack>

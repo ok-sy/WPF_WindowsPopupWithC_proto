@@ -55,7 +55,7 @@ export default function GuideNoticeTab({ now, onNavigate }: { now: Date; onNavig
           </Stack>
           {notice.action && (
             <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 1.5 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#9a3412' }}>사용하는 쪽에서 할 일</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#9a3412' }}>사용하는 화면에서 할 일</Typography>
               <Typography sx={{ fontSize: 14, lineHeight: 1.7, mt: 0.25 }}><RichText text={notice.action} /></Typography>
             </Box>
           )}
@@ -74,7 +74,7 @@ export default function GuideNoticeTab({ now, onNavigate }: { now: Date; onNavig
         </Paper>
       ))}
       <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-        공지는 <C>guide/guideNotices.ts</C>에 항목을 추가해 배포합니다. NEW는 최근 {RECENT_NOTICE_DAYS}일 안에 게시된 공지를 뜻하며 완료 여부와 무관합니다.
+        공지는 <C>guide/guideNotices.ts</C>에 추가합니다. NEW는 최근 {RECENT_NOTICE_DAYS}일 안에 게시된 공지입니다.
       </Typography>
     </Page>
   );

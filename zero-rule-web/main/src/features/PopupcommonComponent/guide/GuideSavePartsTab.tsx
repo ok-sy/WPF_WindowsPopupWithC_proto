@@ -5,29 +5,29 @@ import GuideCodeRunner, { type RunnerDefinition } from './GuideCodeRunner';
 import { protoPopup, samplePopup } from './guideRunners';
 import { Bullets, C, CODE_FONT, CodeBlock, Section } from './GuideUi';
 
-/* 컴포넌트별 최소 입력·출력(AdminPopupDetail 전체 없이 붙이는 기준) */
+/* 컴포넌트별로 꼭 필요한 값과 돌려주는 값(팝업 값 전체 없이 쓰는 기준) */
 const MINIMUM_IO: { name: string; input: string; output: string; parent: string }[] = [
   { name: 'PopupScheduleFields', input: 'value: PopupScheduleValue { periodMode, repeatDayOfWeek?, displayTimes?, displayStartAt?, displayEndAt? } · showPeriod?',
-    output: 'onChange(patch) 바뀐 항목만', parent: '일정 state 보관, 날짜 직렬화(입력란 문자열 → 저장 형식), 저장 전 validatePopupSchedule' },
+    output: 'onChange(patch) 바뀐 항목만', parent: '일정을 state에 담기, 게시 기간을 저장 API 날짜 형식으로 바꾸기, 저장 전 validatePopupSchedule' },
   { name: 'PopupRichTextEditor', input: 'label · initialBlocks: RichBlock[] · compact? · disabled? · placeholder?',
-    output: 'onChange(blocks: RichBlock[], plainText: string)', parent: '두 값을 함께 보관, 다시 넣을 때 key로 재마운트' },
+    output: 'onChange(blocks: RichBlock[], plainText: string)', parent: '두 값을 함께 담기, 본문을 바꿔 넣을 때 key 바꾸기' },
   { name: 'PopupQuestionEditor', input: 'questions: PopupQuestion[] · quiz · passingScore? · fixedQuestionScore? · hidePassingScore?',
-    output: 'onChange(questions) · onPassingScoreChange(score)', parent: '문항 state 보관, 저장 전 validatePopupQuestions' },
-  { name: 'InlinePopupPreview · PopupPreviewDialog · PopupPreview', input: 'popup: AdminPopupDetail(표시용 — withPreviewFallback(state))',
-    output: '화면 · onOpenPreview? · onClose? · onRecommendedSize?', parent: 'withPreviewFallback(state)로 표시용 값만 채워 전달(저장·API 호출 없음, 업무 기본값 없음)' },
+    output: 'onChange(questions) · onPassingScoreChange(score)', parent: '문항을 state에 담기, 저장 전 validatePopupQuestions' },
+  { name: 'InlinePopupPreview · PopupPreviewDialog · PopupPreview', input: 'popup: withPreviewFallback(state)로 만든 값',
+    output: '화면 · onOpenPreview? · onClose? · onRecommendedSize?', parent: '넘길 때만 withPreviewFallback(state) 사용하기' },
 ];
 
 const PICK_CODE = `import { pickPopupFields } from '@/features/PopupcommonComponent';
 
-pickPopupFields(popup, { topLevelKeys: ['popupId', 'title', 'displayStartAt', 'periodMode'] }); // 최상위만
-pickPopupFields(popup, { contentKeys: ['plainText', 'textBlocks'] });                           // content만
-pickPopupFields(popup, { questionKeys: ['questionId', 'title'] });                              // 문항만
-pickPopupFields(popup, {                                                                         // 조합
+pickPopupFields(popup, { topLevelKeys: ['popupId', 'title', 'displayStartAt', 'periodMode'] }); // 팝업 항목만
+pickPopupFields(popup, { contentKeys: ['plainText', 'textBlocks'] });                           // content 항목만
+pickPopupFields(popup, { questionKeys: ['questionId', 'title'] });                              // 문항 항목만
+pickPopupFields(popup, {                                                                         // 함께
   topLevelKeys: ['popupId', 'displayStartAt'], contentKeys: ['plainText'], questionKeys: ['questionId', 'title'],
 });
 // → { popupId, displayStartAt, content: { plainText }, questions: [{ questionId, title }, ...] }`;
 
-/* 실행기: 편집값과 옵션으로 실제 pickPopupFields를 불러 결과를 보여 준다. */
+/* 실행기: 입력값과 고를 항목으로 실제 pickPopupFields를 불러 결과를 보여 준다. */
 const RUNNER: RunnerDefinition = {
   input: {
     popup: {
@@ -42,23 +42,23 @@ const RUNNER: RunnerDefinition = {
     },
     options: { topLevelKeys: ['popupId', 'title', 'hideDays', 'displayStartAt'], contentKeys: ['surveyTitle', 'description'], questionKeys: ['questionId', 'minSelections'] },
   },
-  hint: 'popup은 화면 state 값(업무 기본값 없음), options는 { topLevelKeys?, contentKeys?, questionKeys? }입니다. 영역을 빼거나 빈 배열을 넣어 보세요(빈 문자열·0도 보존됩니다).',
+  hint: 'popup은 입력한 값, options는 가져올 항목 이름입니다. 항목을 빼거나 바꿔 보세요. 빈 문자열·0도 그대로 나옵니다.',
   splitOutput: true,
   compute: (input: { popup: Record<string, unknown>; options: PickPopupFieldsOptions }) => {
     const popup = samplePopup(input.popup);
     return {
       'pickPopupFields(popup, options)': pickPopupFields(popup, input.options),
-      '참고 — proto(RgstPop) 저장 기준과 비교: pickPopupFields(toSaveRequestPopup(protoPopup), options) · 다른 업무의 기본 사용법 아님': pickPopupFields(toSaveRequestPopup(protoPopup(input.popup)), input.options),
+      '참고 — 기존 팝업 등록 화면에서 사용하는 방식과 비교: pickPopupFields(toSaveRequestPopup(protoPopup), options) · 새 화면에서는 쓰지 않음': pickPopupFields(toSaveRequestPopup(protoPopup(input.popup)), input.options),
     };
   },
 };
 
 /**
  * POL-14-01 : 공통 프론트 경계
- * ■ 가이드: 독립 재사용·필드 추출 탭
+ * ■ 가이드: 다른 화면에서 사용하기 탭
  * - in : 없음
- * - out: 화면: 원칙, 컴포넌트 최소 입력·출력, pickPopupFields 규칙·키 표, 서버 없는 샘플 4종, 실행기
- * - 공통 컴포넌트를 특정 테이블·API·저장 형식과 관계없이 단독으로 붙이고, 필요한 필드만 뽑는 방법을 설명한다.
+ * - out: 화면: 컴포넌트별 꼭 필요한 값, pickPopupFields 사용법, 서버 없는 예제 4가지, 실행기
+ * - 공통 컴포넌트를 필요한 값만으로 붙이고, 저장할 때 필요한 항목만 가져오는 방법을 보여 준다.
  */
 export default function GuideSavePartsTab() {
   return (
@@ -66,13 +66,12 @@ export default function GuideSavePartsTab() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 540px' }, gap: 2.5, alignItems: 'start' }}>
         <Stack spacing={2.5} sx={{ minWidth: 0 }}>
           <Alert severity="info" sx={{ fontSize: 14, lineHeight: 1.75 }}>
-            PopupcommonComponent는 특정 테이블(3111/3117 포함)·API·저장 요청 형식과 관계없이 <b>입력 UI·독립 상태·필드 추출·미리보기</b>를 재사용하는 공통 모듈입니다.
-            proto의 <C>toSaveRequest()</C>는 여러 사용 사례 중 하나일 뿐 기준 계약이 아니며, 저장 형식(날짜·키 이름·JSON 모양)은 각 업무 화면이 정합니다.
+            어떤 테이블·API를 쓰는 화면이든 입력 컴포넌트와 미리보기를 그대로 쓸 수 있습니다. 저장 형식은 각 화면의 저장 API에 맞춰 정하면 됩니다.
           </Alert>
 
-          <Section title="1. 컴포넌트 최소 입력·출력" description="AdminPopupDetail 전체를 만들지 않고 필요한 값만 넘겨 붙입니다(미리보기는 withPreviewFallback(state)로 표시용 모양을 만듭니다). props 전체는 컴포넌트 탭에 있습니다.">
+          <Section title="1. 컴포넌트별 꼭 필요한 값" description="팝업 값 전체가 없어도 필요한 값만 넘기면 됩니다. 받는 값 전체는 컴포넌트 탭에 있습니다.">
             <Table size="small" sx={{ '& td, & th': { fontSize: 13.5, py: 1.25, verticalAlign: 'top', lineHeight: 1.65 }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
-              <TableHead><TableRow><TableCell sx={{ width: 190 }}>컴포넌트</TableCell><TableCell>최소 입력</TableCell><TableCell sx={{ width: 190 }}>출력</TableCell><TableCell sx={{ width: 220 }}>부모 책임</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell sx={{ width: 190 }}>컴포넌트</TableCell><TableCell>꼭 필요한 값</TableCell><TableCell sx={{ width: 190 }}>돌려주는 값</TableCell><TableCell sx={{ width: 220 }}>사용하는 화면에서 할 일</TableCell></TableRow></TableHead>
               <TableBody>
                 {MINIMUM_IO.map((row) => (
                   <TableRow key={row.name}>
@@ -85,27 +84,28 @@ export default function GuideSavePartsTab() {
               </TableBody>
             </Table>
             <Typography sx={{ fontSize: 13.5, color: 'text.secondary', mt: 1.5, lineHeight: 1.7 }}>
-              <C>PopupScheduleFields</C>의 기존 <C>popup</C> prop은 호환용으로 계속 받습니다(새 코드는 <C>value</C>). 공통 컴포넌트는 API 호출·DB 컬럼명 선택·특정 테이블용 날짜 직렬화·게시 정책을 하지 않습니다.
+              <C>PopupScheduleFields</C>는 예전 이름인 <C>popup</C>도 받지만, 새 코드는 <C>value</C>를 쓰세요. 공통 컴포넌트는 API를 호출하지 않습니다.
             </Typography>
           </Section>
 
-          <Section title="2. pickPopupFields — 선택 필드 추출" description="최상위·content·문항에서 고른 키만 새 객체로 돌려줍니다. 세 영역은 따로 또는 함께 고릅니다.">
+          <Section title="2. pickPopupFields — 필요한 항목만 가져오기" description="팝업 항목·content·문항에서 고른 항목만 가져옵니다. 세 가지는 따로 또는 함께 고를 수 있습니다.">
             <CodeBlock>{PICK_CODE}</CodeBlock>
             <Box sx={{ mt: 1.5 }}>
               <Bullets items={[
-                <>옵션에 준 영역만 결과에 들어갑니다(빈 배열이면 최상위 키 없음·빈 <C>{'{}'}</C>·빈 문항 객체). 문항은 원본 순서를 유지합니다.</>,
-                <>키가 실제로 없으면 생략하고, 있으면 <C>null</C>·<C>false</C>·<C>0</C>·빈 문자열(값이 undefined여도)을 그대로 둡니다.</>,
-                <><b>값 그대로</b> 돌려줍니다. 날짜 ISO 변환·키 이름 변경·기본값 생성·검증·저장 요청 생성은 하지 않습니다.</>,
-                <>새로 만드는 것은 결과 컨테이너(최상위·<C>content</C>·각 문항 객체)뿐이고, 고른 값이 객체·배열이면 원본과 같은 참조입니다(얕은 복사). 결과를 고치려면 새 객체로 만듭니다.</>,
-                <>타입: <C>topLevelKeys</C>는 <C>content</C>·<C>questions</C>를 뺀 <C>AdminPopupDetail</C> 키, <C>questionKeys</C>는 <C>PopupQuestion</C> 키만 됩니다. 결과는 고른 키만 가진 타입입니다. 외부 문자열 입력은 별도 검증이 필요합니다.</>,
-                <>문항 하위(선택지 안 필드) 선택은 1차 범위 밖입니다. <C>{"'options'"}</C>를 고르면 선택지 배열을 그대로 담습니다.</>,
+                <>넘긴 종류(<C>topLevelKeys</C>·<C>contentKeys</C>·<C>questionKeys</C>)만 결과에 들어갑니다. 문항 순서는 그대로입니다.</>,
+                <>입력하지 않은 항목은 결과에 없습니다.</>,
+                <>사용자가 입력한 값은 그대로 가져옵니다. <C>null</C>·<C>false</C>·<C>0</C>·빈 문자열도 그대로입니다.</>,
+                <>날짜 형식이나 항목 이름은 바꾸지 않습니다. 저장 API 형식에 맞추는 일은 사용하는 화면에서 합니다.</>,
+                <>가져온 객체·배열은 원본과 같은 것을 가리킵니다. 결과를 고칠 때는 새 객체로 만드세요.</>,
+                <>잘못된 항목 이름을 쓰면 타입 오류로 알려 줍니다.</>,
+                <>선택지 안의 항목은 고를 수 없습니다. <C>{"'options'"}</C>를 고르면 선택지 전체를 가져옵니다.</>,
               ]} />
             </Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, mt: 3, mb: 1 }}>content 키 참고 (proto 저장 상수, 유형별로 남기는 키)</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, mt: 3, mb: 1 }}>참고: 유형별 content 항목 이름 (기존 팝업 등록 화면이 저장하는 항목)</Typography>
             <Table size="small" sx={{ '& td, & th': { fontSize: 14, py: 1.25, verticalAlign: 'top' }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
-              <TableHead><TableRow><TableCell sx={{ width: 150 }}>구분</TableCell><TableCell>키</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell sx={{ width: 150 }}>유형</TableCell><TableCell>항목 이름</TableCell></TableRow></TableHead>
               <TableBody>
-                <TableRow><TableCell>공통 창 옵션</TableCell>
+                <TableRow><TableCell>모든 유형</TableCell>
                   <TableCell><Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>{COMMON_CONTENT_KEYS.map((key) => <C key={key}>{key}</C>)}</Stack></TableCell></TableRow>
                 {Object.entries(CONTENT_KEYS_BY_TYPE).map(([type, keys]) => (
                   <TableRow key={type}><TableCell>{type}</TableCell>
@@ -114,7 +114,7 @@ export default function GuideSavePartsTab() {
               </TableBody>
             </Table>
             <Typography sx={{ fontSize: 13.5, color: 'text.secondary', mt: 1.5, lineHeight: 1.7 }}>
-              위 키 목록은 proto 저장 화이트리스트(<C>CONTENT_KEYS_BY_TYPE</C>)입니다. 다른 업무 화면은 자기 저장 형식에 필요한 키를 직접 고릅니다. proto(RgstPop)로 이식할 때만 참고로 <C>toSaveRequestPopup</C> 결과와 비교하며, 범용 추출과 섞지 않습니다.
+              항목 이름을 찾을 때 참고하세요. 새 화면은 저장에 필요한 항목만 직접 고르면 됩니다.
             </Typography>
           </Section>
         </Stack>
@@ -123,8 +123,8 @@ export default function GuideSavePartsTab() {
         </Box>
       </Box>
 
-      <Section title="3. 서버 없는 샘플 — 일정만 / RichText + content 일부 / 문항 일부 / 세 영역 조합"
-        description="각 샘플은 자기 state만 갖고 특정 DB 테이블·API 없이 동작합니다. 입력하면 오른쪽 결과가 바로 바뀝니다. 소스: sample/PopupIndependentSamples.tsx">
+      <Section title="3. 예제 4가지 — 일정만 / 서식 본문 / 문항 / 함께 쓰기"
+        description="서버 없이 동작합니다. 입력하면 오른쪽 결과가 바로 바뀝니다. 소스: sample/PopupIndependentSamples.tsx">
         <PopupIndependentSamples />
       </Section>
     </Stack>

@@ -77,7 +77,7 @@ function Sample({
               mb: 0.75,
             }}
           >
-            INPUT (공통 컴포넌트)
+            입력 (공통 컴포넌트)
           </Typography>
           {input}
         </Box>
@@ -90,7 +90,7 @@ function Sample({
               mb: 0.75,
             }}
           >
-            OUTPUT (pickPopupFields 결과)
+            pickPopupFields로 가져온 결과
           </Typography>
           <Json value={output} />
           <Typography
@@ -102,7 +102,7 @@ function Sample({
               mb: 0.75,
             }}
           >
-            외부 화면에서 붙이는 코드
+            다른 화면에서 쓰는 코드
           </Typography>
           <Box
             component="pre"
@@ -232,7 +232,7 @@ export default function PopupIndependentSamples() {
 const out = pickPopupFields(schedule, { topLevelKeys: ['displayStartAt', 'periodMode', 'displayTimes'] });`}
       />
       <Sample
-        title="② RichText + content 일부 — PopupRichTextEditor"
+        title="② 서식 본문만 — PopupRichTextEditor"
         output={bodyOut}
         input={
           <PopupRichTextEditor
@@ -249,7 +249,7 @@ const out = pickPopupFields(schedule, { topLevelKeys: ['displayStartAt', 'period
 const out = pickPopupFields({ content: body }, { contentKeys: ['textBlocks', 'plainText'] });`}
       />
       <Sample
-        title="③ 문항 일부 — PopupQuestionEditor"
+        title="③ 문항만 — PopupQuestionEditor"
         output={questionOut}
         input={
           <PopupQuestionEditor
@@ -265,7 +265,7 @@ const out = pickPopupFields({ content: body }, { contentKeys: ['textBlocks', 'pl
 const out = pickPopupFields({ questions }, { questionKeys: ['questionId', 'title', 'questionType'] });`}
       />
       <Sample
-        title="④ 세 영역 조합 + 미리보기"
+        title="④ 함께 쓰기 + 미리보기"
         output={combinedOut}
         input={
           <Box

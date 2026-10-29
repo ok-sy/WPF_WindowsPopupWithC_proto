@@ -60,8 +60,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(labels.length === 8 && labels[0] === '시작하기' && labels[7].startsWith('공지'), 'Guide has 8 tabs, starts with 시작하기 and ends with 공지: ' + labels.join('|'));
   check(await run(`document.querySelector('[role=tab][aria-selected=true]').textContent.trim()`) === '시작하기', 'First entry is 시작하기');
   let body = await text();
-  check(body.includes('withPreviewFallback(state)') && body.includes('pickPopupFields') && body.includes('공통 / 부모 화면 / 서버 경계'), 'Start tab shows minimal code and the WEB/parent/SERVER boundary');
-  check(body.includes('proto 등록 화면(RgstPop) 경로'), 'Start tab separates the proto path');
+  check(body.includes('withPreviewFallback(state)') && body.includes('pickPopupFields') && body.includes('알아둘 점'), 'Start tab shows minimal code and the notes to know');
+  check(body.includes('기존 팝업 등록 화면'), 'Start tab separates the proto path');
+  check(!/공개 경계|저장 경계|최종 권위|정규화|명시값|미설정|fallback|합성/.test(body), 'Start tab uses plain wording (no design-document terms)');
   check(body.includes("useState<Partial<AdminPopupDetail>>({ popupType: 'TEXT' })") && !body.includes("title: '', content: {}, questions: []") && body.includes('[직접 구현]'),
     'Start tab minimal state starts with popupType only and marks myApi/toMyRequest as functions to implement');
   // 시작하기 → 실습 링크 이동, 실습은 독립 필드 추출이 기본
@@ -69,7 +70,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[role=tab][aria-selected=true]').textContent.trim()`) === '실습', 'Start tab link navigates to 실습');
   await until(`!!document.querySelector('.ck-editor__editable')`, 'live editor');
   body = await text();
-  check(body.includes('화면 state') && body.includes('pickPopupFields 결과'), 'Live tab defaults to the independent extraction mode');
+  check(body.includes('입력한 값(state)') && body.includes('pickPopupFields 결과'), 'Live tab defaults to the independent extraction mode');
   const picked = JSON.parse(await run(`Array.from(document.querySelectorAll('pre')).map(p=>p.textContent).find(t=>t.trim().startsWith('{'))`));
   check(!('width' in picked) && !('displayStartAt' in picked) && picked.title === '가이드 실습', 'Independent live output has only entered values (no width/period): ' + JSON.stringify(picked));
   check(await run(`!!document.querySelector('[data-testid]') || document.body.innerText.includes('3. 미리보기')`), 'Live tab renders the preview');
@@ -87,27 +88,28 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(!code.includes('contentKeys') && !('content' in result), 'Deselecting every content key drops the contentKeys option and the content region');
   await clickChip('questionId');
   check((await liveCode()).includes("questionKeys: ['questionId']") && Array.isArray((await liveResult()).questions), 'Question keys add questionKeys and an (empty) questions array');
-  await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('proto 저장 변환')).click()`); await pause(1500);
+  await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('기존 팝업 등록 방식')).click()`); await pause(1500);
   body = await text();
   check(body.includes('저장 요청 (toSaveRequest)') && body.includes('처음 값으로 (createDefaultPopup)'), 'Live tab proto mode shows the toSaveRequest comparison');
   // 프로세스: 범용 먼저, proto 별도
-  await openTab('프로세스'); body = await text();
-  check(body.indexOf('범용 흐름') >= 0 && body.indexOf('proto(RgstPop) 전용 흐름') > body.indexOf('범용 흐름'), 'Process tab lists the common flow first and the proto flow separately');
-  check(body.includes('P5 proto 저장') && body.includes('⑥ 선택 추출 → 화면별 저장 경계'), 'Process tab has proto save (P5) and common extraction (⑥)');
+  await openTab('사용 순서'); body = await text();
+  check(body.indexOf('공통 사용 —') >= 0 && body.indexOf('기존 팝업 등록 —') > body.indexOf('공통 사용 —'), 'Process tab lists the common flow first and the proto flow separately');
+  check(body.includes('P5 저장하기') && body.includes('⑥ 필요한 항목만 가져와 저장'), 'Process tab has proto save (P5) and common extraction (⑥)');
+  check(!/공개 경계|저장 경계|최종 권위|정규화|명시값|미설정|fallback|합성/.test(body), 'Process tab uses plain wording (no design-document terms)');
   // 컴포넌트·독립 재사용·예시·변환·유틸
-  await openTab('컴포넌트'); await until(`document.body.innerText.includes('입력 props')`, 'component tab');
+  await openTab('컴포넌트'); await until(`document.body.innerText.includes('받는 값')`, 'component tab');
   check(await run(`document.body.innerText.includes('실행기')`), 'Component tab renders props and a runner');
   // 미리보기 실행기의 onRecommendedSize는 값이 바뀔 때만 호출된다(인라인 콜백 + 부모 state 갱신이 무한 반복되지 않음).
   await run(`Array.from(document.querySelectorAll('[role=tab]')).find(t=>t.textContent.trim()==='InlinePopupPreview').click()`); await pause(2500);
   const recommendedCount = async () => run(`(()=>{const row=Array.from(document.querySelectorAll('*')).filter(e=>e.children.length===0&&e.textContent.trim()==='onRecommendedSize').at(-1);let n=row;for(let i=0;i<4&&n;i++){const chip=n.parentElement?.querySelector('.MuiChip-label');if(chip&&/회$/.test(chip.textContent))return parseInt(chip.textContent,10);n=n.parentElement;}return -1})()`);
   const firstCount = await recommendedCount(); await pause(1500); const secondCount = await recommendedCount();
   check(firstCount >= 1 && firstCount <= 3 && secondCount === firstCount, `InlinePopupPreview runner reports onRecommendedSize only on change (count ${firstCount} → ${secondCount})`);
-  await openTab('독립 재사용'); await until(`document.body.innerText.includes('pickPopupFields 실행기')`, 'saveParts tab');
-  check((await text()).includes('다른 업무의 기본 사용법 아님'), 'saveParts runner labels the proto comparison as reference only');
+  await openTab('다른 화면에서'); await until(`document.body.innerText.includes('pickPopupFields 실행기')`, 'saveParts tab');
+  check((await text()).includes('새 화면에서는 쓰지 않음'), 'saveParts runner labels the proto comparison as reference only');
   await openTab('예시'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'example tab');
-  check((await text()).includes('기존 업무 화면에 붙이는 방법'), 'Example tab explains the connection steps');
-  await openTab('변환·유틸'); body = await text();
-  check(body.includes('범용 — 어느 업무 화면에서든') && body.includes('proto 전용 — RgstPop') && body.indexOf('createDefaultPopup') > body.indexOf('proto 전용 — RgstPop'),
+  check((await text()).includes('기존 화면에 붙이는 예'), 'Example tab explains the connection steps');
+  await openTab('데이터 처리 함수'); body = await text();
+  check(body.includes('공통 사용 — 어느 화면에서든') && body.includes('기존 팝업 등록 — 기존 팝업 등록 화면에서만') && body.indexOf('createDefaultPopup') > body.indexOf('기존 팝업 등록 — 기존 팝업 등록 화면에서만'),
     'Function tab groups functions by scope (createDefaultPopup under proto-only)');
   // 공지: 배지·영향 컴포넌트 링크 → 컴포넌트 탭 선택
   await openTab('공지'); body = await text();

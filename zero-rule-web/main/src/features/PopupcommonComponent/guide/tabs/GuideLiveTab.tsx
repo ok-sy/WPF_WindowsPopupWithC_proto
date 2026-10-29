@@ -63,7 +63,7 @@ function LiveInputs({ selection, onType, title, onTitle, content, onContent, onB
         <TextField size="small" label="이미지 URL" value={text(content, 'imageUrl')} onChange={(event) => onContent('imageUrl', event.target.value)} />
       )}
       {popupType !== 'TEXT' && popupType !== 'IMAGE' && (
-        <Alert severity="info" sx={{ fontSize: 14 }}>설문·퀴즈 문항과 영상 입력은 예시 탭(IS063M02)에서 확인하세요. 여기서는 유형 변경과 출력 값만 봅니다.</Alert>
+        <Alert severity="info" sx={{ fontSize: 14 }}>설문·퀴즈 문항과 영상 입력은 예시 탭에서 해 볼 수 있습니다.</Alert>
       )}
     </Stack>
   );
@@ -116,7 +116,7 @@ function KeyChips<K extends string>({ label, choices, selected, present, onToggl
     <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
       <Typography sx={{ fontSize: 13, fontWeight: 700, minWidth: 104 }}>{label}</Typography>
       {choices.map((key) => (
-        <Chip key={key} size="small" label={present(key) ? key : `${key} (state에 없음)`} clickable aria-pressed={selected.includes(key)}
+        <Chip key={key} size="small" label={present(key) ? key : `${key} (입력 안 함)`} clickable aria-pressed={selected.includes(key)}
           color={selected.includes(key) ? 'primary' : 'default'} variant={selected.includes(key) ? 'filled' : 'outlined'}
           onClick={() => onToggle(key)} sx={{ fontFamily: CODE_FONT, fontSize: 12.5 }} />
       ))}
@@ -144,30 +144,30 @@ function CommonLive() {
   return (
     <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2.5} alignItems="stretch">
       <Stack spacing={2.5} sx={{ flex: 1, minWidth: 0 }}>
-        <Section title="1. 화면 state 바꾸기" description="입력하지 않은 값은 state에 키가 없습니다. 미리보기에만 withPreviewFallback으로 표시용 값을 채웁니다.">
+        <Section title="1. 값 입력하기" description="입력하지 않은 항목은 state에 들어가지 않습니다. 미리보기에는 withPreviewFallback으로 기본값만 채웁니다.">
           <Stack spacing={2.5}>
             <LiveInputs selection={selectionOf(state)} title={state.title} content={state.content} editorKey={editorKey}
               onType={(next) => setState((previous) => changeSampleType(previous, next))}
               onTitle={(title) => setState((previous) => ({ ...previous, title }))}
               onContent={setContent}
               onBody={(blocks, plainText) => setState((previous) => ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))}
-              typeNote={<>유형을 바꾸면 <C>popupType</C>만 바뀝니다(창 크기·완료 비율 기본값을 채우지 않음, 샘플 <C>changeSampleType</C>).</>} />
+              typeNote={<>유형을 바꾸면 <C>popupType</C>만 바뀝니다. 기본값은 채우지 않습니다.</>} />
             <Box>
               <Button size="small" variant="outlined" sx={{ textTransform: 'none' }}
-                onClick={() => { setState(initial()); setEditorKey((key) => key + 1); }}>처음 값으로 (입력 없음)</Button>
+                onClick={() => { setState(initial()); setEditorKey((key) => key + 1); }}>처음으로 (입력 없음)</Button>
             </Box>
           </Stack>
         </Section>
-        <Section title="2. 추출할 항목 고르기" description="칩을 눌러 영역별로 뽑을 키를 고르면 아래 호출 코드와 결과가 바로 바뀝니다. 영역에서 하나도 고르지 않으면 그 옵션을 빼고 호출합니다.">
+        <Section title="2. 가져올 항목 고르기" description="항목을 누르면 아래 호출 코드와 결과가 바로 바뀝니다.">
           <Stack spacing={1.25} data-testid="live-pick-keys">
-            <KeyChips label="최상위" choices={TOP_LEVEL_CHOICES} selected={selection.top} present={(key) => key in state}
+            <KeyChips label="팝업 항목" choices={TOP_LEVEL_CHOICES} selected={selection.top} present={(key) => key in state}
               onToggle={(key) => setSelection((previous) => ({ ...previous, top: toggle(TOP_LEVEL_CHOICES, previous.top, key) }))} />
             <KeyChips label="content" choices={CONTENT_CHOICES} selected={selection.content} present={(key) => key in state.content}
               onToggle={(key) => setSelection((previous) => ({ ...previous, content: toggle(CONTENT_CHOICES, previous.content, key) }))} />
-            <KeyChips label="문항(각 원소)" choices={QUESTION_CHOICES} selected={selection.question} present={() => state.questions.length > 0}
+            <KeyChips label="문항 항목" choices={QUESTION_CHOICES} selected={selection.question} present={() => state.questions.length > 0}
               onToggle={(key) => setSelection((previous) => ({ ...previous, question: toggle(QUESTION_CHOICES, previous.question, key) }))} />
             <Typography sx={{ fontSize: 12.5, color: 'text.secondary', lineHeight: 1.7 }}>
-              &quot;(state에 없음)&quot; 키는 골라도 결과에 나오지 않습니다(미설정). 이 실습은 문항을 입력하지 않으므로 문항 키를 고르면 <C>questions: []</C>가 됩니다. 문항 추출은 독립 재사용 탭 샘플 ③에서 확인하세요.
+              &quot;(입력 안 함)&quot; 항목은 골라도 결과에 나오지 않습니다. 이 실습에는 문항이 없어 문항 항목을 고르면 <C>questions: []</C>가 나옵니다.
             </Typography>
           </Stack>
         </Section>
@@ -176,12 +176,12 @@ function CommonLive() {
             <Box data-testid="live-pick-code"><CodeBlock>{pickCallCode(options)}</CodeBlock></Box>
             <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, value) => value && setView(value)}
               sx={{ '& .MuiToggleButton-root': { textTransform: 'none', px: 2 } }}>
-              <ToggleButton value="pick">pickPopupFields 결과 (picked)</ToggleButton>
-              <ToggleButton value="state">입력 화면 state</ToggleButton>
+              <ToggleButton value="pick">pickPopupFields 결과</ToggleButton>
+              <ToggleButton value="state">입력한 값(state)</ToggleButton>
             </ToggleButtonGroup>
             {view === 'pick' && (
               <Alert severity="info" sx={{ fontSize: 14, lineHeight: 1.7 }}>
-                값 그대로 뽑은 결과입니다(날짜·URL 변환, 기본값 없음, 얕은 복사). 실제 저장 형식은 각 업무 화면의 저장 경계에서 정합니다.
+                입력한 값을 그대로 가져옵니다. 저장할 때 사용하는 API 형식에 맞게 바꾸는 일은 사용하는 화면에서 합니다.
               </Alert>
             )}
             <Box data-testid="live-pick-result" sx={{ maxHeight: 460, overflow: 'auto', borderRadius: 1.5 }}>
@@ -210,30 +210,30 @@ function ProtoLive() {
   return (
     <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2.5} alignItems="stretch">
       <Stack spacing={2.5} sx={{ flex: 1, minWidth: 0 }}>
-        <Section title="1. proto 편집값 바꾸기" description="입력할 때마다 proto 저장 변환(toSaveRequest)으로 요청을 다시 만듭니다. 서버에는 보내지 않습니다.">
+        <Section title="1. 값 입력하기 (기존 팝업 등록 방식)" description="입력할 때마다 toSaveRequest로 저장 요청을 다시 만듭니다. 서버에는 보내지 않습니다.">
           <Stack spacing={2.5}>
             <LiveInputs selection={selectionOf(popup)} title={popup.title} content={popup.content} editorKey={editorKey}
               onType={(next) => setPopup((previous) => changePopupType(previous, next))}
               onTitle={(title) => setPopup((previous) => ({ ...previous, title }))}
               onContent={setContent}
               onBody={(blocks, plainText) => setPopup((previous) => ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))}
-              typeNote={<>유형을 바꾸면 <C>changePopupType(previous, selection)</C>이 호출됩니다(proto 기본값 채움).</>} />
+              typeNote={<>유형을 바꾸면 <C>changePopupType(previous, selection)</C>이 기본값을 채웁니다.</>} />
             <Box>
               <Button size="small" variant="outlined" sx={{ textTransform: 'none' }}
                 onClick={() => { setPopup(initial()); setEditorKey((key) => key + 1); }}>처음 값으로 (createDefaultPopup)</Button>
             </Box>
           </Stack>
         </Section>
-        <Section title="2. proto 편집값과 저장 요청 비교">
+        <Section title="2. 입력한 값과 저장 요청 비교">
           <Stack spacing={1.5}>
             <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, value) => value && setView(value)}
               sx={{ '& .MuiToggleButton-root': { textTransform: 'none', px: 2 } }}>
-              <ToggleButton value="edit">편집값 (AdminPopupDetail)</ToggleButton>
+              <ToggleButton value="edit">입력한 값</ToggleButton>
               <ToggleButton value="save">저장 요청 (toSaveRequest)</ToggleButton>
             </ToggleButtonGroup>
             {view === 'save' && (
               <Alert severity="info" sx={{ fontSize: 14, lineHeight: 1.7 }}>
-                <Box>저장 요청에서 빠진 content 키 <b>{removedKeys.length}개</b> — 유형에 맞는 키만 남기고, 확인(CLOSE)은 기본값이라 footerAction을 보내지 않습니다. URL은 <C>https://</C>를 보정합니다.</Box>
+                <Box>저장 요청에서 빠진 content 항목 <b>{removedKeys.length}개</b> — 유형에 맞는 항목만 남깁니다. 하단 버튼이 “확인”이면 footerAction은 보내지 않습니다. URL 앞에 <C>https://</C>를 붙입니다.</Box>
                 {removedKeys.length > 0 && (
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>{removedKeys.map((key) => <C key={key}>{key}</C>)}</Stack>
                 )}
@@ -264,8 +264,8 @@ export default function GuideLiveTab() {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
         <ToggleButtonGroup size="small" exclusive value={mode} onChange={(_, value) => value && setMode(value)}
           sx={{ '& .MuiToggleButton-root': { textTransform: 'none', px: 2 } }}>
-          <ToggleButton value="common">독립 필드 추출 (범용)</ToggleButton>
-          <ToggleButton value="proto">proto 저장 변환 (RgstPop 전용)</ToggleButton>
+          <ToggleButton value="common">필요한 항목만 가져오기 (공통 사용)</ToggleButton>
+          <ToggleButton value="proto">기존 팝업 등록 방식</ToggleButton>
         </ToggleButtonGroup>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>모드를 바꾸면 입력이 처음 값으로 돌아갑니다.</Typography>
       </Stack>

@@ -18,7 +18,7 @@ const TAB_ORDER: GuideTabId[] = ['start', 'process', 'component', 'saveParts', '
  * POL-14-01 : 공통 프론트 경계
  * ■ PopupcommonComponent 가이드 화면(컨테이너)
  * - in : 없음(설명은 guideData.ts, 공지는 guideNotices.ts, 탭 화면은 tabs/·GuideSavePartsTab.tsx)
- * - out: 화면: 시작하기·프로세스·컴포넌트·독립 재사용·예시·변환·유틸·실습·공지 탭
+ * - out: 화면: 시작하기·사용 순서·컴포넌트·다른 화면에서 사용하기·예시·데이터 처리 함수·실습·공지 탭
  * - 탭 배치·선택 상태·공지 배지만 맡는다. 탭을 바꾸면 해당 탭을 새로 마운트한다(실습 입력·실행기 입력이 처음 값으로 돌아가는 것이 의도한 동작).
  *   서버 API를 호출하지 않는다. 사이드바 메뉴: db/oracle/20_popup_common_guide_menu_oracle.sql.
  */
@@ -36,7 +36,7 @@ export default function PopupCommonGuide() {
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: 2.5, overflow: 'auto', height: '100%', bgcolor: '#fafbfc' }}>
       <Typography id="popup-common-guide-top" component="h2" sx={{ fontSize: 22, fontWeight: 700 }}>PopupcommonComponent 가이드</Typography>
-      <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>팝업 공통 입력·미리보기·선택 필드 추출의 사용 방법과 변경 공지</Typography>
+      <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>팝업 입력·미리보기 컴포넌트를 다른 화면에서 쓰는 방법과 변경 공지</Typography>
       <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable" scrollButtons="auto"
         sx={{ mt: 2, mb: 3, borderBottom: 1, borderColor: 'divider', '& .MuiTab-root': { fontSize: 15, fontWeight: 600, minWidth: 96 } }}>
         {TAB_ORDER.map((id) => (

@@ -109,12 +109,12 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupScheduleFields: {
     input: { periodMode: 'SCHEDULE', repeatDayOfWeek: '1,3,5', displayTimes: [{ startTime: '09:00', endTime: '12:00' }] },
-    hint: "periodMode: 'FIXED'(상시) · 'SCHEDULE'(지정). repeatDayOfWeek는 ISO 요일(1=월) 쉼표 목록, 비우면 매일.",
+    hint: "periodMode: 'FIXED'(항상) · 'SCHEDULE'(요일·시간 지정). repeatDayOfWeek는 요일 번호(1=월)를 쉼표로 적고, 비우면 매일입니다.",
     render: (input, emit) => <ScheduleHost input={input} emit={emit} />,
   },
   InlinePopupPreview: {
     input: TEXT_PATCH,
-    hint: '화면 state 값입니다(미리보기 fallback만 채움). popupType·title·content를 바꿔 보세요("실제 크기로 보기"를 누르면 onOpenPreview).',
+    hint: '입력한 값입니다. 미리보기에 필요한 기본값은 자동으로 채웁니다. popupType·title·content를 바꿔 보세요.',
     render: (input, emit) => (
       <InlinePopupPreview popup={samplePopup(input)} onOpenPreview={() => emit('onOpenPreview', '호출됨')} onRecommendedSize={(size) => emit('onRecommendedSize', size)} />
     ),
@@ -126,7 +126,7 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupPreview: {
     input: { popup: TEXT_PATCH, showBackground: false },
-    hint: 'popup은 화면 state 값입니다(미리보기 fallback만 채움). 푸터 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
+    hint: 'popup은 입력한 값입니다. 하단 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
     render: (input, emit) => (
       <PopupPreview popup={samplePopup(input.popup)} showBackground={input.showBackground} onClose={() => emit('onClose', '호출됨')}
         onRecommendedSize={(size) => emit('onRecommendedSize', size)} />
@@ -136,5 +136,5 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
 
 /** 실행기가 없는 컴포넌트의 안내 */
 export const RUNNER_NOTES: Record<string, string> = {
-  PopupRichTextMenu: 'CKEditor 인스턴스가 필요해 단독 실행기가 없습니다. PopupRichTextEditor 실행기에서 글자를 선택하고 우클릭(또는 서식 버튼)하면 이 패널이 열립니다.',
+  PopupRichTextMenu: '혼자서는 실행해 볼 수 없습니다. PopupRichTextEditor 실행기에서 글자를 고르고 우클릭하면 이 패널이 열립니다.',
 };

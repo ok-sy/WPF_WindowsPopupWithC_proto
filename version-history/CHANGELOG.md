@@ -1,5 +1,17 @@
 ﻿# 변경 이력
 
+## 2026-10-30-18 — 가이드 화면 문구·제목을 쉬운 말로 정리
+
+- 이유: 가이드 설명이 설계 문서 용어(공개 경계·저장 경계·최종 권위·정규화·명시값·미설정·fallback 합성 등)로 쓰여 있어 컴포넌트를 가져다 쓰는 개발자가 한 번 더 해석해야 했음.
+- 변경:
+  - 탭 제목: 프로세스 → 사용 순서, 독립 재사용·필드 추출 → 다른 화면에서 사용하기, 변환·유틸 → 데이터 처리 함수. 범위 표시: 범용/proto 전용 → 공통 사용/기존 팝업 등록.
+  - 컴포넌트 탭: 입력 props → 받는 값, 출력(콜백·화면) → 돌려주는 값, 다루는 값 → 다루는 데이터, 재사용 방법 → 사용 방법. 사용 순서 탭: 부모 화면이 하는 일 → 사용하는 화면에서 할 일, 참고 → 알아둘 점.
+  - 시작하기 탭을 소개·알아둘 점·가져오기·가장 짧은 사용 예·기존 팝업 등록 화면 안내로 다시 씀. 사용 순서(공통 ①~⑥·기존 P1~P5), 컴포넌트 설명·받는 값/돌려주는 값 설명, 데이터 처리 함수 설명, 다른 화면에서 사용하기·실습·예시·공지 안내, 실행기 안내, 독립 샘플 라벨을 한 문장 한 가지·실제 동작 중심으로 정리. 함수명·Props 이름·코드 동작은 그대로.
+  - `guideData.ts` 머리 주석에 화면 문구 작성 규칙 5가지 기록. 렌더 하네스 기대 문구 갱신과 시작하기·사용 순서 탭 설계 용어 재유입 검사 추가. 미리보기 컴포넌트 문서의 가이드 설명 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideUi.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/PopupCommonGuide.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideSavePartsTab.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideRunners.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupIndependentSamples.tsx, scripts/verify-popup-guide-render.cjs, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, guide·sample eslint 0, guide-render 26건·guide-registry 207건·common-sample-69 39건 통과.
+- 상태: 커밋·원격 반영. 실화면 확인 미실행.
+
 ## 2026-10-30-17 — 예시(IS063M02) pickPopupFields 버튼 추가
 
 - 이유: 샘플 소스만 보고도 저장할 때 필요한 항목을 가져오는 방법을 알 수 있어야 함. 기존 저장 버튼은 `toSampleScreenValues`(유형별 항목 목록)를 거쳐 `pickPopupFields` 호출 모양이 드러나지 않았음.

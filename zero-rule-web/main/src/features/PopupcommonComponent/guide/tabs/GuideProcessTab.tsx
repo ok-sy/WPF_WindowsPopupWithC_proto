@@ -3,8 +3,8 @@ import { COMPONENTS, PROCESSES, type GuideProcess, type GuideScope } from '../gu
 import { Bullets, C, Page, RichText, ScopeChip, Section } from '../GuideUi';
 
 const SCOPE_TITLES: Record<GuideScope, string> = {
-  COMMON: '범용 흐름 — 독립 입력 → 상태 → 출력 → 선택 추출 → 화면별 저장 경계',
-  PROTO: 'proto(RgstPop) 전용 흐름 — 등록 화면 편집값 생성·저장',
+  COMMON: '공통 사용 — 입력값 받기 → 미리보기 → 필요한 항목만 가져와 저장',
+  PROTO: '기존 팝업 등록 — 기존 팝업 등록 화면에서 사용하는 방식',
 };
 
 function ProcessSection({ process }: { process: GuideProcess }) {
@@ -31,11 +31,11 @@ function ProcessSection({ process }: { process: GuideProcess }) {
         </Stack>
         {/* 부모 책임·참고·관련 컴포넌트 */}
         <Box sx={{ bgcolor: '#f8fafc', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, alignSelf: 'start' }}>
-          <Typography sx={{ fontSize: 13.5, fontWeight: 700, mb: 0.5 }}>부모 화면이 하는 일</Typography>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 700, mb: 0.5 }}>사용하는 화면에서 할 일</Typography>
           <Bullets items={process.parent} />
           {process.notes && process.notes.length > 0 && (
             <>
-              <Typography sx={{ fontSize: 13.5, fontWeight: 700, mt: 1.5, mb: 0.5 }}>참고</Typography>
+              <Typography sx={{ fontSize: 13.5, fontWeight: 700, mt: 1.5, mb: 0.5 }}>알아둘 점</Typography>
               <Bullets items={process.notes} />
             </>
           )}
@@ -53,9 +53,9 @@ function ProcessSection({ process }: { process: GuideProcess }) {
 
 /**
  * POL-14-01 : 공통 프론트 경계
- * ■ 가이드: 프로세스 탭
+ * ■ 가이드: 사용 순서 탭
  * - in : 없음(guideData.PROCESSES)
- * - out: 화면: 범용 흐름(먼저)과 proto 전용 흐름(별도 소절)의 단계·부모 책임·관련 컴포넌트
+ * - out: 화면: 공통 사용 순서(먼저)와 기존 팝업 등록 방식(따로)의 단계·사용하는 화면에서 할 일·관련 컴포넌트
  * - 데이터가 어떤 순서로 흐르는지 보여 준다. proto 흐름(createDefaultPopup·toSaveRequest)은 범용 흐름과 구분해 표시한다.
  */
 export default function GuideProcessTab() {
@@ -69,7 +69,7 @@ export default function GuideProcessTab() {
             <Typography component="h3" sx={{ fontSize: 18, fontWeight: 700, mt: scope === 'PROTO' ? 2 : 0 }}>{SCOPE_TITLES[scope]}</Typography>
             {scope === 'PROTO' && (
               <Alert severity="warning" sx={{ fontSize: 14, lineHeight: 1.7 }}>
-                proto 등록 화면(<C>features/RgstPop</C>)의 흐름입니다. 다른 업무 화면은 위 범용 흐름을 따르고, 이 단계를 필수 사전 처리로 쓰지 않습니다.
+                기존 팝업 등록 화면(<C>features/RgstPop</C>)에서만 쓰는 방식입니다. 다른 화면은 위 공통 사용 순서를 따르면 됩니다.
               </Alert>
             )}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
