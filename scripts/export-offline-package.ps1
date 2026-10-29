@@ -10,6 +10,7 @@ POL-15-01 : 배포 범위
   3-popup-frameWork   WPF·MockSso 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스·개인 launchSettings 제외)
   4-docs              docs·db·api·README·변경 이력
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 캐시(pnpm store) — scripts/prepare-offline-npm.cjs로 만든 폴더. 통합 TGZ에 포함
+  cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
 
 이유: 폐쇄망에는 zero-rule-server/zero-rule-web 전체가 이미 있으므로 팝업 관련 변경분만 반입하고,
@@ -200,6 +201,11 @@ try {
         $npmManifest | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "MANIFEST-5-npm-ckeditor.txt")
         $npmCount = @(Get-Content -Encoding UTF8 (Join-Path $npmTarget "PACKAGES.txt") | Where-Object { $_.Trim() }).Count
         Write-Host "[5-npm-ckeditor] npm 패키지 $npmCount"
+        # 반입 후 정리 스크립트와 남길 CKEditor 목록(이 묶음의 CKEditor 계열 패키지 이름@버전). 반입 루트에 둔다.
+        Copy-Item -LiteralPath (Join-Path $repositoryRoot "scripts\offline-import\cleanup-after-import.ps1") -Destination (Join-Path $OutputRoot "cleanup-after-import.ps1") -Force
+        $keepLines = @(Get-Content -Encoding UTF8 (Join-Path $npmTarget "PACKAGES.txt") | ForEach-Object { ($_ -split "`t")[0] } | Where-Object { $_ -match 'ckeditor' })
+        (@("# 남길 CKEditor 패키지(이름@버전). cleanup-after-import.ps1이 이 목록에 없는 CKEditor 계열 패키지를 지운다.") + $keepLines) | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "CKEDITOR-KEEP.txt")
+        Write-Host "[cleanup] 남길 CKEditor $($keepLines.Count)"
     }
     if ($IncludeDevDependencies) {
         $null = Export-TreeBundle -Name "6-offline-packages" -Roots @("offline-packages", "offline-sdk") -ExcludeDirs @() -ExcludeExtensions @() -ExcludePatterns @() `
@@ -257,8 +263,10 @@ try {
     # README-IMPORT.md
     $npmRow = ""
     $npmStep = ""
+    $npmCleanup = ""
     if ($npmCount -gt 0) {
         $npmRow = "| 5-npm-ckeditor.tar | 관리자 웹 npm 오프라인 캐시(pnpm store v3) — CKEditor 5 49.0.1·React 래퍼 12.0.0과 의존 패키지 $npmCount 개 | 2-zero-rule-web 반영 후 5-npm-ckeditor의 install-pnpm-store.ps1 실행(README-NPM.md) |`n"
+        $npmCleanup = "7. 정리(선택이지만 권장): 반입본을 푼 폴더에서 ``.\cleanup-after-import.ps1 -Root <반입 루트>``로 미리보기한 뒤 ``-Apply``로 실행한다. $deleteName 의 파일과 49.0.1 세트(CKEDITOR-KEEP.txt)가 아닌 이전 CKEditor를 node_modules·pnpm store에서 지운다.`n"
         $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``로 pnpm store 추가와 ``pnpm install --offline``을 실행한다(사내 npm 저장소 불필요).`n"
     }
     $gitReadme = "Git for Windows 설치 파일 미동봉. 필요하면 -GitInstallerPath로 공식 x64 설치 파일을 지정하여 재생성."
@@ -303,7 +311,7 @@ $($npmStep)3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트
 4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다.
 5. 서버: custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
 6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
-
+$($npmCleanup)
 SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, $Date.tgz.sha256은 통합 TGZ 체크섬이다.
 "@ | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "README-IMPORT.md")
 
@@ -339,6 +347,13 @@ SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, 
     $sourceSums | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "SOURCE-SHA256SUMS.txt")
 
     $payload = @("README-IMPORT.md", "SHA256SUMS.txt", "SOURCE-SHA256SUMS.txt", $deleteName)
+    if ($npmCount -gt 0) {
+        foreach ($extra in @("cleanup-after-import.ps1", "CKEDITOR-KEEP.txt")) {
+            $sums += "$((Get-FileHash -LiteralPath (Join-Path $OutputRoot $extra) -Algorithm SHA256).Hash.ToLower())  $extra"
+            $payload += $extra
+        }
+        $sums | Set-Content -Encoding ASCII (Join-Path $OutputRoot "SHA256SUMS.txt")
+    }
     foreach ($bundle in $bundles) { $payload += "$bundle.tar"; $payload += "MANIFEST-$bundle.txt" }
     if ($gitInstallerIncluded) {
         $sums += "$gitInstallerHash  $gitInstallerName"

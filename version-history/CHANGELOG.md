@@ -1,5 +1,15 @@
 ﻿# 변경 이력
 
+## 2026-10-30-21 — 폐쇄망 반입 후 정리 스크립트(DELETE-SINCE 삭제 + 이전 CKEditor 제거)
+
+- 이유: 폐쇄망에는 CKEditor 커스텀 빌드(0.0.15, 내장 34.1.0)·@ckeditor/* 48.x·@types/ckeditor__* 37.x·React 래퍼 5.1.0 등 이전 버전이 node_modules와 pnpm store에 남고, 반입본 DELETE-SINCE 목록의 파일도 손으로 지워야 했음. 49.0.1 세트만 남기고 한 번에 정리할 수단 필요.
+- 변경:
+  - `scripts/offline-import/cleanup-after-import.ps1`(폐쇄망): 기본 미리보기, `-Apply`로 실제 삭제, 로그 파일 기록. ① 같은 폴더의 DELETE-SINCE-*.txt를 취합해 반입 루트 기준 파일 삭제(`..`·절대 경로 거부, 비게 된 상위 폴더 정리) ② zero-rule-web node_modules(중첩 포함)에서 이름에 ckeditor가 들어간 패키지 중 `CKEDITOR-KEEP.txt`에 없는 이름@버전 삭제 ③ pnpm store(v3)에서 같은 기준의 패키지 색인을 지우고, 다른 패키지가 쓰지 않는 내용 파일만 삭제. `-SkipDelete`·`-SkipNodeModules`·`-SkipStore`·`-StoreDir` 옵션.
+  - `scripts/export-offline-package.ps1`: `-NpmBundleDir`가 있으면 정리 스크립트와 `CKEDITOR-KEEP.txt`(npm 묶음의 CKEditor 계열 62개)를 반입본 루트·통합 TGZ·SHA256SUMS에 넣고 README 반입 절차 7번에 실행 방법 추가.
+- 주요 파일: scripts/offline-import/cleanup-after-import.ps1, scripts/export-offline-package.ps1, version-history/CHANGELOG.md.
+- 검증: 가짜 반입 루트로 미리보기·실제 삭제·재실행 — 삭제 목록 파일 삭제와 빈 폴더 정리, `../` 경로 거부, node_modules 이전 패키지 4개(중첩 1개 포함) 삭제·49.0.1과 일반 패키지 유지, store에서 이전 색인과 단독 내용 파일(일반·exec)만 삭제·공유 내용 파일 유지, 재실행 시 0개. 이 PC 실제 pnpm store(D:\.pnpm-store3) 미리보기 — 이전 CKEditor 180개 패키지·내용 파일 8,589개 대상, 49.0.1 세트 미포함, 10초(삭제는 하지 않음). PowerShell 구문 검사 통과. 폐쇄망 실행은 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30-20 — 20261030 폐쇄망 반입본 생성(CKEditor npm 오프라인 캐시 포함)
 
 - 이유: 20261029 반입 이후의 CKEditor 5 공통 엔진 전환(npm 의존성 변경)·편집기 SourceEditing 수정·자료실 500 수정·팝업 미리보기/WPF 표시 변경·SURVEY 최소·최대 선택 수·가이드 화면을 폐쇄망에 반입하기 위해 새 반입본 필요. 폐쇄망에 사내 npm 저장소가 없어 pnpm store(오프라인 캐시)를 함께 넣음.
