@@ -12,13 +12,14 @@ type Props = {
  * @returns
  */
 export default function SubTitleAndIcon(props: Props) {
-  const { sx, className, ...rest } = props;
+  // labelTitle은 제목 글자로만 쓰고 Stack(DOM)으로 넘기지 않는다(넘기면 React unknown prop 경고).
+  const { sx, className, labelTitle, ...rest } = props;
 
   return (
     <Stack direction="row" alignItems="center" {...rest}>
       <StopOutlinedIcon sx={{ ml: 1, mr: 0.5 }} color="info" fontSize="small" />
       <Typography variant="h6" sx={{ ...sx }}>
-        {props.labelTitle}
+        {labelTitle}
       </Typography>
     </Stack>
   );

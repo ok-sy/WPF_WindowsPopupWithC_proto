@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-16 — SubTitleAndIcon labelTitle DOM 전달 경고 제거
+
+- 이유: 팝업 등록 화면(RgstPop) 등에서 "React does not recognize the `labelTitle` prop on a DOM element" 경고. `SubTitleAndIcon`이 `labelTitle`을 나머지 props와 함께 `Stack`(DOM)으로 넘김.
+- 변경: `labelTitle`을 구조 분해로 분리해 제목 글자로만 쓰고 `Stack`에는 넘기지 않음.
+- 주요 파일: zero-rule-web/main/src/components/SubTitleAndIcon.tsx, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, eslint 0. 실화면 콘솔 재확인은 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30-15 — 게시판·자료실 편집기 SourceEditing 전환 처리 · CKEditor 49 로컬 검증
 
 - 이유: 자료실 편집기(BbsCKEditor)에서 '소스' 버튼을 눌러도 화면이 바뀌지 않음. CKEditor 49 SourceEditing은 편집 영역이 외부 DOM 요소(`editable.hasExternalElement`, React 래퍼가 만든 요소에 DecoupledEditor를 붙인 구조)이면 모드 값만 바꾸고 화면은 바꾸지 않음.
