@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-15 — 게시판·자료실 편집기 SourceEditing 전환 처리 · CKEditor 49 로컬 검증
+
+- 이유: 자료실 편집기(BbsCKEditor)에서 '소스' 버튼을 눌러도 화면이 바뀌지 않음. CKEditor 49 SourceEditing은 편집 영역이 외부 DOM 요소(`editable.hasExternalElement`, React 래퍼가 만든 요소에 DecoupledEditor를 붙인 구조)이면 모드 값만 바꾸고 화면은 바꾸지 않음.
+- 변경: `CommonCKEditor`에 외부 편집 영역용 소스 편집 전환 추가 — 모드가 켜지면 뷰 루트에 `ck-hidden`, 같은 높이의 textarea(현재 HTML) 표시, 다른 편집 명령 잠금, 입력마다 `onContentChange`로 저장 값 갱신(소스 모드에서 바로 저장해도 수정 유지). 모드가 꺼지면 textarea 제거·잠금 해제 후 실행 취소 가능한 배치로 편집기에 반영. 편집 영역이 외부 요소가 아니면 동작하지 않음. 검증 하네스 `verify-bbs-ckeditor-source.cjs`(+entry, @local/ui 두 함수 대체 모듈) 추가. CKEditor 통합 TODO에 로컬 검증 결과 기록.
+- 주요 파일: zero-rule-web/main/src/components/CommonCKEditor.tsx, scripts/verify-bbs-ckeditor-source.cjs, scripts/verify-bbs-ckeditor-source-entry.tsx, docs/design/20261029_CKEditor5_전체통합_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, eslint 0. `verify-bbs-ckeditor-source` 5건 통과(수정 전에는 소스 영역이 생기지 않아 실패), 회귀 rich-text-49 60·survey-rich-text-55 23건 통과. 한글 IME 조합 입력·붙여넣기는 로컬 관리자 웹에서 개발자 수동 확인 성공. 이미지 포함 저장 왕복은 2026-10-30-14 수정 후 API로 확인.
+- 상태: 커밋·원격 반영. 미실행: 로그인 실화면에서 소스 편집 재확인, 폐쇄망 반입본 설치·첫 컴파일 실측·폐쇄망 브라우저 확인.
+
 ## 2026-10-30-14 — 자료실 상세·삭제·파일명 변경 500 오류 수정(@PathVariable 이름 명시)
 
 - 이유: CKEditor 49 로컬 검증 중 자료실 글 저장 후 열기가 실패. `/api/pds/info/{pdsId}`가 500("Name for argument of type [long] not specified ... '-parameters' flag"). Spring Boot 3.4(Spring 6.2)는 `-parameters` 없이 파라미터 이름을 추측하지 않는데 `web/api`·`web/support` 모듈은 Boot 플러그인을 적용하지 않아 이 옵션이 없음.

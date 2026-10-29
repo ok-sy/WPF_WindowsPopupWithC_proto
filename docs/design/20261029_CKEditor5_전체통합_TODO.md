@@ -136,3 +136,9 @@
 
 ## 권장 순서
 실설치/기존 기능 조사 → 공통 엔진 설계 → PopupRich 전환 및 타이핑 해결 → Common 전환 → Bbs 회귀 → 패키지 정리 → 전체 검증.
+
+## 로컬 검증 결과 (2026-10-30)
+- 한글 IME 조합 입력·붙여넣기: 로컬 관리자 웹에서 개발자 수동 확인 성공.
+- SourceEditing(게시판·자료실 BbsCKEditor): 소스 버튼을 눌러도 화면이 바뀌지 않던 문제 확인. CKEditor 49 SourceEditing은 외부 DOM 요소에 붙은 편집 영역(`editable.hasExternalElement`, React 래퍼 + DecoupledEditor)을 직접 바꾸지 않으므로 `CommonCKEditor`에서 소스 모드 전환을 처리하도록 수정. `scripts/verify-bbs-ckeditor-source.cjs` 5건 통과.
+- 이미지(Base64UploadAdapter) 포함 저장 왕복: 저장은 성공하나 다시 열기(`/api/pds/info/{pdsId}`)·삭제가 500(`@PathVariable` 이름 미지정, `-parameters` 미적용)이라 실패로 보였음. 이름 명시로 수정 후 80KB·3MB 본문 저장→열기→삭제 API 왕복 확인.
+- 폐쇄망 반입본 설치·첫 컴파일 실측·폐쇄망 브라우저 확인: 미실행(폐쇄망에서 수행).
