@@ -216,7 +216,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 |---|---|---|
 | `RATING5` | 2026-09-28(설계 18 L-4) 삭제. 기존 문항은 08 스크립트로 `SINGLE_CHOICE` + 가로 배치로 이관 | X |
 | `SINGLE_CHOICE` | 단일 선택 RadioButton | O |
-| `MULTIPLE_CHOICE` | 복수 선택 CheckBox. QUIZ는 정답 수까지만 선택(TODO52-5) | O |
+| `MULTIPLE_CHOICE` | 복수 선택 CheckBox. QUIZ는 정답 수까지만 선택(TODO52-5). SURVEY는 `minSelections`·`maxSelections`로 최소·최대 선택 수 지정(비우면 제한 없음, 2026-10-29) | O |
 | `TEXT` | 주관식 TextBox | O |
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.

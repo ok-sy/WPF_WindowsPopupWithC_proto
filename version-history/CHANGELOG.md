@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-09 — SURVEY 복수 선택 최소·최대 선택 수
+
+- 이유: SURVEY 복수 선택 문항에서 응답자가 고를 수 있는 선택지 수를 관리자가 지정할 수 있어야 함. 최소·최대 모두 nullable(기본 제한 없음), QUIZ는 기존 정답 수 한도 유지, 서버 결과 수신은 선택 수를 거부하지 않음, 관리자 원본(DB)부터 WPF까지 적용으로 결정.
+- 변경: DB `19_question_selection_limit_oracle.sql`(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS` NUMBER(4) NULL, `CK_QUESTION_SELECTION_RANGE`)·`01` 스키마·README. 서버 엔티티·DTO(null이면 JSON 생략, 기존 생성자 유지)·Mapper INSERT/SELECT(QUIZ는 NULL 저장)·관리자 상세·WPF 응답(SURVEY 정답 제거 경로 포함) 전달·`PopupQuestionRules` 저장 검증(SURVEY 복수 선택만, 1~선택지 수, 최소 ≤ 최대)·3117 등록 검증기 동일 규칙. 관리자 웹 모델·편집기 최소/최대 입력과 저장 전 확인·미리보기 한도·최소 미달 제출 불가·안내 문구. WPF DTO·Factory·모델(`MaxSelections`는 QUIZ 정답 수 우선)·설문 화면 진행 문구·제출 가능 판정·제출 시 검증·안내 문구·Demo 샘플. 인터페이스 명세·ALL 명세·옵션 가이드 갱신(MINIMAL은 최초 제공 범위라 미변경).
+- 주요 파일: db/oracle/19_question_selection_limit_oracle.sql, db/oracle/01_popup_schema_oracle.sql, db/oracle/README.md, zero-rule-server/domain/.../PopupQuestionEntity.java·PopupQuestionDto.java·wpf/WpfPopupItem.java, zero-rule-server/repo/core/.../PopupMapper.xml, zero-rule-server/service/core/.../PopupQuestionRules.java·PopupService.java·PopupSurveyRichText.java·sample/fulljson/PopupJsonValidator.java, zero-rule-web/sub/domain/src/model/PopupAdmin.ts, zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx·SurveyPreview.tsx·PopupPreview.tsx, popup-frameWork/Popup/Dtos/SurveyQuestionDto.cs·Factories/PopupFactory.cs·Models/SurveyQuestion.cs·Views/Contents/SurveyPopupView.xaml.cs·Services/DemoPopupDataService.cs, scripts/PopupWindowTests/Program.cs, scripts/verify-completion-ux-43.cjs, docs/design/20261029_SURVEY_복수선택_최소최대선택수_TODO.md, docs/interfaces/POPUP_INTERFACE_SPEC.md·WPF_POPUP_ALL_SPEC.md, docs/POPUP_OPTION_GUIDE.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 로컬 XE(꺼져 있던 OracleServiceXE 시작)에 19 적용 — 컬럼 2·제약 1, 재실행 SKIP. 서버 `gradlew test`(로컬 XE Oracle 포함) — 신규 `PopupQuestionRulesTest` 4건·`PopupJsonValidatorTest` 1건 통과, 실DB `PopupQuestionDatabaseTest` 통과, 실패 4건(`WpfPopupDatabaseTest` 2·`WpfApiOracleHttpTest` 2)은 변경 전 코드로도 동일 재현되는 로컬 데이터 의존 실패. 웹 tsc·eslint 오류 0, `verify-completion-ux-43` 71건(신규 6)·`verify-survey-rich-text-55` 23건 통과. WPF 빌드 경고·오류 0, `PopupWindowTests` 385건 통과(변경 전에도 실패하는 `CheckVideoQuizAspect60`만 실행 시 임시 제외 후 원복), `ApiDemoTests` 70건 통과, `RichTextTests`는 옮겨진 웹 파일 경로 참조로 기존 실패.
+- 상태: 커밋·원격 반영. 원격 개발 DB는 이 PC에서 192.168.114.71:4004 TCP 연결 실패로 19 **미적용**(서버 배포 전 적용 필요). 관리자 웹 저장 → WPF 실화면 조작, Excel·Word·PDF 반영 미실행.
+
 ## 2026-10-29-08 — 20261029 폐쇄망 반입본 생성
 
 - 이유: 20261022 반입 이후의 DTIY3117 전체 JSON 조회 샘플·등록 공통 검증 모듈(서버), 로그인 요청 키 lgonId·Demo JSON Validator(WPF), 관련 TODO·인계 문서를 폐쇄망에 반입하기 위해 새 반입본 필요. 관리자 웹·DB 스크립트 변경 없음.
