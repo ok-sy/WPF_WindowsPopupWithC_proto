@@ -1,5 +1,16 @@
 ﻿# 변경 이력
 
+## 2026-10-30-19 — 폐쇄망 npm 오프라인 캐시(pnpm store) 묶음 스크립트
+
+- 이유: CKEditor 5 공통 엔진 전환(ckeditor5 49.0.1 + @ckeditor/ckeditor5-react 12.0.0)으로 lockfile이 바뀌어 폐쇄망 pnpm store에 없는 패키지가 생김. 폐쇄망에는 사내 npm 저장소가 없어 pnpm store(오프라인 캐시)를 반입해야 함.
+- 변경:
+  - `scripts/prepare-offline-npm.cjs`: zero-rule-web `pnpm-lock.yaml`에서 두 패키지의 의존 범위(전이 포함 177개)를 lockfile 버전 그대로 뽑아 최소 lockfile을 만들고, pnpm 9.15.2(`packageManager`)로 store(v3)를 받아 `pnpm-store-v3.tgz`로 묶음. registry 원본 tarball(작업 폴더에서만 받음)의 sha512를 lockfile integrity와 대조하고, 묶음 store만으로 `pnpm install --offline` 설치를 확인. GNU tar의 드라이브 문자 해석 문제로 Windows 기본 tar 사용.
+  - `scripts/offline-npm/install-pnpm-store.ps1`(폐쇄망): `pnpm store path`(또는 -StoreDir)에 없는 파일만 추가(robocopy /XC /XN /XO) 후 zero-rule-web에서 `pnpm install --offline --frozen-lockfile`. `README-NPM.md` 설치 안내.
+  - `scripts/export-offline-package.ps1`: `-NpmBundleDir` 옵션 — 묶음을 `5-npm-ckeditor`로 복사·MANIFEST·TAR·체크섬·통합 TGZ에 포함하고 README-IMPORT.md에 묶음 행과 반입 절차 추가.
+- 주요 파일: scripts/prepare-offline-npm.cjs, scripts/offline-npm/install-pnpm-store.ps1, scripts/offline-npm/README-NPM.md, scripts/export-offline-package.ps1, version-history/CHANGELOG.md.
+- 검증: `prepare-offline-npm.cjs` 실행 — 177개 tarball 무결성 = lockfile integrity 모두 일치, 묶음 store만으로 오프라인 설치 성공(ckeditor5 49.0.1, 다운로드 0). `install-pnpm-store.ps1`을 빈 store·임시 프로젝트로 실행(pnpm 9.15.2) — store 추가·오프라인 설치 성공, 재실행 시 기존 파일 건너뜀. export 스크립트 PowerShell 구문 검사 통과. 폐쇄망 실제 store 병합·설치는 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30-18 — 가이드 화면 문구·제목을 쉬운 말로 정리
 
 - 이유: 가이드 설명이 설계 문서 용어(공개 경계·저장 경계·최종 권위·정규화·명시값·미설정·fallback 합성 등)로 쓰여 있어 컴포넌트를 가져다 쓰는 개발자가 한 번 더 해석해야 했음.

@@ -9,6 +9,7 @@ POL-15-01 : 배포 범위
   2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff)
   3-popup-frameWork   WPF·MockSso 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스·개인 launchSettings 제외)
   4-docs              docs·db·api·README·변경 이력
+  5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 캐시(pnpm store) — scripts/prepare-offline-npm.cjs로 만든 폴더. 통합 TGZ에 포함
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
 
 이유: 폐쇄망에는 zero-rule-server/zero-rule-web 전체가 이미 있으므로 팝업 관련 변경분만 반입하고,
@@ -21,6 +22,8 @@ MANIFEST(A=신규/M=수정/D=삭제/S=소스 복사)는 폐쇄망 기존 프로�
   .\scripts\export-offline-package.ps1 -UseWorkingChangelog              # 반입본 생성 기록을 적은(미커밋) CHANGELOG로 교체
   .\scripts\export-offline-package.ps1 -VerifyBuild                      # 20261006 NuGet 반입본만으로 WPF 오프라인 빌드 확인
   .\scripts\export-offline-package.ps1 -Force                            # 같은 날짜 폴더가 있으면 지우고 다시 생성
+  .\scripts\export-offline-package.ps1 -NpmBundleDir .offline-cache
+pm-ckeditorundle   # npm 오프라인 캐시(5-npm-ckeditor) 포함
 
 [출력] <OutputRoot>\
   1-zero-rule-server\ 2-zero-rule-web\ 3-popup-frameWork\ 4-docs\ 와 각 .tar  — 원본 경로 구조 유지
@@ -43,6 +46,8 @@ param(
     [string]$NuGetBundle = "",
     # 선택: Git for Windows 공식 x64 설치 파일을 반입 TGZ에 동봉(자동 다운로드 없음)
     [string]$GitInstallerPath = "",
+    # 선택: scripts/prepare-offline-npm.cjs 출력 폴더(pnpm store 묶음). 지정하면 5-npm-ckeditor 묶음으로 통합 TGZ에 넣는다.
+    [string]$NpmBundleDir = "",
     [switch]$UseWorkingChangelog,
     [switch]$IncludeDevDependencies,
     [switch]$VerifyBuild,
@@ -180,6 +185,22 @@ try {
         # 반입본 생성 기록을 적은 최신 변경 이력으로 교체(커밋 전 기록용)
         Copy-Item -LiteralPath (Join-Path $repositoryRoot "version-history\CHANGELOG.md") -Destination (Join-Path $OutputRoot "4-docs\version-history\CHANGELOG.md") -Force
     }
+    # 선택: 관리자 웹 npm 오프라인 캐시(폐쇄망에 사내 npm 저장소가 없어 pnpm store를 반입)
+    $npmCount = 0
+    if (-not [string]::IsNullOrWhiteSpace($NpmBundleDir)) {
+        $npmSource = (Resolve-Path -LiteralPath $NpmBundleDir).Path
+        foreach ($required in @("pnpm-store-v3.tgz", "install-pnpm-store.ps1", "README-NPM.md", "PACKAGES.txt", "package.json", "pnpm-lock.yaml")) {
+            if (-not (Test-Path -LiteralPath (Join-Path $npmSource $required) -PathType Leaf)) { throw "npm 묶음 파일 없음: $required (scripts/prepare-offline-npm.cjs로 생성)" }
+        }
+        $npmTarget = Join-Path $OutputRoot "5-npm-ckeditor"
+        New-Item -ItemType Directory -Force -Path $npmTarget | Out-Null
+        Copy-Item -Path (Join-Path $npmSource "*") -Destination $npmTarget -Recurse -Force
+        $npmManifest = @("# 5-npm-ckeditor: 관리자 웹 npm 오프라인 캐시(pnpm store v3). S=묶음 파일")
+        Get-ChildItem -LiteralPath $npmTarget -Recurse -File | Sort-Object FullName | ForEach-Object { $npmManifest += "S`t$($_.FullName.Substring($npmTarget.Length + 1).Replace('\', '/'))" }
+        $npmManifest | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "MANIFEST-5-npm-ckeditor.txt")
+        $npmCount = @(Get-Content -Encoding UTF8 (Join-Path $npmTarget "PACKAGES.txt") | Where-Object { $_.Trim() }).Count
+        Write-Host "[5-npm-ckeditor] npm 패키지 $npmCount"
+    }
     if ($IncludeDevDependencies) {
         $null = Export-TreeBundle -Name "6-offline-packages" -Roots @("offline-packages", "offline-sdk") -ExcludeDirs @() -ExcludeExtensions @() -ExcludePatterns @() `
             -ExtraFiles @("global.json", "NuGet.config", "scripts/prepare-offline-packages.ps1", "scripts/build-wpf-offline.ps1", "OFFLINE_WPF_BUILD.md")
@@ -218,6 +239,7 @@ try {
 
     # 묶음별 패치노트(선택): <PatchNotesDir>\README-PATCH-<묶음>.md → 묶음 루트
     $bundles = @("1-zero-rule-server", "2-zero-rule-web", "3-popup-frameWork", "4-docs")
+    if ($npmCount -gt 0) { $bundles += "5-npm-ckeditor" }
     if ($PatchNotesDir) {
         foreach ($bundle in $bundles) {
             $note = Join-Path $PatchNotesDir "README-PATCH-$bundle.md"
@@ -233,6 +255,12 @@ try {
     if ($leak) { throw "개인 PC 절대경로 포함: $($leak.Path -join ', ')" }
 
     # README-IMPORT.md
+    $npmRow = ""
+    $npmStep = ""
+    if ($npmCount -gt 0) {
+        $npmRow = "| 5-npm-ckeditor.tar | 관리자 웹 npm 오프라인 캐시(pnpm store v3) — CKEditor 5 49.0.1·React 래퍼 12.0.0과 의존 패키지 $npmCount 개 | 2-zero-rule-web 반영 후 5-npm-ckeditor의 install-pnpm-store.ps1 실행(README-NPM.md) |`n"
+        $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``로 pnpm store 추가와 ``pnpm install --offline``을 실행한다(사내 npm 저장소 불필요).`n"
+    }
     $gitReadme = "Git for Windows 설치 파일 미동봉. 필요하면 -GitInstallerPath로 공식 x64 설치 파일을 지정하여 재생성."
     if ($gitInstallerIncluded) {
         $gitReadme = "Git for Windows 2.56.0.windows.4 (x64): $gitInstallerName 동봉. 압축 해제 후 폐쇄망 PC에서 실행. SHA256: $gitInstallerHash"
@@ -256,7 +284,7 @@ try {
 | 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 pnpm store 확인 |
 | 3-popup-frameWork.tar | WPF/MockSso 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
-
+$npmRow
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
 
 ## 이번 변경
@@ -271,7 +299,7 @@ $gitReadme
 
 1. ``tar -xzf $Date.tgz`` 후 SHA256SUMS.txt로 TAR 체크섬을 확인한다.
 2. 1·2·4 TAR을 반입 루트에 풀고 MANIFEST와 $deleteName 에 따라 병합·삭제한다.
-3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
+$npmStep3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
 4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다.
 5. 서버: custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
 6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
