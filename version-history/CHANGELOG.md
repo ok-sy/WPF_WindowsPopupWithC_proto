@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-03 — Git for Windows 설치파일 오프라인 반입 옵션 추가
+
+- 이유: 폐쇄망 PC에서 사용할 Git for Windows 설치 프로그램을 기존 소스 반입 패키지에 선택적으로 동봉할 필요.
+- 변경: `-GitInstallerPath`로 Git 2.56.0.windows.4 x64 EXE를 받으면 공식 SHA-256 검증 후 통합 TGZ 루트에 포함하고, 추출본 해시를 재검증하도록 확장. 반입 README에 버전·파일명·설치 안내를 추가. 기존 인자 미지정 동작과 WPF/MSI 구성은 유지.
+- 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md, version-history/CHANGELOG.md.
+- 검증: GitHub 공식 릴리스 파일명·해시 확인. Windows PowerShell에서 실제 스크립트 실행·설치파일 반입·TGZ 검증은 미수행.
+- 상태: 스크립트·가이드 반영 / 실제 반입본 생성 검증 대기.
+
 ## 2026-10-29-02 — MSI offline-export 신규 작업 폐기
 
 - 이유: MSI 설치 패키지 offline-export 신규 추진 계획 종료.
