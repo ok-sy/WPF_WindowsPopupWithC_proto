@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-06 — PopupCommonGuide 화면 정리 구현 명세 확정
+
+- 이유: 가이드 내 범용 컴포넌트 계약과 proto 전용 저장 흐름·미리보기 기본값 설명의 혼재, 탭 간 중복 및 한 화면 파일의 과도한 역할을 정리할 구현 기준 필요.
+- 변경: P0(공통/PROTO 범위·withPreviewFallback·WEB/SERVER 정책 정합성), P1(시작하기 포함 8개 탭별 역할), P2(탭 파일·공통 UI 분리), P3(공지 데이터 유지관리 및 변경 검증)의 파일별 구현안·완료 조건을 설계 문서로 추가하고 문서 색인 연결.
+- 주요 파일: docs/design/20261030_PopupCommonGuide_화면정리_구현명세_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: GitHub main의 PopupCommonGuide.tsx, guideData.ts, GuideSavePartsTab.tsx, guideNotices.ts, scene-router.tsx 정적 확인. 타입 검사·빌드·브라우저 테스트 미실행.
+- 상태: TODO 명세 및 색인 반영. 가이드 화면 코드 변경·테스트 미착수.
+
 ## 2026-10-30-05 — WEB 미리보기 fallback(withPreviewFallback)·가이드 개요 탭 삭제·예시 탭(IS063M02Sample)
 
 - 이유: WEB/SERVER 책임 분리 확정(2026-10-30-04)에 따른 WEB 이행 1단계 — 화면 state에는 입력한 값만 두고 미리보기에 넘길 때만 표시용 값을 채우는 구조가 필요. 가이드 개요 탭은 다른 탭과 내용이 겹쳐 삭제하고 실제 화면 연결 예시를 가이드에서 바로 확인할 수 있게 함.
