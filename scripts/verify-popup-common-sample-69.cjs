@@ -18,8 +18,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-common-sample-69-entry.tsx'), output: {path: output, filename: 'bundle.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
-      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
-    module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
+      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
+    module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/},
+      // CKEditor 공통 엔진(ckeditor5)의 CSS를 style 태그로 넣는다.
+      {test: /\.css$/, use: path.join(__dirname, 'verify-css-loader.cjs')}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
   server = http.createServer((req, res) => {const script = /^\/[\w.-]+\.js$/.test(req.url) && fs.existsSync(path.join(output, req.url.slice(1)));
     res.setHeader('Content-Type', script ? 'application/javascript' : 'text/html; charset=utf-8');
@@ -34,7 +36,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   socket = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl); await new Promise(resolve => socket.once('open', resolve));
   let id = 0; const waiting = new Map(); const errors = [];
   socket.on('message', raw => {const m = JSON.parse(raw);
-    if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text);
+    if (m.method === 'Runtime.exceptionThrown' && !m.params.exceptionDetails.url?.startsWith('chrome-extension://')) errors.push(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text);
     if (waiting.has(m.id)) {const p = waiting.get(m.id); waiting.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result);}});
   const send = (method, params = {}) => new Promise((resolve, reject) => {const key = ++id; waiting.set(key, {resolve, reject}); socket.send(JSON.stringify({id: key, method, params}));});
   const run = async expression => {const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true}); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value;};
@@ -45,7 +47,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const preview = "document.querySelector('[data-testid=sample-inline-preview]')";
   const request = async () => JSON.parse(await run(`document.querySelector('[data-testid=sample-save-request]').textContent`));
 
-  await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 950, deviceScaleFactor: 1, mobile: false});
+  // 오류 수집(Runtime.exceptionThrown)은 Edge 기본 확장 프로그램(chrome-extension://) 콘텐츠 스크립트 오류를 제외한다.
+  // CKEditor 49는 문서에 포커스가 있어야 편집 영역을 포커스 상태로 본다(headless 창은 포커스가 없어 선택 영역이 그려지지 않음).
+  await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', {enabled: true}); await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 950, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   await until(`document.querySelectorAll('tbody tr').length > 0`, 'list');
 

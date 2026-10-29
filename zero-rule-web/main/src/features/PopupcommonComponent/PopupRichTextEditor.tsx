@@ -1,12 +1,9 @@
-// @ts-nocheck — CKEditor 커스텀 빌드는 타입 선언이 없다(CommonCKEditor와 동일).
 import { Box, Button, Stack, Typography, type PopoverPosition } from '@mui/material';
-import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { CKEditor, loadCkeditorEngine, type CkeditorEngine } from '@/components/ckeditor';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PopupRichTextMenu from './PopupRichTextMenu';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
 import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
-
-const CKEditor = dynamic(() => import('@ckeditor/ckeditor5-react').then((m) => m.CKEditor), { ssr: false });
 
 type Props = {
   /** 입력 위 제목 */
@@ -37,7 +34,7 @@ type Props = {
  *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
 export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, placeholder, onChange }: Props) {
-  const [Editor, setEditor] = useState<any>(null);
+  const [engine, setEngine] = useState<CkeditorEngine | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
@@ -61,7 +58,15 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   const closeMenu = () => {
     setMenuPosition(null);
     // Esc·바깥 클릭으로 닫아도 원래 선택 범위·커서로 돌아간다.
-    editorRef.current?.editing.view.focus();
+    const editor = editorRef.current;
+    if (!editor) return;
+    // CKEditor 49는 포커스가 돌아올 때 보류된 브라우저 선택(커서)으로 모델 선택을 덮어쓴다. 닫기 전 선택을 보관했다가 되돌린다.
+    // 패널은 글자·문단 속성만 바꾸므로 보관한 위치는 그대로 유효하다.
+    const selection = editor.model.document.selection;
+    const ranges = Array.from(selection.getRanges());
+    const backward = selection.isBackward;
+    editor.editing.view.focus();
+    editor.model.change((writer: any) => writer.setSelection(ranges, { backward }));
   };
   /* 적용 후에도 패널을 유지하므로 포커스는 패널에 두고, 바뀐 서식 상태를 다시 읽어 표시한다. */
   const applyMenu = (action: FormatAction) => {
@@ -79,9 +84,20 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
     return { top: box.top + 24, left: box.left + 16 };
   };
 
+  /* 공통 엔진(ckeditor5)을 클라이언트에서 불러온다. 공용 CommonCKEditor와 같은 엔진·플러그인 출처를 쓰고 config만 팝업 전용이다. */
   useEffect(() => {
-    if (typeof document !== 'undefined') setEditor(() => require('@cp949/ckeditor5-custom-build'));
+    let alive = true;
+    loadCkeditorEngine().then((loaded) => {
+      if (alive) setEngine(loaded);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
+  const config = useMemo(
+    () => engine && { ...engine.popupRichEditorConfig, ...richEditorConfig, placeholder: placeholder ?? '본문을 입력하고 글자를 선택해 서식을 지정하세요.' },
+    [engine, placeholder],
+  );
 
   /* CKEditor 34부터 읽기 전용은 잠금 ID 방식이다(isReadOnly 직접 설정은 사용하지 않음). */
   const applyReadOnly = (editor: any, readOnly: boolean) => {
@@ -109,12 +125,12 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
       <Box ref={toolbarRef} className="ck-reset_all" sx={{ display: compact ? 'none' : undefined, border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0' }} />
       <Box sx={{ border: '1px solid #c4c4c4', borderRadius: compact ? '4px' : '0 0 4px 4px', minHeight: compact ? 40 : 140,
         '& .ck-editor__editable': { minHeight: compact ? 40 : 140, px: 1.5 }, '& .ck-editor__editable p': compact ? { my: 0.75 } : {} }}>
-        {Editor && (
+        {engine && config && (
           <CKEditor
-            editor={Editor}
-            config={{ ...richEditorConfig, placeholder: placeholder ?? '본문을 입력하고 글자를 선택해 서식을 지정하세요.' }}
+            editor={engine.DecoupledEditor}
+            config={config}
             data={initialHtml}
-            onReady={(editor) => {
+            onReady={(editor: any) => {
               editorRef.current = editor;
               const container = toolbarRef.current;
               if (container) {

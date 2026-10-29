@@ -21,8 +21,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-transform-64-entry.tsx'), output: {path: output, filename: 'bundle.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
-      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
-    module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
+      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
+    module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/},
+      // CKEditor 공통 엔진(ckeditor5)의 CSS를 style 태그로 넣는다.
+      {test: /\.css$/, use: path.join(__dirname, 'verify-css-loader.cjs')}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
   // 편집기는 동적 import라 bundle.js 외 청크도 내려준다.
   server = http.createServer((req, res) => {const script = /^\/[\w.-]+\.js$/.test(req.url) && fs.existsSync(path.join(output, req.url.slice(1)));
@@ -44,8 +46,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const waitEditor = async () => { for (let i = 0; i < 100; i++) { if (await run('!!window.editor()')) return; await pause(100); } throw Error('editor not ready: ' + errors.join(' | ') + ' / ' + await run('document.body.innerHTML.slice(0, 600)')); };
 
   const errors = [];
-  socket.on('message', raw => { const m = JSON.parse(raw); if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text); });
-  await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setDeviceMetricsOverride', {width: 1000, height: 900, deviceScaleFactor: 1, mobile: false});
+  socket.on('message', raw => { const m = JSON.parse(raw); if (m.method === 'Runtime.exceptionThrown' && !m.params.exceptionDetails.url?.startsWith('chrome-extension://')) errors.push(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text); });
+  // 오류 수집(Runtime.exceptionThrown)은 Edge 기본 확장 프로그램(chrome-extension://) 콘텐츠 스크립트 오류를 제외한다.
+  // CKEditor 49는 문서에 포커스가 있어야 편집 영역을 포커스 상태로 본다(headless 창은 포커스가 없어 선택 영역이 그려지지 않음).
+  await send('Runtime.enable'); await send('Page.enable'); await send('Emulation.setFocusEmulationEnabled', {enabled: true}); await send('Emulation.setDeviceMetricsOverride', {width: 1000, height: 900, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run('typeof window.mountHost === "function"')) break; await pause(100);}
 

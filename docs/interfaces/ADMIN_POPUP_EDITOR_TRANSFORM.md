@@ -134,7 +134,7 @@ export default function MyTextPopupForm({ api }: { api: any }) {
 | 에디터 | `PopupRichTextEditor.tsx`, `PopupRichTextMenu.tsx`, `popupRichTextFormat.ts`, `popupRichText.ts`, (설문·퀴즈 서식) `PopupRichBlocks.tsx`의 `richBlocksOrNull`, (문항) `PopupQuestionEditor.tsx` |
 | 공용 타입 | `@local/domain`의 `AdminPopupDetail`·`AdminPopupInfo`·`PopupTargetGroup`·`PopupQuestion`·`PopupType`·`PopupDateValue` |
 | 경로 별칭 | `@/` → `zero-rule-web/main/src/`, `@local/domain` → workspace 패키지 `sub/domain` |
-| 패키지 | `@ckeditor/ckeditor5-react` 5, `@cp949/ckeditor5-custom-build`(브라우저에서만 `require`), `next/dynamic`(Next 밖에서는 `React.lazy` 대체 — 검증 하네스의 `next-dynamic-shim.js` 참고), `react` 18, `@mui/material`·`@mui/icons-material` 6 |
-| 리소스·CSS | 헤더 로고 `public/images/popup-header-logo.png`, 글꼴은 `popupRichText.ts`의 `RICH_FONTS` CSS 이름(맑은 고딕·굴림·돋움·바탕)을 사용자 PC 글꼴로 표시. 글로벌 CSS 추가 없음 |
+| 패키지 | `ckeditor5` 49(licenseKey 'GPL'), `@ckeditor/ckeditor5-react` 12, 공통 엔진 `src/components/ckeditor/`(`ckeditorEngine.ts`·`index.ts` — 엔진·플러그인·CSS는 여기서만 불러온다. 다른 출처로 한 번 더 불러오면 `ckeditor-duplicated-modules`), `next/dynamic`(Next 밖에서는 `React.lazy` 대체 — 검증 하네스의 `next-dynamic-shim.js` 참고), `react` 18, `@mui/material`·`@mui/icons-material` 6 |
+| 리소스·CSS | 헤더 로고 `public/images/popup-header-logo.png`, 글꼴은 `popupRichText.ts`의 `RICH_FONTS` CSS 이름(맑은 고딕·굴림·돋움·바탕)을 사용자 PC 글꼴로 표시. 글로벌 CSS 추가 없음(에디터 CSS `ckeditor5/ckeditor5.css`는 공통 엔진 모듈이 불러옴. Next 밖 번들러는 CSS 로더 필요 — 하네스 `scripts/verify-css-loader.cjs` 참고) |
 
 변환 모듈은 `PopupEditorDialog`를 참조하지 않는다. 새 content 옵션을 추가하면 `popupEditorTransform.ts`의 유형별 키 목록(`COMMON_CONTENT_KEYS`·`CONTENT_KEYS_BY_TYPE`)에도 넣어야 저장된다.

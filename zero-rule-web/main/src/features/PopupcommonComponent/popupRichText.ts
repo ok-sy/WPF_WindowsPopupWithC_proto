@@ -127,7 +127,7 @@ export const richEditorConfig = {
   /* 'default'는 크기 서식 없음 = 본문 기본 크기(bodyFontSize). */
   fontSize: { options: ['default', ...RICH_SIZES], supportAllValues: false },
   fontFamily: { options: ['default', ...RICH_FONTS.map((font) => font.css)], supportAllValues: false },
-  alignment: { options: ['left', 'center', 'right'] },
+  alignment: { options: ['left', 'center', 'right'] as ('left' | 'center' | 'right')[] },
 };
 
 const normalizeFontCss = (value: string) => value.replace(/["']/g, '').replace(/\s*,\s*/g, ',').trim().toLowerCase();
