@@ -2,6 +2,8 @@
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
+- [MSI 설치 패키지 offline-export 추가 TODO](design/20261029_MSI_offline-export_추가_TODO.md) — 계획 등록, 도구·CLI는 현행 환경 확인 후 결정.
+
 - [WPF 백그라운드 기본 실행·자동 시작·트레이 옵션 TODO](design/20261028_WPF_백그라운드기본_자동시작_TRAY옵션_TODO.md) — 결정 반영, 구현 대기.
 
 - [결과 큐 메모리 전용 전환·파일 접근 제거 TODO](design/20261028_결과큐_메모리전용_파일접근제거_TODO.md) — 진행 확정, 구현 대기. 로그·캐시는 제외.
