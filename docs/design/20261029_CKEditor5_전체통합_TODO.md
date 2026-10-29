@@ -14,6 +14,14 @@
 - [ ] 커스텀 빌드의 실제 builtinPlugins·toolbar·언어·스타일 전수 조사
 - [ ] ckeditor-duplicated-modules, toolbarview-item-unavailable, 타이핑 불가를 재현하고 각각 원인 기록
 
+### A단계 설치본·lockfile 조사 결과 (제공된 조사 기록, 2026-10-29)
+- 커스텀 빌드 `@cp949/ckeditor5-custom-build@0.0.15` 내부 CKEditor 버전 **34.1.0** (번들의 버전 문자열 확인).
+- `@ckeditor/ckeditor5-react@5.1.0`: 해당 설치본의 peer 범위는 React 16~18. 신규 단일 `ckeditor5` 패키지와 연동할 래퍼 호환성 점검 필요.
+- `@types/ckeditor__ckeditor5-core@33.0.3` devDependency에 의해 개별 `@ckeditor/ckeditor5-*` 48.4.0 패키지가 설치된 것으로 조사됨. **설치 존재와 실제 번들 포함 여부를 구별**한다.
+- 커스텀 빌드 내부 `CKEDITOR_VERSION` 중복 검사 코드 확인. 현행 main의 에디터 생성 경로는 커스텀 빌드 34.1.0을 사용하며, 개별 48.4.0 모듈을 함께 실행 경로에 불러오면 중복 모듈 오류 발생 가능.
+- [x] A-1. 설치본의 위 버전·의존 관계 조사 기록 확보(실행 재현·기타 import 경로 조사까지 완료한 것은 아님).
+- [ ] A-2. 실제 pnpm tree·브라우저 번들/로드 순서를 대조하여 중복 오류 재현 및 검증.
+
 ## B. CommonCKEditor 상세 기능 보존
 소스: zero-rule-web/main/src/components/CommonCKEditor.tsx
 - [ ] Props 유지: editorId?, className?, content?, placeholder?, onEditorReady?(editor), onContentChange(content)
@@ -38,18 +46,22 @@
 소스: features/PopupcommonComponent/PopupRichTextEditor.tsx, PopupRichTextMenu.tsx, popupRichText.ts, popupRichTextFormat.ts
 - [ ] label, initialBlocks, disabled, compact, placeholder, onChange(blocks,plainText) 인터페이스 유지
 - [ ] richEditorConfig: 툴바, 색 팔레트, 폰트, 크기, 정렬, 40px 들여쓰기 유지
+- [ ] `toolbarview-item-unavailable`의 툴바 ID마다 대응 플러그인/명령 등록 여부를 하나씩 대조하고 미등록 항목을 수정
 - [ ] HTML ↔ RichBlock[]/textBlocks 변환, 일반 문자열 반환, 빈 문단·줄바꿈·Run 서식 보존
 - [ ] 우클릭/Shift+F10/서식 버튼/키보드 메뉴, 혼합 서식·선택영역·포커스 복귀 유지
 - [ ] 편집기 툴바 외부 이동, compact 툴바 숨김, disabled readOnly, 최초 initialBlocks·리마운트 유지
 
 ## E. 통합 구현
 - [ ] ckeditor5 기반 공통 엔진/플러그인 import 정책과 화면별 config 구분 설계
+- [ ] `@ckeditor/ckeditor5-react@5.1.0`을 목표 `ckeditor5` 버전과 호환되는 React 래퍼로 **함께 업그레이드**하고 React/Next.js 호환성 검증
+- [ ] 목표 CKEditor 버전의 `licenseKey` 필수 설정 유무를 확인하고 두 에디터의 config에 일관되게 반영. 타이핑 불가 시 읽기 전용 상태·콘솔 라이선스 오류를 우선 진단
+- [ ] `ckeditor5/ckeditor5.css`를 전역에서 한 번 로드하도록 Next.js 설정 위치(`_app` 또는 현행 앱 구조의 전역 스타일 진입점) 확인; 중복/누락 방지
 - [ ] 입력·실행 필수 플러그인 Essentials, Typing, Paragraph 및 화면별 서식 플러그인 연결 확인
 - [ ] PopupRich의 커스텀 require 제거, config/툴바 플러그인·명령 유효성 확인
 - [ ] Common의 커스텀 require 제거 및 기존 HTML·링크·이벤트 기능 유지
 - [ ] Bbs와 모든 화면 호출부의 호환성 확인
 - [ ] Next.js SSR/client-only·CSS·다중 에디터·동적 로딩·언마운트 문제 해결
-- [ ] 다른 참조처가 없음을 확인한 뒤 구형 커스텀 빌드 의존성 제거 및 lockfile 갱신
+- [ ] 다른 참조처가 없음을 확인한 뒤 구형 커스텀 빌드 의존성과 `@types/ckeditor__ckeditor5-core` 제거, lockfile 갱신. `ckeditor5` 자체 타입 선언 사용, 전이 설치된 48.4.0 개별 패키지의 정리 여부 재확인
 
 ## F. 검증 및 완료 조건
 - [ ] 두 에디터 모두 한글 IME/영문 입력, 붙여넣기, Backspace/Delete, Undo/Redo 정상
@@ -58,6 +70,8 @@
 - [ ] PopupRich: 모든 서식, 우클릭·선택 상태, JSON 왕복, 미리보기·WPF 계약 정합
 - [ ] CKEditor 중복 모듈 오류와 toolbarview-item-unavailable 경고 모두 미발생
 - [ ] 단독·동시 사용, 라우트 이동·리마운트, pnpm build/typecheck와 브라우저 실화면 검증
+- [ ] 같은 세션에서 **팝업 등록 → 게시판**, **게시판 → 팝업 등록** 양방향 이동을 각각 검증(클라이언트 전환 시 Next.js 런타임 유지·모듈 재사용 여부 포함)
+- [ ] 타이핑 불가 시 `isReadOnly`, `contenteditable`, `licenseKey` 오류, `Typing`/필수 플러그인·명령 로딩 상태를 순서대로 점검
 - [ ] 결과를 CHANGELOG에 기록. 미실행 검증은 완료 표시 금지
 
 ## 권장 순서
