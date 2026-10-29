@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-06 — 당일 반영분 정합성 점검 및 Demo JSON Validator 보완
+
+- 이유: 2026-10-29-01~05 반영분 정합성 점검 중 Demo JSON Validator가 3117 서버 기본값(YAML)을 WPF 수신 모드에도 적용해 WPF DTO·ALL_SPEC 기본값과 어긋나고, 05 TODO의 재현 케이스(`content.videoEnabled="videoEnabled"`)를 PASS로 판정하는 문제 확인.
+- 변경: 모드별 기본값 분리 — WPF 수신 모드는 WPF DTO 기본값(IMAGE·VIDEO `showDescription`, VIDEO `allowPlaybackRateChange`·`allowSeek` = true), 3117 저장 모드는 `popup-full-json-defaults.yml` 값(false) 유지. `sizeMode`는 WPF 수신 모드에서 `AUTO` 허용(PopupFactory 지원), 3117 모드는 FIXED/RATIO/FULLSCREEN. 3117 모드에서 서버 소유 `deliveryId`·`pollingIntervalSeconds`를 WARNING과 함께 보정 결과에서 제거(PopupFullJsonSampleService와 동일). content boolean·`defaultVolume` 명시값 타입 검사 추가(문자열 boolean ERROR). 전체 예시는 WPF 수신 계약 기준으로 생성하고 중복 ID 재지정 제거. ALL_SPEC 실행 항목에 JSON Validator 동작·한계 기재(MINIMAL_SPEC은 외부 제공 범위 변화 없어 미변경).
+- 점검 결과: 05 TODO의 3111 Assembler(true)·3117 YAML(false) 기본값 차이 서술은 코드와 일치. 03 `scripts/export-offline-package.ps1` PowerShell 구문 파싱 오류 0건(실제 반입본 생성은 미실행). 당일 커밋은 모두 원격 반영 상태였고, `dev:` 커밋 일부(`Demo_JSON...`)는 TODO 번호 없이 작성됐으나 이미 푸시된 이력이라 재작성하지 않음.
+- 주요 파일: popup-frameWork/Popup/DemoJsonValidator.cs, docs/interfaces/WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md.
+- 검증: 로컬 `dotnet build Popup.csproj` 성공(경고 0·오류 0). Validator 소스를 컴파일한 임시 콘솔로 6개 유형 최소/전체 예시 WPF 모드 ERROR 0·PASS 확인, VIDEO `AUTO`(WPF 통과/3117 ERROR), 3117 모드 deliveryId 제거, `videoEnabled` 문자열 ERROR 확인. Validator 창 UI 수동 실행은 미수행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-29-05 — 등록·수정 공통 JSON 검증·기본값 생성 및 3111 직조회 전환 TODO
 
 - 이유: 조회 단계의 기본값 재조립을 없애고 등록·수정 단계에서 타입 오류를 사전에 차단하여 WPF 수신 JSON의 정합성을 확보.

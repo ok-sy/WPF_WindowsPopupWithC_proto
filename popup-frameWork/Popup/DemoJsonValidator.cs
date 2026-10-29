@@ -23,13 +23,15 @@ namespace Popup
             ["showDoNotShowAgain"] = JsonValue.Create(false), ["useBackgroundOverlay"] = JsonValue.Create(true),
             ["backgroundOverlayOpacity"] = JsonValue.Create(0.45), ["popupPosition"] = JsonValue.Create("CENTER")
         };
-        private static readonly Dictionary<string, JsonNode?> VideoDefaults = new()
+        // VIDEO/IMAGE defaults differ by mode: WPF mode = WPF DTO (ALL_SPEC), 3117 mode = popup-full-json-defaults.yml.
+        private static Dictionary<string, JsonNode?> VideoDefaults(bool responseMode) => new()
         {
-            ["showDescription"] = JsonValue.Create(false), ["showControls"] = JsonValue.Create(true),
-            ["allowFullScreen"] = JsonValue.Create(true), ["allowPlaybackRateChange"] = JsonValue.Create(false),
-            ["allowSeek"] = JsonValue.Create(false), ["autoPlay"] = JsonValue.Create(false),
+            ["showDescription"] = JsonValue.Create(responseMode), ["showControls"] = JsonValue.Create(true),
+            ["allowFullScreen"] = JsonValue.Create(true), ["allowPlaybackRateChange"] = JsonValue.Create(responseMode),
+            ["allowSeek"] = JsonValue.Create(responseMode), ["autoPlay"] = JsonValue.Create(false),
             ["isLoop"] = JsonValue.Create(false), ["defaultVolume"] = JsonValue.Create(0.7)
         };
+        private static readonly string[] ServerOwnedKeys = { "deliveryId", "pollingIntervalSeconds" };
         private static readonly HashSet<string> KnownTop = new(CommonDefaults.Keys.Concat(new[]
         {
             "popupId","deliveryId","popupType","title","width","height","footerAction","footerLinkUrl",
@@ -84,11 +86,19 @@ namespace Popup
                     if (string.IsNullOrWhiteSpace(Text(popup[id])))
                         issues.Add(new("ERROR", prefix + "." + id, "WPF 수신 계약상 비어 있으면 안 되는 ID입니다."));
             }
+            else
+            {
+                foreach (string id in ServerOwnedKeys)
+                    if (popup.Remove(id))
+                        issues.Add(new("WARNING", prefix + "." + id, "서버 소유 값이라 3117 저장 JSON에서 제거되고 조회 시 서버가 설정합니다."));
+            }
             if (type.Length > 0 && Types.Contains(type))
             {
+                // AUTO is WPF-only; server/admin web accepts FIXED / RATIO / FULLSCREEN.
+                string[] sizeModes = responseMode ? new[] { "FIXED", "RATIO", "FULLSCREEN", "AUTO" } : new[] { "FIXED", "RATIO", "FULLSCREEN" };
                 string sizeMode = Text(popup["sizeMode"]);
-                if (sizeMode.Length > 0 && !new[] { "FIXED", "RATIO", "FULLSCREEN" }.Contains(sizeMode))
-                    issues.Add(new("ERROR", prefix + ".sizeMode", "허용값: FIXED / RATIO / FULLSCREEN"));
+                if (sizeMode.Length > 0 && !sizeModes.Contains(sizeMode))
+                    issues.Add(new("ERROR", prefix + ".sizeMode", "허용값: " + string.Join(" / ", sizeModes)));
             }
             CheckType(popup, "title", prefix, IsString, "string", issues);
             foreach (string k in new[] { "popupId", "deliveryId", "footerAction", "footerLinkUrl", "sizeMode", "displayMode", "popupPosition" })
@@ -122,6 +132,11 @@ namespace Popup
                 popup["content"] = content;
             }
             string cp = prefix + ".content";
+            // Explicit wrong types (e.g. videoEnabled="videoEnabled") are errors, never hidden by defaults.
+            foreach (string k in new[] { "videoEnabled", "showPlainText", "showHighlight", "showBottomDescription", "showDescription",
+                "keepAspectRatio", "showControls", "allowFullScreen", "allowPlaybackRateChange", "allowSeek", "autoPlay", "isLoop" })
+                CheckType(content, k, cp, IsBool, "boolean", issues);
+            CheckType(content, "defaultVolume", cp, IsNum, "number", issues);
             if (type == "TEXT")
             {
                 if (string.IsNullOrWhiteSpace(Text(content["plainText"])) &&
@@ -137,7 +152,7 @@ namespace Popup
                 if (string.IsNullOrWhiteSpace(Text(content["imageUrl"])))
                     issues.Add(new("ERROR", cp + ".imageUrl", "이미지 URL이 필요합니다."));
                 Default(content, "imageSizeMode", JsonValue.Create("ADAPTIVE"), cp, issues);
-                Default(content, "showDescription", JsonValue.Create(false), cp, issues);
+                Default(content, "showDescription", JsonValue.Create(responseMode), cp, issues);
                 Default(content, "keepAspectRatio", JsonValue.Create(true), cp, issues);
                 if (Text(content["imageSizeMode"]) == "ORIGINAL" && (!Has(popup,"width") || !Has(popup,"height")))
                     issues.Add(new("ERROR", prefix, "IMAGE ORIGINAL에는 width와 height가 필요합니다."));
@@ -149,7 +164,7 @@ namespace Popup
                 CheckType(content, "videoUrl", cp, IsString, "string", issues);
                 if (string.IsNullOrWhiteSpace(Text(content["videoUrl"])))
                     issues.Add(new("ERROR", cp + ".videoUrl", "동영상 URL이 필요합니다."));
-                foreach (var kv in VideoDefaults) Default(content, kv.Key, kv.Value, cp, issues);
+                foreach (var kv in VideoDefaults(responseMode)) Default(content, kv.Key, kv.Value, cp, issues);
                 Default(popup, "completionRatio", JsonValue.Create(1.0), prefix, issues);
             }
             if (type == "SURVEY" || type == "QUIZ")
@@ -189,10 +204,9 @@ namespace Popup
             var p = new JsonObject { ["popupId"] = "DEMO-001", ["deliveryId"] = "11111111-1111-4111-8111-111111111111", ["popupType"] = type, ["title"] = selected + " 예시", ["content"] = content, ["questions"] = q };
             if (!minimal)
             {
-                var normalized = Validate(p.ToJsonString(), false);
+                // Full examples follow the WPF receive contract (keeps popupId/deliveryId, WPF DTO defaults).
+                var normalized = Validate(p.ToJsonString(), true);
                 p = JsonNode.Parse(normalized.Normalized)!.AsObject();
-                p["popupId"] = "DEMO-001";
-                p["deliveryId"] = "11111111-1111-4111-8111-111111111111";
             }
             return p.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         }
