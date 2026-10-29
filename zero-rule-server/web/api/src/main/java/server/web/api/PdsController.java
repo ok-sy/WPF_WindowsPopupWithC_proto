@@ -205,7 +205,7 @@ public class PdsController extends ApiBaseController {
     )
     @PostMapping(value = "/api/pds/info/{pdsId}")
     public CLNewApiResponse<PdsPayloads.PdsInfoResponse> info(
-        @Parameter(description = "자료 ID") @PathVariable long pdsId
+        @Parameter(description = "자료 ID") @PathVariable("pdsId") long pdsId
     ) {
         PdsVo pds = pdsService.findPdsVoById(pdsId);
         if (pds == null) {
@@ -231,7 +231,7 @@ public class PdsController extends ApiBaseController {
     )
     @PostMapping(value = "/api/pds/delete/{pdsId}")
     public CLNewApiResponse delete(
-        @Parameter(description = "자료 ID") @PathVariable long pdsId
+        @Parameter(description = "자료 ID") @PathVariable("pdsId") long pdsId
     ) {
         // 존재하지 않는 게시물이라도 정상 응답
         // 어차피 없으니까 삭제한 것이나 마찬가지
@@ -298,7 +298,7 @@ public class PdsController extends ApiBaseController {
     )
     @PostMapping(value = "/api/pds/update-file-name/{fileId}")
     public CLNewApiResponse<FileUploadResponse> updateFileName(
-        @Parameter(description = "파일 ID") @PathVariable String fileId,
+        @Parameter(description = "파일 ID") @PathVariable("fileId") String fileId,
         @Parameter(description = "변경할 파일명") @RequestParam("fileName") String fileName
     ) {
         if (!StringUtils.hasText(fileName)) {

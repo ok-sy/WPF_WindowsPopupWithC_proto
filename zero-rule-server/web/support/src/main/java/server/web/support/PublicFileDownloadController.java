@@ -34,7 +34,7 @@ public class PublicFileDownloadController {
 
     @RequestMapping(value = "/p/file/download/{fileName}", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView download(
-        @PathVariable String fileName,
+        @PathVariable("fileName") String fileName,
         @RequestParam(value = "download", defaultValue = "false") Boolean download,
         HttpServletResponse response,
         ModelAndView mv
@@ -80,8 +80,8 @@ public class PublicFileDownloadController {
 
     @RequestMapping(value = "/p/file/download2/{fileId}/{fileName}", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView download2(
-        @PathVariable String fileId,
-        @PathVariable String fileName,
+        @PathVariable("fileId") String fileId,
+        @PathVariable("fileName") String fileName,
         @RequestParam(value = "download", defaultValue = "false") Boolean download,
         HttpServletResponse response,
         ModelAndView mv

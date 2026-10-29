@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-14 — 자료실 상세·삭제·파일명 변경 500 오류 수정(@PathVariable 이름 명시)
+
+- 이유: CKEditor 49 로컬 검증 중 자료실 글 저장 후 열기가 실패. `/api/pds/info/{pdsId}`가 500("Name for argument of type [long] not specified ... '-parameters' flag"). Spring Boot 3.4(Spring 6.2)는 `-parameters` 없이 파라미터 이름을 추측하지 않는데 `web/api`·`web/support` 모듈은 Boot 플러그인을 적용하지 않아 이 옵션이 없음.
+- 변경: 이름 없이 선언된 `@PathVariable` 6곳에 이름 명시 — `PdsController`(info·delete의 pdsId, update-file-name의 fileId), `PublicFileDownloadController`(fileName, fileId·fileName). 다른 컨트롤러는 이미 이름을 명시해 해당 없음(검색 확인).
+- 주요 파일: zero-rule-server/web/api/src/main/java/server/web/api/PdsController.java, zero-rule-server/web/support/src/main/java/server/web/support/PublicFileDownloadController.java, version-history/CHANGELOG.md.
+- 검증: 로컬 백엔드 재기동(원격 개발 DB) 후 API — 본문 80KB(이미지 data URI)·3MB 글 생성 → info로 전체 본문 반환 → delete 정상. 검증용 글(10862·10863·10864)은 삭제. 공개 다운로드 엔드포인트 호출은 미실행(컴파일·기동만 확인).
+- 상태: 커밋·원격 반영. 빌드 설정에 `-parameters`를 전역 추가하는 방안은 미적용(이름 명시로 해결).
+
 ## 2026-10-30-13 — 가이드 공지 대상 정리(컴포넌트·함수 동작 변경만)
 
 - 이유: 가이드 공지는 공통 컴포넌트를 쓰는 화면이 알아야 할 동작·사용 흐름 변경만 전달하기로 정리. 가이드 화면 자체 변경·정책 정리·샘플 내부 변경·검증 예정 공지가 섞여 있었음.
