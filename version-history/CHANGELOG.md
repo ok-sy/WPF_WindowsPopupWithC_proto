@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-01 — PopupcommonComponent 독립 재사용·선택적 필드 추출 TODO
+
+- 이유: 공통 UI·데이터 변환을 특정 테이블/API의 저장 포맷에서 분리하고, 일정·RichText·questions를 다른 화면에서도 필요한 필드만 사용하도록 재사용성 개선 계획 정리.
+- 변경: 컴포넌트 value/onChange 독립화, topLevel/content/questions 각각 선택하는 pickPopupFields, 원본값 보존·얕은 복사, proto 전용 toSaveRequest 불변, API 비종속 샘플·Guide 연계, 회귀 검증 기준을 설계 TODO에 작성하고 문서 색인 추가.
+- 주요 파일: docs/design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 기존 popupEditorTransform.ts의 proto 저장 변환 책임과 관련 인계 문서 정적 확인. 빌드·기능 테스트 미실행.
+- 상태: TODO 등록 완료, 구현 미착수.
+
 ## 2026-10-29-16 — TEXT 강조 문구(highlightText·showHighlight) 삭제
 
 - 이유: TEXT 팝업에서 강조 문구를 사용하지 않기로 확정해 WPF·관리자 웹 표시·편집과 계약에서 제거.
