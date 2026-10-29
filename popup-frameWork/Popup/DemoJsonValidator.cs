@@ -186,7 +186,7 @@ namespace Popup
             if (type == "QUIZ") content["videoEnabled"] = videoQuiz;
             if (type == "SURVEY" || type == "QUIZ")
                 q.Add(new JsonObject { ["questionType"] = "TEXT", ["questionText"] = "의견을 입력하세요" });
-            var p = new JsonObject { ["popupType"] = type, ["title"] = selected + " 예시", ["content"] = content, ["questions"] = q };
+            var p = new JsonObject { ["popupId"] = "DEMO-001", ["deliveryId"] = "11111111-1111-4111-8111-111111111111", ["popupType"] = type, ["title"] = selected + " 예시", ["content"] = content, ["questions"] = q };
             if (!minimal)
             {
                 var normalized = Validate(p.ToJsonString(), false);
