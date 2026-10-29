@@ -5,10 +5,10 @@
 ## 2026-10-29-08 — 20261029 폐쇄망 반입본 생성
 
 - 이유: 20261022 반입 이후의 DTIY3117 전체 JSON 조회 샘플·등록 공통 검증 모듈(서버), 로그인 요청 키 lgonId·Demo JSON Validator(WPF), 관련 TODO·인계 문서를 폐쇄망에 반입하기 위해 새 반입본 필요. 관리자 웹·DB 스크립트 변경 없음.
-- 변경: `scripts/export-offline-package.ps1`로 main 864de09를 깨끗한 worktree에서 꺼내 offline-export/20261029 생성(-VerifyBuild, 변경 요약 -NotesFile, 이 기록을 담은 CHANGELOG -UseWorkingChangelog). Git for Windows 설치 파일 동봉(-GitInstallerPath)은 사용하지 않음.
+- 변경: `scripts/export-offline-package.ps1`로 main을 깨끗한 worktree에서 꺼내 offline-export/20261029 생성(-VerifyBuild, 변경 요약 -NotesFile, 이 기록을 담은 CHANGELOG -UseWorkingChangelog). 처음 864de09로 Git 설치 파일 없이 생성한 뒤, Git for Windows 2.56.0.windows.4 x64 설치 파일(`Git-2.56.0.4-64-bit.exe`, 공식 GitHub 릴리스에서 받아 SHA-256 `4961a4a8…c2de80` 일치 확인)을 -GitInstallerPath로 동봉해 같은 날짜로 재생성(-Force).
 - 주요 파일: offline-export/20261029(Git 제외), version-history/CHANGELOG.md.
-- 결과: 서버 A 151·M 8·D 0, 웹 A 27·M 11·D 5(웹 baseline 대비 누적, 20261022 이후 웹 변경 없음), WPF 소스 95, 문서 154 파일. DELETE-SINCE-20260930.txt 누적 21개(20261022 이후 신규 삭제 0). README-IMPORT.md에 변경 요약과 서버 → WPF 적용 순서(관리자 웹·DB 변경 없음) 작성. TGZ SHA256 `edcc2a193196af9227872644faa9431a84189655dc1f5d416c60dcf2e2d05887`.
-- 검증: TAR 4개 파일 수 대조 통과, 반입본 3-popup-frameWork와 저장소 오프라인 NuGet만으로 restore·폴더형 publish·-SingleFile publish 성공(popupSample.exe 91,744,078바이트). 반입본 application-local.yml은 커밋 버전(개발 PC 영상 경로 미포함). 폐쇄망 기존 소스 병합·빌드·실행은 미실행.
+- 결과: 서버 A 151·M 8·D 0, 웹 A 27·M 11·D 5(웹 baseline 대비 누적, 20261022 이후 웹 변경 없음), WPF 소스 95, 문서 154 파일. DELETE-SINCE-20260930.txt 누적 21개(20261022 이후 신규 삭제 0). README-IMPORT.md에 변경 요약과 서버 → WPF 적용 순서(관리자 웹·DB 변경 없음) 작성. 최종본 소스 커밋 d44f968(864de09 + 첫 생성 기록 커밋, 코드 차이 없음). TGZ 루트에 `Git-2.56.0.4-64-bit.exe` 포함, README-IMPORT.md에 Git 설치 안내·SHA-256 기재. 최종 TGZ 78,947,102바이트, SHA256 `2bbd871422bef5829364b0a65abc5dc0e7665f866c4c9d2ff6c195f5c2671efd`(Git 미동봉 첫 생성본 `edcc2a19…`는 재생성으로 대체).
+- 검증: Git 설치 파일 SHA-256 스크립트 검증 통과, TAR 4개 파일 수 대조 통과, 반입본 3-popup-frameWork와 저장소 오프라인 NuGet만으로 restore·폴더형 publish·-SingleFile publish 성공(popupSample.exe 91,744,078바이트). 반입본 application-local.yml은 커밋 버전(개발 PC 영상 경로 미포함). 폐쇄망 기존 소스 병합·빌드·실행은 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-10-29-07 — 등록·수정 공통 JSON 검증·기본값 생성 1단계(공통 모듈·3117 등록 샘플)
@@ -51,7 +51,7 @@
 - 변경: `-GitInstallerPath`로 Git 2.56.0.windows.4 x64 EXE를 받으면 공식 SHA-256 검증 후 통합 TGZ 루트에 포함하고, 추출본 해시를 재검증하도록 확장. 반입 README에 버전·파일명·설치 안내를 추가. 기존 인자 미지정 동작과 WPF/MSI 구성은 유지.
 - 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md, version-history/CHANGELOG.md.
 - 검증: GitHub 공식 릴리스 파일명·해시 확인. Windows PowerShell에서 실제 스크립트 실행·설치파일 반입·TGZ 검증은 미수행.
-- 상태: 스크립트·가이드 반영 / 실제 반입본 생성 검증 대기.
+- 상태: 스크립트·가이드 반영. 2026-10-29-08 반입본 생성에서 -GitInstallerPath 실제 실행·해시 검증·TGZ 동봉 확인(폐쇄망 PC 설치는 미실행).
 
 ## 2026-10-29-02 — MSI offline-export 신규 작업 폐기
 
