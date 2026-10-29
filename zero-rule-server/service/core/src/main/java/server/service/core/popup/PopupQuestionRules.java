@@ -42,7 +42,7 @@ final class PopupQuestionRules {
      * - in : questions(List&lt;PopupQuestionDto&gt;) 문항 · quiz(boolean) 퀴즈 여부 · passingScore(Double) 통과 점수
      * - out: 없음 · 예외: IllegalArgumentException(규칙 위반 메시지)
      * - 문항 수·제목/설명 길이·유형·선택지 배치·배점(양수, 소수 둘째 자리)·주관식 정답/비교 방식·객관식 선택지 2개 이상과
-     *   정답 지정(단일 선택은 1개)·통과 점수(0~총점)를 검사한다.
+     *   정답 지정(단일 선택은 1개)·SURVEY 복수 선택 최소·최대 선택 수·통과 점수(0~총점)를 검사한다.
      */
     static void validate(List<PopupQuestionDto> questions, boolean quiz, Double passingScore) {
         if (questions == null || questions.isEmpty()) fail("문항을 한 개 이상 추가해 주세요.");
@@ -78,12 +78,33 @@ final class PopupQuestionRules {
                 if (quiz && (correct == 0 || ("SINGLE_CHOICE".equals(q.questionType()) && correct != 1)))
                     fail("정답 선택지를 지정해 주세요. 단일 선택은 정답이 한 개여야 합니다.");
             }
+            validateSelectionLimits(q, quiz);
         }
         if (quiz && (total.compareTo(new BigDecimal("99999999.99")) > 0
                 || passingScore == null || !Double.isFinite(passingScore) || passingScore < 0
                 || BigDecimal.valueOf(passingScore).compareTo(total) > 0
                 || BigDecimal.valueOf(passingScore).stripTrailingZeros().scale() > 2))
             fail("통과 점수는 0~총점 사이이며 소수점 두 자리까지 입력할 수 있습니다.");
+    }
+
+    /**
+     * POL-06-02 : 선택·제출
+     * ■ 복수 선택 최소·최대 선택 수 검증
+     * - in : q(PopupQuestionDto) 문항 · quiz(boolean) 퀴즈 여부
+     * - out: 없음 · 예외: IllegalArgumentException
+     * - SURVEY 복수 선택만 값을 가질 수 있다(QUIZ는 정답 수가 한도). 각 값은 1~선택지 수, 최소 ≤ 최대. null = 제한 없음.
+     *   결과 수신은 선택 수를 검사하지 않는다(화면에서 제한).
+     */
+    private static void validateSelectionLimits(PopupQuestionDto q, boolean quiz) {
+        Integer min = q.minSelections();
+        Integer max = q.maxSelections();
+        if (min == null && max == null) return;
+        if (quiz || !"MULTIPLE_CHOICE".equals(q.questionType()))
+            fail("최소·최대 선택 수는 설문의 복수 선택 문항에서만 지정할 수 있습니다.");
+        int options = q.options().size();
+        if ((min != null && (min < 1 || min > options)) || (max != null && (max < 1 || max > options)))
+            fail("최소·최대 선택 수는 1~선택지 수(" + options + ") 사이여야 합니다.");
+        if (min != null && max != null && min > max) fail("최소 선택 수는 최대 선택 수보다 클 수 없습니다.");
     }
 
     private static void fail(String message) { throw new IllegalArgumentException(message); }

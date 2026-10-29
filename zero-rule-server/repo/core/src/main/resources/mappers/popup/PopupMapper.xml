@@ -73,7 +73,8 @@
         INSERT INTO ${popupSchemaPrefix}POPUP_QUESTION
             (QUESTION_ID, QUESTION_TEMPLATE_ID, QUESTION_TYPE, QUESTION_TITLE, QUESTION_DESCRIPTION,
              REQUIRED_YN, SCORED_YN, QUESTION_SCORE, SORT_ORDER, CORRECT_ANSWER,
-             ANSWER_MATCH_MODE, OPTION_LAYOUT, TITLE_BLOCKS, DESCRIPTION_BLOCKS, CREATED_BY, UPDATED_BY)
+             ANSWER_MATCH_MODE, OPTION_LAYOUT, TITLE_BLOCKS, DESCRIPTION_BLOCKS, MIN_SELECTIONS, MAX_SELECTIONS,
+             CREATED_BY, UPDATED_BY)
         VALUES (#{questionId}, #{templateId}, #{question.questionType}, #{question.title}, #{question.description},
                 CASE WHEN #{question.isRequired} = 1 THEN 'Y' ELSE 'N' END,
                 CASE WHEN #{quiz} = 1 THEN 'Y' ELSE 'N' END,
@@ -85,6 +86,9 @@
                      THEN #{question.answerMatchMode} ELSE NULL END,
                 #{question.optionLayout},
                 #{titleBlocksJson, jdbcType=CLOB}, #{descriptionBlocksJson, jdbcType=CLOB},
+                <!-- POL-06-02 : 선택·제출 — 선택 수는 SURVEY 복수 선택만(QUIZ는 정답 수가 한도라 NULL). 저장 검증이 그 밖의 값을 거부한다. -->
+                CASE WHEN #{quiz} = 1 THEN NULL ELSE #{question.minSelections, jdbcType=INTEGER} END,
+                CASE WHEN #{quiz} = 1 THEN NULL ELSE #{question.maxSelections, jdbcType=INTEGER} END,
                 #{auditUser}, #{auditUser})
     </insert>
 
@@ -477,6 +481,8 @@
             <arg column="OPTION_LAYOUT" javaType="java.lang.String"/>
             <arg column="TITLE_BLOCKS" javaType="java.lang.String" jdbcType="CLOB"/>
             <arg column="DESCRIPTION_BLOCKS" javaType="java.lang.String" jdbcType="CLOB"/>
+            <arg column="MIN_SELECTIONS" javaType="java.lang.Integer"/>
+            <arg column="MAX_SELECTIONS" javaType="java.lang.Integer"/>
         </constructor>
     </resultMap>
 
@@ -711,7 +717,9 @@
             OPTION_LAYOUT,
             SORT_ORDER,
             TITLE_BLOCKS,
-            DESCRIPTION_BLOCKS
+            DESCRIPTION_BLOCKS,
+            MIN_SELECTIONS,
+            MAX_SELECTIONS
         FROM ${popupSchemaPrefix}POPUP_QUESTION
         WHERE QUESTION_TEMPLATE_ID IN
         <foreach collection="templateIds"

@@ -352,6 +352,7 @@ public class PopupJsonValidator {
             if (choice && (options == null || options.isNull() || options.isEmpty())) {
                 errors.add(missing(path + ".options", "선택형 문항은 선택지가 1개 이상 필요합니다."));
             }
+            checkSelectionLimits(type, question, options, path, errors);
             if (options != null && options.isArray()) {
                 for (int j = 0; j < options.size(); j++) {
                     String optionPath = path + ".options[" + j + "]";
@@ -364,6 +365,39 @@ public class PopupJsonValidator {
             }
         }
         return questions;
+    }
+
+    /**
+     * POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수(관리자 저장 규칙 PopupQuestionRules와 같음).
+     * null·누락 = 제한 없음. 정수 1~선택지 수, 최소 ≤ 최대. QUIZ(정답 수가 한도)·단일 선택·주관식에는 지정할 수 없다.
+     */
+    private static void checkSelectionLimits(String type, ObjectNode question, JsonNode options, String path, List<PopupJsonIssue> errors) {
+        JsonNode min = question.get("minSelections");
+        JsonNode max = question.get("maxSelections");
+        boolean hasMin = min != null && !min.isNull();
+        boolean hasMax = max != null && !max.isNull();
+        if (!hasMin && !hasMax) return;
+        int before = errors.size();
+        requireKind(question, "minSelections", path, JsonNode::isIntegralNumber, "integer", errors);
+        requireKind(question, "maxSelections", path, JsonNode::isIntegralNumber, "integer", errors);
+        if (errors.size() > before) return;
+        if (!"SURVEY".equals(type) || !"MULTIPLE_CHOICE".equals(question.path("questionType").asText())) {
+            errors.add(new PopupJsonIssue(path + (hasMin ? ".minSelections" : ".maxSelections"), "RULE_VIOLATION", "SURVEY MULTIPLE_CHOICE",
+                    type + "/" + question.path("questionType").asText(), "최소·최대 선택 수는 설문의 복수 선택 문항에서만 지정할 수 있습니다."));
+            return;
+        }
+        int count = options != null && options.isArray() ? options.size() : 0;
+        for (String key : List.of("minSelections", "maxSelections")) {
+            JsonNode value = question.get(key);
+            if (value != null && !value.isNull() && (value.intValue() < 1 || value.intValue() > count)) {
+                errors.add(new PopupJsonIssue(path + "." + key, "OUT_OF_RANGE", "integer [1~" + count + "]", value.toString(),
+                        key + "는 1~선택지 수 사이여야 합니다."));
+            }
+        }
+        if (hasMin && hasMax && min.intValue() > max.intValue()) {
+            errors.add(new PopupJsonIssue(path + ".minSelections", "RULE_VIOLATION", "<= maxSelections(" + max + ")", min.toString(),
+                    "최소 선택 수는 최대 선택 수보다 클 수 없습니다."));
+        }
     }
 
     /** 키가 없으면 기본값, null이면 기본값이 null이 아닐 때만 채운다(명시한 false·0·빈 문자열 유지, 재실행 시 이력 없음). */

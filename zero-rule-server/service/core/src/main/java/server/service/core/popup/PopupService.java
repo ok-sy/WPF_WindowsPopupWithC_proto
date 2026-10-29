@@ -1395,7 +1395,9 @@ public class PopupService {
                 question.answerMatchMode(),
                 question.optionLayout(),
                 parseRichText(question.titleBlocksJson(), "questionId=" + question.questionId()),
-                parseRichText(question.descriptionBlocksJson(), "questionId=" + question.questionId()));
+                parseRichText(question.descriptionBlocksJson(), "questionId=" + question.questionId()),
+                question.minSelections(),
+                question.maxSelections());
     }
 
     /**

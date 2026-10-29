@@ -24,13 +24,24 @@ public record PopupQuestionEntity(
         String optionLayout,
         // POL-06-01 : 문항·서식 — 문항 제목·설명 서식 JSON 배열 문자열(CLOB). NULL = 서식 없음.
         String titleBlocksJson,
-        String descriptionBlocksJson
+        String descriptionBlocksJson,
+        // POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수. NULL = 제한 없음(QUIZ는 정답 수가 한도라 NULL).
+        Integer minSelections,
+        Integer maxSelections
 ) {
+    /** POL-06-02 : 선택·제출 — 선택 수 컬럼 도입 전 생성자(테스트용). 제한 없음으로 만든다. */
+    public PopupQuestionEntity(Long questionId, Long questionTemplateId, String questionType, String questionTitle,
+            String questionDescription, String requiredYn, String scoredYn, BigDecimal questionScore, Integer sortOrder,
+            String correctAnswer, String answerMatchMode, String optionLayout, String titleBlocksJson, String descriptionBlocksJson) {
+        this(questionId, questionTemplateId, questionType, questionTitle, questionDescription, requiredYn, scoredYn,
+                questionScore, sortOrder, correctAnswer, answerMatchMode, optionLayout, titleBlocksJson, descriptionBlocksJson, null, null);
+    }
+
     /** POL-06-01 : 문항·서식 — 서식 컬럼 도입 전 생성자(테스트용). 서식 없음으로 만든다. */
     public PopupQuestionEntity(Long questionId, Long questionTemplateId, String questionType, String questionTitle,
             String questionDescription, String requiredYn, String scoredYn, BigDecimal questionScore, Integer sortOrder,
             String correctAnswer, String answerMatchMode, String optionLayout) {
         this(questionId, questionTemplateId, questionType, questionTitle, questionDescription, requiredYn, scoredYn,
-                questionScore, sortOrder, correctAnswer, answerMatchMode, optionLayout, null, null);
+                questionScore, sortOrder, correctAnswer, answerMatchMode, optionLayout, null, null, null, null);
     }
 }

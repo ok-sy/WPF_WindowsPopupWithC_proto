@@ -98,7 +98,7 @@ final class PopupSurveyRichText {
         return new PopupQuestionDto(question.questionId(), title.plain(), description.plain(), question.questionType(),
                 question.isRequired(), question.isScored(), question.questionScore(), question.sortOrder(), options,
                 question.correctAnswer(), question.answerMatchMode(), question.optionLayout(),
-                title.blocks(), description.blocks());
+                title.blocks(), description.blocks(), question.minSelections(), question.maxSelections());
     }
 
     /** 콘텐츠 서식 필드 하나를 검증해 서식이 있으면 일반 문자열을 덮고, 없으면 서식 키를 지운다. */

@@ -225,6 +225,19 @@ class PopupJsonValidatorTest {
         assertEquals("MISSING_REQUIRED", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[]}").code());
     }
 
+    /** SURVEY 복수 선택 최소·최대 선택 수: 범위 안은 저장, 범위 밖·QUIZ·단일 선택·정수 아님은 오류. */
+    @Test
+    void surveySelectionLimits() {
+        String options = "\"options\":[{\"optionId\":1},{\"optionId\":2},{\"optionId\":3}]";
+        assertTrue(validate("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"minSelections\":1,\"maxSelections\":3," + options + "}]}").valid());
+        assertTrue(validate("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"maxSelections\":null," + options + "}]}").valid());
+        assertEquals("OUT_OF_RANGE", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"maxSelections\":4," + options + "}]}").code());
+        assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"minSelections\":3,\"maxSelections\":2," + options + "}]}").code());
+        assertEquals("TYPE_MISMATCH", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"minSelections\":\"2\"," + options + "}]}").code());
+        assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"SINGLE_CHOICE\",\"maxSelections\":1," + options + "}]}").code());
+        assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"maxSelections\":2," + options + "}]}").code());
+    }
+
     @Test
     void questionsAreDroppedForNonQuestionTypes() {
         assertTrue(normalized("{\"popupType\":\"TEXT\",\"content\":{\"plainText\":\"a\"},\"questions\":[{\"questionType\":\"TEXT\"}]}")

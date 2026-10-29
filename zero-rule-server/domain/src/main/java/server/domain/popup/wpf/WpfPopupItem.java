@@ -144,7 +144,8 @@ public record WpfPopupItem(
                                         option.optionId(), option.value(), option.text(), option.sortOrder(), null,
                                         option.textBlocks()))
                                 .toList(),
-                        null, null, question.optionLayout(), question.titleBlocks(), question.descriptionBlocks()))
+                        null, null, question.optionLayout(), question.titleBlocks(), question.descriptionBlocks(),
+                        question.minSelections(), question.maxSelections()))
                 .toList();
     }
 }
