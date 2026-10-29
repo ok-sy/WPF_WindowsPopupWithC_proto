@@ -184,6 +184,8 @@ Bean은 기존 `popup.sample.full-json.enabled=true`일 때 `PopupFullJsonSample
   "actual": "\"videoEnabled\"", "message": "videoEnabled 값이 올바르지 않습니다." }
 ```
 
+유형별 기본값이 모두 채워진 전체 JSON(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상 QUIZ): [examples/DTIY3117-register-defaults-full.txt](examples/DTIY3117-register-defaults-full.txt). 검증기 정규화 결과로 생성하며 `PopupJsonDefaultsExampleFileTest`가 코드 기본값과 대조한다(기본값 변경 시 `POPUP_REGEN_DEFAULTS_EXAMPLE=1`로 재생성).
+
 ### 10-3. 실제 등록 서비스 연결(교체 지점)
 
 ```java
