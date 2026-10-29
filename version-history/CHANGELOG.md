@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-10 — PopupPreview onRecommendedSize 무한 반복 호출 수정
+
+- 이유: 가이드 컴포넌트 탭 미리보기 실행기의 OUTPUT `onRecommendedSize` 호출 횟수가 계속 증가. 권장 크기 알림 effect가 콜백을 의존성에 두어, 부모가 인라인 콜백을 넘기고 그 안에서 state를 바꾸면 렌더 → 새 콜백 → effect 재실행 → 렌더가 무한 반복됨(등록 화면·샘플은 setState를 직접 넘겨 드러나지 않았음).
+- 변경: `PopupPreview`가 콜백을 ref로 보관해 항상 최신 함수를 쓰고, 권장 너비·높이 값이 바뀔 때만 호출. 렌더 하네스에 InlinePopupPreview 실행기 호출 횟수 고정 검사 추가. 가이드 공지 추가.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, scripts/verify-popup-guide-render.cjs, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, eslint 0. 렌더 하네스 통과(변이 확인: 수정 전 코드에서는 4초 사이 1576회 → 2682회로 증가해 실패). 회귀 image-preview 34·preview-61 52·completion-ux-43 71·common-sample-69 38건, guide-registry 211건 통과.
+- 상태: 커밋·원격 반영. 실화면 확인 미실행.
+
 ## 2026-10-30-09 — PopupCommonGuide 화면 정리(시작하기 탭·범용/proto 구분·탭 파일 분리·등록 검사)
 
 - 이유: 화면 정리 구현 명세(2026-10-30-06) 반영. 가이드가 proto 전용 흐름(createDefaultPopup·toSaveRequest)을 공통 사용법처럼 설명하고, 탭 간 설명이 겹치며 화면 파일 하나가 모든 탭을 렌더해 유지보수가 어려웠음.

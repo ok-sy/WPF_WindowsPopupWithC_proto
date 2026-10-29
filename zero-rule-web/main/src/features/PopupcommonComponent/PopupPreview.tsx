@@ -21,7 +21,7 @@ import {
 } from './imagePreviewLayout';
 import type { AdminPopupDetail } from '@local/domain';
 import { routerUrlOf } from '@/lib/urls';
-import { type SyntheticEvent, useEffect, useId, useState } from 'react';
+import { type SyntheticEvent, useEffect, useId, useRef, useState } from 'react';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
   Box,
@@ -529,13 +529,17 @@ export default function PopupPreview({
   const recommendedHeight =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.height ?? (naturalLayout
       ? clampWindowAxis(popup.height, naturalLayout.window.height, popupMinimumSize(popup).height, workArea.height) : null);
+  // 권장 크기는 값(너비·높이)이 바뀔 때만 알린다. 콜백은 ref로 최신 것을 쓰고 의존성에서 뺀다:
+  // 부모가 인라인 함수(onRecommendedSize={(s) => ...})를 넘기고 그 안에서 state를 바꾸면, 렌더마다 새 함수 → effect 재실행 → 다시 렌더가 무한 반복된다.
+  const recommendedSizeCallback = useRef(onRecommendedSize);
+  useEffect(() => { recommendedSizeCallback.current = onRecommendedSize; });
   useEffect(() => {
-    onRecommendedSize?.(
+    recommendedSizeCallback.current?.(
       recommendedWidth != null && recommendedHeight != null
         ? { width: recommendedWidth, height: recommendedHeight }
         : null,
     );
-  }, [onRecommendedSize, recommendedWidth, recommendedHeight]);
+  }, [recommendedWidth, recommendedHeight]);
 
   const overlayEnabled = popup.content.useBackgroundOverlay !== false;
   const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? 0.45);

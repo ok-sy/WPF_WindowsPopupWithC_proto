@@ -81,6 +81,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 컴포넌트·독립 재사용·예시·변환·유틸
   await openTab('컴포넌트'); await until(`document.body.innerText.includes('입력 props')`, 'component tab');
   check(await run(`document.body.innerText.includes('실행기')`), 'Component tab renders props and a runner');
+  // 미리보기 실행기의 onRecommendedSize는 값이 바뀔 때만 호출된다(인라인 콜백 + 부모 state 갱신이 무한 반복되지 않음).
+  await run(`Array.from(document.querySelectorAll('[role=tab]')).find(t=>t.textContent.trim()==='InlinePopupPreview').click()`); await pause(2500);
+  const recommendedCount = async () => run(`(()=>{const row=Array.from(document.querySelectorAll('*')).filter(e=>e.children.length===0&&e.textContent.trim()==='onRecommendedSize').at(-1);let n=row;for(let i=0;i<4&&n;i++){const chip=n.parentElement?.querySelector('.MuiChip-label');if(chip&&/회$/.test(chip.textContent))return parseInt(chip.textContent,10);n=n.parentElement;}return -1})()`);
+  const firstCount = await recommendedCount(); await pause(1500); const secondCount = await recommendedCount();
+  check(firstCount >= 1 && firstCount <= 3 && secondCount === firstCount, `InlinePopupPreview runner reports onRecommendedSize only on change (count ${firstCount} → ${secondCount})`);
   await openTab('독립 재사용'); await until(`document.body.innerText.includes('pickPopupFields 실행기')`, 'saveParts tab');
   check((await text()).includes('다른 업무의 기본 사용법 아님'), 'saveParts runner labels the proto comparison as reference only');
   await openTab('예시'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'example tab');

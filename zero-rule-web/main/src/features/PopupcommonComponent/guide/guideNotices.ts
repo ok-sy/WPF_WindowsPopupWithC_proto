@@ -52,6 +52,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-10-30-recommended-size-loop', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
+    title: 'onRecommendedSize — 권장 크기 값이 바뀔 때만 호출(무한 반복 수정)',
+    body: ['`PopupPreview`(InlinePopupPreview 포함)가 인라인 콜백(`onRecommendedSize={(s) => ...}`)을 받고 그 안에서 부모 state를 바꾸면 렌더마다 다시 호출되어 무한 반복되던 문제를 고쳤습니다.',
+      '이제 권장 너비·높이 값이 바뀔 때만 호출하고, 콜백은 항상 최신 함수를 씁니다. 값이 같으면 콜백만 바꿔도 다시 호출하지 않습니다.'],
+    components: ['PopupPreview', 'InlinePopupPreview'],
+    action: '변경할 코드는 없습니다. 콜백 교체만으로 재호출을 기대하던 코드가 있다면 권장 크기를 부모 state에 보관해 쓰세요.',
+    tab: 'component',
+  },
+  {
     id: '2026-10-30-guide-restructure', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
     title: '가이드 화면 정리 — 시작하기 탭, 범용/proto 전용 구분',
     body: ['첫 탭으로 시작하기를 추가했습니다(가져오기·최소 사용 코드·공통/부모/서버 경계). 공지는 맨 뒤로 옮기고 최근 게시 수를 배지로 표시합니다.',
