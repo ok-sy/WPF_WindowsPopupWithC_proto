@@ -284,7 +284,7 @@ try {
 | 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 pnpm store 확인 |
 | 3-popup-frameWork.tar | WPF/MockSso 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
-$npmRow
+$($npmRow)
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
 
 ## 이번 변경
@@ -299,7 +299,7 @@ $gitReadme
 
 1. ``tar -xzf $Date.tgz`` 후 SHA256SUMS.txt로 TAR 체크섬을 확인한다.
 2. 1·2·4 TAR을 반입 루트에 풀고 MANIFEST와 $deleteName 에 따라 병합·삭제한다.
-$npmStep3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
+$($npmStep)3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
 4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다.
 5. 서버: custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
 6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
