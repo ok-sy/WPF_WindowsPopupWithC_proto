@@ -59,8 +59,8 @@ public class PopupFullJsonSampleService {
     /** content 안에 저장돼 있을 수 있는 최상위 창·푸터 옵션(기존 관리자 저장 형태). */
     private static final List<String> PROMOTABLE_KEYS = List.of("useBackgroundOverlay", "backgroundOverlayOpacity", "popupPosition",
             "headerFontSize", "bodyFontSize", "footerFontSize", "footerAction", "footerLinkUrl");
-    /** 응답 popup 키 순서(서버 WpfPopupItem과 같음). deliveryId는 조립 뒤 맨 앞에, questions·content는 마지막에 붙인다. */
-    private static final List<String> OUTPUT_ORDER = List.of("popupId", "popupType", "title", "displayMode", "sizeMode",
+    /** 응답 popup 키 순서(서버 WpfPopupItem과 같음). deliveryId는 조립 뒤 맨 앞에, questions·content는 마지막에 붙인다. 등록 정규화 결과도 같은 순서를 쓴다. */
+    static final List<String> OUTPUT_ORDER = List.of("popupId", "popupType", "title", "displayMode", "sizeMode",
             "width", "height", "widthRatio", "heightRatio", "minimumWidth", "minimumHeight", "maximumWidth", "maximumHeight",
             "showHeader", "showFooterButton", "showFooter", "footerAction", "footerLinkUrl", "useBackgroundOverlay",
             "backgroundOverlayOpacity", "popupPosition", "headerFontSize", "bodyFontSize", "footerFontSize", "showDoNotShowAgain",

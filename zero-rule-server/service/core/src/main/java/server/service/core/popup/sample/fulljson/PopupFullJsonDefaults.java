@@ -47,21 +47,35 @@ public final class PopupFullJsonDefaults {
          * - out: 없음 · 예외: PopupSampleException(INVALID_CONTENT_JSON)
          */
         void check(String key, JsonNode value, String id) {
-            boolean ok = switch (kind) {
+            if (!accepts(value)) throw invalid(id, key + " 값이 올바르지 않습니다(" + describe() + "): " + value);
+        }
+
+        /** 값이 규칙에 맞는지(null 아님 전제). 등록 검증({@link PopupJsonValidator})은 예외 대신 이 결과로 오류를 모은다. */
+        boolean accepts(JsonNode value) {
+            return switch (kind) {
                 case BOOL -> value.isBoolean();
                 case STRING -> value.isTextual();
                 case ENUM -> value.isTextual() && values.contains(value.textValue());
                 case INTEGER -> value.isIntegralNumber() && inRange(value.doubleValue());
                 case NUMBER -> value.isNumber() && inRange(value.doubleValue());
             };
-            if (!ok) throw invalid(id, key + " 값이 올바르지 않습니다(" + describe() + "): " + value);
+        }
+
+        /** 규칙에 맞지 않는 값의 오류 코드: 타입은 맞고 값만 틀리면 INVALID_ENUM·OUT_OF_RANGE, 그 밖은 TYPE_MISMATCH. */
+        String issueCode(JsonNode value) {
+            return switch (kind) {
+                case ENUM -> value.isTextual() ? "INVALID_ENUM" : "TYPE_MISMATCH";
+                case INTEGER -> value.isIntegralNumber() ? "OUT_OF_RANGE" : "TYPE_MISMATCH";
+                case NUMBER -> value.isNumber() ? "OUT_OF_RANGE" : "TYPE_MISMATCH";
+                case BOOL, STRING -> "TYPE_MISMATCH";
+            };
         }
 
         private boolean inRange(double v) {
             return (minExclusive ? v > min : v >= min) && v <= max;
         }
 
-        private String describe() {
+        String describe() {
             return switch (kind) {
                 case BOOL -> "boolean";
                 case STRING -> "string";
