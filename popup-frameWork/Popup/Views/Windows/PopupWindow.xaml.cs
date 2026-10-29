@@ -71,7 +71,8 @@ namespace Popup.Views.Windows
             {
                 ApplyVideoWindowSurface();
             }
-            FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "닫기";
+            // POL-02-03 : 푸터 역할 — footerAction CLOSE의 표시 이름은 "확인"(2026-10-29 "닫기"에서 변경, 동작은 닫기 그대로).
+            FooterCloseButton.Content = _options.OpenFooterLinkAndClose ? "바로가기" : "확인";
             var survey = SurveyContent;
             if (survey != null)
             {

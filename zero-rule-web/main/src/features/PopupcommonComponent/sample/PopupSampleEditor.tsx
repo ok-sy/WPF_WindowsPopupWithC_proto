@@ -77,7 +77,7 @@ export default function PopupSampleEditor({ initial, open, onClose, onSave }: Pr
           </Stack>
           {!isSubmitPopupType(popup.popupType) && <Stack direction="row" spacing={1.5}>
             <TextField select size="small" label="푸터 동작" value={footerAction} sx={{ minWidth: 150 }} onChange={(event) => updateContent('footerAction', event.target.value)}>
-              <MenuItem value="CLOSE">닫기</MenuItem>
+              <MenuItem value="CLOSE">확인</MenuItem>
               <MenuItem value="LINK_AND_CLOSE">바로가기</MenuItem>
             </TextField>
             {footerAction === 'LINK_AND_CLOSE' && <TextField size="small" fullWidth label="바로가기 URL" value={contentValue(popup, 'footerLinkUrl')}

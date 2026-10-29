@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-17 — footerAction CLOSE 표시 이름 닫기 → 확인
+
+- 이유: 하단 버튼 동작 CLOSE의 표시 이름을 "확인"으로 변경하기로 확정(값·동작은 그대로 닫기).
+- 변경: WPF `FooterCloseButton` 기본 문구·`ApplyOptions` 문구, `PopupFooterAction` 주석. 관리자 웹 미리보기 하단 버튼, 편집 Dialog·공통 샘플 편집기·IS063M02 샘플의 푸터 동작 선택지 CLOSE 표시, VIDEO 완료 비율 안내 문구("확인 버튼이 비활성"). 보조 닫기 버튼(QUIZ 미달·VIDEO+QUIZ 재생 실패)과 Dialog 닫기 버튼은 CLOSE 동작이 아니므로 "닫기" 유지. 인터페이스 계약 3.7 보완 기록·§6.3·8 Footer 설명, MINIMAL·ALL 명세 FooterAction 행·Footer 버튼 이름, 옵션·사용자 가이드 갱신. 하네스 `verify-completion-ux-43`(VIDEO 주 버튼)·`verify-image-preview` 버튼 문구 기대값 변경.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml(.cs), popup-frameWork/Popup/Models/PopupOptions.cs, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02.tsx, scripts/verify-completion-ux-43.cjs, scripts/verify-image-preview.cjs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/POPUP_OPTION_GUIDE.md, docs/POPUP_USER_OPTION_GUIDE.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 오류 0, `PopupWindowTests` 414건·`ApiDemoTests` 70건 통과. 웹 `tsc` 0, 하네스 completion-ux-43 71·preview-61 52·common-sample-69 32·image-preview 34·transform-64 77·rgstpop-quiz-rule 11건 통과. 로컬 관리자 웹 master 로그인 후 팝업 신규 등록에서 푸터 동작 선택 "확인"·미리보기 하단 버튼 "확인" 확인.
+- 상태: 커밋·원격 반영. 미실행: WPF 실행 화면 육안 확인, 인터페이스 계약 Word·PDF·Excel 재생성 미실행.
+
 ## 2026-10-29-16 — TEXT 강조 문구(highlightText·showHighlight) 삭제
 
 - 이유: TEXT 팝업에서 강조 문구를 사용하지 않기로 확정해 WPF·관리자 웹 표시·편집과 계약에서 제거.

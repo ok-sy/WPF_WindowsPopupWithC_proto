@@ -60,25 +60,25 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 
   // 1. 일반 VIDEO: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구(완료 전 닫기 허용 옵션이 없으므로 항상 적용).
   await render('VIDEO');
-  let b = await button('닫기');
+  let b = await button('확인');
   check(b && b.disabled && b.reason === '영상 0% 시청 · 기준 80% 이상 시청하면 닫을 수 있습니다' && b.role === 'status' && b.live === 'polite',
     'VIDEO blocked close shows reason: ' + JSON.stringify(b));
-  await watch(79); b = await button('닫기');
+  await watch(79); b = await button('확인');
   check(b.disabled && b.reason.startsWith('영상 79% 시청'), 'VIDEO stays disabled below the ratio: ' + JSON.stringify(b));
-  await watch(80); b = await button('닫기');
+  await watch(80); b = await button('확인');
   check(!b.disabled && b.reason === null && (await bodyText()).includes('시청 기준을 충족했습니다'), 'VIDEO enables close at the ratio: ' + JSON.stringify(b));
-  await click('닫기'); check(await run('window.closeCount') === 1, 'Enabled VIDEO close runs onClose');
+  await click('확인'); check(await run('window.closeCount') === 1, 'Enabled VIDEO close runs onClose');
   // 바로가기 라벨도 같은 기준으로 막는다.
   await render('VIDEO', {}, {footerAction: 'LINK_AND_CLOSE', footerLinkUrl: 'https://example.com'});
   b = await button('바로가기'); check(b.disabled && b.reason.includes('닫을 수 있습니다'), 'VIDEO link button is blocked too: ' + JSON.stringify(b));
   // 4자리 내림 의도: 정수 % 슬라이더에서 29% = 기준값 0.29는 도달로 본다.
-  await render('VIDEO', {completionRatio: .29}); await watch(29); b = await button('닫기');
+  await render('VIDEO', {completionRatio: .29}); await watch(29); b = await button('확인');
   check(!b.disabled, 'Integer slider reaches 0.29 exactly: ' + JSON.stringify(b));
-  await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('닫기');
+  await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('확인');
   check(b.disabled && b.reason.includes('기준 80.5%'), 'Fractional ratio text and judgment: ' + JSON.stringify(b));
 
   // 2. POL-02-02 : 종료 제어 — 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
-  await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('닫기');
+  await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('확인');
   check(b.disabled && b.reason.startsWith('영상 0% 시청'), 'Legacy allow-close VIDEO stays blocked (TODO57): ' + JSON.stringify(b));
   check(!(await bodyText()).includes('완료 전 닫기 허용'), 'Preview no longer mentions the removed allow-close option (TODO57)');
 

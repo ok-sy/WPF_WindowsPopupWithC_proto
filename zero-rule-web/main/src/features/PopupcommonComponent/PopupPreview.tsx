@@ -894,7 +894,7 @@ export default function PopupPreview({
                     aria-describedby={videoCloseBlocked ? reasonId : undefined}
                     onClick={handleFooter}
                   >
-                    {linkAction ? '바로가기' : '닫기'}
+                    {linkAction ? '바로가기' : '확인'}
                   </Button>
                 )}
               </Stack>

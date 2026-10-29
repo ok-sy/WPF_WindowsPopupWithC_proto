@@ -54,7 +54,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | SurveyTitleBlocks · DescriptionBlocks · questions[].TitleBlocks · DescriptionBlocks · options[].TextBlocks | 지원(TODO55) | N | `null` | 설문·퀴즈 서식(TEXT textBlocks 구조). 있으면 일반 문자열 대신 표시, 없거나 깨졌으면 일반 문자열. 답변·채점은 ID 그대로. 서버는 서식이 있으면 일반 문자열을 서식에서 파생해 함께 보낸다(2026-10-19 서버·관리자 웹 반영) |
 | ShowLater | 지원 | N | `false` | "나중에 보기" 버튼 표시(TODO52-2). `ShowFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 LATER |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증). 체크박스 문구도 같은 값으로 `{N}일간 보지 않기` 표시 |
-| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
+| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 확인(동작은 닫기) / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`(설계 31). 별도 Overlay 창 사용. 켜지면 Alt+F4·시스템 메뉴 닫기·외부 닫기 요청을 막고 앱 내 닫기·제출과 앱 종료만 허용한다. 화면에 닫기·제출 수단이 없으면 막지 않는다(설계 44) |
 | BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위. 0~1로 보정(서버 저장 검증). 뒤쪽 마우스 입력을 막으며 키보드 전체 차단은 아님 |
@@ -88,7 +88,7 @@ Background Overlay와 닫기 경로(설계 44, 고정 동작·관리자 옵션 �
 - `UseBackgroundOverlay=true`는 시청 기준을 채운 뒤에도 Alt+F4를 자동 허용하지 않는다. 강제 시청은 Overlay 켜짐 + 정상 푸터 + `ShowLater=false` 조합이며 재생 실패·앱 종료 예외는 남는다(TODO57).
 - Esc는 팝업을 닫지 않는다(아무 동작 없음). 영상 전체화면 해제·공통 안내창의 Esc는 그대로다.
 - 앱 종료 중에는 닫기 제한을 적용하지 않으며 결과(CLOSED/VIDEO_WATCHED·시청량)를 큐에 저장한다. 창 제목은 팝업 제목이며(Alt+Tab·스크린리더) 첫 포커스는 SURVEY/QUIZ의 첫 입력 또는 본문의 첫 포커스 가능 요소다. Enter·Space로 의도치 않게 닫히지 않도록 Footer 버튼에는 첫 포커스와 IsDefault를 두지 않는다.
-Footer 버튼 이름은 CLOSE '닫기', LINK_AND_CLOSE '바로가기', SUBMIT '제출'이다.
+Footer 버튼 이름은 CLOSE '확인'(2026-10-29 '닫기'에서 변경, 동작은 닫기), LINK_AND_CLOSE '바로가기', SUBMIT '제출'이다.
 LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL 오류나 실행 실패 시 창을 유지한다.
 설문·퀴즈의 제출 후 링크 열기는 제거했다(설계 30).
 

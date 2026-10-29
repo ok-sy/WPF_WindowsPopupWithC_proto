@@ -144,7 +144,7 @@ export default function IS063M0(props: IS063M0Props) {
                     <Typography component="span" className="required not">*&nbsp;</Typography>푸터버튼명
                   </Typography>
                   <Select defaultValue={1} onChange={handleSelectChange}>
-                    <MenuItem value={1}>닫기</MenuItem>
+                    <MenuItem value={1}>확인</MenuItem>
                     <MenuItem value={2}>바로가기</MenuItem>
                   </Select>
                   {/* 퀴즈팝업, 설문조사, 동영상+퀴즈 팝업일 시 제출 기본선택, 비활성화

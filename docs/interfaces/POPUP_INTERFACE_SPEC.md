@@ -17,6 +17,7 @@
 - 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음. DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
+- 3.7 보완(2026-10-29): `footerAction=CLOSE` 하단 버튼 표시 이름을 **닫기 → 확인**으로 변경(값·동작 변경 없음, WPF·관리자 미리보기·편집 선택지 동일).
 - 3.7 보완(2026-10-29): TEXT content에서 강조 문구 `highlightText`·`showHighlight` 제거. WPF·관리자 웹은 두 키를 읽거나 표시하지 않고(기존 데이터에 남아 있어도 무시), 관리자 웹은 저장 시 보내지 않는다. 서버 인계 샘플 기본값에서도 제거. DB DDL 변경 없음(CONTENT_OPTIONS JSON 키).
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
@@ -308,7 +309,7 @@ X-Client-Version: 1.0.0
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
 | showFooterButton | boolean | O | `true` | Footer 버튼 표시. 상단 X는 없음. SURVEY/QUIZ 제출은 유지 |
 | showFooter | boolean | O | `true` | Footer 표시 |
-| footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(닫기) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT만 허용. 백엔드는 유형에 맞지 않는 명시값을 등록 단계에서 거부하며, WPF는 방어적으로 SURVEY·QUIZ를 항상 SUBMIT, 일반 유형의 생략·미지원 값·SUBMIT을 CLOSE로 처리 |
+| footerAction | string | 선택 | `CLOSE`(SURVEY/QUIZ는 `SUBMIT`) | Footer 버튼 동작. CLOSE(표시 '확인', 닫기 동작) / LINK_AND_CLOSE(바로가기) / SUBMIT(제출). TEXT·IMAGE·VIDEO는 CLOSE·LINK_AND_CLOSE, SURVEY·QUIZ는 SUBMIT만 허용. 백엔드는 유형에 맞지 않는 명시값을 등록 단계에서 거부하며, WPF는 방어적으로 SURVEY·QUIZ를 항상 SUBMIT, 일반 유형의 생략·미지원 값·SUBMIT을 CLOSE로 처리 |
 | footerLinkUrl | string | footerAction=LINK_AND_CLOSE | `""` | 바로가기 URL. 절대 http/https. 다른 동작에서는 보내지 않음 |
 | useBackgroundOverlay | boolean | 선택 | `true` | 배경 Overlay 사용(설계 31) |
 | backgroundOverlayOpacity | number | 선택 | `0.45` | Overlay 불투명도 0~1. 서버 저장 검증, WPF도 0~1로 보정 |
@@ -411,7 +412,7 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 
 `content` 안에 같은 이름의 키가 있어도 WPF는 읽지 않는다. 관리자 저장 위치(CONTENT_OPTIONS)와 WPF 응답 위치는 달라도 된다. 서버가 응답 조립 시 최상위로 옮긴다.
 
-Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **닫기**로 표시하고 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. `useBackgroundOverlay=true`이면 Alt+F4·시스템 메뉴 닫기·외부 닫기 요청은 무시하고 하단 버튼(닫기·바로가기·제출)과 앱 종료로만 닫는다. 화면에 닫기·제출 수단이 없으면 막지 않는다(설계 44). Esc는 팝업을 닫지 않는다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
+Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **확인**으로 표시하고(2026-10-29 '닫기'에서 변경) 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. `useBackgroundOverlay=true`이면 Alt+F4·시스템 메뉴 닫기·외부 닫기 요청은 무시하고 하단 버튼(확인·바로가기·제출)과 앱 종료로만 닫는다. 화면에 닫기·제출 수단이 없으면 막지 않는다(설계 44). Esc는 팝업을 닫지 않는다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
 SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며(불합격 안내에는 점수와 틀린 문항 번호를 표시한다. 설계 43), 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 

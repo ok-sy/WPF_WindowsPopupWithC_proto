@@ -38,7 +38,7 @@
 | ShowHeader | 지원 | N | `true` | 제목/Header 표시 여부 |
 | ShowFooterButton | 지원 | N | `true` | Footer 버튼 표시. 일반 콘텐츠는 닫기·바로가기, SURVEY/QUIZ는 제출. 상단 X는 없음 |
 | ShowFooter | 지원 | N | `true` | Footer 표시 |
-| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 닫기 / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
+| FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 확인(동작은 닫기) / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
 | HideDays | 기본값 사용 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과(HIDDEN)의 숨김 일수. 최소 버전은 생략해 30일 사용. 코드는 1~3650 값 지정 지원(관리자 저장 시 서버 검증) |
@@ -144,7 +144,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
 | QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
-| FooterAction / FooterLinkUrl | `content`가 아니라 `popup` 최상위 값. 일반 콘텐츠는 CLOSE “닫기” 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
+| FooterAction / FooterLinkUrl | `content`가 아니라 `popup` 최상위 값. 일반 콘텐츠는 CLOSE “확인”(닫기 동작) 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
 
 ## 6. 최소 버전 한눈에 보기

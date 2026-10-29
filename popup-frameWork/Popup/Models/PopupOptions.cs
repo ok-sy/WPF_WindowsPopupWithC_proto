@@ -20,7 +20,7 @@ namespace Popup.Models
     /*
      * POL-02-03 : 푸터 역할
      * 공통 Footer 버튼 동작(JSON footerAction).
-     * Close = '닫기', LinkAndClose = '바로가기'(footerLinkUrl을 연 뒤 닫기), Submit = '제출'(SURVEY/QUIZ 고정).
+     * Close = '확인'(동작은 닫기), LinkAndClose = '바로가기'(footerLinkUrl을 연 뒤 닫기), Submit = '제출'(SURVEY/QUIZ 고정).
      */
     public enum PopupFooterAction { Close, LinkAndClose, Submit }
 

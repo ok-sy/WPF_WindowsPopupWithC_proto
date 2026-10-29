@@ -208,7 +208,7 @@ export default function IS063M02Sample() {
                   ? <Select value="SUBMIT" disabled><MenuItem value="SUBMIT">제출</MenuItem></Select>
                   : <Select value={footerAction} disabled={!popup} inputProps={{ 'aria-label': '푸터버튼명' }}
                     onChange={(event) => updateContent('footerAction', event.target.value)}>
-                    <MenuItem value="CLOSE">닫기</MenuItem>
+                    <MenuItem value="CLOSE">확인</MenuItem>
                     <MenuItem value="LINK_AND_CLOSE">바로가기</MenuItem>
                   </Select>}
               </Stack>

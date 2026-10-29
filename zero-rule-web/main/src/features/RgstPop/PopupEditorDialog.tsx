@@ -385,7 +385,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* POL-02-02 : 종료 제어 — 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
                 <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)}
-                  helperText={isVideoQuiz ? '시청 기준 전에는 퀴즈 입력·제출이 잠깁니다.' : '시청 기준 전에는 닫기 버튼이 비활성입니다.'} />
+                  helperText={isVideoQuiz ? '시청 기준 전에는 퀴즈 입력·제출이 잠깁니다.' : '시청 기준 전에는 확인 버튼이 비활성입니다.'} />
                 <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
               </Box>
             </Stack>}
@@ -452,7 +452,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             ) : (
               <TextField select size="small" label="푸터 버튼 동작" value={contentValue(popup, 'footerAction') === 'LINK_AND_CLOSE' ? 'LINK_AND_CLOSE' : 'CLOSE'}
                 disabled={!popup.showFooter || !popup.showCloseButton} onChange={(e) => updateContent('footerAction', e.target.value)}>
-                <MenuItem value="CLOSE">닫기</MenuItem><MenuItem value="LINK_AND_CLOSE">바로가기 (링크 열고 닫기)</MenuItem>
+                <MenuItem value="CLOSE">확인</MenuItem><MenuItem value="LINK_AND_CLOSE">바로가기 (링크 열고 닫기)</MenuItem>
               </TextField>
             )}
             {!isSurvey && popup.content.footerAction === 'LINK_AND_CLOSE' && <TextField size="small" label="바로가기 URL"

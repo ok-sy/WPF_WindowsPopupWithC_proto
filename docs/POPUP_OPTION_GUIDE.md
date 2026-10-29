@@ -50,11 +50,11 @@
 | `displayMode` | `SEQUENTIAL` | 같은 우선순위 그룹 안의 표시 방식. WPF 조회가 1건씩이라 서버 팝업의 동시 표시는 일어나지 않음(2.2) |
 | `displayOrder` | `100` | 관리자 표시 순서. 숫자가 작을수록 먼저 표시. 서버가 이 순서(같으면 생성 시각·ID 순)로 첫 1건을 골라 내려주며 WPF 조회 응답에는 싣지 않음(설계 35) |
 | `showHeader` | `true` | 공통 Header 표시 |
-| `showFooterButton` | `true` | Footer 버튼 표시(닫기·제출·바로가기). Header에는 고정 로고 표시 |
+| `showFooterButton` | `true` | Footer 버튼 표시(확인·제출·바로가기). Header에는 고정 로고 표시 |
 | `showFooter` | `true` | Footer 표시 |
 | `showDoNotShowAgain` | `false` | 다시 보지 않기 체크박스 표시. Footer가 있어야 화면에 보임 |
 | `showLater` | `false` | 나중에 보기 버튼 표시(모든 유형, TODO52-2). Footer가 있어야 화면에 보임. 누르면 결과 LATER로 닫히고 다음 조회 주기에 다시 표시(9.1) |
-| `footerAction` | `CLOSE` | Footer 버튼 동작. `CLOSE`(닫기) / `LINK_AND_CLOSE`(바로가기) / `SUBMIT`(제출, SURVEY·QUIZ 고정). 생략·미지원 값은 유형별 기본값 |
+| `footerAction` | `CLOSE` | Footer 버튼 동작. `CLOSE`(확인 — 닫기 동작) / `LINK_AND_CLOSE`(바로가기) / `SUBMIT`(제출, SURVEY·QUIZ 고정). 생략·미지원 값은 유형별 기본값 |
 | `footerLinkUrl` | 빈 문자열 | `LINK_AND_CLOSE`일 때 열 절대 HTTP/HTTPS URL |
 | `useBackgroundOverlay` | `true` | 팝업 표시 중 배경 클릭 차단·어둡게 표시. 켜면 Alt+F4 등 키보드·외부 닫기를 막고 화면의 닫기·제출로만 닫힌다. 닫기·제출 수단이 화면에 없으면 막지 않는다(설계 44) |
 | `backgroundOverlayOpacity` | `0.45` | 배경 어둡기 0~1(범위 밖 값은 보정) |
@@ -288,7 +288,7 @@ DB 컬럼은 `POPUP_NOTICE.SHOW_LATER_YN`(기본 'N')이며 기존 DB는 `db/ora
 
 ## 11. 공통 푸터 동작
 
-`footerAction`은 기본 `CLOSE`(닫기)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 조회 응답에서는 `popup` 최상위 값이다(설계 30). 이 동작은 `showFooter`와 `showFooterButton`이 모두 켜져 Footer 버튼이 표시된 경우에만 화면에 나타난다.
+`footerAction`은 기본 `CLOSE`(버튼 표시 '확인', 닫기 동작)이며, `LINK_AND_CLOSE`(바로가기)일 때 `footerLinkUrl`의 HTTP(S) 주소를 기본 브라우저로 연 뒤 팝업을 닫는다. 설문·퀴즈는 `SUBMIT`(제출) 고정이다. 관리자 저장은 content(CONTENT_OPTIONS)에 하지만 WPF 조회 응답에서는 `popup` 최상위 값이다(설계 30). 이 동작은 `showFooter`와 `showFooterButton`이 모두 켜져 Footer 버튼이 표시된 경우에만 화면에 나타난다.
 
 ---
 

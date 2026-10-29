@@ -289,7 +289,7 @@
                                 Click="CloseButton_Click"/>
                         <Button x:Name="FooterCloseButton"
                                 Style="{StaticResource ActionButtonStyle}"
-                                Content="닫기"
+                                Content="확인"
                                 Click="CloseButton_Click"/>
                     </StackPanel>
 
