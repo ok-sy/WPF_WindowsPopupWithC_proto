@@ -2,6 +2,14 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-02 — MSI offline-export 신규 작업 폐기
+
+- 이유: MSI 설치 패키지 offline-export 신규 추진 계획 종료.
+- 변경: 20261029 MSI TODO 상태를 폐기로 변경하고 미완료 체크 항목을 활성 작업에서 제외. docs 색인도 폐기로 갱신. 기존 소스 반입용 `scripts/export-offline-package.ps1`, publish 절차 및 별도 백그라운드·결과 큐 TODO는 유지.
+- 주요 파일: docs/design/20261029_MSI_offline-export_추가_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: GitHub main 문서 상태 확인. 코드·빌드·설치 검증 미수행(문서만 변경).
+- 상태: 폐기 반영 / 별도 MSI 도구 선정·구현·설치 검증 진행하지 않음.
+
 ## 2026-10-29-01 — MSI 설치 패키지 offline-export 계획
 
 - 이유: 인터넷 제한 PC/폐쇄망 배포에서 MSI와 명시적 필수 구성요소로 설치·실행을 재현할 절차가 필요.
