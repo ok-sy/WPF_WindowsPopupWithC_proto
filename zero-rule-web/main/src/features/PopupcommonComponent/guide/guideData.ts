@@ -4,7 +4,16 @@
  * - 화면(PopupCommonGuide.tsx)과 분리해 컴포넌트·함수·프로세스 설명만 둔다. 코드가 바뀌면 이 파일을 함께 고친다.
  * - 이름·props·반환값은 실제 소스(../index.ts가 내보내는 것)와 같아야 한다. 새 컴포넌트를 index.ts에 추가하면 COMPONENTS에도 추가한다.
  * - 공지(추가 예정·변경·삭제)는 guideNotices.ts에 따로 둔다.
+ * - 범위(scope): COMMON = 어느 업무 화면이든 쓰는 범용 계약, PROTO = proto 등록 화면(RgstPop)의 편집값 생성·저장 흐름.
+ *   PROTO 함수(createDefaultPopup·toSaveRequest 등)를 독립 화면의 필수 사전 처리로 설명하지 않는다.
+ * ■ 개발 가이드 갱신 규칙(docs/design/20261030_PopupCommonGuide_화면정리_구현명세_TODO.md §4)
+ *  1) 컴포넌트 추가: index.ts export → COMPONENTS(props·출력·예제) → guideRunners 실행기(가능하면) → guideNotices 공지 순으로 함께 고친다.
+ *  2) 함수 추가: FUNCTIONS에 scope와 함께 등록한다. 등록 누락·이름 오류는 scripts/verify-popup-guide-registry.cjs가 검사한다.
+ *  3) props 변경·삭제: 공지 action에 영향 화면·바꾸는 방법을 적는다. 정책 상세는 docs/design TODO가 단일 근거이고 여기엔 요약만 둔다.
  */
+
+/** 설명 범위: COMMON = 범용, PROTO = proto(RgstPop) 전용 */
+export type GuideScope = 'COMMON' | 'PROTO';
 
 /** props·콜백·반환값 한 줄 설명 */
 export interface GuideField {
@@ -39,6 +48,7 @@ export interface GuideComponent {
 export interface GuideFunction {
   name: string;
   file: string;
+  scope: GuideScope;
   input: string;
   output: string;
   description: string;
@@ -54,6 +64,7 @@ export interface GuideStep {
 /** 등록 화면 프로세스 */
 export interface GuideProcess {
   id: string;
+  scope: GuideScope;
   title: string;
   summary: string;
   steps: GuideStep[];
@@ -63,17 +74,80 @@ export interface GuideProcess {
 }
 
 export const PROCESSES: GuideProcess[] = [
+  // ── 범용: 독립 입력 → 상태 → 출력 → 선택 추출 → 화면별 저장 경계 ──
   {
-    id: 'create', title: '① 신규 등록', summary: '빈 편집값을 만들어 편집기·미리보기를 연다.',
+    id: 'state', scope: 'COMMON', title: '① 독립 입력 state', summary: '화면 state에는 입력한 값만 둔다(미설정 = 키 생략).',
     steps: [
-      { actor: 'createDefaultPopup(now?)', description: 'TEXT 유형, 창 560×420, 최소 300×300, 노출 기간 지금부터 한 달인 편집값을 만든다.' },
-      { actor: '부모 state', description: '편집값을 useState로 보관하고 에디터 key(bodyEditorKey 등)를 새로 만든다.' },
-      { actor: 'InlinePopupPreview', description: '편집값을 그대로 넘겨 우측 미리보기를 그린다.' },
+      { actor: '화면 state', description: '필요한 값만 useState로 보관한다. 예: 일정만(`PopupScheduleValue`), 본문만(`{ textBlocks, plainText }`), 문항만(`PopupQuestion[]`), 팝업 모양이 필요하면 `{ popupType, title, content: {}, questions: [] }`.' },
+      { actor: '미설정 / 명시값', description: '입력하지 않은 값은 키를 두지 않는다(서버 기본값 적용 대상). `null`은 현재 서버 기본값 적용 대상, `false`·`0`·빈 문자열은 사용자가 고른 명시값이다(빈 문자열 유효성은 필드별 서버 판단). `undefined`는 JSON 직렬화에서 빠진다.' },
+      { actor: '유형 변경', description: '독립 화면은 `popupType`(영상+퀴즈면 `content.videoEnabled`)만 바꾸고 창 크기·완료 비율 같은 업무 기본값을 채우지 않는다. 샘플 구현: `sample/popupSampleData.ts`의 `changeSampleType`(공개 API 아님).' },
     ],
-    parent: ['popupId 채번·입력 규칙', '활성 여부·대상 그룹 초기값', '에디터 key 갱신(새 편집값을 넣을 때마다)'],
+    parent: ['state 보관(미설정은 키 생략)', '새 값을 넣을 때마다 에디터 key 갱신', 'ID 채번·대상·게시 정책은 각 업무 화면·서버 책임'],
+    notes: ['proto 등록 화면은 `createDefaultPopup()`으로 전체 편집값을 만든다(아래 proto 흐름 P1). 독립 화면의 필수 단계가 아니다.'],
   },
   {
-    id: 'load', title: '② 조회 → 수정', summary: '서버 응답을 편집값으로 바꿔 연다.',
+    id: 'richtext', scope: 'COMMON', title: '② 서식 본문 편집', summary: 'CKEditor로 편집하고 문단·Run JSON과 일반 문자열을 함께 받는다.',
+    steps: [
+      { actor: 'readTextBlocks(value) ?? plainTextToBlocks(plainText)', description: '편집기 초기값. 서식이 없으면 일반 문자열을 서식 없는 문단으로.' },
+      { actor: 'PopupRichTextEditor', description: 'initialBlocks로 처음 한 번만 읽고, 편집할 때마다 onChange(blocks, plainText)를 부른다. 우클릭·Shift+F10·서식 버튼으로 서식 패널(PopupRichTextMenu)을 연다.' },
+      { actor: 'htmlToBlocks / blocksToPlainText', description: '편집기 HTML → 허용 서식만 남긴 RichBlock[] → 일반 문자열. 허용 밖 서식은 버리고 글자는 보존.' },
+      { actor: 'PopupRichBlocks', description: '미리보기에서 RichBlock[]을 React 요소로 그린다(innerHTML 미사용).' },
+    ],
+    parent: ['onChange 결과(blocks, plainText)를 state에 함께 보관', '본문을 바꿔 넣으려면 key로 다시 마운트'],
+    notes: ['허용 값: 굵게·기울임·밑줄·취소선, 색(RICH_COLORS 40색), 크기(RICH_SIZES), 글꼴(RICH_FONTS 4종), 정렬 3종, 들여쓰기 40px 단계.'],
+  },
+  {
+    id: 'question', scope: 'COMMON', title: '③ 설문·퀴즈 문항', summary: '문항·선택지·정답·통과 점수를 편집하고 저장 전 안내 검사를 한다.',
+    steps: [
+      { actor: 'PopupQuestionEditor', description: '문항 추가·삭제·서식 제목/설명·유형·배점·선택지·정답·최소/최대 선택 수. 바뀔 때마다 전체 목록을 onChange로 돌려준다.' },
+      { actor: 'PopupQuizRuleFields + usePopupQuizRule', description: '퀴즈 유형(FULL·CUTOFF·PASS_FAIL)과 기준 개수를 고르면 withQuizRule이 통과 점수를 계산한다. 입력은 `{ popupType, questions, passingScore? }`만 있으면 된다.' },
+      { actor: 'validatePopupQuestions(questions, quiz, passingScore)', description: '저장 전 즉시 안내. 오류 문구 또는 null.' },
+    ],
+    parent: ['문항 state 보관', '안내 검사 실패 시 저장 중단·안내'],
+    notes: ['화면 검사는 즉시 안내이며 저장 성공을 보증하지 않는다. 최종 검증은 서버가 한다.'],
+  },
+  {
+    id: 'schedule', scope: 'COMMON', title: '④ 노출 일정', summary: '게시 기간 안의 요일·시간대를 입력한다.',
+    steps: [
+      { actor: 'PopupScheduleFields(value)', description: '스위치 끔 = FIXED(상시), 켬 = SCHEDULE. 요일 없음 = 매일, 시간대 없음 = 하루 종일. onChange(patch)로 바뀐 항목만 돌려준다. showPeriod면 게시 기간도 입력란 문자열 그대로 돌려준다.' },
+      { actor: 'validatePopupSchedule(value) / describeSchedule', description: '저장 전 안내 검사와 일정 요약 문구(안내용).' },
+    ],
+    parent: ['patch를 state에 병합', '게시 기간 직렬화(입력란 문자열 → 저장 형식)'],
+    notes: ['최종 노출 판단은 서버(KST)가 한다. 조회 주기(30~60분) 때문에 짧은 시간대는 놓칠 수 있다.'],
+  },
+  {
+    id: 'preview', scope: 'COMMON', title: '⑤ 미리보기', summary: '미리보기에 넘길 때만 withPreviewFallback으로 표시용 값을 채운다.',
+    steps: [
+      { actor: 'withPreviewFallback(state)', description: '창 크기·Header/Footer 표시 같은 표시용 최상위 값만 채운 새 객체(미리보기 전용). 원본 state·추출 결과·전송값은 바뀌지 않는다. 동영상+퀴즈 완료 비율이 미설정이면 0.8로 표시한다.' },
+      { actor: 'InlinePopupPreview', description: '우측 미리보기. onOpenPreview가 있으면 "실제 크기로 보기" 버튼을 보여 준다. IMAGE 권장 창 크기는 onRecommendedSize로 알린다.' },
+      { actor: 'PopupPreviewDialog', description: '브라우저 창을 작업 영역으로 보고 크기 모드·9개 위치·배경 Overlay를 WPF와 같이 적용한다. 닫으면 시연 상태 초기화.' },
+      { actor: 'PopupPreview', description: '공용 렌더러. 헤더(검은 배경·흰 제목·고정 로고)·본문·푸터(확인/바로가기/제출, 나중에 보기, 다시 보지 않기)를 WPF 구성대로 그린다.' },
+    ],
+    parent: ['모달 열림 state', 'recommendedSize 전달(선택)'],
+    notes: ['fallback 값은 표시용이며 서버 저장 기본값과 다를 수 있다. 저장·추출에는 쓰지 않는다.'],
+  },
+  {
+    id: 'extract', scope: 'COMMON', title: '⑥ 선택 추출 → 화면별 저장 경계', summary: '필요한 필드만 값 그대로 뽑고, 저장 형식은 각 업무 화면이 정한다.',
+    steps: [
+      { actor: 'pickPopupFields(source, { topLevelKeys?, contentKeys?, questionKeys? })', description: '필요한 키만 값 그대로 뽑는다(변환·검증·기본값 없음, 얕은 복사).' },
+      { actor: '화면별 저장 경계', description: '날짜 직렬화·키 이름·JSON 모양·API 호출은 각 업무 화면이 정한다.' },
+      { actor: '서버', description: '업무 기본값 적용·최종 검증·정규화·노출/완료 판정.' },
+    ],
+    parent: ['저장 형식 변환·API 호출·오류 처리'],
+    notes: ["'독립 재사용·필드 추출' 탭에 최소 입력·출력 표·키 표·샘플 4종·실행기가 있다. 정책: docs/design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md, 20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md"],
+  },
+  // ── proto(RgstPop) 전용: 등록 화면 편집값 생성·저장 흐름 ──
+  {
+    id: 'proto-create', scope: 'PROTO', title: 'P1 신규 편집값', summary: 'proto 등록 화면은 전체 기본 편집값으로 시작한다.',
+    steps: [
+      { actor: 'createDefaultPopup(now?)', description: 'TEXT 유형, 창 560×420, 최소 300×300, 노출 기간 지금부터 한 달인 전체 편집값을 만든다.' },
+      { actor: '부모 state', description: '편집값을 useState로 보관하고 에디터 key(bodyEditorKey 등)를 새로 만든다.' },
+      { actor: 'InlinePopupPreview', description: 'proto 편집값은 이미 전체 모양이라 그대로 넘긴다.' },
+    ],
+    parent: ['popupId 채번·입력 규칙', '활성 여부·대상 그룹 초기값', '에디터 key 갱신'],
+  },
+  {
+    id: 'proto-load', scope: 'PROTO', title: 'P2 조회 → 수정', summary: '서버 응답을 proto 편집값으로 바꿔 연다.',
     steps: [
       { actor: 'api.popupAdmin.info({ popupId })', description: '부모가 조회한다(이 폴더는 API를 부르지 않는다).' },
       { actor: 'toEditorPopup(body.popup)', description: '표시 순서 기본값 100, 주관식 정답 비교 방식 EXACT, IMAGE 크기 모드·구 크기 필드를 정리한다.' },
@@ -82,86 +156,40 @@ export const PROCESSES: GuideProcess[] = [
     parent: ['targetGroups·active는 응답에서 따로 보관', 'resetKey·에디터 key 갱신'],
   },
   {
-    id: 'template', title: '③ 템플릿 불러오기', summary: '다른 팝업 설정을 현재 ID로 복사한다.',
+    id: 'proto-template', scope: 'PROTO', title: 'P3 템플릿 불러오기', summary: '다른 팝업 설정을 현재 ID로 복사한다.',
     steps: [
       { actor: 'toEditorPopupFromTemplate(template, currentPopupId)', description: '현재 팝업 ID를 유지하고 문항 템플릿 연결(questionTemplateId)을 끊는다.' },
     ],
     parent: ['템플릿 목록 조회·선택 대화상자', '에디터 key 갱신'],
   },
   {
-    id: 'type', title: '④ 유형 변경', summary: '입력값은 유지하고 유형별 필수 값만 맞춘다.',
+    id: 'proto-type', scope: 'PROTO', title: 'P4 유형 변경', summary: '입력값은 유지하고 proto 저장에 필요한 값을 채운다.',
     steps: [
-      { actor: 'changePopupType(previous, selection)', description: "selection은 PopupType 또는 'VIDEO_QUIZ'(QUIZ + content.videoEnabled=true). 창 크기 기본값, 완료 비율(영상+퀴즈 0.8, 영상 없음 null), 정답 비교 방식을 맞춘다." },
+      { actor: 'changePopupType(previous, selection)', description: "selection은 PopupType 또는 'VIDEO_QUIZ'(QUIZ + content.videoEnabled=true). 창 크기 기본값, 완료 비율(영상+퀴즈 0.8, 영상 없음 null), 정답 비교 방식을 채운다." },
     ],
     parent: ['유형 선택 UI'],
     notes: ['편집 중에는 다른 유형의 content 키도 남는다. 저장 시 toSaveRequestPopup이 유형별 키만 남긴다.'],
   },
   {
-    id: 'richtext', title: '⑤ 서식 본문 편집', summary: 'CKEditor로 편집하고 문단·Run JSON과 일반 문자열을 함께 받는다.',
+    id: 'proto-save', scope: 'PROTO', title: 'P5 proto 저장', summary: 'proto 등록 화면의 저장 API body를 만든다.',
     steps: [
-      { actor: 'readTextBlocks(content.textBlocks) ?? plainTextToBlocks(plainText)', description: '편집기 초기값. 서식이 없으면 일반 문자열을 서식 없는 문단으로.' },
-      { actor: 'PopupRichTextEditor', description: 'initialBlocks로 처음 한 번만 읽고, 편집할 때마다 onChange(blocks, plainText)를 부른다. 우클릭·Shift+F10·서식 버튼으로 서식 패널(PopupRichTextMenu)을 연다.' },
-      { actor: 'htmlToBlocks / blocksToPlainText', description: '편집기 HTML → 허용 서식만 남긴 RichBlock[] → 일반 문자열. 허용 밖 서식은 버리고 글자는 보존.' },
-      { actor: 'PopupRichBlocks', description: '미리보기에서 RichBlock[]을 React 요소로 그린다(innerHTML 미사용).' },
-    ],
-    parent: ['onChange 결과를 content.textBlocks·content.plainText에 함께 저장', '본문을 바꾸려면 key로 다시 마운트'],
-    notes: ['허용 값: 굵게·기울임·밑줄·취소선, 색(RICH_COLORS 40색), 크기(RICH_SIZES), 글꼴(RICH_FONTS 4종), 정렬 3종, 들여쓰기 40px 단계.'],
-  },
-  {
-    id: 'question', title: '⑥ 설문·퀴즈 문항', summary: '문항·선택지·정답·통과 점수를 편집하고 저장 전 검사한다.',
-    steps: [
-      { actor: 'PopupQuestionEditor', description: '문항 추가·삭제·서식 제목/설명·유형·배점·선택지·정답·최소/최대 선택 수. 바뀔 때마다 전체 목록을 onChange로 돌려준다.' },
-      { actor: 'PopupQuizRuleFields + usePopupQuizRule', description: '퀴즈 유형(FULL·CUTOFF·PASS_FAIL)과 기준 개수를 고르면 withQuizRule이 통과 점수를 계산한다.' },
-      { actor: 'validatePopupQuestions(questions, quiz, passingScore)', description: '저장 전 확인. 오류 문구 또는 null.' },
-    ],
-    parent: ['문항 state 보관', '검사 실패 시 저장 중단·안내'],
-  },
-  {
-    id: 'schedule', title: '⑦ 노출 일정', summary: '게시 기간 안의 요일·시간대를 입력한다.',
-    steps: [
-      { actor: 'PopupScheduleFields', description: "스위치 끔 = FIXED(상시), 켬 = SCHEDULE. 요일 없음 = 매일, 시간대 없음 = 하루 종일. onChange(patch)로 바뀐 항목만 돌려준다." },
-      { actor: 'validatePopupSchedule / describeSchedule', description: '저장 전 검사와 일정 요약 문구.' },
-    ],
-    parent: ['patch를 편집값에 병합'],
-    notes: ['노출 판단은 서버(KST)가 한다. 조회 주기(30~60분) 때문에 짧은 시간대는 놓칠 수 있다.'],
-  },
-  {
-    id: 'preview', title: '⑧ 미리보기', summary: '등록 화면 우측 미리보기와 실제 크기 모달.',
-    steps: [
-      { actor: 'InlinePopupPreview', description: '우측 미리보기. onOpenPreview가 있으면 "실제 크기로 보기" 버튼을 보여 준다. IMAGE 권장 창 크기는 onRecommendedSize로 알린다.' },
-      { actor: 'PopupPreviewDialog', description: '브라우저 창을 작업 영역으로 보고 크기 모드·9개 위치·배경 Overlay를 WPF와 같이 적용한다. 닫으면 시연 상태 초기화.' },
-      { actor: 'PopupPreview', description: '공용 렌더러. 헤더(검은 배경·흰 제목·고정 로고)·본문·푸터(확인/바로가기/제출, 나중에 보기, 다시 보지 않기)를 WPF 구성대로 그린다.' },
-    ],
-    parent: ['모달 열림 state', 'recommendedSize 전달(선택)'],
-  },
-  {
-    id: 'save', title: '⑨ 저장', summary: '검사 후 저장 요청 body를 만들어 API로 보낸다.',
-    steps: [
-      { actor: 'validate* 함수', description: '문항·일정·퀴즈 규칙 검사. 필수값·범위 검사는 부모가 한다.' },
+      { actor: 'validate* 함수', description: '문항·일정·퀴즈 규칙 안내 검사. 필수값·범위 검사는 부모가 한다.' },
       { actor: 'toSaveRequest(popup, active, targetGroups)', description: 'ID·제목 공백 제거, 유형별 content 키만 남김, URL 정규화(https:// 보정), Footer 정규형(CLOSE는 저장 안 함), 날짜 ISO, IMAGE는 popup.width/height만.' },
       { actor: 'api.popupAdmin.save(request)', description: '부모가 호출한다. 성공 시 목록 갱신.' },
     ],
     parent: ['API 호출·오류 toast·목록 갱신'],
-    notes: ['다른 테이블 API로 나눠 보내야 하면 ⑩을 따른다.'],
-  },
-  {
-    id: 'saveParts', title: '⑩ 독립 재사용·필드 추출', summary: '공통 컴포넌트를 필요한 값만으로 붙이고, 필요한 필드만 뽑아 각 화면의 저장 형식으로 보낸다.',
-    steps: [
-      { actor: 'PopupScheduleFields(value) · PopupRichTextEditor · PopupQuestionEditor', description: 'AdminPopupDetail 전체 없이 화면 state(일정 값·RichBlock[]·문항)만으로 단독 사용한다.' },
-      { actor: 'pickPopupFields(source, { topLevelKeys?, contentKeys?, questionKeys? })', description: '필요한 키만 값 그대로 뽑는다(변환·검증·기본값 없음, 얕은 복사).' },
-      { actor: '화면별 저장 경계', description: '날짜 직렬화·키 이름·JSON 모양은 각 업무 화면이 정한다. proto 저장 기준이 필요할 때만 toSaveRequestPopup 결과를 넘긴다.' },
-    ],
-    parent: ['state 보관·저장 형식 변환·API 호출', '미리보기에는 withPreviewFallback(state)로 표시용 값만 채워 전달'],
-    notes: ["'독립 재사용·필드 추출' 탭에 최소 입력·출력 표·키 표·샘플 4종·실행기가 있다. TODO: docs/design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md"],
+    notes: ['proto 저장 API 전용 변환이다. 다른 업무 화면은 ⑥ 선택 추출 → 화면별 저장 경계를 따른다.'],
   },
 ];
 
-const PREVIEW_EXAMPLE = `const [popup, setPopup] = useState(createDefaultPopup);
+const PREVIEW_EXAMPLE = `// 화면 state는 입력한 값만(미설정 = 키 생략)
+const [state, setState] = useState({ popupType: 'TEXT', title: '', content: {}, questions: [] });
 const [open, setOpen] = useState(false);
 const [size, setSize] = useState<Size | null>(null);
+const preview = withPreviewFallback(state); // 미리보기 전용(state·저장 값은 그대로)
 
-<InlinePopupPreview popup={popup} onOpenPreview={() => setOpen(true)} onRecommendedSize={setSize} />
-<PopupPreviewDialog popup={popup} open={open} onClose={() => setOpen(false)} recommendedSize={size} />`;
+<InlinePopupPreview popup={preview} onOpenPreview={() => setOpen(true)} onRecommendedSize={setSize} />
+<PopupPreviewDialog popup={preview} open={open} onClose={() => setOpen(false)} recommendedSize={size} />`;
 
 export const COMPONENTS: GuideComponent[] = [
   {
@@ -177,9 +205,9 @@ export const COMPONENTS: GuideComponent[] = [
     outputs: [{ name: 'onChange', type: '(blocks: RichBlock[], plainText: string) => void', required: true, description: '편집할 때마다 서식 본문과 서식 없는 문자열' }],
     values: ['content.textBlocks + content.plainText (TEXT)', 'content.surveyTitleBlocks·descriptionBlocks (SURVEY·QUIZ)', 'question.titleBlocks·descriptionBlocks, option.textBlocks'],
     reuse: ['HTML은 저장하지 않는다. onChange 결과(blocks, plainText)를 함께 저장한다.', '여러 개를 나란히 써도 편집기마다 선택 범위·패널 상태가 따로다.', '엔진·플러그인은 @/components/ckeditor 공통 엔진에서 온다(직접 ckeditor5를 import하지 않는다).'],
-    example: `<PopupRichTextEditor key={editorKey} label="본문"
-  initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
-  onChange={(blocks, plainText) => setPopup((p) => ({ ...p, content: { ...p.content, textBlocks: blocks, plainText } }))} />`,
+    example: `const [body, setBody] = useState<{ textBlocks: RichBlock[]; plainText: string }>({ textBlocks: [], plainText: '' });
+<PopupRichTextEditor key={editorKey} label="본문" initialBlocks={body.textBlocks}
+  onChange={(textBlocks, plainText) => setBody({ textBlocks, plainText })} />`,
     processes: ['richtext'],
   },
   {
@@ -227,11 +255,12 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'onChange', type: '(questions: PopupQuestion[]) => void', required: true, description: '바뀐 문항 전체' },
       { name: 'onPassingScoreChange', type: '(score: number | null) => void', required: true, description: '통과 점수 입력' },
     ],
-    values: ['popup.questions', 'popup.passingScore', 'SURVEY MULTIPLE_CHOICE의 minSelections·maxSelections(비우면 제한 없음)'],
-    reuse: ['저장 전 validatePopupQuestions(questions, quiz, passingScore)로 검사한다(오류 문구 또는 null).', '새 문항·선택지 ID는 음수 임시 ID다. 서버가 저장 시 채번한다.'],
-    example: `<PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore}
-  onChange={(questions) => setPopup((p) => ({ ...p, questions }))}
-  onPassingScoreChange={(passingScore) => setPopup((p) => ({ ...p, passingScore }))} />`,
+    values: ['questions(PopupQuestion[])', 'passingScore(퀴즈)', 'SURVEY MULTIPLE_CHOICE의 minSelections·maxSelections(비우면 제한 없음)'],
+    reuse: ['저장 전 validatePopupQuestions(questions, quiz, passingScore)로 안내 검사한다(오류 문구 또는 null, 최종 검증은 서버).', '새 문항·선택지 ID는 음수 임시 ID다. 서버가 저장 시 채번한다.'],
+    example: `const [questions, setQuestions] = useState<PopupQuestion[]>([]);
+const [passingScore, setPassingScore] = useState<number | null>(null);
+<PopupQuestionEditor questions={questions} quiz passingScore={passingScore}
+  onChange={setQuestions} onPassingScoreChange={setPassingScore} />`,
     processes: ['question'],
   },
   {
@@ -248,7 +277,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'onRuleChange', type: '(rule: QuizRule) => void', required: true, description: '유형 선택' },
       { name: 'onCountChange', type: '(count: number) => void', required: true, description: '개수 입력' },
     ],
-    values: ['usePopupQuizRule(popup, resetKey) → { rule, count, setRule, setCount, effective, error }', 'withQuizRule이 계산한 effective.passingScore를 저장한다.'],
+    values: ['usePopupQuizRule(target, resetKey) → { rule, count, setRule, setCount, effective, error } (target = { popupType, questions, passingScore? })', 'withQuizRule이 계산한 effective.passingScore를 저장한다.'],
     reuse: ['입력·표시만 한다. 계산은 popupQuizRule.withQuizRule, 검사는 validateQuizRule.'],
     example: `const quizRule = usePopupQuizRule(popup, resetKey);
 <PopupQuizRuleFields questionCount={popup.questions.length} rule={quizRule.rule} count={quizRule.count}
@@ -264,8 +293,8 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'showPeriod', type: 'boolean', description: '게시 기간(시작·종료) 입력도 표시. 기본 false' },
     ],
     outputs: [{ name: 'onChange', type: '(patch: Partial<PopupScheduleValue>) => void', required: true, description: '바뀐 항목만 담은 부분 값. 게시 기간은 입력란 문자열 그대로(직렬화는 부모)' }],
-    values: ['popup.periodMode(FIXED | SCHEDULE)', 'popup.repeatDayOfWeek(ISO 요일 쉼표 목록, 1=월)', 'popup.displayTimes([{ startTime, endTime }])'],
-    reuse: ['저장 전 validatePopupSchedule(popup), 요약은 describeSchedule(periodMode, repeatDayOfWeek, displayTimes).'],
+    values: ['periodMode(FIXED | SCHEDULE)', 'repeatDayOfWeek(ISO 요일 쉼표 목록, 1=월)', 'displayTimes([{ startTime, endTime }])', 'displayStartAt·displayEndAt(showPeriod, 입력란 문자열)'],
+    reuse: ['저장 전 validatePopupSchedule(value)로 안내 검사, 요약은 describeSchedule(periodMode, repeatDayOfWeek, displayTimes).'],
     example: `const [schedule, setSchedule] = useState<PopupScheduleValue>({ periodMode: 'FIXED' });
 <PopupScheduleFields value={schedule} showPeriod onChange={(patch) => setSchedule((p) => ({ ...p, ...patch }))} />`,
     processes: ['schedule'],
@@ -274,15 +303,15 @@ export const COMPONENTS: GuideComponent[] = [
     name: 'InlinePopupPreview', file: 'InlinePopupPreview.tsx',
     summary: '등록 화면 우측 미리보기(제목·"실제 크기로 보기" 버튼 + PopupPreview).',
     props: [
-      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 편집값(그대로 넘김)' },
+      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값(표시용 전체 모양). 독립 화면은 withPreviewFallback(state), proto는 편집값 그대로' },
       { name: 'title', type: 'string', description: "제목. 기본 '팝업 미리보기'" },
     ],
     outputs: [
       { name: 'onOpenPreview', type: '() => void', description: '있으면 "실제 크기로 보기" 버튼 표시' },
       { name: 'onRecommendedSize', type: '(size: Size | null) => void', description: 'IMAGE 권장 창 크기' },
     ],
-    values: ['편집값 전체(읽기 전용)'],
-    reuse: ['API를 부르지 않고 popup을 바꾸지 않는다. 부모 영역의 남은 높이를 채운다.'],
+    values: ['popup 전체(읽기 전용)'],
+    reuse: ['API를 부르지 않고 popup을 바꾸지 않는다. 부모 영역의 남은 높이를 채운다.', '독립 화면 state에는 업무 기본값을 넣지 말고 넘길 때만 withPreviewFallback을 쓴다.'],
     example: PREVIEW_EXAMPLE,
     processes: ['preview'],
   },
@@ -290,12 +319,12 @@ export const COMPONENTS: GuideComponent[] = [
     name: 'PopupPreviewDialog', file: 'PopupPreviewDialog.tsx',
     summary: '실제 크기 미리보기 모달. 크기 모드·9개 위치·배경 Overlay를 WPF와 같이 적용한다.',
     props: [
-      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 편집값' },
+      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. 독립 화면은 withPreviewFallback(state)' },
       { name: 'open', type: 'boolean', required: true, description: '열림 여부(부모 state)' },
       { name: 'recommendedSize', type: 'Size | null', description: '인라인 미리보기가 계산한 IMAGE 권장 크기' },
     ],
     outputs: [{ name: 'onClose', type: '() => void', required: true, description: '종료 버튼·Esc·팝업 안 닫기 동작' }],
-    values: ['편집값 전체(읽기 전용)'],
+    values: ['popup 전체(읽기 전용)'],
     reuse: ['설문 응답·시청 비율 등 시연 상태는 모달 안에만 있고 닫으면 초기화된다.'],
     example: PREVIEW_EXAMPLE,
     processes: ['preview'],
@@ -304,7 +333,7 @@ export const COMPONENTS: GuideComponent[] = [
     name: 'PopupPreview', file: 'PopupPreview.tsx',
     summary: '공용 렌더러. WPF 팝업 창과 같은 헤더·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터를 그리고 완료 조건을 시연한다.',
     props: [
-      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 팝업 설정' },
+      { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 팝업 설정. 독립 화면은 withPreviewFallback(state)' },
       { name: 'showBackground', type: 'boolean', description: '배경 여백·Overlay를 안에 그릴지. 기본 true(모달은 false)' },
     ],
     outputs: [
@@ -313,29 +342,31 @@ export const COMPONENTS: GuideComponent[] = [
     ],
     values: ['헤더: 검은 배경·흰 제목·고정 로고(public/images/popup-header-logo.png)', "푸터 버튼: CLOSE '확인', LINK_AND_CLOSE '바로가기', SURVEY·QUIZ '제출'"],
     reuse: ['보통 InlinePopupPreview·PopupPreviewDialog를 쓰고, 목록 썸네일 등 다른 배치가 필요할 때 직접 쓴다.'],
-    example: `<PopupPreview popup={popup} showBackground={false} />`,
+    example: `<PopupPreview popup={withPreviewFallback(state)} showBackground={false} />`,
     processes: ['preview'],
   },
 ];
 
 export const FUNCTIONS: GuideFunction[] = [
-  { name: 'createDefaultPopup', file: 'popupEditorTransform.ts', input: 'now?: Date', output: 'AdminPopupDetail', description: '신규 기본 편집값' },
-  { name: 'toEditorPopup', file: 'popupEditorTransform.ts', input: 'loaded: AdminPopupDetail', output: 'AdminPopupDetail', description: '조회 응답 popup → 편집값' },
-  { name: 'toEditorPopupFromTemplate', file: 'popupEditorTransform.ts', input: 'template, currentPopupId', output: 'AdminPopupDetail', description: '템플릿 → 편집값(현재 ID 유지, 문항 템플릿 연결 해제)' },
-  { name: 'changePopupType', file: 'popupEditorTransform.ts', input: "previous, selection(PopupType | 'VIDEO_QUIZ')", output: 'AdminPopupDetail', description: '유형 변경(입력값 유지, 필수 값 보정)' },
-  { name: 'toSaveRequestPopup', file: 'popupEditorTransform.ts', input: 'popup: AdminPopupDetail', output: 'AdminPopupDetail', description: '편집값 → 저장 popup(유형별 키·URL·Footer·날짜·IMAGE 크기 정리)' },
-  { name: 'toSaveRequest', file: 'popupEditorTransform.ts', input: 'popup, active, targetGroups', output: 'PopupSaveRequest', description: '저장 API body' },
-  { name: 'COMMON_CONTENT_KEYS / CONTENT_KEYS_BY_TYPE', file: 'popupEditorTransform.ts', input: '(상수)', output: 'string[] / Record<유형, string[]>', description: '저장 시 남기는 공통·유형별 content 키(가이드 content 키 표도 이 목록)' },
-  { name: 'contentValue', file: 'popupEditorTransform.ts', input: 'popup, key', output: 'string', description: 'content 값을 입력란 문자열로(null → "")' },
-  { name: 'toDateTimeLocal', file: 'popupEditorTransform.ts', input: 'value: PopupDateValue', output: 'string', description: '서버 일시 → datetime-local 문자열' },
-  { name: 'describeSchedule / parseWeekdays', file: 'popupEditorTransform.ts', input: 'periodMode, repeatDayOfWeek, displayTimes', output: 'string / number[]', description: '노출 일정 요약·요일 파싱' },
-  { name: 'pickPopupFields', file: 'popupEditorTransform.ts', input: 'popup, { topLevelKeys?, contentKeys?, questionKeys? }', output: '{ ...최상위 키, content?, questions? }', description: '최상위·content·각 문항에서 고른 키만 값 그대로 새 객체로(준 영역만, 키가 있으면 null·0·빈 값 보존, 얕은 복사). 변환·검증 없음' },
-  { name: 'htmlToBlocks / blocksToHtml', file: 'popupRichText.ts', input: 'html / RichBlock[]', output: 'RichBlock[] / html', description: '편집기 HTML ↔ 서식 본문(허용 서식만)' },
-  { name: 'blocksToPlainText / plainTextToBlocks', file: 'popupRichText.ts', input: 'RichBlock[] / string', output: 'string / RichBlock[]', description: '서식 본문 ↔ 일반 문자열(문단 사이 \\n)' },
-  { name: 'readTextBlocks', file: 'popupRichText.ts', input: 'value: unknown', output: 'RichBlock[] | null', description: '서버 값을 계약에 맞는 서식 본문으로(구조 오류 null)' },
-  { name: 'readQuizRule / withQuizRule / validateQuizRule', file: 'popupQuizRule.ts', input: 'popup, rule, count', output: '{ rule, count } / AdminPopupDetail / string | null', description: '퀴즈 유형 ↔ 통과 점수' },
-  { name: 'validatePopupQuestions', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?', output: 'string | null', description: '문항 저장 전 검사' },
-  { name: 'validatePopupSchedule', file: 'PopupScheduleFields.tsx', input: 'popup', output: 'string | null', description: '노출 일정 저장 전 검사' },
-  { name: 'withPreviewFallback', file: 'popupPreviewFallback.ts', input: 'state: Partial<AdminPopupDetail>', output: 'AdminPopupDetail(미리보기 전용)', description: '화면 state에 미리보기 표시용 최상위 필드(PREVIEW_FALLBACK)만 채움. 업무 값·content 기본값은 채우지 않음. 저장·추출에 쓰지 않음' },
-  { name: 'popupFontSize / popupMinimumSize', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '폰트 크기(10~40)·최소 창 크기(300) 읽기' },
+  // 범용
+  { name: 'pickPopupFields', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'popup, { topLevelKeys?, contentKeys?, questionKeys? }', output: '{ ...최상위 키, content?, questions? }', description: '최상위·content·각 문항에서 고른 키만 값 그대로 새 객체로(준 영역만, 키가 있으면 null·0·빈 값 보존, 얕은 복사). 변환·검증·기본값 없음' },
+  { name: 'withPreviewFallback', scope: 'COMMON', file: 'popupPreviewFallback.ts', input: 'state: Partial<AdminPopupDetail>', output: 'AdminPopupDetail(미리보기 전용)', description: '화면 state에 미리보기 표시용 최상위 필드(PREVIEW_FALLBACK)만 채움. 업무 값·content 기본값은 채우지 않고, 동영상+퀴즈 완료 비율 미설정은 0.8로 표시. 저장·추출에 쓰지 않음' },
+  { name: 'contentValue', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'popup, key', output: 'string', description: 'content 값을 입력란 문자열로(null·없음 → "")' },
+  { name: 'toDateTimeLocal', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'value: PopupDateValue', output: 'string', description: '서버 일시 → datetime-local 입력란 문자열' },
+  { name: 'describeSchedule / parseWeekdays', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'periodMode, repeatDayOfWeek, displayTimes', output: 'string / number[]', description: '노출 일정 요약(안내용)·요일 파싱' },
+  { name: 'htmlToBlocks / blocksToHtml', scope: 'COMMON', file: 'popupRichText.ts', input: 'html / RichBlock[]', output: 'RichBlock[] / html', description: '편집기 HTML ↔ 서식 본문(허용 서식만)' },
+  { name: 'blocksToPlainText / plainTextToBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'RichBlock[] / string', output: 'string / RichBlock[]', description: '서식 본문 ↔ 일반 문자열(문단 사이 \\n)' },
+  { name: 'readTextBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'value: unknown', output: 'RichBlock[] | null', description: '서버 값을 계약에 맞는 서식 본문으로(구조 오류 null)' },
+  { name: 'readQuizRule / withQuizRule / validateQuizRule', scope: 'COMMON', file: 'popupQuizRule.ts', input: '{ popupType, questions, passingScore? }, rule, count', output: '{ rule, count } / 같은 타입 / string | null', description: '퀴즈 유형 ↔ 통과 점수(검사는 즉시 안내용)' },
+  { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?', output: 'string | null', description: '문항 저장 전 안내 검사(최종 검증은 서버)' },
+  { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 일정 저장 전 안내 검사(최종 검증은 서버)' },
+  { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '폰트 크기(10~40)·최소 창 크기(300) 읽기' },
+  // proto(RgstPop) 전용
+  { name: 'createDefaultPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'now?: Date', output: 'AdminPopupDetail', description: 'proto 신규 전체 편집값(업무 기본값 포함). 독립 화면 state에는 쓰지 않음' },
+  { name: 'toEditorPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'loaded: AdminPopupDetail', output: 'AdminPopupDetail', description: '조회 응답 popup → proto 편집값' },
+  { name: 'toEditorPopupFromTemplate', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'template, currentPopupId', output: 'AdminPopupDetail', description: '템플릿 → proto 편집값(현재 ID 유지, 문항 템플릿 연결 해제)' },
+  { name: 'changePopupType', scope: 'PROTO', file: 'popupEditorTransform.ts', input: "previous, selection(PopupType | 'VIDEO_QUIZ')", output: 'AdminPopupDetail', description: '유형 변경(입력값 유지, 창 크기·완료 비율·비교 방식 기본값 채움)' },
+  { name: 'toSaveRequestPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'popup: AdminPopupDetail', output: 'AdminPopupDetail', description: 'proto 편집값 → 저장 popup(유형별 키·URL·Footer·날짜 ISO·IMAGE 크기 정리)' },
+  { name: 'toSaveRequest', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'popup, active, targetGroups', output: 'PopupSaveRequest', description: 'proto 저장 API body' },
+  { name: 'COMMON_CONTENT_KEYS / CONTENT_KEYS_BY_TYPE', scope: 'PROTO', file: 'popupEditorTransform.ts', input: '(상수)', output: 'string[] / Record<유형, string[]>', description: 'proto 저장 시 남기는 공통·유형별 content 키(가이드 content 키 표도 이 목록)' },
 ];

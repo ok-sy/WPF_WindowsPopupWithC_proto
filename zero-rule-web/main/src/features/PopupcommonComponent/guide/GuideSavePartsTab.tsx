@@ -1,38 +1,9 @@
-import { Alert, Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import type { ReactNode } from 'react';
+import { Alert, Box, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { COMMON_CONTENT_KEYS, CONTENT_KEYS_BY_TYPE, pickPopupFields, toSaveRequestPopup, type PickPopupFieldsOptions } from '..';
 import PopupIndependentSamples from '../sample/PopupIndependentSamples';
-import GuideCodeRunner, { CODE_FONT, type RunnerDefinition } from './GuideCodeRunner';
+import GuideCodeRunner, { type RunnerDefinition } from './GuideCodeRunner';
 import { protoPopup, samplePopup } from './guideRunners';
-
-function C({ children }: { children: ReactNode }) {
-  return (
-    <Box component="code" sx={{ fontFamily: CODE_FONT, fontSize: '0.92em', bgcolor: '#f1f5f9', color: '#0f172a', border: '1px solid #e2e8f0',
-      borderRadius: 0.75, px: 0.6, py: 0.1 }}>{children}</Box>
-  );
-}
-function CodeBlock({ children }: { children: string }) {
-  return (
-    <Box component="pre" sx={{ m: 0, p: 2, bgcolor: '#0f172a', color: '#e2e8f0', borderRadius: 1.5, fontSize: 13, lineHeight: 1.65, overflow: 'auto',
-      fontFamily: CODE_FONT }}>{children}</Box>
-  );
-}
-function Section({ title, description, children }: { title: string; description?: ReactNode; children: ReactNode }) {
-  return (
-    <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 2 }}>
-      <Typography component="h3" sx={{ fontSize: 17, fontWeight: 700, pl: 1.25, borderLeft: '4px solid', borderColor: 'primary.main', lineHeight: 1.3 }}>{title}</Typography>
-      {description && <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 1, lineHeight: 1.7 }}>{description}</Typography>}
-      <Box sx={{ mt: 2 }}>{children}</Box>
-    </Paper>
-  );
-}
-function Bullets({ items }: { items: ReactNode[] }) {
-  return (
-    <Box component="ul" sx={{ m: 0, pl: 2.5, '& li': { fontSize: 14, lineHeight: 1.8, mb: 0.25 }, '& li::marker': { color: 'primary.main' } }}>
-      {items.map((item, index) => <li key={index}>{item}</li>)}
-    </Box>
-  );
-}
+import { Bullets, C, CODE_FONT, CodeBlock, Section } from './GuideUi';
 
 /* 컴포넌트별 최소 입력·출력(AdminPopupDetail 전체 없이 붙이는 기준) */
 const MINIMUM_IO: { name: string; input: string; output: string; parent: string }[] = [
@@ -77,7 +48,7 @@ const RUNNER: RunnerDefinition = {
     const popup = samplePopup(input.popup);
     return {
       'pickPopupFields(popup, options)': pickPopupFields(popup, input.options),
-      '(proto 저장 기준이 필요할 때) pickPopupFields(toSaveRequestPopup(popup), options)': pickPopupFields(toSaveRequestPopup(protoPopup(input.popup)), input.options),
+      '참고 — proto(RgstPop) 저장 기준과 비교: pickPopupFields(toSaveRequestPopup(protoPopup), options) · 다른 업무의 기본 사용법 아님': pickPopupFields(toSaveRequestPopup(protoPopup(input.popup)), input.options),
     };
   },
 };
@@ -99,7 +70,7 @@ export default function GuideSavePartsTab() {
             proto의 <C>toSaveRequest()</C>는 여러 사용 사례 중 하나일 뿐 기준 계약이 아니며, 저장 형식(날짜·키 이름·JSON 모양)은 각 업무 화면이 정합니다.
           </Alert>
 
-          <Section title="1. 컴포넌트 최소 입력·출력" description="AdminPopupDetail 전체를 만들지 않고 필요한 값만 넘겨 붙입니다(미리보기만 표시용 전체 모양 필요).">
+          <Section title="1. 컴포넌트 최소 입력·출력" description="AdminPopupDetail 전체를 만들지 않고 필요한 값만 넘겨 붙입니다(미리보기는 withPreviewFallback(state)로 표시용 모양을 만듭니다). props 전체는 컴포넌트 탭에 있습니다.">
             <Table size="small" sx={{ '& td, & th': { fontSize: 13.5, py: 1.25, verticalAlign: 'top', lineHeight: 1.65 }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
               <TableHead><TableRow><TableCell sx={{ width: 190 }}>컴포넌트</TableCell><TableCell>최소 입력</TableCell><TableCell sx={{ width: 190 }}>출력</TableCell><TableCell sx={{ width: 220 }}>부모 책임</TableCell></TableRow></TableHead>
               <TableBody>
@@ -130,7 +101,7 @@ export default function GuideSavePartsTab() {
                 <>문항 하위(선택지 안 필드) 선택은 1차 범위 밖입니다. <C>{"'options'"}</C>를 고르면 선택지 배열을 그대로 담습니다.</>,
               ]} />
             </Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, mt: 3, mb: 1 }}>content 키 (실제 상수, 유형별로 저장되는 키)</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, mt: 3, mb: 1 }}>content 키 참고 (proto 저장 상수, 유형별로 남기는 키)</Typography>
             <Table size="small" sx={{ '& td, & th': { fontSize: 14, py: 1.25, verticalAlign: 'top' }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
               <TableHead><TableRow><TableCell sx={{ width: 150 }}>구분</TableCell><TableCell>키</TableCell></TableRow></TableHead>
               <TableBody>
@@ -143,7 +114,7 @@ export default function GuideSavePartsTab() {
               </TableBody>
             </Table>
             <Typography sx={{ fontSize: 13.5, color: 'text.secondary', mt: 1.5, lineHeight: 1.7 }}>
-              proto 저장 기준(다른 유형 content 키 제외·URL 보정·날짜 ISO)이 필요한 경우에만 <C>toSaveRequestPopup(popup)</C> 결과를 넘깁니다. 이 변환은 proto 저장 전용이며 범용 추출과 섞지 않습니다.
+              위 키 목록은 proto 저장 화이트리스트(<C>CONTENT_KEYS_BY_TYPE</C>)입니다. 다른 업무 화면은 자기 저장 형식에 필요한 키를 직접 고릅니다. proto(RgstPop)로 이식할 때만 참고로 <C>toSaveRequestPopup</C> 결과와 비교하며, 범용 추출과 섞지 않습니다.
             </Typography>
           </Section>
         </Stack>

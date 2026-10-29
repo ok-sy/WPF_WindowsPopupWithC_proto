@@ -1,5 +1,18 @@
 ﻿# 변경 이력
 
+## 2026-10-30-09 — PopupCommonGuide 화면 정리(시작하기 탭·범용/proto 구분·탭 파일 분리·등록 검사)
+
+- 이유: 화면 정리 구현 명세(2026-10-30-06) 반영. 가이드가 proto 전용 흐름(createDefaultPopup·toSaveRequest)을 공통 사용법처럼 설명하고, 탭 간 설명이 겹치며 화면 파일 하나가 모든 탭을 렌더해 유지보수가 어려웠음.
+- 변경:
+  - P0 정합성: `guideData.ts` 프로세스·함수에 `scope`(COMMON/PROTO) 추가. 프로세스를 범용 ①~⑥(독립 state·서식·문항·일정·미리보기 `withPreviewFallback`·선택 추출→화면별 저장 경계)과 proto P1~P5(신규 편집값·조회·템플릿·유형 변경·proto 저장)로 분리. 컴포넌트 예제를 독립 state 기준으로, 미리보기 예제를 `withPreviewFallback(state)`로 변경. 검사 함수 설명을 즉시 안내(최종 검증은 서버)로 정리. 독립 재사용 탭의 proto 비교 출력·content 키 표를 참고용으로 표시.
+  - P1 탭 구성: 시작하기 탭 신설(첫 진입: 가져오기·최소 사용 코드·공통/부모/서버 경계·미설정/명시값 규칙·proto 경로), 공지는 맨 뒤로 옮기고 최근 게시 배지 유지. 실습 탭은 독립 필드 추출(미설정 state·pickPopupFields·withPreviewFallback)을 기본, proto 저장 변환을 토글로. 예시 탭에 연결 단계 요약.
+  - P2 파일 분리: `PopupCommonGuide.tsx`를 컨테이너(탭 배치·선택·배지·탭 이동)로 축소, 탭을 `guide/tabs/`(GuideStartTab·GuideProcessTab·GuideComponentTab·GuideExampleTab·GuideFunctionTab·GuideLiveTab·GuideNoticeTab)로 분리, 공통 표시를 `guide/GuideUi.tsx`로 모으고 `GuideSavePartsTab` 중복 렌더러 제거.
+  - P3 공지·검사: 공지 `tab` 링크와 영향 컴포넌트 칩(컴포넌트 탭 해당 항목·변환·유틸 탭으로 이동), `RECENT_NOTICE_DAYS`·`isRecentNotice`(게시일 기준, 완료 여부와 무관), 갱신 규칙 주석. 공지 2건 추가(가이드 정리, 샘플 미설정·완료 비율 0.8). 정적 검사 `verify-popup-guide-registry.cjs`(공개 컴포넌트↔COMPONENTS, FUNCTIONS 이름↔실제 export, scope, 범용 흐름의 proto 함수 사용 금지, 실행기, 공지 id·날짜·영향 이름·탭, 공통 소스→guide/sample 역참조 금지)와 렌더 스모크 `verify-popup-guide-render.cjs`(headless Edge, 로그인 없음) 추가.
+  - 문서: 화면 정리 명세 TODO 체크·§7 구현 결과, 미리보기 컴포넌트 문서 가이드 설명, 문서 색인 상태.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/PopupCommonGuide.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideUi.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideSavePartsTab.tsx, scripts/verify-popup-guide-registry.cjs, scripts/verify-popup-guide-render.cjs, scripts/verify-popup-guide-render-entry.tsx, docs/design/20261030_PopupCommonGuide_화면정리_구현명세_TODO.md, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, guide eslint 오류 0. `verify-popup-guide-registry` 207건 통과(변이 확인: 컴포넌트 이름 오류·proto 함수 scope 오류·범용 흐름 proto actor를 넣으면 실패), `verify-popup-guide-render` 18건 통과(탭 8개 순서·시작하기 첫 진입·링크 이동·실습 모드·범용/proto 구분·공지 칩 이동·오류 0). 회귀 common-sample-69 38·pick-fields 25·rgstpop-quiz-rule 11·preview-61 52·transform-64 77건 통과.
+- 상태: 커밋·원격 반영. 미실행: 운영 빌드(`next build`), 로그인 실화면 확인, 한글 조합 입력·브라우저 너비 변경 확인.
+
 ## 2026-10-30-08 — 동영상+퀴즈 미리보기 완료 비율 fallback 0.8
 
 - 이유: 미설정 기준 샘플에서 동영상+퀴즈 완료 비율을 비워 두면 미리보기가 PopupPreview 기본값(100%)으로 표시돼 등록 화면 기본값(changePopupType 0.8)과 달랐음.

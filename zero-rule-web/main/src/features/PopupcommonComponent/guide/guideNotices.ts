@@ -5,7 +5,10 @@
  * - 추가 방법: GUIDE_NOTICES 배열에 항목 하나를 넣는다. 정렬은 화면이 date 내림차순으로 하므로 순서는 상관없다.
  *   date는 'YYYY-MM-DD'(KST). id는 겹치지 않는 문자열. 화면은 최근 14일 안의 공지에 NEW를 붙인다.
  * - 예정(PLANNED)이 반영되면 항목을 지우지 말고 status를 DONE으로 바꾸고 doneDate를 적는다(이력 유지).
+ * - props 변경·삭제 공지는 action에 영향 화면과 바꾸는 방법을 적는다. 상세 정책은 docs/design TODO 링크로 두고 여기엔 요약만 쓴다.
+ * - 이 파일이 공지의 단일 출처다(게시판 DB·API를 만들지 않는다).
  */
+import type { GuideTabId } from './GuideUi';
 
 /** 공지 구분 */
 export type NoticeCategory = 'ADDED' | 'CHANGED' | 'REMOVED' | 'PLANNED' | 'NOTICE';
@@ -27,6 +30,17 @@ export interface GuideNotice {
   action?: string;
   /** 반영일(status DONE일 때) */
   doneDate?: string;
+  /** 자세한 내용이 있는 가이드 탭(공지 카드에 이동 링크 표시) */
+  tab?: GuideTabId;
+}
+
+/** 최근 게시로 표시(NEW·배지)하는 기간(일). 게시일 기준이며 완료·실행 여부를 추측하지 않는다. */
+export const RECENT_NOTICE_DAYS = 14;
+
+/** 게시일(YYYY-MM-DD, KST)이 now 기준 최근 RECENT_NOTICE_DAYS일 안인지 */
+export function isRecentNotice(date: string, now: Date): boolean {
+  const time = new Date(`${date}T00:00:00+09:00`).getTime();
+  return Number.isFinite(time) && now.getTime() - time < RECENT_NOTICE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export const NOTICE_CATEGORY_LABELS: Record<NoticeCategory, string> = {
@@ -38,6 +52,25 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-10-30-guide-restructure', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
+    title: '가이드 화면 정리 — 시작하기 탭, 범용/proto 전용 구분',
+    body: ['첫 탭으로 시작하기를 추가했습니다(가져오기·최소 사용 코드·공통/부모/서버 경계). 공지는 맨 뒤로 옮기고 최근 게시 수를 배지로 표시합니다.',
+      '프로세스·변환·유틸에 범용 / proto 전용 표시를 붙였습니다. `createDefaultPopup`·`changePopupType`·`toSaveRequest`는 proto(RgstPop) 전용이며 독립 화면의 필수 처리가 아닙니다.',
+      '실습 탭은 독립 필드 추출 실습을 먼저 보여 주고, proto 저장 변환 실습은 선택해서 봅니다.'],
+    components: ['createDefaultPopup', 'changePopupType', 'toSaveRequest', 'withPreviewFallback', 'pickPopupFields'],
+    action: '새 화면은 시작하기 탭의 최소 코드(입력한 값만 state, 미리보기는 withPreviewFallback, 저장은 pickPopupFields + 화면별 저장 경계)를 따르세요.',
+    tab: 'start',
+  },
+  {
+    id: '2026-10-30-sample-unset', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
+    title: '공통 샘플 state 미설정 기준 전환 · 동영상+퀴즈 미리보기 완료 비율 0.8',
+    body: ['목록 샘플·편집 샘플·IS063M02 샘플의 state가 입력한 값만 갖습니다(`newSamplePopup`은 ID·제목·TEXT만, 유형 전환 `changeSampleType`은 업무 기본값을 채우지 않음). 저장 값에는 입력하지 않은 창 크기·나중에 보기·푸터 동작 키가 없습니다.',
+      '`withPreviewFallback`은 동영상+퀴즈의 완료 비율이 미설정이면 미리보기에서 0.8(80%)로 표시합니다(state·저장 값에는 넣지 않음). 일반 VIDEO는 1.0 그대로입니다.'],
+    components: ['withPreviewFallback', 'usePopupQuizRule'],
+    action: '샘플을 복사해 쓰던 화면은 state에 createDefaultPopup 값을 넣지 말고 미리보기에만 withPreviewFallback을 쓰세요.',
+    tab: 'example',
+  },
+  {
     id: '2026-10-30-preview-fallback', date: '2026-10-30', category: 'ADDED', status: 'DONE', doneDate: '2026-10-30',
     title: 'WEB/SERVER 책임 분리 — 미설정은 키 생략, 미리보기 fallback은 withPreviewFallback',
     body: ['WEB은 입력·표시·미리보기, SERVER는 업무 기본값·최종 검증·정규화를 맡습니다. 미설정 값은 키를 생략하고(null은 현재 서버 기본값 적용 대상), false·0·빈 문자열은 명시값으로 그대로 보냅니다.',
@@ -45,6 +78,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
       '가이드의 개요 탭을 없애고 예시 탭(IS063M02Sample)을 추가했습니다.'],
     components: ['withPreviewFallback', 'pickPopupFields'],
     action: '신규 독립 화면은 state를 미설정으로 시작하고 미리보기에 withPreviewFallback을 쓰세요. 기존 RgstPop(proto)은 서버 대응 후 점진 전환합니다.',
+    tab: 'process',
   },
   {
     id: '2026-10-30-pick-fields', date: '2026-10-30', category: 'ADDED', status: 'DONE', doneDate: '2026-10-30',
@@ -54,6 +88,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
       '`PopupScheduleFields`가 일정 전용 `value: PopupScheduleValue`를 받습니다(AdminPopupDetail 불필요, `showPeriod`로 게시 기간 입력 포함). 기존 `popup` prop도 계속 받습니다.'],
     components: ['pickPopupFields', 'PopupScheduleFields'],
     action: '필드를 손으로 골라 담던 화면은 pickPopupFields로, 일정 입력은 value prop으로 바꾸세요. 기존 popup prop 호출은 그대로 동작합니다.',
+    tab: 'saveParts',
   },
   {
     id: '2026-10-29-runner', date: '2026-10-29', category: 'ADDED', status: 'DONE', doneDate: '2026-10-29',
