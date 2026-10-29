@@ -1,11 +1,10 @@
-import type { AdminPopupDetail } from '@local/domain';
 import {
   Alert, Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import { POPUP_TYPE_LABELS } from '../popupCommon';
 import PopupSampleEditor from './PopupSampleEditor';
-import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popupSampleData';
+import { createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState } from './popupSampleData';
 
 /**
  * POL-14-01 : 공통 프론트 경계
@@ -22,14 +21,14 @@ import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popu
  */
 export default function PopupListSample() {
   // [실연동] 초기 목록. useEffect에서 api.popupAdmin.list({ ctx })의 body로 채운다(목록 항목 → 수정 시 info로 상세 조회).
-  const [popups, setPopups] = useState<AdminPopupDetail[]>(createSamplePopups);
-  const [editing, setEditing] = useState<{ popup: AdminPopupDetail; key: number } | null>(null);
+  const [popups, setPopups] = useState<SamplePopupState[]>(createSamplePopups);
+  const [editing, setEditing] = useState<{ popup: SamplePopupState; key: number } | null>(null);
   const [lastRequest, setLastRequest] = useState<Record<string, unknown> | null>(null);
   // 열 때마다 새 key로 편집기를 마운트해 이전 팝업의 편집 상태·에디터 내용이 섞이지 않게 한다.
   // [실연동] 수정 시작: api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup)을 넘긴다.
-  const open = (popup: AdminPopupDetail) => setEditing({ popup, key: Date.now() });
+  const open = (popup: SamplePopupState) => setEditing({ popup, key: Date.now() });
 
-  const save = (popup: AdminPopupDetail) => {
+  const save = (popup: SamplePopupState) => {
     // [실연동] 이 화면의 저장 API 형식으로 바꿔 호출하고 성공 시에만 목록을 갱신한다. 화면에 없는 값(기간·활성·대상 그룹)은 넣지 않는다.
     const request = toSampleScreenValues(popup);
     setLastRequest(request);
@@ -43,7 +42,7 @@ export default function PopupListSample() {
     <Box sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
         <Typography variant="h6" fontWeight={700}>팝업 공통 컴포넌트 샘플 — 목록</Typography>
-        {/* [옵션] 신규 기본값은 newSamplePopup() = createDefaultPopup()(창 560×420·최소 300×300 등) + 전체 content 옵션. [실연동] popupId는 서버 채번/입력 규칙으로 바꾼다. */}
+        {/* [옵션] 신규 값은 newSamplePopup() = 팝업 ID·제목·TEXT만(미설정 기준, 창 크기·content 옵션은 비움 — 미리보기는 표시용 fallback, 저장 시 서버 기본값). [실연동] popupId는 서버 채번/입력 규칙으로 바꾼다. */}
         <Button variant="contained" size="small"
           onClick={() => open(newSamplePopup(`LOCAL-${popups.length + 1}`, '새 팝업'))}>신규</Button>
       </Stack>

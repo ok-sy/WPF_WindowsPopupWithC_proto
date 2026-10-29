@@ -1,7 +1,7 @@
 # PopupcommonComponent WEB 표시 기본값 / SERVER 업무 정책 책임 분리 TODO
 
 작성: 2026-10-30 (KST)
-상태: **정책 확정(2026-10-30: 미설정 표현 규칙·F-3 분류) · WEB 이행 1단계 완료(withPreviewFallback·신규 독립 샘플·문구)** · RgstPop(proto)·기존 샘플 state 전환과 서버 항목은 미실행. 신규 숫자 TODO 번호는 임의 부여하지 않음.
+상태: **정책 확정(2026-10-30: 미설정 표현 규칙·F-3 분류) · WEB 이행 1단계 완료(withPreviewFallback·신규 독립 샘플·문구) · 기존 샘플 state 전환 완료** · RgstPop(proto) 전환과 서버 항목은 미실행. 신규 숫자 TODO 번호는 임의 부여하지 않음.
 관련: [독립 재사용·선택 필드 추출 TODO](20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md)(공통 컴포넌트 계약 A~E) · [등록·수정 공통 JSON 검증 TODO](20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md)(서버 검증·기본값 구현) · [팝업 JSON 가공·요청 body 정책](20261029_팝업JSON_가공_요청body_정책정리.md)
 
 ## 원칙
@@ -21,7 +21,7 @@ WEB 공통 컴포넌트는 사용자 입력·표시·미리보기를 담당하�
 - [ ] 입력 단계의 형식·유형·범위 오류는 즉시 안내할 수 있으나 서버 최종 판정으로 간주하지 않는다(문구에 "저장 시 서버가 최종 확인" 취지 유지).
 - [x] 미리보기 시뮬레이션(설문·퀴즈 채점, 노출 일정 요약, 동영상 시청 비율)은 표시 목적임을 구분하고, 서버 결과와 다를 수 있는 규칙을 확정 정책처럼 안내하지 않는다. → 노출 일정 요약 문구를 "안내용 요약이며 최종 노출은 서버가 한국 시간으로 판단"으로, 주석의 "확정 정책"을 "서버 정책, 화면 문구는 안내용"으로 정리.
 - [x] `pickPopupFields()`는 선택한 값을 그대로 반환한다(서버 정책 적용·날짜 ISO 변환·대상 판정·완료 판정 없음) — A~E TODO에서 구현.
-- [x] 업무 기본값 미설정과 사용자의 명시값(false·0·빈 문자열)을 구별한다 — 신규 독립 샘플(`PopupIndependentSamples`)·가이드 실행기 state를 미설정(키 생략) 기준으로 전환. 기존 샘플(`IS063M02Sample`·`PopupListSample`)은 저장 값만 화면 입력 필드로 제한(state 전환은 후속), RgstPop은 proto 유지.
+- [x] 업무 기본값 미설정과 사용자의 명시값(false·0·빈 문자열)을 구별한다 — 신규 독립 샘플(`PopupIndependentSamples`)·가이드 실행기 state를 미설정(키 생략) 기준으로 전환. 기존 샘플(`IS063M02Sample`·`PopupListSample`·`PopupSampleEditor`)도 state를 미설정 기준(`SamplePopupState`·`newSamplePopup`·`changeSampleType`, 미리보기 `withPreviewFallback`)으로 전환(2026-10-30), RgstPop은 proto 유지.
 
 ### 미설정 표현 규칙 (확정 2026-10-30)
 

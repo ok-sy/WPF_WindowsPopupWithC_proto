@@ -14,6 +14,9 @@ export const QUIZ_RULES: { value: Exclude<QuizRule, ''>; label: string; suffix?:
 /** [확정] 퀴즈 문항 배점. 모든 문항 1점이라 총점 = 문항 수다. */
 export const QUIZ_QUESTION_SCORE = 1;
 
+/** 퀴즈 규칙이 읽는 값. 등록 화면(AdminPopupDetail)과 미설정 기준 샘플 state(passingScore 생략 가능)를 함께 받는다. */
+export type QuizRuleTarget = Pick<AdminPopupDetail, 'popupType' | 'questions'> & { passingScore?: number | null };
+
 /**
  * POL-06-02 : 선택·제출
  * ■ 퀴즈유형 복원
@@ -22,7 +25,7 @@ export const QUIZ_QUESTION_SCORE = 1;
  * - 저장된 통과 점수를 받아 퀴즈유형을 되살린다. 통과 점수가 문항 수 이상이면 만점 통과, 그 밖에는 커트라인 N개로 본다.
  *   (만점/커트라인/통과·실패는 저장 값이 passingScore 하나라 커트라인과 통과·실패 제출은 구분되지 않는다.)
  */
-export function readQuizRule(popup: AdminPopupDetail): { rule: QuizRule; count: number } {
+export function readQuizRule(popup: QuizRuleTarget): { rule: QuizRule; count: number } {
   const total = popup.questions.length;
   const score = popup.passingScore;
   if (popup.popupType !== 'QUIZ' || score == null) return { rule: '', count: 1 };
@@ -37,7 +40,7 @@ export function readQuizRule(popup: AdminPopupDetail): { rule: QuizRule; count: 
  * - 편집값을 받아 모든 문항을 1점·채점 대상으로 맞추고 통과 점수(만점 = 문항 수, 커트라인·통과/실패 = N)를 넣는다.
  *   미리보기와 저장 요청에 이 결과를 보낸다. 미달(실패)이면 WPF가 제출하지 않고 다시 채점하게 하므로 별도 값은 없다.
  */
-export function withQuizRule(popup: AdminPopupDetail, rule: QuizRule, count: number): AdminPopupDetail {
+export function withQuizRule<T extends QuizRuleTarget>(popup: T, rule: QuizRule, count: number): T {
   if (popup.popupType !== 'QUIZ') return popup;
   const questions = popup.questions.map((question) => ({ ...question, isScored: true, questionScore: QUIZ_QUESTION_SCORE }));
   const passingScore = rule === 'FULL' ? questions.length : rule ? Math.min(count, questions.length) : null;
@@ -51,7 +54,7 @@ export function withQuizRule(popup: AdminPopupDetail, rule: QuizRule, count: num
  * - out: string | null 오류 문구(없으면 null)
  * - 퀴즈유형 선택 여부와 통과 기준 개수(1~문항 수 정수)를 검사한다. QUIZ가 아니면 항상 null.
  */
-export function validateQuizRule(popup: AdminPopupDetail, rule: QuizRule, count: number): string | null {
+export function validateQuizRule(popup: QuizRuleTarget, rule: QuizRule, count: number): string | null {
   if (popup.popupType !== 'QUIZ') return null;
   if (!rule) return '퀴즈유형을 선택해 주세요.';
   if (rule !== 'FULL' && (!Number.isInteger(count) || count < 1 || count > popup.questions.length)) {
@@ -67,7 +70,7 @@ export function validateQuizRule(popup: AdminPopupDetail, rule: QuizRule, count:
  * - out: { rule, count, setRule, setCount, effective, error } effective = 규칙을 적용한 편집값, error = 검사 결과
  * - 편집값을 받아 퀴즈유형·통과 기준 개수를 화면 상태로 관리한다. resetKey가 바뀌면 그때의 편집값에서 유형을 다시 읽는다.
  */
-export function usePopupQuizRule(popup: AdminPopupDetail | null, resetKey: number) {
+export function usePopupQuizRule<T extends QuizRuleTarget>(popup: T | null, resetKey: number) {
   const [rule, setRule] = useState<QuizRule>('');
   const [count, setCount] = useState(1);
   useEffect(() => {

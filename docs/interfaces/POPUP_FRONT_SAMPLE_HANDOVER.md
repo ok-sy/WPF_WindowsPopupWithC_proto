@@ -14,7 +14,7 @@
 | `sample/PopupSampleEditor.tsx` | 공통 컴포넌트만으로 만든 최소 편집 Dialog. 실제 `PopupEditorDialog`는 일정·대상 그룹·템플릿·API까지 섞여 있어 이식 예제로 읽기 어렵기 때문에, **편집값(state) 하나 → 두 미리보기** 구조만 남긴 축소판을 따로 뒀다 |
 | `sample/IS063M02.tsx` | 사진 복원 퍼블리싱 원본. **대조용으로만 보존**(첫 줄 `// @ts-nocheck`만 추가). 저장소에 없는 `IS035Info` 타입·폐쇄망 전역 `n*` CSS에 의존해 그대로는 컴파일되지 않는다 |
 | `sample/IS063M02Sample.tsx` | 원본 레이아웃·클래스를 유지하고 공통 기능을 연결한 실제 이식 예제. 원본과 나란히 비교하며 무엇이 바뀌었는지 볼 수 있게 별도 파일로 뒀다 |
-| `sample/popupSampleData.ts` | 서버 대신 공급하는 **편집값(AdminPopupDetail)** 6종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈). 조회 응답 형태가 아니라 화면에 바로 넣는 값이라는 점을 분리해 두려고 별도 파일로 뒀다. 샘플이므로 `SAMPLE_FULL_CONTENT_OPTIONS`로 계약상 가능한 content 옵션 키를 모두 싣고, 신규 작성도 `newSamplePopup()`(= `createDefaultPopup()` + 전체 옵션)을 쓴다. 실제 등록 화면 기본값(`createDefaultPopup`)은 바꾸지 않았다 |
+| `sample/popupSampleData.ts` | 서버 대신 공급하는 **편집값(`SamplePopupState`)** 6종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈). 조회 응답 형태가 아니라 화면에 바로 넣는 값이라는 점을 분리해 두려고 별도 파일로 뒀다. 2026-10-30부터 **미설정 기준**: 샘플마다 보여 주려는 값만 싣고, 신규 `newSamplePopup()`은 팝업 ID·제목·TEXT만 담는다(`createDefaultPopup()` 업무 기본값 미사용). 유형 전환은 `changeSampleType()`(기본값 채우지 않음), 미리보기는 `withPreviewFallback(state)`. 실제 등록 화면(RgstPop) 기본값(`createDefaultPopup`)은 바꾸지 않았다 |
 | 공통 폴더 나머지 | 에디터(`PopupRichTextEditor`·`PopupRichTextMenu`·`PopupQuestionEditor`·`PopupScheduleFields`), 표시·미리보기(`InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`·`SurveyPreview`·`AspectVideoArea`·`PopupRichBlocks`), 변환·계산(`popupEditorTransform`·`popupRichText`·`popupRichTextFormat`·`popupPreviewDialogLayout`·`imagePreviewLayout`·`popupCommon`·`normalizePopupLink`·`popupDemoQuestions`). **관리자 API·등록 부모·sample을 참조하지 않는다**(그래서 다른 화면에 복사해도 따라오는 의존이 없다) |
 
 라우트(`scene/scene-router.tsx`): `/popup-common-sample`(목록 샘플), `/popup-common-sample/is063m02`(IS063M02 샘플). 기존 `/rgst-pop`은 그대로다. 메뉴 노출은 기존 메뉴 등록 절차가 따로 필요하다.
@@ -37,9 +37,9 @@
 핵심 규칙:
 - **편집값은 하나다.** 우측·모달 미리보기는 같은 `popup`을 받기만 하고 값을 바꾸지 않는다. 설문 응답·퀴즈 채점·영상 시청 비율 같은 미리보기 시연 상태는 각 미리보기 내부에만 있고 저장값에 섞이지 않는다.
 - **에디터 key 정책.** `PopupRichTextEditor`는 `initialBlocks`를 처음 마운트할 때만 읽는다(입력 중 커서 유지). 그래서 신규 폼 생성·불러오기·유형 전환에서만 `editorKey`를 올려 다시 마운트하고, 글자 입력 중에는 key를 바꾸지 않는다.
-- **유형 전환은 `changePopupType`.** 공통 입력값(제목·크기 등)은 유지하고 유형별 필수 값(창 크기·완료 비율·정답 비교 방식)만 맞춘다. 편집 중에는 다른 유형의 content 키도 남겨 두고, 저장 요청을 만들 때(`toSaveRequestPopup`) 해당 유형 키만 남긴다.
+- **유형 전환은 `changePopupType`(proto RgstPop) / `changeSampleType`(샘플).** 둘 다 공통 입력값(제목·크기 등)은 유지한다. proto는 유형별 필수 값(창 크기·완료 비율·정답 비교 방식)을 채우고, 샘플은 미설정 기준이라 채우지 않는다(서버 기본값·검증). 편집 중에는 다른 유형의 content 키도 남겨 두고, 저장 요청을 만들 때(`toSaveRequestPopup`) 해당 유형 키만 남긴다.
 - **본문 서식.** 에디터 `onChange(blocks, plainText)` → `content.textBlocks`(서식 기준)와 `content.plainText`(서식 없는 문자열)를 함께 갱신한다. 설문·퀴즈의 제목·설명은 `surveyTitleBlocks/surveyTitle`, `descriptionBlocks/description` 쌍이다.
-- **샘플 저장 값(2026-10-30).** 샘플은 proto 저장 변환을 쓰지 않고 `toSampleScreenValues(popup)`(= `pickPopupFields`)로 화면이 입력하는 필드만 담는다. 게시 기간·노출 일정·표시 순서·활성·대상 그룹은 샘플에 입력이 없으므로 결과에 없다(미리보기에 필요 없는 정책을 화면이 떠안지 않음). 입력을 추가하면 `popupSampleData.ts`의 키 목록에도 더한다.
+- **샘플 저장 값(2026-10-30).** 샘플은 proto 저장 변환을 쓰지 않고 `toSampleScreenValues(popup)`(= `pickPopupFields`)로 화면이 입력하는 필드만 담는다. 게시 기간·노출 일정·표시 순서·활성·대상 그룹은 샘플에 입력이 없으므로 결과에 없다(미리보기에 필요 없는 정책을 화면이 떠안지 않음). 입력을 추가하면 `popupSampleData.ts`의 키 목록에도 더한다. state도 미설정 기준이라 입력하지 않은 창 크기·나중에 보기·푸터 동작 등은 저장 값에 키가 없다.
 - **proto 저장 정규화(RgstPop 전용).** `toSaveRequestPopup`이 ID·제목 공백 제거, 유형별 content 키 화이트리스트, URL 정규화, 푸터 정규형(설문·퀴즈는 SUBMIT 고정이라 `footerAction`을 저장하지 않고, 그 밖에는 바로가기일 때만 `footerAction`·`footerLinkUrl` 저장), 날짜 ISO 변환을 한다. 입력 검증(필수값·범위)은 하지 않으므로 부모가 저장 전에 검사한다(샘플: 제목·크기 300 이상).
 
 ## 3. 조절 가능한 옵션
@@ -74,7 +74,7 @@
 | `POPUP_MIN_WINDOW_SIZE`(300) | `popupCommon.ts` | 서버 `PopupService.POPUP_MIN_WINDOW_SIZE`, WPF `PopupOptions.MinWindowSize` |
 | `FONT_SIZE_MIN/MAX`(10~40) | `popupCommon.ts` | 서버 `validateFontSizeOptions`, WPF `PopupOptions.FontSizeMin/Max` |
 | `TYPE_OPTIONS` | `sample/IS063M02Sample.tsx` | 화면 선택지만. 유형 자체를 추가하려면 서버·WPF 계약 변경이 필요 |
-| `createSamplePopups()`, `newSamplePopup()`, `SAMPLE_FULL_CONTENT_OPTIONS` | `sample/popupSampleData.ts` | 샘플 전용. 옵션 키를 더하면 `CONTENT_KEYS_BY_TYPE`(저장 화이트리스트)과 서버 샘플 `CONTENT_DEFAULTS`도 함께 맞춘다 |
+| `createSamplePopups()`, `newSamplePopup()`, `changeSampleType()`, `SamplePopupState` | `sample/popupSampleData.ts` | 샘플 전용(미설정 기준). 화면 입력을 더하면 `toSampleScreenValues`의 키 목록(`SAMPLE_CONTENT_KEYS` 등)도 함께 맞춘다 |
 
 ## 4. 옵션을 추가·삭제하는 예시
 

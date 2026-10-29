@@ -93,6 +93,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(saved.popupType === 'SURVEY' && saved.questions.length > 0 && !JSON.stringify(saved).includes('"selected') && !JSON.stringify(saved).includes('"answer"'),
     'Preview demo answers do not leak into the survey save request');
   check(before > 0, 'Question editor renders inputs for each question');
+  // 6-1) 미설정 기준: 신규를 바로 저장하면 입력하지 않은 값(창 크기·나중에 보기·content 옵션)은 키가 없다(서버 기본값 적용 대상).
+  await clickButton('신규');
+  await until(`!!document.querySelector('[data-testid=sample-editor-form]')`, 'new editor (unset)');
+  check(await run(`${preview}.textContent.length > 0`), 'New unset popup still renders the inline preview (preview fallback)');
+  await clickButton('저장');
+  saved = await request();
+  check(['width', 'height', 'showLater', 'sizeMode', 'showFooter'].every(key => !(key in saved)) && Object.keys(saved.content).length === 0,
+    'New popup save value omits values the screen did not enter: ' + JSON.stringify(saved));
   // 7) 유형 전환(TEXT → QUIZ)과 영상+퀴즈 열기에서 오류 없이 다시 구성된다.
   await clickButton('신규');
   await until(`!!document.querySelector('[data-testid=sample-editor-form]')`, 'new editor');
@@ -133,6 +141,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(saved.popupType === 'TEXT' && saved.title === 'IS063 헤더' && saved.width === 640 && saved.content.plainText.includes('IS063 본문')
     && !('attachedFileName' in saved.content) && !JSON.stringify(saved).includes('IS063 컨텐츠'), '[IS063] Save request matches the edit; content name is not invented into the contract');
   check(!('displayStartAt' in saved) && !('periodMode' in saved) && !('active' in saved) && !('targetGroups' in saved), '[IS063] Save value has no period·schedule·active·targets (no input on this screen)');
+  check(!('height' in saved) && !('showLater' in saved) && !('footerAction' in saved.content), '[IS063] Unset height·showLater·footerAction stay out of the save value (server defaults): ' + JSON.stringify(saved));
   await clickButton('닫기');
   // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
   await pickType('퀴즈 팝업'); await clickButton('폼 생성');

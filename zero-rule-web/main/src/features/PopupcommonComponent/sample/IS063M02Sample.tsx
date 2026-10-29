@@ -1,4 +1,3 @@
-import type { AdminPopupDetail } from '@local/domain';
 import { NavigateNext } from '@mui/icons-material';
 import {
   Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, Menu, MenuItem, Select, Stack, Switch, TextField, Typography,
@@ -13,11 +12,12 @@ import { richBlocksOrNull } from '../PopupRichBlocks';
 import PopupRichTextEditor from '../PopupRichTextEditor';
 import type { Size } from '../imagePreviewLayout';
 import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
-import {
-  changePopupType, contentValue, isSubmitPopupType, type PopupTypeSelection,
-} from '../popupEditorTransform';
+import { isSubmitPopupType, type PopupTypeSelection } from '../popupEditorTransform';
+import { withPreviewFallback } from '../popupPreviewFallback';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
-import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popupSampleData';
+import {
+  changeSampleType, createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState,
+} from './popupSampleData';
 
 /*
  * 복원 퍼블리싱 IS063M02(컨텐츠 등록)에 공통 팝업 기능을 연결한 샘플. 원본은 같은 폴더 IS063M02.tsx(대조용, 변경 없음).
@@ -34,6 +34,7 @@ import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popu
  * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수 N이며, [확정] 미달(실패)이면 제출하지 못한다
  * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 세 유형 모두 저장 값은 passingScore 하나다.
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
+ * 화면 state는 입력한 값만 갖는다(미설정 = 키 생략, newSamplePopup·changeSampleType). 미리보기에는 withPreviewFallback으로 표시용 값만 채워 넘긴다.
  * 저장은 화면이 입력하는 필드만 담은 값(toSampleScreenValues)을 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
  * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
@@ -49,12 +50,15 @@ const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[
   { value: 'VIDEO_QUIZ', label: '동영상 + 퀴즈 팝업', title: '동영상 + 퀴즈 컨텐츠' },
 ];
 
-const selectionOf = (popup: AdminPopupDetail): PopupTypeSelection =>
+const selectionOf = (popup: SamplePopupState): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
 
-// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 기본값은 newSamplePopup()(createDefaultPopup + 전체 content 옵션).
-const newPopup = (selection: PopupTypeSelection): AdminPopupDetail =>
-  changePopupType(newSamplePopup('N2609001', ''), selection);
+// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 값은 newSamplePopup()(팝업 ID·제목·TEXT만, 미설정 기준).
+const newPopup = (selection: PopupTypeSelection): SamplePopupState =>
+  changeSampleType(newSamplePopup('N2609001', ''), selection);
+
+/* 미설정 content 값은 빈 문자열로 표시만 한다(state에는 넣지 않음). */
+const contentText = (popup: SamplePopupState, key: string) => { const value = popup.content[key]; return value == null ? '' : String(value); };
 
 function Required({ not = false }: { not?: boolean }) {
   return <Typography component="span" className={not ? 'required not' : 'required'}>*&nbsp;</Typography>;
@@ -70,7 +74,7 @@ function Required({ not = false }: { not?: boolean }) {
  */
 export default function IS063M02Sample() {
   const [pendingType, setPendingType] = useState<PopupTypeSelection | ''>('');
-  const [popup, setPopup] = useState<AdminPopupDetail | null>(null);
+  const [popup, setPopup] = useState<SamplePopupState | null>(null);
   // 확인 필요: '컨텐츠 명'은 저장 계약(AdminPopupDetail)에 대응 필드가 없어 화면 state로만 둔다. 필드가 확정되면 popup으로 옮긴다.
   const [contentName, setContentName] = useState('');
   const [editorKey, setEditorKey] = useState(0);
@@ -81,10 +85,10 @@ export default function IS063M02Sample() {
   const [error, setError] = useState('');
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
-  const start = (next: AdminPopupDetail) => {
+  const start = (next: SamplePopupState) => {
     setPopup(next); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError('');
   };
-  const update = <K extends keyof AdminPopupDetail>(key: K, value: AdminPopupDetail[K]) =>
+  const update = <K extends keyof SamplePopupState>(key: K, value: SamplePopupState[K]) =>
     setPopup((previous) => (previous ? { ...previous, [key]: value } : previous));
   const updateContent = (key: string, value: unknown) =>
     setPopup((previous) => (previous ? { ...previous, content: { ...previous.content, [key]: value } } : previous));
@@ -93,12 +97,13 @@ export default function IS063M02Sample() {
   const typeTitle = TYPE_OPTIONS.find((option) => option.value === selection)?.title ?? '컨텐츠';
   const isQuestion = popup?.popupType === 'SURVEY' || popup?.popupType === 'QUIZ';
   const hasVideo = popup?.popupType === 'VIDEO' || popup?.content.videoEnabled === true;
-  const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentValue(popup, 'footerAction')) || 'CLOSE';
+  const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentText(popup, 'footerAction')) || 'CLOSE';
   const isQuiz = popup?.popupType === 'QUIZ';
   /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
    * 신규·불러오기(editorKey 변경) 때 저장된 통과 점수로 유형을 복원하고, 미리보기·저장에는 규칙을 적용한 effective를 보낸다. */
   const quiz = usePopupQuizRule(popup, editorKey);
   const effective = quiz.effective;
+  const preview = effective ? withPreviewFallback(effective) : null;
 
   const attach = (file: File | undefined) => {
     if (!file || !popup) return;
@@ -163,9 +168,9 @@ export default function IS063M02Sample() {
                   {TYPE_OPTIONS.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
                 </Select>
                 <Box className="nConBtnBox" sx={{ display: 'flex', gap: 1 }}>
-                  {/* 이미 편집 중이면 유형만 바꾸고 공통 입력값은 유지한다(changePopupType). */}
+                  {/* 이미 편집 중이면 유형만 바꾸고 공통 입력값은 유지한다(changeSampleType — 업무 기본값은 채우지 않음). */}
                   <Button variant="contained" disabled={!pendingType}
-                    onClick={() => pendingType && start(popup ? changePopupType(popup, pendingType) : newPopup(pendingType))}>폼 생성</Button>
+                    onClick={() => pendingType && start(popup ? changeSampleType(popup, pendingType) : newPopup(pendingType))}>폼 생성</Button>
                   <Button variant="contained" className="nWhiteBtn" onClick={(event) => setLoadAnchor(event.currentTarget)}>불러오기</Button>
                   <Menu anchorEl={loadAnchor} open={Boolean(loadAnchor)} onClose={() => setLoadAnchor(null)}>
                     {createSamplePopups().map((item) => (
@@ -216,7 +221,7 @@ export default function IS063M02Sample() {
               {footerAction === 'LINK_AND_CLOSE' && popup && (
                 <Stack className="nConSectionDiv">
                   <Typography className="nConSectionTitle"><Required not />URL 링크</Typography>
-                  <TextField sx={{ width: '100%' }} value={contentValue(popup, 'footerLinkUrl')}
+                  <TextField sx={{ width: '100%' }} value={contentText(popup, 'footerLinkUrl')}
                     slotProps={{ htmlInput: { 'aria-label': 'URL 링크' } }} onChange={(event) => updateContent('footerLinkUrl', event.target.value)} />
                 </Stack>
               )}
@@ -229,14 +234,14 @@ export default function IS063M02Sample() {
             {!popup && <Typography color="text.secondary">컨텐츠 유형을 선택하고 폼 생성을 누르세요.</Typography>}
             {popup?.popupType === 'TEXT' && (
               <PopupRichTextEditor key={`body-${editorKey}`} label="본문"
-                initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
+                initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentText(popup, 'plainText'))}
                 onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))} />
             )}
             {popup && (popup.popupType === 'IMAGE' || hasVideo) && (
               <Box className="nFormBox">
                 <Box className="nFormLine" sx={{ gap: '5px', display: 'flex', alignItems: 'center' }}>
                   <Box className="nFileWrap" sx={{ flex: 1 }}>
-                    <Typography className="nFileList">{contentValue(popup, 'attachedFileName') || '첨부 파일 없음'}</Typography>
+                    <Typography className="nFileList">{contentText(popup, 'attachedFileName') || '첨부 파일 없음'}</Typography>
                   </Box>
                   <span className="nAddFile02">
                     <label>
@@ -247,7 +252,7 @@ export default function IS063M02Sample() {
                   </span>
                 </Box>
                 <TextField size="small" fullWidth sx={{ mt: 1 }} label={popup.popupType === 'IMAGE' ? '이미지 URL' : '동영상 URL'}
-                  value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')}
+                  value={contentText(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')}
                   onChange={(event) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', event.target.value)} />
                 <Typography component="span" sx={{ color: '#333' }}>
                   {popup.popupType === 'IMAGE' ? '※ BMP, GIF, JPG, PNG 파일만 등록 가능합니다.' : '※ MP4 파일만 등록 가능합니다.'}
@@ -259,7 +264,7 @@ export default function IS063M02Sample() {
                 <Stack className="nConSectionDiv" spacing={1} sx={{ mt: 1 }}>
                   <Typography className="nConSectionTitle"><Required not />설명</Typography>
                   <PopupRichTextEditor key={`description-${editorKey}`} compact label="설명" placeholder="설명(선택)"
-                    initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
+                    initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentText(popup, 'description'))}
                     onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
                 </Stack>
                 {isQuiz && <Box sx={{ mt: 1 }}>
@@ -281,7 +286,7 @@ export default function IS063M02Sample() {
           <Box className="nDevider" data-testid="is063-right" sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 560 }}>
             <Box component="h4" className="nConTitle">미리보기</Box>
             {popup
-              ? <InlinePopupPreview popup={effective ?? popup} title="" onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
+              ? <InlinePopupPreview popup={preview ?? withPreviewFallback(popup)} title="" onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setFitWindow} />
               : <Typography color="text.secondary">폼을 만들면 미리보기가 표시됩니다.</Typography>}
           </Box>
         </Box>
@@ -291,7 +296,7 @@ export default function IS063M02Sample() {
           <Button variant="contained" className="nWhiteBtn" onClick={() => { setPopup(null); setPendingType(''); setContentName(''); setSaved(null); setError(''); }}>취소</Button>
         </Box>
       </Box>
-      {effective && <PopupPreviewDialog popup={effective} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
+      {preview && <PopupPreviewDialog popup={preview} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
       <Dialog open={Boolean(saved)} onClose={() => setSaved(null)} maxWidth="md" fullWidth>
         <DialogTitle>저장 값 (화면 입력 필드만, 서버 미전송)</DialogTitle>
         <DialogContent dividers>

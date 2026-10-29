@@ -1,5 +1,17 @@
 ﻿# 변경 이력
 
+## 2026-10-30-07 — 기존 공통 샘플 state 미설정 기준 전환
+
+- 이유: WEB/SERVER 책임 분리(2026-10-30-04) 미설정 표현 규칙을 기존 샘플(목록 샘플·IS063M02 샘플)에도 적용. 샘플 state가 createDefaultPopup 업무 기본값(창 560×420·content 옵션 전체 등)을 갖고 있어 입력하지 않은 값과 명시값이 구별되지 않았음.
+- 변경:
+  - `popupSampleData.ts`: 샘플 state 타입 `SamplePopupState`(ID·유형·제목·content·문항만 필수, 나머지는 입력 시에만) 추가. `newSamplePopup`은 ID·제목·TEXT만, `createSamplePopups`는 샘플별 지정 값만 담도록 변경하고 `SAMPLE_FULL_CONTENT_OPTIONS` 삭제. 샘플 유형 전환 `changeSampleType` 추가(공통 입력 유지, 창 크기·완료 비율·주관식 비교 방식 기본값 미채움, 새 유형에서 쓰지 않는 completionRatio·passingScore·videoEnabled 제거).
+  - `PopupSampleEditor`·`IS063M02Sample`·`PopupListSample`: state를 `SamplePopupState`로, 유형 전환을 `changeSampleType`으로, 미리보기(InlinePopupPreview·PopupPreviewDialog)에 `withPreviewFallback` 적용. 미설정 content는 입력란에 빈 값으로만 표시.
+  - `popupQuizRule.ts`: `readQuizRule`·`withQuizRule`·`validateQuizRule`·`usePopupQuizRule`이 `QuizRuleTarget`(popupType·questions·passingScore?)을 받도록 일반화(RgstPop 호출 변경 없음).
+  - 하네스 `verify-popup-common-sample-69`: 신규 즉시 저장 시 미입력 값 키 없음, 미설정 상태 미리보기 표시, IS063 미입력 height·showLater·footerAction 미포함 검사 3건 추가.
+  - 문서: 샘플 인계 가이드·미리보기 컴포넌트 문서·책임 분리 TODO 진행 표시, 가이드 독립 재사용 프로세스 문구(미리보기는 withPreviewFallback).
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/sample/popupSampleData.ts, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample.tsx, zero-rule-web/main/src/features/PopupcommonComponent/popupQuizRule.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, scripts/verify-popup-common-sample-69.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, 변경 파일 eslint 오류 0. 하네스 common-sample-69 37건(신규 3건 포함)·rgstpop-quiz-rule 11건·preview-61 52건·transform-64 77건 통과. 실화면 확인은 미실행(가이드 예시 탭 IS063 동영상+퀴즈 폼 생성 미리보기 표시만 부분 확인, 예외 0건).
+- 상태: 커밋·원격 반영. 미설정 상태 VIDEO+QUIZ 미리보기의 완료 기준이 표시용 fallback(100%)으로 보이며 서버 기본값(0.8)과 다를 수 있음. RgstPop 전환·서버 기본값 대응은 후속.
 ## 2026-10-30-06 — PopupCommonGuide 화면 정리 구현 명세 확정
 
 - 이유: 가이드 내 범용 컴포넌트 계약과 proto 전용 저장 흐름·미리보기 기본값 설명의 혼재, 탭 간 중복 및 한 화면 파일의 과도한 역할을 정리할 구현 기준 필요.
