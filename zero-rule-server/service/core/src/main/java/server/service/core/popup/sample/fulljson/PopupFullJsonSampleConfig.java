@@ -11,14 +11,15 @@ import org.springframework.core.io.ResourceLoader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import server.repo.core.mapper.popup.sample.fulljson.PopupFullJsonRegisterSampleMapper;
 import server.repo.core.mapper.popup.sample.fulljson.PopupFullJsonSampleMapper;
 
 /**
  * POL-14-03 : 서버 인계 예제
  * POL-13-03 : 적용·샘플 구분
- * ■ DTIY3117 전체 JSON 조회 샘플 Bean 구성
+ * ■ DTIY3117 전체 JSON 조회·등록 샘플 Bean 구성
  * - in : popup.sample.full-json.* 설정(enabled·defaults-location)
- * - out: 기본값(PopupFullJsonDefaults)·샘플 서비스 Bean · 예외: IllegalStateException(기본값 파일 없음·검증 실패 → 기동 실패)
+ * - out: 기본값(PopupFullJsonDefaults)·조회 샘플 서비스·등록 공통 검증기(PopupJsonValidator)·등록 샘플 서비스 Bean · 예외: IllegalStateException(기본값 파일 없음·검증 실패 → 기동 실패)
  * - 기본 비활성이며 {@code popup.sample.full-json.enabled=true}일 때만 등록한다. 기존 3111 샘플({@code popup.sample.single-query})과
  *   설정·Bean 이름이 겹치지 않아 둘을 동시에 켤 수 있다.
  *
@@ -50,5 +51,17 @@ public class PopupFullJsonSampleConfig {
     PopupFullJsonSampleService popupFullJsonSampleService(PopupFullJsonSampleMapper mapper, ObjectMapper objectMapper,
                                                          PopupFullJsonDefaults popupFullJsonDefaults) {
         return new PopupFullJsonSampleService(mapper, objectMapper, popupFullJsonDefaults);
+    }
+
+    /** 등록·수정 공통 검증기. 조회 샘플과 같은 규칙 표·기본값 파일을 쓴다. */
+    @Bean
+    PopupJsonValidator popupJsonValidator(ObjectMapper objectMapper, PopupFullJsonDefaults popupFullJsonDefaults) {
+        return new PopupJsonValidator(objectMapper, popupFullJsonDefaults);
+    }
+
+    @Bean
+    PopupFullJsonRegisterSampleService popupFullJsonRegisterSampleService(PopupFullJsonRegisterSampleMapper registerMapper,
+                                                                         PopupJsonValidator popupJsonValidator, ObjectMapper objectMapper) {
+        return new PopupFullJsonRegisterSampleService(registerMapper, popupJsonValidator, objectMapper);
     }
 }

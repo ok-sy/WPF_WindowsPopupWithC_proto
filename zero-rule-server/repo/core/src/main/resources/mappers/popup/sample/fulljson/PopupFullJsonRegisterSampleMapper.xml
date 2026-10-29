@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  POL-13-03 : 적용·샘플 구분
+  POL-14-03 : 서버 인계 예제
+  DTIY3117 등록·수정 샘플 SQL (Oracle 11g 호환).
+  - 저장 값은 공통 검증(PopupJsonValidator)을 통과한 정규화 popup JSON만 받는다.
+  - CLOB은 #{popupJson, jdbcType=CLOB} 바인딩으로 넣는다(SQL 리터럴 4000바이트 제한과 무관).
+  - 컬럼은 DTIY3117 사진 판독(POPU_ID, POPU_BLTN_CN, REG_USER_ID, REG_DTTM, CHNG_USER_ID, CHNG_DTTM)이며 확정 DDL이 아니다.
+  - [교체 지점] 실제 등록 테이블·감사 컬럼·DEFAULT 제약이 다르면 컬럼 목록을 맞춘다.
+-->
+<mapper namespace="server.repo.core.mapper.popup.sample.fulljson.PopupFullJsonRegisterSampleMapper">
+    <!-- 신규 등록. POPU_ID 중복은 DB PK 오류로 실패한다. -->
+    <insert id="insertBulletin">
+        INSERT INTO DTIY3117 (POPU_ID, POPU_BLTN_CN, REG_USER_ID, REG_DTTM)
+        VALUES (#{popupId, jdbcType=VARCHAR}, #{popupJson, jdbcType=CLOB}, #{userId, jdbcType=VARCHAR}, SYSDATE)
+    </insert>
+    <!-- 전체 JSON 교체 수정. 대상이 없으면 0행. -->
+    <update id="updateBulletin">
+        UPDATE DTIY3117
+           SET POPU_BLTN_CN = #{popupJson, jdbcType=CLOB}
+             , CHNG_USER_ID = #{userId, jdbcType=VARCHAR}
+             , CHNG_DTTM    = SYSDATE
+         WHERE POPU_ID = #{popupId, jdbcType=VARCHAR}
+    </update>
+</mapper>
