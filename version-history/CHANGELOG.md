@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-08 — 동영상+퀴즈 미리보기 완료 비율 fallback 0.8
+
+- 이유: 미설정 기준 샘플에서 동영상+퀴즈 완료 비율을 비워 두면 미리보기가 PopupPreview 기본값(100%)으로 표시돼 등록 화면 기본값(changePopupType 0.8)과 달랐음.
+- 변경: `withPreviewFallback`이 동영상+퀴즈(QUIZ + content.videoEnabled)의 완료 비율이 미설정(키 없음·null)이면 `PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO`(0.8)로 표시. 일반 VIDEO는 1.0(WPF 기본값) 유지, state·저장 값에는 넣지 않음. 하네스에 IS063 동영상+퀴즈 신규 폼 미리보기 '완료 기준 80%' 검사 추가.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewFallback.ts, scripts/verify-popup-common-sample-69.cjs, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, common-sample-69 38건 통과. 실화면 확인 미실행.
+- 상태: 커밋·원격 반영. 서버(3117 검증기)의 동영상+퀴즈 완료 비율 기본값은 별도 확인 필요(WPF 미지정 시 1.0).
+
 ## 2026-10-30-07 — 기존 공통 샘플 state 미설정 기준 전환
 
 - 이유: WEB/SERVER 책임 분리(2026-10-30-04) 미설정 표현 규칙을 기존 샘플(목록 샘플·IS063M02 샘플)에도 적용. 샘플 state가 createDefaultPopup 업무 기본값(창 560×420·content 옵션 전체 등)을 갖고 있어 입력하지 않은 값과 명시값이 구별되지 않았음.

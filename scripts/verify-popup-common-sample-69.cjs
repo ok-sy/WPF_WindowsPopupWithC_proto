@@ -143,6 +143,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(!('displayStartAt' in saved) && !('periodMode' in saved) && !('active' in saved) && !('targetGroups' in saved), '[IS063] Save value has no period·schedule·active·targets (no input on this screen)');
   check(!('height' in saved) && !('showLater' in saved) && !('footerAction' in saved.content), '[IS063] Unset height·showLater·footerAction stay out of the save value (server defaults): ' + JSON.stringify(saved));
   await clickButton('닫기');
+  // 미설정 완료 비율: 동영상+퀴즈 미리보기는 0.8(80%)로 표시하고 저장 값에는 넣지 않는다.
+  await pickType('동영상 + 퀴즈 팝업'); await clickButton('폼 생성');
+  check(await run(`${right}.textContent.includes('완료 기준 80%')`), '[IS063] Unset VIDEO+QUIZ completion ratio previews as 80%');
   // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
   await pickType('퀴즈 팝업'); await clickButton('폼 생성');
   check(await run(`${mid}.textContent.includes('문항 추가') && document.querySelector('input[aria-label="헤더 제목"]').value==='IS063 헤더'`),

@@ -35,6 +35,9 @@ export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
   questions: [],
 };
 
+/** 동영상+퀴즈 미리보기 완료 비율. 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 0.8로 표시한다. 일반 VIDEO는 1.0(WPF 기본값) 그대로. */
+export const PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO = 0.8;
+
 /**
  * POL-08-01 : 공통 렌더러
  * ■ 미리보기용 팝업 만들기
@@ -42,8 +45,13 @@ export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
  * - out: AdminPopupDetail 미리보기 컴포넌트(InlinePopupPreview·PopupPreviewDialog·PopupPreview)에 넘길 새 객체
  * - 표시용 fallback(PREVIEW_FALLBACK) 위에 state를 얹는다. state에 있는 값(null·false·0·빈 문자열 포함)이 항상 우선이고,
  *   content는 state 값만 쓴다. 업무 값(기간·반복 등)은 채우지 않으므로 반환값을 저장·추출에 쓰지 않는다(미리보기 전용).
+ *   동영상+퀴즈(QUIZ + content.videoEnabled)는 완료 비율이 미설정(키 없음·null)이면 PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO로 표시한다.
  */
 export function withPreviewFallback(state: Partial<AdminPopupDetail>): AdminPopupDetail {
   // 미리보기는 업무 값(displayStartAt·periodMode 등)을 읽지 않아 채우지 않는다. 타입은 미리보기 props(AdminPopupDetail)에 맞춘다.
-  return { ...PREVIEW_FALLBACK, ...state, content: { ...(state.content ?? {}) } } as AdminPopupDetail;
+  const videoQuiz = state.popupType === 'QUIZ' && state.content?.videoEnabled === true;
+  return {
+    ...PREVIEW_FALLBACK, ...state, content: { ...(state.content ?? {}) },
+    ...(videoQuiz && state.completionRatio == null ? { completionRatio: PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } : {}),
+  } as AdminPopupDetail;
 }
