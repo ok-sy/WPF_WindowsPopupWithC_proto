@@ -1,5 +1,22 @@
 ﻿# 변경 이력
 
+## 2026-10-30-03 — WEB 표시 기본값 / SERVER 업무 정책 책임 분리 TODO 정의
+
+- 이유: 공통 컴포넌트 계약(독립 재사용·선택 필드 추출)과 별도로, WEB 공통 컴포넌트는 입력·표시·미리보기를, 최종 기본값·검증·저장 정합성은 서버가 맡는 책임 분리를 정의할 필요. 한 문서에 두면 서버 작업이 필요한 항목과 "서버/DB 변경 제외" 범위가 충돌해 문서를 나눔.
+- 변경: `docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md` 추가 — 원칙·범위(서버 구현은 등록·수정 공통 JSON 검증 TODO로 연결, 서버 경로 proto 관리자 API / 3117 등록 경로 구분), F-1 WEB 책임(미리보기 fallback은 state에 넣지 않고 합성, 입력 단계 안내, 표시용 시뮬레이션, 미설정 표현 규칙 — 미설정 = 생략·null, 명시 = false·0·'', '' 의미는 필드별), F-2 SERVER 책임과 두 경로 현황 표, F-3 기존 구현 분류 초안(createDefaultPopup 기본값·toSaveRequestPopup 정규화·웹 검증·미리보기 문구 → UI 전용/proto 호환/서버 이관 후보)과 이행 원칙, F-4 WEB/SERVER 검증 구분. 독립 재사용 TODO에 분리 문서 링크, 정책 문서 P1을 "proto(RgstPop)만 toSaveRequest 기준, 그 밖의 화면은 pickPopupFields 값 그대로·각자 저장 경계"로 수정, 문서 색인 갱신.
+- 주요 파일: docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md, docs/design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md, docs/design/20261029_팝업JSON_가공_요청body_정책정리.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 문서 작업(코드 변경 없음). 현행 기술은 `popupEditorTransform.ts`(createDefaultPopup·toSaveRequestPopup)·`PopupScheduleFields.tsx`·`popupQuizRule.ts`·`SERVER_SAMPLE_FULL_JSON_API.md` §3·§10과 대조.
+- 후속 확정: 미설정 표현 규칙(기본 키 생략, null은 명시적 초기화 의미를 갖되 현재는 3117 검증기와 같이 기본값 적용 대상으로 유지하고 초기화가 필요한 필드만 별도 계약, false·0은 그대로, ''는 필드별 — title 서버 오류·description 설명 없음·plainText 본문 없음/필수 여부는 유형별 서버 검증), F-3 분류 확정(창 크기·비율과 영상·오버레이 옵션 = WEB 미리보기 fallback/SERVER 기본값, 최소 창 크기·문항·퀴즈 = WEB 안내/SERVER 최종 검증, 게시 기간·반복 = WEB 입력/SERVER 정책·검증, URL 보정 = WEB 미리보기 편의/SERVER 정규화, 유형별 content 필터링 = SERVER 최종 정합성, 노출·완료 판정 = SERVER 정책/WEB 시뮬레이션, 날짜 ISO = proto 호환). 신규 독립 화면부터 적용하고 RgstPop은 서버 대응 구현 후 점진 전환. `withPreviewFallback()`은 미리보기 렌더에 필요한 필드만 합성(업무 값 제외) 조건 추가.
+- 상태: 커밋·원격 반영. 정책 확정, WEB 이행 1단계는 2026-10-30-04, 서버 연결 미실행.
+
+## 2026-10-29-19 — 팝업 JSON 가공·요청 body 생성 정책 정리
+
+- 이유: 게시정보·대상자 등 다른 테이블 API 요청 body를 만드는 방식이 정해지지 않아 공통 함수 범위를 정하기 전에 정책 정리가 필요. 검토 결과 최상위 필드는 입력값 수준이고 어려운 부분은 content·문항뿐이라 범위를 그 두 곳으로 확정.
+- 변경: `docs/design/20261029_팝업JSON_가공_요청body_정책정리.md` 추가 — 배경(3117 본체 JSON과 별도 컬럼·테이블), 범위 결정(최상위 key/value, active·targetGroups는 저장 요청 최상위, content·문항만 공통 함수), 정책 P1~P6(원천 저장 기준 값, 최상위 구조 분해·얕은 복사 주의, content·문항은 pickPopupFields 하나로 — 키 단일 출처·저장 기준 값 전달·서식 짝·임시 ID·유형별 필드·passingScore, 저장 호출 단위, 조회 복원, 공지), 프로세스, 할 일, 확인 필요 정보. 문서 색인(`docs/README.md`) 갱신.
+- 주요 파일: docs/design/20261029_팝업JSON_가공_요청body_정책정리.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 문서 작업. 현재 상태 기술은 `popupEditorTransform.ts`(pickPopupFields)·`SERVER_SAMPLE_FULL_JSON_API.md` §3과 대조.
+- 상태: 커밋·원격 반영. 폐쇄망 테이블 구조·저장 호출 단위 확인 대기.
+
 ## 2026-10-29-17 — footerAction CLOSE 표시 이름 닫기 → 확인
 
 - 이유: 하단 버튼 동작 CLOSE의 표시 이름을 "확인"으로 변경하기로 확정(값·동작은 그대로 닫기).
