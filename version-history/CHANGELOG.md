@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-15 — 팝업 Header 로고 흰 글자·관리자 미리보기 Header 검정
+
+- 이유: WPF Header는 검은 배경인데 고정 로고(CLOVER)의 글자가 검은색이라 심볼만 보였고, 관리자 웹 미리보기 Header는 흰색이라 WPF와 외형이 달랐음(설계 25 Header 정합성 보완).
+- 변경: 기본 로고의 검은 글자 픽셀만 흰색으로 바꾼 그림으로 WPF `Resources/HeaderLogo.png`와 미리보기 사본 `public/images/popup-header-logo.png`를 함께 교체(투명도·심볼 색 유지, 2043×456 그대로). 미리보기 Header를 WPF `HeaderArea`·`PopupTitleText`와 같은 검은 배경·흰 제목으로 바꾸고 흰 Header용 구분선 제거. 비교 문서 Header 항목 갱신. MINIMAL·ALL 명세는 이미 "검은 배경·흰 제목·고정 로고"이며 옵션·계약 변경 없음. 별도 로고 이미지(`docs/interfaces/examples/hyundaiCi.*`)는 저장소에 넣지 않음(로컬·반입본 전용).
+- 주요 파일: popup-frameWork/Popup/Resources/HeaderLogo.png, zero-rule-web/main/public/images/popup-header-logo.png, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, docs/reviews/POPUP_PREVIEW_WPF_PARITY.md, version-history/CHANGELOG.md.
+- 검증: WPF 빌드 오류 0. 하네스 verify-popup-preview-61 52건·verify-image-preview 34건·verify-popup-common-sample-69 32건 통과. 로컬 관리자 웹 master 로그인 후 팝업 신규 등록 미리보기 Header 검정·흰 제목·흰 글자 로고 확인.
+- 상태: 커밋·원격 반영. WPF 실행 화면 확인은 미실행(리소스 이미지 교체만).
+
 ## 2026-10-29-14 — 관리자 웹 CKEditor 5 공통 엔진 전환(ckeditor5 49.0.1)
 
 - 이유: 공통 에디터(CommonCKEditor·BbsCKEditor)와 팝업 서식 에디터(PopupRichTextEditor)가 패치가 끝난 온라인 빌더 커스텀 빌드(CKEditor 34.1.0)에 묶여 있고, 다른 엔진 출처가 섞이면 `ckeditor-duplicated-modules`가 나는 구조. 자료실 에디터의 `toolbarview-item-unavailable`·`widget-toolbar-no-items` 경고 해소 필요. 목표 버전은 GPL 조건이 44.3.0과 같고(47 LTS만 'GPL' 키 차단) 공식 지원 래퍼가 있는 `ckeditor5` 49.0.1 + `@ckeditor/ckeditor5-react` 12.0.0으로 재확정.

@@ -27,7 +27,7 @@
 
 ## 알려진 차이
 
-- Header: 미리보기도 WPF와 같이 Header에 닫기 버튼 없이 클릭되지 않는 고정 로고(`public/images/popup-header-logo.png`, WPF `Resources/HeaderLogo.png` 사본, 100×24)를 그린다. 닫기는 Footer 버튼 하나다(WPF 그 밖의 종료 경로는 Alt+F4). WPF Header 배경은 검정이고 미리보기 Header는 흰색이라 로고 대비가 다르게 보인다. Header 높이는 유형과 관계없이 WPF `HeaderRow`와 같은 40이며 제목은 한 줄 말줄임으로 그린다. IMAGE 미리보기 창에는 WPF `PopupBodyBorder`(두께 0)와 같이 테두리를 그리지 않는다.
+- Header: 미리보기도 WPF와 같이 Header에 닫기 버튼 없이 클릭되지 않는 고정 로고(`public/images/popup-header-logo.png`, WPF `Resources/HeaderLogo.png` 사본, 100×24)를 그린다. 닫기는 Footer 버튼 하나다(WPF 그 밖의 종료 경로는 Alt+F4). Header 배경·제목 색은 WPF와 같은 검정·흰색이고, 로고는 검은 배경에서 보이도록 CLOVER 글자를 흰색으로 바꾼 그림을 WPF·미리보기가 같이 쓴다(기본 로고. 다른 로고를 쓰려면 두 파일을 같은 이름으로 교체). Header 높이는 유형과 관계없이 WPF `HeaderRow`와 같은 40이며 제목은 한 줄 말줄임으로 그린다. IMAGE 미리보기 창에는 WPF `PopupBodyBorder`(두께 0)와 같이 테두리를 그리지 않는다.
 - IMAGE 크기 계산: `imagePreviewLayout.ts`가 WPF `ImagePopupView`(설계 15·23)와 같은 규칙으로 계산한다. FILL 모드와 `imageAreaRatio`·`descriptionPosition`·오른쪽 설명 폭은 설계 23에서 제거했으며 설명은 항상 이미지 아래다.
   - ORIGINAL: 자연 이미지 픽셀 크기를 그대로 쓰고 좌상단에 배치한 뒤 초과 영역을 숨긴다. 작은 이미지는 확대하지 않는다. 제목·설명은 쓰지 않는다.
   - ADAPTIVE: `popup.width/height`는 창 크기이며(TODO58로 content에서 이동) 이미지는 원본보다 확대하지 않고 비율을 유지해 맞춘다.

@@ -672,7 +672,7 @@ export default function PopupPreview({
         )}
         {popup.showHeader && (
           // WPF PopupWindow.xaml HeaderRow(Height=40)는 유형과 관계없는 공통 행이다. 제목은 TextTrimming처럼 한 줄 말줄임으로 그린다.
-          // 미리보기 Header는 흰색이라 IMAGE 외 유형은 구분선을 Header 높이 안(border-box)에 둔다.
+          // 배경·제목 색은 WPF HeaderArea(Background=Black)·PopupTitleText(Foreground=White)와 같다. 본문과 색이 달라 구분선은 두지 않는다.
           <Stack
             direction="row"
             alignItems="center"
@@ -682,7 +682,8 @@ export default function PopupPreview({
               pl: '18px',
               pr: 2,
               flexShrink: 0,
-              ...(popup.popupType !== 'IMAGE' ? { borderBottom: 1, borderColor: 'divider' } : {}),
+              bgcolor: '#000',
+              color: '#fff',
             }}
           >
             <Typography
