@@ -2,6 +2,8 @@
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
+- [SURVEY 복수 선택 최소·최대 선택 수 TODO](design/20261029_SURVEY_복수선택_최소최대선택수_TODO.md) — 구현 완료, 원격 개발 DB 적용·실화면 확인 대기.
+
 - [등록·수정 공통 JSON 검증·기본값 생성 및 3111 직조회 전환 TODO](design/20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md) — 1단계 구현(공통 모듈·3117 등록 샘플), 조회 전환·3111 보류.
 
 - [MSI 설치 패키지 offline-export 추가 TODO](design/20261029_MSI_offline-export_추가_TODO.md) — **폐기(2026-10-29)**, 구현 대상에서 제외. 기존 소스 반입 offline-export는 유지.
