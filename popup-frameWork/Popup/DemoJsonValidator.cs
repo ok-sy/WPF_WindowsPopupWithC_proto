@@ -78,6 +78,18 @@ namespace Popup
                 issues.Add(new("ERROR", prefix + ".popupType", "VIDEO_QUIZ는 독립 타입이 아닙니다. QUIZ + content.videoEnabled=true를 사용하세요."));
             else if (!Types.Contains(type))
                 issues.Add(new("ERROR", prefix + ".popupType", "필수 또는 지원되지 않는 유형: " + type));
+            if (responseMode)
+            {
+                foreach (string id in new[] { "popupId", "deliveryId" })
+                    if (string.IsNullOrWhiteSpace(Text(popup[id])))
+                        issues.Add(new("ERROR", prefix + "." + id, "WPF 수신 계약상 비어 있으면 안 되는 ID입니다."));
+            }
+            if (type.Length > 0 && Types.Contains(type))
+            {
+                string sizeMode = Text(popup["sizeMode"]);
+                if (sizeMode.Length > 0 && !new[] { "FIXED", "RATIO", "FULLSCREEN" }.Contains(sizeMode))
+                    issues.Add(new("ERROR", prefix + ".sizeMode", "허용값: FIXED / RATIO / FULLSCREEN"));
+            }
             CheckType(popup, "title", prefix, IsString, "string", issues);
             foreach (string k in new[] { "popupId", "deliveryId", "footerAction", "footerLinkUrl", "sizeMode", "displayMode", "popupPosition" })
                 CheckType(popup, k, prefix, IsString, "string", issues);
@@ -180,6 +192,7 @@ namespace Popup
                 var normalized = Validate(p.ToJsonString(), false);
                 p = JsonNode.Parse(normalized.Normalized)!.AsObject();
                 p["popupId"] = "DEMO-001";
+                p["deliveryId"] = "11111111-1111-4111-8111-111111111111";
             }
             return p.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         }
