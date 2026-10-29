@@ -7,6 +7,7 @@
 - 주요 파일: docs/design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md, docs/README.md, version-history/CHANGELOG.md.
 - 검증: 기존 popupEditorTransform.ts의 proto 저장 변환 책임과 관련 인계 문서 정적 확인. 빌드·기능 테스트 미실행.
 - 상태: TODO 등록 완료, 구현 미착수.
+- 후속 보완(2026-10-30): WEB은 입력/UI 초기값·미리보기 전용 fallback 및 안내 검증, SERVER는 업무 정책·누락값 기본값·최종 타입/범위 검증·정규화/저장을 담당하는 경계를 F절에 정의. 기존 proto 호환 함수는 즉시 제거하지 않고 정책 이관 후보만 분류하도록 명시. 구현·연동 테스트 미실행.
 
 ## 2026-10-29-16 — TEXT 강조 문구(highlightText·showHighlight) 삭제
 
