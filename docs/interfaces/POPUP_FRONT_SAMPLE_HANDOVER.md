@@ -139,7 +139,7 @@ sample('SAMPLE-TEXT-LINK', '바로가기 공지', { popupType: 'TEXT' },
 | 목록 | `createSamplePopups()` | `api.popupAdmin.list({ ctx })`의 `body`(목록 항목) | `RgstPop.tsx` |
 | 편집 시작 | 목록 행 객체 그대로 | `api.popupAdmin.info({ popupId })` → `toEditorPopup(body.popup)` + `body.targetGroups` | `PopupEditorDialog.tsx` |
 | 불러오기(템플릿) | 샘플 메뉴 | `PopupTemplateDialog` → `toEditorPopupFromTemplate` | `PopupEditorDialog.tsx` |
-| 저장 | `toSampleScreenValues(popup)` JSON 표시(화면 입력 필드만) | 그 화면의 저장 API 형식으로 바꿔 호출 + 성공/실패 처리(`handleError`, toast). proto 등록 화면은 `api.popupAdmin.save(toSaveRequest(popup, active, targetGroups))` | `PopupEditorDialog.tsx`(proto) |
+| 저장 | `toSampleScreenValues(popup)` JSON 표시(화면 입력 필드만). IS063M02 샘플은 'pickPopupFields로 가져오기' 버튼으로 `pickPopupFields` 호출 코드와 결과도 보여 준다(2026-10-30) | 그 화면의 저장 API 형식으로 바꿔 호출 + 성공/실패 처리(`handleError`, toast). proto 등록 화면은 `api.popupAdmin.save(toSaveRequest(popup, active, targetGroups))` | `PopupEditorDialog.tsx`(proto) |
 | 입력 검증 | 제목·크기 300 | `validatePopupSchedule`, `validatePopupQuestions`, 최소·최대 크기, 숨김 일수 등 | `PopupEditorDialog.tsx`의 save |
 | 파일 첨부 | `URL.createObjectURL` 미리보기 | 서버 업로드 API → 서버 경로 URL을 `imageUrl`/`videoUrl`에 저장(영상은 `samples/popup-video-range` Range API 규칙) | 서버 구현 필요 |
 | 팝업 ID | 고정 `N2609001`/`LOCAL-n` | 서버 채번 또는 입력 규칙 | 확인 필요 |

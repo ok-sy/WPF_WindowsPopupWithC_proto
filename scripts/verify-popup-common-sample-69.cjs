@@ -143,6 +143,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(!('displayStartAt' in saved) && !('periodMode' in saved) && !('active' in saved) && !('targetGroups' in saved), '[IS063] Save value has no period·schedule·active·targets (no input on this screen)');
   check(!('height' in saved) && !('showLater' in saved) && !('footerAction' in saved.content), '[IS063] Unset height·showLater·footerAction stay out of the save value (server defaults): ' + JSON.stringify(saved));
   await clickButton('닫기');
+  // [예시] pickPopupFields 버튼: 호출 코드와 결과를 보여 준다. 입력하지 않은 항목(기간 등)은 결과에 없다.
+  await clickButton('pickPopupFields로 가져오기');
+  const picked = JSON.parse(await run(`document.querySelector('[data-testid=is063-pick-result]').textContent`));
+  check(await run(`document.querySelector('[data-testid=is063-pick-code]').textContent.includes('pickPopupFields(popup, {')`)
+    && picked.title === 'IS063 헤더' && picked.width === 640 && picked.content.plainText.includes('IS063 본문') && !('displayStartAt' in picked) && !('imageUrl' in picked.content),
+    '[IS063] pickPopupFields button shows the call code and only entered fields: ' + JSON.stringify(picked).slice(0, 200));
+  await clickButton('닫기');
   // 미설정 완료 비율: 동영상+퀴즈 미리보기는 0.8(80%)로 표시하고 저장 값에는 넣지 않는다.
   await pickType('동영상 + 퀴즈 팝업'); await clickButton('폼 생성');
   check(await run(`${right}.textContent.includes('완료 기준 80%')`), '[IS063] Unset VIDEO+QUIZ completion ratio previews as 80%');

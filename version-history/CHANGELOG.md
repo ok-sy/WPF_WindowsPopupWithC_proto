@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-17 — 예시(IS063M02) pickPopupFields 버튼 추가
+
+- 이유: 샘플 소스만 보고도 저장할 때 필요한 항목을 가져오는 방법을 알 수 있어야 함. 기존 저장 버튼은 `toSampleScreenValues`(유형별 항목 목록)를 거쳐 `pickPopupFields` 호출 모양이 드러나지 않았음.
+- 변경: IS063M02 샘플에 'pickPopupFields로 가져오기' 버튼 추가. `pickForSave`에서 `pickPopupFields`를 직접 호출(팝업 항목·content·문항 항목 지정)하고, 결과 대화상자에 같은 호출 코드(`PICK_EXAMPLE_CODE`)와 결과를 표시(서버 미전송). 취소 시 결과 초기화. 하네스에 버튼 → 호출 코드·입력한 항목만 포함·입력하지 않은 항목 미포함 검사 추가. 샘플 인계 문서 저장 행 보완.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx, scripts/verify-popup-common-sample-69.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, eslint 0, common-sample-69 39건 통과.
+- 상태: 커밋·원격 반영. 실화면 확인 미실행.
+
 ## 2026-10-30-16 — SubTitleAndIcon labelTitle DOM 전달 경고 제거
 
 - 이유: 팝업 등록 화면(RgstPop) 등에서 "React does not recognize the `labelTitle` prop on a DOM element" 경고. `SubTitleAndIcon`이 `labelTitle`을 나머지 props와 함께 `Stack`(DOM)으로 넘김.

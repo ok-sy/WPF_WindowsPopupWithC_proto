@@ -12,7 +12,7 @@ import { richBlocksOrNull } from '../PopupRichBlocks';
 import PopupRichTextEditor from '../PopupRichTextEditor';
 import type { Size } from '../imagePreviewLayout';
 import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
-import { isSubmitPopupType, type PopupTypeSelection } from '../popupEditorTransform';
+import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
 import {
@@ -60,6 +60,13 @@ const newPopup = (selection: PopupTypeSelection): SamplePopupState =>
 /* 미설정 content 값은 빈 문자열로 표시만 한다(state에는 넣지 않음). */
 const contentText = (popup: SamplePopupState, key: string) => { const value = popup.content[key]; return value == null ? '' : String(value); };
 
+/* [예시] pickPopupFields 호출 코드. 아래 pickForSave와 같은 내용을 결과 대화상자에도 보여 준다(코드를 바꾸면 이 문자열도 같이 바꾼다). */
+const PICK_EXAMPLE_CODE = `const picked = pickPopupFields(popup, {
+  topLevelKeys: ['popupType', 'title', 'width', 'height', 'showLater'],
+  contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'surveyTitle', 'footerAction'],
+  questionKeys: ['questionId', 'title', 'questionType'],
+});`;
+
 function Required({ not = false }: { not?: boolean }) {
   return <Typography component="span" className={not ? 'required not' : 'required'}>*&nbsp;</Typography>;
 }
@@ -82,6 +89,7 @@ export default function IS063M02Sample() {
   const [fitWindow, setFitWindow] = useState<Size | null>(null);
   const [loadAnchor, setLoadAnchor] = useState<HTMLElement | null>(null);
   const [saved, setSaved] = useState<Record<string, unknown> | null>(null);
+  const [picked, setPicked] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState('');
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
@@ -127,6 +135,22 @@ export default function IS063M02Sample() {
     const { attachedFileName: _file, ...content } = target.content;
     setError('');
     setSaved(toSampleScreenValues({ ...target, content }));
+  };
+
+  /*
+   * [예시] 저장할 때 필요한 항목만 가져오기 — pickPopupFields
+   * - 가져올 항목 이름을 영역별로 넘기면 그 값만 담긴 새 객체가 나온다(입력한 값은 바뀌지 않는다).
+   * - 입력하지 않은 항목은 결과에도 없다. 이 결과를 저장 API 형식에 맞게 바꿔 보내면 된다.
+   * - 위 저장 버튼(save)은 같은 일을 toSampleScreenValues(유형별 항목 목록)로 한다. 이 버튼은 호출 방법을 그대로 보여 주는 용도다.
+   */
+  const pickForSave = () => {
+    if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
+    setError('');
+    setPicked(pickPopupFields(effective ?? popup, {
+      topLevelKeys: ['popupType', 'title', 'width', 'height', 'showLater'],
+      contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'surveyTitle', 'footerAction'],
+      questionKeys: ['questionId', 'title', 'questionType'],
+    }));
   };
 
   const sizeField = (label: string, key: 'width' | 'height') => (
@@ -293,7 +317,8 @@ export default function IS063M02Sample() {
         {error && <Typography color="error" role="alert" sx={{ mt: 1 }}>{error}</Typography>}
         <Box className="nBtnWrap" sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
           <Button variant="contained" onClick={save}>저장</Button>
-          <Button variant="contained" className="nWhiteBtn" onClick={() => { setPopup(null); setPendingType(''); setContentName(''); setSaved(null); setError(''); }}>취소</Button>
+          <Button variant="outlined" onClick={pickForSave} sx={{ textTransform: 'none' }}>pickPopupFields로 가져오기</Button>
+          <Button variant="contained" className="nWhiteBtn" onClick={() => { setPopup(null); setPendingType(''); setContentName(''); setSaved(null); setPicked(null); setError(''); }}>취소</Button>
         </Box>
       </Box>
       {preview && <PopupPreviewDialog popup={preview} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
@@ -306,6 +331,15 @@ export default function IS063M02Sample() {
           <Box component="pre" data-testid="is063-save-request" sx={{ m: 0, mt: 1, fontSize: 12, overflow: 'auto' }}>{JSON.stringify(saved, null, 2)}</Box>
         </DialogContent>
         <DialogActions><Button onClick={() => setSaved(null)}>닫기</Button></DialogActions>
+      </Dialog>
+      <Dialog open={Boolean(picked)} onClose={() => setPicked(null)} maxWidth="md" fullWidth>
+        <DialogTitle>pickPopupFields 결과 (서버에 보내지 않음)</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" sx={{ mb: 1 }}>필요한 항목 이름을 넘기면 그 값만 가져옵니다. 입력하지 않은 항목은 결과에 없습니다.</Typography>
+          <Box component="pre" data-testid="is063-pick-code" sx={{ m: 0, p: 1.5, fontSize: 12, overflow: 'auto', bgcolor: '#0f172a', color: '#e2e8f0', borderRadius: 1 }}>{PICK_EXAMPLE_CODE}</Box>
+          <Box component="pre" data-testid="is063-pick-result" sx={{ m: 0, mt: 1.5, fontSize: 12, overflow: 'auto' }}>{JSON.stringify(picked, null, 2)}</Box>
+        </DialogContent>
+        <DialogActions><Button onClick={() => setPicked(null)}>닫기</Button></DialogActions>
       </Dialog>
     </Box>
   );
