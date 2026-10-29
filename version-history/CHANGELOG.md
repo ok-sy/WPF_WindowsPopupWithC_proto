@@ -2,6 +2,15 @@
 
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
+## 2026-10-29-08 — 20261029 폐쇄망 반입본 생성
+
+- 이유: 20261022 반입 이후의 DTIY3117 전체 JSON 조회 샘플·등록 공통 검증 모듈(서버), 로그인 요청 키 lgonId·Demo JSON Validator(WPF), 관련 TODO·인계 문서를 폐쇄망에 반입하기 위해 새 반입본 필요. 관리자 웹·DB 스크립트 변경 없음.
+- 변경: `scripts/export-offline-package.ps1`로 main 864de09를 깨끗한 worktree에서 꺼내 offline-export/20261029 생성(-VerifyBuild, 변경 요약 -NotesFile, 이 기록을 담은 CHANGELOG -UseWorkingChangelog). Git for Windows 설치 파일 동봉(-GitInstallerPath)은 사용하지 않음.
+- 주요 파일: offline-export/20261029(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 151·M 8·D 0, 웹 A 27·M 11·D 5(웹 baseline 대비 누적, 20261022 이후 웹 변경 없음), WPF 소스 95, 문서 154 파일. DELETE-SINCE-20260930.txt 누적 21개(20261022 이후 신규 삭제 0). README-IMPORT.md에 변경 요약과 서버 → WPF 적용 순서(관리자 웹·DB 변경 없음) 작성. TGZ SHA256 `edcc2a193196af9227872644faa9431a84189655dc1f5d416c60dcf2e2d05887`.
+- 검증: TAR 4개 파일 수 대조 통과, 반입본 3-popup-frameWork와 저장소 오프라인 NuGet만으로 restore·폴더형 publish·-SingleFile publish 성공(popupSample.exe 91,744,078바이트). 반입본 application-local.yml은 커밋 버전(개발 PC 영상 경로 미포함). 폐쇄망 기존 소스 병합·빌드·실행은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-10-29-07 — 등록·수정 공통 JSON 검증·기본값 생성 1단계(공통 모듈·3117 등록 샘플)
 
 - 이유: 2026-10-29-05 TODO의 1단계로, 조회 단계 기본값 재조립 대신 등록·수정 단계에서 타입 오류를 차단하고 누락 선택값만 기본값으로 채운 전체 JSON을 저장하는 공통 모듈이 필요. 범위는 공통 모듈과 인계용 등록 샘플로 한정하고 기존 3111·3117 조회 경로는 변경하지 않기로 결정. 단일 등록 기본값은 3117 확정값(false)으로 명시 확정.
