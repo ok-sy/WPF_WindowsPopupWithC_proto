@@ -65,7 +65,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     title: '가이드 화면 정리 — 시작하기 탭, 범용/proto 전용 구분',
     body: ['첫 탭으로 시작하기를 추가했습니다(가져오기·최소 사용 코드·공통/부모/서버 경계). 공지는 맨 뒤로 옮기고 최근 게시 수를 배지로 표시합니다.',
       '프로세스·변환·유틸에 범용 / proto 전용 표시를 붙였습니다. `createDefaultPopup`·`changePopupType`·`toSaveRequest`는 proto(RgstPop) 전용이며 독립 화면의 필수 처리가 아닙니다.',
-      '실습 탭은 독립 필드 추출 실습을 먼저 보여 주고, proto 저장 변환 실습은 선택해서 봅니다.'],
+      '실습 탭은 독립 필드 추출 실습을 먼저 보여 주고(추출할 키를 칩으로 고르면 실제 `pickPopupFields` 호출 코드와 결과가 바로 바뀜), proto 저장 변환 실습은 선택해서 봅니다.'],
     components: ['createDefaultPopup', 'changePopupType', 'toSaveRequest', 'withPreviewFallback', 'pickPopupFields'],
     action: '새 화면은 시작하기 탭의 최소 코드(입력한 값만 state, 미리보기는 withPreviewFallback, 저장은 pickPopupFields + 화면별 저장 경계)를 따르세요.',
     tab: 'start',

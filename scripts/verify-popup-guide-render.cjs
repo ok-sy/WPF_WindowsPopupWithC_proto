@@ -73,6 +73,20 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const picked = JSON.parse(await run(`Array.from(document.querySelectorAll('pre')).map(p=>p.textContent).find(t=>t.trim().startsWith('{'))`));
   check(!('width' in picked) && !('displayStartAt' in picked) && picked.title === '가이드 실습', 'Independent live output has only entered values (no width/period): ' + JSON.stringify(picked));
   check(await run(`!!document.querySelector('[data-testid]') || document.body.innerText.includes('3. 미리보기')`), 'Live tab renders the preview');
+  // 추출 항목 선택: 칩을 고르면 호출 코드와 결과가 바뀐다. state에 없는 키(width)는 골라도 결과에 없다.
+  const liveCode = () => run(`document.querySelector('[data-testid=live-pick-code]').textContent`);
+  const liveResult = async () => JSON.parse(await run(`document.querySelector('[data-testid=live-pick-result]').textContent`));
+  const clickChip = async label => { await run(`Array.from(document.querySelectorAll('[data-testid=live-pick-keys] .MuiChip-root')).find(c=>c.textContent===${JSON.stringify(label)}||c.textContent.startsWith(${JSON.stringify(label + ' (')})).click()`); await pause(400); };
+  check((await liveCode()).includes("topLevelKeys: ['popupType', 'title']") && (await liveCode()).includes("contentKeys: ['textBlocks', 'plainText']"), 'Live call code shows the default selected keys');
+  await clickChip('width'); await clickChip('popupId');
+  let code = await liveCode(); let result = await liveResult();
+  check(code.includes("topLevelKeys: ['popupId', 'popupType', 'title', 'width']") && result.popupId === 'GUIDE-001' && !('width' in result),
+    'Selecting keys updates the call code in choice order; a key missing from state (width) stays out of the result: ' + JSON.stringify(result));
+  await clickChip('textBlocks'); await clickChip('plainText');
+  code = await liveCode(); result = await liveResult();
+  check(!code.includes('contentKeys') && !('content' in result), 'Deselecting every content key drops the contentKeys option and the content region');
+  await clickChip('questionId');
+  check((await liveCode()).includes("questionKeys: ['questionId']") && Array.isArray((await liveResult()).questions), 'Question keys add questionKeys and an (empty) questions array');
   await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('proto 저장 변환')).click()`); await pause(1500);
   body = await text();
   check(body.includes('저장 요청 (toSaveRequest)') && body.includes('처음 값으로 (createDefaultPopup)'), 'Live tab proto mode shows the toSaveRequest comparison');

@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-12 — 가이드 실습 독립 필드 추출: 추출 항목 선택·호출 코드 표시
+
+- 이유: 실습의 독립 필드 추출이 고정 키 목록(toSampleScreenValues)으로만 결과를 보여 줘, 어떤 키를 어떻게 넘겨 호출하는지 확인할 수 없었음.
+- 변경: 실습(범용) 모드에 '추출할 항목 고르기'(최상위·content·문항 키 칩, state에 없는 키는 "(state에 없음)" 표시)와 '호출 코드와 결과'(고른 키로 만든 실제 `pickPopupFields(state, { topLevelKeys, contentKeys, questionKeys })` 코드, 결과/state 전환) 추가. 영역에서 하나도 고르지 않으면 해당 옵션을 빼고 호출. 호출 코드는 선택지 순서로 표시. 가이드 공지 문구 보완. 렌더 하네스에 키 선택 → 호출 코드·결과 반영, state에 없는 키 미포함, 영역 해제 시 옵션 제외 검사 추가.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/GuideLiveTab.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, scripts/verify-popup-guide-render.cjs, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0, guide eslint 0, guide-render 24건 통과.
+- 상태: 커밋·원격 반영. 실화면 확인 미실행.
+
 ## 2026-10-30-11 — 가이드 시작하기 최소 예제 미설정 기준 정리
 
 - 이유: 미설정 키 생략 정책을 보여 주는 첫 예제가 입력하지 않은 `title: ''`·`questions: []`를 초기 state에 넣고 있었고, 가상 함수(`myApi`·`toMyRequest`)가 실제 API처럼 보일 수 있었음.
