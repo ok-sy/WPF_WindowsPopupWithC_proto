@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-13 — 관리자 웹 메뉴 아이콘 MUI 전체 import 제거
+
+- 이유: 개발 서버 화면 컴파일 모듈 27,681개 중 10,617개가 `@mui/icons-material` 전체였다. 사이드바가 쓰는 `MuiGenericIcon`의 `import * as icons`가 아이콘 1만여 개를 모든 화면 컴파일·번들에 넣어 폐쇄망 첫 컴파일 지연의 주원인이 됨.
+- 변경: `MuiGenericIcon`을 실제 사용 아이콘 30개의 개별 경로 import 표로 교체(아이콘 선택 목록 `DEFAULT_ICON_LIST` 29개 + 원격 개발 DB `CLOVER_PAGE_SECTION`·`CLOVER_PAGE` 아이콘 값 중 목록 밖 `LocalPolice`). 등록되지 않은 이름은 그리지 않음(이전에는 undefined 컴포넌트 렌더링으로 화면 오류). `IconNames` 타입·`StringToMuiIcon` 사용처 변경 없음. 아이콘 추가 방법은 소스 주석에 기록.
+- 주요 파일: zero-rule-web/main/src/components/StringToMuiIcon/MuiGenericIcon.tsx, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 오류 0, 변경 파일 eslint 오류 0. 개발 서버(Turbopack, 캐시 없음) `/` 첫 컴파일 15.4초 → 5.6초, `/pds/edit` 3.7초 → 1.1초. 운영 빌드(webpack) 성공, 컴파일 80초 → 46초, 화면별 First Load JS 1.9MB → 502kB. 로컬 관리자 웹(로컬 서버 + 원격 개발 DB) master 로그인 후 사이드바 메뉴 아이콘 전체 표시(LOCK관리 `LocalPolice` 포함) 확인.
+- 상태: 커밋·원격 반영. 폐쇄망 DB에 위 30개 밖의 메뉴 아이콘 값이 있으면 해당 메뉴 아이콘이 비어 보이므로 반입 후 `CLOVER_PAGE_SECTION`·`CLOVER_PAGE`의 icon 값 확인 필요(미실행).
+
 ## 2026-10-29-12 — 관리자 웹 개발 서버 Turbopack 전환
 
 - 이유: 폐쇄망에서 개발 서버 첫 컴파일이 오래 걸림. 캐시 없는 개발 서버 측정에서 webpack은 화면마다 20~30초(`/` 29.5초, `/pds/edit` 21초), Turbopack은 `/` 15.4초, `/pds/edit` 3.7초.
