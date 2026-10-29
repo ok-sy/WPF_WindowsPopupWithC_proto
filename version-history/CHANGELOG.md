@@ -1,5 +1,18 @@
 ﻿# 변경 이력
 
+## 2026-10-30-04 — WEB 미리보기 fallback(withPreviewFallback)·가이드 개요 탭 삭제·예시 탭(IS063M02Sample)
+
+- 이유: WEB/SERVER 책임 분리 확정(2026-10-30-03)에 따른 WEB 이행 1단계 — 화면 state에는 입력한 값만 두고 미리보기에 넘길 때만 표시용 값을 채우는 구조가 필요. 가이드 개요 탭은 다른 탭과 내용이 겹쳐 삭제하고 실제 화면 연결 예시를 가이드에서 바로 확인할 수 있게 함.
+- 변경:
+  - `popupPreviewFallback.ts` 추가(`PREVIEW_FALLBACK`·`withPreviewFallback`, index export): PopupPreview가 실제로 읽는 최상위 표시 필드만 채우고 업무 값(기간·반복·표시 순서·대상)·content 기본값은 채우지 않음, state 값(null·false·0·'' 포함) 우선.
+  - 신규 독립 샘플 ④ state를 미설정(키 생략) 기준으로 바꾸고 미리보기에 `withPreviewFallback` 사용. 가이드 실행기 `samplePopup`도 fallback 기준으로, proto 저장 비교 줄만 `protoPopup`(createDefaultPopup 기반).
+  - `PopupScheduleFields` 노출 일정 요약 문구를 안내용으로(최종 노출은 서버 판단), 주석 "확정 정책" 표현 정리.
+  - 가이드: 개요 탭과 그 전용 데이터(`DATA_OBJECTS`·`BOUNDARY_RULES`·`RELATED_DOCS`) 삭제, '예시' 탭 추가(`sample/IS063M02Sample` 렌더), 변환·유틸 목록·공지·최소 입력 표 갱신.
+  - 문서: F 문서 F-1·F-3·F-4 진행 표시, A~E 문서 운영 빌드 완료 표시.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewFallback.ts, zero-rule-web/main/src/features/PopupcommonComponent/index.ts, zero-rule-web/main/src/features/PopupcommonComponent/PopupScheduleFields.tsx, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupIndependentSamples.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/PopupCommonGuide.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideRunners.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideSavePartsTab.tsx, docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md, docs/design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0·변경 파일 eslint 오류 0, 운영 빌드(`next build`) 성공. 회귀 하네스 transform-64 77·common-sample-69 34·rgstpop-quiz-rule 11·preview-61 52·completion-ux-43 71·rich-text-49 60·image-preview 34·survey-rich-text-55 23건, `verify-popup-pick-fields` 25건 통과. 로컬 관리자 웹 — 가이드 탭(공지·프로세스·컴포넌트·독립 재사용·예시·변환·유틸·실습, 개요 없음), 예시 탭 IS063M02Sample(폼 생성·미리보기) 표시, 독립 샘플 ④ 미리보기·추출 결과(fallback 필드 없음), PopupPreview 실행기, 예외 0건.
+- 상태: 커밋·원격 반영. 기존 샘플·RgstPop state 전환과 서버 항목은 후속.
+
 ## 2026-10-30-03 — WEB 표시 기본값 / SERVER 업무 정책 책임 분리 TODO 정의
 
 - 이유: 공통 컴포넌트 계약(독립 재사용·선택 필드 추출)과 별도로, WEB 공통 컴포넌트는 입력·표시·미리보기를, 최종 기본값·검증·저장 정합성은 서버가 맡는 책임 분리를 정의할 필요. 한 문서에 두면 서버 작업이 필요한 항목과 "서버/DB 변경 제외" 범위가 충돌해 문서를 나눔.
@@ -9,6 +22,29 @@
 - 후속 확정: 미설정 표현 규칙(기본 키 생략, null은 명시적 초기화 의미를 갖되 현재는 3117 검증기와 같이 기본값 적용 대상으로 유지하고 초기화가 필요한 필드만 별도 계약, false·0은 그대로, ''는 필드별 — title 서버 오류·description 설명 없음·plainText 본문 없음/필수 여부는 유형별 서버 검증), F-3 분류 확정(창 크기·비율과 영상·오버레이 옵션 = WEB 미리보기 fallback/SERVER 기본값, 최소 창 크기·문항·퀴즈 = WEB 안내/SERVER 최종 검증, 게시 기간·반복 = WEB 입력/SERVER 정책·검증, URL 보정 = WEB 미리보기 편의/SERVER 정규화, 유형별 content 필터링 = SERVER 최종 정합성, 노출·완료 판정 = SERVER 정책/WEB 시뮬레이션, 날짜 ISO = proto 호환). 신규 독립 화면부터 적용하고 RgstPop은 서버 대응 구현 후 점진 전환. `withPreviewFallback()`은 미리보기 렌더에 필요한 필드만 합성(업무 값 제외) 조건 추가.
 - 상태: 커밋·원격 반영. 정책 확정, WEB 이행 1단계는 2026-10-30-04, 서버 연결 미실행.
 
+## 2026-10-30-02 — PopupcommonComponent 독립 재사용·선택 필드 추출
+
+- 이유: 공통 모듈을 특정 테이블(3111/3117 포함)·API·저장 요청 형식과 관계없이 여러 업무 화면에서 쓰도록 컴포넌트 입출력을 독립화하고, 범용 선택 필드 추출을 proto 저장 변환(`toSaveRequestPopup`)과 분리.
+- 변경:
+  - `PopupScheduleFields`: 일정 전용 `value: PopupScheduleValue`(periodMode·repeatDayOfWeek·displayTimes·displayStartAt·displayEndAt) 추가·타입 export, `showPeriod`로 게시 기간 입력(입력란 문자열 그대로 onChange, 직렬화는 부모). 기존 `popup` prop은 호환용 유지(등록 화면 호출부 변경 없음).
+  - `pickPopupFields`: `topLevelKeys` 추가(content·questions 제외 최상위 키). 키 판단을 own property 기준으로 바꿔 값이 undefined여도 키가 있으면 보존(2026-10-30-01의 "undefined 값 제외"에서 변경), 결과 타입을 `Partial<Pick<…>>`로 실제 동작과 맞춤, 입력은 부분 객체도 허용. 값 그대로·얕은 복사·변환 없음 원칙을 주석에 명시.
+  - 서버 없는 샘플 `sample/PopupIndependentSamples.tsx` 4종(일정만 / RichText + content 일부 / 문항 일부 / 세 영역 조합 + 미리보기)과 붙이는 코드.
+  - 가이드: 'content·문항 가공' 탭을 '독립 재사용·필드 추출'로 개편(원칙, 컴포넌트 최소 입력·출력 표, pickPopupFields 규칙·키 표, 샘플, 실행기), 프로세스 ⑩·컴포넌트 탭 PopupScheduleFields props·변환·유틸 목록·공지 갱신, 실행기 일정 입력을 value prop으로.
+  - 문서: TODO `docs/design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md`(진행 기록 포함), 정책 문서 상태 줄, `ADMIN_POPUP_EDITOR_TRANSFORM.md` 5-1, 문서 색인.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupScheduleFields.tsx, zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts, zero-rule-web/main/src/features/PopupcommonComponent/index.ts, zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupIndependentSamples.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/GuideSavePartsTab.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideRunners.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/PopupCommonGuide.tsx, zero-rule-web/main/src/features/PopupcommonComponent/__typetests__/pickPopupFields.typetest.ts, scripts/verify-popup-pick-fields.cjs, docs/design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md, docs/design/20261029_팝업JSON_가공_요청body_정책정리.md, docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: `verify-popup-pick-fields` 25건(영역별 단독·조합, 미지정·빈 배열·누락 키, null·false·0·빈 문자열·undefined 키 보존, 문항 순서 유지, 원본 동결 객체 불변, 결과 컨테이너 새 객체·중첩 값 참조, options 참조, 부분 객체), 변이 확인(own property 판단을 `!== undefined`로 바꾸면 실패). 웹 `tsc` 0(타입 테스트 포함: 고르지 않은 키·content/questions를 topLevelKeys로·없는 키 오류), 변경 파일 eslint 오류 0. 회귀 하네스 transform-64 77·common-sample-69 32·rgstpop-quiz-rule 11·preview-61 52·completion-ux-43 71·rich-text-49 60건 통과. 로컬 관리자 웹 — 신규 등록 노출 일정 스위치(legacy popup prop) 동작, 가이드 샘플 ① 요일 토글 → 결과 갱신·② 본문 입력 → plainText 반영·④ 미리보기 표시, 실행기 결과(빈 문자열·0 보존), 예외 0건.
+- 후속 보완(샘플 저장 값): 샘플 화면이 입력하지 않는 proto 저장 값(게시 기간·노출 일정·표시 순서·활성·대상 그룹)이 `toSaveRequest`를 거쳐 기본값으로 실리던 문제를 정리. `popupSampleData.ts`에 `toSampleScreenValues`(= `pickPopupFields`, 화면 입력 필드만: popupId·popupType·title·width·height·showLater, 문항형은 passingScore·questions, content는 유형별 화면 입력 키) 추가, `IS063M02Sample`·`PopupListSample` 저장 표시를 이 값으로 변경(`toSaveRequest` 미사용, 미리보기용 state는 그대로), 주석·`POPUP_FRONT_SAMPLE_HANDOVER.md`·`ADMIN_POPUP_PREVIEW_COMPONENTS.md` 갱신. `verify-popup-common-sample-69`를 평평한 저장 값 기준으로 바꾸고 기간·일정·활성·대상 그룹 미포함 검사 2건 추가 — 34건 통과. 웹 `tsc` 0·eslint 0.
+- 상태: 커밋·원격 반영. 운영 빌드는 2026-10-30-04에서 성공 확인.
+
+## 2026-10-30-01 — content·questions 선택 필드 추출 공통 함수 pickPopupFields
+
+- 이유: `AdminPopupDetail`에서 content와 questions의 필요한 key:value만 골라 다른 API 요청 데이터로 쓰는 공통 함수 필요(작업 범위: 신규 함수 1개 + export + 테스트, 기존 `toSaveRequestPopup`·RichText 변환·API 요청 구조 변경 없음).
+- 변경: `popupEditorTransform.ts`에 `pickPopupFields(popup, { contentKeys?, questionKeys? })`·`PickPopupFieldsOptions`·`PickedPopupFields` 추가(`index.ts`의 기존 `export *`로 공통 export). content에서 contentKeys의 키만, 각 문항에서 questionKeys의 키만 골라 새 객체로 반환. 옵션에 준 영역(빈 배열 포함)만 결과에 넣고, undefined 값·없는 키는 제외(null은 유지), content·questions가 없으면 빈 값. 결과 타입은 옵션에 준 영역만 속성으로 가지며 문항은 `Pick<PopupQuestion, K>`, questionKeys는 `keyof PopupQuestion`으로 검사. 저장 정리는 하지 않으므로 저장 기준 값이 필요하면 `toSaveRequestPopup(popup)` 결과를 넘긴다(주석 명시). 테스트: `scripts/verify-popup-pick-fields.cjs`(Node, TypeScript 변환 후 실제 모듈 실행), 타입 테스트 `__typetests__/pickPopupFields.typetest.ts`(웹 type-check가 `@ts-expect-error`로 검사).
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform.ts, zero-rule-web/main/src/features/PopupcommonComponent/__typetests__/pickPopupFields.typetest.ts, scripts/verify-popup-pick-fields.cjs, version-history/CHANGELOG.md.
+- 검증: `verify-popup-pick-fields` 16건 통과(content만·questions만·함께, 옵션 없음·빈 배열·없는 키·undefined/null·빈/누락 questions, 원본 동결 객체 불변·새 객체 반환, toSaveRequestPopup 결과와 함께 사용). 웹 `tsc` 0(타입 테스트 포함), 변경 파일 eslint 0. 타입 변이 확인: 결과 문항 타입을 `PopupQuestion[]`로 느슨하게 바꾸면 타입 테스트가 실패하고 원복 후 통과. 기존 저장 변환 회귀 `verify-popup-transform-64` 77건 통과.
+- 후속 정리: 중복되던 `popupSaveParts.ts`(contentForSave·questionsForSave·flattenQuestions·nestQuestions)를 제거하고 pickPopupFields로 통일. 가이드 'content·문항 가공' 탭·프로세스 ⑩·변환·유틸 목록·공지, 정책 문서 P1~P3·프로세스, `ADMIN_POPUP_EDITOR_TRANSFORM.md` 5-1, 문서 색인을 pickPopupFields 기준으로 갱신.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-29-19 — 팝업 JSON 가공·요청 body 생성 정책 정리
 
 - 이유: 게시정보·대상자 등 다른 테이블 API 요청 body를 만드는 방식이 정해지지 않아 공통 함수 범위를 정하기 전에 정책 정리가 필요. 검토 결과 최상위 필드는 입력값 수준이고 어려운 부분은 content·문항뿐이라 범위를 그 두 곳으로 확정.
@@ -16,6 +52,21 @@
 - 주요 파일: docs/design/20261029_팝업JSON_가공_요청body_정책정리.md, docs/README.md, version-history/CHANGELOG.md.
 - 검증: 문서 작업. 현재 상태 기술은 `popupEditorTransform.ts`(pickPopupFields)·`SERVER_SAMPLE_FULL_JSON_API.md` §3과 대조.
 - 상태: 커밋·원격 반영. 폐쇄망 테이블 구조·저장 호출 단위 확인 대기.
+
+## 2026-10-29-18 — 관리자 웹 PopupcommonComponent 가이드 화면 추가
+
+- 이유: 팝업 공통 컴포넌트를 다른 화면·프로젝트에서 재사용할 수 있도록 컴포넌트별 값·변환·재사용 방법을 프로세스별로 설명하고, 추가 예정·변경·삭제 사항을 같은 화면에서 공지할 필요.
+- 변경:
+  - `features/PopupcommonComponent/guide/` 추가 — `PopupCommonGuide.tsx`(탭: 공지·개요·프로세스·컴포넌트·변환·유틸·실습), `guideData.ts`(경계 규칙, 주고받는 객체 4종, 프로세스 9종, 공개 컴포넌트 9종의 props·출력·값·재사용·예시, 변환·유틸 함수 표, 관련 문서), `guideNotices.ts`(공지 데이터: 구분 추가·변경·삭제·추가 예정·안내, 상태, 영향 컴포넌트, 사용하는 쪽 조치. 최근 14일 NEW 표시). 공지는 코드 파일로 관리하며 서버·DB를 쓰지 않음.
+  - 실습 탭은 실제 `createDefaultPopup`·`changePopupType`·`PopupRichTextEditor`·`toSaveRequest`·`InlinePopupPreview`·`PopupPreviewDialog`를 호출해 편집값과 저장 요청 JSON, 저장 시 빠지는 content 키를 보여 줌(서버 미전송).
+  - `scene-router.tsx`에 `/popup-common-guide` 등록, 직접 접근용 `pages/popup-common-guide.tsx`.
+  - 메뉴: `db/oracle/20_popup_common_guide_menu_oracle.sql`(페이지·NAV 항목, 멱등) 추가.
+  - 문서: `db/oracle/README.md` 20 절, `docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md` 가이드 행·설명.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/PopupCommonGuide.tsx, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts, zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts, zero-rule-web/main/src/scene/scene-router.tsx, zero-rule-web/main/pages/popup-common-guide.tsx, db/oracle/20_popup_common_guide_menu_oracle.sql, db/oracle/README.md, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 0·변경 파일 eslint 오류 0. 원격 개발 DB에 20 스크립트 실행 — 페이지 1(page_key 27)·NAV 항목 2. 로컬 관리자 웹(원격 개발 DB) master 로그인 후 사이드바 '팝업 관리 > PopupcommonComponent 가이드'로 열림, 6개 탭 표시, 공지 7건·NEW 표시, 컴포넌트 상세(PopupQuestionEditor props·import 예시), 실습 탭 본문 입력이 저장 요청 plainText에 반영·빠진 키 안내, 유형 이미지로 변경 시 저장 요청 content가 IMAGE 키만 남음, 예외 0건.
+- 후속 보완(가독성): 브라우저 기본 monospace가 가늘고 넓게 보여 코드 글꼴을 Consolas·D2Coding 계열로 지정하고 본문 안 코드는 배경 있는 조각으로 표시. 본문 최대 폭 1120px, 글자 14~15px·줄 간격 1.7~1.8, 구획 제목 강조선. 개요 전체 흐름을 텍스트 화살표 그림에서 3단 상자 흐름으로, 주고받는 객체를 표에서 항목 목록으로, 프로세스를 단계 타임라인 + 오른쪽 '부모 화면이 하는 일' 상자와 상단 바로가기 칩으로, 변환·유틸을 좁은 5열 표에서 파일별 목록(설명·입력 → 반환)으로, 공지를 구분 색 강조선·'사용하는 쪽에서 할 일' 상자로 변경. 버튼·토글 대문자 변환 해제. 실화면 6개 탭 캡처와 실습 동작(본문 → plainText 반영, 유형 변경 시 키 정리) 재확인, 예외 0건.
+- 후속 보완(content·문항 가공·코드 실행기): 다른 테이블 API 요청 데이터 생성 정책(2026-10-29-19)에 따라 최상위 필드는 `toSaveRequest` 결과에서 key/value로 꺼내고 content·문항만 공통 함수로 처리. 공통 함수는 2026-10-30-01 `pickPopupFields`로 통일(중간 안 `popupDataset.ts`·`popupSaveParts.ts`는 제거). content 키 표를 위해 `popupEditorTransform`의 `COMMON_CONTENT_KEYS`·`CONTENT_KEYS_BY_TYPE`를 읽기 전용으로 내보냄. 가이드에 'content·문항 가공' 탭(최상위 key/value 원칙, pickPopupFields 사용법, 실제 상수로 그리는 content 키 표, 문항 필드, pickPopupFields 실행기)과 프로세스 ⑩ 추가. 컴포넌트 탭을 가로 선택 + 설명 | 코드 실행기(INPUT JSON 편집 → 실행 결과에 실제 컴포넌트 → OUTPUT 콜백 값, Ctrl+Enter, 잘못된 입력은 오류 경계로 표시) 배치로 변경, 컴포넌트 8종 실행기(`guideRunners.tsx`, PopupRichTextMenu는 안내). 변환·유틸 목록·공지 갱신, `ADMIN_POPUP_EDITOR_TRANSFORM.md` 5-1 절. 검증: `tsc` 0·변경 파일 eslint 0, 로컬 관리자 웹 실화면 — 컴포넌트 탭 PopupRichTextEditor 실행기 입력 시 OUTPUT onChange 반영·입력 JSON 변경 후 실행 시 재마운트. 'content·문항 가공' 탭 pickPopupFields 실행기 — 편집값 그대로는 content에 다른 유형 키(plainText) 포함, toSaveRequestPopup 결과를 넘기면 SURVEY 키만, 문항은 고른 필드만(값 없는 minSelections 생략) 확인, 예외 0건.
+- 상태: 커밋·원격 반영. 운영 빌드(`next build`)는 2026-10-30-04에서 성공 확인.
 
 ## 2026-10-29-17 — footerAction CLOSE 표시 이름 닫기 → 확인
 

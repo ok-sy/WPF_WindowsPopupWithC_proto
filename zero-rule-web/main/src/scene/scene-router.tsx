@@ -34,6 +34,8 @@ const RgstPop = dynamic(() => import('@/features/RgstPop'), { ssr: false });
 // POL-14-01 : 공통 프론트 경계 — 공통 팝업 컴포넌트 샘플(서버 없이 목록→편집→우측/모달 미리보기). 기존 '/rgst-pop' 경로는 그대로 둔다.
 const PopupListSample = dynamic(() => import('@/features/PopupcommonComponent/sample/PopupListSample'), { ssr: false });
 const IS063M02Sample = dynamic(() => import('@/features/PopupcommonComponent/sample/IS063M02Sample'), { ssr: false });
+// POL-14-01 : 공통 프론트 경계 — 공통 컴포넌트 사용 안내·변경 공지 화면. 사이드바 메뉴는 db/oracle/20_popup_common_guide_menu_oracle.sql.
+const PopupCommonGuide = dynamic(() => import('@/features/PopupcommonComponent/guide/PopupCommonGuide'), { ssr: false });
 
 export interface ISceneComponent {
   url: string;
@@ -94,6 +96,7 @@ export const SCENES: Record<string, ISceneComponent> = createScenes([
   ['/rgst-pop', '팝업 등록', RgstPop],
   ['/popup-common-sample', '팝업 공통 컴포넌트 샘플', PopupListSample],
   ['/popup-common-sample/is063m02', '컨텐츠 등록 샘플(IS063M02)', IS063M02Sample],
+  ['/popup-common-guide', 'PopupcommonComponent 가이드', PopupCommonGuide],
 ]);
 
 // url(키)로 값을 리턴해준다

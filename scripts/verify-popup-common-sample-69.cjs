@@ -74,11 +74,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'Modal preview shows the same latest popup');
   await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
   check(await run(`document.querySelectorAll('.MuiDialog-root').length`) === 1, 'Closing the modal keeps the editor open');
-  // 5) 저장: toSaveRequest 결과가 편집값과 일치하고 목록이 바뀐다(서버 미전송 표시).
+  // 5) 저장: 화면 입력 필드만 담은 저장 값이 편집값과 일치하고 목록이 바뀐다(서버 미전송 표시). proto 저장 값(기간·활성·대상 그룹)은 넣지 않는다.
   await clickButton('저장');
   let saved = await request();
-  check(saved.popup.title === '변경된 점검 제목' && saved.popup.content.plainText.includes('추가문구') && saved.popup.content.textBlocks[0].runs.some(r => r.text.includes('추가문구'))
-    && saved.active === true && Array.isArray(saved.targetGroups), 'Save request carries the edited title, blocks and plainText');
+  check(saved.title === '변경된 점검 제목' && saved.content.plainText.includes('추가문구') && saved.content.textBlocks[0].runs.some(r => r.text.includes('추가문구'))
+    , 'Save value carries the edited title, blocks and plainText');
+  check(['displayStartAt', 'displayEndAt', 'periodMode', 'repeatDayOfWeek', 'displayTimes', 'displayOrder', 'active', 'targetGroups', 'popup'].every(key => !(key in saved)),
+    'Save value has no proto-only fields the screen does not edit (period·schedule·order·active·targets): ' + Object.keys(saved).join(','));
   check(await run(`Array.from(document.querySelectorAll('tbody tr')).some(r=>r.textContent.includes('변경된 점검 제목'))`) && await run(`document.body.textContent.includes('서버 미전송')`),
     'Local list is updated and the request is marked as not sent to a server');
   // 6) SURVEY: 미리보기 시연 응답이 저장값에 섞이지 않는다.
@@ -88,7 +90,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`${preview}.querySelector('input[type=radio],input[type=checkbox]').click()`); await pause(200);
   await clickButton('저장');
   saved = await request();
-  check(saved.popup.popupType === 'SURVEY' && saved.popup.questions.length > 0 && !JSON.stringify(saved).includes('"selected') && !JSON.stringify(saved).includes('"answer"'),
+  check(saved.popupType === 'SURVEY' && saved.questions.length > 0 && !JSON.stringify(saved).includes('"selected') && !JSON.stringify(saved).includes('"answer"'),
     'Preview demo answers do not leak into the survey save request');
   check(before > 0, 'Question editor renders inputs for each question');
   // 7) 유형 전환(TEXT → QUIZ)과 영상+퀴즈 열기에서 오류 없이 다시 구성된다.
@@ -128,8 +130,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('300')`), '[IS063] Size below 300 is rejected (TODO68)');
   await setInput('input[aria-label="가로"]', '640'); await clickButton('저장');
   saved = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`));
-  check(saved.popup.popupType === 'TEXT' && saved.popup.title === 'IS063 헤더' && saved.popup.width === 640 && saved.popup.content.plainText.includes('IS063 본문')
-    && !('attachedFileName' in saved.popup.content) && !JSON.stringify(saved).includes('IS063 컨텐츠'), '[IS063] Save request matches the edit; content name is not invented into the contract');
+  check(saved.popupType === 'TEXT' && saved.title === 'IS063 헤더' && saved.width === 640 && saved.content.plainText.includes('IS063 본문')
+    && !('attachedFileName' in saved.content) && !JSON.stringify(saved).includes('IS063 컨텐츠'), '[IS063] Save request matches the edit; content name is not invented into the contract');
+  check(!('displayStartAt' in saved) && !('periodMode' in saved) && !('active' in saved) && !('targetGroups' in saved), '[IS063] Save value has no period·schedule·active·targets (no input on this screen)');
   await clickButton('닫기');
   // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
   await pickType('퀴즈 팝업'); await clickButton('폼 생성');
@@ -142,15 +145,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const first = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
   await run(`document.querySelector('input[aria-label="1번 문항 2번 선택지 정답"]').click()`); await pause(200); await clickButton('저장');
   const second = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
-  check(first.popup.questions.length >= 2 && JSON.stringify(first.popup.questions[0]) !== JSON.stringify(second.popup.questions[0])
-    && JSON.stringify(first.popup.questions[1]) === JSON.stringify(second.popup.questions[1]) && !('footerAction' in second.popup.content),
+  check(first.questions.length >= 2 && JSON.stringify(first.questions[0]) !== JSON.stringify(second.questions[0])
+    && JSON.stringify(first.questions[1]) === JSON.stringify(second.questions[1]) && !('footerAction' in second.content),
     '[IS063] Per-question answer selection is independent; quiz save omits footerAction (SUBMIT is fixed by the server)');
   // [확정 점수 규칙] 문항 1점 고정·총점 = 문항 수, 만점 통과 = 문항 수, 커트라인 N개 = N점.
   check(await run(`!document.querySelector('[data-testid=is063-mid]').textContent.includes('배점 모두 1점') && !Array.from(document.querySelectorAll('[data-testid=is063-mid] label')).some(l=>l.textContent==='배점' || l.textContent==='통과 점수')`),
     '[IS063] Quiz score is fixed at 1 point: no per-question score or passing score input');
-  const count = second.popup.questions.length;
-  check(second.popup.questions.every(q => q.questionScore === 1 && q.isScored === true) && second.popup.passingScore === 2,
-    '[IS063] Loaded quiz keeps cutoff 2 and saves every question as 1 point: ' + JSON.stringify(second.popup.questions.map(q => q.questionScore)) + ' / ' + second.popup.passingScore);
+  const count = second.questions.length;
+  check(second.questions.every(q => q.questionScore === 1 && q.isScored === true) && second.passingScore === 2,
+    '[IS063] Loaded quiz keeps cutoff 2 and saves every question as 1 point: ' + JSON.stringify(second.questions.map(q => q.questionScore)) + ' / ' + second.passingScore);
   const pickRule = async label => {
     await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.querySelector('[role=combobox]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`); await pause(300);
     await run(`Array.from(document.querySelectorAll('[role=option]')).find(o=>o.textContent===${JSON.stringify(label)}).click()`); await pause(300);
@@ -159,10 +162,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 ${count}점')`), '[IS063] Full-score pass shows passing score = question count');
   await clickButton('저장');
   let rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
-  check(rule.popup.passingScore === count, `[IS063] Full-score pass saves passingScore ${count} for ${count} questions`);
+  check(rule.passingScore === count, `[IS063] Full-score pass saves passingScore ${count} for ${count} questions`);
   await pickRule('커트라인 통과'); await setInput('input[aria-label="통과 기준 개수"]', '1'); await clickButton('저장');
   rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
-  check(rule.popup.passingScore === 1 && rule.popup.questions.every(q => q.questionScore === 1), '[IS063] Cutoff 1 saves passingScore 1');
+  check(rule.passingScore === 1 && rule.questions.every(q => q.questionScore === 1), '[IS063] Cutoff 1 saves passingScore 1');
   await setInput('input[aria-label="통과 기준 개수"]', String(count + 1)); await clickButton('저장');
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('통과 기준')`), '[IS063] Cutoff above the question count is rejected');
   await setInput('input[aria-label="통과 기준 개수"]', '1');

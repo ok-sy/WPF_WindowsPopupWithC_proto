@@ -1,6 +1,6 @@
 import type { AdminPopupDetail } from '@local/domain';
 import popupDemoQuestions from '../popupDemoQuestions';
-import { createDefaultPopup } from '../popupEditorTransform';
+import { createDefaultPopup, pickPopupFields } from '../popupEditorTransform';
 import { plainTextToBlocks } from '../popupRichText';
 
 /*
@@ -77,4 +77,34 @@ export function createSamplePopups(): AdminPopupDetail[] {
       passingScore: 1, questions: popupDemoQuestions(true).slice(0, 1) },
     { videoEnabled: true, videoUrl: '', videoTitle: '영상 + 퀴즈', surveyTitle: '영상 확인 퀴즈' }),
   ];
+}
+
+/* 샘플 화면(PopupSampleEditor·IS063M02Sample)이 입력하는 값만. 게시 기간·노출 일정·표시 순서·활성·대상 그룹 같은 proto 저장 값은
+ * 화면에 입력이 없으므로 결과에 넣지 않는다(미리보기에 필요 없는 정책을 화면이 떠안지 않음). 입력을 추가하면 여기에도 키를 더한다. */
+const SAMPLE_TOP_LEVEL_KEYS = ['popupId', 'popupType', 'title', 'width', 'height', 'showLater'] as const;
+const SAMPLE_FOOTER_KEYS = ['footerAction', 'footerLinkUrl'];
+const SAMPLE_CONTENT_KEYS: Record<string, string[]> = {
+  TEXT: ['textBlocks', 'plainText', ...SAMPLE_FOOTER_KEYS],
+  IMAGE: ['imageUrl', 'description', 'descriptionBlocks', ...SAMPLE_FOOTER_KEYS],
+  VIDEO: ['videoUrl', 'description', 'descriptionBlocks', ...SAMPLE_FOOTER_KEYS],
+  SURVEY: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks'],
+  QUIZ: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks', 'videoEnabled', 'videoUrl'],
+};
+const SAMPLE_QUESTION_KEYS = ['questionId', 'title', 'titleBlocks', 'description', 'descriptionBlocks', 'questionType', 'optionLayout', 'isRequired',
+  'isScored', 'questionScore', 'sortOrder', 'options', 'correctAnswer', 'answerMatchMode', 'minSelections', 'maxSelections'] as const;
+
+/**
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 샘플 화면 저장 값
+ * - in : popup(AdminPopupDetail) 샘플 화면 편집값(미리보기용 전체 모양)
+ * - out: Record<string, unknown> 화면이 입력하는 필드만 담은 값(pickPopupFields 결과)
+ * - 미리보기용 state에는 createDefaultPopup 기본값이 함께 있지만, 저장 값에는 화면이 다루는 필드만 담는다.
+ *   proto 저장 변환(toSaveRequest: 기간 ISO·활성·대상 그룹·유형별 content 정리)은 호출하지 않는다.
+ *   [실연동] 실제 저장 API에 붙일 때 이 값을 그 API의 형식(날짜·키 이름 등)으로 바꾸는 것은 각 화면의 저장 경계에서 한다.
+ */
+export function toSampleScreenValues(popup: AdminPopupDetail): Record<string, unknown> {
+  const question = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
+  return question
+    ? pickPopupFields(popup, { topLevelKeys: [...SAMPLE_TOP_LEVEL_KEYS, 'passingScore'], contentKeys: SAMPLE_CONTENT_KEYS[popup.popupType], questionKeys: SAMPLE_QUESTION_KEYS })
+    : pickPopupFields(popup, { topLevelKeys: SAMPLE_TOP_LEVEL_KEYS, contentKeys: SAMPLE_CONTENT_KEYS[popup.popupType] ?? [] });
 }

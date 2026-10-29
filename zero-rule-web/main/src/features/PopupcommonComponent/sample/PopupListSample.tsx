@@ -4,20 +4,19 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { POPUP_TYPE_LABELS } from '../popupCommon';
-import { toSaveRequest, type PopupSaveRequest } from '../popupEditorTransform';
 import PopupSampleEditor from './PopupSampleEditor';
-import { createSamplePopups, newSamplePopup } from './popupSampleData';
+import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popupSampleData';
 
 /**
  * POL-14-01 : 공통 프론트 경계
  * POL-07-01 : 부모의 데이터 소유
  * ■ 팝업 목록 샘플 화면
  * - in : 데이터 공급 createSamplePopups()(로컬 샘플 목록) · 신규 기본값 newSamplePopup()
- * - out: 저장 요청 toSaveRequest(popup, true, []) 결과(서버 미전송, 화면에 표시) · 화면: 팝업 목록 표·신규/수정 버튼·PopupSampleEditor 편집 대화상자
+ * - out: 저장 값 toSampleScreenValues(popup) — 화면이 입력하는 필드만(서버 미전송, 화면에 표시) · 화면: 팝업 목록 표·신규/수정 버튼·PopupSampleEditor 편집 대화상자
  * - 샘플 팝업 목록을 받아 신규/수정 → 편집기·두 미리보기 흐름(RgstPop 목록과 같은 흐름)을 관리자 API·인증 없이 보여 준다.
- * 데이터 공급 경계: 목록은 createSamplePopups()(로컬), 저장은 toSaveRequest로 요청 객체만 만들고 메모리 목록을 바꾼다.
+ * 데이터 공급 경계: 목록은 createSamplePopups()(로컬), 저장은 화면이 입력하는 필드만(toSampleScreenValues) 보여 주고 메모리 목록을 바꾼다.
  * 실제 서버에 연결할 때는 목록을 api.popupAdmin.list({ ctx }), 편집 시작을 api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup),
- * 저장을 api.popupAdmin.save(toSaveRequest(...))로 바꾼다(RgstPop.tsx·PopupEditorDialog.tsx가 실제 구현).
+ * 저장을 이 화면의 저장 API 형식으로 바꿔 호출한다(proto 등록 화면 RgstPop은 자기 저장 변환 toSaveRequest를 쓴다 — 샘플에는 해당 없음).
  * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  */
@@ -25,14 +24,14 @@ export default function PopupListSample() {
   // [실연동] 초기 목록. useEffect에서 api.popupAdmin.list({ ctx })의 body로 채운다(목록 항목 → 수정 시 info로 상세 조회).
   const [popups, setPopups] = useState<AdminPopupDetail[]>(createSamplePopups);
   const [editing, setEditing] = useState<{ popup: AdminPopupDetail; key: number } | null>(null);
-  const [lastRequest, setLastRequest] = useState<PopupSaveRequest | null>(null);
+  const [lastRequest, setLastRequest] = useState<Record<string, unknown> | null>(null);
   // 열 때마다 새 key로 편집기를 마운트해 이전 팝업의 편집 상태·에디터 내용이 섞이지 않게 한다.
   // [실연동] 수정 시작: api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup)을 넘긴다.
   const open = (popup: AdminPopupDetail) => setEditing({ popup, key: Date.now() });
 
   const save = (popup: AdminPopupDetail) => {
-    // [실연동] active·targetGroups는 등록 화면의 활성 스위치·대상 그룹 입력값. 이후 api.popupAdmin.save(request) 성공 시에만 목록을 갱신한다.
-    const request = toSaveRequest(popup, true, []);
+    // [실연동] 이 화면의 저장 API 형식으로 바꿔 호출하고 성공 시에만 목록을 갱신한다. 화면에 없는 값(기간·활성·대상 그룹)은 넣지 않는다.
+    const request = toSampleScreenValues(popup);
     setLastRequest(request);
     setPopups((previous) => previous.some((item) => item.popupId === popup.popupId)
       ? previous.map((item) => (item.popupId === popup.popupId ? popup : item))
@@ -66,7 +65,7 @@ export default function PopupListSample() {
         </Table>
       </Paper>
       {lastRequest && <Box sx={{ mt: 2 }}>
-        <Typography variant="subtitle2">마지막 저장 요청 객체(toSaveRequest 결과, 서버 미전송)</Typography>
+        <Typography variant="subtitle2">마지막 저장 값(화면 입력 필드만, 서버 미전송)</Typography>
         <Box component="pre" data-testid="sample-save-request" sx={{ m: 0, p: 1.5, maxHeight: 280, overflow: 'auto', bgcolor: 'grey.100', fontSize: 12 }}>
           {JSON.stringify(lastRequest, null, 2)}
         </Box>

@@ -158,10 +158,11 @@ function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail 
 
 /* 저장 시 팝업 유형에서 쓰는 content 키만 보낸다(WPF content DTO·관리자 미리보기 기준).
  * 편집 중에는 유형을 바꿔도 입력값이 남도록 모든 키를 유지하고, 저장 요청에서만 걸러 다른 유형의 키가
- * CONTENT_OPTIONS에 쌓이지 않게 한다. 새 content 옵션을 추가하면 이 목록에도 넣어야 저장된다. */
-const COMMON_CONTENT_KEYS = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
+ * CONTENT_OPTIONS에 쌓이지 않게 한다. 새 content 옵션을 추가하면 이 목록에도 넣어야 저장된다.
+ * 가이드 화면의 content 키 표도 이 목록을 그린다(읽기 전용으로 내보냄). */
+export const COMMON_CONTENT_KEYS: readonly string[] = ['useBackgroundOverlay', 'backgroundOverlayOpacity', 'popupPosition',
   'headerFontSize', 'bodyFontSize', 'footerFontSize', 'footerAction', 'footerLinkUrl'];
-const CONTENT_KEYS_BY_TYPE: Record<string, string[]> = {
+export const CONTENT_KEYS_BY_TYPE: Readonly<Record<string, readonly string[]>> = {
   TEXT: ['plainText', 'textBlocks', 'showPlainText', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'keepAspectRatio'],
   VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
@@ -300,4 +301,57 @@ export function describeSchedule(periodMode: string | null | undefined, repeatDa
   const dayText = days.length === 0 || days.length === 7 ? '매일' : days.map((day) => WEEKDAYS[day - 1].label).join('·');
   const timeText = typeof times === 'string' ? times : (times ?? []).map((time) => `${time.startTime}~${time.endTime}`).join(', ');
   return `${dayText} · ${timeText || '종일'}`;
+}
+
+/** pickPopupFields로 고를 수 있는 최상위 키(content·questions는 contentKeys·questionKeys로 고른다) */
+export type PopupTopLevelKey = Exclude<keyof AdminPopupDetail, 'content' | 'questions'>;
+
+/**
+ * POL-07-02 : 변환 책임 분리
+ * ■ 선택 필드 추출 옵션
+ * - in : 없음(타입)
+ * - out: topLevelKeys?(최상위에서 고를 키) · contentKeys?(content에서 고를 키) · questionKeys?(각 문항에서 고를 PopupQuestion 키)
+ * - 세 목록은 따로 또는 함께 줄 수 있다. 준 목록(빈 배열 포함)의 영역만 결과에 들어간다.
+ *   문항 하위(options 안의 필드) 선택은 1차 범위에 없다('options'를 고르면 선택지 배열을 그대로 담는다).
+ */
+export interface PickPopupFieldsOptions {
+  topLevelKeys?: readonly PopupTopLevelKey[];
+  contentKeys?: readonly string[];
+  questionKeys?: readonly (keyof PopupQuestion)[];
+}
+
+/** pickPopupFields 결과 타입. 고른 최상위 키는 그대로 최상위에, content·questions는 준 영역만 들어간다(문항 원소는 Pick). */
+export type PickedPopupFields<O extends PickPopupFieldsOptions> =
+  (O extends { topLevelKeys: readonly (infer T extends PopupTopLevelKey)[] } ? Partial<Pick<AdminPopupDetail, T>> : unknown)
+  & (O extends { contentKeys: readonly (infer C extends string)[] } ? { content: Partial<Record<C, unknown>> } : unknown)
+  & (O extends { questionKeys: readonly (infer K extends keyof PopupQuestion)[] } ? { questions: Partial<Pick<PopupQuestion, K>>[] } : unknown);
+
+/* 객체에 실제로 있는 키만 골라 새 객체로(값이 null·false·0·빈 문자열·undefined여도 키가 있으면 보존). */
+const hasOwn = (target: object, key: PropertyKey) => Object.prototype.hasOwnProperty.call(target, key);
+function pickOwn(source: object | null | undefined, keys: readonly PropertyKey[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!source) return result;
+  for (const key of keys) if (hasOwn(source, key)) result[key as string] = (source as Record<PropertyKey, unknown>)[key];
+  return result;
+}
+
+/**
+ * POL-07-02 : 변환 책임 분리
+ * ■ 선택 필드 추출(범용)
+ * - in : popup(AdminPopupDetail 또는 같은 모양의 부분 객체) · options(PickPopupFieldsOptions) topLevelKeys?·contentKeys?·questionKeys?
+ * - out: PickedPopupFields 고른 영역만 담은 새 객체({ ...최상위 키, content?, questions? })
+ * - 최상위에서 topLevelKeys의 키를, content에서 contentKeys의 키를, 각 문항에서 questionKeys의 키를 골라 새 객체로 돌려준다.
+ *   옵션에 없는 영역은 결과에서 뺀다. 키가 실제로 없으면 생략하고, 있으면 null·false·0·빈 문자열도 그대로 둔다. 문항 순서는 유지한다.
+ *   새 객체는 결과 컨테이너(최상위·content·각 문항 객체)뿐이고, 고른 값이 객체·배열이면 원본과 같은 참조다(얕은 복사).
+ *   날짜 ISO 변환·키 이름 변경·기본값 생성·검증·저장 요청 생성은 하지 않는다(입력 값 그대로). 저장 형식은 각 업무 화면이 정한다.
+ *   예: pickPopupFields(popup, { topLevelKeys: ['popupId', 'displayStartAt'], contentKeys: ['plainText'], questionKeys: ['questionId', 'title'] })
+ */
+export function pickPopupFields<const O extends PickPopupFieldsOptions>(popup: Partial<AdminPopupDetail>, options: O): PickedPopupFields<O> {
+  const result: Record<string, unknown> = options.topLevelKeys ? pickOwn(popup, options.topLevelKeys) : {};
+  if (options.contentKeys) result.content = pickOwn(popup.content, options.contentKeys);
+  if (options.questionKeys) {
+    const keys = options.questionKeys;
+    result.questions = (popup.questions ?? []).map((question) => pickOwn(question, keys));
+  }
+  return result as PickedPopupFields<O>;
 }

@@ -1,5 +1,8 @@
 # 팝업 프로젝트 문서
 
+- [PopupcommonComponent WEB 표시 기본값 / SERVER 정책 책임 분리 TODO](design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md) — WEB은 입력·표시·미리보기 fallback, SERVER는 최종 기본값·검증·정규화. 미설정 표현 규칙, createDefaultPopup·toSaveRequestPopup·웹 검증 분류 초안(UI 전용/proto 호환/서버 이관 후보), 서버 구현은 등록·수정 공통 JSON 검증 TODO와 연결(정의 단계).
+- [PopupcommonComponent 독립 재사용·선택 필드 추출 TODO](design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md) — 테이블·API·저장 형식과 무관한 공통 컴포넌트 단독 사용(PopupScheduleFields value), 범용 pickPopupFields(topLevel·content·questions, 값 그대로), 서버 없는 샘플 4종(운영 빌드 확인 대기).
+- [팝업 JSON 가공·요청 body 생성 정책 정리](design/20261029_팝업JSON_가공_요청body_정책정리.md) — 다른 테이블 API 요청 body 생성 정책: 최상위 필드는 toSaveRequest 결과에서 key/value, content·문항만 공통 함수 pickPopupFields로 처리(범위 확정, 테이블 구조 확인 대기).
 - [CKEditor 5 Common·PopupRich 전체 통합 TODO](design/20261029_CKEditor5_전체통합_TODO.md) — 현행 Common/Bbs/PopupRich 기능 전수 조사부터 단일 엔진 전환·중복 오류 해결·회귀 검증까지 포함(구현 대기).
 
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.

@@ -30,8 +30,8 @@
       ├──────────► InlinePopupPreview popup={popup}     (우측, 축소 표시)
       ├──────────► PopupPreviewDialog popup={popup}     (버튼으로 여는 실제 크기)
       ▼
-[저장]         toSaveRequest(popup, active, targetGroups)  → 요청 객체
-               └ 샘플: 화면에 JSON 표시(서버 미전송)   ──(실연동: api.popupAdmin.save)
+[저장]         샘플: toSampleScreenValues(popup) → 화면이 입력하는 필드만(서버 미전송, JSON 표시)
+               └ 실연동: 이 값을 각 화면의 저장 API 형식으로 바꿔 호출(proto 등록 화면 RgstPop은 자기 저장 변환 toSaveRequest 사용)
 ```
 
 핵심 규칙:
@@ -39,7 +39,8 @@
 - **에디터 key 정책.** `PopupRichTextEditor`는 `initialBlocks`를 처음 마운트할 때만 읽는다(입력 중 커서 유지). 그래서 신규 폼 생성·불러오기·유형 전환에서만 `editorKey`를 올려 다시 마운트하고, 글자 입력 중에는 key를 바꾸지 않는다.
 - **유형 전환은 `changePopupType`.** 공통 입력값(제목·크기 등)은 유지하고 유형별 필수 값(창 크기·완료 비율·정답 비교 방식)만 맞춘다. 편집 중에는 다른 유형의 content 키도 남겨 두고, 저장 요청을 만들 때(`toSaveRequestPopup`) 해당 유형 키만 남긴다.
 - **본문 서식.** 에디터 `onChange(blocks, plainText)` → `content.textBlocks`(서식 기준)와 `content.plainText`(서식 없는 문자열)를 함께 갱신한다. 설문·퀴즈의 제목·설명은 `surveyTitleBlocks/surveyTitle`, `descriptionBlocks/description` 쌍이다.
-- **저장 정규화.** `toSaveRequestPopup`이 ID·제목 공백 제거, 유형별 content 키 화이트리스트, URL 정규화, 푸터 정규형(설문·퀴즈는 SUBMIT 고정이라 `footerAction`을 저장하지 않고, 그 밖에는 바로가기일 때만 `footerAction`·`footerLinkUrl` 저장), 날짜 ISO 변환을 한다. 입력 검증(필수값·범위)은 하지 않으므로 부모가 저장 전에 검사한다(샘플: 제목·크기 300 이상).
+- **샘플 저장 값(2026-10-30).** 샘플은 proto 저장 변환을 쓰지 않고 `toSampleScreenValues(popup)`(= `pickPopupFields`)로 화면이 입력하는 필드만 담는다. 게시 기간·노출 일정·표시 순서·활성·대상 그룹은 샘플에 입력이 없으므로 결과에 없다(미리보기에 필요 없는 정책을 화면이 떠안지 않음). 입력을 추가하면 `popupSampleData.ts`의 키 목록에도 더한다.
+- **proto 저장 정규화(RgstPop 전용).** `toSaveRequestPopup`이 ID·제목 공백 제거, 유형별 content 키 화이트리스트, URL 정규화, 푸터 정규형(설문·퀴즈는 SUBMIT 고정이라 `footerAction`을 저장하지 않고, 그 밖에는 바로가기일 때만 `footerAction`·`footerLinkUrl` 저장), 날짜 ISO 변환을 한다. 입력 검증(필수값·범위)은 하지 않으므로 부모가 저장 전에 검사한다(샘플: 제목·크기 300 이상).
 
 ## 3. 조절 가능한 옵션
 
@@ -138,7 +139,7 @@ sample('SAMPLE-TEXT-LINK', '바로가기 공지', { popupType: 'TEXT' },
 | 목록 | `createSamplePopups()` | `api.popupAdmin.list({ ctx })`의 `body`(목록 항목) | `RgstPop.tsx` |
 | 편집 시작 | 목록 행 객체 그대로 | `api.popupAdmin.info({ popupId })` → `toEditorPopup(body.popup)` + `body.targetGroups` | `PopupEditorDialog.tsx` |
 | 불러오기(템플릿) | 샘플 메뉴 | `PopupTemplateDialog` → `toEditorPopupFromTemplate` | `PopupEditorDialog.tsx` |
-| 저장 | `toSaveRequest(popup, true, [])` JSON 표시 | `api.popupAdmin.save(toSaveRequest(popup, active, targetGroups))` + 성공/실패 처리(`handleError`, toast) | `PopupEditorDialog.tsx` |
+| 저장 | `toSampleScreenValues(popup)` JSON 표시(화면 입력 필드만) | 그 화면의 저장 API 형식으로 바꿔 호출 + 성공/실패 처리(`handleError`, toast). proto 등록 화면은 `api.popupAdmin.save(toSaveRequest(popup, active, targetGroups))` | `PopupEditorDialog.tsx`(proto) |
 | 입력 검증 | 제목·크기 300 | `validatePopupSchedule`, `validatePopupQuestions`, 최소·최대 크기, 숨김 일수 등 | `PopupEditorDialog.tsx`의 save |
 | 파일 첨부 | `URL.createObjectURL` 미리보기 | 서버 업로드 API → 서버 경로 URL을 `imageUrl`/`videoUrl`에 저장(영상은 `samples/popup-video-range` Range API 규칙) | 서버 구현 필요 |
 | 팝업 ID | 고정 `N2609001`/`LOCAL-n` | 서버 채번 또는 입력 규칙 | 확인 필요 |

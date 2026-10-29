@@ -14,10 +14,10 @@ import PopupRichTextEditor from '../PopupRichTextEditor';
 import type { Size } from '../imagePreviewLayout';
 import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
 import {
-  changePopupType, contentValue, isSubmitPopupType, toSaveRequest, type PopupSaveRequest, type PopupTypeSelection,
+  changePopupType, contentValue, isSubmitPopupType, type PopupTypeSelection,
 } from '../popupEditorTransform';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
-import { createSamplePopups, newSamplePopup } from './popupSampleData';
+import { createSamplePopups, newSamplePopup, toSampleScreenValues } from './popupSampleData';
 
 /*
  * 복원 퍼블리싱 IS063M02(컨텐츠 등록)에 공통 팝업 기능을 연결한 샘플. 원본은 같은 폴더 IS063M02.tsx(대조용, 변경 없음).
@@ -34,7 +34,7 @@ import { createSamplePopups, newSamplePopup } from './popupSampleData';
  * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수 N이며, [확정] 미달(실패)이면 제출하지 못한다
  * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 세 유형 모두 저장 값은 passingScore 하나다.
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
- * 저장은 toSaveRequest 결과를 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
+ * 저장은 화면이 입력하는 필드만 담은 값(toSampleScreenValues)을 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
  * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  */
@@ -65,7 +65,7 @@ function Required({ not = false }: { not?: boolean }) {
  * POL-06-02 : 선택·제출
  * ■ 컨텐츠 등록 샘플 화면(IS063M02)
  * - in : 데이터 공급 newSamplePopup()(폼 생성 기본값) · createSamplePopups()(불러오기 목록)
- * - out: 저장 요청 toSaveRequest(퀴즈 점수 규칙 적용값, true, []) 결과(서버 미전송, 대화상자에 표시) · 화면: 좌(컨텐츠 정보·팝업 설정)/중(유형별 컨텐츠)/우(미리보기) 3단과 실제 크기 미리보기
+ * - out: 저장 값 toSampleScreenValues(퀴즈 점수 규칙 적용값) — 화면이 입력하는 필드만(서버 미전송, 대화상자에 표시) · 화면: 좌(컨텐츠 정보·팝업 설정)/중(유형별 컨텐츠)/우(미리보기) 3단과 실제 크기 미리보기
  * - 컨텐츠 유형과 샘플 편집값을 받아 원본 퍼블리싱 배치 그대로 공통 편집기·문항 편집기·미리보기를 연결하고, 저장 시 입력을 검증해 저장 요청 객체를 만든다.
  */
 export default function IS063M02Sample() {
@@ -77,7 +77,7 @@ export default function IS063M02Sample() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [fitWindow, setFitWindow] = useState<Size | null>(null);
   const [loadAnchor, setLoadAnchor] = useState<HTMLElement | null>(null);
-  const [saved, setSaved] = useState<PopupSaveRequest | null>(null);
+  const [saved, setSaved] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState('');
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
@@ -108,7 +108,8 @@ export default function IS063M02Sample() {
     updateContent('attachedFileName', file.name);
   };
 
-  // [실연동] 검증 통과 후 api.popupAdmin.save(toSaveRequest(popup, active, targetGroups)) 호출, 성공/실패 처리(toast·handleError)를 붙인다.
+  // [실연동] 검증 통과 후 이 화면의 저장 API 형식으로 바꿔 호출하고 성공/실패 처리(toast·handleError)를 붙인다.
+  //   저장 값은 화면이 입력하는 필드만(toSampleScreenValues). proto 저장 변환(toSaveRequest: 기간·활성·대상 그룹 등)은 이 화면에 없는 값이라 쓰지 않는다.
   // [옵션] 필수 입력 규칙은 이 함수에서 추가·삭제한다(예: 문항 검증 validatePopupQuestions(popup.questions, popup.popupType === 'QUIZ', popup.passingScore)).
   const save = () => {
     if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
@@ -120,7 +121,7 @@ export default function IS063M02Sample() {
     const target = effective ?? popup;
     const { attachedFileName: _file, ...content } = target.content;
     setError('');
-    setSaved(toSaveRequest({ ...target, content }, true, []));
+    setSaved(toSampleScreenValues({ ...target, content }));
   };
 
   const sizeField = (label: string, key: 'width' | 'height') => (
@@ -292,7 +293,7 @@ export default function IS063M02Sample() {
       </Box>
       {effective && <PopupPreviewDialog popup={effective} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />}
       <Dialog open={Boolean(saved)} onClose={() => setSaved(null)} maxWidth="md" fullWidth>
-        <DialogTitle>저장 요청 객체 (서버 미전송)</DialogTitle>
+        <DialogTitle>저장 값 (화면 입력 필드만, 서버 미전송)</DialogTitle>
         <DialogContent dividers>
           <Typography variant="caption" color="text.secondary">
             컨텐츠 명 &quot;{contentName}&quot;은 현재 저장 계약에 대응 필드가 없어 요청에 넣지 않았습니다(서버 확정 필요).

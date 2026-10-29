@@ -124,13 +124,25 @@ export default function MyTextPopupForm({ api }: { api: any }) {
 
 저장소 안 실행 예시: `scripts/verify-popup-transform-64-entry.tsx`의 `TransformHost`(전체 등록 화면 없이 에디터·우측/모달 미리보기·변환 함수 연결, 실제 저장 대신 저장 요청 객체를 화면과 `window.saveRequest()`로 확인). 실행: `node scripts/verify-popup-transform-64.cjs`.
 
+## 5-1. 선택 필드 추출 (`pickPopupFields`, 2026-10-30)
+
+근거: [독립 재사용·선택 필드 추출 TODO](../design/20261030_PopupcommonComponent_독립재사용_선택필드추출_TODO.md). 공통 모듈은 특정 테이블·API·저장 형식과 무관하며, `toSaveRequest()`는 proto 사용 사례 중 하나다.
+
+| 함수 | 입력 → 반환 | 설명 |
+|---|---|---|
+| `pickPopupFields(source, { topLevelKeys?, contentKeys?, questionKeys? })` | → `{ ...최상위 키, content?, questions? }` | 최상위·content·각 문항에서 고른 키만 **값 그대로** 새 객체로. 준 영역만 결과에 포함(빈 배열이면 빈 값), 키가 실제로 없으면 생략·있으면 null·false·0·빈 문자열 보존, 문항 순서 유지, 고른 중첩 값은 원본 참조(얕은 복사). 날짜 변환·키 이름 변경·기본값·검증·저장 요청 생성 없음. 타입: `topLevelKeys`는 content·questions 제외 `AdminPopupDetail` 키, `questionKeys`는 `PopupQuestion` 키. proto 저장 기준이 필요할 때만 `toSaveRequestPopup(popup)` 결과를 넘긴다 |
+
+- `PopupScheduleFields`는 일정 전용 `value: PopupScheduleValue`(+ `showPeriod`)로 단독 사용한다. 기존 `popup` prop은 호환용.
+- 테스트: `scripts/verify-popup-pick-fields.cjs`(Node 25건), 타입 테스트 `__typetests__/pickPopupFields.typetest.ts`(웹 type-check).
+- 서버 없는 샘플: `sample/PopupIndependentSamples.tsx`(일정만 / RichText + content 일부 / 문항 일부 / 세 영역 조합). 관리자 '팝업 관리 > PopupcommonComponent 가이드'의 '독립 재사용·필드 추출' 탭에서 실행된다.
+
 ## 6. 이식 시 필요한 파일·의존성
 
 미리보기 컴포넌트 의존성(`ADMIN_POPUP_PREVIEW_COMPONENTS.md` §4)에 아래를 더한다.
 
 | 구분 | 항목 |
 |---|---|
-| 변환 | `popupEditorTransform.ts`(의존: `normalizePopupLink.ts`, `popupCommon.ts`, `@local/domain` 타입만) |
+| 변환 | `popupEditorTransform.ts`(의존: `normalizePopupLink.ts`, `popupCommon.ts`, `@local/domain` 타입만), 선택 필드 추출 `pickPopupFields`(같은 파일) |
 | 에디터 | `PopupRichTextEditor.tsx`, `PopupRichTextMenu.tsx`, `popupRichTextFormat.ts`, `popupRichText.ts`, (설문·퀴즈 서식) `PopupRichBlocks.tsx`의 `richBlocksOrNull`, (문항) `PopupQuestionEditor.tsx` |
 | 공용 타입 | `@local/domain`의 `AdminPopupDetail`·`AdminPopupInfo`·`PopupTargetGroup`·`PopupQuestion`·`PopupType`·`PopupDateValue` |
 | 경로 별칭 | `@/` → `zero-rule-web/main/src/`, `@local/domain` → workspace 패키지 `sub/domain` |

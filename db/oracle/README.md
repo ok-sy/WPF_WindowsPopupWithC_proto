@@ -226,6 +226,14 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @19_question_selection_limit_oracle.sql POPUP.`
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 19_question_selection_limit_oracle.sql`
 
+## PopupcommonComponent 가이드 메뉴 등록 (2026-10-29)
+
+`20_popup_common_guide_menu_oracle.sql` — 앱 계정(zero-rule) 공통 메뉴 테이블에 페이지 `PopupcommonComponent 가이드`(`/popup-common-guide`, 아이콘 `Description`)를 추가하고, `/rgst-pop` 항목이 있는 모든 NAV에 같은 그룹("팝업 관리")·팝업 등록 바로 뒤 순서(sort_no + 10)로 넣는다. 데이터만 추가하며 멱등이다.
+
+- 전제: `04_popup_web_menu_oracle.sql` 실행 완료. 화면 코드는 `zero-rule-web` scene-router `/popup-common-guide`(features/PopupcommonComponent/guide).
+- 적용 현황: 원격 개발 DB 2026-10-29 실행 — 페이지 1건(page_key 27), NAV 항목 2건("관리자 메뉴" sort 2310, "팝업 관리" sort 210). 로컬 XE POPUP 계정에는 공통 메뉴 테이블이 없어 대상 아님.
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 20_popup_common_guide_menu_oracle.sql`
+
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 
 `tools/apply-dev-db.ps1 <NN_..._oracle.sql>` — 원격 개발 DB(192.168.114.71 XE, 앱 계정 `zero-rule`, 방식 B 빈 스키마 접두어)에 이관 스크립트 1개를 실행한다.

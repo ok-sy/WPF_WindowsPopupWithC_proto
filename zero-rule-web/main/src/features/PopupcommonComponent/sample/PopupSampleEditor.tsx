@@ -18,7 +18,7 @@ type Props = {
   initial: AdminPopupDetail;
   open: boolean;
   onClose: () => void;
-  /** 저장 버튼. 부모가 toSaveRequest로 요청 객체를 만들고 저장 위치(로컬/서버)를 정한다. */
+  /** 저장 버튼. 부모가 화면 입력 필드만 담은 값(toSampleScreenValues)을 만들고 저장 위치(로컬/서버)·형식을 정한다. */
   onSave: (popup: AdminPopupDetail) => void;
 };
 
