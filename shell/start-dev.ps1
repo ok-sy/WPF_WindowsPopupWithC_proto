@@ -7,7 +7,7 @@
 #
 # 백엔드 : .\gradlew :app:bootRun -Pprofile=local  (JndiResource 기본값 = 공통 개발 DB 192.168.114.71:4004/XE, 팝업 테이블은 앱 계정 스키마)
 #          -LocalDb 이면 ZERO_RULE_DB_URL/USER/PASSWORD + CUSTOM_POPUP_SCHEMA=POPUP 환경변수를 창에 넣어 로컬 XE로 붙인다.
-# 프런트 : pnpm run dev --env-mode=loose (turbo → next dev, http://localhost:3000). next.config.mjs가 읽는 API_BASE_URL/ROUTER_BASE_URL을
+# 프런트 : pnpm run dev --env-mode=loose (turbo → next dev --turbopack, http://localhost:3000. webpack 개발 서버는 main에서 pnpm run dev:webpack). next.config.mjs가 읽는 API_BASE_URL/ROUTER_BASE_URL을
 #          창 환경변수로 넣는다(.env 파일이 없어도 동작). turbo 2.x는 strict env 모드라 선언되지 않은 환경변수를 자식(next)에
 #          넘기지 않으므로 --env-mode=loose 가 필요하다(turbo.json 미수정). node_modules가 없으면 install --frozen-lockfile을 먼저 한다.
 #          pnpm은 package.json의 packageManager 버전을 npx로 실행한다(전역 pnpm 버전 차이로 lockfile이 바뀌는 것을 방지).

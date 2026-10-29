@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-12 — 관리자 웹 개발 서버 Turbopack 전환
+
+- 이유: 폐쇄망에서 개발 서버 첫 컴파일이 오래 걸림. 캐시 없는 개발 서버 측정에서 webpack은 화면마다 20~30초(`/` 29.5초, `/pds/edit` 21초), Turbopack은 `/` 15.4초, `/pds/edit` 3.7초.
+- 변경: `pnpm dev`를 `next dev --turbopack`으로 바꾸고 webpack 개발 서버는 `dev:webpack`으로 유지. `next.config.mjs`에 Turbopack SVG 규칙 추가(svgr 단독, `ReactComponent` 이름 내보내기). svgr + svg-url-loader 연결은 Turbopack 로더 실행기에서 svgr의 `this.fs.readFile`이 없어 실패하므로 SVG를 이미지 주소로 쓰던 `NotReady`는 public 경로 문자열로 변경. 운영 빌드(`next build`)는 기존 webpack 설정 그대로. `shell/start-dev.ps1` 설명 주석 갱신.
+- 주요 파일: zero-rule-web/main/package.json, zero-rule-web/main/next.config.mjs, zero-rule-web/main/src/components/NotReady/NotReady.tsx, shell/start-dev.ps1, version-history/CHANGELOG.md.
+- 검증: 웹 `tsc` 오류 0. 로컬 서버(원격 개발 DB) + Turbopack 개발 서버로 Edge headless 실화면 확인 — master 로그인, 사이드바 아이콘 표시, 팝업 등록 탭 → 신규 등록 다이얼로그 팝업 서식 에디터 입력·미리보기 반영, 클라이언트 라우팅으로 자료실 등록 CKEditor 입력·재진입, `ckeditor-duplicated-modules`·예외 없음(`CKEDITOR_VERSION` 34.1.0 유지). 운영 빌드(webpack) 성공. 실험으로 `next build --turbopack`도 `experimental.turbopackScopeHoisting: false` 조건에서 성공했으나 15.5 베타라 적용하지 않음.
+- 상태: 커밋·원격 반영. 폐쇄망 PC 실측은 미실행. 자료실 CommonCKEditor에서 `toolbarview-item-unavailable`·`widget-toolbar-no-items` 경고가 나며 커스텀 빌드 설정 문제로 CKEditor 통합 TODO에서 다룸(번들러와 무관, webpack 대조는 미실행). Turbopack 개발 서버는 디스크 캐시가 정식 기능이 아니어서 재기동마다 다시 컴파일.
+
 ## 2026-10-29-11 — CKEditor5 통합 A-2 의존 트리·번들·중복 오류 재현 조사
 
 - 이유: 공통 에디터와 팝업 서식 에디터를 같은 CKEditor 출처로 통일하기 전에 실제 설치 트리·운영 번들·로드 순서를 대조하고 `ckeditor-duplicated-modules` 발생 조건을 재현으로 확정할 필요. 목표 버전을 `ckeditor5` 44.3.0 + `@ckeditor/ckeditor5-react` 5.1.0으로 확정.

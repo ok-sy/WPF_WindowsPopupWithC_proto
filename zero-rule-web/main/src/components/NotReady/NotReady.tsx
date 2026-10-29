@@ -3,10 +3,12 @@ import { flatSx, Link } from '@local/ui';
 import HomeIcon from '@mui/icons-material/Home';
 import type { SxProps } from '@mui/material';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import imgUnderConstruction from '@public/images/under_construction1.svg';
 import clsx from 'clsx';
 import Image from 'next/image';
 import { rootSx } from './style';
+
+// public 경로로 참조한다. SVG default import(이미지 주소)는 Turbopack 개발 서버 SVG 규칙에서 제공하지 않는다.
+const imgUnderConstruction = '/images/under_construction1.svg';
 
 type Props = {
   sx?: SxProps;

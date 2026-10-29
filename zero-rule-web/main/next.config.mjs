@@ -26,6 +26,18 @@ const nextConfig = {
   staticPageGenerationTimeout: 1000, // default 60
   trailingSlash: true,
 
+  // 개발 서버(`next dev --turbopack`)용 SVG 처리. 아래 webpack 설정은 운영 빌드(`next build`)에서 계속 쓴다.
+  // svgr + svg-url-loader 연결은 Turbopack 로더 실행기가 지원하지 않아(svgr의 this.fs.readFile) svgr 단독으로
+  // `import { ReactComponent as X } from '*.svg'` 이름 내보내기만 제공한다. SVG를 이미지 주소로 쓸 때는 public 경로 문자열을 쓴다.
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: [{ loader: '@svgr/webpack', options: { exportType: 'named' } }],
+        as: '*.js',
+      },
+    },
+  },
+
   webpack: (config, {}) => {
     config.module.rules.push({
       test: /\.svg$/,
