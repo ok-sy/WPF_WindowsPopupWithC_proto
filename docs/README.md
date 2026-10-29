@@ -1,5 +1,7 @@
 # 팝업 프로젝트 문서
 
+- [CKEditor 5 Common·PopupRich 전체 통합 TODO](design/20261029_CKEditor5_전체통합_TODO.md) — 현행 Common/Bbs/PopupRich 기능 전수 조사부터 단일 엔진 전환·중복 오류 해결·회귀 검증까지 포함(구현 대기).
+
 프로젝트 문서는 저장소 루트의 `docs/`에서 관리한다.
 
 - [SURVEY 복수 선택 최소·최대 선택 수 TODO](design/20261029_SURVEY_복수선택_최소최대선택수_TODO.md) — 구현 완료, 원격 개발 DB 적용·실화면 확인 대기.
