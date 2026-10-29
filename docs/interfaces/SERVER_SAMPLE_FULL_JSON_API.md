@@ -129,7 +129,7 @@ POPU_ID는 10자, `REG_USER_ID='SAMPLE'`·`REG_DTTM=SYSDATE`. 정리 DELETE는 �
 | [교체 지점] | `defaults-location` | 기본값 파일 위치 |
 | [미확인] | 컬럼 철자 `POPU_BLTN_CN`·키 길이·DEFAULT | 실제 DDL과 대조 |
 
-범위 제외: 등록/수정 API의 저장 경계, 관리자 상세조회 복원, 기존 3111 데이터 이관, WPF EXE 변경. WPF 응답 계약이 같으므로 WPF 파서·창은 바꾸지 않았다.
+범위 제외: 관리자 상세조회 복원, 기존 3111 데이터 이관, WPF EXE 변경. WPF 응답 계약이 같으므로 WPF 파서·창은 바꾸지 않았다.
 
 ## 8. 옵션 추가·삭제 예시
 
@@ -143,3 +143,69 @@ POPU_ID는 10자, `REG_USER_ID='SAMPLE'`·`REG_DTTM=SYSDATE`. 정리 DELETE는 �
 - 실행: `PopupFullJsonSampleTest` 15건(파싱 실패 유형, popupId 기준, 서버 소유 값 제거, 계약 외 키 제거·키 순서, 기본값·false/0 유지, 타입 오류 거절, content 옵션 승격, 설정 원본 불변, IMAGE 크기, 푸터 규칙, 영상 QUIZ 상속, 필수 콘텐츠·문항 형식, 샘플 INSERT 6건 조립, 설정 파일 기동 검증 9종), `PopupFullJsonSampleMapperXmlTest` 3건(바인딩 SQL·CLOB 매핑·3111 매퍼와 공존), `PopupFullJsonSampleControllerTest` 4건(200/null·500·401·400). service/core·repo/core·web/api 전체 회귀 통과.
 - 변이 확인: 기본값 `allowSeek` true 변경·SURVEY `isCorrect` 제거 생략 시 각각 실패.
 - 미실행: 실제 Oracle DTIY3117 조회·DDL 대조, 서버 기동 후 HTTP 호출, API Demo·WPF 유형별 표시, 등록/수정·상세조회 왕복.
+
+## 10. 등록·수정 공통 JSON 검증·기본값 생성 (2026-10-29)
+
+근거: [등록·수정 공통 JSON 검증 TODO](../design/20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md). 조회 단계 기본값 재조립을 없애기 위한 첫 단계로, **등록·수정 시 DB 쓰기 직전**에 호출할 공통 모듈과 인계용 등록 샘플을 추가했다. 기존 3111·3117 **조회 경로는 바꾸지 않았다**(전환은 TODO §3, 별도 진행).
+
+### 10-1. 파일과 선언 이유
+
+| 파일 | 선언 이유 |
+|---|---|
+| `service/core/.../fulljson/PopupJsonValidator.java` | 공통 모듈 본체. 타입·필수값·ENUM·범위를 **오류를 모아** 검사하고, 누락/null에만 기본값을 채운 정규화 popup을 만든다. 예외를 던지지 않고 결과 객체로 돌려준다 |
+| `PopupJsonValidationResult.java` | 저장 가능 여부(`valid()` = 오류 0건)·정규화 결과(오류면 null)·오류·변경 이력·정책 버전 |
+| `PopupJsonIssue.java` | 오류 1건 `{path, code, expected, actual, message}` — 관리자 화면에 필드별로 표시 |
+| `PopupJsonChange.java` | 경고 1건 `{path, before, after, reason}` — 기본값 적용·제거·이동 이력 |
+| `PopupFullJsonRegisterSampleService.java` | 인계용 등록·수정 흐름 예시: 검증 → 오류면 쓰기 0건 → 통과 시 정규화 JSON INSERT/UPDATE |
+| `repo/core/.../PopupFullJsonRegisterSampleMapper.java` + `.xml` | DTIY3117 INSERT/UPDATE(CLOB 바인딩). 조회 매퍼와 분리해 기존 조회 샘플·테스트를 바꾸지 않는다 |
+| `PopupFullJsonDefaults.java`(수정) | `Rule.accepts`·`issueCode`·`describe` 추가. 규칙 표·YAML 기본값을 조회 샘플과 **공유**한다(규칙 복제 없음) |
+
+Bean은 기존 `popup.sample.full-json.enabled=true`일 때 `PopupFullJsonSampleConfig`가 함께 등록한다.
+
+### 10-2. 처리 로직
+
+객체 확인 → envelope(`{popup:...}`) 거절 → `deliveryId`·`pollingIntervalSeconds` 제거 → popupId를 DB 키와 대조(없으면 채움) → content/questions 분리 → content 안 창·푸터 옵션 최상위 이동 → 계약 외 최상위 키 제거 → 명시값 타입·ENUM·범위 → 유형별 필수 콘텐츠 → 누락/null 기본값 → 푸터 규칙 → 최소/최대 크기 → 문항 → 조회 응답과 같은 키 순서로 조립.
+
+| 입력 | 처리 |
+|---|---|
+| 명시값 타입·ENUM·범위 오류(`videoEnabled:"videoEnabled"`, `"true"`, `sizeMode:"AUTO"`) | 오류. 자동 변환·기본값 대체 없음 |
+| 누락·null | 기본값 + 이력. 명시한 false·0·빈 문자열 유지. 기본값이 null인 키(글자 크기·hideDays)는 null |
+| 기본값 | `popup-full-json-defaults.yml` 그대로. IMAGE·VIDEO `showDescription`, VIDEO `allowSeek`·`allowPlaybackRateChange` = **false**(2026-10-27 확정값 유지, 영상 QUIZ 상속) |
+| SURVEY 정답 키 | 관리자 원본 왕복을 위해 **저장 시 유지**. WPF 응답에서 빼는 것은 조회 책임 |
+| 같은 결과 재검증 | 같은 결과·이력 0건(멱등) |
+
+오류 code: `INVALID_JSON`·`NOT_OBJECT`·`ENVELOPE_NOT_ALLOWED`·`MISSING_REQUIRED`·`TYPE_MISMATCH`·`INVALID_ENUM`·`OUT_OF_RANGE`·`ID_MISMATCH`·`RULE_VIOLATION`.
+변경 reason: `DEFAULT_APPLIED`·`SERVER_OWNED_REMOVED`·`UNKNOWN_FIELD_REMOVED`·`MOVED_FROM_CONTENT`·`NOT_APPLICABLE_REMOVED`·`POPUP_ID_SET`·`VALUE_TRIMMED`.
+
+오류 응답 예:
+
+```json
+{ "path": "$.content.videoEnabled", "code": "TYPE_MISMATCH", "expected": "boolean",
+  "actual": "\"videoEnabled\"", "message": "videoEnabled 값이 올바르지 않습니다." }
+```
+
+### 10-3. 실제 등록 서비스 연결(교체 지점)
+
+```java
+// 기존 저장 메서드의 DB 쓰기 직전
+PopupJsonValidationResult result = popupJsonValidator.validate(requestJson, popupId);
+if (!result.valid()) return badRequest(result.errors());          // 쓰기·COMMIT 없음
+mapper.save(popupId, objectMapper.writeValueAsString(result.normalized()));
+return ok(result.changes());                                      // 기본값 적용 경고 표시
+```
+
+- 부분 수정(PATCH)이면 기존 저장 JSON과 병합한 **최종 객체**를 검증한다. 샘플 `update`는 전체 교체다.
+- 여러 테이블에 쓰면 `@Transactional` 안에서 검증 → 쓰기 순서를 지킨다.
+- 로그에는 오류 경로·코드만 남기고 값 원문을 남기지 않는다.
+- [미확인] DTIY3117 감사 컬럼(`REG_USER_ID`·`REG_DTTM`·`CHNG_USER_ID`·`CHNG_DTTM`)과 DEFAULT 제약은 사진 판독 기준이다.
+
+### 10-4. 옵션 추가·삭제
+
+규칙·기본값은 §8과 같은 위치(`PopupFullJsonDefaults` 규칙 표 + YAML)를 쓰므로 한 번 바꾸면 등록 검증과 조회 샘플에 함께 적용된다. 바꾼 뒤 `PopupJsonValidator.POLICY_VERSION`을 올린다. 규칙 표 밖 본문 필드(TEXT `plainText`·`textBlocks`, `imageUrl`, `videoUrl`, 문항 `isRequired`·`isScored`·`questionScore`·`options[].isCorrect`)의 타입 검사는 `PopupJsonValidator`의 `checkContentValues`·`checkQuestions`에서 추가·삭제한다.
+
+### 10-5. 범위와 남은 항목
+
+- 3111: 컬럼 + content CLOB 구조라 전체 JSON 직조회가 불가하다. 저장 형식 결정 전까지 Assembler 제거는 보류(TODO §3).
+- 3117 조회의 기본값 제거, 기존 행 이행, 관리자 화면 오류 표시, Demo JSON Validator(C#)와의 정책 대조 문서화는 후속.
+- 검증: `PopupJsonValidatorTest` 16건(유형별 최소 JSON 6종 정상·멱등, 확정 기본값, false/0 유지·null 보완, IMAGE 크기, 문자열 boolean 거절 재현, ENUM·범위 코드, 오류 수집, 구조 오류, 서버 소유 값·popupId, 원본 불변, 푸터, SURVEY 정답 유지, 중첩 문항 오류, 등록 샘플 오류 시 쓰기 0건·수정 대상 없음), `PopupFullJsonRegisterSampleMapperXmlTest` 3건. 서버 전체 233건 실패 0·skip 11.
+- 미실행: 실제 Oracle DTIY3117 INSERT/UPDATE(로컬·원격 개발 DB), 등록 → 조회 → WPF 표시 왕복.
