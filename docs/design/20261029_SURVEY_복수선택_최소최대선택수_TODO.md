@@ -44,4 +44,4 @@
 
 ### 2026-10-29 원격 개발 DB 적용
 
-- 원격 개발 DB(192.168.114.71:4004/XE, zero-rule) 접속 복구 후 `db\oracle	oolspply-dev-db.ps1 19_question_selection_limit_oracle.sql` 실행: `MIN_SELECTIONS`·`MAX_SELECTIONS` 컬럼·`CK_QUESTION_SELECTION_RANGE` 제약·주석 OK, 확인 쿼리 컬럼 2·제약 1.
+- 원격 개발 DB(192.168.114.71:4004/XE, zero-rule) 접속 복구 후 `db\oracle\tools\apply-dev-db.ps1 19_question_selection_limit_oracle.sql` 실행: `MIN_SELECTIONS`·`MAX_SELECTIONS` 컬럼·`CK_QUESTION_SELECTION_RANGE` 제약·주석 OK, 확인 쿼리 컬럼 2·제약 1.
