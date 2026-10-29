@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-29-10 — CKEditor5 Common·PopupRich 전체 통합 TODO 등록
+
+- 이유: 공통·팝업 에디터의 CKEditor 의존성 통일 필요. 모듈 중복, 툴바 플러그인 경고, 전환 시 입력 불가 증상에 대한 원인 조사와 기능 회귀 방지 계획 수립.
+- 변경: GitHub main 기준 Common과 PopupRich 모두 커스텀 빌드 require를 사용한다는 현행 사항을 반영. Common HTML 편집·포커스·링크 옵션·이벤트, Bbs 툴바 분리·높이 동기화, PopupRich textBlocks·서식 메뉴·들여쓰기를 상세 정리한 전체 통합 TODO와 문서 색인 추가.
+- 주요 파일: docs/design/20261029_CKEditor5_전체통합_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 저장소 현행 소스 열람. 빌드·브라우저 재현·기능 테스트 미실행.
+- 상태: TODO 문서 등록 완료. 실제 엔진 교체·의존성 제거·검증은 미착수.
+
 프로젝트의 수정 내역과 검증 결과를 기록한다. 날짜는 한국 시간(KST)을 사용한다.
 
 ## 2026-10-29-09 — SURVEY 복수 선택 최소·최대 선택 수
