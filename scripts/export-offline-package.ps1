@@ -41,6 +41,8 @@ param(
     [string]$NotesFile = "",
     [string]$PatchNotesDir = "",
     [string]$NuGetBundle = "",
+    # 선택: Git for Windows 공식 x64 설치 파일을 반입 TGZ에 동봉(자동 다운로드 없음)
+    [string]$GitInstallerPath = "",
     [switch]$UseWorkingChangelog,
     [switch]$IncludeDevDependencies,
     [switch]$VerifyBuild,
@@ -183,6 +185,20 @@ try {
             -ExtraFiles @("global.json", "NuGet.config", "scripts/prepare-offline-packages.ps1", "scripts/build-wpf-offline.ps1", "OFFLINE_WPF_BUILD.md")
     }
 
+    # 선택: 폐쇄망 Git for Windows 설치 파일(기존 소스·WPF 산출 방식과 분리)
+    $gitInstallerName = "Git-2.56.0.4-64-bit.exe"
+    $gitInstallerHash = "4961a4a8cc778d8b6e00a5819e5fe4d078b754555aff7aedc2d77a5d74c2de80"
+    $gitInstallerIncluded = $false
+    if (-not [string]::IsNullOrWhiteSpace($GitInstallerPath)) {
+        if (-not (Test-Path -LiteralPath $GitInstallerPath -PathType Leaf)) { throw "Git 설치 파일 없음: $GitInstallerPath" }
+        if ([IO.Path]::GetFileName($GitInstallerPath) -ne $gitInstallerName) { throw "Git 설치 파일명 불일치 (필요: $gitInstallerName)" }
+        $actualHash = (Get-FileHash -LiteralPath $GitInstallerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($actualHash -ne $gitInstallerHash) { throw "Git 설치 파일 SHA256 불일치: $actualHash" }
+        Copy-Item -LiteralPath $GitInstallerPath -Destination (Join-Path $OutputRoot $gitInstallerName) -Force
+        $gitInstallerIncluded = $true
+        Write-Host "[Git for Windows] $gitInstallerName SHA256 verified"
+    }
+
     # 삭제 목록: 누적(기준 반입본 이후) + 직전 반입본 이후 생겼다가 지워진 파일(누적 diff에 안 잡힘)
     $deleteName = "DELETE-SINCE-$DeleteBaselineName.txt"
     $deleteScope = @("popup-frameWork", "zero-rule-web", "zero-rule-server", "docs", "db", "api")
@@ -217,6 +233,10 @@ try {
     if ($leak) { throw "개인 PC 절대경로 포함: $($leak.Path -join ', ')" }
 
     # README-IMPORT.md
+    $gitReadme = "Git for Windows 설치 파일 미동봉. 필요하면 -GitInstallerPath로 공식 x64 설치 파일을 지정하여 재생성."
+    if ($gitInstallerIncluded) {
+        $gitReadme = "Git for Windows 2.56.0.windows.4 (x64): $gitInstallerName 동봉. 압축 해제 후 폐쇄망 PC에서 실행. SHA256: $gitInstallerHash"
+    }
     $notes = "(변경 요약 미작성 — -NotesFile로 직전 반입본 이후 변경·DB 적용 순서·호환성을 넣는다)"
     if ($NotesFile) { $notes = (Get-Content -Encoding UTF8 -Raw $NotesFile).TrimEnd() }
     $previousText = "직전 반입본 없음"
@@ -242,6 +262,10 @@ try {
 ## 이번 변경
 
 $notes
+
+## Git 설치 파일
+
+$gitReadme
 
 ## 반입 절차
 
@@ -288,6 +312,11 @@ SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, 
 
     $payload = @("README-IMPORT.md", "SHA256SUMS.txt", "SOURCE-SHA256SUMS.txt", $deleteName)
     foreach ($bundle in $bundles) { $payload += "$bundle.tar"; $payload += "MANIFEST-$bundle.txt" }
+    if ($gitInstallerIncluded) {
+        $sums += "$gitInstallerHash  $gitInstallerName"
+        $sums | Set-Content -Encoding ASCII (Join-Path $OutputRoot "SHA256SUMS.txt")
+        $payload += $gitInstallerName
+    }
     $tgz = Join-Path $OutputRoot "$Date.tgz"
     & tar -czf $tgz -C $OutputRoot @payload
     if ($LASTEXITCODE -ne 0) { throw "tgz 실패" }
@@ -303,6 +332,11 @@ SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, 
     foreach ($line in $sums) {
         $parts = $line -split '  '
         if ((Get-FileHash -LiteralPath (Join-Path $check $parts[1]) -Algorithm SHA256).Hash.ToLower() -ne $parts[0]) { throw "TGZ 안 TAR 체크섬 불일치: $($parts[1])" }
+    }
+    if ($gitInstallerIncluded) {
+        $extractedGit = Join-Path $check $gitInstallerName
+        if (-not (Test-Path -LiteralPath $extractedGit -PathType Leaf)) { throw "TGZ 안 Git 설치 파일 누락" }
+        if ((Get-FileHash -LiteralPath $extractedGit -Algorithm SHA256).Hash.ToLowerInvariant() -ne $gitInstallerHash) { throw "TGZ 안 Git 설치 파일 SHA256 불일치" }
     }
     Remove-Item -LiteralPath $check -Recurse -Force
 
