@@ -1,5 +1,11 @@
 # 변경 이력
 
+## 2026-10-30 — 폐쇄망 FRONT 당일 반입 이슈 문서화
+
+- 내용: pnpm workspace/lockfile 오류, 수동 node_modules 구조, MUI Icon 및 Turbopack 적용, SVG default import 해결, CSS side-effect import 오류, CssBaseline/Emotion과 기존 body 배경 충돌, SSR useLayoutEffect 경고를 해결·미해결 상태로 구분해 문서화.
+- 주요 파일: `docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md`, `docs/README.md`, `version-history/CHANGELOG.md`.
+- 상태: **문서만 반영. 폐쇄망 소스 수정·패키지 설치·최종 빌드 검증 미수행.**
+
 ## 2026-10-30-27 — workspace 패키지 이름 자동 transpile(Turbopack SVG 로더는 원복)
 
 - 이유: 폐쇄망 관리자 웹 Turbopack 개발 서버에서 `NotReady.tsx`의 `import imgUnderConstruction from '@public/images/under_construction1.svg'`가 `Export default doesn't exist in target module`로 실패(Turbopack SVG 규칙이 svgr 이름 내보내기만 제공). 폐쇄망 자체 코드에도 같은 형태가 있을 수 있어 사용처 수정 대신 로더에서 webpack과 같은 내보내기 제공 필요. 함께 sub의 `@repo/*` 패키지를 인식하지 못하는 현상 보고 — 반입한 next.config.mjs의 transpilePackages가 `@local/*` 고정이라 이름이 다른 환경에서 빠질 수 있음.
