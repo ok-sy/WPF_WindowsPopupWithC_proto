@@ -1,7 +1,7 @@
 # 폐쇄망 pnpm workspace package.json / lockfile 불일치 해결 TODO
 
 작성: 2026-10-30 (KST)
-상태: **문서 작성만 완료. 폐쇄망 적용·패키지 설치·빌드 검증 미실행.**
+상태: **1·2단계 수집·비교 스크립트 준비(2026-10-30). 폐쇄망 수집·적용·패키지 설치·빌드 검증 미실행.**
 대상: 폐쇄망 `front_end`(zero-rule-web 대응) 및 외부망 반입본
 연관 문서: `20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md`
 
@@ -16,12 +16,13 @@
 ## 1. 폐쇄망 현행 상태 보관
 
 - [ ] 현재 `front_end` 소스 및 `node_modules`/pnpm store 위치 확인, 설치 전 파일 백업.
-- [ ] 루트 `package.json`, `main/package.json`, `sub/*/package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`을 모두 수집.
+- [ ] 루트 `package.json`, `main/package.json`, `sub/*/package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`을 모두 수집. → `scripts/offline-npm/collect-workspace-manifest.ps1 -WebRoot <front_end 루트>`로 zip 수집(소스·node_modules 제외, pnpm/node 버전·store 경로 포함).
 - [ ] 외부망 반입본(2026-10-30 `2-zero-rule-web`, 기준 커밋 `93b8e37`)과 파일별 diff 작성. 폐쇄망 자체 수정은 별도 표시.
 - [ ] pnpm 버전 확인: 외부망 루트의 `packageManager: pnpm@9.15.2`와 폐쇄망 사용 버전이 일치하는지 확인. Node 버전도 기록.
 
 ## 2. workspace 선언값 정합성 확인
 
+- [ ] 외부망에서 `scripts/offline-npm/compare-workspace-manifest.ps1 -Manifest <수집 zip>` 실행 → `workspace-diff.csv`(workspace×패키지: 폐쇄망/외부망 범위, 양쪽 lockfile 해결 버전, 상태, `ClosedLockOutdated`=반입 lockfile과 폐쇄망 선언 불일치 행).
 - [ ] `pnpm-lock.yaml`의 `importers['.']`, `importers['main']`, `importers['sub/ui']`, 다른 `sub/*`를 각 폴더 `package.json`의 dependencies/devDependencies와 대조.
 - [ ] 이름이 같은 패키지마다 **요구 버전 범위(specifier)**, **lockfile이 선택한 실제 버전(version)**, **폐쇄망 기존에 설치된 버전**을 구분해서 표 작성.
 - [ ] 특히 사진에 나타난 `sub/ui`의 `@types/eslint`, `@types/react`, `@types/sanitize-html` 및 기타 패키지 선언 비교. 스크린샷으로 확정할 수 없는 행은 실제 파일 대조 후 확정.

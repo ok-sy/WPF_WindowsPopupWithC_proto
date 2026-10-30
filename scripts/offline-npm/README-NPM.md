@@ -7,6 +7,7 @@
 |---|---|
 | `pnpm-store-v3.tgz` | pnpm 9 store(v3). 폐쇄망 pnpm store에 추가합니다 |
 | `install-pnpm-store.ps1` | store 추가 + `pnpm install --offline` 실행 |
+| `collect-workspace-manifest.ps1` | lockfile 불일치 분석용으로 workspace의 package.json·lockfile·pnpm/node 버전을 zip으로 수집 |
 | `PACKAGES.txt` | 들어 있는 패키지 이름@버전과 무결성 값(lockfile과 같음) |
 | `package.json`, `pnpm-lock.yaml` | 묶음만으로 설치되는지 확인하는 최소 프로젝트 |
 
@@ -41,3 +42,13 @@ pnpm install --offline --frozen-lockfile --store-dir D:\temp-store
 
 - `ERR_PNPM_NO_OFFLINE_TARBALL`이 CKEditor가 아닌 패키지에서 나면, 이번 반입과 관계없이 폐쇄망 store에 원래 없던 패키지입니다. 그 패키지 이름을 알려 주시면 추가 묶음을 만듭니다.
 - store 형식 오류가 나면 폐쇄망 pnpm 버전을 확인합니다(9.15.2 필요, `pnpm -v`).
+- `ERR_PNPM_OUTDATED_LOCKFILE`이 나면 폐쇄망 package.json과 반입한 lockfile의 선언값이 다른 것입니다. 폐쇄망에서 lockfile을 고치지 말고 선언 파일을 수집해 외부망에서 비교합니다.
+
+```powershell
+# 폐쇄망: front_end 루트의 package.json(루트·main·sub/*)·pnpm-workspace.yaml·.npmrc·pnpm-lock.yaml과 pnpm/node 버전 수집
+.\collect-workspace-manifest.ps1 -WebRoot D:\경로\front_end
+# 외부망(저장소 루트): 수집 zip과 zero-rule-web 비교 → workspace-diff.csv
+.\scripts\offline-npm\compare-workspace-manifest.ps1 -Manifest D:\반입\workspace-manifest-<시각>.zip
+```
+
+- 비교표의 `ClosedLockOutdated=Y` 행이 오류를 일으키는 선언입니다. 유지·변경 결정 후 외부망에서 lockfile을 다시 만듭니다(docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md).

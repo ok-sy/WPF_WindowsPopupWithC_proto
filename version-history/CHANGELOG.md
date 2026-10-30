@@ -1,4 +1,15 @@
-﻿# 변경 이력
+# 변경 이력
+
+## 2026-10-30-24 — 폐쇄망 workspace 의존성 수집·비교 스크립트
+
+- 이유: 폐쇄망 lockfile 불일치(2026-10-30-23) 분석 결과 외부망 zero-rule-web은 workspace 7곳 package.json과 pnpm-lock.yaml importer specifier가 모두 일치(불일치 0). 원인은 폐쇄망 front_end의 package.json 선언이 반입 lockfile과 다른 것으로 보여, 폐쇄망 선언 파일을 모아 workspace·패키지 단위로 비교할 도구가 필요.
+- 변경:
+  - `scripts/offline-npm/collect-workspace-manifest.ps1`(폐쇄망): front_end 루트·main·sub/* package.json, pnpm-workspace.yaml, .npmrc, pnpm-lock.yaml과 pnpm·node 버전·store 경로(env.txt)를 zip으로 수집. 소스·node_modules 제외.
+  - `scripts/offline-npm/compare-workspace-manifest.ps1`(외부망): 수집 zip(또는 폴더)과 zero-rule-web을 비교해 `workspace-diff.csv` 생성 — 폐쇄망/외부망 범위, 외부망·폐쇄망 lockfile specifier·해결 버전, 상태(동일/범위다름/폐쇄망만/외부망만), `ClosedLockOutdated`(반입 lockfile이 폐쇄망 선언과 달라 ERR_PNPM_OUTDATED_LOCKFILE을 일으키는 행). lockfile v9/v6 및 v5(specifiers 블록) 형식 지원. workspace별 요약 출력.
+  - `scripts/prepare-offline-npm.cjs`: npm 묶음(5-npm-ckeditor)에 수집 스크립트 포함. `README-NPM.md`에 수집 스크립트와 OUTDATED_LOCKFILE 대응 절차 추가. TODO 문서 1·2단계에 스크립트 연결.
+- 주요 파일: scripts/offline-npm/collect-workspace-manifest.ps1, scripts/offline-npm/compare-workspace-manifest.ps1, scripts/offline-npm/README-NPM.md, scripts/prepare-offline-npm.cjs, docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기준 커밋 f66e8ed의 zero-rule-web 선언 파일로 가상 폐쇄망 폴더를 만들고 sub/ui `@types/react`를 `^18.3.1`로 바꿔 수집→비교 실행. main 범위다름 1(@ckeditor/ckeditor5-react ^5.1.0↔^12.0.0)·폐쇄망만 4(@cp949/ckeditor5-custom-build, @types/ckeditor__ckeditor5-core, react-markdown, remark-gfm)·외부망만 1(ckeditor5), sub/ui 범위다름 1(@types/react)이 기준 이후 git diff·변경값과 일치, 잠금불일치 6행 표시. 8.3 짧은 경로(TEMP)에서 상대 경로가 어긋나던 문제와 lockfile 빈 줄 처리 오류를 수정 후 재확인. Windows PowerShell 5.1 한글 출력을 위해 UTF-8 BOM 저장. 이 PC pnpm 7.29.0은 lockfile v9를 다루지 못해 lockfile 재생성은 pnpm 9.15.2 필요. 폐쇄망 실제 수집·비교는 미실행.
+- 상태: 커밋·원격 반영. 폐쇄망 수집 zip 대기(이후 2단계 비교표 작성).
 
 ## 2026-10-30-23 — 폐쇄망 pnpm workspace/lockfile 불일치 해결 TODO 작성
 
