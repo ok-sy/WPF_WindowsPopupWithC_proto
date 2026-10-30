@@ -1,6 +1,6 @@
 # 변경 이력
 
-## 2026-10-30-27 — Turbopack SVG default import 지원·workspace 패키지 이름 자동 transpile
+## 2026-10-30-27 — workspace 패키지 이름 자동 transpile(Turbopack SVG 로더는 원복)
 
 - 이유: 폐쇄망 관리자 웹 Turbopack 개발 서버에서 `NotReady.tsx`의 `import imgUnderConstruction from '@public/images/under_construction1.svg'`가 `Export default doesn't exist in target module`로 실패(Turbopack SVG 규칙이 svgr 이름 내보내기만 제공). 폐쇄망 자체 코드에도 같은 형태가 있을 수 있어 사용처 수정 대신 로더에서 webpack과 같은 내보내기 제공 필요. 함께 sub의 `@repo/*` 패키지를 인식하지 못하는 현상 보고 — 반입한 next.config.mjs의 transpilePackages가 `@local/*` 고정이라 이름이 다른 환경에서 빠질 수 있음.
 - 변경:
@@ -9,6 +9,7 @@
   - FRONT 단계별 반영 체크리스트에 로더·자동 transpile·폐쇄망 next.config 병합 주의 추가.
 - 주요 파일: zero-rule-web/main/turbopack-svg-loader.cjs, zero-rule-web/main/next.config.mjs, docs/design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md, version-history/CHANGELOG.md.
 - 검증: NotReady.tsx를 기준 커밋(f66e8ed)의 SVG default import로 임시 복원하고 `next dev --turbopack` 실행 — `/` 200, 빌드 오류 없음, 컴파일 결과 SVG 모듈이 `ReactComponent`·`default`(data:image/svg+xml) 둘 다 내보냄. 복원 후 원래 파일로 되돌림. 가상 sub(`@repo/ui`·`@repo/util`·`@repo/eslint-config`·`@repo/typescript-config`)로 설정을 불러와 transpilePackages에 `@repo/ui`·`@repo/util`만 추가됨을 확인. `next build`(webpack) 성공(33페이지). 폐쇄망의 `@repo` 해석 실패 원인(이름 차이 외 node_modules 미연결·별도 alias 여부)은 오류 화면·설정 파일 미확인. 폐쇄망 적용·반입본 재생성은 미실행.
+- 후속 정정(SVG 로더 원복): SVG 오류는 폐쇄망에서 반입본의 `NotReady.tsx` 수정본(public 경로 문자열)을 반영하지 않은 것이 원인으로 확인돼 `turbopack-svg-loader.cjs`를 삭제하고 `turbopack.rules['*.svg']`를 이전 svgr 이름 내보내기로 되돌림. `transpilePackages` 자동 추가(`@repo/*`)만 유지. 체크리스트에서 로더 항목을 빼고 `NotReady.tsx` 동시 반영 필수·폐쇄망 자체 SVG default import는 public 경로로 바꾸도록 명시. 검증: next.config.mjs가 867d69a 이전 대비 transpilePackages 자동 추가만 다름(git diff), 설정 로딩 시 Turbopack 규칙·transpilePackages 확인, `next dev --turbopack` `/` 200, `next build` 성공.
 - 상태: 커밋·원격 반영. 폐쇄망 `@repo` 오류 내용 확인 대기.
 
 ## 2026-10-30-26 — 폐쇄망 CKEditor node_modules 폴더 복사 반입 도구
