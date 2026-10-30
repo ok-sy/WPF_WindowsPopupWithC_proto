@@ -17,7 +17,8 @@
 - 변경: 폐쇄망 기존 소스 백업 → 전체 workspace package.json과 lockfile 비교 → 외부망에서 최종 적용 구성의 lockfile 재생성 → 전체 오프라인 pnpm store 반입 → 설치·Turbopack·MUI·CKEditor·Common·빌드 검증 절차를 별도 TODO로 작성, docs/README.md 연결.
 - 주요 파일: docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, docs/README.md, version-history/CHANGELOG.md.
 - 검증: 오류 화면·반입본 MANIFEST 및 현재 repository 의존 설정 대조. 실제 폐쇄망 설치·빌드 미실행.
-- 상태: 문서만 등록, 해결 작업 미착수.
+- 후속 확인(2026-10-30): `sub/eslint-config/package.json`도 `ERR_PNPM_OUTDATED_LOCKFILE` 발생. 화면에서 `next`와 `@next/eslint-plugin-next` 선언 차이 확인. TODO에 해당 workspace 및 나머지 `sub/*` 전체 비교를 추가(문서만 변경, 폐쇄망 검증 미실행).
+- 상태: 문서 및 후속 오류 사례 반영. 설치 해결 작업 미완료.
 
 ## 2026-10-30-22 — 폐쇄망 FRONT 단계별 반영 체크리스트 문서화
 
