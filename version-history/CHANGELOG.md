@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-23 — 폐쇄망 pnpm workspace/lockfile 불일치 해결 TODO 작성
+
+- 이유: CKEditor 오프라인 설치 중 ROOT/main/sub/ui package.json 선언과 pnpm-lock.yaml specifier 불일치(ERR_PNPM_OUTDATED_LOCKFILE), 오프라인 lockfile 갱신 중 레지스트리 메타데이터 부족(ERR_PNPM_NO_OFFLINE_META) 발생.
+- 변경: 폐쇄망 기존 소스 백업 → 전체 workspace package.json과 lockfile 비교 → 외부망에서 최종 적용 구성의 lockfile 재생성 → 전체 오프라인 pnpm store 반입 → 설치·Turbopack·MUI·CKEditor·Common·빌드 검증 절차를 별도 TODO로 작성, docs/README.md 연결.
+- 주요 파일: docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: 오류 화면·반입본 MANIFEST 및 현재 repository 의존 설정 대조. 실제 폐쇄망 설치·빌드 미실행.
+- 상태: 문서만 등록, 해결 작업 미착수.
+
 ## 2026-10-30-22 — 폐쇄망 FRONT 단계별 반영 체크리스트 문서화
 
 - 이유: 폐쇄망 기존 프론트에 Turbopack, MUI Icon 로딩 개선, CKEditor 5 단일 엔진, PopupcommonComponent를 순서대로 적용하기 위한 파일·패키지·검증 항목 정리 필요.
