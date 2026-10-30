@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-10-30-28 — Turbopack 개발 서버에서 MUI CssBaseline이 전역 CSS body를 덮어쓰는 문제 수정
+
+- 이유: 폐쇄망 관리자 웹을 `next dev --turbopack`으로 실행하면 전역 CSS의 `body` 규칙이 MUI `CssBaseline` 규칙에 덮여 적용되지 않음. 로컬에서 재현해 보니 Turbopack SSR이 `@mui/material-nextjs/v15-pagesRouter`를 외부(CJS) 모듈로 불러오고 `@mui/material`·`@emotion/react`는 번들(ESM)해 emotion 인스턴스가 둘로 갈림. 그 결과 `AppCacheProvider`/`documentGetInitialProps`의 `mui` 캐시가 무시되고 MUI 스타일이 기본 `css` 캐시로 `<body>` 안에 인라인 출력돼 `<head>`의 전역 CSS 링크보다 뒤에 놓임(같은 명시도에서 뒤 규칙 우선). webpack(`next build`·`next dev`)은 영향 없음.
+- 변경: `next.config.mjs`의 `transpilePackages`에 `@mui/material-nextjs` 추가해 Turbopack에서도 같은 emotion 인스턴스로 번들되게 함. 원인 주석 추가.
+- 주요 파일: zero-rule-web/main/next.config.mjs, docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md(3-1 원인·수정·폐쇄망 확인 방법 추가), version-history/CHANGELOG.md.
+- 검증: 임시 전역 CSS(`body { background-color }`)를 `_app.tsx`에 넣고 `next dev --turbopack`의 `/login/` SSR HTML 비교 — 수정 전 `data-emotion="css-global …"`(CssBaseline)이 `<body>` 안에 인라인, 서버 청크에 `[externals]/@mui/material-nextjs/v15-pagesRouter (cjs)` 확인. 수정 후 `data-emotion="mui-global …"`이 `<head>`의 `emotion-insertion-point` 바로 뒤, 전역 CSS 링크(`data-n-g`) 앞에 위치하고 `css` 키 스타일 0건. 임시 CSS·import는 제거. `next build`(webpack) 성공. 브라우저 실화면·폐쇄망 적용은 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30 — 폐쇄망 FRONT 당일 반입 이슈 문서화
 
 - 내용: pnpm workspace/lockfile 오류, 수동 node_modules 구조, MUI Icon 및 Turbopack 적용, SVG default import 해결, CSS side-effect import 오류, CssBaseline/Emotion과 기존 body 배경 충돌, SSR useLayoutEffect 경고를 해결·미해결 상태로 구분해 문서화.

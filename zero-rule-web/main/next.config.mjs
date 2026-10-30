@@ -36,7 +36,11 @@ const nextConfig = {
   reactStrictMode: false,
   // workspace 패키지(sub/*)는 TS 소스를 그대로 내보내므로 Next가 직접 변환해야 한다.
   // 환경마다 패키지 이름(@local/*, @repo/*)이 달라 sub/*/package.json의 name을 읽어 함께 넣는다.
-  transpilePackages: [...new Set(['@local/ui', '@local/util', '@local/domain', '@local/validators', ...WORKSPACE_PACKAGES])],
+  // @mui/material-nextjs: Turbopack SSR은 이 패키지를 외부(CJS)로 불러와 번들된 @mui/material과 @emotion/react 인스턴스가 갈린다.
+  // 그러면 AppCacheProvider 캐시가 무시되어 CssBaseline 등 MUI 스타일이 <body>에 인라인으로 찍히고 전역 CSS(body)를 덮어쓴다.
+  transpilePackages: [
+    ...new Set(['@mui/material-nextjs', '@local/ui', '@local/util', '@local/domain', '@local/validators', ...WORKSPACE_PACKAGES]),
+  ],
   // productionBrowserSourceMaps: !PRODUCTION,
   productionBrowserSourceMaps: true,
   poweredByHeader: false,
