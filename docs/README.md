@@ -1,5 +1,6 @@
 # 팝업 프로젝트 문서
 
+- [폐쇄망 FRONT 단계별 반영 체크리스트](design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md) — 사전 오프라인 설치 준비 → Turbopack → MUI Icon → CKEditor → PopupcommonComponent → 화면 연결·최종 검증 순서 및 파일·명령어(문서만 작성, 반영 대기).
 - [PopupCommonGuide 화면 정리 구현 명세 TODO](design/20261030_PopupCommonGuide_화면정리_구현명세_TODO.md) — 공통/PROTO 흐름 정합성(P0), 탭별 정보 구조(P1), 화면 파일 분할(P2), 공지 관리·테스트(P3). 구현 완료(2026-10-30), 운영 빌드·실화면 확인 미실행.
 - [PopupcommonComponent WEB 표시 기본값 / SERVER 정책 책임 분리 TODO](design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md) — WEB은 입력·표시·미리보기 fallback, SERVER는 최종 기본값·검증·정규화. 미설정 표현 규칙, createDefaultPopup·toSaveRequestPopup·웹 검증 분류 초안(UI 전용/proto 호환/서버 이관 후보), 서버 구현은 등록·수정 공통 JSON 검증 TODO와 연결(정의 단계).
 - [PopupcommonComponent 독립 재사용·선택 필드 추출 TODO](design/20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md) — 테이블·API·저장 형식과 무관한 공통 컴포넌트 단독 사용(PopupScheduleFields value), 범용 pickPopupFields(topLevel·content·questions, 값 그대로), 서버 없는 샘플 4종(운영 빌드 확인 대기).
