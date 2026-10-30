@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-10-30-25 — 폐쇄망 CKEditor node_modules 직접 복사 반입 경로 TODO 보완
+
+- 이유: 폐쇄망에서 CKEditor 패키지가 node_modules의 일반 디렉터리로 확인되고 pnpm why 결과가 없어, 기존 수동 복사 방식도 설치 대안으로 검증할 필요.
+- 변경: 기존 workspace/lockfile 불일치 TODO §6에 설치 상태 확인(ckeditor5 44.3.0, React 래퍼 5.1.0), 실제 모듈 경로·기존 사용처 조사, 백업, CKEditor 49.0.1/React 12.0.0 및 의존성 전체 복사, 새 엔진으로 관련 화면 동시 전환, 중복 모듈·빌드·화면 회귀 검사 기준을 추가. 직접 복사 방식은 추정이며 정상 배포로 검증된 것은 아님.
+- 주요 파일: docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, version-history/CHANGELOG.md.
+- 검증: 사용자가 제공한 폐쇄망 버전·LinkType·require.resolve 결과 기준 문서화. 실제 반입 및 검증 미실행.
+- 상태: 문서만 반영, 설치/코드 변경 미실행.
+
 ## 2026-10-30-24 — 폐쇄망 workspace 의존성 수집·비교 스크립트
 
 - 이유: 폐쇄망 lockfile 불일치(2026-10-30-23) 분석 결과 외부망 zero-rule-web은 workspace 7곳 package.json과 pnpm-lock.yaml importer specifier가 모두 일치(불일치 0). 원인은 폐쇄망 front_end의 package.json 선언이 반입 lockfile과 다른 것으로 보여, 폐쇄망 선언 파일을 모아 workspace·패키지 단위로 비교할 도구가 필요.
