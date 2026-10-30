@@ -1,5 +1,13 @@
 ﻿# 변경 이력
 
+## 2026-10-30-22 — 폐쇄망 FRONT 단계별 반영 체크리스트 문서화
+
+- 이유: 폐쇄망 기존 프론트에 Turbopack, MUI Icon 로딩 개선, CKEditor 5 단일 엔진, PopupcommonComponent를 순서대로 적용하기 위한 파일·패키지·검증 항목 정리 필요.
+- 변경: 사전 pnpm lockfile·오프라인 store 준비, Turbopack 개발 서버와 webpack 빌드 구분, MUI 아이콘 선택 목록/표시 맵 차이 7건 점검, CKEditor 오프라인 캐시 반입·양방향 화면 전환 검증, 공통 컴포넌트/샘플/Guide 단계별 반영·최종 빌드 체크리스트를 신규 문서에 정리. docs/README.md 색인 추가.
+- 주요 파일: docs/design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md, docs/README.md, version-history/CHANGELOG.md.
+- 검증: GitHub main의 package.json, next.config.mjs, MUI 아이콘 목록·맵, CKEditor 공통 엔진, PopupcommonComponent index 및 폐쇄망 npm 반입 스크립트 정적 확인. 폐쇄망 설치·빌드·실화면 검증은 미실행.
+- 상태: **문서만 등록**, 구현·폐쇄망 반영 미실행.
+
 ## 2026-10-30-21 — 폐쇄망 반입 후 정리 스크립트(DELETE-SINCE 삭제 + 이전 CKEditor 제거)
 
 - 이유: 폐쇄망에는 CKEditor 커스텀 빌드(0.0.15, 내장 34.1.0)·@ckeditor/* 48.x·@types/ckeditor__* 37.x·React 래퍼 5.1.0 등 이전 버전이 node_modules와 pnpm store에 남고, 반입본 DELETE-SINCE 목록의 파일도 손으로 지워야 했음. 49.0.1 세트만 남기고 한 번에 정리할 수단 필요.
