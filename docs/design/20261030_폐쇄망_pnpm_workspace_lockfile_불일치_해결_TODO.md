@@ -56,6 +56,37 @@
 - [ ] `pnpm type-check`, `pnpm build` 및 로그인 화면을 확인하고 결과/미완료를 변경 이력에 기록.
 - [ ] 설치 성공을 이유로 외부망/폐쇄망 의존성 차이가 없다고 단정하지 않음. 최종 diff와 재현 가능한 lockfile 보관.
 
+## 6. 별도 대응: node_modules 직접 복사 환경에서 CKEditor 교체
+
+**현장 확인(2026-10-30, 개발자 명령 결과):**
+- 폐쇄망 `front_end` 루트에서 `require('ckeditor5/package.json').version` → **44.3.0**.
+- `require('@ckeditor/ckeditor5-react/package.json').version` → **5.1.0**.
+- `require.resolve()`가 실제 경로를 반환함. 확인한 `node_modules/@ckeditor/ckeditor5-core`, `node_modules/ckeditor5`, `node_modules/@ckeditor/ckeditor5-react`의 `Get-Item ... | Select LinkType`은 비어 있음.
+- `pnpm why`는 출력 없음. **해당 항목들이 일반 폴더로 존재함은 확인**, 다만 모든 의존성이 수동 복사됐는지, 다른 폴더의 링크·설치 이력까지 확정되는 것은 아님.
+- 기존 프로젝트가 `node_modules`에 필요한 패키지 폴더를 수동 복사해 쓰는 방식이라는 현장 정황. 따라서 **수동 복사 경로를 별도 검증**한다. 이 경로에서는 `pnpm install --frozen-lockfile`의 lockfile 오류가 복사 단계 자체를 막지는 않지만, 의존성·실행 정상 여부 검증은 필수다.
+
+### 6-1. 사전 조사 및 백업
+- [ ] 기존 `node_modules`, `package.json`, `pnpm-lock.yaml`을 백업하고, 기존 서비스/개발 화면 구동 기준을 기록.
+- [ ] `require.resolve('ckeditor5')`, `require.resolve('@ckeditor/ckeditor5-react')`가 가리키는 **실제 경로** 및 `ckeditor5/package.json`·React 래퍼 버전 기록. 루트/main의 모듈 검색 위치 차이도 확인.
+- [ ] 관련 `@ckeditor/*` 패키지·`ckeditor5`·구형 커스텀 빌드의 실제 사용처(import/require) 전수 확인; 다른 기존 화면이 이전 엔진에 의존하는지 점검.
+- [ ] 별도 프로젝트/백업 폴더에서 새 엔진 전환을 먼저 실험. 현재 동작하는 node_modules를 바로 삭제하거나 덮어쓰지 않는다.
+
+### 6-2. 직접 복사 반입 경로(설치 방식 미확정 시 대안)
+- [ ] 외부망에서 최종 소스와 동일한 **Node/pnpm 환경 및 lockfile**로 의존성을 갖춘 반입용 디렉터리 준비. CKEditor만이 아니라 실제 런타임 의존 전체 및 패키지 내부 참조를 확인.
+- [ ] **필요한 패키지와 의존성 전체**를 목록화. `ckeditor5@49.0.1`과 `@ckeditor/ckeditor5-react@12.0.0`뿐 아니라 필요한 `@ckeditor/*` 및 타 패키지 의존성 포함; 구버전 44.3.0/5.1.0과 실행 경로가 섞이지 않게 함.
+- [ ] 직접 복사 방식은 실제 구조(일반 디렉터리/심볼릭 링크/하드 링크)를 검사하고 **의존 패키지 해석까지 가능한 결과물**만 반입. pnpm store 폴더 복사만으로 완성된 node_modules라고 가정하지 않음.
+- [ ] **전환 소스 동시 반입:** `src/components/ckeditor/{index.ts,ckeditorEngine.ts}`, `CommonCKEditor.tsx`, `PopupRichTextEditor.tsx` 및 호출부. 게시판만 새 버전·팝업은 구형 엔진을 사용하는 중간 상태로 실행하지 않음.
+- [ ] 소스상 `@cp949/ckeditor5-custom-build` 및 직접 `@ckeditor/ckeditor5-* ` 호출 여부 확인. 불필요한 이전 엔진 제거는 사용처/복구 경로를 확인한 후 실시.
+- [ ] **권장 대안:** 직접 복사 방식보다 재현성이 높은 `pnpm install --offline --frozen-lockfile`은 별도 해결 경로(1~5단계)로 유지. 둘 중 한 방식을 검증해 선택하고 무작정 혼용하지 않는다.
+
+### 6-3. 반영 후 검증
+- [ ] 루트와 `main`에서 `require.resolve` 및 패키지 버전 확인: `ckeditor5 49.0.1`, `@ckeditor/ckeditor5-react 12.0.0`. 해석 실패 시 모듈 경로/내부 의존성부터 확인.
+- [ ] 게시판·자료실(Common/Bbs)와 팝업(PopupRich)이 **동일한 엔진 경로**를 사용함을 확인.
+- [ ] 기존 웹 → 자료실 → 팝업 등록 → 자료실(반대 순서도) 화면 이동·한글 입력·붙여넣기·서식·소스 편집·미리보기 확인.
+- [ ] 브라우저 콘솔의 `ckeditor-duplicated-modules`, 플러그인/라이선스/모듈 탐색 오류가 없는지 확인.
+- [ ] Turbopack 개발 실행 및 `pnpm build` webpack 빌드, TypeScript 검사. 실패 시 백업으로 복구 가능해야 한다.
+- [ ] 선택한 배포 방식(직접 복사 또는 pnpm 설치), 반입 패키지 목록·버전·파일 경로·검증 결과를 기록.
+
 ## 참고 명령 (인터넷 연결 PC에서 lockfile 생성)
 
 ```powershell
