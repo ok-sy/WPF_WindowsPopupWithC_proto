@@ -72,6 +72,7 @@
 - [ ] 별도 프로젝트/백업 폴더에서 새 엔진 전환을 먼저 실험. 현재 동작하는 node_modules를 바로 삭제하거나 덮어쓰지 않는다.
 
 ### 6-2. 직접 복사 반입 경로(설치 방식 미확정 시 대안)
+- 도구(2026-10-30): 외부망 `node scripts/prepare-offline-node-modules.cjs`(npm 묶음 store로 hoisted 설치 → 링크 없는 트리, peer 제외) → `node_modules-ckeditor.tgz`·`NODE-MODULES.txt`. 폐쇄망 `node copy-node-modules.cjs --web-root <front_end>`(기본 미리보기, `--apply` 반영, `--rollback <백업>`): 이전 엔진을 루트·main·sub/* node_modules에서 백업 폴더로 이동, 없으면 복사·같은 버전 재사용·다른 버전은 덮지 않고 필요한 패키지 안 node_modules에 배치(Node 탐색 규칙으로 계산). 가상 폐쇄망 구조로 반영→webpack 번들→되돌리기 확인, 폐쇄망 실행 미실행.
 - [ ] 외부망에서 최종 소스와 동일한 **Node/pnpm 환경 및 lockfile**로 의존성을 갖춘 반입용 디렉터리 준비. CKEditor만이 아니라 실제 런타임 의존 전체 및 패키지 내부 참조를 확인.
 - [ ] **필요한 패키지와 의존성 전체**를 목록화. `ckeditor5@49.0.1`과 `@ckeditor/ckeditor5-react@12.0.0`뿐 아니라 필요한 `@ckeditor/*` 및 타 패키지 의존성 포함; 구버전 44.3.0/5.1.0과 실행 경로가 섞이지 않게 함.
 - [ ] 직접 복사 방식은 실제 구조(일반 디렉터리/심볼릭 링크/하드 링크)를 검사하고 **의존 패키지 해석까지 가능한 결과물**만 반입. pnpm store 폴더 복사만으로 완성된 node_modules라고 가정하지 않음.

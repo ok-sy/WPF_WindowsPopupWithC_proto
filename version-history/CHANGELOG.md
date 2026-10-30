@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-10-30-26 — 폐쇄망 CKEditor node_modules 폴더 복사 반입 도구
+
+- 이유: 폐쇄망 front_end는 pnpm store·pnpm install을 쓰지 않고 node_modules에 패키지 폴더를 직접 복사해 사용(ckeditor5 44.3.0, @ckeditor/ckeditor5-react 5.1.0, 링크 없음)하는 것으로 확인돼 install-pnpm-store.ps1 방식이 적용되지 않음. lockfile 검사 없이 복사만 하므로 의존 패키지 버전 해석을 반입 도구가 직접 보장해야 함.
+- 변경:
+  - `scripts/prepare-offline-node-modules.cjs`(외부망, 인터넷 불필요): npm 묶음 store로 hoisted·복사 방식 설치를 해 링크 없는 node_modules 트리를 만들고, ckeditor5·React 래퍼에서 dependencies·optionalDependencies로 닿는 위치만 남김(react·loose-envify·js-tokens peer 제외). `node_modules-ckeditor.tgz`, `NODE-MODULES.txt`(174개 위치), `copy-node-modules.cjs`를 묶음 폴더에 생성. `prepare-offline-npm.cjs` 마지막 단계에서 자동 실행.
+  - `scripts/offline-npm/copy-node-modules.cjs`(폐쇄망, Node): 기본 미리보기, `--apply` 반영, `--rollback <백업>` 되돌리기. 루트·main·sub/* node_modules의 이전 엔진(ckeditor5, @ckeditor/*)을 백업 폴더로 이동, 묶음 최상위 패키지는 없으면 복사·같은 버전 재사용·다른 버전은 덮지 않음. 복사한 패키지마다 Node 모듈 탐색 규칙으로 의존 버전을 계산해 묶음과 다르면 그 패키지 안 node_modules에 배치(변화 없을 때까지 반복). react(peer) 버전, 이전 엔진을 참조하는 다른 패키지를 표시. 백업 폴더에 plan.json·로그 기록, 반영 후 루트·main에서 찾는 버전 출력.
+  - `scripts/export-offline-package.ps1`: 묶음에 복사본이 있으면 README-IMPORT 반입 절차에 폴더 복사 방법 안내 추가. `README-NPM.md`에 폴더 복사 설치 절차, TODO 문서 6-2에 도구 연결.
+- 주요 파일: scripts/prepare-offline-node-modules.cjs, scripts/offline-npm/copy-node-modules.cjs, scripts/prepare-offline-npm.cjs, scripts/export-offline-package.ps1, scripts/offline-npm/README-NPM.md, docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, version-history/CHANGELOG.md.
+- 검증: 로컬 묶음으로 복사본 생성(17.8MB, 위치 174개, ckeditor5 49.0.1·래퍼 12.0.0). 가상 폐쇄망 front_end(루트 ckeditor5 44.3.0·래퍼 5.1.0·core 44.3.0, main/node_modules 그림자 ckeditor5, 다른 버전 color-convert 2.0.1·debug 2.6.9, 같은 버전 es-toolkit 1.52.0, @cp949/ckeditor5-custom-build, react 18.3.1)에서 미리보기 → 이전 엔진 4개 이동·최상위 171개 복사·재사용 1·유지 2·패키지 안 배치 2(ckeditor5-ui→color-convert 3.1.0, micromark→debug 4.4.3) 표시. 반영 후 Next 내장 webpack으로 ckeditor5·React 래퍼·실제 `ckeditorEngine.ts`(한국어 번역)·`ckeditor5.css` 번들 — 오류 0, 44.x 모듈 0, 엔진 49.0.1 단일, 다른 버전 패키지는 의도한 위치에서 해석. 되돌리기 후 원래 버전·최상위 목록 동일(빈 scope 폴더 정리 보완 후 재확인). export 스크립트 PowerShell 구문 검사 통과. 폐쇄망 실제 실행·관리자 웹 화면 확인은 미실행. 반입본 재생성은 하지 않음.
+- 상태: 커밋·원격 반영. 폐쇄망 적용 대기.
+
 ## 2026-10-30-25 — 폐쇄망 CKEditor node_modules 직접 복사 반입 경로 TODO 보완
 
 - 이유: 폐쇄망에서 CKEditor 패키지가 node_modules의 일반 디렉터리로 확인되고 pnpm why 결과가 없어, 기존 수동 복사 방식도 설치 대안으로 검증할 필요.

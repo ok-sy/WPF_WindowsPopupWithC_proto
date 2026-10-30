@@ -2,7 +2,8 @@
 // ■ 폐쇄망 반입용 npm 패키지 묶음 생성(CKEditor 5 공통 엔진)
 // - in : zero-rule-web/pnpm-lock.yaml(프로젝트 lockfile), 인터넷 연결(npm registry)
 // - out: <출력 폴더>\ — pnpm-store-v3.tgz(pnpm 오프라인 캐시 = store), PACKAGES.txt(이름@버전·무결성),
-//        package.json·pnpm-lock.yaml(묶음 확인용 최소 프로젝트), install-pnpm-store.ps1, collect-workspace-manifest.ps1, README-NPM.md
+//        package.json·pnpm-lock.yaml(묶음 확인용 최소 프로젝트), install-pnpm-store.ps1, collect-workspace-manifest.ps1, README-NPM.md,
+//        node_modules-ckeditor.tgz·NODE-MODULES.txt·copy-node-modules.cjs(폴더 복사용, prepare-offline-node-modules.cjs)
 // - 폐쇄망에는 사내 npm 저장소가 없으므로 pnpm store(오프라인 캐시)를 반입해 `pnpm install --offline`으로 설치한다.
 // - lockfile에서 ckeditor5·@ckeditor/ckeditor5-react가 실제로 쓰는 패키지(전이 의존 포함)만 뽑아 버전을 lockfile과 똑같이 맞춘다.
 //   pnpm은 프로젝트 지정 버전(package.json packageManager, pnpm@9.15.2)으로 실행해 폐쇄망과 같은 store 형식(v3)을 만든다.
@@ -99,4 +100,6 @@ for (const file of ['install-pnpm-store.ps1', 'collect-workspace-manifest.ps1', 
   fs.copyFileSync(path.join(__dirname, 'offline-npm', file), path.join(out, file));
 }
 fs.rmSync(work, { recursive: true, force: true });
+// pnpm 설치 없이 node_modules를 폴더째 복사해 쓰는 폐쇄망용 복사본(node_modules-ckeditor.tgz)도 같은 묶음에 만든다
+execSync(`node "${path.join(__dirname, 'prepare-offline-node-modules.cjs')}" "${out}"`, { stdio: 'inherit' });
 console.log('Done: ' + out);

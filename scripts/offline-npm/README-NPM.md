@@ -8,6 +8,9 @@
 | `pnpm-store-v3.tgz` | pnpm 9 store(v3). 폐쇄망 pnpm store에 추가합니다 |
 | `install-pnpm-store.ps1` | store 추가 + `pnpm install --offline` 실행 |
 | `collect-workspace-manifest.ps1` | lockfile 불일치 분석용으로 workspace의 package.json·lockfile·pnpm/node 버전을 zip으로 수집 |
+| `node_modules-ckeditor.tgz` | pnpm 설치 없이 폴더째 복사하는 환경용 node_modules 트리(링크 없는 일반 폴더, react 등 peer 제외) |
+| `copy-node-modules.cjs` | 위 트리를 front_end `node_modules`에 충돌 없이 배치(미리보기·반영·되돌리기) |
+| `NODE-MODULES.txt` | 트리 안 패키지 위치와 이름@버전 |
 | `PACKAGES.txt` | 들어 있는 패키지 이름@버전과 무결성 값(lockfile과 같음) |
 | `package.json`, `pnpm-lock.yaml` | 묶음만으로 설치되는지 확인하는 최소 프로젝트 |
 
@@ -23,6 +26,21 @@
 - `pnpm store path`로 찾은 store에 없는 파일만 추가합니다. 기존 파일은 그대로 둡니다.
 - 이어서 zero-rule-web에서 `pnpm install --offline --frozen-lockfile`을 실행합니다.
 - store 경로를 직접 정하려면 `-StoreDir D:\pnpm-store`를 붙입니다. store만 추가하려면 `-SkipInstall`을 붙입니다.
+
+## 설치(node_modules를 폴더째 복사해 쓰는 경우)
+
+pnpm install을 쓰지 않고 `node_modules`에 패키지 폴더를 직접 복사해 쓰는 환경에서는 위 설치 대신 이 방법을 씁니다. 두 방법을 섞지 않습니다.
+
+```powershell
+node copy-node-modules.cjs --web-root D:\경로\front_end            # 미리보기(변경 없음)
+node copy-node-modules.cjs --web-root D:\경로\front_end --apply    # 반영
+node copy-node-modules.cjs --rollback D:\경로\front_end_ckeditor-backup-<시각>   # 되돌리기
+```
+
+- 루트·`main`·`sub/*`의 `node_modules`에 있는 이전 엔진(`ckeditor5`, `@ckeditor/*`)을 백업 폴더(기본: front_end 옆 `front_end_ckeditor-backup-<시각>`)로 옮깁니다. 두 엔진이 섞이면 `ckeditor-duplicated-modules` 오류가 나기 때문입니다.
+- 묶음 패키지가 루트에 없으면 복사하고, 같은 버전이 있으면 그대로 씁니다. **다른 버전이 있으면 덮지 않고**, 그 패키지가 필요한 CKEditor 쪽 패키지 안 `node_modules`에 넣습니다(기존 화면 영향 없음).
+- react는 front_end의 것을 씁니다. 미리보기에 react 버전과, 이전 엔진을 참조하는 다른 패키지(예: `@cp949/ckeditor5-custom-build`)가 나오면 소스에서 쓰지 않는지 확인합니다.
+- 반영 후 `main\.next`를 지우고 개발 서버를 다시 시작한 뒤 자료실·팝업 등록 편집기를 확인합니다. CKEditor 전환 소스(`src/components/ckeditor/*`, `CommonCKEditor.tsx`, `PopupRichTextEditor.tsx`)를 같이 반영해야 합니다.
 
 ## 묶음만 먼저 확인하기(선택)
 
