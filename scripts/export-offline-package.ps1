@@ -270,6 +270,7 @@ try {
         $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``로 pnpm store 추가와 ``pnpm install --offline``을 실행한다(사내 npm 저장소 불필요).`n"
         # node_modules를 폴더째 복사해 쓰는 폐쇄망용 복사본(prepare-offline-node-modules.cjs)이 있으면 그 방법을 함께 안내
         if (Test-Path -LiteralPath (Join-Path $npmTarget "node_modules-ckeditor.tgz")) {
+            $npmRow = $npmRow.Replace("install-pnpm-store.ps1 실행(README-NPM.md) |", "install-pnpm-store.ps1 실행, node_modules 폴더 복사 환경은 copy-node-modules.cjs(node_modules-ckeditor.tgz) 실행(README-NPM.md) |")
             $npmStep += "     pnpm 설치 없이 node_modules를 폴더째 복사해 쓰는 경우: ``node copy-node-modules.cjs --web-root <front_end 경로>``로 미리보기 후 ``--apply``(이전 CKEditor는 백업 폴더로 이동, ``--rollback <백업 폴더>``로 되돌리기). 두 방법 중 하나만 쓴다.`n"
         }
     }
