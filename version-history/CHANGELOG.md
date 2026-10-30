@@ -278,7 +278,8 @@ pm-ckeditorundle -NotesFile <변경 요약>`로 offline-export/20261030 생성.
 - 변경: `MuiGenericIcon`을 실제 사용 아이콘 30개의 개별 경로 import 표로 교체(아이콘 선택 목록 `DEFAULT_ICON_LIST` 29개 + 원격 개발 DB `CLOVER_PAGE_SECTION`·`CLOVER_PAGE` 아이콘 값 중 목록 밖 `LocalPolice`). 등록되지 않은 이름은 그리지 않음(이전에는 undefined 컴포넌트 렌더링으로 화면 오류). `IconNames` 타입·`StringToMuiIcon` 사용처 변경 없음. 아이콘 추가 방법은 소스 주석에 기록.
 - 주요 파일: zero-rule-web/main/src/components/StringToMuiIcon/MuiGenericIcon.tsx, version-history/CHANGELOG.md.
 - 검증: 웹 `tsc` 오류 0, 변경 파일 eslint 오류 0. 개발 서버(Turbopack, 캐시 없음) `/` 첫 컴파일 15.4초 → 5.6초, `/pds/edit` 3.7초 → 1.1초. 운영 빌드(webpack) 성공, 컴파일 80초 → 46초, 화면별 First Load JS 1.9MB → 502kB. 로컬 관리자 웹(로컬 서버 + 원격 개발 DB) master 로그인 후 사이드바 메뉴 아이콘 전체 표시(LOCK관리 `LocalPolice` 포함) 확인.
-- 상태: 커밋·원격 반영. 폐쇄망 DB에 위 30개 밖의 메뉴 아이콘 값이 있으면 해당 메뉴 아이콘이 비어 보이므로 반입 후 `CLOVER_PAGE_SECTION`·`CLOVER_PAGE`의 icon 값 확인 필요(미실행).
+- 후속 보완(누락 아이콘): `DEFAULT_ICON_LIST`는 29개가 아니라 37개였고, 표에서 `LightbulbCircle`·`Phone`·`PowerSettingsNew`·`QuestionMark`·`Search`·`Telegram`·`ThumbUp` 7개가 빠져 아이콘 선택 팝오버에서 해당 버튼이 빈 칸으로 보이고 선택 후 메뉴 아이콘도 그려지지 않았음. 7개를 개별 경로 import·표에 추가해 등록 아이콘 37개(선택 목록 37개 전부 포함, `LocalPolice`는 선택 목록에도 있음)(주요 파일: zero-rule-web/main/src/components/StringToMuiIcon/MuiGenericIcon.tsx). 검증: 웹 `tsc` 오류 0, 변경 파일 eslint 오류 0, 선택 목록 이름 전체가 표에 있는지 스크립트 대조(누락 0), 설치된 `@mui/icons-material`에 7개 모듈 존재 확인. 실화면 확인은 미실행.
+- 상태: 커밋·원격 반영. 폐쇄망 DB에 위 37개 밖의 메뉴 아이콘 값이 있으면 해당 메뉴 아이콘이 비어 보이므로 반입 후 `CLOVER_PAGE_SECTION`·`CLOVER_PAGE`의 icon 값 확인 필요(미실행).
 
 ## 2026-10-29-12 — 관리자 웹 개발 서버 Turbopack 전환
 

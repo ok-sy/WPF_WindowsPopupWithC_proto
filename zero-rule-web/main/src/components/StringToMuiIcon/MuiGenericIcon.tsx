@@ -20,13 +20,20 @@ import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
 import Home from '@mui/icons-material/Home';
 import Instagram from '@mui/icons-material/Instagram';
 import LaptopChromebook from '@mui/icons-material/LaptopChromebook';
+import LightbulbCircle from '@mui/icons-material/LightbulbCircle';
 import LocalPolice from '@mui/icons-material/LocalPolice';
 import ManageSearch from '@mui/icons-material/ManageSearch';
 import Monitor from '@mui/icons-material/Monitor';
 import NoteAlt from '@mui/icons-material/NoteAlt';
 import People from '@mui/icons-material/People';
 import Person from '@mui/icons-material/Person';
+import Phone from '@mui/icons-material/Phone';
+import PowerSettingsNew from '@mui/icons-material/PowerSettingsNew';
+import QuestionMark from '@mui/icons-material/QuestionMark';
+import Search from '@mui/icons-material/Search';
 import Settings from '@mui/icons-material/Settings';
+import Telegram from '@mui/icons-material/Telegram';
+import ThumbUp from '@mui/icons-material/ThumbUp';
 import ViewQuilt from '@mui/icons-material/ViewQuilt';
 import Work from '@mui/icons-material/Work';
 import ZoomIn from '@mui/icons-material/ZoomIn';
@@ -63,13 +70,20 @@ const MENU_ICONS: Partial<Record<IconNames, SvgIconComponent>> = {
   Home,
   Instagram,
   LaptopChromebook,
+  LightbulbCircle,
   LocalPolice,
   ManageSearch,
   Monitor,
   NoteAlt,
   People,
   Person,
+  Phone,
+  PowerSettingsNew,
+  QuestionMark,
+  Search,
   Settings,
+  Telegram,
+  ThumbUp,
   ViewQuilt,
   Work,
   ZoomIn,
