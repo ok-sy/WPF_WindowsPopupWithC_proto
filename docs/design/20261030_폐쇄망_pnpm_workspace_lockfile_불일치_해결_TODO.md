@@ -8,7 +8,8 @@
 ## 발생 현상
 
 - CKEditor 반입용 `install-pnpm-store.ps1 -WebRoot <front_end 루트>` 실행 후 pnpm store 반입 단계는 진행됐으나, 내부의 `pnpm install --offline --frozen-lockfile` 단계에서 `ERR_PNPM_OUTDATED_LOCKFILE` 발생.
-- 오류에서 처음에는 `<ROOT>/main/package.json`, 이후 `<ROOT>/sub/ui/package.json`의 `specifiers`와 루트 `pnpm-lock.yaml`에 적힌 값이 다르다고 출력.
+- 오류에서 `<ROOT>/package.json`, `<ROOT>/main/package.json`, `<ROOT>/sub/ui/package.json`에 이어 **`<ROOT>/sub/eslint-config/package.json`**의 `specifiers`와 루트 `pnpm-lock.yaml`에 적힌 값이 다르다고 출력.
+- 추가 사례(`sub/eslint-config`): 스크린샷에 lockfile `next: 15.5.18` / package.json `next: ^15.5.21`, `@next/eslint-plugin-next: ^15.5.18` / `^15.5.21` 불일치가 표시됨. 화면의 일부 줄이 길어 전체 항목은 실제 파일로 확정해야 함.
 - 예시로 `@types/eslint`, `@types/react`, `@types/sanitize-html` 등 범위 문자열이 달랐음. `^18.3.1`과 `^18.3.18`은 같은 버전을 설치할 수 있어도 **lockfile의 선언값 검사는 문자열 기준으로 일치해야 함**.
 - 폐쇄망에서 `pnpm install --lockfile-only --offline`을 시도하자 `ERR_PNPM_NO_OFFLINE_META`: `@babel/core@7.29.7`, `@svgr/webpack@8.1.0` 관련 레지스트리 메타데이터를 찾지 못해 실패.
 - **원인 범위:** 단일 CKEditor 패키지 문제로 단정하지 않고, 폐쇄망 기존 workspace와 외부망 lockfile 간 선언/해결 버전/캐시 불일치를 각각 확인해야 함.
@@ -25,7 +26,9 @@
 - [ ] 외부망에서 `scripts/offline-npm/compare-workspace-manifest.ps1 -Manifest <수집 zip>` 실행 → `workspace-diff.csv`(workspace×패키지: 폐쇄망/외부망 범위, 양쪽 lockfile 해결 버전, 상태, `ClosedLockOutdated`=반입 lockfile과 폐쇄망 선언 불일치 행).
 - [ ] `pnpm-lock.yaml`의 `importers['.']`, `importers['main']`, `importers['sub/ui']`, 다른 `sub/*`를 각 폴더 `package.json`의 dependencies/devDependencies와 대조.
 - [ ] 이름이 같은 패키지마다 **요구 버전 범위(specifier)**, **lockfile이 선택한 실제 버전(version)**, **폐쇄망 기존에 설치된 버전**을 구분해서 표 작성.
-- [ ] 특히 사진에 나타난 `sub/ui`의 `@types/eslint`, `@types/react`, `@types/sanitize-html` 및 기타 패키지 선언 비교. 스크린샷으로 확정할 수 없는 행은 실제 파일 대조 후 확정.
+- [ ] 특히 사진에 나타난 `sub/ui`의 `@types/eslint`, `@types/react`, `@types/sanitize-html` 및 기타 패키지 선언 비교.
+- [ ] `sub/eslint-config/package.json`의 `next`, `@next/eslint-plugin-next`, ESLint 관련 dependencies/devDependencies와 lockfile `importers['sub/eslint-config']` 대조.
+- [ ] `sub/typescript-config`를 포함한 나머지 `sub/*` 전부 검사하여 오류가 다음 workspace로 반복되지 않게 한다. 스크린샷으로 확정할 수 없는 행은 실제 파일 대조 후 확정.
 - [ ] 외부망 버전 적용이 필요한 패키지(Next/Turbopack·MUI·CKEditor)와 폐쇄망 기존 유지 대상(업무용 수정·의존성)을 결정. 무조건 `package.json` 전체를 외부망 버전으로 덮지 않음.
 - [ ] workspace 전체에서 요구하는 동일 패키지의 버전 호환성/peer dependencies 확인.
 
