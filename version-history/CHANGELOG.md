@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-10-30-29 — tsconfig extends 상대 경로화·일반 CSS 타입 선언 추가
+
+- 이유: 폐쇄망 FRONT 당일 이슈 중 `@repo/typescript-config/nextjs.json not found`와 CSS side-effect import `ts(2882)`를 폐쇄망에서 각각 상대 경로 extends, `main/src/css.d.ts`로 해결. 수동 node_modules 복사 환경에는 workspace 링크가 없어 패키지 이름 extends가 실패하므로 저장소도 같은 방식으로 맞춰 다음 반입 시 차이가 생기지 않게 함. TypeScript `extends`는 대체 경로를 지원하지 않아 기존 패키지 이름 방식과 병행 불가.
+- 변경:
+  - `main/tsconfig.json` → `../sub/typescript-config/nextjs.json`, `sub/domain`·`sub/util` → `../typescript-config/base.json`, `sub/ui`·`sub/validators` → `../typescript-config/react-library.json`(가리키는 파일은 기존과 동일).
+  - `main/src/css.d.ts` 추가(`declare module '*.css';`). Next 기본 타입은 `*.module.css`만 제공, 저장소는 `.module.css` 미사용으로 충돌 없음.
+  - 당일 이슈 문서의 두 항목 해결 상태·근거 갱신.
+- 주요 파일: zero-rule-web/main/tsconfig.json, zero-rule-web/sub/{domain,ui,util,validators}/tsconfig.json, zero-rule-web/main/src/css.d.ts, docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md, version-history/CHANGELOG.md.
+- 검증: tsc — main 0, sub/ui·util·validators 0, sub/domain 7(변경 전과 동일한 기존 오류). eslint(main src·pages) 오류 0. `next build`(webpack) 성공(33페이지). `next dev --turbopack` `/login/`·`/` 200, 빌드 오류 없음. 로컬 TS 5.7.3에서 `noUncheckedSideEffectImports`를 켜도 ts(2882) 미재현(폐쇄망 에디터 TS 버전 차이로 추정). 폐쇄망 반영은 이미 수동 적용분, 반입본 재생성은 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30-28 — Turbopack 개발 서버에서 MUI CssBaseline이 전역 CSS body를 덮어쓰는 문제 수정
 
 - 이유: 폐쇄망 관리자 웹을 `next dev --turbopack`으로 실행하면 전역 CSS의 `body` 규칙이 MUI `CssBaseline` 규칙에 덮여 적용되지 않음. 로컬에서 재현해 보니 Turbopack SSR이 `@mui/material-nextjs/v15-pagesRouter`를 외부(CJS) 모듈로 불러오고 `@mui/material`·`@emotion/react`는 번들(ESM)해 emotion 인스턴스가 둘로 갈림. 그 결과 `AppCacheProvider`/`documentGetInitialProps`의 `mui` 캐시가 무시되고 MUI 스타일이 기본 `css` 캐시로 `<body>` 안에 인라인 출력돼 `<head>`의 전역 CSS 링크보다 뒤에 놓임(같은 명시도에서 뒤 규칙 우선). webpack(`next build`·`next dev`)은 영향 없음.
