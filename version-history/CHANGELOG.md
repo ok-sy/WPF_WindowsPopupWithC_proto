@@ -1,5 +1,12 @@
 # 변경 이력
 
+## 2026-11-02-03 — CommonCKEditor를 폐쇄망과 같은 폴더 구조로 이동
+
+- 이유: 폐쇄망 front_end에는 이전 판 공용 편집기 `components/CommonCKEditor/CommonCKEditor.tsx`(ckeditor5 직접 import, 같은 Props·`requestFocusToEditor`)와 보기 전용 `CommonCKEditorView.tsx`가 폴더로 있고, 반입본은 `components/CommonCKEditor.tsx`(최상위 파일)로 들어가 같은 편집기가 두 벌 생김. 폴더판을 반입본으로 대체하고 이후 반입에서 최상위 파일이 다시 생기지 않도록 저장소 경로를 폐쇄망 구조에 맞춤.
+- 변경: `components/CommonCKEditor.tsx` → `components/CommonCKEditor/CommonCKEditor.tsx`(git mv, 내용 변경 없음 — import가 모두 `@/` 절대 경로라 이동 영향 없음). `BbsCKEditor.tsx` import를 `@/components/CommonCKEditor/CommonCKEditor`로 변경. 폴더에 `index.ts`는 두지 않음(폐쇄망 폴더 구조와 동일, `CommonCKEditorView.tsx`는 폐쇄망 자체 파일로 저장소에 넣지 않음). 하네스 별칭과 현행 경로를 적은 문서 4곳 갱신(과거 조사 기록의 파일명은 유지).
+- 주요 파일: zero-rule-web/main/src/components/CommonCKEditor/CommonCKEditor.tsx, zero-rule-web/main/src/components/BbsCKEditor.tsx, scripts/verify-bbs-ckeditor-source.cjs, scripts/offline-npm/README-NPM.md, docs/design/20261029_CKEditor5_전체통합_TODO.md, docs/design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md, docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md.
+- 검증: main `tsc --noEmit` 오류 0, eslint(BbsCKEditor·CommonCKEditor) 오류 0, `scripts/verify-bbs-ckeditor-source.cjs` 5건 통과. 로컬 관리자 웹 실화면 확인 미실행. 폐쇄망 반영 미실행 — 폐쇄망은 폴더판 `CommonCKEditor.tsx`를 이 파일로 교체하고 최상위 `CommonCKEditor.tsx`를 지우며 `CommonCKEditorView.tsx`는 유지(다음 반입본에서는 최상위 파일이 D로 집계됨).
+- 상태: 커밋·원격 반영.
 ## 2026-11-02 — PU001P01~P06 요구사항 정의·정합성 검토 TODO
 
 - 사용자 승인 Q1~Q7 기반으로 WPF proto 기존 구현 정적 대조. VIDEO 완료/QUIZ 채점/SURVEY 필수/VIDEO+QUIZ 잠금/ShowLater는 현행 재사용, QUIZ 참여형·만점형/푸터 배치·문구/실화면 검증은 부분 일치·후속 TODO.

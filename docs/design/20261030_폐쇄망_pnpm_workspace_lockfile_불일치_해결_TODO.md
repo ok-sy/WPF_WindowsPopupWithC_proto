@@ -78,7 +78,7 @@
 - [ ] 외부망에서 최종 소스와 동일한 **Node/pnpm 환경 및 lockfile**로 의존성을 갖춘 반입용 디렉터리 준비. CKEditor만이 아니라 실제 런타임 의존 전체 및 패키지 내부 참조를 확인.
 - [ ] **필요한 패키지와 의존성 전체**를 목록화. `ckeditor5@49.0.1`과 `@ckeditor/ckeditor5-react@12.0.0`뿐 아니라 필요한 `@ckeditor/*` 및 타 패키지 의존성 포함; 구버전 44.3.0/5.1.0과 실행 경로가 섞이지 않게 함.
 - [ ] 직접 복사 방식은 실제 구조(일반 디렉터리/심볼릭 링크/하드 링크)를 검사하고 **의존 패키지 해석까지 가능한 결과물**만 반입. pnpm store 폴더 복사만으로 완성된 node_modules라고 가정하지 않음.
-- [ ] **전환 소스 동시 반입:** `src/components/ckeditor/{index.ts,ckeditorEngine.ts}`, `CommonCKEditor.tsx`, `PopupRichTextEditor.tsx` 및 호출부. 게시판만 새 버전·팝업은 구형 엔진을 사용하는 중간 상태로 실행하지 않음.
+- [ ] **전환 소스 동시 반입:** `src/components/ckeditor/{index.ts,ckeditorEngine.ts}`, `CommonCKEditor/CommonCKEditor.tsx`, `PopupRichTextEditor.tsx` 및 호출부. 게시판만 새 버전·팝업은 구형 엔진을 사용하는 중간 상태로 실행하지 않음.
 - [ ] 소스상 `@cp949/ckeditor5-custom-build` 및 직접 `@ckeditor/ckeditor5-* ` 호출 여부 확인. 불필요한 이전 엔진 제거는 사용처/복구 경로를 확인한 후 실시.
 - [ ] **권장 대안:** 직접 복사 방식보다 재현성이 높은 `pnpm install --offline --frozen-lockfile`은 별도 해결 경로(1~5단계)로 유지. 둘 중 한 방식을 검증해 선택하고 무작정 혼용하지 않는다.
 

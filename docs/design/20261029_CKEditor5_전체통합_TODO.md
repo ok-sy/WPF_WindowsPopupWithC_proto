@@ -54,7 +54,7 @@
 - 타이핑 불가: 44 이상에서 `licenseKey`가 없으면 에디터가 막히는 것이 알려진 원인이다. 이번 전환은 처음부터 `'GPL'`을 넣어 재현 대상이 아니었고, 실화면에서 두 에디터 `isReadOnly=false`·`contenteditable=true`·입력 정상.
 
 ## B. CommonCKEditor 상세 기능 보존
-소스: zero-rule-web/main/src/components/CommonCKEditor.tsx
+소스: zero-rule-web/main/src/components/CommonCKEditor/CommonCKEditor.tsx(2026-11-02 폐쇄망 구조에 맞춰 폴더로 이동)
 - [ ] Props 유지: editorId?, className?, content?, placeholder?, onEditorReady?(editor), onContentChange(content)
 - [ ] @ckeditor/ckeditor5-react를 next/dynamic(ssr:false)로 클라이언트에서 로드
 - [ ] 현재 useEffect -> setupEditor -> 커스텀 빌드 require -> prepared 후 렌더 흐름을 새 엔진 초기화 방식으로 안전하게 변경

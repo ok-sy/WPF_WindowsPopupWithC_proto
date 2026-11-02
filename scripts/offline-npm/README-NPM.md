@@ -45,7 +45,7 @@ node copy-node-modules.cjs --rollback D:\경로\front_end_ckeditor-backup-<시�
 - (`--include-next` 묶음일 때만) Next.js도 같은 방식으로 교체합니다. 루트·`main`·`sub/*`의 `next`, `@next/swc-*`, 묶음에 있는 `@next/env`·`@next/eslint-plugin-next`를 백업 폴더로 옮기고 루트에 15.5.21 하나만 둡니다(main·sub가 서로 다른 next를 보지 않게). 묶음에 없는 다른 `@next/*` 패키지는 그대로 둡니다. 반영 결과 끝에 루트·main·sub/*마다 찾은 next 버전이 나옵니다.
 - 묶음 패키지가 루트에 없으면 복사하고, 같은 버전이 있으면 그대로 씁니다. **다른 버전이 있으면 덮지 않고**, 그 패키지가 필요한 CKEditor 쪽 패키지 안 `node_modules`에 넣습니다(기존 화면 영향 없음).
 - react는 front_end의 것을 씁니다. 미리보기에 react 버전과, 이전 엔진을 참조하는 다른 패키지(예: `@cp949/ckeditor5-custom-build`)가 나오면 소스에서 쓰지 않는지 확인합니다.
-- 반영 후 `main\.next`를 지우고 개발 서버를 다시 시작한 뒤 자료실·팝업 등록 편집기를 확인합니다. CKEditor 전환 소스(`src/components/ckeditor/*`, `CommonCKEditor.tsx`, `PopupRichTextEditor.tsx`)를 같이 반영해야 합니다.
+- 반영 후 `main\.next`를 지우고 개발 서버를 다시 시작한 뒤 자료실·팝업 등록 편집기를 확인합니다. CKEditor 전환 소스(`src/components/ckeditor/*`, `CommonCKEditor/CommonCKEditor.tsx`, `PopupRichTextEditor.tsx`)를 같이 반영해야 합니다.
 
 ## 묶음만 먼저 확인하기(선택)
 

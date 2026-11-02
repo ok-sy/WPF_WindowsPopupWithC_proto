@@ -1,4 +1,4 @@
-import CommonCKEditor from '@/components/CommonCKEditor';
+import CommonCKEditor from '@/components/CommonCKEditor/CommonCKEditor';
 import { flatSx, requestSelector } from '@local/ui';
 import type { SxProps } from '@mui/material';
 import { Box } from '@mui/material';
