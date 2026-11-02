@@ -1,5 +1,6 @@
 # 팝업 프로젝트 문서
 
+- [PU001P01~P06 요구사항 정의 및 proto 정합성 검토 TODO](design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md) — Q1~Q7 승인 정책을 기준으로 정적 일치·부분 일치·검증 대기 구분. **코드 변경 없음.**
 - [PU001P01~P06 기획서 × proto 반영·확인 요청](design/20261102_기획서_PU001P01-P06_proto_반영_확인요청.md) — 현행 6개 화면 재사용 매핑, 영상 완료·퀴즈 제출·설문 검증 등 정책 충돌 7개 확인 요청. 승인 전 코드 미변경.
 - [2026-10-30 폐쇄망 FRONT 반입 당일 이슈 정리](design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md) — pnpm/수동 복사, MUI Icon·Turbopack, SVG, CSS 우선순위, SSR 경고의 현상·원인·해결 상태 및 후속 검증.
 - [폐쇄망 pnpm workspace/lockfile 불일치 해결 TODO](design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md) — ROOT/main/sub/ui 등 package.json과 pnpm-lock.yaml 선언 차이, 오프라인 메타데이터 부족 문제 해결 순서(미구현).
