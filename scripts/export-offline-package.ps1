@@ -9,7 +9,7 @@ POL-15-01 : 배포 범위
   2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff)
   3-popup-frameWork   WPF·MockSso 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스·개인 launchSettings 제외)
   4-docs              docs·db·api·README·변경 이력
-  5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 캐시(pnpm store) — scripts/prepare-offline-npm.cjs로 만든 폴더. 통합 TGZ에 포함
+  5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
 
@@ -51,6 +51,9 @@ param(
     [string]$NpmBundleDir = "",
     [switch]$UseWorkingChangelog,
     [switch]$IncludeDevDependencies,
+    # 5-npm-ckeditor에 pnpm 설치용 파일(pnpm-store-v3.tgz·install-pnpm-store.ps1·package.json·pnpm-lock.yaml·collect-workspace-manifest.ps1)도 넣는다.
+    # 기본은 넣지 않는다 — 폐쇄망 front_end는 node_modules 폴더 복사 방식만 쓰고, pnpm 설치 방식은 workspace 구조 변경이 필요해 보류.
+    [switch]$IncludePnpmStore,
     [switch]$VerifyBuild,
     [switch]$Force
 )
@@ -186,17 +189,21 @@ try {
         # 반입본 생성 기록을 적은 최신 변경 이력으로 교체(커밋 전 기록용)
         Copy-Item -LiteralPath (Join-Path $repositoryRoot "version-history\CHANGELOG.md") -Destination (Join-Path $OutputRoot "4-docs\version-history\CHANGELOG.md") -Force
     }
-    # 선택: 관리자 웹 npm 오프라인 캐시(폐쇄망에 사내 npm 저장소가 없어 pnpm store를 반입)
+    # 선택: 관리자 웹 npm 오프라인 반입(폐쇄망에 사내 npm 저장소가 없어 node_modules 폴더 복사본을 반입)
     $npmCount = 0
     if (-not [string]::IsNullOrWhiteSpace($NpmBundleDir)) {
         $npmSource = (Resolve-Path -LiteralPath $NpmBundleDir).Path
-        foreach ($required in @("pnpm-store-v3.tgz", "install-pnpm-store.ps1", "README-NPM.md", "PACKAGES.txt", "package.json", "pnpm-lock.yaml")) {
-            if (-not (Test-Path -LiteralPath (Join-Path $npmSource $required) -PathType Leaf)) { throw "npm 묶음 파일 없음: $required (scripts/prepare-offline-npm.cjs로 생성)" }
+        $pnpmOnly = @("pnpm-store-v3.tgz", "install-pnpm-store.ps1", "package.json", "pnpm-lock.yaml", "collect-workspace-manifest.ps1")
+        $required = @("README-NPM.md", "PACKAGES.txt", "node_modules-ckeditor.tgz", "NODE-MODULES.txt", "copy-node-modules.cjs")
+        if ($IncludePnpmStore) { $required += $pnpmOnly }
+        foreach ($file in $required) {
+            if (-not (Test-Path -LiteralPath (Join-Path $npmSource $file) -PathType Leaf)) { throw "npm 묶음 파일 없음: $file (scripts/prepare-offline-npm.cjs로 생성)" }
         }
         $npmTarget = Join-Path $OutputRoot "5-npm-ckeditor"
         New-Item -ItemType Directory -Force -Path $npmTarget | Out-Null
-        Copy-Item -Path (Join-Path $npmSource "*") -Destination $npmTarget -Recurse -Force
-        $npmManifest = @("# 5-npm-ckeditor: 관리자 웹 npm 오프라인 캐시(pnpm store v3). S=묶음 파일")
+        Get-ChildItem -LiteralPath $npmSource -File | Where-Object { $IncludePnpmStore -or ($pnpmOnly -notcontains $_.Name) } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $npmTarget -Force }
+        $npmKind = if ($IncludePnpmStore) { "node_modules 폴더 복사본 + pnpm store v3" } else { "node_modules 폴더 복사본" }
+        $npmManifest = @("# 5-npm-ckeditor: 관리자 웹 npm 오프라인 반입($npmKind). S=묶음 파일")
         Get-ChildItem -LiteralPath $npmTarget -Recurse -File | Sort-Object FullName | ForEach-Object { $npmManifest += "S`t$($_.FullName.Substring($npmTarget.Length + 1).Replace('\', '/'))" }
         $npmManifest | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "MANIFEST-5-npm-ckeditor.txt")
         $npmCount = @(Get-Content -Encoding UTF8 (Join-Path $npmTarget "PACKAGES.txt") | Where-Object { $_.Trim() }).Count
@@ -265,13 +272,21 @@ try {
     $npmStep = ""
     $npmCleanup = ""
     if ($npmCount -gt 0) {
-        $npmRow = "| 5-npm-ckeditor.tar | 관리자 웹 npm 오프라인 캐시(pnpm store v3) — CKEditor 5 49.0.1·React 래퍼 12.0.0·Next.js 15.5.21(SWC Windows x64·Linux x64 glibc)과 의존 패키지 $npmCount 개 | 2-zero-rule-web 반영 후 5-npm-ckeditor의 install-pnpm-store.ps1 실행(README-NPM.md) |`n"
+        # prepare-offline-npm.cjs --include-next로 만든 묶음이면 Next.js 포함을 표시
+        $npmNextLine = @(Get-Content -Encoding UTF8 (Join-Path $npmTarget "PACKAGES.txt") | Where-Object { $_ -match '^next@' }) | Select-Object -First 1
+        $npmNext = ""
+        $npmNextMove = ""
+        if ($npmNextLine) {
+            $npmNext = "·Next.js $((($npmNextLine -split "`t")[0]) -replace '^next@', '')(SWC Windows x64·Linux x64 glibc)"
+            $npmNextMove = "와 next·@next/swc-*·@next/env·@next/eslint-plugin-next"
+        }
+        $npmRow = "| 5-npm-ckeditor.tar | 관리자 웹 npm 오프라인 반입($npmKind) — CKEditor 5 49.0.1·React 래퍼 12.0.0$($npmNext)과 의존 패키지 $npmCount 개 | 2-zero-rule-web 반영 후 5-npm-ckeditor의 copy-node-modules.cjs(node_modules-ckeditor.tgz) 실행(README-NPM.md) |`n"
         $npmCleanup = "7. 정리(선택이지만 권장): 반입본을 푼 폴더에서 ``.\cleanup-after-import.ps1 -Root <폐쇄망 최상위>``로 미리보기한 뒤 ``-Apply``로 실행한다. 1-*·8-dev\backend(서버), 2-*·8-dev\front(웹), 3-*(WPF, 3-csAgent)를 자동으로 찾아 $deleteName 의 파일을 모든 위치에서 지우고, 49.0.1 세트(CKEDITOR-KEEP.txt)가 아닌 이전 CKEditor를 웹 위치의 node_modules와 pnpm store에서 지운다. 미리보기 맨 위에 찾은 위치가 나오니 먼저 확인한다.`n"
-        $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``로 pnpm store 추가와 ``pnpm install --offline``을 실행한다(사내 npm 저장소 불필요).`n"
-        # node_modules를 폴더째 복사해 쓰는 폐쇄망용 복사본(prepare-offline-node-modules.cjs)이 있으면 그 방법을 함께 안내
-        if (Test-Path -LiteralPath (Join-Path $npmTarget "node_modules-ckeditor.tgz")) {
-            $npmRow = $npmRow.Replace("install-pnpm-store.ps1 실행(README-NPM.md) |", "install-pnpm-store.ps1 실행, node_modules 폴더 복사 환경은 copy-node-modules.cjs(node_modules-ckeditor.tgz) 실행(README-NPM.md) |")
-            $npmStep += "     pnpm 설치 없이 node_modules를 폴더째 복사해 쓰는 경우: ``node copy-node-modules.cjs --web-root <front_end 경로>``로 미리보기 후 ``--apply``(이전 CKEditor와 next·@next/swc-*·@next/env·@next/eslint-plugin-next는 루트·main·sub/*에서 백업 폴더로 이동, ``--rollback <백업 폴더>``로 되돌리기). 두 방법 중 하나만 쓴다.`n"
+        # 폐쇄망 front_end는 pnpm install 없이 node_modules 폴더를 복사해 쓴다 → copy-node-modules.cjs가 기본 절차
+        $npmStep = "   - 관리자 웹: 2-zero-rule-web 반영 후 5-npm-ckeditor.tar를 풀고 ``node copy-node-modules.cjs --web-root <front_end 경로>``로 미리보기 후 ``--apply``(이전 CKEditor$($npmNextMove)는 루트·main·sub/*에서 백업 폴더로 이동, ``--rollback <백업 폴더>``로 되돌리기). 같은 버전 세트를 이미 반영했다면 건너뛴다.`n"
+        if ($IncludePnpmStore) {
+            $npmRow = $npmRow.Replace("copy-node-modules.cjs(node_modules-ckeditor.tgz) 실행(README-NPM.md) |", "copy-node-modules.cjs(node_modules-ckeditor.tgz) 실행, pnpm 설치 환경은 install-pnpm-store.ps1 실행(README-NPM.md) |")
+            $npmStep += "     pnpm으로 설치하는 환경이면 대신 ``.\install-pnpm-store.ps1 -WebRoot <zero-rule-web 경로>``(pnpm store 추가 + ``pnpm install --offline``). 두 방법 중 하나만 쓴다.`n"
         }
     }
     $gitReadme = "Git for Windows 설치 파일 미동봉. 필요하면 -GitInstallerPath로 공식 x64 설치 파일을 지정하여 재생성."
@@ -294,7 +309,7 @@ try {
 | 묶음 | 내용 | 반입 |
 |---|---|---|
 | 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |
-| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 pnpm store 확인 |
+| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
 | 3-popup-frameWork.tar | WPF/MockSso 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
 $($npmRow)

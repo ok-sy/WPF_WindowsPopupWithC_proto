@@ -30,6 +30,12 @@
   - 묶음: `prepare-offline-npm.cjs` 실행 — 패키지 256개(다른 플랫폼 제외 24개), tarball 무결성 = lockfile integrity, 묶음 store만으로 오프라인 설치 성공(ckeditor5 49.0.1, React 래퍼 12.0.0, next 15.5.21, @next/eslint-plugin-next 15.5.21, SWC win32·linux). node_modules 트리 213위치(SWC win32-x64-msvc·linux-x64-gnu, sharp win32·linux), node_modules-ckeditor.tgz 157,235,238바이트, pnpm-store-v3.tgz 224,481,578바이트.
   - 폐쇄망 재현: HEAD(15.5.18) 소스·lockfile로 hoisted 설치한 front_end에 `sub/eslint-config/node_modules/next`(15.5.18)를 추가하고 새 package.json·lockfile을 덮은 뒤 `copy-node-modules.cjs` 미리보기·반영 — 이동 67(ckeditor 계열 + next·@next/env·@next/eslint-plugin-next·@next/swc-win32-x64-msvc·sub/eslint-config의 next), 루트·main·sub/* 8곳 모두 next 15.5.21(node_modules\next). 반영 상태에서 `next build` 성공(Next.js 15.5.21), `next dev --turbopack` `/login/`·`/` 200. `--rollback` 후 next 15.5.18·sub/eslint-config 안 next 원위치 확인. export 스크립트 PowerShell 구문 검사 통과.
   - 미실행: 폐쇄망 실제 반영, Linux에서 linux SWC로 실행 확인.
+- 후속 보완(Next 제외·store 제외 반입): 폐쇄망 node_modules에 next 15.5.21과 `@next/swc-*` 15.5.21이 이미 설치된 것으로 확인돼 next 실물 반입이 불필요. 또 폐쇄망 front_end는 node_modules 폴더 복사 방식만 쓰고 pnpm store 설치 방식은 workspace 구조 변경이 필요해 보류 중이라 store 반입도 불필요.
+  - `prepare-offline-npm.cjs`: next·`@next/eslint-plugin-next`는 `--include-next`일 때만 넣음(기본 CKEditor만). 출력 폴더 인자와 옵션 분리.
+  - `export-offline-package.ps1`: `-IncludePnpmStore` 스위치 추가. 기본은 5-npm-ckeditor에 폴더 복사용 파일(node_modules-ckeditor.tgz·NODE-MODULES.txt·copy-node-modules.cjs·PACKAGES.txt·README-NPM.md)만 넣고 pnpm 설치용 파일(pnpm-store-v3.tgz·install-pnpm-store.ps1·package.json·pnpm-lock.yaml·collect-workspace-manifest.ps1)은 제외. README-IMPORT의 5-npm 행·적용 절차를 copy-node-modules.cjs 기준으로 바꾸고, 묶음 PACKAGES.txt에 `next@`가 있을 때만 Next.js 포함·교체 문구 표시.
+  - `README-NPM.md`: 폴더 복사 방식 기준으로 제목·설명 변경, next 기본 미포함과 store 미포함(옵션일 때만 포함) 명시.
+  - `copy-node-modules.cjs`의 Next 교체는 묶음에 next가 있을 때만 동작하므로 그대로 유지.
+  - 검증: next 제외 묶음 재생성 — 패키지 177개, tarball 무결성 일치, 오프라인 설치 성공(ckeditor5 49.0.1, React 래퍼 12.0.0), node_modules 위치 174개(SWC 없음), node_modules-ckeditor.tgz 17,838,099바이트. export 스크립트 PowerShell 구문 검사 통과. 반입본 결과는 2026-11-02-02.
 - 상태: 커밋·원격 반영.
 
 ## 2026-10-30-29 — tsconfig extends 상대 경로화·일반 CSS 타입 선언 추가
