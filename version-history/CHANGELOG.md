@@ -1,5 +1,11 @@
 # 변경 이력
 
+## 2026-11-02 — PU001P01~P06 요구사항 정의·정합성 검토 TODO
+
+- 사용자 승인 Q1~Q7 기반으로 WPF proto 기존 구현 정적 대조. VIDEO 완료/QUIZ 채점/SURVEY 필수/VIDEO+QUIZ 잠금/ShowLater는 현행 재사용, QUIZ 참여형·만점형/푸터 배치·문구/실화면 검증은 부분 일치·후속 TODO.
+- 파일: `docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md`, `docs/README.md`, `version-history/CHANGELOG.md`.
+- 상태: 정의·정적 검토 단계. **WPF·WEB·SERVER 코드 변경 없음, 신규 빌드·테스트 미실행.**
+
 ## 2026-11-02 — 기획서 PU001P01~P06의 proto 구현 대조·확인 요청
 
 - TEXT·IMAGE·VIDEO·QUIZ·SURVEY·VIDEO+QUIZ의 기존 WPF 재사용 지점을 정적 검토, 완료 조건/제출 UX 충돌 및 승인 필요 항목 Q1~Q7 기록.
