@@ -1,11 +1,11 @@
 // POL-15-01 : 배포 범위
-// ■ 폐쇄망 반입용 CKEditor node_modules 복사본 생성(pnpm 설치를 쓰지 않는 폐쇄망용)
+// ■ 폐쇄망 반입용 CKEditor·Next.js node_modules 복사본 생성(pnpm 설치를 쓰지 않는 폐쇄망용)
 // - in : prepare-offline-npm.cjs가 만든 npm 묶음 폴더(pnpm-store-v3.tgz, package.json, pnpm-lock.yaml)
 // - out: 같은 폴더에 node_modules-ckeditor.tgz(일반 폴더 node_modules 트리), NODE-MODULES.txt(경로·이름@버전),
 //        copy-node-modules.cjs(폐쇄망 복사 스크립트)
 // - 폐쇄망 front_end는 pnpm install 없이 node_modules에 패키지 폴더를 직접 복사해 쓴다(링크 없음).
 //   그래서 묶음 store로 hoisted(평면) 방식 설치를 한 번 해서 링크 없는 실제 폴더 트리를 만든다.
-// - peer 의존(react 등)은 폐쇄망 프로젝트의 것을 써야 하므로 넣지 않는다. 두 패키지에서 dependencies·
+// - peer 의존(react 등)은 폐쇄망 프로젝트의 것을 써야 하므로 넣지 않는다. 묶음 대상 패키지에서 dependencies·
 //   optionalDependencies로 닿는 패키지만 남긴다(react가 두 벌이면 hook 오류가 난다).
 // [사용] 저장소 루트에서(인터넷 불필요): node scripts/prepare-offline-node-modules.cjs [묶음 폴더=.offline-cache/npm-ckeditor/bundle]
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process');
@@ -65,14 +65,16 @@ function resolveFrom(relPath, dep) {
   }
 }
 
-// 3) 두 패키지에서 dependencies·optionalDependencies로 닿는 위치만 남김(peer 의존 제외)
+// 3) 묶음 대상 패키지에서 dependencies·optionalDependencies로 닿는 위치만 남김(peer 의존 제외)
 const keep = new Set();
 const stack = roots.map((r) => resolveFrom('', r));
 while (stack.length) {
   const relPath = stack.pop();
   if (!relPath || keep.has(relPath)) continue;
-  keep.add(relPath);
   const { json } = all.get(relPath);
+  // 폐쇄망 Linux는 glibc 기준. Windows에서 설치하면 libc 조건이 걸러지지 않아 musl 전용 바이너리(@next/swc-linux-x64-musl 등)는 뺀다
+  if (Array.isArray(json.libc) && !json.libc.includes('glibc')) continue;
+  keep.add(relPath);
   for (const dep of Object.keys({ ...json.dependencies, ...json.optionalDependencies })) {
     const found = resolveFrom(relPath, dep);
     if (!found && !(json.optionalDependencies || {})[dep]) throw new Error(`의존 패키지 없음: ${relPath} → ${dep}`);
@@ -92,7 +94,8 @@ const lines = [...keep].sort().map((p) => `${p}\t${all.get(p).name}@${all.get(p)
 fs.writeFileSync(path.join(bundle, 'NODE-MODULES.txt'), lines.join('\n') + '\n');
 run(`${TAR} -czf "${path.join(bundle, 'node_modules-ckeditor.tgz')}" -C "${project}" node_modules`, work);
 fs.copyFileSync(path.join(__dirname, 'offline-npm', 'copy-node-modules.cjs'), path.join(bundle, 'copy-node-modules.cjs'));
-const ck = all.get('ckeditor5').json.version, react = all.get('@ckeditor/ckeditor5-react').json.version;
-console.log(`[3/4] node_modules-ckeditor.tgz(ckeditor5 ${ck}, @ckeditor/ckeditor5-react ${react}), NODE-MODULES.txt ${lines.length}줄`);
+const versions = roots.map((r) => `${r} ${all.get(r).json.version}`).join(', ');
+const swc = [...keep].filter((p) => p.startsWith('@next/swc-')).join(', ') || '없음';
+console.log(`[3/4] node_modules-ckeditor.tgz(${versions}; SWC ${swc}), NODE-MODULES.txt ${lines.length}줄`);
 fs.rmSync(work, { recursive: true, force: true });
 console.log(`[4/4] 완료: ${bundle}`);

@@ -1,7 +1,10 @@
-# CKEditor 5 npm 오프라인 캐시(pnpm store)
+# CKEditor 5·Next.js npm 오프라인 캐시(pnpm store)
 
-관리자 웹 서식 편집기가 `ckeditor5` 49.0.1 + `@ckeditor/ckeditor5-react` 12.0.0으로 바뀌어, 폐쇄망 pnpm store에 없는 패키지가 생겼습니다.
-이 묶음은 두 패키지와 그 의존 패키지 전체를 pnpm store(오프라인 캐시) 형식으로 담고 있습니다. 사내 npm 저장소 없이 설치할 수 있습니다.
+관리자 웹 서식 편집기가 `ckeditor5` 49.0.1 + `@ckeditor/ckeditor5-react` 12.0.0으로 바뀌었고, main·sub의 `next`·`@next/eslint-plugin-next`를 15.5.21로 통일해 폐쇄망 pnpm store·node_modules에 없는 패키지가 생겼습니다.
+이 묶음은 네 패키지와 그 의존 패키지 전체를 pnpm store(오프라인 캐시) 형식과 node_modules 폴더 형식으로 담고 있습니다. 사내 npm 저장소 없이 설치할 수 있습니다.
+
+- 플랫폼별 바이너리는 Windows x64와 Linux x64(glibc)용만 넣었습니다: `@next/swc-win32-x64-msvc`, `@next/swc-linux-x64-gnu`, `@img/sharp-win32-x64`, `@img/sharp-linux-x64`. Windows에서 만든 node_modules를 Linux에서도 쓰는 경우를 위해 둘 다 둡니다.
+- 파일 이름(`5-npm-ckeditor`, `node_modules-ckeditor.tgz`)은 이전 반입본과 같게 유지했습니다. 이 묶음에는 Next.js도 들어 있습니다.
 
 | 파일 | 용도 |
 |---|---|
@@ -38,6 +41,7 @@ node copy-node-modules.cjs --rollback D:\경로\front_end_ckeditor-backup-<시�
 ```
 
 - 루트·`main`·`sub/*`의 `node_modules`에 있는 이전 엔진(`ckeditor5`, `@ckeditor/*`)을 백업 폴더(기본: front_end 옆 `front_end_ckeditor-backup-<시각>`)로 옮깁니다. 두 엔진이 섞이면 `ckeditor-duplicated-modules` 오류가 나기 때문입니다.
+- Next.js도 같은 방식으로 교체합니다. 루트·`main`·`sub/*`의 `next`, `@next/swc-*`, 묶음에 있는 `@next/env`·`@next/eslint-plugin-next`를 백업 폴더로 옮기고 루트에 15.5.21 하나만 둡니다(main·sub가 서로 다른 next를 보지 않게). 묶음에 없는 다른 `@next/*` 패키지는 그대로 둡니다. 반영 결과 끝에 루트·main·sub/*마다 찾은 next 버전이 나옵니다.
 - 묶음 패키지가 루트에 없으면 복사하고, 같은 버전이 있으면 그대로 씁니다. **다른 버전이 있으면 덮지 않고**, 그 패키지가 필요한 CKEditor 쪽 패키지 안 `node_modules`에 넣습니다(기존 화면 영향 없음).
 - react는 front_end의 것을 씁니다. 미리보기에 react 버전과, 이전 엔진을 참조하는 다른 패키지(예: `@cp949/ckeditor5-custom-build`)가 나오면 소스에서 쓰지 않는지 확인합니다.
 - 반영 후 `main\.next`를 지우고 개발 서버를 다시 시작한 뒤 자료실·팝업 등록 편집기를 확인합니다. CKEditor 전환 소스(`src/components/ckeditor/*`, `CommonCKEditor.tsx`, `PopupRichTextEditor.tsx`)를 같이 반영해야 합니다.
@@ -54,6 +58,8 @@ pnpm install --offline --frozen-lockfile --store-dir D:\temp-store
 ## 설치 확인
 
 - `zero-rule-web\node_modules\ckeditor5\package.json`의 version이 49.0.1인지 확인합니다.
+- `node_modules\next\package.json`의 version이 15.5.21인지, 개발 서버 기동 화면에 `Next.js 15.5.21`이 나오는지 확인합니다. `main\node_modules\next`나 `sub\*\node_modules\next`가 남아 있으면 안 됩니다.
+- `main`·`sub/eslint-config`·`sub/ui`의 package.json도 15.5.21(2-zero-rule-web 반입본)로 같이 반영해야 합니다.
 - 관리자 웹 자료실 등록과 팝업 등록 화면에서 편집기가 열리는지 확인합니다.
 
 ## 설치 실패 시

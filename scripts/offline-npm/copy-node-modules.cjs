@@ -1,12 +1,15 @@
 // POL-15-01 : 배포 범위
-// ■ 폐쇄망: CKEditor 49 node_modules를 pnpm 설치 없이 폴더 복사로 반영
+// ■ 폐쇄망: CKEditor 49·Next.js node_modules를 pnpm 설치 없이 폴더 복사로 반영
 // - in : 같은 폴더의 node_modules-ckeditor.tgz(prepare-offline-node-modules.cjs가 만든 일반 폴더 트리), front_end 루트
-// - out: front_end\node_modules에 CKEditor 49 트리 복사, 이전 CKEditor 폴더는 백업 폴더로 이동, 백업 폴더에 plan.json·로그
+// - out: front_end\node_modules에 묶음 트리 복사, 이전 CKEditor·Next 폴더는 백업 폴더로 이동, 백업 폴더에 plan.json·로그
 // - 폐쇄망 front_end는 pnpm install 없이 node_modules에 패키지 폴더를 직접 복사해 쓴다. lockfile 검사를 하지 않으므로
 //   이 스크립트가 Node 모듈 탐색 규칙대로 각 패키지가 맞는 버전을 찾는지 직접 계산해 배치한다.
 // - 배치 규칙
 //   1) 이전 엔진(ckeditor5, @ckeditor/*)을 루트·main·sub/* node_modules에서 백업 폴더로 옮긴다(두 엔진이 섞이면
 //      ckeditor-duplicated-modules 오류).
+//      Next.js도 교체 대상: next, @next/swc-*(next와 버전이 같아야 함), 묶음에 있는 @next/*(env·eslint-plugin-next).
+//      main·sub가 서로 다른 next를 보지 않도록 루트·main·sub/* 모두에서 옮기고 루트에 묶음 버전 하나만 둔다.
+//      묶음에 없는 다른 @next/* 패키지는 건드리지 않는다.
 //   2) 묶음 최상위 패키지: 루트에 없으면 복사, 같은 버전이 있으면 그대로 사용, 다른 버전이 있으면 덮지 않는다.
 //   3) 복사한 패키지마다 의존 패키지를 탐색 규칙으로 찾아 묶음과 버전이 다르면 그 패키지 안 node_modules에 넣는다.
 //      → 폐쇄망의 기존 패키지(다른 버전)는 건드리지 않는다.
@@ -24,6 +27,8 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 const has = (name) => args.includes(name);
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const isEngine = (name) => name === 'ckeditor5' || name.startsWith('@ckeditor/');
+// Next.js 교체 대상(bundleTop: 묶음 최상위 패키지 이름)
+const isNext = (name, bundleTop) => name === 'next' || name.startsWith('@next/swc-') || (name.startsWith('@next/') && bundleTop.has(name));
 const stamp = new Date(Date.now() + 9 * 3600 * 1000).toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
 const logLines = [];
 const log = (line = '') => { console.log(line); logLines.push(line); };
@@ -102,15 +107,22 @@ try {
     }
   }
 
-  // 2) 옮길 이전 엔진 폴더: 루트·main·sub/* node_modules의 ckeditor5, @ckeditor/*
+  // 2) 옮길 이전 폴더: 루트·main·sub/* node_modules의 ckeditor5, @ckeditor/*, Next.js 교체 대상
   const nmDirs = [rootNm, path.join(webRoot, 'main', 'node_modules')];
   const subRoot = path.join(webRoot, 'sub');
   if (fs.existsSync(subRoot)) for (const s of fs.readdirSync(subRoot)) nmDirs.push(path.join(subRoot, s, 'node_modules'));
   const moved = [];   // webRoot 기준 상대 경로
+  const bundleTop = new Set([...bundle.keys()].filter((p) => !p.includes('/node_modules/')));
+  const bundleHasNext = bundleTop.has('next');
   for (const dir of nmDirs.filter((d) => fs.existsSync(d))) {
-    if (fs.existsSync(path.join(dir, 'ckeditor5'))) moved.push(path.relative(webRoot, path.join(dir, 'ckeditor5')));
-    const scope = path.join(dir, '@ckeditor');
-    if (fs.existsSync(scope)) for (const n of fs.readdirSync(scope)) moved.push(path.relative(webRoot, path.join(scope, n)));
+    const names = ['ckeditor5', 'next'];
+    for (const scope of ['@ckeditor', '@next']) {
+      if (fs.existsSync(path.join(dir, scope))) for (const n of fs.readdirSync(path.join(dir, scope))) names.push(`${scope}/${n}`);
+    }
+    for (const name of names) {
+      if (!fs.existsSync(path.join(dir, ...name.split('/')))) continue;
+      if (isEngine(name) || (bundleHasNext && isNext(name, bundleTop))) moved.push(path.relative(webRoot, path.join(dir, ...name.split('/'))));
+    }
   }
   const movedSet = new Set(moved.map((p) => p.split(path.sep).join('/')));
   const rootRel = path.relative(webRoot, rootNm).split(path.sep).join('/');   // "node_modules"
@@ -185,8 +197,9 @@ try {
   }
   const react = resolveTarget('', 'react');
 
-  log(`[CKEditor node_modules 복사] ${apply ? '반영' : '미리보기(--apply로 반영)'} · ${webRoot}`);
-  log(`- 백업으로 옮길 이전 엔진 폴더 ${moved.length}개`);
+  log(`[CKEditor·Next node_modules 복사] ${apply ? '반영' : '미리보기(--apply로 반영)'} · ${webRoot}`);
+  log(`- 묶음 버전: ${['ckeditor5', '@ckeditor/ckeditor5-react', 'next', '@next/eslint-plugin-next'].filter((n) => bundle.has(n)).map((n) => `${n} ${bundle.get(n).json.version}`).join(', ')}`);
+  log(`- 백업으로 옮길 이전 폴더 ${moved.length}개`);
   for (const p of moved) log(`    ${p}`);
   log(`- 최상위 복사 ${copies.filter((c) => !c.target.includes('/node_modules/')).length}개 · 같은 버전 재사용 ${reused.length}개 · 다른 버전 유지(덮지 않음) ${conflicts.length}개`);
   for (const c of conflicts) log(`    유지: ${c}`);
@@ -212,7 +225,7 @@ try {
   }
   fs.writeFileSync(path.join(backup, 'plan.json'), JSON.stringify({ webRoot, time: stamp, moved, copied }, null, 2));
 
-  // 7) 확인: 루트·main에서 탐색되는 ckeditor5·React 래퍼 버전
+  // 7) 확인: 루트·main·sub/*에서 탐색되는 ckeditor5·React 래퍼·next 버전
   const findUp = (from, name) => {
     for (let d = from; ; d = path.dirname(d)) {
       const f = path.join(d, 'node_modules', ...name.split('/'), 'package.json');
@@ -220,11 +233,15 @@ try {
       if (path.dirname(d) === d) return '없음';
     }
   };
-  for (const from of [webRoot, path.join(webRoot, 'main')]) {
-    log(`- ${path.relative(webRoot, from) || '루트'}: ckeditor5 ${findUp(from, 'ckeditor5')}, @ckeditor/ckeditor5-react ${findUp(from, '@ckeditor/ckeditor5-react')}`);
+  const froms = [webRoot, path.join(webRoot, 'main')];
+  if (fs.existsSync(subRoot)) for (const s of fs.readdirSync(subRoot)) if (fs.existsSync(path.join(subRoot, s, 'package.json'))) froms.push(path.join(subRoot, s));
+  for (const from of froms) {
+    const parts = [`ckeditor5 ${findUp(from, 'ckeditor5')}`, `@ckeditor/ckeditor5-react ${findUp(from, '@ckeditor/ckeditor5-react')}`];
+    if (bundleHasNext) parts.push(`next ${findUp(from, 'next')}`);
+    log(`- ${path.relative(webRoot, from) || '루트'}: ${parts.join(', ')}`);
   }
   log(`반영 완료. 백업: ${backup}`);
-  log('다음: main\\.next 삭제 → 개발 서버 재시작 → 자료실·팝업 등록 편집기 확인. 되돌리기: node copy-node-modules.cjs --rollback <백업 폴더>');
+  log('다음: main\\.next 삭제 → 개발 서버 재시작(기동 화면의 Next.js 버전 확인) → 자료실·팝업 등록 편집기 확인. 되돌리기: node copy-node-modules.cjs --rollback <백업 폴더>');
   fs.writeFileSync(path.join(backup, `copy-node-modules-${stamp}.log`), logLines.join('\n') + '\n');
 }
 finally {

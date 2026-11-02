@@ -1,11 +1,14 @@
 // POL-15-01 : 배포 범위
-// ■ 폐쇄망 반입용 npm 패키지 묶음 생성(CKEditor 5 공통 엔진)
+// ■ 폐쇄망 반입용 npm 패키지 묶음 생성(CKEditor 5 공통 엔진 + Next.js)
 // - in : zero-rule-web/pnpm-lock.yaml(프로젝트 lockfile), 인터넷 연결(npm registry)
 // - out: <출력 폴더>\ — pnpm-store-v3.tgz(pnpm 오프라인 캐시 = store), PACKAGES.txt(이름@버전·무결성),
 //        package.json·pnpm-lock.yaml(묶음 확인용 최소 프로젝트), install-pnpm-store.ps1, collect-workspace-manifest.ps1, README-NPM.md,
 //        node_modules-ckeditor.tgz·NODE-MODULES.txt·copy-node-modules.cjs(폴더 복사용, prepare-offline-node-modules.cjs)
 // - 폐쇄망에는 사내 npm 저장소가 없으므로 pnpm store(오프라인 캐시)를 반입해 `pnpm install --offline`으로 설치한다.
-// - lockfile에서 ckeditor5·@ckeditor/ckeditor5-react가 실제로 쓰는 패키지(전이 의존 포함)만 뽑아 버전을 lockfile과 똑같이 맞춘다.
+// - lockfile에서 ckeditor5·@ckeditor/ckeditor5-react·next·@next/eslint-plugin-next가 실제로 쓰는 패키지(전이 의존 포함)만 뽑아
+//   버전을 lockfile과 똑같이 맞춘다. next는 main·sub 버전 통일(15.5.21)로 폐쇄망 node_modules 교체가 필요해 포함한다.
+// - 플랫폼별 패키지(@next/swc-*, @img/sharp-*)는 폐쇄망 개발 PC(Windows x64)와 Linux x64(glibc) 것만 넣는다(TARGET).
+//   폐쇄망 Linux가 Windows에서 만든 node_modules를 그대로 쓰므로 두 OS 바이너리를 함께 둔다.
 //   pnpm은 프로젝트 지정 버전(package.json packageManager, pnpm@9.15.2)으로 실행해 폐쇄망과 같은 store 형식(v3)을 만든다.
 // - 검사: registry 원본 tarball(작업 폴더에서만 받음)의 sha512가 lockfile integrity와 일치, 만든 store만으로 네트워크 없이 설치(--offline)되는지 확인.
 // [사용] 저장소 루트에서(인터넷 PC): node scripts/prepare-offline-npm.cjs [출력 폴더=.offline-cache/npm-ckeditor/bundle]
@@ -17,7 +20,12 @@ const work = path.join(path.dirname(out), 'work');
 const PNPM = 'npx -y pnpm@9.15.2';
 // Windows 기본 tar(bsdtar). PATH의 GNU tar(Git Bash)는 'D:\...'를 원격 호스트로 해석해 실패한다.
 const TAR = process.platform === 'win32' ? `"${path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')}"` : 'tar';
-const ROOT_PACKAGES = ['ckeditor5', '@ckeditor/ckeditor5-react'];
+const ROOT_PACKAGES = ['ckeditor5', '@ckeditor/ckeditor5-react', 'next', '@next/eslint-plugin-next'];
+// 플랫폼별 패키지를 넣을 대상. pnpm supportedArchitectures와 같은 값(묶음 package.json의 pnpm 필드로 전달)
+const TARGET = { os: ['win32', 'linux'], cpu: ['x64'], libc: ['glibc'] };
+// lockfile packages 항목의 os·cpu·libc 조건이 TARGET 중 하나라도 맞는지('!x'는 제외 조건)
+const fits = (list, allowed) => !list || list.some((v) => (v.startsWith('!') ? allowed.some((a) => a !== v.slice(1)) : allowed.includes(v)));
+const forTarget = (p) => { const e = lock.packages[p] || {}; return fits(e.os, TARGET.os) && fits(e.cpu, TARGET.cpu) && fits(e.libc, TARGET.libc); };
 const run = (command, cwd) => execSync(command, { cwd, stdio: ['ignore', 'pipe', 'inherit'] }).toString();
 const yaml = require(path.join(web, 'node_modules/js-yaml'));
 
@@ -42,8 +50,9 @@ while (stack.length) {
     for (const [name, version] of Object.entries(snapshot[group] || {})) stack.push(`${name}@${version}`);
   }
 }
-const packages = [...new Set([...seen].map((key) => key.replace(/\(.*$/, '')))].sort();
-console.log(`[1/5] 대상 ${Object.entries(roots).map(([n, d]) => `${n}@${d.version}`).join(', ')} → 패키지 ${packages.length}개`);
+const allPackages = [...new Set([...seen].map((key) => key.replace(/\(.*$/, '')))].sort();
+const packages = allPackages.filter(forTarget);   // 실제로 받는 패키지(다른 플랫폼 바이너리 제외)
+console.log(`[1/5] 대상 ${Object.entries(roots).map(([n, d]) => `${n}@${d.version}`).join(', ')} → 패키지 ${packages.length}개(다른 플랫폼 제외 ${allPackages.length - packages.length}개)`);
 
 // 2) 최소 프로젝트(package.json·pnpm-lock.yaml)
 fs.rmSync(out, { recursive: true, force: true });
@@ -54,10 +63,14 @@ fs.mkdirSync(tarballs, { recursive: true });
 const mini = {
   lockfileVersion: lock.lockfileVersion, settings: lock.settings,
   importers: { '.': { dependencies: Object.fromEntries(Object.entries(roots).map(([n, d]) => [n, { specifier: d.specifier, version: d.version }])) } },
-  packages: Object.fromEntries(packages.map((p) => [p, lock.packages[p]])),
+  packages: Object.fromEntries(allPackages.map((p) => [p, lock.packages[p]])),
   snapshots: Object.fromEntries([...seen].sort().map((k) => [k, lock.snapshots[k]])),
 };
-const manifest = { name: 'ckeditor-offline-bundle', private: true, dependencies: Object.fromEntries(Object.entries(roots).map(([n, d]) => [n, d.specifier])) };
+const manifest = {
+  name: 'zero-rule-web-offline-bundle', private: true,
+  dependencies: Object.fromEntries(Object.entries(roots).map(([n, d]) => [n, d.specifier])),
+  pnpm: { supportedArchitectures: TARGET },
+};
 for (const dir of [out, path.join(work, 'project')]) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), yaml.dump(mini, { lineWidth: -1 }));
@@ -91,9 +104,15 @@ run(`${TAR} -xzf "${path.join(out, 'pnpm-store-v3.tgz')}" -C "${verifyStore}"`, 
 fs.copyFileSync(path.join(out, 'package.json'), path.join(verify, 'package.json'));
 fs.copyFileSync(path.join(out, 'pnpm-lock.yaml'), path.join(verify, 'pnpm-lock.yaml'));
 run(`${PNPM} install --offline --frozen-lockfile --store-dir "${verifyStore}" --config.node-linker=hoisted`, verify);
-const installed = require(path.join(verify, 'node_modules/ckeditor5/package.json')).version;
-if (installed !== roots.ckeditor5.version) throw new Error('오프라인 설치 버전 불일치: ' + installed);
-console.log(`[5/5] 묶음 store만으로 오프라인 설치 성공(ckeditor5 ${installed})`);
+const installed = {};
+for (const name of ROOT_PACKAGES) {
+  installed[name] = require(path.join(verify, 'node_modules', ...name.split('/'), 'package.json')).version;
+  if (installed[name] !== roots[name].version.replace(/\(.*$/, '')) throw new Error(`오프라인 설치 버전 불일치: ${name} ${installed[name]}`);
+}
+for (const swc of ['@next/swc-win32-x64-msvc', '@next/swc-linux-x64-gnu']) {
+  if (!fs.existsSync(path.join(verify, 'node_modules', ...swc.split('/'), 'package.json'))) throw new Error('SWC 바이너리 없음: ' + swc);
+}
+console.log(`[5/5] 묶음 store만으로 오프라인 설치 성공(${Object.entries(installed).map(([n, v]) => `${n} ${v}`).join(', ')}, SWC win32·linux)`);
 
 // 폐쇄망 설치 스크립트·안내
 for (const file of ['install-pnpm-store.ps1', 'collect-workspace-manifest.ps1', 'README-NPM.md']) {

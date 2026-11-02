@@ -22,7 +22,7 @@
     "framer-motion": "^12.0.1",
     "lru-cache": "^11.0.2",
     "mitt": "^3.0.1",
-    "next": "^15.5.18",
+    "next": "^15.5.21",
     "react": "^18.3.1",
     "react-draggable": "^4.4.6",
     "react-use": "^17.4.2",
@@ -46,6 +46,6 @@
     "rxjs": "^7"
   },
   "dependencies": {
-    "@next/eslint-plugin-next": "15.5.18"
+    "@next/eslint-plugin-next": "15.5.21"
   }
 }

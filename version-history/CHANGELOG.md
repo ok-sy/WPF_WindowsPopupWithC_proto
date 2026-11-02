@@ -1,5 +1,22 @@
 # 변경 이력
 
+## 2026-11-02-01 — main·sub Next.js 15.5.21 통일 및 폐쇄망 node_modules 교체 반입 도구 보완
+
+- 이유: 폐쇄망 `sub/eslint-config`만 `next: 15.5.21`·`@next/eslint-plugin-next: ^15.5.21`이고 main은 `^15.5.18`이라 반입 lockfile(15.5.18)과 선언이 어긋남(`ERR_PNPM_OUTDATED_LOCKFILE` 사례). 저장소·이전 반입본에는 15.5.21 이력이 없어 폐쇄망 자체 수정으로 판단했고, main·sub를 15.5.21로 통일하기로 결정. 폐쇄망은 pnpm 설치 없이 node_modules 폴더를 복사해 쓰므로 next 15.5.21 실물과 교체 수단을 반입본에 넣어야 함.
+- 변경:
+  - `main/package.json`: `next`·`@next/eslint-plugin-next` `^15.5.18` → `^15.5.21`. `sub/eslint-config/package.json`: `next` `15.5.18` → `15.5.21`, `@next/eslint-plugin-next` → `^15.5.21`. `sub/ui/package.json`: devDependencies `next` → `^15.5.21`, dependencies `@next/eslint-plugin-next` → `15.5.21`. pnpm 9.15.2로 lockfile 갱신 — next·@next/env·@next/eslint-plugin-next·@next/swc-*(8종) 15.5.21과 @mui/material-nextjs snapshot의 next 참조만 바뀜(57줄 교체). 15.5.18 → 15.5.21 사이 next 의존성 변화는 @next/env·@next/swc-* 버전뿐.
+  - `scripts/prepare-offline-npm.cjs`: 묶음 대상에 `next`·`@next/eslint-plugin-next` 추가. 플랫폼별 패키지는 Windows x64·Linux x64(glibc)만 받음(묶음 package.json `pnpm.supportedArchitectures`, lockfile os·cpu·libc 조건으로 대조용 tarball도 같은 범위만). 오프라인 설치 검사를 네 패키지 버전과 SWC win32·linux 존재 확인으로 확장(peer 접미사 제거 후 비교).
+  - `scripts/prepare-offline-node-modules.cjs`: 로그를 묶음 대상 전체로 일반화, Windows 설치에서 걸러지지 않는 musl 전용 바이너리 제외.
+  - `scripts/offline-npm/copy-node-modules.cjs`: Next.js 교체 추가 — 루트·main·sub/* node_modules의 `next`, `@next/swc-*`, 묶음에 있는 `@next/*`(env·eslint-plugin-next)를 백업으로 옮기고 루트에 묶음 버전 하나만 배치(묶음에 없는 다른 @next/*는 유지). 미리보기에 묶음 버전, 반영 후 루트·main·sub/*별 next 탐색 버전 출력. 파일 이름(`node_modules-ckeditor.tgz`, `5-npm-ckeditor`)은 호환을 위해 유지.
+  - `scripts/offline-npm/README-NPM.md`, `scripts/export-offline-package.ps1`(README-IMPORT 5-npm 행·폴더 복사 안내), lockfile 불일치 TODO 문서 2단계 eslint-config 항목에 확인 결과·결정 기록.
+- 주요 파일: zero-rule-web/main/package.json, zero-rule-web/sub/eslint-config/package.json, zero-rule-web/sub/ui/package.json, zero-rule-web/pnpm-lock.yaml, scripts/prepare-offline-npm.cjs, scripts/prepare-offline-node-modules.cjs, scripts/offline-npm/copy-node-modules.cjs, scripts/offline-npm/README-NPM.md, scripts/export-offline-package.ps1, docs/design/20261030_폐쇄망_pnpm_workspace_lockfile_불일치_해결_TODO.md, version-history/CHANGELOG.md.
+- 검증:
+  - 로컬: next 실물 1벌(node_modules/next 15.5.21)을 main·sub/eslint-config가 함께 해석. tsc main 0, sub/ui·util·validators 0, sub/domain 7(기존과 동일). eslint(main src·pages) 오류 0(경고 83). `next build`(webpack) 성공(33페이지). `next dev --turbopack` 기동 화면 `Next.js 15.5.21`, `/login/`·`/` 200.
+  - 묶음: `prepare-offline-npm.cjs` 실행 — 패키지 256개(다른 플랫폼 제외 24개), tarball 무결성 = lockfile integrity, 묶음 store만으로 오프라인 설치 성공(ckeditor5 49.0.1, React 래퍼 12.0.0, next 15.5.21, @next/eslint-plugin-next 15.5.21, SWC win32·linux). node_modules 트리 213위치(SWC win32-x64-msvc·linux-x64-gnu, sharp win32·linux), node_modules-ckeditor.tgz 157,235,238바이트, pnpm-store-v3.tgz 224,481,578바이트.
+  - 폐쇄망 재현: HEAD(15.5.18) 소스·lockfile로 hoisted 설치한 front_end에 `sub/eslint-config/node_modules/next`(15.5.18)를 추가하고 새 package.json·lockfile을 덮은 뒤 `copy-node-modules.cjs` 미리보기·반영 — 이동 67(ckeditor 계열 + next·@next/env·@next/eslint-plugin-next·@next/swc-win32-x64-msvc·sub/eslint-config의 next), 루트·main·sub/* 8곳 모두 next 15.5.21(node_modules\next). 반영 상태에서 `next build` 성공(Next.js 15.5.21), `next dev --turbopack` `/login/`·`/` 200. `--rollback` 후 next 15.5.18·sub/eslint-config 안 next 원위치 확인. export 스크립트 PowerShell 구문 검사 통과.
+  - 미실행: 폐쇄망 실제 반영, Linux에서 linux SWC로 실행 확인.
+- 상태: 커밋·원격 반영.
+
 ## 2026-10-30-29 — tsconfig extends 상대 경로화·일반 CSS 타입 선언 추가
 
 - 이유: 폐쇄망 FRONT 당일 이슈 중 `@repo/typescript-config/nextjs.json not found`와 CSS side-effect import `ts(2882)`를 폐쇄망에서 각각 상대 경로 extends, `main/src/css.d.ts`로 해결. 수동 node_modules 복사 환경에는 workspace 링크가 없어 패키지 이름 extends가 실패하므로 저장소도 같은 방식으로 맞춰 다음 반입 시 차이가 생기지 않게 함. TypeScript `extends`는 대체 경로를 지원하지 않아 기존 패키지 이름 방식과 병행 불가.

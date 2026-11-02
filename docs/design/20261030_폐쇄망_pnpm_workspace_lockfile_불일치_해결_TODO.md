@@ -27,7 +27,9 @@
 - [ ] `pnpm-lock.yaml`의 `importers['.']`, `importers['main']`, `importers['sub/ui']`, 다른 `sub/*`를 각 폴더 `package.json`의 dependencies/devDependencies와 대조.
 - [ ] 이름이 같은 패키지마다 **요구 버전 범위(specifier)**, **lockfile이 선택한 실제 버전(version)**, **폐쇄망 기존에 설치된 버전**을 구분해서 표 작성.
 - [ ] 특히 사진에 나타난 `sub/ui`의 `@types/eslint`, `@types/react`, `@types/sanitize-html` 및 기타 패키지 선언 비교.
-- [ ] `sub/eslint-config/package.json`의 `next`, `@next/eslint-plugin-next`, ESLint 관련 dependencies/devDependencies와 lockfile `importers['sub/eslint-config']` 대조.
+- [x] `sub/eslint-config/package.json`의 `next`, `@next/eslint-plugin-next`, ESLint 관련 dependencies/devDependencies와 lockfile `importers['sub/eslint-config']` 대조.
+  - 2026-11-02 확인: 폐쇄망 `sub/eslint-config`만 `next: 15.5.21`·`@next/eslint-plugin-next: ^15.5.21`, main은 `^15.5.18`(외부망 저장소·반입본에는 15.5.21 이력 없음 → 폐쇄망 자체 수정).
+  - 결정: main·sub 모두 15.5.21로 통일. 외부망에서 `main`·`sub/eslint-config`·`sub/ui` package.json과 lockfile을 갱신하고, npm 묶음(5-npm-ckeditor)에 next 15.5.21(SWC Windows x64·Linux x64 glibc)을 넣어 `copy-node-modules.cjs`가 루트·main·sub/*의 이전 next·@next/swc-*·@next/env·@next/eslint-plugin-next를 백업으로 옮기고 루트에 15.5.21 하나만 두게 함(20261102 반입본).
 - [ ] `sub/typescript-config`를 포함한 나머지 `sub/*` 전부 검사하여 오류가 다음 workspace로 반복되지 않게 한다. 스크린샷으로 확정할 수 없는 행은 실제 파일 대조 후 확정.
 - [ ] 외부망 버전 적용이 필요한 패키지(Next/Turbopack·MUI·CKEditor)와 폐쇄망 기존 유지 대상(업무용 수정·의존성)을 결정. 무조건 `package.json` 전체를 외부망 버전으로 덮지 않음.
 - [ ] workspace 전체에서 요구하는 동일 패키지의 버전 호환성/peer dependencies 확인.
