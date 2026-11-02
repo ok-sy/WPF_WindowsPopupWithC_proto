@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-02-02 — 20261102 폐쇄망 반입본 생성(Next.js 15.5.21 통일 포함)
+
+- 이유: main·sub Next.js 15.5.21 통일(2026-11-02-01)과 20261030 반입본(3429f01) 이후의 관리자 웹 수정(next.config transpilePackages·@mui/material-nextjs, tsconfig 상대 경로 extends·css.d.ts)을 폐쇄망에 반입.
+- 변경: `node scripts/prepare-offline-npm.cjs`로 npm 묶음(CKEditor + next 15.5.21) 재생성 후 `scripts/export-offline-package.ps1 -NpmBundleDir .offline-cache\npm-ckeditor\bundle -NotesFile <변경 요약>`로 offline-export/20261102 생성. 변경 요약에 Next 통일(세 package.json 동시 반영, copy-node-modules.cjs로 next 교체, SWC Windows·Linux 동봉, 기동 화면 버전 확인), next.config 두 항목(data-emotion 키 확인, NotReady.tsx 동시 반영), tsconfig·css.d.ts(폐쇄망 수동 적용분과 동일), 메뉴 아이콘 7개 재확인, 적용 순서 기재. Git 설치 파일 미동봉.
+- 주요 파일: offline-export/20261102(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 151·M 10·D 0, 웹 A 49·M 24·D 5(baseline 누적), WPF 소스 95, 문서 165, 5-npm-ckeditor 10 파일(패키지 256개), CKEDITOR-KEEP 62. 소스 커밋 4924027, 직전 반입본 20261030(3429f01). TGZ 392,919,990바이트, SHA256 `1835bcd96111ae5fe126e0c27e61f035db1687c8277f94871aff469f168023da`.
+- 검증: TAR 5개 파일 수 대조 통과, TGZ 체크섬 일치, TGZ를 풀어 안 TAR 5개·cleanup-after-import.ps1·CKEDITOR-KEEP.txt SHA256 대조 통과. 2-zero-rule-web의 세 package.json이 15.5.21, lockfile 15.5.21 반영, 5-npm-ckeditor의 copy-node-modules.cjs가 저장소 최신본과 동일. 묶음 동작은 2026-11-02-01의 폐쇄망 재현 검증으로 갈음. WPF 소스 변경 없어 빌드 확인 생략. 폐쇄망 반영은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-11-02-01 — main·sub Next.js 15.5.21 통일 및 폐쇄망 node_modules 교체 반입 도구 보완
 
 - 이유: 폐쇄망 `sub/eslint-config`만 `next: 15.5.21`·`@next/eslint-plugin-next: ^15.5.21`이고 main은 `^15.5.18`이라 반입 lockfile(15.5.18)과 선언이 어긋남(`ERR_PNPM_OUTDATED_LOCKFILE` 사례). 저장소·이전 반입본에는 15.5.21 이력이 없어 폐쇄망 자체 수정으로 판단했고, main·sub를 15.5.21로 통일하기로 결정. 폐쇄망은 pnpm 설치 없이 node_modules 폴더를 복사해 쓰므로 next 15.5.21 실물과 교체 수단을 반입본에 넣어야 함.
