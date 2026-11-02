@@ -1,5 +1,11 @@
 # 변경 이력
 
+## 2026-11-02 — 기획서 PU001P01~P06의 proto 구현 대조·확인 요청
+
+- TEXT·IMAGE·VIDEO·QUIZ·SURVEY·VIDEO+QUIZ의 기존 WPF 재사용 지점을 정적 검토, 완료 조건/제출 UX 충돌 및 승인 필요 항목 Q1~Q7 기록.
+- 파일: `docs/design/20261102_기획서_PU001P01-P06_proto_반영_확인요청.md`, `docs/README.md`, `version-history/CHANGELOG.md`.
+- 검증: 정적 코드·정책 문서 대조. **기획 미확정으로 동작 코드 변경 없음, 실기기 테스트 미실행.**
+
 ## 2026-11-02-02 — 20261102 폐쇄망 반입본 생성(Next.js 15.5.21 통일 포함)
 
 - 이유: main·sub Next.js 15.5.21 통일(2026-11-02-01)과 20261030 반입본(3429f01) 이후의 관리자 웹 수정(next.config transpilePackages·@mui/material-nextjs, tsconfig 상대 경로 extends·css.d.ts)을 폐쇄망에 반입.
