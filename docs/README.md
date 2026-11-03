@@ -39,6 +39,7 @@
 | [TODO72](design/72_DTIY3111_사진스키마_단건샘플정합성_TODO.md) | DTIY3111 사진 OCR 근거 및 단건 조회 샘플 컬럼·INSERT 정합성 보완(구체화 완료·구현 미착수) |
 | [interfaces/](interfaces) | WPF Client API 계약서 [POPUP_INTERFACE_SPEC.md](interfaces/POPUP_INTERFACE_SPEC.md)(v3.7), Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`, 최소/전체 기능 정의서, [examples/](interfaces/examples) JSON 예제 |
 | [reviews/](reviews) | 구현 검토·측정 절차 |
+| [reviews/20261103_활성작업_폐기대체_정리_검토.md](reviews/20261103_활성작업_폐기대체_정리_검토.md) | 활성 작업 정리 1단계 — 폐기·대체 항목 확정 근거와 판단 필요 항목(결정란) |
 | [reviews/POPUP_PREVIEW_WPF_PARITY.md](reviews/POPUP_PREVIEW_WPF_PARITY.md) | 관리자 미리보기와 WPF 표시 정합성·알려진 차이 |
 | [reviews/20261007_저사양_PC_VIDEO_측정_가이드.md](reviews/20261007_저사양_PC_VIDEO_측정_가이드.md) | 저사양 PC / Horizon VIDEO 측정 절차 |
 | [reviews/20261002_WPF_TODO_변경_라인별_설명.md](reviews/20261002_WPF_TODO_변경_라인별_설명.md) | 2026-10-02 WPF TODO 변경 소스 줄별 설명(당시 기록) |
