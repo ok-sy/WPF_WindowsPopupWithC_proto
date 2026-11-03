@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-15 — dev: pickPopupFields JSON 직렬화 구별 검사 추가
+
+- 이유: A 실행 순서 3번. WEB 책임 분리 TODO F-4의 "미설정(생략·null)과 명시 false·0·빈 문자열이 입력·추출·전송까지 구별" 항목에 추출 단계 검사만 있고 전송(JSON 직렬화) 단계 검사가 없었음.
+- 변경: `scripts/verify-popup-pick-fields.cjs` §7 추가(9건) — 편집기의 입력 비움 동작(IS063M02Sample·PopupSampleEditor는 undefined, PopupQuestionEditor 배점·선택 수는 null)을 그대로 재현해 `pickPopupFields` → `JSON.stringify`/`parse` 결과 확인: 키 삭제·undefined는 본문에서 생략, null은 null로 유지, 0·false·빈 문자열 유지, 추출 단계에서 보존한 undefined 키도 전송 시 생략과 같아짐, 같은 필드의 미설정 본문과 명시 0 본문이 다름. 제품 코드 변경 없음. 원본 TODO F-4 해당 항목 체크, ACTIVE_TASKS A-1 3번 완료 표기.
+- 주요 파일: scripts/verify-popup-pick-fields.cjs, docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md, docs/policies/ACTIVE_TASKS.md, version-history/CHANGELOG.md.
+- 검증: `node scripts/verify-popup-pick-fields.cjs` 34건 통과(변경 전 HEAD 25건 통과). 서버 쪽 "유효하지 않은 명시값 거절·누락값만 기본값" 항목은 이번 범위 밖으로 미체크 유지. 실화면 확인 없음.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-14 — D 추가 정정(A 실행판단 검토 §7) 원본 TODO 반영
 
 - 이유: A 실행 순서 2번. 이미 끝났거나 후속 결정으로 대체된 항목이 원본 TODO에 미체크·낡은 서술로 남아 진행 현황을 왜곡. 근거가 확인된 항목만 정정하고 실환경 미실행 항목은 완료 처리하지 않음.

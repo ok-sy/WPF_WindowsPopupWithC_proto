@@ -92,4 +92,26 @@ check(pickPopupFields(popup, { questionKeys: ['options'] }).questions[1].options
 const saved = pickPopupFields(toSaveRequestPopup(popup), { topLevelKeys: ['displayStartAt'], contentKeys: ['plainText', 'surveyTitle'] });
 check(same(saved.content, { surveyTitle: '만족도' }), 'toSaveRequestPopup 결과를 넘기면 SURVEY에 없는 plainText는 이미 제외됨');
 
+// 7. 입력·추출·전송(JSON 직렬화)까지 미설정과 명시값 구별 — WEB 책임 분리 TODO F-4
+//    편집기는 숫자 입력을 비우면 undefined(IS063M02Sample·PopupSampleEditor) 또는 null(PopupQuestionEditor 배점·선택 수)로 둔다.
+//    JSON 규칙상 undefined 키는 전송 본문에서 빠지고(생략 = 미설정), null은 "null"로 남는다(명시적 미설정).
+//    false·0·빈 문자열은 그대로 전송되어 서버가 미설정과 구별할 수 있어야 한다.
+const fieldKeys = ['hideDays', 'showLater', 'title', 'questionTemplateId', 'width'];
+const wire = (value) => JSON.parse(JSON.stringify(value));
+const send = (state) => wire(pickPopupFields(state, { topLevelKeys: fieldKeys, contentKeys: ['zero', 'off', 'blank', 'nothing', 'empty'], questionKeys: ['questionScore'] }));
+const { width: _removed, ...withoutWidth } = popup; // 입력 값 삭제 = 키 제거
+const editedQuestions = [{ ...popup.questions[0], questionScore: 0 }, { ...popup.questions[1], questionScore: null }];
+const sent = send({ ...withoutWidth, hideDays: 0, showLater: false, title: '', questionTemplateId: null, questions: editedQuestions });
+check(!('width' in sent), '키를 지운 값은 전송 본문에 없음(서버 기본값 대상)');
+check(sent.hideDays === 0 && sent.showLater === false && sent.title === '', '명시 0·false·빈 문자열은 전송 본문에 그대로: ' + JSON.stringify(sent));
+check('questionTemplateId' in sent && sent.questionTemplateId === null, 'null은 키와 함께 null로 전송(생략과 구별)');
+check(same(sent.content, { zero: 0, off: false, blank: '', nothing: null }), 'content: 0·false·빈 문자열·null 유지, undefined 키는 전송 시 빠짐: ' + JSON.stringify(sent.content));
+check(!('empty' in sent.content), '추출 단계에서 보존한 undefined 키도 JSON 전송 단계에서는 생략과 같아짐');
+check(sent.questions[0].questionScore === 0 && sent.questions[1].questionScore === null, '문항 배점 0과 비운 값(null) 구별');
+const cleared = send({ ...popup, width: undefined, questions: [{ ...popup.questions[0], questionScore: undefined }] });
+check(!('width' in cleared) && !('questionScore' in cleared.questions[0]), '입력을 비워 undefined가 된 값은 키를 지운 경우와 같은 본문');
+const explicit = send({ ...popup, width: 0 });
+check('width' in explicit && explicit.width === 0, '같은 필드라도 명시 0은 전송되어 미설정과 다른 본문');
+check(JSON.stringify(cleared) !== JSON.stringify(explicit), '미설정 본문과 명시 0 본문이 직렬화 결과에서 다름');
+
 console.log(`PASS: ${checks} pickPopupFields checks`);

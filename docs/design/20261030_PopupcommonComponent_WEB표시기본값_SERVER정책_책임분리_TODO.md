@@ -87,7 +87,7 @@ WEB 공통 컴포넌트는 사용자 입력·표시·미리보기를 담당하�
 
 WEB(이 문서):
 - [x] 미리보기 fallback을 적용해도 입력 원본과 `pickPopupFields()` 결과가 바뀌지 않는다(독립 샘플 ④ — 추출 결과에 fallback 필드 없음, 실화면 확인).
-- [ ] 미설정(생략·null)과 명시 false·0·빈 문자열이 입력·추출·전송(JSON 직렬화)까지 의도대로 구별된다.
+- [x] 미설정(생략·null)과 명시 false·0·빈 문자열이 입력·추출·전송(JSON 직렬화)까지 의도대로 구별된다. — 2026-11-03: `verify-popup-pick-fields.cjs` §7 9건(키 삭제·입력 비움 undefined는 전송 본문에서 생략, null은 null로 전송, 0·false·빈 문자열 유지). 서버 쪽 판정은 아래 SERVER 항목.
 - [x] 현재 proto 등록·미리보기·저장 회귀 없음 — 하네스 transform-64 77·common-sample-69 34·rgstpop-quiz-rule 11·preview-61 52·completion-ux-43 71·rich-text-49 60·image-preview 34·survey-rich-text-55 23건, 운영 빌드 성공.
 
 SERVER(등록·수정 공통 JSON 검증 TODO와 연결):
