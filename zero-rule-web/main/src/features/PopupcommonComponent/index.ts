@@ -17,6 +17,7 @@ export { default as PopupPreviewDialog } from './PopupPreviewDialog';
 export { default as PopupPreview } from './PopupPreview';
 export { default as PopupQuizRuleFields } from './PopupQuizRuleFields';
 export * from './popupQuizRule';
+export * from './popupQuizResultNotice';
 export * from './popupEditorTransform';
 export * from './popupCommon';
 export * from './popupPreviewFallback';

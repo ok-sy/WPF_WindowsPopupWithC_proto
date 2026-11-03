@@ -146,13 +146,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await answerQuiz(); await pause(200);
   b = await button('제출'); check(!b.disabled && b.reason === null, 'QUIZ submit enabled when all required answered: ' + JSON.stringify(b));
   await click('제출'); await pause(200);
-  check((await bodyText()).includes('미리보기: 50점 · 미통과 · 틀린 문항: 2, 4번'), 'QUIZ failure lists wrong question numbers');
+  // PU001 Q3: 미리보기 문구는 WPF 결과 창(QuizResultNotice)과 같다. 4문항×25점·통과 100점 = 만점형.
+  check((await bodyText()).includes("문제를 모두 맞춰야 퀴즈를 종료할 수 있습니다.\n다시 풀어주세요.\n\n틀린 문항: 2, 4번\n다시 제출하지 않으려면 하단 '닫기'로 닫을 수 있습니다."),
+    'QUIZ full-score failure matches WPF notice with wrong numbers and aux close: ' + JSON.stringify(await bodyText()));
   check((await button('닫기')) !== null, 'QUIZ failure without overlay shows secondary close');
   await run(`document.querySelector('input[aria-label="정답 2"]').click()`); await pause(200);
   check((await button('닫기')) !== null, 'Secondary close stays after editing answers');
   await render('QUIZ', {}, {});
   await answerQuiz(); await pause(200); await click('제출'); await pause(200);
-  check((await bodyText()).includes('틀린 문항: 2, 4번') && await button('닫기') === null, 'QUIZ with overlay hides secondary close');
+  check((await bodyText()).includes('틀린 문항: 2, 4번') && !(await bodyText()).includes("'닫기'로 닫을 수") && await button('닫기') === null, 'QUIZ with overlay hides secondary close and its notice');
   await render('QUIZ', {showFooter: false}, {useBackgroundOverlay: false});
   await answerQuiz(); await pause(200); await click('제출'); await pause(200);
   check(await button('닫기') === null, 'QUIZ with showFooter=false hides secondary close');
@@ -160,7 +162,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`(()=>{for (const t of ['정답 1','정답 2','정답 3','정답 4']) document.querySelector('input[aria-label="'+t+'"]').click();})()`); await pause(200);
   await click('제출'); await pause(200);
   const passed = await bodyText();
-  check(passed.includes('미리보기: 100점 · 통과') && !passed.includes('틀린 문항') && await button('닫기') === null, 'QUIZ pass has no wrong numbers or secondary close');
+  check(passed.includes('퀴즈를 모두 맞추셨습니다.\n완료 조건을 종료합니다.') && !passed.includes('틀린 문항') && await button('닫기') === null, 'QUIZ full-score pass matches WPF notice: ' + JSON.stringify(passed));
+  // 커트라인형(50점 = 2/4 통과, 75점 = 2/4 실패, 배점 25점이라 기준은 점수)·참여형(0점, 2/4도 완료).
+  const halfQuiz = () => run(`(()=>{for (const t of ['정답 1','정답 2','오답 3','오답 4']) document.querySelector('input[aria-label="'+t+'"]').click();})()`);
+  await render('QUIZ', {passingScore: 50}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
+  check((await bodyText()).includes('퀴즈를 통과하여 완료 조건을 종료합니다.\n\n2/4개'), 'QUIZ cutoff pass matches WPF notice (Q3)');
+  await render('QUIZ', {passingScore: 75}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
+  check((await bodyText()).includes('퀴즈를 통과하지 못하였습니다.\n문제를 다시 풀어주세요.\n(통과 기준: 75점 이상)\n\n2/4개\n틀린 문항: 3, 4번'), 'QUIZ cutoff failure matches WPF notice (Q3): ' + JSON.stringify(await bodyText()));
+  await render('QUIZ', {passingScore: 0}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
+  check((await bodyText()).includes('퀴즈를 완료하여 완료 조건을 종료합니다.\n\n2/4개') && await button('닫기') === null, 'QUIZ participation matches WPF notice (Q3)');
 
   // 5. SURVEY: 보조 닫기 없음. 필수 미응답이면 제출 비활성 + 진행 문구 연결.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: true, sortOrder: 1, options: []}]}, {useBackgroundOverlay: false});

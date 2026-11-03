@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-26 — dev: 관리자 웹 퀴즈 미리보기 결과 문구 WPF 정렬(PU001 Q3)
+
+- 이유: WPF QUIZ 결과 안내를 커트라인형·만점형·참여형으로 나눴으나(2026-11-03-25) 관리자 웹 미리보기는 `미리보기: N점 · 통과/미통과 · 틀린 문항` 한 줄을 표시해 같은 팝업의 결과 문구가 달랐음.
+- 변경: `PopupcommonComponent/popupQuizResultNotice.ts` 신규(WPF `QuizResultNotice`와 같은 유형 판별·문구·을/를 조사·통과 기준 개수/점수·틀린 문항 `[옵션]` 표시·보조 닫기 안내), `index.ts`에서 공개. `PopupPreview` 제출 채점이 채점 문항 수·정답 수·만점·전 문항 1점 여부를 계산해 이 모듈의 본문을 상태 문구로 표시(`white-space: pre-line`), 통과 점수 없음·0 이하·비정상은 0으로 보고 채점 문항이 없으면 통과(WPF QuizGrader와 같음). 보조 닫기 안내는 미리보기의 보조 닫기 표시 조건(영상 없는 QUIZ·배경 어둡기 꺼짐·푸터 표시·미달)과 같게 붙임. PU001 TODO 메모 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupQuizResultNotice.ts(신규), PopupPreview.tsx, index.ts, scripts/verify-completion-ux-43.cjs, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: `verify-completion-ux-43` 78건 통과(만점형 실패·통과 문구, 보조 닫기 안내 유무, 커트라인형 통과 2/4·실패 `(통과 기준: 75점 이상)`, 참여형 2/4 완료 — 기존 문구 검사 3건 교체·4건 추가). `tsc --noEmit` 오류 0, 변경 파일 ESLint 0, `verify-popup-preview-61` 52·`verify-popup-common-sample-69` 39·`verify-rgstpop-quiz-rule` 15·`verify-survey-rich-text-55` 23 통과. 미실행: 관리자 웹 실화면.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-25 — dev: WPF QUIZ 결과 안내 커트라인형·만점형·참여형 분리(PU001 Q3)
 
 - 이유: 기획서(106·109) QUIZ 결과 화면이 커트라인형·만점형·참여형별로 문구·버튼·정답 개수 표시가 다르나, WPF는 유형 구분 없이 성공 "점수 N점 / 평가를 통과했어요"(완료), 실패 "점수·통과 점수 / 다시 도전해 주세요"(답안 수정) 한 가지만 표시했음.

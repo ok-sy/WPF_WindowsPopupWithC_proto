@@ -12,6 +12,7 @@ import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { popupFontSize, popupMinimumSize } from './popupCommon';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
+import { buildQuizResultNotice } from './popupQuizResultNotice';
 import {
   fitToImageLayout,
   imageSizeMode,
@@ -431,6 +432,7 @@ export default function PopupPreview({
     }
     // WPF 미달 안내와 같이 틀린 채점 문항의 화면 번호(1부터)를 모은다.
     const wrongNumbers: number[] = [];
+    const scoredQuestions = popup.questions.filter((question) => question.isScored);
     const score = popup.questions
       .reduce((total, question, index) => {
         if (!question.isScored) return total;
@@ -459,12 +461,22 @@ export default function PopupPreview({
         return total + (correct ? (question.questionScore ?? 1) : 0);
       }, 0);
     const rounded = Math.round(score * 100) / 100;
-    const passed = rounded >= (popup.passingScore ?? 0);
+    // WPF QuizGrader와 같이 통과 점수가 없거나 0 이하·비정상이면 0(항상 통과)으로 본다.
+    const passing = typeof popup.passingScore === 'number' && Number.isFinite(popup.passingScore) && popup.passingScore > 0 ? popup.passingScore : 0;
+    const passed = scoredQuestions.length === 0 || rounded >= passing;
     if (!passed) setQuizFailed(true);
-    setSubmissionStatus(
-      `미리보기: ${rounded}점 · ${passed ? '통과' : '미통과'}` +
-        (!passed && wrongNumbers.length ? ` · 틀린 문항: ${wrongNumbers.join(', ')}번` : ''),
-    );
+    // POL-06-02 : 선택·제출 — WPF 결과 창(QuizResultNotice)과 같은 본문(커트라인형·만점형·참여형, PU001 Q3).
+    // 보조 닫기는 영상 없는 QUIZ가 배경 어둡기를 끈 상태에서 미달 판정 뒤에만 보이므로(아래 showSecondaryClose) 같은 조건으로 안내한다.
+    const notice = buildQuizResultNotice({
+      passed,
+      passingScore: passing,
+      correctCount: scoredQuestions.length - wrongNumbers.length,
+      scoredCount: scoredQuestions.length,
+      maxScore: Math.round(scoredQuestions.reduce((sum, question) => sum + (question.questionScore ?? 1), 0) * 100) / 100,
+      unitScored: scoredQuestions.every((question) => (question.questionScore ?? 1) === 1),
+      incorrectQuestionNumbers: wrongNumbers,
+    }, popup.title, !passed && popup.showFooter && !(popup.content.videoEnabled === true) && popup.content.useBackgroundOverlay === false);
+    setSubmissionStatus(notice.message);
   };
   const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
   const isPlainVideo = popup.popupType === 'VIDEO';
@@ -782,7 +794,7 @@ export default function PopupPreview({
                   {surveyProgress}
                 </Typography>
                 {submissionStatus && (
-                  <Typography role="status" aria-live="polite" sx={{ color: surveyColors.muted, fontSize: 13 }}>
+                  <Typography role="status" aria-live="polite" sx={{ color: surveyColors.muted, fontSize: 13, whiteSpace: 'pre-line' }}>
                     {submissionStatus}
                   </Typography>
                 )}
