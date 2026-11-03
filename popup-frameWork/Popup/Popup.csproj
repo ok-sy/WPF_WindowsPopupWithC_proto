@@ -71,4 +71,9 @@
   <ItemGroup>
     <Resource Include="Resources\HeaderLogo.png" />
   </ItemGroup>
+
+  <!-- Demo 전용 internal 형식(DemoJsonValidator·DemoJsonSamples3117)을 BehaviorTests에서 검증한다. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Popup.BehaviorTests" />
+  </ItemGroup>
 </Project>

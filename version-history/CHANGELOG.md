@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-03-01 — DTIY3117 저장 JSON 유형별·옵션별 가짓수 산정·샘플과 Demo JSON Validator 팝업 띄우기
+
+- 이유: 3117 저장 JSON의 옵션 조합 범위를 수치로 정리하고, 유형·옵션 값마다 실제 저장 형태 샘플을 Demo JSON Validator(3117 모드)에서 검증하고 실제 팝업으로 확인할 수 있게 하기 위함. 기존 "팝업 미리보기"는 준비 중(비활성) 상태였음.
+- 변경:
+  - `DemoJsonSamples3117` 추가: 유형별 옵션 영역(공통 11·유형 고유) 정의, 이론 가짓수(영역 값 수의 곱, 숫자 옵션은 기본/지정 대표값 2개, 의존 값은 한 영역으로 묶음), 샘플 생성(유형별 기본 1건 + 옵션 값 하나씩만 바꾼 건 219건, 규칙 위반 13건), 미리보기 DTO 변환(deliveryId 미리보기 값, LOCAL_DEMO_IMAGE·VIDEO 토큰 → Demo 내장 미디어 경로).
+  - 가짓수: TEXT 165,888 · IMAGE 414,720 · VIDEO 10,616,832 · SURVEY 228,096 · QUIZ 497,664 · VIDEO_QUIZ 254,803,968, 합계 266,727,168. 문항은 1개 기준 유효 조합(SURVEY 22, QUIZ 24).
+  - JSON Validator: "3117 옵션 샘플" 창 추가(유형·규칙 위반 필터, 가짓수·산식 표시, JSON 보기·복사, 입력창 적용 시 3117 모드 전환, 검증 후 팝업 띄우기·더블클릭). "팝업 미리보기(준비 중)"를 "팝업 띄우기"로 활성화 — ERROR가 없을 때만 정규화 JSON을 PopupFactory·PopupManager로 표시하고 결과 훅을 연결하지 않아 결과 저장·전송·Demo 서버 상태 변경 없음.
+  - `Popup.csproj`에 `InternalsVisibleTo Popup.BehaviorTests` 추가(로컬 BehaviorTests에서 Demo internal 형식 검증), ALL_SPEC 5장 실행 행에 샘플 창·팝업 띄우기 반영(MINIMAL은 Demo 도구라 변경 없음), 산정 문서 추가.
+- 주요 파일: popup-frameWork/Popup/DemoJsonSamples3117.cs, popup-frameWork/Popup/DemoWindow.JsonValidator.cs, popup-frameWork/Popup/Popup.csproj, docs/interfaces/examples/DTIY3117-option-samples.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md.
+- 검증: Popup 빌드 경고·오류 0. 로컬 BehaviorTests(Git 제외)에 `CheckJsonSamples3117` 추가 — 프로젝트 전체는 기존 오류 6건(`AllowCloseBeforeComplete`·`ResolveDisplaySize` 참조, 이번 변경과 무관)으로 컴파일되지 않아 같은 검사 메서드를 별도 하네스(빌드된 popupSample.dll 참조)로 실행해 685건 통과: 유형별 가짓수·샘플 수, ID 중복 없음, 정상 219건 3117 모드 ERROR 0·계약 외 키 경고 0·미리보기 DTO → PopupFactory 생성 성공, 규칙 위반 13건 모두 ERROR. 실제 창 표시(실화면) 확인은 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-02-03 — CommonCKEditor를 폐쇄망과 같은 폴더 구조로 이동
 
 - 이유: 폐쇄망 front_end에는 이전 판 공용 편집기 `components/CommonCKEditor/CommonCKEditor.tsx`(ckeditor5 직접 import, 같은 Props·`requestFocusToEditor`)와 보기 전용 `CommonCKEditorView.tsx`가 폴더로 있고, 반입본은 `components/CommonCKEditor.tsx`(최상위 파일)로 들어가 같은 편집기가 두 벌 생김. 폴더판을 반입본으로 대체하고 이후 반입에서 최상위 파일이 다시 생기지 않도록 저장소 경로를 폐쇄망 구조에 맞춤.
