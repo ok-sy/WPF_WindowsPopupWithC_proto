@@ -1,11 +1,19 @@
 # 변경 이력
 
+## 2026-11-03-03 — 로컬 BehaviorTests 컴파일 오류 6건 수정(현행 계약 반영)
+
+- 이유: 로컬 검증 하네스 `Popup.BehaviorTests`(Git 제외)가 TODO57(`AllowCloseBeforeComplete` 폐기)·TODO58(`ImagePopupView.ResolveDisplaySize` → `ResolveContentArea`, 두 축 지정 시 영역 그대로) 이후 갱신되지 않아 컴파일 오류 6건으로 실행 불가.
+- 변경: `AllowCloseBeforeComplete` 설정 3곳 삭제(시청 기준 잠금 항상 적용), "완료 전 닫기 허용" VIDEO 검사 블록 삭제(경로 폐기), 시청 전 VIDEO 창 정리는 재생 실패 표시로 닫기 제한 해제. 이미지 크기 검사를 `ResolveContentArea` 규칙(두 축 = 그대로, 한 축·미지정 + 비율 고정 = 원본 비율, 해제 = 지정값·원본값)으로 변경하고 FIT_TO_IMAGE 9999×300 기대 높이를 300으로 수정. Demo 샘플 선택 함수에서 `DEMO-SURVEY-PLAIN`을 SURVEY 기본 후보에서 제외(SURVEY 2건으로 `Single()` 실패하던 문제).
+- 주요 파일: popup-frameWork/Popup.BehaviorTests/Program.cs(Git 제외 — 커밋 대상 아님).
+- 검증: BehaviorTests 빌드 경고·오류 0. 전체 실행 시 실패를 모으는 임시 모드로 집계(집계 후 원복): 통과 1,627건, 실패 48건·예외 3건 남음 — 설문·퀴즈 선택 행 스타일(색·Path 체크·높이·카드 패딩) 기대값, VIDEO 시청 전 닫기 취소 검사(테스트가 `UseBackgroundOverlay=false`로 열어 TODO57 기준상 외부 닫기 허용과 충돌), 이미지 창 여백 계산, Demo 옵션 편집기 NullReference, 들여쓰기 거절 기대값, 삭제된 웹 경로(`features/RgstPop/popupRichText.ts`) 참조. 앱 코드는 변경 없음. 남은 실패는 기대값 재설정 범위라 미수정.
+- 상태: 로컬 파일만 변경(커밋 없음).
+
 ## 2026-11-03-02 — 20261103 폐쇄망 반입본 생성(CommonCKEditor 폴더 이동·3117 옵션 샘플·로고 이미지)
 
-- 재생성(로고 이미지 포함): `docs/interfaces/examples/hyundaiCi.png`·`hyundaiCi.webp`는 2026-10-29-15에서 "로컬·반입본 전용"으로 정했으나 `.git/info/exclude` 대상이라 HEAD worktree 기준인 반입 스크립트에 담기지 않아 20261029~20261102 반입본에 모두 빠져 있었음. `export-offline-package.ps1`에 로컬 전용 문서 목록을 두고 작업 폴더에서 4-docs로 직접 복사(MANIFEST-4-docs에 `L` 표시, 파일이 없으면 경고만)하도록 보완하고 같은 날짜로 재생성(-Force, 소스 커밋 e94e135 — 변경 이력 커밋만 추가돼 소스 동일). 변경 요약에 로고 이미지 항목 추가.
+- 재생성(로고 이미지 포함): `docs/interfaces/examples/hyundaiCi.png`·`hyundaiCi.webp`는 2026-10-29-15에서 "로컬·반입본 전용"으로 정했으나 `.git/info/exclude` 대상이라 HEAD worktree 기준인 반입 스크립트에 담기지 않아 20261029~20261102 반입본에 모두 빠져 있었음. 이번 반입본에만 필요해, `export-offline-package.ps1`에 로컬 전용 문서를 작업 폴더에서 4-docs로 복사하는 처리(MANIFEST-4-docs에 `L` 표시)를 넣어 같은 날짜로 재생성(-Force, 소스 커밋 e94e135 — 변경 이력 커밋만 추가돼 소스 동일)한 뒤 스크립트 변경은 되돌림(506e3ec의 스크립트 부분 원복). 다음 반입본에는 로고가 자동 포함되지 않음. 변경 요약에 로고 이미지 항목 추가.
   - 결과: 문서 170(이전 168 + 로고 2), 그 밖의 묶음 수 동일. TGZ 13,139,813바이트, SHA256 `04b7808abb2d3eef1e8d37649faa78ca26c6173b4d72c24fad7462d67b7c4d95`(1차본 `9a766217…`는 대체).
   - 검증: TAR 4개 파일 수 대조, TGZ 체크섬 일치, TGZ를 풀어 안 TAR 4개 SHA256 통과, 4-docs.tar에 hyundaiCi 2개 포함·작업 폴더 원본과 바이트 동일 확인. 폐쇄망 반영은 미실행.
-  - 주요 파일: scripts/export-offline-package.ps1.
+  - 주요 파일: offline-export/20261103(Git 제외), scripts/export-offline-package.ps1(재생성 후 원복).
 - 이유: 20261102 반입본(8986689) 이후의 관리자 웹 CommonCKEditor 폴더 이동(bafeeae·e0be492)과 WPF Demo 3117 옵션 샘플·팝업 띄우기(7917c0d)를 폐쇄망에 반입.
 - 변경: `scripts/export-offline-package.ps1 -Date 20261103 -PreviousExport 20261102 -PreviousCommit 8986689 -NotesFile <변경 요약>`으로 offline-export/20261103 생성. npm 패키지 변경이 없어 5-npm-ckeditor 묶음 미포함(20261102 묶음 유효). 변경 요약에 폴더판 CommonCKEditor 교체·최상위 파일 삭제·CommonCKEditorView.tsx 유지·`main\.next` 삭제 후 재기동, WPF 재빌드 후 JSON Validator → 3117 옵션 샘플 확인 순서 기재. Git 설치 파일 미동봉.
 - 주요 파일: offline-export/20261103(Git 제외), version-history/CHANGELOG.md.
