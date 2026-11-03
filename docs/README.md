@@ -39,6 +39,7 @@
 | [TODO72](design/72_DTIY3111_사진스키마_단건샘플정합성_TODO.md) | DTIY3111 사진 OCR 근거 및 단건 조회 샘플 컬럼·INSERT 정합성 보완(구체화 완료·구현 미착수) |
 | [interfaces/](interfaces) | WPF Client API 계약서 [POPUP_INTERFACE_SPEC.md](interfaces/POPUP_INTERFACE_SPEC.md)(v3.7), Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`, 최소/전체 기능 정의서, [examples/](interfaces/examples) JSON 예제 |
 | [reviews/](reviews) | 구현 검토·측정 절차 |
+| [reviews/20261103_활성작업_A실행판단_검토.md](reviews/20261103_활성작업_A실행판단_검토.md) | 활성 작업 정리 3단계 — A 실제 잔여·착수 가능 작업·실행 회차 R1~R4·외부 입력 대기(결정란) |
 | [reviews/20261103_활성작업_D상태대조_검토.md](reviews/20261103_활성작업_D상태대조_검토.md) | 활성 작업 정리 2단계 — TODO56·52·57·58·CKEditor·폐쇄망 FRONT 원문 체크/머리말 정리안(결정란) |
 | [reviews/20261103_활성작업_폐기대체_정리_검토.md](reviews/20261103_활성작업_폐기대체_정리_검토.md) | 활성 작업 정리 1단계 — 폐기·대체 항목 확정 근거와 판단 필요 항목(결정란) |
 | [reviews/POPUP_PREVIEW_WPF_PARITY.md](reviews/POPUP_PREVIEW_WPF_PARITY.md) | 관리자 미리보기와 WPF 표시 정합성·알려진 차이 |
