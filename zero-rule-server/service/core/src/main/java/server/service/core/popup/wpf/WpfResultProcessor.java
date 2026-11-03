@@ -163,7 +163,7 @@ public class WpfResultProcessor {
      *
      * <p>POL-06-02 : 선택·제출 — QUIZ 점수·통과 판정은 WPF가 로컬에서 먼저 하고 사용자에게 즉시 보여 준 뒤,
      * 결과 항목의 score/passed로 함께 보낸다. 서버는 그 값을 그대로 저장하고 완료 판정에 쓴다(submitResponse).
-     * 서버 계산값과 다르면 경고 로그만 남긴다. 응답은 처리 상태 중심이며 totalScore/passed를 다시 내려주지 않는다.</p>
+     * 서버는 답안을 다시 채점하지 않는다(PU001 B-1). 응답은 처리 상태 중심이며 totalScore/passed를 다시 내려주지 않는다.</p>
      */
     private WpfResultItemResponse handleSubmitted(String employeeNo, WpfResultCommand item) {
         if (item.answers().isEmpty()) {

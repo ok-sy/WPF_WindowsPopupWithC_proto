@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-10-27 (KST)
+- 최신화: 2026-11-03 (KST)
+- 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
 - 3.7 보완(2026-10-27, 로그인 요청 키): WPF-00 로그인 요청의 사용자 식별 키를 `logonId` → `lgonId`로 변경. 폐쇄망 로그인 API(`p/api/ssoLogin`) 요청 DTO와 같은 키다. WPF 일반 모드·API Demo 기본 JSON이 `lgonId`를 보내며, 로컬 프로토타입 서버(`/api/wpf/auth/login`)는 `lgonId`를 받고 이전 키 `logonId`도 별칭으로 받는다. 응답·토큰 계약은 바뀌지 않는다.
 - 산출물 동기화(2026-10-22, TODO71): Word·PDF·Excel에 현행 v3.7 보완(최소 창 300×300, 초기화 버튼 삭제, 취소선·문단 서식, SURVEY·QUIZ 서식·선택 제한·배점, IMAGE 공통 크기)을 반영. 버전 번호·API 계약 변경 없음.
 - 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
@@ -1013,7 +1014,7 @@ VIDEO_WATCHED
 
 현재 WPF는 통과한 QUIZ만 SUBMITTED 한다.
 
-`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드가 문항별로 계산한 점수·정오답(문항 상세 저장)은 진단값이며, 그 합계가 저장된 최종 점수(WPF `score`)와 다를 수 있다(설계 34-16). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 백엔드가 자체 계산한 점수와 다르면 로그만 남기고 저장 값은 바꾸지 않는다. SURVEY에는 보내지 않는다.
+`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
 
 동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 결과에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 

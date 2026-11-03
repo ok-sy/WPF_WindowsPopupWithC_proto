@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 /**
  * POL-06-02 : 선택·제출
  * ■ QUIZ·SURVEY 제출 점수 저장 테스트
- * - QUIZ 제출은 WPF가 판정한 score/passed를 저장·완료 판정에 쓰고, SURVEY는 기존 저장을 유지한다.
+ * - QUIZ 제출은 WPF가 판정한 score/passed를 저장·완료 판정에 쓰고 서버는 재채점하지 않는다(PU001 B-1). SURVEY는 0점·통과로 완료한다.
  */
 class PopupSubmitScoreTest {
     private PopupMapper mapper;
@@ -47,15 +47,29 @@ class PopupSubmitScoreTest {
                 .thenReturn(new PopupSubmissionContext("Q1", type, 20L, passingScore));
     }
 
-    /** 서버 계산값과 달라도 QUIZ는 WPF score/passed를 저장·완료 판정에 쓴다. */
-    @Test void quizStoresWpfScoreAndPassedEvenWhenServerCalculationDiffers() {
+    /** 정답을 골라도 QUIZ는 WPF score/passed만 저장·완료 판정에 쓰고, 문항별 점수·정오답은 null로 저장한다. */
+    @Test void quizStoresWpfScoreAndPassedWithoutServerGrading() {
         context("QUIZ", BigDecimal.TEN);
-        // 서버 계산은 10점·통과지만 WPF 판정(4점·불합격)을 그대로 저장한다(불일치는 로그만).
+        // 정답 선택지(10)를 골랐지만 서버는 채점하지 않으므로 WPF 판정(4점·불합격)이 그대로 저장된다.
         var result = service.submitResponse("Q1", "r-1", "E1001", answers, 4.0, false);
         assertEquals(4.0, result.totalScore());
         assertFalse(result.passed());
         verify(mapper).upsertPopupResponse("r-1", "E1001", "Q1", 20L, new BigDecimal("4.00"), "N");
+        verify(mapper).insertResponseAnswer(5001L, 1L, null, null, null, "E1001");
+        verify(mapper).insertResponseValue(7001L, 10L, "A", "E1001");
         verify(mapper).markPopupCompleted("E1001", "Q1", "N");
+    }
+
+    /** 재채점을 없애도 답안 형식 검증(문항에 없는 선택지·단일 선택 복수 응답·선택형 textAnswer)은 유지한다. */
+    @Test void answerFormatValidationIsKeptWithoutGrading() {
+        context("QUIZ", BigDecimal.TEN);
+        assertThrows(IllegalArgumentException.class, () -> service.submitResponse("Q1", "r-1", "E1001",
+                List.of(new PopupSubmitAnswer(1L, null, List.of(99L))), 10.0, true));
+        assertThrows(IllegalArgumentException.class, () -> service.submitResponse("Q1", "r-1", "E1001",
+                List.of(new PopupSubmitAnswer(1L, null, List.of(10L, 11L))), 10.0, true));
+        assertThrows(IllegalArgumentException.class, () -> service.submitResponse("Q1", "r-1", "E1001",
+                List.of(new PopupSubmitAnswer(1L, "텍스트", List.of(10L))), 10.0, true));
+        verify(mapper, never()).upsertPopupResponse(any(), any(), any(), any(), any(), any());
     }
 
     /** WPF 채점값이 없는 QUIZ 제출은 저장 전에 거부한다. */
@@ -73,7 +87,7 @@ class PopupSubmitScoreTest {
         context("SURVEY", null);
         var result = service.submitResponse("Q1", "r-1", "E1001", answers, 99.0, false);
         assertTrue(result.passed());
-        verify(mapper).upsertPopupResponse(eq("r-1"), eq("E1001"), eq("Q1"), eq(20L), any(), eq("Y"));
+        verify(mapper).upsertPopupResponse("r-1", "E1001", "Q1", 20L, BigDecimal.ZERO, "Y");
         verify(mapper).markPopupCompleted("E1001", "Q1", "Y");
     }
 }

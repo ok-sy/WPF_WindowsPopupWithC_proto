@@ -28,23 +28,6 @@ class PopupQuestionRulesTest {
         assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(rating5), false, null));
     }
 
-    /** EXACT 비교는 앞뒤 공백만 제거하고 내부 공백은 그대로 비교한다. */
-    @Test void exactMatchTrimsOnlyOuterWhitespace() {
-        assertTrue(PopupQuestionRules.matchesText("  Windows + L  ", "Windows + L", "EXACT"));
-        assertFalse(PopupQuestionRules.matchesText("Windows + L 누르기", "Windows + L", "EXACT"));
-        assertFalse(PopupQuestionRules.matchesText("windows + L", "Windows + L", "EXACT"));
-        assertFalse(PopupQuestionRules.matchesText("Windows+L", "Windows + L", "EXACT"));
-    }
-
-    /** CONTAINS는 제출 답 안에 정답 문자열이 있어야 하며 모드가 없으면 불일치다. */
-    @Test void containsRequiresExpectedTextWithinSubmittedAnswer() {
-        assertTrue(PopupQuestionRules.matchesText("Windows + L 키를 누릅니다", "Windows + L", "CONTAINS"));
-        assertFalse(PopupQuestionRules.matchesText("Windows", "Windows + L", "CONTAINS"));
-        assertFalse(PopupQuestionRules.matchesText("응답", " ", "CONTAINS"));
-        assertFalse(PopupQuestionRules.matchesText(null, "정답", "EXACT"));
-        assertFalse(PopupQuestionRules.matchesText("정답", "정답", null));
-    }
-
     /** 설문 문항은 배점·정답이 없어도 통과한다. */
     @Test void surveyNeedsNoScoreOrCorrectAnswer() {
         assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(text(null, null, null)), false, null));

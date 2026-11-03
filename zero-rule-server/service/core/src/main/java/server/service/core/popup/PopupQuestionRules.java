@@ -9,23 +9,11 @@ import java.util.Set;
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 공통 규칙
  * - in : 문항 목록(PopupQuestionDto)·퀴즈 여부·통과 점수
- * - out: 검증 통과 또는 IllegalArgumentException · 기본 배점 채운 문항 · 주관식 정답 일치 여부
- * - 관리자 저장 검증과 서버 채점이 같은 문항 규칙(유형·배치·배점·정답·통과 점수 범위)을 쓰도록 모은다.
+ * - out: 검증 통과 또는 IllegalArgumentException · 기본 배점 채운 문항
+ * - 관리자 저장 검증의 문항 규칙(유형·배치·배점·정답·통과 점수 범위)을 모은다. 제출 채점은 WPF가 하며 서버는 재채점하지 않는다(PU001 B-1).
  */
 final class PopupQuestionRules {
     private PopupQuestionRules() {}
-
-    /** 주관식 답을 정답과 비교한다(앞뒤 공백 제거, EXACT 완전 일치·CONTAINS 포함, 그 밖의 모드는 불일치). */
-    static boolean matchesText(String answer, String expected, String mode) {
-        if (answer == null || answer.isBlank() || expected == null || expected.isBlank()) return false;
-        String actual = answer.trim();
-        String correct = expected.trim();
-        return switch (mode == null ? "" : mode) {
-            case "EXACT" -> actual.equals(correct);
-            case "CONTAINS" -> actual.contains(correct);
-            default -> false;
-        };
-    }
 
     /** 퀴즈 기본 배점. 배점을 비우면 1점으로 저장해 총점이 문항 수와 같아진다. */
     static final BigDecimal DEFAULT_QUESTION_SCORE = BigDecimal.ONE;

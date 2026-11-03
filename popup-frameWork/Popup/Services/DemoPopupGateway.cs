@@ -21,7 +21,7 @@ namespace Popup.Services
      *   (PopupResultBuilder → PopupResultQueue → 게이트웨이 → 항목 응답 → 안내)을 실제 코드로 통과시킨다.
      *   서버 규칙을 최대한 그대로 재현한다:
      *     - HIDDEN : hideDays(1~3650) 동안 숨김 → 다음 조회에서 제외
-     *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(서버 재채점 없음, 실제 서버는 참고·로그).
+     *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(서버 재채점 없음 — 실제 서버도 같음, PU001 B-1).
      *                   score/passed가 빠진 QUIZ 항목은 WPF_INVALID_RESULT로 거절한다(데모 채점기 없음).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
      *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).

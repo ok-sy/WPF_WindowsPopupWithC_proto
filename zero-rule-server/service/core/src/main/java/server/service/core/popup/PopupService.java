@@ -1,8 +1,6 @@
 package server.service.core.popup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
@@ -32,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,8 +61,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PopupService {
-
-    private static final Logger log = LoggerFactory.getLogger(PopupService.class);
 
     private static final Set<String> POPUP_TYPES =
             Set.of("TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ");
@@ -460,13 +455,14 @@ public class PopupService {
      * - in : popupId · clientRequestId(멱등 요청 ID) · userId(사번) · answers(답안) · clientScore/clientPassed(WPF 채점값)
      * - out: PopupSubmitResponseDto 저장한 점수·통과 여부 · 예외: IllegalArgumentException(자격·문항·답안 오류)
      * - 설문·퀴즈 답안을 검증해 응답 테이블에 저장한다.
-     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안을 검사한 후 문항별 정오답·점수를 계산한다.
+     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안, 문항 유형별 답안 형식(선택지 소속·단일 선택 수·중복 선택지)을 검사한다.
      * 요청 ID를 응답 upsert에 전달하고 반환된 응답 ID의 하위 답안을 교체한다.
      * 모든 저장은 한 트랜잭션이므로 중간 실패 시 일부 답안만 남지 않는다.
      *
      * <p>POL-06-02 : 선택·제출 — QUIZ의 최종 점수·통과 여부는 WPF가 로컬 채점으로 결정한 {@code clientScore}/{@code clientPassed}를
-     * 그대로 저장하고 완료 판정에도 사용한다(둘 다 필수). 서버 계산값은 문항별 상세 저장과 불일치 경고 로그에만 쓴다.
-     * SURVEY는 채점 대상이 아니므로 WPF 값을 받지 않고 기존처럼 0점·통과로 저장해 제출 즉시 완료한다.</p>
+     * 그대로 저장하고 완료 판정에도 사용한다(둘 다 필수). 서버는 답안을 다시 채점하지 않으며(PU001 B-1, 2026-11-03)
+     * 문항별 상세(POPUP_RESPONSE_ANSWER)의 EARNED_SCORE·CORRECT_YN은 null로 저장한다.
+     * SURVEY는 채점 대상이 아니므로 WPF 값을 받지 않고 0점·통과로 저장해 제출 즉시 완료한다.</p>
      */
     @Transactional
     public PopupSubmitResponseDto submitResponse(
@@ -593,29 +589,22 @@ public class PopupService {
                 : popupMapper.selectOptionsByQuestionIds(questionIds).stream()
                 .collect(Collectors.groupingBy(PopupOptionEntity::questionId));
 
-        // 답안 형식을 DB의 문항·선택지로 검증하고 문항별 정오답·점수를 계산한다(상세 저장·불일치 확인용).
-        List<GradedAnswer> gradedAnswers = answers.stream()
-                .map(answer -> gradeAnswer(
+        // 답안 형식만 DB의 문항·선택지로 검증한다. 채점은 하지 않는다(QUIZ 판정은 WPF 값, PU001 B-1).
+        List<ValidatedAnswer> validatedAnswers = answers.stream()
+                .map(answer -> validateAnswer(
                         questionById.get(answer.questionId()),
                         answer,
                         optionsByQuestion.getOrDefault(
                                 answer.questionId(), List.of())))
                 .toList();
-        BigDecimal totalScore = gradedAnswers.stream()
-                .map(GradedAnswer::earnedScore)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        // 비채점 문항의 null 점수는 합산에서 제외하며, 통과 점수 미설정은 0점으로 본다.
-        BigDecimal passingScore = context.passingScore() == null
-                ? BigDecimal.ZERO : context.passingScore();
-        String passedYn = totalScore.compareTo(passingScore) >= 0 ? "Y" : "N";
+        // SURVEY는 채점 대상이 아니므로 0점·통과로 저장한다.
+        BigDecimal totalScore = BigDecimal.ZERO;
+        String passedYn = "Y";
         if ("QUIZ".equalsIgnoreCase(context.popupType())) {
             if (clientScore == null || clientPassed == null
                     || !Double.isFinite(clientScore) || clientScore < 0) {
                 throw new IllegalArgumentException("QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
             }
-            logClientScoreMismatch(normalizedUserId, normalizedPopupId, normalizedRequestId,
-                    clientScore, clientPassed, totalScore, "Y".equals(passedYn));
             totalScore = BigDecimal.valueOf(clientScore).setScale(2, RoundingMode.HALF_UP);
             passedYn = clientPassed ? "Y" : "N";
         }
@@ -629,15 +618,16 @@ public class PopupService {
         // 같은 응답을 갱신할 때 이전 선택지가 남지 않도록 상세 답안을 다시 구성한다.
         popupMapper.deleteResponseAnswers(responseId);
 
-        for (GradedAnswer graded : gradedAnswers) {
+        for (ValidatedAnswer validated : validatedAnswers) {
+            // 문항별 점수·정오답(EARNED_SCORE·CORRECT_YN)은 서버가 채점하지 않으므로 null로 저장한다.
             Long responseAnswerId = popupMapper.insertResponseAnswer(
                     responseId,
-                    graded.question().questionId(),
-                    normalizeText(graded.answer().textAnswer()),
-                    graded.earnedScore(),
-                    graded.correctYn(),
+                    validated.question().questionId(),
+                    normalizeText(validated.answer().textAnswer()),
+                    null,
+                    null,
                     normalizedUserId);
-            for (PopupOptionEntity selectedOption : graded.selectedOptions()) {
+            for (PopupOptionEntity selectedOption : validated.selectedOptions()) {
                 popupMapper.insertResponseValue(
                         responseAnswerId,
                         selectedOption.optionId(),
@@ -649,19 +639,6 @@ public class PopupService {
         popupMapper.markPopupCompleted(
                 normalizedUserId, normalizedPopupId, passedYn);
         return new PopupSubmitResponseDto(totalScore.doubleValue(), "Y".equals(passedYn));
-    }
-
-    /**
-     * POL-06-02 : 선택·제출 — WPF 로컬 채점값과 서버 계산값이 다르면 경고 로그만 남긴다(저장 값은 WPF 값).
-     * 정답 데이터가 어긋났는지 추적하기 위한 것이다. 점수는 소수 둘째 자리(WPF 반올림 기준)로 비교한다.
-     */
-    private static void logClientScoreMismatch(String userId, String popupId, String resultId,
-                                               double clientScore, boolean clientPassed,
-                                               BigDecimal serverScore, boolean serverPassed) {
-        if (Math.abs(clientScore - serverScore.doubleValue()) >= 0.01 || clientPassed != serverPassed) {
-            log.warn("[WPF] QUIZ 로컬 채점값 불일치 userId={} popupId={} resultId={} wpf(score={}, passed={}) server(score={}, passed={})",
-                    userId, popupId, resultId, clientScore, clientPassed, serverScore, serverPassed);
-        }
     }
 
     /** 서술형은 공백이 아닌 텍스트, 선택형은 하나 이상의 선택지 제출을 필수 답안으로 본다. */
@@ -676,12 +653,11 @@ public class PopupService {
     }
 
     /**
-     * 문항 유형에 맞는 답안인지 검사하고 저장에 필요한 채점 결과를 만든다.
-     * 서술형 정답 비교는 PopupQuestionRules의 일치 모드에 위임한다.
-     * 선택형은 해당 문항의 선택지만 허용하며 정답 집합과 완전히 같을 때만
-     * 전체 배점을 부여한다. 부분 점수는 없고 비채점 문항은 점수·정오답을 null로 둔다.
+     * 문항 유형에 맞는 답안인지 검사하고 저장할 선택지를 찾는다(채점하지 않음).
+     * 서술형은 선택지 제출을 거절하고, 선택형은 textAnswer 제출·단일 선택 복수 응답·중복 선택지·
+     * 해당 문항에 없는 선택지를 거절한다.
      */
-    private GradedAnswer gradeAnswer(
+    private ValidatedAnswer validateAnswer(
             PopupQuestionEntity question,
             PopupSubmitAnswer answer,
             List<PopupOptionEntity> availableOptions) {
@@ -691,13 +667,7 @@ public class PopupService {
                         "서술형 문항에는 선택지를 제출할 수 없습니다. questionId="
                                 + question.questionId());
             }
-            if (!isYes(question.scoredYn())) {
-                return new GradedAnswer(question, answer, List.of(), null, null);
-            }
-            boolean correct = PopupQuestionRules.matchesText(
-                    answer.textAnswer(), question.correctAnswer(), question.answerMatchMode());
-            return new GradedAnswer(question, answer, List.of(),
-                    correct ? question.questionScore() : BigDecimal.ZERO, correct ? "Y" : "N");
+            return new ValidatedAnswer(question, answer, List.of());
         }
 
         if (normalizeText(answer.textAnswer()) != null) {
@@ -733,20 +703,7 @@ public class PopupService {
                 })
                 .toList();
 
-        if (!isYes(question.scoredYn())) {
-            return new GradedAnswer(
-                    question, answer, selectedOptions, null, null);
-        }
-        Set<Long> correctOptionIds = availableOptions.stream()
-                .filter(option -> isYes(option.correctYn()))
-                .map(PopupOptionEntity::optionId)
-                .collect(Collectors.toSet());
-        boolean correct = uniqueOptionIds.equals(correctOptionIds);
-        BigDecimal earnedScore = correct
-                ? question.questionScore() : BigDecimal.ZERO;
-        return new GradedAnswer(
-                question, answer, selectedOptions,
-                earnedScore, correct ? "Y" : "N");
+        return new ValidatedAnswer(question, answer, selectedOptions);
     }
 
     /** 공백뿐인 문자열은 null, 그 밖에는 앞뒤 공백을 제거한다. */
@@ -754,12 +711,10 @@ public class PopupService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private record GradedAnswer(
+    private record ValidatedAnswer(
             PopupQuestionEntity question,
             PopupSubmitAnswer answer,
-            List<PopupOptionEntity> selectedOptions,
-            BigDecimal earnedScore,
-            String correctYn
+            List<PopupOptionEntity> selectedOptions
     ) {
     }
 

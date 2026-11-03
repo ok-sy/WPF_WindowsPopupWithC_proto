@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-03-20 — dev: 서버 QUIZ 재채점 제거(PU001 B-1)
+
+- 이유: PU001 B-1 결정(채점·합격 판단은 WPF 로컬 판정, 서버 독립 재채점·불일치 경고 제거). 서버는 문항별 채점 후 합계·통과를 계산했지만 저장 값은 WPF `score`·`passed`로 덮어써 결과는 경고 로그와 문항 상세의 진단값에만 쓰였고, 문항 상세 EARNED_SCORE·CORRECT_YN을 읽는 서버 코드는 없었음.
+- 변경:
+  - `PopupService.submitResponse`: `gradeAnswer` → `validateAnswer`(채점 없이 답안 형식만 검증: 서술형 선택지 제출·선택형 textAnswer·단일 선택 복수 응답·중복 선택지·문항에 없는 선택지 거절). 합계·통과 계산과 `logClientScoreMismatch`·Logger 제거. QUIZ는 WPF score(소수 2자리)·passed 저장, 누락·음수·비정상 수 거절 유지. SURVEY는 0점·통과 고정(이전에는 서버 계산값이었으나 SURVEY 문항은 비채점이라 결과 같음). 문항 상세 EARNED_SCORE·CORRECT_YN은 null 저장.
+  - `PopupQuestionRules.matchesText`와 해당 테스트 2건 제거(재채점 전용, 다른 사용처 없음).
+  - `PopupSubmitScoreTest`: 정답 선택에도 WPF 값 저장·문항 상세 null 저장 검증, 재채점 제거 후 답안 형식 검증 유지 검사 추가, SURVEY 0점 저장 확인.
+  - 주석·문서: WpfResultType·WpfResultProcessor·DemoPopupGateway 주석, `POPUP_INTERFACE_SPEC.md` §10.6 및 변경 기록(JSON 계약 변경 없음), PU001 TODO B-1 완료 표기. WPF 동작·MINIMAL/ALL_SPEC 계약 변경 없음.
+- 주요 파일: zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java, PopupQuestionRules.java, wpf/WpfResultProcessor.java, zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultType.java, zero-rule-server/service/core/src/test/java/server/service/core/popup/PopupSubmitScoreTest.java·PopupQuestionRulesTest.java, popup-frameWork/Popup/Services/DemoPopupGateway.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test` 238건 통과·11 skip(Oracle 연동)·실패 0. 로컬 XE(POPUP) 실DB 지정 `:service:core:test` 165건 중 163 통과, `WpfPopupDatabaseTest` 2건 실패(조회 popup=null) — 변경 전 HEAD 별도 작업 트리에서도 같은 2건 동일 실패로 로컬 샘플 데이터 상태 문제(2026-10 기록과 같음). `PopupQuestionDatabaseTest`(QUIZ 제출 저장 포함)·`WpfDeliveredResultDatabaseTest`는 로컬 XE에서 통과. 미실행: 원격 개발 DB 실DB 테스트(192.168.114.71:4004 리스너 없음 ORA-12541), 원격 서버 배포, WPF 연동 실기동.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-19 — docs: WPF 최소 사양서 ShowLater 행 보완
 
 - 이유: 정합성 보완(PU001 B-8 결정). 나중에 보기(`showLater`, TODO52-2)는 WPF·서버·ALL_SPEC·인터페이스 계약서에 구현·기재되어 있으나 최소 사양서 필드 표에만 행이 없었음.
