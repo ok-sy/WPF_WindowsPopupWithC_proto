@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-29 — docs: 폐쇄망 반입본에서 MockSso·Popup.slnx 제외
+
+- 이유: 반입 준비. 폐쇄망 SSO·로그인을 폐쇄망 정책에 맞춰 반영해 개발용 임시 SSO 서버(MockSso)가 폐쇄망에서 필요 없어짐. MockSso를 포함한 솔루션(Popup.slnx)으로 복원하던 폐쇄망 빌드 스크립트는 MockSso가 없으면 복원이 실패하므로 함께 정리.
+- 변경: `scripts/export-offline-package.ps1` 3-popup-frameWork 묶음 루트를 `popup-frameWork/Popup`만으로 줄이고 `Popup.slnx`를 추가 파일에서 제외, 누출 검사 정규식에 `MockSso/`·`Popup.slnx` 추가, 머리말·README-IMPORT 표 설명 갱신. `scripts/build-wpf-offline.ps1`는 `Popup.slnx` 대신 `Popup/Popup.csproj`를 직접 restore(publish는 기존과 같음). `OFFLINE_WPF_BUILD.md` 묶음 설명 갱신. 개발 저장소의 MockSso·Popup.slnx·`prepare-offline-packages.ps1`(외부망 NuGet 수집)은 그대로 둔다. 폐쇄망에 이전 반입된 MockSso 폴더는 DELETE 목록에 넣지 않았으며 빌드에 쓰이지 않는다.
+- 주요 파일: scripts/export-offline-package.ps1, scripts/build-wpf-offline.ps1, OFFLINE_WPF_BUILD.md, version-history/CHANGELOG.md.
+- 검증: 두 스크립트 PowerShell 구문 분석 오류 0. 반입 3-popup-frameWork와 같은 구성(Popup 소스·global.json·NuGet.config·build-wpf-offline.ps1, MockSso·Popup.slnx 없음) + 20261006 NuGet 반입본만으로 `.offline-verify`에서 오프라인 빌드 — 폴더형 publish(`popupSample.exe`)·단일 EXE(91,777,870 bytes) 생성 확인. 미실행: 실제 반입본 생성(`export-offline-package.ps1`, 다음 반입 때), 폐쇄망 PC 빌드.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-28 — dev: SURVEY 제출 완료 안내 추가
 
 - 이유: 요구사항 반영. SURVEY는 제출 후 안내 없이 바로 닫혀 제출 완료를 알 수 없었고, 관리자 웹 미리보기는 `미리보기: 제출 완료`를 표시해 문구도 달랐음. "설문조사가 완료되었습니다." 안내 표시로 확정.

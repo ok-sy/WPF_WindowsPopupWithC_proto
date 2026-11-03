@@ -7,7 +7,7 @@ POL-15-01 : 배포 범위
 
   1-zero-rule-server  서버 — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정 파일(git diff)
   2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff)
-  3-popup-frameWork   WPF·MockSso 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스·개인 launchSettings 제외)
+  3-popup-frameWork   WPF 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스 제외). 개발용 MockSso·Popup.slnx는 2026-11-03부터 넣지 않는다
   4-docs              docs·db·api·README·변경 이력
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
@@ -176,12 +176,14 @@ try {
         -ExcludePatterns @("*/build/*", "zero-rule-server/.git-upstream-*/*", "*.class", "zero-rule-server/popup-videos/*")
     $web = Export-GitDiffBundle -Name "2-zero-rule-web" -Baseline $WebBaseline -PathSpec "zero-rule-web" `
         -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*")
-    # WPF: Popup·MockSso 소스만. 검증 하네스(Popup.BehaviorTests·Popup.RecoveryTests·scripts/*Tests)와 개인 실행 설정은 넣지 않는다.
-    $wpf = Export-TreeBundle -Name "3-popup-frameWork" -Roots @("popup-frameWork/Popup", "popup-frameWork/MockSso") `
+    # WPF: Popup 소스만. 검증 하네스(Popup.BehaviorTests·Popup.RecoveryTests·scripts/*Tests)는 넣지 않는다.
+    # 개발용 임시 SSO 서버(MockSso)와 그것을 포함한 솔루션(Popup.slnx)은 폐쇄망에 필요 없어 2026-11-03부터 제외한다.
+    # 폐쇄망 빌드(build-wpf-offline.ps1)는 Popup.csproj를 직접 복원·게시한다.
+    $wpf = Export-TreeBundle -Name "3-popup-frameWork" -Roots @("popup-frameWork/Popup") `
         -ExcludeDirs @("bin", "obj", "publish", ".vs") `
         -ExcludeExtensions @(".exe", ".dll", ".pdb", ".deps.json", ".runtimeconfig.json", ".cache", ".user") `
-        -ExcludePatterns @("popup-frameWork/MockSso/Properties/launchSettings.json") `
-        -ExtraFiles @("popup-frameWork/Popup.slnx", "global.json", "NuGet.config", "scripts/build-wpf-offline.ps1")
+        -ExcludePatterns @() `
+        -ExtraFiles @("global.json", "NuGet.config", "scripts/build-wpf-offline.ps1")
     # 문서: docs/interfaces/OLD는 Git 제외 로컬 보관, AGENTS.md는 개발 저장소 작업 규칙이라 넣지 않는다.
     $docs = Export-TreeBundle -Name "4-docs" -Roots @("docs", "db", "api") -ExcludeDirs @("OLD") -ExcludeExtensions @() -ExcludePatterns @() `
         -ExtraFiles @("README.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md")
@@ -310,7 +312,7 @@ try {
 |---|---|---|
 | 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |
 | 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
-| 3-popup-frameWork.tar | WPF/MockSso 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
+| 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않음(폐쇄망에 이전 반입분이 있어도 빌드에 쓰지 않음). EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
 $($npmRow)
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
@@ -352,7 +354,7 @@ SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, 
             $relative = $file.FullName.Substring($bundlePath.Length + 1).Replace('\', '/')
             if ($entries -notcontains $relative) { throw "TAR 누락: $bundle $relative" }
         }
-        if ($entries -match '(^|/)(bin|obj|publish|build|node_modules|\.next|Popup\.BehaviorTests|Popup\.RecoveryTests|popup-videos)/|\.(exe|dll|pdb|class)$|MockSso/Properties/launchSettings\.json') {
+        if ($entries -match '(^|/)(bin|obj|publish|build|node_modules|\.next|Popup\.BehaviorTests|Popup\.RecoveryTests|popup-videos|MockSso)/|\.(exe|dll|pdb|class)$|Popup\.slnx$') {
             throw "제외 대상 포함: $bundle"
         }
         $sums += "$((Get-FileHash -LiteralPath $tarPath -Algorithm SHA256).Hash.ToLower())  $bundle.tar"

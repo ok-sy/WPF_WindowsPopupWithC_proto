@@ -11,7 +11,6 @@ $ErrorActionPreference = "Stop"
 # NuGet.config removes remote feeds, so restore and publish stay offline.
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$solutionPath = Join-Path $repositoryRoot "popup-frameWork\Popup.slnx"
 $projectPath = Join-Path $repositoryRoot "popup-frameWork\Popup\Popup.csproj"
 $offlineConfig = Join-Path $repositoryRoot "NuGet.config"
 $packageCache = Join-Path $repositoryRoot ".offline-cache\packages"
@@ -38,7 +37,8 @@ if ($sdkVersion -ne "10.0.400") {
 }
 
 Write-Host "[1/2] Restoring from repository-local NuGet packages"
-dotnet restore $solutionPath `
+# Restore the WPF project only: Popup.slnx also lists the dev-only MockSso, which the offline package no longer ships (2026-11-03).
+dotnet restore $projectPath `
     --runtime win-x64 `
     --packages $packageCache `
     --configfile $offlineConfig `
