@@ -1,12 +1,20 @@
 # 변경 이력
 
-## 2026-11-03-03 — 로컬 BehaviorTests 컴파일 오류 6건 수정(현행 계약 반영)
+## 2026-11-03-03 — 로컬 BehaviorTests 현행 계약 반영(컴파일 오류 6건·실행 실패 51건 정리)
 
-- 이유: 로컬 검증 하네스 `Popup.BehaviorTests`(Git 제외)가 TODO57(`AllowCloseBeforeComplete` 폐기)·TODO58(`ImagePopupView.ResolveDisplaySize` → `ResolveContentArea`, 두 축 지정 시 영역 그대로) 이후 갱신되지 않아 컴파일 오류 6건으로 실행 불가.
-- 변경: `AllowCloseBeforeComplete` 설정 3곳 삭제(시청 기준 잠금 항상 적용), "완료 전 닫기 허용" VIDEO 검사 블록 삭제(경로 폐기), 시청 전 VIDEO 창 정리는 재생 실패 표시로 닫기 제한 해제. 이미지 크기 검사를 `ResolveContentArea` 규칙(두 축 = 그대로, 한 축·미지정 + 비율 고정 = 원본 비율, 해제 = 지정값·원본값)으로 변경하고 FIT_TO_IMAGE 9999×300 기대 높이를 300으로 수정. Demo 샘플 선택 함수에서 `DEMO-SURVEY-PLAIN`을 SURVEY 기본 후보에서 제외(SURVEY 2건으로 `Single()` 실패하던 문제).
+- 이유: 로컬 검증 하네스 `Popup.BehaviorTests`(Git 제외)가 TODO52-5·55·56·57·58·63·68과 2026-10-29 푸터 문구 변경 이후 갱신되지 않아 컴파일 오류 6건으로 실행되지 않았고, 컴파일을 고친 뒤에도 실패 48건·예외 3건(통과 1,627)이 남음. 앱 동작을 바꾸지 않고 테스트 기대값을 현행 계약에 맞춤.
+- 변경(테스트만):
+  - TODO57 완료 전 닫기 허용 폐기: `AllowCloseBeforeComplete` 사용 제거. VIDEO 외부 닫기 검사를 Overlay 기준으로 재작성 — Overlay 꺼짐은 시청 전에도 닫힘, 켜짐은 시청 전·후·재생 실패에도 취소, 푸터가 없어 나가는 수단이 없으면 허용, 앱 종료는 항상 닫힘. VIDEO+QUIZ 잠금 Alt+F4 검사도 Overlay 켜짐/꺼짐 둘 다 확인. 정리 단계는 Overlay를 풀거나 재생 실패로 표시한 뒤 닫음.
+  - TODO58 IMAGE 공통 크기: `ResolveDisplaySize` → `ResolveContentArea`(두 축 = 그대로, 한 축·미지정 + 비율 고정 = 원본 비율), FIT_TO_IMAGE 9999×300 기대 높이 300, Factory는 최상위 크기 우선·content 크기는 최상위가 없을 때만 읽음, Demo 옵션 편집기의 IMAGE 크기 입력을 최상위 width/height로 변경(ORIGINAL도 같은 한 쌍, keepAspectRatio 제거).
+  - TODO68 최종 창 하한 300×300: 여백 계산 검사를 하한보다 큰 200×300 영역(창 306×398)으로 변경.
+  - TODO55·56 설문 디자인 버전: 기존 스타일 검사 5개(카드·선택 행·체크 Path·hover·포커스·TextArea)는 V1 디자인 회귀 검사로 `SurveyDesign.Current = "V1"`에서 실행하고 복원. 기본 V2 검사(`CheckSurveyDesignV2`) 추가 — 문항 아래 구분선·반경 0·마지막 문항 구분선 없음, 선택 강조 #171717, 선택 시 링·체크 표시.
+  - TODO52-5 QUIZ 복수 선택 한도: 정답 수(2개) 초과 행은 비활성·미선택, 수집 답안 {2201, 2202}.
+  - TODO63 들여쓰기 단계 제한 없음: 표시 방어 기대값 indent 11 → 440, Demo 편집기 indent 12 허용·6 거절 기대 삭제.
+  - 문구·경로·데이터: 기본 푸터 버튼 "확인", 진행 문구 "필수 응답 2/2 완료", 조회 로그 `[조회] (TEXT) → …`, 웹 서식 정의 경로 `features/PopupcommonComponent/popupRichText.ts`, Demo SURVEY 후보에서 `DEMO-SURVEY-PLAIN` 제외.
+  - 실패 메시지에 실제 값을 함께 출력하도록 일부 보강.
 - 주요 파일: popup-frameWork/Popup.BehaviorTests/Program.cs(Git 제외 — 커밋 대상 아님).
-- 검증: BehaviorTests 빌드 경고·오류 0. 전체 실행 시 실패를 모으는 임시 모드로 집계(집계 후 원복): 통과 1,627건, 실패 48건·예외 3건 남음 — 설문·퀴즈 선택 행 스타일(색·Path 체크·높이·카드 패딩) 기대값, VIDEO 시청 전 닫기 취소 검사(테스트가 `UseBackgroundOverlay=false`로 열어 TODO57 기준상 외부 닫기 허용과 충돌), 이미지 창 여백 계산, Demo 옵션 편집기 NullReference, 들여쓰기 거절 기대값, 삭제된 웹 경로(`features/RgstPop/popupRichText.ts`) 참조. 앱 코드는 변경 없음. 남은 실패는 기대값 재설정 범위라 미수정.
-- 상태: 로컬 파일만 변경(커밋 없음).
+- 검증: BehaviorTests 빌드 경고·오류 0, 전체 실행(첫 실패에서 멈추는 원래 방식) 1,711건 통과·exit 0. 테스트 산출 PNG(`.offline-verify/demo-window`)는 Git 제외 경로. 앱 코드 변경 없음.
+- 상태: 로컬 파일만 변경(커밋 없음). 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-11-03-02 — 20261103 폐쇄망 반입본 생성(CommonCKEditor 폴더 이동·3117 옵션 샘플·로고 이미지)
 
