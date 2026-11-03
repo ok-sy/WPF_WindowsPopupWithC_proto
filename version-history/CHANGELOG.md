@@ -5,8 +5,8 @@
 - 이유: 2026-11-03 D 대조에서 TODO56의 유일한 미구현 항목(56-8 동일 문구에 서로 다른 optionId가 있을 때 선택·결과가 ID로 구분되는지 확인)을 A 실행 순서 1번으로 처리. 제품 코드는 이미 optionId 기반이라 회귀 검사만 추가.
 - 변경: `scripts/PopupWindowTests/Program.cs`에 `CheckSameTextOptionIds56` 추가 — QUIZ에 같은 문구("예") SINGLE(9001·9002·9003)·MULTIPLE(9201·9202·9203, 정답 9201·9202) 문항을 띄워 실제 RadioButton/CheckBox 선택 → `CollectAnswers` → `QuizGrader`(오답 조합 1점 불합격 → 정답 조합 2점 합격) → `PopupResultBuilder` 결과 DTO `OptionIds`가 모두 같은 ID를 쓰는지 확인. 원본 TODO56 56-8 체크·머리말 갱신, ACTIVE_TASKS A 행 완료 표기. Demo 샘플은 추가하지 않음.
 - 주요 파일: scripts/PopupWindowTests/Program.cs, docs/design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md, docs/policies/ACTIVE_TASKS.md, version-history/CHANGELOG.md.
-- 검증: 새 검사를 Main 맨 앞에서 단독 실행해 7건 통과(임시 순서 변경 후 원복). **PopupWindowTests 전체 실행은 기존 `CheckVideoQuizAspect60`의 "[TODO60] restoring the window width recalculates instead of holding (281.4, width 657)"에서 중단** — 변경 전 HEAD 소스로도 같은 지점에서 실패해 이번 변경과 무관. 현재 이 PC의 주 모니터가 1280×720(작업 영역 높이 672)이라 검사가 여는 760×860 창이 화면에 맞게 줄어 스크롤바 표시 조건이 달라진 환경 의존 실패로 추정(2026-10-29 같은 검사 포함 414건 통과 기록). 확인 전까지 PopupWindowTests "전체 통과" 근거로 쓰지 않음.
-- 상태: 커밋·원격 반영. 후속: TODO60 검사를 주 모니터 크기와 무관하게 만들거나 큰 모니터에서 재실행해 원인 확정.
+- 검증: 새 검사를 단독 실행해 7건 통과. 처음 전체 실행은 기존 `CheckVideoQuizAspect60`의 "[TODO60] restoring the window width recalculates instead of holding (281.4, width 657)"에서 중단됐고 변경 전 HEAD 소스로도 같았음 — 원격 접속으로 주 모니터가 1280×720(작업 영역 높이 672)이어서 검사가 여는 760×860 창이 줄어든 환경 문제. 주 모니터를 2560×1440으로 되돌린 뒤 `dotnet run --project scripts/PopupWindowTests` 전체 **421건 통과**(기존 414 + 신규 7). 코드 결함 아님.
+- 상태: 커밋·원격 반영. 참고: PopupWindowTests의 TODO60 창 크기 검사는 주 모니터 작업 영역이 창보다 작으면 실패하므로 실행 환경(주 모니터 해상도)을 함께 기록.
 
 ## 2026-11-03-12 — A 실행 판단 사용자 승인 7건 반영
 
