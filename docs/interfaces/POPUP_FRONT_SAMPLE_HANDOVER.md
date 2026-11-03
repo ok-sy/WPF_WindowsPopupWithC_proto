@@ -52,7 +52,7 @@
 | `InlinePopupPreview` | `popup`, `onOpenPreview?`, `onRecommendedSize?`, `title?` | `onOpenPreview`가 있으면 "실제 크기로 보기" 버튼 표시. `title` 기본 "팝업 미리보기" |
 | `PopupPreviewDialog` | `popup`, `open`, `onClose`, `recommendedSize?` | `recommendedSize`는 인라인이 계산한 IMAGE 권장 창 크기(첫 표시용, 선택) |
 | `PopupQuestionEditor` | `questions`, `quiz`, `passingScore?`, `onChange`, `onPassingScoreChange`, `fixedQuestionScore?`, `hidePassingScore?` | `quiz=true`면 정답·배점·통과 점수 입력 표시. `fixedQuestionScore`(예: 1)면 배점 입력을 숨기고 새 문항도 그 배점, `hidePassingScore`면 통과 점수 입력을 숨김(부모가 계산) |
-| `PopupQuizRuleFields` | `questionCount`, `rule`, `count`, `passingScore`, `onRuleChange`, `onCountChange`, `className?`, `titlePrefix?` | 퀴즈유형(만점 통과/커트라인 통과/통과·실패 제출)과 통과 기준 개수 입력. 계산은 `popupQuizRule`(`usePopupQuizRule`·`withQuizRule`·`validateQuizRule`)이 한다. 문항 1점 고정, 만점 = 문항 수, 커트라인·통과/실패 = N점, 실패 시 제출 불가. 전달 샘플(IS063M02Sample)과 내부 등록 화면(RgstPop)이 같은 코드를 쓴다 |
+| `PopupQuizRuleFields` | `questionCount`, `rule`, `count`, `passingScore`, `onRuleChange`, `onCountChange`, `className?`, `titlePrefix?` | 퀴즈유형(만점 통과/커트라인 통과/통과·실패 제출/참여형)과 통과 기준 개수 입력. 계산은 `popupQuizRule`(`usePopupQuizRule`·`withQuizRule`·`validateQuizRule`)이 한다. 문항 1점 고정, 만점 = 문항 수, 커트라인·통과/실패 = N점, 참여형 = 0점(정답 수 무관 제출 완료, 저장된 0은 참여형으로 복원), 실패 시 제출 불가. 전달 샘플(IS063M02Sample)과 내부 등록 화면(RgstPop)이 같은 코드를 쓴다 |
 | `PopupScheduleFields` | `popup`, `onChange` | 게시 기간 안 노출 일정(요일·시간대). 샘플에는 넣지 않았다 |
 
 ### 3.2 값으로 조절하는 옵션(편집값 `AdminPopupDetail`)
@@ -144,7 +144,7 @@ sample('SAMPLE-TEXT-LINK', '바로가기 공지', { popupType: 'TEXT' },
 | 파일 첨부 | `URL.createObjectURL` 미리보기 | 서버 업로드 API → 서버 경로 URL을 `imageUrl`/`videoUrl`에 저장(영상은 `samples/popup-video-range` Range API 규칙) | 서버 구현 필요 |
 | 팝업 ID | 고정 `N2609001`/`LOCAL-n` | 서버 채번 또는 입력 규칙 | 확인 필요 |
 | 컨텐츠 명(IS063M02) | 화면 값만, 요청에 미포함 | 저장 계약 필드 확정 후 추가(§4.2 절차) | 확인 필요 |
-| 퀴즈유형(만점/커트라인/통과·실패) | [확정] 문항 1점 고정(총점 = 문항 수), 만점 통과 = 통과 점수 문항 수(10문항 → 10점), 커트라인 통과 = N개 이상(7개 → 7점), 통과/실패 제출도 통과 점수 N. `withQuizRule`이 미리보기·저장 값에 적용 | 그대로 사용. [확정] 미달(실패)이면 제출하지 못한다(WPF: 창 유지·재채점, 통과 시에만 SUBMITTED). 세 유형 모두 저장 값은 passingScore | `sample/IS063M02Sample.tsx` |
+| 퀴즈유형(만점/커트라인/통과·실패/참여형) | [확정] 문항 1점 고정(총점 = 문항 수), 만점 통과 = 통과 점수 문항 수(10문항 → 10점), 커트라인 통과 = N개 이상(7개 → 7점), 통과/실패 제출도 통과 점수 N, 참여형 = 통과 점수 0(2026-11-03 PU001 Q3). `withQuizRule`이 미리보기·저장 값에 적용 | 그대로 사용. [확정] 미달(실패)이면 제출하지 못한다(WPF: 창 유지·재채점, 통과 시에만 SUBMITTED). 참여형은 0점 기준이라 항상 제출된다. 네 유형 모두 저장 값은 passingScore | `sample/IS063M02Sample.tsx` |
 | 스타일 | `n*` 클래스(전역 CSS 없음) + sx 3단 배치 | 폐쇄망 전역 CSS 적용 후 sx 중복 여부 정리 | 폐쇄망 확인 |
 | 권한·메뉴 | 라우트만 등록 | 메뉴 DB 등록·권한 | 기존 절차 |
 

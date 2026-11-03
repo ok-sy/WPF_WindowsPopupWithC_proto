@@ -1,5 +1,5 @@
 // RgstPop 등록 편집기(테스트 화면)에 전달 샘플과 같은 퀴즈 점수 규칙이 적용되는지 headless Edge로 확인한다.
-// 규칙: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 문항 수, 커트라인 N개 = N점, 통과/실패 제출도 N점(실패 시 제출 불가).
+// 규칙: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 문항 수, 커트라인 N개 = N점, 통과/실패 제출도 N점(실패 시 제출 불가), 참여형 = 0점.
 // 관리자 API는 @/provider 대역으로 바꿔 서버 없이 실행한다. 저장소 루트에서: node scripts/verify-rgstpop-quiz-rule.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/rgstpop-quiz');
@@ -97,7 +97,19 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.body.textContent.includes('미달(실패)이면 제출되지 않고')`), 'Pass/fail submit explains that a failed quiz cannot be submitted');
   saved = await save();
   check(saved && saved.popup.passingScore === 1, 'Pass/fail submit saves passingScore N');
-  // 5) 통과 점수 없는 데이터: 유형 미선택이면 저장 거절.
+  // 5) PU001 Q3 참여형: 통과 점수 0 저장, 기준 개수 입력 없음, 0으로 저장된 팝업은 참여형으로 복원돼 다시 저장해도 0 유지.
+  await pickRule('참여형');
+  check(await run(`!document.querySelector('[aria-label="통과 기준 개수"]') && document.body.textContent.includes('정답 개수와 관계없이 제출하면 완료됩니다')
+    && document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점')`), 'Participation shows no count input and 0 passing score');
+  saved = await save();
+  check(saved && saved.popup.passingScore === 0 && saved.popup.questions.every(q => q.questionScore === 1 && q.isScored === true),
+    'Participation saves passingScore 0 with 1-point scored questions: ' + JSON.stringify(saved && saved.popup.passingScore) + ' toast=' + await toastText());
+  await mount(0, 1);
+  check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점') && !document.querySelector('[aria-label="통과 기준 개수"]')
+    && document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('참여형')`), 'Loaded passingScore 0 restores participation');
+  saved = await save();
+  check(saved && saved.popup.passingScore === 0, 'Re-saving a participation quiz keeps passingScore 0 (no silent change to 1): ' + JSON.stringify(saved && saved.popup.passingScore));
+  // 6) 통과 점수 없는 데이터: 유형 미선택이면 저장 거절.
   await mount(null, 1);
   check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 -점')`), 'Quiz without passingScore starts unselected');
   saved = await save();

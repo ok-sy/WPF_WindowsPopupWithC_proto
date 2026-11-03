@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-24 — dev: 관리자 웹 퀴즈유형 참여형 추가(PU001 Q3)
+
+- 이유: PU001 Q3 참여형을 기존 계약의 QUIZ `passingScore=0`으로 표현하기로 했으나, 관리자 등록 화면은 퀴즈유형(만점·커트라인·통과/실패, 기준 1~문항 수)으로만 통과 점수를 만들어 0을 저장할 수 없었고, 0으로 저장된 팝업을 열면 커트라인 1개로 복원돼 다시 저장 시 1로 바뀌었음(2026-11-03-23 확인).
+- 변경: 공통 `popupQuizRule.ts`에 `PARTICIPATION`('참여형')과 `PARTICIPATION_PASSING_SCORE=0` 추가 — `withQuizRule`은 문항 1점·채점 대상 유지 후 통과 점수 0, `readQuizRule`은 0을 참여형으로 복원, `validateQuizRule`은 참여형에 기준 개수 검사 생략. `PopupQuizRuleFields`에 참여형 안내 문구(정답 개수 무관 제출 완료·실제 점수 전송). 가이드 데이터·실행 예시 힌트, `POPUP_FRONT_SAMPLE_HANDOVER.md`·`ADMIN_POPUP_PREVIEW_COMPONENTS.md` 퀴즈유형 설명, PU001 TODO Q3 진행 기록 갱신. RgstPop 등록 화면과 IS063M02 전달 샘플이 같은 코드를 사용. JSON 계약·서버·WPF 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/popupQuizRule.ts, PopupQuizRuleFields.tsx, guide/guideData.ts, guide/guideRunners.tsx, scripts/verify-rgstpop-quiz-rule.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: `verify-rgstpop-quiz-rule` 15건 통과(참여형 선택 시 기준 개수 입력 없음·통과 점수 0점 표시·저장 passingScore 0·전 문항 1점 채점, passingScore 0 데이터 참여형 복원·재저장 0 유지 4건 추가). `tsc --noEmit` 오류 0, 변경 파일 ESLint 0, `verify-popup-common-sample-69` 39·`verify-popup-preview-61` 52·`verify-completion-ux-43` 75 통과. 미실행: 관리자 웹 실화면, 원격 개발 DB 저장·조회, WPF 참여형 완료 모달(별도 작업).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-23 — dev: Q3 참여형 passingScore=0 저장·전달 경로 확인
 
 - 이유: PU001 Q3 참여형을 기존 계약의 `popupType=QUIZ`·`passingScore=0`으로 표현하기로 해, 관리자 등록·서버 저장/조회·WPF 전달·채점 전 구간에서 0이 유지되는지 검증 필요.

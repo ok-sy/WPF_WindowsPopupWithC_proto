@@ -269,10 +269,10 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
   },
   {
     name: 'PopupQuizRuleFields', file: 'PopupQuizRuleFields.tsx',
-    summary: '퀴즈 유형(만점 통과·커트라인 통과·통과/실패 제출)과 기준 개수를 입력합니다.',
+    summary: '퀴즈 유형(만점 통과·커트라인 통과·통과/실패 제출·참여형)과 기준 개수를 입력합니다.',
     props: [
       { name: 'questionCount', type: 'number', required: true, description: '문항 수' },
-      { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PASS_FAIL')", required: true, description: '고른 퀴즈 유형' },
+      { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PASS_FAIL' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
       { name: 'count', type: 'number', required: true, description: '통과 기준 개수' },
       { name: 'passingScore', type: 'number | null', description: '계산된 통과 점수(안내용)' },
       { name: 'className / titlePrefix', type: 'string / ReactNode', description: '퍼블리싱 클래스·제목 앞 표시' },

@@ -21,7 +21,7 @@ type Props = {
  * - in : questionCount(number) 문항 수 · rule(QuizRule) 선택한 유형 · count(number) 통과 기준 개수 · passingScore 계산된 통과 점수(안내용)
  *        · className?(string) 바깥 class · titlePrefix?(ReactNode) 제목 앞 표시
  * - out: onRuleChange(rule) 유형 선택 · onCountChange(count) 개수 입력 · 화면: 유형 선택·개수 입력·"문항 N개 × 1점 = 총점 · 통과 점수" 안내
- * - 문항 수와 현재 선택을 받아 만점 통과/커트라인 통과/통과·실패 제출을 고르게 하고, 통과 점수 계산 결과를 보여 준다.
+ * - 문항 수와 현재 선택을 받아 만점 통과/커트라인 통과/통과·실패 제출/참여형을 고르게 하고, 통과 점수 계산 결과를 보여 준다.
  *   통과 점수 계산 자체는 popupQuizRule.withQuizRule이 한다(이 컴포넌트는 입력·표시만).
  */
 export default function PopupQuizRuleFields({ questionCount, rule, count, passingScore, onRuleChange, onCountChange, className, titlePrefix }: Props) {
@@ -42,6 +42,11 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
       <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }} data-testid="quiz-rule-score">
         문항 {questionCount}개 × {QUIZ_QUESTION_SCORE}점 = 총점 {questionCount * QUIZ_QUESTION_SCORE}점 · 통과 점수 {passingScore ?? '-'}점
       </Typography>
+      {rule === 'PARTICIPATION' && (
+        <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
+          정답 개수와 관계없이 제출하면 완료됩니다. 채점은 하며 실제 점수를 결과로 보냅니다.
+        </Typography>
+      )}
       {rule === 'PASS_FAIL' && (
         <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
           미달(실패)이면 제출되지 않고 점수 안내 후 다시 풀어 통과해야 제출됩니다.
