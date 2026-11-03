@@ -1,7 +1,11 @@
 # 변경 이력
 
-## 2026-11-03-02 — 20261103 폐쇄망 반입본 생성(CommonCKEditor 폴더 이동·3117 옵션 샘플)
+## 2026-11-03-02 — 20261103 폐쇄망 반입본 생성(CommonCKEditor 폴더 이동·3117 옵션 샘플·로고 이미지)
 
+- 재생성(로고 이미지 포함): `docs/interfaces/examples/hyundaiCi.png`·`hyundaiCi.webp`는 2026-10-29-15에서 "로컬·반입본 전용"으로 정했으나 `.git/info/exclude` 대상이라 HEAD worktree 기준인 반입 스크립트에 담기지 않아 20261029~20261102 반입본에 모두 빠져 있었음. `export-offline-package.ps1`에 로컬 전용 문서 목록을 두고 작업 폴더에서 4-docs로 직접 복사(MANIFEST-4-docs에 `L` 표시, 파일이 없으면 경고만)하도록 보완하고 같은 날짜로 재생성(-Force, 소스 커밋 e94e135 — 변경 이력 커밋만 추가돼 소스 동일). 변경 요약에 로고 이미지 항목 추가.
+  - 결과: 문서 170(이전 168 + 로고 2), 그 밖의 묶음 수 동일. TGZ 13,139,813바이트, SHA256 `04b7808abb2d3eef1e8d37649faa78ca26c6173b4d72c24fad7462d67b7c4d95`(1차본 `9a766217…`는 대체).
+  - 검증: TAR 4개 파일 수 대조, TGZ 체크섬 일치, TGZ를 풀어 안 TAR 4개 SHA256 통과, 4-docs.tar에 hyundaiCi 2개 포함·작업 폴더 원본과 바이트 동일 확인. 폐쇄망 반영은 미실행.
+  - 주요 파일: scripts/export-offline-package.ps1.
 - 이유: 20261102 반입본(8986689) 이후의 관리자 웹 CommonCKEditor 폴더 이동(bafeeae·e0be492)과 WPF Demo 3117 옵션 샘플·팝업 띄우기(7917c0d)를 폐쇄망에 반입.
 - 변경: `scripts/export-offline-package.ps1 -Date 20261103 -PreviousExport 20261102 -PreviousCommit 8986689 -NotesFile <변경 요약>`으로 offline-export/20261103 생성. npm 패키지 변경이 없어 5-npm-ckeditor 묶음 미포함(20261102 묶음 유효). 변경 요약에 폴더판 CommonCKEditor 교체·최상위 파일 삭제·CommonCKEditorView.tsx 유지·`main\.next` 삭제 후 재기동, WPF 재빌드 후 JSON Validator → 3117 옵션 샘플 확인 순서 기재. Git 설치 파일 미동봉.
 - 주요 파일: offline-export/20261103(Git 제외), version-history/CHANGELOG.md.

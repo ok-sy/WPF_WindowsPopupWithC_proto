@@ -185,6 +185,18 @@ try {
     # 문서: docs/interfaces/OLD는 Git 제외 로컬 보관, AGENTS.md는 개발 저장소 작업 규칙이라 넣지 않는다.
     $docs = Export-TreeBundle -Name "4-docs" -Roots @("docs", "db", "api") -ExcludeDirs @("OLD") -ExcludeExtensions @() -ExcludePatterns @() `
         -ExtraFiles @("README.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md")
+    # 로컬·반입본 전용 파일: 저장소에 넣지 않는(.git/info/exclude) 파일이라 worktree에 없으므로 작업 폴더에서 직접 복사한다. 없으면 경고만 한다.
+    $localOnlyDocs = @("docs/interfaces/examples/hyundaiCi.png", "docs/interfaces/examples/hyundaiCi.webp")
+    $docsManifestPath = Join-Path $OutputRoot "MANIFEST-4-docs.txt"
+    foreach ($file in $localOnlyDocs) {
+        $localSource = Join-Path $repositoryRoot ($file -replace "/", "\")
+        if (-not (Test-Path -LiteralPath $localSource -PathType Leaf)) { Write-Warning "로컬 전용 파일 없음(반입본 미포함): $file"; continue }
+        $target = Join-Path (Join-Path $OutputRoot "4-docs") ($file -replace "/", "\")
+        New-Item -ItemType Directory -Force (Split-Path -Parent $target) | Out-Null
+        Copy-Item -LiteralPath $localSource -Destination $target -Force
+        Add-Content -Encoding UTF8 -LiteralPath $docsManifestPath -Value "L`t$file"
+        $docs++
+    }
     if ($UseWorkingChangelog) {
         # 반입본 생성 기록을 적은 최신 변경 이력으로 교체(커밋 전 기록용)
         Copy-Item -LiteralPath (Join-Path $repositoryRoot "version-history\CHANGELOG.md") -Destination (Join-Path $OutputRoot "4-docs\version-history\CHANGELOG.md") -Force
