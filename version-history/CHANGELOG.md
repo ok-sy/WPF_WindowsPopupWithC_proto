@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-03-23 — dev: Q3 참여형 passingScore=0 저장·전달 경로 확인
+
+- 이유: PU001 Q3 참여형을 기존 계약의 `popupType=QUIZ`·`passingScore=0`으로 표현하기로 해, 관리자 등록·서버 저장/조회·WPF 전달·채점 전 구간에서 0이 유지되는지 검증 필요.
+- 변경: `PopupAdminQuestionsTest.participationQuizPassingScoreZeroIsSavedAndDelivered` 추가(QUIZ passingScore 0 저장 명령 값 0, `WpfPopupItem` 응답 JSON에 `passingScore` 0 포함, 음수 저장 거절). PU001 TODO §4-2 Q3에 경로별 확인 결과·남은 작업 기록. 동작 코드 변경 없음.
+- 확인 결과: 서버 저장 검증(0~총점)·DB(CHECK ≥ 0)·조회·WPF 응답(NON_NULL, 0 유지)·3117 샘플 규칙은 0 허용. WPF는 0이면 항상 통과해 실제 score·`passed=true`로 SUBMITTED 생성하나 통과 모달이 "평가를 통과했어요"라 참여형 문구와 다름. 관리자 웹 등록 화면은 퀴즈유형(기준 1~문항 수)만 있어 0을 입력할 수 없고, 0으로 저장된 팝업을 열어 다시 저장하면 커트라인 1개로 복원돼 1로 바뀜. 3111 단건 샘플은 컬럼이 없어 항상 null.
+- 주요 파일: zero-rule-server/service/core/src/test/java/server/service/core/popup/PopupAdminQuestionsTest.java, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: `:service:core:test --tests *PopupAdminQuestionsTest` 18건 통과. 관리자 웹·WPF는 정적 추적(`popupQuizRule.ts` readQuizRule·withQuizRule·validateQuizRule, `PopupEditorDialog` hidePassingScore, `QuizGrader`, `PopupManager.SubmitSurveyResult`). 미실행: 원격 개발 DB 실DB 저장·조회(접속 불가), 관리자 웹 실화면, WPF 실기동.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-22 — dev: 동영상+퀴즈 completionRatio 미설정 기본값 0.8 통일(PU001 B-7)
 
 - 이유: PU001 B-7 결정. 동영상+퀴즈의 `completionRatio` 미설정 시 관리자 웹 미리보기·등록 화면은 0.8, WPF·서버 시청 완료 판정과 서버 샘플 기본값은 1.0으로 달라 같은 팝업의 완료 기준이 화면마다 달랐음.

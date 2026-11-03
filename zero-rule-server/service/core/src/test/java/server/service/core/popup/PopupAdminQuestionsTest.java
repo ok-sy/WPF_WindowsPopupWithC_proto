@@ -98,6 +98,33 @@ class PopupAdminQuestionsTest {
                 popup(List.of(question(true, true))), false, List.of(), "admin"));
     }
 
+    /**
+     * PU001 Q3 참여형 — QUIZ passingScore=0은 저장 검증을 통과해 POPUP_NOTICE.PASSING_SCORE에 0으로 저장되고,
+     * WPF 조회 응답에도 null로 바뀌지 않고 0으로 실린다(NON_NULL이라 0은 생략되지 않음).
+     */
+    @Test void participationQuizPassingScoreZeroIsSavedAndDelivered() throws Exception {
+        var base = popup(List.of(question(true, false)));
+        var zero = new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                base.width(), base.height(), base.widthRatio(), base.heightRatio(), base.minimumWidth(), base.minimumHeight(),
+                base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
+                base.showDoNotShowAgain(), base.showLater(), base.questionTemplateId(), base.periodMode(), null, null, null, null, null,
+                0.0, base.questions(), base.content());
+        service.saveAdminPopup(zero, false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupNotice(argThat(c -> c.passingScore() != null && c.passingScore().signum() == 0));
+        var json = new ObjectMapper().findAndRegisterModules().valueToTree(server.domain.popup.wpf.WpfPopupItem.from(zero, true));
+        assertTrue(json.has("passingScore"), "passingScore=0 키가 응답에 있어야 함: " + json);
+        assertEquals(0.0, json.path("passingScore").asDouble(-1));
+        // 음수는 계속 거절한다.
+        var negative = new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                base.width(), base.height(), base.widthRatio(), base.heightRatio(), base.minimumWidth(), base.minimumHeight(),
+                base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
+                base.showDoNotShowAgain(), base.showLater(), base.questionTemplateId(), base.periodMode(), null, null, null, null, null,
+                -1.0, base.questions(), base.content());
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(negative, false, List.of(), "admin"));
+    }
+
     /** 문항 없는 퀴즈는 공통 문항 규칙으로 거부한다. */
     @Test void emptyQuizIsRejectedByCurrentQuestionRules() {
         assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(popup(List.of()), false, List.of(), "admin"));
