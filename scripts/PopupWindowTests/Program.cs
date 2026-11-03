@@ -83,8 +83,22 @@ internal static class Program
     };
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
+        // 인자로 검사 이름 일부를 주면 그 검사만 실행한다(예: QuizResult). 인자가 없으면 전체를 순서대로 실행한다.
+        if (args.Length > 0)
+        {
+            var selected = typeof(Program).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                .Where(m => m.Name.StartsWith("Check") && m.GetParameters().Length == 0 && args.Any(a => m.Name.Contains(a, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            foreach (var method in selected)
+            {
+                try { method.Invoke(null, null); }
+                catch (TargetInvocationException e) when (e.InnerException != null) { throw e.InnerException; }
+            }
+            Console.WriteLine($"PASS: {_checks} popup window checks ({string.Join(", ", selected.Select(m => m.Name))})");
+            return;
+        }
         CheckHideDaysLabel50();
         CheckVideoClose50();
         CheckDisplayModeIgnored50();
@@ -97,6 +111,7 @@ internal static class Program
         CheckServerSampleResponses();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
+        CheckQuizResultNoticeQ3();
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
         CheckOwnerCloseSavesResult();
@@ -828,6 +843,73 @@ internal static class Program
         }
     }
 
+    private static SurveySubmission ToSubmission(List<SurveyAnswer> answers, QuizGrader.Result graded) => new()
+    {
+        Answers = answers, Score = graded.Score, Passed = graded.Passed, PassingScore = graded.PassingScore,
+        IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers, CorrectCount = graded.CorrectCount,
+        ScoredCount = graded.ScoredCount, MaxScore = graded.MaxScore, UnitScored = graded.UnitScored
+    };
+
+    /* QuizResultNotice.Build(internal)를 reflection으로 호출해 (Title, Message, ButtonText)를 돌려준다. */
+    private static (string Title, string Message, string ButtonText) QuizNotice(SurveySubmission submission, string? name, bool aux)
+    {
+        var type = typeof(Popup.Managers.PopupManager).Assembly.GetType("Popup.Managers.QuizResultNotice")!;
+        object notice = type.GetMethod("Build", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object?[] { submission, name, aux })!;
+        string Get(string property) => (string)notice.GetType().GetProperty(property)!.GetValue(notice)!;
+        return (Get("Title"), Get("Message"), Get("ButtonText"));
+    }
+
+    /*
+     * POL-06-02 : 선택·제출 — PU001 Q3 QUIZ 결과 안내 3유형(기획서 106·109). 10문항 1점 기준:
+     * 커트라인 6 → 7/10 성공 "통과하여 … 종료"+확인, 3/10 실패 "통과 기준: 6개 이상"+다시 풀기 / 만점 10 → 10/10 성공 "모두 맞추셨습니다", 9/10 실패 /
+     * 참여형 0 → 2/10도 passed=true "완료하여 … 종료"+2/10개+확인. 배점이 1점이 아니면 통과 기준을 점수로 적는다.
+     */
+    private static void CheckQuizResultNoticeQ3()
+    {
+        var questions = Enumerable.Range(1, 10).Select(i => new SurveyQuestion
+        {
+            QuestionId = i, QuestionType = SurveyQuestionType.SingleChoice, Title = $"문항 {i}", IsScored = true,
+            Options = new List<SurveyOption> { new() { OptionId = i * 10 + 1, IsCorrect = true }, new() { OptionId = i * 10 + 2, IsCorrect = false } }
+        }).ToList();
+        List<SurveyAnswer> Answers(int correct) => questions.Select((q, index) =>
+        {
+            var answer = new SurveyAnswer { QuestionId = q.QuestionId };
+            answer.SelectedOptionIds.Add(q.Options[index < correct ? 0 : 1].OptionId);
+            return answer;
+        }).ToList();
+        (bool Passed, (string Title, string Message, string ButtonText) Notice, QuizGrader.Result Graded) Run(int correct, double? passing, string? name = "보안 퀴즈")
+        {
+            var answers = Answers(correct);
+            var graded = QuizGrader.Grade(questions, answers, passing);
+            return (graded.Passed, QuizNotice(ToSubmission(answers, graded), name, false), graded);
+        }
+
+        var cutPass = Run(7, 6);
+        Check(cutPass.Passed && cutPass.Notice.Message.StartsWith("퀴즈를 통과하여 보안 퀴즈를 종료합니다.") && cutPass.Notice.Message.Contains("7/10개")
+            && cutPass.Notice.ButtonText == "확인", $"[Q3] cutoff pass notice ({cutPass.Notice})");
+        var cutFail = Run(3, 6);
+        Check(!cutFail.Passed && cutFail.Notice.Message.StartsWith("퀴즈를 통과하지 못하였습니다.\n문제를 다시 풀어주세요.\n(통과 기준: 6개 이상)")
+            && cutFail.Notice.Message.Contains("3/10개") && cutFail.Notice.ButtonText == "다시 풀기", $"[Q3] cutoff fail notice ({cutFail.Notice})");
+        var fullPass = Run(10, 10);
+        Check(fullPass.Passed && fullPass.Notice.Message == "퀴즈를 모두 맞추셨습니다.\n보안 퀴즈를 종료합니다." && fullPass.Notice.ButtonText == "확인",
+            $"[Q3] full-score pass notice ({fullPass.Notice})");
+        var fullFail = Run(9, 10);
+        Check(!fullFail.Passed && fullFail.Notice.Message.StartsWith("문제를 모두 맞춰야 퀴즈를 종료할 수 있습니다.\n다시 풀어주세요.")
+            && fullFail.Notice.Message.Contains("틀린 문항: 10번") && fullFail.Notice.ButtonText == "다시 풀기", $"[Q3] full-score fail notice ({fullFail.Notice})");
+        var join = Run(2, 0);
+        Check(join.Passed && join.Graded.Score == 2 && join.Notice.Message == "퀴즈를 완료하여 보안 퀴즈를 종료합니다.\n\n2/10개"
+            && join.Notice.Title == "퀴즈를 완료했어요" && join.Notice.ButtonText == "확인", $"[Q3] participation notice keeps the real score ({join.Notice})");
+        // 받침 있는 이름은 "을", 이름이 없으면 "퀴즈를", 비한글은 "을(를)".
+        Check(Run(2, 0, "안전 교육").Notice.Message.StartsWith("퀴즈를 완료하여 안전 교육을 종료합니다.")
+            && Run(2, 0, "  ").Notice.Message.StartsWith("퀴즈를 완료하여 퀴즈를 종료합니다.")
+            && Run(2, 0, "Quiz").Notice.Message.StartsWith("퀴즈를 완료하여 Quiz을(를) 종료합니다."), "[Q3] object particle follows the quiz name");
+        // 배점이 1점이 아니면 통과 기준을 점수로 안내한다.
+        foreach (var question in questions) question.QuestionScore = 10;
+        var points = Run(3, 60);
+        Check(!points.Passed && points.Notice.Message.Contains("(통과 기준: 60점 이상)") && points.Notice.Message.Contains("3/10개"),
+            $"[Q3] non-unit scores show the criterion in points ({points.Notice})");
+    }
+
     /* QUIZ 미달 안내의 틀린 문항 번호(화면 번호). 결과 항목에는 담지 않는다. */
     private static void CheckQuizFailedMessage43()
     {
@@ -852,16 +934,11 @@ internal static class Program
         var expectedWrong = scoredNumbers.Skip(1).ToList();
         Check(graded.IncorrectQuestionNumbers.SequenceEqual(expectedWrong), "[설계 43] a correct answer is removed from the incorrect list");
 
-        var submission = new SurveySubmission
-        {
-            Answers = answers, Score = graded.Score, Passed = graded.Passed, PassingScore = graded.PassingScore,
-            IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers
-        };
-        var build = typeof(Popup.Managers.PopupManager).GetMethod("BuildQuizFailedMessage", BindingFlags.Static | BindingFlags.NonPublic)!;
-        string noAux = (string)build.Invoke(null, new object[] { submission, false })!;
-        Check(noAux.Contains($"틀린 문항: {string.Join(", ", expectedWrong)}번") && noAux.Contains("다시 제출해 주세요")
+        var submission = ToSubmission(answers, graded);
+        string noAux = QuizNotice(submission, "보안 퀴즈", false).Message;
+        Check(noAux.Contains($"틀린 문항: {string.Join(", ", expectedWrong)}번") && noAux.Contains("다시 풀어주세요")
             && !noAux.Contains("'닫기'"), $"[설계 43] failed QUIZ notice lists wrong question numbers ({noAux})");
-        string withAux = (string)build.Invoke(null, new object[] { submission, true })!;
+        string withAux = QuizNotice(submission, "보안 퀴즈", true).Message;
         Check(withAux.Contains("하단 '닫기'로 닫을 수 있습니다"), "[설계 43] the notice mentions the aux close only when it is shown");
 
         // 안내의 보조 닫기 문장은 창의 실제 표시 조건(HasAuxClose)을 따른다: Overlay 꺼진 QUIZ는 표시, 정상 재생 중 VIDEO+QUIZ는 미표시.

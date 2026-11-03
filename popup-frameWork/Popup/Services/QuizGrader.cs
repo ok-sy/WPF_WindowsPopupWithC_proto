@@ -13,9 +13,9 @@ namespace Popup.Services
      * - [역할] QUIZ 로컬 채점기. 사용자가 "채점" 버튼을 누르면 서버 응답을 기다리지 않고 즉시 점수·통과 여부를 계산한다.
      *
      * [추가 이유] 현재 용도(신규 입사자 안내·간단 퀴즈)에서는 사용자 화면 판정을 WPF가 즉시 하고 서버는 결과 저장에 집중한다.
-     * 서버(PopupService.gradeAnswer)와 같은 규칙으로 계산해 두 값이 어긋나지 않게 한다.
+     * 서버는 재채점하지 않고 이 결과(score·passed)를 그대로 저장한다(PU001 B-1, 2026-11-03).
      *
-     * [채점 규칙 — 서버 gradeAnswer / PopupQuestionRules.matchesText 와 동일]
+     * [채점 규칙 — 관리자 웹 미리보기와 같은 기준. 서버 재채점(gradeAnswer·matchesText)은 B-1에서 제거]
      *   - 채점 문항(IsScored)만 계산한다. 비채점 문항은 점수 없음.
      *   - 선택형(SINGLE/MULTIPLE): 선택한 선택지 집합 == 정답(IsCorrect=true) 선택지 집합 이면 문항 배점 전부, 아니면 0. 부분 점수 없음.
      *   - 서술형(TEXT): 정답 문자열과 일치 모드 EXACT(trim 후 완전 일치) / CONTAINS(trim 후 포함) 로 비교. 모드가 없으면 오답.
@@ -30,10 +30,19 @@ namespace Popup.Services
         public const double DefaultQuestionScore = 1;
         /// <summary>
         /// IncorrectQuestionNumbers: 틀린 채점 문항의 화면 번호(문항 목록 순서 1부터). 미달 안내에만 쓰며 결과 계약(score·passed)에는 담지 않는다.
+        /// CorrectCount·ScoredCount·MaxScore·UnitScored: 결과 안내(PU001 Q3, 정답 N/M개·유형 판별)용. 결과 계약에는 담지 않는다.
         /// </summary>
         public sealed record Result(double Score, bool Passed, double PassingScore)
         {
             public IReadOnlyList<int> IncorrectQuestionNumbers { get; init; } = Array.Empty<int>();
+            /// <summary>정답 채점 문항 수.</summary>
+            public int CorrectCount { get; init; }
+            /// <summary>채점 문항 수(정답 N/M개의 M).</summary>
+            public int ScoredCount { get; init; }
+            /// <summary>채점 문항 배점 합(만점).</summary>
+            public double MaxScore { get; init; }
+            /// <summary>모든 채점 문항이 1점이면 true(통과 기준을 개수로 안내할 수 있음).</summary>
+            public bool UnitScored { get; init; }
         }
 
         /* ■ 채점: 채점 문항만 계산해 총점(소수 2자리 반올림)·통과 여부·틀린 문항 번호를 돌려준다. 채점 문항이 없으면 0점 통과. */
@@ -65,8 +74,20 @@ namespace Popup.Services
             }
 
             total = Math.Round(total, 2);
-            return new Result(total, total >= passing, passing) { IncorrectQuestionNumbers = incorrect };
+            double maxScore = Math.Round(scored.Sum(EffectiveScore), 2);
+            return new Result(total, total >= passing, passing)
+            {
+                IncorrectQuestionNumbers = incorrect,
+                CorrectCount = scored.Count - incorrect.Count,
+                ScoredCount = scored.Count,
+                MaxScore = maxScore,
+                UnitScored = scored.All(question => EffectiveScore(question) == DefaultQuestionScore)
+            };
         }
+
+        /// <summary>문항 배점. 없거나 비정상이면 기본 1점(채점 합산과 같은 기준).</summary>
+        private static double EffectiveScore(SurveyQuestion question)
+            => question.QuestionScore is double score && double.IsFinite(score) ? score : DefaultQuestionScore;
 
         /// <summary>문항 하나의 정오답. 선택형은 선택지 집합 비교, 서술형은 문자열 일치 모드 비교.</summary>
         public static bool IsCorrect(SurveyQuestion question, SurveyAnswer answer)
@@ -84,7 +105,7 @@ namespace Popup.Services
             return correctIds.Count > 0 && selectedIds.SetEquals(correctIds);
         }
 
-        /// <summary>서버 PopupQuestionRules.matchesText 와 같은 규칙. 모드가 EXACT/CONTAINS가 아니면 오답.</summary>
+        /// <summary>주관식 비교(EXACT 완전 일치·CONTAINS 포함, trim 후). 모드가 EXACT/CONTAINS가 아니면 오답.</summary>
         public static bool MatchesText(string? answer, string? expected, string? mode)
         {
             if (string.IsNullOrWhiteSpace(answer) || string.IsNullOrWhiteSpace(expected))

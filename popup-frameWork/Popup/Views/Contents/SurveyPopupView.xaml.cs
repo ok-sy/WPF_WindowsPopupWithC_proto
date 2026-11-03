@@ -998,7 +998,11 @@ namespace Popup.Views.Contents
                     Score = graded.Score,
                     Passed = graded.Passed,
                     PassingScore = graded.PassingScore,
-                    IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers
+                    IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers,
+                    CorrectCount = graded.CorrectCount,
+                    ScoredCount = graded.ScoredCount,
+                    MaxScore = graded.MaxScore,
+                    UnitScored = graded.UnitScored
                 };
             }
             else

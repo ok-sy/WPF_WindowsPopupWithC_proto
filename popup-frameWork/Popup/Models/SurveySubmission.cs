@@ -24,5 +24,15 @@ namespace Popup.Models
 
         /// <summary>POL-06-03 : 표현·수명 — QUIZ 미달 안내용 틀린 문항 번호(화면 번호). 결과 항목(WpfResultItemDto)에는 담지 않는다.</summary>
         public IReadOnlyList<int> IncorrectQuestionNumbers { get; init; } = new List<int>();
+
+        /* POL-06-02 : 선택·제출 — QUIZ 결과 안내(PU001 Q3: 정답 N/M개·커트라인/만점/참여형 판별)용. 결과 항목에는 담지 않는다. */
+        /// <summary>정답 채점 문항 수.</summary>
+        public int CorrectCount { get; init; }
+        /// <summary>채점 문항 수.</summary>
+        public int ScoredCount { get; init; }
+        /// <summary>채점 문항 배점 합(만점).</summary>
+        public double MaxScore { get; init; }
+        /// <summary>모든 채점 문항이 1점인지(통과 기준을 개수로 안내).</summary>
+        public bool UnitScored { get; init; }
     }
 }

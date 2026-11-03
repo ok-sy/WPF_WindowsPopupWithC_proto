@@ -239,14 +239,15 @@ namespace Popup.Managers
          * POL-06-03 : 표현·수명
          * POL-02-02 : 종료 제어
          * 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 창을 닫는다.
-         *  1. QUIZ 미통과(passed=false)면 점수·통과 점수를 안내하고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다.
-         *     사용자는 답안을 고쳐 "제출"을 다시 누를 수 있고, 통과 점수를 넘길 때까지 반복한다.
+         *  1. QUIZ 미통과(passed=false)면 유형별 실패 안내(QuizResultNotice: 커트라인형 기준·정답 N/M개, 만점형 전부 정답 요구)를
+         *     보여 주고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다. "다시 풀기" 후 통과할 때까지 반복한다.
          *     안내에 틀린 문항 번호를 함께 보여 준다(결과 계약 score·passed는 그대로).
          *     QUIZ의 푸터 버튼은 '제출'이라 닫기 버튼이 없다. Background Overlay가 꺼져 있으면 미달 1회 뒤 보조 '닫기'가 보이고,
          *     켜져 있으면 통과해야 닫힌다(Alt+F4도 막힘). 제출 없이 나가면 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
          *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(메모리 결과 큐 적재).
          *     이 시점부터 결과는 유실되지 않는다.
-         *  3. QUIZ 통과 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
+         *  3. QUIZ 유형별 완료 안내(서버 응답 없음, PU001 Q3): 커트라인형 "통과하여 … 종료" + N/M개, 만점형 "모두 맞추셨습니다",
+         *     참여형(passingScore 0) "완료하여 … 종료" + N/M개. 확인을 누르면 닫힌다. SURVEY는 안내 없이 닫는다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
          * EnqueueResult가 없으면(훅 미연결) 저장 없이 닫는다.
          */
@@ -254,13 +255,12 @@ namespace Popup.Managers
             PopupWindow popupWindow, PopupOptions popupOptions, PopupResultBuilder builder, SurveySubmission submission)
         {
             bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
-            string passingText = submission.PassingScore is double passing && passing > 0
-                ? $" (통과 점수 {passing:0.##}점)" : string.Empty;
 
             if (isQuiz && submission.Passed == false)
             {
                 popupWindow.NotifyQuizFailed();
-                PopupAlert.Show(popupWindow, BuildQuizFailedMessage(submission, popupWindow.HasAuxClose), "다시 도전해 주세요", "답안 수정");
+                QuizResultNotice.Notice failed = QuizResultNotice.Build(submission, popupOptions.Title, popupWindow.HasAuxClose);
+                PopupAlert.Show(popupWindow, failed.Message, failed.Title, failed.ButtonText);
                 return;   // 창 유지, 제출 없음
             }
 
@@ -268,35 +268,14 @@ namespace Popup.Managers
             popupOptions.EnqueueResult?.Invoke(item);
             builder.MarkFinalized();
 
-            if (isQuiz && submission.Score is double score)
+            if (isQuiz && submission.Score is double)
             {
-                PopupAlert.Show(popupWindow,
-                    $"점수: {score:0.##}점{passingText}\n\n평가를 통과했습니다.",
-                    "평가를 통과했어요", "완료");
+                QuizResultNotice.Notice done = QuizResultNotice.Build(submission, popupOptions.Title, auxCloseVisible: false);
+                PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText);
             }
 
             popupWindow.CloseByApp();   // 앱이 시작한 닫기(외부 닫기 제한 대상 아님). Closed 핸들러가 백그라운드 전송을 시작한다
         }
-
-        /*
-         * POL-06-02 : 선택·제출
-         * ■ QUIZ 미달 안내 문구
-         * - in : submission(SurveySubmission) 채점 결과 · auxCloseVisible(bool) 보조 닫기 표시 여부
-         * - out: string 안내 문구
-         * - 점수·통과 점수에 틀린 채점 문항 번호(화면 번호)를 더한다.
-         * 보조 닫기가 실제로 보이는 경우(PopupWindow.HasAuxClose)에는 제출 없이 닫을 수 있다는 안내를 붙인다.
-         */
-        internal static string BuildQuizFailedMessage(SurveySubmission submission, bool auxCloseVisible)
-        {
-            string passingText = submission.PassingScore is double passing && passing > 0
-                ? $" (통과 점수 {passing:0.##}점)" : string.Empty;
-            string incorrectText = submission.IncorrectQuestionNumbers.Count > 0
-                ? $"\n틀린 문항: {string.Join(", ", submission.IncorrectQuestionNumbers)}번" : string.Empty;
-            string closeText = auxCloseVisible
-                ?"\n다시 제출하지 않으려면 하단 '닫기'로 닫을 수 있습니다." : string.Empty;
-            return $"점수: {submission.Score ?? 0:0.##}점{passingText}{incorrectText}\n\n통과 점수에 미달했습니다.\n답안을 확인한 뒤 다시 제출해 주세요.{closeText}";
-        }
-
 
         /*
          * Overlay(배경)를 클릭하면 Overlay는 활성화되지 않지만, 안전하게 열려 있는 팝업을 모두

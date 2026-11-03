@@ -143,7 +143,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | content.width/height | 폐기(TODO58). 최소 버전(ORIGINAL)은 원래 사용하지 않음. 구 키 `imageWidth/imageHeight`는 v3.6에서 폐기 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
-| QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점 |
+| QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점. 결과 안내 문구는 `passingScore`로 커트라인형·만점형·참여형(0)을 나눠 표시(PU001 Q3, 고정 동작) |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
 | FooterAction / FooterLinkUrl | `content`가 아니라 `popup` 최상위 값. 일반 콘텐츠는 CLOSE “확인”(닫기 동작) 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |

@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-03-25 — dev: WPF QUIZ 결과 안내 커트라인형·만점형·참여형 분리(PU001 Q3)
+
+- 이유: 기획서(106·109) QUIZ 결과 화면이 커트라인형·만점형·참여형별로 문구·버튼·정답 개수 표시가 다르나, WPF는 유형 구분 없이 성공 "점수 N점 / 평가를 통과했어요"(완료), 실패 "점수·통과 점수 / 다시 도전해 주세요"(답안 수정) 한 가지만 표시했음.
+- 변경:
+  - `Managers/QuizResultNotice.cs` 신규: passingScore로 유형 판별(0 이하·미설정·채점 문항 없음 = 참여형, 만점 이상 = 만점형, 그 밖 = 커트라인형)하고 기획서 문구로 (제목, 본문, 버튼) 생성. 성공 버튼 "확인", 실패 "다시 풀기". 커트라인형·참여형은 `N/M개`(정답 채점 문항 수/채점 문항 수), 커트라인 실패는 `(통과 기준: N개 이상)`(전 문항 1점이 아니면 `N점 이상`). 실패 안내에 틀린 문항 번호·보조 닫기 안내 유지. 퀴즈 이름은 팝업 제목(비면 "퀴즈")에 받침 기준 을/를(비한글 "을(를)").
+  - `QuizGrader.Result`·`SurveySubmission`에 CorrectCount·ScoredCount·MaxScore·UnitScored 추가(안내 전용, 결과 계약 미포함), `SurveyPopupView`가 전달. `PopupManager.SubmitSurveyResult`가 성공·실패 모두 `QuizResultNotice` 사용, 기존 `BuildQuizFailedMessage` 삭제. 결과 큐 적재 시점(안내 전)·score/passed 계약·창 유지/재채점 흐름은 그대로. VIDEO+QUIZ도 같은 경로.
+  - 테스트: PopupWindowTests `CheckQuizResultNoticeQ3`(10문항 1점: 커트라인 6 기준 7/10 성공·3/10 실패, 만점 10/10 성공·9/10 실패, 참여형 2/10 passed=true·score 2, 조사, 배점 10점일 때 점수 기준) 추가, `CheckQuizFailedMessage43` 새 문구로 갱신, 검사 이름 인자로 일부만 실행하는 옵션 추가. BehaviorTests(로컬 전용) 모달 제목 갱신.
+  - 문서: `WPF_POPUP_ALL_SPEC.md`(제출 규칙·제출 실패 행), `WPF_POPUP_MINIMAL_SPEC.md`(QUIZ 미통과 동작 행, 고정 동작 설명만), `POPUP_INTERFACE_SPEC.md` 제출 설명, `popup-frameWork/README.md` 제출 흐름, PU001 TODO Q3 두 항목 완료 표기.
+- 주요 파일: popup-frameWork/Popup/Managers/QuizResultNotice.cs(신규), Managers/PopupManager.cs, Services/QuizGrader.cs, Models/SurveySubmission.cs, Views/Contents/SurveyPopupView.xaml.cs, scripts/PopupWindowTests/Program.cs, docs/interfaces/WPF_POPUP_ALL_SPEC.md·WPF_POPUP_MINIMAL_SPEC.md·POPUP_INTERFACE_SPEC.md, popup-frameWork/README.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md. 로컬 전용(Git 제외): popup-frameWork/Popup.BehaviorTests/Program.cs.
+- 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests는 전체 실행 시 기존 `CheckVideoQuizAspect60`에서 중단(원격 접속 작업 영역 1280×672, 2026-11-03-13과 같은 환경 문제)해 그 검사를 뺀 나머지 22개 검사를 이름 지정으로 실행 — 399건 통과(`CheckQuizResultNoticeQ3`·`CheckQuizFailedMessage43` 포함). BehaviorTests 1,711(QUIZ 실패 → 다시 풀어 주세요 창 유지·미저장, 정답 재제출 → 통과 안내 후 닫힘·SUBMITTED 1건)·RecoveryTests 154·ApiDemoTests 71 통과. 미실행: 실제 WPF 실기동 화면 확인(모달 문구·줄바꿈 표시), 원격 개발 DB 연동, 관리자 웹 미리보기 문구 정렬.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-24 — dev: 관리자 웹 퀴즈유형 참여형 추가(PU001 Q3)
 
 - 이유: PU001 Q3 참여형을 기존 계약의 QUIZ `passingScore=0`으로 표현하기로 했으나, 관리자 등록 화면은 퀴즈유형(만점·커트라인·통과/실패, 기준 1~문항 수)으로만 통과 점수를 만들어 0을 저장할 수 없었고, 0으로 저장된 팝업을 열면 커트라인 1개로 복원돼 다시 저장 시 1로 바뀌었음(2026-11-03-23 확인).
