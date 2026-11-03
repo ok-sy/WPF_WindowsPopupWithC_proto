@@ -21,6 +21,7 @@
 - 주요 파일: offline-export/20261103(Git 제외), version-history/CHANGELOG.md.
 - 결과: 서버 A 153·M 10·D 0, 웹 A 51·M 23·D 6(baseline 누적), WPF 소스 94(MockSso·Popup.slnx 없음), 문서 174(로고 2 포함). DELETE 누적 22개 + 20261102 이후 신규 1개(`zero-rule-web/main/src/components/CommonCKEditor.tsx`) + 미반입 개발용 절 3개(MockSso 2·Popup.slnx). TGZ 13,215,237바이트, SHA256 `7977345ac43194f47df23883241913c7024a515304b84870e8205801680f916e`.
 - 검증: TAR 4개 파일 수·경로 대조, 제외 대상 누출 검사(MockSso·Popup.slnx 포함), TGZ 체크섬 일치, `-VerifyBuild`로 20261006 NuGet 반입본 + 3-popup-frameWork만으로 폴더형·단일 EXE(91,778,382바이트) publish 성공(Popup.csproj 직접 복원). 폐쇄망 반영은 미실행.
+- 재생성(같은 날, WPF 백그라운드 실행 포함): 2026-11-03-31(8ef379c·6ecb950) 반영을 위해 `-Force`로 같은 옵션에 다시 생성(기준 커밋 6ecb950), 변경 요약에 기본 백그라운드 실행·`--tray`·로그인 자동 시작 1회 등록·시작 조회 실패 안내 숨김과 폐쇄망 확인 순서(설치 위치 실행 → Run 값 → 재로그인 자동 실행 → `--tray`) 추가. 로고는 같은 임시 처리(생성 후 스크립트 원복). 결과: 서버 A 153·M 10, 웹 A 51·M 23·D 6, WPF 소스 95(StartupOptions.cs 추가, MockSso·Popup.slnx 없음), 문서 174(로고 2), DELETE 동일. TGZ 13,225,075바이트, SHA256 `937608fa0d0d5a4358bafee532209c3305db75b68d608b759afe2b04c04adc6d`(오후 1차본 `7977345a…`는 대체). 검증: TAR 4개 대조·누출 검사·TGZ 체크섬, `-VerifyBuild` 폴더형·단일 EXE publish 성공. 폐쇄망 반영은 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-11-03-29 — docs: 폐쇄망 반입본에서 MockSso·Popup.slnx 제외
