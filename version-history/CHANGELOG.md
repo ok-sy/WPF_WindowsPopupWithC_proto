@@ -10,6 +10,7 @@
   - 문서: `WPF_POPUP_ALL_SPEC.md`(제출 규칙·제출 실패 행), `WPF_POPUP_MINIMAL_SPEC.md`(QUIZ 미통과 동작 행, 고정 동작 설명만), `POPUP_INTERFACE_SPEC.md` 제출 설명, `popup-frameWork/README.md` 제출 흐름, PU001 TODO Q3 두 항목 완료 표기.
 - 주요 파일: popup-frameWork/Popup/Managers/QuizResultNotice.cs(신규), Managers/PopupManager.cs, Services/QuizGrader.cs, Models/SurveySubmission.cs, Views/Contents/SurveyPopupView.xaml.cs, scripts/PopupWindowTests/Program.cs, docs/interfaces/WPF_POPUP_ALL_SPEC.md·WPF_POPUP_MINIMAL_SPEC.md·POPUP_INTERFACE_SPEC.md, popup-frameWork/README.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md. 로컬 전용(Git 제외): popup-frameWork/Popup.BehaviorTests/Program.cs.
 - 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests는 전체 실행 시 기존 `CheckVideoQuizAspect60`에서 중단(원격 접속 작업 영역 1280×672, 2026-11-03-13과 같은 환경 문제)해 그 검사를 뺀 나머지 22개 검사를 이름 지정으로 실행 — 399건 통과(`CheckQuizResultNoticeQ3`·`CheckQuizFailedMessage43` 포함). BehaviorTests 1,711(QUIZ 실패 → 다시 풀어 주세요 창 유지·미저장, 정답 재제출 → 통과 안내 후 닫힘·SUBMITTED 1건)·RecoveryTests 154·ApiDemoTests 71 통과. 미실행: 실제 WPF 실기동 화면 확인(모달 문구·줄바꿈 표시), 원격 개발 DB 연동, 관리자 웹 미리보기 문구 정렬.
+- 후속(같은 날): 결과 창 상단 굵은 제목을 그리지 않도록 `PopupAlert.Show/CreateDialog`에 `showHeading`(기본 true) 추가, 퀴즈 결과 안내만 false — 제목 문자열은 창 이름(Window.Title)으로만 남아 스크린리더·자동화 식별에 쓰이고 다른 안내 모달은 그대로. 틀린 문항 번호 표시는 `QuizResultNotice.Build`의 `[옵션] 틀린 문항 번호` 주석 아래 두 줄만 주석 처리하면 빠지도록 분리. PopupWindowTests에 제목 미표시·창 이름 유지 검사 추가(이름 지정 실행 400건 통과), BehaviorTests의 `CreateDialog` 리플렉션 호출 인자 갱신 후 1,711건 통과. 커밋·원격 반영.
 - 상태: 커밋·원격 반영.
 
 ## 2026-11-03-24 — dev: 관리자 웹 퀴즈유형 참여형 추가(PU001 Q3)

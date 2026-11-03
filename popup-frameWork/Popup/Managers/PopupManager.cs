@@ -260,7 +260,7 @@ namespace Popup.Managers
             {
                 popupWindow.NotifyQuizFailed();
                 QuizResultNotice.Notice failed = QuizResultNotice.Build(submission, popupOptions.Title, popupWindow.HasAuxClose);
-                PopupAlert.Show(popupWindow, failed.Message, failed.Title, failed.ButtonText);
+                PopupAlert.Show(popupWindow, failed.Message, failed.Title, failed.ButtonText, showHeading: false);
                 return;   // 창 유지, 제출 없음
             }
 
@@ -271,7 +271,7 @@ namespace Popup.Managers
             if (isQuiz && submission.Score is double)
             {
                 QuizResultNotice.Notice done = QuizResultNotice.Build(submission, popupOptions.Title, auxCloseVisible: false);
-                PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText);
+                PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText, showHeading: false);
             }
 
             popupWindow.CloseByApp();   // 앱이 시작한 닫기(외부 닫기 제한 대상 아님). Closed 핸들러가 백그라운드 전송을 시작한다

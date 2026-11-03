@@ -903,6 +903,13 @@ internal static class Program
         Check(Run(2, 0, "안전 교육").Notice.Message.StartsWith("퀴즈를 완료하여 안전 교육을 종료합니다.")
             && Run(2, 0, "  ").Notice.Message.StartsWith("퀴즈를 완료하여 퀴즈를 종료합니다.")
             && Run(2, 0, "Quiz").Notice.Message.StartsWith("퀴즈를 완료하여 Quiz을(를) 종료합니다."), "[Q3] object particle follows the quiz name");
+        // 퀴즈 결과 창은 제목을 화면에 그리지 않는다(창 이름으로만 남음). 기본 호출은 제목을 그대로 그린다.
+        var create = typeof(PopupAlert).GetMethod("CreateDialog", BindingFlags.Static | BindingFlags.NonPublic)!;
+        List<string> Texts(Window dialog) => ((StackPanel)((Border)dialog.Content).Child).Children.OfType<TextBlock>().Select(t => t.Text).ToList();
+        var hidden = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false })!;
+        var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true })!;
+        Check(Texts(hidden).SequenceEqual(new[] { join.Notice.Message }) && hidden.Title == "퀴즈를 완료했어요"
+            && Texts(shown).SequenceEqual(new[] { "제목", "본문" }), "[Q3] quiz result dialog hides the heading but keeps the window title");
         // 배점이 1점이 아니면 통과 기준을 점수로 안내한다.
         foreach (var question in questions) question.QuestionScore = 10;
         var points = Run(3, 60);

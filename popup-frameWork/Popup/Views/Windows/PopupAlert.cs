@@ -8,17 +8,18 @@ namespace Popup.Views.Windows;
  * POL-06-02 : 선택·제출
  * ■ 팝업 공통 안내 모달
  * - in : owner(Window?) 표시 중이면 가운데 기준 창 · message·title(string) · buttonText(string, 기본 "확인")
+ *        · showHeading(bool, 기본 true) false면 title을 본문 위 굵은 제목으로 그리지 않는다(창 이름 Window.Title로만 남아 스크린리더·자동화가 찾을 수 있음).
  * - out: 없음(Show는 닫힐 때까지 대기) · CreateDialog는 표시 전 Window를 돌려준다.
  * - 팝업의 제출·채점 안내에 사용하는 공통 모달. 테두리 없는 최상위 창이며 확인 버튼(Enter/Esc)으로 닫는다.
  */
 public static class PopupAlert
 {
-    public static void Show(Window? owner, string message, string title, string buttonText = "확인")
+    public static void Show(Window? owner, string message, string title, string buttonText = "확인", bool showHeading = true)
     {
-        CreateDialog(owner, message, title, buttonText).ShowDialog();
+        CreateDialog(owner, message, title, buttonText, showHeading).ShowDialog();
     }
 
-    internal static Window CreateDialog(Window? owner, string message, string title, string buttonText = "확인")
+    internal static Window CreateDialog(Window? owner, string message, string title, string buttonText = "확인", bool showHeading = true)
     {
         var dialog = new Window
         {
@@ -34,10 +35,13 @@ public static class PopupAlert
             Source = new System.Uri("/popupSample;component/Views/Windows/PopupStyles.xaml", System.UriKind.Relative)
         });
         var panel = new StackPanel { Margin = new Thickness(30) };
-        panel.Children.Add(new TextBlock { Text = title, FontSize = 25, FontWeight = FontWeights.Bold,
-            Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap });
+        if (showHeading)
+        {
+            panel.Children.Add(new TextBlock { Text = title, FontSize = 25, FontWeight = FontWeights.Bold,
+                Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap });
+        }
         panel.Children.Add(new TextBlock { Text = message, FontSize = 15, Foreground = Brushes.Black,
-            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 26), LineHeight = 24 });
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, showHeading ? 18 : 0, 0, 26), LineHeight = 24 });
         var button = new Button { Content = buttonText, IsDefault = true, IsCancel = true,
             HorizontalAlignment = HorizontalAlignment.Right, Style = (Style)dialog.FindResource("ActionButtonStyle") };
         button.Click += (_, _) => dialog.Close();
