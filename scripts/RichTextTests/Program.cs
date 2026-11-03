@@ -489,7 +489,7 @@ internal static class Program
         string server = File.ReadAllText(Path.Combine(root, "zero-rule-server", "service", "core", "src", "main", "java", "server", "service", "core", "popup", "PopupRichText.java"));
         var serverFonts = System.Text.RegularExpressions.Regex.Match(server, @"FONTS\s*=\s*Set\.of\(([^)]*)\)").Groups[1].Value
             .Split(',').Select(v => v.Trim().Trim('"')).Where(v => v.Length > 0).ToList();
-        string web = File.ReadAllText(Path.Combine(root, "zero-rule-web", "main", "src", "features", "RgstPop", "popupRichText.ts"));
+        string web = File.ReadAllText(Path.Combine(root, "zero-rule-web", "main", "src", "features", "PopupcommonComponent", "popupRichText.ts"));
         var webFonts = System.Text.RegularExpressions.Regex.Matches(web, @"\{ id: '([A-Z_]+)'").Select(m => m.Groups[1].Value).ToList();
         Check(serverFonts.Count > 0 && serverFonts.All(wpfFonts.ContainsKey) && webFonts.ToHashSet().SetEquals(serverFonts),
             "Every server font id has a WPF mapping and matches admin editor ids: " + string.Join(",", serverFonts));

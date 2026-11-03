@@ -1,9 +1,9 @@
 # 57. 완료 전 닫기 옵션 폐기 및 Overlay·완료·나중에 보기 역할 분리 TODO
 
 기준일: 2026-10-19 (KST)
-상태: **구현 완료(WPF·서버·관리자 웹·문서, 자동 검증) · 실화면·원격 개발 환경 확인 대기**
+상태: **구현 완료(WPF·서버·관리자 웹·문서) · 코드 행동 검증 완료(추적 PopupWindowTests, 2026-11-03 로컬 BehaviorTests 재작성) · 실제 Windows 버튼·키보드, 관리자 웹 실저장·재조회, 원격 개발 환경·구 WPF 조합 확인 대기**. 2026-11-03 대조([D 상태 대조](../reviews/20261103_활성작업_D상태대조_검토.md)).
 조사 기준: main `803cd3c`, 현재 PopupWindow의 닫기·Overlay 처리 및 인터페이스 계약.
-이번 작업은 계획 등록이다. 코드·API·DB 동작은 아직 변경하지 않았다.
+(등록 당시 기록) 이번 작업은 계획 등록이다. 코드·API·DB 동작은 아직 변경하지 않았다.
 
 ## 확정 방향
 
@@ -87,9 +87,9 @@ Overlay의 “화면에 종료 수단이 전혀 없으면 외부 닫기 허용�
 - [x] 외부 닫기 허용과 미완료 결과 저장을 설명해 “완료 기준 전에는 어떤 방법으로도 종료 불가”라는 잘못된 안내를 제거한다.
 
 ### 57-8 검증 및 완료 구분
-- [ ] VIDEO/영상 결합 QUIZ × Overlay ON/OFF × 기준 미달/충족 × Later ON/OFF 조합의 핵심 행동을 검증한다.
-- [ ] 재생 실패, 푸터 숨김, 정상 닫기, Alt+F4, 외부 WM_CLOSE, 나중에 보기, 앱 종료의 예외를 확인한다.
-- [ ] 기존 추적되는 WPF 테스트에서 필요한 닫기·결과 회귀 검증만 보완하고 실제 Windows 버튼/키보드 흐름을 확인한다.
+- [x] VIDEO/영상 결합 QUIZ × Overlay ON/OFF × 기준 미달/충족 × Later ON/OFF 조합의 핵심 행동을 검증한다. — 실화면 잔여(2026-11-03 대조)
+- [x] 재생 실패, 푸터 숨김, 정상 닫기, Alt+F4, 외부 WM_CLOSE, 나중에 보기, 앱 종료의 예외를 확인한다. — 실화면 잔여(2026-11-03 대조)
+- [ ] 기존 추적되는 WPF 테스트에서 필요한 닫기·결과 회귀 검증만 보완하고 실제 Windows 버튼/키보드 흐름을 확인한다. — 추적 테스트 보완 완료, 실제 Windows 조작만 잔여(2026-11-03 대조)
 - [ ] 코드 검증과 실화면 검증, Front/Server 인계·통합 검증 상태를 구분한다. 담당자 검증 전 서버 전체 완료로 표시하지 않는다.
 
 ## 구현 기록 (2026-10-19)
@@ -120,7 +120,7 @@ Overlay의 “화면에 종료 수단이 전혀 없으면 외부 닫기 허용�
 
 - PopupWindowTests 329건 통과: VIDEO·VIDEO+QUIZ × Overlay ON/OFF × 시청 전/후 외부 닫기, 구 allowCloseBeforeComplete true/false 무시, Overlay ON 재생 실패 시 버튼 닫기, 출구 없는 VIDEO 키보드 닫기, Overlay OFF 외부 닫기 결과 VIDEO_WATCHED, 앱 종료, 나중에 보기(LATER) 회귀.
 - ApiDemoTests 69건·RichTextTests 102건·CornerWindowTests 761건 통과. 서버 gradlew test 139건 통과(Oracle 연동 8건 skip). 웹 tsc·eslint 통과, verify-completion-ux-43 56건 통과.
-- 미실행: 실제 Windows에서 버튼·키보드(Alt+F4·시스템 메뉴) 실조작, 관리자 웹 실화면 저장·재조회, 원격 개발 서버 반영·구 WPF 조합 확인. 로컬 전용 Popup.BehaviorTests(.gitignore 대상)는 갱신하지 않았다(폐기 속성 참조로 빌드되지 않음).
+- 미실행: 실제 Windows에서 버튼·키보드(Alt+F4·시스템 메뉴) 실조작, 관리자 웹 실화면 저장·재조회, 원격 개발 서버 반영·구 WPF 조합 확인. 로컬 전용 Popup.BehaviorTests(.gitignore 대상)는 갱신하지 않았다(폐기 속성 참조로 빌드되지 않음). → 2026-11-03 로컬 BehaviorTests를 Overlay 기준으로 재작성해 1,711건 통과(CHANGELOG 2026-11-03-03).
 
 ## 책임과 완료 기준
 

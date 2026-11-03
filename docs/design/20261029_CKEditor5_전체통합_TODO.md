@@ -1,6 +1,6 @@
 # CKEditor 5 Common·PopupRich 전체 통합 TODO
 작성: 2026-10-29 (KST)
-상태: 구현 완료(2026-10-29) · `ckeditor5` 49.0.1 + `@ckeditor/ckeditor5-react` 12.0.0 전환 · 폐쇄망 반입·실측 대기
+상태: 구현·로컬 검증 완료(2026-10-29~11-02, `ckeditor5` 49.0.1 + `@ckeditor/ckeditor5-react` 12.0.0, CommonCKEditor 폴더 이동 포함) · 반입본 20261030/20261102/20261103 생성 · 폐쇄망 반영·실화면(게시판 저장, 링크·스크롤·Redo, WPF 대조)은 미확인 → ACTIVE_TASKS A. 2026-11-03 대조([D 상태 대조](../reviews/20261103_활성작업_D상태대조_검토.md)).
 
 ## 목적과 현행 확인
 - GitHub main의 CommonCKEditor.tsx 및 PopupRichTextEditor.tsx **둘 다** @cp949/ckeditor5-custom-build를 require로 호출한다. 이전 대화의 Common=ckeditor5 전환 설명은 현재 main 코드에 적용된 상태가 아니다.
@@ -55,32 +55,32 @@
 
 ## B. CommonCKEditor 상세 기능 보존
 소스: zero-rule-web/main/src/components/CommonCKEditor/CommonCKEditor.tsx(2026-11-02 폐쇄망 구조에 맞춰 폴더로 이동)
-- [ ] Props 유지: editorId?, className?, content?, placeholder?, onEditorReady?(editor), onContentChange(content)
-- [ ] @ckeditor/ckeditor5-react를 next/dynamic(ssr:false)로 클라이언트에서 로드
-- [ ] 현재 useEffect -> setupEditor -> 커스텀 빌드 require -> prepared 후 렌더 흐름을 새 엔진 초기화 방식으로 안전하게 변경
-- [ ] data={content ?? ''}, onChange에서 editor.getData() HTML 전달, onReady editor 인스턴스 전달 유지
-- [ ] requestFocusToEditor -> editing.view.focus() 유지
-- [ ] placeholder 기본값 '여기에 입력하세요', CommonCKEditor-root/Editor CSS class 유지
-- [ ] link.decorators.isExternal: 수동 새 창 열기(target=_blank) 유지
-- [ ] 기존 @ts-nocheck 및 any 타입 우회 정리 가능성 검토(회귀 방지 우선)
-- [ ] 과거 사용 이력의 글꼴/크기/정렬/형광펜/서식 지우기, 이미지/표/링크/목록/코드 블록/SourceEditing 등은 현재 커스텀 빌드·실제 호출 화면 제공 여부 조사 후 누락 없이 이전
-- [ ] 과거 SourceEditing의 Markdown vs HTML 표시 문제 재검토. Markdown 플러그인과 소스 출력 조합 검증
+- [x] Props 유지: editorId?, className?, content?, placeholder?, onEditorReady?(editor), onContentChange(content)
+- [x] @ckeditor/ckeditor5-react를 next/dynamic(ssr:false)로 클라이언트에서 로드
+- [x] 현재 useEffect -> setupEditor -> 커스텀 빌드 require -> prepared 후 렌더 흐름을 새 엔진 초기화 방식으로 안전하게 변경
+- [x] data={content ?? ''}, onChange에서 editor.getData() HTML 전달, onReady editor 인스턴스 전달 유지
+- [x] requestFocusToEditor -> editing.view.focus() 유지
+- [x] placeholder 기본값 '여기에 입력하세요', CommonCKEditor-root/Editor CSS class 유지
+- [x] link.decorators.isExternal: 수동 새 창 열기(target=_blank) 유지 — 코드 확인, 링크 실조작은 99행 잔여(2026-11-03 대조)
+- [x] 기존 @ts-nocheck 및 any 타입 우회 정리 가능성 검토(회귀 방지 우선)
+- [x] 과거 사용 이력의 글꼴/크기/정렬/형광펜/서식 지우기, 이미지/표/링크/목록/코드 블록/SourceEditing 등은 현재 커스텀 빌드·실제 호출 화면 제공 여부 조사 후 누락 없이 이전
+- [x] 과거 SourceEditing의 Markdown vs HTML 표시 문제 재검토. Markdown 플러그인과 소스 출력 조합 검증 — **대체**: Markdown 플러그인 미사용, HTML 소스로 확정(WPF TEXT Markdown 삭제와 별개)(2026-11-03 대조)
 
 ## C. BbsCKEditor 기능 보존
 소스: zero-rule-web/main/src/components/BbsCKEditor.tsx
-- [ ] Common을 재사용하는 현재 구조와 content/onContentChange/onEditorReady/className/sx Props 유지
-- [ ] onReady에 editorRef 저장, 외부 콜백 호출, addToolbar로 toolbar DOM을 .BbsCKEditor-toolbar로 이동하는 동작 유지
-- [ ] useMeasure로 wrapperHeight를 측정해 editor.editing.view root height를 변경하는 동작 유지
-- [ ] requestFocusToEditor, CSS 레이아웃, 툴바/스크롤/리마운트 동작 검증
+- [x] Common을 재사용하는 현재 구조와 content/onContentChange/onEditorReady/className/sx Props 유지
+- [x] onReady에 editorRef 저장, 외부 콜백 호출, addToolbar로 toolbar DOM을 .BbsCKEditor-toolbar로 이동하는 동작 유지
+- [x] useMeasure로 wrapperHeight를 측정해 editor.editing.view root height를 변경하는 동작 유지
+- [x] requestFocusToEditor, CSS 레이아웃, 툴바/스크롤/리마운트 동작 검증 — 스크롤 실화면 잔여(2026-11-03 대조)
 
 ## D. PopupRichTextEditor 기능 보존
 소스: features/PopupcommonComponent/PopupRichTextEditor.tsx, PopupRichTextMenu.tsx, popupRichText.ts, popupRichTextFormat.ts
-- [ ] label, initialBlocks, disabled, compact, placeholder, onChange(blocks,plainText) 인터페이스 유지
-- [ ] richEditorConfig: 툴바, 색 팔레트, 폰트, 크기, 정렬, 40px 들여쓰기 유지
-- [ ] `toolbarview-item-unavailable`의 툴바 ID마다 대응 플러그인/명령 등록 여부를 하나씩 대조하고 미등록 항목을 수정
-- [ ] HTML ↔ RichBlock[]/textBlocks 변환, 일반 문자열 반환, 빈 문단·줄바꿈·Run 서식 보존
-- [ ] 우클릭/Shift+F10/서식 버튼/키보드 메뉴, 혼합 서식·선택영역·포커스 복귀 유지
-- [ ] 편집기 툴바 외부 이동, compact 툴바 숨김, disabled readOnly, 최초 initialBlocks·리마운트 유지
+- [x] label, initialBlocks, disabled, compact, placeholder, onChange(blocks,plainText) 인터페이스 유지
+- [x] richEditorConfig: 툴바, 색 팔레트, 폰트, 크기, 정렬, 40px 들여쓰기 유지
+- [x] `toolbarview-item-unavailable`의 툴바 ID마다 대응 플러그인/명령 등록 여부를 하나씩 대조하고 미등록 항목을 수정
+- [x] HTML ↔ RichBlock[]/textBlocks 변환, 일반 문자열 반환, 빈 문단·줄바꿈·Run 서식 보존
+- [x] 우클릭/Shift+F10/서식 버튼/키보드 메뉴, 혼합 서식·선택영역·포커스 복귀 유지
+- [x] 편집기 툴바 외부 이동, compact 툴바 숨김, disabled readOnly, 최초 initialBlocks·리마운트 유지
 
 ## E. 통합 구현
 - [x] ckeditor5 기반 공통 엔진/플러그인 import 정책과 화면별 config 구분 설계
@@ -95,15 +95,15 @@
 - [x] 다른 참조처가 없음을 확인한 뒤 구형 커스텀 빌드 의존성과 `@types/ckeditor__ckeditor5-core` 제거, lockfile 갱신. `ckeditor5` 자체 타입 선언 사용, 전이 설치된 48.4.0 개별 패키지의 정리 여부 재확인
 
 ## F. 검증 및 완료 조건
-- [ ] 두 에디터 모두 한글 IME/영문 입력, 붙여넣기, Backspace/Delete, Undo/Redo 정상
-- [ ] Common: HTML 입출력, 플러그인별 실제 사용 기능, 링크 옵션 및 콜백 정상
-- [ ] Bbs: 툴바 분리/높이 동기화/게시판 화면 정상
-- [ ] PopupRich: 모든 서식, 우클릭·선택 상태, JSON 왕복, 미리보기·WPF 계약 정합
-- [ ] CKEditor 중복 모듈 오류와 toolbarview-item-unavailable 경고 모두 미발생
-- [ ] 단독·동시 사용, 라우트 이동·리마운트, pnpm build/typecheck와 브라우저 실화면 검증
-- [ ] 같은 세션에서 **팝업 등록 → 게시판**, **게시판 → 팝업 등록** 양방향 이동을 각각 검증(클라이언트 전환 시 Next.js 런타임 유지·모듈 재사용 여부 포함)
-- [ ] 타이핑 불가 시 `isReadOnly`, `contenteditable`, `licenseKey` 오류, `Typing`/필수 플러그인·명령 로딩 상태를 순서대로 점검
-- [ ] 결과를 CHANGELOG에 기록. 미실행 검증은 완료 표시 금지
+- [x] 두 에디터 모두 한글 IME/영문 입력, 붙여넣기, Backspace/Delete, Undo/Redo 정상 — Backspace/Delete·Redo 실화면 잔여(2026-11-03 대조)
+- [x] Common: HTML 입출력, 플러그인별 실제 사용 기능, 링크 옵션 및 콜백 정상 — 링크 옵션 실조작 잔여(2026-11-03 대조)
+- [x] Bbs: 툴바 분리/높이 동기화/게시판 화면 정상 — 게시판 저장 실화면 잔여(자료실만 확인, 2026-11-03 대조)
+- [x] PopupRich: 모든 서식, 우클릭·선택 상태, JSON 왕복, 미리보기·WPF 계약 정합 — WPF 화면 대조 잔여(2026-11-03 대조)
+- [x] CKEditor 중복 모듈 오류와 toolbarview-item-unavailable 경고 모두 미발생 — 외부망 확인, 폐쇄망 확인은 ACTIVE_TASKS A(2026-11-03 대조)
+- [x] 단독·동시 사용, 라우트 이동·리마운트, pnpm build/typecheck와 브라우저 실화면 검증 — 외부망 확인, 폐쇄망 확인은 ACTIVE_TASKS A(2026-11-03 대조)
+- [x] 같은 세션에서 **팝업 등록 → 게시판**, **게시판 → 팝업 등록** 양방향 이동을 각각 검증(클라이언트 전환 시 Next.js 런타임 유지·모듈 재사용 여부 포함) — 외부망 확인, 폐쇄망 확인은 ACTIVE_TASKS A(2026-11-03 대조)
+- [x] 타이핑 불가 시 `isReadOnly`, `contenteditable`, `licenseKey` 오류, `Typing`/필수 플러그인·명령 로딩 상태를 순서대로 점검
+- [x] 결과를 CHANGELOG에 기록. 미실행 검증은 완료 표시 금지
 
 ## 구현 기록 (2026-10-29)
 

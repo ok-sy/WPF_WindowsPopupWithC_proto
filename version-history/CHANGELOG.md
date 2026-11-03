@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-03-10 — D 상태 대조 결정 반영(원본 TODO 체크·머리말 정정, RichTextTests 경로 수정)
+
+- 이유: 2026-11-03-09 D 상태 대조 검토의 결정란 6개를 모두 제안대로 확정. 원본 TODO의 미체크·머리말이 후속 구현·결정과 어긋나 진행 상황을 왜곡하던 것을 정정.
+- 변경:
+  - 원본 TODO 7개 정정(항목 문구는 유지하고 체크와 끝 표기만 추가): TODO56 체크 0/60 → 57/60(실화면 잔여 9는 `— 실화면 잔여(2026-11-03 대조)` 표기, Front 인계 3·별도 버전 1·단계 비교 1은 `— 대체:` 표기, 56-8 동일 문구·다른 optionId는 미구현으로 남김), TODO52 머리말(52-1·2·4·5 구현, 52-3·6~8 계약·인계 대기), TODO57·58 머리말·등록 당시 문구 표시·검증절 4건 체크+실화면 잔여(58은 TODO68 하한 연결), CKEditor5 통합 미체크 29 → 0(잔여는 항목 끝 표기, Markdown 항목은 대체), 폐쇄망 FRONT 체크리스트(체크 10, pnpm store 항목 대체, 폐쇄망 보고 기준 4 표기, 폐쇄망 확인은 A 표기), 반입 당일 이슈(상태표 pnpm·배경 행 정정, @local 링크 행 추가, lockfile 절차 대체).
+  - `docs/policies/ACTIVE_TASKS.md`: A에 TODO56 56-8 구현 대기와 「폐쇄망 FRONT 반영 확인」 묶음 추가, D·날짜형 행에 정리 완료 표기(TODO54·59·60은 미대조).
+  - `scripts/RichTextTests/Program.cs`: 서식 글꼴 대조용 웹 파일 경로를 `features/RgstPop` → `features/PopupcommonComponent`로 수정(TODO69 이동 반영).
+  - `popup-frameWork/README.md` 설문 디자인 설명: V2 설명에 섞인 V1 문구(옅은 회색 배경·문항 카드·항상 보이는 체크·SemiBold 선택)와 안내 위치(문항 아래 → 제목 끝)를 V2 기준으로 정리.
+  - 검토 문서 결정란 체크, Trello TODO56 카드에 정리 내용 댓글 추가 후 "완료(검증완료)" → "검증대기" 이동.
+- 주요 파일: docs/design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md, 52_*·57_*·58_* TODO, docs/design/20261029_CKEditor5_전체통합_TODO.md, 20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md, 20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md, docs/policies/ACTIVE_TASKS.md, docs/reviews/20261103_활성작업_D상태대조_검토.md, scripts/RichTextTests/Program.cs, popup-frameWork/README.md, version-history/CHANGELOG.md.
+- 검증: `dotnet run --project scripts/RichTextTests` 113건 통과(경로 수정 후). 원본 TODO 정정 후 미체크 수 TODO56 3·TODO52 4·TODO57 2·TODO58 4·CKEditor 0·체크리스트 21·당일 이슈 5로 대조표와 일치. 실화면·폐쇄망 확인은 하지 않음. TODO56 56-8 샘플·검사 추가는 A로만 등록(미착수).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-09 — 활성 작업 D(원문 상태) 대조 검토 문서
 
 - 이유: ACTIVE_TASKS D 분류(TODO56·52·57·58, 날짜형 CKEditor5 통합·폐쇄망 FRONT 체크리스트·반입 당일 이슈)의 미체크·머리말이 후속 구현·결정과 어긋나 진행 상황을 왜곡함. 원본을 고치기 전에 항목별 판정과 정리안을 확정하기 위함.
