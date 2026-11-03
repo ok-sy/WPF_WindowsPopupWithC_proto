@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-03-27 — dev: PU001 B-2/B-3/B-5/B-6 현행 유지 경로 회귀 테스트 추가
+
+- 이유: PU001 B-2(passingScore 누락·비양수 항상 통과)·B-3(불합격 후 HIDDEN은 완료 아님·만료 후 재노출)·B-5(LATER는 showLater 재검사 없이 유예)·B-6(VIDEO+QUIZ 재생 실패 시 잠금 유지·닫기만 허용)을 현행 유지로 결정해, 이후 변경에서 깨지지 않도록 회귀 검사 필요.
+- 변경(테스트만, 동작 코드 변경 없음):
+  - WPF `scripts/PopupWindowTests` `CheckRegressionB2356`: B-2 passingScore null·0·-5·NaN 통과·점수 0·참여형 안내, B-3 불합격 판정 후 다시 보지 않기 + 보조 닫기 → HIDDEN(hideDays 7) 1건·SUBMITTED 없음, B-6 재생 실패 → 퀴즈 잠금·제출 비활성·다시 보지 않기 비활성·보조 닫기 표시, 닫으면 VIDEO_WATCHED(시청 30초)만 저장.
+  - 서버 `WpfResultProcessorTest.closingWithoutSubmissionDoesNotCompleteQuizSurveyOrVideo`(QUIZ·SURVEY·VIDEO CLOSED와 QUIZ HIDDEN은 완료 처리 없음), `PopupDeliveredResultTest.videoQuizWatchAloneDoesNotCompleteThePopup`(영상+퀴즈 시청 기준 충족도 완료 아님), `WpfQuizRegressionDatabaseTest`(롤백 전용 실DB: QUIZ 전달 건 HIDDEN ACCEPTED·POPUP_STATUS=HIDDEN·미완료·후보 제외 → 숨김 기간을 과거로 옮기면 재노출·미완료). 실DB 테스트는 샘플 게시 기간이 지난 로컬 데이터에서도 돌도록 트랜잭션 안에서 QUIZ 게시 기간을 늘리고 롤백.
+  - B-5는 기존 `laterDefersWithoutCompletionForEveryType`·`CheckLater52`가 확인하므로 추가하지 않음. PU001 TODO 회귀 항목 완료 표기.
+- 주요 파일: scripts/PopupWindowTests/Program.cs, zero-rule-server/service/core/src/test/java/server/service/core/popup/wpf/WpfResultProcessorTest.java, PopupDeliveredResultTest.java, wpf/WpfQuizRegressionDatabaseTest.java(신규), docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test` 248건 통과·12 skip(Oracle 연동)·실패 0. 로컬 XE(POPUP) 실DB `WpfQuizRegressionDatabaseTest` 통과, 실행 후 SAMPLE-QUIZ-003 게시 기간이 원래 값(2026-10-19 종료) 그대로임을 확인(롤백). PopupWindowTests는 기존 환경 문제 검사(`CheckVideoQuizAspect60`)를 뺀 23개 검사 이름 지정 실행 412건 통과, BehaviorTests 1,711 통과. 참고: 로컬 샘플 팝업 4건의 게시 기간이 2026-10-19에 끝나 있어 기존 `WpfPopupDatabaseTest` 2건이 로컬에서 popup=null로 실패하던 원인이 데이터 상태임을 확인. 미실행: 원격 개발 DB(192.168.114.71:4004 접속 불가), WPF 실기동.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-26 — dev: 관리자 웹 퀴즈 미리보기 결과 문구 WPF 정렬(PU001 Q3)
 
 - 이유: WPF QUIZ 결과 안내를 커트라인형·만점형·참여형으로 나눴으나(2026-11-03-25) 관리자 웹 미리보기는 `미리보기: N점 · 통과/미통과 · 틀린 문항` 한 줄을 표시해 같은 팝업의 결과 문구가 달랐음.

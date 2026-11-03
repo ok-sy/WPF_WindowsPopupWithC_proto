@@ -93,6 +93,20 @@ class PopupDeliveredResultTest {
     }
 
     /** 게시중단 뒤에도 전달 건 영상 시청 결과를 저장한다. */
+    /**
+     * PU001 B-6 회귀: 동영상+퀴즈(QUIZ 영상 문맥)는 영상을 기준 이상 봐도 시청 기록만 남기고 팝업을 완료로 바꾸지 않는다
+     * (재생 실패·시청 후 제출 없이 닫으면 다음 조회에 다시 노출, 완료는 퀴즈 제출에서만).
+     */
+    @Test void videoQuizWatchAloneDoesNotCompleteThePopup() {
+        when(mapper.selectVideoPopupContext("E1001", "VQ1", false))
+                .thenReturn(new VideoPopupContext("VQ1", "QUIZ", new BigDecimal("0.8")));
+        var response = service.saveDeliveredVideoProgress("VQ1", "E1001", new BigDecimal("100"), new BigDecimal("100"),
+                new BigDecimal("100"), new BigDecimal("100"));
+        assertTrue(response.completed(), "시청 기준 충족은 그대로 판정");
+        verify(mapper).upsertVideoProgress(eq("E1001"), eq("VQ1"), any(), any(), any(), any(), any(), eq("Y"));
+        verify(mapper, never()).markPopupCompleted(any(), any(), any());
+    }
+
     @Test void deliveredVideoProgressIsAcceptedAfterUnpublish() {
         when(mapper.selectVideoPopupContext("E1001", "V1", false))
                 .thenReturn(new VideoPopupContext("V1", "VIDEO", new BigDecimal("0.9")));

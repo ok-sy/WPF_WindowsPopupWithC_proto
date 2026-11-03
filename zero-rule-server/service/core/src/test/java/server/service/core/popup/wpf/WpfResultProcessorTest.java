@@ -116,6 +116,28 @@ class WpfResultProcessorTest {
         }
     }
 
+    /**
+     * PU001 B-3·B-6 회귀: 일반 안내(TEXT·IMAGE)가 아닌 유형의 CLOSED(제출 없이 닫기 — QUIZ 불합격 뒤 보조 닫기,
+     * VIDEO+QUIZ 재생 실패 후 닫기, 영상 미완료 닫기)는 완료로 처리하지 않아 다음 조회 주기에 다시 노출된다.
+     * HIDDEN도 숨김 위임만 하고 완료 처리하지 않는다.
+     */
+    @Test void closingWithoutSubmissionDoesNotCompleteQuizSurveyOrVideo() {
+        for (String type : List.of("QUIZ", "SURVEY", "VIDEO")) {
+            setup();
+            delivery(type);
+            assertEquals(WpfResultItemResponse.Status.ACCEPTED,
+                    processor.processOne("E1001", item(WpfResultType.CLOSED, null, null, null)).status(), type);
+            verify(wpfMapper).completeDelivery("D-1", "r-1", "CLOSED", 2700);
+            verify(popupMapper, never()).markPopupCompleted(any(), any(), any());
+        }
+        setup();
+        delivery("QUIZ");
+        processor.processOne("E1001", item(WpfResultType.HIDDEN, 7, null, null));
+        verify(popupService).hidePopup("P1", "E1001", 7);
+        verify(popupMapper, never()).markPopupCompleted(any(), any(), any());
+        verify(popupService, never()).submitDeliveredResponse(any(), any(), any(), any(), any(), any());
+    }
+
     /** 대조: 같은 TEXT 전달 건의 CLOSED는 완료 처리한다(LATER와 구분). */
     @Test void textClosedCompletesButLaterDoesNot() {
         delivery("TEXT");

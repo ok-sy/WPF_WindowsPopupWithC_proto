@@ -115,6 +115,7 @@ internal static class Program
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
         CheckOwnerCloseSavesResult();
+        CheckRegressionB2356();
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
@@ -1383,6 +1384,81 @@ internal static class Program
      * 소유자 창이 닫히면 Win32가 소유 창을 함께 파괴해 팝업의 Closing 없이 Closed만 온다.
      * 이 경로에서도 Closing에서 읽던 영상 시청량·다시 보지 않기 체크가 결과에 실려야 한다.
      */
+    /*
+     * PU001 B-2/B-3/B-6 현행 유지 경로 회귀(B-5 LATER는 CheckLater52).
+     *  B-2: passingScore 누락·0 이하·비정상이면 기준 0 → 전부 틀려도 통과(항상 통과 fallback), 안내는 참여형.
+     *  B-3: QUIZ 불합격 뒤 '다시 보지 않기' 체크 + 보조 닫기 → HIDDEN(hideDays) 1건만 저장, SUBMITTED 없음.
+     *  B-6: VIDEO+QUIZ 재생 실패 → 퀴즈 잠금 유지(자동 활성화 없음)·제출 비활성, 보조 닫기로 닫으면 시청 기록(VIDEO_WATCHED)만 저장.
+     *  서버 쪽(HIDDEN·CLOSED·영상+퀴즈 시청은 완료 아님, 숨김 만료 후 재노출)은 WpfResultProcessorTest·PopupDeliveredResultTest·WpfQuizRegressionDatabaseTest.
+     */
+    private static void CheckRegressionB2356()
+    {
+        // B-2
+        var quizDto = DemoPopups("QUIZ").Single();
+        var questions = (List<SurveyQuestion>)typeof(SurveyPopupView).GetField("_questions", Flags)!
+            .GetValue((SurveyPopupView)PopupFactory.Create(quizDto).Content!)!;
+        foreach (double? passing in new double?[] { null, 0, -5, double.NaN })
+        {
+            var graded = QuizGrader.Grade(questions, new List<SurveyAnswer>(), passing);
+            Check(graded.Passed && graded.Score == 0 && graded.PassingScore == 0 && graded.CorrectCount == 0,
+                $"[B-2] passingScore {passing?.ToString() ?? "null"} falls back to always pass with the real score 0");
+            Check(QuizNotice(ToSubmission(new List<SurveyAnswer>(), graded), "보안 퀴즈", false).Message.StartsWith("퀴즈를 완료하여"),
+                $"[B-2] passingScore {passing?.ToString() ?? "null"} shows the participation notice");
+        }
+
+        var owner = NewOwner();
+        try
+        {
+            // B-3
+            var manager = new Popup.Managers.PopupManager(owner);
+            var dto = DemoPopups("QUIZ").Single();
+            dto.ShowFooter = true;
+            dto.ShowDoNotShowAgain = true;
+            dto.HideDays = 7;
+            var options = PopupFactory.Create(dto);
+            options.UseBackgroundOverlay = false;
+            var saved = new List<Popup.Dtos.WpfResultItemDto>();
+            options.EnqueueResult = saved.Add;
+            manager.Show(options);
+            var window = OpenWindows(manager).Single();
+            typeof(PopupWindow).GetMethod("NotifyQuizFailed", Flags)!.Invoke(window, null);   // 불합격 판정 1회(창 유지·결과 없음)
+            ((CheckBox)window.FindName("DoNotShowAgainCheckBox")).IsChecked = true;
+            var aux = (Button)window.FindName("FooterAuxCloseButton");
+            Check(aux.Visibility == Visibility.Visible && saved.Count == 0, "[B-3] failed QUIZ keeps the window with the aux close and no result yet");
+            Click(window, aux);
+            Check(!manager.HasOpenPopups && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Hidden && saved[0].HideDays == 7
+                && saved[0].Score == null && saved[0].Passed == null,
+                $"[B-3] do-not-show-again after a failed QUIZ saves HIDDEN only ({saved.Count}, {saved.FirstOrDefault()?.ResultType})");
+
+            // B-6
+            var videoManager = new Popup.Managers.PopupManager(owner);
+            var videoDto = DemoPopups("VIDEO_QUIZ").Single();
+            videoDto.ShowFooter = true;
+            videoDto.ShowDoNotShowAgain = true;
+            videoDto.CompletionRatio = 0.8;
+            var videoOptions = PopupFactory.Create(videoDto);
+            videoOptions.UseBackgroundOverlay = false;
+            var videoSaved = new List<Popup.Dtos.WpfResultItemDto>();
+            videoOptions.EnqueueResult = videoSaved.Add;
+            videoManager.Show(videoOptions);
+            var videoWindow = OpenWindows(videoManager).Single();
+            var view = (VideoQuizPopupView)videoOptions.Content!;
+            SetPlaybackFailed(view.Video, false);
+            Report(view.Video, Snapshot(30, 30));
+            FailPlayback(view.Video);
+            var submit = (Button)videoWindow.FindName("FooterCloseButton");
+            var videoAux = (Button)videoWindow.FindName("FooterAuxCloseButton");
+            Check(!view.IsUnlocked && !submit.IsEnabled && videoAux.Visibility == Visibility.Visible
+                && !((CheckBox)videoWindow.FindName("DoNotShowAgainCheckBox")).IsEnabled,
+                "[B-6] playback failure keeps the quiz locked (no auto unlock), submit disabled, aux close shown");
+            Click(videoWindow, videoAux);
+            Check(!videoManager.HasOpenPopups && videoSaved.Count == 1 && videoSaved[0].ResultType == Popup.Dtos.WpfResultType.VideoWatched
+                && videoSaved[0].Video?.WatchedSeconds == 30 && videoSaved[0].Answers == null,
+                $"[B-6] closing after playback failure saves the watch record only ({videoSaved.Count}, {videoSaved.FirstOrDefault()?.ResultType})");
+        }
+        finally { owner.Close(); }
+    }
+
     private static void CheckOwnerCloseSavesResult()
     {
         foreach (string type in new[] { "VIDEO", "TEXT" })
