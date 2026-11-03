@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-16 — PU001P01~P06 호출 경로 정적 추적 결과 기록
+
+- 이유: A 실행 순서 4번. PU001 요구사항 TODO P1(WPF 코드/계약 정합성 점검) 5건이 미착수 상태여서 WPF·관리자 웹·서버의 호출 경로를 정적으로 추적해 Q1~Q7 대비 판정과 차이를 확정.
+- 변경: PU001 TODO에 §4-1 추가 — 범위별 판정(푸터·닫기·LATER, QuizGrader, VideoCompletion은 일치, 웹 미리보기·서버 전달은 부분 일치)과 근거 파일·행, 결정 필요 8건(서버가 QUIZ 재채점 후에도 클라이언트 score·passed로 저장, passingScore 미설정 시 항상 통과·샘플 경로 null, 불합격 뒤 HIDDEN 가능, 서버 최소·최대 선택 수 미검증, LATER 수신 시 showLater 미확인, VIDEO+QUIZ 재생 실패 처리, 웹 fallback 0.8 vs 1.0, MINIMAL_SPEC의 ShowLater 누락·QuestionScore 0점 문구). P1 5건 체크(결과 화면 문구 대조는 기획서 원본 수신 후). ACTIVE_TASKS A-1 4번 완료 표기.
+- 주요 파일: docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, docs/policies/ACTIVE_TASKS.md, version-history/CHANGELOG.md.
+- 검증: 정적 코드 읽기(WPF `PopupWindow`·`PopupManager`·`PopupResultBuilder`·`QuizGrader`·`VideoCompletion`·`VideoQuizPopupView`, 웹 `PopupPreview`·`popupPreviewFallback`·`popupQuizRule`·RgstPop, 서버 `PopupService`·`WpfPopupItem`·`WpfResultProcessor`·매퍼). 핵심 주장(나중에 보기 조건, passingScore 처리, 불합격 시 창 유지, 서버의 클라이언트 점수 저장, fallback 0.8, MINIMAL_SPEC 문구)은 해당 행을 직접 재확인. 실행·실화면·실DB 검증 없음. 코드·인터페이스 문서 변경 없음.
+- 상태: 커밋·원격 반영. 결정 필요 8건은 미결.
+
 ## 2026-11-03-15 — dev: pickPopupFields JSON 직렬화 구별 검사 추가
 
 - 이유: A 실행 순서 3번. WEB 책임 분리 TODO F-4의 "미설정(생략·null)과 명시 false·0·빈 문자열이 입력·추출·전송까지 구별" 항목에 추출 단계 검사만 있고 전송(JSON 직렬화) 단계 검사가 없었음.
