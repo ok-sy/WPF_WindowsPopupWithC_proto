@@ -1525,6 +1525,26 @@ internal static class Program
             && Resolve(Array.Empty<string>(), null, "yes").AutostartEnabled && Resolve(Array.Empty<string>(), null, "maybe").AutostartEnabled,
             "[A-1 6] autostart env false/off disables, invalid falls back to true");
 
+        // appsettings(Startup)은 환경변수 다음 순위: 명령행 > 환경변수 > appsettings > 기본값.
+        Popup.Services.StartupOptions Configured(string[] args, string? tray, string? autostart, bool? configuredTray, bool? configuredAutostart) =>
+            Popup.Services.StartupOptions.Resolve(Popup.Services.LaunchArguments.Parse(args),
+                name => name == Popup.Services.StartupOptions.TrayEnvironmentVariable ? tray
+                    : name == Popup.Services.StartupOptions.AutostartEnvironmentVariable ? autostart : null,
+                configuredTray, configuredAutostart);
+        Check(Configured(Array.Empty<string>(), null, null, true, false) == new Popup.Services.StartupOptions(true, false),
+            "[A-1 6] appsettings Startup values apply when there is no argument or environment variable");
+        Check(Configured(Array.Empty<string>(), "false", "true", true, false) == new Popup.Services.StartupOptions(false, true),
+            "[A-1 6] environment variables win over appsettings");
+        Check(Configured(new[] { "--tray" }, null, null, false, null).TrayEnabled
+            && Configured(Array.Empty<string>(), "maybe", "maybe", true, false) == new Popup.Services.StartupOptions(true, false)
+            && Configured(Array.Empty<string>(), null, null, null, null) == new Popup.Services.StartupOptions(false, true),
+            "[A-1 6] --tray wins over appsettings false, invalid environment values fall back to appsettings, nothing set uses defaults");
+        // 주석·끝 쉼표가 있는 실제 appsettings.json(EXE 옆 파일 또는 내장 리소스)을 읽고 Startup 항목을 가져온다.
+        var load = typeof(Popup.MainWindow).GetMethod("LoadPopupClientSettings", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var loaded = (PopupClientSettings)load.Invoke(null, null)!;
+        Check(loaded.TrayEnabled == false && loaded.AutostartEnabled == true && loaded.BaseUrl.Length > 0 && loaded.AuthLoginPath == "/api/wpf/auth/login",
+            $"[A-1 6] commented appsettings.json parses with Startup values (tray {loaded.TrayEnabled}, autostart {loaded.AutostartEnabled})");
+
         const string testRoot = @"Software\OksyPopupClient.Tests";
         string runKey = testRoot + @"\Run", stateKey = testRoot + @"\State";
         const string installed = @"C:\Program Files\Oksy Popup\popupSample.exe";

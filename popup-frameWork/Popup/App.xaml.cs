@@ -124,10 +124,13 @@ namespace Popup
                 true;
 
             LaunchArguments arguments = LaunchArguments.Parse(e.Args);
-            _startupOptions = StartupOptions.Resolve(arguments);
 
             _mainWindow =
                 new MainWindow();
+
+            // POL-15 : 배포·실행 환경 — 명령행 > 환경변수 > appsettings(Startup) > 기본값
+            _startupOptions = StartupOptions.Resolve(arguments, null,
+                _mainWindow.Settings.TrayEnabled, _mainWindow.Settings.AutostartEnabled);
 
             _mainWindow.Closing +=
                 MainWindow_Closing;

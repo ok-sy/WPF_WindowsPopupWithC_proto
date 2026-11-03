@@ -70,6 +70,9 @@ namespace Popup
         /* POL-14-02 : Demo 모드 — -Demo -Api일 때만 설정을 넘긴다(그 밖에는 null → 인메모리 Demo). 이 창은 Demo와 같이 서버를 호출하지 않는다. */
         public PopupClientSettings? ApiDemoSettings { get; }
 
+        /* POL-15 : 배포·실행 환경 — 읽은 appsettings 설정. App이 Startup(트레이·자동 시작) 값을 시작 옵션에 쓴다. */
+        public PopupClientSettings Settings { get; }
+
         /*
          * ■ 관리 화면 생성
          * - in : 없음(appsettings.json·실행 인자를 직접 읽음)
@@ -84,6 +87,7 @@ namespace Popup
             _popupService = new PopupService();
 
             PopupClientSettings settings = LoadPopupClientSettings();
+            Settings = settings;
             _demoMode = settings.DemoMode;
             DemoAuthTestSettings = settings.DemoMode && !settings.DemoApi && settings.DemoSsoLoginTest ? settings : null;
             ApiDemoSettings = settings.DemoApi ? settings : null;
@@ -157,6 +161,8 @@ namespace Popup
          * }
          * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype에서만 쓴다.
          * SurveyDesignVersion 은 SURVEY·QUIZ 문항 디자인 버전(SurveyDesign). 없거나 모르는 값이면 최신 버전.
+         * 최상위 "Startup": { "TrayEnabled": false, "AutostartEnabled": true } 는 선택(없으면 환경변수·기본값).
+         * 파일 안의 // 한 줄 주석·블록 주석과 끝 쉼표를 허용한다(항목 설명은 appsettings.json 주석 참고).
          */
         private static PopupClientSettings LoadPopupClientSettings()
         {
@@ -175,7 +181,8 @@ namespace Popup
                 configurationJson = reader.ReadToEnd();
             }
 
-            using JsonDocument document = JsonDocument.Parse(configurationJson);
+            using JsonDocument document = JsonDocument.Parse(configurationJson,
+                new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
             if (!document.RootElement.TryGetProperty("PopupApi", out JsonElement api))
             {
                 throw new InvalidOperationException("appsettings.json에 PopupApi 설정이 없습니다.");
@@ -219,6 +226,12 @@ namespace Popup
                 settings.AuthPeriodicLoginMinutes = GetInt32(auth, "PeriodicLoginMinutes", 60);
             }
 
+            if (document.RootElement.TryGetProperty("Startup", out JsonElement startup) && startup.ValueKind == JsonValueKind.Object)
+            {
+                settings.TrayEnabled = GetNullableBoolean(startup, "TrayEnabled");
+                settings.AutostartEnabled = GetNullableBoolean(startup, "AutostartEnabled");
+            }
+
             if (!settings.DemoMode && string.IsNullOrWhiteSpace(settings.BaseUrl))
             {
                 throw new InvalidOperationException("PopupApi.BaseUrl 값이 비어 있습니다.");
@@ -241,6 +254,13 @@ namespace Popup
                && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
                 ? value.GetBoolean()
                 : defaultValue;
+
+        /// <summary>true/false이면 그 값, 없거나 다른 형식이면 null(설정 없음).</summary>
+        private static bool? GetNullableBoolean(JsonElement element, string name)
+            => element.TryGetProperty(name, out JsonElement value)
+               && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
+                ? value.GetBoolean()
+                : null;
 
         private static int GetInt32(JsonElement element, string name, int defaultValue)
             => element.TryGetProperty(name, out JsonElement value) && value.TryGetInt32(out int result)

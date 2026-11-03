@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-32 — dev: WPF appsettings 전 항목 주석·Startup(트레이·자동 시작) 설정 추가
+
+- 이유: 트레이 표시·자동 시작을 환경변수·실행 인자로만 바꿀 수 있어, 단일 EXE·폐쇄망 배포에서 설정 파일 하나로 실행 옵션을 정하고 각 항목의 의미를 파일에서 바로 확인할 필요가 있었음.
+- 변경: `appsettings.json`에 모든 항목(DemoMode·DemoSsoLoginTest·BaseUrl·AutoLoadOnStartup·PollingIntervalSeconds·SurveyDesignVersion·Auth.*·DevUserId)의 의미·허용 값·기본값·적용 모드 주석과, 파일 밖에서 바꾸는 실행 인자(`-Demo`·`-Demo -Api`·`--show-main`·`--tray`)·환경변수(`WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED`·`POPUP_DEV_USER_ID`)·우선순위 머리 주석 추가(값은 기존 그대로). 최상위 `Startup` 항목(`TrayEnabled` 기본 false·`AutostartEnabled` 기본 true) 신설. `MainWindow.LoadPopupClientSettings`가 주석·끝 쉼표를 허용(`JsonCommentHandling.Skip`, `AllowTrailingCommas`)하고 `Startup`을 `PopupClientSettings.TrayEnabled`·`AutostartEnabled`(bool?, 없으면 null)로 읽음, `MainWindow.Settings` 공개. `StartupOptions.Resolve`가 명령행 > 환경변수 > appsettings > 기본값으로 결정(환경변수가 잘못된 값이면 appsettings), `App`은 MainWindow 생성 뒤 결정. 기존 `Startup` 없는 설정 파일은 기존 동작 그대로. README 4장 설정 설명·표, 백그라운드 실행 설정 표 갱신.
+- 주요 파일: popup-frameWork/Popup/appsettings.json, MainWindow.xaml.cs, Models/PopupClientSettings.cs, Services/StartupOptions.cs, App.xaml.cs, scripts/PopupWindowTests/Program.cs, popup-frameWork/README.md, version-history/CHANGELOG.md.
+- 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests `CheckBackgroundStartupA16` 19건(appsettings 우선순위 3건·주석 든 실제 appsettings.json 파싱·Startup 값 1건 추가), 환경 문제 검사 제외 433건 통과. BehaviorTests 1,711·RecoveryTests 154·ApiDemoTests 71 통과. 주석 39줄이 든 appsettings.json(DemoMode=false)을 EXE 옆에 두고 실행 — 6초 동안 프로세스 유지·보이는 창 없음. 미실행: `Startup.TrayEnabled=true`일 때 트레이 아이콘 실표시 확인.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-31 — dev: WPF 백그라운드 기본 실행·최초 실행 자동 시작 등록·--tray 선택(A-1 6번)
 
 - 이유: A 실행 순서 6번. 2026-10-28 결정(기본 백그라운드 실행·트레이 선택)과 2026-11-03 결정(사용자 세션 첫 실행 시 HKCU 1회 자동 시작 등록·사용자 해제 존중, 일반 사용자 종료 기능 신규 개발 제외)이 구현 대기였고, 코드는 트레이를 항상 만들고 관리 화면을 한 번 보였다 숨겼으며 자동 시작은 트레이 메뉴 토글로만 등록했음.

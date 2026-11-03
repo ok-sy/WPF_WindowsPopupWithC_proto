@@ -82,5 +82,15 @@ namespace Popup.Models
         /// </summary>
         public string DevUserId { get; set; } =
             string.Empty;
+
+        /*
+         * POL-15 : 배포·실행 환경 — appsettings 최상위 "Startup" 항목(선택). null = 설정 없음(환경변수·기본값 사용).
+         * 우선순위: 명령행(--tray) > 환경변수(WPF_POPUP_TRAY_ENABLED·WPF_POPUP_AUTOSTART_ENABLED) > appsettings > 기본값. StartupOptions.Resolve 참고.
+         */
+        /// <summary>Startup.TrayEnabled — 트레이 아이콘 표시(기본 false). Demo 모드는 항상 표시.</summary>
+        public bool? TrayEnabled { get; set; }
+
+        /// <summary>Startup.AutostartEnabled — 사용자 세션 첫 실행 시 로그인 자동 시작 1회 등록(기본 true). false면 이 앱 등록 값 삭제.</summary>
+        public bool? AutostartEnabled { get; set; }
     }
 }

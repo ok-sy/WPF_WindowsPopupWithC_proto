@@ -143,12 +143,12 @@ MainWindow 숨김
 트레이 아이콘 없음 (--tray일 때만 표시 — 상태·진단용, 메뉴: 관리 화면 열기·팝업 다시 조회·Windows 시작 시 자동 실행·종료)
 ```
 
-| 설정 | 환경변수 | 기본값 | 명령행 |
-|---|---|---|---|
-| 트레이 표시 | `WPF_POPUP_TRAY_ENABLED` | false | `--tray`(환경변수 false보다 우선) |
-| 로그인 자동 시작 | `WPF_POPUP_AUTOSTART_ENABLED` | true | 없음 |
+| 설정 | 명령행 | 환경변수 | appsettings | 기본값 |
+|---|---|---|---|---|
+| 트레이 표시 | `--tray`(아래 값의 false보다 우선) | `WPF_POPUP_TRAY_ENABLED` | `Startup.TrayEnabled` | false |
+| 로그인 자동 시작 | 없음 | `WPF_POPUP_AUTOSTART_ENABLED` | `Startup.AutostartEnabled` | true |
 
-- bool 값은 true/false·1/0·yes/no·on/off, 그 밖의 값은 기본값.
+- 환경변수 bool 값은 true/false·1/0·yes/no·on/off, 그 밖의 값이면 appsettings·기본값 순으로 쓴다.
 - 자동 시작: 사용자 세션의 첫 일반 실행에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `OksyPopupClient`에 `"<EXE 전체 경로>"`(따옴표, `--tray` 없음)를 등록하고 이력 `HKCU\Software\OksyPopupClient\AutostartInitialized=1`을 남긴다. 이후에는 다시 등록하지 않아 사용자가 지우거나 작업 관리자에서 끈 설정을 되돌리지 않는다. `WPF_POPUP_AUTOSTART_ENABLED=false`면 이 앱 값만 지운다. `%TEMP%`·빌드 출력(`in\` 아래)·SYSTEM 계정 실행은 등록하지 않는다(설치 위치에서 실행될 때 등록).
 - 시작 직후 자동 조회가 실패해도(서버 연결 실패 등) 안내 창을 띄우지 않고 복구 간격으로 다시 조회한다. `--show-main` 실행과 수동 '팝업 다시 조회'는 오류를 안내하고, 426 업데이트 안내는 항상 띄운다.
 - 일반 사용자용 종료 명령(`--exit`)은 두지 않는다(2026-11-03 결정). 종료는 `--tray` 트레이 메뉴·Windows 종료/로그오프·426 업데이트 안내.
@@ -212,7 +212,11 @@ MainWindow
 Popup/appsettings.json
 ```
 
-대표 설정:
+EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 EXE에 넣은 파일(내장 리소스)을 읽는다. 단일 EXE도 같다.
+파일 안의 `//` 주석과 끝 쉼표를 허용한다. 저장소 `Popup/appsettings.json`에는 모든 항목·실행 인자·환경변수 설명이 주석으로 들어 있다.
+우선순위: 실행 인자 > 환경변수 > appsettings > 기본값.
+
+대표 설정(주석 생략):
 
 ```json
 {
@@ -231,6 +235,10 @@ Popup/appsettings.json
       "PeriodicLoginMinutes": 60
     },
     "DevUserId": "E1001"
+  },
+  "Startup": {
+    "TrayEnabled": false,
+    "AutostartEnabled": true
   }
 }
 ```
@@ -249,6 +257,8 @@ Popup/appsettings.json
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
 | `Auth.LoginPath` | Zero WPF 로그인 API |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
+| `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
+| `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
 | `DevUserId` | 개발용 `X-Dev-User-Id` 헤더 값. 서버가 프로토타입 토큰 모드(`custom.wpf-auth-prototype.enabled=true`)이면 **무시**되고 Bearer 토큰만 통한다. 유지/제거는 별도 결정(설계 10 §14) |
 
 현재 로컬 테스트의 SSO URL:
