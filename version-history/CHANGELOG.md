@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-19 — docs: WPF 최소 사양서 ShowLater 행 보완
+
+- 이유: 정합성 보완(PU001 B-8 결정). 나중에 보기(`showLater`, TODO52-2)는 WPF·서버·ALL_SPEC·인터페이스 계약서에 구현·기재되어 있으나 최소 사양서 필드 표에만 행이 없었음.
+- 변경: `WPF_POPUP_MINIMAL_SPEC.md` 공통 필드 표에 ShowLater 행 추가(기본 false, `ShowFooter=true`일 때만 표시, 결과 `LATER`·서버 재노출 유예, 완료 기준 전 유일한 화면 이탈 버튼). 최소 JSON 예시 파일은 생략 시 false로 동작하므로 변경하지 않음. PU001 정합성 검토 TODO B-8 후속 항목 완료 표기.
+- 주요 파일: docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: `WPF_POPUP_ALL_SPEC.md` 55·81행, `POPUP_INTERFACE_SPEC.md` 321·961·964행 기재와 대조. 코드 변경 없음.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-18 — docs: WPF 최소 사양서 QUIZ 배점 기본값 정정·통과 결과 전달 설명 추가
 
 - 이유: 정합성 보완. 최소 사양서에 QUIZ 통과 여부(`passed`)가 결과로 어떻게 전달되는지 설명이 없었고, `QuestionScore` 누락 시 0점으로 적혀 있어 코드(`QuizGrader.DefaultQuestionScore`=1)·ALL_SPEC·인터페이스 계약서(1점, 3.7 보완 2026-10-21)와 달랐음.
