@@ -101,7 +101,7 @@ namespace Popup
             yield return Bool("content", "autoPlay", false, true);
             yield return Bool("content", "isLoop", false, true);
             yield return new("content", "defaultVolume", "숫자 대표값", new[] { Keep("0.7(기본)"), Body("0.3", "defaultVolume", 0.3) });
-            yield return new("popup", "completionRatio", "숫자 대표값", new[] { Keep("1.0(기본)"), Top("0.5", "completionRatio", 0.5) });
+            yield return new("popup", "completionRatio", "숫자 대표값", new[] { Keep("기본(VIDEO 1.0·영상+퀴즈 0.8)"), Top("0.5", "completionRatio", 0.5) });
         }
 
         /* ■ 유형별 옵션 영역(공통 + 유형 고유). 순서가 샘플 번호 순서다. */

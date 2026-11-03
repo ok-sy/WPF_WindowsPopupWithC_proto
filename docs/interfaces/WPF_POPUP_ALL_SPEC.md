@@ -61,7 +61,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | HeaderFontSize | 지원 | N | `null` | 최상위. 미지정 시 Header 17. 지정 시 10~40 보정 |
 | BodyFontSize | 지원 | N | `null` | 최상위. 미지정 시 View 기본. 지원 View에 본문 크기 전달 |
 | FooterFontSize | 지원 | N | `null` | 최상위. 미지정 시 Footer 14. 지정 시 10~40 보정 |
-| CompletionRatio | 지원 | N | `null` → `1.0` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준 |
+| CompletionRatio | 지원 | N | `null` → VIDEO `1.0` / VIDEO+QUIZ `0.8` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준. 미설정 기본값은 유형별(PU001 B-7, 서버 판정·관리자 미리보기와 같음) |
 | ~~AllowCloseBeforeComplete~~ | 폐기(TODO57) | - | - | 새 WPF는 읽지 않는다(구 서버가 보내도 무시). 화면 버튼은 `CompletionRatio`, Alt+F4 등 외부 닫기는 `UseBackgroundOverlay`, 완료 전 연기는 `ShowLater`로 판단한다. 구 WPF는 필드가 없으면 기본 `true`(완료 전 닫기 허용)로 동작하므로 서버 필드 제거 전 새 WPF 배포를 확인한다 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
 

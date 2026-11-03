@@ -16,6 +16,17 @@ namespace Popup.Services
      */
     public static class VideoCompletion
     {
+        /*
+         * POL-05-02 : 완료·화면 이탈 — completionRatio 미설정(null·생략) 기본값(PU001 B-7, 2026-11-03).
+         * VIDEO 단독은 1.0, 동영상+퀴즈(QUIZ + content.videoEnabled)는 0.8. 서버 PopupService.saveVideoProgress·
+         * 관리자 웹 미리보기(PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO)와 같은 값이다. 명시 값은 그대로 쓴다.
+         */
+        public const double DefaultVideoRatio = 1.0;
+        public const double DefaultVideoQuizRatio = 0.8;
+
+        /// <summary>completionRatio 미설정 시 기본값. 동영상+퀴즈면 0.8, 그 밖(VIDEO)은 1.0.</summary>
+        public static double DefaultRatio(bool videoQuiz) => videoQuiz ? DefaultVideoQuizRatio : DefaultVideoRatio;
+
         /// <summary>시청 비율(0~1, 소수 4자리 내림). 길이가 0 이하면 0.</summary>
         public static decimal WatchedRatio(decimal watchedSeconds, decimal durationSeconds)
         {

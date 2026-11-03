@@ -1,3 +1,4 @@
+using Popup.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -164,7 +165,7 @@ namespace Popup
                 if (string.IsNullOrWhiteSpace(Text(content["videoUrl"])))
                     issues.Add(new("ERROR", cp + ".videoUrl", "동영상 URL이 필요합니다."));
                 foreach (var kv in VideoDefaults(responseMode)) Default(content, kv.Key, kv.Value, cp, issues);
-                Default(popup, "completionRatio", JsonValue.Create(1.0), prefix, issues);
+                Default(popup, "completionRatio", JsonValue.Create(VideoCompletion.DefaultRatio(videoQuiz)), prefix, issues);
             }
             if (type == "SURVEY" || type == "QUIZ")
             {

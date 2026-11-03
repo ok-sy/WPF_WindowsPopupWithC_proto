@@ -35,7 +35,7 @@ export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
   questions: [],
 };
 
-/** 동영상+퀴즈 미리보기 완료 비율. 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 0.8로 표시한다. 일반 VIDEO는 1.0(WPF 기본값) 그대로. */
+/** 동영상+퀴즈 미리보기 완료 비율. 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 0.8로 표시한다. 일반 VIDEO는 1.0 그대로. WPF·서버의 미설정 기본값도 같다(PU001 B-7, 2026-11-03). */
 export const PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO = 0.8;
 
 /**

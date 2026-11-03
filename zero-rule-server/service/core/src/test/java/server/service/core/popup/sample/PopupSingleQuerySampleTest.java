@@ -168,7 +168,7 @@ class PopupSingleQuerySampleTest {
         JsonNode quiz = service(row("50", "{\"surveyTitle\":\"퀴즈\",\"videoEnabled\":true,\"videoUrl\":\"https://x/v.mp4\"}"), (r, t) -> quizQuestions)
                 .nextPopup("E1001", null, null).get("popup");
         assertTrue(quiz.has("passingScore") && quiz.get("passingScore").isNull());
-        assertEquals(1.0, quiz.get("completionRatio").doubleValue(), "영상+퀴즈 완료 비율 기본 1.0");
+        assertEquals(0.8, quiz.get("completionRatio").doubleValue(), "영상+퀴즈 완료 비율 기본 0.8(PU001 B-7)");
         assertTrue(quiz.at("/content/allowSeek").booleanValue() && quiz.at("/content/descriptionBlocks").isNull(), "영상+퀴즈는 VIDEO 옵션도 포함");
         JsonNode question = quiz.at("/questions/0");
         assertEquals(1, question.get("questionScore").intValue(), "채점 문항 배점 기본 1");
@@ -277,7 +277,7 @@ class PopupSingleQuerySampleTest {
         assertTrue(videoQuiz.get("content").get("videoEnabled").booleanValue());
         assertEquals("https://files.example.com/popup/popup/sample/video/training.mp4", videoQuiz.get("content").get("videoUrl").asText(),
                 "영상+퀴즈도 영상 컬럼 URL이 content.videoUrl보다 우선");
-        assertEquals(1.0, videoQuiz.get("completionRatio").doubleValue());
+        assertEquals(0.8, videoQuiz.get("completionRatio").doubleValue(), "영상+퀴즈 미설정 기본 0.8(PU001 B-7)");
         assertEquals(PopupSampleException.Reason.QUESTIONS_NOT_CONNECTED,
                 assertThrows(PopupSampleException.class, () -> service(toRow(rows.get(3))).nextPopup("E1001", null, null)).reason(),
                 "문항 미연결 상태의 SURVEY는 오류가 정상");

@@ -233,7 +233,7 @@ class PopupFullJsonSampleTest {
         JsonNode content = videoQuiz.get("content");
         assertTrue(content.get("allowSeek").booleanValue());
         assertFalse(content.get("allowPlaybackRateChange").booleanValue() || content.get("showDescription").booleanValue());
-        assertEquals(1.0, videoQuiz.get("completionRatio").doubleValue());
+        assertEquals(0.8, videoQuiz.get("completionRatio").doubleValue(), "영상+퀴즈 미설정 기본 0.8(PU001 B-7)");
         assertTrue(videoQuiz.has("passingScore") && videoQuiz.get("passingScore").isNull());
 
         ObjectNode quiz = popup("{\"popupType\":\"QUIZ\",\"content\":{}," + questions + "}");
@@ -300,7 +300,7 @@ class PopupFullJsonSampleTest {
         assertEquals("정보보호팀", quiz.get("questions").get(1).get("correctAnswer").textValue());
 
         ObjectNode videoQuiz = popups.get("S17-VQZ-01");
-        assertEquals(1.0, videoQuiz.get("completionRatio").doubleValue());
+        assertEquals(0.8, videoQuiz.get("completionRatio").doubleValue(), "영상+퀴즈 미설정 기본 0.8(PU001 B-7)");
         assertTrue(videoQuiz.get("content").get("allowSeek").booleanValue());
         assertFalse(videoQuiz.get("content").get("showDescription").booleanValue());
 

@@ -68,7 +68,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 | CNTN_CN (CLOB) | `content` | JSON 객체만 허용. 객체 그대로(이중 직렬화 없음) |
 | (컬럼 없음) | `displayMode`·`sizeMode`·`widthRatio`·`heightRatio`·`minimum*`·`maximum*`·`showHeader`·`showFooter`·`showFooterButton`·`showDoNotShowAgain` | SEQUENTIAL·FIXED·0.7·0.75·300·300·1200·900·true·true·true·false |
 | content `useBackgroundOverlay`·`backgroundOverlayOpacity`·`popupPosition`·`*FontSize` | 최상위 같은 이름 | 설계 31처럼 최상위로 옮기고 content에서 제거. 누락 시 true·0.45·CENTER·폰트 `null`(키 포함, WPF 기본 크기). 명시적 false·0 유지, 범위 밖 값은 오류 |
-| (컬럼 없음) | `hideDays` / `completionRatio` / `passingScore` | `null` / VIDEO·영상+퀴즈 `1.0`, 그 밖 `null` / QUIZ만 키 포함 `null`. 컬럼이 확정되면 row 값으로 교체 |
+| (컬럼 없음) | `hideDays` / `completionRatio` / `passingScore` | `null` / VIDEO `1.0`·영상+퀴즈 `0.8`(PU001 B-7), 그 밖 `null` / QUIZ만 키 포함 `null`. 컬럼이 확정되면 row 값으로 교체 |
 
 ### 3.1 샘플 응답은 가능한 옵션 키를 모두 싣는다
 
@@ -136,7 +136,7 @@ SELECT *
 | SMP-VDO-01 | 30 VIDEO | 영상 컬럼 → videoUrl, 나중에 보기(AFTR_CNFM_OBJ_YN=Y), 배속·탐색 금지 |
 | SMP-SVY-01 | 40 SURVEY | 푸터 코드 NULL이어도 SUBMIT. 문항은 QuestionPort |
 | SMP-QIZ-01 | 50 QUIZ | 영상 없는 퀴즈. 문항·정답 키는 QuestionPort |
-| SMP-VQZ-01 | 50 QUIZ | `videoEnabled=true` 영상+퀴즈. 영상 컬럼 URL이 content.videoUrl보다 우선, completionRatio 1.0 |
+| SMP-VQZ-01 | 50 QUIZ | `videoEnabled=true` 영상+퀴즈. 영상 컬럼 URL이 content.videoUrl보다 우선, completionRatio 0.8(영상+퀴즈 기본값) |
 
 - 확인할 행은 `?contentId=SMP-TXT-01`처럼 지정한다. 정렬이 `POPU_CNTN_ID DESC`라 지정하지 않으면 SMP-VQZ-01이 먼저 잡힌다.
 - 기본 `UnconnectedQuestionPort` 상태에서 SURVEY·QUIZ 3건은 `QUESTIONS_NOT_CONNECTED`(500)가 정상이다. 문항 형태는 `web/api/src/test/resources/sample/relay/survey.json`·`quiz.json`·`video-quiz.json`의 `questions`를 따른다.

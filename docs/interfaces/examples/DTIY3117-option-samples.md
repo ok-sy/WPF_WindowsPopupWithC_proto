@@ -2,7 +2,7 @@
 
 - 작성: 2026-11-03 (KST)
 - 대상: DTIY3117 `POPU_BLTN_CN` 저장 형태(popup 본체, deliveryId·pollingIntervalSeconds 없음)
-- 기준: `popup-full-json-defaults.yml`(정책 `3117-REG-2026-10-29`), [WPF 전체 기능 정의서](../WPF_POPUP_ALL_SPEC.md), [기본값 전체 JSON](DTIY3117-register-defaults-full.txt)
+- 기준: `popup-full-json-defaults.yml`(정책 `3117-REG-2026-11-03`), [WPF 전체 기능 정의서](../WPF_POPUP_ALL_SPEC.md), [기본값 전체 JSON](DTIY3117-register-defaults-full.txt)
 - 소스: `popup-frameWork/Popup/DemoJsonSamples3117.cs`(옵션 영역·가짓수·샘플 생성), WPF Demo JSON Validator "3117 옵션 샘플" 창
 
 ## 1. 산정 기준

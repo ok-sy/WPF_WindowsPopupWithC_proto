@@ -25,7 +25,7 @@ namespace Popup.Services
      *                   score/passed가 빠진 QUIZ 항목은 WPF_INVALID_RESULT로 거절한다(데모 채점기 없음).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
      *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).
-     *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(기본 1.0)면 완료
+     *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(미설정 기본 VIDEO 1.0·동영상+퀴즈 0.8)면 완료
      *     - 같은 resultId 재수신은 DUPLICATE
      *     - 조회마다 전달 건(deliveryId)을 발급하고 결과에서 일치·미종료를 검사한다. 일반 안내(TEXT·IMAGE) 닫기는 완료,
      *       설문·퀴즈·영상의 미완료 결과는 조회 간격(DeferSeconds) 동안 재노출 유예. 저장 후 남은 후보로 nextStatus를 돌려준다.
@@ -174,7 +174,7 @@ namespace Popup.Services
                     {
                         // POL-05-02 : 완료·화면 이탈 — 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 WPF_INVALID_VIDEO).
                         if (item.Video == null
-                            || !VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? 1.0))
+                            || !VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? VideoCompletion.DefaultVideoQuizRatio))
                             return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 완료 비율을 충족해야 합니다.");
                     }
                     if (item.Answers == null || item.Answers.Count == 0)
@@ -212,7 +212,7 @@ namespace Popup.Services
                     {
                         return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 정보가 없습니다.");
                     }
-                    if (VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? 1.0)
+                    if (VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? VideoCompletion.DefaultVideoRatio)
                         && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
                     {
                         _completed.Add(item.PopupId);

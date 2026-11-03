@@ -123,7 +123,7 @@ TEXT 크기는 별도 Width/Height가 아니라 공통 Width/Height를 사용한
 | IsCorrect | 최소 QUIZ 선택형에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시 |
 | OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
 | VideoEnabled | VIDEO+QUIZ에서 지원 | N | `false` | `content.videoEnabled=true`이면 영상 시청 후 QUIZ를 푸는 결합형 화면 사용 |
-| CompletionRatio | VIDEO+QUIZ에서 지원 | N | `1.0` | 누적 시청 도달률(0~1). 기준 도달 전 QUIZ 및 Footer 비활성화, 도달 시 활성화 |
+| CompletionRatio | VIDEO+QUIZ에서 지원 | N | `0.8` | 누적 시청 도달률(0~1). 생략/null이면 0.8(VIDEO 단독은 1.0, PU001 B-7). 기준 도달 전 QUIZ 및 Footer 비활성화, 도달 시 활성화 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 팝업 최상위 합격점. 0~총점. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
 | IsScored | QUIZ에서 지원 | Y(QUIZ) | `false` | 최소 QUIZ 문항은 true 명시. SURVEY는 false 사용 |
 | QuestionScore | QUIZ에서 지원 | Y(QUIZ) | `null` → 1 | 양수 배점. 누락/null이면 WPF 로컬 계산은 기본 1점(서버도 미입력 시 1점 저장, 모두 1점이면 총점 = 문항 수) |

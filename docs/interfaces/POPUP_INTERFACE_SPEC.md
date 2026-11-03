@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-11-03 (KST)
+- 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
 - 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
 - 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
 - 3.7 보완(2026-10-27, 로그인 요청 키): WPF-00 로그인 요청의 사용자 식별 키를 `logonId` → `lgonId`로 변경. 폐쇄망 로그인 API(`p/api/ssoLogin`) 요청 DTO와 같은 키다. WPF 일반 모드·API Demo 기본 JSON이 `lgonId`를 보내며, 로컬 프로토타입 서버(`/api/wpf/auth/login`)는 `lgonId`를 받고 이전 키 `logonId`도 별칭으로 받는다. 응답·토큰 계약은 바뀌지 않는다.
@@ -322,7 +323,7 @@ X-Client-Version: 1.0.0
 | showDoNotShowAgain | boolean | O | `false` | 다시 보지 않기 체크박스 표시 |
 | showLater | boolean | 선택 | `false` | 나중에 보기 버튼 표시(TODO52-2). `showFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 `LATER`(§10.4.1)로 닫힌다. 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)에도 누를 수 있으며, 완료 기준 전 화면 이탈 버튼은 이것뿐이다(TODO57) |
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
-| completionRatio | number | VIDEO / 동영상+퀴즈 | `1.0` | 완료 인정 비율 0~1 |
+| completionRatio | number | VIDEO / 동영상+퀴즈 | VIDEO `1.0` / 동영상+퀴즈 `0.8` | 완료 인정 비율 0~1. 생략/null이면 유형별 기본값(PU001 B-7) |
 | ~~allowCloseBeforeComplete~~ | - | 폐기(TODO57) | - | 응답에서 제거. 새 WPF는 보내도 무시한다. 화면 버튼은 `completionRatio`, 외부 닫기는 `popup.useBackgroundOverlay`, 완료 전 연기는 `showLater`. 구 WPF는 필드가 없으면 `true`로 동작하므로 새 WPF 배포 후 제거한다 |
 | passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
@@ -381,7 +382,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 - width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다.
 - **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
-- completionRatio 생략/null은 1.0(100% 시청). 80% 완료가 필요하면 0.8을 명시한다. showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
+- completionRatio 생략/null은 VIDEO 1.0(100% 시청), 동영상+퀴즈 0.8(2026-11-03 PU001 B-7). 다른 기준이 필요하면 값을 명시한다. showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
 - pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
 - [설계 34-31·32] `footerAction`·`popupPosition`의 빈 문자열·null은 생략과 같이 유형별 기본값(CLOSE 또는 SUBMIT, CENTER)으로 처리하며 미지원 값도 기본값이다. 백엔드 등록 단계는 빈 문자열을 생략으로 받고 미지원 값·유형에 맞지 않는 Action은 거부한다. `useBackgroundOverlay=false`·`backgroundOverlayOpacity=0`은 누락이 아닌 정상 명시값이다. 두 값은 non-nullable이므로 null 대신 생략한다. 글자 크기는 null·생략이면 화면 기본 크기다.
 - **생략과 명시적 null은 다르다.** non-nullable bool/int/double의 null은 역직렬화 오류가 될 수 있다. string/list에 null이 들어가면 초기값을 덮어써 후속 처리 실패가 가능하다. nullable로 문서화된 값 외에는 null을 보내지 않는다. 날짜는 ISO 8601 문자열 또는 허용된 null만 전달한다.

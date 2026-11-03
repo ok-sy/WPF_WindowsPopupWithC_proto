@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class PopupJsonValidator {
 
     /** 규칙·기본값을 바꾸면 올린다. 저장 이력·오류 응답에 함께 남길 수 있다. */
-    public static final String POLICY_VERSION = "3117-REG-2026-10-29";
+    public static final String POLICY_VERSION = "3117-REG-2026-11-03";   // 2026-11-03: 영상+퀴즈 completionRatio 기본 0.8(PU001 B-7)
 
     private static final Set<String> SERVER_OWNED_KEYS = Set.of("deliveryId", "pollingIntervalSeconds");
     /** content 안에 들어올 수 있는 최상위 창·푸터 옵션(조회 샘플과 같은 호환 규칙). */
@@ -271,7 +271,9 @@ public class PopupJsonValidator {
         fill(work, base, "$", changes);
         if (!work.hasNonNull("title")) setDefault(work, "title", work.textNode(""), "$", changes);
         if (video) {
-            if (!work.hasNonNull("completionRatio")) setDefault(work, "completionRatio", work.numberNode(1.0), "$", changes);
+            // PU001 B-7: 미설정 기본값 VIDEO 1.0, 동영상+퀴즈 0.8
+            if (!work.hasNonNull("completionRatio"))
+                setDefault(work, "completionRatio", work.numberNode("QUIZ".equals(type) ? 0.8 : 1.0), "$", changes);
         } else {
             removeNotApplicable(work, "completionRatio", changes);
         }

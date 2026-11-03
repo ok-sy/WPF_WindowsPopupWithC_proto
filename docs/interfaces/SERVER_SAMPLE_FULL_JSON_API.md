@@ -101,7 +101,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 
 - IMAGE: width/height가 없거나 null이면 채우지 않고 키도 싣지 않는다(크기 미지정 = 원본 기준). `imageSizeMode=ORIGINAL`은 width/height 필수.
 - SURVEY·QUIZ: footerAction 없으면 SUBMIT, 다른 명시값은 거절. TEXT·IMAGE·VIDEO의 SUBMIT은 거절. LINK_AND_CLOSE는 절대 http/https `footerLinkUrl` 필수, 그 밖의 동작이면 `footerLinkUrl`을 싣지 않는다.
-- VIDEO·영상 QUIZ(`videoEnabled=true`): completionRatio 없으면 1.0. 그 밖 유형은 null.
+- VIDEO·영상 QUIZ(`videoEnabled=true`): completionRatio 없으면 VIDEO 1.0, 영상 QUIZ 0.8(PU001 B-7). 그 밖 유형은 null.
 - 영상 QUIZ: VIDEO content 기본값을 함께 채운다(명시값 유지). 영상 없는 QUIZ에는 VIDEO 필드를 넣지 않는다.
 - passingScore: QUIZ만 싣는다(없으면 null). title: 없으면 "".
 - 본문·파일 URL·문항·정답은 채우지 않는다. 필수 콘텐츠(TEXT 본문 또는 textBlocks, IMAGE imageUrl, VIDEO·영상 QUIZ videoUrl, SURVEY·QUIZ 문항)가 없으면 거절한다.

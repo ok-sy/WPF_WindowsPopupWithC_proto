@@ -84,7 +84,7 @@ namespace Popup.Models
         public string PopupType { get; set; } = string.Empty;
 
         /* POL-05-02 : 완료·화면 이탈 — 영상 완료 기준 누적 시청 비율. 기본 1.0 */
-        public double CompletionRatio { get; set; } = 1.0;
+        public double CompletionRatio { get; set; } = 1.0;   // PopupFactory가 미설정 시 VIDEO 1.0·동영상+퀴즈 0.8로 채운다(PU001 B-7)
 
         public string Title { get; set; } = string.Empty;
         public FrameworkElement? Content { get; set; }

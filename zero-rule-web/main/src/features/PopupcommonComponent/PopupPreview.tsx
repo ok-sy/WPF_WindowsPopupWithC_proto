@@ -11,6 +11,7 @@ import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { popupFontSize, popupMinimumSize } from './popupCommon';
+import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import {
   fitToImageLayout,
   imageSizeMode,
@@ -97,7 +98,7 @@ function PopupBody({
     return (
       <Stack spacing={2}>
         <PopupBody
-          popup={{ ...popup, popupType: 'VIDEO' }}
+          popup={{ ...popup, popupType: 'VIDEO', completionRatio: popup.completionRatio ?? PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO }}
           naturalImageSize={null}
           fitLayout={null}
           onImageLoad={onImageLoad}
@@ -473,7 +474,8 @@ export default function PopupPreview({
     () => setPreviewWatchPercent(0),
     [popup.popupId, popup.popupType, popup.content.videoUrl, popup.completionRatio, isVideoQuiz],
   );
-  const requiredRatio = Math.max(0, Math.min(1, popup.completionRatio ?? 1));
+  // 미설정이면 동영상+퀴즈 0.8, VIDEO 1.0(WPF·서버 기본값과 같음, PU001 B-7).
+  const requiredRatio = Math.max(0, Math.min(1, popup.completionRatio ?? (isVideoQuiz ? PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO : 1)));
   const requiredPercent = percentText(requiredRatio);
   /*
    * WPF는 누적 시청 비율을 소수점 4자리에서 내림한 뒤 완료 기준 이상인지 본다.

@@ -39,7 +39,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *   <tr><td>footerLinkUrl</td><td>FTR_URL</td><td>LINK_AND_CLOSE일 때만, 절대 http/https 필수</td></tr>
  *   <tr><td>useBackgroundOverlay / backgroundOverlayOpacity / popupPosition</td><td>content</td><td>true / 0.45 / CENTER</td></tr>
  *   <tr><td>header/body/footerFontSize</td><td>content</td><td>null(키는 항상 포함, null = WPF XAML 기본 크기)</td></tr>
- *   <tr><td>hideDays / completionRatio / passingScore</td><td>(컬럼 없음)</td><td>null / VIDEO·영상+퀴즈 1.0, 그 밖 null / QUIZ만 키 포함 null</td></tr>
+ *   <tr><td>hideDays / completionRatio / passingScore</td><td>(컬럼 없음)</td><td>null / VIDEO 1.0·영상+퀴즈 0.8(PU001 B-7), 그 밖 null / QUIZ만 키 포함 null</td></tr>
  *   <tr><td>content 유형별 옵션</td><td>CNTN_CN</td><td>{@link #CONTENT_DEFAULTS} 표(명세 §8·WPF 콘텐츠 DTO 기본값과 같음)</td></tr>
  *   <tr><td>questions[]·options[] 선택 필드</td><td>QuestionPort</td><td>applyQuestionDefaults</td></tr>
  *   <tr><td>displayMode·sizeMode·widthRatio·heightRatio·minimum*·maximum*·showHeader·showFooter·showFooterButton·showDoNotShowAgain</td>
@@ -146,7 +146,8 @@ public class PopupSingleResponseAssembler {
         boolean video = "VIDEO".equals(type) || ("QUIZ".equals(type) && content.path("videoEnabled").asBoolean(false));
         // [교체 지점] 숨김 일수·완료 비율·통과 점수는 DTIY3111에 컬럼이 없어 계약 기본값을 싣는다. 컬럼이 확정되면 row 값으로 바꾼다.
         popup.putNull("hideDays");
-        if (video) popup.put("completionRatio", 1.0); else popup.putNull("completionRatio");
+        // PU001 B-7: VIDEO 1.0, 동영상+퀴즈 0.8(미설정 기본값)
+        if (video) popup.put("completionRatio", "QUIZ".equals(type) ? 0.8 : 1.0); else popup.putNull("completionRatio");
         if ("QUIZ".equals(type)) popup.putNull("passingScore");
         applyFile(content, row, type);
         ArrayNode questionList = questions == null ? objectMapper.createArrayNode() : questions.deepCopy();

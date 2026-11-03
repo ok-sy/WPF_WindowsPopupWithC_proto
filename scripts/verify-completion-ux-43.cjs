@@ -77,6 +77,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('확인');
   check(b.disabled && b.reason.includes('기준 80.5%'), 'Fractional ratio text and judgment: ' + JSON.stringify(b));
 
+  // PU001 B-7: completionRatio 미설정(null)이면 VIDEO는 1.0, VIDEO+QUIZ는 0.8로 판정·표시한다(WPF·서버 기본값과 같음).
+  await render('VIDEO', {completionRatio: null}); b = await button('확인');
+  check(b.disabled && b.reason.includes('기준 100%'), 'VIDEO null ratio defaults to 100% (B-7): ' + JSON.stringify(b));
+  await render('QUIZ', {completionRatio: null}, {videoEnabled: true}); b = await button('제출');
+  check(b.disabled && b.reason.includes('기준 80%'), 'VIDEO+QUIZ null ratio defaults to 80% (B-7): ' + JSON.stringify(b));
+  await watch(80); b = await button('제출');
+  check(!b.reason.startsWith('영상'), 'VIDEO+QUIZ null ratio unlocks at 80% (B-7): ' + JSON.stringify(b));
+  check((await bodyText()).includes('완료 기준 80%'), 'VIDEO+QUIZ null ratio caption shows 80% (B-7)');
+
   // 2. POL-02-02 : 종료 제어 — 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
   await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('확인');
   check(b.disabled && b.reason.startsWith('영상 0% 시청'), 'Legacy allow-close VIDEO stays blocked (TODO57): ' + JSON.stringify(b));

@@ -103,7 +103,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | 옵션 | 필수 여부 | Default | 설명 |
 |---|---|---|---|
 | `hideDays` | 선택 | 결과 생성 시 30일 | 다시 보지 않기 선택 시 HIDDEN 결과에 사용. 1~3650(관리자 저장 시 서버 검증) |
-| `completionRatio` | VIDEO/동영상+퀴즈 | 1.0 | 누적 시청 완료 기준 0~1 |
+| `completionRatio` | VIDEO/동영상+퀴즈 | VIDEO 1.0 / 동영상+퀴즈 0.8 | 누적 시청 완료 기준 0~1 |
 | `passingScore` | QUIZ | 없음 | WPF 로컬 채점 통과 점수 |
 | ~~`allowCloseBeforeComplete`~~ | - | - | 폐기(TODO57). VIDEO 닫기 버튼은 `completionRatio` 기준 전 항상 비활성(시청 %·기준 사유 표시), 동영상+퀴즈는 기준 전 입력·제출 잠금. Alt+F4 등 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`로 정한다 |
 
@@ -185,7 +185,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `autoPlay` | `false` | 자동 재생 | 사용 |
 | `isLoop` | `false` | 반복 재생 | 사용 |
 | `defaultVolume` | `0.7` | 시스템 볼륨 연결 전/실패 시 초기 음량 0~1. 연결 성공 시 현재 Windows 값 우선 | 사용 |
-| `completionRatio` | `1.0` | 완료 인정 비율 | 누적 시청 기준/닫기 제한에 사용 |
+| `completionRatio` | VIDEO `1.0` / 동영상+퀴즈 `0.8` | 완료 인정 비율 | 누적 시청 기준/닫기 제한에 사용 |
 
 로컬 MediaElement와 HTTP/HTTPS HTML5 영상은 영상 하단에 겹치는 WPF Overlay 컨트롤바를 사용한다. 재생 중 일반 화면 3초·영상 전체화면 2초 무입력·마우스 이탈 시 숨기고 진입·이동 시 표시하며 일시정지·조작 중에는 유지한다. URL 영상의 브라우저 기본 controls는 없으며 공통 재생·일시정지·탐색·배속·전체화면 옵션을 적용한다. 음량/음소거는 Windows Master Volume/Mute와 양방향 동기화하고 내부 영상 음량은 1.0으로 유지한다. `defaultVolume`은 시스템 연결 전/실패 시 초기 음량이며 시스템 연결 성공 시 현재 Windows 값으로 대체한다. Windows 볼륨 변경은 다른 앱에도 영향을 주며 종료 시 이전 값으로 복원하지 않는다. `showControls=false`이면 숨기고 영상 클릭으로 재생을 전환한다. `allowPlaybackRateChange=false`이면 HTML5도 1.0배로 제한하며 `allowFullScreen=false`이면 WPF 버튼과 진입을 제한한다. `allowSeek=false`이면 진행바 클릭·드래그·키보드·UI Automation으로 재생 위치를 바꿀 수 없고 HTML5 seek 명령도 무시한다. 진행률·현재/전체 시간 표시와 루프·종료 후 재시작은 유지하며 전체화면에서도 같은 정책을 적용한다. buffering/waiting/stalled는 중앙 Spinner로 표시한다.
 

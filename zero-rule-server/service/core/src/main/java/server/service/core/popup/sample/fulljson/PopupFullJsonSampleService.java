@@ -249,7 +249,8 @@ public class PopupFullJsonSampleService {
         if (!work.hasNonNull("title")) work.put("title", "");
         applyFooter(type, work, id);
         if (video) {
-            if (!work.hasNonNull("completionRatio")) work.put("completionRatio", 1.0);
+            // PU001 B-7: 미설정 기본값 VIDEO 1.0, 동영상+퀴즈 0.8
+            if (!work.hasNonNull("completionRatio")) work.put("completionRatio", "QUIZ".equals(type) ? 0.8 : 1.0);
         } else {
             work.putNull("completionRatio");
         }

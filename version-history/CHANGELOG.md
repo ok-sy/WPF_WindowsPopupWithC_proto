@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-03-22 — dev: 동영상+퀴즈 completionRatio 미설정 기본값 0.8 통일(PU001 B-7)
+
+- 이유: PU001 B-7 결정. 동영상+퀴즈의 `completionRatio` 미설정 시 관리자 웹 미리보기·등록 화면은 0.8, WPF·서버 시청 완료 판정과 서버 샘플 기본값은 1.0으로 달라 같은 팝업의 완료 기준이 화면마다 달랐음.
+- 변경:
+  - 기준: 동영상+퀴즈(QUIZ + `content.videoEnabled=true`) 미설정(null·생략)은 0.8, VIDEO 단독 미설정은 1.0 유지, 명시 값은 그대로.
+  - WPF: `VideoCompletion.DefaultVideoRatio`·`DefaultVideoQuizRatio`·`DefaultRatio(videoQuiz)` 추가, `PopupFactory`가 유형별 기본값으로 `VideoQuizPopupView`·`PopupOptions.CompletionRatio`를 채움. DemoPopupGateway(영상+퀴즈 제출 0.8·VIDEO 시청 1.0), DemoJsonValidator 기본값, Demo 옵션 입력 안내·3117 샘플 라벨 갱신.
+  - 서버: `PopupService.saveVideoProgress` 미설정 기준을 문맥 유형(QUIZ=영상+퀴즈 0.8, VIDEO 1.0)으로 결정(`defaultCompletionRatio`). 3117 전체 JSON 샘플(`PopupFullJsonSampleService`·`PopupJsonValidator`, 정책 버전 `3117-REG-2026-11-03`)·3111 단건 샘플(`PopupSingleResponseAssembler`) 기본값을 영상+퀴즈 0.8로. 기본값 예시 파일 `DTIY3117-register-defaults-full.txt` 재생성(QUIZ_VIDEO 블록 0.8), 샘플 테스트 기대값 갱신. WPF 응답의 completionRatio는 기존처럼 null을 그대로 전달.
+  - 웹: `PopupPreview` 미리보기 판정(`requiredRatio`)·영상 영역 완료 기준 문구가 미설정 영상+퀴즈를 0.8로 표시(기존 `withPreviewFallback`을 거치지 않는 호출도 같은 값).
+  - 문서: `POPUP_INTERFACE_SPEC.md` 변경 기록·필드 표·§8 설명, `WPF_POPUP_ALL_SPEC.md`·`WPF_POPUP_MINIMAL_SPEC.md`(VIDEO+QUIZ 행만 0.8, VIDEO 행 1.0 유지), `POPUP_OPTION_GUIDE.md`, 서버 샘플 API 문서 2종, `DTIY3117-option-samples.md` 정책 버전, `db/oracle/01` POPUP_NOTICE.COMPLETION_RATIO 주석 문구, PU001 TODO B-7 완료 표기.
+- 주요 파일: popup-frameWork/Popup/Services/VideoCompletion.cs, Factories/PopupFactory.cs, Services/DemoPopupGateway.cs, DemoJsonValidator.cs, zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java, sample/fulljson/PopupFullJsonSampleService.java·PopupJsonValidator.java, sample/PopupSingleResponseAssembler.java, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, scripts/verify-completion-ux-43.cjs, docs/interfaces/*, docs/POPUP_OPTION_GUIDE.md, db/oracle/01_popup_schema_oracle.sql, version-history/CHANGELOG.md.
+- 검증: WPF Release 빌드 경고·오류 0, BehaviorTests 1,711·RecoveryTests 154(로컬 전용)·ApiDemoTests 71 통과. 서버 `gradlew test` 244건 통과·11 skip(Oracle 연동)·실패 0(샘플 기대값 5건 0.8로 갱신 후). 웹 `tsc --noEmit` 오류 0, 변경 파일 ESLint 0, `verify-completion-ux-43` 75건(미설정 VIDEO 100%·영상+퀴즈 80% 판정·문구 4건 추가)·`verify-popup-preview-61` 52·`verify-popup-transform-64` 77·`verify-popup-pick-fields` 34·`verify-popup-common-sample-69` 39 통과. 미실행: 원격 개발 DB 실DB 테스트(192.168.114.71:4004 접속 불가), DB 주석 변경 스크립트 적용(01 파일 문구만 수정), 원격 서버 배포, WPF 실기동·관리자 웹 실화면.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-21 — dev: 서버 SURVEY 최소·최대 선택 수 제출 검증 추가(PU001 B-4)
 
 - 이유: PU001 B-4 결정. SURVEY 복수 선택의 `minSelections`·`maxSelections`는 관리자 저장 시 범위만 검증하고 WPF·관리자 미리보기 화면에서만 제한했으며, 서버 결과 수신은 선택 수를 검사하지 않아 화면 제한을 벗어난 결과도 저장될 수 있었음.

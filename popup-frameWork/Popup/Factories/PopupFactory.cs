@@ -1,5 +1,6 @@
 ﻿using Popup.Dtos;
 using Popup.Models;
+using Popup.Services;
 using Popup.Views.Contents;
 using System;
 using System.Collections.Generic;
@@ -47,6 +48,11 @@ namespace Popup.Factories
              */
             if (popupDto == null) throw new ArgumentNullException(nameof(popupDto));
 
+            // POL-05-02 : 완료·화면 이탈 — completionRatio 미설정이면 VIDEO 1.0, 동영상+퀴즈 0.8(PU001 B-7).
+            bool videoQuiz = popupDto.PopupType.Trim().Equals("QUIZ", StringComparison.OrdinalIgnoreCase)
+                && GetContentBoolean(popupDto.Content, "videoEnabled", false);
+            double completionRatio = popupDto.CompletionRatio ?? VideoCompletion.DefaultRatio(videoQuiz);
+
             FrameworkElement content = popupDto.PopupType.Trim().ToUpperInvariant() switch
             {
                 "TEXT" => CreateTextPopupView(popupDto.Content),
@@ -55,7 +61,7 @@ namespace Popup.Factories
                 "SURVEY" => CreateSurveyPopupView(popupDto, false),
                 "QUIZ" when GetContentBoolean(popupDto.Content, "videoEnabled", false) =>
                     new VideoQuizPopupView(CreateVideoPopupView(popupDto.Content),
-                        CreateSurveyPopupView(popupDto, true), popupDto.CompletionRatio ?? 1.0),
+                        CreateSurveyPopupView(popupDto, true), completionRatio),
                 "QUIZ" => CreateSurveyPopupView(popupDto, true),
                 _ => throw new NotSupportedException($"지원하지 않는 팝업 종류입니다: {popupDto.PopupType}")
             };
@@ -92,7 +98,7 @@ namespace Popup.Factories
                 BodyFontSize = popupDto.BodyFontSize,
                 FooterFontSize = popupDto.FooterFontSize,
 
-                CompletionRatio = popupDto.CompletionRatio ?? 1.0,
+                CompletionRatio = completionRatio,
                 Position = ConvertPopupPosition(popupDto.PopupPosition),
                 SizeMode = content is ImagePopupView && !string.Equals(popupDto.SizeMode, "FULLSCREEN", StringComparison.OrdinalIgnoreCase)
                     ? PopupSizeMode.Fixed : ConvertPopupSizeMode(popupDto.SizeMode),

@@ -735,6 +735,14 @@ public class PopupService {
         }
     }
 
+    /** POL-05-02 : 완료·화면 이탈 — completionRatio 미설정 기본값. VIDEO 1.0, 동영상+퀴즈 0.8(PU001 B-7, WPF VideoCompletion과 같음). */
+    static final BigDecimal DEFAULT_VIDEO_COMPLETION_RATIO = BigDecimal.ONE;
+    static final BigDecimal DEFAULT_VIDEO_QUIZ_COMPLETION_RATIO = new BigDecimal("0.8");
+
+    static BigDecimal defaultCompletionRatio(boolean videoQuiz) {
+        return videoQuiz ? DEFAULT_VIDEO_QUIZ_COMPLETION_RATIO : DEFAULT_VIDEO_COMPLETION_RATIO;
+    }
+
     /** 공백뿐인 문자열은 null, 그 밖에는 앞뒤 공백을 제거한다. */
     private String normalizeText(String value) {
         return value == null || value.isBlank() ? null : value.trim();
@@ -832,8 +840,9 @@ public class PopupService {
         BigDecimal normalizedWatchedSeconds = watchedSeconds.min(durationSeconds);
         BigDecimal watchedRatio = normalizedWatchedSeconds.divide(
                 durationSeconds, 4, RoundingMode.DOWN).min(BigDecimal.ONE);
-        BigDecimal requiredRatio = context.completionRatio() == null
-                ? BigDecimal.ONE : context.completionRatio();
+        // POL-05-02 : 완료·화면 이탈 — 미설정이면 VIDEO 1.0, 동영상+퀴즈(QUIZ, 조회 조건상 videoEnabled) 0.8(PU001 B-7).
+        BigDecimal requiredRatio = context.completionRatio() != null
+                ? context.completionRatio() : defaultCompletionRatio("QUIZ".equalsIgnoreCase(context.popupType()));
         boolean completed = watchedRatio.compareTo(requiredRatio) >= 0;
         String completedYn = completed ? "Y" : "N";
 
