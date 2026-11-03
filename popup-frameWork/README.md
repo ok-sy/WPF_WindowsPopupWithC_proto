@@ -96,7 +96,7 @@ Popup/App.xaml.cs
              ShutdownMode="OnExplicitShutdown">
 ```
 
-트레이 상주 프로그램이므로 MainWindow가 숨겨지거나 닫혀도 프로그램이 자동 종료되지 않게 한다.
+백그라운드 상주 프로그램이므로 MainWindow가 숨겨지거나 팝업 창이 모두 닫혀도 프로그램이 자동 종료되지 않게 한다.
 
 ### App.xaml.cs
 
@@ -117,27 +117,40 @@ CrashGuard 설치
 ↓
 Mutex로 중복 실행 방지
 ↓
+시작 옵션 결정(StartupOptions: --tray > 환경변수 > 기본값)
+↓
 MainWindow 생성
 ↓
-트레이 아이콘 생성
+트레이 아이콘 생성 — --tray / WPF_POPUP_TRAY_ENABLED=true / Demo 모드일 때만
 ↓
-MainWindow.Show()
+MainWindow.Show() — 일반 실행은 화면 밖·비활성·작업 표시줄 없음
 ↓
-Loaded 이벤트 발생
+Loaded 이벤트 발생(자동 조회 시작)
 ↓
-API 모드면 MainWindow.Hide()
+API 모드면 MainWindow.Hide() 후 가운데 위치로 복원
+↓
+최초 실행이면 HKCU 자동 시작 1회 등록(WindowsStartupService.ApplyFirstRunPolicy)
 ```
 
 MainWindow를 잠깐 `Show()` 하는 이유는 화면을 보여주기 위해서가 아니라
-`MainWindow.Loaded` 이벤트를 발생시켜 자동 팝업 조회를 시작하기 위해서다.
+`MainWindow.Loaded` 이벤트를 발생시켜 자동 팝업 조회를 시작하기 위해서다. 일반 실행에서는 화면 밖에서 띄웠다 숨겨 깜빡이지 않는다.
 
-일반 실행에서는 관리 화면을 다시 숨기고 트레이에서 상주한다.
+**기본 실행은 백그라운드 전용**이다(A-1 6번, 2026-11-03 구현). 트레이 아이콘·관리 화면 없이 조회·결과 재전송·업무 팝업 표시만 한다.
 
 ```text
 popupSample.exe 실행 중
 MainWindow 숨김
-트레이 아이콘 표시
+트레이 아이콘 없음 (--tray일 때만 표시 — 상태·진단용, 메뉴: 관리 화면 열기·팝업 다시 조회·Windows 시작 시 자동 실행·종료)
 ```
+
+| 설정 | 환경변수 | 기본값 | 명령행 |
+|---|---|---|---|
+| 트레이 표시 | `WPF_POPUP_TRAY_ENABLED` | false | `--tray`(환경변수 false보다 우선) |
+| 로그인 자동 시작 | `WPF_POPUP_AUTOSTART_ENABLED` | true | 없음 |
+
+- bool 값은 true/false·1/0·yes/no·on/off, 그 밖의 값은 기본값.
+- 자동 시작: 사용자 세션의 첫 일반 실행에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `OksyPopupClient`에 `"<EXE 전체 경로>"`(따옴표, `--tray` 없음)를 등록하고 이력 `HKCU\Software\OksyPopupClient\AutostartInitialized=1`을 남긴다. 이후에는 다시 등록하지 않아 사용자가 지우거나 작업 관리자에서 끈 설정을 되돌리지 않는다. `WPF_POPUP_AUTOSTART_ENABLED=false`면 이 앱 값만 지운다. `%TEMP%`·빌드 출력(`in\` 아래)·SYSTEM 계정 실행은 등록하지 않는다(설치 위치에서 실행될 때 등록).
+- 일반 사용자용 종료 명령(`--exit`)은 두지 않는다(2026-11-03 결정). 종료는 `--tray` 트레이 메뉴·Windows 종료/로그오프·426 업데이트 안내.
 
 실행 인자:
 
@@ -145,7 +158,7 @@ MainWindow 숨김
 --show-main
 ```
 
-을 주면 개발/테스트용 관리 화면을 숨기지 않는다.
+을 주면 개발/테스트용 관리 화면을 숨기지 않는다. `--tray`를 함께 주면 트레이 메뉴도 쓸 수 있다.
 
 ---
 
@@ -869,7 +882,7 @@ WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03�
 
 ## 19. 프로그램 종료
 
-트레이 메뉴의 **종료** 또는 426 업데이트 안내를 닫으면 실제로 끝난다.
+`--tray` 실행의 트레이 메뉴 **종료**, 426 업데이트 안내 닫기, Windows 종료·로그오프에서 실제로 끝난다(기본 실행은 트레이가 없다).
 
 `MainWindow.OnClosed()`에서:
 
@@ -936,7 +949,9 @@ PopupManager.AttachResultCollection()
 
 | 파일 | 역할 |
 |---|---|
-| `App.xaml.cs` | 프로그램 시작/종료, 트레이, 단일 실행 |
+| `App.xaml.cs` | 프로그램 시작/종료, (선택)트레이, 단일 실행, 최초 실행 자동 시작 등록 호출 |
+| `Services/StartupOptions.cs` | `--tray`·`WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED` 해석 |
+| `Services/WindowsStartupService.cs` | HKCU Run 자동 시작 등록·최초 1회 정책 |
 | `MainWindow.xaml.cs` | 전체 객체 조립, 자동 조회, polling |
 | `SsoClient.cs` | Windows 통합 인증으로 SSO XML 조회 |
 | `WpfLoginClient.cs` | SSO 사용자 정보로 Zero 로그인 API 호출 |

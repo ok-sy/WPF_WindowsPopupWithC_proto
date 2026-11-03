@@ -11,10 +11,12 @@ namespace Popup
 {
     /*
      * ■ WPF 앱 진입점(시작·트레이·종료)
-     * - in : 실행 인자(-Demo / -Api / --show-main / --restarted)
-     * - out: 없음(단일 실행 잠금·트레이 아이콘·MainWindow 또는 DemoWindow 표시)
+     * - in : 실행 인자(-Demo / -Api / --show-main / --tray / --restarted) · 환경변수 WPF_POPUP_TRAY_ENABLED·WPF_POPUP_AUTOSTART_ENABLED
+     * - out: 없음(단일 실행 잠금·(선택)트레이 아이콘·MainWindow 또는 DemoWindow 표시·최초 실행 자동 시작 등록)
      * - WPF 프로그램 전체의 시작과 종료를 관리한다.
-     *   MainWindow를 직접 시작 화면으로 사용하지 않고, Windows 트레이 아이콘을 프로그램의 기본 진입점으로 사용한다.
+     *   POL-15 : 배포·실행 환경 — 일반 실행은 트레이·관리 화면 없이 백그라운드에서 조회·결과 재전송만 한다(A-1 6번).
+     *   트레이는 --tray 또는 WPF_POPUP_TRAY_ENABLED=true일 때만 만든다(상태·진단용). Demo 모드는 개발 화면을 다시 열 수단이라 항상 만든다.
+     *   일반 사용자용 종료 명령(--exit)·트레이 외 종료 메뉴는 두지 않는다(2026-11-03 결정 C). Windows 종료·로그오프 처리는 유지한다.
      */
     public partial class App : Application
     {
@@ -44,6 +46,9 @@ namespace Popup
 
         private bool _isExiting;
 
+        /// <summary>POL-15 : 배포·실행 환경 — 시작 옵션(트레이 표시·자동 시작). OnStartup에서 정한다.</summary>
+        private StartupOptions _startupOptions = new(TrayEnabled: false, AutostartEnabled: true);
+
         /// <summary>
         /// POL-02-02 : 종료 제어
         /// POL-12-01 : 종결과 보관
@@ -53,7 +58,7 @@ namespace Popup
         public bool IsExiting => _isExiting;
 
         /*
-         * API 모드는 관리용 MainWindow를 한 번 표시한 뒤 트레이로 숨긴다.
+         * API 모드는 관리용 MainWindow를 화면 밖에서 한 번 표시한 뒤 숨긴다(트레이는 --tray일 때만).
          * Demo Mode는 사용자가 팝업 종류를 고를 수 있도록 선택 화면을 유지한다.
          */
         protected override void OnStartup(
@@ -118,13 +123,20 @@ namespace Popup
             _ownsSingleInstanceMutex =
                 true;
 
+            LaunchArguments arguments = LaunchArguments.Parse(e.Args);
+            _startupOptions = StartupOptions.Resolve(arguments);
+
             _mainWindow =
                 new MainWindow();
 
             _mainWindow.Closing +=
                 MainWindow_Closing;
 
-            CreateTrayIcon();
+            // POL-15 : 배포·실행 환경 — 트레이는 선택 기능. Demo는 숨긴 개발 화면을 다시 여는 유일한 수단이라 항상 만든다.
+            if (_mainWindow.IsDemoMode || _startupOptions.TrayEnabled)
+            {
+                CreateTrayIcon();
+            }
 
             /*
              * Show를 호출해야 MainWindow.Loaded가 발생하여
@@ -147,19 +159,55 @@ namespace Popup
             else
             {
                 MainWindow = _mainWindow;
+                if (!arguments.ShowMain)
+                {
+                    PrepareHiddenStartup(_mainWindow);
+                }
                 _mainWindow.Show();
                 /*
                  * POL-15-02 : 인증·버전
                  * [로그인 테스트] 실행 인자 --show-main 이면 관리 화면을 숨기지 않고 띄운 채 시작한다.
                  * "SSO 로그인 테스트"·"팝업 다시 조회" 버튼을 트레이 메뉴 없이 바로 누를 수 있어 SSO/로그인 확인에 쓴다.
-                 * 인자가 없으면 기존과 같이 한 번 표시 후 트레이로 숨긴다.
+                 * 인자가 없으면 화면 밖에서 한 번 표시(Loaded로 자동 조회 시작) 후 숨긴다. 트레이는 --tray일 때만 있다.
                  */
-                bool showMain = LaunchArguments.Parse(e.Args).ShowMain;
-                if (!showMain)
+                if (!arguments.ShowMain)
                 {
                     _mainWindow.Hide();
+                    RestoreStartupPosition(_mainWindow);
+                }
+
+                // POL-15 : 배포·실행 환경 — 사용자 세션 첫 일반 실행에서 HKCU 자동 시작 1회 등록(이후 사용자 해제 존중).
+                WindowsStartupService.AutostartOutcome outcome = _windowsStartupService.ApplyFirstRunPolicy(_startupOptions.AutostartEnabled);
+                System.Diagnostics.Debug.WriteLine($"[STARTUP] tray={_startupOptions.TrayEnabled} autostart={_startupOptions.AutostartEnabled} → {outcome}");
+                if (_runOnWindowsStartupMenuItem != null)
+                {
+                    _runOnWindowsStartupMenuItem.Checked = _windowsStartupService.IsEnabled();
                 }
             }
+        }
+
+        /*
+         * POL-15 : 배포·실행 환경
+         * 숨겨 시작하는 관리 화면은 Loaded(자동 조회 시작)를 위해 Show()를 한 번 해야 한다. 화면 밖·비활성·작업 표시줄 없이 띄워
+         * 사용자에게 깜빡이지 않게 하고, 숨긴 뒤에는 가운데 위치로 되돌려 --tray "관리 화면 열기" 때 정상 위치에 보이게 한다.
+         */
+        private static void PrepareHiddenStartup(Window window)
+        {
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.ShowActivated = false;
+            window.ShowInTaskbar = false;
+            window.Left = -32000;
+            window.Top = -32000;
+        }
+
+        private static void RestoreStartupPosition(Window window)
+        {
+            Rect area = SystemParameters.WorkArea;
+            double width = double.IsNaN(window.Width) ? window.ActualWidth : window.Width;
+            double height = double.IsNaN(window.Height) ? window.ActualHeight : window.Height;
+            window.Left = area.Left + Math.Max(0, (area.Width - width) / 2);
+            window.Top = area.Top + Math.Max(0, (area.Height - height) / 2);
+            window.ShowActivated = true;
         }
 
         /*

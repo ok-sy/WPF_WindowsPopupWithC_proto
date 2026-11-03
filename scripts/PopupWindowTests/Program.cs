@@ -117,6 +117,7 @@ internal static class Program
         CheckOwnerCloseSavesResult();
         CheckRegressionB2356();
         CheckSurveyCompletedNotice();
+        CheckBackgroundStartupA16();
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
@@ -1497,6 +1498,88 @@ internal static class Program
         Check(seen.SequenceEqual(new[] { "설문조사가 완료되었습니다." }), $"SURVEY submission shows the completion notice without a heading ({string.Join(" / ", seen)})");
         Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted,
             $"SURVEY submission saves SUBMITTED and closes after the notice ({saved.Count})");
+    }
+
+    /*
+     * POL-15 : 배포·실행 환경 — A-1 6번 백그라운드 기본 실행·자동 시작·--tray.
+     *  시작 옵션: --tray > WPF_POPUP_TRAY_ENABLED > 기본 false, WPF_POPUP_AUTOSTART_ENABLED 기본 true, 잘못된 값은 기본값.
+     *  자동 시작: 최초 1회 등록(따옴표 경로·--tray 없음)·이력 기록, 이후 사용자 해제 존중, false면 이 앱 값만 삭제, 임시·빌드 경로·SYSTEM 제외.
+     *  숨김 시작: 화면 밖·비활성으로 Show 후 숨기고 가운데로 되돌린다.
+     *  레지스트리는 HKCU\Software\OksyPopupClient.Tests 아래 테스트 키만 쓰고 끝나면 지운다(실제 Run 키는 건드리지 않음).
+     */
+    private static void CheckBackgroundStartupA16()
+    {
+        Check(Popup.Services.LaunchArguments.Parse(new[] { "--tray" }).Tray && Popup.Services.LaunchArguments.Parse(new[] { "-Tray" }).Tray
+            && !Popup.Services.LaunchArguments.Parse(Array.Empty<string>()).Tray && !Popup.Services.LaunchArguments.Parse(new[] { "--show-main" }).Tray,
+            "[A-1 6] --tray is parsed case-insensitively with single or double hyphen");
+        Popup.Services.StartupOptions Resolve(string[] args, string? tray, string? autostart) =>
+            Popup.Services.StartupOptions.Resolve(Popup.Services.LaunchArguments.Parse(args),
+                name => name == Popup.Services.StartupOptions.TrayEnvironmentVariable ? tray
+                    : name == Popup.Services.StartupOptions.AutostartEnvironmentVariable ? autostart : null);
+        Check(Resolve(Array.Empty<string>(), null, null) == new Popup.Services.StartupOptions(false, true), "[A-1 6] default: no tray, autostart on");
+        Check(Resolve(new[] { "--tray" }, "false", null).TrayEnabled, "[A-1 6] --tray wins over WPF_POPUP_TRAY_ENABLED=false");
+        Check(Resolve(Array.Empty<string>(), " TRUE ", null).TrayEnabled && Resolve(Array.Empty<string>(), "1", null).TrayEnabled
+            && !Resolve(Array.Empty<string>(), "maybe", null).TrayEnabled && !Resolve(Array.Empty<string>(), "", null).TrayEnabled,
+            "[A-1 6] tray env accepts true/1, invalid or empty falls back to false");
+        Check(!Resolve(Array.Empty<string>(), null, "false").AutostartEnabled && !Resolve(Array.Empty<string>(), null, "off").AutostartEnabled
+            && Resolve(Array.Empty<string>(), null, "yes").AutostartEnabled && Resolve(Array.Empty<string>(), null, "maybe").AutostartEnabled,
+            "[A-1 6] autostart env false/off disables, invalid falls back to true");
+
+        const string testRoot = @"Software\OksyPopupClient.Tests";
+        string runKey = testRoot + @"\Run", stateKey = testRoot + @"\State";
+        const string installed = @"C:\Program Files\Oksy Popup\popupSample.exe";
+        Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(testRoot, throwOnMissingSubKey: false);
+        try
+        {
+            string? path = installed; bool system = false;
+            var service = new Popup.Services.WindowsStartupService(runKey, stateKey, () => path, () => system);
+            string? RunValue() { using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKey); return key?.GetValue("OksyPopupClient") as string; }
+            using (var other = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(runKey)) other.SetValue("OtherApp", "\"C:\\Other\\other.exe\"");
+
+            Check(service.ApplyFirstRunPolicy(true) == Popup.Services.WindowsStartupService.AutostartOutcome.Registered
+                && RunValue() == "\"" + installed + "\"" && service.IsInitialized() && service.IsEnabled(),
+                $"[A-1 6] first run registers the quoted EXE path without --tray ({RunValue()})");
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKey, writable: true)) key!.DeleteValue("OksyPopupClient");   // 사용자가 해제
+            Check(service.ApplyFirstRunPolicy(true) == Popup.Services.WindowsStartupService.AutostartOutcome.AlreadyInitialized && RunValue() == null,
+                "[A-1 6] a user's removal is respected on later runs (no forced re-registration)");
+            service.SetEnabled(true);
+            Check(RunValue() == "\"" + installed + "\"", "[A-1 6] the tray toggle can register again by user choice");
+            Check(service.ApplyFirstRunPolicy(false) == Popup.Services.WindowsStartupService.AutostartOutcome.Removed && RunValue() == null,
+                "[A-1 6] WPF_POPUP_AUTOSTART_ENABLED=false removes only this app's value");
+            using (var other = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKey))
+                Check(other?.GetValue("OtherApp") as string == "\"C:\\Other\\other.exe\"", "[A-1 6] other Run entries are untouched");
+
+            Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(stateKey, throwOnMissingSubKey: false);
+            foreach ((string? candidate, bool asSystem, Popup.Services.WindowsStartupService.AutostartOutcome expected) in new[]
+            {
+                (System.IO.Path.Combine(System.IO.Path.GetTempPath(), "x", "popupSample.exe"), false, Popup.Services.WindowsStartupService.AutostartOutcome.SkippedTemporaryPath),
+                (@"D:\src\popup-frameWork\Popup\bin\Release\popupSample.exe", false, Popup.Services.WindowsStartupService.AutostartOutcome.SkippedTemporaryPath),
+                ((string?)null, false, Popup.Services.WindowsStartupService.AutostartOutcome.SkippedTemporaryPath),
+                (installed, true, Popup.Services.WindowsStartupService.AutostartOutcome.SkippedSystemAccount),
+            })
+            {
+                path = candidate; system = asSystem;
+                Check(service.ApplyFirstRunPolicy(true) == expected && RunValue() == null && !service.IsInitialized(),
+                    $"[A-1 6] {candidate ?? "(no path)"} (system {asSystem}) is not registered and leaves no history ({expected})");
+            }
+        }
+        finally { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(testRoot, throwOnMissingSubKey: false); }
+
+        // 숨김 시작: 화면 밖·비활성·작업 표시줄 없음으로 Show → Hide 후 작업 영역 가운데로 복귀.
+        var prepare = typeof(Popup.App).GetMethod("PrepareHiddenStartup", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var restore = typeof(Popup.App).GetMethod("RestoreStartupPosition", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var window = new Window { Width = 420, Height = 270, ShowInTaskbar = true };
+        prepare.Invoke(null, new object[] { window });
+        window.Show();
+        // WPF가 -32000을 -16384로 보정하므로 화면 밖(-10000 미만) 여부만 본다.
+        bool offscreen = window.Left < -10000 && window.Top < -10000 && !window.ShowActivated && !window.ShowInTaskbar && !window.IsActive;
+        string shownState = $"left {window.Left}, top {window.Top}, activated {window.ShowActivated}, taskbar {window.ShowInTaskbar}, active {window.IsActive}";
+        window.Hide();
+        restore.Invoke(null, new object[] { window });
+        Rect area = SystemParameters.WorkArea;
+        Check(offscreen && window.Left >= area.Left && window.Top >= area.Top && window.Left + 420 <= area.Right + 1 && window.ShowActivated && !window.IsVisible,
+            $"[A-1 6] hidden startup shows off-screen without activation, then returns to the work area ({window.Left}, {window.Top}; shown: {shownState})");
+        window.Close();
     }
 
     private static void CheckOwnerCloseSavesResult()

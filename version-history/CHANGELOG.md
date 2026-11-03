@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-03-31 — dev: WPF 백그라운드 기본 실행·최초 실행 자동 시작 등록·--tray 선택(A-1 6번)
+
+- 이유: A 실행 순서 6번. 2026-10-28 결정(기본 백그라운드 실행·트레이 선택)과 2026-11-03 결정(사용자 세션 첫 실행 시 HKCU 1회 자동 시작 등록·사용자 해제 존중, 일반 사용자 종료 기능 신규 개발 제외)이 구현 대기였고, 코드는 트레이를 항상 만들고 관리 화면을 한 번 보였다 숨겼으며 자동 시작은 트레이 메뉴 토글로만 등록했음.
+- 변경:
+  - `Services/StartupOptions.cs` 신규: `--tray` > `WPF_POPUP_TRAY_ENABLED` > 기본 false, `WPF_POPUP_AUTOSTART_ENABLED` 기본 true, bool true/false·1/0·yes/no·on/off(그 밖은 기본값+Debug 로그). `LaunchArguments`에 `Tray` 추가.
+  - `App.xaml.cs`: 트레이는 `--tray`·환경변수 true·Demo 모드일 때만 생성. 일반 실행 관리 화면은 화면 밖·비활성·작업 표시줄 없이 Show(Loaded로 자동 조회 시작) 후 Hide·가운데 위치 복원(깜빡임 제거). 일반 실행 시작 때 자동 시작 정책 적용·트레이 체크 상태 갱신. `--show-main`·Demo·종료·단일 실행·CrashGuard 경로는 그대로.
+  - `Services/WindowsStartupService.cs`: `ApplyFirstRunPolicy` — 이력(`HKCU\Software\OksyPopupClient\AutostartInitialized=1`)이 없으면 Run `OksyPopupClient`에 따옴표 EXE 경로(--tray 없음) 등록 후 이력 기록, 이력이 있으면 재등록 안 함, false면 이 앱 값만 삭제(이력 유지), `%TEMP%`·`in\` 빌드 출력·경로 불명·SYSTEM 계정은 등록·이력 없음, 실패는 예외 없이 Failed. 트레이 토글(`SetEnabled`)도 이력 기록. 검증용 생성자(키 경로·실행 경로·계정 판정 주입).
+  - 테스트: PopupWindowTests `CheckBackgroundStartupA16`(인자·환경변수 우선순위·잘못된 값, 테스트 전용 HKCU 키로 최초 등록·사용자 삭제 존중·토글 재등록·false 삭제·다른 Run 값 유지·임시/빌드/경로 없음/SYSTEM 제외, 숨김 시작 화면 밖·비활성·작업 표시줄 없음·복원) 15건.
+  - 문서: 백그라운드 TODO 구현 항목 체크·검증 메모·상태, ACTIVE_TASKS 6번·상태표, popup-frameWork/README 시작 순서·설정 표·종료 설명·파일 표, ALL_SPEC 실행 행·종료 설명. MINIMAL_SPEC은 팝업 JSON 최소 범위라 변경 없음.
+- 주요 파일: popup-frameWork/Popup/App.xaml.cs, Services/StartupOptions.cs(신규), Services/WindowsStartupService.cs, Services/LaunchArguments.cs, scripts/PopupWindowTests/Program.cs, docs/design/20261028_WPF_백그라운드기본_자동시작_TRAY옵션_TODO.md, docs/policies/ACTIVE_TASKS.md, popup-frameWork/README.md, docs/interfaces/WPF_POPUP_ALL_SPEC.md, version-history/CHANGELOG.md.
+- 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests `CheckBackgroundStartupA16` 15건 통과, 기존 환경 문제 검사(`CheckVideoQuizAspect60`) 제외 25개 검사 이름 지정 실행 429건 통과, 테스트 HKCU 키 정리 확인. BehaviorTests 1,711·RecoveryTests 154·ApiDemoTests 71 통과. 실행 확인: 빌드 출력(appsettings DemoMode=true)은 Demo 화면 표시, 임시 폴더 복사본(DemoMode=false) 실행 6초 동안 관리 화면 미표시·프로세스 유지(서버 없음으로 기존 '팝업 조회 오류' 안내 표시), 두 경우 모두 실제 Run 키·이력 키 미생성(빌드/임시 경로 제외). 미실행: 설치 경로 실행의 실제 HKCU 등록, Windows 로그인 자동 시작·작업 관리자 해제, `--tray` 아이콘 표시·메뉴, 서버 연동 업무 팝업(R4), 제거 설치 시 정리(설치 프로그램 없음).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-30 — 20261103 폐쇄망 반입본 생성(11/3 작업 전체·MockSso 제외·로고 포함)
 
 - 이유: 20261102 반입본(8986689) 이후 변경을 폐쇄망에 반입. 오전에 만든 20261103 반입본(7917c0d)은 폐쇄망에 쓰지 않고 삭제해(2026-11-03-29 뒤 기록 철회) 같은 날짜로 다시 생성.
