@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-18 — docs: WPF 최소 사양서 QUIZ 배점 기본값 정정·통과 결과 전달 설명 추가
+
+- 이유: 정합성 보완. 최소 사양서에 QUIZ 통과 여부(`passed`)가 결과로 어떻게 전달되는지 설명이 없었고, `QuestionScore` 누락 시 0점으로 적혀 있어 코드(`QuizGrader.DefaultQuestionScore`=1)·ALL_SPEC·인터페이스 계약서(1점, 3.7 보완 2026-10-21)와 달랐음.
+- 변경: `WPF_POPUP_MINIMAL_SPEC.md` QuestionScore 행을 기본값 `null` → 1·누락 시 1점 계산으로 정정. API 흐름 절에 QUIZ 통과 판정(합계 ≥ passingScore)·불합격 시 미전송·통과 시 `SUBMITTED`에 `score`·`passed` 포함·누락 시 서버 `REJECTED`·서버는 값 그대로 저장 설명 추가(계약 변경 없음, 계약서 §10.6 연결). PU001 정합성 검토 TODO 결정 8번·§4-2 B-8 후속 항목에 정정 사실 기록(B-8 중 ShowLater 행 보완은 미반영).
+- 주요 파일: docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 기재 내용을 `QuizGrader.cs`(통과 계산·배점 기본 1점), `PopupManager.cs:260`(불합격 시 미전송), `PopupResultBuilder.cs:107-108`, `PopupService.java:611-620`(score·passed 누락 거절·그대로 저장), `POPUP_INTERFACE_SPEC.md` 896·1016·1148행과 대조. 코드 변경 없음.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-17 — dev: 결과 큐 메모리 전용 전환(파일 접근 제거)
 
 - 이유: A 실행 순서 5번. 2026-10-28 결정(VMware 환경의 로컬 드라이브 쓰기 제약으로 결과 미전송 큐를 메모리에만 보관, 종료 시 유실 수용)이 구현 대기였고, 코드에는 `pending-results.json` 읽기·쓰기·손상 백업이 남아 있었음.
