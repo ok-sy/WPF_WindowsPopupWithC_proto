@@ -106,6 +106,7 @@ internal static class Program
         CheckLater52();
         CheckSurveyColors();
         CheckQuizSelectionLimit();
+        CheckSameTextOptionIds56();
         Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68)");
     }
 
@@ -1117,6 +1118,72 @@ internal static class Program
      * QUIZ 복수 선택은 정답 수만큼만 고를 수 있다. 한도에 닿으면 남은 선택지가 비활성화되고 해제하면 풀린다.
      * SURVEY 복수 선택(정답 없음)은 제한이 없다.
      */
+    /*
+     * [56-8] 같은 문구·다른 optionId: 선택지 문구가 같아도 선택·응답·결과·채점은 optionId로 구분된다.
+     * SINGLE(9001·9002·9003 중 9001·9002가 "예")과 MULTIPLE(9201·9202·9203 모두 "예", 정답 9201·9202)을 띄워
+     * 실제 컨트롤 선택 → CollectAnswers → PopupResultBuilder 결과 DTO → QuizGrader까지 같은 ID를 쓰는지 본다.
+     */
+    private static void CheckSameTextOptionIds56()
+    {
+        static IEnumerable<DependencyObject> Visuals(DependencyObject root)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                yield return child;
+                foreach (DependencyObject nested in Visuals(child)) yield return nested;
+            }
+        }
+        static Popup.Dtos.SurveyOptionDto Option(long id, string text, bool correct) =>
+            new() { OptionId = id, Value = "V" + id, Text = text, IsCorrect = correct };
+        var quiz = OpenPopup("QUIZ", dto =>
+        {
+            dto.PassingScore = 2;
+            dto.Questions = new()
+            {
+                new() { QuestionId = 9100, Title = "같은 문구 단일 선택", QuestionType = "SINGLE_CHOICE", IsRequired = true, IsScored = true, QuestionScore = 1,
+                    Options = new() { Option(9001, "예", false), Option(9002, "예", true), Option(9003, "아니오", false) } },
+                new() { QuestionId = 9200, Title = "같은 문구 복수 선택", QuestionType = "MULTIPLE_CHOICE", IsRequired = true, IsScored = true, QuestionScore = 1,
+                    Options = new() { Option(9201, "예", true), Option(9202, "예", true), Option(9203, "예", false) } }
+            };
+        });
+        quiz.Window.UpdateLayout();
+        var view = (SurveyPopupView)quiz.Options.Content!;
+        static long Id(System.Windows.Controls.Primitives.ToggleButton toggle) => ((Popup.Models.SurveyOption)toggle.Tag).OptionId;
+        var radios = Visuals(view).OfType<RadioButton>().Where(r => r.Tag is Popup.Models.SurveyOption).ToList();
+        var boxes = Visuals(view).OfType<CheckBox>().Where(b => b.Tag is Popup.Models.SurveyOption).ToList();
+        Check(radios.Select(Id).SequenceEqual(new long[] { 9001, 9002, 9003 }) && boxes.Select(Id).SequenceEqual(new long[] { 9201, 9202, 9203 }),
+            "[56-8] same-text options render as separate controls in optionId order");
+        Check(((Popup.Models.SurveyOption)radios[0].Tag).Text == ((Popup.Models.SurveyOption)radios[1].Tag).Text
+              && boxes.Select(b => ((Popup.Models.SurveyOption)b.Tag).Text).Distinct().Count() == 1,
+            "[56-8] the compared options really share the same visible text");
+
+        List<SurveyAnswer> Collect() => (List<SurveyAnswer>)typeof(SurveyPopupView).GetMethod("CollectAnswers", Flags)!.Invoke(view, null)!;
+        var questions = (List<Popup.Models.SurveyQuestion>)typeof(SurveyPopupView).GetField("_questions", Flags)!.GetValue(view)!;
+
+        radios[1].IsChecked = true;   // 두 번째 "예"(9002)
+        boxes[1].IsChecked = true;    // 9202
+        boxes[2].IsChecked = true;    // 9203 (오답)
+        var answers = Collect();
+        Check(answers.Single(a => a.QuestionId == 9100).SelectedOptionIds.SequenceEqual(new long[] { 9002 }),
+            "[56-8] single choice records the selected same-text option by its own id (9002, not 9001)");
+        Check(answers.Single(a => a.QuestionId == 9200).SelectedOptionIds.OrderBy(i => i).SequenceEqual(new long[] { 9202, 9203 }),
+            "[56-8] multiple choice records each same-text option id separately");
+        var wrong = QuizGrader.Grade(questions, answers, 2);
+        Check(wrong.Score == 1 && !wrong.Passed, $"[56-8] grading uses option ids: 9002 correct, {{9202,9203}} wrong → score 1 ({wrong.Score})");
+
+        boxes[2].IsChecked = false;
+        boxes[0].IsChecked = true;    // 9201 + 9202 = 정답 집합
+        answers = Collect();
+        var right = QuizGrader.Grade(questions, answers, 2);
+        Check(right.Score == 2 && right.Passed, "[56-8] switching to the other same-text ids changes the graded result (9201+9202 → pass)");
+        var item = new PopupResultBuilder("DEMO-QUIZ-56-8", null).BuildSubmitted(new SurveySubmission { Answers = answers }, DateTimeOffset.Now);
+        Check(item.Answers!.Single(a => a.QuestionId == 9100).OptionIds.SequenceEqual(new long[] { 9002 })
+              && item.Answers!.Single(a => a.QuestionId == 9200).OptionIds.OrderBy(i => i).SequenceEqual(new long[] { 9201, 9202 }),
+            "[56-8] result DTO carries the same option ids (no text-based mapping)");
+        ShutdownClose(quiz.Window);
+    }
+
     private static void CheckQuizSelectionLimit()
     {
         static IEnumerable<DependencyObject> Visuals(DependencyObject root)
