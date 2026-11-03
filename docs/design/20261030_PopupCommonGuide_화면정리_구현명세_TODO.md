@@ -64,7 +64,7 @@
 - [x] 컴포넌트 실행기, 독립 추출 실행기, IS063M02 예시, Live 미리보기, 공지 필터·NEW 표시 정상.
 - [ ] 탭 이동 전후 에디터 조합 입력·커서·포커스·초기화, 브라우저 너비 변경/스크롤, 오류 콘솔 0. → 탭 전환·오류 콘솔 0은 렌더 하네스로 확인, 한글 조합 입력·너비 변경은 미실행.
 - [x] 정적 검증: 문서 내 import/export·Props·함수명·분류가 실제 코드와 일치하는지 확인.
-- [ ] typecheck, eslint, 관련 기존 scripts/verify-*.cjs, `pnpm build`, 브라우저 실화면 테스트. 결과를 CHANGELOG에 기록. 미실행 테스트는 완료 처리하지 않는다. → typecheck·eslint·하네스 완료, `pnpm build`·로그인 실화면 미실행.
+- [ ] typecheck, eslint, 관련 기존 scripts/verify-*.cjs, `pnpm build`, 브라우저 실화면 테스트. 결과를 CHANGELOG에 기록. 미실행 테스트는 완료 처리하지 않는다. → typecheck·eslint·하네스 완료, `next build` 33페이지 성공(2026-10-30-29, 가이드 마지막 변경 이후), 로그인 실화면만 미실행(R1).
 
 ## 6. 구현 우선순위/완료 산출
 1. P0: 잘못된/혼동을 유발하는 정책 설명 수정(가장 우선)

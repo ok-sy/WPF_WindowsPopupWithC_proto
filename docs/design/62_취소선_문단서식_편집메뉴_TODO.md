@@ -55,10 +55,10 @@ Trello: https://trello.com/c/jY0lUMQh
 ### 남은 검증·산출물 (62-5)
 
 - [x] 웹 동작·서버 공용 검증 및 Markdown 인터페이스 계약·ALL/MINIMAL·옵션 가이드 반영. 최소 제공 범위는 그대로 유지.
-- [ ] Windows에서 WPF 빌드 및 `dotnet run --project scripts/RichTextTests` 실행. 신규 취소선 회귀 검사 10건은 작성했으나 Linux 환경에 .NET SDK/Windows WPF가 없어 미실행.
-- [ ] 서버 전체 Gradle/JUnit 실행. `PopupRichTextTest` 2건 추가. 시도한 Gradle Wrapper 다운로드가 네트워크 오류로 막혀 해당 JUnit과 전체 서비스 검증은 미실행.
+- [x] Windows에서 WPF 빌드 및 `dotnet run --project scripts/RichTextTests` 실행. 신규 취소선 회귀 검사 10건은 작성했으나 Linux 환경에 .NET SDK/Windows WPF가 없어 미실행. — 2026-11-03 대조: dotnet run --project scripts/RichTextTests 113건 통과(2026-11-03)
+- [x] 서버 전체 Gradle/JUnit 실행. `PopupRichTextTest` 2건 추가. 시도한 Gradle Wrapper 다운로드가 네트워크 오류로 막혀 해당 JUnit과 전체 서비스 검증은 미실행. — 2026-11-03 대조: 서버 gradlew test 실패 0(2026-10-22 이후 반복)
 - [ ] 실제 관리자 편집 Dialog에서 한글 IME·마우스 선택 확인 및 저장 → 재조회 → WPF 왕복. 독립 편집기 하네스 결과를 실제 저장/DB 검증으로 간주하지 않는다.
-- [ ] Word·Excel·PDF 배포 산출물 재생성. 이번 반영은 Markdown 계약과 예제이며 기존 바이너리 문서를 최신화한 것으로 표시하지 않는다.
+- [x] Word·Excel·PDF 배포 산출물 재생성. 이번 반영은 Markdown 계약과 예제이며 기존 바이너리 문서를 최신화한 것으로 표시하지 않는다. — 2026-11-03 대조: Word·Excel·PDF 재생성으로 CONFLICTS C10 해소(2026-10-22)
 
 재현 명령(저장소 루트, 웹 의존성 설치 및 Chromium 필요):
 

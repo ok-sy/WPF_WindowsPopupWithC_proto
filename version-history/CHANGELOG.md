@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-03-14 — D 추가 정정(A 실행판단 검토 §7) 원본 TODO 반영
+
+- 이유: A 실행 순서 2번. 이미 끝났거나 후속 결정으로 대체된 항목이 원본 TODO에 미체크·낡은 서술로 남아 진행 현황을 왜곡. 근거가 확인된 항목만 정정하고 실환경 미실행 항목은 완료 처리하지 않음.
+- 변경(항목 문구는 유지하고 체크와 줄 끝 `— 2026-11-03 대조:` 근거만 추가):
+  - TODO14: 249·254·255·322·324·410·413·622~627 체크(MANIFEST 반입본 확인, 747행 DevUserId·prototype 반입 결정, WPF localhost는 주석·예시뿐, 개인 경로 grep 0건, Media EmbeddedResource, Services git mv 이후 빌드·테스트 통과). 323(pnpm store → node_modules 폴더 복사)·327(FIXED 제거 → TODO58) 대체 표기.
+  - TODO18 168·196, TODO28 118·175, TODO24 56 대체 표기. TODO28 104 체크(폐쇄망 실제 글꼴 설치 확인은 R4 잔여). TODO19 114 체크(`WpfApiOracleHttpTest` Order(3)). TODO62 58·59·61 체크(RichTextTests 113건, 서버 gradle test 실패 0, C10 해소).
+  - TODO53-11 본문의 "관리자 웹 서버는 개발계에서만 가능" 서술을 로컬 관리자 웹 + 원격 개발 DB 실화면 가능(2026-10-29-12)·R1 수행으로 정정. TODO45-7에 대조 완료(2026-10-17)·45-6 실행 뒤 닫는다는 상태 문구 추가(미체크 유지).
+  - PopupCommonGuide 67행: `next build` 33페이지 성공(2026-10-30-29, 가이드 마지막 변경 이후) 반영, 로그인 실화면만 미실행으로 남김(미체크 유지).
+  - WEB 책임 분리 21·82·83 체크(GuideStartTab·guideData 안내 문구, PopupcommonComponent fetch/axios/`/api/`·DTIY 0건), 81은 상시 원칙 표기.
+  - ACTIVE_TASKS A-1 2번 완료 표기, A 실행판단 검토 §7에 반영 기록.
+- 주요 파일: docs/design/14_*·18_*·19_*·24_*·28_*·45_*·53_*·62_* TODO, docs/design/20261030_PopupCommonGuide_화면정리_구현명세_TODO.md, docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md, docs/policies/ACTIVE_TASKS.md, docs/reviews/20261103_활성작업_A실행판단_검토.md, version-history/CHANGELOG.md.
+- 검증: 각 근거를 현행 소스·CHANGELOG·CONFLICTS와 정적 재대조(grep·git log). 테스트 재실행·실화면·폐쇄망 확인은 하지 않음. 코드 변경 없음.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-13 — dev: 56-8 같은 문구·다른 optionId 검사 추가
 
 - 이유: 2026-11-03 D 대조에서 TODO56의 유일한 미구현 항목(56-8 동일 문구에 서로 다른 optionId가 있을 때 선택·결과가 ID로 구분되는지 확인)을 A 실행 순서 1번으로 처리. 제품 코드는 이미 optionId 기반이라 회귀 검사만 추가.

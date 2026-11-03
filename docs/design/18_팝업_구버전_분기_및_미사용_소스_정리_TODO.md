@@ -165,7 +165,7 @@
 - [x] 4) WPF C-13: DTO 기본값 ADAPTIVE → FIXED 매핑 제거
 - [x] 5) 계약서 3.1로 갱신(FIXED 삭제), 설계 15·`POPUP_OPTION_GUIDE.md` 갱신
 - [x] 검증(정적): 서버 popup 테스트 39건 중 37 통과·2 skip·실패 0, `dotnet build Popup.slnx` 경고 0·오류 0, 웹 build 성공
-- [ ] 검증(실행): 관리자 웹에서 기존 FIXED 팝업 열기·저장, `--demo` IMAGE 표시, 서버 FIXED 저장 거부 HTTP 확인
+- [ ] 검증(실행): 관리자 웹에서 기존 FIXED 팝업 열기·저장, `--demo` IMAGE 표시, 서버 FIXED 저장 거부 HTTP 확인 — 2026-11-03 대조: 대체: FIXED 제거 후 IMAGE 크기는 TODO58, 서버는 검증만 하는 결정으로 대체
 
 ### L-2. 데모 JSON v3 전환 → WPF 설문/퀴즈 구형 분기 제거
 
@@ -193,7 +193,7 @@
 - [x] C-23 TEXT 표시 플래그 non-null 전환(WPF DTO `bool`, `PopupFactory` fallback 삭제, 웹 편집기·미리보기 동시), 기존 행은 08이 같은 규칙으로 채움
 - [x] DDL `01`에 같은 제약 반영, L-0에서 보류한 `POPUP_NOTICE.PASSING_SCORE` 주석 수정(S-20)
 - [x] 검증: 서버 popup 테스트 43건 전부 통과(로컬 XE 실DB 2건 포함), `dotnet build` 경고 0·오류 0, 웹 build 성공
-- [ ] 검증(실행): `--demo` TEXT·SURVEY 표시, 서버 기동·WPF 목록 화면 확인(원격 개발 DB 08 적용과 실DB 왕복 테스트는 2026-09-28 완료)
+- [ ] 검증(실행): `--demo` TEXT·SURVEY 표시, 서버 기동·WPF 목록 화면 확인(원격 개발 DB 08 적용과 실DB 왕복 테스트는 2026-09-28 완료) — 2026-11-03 대조: 대체: 서버 기동·WPF 목록 화면 확인은 목록 API 폐지(TODO35)로 대체, 실화면 회귀는 TODO53-11~12
 
 ### L-5. 정책 결정이 필요한 항목
 

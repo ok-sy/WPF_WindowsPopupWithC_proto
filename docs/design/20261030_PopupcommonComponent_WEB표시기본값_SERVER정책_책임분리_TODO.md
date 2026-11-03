@@ -18,7 +18,7 @@ WEB 공통 컴포넌트는 사용자 입력·표시·미리보기를 담당하�
 
 - [x] 렌더·입력 편의상 필요한 UI 초기값과 **미리보기 전용 fallback**만 정의한다. 원본 편집값(state)을 미리보기 때문에 덮어쓰지 않는다 → 구조: state는 입력한 값만 갖고, 미리보기에 넘길 때만 fallback을 합친다(`withPreviewFallback(state)`).
 - [x] `withPreviewFallback()`은 `createDefaultPopup()` 전체를 합치지 않고 **미리보기 렌더에 실제 필요한 필드만** 합성한다(창 크기·비율·Header/Footer 표시, 유형 렌더에 필요한 표시 옵션 등). 표시용 기본값이 미리보기 안에서 업무 정책처럼 동작하지 않게 하기 위함이며, 합성 대상 필드 목록을 함수 주석·가이드에 명시한다. 기간·반복·대상·완료 기준 같은 업무 값은 합성하지 않는다. → 2026-10-30 `popupPreviewFallback.ts`(`PREVIEW_FALLBACK`: popupId·popupType·title·sizeMode·width·height·비율·최소/최대·showHeader·showCloseButton·showFooter·showDoNotShowAgain·showLater·hideDays·completionRatio·passingScore·questions, content는 state 값만 — 미리보기가 PopupPreview에서 실제로 읽는 필드 기준).
-- [ ] 입력 단계의 형식·유형·범위 오류는 즉시 안내할 수 있으나 서버 최종 판정으로 간주하지 않는다(문구에 "저장 시 서버가 최종 확인" 취지 유지).
+- [x] 입력 단계의 형식·유형·범위 오류는 즉시 안내할 수 있으나 서버 최종 판정으로 간주하지 않는다(문구에 "저장 시 서버가 최종 확인" 취지 유지). — 2026-11-03 대조: GuideStartTab.tsx "저장 가능한 데이터인지는 서버에서 최종 확인합니다."
 - [x] 미리보기 시뮬레이션(설문·퀴즈 채점, 노출 일정 요약, 동영상 시청 비율)은 표시 목적임을 구분하고, 서버 결과와 다를 수 있는 규칙을 확정 정책처럼 안내하지 않는다. → 노출 일정 요약 문구를 "안내용 요약이며 최종 노출은 서버가 한국 시간으로 판단"으로, 주석의 "확정 정책"을 "서버 정책, 화면 문구는 안내용"으로 정리.
 - [x] `pickPopupFields()`는 선택한 값을 그대로 반환한다(서버 정책 적용·날짜 ISO 변환·대상 판정·완료 판정 없음) — A~E TODO에서 구현.
 - [x] 업무 기본값 미설정과 사용자의 명시값(false·0·빈 문자열)을 구별한다 — 신규 독립 샘플(`PopupIndependentSamples`)·가이드 실행기 state를 미설정(키 생략) 기준으로 전환. 기존 샘플(`IS063M02Sample`·`PopupListSample`·`PopupSampleEditor`)도 state를 미설정 기준(`SamplePopupState`·`newSamplePopup`·`changeSampleType`, 미리보기 `withPreviewFallback`)으로 전환(2026-10-30), RgstPop은 proto 유지.
@@ -78,9 +78,9 @@ WEB 공통 컴포넌트는 사용자 입력·표시·미리보기를 담당하�
 적용 범위: **신규 독립 화면부터** 위 책임을 적용한다. 기존 proto `toSaveRequest()`·`toSaveRequestPopup()`·`createDefaultPopup()`·RgstPop은 당장 유지하고, 서버의 대응 구현(누락 기본값·최종 검증·정규화)이 준비된 뒤 점진적으로 전환한다.
 
 이행 원칙:
-- [ ] proto 저장 경로(`toSaveRequest`·`toSaveRequestPopup`·`createDefaultPopup`·RgstPop)는 즉시 제거하거나 계약을 바꾸지 않는다. 서버 정책 수용이 확인된 기능만 단계적으로 이관한다.
-- [ ] 서버 기본값과 UI 미리보기 fallback이 다를 수 있음을 가이드에 명시한다. 정확한 재현이 필요한 미리보기는 서버 검증·정규화 결과를 쓰도록 후속 연동 범위로 분리한다.
-- [ ] 공통 컴포넌트는 백엔드의 특정 스키마·테이블을 알지 않는다. 서버 연동 방식은 호출하는 업무 화면이 정한다.
+- [ ] proto 저장 경로(`toSaveRequest`·`toSaveRequestPopup`·`createDefaultPopup`·RgstPop)는 즉시 제거하거나 계약을 바꾸지 않는다. 서버 정책 수용이 확인된 기능만 단계적으로 이관한다. — 2026-11-03 대조: 상시 원칙(완료 체크 대상 아님) — proto 저장 경로 유지 중
+- [x] 서버 기본값과 UI 미리보기 fallback이 다를 수 있음을 가이드에 명시한다. 정확한 재현이 필요한 미리보기는 서버 검증·정규화 결과를 쓰도록 후속 연동 범위로 분리한다. — 2026-11-03 대조: GuideStartTab.tsx·guideData.ts의 미리보기 기본값 차이 안내, withPreviewFallback은 저장에 쓰지 않음
+- [x] 공통 컴포넌트는 백엔드의 특정 스키마·테이블을 알지 않는다. 서버 연동 방식은 호출하는 업무 화면이 정한다. — 2026-11-03 대조: PopupcommonComponent에 fetch/axios/"/api/"·DTIY 참조 0건
 - [x] 미리보기 fallback 합성 함수 `withPreviewFallback`을 공통 모듈(`popupPreviewFallback.ts`, index export)에 두고 신규 독립 샘플·가이드 실행기 state에서 업무 기본값을 뺐다(proto RgstPop은 호환 유지, proto 비교용 실행기 줄만 createDefaultPopup 사용).
 
 ## F-4. 검증

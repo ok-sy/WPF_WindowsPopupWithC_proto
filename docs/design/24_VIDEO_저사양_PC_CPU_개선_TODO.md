@@ -53,7 +53,7 @@
 
 - [x] VIDEO 및 VIDEO+QUIZ를 호스팅하는 창에 AllowsTransparency=False 적용.
 - [x] 공통 PopupWindow를 사용하므로 영상 포함 여부에 따른 설정을 창 표시/네이티브 핸들 생성 전에 결정한다. 표시 후 변경하는 방식은 사용하지 않는다.
-- [ ] 불투명 창에 맞는 명시적 Background, 제목줄·모서리·드래그·크기/위치 동작을 정리한다. WindowChrome 등 대안은 대상 Windows 환경과 시각 결과를 확인한 후 선택한다.
+- [ ] 불투명 창에 맞는 명시적 Background, 제목줄·모서리·드래그·크기/위치 동작을 정리한다. WindowChrome 등 대안은 대상 Windows 환경과 시각 결과를 확인한 후 선택한다. — 2026-11-03 대조: 대체: TODO25 OpaqueWindowCorners로 대체
 - [x] 별도 전체화면 창의 투명도·효과 적용 여부를 점검하고 영상 재생에 불필요한 효과를 배제한다.
 - [x] 배경 오버레이는 별도 창으로 유지한다. 영상 창의 AllowsTransparency와 useBackgroundOverlay를 혼동하거나 함께 강제로 끄지 않는다.
 - [ ] 로컬·HTTP 영상 모두 동일한 창 외형 정책이 가능한지 확인하며 WebView2CompositionControl 표시·입력 회귀를 점검한다.

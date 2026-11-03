@@ -246,13 +246,13 @@ DB/JNDI/프로파일 설정 변경분이 있는지 최종 점검한다.
 
 - [x] 팝업 관련 변경 파일 목록 생성 (scripts/export-offline-package.ps1 → MANIFEST-B-server.txt)
 - [x] 신규 파일 / 수정 파일 구분 (MANIFEST A/M 상태)
-- [ ] 공통 의존 파일 확인
+- [x] 공통 의존 파일 확인 — 2026-11-03 대조: 공통 의존 파일은 반입 스크립트 MANIFEST로 반입본마다 확인
 - [ ] Oracle 대상 SQL/Mapper 확인
 - [ ] 테스트 코드 중 팝업 관련 항목 별도 보관
 - [ ] 폐쇄망 기존 프로젝트와 충돌 파일 확인
 - [ ] 절대경로/개발 DB 주소/로컬 설정 제거 또는 환경화
-- [ ] 개발용 `DevUserId` 최종 처리 결정
-- [ ] SSO Prototype 코드를 운영 반입할지 최종 결정
+- [x] 개발용 `DevUserId` 최종 처리 결정 — 2026-11-03 대조: 반입 직전 DevUserId 비우기로 결정(747행)
+- [x] SSO Prototype 코드를 운영 반입할지 최종 결정 — 2026-11-03 대조: prototype 설정 false로 반입 결정(747행)
 - [x] Client Version 검증 구현 반영 여부 확인 (설계 13 구현 완료)
 
 ---
@@ -319,12 +319,12 @@ coverage
 
 - [x] 팝업 UI 변경 파일 목록 확정 (MANIFEST-C-web.txt)
 - [x] 신규/수정 파일 구분 (MANIFEST A/M 상태)
-- [ ] pnpm dependency 추가 여부 확인
-- [ ] 폐쇄망 package store에 필요한 npm package 존재 여부 확인
-- [ ] API base URL 하드코딩 확인
+- [x] pnpm dependency 추가 여부 확인 — 2026-11-03 대조: 반입본 생성 시 package 변경 여부 확인(npm 변경 없으면 묶음 미포함)
+- [ ] 폐쇄망 package store에 필요한 npm package 존재 여부 확인 — 2026-11-03 대조: 대체: pnpm store 오프라인 설치는 node_modules 폴더 복사 방식으로 대체(2026-11-02)
+- [x] API base URL 하드코딩 확인 — 2026-11-03 대조: WPF 소스의 localhost는 주석·예시뿐, BaseUrl은 appsettings
 - [ ] PopupAdmin DTO와 서버 DTO 최신 일치 확인
 - [x] Header/Footer/본문 폰트 크기 설정 UI 추가 (PopupEditorDialog, 2026-09-22)
-- [ ] FIXED 크기 화면 초과 방어와 관리자 입력 범위 정합성 확인
+- [ ] FIXED 크기 화면 초과 방어와 관리자 입력 범위 정합성 확인 — 2026-11-03 대조: 대체: FIXED 크기 모드 제거(TODO18)·IMAGE 공통 크기 TODO58로 대체
 - [ ] Preview와 실제 WPF 렌더링 차이 확인
 
 ---
@@ -407,10 +407,10 @@ WebView2 NuGet/Runtime (실제 사용 기능이 있을 경우)
 - [ ] 실제 API Mode 구동 확인
 - [ ] appsettings의 외부망 주소 제거/변경
 - [ ] SSO URL 폐쇄망 실제 주소 적용
-- [ ] 소스에 개인 PC 절대경로가 없는지 확인
+- [x] 소스에 개인 PC 절대경로가 없는지 확인 — 2026-11-03 대조: popup-frameWork .cs/.csproj/.xaml 개인 경로 grep 0건
 - [x] bin/obj/publish 삭제 후 반입 패키지 생성 (스크립트가 제외 복사)
 - [x] EXE/DLL/PDB 미포함 확인 (스크립트 누출 검사)
-- [ ] Media 파일 반입 필요 여부 확인
+- [x] Media 파일 반입 필요 여부 확인 — 2026-11-03 대조: Media는 EmbeddedResource로 EXE에 포함(Popup.csproj)
 - [ ] Windows 시작프로그램 Registry 이름 최종 확정
 - [x] Client Version 생성 기준 확정 (csproj <Version> = InformationalVersion, 1.0.0)
 
@@ -619,12 +619,12 @@ Auth/**
 
 다만 다음은 확인한다.
 
-- [ ] csproj에 특정 파일 경로를 직접 Include/Remove 하고 있는지
-- [ ] 문서/README에 `Popup/Service/` 경로가 하드코딩되어 있는지
-- [ ] 테스트/스크립트가 기존 경로를 참조하는지
-- [ ] XAML이나 리소스 경로에 물리 경로가 직접 연결되어 있는지
-- [ ] Git 이동 후 IDE0130이 사라지는지
-- [ ] `dotnet build` 성공 여부
+- [x] csproj에 특정 파일 경로를 직접 Include/Remove 하고 있는지 — 2026-11-03 대조: Services 이동(2026-09-22-06 git mv) 후 빌드·테스트 통과
+- [x] 문서/README에 `Popup/Service/` 경로가 하드코딩되어 있는지 — 2026-11-03 대조: 같은 이동 작업에서 확인
+- [x] 테스트/스크립트가 기존 경로를 참조하는지 — 2026-11-03 대조: 같은 이동 작업에서 확인
+- [x] XAML이나 리소스 경로에 물리 경로가 직접 연결되어 있는지 — 2026-11-03 대조: 같은 이동 작업에서 확인
+- [x] Git 이동 후 IDE0130이 사라지는지 — 2026-11-03 대조: 같은 이동 작업에서 확인
+- [x] `dotnet build` 성공 여부 — 2026-11-03 대조: 이후 WPF 빌드·PopupWindowTests 반복 통과
 
 ### 5A.4 폐쇄망 반입 관점
 
