@@ -66,7 +66,7 @@
 | [TODO14](../design/14_폐쇄망_반입_및_UI_보완_TODO.md)·[18](../design/18_팝업_구버전_분기_및_미사용_소스_정리_TODO.md)·[19](../design/19_WPF_운영_조회_및_VIDEO_UI_TODO.md) | 과거 체크 중 실제 미실행 항목·구 계약 대체 항목 재확인 | **원문 전체 재실행 금지**. 현재 빌드/반입/표시 기준으로 유효한 항목만 추출 |
 | [TODO20·22·23·28·38·44·49·54·55·57·58·59·60·62·63](../reviews/TODO71/INVENTORY.md) | 유형별 UI·서식·영상·이미지의 남은 체크 및 실화면 확인 | 최신 구현 기록·후속 대체·검증 증거를 항목별 확인. **미체크=미구현 아님** |
 | [TODO56 56-8](../design/56_SURVEY_QUIZ_선택상태_응답안내_UX_TODO.md) 동일 문구·다른 optionId 사례 | 2026-11-03 D 대조에서 유일한 미구현 항목. 같은 문구의 선택지가 optionId로 구분돼 선택·결과에 반영되는지 확인할 Demo 샘플·자동 검사 없음 | **구현 대기**. Demo 샘플·PopupWindowTests 검사 추가 후 체크 **2026-11-03 완료**: `CheckSameTextOptionIds56`(PopupWindowTests) 7건 통과, 원본 56-8 체크 |
-| **폐쇄망 FRONT 반영 확인**([체크리스트](../design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md)·[당일 이슈](../design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md)·[CKEditor5](../design/20261029_CKEditor5_전체통합_TODO.md)) | 외부망 완료·폐쇄망 미확인 약 20건 묶음: 20261102/20261103 반입본 적용(CommonCKEditor 폴더 교체·최상위 파일 삭제), `copy-node-modules.cjs` 반영·버전 확인, dev/build/type-check, 자료실·게시판·팝업 등록 편집기, 공통 컴포넌트·미리보기 화면, 아이콘·배경 실화면 | **폐쇄망 실행 결과 필요**. 보고만 있는 항목(Turbopack·MUI 아이콘·SVG·@local 링크)은 검증 기록과 구분 |
+| **폐쇄망 FRONT 반영 확인**([체크리스트](../design/20261030_폐쇄망_FRONT_단계별_반영_체크리스트.md)·[당일 이슈](../design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md)·[CKEditor5](../design/20261029_CKEditor5_전체통합_TODO.md)) | 외부망 완료·폐쇄망 미확인 약 20건 묶음: 20261102 반입본·다음 반입본 적용(CommonCKEditor 폴더 교체·최상위 파일 삭제는 다음 반입본), `copy-node-modules.cjs` 반영·버전 확인, dev/build/type-check, 자료실·게시판·팝업 등록 편집기, 공통 컴포넌트·미리보기 화면, 아이콘·배경 실화면 | **폐쇄망 실행 결과 필요**. 보고만 있는 항목(Turbopack·MUI 아이콘·SVG·@local 링크)은 검증 기록과 구분 |
 
 ### 날짜형 TODO 후속 작업 (2026-11-03 검토 결정)
 

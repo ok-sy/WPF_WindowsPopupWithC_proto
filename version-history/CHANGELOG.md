@@ -264,19 +264,6 @@
 - 검증: BehaviorTests 빌드 경고·오류 0, 전체 실행(첫 실패에서 멈추는 원래 방식) 1,711건 통과·exit 0. 테스트 산출 PNG(`.offline-verify/demo-window`)는 Git 제외 경로. 앱 코드 변경 없음.
 - 상태: 로컬 파일만 변경(커밋 없음). 이 기록은 커밋에 포함, 원격 반영.
 
-## 2026-11-03-02 — 20261103 폐쇄망 반입본 생성(CommonCKEditor 폴더 이동·3117 옵션 샘플·로고 이미지)
-
-- 재생성(로고 이미지 포함): `docs/interfaces/examples/hyundaiCi.png`·`hyundaiCi.webp`는 2026-10-29-15에서 "로컬·반입본 전용"으로 정했으나 `.git/info/exclude` 대상이라 HEAD worktree 기준인 반입 스크립트에 담기지 않아 20261029~20261102 반입본에 모두 빠져 있었음. 이번 반입본에만 필요해, `export-offline-package.ps1`에 로컬 전용 문서를 작업 폴더에서 4-docs로 복사하는 처리(MANIFEST-4-docs에 `L` 표시)를 넣어 같은 날짜로 재생성(-Force, 소스 커밋 e94e135 — 변경 이력 커밋만 추가돼 소스 동일)한 뒤 스크립트 변경은 되돌림(506e3ec의 스크립트 부분 원복). 다음 반입본에는 로고가 자동 포함되지 않음. 변경 요약에 로고 이미지 항목 추가.
-  - 결과: 문서 170(이전 168 + 로고 2), 그 밖의 묶음 수 동일. TGZ 13,139,813바이트, SHA256 `04b7808abb2d3eef1e8d37649faa78ca26c6173b4d72c24fad7462d67b7c4d95`(1차본 `9a766217…`는 대체).
-  - 검증: TAR 4개 파일 수 대조, TGZ 체크섬 일치, TGZ를 풀어 안 TAR 4개 SHA256 통과, 4-docs.tar에 hyundaiCi 2개 포함·작업 폴더 원본과 바이트 동일 확인. 폐쇄망 반영은 미실행.
-  - 주요 파일: offline-export/20261103(Git 제외), scripts/export-offline-package.ps1(재생성 후 원복).
-- 이유: 20261102 반입본(8986689) 이후의 관리자 웹 CommonCKEditor 폴더 이동(bafeeae·e0be492)과 WPF Demo 3117 옵션 샘플·팝업 띄우기(7917c0d)를 폐쇄망에 반입.
-- 변경: `scripts/export-offline-package.ps1 -Date 20261103 -PreviousExport 20261102 -PreviousCommit 8986689 -NotesFile <변경 요약>`으로 offline-export/20261103 생성. npm 패키지 변경이 없어 5-npm-ckeditor 묶음 미포함(20261102 묶음 유효). 변경 요약에 폴더판 CommonCKEditor 교체·최상위 파일 삭제·CommonCKEditorView.tsx 유지·`main\.next` 삭제 후 재기동, WPF 재빌드 후 JSON Validator → 3117 옵션 샘플 확인 순서 기재. Git 설치 파일 미동봉.
-- 주요 파일: offline-export/20261103(Git 제외), version-history/CHANGELOG.md.
-- 결과: 서버 A 151·M 10·D 0, 웹 A 50·M 23·D 6(baseline 누적), WPF 소스 96, 문서 168, 새로 삭제할 파일 1개(`zero-rule-web/main/src/components/CommonCKEditor.tsx`, 누적 22). 소스 커밋 7917c0d. TGZ 13,138,156바이트, SHA256 `9a766217fe4cb5a41eadc00ac45f706cbe45e1094c9bcc439eeba996728310ea`.
-- 검증: TAR 4개 파일 수 대조 통과, TGZ 체크섬 일치, TGZ를 풀어 안 TAR 4개 SHA256 대조 통과. MANIFEST에 CommonCKEditor D/A·DemoJsonSamples3117.cs·산정 문서 포함 확인. 폐쇄망 반영은 미실행.
-- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
-
 ## 2026-11-03-01 — DTIY3117 저장 JSON 유형별·옵션별 가짓수 산정·샘플과 Demo JSON Validator 팝업 띄우기
 
 - 이유: 3117 저장 JSON의 옵션 조합 범위를 수치로 정리하고, 유형·옵션 값마다 실제 저장 형태 샘플을 Demo JSON Validator(3117 모드)에서 검증하고 실제 팝업으로 확인할 수 있게 하기 위함. 기존 "팝업 미리보기"는 준비 중(비활성) 상태였음.
