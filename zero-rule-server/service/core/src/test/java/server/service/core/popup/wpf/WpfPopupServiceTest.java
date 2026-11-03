@@ -222,6 +222,7 @@ class WpfPopupServiceTest {
         var cases = Map.of(
                 "현재 사용자에게 제출 가능한 팝업이 아닙니다.", "WPF_NOT_ELIGIBLE",
                 "현재 설문에 포함되지 않은 문항입니다. questionId=9", "WPF_INVALID_ANSWER",
+                "복수 선택 문항은 최대 3개까지 선택할 수 있습니다. questionId=1, selected=4", "WPF_INVALID_ANSWER",
                 "유효한 전달 건이 아닙니다. deliveryId=x", "WPF_INVALID_DELIVERY",
                 "전달 건의 팝업과 일치하지 않습니다. deliveryId=x", "WPF_INVALID_DELIVERY",
                 "이미 결과가 저장된 전달 건입니다. deliveryId=x", "WPF_DELIVERY_COMPLETED");

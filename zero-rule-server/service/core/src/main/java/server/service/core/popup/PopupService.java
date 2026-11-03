@@ -455,7 +455,8 @@ public class PopupService {
      * - in : popupId · clientRequestId(멱등 요청 ID) · userId(사번) · answers(답안) · clientScore/clientPassed(WPF 채점값)
      * - out: PopupSubmitResponseDto 저장한 점수·통과 여부 · 예외: IllegalArgumentException(자격·문항·답안 오류)
      * - 설문·퀴즈 답안을 검증해 응답 테이블에 저장한다.
-     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안, 문항 유형별 답안 형식(선택지 소속·단일 선택 수·중복 선택지)을 검사한다.
+     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안, 문항 유형별 답안 형식(선택지 소속·단일 선택 수·중복 선택지)과
+     * SURVEY 복수 선택의 최소·최대 선택 수(PU001 B-4)를 검사한다.
      * 요청 ID를 응답 upsert에 전달하고 반환된 응답 ID의 하위 답안을 교체한다.
      * 모든 저장은 한 트랜잭션이므로 중간 실패 시 일부 답안만 남지 않는다.
      *
@@ -655,7 +656,7 @@ public class PopupService {
     /**
      * 문항 유형에 맞는 답안인지 검사하고 저장할 선택지를 찾는다(채점하지 않음).
      * 서술형은 선택지 제출을 거절하고, 선택형은 textAnswer 제출·단일 선택 복수 응답·중복 선택지·
-     * 해당 문항에 없는 선택지를 거절한다.
+     * 해당 문항에 없는 선택지를 거절한다. 복수 선택은 최소·최대 선택 수도 검사한다({@link #validateSelectionCount}).
      */
     private ValidatedAnswer validateAnswer(
             PopupQuestionEntity question,
@@ -703,7 +704,35 @@ public class PopupService {
                 })
                 .toList();
 
+        validateSelectionCount(question, selectedOptions.size());
         return new ValidatedAnswer(question, answer, selectedOptions);
+    }
+
+    /**
+     * POL-06-02 : 선택·제출
+     * ■ 복수 선택 최소·최대 선택 수 제출 검증(PU001 B-4)
+     * - in : question(PopupQuestionEntity) 문항(minSelections·maxSelections) · count(int) 선택한 선택지 수
+     * - out: 없음 · 예외: IllegalArgumentException("문항" 포함 → WPF_INVALID_ANSWER)
+     * - WPF 화면 제한(최대 도달 시 비활성, 최소 미달 시 제출 불가)과 같은 기준을 서버에서도 확인한다.
+     *   최대: count ≤ max. 최소: 필수 문항은 max(1, min) 이상, 선택 문항은 0개(미응답) 또는 min 이상.
+     *   값이 null이면 제한 없음. 저장 시 SURVEY MULTIPLE_CHOICE에만 값이 들어가므로(QUIZ는 NULL) 유형을 다시 보지 않는다.
+     */
+    private static void validateSelectionCount(PopupQuestionEntity question, int count) {
+        if (!"MULTIPLE_CHOICE".equalsIgnoreCase(question.questionType())) {
+            return;
+        }
+        Integer max = question.maxSelections();
+        if (max != null && count > max) {
+            throw new IllegalArgumentException(
+                    "복수 선택 문항은 최대 " + max + "개까지 선택할 수 있습니다. questionId="
+                            + question.questionId() + ", selected=" + count);
+        }
+        Integer min = question.minSelections();
+        if (min != null && count > 0 && count < min) {
+            throw new IllegalArgumentException(
+                    "복수 선택 문항은 최소 " + min + "개를 선택해야 합니다. questionId="
+                            + question.questionId() + ", selected=" + count);
+        }
     }
 
     /** 공백뿐인 문자열은 null, 그 밖에는 앞뒤 공백을 제거한다. */

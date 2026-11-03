@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-21 — dev: 서버 SURVEY 최소·최대 선택 수 제출 검증 추가(PU001 B-4)
+
+- 이유: PU001 B-4 결정. SURVEY 복수 선택의 `minSelections`·`maxSelections`는 관리자 저장 시 범위만 검증하고 WPF·관리자 미리보기 화면에서만 제한했으며, 서버 결과 수신은 선택 수를 검사하지 않아 화면 제한을 벗어난 결과도 저장될 수 있었음.
+- 변경: `PopupService.validateAnswer`에서 `validateSelectionCount` 호출 — MULTIPLE_CHOICE 문항의 선택 수가 최대 초과이거나 1개 이상 골랐는데 최소 미달이면 `IllegalArgumentException`("문항" 포함 → `WPF_INVALID_ANSWER`, REJECTED). 필수 문항 0개는 기존 필수 답안 검사로 거절되어 필수는 max(1, 최소) 기준과 같음. 값 null은 제한 없음, QUIZ는 저장 시 NULL이라 검사 대상 아님. `PopupQuestionRules` 주석, `POPUP_INTERFACE_SPEC.md` 변경 기록·maxSelections 행·REJECTED 코드 표, PU001 TODO B-4 완료 표기. JSON 계약·WPF·웹 변경 없음.
+- 주요 파일: zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java, PopupQuestionRules.java, zero-rule-server/service/core/src/test/java/server/service/core/popup/PopupSubmitSelectionCountTest.java(신규), wpf/WpfPopupServiceTest.java, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md, version-history/CHANGELOG.md.
+- 검증: 서버 `gradlew test` 244건 통과·11 skip(Oracle 연동)·실패 0 — 최대 초과·최소 미달 거절(저장 0건), 경계값 2·3개 저장, 선택 문항 0개 허용·1개 거절, 필수 0개 기존 필수 검사, 제한 없음 전체 선택 허용, 거절 메시지 `WPF_INVALID_ANSWER` 분류. 미실행: 원격 개발 DB 실DB 테스트(192.168.114.71:4004 TCP 접속 실패), 원격 서버 배포, WPF 연동 실기동.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-20 — dev: 서버 QUIZ 재채점 제거(PU001 B-1)
 
 - 이유: PU001 B-1 결정(채점·합격 판단은 WPF 로컬 판정, 서버 독립 재채점·불일치 경고 제거). 서버는 문항별 채점 후 합계·통과를 계산했지만 저장 값은 WPF `score`·`passed`로 덮어써 결과는 경고 로그와 문항 상세의 진단값에만 쓰였고, 문항 상세 EARNED_SCORE·CORRECT_YN을 읽는 서버 코드는 없었음.

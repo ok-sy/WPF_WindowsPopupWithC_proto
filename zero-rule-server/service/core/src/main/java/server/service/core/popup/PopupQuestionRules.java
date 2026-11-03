@@ -81,7 +81,7 @@ final class PopupQuestionRules {
      * - in : q(PopupQuestionDto) 문항 · quiz(boolean) 퀴즈 여부
      * - out: 없음 · 예외: IllegalArgumentException
      * - SURVEY 복수 선택만 값을 가질 수 있다(QUIZ는 정답 수가 한도). 각 값은 1~선택지 수, 최소 ≤ 최대. null = 제한 없음.
-     *   결과 수신은 선택 수를 검사하지 않는다(화면에서 제한).
+     *   결과 수신도 같은 기준으로 선택 수를 검사한다(PopupService.validateSelectionCount, PU001 B-4).
      */
     private static void validateSelectionLimits(PopupQuestionDto q, boolean quiz) {
         Integer min = q.minSelections();

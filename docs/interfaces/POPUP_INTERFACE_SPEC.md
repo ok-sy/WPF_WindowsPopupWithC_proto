@@ -2,6 +2,7 @@
 
 - 문서 버전: 3.7
 - 최신화: 2026-11-03 (KST)
+- 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
 - 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
 - 3.7 보완(2026-10-27, 로그인 요청 키): WPF-00 로그인 요청의 사용자 식별 키를 `logonId` → `lgonId`로 변경. 폐쇄망 로그인 API(`p/api/ssoLogin`) 요청 DTO와 같은 키다. WPF 일반 모드·API Demo 기본 JSON이 `lgonId`를 보내며, 로컬 프로토타입 서버(`/api/wpf/auth/login`)는 `lgonId`를 받고 이전 키 `logonId`도 별칭으로 받는다. 응답·토큰 계약은 바뀌지 않는다.
 - 산출물 동기화(2026-10-22, TODO71): Word·PDF·Excel에 현행 v3.7 보완(최소 창 300×300, 초기화 버튼 삭제, 취소선·문단 서식, SURVEY·QUIZ 서식·선택 제한·배점, IMAGE 공통 크기)을 반영. 버전 번호·API 계약 변경 없음.
@@ -15,7 +16,7 @@
 - 3.7 보완(2026-10-22, TODO66): 관리자 공용 서식 편집기(TEXT·SURVEY·QUIZ)의 CKEditor 툴바 `서식 지우기`와 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼 삭제. 글자·문단 서식은 개별 버튼과 글꼴/크기 기본값 선택으로 되돌린다. JSON 필드·저장값·WPF 표시 변경 없음.
 - 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
-- 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음. DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
+- 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음(2026-11-03 B-4로 서버 검증 추가, 위 항목). DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-29): `footerAction=CLOSE` 하단 버튼 표시 이름을 **닫기 → 확인**으로 변경(값·동작 변경 없음, WPF·관리자 미리보기·편집 선택지 동일).
@@ -818,7 +819,7 @@ passingScore 이상
 | questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. QUIZ MULTIPLE_CHOICE는 정답 선택지 수까지만 선택 가능(TODO52-5, 별도 필드 없음) |
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
 | minSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최소 선택 수. 필수 문항은 max(1, 값)개 이상이 응답 완료, 선택 문항은 0개 또는 값 이상이어야 제출 가능. 1~선택지 수, ≤ maxSelections. QUIZ·단일 선택·주관식에는 없음(2026-10-29) |
-| maxSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최대 선택 수. 한도 도달 시 남은 선택지 비활성. QUIZ는 이 필드 대신 정답 수가 한도. 서버 결과 수신은 선택 수를 검사하지 않음(2026-10-29) |
+| maxSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최대 선택 수. 한도 도달 시 남은 선택지 비활성. QUIZ는 이 필드 대신 정답 수가 한도. 서버도 결과 수신 시 최소·최대 선택 수를 같은 기준으로 검증하며 위반은 `REJECTED`(`WPF_INVALID_ANSWER`)(2026-11-03, PU001 B-4) |
 | isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
 | isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
 | questionScore | number | 채점 QUIZ | `null` → 기본 1점 | 문항 배점. 관리자 저장 시 비우면 서버가 1점으로 저장한다. 모두 1점이면 총점 = 문항 수 |
@@ -1151,7 +1152,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | REJECTED | WPF_DELIVERY_COMPLETED | 다른 resultId의 결과가 이미 저장된 전달 건(같은 resultId 재전송은 DUPLICATE) |
 | REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(비활성 사용자, 팝업 행 없음, 유효한 영상 팝업 아님). 결과 수용은 유효한 전달 건(`deliveryId`의 사용자·popupId 일치, 미완료)을 기준으로 하며 팝업의 현재 활성·게시 기간·대상 여부는 다시 보지 않는다 — 게시중단 전에 표시된 건(EXPIRED 전달 건 포함)의 결과는 수용(설계 47-4·50 A9) |
 | REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
-| REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지 등) |
+| REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지, SURVEY 복수 선택 최소·최대 선택 수 위반 등) |
 | REJECTED | WPF_INVALID_HIDE_DAYS | 현재 서버에서는 발생하지 않음(범위 밖 hideDays는 요청 형식 검사에서 WPF_INVALID_RESULT, 누락도 WPF_INVALID_RESULT) |
 | REJECTED | WPF_INVALID_VIDEO | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
 | RETRYABLE_ERROR | WPF_RETRYABLE | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
