@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-03-17 — dev: 결과 큐 메모리 전용 전환(파일 접근 제거)
+
+- 이유: A 실행 순서 5번. 2026-10-28 결정(VMware 환경의 로컬 드라이브 쓰기 제약으로 결과 미전송 큐를 메모리에만 보관, 종료 시 유실 수용)이 구현 대기였고, 코드에는 `pending-results.json` 읽기·쓰기·손상 백업이 남아 있었음.
+- 변경:
+  - `PopupResultQueue`: 파일 함수(Load/Save/TrySave/ReadFile)·`_unsaved`·`FileJsonOptions`·경로 인자를 제거하고 인스턴스 메모리 목록 `_pending` 하나로 통합. Enqueue는 resultId 중복 교체 후 적재, CountPending은 메모리 건수. Flush는 잠금 밖에서 전송하고 종결 시 **보낸 객체 참조만** 제거해 전송 중 같은 resultId 갱신 항목을 과거 응답으로 지우지 않음. 파일 사용 불가 때문의 Blocked 분기 삭제(미종결·전송 중단일 때만 Blocked). 400 격리·INTERNAL_ERROR 실행당 3회·426 중단·REJECTED 종결·다른 resultId 응답 보관은 유지. RetainForExit는 메모리 적재(예외 없음).
+  - Demo: 데모 큐 임시 파일 경로 제거. API Demo: 연결별 파일(`%TEMP%/Popup/api-demo/pending-<해시>.json`) 대신 연결마다 새 메모리 큐, 연결 변경 시 미전송 결과가 버려진다는 확인 문구로 변경, `SafeCountPending`·"확인 불가" 표시 제거, 검증용 `ApiQueueFilePath` → `ApiQueue`.
+  - PopupManager·PopupOptions·MainWindow·ClientVersion·PopupApiService 주석과 로그를 파일 저장 → 큐 적재·종료 시 유실 기준으로 정리(동작 변경 없음).
+  - 테스트: RecoveryTests 큐 검사 재작성(파일·손상 백업·다음 실행 복원 검사 제거, 같은 실행 재전송 원본 객체 유지, 같은 resultId 갱신 보호, 재시작=새 인스턴스 0건, 생성자·필드에 경로 없음, 기존 `%LOCALAPPDATA%\Popup\pending-results.json` 미생성·미변경, Flush 중 8스레드×50건 동시 적재), RecoveryTests에 `PopupOptions.MinWindowSize` 테스트 전용 상수 추가(TODO68 이후 링크된 DTO가 WPF 모델을 참조해 빌드가 깨져 있던 문제), ApiDemoTests 큐 파일 검사 → 메모리 건수·연결별 새 인스턴스, BehaviorTests 큐 파일 경로·`FileJsonOptions` 왕복 검사 제거.
+  - 문서: POL-12·POLICY(POL-12-01·02), popup-frameWork/README 결과 큐 절·API Demo 연결 경계, WPF_POPUP_ALL_SPEC·MINIMAL_SPEC·POPUP_INTERFACE_SPEC의 파일 큐·다음 실행 재전송·설계 39-1(큐 파일 읽기 불가 시 조회 보류) 설명을 메모리 전용 기준으로 갱신. 3117 후속 TODO 큐 설명 갱신. 결과 큐 TODO 체크(VMware 실환경 항목만 미체크), ACTIVE_TASKS A-1 5번 완료 표기. TODO53 큐 장애 정책 보류 기록은 변경하지 않음.
+- 주요 파일: popup-frameWork/Popup/Services/PopupResultQueue.cs, popup-frameWork/Popup/DemoWindow.Api.cs, popup-frameWork/Popup/DemoWindow.xaml.cs, popup-frameWork/Popup/Managers/PopupManager.cs, popup-frameWork/Popup/Models/PopupOptions.cs, scripts/ApiDemoTests/Program.cs, popup-frameWork/README.md, docs/interfaces/*, docs/policies/POL-12.md·POLICY.md·ACTIVE_TASKS.md, docs/design/20261028_결과큐_메모리전용_파일접근제거_TODO.md, docs/design/20261028_DTIY3117_사번조회_최소구성_후속TODO.md, version-history/CHANGELOG.md. 로컬 전용(Git 제외): popup-frameWork/Popup.RecoveryTests/Program.cs·PopupOptionsStub.cs, popup-frameWork/Popup.BehaviorTests/Program.cs.
+- 검증: WPF Release 빌드 경고·오류 0. `dotnet run --project popup-frameWork/Popup.RecoveryTests` 154건 통과, `dotnet run --project scripts/ApiDemoTests` 71건 통과, `dotnet run --project popup-frameWork/Popup.BehaviorTests` 1,711건 통과. PopupResultQueue·Demo 파일에서 File/Directory/Path/LocalApplicationData/TEMP 사용 grep 0건. `scripts/PopupWindowTests`는 기존 `CheckVideoQuizAspect60`에서 중단 — 원격 접속으로 주 모니터 작업 영역 1280×672(2026-11-03-13과 같은 환경 문제, 큐 변경과 무관). 미실행: VMware 실환경(쓰기 제약) 실행, 실제 프로세스 재시작·서버 도달 여부 구분(R1).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-16 — PU001P01~P06 호출 경로 정적 추적 결과 기록
 
 - 이유: A 실행 순서 4번. PU001 요구사항 TODO P1(WPF 코드/계약 정합성 점검) 5건이 미착수 상태여서 WPF·관리자 웹·서버의 호출 경로를 정적으로 추적해 Q1~Q7 대비 판정과 차이를 확정.

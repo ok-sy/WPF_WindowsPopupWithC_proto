@@ -294,7 +294,7 @@ namespace Popup.Services
             /*
              * POL-15-02 : 인증·버전
              * 426은 401 재로그인 경로에 넣지 않는다. 재시도 없이 전용 예외로 올려
-             * 호출자(MainWindow·PopupResultQueue)가 업데이트 안내·전송 중단(pending 보존)을 하게 한다.
+             * 호출자(MainWindow·PopupResultQueue)가 업데이트 안내·전송 중단(pending은 실행 동안 메모리 보존)을 하게 한다.
              */
             if (response.StatusCode == HttpStatusCode.UpgradeRequired)
             {

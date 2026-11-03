@@ -343,7 +343,7 @@ namespace Popup
          * 서버 426(클라이언트 버전 미지원) 처리 — 조회·로그인·결과 전송 공통.
          *   - 401 재로그인 경로에 들어가지 않는다(WpfClientVersionException은 별도 타입).
          *   - 같은 API를 무한 재시도하지 않도록 주기 조회 타이머를 멈춘다(프로그램을 업데이트 후 다시 실행해야 한다).
-         *   - pending 결과는 PopupResultQueue가 지우지 않았으므로 새 버전에서 재전송된다.
+         *   - pending 결과는 PopupResultQueue가 지우지 않지만 메모리 전용이라 Agent 종료와 함께 사라진다(새 버전으로 넘어가지 않음).
          *   - 안내는 프로세스당 1회만 띄우고 안내를 닫으면 Agent를 정상 종료한다.
          * 백그라운드 스레드에서 올 수 있으므로 Dispatcher로 UI 스레드에서 실행한다.
          */

@@ -4,7 +4,6 @@ using Popup.Services;
 using Popup.Services.Auth;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -33,8 +32,8 @@ namespace Popup
      *   입력 JSON 본문을 보내는 오버로드, HttpClient 안쪽의 관찰 지점(HttpExchangeRecorder), 입력값 기반 인증 공급자뿐이다.
      *   응답 구조 재작성·별도 렌더러·가짜 deliveryId 생성은 하지 않는다.
      *
-     * [경계] 결과 큐 파일을 "Base URL·인증 방식·인증 대상·X-Dev-User-Id" 조합별로 나눈다. 연결을 바꾸면 이전 연결의 미전송 결과는
-     *   그 연결 전용 파일에 남고, 같은 연결을 다시 적용했을 때만 전송된다. 일반 실행의 pending-results.json과도 섞이지 않는다.
+     * [경계] 결과 큐(메모리 전용)는 "Base URL·인증 방식·인증 대상·X-Dev-User-Id" 연결마다 새로 만든다. 연결을 바꾸면 이전 연결의
+     *   미전송 결과는 확인 후 버리며 다른 연결로는 보내지 않는다. 일반 실행의 결과 큐와도 섞이지 않는다(파일을 쓰지 않음).
      * [동시 실행] 이 모드에서 MainWindow는 API 서비스·주기 조회를 만들지 않으므로 자동 조회 루프와 겹치지 않는다.
      */
     public partial class DemoWindow
@@ -57,8 +56,8 @@ namespace Popup
         private bool IsApiBusy => _apiBusyCount > 0;
         private bool ApiRevealSecrets => ApiRevealSecretsCheck.IsChecked == true;
 
-        /// <summary>이번 API Demo가 쓰는 결과 큐 파일 경로(연결 미적용이면 null). 검증용.</summary>
-        internal string? ApiQueueFilePath { get; private set; }
+        /// <summary>현재 연결의 결과 큐(연결 미적용이면 null). 연결을 바꾸면 새 인스턴스가 된다. 검증용.</summary>
+        internal PopupResultQueue? ApiQueue => _apiQueue;
 
         private void InitializeApiDemo(PopupClientSettings settings)
         {
@@ -252,7 +251,7 @@ namespace Popup
         /// <summary>결과 큐를 전송하고 요약을 남긴다. 426은 기록 후 Blocked로 돌려준다(큐는 전송 중단, 항목 보관).</summary>
         private async Task<ResultFlushOutcome> FlushApiResultsAsync(PopupResultQueue queue, string stage)
         {
-            int before = SafeCountPending(queue);
+            int before = queue.CountPending();
             ResultFlushOutcome outcome;
             try
             {
@@ -263,7 +262,7 @@ namespace Popup
                 LogApiError($"결과 전송({stage})", exception);
                 return new ResultFlushOutcome(true, null);
             }
-            int after = SafeCountPending(queue);
+            int after = queue.CountPending();
             if (outcome.LastSaved != null) _lastNextStatus = outcome.LastSaved.NextStatus;
             if (before == 0 && after == 0 && outcome.LastSaved == null && !outcome.Blocked) return outcome;   // 보낼 것이 없었다.
             AppendLog($"[결과 전송 · {stage}] 보관 {Describe(before)} → {Describe(after)}"
@@ -329,11 +328,11 @@ namespace Popup
 
             if (_apiQueue != null)
             {
-                int pending = SafeCountPending(_apiQueue);
+                int pending = _apiQueue.CountPending();
                 if (pending != 0
                     && MessageBox.Show(this,
-                        $"현재 연결에 미전송 결과 {Describe(pending)}이 있습니다.\n\n연결을 바꾸면 이 결과는 현재 연결 전용 파일에 남고, " +
-                        "같은 연결 값을 다시 적용할 때만 전송됩니다. 다른 연결로는 보내지 않습니다.\n\n연결을 바꿀까요?",
+                        $"현재 연결에 미전송 결과 {Describe(pending)}이 있습니다.\n\n결과 큐는 메모리에만 있어 연결을 바꾸면 " +
+                        "이 결과는 버려집니다. 다른 연결로는 보내지 않습니다.\n\n연결을 바꿀까요?",
                         "API Demo 연결 변경", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 {
                     AppendLog("[연결] 변경을 취소했습니다(현재 연결 유지).");
@@ -362,8 +361,7 @@ namespace Popup
 
             _apiAuth = auth;
             _apiService = new PopupApiService(baseUrl, auth, string.IsNullOrEmpty(devUserId) ? null : devUserId, _apiHttpClient);
-            ApiQueueFilePath = Path.Combine(Path.GetTempPath(), "Popup", "api-demo", $"pending-{key[..16]}.json");
-            _apiQueue = new PopupResultQueue(_apiService, ApiQueueFilePath);
+            _apiQueue = new PopupResultQueue(_apiService);
             _apiConnectionKey = key;
             _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", _ => "인증 헤더 없음" };
             _lastNextStatus = null;
@@ -371,13 +369,13 @@ namespace Popup
             ApiConnectionExpander.IsExpanded = false;   // POL-14-02 : Demo 모드 — 적용한 연결은 요약만 남기고 접는다
             AppendLog($"--- 연결 적용: {baseUrl} · {_apiAuthModeLabel}"
                       + (string.IsNullOrEmpty(devUserId) ? string.Empty : $" · X-Dev-User-Id={devUserId}")
-                      + $" · 이 연결의 미전송 {Describe(SafeCountPending(_apiQueue))} ---");
+                      + $" · 이 연결의 미전송 {Describe(_apiQueue.CountPending())} ---");
             UpdateApiState();
             return true;
         }
 
         /// <summary>■ 연결 키 계산 — in : baseUrl·mode·identity·devUserId(string) · out: string SHA-256 소문자 16진수.
-        /// Base URL·인증 방식·인증 대상·X-Dev-User-Id 조합의 해시. 토큰 원문은 남기지 않고 해시만 파일 이름에 쓴다.</summary>
+        /// Base URL·인증 방식·인증 대상·X-Dev-User-Id 조합의 해시. 토큰 원문은 남기지 않고 연결 변경 판단에만 쓴다.</summary>
         internal static string ComputeConnectionKey(string baseUrl, string mode, string identity, string devUserId)
         {
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(
@@ -514,24 +512,12 @@ namespace Popup
             string devUser = ApiDevUserIdText.Text.Trim();
             ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"
                 + (devUser.Length == 0 ? string.Empty : $" · X-Dev-User-Id {devUser}")
-                + $"\n미전송 {Describe(SafeCountPending(_apiQueue))}";
-            ServerStateText.Text = $"{_apiService.BaseUrl} · {_apiAuthModeLabel}{token} · 미전송 {Describe(SafeCountPending(_apiQueue))}"
+                + $"\n미전송 {Describe(_apiQueue.CountPending())}";
+            ServerStateText.Text = $"{_apiService.BaseUrl} · {_apiAuthModeLabel}{token} · 미전송 {Describe(_apiQueue.CountPending())}"
                 + $" · nextStatus {_lastNextStatus ?? "-"} · pollingIntervalSeconds {_lastPollingIntervalSeconds?.ToString() ?? "-"}(미사용)";
             UpdateApiControls();
         }
 
-        private static int SafeCountPending(PopupResultQueue queue)
-        {
-            try
-            {
-                return queue.CountPending();
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                return -1;
-            }
-        }
-
-        private static string Describe(int count) => count < 0 ? "확인 불가" : $"{count}건";
+        private static string Describe(int count) => $"{count}건";
     }
 }

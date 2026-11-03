@@ -53,7 +53,7 @@ namespace Popup.Services
      * [추가 이유] 426은 401(재로그인 후 1회 재전송)·네트워크 오류(다음 주기에 재시도)와 구분해야 한다.
      *   - 재로그인하지 않는다.
      *   - 같은 API를 무한 재시도하지 않는다(MainWindow가 주기 조회를 멈추고 업데이트 안내).
-     *   - pending 결과는 삭제하지 않는다(PopupResultQueue.FlushAsync가 보관 유지).
+     *   - pending 결과는 삭제하지 않는다(PopupResultQueue.FlushAsync가 이번 실행 동안 메모리에 보관 유지).
      * 서버 응답 본문 { code, message, clientVersion, minimumSupportedVersion, latestVersion } 을 담는다.
      */
     public sealed class WpfClientVersionException : HttpRequestException

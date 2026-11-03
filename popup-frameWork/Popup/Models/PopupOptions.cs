@@ -45,16 +45,15 @@ namespace Popup.Models
          */
 
         /// <summary>
-        /// 결과 항목을 로컬 큐(pending-results.json)에 저장한다(동기). PopupResultQueue.Enqueue에 연결된다.
-        /// 반환 시점에 결과가 파일에 보존되므로 그 뒤에 창을 닫아도 유실되지 않는다. 서버 전송은 하지 않는다.
-        /// POL-12-01 : 종결과 보관 — 창 닫기(Closing) 중에도 호출하므로 동기 저장이다. 디스크 저장 실패 시 예외를 던지며 항목은 큐에 남기지 않는다
-        /// (호출자가 창을 유지하고 다음 닫기·제출 때 결과를 다시 만들어 저장한다).
+        /// 결과 항목을 메모리 결과 큐에 넣는다(동기). PopupResultQueue.Enqueue에 연결된다. 서버 전송은 하지 않는다.
+        /// POL-12-01 : 종결과 보관 — 창 닫기(Closing) 중에도 호출하므로 동기다. 메모리 전용이라 프로세스가 끝나면 미전송 결과는 사라진다.
+        /// 예외가 나면 항목은 큐에 남지 않으며 호출자가 창을 유지하고 다음 닫기·제출 때 결과를 다시 만들어 넣는다.
         /// </summary>
         public Action<WpfResultItemDto>? EnqueueResult { get; set; }
 
         /// <summary>
         /// POL-12-01 : 종결과 보관
-        /// 앱 종료 중 저장에 실패한 닫힘 결과를 이번 실행 동안 메모리에 남긴다. PopupResultQueue.RetainForExit에 연결된다.
+        /// 앱 종료 중 적재에 실패한 닫힘 결과를 이번 실행 동안 메모리에 남긴다. PopupResultQueue.RetainForExit에 연결된다.
         /// 종료 경로는 이미 전송을 멈춘 상태라 이 결과는 서버에 보내지 못한 채 프로세스 종료와 함께 사라질 수 있다.
         /// </summary>
         public Action<WpfResultItemDto>? RetainResultForExit { get; set; }

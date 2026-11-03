@@ -133,9 +133,9 @@ namespace Popup.Managers
          * 창 하나의 생명주기 동안 PopupResultBuilder에 사실만 기록하고, 닫힐 때 결과 항목 1개를 만든다.
          *
          * 모든 결과(CLOSED/HIDDEN/VIDEO_WATCHED/SUBMITTED)는 서버 응답을 기다리지 않는다.
-         *   결과 항목 생성 → EnqueueResult(pending-results.json 저장) → 창 닫기 → FlushResultsInBackground(백그라운드 전송)
+         *   결과 항목 생성 → EnqueueResult(메모리 결과 큐 적재) → 창 닫기 → FlushResultsInBackground(백그라운드 전송)
          * 일반 결과(CLOSED/HIDDEN/VIDEO_WATCHED)도 제출과 같은 순서로, 창이 실제로 닫히기 전(Closing, 취소되지 않은 경우)
-         *   파일에 먼저 저장한다. 저장 전에 프로세스가 끝나 결과가 남지 않는 경우를 막는다.
+         *   큐에 먼저 넣는다. 큐는 메모리 전용이라 프로세스가 끝나면 미전송 결과는 사라진다(2026-10-28 결정).
          * 설문·퀴즈 제출도 SurveyPopupView가 필수 응답 검증·로컬 채점을 끝낸 뒤 같은 경로를 탄다.
          * 제출 직후 서버 응답(통과 여부·거절)을 기다려 안내하지 않는다.
          */
@@ -167,7 +167,7 @@ namespace Popup.Managers
                     }
                     catch (Exception exception)
                     {
-                        // 로컬 파일 저장 자체가 실패한 경우(디스크 오류 등). 창을 유지해 사용자가 다시 시도할 수 있게 한다.
+                        // 결과 적재·결과 생성에서 예외가 난 경우. 창을 유지해 사용자가 다시 시도할 수 있게 한다.
                         PopupAlert.Show(popupWindow,
                             "응답을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.\n\n" + exception.Message,
                             "저장하지 못했어요", "다시 시도");
@@ -198,7 +198,7 @@ namespace Popup.Managers
                 WpfResultItemDto item = builder.BuildOnClose(DateTimeOffset.Now, popupOptions.LaterRequested, popupOptions.DoNotShowAgainChecked);
                 if (!TryEnqueueBeforeClose(popupWindow, popupOptions, item))
                 {
-                    eventArgs.Cancel = true;   // POL-12-01 : 종결과 보관 — 영속 저장 전에는 닫지 않는다. 다시 닫으면 같은 resultId로 재시도한다.
+                    eventArgs.Cancel = true;   // POL-12-01 : 종결과 보관 — 큐에 넣지 못하면 닫지 않는다. 다시 닫으면 같은 resultId로 재시도한다.
                     return;
                 }
                 builder.MarkFinalized();
@@ -227,7 +227,7 @@ namespace Popup.Managers
                 }
                 catch (Exception exception)
                 {
-                    Debug.WriteLine($"팝업 결과 로컬 저장 실패(닫힌 뒤) (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                    Debug.WriteLine($"팝업 결과 큐 적재 실패(닫힌 뒤) (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
                     popupOptions.RetainResultForExit?.Invoke(item);
                 }
             };
@@ -244,7 +244,7 @@ namespace Popup.Managers
          *     안내에 틀린 문항 번호를 함께 보여 준다(결과 계약 score·passed는 그대로).
          *     QUIZ의 푸터 버튼은 '제출'이라 닫기 버튼이 없다. Background Overlay가 꺼져 있으면 미달 1회 뒤 보조 '닫기'가 보이고,
          *     켜져 있으면 통과해야 닫힌다(Alt+F4도 막힘). 제출 없이 나가면 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
-         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(pending-results.json 저장).
+         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(메모리 결과 큐 적재).
          *     이 시점부터 결과는 유실되지 않는다.
          *  3. QUIZ 통과 안내(서버 응답 없음). SURVEY는 안내 없이 닫는다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
@@ -315,9 +315,9 @@ namespace Popup.Managers
         }
 
         /// <summary>
-        /// POL-12-01 : 종결과 보관 — 닫힘 항목을 창이 닫히기 전에 로컬 큐 파일에 저장한다. 성공하면 true.
-        /// 디스크 저장에 실패하면 안내 후 false를 돌려 호출자가 닫기를 취소하게 한다. 항목은 큐에 남기지 않으며(전송되지 않음)
-        /// 창이 상태를 유지하다 다음 닫기 때 결과를 다시 만들어 저장한다.
+        /// POL-12-01 : 종결과 보관 — 닫힘 항목을 창이 닫히기 전에 메모리 결과 큐에 넣는다. 성공하면 true.
+        /// 적재에서 예외가 나면(메모리 전용이라 디스크 오류는 없음) 안내 후 false를 돌려 호출자가 닫기를 취소하게 한다.
+        /// 항목은 큐에 남기지 않으며 창이 상태를 유지하다 다음 닫기 때 결과를 다시 만들어 넣는다.
         /// 앱 종료 중에는 닫기를 막을 수 없으므로 RetainResultForExit로 메모리에 남기고 true를 돌려 닫는다(종료 후에는 남지 않을 수 있음).
         /// </summary>
         private static bool TryEnqueueBeforeClose(PopupWindow popupWindow, PopupOptions popupOptions, WpfResultItemDto item)
@@ -330,7 +330,7 @@ namespace Popup.Managers
             }
             catch (Exception exception)
             {
-                Debug.WriteLine($"팝업 결과 로컬 저장 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
+                Debug.WriteLine($"팝업 결과 큐 적재 실패 (PopupId: {item.PopupId}, Type: {item.ResultType}): {exception.Message}");
                 if (PopupWindow.IsApplicationExiting())
                 {
                     popupOptions.RetainResultForExit?.Invoke(item);

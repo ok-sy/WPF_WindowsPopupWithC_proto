@@ -235,8 +235,8 @@ internal static class Program
 
         // 1) 로그인 → 수동 조회(입력 JSON 본문 그대로) → 팝업 표시
         Query(window);
-        string queuePath = (string)typeof(DemoWindow).GetProperty("ApiQueueFilePath", Flags)!.GetValue(window)!;
-        if (File.Exists(queuePath)) File.Delete(queuePath);
+        PopupResultQueue queue = (PopupResultQueue)typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)!;
+        Check(queue.CountPending() == 0, "[메모리 큐] a newly applied connection starts with an empty in-memory queue");
         Check(server.LoginBodies.Count == 1 && server.LoginBodies[0].Contains("\"lgonId\":\"E1001\""), "[51-2] login API receives the entered login JSON");
         Check(server.PopupRequests.Count == 1 && server.PopupRequests[0].Body == "{\"probe\":1}", "[51-2] query sends the entered JSON body as-is");
         Check(server.PopupRequests[0].Authorization == "Bearer tok-1" && server.PopupRequests[0].ClientVersion == ClientVersion.Value,
@@ -286,7 +286,7 @@ internal static class Program
         CloseShownPopup(window);
         Pump(() => server.ResultBodies.Count == 2);
         Pump(() => Logs(window).Any(l => l.Contains("미종결 결과 있음")));
-        Check(File.Exists(queuePath), "[51-7] failed result stays in the connection queue file");
+        Check(queue.CountPending() == 1, "[51-7] failed result stays in the connection's in-memory queue");
         int popupRequests = server.PopupRequests.Count;
         Query(window);
         Check(server.ResultBodies.Count == 3 && server.ResultBodies[2] == server.ResultBodies[1],
@@ -296,8 +296,8 @@ internal static class Program
         server.ResultMode = "ACCEPTED";
         typeof(DemoWindow).GetMethod("ApiFlushButton_Click", Flags)!.Invoke(window, new object?[] { null, new RoutedEventArgs() });
         Pump(() => server.ResultBodies.Count == 4);
-        Pump(() => !File.Exists(queuePath));
-        Check(server.ResultBodies[3] == server.ResultBodies[1] && !File.Exists(queuePath),
+        Pump(() => queue.CountPending() == 0);
+        Check(server.ResultBodies[3] == server.ResultBodies[1] && queue.CountPending() == 0,
             "[51-7] manual resend uses the same body and settles the queue");
 
         // 5) 정상 대상 없음·빈 응답·잘못된 JSON·HTTP 500·팝업 생성 오류를 구분해 기록
@@ -319,14 +319,15 @@ internal static class Program
         Query(window);
         Check(server.PopupRequests.Count == before && Logs(window).Any(l => l.Contains("JSON 객체")), "[51-2] non-object query JSON is not sent");
 
-        // 7) 연결 변경(사용자 변경, 미전송 없음) → 다른 결과 큐 파일
+        // 7) 연결 변경(사용자 변경, 미전송 없음) → 새 메모리 결과 큐
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{}";
         ((TextBox)window.FindName("ApiDevUserIdText")).Text = "E2002";
         server.PopupMode = "NULL";
         Query(window);
-        string otherPath = (string)typeof(DemoWindow).GetProperty("ApiQueueFilePath", Flags)!.GetValue(window)!;
-        Check(otherPath != queuePath && server.PopupRequests[^1].DevUserId == "E2002" && server.LoginBodies.Count == 3,
-            "[51-7] changed connection uses a new queue file, new token and X-Dev-User-Id");
+        var otherQueue = (PopupResultQueue)typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)!;
+        Check(!ReferenceEquals(otherQueue, queue) && otherQueue.CountPending() == 0
+              && server.PopupRequests[^1].DevUserId == "E2002" && server.LoginBodies.Count == 3,
+            "[51-7] changed connection uses a new in-memory queue, new token and X-Dev-User-Id");
         window.Close();
     }
 

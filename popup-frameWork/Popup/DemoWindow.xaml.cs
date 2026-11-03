@@ -4,7 +4,6 @@ using Popup.Models;
 using Popup.Services;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
@@ -62,9 +61,7 @@ namespace Popup
             _popupService = new PopupService();
             _gateway = new DemoPopupGateway();
             _gateway.ResultProcessed += Gateway_ResultProcessed;
-            _resultQueue = new PopupResultQueue(
-                _gateway,
-                Path.Combine(Path.GetTempPath(), "Popup", "demo-pending-results.json"));
+            _resultQueue = new PopupResultQueue(_gateway);   // 메모리 전용(창을 닫으면 미전송 결과도 사라짐)
             InitializeDemoSettings();
             UpdateServerState();
             if (apiDemoSettings != null) InitializeApiDemo(apiDemoSettings);
