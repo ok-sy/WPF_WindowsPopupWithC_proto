@@ -22,7 +22,7 @@
 
 - [x] 시작 옵션을 한곳에서 파싱하고 환경변수의 bool 값·잘못된 값 처리 기준을 정한다. — 2026-11-03: `Services/StartupOptions.cs`(true/false·1/0·yes/no·on/off, 그 밖은 기본값+Debug 로그), `LaunchArguments.Tray`.
 - [x] 트레이 기본 비활성화, --tray 및 환경변수 활성화 경로를 분리한다. 명시하지 않은 옵션이 환경변수를 false로 덮지 않게 한다. — 2026-11-03: 일반 실행은 트레이 미생성, `--tray` 또는 `WPF_POPUP_TRAY_ENABLED=true`일 때만. `--tray`가 환경변수 false보다 우선, 명령행이 없으면 환경변수 값 그대로. Demo 모드는 개발 화면 재표시 수단이라 항상 트레이.
-- [x] 백그라운드 실행에서도 인증·조회·재전송·실제 팝업 표시를 유지한다. Demo/개발 화면은 기존 명시 실행 경로를 보존한다. — 2026-11-03: 조회·인증·재전송 경로 변경 없음(MainWindow를 화면 밖·비활성으로 Show→Hide해 Loaded로 자동 조회 시작, 깜빡임 없음). Demo·`--show-main` 경로 유지.
+- [x] 백그라운드 실행에서도 인증·조회·재전송·실제 팝업 표시를 유지한다. Demo/개발 화면은 기존 명시 실행 경로를 보존한다. — 2026-11-03: 조회·인증·재전송 경로 변경 없음(MainWindow를 화면 밖·비활성으로 Show→Hide해 Loaded로 자동 조회 시작, 깜빡임 없음). Demo·`--show-main` 경로 유지. 시작 자동 조회 실패 안내 창은 띄우지 않고 복구 간격 재조회(`--show-main`·수동 재조회·426 안내는 유지, 2026-11-03).
 - [x] 팝업 X/닫기는 해당 팝업의 기존 완료·결과 정책을 따른다. 마지막 창이 닫혀도 백그라운드 프로세스는 종료하지 않는다. — 기존 `ShutdownMode=OnExplicitShutdown` 유지로 마지막 창이 닫혀도 프로세스 유지(변경 없음).
 - [x] 명시적 앱 종료·로그오프·업데이트 종료 때 타이머·통신·자원을 정리한다. 중복 실행 방지도 유지한다. — 기존 ExitAgent·OnSessionEnding·단일 실행 Mutex 유지(변경 없음).
 - [x] 자동 시작은 설치/설정 적용 시 현재 사용자 범위로 등록한다. 매 실행마다 강제 재등록해 사용자의 해제를 되돌리지 않는다. — 2026-11-03 결정에 따라 **사용자 세션 첫 일반 실행 시 HKCU 1회 등록** + 이력 `HKCU\Software\OksyPopupClient\AutostartInitialized`로 이후 재등록 안 함(`WindowsStartupService.ApplyFirstRunPolicy`). 트레이 토글도 이력 기록.

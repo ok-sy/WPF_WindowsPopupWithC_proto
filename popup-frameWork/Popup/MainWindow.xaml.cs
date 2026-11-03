@@ -296,7 +296,9 @@ namespace Popup
             StartPeriodicPolling();
             if (_autoLoadOnStartup)
             {
-                await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: true);
+                // POL-15 : 배포·실행 환경 — 백그라운드 기본 실행에서는 시작 조회 실패를 안내 창으로 띄우지 않고 복구 간격으로 다시 조회한다.
+                // 관리 화면을 띄운 개발 실행(--show-main)만 안내한다. 426 업데이트 안내·수동 재조회 안내는 그대로.
+                await LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: LaunchArguments.Current.ShowMain);
             }
         }
 

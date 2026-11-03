@@ -150,6 +150,7 @@ MainWindow 숨김
 
 - bool 값은 true/false·1/0·yes/no·on/off, 그 밖의 값은 기본값.
 - 자동 시작: 사용자 세션의 첫 일반 실행에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `OksyPopupClient`에 `"<EXE 전체 경로>"`(따옴표, `--tray` 없음)를 등록하고 이력 `HKCU\Software\OksyPopupClient\AutostartInitialized=1`을 남긴다. 이후에는 다시 등록하지 않아 사용자가 지우거나 작업 관리자에서 끈 설정을 되돌리지 않는다. `WPF_POPUP_AUTOSTART_ENABLED=false`면 이 앱 값만 지운다. `%TEMP%`·빌드 출력(`in\` 아래)·SYSTEM 계정 실행은 등록하지 않는다(설치 위치에서 실행될 때 등록).
+- 시작 직후 자동 조회가 실패해도(서버 연결 실패 등) 안내 창을 띄우지 않고 복구 간격으로 다시 조회한다. `--show-main` 실행과 수동 '팝업 다시 조회'는 오류를 안내하고, 426 업데이트 안내는 항상 띄운다.
 - 일반 사용자용 종료 명령(`--exit`)은 두지 않는다(2026-11-03 결정). 종료는 `--tray` 트레이 메뉴·Windows 종료/로그오프·426 업데이트 안내.
 
 실행 인자:
