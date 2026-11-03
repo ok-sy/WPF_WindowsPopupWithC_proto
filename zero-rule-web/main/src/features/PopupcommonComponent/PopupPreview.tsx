@@ -12,7 +12,7 @@ import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { popupFontSize, popupMinimumSize } from './popupCommon';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
-import { buildQuizResultNotice } from './popupQuizResultNotice';
+import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import {
   fitToImageLayout,
   imageSizeMode,
@@ -427,7 +427,7 @@ export default function PopupPreview({
         : '선택 문항에 자유롭게 응답해주세요.';
   const submitPreview = () => {
     if (popup.popupType !== 'QUIZ') {
-      setSubmissionStatus('미리보기: 제출 완료');
+      setSubmissionStatus(SURVEY_COMPLETED_MESSAGE);
       return;
     }
     // WPF 미달 안내와 같이 틀린 채점 문항의 화면 번호(1부터)를 모은다.

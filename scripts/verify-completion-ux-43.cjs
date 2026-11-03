@@ -179,6 +179,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 필수 문항이 0개(선택 문항만)면 바로 제출할 수 있다.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 1, options: []}]});
   b = await button('제출'); check(!b.disabled, 'SURVEY with no required question can submit: ' + JSON.stringify(b));
+  // SURVEY 제출 완료 안내는 WPF와 같은 문구(PopupManager.SurveyCompletedMessage).
+  await click('제출'); await pause(200);
+  check((await bodyText()).includes('설문조사가 완료되었습니다.') && !(await bodyText()).includes('미리보기: 제출 완료'), 'SURVEY submit shows the WPF completion notice');
   // 6. POL-02-03 : 푸터 역할 — 나중에 보기: showFooter·showLater일 때만 표시, 완료 전 잠금(VIDEO 시청·VIDEO+QUIZ)과 관계없이 활성이며 누르면 닫힌다.
   for (const [type, content] of [['TEXT', {}], ['VIDEO', {}], ['QUIZ', {videoEnabled: true}], ['QUIZ', {}], ['SURVEY', {}]]) {
     const label = type + (content.videoEnabled ? '+VIDEO' : '');

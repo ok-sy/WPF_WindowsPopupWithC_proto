@@ -417,7 +417,7 @@ PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검�
 
 Footer 동작(`footerAction`·`footerLinkUrl`)은 §6.3 최상위 필드다(설계 30). content 안의 같은 키는 읽지 않는다. `CLOSE`는 하단 버튼을 **확인**으로 표시하고(2026-10-29 '닫기'에서 변경) 종료 처리 후 창을 닫는다. `LINK_AND_CLOSE`는 일반 콘텐츠의 하단 버튼을 **바로가기**로 표시하며, 기본 브라우저로 URL을 연 뒤 창을 닫는다. URL이 잘못되었거나 브라우저 실행이 실패하면 창을 유지하고 오류를 안내한다. `SUBMIT`은 SURVEY·QUIZ·VIDEO+QUIZ의 **제출**이며 링크를 열지 않는다. Header에는 닫기 버튼이 없으며 Alt+F4 등 종료 경로에는 기존 종료 정책을 적용한다. `useBackgroundOverlay=true`이면 Alt+F4·시스템 메뉴 닫기·외부 닫기 요청은 무시하고 하단 버튼(확인·바로가기·제출)과 앱 종료로만 닫는다. 화면에 닫기·제출 수단이 없으면 막지 않는다(설계 44). Esc는 팝업을 닫지 않는다. 버튼 표시는 `showFooter`·`showFooterButton`을 따른다.
 
-SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며(불합격 안내에는 틀린 문항 번호를 표시한다. 설계 43), QUIZ 결과 안내 문구는 `passingScore`로 커트라인형·만점형·참여형(0)을 나눠 표시하고(PU001 Q3, JSON 변경 없음, [WPF 전체 기능 정의서](WPF_POPUP_ALL_SPEC.md) 참조), 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
+SURVEY·QUIZ·VIDEO+QUIZ는 제출 버튼을 하나만 표시한다. 공통 푸터가 있으면 내부 제출 버튼을 숨기고 하단 제출에서 응답 수집·검증·채점을 실행한다. 푸터가 없으면 내부 제출 버튼을 사용한다. `showFooterButton=false`여도 제출 버튼은 유지한다. 미응답·QUIZ 불합격은 안내 후 창을 유지하며(불합격 안내에는 틀린 문항 번호를 표시한다. 설계 43), SURVEY 제출 후에는 "설문조사가 완료되었습니다." 안내를, QUIZ 결과 안내 문구는 `passingScore`로 커트라인형·만점형·참여형(0)을 나눠 표시하고(PU001 Q3, JSON 변경 없음, [WPF 전체 기능 정의서](WPF_POPUP_ALL_SPEC.md) 참조), 통과한 QUIZ는 `SUBMITTED`에 답안·score·passed를 포함한다. 영상 시청 후 Alt+F4로 종료한 결과는 제출과 구분한다. 제출·채점 안내는 흰색 바탕·검은 테두리·둥근 버튼의 공통 모달을 사용한다.
 
 ### popupPosition ENUM
 

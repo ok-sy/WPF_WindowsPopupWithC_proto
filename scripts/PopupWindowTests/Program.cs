@@ -116,6 +116,7 @@ internal static class Program
         CheckShutdownSavesResult44();
         CheckOwnerCloseSavesResult();
         CheckRegressionB2356();
+        CheckSurveyCompletedNotice();
         CheckOverlayCleanupOnFailure44();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
@@ -1457,6 +1458,45 @@ internal static class Program
                 $"[B-6] closing after playback failure saves the watch record only ({videoSaved.Count}, {videoSaved.FirstOrDefault()?.ResultType})");
         }
         finally { owner.Close(); }
+    }
+
+    /*
+     * action 실행 중 뜨는 모달(ShowDialog의 중첩 메시지 루프)에서 창 이름이 title인 창을 찾아 본문 TextBlock 문구를 모으고 닫는다.
+     * Application 없이도 HwndSource 목록으로 찾는다.
+     */
+    private static List<string> CloseDialogs(string title, Action action)
+    {
+        var seen = new List<string>();
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        timer.Tick += (_, _) =>
+        {
+            foreach (var source in PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>().ToList())
+            {
+                if (source.RootVisual is not Window dialog || dialog.Title != title || !dialog.IsVisible) continue;
+                var texts = ((StackPanel)((Border)dialog.Content).Child).Children.OfType<TextBlock>().Select(t => t.Text);
+                seen.Add(string.Join("|", texts));
+                dialog.Close();
+            }
+        };
+        timer.Start();
+        try { action(); }
+        finally { timer.Stop(); }
+        return seen;
+    }
+
+    /* POL-06-02 : 선택·제출 — SURVEY 제출: 결과(SUBMITTED)를 큐에 넣은 뒤 제목 없는 "설문조사가 완료되었습니다." 안내를 띄우고 확인하면 닫힌다. */
+    private static void CheckSurveyCompletedNotice()
+    {
+        var opened = OpenPopup("SURVEY", dto => dto.ShowFooter = true);
+        var saved = new List<Popup.Dtos.WpfResultItemDto>();
+        opened.Options.EnqueueResult = saved.Add;
+        var builder = new PopupResultBuilder("P1", null, "D-1");
+        var submit = typeof(Popup.Managers.PopupManager).GetMethod("SubmitSurveyResult", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var seen = CloseDialogs("설문조사 완료", () => submit.Invoke(null, new object[]
+            { opened.Window, opened.Options, builder, new SurveySubmission { Answers = new List<SurveyAnswer>() } }));
+        Check(seen.SequenceEqual(new[] { "설문조사가 완료되었습니다." }), $"SURVEY submission shows the completion notice without a heading ({string.Join(" / ", seen)})");
+        Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted,
+            $"SURVEY submission saves SUBMITTED and closes after the notice ({saved.Count})");
     }
 
     private static void CheckOwnerCloseSavesResult()

@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-03-28 — dev: SURVEY 제출 완료 안내 추가
+
+- 이유: 요구사항 반영. SURVEY는 제출 후 안내 없이 바로 닫혀 제출 완료를 알 수 없었고, 관리자 웹 미리보기는 `미리보기: 제출 완료`를 표시해 문구도 달랐음. "설문조사가 완료되었습니다." 안내 표시로 확정.
+- 변경: WPF `PopupManager.SubmitSurveyResult`가 SURVEY 결과(SUBMITTED)를 큐에 넣은 뒤 퀴즈 결과 창과 같은 형식(상단 제목 없음, 창 이름 "설문조사 완료")으로 "설문조사가 완료되었습니다." + 확인을 띄우고 닫음(`SurveyCompletedMessage`). 관리자 웹 `PopupPreview` SURVEY 제출 문구를 같은 값(`SURVEY_COMPLETED_MESSAGE`, popupQuizResultNotice.ts)으로 변경. ALL_SPEC·인터페이스 계약서 제출 설명, README 제출 흐름 갱신. 결과 계약·큐 적재 시점 변경 없음.
+- 주요 파일: popup-frameWork/Popup/Managers/PopupManager.cs, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx·popupQuizResultNotice.ts, scripts/PopupWindowTests/Program.cs, scripts/verify-completion-ux-43.cjs, docs/interfaces/WPF_POPUP_ALL_SPEC.md·POPUP_INTERFACE_SPEC.md, popup-frameWork/README.md, version-history/CHANGELOG.md.
+- 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests `CheckSurveyCompletedNotice`(안내 문구·제목 미표시·SUBMITTED 1건·닫힘, 모달은 HwndSource로 찾아 닫음) 추가 — 기존 환경 문제 검사(`CheckVideoQuizAspect60`) 제외 24개 검사 이름 지정 실행 414건 통과. BehaviorTests 1,711·RecoveryTests 154·ApiDemoTests 71 통과(새 모달로 멈춤 없음). 웹 `verify-completion-ux-43` 79건(SURVEY 제출 문구 1건 추가)·`verify-popup-preview-61` 52·`verify-popup-common-sample-69` 39·`verify-survey-rich-text-55` 23 통과, tsc·ESLint 0. 미실행: WPF 실기동·관리자 웹 실화면.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-03-27 — dev: PU001 B-2/B-3/B-5/B-6 현행 유지 경로 회귀 테스트 추가
 
 - 이유: PU001 B-2(passingScore 누락·비양수 항상 통과)·B-3(불합격 후 HIDDEN은 완료 아님·만료 후 재노출)·B-5(LATER는 showLater 재검사 없이 유예)·B-6(VIDEO+QUIZ 재생 실패 시 잠금 유지·닫기만 허용)을 현행 유지로 결정해, 이후 변경에서 깨지지 않도록 회귀 검사 필요.

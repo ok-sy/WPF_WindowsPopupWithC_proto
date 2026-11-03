@@ -11,6 +11,9 @@
  * - 한쪽 문구를 바꾸면 다른 쪽도 같이 바꾼다(WPF PopupWindowTests CheckQuizResultNoticeQ3, 웹 verify-completion-ux-43).
  */
 
+/** SURVEY 제출 완료 안내(WPF PopupManager.SurveyCompletedMessage와 같음). */
+export const SURVEY_COMPLETED_MESSAGE = '설문조사가 완료되었습니다.';
+
 export type QuizResultKind = 'CUTOFF' | 'FULL_SCORE' | 'PARTICIPATION';
 
 export interface QuizResultInput {

@@ -247,10 +247,13 @@ namespace Popup.Managers
          *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(메모리 결과 큐 적재).
          *     이 시점부터 결과는 유실되지 않는다.
          *  3. QUIZ 유형별 완료 안내(서버 응답 없음, PU001 Q3): 커트라인형 "통과하여 … 종료" + N/M개, 만점형 "모두 맞추셨습니다",
-         *     참여형(passingScore 0) "완료하여 … 종료" + N/M개. 확인을 누르면 닫힌다. SURVEY는 안내 없이 닫는다.
+         *     참여형(passingScore 0) "완료하여 … 종료" + N/M개. 확인을 누르면 닫힌다. SURVEY는 "설문조사가 완료되었습니다." 안내 후 확인을 누르면 닫힌다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
          * EnqueueResult가 없으면(훅 미연결) 저장 없이 닫는다.
          */
+        /// <summary>SURVEY 제출 완료 안내 문구(관리자 웹 미리보기 SURVEY_COMPLETED_MESSAGE와 같음).</summary>
+        internal const string SurveyCompletedMessage = "설문조사가 완료되었습니다.";
+
         private static void SubmitSurveyResult(
             PopupWindow popupWindow, PopupOptions popupOptions, PopupResultBuilder builder, SurveySubmission submission)
         {
@@ -272,6 +275,11 @@ namespace Popup.Managers
             {
                 QuizResultNotice.Notice done = QuizResultNotice.Build(submission, popupOptions.Title, auxCloseVisible: false);
                 PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText, showHeading: false);
+            }
+            else if (!isQuiz)
+            {
+                // POL-06-02 : 선택·제출 — SURVEY 제출 완료 안내(퀴즈 결과 창과 같은 형식: 제목 없이 본문·확인). 결과는 이미 큐에 적재됨.
+                PopupAlert.Show(popupWindow, SurveyCompletedMessage, "설문조사 완료", "확인", showHeading: false);
             }
 
             popupWindow.CloseByApp();   // 앱이 시작한 닫기(외부 닫기 제한 대상 아님). Closed 핸들러가 백그라운드 전송을 시작한다
