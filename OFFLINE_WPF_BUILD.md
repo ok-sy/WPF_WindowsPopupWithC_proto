@@ -100,7 +100,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\export-offline-package.ps1 -IncludeDevDependencies          # 6-offline-packages(offline-packages·offline-sdk)도 생성
 ```
 
-- 묶음: `1-zero-rule-server`·`2-zero-rule-web`(베이스라인 대비 변경분), `3-popup-frameWork`(WPF 소스, EXE/DLL/PDB·검증 하네스 제외. 개발용 MockSso·`Popup.slnx`는 2026-11-03부터 제외 — `build-wpf-offline.ps1`은 `Popup.csproj`를 직접 복원·게시), `4-docs`(docs·db·api·README·변경 이력), 선택 `6-offline-packages`.
+- 묶음: `1-zero-rule-server`·`2-zero-rule-web`(베이스라인 대비 변경분), `3-popup-frameWork`(WPF 소스, EXE/DLL/PDB·검증 하네스 제외. 개발용 MockSso·`Popup.slnx`는 2026-11-03부터 제외 — `build-wpf-offline.ps1`은 `Popup.csproj`를 직접 복원·게시. 이전 반입분 MockSso 파일·`Popup.slnx`는 DELETE 목록에 넣어 `cleanup-after-import.ps1`로 지움), `4-docs`(docs·db·api·README·변경 이력), 선택 `6-offline-packages`.
 - 묶음별 TAR, 통합 `<날짜>.tgz`(+`.sha256`), `MANIFEST-*.txt`, `DELETE-SINCE-20260930.txt`(누적 삭제 + 직전 반입본 이후 생겼다가 지워진 파일), `SHA256SUMS.txt`(TAR)·`SOURCE-SHA256SUMS.txt`(파일별), `README-IMPORT.md`를 만든다.
 - 직전 반입본은 `offline-export` 아래 가장 최근 반입본의 README에서 기준 커밋을 읽는다(`-PreviousExport`·`-PreviousCommit`로 지정 가능).
 - 생성 중 검사: 코드·설정 파일의 개인 PC 절대경로, TAR 파일 수·경로 대조, 제외 대상 누출, TGZ 해제 후 TAR 체크섬 대조. `-VerifyBuild`는 20261006 NuGet 반입본과 3-popup-frameWork만으로 폴더형·단일 EXE publish를 확인한다.

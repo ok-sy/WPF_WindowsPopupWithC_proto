@@ -10,7 +10,7 @@ POL-15-01 : 배포 범위
      앞부분을 프로젝트 위치로 바꿔, 그 프로젝트의 위치 전부에서 지운다. 그래서 빈 폴더가 되면 폴더도 지운다(프로젝트 위치까지).
        zero-rule-server/<경로> → <서버 위치>\<경로>      (app·web·service 등이 있는 폴더)
        zero-rule-web/<경로>    → <웹 위치>\<경로>        (main·sub·package.json·node_modules가 있는 폴더)
-       popup-frameWork/<경로>  → <WPF 위치>\<경로>       (Popup·MockSso가 있는 폴더)
+       popup-frameWork/<경로>  → <WPF 위치>\<경로>       (Popup이 있는 폴더. 이전 반입분 MockSso·Popup.slnx는 삭제 목록에 포함)
        docs/·db/·api/<경로>    → <문서 위치>\docs|db|api\<경로>
      위치가 없는 프로젝트의 줄은 건너뛴다(로그에 표시).
   2) node_modules: 웹 위치마다 node_modules에서 이름에 ckeditor가 들어간 패키지(@ckeditor/*, ckeditor5, @cp949/ckeditor5-custom-build,

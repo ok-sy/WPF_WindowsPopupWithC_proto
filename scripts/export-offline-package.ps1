@@ -250,6 +250,15 @@ try {
             $deleteLines += $extra
         }
     }
+    # 반입하지 않게 된 개발용 파일(저장소에는 남아 있어 git diff 삭제로 잡히지 않음): 임시 SSO 서버 MockSso와 이를 포함한 Popup.slnx.
+    # 이전 반입본에 들어갔던 파일만 적는다(개인 launchSettings.json은 반입한 적 없음).
+    $retired = @(& git -C $worktree -c core.quotepath=false ls-files -- "popup-frameWork/MockSso" "popup-frameWork/Popup.slnx" |
+        Where-Object { $_ -notlike "*/Properties/launchSettings.json" -and $cumulative -notcontains $_ })
+    if ($retired) {
+        $deleteLines += ""
+        $deleteLines += "# 2026-11-03부터 반입하지 않는 개발용 파일(임시 SSO 서버 MockSso, 이를 포함한 Popup.slnx). 이전 반입분이 있으면 삭제."
+        $deleteLines += $retired
+    }
     $deleteLines | Set-Content -Encoding UTF8 (Join-Path $OutputRoot $deleteName)
 
     # 묶음별 패치노트(선택): <PatchNotesDir>\README-PATCH-<묶음>.md → 묶음 루트
@@ -312,7 +321,7 @@ try {
 |---|---|---|
 | 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |
 | 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
-| 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않음(폐쇄망에 이전 반입분이 있어도 빌드에 쓰지 않음). EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
+| 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않으며 이전 반입분은 DELETE 목록으로 삭제. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
 $($npmRow)
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
