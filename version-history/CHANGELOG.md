@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-03-30 — 20261103 폐쇄망 반입본 생성(11/3 작업 전체·MockSso 제외·로고 포함)
+
+- 이유: 20261102 반입본(8986689) 이후 변경을 폐쇄망에 반입. 오전에 만든 20261103 반입본(7917c0d)은 폐쇄망에 쓰지 않고 삭제해(2026-11-03-29 뒤 기록 철회) 같은 날짜로 다시 생성.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261103 -PreviousExport 20261102 -PreviousCommit 8986689 -NotesFile <변경 요약> -VerifyBuild`로 offline-export/20261103 생성(기준 커밋 e938bf5). 변경 요약: 관리자 웹 CommonCKEditor 폴더 이동(최상위 파일 삭제·View 유지·`.next` 삭제 후 재기동)·퀴즈유형 참여형·미리보기 결과 문구, WPF 결과 큐 메모리 전용·QUIZ 결과 창 3유형·SURVEY 완료 안내·영상+퀴즈 완료 비율 기본 0.8·Demo 3117 옵션 샘플·MockSso/Popup.slnx 미반입과 빌드 방법, 서버 QUIZ 재채점 제거·SURVEY 선택 수 검증·완료 비율 기본값·3117 정책 버전, 실행할 DB 스크립트 없음. 로고 `hyundaiCi.png`·`webp`(Git 제외)는 2026-11-03 오전과 같은 임시 처리(506e3ec 내용을 작업 트리에만 적용 → 생성 후 원복, 커밋 없음)로 4-docs에 포함(MANIFEST-4-docs `L`). npm 변경이 없어 5-npm-ckeditor 미포함(20261102 묶음 유효).
+- 주요 파일: offline-export/20261103(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 153·M 10·D 0, 웹 A 51·M 23·D 6(baseline 누적), WPF 소스 94(MockSso·Popup.slnx 없음), 문서 174(로고 2 포함). DELETE 누적 22개 + 20261102 이후 신규 1개(`zero-rule-web/main/src/components/CommonCKEditor.tsx`) + 미반입 개발용 절 3개(MockSso 2·Popup.slnx). TGZ 13,215,237바이트, SHA256 `7977345ac43194f47df23883241913c7024a515304b84870e8205801680f916e`.
+- 검증: TAR 4개 파일 수·경로 대조, 제외 대상 누출 검사(MockSso·Popup.slnx 포함), TGZ 체크섬 일치, `-VerifyBuild`로 20261006 NuGet 반입본 + 3-popup-frameWork만으로 폴더형·단일 EXE(91,778,382바이트) publish 성공(Popup.csproj 직접 복원). 폐쇄망 반영은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-11-03-29 — docs: 폐쇄망 반입본에서 MockSso·Popup.slnx 제외
 
 - 이유: 반입 준비. 폐쇄망 SSO·로그인을 폐쇄망 정책에 맞춰 반영해 개발용 임시 SSO 서버(MockSso)가 폐쇄망에서 필요 없어짐. MockSso를 포함한 솔루션(Popup.slnx)으로 복원하던 폐쇄망 빌드 스크립트는 MockSso가 없으면 복원이 실패하므로 함께 정리.
