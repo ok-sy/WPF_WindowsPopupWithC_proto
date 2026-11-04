@@ -382,8 +382,17 @@ internal static class Program
         else
         {
             Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("deliveryId=")));
+            PopupWindow shown = OpenPopups(window).Single();
+            object? content = ((ContentControl)shown.FindName("PopupContent")).Content;
+            Check(content != null, "[R-05] real popup renders its content view");
+            Console.WriteLine($"REAL view: {content!.GetType().Name} · title {shown.Title}");
             CloseShownPopup(window);
-            Pump(() => !IsBusy(window) && steps.Text.Contains("✓ 결과 전송"), 20000);
+            try { Pump(() => !IsBusy(window) && steps.Text.Contains("✓ 결과 전송"), 20000); }
+            catch (TimeoutException)
+            {
+                foreach (string line in Logs(window).TakeLast(8)) Console.WriteLine("LOG: " + line);
+                Console.WriteLine("LOG: steps " + steps.Text.ReplaceLineEndings(" | "));
+            }
             Check(steps.Text.Contains("✓ 결과 전송"), "[R-06] real result is accepted: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
             Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("nextStatus")));
             Check(OpenPopups(window).Count == 0, "[R-07] real result does not open the next popup automatically");

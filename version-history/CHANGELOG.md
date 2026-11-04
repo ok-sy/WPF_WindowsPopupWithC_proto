@@ -1,14 +1,22 @@
 # 변경 이력
 
+## 2026-11-04-08 — 20261104 폐쇄망 반입본 삭제
+
+- 이유: 당일 반입을 진행하지 못해 생성한 20261104 반입본을 폐기. 2026-11-04-01·03·04·06의 반입본 생성 기록은 이력으로 유지하되 폐쇄망에 반입되지 않음.
+- 변경: `offline-export/20261104/`(기준 c459a82, Git 제외) 삭제. 재생성 입력인 `.offline-cache/git-history-20261104/`와 `.offline-cache/notes-20261104.md`는 유지. 스크립트의 같은 날짜 통합·RgstPop 제외 동작은 유지.
+- 검증: `offline-export`의 최신 반입본이 20261103(71f58ae)임을 확인. 다음 반입본은 이를 직전 반입본으로 잡고, 서버·웹은 누적 diff, WPF·문서는 전체 복사라 11/4 변경이 포함됨.
+- 상태: 커밋에 포함, 원격 반영.
+
 ## 2026-11-04-07 — dev: API Demo ID/비밀번호 로그인(SSO 미사용)과 입력 UI 개선
 
 - 이유: SSO 없이 테스트 계정으로 로그인해 팝업 조회·표시·결과 저장을 회귀 검증할 필요. 기존 Demo 로그인은 SSO 기반 프로토타입 API라 비밀번호 로그인과 응답 형식이 다름.
 - 조사: 일반 로그인 `POST /p/api/auth/login`은 토큰을 응답 헤더 `x-custom-authorization`으로 주고 실패도 HTTP 200으로 응답. 이 토큰은 `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`일 때 기존 `SecurityContextWpfUserResolver`로 팝업 API를 통과. 서버 코드·인증 정책은 변경하지 않음.
 - 변경: API Demo 인증 방식에 `ID/비밀번호 로그인` 추가(`DemoCredentialLoginClient`, `DemoApiAuthHeaderProvider.ForCredential`). 성공은 토큰 헤더로 판단하고 401이면 1회 재로그인. HTTP 기록에서 비밀번호를 수집 단계에 제거해 `토큰 평문 표시`와 무관하게 남지 않게 함. 입력을 연결·인증·조회로 묶고, 방식별 입력만 표시, 입력란 오류 표시, Enter 로그인, 단계별 상태와 최근 HTTP 상태 표시 추가. `ApiDemoTests`에 모의 서버 흐름과 환경변수로 켜는 실제 서버 회귀 추가.
 - 주요 파일: popup-frameWork/Popup/(DemoWindow.Api.cs, DemoWindow.xaml, Services/Auth/DemoCredentialLoginClient.cs, Services/Auth/DemoApiAuthHeaderProvider.cs, Services/HttpExchangeRecorder.cs, ../README.md), scripts/ApiDemoTests/Program.cs, docs/design/20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md. ALL·MINIMAL 명세는 API Demo를 다루지 않아 변경 없음.
-- 검증: WPF Release 빌드 경고·오류 0. `ApiDemoTests` 102건 통과(모의 서버). 로컬 Spring 서버 + 로컬 XE에서 실제 로그인 → TEXT 조회·표시 → 결과 저장(`nextStatus=EMPTY`) → 수동 재조회(`popup=null`) 포함 107건 통과, 미인증·잘못된 토큰 401과 미등록 사용자 403은 HTTP 호출로 확인. 임시 권한·사용자·팝업 행은 검증 후 삭제. PopupWindowTests는 주 모니터 복구 후 전체 476건 통과(1280×720 상태에서는 `CheckVideoQuizAspect60`만 실패). 원격 개발 DB 서버에서 실제 로그인 성공과 토큰 인증 통과 확인, `master`가 원격 `APP_USER`에 없어 조회는 403 `WPF_USER_INACTIVE`로 끝나며 화면에 원인 표시.
-- 미실행: 원격 개발 DB의 조회·표시·결과 저장(테스트 사용자·게시 중 팝업 없음, 공용 데이터라 행 미추가), TEXT 외 유형 실제 서버 렌더링, 신규 로그인 경로의 타임아웃·연결 실패, 화면 육안 확인. Popup.BehaviorTests·RecoveryTests와 폐쇄망 반영도 미실행.
-- 상태: 커밋에 포함, 원격 반영. 20261104 반입본에는 미포함.
+- 검증: WPF Release 빌드 경고·오류 0. `ApiDemoTests` 102건 통과(모의 서버). 로컬 Spring 서버 + 로컬 XE에서 실제 로그인 → TEXT 조회·표시 → 결과 저장(`nextStatus=EMPTY`) → 수동 재조회(`popup=null`) 포함 107건 통과, 미인증·잘못된 토큰 401과 미등록 사용자 403은 HTTP 호출로 확인. 임시 권한·사용자·팝업 행은 검증 후 삭제. PopupWindowTests는 주 모니터 복구 후 전체 476건 통과(1280×720 상태에서는 `CheckVideoQuizAspect60`만 실패). 원격 개발 DB에는 `master`가 `APP_USER`에 없어 조회가 403 `WPF_USER_INACTIVE`로 끝나고 화면에 원인이 표시됨을 먼저 확인. 이후 `master` 전용 임시 사용자·샘플 복사 팝업으로 TEXT·VIDEO·SURVEY·QUIZ의 로그인 → 조회 → 화면 생성 → 결과 저장 → 수동 재조회 통과, 임시 행 삭제 확인(남은 행 0건). TEXT 4회 중 첫 1회는 결과 단계 대기 시간 초과로 실패(서버에 결과 행은 저장됨)했고 재실행 3회는 통과, 원인 미확정.
+- 미실행: IMAGE·VIDEO+QUIZ 실제 서버 렌더링(원격 샘플 없음), 신규 로그인 경로의 타임아웃·연결 실패, 화면 육안 확인. Popup.BehaviorTests·RecoveryTests와 폐쇄망 반영도 미실행.
+- 보안: TODO 문서의 테스트 계정 비밀번호 평문 제거(Git 이력에는 남음).
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
 
 ## 2026-11-04-06 — dev: TODO52-2 나중에 보기 버튼 Footer 왼쪽 끝 배치
 
