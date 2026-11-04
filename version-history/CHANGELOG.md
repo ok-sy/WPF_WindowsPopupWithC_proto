@@ -12,10 +12,10 @@
 ## 2026-11-04-01 — 웹·WPF Git 히스토리 정리 번들 생성
 
 - 이유: 폐쇄망에서 웹·WPF 코드의 `blame`·diff 조회가 필요해, 민감정보를 정리한 이력을 조회 전용 번들로 반입 준비.
-- 변경: 저장소 복제본에서 `git filter-repo`로 `zero-rule-web`, `popup-frameWork`만 남김(MockSso·Popup.slnx·Popup.BehaviorTests·Popup.RecoveryTests 제외). 작성자 통일, Co-Authored-By·생성 도구 표기 제거, 개발 DB IP를 `<DEV-HOST>`로 치환. 원본 저장소 이력은 변경 없음.
-- 결과: `offline-export/20261104-git-history/`(Git 제외)에 번들·`COMMIT-MAP.txt`·`README-IMPORT.md`·`SHA256SUMS.txt` 생성. 기준 04aeb62, 커밋 209개, 번들 26,998,797바이트, SHA256 `03df2a89352cc36b9c7e679e715d960925692ab328e5a9624b2eec548addaa4c`.
-- 검증: `git bundle verify`와 클론·`log`·`blame` 조회 성공. 최신 트리 1,295개 파일을 원본과 대조해 IP 치환 파일 2개(`zero-rule-web/Dockerfile`, `_build-docker-dev.sh`)만 다름 확인. 이력에 제외 경로·서버 경로·개발 DB IP·원격 개발 DB 비밀번호·기존 작성자 이메일 0건. 폐쇄망 반영은 미실행.
-- 남은 항목: 번들에 관리자 웹 `authentication.ts` 암호화 키, `LoginForm.tsx` 기본 비밀번호가 포함됨(베이스라인 f66e8ed 이후 변경 없는 값으로, 소스 반입본에는 들어가지 않는 파일).
+- 변경: 저장소 복제본에서 `git filter-repo`로 `zero-rule-web`, `popup-frameWork`만 남김(MockSso·Popup.slnx·Popup.BehaviorTests·Popup.RecoveryTests 제외). 작성자 통일, Co-Authored-By·생성 도구 표기 제거, 개발 DB IP를 `<DEV-HOST>`로 치환. 폐쇄망 기존 소스와의 일치 여부를 확인할 수 없어 관리자 웹 `authentication.ts` 암호화 키를 `<REDACTED>`로, `LoginForm.tsx` 기본 비밀번호를 빈 값으로 전체 이력에서 치환. 원본 저장소 이력은 변경 없음.
+- 결과: `offline-export/20261104-git-history/`(Git 제외)에 번들·`COMMIT-MAP.txt`·`README-IMPORT.md`·`SHA256SUMS.txt` 생성. 기준 04aeb62, 커밋 209개, 번들 26,999,252바이트, SHA256 `99f314a374ab77f325bd7df0c6a247d9f1ab0c5cb9bf63df2ff9e50c6a7cff5b`.
+- 검증: `git bundle verify`와 클론·`log`·`blame` 조회 성공. 최신 트리 1,295개 파일을 원본과 대조해 치환 대상 4개(`zero-rule-web/Dockerfile`, `_build-docker-dev.sh`, `main/src/auth/authentication.ts`, `main/src/components/LoginForm/LoginForm.tsx`)만 다름 확인. 이력에 제외 경로·서버 경로·개발 DB IP·원격 개발 DB 비밀번호·기존 작성자 이메일·치환한 웹 키·기본 비밀번호 0건. 폐쇄망 반영은 미실행.
+- 남은 항목: 번들 코드는 조회 전용으로, 치환한 키로 빌드·실행하지 않음. `userSampleData.ts`의 샘플 비밀번호는 치환하지 않음.
 - 상태: 번들 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-11-03-33 — 개발자용 문서 프론트·백엔드·CS 영역별 통합
