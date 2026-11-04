@@ -10,7 +10,7 @@ namespace Popup.Services.Auth
      * POL-14-02 : Demo 모드
      * POL-15-02 : 인증·버전
      * ■ API Demo 인증 헤더 공급자
-     * - in : ForToken(token) 직접 입력 토큰 · ForLogin(loginClient, loginBody) 로그인 요청 JSON
+     * - in : ForToken(token) 직접 입력 토큰 · ForLogin(loginClient, loginBody) 로그인 요청 JSON · ForCredential(client, id, password) ID/비밀번호
      * - out: Authorization 헤더 값 · LastLogin(마지막 로그인 응답) · 로그인 실패 예외는 그대로 전파
      * - API Demo 전용 인증 헤더 공급자. 두 경로를 구분한다.
      *   - 토큰 직접 입력: 입력한 값을 Authorization 헤더로 보낸다(스킴이 없으면 "Bearer "를 붙임). 401이어도 새 토큰을 만들 수 없어
@@ -18,6 +18,8 @@ namespace Popup.Services.Auth
      *   - 로그인 후 토큰 사용: 입력한 로그인 요청 JSON으로 로그인 API를 호출해 받은 토큰을 메모리에만 보관한다.
      *     토큰이 없으면 첫 요청 직전에 로그인하고, 401이면 SsoAuthHeaderProvider와 같이 "401을 받은 토큰이 아직 현재 토큰일 때만"
      *     같은 로그인 본문으로 1회 재로그인한다. SSO 호출은 하지 않는다(로그인 본문을 직접 입력).
+     *   - ID/비밀번호 로그인: 일반 로그인 API로 받은 토큰을 메모리에만 보관한다. 재로그인 규칙은 로그인 경로와 같다.
+     *     비밀번호는 재로그인을 위해 이 인스턴스에만 두고, 연결을 바꾸면 인스턴스와 함께 버린다.
      * Demo는 실패 단계를 보여 주는 도구이므로 로그인 실패를 삼키지 않고 호출자에게 그대로 전파한다.
      * 토큰은 파일·로그에 남기지 않는다.
      */
@@ -25,21 +27,19 @@ namespace Popup.Services.Auth
     {
         private const string BearerPrefix = "Bearer ";
 
-        private readonly WpfLoginClient? _loginClient;
-        private readonly JsonElement _loginBody;
+        private readonly Func<CancellationToken, Task<WpfLoginResponseDto>>? _login;
         private readonly SemaphoreSlim _loginGate = new(1, 1);
         private string? _authorization;
 
-        private DemoApiAuthHeaderProvider(string? authorization, WpfLoginClient? loginClient, JsonElement loginBody)
+        private DemoApiAuthHeaderProvider(string? authorization, Func<CancellationToken, Task<WpfLoginResponseDto>>? login)
         {
             _authorization = authorization;
-            _loginClient = loginClient;
-            _loginBody = loginBody;
+            _login = login;
         }
 
         /// <summary>토큰 직접 입력. 값이 비어 있으면 헤더를 붙이지 않는다.</summary>
         public static DemoApiAuthHeaderProvider ForToken(string? token)
-            => new(NormalizeAuthorization(token), null, default);
+            => new(NormalizeAuthorization(token), null);
 
         /// <summary>로그인 요청 JSON 객체로 로그인 API를 호출해 토큰을 얻는다.</summary>
         public static DemoApiAuthHeaderProvider ForLogin(WpfLoginClient loginClient, JsonElement loginBody)
@@ -47,10 +47,18 @@ namespace Popup.Services.Auth
             ArgumentNullException.ThrowIfNull(loginClient);
             if (loginBody.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException("로그인 요청 본문은 JSON 객체여야 합니다.", nameof(loginBody));
-            return new(null, loginClient, loginBody.Clone());
+            JsonElement body = loginBody.Clone();
+            return new(null, cancellationToken => loginClient.LoginAsync(body, cancellationToken));
         }
 
-        public bool UsesLogin => _loginClient != null;
+        /// <summary>ID/비밀번호로 일반 로그인 API를 호출해 토큰을 얻는다.</summary>
+        public static DemoApiAuthHeaderProvider ForCredential(DemoCredentialLoginClient loginClient, string logonId, string password)
+        {
+            ArgumentNullException.ThrowIfNull(loginClient);
+            return new(null, cancellationToken => loginClient.LoginAsync(logonId, password, cancellationToken));
+        }
+
+        public bool UsesLogin => _login != null;
 
         /// <summary>마지막 로그인 응답(토큰 포함). 화면은 길이·만료 시각만 보여 준다.</summary>
         public WpfLoginResponseDto? LastLogin { get; private set; }
@@ -61,13 +69,13 @@ namespace Popup.Services.Auth
         public async Task<string?> GetAuthorizationHeaderAsync(CancellationToken cancellationToken = default)
         {
             string? current = Volatile.Read(ref _authorization);
-            if (current != null || _loginClient == null) return current;
+            if (current != null || _login == null) return current;
             return await LoginCoreAsync(failedAuthorization: null, force: false, cancellationToken);
         }
 
         public async Task OnUnauthorizedAsync(string? failedAuthorizationHeader, CancellationToken cancellationToken = default)
         {
-            if (_loginClient == null) return;   // 토큰 직접 입력은 갱신 수단이 없다.
+            if (_login == null) return;   // 토큰 직접 입력은 갱신 수단이 없다.
             Debug.WriteLine("[API-DEMO] 401 → 같은 로그인 본문으로 재로그인");
             await LoginCoreAsync(failedAuthorizationHeader, force: false, cancellationToken);
         }
@@ -75,7 +83,7 @@ namespace Popup.Services.Auth
         /// <summary>"로그인" 버튼. 보관 토큰과 관계없이 지금 로그인해 토큰을 바꾼다.</summary>
         public async Task<WpfLoginResponseDto> LoginNowAsync(CancellationToken cancellationToken = default)
         {
-            if (_loginClient == null) throw new InvalidOperationException("토큰 직접 입력 방식에서는 로그인하지 않습니다.");
+            if (_login == null) throw new InvalidOperationException("토큰 직접 입력 방식에서는 로그인하지 않습니다.");
             await LoginCoreAsync(failedAuthorization: null, force: true, cancellationToken);
             return LastLogin!;
         }
@@ -94,7 +102,7 @@ namespace Popup.Services.Auth
                 if (!force && current != null && !string.Equals(current, failedAuthorization, StringComparison.Ordinal))
                     return current;   // 이미 다른 요청이 갱신했다.
 
-                WpfLoginResponseDto login = await _loginClient!.LoginAsync(_loginBody, cancellationToken);
+                WpfLoginResponseDto login = await _login!(cancellationToken);
                 LastLogin = login;
                 string scheme = string.IsNullOrWhiteSpace(login.TokenType) ? "Bearer" : login.TokenType.Trim();
                 string authorization = $"{scheme} {login.AccessToken}";

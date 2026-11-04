@@ -51,6 +51,10 @@ namespace Popup
         private int? _lastPollingIntervalSeconds;
         /* 마지막 HTTP 기록. 응답 해석 실패를 빈 응답·잘못된 JSON·구조 불일치로 나눌 때 쓴다(관찰 스레드에서 기록). */
         private HttpExchangeRecord? _lastExchange;
+        /* POL-14-02 : Demo 모드 — 단계별 상태(○ 대기 · ✓ 성공 · ✕ 실패 · - 해당 없음)와 마지막 HTTP 상태 */
+        private static readonly string[] ApiSteps = { "연결", "로그인", "인증 준비", "팝업 조회", "표시", "결과 전송" };
+        private readonly Dictionary<string, char> _apiStepStates = new();
+        private string _apiLastHttp = "-";
 
         private bool IsApiDemo => _apiSettings != null;
         private bool IsApiBusy => _apiBusyCount > 0;
@@ -84,6 +88,7 @@ namespace Popup
 
             ApiBaseUrlText.Text = settings.BaseUrl;
             ApiLoginPathText.Text = settings.AuthLoginPath;
+            ApiCredentialPathText.Text = DemoCredentialLoginClient.DefaultLoginPath;   // 비밀번호는 기본값을 두지 않는다.
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
             ApiDevUserIdText.Text = MainWindow.ResolveDevUserId(settings.DevUserId) ?? string.Empty;
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
@@ -114,7 +119,9 @@ namespace Popup
             if (ApiLoginPanel == null || ApiTokenPanel == null || ApiLoginButton == null) return;   // XAML 로드 중
             ApiLoginPanel.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
             ApiTokenPanel.Visibility = SelectedAuthMode == "TOKEN" ? Visibility.Visible : Visibility.Collapsed;
-            ApiLoginButton.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
+            ApiCredentialPanel.Visibility = SelectedAuthMode == "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
+            ApiDevUserPanel.Visibility = SelectedAuthMode == "CREDENTIAL" ? Visibility.Collapsed : Visibility.Visible;   // 사용자는 로그인 토큰으로 정해진다.
+            ApiLoginButton.Visibility = SelectedAuthMode is "LOGIN" or "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void ApiRevealSecretsCheck_Changed(object sender, RoutedEventArgs e) => ResultLogList_SelectionChanged(sender, null!);
@@ -124,6 +131,13 @@ namespace Popup
 
         private async void ApiQueryButton_Click(object sender, RoutedEventArgs e) => await QueryApiAsync();
 
+        private void ApiCredentialInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.Enter) return;
+            e.Handled = true;
+            if (ApiLoginButton.IsEnabled) ApiLoginButton_Click(sender, e);
+        }
+
         private async void ApiLoginButton_Click(object sender, RoutedEventArgs e)
         {
             await RunApiAsync(async () =>
@@ -132,8 +146,9 @@ namespace Popup
                 try
                 {
                     WpfLoginResponseDto login = await auth.LoginNowAsync();
-                    AppendLog($"[로그인] 성공 · tokenType={login.TokenType} · 토큰 {login.AccessToken.Length}자(메모리 보관) · "
-                              + $"expiresAt={login.ExpiresAt.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}");
+                    AppendLog($"[로그인] 성공 · tokenType={login.TokenType} · 토큰 {login.AccessToken.Length}자(메모리 보관)"
+                              + (login.ExpiresAt == default ? string.Empty : $" · expiresAt={login.ExpiresAt.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}"));
+                    ApiConnectionExpander.IsExpanded = false;
                 }
                 catch (Exception exception)
                 {
@@ -170,7 +185,7 @@ namespace Popup
                     "API Demo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (!TryParseJsonObject(ApiQueryBodyText.Text, "단건 조회 요청 JSON", out JsonElement body)) return;
+            if (!TryParseJsonObject(ApiQueryBodyText.Text, "단건 조회 요청 JSON", ApiQueryErrorText, out JsonElement body)) return;
 
             await RunApiAsync(async () =>
             {
@@ -186,6 +201,8 @@ namespace Popup
                     return;
                 }
 
+                SetApiStep("표시", '○');
+                SetApiStep("결과 전송", '○');
                 WpfNextPopupResponseDto response;
                 try
                 {
@@ -201,6 +218,8 @@ namespace Popup
                 if (response.Popup == null)
                 {
                     AppendLog($"[조회] popup=null — 표시 대상 없음(정상) · pollingIntervalSeconds={response.PollingIntervalSeconds} (수동 모드, 타이머 미시작)");
+                    SetApiStep("표시", '-');
+                    SetApiStep("결과 전송", '-');
                     return;
                 }
                 AppendLog($"[조회] {response.Popup.PopupId} · {response.Popup.PopupType} · deliveryId={response.Popup.DeliveryId} · "
@@ -215,9 +234,11 @@ namespace Popup
                     options.RetainResultForExit = queue.RetainForExit;
                     options.FlushResultsInBackground = () => _ = OnApiPopupClosedAsync(queue);
                     _popupManager.Show(options);
+                    SetApiStep("표시", '✓');
                 }
                 catch (Exception exception)
                 {
+                    SetApiStep("표시", '✕');
                     _lastApiFailure = "팝업 생성";
                     AppendLog($"[오류] 팝업 생성 — 응답은 정상 수신했지만 WPF 팝업을 만들지 못했습니다: {exception.GetType().Name}: {exception.Message}");
                 }
@@ -279,6 +300,7 @@ namespace Popup
         private bool EnsureApiConnection(bool forceLog)
         {
             if (_apiHttpClient == null) return false;
+            ShowApiInputError(ApiInputErrorText, null);
             if (_popupManager.HasOpenPopups)
             {
                 AppendLog("[연결] 표시 중인 팝업이 있어 연결을 바꾸지 않았습니다.");
@@ -288,31 +310,33 @@ namespace Popup
             string baseUrl = ApiBaseUrlText.Text.Trim().TrimEnd('/');
             if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
-                ApiConnectionExpander.IsExpanded = true;   // POL-14-02 : Demo 모드 — 연결 입력 오류는 설정을 펼쳐 보여 준다
-                AppendLog("[입력 오류] Base URL은 http:// 또는 https://로 시작하는 절대 주소여야 합니다.");
-                return false;
+                return RejectConnectionInput("Base URL은 http:// 또는 https://로 시작하는 절대 주소여야 합니다.", ApiBaseUrlText);
             }
             string mode = SelectedAuthMode;
-            string devUserId = ApiDevUserIdText.Text.Trim();
+            string devUserId = mode == "CREDENTIAL" ? string.Empty : ApiDevUserIdText.Text.Trim();
             string loginPath = ApiLoginPathText.Text.Trim();
+            string credentialPath = ApiCredentialPathText.Text.Trim();
+            string credentialId = ApiCredentialIdText.Text.Trim();
+            string credentialPassword = ApiCredentialPasswordBox.Password;
             string identity;
             JsonElement loginBody = default;
             string? token = null;
             switch (mode)
             {
                 case "LOGIN":
-                    if (!TryParseJsonObject(ApiLoginBodyText.Text, "로그인 요청 JSON", out loginBody)) { ApiConnectionExpander.IsExpanded = true; return false; }
+                    if (!TryParseJsonObject(ApiLoginBodyText.Text, "로그인 요청 JSON", ApiInputErrorText, out loginBody)) { ApiConnectionExpander.IsExpanded = true; SetApiStep("연결", '✕'); return false; }
                     identity = loginPath + "\n" + loginBody.GetRawText();
                     break;
                 case "TOKEN":
                     token = DemoApiAuthHeaderProvider.NormalizeAuthorization(ApiTokenBox.Password);
-                    if (token == null)
-                    {
-                        ApiConnectionExpander.IsExpanded = true;
-                        AppendLog("[입력 오류] 토큰 직접 입력 방식에는 Authorization 토큰이 필요합니다.");
-                        return false;
-                    }
+                    if (token == null) return RejectConnectionInput("토큰 직접 입력 방식에는 Authorization 토큰이 필요합니다.", ApiTokenBox);
                     identity = token;
+                    break;
+                case "CREDENTIAL":
+                    if (!credentialPath.StartsWith('/')) return RejectConnectionInput("로그인 경로는 /로 시작해야 합니다. 예: " + DemoCredentialLoginClient.DefaultLoginPath, ApiCredentialPathText);
+                    if (credentialId.Length == 0) return RejectConnectionInput("아이디를 입력하세요.", ApiCredentialIdText);
+                    if (credentialPassword.Length == 0) return RejectConnectionInput("비밀번호를 입력하세요.", ApiCredentialPasswordBox);
+                    identity = credentialPath + "\n" + credentialId + "\n" + credentialPassword;   // 연결 키 해시에만 쓴다.
                     break;
                 default:
                     identity = string.Empty;
@@ -349,21 +373,23 @@ namespace Popup
                 {
                     "LOGIN" => DemoApiAuthHeaderProvider.ForLogin(new WpfLoginClient(baseUrl, loginPath, _apiHttpClient), loginBody),
                     "TOKEN" => DemoApiAuthHeaderProvider.ForToken(token),
+                    "CREDENTIAL" => DemoApiAuthHeaderProvider.ForCredential(new DemoCredentialLoginClient(baseUrl, credentialPath, _apiHttpClient), credentialId, credentialPassword),
                     _ => DemoApiAuthHeaderProvider.ForToken(null)
                 };
             }
             catch (ArgumentException exception)
             {
-                ApiConnectionExpander.IsExpanded = true;
-                AppendLog("[입력 오류] " + exception.Message);
-                return false;
+                return RejectConnectionInput(exception.Message, null);
             }
 
             _apiAuth = auth;
             _apiService = new PopupApiService(baseUrl, auth, string.IsNullOrEmpty(devUserId) ? null : devUserId, _apiHttpClient);
             _apiQueue = new PopupResultQueue(_apiService);
             _apiConnectionKey = key;
-            _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", _ => "인증 헤더 없음" };
+            _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", "CREDENTIAL" => $"ID/비밀번호 로그인({credentialId})", _ => "인증 헤더 없음" };
+            _apiStepStates.Clear();
+            _apiLastHttp = "-";
+            SetApiStep("연결", '✓');
             _lastNextStatus = null;
             _lastPollingIntervalSeconds = null;
             ApiConnectionExpander.IsExpanded = false;   // POL-14-02 : Demo 모드 — 적용한 연결은 요약만 남기고 접는다
@@ -426,8 +452,12 @@ namespace Popup
             {
                 WpfClientVersionException version =>
                     $"클라이언트 버전 차단(426) — {version.UserMessage} 결과 전송을 멈췄습니다(항목 보관, 연결을 다시 적용하면 재개).",
+                DemoCredentialLoginException credential => "로그인 실패 — " + credential.Message,
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } http =>
-                    $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}",
+                    $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}"
+                    + (SelectedAuthMode == "CREDENTIAL" ? " 서버의 custom.wpf-auth-prototype.enabled·custom.wpf-popup.dev-user-header가 false인지 확인하세요." : string.Empty),
+                HttpRequestException { StatusCode: HttpStatusCode.Forbidden } http when http.Message.Contains("WPF_USER_INACTIVE", StringComparison.Ordinal) =>
+                    $"HTTP 오류 403: 로그인은 됐지만 이 계정이 활성 팝업 사용자가 아닙니다. {http.Message}",
                 HttpRequestException { StatusCode: { } status } http => $"HTTP 오류 {(int)status}: {http.Message}",
                 HttpRequestException http => $"통신 실패(응답 없음): {http.Message}",
                 JsonException json => ResponseParseFailure(json),
@@ -436,6 +466,11 @@ namespace Popup
             };
             AppendLog($"[오류] {stage} — {detail}");
             _lastApiFailure = stage;
+            if (exception is DemoCredentialLoginException)
+            {
+                SetApiStep("로그인", '✕');
+                ApiConnectionExpander.IsExpanded = true;   // 로그인 입력을 바로 고칠 수 있게 펼친다.
+            }
         }
 
         private string ResponseParseFailure(JsonException exception)
@@ -465,20 +500,63 @@ namespace Popup
         {
             int index = ResultLogList.Items.Count;
             _httpDetails[index] = record;
+            ApplyHttpStep(record);
             AppendLog($"[{record.StartedAt:HH:mm:ss}] {HttpCategory(record.Url)} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}");
             ResultLogList.SelectedIndex = index;
             DetailTabs.SelectedIndex = 1;
         }
 
-        private bool TryParseJsonObject(string text, string label, out JsonElement element)
+        /* HTTP 기록으로 단계 상태를 갱신한다. 로그인 성공은 토큰 보관 여부(UpdateApiState)로 판단한다(일반 로그인은 실패도 200). */
+        private void ApplyHttpStep(HttpExchangeRecord record)
+        {
+            _apiLastHttp = (record.StatusCode?.ToString() ?? "응답 없음") + $" · {record.ElapsedMs}ms";
+            bool success = record.StatusCode is >= 200 and < 300;
+            string path = Uri.TryCreate(record.Url, UriKind.Absolute, out Uri? uri) ? uri.AbsolutePath : record.Url;
+            if (path.EndsWith("/api/wpf/popups/results", StringComparison.OrdinalIgnoreCase)) SetApiStep("결과 전송", success ? '✓' : '✕');
+            else if (path.EndsWith("/api/wpf/popups", StringComparison.OrdinalIgnoreCase)) SetApiStep("팝업 조회", success ? '✓' : '✕');
+            else if (!success) SetApiStep("로그인", '✕');
+            else RenderApiSteps();
+        }
+
+        private void SetApiStep(string step, char state)
+        {
+            _apiStepStates[step] = state;
+            RenderApiSteps();
+        }
+
+        private void RenderApiSteps()
+        {
+            ApiStepText.Text = string.Join(" → ", ApiSteps.Select(step => $"{(_apiStepStates.TryGetValue(step, out char state) ? state : '○')} {step}"))
+                + $"\n최근 HTTP {_apiLastHttp}";
+        }
+
+        /* 입력 오류는 입력란 가까이에 표시하고 로그에도 남긴다. message=null이면 지운다. */
+        private void ShowApiInputError(TextBlock target, string? message)
+        {
+            target.Text = message ?? string.Empty;
+            target.Visibility = message == null ? Visibility.Collapsed : Visibility.Visible;
+            if (message != null) AppendLog("[입력 오류] " + message);
+        }
+
+        private bool RejectConnectionInput(string message, Control? focus)
+        {
+            ApiConnectionExpander.IsExpanded = true;   // POL-14-02 : Demo 모드 — 연결 입력 오류는 설정을 펼쳐 보여 준다.
+            ShowApiInputError(ApiInputErrorText, message);
+            SetApiStep("연결", '✕');
+            focus?.Focus();
+            return false;
+        }
+
+        private bool TryParseJsonObject(string text, string label, TextBlock errorTarget, out JsonElement element)
         {
             element = default;
+            ShowApiInputError(errorTarget, null);
             try
             {
                 using JsonDocument document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
                 if (document.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    AppendLog($"[입력 오류] {label}은 JSON 객체({{...}})여야 합니다.");
+                    ShowApiInputError(errorTarget, $"{label}은 JSON 객체({{...}})여야 합니다.");
                     return false;
                 }
                 element = document.RootElement.Clone();
@@ -486,7 +564,7 @@ namespace Popup
             }
             catch (JsonException exception)
             {
-                AppendLog($"[입력 오류] {label} 형식이 잘못됐습니다(요청을 보내지 않음): {exception.Message}");
+                ShowApiInputError(errorTarget, $"{label} 형식이 잘못됐습니다(요청을 보내지 않음): {exception.Message}");
                 return false;
             }
         }
@@ -505,11 +583,23 @@ namespace Popup
             {
                 ServerStateText.Text = "연결 미적용 · 수동 모드(자동 폴링 OFF)";
                 ApiConnectionSummaryText.Text = "연결 미적용 · 아래 설정을 입력하고 '연결 적용' 또는 '팝업 조회'를 누르세요.";
+                RenderApiSteps();
                 return;
             }
             string token = _apiAuth?.UsesLogin == true ? (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)") : string.Empty;
             // POL-14-02 : Demo 모드 — 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
-            string devUser = ApiDevUserIdText.Text.Trim();
+            string devUser = SelectedAuthMode == "CREDENTIAL" ? string.Empty : ApiDevUserIdText.Text.Trim();
+            if (_apiAuth?.UsesLogin == true)
+            {
+                if (_apiAuth.HasAuthorization) { _apiStepStates["로그인"] = '✓'; _apiStepStates["인증 준비"] = '✓'; }
+                else _apiStepStates["인증 준비"] = '○';
+            }
+            else if (_apiAuth != null)
+            {
+                _apiStepStates["로그인"] = '-';
+                _apiStepStates["인증 준비"] = _apiAuth.HasAuthorization ? '✓' : '-';
+            }
+            RenderApiSteps();
             ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"
                 + (devUser.Length == 0 ? string.Empty : $" · X-Dev-User-Id {devUser}")
                 + $"\n미전송 {Describe(_apiQueue.CountPending())}";

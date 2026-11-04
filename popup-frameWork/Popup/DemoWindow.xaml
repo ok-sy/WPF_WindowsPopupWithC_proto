@@ -118,15 +118,31 @@
                             </Border>
                             <Expander x:Name="ApiConnectionExpander" Header="연결·인증 설정" IsExpanded="True" Margin="0,0,0,10">
                                 <StackPanel Margin="0,8,0,0">
+                                <!-- POL-14-02 : Demo 모드 — 연결 → 인증 순서로 묶는다. 인증 방식에 필요한 입력만 보여 준다. -->
+                                <TextBlock Text="1. 연결" FontWeight="SemiBold" Margin="0,0,0,6"/>
                                 <TextBlock Text="Base URL" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="ApiBaseUrlText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
                                          ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)"/>
+                                <TextBlock Text="2. 인증" FontWeight="SemiBold" Margin="0,4,0,6"/>
                                 <TextBlock Text="인증 방식" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="ApiAuthModeCombo" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="ApiAuthModeCombo_SelectionChanged">
                                     <ComboBoxItem Content="로그인 API 호출 후 토큰 사용" Tag="LOGIN"/>
                                     <ComboBoxItem Content="토큰 직접 입력" Tag="TOKEN"/>
                                     <ComboBoxItem Content="인증 헤더 없음" Tag="NONE"/>
+                                    <ComboBoxItem Content="ID/비밀번호 로그인 (SSO 미사용)" Tag="CREDENTIAL"/>
                                 </ComboBox>
+                                <StackPanel x:Name="ApiCredentialPanel" Visibility="Collapsed">
+                                    <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
+                                    <TextBox x:Name="ApiCredentialPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
+                                    <TextBlock Text="아이디" Style="{StaticResource Label}"/>
+                                    <TextBox x:Name="ApiCredentialIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
+                                             KeyDown="ApiCredentialInput_KeyDown"/>
+                                    <TextBlock Text="비밀번호" Style="{StaticResource Label}"/>
+                                    <PasswordBox x:Name="ApiCredentialPasswordBox" MinHeight="30" Padding="6,4" Margin="0,0,0,4" VerticalContentAlignment="Center"
+                                                 KeyDown="ApiCredentialInput_KeyDown"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="관리자 웹과 같은 일반 로그인입니다. 비밀번호는 저장·로그에 남기지 않습니다. 팝업 API가 이 토큰을 받으려면 서버의 custom.wpf-auth-prototype.enabled와 custom.wpf-popup.dev-user-header가 false여야 합니다."/>
+                                </StackPanel>
                                 <StackPanel x:Name="ApiLoginPanel">
                                     <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
                                     <TextBox x:Name="ApiLoginPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
@@ -140,18 +156,25 @@
                                                  ToolTip="토큰만 넣으면 'Bearer '를 붙입니다. 'Bearer xxx'처럼 스킴까지 넣어도 됩니다."/>
                                     <TextBlock Text="토큰만 넣으면 'Bearer '를 붙입니다. 401이어도 재로그인하지 않습니다." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
                                 </StackPanel>
+                                <StackPanel x:Name="ApiDevUserPanel">
                                 <TextBlock Text="X-Dev-User-Id (선택)" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="ApiDevUserIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
                                          ToolTip="서버 dev-user-header 프로파일 전용. 비우면 헤더를 보내지 않습니다."/>
+                                </StackPanel>
+                                <TextBlock x:Name="ApiInputErrorText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,8"
+                                           AutomationProperties.LiveSetting="Assertive"/>
                                 <Button x:Name="ApiApplyButton" Content="연결 적용" Click="ApiApplyButton_Click"
                                         ToolTip="입력한 Base URL·인증·사용자로 API 서비스와 결과 큐를 만듭니다. 조회·로그인 때도 바뀐 값이 있으면 자동 적용합니다."/>
                                 <Button x:Name="ApiLoginButton" Content="로그인" Click="ApiLoginButton_Click"
-                                        ToolTip="로그인 요청 JSON으로 로그인 API를 지금 호출하고 토큰을 교체합니다."/>
+                                        ToolTip="입력한 인증 정보로 로그인 API를 지금 호출하고 토큰을 교체합니다."/>
                                 </StackPanel>
                             </Expander>
-                            <TextBlock Text="단건 조회 요청 JSON" Style="{StaticResource Label}" Margin="0,8,0,6"/>
+                            <TextBlock Text="3. 팝업 조회" FontWeight="SemiBold" Margin="0,4,0,6"/>
+                            <TextBlock Text="단건 조회 요청 JSON" Style="{StaticResource Label}" Margin="0,0,0,6"/>
                             <TextBox x:Name="ApiQueryBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" Text="{}{}"/>
+                            <TextBlock x:Name="ApiQueryErrorText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-4,0,8"
+                                       AutomationProperties.LiveSetting="Assertive"/>
                             <CheckBox x:Name="ApiRevealSecretsCheck" Content="토큰 평문 표시 (화면만)" Margin="0,4,0,12"
                                       Checked="ApiRevealSecretsCheck_Changed" Unchecked="ApiRevealSecretsCheck_Changed"/>
                             <TextBlock Style="{StaticResource Hint}"
@@ -176,6 +199,8 @@
                             </Grid>
                         </StackPanel>
                         <StackPanel x:Name="ApiActionBar" Visibility="Collapsed">
+                            <TextBlock x:Name="ApiStepText" TextWrapping="Wrap" Foreground="#374151" FontSize="12" Margin="0,0,0,8"
+                                       AutomationProperties.LiveSetting="Polite"/>
                             <Button x:Name="ApiQueryButton" Content="팝업 조회 (POST /api/wpf/popups)" Style="{StaticResource PrimaryButton}" Click="ApiQueryButton_Click"/>
                             <Button x:Name="ApiFlushButton" Content="미전송 결과 재전송" Click="ApiFlushButton_Click"
                                     ToolTip="보관 중인 결과를 같은 resultId·본문으로 다시 보냅니다."/>

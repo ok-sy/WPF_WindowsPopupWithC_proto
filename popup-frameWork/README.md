@@ -1016,7 +1016,7 @@ popupSample.exe -Demo -Api
 
 - 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
-- 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 / 인증 헤더 없음 — 초기 선택은 `Auth.Mode`),
+- 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 / 인증 헤더 없음 / ID/비밀번호 로그인 — 초기 선택은 `Auth.Mode`),
   `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/ssoLogin` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
   `X-Dev-User-Id`(선택, 서버 dev-user-header 전용), `단건 조회 요청 JSON`(기본 `{}`).
 - 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
@@ -1033,7 +1033,10 @@ popupSample.exe -Demo -Api
   연결을 바꾸면 이전 연결의 미전송 결과는 버린다(미전송이 있으면 변경 전 확인). 다른 연결이나 일반 실행의 결과 큐로 보내지 않는다.
 - 트레이 `팝업 다시 조회`는 API Demo에서 `팝업 조회`와 같은 실제 조회로 동작한다. 이 모드의 관리 화면(MainWindow)은 API 서비스·주기 조회를 만들지 않아 자동 조회 루프와 겹치지 않는다.
 - 인메모리 전용 조작(샘플 선택·옵션 설정·상태 초기화·전체 실행·SSO·로그인 테스트)은 API Demo에서 숨긴다.
-- 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움).
+- ID/비밀번호 로그인(SSO 미사용): 인증 방식에서 `ID/비밀번호 로그인`을 고르고 `로그인 경로`(기본 `/api/auth/login`)·`아이디`·`비밀번호`를 입력한다. 관리자 웹과 같은 일반 로그인이며 토큰은 응답 헤더 `x-custom-authorization`으로 받아 `Authorization: Bearer`로 보낸다. 성공 여부는 이 헤더로 판단한다(일반 로그인은 실패도 HTTP 200). 비밀번호는 기본값이 없고 파일·로그·HTTP 상세에 남지 않는다.
+  - 서버 조건: `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`(아니면 팝업 API가 401). 계정은 `APP_USER`에 활성 사번으로 있어야 한다(아니면 403 `WPF_USER_INACTIVE`).
+- 진행 표시: 조회 버튼 위에 `연결 → 로그인 → 인증 준비 → 팝업 조회 → 표시 → 결과 전송` 상태와 최근 HTTP 상태·소요 시간을 보여 준다. 입력 오류는 입력란 아래에 표시하고 요청을 보내지 않는다.
+- 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움). 실제 서버까지 확인하려면 `POPUP_DEMO_REAL_BASE_URL`·`POPUP_DEMO_REAL_ID`·`POPUP_DEMO_REAL_PASSWORD`를 설정한다(실제 전달·결과 데이터가 생긴다).
 
 ### 폐쇄망 Demo 미디어
 

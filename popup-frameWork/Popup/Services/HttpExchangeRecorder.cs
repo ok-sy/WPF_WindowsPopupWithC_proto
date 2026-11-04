@@ -40,6 +40,8 @@ namespace Popup.Services
         /* 마스킹 대상. 헤더는 이름, 본문은 JSON 속성 이름(대소문자 무시)으로 찾는다. */
         private static readonly HashSet<string> SecretHeaders = new(StringComparer.OrdinalIgnoreCase) { "Authorization" };
         private static readonly HashSet<string> SecretProperties = new(StringComparer.OrdinalIgnoreCase) { "accessToken", "refreshToken" };
+        /* 비밀번호는 표시 옵션과 관계없이 기록하지 않는다. 기록을 만들 때 값을 지워 메모리에도 남기지 않는다. */
+        private static readonly HashSet<string> PasswordProperties = new(StringComparer.OrdinalIgnoreCase) { "passwd", "password", "pswd" };
 
         /// <summary>목록 한 줄 요약. 예: "POST /api/wpf/popups → 200 (35 ms)"</summary>
         public string Summary(string baseUrl)
@@ -85,6 +87,35 @@ namespace Popup.Services
             if (statusCode == null) return "NO_RESPONSE";
             if (string.IsNullOrWhiteSpace(body)) return "EMPTY";
             return TryParse(body, out _) ? "JSON" : "INVALID_JSON";
+        }
+
+        /// <summary>요청 본문의 비밀번호 속성 값을 지운다. JSON 객체가 아니거나 비밀번호 속성이 없으면 그대로 돌려준다.</summary>
+        internal static string? RedactPasswords(string? body)
+        {
+            if (string.IsNullOrEmpty(body) || !TryParse(body, out JsonNode? node) || !RedactNode(node)) return body;
+            return node!.ToJsonString(DisplayJsonOptions);
+        }
+
+        private static bool RedactNode(JsonNode? node)
+        {
+            bool changed = false;
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (string name in obj.Select(p => p.Key).ToList())
+                    {
+                        if (PasswordProperties.Contains(name)) { obj[name] = "******** (기록 안 함)"; changed = true; }
+                        else if (RedactNode(obj[name])) changed = true;
+                    }
+                    break;
+                case JsonArray array:
+                    foreach (JsonNode? item in array)
+                    {
+                        if (RedactNode(item)) changed = true;
+                    }
+                    break;
+            }
+            return changed;
         }
 
         internal static string MaskAuthorization(string value)
@@ -157,7 +188,8 @@ namespace Popup.Services
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             DateTimeOffset startedAt = DateTimeOffset.Now;
-            string? requestBody = request.Content == null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            string? requestBody = request.Content == null ? null
+                : HttpExchangeRecord.RedactPasswords(await request.Content.ReadAsStringAsync(cancellationToken));
             List<KeyValuePair<string, string>> headers = request.Headers
                 .Concat(request.Content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>())
                 .Select(h => new KeyValuePair<string, string>(h.Key, string.Join(", ", h.Value)))

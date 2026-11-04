@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 using Popup;
 using Popup.Dtos;
@@ -53,6 +54,7 @@ internal static class Program
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
         CheckLaunchArguments();
         CheckRecordMasking();
+        CheckCredentialFailureText();
         CheckConnectionKey();
         CheckLoginRequestKey();
         CheckHttpCategory54();
@@ -60,6 +62,8 @@ internal static class Program
         CheckDemoOptions54();
         using MockServer server = new();
         CheckApiDemoFlow(server);
+        CheckCredentialFlow(server);
+        CheckCredentialRealServer();
         Console.WriteLine($"PASS: {_checks} API demo checks (design 51, TODO54)");
     }
 
@@ -212,6 +216,192 @@ internal static class Program
         // 복사본 편집: 원본 DTO는 그대로
         Check(sample.SizeMode == "RATIO" && !sample.ShowDoNotShowAgain, "[54-5] editing never touches the original sample");
         editor.Close();
+    }
+
+    private static string Describe(string? body) => (string)typeof(DemoCredentialLoginClient).GetMethod("DescribeFailure", Flags)!.Invoke(null, new object?[] { body })!;
+    private static string? Redact(string? body) => (string?)typeof(HttpExchangeRecord).GetMethod("RedactPasswords", Flags)!.Invoke(null, new object?[] { body });
+
+    private static void CheckCredentialFailureText()
+    {
+        string business = Describe("{\"msgId\":\"FW00000009\",\"msgCn\":\"불일치\"}");
+        Check(business.Contains("FW00000009") && business.Contains("계정 권한"), "[R-08] business failure with HTTP 200 shows the server message");
+        Check(Describe("").Contains("빈 응답"), "[R-08] empty login response is identified");
+        Check(Describe("{\"a\":1}").Contains("형식 불일치"), "[R-08] unexpected login response shape is identified");
+        Check(Describe("<html>").Contains("JSON이 아닌"), "[R-08] non-JSON login response is identified");
+        string? redacted = Redact("{\"lgonId\":\"u\",\"passwd\":\"PW-SECRET\"}");
+        Check(redacted != null && !redacted.Contains("PW-SECRET") && redacted.Contains("\"lgonId\""), "[U-04] recorder removes the password from the request body");
+        Check(Redact("{\"a\":1}") == "{\"a\":1}", "[U-04] body without a password stays unchanged");
+    }
+
+    /* ID/비밀번호 로그인(SSO 미사용) → 조회 → 표시 → 결과 → 수동 다음 조회. 입력·오류·마스킹·연결 변경을 함께 본다. */
+    private static void CheckCredentialFlow(MockServer server)
+    {
+        const string Password = "PW-SECRET-1";
+        server.PopupMode = "TEXT";
+        server.ResultMode = "ACCEPTED";
+        server.CredentialPassword = Password;
+        server.CredentialMode = "OK";
+        int popupRequestsBefore = server.PopupRequests.Count;
+        int resultsBefore = server.ResultBodies.Count;
+        PopupClientSettings settings = new()
+        {
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/wpf/auth/login"
+        };
+        DemoWindow window = new(settings);
+        window.Show();
+        ComboBox mode = (ComboBox)window.FindName("ApiAuthModeCombo");
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "CREDENTIAL");
+        Pump(() => true);
+        TextBox id = (TextBox)window.FindName("ApiCredentialIdText");
+        PasswordBox password = (PasswordBox)window.FindName("ApiCredentialPasswordBox");
+        TextBlock error = (TextBlock)window.FindName("ApiInputErrorText");
+        TextBlock steps = (TextBlock)window.FindName("ApiStepText");
+        bool Shown(string name) => ((FrameworkElement)window.FindName(name)).Visibility == Visibility.Visible;
+        Check(Shown("ApiCredentialPanel") && !Shown("ApiLoginPanel") && !Shown("ApiTokenPanel") && !Shown("ApiDevUserPanel"), "[U-02] credential mode shows only its inputs");
+        Check(password.Password.Length == 0 && ((TextBox)window.FindName("ApiCredentialPathText")).Text == "/api/auth/login", "[U-03] password is not prefilled and the path has a default");
+
+        // 입력 검증은 요청 없이 입력란 근처에 표시한다.
+        int loginsBefore = server.CredentialBodies.Count;
+        ClickLogin(window);
+        Check(error.Visibility == Visibility.Visible && error.Text.Contains("아이디") && server.CredentialBodies.Count == loginsBefore, "[U-05] empty id is rejected before any request");
+        id.Text = "master";
+        ClickLogin(window);
+        Check(error.Text.Contains("비밀번호") && server.CredentialBodies.Count == loginsBefore, "[U-05] empty password is rejected before any request");
+        ((TextBox)window.FindName("ApiCredentialPathText")).Text = "api/auth/login";
+        password.Password = "wrong-password";
+        ClickLogin(window);
+        Check(error.Text.Contains("로그인 경로"), "[U-05] invalid login path is rejected");
+        ((TextBox)window.FindName("ApiCredentialPathText")).Text = "/api/auth/login";
+
+        // 잘못된 비밀번호: HTTP 200이어도 실패로 구분하고 입력을 펼친다.
+        ClickLogin(window);
+        Pump(() => server.CredentialBodies.Count == loginsBefore + 1 && !IsBusy(window));
+        Pump(() => false, 100);
+        Check(error.Visibility == Visibility.Collapsed && Logs(window).Any(l => l.Contains("로그인 실패") && l.Contains("FW00000009")), "[R-08] wrong password shows a login failure, not success");
+        Check(((Expander)window.FindName("ApiConnectionExpander")).IsExpanded && steps.Text.Contains("✕ 로그인"), "[U-06] failed login is marked and its inputs stay open");
+        // HTTP 오류·토큰 없는 응답
+        server.CredentialMode = "500";
+        ClickLogin(window);
+        Pump(() => server.CredentialBodies.Count == loginsBefore + 2 && !IsBusy(window));
+        Pump(() => false, 100);
+        Check(Logs(window).Any(l => l.Contains("HTTP 오류 500")), "[R-08] login HTTP 500 is identified");
+        server.CredentialMode = "NO_TOKEN";
+        password.Password = Password;
+        ClickLogin(window);
+        Pump(() => server.CredentialBodies.Count == loginsBefore + 3 && !IsBusy(window));
+        Pump(() => false, 100);
+        Check(Logs(window).Any(l => l.Contains("토큰이 없습니다")), "[R-08] missing token header is identified");
+
+        // 정상 로그인(Enter)
+        server.CredentialMode = "OK";
+        password.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(password)!, 0, Key.Enter) { RoutedEvent = Keyboard.KeyDownEvent });
+        Pump(() => server.CredentialBodies.Count == loginsBefore + 4 && !IsBusy(window));
+        Pump(() => false, 100);
+        Check(server.CredentialBodies[^1].Contains("\"lgonId\":\"master\"") && server.CredentialBodies[^1].Contains(Password), "[R-02] login posts lgonId and passwd");
+        Check(Logs(window).Any(l => l.Contains("[로그인] 성공")) && !((Expander)window.FindName("ApiConnectionExpander")).IsExpanded, "[U-07] Enter logs in and collapses the settings");
+        Check(steps.Text.Contains("✓ 연결") && steps.Text.Contains("✓ 로그인") && steps.Text.Contains("✓ 인증 준비") && steps.Text.Contains("최근 HTTP 200"), "[U-06] steps show login success and the last HTTP status: " + steps.Text);
+
+        // 조회 → 표시 → 결과 → 다음 조회는 수동
+        Query(window);
+        var request = server.PopupRequests[^1];
+        Check(request.Authorization == "Bearer " + server.ValidToken && string.IsNullOrEmpty(request.DevUserId), "[R-03] query sends the login token and no dev user header");
+        Check(OpenPopups(window).Count == 1 && steps.Text.Contains("✓ 팝업 조회") && steps.Text.Contains("✓ 표시"), "[R-05] popup is shown and the steps follow: " + steps.Text);
+        CloseShownPopup(window);
+        Pump(() => server.ResultBodies.Count == resultsBefore + 1 && !IsBusy(window));
+        Pump(() => ((TextBlock)window.FindName("ApiStepText")).Text.Contains("✓ 결과 전송"));
+        Check(steps.Text.Contains("✓ 결과 전송") && server.PopupRequests.Count == popupRequestsBefore + 1, "[R-07] AVAILABLE does not trigger an automatic next query");
+        server.PopupMode = "NULL";
+        Query(window);
+        Check(server.PopupRequests.Count == popupRequestsBefore + 2 && Logs(window).Any(l => l.Contains("popup=null")) && steps.Text.Contains("- 표시"), "[R-04] popup=null is a normal result");
+
+        // 401 → 같은 ID/비밀번호로 1회 재로그인 후 재시도
+        int loginsBeforeRetry = server.CredentialBodies.Count;
+        server.InvalidateToken();
+        Query(window);
+        Check(server.CredentialBodies.Count == loginsBeforeRetry + 1 && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-09] 401 logs in once and retries");
+
+        // 비밀번호·토큰 비노출(토큰 표시 옵션을 켜도 비밀번호는 없음)
+        ((CheckBox)window.FindName("ApiRevealSecretsCheck")).IsChecked = true;
+        Dictionary<int, HttpExchangeRecord> details = (Dictionary<int, HttpExchangeRecord>)typeof(DemoWindow).GetField("_httpDetails", Flags)!.GetValue(window)!;
+        Check(details.Values.Any(r => r.Url.EndsWith("/api/auth/login")), "[R-11] login exchange is recorded");
+        Check(details.Values.All(r => !r.ToDisplayJson(true).Request.Contains(Password) && !r.ToDisplayJson(true).Response.Contains(Password)), "[U-04] password never appears in HTTP details, even with reveal on");
+        Check(Logs(window).All(l => !l.Contains(Password)) && Logs(window).All(l => !l.Contains(server.ValidToken!)), "[U-04] logs contain neither the password nor the token");
+        Check(!((TextBlock)window.FindName("ApiConnectionSummaryText")).Text.Contains(Password), "[U-04] connection summary does not expose the password");
+        ((CheckBox)window.FindName("ApiRevealSecretsCheck")).IsChecked = false;
+
+        // 연결 변경: 이전 인증 초기화(재로그인), 새 큐
+        object? queue = typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window);
+        int loginsBeforeChange = server.CredentialBodies.Count;
+        id.Text = "other-user";
+        Query(window);
+        Check(server.CredentialBodies.Count == loginsBeforeChange + 1 && server.CredentialBodies[^1].Contains("other-user"), "[U-08] changing the account logs in again");
+        Check(!ReferenceEquals(queue, typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)), "[U-08] changing the account replaces the result queue");
+
+        // 기존 방식 보존: 토큰 직접 입력은 비밀번호·로그인 없이 동작
+        int loginsBeforeToken = server.CredentialBodies.Count;
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "TOKEN");
+        Pump(() => true);
+        Check(!Shown("ApiCredentialPanel") && Shown("ApiTokenPanel") && Shown("ApiDevUserPanel"), "[R-10] token mode keeps its existing inputs");
+        ((PasswordBox)window.FindName("ApiTokenBox")).Password = server.ValidToken!;
+        Query(window);
+        Check(server.CredentialBodies.Count == loginsBeforeToken && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-10] token mode does not call the credential login");
+        window.Close();
+    }
+
+    /*
+     * 실제 서버 회귀(R-01~07). POPUP_DEMO_REAL_BASE_URL·ID·PASSWORD 환경변수가 있을 때만 실행한다. 비밀번호를 저장소에 두지 않는다.
+     * 실제 DB의 전달·결과가 바뀌므로 대상 환경과 계정을 확인하고 실행한다.
+     */
+    private static void CheckCredentialRealServer()
+    {
+        string? baseUrl = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_BASE_URL");
+        string? logonId = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_ID");
+        string? password = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_PASSWORD");
+        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(logonId) || string.IsNullOrEmpty(password))
+        {
+            Console.WriteLine("SKIP: real server credential check (POPUP_DEMO_REAL_* not set)");
+            return;
+        }
+        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = baseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/wpf/auth/login" });
+        window.Show();
+        ComboBox mode = (ComboBox)window.FindName("ApiAuthModeCombo");
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "CREDENTIAL");
+        ((TextBox)window.FindName("ApiCredentialIdText")).Text = logonId;
+        ((PasswordBox)window.FindName("ApiCredentialPasswordBox")).Password = password;
+        TextBlock steps = (TextBlock)window.FindName("ApiStepText");
+        ClickLogin(window);
+        Pump(() => !IsBusy(window) && Logs(window).Any(l => l.Contains("[로그인] 성공") || l.Contains("[오류]")), 20000);
+        Check(Logs(window).Any(l => l.Contains("[로그인] 성공")), "[R-02] real login succeeds: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
+        Query(window);
+        Check(steps.Text.Contains("✓ 팝업 조회"), "[R-04] real query succeeds: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
+        if (OpenPopups(window).Count == 0)
+        {
+            Check(Logs(window).Any(l => l.Contains("popup=null")), "[R-04] real server returned popup=null");
+            Console.WriteLine("REAL: popup=null");
+        }
+        else
+        {
+            Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("deliveryId=")));
+            CloseShownPopup(window);
+            Pump(() => !IsBusy(window) && steps.Text.Contains("✓ 결과 전송"), 20000);
+            Check(steps.Text.Contains("✓ 결과 전송"), "[R-06] real result is accepted: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
+            Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("nextStatus")));
+            Check(OpenPopups(window).Count == 0, "[R-07] real result does not open the next popup automatically");
+            Query(window);
+            Console.WriteLine("REAL next: " + Logs(window).Last(l => l.Contains("[조회]")));
+            if (OpenPopups(window).Count > 0) CloseShownPopup(window);
+            Pump(() => !IsBusy(window), 20000);
+        }
+        Check(Logs(window).All(l => !l.Contains(password)), "[U-04] real run logs do not contain the password");
+        window.Close();
+    }
+
+    private static bool IsBusy(DemoWindow window) => (bool)typeof(DemoWindow).GetProperty("IsApiBusy", Flags)!.GetValue(window)!;
+
+    private static void ClickLogin(DemoWindow window)
+    {
+        ((Button)window.FindName("ApiLoginButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump(() => true);
     }
 
     private static void CheckApiDemoFlow(MockServer server)
@@ -406,6 +596,10 @@ internal static class Program
         public List<string> ResultBodies { get; } = new();
         public volatile string PopupMode = "TEXT";
         public volatile string ResultMode = "ACCEPTED";
+        public volatile string CredentialMode = "OK";
+        public volatile string CredentialPassword = string.Empty;
+        public List<string> CredentialBodies { get; } = new();
+        public string? ValidToken { get { lock (_lock) return _validToken; } }
 
         public void InvalidateToken()
         {
@@ -441,6 +635,25 @@ internal static class Program
                         {
                             accessToken = _validToken, tokenType = "Bearer", expiresAt = DateTimeOffset.Now.AddMinutes(10)
                         }));
+                    }
+                    return;
+                case "/p/api/auth/login":
+                    lock (_lock) CredentialBodies.Add(body);
+                    if (CredentialMode == "500") { Write(context, 500, "{}"); return; }
+                    using (JsonDocument login = JsonDocument.Parse(body))
+                    {
+                        if (CredentialMode == "OK" && login.RootElement.GetProperty("passwd").GetString() == CredentialPassword)
+                        {
+                            lock (_lock)
+                            {
+                                _loginCount++;
+                                _validToken = $"cred-{_loginCount}";
+                                context.Response.Headers["x-custom-authorization"] = _validToken;
+                            }
+                            Write(context, 200, "{\"msgId\":\"BE00000006\"}");
+                        }
+                        else if (CredentialMode == "NO_TOKEN") Write(context, 200, "{}");
+                        else Write(context, 200, "{\"msgId\":\"FW00000009\",\"msgCn\":\"mismatch\"}");
                     }
                     return;
                 case "/p/api/wpf/popups":
