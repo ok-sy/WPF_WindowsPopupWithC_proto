@@ -128,21 +128,7 @@
                                 <ComboBox x:Name="ApiAuthModeCombo" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="ApiAuthModeCombo_SelectionChanged">
                                     <ComboBoxItem Content="로그인 API 호출 후 토큰 사용" Tag="LOGIN"/>
                                     <ComboBoxItem Content="토큰 직접 입력" Tag="TOKEN"/>
-                                    <ComboBoxItem Content="인증 헤더 없음" Tag="NONE"/>
-                                    <ComboBoxItem Content="ID/비밀번호 로그인 (SSO 미사용)" Tag="CREDENTIAL"/>
                                 </ComboBox>
-                                <StackPanel x:Name="ApiCredentialPanel" Visibility="Collapsed">
-                                    <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
-                                    <TextBox x:Name="ApiCredentialPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
-                                    <TextBlock Text="아이디" Style="{StaticResource Label}"/>
-                                    <TextBox x:Name="ApiCredentialIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                             KeyDown="ApiCredentialInput_KeyDown"/>
-                                    <TextBlock Text="비밀번호" Style="{StaticResource Label}"/>
-                                    <PasswordBox x:Name="ApiCredentialPasswordBox" MinHeight="30" Padding="6,4" Margin="0,0,0,4" VerticalContentAlignment="Center"
-                                                 KeyDown="ApiCredentialInput_KeyDown"/>
-                                    <TextBlock Style="{StaticResource Hint}"
-                                               Text="관리자 웹과 같은 일반 로그인입니다. 비밀번호는 저장·로그에 남기지 않습니다. 팝업 API가 이 토큰을 받으려면 서버의 custom.wpf-auth-prototype.enabled와 custom.wpf-popup.dev-user-header가 false여야 합니다."/>
-                                </StackPanel>
                                 <StackPanel x:Name="ApiLoginPanel">
                                     <TextBlock Text="로그인 경로" Style="{StaticResource Label}"/>
                                     <TextBox x:Name="ApiLoginPathText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"/>
@@ -165,11 +151,15 @@
                                 </StackPanel>
                             </Expander>
                             <TextBlock Text="3. 팝업 조회" FontWeight="SemiBold" Margin="0,4,0,6"/>
-                            <TextBlock Text="단건 조회 요청 JSON" Style="{StaticResource Label}" Margin="0,0,0,6"/>
+                            <!-- POL-14-02 : Demo 모드 — 기본 요청은 빈 객체라 접어 둔다. 입력 오류가 나면 펼친다. -->
+                            <Expander x:Name="ApiQueryExpander" Header="단건 조회 요청 JSON (기본: 빈 객체)" IsExpanded="False" Margin="0,0,0,10">
+                            <StackPanel Margin="0,8,0,0">
                             <TextBox x:Name="ApiQueryBodyText" FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,10"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" Text="{}{}"/>
                             <TextBlock x:Name="ApiQueryErrorText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-4,0,8"
                                        AutomationProperties.LiveSetting="Assertive"/>
+                            </StackPanel>
+                            </Expander>
                             <CheckBox x:Name="ApiRevealSecretsCheck" Content="토큰 평문 표시 (화면만)" Margin="0,4,0,12"
                                       Checked="ApiRevealSecretsCheck_Changed" Unchecked="ApiRevealSecretsCheck_Changed"/>
                             <TextBlock Style="{StaticResource Hint}"

@@ -10,7 +10,7 @@ namespace Popup.Services.Auth
      * POL-14-02 : Demo 모드
      * POL-15-02 : 인증·버전
      * ■ API Demo 인증 헤더 공급자
-     * - in : ForToken(token) 직접 입력 토큰 · ForLogin(loginClient, loginBody) 로그인 요청 JSON · ForCredential(client, id, password) ID/비밀번호
+     * - in : ForToken(token) 직접 입력 토큰 · ForLogin(loginClient, loginBody) 로그인 요청 JSON
      * - out: Authorization 헤더 값 · LastLogin(마지막 로그인 응답) · 로그인 실패 예외는 그대로 전파
      * - API Demo 전용 인증 헤더 공급자. 두 경로를 구분한다.
      *   - 토큰 직접 입력: 입력한 값을 Authorization 헤더로 보낸다(스킴이 없으면 "Bearer "를 붙임). 401이어도 새 토큰을 만들 수 없어
@@ -18,8 +18,6 @@ namespace Popup.Services.Auth
      *   - 로그인 후 토큰 사용: 입력한 로그인 요청 JSON으로 로그인 API를 호출해 받은 토큰을 메모리에만 보관한다.
      *     토큰이 없으면 첫 요청 직전에 로그인하고, 401이면 SsoAuthHeaderProvider와 같이 "401을 받은 토큰이 아직 현재 토큰일 때만"
      *     같은 로그인 본문으로 1회 재로그인한다. SSO 호출은 하지 않는다(로그인 본문을 직접 입력).
-     *   - ID/비밀번호 로그인: 일반 로그인 API로 받은 토큰을 메모리에만 보관한다. 재로그인 규칙은 로그인 경로와 같다.
-     *     비밀번호는 재로그인을 위해 이 인스턴스에만 두고, 연결을 바꾸면 인스턴스와 함께 버린다.
      * Demo는 실패 단계를 보여 주는 도구이므로 로그인 실패를 삼키지 않고 호출자에게 그대로 전파한다.
      * 토큰은 파일·로그에 남기지 않는다.
      */
@@ -51,9 +49,6 @@ namespace Popup.Services.Auth
             return new(null, cancellationToken => loginClient.LoginAsync(body, cancellationToken));
         }
 
-        /// <summary>ID/비밀번호로 일반 로그인 API를 호출해 토큰을 얻는다.</summary>
-        public static DemoApiAuthHeaderProvider ForCredential(WpfLoginClient loginClient, string logonId, string password)
-            => ForLogin(loginClient, JsonSerializer.SerializeToElement(new { lgonId = logonId, passwd = password }));
 
         public bool UsesLogin => _login != null;
 

@@ -57,8 +57,6 @@ namespace Popup.Services.Auth
     {
         /// <summary>토큰을 담는 응답 헤더(서버 custom.auth-header.user-refresh-token-header).</summary>
         public const string TokenHeaderName = "x-custom-authorization";
-        /// <summary>BaseUrl(…/p) 기준 일반 로그인 경로. API Demo ID/비밀번호 방식의 기본값.</summary>
-        public const string CredentialLoginPath = "/api/auth/login";
         private const string BearerPrefix = "Bearer ";
 
         private static readonly HttpClient HttpClient = new()

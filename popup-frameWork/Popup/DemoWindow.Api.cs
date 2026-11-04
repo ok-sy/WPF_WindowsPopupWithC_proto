@@ -88,7 +88,6 @@ namespace Popup
 
             ApiBaseUrlText.Text = settings.BaseUrl;
             ApiLoginPathText.Text = settings.AuthLoginPath;
-            ApiCredentialPathText.Text = WpfLoginClient.CredentialLoginPath;   // 비밀번호는 기본값을 두지 않는다.
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
             switch (settings.AuthMode.Trim().ToUpperInvariant())
@@ -101,7 +100,7 @@ namespace Popup
                     ApiAuthModeCombo.SelectedIndex = 0;
                     break;
                 default:
-                    ApiAuthModeCombo.SelectedIndex = 2;
+                    ApiAuthModeCombo.SelectedIndex = 0;
                     break;
             }
             ApplyAuthModeVisibility();
@@ -109,7 +108,7 @@ namespace Popup
             UpdateApiState();
         }
 
-        private string SelectedAuthMode => (ApiAuthModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "NONE";
+        private string SelectedAuthMode => (ApiAuthModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "LOGIN";
 
         private void ApiAuthModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyAuthModeVisibility();
 
@@ -118,8 +117,7 @@ namespace Popup
             if (ApiLoginPanel == null || ApiTokenPanel == null || ApiLoginButton == null) return;   // XAML 로드 중
             ApiLoginPanel.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
             ApiTokenPanel.Visibility = SelectedAuthMode == "TOKEN" ? Visibility.Visible : Visibility.Collapsed;
-            ApiCredentialPanel.Visibility = SelectedAuthMode == "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
-            ApiLoginButton.Visibility = SelectedAuthMode is "LOGIN" or "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
+            ApiLoginButton.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void ApiRevealSecretsCheck_Changed(object sender, RoutedEventArgs e) => ResultLogList_SelectionChanged(sender, null!);
@@ -128,13 +126,6 @@ namespace Popup
             => await RunApiAsync(() => Task.FromResult(EnsureApiConnection(forceLog: true)));
 
         private async void ApiQueryButton_Click(object sender, RoutedEventArgs e) => await QueryApiAsync();
-
-        private void ApiCredentialInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key != System.Windows.Input.Key.Enter) return;
-            e.Handled = true;
-            if (ApiLoginButton.IsEnabled) ApiLoginButton_Click(sender, e);
-        }
 
         private async void ApiLoginButton_Click(object sender, RoutedEventArgs e)
         {
@@ -183,7 +174,11 @@ namespace Popup
                     "API Demo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (!TryParseJsonObject(ApiQueryBodyText.Text, "단건 조회 요청 JSON", ApiQueryErrorText, out JsonElement body)) return;
+            if (!TryParseJsonObject(ApiQueryBodyText.Text, "단건 조회 요청 JSON", ApiQueryErrorText, out JsonElement body))
+            {
+                ApiQueryExpander.IsExpanded = true;   // 접혀 있어도 오류 위치가 보이게 펼친다.
+                return;
+            }
 
             await RunApiAsync(async () =>
             {
@@ -312,9 +307,6 @@ namespace Popup
             }
             string mode = SelectedAuthMode;
             string loginPath = ApiLoginPathText.Text.Trim();
-            string credentialPath = ApiCredentialPathText.Text.Trim();
-            string credentialId = ApiCredentialIdText.Text.Trim();
-            string credentialPassword = ApiCredentialPasswordBox.Password;
             string identity;
             JsonElement loginBody = default;
             string? token = null;
@@ -324,19 +316,10 @@ namespace Popup
                     if (!TryParseJsonObject(ApiLoginBodyText.Text, "로그인 요청 JSON", ApiInputErrorText, out loginBody)) { ApiConnectionExpander.IsExpanded = true; SetApiStep("연결", '✕'); return false; }
                     identity = loginPath + "\n" + loginBody.GetRawText();
                     break;
-                case "TOKEN":
+                default:
                     token = DemoApiAuthHeaderProvider.NormalizeAuthorization(ApiTokenBox.Password);
                     if (token == null) return RejectConnectionInput("토큰 직접 입력 방식에는 Authorization 토큰이 필요합니다.", ApiTokenBox);
                     identity = token;
-                    break;
-                case "CREDENTIAL":
-                    if (!credentialPath.StartsWith('/')) return RejectConnectionInput("로그인 경로는 /로 시작해야 합니다. 예: " + WpfLoginClient.CredentialLoginPath, ApiCredentialPathText);
-                    if (credentialId.Length == 0) return RejectConnectionInput("아이디를 입력하세요.", ApiCredentialIdText);
-                    if (credentialPassword.Length == 0) return RejectConnectionInput("비밀번호를 입력하세요.", ApiCredentialPasswordBox);
-                    identity = credentialPath + "\n" + credentialId + "\n" + credentialPassword;   // 연결 키 해시에만 쓴다.
-                    break;
-                default:
-                    identity = string.Empty;
                     break;
             }
 
@@ -369,9 +352,7 @@ namespace Popup
                 auth = mode switch
                 {
                     "LOGIN" => DemoApiAuthHeaderProvider.ForLogin(new WpfLoginClient(baseUrl, loginPath, _apiHttpClient), loginBody),
-                    "TOKEN" => DemoApiAuthHeaderProvider.ForToken(token),
-                    "CREDENTIAL" => DemoApiAuthHeaderProvider.ForCredential(new WpfLoginClient(baseUrl, credentialPath, _apiHttpClient), credentialId, credentialPassword),
-                    _ => DemoApiAuthHeaderProvider.ForToken(null)
+                    _ => DemoApiAuthHeaderProvider.ForToken(token)
                 };
             }
             catch (ArgumentException exception)
@@ -383,7 +364,7 @@ namespace Popup
             _apiService = new PopupApiService(baseUrl, auth, null, _apiHttpClient);
             _apiQueue = new PopupResultQueue(_apiService);
             _apiConnectionKey = key;
-            _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", "CREDENTIAL" => $"ID/비밀번호 로그인({credentialId})", _ => "인증 헤더 없음" };
+            _apiAuthModeLabel = mode == "LOGIN" ? "로그인 토큰" : "토큰 직접 입력";
             _apiStepStates.Clear();
             _apiLastHttp = "-";
             SetApiStep("연결", '✓');
@@ -450,8 +431,7 @@ namespace Popup
                     $"클라이언트 버전 차단(426) — {version.UserMessage} 결과 전송을 멈췄습니다(항목 보관, 연결을 다시 적용하면 재개).",
                 WpfLoginFailedException failed => "로그인 실패 — " + failed.Message,
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } http =>
-                    $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}"
-                    + (SelectedAuthMode == "CREDENTIAL" ? " 서버의 custom.wpf-auth-prototype.enabled·custom.wpf-popup.dev-user-header가 false인지 확인하세요." : string.Empty),
+                    $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}",
                 HttpRequestException { StatusCode: HttpStatusCode.Forbidden } http when http.Message.Contains("WPF_USER_INACTIVE", StringComparison.Ordinal) =>
                     $"HTTP 오류 403: 로그인은 됐지만 이 계정이 활성 팝업 사용자가 아닙니다. {http.Message}",
                 HttpRequestException { StatusCode: { } status } http => $"HTTP 오류 {(int)status}: {http.Message}",

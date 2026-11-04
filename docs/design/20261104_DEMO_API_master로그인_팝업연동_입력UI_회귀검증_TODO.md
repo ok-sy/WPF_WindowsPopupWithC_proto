@@ -52,6 +52,8 @@ SSO 호출 없이 테스트 계정 `master`(비밀번호는 문서에 적지 않
 
 ## 5. 실행 결과 (2026-11-04)
 
+- 화면 정리(2026-11-04): 인증 방식을 `로그인 API 호출 후 토큰 사용`과 `토큰 직접 입력` 2가지로 줄였다. ID/비밀번호 전용 입력(PasswordBox·Enter 로그인)과 `인증 헤더 없음`을 삭제하고, 일반 로그인은 로그인 경로 `/api/auth/login`과 JSON `{lgonId, passwd}`로 호출한다. 그래서 U-02·U-03·U-04·U-07의 비밀번호 입력 항목은 이 결정으로 대체되며, JSON 칸의 비밀번호는 화면에 보이지만 HTTP 기록·로그에는 남지 않는다. 단건 조회 요청 JSON은 기본으로 접어 둔다.
+
 - 실행 조건: 서버 환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_ENABLED=false`, `CUSTOM_WPF_POPUP_DEV_USER_HEADER=false`. 계정은 로그인 권한 조회(`/apis/cloverframework/nav/items`)가 통과하고 `APP_USER`에 활성 행이 있어야 한다.
 - 로컬 XE에는 권한·`APP_USER` 데이터가 없어 임시 행과 임시 TEXT 팝업으로 검증하고 모두 지웠다. 로그인 시각·`CLOVER_USER_AUTH`·실패 횟수는 로컬 XE의 `master`에 남을 수 있다.
 - 실제 서버 회귀는 `POPUP_DEMO_REAL_BASE_URL`·`POPUP_DEMO_REAL_ID`·`POPUP_DEMO_REAL_PASSWORD`를 설정하고 `scripts/ApiDemoTests`를 실행한다. 비밀번호는 저장소에 두지 않는다.

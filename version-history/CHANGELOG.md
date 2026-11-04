@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-13 — dev: API Demo 인증 방식 2가지로 정리·조회 JSON 접기
+
+- 이유: 단건 조회 JSON은 기본이 빈 객체라 항상 펼칠 필요가 없고, 로그인 JSON 입력이 프로토타입·`ssoLogin`·일반 로그인을 모두 호출할 수 있어 인증 방식을 줄일 수 있음.
+- 변경: 인증 방식을 `로그인 API 호출 후 토큰 사용`과 `토큰 직접 입력`만 남김. `인증 헤더 없음`과 ID/비밀번호 전용 입력(비밀번호 칸·Enter 로그인)을 삭제. appsettings `Auth.Mode=None`이면 로그인 방식으로 시작. 단건 조회 JSON을 접기 영역에 넣고 입력 오류 시 펼침. HTTP 기록의 비밀번호 제거는 유지.
+- 주요 파일: popup-frameWork/Popup/(DemoWindow.xaml, DemoWindow.Api.cs, Services/Auth/DemoApiAuthHeaderProvider.cs, Services/Auth/WpfLoginClient.cs), popup-frameWork/README.md, scripts/ApiDemoTests/Program.cs, docs/design/20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md. 일반 실행의 `Auth.Mode`는 변경 없음.
+- 검증: WPF 빌드 오류 0. `ApiDemoTests` 114건 통과(인증 방식 2가지, 조회 JSON 접기·오류 시 펼침, JSON 일반 로그인 성공·실패, 비밀번호 기록 제외, 토큰 직접 입력). 임시 서버 + 원격 개발 DB에서 JSON으로 `master` 일반 로그인 → 조회 200(`popup=null`) 포함 118건 통과. `PopupWindowTests` 전체 476건 통과. 화면 육안 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-04-12 — dev: 테스트 계정 master APP_USER 영구 등록
 
 - 이유: `master`로 팝업 API를 호출하면 `APP_USER`에 없어 403 `WPF_USER_INACTIVE`로 끝나, 개발 환경에 활성 사용자로 상시 등록.
