@@ -55,6 +55,7 @@ SSO 호출 없이 테스트 계정 `master` / 비밀번호 `1111`로 로그인�
 - 실행 조건: 서버 환경변수 `CUSTOM_WPF_AUTH_PROTOTYPE_ENABLED=false`, `CUSTOM_WPF_POPUP_DEV_USER_HEADER=false`. 계정은 로그인 권한 조회(`/apis/cloverframework/nav/items`)가 통과하고 `APP_USER`에 활성 행이 있어야 한다.
 - 로컬 XE에는 권한·`APP_USER` 데이터가 없어 임시 행과 임시 TEXT 팝업으로 검증하고 모두 지웠다. 로그인 시각·`CLOVER_USER_AUTH`·실패 횟수는 로컬 XE의 `master`에 남을 수 있다.
 - 실제 서버 회귀는 `POPUP_DEMO_REAL_BASE_URL`·`POPUP_DEMO_REAL_ID`·`POPUP_DEMO_REAL_PASSWORD`를 설정하고 `scripts/ApiDemoTests`를 실행한다. 비밀번호는 저장소에 두지 않는다.
-- 남은 항목: 원격 개발 DB 회귀(VPN 연결 필요), TEXT 외 유형 렌더링, 타임아웃·연결 실패 수동 확인, 화면 육안 확인.
+- 원격 개발 DB(2026-11-04): 같은 서버 설정으로 실제 로그인 성공, 토큰이 팝업 API 인증을 통과했다. `master`가 원격 `APP_USER`에 없어 조회는 403 `WPF_USER_INACTIVE`로 끝나고, 화면에 원인을 구분해 표시했다. 현재 게시 기간인 활성 팝업도 없어 조회·표시·결과 저장은 미실행. 공용 데이터라 임의로 행을 넣지 않았다.
+- 남은 항목: 원격 개발 DB의 테스트 사용자·팝업 준비 후 조회~결과 회귀, TEXT 외 유형 렌더링, 타임아웃·연결 실패 수동 확인, 화면 육안 확인.
 
 참고: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`, `docs/design/10_WPF_SSO_토큰_프로토타입_계획.md`.

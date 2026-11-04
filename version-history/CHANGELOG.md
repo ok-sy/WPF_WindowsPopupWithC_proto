@@ -6,8 +6,8 @@
 - 조사: 일반 로그인 `POST /p/api/auth/login`은 토큰을 응답 헤더 `x-custom-authorization`으로 주고 실패도 HTTP 200으로 응답. 이 토큰은 `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`일 때 기존 `SecurityContextWpfUserResolver`로 팝업 API를 통과. 서버 코드·인증 정책은 변경하지 않음.
 - 변경: API Demo 인증 방식에 `ID/비밀번호 로그인` 추가(`DemoCredentialLoginClient`, `DemoApiAuthHeaderProvider.ForCredential`). 성공은 토큰 헤더로 판단하고 401이면 1회 재로그인. HTTP 기록에서 비밀번호를 수집 단계에 제거해 `토큰 평문 표시`와 무관하게 남지 않게 함. 입력을 연결·인증·조회로 묶고, 방식별 입력만 표시, 입력란 오류 표시, Enter 로그인, 단계별 상태와 최근 HTTP 상태 표시 추가. `ApiDemoTests`에 모의 서버 흐름과 환경변수로 켜는 실제 서버 회귀 추가.
 - 주요 파일: popup-frameWork/Popup/(DemoWindow.Api.cs, DemoWindow.xaml, Services/Auth/DemoCredentialLoginClient.cs, Services/Auth/DemoApiAuthHeaderProvider.cs, Services/HttpExchangeRecorder.cs, ../README.md), scripts/ApiDemoTests/Program.cs, docs/design/20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md. ALL·MINIMAL 명세는 API Demo를 다루지 않아 변경 없음.
-- 검증: WPF Release 빌드 경고·오류 0. `ApiDemoTests` 102건 통과(모의 서버). 로컬 Spring 서버 + 로컬 XE에서 실제 로그인 → TEXT 조회·표시 → 결과 저장(`nextStatus=EMPTY`) → 수동 재조회(`popup=null`) 포함 107건 통과, 미인증·잘못된 토큰 401과 미등록 사용자 403은 HTTP 호출로 확인. 임시 권한·사용자·팝업 행은 검증 후 삭제. PopupWindowTests 25개 검사 447건 통과. `CheckVideoQuizAspect60`은 주 모니터가 1280×720으로 바뀐 상태에서 실패해 제외.
-- 미실행: 원격 개발 DB 회귀(VPN 미연결, 접속 불가), TEXT 외 유형 실제 서버 렌더링, 신규 로그인 경로의 타임아웃·연결 실패, 화면 육안 확인. Popup.BehaviorTests·RecoveryTests와 폐쇄망 반영도 미실행.
+- 검증: WPF Release 빌드 경고·오류 0. `ApiDemoTests` 102건 통과(모의 서버). 로컬 Spring 서버 + 로컬 XE에서 실제 로그인 → TEXT 조회·표시 → 결과 저장(`nextStatus=EMPTY`) → 수동 재조회(`popup=null`) 포함 107건 통과, 미인증·잘못된 토큰 401과 미등록 사용자 403은 HTTP 호출로 확인. 임시 권한·사용자·팝업 행은 검증 후 삭제. PopupWindowTests는 주 모니터 복구 후 전체 476건 통과(1280×720 상태에서는 `CheckVideoQuizAspect60`만 실패). 원격 개발 DB 서버에서 실제 로그인 성공과 토큰 인증 통과 확인, `master`가 원격 `APP_USER`에 없어 조회는 403 `WPF_USER_INACTIVE`로 끝나며 화면에 원인 표시.
+- 미실행: 원격 개발 DB의 조회·표시·결과 저장(테스트 사용자·게시 중 팝업 없음, 공용 데이터라 행 미추가), TEXT 외 유형 실제 서버 렌더링, 신규 로그인 경로의 타임아웃·연결 실패, 화면 육안 확인. Popup.BehaviorTests·RecoveryTests와 폐쇄망 반영도 미실행.
 - 상태: 커밋에 포함, 원격 반영. 20261104 반입본에는 미포함.
 
 ## 2026-11-04-06 — dev: TODO52-2 나중에 보기 버튼 Footer 왼쪽 끝 배치
