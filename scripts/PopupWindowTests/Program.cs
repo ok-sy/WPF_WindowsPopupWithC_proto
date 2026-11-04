@@ -1657,6 +1657,21 @@ internal static class Program
         }
         Check(!new Popup.Dtos.PopupResponseDto().ShowLater, "[52-2] ShowLater defaults to false");
 
+        // 나중에 보기는 Footer 왼쪽 끝, 다시 보지 않기·확인/제출은 그 오른쪽이다.
+        foreach (string type in new[] { "TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ", "VIDEO_QUIZ", "FOOTER_LINK" })
+        {
+            var opened = OpenPopup(type, dto => { dto.ShowFooter = true; dto.ShowLater = true; dto.ShowDoNotShowAgain = true; });
+            opened.Window.UpdateLayout();
+            var footerArea = opened.Find<Grid>("FooterArea");
+            var laterButton = opened.Find<Button>("FooterLaterButton");
+            double LeftOf(FrameworkElement element) => element.TranslatePoint(new System.Windows.Point(0, 0), footerArea).X;
+            double laterRight = LeftOf(laterButton) + laterButton.ActualWidth;
+            Check(Math.Abs(LeftOf(laterButton)) < 0.5 && laterButton.ActualWidth > 0, $"[later-left] {type} later button is at the left end ({LeftOf(laterButton)})");
+            Check(LeftOf(opened.Find<CheckBox>("DoNotShowAgainCheckBox")) >= laterRight && LeftOf(opened.Find<Button>("FooterCloseButton")) >= laterRight,
+                $"[later-left] {type} do-not-show-again and main button stay right of later");
+            ShutdownClose(opened.Window);
+        }
+
         var builder = new PopupResultBuilder("P1", 7, "D-1");
         builder.SetVideoProgress(Snapshot(30));
         var later = builder.BuildOnClose(DateTimeOffset.Now, true, true);

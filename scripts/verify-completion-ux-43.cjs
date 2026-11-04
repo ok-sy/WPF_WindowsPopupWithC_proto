@@ -193,6 +193,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     b = await button('나중에 보기'); check(b && !b.disabled, `${label} shows an enabled later button: ` + JSON.stringify(b));
     const before = await run('window.closeCount ?? 0'); await click('나중에 보기');
     check(await run('window.closeCount') === before + 1, `${label} later runs onClose`);
+    // 나중에 보기는 푸터 왼쪽 끝, 다시 보지 않기·확인/제출은 그 오른쪽(WPF와 같은 순서)
+    await render(type, {showLater: true, showDoNotShowAgain: true}, content);
+    const place = await run(`(()=>{const all=[...document.querySelectorAll('button')];const later=all.find(b=>b.textContent.trim()==='나중에 보기');const box=later.getBoundingClientRect();
+      const paper=later.closest('.MuiPaper-root').getBoundingClientRect();const check=document.querySelector('.MuiFormControlLabel-root').getBoundingClientRect();
+      const main=all.filter(b=>['확인','제출','바로가기'].includes(b.textContent.trim())).pop().getBoundingClientRect();
+      return {offset:box.left-paper.left,right:box.right,check:check.left,main:main.left};})()`);
+    check(place.offset <= 32 && place.check >= place.right && place.main >= place.right, `${label} later sits at the left end: ` + JSON.stringify(place));
   }
   // 7. POL-06-03 : 표현·수명 — 설문 디자인 V2: 흰 본문, 문항 카드 없이 구분선(마지막 제외), 제목 끝 선택 안내, 라운드 6,
   //    라디오·체크박스 표시 없음, 선택 = 2px 테두리(크기 불변) + 세로형만 체크, 선택해도 굵기 불변.

@@ -52,7 +52,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | ShowFooter | 지원 | N | `true` | Footer 전체 표시. SURVEY/QUIZ 제출 버튼 위치에도 영향 |
 | ShowDoNotShowAgain | 지원 | N | `false` | 응답 DTO 기준. 직접 PopupOptions 생성 시 기본값은 true |
 | SurveyTitleBlocks · DescriptionBlocks · questions[].TitleBlocks · DescriptionBlocks · options[].TextBlocks | 지원(TODO55) | N | `null` | 설문·퀴즈 서식(TEXT textBlocks 구조). 있으면 일반 문자열 대신 표시, 없거나 깨졌으면 일반 문자열. 답변·채점은 ID 그대로. 서버는 서식이 있으면 일반 문자열을 서식에서 파생해 함께 보낸다(2026-10-19 서버·관리자 웹 반영) |
-| ShowLater | 지원 | N | `false` | "나중에 보기" 버튼 표시(TODO52-2). `ShowFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 LATER |
+| ShowLater | 지원 | N | `false` | "나중에 보기" 버튼 표시(TODO52-2, Footer 왼쪽 끝). `ShowFooter=true`일 때만 보이며 모든 유형에 적용. 누르면 결과 LATER |
 | HideDays | 지원 | N | `null` → 결과에서 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증). 체크박스 문구도 같은 값으로 `{N}일간 보지 않기` 표시 |
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`(설계 30). CLOSE 확인(동작은 닫기) / LINK_AND_CLOSE 바로가기 / SUBMIT 제출. SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT 고정, 일반 유형의 그 밖의 값은 CLOSE |
 | FooterLinkUrl | 조건부 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. LINK_AND_CLOSE에서 유효한 HTTP/HTTPS 절대 URL |
@@ -78,7 +78,7 @@ Footer가 있으면 공통 제출 버튼, 없으면 콘텐츠 내부 제출 버�
 - VIDEO+QUIZ 잠금 중: 제출·다시 보지 않기 비활성(기존 계약) + `영상 {현재}% · 기준 {기준}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`. 해제 뒤에는 필수 문항 진행 문구로 바뀌고 첫 문항으로 포커스를 옮긴다.
 - SURVEY/QUIZ 제출은 필수 미응답일 때만 비활성이다. 통과 점수로 제출을 막지 않는다(채점 전 교착 방지). QUIZ 불합격 안내에는 틀린 채점 문항 번호(예: `틀린 문항: 2, 4번`)를 표시한다. QUIZ 결과 안내는 `passingScore`로 유형을 나눈다(PU001 Q3, 신규 JSON 없음): 0 이하·미설정 = 참여형("퀴즈를 완료하여 {팝업 제목}을 종료합니다." + 정답 `N/M개` + 확인, 항상 제출), 만점 이상 = 만점형(성공 "퀴즈를 모두 맞추셨습니다." + 확인 / 실패 "문제를 모두 맞춰야 퀴즈를 종료할 수 있습니다. 다시 풀어주세요." + 다시 풀기), 그 밖 = 커트라인형(성공 "퀴즈를 통과하여 … 종료합니다." + `N/M개` + 확인 / 실패 "퀴즈를 통과하지 못하였습니다. 문제를 다시 풀어주세요. (통과 기준: N개 이상)" + `N/M개` + 다시 풀기). `N/M개`는 정답 채점 문항 수/채점 문항 수, 통과 기준은 모든 채점 문항이 1점이면 개수·아니면 점수로 적는다. 실패 안내에는 틀린 문항 번호를 함께 표시한다. 결과 창은 상단 제목 없이 본문과 버튼만 표시한다. VIDEO+QUIZ도 같은 안내를 쓴다. SURVEY는 제출 후 같은 형식으로 "설문조사가 완료되었습니다." + 확인을 보여 주고 닫는다(결과는 안내 전 큐 적재). 결과 계약(`score`·`passed`)은 바뀌지 않는다.
 - 보조 닫기(제출 버튼과 구분되는 밝은 버튼)는 정책상 제출 전 이탈이 허용될 때만 Footer에 표시한다. VIDEO+QUIZ는 재생 실패(TODO57 — 완료 전 닫기 허용 기반 표시 폐기), QUIZ(영상 없음)는 불합격 1회 이후이면서 Background Overlay가 꺼진 경우다. SURVEY·TEXT·IMAGE·VIDEO와 `ShowFooter=false`에서는 표시하지 않는다. 결과는 Alt+F4 닫기와 같은 CLOSED(영상은 VIDEO_WATCHED)다.
-- 나중에 보기(TODO52-2): `ShowFooter`·`ShowLater`가 모두 true면 Footer에 "나중에 보기" 버튼을 둔다. 누르면 결과 LATER로 닫히며 다시 보지 않기 체크·영상 시청량보다 우선한다(hideDays·video 미포함). 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)과 Background Overlay 중에도 누를 수 있고, Overlay의 화면 출구로 인정한다. 서버는 완료 처리 없이 다음 조회 주기까지 유예한다. 완료 기준 전 화면 버튼으로 나가는 수단은 이 버튼뿐이다(TODO57).
+- 나중에 보기(TODO52-2): `ShowFooter`·`ShowLater`가 모두 true면 Footer 왼쪽 끝에 "나중에 보기" 버튼을 둔다(다시 보지 않기·확인/제출은 그 오른쪽). 누르면 결과 LATER로 닫히며 다시 보지 않기 체크·영상 시청량보다 우선한다(hideDays·video 미포함). 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)과 Background Overlay 중에도 누를 수 있고, Overlay의 화면 출구로 인정한다. 서버는 완료 처리 없이 다음 조회 주기까지 유예한다. 완료 기준 전 화면 버튼으로 나가는 수단은 이 버튼뿐이다(TODO57).
 
 Background Overlay와 닫기 경로(설계 44, 고정 동작·관리자 옵션 없음):
 

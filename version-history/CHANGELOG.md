@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-06 — dev: TODO52-2 나중에 보기 버튼 Footer 왼쪽 끝 배치
+
+- 이유: 화면설계서 V0.5(`recieve_plan0.5.md`)의 Footer 배치는 왼쪽 `나중에 보기`, 오른쪽 `확인`/`제출`인데, WPF와 관리자 미리보기 모두 오른쪽 버튼 묶음에 있어 불일치.
+- 변경: WPF `PopupWindow.xaml` Footer를 3열(나중에 보기 / 진행 문구·다시 보지 않기 / 닫기·확인·제출)로 변경. 관리자 미리보기 `PopupPreview.tsx`의 설문·퀴즈 Footer와 일반 Footer도 같은 순서로 이동. 일반 Footer는 줄이 바뀌어도 확인 버튼이 오른쪽에 남도록 조정. 표시 조건과 결과 `LATER` 동작은 변경 없음. ALL·MINIMAL 명세와 `recieve_plan0.5.md`에 위치 반영.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, scripts/PopupWindowTests/Program.cs, scripts/verify-completion-ux-43.cjs, docs/interfaces/WPF_POPUP_ALL_SPEC.md, docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md, docs/design/recieve_plan0.5.md.
+- 검증: WPF Release 빌드 경고·오류 0. PopupWindowTests 25개 검사 이름 지정 실행 447건 통과(`CheckLater52`에 7개 유형 위치 검사 추가). `CheckVideoQuizAspect60`은 기존 환경 문제로 전체 실행 시 실패해 제외(기존 코드 비교 실행은 worktree의 NuGet 복원 실패로 미확인). 웹 `tsc`·eslint 오류 0, `verify-completion-ux-43` 84건, `verify-popup-preview-61` 52건, `verify-image-preview` 34건 통과. WPF·관리자 웹 실화면 육안 확인, Popup.BehaviorTests·RecoveryTests, 폐쇄망 반영은 미실행. Word·Excel 계약 산출물은 재생성하지 않음.
+- 상태: 커밋에 포함, 원격 반영.
+
 ## 2026-11-04-05 — PopupRichTextEditor 상단 툴바 숨김 TODO
 
 - 이유: 본문 편집 영역 크기와 상단 툴바 표시 여부를 별도로 제어할 필요.

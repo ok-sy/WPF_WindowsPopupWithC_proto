@@ -41,7 +41,7 @@
 | FooterAction | 지원 | N | `CLOSE`(SURVEY/QUIZ는 SUBMIT) | 최상위 `footerAction`. CLOSE 확인(동작은 닫기) / LINK_AND_CLOSE 바로가기 / SUBMIT 제출(SURVEY·QUIZ 고정) |
 | FooterLinkUrl | FooterAction 사용 시 지원 | 조건부 | `""` | 최상위 `footerLinkUrl`. `LINK_AND_CLOSE`일 때 열 HTTP/HTTPS URL |
 | ShowDoNotShowAgain | 지원 | N | `false` | 다시 보지 않기 표시. 응답 DTO 기준 기본값 false |
-| ShowLater | 지원 | N | `false` | 최상위 `showLater`. Footer "나중에 보기" 버튼 표시(`ShowFooter=true`일 때만, 모든 유형). 누르면 결과 `resultType=LATER`로 닫히고 서버는 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다. 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)에도 누를 수 있으며, 완료 기준 전 화면 버튼으로 나가는 수단은 이것뿐이다(TODO57). 최소 JSON 예시는 생략해 false 사용 |
+| ShowLater | 지원 | N | `false` | 최상위 `showLater`. Footer 왼쪽 끝 "나중에 보기" 버튼 표시(`ShowFooter=true`일 때만, 모든 유형). 누르면 결과 `resultType=LATER`로 닫히고 서버는 완료 처리 없이 다음 조회 주기까지 재노출을 유예한다. 완료 기준 전(VIDEO 시청 기준·VIDEO+QUIZ 잠금·QUIZ 통과 전)에도 누를 수 있으며, 완료 기준 전 화면 버튼으로 나가는 수단은 이것뿐이다(TODO57). 최소 JSON 예시는 생략해 false 사용 |
 | HideDays | 기본값 사용 | N | `null` → 결과에서 30일 | 다시 보지 않기 결과(HIDDEN)의 숨김 일수. 최소 버전은 생략해 30일 사용. 코드는 1~3650 값 지정 지원(관리자 저장 시 서버 검증) |
 | UseBackgroundOverlay | 지원 | N | `true` | 최상위 `useBackgroundOverlay`. 배경 Overlay 사용 |
 | BackgroundOverlayOpacity | 지원 | N | `0.45` | 최상위 `backgroundOverlayOpacity`. Overlay 불투명도(0~1) |

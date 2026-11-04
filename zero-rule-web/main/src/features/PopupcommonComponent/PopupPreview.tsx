@@ -784,6 +784,18 @@ export default function PopupPreview({
             sx={{ px: 3, py: 1.75, flexShrink: 0, borderTop: `1px solid ${surveyColors.border}` }}
           >
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+              {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
+              {showLaterButton && (
+                <Button
+                  variant="text"
+                  color="inherit"
+                  sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14, flexShrink: 0 }}
+                  onClick={laterPreview}
+                >
+                  나중에 보기
+                </Button>
+              )}
               <Box sx={{ minWidth: 0 }}>
                 <Typography
                   id={reasonId}
@@ -814,17 +826,8 @@ export default function PopupPreview({
                   />
                 )}
               </Box>
+              </Stack>
               <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
-                {showLaterButton && (
-                  <Button
-                    variant="text"
-                    color="inherit"
-                    sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14 }}
-                    onClick={laterPreview}
-                  >
-                    나중에 보기
-                  </Button>
-                )}
                 {showSecondaryClose && (
                   <Button
                     variant="text"
@@ -876,6 +879,12 @@ export default function PopupPreview({
               }}
             >
               <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+                {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
+                {showLaterButton && (
+                  <Button variant="text" color="inherit" onClick={laterPreview}>
+                    나중에 보기
+                  </Button>
+                )}
                 {popup.showDoNotShowAgain ? (
                   <FormControlLabel
                     control={<Checkbox size="small" />}
@@ -897,12 +906,8 @@ export default function PopupPreview({
                   </Typography>
                 )}
               </Stack>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                {showLaterButton && (
-                  <Button variant="text" color="inherit" onClick={laterPreview}>
-                    나중에 보기
-                  </Button>
-                )}
+              {/* 좁아서 줄이 바뀌어도 확인 버튼은 오른쪽에 둔다. */}
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto' }}>
                 {popup.showCloseButton && (
                   <Button
                     variant="contained"
