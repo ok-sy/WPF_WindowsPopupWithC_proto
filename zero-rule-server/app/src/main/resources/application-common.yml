@@ -14,6 +14,7 @@ spring:
 logging:
   config: classpath:logback.xml
 
+# [변경 지점] 포트·컨텍스트 경로를 바꾸면 WPF BaseUrl과 관리자 웹 API_BASE_URL도 함께 바꾼다.
 server:
   port: 8080
   servlet:
@@ -23,10 +24,12 @@ server:
     max-http-form-post-size: 4096MB
   shutdown: graceful
 
+# [변경 지점] 토큰 헤더 이름을 바꾸면 WPF WpfLoginClient.TokenHeaderName과 관리자 웹 HTTP_TOKEN_HEADER도 함께 바꾼다.
 custom.auth-header:
   user-refresh-token-header: "x-custom-authorization"
   user-clear-header: "x-custom-authorization-clear"
 
+# [변경 지점] 관리자 웹을 여는 주소(도메인·포트)를 여기에 넣는다. WPF 호출에는 영향이 없다.
 custom.server-security:
   allowed-origins:
     - http://localhost:3000

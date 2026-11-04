@@ -50,6 +50,7 @@ import java.time.ZoneId;
  */
 @Tag(name = "Popup WPF")
 @RestController
+// [변경 지점] WPF 조회·결과 API 경로. WPF PopupApiService와 인터페이스 명세를 함께 바꾼다.
 @RequestMapping("/p/api/wpf/popups")
 public class WpfPopupController {
 

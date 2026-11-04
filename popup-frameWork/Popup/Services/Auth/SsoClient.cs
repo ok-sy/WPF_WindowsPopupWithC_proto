@@ -28,6 +28,7 @@ namespace Popup.Services.Auth
      */
     public sealed class SsoClient
     {
+        // [변경 지점] SSO 응답 XML 태그. SSO 응답 형식이 바뀌면 함께 바꾼다.
         public const string UserIdTag = "MAIN_USER_ID";
         public const string ClassCodeTag = "MAIN_USER_CLASSI_CODE";
 
@@ -55,6 +56,7 @@ namespace Popup.Services.Auth
             };
             _httpClient = new HttpClient(handler)
             {
+                // [변경 지점] SSO 요청 제한 시간. 설정값이 아니라 코드 상수다.
                 Timeout = timeout ?? TimeSpan.FromSeconds(10)
             };
         }

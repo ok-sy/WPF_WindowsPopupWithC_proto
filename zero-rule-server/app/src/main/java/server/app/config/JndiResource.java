@@ -46,7 +46,7 @@ public class JndiResource {
         // POL-15-03 : 환경 확인 — WPF 팝업용 추가 분기. 환경변수 ZERO_RULE_DB_URL / ZERO_RULE_DB_USER / ZERO_RULE_DB_PASSWORD 가
         // 설정돼 있으면 그 값을 우선 사용한다. 개발 DB(192.168.114.71)에 접속할 수 없는 로컬 환경에서
         // 로컬 Oracle XE(예: jdbc:log4jdbc:oracle:thin:@//localhost:1521/XEPDB1)로 띄우기 위한 것으로,
-        // URL·계정은 환경변수가 없으면 업스트림 기본값을 쓴다.
+        // [변경 지점] DB 주소·계정·비밀번호는 환경변수로 바꾼다. URL·계정은 환경변수가 없으면 업스트림 기본값을 쓴다.
         // 드라이버는 업스트림과 같은 log4jdbc DriverSpy를 유지한다(URL 접두어 jdbc:log4jdbc: 필요).
         resource.setProperty("driverClassName", "net.sf.log4jdbc.sql.jdbcapi.DriverSpy");
         resource.setProperty("url", envOrDefault("ZERO_RULE_DB_URL", "jdbc:log4jdbc:oracle:thin:@//192.168.114.71:4004/XE"));

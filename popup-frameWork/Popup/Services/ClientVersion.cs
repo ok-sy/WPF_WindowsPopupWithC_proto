@@ -22,6 +22,7 @@ namespace Popup.Services
      */
     public static class ClientVersion
     {
+        // [변경 지점] 버전 헤더 이름. 서버 WpfClientVersionInterceptor와 함께 바꾼다.
         public const string HeaderName = "X-Client-Version";
 
         private static readonly Lazy<string> Current = new(ReadVersion);

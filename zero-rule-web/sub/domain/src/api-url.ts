@@ -26,7 +26,10 @@ export const AUTH_API_URL = {
   signOut: '/api/auth/logout',
 };
 
-/** PopupAdminApiURL */
+/**
+ * PopupAdminApiURL
+ * [변경 지점] 서버 PopupAdminController 경로와 함께 바꾼다. 호스트는 API_BASE_URL 환경변수로 정한다.
+ */
 export const POPUP_ADMIN_API_URL = {
   list: '/apis/popup/list',
   info: '/apis/popup/info',

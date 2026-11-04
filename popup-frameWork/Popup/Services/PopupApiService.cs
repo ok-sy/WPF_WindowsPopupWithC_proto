@@ -70,6 +70,7 @@ namespace Popup.Services
                  * 서버가 응답하지 않을 때
                  * 무한정 기다리지 않도록 제한 시간을 설정한다.
                  */
+                // [변경 지점] 요청 제한 시간. 게이트웨이를 거쳐 느려지면 조정한다. 설정값이 아니라 코드 상수다.
                 Timeout =
                     TimeSpan.FromSeconds(10)
             };
@@ -204,6 +205,7 @@ namespace Popup.Services
         /// </summary>
         public Task<WpfNextPopupResponseDto> GetNextPopupAsync()
             => SendWithAuthAsync<WpfNextPopupResponseDto>(
+                // [변경 지점] 단건 조회 API 경로. BaseUrl 뒤에 붙는다. 서버 WpfPopupController와 인터페이스 명세를 함께 맞춘다.
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", new { });
 
         /// <summary>
@@ -216,6 +218,7 @@ namespace Popup.Services
             if (requestBody.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException("단건 조회 요청 본문은 JSON 객체여야 합니다.", nameof(requestBody));
             return SendWithAuthAsync<WpfNextPopupResponseDto>(
+                // [변경 지점] 단건 조회 API 경로(API Demo 입력 본문). 아래 기본 조회와 같이 바꾼다.
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", requestBody);
         }
 
@@ -232,6 +235,7 @@ namespace Popup.Services
         {
             ArgumentNullException.ThrowIfNull(item);
             return SendWithAuthAsync<WpfResultResponseDto>(
+                // [변경 지점] 결과 저장 API 경로. BaseUrl 뒤에 붙는다. 서버 WpfPopupController와 인터페이스 명세를 함께 맞춘다.
                 HttpMethod.Post, $"{_baseUrl}/api/wpf/popups/results", item);
         }
 
@@ -282,6 +286,7 @@ namespace Popup.Services
             string? authorization = await _authHeaderProvider.GetAuthorizationHeaderAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(authorization))
             {
+                // [변경 지점] 인증 요청 헤더. 서버 인증 필터가 읽는 이름·Bearer 규칙이 바뀌면 함께 바꾼다.
                 request.Headers.TryAddWithoutValidation("Authorization", authorization);
             }
             if (_devUserId != null)

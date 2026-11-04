@@ -55,12 +55,14 @@ namespace Popup.Services.Auth
      */
     public sealed class WpfLoginClient
     {
+        // [변경 지점] 서버 custom.auth-header.user-refresh-token-header를 바꾸면 이 값과 관리자 웹 HTTP_TOKEN_HEADER도 함께 바꾼다.
         /// <summary>토큰을 담는 응답 헤더(서버 custom.auth-header.user-refresh-token-header).</summary>
         public const string TokenHeaderName = "x-custom-authorization";
         private const string BearerPrefix = "Bearer ";
 
         private static readonly HttpClient HttpClient = new()
         {
+            // [변경 지점] 로그인 요청 제한 시간. 설정값이 아니라 코드 상수다.
             Timeout = TimeSpan.FromSeconds(10)
         };
 
@@ -82,6 +84,7 @@ namespace Popup.Services.Auth
                 throw new ArgumentException("팝업 API 주소가 필요합니다.", nameof(baseUrl));
             }
             _httpClient = httpClient ?? HttpClient;
+            // [변경 지점] 기본 로그인 경로. 환경별 값은 appsettings Auth.LoginPath로 지정한다(폐쇄망 /api/ssoLogin).
             string path = string.IsNullOrWhiteSpace(loginPath) ? "/api/wpf/auth/login" : loginPath.Trim();
             _loginUrl = baseUrl.Trim().TrimEnd('/') + "/" + path.TrimStart('/');
         }

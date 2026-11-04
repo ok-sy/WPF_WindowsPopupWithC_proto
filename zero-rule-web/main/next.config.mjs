@@ -15,6 +15,7 @@ const WORKSPACE_PACKAGES = fs.existsSync(SUB_DIR)
 
 // const PRODUCTION = process.env.NODE_ENV === 'production';
 const PRODUCTION = process.env.NODE_ENV === 'standalone';
+// [변경 지점] 배포 환경별 주소. 소스가 아니라 환경변수·빌드 인자로 넣는다. API_BASE_URL은 컨텍스트 경로까지 포함한다.
 const BASE_URL = process.env.BASE_URL || '';
 const ROUTER_BASE_URL = process.env.ROUTER_BASE_URL;
 const API_BASE_URL = process.env.API_BASE_URL;
@@ -74,6 +75,7 @@ const nextConfig = {
     BASE_URL,
     ROUTER_BASE_URL,
     API_BASE_URL,
+    // [변경 지점] 서버 custom.auth-header 값·WPF WpfLoginClient.TokenHeaderName과 함께 바꾼다.
     HTTP_TOKEN_HEADER: 'x-custom-authorization',
     HTTP_TOKEN_CLEAR_HEADER: 'x-custom-authorization-clear',
     DEBUG: true,

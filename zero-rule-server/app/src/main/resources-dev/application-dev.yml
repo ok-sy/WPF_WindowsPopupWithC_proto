@@ -1,6 +1,7 @@
 custom.system:
   config-name: dev
   public-image-server-url: "/p/file/download/:FILEID:"
+  # [변경 지점] 환경별 서버 공개 주소(컨텍스트 경로 포함).
   base-server-url: "https://zerorule.labcl.net/zero-rule-server"
 #  - "http://192.168.184.134:8080/zero-rule-server"
 

@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-14 — docs: 환경별 변경 지점 주석 추가
+
+- 이유: 도메인 호출 등 환경 변경에 대비해 주소·API 경로·헤더·제한 시간을 바꾸는 위치를 코드에서 바로 찾을 필요.
+- 변경: `[변경 지점]` 표식 주석을 WPF(appsettings·API·로그인·SSO·버전 헤더), 관리자 웹(환경변수·토큰 헤더·관리 API 경로), 서버(포트·컨텍스트 경로·토큰 헤더·허용 Origin·공개 주소·WPF API 경로·DB 접속)에 추가. 함께 바꿀 다른 위치도 주석에 명시. 동작 변경 없음.
+- 제외: 미커밋 로컬 변경이 있는 `application-local.yml`, 공통 원본 그대로인 `DBConnection.java`·`UserLoginController.java`는 수정하지 않음.
+- 검증: 변경 줄이 주석뿐임을 diff로 확인. WPF 빌드 오류 0, `ApiDemoTests` 114건, appsettings 파싱 포함 `CheckBackgroundStartupA16` 19건 통과. 관리자 웹 `tsc` 오류 0, 서버 `compileJava` 성공. 변경한 yml을 읽는 서버 기동은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-04-13 — dev: API Demo 인증 방식 2가지로 정리·조회 JSON 접기
 
 - 이유: 단건 조회 JSON은 기본이 빈 객체라 항상 펼칠 필요가 없고, 로그인 JSON 입력이 프로토타입·`ssoLogin`·일반 로그인을 모두 호출할 수 있어 인증 방식을 줄일 수 있음.
