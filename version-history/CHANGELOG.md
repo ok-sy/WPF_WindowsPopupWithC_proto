@@ -1,5 +1,12 @@
 # 변경 이력
 
+## 2026-11-04-03 — 같은 날짜 반입본 단일 폴더·TGZ 통합
+
+- 이유: 같은 날짜 반입물이 폴더·압축으로 나뉘면 폐쇄망 `7-archaiv/반입파일`의 날짜별 보관 구조와 맞지 않아 하나로 통합.
+- 변경: `export-offline-package.ps1`에 `-GitHistoryDir` 추가. 지정한 폴더의 조회 전용 번들을 `9-git-history` 묶음으로 같은 날짜 TGZ에 포함하고 README-IMPORT 표·절차에 반영. 폐쇄망 `E:\Workspace`의 1~8번 폴더와 겹치지 않도록 9번 사용. `OFFLINE_WPF_BUILD.md`에 같은 날짜 통합 규칙 추가. 별도 폴더였던 히스토리 번들은 재생성 원본으로 `.offline-cache/git-history-20261104/`(Git 제외)로 이동.
+- 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md.
+- 상태: 스크립트 수정 커밋에 포함, 원격 반영. 반입본 생성 결과는 아래 후속에 기록.
+
 ## 2026-11-04-02 — dev: TODO50-S1 원격 개발 DB 비밀번호 저장소 제거(2026-10-15 유지 결정 번복)
 
 - 이유: 원격 개발 DB 비밀번호가 추적 파일(`JndiResource` 기본값, `application-dev_db.yml` 주석)에 평문으로 남아 있어, 2026-10-15 유지 결정을 번복하고 환경변수·Git 제외 파일로 분리.

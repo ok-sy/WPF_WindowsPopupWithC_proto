@@ -12,6 +12,9 @@ POL-15-01 : 배포 범위
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
+  9-git-history       (선택 -GitHistoryDir) 민감값을 정리한 조회 전용 Git 번들. 소스 적용 대상이 아니며 통합 TGZ에 함께 넣는다
+
+같은 날짜 반입은 폴더 하나·TGZ 하나로 합친다. 날짜 뒤에 이름을 붙인 별도 폴더·압축을 만들지 않고, 같은 날 추가분은 옵션을 모두 지정해 -Force로 다시 만든다.
 
 이유: 폐쇄망에는 zero-rule-server/zero-rule-web 전체가 이미 있으므로 팝업 관련 변경분만 반입하고,
 WPF는 외부망 산출물(EXE)이 아니라 폐쇄망에서 직접 빌드할 수 있게 소스만 가져간다.
@@ -49,6 +52,8 @@ param(
     [string]$GitInstallerPath = "",
     # 선택: scripts/prepare-offline-npm.cjs 출력 폴더(pnpm store 묶음). 지정하면 5-npm-ckeditor 묶음으로 통합 TGZ에 넣는다.
     [string]$NpmBundleDir = "",
+    # 선택: git bundle 파일이 든 폴더. 9-git-history 묶음으로 같은 날짜 통합 TGZ에 넣는다. -Force로 지워지지 않도록 출력 폴더 밖에 둔다.
+    [string]$GitHistoryDir = "",
     [switch]$UseWorkingChangelog,
     [switch]$IncludeDevDependencies,
     # 5-npm-ckeditor에 pnpm 설치용 파일(pnpm-store-v3.tgz·install-pnpm-store.ps1·package.json·pnpm-lock.yaml·collect-workspace-manifest.ps1)도 넣는다.
@@ -216,6 +221,19 @@ try {
         (@("# 남길 CKEditor 패키지(이름@버전). cleanup-after-import.ps1이 이 목록에 없는 CKEditor 계열 패키지를 지운다.") + $keepLines) | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "CKEDITOR-KEEP.txt")
         Write-Host "[cleanup] 남길 CKEditor $($keepLines.Count)"
     }
+    # 선택: 조회 전용 Git 히스토리 번들
+    $gitHistoryCount = 0
+    if (-not [string]::IsNullOrWhiteSpace($GitHistoryDir)) {
+        $gitHistorySource = (Resolve-Path -LiteralPath $GitHistoryDir).Path
+        if (@(Get-ChildItem -LiteralPath $gitHistorySource -File -Filter "*.bundle").Count -lt 1) { throw "git bundle 파일 없음: $gitHistorySource" }
+        $gitHistoryTarget = Join-Path $OutputRoot "9-git-history"
+        New-Item -ItemType Directory -Force -Path $gitHistoryTarget | Out-Null
+        Get-ChildItem -LiteralPath $gitHistorySource -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $gitHistoryTarget }
+        $gitHistoryManifest = @("# 9-git-history: 조회 전용 Git 히스토리 번들. S=묶음 파일")
+        Get-ChildItem -LiteralPath $gitHistoryTarget -File | Sort-Object Name | ForEach-Object { $gitHistoryManifest += "S`t$($_.Name)"; $gitHistoryCount++ }
+        $gitHistoryManifest | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "MANIFEST-9-git-history.txt")
+        Write-Host "[9-git-history] 파일 $gitHistoryCount"
+    }
     if ($IncludeDevDependencies) {
         $null = Export-TreeBundle -Name "6-offline-packages" -Roots @("offline-packages", "offline-sdk") -ExcludeDirs @() -ExcludeExtensions @() -ExcludePatterns @() `
             -ExtraFiles @("global.json", "NuGet.config", "scripts/prepare-offline-packages.ps1", "scripts/build-wpf-offline.ps1", "OFFLINE_WPF_BUILD.md")
@@ -264,6 +282,7 @@ try {
     # 묶음별 패치노트(선택): <PatchNotesDir>\README-PATCH-<묶음>.md → 묶음 루트
     $bundles = @("1-zero-rule-server", "2-zero-rule-web", "3-popup-frameWork", "4-docs")
     if ($npmCount -gt 0) { $bundles += "5-npm-ckeditor" }
+    if ($gitHistoryCount -gt 0) { $bundles += "9-git-history" }
     if ($PatchNotesDir) {
         foreach ($bundle in $bundles) {
             $note = Join-Path $PatchNotesDir "README-PATCH-$bundle.md"
@@ -308,6 +327,12 @@ try {
     if ($NotesFile) { $notes = (Get-Content -Encoding UTF8 -Raw $NotesFile).TrimEnd() }
     $previousText = "직전 반입본 없음"
     $previousDeletes = ""
+    $gitHistoryRow = ""
+    $gitHistoryStep = ""
+    if ($gitHistoryCount -gt 0) {
+        $gitHistoryRow = "| 9-git-history.tar | 웹·WPF 조회 전용 Git 히스토리 번들 | 소스에 덮어쓰지 않음. 내부 README-IMPORT.md 참조 |`n"
+        $gitHistoryStep = "`n7. 9-git-history.tar는 소스 폴더와 분리해 풀고(예: 7-archaiv 아래) ``git clone``으로 조회한다."
+    }
     if ($PreviousExport) {
         $previousText = "직전 반입본 $PreviousExport($PreviousCommit)"
         $previousDeletes = " $PreviousExport 이후 새로 삭제할 파일 $($sincePrevious.Count)개."
@@ -323,7 +348,7 @@ try {
 | 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
 | 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않으며 이전 반입분은 DELETE 목록으로 삭제. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
-$($npmRow)
+$($npmRow)$($gitHistoryRow)
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
 
 ## 이번 변경
@@ -342,7 +367,7 @@ $($npmStep)3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트
 4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다.
 5. 서버: custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
 6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
-$($npmCleanup)
+$($npmCleanup)$($gitHistoryStep)
 SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, $Date.tgz.sha256은 통합 TGZ 체크섬이다.
 "@ | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "README-IMPORT.md")
 
