@@ -5,6 +5,7 @@
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
 - 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
 - 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
+- 3.7 보완(2026-11-04, 로그인 토큰 위치): WPF-00 응답의 토큰을 응답 헤더 `x-custom-authorization`에서 먼저 읽고, 없으면 본문 `accessToken`을 사용하도록 명시. 폐쇄망 `p/api/ssoLogin`은 헤더로 토큰을 주고 본문은 프로필 메시지다. 요청 JSON 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-10-27, 로그인 요청 키): WPF-00 로그인 요청의 사용자 식별 키를 `logonId` → `lgonId`로 변경. 폐쇄망 로그인 API(`p/api/ssoLogin`) 요청 DTO와 같은 키다. WPF 일반 모드·API Demo 기본 JSON이 `lgonId`를 보내며, 로컬 프로토타입 서버(`/api/wpf/auth/login`)는 `lgonId`를 받고 이전 키 `logonId`도 별칭으로 받는다. 응답·토큰 계약은 바뀌지 않는다.
 - 산출물 동기화(2026-10-22, TODO71): Word·PDF·Excel에 현행 v3.7 보완(최소 창 300×300, 초기화 버튼 삭제, 취소선·문단 서식, SURVEY·QUIZ 서식·선택 제한·배점, IMAGE 공통 크기)을 반영. 버전 번호·API 계약 변경 없음.
 - 2026-10-19 변경(버전 번호 3.7 유지, TODO57·58·59·60): `allowCloseBeforeComplete` 폐기(화면 버튼은 `completionRatio`, 외부 닫기는 `useBackgroundOverlay`, 완료 전 연기는 `showLater`). IMAGE 크기를 `content.width/height`에서 최상위 `popup.width/height` 한 쌍으로 이동 — ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(§8.2). 동영상+퀴즈 중간 안내 제거·영상 영역 원본 비율 배정(JSON 변경 없음).
@@ -209,6 +210,13 @@ X-Client-Version: 1.0.0
 | linkYn | string | O | `"N"` | 현재 C#은 항상 `N` 전송 |
 
 ## 5.2 Response
+
+WPF는 2xx 응답에서 토큰을 아래 순서로 찾는다. 둘 다 없으면 로그인 실패로 처리한다(일반 로그인 계열은 실패도 HTTP 200일 수 있다).
+
+1. 응답 헤더 `x-custom-authorization` — 폐쇄망 `p/api/ssoLogin`, 일반 로그인 `p/api/auth/login`. 본문은 프로필 메시지이고 만료 시각을 주지 않는다. `Bearer ` 접두사가 있으면 제거해 사용한다.
+2. 응답 본문 `accessToken` — 로컬 프로토타입 `p/api/wpf/auth/login`. 아래 형식이다.
+
+이후 요청에는 어느 경우든 `Authorization: Bearer {토큰}`을 보낸다. 토큰 갱신은 401 재로그인과 정기 재로그인이 맡으며 `expiresAt`으로 판단하지 않는다.
 
 ```json
 {

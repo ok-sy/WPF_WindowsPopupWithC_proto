@@ -63,6 +63,8 @@ internal static class Program
         using MockServer server = new();
         CheckApiDemoFlow(server);
         CheckCredentialFlow(server);
+        CheckLoginTokenSources(server);
+        CheckDemoHeaderTokenLogin(server);
         CheckCredentialRealServer();
         Console.WriteLine($"PASS: {_checks} API demo checks (design 51, TODO54)");
     }
@@ -217,7 +219,7 @@ internal static class Program
         editor.Close();
     }
 
-    private static string Describe(string? body) => (string)typeof(DemoCredentialLoginClient).GetMethod("DescribeFailure", Flags)!.Invoke(null, new object?[] { body })!;
+    private static string Describe(string? body) => (string)typeof(WpfLoginClient).GetMethod("DescribeFailure", Flags)!.Invoke(null, new object?[] { body })!;
     private static string? Redact(string? body) => (string?)typeof(HttpExchangeRecord).GetMethod("RedactPasswords", Flags)!.Invoke(null, new object?[] { body });
 
     private static void CheckCredentialFailureText()
@@ -230,6 +232,51 @@ internal static class Program
         string? redacted = Redact("{\"lgonId\":\"u\",\"passwd\":\"PW-SECRET\"}");
         Check(redacted != null && !redacted.Contains("PW-SECRET") && redacted.Contains("\"lgonId\""), "[U-04] recorder removes the password from the request body");
         Check(Redact("{\"a\":1}") == "{\"a\":1}", "[U-04] body without a password stays unchanged");
+    }
+
+    /* 일반 실행 로그인: 폐쇄망 ssoLogin처럼 토큰이 응답 헤더로 와도, 프로토타입처럼 본문으로 와도 동작해야 한다. */
+    private static void CheckLoginTokenSources(MockServer server)
+    {
+        WpfLoginResponseDto Login(string mode, string path = "/api/ssoLogin")
+        {
+            server.SsoLoginMode = mode;
+            return Task.Run(() => new WpfLoginClient(server.BaseUrl, path).LoginAsync(new SsoUserInfo("E1001", "A1"))).GetAwaiter().GetResult();
+        }
+        WpfLoginResponseDto header = Login("HEADER");
+        Check(header.AccessToken == server.ValidToken && header.TokenType == "Bearer" && header.ExpiresAt == default, "[login-token] token is read from the response header with a profile body");
+        Check(server.SsoLoginBodies[^1].Contains("\"lgonId\":\"E1001\"") && server.SsoLoginBodies[^1].Contains("\"classCode\":\"A1\"") && server.SsoLoginBodies[^1].Contains("\"linkYn\":\"N\""), "[login-token] ssoLogin receives lgonId, classCode and linkYn");
+        Check(Login("BOTH").AccessToken == server.ValidToken, "[login-token] header token wins over the body token");
+        Check(Login("BEARER").AccessToken == server.ValidToken, "[login-token] a Bearer prefix in the header is not doubled");
+        WpfLoginResponseDto body = Login("BODY");
+        Check(body.AccessToken == server.ValidToken && body.ExpiresAt != default, "[login-token] body accessToken still works without the header");
+        foreach (string mode in new[] { "NONE", "EMPTY", "INVALID" })
+        {
+            try { Login(mode); Check(false, $"[login-token] {mode} must fail"); }
+            catch (WpfLoginFailedException failed) { Check(failed.Message.Contains("토큰이 없습니다"), $"[login-token] {mode} reports a missing token"); }
+        }
+        // 일반 실행 경로: SSO 1회 → 로그인 → 헤더 토큰, 401은 SSO 없이 재로그인
+        server.SsoLoginMode = "HEADER";
+        int ssoBefore = server.SsoGetCount;
+        SsoAuthHeaderProvider provider = new(new SsoClient(server.BaseUrl + "/sso"), new WpfLoginClient(server.BaseUrl, "/api/ssoLogin"));
+        string? first = Task.Run(() => provider.GetAuthorizationHeaderAsync()).GetAwaiter().GetResult();
+        Check(first == "Bearer " + server.ValidToken && server.SsoGetCount == ssoBefore + 1, "[login-token] SSO provider sends the header token as Bearer");
+        Task.Run(() => provider.OnUnauthorizedAsync(first)).GetAwaiter().GetResult();
+        string? renewed = Task.Run(() => provider.GetAuthorizationHeaderAsync()).GetAwaiter().GetResult();
+        Check(renewed != first && renewed == "Bearer " + server.ValidToken && server.SsoGetCount == ssoBefore + 1, "[login-token] 401 logs in again with the header token and no second SSO call");
+    }
+
+    /* API Demo 로그인 방식도 같은 클라이언트라 ssoLogin 경로와 헤더 토큰으로 조회까지 이어진다. */
+    private static void CheckDemoHeaderTokenLogin(MockServer server)
+    {
+        server.SsoLoginMode = "HEADER";
+        server.PopupMode = "NULL";
+        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/ssoLogin" });
+        window.Show();
+        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
+        Query(window);
+        Check(server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken && Logs(window).Any(l => l.Contains("popup=null")), "[login-token] API demo login mode queries with the header token");
+        Check(((TextBlock)window.FindName("ApiStepText")).Text.Contains("✓ 로그인"), "[login-token] API demo marks the header token login as success");
+        window.Close();
     }
 
     /* ID/비밀번호 로그인(SSO 미사용) → 조회 → 표시 → 결과 → 수동 다음 조회. 입력·오류·마스킹·연결 변경을 함께 본다. */
@@ -609,6 +656,9 @@ internal static class Program
         public volatile string CredentialPassword = string.Empty;
         public List<string> CredentialBodies { get; } = new();
         public string? ValidToken { get { lock (_lock) return _validToken; } }
+        public volatile string SsoLoginMode = "HEADER";
+        public List<string> SsoLoginBodies { get; } = new();
+        public int SsoGetCount;
 
         public void InvalidateToken()
         {
@@ -646,6 +696,36 @@ internal static class Program
                         }));
                     }
                     return;
+                case "/p/sso":
+                    Interlocked.Increment(ref SsoGetCount);
+                    context.Response.StatusCode = 200;
+                    context.Response.ContentType = "text/xml";
+                    byte[] xml = Encoding.UTF8.GetBytes("<RESULT><MAIN_USER_ID>E1001</MAIN_USER_ID><MAIN_USER_CLASSI_CODE>A1</MAIN_USER_CLASSI_CODE></RESULT>");
+                    context.Response.OutputStream.Write(xml);
+                    context.Response.Close();
+                    return;
+                case "/p/api/ssoLogin":
+                    {
+                        string token;
+                        lock (_lock)
+                        {
+                            SsoLoginBodies.Add(body);
+                            _loginCount++;
+                            token = $"sso-{_loginCount}";
+                            if (SsoLoginMode is "HEADER" or "BOTH" or "BEARER" or "BODY") _validToken = token;
+                        }
+                        string headerValue = SsoLoginMode == "BEARER" ? "Bearer " + token : token;
+                        if (SsoLoginMode is "HEADER" or "BOTH" or "BEARER") context.Response.Headers["x-custom-authorization"] = headerValue;
+                        switch (SsoLoginMode)
+                        {
+                            case "BOTH": Write(context, 200, "{\"accessToken\":\"body-token\"}"); return;
+                            case "BODY": Write(context, 200, JsonSerializer.Serialize(new { accessToken = token, tokenType = "Bearer", expiresAt = DateTimeOffset.Now.AddMinutes(10) })); return;
+                            case "EMPTY": Write(context, 200, string.Empty); return;
+                            case "INVALID": Write(context, 200, "<html>"); return;
+                            case "NONE": Write(context, 200, "{\"msgId\":\"FW00000009\",\"msgCn\":\"fail\"}"); return;
+                            default: Write(context, 200, "{\"msgId\":\"BE00000006\",\"body\":{\"profile\":{}}}"); return;
+                        }
+                    }
                 case "/p/api/auth/login":
                     lock (_lock) CredentialBodies.Add(body);
                     if (CredentialMode == "500") { Write(context, 500, "{}"); return; }

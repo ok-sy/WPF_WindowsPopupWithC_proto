@@ -73,7 +73,7 @@ namespace Popup
                     + $"POST {client.LoginUrl}\n"
                     + $"{{ lgonId: {logonId}, classCode: {classCode}, linkYn: N }}\n"
                     + $"tokenType = {response.TokenType}, 토큰 {response.AccessToken.Length}자 (보관하지 않음)\n"
-                    + $"expiresAt = {response.ExpiresAt.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}\n"
+                    + $"expiresAt = {(response.ExpiresAt == default ? "(응답에 없음)" : response.ExpiresAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz"))}\n"
                     + $"{stopwatch.ElapsedMilliseconds} ms";
             });
         }

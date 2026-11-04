@@ -430,7 +430,7 @@ namespace Popup
                     $"   POST {result.LoginUrl}\n" +
                     $"   {{ lgonId: {result.User.LogonId}, classCode: {result.User.ClassCode}, linkYn: N }}\n" +
                     $"   tokenType = {result.TokenType}, 토큰 {result.TokenLength}자 (메모리 보관)\n" +
-                    $"   expiresAt = {result.ExpiresAt:yyyy-MM-dd HH:mm:ss zzz}\n" +
+                    $"   expiresAt = {(result.ExpiresAt == default ? "(응답에 없음)" : result.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss zzz"))}\n" +
                     $"   {result.LoginElapsedMs} ms",
                     "SSO 로그인 테스트 — 성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }

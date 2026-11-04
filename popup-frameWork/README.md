@@ -255,7 +255,7 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 E
 | `SurveyDesignVersion` | SURVEY·QUIZ(VIDEO+QUIZ 포함) 문항 디자인 버전. `V1` 무채색, `V2` 색 규칙(기본·최신). 없거나 모르는 값이면 최신. 다시 빌드하지 않고 바꾸려면 EXE 옆 `appsettings.json`에 지정 |
 | `Auth.Mode` | None / Static / SsoPrototype |
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
-| `Auth.LoginPath` | Zero WPF 로그인 API |
+| `Auth.LoginPath` | 로그인 API. 로컬 프로토타입 `/api/wpf/auth/login`, 폐쇄망 `/api/ssoLogin` |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
 | `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
 | `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
@@ -393,7 +393,7 @@ POST /p/api/wpf/auth/login
 }
 ```
 
-응답:
+응답: 토큰은 응답 헤더 `x-custom-authorization`(폐쇄망 `p/api/ssoLogin`)을 먼저 읽고, 없으면 본문 `accessToken`(로컬 프로토타입)을 쓴다. 본문 형식은 다음과 같다.
 
 ```json
 {

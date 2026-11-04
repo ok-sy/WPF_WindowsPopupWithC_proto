@@ -88,7 +88,7 @@ namespace Popup
 
             ApiBaseUrlText.Text = settings.BaseUrl;
             ApiLoginPathText.Text = settings.AuthLoginPath;
-            ApiCredentialPathText.Text = DemoCredentialLoginClient.DefaultLoginPath;   // 비밀번호는 기본값을 두지 않는다.
+            ApiCredentialPathText.Text = WpfLoginClient.CredentialLoginPath;   // 비밀번호는 기본값을 두지 않는다.
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
             switch (settings.AuthMode.Trim().ToUpperInvariant())
@@ -330,7 +330,7 @@ namespace Popup
                     identity = token;
                     break;
                 case "CREDENTIAL":
-                    if (!credentialPath.StartsWith('/')) return RejectConnectionInput("로그인 경로는 /로 시작해야 합니다. 예: " + DemoCredentialLoginClient.DefaultLoginPath, ApiCredentialPathText);
+                    if (!credentialPath.StartsWith('/')) return RejectConnectionInput("로그인 경로는 /로 시작해야 합니다. 예: " + WpfLoginClient.CredentialLoginPath, ApiCredentialPathText);
                     if (credentialId.Length == 0) return RejectConnectionInput("아이디를 입력하세요.", ApiCredentialIdText);
                     if (credentialPassword.Length == 0) return RejectConnectionInput("비밀번호를 입력하세요.", ApiCredentialPasswordBox);
                     identity = credentialPath + "\n" + credentialId + "\n" + credentialPassword;   // 연결 키 해시에만 쓴다.
@@ -370,7 +370,7 @@ namespace Popup
                 {
                     "LOGIN" => DemoApiAuthHeaderProvider.ForLogin(new WpfLoginClient(baseUrl, loginPath, _apiHttpClient), loginBody),
                     "TOKEN" => DemoApiAuthHeaderProvider.ForToken(token),
-                    "CREDENTIAL" => DemoApiAuthHeaderProvider.ForCredential(new DemoCredentialLoginClient(baseUrl, credentialPath, _apiHttpClient), credentialId, credentialPassword),
+                    "CREDENTIAL" => DemoApiAuthHeaderProvider.ForCredential(new WpfLoginClient(baseUrl, credentialPath, _apiHttpClient), credentialId, credentialPassword),
                     _ => DemoApiAuthHeaderProvider.ForToken(null)
                 };
             }
@@ -448,7 +448,7 @@ namespace Popup
             {
                 WpfClientVersionException version =>
                     $"클라이언트 버전 차단(426) — {version.UserMessage} 결과 전송을 멈췄습니다(항목 보관, 연결을 다시 적용하면 재개).",
-                DemoCredentialLoginException credential => "로그인 실패 — " + credential.Message,
+                WpfLoginFailedException failed => "로그인 실패 — " + failed.Message,
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } http =>
                     $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}"
                     + (SelectedAuthMode == "CREDENTIAL" ? " 서버의 custom.wpf-auth-prototype.enabled·custom.wpf-popup.dev-user-header가 false인지 확인하세요." : string.Empty),
@@ -462,7 +462,7 @@ namespace Popup
             };
             AppendLog($"[오류] {stage} — {detail}");
             _lastApiFailure = stage;
-            if (exception is DemoCredentialLoginException)
+            if (exception is WpfLoginFailedException)
             {
                 SetApiStep("로그인", '✕');
                 ApiConnectionExpander.IsExpanded = true;   // 로그인 입력을 바로 고칠 수 있게 펼친다.

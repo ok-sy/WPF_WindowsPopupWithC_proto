@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-11 — dev: WPF 로그인 응답 헤더 토큰 지원
+
+- 이유: 폐쇄망 `p/api/ssoLogin`은 기존 로그인에서 인증 수단만 SSO로 바뀐 형태로 토큰을 응답 헤더 `x-custom-authorization`으로 준다(2026-10-27 연동 가이드). 폐쇄망에 적용한 헤더 읽기 수정이 저장소에 없어, `3-popup-frameWork` 소스 덮어쓰기 때 일반 실행 로그인이 실패할 수 있음.
+- 변경: `WpfLoginClient`가 헤더 토큰을 먼저 읽고 없으면 본문 `accessToken`을 사용. 토큰 없는 2xx는 `WpfLoginFailedException`으로 서버 메시지와 함께 실패 처리. `DemoCredentialLoginClient`를 삭제하고 API Demo ID/비밀번호 방식도 같은 클라이언트 사용. `expiresAt`이 없으면 `(응답에 없음)`으로 표시. 로그인 경로 기본값은 유지하고 `appsettings` 설명에 폐쇄망 값 추가. 인터페이스 명세 5.2·README·연동 가이드 갱신.
+- 주요 파일: popup-frameWork/Popup/Services/Auth/(WpfLoginClient.cs, DemoApiAuthHeaderProvider.cs), popup-frameWork/Popup/(DemoWindow.Api.cs, DemoWindow.AuthTest.cs, MainWindow.xaml.cs, appsettings.json), scripts/ApiDemoTests/Program.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, popup-frameWork/README.md. ALL·MINIMAL은 로그인 응답 형식을 다루지 않아 변경 없음. Word·PDF·Excel 미갱신.
+- 검증: WPF 빌드 경고·오류 0. `ApiDemoTests` 114건 통과(헤더 토큰, 헤더 우선, `Bearer` 접두사, 본문 fallback, 토큰 없음·빈 응답·비JSON 실패, SSO → 로그인 → 401 재로그인, API Demo의 ssoLogin 경로). `PopupWindowTests` 전체 476건 통과. 원격 개발 DB에 연결한 임시 서버에서 일반 로그인 헤더 토큰 수신과 팝업 API 인증 통과 확인(`master` 미등록으로 조회는 403 `WPF_USER_INACTIVE`). 폐쇄망 `p/api/ssoLogin` 실제 호출, 로컬 프로토타입 서버의 이번 빌드 수동 확인, 일반 실행 화면 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-04-10 — dev: API Demo X-Dev-User-Id 입력 제거
 
 - 이유: 폐쇄망 서버 인증은 이 프로젝트 관리 범위가 아니고 API Demo는 로그인·토큰 방식으로 검증하므로, Demo의 개발용 사용자 헤더 입력이 불필요.

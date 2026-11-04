@@ -29,21 +29,38 @@ namespace Popup.Services.Auth
         public DateTimeOffset ExpiresAt { get; set; }
     }
 
+    /// <summary>2xx 응답이지만 토큰이 없는 로그인 실패. 일반 로그인 계열은 실패도 HTTP 200과 업무 메시지로 돌려준다.</summary>
+    public sealed class WpfLoginFailedException : InvalidOperationException
+    {
+        public WpfLoginFailedException(string message) : base(message) { }
+    }
+
     /*
      * POL-15-02 : 인증·버전
      * ■ WPF 로그인 API 클라이언트
      * - in : baseUrl(string) PopupApi.BaseUrl · loginPath(string?, 기본 /api/wpf/auth/login) · httpClient(HttpClient?)
-     * - out: LoginAsync → WpfLoginResponseDto · 예외: WpfClientVersionException(426), HttpRequestException(비성공), InvalidOperationException(accessToken 없음)
+     * - out: LoginAsync → WpfLoginResponseDto · 예외: WpfClientVersionException(426), HttpRequestException(비성공), WpfLoginFailedException(accessToken 없음)
      * - [역할] SsoClient가 얻은 사용자 식별값을 Zero 서버 프로토타입 로그인 API
      * (POST /p/api/wpf/auth/login)에 보내고 { accessToken, tokenType, expiresAt } 를 받는다.
      *
      * [추가 이유] 토큰 획득 방법을 PopupApiService에서 분리한다. PopupApiService는 IAuthHeaderProvider가 준 헤더 값만
      * 붙이고, 이 클래스는 로그인 API만 안다. 운영 전환 시(타 팀 통합 토큰) 이 클래스와 SsoAuthHeaderProvider만 바뀐다.
      *
+     * [토큰 위치] 응답 헤더 x-custom-authorization을 먼저 읽고, 없으면 본문 accessToken을 쓴다.
+     *   - 폐쇄망 p/api/ssoLogin·일반 로그인 p/api/auth/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
+     *   - 로컬 프로토타입 p/api/wpf/auth/login: 본문 { accessToken, tokenType, expiresAt }.
+     *   헤더 토큰은 만료 시각을 주지 않으므로 ExpiresAt은 기본값이다. 갱신은 401 재로그인과 정기 재로그인이 맡고 만료 시각으로 판단하지 않는다.
+     *
      * [규칙] 이 HttpClient에는 Windows 자격 증명을 붙이지 않는다(UseDefaultCredentials 기본 false). 응답 토큰을 로그에 적지 않는다.
      */
     public sealed class WpfLoginClient
     {
+        /// <summary>토큰을 담는 응답 헤더(서버 custom.auth-header.user-refresh-token-header).</summary>
+        public const string TokenHeaderName = "x-custom-authorization";
+        /// <summary>BaseUrl(…/p) 기준 일반 로그인 경로. API Demo ID/비밀번호 방식의 기본값.</summary>
+        public const string CredentialLoginPath = "/api/auth/login";
+        private const string BearerPrefix = "Bearer ";
+
         private static readonly HttpClient HttpClient = new()
         {
             Timeout = TimeSpan.FromSeconds(10)
@@ -128,14 +145,60 @@ namespace Popup.Services.Auth
                     response.StatusCode);
             }
 
-            WpfLoginResponseDto? body = await response.Content.ReadFromJsonAsync<WpfLoginResponseDto>(JsonOptions, cancellationToken);
-            if (body == null || string.IsNullOrWhiteSpace(body.AccessToken))
-            {
-                throw new InvalidOperationException("WPF 로그인 API 응답에 accessToken이 없습니다.");
-            }
+            string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            WpfLoginResponseDto body = ReadToken(response, responseBody)
+                ?? throw new WpfLoginFailedException(DescribeFailure(responseBody));
 
             Debug.WriteLine($"[WPF-LOGIN] lgonId={logonIdForLog} expiresAt={body.ExpiresAt:O} ({stopwatch.ElapsedMilliseconds}ms)");
             return body;
         }
+
+        /* 헤더 토큰 우선, 없으면 본문 accessToken. 둘 다 없으면 null. */
+        private static WpfLoginResponseDto? ReadToken(HttpResponseMessage response, string responseBody)
+        {
+            if (response.Headers.TryGetValues(TokenHeaderName, out var values))
+            {
+                foreach (string value in values)
+                {
+                    if (string.IsNullOrWhiteSpace(value)) continue;
+                    string token = value.Trim();
+                    if (token.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase)) token = token[BearerPrefix.Length..].Trim();
+                    if (token.Length > 0) return new WpfLoginResponseDto { AccessToken = token, TokenType = "Bearer" };
+                }
+            }
+            try
+            {
+                WpfLoginResponseDto? body = string.IsNullOrWhiteSpace(responseBody) ? null : JsonSerializer.Deserialize<WpfLoginResponseDto>(responseBody, JsonOptions);
+                return body == null || string.IsNullOrWhiteSpace(body.AccessToken) ? null : body;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>토큰이 없는 2xx 응답의 안내 문구. 토큰·비밀번호를 담지 않는다.</summary>
+        internal static string DescribeFailure(string? body)
+        {
+            const string NoToken = $"로그인 응답에 토큰이 없습니다(헤더 {TokenHeaderName}, 본문 accessToken)";
+            if (string.IsNullOrWhiteSpace(body)) return NoToken + " — 빈 응답.";
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(body);
+                if (document.RootElement.ValueKind != JsonValueKind.Object) return NoToken + " — 응답 형식 불일치.";
+                string? id = Text(document.RootElement, "msgId");
+                string? message = Text(document.RootElement, "msgCn");
+                return id == null && message == null
+                    ? NoToken + " — 응답 형식 불일치."
+                    : $"{NoToken}. 입력값 또는 계정 권한을 확인하세요(서버 응답 {id} {message}).";
+            }
+            catch (JsonException)
+            {
+                return NoToken + " — JSON이 아닌 응답.";
+            }
+        }
+
+        private static string? Text(JsonElement element, string name)
+            => element.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 }

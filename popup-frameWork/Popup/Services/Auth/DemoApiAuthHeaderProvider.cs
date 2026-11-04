@@ -52,11 +52,8 @@ namespace Popup.Services.Auth
         }
 
         /// <summary>ID/비밀번호로 일반 로그인 API를 호출해 토큰을 얻는다.</summary>
-        public static DemoApiAuthHeaderProvider ForCredential(DemoCredentialLoginClient loginClient, string logonId, string password)
-        {
-            ArgumentNullException.ThrowIfNull(loginClient);
-            return new(null, cancellationToken => loginClient.LoginAsync(logonId, password, cancellationToken));
-        }
+        public static DemoApiAuthHeaderProvider ForCredential(WpfLoginClient loginClient, string logonId, string password)
+            => ForLogin(loginClient, JsonSerializer.SerializeToElement(new { lgonId = logonId, passwd = password }));
 
         public bool UsesLogin => _login != null;
 
