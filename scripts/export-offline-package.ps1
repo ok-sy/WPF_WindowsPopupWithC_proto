@@ -184,6 +184,8 @@ try {
     # 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발한다. 프로토타입 RgstPop은 반입하지 않으므로 반입 scene-router에서도 참조 2줄을 뺀다.
     $routerPath = Join-Path $OutputRoot "2-zero-rule-web\zero-rule-web\main\src\scene\scene-router.tsx"
     $routerText = [System.IO.File]::ReadAllText($routerPath, $utf8)
+    # 샘플 설명을 겸하는 주석은 남기고 /rgst-pop 문장만 지운다.
+    $routerText = $routerText.Replace(" 기존 '/rgst-pop' 경로는 그대로 둔다.", "")
     $routerPattern = '(?m)^.*(features/RgstPop|''/rgst-pop'').*\n'
     if ([regex]::Matches($routerText, $routerPattern).Count -ne 2) { throw "scene-router의 RgstPop 참조가 2줄이 아닙니다. 반입 처리를 확인하세요." }
     $routerText = [regex]::Replace($routerText, $routerPattern, "")
