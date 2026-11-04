@@ -6,7 +6,11 @@
 - 변경: 선택 prop `hideToolbar`의 동작, 기존 `compact`와의 조합, 우클릭 서식 유지 및 완료 기준 정의.
 - 주요 파일: docs/design/20261104_PopupRichTextEditor_Toolbar_TODO.md.
 - 검증: 현행 컴포넌트의 툴바 렌더링과 본문 높이 조건 대조. 타입 체크와 화면 검증은 구현 단계에서 수행.
-- 상태: 정의서 추가 / 구현 대기.
+- 구현: `PopupRichTextEditor`에 선택 prop `hideToolbar` 추가. 툴바 Box와 본문·편집 영역 상단 모서리는 `compact || hideToolbar`, 본문 높이·문단 간격은 기존 `compact` 조건을 따름. 표시 상태만 바꾸므로 값이 바뀌어도 입력 내용·선택 범위 유지. 가이드 props·실행기·저장 부품 표와 `POPUP_FRONT_SAMPLE_HANDOVER.md` 갱신, `verify-rich-text-49`에 호출 조건·켜고 끄기·숨김 상태 입력·서식 검사 추가.
+- 구현 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupRichTextEditor.tsx, guide/guideData.ts, guide/guideRunners.tsx, guide/GuideSavePartsTab.tsx), scripts/verify-rich-text-49.cjs, scripts/verify-rich-text-49-entry.tsx, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md.
+- 구현 검증: `tsc --noEmit` 오류 0, 변경 파일 eslint 오류 0. `verify-rich-text-49` 73건, `verify-popup-guide-render` 26건, `verify-popup-transform-64` 77건, `verify-question-template-picker` 7건 통과. 로컬 관리자 웹 실화면 확인과 폐쇄망 반영은 미실행.
+- 미적용·확인 사항: 대상 화면이 지정되지 않아 호출부에는 `hideToolbar`를 전달하지 않음. 하네스에서 `compact` 문단 상단 여백이 코드의 6px가 아니라 12px로 계산되며, 변경 범위 밖이라 수정하지 않음.
+- 상태: 공통 컴포넌트 구현·하네스 검증 완료. 커밋에 포함, 원격 반영. 20261104 반입본에는 미포함.
 
 ## 2026-11-04-04 — 폐쇄망 반입본에서 프로토타입 등록 화면 RgstPop 제외
 

@@ -13,12 +13,16 @@ const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, s
 const w = window as any;
 Object.assign(w, { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, readTextBlocks, RICH_COLORS });
 let mountKey = 0;
-w.mount = (blocks: RichBlock[], disabled = false, previewBlocks: RichBlock[] | null = null) => {
+type EditorOptions = { compact?: boolean; hideToolbar?: boolean };
+let renderCurrent: (options: EditorOptions) => void = () => {};
+/* 다시 마운트하지 않고 옵션만 바꾼다(툴바 켜고 끄기 확인용). */
+w.setEditorOptions = (options: EditorOptions) => renderCurrent(options);
+w.mount = (blocks: RichBlock[], disabled = false, previewBlocks: RichBlock[] | null = null, options: EditorOptions = {}) => {
   w.lastChange = null;
   mountKey++;
-  root.render(<ThemeProvider theme={theme}><CssBaseline />
+  renderCurrent = (current) => root.render(<ThemeProvider theme={theme}><CssBaseline />
     <div style={{ width: 640, padding: 16 }}>
-      <PopupRichTextEditor key={mountKey} label="일반 텍스트" initialBlocks={blocks} disabled={disabled}
+      <PopupRichTextEditor key={mountKey} label="일반 텍스트" initialBlocks={blocks} disabled={disabled} compact={current.compact} hideToolbar={current.hideToolbar}
         onChange={(changed, plainText) => { w.lastChange = { blocks: changed, plainText }; }} />
     </div>
     {previewBlocks && <div id="preview" style={{ width: 300, padding: 16 }}>
@@ -29,6 +33,7 @@ w.mount = (blocks: RichBlock[], disabled = false, previewBlocks: RichBlock[] | n
     {previewBlocks && <div id="rich-blocks-preview"><PopupRichBlocks blocks={previewBlocks} /></div>}
     <button id="outside" style={{ marginLeft: 16 }}>바깥</button>
   </ThemeProvider>);
+  renderCurrent(options);
 };
 w.editor = () => (document.querySelector('.ck-editor__editable') as any)?.ckeditorInstance;
 /* 문단 index의 [start, end) 글자 범위를 선택한다(end 생략 = 커서). */

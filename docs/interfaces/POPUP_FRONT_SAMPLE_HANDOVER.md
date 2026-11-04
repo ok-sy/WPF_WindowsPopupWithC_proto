@@ -48,7 +48,7 @@
 
 | 컴포넌트 | props | 설명 |
 |---|---|---|
-| `PopupRichTextEditor` | `label`, `initialBlocks`, `onChange(blocks, plainText)`, `disabled?`, `compact?`, `placeholder?` | `compact`는 툴바를 숨긴 짧은 입력(문항·선택지·설명). 서식은 우클릭/'서식' 버튼 패널로 지정 |
+| `PopupRichTextEditor` | `label`, `initialBlocks`, `onChange(blocks, plainText)`, `disabled?`, `compact?`, `hideToolbar?`, `placeholder?` | `compact`는 툴바를 숨긴 짧은 입력(문항·선택지·설명). `hideToolbar`는 본문 높이를 유지한 채 상단 툴바만 숨김(값을 바꿔도 입력 내용 유지). 서식은 우클릭/'서식' 버튼 패널로 지정 |
 | `InlinePopupPreview` | `popup`, `onOpenPreview?`, `onRecommendedSize?`, `title?` | `onOpenPreview`가 있으면 "실제 크기로 보기" 버튼 표시. `title` 기본 "팝업 미리보기" |
 | `PopupPreviewDialog` | `popup`, `open`, `onClose`, `recommendedSize?` | `recommendedSize`는 인라인이 계산한 IMAGE 권장 창 크기(첫 표시용, 선택) |
 | `PopupQuestionEditor` | `questions`, `quiz`, `passingScore?`, `onChange`, `onPassingScoreChange`, `fixedQuestionScore?`, `hidePassingScore?` | `quiz=true`면 정답·배점·통과 점수 입력 표시. `fixedQuestionScore`(예: 1)면 배점 입력을 숨기고 새 문항도 그 배점, `hidePassingScore`면 통과 점수 입력을 숨김(부모가 계산) |

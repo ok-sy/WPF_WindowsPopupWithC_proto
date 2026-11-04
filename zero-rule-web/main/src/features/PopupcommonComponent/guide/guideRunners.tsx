@@ -85,10 +85,10 @@ function DialogHost({ popup, emit }: { popup: AdminPopupDetail; emit: RunnerEmit
 
 export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   PopupRichTextEditor: {
-    input: { label: '본문', initialBlocks: SAMPLE_BLOCKS, compact: false, disabled: false, placeholder: '본문을 입력하세요' },
-    hint: 'initialBlocks·compact·disabled를 바꿔 실행해 보세요. 편집기에 입력하면 onChange(blocks, plainText)가 OUTPUT에 나옵니다.',
+    input: { label: '본문', initialBlocks: SAMPLE_BLOCKS, compact: false, hideToolbar: false, disabled: false, placeholder: '본문을 입력하세요' },
+    hint: 'initialBlocks·compact·hideToolbar·disabled를 바꿔 실행해 보세요. 편집기에 입력하면 onChange(blocks, plainText)가 OUTPUT에 나옵니다.',
     render: (input, emit) => (
-      <PopupRichTextEditor label={input.label} initialBlocks={readTextBlocks(input.initialBlocks) ?? []} compact={input.compact}
+      <PopupRichTextEditor label={input.label} initialBlocks={readTextBlocks(input.initialBlocks) ?? []} compact={input.compact} hideToolbar={input.hideToolbar}
         disabled={input.disabled} placeholder={input.placeholder} onChange={(blocks, plainText) => emit('onChange', { blocks, plainText })} />
     ),
   },

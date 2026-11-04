@@ -277,6 +277,41 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`['#preview','#rich-blocks-preview'].every(s=>{const e=Array.from(document.querySelectorAll(s+' span')).find(e=>e.children.length===0&&e.textContent==='밑줄 취소선');
     const d=getComputedStyle(e).textDecorationLine;return d.includes('underline')&&d.includes('line-through');})`),
     '[62] TEXT and shared survey/quiz preview display both decorations together');
+  // 상단 툴바 숨김(hideToolbar): 호출 조건별 표시·높이·모서리, 켜고 끄기, 숨김 상태의 입력·서식
+  const toolbarLayout = () => run(`(()=>{const e=document.querySelector('.ck-editor__editable');
+    const tool=document.querySelector('.ck.ck-toolbar').parentElement;const body=tool.nextElementSibling;const p=e.querySelector('p');
+    return {toolbar:getComputedStyle(tool).display!=='none'&&tool.getBoundingClientRect().height>0,min:parseFloat(getComputedStyle(e).minHeight),
+      bodyTop:getComputedStyle(body).borderTopLeftRadius,bodyBottom:getComputedStyle(body).borderBottomLeftRadius,editTop:getComputedStyle(e).borderTopLeftRadius,
+      gapTop:Math.round(body.getBoundingClientRect().top-tool.previousElementSibling.getBoundingClientRect().bottom),pMargin:p?getComputedStyle(p).marginTop:''};})()`);
+  const toolbarBlocks = [{alignment:'LEFT',runs:[{text:'툴바 숨김 본문'}]}];
+  const shapes = {};
+  for (const [name, options, shown, min, top] of [['basic',{},true,140,'0px'],['hideToolbar',{hideToolbar:true},false,140,'4px'],['compact',{compact:true},false,40,'4px'],['compact+hideToolbar',{compact:true,hideToolbar:true},false,40,'4px']]) {
+    await run(`window.mount(${JSON.stringify(toolbarBlocks)},false,null,${JSON.stringify(options)})`); await waitEditor(); await pause(250);
+    const shape = shapes[name] = await toolbarLayout();
+    check(shape.toolbar===shown && shape.min===min && shape.bodyTop===top && shape.bodyBottom==='4px' && shape.editTop===(top==='4px'?'3px':'0px'),
+      '[toolbar] '+name+' toolbar, height and corners: '+JSON.stringify(shape));
+  }
+  check(shapes.hideToolbar.gapTop===0 && shapes.basic.pMargin===shapes.hideToolbar.pMargin,
+    '[toolbar] hidden toolbar leaves no blank line and keeps default paragraph spacing: '+JSON.stringify(shapes));
+  await run(`window.mount(${JSON.stringify(toolbarBlocks)},false,null,{})`); await waitEditor(); await pause(250);
+  await run(`window.keptEditor=window.editor();window.select(0,0,2);window.setEditorOptions({hideToolbar:true})`); await pause(150);
+  check(!(await toolbarLayout()).toolbar && await run(`window.editor()===window.keptEditor&&window.selectionText()==='툴바'`), '[toolbar] turning off keeps the editor instance and selection');
+  await run(`window.setEditorOptions({})`); await pause(150);
+  check((await toolbarLayout()).toolbar && await run(`window.editor()===window.keptEditor&&window.selectionText()==='툴바'&&!!document.querySelector('.ck-reset_all .ck.ck-toolbar')`), '[toolbar] turning on restores the same toolbar');
+  check(JSON.stringify(await toolbarLayout())===JSON.stringify(shapes.basic), '[toolbar] turning on again matches the default design');
+  await run(`window.mount(${JSON.stringify(toolbarBlocks)},false,null,{hideToolbar:true})`); await waitEditor(); await pause(250);
+  await run(`window.editor().editing.view.focus();window.select(0,0,2)`); await run(`window.editor().model.change(w=>w.insertText('입력',window.editor().model.document.selection.getFirstPosition()))`); await pause(80);
+  check((await blocks())[0].runs.map(r=>r.text).join('').startsWith('입력'), '[toolbar] hidden toolbar still emits change while typing');
+  await run(`window.select(0,0,2)`); await rightClickParagraph(0);
+  check(await panelOpen(), '[toolbar] right click opens the format panel while hidden');
+  await click('[aria-label="굵게"]');
+  check((await blocks())[0].runs[0].bold===true, '[toolbar] right-click format applies and emits change while hidden');
+  await key('Escape', 'Escape', 27);
+  check(await run(`(()=>{const e=new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:50,clientY:50,shiftKey:true});document.querySelector('.ck-editor__editable').dispatchEvent(e);return !e.defaultPrevented;})()`) && !(await panelOpen()),
+    '[toolbar] Shift+right click keeps the browser menu while hidden');
+  await run(`window.mount(${JSON.stringify(toolbarBlocks)},true,null,{hideToolbar:true})`); await waitEditor(); await pause(250);
+  await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(100);
+  check(await run(`window.editor().isReadOnly`) && !(await panelOpen()), '[toolbar] read-only stays locked with no format panel while hidden');
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});
   fs.writeFileSync(path.join(output,'preview-62.png'),Buffer.from(finalShot.data,'base64'));
