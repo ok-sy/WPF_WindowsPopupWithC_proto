@@ -6,7 +6,9 @@
 - 변경: `export-offline-package.ps1`에서 `features/RgstPop` 제외, 반입 `scene-router.tsx`에서 참조 2줄 제거(2줄이 아니면 생성 중단), DELETE 목록에 현재 RgstPop 파일 추가, TAR 제외 검사에 경로 추가. `OFFLINE_WPF_BUILD.md`·`POPUP_FRONT_SAMPLE_HANDOVER.md`에 범위 명시. 저장소의 RgstPop 코드·경로·검증 스크립트는 변경 없음.
 - 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md.
 - 미변경: 메뉴 SQL 04·20은 폐쇄망 `SCRE_TPCD`·`UP_PAGE_ID` 규칙이 미확인이라 수정하지 않고 README-IMPORT에 실행 주의만 기재. 가이드 화면 문구도 저장소 프로토타입 기준으로 유지. 9-git-history 번들은 조회 전용이라 RgstPop 이력을 유지.
-- 상태: 스크립트 수정 커밋에 포함, 원격 반영. 반입본 재생성 결과는 아래 후속에 기록.
+- 결과: 같은 날짜 규칙에 따라 `offline-export/20261104/`와 `20261104.tgz`를 다시 생성(이전 ea7e024 기준본 대체). 기준 커밋 de3875f, 웹 A 51·M 19·D 3, TAR 70개 파일(RgstPop 제외). TGZ 40,202,219바이트, SHA256 `99aa55c5000fb96b5ca05787a8fa664cd2bd4a8f055c0426ad8b819b7454723a`.
+- 검증: 웹 TAR의 RgstPop 파일·import·경로 참조 0건, 반입 `scene-router.tsx` 참조 0건, DELETE 목록에 RgstPop 절 포함, README-IMPORT 안내 포함, TGZ·TAR 체크섬 일치. HEAD 사본에서 RgstPop을 지우고 반입 `scene-router.tsx`를 적용해 `main` `tsc --noEmit` 오류 0. `next build`와 폐쇄망 반영은 미실행. 생성 과정에서 scene-router 참조 수 검사가 34행 주석까지 3건을 잡아 중단되어, 주석 문장 제거 후 재생성.
+- 상태: 반입본 재생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-11-04-03 — 같은 날짜 반입본 단일 폴더·TGZ 통합
 
