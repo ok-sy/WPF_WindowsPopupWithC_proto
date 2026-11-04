@@ -32,7 +32,7 @@ namespace Popup
      *   입력 JSON 본문을 보내는 오버로드, HttpClient 안쪽의 관찰 지점(HttpExchangeRecorder), 입력값 기반 인증 공급자뿐이다.
      *   응답 구조 재작성·별도 렌더러·가짜 deliveryId 생성은 하지 않는다.
      *
-     * [경계] 결과 큐(메모리 전용)는 "Base URL·인증 방식·인증 대상·X-Dev-User-Id" 연결마다 새로 만든다. 연결을 바꾸면 이전 연결의
+     * [경계] 결과 큐(메모리 전용)는 "Base URL·인증 방식·인증 대상" 연결마다 새로 만든다. 연결을 바꾸면 이전 연결의
      *   미전송 결과는 확인 후 버리며 다른 연결로는 보내지 않는다. 일반 실행의 결과 큐와도 섞이지 않는다(파일을 쓰지 않음).
      * [동시 실행] 이 모드에서 MainWindow는 API 서비스·주기 조회를 만들지 않으므로 자동 조회 루프와 겹치지 않는다.
      */
@@ -90,7 +90,6 @@ namespace Popup
             ApiLoginPathText.Text = settings.AuthLoginPath;
             ApiCredentialPathText.Text = DemoCredentialLoginClient.DefaultLoginPath;   // 비밀번호는 기본값을 두지 않는다.
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
-            ApiDevUserIdText.Text = MainWindow.ResolveDevUserId(settings.DevUserId) ?? string.Empty;
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
             switch (settings.AuthMode.Trim().ToUpperInvariant())
             {
@@ -120,7 +119,6 @@ namespace Popup
             ApiLoginPanel.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
             ApiTokenPanel.Visibility = SelectedAuthMode == "TOKEN" ? Visibility.Visible : Visibility.Collapsed;
             ApiCredentialPanel.Visibility = SelectedAuthMode == "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
-            ApiDevUserPanel.Visibility = SelectedAuthMode == "CREDENTIAL" ? Visibility.Collapsed : Visibility.Visible;   // 사용자는 로그인 토큰으로 정해진다.
             ApiLoginButton.Visibility = SelectedAuthMode is "LOGIN" or "CREDENTIAL" ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -313,7 +311,6 @@ namespace Popup
                 return RejectConnectionInput("Base URL은 http:// 또는 https://로 시작하는 절대 주소여야 합니다.", ApiBaseUrlText);
             }
             string mode = SelectedAuthMode;
-            string devUserId = mode == "CREDENTIAL" ? string.Empty : ApiDevUserIdText.Text.Trim();
             string loginPath = ApiLoginPathText.Text.Trim();
             string credentialPath = ApiCredentialPathText.Text.Trim();
             string credentialId = ApiCredentialIdText.Text.Trim();
@@ -343,7 +340,7 @@ namespace Popup
                     break;
             }
 
-            string key = ComputeConnectionKey(baseUrl, mode, identity, devUserId);
+            string key = ComputeConnectionKey(baseUrl, mode, identity);
             if (key == _apiConnectionKey && _apiService != null)
             {
                 if (forceLog) AppendLog("[연결] 입력값이 같아 현재 연결을 유지합니다.");
@@ -383,7 +380,7 @@ namespace Popup
             }
 
             _apiAuth = auth;
-            _apiService = new PopupApiService(baseUrl, auth, string.IsNullOrEmpty(devUserId) ? null : devUserId, _apiHttpClient);
+            _apiService = new PopupApiService(baseUrl, auth, null, _apiHttpClient);
             _apiQueue = new PopupResultQueue(_apiService);
             _apiConnectionKey = key;
             _apiAuthModeLabel = mode switch { "LOGIN" => "로그인 토큰", "TOKEN" => "토큰 직접 입력", "CREDENTIAL" => $"ID/비밀번호 로그인({credentialId})", _ => "인증 헤더 없음" };
@@ -394,18 +391,17 @@ namespace Popup
             _lastPollingIntervalSeconds = null;
             ApiConnectionExpander.IsExpanded = false;   // POL-14-02 : Demo 모드 — 적용한 연결은 요약만 남기고 접는다
             AppendLog($"--- 연결 적용: {baseUrl} · {_apiAuthModeLabel}"
-                      + (string.IsNullOrEmpty(devUserId) ? string.Empty : $" · X-Dev-User-Id={devUserId}")
                       + $" · 이 연결의 미전송 {Describe(_apiQueue.CountPending())} ---");
             UpdateApiState();
             return true;
         }
 
-        /// <summary>■ 연결 키 계산 — in : baseUrl·mode·identity·devUserId(string) · out: string SHA-256 소문자 16진수.
-        /// Base URL·인증 방식·인증 대상·X-Dev-User-Id 조합의 해시. 토큰 원문은 남기지 않고 연결 변경 판단에만 쓴다.</summary>
-        internal static string ComputeConnectionKey(string baseUrl, string mode, string identity, string devUserId)
+        /// <summary>■ 연결 키 계산 — in : baseUrl·mode·identity(string) · out: string SHA-256 소문자 16진수.
+        /// Base URL·인증 방식·인증 대상 조합의 해시. 토큰 원문은 남기지 않고 연결 변경 판단에만 쓴다.</summary>
+        internal static string ComputeConnectionKey(string baseUrl, string mode, string identity)
         {
             byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(
-                $"{baseUrl.Trim().TrimEnd('/').ToLowerInvariant()}\n{mode}\n{identity}\n{devUserId}"));
+                $"{baseUrl.Trim().TrimEnd('/').ToLowerInvariant()}\n{mode}\n{identity}"));
             return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
@@ -588,7 +584,6 @@ namespace Popup
             }
             string token = _apiAuth?.UsesLogin == true ? (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)") : string.Empty;
             // POL-14-02 : Demo 모드 — 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
-            string devUser = SelectedAuthMode == "CREDENTIAL" ? string.Empty : ApiDevUserIdText.Text.Trim();
             if (_apiAuth?.UsesLogin == true)
             {
                 if (_apiAuth.HasAuthorization) { _apiStepStates["로그인"] = '✓'; _apiStepStates["인증 준비"] = '✓'; }
@@ -601,7 +596,6 @@ namespace Popup
             }
             RenderApiSteps();
             ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"
-                + (devUser.Length == 0 ? string.Empty : $" · X-Dev-User-Id {devUser}")
                 + $"\n미전송 {Describe(_apiQueue.CountPending())}";
             ServerStateText.Text = $"{_apiService.BaseUrl} · {_apiAuthModeLabel}{token} · 미전송 {Describe(_apiQueue.CountPending())}"
                 + $" · nextStatus {_lastNextStatus ?? "-"} · pollingIntervalSeconds {_lastPollingIntervalSeconds?.ToString() ?? "-"}(미사용)";

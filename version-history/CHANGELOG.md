@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-10 — dev: API Demo X-Dev-User-Id 입력 제거
+
+- 이유: 폐쇄망 서버 인증은 이 프로젝트 관리 범위가 아니고 API Demo는 로그인·토큰 방식으로 검증하므로, Demo의 개발용 사용자 헤더 입력이 불필요.
+- 변경: `DemoWindow`에서 `X-Dev-User-Id` 입력·전송·연결 키 구성·상태 표시를 제거. appsettings `DevUserId`도 API Demo에서는 사용하지 않음. 서버 `DevHeaderWpfUserResolver`, 일반 실행의 `DevUserId`, `PopupApiService`의 헤더 기능은 변경 없음.
+- 주요 파일: popup-frameWork/Popup/(DemoWindow.xaml, DemoWindow.Api.cs), popup-frameWork/README.md, scripts/ApiDemoTests/Program.cs. 설계 51은 당시 기록으로 유지.
+- 검증: 별도 출력 폴더 빌드 경고·오류 0, `ApiDemoTests` 102건 통과(입력 없음, appsettings `DevUserId`가 있어도 모든 조회에 헤더 미전송 확인). 실제 서버 회귀와 화면 육안 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-04-09 — 20261105 CI 이미지 단독 반입 묶음 생성
 
 - 이유: 소스 반입 없이 CI 이미지만 다음 날 반입할 수 있도록 별도 준비.

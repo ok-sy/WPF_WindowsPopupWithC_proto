@@ -119,14 +119,13 @@ internal static class Program
 
     private static void CheckConnectionKey()
     {
-        string Key(string url, string mode, string identity, string dev)
-            => (string)typeof(DemoWindow).GetMethod("ComputeConnectionKey", Flags)!.Invoke(null, new object[] { url, mode, identity, dev })!;
-        string baseKey = Key("http://h/p", "LOGIN", "body", "E1");
-        Check(baseKey == Key("HTTP://H/p/", "LOGIN", "body", "E1"), "[51-7] trailing slash and host case do not split the queue");
-        Check(baseKey != Key("http://h2/p", "LOGIN", "body", "E1"), "[51-7] other base URL uses another queue");
-        Check(baseKey != Key("http://h/p", "TOKEN", "body", "E1"), "[51-7] other auth mode uses another queue");
-        Check(baseKey != Key("http://h/p", "LOGIN", "other", "E1"), "[51-7] other account uses another queue");
-        Check(baseKey != Key("http://h/p", "LOGIN", "body", "E2"), "[51-7] other dev user uses another queue");
+        string Key(string url, string mode, string identity)
+            => (string)typeof(DemoWindow).GetMethod("ComputeConnectionKey", Flags)!.Invoke(null, new object[] { url, mode, identity })!;
+        string baseKey = Key("http://h/p", "LOGIN", "body");
+        Check(baseKey == Key("HTTP://H/p/", "LOGIN", "body"), "[51-7] trailing slash and host case do not split the queue");
+        Check(baseKey != Key("http://h2/p", "LOGIN", "body"), "[51-7] other base URL uses another queue");
+        Check(baseKey != Key("http://h/p", "TOKEN", "body"), "[51-7] other auth mode uses another queue");
+        Check(baseKey != Key("http://h/p", "LOGIN", "other"), "[51-7] other account uses another queue");
     }
 
     private static void CheckInMemoryDemoLayout()
@@ -257,7 +256,7 @@ internal static class Program
         TextBlock error = (TextBlock)window.FindName("ApiInputErrorText");
         TextBlock steps = (TextBlock)window.FindName("ApiStepText");
         bool Shown(string name) => ((FrameworkElement)window.FindName(name)).Visibility == Visibility.Visible;
-        Check(Shown("ApiCredentialPanel") && !Shown("ApiLoginPanel") && !Shown("ApiTokenPanel") && !Shown("ApiDevUserPanel"), "[U-02] credential mode shows only its inputs");
+        Check(Shown("ApiCredentialPanel") && !Shown("ApiLoginPanel") && !Shown("ApiTokenPanel"), "[U-02] credential mode shows only its inputs");
         Check(password.Password.Length == 0 && ((TextBox)window.FindName("ApiCredentialPathText")).Text == "/api/auth/login", "[U-03] password is not prefilled and the path has a default");
 
         // 입력 검증은 요청 없이 입력란 근처에 표시한다.
@@ -341,7 +340,7 @@ internal static class Program
         int loginsBeforeToken = server.CredentialBodies.Count;
         mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "TOKEN");
         Pump(() => true);
-        Check(!Shown("ApiCredentialPanel") && Shown("ApiTokenPanel") && Shown("ApiDevUserPanel"), "[R-10] token mode keeps its existing inputs");
+        Check(!Shown("ApiCredentialPanel") && Shown("ApiTokenPanel"), "[R-10] token mode keeps its existing inputs");
         ((PasswordBox)window.FindName("ApiTokenBox")).Password = server.ValidToken!;
         Query(window);
         Check(server.CredentialBodies.Count == loginsBeforeToken && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-10] token mode does not call the credential login");
@@ -417,7 +416,7 @@ internal static class Program
     {
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/wpf/auth/login"
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/wpf/auth/login", DevUserId = "E-SETTINGS"
         };
         DemoWindow window = new(settings);
         window.Show();
@@ -429,7 +428,7 @@ internal static class Program
               && ((TextBlock)window.FindName("ModeBadgeText")).Text == "API 연결",
             "[54-2] API demo shows the query action bar outside the scroll area and the API mode badge");
         ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
-        ((TextBox)window.FindName("ApiDevUserIdText")).Text = string.Empty;
+        Check(window.FindName("ApiDevUserIdText") == null, "[dev-header] API demo has no X-Dev-User-Id input");
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{\"probe\":1}";
 
         // 1) 로그인 → 수동 조회(입력 JSON 본문 그대로) → 팝업 표시
@@ -520,13 +519,14 @@ internal static class Program
 
         // 7) 연결 변경(사용자 변경, 미전송 없음) → 새 메모리 결과 큐
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{}";
-        ((TextBox)window.FindName("ApiDevUserIdText")).Text = "E2002";
+        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E2002\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         server.PopupMode = "NULL";
         Query(window);
         var otherQueue = (PopupResultQueue)typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)!;
         Check(!ReferenceEquals(otherQueue, queue) && otherQueue.CountPending() == 0
-              && server.PopupRequests[^1].DevUserId == "E2002" && server.LoginBodies.Count == 3,
-            "[51-7] changed connection uses a new in-memory queue, new token and X-Dev-User-Id");
+              && server.LoginBodies.Count == 3 && server.LoginBodies[^1].Contains("E2002")
+              && server.PopupRequests.All(r => string.IsNullOrEmpty(r.DevUserId)),
+            "[51-7] changed connection uses a new in-memory queue and token, and API demo never sends X-Dev-User-Id");
         window.Close();
     }
 

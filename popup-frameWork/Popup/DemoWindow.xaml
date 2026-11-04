@@ -156,11 +156,6 @@
                                                  ToolTip="토큰만 넣으면 'Bearer '를 붙입니다. 'Bearer xxx'처럼 스킴까지 넣어도 됩니다."/>
                                     <TextBlock Text="토큰만 넣으면 'Bearer '를 붙입니다. 401이어도 재로그인하지 않습니다." Style="{StaticResource Hint}" Margin="0,0,0,10"/>
                                 </StackPanel>
-                                <StackPanel x:Name="ApiDevUserPanel">
-                                <TextBlock Text="X-Dev-User-Id (선택)" Style="{StaticResource Label}"/>
-                                <TextBox x:Name="ApiDevUserIdText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                         ToolTip="서버 dev-user-header 프로파일 전용. 비우면 헤더를 보내지 않습니다."/>
-                                </StackPanel>
                                 <TextBlock x:Name="ApiInputErrorText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,8"
                                            AutomationProperties.LiveSetting="Assertive"/>
                                 <Button x:Name="ApiApplyButton" Content="연결 적용" Click="ApiApplyButton_Click"

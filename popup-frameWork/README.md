@@ -1018,7 +1018,7 @@ popupSample.exe -Demo -Api
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
 - 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 / 인증 헤더 없음 / ID/비밀번호 로그인 — 초기 선택은 `Auth.Mode`),
   `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/ssoLogin` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
-  `X-Dev-User-Id`(선택, 서버 dev-user-header 전용), `단건 조회 요청 JSON`(기본 `{}`).
+  `단건 조회 요청 JSON`(기본 `{}`). API Demo는 `X-Dev-User-Id`를 보내지 않는다(appsettings `DevUserId`도 사용하지 않음).
 - 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
   → 창 닫기·제출 → 결과를 `POST /api/wpf/popups/results`로 실제 전송 → `status`·`nextStatus`를 로그에 표시.
   **자동 폴링은 없고** `nextStatus=AVAILABLE`이어도 다음 조회는 버튼으로 실행한다. `pollingIntervalSeconds`는 로그·상태줄에만 표시한다.
@@ -1029,7 +1029,7 @@ popupSample.exe -Demo -Api
   `Authorization` 헤더와 응답의 `accessToken`은 기본 마스킹하며 `토큰 평문 표시(화면만)`로만 볼 수 있다. 토큰은 메모리에만 두고 파일 로그에 남기지 않는다.
 - 인증: 로그인 방식은 첫 요청 직전 로그인하고, 401이면 같은 로그인 본문으로 1회 재로그인 후 같은 요청을 재전송한다. 토큰 직접 입력은 재로그인하지 않는다. `로그인` 버튼은 지금 로그인해 토큰을 교체한다.
 - 재시도: 결과의 `resultId`는 생성 시 확정되며 `미전송 결과 재전송`(또는 다음 조회 전 자동 전송)은 같은 ID·본문으로 보낸다. 종결(ACCEPTED·DUPLICATE·REJECTED) 판정·400 제외·INTERNAL_ERROR 재시도 상한은 일반 실행의 결과 큐와 같다.
-- 연결 경계: 결과 큐(메모리 전용)는 `Base URL·인증 방식·인증 대상(로그인 본문 또는 토큰)·X-Dev-User-Id` 연결마다 새로 만든다.
+- 연결 경계: 결과 큐(메모리 전용)는 `Base URL·인증 방식·인증 대상(로그인 본문, ID/비밀번호 또는 토큰)` 연결마다 새로 만든다.
   연결을 바꾸면 이전 연결의 미전송 결과는 버린다(미전송이 있으면 변경 전 확인). 다른 연결이나 일반 실행의 결과 큐로 보내지 않는다.
 - 트레이 `팝업 다시 조회`는 API Demo에서 `팝업 조회`와 같은 실제 조회로 동작한다. 이 모드의 관리 화면(MainWindow)은 API 서비스·주기 조회를 만들지 않아 자동 조회 루프와 겹치지 않는다.
 - 인메모리 전용 조작(샘플 선택·옵션 설정·상태 초기화·전체 실행·SSO·로그인 테스트)은 API Demo에서 숨긴다.
