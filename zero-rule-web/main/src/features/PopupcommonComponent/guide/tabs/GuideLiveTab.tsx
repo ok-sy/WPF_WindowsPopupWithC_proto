@@ -1,6 +1,6 @@
 import type { AdminPopupDetail, PopupQuestion } from '@local/domain';
 import {
-  Alert, Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
+  Alert, Box, Button, Chip, FormControl, FormControlLabel, InputLabel, MenuItem, Paper, Select, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
 import { useMemo, useState, type ReactNode } from 'react';
 import {
@@ -29,6 +29,7 @@ function LiveInputs({ selection, onType, title, onTitle, content, onContent, onB
   editorKey: number; typeNote: ReactNode;
 }) {
   const popupType = selection === 'VIDEO_QUIZ' ? 'QUIZ' : selection;
+  const [toolbarOn, setToolbarOn] = useState(true);
   return (
     <Stack spacing={2.5}>
       <Stack spacing={1}>
@@ -56,8 +57,12 @@ function LiveInputs({ selection, onType, title, onTitle, content, onContent, onB
         </Stack>
       )}
       {popupType === 'TEXT' && (
-        <PopupRichTextEditor key={editorKey} label="본문 (PopupRichTextEditor)"
-          initialBlocks={readTextBlocks(content.textBlocks) ?? plainTextToBlocks(text(content, 'plainText'))} onChange={onBody} />
+        <Stack spacing={0.5}>
+          <FormControlLabel label={<>상단 툴바 표시 (<C>hideToolbar</C>)</>}
+            control={<Switch size="small" checked={toolbarOn} slotProps={{ input: { 'aria-label': '상단 툴바 표시' } }} onChange={(event) => setToolbarOn(event.target.checked)} />} />
+          <PopupRichTextEditor key={editorKey} label="본문 (PopupRichTextEditor)" hideToolbar={!toolbarOn}
+            initialBlocks={readTextBlocks(content.textBlocks) ?? plainTextToBlocks(text(content, 'plainText'))} onChange={onBody} />
+        </Stack>
       )}
       {popupType === 'IMAGE' && (
         <TextField size="small" label="이미지 URL" value={text(content, 'imageUrl')} onChange={(event) => onContent('imageUrl', event.target.value)} />

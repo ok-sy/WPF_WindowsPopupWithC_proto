@@ -54,6 +54,13 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-04-hide-toolbar', date: '2026-11-04', category: 'ADDED', status: 'DONE', doneDate: '2026-11-04',
+    title: 'PopupRichTextEditor 상단 툴바 켜고 끄기(hideToolbar)',
+    body: ['hideToolbar를 넘기면 본문 높이는 그대로 두고 상단 툴바만 숨깁니다. 값을 바꿔도 입력 내용과 선택 범위가 유지되고, 서식은 우클릭이나 서식 버튼으로 지정합니다.', '넘기지 않으면 기존 화면과 같습니다.'],
+    components: ['PopupRichTextEditor'],
+    action: '툴바를 숨길 화면에서만 hideToolbar를 넘깁니다. 켜고 끄는 버튼은 그 화면에서 만듭니다.',
+  },
+  {
     id: '2026-10-30-recommended-size-loop', date: '2026-10-30', category: 'CHANGED', status: 'DONE', doneDate: '2026-10-30',
     title: 'onRecommendedSize — 크기가 바뀔 때만 호출',
     body: ['`PopupPreview`·`InlinePopupPreview`의 `onRecommendedSize`가 계속 반복 호출되던 문제를 고쳤습니다.',

@@ -209,7 +209,7 @@ export const COMPONENTS: GuideComponent[] = [
     ],
     outputs: [{ name: 'onChange', type: '(blocks: RichBlock[], plainText: string) => void', required: true, description: '입력할 때마다 서식 본문과 일반 글자를 돌려줍니다.' }],
     values: ['TEXT: content.textBlocks + content.plainText', '설문·퀴즈: content.surveyTitleBlocks·descriptionBlocks', '문항: question.titleBlocks·descriptionBlocks, 선택지: option.textBlocks'],
-    reuse: ['HTML은 저장하지 않습니다. onChange로 받은 두 값을 함께 저장합니다.', '편집기를 여러 개 두어도 서로 영향을 주지 않습니다.', 'ckeditor5를 직접 import하지 말고 이 컴포넌트를 쓰세요.'],
+    reuse: ['HTML은 저장하지 않습니다. onChange로 받은 두 값을 함께 저장합니다.', '툴바를 켜고 끄려면 화면의 state를 hideToolbar에 넘깁니다. 입력 내용은 유지됩니다.', '편집기를 여러 개 두어도 서로 영향을 주지 않습니다.', 'ckeditor5를 직접 import하지 말고 이 컴포넌트를 쓰세요.'],
     example: `const [body, setBody] = useState<{ textBlocks: RichBlock[]; plainText: string }>({ textBlocks: [], plainText: '' });
 <PopupRichTextEditor key={editorKey} label="본문" initialBlocks={body.textBlocks}
   onChange={(textBlocks, plainText) => setBody({ textBlocks, plainText })} />`,

@@ -74,6 +74,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const picked = JSON.parse(await run(`Array.from(document.querySelectorAll('pre')).map(p=>p.textContent).find(t=>t.trim().startsWith('{'))`));
   check(!('width' in picked) && !('displayStartAt' in picked) && picked.title === '가이드 실습', 'Independent live output has only entered values (no width/period): ' + JSON.stringify(picked));
   check(await run(`!!document.querySelector('[data-testid]') || document.body.innerText.includes('3. 미리보기')`), 'Live tab renders the preview');
+  // 실습 탭 툴바 스위치: 끄면 상단 툴바만 숨고 같은 편집기가 유지되며, 켜면 돌아온다.
+  const liveToolbarShown = () => run(`(()=>{const t=document.querySelector('.ck.ck-toolbar');return !!t&&getComputedStyle(t.parentElement).display!=='none';})()`);
+  check(await liveToolbarShown(), 'Live tab shows the editor toolbar by default');
+  await run(`window.keptGuideEditor=document.querySelector('.ck-editor__editable').ckeditorInstance;document.querySelector('input[aria-label="상단 툴바 표시"]').click()`); await pause(300);
+  check(!(await liveToolbarShown()) && await run(`document.querySelector('.ck-editor__editable').ckeditorInstance===window.keptGuideEditor`), 'Live tab toolbar switch hides the toolbar and keeps the editor');
+  await run(`document.querySelector('input[aria-label="상단 툴바 표시"]').click()`); await pause(300);
+  check(await liveToolbarShown(), 'Live tab toolbar switch restores the toolbar');
   // 추출 항목 선택: 칩을 고르면 호출 코드와 결과가 바뀐다. state에 없는 키(width)는 골라도 결과에 없다.
   const liveCode = () => run(`document.querySelector('[data-testid=live-pick-code]').textContent`);
   const liveResult = async () => JSON.parse(await run(`document.querySelector('[data-testid=live-pick-result]').textContent`));
