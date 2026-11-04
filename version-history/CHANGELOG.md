@@ -5,7 +5,9 @@
 - 이유: 같은 날짜 반입물이 폴더·압축으로 나뉘면 폐쇄망 `7-archaiv/반입파일`의 날짜별 보관 구조와 맞지 않아 하나로 통합.
 - 변경: `export-offline-package.ps1`에 `-GitHistoryDir` 추가. 지정한 폴더의 조회 전용 번들을 `9-git-history` 묶음으로 같은 날짜 TGZ에 포함하고 README-IMPORT 표·절차에 반영. 폐쇄망 `E:\Workspace`의 1~8번 폴더와 겹치지 않도록 9번 사용. `OFFLINE_WPF_BUILD.md`에 같은 날짜 통합 규칙 추가. 별도 폴더였던 히스토리 번들은 재생성 원본으로 `.offline-cache/git-history-20261104/`(Git 제외)로 이동.
 - 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md.
-- 상태: 스크립트 수정 커밋에 포함, 원격 반영. 반입본 생성 결과는 아래 후속에 기록.
+- 결과: `offline-export/20261104/` 폴더 하나와 `20261104.tgz` 하나로 생성. 기준 커밋 ea7e024, 직전 반입본 20261103(71f58ae). 서버 A 153·M 10·D 0, 웹 A 51·M 23·D 6, WPF 소스 95, 문서 180, 9-git-history 4개 파일. TGZ 40,219,932바이트, SHA256 `b79af418ac8ae2da249b0917eb80617b8c3cc6284152735366416a801aca6fc1`. README-IMPORT에 `ZERO_RULE_DB_PASSWORD` 설정 안내 포함.
+- 검증: 스크립트의 TAR 파일 수·경로·제외 대상 검사 통과, TGZ·TAR 체크섬 일치. TGZ를 풀어 번들 체크섬·`git bundle verify` 통과, 소스 TAR 전체에서 원격 개발 DB 비밀번호 0건, `JndiResource` 빈 기본값 확인. `-VerifyBuild`는 WPF 소스 변경이 없어 미실행. 폐쇄망 반영은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
 
 ## 2026-11-04-02 — dev: TODO50-S1 원격 개발 DB 비밀번호 저장소 제거(2026-10-15 유지 결정 번복)
 
