@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-12 — dev: 테스트 계정 master APP_USER 영구 등록
+
+- 이유: `master`로 팝업 API를 호출하면 `APP_USER`에 없어 403 `WPF_USER_INACTIVE`로 끝나, 개발 환경에 활성 사용자로 상시 등록.
+- 변경: 재실행 가능한 `db/oracle/21_dev_master_app_user_oracle.sql` 추가(부서 `D110`, 직위 `P01`, 활성). 대상 조건과 팝업은 추가하지 않음. `db/oracle/README.md`와 API Demo TODO 갱신.
+- 주요 파일: db/oracle/21_dev_master_app_user_oracle.sql, db/oracle/README.md, docs/design/20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md.
+- 검증: 로컬 XE 실행·재실행과 원격 개발 DB 실행 후 `master` 활성 행 확인. 로컬 프로토타입 서버에서 `master` 조회 HTTP 200(`popup=null`) 확인. 원격 개발 DB에서는 서버 호출 미실행.
+- 상태: 커밋에 포함, 원격 반영. 스크립트는 다음 반입본 4-docs에 포함되나 폐쇄망 실행 대상이 아님.
+
 ## 2026-11-04-11 — dev: WPF 로그인 응답 헤더 토큰 지원
 
 - 이유: 폐쇄망 `p/api/ssoLogin`은 기존 로그인에서 인증 수단만 SSO로 바뀐 형태로 토큰을 응답 헤더 `x-custom-authorization`으로 준다(2026-10-27 연동 가이드). 폐쇄망에 적용한 헤더 읽기 수정이 저장소에 없어, `3-popup-frameWork` 소스 덮어쓰기 때 일반 실행 로그인이 실패할 수 있음.

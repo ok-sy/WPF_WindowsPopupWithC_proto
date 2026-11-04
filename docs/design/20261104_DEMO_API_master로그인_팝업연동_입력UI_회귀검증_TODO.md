@@ -56,6 +56,7 @@ SSO 호출 없이 테스트 계정 `master`(비밀번호는 문서에 적지 않
 - 로컬 XE에는 권한·`APP_USER` 데이터가 없어 임시 행과 임시 TEXT 팝업으로 검증하고 모두 지웠다. 로그인 시각·`CLOVER_USER_AUTH`·실패 횟수는 로컬 XE의 `master`에 남을 수 있다.
 - 실제 서버 회귀는 `POPUP_DEMO_REAL_BASE_URL`·`POPUP_DEMO_REAL_ID`·`POPUP_DEMO_REAL_PASSWORD`를 설정하고 `scripts/ApiDemoTests`를 실행한다. 비밀번호는 저장소에 두지 않는다.
 - 원격 개발 DB(2026-11-04): `master` 전용 임시 `APP_USER`와 샘플 복사 팝업을 유형별로 만들어 검증하고 모두 지웠다(남은 행 0건, 기존 공지 4건 유지). TEXT·VIDEO·SURVEY·QUIZ 모두 로그인 → 조회 → 화면 생성 → 결과 저장(`nextStatus=EMPTY`) → 수동 재조회(`popup=null`) 통과.
+- 2026-11-04 이후 `master`는 `db/oracle/21_dev_master_app_user_oracle.sql`로 로컬 XE·원격 개발 DB의 `APP_USER`에 영구 등록되어 있다(로컬 XE의 로그인 권한 행은 없음).
 - TEXT는 4회 중 첫 1회만 결과 단계 대기 시간(20초) 초과로 실패했다. 이때도 서버에 결과 행은 저장됐고, 같은 조건 재실행 3회는 모두 통과해 원인은 재현·확정하지 못했다. 재발 시 로그를 남기도록 검사를 보완했다.
 - 남은 항목: IMAGE·VIDEO+QUIZ 실제 서버 렌더링(원격 샘플 없음), 신규 로그인 경로의 타임아웃·연결 실패 수동 확인, 화면 육안 확인.
 
