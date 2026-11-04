@@ -1,5 +1,5 @@
 ﻿# 원격 개발 DB(192.168.114.71 XE, 앱 계정 zero-rule = 방식 B, 스키마 접두어 "")에 db/oracle 이관 스크립트 1개를 실행한다.
-# 비밀번호는 zero-rule-server/app/src/main/resources/application-dev_db.yml의 주석 줄(#password:)에서 읽고 화면에 출력하지 않는다.
+# 비밀번호는 환경변수 ZERO_RULE_DB_PASSWORD, 없으면 Git 제외 파일 shell/dev-db.local.env에서 읽고 출력하지 않는다.
 # 사용: powershell -NoProfile -File db\oracle\tools\apply-dev-db.ps1 17_question_rich_text_oracle.sql
 param([Parameter(Mandatory = $true)][string]$Script)
 
@@ -10,10 +10,10 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $oracleDir)
 if ($Script -notmatch '^\d{2}_[A-Za-z0-9_]+_oracle\.sql$' -or -not (Test-Path (Join-Path $oracleDir $Script))) {
     throw "db/oracle 아래의 NN_*_oracle.sql 이름만 받습니다: $Script"
 }
-$config = Join-Path $repoRoot 'zero-rule-server\app\src\main\resources\application-dev_db.yml'
-$line = (Select-String -Path $config -Pattern '#password:' | Select-Object -First 1).Line
-if (-not $line) { throw "개발 DB 비밀번호 줄을 찾지 못했습니다: $config" }
-$password = ($line -split 'password:\s*', 2)[1].Trim().Trim('"').Trim("'")
+. (Join-Path $repoRoot 'shell\dev-db-env.ps1')
+Import-DevDbEnv
+$password = $env:ZERO_RULE_DB_PASSWORD
+if ([string]::IsNullOrWhiteSpace($password)) { throw 'ZERO_RULE_DB_PASSWORD가 없습니다. shell/dev-db.local.env.example을 복사해 shell/dev-db.local.env를 만드세요.' }
 
 $env:NLS_LANG = 'KOREAN_KOREA.AL32UTF8'   # 한글 주석의 따옴표가 깨지면 ORA-01756
 Push-Location $oracleDir

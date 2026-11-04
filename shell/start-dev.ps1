@@ -21,7 +21,7 @@ param(
     [switch]$LocalDb,                                            # 로컬 XE 21c로 백엔드 기동
     [string]$LocalDbUrl = 'jdbc:log4jdbc:oracle:thin:@//localhost:1521/XEPDB1',
     [string]$LocalDbUser = 'ZERO_RULE',
-    [string]$LocalDbPassword = 'zero_rule',
+    [string]$LocalDbPassword = '',                                # 비우면 ZERO_RULE_LOCAL_DB_PASSWORD(환경변수·dev-db.local.env)
     [string]$LocalPopupSchema = 'POPUP',                         # 로컬은 별도 POPUP 계정(설계 기본)
     [string]$ApiBaseUrl = 'http://localhost:8080/zero-rule-server',  # 프런트가 호출할 백엔드 주소
     [string]$RouterBaseUrl = '/',
@@ -74,6 +74,11 @@ function Start-DevWindow {
         -ArgumentList @('-NoProfile', '-NoExit', '-EncodedCommand', $encodedCommand) | Out-Null
 }
 
+# [설계 50 S1] DB 비밀번호는 저장소에 두지 않는다. 이미 설정된 환경변수가 우선이고, 없으면 Git 제외 파일에서 읽는다.
+. (Join-Path $PSScriptRoot 'dev-db-env.ps1')
+Import-DevDbEnv
+if (-not $LocalDbPassword) { $LocalDbPassword = $env:ZERO_RULE_LOCAL_DB_PASSWORD }
+
 # ---- 백엔드 --------------------------------------------------------------------
 if (-not $SkipBackend) {
     $backendEnv = @{ JAVA_HOME = $javaHome }
@@ -81,11 +86,18 @@ if (-not $SkipBackend) {
         # JndiResource(추가 분기)·MyBatisConfig(custom.popup.schema)가 읽는 환경변수
         $backendEnv.ZERO_RULE_DB_URL = $LocalDbUrl
         $backendEnv.ZERO_RULE_DB_USER = $LocalDbUser
+        if ([string]::IsNullOrWhiteSpace($LocalDbPassword)) {
+            Write-Warning 'ZERO_RULE_LOCAL_DB_PASSWORD is not set. See shell/dev-db.local.env.example.'
+        }
         $backendEnv.ZERO_RULE_DB_PASSWORD = $LocalDbPassword
         $backendEnv.CUSTOM_POPUP_SCHEMA = $LocalPopupSchema
         $dbLabel = "local XE ($LocalDbUrl, popup schema=$LocalPopupSchema)"
     } else {
         $dbLabel = 'remote dev DB 192.168.114.71:4004/XE (VPN required, popup tables in app schema)'
+        # [설계 50 S1] 원격 개발 DB 비밀번호는 저장소에 없다. 환경변수 또는 shell/dev-db.local.env의 ZERO_RULE_DB_PASSWORD를 백엔드 창이 물려받는다.
+        if ([string]::IsNullOrWhiteSpace($env:ZERO_RULE_DB_PASSWORD)) {
+            Write-Warning 'ZERO_RULE_DB_PASSWORD is not set. Create shell/dev-db.local.env from the .example file; the backend cannot log in to the remote dev DB until it is set.'
+        }
     }
     if ($TokenTtl) {
         # WpfAuthPrototypeProps.tokenTtlMinutes (Duration, 단위 없는 숫자=분) — Spring relaxed binding으로 환경변수가 yml 값을 덮어쓴다

@@ -238,7 +238,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 `tools/apply-dev-db.ps1 <NN_..._oracle.sql>` — 원격 개발 DB(192.168.114.71 XE, 앱 계정 `zero-rule`, 방식 B 빈 스키마 접두어)에 이관 스크립트 1개를 실행한다.
 
-- 비밀번호는 `zero-rule-server/app/src/main/resources/application-dev_db.yml`의 주석 줄(`#password:`)에서 읽고 출력하지 않는다.
+- 비밀번호는 환경변수 `ZERO_RULE_DB_PASSWORD`, 없으면 Git 제외 파일 `shell/dev-db.local.env`에서 읽고 출력하지 않는다.
 - `db/oracle` 아래 `NN_*_oracle.sql` 이름만 받는다(경로·다른 파일 실행 방지).
 - PowerShell 5.1은 빈 인자(`""`)를 네이티브 프로그램에 넘기지 못하고 파이프 입력에는 BOM이 붙어 첫 줄을 sqlplus가 알아보지 못한다(SP2-0734). 그래서 `DEFINE 1 = ''`과 스크립트 호출만 담은 임시 래퍼(BOM 없음)를 만들어 실행하고 지운다.
 - 실DB 테스트를 원격으로 돌릴 때 `POPUP_TEST_DB_SCHEMA=""`는 PowerShell에서 빈 값 설정이 변수 삭제가 되어 기본 `POPUP.`로 돌아간다(ORA-00942). Git Bash 등 빈 값을 넘길 수 있는 셸에서 실행한다.

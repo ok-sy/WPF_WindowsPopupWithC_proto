@@ -46,3 +46,6 @@ scripts/ApiDemoTests/obj/
 
 # 구버전 인터페이스 정의서(Word/PDF) 로컬 보관 — 현행 기준은 POPUP_INTERFACE_SPEC.md·WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx
 docs/interfaces/OLD/
+
+# [설계 50 S1] 개발 DB 비밀번호 로컬 파일
+shell/dev-db.local.env

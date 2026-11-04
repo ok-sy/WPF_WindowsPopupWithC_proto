@@ -46,17 +46,19 @@ public class JndiResource {
         // POL-15-03 : 환경 확인 — WPF 팝업용 추가 분기. 환경변수 ZERO_RULE_DB_URL / ZERO_RULE_DB_USER / ZERO_RULE_DB_PASSWORD 가
         // 설정돼 있으면 그 값을 우선 사용한다. 개발 DB(192.168.114.71)에 접속할 수 없는 로컬 환경에서
         // 로컬 Oracle XE(예: jdbc:log4jdbc:oracle:thin:@//localhost:1521/XEPDB1)로 띄우기 위한 것으로,
-        // 환경변수가 없으면 업스트림 값 그대로 동작하므로 기존 배포 환경에는 영향이 없다.
+        // URL·계정은 환경변수가 없으면 업스트림 기본값을 쓴다.
         // 드라이버는 업스트림과 같은 log4jdbc DriverSpy를 유지한다(URL 접두어 jdbc:log4jdbc: 필요).
         resource.setProperty("driverClassName", "net.sf.log4jdbc.sql.jdbcapi.DriverSpy");
         resource.setProperty("url", envOrDefault("ZERO_RULE_DB_URL", "jdbc:log4jdbc:oracle:thin:@//192.168.114.71:4004/XE"));
         resource.setProperty("username", envOrDefault("ZERO_RULE_DB_USER", "zero-rule"));
-        resource.setProperty("password", envOrDefault("ZERO_RULE_DB_PASSWORD", "Zerorule4321!"));
+        // [설계 50 S1] DB 비밀번호는 저장소에 두지 않는다(업스트림의 하드코딩 기본값 제거). 원격 개발 DB로 띄울 때도
+        // 환경변수 ZERO_RULE_DB_PASSWORD를 설정해야 하며, 없으면 빈 값으로 두어 접속 시 인증 오류가 난다.
+        resource.setProperty("password", envOrDefault("ZERO_RULE_DB_PASSWORD", ""));
 
         return resource;
     }
 
-    /** POL-15-03 : 환경 확인 — WPF 팝업용 추가. 환경변수가 비어 있지 않으면 그 값을, 아니면 업스트림 기본값을 돌려준다. */
+    /** POL-15-03 : 환경 확인 — WPF 팝업용 추가. 환경변수가 비어 있지 않으면 그 값을, 아니면 기본값을 돌려준다. */
     private static String envOrDefault(String name, String defaultValue) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? defaultValue : value;

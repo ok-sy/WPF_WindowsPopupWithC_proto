@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-04-02 — dev: TODO50-S1 원격 개발 DB 비밀번호 저장소 제거(2026-10-15 유지 결정 번복)
+
+- 이유: 원격 개발 DB 비밀번호가 추적 파일(`JndiResource` 기본값, `application-dev_db.yml` 주석)에 평문으로 남아 있어, 2026-10-15 유지 결정을 번복하고 환경변수·Git 제외 파일로 분리.
+- 변경: `JndiResource` 비밀번호 기본값 제거(환경변수 `ZERO_RULE_DB_PASSWORD`만 사용, 없으면 빈 값으로 DB 로그인 실패). `application-dev_db.yml` 비밀번호 주석 삭제. Git 제외 파일 `shell/dev-db.local.env`와 예시 `shell/dev-db.local.env.example`, 읽기 함수 `shell/dev-db-env.ps1` 추가(설정된 환경변수 우선). `start-dev.ps1`·`apply-dev-db.ps1`이 이 파일을 읽도록 수정하고, `start-dev.ps1`의 로컬 XE 비밀번호 기본값도 `ZERO_RULE_LOCAL_DB_PASSWORD`로 분리. README·db/oracle/README·설계 50 S1 갱신.
+- 주요 파일: zero-rule-server/app/src/main/(java/server/app/config/JndiResource.java, resources/application-dev_db.yml), shell/(start-dev.ps1, dev-db-env.ps1, dev-db.local.env.example), db/oracle/tools/apply-dev-db.ps1, .gitignore, README.md, db/oracle/README.md, docs/design/50_*.
+- 검증: `:app:compileJava` 성공. PowerShell 스크립트 3개 구문 오류 0. `Import-DevDbEnv`로 두 비밀번호 로드 확인. `shell/dev-db.local.env`의 Git 제외 확인. 추적·미추적 작업 파일에서 해당 비밀번호 문자열 0건. 원격 개발 DB 로그인은 ORA-12170(접속 시간 초과)으로 미확인. 백엔드 기동·`apply-dev-db.ps1`·`start-dev.ps1` 실제 실행은 미실행.
+- 남은 항목: 비밀번호 교체 미실행(Git 이력과 GitHub 원격에 기존 값이 남아 있음), 이력 재작성 미실행. 폐쇄망은 다음 반입본 적용 시 `ZERO_RULE_DB_PASSWORD` 설정 필요. `DBConnection.java`(업스트림 파일)의 비밀번호 상수와 관리자 웹 `authentication.ts` 암호화 키, `LoginForm.tsx` 기본 비밀번호는 변경하지 않음.
+- 상태: 커밋에 포함, 원격 반영.
+
 ## 2026-11-04-01 — 웹·WPF Git 히스토리 정리 번들 생성
 
 - 이유: 폐쇄망에서 웹·WPF 코드의 `blame`·diff 조회가 필요해, 민감정보를 정리한 이력을 조회 전용 번들로 반입 준비.
