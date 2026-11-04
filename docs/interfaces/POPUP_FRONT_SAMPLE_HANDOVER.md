@@ -17,7 +17,7 @@
 | `sample/popupSampleData.ts` | 서버 대신 공급하는 **편집값(`SamplePopupState`)** 6종(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상+퀴즈). 조회 응답 형태가 아니라 화면에 바로 넣는 값이라는 점을 분리해 두려고 별도 파일로 뒀다. 2026-10-30부터 **미설정 기준**: 샘플마다 보여 주려는 값만 싣고, 신규 `newSamplePopup()`은 팝업 ID·제목·TEXT만 담는다(`createDefaultPopup()` 업무 기본값 미사용). 유형 전환은 `changeSampleType()`(기본값 채우지 않음), 미리보기는 `withPreviewFallback(state)`. 실제 등록 화면(RgstPop) 기본값(`createDefaultPopup`)은 바꾸지 않았다 |
 | 공통 폴더 나머지 | 에디터(`PopupRichTextEditor`·`PopupRichTextMenu`·`PopupQuestionEditor`·`PopupScheduleFields`), 표시·미리보기(`InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`·`SurveyPreview`·`AspectVideoArea`·`PopupRichBlocks`), 변환·계산(`popupEditorTransform`·`popupRichText`·`popupRichTextFormat`·`popupPreviewDialogLayout`·`imagePreviewLayout`·`popupCommon`·`normalizePopupLink`·`popupDemoQuestions`). **관리자 API·등록 부모·sample을 참조하지 않는다**(그래서 다른 화면에 복사해도 따라오는 의존이 없다) |
 
-라우트(`scene/scene-router.tsx`): `/popup-common-sample`(목록 샘플), `/popup-common-sample/is063m02`(IS063M02 샘플). 기존 `/rgst-pop`은 그대로다. 메뉴 노출은 기존 메뉴 등록 절차가 따로 필요하다.
+라우트(`scene/scene-router.tsx`): `/popup-common-sample`(목록 샘플), `/popup-common-sample/is063m02`(IS063M02 샘플). 기존 `/rgst-pop`은 개발 저장소의 프로토타입에만 있고 폐쇄망에는 반입하지 않는다(2026-11-04부터). 문서의 `RgstPop`은 저장 연동 참고 예시로 읽고, 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발한다. 메뉴 노출은 기존 메뉴 등록 절차가 따로 필요하다.
 
 ## 2. 로직 흐름
 

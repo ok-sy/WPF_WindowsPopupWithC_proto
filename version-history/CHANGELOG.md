@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-04-04 — 폐쇄망 반입본에서 프로토타입 등록 화면 RgstPop 제외
+
+- 이유: 폐쇄망 실제 등록 기능은 폐쇄망 프론트에서 개발하기로 정리되어, 프로토타입 `features/RgstPop`은 로컬·Git에만 유지하고 반입본에서 제외. 누적 diff 방식 반입에서 파일이 되살아나는 문제도 함께 차단.
+- 변경: `export-offline-package.ps1`에서 `features/RgstPop` 제외, 반입 `scene-router.tsx`에서 참조 2줄 제거(2줄이 아니면 생성 중단), DELETE 목록에 현재 RgstPop 파일 추가, TAR 제외 검사에 경로 추가. `OFFLINE_WPF_BUILD.md`·`POPUP_FRONT_SAMPLE_HANDOVER.md`에 범위 명시. 저장소의 RgstPop 코드·경로·검증 스크립트는 변경 없음.
+- 주요 파일: scripts/export-offline-package.ps1, OFFLINE_WPF_BUILD.md, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md.
+- 미변경: 메뉴 SQL 04·20은 폐쇄망 `SCRE_TPCD`·`UP_PAGE_ID` 규칙이 미확인이라 수정하지 않고 README-IMPORT에 실행 주의만 기재. 가이드 화면 문구도 저장소 프로토타입 기준으로 유지. 9-git-history 번들은 조회 전용이라 RgstPop 이력을 유지.
+- 상태: 스크립트 수정 커밋에 포함, 원격 반영. 반입본 재생성 결과는 아래 후속에 기록.
+
 ## 2026-11-04-03 — 같은 날짜 반입본 단일 폴더·TGZ 통합
 
 - 이유: 같은 날짜 반입물이 폴더·압축으로 나뉘면 폐쇄망 `7-archaiv/반입파일`의 날짜별 보관 구조와 맞지 않아 하나로 통합.

@@ -6,7 +6,7 @@ POL-15-01 : 배포 범위
 - HEAD를 깨끗한 worktree로 꺼내 팝업 관련 소스만 묶는다. 작업 트리의 미커밋 변경(개발 PC 전용 설정 등)은 들어가지 않는다.
 
   1-zero-rule-server  서버 — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정 파일(git diff)
-  2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff)
+  2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff). 프로토타입 등록 화면 features/RgstPop과 /rgst-pop 경로는 제외(저장소에는 유지)
   3-popup-frameWork   WPF 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스 제외). 개발용 MockSso·Popup.slnx는 2026-11-03부터 넣지 않는다
   4-docs              docs·db·api·README·변경 이력
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
@@ -180,7 +180,18 @@ try {
     $server = Export-GitDiffBundle -Name "1-zero-rule-server" -Baseline $ServerBaseline -PathSpec "zero-rule-server" `
         -ExcludePatterns @("*/build/*", "zero-rule-server/.git-upstream-*/*", "*.class", "zero-rule-server/popup-videos/*")
     $web = Export-GitDiffBundle -Name "2-zero-rule-web" -Baseline $WebBaseline -PathSpec "zero-rule-web" `
-        -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*")
+        -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*", "zero-rule-web/main/src/features/RgstPop/*")
+    # 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발한다. 프로토타입 RgstPop은 반입하지 않으므로 반입 scene-router에서도 참조 2줄을 뺀다.
+    $routerPath = Join-Path $OutputRoot "2-zero-rule-web\zero-rule-web\main\src\scene\scene-router.tsx"
+    $routerText = [System.IO.File]::ReadAllText($routerPath, $utf8)
+    $routerPattern = "(?m)^[^
+]*(features/RgstPop|'/rgst-pop')[^
+]*?
+"
+    if ([regex]::Matches($routerText, $routerPattern).Count -ne 2) { throw "scene-router의 RgstPop 참조가 2줄이 아닙니다. 반입 처리를 확인하세요." }
+    $routerText = [regex]::Replace($routerText, $routerPattern, "")
+    if ($routerText -match "RgstPop|rgst-pop") { throw "반입 scene-router에 RgstPop 참조가 남았습니다." }
+    [System.IO.File]::WriteAllText($routerPath, $routerText, $utf8)
     # WPF: Popup 소스만. 검증 하네스(Popup.BehaviorTests·Popup.RecoveryTests·scripts/*Tests)는 넣지 않는다.
     # 개발용 임시 SSO 서버(MockSso)와 그것을 포함한 솔루션(Popup.slnx)은 폐쇄망에 필요 없어 2026-11-03부터 제외한다.
     # 폐쇄망 빌드(build-wpf-offline.ps1)는 Popup.csproj를 직접 복원·게시한다.
@@ -277,6 +288,13 @@ try {
         $deleteLines += "# 2026-11-03부터 반입하지 않는 개발용 파일(임시 SSO 서버 MockSso, 이를 포함한 Popup.slnx). 이전 반입분이 있으면 삭제."
         $deleteLines += $retired
     }
+    # 프로토타입 등록 화면: 저장소에는 유지하고 폐쇄망에서만 뺀다(git diff 삭제로 잡히지 않아 ls-files로 적는다).
+    $protoOnly = @(& git -C $worktree -c core.quotepath=false ls-files -- "zero-rule-web/main/src/features/RgstPop" | Where-Object { $cumulative -notcontains $_ })
+    if ($protoOnly) {
+        $deleteLines += ""
+        $deleteLines += "# 2026-11-04부터 반입하지 않는 프로토타입 등록 화면(features/RgstPop). 폐쇄망 실제 등록 화면으로 대체. 이전 반입분이 있으면 삭제."
+        $deleteLines += $protoOnly
+    }
     $deleteLines | Set-Content -Encoding UTF8 (Join-Path $OutputRoot $deleteName)
 
     # 묶음별 패치노트(선택): <PatchNotesDir>\README-PATCH-<묶음>.md → 묶음 루트
@@ -345,7 +363,7 @@ try {
 | 묶음 | 내용 | 반입 |
 |---|---|---|
 | 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |
-| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline) | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
+| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline). 프로토타입 features/RgstPop·/rgst-pop 경로 제외 | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
 | 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않으며 이전 반입분은 DELETE 목록으로 삭제. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
 | 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
 $($npmRow)$($gitHistoryRow)
@@ -388,7 +406,7 @@ SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, 
             $relative = $file.FullName.Substring($bundlePath.Length + 1).Replace('\', '/')
             if ($entries -notcontains $relative) { throw "TAR 누락: $bundle $relative" }
         }
-        if ($entries -match '(^|/)(bin|obj|publish|build|node_modules|\.next|Popup\.BehaviorTests|Popup\.RecoveryTests|popup-videos|MockSso)/|\.(exe|dll|pdb|class)$|Popup\.slnx$') {
+        if ($entries -match '(^|/)(bin|obj|publish|build|node_modules|\.next|Popup\.BehaviorTests|Popup\.RecoveryTests|popup-videos|MockSso|features/RgstPop)/|\.(exe|dll|pdb|class)$|Popup\.slnx$') {
             throw "제외 대상 포함: $bundle"
         }
         $sums += "$((Get-FileHash -LiteralPath $tarPath -Algorithm SHA256).Hash.ToLower())  $bundle.tar"
