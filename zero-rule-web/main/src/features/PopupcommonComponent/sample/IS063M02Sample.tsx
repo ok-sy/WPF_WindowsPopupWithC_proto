@@ -24,7 +24,7 @@ import {
  *
  * 원본 구조(n* 클래스·좌/중/우 3단·버튼 위치)는 유지하고 다음을 바꿨다.
  *  - BbsCKEditor 자리에 공통 PopupRichTextEditor, 우측 '미리보기'에 InlinePopupPreview, 미리보기 버튼에 PopupPreviewDialog 연결.
- *  - 모든 편집기가 하나의 inputData를 쓰던 구조 → 필드별(본문·콘텐츠 제목·설명) 편집값. 문항은 PopupQuestionEditor가 문항·선택지별로 관리하고,
+ *  - 모든 편집기가 하나의 inputData를 쓰던 구조 → 필드별(본문·설명) 편집값. 문항은 PopupQuestionEditor가 문항·선택지별로 관리하고,
  *    원본의 공유 라디오 state(selectedValue)와 미연결 추가/삭제 버튼은 공통 문항 편집기의 문항별 정답 선택·추가/삭제로 대체.
  *  - 숫자 Select 값(1~7)과 문자열 비교('2') 불일치 → 유형·푸터 Select 모두 계약 문자열 값 사용.
  *  - FormControlLabel 단독 label(boolean) 타입 오류는 문항 편집기 대체로 제거.
@@ -63,7 +63,7 @@ const contentText = (popup: SamplePopupState, key: string) => { const value = po
 /* [예시] pickPopupFields 호출 코드. 아래 pickForSave와 같은 내용을 결과 대화상자에도 보여 준다(코드를 바꾸면 이 문자열도 같이 바꾼다). */
 const PICK_EXAMPLE_CODE = `const picked = pickPopupFields(popup, {
   topLevelKeys: ['popupType', 'title', 'width', 'height', 'showLater'],
-  contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'surveyTitle', 'footerAction'],
+  contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'description', 'footerAction'],
   questionKeys: ['questionId', 'title', 'questionType'],
 });`;
 
@@ -148,7 +148,7 @@ export default function IS063M02Sample() {
     setError('');
     setPicked(pickPopupFields(effective ?? popup, {
       topLevelKeys: ['popupType', 'title', 'width', 'height', 'showLater'],
-      contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'surveyTitle', 'footerAction'],
+      contentKeys: ['plainText', 'imageUrl', 'videoUrl', 'description', 'footerAction'],
       questionKeys: ['questionId', 'title', 'questionType'],
     }));
   };
@@ -257,7 +257,7 @@ export default function IS063M02Sample() {
             <Box component="h4" className="nConTitle">{typeTitle}</Box>
             {!popup && <Typography color="text.secondary">컨텐츠 유형을 선택하고 폼 생성을 누르세요.</Typography>}
             {popup?.popupType === 'TEXT' && (
-              <PopupRichTextEditor key={`body-${editorKey}`} label="본문"
+              <PopupRichTextEditor key={`body-${editorKey}`} hideToolbar label="본문"
                 initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentText(popup, 'plainText'))}
                 onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))} />
             )}

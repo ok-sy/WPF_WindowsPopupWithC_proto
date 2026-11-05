@@ -88,15 +88,15 @@ export default function PopupSampleEditor({ initial, open, onClose, onSave }: Pr
             {footerAction === 'LINK_AND_CLOSE' && <TextField size="small" fullWidth label="바로가기 URL" value={text('footerLinkUrl')}
               onChange={(event) => updateContent('footerLinkUrl', event.target.value)} />}
           </Stack>}
-          {popup.popupType === 'TEXT' && <PopupRichTextEditor key={`text-${editorKey}`} label="본문"
+          {popup.popupType === 'TEXT' && <PopupRichTextEditor key={`text-${editorKey}`} hideToolbar label="본문"
             initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(text('plainText'))}
             onChange={(blocks, plainText) => setPopup((previous) => ({ ...previous, content: { ...previous.content, textBlocks: blocks, plainText } }))} />}
           {popup.popupType === 'IMAGE' && <TextField size="small" label="이미지 URL" value={text('imageUrl')} onChange={(event) => updateContent('imageUrl', event.target.value)} />}
           {hasVideo && <TextField size="small" label="영상 URL" value={text('videoUrl')} onChange={(event) => updateContent('videoUrl', event.target.value)} />}
           {isQuestion && <>
-            <PopupRichTextEditor key={`survey-title-${editorKey}`} compact label="콘텐츠 제목" placeholder="콘텐츠 제목"
-              initialBlocks={richBlocksOrNull(popup.content.surveyTitleBlocks) ?? plainTextToBlocks(text('surveyTitle'))}
-              onChange={(blocks, plainText) => setPopup((previous) => ({ ...previous, content: { ...previous.content, surveyTitleBlocks: blocks, surveyTitle: plainText } }))} />
+            <PopupRichTextEditor key={`description-${editorKey}`} compact label="설명" placeholder="설명(선택)"
+              initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(text('description'))}
+              onChange={(blocks, plainText) => setPopup((previous) => ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
             {/* 문항별 입력·선택 state는 PopupQuestionEditor가 문항 객체마다 따로 관리한다. */}
             <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore}
               onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />

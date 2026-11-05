@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-06 — dev: 73_설문퀴즈 콘텐츠 제목·문항 설명 입력 제거, TEXT 툴바 숨김
+
+- 이유: 요청 원문 2·5·6 반영. 설문·퀴즈의 콘텐츠 제목(`surveyTitleBlocks`)과 문항 설명이 불필요하고, TEXT 편집기 상단 툴바를 표시하지 않기로 확정.
+- 변경: `PopupQuestionEditor`의 문항 설명 입력, `PopupEditorDialog`·`PopupSampleEditor`의 콘텐츠 제목 입력 제거. `PopupSampleEditor`에는 기획서 항목인 설명 입력을 추가. TEXT 본문 편집기 3곳에 `hideToolbar` 적용(서식은 우클릭 패널). 샘플 저장 값·기본 데이터에서 `surveyTitle`·`surveyTitleBlocks`와 문항 `description`·`descriptionBlocks` 제외. 미리보기는 제목이 비면 '콘텐츠 제목' 안내 없이 표시. 이미 저장된 값은 편집값에 남아 등록 화면 저장 시 유지되고 그대로 표시됨. 서버·WPF·API 계약 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, PopupPreview.tsx, sample/PopupSampleEditor.tsx, sample/IS063M02Sample.tsx, sample/PopupIndependentSamples.tsx, sample/popupSampleData.ts, guide/guideNotices.ts), zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, scripts/verify-survey-rich-text-55.cjs.
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-survey-rich-text-55` 39건, `verify-popup-common-sample-69` 39건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-preview-61` 52건, `verify-completion-ux-43` 84건, `verify-popup-transform-64` 77건, `verify-popup-guide-registry` 218건, `verify-popup-guide-render` 29건 통과. 제목 없는 팝업의 WPF 실제 표시는 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-05-05 — dev: TODO73 관리자 웹 퀴즈·설문 에디터 요구사항 정의
 
 - 이유: 퀴즈·설문 편집 화면의 문항 설명 제거, 선다형/OX형 선택 및 공통코드 E0089/E0090 연동 요구에 대한 구현 범위와 데이터 보존 조건을 분리해 정의.

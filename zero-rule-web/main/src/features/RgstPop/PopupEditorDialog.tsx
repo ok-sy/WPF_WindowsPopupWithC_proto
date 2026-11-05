@@ -305,13 +305,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
             {/* POL-03-01 : 저장·표시 경계 — TEXT는 콘텐츠 제목·설명을 본문 서식 편집기로 작성한다. */}
             {!originalImageMode && titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
-            {/* POL-06-01 : 문항·서식 — 설문·퀴즈(동영상+퀴즈 포함)의 콘텐츠 제목·설명은 서식 편집기로 입력한다. 글자가 없으면 서식을 보내지 않는다. */}
+            {/* POL-06-01 : 문항·서식 — 설문·퀴즈(동영상+퀴즈 포함)는 콘텐츠 제목 입력 없이 설명만 서식 편집기로 입력한다. 기존 surveyTitle·surveyTitleBlocks는 편집값에 그대로 남긴다(TODO73). */}
             {isSurvey && <>
-              <PopupRichTextEditor key={`survey-title-${bodyEditorKey}`} compact label="콘텐츠 제목" placeholder="콘텐츠 제목"
-                initialBlocks={richBlocksOrNull(popup.content.surveyTitleBlocks) ?? plainTextToBlocks(contentValue(popup, 'surveyTitle'))}
-                onChange={(blocks, plainText) => setPopup((previous) => ({
-                  ...previous, content: { ...previous.content, surveyTitle: plainText, surveyTitleBlocks: richBlocksOrNull(blocks) },
-                }))} />
               <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact label="설명" placeholder="설명(선택)"
                 initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
                 onChange={(blocks, plainText) => setPopup((previous) => ({
@@ -323,7 +318,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
               {/* TEXT는 본문(제목·설명 포함)·하단 설명만 편집한다(강조 문구는 삭제). */}
               {/* POL-03-01 : 저장·표시 경계 — 본문은 서식 편집기로 입력하고 textBlocks(기준)와 파생 plainText를 함께 갱신한다. */}
-              {<PopupRichTextEditor key={bodyEditorKey} label="일반 텍스트" disabled={!showTextPlainText}
+              {<PopupRichTextEditor key={bodyEditorKey} hideToolbar label="일반 텍스트" disabled={!showTextPlainText}
                 initialBlocks={readTextBlocks(popup.content.textBlocks) ?? plainTextToBlocks(contentValue(popup, 'plainText'))}
                 onChange={(blocks, plainText) => setPopup((previous) => ({
                   ...previous, content: { ...previous.content, textBlocks: blocks, plainText },

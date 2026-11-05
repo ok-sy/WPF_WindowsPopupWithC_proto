@@ -66,7 +66,8 @@ function contentTitle(popup: AdminPopupDetail): string {
   const content = popup.content;
   if (popup.popupType === 'TEXT') return '';
   if (popup.popupType === 'IMAGE') return String(content.imageTitle ?? '');
-  return text(popup.popupType === 'VIDEO' ? content.videoTitle : content.surveyTitle, '콘텐츠 제목');
+  if (popup.popupType === 'VIDEO') return text(content.videoTitle, '콘텐츠 제목');
+  return String(content.surveyTitle ?? '');
 }
 
 interface PopupBodyProps {

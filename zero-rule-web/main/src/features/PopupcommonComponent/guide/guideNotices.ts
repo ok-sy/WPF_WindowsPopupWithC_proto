@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-05-todo73-editor-fields', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
+    title: '설문·퀴즈 콘텐츠 제목·문항 설명 입력 제거, TEXT 편집기 툴바 숨김',
+    body: ['설문·퀴즈 편집기에서 콘텐츠 제목과 문항 설명 입력을 뺐습니다. 이미 저장된 값은 지우지 않고 그대로 표시합니다.',
+      'TEXT 본문 편집기는 hideToolbar로 상단 툴바를 숨깁니다. 서식은 우클릭 패널로 지정합니다.'],
+    components: ['PopupQuestionEditor', 'PopupRichTextEditor'],
+    action: '설문·퀴즈 등록 화면에서는 surveyTitle·surveyTitleBlocks 입력을 만들지 않습니다.',
+  },
+  {
     id: '2026-11-05-ox-question-preset', date: '2026-11-05', category: 'ADDED', status: 'DONE', doneDate: '2026-11-05',
     title: 'PopupQuestionEditor OX 문항 추가',
     body: ['「OX 문항 추가」 버튼을 누르면 O·X 선택지를 채운 단일 선택 문항을 가로 배치로 만듭니다. 저장 형식은 일반 객관식과 같습니다.'],

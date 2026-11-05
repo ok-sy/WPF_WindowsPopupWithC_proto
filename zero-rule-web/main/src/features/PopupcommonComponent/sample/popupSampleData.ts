@@ -79,12 +79,12 @@ export function createSamplePopups(): SamplePopupState[] {
     sample('SAMPLE-VIDEO', '교육 영상', { popupType: 'VIDEO', width: 760, height: 560, completionRatio: 0.9 },
       { videoTitle: '교육 영상' }),
     sample('SAMPLE-SURVEY', '만족도 조사', { popupType: 'SURVEY', width: 640, height: 640, questions: popupDemoQuestions(false) },
-      { surveyTitle: '만족도 조사' }),
+      {}),
     sample('SAMPLE-QUIZ', '보안 퀴즈', { popupType: 'QUIZ', width: 640, height: 640, passingScore: 2, questions: popupDemoQuestions(true) },
-      { surveyTitle: '보안 퀴즈' }),
+      {}),
     sample('SAMPLE-VIDEO-QUIZ', '영상 + 퀴즈', { popupType: 'QUIZ', width: 760, height: 860, completionRatio: 0.8,
       passingScore: 1, questions: popupDemoQuestions(true).slice(0, 1) },
-    { videoEnabled: true, videoTitle: '영상 + 퀴즈', surveyTitle: '영상 확인 퀴즈' }),
+    { videoEnabled: true, videoTitle: '영상 + 퀴즈' }),
   ];
 }
 
@@ -96,10 +96,10 @@ const SAMPLE_CONTENT_KEYS: Record<string, string[]> = {
   TEXT: ['textBlocks', 'plainText', ...SAMPLE_FOOTER_KEYS],
   IMAGE: ['imageUrl', 'description', 'descriptionBlocks', ...SAMPLE_FOOTER_KEYS],
   VIDEO: ['videoUrl', 'description', 'descriptionBlocks', ...SAMPLE_FOOTER_KEYS],
-  SURVEY: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks'],
-  QUIZ: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks', 'videoEnabled', 'videoUrl'],
+  SURVEY: ['description', 'descriptionBlocks'],
+  QUIZ: ['description', 'descriptionBlocks', 'videoEnabled', 'videoUrl'],
 };
-const SAMPLE_QUESTION_KEYS = ['questionId', 'title', 'titleBlocks', 'description', 'descriptionBlocks', 'questionType', 'optionLayout', 'isRequired',
+const SAMPLE_QUESTION_KEYS = ['questionId', 'title', 'titleBlocks', 'questionType', 'optionLayout', 'isRequired',
   'isScored', 'questionScore', 'sortOrder', 'options', 'correctAnswer', 'answerMatchMode', 'minSelections', 'maxSelections'] as const;
 
 /**

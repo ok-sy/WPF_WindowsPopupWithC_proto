@@ -199,15 +199,15 @@ export default function PopupIndependentSamples() {
       title: "독립 재사용 샘플",
       ...schedule,
       content: {
-        surveyTitle: body.plainText.split("\n")[0],
-        surveyTitleBlocks: body.textBlocks,
+        description: body.plainText,
+        descriptionBlocks: body.textBlocks,
       },
       questions,
     };
   }, [schedule, body, questions]);
   const combinedOut = pickPopupFields(combined, {
     topLevelKeys: ["popupId", "title", "displayStartAt", "periodMode"],
-    contentKeys: ["surveyTitle", "surveyTitleBlocks"],
+    contentKeys: ["description", "descriptionBlocks"],
     questionKeys: ["questionId", "title"],
   });
 
@@ -286,12 +286,12 @@ const out = pickPopupFields({ questions }, { questionKeys: ['questionId', 'title
           </Box>
         }
         code={`// 화면 state는 입력한 값만(미설정 = 키 생략). 업무 기본값을 state에 넣지 않는다.
-const popup = { popupType: 'SURVEY', ...schedule, content: { surveyTitleBlocks: body.textBlocks }, questions };
+const popup = { popupType: 'SURVEY', ...schedule, content: { descriptionBlocks: body.textBlocks }, questions };
 // 미리보기에 넘길 때만 표시용 값(창 크기·Header/Footer 등)을 채운다.
 <InlinePopupPreview popup={withPreviewFallback(popup)} />
 const out = pickPopupFields(popup, {
   topLevelKeys: ['popupId', 'title', 'displayStartAt'],
-  contentKeys: ['surveyTitle', 'surveyTitleBlocks'], questionKeys: ['questionId', 'title'] });`}
+  contentKeys: ['description', 'descriptionBlocks'], questionKeys: ['questionId', 'title'] });`}
       />
     </Stack>
   );

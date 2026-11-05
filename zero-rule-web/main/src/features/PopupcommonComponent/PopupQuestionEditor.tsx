@@ -122,7 +122,7 @@ const OX_OPTION_TEXTS = ['O', 'X'];
  * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김
  * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
  * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
- *   제목·설명·선택지는 서식 편집기(compact)를 쓰며 편집기마다 선택 범위·패널 상태가 따로다. 저장 전 확인은 validatePopupQuestions로 한다.
+ *   제목·선택지는 서식 편집기(compact)를 쓰며 편집기마다 선택 범위·패널 상태가 따로다. 저장 전 확인은 validatePopupQuestions로 한다.
  */
 export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
@@ -157,13 +157,10 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           <FormControlLabel label="필수문항" control={<Checkbox checked={q.isRequired} onChange={(_, checked) => update(index, { isRequired: checked })} />} />
           <IconButton aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon /></IconButton>
         </Stack>
-        {/* 문항 제목·설명은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 편집기마다 선택 범위·패널 상태가 따로다. */}
+        {/* 문항 제목은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73). */}
         <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
-        <PopupRichTextEditor compact label="문항 설명" placeholder="문항 설명(선택)"
-          initialBlocks={initialRich(q.descriptionBlocks, q.description)}
-          onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { description: value.plain, descriptionBlocks: value.blocks }); }} />
         <Stack direction="row" spacing={1}>
           <TextField select fullWidth label="문항 유형" value={q.questionType} onChange={(e) => update(index, {
             questionType: e.target.value,
