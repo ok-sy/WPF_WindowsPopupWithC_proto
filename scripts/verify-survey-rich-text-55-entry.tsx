@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import type { PopupQuestion } from '@local/domain';
 import PopupQuestionEditor, { validatePopupQuestions } from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor';
 import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
+import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog';
 
 /* POL-06-01 : 문항·서식
  * ■ 실제 문항 편집기(CKEditor 커스텀 빌드 여러 개)·설문 미리보기를 브라우저에서 띄우는 검증 진입점. */
@@ -33,6 +34,10 @@ w.mountPreview = (popup: any) => {
       <PopupPreview key={mountKey} popup={popup} showBackground={false} />
     </div>
   </ThemeProvider>);
+};
+w.mountDialog = (popup: any) => {
+  mountKey++;
+  root.render(<ThemeProvider theme={theme}><CssBaseline /><PopupPreviewDialog key={mountKey} popup={popup} open onClose={() => undefined} /></ThemeProvider>);
 };
 w.editors = () => Array.from(document.querySelectorAll('.ck-editor__editable')).map((element: any) => element.ckeditorInstance);
 /* 편집기 index의 문단 block에서 [start, end) 글자 범위를 선택한다. */

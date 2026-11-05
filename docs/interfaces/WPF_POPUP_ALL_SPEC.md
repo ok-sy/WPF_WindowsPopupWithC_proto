@@ -192,7 +192,7 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | questions[].QuestionType | 지원 | Y | `""` | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. QUIZ MULTIPLE_CHOICE는 `isCorrect=true` 선택지 수까지만 선택 가능하며 한도 도달 시 남은 선택지 비활성·`최대 N개 선택` 안내(TODO52-5). SURVEY 복수 선택은 `minSelections`·`maxSelections`가 없으면 제한 없음 |
 | questions[].IsRequired | 지원 | Y(서버가 항상 true/false 제공) | `false` | 누락 시 false로 보아 필수 검증 없음 |
 | questions[].Options | 선택형에서 지원 | 조건부 | `[]` | TEXT는 빈 배열 |
-| questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL |
+| questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL. HORIZONTAL 단일 선택의 선택지가 O·X이면 크게 표시(폭 96·높이 52 이상, 글자 20). JSON 변경 없음 |
 | questions[].MinSelections / MaxSelections | SURVEY 복수 선택에서 지원 | N | `null` = 제한 없음 | 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항 max(1, 최소), 선택 문항 0개 또는 최소 이상). 안내 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도가 우선(2026-10-29) |
 | questions[].IsScored | QUIZ에서 지원 | Y(QUIZ 계약) | `false` | 채점 문항은 true 명시. 현재 서버 저장 규칙은 최소 1개 true 존재까지는 보장하지 않으므로 응답 검증 필요 |
 | questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` → 1 | 양수 배점. 누락/null이면 WPF 로컬 점수 기본 1점(서버도 미입력 시 1점 저장, 모두 1점이면 총점 = 문항 수) |

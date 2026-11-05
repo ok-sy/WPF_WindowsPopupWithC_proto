@@ -62,6 +62,13 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     action: '설문·퀴즈 등록 화면에서는 surveyTitle·surveyTitleBlocks 입력을 만들지 않습니다.',
   },
   {
+    id: '2026-11-05-ox-design', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
+    title: 'OX 문항 표시 개선, 미리보기 모서리 정리',
+    body: ['OX 문항은 편집기에서 정답 버튼으로 고르고, 미리보기·WPF에서 O·X를 크게 표시합니다. 미리보기 창 모서리는 WPF와 같은 6px이며 흰색이 비치지 않습니다.'],
+    components: ['PopupQuestionEditor', 'PopupPreview', 'PopupPreviewDialog'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-05-remove-example-questions', date: '2026-11-05', category: 'REMOVED', status: 'DONE', doneDate: '2026-11-05',
     title: '미리보기 예제 문항 보기 삭제',
     body: ['설문·퀴즈 미리보기의 「예제 문항 보기」 버튼을 삭제했습니다. 미리보기는 입력한 문항만 보여 줍니다.'],

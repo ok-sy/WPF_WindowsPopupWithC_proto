@@ -38,6 +38,16 @@ export const SAMPLE_QUIZ_TYPE_OPTIONS: PopupCodeOption[] = [
   { code: '02', codeNm: '컷트라인형' },
 ];
 
+/**
+ * POL-06-01 : 문항·서식
+ * ■ OX 문항 판별
+ * - 단일 선택 문항의 선택지가 O·X 두 개이면 OX 문항이다. 답안 유형은 저장하지 않으므로 다시 열 때도 이 기준으로 복원한다.
+ * - 편집기·미리보기·WPF(SurveyPopupView.IsOxQuestion)가 같은 기준을 쓴다.
+ */
+export const isOxQuestion = (question: { questionType: string; options: { text: string }[] }): boolean =>
+  question.questionType === 'SINGLE_CHOICE' && question.options.length === 2
+  && question.options[0].text === 'O' && question.options[1].text === 'X';
+
 /** 코드 조회 함수 형태. `api.clCode.search`를 그대로 넘길 수 있다. */
 export type PopupCodeSearch = (params: { codeType: string; rowsPerPage: number; pageNumber: number }) => Promise<{
   body: { pagerData: { elements: PopupCodeOption[] } };

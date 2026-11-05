@@ -4,7 +4,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, Stack, TextField, Typography } from '@mui/material';
 import { richBlocksOrNull } from './PopupRichBlocks';
 import PopupRichTextEditor from './PopupRichTextEditor';
-import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
+import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, isOxQuestion, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
 import { plainTextToBlocks, type RichBlock } from './popupRichText';
 
 interface Props {
@@ -119,8 +119,6 @@ const richValue = (blocks: RichBlock[], plain: string) => ({ blocks: richBlocksO
  * - 답안 유형은 저장하지 않으므로 다시 열 때 선택지가 O·X이면 OX형으로 복원한다.
  */
 const OX_OPTION_TEXTS = ['O', 'X'];
-const isOxQuestion = (q: PopupQuestion) => q.questionType === 'SINGLE_CHOICE' && q.options.length === OX_OPTION_TEXTS.length
-  && q.options.every((option, index) => option.text === OX_OPTION_TEXTS[index]);
 /* 유형을 바꾸며 새로 만든 선택지는 새 임시 ID라 편집기가 이전 내용을 이어받지 않는다. */
 const createOptions = (texts: string[]): PopupOption[] => texts.map((text, index) => ({
   optionId: temporaryId(), value: String(index + 1), text, sortOrder: index + 1, isCorrect: false,
@@ -241,16 +239,26 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             <MenuItem value="EXACT">정확히 일치</MenuItem><MenuItem value="CONTAINS">포함</MenuItem>
           </TextField>
         </Stack> : <Stack spacing={1}>
-          {quiz && isOxQuestion(q) ? <Stack direction="row" spacing={2} alignItems="center">
-            {q.options.map((option, oi) => <FormControlLabel key={option.optionId} label={option.text} control={<Radio checked={Boolean(option.isCorrect)}
-              inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }}
-              onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} />} />)}
+          {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`}>
+            <Typography variant="body2" fontWeight={600}>정답</Typography>
+            <Stack direction="row" spacing={1}>
+              {q.options.map((option, oi) => {
+                const checked = Boolean(option.isCorrect);
+                return <Button key={option.optionId} role="radio" aria-checked={checked} aria-label={`${index + 1}번 문항 ${oi + 1}번 선택지 정답`}
+                  variant="outlined" color="inherit" disableElevation
+                  onClick={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })}
+                  sx={{ minWidth: 96, height: 52, fontSize: 20, fontWeight: 600, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
+                    bgcolor: checked ? '#171717' : '#FFFFFF', color: checked ? '#FFFFFF' : '#222222',
+                    '&:hover': { bgcolor: checked ? '#171717' : '#F5F5F5', borderColor: checked ? '#171717' : '#8C8C8C' } }}>{option.text}</Button>;
+              })}
+            </Stack>
+            {!q.options.some((option) => option.isCorrect) && <Typography variant="caption" color="text.secondary">정답을 선택해 주세요.</Typography>}
           </Stack> : <>
           {/* 선택지 편집기는 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다. */}
           {q.options.map((option, oi) => <Stack key={option.optionId} direction="row" spacing={1} alignItems="center">
             {quiz && (q.questionType === 'SINGLE_CHOICE' ? <Radio checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />)}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <PopupRichTextEditor compact label={`선택지 ${oi + 1}${quiz ? ' (왼쪽 체크: 정답)' : ''}`} placeholder="선택지 내용"
+              <PopupRichTextEditor compact label={`선택지 ${oi + 1}${quiz ? ' (왼쪽 선택: 정답)' : ''}`} placeholder="선택지 내용"
                 initialBlocks={initialRich(option.textBlocks, option.text)}
                 onChange={(blocks, plain) => {
                   const value = richValue(blocks, plain);

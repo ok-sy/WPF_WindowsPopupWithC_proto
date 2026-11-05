@@ -59,7 +59,7 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
    * FULLSCREEN은 Paper 크기를 지정하지 않는다(paper: undefined). */
   const slotProps = {
     backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
-    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height,
+    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: '6px', bgcolor: 'transparent',
       maxWidth: `min(96vw, calc(100vw - ${edgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${edgeMargin * 2}px))`, m: `${edgeMargin}px`, overflow: 'hidden' } },
   };
 

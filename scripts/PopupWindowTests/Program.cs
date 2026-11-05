@@ -113,6 +113,7 @@ internal static class Program
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckQuizResultNoticeQ3();
+        CheckOxQuestion73();
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
         CheckOwnerCloseSavesResult();
@@ -941,6 +942,41 @@ internal static class Program
      * 커트라인 6 → 7/10 성공 "통과하여 … 종료"+확인, 3/10 실패 "통과 기준: 6개 이상"+다시 풀기 / 만점 10 → 10/10 성공 "모두 맞추셨습니다", 9/10 실패 /
      * 참여형 0 → 2/10도 passed=true "완료하여 … 종료"+2/10개+확인. 배점이 1점이 아니면 통과 기준을 점수로 적는다.
      */
+    /* TODO73: 가로 배치 O·X 단일 선택은 크게 표시하고, 다른 문항 크기는 그대로다. 선택은 일반 라디오와 같다. */
+    private static void CheckOxQuestion73()
+    {
+        var opened = OpenPopup("QUIZ", dto =>
+        {
+            var question = dto.Questions.First(q => q.QuestionType == "SINGLE_CHOICE");
+            question.OptionLayout = "HORIZONTAL";
+            question.Options = question.Options.Take(2).ToList();
+            question.Options[0].Text = "O";
+            question.Options[1].Text = "X";
+            question.Options.ForEach(option => option.TextBlocks = null);
+        });
+        opened.Window.UpdateLayout();
+        var radios = new List<System.Windows.Controls.RadioButton>();
+        void Walk(DependencyObject root)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                if (child is System.Windows.Controls.RadioButton radio) radios.Add(radio);
+                Walk(child);
+            }
+        }
+        Walk(opened.Window);
+        string NameOf(System.Windows.Controls.RadioButton radio) => System.Windows.Automation.AutomationProperties.GetName(radio);
+        var ox = radios.Where(radio => NameOf(radio) is "O" or "X").ToList();
+        Check(ox.Count == 2 && ox.All(radio => radio.ActualWidth >= 96 && radio.ActualHeight >= 52), $"[TODO73] OX options are large ({string.Join(",", ox.Select(r => $"{r.ActualWidth}x{r.ActualHeight}"))})");
+        Check(ox.All(radio => radio.Content is System.Windows.Controls.TextBlock { FontSize: 20, TextAlignment: TextAlignment.Center }), "[TODO73] OX text is 20 and centered");
+        var others = radios.Except(ox).ToList();
+        Check(others.Count > 0 && others.All(radio => radio.MinWidth < 96), "[TODO73] Other choices keep their size");
+        ox[1].IsChecked = true;
+        Check(ox[1].IsChecked == true && ox[0].IsChecked != true, "[TODO73] OX options stay one radio group");
+        ShutdownClose(opened.Window);
+    }
+
     private static void CheckQuizResultNoticeQ3()
     {
         var questions = Enumerable.Range(1, 10).Select(i => new SurveyQuestion

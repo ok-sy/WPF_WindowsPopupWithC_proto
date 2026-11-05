@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-11 — dev: 73_OX문항 표시 개선·미리보기 모서리 수정
+
+- 이유: 화면 검토에서 확인된 이슈. OX 문항의 정답 입력과 표시가 작고 구분이 약했고, 미리보기 바깥 틀(4px·회색)과 대화상자 배경(흰색)이 창의 둥근 모서리(8px)로 비쳤으며, 긴 제목에서 문항 번호가 두 줄로 깨짐.
+- 변경: 편집기 OX 문항을 라디오에서 `정답` 라벨과 O·X 버튼(폭 96·높이 52, 선택 시 진한 배경)으로 변경하고 미선택 안내 추가. 관리자 미리보기와 WPF는 가로 배치 O·X 단일 선택을 폭 96·높이 52 이상, 글자 20·SemiBold 가운데 정렬로 표시. OX 판별은 `isOxQuestion`으로 공유. 미리보기 창·바깥 틀·대화상자 둥글기를 WPF와 같은 6px(FULLSCREEN 창·바깥 틀 0)로 맞추고 바깥 틀·대화상자 배경을 투명으로 변경. 문항 번호 줄바꿈 방지. 저장 형식·채점·결과 계약 변경 없음. ALL 명세 갱신, MINIMAL은 최소 제공 범위 표시 변경이 아니라 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, SurveyPreview.tsx, PopupPreview.tsx, PopupPreviewDialog.tsx, popupQuestionCodes.ts, guide/guideNotices.ts), popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs, docs/interfaces/WPF_POPUP_ALL_SPEC.md, scripts/(PopupWindowTests/Program.cs, verify-survey-rich-text-55.cjs, verify-survey-rich-text-55-entry.tsx, verify-popup-preview-61.cjs).
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-survey-rich-text-55` 42건, `verify-popup-preview-61`, `verify-image-preview` 34건, `verify-completion-ux-43` 84건, `verify-popup-common-sample-69` 44건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-guide-registry` 229건, `verify-popup-guide-render` 29건 통과. `verify-popup-preview-61`의 대화상자 둥글기 기대값을 4px에서 6px로 변경. `PopupWindowTests`는 `CheckOxQuestion73`(신규)·`CheckQuizResultNoticeQ3`·`CheckVideoQuizFooter43` 22건만 이름 지정 실행해 통과. 주 모니터 해상도가 1707×960이라 전체 실행은 미실행. 하네스 캡처로 편집기·대화상자 모양 확인, WPF 실제 화면은 미확인.
+- 상태: 커밋에 포함, 원격 반영. 20261105 반입본(6120b29) 미포함.
+
 ## 2026-11-05-10 — 20261105 폐쇄망 전체 반입본 재생성(TODO73 포함)
 
 - 이유: TODO73 에디터 정리·공통코드 연결과 예제 문항 보기 삭제를 폐쇄망에 반입. 같은 날짜 규칙에 따라 7686eda 기준 반입본(2026-11-05-03)을 대체.

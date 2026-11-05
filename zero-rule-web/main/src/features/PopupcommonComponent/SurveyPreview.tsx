@@ -1,3 +1,4 @@
+import { isOxQuestion } from './popupQuestionCodes';
 import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
@@ -268,6 +269,8 @@ export default function SurveyPreview({
       )}
       {questions.map((question, index) => {
         const horizontal = question.optionLayout === 'HORIZONTAL';
+        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 크게 표시한다.
+        const ox = horizontal && isOxQuestion(question);
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
         const titleId = `${namePrefix}-question-${question.questionId}`;
@@ -314,7 +317,7 @@ export default function SurveyPreview({
             <Stack direction="row" alignItems="center" spacing={2}>
               <Typography
                 component="span"
-                sx={{ fontSize: 12, fontWeight: 600, color: surveyColors.muted }}
+                sx={{ fontSize: 12, fontWeight: 600, color: surveyColors.muted, flexShrink: 0, whiteSpace: 'nowrap' }}
               >
                 {String(index + 1).padStart(2, '0')}
               </Typography>
@@ -448,7 +451,8 @@ export default function SurveyPreview({
                           gridTemplateColumns: horizontal ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          minHeight: horizontal ? 44 : 48,
+                          minHeight: ox ? 52 : horizontal ? 44 : 48,
+                          minWidth: ox ? 96 : undefined,
                           p: horizontal ? '10px 14px' : '12px 16px',
                           border: '1px solid',
                           borderRadius: `${surveyDesign.choiceRadius}px`,
@@ -470,9 +474,10 @@ export default function SurveyPreview({
                           sx={{
                             display: 'grid',
                             minWidth: 0,
-                            lineHeight: '22px',
+                            lineHeight: ox ? '26px' : '22px',
                             whiteSpace: 'pre-wrap',
                             overflowWrap: 'anywhere',
+                            ...(ox ? { fontSize: 20, fontWeight: 600, textAlign: 'center' } : {}),
                           }}
                         >
                           {surveyDesign.selectedBold && (
@@ -487,7 +492,7 @@ export default function SurveyPreview({
                           )}
                           <Box
                             component="span"
-                            sx={{ gridArea: '1 / 1', fontWeight: selected && surveyDesign.selectedBold ? 600 : 400 }}
+                            sx={{ gridArea: '1 / 1', fontWeight: ox ? 600 : selected && surveyDesign.selectedBold ? 600 : 400 }}
                           >
                             {optionLabel}
                           </Box>

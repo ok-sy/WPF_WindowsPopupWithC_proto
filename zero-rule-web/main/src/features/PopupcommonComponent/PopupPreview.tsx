@@ -613,8 +613,9 @@ export default function PopupPreview({
               }
             : undefined,
         overflow: 'hidden',
-        borderRadius: 1,
-        bgcolor: isSurvey ? surveyColors.chipHover : '#e9edf4',
+        // 바깥 틀에 색을 칠하면 안쪽 창의 둥근 모서리로 비친다. 둥글기는 WPF 창과 같은 6(FULLSCREEN 0)이다.
+        borderRadius: popup.sizeMode === 'FULLSCREEN' ? 0 : '6px',
+        bgcolor: 'transparent',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
@@ -630,7 +631,7 @@ export default function PopupPreview({
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
-          borderRadius: 2,
+          borderRadius: popup.sizeMode === 'FULLSCREEN' ? 0 : '6px',
           // SURVEY·QUIZ(VIDEO+QUIZ 포함)는 WPF와 같이 본문·푸터까지 설문 콘텐츠 배경(옅은 회색)이다.
           bgcolor: isSurvey ? surveyColors.content : 'white',
           // WPF PopupBodyBorder BorderThickness=0과 같이 IMAGE 창 테두리를 그리지 않는다.
