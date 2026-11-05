@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-17 — dev: 73_OX 정답 선택 UI 수정
+
+- 이유: TODO73-10~15 구현. OX형 정답 선택이 일반 선택지와 비슷해 설정용 정답 지정임을 구분하기 어려움.
+- 변경: `PopupQuestionEditor` OX형 문항 영역을 `정답 선택 *`과 같은 크기의 큰 O·X 칸 2개(높이 88, 글자 36)로 변경. 칸 전체 클릭, 정답 1개, 선택 칸만 배경·테두리 표시, 화살표 키 이동과 포커스 표시 추가. 저장은 기존 `SINGLE_CHOICE` O·X 선택지와 `isCorrect`. 선다형 입력과 미리보기 응답 버튼, 서버·WPF는 변경 없음. 가이드 공지·인계 문서 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, guide/guideNotices.ts), scripts/verify-survey-rich-text-55.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md.
+- 검증: `verify-survey-rich-text-55` 53건(같은 크기 2칸, 글자만 표시, 칸 모서리 클릭, 단일 정답, 화살표 키·포커스, 300px 너비, 편집값 재로딩, 저장 형식, 미리보기 응답 독립 추가), `verify-popup-common-sample-69` 45건, `verify-popup-guide-render` 29건, `verify-popup-preview-61` 66건, `verify-popup-transform-64` 77건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-guide-registry` 236건 통과. `tsc`·변경 파일 eslint 오류 0. 하네스 스크린샷으로 화면 형태 확인. 로컬 관리자 웹 실화면 조작과 서버 저장·재조회 왕복은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-16 — dev: TODO73 OX 정답 선택 UI 추가 정의
 
 - 이유: 퀴즈 에디터의 OX형 정답 선택 UI가 일반 선택지 UI와 비슷해 설정용 정답 지정인지 구분하기 어려워 화면 요구사항을 보완.

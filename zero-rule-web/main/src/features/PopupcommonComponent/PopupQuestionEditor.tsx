@@ -239,19 +239,31 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             <MenuItem value="EXACT">정확히 일치</MenuItem><MenuItem value="CONTAINS">포함</MenuItem>
           </TextField>
         </Stack> : <Stack spacing={1}>
-          {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`}>
-            <Typography variant="body2" fontWeight={600}>정답</Typography>
-            <Stack direction="row" spacing={1}>
+          {/* POL-06-02 : 선택·제출 — OX 정답은 큰 칸 2개 중 하나만 고른다. 저장은 기존 SINGLE_CHOICE의 O·X 선택지와 isCorrect다.
+              라디오 그룹 규칙대로 Tab은 그룹에 한 번만 들어오고, 화살표로 옮기면 정답도 함께 바뀐다. */}
+          {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`} aria-required>
+            <Typography variant="body2" fontWeight={600}>정답 선택 *</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
               {q.options.map((option, oi) => {
                 const checked = Boolean(option.isCorrect);
+                const choose = (target: number) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === target })) });
+                const focusable = checked || (oi === 0 && !q.options.some((o) => o.isCorrect));
                 return <Button key={option.optionId} role="radio" aria-checked={checked} aria-label={`${index + 1}번 문항 ${oi + 1}번 선택지 정답`}
-                  variant="outlined" color="inherit" disableElevation
-                  onClick={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })}
-                  sx={{ minWidth: 96, height: 52, fontSize: 20, fontWeight: 600, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
+                  tabIndex={focusable ? 0 : -1} variant="outlined" color="inherit" disableElevation
+                  onClick={() => choose(oi)}
+                  onKeyDown={(event) => {
+                    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+                    event.preventDefault();
+                    const next = (oi + 1) % q.options.length;
+                    choose(next);
+                    (event.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
+                  }}
+                  sx={{ minWidth: 0, height: 88, fontSize: 36, fontWeight: 700, lineHeight: 1, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
                     bgcolor: checked ? '#171717' : '#FFFFFF', color: checked ? '#FFFFFF' : '#222222',
-                    '&:hover': { bgcolor: checked ? '#171717' : '#F5F5F5', borderColor: checked ? '#171717' : '#8C8C8C' } }}>{option.text}</Button>;
+                    '&:hover': { bgcolor: checked ? '#171717' : '#F5F5F5', borderColor: checked ? '#171717' : '#8C8C8C' },
+                    '&.Mui-focusVisible': { outline: '2px solid #2563EB', outlineOffset: 2 } }}>{option.text}</Button>;
               })}
-            </Stack>
+            </Box>
             {!q.options.some((option) => option.isCorrect) && <Typography variant="caption" color="text.secondary">정답을 선택해 주세요.</Typography>}
           </Stack> : <>
           {/* 선택지 편집기는 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다. */}

@@ -84,6 +84,13 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     action: "loadPopupQuestionCodes(api.clCode.search) 결과를 answerTypeOptions·options prop으로 넘깁니다. rule 값 'PASS_FAIL'은 더 쓰지 않습니다.",
   },
   {
+    id: '2026-11-05-ox-answer-cells', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
+    title: 'OX 문항 정답 선택을 큰 O·X 칸으로 변경',
+    body: ['퀴즈 편집기의 OX 정답을 같은 크기의 O·X 칸 2개에서 고릅니다. 칸 전체를 누르거나 화살표 키로 바꾸며 정답은 하나입니다.', '저장 값은 기존과 같은 단일 선택 O·X 선택지와 isCorrect입니다. 선다형 입력과 미리보기 응답 버튼은 바뀌지 않습니다.'],
+    components: ['PopupQuestionEditor'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-05-dialog-no-placeholder', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
     title: '실제 크기 미리보기에서 입력 안내 문구 제거',
     body: ['PopupPreviewDialog는 값이 없는 팝업 제목·영상 제목·설명·이미지 자리에 안내 문구를 표시하지 않습니다. 실제 WPF 팝업처럼 비워 둡니다.', 'InlinePopupPreview는 입력 안내를 위해 기존 문구를 유지합니다.'],
