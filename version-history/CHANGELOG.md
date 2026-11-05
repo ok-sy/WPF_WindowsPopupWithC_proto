@@ -11,10 +11,10 @@
 ## 2026-11-05-20 — 20261106 폐쇄망 전체 반입본 생성
 
 - 이유: 2026-11-06 반입 예정분으로 OX 큰 칸 표시, 서식 패널 툴팁 수정, 실제 크기 미리보기 안내 문구 제거를 포함한 반입본 필요. 20261105 묶음은 폐쇄망에 적용되지 않아 비교 기준은 20261103을 유지.
-- 변경: `scripts/export-offline-package.ps1 -Date 20261106 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261106 -VerifyBuild` 실행(기준 커밋 a97c924). 히스토리 번들을 같은 커밋으로 재생성. CI 이미지는 506e3ec 내용을 작업 트리에만 적용해 포함하고 생성 후 원복. npm 변경 없음. 20261106이 20261105의 파일·커밋을 모두 포함함을 대조한 뒤 `offline-export/20261105` 삭제.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261106 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261106 -VerifyBuild -Force` 실행(기준 커밋 9403689, 가이드 공통코드 안내 반영을 위해 a97c924 기준 생성본을 같은 날짜로 대체). 히스토리 번들을 같은 커밋으로 재생성. CI 이미지는 506e3ec 내용을 작업 트리에만 적용해 포함하고 생성 후 원복. npm 변경 없음. 20261106이 20261105의 파일·커밋을 모두 포함함을 대조한 뒤 `offline-export/20261105` 삭제.
 - 주요 파일: offline-export/20261106(Git 제외), .offline-cache/git-history-20261106(Git 제외), .offline-cache/notes-20261106.md(Git 제외), version-history/CHANGELOG.md.
-- 결과: 서버 A 153·M 11·D 0, 웹 A 52·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 187(CI 이미지 2 포함), 9-git-history 4개 파일. TGZ 40,286,146바이트, SHA256 `5a99b6907939977655b74c86859627da7804d6e89d2fa621ab428b677250b11e`. 번들은 커밋 230개, 27,040,980바이트, SHA256 `6bfb9074c37911ab70dd31e1804de539749961559249697e9f1d37e95984878e`.
-- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,795,278바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본 522개 파일에 원격 개발 DB 비밀번호·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, CI 이미지 2개와 OX·툴팁 수정 포함 확인. 번들은 `git bundle verify`·클론 성공, 민감값·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
+- 결과: 서버 A 153·M 11·D 0, 웹 A 52·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 187(CI 이미지 2 포함), 9-git-history 4개 파일. TGZ 40,286,847바이트, SHA256 `94efda75e8a4da11dfb21d6663587463c7c395da1407f7f022985385950409a8`. 번들은 커밋 231개, 27,041,621바이트, SHA256 `1c59dc60277d705498ba95e253486b90706f9f327eb16e71a15f171987895b9c`.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,795,278바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본 522개 파일에 원격 개발 DB 비밀번호·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, CI 이미지 2개와 OX·툴팁·가이드 안내 수정 포함 확인. 번들은 `git bundle verify`·클론 성공, 민감값·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
 
 ## 2026-11-05-19 — dev: 73_OX 큰 칸 미리보기·실제 팝업 적용
