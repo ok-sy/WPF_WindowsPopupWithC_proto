@@ -126,6 +126,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('폼 생성')`), '[IS063] Save without a form is rejected instead of pretending success');
   await pickType('텍스트 팝업'); await clickButton('폼 생성');
   await until(`!!${mid}.querySelector('.ck-editor__editable')`, 'is063 editor');
+  check(await run(`${right}.querySelector('.MuiPaper-root').getBoundingClientRect().height > 300`), 'IS063 inline preview fills the right column');
   check(await run(`${mid}.querySelector('h4').textContent==='텍스트 컨텐츠'`), '[IS063] Middle title follows the selected type');
   await setInput('input[aria-label="헤더 제목"]', 'IS063 헤더'); await setInput('input[aria-label="컨텐츠 명"]', 'IS063 컨텐츠');
   await run(`(()=>{const ed=${mid}.querySelector('.ck-editor__editable').ckeditorInstance;ed.model.change(w=>w.insertText('IS063 본문',ed.model.document.selection.getFirstPosition()));})()`); await pause(300);

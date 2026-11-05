@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-12 — dev: 인라인 미리보기 이미지 높이 0 수정
+
+- 이유: 미리보기 이미지 높이가 0으로 전달되어 보이지 않는다는 요건. 측정 결과 `popup.height` 값이 아니라 `InlinePopupPreview`의 높이 구조가 원인. 바깥 Stack이 부모 높이를 받지 못해 grid가 아닌 부모(flex·일반 div)에서 이미지 칸이 내용 높이 0으로 접히고, `ADAPTIVE` 이미지 0px, `FIT_TO_IMAGE` 이미지 칸 2px(테두리)로 표시. 인터페이스 문서의 `flex` + `height: 600` 예시도 동일.
+- 변경: `InlinePopupPreview`가 남은 높이를 채우고 absolute 상자로 미리보기 높이를 확정. 부모 높이가 없으면 미리보기 영역 최소 320px. 이미지 계산·`PopupPreview`·모달·저장 값은 변경 없음. 인터페이스 문서 갱신. 일반 div 부모에서는 긴 내용이 부모를 늘리지 않고 미리보기 안에서 스크롤됨.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx, docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, scripts/verify-image-preview.cjs, scripts/verify-image-preview-entry.tsx, scripts/verify-popup-common-sample-69.cjs.
+- 검증: 수정 전 임시 측정에서 flex·일반 div 부모의 `ADAPTIVE` 이미지 0px, grid 부모만 정상 확인. 수정 후 부모 구조 6종 × 크기 모드 3종 이미지 표시, `popup.height` 0, 고정 높이 부모 채움 검사 추가. `verify-image-preview` 54건, `verify-popup-preview-61` 52건, `verify-popup-common-sample-69` 45건(IS063 우측 미리보기 포함), `verify-popup-guide-render` 29건, `verify-completion-ux-43` 84건, `verify-popup-transform-64` 77건, `verify-question-template-picker` 7건 통과. `tsc`·변경 파일 eslint 오류 0. 로컬 관리자 웹 실화면과 폐쇄망 화면 확인은 미실행. 같은 시점 원격 개발 DB 접속·읽기 조회 정상 확인.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-11 — dev: 73_OX문항 표시 개선·미리보기 모서리 수정
 
 - 이유: 화면 검토에서 확인된 이슈. OX 문항의 정답 입력과 표시가 작고 구분이 약했고, 미리보기 바깥 틀(4px·회색)과 대화상자 배경(흰색)이 창의 둥근 모서리(8px)로 비쳤으며, 긴 제목에서 문항 번호가 두 줄로 깨짐.

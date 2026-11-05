@@ -10,7 +10,7 @@
 
 | 파일(`zero-rule-web/main/src/features/PopupcommonComponent/`) | 역할 |
 |---|---|
-| `InlinePopupPreview.tsx` | 제목 + "실제 크기로 보기" 버튼 + `PopupPreview`. 부모 영역의 남은 높이를 채운다 |
+| `InlinePopupPreview.tsx` | 제목 + "실제 크기로 보기" 버튼 + `PopupPreview`. 부모 영역의 남은 높이를 채운다. 부모 높이가 없으면 미리보기 영역을 최소 320px로 표시한다 |
 | `PopupPreviewDialog.tsx` | 실제 크기 모달. 크기 모드·브라우저 창 크기 변경·9개 위치·배경 Overlay·배경 클릭 차단·Esc/종료 버튼 |
 | `popupPreviewDialogLayout.ts` | 모달 크기(`previewDialogSize`)·위치(`previewPositionAlign`)·가장자리 여백(`previewEdgeMargin`)·Overlay 값(`previewOverlay`) 순수 함수 |
 | `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다 |
@@ -45,7 +45,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [recommended, setRecommended] = useState<Size | null>(null);
   return <>
-    {/* 높이가 정해진 부모 안에 둔다(미리보기가 남은 높이를 채움). */}
+    {/* 부모는 grid·flex·일반 div 모두 가능하다. 높이를 정하면 남은 높이를 채우고, 없으면 미리보기 영역 최소 320px로 표시한다. */}
     <div style={{ display: 'flex', flexDirection: 'column', height: 600 }}>
       <InlinePopupPreview popup={popup} onOpenPreview={() => setPreviewOpen(true)} onRecommendedSize={setRecommended} />
     </div>

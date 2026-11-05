@@ -84,5 +84,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(chrome.header === 40, type + ' header height matches WPF HeaderRow 40: ' + chrome.header);
     if (type === 'IMAGE') check(chrome.border === '0px/0px', 'IMAGE paper has no border like WPF PopupBodyBorder 0: ' + chrome.border);
   }
+  // 인라인 미리보기는 부모 구조와 관계없이 이미지 칸이 접히지 않는다(grid가 아닌 부모에서 높이 0으로 안 보이던 문제).
+  const inlineMeasure = `(()=>{const i=document.querySelector('img[alt="팝업 이미지 미리보기"]');const h=e=>e?Math.round(e.getBoundingClientRect().height):0;return {img:h(i),area:h(i&&i.parentElement),loaded:!!i&&i.complete&&i.naturalWidth>0};})()`;
+  for (const parent of ['gridRow', 'flexFixed', 'flexMin', 'flexMinTitle', 'blockFixed', 'blockAuto']) for (const mode of ['ADAPTIVE', 'FIT_TO_IMAGE', 'ORIGINAL']) {
+    await run(`window.inlineScenario('${parent}', '${mode}')`); await pause(200);
+    const m = await run(inlineMeasure);
+    check(m.loaded && m.img > 50 && m.area > 50, `Inline preview keeps the image visible in ${parent}/${mode}: ` + JSON.stringify(m));
+  }
+  await run(`window.inlineScenario('flexFixed', 'ADAPTIVE', 0)`); await pause(200);
+  check((await run(inlineMeasure)).img > 50, 'Inline preview ignores popup.height 0');
+  await run(`window.inlineScenario('flexFixed', 'ADAPTIVE')`); await pause(200);
+  const fixedPreview = await run(`(()=>{const p=document.querySelector('.MuiPaper-root').getBoundingClientRect(),c=document.querySelector('#root > div').getBoundingClientRect();return {bottom:Math.round(c.bottom-p.bottom),height:Math.round(p.height)};})()`);
+  check(fixedPreview.bottom <= 24 && fixedPreview.height > 450, 'Inline preview fills a fixed-height parent: ' + JSON.stringify(fixedPreview));
   console.log('PASS: ' + checks + ' IMAGE preview checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
