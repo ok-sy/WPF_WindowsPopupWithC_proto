@@ -1,12 +1,21 @@
 # 변경 이력
 
+## 2026-11-05-20 — 20261106 폐쇄망 전체 반입본 생성
+
+- 이유: 2026-11-06 반입 예정분으로 OX 큰 칸 표시, 서식 패널 툴팁 수정, 실제 크기 미리보기 안내 문구 제거를 포함한 반입본 필요. 20261105 묶음은 폐쇄망에 적용되지 않아 비교 기준은 20261103을 유지.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261106 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261106 -VerifyBuild` 실행(기준 커밋 a97c924). 히스토리 번들을 같은 커밋으로 재생성. CI 이미지는 506e3ec 내용을 작업 트리에만 적용해 포함하고 생성 후 원복. npm 변경 없음. `offline-export/20261105`는 삭제하지 않고 유지.
+- 주요 파일: offline-export/20261106(Git 제외), .offline-cache/git-history-20261106(Git 제외), .offline-cache/notes-20261106.md(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 153·M 11·D 0, 웹 A 52·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 187(CI 이미지 2 포함), 9-git-history 4개 파일. TGZ 40,286,146바이트, SHA256 `5a99b6907939977655b74c86859627da7804d6e89d2fa621ab428b677250b11e`. 번들은 커밋 230개, 27,040,980바이트, SHA256 `6bfb9074c37911ab70dd31e1804de539749961559249697e9f1d37e95984878e`.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,795,278바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본 522개 파일에 원격 개발 DB 비밀번호·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, CI 이미지 2개와 OX·툴팁 수정 포함 확인. 번들은 `git bundle verify`·클론 성공, 민감값·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-05-19 — dev: 73_OX 큰 칸 미리보기·실제 팝업 적용
 
 - 이유: 큰 O·X 칸은 편집 화면이 아니라 응답자가 보는 미리보기·실제 팝업에 적용하는 것으로 방향 변경(TODO73-14의 미리보기 변경 금지를 대체).
 - 변경: `SurveyPreview`와 WPF `SurveyPopupView`의 OX 문항을 같은 크기 칸 2개가 폭을 나누는 형태로 변경(높이 88 이상, 글자 36·굵게, 가운데 정렬, 간격 8, WPF는 `UniformGrid`). 선택 표시는 문항 디자인의 기존 칩 스타일 유지. `PopupQuestionEditor` OX 칸은 높이 52·글자 20으로 되돌리고 가로만 2등분, 칸 전체 클릭·화살표 키·단일 정답 유지. TODO73 73-16~18, ALL 명세, 인계 문서, 가이드 공지 갱신. MINIMAL 명세는 OX 표시 항목이 없어 변경 없음. JSON·저장 형식·서버·DTO 변경 없음.
 - 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, SurveyPreview.tsx, guide/guideNotices.ts), popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs, scripts/(verify-survey-rich-text-55.cjs, PopupWindowTests/Program.cs), docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md, docs/interfaces/(WPF_POPUP_ALL_SPEC.md, POPUP_FRONT_SAMPLE_HANDOVER.md).
 - 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-survey-rich-text-55` 53건, `verify-popup-preview-61` 66건, `verify-completion-ux-43` 84건, `verify-popup-common-sample-69` 45건 통과. `PopupWindowTests` 497건 통과(`CheckOxQuestion73` 포함). 실화면·서버 저장 왕복 미수행.
-- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+- 상태: 커밋에 포함, 원격 반영. 20261106 반입본 포함, 폐쇄망 반영 미실행.
 
 ## 2026-11-05-18 — dev: 66_서식 패널 툴팁 수정
 
@@ -14,7 +23,7 @@
 - 변경: `PopupRichTextMenu`의 MUI Tooltip을 색 칸과 같은 네이티브 `title`로 교체. 비활성 버튼 설명은 바깥 `span`의 `title`로 유지. 어긋남의 내부 원인은 확정하지 않았고 측정으로 증상을 확인.
 - 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx, scripts/verify-rich-text-49.cjs.
 - 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-rich-text-49` 75건 통과(클릭 후 MUI 툴팁 없음·패널 위치 유지 포함). 실화면 미수행.
-- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+- 상태: 커밋에 포함, 원격 반영. 20261106 반입본 포함, 폐쇄망 반영 미실행.
 
 ## 2026-11-05-17 — dev: 73_OX 정답 선택 UI 수정
 
@@ -22,7 +31,7 @@
 - 변경: `PopupQuestionEditor` OX형 문항 영역을 `정답 선택 *`과 같은 크기의 큰 O·X 칸 2개(높이 88, 글자 36)로 변경. 칸 전체 클릭, 정답 1개, 선택 칸만 배경·테두리 표시, 화살표 키 이동과 포커스 표시 추가. 저장은 기존 `SINGLE_CHOICE` O·X 선택지와 `isCorrect`. 선다형 입력과 미리보기 응답 버튼, 서버·WPF는 변경 없음. 가이드 공지·인계 문서 갱신.
 - 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, guide/guideNotices.ts), scripts/verify-survey-rich-text-55.cjs, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md.
 - 검증: `verify-survey-rich-text-55` 53건(같은 크기 2칸, 글자만 표시, 칸 모서리 클릭, 단일 정답, 화살표 키·포커스, 300px 너비, 편집값 재로딩, 저장 형식, 미리보기 응답 독립 추가), `verify-popup-common-sample-69` 45건, `verify-popup-guide-render` 29건, `verify-popup-preview-61` 66건, `verify-popup-transform-64` 77건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-guide-registry` 236건 통과. `tsc`·변경 파일 eslint 오류 0. 하네스 스크린샷으로 화면 형태 확인. 로컬 관리자 웹 실화면 조작과 서버 저장·재조회 왕복은 미실행.
-- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+- 상태: 커밋에 포함, 원격 반영. 20261106 반입본 포함, 폐쇄망 반영 미실행.
 
 ## 2026-11-05-16 — dev: TODO73 OX 정답 선택 UI 추가 정의
 
@@ -48,7 +57,7 @@
 - 유지: 영상 자리 표시(`영상 재생 영역`, 재생 컨트롤, 완료 기준 안내)와 시청 비율 슬라이더는 null 대체 문구가 아니라 미리보기 시연 요소라 유지. `withPreviewFallback`의 표시 기본값과 WPF 기본값이 있는 값(숨김 일수 30일 등)도 유지.
 - 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupPreview.tsx, PopupPreviewDialog.tsx, guide/guideNotices.ts), docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, scripts/verify-popup-preview-61.cjs.
 - 검증: `verify-popup-preview-61` 66건(유형 4종 null 값에서 모달 문구 0건·인라인 안내 유지, 입력값 표시 검사 추가), `verify-image-preview` 54건, `verify-completion-ux-43` 84건, `verify-popup-common-sample-69` 45건, `verify-popup-guide-render` 29건, `verify-popup-transform-64` 77건 통과. `tsc`·변경 파일 eslint 오류 0. 로컬 관리자 웹 실화면 확인은 미실행.
-- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+- 상태: 커밋에 포함, 원격 반영. 20261106 반입본 포함, 폐쇄망 반영 미실행.
 
 ## 2026-11-05-13 — 20261105 폐쇄망 전체 반입본 재생성(인라인 미리보기 수정 포함)
 
