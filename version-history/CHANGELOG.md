@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-05-03 — 20261105 폐쇄망 전체 반입본 생성
+
+- 이유: 20261103 반입본(71f58ae) 이후 변경을 폐쇄망에 반입. 11월 4일에 만든 CI 이미지 단독 20261105 묶음은 같은 날짜 규칙에 따라 전체 반입본으로 대체.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261105 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261105 -VerifyBuild -Force`로 offline-export/20261105 생성(기준 커밋 7686eda). CI 이미지 `hyundaiCi.png`·`webp`(Git 제외)는 506e3ec 내용을 작업 트리에만 적용해 4-docs에 포함하고 생성 후 원복(스크립트 변경 없음). 변경 요약에 `Auth.LoginPath`=`/api/auth/sso/login`, 서버 설정 false 2건·`APP_USER` 활성 행, §6 폐쇄망 실호출 항목, `ZERO_RULE_DB_PASSWORD` 필수, 실행할 DB 스크립트 없음과 개발 전용 SQL 21 미실행, 메뉴 SQL 04·20 주의, RgstPop 미반입, 나중에 보기·`hideToolbar`·API Demo 입력 UI·배율 변경 동작을 기재. npm 변경이 없어 5-npm-ckeditor 미포함(20261102 묶음 유효).
+- 주요 파일: offline-export/20261105(Git 제외), .offline-cache/git-history-20261105(Git 제외), .offline-cache/notes-20261105.md(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 153·M 11·D 0, 웹 A 51·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 185(CI 이미지 2 포함), 9-git-history 4개 파일. DELETE 누적 22개, 20261103 이후 신규 0개. TGZ 40,245,051바이트, SHA256 `59110d098312563c10effebd07f2a609e9223ac93ef16da83c943dd8b333212f`. 번들은 기준 7686eda, 커밋 219개, 27,017,174바이트, SHA256 `5d2e60676a959fac8f87bfbcd28e4e18f6c08d2d3a6423d65215b917d4898ae2`.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,794,766바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본 기준 원격 개발 DB 비밀번호 0건, RgstPop 파일·`scene-router.tsx` 참조 0건, MockSso·AGENTS.md·EXE·PDB 0건, CI 이미지 2개, 배율 변경 코드 포함 확인. 번들은 `git bundle verify`·클론 성공, 전체 이력에 개발 DB IP·치환한 웹 키·기본 비밀번호·원격 개발 DB 비밀번호·기존 이메일·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행. 반입 `appsettings.json`의 `LoginPath`는 로컬 프로토타입 값이라 폐쇄망 값 유지가 필요.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-11-05-02 — dev: 배율 변경 시 닫기 버튼 화면 유지
 
 - 이유: 팝업 표시 중 배율을 올리면 IMAGE 외 유형은 이전 배율의 크기 상한이 유지되어 창이 화면을 넘고 푸터 닫기 버튼이 밀릴 수 있음. 배율과 관계없이 닫기 버튼이 보이도록 보완.
