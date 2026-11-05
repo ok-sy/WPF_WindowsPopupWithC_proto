@@ -108,6 +108,7 @@ internal static class Program
         CheckVideoQuizAspect60();
         CheckImageSize58();
         CheckMinimumSize68();
+        CheckCloseButtonAfterDisplayChange();
         CheckServerSampleResponses();
         CheckAuxClose43();
         CheckQuizFailedMessage43();
@@ -581,6 +582,79 @@ internal static class Program
         var filled = Fit(false, false);
         Check(filled.Stretch == System.Windows.Media.Stretch.Fill && Math.Abs(filled.Image.Width - 320) < 0.6 && Math.Abs(filled.Image.Height - 200) < 0.6,
             $"[TODO58] unlocked ratio fills the content area ({filled.Image})");
+    }
+
+    /*
+     * POL-02-03 : 푸터 역할 — 배율 변경 뒤에도 닫기 버튼이 작업 영역 안에 있어야 한다.
+     * 실제 배율은 테스트에서 바꿀 수 없어, 배율 상승으로 실제 크기가 커진 상태를 창 크기·위치로 만들고 DPI 변경 경로를 호출한다.
+     */
+    private static void CheckCloseButtonAfterDisplayChange()
+    {
+        void Refresh(Window window)
+        {
+            typeof(Window).GetMethod("OnDpiChanged", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(window, new object[] { new DpiScale(1, 1), new DpiScale(2, 2) });
+            for (int i = 0; i < 5; i++)
+            {
+                window.UpdateLayout();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }
+        }
+        void CheckButton(Opened opened, Rect limit, string label)
+        {
+            var button = opened.Find<Button>("FooterCloseButton");
+            Rect inWindow = button.TransformToAncestor(opened.Window).TransformBounds(new Rect(button.RenderSize));
+            Rect onScreen = new(opened.Window.Left + inWindow.Left, opened.Window.Top + inWindow.Top, inWindow.Width, inWindow.Height);
+            limit.Inflate(0.5, 0.5);
+            Check(button.Visibility == Visibility.Visible && inWindow.Width > 0 && limit.Contains(onScreen),
+                $"[display-change] {label}: close button stays on screen ({onScreen} in {limit})");
+        }
+
+        Rect area = SystemParameters.WorkArea;
+        foreach (var (type, mode) in new[] { ("TEXT", "FIXED"), ("TEXT", "RATIO"), ("TEXT", "AUTO"), ("SURVEY", "FIXED"), ("QUIZ", "FIXED"), ("VIDEO", "FIXED"), ("IMAGE", "FIXED") })
+        {
+            // 큰 창: 이전 배율 상한으로 화면을 넘은 상태. 상한을 다시 계산해야 버튼이 돌아온다.
+            var large = OpenPopup(type, dto => { dto.SizeMode = mode; dto.Width = 640; dto.Height = 480; dto.WidthRatio = 0.5; dto.HeightRatio = 0.5; dto.ShowFooter = true; });
+            large.Window.UpdateLayout();
+            large.Window.MaxWidth = double.PositiveInfinity; large.Window.MaxHeight = double.PositiveInfinity;
+            large.Window.SizeToContent = SizeToContent.Manual;
+            large.Window.Width = area.Width * 2; large.Window.Height = area.Height * 2;
+            large.Window.Left = area.Left; large.Window.Top = area.Top;
+            Refresh(large.Window);
+            CheckButton(large, area, $"{type} {mode} oversized");
+            ShutdownClose(large.Window);
+
+            // 작은 창: 크기는 그대로인데 왼쪽 위 기준으로 커져 화면 아래로 밀린 상태. 위치를 되돌려야 한다.
+            var pushed = OpenPopup(type, dto => { dto.SizeMode = mode; dto.Width = 640; dto.Height = 480; dto.WidthRatio = 0.5; dto.HeightRatio = 0.5; dto.ShowFooter = true; });
+            pushed.Window.UpdateLayout();
+            pushed.Window.Left = area.Right - 100; pushed.Window.Top = area.Bottom - 100;
+            Refresh(pushed.Window);
+            CheckButton(pushed, area, $"{type} {mode} pushed off screen");
+            ShutdownClose(pushed.Window);
+        }
+
+        // 화면 안에 있으면 사용자가 옮긴 위치를 유지한다.
+        var moved = OpenPopup("TEXT", dto => { dto.SizeMode = "FIXED"; dto.Width = 500; dto.Height = 400; dto.ShowFooter = true; });
+        moved.Window.UpdateLayout();
+        moved.Window.Left = area.Left + 7; moved.Window.Top = area.Top + 9;
+        Refresh(moved.Window);
+        Check(Math.Abs(moved.Window.Left - (area.Left + 7)) < 0.6 && Math.Abs(moved.Window.Top - (area.Top + 9)) < 0.6,
+            $"[display-change] a window inside the work area keeps its dragged position ({moved.Window.Left}, {moved.Window.Top})");
+        ShutdownClose(moved.Window);
+
+        // FULLSCREEN은 화면 전체 크기를 다시 맞춘다.
+        var full = OpenPopup("TEXT", dto => { dto.SizeMode = "FULLSCREEN"; dto.ShowFooter = true; });
+        full.Window.UpdateLayout();
+        full.Window.Width = SystemParameters.PrimaryScreenWidth * 2; full.Window.Height = SystemParameters.PrimaryScreenHeight * 2;
+        Refresh(full.Window);
+        CheckButton(full, new Rect(0, 0, SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight), "TEXT FULLSCREEN");
+        ShutdownClose(full.Window);
+
+        // 최소 크기 창에서 푸터 버튼이 모두 보여도 닫기 버튼이 창 밖으로 잘리지 않는다.
+        var narrow = OpenPopup("TEXT", dto => { dto.SizeMode = "FIXED"; dto.Width = 300; dto.Height = 300; dto.ShowFooter = true; dto.ShowLater = true; });
+        narrow.Window.UpdateLayout();
+        CheckButton(narrow, new Rect(narrow.Window.Left, narrow.Window.Top, narrow.Window.ActualWidth, narrow.Window.ActualHeight), "minimum window with later button");
+        ShutdownClose(narrow.Window);
     }
 
     /* POL-01-03 : 최소 크기 — 팝업 창 최소 300 x 300: 누락 기본값, 299/300/301 경계, 기존 데이터(최소 100·최대 200 모순) 방어, IMAGE 최종 창 하한. */

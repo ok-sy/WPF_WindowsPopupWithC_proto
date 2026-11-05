@@ -146,6 +146,21 @@ namespace Popup.Views.Windows
                 Closed += (_, _) => SystemParameters.StaticPropertyChanged -= workAreaChanged;
             }
 
+            /*
+             * POL-02-03 : 푸터 역할
+             * 팝업을 띄운 채 배율·작업 영역이 바뀌어도 푸터 닫기 버튼이 화면 밖으로 밀리지 않게 크기·위치를 다시 맞춘다.
+             * WPF는 배율이 바뀌어도 DIP 크기를 유지해 실제 크기가 커지므로, 이전 배율로 계산한 상한을 그대로 두면 화면을 넘는다.
+             * 레이아웃이 끝난 뒤의 값을 쓰도록 Background 우선순위로 처리한다.
+             */
+            void QueueDisplayRefresh() => Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Background, new Action(RefreshForDisplayChange));
+            DpiChanged += (_, _) => QueueDisplayRefresh();
+            System.ComponentModel.PropertyChangedEventHandler displayChanged = (_, args) => {
+                if (args.PropertyName == nameof(SystemParameters.WorkArea) && !Dispatcher.HasShutdownStarted) QueueDisplayRefresh();
+            };
+            SystemParameters.StaticPropertyChanged += displayChanged;
+            Closed += (_, _) => SystemParameters.StaticPropertyChanged -= displayChanged;
+
             if (_options.SizeMode
                 == PopupSizeMode.Fullscreen)
             {
@@ -787,6 +802,26 @@ namespace Popup.Views.Windows
         }
 
         /*
+         * POL-02-03 : 푸터 역할
+         * ■ 배율·작업 영역 변경 후 창 복구
+         * - in : 없음(현재 모니터 작업 영역, PopupOptions)
+         * - out: 없음 · 크기 상한을 다시 계산하고, 창이 작업 영역을 벗어난 경우에만 설정 위치로 되돌린다.
+         * - 작업 영역 안에 있으면 사용자가 드래그한 위치를 유지한다. IMAGE 크기는 RefreshImageBounds가 맡는다.
+         */
+        private void RefreshForDisplayChange()
+        {
+            if (!IsLoaded || !IsVisible) return;
+            if (_options.SizeMode == PopupSizeMode.Fullscreen) { ApplyFullscreenBounds(); return; }
+            if (!IsImagePopup) ApplyWindowSize();
+            UpdateLayout();
+            Rect area = CurrentWorkArea();
+            const double Tolerance = 0.5;
+            if (Left < area.Left - Tolerance || Top < area.Top - Tolerance
+                || Left + ActualWidth > area.Right + Tolerance || Top + ActualHeight > area.Bottom + Tolerance)
+                ApplyPosition();
+        }
+
+        /*
          * POL-01-01 : 공통 옵션의 위치
          * POL-01-02 : 기본값의 적용
          * 관리자가 설정한 Header/Footer/본문 폰트 크기를 적용한다.
@@ -845,6 +880,11 @@ namespace Popup.Views.Windows
             SourceInitialized -=
                 PopupWindow_SourceInitialized;
 
+            ApplyFullscreenBounds();
+        }
+
+        private void ApplyFullscreenBounds()
+        {
             WindowInteropHelper windowInteropHelper =
                 new WindowInteropHelper(
                     this);

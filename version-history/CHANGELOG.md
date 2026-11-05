@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-02 — dev: 배율 변경 시 닫기 버튼 화면 유지
+
+- 이유: 팝업 표시 중 배율을 올리면 IMAGE 외 유형은 이전 배율의 크기 상한이 유지되어 창이 화면을 넘고 푸터 닫기 버튼이 밀릴 수 있음. 배율과 관계없이 닫기 버튼이 보이도록 보완.
+- 변경: `PopupWindow`가 배율(`DpiChanged`)·작업 영역 변경 때 IMAGE 외 유형의 크기 상한을 다시 계산하고, 창이 작업 영역을 벗어난 경우에만 설정 위치로 되돌림. 작업 영역 안이면 드래그한 위치 유지. FULLSCREEN은 화면 크기 계산을 `ApplyFullscreenBounds`로 분리해 다시 적용. API·설정 변경 없음. MINIMAL은 배율 동작을 다루지 않아 변경 없음.
+- 주요 파일: popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs, scripts/PopupWindowTests/Program.cs, docs/interfaces/WPF_POPUP_ALL_SPEC.md.
+- 검증: `PopupWindowTests` 493건 통과(신규 17건: TEXT FIXED·RATIO·AUTO, SURVEY·QUIZ·VIDEO·IMAGE FIXED, FULLSCREEN, 드래그 위치 유지, 최소 창). 복구 코드를 끈 상태에서 신규 검사 실패 확인. `ApiDemoTests` 114건 통과. 실제 배율은 테스트에서 바꿀 수 없어 커진 창 상태를 만들어 DPI 변경 경로를 호출함. 실제 배율 변경 화면 확인은 미실행. `showFooter=false`는 푸터가 없는 설정이라 대상 외.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-05-01 — dev: 폐쇄망 SSO 로그인 경로 변경 반영·계약 TODO 정리
 
 - 이유: 폐쇄망 SSO 로그인 경로가 `p/api/ssoLogin`에서 `p/api/auth/sso/login`으로 바뀌어 이전 경로를 폐기(요청 형식과 SSO 로그인 흐름은 유지). 추가된 계약 TODO가 이미 구현된 헤더 토큰 처리를 불일치로 기록하고 있어 정합성 보완 필요.

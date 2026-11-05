@@ -106,7 +106,9 @@ LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL �
 
 위치 값: CENTER, TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER_LEFT, CENTER_RIGHT,
 BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니터의 DPI와
-작업 영역을 사용하며 FULLSCREEN은 주 모니터 전체 영역을 사용한다.
+작업 영역을 사용하며 FULLSCREEN은 주 모니터 전체 영역을 사용한다. 팝업 표시 중 배율·작업
+영역이 바뀌면 크기 상한을 다시 계산하고, 창이 작업 영역을 벗어난 경우에만 설정 위치로 되돌려
+푸터 닫기 버튼을 화면 안에 유지한다.
 
 ### 3.3 공통 외형
 
