@@ -248,7 +248,7 @@ export const COMPONENTS: GuideComponent[] = [
   },
   {
     name: 'PopupQuestionEditor', file: 'PopupQuestionEditor.tsx',
-    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다.',
+    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 「OX 문항 추가」는 O·X 선택지를 채운 단일 선택 문항을 만듭니다.',
     props: [
       { name: 'questions', type: 'PopupQuestion[]', required: true, description: '문항 목록' },
       { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다(정답·배점·통과 점수 표시).' },

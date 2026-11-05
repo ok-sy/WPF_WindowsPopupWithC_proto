@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-04 — dev: 설문·퀴즈 OX 문항 프리셋 추가
+
+- 이유: 설문·퀴즈 작성 시 OX 문항을 매번 선택지 입력으로 만들어야 해 프리셋 요구사항 반영.
+- 변경: `PopupQuestionEditor`에 `OX 문항 추가` 버튼 추가. 누르면 O·X 선택지를 채운 단일 선택 문항을 가로 배치로 만들고 정답은 비워 둔다. 퀴즈는 기존 저장 전 확인대로 정답 체크가 필요하다. 기존 `문항 추가`의 빈 선택지 2개·세로 배치, 기존 문항은 변경 없음. 저장 형식이 일반 객관식과 같아 서버·WPF·API 계약 변경 없음. 가이드 공지·컴포넌트 설명과 인계 문서에 반영.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx, guide/guideData.ts, guide/guideNotices.ts, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, scripts/verify-survey-rich-text-55.cjs, scripts/verify-survey-rich-text-55-entry.tsx. WPF 기능 변경이 없어 ALL·MINIMAL 명세는 변경 없음.
+- 검증: 웹 `tsc`·eslint 오류 0. `verify-survey-rich-text-55` 39건 통과(설문·퀴즈 프리셋 검사 포함), `verify-popup-common-sample-69` 39건, `verify-popup-guide-registry` 214건, `verify-popup-guide-render` 29건, `verify-rgstpop-quiz-rule` 15건 통과. 실화면 확인, 서버 저장·WPF 표시 연동 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 20261105 반입본(7686eda) 미포함.
+
 ## 2026-11-05-03 — 20261105 폐쇄망 전체 반입본 생성
 
 - 이유: 20261103 반입본(71f58ae) 이후 변경을 폐쇄망에 반입. 11월 4일에 만든 CI 이미지 단독 20261105 묶음은 같은 날짜 규칙에 따라 전체 반입본으로 대체.

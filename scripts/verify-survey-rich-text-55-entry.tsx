@@ -12,17 +12,17 @@ const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, s
 const w = window as any;
 w.validatePopupQuestions = validatePopupQuestions;
 
-function Editor({ initial }: { initial: PopupQuestion[] }) {
+function Editor({ initial, quiz }: { initial: PopupQuestion[]; quiz: boolean }) {
   const [questions, setQuestions] = useState(initial);
   w.questions = questions;
-  return <PopupQuestionEditor questions={questions} quiz={false} onChange={setQuestions} onPassingScoreChange={() => undefined} />;
+  return <PopupQuestionEditor questions={questions} quiz={quiz} onChange={setQuestions} onPassingScoreChange={() => undefined} />;
 }
 
 let mountKey = 0;
-w.mountEditor = (questions: PopupQuestion[]) => {
+w.mountEditor = (questions: PopupQuestion[], quiz = false) => {
   mountKey++;
   root.render(<ThemeProvider theme={theme}><CssBaseline />
-    <div style={{ width: 760, padding: 16 }}><Editor key={mountKey} initial={questions} /></div>
+    <div style={{ width: 760, padding: 16 }}><Editor key={mountKey} initial={questions} quiz={quiz} /></div>
     <button id="outside" style={{ marginLeft: 16 }}>바깥</button>
   </ThemeProvider>);
 };

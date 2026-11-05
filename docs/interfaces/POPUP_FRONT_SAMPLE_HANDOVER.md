@@ -51,7 +51,7 @@
 | `PopupRichTextEditor` | `label`, `initialBlocks`, `onChange(blocks, plainText)`, `disabled?`, `compact?`, `hideToolbar?`, `placeholder?` | `compact`는 툴바를 숨긴 짧은 입력(문항·선택지·설명). `hideToolbar`는 본문 높이를 유지한 채 상단 툴바만 숨김(값을 바꿔도 입력 내용 유지). 서식은 우클릭/'서식' 버튼 패널로 지정 |
 | `InlinePopupPreview` | `popup`, `onOpenPreview?`, `onRecommendedSize?`, `title?` | `onOpenPreview`가 있으면 "실제 크기로 보기" 버튼 표시. `title` 기본 "팝업 미리보기" |
 | `PopupPreviewDialog` | `popup`, `open`, `onClose`, `recommendedSize?` | `recommendedSize`는 인라인이 계산한 IMAGE 권장 창 크기(첫 표시용, 선택) |
-| `PopupQuestionEditor` | `questions`, `quiz`, `passingScore?`, `onChange`, `onPassingScoreChange`, `fixedQuestionScore?`, `hidePassingScore?` | `quiz=true`면 정답·배점·통과 점수 입력 표시. `fixedQuestionScore`(예: 1)면 배점 입력을 숨기고 새 문항도 그 배점, `hidePassingScore`면 통과 점수 입력을 숨김(부모가 계산) |
+| `PopupQuestionEditor` | `questions`, `quiz`, `passingScore?`, `onChange`, `onPassingScoreChange`, `fixedQuestionScore?`, `hidePassingScore?` | `quiz=true`면 정답·배점·통과 점수 입력 표시. `fixedQuestionScore`(예: 1)면 배점 입력을 숨기고 새 문항도 그 배점, `hidePassingScore`면 통과 점수 입력을 숨김(부모가 계산). `OX 문항 추가` 버튼은 O·X 선택지를 채운 단일 선택 문항을 가로 배치로 만들며 저장 형식은 일반 객관식과 같음 |
 | `PopupQuizRuleFields` | `questionCount`, `rule`, `count`, `passingScore`, `onRuleChange`, `onCountChange`, `className?`, `titlePrefix?` | 퀴즈유형(만점 통과/커트라인 통과/통과·실패 제출/참여형)과 통과 기준 개수 입력. 계산은 `popupQuizRule`(`usePopupQuizRule`·`withQuizRule`·`validateQuizRule`)이 한다. 문항 1점 고정, 만점 = 문항 수, 커트라인·통과/실패 = N점, 참여형 = 0점(정답 수 무관 제출 완료, 저장된 0은 참여형으로 복원), 실패 시 제출 불가. 전달 샘플(IS063M02Sample)과 내부 등록 화면(RgstPop)이 같은 코드를 쓴다 |
 | `PopupScheduleFields` | `popup`, `onChange` | 게시 기간 안 노출 일정(요일·시간대). 샘플에는 넣지 않았다 |
 

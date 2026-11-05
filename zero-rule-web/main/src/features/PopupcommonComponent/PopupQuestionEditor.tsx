@@ -107,6 +107,13 @@ const initialRich = (blocks: unknown, plain: string | null | undefined): RichBlo
   richBlocksOrNull(blocks) ?? plainTextToBlocks(plain ?? '');
 /** 편집 결과: 글자가 없으면 서식을 보내지 않는다(null). 일반 문자열은 서버와 같은 규칙으로 서식에서 파생한다. */
 const richValue = (blocks: RichBlock[], plain: string) => ({ blocks: richBlocksOrNull(blocks), plain });
+/**
+ * POL-06-01 : 문항·서식
+ * ■ OX 문항 프리셋
+ * - 단일 선택 문항에 O·X 선택지를 채우고 가로로 배치한다. 저장 형식은 일반 객관식과 같아 서버·WPF 계약 변경이 없다.
+ * - 정답은 고르지 않는다. 퀴즈는 작성자가 정답을 체크해야 저장 전 확인을 통과한다.
+ */
+const OX_OPTION_TEXTS = ['O', 'X'];
 
 /**
  * POL-06-01 : 문항·서식
@@ -122,12 +129,12 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
   const updateOption = (index: number, optionId: number, patch: Partial<PopupOption>) =>
     update(index, { options: questions[index].options.map((o) => o.optionId === optionId ? { ...o, ...patch } : o) });
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
-  const add = () => onChange([...questions, {
-    questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
+  const add = (optionTexts = ['', ''], optionLayout: PopupQuestion['optionLayout'] = 'VERTICAL') => onChange([...questions, {
+    questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout,
     // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
     isRequired: quiz, isScored: quiz, questionScore: quiz ? fixedQuestionScore ?? DEFAULT_QUESTION_SCORE : null,
     sortOrder: questions.length + 1, answerMatchMode: 'EXACT', correctAnswer: '',
-    options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
+    options: optionTexts.map((text, i) => ({ optionId: -(i + 1), value: String(i + 1), text, sortOrder: i + 1, isCorrect: false })),
   }]);
   return <Stack spacing={2}>
     <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 ({questions.length})</Typography>
@@ -217,6 +224,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         </Stack>}
       </Stack>
     </Box>)}
-    <Button startIcon={<AddIcon />} onClick={add} sx={{ alignSelf: 'flex-start' }}>문항 추가</Button>
+    <Stack direction="row" spacing={1}>
+      <Button startIcon={<AddIcon />} onClick={() => add()}>문항 추가</Button>
+      <Button startIcon={<AddIcon />} onClick={() => add(OX_OPTION_TEXTS, 'HORIZONTAL')}>OX 문항 추가</Button>
+    </Stack>
   </Stack>;
 }
