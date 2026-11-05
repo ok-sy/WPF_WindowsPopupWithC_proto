@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-01 — dev: 폐쇄망 SSO 로그인 경로 변경 반영·계약 TODO 정리
+
+- 이유: 폐쇄망 SSO 로그인 경로가 `p/api/ssoLogin`에서 `p/api/auth/sso/login`으로 바뀌어 이전 경로를 폐기(요청 형식과 SSO 로그인 흐름은 유지). 추가된 계약 TODO가 이미 구현된 헤더 토큰 처리를 불일치로 기록하고 있어 정합성 보완 필요.
+- 변경: 설정 주석·코드 주석·README·인터페이스 명세 WPF-00·`ApiDemoTests` 모의 서버와 호출 경로를 새 경로로 변경. API Demo 로그인 분류 검사에 새 경로 추가. `WpfLoginClient`의 426 주석을 서버 버전 검사 범위에 맞게 수정. API Demo TODO §6을 구조 변경 불필요로 정리하고 폐쇄망 실호출 항목만 미완료로 유지. WPF·서버 로직, 기본 `LoginPath`, DTO, 인증 설정은 변경 없음. 과거 이력·검토 문서의 이전 경로는 당시 기록으로 유지.
+- 주요 파일: popup-frameWork/Popup/(appsettings.json, Services/Auth/WpfLoginClient.cs), popup-frameWork/README.md, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/(20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md, 20261027_DB조회_최소샘플_WPF로그인_연동_TODO_GUIDE.md), scripts/ApiDemoTests/Program.cs, zero-rule-server/web/api/.../(WpfLoginRequest.java, WpfAuthPrototypeControllerTest.java). ALL·MINIMAL은 로그인 경로를 다루지 않아 변경 없음. Word·PDF·Excel 미갱신.
+- 검증: WPF 소스·서버 Java·appsettings의 변경 줄이 주석뿐임을 diff로 확인. `ApiDemoTests` 114건 통과(모의 서버를 새 경로로 변경: 헤더·본문 토큰, SSO → 로그인 → 401 재로그인, API Demo 로그인 → 조회, 분류 표시). `PopupWindowTests`는 주 모니터 1280×720 환경에서 기존 `CheckVideoQuizAspect60`(TODO60)에서 중단되어 이후 검사는 미실행. 서버 컴파일·테스트, 폐쇄망 `p/api/auth/sso/login` 실제 호출은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영·실호출 미실행.
+
 ## 2026-11-04-14 — docs: 환경별 변경 지점 주석 추가
 
 - 이유: 도메인 호출 등 환경 변경에 대비해 주소·API 경로·헤더·제한 시간을 바꾸는 위치를 코드에서 바로 찾을 필요.

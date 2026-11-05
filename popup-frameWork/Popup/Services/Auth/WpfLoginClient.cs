@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Popup.Services.Auth
 {
     /// <summary>
-    /// POST {BaseUrl}{LoginPath} 요청 본문. 전송 키는 폐쇄망 로그인 API(p/api/ssoLogin) 요청 DTO와 같은
+    /// POST {BaseUrl}{LoginPath} 요청 본문. 전송 키는 폐쇄망 로그인 API(p/api/auth/sso/login) 요청 DTO와 같은
     /// lgonId·classCode·linkYn이다. C# 속성 이름(LogonId)은 내부 이름이라 바꾸지 않고 전송 키만 지정한다.
     /// </summary>
     public sealed class WpfLoginRequestDto
@@ -47,7 +47,7 @@ namespace Popup.Services.Auth
      * 붙이고, 이 클래스는 로그인 API만 안다. 운영 전환 시(타 팀 통합 토큰) 이 클래스와 SsoAuthHeaderProvider만 바뀐다.
      *
      * [토큰 위치] 응답 헤더 x-custom-authorization을 먼저 읽고, 없으면 본문 accessToken을 쓴다.
-     *   - 폐쇄망 p/api/ssoLogin·일반 로그인 p/api/auth/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
+     *   - 폐쇄망 p/api/auth/sso/login·일반 로그인 p/api/auth/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
      *   - 로컬 프로토타입 p/api/wpf/auth/login: 본문 { accessToken, tokenType, expiresAt }.
      *   헤더 토큰은 만료 시각을 주지 않으므로 ExpiresAt은 기본값이다. 갱신은 401 재로그인과 정기 재로그인이 맡고 만료 시각으로 판단하지 않는다.
      *
@@ -84,7 +84,7 @@ namespace Popup.Services.Auth
                 throw new ArgumentException("팝업 API 주소가 필요합니다.", nameof(baseUrl));
             }
             _httpClient = httpClient ?? HttpClient;
-            // [변경 지점] 기본 로그인 경로. 환경별 값은 appsettings Auth.LoginPath로 지정한다(폐쇄망 /api/ssoLogin).
+            // [변경 지점] 기본 로그인 경로. 환경별 값은 appsettings Auth.LoginPath로 지정한다(폐쇄망 /api/auth/sso/login).
             string path = string.IsNullOrWhiteSpace(loginPath) ? "/api/wpf/auth/login" : loginPath.Trim();
             _loginUrl = baseUrl.Trim().TrimEnd('/') + "/" + path.TrimStart('/');
         }
@@ -122,7 +122,8 @@ namespace Popup.Services.Auth
             Stopwatch stopwatch = Stopwatch.StartNew();
             /*
              * POL-15-02 : 인증·버전
-             * 로그인(최초 서버 접점)에도 X-Client-Version을 보낸다. 지원 종료 버전이면 토큰 발급 전에 426으로
+             * 로그인(최초 서버 접점)에도 X-Client-Version을 보낸다. 서버가 로그인 경로까지 검사하면(저장소 서버는 /p/api/wpf/**만 검사해
+             * 프로토타입 로그인만 해당, /p/api/auth/sso/login은 첫 팝업 조회에서 426) 지원 종료 버전은 토큰 발급 전에 426으로
              * 차단되어 이후 팝업 조회가 시작되지 않는다. 426은 WpfClientVersionException으로 구분해 던진다(재로그인 금지).
              */
             using HttpRequestMessage httpRequest = new(HttpMethod.Post, _loginUrl)

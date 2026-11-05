@@ -81,7 +81,7 @@ internal static class Program
         Check(Parse("-show-main").ShowMain && Parse("--show-main").ShowMain, "[51-1] show-main accepts single and double dash");
     }
 
-    /// <summary>일반 모드 로그인 본문은 폐쇄망 p/api/ssoLogin 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>
+    /// <summary>일반 모드 로그인 본문은 폐쇄망 p/api/auth/sso/login 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>
     private static void CheckLoginRequestKey()
     {
         string body = JsonSerializer.Serialize(new WpfLoginRequestDto { LogonId = "E1001", ClassCode = "A1" },
@@ -114,7 +114,7 @@ internal static class Program
     {
         string Category(string url) => (string)typeof(DemoWindow).GetMethod("HttpCategory", Flags)!.Invoke(null, new object[] { url })!;
         Check(Category("http://h/p/api/wpf/popups") == "[조회]" && Category("http://h/p/api/wpf/popups/results") == "[결과]"
-              && Category("http://h/p/api/wpf/auth/login") == "[로그인]" && Category("http://h/p/other") == "[HTTP]",
+              && Category("http://h/p/api/wpf/auth/login") == "[로그인]" && Category("http://h/p/api/auth/sso/login") == "[로그인]" && Category("http://h/p/other") == "[HTTP]",
             "[54-7] request kind is derived from the path");
     }
 
@@ -233,17 +233,17 @@ internal static class Program
         Check(Redact("{\"a\":1}") == "{\"a\":1}", "[U-04] body without a password stays unchanged");
     }
 
-    /* 일반 실행 로그인: 폐쇄망 ssoLogin처럼 토큰이 응답 헤더로 와도, 프로토타입처럼 본문으로 와도 동작해야 한다. */
+    /* 일반 실행 로그인: 폐쇄망 SSO 로그인처럼 토큰이 응답 헤더로 와도, 프로토타입처럼 본문으로 와도 동작해야 한다. */
     private static void CheckLoginTokenSources(MockServer server)
     {
-        WpfLoginResponseDto Login(string mode, string path = "/api/ssoLogin")
+        WpfLoginResponseDto Login(string mode, string path = "/api/auth/sso/login")
         {
             server.SsoLoginMode = mode;
             return Task.Run(() => new WpfLoginClient(server.BaseUrl, path).LoginAsync(new SsoUserInfo("E1001", "A1"))).GetAwaiter().GetResult();
         }
         WpfLoginResponseDto header = Login("HEADER");
         Check(header.AccessToken == server.ValidToken && header.TokenType == "Bearer" && header.ExpiresAt == default, "[login-token] token is read from the response header with a profile body");
-        Check(server.SsoLoginBodies[^1].Contains("\"lgonId\":\"E1001\"") && server.SsoLoginBodies[^1].Contains("\"classCode\":\"A1\"") && server.SsoLoginBodies[^1].Contains("\"linkYn\":\"N\""), "[login-token] ssoLogin receives lgonId, classCode and linkYn");
+        Check(server.SsoLoginBodies[^1].Contains("\"lgonId\":\"E1001\"") && server.SsoLoginBodies[^1].Contains("\"classCode\":\"A1\"") && server.SsoLoginBodies[^1].Contains("\"linkYn\":\"N\""), "[login-token] sso login receives lgonId, classCode and linkYn");
         Check(Login("BOTH").AccessToken == server.ValidToken, "[login-token] header token wins over the body token");
         Check(Login("BEARER").AccessToken == server.ValidToken, "[login-token] a Bearer prefix in the header is not doubled");
         WpfLoginResponseDto body = Login("BODY");
@@ -256,7 +256,7 @@ internal static class Program
         // 일반 실행 경로: SSO 1회 → 로그인 → 헤더 토큰, 401은 SSO 없이 재로그인
         server.SsoLoginMode = "HEADER";
         int ssoBefore = server.SsoGetCount;
-        SsoAuthHeaderProvider provider = new(new SsoClient(server.BaseUrl + "/sso"), new WpfLoginClient(server.BaseUrl, "/api/ssoLogin"));
+        SsoAuthHeaderProvider provider = new(new SsoClient(server.BaseUrl + "/sso"), new WpfLoginClient(server.BaseUrl, "/api/auth/sso/login"));
         string? first = Task.Run(() => provider.GetAuthorizationHeaderAsync()).GetAwaiter().GetResult();
         Check(first == "Bearer " + server.ValidToken && server.SsoGetCount == ssoBefore + 1, "[login-token] SSO provider sends the header token as Bearer");
         Task.Run(() => provider.OnUnauthorizedAsync(first)).GetAwaiter().GetResult();
@@ -264,12 +264,12 @@ internal static class Program
         Check(renewed != first && renewed == "Bearer " + server.ValidToken && server.SsoGetCount == ssoBefore + 1, "[login-token] 401 logs in again with the header token and no second SSO call");
     }
 
-    /* API Demo 로그인 방식도 같은 클라이언트라 ssoLogin 경로와 헤더 토큰으로 조회까지 이어진다. */
+    /* API Demo 로그인 방식도 같은 클라이언트라 폐쇄망 SSO 로그인 경로와 헤더 토큰으로 조회까지 이어진다. */
     private static void CheckDemoHeaderTokenLogin(MockServer server)
     {
         server.SsoLoginMode = "HEADER";
         server.PopupMode = "NULL";
-        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/ssoLogin" });
+        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/auth/sso/login" });
         window.Show();
         ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         Query(window);
@@ -698,7 +698,7 @@ internal static class Program
                     context.Response.OutputStream.Write(xml);
                     context.Response.Close();
                     return;
-                case "/p/api/ssoLogin":
+                case "/p/api/auth/sso/login":
                     {
                         string token;
                         lock (_lock)

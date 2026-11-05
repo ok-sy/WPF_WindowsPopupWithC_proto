@@ -16,7 +16,7 @@ import jakarta.validation.constraints.Size;
  * - WPF가 사내 SSO XML에서 읽은 사용자 식별값을 그대로 전달한다.
  *   프로토타입에서는 서버가 SSO에 재확인하지 않고 필수 값 존재 여부만 검사한다(SSO 진위 확인은 프로토타입 범위 밖,
  *   docs/design/10_WPF_SSO_토큰_프로토타입_계획.md).
- * - 요청 키는 폐쇄망 로그인 API(p/api/ssoLogin) 요청 DTO와 같은 {@code lgonId}다. 이전 WPF가 보내던 {@code logonId}도
+ * - 요청 키는 폐쇄망 로그인 API(p/api/auth/sso/login) 요청 DTO와 같은 {@code lgonId}다. 이전 WPF가 보내던 {@code logonId}도
  *   {@link JsonAlias}로 받는다. Java 이름 logonId는 내부 이름이다.
  *
  * @param logonId   JSON {@code lgonId}(별칭 logonId). SSO XML {@code MAIN_USER_ID} — 사번. WPF API의 사용자 식별값이 된다.

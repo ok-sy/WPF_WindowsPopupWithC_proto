@@ -1,7 +1,7 @@
 # API Demo master 로그인 → 팝업 API 연동 및 입력 UI 최적화 회귀검증 TODO
 
 작성일: 2026-11-04  
-상태: **구현·로컬 검증 완료(2026-11-04) / 원격 개발 DB 회귀와 TEXT 외 유형 확인 남음**  
+상태: **구현·로컬 검증 완료(2026-11-04) / 원격 개발 DB 회귀와 TEXT 외 유형 확인 남음 / 폐쇄망 SSO 로그인 실호출 남음(§6)**  
 대상: `popup-frameWork/Popup` API Demo (`-Demo -Api`) 및 실제 개발/검증 서버
 
 ## 목적
@@ -64,32 +64,37 @@ SSO 호출 없이 테스트 계정 `master`(비밀번호는 문서에 적지 않
 
 참고: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`, `docs/design/10_WPF_SSO_토큰_프로토타입_계획.md`.
 
-## 6. 폐쇄망 Swagger SSO 로그인 계약 확인 및 추가 TODO (2026-11-05)
+## 6. 폐쇄망 SSO 로그인 계약 대조 및 남은 확인 (2026-11-05)
 
-> 근거: 사용자가 제공한 폐쇄망 서버 `UserSsoLoginController.java` 코드 사진 2장과 Swagger UI 화면 1장. **사진에서 확인된 사실만 계약 후보로 기록**하며 실제 요청 성공 여부·헤더 재사용·필드 필수 여부는 미검증이다. §1~5의 **2026-11-04 일반 ID/비밀번호 로그인 구현·검증 결과는 그대로 유지**한다.
+> 근거: 폐쇄망 서버 `UserSsoLoginController.java` 코드 사진 2장, Swagger UI 화면 1장, 폐쇄망 호출 경로·요청·응답 확인 내용. 저장소 코드와 대조했으며 **폐쇄망 실제 호출은 미실행**이다. §1~5의 2026-11-04 일반 ID/비밀번호 로그인 구현·검증 결과는 그대로 유지한다.
 
-### 확인된 서버 측 구조
+**판단: 구조 변경 불필요.** 폐쇄망 SSO 로그인 경로만 `/api/ssoLogin`에서 `/api/auth/sso/login`으로 바뀌었고(이전 경로 폐기), SSO 사용자 식별 → 로그인 → Bearer 토큰 흐름은 유지한다. 환경별 경로는 `Auth.LoginPath`로 지정한다.
 
-| 구분 | 사진으로 확인한 내용 | WPF 측 의미 |
-| --- | --- | --- |
-| SSO 로그인 엔드포인트 | `POST /p/api/auth/sso/login` (Swagger 표기) | `BaseUrl`에 이미 `/p`가 포함되면 상대 경로는 `/api/auth/sso/login`; `/p` 중복 주의 |
-| Request DTO | `AuthPayloads.SsoLoginRequest` | 현행 WPF 프로토타입 `WpfLoginRequestDto`와 요청 필드·의미 비교 필요 |
-| Swagger 요청 예시 | `lgonId`(string), `classCode`(string), `otpNo`(string), `linkYn`(string), `is6443`(boolean) | Swagger **예시 값**이며 모든 필드 필수 또는 기본값이 true라는 증거는 아님 |
-| 인증 발급 | `userTokenProvider.createToken()`, `userService.saveAuth(...)` | 서버가 인증 토큰을 발급하고 인증정보를 저장하는 경로 |
-| 토큰 응답 헤더 | Swagger `x-custom-authorization`; 코드에서는 `authHeaderProps.getUserRefreshTokenHeader()`에 토큰값 추가 | 헤더에서 토큰 추출 필요; **이 값이 요청용 헤더인지 Bearer 접두어가 필요한지는 인증 필터로 확인** |
-| JSON 응답 | 컨트롤러 반환은 `CLNewApiResponse<LoginProfileResponse>`; Swagger 스키마에는 `profile` 등 표시 | WPF 프로토타입의 최상위 `accessToken` JSON 파싱과 불일치. 실제 응답 envelope 형태는 Swagger 실행값으로 재확인 |
-| 별도 일반 로그인 | Swagger 하단 `POST /p/api/auth/mnt/login`도 보임(관리자 로그인) | 기존 §1~5 `POST /p/api/auth/login`과 별개 엔드포인트일 수 있으므로 이름만 보고 동일시하지 않음 |
+### 계약 대조
 
-### 추가 검증 TODO — SSO 경로와 ID/비밀번호 경로 혼동 방지
+| 구분 | 폐쇄망 | WPF 현행 코드 | 결과 |
+| --- | --- | --- | --- |
+| 엔드포인트 | `POST /p/api/auth/sso/login` | `BaseUrl`(`/p` 포함) + `Auth.LoginPath` = `/api/auth/sso/login` | 설정으로 일치, `/p` 중복 주의 |
+| 요청 | 기존 WPF 로그인과 동일. Swagger 예시에는 `otpNo`, `is6443`도 표시 | `lgonId`, `classCode`, `linkYn=N` 전송 | 일치. 두 필드 미전송 성공은 S-01에서 확인 |
+| 토큰 위치 | 코드 사진·10/27 응답 화면은 헤더 `x-custom-authorization`, 본문은 프로필 | 헤더 우선, 없으면 본문 `accessToken` | 어느 쪽이든 처리. 실제 위치는 S-02에서 기록 |
+| 실패 응답 | HTTP 200 가능성 있음 | 2xx라도 토큰이 없으면 `WpfLoginFailedException` | 처리 |
+| 후속 인증 | 사진의 `createToken`·`saveAuth`·응답 헤더 구성이 저장소 일반 로그인과 같음 | 조회·결과에 `Authorization: Bearer` | 저장소 서버 필터 기준 일치. 폐쇄망은 S-03에서 확인 |
+| `/p/api/auth/mnt/login` | Swagger에 보이는 관리자 로그인 | 호출하지 않음 | 범위 밖 |
 
-- [ ] **S-01 필드 정의**: 폐쇄망 `AuthPayloads.SsoLoginRequest` 실제 필드 정의를 열어 `lgonId/classCode/otpNo/linkYn/is6443`의 필수 여부, 유효값, 불필요 필드 허용 여부를 확인한다. 특히 `otpNo`와 `is6443`의 실제 의미를 추측하지 않는다.
-- [ ] **S-02 실제 응답 캡처**: Swagger Try it out 또는 승인된 테스트 환경에서 SSO 로그인 성공/실패의 HTTP 상태, **응답 헤더명·토큰 값 형식(마스킹)**, 실제 JSON envelope를 기록한다. 프로필 JSON에 토큰이 없더라도 헤더에서 추출되는지 확인한다.
-- [ ] **S-03 토큰 후속 사용**: 서버 인증 필터와 `authHeaderProps` 설정을 비교하여 팝업 조회·결과 전송에 요구하는 **요청 헤더명**, `Bearer` 접두어 유무, 토큰 만료·401 갱신 동작을 검증한다. 응답 `x-custom-authorization`을 요청 헤더와 자동으로 동일시하지 않는다.
-- [ ] **S-04 로그인 경로 분리**: `master`/비밀번호 일반 로그인(`/p/api/auth/login`, 기존 §1~5)과 **SSO 경로**(`/p/api/auth/sso/login`)의 인증 주체·Request DTO·응답 처리·사용 가능 환경을 구분한다. **SSO 없이 master 로그인**이라는 최초 회귀검증 목표를 SSO API로 대체하지 않는다.
-- [ ] **S-05 관리자 로그인 비교**: Swagger에 보이는 `/p/api/auth/mnt/login`이 기존 일반 `/p/api/auth/login`과 어떻게 다른지 요청 DTO·인가 범위·응답 토큰 기준으로 확인한다. 필요 시 API Demo의 로그인 경로 선택/표시 TODO만 별도 정의한다.
-- [ ] **S-06 WPF 호환성 설계**: SSO 경로 시험이 실제로 필요할 때만 `WpfLoginClient`(프로토타입 JSON 토큰)와 별도 응답 헤더 토큰 추출 경로를 설계하고, 현재 ID/비밀번호/직접 토큰·팝업 결과 호출 회귀를 보존한다. **현재 코드 변경 요청 아님**.
-- [ ] **S-07 Demo 입력창**: 로그인 방식 선택 시 URL과 예상 요청 스키마를 함께 표시하고, SSO 경로의 `otpNo/is6443`를 일반 ID/비밀번호 입력과 섞지 않도록 입력 안내·검증을 설계한다. 민감정보/토큰은 요청·응답 표시/복사/로그에서 기본 마스킹.
-- [ ] **S-08 실제 폐쇄망 회귀**: 인증 획득 성공→팝업 조회→렌더링→결과 전송→다음 수동 조회, 잘못된 계정·필수 필드 누락·401·403·토큰 만료 및 중복 결과 전송을 **실제 서버 환경에서** 검증하고 결과를 날짜·환경별 기록한다.
+### 남은 확인 — 폐쇄망 실호출
 
-**변경 관리:** 이번에는 TODO 문서만 수정. 기존 §1~5 완료 체크·실행 이력은 소급 수정하지 않으며 WPF/서버 코드, DTO, 인증 설정, 인터페이스 명세는 수정하지 않는다.
+- [ ] **S-01 요청**: `lgonId`, `classCode`, `linkYn`만으로 로그인이 성공하는지 확인한다(`otpNo`, `is6443` 미전송).
+- [ ] **S-02 응답**: 성공·실패의 HTTP 상태, 토큰 위치·형식(마스킹), 본문 형식을 기록한다.
+- [ ] **S-03 토큰 후속 사용**: 발급 토큰으로 `POST /p/api/wpf/popups`·`/results`가 인증되는지 확인한다. 폐쇄망 **서버 측** 전제는 `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`, 사번의 `APP_USER` 활성 행이다(WPF 변경 사항 아님).
+- [ ] **S-08 회귀**: 인증 획득→팝업 조회→렌더링→결과 전송→다음 수동 조회, 잘못된 계정·필수 필드 누락·401·403·토큰 만료, 중복 결과 전송을 실제 서버에서 검증하고 날짜·환경별로 기록한다.
 
+### 코드·문서 대조로 종료
+
+- [x] **S-04 로그인 경로 분리**: `LoginPath`와 로그인 JSON으로 일반 로그인(`/api/auth/login`, `{lgonId, passwd}`)과 SSO 로그인을 구분한다. `master` 회귀검증 목표는 §1~5 그대로 유지한다.
+- [x] **S-05 관리자 로그인 비교**: WPF가 호출하지 않아 범위에서 제외한다.
+- [x] **S-06 WPF 호환성 설계**: `WpfLoginClient`가 이미 헤더 토큰을 처리해 별도 경로가 불필요하다(`ApiDemoTests`로 새 경로 검사).
+- [x] **S-07 Demo 입력창**: 로그인 경로·JSON 입력과 토큰 기본 마스킹이 이미 있어 전용 입력을 추가하지 않고 README 안내로 대체한다.
+
+**참고:** 버전 검사는 서버 `/p/api/wpf/**`에만 적용되므로, 폐쇄망 설정도 같다면 구버전 WPF는 로그인이 아니라 첫 팝업 조회에서 426을 받는다. 서버 측 동작이며 WPF는 헤더 전송과 426 처리를 유지한다.
+
+**변경 관리:** 폐쇄망 경로 표기·테스트 경로·이 절을 수정했다. WPF 로직, 서버 로직, DTO, 인증 설정은 변경하지 않았다.

@@ -255,7 +255,7 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 E
 | `SurveyDesignVersion` | SURVEY·QUIZ(VIDEO+QUIZ 포함) 문항 디자인 버전. `V1` 무채색, `V2` 색 규칙(기본·최신). 없거나 모르는 값이면 최신. 다시 빌드하지 않고 바꾸려면 EXE 옆 `appsettings.json`에 지정 |
 | `Auth.Mode` | None / Static / SsoPrototype |
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
-| `Auth.LoginPath` | 로그인 API. 로컬 프로토타입 `/api/wpf/auth/login`, 폐쇄망 `/api/ssoLogin` |
+| `Auth.LoginPath` | 로그인 API. 로컬 프로토타입 `/api/wpf/auth/login`, 폐쇄망 `/api/auth/sso/login` |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
 | `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
 | `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
@@ -393,7 +393,7 @@ POST /p/api/wpf/auth/login
 }
 ```
 
-응답: 토큰은 응답 헤더 `x-custom-authorization`(폐쇄망 `p/api/ssoLogin`)을 먼저 읽고, 없으면 본문 `accessToken`(로컬 프로토타입)을 쓴다. 본문 형식은 다음과 같다.
+응답: 토큰은 응답 헤더 `x-custom-authorization`(폐쇄망 `p/api/auth/sso/login`)을 먼저 읽고, 없으면 본문 `accessToken`(로컬 프로토타입)을 쓴다. 본문 형식은 다음과 같다.
 
 ```json
 {
@@ -1017,7 +1017,7 @@ popupSample.exe -Demo -Api
 - 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
 - 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 — 초기 선택은 `Auth.Mode`),
-  `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/ssoLogin` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
+  `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/auth/sso/login` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
   `단건 조회 요청 JSON`(기본 `{}`, 평소에는 접혀 있고 입력 오류 시 펼침). API Demo는 `X-Dev-User-Id`를 보내지 않는다(appsettings `DevUserId`도 사용하지 않음).
 - 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
   → 창 닫기·제출 → 결과를 `POST /api/wpf/popups/results`로 실제 전송 → `status`·`nextStatus`를 로그에 표시.

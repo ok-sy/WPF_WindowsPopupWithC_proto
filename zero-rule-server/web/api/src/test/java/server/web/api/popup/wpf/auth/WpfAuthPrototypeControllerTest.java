@@ -121,7 +121,7 @@ class WpfAuthPrototypeControllerTest {
         verifyNoInteractions(popupService);
     }
 
-    /** 폐쇄망 p/api/ssoLogin과 같은 lgonId가 기준 키이고, 이전 WPF의 logonId도 별칭으로 받는다. */
+    /** 폐쇄망 p/api/auth/sso/login과 같은 lgonId가 기준 키이고, 이전 WPF의 logonId도 별칭으로 받는다. */
     @Test void legacyLogonIdKeyIsAcceptedAsAlias() throws Exception {
         MvcResult result = mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

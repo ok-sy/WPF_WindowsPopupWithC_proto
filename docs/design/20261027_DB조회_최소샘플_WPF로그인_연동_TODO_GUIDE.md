@@ -62,6 +62,8 @@
 
 ## 4. 실제 SSO 로그인 계약 반영
 
+> 2026-11-05: 폐쇄망 SSO 로그인 경로는 `p/api/auth/sso/login`으로 변경됐다(`p/api/ssoLogin` 폐기). 아래 항목의 이전 경로는 당시 기록이며, 미완료 항목은 새 경로로 확인한다.
+
 실제 로그인 응답 화면에서 body는 프로필 envelope이며, 토큰은 `x-custom-authorization` 응답 헤더에 담기는 것을 확인했다. 토큰·암호문·복호화 값은 문서에 저장하지 않는다.
 
 - [x] WpfLoginClient.SendLoginAsync에서 2xx 확인 후 응답 헤더 `x-custom-authorization`을 먼저 읽는 코드 적용 화면 확인. 기존 body.accessToken 방식은 헤더 미검출 시 fallback이다. (2026-11-04 저장소 반영: 이전까지 저장소 코드에는 없어 소스 반입 시 덮어써질 수 있었다.)
