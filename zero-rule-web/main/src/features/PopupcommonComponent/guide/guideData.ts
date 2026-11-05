@@ -255,7 +255,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'passingScore', type: 'number | null', description: '퀴즈 통과 점수' },
       { name: 'fixedQuestionScore', type: 'number', description: '배점을 고정합니다. 주면 배점 입력칸을 숨깁니다.' },
       { name: 'hidePassingScore', type: 'boolean', description: '통과 점수 입력칸을 숨깁니다.' },
-      { name: 'answerTypeOptions', type: 'PopupCodeOption[]', description: '공통코드 0089 조회 결과. 생략하면 샘플용 목록, 빈 배열이면 변경을 막습니다.' },
+      { name: 'answerTypeOptions', type: 'PopupCodeOption[]', description: '공통코드 0089 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 answerTypes를 넘깁니다. DB에 0089 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 변경을 막습니다.' },
     ],
     outputs: [
       { name: 'onChange', type: '(questions: PopupQuestion[]) => void', required: true, description: '바뀐 문항 목록 전체' },
@@ -277,7 +277,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
       { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
       { name: 'count', type: 'number', required: true, description: '통과 기준 개수' },
       { name: 'passingScore', type: 'number | null', description: '계산된 통과 점수(안내용)' },
-      { name: 'options', type: 'PopupCodeOption[]', description: '공통코드 0090 조회 결과. 생략하면 샘플용 목록, 빈 배열이면 선택을 막습니다.' },
+      { name: 'options', type: 'PopupCodeOption[]', description: '공통코드 0090 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 quizTypes를 넘깁니다. DB에 0090 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 선택을 막습니다.' },
       { name: 'className / titlePrefix', type: 'string / ReactNode', description: '퍼블리싱 클래스·제목 앞 표시' },
     ],
     outputs: [

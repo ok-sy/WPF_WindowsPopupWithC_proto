@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-21 — dev: 73_가이드 공통코드 조회 안내 추가
+
+- 이유: 공통코드 조회 방법이 가이드 공지 탭에만 있고, 폐쇄망 DB에 코드가 없을 때 입력이 막힌다는 안내가 없어 연동 시 누락 우려.
+- 변경: 가이드 컴포넌트 탭의 `PopupQuestionEditor` `answerTypeOptions`, `PopupQuizRuleFields` `options` 설명에 `loadPopupQuestionCodes(api.clCode.search)` 호출, 넘길 결과(`answerTypes`, `quizTypes`), DB 코드 `0089`·`0090` 필요 조건 추가. 동작 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts.
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-popup-guide-registry` 237건, `verify-popup-guide-render` 29건 통과. 실화면 미수행.
+- 상태: 커밋에 포함, 원격 반영. 20261106 반입본 포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-20 — 20261106 폐쇄망 전체 반입본 생성
 
 - 이유: 2026-11-06 반입 예정분으로 OX 큰 칸 표시, 서식 패널 툴팁 수정, 실제 크기 미리보기 안내 문구 제거를 포함한 반입본 필요. 20261105 묶음은 폐쇄망에 적용되지 않아 비교 기준은 20261103을 유지.
