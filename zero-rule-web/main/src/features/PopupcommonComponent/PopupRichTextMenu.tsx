@@ -8,7 +8,7 @@ import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
 import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
 import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
 import {
-  Box, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Tooltip, Typography, type PopoverPosition,
+  Box, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Typography, type PopoverPosition,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, type RichFontId } from './popupRichText';
@@ -94,29 +94,27 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
     paperRef.current?.querySelectorAll<HTMLButtonElement>('[data-color-cell]')[next]?.focus();
   };
 
+  // 패널 안에서 MUI Tooltip을 쓰면 클릭 후 툴팁이 패널 좌표만큼 어긋나 표시되어 색 칸과 같은 네이티브 title을 쓴다.
   const toggle = (key: 'bold' | 'italic' | 'underline' | 'strikethrough', label: string, icon: ReactNode) => {
     const on = state?.[key].value === true && !mixed(key);
     return (
-      <Tooltip title={`${label}${mixed(key) ? ' (혼합)' : ''}`} disableInteractive>
-        <IconButton size="small" aria-label={`${label}${mixed(key) ? ' (혼합)' : ''}`} aria-pressed={mixed(key) ? 'mixed' : on}
-          onClick={() => onApply({ type: 'toggle', key })}
-          sx={{ borderRadius: 1, border: '1px solid', borderColor: on ? 'primary.main' : 'divider', bgcolor: on ? 'action.selected' : undefined,
-            opacity: mixed(key) ? 0.65 : 1 }}>
-          {icon}
-        </IconButton>
-      </Tooltip>
+      <IconButton size="small" title={`${label}${mixed(key) ? ' (혼합)' : ''}`} aria-label={`${label}${mixed(key) ? ' (혼합)' : ''}`} aria-pressed={mixed(key) ? 'mixed' : on}
+        onClick={() => onApply({ type: 'toggle', key })}
+        sx={{ borderRadius: 1, border: '1px solid', borderColor: on ? 'primary.main' : 'divider', bgcolor: on ? 'action.selected' : undefined,
+          opacity: mixed(key) ? 0.65 : 1 }}>
+        {icon}
+      </IconButton>
     );
   };
   const paragraph = state?.paragraph;
   const paragraphButton = (label: string, icon: ReactNode, action: FormatAction, enabled: boolean, selected?: boolean | 'mixed') => (
-    <Tooltip title={`${label}${selected === 'mixed' ? ' (혼합)' : ''}`} describeChild disableInteractive>
-      <span><IconButton size="small" aria-label={label} disabled={!enabled} aria-pressed={selected}
-        onClick={() => onApply(action)}
-        sx={{ borderRadius: 1, border: '1px solid', borderColor: selected === true ? 'primary.main' : 'divider',
-          bgcolor: selected === true ? 'action.selected' : undefined }}>
-        {icon}
-      </IconButton></span>
-    </Tooltip>
+    // 비활성 버튼에도 설명이 보이도록 title은 바깥 span에 둔다.
+    <span title={`${label}${selected === 'mixed' ? ' (혼합)' : ''}`}><IconButton size="small" aria-label={label} disabled={!enabled} aria-pressed={selected}
+      onClick={() => onApply(action)}
+      sx={{ borderRadius: 1, border: '1px solid', borderColor: selected === true ? 'primary.main' : 'divider',
+        bgcolor: selected === true ? 'action.selected' : undefined }}>
+      {icon}
+    </IconButton></span>
   );
   const selectSx = { fontSize: 13, '& select': { py: 0.5 } };
 

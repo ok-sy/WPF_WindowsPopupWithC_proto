@@ -130,6 +130,16 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[66] Panel shows the expanded 8x5 color grid with font, size, B/I/U and no color reset / format clear: ' + JSON.stringify(layout));
   check(layout.focus, 'Opening the panel focuses the color grid');
   check(await run(`['#111827','#6B7280','#DC2626','#EA580C','#CA8A04','#16A34A','#2563EB','#7C3AED'].every(c=>RICH_COLORS.some(x=>x.color===c))`), 'Existing 8 colors stay in the palette');
+  // 시연 이슈: 패널 버튼을 누르면 MUI 툴팁이 패널 좌표만큼 어긋나 엉뚱한 곳에 남았다. 네이티브 title만 쓰고 패널 위치는 유지한다.
+  const panelRect = () => run(`(()=>{const r=document.querySelector('[role=dialog][aria-label="서식"]').getBoundingClientRect();return r.left+','+r.top;})()`);
+  const panelBefore = await panelRect();
+  const italicAt = await center('[role=dialog][aria-label="서식"] button[aria-label="기울임"]');
+  await mouse('mouseMoved', italicAt.x, italicAt.y); await pause(500);
+  await clickAt(italicAt.x, italicAt.y); await pause(300); await clickAt(italicAt.x, italicAt.y); await pause(300);
+  check(await run(`document.querySelectorAll('.MuiTooltip-popper').length`) === 0 && await run(`document.querySelector('[role=dialog][aria-label="서식"] button[aria-label="기울임"]').title`) === '기울임',
+    'Panel buttons use a native title so no tooltip can jump after a click');
+  const indentAt = await center('[role=dialog][aria-label="서식"] span[title="들여쓰기"]');
+  check(indentAt.x > 0 && await panelRect() === panelBefore, 'Panel stays in place after clicking a format button');
   await click('[data-color-cell][aria-label="글자 색 빨강"]');
   check(await panelOpen(), 'Panel stays open after applying a color');
   check((await blocks())[0].runs[0].text === '가나다' && (await blocks())[0].runs[0].color === '#DC2626' && (await blocks())[0].runs[1].color === undefined,

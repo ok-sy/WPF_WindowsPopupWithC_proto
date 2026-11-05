@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-18 — dev: 66_서식 패널 툴팁 수정
+
+- 이유: 서식 패널 버튼을 클릭하면 MUI 툴팁이 패널 좌표(측정값 -560, -55)만큼 어긋나 좌측 사이드바 부근에 남는 시연 이슈 확인.
+- 변경: `PopupRichTextMenu`의 MUI Tooltip을 색 칸과 같은 네이티브 `title`로 교체. 비활성 버튼 설명은 바깥 `span`의 `title`로 유지. 어긋남의 내부 원인은 확정하지 않았고 측정으로 증상을 확인.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextMenu.tsx, scripts/verify-rich-text-49.cjs.
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-rich-text-49` 75건 통과(클릭 후 MUI 툴팁 없음·패널 위치 유지 포함). 실화면 미수행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-17 — dev: 73_OX 정답 선택 UI 수정
 
 - 이유: TODO73-10~15 구현. OX형 정답 선택이 일반 선택지와 비슷해 설정용 정답 지정임을 구분하기 어려움.
