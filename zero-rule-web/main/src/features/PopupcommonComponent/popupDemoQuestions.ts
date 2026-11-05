@@ -1,6 +1,6 @@
 import type { PopupQuestion } from '@local/domain';
 
-// 미리보기 전용 예시 문항. WPF DemoPopupDataService의 예시와 같은 내용이다.
+// 샘플 화면 전용 예시 문항. WPF DemoPopupDataService의 예시와 같은 내용이다.
 const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
   SURVEY: [
     {
@@ -376,7 +376,7 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
  * ■ 예시 문항 생성
  * - in : quiz(boolean) true면 퀴즈, false면 설문 예시
  * - out: PopupQuestion[] 복사한 예시 문항 목록
- * - 퀴즈 여부를 받아 미리보기·샘플용 예시 문항을 새 객체로 복사해 돌려준다(돌려받은 값을 고쳐도 원본 예시는 바뀌지 않는다).
+ * - 퀴즈 여부를 받아 샘플용 예시 문항을 새 객체로 복사해 돌려준다(돌려받은 값을 고쳐도 원본 예시는 바뀌지 않는다).
  */
 export default function popupDemoQuestions(quiz: boolean): PopupQuestion[] {
   // 퀴즈 문항은 단일 객관식만 있다(TODO73). 설문은 복수 선택·주관식 예시를 그대로 쓴다.

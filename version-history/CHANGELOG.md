@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-09 — dev: 73_미리보기 예제 문항 보기 삭제·참여형 통계 소관 정리
+
+- 이유: 설문·퀴즈 미리보기의 예제 문항 보기가 불필요하다는 요구사항 반영. 참여형은 항상 통과하고, 기획서의 합격 기준 개수는 서버가 관리하는 출력용 통계값으로 확정.
+- 변경: `PopupPreview`의 `예제 문항 보기` 버튼·상태와 안내 문구 삭제, `SurveyPreview` 빈 문항 안내 수정. `popupDemoQuestions`는 샘플 화면 전용으로 유지. 인터페이스 명세·Word 생성 스크립트·미리보기 문서·가이드 공지 갱신(JSON 변경 없음, Word 산출물은 재생성하지 않음). TODO73에 참여형 통계 소관을 기록. WPF 에이전트와 웹 편집기는 이 통계값을 다루지 않으며 서버 구현은 범위 밖.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupPreview.tsx, SurveyPreview.tsx, popupDemoQuestions.ts, guide/guideNotices.ts), docs/interfaces/(POPUP_INTERFACE_SPEC.md, ADMIN_POPUP_PREVIEW_COMPONENTS.md), docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md, scripts/export-interface-word.cjs.
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-popup-preview-61` 52건, `verify-completion-ux-43` 84건, `verify-survey-rich-text-55` 36건, `verify-popup-common-sample-69` 44건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-guide-registry` 224건, `verify-popup-guide-render` 29건, `verify-image-preview` 34건 통과. 로컬 XE의 `CLOVER_BATCH_NODE` 빈 행 삭제 후 약 1분 안에 `node_id`가 채워진 행이 다시 생성됨을 확인(저장소 변경 아님). 실화면 미확인.
+- 상태: 커밋에 포함, 원격 반영.
+
 ## 2026-11-05-08 — dev: 73_참여형_항상통과·퀴즈_단일객관식 정리
 
 - 이유: 정책 확정. 컷트라인형은 미달이면 통과하지 못하고, 참여형은 항상 통과하며 `passed`로 구분한다. 퀴즈 문항은 단일 객관식만 있고 OX형은 웹 프리셋이다. 설문·퀴즈는 `surveyTitle` 없이 콘텐츠의 `description`만 쓴다.

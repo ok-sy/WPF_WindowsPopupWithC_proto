@@ -62,6 +62,13 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     action: '설문·퀴즈 등록 화면에서는 surveyTitle·surveyTitleBlocks 입력을 만들지 않습니다.',
   },
   {
+    id: '2026-11-05-remove-example-questions', date: '2026-11-05', category: 'REMOVED', status: 'DONE', doneDate: '2026-11-05',
+    title: '미리보기 예제 문항 보기 삭제',
+    body: ['설문·퀴즈 미리보기의 「예제 문항 보기」 버튼을 삭제했습니다. 미리보기는 입력한 문항만 보여 줍니다.'],
+    components: ['PopupPreview', 'InlinePopupPreview'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-05-todo73-common-code', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
     title: '답안 유형·퀴즈 유형 공통코드 연결',
     body: ['퀴즈 답안 유형은 공통코드 0089(OX형·선다형), 퀴즈 유형은 0090(참여형·만점형·컷트라인형)으로 고릅니다. 퀴즈 문항은 단일 객관식만 만들고, OX형은 O·X를 채우는 프리셋입니다. 참여형은 항상 통과, 컷트라인형은 미달이면 통과하지 못합니다(passed). 코드값은 저장하지 않고 기존 questionType·options·passingScore로 변환합니다.',

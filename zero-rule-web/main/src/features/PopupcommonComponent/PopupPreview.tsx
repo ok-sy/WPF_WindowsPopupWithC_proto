@@ -5,7 +5,6 @@ import SurveyPreview, {
   type PreviewAnswer,
   type SurveyPreviewProps,
 } from './SurveyPreview';
-import popupDemoQuestions from './popupDemoQuestions';
 import AspectVideoArea from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
@@ -384,19 +383,11 @@ export default function PopupPreview({
   onClose,
   onRecommendedSize,
 }: PopupPreviewProps) {
-  const [showExamples, setShowExamples] = useState(false);
   const [answers, setAnswers] = useState<Record<number, PreviewAnswer>>({});
   const [submissionStatus, setSubmissionStatus] = useState('');
   const namePrefix = useId();
   const isSurvey = configuredPopup.popupType === 'SURVEY' || configuredPopup.popupType === 'QUIZ';
-  const popup =
-    showExamples && isSurvey
-      ? {
-          ...configuredPopup,
-          questions: popupDemoQuestions(configuredPopup.popupType === 'QUIZ'),
-          passingScore: configuredPopup.popupType === 'QUIZ' ? 100 : configuredPopup.passingScore,
-        }
-      : configuredPopup;
+  const popup = configuredPopup;
   const questionSignature = JSON.stringify(popup.questions);
   // QUIZ 미달 판정을 한 번이라도 받았는지(보조 닫기 버튼 표시 조건). 답을 고쳐도 유지한다.
   const [quizFailed, setQuizFailed] = useState(false);
@@ -646,18 +637,6 @@ export default function PopupPreview({
           ...(popup.popupType === 'IMAGE' ? {boxSizing: 'border-box'} : {}),
         }}
       >
-        {isSurvey && (
-          <Box sx={{ px: 3, pt: 1, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button size="small" color="inherit" onClick={() => setShowExamples((value) => !value)}>
-              {showExamples ? '입력한 문항 보기' : '예제 문항 보기'}
-            </Button>
-            {showExamples && (
-              <Typography variant="caption" sx={{ color: surveyColors.muted }}>
-                예제는 저장되지 않습니다.
-              </Typography>
-            )}
-          </Box>
-        )}
         {(isVideoQuiz || isPlainVideo) && (
           <Box sx={{ px: 2, pt: 1, bgcolor: surveyColors.card, flexShrink: 0 }}>
             <Typography variant="caption">

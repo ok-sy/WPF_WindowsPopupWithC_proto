@@ -263,7 +263,7 @@ export default function SurveyPreview({
       )}
       {!questions.length && (
         <Typography sx={{ color: surveyColors.muted, fontSize: 14 }}>
-          문항을 추가하거나 예제 문항을 확인해주세요.
+          문항을 추가해주세요.
         </Typography>
       )}
       {questions.map((question, index) => {
