@@ -41,7 +41,7 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
       </Select>
       {selected?.suffix && <>
         <TextField size="small" type="number" sx={{ width: 72 }} value={count}
-          slotProps={{ htmlInput: { 'aria-label': '통과 기준 개수', min: rule === 'PARTICIPATION' ? 0 : 1, max: questionCount } }}
+          slotProps={{ htmlInput: { 'aria-label': '통과 기준 개수', min: 1, max: questionCount } }}
           onChange={(event) => onCountChange(Number(event.target.value))} />
         <Typography component="span">{selected.suffix}</Typography>
       </>}
@@ -53,9 +53,12 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
       )}
       {rule === 'PARTICIPATION' && (
         <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
-          {count === 0
-            ? '0개면 정답 개수와 관계없이 제출하면 완료됩니다. 채점은 하며 실제 점수를 결과로 보냅니다.'
-            : '미달(불합격)이면 제출되지 않고 다시 풀어 합격해야 제출됩니다. 저장 값이 통과 점수뿐이라 다시 열면 컷트라인형으로 표시됩니다.'}
+          정답 개수와 관계없이 제출하면 통과(passed=true)입니다. 채점은 하며 실제 점수를 결과로 보냅니다.
+        </Typography>
+      )}
+      {rule === 'CUTOFF' && (
+        <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
+          미달이면 통과(passed=true)가 되지 않습니다. 제출되지 않고 다시 풀어 기준을 넘어야 제출됩니다.
         </Typography>
       )}
     </Stack>

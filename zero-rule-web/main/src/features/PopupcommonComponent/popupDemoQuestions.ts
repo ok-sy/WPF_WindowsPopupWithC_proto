@@ -379,8 +379,11 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
  * - 퀴즈 여부를 받아 미리보기·샘플용 예시 문항을 새 객체로 복사해 돌려준다(돌려받은 값을 고쳐도 원본 예시는 바뀌지 않는다).
  */
 export default function popupDemoQuestions(quiz: boolean): PopupQuestion[] {
-  return examples[quiz ? 'QUIZ' : 'SURVEY'].map((question) => ({
+  // 퀴즈 문항은 단일 객관식만 있다(TODO73). 설문은 복수 선택·주관식 예시를 그대로 쓴다.
+  const source = quiz ? examples.QUIZ.filter((question) => question.questionType === 'SINGLE_CHOICE') : examples.SURVEY;
+  return source.map((question, index) => ({
     ...question,
+    sortOrder: index + 1,
     options: question.options.map((option) => ({ ...option })),
   }));
 }

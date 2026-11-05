@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-08 — dev: 73_참여형_항상통과·퀴즈_단일객관식 정리
+
+- 이유: 정책 확정. 컷트라인형은 미달이면 통과하지 못하고, 참여형은 항상 통과하며 `passed`로 구분한다. 퀴즈 문항은 단일 객관식만 있고 OX형은 웹 프리셋이다. 설문·퀴즈는 `surveyTitle` 없이 콘텐츠의 `description`만 쓴다.
+- 변경: 2026-11-05-07에서 넣은 참여형 기준 개수 입력을 제거하고 참여형을 통과 점수 0으로 고정(WPF `QuizGrader`가 `passed=true`로 판정). 컷트라인형은 통과 점수 N을 유지하며 미달이면 `passed=false`로 제출되지 않음. WPF·서버 코드 변경 없음. 퀴즈 유형 입력 안내 문구 수정. `popupDemoQuestions(true)`를 단일 선택 문항만 반환하도록 변경. 기존 복수 선택·주관식 퀴즈 문항은 값을 유지해 표시. TODO73·가이드·인계 문서 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(popupQuizRule.ts, PopupQuizRuleFields.tsx, popupDemoQuestions.ts, guide/guideNotices.ts, guide/guideRunners.tsx), docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, scripts/(verify-popup-common-sample-69.cjs, verify-rgstpop-quiz-rule.cjs).
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-popup-common-sample-69` 44건, `verify-rgstpop-quiz-rule` 15건, `verify-survey-rich-text-55` 36건, `verify-completion-ux-43` 84건, `verify-popup-preview-61` 52건, `verify-popup-guide-registry` 220건, `verify-popup-guide-render` 29건 통과. `PopupWindowTests` `CheckQuizResultNoticeQ3` 8건 통과(코드 변경 없음). 실화면, 서버 저장, 원격 개발 DB, 폐쇄망 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-05-07 — dev: 73_답안유형·퀴즈유형 공통코드 연결, 설문 입력 정리
 
 - 이유: 요청 원문 3·4와 기획서 4장(퀴즈)·5장(설문) 반영. 답안 유형은 공통코드 0089, 퀴즈 유형은 0090으로 확인.

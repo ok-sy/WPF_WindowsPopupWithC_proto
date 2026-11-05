@@ -104,7 +104,7 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupQuizRuleFields: {
     input: { questionCount: 5, rule: 'CUTOFF', count: 3 },
-    hint: "rule: 'FULL'(만점형) · 'CUTOFF'(컷트라인형) · 'PARTICIPATION'(참여형, 기준 개수 0이면 제출하면 완료). 문항 1점 기준으로 통과 점수를 계산합니다.",
+    hint: "rule: 'FULL'(만점형) · 'CUTOFF'(컷트라인형) · 'PARTICIPATION'(참여형, 통과 점수 0으로 항상 통과). 문항 1점 기준으로 통과 점수를 계산합니다.",
     render: (input, emit) => <QuizRuleHost input={input} emit={emit} />,
   },
   PopupScheduleFields: {

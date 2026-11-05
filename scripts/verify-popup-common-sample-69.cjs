@@ -188,14 +188,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await setInput('input[aria-label="통과 기준 개수"]', String(count + 1)); await clickButton('저장');
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('커트라인 점수')`), '[IS063] Cutoff above the question count is rejected');
   await setInput('input[aria-label="통과 기준 개수"]', '1');
-  // 참여형: 기준 개수 입력 있음. 0이면 통과 점수 0, N이면 N. 미달이면 제출되지 않는다는 안내.
+  // 컷트라인형은 미달이면 통과하지 못한다는 안내, 참여형은 기준 개수 없이 통과 점수 0.
+  check(await run(`document.querySelector('[data-testid=is063-mid]').textContent.includes('미달이면 통과(passed=true)가 되지 않습니다')`), '[IS063] Cutoff explains that a failed quiz does not pass');
   await pickRule('참여형');
-  check(await run(`document.querySelector('input[aria-label="통과 기준 개수"]').value==='0' && document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점')`), '[IS063] Participation starts at 0 with a count input');
-  await setInput('input[aria-label="통과 기준 개수"]', '1');
-  check(await run(`document.querySelector('[data-testid=is063-mid]').textContent.includes('다시 열면 컷트라인형으로 표시됩니다')`), '[IS063] Participation with a count explains the failed-quiz behavior and the reload limit');
+  check(await run(`!document.querySelector('input[aria-label="통과 기준 개수"]') && document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점') && document.querySelector('[data-testid=is063-mid]').textContent.includes('제출하면 통과(passed=true)')`), '[IS063] Participation has no count input and passing score 0');
   await clickButton('저장');
   rule = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
-  check(rule.passingScore === 1, '[IS063] Participation with count 1 saves passingScore 1');
+  check(rule.passingScore === 0, '[IS063] Participation saves passingScore 0');
+  check(rule.questions.every(q => q.questionType === 'SINGLE_CHOICE'), '[IS063] Sample quiz has only single choice questions');
   check(!('surveyTitle' in rule.content) && !('surveyTitleBlocks' in rule.content) && rule.questions.every(q => !('description' in q)), '[IS063] Quiz save omits the content title and question description');
   check(await run(`!document.querySelector('[data-testid=is063-mid]').textContent.includes('콘텐츠 제목') && !document.querySelector('[data-testid=is063-mid]').textContent.includes('문항 설명')`), '[IS063] Content title and question description inputs are removed');
   await clickButton('취소');
