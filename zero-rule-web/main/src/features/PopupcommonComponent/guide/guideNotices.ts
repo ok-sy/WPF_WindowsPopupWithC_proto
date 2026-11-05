@@ -62,11 +62,12 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     action: '설문·퀴즈 등록 화면에서는 surveyTitle·surveyTitleBlocks 입력을 만들지 않습니다.',
   },
   {
-    id: '2026-11-05-ox-question-preset', date: '2026-11-05', category: 'ADDED', status: 'DONE', doneDate: '2026-11-05',
-    title: 'PopupQuestionEditor OX 문항 추가',
-    body: ['「OX 문항 추가」 버튼을 누르면 O·X 선택지를 채운 단일 선택 문항을 가로 배치로 만듭니다. 저장 형식은 일반 객관식과 같습니다.'],
-    components: ['PopupQuestionEditor'],
-    action: '바꿀 코드는 없습니다. 퀴즈에서는 작성자가 정답을 체크합니다.',
+    id: '2026-11-05-todo73-common-code', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
+    title: '답안 유형·퀴즈 유형 공통코드 연결',
+    body: ['퀴즈 답안 유형은 공통코드 0089(OX형·선다형), 퀴즈 유형은 0090(참여형·만점형·컷트라인형)으로 고릅니다. 코드값은 저장하지 않고 기존 questionType·options·passingScore로 변환합니다.',
+      '설문은 응답 유형(객관식·주관식)·레이아웃·응답 수(단일·복수, 개수)로 입력합니다. 통과/실패 제출 유형은 참여형으로 대체했습니다.'],
+    components: ['PopupQuestionEditor', 'PopupQuizRuleFields'],
+    action: "loadPopupQuestionCodes(api.clCode.search) 결과를 answerTypeOptions·options prop으로 넘깁니다. rule 값 'PASS_FAIL'은 더 쓰지 않습니다.",
   },
   {
     id: '2026-11-04-hide-toolbar', date: '2026-11-04', category: 'ADDED', status: 'DONE', doneDate: '2026-11-04',

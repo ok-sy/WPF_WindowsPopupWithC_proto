@@ -30,6 +30,7 @@ import {
  *  - FormControlLabel 단독 label(boolean) 타입 오류는 문항 편집기 대체로 제거.
  *  - 크기 placeholder '최소 200' → 공통 최소 300.
  * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 둔다(서버 확정 필요).
+ * [실연동] 퀴즈 유형·답안 유형 목록은 샘플용 값이다. loadPopupQuestionCodes(api.clCode.search) 결과를 PopupQuizRuleFields options·PopupQuestionEditor answerTypeOptions로 넘긴다.
  * [확정] 퀴즈 점수: 문항은 무조건 1점(총점 = 문항 수). 만점 통과 = 통과 점수 문항 수(10문항 → 10점),
  * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수 N이며, [확정] 미달(실패)이면 제출하지 못한다
  * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 세 유형 모두 저장 값은 passingScore 하나다.

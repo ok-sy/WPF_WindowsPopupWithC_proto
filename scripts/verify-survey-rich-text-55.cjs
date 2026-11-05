@@ -152,26 +152,48 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await run(`window.mountPreview(${JSON.stringify(plainVideoQuiz)})`); await pause(400);
   check(await run(`(document.querySelector('#preview').textContent.match(/안내/g)||[]).length`) === 1, 'VIDEO+QUIZ still hides the same plain description');
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'video-quiz-preview.png'), Buffer.from(shot.data, 'base64'));
-  // POL-06-01 : 문항·서식 — OX 프리셋은 설문·퀴즈 모두 O·X 단일 선택을 만들고, 일반 문항 추가와 정답 확인은 그대로다.
+  // POL-06-02 : 선택·제출 — 퀴즈 답안 유형(0089): OX형은 O·X 단일 선택, 선다형은 선택지 편집. 기존 복수 선택·주관식은 값 유지.
   const clickButton = label => run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()===${JSON.stringify(label)}).click()`);
-  for (const quiz of [false, true]) {
-    const kind = quiz ? 'Quiz' : 'Survey';
-    await run(`window.mountEditor([], ${quiz})`); await pause(400);
-    await clickButton('OX 문항 추가'); await pause(1200);
-    await clickButton('문항 추가'); await pause(1200);
-    const ox = await run(`(()=>{const [o,p]=window.questions;return {type:o.questionType,layout:o.optionLayout,texts:o.options.map(x=>x.text),values:o.options.map(x=>x.value),order:o.options.map(x=>x.sortOrder),correct:o.options.filter(x=>x.isCorrect).length,required:o.isRequired,scored:o.isScored,score:o.questionScore,
-      plainLayout:p.optionLayout,plainTexts:p.options.map(x=>x.text),editors:window.editors().map(e=>e.getData().replace(/<[^>]+>/g,'').trim())};})()`);
-    check(ox.type === 'SINGLE_CHOICE' && ox.layout === 'HORIZONTAL', kind + ' OX preset is a horizontal single choice: ' + JSON.stringify(ox));
-    check(ox.texts.join() === 'O,X' && ox.values.join() === '1,2' && ox.order.join() === '1,2', kind + ' OX preset fills O and X in order: ' + JSON.stringify(ox));
-    check(ox.correct === 0, kind + ' OX preset does not choose an answer');
-    check(ox.required === quiz && ox.scored === quiz && ox.score === (quiz ? 1 : null), kind + ' OX preset keeps the new question defaults: ' + JSON.stringify(ox));
-    check(ox.editors.includes('O') && ox.editors.includes('X'), kind + ' option editors show O and X: ' + JSON.stringify(ox.editors));
-    check(ox.plainLayout === 'VERTICAL' && ox.plainTexts.join() === ',', kind + ' plain add keeps empty vertical options');
-    const verdict = await run(`(()=>{const q={...window.questions[0],title:'문항'};const correct={...q,options:q.options.map((x,i)=>({...x,isCorrect:i===0}))};
-      return {without:window.validatePopupQuestions([q],${quiz},0),withAnswer:window.validatePopupQuestions([correct],${quiz},0)};})()`);
-    check(quiz ? verdict.without.includes('정답') : verdict.without === null, kind + ' OX preset validation before choosing an answer: ' + JSON.stringify(verdict));
-    check(verdict.withAnswer === null, kind + ' OX preset passes validation with one answer: ' + JSON.stringify(verdict));
-  }
+  const pick = async (aria, label) => {
+    await run(`document.querySelector('[aria-label=${JSON.stringify(aria)}]').parentElement.querySelector('[role=combobox]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`); await pause(300);
+    await run(`Array.from(document.querySelectorAll('[role=option]')).find(o=>o.textContent===${JSON.stringify(label)}).click()`); await pause(500);
+  };
+  await run(`window.mountEditor([], true)`); await pause(400);
+  check(await run(`!Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('OX 문항'))`), 'The OX question button is replaced by the answer type select');
+  await clickButton('문항 추가'); await pause(800);
+  q = (await questions())[0];
+  check(q.questionType === 'SINGLE_CHOICE' && q.options.every(o => o.text === ''), 'A new quiz question starts as a multiple choice with empty options');
+  await pick('1번 문항 답안 유형', 'OX형');
+  q = (await questions())[0];
+  check(q.questionType === 'SINGLE_CHOICE' && q.optionLayout === 'HORIZONTAL' && q.options.map(o => o.text).join() === 'O,X' && q.options.every(o => !o.isCorrect), 'OX type becomes a horizontal single choice with O and X and no answer: ' + JSON.stringify(q.options));
+  check(await run(`window.validatePopupQuestions([{...window.questions[0],title:'문항'}],true,0)`) === '1번 문항: 정답 선택지를 확인해 주세요.', 'OX type requires an answer');
+  await run(`document.querySelector('input[aria-label="1번 문항 2번 선택지 정답"]').click()`); await pause(200);
+  q = (await questions())[0];
+  check(q.options.map(o => Boolean(o.isCorrect)).join() === 'false,true' && await run(`window.validatePopupQuestions([{...window.questions[0],title:'문항'}],true,0)`) === null, 'Choosing X sets one answer and passes validation');
+  check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 1, 'OX options use radios instead of option editors');
+  await pick('1번 문항 답안 유형', '선다형');
+  q = (await questions())[0];
+  check(q.options.length === 2 && q.options.every(o => o.text === '' && !o.isCorrect) && q.optionLayout === 'VERTICAL', 'Choice type replaces O and X with empty options');
+  const legacy = [{questionId: 21, title: '복수', questionType: 'MULTIPLE_CHOICE', isRequired: true, sortOrder: 1, options: [{optionId: 1, value: '1', text: '가', sortOrder: 1, isCorrect: true}, {optionId: 2, value: '2', text: '나', sortOrder: 2, isCorrect: true}]},
+    {questionId: 22, title: '주관', questionType: 'TEXT', isRequired: true, sortOrder: 2, options: [], correctAnswer: '답', answerMatchMode: 'EXACT'},
+    {questionId: 23, title: '오엑스', description: '기존 설명', questionType: 'SINGLE_CHOICE', isRequired: true, sortOrder: 3, options: [{optionId: 3, value: '1', text: 'O', sortOrder: 1, isCorrect: true}, {optionId: 4, value: '2', text: 'X', sortOrder: 2, isCorrect: false}]}];
+  await run(`window.mountEditor(${JSON.stringify(legacy)}, true)`); await pause(800);
+  check(await run(`document.body.textContent.includes('기존 유형: 복수 선택') && document.body.textContent.includes('기존 유형: 주관식') && document.body.textContent.includes('OX형')`), 'Legacy multiple and text questions stay visible, O and X reload as the OX type');
+  q = await questions();
+  check(q[0].options.length === 2 && q[1].correctAnswer === '답' && q[2].description === '기존 설명', 'Loading keeps legacy values untouched');
+  // 설문: 응답 유형·레이아웃·응답 수(복수 N개 → maxSelections).
+  await run(`window.mountEditor([], false)`); await pause(400);
+  await clickButton('문항 추가'); await pause(800);
+  await pick('1번 문항 응답 수', '복수 선택');
+  check((await questions())[0].questionType === 'MULTIPLE_CHOICE', 'Survey response count selects multiple choice');
+  await run(`(()=>{const i=document.querySelector('input[aria-label="1번 문항 선택 개수"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,'2');i.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(200);
+  check((await questions())[0].maxSelections === 2, 'Survey N selections saves maxSelections');
+  await pick('1번 문항 응답 유형', '주관식');
+  q = (await questions())[0];
+  check(q.questionType === 'TEXT' && q.options.length === 0 && q.maxSelections == null, 'Survey text type removes options and the selection count');
+  await pick('1번 문항 응답 유형', '객관식');
+  q = (await questions())[0];
+  check(q.questionType === 'SINGLE_CHOICE' && q.options.length === 2, 'Survey choice type restores two empty options');
   await run(`window.mountPreview(${JSON.stringify(popup)})`); await pause(400);
   const shot2 = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'survey-preview.png'), Buffer.from(shot2.data, 'base64'));
   check(!errors.length, 'No page exceptions: ' + errors.join(' | '));

@@ -248,13 +248,14 @@ export const COMPONENTS: GuideComponent[] = [
   },
   {
     name: 'PopupQuestionEditor', file: 'PopupQuestionEditor.tsx',
-    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 「OX 문항 추가」는 O·X 선택지를 채운 단일 선택 문항을 만듭니다.',
+    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다.',
     props: [
       { name: 'questions', type: 'PopupQuestion[]', required: true, description: '문항 목록' },
       { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다(정답·배점·통과 점수 표시).' },
       { name: 'passingScore', type: 'number | null', description: '퀴즈 통과 점수' },
       { name: 'fixedQuestionScore', type: 'number', description: '배점을 고정합니다. 주면 배점 입력칸을 숨깁니다.' },
       { name: 'hidePassingScore', type: 'boolean', description: '통과 점수 입력칸을 숨깁니다.' },
+      { name: 'answerTypeOptions', type: 'PopupCodeOption[]', description: '공통코드 0089 조회 결과. 생략하면 샘플용 목록, 빈 배열이면 변경을 막습니다.' },
     ],
     outputs: [
       { name: 'onChange', type: '(questions: PopupQuestion[]) => void', required: true, description: '바뀐 문항 목록 전체' },
@@ -270,12 +271,13 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
   },
   {
     name: 'PopupQuizRuleFields', file: 'PopupQuizRuleFields.tsx',
-    summary: '퀴즈 유형(만점 통과·커트라인 통과·통과/실패 제출·참여형)과 기준 개수를 입력합니다.',
+    summary: '퀴즈 유형(공통코드 0090: 참여형·만점형·컷트라인형)과 기준 개수를 입력합니다.',
     props: [
       { name: 'questionCount', type: 'number', required: true, description: '문항 수' },
-      { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PASS_FAIL' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
+      { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
       { name: 'count', type: 'number', required: true, description: '통과 기준 개수' },
       { name: 'passingScore', type: 'number | null', description: '계산된 통과 점수(안내용)' },
+      { name: 'options', type: 'PopupCodeOption[]', description: '공통코드 0090 조회 결과. 생략하면 샘플용 목록, 빈 배열이면 선택을 막습니다.' },
       { name: 'className / titlePrefix', type: 'string / ReactNode', description: '퍼블리싱 클래스·제목 앞 표시' },
     ],
     outputs: [

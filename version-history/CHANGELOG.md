@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-05-07 — dev: 73_답안유형·퀴즈유형 공통코드 연결, 설문 입력 정리
+
+- 이유: 요청 원문 3·4와 기획서 4장(퀴즈)·5장(설문) 반영. 답안 유형은 공통코드 0089, 퀴즈 유형은 0090으로 확인.
+- 변경: `popupQuestionCodes.ts` 추가(코드 조회·코드값 → 내부 값 매핑). `PopupQuestionEditor` 퀴즈는 답안 유형 SelectBox(OX형은 O·X 단일 선택·가로 배치, 선다형은 선택지 편집, 정답 라디오), 설문은 응답 유형·레이아웃·응답 수(복수 개수 → `maxSelections`)로 변경. `OX 문항 추가` 버튼(2026-11-05-04) 제거. 기존 복수 선택·주관식 퀴즈 문항은 값을 유지해 표시하고 새로 만들 수 없음. `PopupQuizRuleFields`는 0090 조회 결과를 표시하고 `PASS_FAIL`을 삭제, 참여형에 기준 개수 입력 추가(0이면 제출하면 완료). 초과 입력 문구는 기획서 문구로 변경. `PopupEditorDialog`가 `api.clCode.search`로 코드를 조회하고, 조회 전·실패 시 선택을 막음. 저장 형식은 기존 `questionType`·`options`·`passingScore`로 서버·WPF·API 계약 변경 없음. 개발 DB용 `22_popup_question_code_oracle.sql` 추가, TODO73·가이드·인계 문서 갱신.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(popupQuestionCodes.ts, PopupQuestionEditor.tsx, PopupQuizRuleFields.tsx, popupQuizRule.ts, index.ts, guide/*, sample/IS063M02Sample.tsx), zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx, db/oracle/(22_popup_question_code_oracle.sql, README.md), docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md, scripts/(verify-survey-rich-text-55.cjs, verify-popup-common-sample-69.cjs, verify-rgstpop-quiz-rule.cjs).
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-survey-rich-text-55` 36건, `verify-popup-common-sample-69` 43건, `verify-rgstpop-quiz-rule` 16건, `verify-popup-guide-registry` 220건, `verify-popup-guide-render` 29건, `verify-popup-preview-61` 52건, `verify-completion-ux-43` 84건, `verify-popup-transform-64` 77건, `verify-popup-pick-fields` 34건 통과. 로컬 XE에 22 스크립트 실행 후 로컬 서버 `code/search`에서 0089 2건·0090 3건 조회 확인. 실화면, 원격 개발 DB 적용, 폐쇄망 조회, WPF 표시는 미실행.
+- 남은 항목: 새 퀴즈 문항의 복수 선택·주관식 제외는 담당자 확인 중. 참여형 기준 개수 1 이상은 저장 값이 `passingScore`뿐이라 컷트라인형과 구분되지 않음(동작·WPF 결과 문구 동일, 다시 열면 컷트라인형 표시).
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함.
+
 ## 2026-11-05-06 — dev: 73_설문퀴즈 콘텐츠 제목·문항 설명 입력 제거, TEXT 툴바 숨김
 
 - 이유: 요청 원문 2·5·6 반영. 설문·퀴즈의 콘텐츠 제목(`surveyTitleBlocks`)과 문항 설명이 불필요하고, TEXT 편집기 상단 툴바를 표시하지 않기로 확정.

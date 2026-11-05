@@ -25,6 +25,7 @@ import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout
 import { displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
+import { loadPopupQuestionCodes, type PopupQuestionCodes } from '../PopupcommonComponent/popupQuestionCodes';
 import { QUIZ_QUESTION_SCORE, usePopupQuizRule } from '../PopupcommonComponent/popupQuizRule';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
@@ -147,6 +148,14 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
    * 미리보기·저장에는 규칙을 적용한 previewPopup을 보낸다(전달 샘플 IS063M02와 같은 공통 코드). */
   const quiz = usePopupQuizRule(popup, bodyEditorKey);
   const previewPopup = quiz.effective ?? popup;
+  /* POL-06-02 : 선택·제출 — 답안 유형(0089)·퀴즈 유형(0090) 공통코드. 조회 전·실패 시 빈 목록이면 입력이 선택을 막고 안내한다. */
+  const [codes, setCodes] = useState<PopupQuestionCodes | null>(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    let live = true;
+    void loadPopupQuestionCodes((params) => api.clCode.search(params)).then((loaded) => { if (live) setCodes(loaded); });
+    return () => { live = false; };
+  }, [open, api]);
 
   useEffect(() => {
     if (!open) return;
@@ -373,9 +382,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 setBodyEditorKey((key) => key + 1);
               }} />}
             {popup.popupType === 'QUIZ' && <PopupQuizRuleFields questionCount={popup.questions.length} rule={quiz.rule} count={quiz.count}
-              passingScore={previewPopup.passingScore} onRuleChange={quiz.setRule} onCountChange={quiz.setCount} />}
+              passingScore={previewPopup.passingScore} options={codes?.quizTypes ?? []} onRuleChange={quiz.setRule} onCountChange={quiz.setCount} />}
             {isSurvey && <PopupQuestionEditor key={`questions-${bodyEditorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={previewPopup.passingScore}
-              fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
+              fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore answerTypeOptions={codes?.answerTypes ?? []} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* POL-02-02 : 종료 제어 — 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
