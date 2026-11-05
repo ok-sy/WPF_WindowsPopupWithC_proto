@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-05-10 — 20261105 폐쇄망 전체 반입본 재생성(TODO73 포함)
+
+- 이유: TODO73 에디터 정리·공통코드 연결과 예제 문항 보기 삭제를 폐쇄망에 반입. 같은 날짜 규칙에 따라 7686eda 기준 반입본(2026-11-05-03)을 대체.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261105 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261105 -VerifyBuild -Force` 실행(기준 커밋 6120b29). 히스토리 번들을 같은 커밋으로 재생성. CI 이미지는 506e3ec 내용을 작업 트리에만 적용해 포함하고 생성 후 원복. 변경 요약에 TODO73, 공통코드 연결 위치, 개발 전용 SQL 21·22 미실행을 추가. npm 변경 없음.
+- 주요 파일: offline-export/20261105(Git 제외), .offline-cache/git-history-20261105(Git 제외), .offline-cache/notes-20261105.md(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 153·M 11·D 0, 웹 A 52·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 187(CI 이미지 2 포함), 9-git-history 4개 파일. TGZ SHA256 `4a146700f785df248e6221545080c187813be7c1457c20bd304172ea8a7e59d7`. 번들은 커밋 224개, 27,031,197바이트, SHA256 `ea6a86e28aa667f08baddf2d23f25577333958f123972cbfba2a99e90876d191`.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,794,766바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본에 원격 개발 DB 비밀번호·RgstPop·MockSso·EXE·PDB 0건, TODO73 코드 포함 확인. 번들은 `git bundle verify`·클론 성공, 민감값·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-11-05-09 — dev: 73_미리보기 예제 문항 보기 삭제·참여형 통계 소관 정리
 
 - 이유: 설문·퀴즈 미리보기의 예제 문항 보기가 불필요하다는 요구사항 반영. 참여형은 항상 통과하고, 기획서의 합격 기준 개수는 서버가 관리하는 출력용 통계값으로 확정.
