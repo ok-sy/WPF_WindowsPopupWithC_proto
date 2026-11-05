@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-05-13 — 20261105 폐쇄망 전체 반입본 재생성(인라인 미리보기 수정 포함)
+
+- 이유: 인라인 미리보기 이미지 높이 0 수정과 OX 문항 표시 개선을 폐쇄망에 반입. 같은 날짜 규칙에 따라 6120b29 기준 반입본(2026-11-05-10)을 대체.
+- 변경: `scripts/export-offline-package.ps1 -Date 20261105 -PreviousExport 20261103 -PreviousCommit 71f58ae -NotesFile <변경 요약> -GitHistoryDir .offline-cache/git-history-20261105 -VerifyBuild -Force` 실행(기준 커밋 d030349). 히스토리 번들을 같은 커밋으로 재생성. CI 이미지는 506e3ec 내용을 작업 트리에만 적용해 포함하고 생성 후 원복. 변경 요약에 인라인 미리보기·OX 문항 항목 추가. npm 변경 없음.
+- 주요 파일: offline-export/20261105(Git 제외), .offline-cache/git-history-20261105(Git 제외), .offline-cache/notes-20261105.md(Git 제외), version-history/CHANGELOG.md.
+- 결과: 서버 A 153·M 11·D 0, 웹 A 52·M 20·D 3(baseline 누적, RgstPop 제외), WPF 소스 95, 문서 187(CI 이미지 2 포함), 9-git-history 4개 파일. TGZ 40,276,201바이트, SHA256 `79ec8768689ca91f8138d01838f0981c478abcff57a023eefc0bc25256353d39`. 번들은 커밋 226개, 27,035,053바이트, SHA256 `54c3cabc942b71a13fa6694d363f917c2982a7ee692b5ec05db19358ab8615c2`.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,795,278바이트) 생성 확인. TGZ·TAR 체크섬 일치. 추출본 518개 파일에 원격 개발 DB 비밀번호·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, CI 이미지 2개와 `InlinePopupPreview` 수정 포함 확인. 번들은 `git bundle verify`·클론 성공, 민감값·제외 경로 0건, 최신 트리에서 치환 대상 4개만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영.
+
 ## 2026-11-05-12 — dev: 인라인 미리보기 이미지 높이 0 수정
 
 - 이유: 미리보기 이미지 높이가 0으로 전달되어 보이지 않는다는 요건. 측정 결과 `popup.height` 값이 아니라 `InlinePopupPreview`의 높이 구조가 원인. 바깥 Stack이 부모 높이를 받지 못해 grid가 아닌 부모(flex·일반 div)에서 이미지 칸이 내용 높이 0으로 접히고, `ADAPTIVE` 이미지 0px, `FIT_TO_IMAGE` 이미지 칸 2px(테두리)로 표시. 인터페이스 문서의 `flex` + `height: 600` 예시도 동일.
