@@ -350,7 +350,9 @@ namespace Popup.Views.Contents
 
         private Panel CreateOptionPanel(SurveyQuestion question)
         {
-            Panel panel = question.HorizontalOptions ? new WrapPanel() : new StackPanel();
+            // OX 문항은 두 칸이 폭을 똑같이 나눠 갖는다(좁아져도 줄바꿈하지 않는다).
+            Panel panel = IsOxQuestion(question) ? new UniformGrid { Rows = 1, Columns = 2 }
+                : question.HorizontalOptions ? new WrapPanel() : new StackPanel();
             panel.Margin = (Thickness)FindResource("SurveyAnswerSpacing");
             panel.SizeChanged += (_, _) =>
             {
@@ -513,22 +515,24 @@ namespace Popup.Views.Contents
 
         /*
          * POL-06-03 : 표현·수명
-         * OX 문항 표시. 가로 배치 단일 선택의 선택지가 O·X이면 글자를 크게 하고 폭을 넓혀 누르기 쉽게 한다.
+         * OX 문항 표시. 가로 배치 단일 선택의 선택지가 O·X이면 같은 크기의 큰 칸 2개로 폭을 나누고 가운데에 글자만 크게 표시한다.
          * 관리자 웹 미리보기(SurveyPreview)와 같은 기준·크기이며 결과·채점·선택 동작은 일반 객관식과 같다.
          */
         internal static bool IsOxQuestion(SurveyQuestion question) =>
             question.HorizontalOptions && question.QuestionType == SurveyQuestionType.SingleChoice && question.Options.Count == 2
             && question.Options[0].Text == "O" && question.Options[1].Text == "X";
 
-        private static void ApplyOxOptionLayout(RadioButton radioButton)
+        private static void ApplyOxOptionLayout(RadioButton radioButton, bool isLast)
         {
-            radioButton.MinWidth = 96;
-            radioButton.MinHeight = 52;
+            // 같은 폭을 유지하면서 두 칸 사이 간격이 일반 칩과 같은 8이 되도록 여백을 반씩 나눈다.
+            radioButton.Margin = isLast ? new Thickness(4, 0, 0, 0) : new Thickness(0, 0, 4, 0);
+            radioButton.HorizontalAlignment = HorizontalAlignment.Stretch;
+            radioButton.MinHeight = 88;
             if (radioButton.Content is TextBlock label)
             {
-                label.FontSize = 20;
-                label.FontWeight = FontWeights.SemiBold;
-                label.LineHeight = 26;
+                label.FontSize = 36;
+                label.FontWeight = FontWeights.Bold;
+                label.LineHeight = 44;
                 label.TextAlignment = TextAlignment.Center;
             }
         }
@@ -553,7 +557,7 @@ namespace Popup.Views.Contents
                     GroupName = $"Question_{question.QuestionId}"
                 };
 
-                if (IsOxQuestion(question)) ApplyOxOptionLayout(radioButton);
+                if (IsOxQuestion(question)) ApplyOxOptionLayout(radioButton, isLast);
                 radioButton.Checked += AnswerSelectionChanged;
                 radioButton.Unchecked += AnswerSelectionChanged;
                 System.Windows.Automation.AutomationProperties.SetName(radioButton, option.Text);

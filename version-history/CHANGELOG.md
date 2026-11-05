@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-05-19 — dev: 73_OX 큰 칸 미리보기·실제 팝업 적용
+
+- 이유: 큰 O·X 칸은 편집 화면이 아니라 응답자가 보는 미리보기·실제 팝업에 적용하는 것으로 방향 변경(TODO73-14의 미리보기 변경 금지를 대체).
+- 변경: `SurveyPreview`와 WPF `SurveyPopupView`의 OX 문항을 같은 크기 칸 2개가 폭을 나누는 형태로 변경(높이 88 이상, 글자 36·굵게, 가운데 정렬, 간격 8, WPF는 `UniformGrid`). 선택 표시는 문항 디자인의 기존 칩 스타일 유지. `PopupQuestionEditor` OX 칸은 높이 52·글자 20으로 되돌리고 가로만 2등분, 칸 전체 클릭·화살표 키·단일 정답 유지. TODO73 73-16~18, ALL 명세, 인계 문서, 가이드 공지 갱신. MINIMAL 명세는 OX 표시 항목이 없어 변경 없음. JSON·저장 형식·서버·DTO 변경 없음.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, SurveyPreview.tsx, guide/guideNotices.ts), popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs, scripts/(verify-survey-rich-text-55.cjs, PopupWindowTests/Program.cs), docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md, docs/interfaces/(WPF_POPUP_ALL_SPEC.md, POPUP_FRONT_SAMPLE_HANDOVER.md).
+- 검증: 웹 `tsc`·변경 파일 eslint 오류 0. `verify-survey-rich-text-55` 53건, `verify-popup-preview-61` 66건, `verify-completion-ux-43` 84건, `verify-popup-common-sample-69` 45건 통과. `PopupWindowTests` 497건 통과(`CheckOxQuestion73` 포함). 실화면·서버 저장 왕복 미수행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-18 — dev: 66_서식 패널 툴팁 수정
 
 - 이유: 서식 패널 버튼을 클릭하면 MUI 툴팁이 패널 좌표(측정값 -560, -55)만큼 어긋나 좌측 사이드바 부근에 남는 시연 이슈 확인.

@@ -269,7 +269,7 @@ export default function SurveyPreview({
       )}
       {questions.map((question, index) => {
         const horizontal = question.optionLayout === 'HORIZONTAL';
-        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 크게 표시한다.
+        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 같은 크기의 큰 칸 2개로 폭을 나눠 표시한다.
         const ox = horizontal && isOxQuestion(question);
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
@@ -339,7 +339,7 @@ export default function SurveyPreview({
                 mt: 1.75,
                 display: 'flex',
                 flexDirection: horizontal ? 'row' : 'column',
-                flexWrap: 'wrap',
+                flexWrap: ox ? 'nowrap' : 'wrap',
                 gap: 1,
                 minWidth: 0,
               }}
@@ -402,6 +402,7 @@ export default function SurveyPreview({
                         minWidth: 0,
                         maxWidth: '100%',
                         width: horizontal ? 'auto' : '100%',
+                        flex: ox ? '1 1 0' : undefined,
                         cursor: optionDisabled ? 'default' : 'pointer',
                         // V2 포커스는 선택 테두리를 덮지 않고 바깥 점선으로만 표시한다.
                         '& input:focus-visible + .survey-option': surveyDesign.selectedRing
@@ -451,8 +452,7 @@ export default function SurveyPreview({
                           gridTemplateColumns: horizontal ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          minHeight: ox ? 52 : horizontal ? 44 : 48,
-                          minWidth: ox ? 96 : undefined,
+                          minHeight: ox ? 88 : horizontal ? 44 : 48,
                           p: horizontal ? '10px 14px' : '12px 16px',
                           border: '1px solid',
                           borderRadius: `${surveyDesign.choiceRadius}px`,
@@ -474,10 +474,10 @@ export default function SurveyPreview({
                           sx={{
                             display: 'grid',
                             minWidth: 0,
-                            lineHeight: ox ? '26px' : '22px',
+                            lineHeight: ox ? '44px' : '22px',
                             whiteSpace: 'pre-wrap',
                             overflowWrap: 'anywhere',
-                            ...(ox ? { fontSize: 20, fontWeight: 600, textAlign: 'center' } : {}),
+                            ...(ox ? { fontSize: 36, textAlign: 'center' } : {}),
                           }}
                         >
                           {surveyDesign.selectedBold && (
@@ -485,14 +485,14 @@ export default function SurveyPreview({
                             <Box
                               component="span"
                               aria-hidden="true"
-                              sx={{ gridArea: '1 / 1', fontWeight: 600, visibility: 'hidden' }}
+                              sx={{ gridArea: '1 / 1', fontWeight: ox ? 700 : 600, visibility: 'hidden' }}
                             >
                               {optionLabel}
                             </Box>
                           )}
                           <Box
                             component="span"
-                            sx={{ gridArea: '1 / 1', fontWeight: ox ? 600 : selected && surveyDesign.selectedBold ? 600 : 400 }}
+                            sx={{ gridArea: '1 / 1', fontWeight: ox ? 700 : selected && surveyDesign.selectedBold ? 600 : 400 }}
                           >
                             {optionLabel}
                           </Box>

@@ -239,7 +239,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             <MenuItem value="EXACT">정확히 일치</MenuItem><MenuItem value="CONTAINS">포함</MenuItem>
           </TextField>
         </Stack> : <Stack spacing={1}>
-          {/* POL-06-02 : 선택·제출 — OX 정답은 큰 칸 2개 중 하나만 고른다. 저장은 기존 SINGLE_CHOICE의 O·X 선택지와 isCorrect다.
+          {/* POL-06-02 : 선택·제출 — OX 정답은 폭을 나눈 칸 2개 중 하나만 고른다. 높이·글자는 낮게 두고, 큰 칸 표시는 미리보기·실제 팝업(SurveyPreview·WPF)에만 적용한다. 저장은 기존 SINGLE_CHOICE의 O·X 선택지와 isCorrect다.
               라디오 그룹 규칙대로 Tab은 그룹에 한 번만 들어오고, 화살표로 옮기면 정답도 함께 바뀐다. */}
           {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`} aria-required>
             <Typography variant="body2" fontWeight={600}>정답 선택 *</Typography>
@@ -258,7 +258,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
                     choose(next);
                     (event.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
                   }}
-                  sx={{ minWidth: 0, height: 88, fontSize: 36, fontWeight: 700, lineHeight: 1, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
+                  sx={{ minWidth: 0, height: 52, fontSize: 20, fontWeight: 600, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
                     bgcolor: checked ? '#171717' : '#FFFFFF', color: checked ? '#FFFFFF' : '#222222',
                     '&:hover': { bgcolor: checked ? '#171717' : '#F5F5F5', borderColor: checked ? '#171717' : '#8C8C8C' },
                     '&.Mui-focusVisible': { outline: '2px solid #2563EB', outlineOffset: 2 } }}>{option.text}</Button>;

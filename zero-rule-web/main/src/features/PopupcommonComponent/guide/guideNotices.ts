@@ -85,9 +85,9 @@ export const GUIDE_NOTICES: GuideNotice[] = [
   },
   {
     id: '2026-11-05-ox-answer-cells', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
-    title: 'OX 문항 정답 선택을 큰 O·X 칸으로 변경',
-    body: ['퀴즈 편집기의 OX 정답을 같은 크기의 O·X 칸 2개에서 고릅니다. 칸 전체를 누르거나 화살표 키로 바꾸며 정답은 하나입니다.', '저장 값은 기존과 같은 단일 선택 O·X 선택지와 isCorrect입니다. 선다형 입력과 미리보기 응답 버튼은 바뀌지 않습니다.'],
-    components: ['PopupQuestionEditor'],
+    title: 'OX 문항을 미리보기·실제 팝업에서 큰 O·X 칸으로 표시',
+    body: ['OX 문항의 미리보기와 실제 팝업은 같은 크기의 큰 O·X 칸 2개가 폭을 나눠 표시합니다. 편집기의 정답 칸은 높이를 낮게 두고 가로만 나누며 칸 전체 클릭이나 화살표 키로 바꾸고 정답은 하나입니다.', '저장 값은 기존과 같은 단일 선택 O·X 선택지와 isCorrect입니다. 선다형 입력과 응답 버튼은 바뀌지 않습니다.'],
+    components: ['PopupQuestionEditor', 'PopupPreview'],
     action: '바꿀 코드는 없습니다.',
   },
   {
