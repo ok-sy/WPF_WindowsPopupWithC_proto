@@ -1,5 +1,22 @@
 # 변경 이력
 
+## 2026-11-05-15 — dev: 73_원격 개발 DB 퀴즈·설문 공통코드 등록
+
+- 이유: 관리자 웹이 조회하는 답안 유형(`0089`)·퀴즈 유형(`0090`) 공통코드가 원격 개발 DB에 없어 등록.
+- 변경: `db/oracle/22_popup_question_code_oracle.sql`을 원격 개발 DB에 실행해 코드 그룹 2건, 코드 5건 추가. 스크립트는 변경 없음. `db/oracle/README.md`에 적용 현황 기록.
+- 주요 파일: db/oracle/README.md, version-history/CHANGELOG.md.
+- 검증: 실행 전 해당 코드 0건, 실행 후 새 연결에서 코드 5건·그룹 2건 조회. 관리자 웹 화면에서 코드 표시 확인은 미실행. 폐쇄망은 실행 대상이 아님.
+- 상태: 커밋에 포함, 원격 반영.
+
+## 2026-11-05-14 — dev: 실제 크기 미리보기 null 항목 안내 문구 제거
+
+- 이유: 실제 크기 미리보기가 실제 WPF 팝업과 같아야 하는데, null인 항목에 입력 안내 문구가 채워져 표시됨. WPF는 값 없는 제목·설명을 비워 둔다.
+- 변경: `PopupPreview`에 `hidePlaceholders`(기본 false)를 추가하고 `PopupPreviewDialog`에서 사용. 모달에서 `팝업 제목`, `콘텐츠 제목`, `팝업 설명이 여기에 표시됩니다.`, `이미지 URL을 입력하면 여기에 표시됩니다.`를 표시하지 않고, 값 없는 영상 설명 줄도 그리지 않음. 인라인 미리보기와 저장 값은 변경 없음. 가이드 공지·인터페이스 문서 갱신.
+- 유지: 영상 자리 표시(`영상 재생 영역`, 재생 컨트롤, 완료 기준 안내)와 시청 비율 슬라이더는 null 대체 문구가 아니라 미리보기 시연 요소라 유지. `withPreviewFallback`의 표시 기본값과 WPF 기본값이 있는 값(숨김 일수 30일 등)도 유지.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupPreview.tsx, PopupPreviewDialog.tsx, guide/guideNotices.ts), docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md, scripts/verify-popup-preview-61.cjs.
+- 검증: `verify-popup-preview-61` 66건(유형 4종 null 값에서 모달 문구 0건·인라인 안내 유지, 입력값 표시 검사 추가), `verify-image-preview` 54건, `verify-completion-ux-43` 84건, `verify-popup-common-sample-69` 45건, `verify-popup-guide-render` 29건, `verify-popup-transform-64` 77건 통과. `tsc`·변경 파일 eslint 오류 0. 로컬 관리자 웹 실화면 확인은 미실행.
+- 상태: 커밋에 포함, 원격 반영. 반입본 미포함, 폐쇄망 반영 미실행.
+
 ## 2026-11-05-13 — 20261105 폐쇄망 전체 반입본 재생성(인라인 미리보기 수정 포함)
 
 - 이유: 인라인 미리보기 이미지 높이 0 수정과 OX 문항 표시 개선을 폐쇄망에 반입. 같은 날짜 규칙에 따라 6120b29 기준 반입본(2026-11-05-10)을 대체.

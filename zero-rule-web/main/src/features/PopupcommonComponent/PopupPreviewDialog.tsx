@@ -74,7 +74,7 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
         sx={{ position: 'fixed', ...(!fullScreen && alignY === 'flex-start' ? { bottom: 12 } : { top: 12 }), right: 12, zIndex: (theme) => theme.zIndex.modal + 1, boxShadow: 3 }}>
         미리보기 종료 (Esc)
       </Button>
-      <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} showBackground={false} onClose={onClose} onRecommendedSize={setMeasuredSize} /></DialogContent>
+      <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} showBackground={false} hidePlaceholders onClose={onClose} onRecommendedSize={setMeasuredSize} /></DialogContent>
     </Dialog>
   );
 }

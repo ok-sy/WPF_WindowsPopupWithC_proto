@@ -244,6 +244,13 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @21_dev_master_app_user_oracle.sql POPUP.`
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 21_dev_master_app_user_oracle.sql`
 
+## 퀴즈·설문 공통코드 등록 (2026-11-05)
+
+`22_popup_question_code_oracle.sql` — 답안 유형(`0089`)·퀴즈 유형(`0090`) 공통코드를 없을 때만 넣는다. 이미 있는 값은 바꾸지 않는다. **폐쇄망은 이 코드가 이미 있어 실행하지 않는다.**
+
+- 적용 현황: 원격 개발 DB 2026-11-05 실행 — 코드 그룹 2건, 코드 5건(`0089` OX형·선다형, `0090` 참여형·만점형·컷트라인형), 새 연결로 조회 확인.
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 22_popup_question_code_oracle.sql`
+
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 
 `tools/apply-dev-db.ps1 <NN_..._oracle.sql>` — 원격 개발 DB(192.168.114.71 XE, 앱 계정 `zero-rule`, 방식 B 빈 스키마 접두어)에 이관 스크립트 1개를 실행한다.

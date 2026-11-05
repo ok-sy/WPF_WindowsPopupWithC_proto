@@ -44,6 +44,8 @@ interface PopupPreviewProps {
   onClose?: () => void;
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE, 또는 크기 미지정 ADAPTIVE에서 WPF가 다시 계산할 팝업 창 크기). 그 외에는 null. */
   onRecommendedSize?: (size: Size | null) => void;
+  /** true면 값이 없는 항목에 입력 안내 문구를 채우지 않는다(WPF와 같음). 실제 크기 모달이 쓴다. 기본 false(인라인 미리보기). */
+  hidePlaceholders?: boolean;
 }
 
 function text(value: unknown, fallback: string): string {
@@ -61,11 +63,11 @@ function percentText(ratio: number): string {
 }
 
 /** 콘텐츠 제목. TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
-function contentTitle(popup: AdminPopupDetail): string {
+function contentTitle(popup: AdminPopupDetail, hidePlaceholders: boolean): string {
   const content = popup.content;
   if (popup.popupType === 'TEXT') return '';
   if (popup.popupType === 'IMAGE') return String(content.imageTitle ?? '');
-  if (popup.popupType === 'VIDEO') return text(content.videoTitle, '콘텐츠 제목');
+  if (popup.popupType === 'VIDEO') return text(content.videoTitle, hidePlaceholders ? '' : '콘텐츠 제목');
   return String(content.surveyTitle ?? '');
 }
 
@@ -79,6 +81,8 @@ interface PopupBodyProps {
   hideSurveyDescription?: boolean;
   /** VIDEO+QUIZ의 영상 영역을 원본 비율 × 실제 너비 높이로 그린다(단독 VIDEO는 남은 높이를 채우는 고정 영역). */
   aspectVideo?: boolean;
+  /** 값이 없는 항목의 입력 안내 문구를 숨긴다. */
+  hidePlaceholders?: boolean;
   survey?: Omit<SurveyPreviewProps, 'description'>;
 }
 
@@ -90,10 +94,11 @@ function PopupBody({
   videoUnlocked = false,
   hideSurveyDescription = false,
   aspectVideo = false,
+  hidePlaceholders = false,
   survey,
 }: PopupBodyProps) {
   const content = popup.content;
-  const description = text(content.description, '팝업 설명이 여기에 표시됩니다.');
+  const description = text(content.description, hidePlaceholders ? '' : '팝업 설명이 여기에 표시됩니다.');
 
   if (popup.popupType === 'QUIZ' && content.videoEnabled === true) {
     return (
@@ -104,6 +109,7 @@ function PopupBody({
           fitLayout={null}
           onImageLoad={onImageLoad}
           aspectVideo
+          hidePlaceholders={hidePlaceholders}
           survey={survey}
         />
         {/* 영상과 퀴즈 사이 시스템 안내는 WPF와 같이 두지 않는다. 시청 %·기준 사유는 제출 영역 진행 문구에만 표시한다. */}
@@ -119,6 +125,7 @@ function PopupBody({
             onImageLoad={onImageLoad}
             // 서식 설명은 영상 영역(일반 문자열)과 표시가 달라 숨기지 않는다(WPF CollapseHeaderShownAbove와 같음).
             hideSurveyDescription={content.showDescription !== false && !richBlocksOrNull(content.descriptionBlocks)}
+            hidePlaceholders={hidePlaceholders}
             survey={survey}
           />
         </Box>
@@ -180,7 +187,7 @@ function PopupBody({
           color: 'text.secondary',
         }}
       >
-        이미지 URL을 입력하면 여기에 표시됩니다.
+        {hidePlaceholders ? null : '이미지 URL을 입력하면 여기에 표시됩니다.'}
       </Box>
     );
 
@@ -267,7 +274,7 @@ function PopupBody({
     const defaultVolume = Number(content.defaultVolume);
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
-        {showDescription && <Typography color="text.secondary">{description}</Typography>}
+        {showDescription && description && <Typography color="text.secondary">{description}</Typography>}
         {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <Box
           sx={{
             flex: 1,
@@ -380,6 +387,7 @@ function PopupBody({
 export default function PopupPreview({
   popup: configuredPopup,
   showBackground = true,
+  hidePlaceholders = false,
   onClose,
   onRecommendedSize,
 }: PopupPreviewProps) {
@@ -554,7 +562,7 @@ export default function PopupPreview({
     : 0.45;
   const originalImage =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
-  const title = contentTitle(popup);
+  const title = contentTitle(popup, hidePlaceholders);
   // 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
   const richSurveyTitle = isSurvey ? richBlocksOrNull(popup.content.surveyTitleBlocks) : null;
   // 관리자 폰트 크기 미리보기. WPF와 같은 10~40 범위로 보정하고, 없으면 기존 미리보기 크기를 유지한다.
@@ -682,7 +690,7 @@ export default function PopupPreview({
                 fontSize: headerFontSize ?? undefined,
               }}
             >
-              {text(popup.title, '팝업 제목')}
+              {text(popup.title, hidePlaceholders ? '' : '팝업 제목')}
             </Typography>
             {/* WPF PopupWindow.xaml HeaderLogo와 같이 상단 닫기 버튼 없이 오른쪽에 고정 로고(100x24, Uniform, 오른쪽 여백 18)만 표시한다.
                 닫기는 하단 버튼 또는 "실제 크기로 보기" 모달의 종료 버튼으로 한다. */}
@@ -748,6 +756,7 @@ export default function PopupPreview({
               videoUnlocked={videoUnlocked}
               naturalImageSize={naturalImageSize}
               fitLayout={fitLayout}
+              hidePlaceholders={hidePlaceholders}
               onImageLoad={(size) => setNaturalImage({ url: imageUrl, size })}
               survey={{
                 questions: popup.questions,

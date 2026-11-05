@@ -84,6 +84,13 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     action: "loadPopupQuestionCodes(api.clCode.search) 결과를 answerTypeOptions·options prop으로 넘깁니다. rule 값 'PASS_FAIL'은 더 쓰지 않습니다.",
   },
   {
+    id: '2026-11-05-dialog-no-placeholder', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
+    title: '실제 크기 미리보기에서 입력 안내 문구 제거',
+    body: ['PopupPreviewDialog는 값이 없는 팝업 제목·영상 제목·설명·이미지 자리에 안내 문구를 표시하지 않습니다. 실제 WPF 팝업처럼 비워 둡니다.', 'InlinePopupPreview는 입력 안내를 위해 기존 문구를 유지합니다.'],
+    components: ['PopupPreviewDialog', 'PopupPreview'],
+    action: 'PopupPreview를 직접 쓰는 화면에서 같은 동작이 필요하면 hidePlaceholders를 넘깁니다.',
+  },
+  {
     id: '2026-11-04-hide-toolbar', date: '2026-11-04', category: 'ADDED', status: 'DONE', doneDate: '2026-11-04',
     title: 'PopupRichTextEditor 상단 툴바 켜고 끄기(hideToolbar)',
     body: ['hideToolbar를 넘기면 본문 높이는 그대로 두고 상단 툴바만 숨깁니다. 값을 바꿔도 입력 내용과 선택 범위가 유지되고, 서식은 우클릭이나 서식 버튼으로 지정합니다.', '넘기지 않으면 기존 화면과 같습니다.'],

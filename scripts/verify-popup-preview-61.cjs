@@ -141,6 +141,28 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await size({sizeMode: 'RATIO', widthRatio: .1, heightRatio: .1, minimumWidth: 100, minimumHeight: 100}) === JSON.stringify({width: 300, height: 300}), '[TODO68] RATIO result below 300 uses the floor');
   check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 269, height: 250}), '[TODO68] a viewport smaller than 300 keeps the modal on screen');
   check(await size({width: 640, height: 480}) === JSON.stringify({width: 640, height: 480}), '[TODO68] sizes above the floor are unchanged');
+  // 실제 크기 모달은 값이 없는 항목에 입력 안내 문구를 넣지 않는다. 인라인 미리보기는 안내를 유지한다.
+  const PLACEHOLDERS = ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.', '이미지 URL을 입력하면 여기에 표시됩니다.'];
+  const shownIn = async (selector, words) => run(`(()=>{const t=document.querySelector(${JSON.stringify(selector)}).innerText;return ${JSON.stringify(words)}.filter(w=>t.includes(w));})()`);
+  for (const [type, inlineWords, content] of [
+    ['VIDEO', ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.'], {videoTitle: null, description: null}],
+    ['IMAGE', ['팝업 제목', '이미지 URL을 입력하면 여기에 표시됩니다.'], {imageUrl: '', description: null}],
+    ['SURVEY', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.'], {surveyTitle: null, description: null}],
+    ['QUIZ', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.'], {videoEnabled: true, videoTitle: null, surveyTitle: null, description: null}],
+  ]) {
+    await render(type, {title: null}, content);
+    const inline = await shownIn('#root', PLACEHOLDERS);
+    check(inlineWords.every(w => inline.includes(w)), `${type} inline preview keeps the input guide: ` + JSON.stringify(inline));
+    await openPreview();
+    const dialog = await shownIn('.MuiDialog-root', PLACEHOLDERS);
+    check(dialog.length === 0, `${type} dialog hides placeholders for null values: ` + JSON.stringify(dialog));
+    await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
+  }
+  await render('VIDEO', {title: '실제 제목'}, {videoTitle: '실제 영상 제목', description: '실제 설명'});
+  await openPreview();
+  const realValues = await run(`document.querySelector('.MuiDialog-root').innerText`);
+  check(['실제 제목', '실제 영상 제목', '실제 설명'].every(w => realValues.includes(w)), 'Dialog still shows entered values');
+  await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
