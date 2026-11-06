@@ -212,9 +212,9 @@ X-Client-Version: 1.0.0
 
 ## 5.2 Response
 
-WPF는 2xx 응답에서 토큰을 아래 순서로 찾는다. 둘 다 없으면 로그인 실패로 처리한다(일반 로그인 계열은 실패도 HTTP 200일 수 있다).
+WPF는 2xx 응답에서 토큰을 아래 순서로 찾는다. 둘 다 없으면 로그인 실패로 처리한다(폐쇄망 로그인은 실패도 HTTP 200일 수 있다).
 
-1. 응답 헤더 `x-custom-authorization` — 폐쇄망 `p/api/auth/sso/login`, 일반 로그인 `p/api/auth/login`. 본문은 프로필 메시지이고 만료 시각을 주지 않는다. `Bearer ` 접두사가 있으면 제거해 사용한다.
+1. 응답 헤더 `x-custom-authorization` — 폐쇄망 `p/api/auth/sso/login`. 본문은 프로필 메시지이고 만료 시각을 주지 않는다. `Bearer ` 접두사가 있으면 제거해 사용한다.
 2. 응답 본문 `accessToken` — 로컬 프로토타입 `p/api/wpf/auth/login`. 아래 형식이다.
 
 이후 요청에는 어느 경우든 `Authorization: Bearer {토큰}`을 보낸다. 토큰 갱신은 401 재로그인과 정기 재로그인이 맡으며 `expiresAt`으로 판단하지 않는다.

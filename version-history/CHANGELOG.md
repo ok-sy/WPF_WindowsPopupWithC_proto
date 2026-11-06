@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-06-04 — dev: API Demo 일반 로그인 검증·비밀번호 처리 삭제
+
+- 이유: 에이전트 로그인 요청은 `lgonId`·`classCode`·`linkYn`뿐이고 SSO는 Windows 자격 증명을 사용해 비밀번호 개념이 없음. API Demo 일반 로그인 검증에만 쓰이던 비밀번호 처리가 에이전트에 비밀번호가 있는 것처럼 보여 정리.
+- 변경: `HttpExchangeRecord`의 `PasswordProperties`·`RedactPasswords`·`RedactNode` 삭제. ApiDemoTests의 비밀번호 가리기 검사와 실제 서버 회귀(`POPUP_DEMO_REAL_*`) 삭제, 로그인 흐름 검사는 비밀번호 없는 본문과 테스트 전용 경로 `/api/demo/login`으로 전환해 입력 검증·실패 구분·401 재로그인·연결 변경·토큰 마스킹 검사 유지. README·인터페이스 명세의 일반 로그인 안내 삭제. 토큰 입력용 `PasswordBox`, 토큰 마스킹, 웹이 쓰는 서버 `/api/auth/login`은 유지. API Demo 로그인 JSON은 자유 입력이라 민감값을 넣으면 HTTP 상세에 그대로 표시되며 README에 입력 금지 안내 추가.
+- 주요 파일: popup-frameWork/Popup/Services/HttpExchangeRecorder.cs, popup-frameWork/Popup/Services/Auth/WpfLoginClient.cs, popup-frameWork/Popup/DemoWindow.Api.cs, popup-frameWork/README.md, scripts/ApiDemoTests/Program.cs, docs/interfaces/POPUP_INTERFACE_SPEC.md, docs/design/20261104_DEMO_API_master로그인_팝업연동_입력UI_회귀검증_TODO.md.
+- 검증: WPF 빌드 성공, `ApiDemoTests` 110건 통과(비밀번호 전용 검사 삭제로 114건에서 감소). 소스에 `PasswordProperties`·`RedactPasswords`·`POPUP_DEMO_REAL` 참조 없음을 확인. `PopupWindowTests`, 실제 서버·폐쇄망 호출은 미실행. 인터페이스 명세 Word·PDF는 재생성하지 않음.
+- 상태: 커밋에 포함, 원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-06-03 — 팝업 헤더 로고 리사이즈 스크립트 추가
 
 - 이유: 반입한 CI 이미지(240×240, 여백 많음)를 헤더 로고 칸(100×24, Uniform)에 그대로 넣으면 그림이 약 15×4로 작게 표시되어, 여백을 자르고 칸 비율에 맞춘 이미지가 필요.

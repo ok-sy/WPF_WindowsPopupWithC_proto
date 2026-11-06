@@ -53,7 +53,7 @@ internal static class Program
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
         CheckLaunchArguments();
         CheckRecordMasking();
-        CheckCredentialFailureText();
+        CheckLoginFailureText();
         CheckConnectionKey();
         CheckLoginRequestKey();
         CheckHttpCategory54();
@@ -61,10 +61,9 @@ internal static class Program
         CheckDemoOptions54();
         using MockServer server = new();
         CheckApiDemoFlow(server);
-        CheckGeneralLoginFlow(server);
+        CheckDemoLoginFlow(server);
         CheckLoginTokenSources(server);
         CheckDemoHeaderTokenLogin(server);
-        CheckCredentialRealServer();
         Console.WriteLine($"PASS: {_checks} API demo checks (design 51, TODO54)");
     }
 
@@ -219,18 +218,14 @@ internal static class Program
     }
 
     private static string Describe(string? body) => (string)typeof(WpfLoginClient).GetMethod("DescribeFailure", Flags)!.Invoke(null, new object?[] { body })!;
-    private static string? Redact(string? body) => (string?)typeof(HttpExchangeRecord).GetMethod("RedactPasswords", Flags)!.Invoke(null, new object?[] { body });
 
-    private static void CheckCredentialFailureText()
+    private static void CheckLoginFailureText()
     {
         string business = Describe("{\"msgId\":\"FW00000009\",\"msgCn\":\"불일치\"}");
         Check(business.Contains("FW00000009") && business.Contains("계정 권한"), "[R-08] business failure with HTTP 200 shows the server message");
         Check(Describe("").Contains("빈 응답"), "[R-08] empty login response is identified");
         Check(Describe("{\"a\":1}").Contains("형식 불일치"), "[R-08] unexpected login response shape is identified");
         Check(Describe("<html>").Contains("JSON이 아닌"), "[R-08] non-JSON login response is identified");
-        string? redacted = Redact("{\"lgonId\":\"u\",\"passwd\":\"PW-SECRET\"}");
-        Check(redacted != null && !redacted.Contains("PW-SECRET") && redacted.Contains("\"lgonId\""), "[U-04] recorder removes the password from the request body");
-        Check(Redact("{\"a\":1}") == "{\"a\":1}", "[U-04] body without a password stays unchanged");
     }
 
     /* 일반 실행 로그인: 폐쇄망 SSO 로그인처럼 토큰이 응답 헤더로 와도, 프로토타입처럼 본문으로 와도 동작해야 한다. */
@@ -279,19 +274,17 @@ internal static class Program
     }
 
     /* 인증 방식은 로그인(JSON)·토큰 직접 입력 2가지. 일반 로그인 → 조회 → 표시 → 결과 → 수동 다음 조회와 입력·오류·마스킹·연결 변경을 본다. */
-    private static void CheckGeneralLoginFlow(MockServer server)
+    private static void CheckDemoLoginFlow(MockServer server)
     {
-        const string Password = "PW-SECRET-1";
-        string LoginJson(string id, string pw) => JsonSerializer.Serialize(new { lgonId = id, passwd = pw });
+        string LoginJson(string id) => JsonSerializer.Serialize(new { lgonId = id, classCode = "A1", linkYn = "N" });
         server.PopupMode = "TEXT";
         server.ResultMode = "ACCEPTED";
-        server.CredentialPassword = Password;
         server.CredentialMode = "OK";
         int popupRequestsBefore = server.PopupRequests.Count;
         int resultsBefore = server.ResultBodies.Count;
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/api/auth/login"
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/api/demo/login"
         };
         DemoWindow window = new(settings);
         window.Show();
@@ -316,12 +309,12 @@ internal static class Program
         Check(queryExpander.IsExpanded && ((TextBlock)window.FindName("ApiQueryErrorText")).Visibility == Visibility.Visible && server.PopupRequests.Count == popupsBeforeInvalid, "[query-json] invalid query JSON expands the section and shows the error");
         ((TextBox)window.FindName("ApiQueryBodyText")).Text = "{}";
 
-        // 잘못된 비밀번호: HTTP 200이어도 실패로 구분하고 입력을 펼친다.
-        loginBody.Text = LoginJson("master", "wrong-password");
+        // 거절된 계정: HTTP 200이어도 실패로 구분하고 입력을 펼친다.
+        loginBody.Text = LoginJson("wrong-user");
         ClickLogin(window);
         Pump(() => server.CredentialBodies.Count == loginsBefore + 1 && !IsBusy(window));
         Pump(() => false, 100);
-        Check(error.Visibility == Visibility.Collapsed && Logs(window).Any(l => l.Contains("로그인 실패") && l.Contains("FW00000009")), "[R-08] wrong password shows a login failure, not success");
+        Check(error.Visibility == Visibility.Collapsed && Logs(window).Any(l => l.Contains("로그인 실패") && l.Contains("FW00000009")), "[R-08] rejected account shows a login failure, not success");
         Check(((Expander)window.FindName("ApiConnectionExpander")).IsExpanded && steps.Text.Contains("✕ 로그인"), "[U-06] failed login is marked and its inputs stay open");
         server.CredentialMode = "500";
         ClickLogin(window);
@@ -329,7 +322,7 @@ internal static class Program
         Pump(() => false, 100);
         Check(Logs(window).Any(l => l.Contains("HTTP 오류 500")), "[R-08] login HTTP 500 is identified");
         server.CredentialMode = "NO_TOKEN";
-        loginBody.Text = LoginJson("master", Password);
+        loginBody.Text = LoginJson("master");
         ClickLogin(window);
         Pump(() => server.CredentialBodies.Count == loginsBefore + 3 && !IsBusy(window));
         Pump(() => false, 100);
@@ -340,7 +333,7 @@ internal static class Program
         ClickLogin(window);
         Pump(() => server.CredentialBodies.Count == loginsBefore + 4 && !IsBusy(window));
         Pump(() => false, 100);
-        Check(server.CredentialBodies[^1].Contains("\"lgonId\":\"master\"") && server.CredentialBodies[^1].Contains(Password), "[R-02] login posts the entered JSON");
+        Check(server.CredentialBodies[^1].Contains("\"lgonId\":\"master\"") && server.CredentialBodies[^1].Contains("\"classCode\":\"A1\""), "[R-02] login posts the entered JSON");
         Check(Logs(window).Any(l => l.Contains("[로그인] 성공")) && !((Expander)window.FindName("ApiConnectionExpander")).IsExpanded, "[U-07] login collapses the settings");
         Check(steps.Text.Contains("✓ 연결") && steps.Text.Contains("✓ 로그인") && steps.Text.Contains("✓ 인증 준비") && steps.Text.Contains("최근 HTTP 200"), "[U-06] steps show login success and the last HTTP status: " + steps.Text);
 
@@ -363,19 +356,14 @@ internal static class Program
         Query(window);
         Check(server.CredentialBodies.Count == loginsBeforeRetry + 1 && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-09] 401 logs in once and retries");
 
-        // 입력 JSON의 비밀번호도 기록에 남지 않는다(토큰 표시 옵션을 켜도 없음).
-        ((CheckBox)window.FindName("ApiRevealSecretsCheck")).IsChecked = true;
-        Dictionary<int, HttpExchangeRecord> details = (Dictionary<int, HttpExchangeRecord>)typeof(DemoWindow).GetField("_httpDetails", Flags)!.GetValue(window)!;
-        Check(details.Values.Any(r => r.Url.EndsWith("/api/auth/login")), "[R-11] login exchange is recorded");
-        Check(details.Values.All(r => !r.ToDisplayJson(true).Request.Contains(Password) && !r.ToDisplayJson(true).Response.Contains(Password)), "[U-04] password never appears in HTTP details, even with reveal on");
-        Check(Logs(window).All(l => !l.Contains(Password)) && Logs(window).All(l => !l.Contains(server.ValidToken!)), "[U-04] logs contain neither the password nor the token");
-        Check(!((TextBlock)window.FindName("ApiConnectionSummaryText")).Text.Contains(Password), "[U-04] connection summary does not expose the password");
-        ((CheckBox)window.FindName("ApiRevealSecretsCheck")).IsChecked = false;
+                Dictionary<int, HttpExchangeRecord> details = (Dictionary<int, HttpExchangeRecord>)typeof(DemoWindow).GetField("_httpDetails", Flags)!.GetValue(window)!;
+        Check(details.Values.Any(r => r.Url.EndsWith("/api/demo/login")), "[R-11] login exchange is recorded");
+        Check(Logs(window).All(l => !l.Contains(server.ValidToken!)), "[U-04] logs do not contain the token");
 
         // 연결 변경: 이전 인증 초기화(재로그인), 새 큐
         object? queue = typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window);
         int loginsBeforeChange = server.CredentialBodies.Count;
-        loginBody.Text = LoginJson("other-user", Password);
+        loginBody.Text = LoginJson("other-user");
         Query(window);
         Check(server.CredentialBodies.Count == loginsBeforeChange + 1 && server.CredentialBodies[^1].Contains("other-user"), "[U-08] changing the account logs in again");
         Check(!ReferenceEquals(queue, typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)), "[U-08] changing the account replaces the result queue");
@@ -388,60 +376,6 @@ internal static class Program
         ((PasswordBox)window.FindName("ApiTokenBox")).Password = server.ValidToken!;
         Query(window);
         Check(server.CredentialBodies.Count == loginsBeforeToken && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-10] token mode does not call the login API");
-        window.Close();
-    }
-
-    /*
-     * 실제 서버 회귀(R-01~07). POPUP_DEMO_REAL_BASE_URL·ID·PASSWORD 환경변수가 있을 때만 실행한다. 비밀번호를 저장소에 두지 않는다.
-     * 로그인 JSON으로 일반 로그인 /api/auth/login을 호출한다. 실제 DB의 전달·결과가 바뀌므로 대상 환경과 계정을 확인하고 실행한다.
-     */
-    private static void CheckCredentialRealServer()
-    {
-        string? baseUrl = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_BASE_URL");
-        string? logonId = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_ID");
-        string? password = Environment.GetEnvironmentVariable("POPUP_DEMO_REAL_PASSWORD");
-        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(logonId) || string.IsNullOrEmpty(password))
-        {
-            Console.WriteLine("SKIP: real server login check (POPUP_DEMO_REAL_* not set)");
-            return;
-        }
-        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = baseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/auth/login" });
-        window.Show();
-        ((TextBox)window.FindName("ApiLoginBodyText")).Text = JsonSerializer.Serialize(new { lgonId = logonId, passwd = password });
-        TextBlock steps = (TextBlock)window.FindName("ApiStepText");
-        ClickLogin(window);
-        Pump(() => !IsBusy(window) && Logs(window).Any(l => l.Contains("[로그인] 성공") || l.Contains("[오류]")), 20000);
-        Check(Logs(window).Any(l => l.Contains("[로그인] 성공")), "[R-02] real login succeeds: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
-        Query(window);
-        Check(steps.Text.Contains("✓ 팝업 조회"), "[R-04] real query succeeds: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
-        if (OpenPopups(window).Count == 0)
-        {
-            Check(Logs(window).Any(l => l.Contains("popup=null")), "[R-04] real server returned popup=null");
-            Console.WriteLine("REAL: popup=null");
-        }
-        else
-        {
-            Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("deliveryId=")));
-            PopupWindow shown = OpenPopups(window).Single();
-            object? content = ((ContentControl)shown.FindName("PopupContent")).Content;
-            Check(content != null, "[R-05] real popup renders its content view");
-            Console.WriteLine($"REAL view: {content!.GetType().Name} · title {shown.Title}");
-            CloseShownPopup(window);
-            try { Pump(() => !IsBusy(window) && steps.Text.Contains("✓ 결과 전송"), 20000); }
-            catch (TimeoutException)
-            {
-                foreach (string line in Logs(window).TakeLast(8)) Console.WriteLine("LOG: " + line);
-                Console.WriteLine("LOG: steps " + steps.Text.ReplaceLineEndings(" | "));
-            }
-            Check(steps.Text.Contains("✓ 결과 전송"), "[R-06] real result is accepted: " + string.Join(" | ", Logs(window).Where(l => l.Contains("[오류]"))));
-            Console.WriteLine("REAL: " + Logs(window).Last(l => l.Contains("nextStatus")));
-            Check(OpenPopups(window).Count == 0, "[R-07] real result does not open the next popup automatically");
-            Query(window);
-            Console.WriteLine("REAL next: " + Logs(window).Last(l => l.Contains("[조회]")));
-            if (OpenPopups(window).Count > 0) CloseShownPopup(window);
-            Pump(() => !IsBusy(window), 20000);
-        }
-        Check(Logs(window).All(l => !l.Contains(password)), "[U-04] real run logs do not contain the password");
         window.Close();
     }
 
@@ -647,7 +581,6 @@ internal static class Program
         public volatile string PopupMode = "TEXT";
         public volatile string ResultMode = "ACCEPTED";
         public volatile string CredentialMode = "OK";
-        public volatile string CredentialPassword = string.Empty;
         public List<string> CredentialBodies { get; } = new();
         public string? ValidToken { get { lock (_lock) return _validToken; } }
         public volatile string SsoLoginMode = "HEADER";
@@ -720,12 +653,12 @@ internal static class Program
                             default: Write(context, 200, "{\"msgId\":\"BE00000006\",\"body\":{\"profile\":{}}}"); return;
                         }
                     }
-                case "/p/api/auth/login":
+                case "/p/api/demo/login":
                     lock (_lock) CredentialBodies.Add(body);
                     if (CredentialMode == "500") { Write(context, 500, "{}"); return; }
                     using (JsonDocument login = JsonDocument.Parse(body))
                     {
-                        if (CredentialMode == "OK" && login.RootElement.GetProperty("passwd").GetString() == CredentialPassword)
+                        if (CredentialMode == "OK" && login.RootElement.GetProperty("lgonId").GetString() != "wrong-user")
                         {
                             lock (_lock)
                             {

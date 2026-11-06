@@ -29,7 +29,7 @@ namespace Popup.Services.Auth
         public DateTimeOffset ExpiresAt { get; set; }
     }
 
-    /// <summary>2xx 응답이지만 토큰이 없는 로그인 실패. 일반 로그인 계열은 실패도 HTTP 200과 업무 메시지로 돌려준다.</summary>
+    /// <summary>2xx 응답이지만 토큰이 없는 로그인 실패. 폐쇄망 로그인은 실패도 HTTP 200과 업무 메시지로 돌려줄 수 있다.</summary>
     public sealed class WpfLoginFailedException : InvalidOperationException
     {
         public WpfLoginFailedException(string message) : base(message) { }
@@ -47,7 +47,7 @@ namespace Popup.Services.Auth
      * 붙이고, 이 클래스는 로그인 API만 안다. 운영 전환 시(타 팀 통합 토큰) 이 클래스와 SsoAuthHeaderProvider만 바뀐다.
      *
      * [토큰 위치] 응답 헤더 x-custom-authorization을 먼저 읽고, 없으면 본문 accessToken을 쓴다.
-     *   - 폐쇄망 p/api/auth/sso/login·일반 로그인 p/api/auth/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
+     *   - 폐쇄망 p/api/auth/sso/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
      *   - 로컬 프로토타입 p/api/wpf/auth/login: 본문 { accessToken, tokenType, expiresAt }.
      *   헤더 토큰은 만료 시각을 주지 않으므로 ExpiresAt은 기본값이다. 갱신은 401 재로그인과 정기 재로그인이 맡고 만료 시각으로 판단하지 않는다.
      *
@@ -179,7 +179,7 @@ namespace Popup.Services.Auth
             }
         }
 
-        /// <summary>토큰이 없는 2xx 응답의 안내 문구. 토큰·비밀번호를 담지 않는다.</summary>
+        /// <summary>토큰이 없는 2xx 응답의 안내 문구. 토큰을 담지 않는다.</summary>
         internal static string DescribeFailure(string? body)
         {
             const string NoToken = $"로그인 응답에 토큰이 없습니다(헤더 {TokenHeaderName}, 본문 accessToken)";
