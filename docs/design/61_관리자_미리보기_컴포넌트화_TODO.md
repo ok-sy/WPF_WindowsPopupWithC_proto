@@ -106,7 +106,7 @@
 
 ## 추가 TODO — IMAGE 실제 크기 미리보기 모서리/그림자 충돌 (2026-11-06)
 
-상태: **폐쇄망 화면 증상 확인 / 원인 후보 정적 추적 / 수정·실행 검증 미수행**
+상태: **로컬 재현·수정 완료(61-13·14) / 폐쇄망 CSS 원본 추적·실화면 확인 대기(61-12·15·16 일부)**
 
 ### 재현 조건과 범위
 
@@ -125,10 +125,17 @@
 
 ### 구현 전·후속 검증 TODO
 
-- [ ] **61-12 원인 CSS 추적**: IMAGE 실제 크기 모달의 Dialog Paper와 PopupPreview Paper를 각각 DevTools로 선택하여 `border-radius` Computed 값·적용/취소된 Style·선택자 출처(파일/행)·상속이 아닌 우선순위를 기록한다. `MuiDialog-root` 하위 Paper 전체를 대상으로 하는 폐쇄망 스타일인지 확인.
-- [ ] **61-13 radius 복원**: 원인 규칙의 적용 범위를 정리하여 IMAGE 일반 창의 **6px 모서리**를 유지하고 FULLSCREEN의 0px 동작은 유지한다. 무조건적인 `!important` 덮어쓰기는 우선 해결책으로 사용하지 않는다.
-- [ ] **61-14 그림자 소유자 단일화**: 외부 Dialog Paper와 내부 PopupPreview Paper 각각의 `box-shadow` 및 `--Paper-shadow` 값을 확인한다. IMAGE 실제 크기 미리보기에서 시각적 그림자가 한 번만 적용되도록 책임을 한 계층으로 정리하되, 기본 Dialog/인라인 다른 타입의 그림자 정책을 임의 변경하지 않는다.
-- [ ] **61-15 IMAGE 조건별 검증**: IMAGE의 ADAPTIVE/FIT_TO_IMAGE/ORIGINAL, FIXED/RATIO/FULLSCREEN 및 인라인/실제 크기 미리보기를 비교해 radius·shadow·이미지 표시 영역·푸터·스크롤·크기 계산의 변화를 검증한다.
-- [ ] **61-16 회귀·환경 비교**: 동일 HTML/CSS 노드를 로컬과 폐쇄망 브라우저에서 비교하고, 프로젝트 MUI 및 전역 CSS 로드 순서 차이를 기록한다. TEXT/VIDEO/SURVEY/QUIZ와 기존 등록·샘플 화면도 회귀 확인한다. 변경 시 관련 웹 타입 검사·미리보기 검증을 별도로 수행한다.
+- [ ] **61-12 원인 CSS 추적** (폐쇄망 확인 필요): IMAGE 실제 크기 모달의 Dialog Paper와 PopupPreview Paper를 각각 DevTools로 선택하여 `border-radius` Computed 값·적용/취소된 Style·선택자 출처(파일/행)·상속이 아닌 우선순위를 기록한다. `MuiDialog-root` 하위 Paper 전체를 대상으로 하는 폐쇄망 스타일인지 확인.
+- [x] **61-13 radius 복원**: 원인 규칙의 적용 범위를 정리하여 IMAGE 일반 창의 **6px 모서리**를 유지하고 FULLSCREEN의 0px 동작은 유지한다. 무조건적인 `!important` 덮어쓰기는 우선 해결책으로 사용하지 않는다.
+- [x] **61-14 그림자 소유자 단일화**: 외부 Dialog Paper와 내부 PopupPreview Paper 각각의 `box-shadow` 및 `--Paper-shadow` 값을 확인한다. IMAGE 실제 크기 미리보기에서 시각적 그림자가 한 번만 적용되도록 책임을 한 계층으로 정리하되, 기본 Dialog/인라인 다른 타입의 그림자 정책을 임의 변경하지 않는다.
+- [ ] **61-15 IMAGE 조건별 검증** (radius·shadow·24px 여백은 하네스 확인, 폐쇄망 화면 대기): IMAGE의 ADAPTIVE/FIT_TO_IMAGE/ORIGINAL, FIXED/RATIO/FULLSCREEN 및 인라인/실제 크기 미리보기를 비교해 radius·shadow·이미지 표시 영역·푸터·스크롤·크기 계산의 변화를 검증한다.
+- [ ] **61-16 회귀·환경 비교** (로컬 TEXT/VIDEO/SURVEY/QUIZ·샘플 하네스 회귀 확인, 폐쇄망 비교 대기): 동일 HTML/CSS 노드를 로컬과 폐쇄망 브라우저에서 비교하고, 프로젝트 MUI 및 전역 CSS 로드 순서 차이를 기록한다. TEXT/VIDEO/SURVEY/QUIZ와 기존 등록·샘플 화면도 회귀 확인한다. 변경 시 관련 웹 타입 검사·미리보기 검증을 별도로 수행한다.
 
-**변경 제한:** 이번 작업은 TODO 정의서만 갱신한다. 웹 소스, 전역 CSS, WPF·서버, 인터페이스 명세 및 테스트 스크립트는 변경하지 않는다. 위 원인 분석은 코드/화면 단서를 통한 후보이며 실제 수정 전 브라우저 검증이 필요하다.
+**변경 제한(정의 시점):** TODO 정의 커밋은 정의서만 갱신했다. 수정 범위는 아래 구현 결과와 같다.
+
+### 재현·구현 결과 (2026-11-06)
+
+- 재현: 저장소에 없는 폐쇄망 규칙을 `.MuiDialog-root .MuiPaper-root { border-radius: 0 }`으로 가정해 headless Edge에 주입. 다른 유형은 계산값이 0이어도 내부 Paper가 틀을 채워 6px 틀(`overflow: hidden`)에 잘려 둥글게 보이고, IMAGE는 틀 패딩 24px로 안쪽에 있어 직각이 드러난다. 그림자 이중 표시는 규칙이 없어도 재현되어 저장소 코드 문제로 확인했다.
+- 24px 패딩은 WPF `PopupOuterGrid Margin="24"`(그림자 여백)에 대응하므로 유지한다.
+- 수정: IMAGE 일반 창의 Dialog Paper `boxShadow: none`, 내부 Paper 둥글기 `'&&&'`(우선순위 0,3,0)로 지정. `!important`와 폐쇄망 CSS 변경 없음. Dialog Paper 자체의 계산값은 규칙이 있으면 0으로 남지만 IMAGE는 투명·그림자 없음이라 보이지 않는다. 다른 유형의 Dialog 그림자는 유지한다.
+- 미확인: 폐쇄망 규칙 원본·전체 내용, 폐쇄망 실화면, 로컬 관리자 웹 실화면.

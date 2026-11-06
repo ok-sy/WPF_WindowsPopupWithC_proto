@@ -55,11 +55,14 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   const [alignX, alignY] = previewPositionAlign(popup);
   const edgeMargin = previewEdgeMargin(popup);
   const size = previewDialogSize(popup, measuredSize ?? recommendedSize, viewport);
+  /* IMAGE 일반 창은 PopupPreview가 WPF처럼 그림자 여백 24px 안쪽에 그림자를 그린다.
+   * 투명한 Dialog Paper(여백까지 포함한 창 크기)에도 그림자가 있으면 사각형이 이중으로 보이므로 Dialog 쪽 그림자를 뺀다. */
+  const shadowInsidePreview = popup.popupType === 'IMAGE';
   /* MUI 6.4.1+ Dialog slotProps(backdrop·paper). deprecated BackdropProps·PaperProps 대신 한 객체로 넘긴다.
    * FULLSCREEN은 Paper 크기를 지정하지 않는다(paper: undefined). */
   const slotProps = {
     backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
-    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: '6px', bgcolor: 'transparent',
+    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: '6px', bgcolor: 'transparent', ...(shadowInsidePreview ? { boxShadow: 'none' } : {}),
       maxWidth: `min(96vw, calc(100vw - ${edgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${edgeMargin * 2}px))`, m: `${edgeMargin}px`, overflow: 'hidden' } },
   };
 

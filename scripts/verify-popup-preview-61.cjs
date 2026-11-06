@@ -163,6 +163,39 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const realValues = await run(`document.querySelector('.MuiDialog-root').innerText`);
   check(['실제 제목', '실제 영상 제목', '실제 설명'].every(w => realValues.includes(w)), 'Dialog still shows entered values');
   await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
+  // [61-13·14] 폐쇄망 DevTools에서 확인된 규칙을 넣어도 창 둥글기를 유지하고, IMAGE 일반 창의 그림자는 안쪽 Paper 하나만 보인다.
+  const frame = async () => {
+    await openPreview();
+    const value = await run(`(()=>{const d=document.querySelector('.MuiDialog-paper'),i=d.querySelector('.MuiPaper-root'),b=i.parentElement,r=e=>e.getBoundingClientRect();
+      return {dialogShadow:getComputedStyle(d).boxShadow!=='none',innerShadow:getComputedStyle(i).boxShadow!=='none',innerRadius:getComputedStyle(i).borderTopLeftRadius,pad:getComputedStyle(b).paddingTop,
+        dialog:[r(d).width,r(d).height],inner:[r(i).width,r(i).height]};})()`);
+    await escape();
+    return value;
+  };
+  const IMAGE_CASES = [
+    ['ADAPTIVE', {}, {imageSizeMode: 'ADAPTIVE'}], ['FIT_TO_IMAGE', {}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true}], ['ORIGINAL', {}, {imageSizeMode: 'ORIGINAL'}],
+    ['RATIO', {sizeMode: 'RATIO'}, {imageSizeMode: 'ADAPTIVE'}],
+  ];
+  for (const rule of [false, true]) {
+    await run(`(()=>{document.getElementById('closed-net-rule')?.remove();${rule ? "const s=document.createElement('style');s.id='closed-net-rule';s.textContent='.MuiDialog-root .MuiPaper-root{border-radius:0}';document.head.appendChild(s);" : ''}})()`);
+    const label = rule ? 'with the Dialog Paper radius rule' : 'without the rule';
+    for (const [name, overrides, content] of IMAGE_CASES) {
+      await render('IMAGE', overrides, content);
+      const f = await frame();
+      check(f.innerRadius === '6px', `[61-13] IMAGE ${name} keeps the 6px corner ${label}: ` + JSON.stringify(f));
+      check(!f.dialogShadow && f.innerShadow, `[61-14] IMAGE ${name} has one shadow on the inner Paper ${label}: ` + JSON.stringify(f));
+      check(f.pad === '24px' && f.inner[0] === f.dialog[0] - 48 && f.inner[1] === f.dialog[1] - 48, `[61-15] IMAGE ${name} keeps the 24px WPF shadow margin ${label}: ` + JSON.stringify(f));
+    }
+    await render('IMAGE', {sizeMode: 'FULLSCREEN'}, {imageSizeMode: 'ADAPTIVE'});
+    const full = await frame();
+    check(full.innerRadius === '0px' && full.pad === '0px', `[61-13] IMAGE FULLSCREEN keeps 0 corners ${label}: ` + JSON.stringify(full));
+    for (const type of ['TEXT', 'VIDEO', 'SURVEY', 'QUIZ']) {
+      await render(type);
+      const f = await frame();
+      check(f.dialogShadow && f.innerRadius === '6px' && f.inner[0] === f.dialog[0], `[61-16] ${type} keeps its Dialog shadow and size ${label}: ` + JSON.stringify(f));
+    }
+  }
+  await run("document.getElementById('closed-net-rule')?.remove()");
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
