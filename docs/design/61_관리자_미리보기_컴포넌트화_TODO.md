@@ -102,3 +102,33 @@
 - 신규 `node scripts/verify-popup-preview-61.cjs` 42건 통과(headless Edge, 최소 호스트).
 - 기존 하네스: verify-image-preview 34건, verify-completion-ux-43 60건, verify-survey-rich-text-55 23건, verify-question-template-picker 7건 통과. verify-rich-text-49는 처음 두 번 'Mixed bold selection is shown as mixed'(서식 메뉴 선택 상태, 미리보기 분리와 무관)에서 실패하고 세 번째 실행에서 40건 통과.
 - 미실행: 실제 관리자 웹 로그인 화면에서 신규·수정·템플릿 적용 후 미리보기 확인, 다른 등록 화면에 실제 이식.
+
+
+## 추가 TODO — IMAGE 실제 크기 미리보기 모서리/그림자 충돌 (2026-11-06)
+
+상태: **폐쇄망 화면 증상 확인 / 원인 후보 정적 추적 / 수정·실행 검증 미수행**
+
+### 재현 조건과 범위
+
+- 폐쇄망 관리자 웹에서 **팝업 타입 IMAGE**, **실제 크기로 보기** 모달을 열었을 때 모서리 둥글기(`border-radius`)가 기대값과 다르게 **0으로 강제 적용**되고, 그림자가 **이중으로 보이는** 현상을 확인.
+- TEXT/VIDEO/SURVEY/QUIZ 등 다른 타입에서 동일 현상은 현재 관찰되지 않음. IMAGE 한정 분기와 전역 CSS 간 충돌을 우선 조사하며 원인을 IMAGE 자체로 단정하지 않는다.
+- 관련 사진의 **깨진 이미지 표시는 잘못된 테스트 파일 경로로 발생한 별도 상황**이며 이번 수정 범위에서 **제외**. 이미지 URL·업로드·리소스 경로를 이 결함의 원인으로 연결하지 않는다.
+
+### 현행 코드 기반 점검 지점
+
+| 위치 | 현행 설정/단서 | 확인 사항 |
+| --- | --- | --- |
+| `PopupcommonComponent/PopupPreviewDialog.tsx` | 모달 `Dialog`의 `slotProps.paper.sx`에 `borderRadius: '6px'`, `bgcolor: 'transparent'`, `overflow: 'hidden'` | 해당 스타일이 폐쇄망에서 실제 적용되는지, 다른 선택자의 `border-radius: 0`에 덮이는지 확인 |
+| `PopupcommonComponent/PopupPreview.tsx` | 외부 렌더러 Box 및 내부 `Paper`에 FULLSCREEN이 아니면 `borderRadius: '6px'`; `Paper elevation={isSurvey ? 0 : 8}` | IMAGE에서 내부 Paper 그림자(elevation 8)가 적용되며 모달 Dialog Paper의 기본 그림자와 겹치는지 확인 |
+| 폐쇄망 DevTools Styles | `.MuiDialog-root .MuiPaper-root` 계열 규칙에서 `border-radius: 0` 표시됨 | **선택자 선언 원본 CSS/스타일 주입 위치**, 우선순위·로드 순서 및 어떤 DOM Paper에 매칭되는지 확인. GitHub 소스에서 해당 정확한 선언 위치는 미확인 |
+| MUI Dialog 구조 | 바깥 Dialog Paper 내부에 미리보기용 Paper 중첩 | Paper 각각의 `box-shadow` 계산값 및 실제 그림자 소유자 추적; 사진의 `--Paper-shadow` CSS 변수와 `box-shadow`가 적용된 노드 확인 |
+
+### 구현 전·후속 검증 TODO
+
+- [ ] **61-12 원인 CSS 추적**: IMAGE 실제 크기 모달의 Dialog Paper와 PopupPreview Paper를 각각 DevTools로 선택하여 `border-radius` Computed 값·적용/취소된 Style·선택자 출처(파일/행)·상속이 아닌 우선순위를 기록한다. `MuiDialog-root` 하위 Paper 전체를 대상으로 하는 폐쇄망 스타일인지 확인.
+- [ ] **61-13 radius 복원**: 원인 규칙의 적용 범위를 정리하여 IMAGE 일반 창의 **6px 모서리**를 유지하고 FULLSCREEN의 0px 동작은 유지한다. 무조건적인 `!important` 덮어쓰기는 우선 해결책으로 사용하지 않는다.
+- [ ] **61-14 그림자 소유자 단일화**: 외부 Dialog Paper와 내부 PopupPreview Paper 각각의 `box-shadow` 및 `--Paper-shadow` 값을 확인한다. IMAGE 실제 크기 미리보기에서 시각적 그림자가 한 번만 적용되도록 책임을 한 계층으로 정리하되, 기본 Dialog/인라인 다른 타입의 그림자 정책을 임의 변경하지 않는다.
+- [ ] **61-15 IMAGE 조건별 검증**: IMAGE의 ADAPTIVE/FIT_TO_IMAGE/ORIGINAL, FIXED/RATIO/FULLSCREEN 및 인라인/실제 크기 미리보기를 비교해 radius·shadow·이미지 표시 영역·푸터·스크롤·크기 계산의 변화를 검증한다.
+- [ ] **61-16 회귀·환경 비교**: 동일 HTML/CSS 노드를 로컬과 폐쇄망 브라우저에서 비교하고, 프로젝트 MUI 및 전역 CSS 로드 순서 차이를 기록한다. TEXT/VIDEO/SURVEY/QUIZ와 기존 등록·샘플 화면도 회귀 확인한다. 변경 시 관련 웹 타입 검사·미리보기 검증을 별도로 수행한다.
+
+**변경 제한:** 이번 작업은 TODO 정의서만 갱신한다. 웹 소스, 전역 CSS, WPF·서버, 인터페이스 명세 및 테스트 스크립트는 변경하지 않는다. 위 원인 분석은 코드/화면 단서를 통한 후보이며 실제 수정 전 브라우저 검증이 필요하다.
