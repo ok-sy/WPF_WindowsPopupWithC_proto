@@ -126,6 +126,13 @@ const createOptions = (texts: string[]): PopupOption[] => texts.map((text, index
 /* 기존 복수 선택·주관식 퀴즈 문항은 새로 만들 수 없지만 그대로 표시·유지한다(TODO73-5). */
 const LEGACY_ANSWER_TYPE_LABELS: Record<string, string> = { MULTIPLE_CHOICE: '기존 유형: 복수 선택', TEXT: '기존 유형: 주관식' };
 
+/* 문항 카드 안 짧은 입력을 한 행에 묶고 폭이 부족하면 줄바꿈한다. Stack spacing은 줄바꿈된 항목에 왼쪽 여백이 남아 gap을 쓴다. */
+const FIELD_ROW_SX = { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 1 };
+/* 선택지 한 줄의 라디오·삭제 칸. 편집기 첫 줄(테두리 포함 36px)과 맞추고, 여러 줄로 늘어나도 첫 줄에 남긴다. */
+const OPTION_SLOT_SX = { height: 36, display: 'flex', alignItems: 'center', flexShrink: 0 };
+/* 작게 그려도 클릭 영역은 32px를 유지한다. */
+const ICON_BUTTON_SX = { width: 32, height: 32 };
+
 /**
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
@@ -167,34 +174,35 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     sortOrder: questions.length + 1, answerMatchMode: 'EXACT', correctAnswer: '',
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
-  return <Stack spacing={2}>
+  return <Stack spacing={1.5} sx={{ width: '100%', minWidth: 0 }}>
     <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 ({questions.length})</Typography>
-    {quiz && <Stack direction="row" spacing={2} alignItems="center">
-      <Typography sx={{ flex: 1 }} fontWeight={700}>
+    {quiz && <Box sx={{ ...FIELD_ROW_SX, alignItems: 'center' }}>
+      <Typography sx={{ flex: '1 1 160px', minWidth: 0 }} fontWeight={700}>
         총점 {total}점{questions.length > 0 && total === questions.length ? ` (문항 ${questions.length}개 × 1점)` : ''}
       </Typography>
       {fixedQuestionScore == null && <Button size="small" variant="outlined" disabled={!questions.length}
         onClick={() => onChange(questions.map((q) => ({ ...q, questionScore: DEFAULT_QUESTION_SCORE, isScored: true })))}>
         배점 모두 1점
       </Button>}
-      {!hidePassingScore && <TextField label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }}
+      {!hidePassingScore && <TextField size="small" label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }} sx={{ width: 110 }}
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
-    </Stack>}
+    </Box>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
-    {questions.map((q, index) => <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
-      <Stack spacing={1.5}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontWeight={700} sx={{ flex: 1 }}>{index + 1}번 문항</Typography>
-          <FormControlLabel label="필수문항" control={<Checkbox checked={q.isRequired} onChange={(_, checked) => update(index, { isRequired: checked })} />} />
-          <IconButton aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon /></IconButton>
+    {questions.map((q, index) => <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
+      <Stack spacing={1}>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0 }}>{index + 1}번 문항</Typography>
+          <FormControlLabel label="필수문항" sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: 13 } }}
+            control={<Checkbox size="small" checked={q.isRequired} onChange={(_, checked) => update(index, { isRequired: checked })} />} />
+          <IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon fontSize="small" /></IconButton>
         </Stack>
         {/* 문항 제목은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73). */}
         <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
-        {quiz ? <Stack direction="row" spacing={1}>
+        {quiz ? <Box sx={FIELD_ROW_SX}>
           {/* 답안 유형 표시 이름은 공통코드 0089. 기존 복수 선택·주관식은 항목을 하나 더 보여 값을 유지한다. */}
-          <TextField select fullWidth label="답안 유형" value={answerTypeValue(q)} disabled={!answerTypeOptions.length && q.questionType === 'SINGLE_CHOICE'}
+          <TextField select size="small" label="답안 유형" value={answerTypeValue(q)} sx={{ flex: '1 1 160px', minWidth: 140 }} disabled={!answerTypeOptions.length && q.questionType === 'SINGLE_CHOICE'}
             helperText={answerTypeOptions.length ? undefined : `공통코드 ${ANSWER_TYPE_CODE_TYPE}을 불러오는 중이거나 불러오지 못했습니다.`}
             slotProps={{ select: { inputProps: { 'aria-label': `${index + 1}번 문항 답안 유형` } } }}
             onChange={(e) => changeAnswerType(index, e.target.value)}>
@@ -204,41 +212,41 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             {!answerTypeOptions.some((item) => item.code === answerTypeValue(q)) && !LEGACY_ANSWER_TYPE_LABELS[q.questionType]
               && <MenuItem value={answerTypeValue(q)} sx={{ display: 'none' }}>{answerTypeValue(q) === ANSWER_TYPE_OX ? 'O·X' : '선택지'}</MenuItem>}
           </TextField>
-          {fixedQuestionScore == null && <TextField label="배점" type="number" value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} InputLabelProps={{ shrink: true }}
+          {fixedQuestionScore == null && <TextField size="small" label="배점" type="number" sx={{ flex: '0 1 100px', minWidth: 88 }} value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} InputLabelProps={{ shrink: true }}
             onChange={(e) => update(index, { questionScore: e.target.value === '' ? null : Number(e.target.value), isScored: true })} />}
-        </Stack> : <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-          <TextField select label="응답 유형" value={q.questionType === 'TEXT' ? 'TEXT' : 'CHOICE'} sx={{ minWidth: 130 }}
+        </Box> : <Box sx={FIELD_ROW_SX}>
+          <TextField select size="small" label="응답 유형" value={q.questionType === 'TEXT' ? 'TEXT' : 'CHOICE'} sx={{ flex: '1 1 112px', minWidth: 112 }}
             slotProps={{ select: { inputProps: { 'aria-label': `${index + 1}번 문항 응답 유형` } } }}
             onChange={(e) => changeSurveyType(index, e.target.value === 'TEXT' ? 'TEXT' : 'SINGLE_CHOICE')}>
             <MenuItem value="CHOICE">객관식</MenuItem>
             <MenuItem value="TEXT">주관식</MenuItem>
           </TextField>
           {q.questionType !== 'TEXT' && <>
-            <TextField select label="레이아웃" value={q.optionLayout ?? 'VERTICAL'} sx={{ minWidth: 110 }} onChange={(e) => update(index, { optionLayout: e.target.value as 'VERTICAL' | 'HORIZONTAL' })}>
+            <TextField select size="small" label="레이아웃" value={q.optionLayout ?? 'VERTICAL'} sx={{ flex: '1 1 104px', minWidth: 104 }} onChange={(e) => update(index, { optionLayout: e.target.value as 'VERTICAL' | 'HORIZONTAL' })}>
               <MenuItem value="HORIZONTAL">가로형</MenuItem>
               <MenuItem value="VERTICAL">세로형</MenuItem>
             </TextField>
-            <TextField select label="응답 수" value={q.questionType} sx={{ minWidth: 120 }}
+            <TextField select size="small" label="응답 수" value={q.questionType} sx={{ flex: '1 1 120px', minWidth: 120 }}
               slotProps={{ select: { inputProps: { 'aria-label': `${index + 1}번 문항 응답 수` } } }}
               onChange={(e) => changeSurveyType(index, e.target.value)}>
               <MenuItem value="SINGLE_CHOICE">단일 선택</MenuItem>
               <MenuItem value="MULTIPLE_CHOICE">복수 선택</MenuItem>
             </TextField>
-            {q.questionType === 'MULTIPLE_CHOICE' && <Stack direction="row" spacing={0.5} alignItems="center" sx={{ pt: 1 }}>
+            {q.questionType === 'MULTIPLE_CHOICE' && <Stack direction="row" spacing={0.5} alignItems="center">
               <TextField size="small" type="number" value={q.maxSelections ?? ''} placeholder="제한 없음" sx={{ width: 110 }}
                 slotProps={{ htmlInput: { min: 1, max: q.options.length, step: 1, 'aria-label': `${index + 1}번 문항 선택 개수` } }}
                 onChange={(e) => update(index, { maxSelections: e.target.value === '' ? null : Number(e.target.value), minSelections: null })} />
               <Typography component="span">개 선택</Typography>
             </Stack>}
           </>}
-        </Stack>}
-        {q.questionType === 'TEXT' ? quiz && <Stack spacing={1.5}>
-          <TextField label="주관식 정답" required value={q.correctAnswer ?? ''} onChange={(e) => update(index, { correctAnswer: e.target.value })} />
-          <TextField select label="정답 비교 방식" value={q.answerMatchMode ?? 'EXACT'} onChange={(e) => update(index, { answerMatchMode: e.target.value as 'EXACT' | 'CONTAINS' })}
+        </Box>}
+        {q.questionType === 'TEXT' ? quiz && <Stack spacing={1}>
+          <TextField size="small" label="주관식 정답" required value={q.correctAnswer ?? ''} onChange={(e) => update(index, { correctAnswer: e.target.value })} />
+          <TextField select size="small" label="정답 비교 방식" value={q.answerMatchMode ?? 'EXACT'} onChange={(e) => update(index, { answerMatchMode: e.target.value as 'EXACT' | 'CONTAINS' })}
             helperText="앞뒤 공백은 제외하며, 대소문자와 문장 안의 공백은 구분합니다.">
             <MenuItem value="EXACT">정확히 일치</MenuItem><MenuItem value="CONTAINS">포함</MenuItem>
           </TextField>
-        </Stack> : <Stack spacing={1}>
+        </Stack> : <Stack spacing={0.75}>
           {/* POL-06-02 : 선택·제출 — OX 정답은 폭을 나눈 칸 2개 중 하나만 고른다. 높이·글자는 낮게 두고, 큰 칸 표시는 미리보기·실제 팝업(SurveyPreview·WPF)에만 적용한다. 저장은 기존 SINGLE_CHOICE의 O·X 선택지와 isCorrect다.
               라디오 그룹 규칙대로 Tab은 그룹에 한 번만 들어오고, 화살표로 옮기면 정답도 함께 바뀐다. */}
           {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`} aria-required>
@@ -258,7 +266,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
                     choose(next);
                     (event.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
                   }}
-                  sx={{ minWidth: 0, height: 52, fontSize: 20, fontWeight: 600, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
+                  sx={{ minWidth: 0, height: 44, fontSize: 18, fontWeight: 600, borderRadius: '6px', borderColor: checked ? '#171717' : '#E5E5E5',
                     bgcolor: checked ? '#171717' : '#FFFFFF', color: checked ? '#FFFFFF' : '#222222',
                     '&:hover': { bgcolor: checked ? '#171717' : '#F5F5F5', borderColor: checked ? '#171717' : '#8C8C8C' },
                     '&.Mui-focusVisible': { outline: '2px solid #2563EB', outlineOffset: 2 } }}>{option.text}</Button>;
@@ -266,11 +274,13 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             </Box>
             {!q.options.some((option) => option.isCorrect) && <Typography variant="caption" color="text.secondary">정답을 선택해 주세요.</Typography>}
           </Stack> : <>
-          {/* 선택지 편집기는 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다. */}
-          {q.options.map((option, oi) => <Stack key={option.optionId} direction="row" spacing={1} alignItems="center">
-            {quiz && (q.questionType === 'SINGLE_CHOICE' ? <Radio checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />)}
+          {quiz && <Typography variant="caption" color="text.secondary">왼쪽 선택: 정답</Typography>}
+          {/* 선택지 편집기는 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다.
+              번호·입력칸·서식·삭제를 한 줄에 두고, 긴 내용은 입력칸만 아래로 늘어난다. */}
+          {q.options.map((option, oi) => <Stack key={option.optionId} direction="row" spacing={0.5} alignItems="flex-start">
+            {quiz && <Box sx={OPTION_SLOT_SX}>{q.questionType === 'SINGLE_CHOICE' ? <Radio size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />}</Box>}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <PopupRichTextEditor compact label={`선택지 ${oi + 1}${quiz ? ' (왼쪽 선택: 정답)' : ''}`} placeholder="선택지 내용"
+              <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
                 initialBlocks={initialRich(option.textBlocks, option.text)}
                 onChange={(blocks, plain) => {
                   const value = richValue(blocks, plain);
@@ -278,7 +288,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
                   updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks });
                 }} />
             </Box>
-            <IconButton aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon /></IconButton>
+            <Box sx={OPTION_SLOT_SX}><IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon fontSize="small" /></IconButton></Box>
           </Stack>)}
           {/* QUIZ 복수 선택은 정답 수만큼만 응답자가 고를 수 있다(미리보기·WPF 동일). */}
           {quiz && q.questionType === 'MULTIPLE_CHOICE' && <Typography variant="caption" color="text.secondary">
@@ -288,7 +298,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           {!quiz && q.questionType === 'MULTIPLE_CHOICE' && <Typography variant="caption" color={selectionLimitError(q, quiz) ? 'error' : 'text.secondary'}>
             {selectionLimitError(q, quiz) ?? `선택지 ${q.options.length}개 · 비우면 제한 없음`}
           </Typography>}
-          <Button startIcon={<AddIcon />} onClick={() => update(index, { options: [...q.options, { optionId: temporaryId(), value: String(q.options.length + 1), text: '', sortOrder: q.options.length + 1, isCorrect: false }] })}>선택지 추가</Button>
+          <Button size="small" startIcon={<AddIcon />} sx={{ alignSelf: 'flex-start' }} onClick={() => update(index, { options: [...q.options, { optionId: temporaryId(), value: String(q.options.length + 1), text: '', sortOrder: q.options.length + 1, isCorrect: false }] })}>선택지 추가</Button>
           </>}
         </Stack>}
       </Stack>

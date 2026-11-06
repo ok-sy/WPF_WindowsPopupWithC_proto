@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-06-02 — dev: TODO69 설문·퀴즈 3분할 입력 밀도 조정
+
+- 이유: IS063M02 중앙 문항 편집 열에서 입력칸이 세로로 길어 한 번에 보이는 문항 수가 적음. 측정 결과 compact 편집기의 40px 지정이 CKEditor 기본 패딩(상하 16px)·문단 여백(12px)에 밀려 실제 80px로 표시되고 있었음.
+- 변경: 3열 구조를 유지하고 입력 크기·간격·정렬만 조정. compact 입력칸 최소 높이 34와 선택자 우선순위 수정, 문항 제목 라벨 행 축소, Select `size=small`과 flex 줄바꿈, 선택지 번호·입력칸·서식·삭제 한 줄 배치(`PopupRichTextEditor.inlineLabel` 추가), 편집기 OX 칸 높이 52 → 44, 삭제 버튼 32px·추가 버튼 왼쪽 정렬, 카드 여백 축소. compact를 쓰는 콘텐츠 설명 입력칸도 함께 낮아짐. 저장 형식·업무 로직·미리보기·WPF 변경 없음.
+- 측정: 퀴즈 문항 카드 559 → 329px, 입력칸 80 → 34px, 선택지 한 줄 113 → 36px, Select 56 → 40px(샘플 1번 문항, 중앙 열 472px).
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/(PopupQuestionEditor.tsx, PopupRichTextEditor.tsx, sample/IS063M02Sample.tsx, guide/guideData.ts, guide/GuideSavePartsTab.tsx, guide/guideNotices.ts), scripts/(verify-popup-common-sample-69.cjs, verify-survey-rich-text-55.cjs, verify-rich-text-49.cjs), docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md, docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md.
+- 검증: `tsc`·변경 파일 eslint 오류 0. `verify-popup-common-sample-69` 61건(1400·1024px 3열 유지, 가로 넘침·Select 잘림 없음, 선택지 한 줄 정렬, 긴 선택지 줄바꿈, 편집기 재마운트 없음, 크기 변경 후 저장값 동일, 미리보기 반영), `verify-survey-rich-text-55` 53건, `verify-rich-text-49` 75건, `verify-completion-ux-43` 84건, `verify-popup-preview-61` 66건, `verify-question-template-picker` 7건, `verify-popup-guide-render` 29건, `verify-popup-guide-registry` 241건, `verify-rgstpop-quiz-rule` 15건, `verify-popup-transform-64` 77건 통과. 하네스 스크린샷으로 화면 형태 확인. 69-17의 폐쇄망 `n*` CSS 우선순위·브라우저 확대 배율, 로컬 관리자 웹 실화면, `next build`는 미실행.
+- 상태: 커밋에 포함, 원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-06-01 — dev: TODO69 설문·퀴즈 3분할 입력 레이아웃 조정 정의
 
 - 이유: IS063M02 3분할 등록 화면에서 중앙 설문·퀴즈 에디터의 입력창 높이·너비 및 SelectBox 배치가 공간 대비 비효율적인 문제를 개선할 필요.

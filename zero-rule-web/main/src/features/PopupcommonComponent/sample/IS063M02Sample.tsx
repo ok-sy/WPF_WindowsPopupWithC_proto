@@ -298,7 +298,7 @@ export default function IS063M02Sample() {
                 </Box>}
                 {/* 원본의 문항별 하드코딩 블록·공유 라디오 state 대신 공통 문항 편집기가 문항·선택지·정답을 각각 관리한다.
                     [확정] 퀴즈 배점은 1점 고정이라 배점 입력을 숨기고(fixedQuestionScore), 통과 점수는 퀴즈유형에서 계산한다(hidePassingScore). */}
-                <Box className="nQuizBox" sx={{ mt: 1 }}>
+                <Box className="nQuizBox" sx={{ mt: 1, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                   <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={effective?.passingScore}
                     fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore
                     onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />
