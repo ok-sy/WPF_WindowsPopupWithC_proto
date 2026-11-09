@@ -122,3 +122,13 @@
 - [ ] **73-30 검증** — 설문 단일·복수 선택 및 주관식, 퀴즈 선다형·OX의 입력 UI와 정답 선택을 확인한다. 유형 전환, 기존 서식 문항 수정, 줄바꿈, 미리보기, 저장·재조회 및 웹 타입 검사를 확인한다.
 
 `compact`와 `hideToolbar`는 CKEditor 툴바 표시를 제어한다. 이 요건은 공통 문항 편집기에서 분기하며 별도 화면 옵션과 API·DTO 변경은 범위에서 제외한다.
+
+## 8. 추가 TODO — 가이드 페이지 PopupAdmin 타입 안내 (2026-11-09)
+
+상태 **요구사항 정의 완료 / 구현 대기**
+
+- [ ] **73-31 타입 안내** — `/popup-common-guide`의 시작 탭에 `PopupAdmin.ts` 타입 안내를 추가한다. `PopupType`, `AdminPopupDetail`, `PopupQuestion`, `PopupOption`의 역할과 포함 관계를 보여 준다. 화면 초기 상태의 `Partial<AdminPopupDetail>`, 상세 모델, 저장 요청의 차이를 구분한다.
+- [ ] **73-32 예시** — 최소 팝업 입력 예시와 설문·퀴즈 문항 예시를 제공한다. 현행 모델에서 `content`와 `questions`의 위치, `title`·`text`와 서식 블록의 관계, OX의 `SINGLE_CHOICE` 및 O/X 선택지 표현을 설명한다. 73-28~73-30의 일반 텍스트 전환은 적용 상태에 맞춰 안내한다.
+- [ ] **73-33 검증** — 예시의 타입과 import를 실제 workspace 공개 경로에 맞추고 기존 가이드 예제 타입 검사에 연결한다. 기존 탭과 예시 실행을 확인한다.
+
+기준 모델은 `zero-rule-web/sub/domain/src/model/PopupAdmin.ts`이며 표시 위치는 `guide/tabs/GuideStartTab.tsx`를 우선 검토한다.
