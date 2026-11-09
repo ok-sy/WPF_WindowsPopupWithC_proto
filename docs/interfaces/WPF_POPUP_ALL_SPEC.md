@@ -64,6 +64,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 | CompletionRatio | 지원 | N | `null` → VIDEO `1.0` / VIDEO+QUIZ `0.8` | VIDEO / VIDEO+QUIZ 누적 시청 완료 기준. 미설정 기본값은 유형별(PU001 B-7, 서버 판정·관리자 미리보기와 같음) |
 | ~~AllowCloseBeforeComplete~~ | 폐기(TODO57) | - | - | 새 WPF는 읽지 않는다(구 서버가 보내도 무시). 화면 버튼은 `CompletionRatio`, Alt+F4 등 외부 닫기는 `UseBackgroundOverlay`, 완료 전 연기는 `ShowLater`로 판단한다. 구 WPF는 필드가 없으면 기본 `true`(완료 전 닫기 허용)로 동작하므로 서버 필드 제거 전 새 WPF 배포를 확인한다 |
 | PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 합격점은 서버가 0~총점 범위로 제공. 누락 시 WPF는 0점 통과 기준으로 처리할 수 있음 |
+| RequiresPassing | QUIZ에서 지원 | N | `null` → `PassingScore` 기준 판정 | 합격해야 제출·완료되는지(PU001 §7). `false` 참여형, `true` 커트라인형·만점형. 상세는 §4.4 |
 
 Footer 버튼 표시는 서버 응답(Java `WpfPopupItem`)과 C# 모두 `showFooterButton` 하나만 사용한다. legacy `showCloseButton` 수신 별칭은 삭제했다(설계 29-11). 관리자 API·DB는 기존 이름(showCloseButton·SHOW_CLOSE_BUTTON_YN)을 유지하고 WPF 응답 조립 시 변환한다.
 
@@ -201,11 +202,12 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | options[].OptionId | 지원 | Y(선택형) | `0` | 응답 OPTION_ID 연결. 양수·문항 내 고유 ID를 서버가 보장 |
 | options[].Value / Text | 지원 | Value N · Text Y(선택형) | `""` | 업무 값(선택)·화면 문구. 응답 식별은 OptionId |
 | options[].IsCorrect | QUIZ에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시. SURVEY는 채점하지 않음 |
-| PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 최상위 합격점. 0~총점 범위 |
+| PassingScore | QUIZ에서 지원 | Y(QUIZ) | `null` | 최상위 합격점. 0~총점 범위. 참여형도 합격 기준(통계용 `passed`)으로 양수를 가질 수 있음 |
+| RequiresPassing | QUIZ에서 지원 | N | `null` → `PassingScore` 기준 판정 | 최상위 `requiresPassing`(PU001 §7). `false` 참여형: 미달이어도 `passed=false`로 제출·완료 안내. `true` 커트라인형·만점형: 미달이면 창 유지·재채점. 생략 시 `PassingScore` 0 이하·미설정 = 참여형 |
 
 선택형은 VERTICAL 전체 폭 Row·우측 체크 Path, HORIZONTAL 공통 Chip으로 표시한다.
 긴 문장 줄바꿈, 단일/복수 선택, 필수 미응답 검증, 주관식 입력·스크롤을 지원한다.
-제출 영역은 스크롤 밖에 고정한다. QUIZ는 필수 검증·로컬 채점 후 통과 시 제출하며
+제출 영역은 스크롤 밖에 고정한다. QUIZ는 필수 검증·로컬 채점 후 통과 시(참여형 `RequiresPassing=false`는 합불과 무관하게) 제출하며
 서버 결과 전송을 기다리기 전에 결과 큐 적재를 완료한다. **미통과 시 별도 `CloseOnFail` JSON 필드 없이 창을 유지하고 수정·재채점한다.** RATING5·correctAnswers는 삭제된 계약이다.
 
 ### 4.5 VIDEO+QUIZ

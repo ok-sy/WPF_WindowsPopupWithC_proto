@@ -256,6 +256,7 @@
         }
       ],
       "passingScore": 80,
+      "requiresPassing": true,
       "content": {
         "surveyTitle": "보안 확인 퀴즈",
         "description": "총점 100점, 통과 기준 80점입니다.",
@@ -337,6 +338,7 @@
         }
       ],
       "passingScore": 80,
+      "requiresPassing": true,
       "content": {
         "videoTitle": "영상 확인 퀴즈",
         "videoUrl": "https://example.com/media/security.mp4",

@@ -129,6 +129,7 @@
       "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "passingScore": 80,
+      "requiresPassing": true,
       "questions": [
         {
           "questionId": 201,
@@ -176,6 +177,7 @@
       "showDoNotShowAgain": false,
       "completionRatio": 0.8,
       "passingScore": 80,
+      "requiresPassing": true,
       "questions": [
         {
           "questionId": 301,

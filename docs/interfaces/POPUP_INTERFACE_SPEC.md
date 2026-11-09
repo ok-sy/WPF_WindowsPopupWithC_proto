@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-11-05 (KST)
+- 최신화: 2026-11-09 (KST)
+- 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
 - 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
 - 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
@@ -334,7 +335,8 @@ X-Client-Version: 1.0.0
 | hideDays | integer | 선택 | `null` → HIDDEN 생성 시 30일 | 다시 보지 않기(HIDDEN) 결과의 숨김 일수. 1~3650(관리자 저장 시 서버 검증, 결과 요청도 같은 범위 §10.4) |
 | completionRatio | number | VIDEO / 동영상+퀴즈 | VIDEO `1.0` / 동영상+퀴즈 `0.8` | 완료 인정 비율 0~1. 생략/null이면 유형별 기본값(PU001 B-7) |
 | ~~allowCloseBeforeComplete~~ | - | 폐기(TODO57) | - | 응답에서 제거. 새 WPF는 보내도 무시한다. 화면 버튼은 `completionRatio`, 외부 닫기는 `popup.useBackgroundOverlay`, 완료 전 연기는 `showLater`. 구 WPF는 필드가 없으면 `true`로 동작하므로 새 WPF 배포 후 제거한다 |
-| passingScore | number | QUIZ | `null` | 로컬 통과 점수. 채점 QUIZ는 반드시 명시(6.4 참고) |
+| passingScore | number | QUIZ | `null` | 로컬 통과(합격) 점수. 채점 QUIZ는 반드시 명시(6.4 참고). 참여형도 합격 기준으로 양수를 가질 수 있다 |
+| requiresPassing | boolean | QUIZ 선택 | 생략 → `passingScore` 기준 판정 | 합격해야 제출·완료되는지(PU001 §7). `false` 참여형: 미달이어도 제출하고 완료 안내. `true` 커트라인형·만점형: 미달이면 제출하지 않고 재응시. 생략(구 데이터·구 서버)이면 `passingScore` 0 이하·미설정은 참여형, 그 외는 합격 필요. QUIZ 외 유형에는 내려주지 않는다 |
 | questions | array | SURVEY / QUIZ | `[]` | 문항 목록 |
 | content | object | O | 유형별 필수값 포함 | 유형별 화면 데이터 및 공통 옵션 |
 
@@ -696,6 +698,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
   "popupType": "QUIZ",
   "title": "보안 퀴즈",
   "passingScore": 80,
+  "requiresPassing": true,
   "questions": [
     {
       "questionId": 201,
@@ -763,10 +766,15 @@ CONTAINS
 
 ```text
 채점
-→ passingScore 미달
+→ passingScore 미달 + requiresPassing=true(또는 생략 + passingScore>0)
 → 점수 안내
 → 창 유지
 → 답 수정 후 다시 채점
+
+passingScore 미달 + requiresPassing=false(참여형)
+→ SUBMITTED 결과 생성(score, passed=false)
+→ 참여 완료 안내(정답 N/M개)
+→ 확인 후 창 닫기
 
 passingScore 이상
 → SUBMITTED 결과 생성
@@ -786,6 +794,7 @@ passingScore 이상
   "popupType": "QUIZ",
   "completionRatio": 0.8,
   "passingScore": 80,
+  "requiresPassing": true,
   "content": {
     "videoEnabled": true,
     "videoUrl": "https://example.com/training.mp4",
@@ -905,7 +914,7 @@ X-Client-Version: 1.0.0
 | hideDays | integer | HIDDEN 필수 | `null`. HIDDEN 생성 시 조회 응답 popup의 hideDays(1~3650), 없으면 30. 1~3650(§10.4) |
 | answers[] | array | SUBMITTED(SURVEY·QUIZ·VIDEO+QUIZ) 필수 | `null`. 1개 이상. `questionId`·`optionIds[]`(TEXT는 [])·`textAnswer`(TEXT 문항). null 요소 금지(§10.5·10.6) |
 | score | number | QUIZ SUBMITTED 필수 | `null`. WPF 최종 채점 점수, 0 이상. SURVEY는 보내지 않음(§10.6) |
-| passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 최종 통과 여부(§10.6) |
+| passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 채점 합불(`score ≥ passingScore`, §10.6). 참여형 미달이면 `false`로 제출된다. 완료 여부와는 별개 |
 | video | object | VIDEO_WATCHED·VIDEO+QUIZ SUBMITTED 필수 | `null`. 영상 시청 정보(§10.7) |
 
 유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 결과를 `REJECTED`로 응답한다(§11). 제안서 v0.3의 `action`·`completedAt` 이름은 채택하지 않고 기존 `resultType`·`closedAt` 등 필드 이름을 유지한다(그 밖의 차이는 §10.9).
@@ -1023,9 +1032,9 @@ VIDEO_WATCHED
 }
 ```
 
-현재 WPF는 통과한 QUIZ만 SUBMITTED 한다.
+현재 WPF는 합격이 필요한 QUIZ(`requiresPassing=true`)는 통과한 경우만 SUBMITTED 하고, 참여형(`requiresPassing=false`)은 미달이어도 `passed: false`로 SUBMITTED 한다(PU001 §7).
 
-`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장하고 완료 판정에 사용한다(설계 33). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
+`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장한다(설계 33). 완료 처리는 `passed`와 무관하게 유효한 SUBMITTED이면 완료다(2026-11-09 PU001 §7, 이전의 `passed` 기반 완료 판정 대체). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
 
 동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 결과에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 
@@ -1665,6 +1674,7 @@ EMPTY
     }
   ],
   "passingScore": 80,
+  "requiresPassing": true,
   "content": {
     "surveyTitle": "보안 확인 퀴즈",
     "description": "총점 100점, 통과 기준 80점입니다.",
@@ -1751,6 +1761,7 @@ EMPTY
     }
   ],
   "passingScore": 80,
+  "requiresPassing": true,
   "content": {
     "videoTitle": "영상 확인 퀴즈",
     "videoUrl": "https://example.com/media/security.mp4",

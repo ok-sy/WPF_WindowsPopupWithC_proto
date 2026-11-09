@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-09-12 — dev: PU001 참여형 퀴즈 계약·스펙 문서 반영
+
+- 이유: 조회 `requiresPassing` 추가와 참여형 `passed` 의미 변화를 인터페이스 계약·WPF 스펙·인계 문서에 맞춤(AGENTS 규칙: WPF 기능 변경 시 MINIMAL·ALL 함께 갱신).
+- 변경: `POPUP_INTERFACE_SPEC` 3.7 보완 항목, popup 필드표 `requiresPassing`, QUIZ 실패/성공 흐름, 결과 `passed`·§10.6 완료 처리 문구. `WPF_POPUP_MINIMAL_SPEC`(미통과 동작·통과 판정), `WPF_POPUP_ALL_SPEC`(RequiresPassing 행·제출 조건). WPF 예제 JSON(`WPF-01-popup-types*.json`, 계약서·MINIMAL 예시)에 `requiresPassing: true`. `POPUP_FRONT_SAMPLE_HANDOVER` 퀴즈 유형 행, TODO73 §3-1 갱신 표기, PU001 TODO §7 체크·구현 결과.
+- 주요 파일: `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `WPF_POPUP_MINIMAL_SPEC.md`, `WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/examples/WPF-01-popup-types.json`, `WPF-01-popup-types-minimal.json`, `POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md`.
+- 검증: 예제 JSON 파싱 확인. Word·PDF·Excel(v3.7 산출물) 미갱신.
+- 상태: 커밋 완료, 원격 반영.
+
 ## 2026-11-09-11 — dev: PU001 참여형 퀴즈 관리자 웹 기준 개수·quizTypeCode
 
 - 이유: PU001 TODO §7 구현. 참여형 합격 기준 입력과 3개 유형의 저장·복원(유형 코드)이 필요.

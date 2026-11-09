@@ -143,7 +143,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | content.width/height | 폐기(TODO58). 최소 버전(ORIGINAL)은 원래 사용하지 않음. 구 키 `imageWidth/imageHeight`는 v3.6에서 폐기 |
 | IsMuted | 해당 필드 없음. 영상 컨트롤이 Windows Master Mute와 동기화하며 연결 실패 시 내부 음량으로 처리 |
 | FULLSCREEN | AllowFullScreen(영상 플레이어 전체화면)과 SizeMode=FULLSCREEN(팝업 Window 전체화면)은 서로 다른 기능 |
-| QUIZ 미통과 동작 | 별도 JSON 설정 필드 없음. WPF가 창을 유지하고 답 수정 후 재채점. 결과 안내 문구는 `passingScore`로 커트라인형·만점형·참여형(0)을 나눠 표시(PU001 Q3, 고정 동작) |
+| QUIZ 미통과 동작 | 최상위 `requiresPassing`(선택, 2026-11-09 PU001 §7)으로 나눈다. `true`(커트라인형·만점형)는 창을 유지하고 답 수정 후 재채점. `false`(참여형)는 기준 미달이어도 `passed: false`로 제출하고 참여 완료 안내 후 닫음. 생략 시 기존처럼 `passingScore` 0 이하·미설정이면 참여형. 안내 문구는 커트라인형·만점형·참여형으로 나눠 표시(PU001 Q3) |
 | QuestionLayout | 실제 필드명은 OptionLayout. 선택지 배치를 VERTICAL/HORIZONTAL로 지정 |
 | FooterAction / FooterLinkUrl | `content`가 아니라 `popup` 최상위 값. 일반 콘텐츠는 CLOSE “확인”(닫기 동작) 또는 LINK_AND_CLOSE “바로가기”(유효한 HTTP/HTTPS URL을 열고 종료), SURVEY·QUIZ·VIDEO+QUIZ는 SUBMIT “제출” 고정이며 링크를 열지 않음 |
 | VIDEO+QUIZ | `PopupType=QUIZ + content.videoEnabled=true` 조합. CompletionRatio 도달 전 Quiz/Footer 비활성화, 도달 후 활성화 |
@@ -166,7 +166,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 ### 표시·조회 동작
 
 - API는 로그인·단건 조회(`POST /api/wpf/popups`)·결과 1건 전송(`POST /api/wpf/popups/results`) 세 가지다(설계 35). 조회 응답은 `pollingIntervalSeconds`와 팝업 1건 `popup`(없으면 `null`)이며 결과 요청에는 `popup.deliveryId`를 넣는다. 상세는 [인터페이스 계약서](POPUP_INTERFACE_SPEC.md) 6·10·11절을 따른다.
-- QUIZ 통과 여부는 WPF가 채점해 결정한다(채점 문항 점수 합계 ≥ `passingScore`). 불합격이면 결과를 보내지 않고 창을 유지하며, 통과한 경우에만 `SUBMITTED` 결과에 `answers`와 함께 `score`·`passed`를 보낸다. QUIZ `SUBMITTED`에 `score`·`passed`가 없으면 서버는 `REJECTED`(`WPF_INVALID_RESULT`)로 처리하고, 있으면 그 값을 그대로 저장해 완료 판정에 사용한다([계약서 §10.6](POPUP_INTERFACE_SPEC.md)). SURVEY에는 보내지 않는다.
+- QUIZ 통과 여부는 WPF가 채점해 결정한다(채점 문항 점수 합계 ≥ `passingScore`). 합격이 필요한 퀴즈(`requiresPassing=true`, 생략 시 `passingScore`>0)는 불합격이면 결과를 보내지 않고 창을 유지하며, 통과한 경우에만 `SUBMITTED` 결과에 `answers`와 함께 `score`·`passed`를 보낸다. 참여형(`requiresPassing=false`)은 미달이어도 `passed: false`로 `SUBMITTED`를 보낸다. QUIZ `SUBMITTED`에 `score`·`passed`가 없으면 서버는 `REJECTED`(`WPF_INVALID_RESULT`)로 처리하고, 있으면 그 값을 그대로 저장하고, 유효한 `SUBMITTED`는 `passed`와 관계없이 완료로 처리한다([계약서 §10.6](POPUP_INTERFACE_SPEC.md)). SURVEY에는 보내지 않는다.
 - 로그인/기동 직후 최초 조회한다. 서버만 활성·기간·대상·숨김·완료·재노출 유예를 판단하고 표시 순서상 첫 1건을 내려주며 WPF는 받은 1건을 바로 표시한다. 표시 중에는 다른 조회를 하지 않는다. 결과 응답 `nextStatus`=AVAILABLE이면 즉시 다음 조회, EMPTY 또는 조회 결과 `popup=null`이면 가장 최근 `pollingIntervalSeconds`(30~60분)만큼 기다린 뒤 조회한다. 누락/0 이하는 범위 제한된 WPF 로컬 설정을 유지한다.
 - 보내지 못한 결과가 남아 있으면 다음 팝업을 조회하지 않고 같은 resultId로 1건씩 재전송한다. 결과 큐는 메모리 전용이라 프로그램이 종료되면 보내지 못한 결과는 사라진다(2026-10-28 결정). 재전송한 결과의 nextStatus가 EMPTY면 조회 간격을 기다린다. 이 복구 동작은 주간회의 결정 전 임시 기준이다.
 - 로컬 파일·HTTP/HTTPS 직접 영상은 동일한 WPF Overlay 컨트롤을 사용한다. 재생 중 무입력·마우스 이탈 시 숨기고 진입·이동 시 표시하며 일시정지·조작 중에는 유지한다. HTML5 브라우저 기본 controls는 표시하지 않고 ShowControls·AllowFullScreen을 두 재생 방식에 적용한다. 음량·음소거는 현재 Windows Master Volume/Mute와 동기화하며 내부 영상 음량은 1.0으로 유지한다. DefaultVolume은 시스템 연결 전/실패 시 초기 음량이다. Windows 값 변경은 다른 프로그램에도 영향을 주며 종료 시 이전 값으로 복원하지 않는다. 코드의 AllowPlaybackRateChange=false는 HTML5도 1.0배로 제한하지만 최소 오픈 범위의 배속 변경 옵션은 계속 미제공이다.
@@ -332,6 +332,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "footerAction": "SUBMIT",
   "showDoNotShowAgain": false,
   "passingScore": 80,
+  "requiresPassing": true,
   "questions": [
     {
       "questionId": 201,
@@ -384,6 +385,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
   "showDoNotShowAgain": false,
   "completionRatio": 0.8,
   "passingScore": 80,
+  "requiresPassing": true,
   "questions": [
     {
       "questionId": 301,
