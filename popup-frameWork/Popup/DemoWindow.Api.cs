@@ -482,7 +482,7 @@ namespace Popup
             DetailTabs.SelectedIndex = 1;
         }
 
-        /* HTTP 기록으로 단계 상태를 갱신한다. 로그인 성공은 토큰 보관 여부(UpdateApiState)로 판단한다(일반 로그인은 실패도 200). */
+        /* HTTP 기록으로 단계 상태를 갱신한다. 로그인 성공은 토큰 보관 여부(UpdateApiState)로 판단한다(폐쇄망 로그인은 실패도 200일 수 있다). */
         private void ApplyHttpStep(HttpExchangeRecord record)
         {
             _apiLastHttp = (record.StatusCode?.ToString() ?? "응답 없음") + $" · {record.ElapsedMs}ms";

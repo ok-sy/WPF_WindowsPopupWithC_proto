@@ -1029,14 +1029,14 @@ popupSample.exe -Demo -Api
   `Authorization` 헤더와 응답의 `accessToken`은 기본 마스킹하며 `토큰 평문 표시(화면만)`로만 볼 수 있다. 토큰은 메모리에만 두고 파일 로그에 남기지 않는다.
 - 인증: 로그인 방식은 첫 요청 직전 로그인하고, 401이면 같은 로그인 본문으로 1회 재로그인 후 같은 요청을 재전송한다. 토큰 직접 입력은 재로그인하지 않는다. `로그인` 버튼은 지금 로그인해 토큰을 교체한다.
 - 재시도: 결과의 `resultId`는 생성 시 확정되며 `미전송 결과 재전송`(또는 다음 조회 전 자동 전송)은 같은 ID·본문으로 보낸다. 종결(ACCEPTED·DUPLICATE·REJECTED) 판정·400 제외·INTERNAL_ERROR 재시도 상한은 일반 실행의 결과 큐와 같다.
-- 연결 경계: 결과 큐(메모리 전용)는 `Base URL·인증 방식·인증 대상(로그인 본문, ID/비밀번호 또는 토큰)` 연결마다 새로 만든다.
+- 연결 경계: 결과 큐(메모리 전용)는 `Base URL·인증 방식·인증 대상(로그인 본문 또는 토큰)` 연결마다 새로 만든다.
   연결을 바꾸면 이전 연결의 미전송 결과는 버린다(미전송이 있으면 변경 전 확인). 다른 연결이나 일반 실행의 결과 큐로 보내지 않는다.
 - 트레이 `팝업 다시 조회`는 API Demo에서 `팝업 조회`와 같은 실제 조회로 동작한다. 이 모드의 관리 화면(MainWindow)은 API 서비스·주기 조회를 만들지 않아 자동 조회 루프와 겹치지 않는다.
 - 인메모리 전용 조작(샘플 선택·옵션 설정·상태 초기화·전체 실행·SSO·로그인 테스트)은 API Demo에서 숨긴다.
-- 일반 로그인(SSO 미사용) 검증: `로그인 경로`를 `/api/auth/login`, `로그인 요청 JSON`을 `{"lgonId":"...","passwd":"..."}`로 입력한다. 토큰은 응답 헤더 `x-custom-authorization`으로 받아 `Authorization: Bearer`로 보내고, 일반 로그인은 실패도 HTTP 200이라 토큰 유무로 판단한다. JSON 칸의 비밀번호는 화면에 그대로 보이지만 파일·로그·HTTP 상세에는 남지 않는다.
+- 로그인 검증: `로그인 요청 JSON`은 `{"lgonId":"...","classCode":"...","linkYn":"N"}`이다. 에이전트 로그인에는 비밀번호가 없다. 토큰은 응답 헤더 `x-custom-authorization`(없으면 본문 `accessToken`)으로 받아 `Authorization: Bearer`로 보내고, 실패도 HTTP 200일 수 있어 토큰 유무로 판단한다. 입력한 JSON은 HTTP 상세에 그대로 표시되므로 비밀번호 같은 민감값을 넣지 않는다.
   - 서버 조건: `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`(아니면 팝업 API가 401). 계정은 `APP_USER`에 활성 사번으로 있어야 한다(아니면 403 `WPF_USER_INACTIVE`).
 - 진행 표시: 조회 버튼 위에 `연결 → 로그인 → 인증 준비 → 팝업 조회 → 표시 → 결과 전송` 상태와 최근 HTTP 상태·소요 시간을 보여 준다. 입력 오류는 입력란 아래에 표시하고 요청을 보내지 않는다.
-- 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움). 실제 서버까지 확인하려면 `POPUP_DEMO_REAL_BASE_URL`·`POPUP_DEMO_REAL_ID`·`POPUP_DEMO_REAL_PASSWORD`를 설정한다(실제 전달·결과 데이터가 생긴다).
+- 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움).
 
 ### 폐쇄망 Demo 미디어
 
