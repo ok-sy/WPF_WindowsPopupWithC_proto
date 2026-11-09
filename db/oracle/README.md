@@ -260,6 +260,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 순서: **서버 반영 전에 실행.** 새 서버는 이 컬럼을 조회·저장하므로 없으면 ORA-00904로 실패한다. 이전 서버는 쓰지 않아 실행 후에도 동작한다.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @23_popup_quiz_type_oracle.sql POPUP.`
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 23_popup_quiz_type_oracle.sql`
+- 적용 현황: 로컬 XE 2026-11-09 적용(QUIZ 1행 `01`). 원격 개발 DB 2026-11-09 적용(첫 시도 ORA-12170 접속 시간 초과 후 재실행, QUIZ 1행 `01`, 유형 없는 QUIZ 0).
 
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 
