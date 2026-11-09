@@ -204,6 +204,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'initialBlocks', type: 'RichBlock[]', required: true, description: '처음 보여 줄 본문. 처음 한 번만 읽습니다. 바꾸려면 key를 바꿉니다.' },
       { name: 'disabled', type: 'boolean', description: '읽기 전용으로 보여 줍니다.' },
       { name: 'compact', type: 'boolean', description: '툴바를 숨긴 짧은 입력칸입니다. 서식은 우클릭으로 엽니다.' },
+      { name: 'inlineLabel', type: 'string', description: 'compact일 때 짧은 표시(선택지 번호 등)·입력칸·서식 버튼을 한 줄에 둡니다.' },
       { name: 'hideToolbar', type: 'boolean', description: '상단 툴바만 숨깁니다. 본문 높이는 그대로이고, 값을 바꿔도 입력 내용이 유지됩니다.' },
       { name: 'placeholder', type: 'string', description: '비어 있을 때 안내 문구' },
     ],

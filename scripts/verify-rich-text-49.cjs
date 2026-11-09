@@ -295,7 +295,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       gapTop:Math.round(body.getBoundingClientRect().top-tool.previousElementSibling.getBoundingClientRect().bottom),pMargin:p?getComputedStyle(p).marginTop:''};})()`);
   const toolbarBlocks = [{alignment:'LEFT',runs:[{text:'툴바 숨김 본문'}]}];
   const shapes = {};
-  for (const [name, options, shown, min, top] of [['basic',{},true,140,'0px'],['hideToolbar',{hideToolbar:true},false,140,'4px'],['compact',{compact:true},false,40,'4px'],['compact+hideToolbar',{compact:true,hideToolbar:true},false,40,'4px']]) {
+  for (const [name, options, shown, min, top] of [['basic',{},true,140,'0px'],['hideToolbar',{hideToolbar:true},false,140,'4px'],['compact',{compact:true},false,34,'4px'],['compact+hideToolbar',{compact:true,hideToolbar:true},false,34,'4px']]) {
     await run(`window.mount(${JSON.stringify(toolbarBlocks)},false,null,${JSON.stringify(options)})`); await waitEditor(); await pause(250);
     const shape = shapes[name] = await toolbarLayout();
     check(shape.toolbar===shown && shape.min===min && shape.bodyTop===top && shape.bodyBottom==='4px' && shape.editTop===(top==='4px'?'3px':'0px'),

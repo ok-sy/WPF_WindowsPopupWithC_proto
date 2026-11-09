@@ -180,7 +180,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
       extras:c.reduce((n,e)=>n+e.querySelectorAll('svg,input,img').length,0),checked:c.map(e=>e.getAttribute('aria-checked')),bg:c.map(e=>getComputedStyle(e).backgroundColor),border:c.map(e=>getComputedStyle(e).borderTopColor),align:c.map(e=>getComputedStyle(e).justifyContent),tab:c.map(e=>e.tabIndex),focus:c.indexOf(document.activeElement)};})()`);
   let ox = await oxCells();
   check(ox.label === '정답 선택 *' && ox.count === 2 && ox.text.join() === 'O,X' && ox.extras === 0, '[73-11] OX cells show only one letter under the required label: ' + JSON.stringify(ox));
-  check(ox.rects[0].w === ox.rects[1].w && ox.rects[0].h === ox.rects[1].h && ox.rects[0].h === 52 && ox.rects[0].w > 200 && ox.rects[0].top === ox.rects[1].top && ox.align[0] === 'center', '[73-16] Editor OX cells keep height 52 and split the width: ' + JSON.stringify(ox.rects));
+  check(ox.rects[0].w === ox.rects[1].w && ox.rects[0].h === ox.rects[1].h && ox.rects[0].h === 44 && ox.rects[0].w > 200 && ox.rects[0].top === ox.rects[1].top && ox.align[0] === 'center', '[73-16] Editor OX cells keep height 44 and split the width: ' + JSON.stringify(ox.rects));
   check(ox.checked.join() === 'false,true' && ox.bg[0] !== ox.bg[1] && ox.border[0] !== ox.border[1] && ox.tab.join() === '-1,0', '[73-12] Only the chosen cell differs and takes the tab stop: ' + JSON.stringify(ox));
   const cellCenter = await run(`(()=>{const r=document.querySelector('button[aria-label="1번 문항 1번 선택지 정답"]').getBoundingClientRect();return {x:r.left+12,y:r.top+10};})()`);
   await clickAt(cellCenter.x, cellCenter.y); await pause(200);

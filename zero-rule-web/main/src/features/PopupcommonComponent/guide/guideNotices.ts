@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-06-todo69-editor-density', date: '2026-11-06', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-06',
+    title: '설문·퀴즈 문항 편집기 입력 밀도 조정',
+    body: ['문항 제목·선택지 입력칸과 Select 높이를 줄이고, 짧은 Select는 한 행에 묶어 폭이 부족하면 줄바꿈합니다.',
+      '선택지는 번호·입력칸·서식·삭제를 한 줄에 둡니다. 편집기 OX 칸은 높이 44입니다. 미리보기·WPF OX 크기와 저장 형식은 바뀌지 않습니다.'],
+    components: ['PopupQuestionEditor', 'PopupRichTextEditor'],
+    action: '바꿀 코드는 없습니다. PopupRichTextEditor에 선택 prop inlineLabel이 추가되었습니다.',
+  },
+  {
     id: '2026-11-05-todo73-editor-fields', date: '2026-11-05', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-05',
     title: '설문·퀴즈 콘텐츠 제목·문항 설명 입력 제거, TEXT 편집기 툴바 숨김',
     body: ['설문·퀴즈 편집기에서 콘텐츠 제목과 문항 설명 입력을 뺐습니다. 이미 저장된 값은 지우지 않고 그대로 표시합니다.',
