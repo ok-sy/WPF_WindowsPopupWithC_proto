@@ -465,6 +465,7 @@ namespace Popup.Services
                       "description": "객관식 4문항은 각 25점이며 100점이면 통과합니다. 단일선택은 하나, 복수선택은 해당하는 항목을 모두 선택하세요. 마지막 의견은 선택 사항입니다."
                     },
                     "passingScore": 100,
+                    "requiresPassing": true,
                     "questions": [
                       {
                         "questionId": 2001,
@@ -621,6 +622,8 @@ namespace Popup.Services
             videoQuiz["showFooter"] = true;
             videoQuiz["showFooterButton"] = true;
             videoQuiz["content"]!["videoEnabled"] = true;
+            // POL-06-02 : 선택·제출 — requiresPassing 없는 구 서버 응답 예시(PU001 §7). passingScore 100 = 만점이라 기존 판정상 만점형으로 같게 동작한다.
+            videoQuiz.Remove("requiresPassing");
             // POL-05-03 : 결합 화면 — 서버는 VIDEO+QUIZ 제목을 1개(CONTENT_TITLE = surveyTitle)만 저장하고 videoTitle을 같은 값으로 내려준다.
             videoQuiz["content"]!["videoTitle"] = "교육 영상 이해도 평가";
             videoQuiz["content"]!["autoPlay"] = false;

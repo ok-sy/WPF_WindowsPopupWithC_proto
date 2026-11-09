@@ -239,15 +239,16 @@ namespace Popup.Managers
          * POL-06-03 : 표현·수명
          * POL-02-02 : 종료 제어
          * 설문·퀴즈 제출: WPF가 이미 판정한 결과를 로컬 큐에 저장한 뒤 창을 닫는다.
-         *  1. QUIZ 미통과(passed=false)면 유형별 실패 안내(QuizResultNotice: 커트라인형 기준·정답 N/M개, 만점형 전부 정답 요구)를
+         *  1. 합격이 필요한 QUIZ(조회 requiresPassing=true, 필드가 없으면 기존 passingScore 판정상 커트라인형·만점형, PU001 §7)가
+         *     미통과(passed=false)면 유형별 실패 안내(QuizResultNotice: 커트라인형 기준·정답 N/M개, 만점형 전부 정답 요구)를
          *     보여 주고 **창을 유지**한다. 결과는 만들지도 저장하지도 않는다. "다시 풀기" 후 통과할 때까지 반복한다.
          *     안내에 틀린 문항 번호를 함께 보여 준다(결과 계약 score·passed는 그대로).
          *     QUIZ의 푸터 버튼은 '제출'이라 닫기 버튼이 없다. Background Overlay가 꺼져 있으면 미달 1회 뒤 보조 '닫기'가 보이고,
          *     켜져 있으면 통과해야 닫힌다(Alt+F4도 막힘). 제출 없이 나가면 CLOSED 항목만 전송되어 다음 조회 때 다시 노출된다.
-         *  2. 통과(또는 SURVEY)면 결과 항목(answers + score/passed) 생성 → EnqueueResult(메모리 결과 큐 적재).
-         *     이 시점부터 결과는 유실되지 않는다.
+         *  2. 통과, 참여형(채점 합불 무관) 또는 SURVEY면 결과 항목(answers + score/passed) 생성 → EnqueueResult(메모리 결과 큐 적재).
+         *     참여형 기준 미달은 실제 score와 passed=false 그대로 적재한다. 이 시점부터 결과는 유실되지 않는다.
          *  3. QUIZ 유형별 완료 안내(서버 응답 없음, PU001 Q3): 커트라인형 "통과하여 … 종료" + N/M개, 만점형 "모두 맞추셨습니다",
-         *     참여형(passingScore 0) "완료하여 … 종료" + N/M개. 확인을 누르면 닫힌다. SURVEY는 "설문조사가 완료되었습니다." 안내 후 확인을 누르면 닫힌다.
+         *     참여형(requiresPassing=false, 또는 필드 없이 passingScore 0) "완료하여 … 종료" + N/M개(기준 미달 포함). 확인을 누르면 닫힌다. SURVEY는 "설문조사가 완료되었습니다." 안내 후 확인을 누르면 닫힌다.
          *  4. 창 닫기 → 백그라운드 전송(FlushResultsInBackground)
          * EnqueueResult가 없으면(훅 미연결) 저장 없이 닫는다.
          */
@@ -259,7 +260,8 @@ namespace Popup.Managers
         {
             bool isQuiz = string.Equals(popupOptions.PopupType, "QUIZ", StringComparison.OrdinalIgnoreCase);
 
-            if (isQuiz && submission.Passed == false)
+            // 합격이 필요한 퀴즈(requiresPassing ?? 기존 판정 != 참여형)에서 미통과일 때만 막는다. 참여형 미달은 아래로 내려가 제출한다.
+            if (isQuiz && submission.Passed == false && QuizResultNotice.RequiresPassing(submission))
             {
                 popupWindow.NotifyQuizFailed();
                 QuizResultNotice.Notice failed = QuizResultNotice.Build(submission, popupOptions.Title, popupWindow.HasAuxClose);

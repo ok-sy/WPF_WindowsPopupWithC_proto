@@ -19,7 +19,7 @@ namespace Popup.Views.Contents
      * POL-06-03 : 표현·수명
      * ■ SURVEY / QUIZ 문항 화면
      * - in : title·description(string) · questions(List<SurveyQuestion>) · isQuizMode(bool) · passingScore(double?)
-     *        · titleBlocks/descriptionBlocks(IReadOnlyList<PopupTextBlockDto>?) 머리말 서식
+     *        · requiresPassing(bool?, QUIZ 합격 필요 여부) · titleBlocks/descriptionBlocks(IReadOnlyList<PopupTextBlockDto>?) 머리말 서식
      * - out: SurveySubmitted(SurveySubmission) 답안·점수·통과 여부 · ResponseProgressChanged · CanSubmit · ResponseProgressText
      * - 설문 질문을 화면에 표시하고 필수 응답 진행을 계산한다. 제출 시 필수 응답을 검증하고 QUIZ면 로컬에서 채점해 이벤트로 넘긴다.
      *   서버 응답을 기다리지 않는다. 서식(Blocks)은 표시에만 쓰고 문항·선택지 ID와 답변 값은 바꾸지 않는다.
@@ -91,6 +91,9 @@ namespace Popup.Views.Contents
          */
         private readonly double? _passingScore;
 
+        /* POL-06-02 : 선택·제출 — 조회 응답 requiresPassing(QUIZ만, PU001 §7). 제출 결과에 실어 PopupManager가 제출 차단·안내 유형을 정한다. */
+        private readonly bool? _requiresPassing;
+
         /*
          * 질문별로 생성된 입력 컨트롤을 저장한다.
          *
@@ -140,7 +143,7 @@ namespace Popup.Views.Contents
         /*
          * ■ 설문 화면 생성자
          * - in : title·description(string) · questions(List<SurveyQuestion>, null이면 빈 목록) · isQuizMode(bool)
-         *        · passingScore(double?) · titleBlocks/descriptionBlocks(서식 머리말, 선택)
+         *        · passingScore(double?) · titleBlocks/descriptionBlocks(서식 머리말, 선택) · requiresPassing(bool?, 선택)
          * - out: 없음 · 문항 카드를 만들고 필수 응답 진행을 계산한다.
          * - 실제 설문 데이터를 받아 화면을 만드는 생성자. 디자인 버전 리소스를 InitializeComponent 전에 넣는다.
          */
@@ -151,7 +154,8 @@ namespace Popup.Views.Contents
         bool isQuizMode = false,
         double? passingScore = null,
         IReadOnlyList<PopupTextBlockDto>? titleBlocks = null,
-        IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null)
+        IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null,
+        bool? requiresPassing = null)
         {
             // 문항 디자인 버전(SurveyDesign.Current)의 스타일을 XAML의 StaticResource보다 먼저 넣는다.
             Resources = SurveyDesign.CreateResources();
@@ -175,6 +179,7 @@ namespace Popup.Views.Contents
              * POL-06-02 : 선택·제출 — QUIZ 통과 점수. 로컬 채점(QuizGrader)의 통과 기준으로 쓴다. 없으면 0(항상 통과).
              */
             _passingScore = passingScore;
+            _requiresPassing = requiresPassing;
 
             /*
              * QuizMode도 제출 버튼 문구는 XAML 기본값과 같은 "제출"이다(채점은 제출 시 로컬에서 함께 한다).
@@ -1013,7 +1018,9 @@ namespace Popup.Views.Contents
              * POL-06-02 : 선택·제출 — QUIZ는 여기서 즉시 채점한다. 서버가 QUIZ 팝업에 한해 정답 정보
              * (options[].isCorrect / correctAnswer / answerMatchMode / questionScore)를 내려준다.
              * SURVEY는 채점하지 않으므로 점수·통과 여부가 null이다.
-             * 미통과면 PopupManager가 안내만 하고 창을 유지한다(제출 없음, 답안 수정 후 재채점). 통과 시에만 SUBMITTED가 만들어진다.
+             * passed는 유형과 무관하게 실제 채점 합불(score >= passingScore)이다(PU001 §7).
+             * 합격이 필요한 퀴즈(커트라인형·만점형)가 미통과면 PopupManager가 안내만 하고 창을 유지한다(제출 없음, 답안 수정 후 재채점).
+             * 참여형(requiresPassing=false)은 미달이어도 SUBMITTED(passed=false)를 만든다.
              */
             SurveySubmission submission;
             if (_isQuizMode)
@@ -1025,6 +1032,7 @@ namespace Popup.Views.Contents
                     Score = graded.Score,
                     Passed = graded.Passed,
                     PassingScore = graded.PassingScore,
+                    RequiresPassing = _requiresPassing,
                     IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers,
                     CorrectCount = graded.CorrectCount,
                     ScoredCount = graded.ScoredCount,

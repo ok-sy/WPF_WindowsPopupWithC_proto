@@ -23,6 +23,7 @@ namespace Popup.Services
      *     - HIDDEN : hideDays(1~3650) 동안 숨김 → 다음 조회에서 제외
      *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(서버 재채점 없음 — 실제 서버도 같음, PU001 B-1).
      *                   score/passed가 빠진 QUIZ 항목은 WPF_INVALID_RESULT로 거절한다(데모 채점기 없음).
+     *                   유효한 QUIZ 제출은 passed와 무관하게 완료한다(참여형 미달 passed=false 포함, PU001 §7).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
      *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).
      *     - VIDEO_WATCHED : watched/duration ≥ completionRatio(미설정 기본 VIDEO 1.0·동영상+퀴즈 0.8)면 완료
@@ -193,13 +194,14 @@ namespace Popup.Services
                          * WPF가 로컬 채점한 score/passed를 그대로 저장한다(서버와 같이 QUIZ 필수, 없으면 REJECTED).
                          * score/passed 없이 오는 제출을 채점하는 데모 채점기는 두지 않는다.
                          * 응답에는 totalScore/passed를 다시 내려주지 않는다.
+                         * PU001 §7: 유효한 QUIZ SUBMITTED는 passed와 무관하게 완료한다(서버와 같음). 제출 허용 판단은 WPF가 한다
+                         * (합격이 필요한 퀴즈의 미달은 WPF가 전송 전에 막고, 참여형 미달은 passed=false로 와도 완료).
                          */
                         if (!item.Score.HasValue || item.Passed == null)
                         {
                             return Reject(response, "WPF_INVALID_RESULT", "QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
                         }
-                        bool passed = item.Passed.Value;
-                        if (passed) _completed.Add(item.PopupId);
+                        _completed.Add(item.PopupId);
                     }
                     else
                     {

@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-09-10 — dev: PU001 참여형 퀴즈 WPF requiresPassing 제출 분기
+
+- 이유: PU001 TODO §7 구현. 참여형은 기준 미달이어도 제출·완료하고 실제 합불을 `passed`로 보내야 함.
+- 변경:
+  - 조회 `PopupResponseDto.RequiresPassing`(bool?) → `PopupFactory` → `SurveyPopupView` → `SurveySubmission.RequiresPassing`(QUIZ·VIDEO+QUIZ만).
+  - `PopupManager.SubmitSurveyResult` 차단 조건 `isQuiz && passed == false && QuizResultNotice.RequiresPassing(submission)`(값 없으면 기존 passingScore 판정). 참여형 미달은 `score`·`passed:false`로 적재하고 참여 완료 안내 후 종료(실패·보조 닫기 경로 미진입).
+  - `QuizResultNotice.Classify`에 requiresPassing 분기(false 참여형, true 만점/커트라인, null 기존). `QuizGrader`는 기존 `score >= passingScore` 유지.
+  - Demo: `DemoPopupGateway`는 유효한 QUIZ 제출을 합불 무관 완료, `DemoJsonValidator.KnownTop`·boolean 검사에 `requiresPassing`, DEMO-QUIZ-001에 `requiresPassing: true`(DEMO-VIDEO-QUIZ는 필드 없는 대체 판정 샘플). `popup-frameWork/README.md` 흐름 갱신.
+  - `scripts/PopupWindowTests` `CheckRequiresPassingS7` 추가(참여형 5·3점 제출, 기준 동일 점수, 커트라인·만점 차단, 필드 없음 대체 판정, QUIZ·VIDEO+QUIZ 창 실제 제출, 데모 완료 처리).
+- 주요 파일: `popup-frameWork/Popup/Managers/PopupManager.cs`, `Managers/QuizResultNotice.cs`, `Dtos/PopupResponseDto.cs`, `Views/Contents/SurveyPopupView.xaml.cs`, `Services/DemoPopupGateway.cs`, `DemoJsonValidator.cs`, `scripts/PopupWindowTests/Program.cs`.
+- 검증: `dotnet build popup-frameWork\Popup.slnx` 경고·오류 0. PopupWindowTests 521건(CheckVideoQuizAspect60 포함) 통과, ApiDemoTests 110·RichTextTests 113 통과. 실화면·실서버 연동 미실행.
+- 상태: 커밋 완료, 원격 반영.
+
 ## 2026-11-09-09 — dev: PU001 참여형 퀴즈 유형 코드 저장·제출 완료 분리(서버·DB)
 
 - 이유: PU001 TODO §7 구현. 참여형에도 합격 기준을 두고 합불을 기록하되 유효한 제출은 완료로 처리해야 하며, 관리자 화면이 3개 유형을 점수만으로 구분할 수 없어 유형 코드 저장이 필요.

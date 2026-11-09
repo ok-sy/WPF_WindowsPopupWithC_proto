@@ -1142,7 +1142,7 @@ namespace Popup.Views.Windows
             }
         }
 
-        /// <summary>POL-05-02 : 완료·화면 이탈 — PopupManager가 QUIZ 미달 안내 뒤 호출한다. Overlay가 꺼진 QUIZ는 이때부터 보조 닫기를 보여 준다.</summary>
+        /// <summary>POL-05-02 : 완료·화면 이탈 — PopupManager가 합격이 필요한 QUIZ의 미달 안내 뒤 호출한다(참여형 미달은 호출하지 않음, PU001 §7). Overlay가 꺼진 QUIZ는 이때부터 보조 닫기를 보여 준다.</summary>
         internal void NotifyQuizFailed()
         {
             _quizFailedOnce = true;

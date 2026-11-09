@@ -113,6 +113,7 @@ internal static class Program
         CheckAuxClose43();
         CheckQuizFailedMessage43();
         CheckQuizResultNoticeQ3();
+        CheckRequiresPassingS7();
         CheckOxQuestion73();
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
@@ -1029,6 +1030,126 @@ internal static class Program
         var points = Run(3, 60);
         Check(!points.Passed && points.Notice.Message.Contains("(통과 기준: 60점 이상)") && points.Notice.Message.Contains("3/10개"),
             $"[Q3] non-unit scores show the criterion in points ({points.Notice})");
+    }
+
+    /*
+     * POL-06-02 : 선택·제출 — PU001 §7 참여형 채점 결과와 완료 상태 분리(조회 requiresPassing).
+     *  - passed는 유형과 무관한 실제 채점 합불(score >= passingScore). 참여형(false) 기준 5에서 3점 → passed=false·score=3 SUBMITTED 적재,
+     *    참여 완료 안내 후 닫힘, 실패·재응시 경로(NotifyQuizFailed) 미진입. 기준과 같은 점수는 passed=true.
+     *  - requiresPassing=true 커트라인 미달 → 전송 차단·재응시 안내(기존과 같음), 만점형은 만점 기준 안내.
+     *  - 필드 없음(구 서버) → passingScore 0 참여형, 양수 커트라인형(기존 판정).
+     *  - 조회 JSON 역직렬화·QUIZ/VIDEO+QUIZ 전달, Demo 게이트웨이의 passed=false 제출 완료 처리.
+     */
+    private static void CheckRequiresPassingS7()
+    {
+        var questions = Enumerable.Range(1, 10).Select(i => new SurveyQuestion
+        {
+            QuestionId = i, QuestionType = SurveyQuestionType.SingleChoice, Title = $"문항 {i}", IsScored = true,
+            Options = new List<SurveyOption> { new() { OptionId = i * 10 + 1, IsCorrect = true }, new() { OptionId = i * 10 + 2, IsCorrect = false } }
+        }).ToList();
+        SurveySubmission Submit(int correct, double? passing, bool? requiresPassing)
+        {
+            var answers = questions.Select((q, index) =>
+            {
+                var answer = new SurveyAnswer { QuestionId = q.QuestionId };
+                answer.SelectedOptionIds.Add(q.Options[index < correct ? 0 : 1].OptionId);
+                return answer;
+            }).ToList();
+            var graded = QuizGrader.Grade(questions, answers, passing);
+            return new SurveySubmission
+            {
+                Answers = answers, Score = graded.Score, Passed = graded.Passed, PassingScore = graded.PassingScore, RequiresPassing = requiresPassing,
+                IncorrectQuestionNumbers = graded.IncorrectQuestionNumbers, CorrectCount = graded.CorrectCount,
+                ScoredCount = graded.ScoredCount, MaxScore = graded.MaxScore, UnitScored = graded.UnitScored
+            };
+        }
+        var noticeType = typeof(Popup.Managers.PopupManager).Assembly.GetType("Popup.Managers.QuizResultNotice")!;
+        bool RequiresPassing(SurveySubmission s) => (bool)noticeType.GetMethod("RequiresPassing", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[] { s })!;
+
+        // 1) 채점·안내·차단 판정
+        var join = Submit(3, 5, false);
+        var joinNotice = QuizNotice(join, "보안 퀴즈", false);
+        Check(join.Passed == false && join.Score == 3 && !RequiresPassing(join)
+            && joinNotice.Message == "퀴즈를 완료하여 보안 퀴즈를 종료합니다.\n\n3/10개" && joinNotice.ButtonText == "확인",
+            $"[§7] participation below threshold keeps passed=false·score 3 and shows the completion notice ({joinNotice})");
+        var joinEqual = Submit(5, 5, false);
+        Check(joinEqual.Passed == true && QuizNotice(joinEqual, "보안 퀴즈", false).Message.StartsWith("퀴즈를 완료하여"),
+            "[§7] participation at the threshold is passed=true");
+        var cut = Submit(3, 5, true);
+        var cutNotice = QuizNotice(cut, "보안 퀴즈", false);
+        Check(cut.Passed == false && RequiresPassing(cut) && cutNotice.Message.Contains("(통과 기준: 5개 이상)") && cutNotice.ButtonText == "다시 풀기",
+            $"[§7] requiresPassing=true cutoff below threshold asks for a retry ({cutNotice})");
+        Check(QuizNotice(Submit(6, 5, true), "보안 퀴즈", false).Message.StartsWith("퀴즈를 통과하여"), "[§7] requiresPassing=true cutoff pass notice");
+        var fullFail = QuizNotice(Submit(9, 10, true), "보안 퀴즈", false);
+        var fullPass = QuizNotice(Submit(10, 10, true), "보안 퀴즈", false);
+        Check(fullFail.Message.StartsWith("문제를 모두 맞춰야 퀴즈를 종료할 수 있습니다.") && fullFail.ButtonText == "다시 풀기"
+            && fullPass.Message == "퀴즈를 모두 맞추셨습니다.\n보안 퀴즈를 종료합니다.", $"[§7] requiresPassing=true full-score notices ({fullFail} / {fullPass})");
+        var legacyJoin = Submit(2, 0, null);
+        Check(legacyJoin.Passed == true && !RequiresPassing(legacyJoin) && QuizNotice(legacyJoin, "보안 퀴즈", false).Message.StartsWith("퀴즈를 완료하여"),
+            "[§7] missing requiresPassing with passingScore 0 falls back to participation");
+        var legacyCut = Submit(3, 5, null);
+        Check(legacyCut.Passed == false && RequiresPassing(legacyCut) && QuizNotice(legacyCut, "보안 퀴즈", false).ButtonText == "다시 풀기",
+            "[§7] missing requiresPassing with a positive passingScore falls back to cutoff");
+        Check(RequiresPassing(Submit(9, 10, null)) && QuizNotice(Submit(9, 10, null), "보안 퀴즈", false).Message.StartsWith("문제를 모두 맞춰야"),
+            "[§7] missing requiresPassing with passingScore = max falls back to full-score");
+
+        // 2) PopupManager.SubmitSurveyResult 경로: 참여형 미달은 적재 후 닫힘, 합격 필요 미달은 차단·창 유지
+        var submit = typeof(Popup.Managers.PopupManager).GetMethod("SubmitSurveyResult", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var failedOnce = typeof(PopupWindow).GetField("_quizFailedOnce", Flags)!;
+        foreach (string type in new[] { "QUIZ", "VIDEO_QUIZ" })
+        {
+            var opened = OpenPopup(type, dto => dto.ShowFooter = true);
+            var saved = new List<Popup.Dtos.WpfResultItemDto>();
+            opened.Options.EnqueueResult = saved.Add;
+            var seen = CloseDialogs("퀴즈를 완료했어요", () => submit.Invoke(null, new object[]
+                { opened.Window, opened.Options, new PopupResultBuilder("P7", null, "D-7"), Submit(3, 5, false) }));
+            Check(seen.Count == 1 && seen[0].StartsWith("퀴즈를 완료하여") && seen[0].EndsWith("3/10개"),
+                $"[§7] {type} participation below threshold shows the completion notice ({string.Join(" / ", seen)})");
+            Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted
+                && saved[0].Score == 3 && saved[0].Passed == false && !(bool)failedOnce.GetValue(opened.Window)!,
+                $"[§7] {type} participation below threshold enqueues SUBMITTED(score 3, passed false) and never enters the retry path ({saved.Count})");
+
+            foreach (bool? requires in new bool?[] { true, null })
+            {
+                var blocked = OpenPopup(type, dto => dto.ShowFooter = true);
+                var blockedSaved = new List<Popup.Dtos.WpfResultItemDto>();
+                blocked.Options.EnqueueResult = blockedSaved.Add;
+                var retry = CloseDialogs("다시 풀어 주세요", () => submit.Invoke(null, new object[]
+                    { blocked.Window, blocked.Options, new PopupResultBuilder("P7", null, "D-7"), Submit(3, 5, requires) }));
+                Check(retry.Count == 1 && retry[0].Contains("(통과 기준: 5개 이상)") && !blocked.Closed() && blockedSaved.Count == 0
+                    && (bool)failedOnce.GetValue(blocked.Window)!,
+                    $"[§7] {type} requiresPassing {requires?.ToString() ?? "null"} cutoff below threshold blocks submission and asks for a retry");
+                ShutdownClose(blocked.Window);
+            }
+        }
+
+        // 3) 조회 JSON → 팝업 화면: requiresPassing을 QUIZ·VIDEO+QUIZ 화면까지 전달, 없으면 null
+        var json = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+        var requiresField = typeof(SurveyPopupView).GetField("_requiresPassing", Flags)!;
+        foreach (string type in new[] { "QUIZ", "VIDEO_QUIZ" })
+        {
+            foreach (bool? value in new bool?[] { false, true, null })
+            {
+                var node = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(DemoPopups(type).Single(), json))!.AsObject();
+                node.Remove("requiresPassing");
+                if (value is bool flag) node["requiresPassing"] = flag;
+                var dto = System.Text.Json.JsonSerializer.Deserialize<Popup.Dtos.PopupResponseDto>(node.ToJsonString(), json)!;
+                var content = PopupFactory.Create(dto).Content;
+                var view = content as SurveyPopupView ?? ((VideoQuizPopupView)content!).Quiz;
+                Check(dto.RequiresPassing == value && (bool?)requiresField.GetValue(view) == value,
+                    $"[§7] {type} requiresPassing {value?.ToString() ?? "absent"} reaches the quiz view");
+            }
+        }
+        Check(DemoPopups("QUIZ").Single().RequiresPassing == true && DemoPopups("VIDEO_QUIZ").Single().RequiresPassing == null,
+            "[§7] demo samples: QUIZ declares requiresPassing=true, VIDEO+QUIZ omits it (fallback)");
+
+        // 4) Demo 게이트웨이: 유효한 QUIZ 제출은 passed=false여도 완료
+        var gateway = new DemoPopupGateway();
+        var next = gateway.GetNextPopupAsync("QUIZ").GetAwaiter().GetResult().Popup!;
+        var item = new PopupResultBuilder(next.PopupId, null, next.DeliveryId).BuildSubmitted(Submit(3, 5, false), DateTimeOffset.Now);
+        var response = gateway.PostResultAsync(item).GetAwaiter().GetResult();
+        Check(response.IsSaved && gateway.CompletedCount == 1 && gateway.GetNextPopupAsync("QUIZ").GetAwaiter().GetResult().Popup == null,
+            $"[§7] demo gateway completes a QUIZ SUBMITTED with passed=false ({response.Status} {response.Code})");
     }
 
     /* QUIZ 미달 안내의 틀린 문항 번호(화면 번호). 결과 항목에는 담지 않는다. */

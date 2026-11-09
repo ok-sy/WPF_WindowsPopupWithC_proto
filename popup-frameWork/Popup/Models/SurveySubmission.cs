@@ -16,11 +16,17 @@ namespace Popup.Models
         /// <summary>QUIZ면 로컬 채점 점수, SURVEY면 null(채점 없음).</summary>
         public double? Score { get; init; }
 
-        /// <summary>QUIZ면 통과 여부(점수 ≥ 통과 점수), SURVEY면 null.</summary>
+        /// <summary>QUIZ면 채점 합불(점수 ≥ 통과 점수, 참여형도 실제 값), SURVEY면 null.</summary>
         public bool? Passed { get; init; }
 
         /// <summary>QUIZ 통과 점수(안내 문구용). SURVEY면 null.</summary>
         public double? PassingScore { get; init; }
+
+        /// <summary>
+        /// POL-06-02 : 선택·제출 — 조회 응답 requiresPassing(PU001 §7). false 참여형, true 커트라인형·만점형, null 기존 passingScore 판정.
+        /// 제출 차단·안내 유형 판정용이며 결과 항목(WpfResultItemDto)에는 담지 않는다.
+        /// </summary>
+        public bool? RequiresPassing { get; init; }
 
         /// <summary>POL-06-03 : 표현·수명 — QUIZ 미달 안내용 틀린 문항 번호(화면 번호). 결과 항목(WpfResultItemDto)에는 담지 않는다.</summary>
         public IReadOnlyList<int> IncorrectQuestionNumbers { get; init; } = new List<int>();

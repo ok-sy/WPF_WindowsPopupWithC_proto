@@ -242,7 +242,8 @@ namespace Popup.Factories
          * POL-06-02 : 선택·제출
          * 문항은 응답 최상위 questions로만 받는다.
          * QUIZ는 WPF가 로컬 채점하므로 서버가 QUIZ 팝업에 한해 내려주는 정답 정보
-         * (questionScore / options[].isCorrect / correctAnswer / answerMatchMode)와 최상위 passingScore를 모델에 옮긴다.
+         * (questionScore / options[].isCorrect / correctAnswer / answerMatchMode)와 최상위 passingScore·requiresPassing을 모델에 옮긴다.
+         * requiresPassing은 QUIZ(VIDEO+QUIZ 포함)에만 넘기고 SURVEY는 null로 둔다.
          * content.questions / content.passingScore / correctAnswers(보기 value 목록)는 읽지 않는다(데모 JSON도 최상위 형태).
          */
         private static SurveyPopupView CreateSurveyPopupView(PopupResponseDto popupDto, bool isQuizMode)
@@ -291,7 +292,8 @@ namespace Popup.Factories
                 isQuizMode,
                 popupDto.PassingScore,
                 contentDto.SurveyTitleBlocks,
-                contentDto.DescriptionBlocks);
+                contentDto.DescriptionBlocks,
+                requiresPassing: isQuizMode ? popupDto.RequiresPassing : null);
         }
 
         private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>

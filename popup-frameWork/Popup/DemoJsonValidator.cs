@@ -36,7 +36,7 @@ namespace Popup
         private static readonly HashSet<string> KnownTop = new(CommonDefaults.Keys.Concat(new[]
         {
             "popupId","deliveryId","popupType","title","width","height","footerAction","footerLinkUrl",
-            "completionRatio","passingScore","hideDays","headerFontSize","bodyFontSize","footerFontSize",
+            "completionRatio","passingScore","requiresPassing","hideDays","headerFontSize","bodyFontSize","footerFontSize",
             "content","questions","pollingIntervalSeconds"
         }), StringComparer.Ordinal);
 
@@ -108,7 +108,7 @@ namespace Popup
                 "maximumWidth", "maximumHeight", "backgroundOverlayOpacity", "completionRatio", "passingScore",
                 "headerFontSize", "bodyFontSize", "footerFontSize", "hideDays" })
                 CheckType(popup, k, prefix, IsNum, "number", issues);
-            foreach (string k in new[] { "showHeader", "showFooter", "showFooterButton", "showLater", "showDoNotShowAgain", "useBackgroundOverlay" })
+            foreach (string k in new[] { "showHeader", "showFooter", "showFooterButton", "showLater", "showDoNotShowAgain", "useBackgroundOverlay", "requiresPassing" })
                 CheckType(popup, k, prefix, IsBool, "boolean", issues);
             foreach (var kv in CommonDefaults) Default(popup, kv.Key, kv.Value, prefix, issues);
             if (type != "IMAGE")

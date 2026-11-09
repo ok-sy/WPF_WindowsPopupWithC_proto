@@ -176,6 +176,13 @@ namespace Popup.Dtos
         public int? HideDays { get; set; }
         public double? CompletionRatio { get; set; }
         public double? PassingScore { get; set; }
+        /*
+         * POL-06-02 : 선택·제출 — QUIZ 합격 필요 여부(PU001 §7, 2026-11-09). 서버가 관리자 퀴즈 유형 코드에서 파생해 QUIZ에만 내려준다.
+         *   false = 참여형(채점 합불과 무관하게 유효 제출이면 완료) · true = 커트라인형·만점형(합격해야 제출·완료)
+         *   null(필드 없음, 구 서버) = 기존 passingScore 기준 유형 판정(0 이하·미설정 참여형, 만점 이상 만점형, 그 밖 커트라인형).
+         * 결과 요청의 passed(채점 합불)와 이름·의미가 다르다. 판정은 QuizResultNotice.RequiresPassing에서 한다.
+         */
+        public bool? RequiresPassing { get; set; }
         /* POL-02-02 : 종료 제어 — allowCloseBeforeComplete는 받지 않는다. 화면 버튼은 completionRatio, 외부 닫기는 useBackgroundOverlay,
          * 완료 전 연기는 showLater로 판단한다. 구 서버가 필드를 보내도 System.Text.Json이 모르는 속성으로 무시한다. */
 
