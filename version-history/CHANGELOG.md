@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-06-05 — dev: TODO61 IMAGE 실제 크기 미리보기 radius·shadow 충돌 정의
+
+- 이유: 폐쇄망 관리자 웹에서 IMAGE 타입의 실제 크기 미리보기만 모서리 둥글기가 0으로 표시되고, Dialog와 내부 Paper의 그림자가 중첩되어 보이는 증상을 확인.
+- 변경: TODO61에 61-12~61-16 추가. 폐쇄망 CSS의 `.MuiDialog-root .MuiPaper-root` 적용 원본 추적, Dialog Paper와 PopupPreview Paper의 `border-radius`/그림자 책임 비교, IMAGE 모드별·FULLSCREEN·다른 팝업 유형 회귀검증을 정의. 잘못된 테스트 이미지 경로로 인한 깨진 이미지는 이번 이슈에서 제외.
+- 주요 파일: `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `version-history/CHANGELOG.md`.
+- 검증: 제공된 DevTools·화면 사진과 GitHub 현재 소스의 관련 설정을 정적 대조. 폐쇄망 CSS 선언 원본 미확인, 실화면 추가 재현·코드 수정·테스트 미실행.
+- 상태: TODO 문서 커밋 `4bd2c59e` 반영. 구현 및 원인 확정 미완료. 변경 이력은 후속 커밋으로 보완.
+
+
 ## 2026-11-06-04 — dev: API Demo 일반 로그인 검증·비밀번호 처리 삭제
 
 - 이유: 에이전트 로그인 요청은 `lgonId`·`classCode`·`linkYn`뿐이고 SSO는 Windows 자격 증명을 사용해 비밀번호 개념이 없음. API Demo 일반 로그인 검증에만 쓰이던 비밀번호 처리가 에이전트에 비밀번호가 있는 것처럼 보여 정리.
