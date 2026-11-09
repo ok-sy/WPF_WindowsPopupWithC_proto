@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-09-06 — dev: TODO73 가이드 시작 탭 PopupAdmin 타입 안내
+
+- 이유: TODO73 §8(73-31~33) 구현. 공통 컴포넌트를 쓰는 화면에서 관리자 팝업 타입의 역할·포함 관계와 입력·상세·저장 값 차이를 가이드에서 바로 확인할 수 있도록 함.
+- 변경:
+  - `GuideStartTab`: `3. 데이터 타입(PopupAdmin.ts)` 절 추가(기존 `기존 팝업 등록 화면`은 4번). `@local/domain` import, `PopupType`·`AdminPopupDetail`·`PopupQuestion`·`PopupOption` 역할, 포함 관계 트리, `Partial<AdminPopupDetail>`·`AdminPopupDetail`·저장 요청(`pickPopupFields`/`toSaveRequest` → `PopupSaveRequest`) 차이, 최소 입력·퀴즈(OX형+선다형) 예시, `title`·`text`와 서식 블록 관계(-05 일반 입력 반영), OX 판별, 최대 30문항 안내.
+  - `guide/guideTypeExamples.ts` 신규: 예시 값을 실제 타입으로 선언해 웹 `tsc`가 모델 변경 시 예시 불일치를 잡게 하고, 화면은 그 값을 코드 문자열로 표시. 별도 가이드 예제 타입 검사 스크립트는 없어 웹 타입 검사에 연결.
+  - `verify-popup-guide-render`: 시작 탭 타입 안내·예시 검사 2건 추가.
+  - TODO73 문서 상태 줄에 §6~§8 완료 일자 반영.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/GuideStartTab.tsx`, `guide/guideTypeExamples.ts`, `scripts/verify-popup-guide-render.cjs`, TODO73 문서.
+- 검증: 웹 `tsc`·eslint 통과. `verify-popup-guide-render` 31건(기존 탭·실습 이동·시작 탭 문구 규칙 포함), `verify-popup-guide-registry` 272건 통과. 로컬 관리자 웹 실화면 미실행.
+- 상태: 커밋 완료, 미푸시.
+
 ## 2026-11-09-05 — dev: TODO73 설문·퀴즈 문항 제목·선택지 일반 텍스트 입력
 
 - 이유: TODO73 §7(73-28~30) 구현. OX 외 문항은 서식 없이 일반 문자열로 입력하기로 정해 문항 편집기를 분기.

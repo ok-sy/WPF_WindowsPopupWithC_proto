@@ -62,6 +62,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   let body = await text();
   check(body.includes('withPreviewFallback(state)') && body.includes('pickPopupFields') && body.includes('알아둘 점'), 'Start tab shows minimal code and the notes to know');
   check(body.includes('기존 팝업 등록 화면'), 'Start tab separates the proto path');
+  // TODO73-31·32: PopupAdmin.ts 타입 역할·포함 관계·세 가지 값 차이·입력/퀴즈 예시
+  check(['3. 데이터 타입(PopupAdmin.ts)', 'PopupType', 'AdminPopupDetail', 'PopupQuestion', 'PopupOption', 'questions: PopupQuestion[]', 'options: PopupOption[]', 'Partial<AdminPopupDetail>', 'PopupSaveRequest'].every(t => body.includes(t)),
+    '[73-31] Start tab explains PopupAdmin types, their nesting and input/detail/save differences');
+  check(body.includes('const state: Partial<AdminPopupDetail> = {') && body.includes('const quiz: Partial<AdminPopupDetail> = {') && body.includes('"SINGLE_CHOICE"') && body.includes('text: "O"') && body.includes('text: "X"') && body.includes('최대 30개'),
+    '[73-32] Start tab shows typed minimal and quiz (OX + choice) examples');
   check(!/공개 경계|저장 경계|최종 권위|정규화|명시값|미설정|fallback|합성/.test(body), 'Start tab uses plain wording (no design-document terms)');
   check(body.includes("useState<Partial<AdminPopupDetail>>({ popupType: 'TEXT' })") && !body.includes("title: '', content: {}, questions: []") && body.includes('[직접 구현]'),
     'Start tab minimal state starts with popupType only and marks myApi/toMyRequest as functions to implement');

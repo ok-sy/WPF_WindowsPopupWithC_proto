@@ -1,7 +1,7 @@
 # TODO73 — 관리자 웹 퀴즈·설문 에디터 입력 정리 및 공통코드 매핑
 
 작성일: 2026-11-05  
-상태: **구현·자동 검증 완료(2026-11-05) / 실화면·원격 개발 DB·폐쇄망 확인 대기**  
+상태: **구현·자동 검증 완료(2026-11-05, §6~§8은 2026-11-09) / 실화면·원격 개발 DB·폐쇄망 확인 대기**  
 적용 범위: 관리자 웹 **편집기 및 편집용 데이터 변환**, 기획서 퀴즈(1/2, 2/2) 화면과 전달된 변경요청 기준. WPF·서버·DB·인터페이스 계약 변경은 이번 단계에서 제외.
 
 ## 1. 요구사항 기준
@@ -146,8 +146,12 @@
 
 상태 **요구사항 정의 완료 / 구현 대기**
 
-- [ ] **73-31 타입 안내** — `/popup-common-guide`의 시작 탭에 `PopupAdmin.ts` 타입 안내를 추가한다. `PopupType`, `AdminPopupDetail`, `PopupQuestion`, `PopupOption`의 역할과 포함 관계를 보여 준다. 화면 초기 상태의 `Partial<AdminPopupDetail>`, 상세 모델, 저장 요청의 차이를 구분한다.
-- [ ] **73-32 예시** — 최소 팝업 입력 예시와 설문·퀴즈 문항 예시를 제공한다. 현행 모델에서 `content`와 `questions`의 위치, `title`·`text`와 서식 블록의 관계, OX의 `SINGLE_CHOICE` 및 O/X 선택지 표현을 설명한다. 73-28~73-30의 일반 텍스트 전환은 적용 상태에 맞춰 안내한다.
-- [ ] **73-33 검증** — 예시의 타입과 import를 실제 workspace 공개 경로에 맞추고 기존 가이드 예제 타입 검사에 연결한다. 기존 탭과 예시 실행을 확인한다.
+- [x] **73-31 타입 안내** — `/popup-common-guide`의 시작 탭에 `PopupAdmin.ts` 타입 안내를 추가한다. `PopupType`, `AdminPopupDetail`, `PopupQuestion`, `PopupOption`의 역할과 포함 관계를 보여 준다. 화면 초기 상태의 `Partial<AdminPopupDetail>`, 상세 모델, 저장 요청의 차이를 구분한다.
+- [x] **73-32 예시** — 최소 팝업 입력 예시와 설문·퀴즈 문항 예시를 제공한다. 현행 모델에서 `content`와 `questions`의 위치, `title`·`text`와 서식 블록의 관계, OX의 `SINGLE_CHOICE` 및 O/X 선택지 표현을 설명한다. 73-28~73-30의 일반 텍스트 전환은 적용 상태에 맞춰 안내한다.
+- [x] **73-33 검증** — 예시의 타입과 import를 실제 workspace 공개 경로에 맞추고 기존 가이드 예제 타입 검사에 연결한다. 기존 탭과 예시 실행을 확인한다.
 
 기준 모델은 `zero-rule-web/sub/domain/src/model/PopupAdmin.ts`이며 표시 위치는 `guide/tabs/GuideStartTab.tsx`를 우선 검토한다.
+
+**구현 결과(2026-11-09)**: 시작 탭에 `3. 데이터 타입(PopupAdmin.ts)` 절을 추가하고 기존 `기존 팝업 등록 화면`을 4번으로 옮겼다. import(`@local/domain`), 네 타입 역할, 포함 관계 트리, 화면 입력값(`Partial<AdminPopupDetail>`)·상세 값(`AdminPopupDetail`)·저장 요청(`pickPopupFields`/`toSaveRequest` → `PopupSaveRequest`) 차이, 최소 입력 예시와 퀴즈 예시(OX형 + 선다형, `questions` 위치, `content.description`), `title`·`text`와 서식 블록 관계, OX 판별, 30문항 상한을 안내한다. 예시 값은 `guide/guideTypeExamples.ts`에 실제 타입으로 선언해 웹 `tsc`가 검사하고, 화면은 그 값을 코드 문자열로 보여 준다(별도 예제 타입 검사 스크립트는 없었으므로 웹 타입 검사에 연결).
+
+**검증(2026-11-09)**: 웹 `tsc`, `verify-popup-guide-render`(31, 시작 탭 타입 안내·예시 2건 추가), `verify-popup-guide-registry`(272) 통과.
