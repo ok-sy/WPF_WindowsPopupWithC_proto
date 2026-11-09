@@ -3,10 +3,11 @@
 ## 2026-11-09-08 — PU001 참여형 퀴즈 채점·완료 분리 정의
 
 - 이유: 참여형에서 통계 기준 미달도 기록하면서 유효한 제출을 완료로 처리할 필요.
-- 변경: POPUP_NOTICE E0090 유형 코드 저장, 조회 requiresPassing, WPF 미달 전송 차단 분기, 유효한 SUBMITTED 완료 처리와 채점값 저장 분리, 결과 JSON 유지 및 구버전 배포 순서 정의. 전달 건 정책 스냅샷은 범위에서 제외.
+- 변경: POPUP_NOTICE E0090 유형 코드 저장, 조회 응답 최상위 `passed`(참여형 여부, WPF 내부 `RequiresPassing = !passed`; 처음 정의한 `requiresPassing`에서 이름 변경), WPF 미달 전송 차단 분기, 유효한 SUBMITTED 완료 처리와 채점값 저장 분리, 결과 JSON 유지 및 구버전 배포 순서 정의. 전달 건 정책 스냅샷은 범위에서 제외.
 - 주요 파일: docs/design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md.
 - 검증: 현행 WPF·서버의 passed 사용 경로와 결과 DTO 대조.
-- 상태: TODO 반영 / 구현 대기.
+- 보완: 조회·결과 `passed` 구분 표기, 스펙 문서·데모 검사기·DB 스크립트·TODO73 정리 항목 추가.
+- 상태: TODO 반영, 원격 반영 / 구현 대기.
 
 ## 2026-11-09-07 — dev: TODO73 문항 편집기 richQuestionText·maxQuestions props
 
