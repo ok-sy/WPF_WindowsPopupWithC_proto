@@ -54,6 +54,28 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-09-todo73-plain-question-text', date: '2026-11-09', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-09',
+    title: '설문·퀴즈 문항 제목·선택지 일반 텍스트 입력',
+    body: ['OX 외 문항의 제목과 선택지 문구는 서식 편집기 대신 일반 입력칸(여러 줄)으로 입력합니다. 퀴즈 OX 문항 제목과 O·X 정답 선택은 그대로입니다.',
+      '기존 서식 문항은 일반 문자열을 먼저 보여 주고, 문자열이 없으면 서식의 글자를 보여 줍니다. 입력칸에서 고치면 titleBlocks·textBlocks를 비웁니다(null).'],
+    components: ['PopupQuestionEditor'],
+    action: '바꿀 코드는 없습니다. 저장 형식(title·text, 서식 블록)은 그대로입니다.',
+  },
+  {
+    id: '2026-11-09-todo73-question-max', date: '2026-11-09', category: 'ADDED', status: 'DONE', doneDate: '2026-11-09',
+    title: '설문·퀴즈 최대 30문항',
+    body: ['문항 개수를 「문항 N/30」으로 보여 주고 30개가 되면 문항 추가 버튼을 막습니다. 템플릿·기존 자료로 30개를 넘게 들어오면 자르지 않고 사유를 보여 주며, validatePopupQuestions가 저장을 막습니다.'],
+    components: ['PopupQuestionEditor', 'validatePopupQuestions'],
+    action: '바꿀 코드는 없습니다. 상한 값은 QUESTION_MAX로 가져올 수 있습니다. 서버·WPF 제한은 별도로 정합니다.',
+  },
+  {
+    id: '2026-11-09-todo73-inline-size-notice', date: '2026-11-09', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-09',
+    title: '인라인 미리보기 크기 안내 문구',
+    body: ['우측 인라인 미리보기 제목과 「실제 크기로 보기」 버튼 사이에 「실제 팝업 크기와 다를 수 있습니다.」를 작게 표시합니다. 폭이 좁으면 줄바꿈됩니다. 실제 크기 모달에는 표시하지 않습니다.'],
+    components: ['InlinePopupPreview'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-06-todo69-editor-density', date: '2026-11-06', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-06',
     title: '설문·퀴즈 문항 편집기 입력 밀도 조정',
     body: ['문항 제목·선택지 입력칸과 Select 높이를 줄이고, 짧은 Select는 한 행에 묶어 폭이 부족하면 줄바꿈합니다.',

@@ -201,44 +201,46 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`!document.querySelector('[data-testid=is063-mid]').textContent.includes('콘텐츠 제목') && !document.querySelector('[data-testid=is063-mid]').textContent.includes('문항 설명')`), '[IS063] Content title and question description inputs are removed');
   // 69-11~18: 3분할을 유지한 채 중앙 문항 편집 영역 밀도를 높인다(폭 회귀·커서·저장값 포함).
   const measureMid = () => run(`(()=>{const m=${mid},del=document.querySelector('[aria-label="1번 문항 삭제"]'),card=del.parentElement.parentElement.parentElement;
-    const title=card.querySelector('.ck-editor__editable');
+    const title=card.querySelector('textarea[aria-label="1번 문항 제목"]')?.closest('.MuiInputBase-root')??card.querySelector('.ck-editor__editable');
     const sel=Array.from(card.querySelectorAll('.MuiSelect-select')),labels=Array.from(card.querySelectorAll('.MuiInputLabel-root'));
     const cols=Array.from(document.querySelector('.nResultArea').children).map(c=>Math.round(c.getBoundingClientRect().top));
     return {mid:Math.round(m.getBoundingClientRect().width),overflow:m.scrollWidth-m.clientWidth,page:document.documentElement.scrollWidth-document.documentElement.clientWidth,card:Math.round(card.getBoundingClientRect().height),
       title:Math.round(title.getBoundingClientRect().height),selectH:sel[0]?Math.round(sel[0].closest('.MuiTextField-root').getBoundingClientRect().height):0,
       selectTops:sel.map(e=>Math.round(e.getBoundingClientRect().top)),clipped:sel.filter(e=>e.scrollWidth>e.clientWidth).length+labels.filter(e=>e.scrollWidth>e.clientWidth).length,cols};})()`);
-  const measureOption = () => run(`(()=>{const del=document.querySelector('[aria-label="선택지 1 삭제"]'),row=del.closest('.MuiStack-root'),edit=row.querySelector('.ck-editor__editable'),radio=row.querySelector('input[type=radio]');
-    const format=Array.from(row.querySelectorAll('button')).find(b=>b.textContent==='서식');const r=edit.getBoundingClientRect(),d=del.getBoundingClientRect();
-    return {height:Math.round(row.getBoundingClientRect().height),edit:Math.round(r.height),width:Math.round(r.width),del:{w:Math.round(d.width),h:Math.round(d.height)},number:row.querySelector('[role=group]')?.getAttribute('aria-label')??null,
-      shortLabel:row.querySelector('[role=group]')?.firstElementChild.textContent??null,sameLine:Math.abs(d.top-r.top)<8&&Math.abs(format.getBoundingClientRect().top-r.top)<8&&(!radio||Math.abs(radio.parentElement.getBoundingClientRect().top-r.top)<8),overflow:edit.scrollWidth-edit.clientWidth};})()`);
+  // TODO73-28: 선택지는 일반 입력(TextField multiline). 번호는 입력칸 앞 표시, 접근성 이름은 'N번 문항 선택지 M'.
+  const measureOption = () => run(`(()=>{const del=document.querySelector('[aria-label="선택지 1 삭제"]'),row=del.closest('.MuiStack-root'),area=row.querySelector('textarea[aria-label]'),edit=area.closest('.MuiInputBase-root'),radio=row.querySelector('input[type=radio]');
+    const r=edit.getBoundingClientRect(),d=del.getBoundingClientRect();
+    return {height:Math.round(row.getBoundingClientRect().height),edit:Math.round(r.height),width:Math.round(r.width),del:{w:Math.round(d.width),h:Math.round(d.height)},number:area.getAttribute('aria-label'),
+      shortLabel:edit.querySelector('.MuiInputAdornment-root,span')?.textContent??null,sameLine:Math.abs(d.top-r.top)<8&&(!radio||Math.abs(radio.parentElement.getBoundingClientRect().top-r.top)<8),overflow:area.scrollWidth-area.clientWidth};})()`);
   await clickButton('저장'); const beforeResize = await run(`document.querySelector('[data-testid=is063-save-request]').textContent`); await clickButton('닫기');
   const quizWide = await measureMid(), optionWide = await measureOption();
   console.log('[69 density] quiz@1400', JSON.stringify(quizWide), JSON.stringify(optionWide));
-  await run(`void (window.__title69=document.querySelector('[data-testid=is063-mid] .nQuizBox .ck-editor__editable').ckeditorInstance)`);
+  await run(`void (window.__title69=document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox textarea[aria-label="1번 문항 제목"]')}))`);
   check(quizWide.cols.every(top => top === quizWide.cols[0]), '[69-17] Three columns stay on one row at 1400');
   check(quizWide.overflow <= 0 && quizWide.page <= 0 && quizWide.clipped === 0, '[69-11] Quiz editor has no horizontal overflow or clipped select: ' + JSON.stringify(quizWide));
-  check(quizWide.title <= 36 && quizWide.selectH <= 40, '[69-12·13] Question title and select heights are compact: ' + JSON.stringify(quizWide));
-  check(optionWide.sameLine && optionWide.edit <= 36 && optionWide.height <= 40 && optionWide.number === '선택지 1' && optionWide.shortLabel === '1', '[69-14] Option number, input and delete share one line: ' + JSON.stringify(optionWide));
+  check(quizWide.title <= 40 && quizWide.selectH <= 40, '[69-12·13] Question title and select heights are compact: ' + JSON.stringify(quizWide));
+  check(optionWide.sameLine && optionWide.edit <= 40 && optionWide.height <= 40 && optionWide.number === '1번 문항 선택지 1' && optionWide.shortLabel === '1', '[69-14] Option number, input and delete share one line: ' + JSON.stringify(optionWide));
   check(optionWide.del.w >= 32 && optionWide.del.h >= 32, '[69-16] Option delete keeps a 32px click target: ' + JSON.stringify(optionWide.del));
-  check(await run(`Array.from(${mid}.querySelectorAll('button')).filter(b=>['선택지 추가','문항 추가'].includes(b.textContent.trim())).every(b=>getComputedStyle(b).alignSelf==='flex-start')`), '[69-16] Add buttons align to the same start edge');
+  check(await run(`Array.from(${mid}.querySelectorAll('button')).filter(b=>['선택지 추가','문항 추가'].includes(b.textContent.trim())).every(b=>getComputedStyle(b.textContent.trim()==='문항 추가'?b.parentElement:b).alignSelf==='flex-start')`), '[69-16] Add buttons align to the same start edge (문항 추가 is wrapped with its 30-question notice, TODO73-23)');
   await send('Emulation.setDeviceMetricsOverride', {width: 1024, height: 950, deviceScaleFactor: 1, mobile: false}); await pause(300);
   const quizNarrow = await measureMid(), optionNarrow = await measureOption();
   console.log('[69 density] quiz@1024', JSON.stringify(quizNarrow), JSON.stringify(optionNarrow));
   check(quizNarrow.cols.every(top => top === quizNarrow.cols[0]) && quizNarrow.overflow <= 0 && quizNarrow.page <= 0 && quizNarrow.clipped === 0, '[69-17] Narrow window keeps three columns without overflow: ' + JSON.stringify(quizNarrow));
   check(optionNarrow.sameLine && optionNarrow.width >= 140, '[69-14] Narrow option row keeps a usable input width: ' + JSON.stringify(optionNarrow));
-  check(await run(`document.querySelector('[data-testid=is063-mid] .nQuizBox .ck-editor__editable').ckeditorInstance===window.__title69`), '[69-18] Resizing keeps the same title editor (no remount)');
+  check(await run(`document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox textarea[aria-label="1번 문항 제목"]')})===window.__title69`), '[69-18] Resizing keeps the same title input (no remount)');
   await clickButton('저장'); const afterResize = await run(`document.querySelector('[data-testid=is063-save-request]').textContent`); await clickButton('닫기');
   check(afterResize === beforeResize, '[69-18] Layout change does not alter the save value');
   // 긴 선택지는 줄바꿈으로 계속 편집하고, 미리보기에 그대로 전달한다.
   const longOption = '긴선택지'.repeat(30);
-  await run(`(()=>{const del=document.querySelector('[aria-label="선택지 1 삭제"]');const ed=del.closest('.MuiStack-root').querySelector('.ck-editor__editable').ckeditorInstance;window.__option69=ed;ed.model.change(w=>w.insertText(${JSON.stringify(longOption)},ed.model.document.selection.getFirstPosition()));})()`); await pause(300);
+  const optionArea = `document.querySelector('[aria-label="선택지 1 삭제"]').closest('.MuiStack-root').querySelector('textarea[aria-label]')`;
+  await run(`(()=>{const i=${optionArea};window.__option69=i;Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(i,${JSON.stringify(longOption)}+i.value);i.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(300);
   const optionLong = await measureOption(), quizLong = await measureMid();
   check(optionLong.edit > optionNarrow.edit && optionLong.overflow <= 0 && quizLong.overflow <= 0, '[69-14] Long option wraps inside the row: ' + JSON.stringify(optionLong));
   check(await run(`${right}.textContent.includes(${JSON.stringify(longOption)})`), '[69-18] Option text reaches the inline preview');
-  check(await run(`document.querySelector('[aria-label="선택지 1 삭제"]').closest('.MuiStack-root').querySelector('.ck-editor__editable').ckeditorInstance===window.__option69`), '[69-18] Typing keeps the same option editor');
+  check(await run(`${optionArea}===window.__option69`), '[69-18] Typing keeps the same option input');
   const optionBefore = await run(`document.querySelectorAll('[aria-label$="선택지 정답"]').length`);
   await clickButton('선택지 추가', mid); await pause(300);
-  check(await run(`document.querySelectorAll('[aria-label$="선택지 정답"]').length`) === optionBefore + 1 && await run(`document.querySelector('[aria-label="선택지 1 삭제"]').closest('.MuiStack-root').querySelector('.ck-editor__editable').ckeditorInstance===window.__option69`), '[69-18] Adding an option keeps the other editors');
+  check(await run(`document.querySelectorAll('[aria-label$="선택지 정답"]').length`) === optionBefore + 1 && await run(`${optionArea}===window.__option69`), '[69-18] Adding an option keeps the other inputs');
   fs.writeFileSync(path.join(output, 'is063-quiz-1024.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: true})).data, 'base64'));
   // 설문: 응답 유형·레이아웃·응답 수는 폭이 되면 한 행, 좁으면 줄바꿈한다.
   await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 950, deviceScaleFactor: 1, mobile: false}); await pause(200);

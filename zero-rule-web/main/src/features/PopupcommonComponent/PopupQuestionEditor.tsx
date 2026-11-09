@@ -5,7 +5,7 @@ import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, S
 import { richBlocksOrNull } from './PopupRichBlocks';
 import PopupRichTextEditor from './PopupRichTextEditor';
 import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, isOxQuestion, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
-import { plainTextToBlocks, type RichBlock } from './popupRichText';
+import { blocksToPlainText, plainTextToBlocks, type RichBlock } from './popupRichText';
 
 interface Props {
   /** 편집할 문항 목록 */
@@ -129,6 +129,18 @@ const initialRich = (blocks: unknown, plain: string | null | undefined): RichBlo
 const richValue = (blocks: RichBlock[], plain: string) => ({ blocks: richBlocksOrNull(blocks), plain });
 /**
  * POL-06-01 : 문항·서식
+ * ■ 일반 텍스트 입력 표시값(TODO73-29)
+ * - in : plain(string | null | undefined) 저장된 일반 문자열 · blocks(unknown) 저장된 서식 블록
+ * - out: string 입력칸에 보일 문자열
+ * - 일반 문자열을 우선 쓰고, 비어 있으면 서식 블록의 글자를 줄바꿈으로 이어 복원한다. 열기만 하면 저장값(서식 포함)은 바꾸지 않는다.
+ */
+const plainInputValue = (plain: string | null | undefined, blocks: unknown): string => {
+  if (plain) return plain;
+  const rich = richBlocksOrNull(blocks);
+  return rich ? blocksToPlainText(rich) : '';
+};
+/**
+ * POL-06-01 : 문항·서식
  * ■ OX형 판별·선택지
  * - OX형은 단일 선택 문항에 O·X 선택지를 둔 형태다. 저장 형식은 일반 객관식과 같아 서버·WPF 계약 변경이 없다.
  * - 답안 유형은 저장하지 않으므로 다시 열 때 선택지가 O·X이면 OX형으로 복원한다.
@@ -143,8 +155,8 @@ const LEGACY_ANSWER_TYPE_LABELS: Record<string, string> = { MULTIPLE_CHOICE: '�
 
 /* 문항 카드 안 짧은 입력을 한 행에 묶고 폭이 부족하면 줄바꿈한다. Stack spacing은 줄바꿈된 항목에 왼쪽 여백이 남아 gap을 쓴다. */
 const FIELD_ROW_SX = { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 1 };
-/* 선택지 한 줄의 라디오·삭제 칸. 편집기 첫 줄(테두리 포함 36px)과 맞추고, 여러 줄로 늘어나도 첫 줄에 남긴다. */
-const OPTION_SLOT_SX = { height: 36, display: 'flex', alignItems: 'center', flexShrink: 0 };
+/* 선택지 한 줄의 라디오·삭제 칸. 일반 입력칸(size small) 첫 줄 높이 40px과 맞추고, 여러 줄로 늘어나도 첫 줄에 남긴다. */
+const OPTION_SLOT_SX = { height: 40, display: 'flex', alignItems: 'center', flexShrink: 0 };
 /* 작게 그려도 클릭 영역은 32px를 유지한다. */
 const ICON_BUTTON_SX = { width: 32, height: 32 };
 
@@ -155,7 +167,7 @@ const ICON_BUTTON_SX = { width: 32, height: 32 };
  * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김
  * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
  * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
- *   제목·선택지는 서식 편집기(compact)를 쓰며 편집기마다 선택 범위·패널 상태가 따로다. 저장 전 확인은 validatePopupQuestions로 한다.
+ *   OX 외 문항의 제목·선택지는 일반 텍스트 입력(여러 줄)이고, 퀴즈 OX 문항 제목만 서식 편집기(compact)를 유지한다(TODO73-28). 저장 전 확인은 validatePopupQuestions로 한다.
  */
 export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
@@ -206,7 +218,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Box>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
-    {questions.map((q, index) => <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
+    {questions.map((q, index) => { const oxQuestion = quiz && isOxQuestion(q); return <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
       <Stack spacing={1}>
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0 }}>{index + 1}번 문항</Typography>
@@ -214,10 +226,15 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             control={<Checkbox size="small" checked={q.isRequired} onChange={(_, checked) => update(index, { isRequired: checked })} />} />
           <IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon fontSize="small" /></IconButton>
         </Stack>
-        {/* 문항 제목은 TEXT와 같은 서식 편집기(우클릭 펼침 팔레트). 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73). */}
-        <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
+        {/* 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73).
+            POL-06-01 : 문항·서식 — 퀴즈 OX 문항 제목은 기존 서식 편집기(우클릭 펼침 팔레트)를 유지하고, 그 외 문항 제목은 일반 텍스트(여러 줄)로 입력한다(TODO73-28).
+            일반 입력에서 고치면 titleBlocks를 비워(null) 서버가 title을 그대로 쓰게 한다. 이전 서식이 미리보기·저장에서 우선되지 않는다(TODO73-29). */}
+        {oxQuestion ? <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
+          : <TextField size="small" multiline minRows={1} fullWidth label="문항 제목" required placeholder="문항 제목을 입력하세요."
+            slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 제목` } }}
+            value={plainInputValue(q.title, q.titleBlocks)} onChange={(e) => update(index, { title: e.target.value, titleBlocks: null })} />}
         {quiz ? <Box sx={FIELD_ROW_SX}>
           {/* 답안 유형 표시 이름은 공통코드 0089. 기존 복수 선택·주관식은 항목을 하나 더 보여 값을 유지한다. */}
           <TextField select size="small" label="답안 유형" value={answerTypeValue(q)} sx={{ flex: '1 1 160px', minWidth: 140 }} disabled={!answerTypeOptions.length && q.questionType === 'SINGLE_CHOICE'}
@@ -267,7 +284,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         </Stack> : <Stack spacing={0.75}>
           {/* POL-06-02 : 선택·제출 — OX 정답은 폭을 나눈 칸 2개 중 하나만 고른다. 높이·글자는 낮게 두고, 큰 칸 표시는 미리보기·실제 팝업(SurveyPreview·WPF)에만 적용한다. 저장은 기존 SINGLE_CHOICE의 O·X 선택지와 isCorrect다.
               라디오 그룹 규칙대로 Tab은 그룹에 한 번만 들어오고, 화살표로 옮기면 정답도 함께 바뀐다. */}
-          {quiz && isOxQuestion(q) ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`} aria-required>
+          {oxQuestion ? <Stack spacing={0.75} role="radiogroup" aria-label={`${index + 1}번 문항 정답`} aria-required>
             <Typography variant="body2" fontWeight={600}>정답 선택 *</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
               {q.options.map((option, oi) => {
@@ -293,18 +310,17 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             {!q.options.some((option) => option.isCorrect) && <Typography variant="caption" color="text.secondary">정답을 선택해 주세요.</Typography>}
           </Stack> : <>
           {quiz && <Typography variant="caption" color="text.secondary">왼쪽 선택: 정답</Typography>}
-          {/* 선택지 편집기는 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다.
-              번호·입력칸·서식·삭제를 한 줄에 두고, 긴 내용은 입력칸만 아래로 늘어난다. */}
+          {/* 선택지 입력칸은 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다.
+              정답·입력칸·삭제를 한 줄에 두고, 긴 내용은 입력칸만 아래로 늘어난다. */}
           {q.options.map((option, oi) => <Stack key={option.optionId} direction="row" spacing={0.5} alignItems="flex-start">
             {quiz && <Box sx={OPTION_SLOT_SX}>{q.questionType === 'SINGLE_CHOICE' ? <Radio size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />}</Box>}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
-                initialBlocks={initialRich(option.textBlocks, option.text)}
-                onChange={(blocks, plain) => {
-                  const value = richValue(blocks, plain);
-                  // 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다.
-                  updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks });
-                }} />
+              {/* POL-06-01 : 문항·서식 — 선택지 문구는 일반 텍스트(여러 줄). 고치면 textBlocks를 비워 이전 서식이 남지 않게 한다(TODO73-28·29). */}
+              <TextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" value={plainInputValue(option.text, option.textBlocks)}
+                slotProps={{ input: { startAdornment: <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1, flexShrink: 0 }}>{oi + 1}</Typography> },
+                  htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
+                // 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다.
+                onChange={(e) => updateOption(index, option.optionId, { text: e.target.value, textBlocks: null })} />
             </Box>
             <Box sx={OPTION_SLOT_SX}><IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon fontSize="small" /></IconButton></Box>
           </Stack>)}
@@ -320,7 +336,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           </>}
         </Stack>}
       </Stack>
-    </Box>)}
+    </Box>; })}
     <Stack direction="row" alignItems="center" spacing={1} sx={{ alignSelf: 'flex-start' }}>
       <Button startIcon={<AddIcon />} onClick={add} disabled={full}>문항 추가</Button>
       {full && <Typography variant="caption" color="text.secondary">최대 {QUESTION_MAX}개까지 추가할 수 있습니다.</Typography>}

@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-09-05 — dev: TODO73 설문·퀴즈 문항 제목·선택지 일반 텍스트 입력
+
+- 이유: TODO73 §7(73-28~30) 구현. OX 외 문항은 서식 없이 일반 문자열로 입력하기로 정해 문항 편집기를 분기.
+- 변경:
+  - `PopupQuestionEditor`: `quiz && isOxQuestion(q)`인 문항만 제목 서식 편집기를 유지하고, 그 외 문항(설문 전체·퀴즈 선다형·기존 복수/주관식)의 제목과 선택지는 `TextField multiline`으로 입력. 설문은 OX 답안 유형이 없어(0089는 퀴즈 전용) 선택지가 O·X여도 일반 입력으로 둠 — 입력 도중 편집기가 바뀌는 문제 회피.
+  - 표시값은 `title`·`text` 우선, 비어 있으면 `blocksToPlainText`로 서식 글자 복원. 입력 시 해당 `titleBlocks`·`textBlocks`를 `null`로 비워 이전 서식이 미리보기·저장에서 우선되지 않게 함. 열기만 한 문항은 객체를 바꾸지 않음. 줄바꿈 그대로 저장. 접근성 이름 `N번 문항 제목`·`N번 문항 선택지 M`, 선택지 번호는 입력칸 앞 표시, 정답·삭제 칸 높이 40px로 정렬.
+  - 가이드: `PopupQuestionEditor` 설명과 공지(일반 텍스트 입력·최대 30문항·인라인 미리보기 크기 안내, -04 변경 포함) 추가. 인계 문서 `PopupQuestionEditor` 행 갱신.
+  - 하네스: `verify-survey-rich-text-55` 1~6절을 일반 입력 기준으로 교체하고 30문항 상한 절(-04 요건) 추가. `verify-popup-common-sample-69`의 제목·선택지 측정 대상을 입력칸으로 바꾸고 `문항 추가` 정렬 검사를 감싼 요소 기준으로 조정.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/verify-popup-common-sample-69.cjs`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, TODO73 문서.
+- 검증: 웹 `tsc`·eslint 통과. `verify-survey-rich-text-55` 59건(서식 문항 열기·블록 복원·데이터 무변경, 선택지·제목 수정 시 해당 블록만 null, 줄바꿈, 삭제 후 ID 유지, 빈 제목·1000자 차단, 주관식 제목, 퀴즈 OX 서식 제목·정답, 유형 전환, 기존 유형 보존, 미리보기), `verify-popup-common-sample-69` 61건, `verify-rich-text-49` 75건, `verify-popup-pick-fields` 34건, `verify-popup-transform-64` 77건, `verify-image-preview` 54건, `verify-popup-guide-registry` 272건 통과. 로컬 관리자 웹 실화면·서버 저장 왕복·WPF 표시 확인·폐쇄망 미실행.
+- 상태: 커밋 완료, 미푸시.
+
 ## 2026-11-09-04 — dev: TODO73 MUI slotProps 전환·최대 30문항·인라인 미리보기 크기 안내
 
 - 이유: TODO73 §6(73-19~27) 구현. 설문·퀴즈 편집기의 MUI v7 제거 예정 속성 정리, 관리자 편집기 문항 수 상한 고정, 축소 표시되는 인라인 미리보기의 크기 차이 안내.

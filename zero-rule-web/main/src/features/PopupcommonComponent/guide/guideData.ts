@@ -249,7 +249,7 @@ export const COMPONENTS: GuideComponent[] = [
   },
   {
     name: 'PopupQuestionEditor', file: 'PopupQuestionEditor.tsx',
-    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다.',
+    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다. 문항은 최대 30개(QUESTION_MAX)이며, OX 외 문항의 제목·선택지는 일반 텍스트(여러 줄)로 입력합니다.',
     props: [
       { name: 'questions', type: 'PopupQuestion[]', required: true, description: '문항 목록' },
       { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다(정답·배점·통과 점수 표시).' },
@@ -263,7 +263,8 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'onPassingScoreChange', type: '(score: number | null) => void', required: true, description: '통과 점수 입력' },
     ],
     values: ['questions(PopupQuestion[])', 'passingScore(퀴즈)', '설문 복수 선택의 minSelections·maxSelections(비우면 제한 없음)'],
-    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore)로 입력 오류를 확인합니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.'],
+    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore)로 입력 오류를 확인합니다. 30개를 넘는 문항도 여기서 막습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
+      '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 OX 문항 제목만 서식 편집기를 씁니다.'],
     example: `const [questions, setQuestions] = useState<PopupQuestion[]>([]);
 const [passingScore, setPassingScore] = useState<number | null>(null);
 <PopupQuestionEditor questions={questions} quiz passingScore={passingScore}
