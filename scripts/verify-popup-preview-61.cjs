@@ -59,6 +59,19 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 1) 최소 호스트: API·등록 폼 없이 샘플 객체로 인라인 미리보기를 그린다.
   check(await run("document.querySelector('#root').textContent.includes('팝업 미리보기') && document.querySelector('#root').textContent.includes('본문')"), 'Inline preview renders a sample popup without the editor');
   check(!(await dialogOpen()), 'Dialog is closed until requested');
+  // TODO73-25~27: 제목 오른쪽·버튼 왼쪽 작은 회색 안내. 좁으면 줄바꿈되고 겹치지 않으며 실제 크기 모달에는 없다.
+  const NOTICE = '실제 팝업 크기와 다를 수 있습니다.';
+  const header = () => run(`(()=>{const n=Array.from(document.querySelectorAll('#root span,#root p')).find(e=>e.textContent===${JSON.stringify(NOTICE)});
+    const t=Array.from(document.querySelectorAll('#root h6')).find(e=>e.textContent==='팝업 미리보기');const b=Array.from(document.querySelectorAll('#root button')).find(e=>e.textContent.includes('실제 크기로 보기'));
+    const r=e=>{const x=e.getBoundingClientRect();return {l:x.left,t:x.top,r:x.right,b:x.bottom}};const s=getComputedStyle(n);
+    return {n:r(n),t:r(t),b:r(b),size:parseFloat(s.fontSize),color:s.color,count:document.body.textContent.split(${JSON.stringify(NOTICE)}).length-1}})()`);
+  const apart = (a, b) => a.r <= b.l + 0.5 || b.r <= a.l + 0.5 || a.b <= b.t + 0.5 || b.b <= a.t + 0.5;
+  let h = await header();
+  check(h.count === 1 && h.t.r <= h.n.l && h.n.r <= h.b.l && h.size <= 12 && h.color !== 'rgb(0, 0, 0)', '[73-25] Size notice sits between title and button as small gray text: ' + JSON.stringify(h));
+  await run(`document.querySelector('#root > div').style.width='240px'`); await pause(300);
+  h = await header();
+  check(apart(h.n, h.t) && apart(h.n, h.b) && apart(h.t, h.b) && h.n.r <= 240 + 1, '[73-26] Narrow width wraps the notice without overlapping title or button: ' + JSON.stringify(h));
+  await run(`document.querySelector('#root > div').style.width='520px'`); await pause(300);
   // 2) FIXED·중앙·Overlay 사용: 크기·위치·배경, 배경 클릭 무시, Esc 종료.
   await openPreview();
   let rect = await paper();
@@ -69,6 +82,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(paperStyle.margin === '24px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '952px' && paperStyle.maxHeight === '852px' && paperStyle.radius === '6px',
     '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
   check(await run("Array.from(document.querySelectorAll('.MuiDialog-root button')).some(b=>b.getAttribute('aria-label')==='실제 크기 미리보기 종료')"), 'Dialog has its own exit button');
+  check(!(await run(`document.querySelector('.MuiDialog-root').textContent.includes(${JSON.stringify(NOTICE)})`)), '[73-27] The actual size dialog does not show the size notice');
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'text-dialog.png'), Buffer.from(shot.data, 'base64'));
   await clickAt(5, 5);
   check(await dialogOpen(), 'Backdrop click is ignored while overlay is enabled');

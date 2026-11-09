@@ -52,6 +52,16 @@ export const OPTION_TEXT_MAX = 1000;
 export const DEFAULT_QUESTION_SCORE = 1;
 
 /**
+ * POL-06-02 : 선택·제출
+ * ■ 설문·퀴즈 최대 문항 수
+ * - in : 없음
+ * - out: number 30
+ * - 관리자 편집기 상한이다(TODO73-22). 넘는 데이터(템플릿·기존 자료)는 자르지 않고 표시만 하며 저장 전 확인에서 막는다.
+ *   서버·WPF 제한은 계약 검토 후 별도로 정한다(TODO73-24).
+ */
+export const QUESTION_MAX = 30;
+
+/**
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 저장 전 확인
@@ -61,6 +71,7 @@ export const DEFAULT_QUESTION_SCORE = 1;
  */
 export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean, passingScore?: number | null): string | null {
   if (!questions.length) return '문항을 한 개 이상 추가해 주세요.';
+  if (questions.length > QUESTION_MAX) return questionOverflowMessage(questions.length);
   for (const [index, q] of questions.entries()) {
     const prefix = `${index + 1}번 문항: `;
     if (!q.title.trim()) return prefix + '제목을 입력해 주세요.';
@@ -102,6 +113,10 @@ export function selectionLimitError(q: PopupQuestion, quiz: boolean): string | n
   if (min != null && max != null && min > max) return '최소 선택 수는 최대 선택 수보다 클 수 없습니다.';
   return null;
 }
+
+/* 30개 초과 안내. 편집기 경고와 저장 전 확인이 같은 문구를 쓴다. */
+const questionOverflowMessage = (count: number) =>
+  `문항은 최대 ${QUESTION_MAX}개까지 등록할 수 있습니다. 현재 ${count}개이므로 ${count - QUESTION_MAX}개를 삭제한 후 저장해 주세요.`;
 
 /* 새 문항·선택지의 임시 ID(음수). 편집기 key로도 쓰므로 같은 시각에 여러 개를 만들어도 겹치지 않게 순번을 더한다. */
 let temporaryIdSequence = 0;
@@ -167,7 +182,8 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
       options: questionType === 'TEXT' ? [] : q.options.length ? q.options : createOptions(['', '']) });
   };
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
-  const add = () => onChange([...questions, {
+  const full = questions.length >= QUESTION_MAX;
+  const add = () => !full && onChange([...questions, {
     questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
     // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
     isRequired: quiz, isScored: quiz, questionScore: quiz ? fixedQuestionScore ?? DEFAULT_QUESTION_SCORE : null,
@@ -175,7 +191,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
   return <Stack spacing={1.5} sx={{ width: '100%', minWidth: 0 }}>
-    <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 ({questions.length})</Typography>
+    <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 {questions.length}/{QUESTION_MAX}</Typography>
+    {/* 템플릿·기존 자료로 30개를 넘게 들어온 경우 자르지 않고 사유를 보여 준다. 저장은 validatePopupQuestions가 막는다. */}
+    {questions.length > QUESTION_MAX && <Typography variant="body2" color="error" role="alert">{questionOverflowMessage(questions.length)}</Typography>}
     {quiz && <Box sx={{ ...FIELD_ROW_SX, alignItems: 'center' }}>
       <Typography sx={{ flex: '1 1 160px', minWidth: 0 }} fontWeight={700}>
         총점 {total}점{questions.length > 0 && total === questions.length ? ` (문항 ${questions.length}개 × 1점)` : ''}
@@ -184,7 +202,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         onClick={() => onChange(questions.map((q) => ({ ...q, questionScore: DEFAULT_QUESTION_SCORE, isScored: true })))}>
         배점 모두 1점
       </Button>}
-      {!hidePassingScore && <TextField size="small" label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }} sx={{ width: 110 }}
+      {!hidePassingScore && <TextField size="small" label="통과 점수" type="number" value={passingScore ?? ''} slotProps={{ htmlInput: { min: 0, max: total, step: 0.01 } }} sx={{ width: 110 }}
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Box>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
@@ -212,7 +230,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             {!answerTypeOptions.some((item) => item.code === answerTypeValue(q)) && !LEGACY_ANSWER_TYPE_LABELS[q.questionType]
               && <MenuItem value={answerTypeValue(q)} sx={{ display: 'none' }}>{answerTypeValue(q) === ANSWER_TYPE_OX ? 'O·X' : '선택지'}</MenuItem>}
           </TextField>
-          {fixedQuestionScore == null && <TextField size="small" label="배점" type="number" sx={{ flex: '0 1 100px', minWidth: 88 }} value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} InputLabelProps={{ shrink: true }}
+          {fixedQuestionScore == null && <TextField size="small" label="배점" type="number" sx={{ flex: '0 1 100px', minWidth: 88 }} value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} slotProps={{ inputLabel: { shrink: true } }}
             onChange={(e) => update(index, { questionScore: e.target.value === '' ? null : Number(e.target.value), isScored: true })} />}
         </Box> : <Box sx={FIELD_ROW_SX}>
           <TextField select size="small" label="응답 유형" value={q.questionType === 'TEXT' ? 'TEXT' : 'CHOICE'} sx={{ flex: '1 1 112px', minWidth: 112 }}
@@ -303,6 +321,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         </Stack>}
       </Stack>
     </Box>)}
-    <Button startIcon={<AddIcon />} onClick={add} sx={{ alignSelf: 'flex-start' }}>문항 추가</Button>
+    <Stack direction="row" alignItems="center" spacing={1} sx={{ alignSelf: 'flex-start' }}>
+      <Button startIcon={<AddIcon />} onClick={add} disabled={full}>문항 추가</Button>
+      {full && <Typography variant="caption" color="text.secondary">최대 {QUESTION_MAX}개까지 추가할 수 있습니다.</Typography>}
+    </Stack>
   </Stack>;
 }

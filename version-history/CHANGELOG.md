@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-09-04 — dev: TODO73 MUI slotProps 전환·최대 30문항·인라인 미리보기 크기 안내
+
+- 이유: TODO73 §6(73-19~27) 구현. 설문·퀴즈 편집기의 MUI v7 제거 예정 속성 정리, 관리자 편집기 문항 수 상한 고정, 축소 표시되는 인라인 미리보기의 크기 차이 안내.
+- 변경:
+  - `PopupQuestionEditor`: 통과 점수 `inputProps` → `slotProps.htmlInput`, 배점 `InputLabelProps` → `slotProps.inputLabel`(MUI 6.5.0, 값·동작 동일). 해당 편집기에 `InputProps`·`FormHelperTextProps`·`SelectProps` 사용은 없었고, Radio·Checkbox `inputProps`는 6.x에서 deprecated가 아니어서 유지. 다른 공통 파일은 범위 제한으로 미변경.
+  - `QUESTION_MAX = 30`(index.ts 공개). 헤더 `문항 N/30`, 30개면 `문항 추가` 비활성과 사유 표시, 29개 이하로 줄면 재활성. 30개 초과 유입(템플릿·기존 자료)은 자르지 않고 `role=alert` 안내, `validatePopupQuestions`가 같은 문구로 저장 차단. 서버·WPF·저장 JSON 미변경.
+  - `InlinePopupPreview`: 제목과 `실제 크기로 보기` 사이에 `실제 팝업 크기와 다를 수 있습니다.`(caption·회색). 줄바꿈 허용 행, 버튼은 오른쪽 끝 유지, 실제 크기 모달에는 미표시. `title=""`이면 제목 요소 생략.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `InlinePopupPreview.tsx`, `index.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: 웹 `tsc --noEmit`·eslint 통과(기존 `popupRichText.ts` 경고 1건). `verify-popup-preview-61` 121건 통과(안내 위치·240px 줄바꿈 겹침 없음·모달 미표시 추가). 30문항 상한 하네스(29→30→29, 31문항 유입·저장 차단)는 `verify-survey-rich-text-55`에 넣어 다음 항목(-05) 커밋에 포함, 전체 작업 기준 59건 통과. 로컬 관리자 웹 실화면·서버 저장 왕복·폐쇄망 미실행.
+- 상태: 커밋 완료, 미푸시.
+
 ## 2026-11-09-03 — TODO73 PopupAdmin 타입 가이드 정의
 
 - 이유: 공통 컴포넌트 가이드에서 관리자 팝업 타입의 역할과 데이터 구조를 확인할 수 있도록 요건 정의.

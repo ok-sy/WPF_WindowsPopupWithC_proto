@@ -10,7 +10,7 @@
 export { default as PopupRichTextEditor } from './PopupRichTextEditor';
 export { default as PopupRichTextMenu } from './PopupRichTextMenu';
 export { default as PopupRichBlocks, richBlocksOrNull } from './PopupRichBlocks';
-export { default as PopupQuestionEditor, validatePopupQuestions } from './PopupQuestionEditor';
+export { default as PopupQuestionEditor, validatePopupQuestions, QUESTION_MAX } from './PopupQuestionEditor';
 export { default as PopupScheduleFields, validatePopupSchedule, type PopupScheduleValue } from './PopupScheduleFields';
 export { default as InlinePopupPreview } from './InlinePopupPreview';
 export { default as PopupPreviewDialog } from './PopupPreviewDialog';
