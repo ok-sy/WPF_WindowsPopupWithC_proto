@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-09-07 — dev: TODO73 문항 편집기 richQuestionText·maxQuestions props
+
+- 이유: 일반 텍스트 입력(-05)과 최대 30문항(-04)이 편집기 안에 고정돼 화면마다 선택할 수 없어 선택 props로 전환 가능하게 함(TODO73-34·35).
+- 변경:
+  - `PopupQuestionEditor`: `richQuestionText?: boolean`(기본 false, true면 모든 제목·선택지 서식 편집기 + 서식 블록 저장, 정답·삭제 칸 높이 36px), `maxQuestions?: number`(기본 `QUESTION_MAX` 30; 헤더·추가 비활성·초과 안내).
+  - `validatePopupQuestions`: 네 번째 인자 `maxQuestions`(기본 30) 추가. 기존 호출부는 인자 생략으로 동작 동일.
+  - 가이드 컴포넌트 표·실행기 입력·공지, 인계 문서 `PopupQuestionEditor` 행, TODO73 §9 추가.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `guide/guideData.ts`, `guide/guideRunners.tsx`, `guide/guideNotices.ts`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/verify-survey-rich-text-55-entry.tsx`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, TODO73 문서.
+- 검증: 웹 `tsc`·eslint 통과. `verify-survey-rich-text-55` 64건(서식 편집기 모드·선택지 서식 저장, `maxQuestions=3` 표시·추가 비활성·초과 안내·검증 인자, 기본 30 유지 추가), `verify-popup-common-sample-69` 61건, `verify-popup-preview-61` 121건, `verify-popup-guide-render` 31건, `verify-popup-guide-registry` 276건 통과. 로컬 관리자 웹 실화면 미실행.
+- 상태: 커밋 완료, 원격 반영. Trello 카드 73 갱신.
+
 ## 2026-11-09-06 — dev: TODO73 가이드 시작 탭 PopupAdmin 타입 안내
 
 - 이유: TODO73 §8(73-31~33) 구현. 공통 컴포넌트를 쓰는 화면에서 관리자 팝업 타입의 역할·포함 관계와 입력·상세·저장 값 차이를 가이드에서 바로 확인할 수 있도록 함.

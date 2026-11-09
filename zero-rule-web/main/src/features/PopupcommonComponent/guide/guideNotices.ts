@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-09-todo73-question-editor-props', date: '2026-11-09', category: 'ADDED', status: 'DONE', doneDate: '2026-11-09',
+    title: '문항 편집기 richQuestionText·maxQuestions 추가',
+    body: ['PopupQuestionEditor에 richQuestionText(기본 false)와 maxQuestions(기본 30)를 추가했습니다. richQuestionText를 true로 주면 문항 제목·선택지를 서식 편집기로 입력합니다. maxQuestions로 최대 문항 수를 바꿉니다.',
+      'validatePopupQuestions는 네 번째 인자로 같은 최대 문항 수를 받습니다(생략하면 30).'],
+    components: ['PopupQuestionEditor', 'validatePopupQuestions'],
+    action: '기본값이 기존 동작과 같아 바꿀 코드는 없습니다. maxQuestions를 바꾸면 저장 전 validatePopupQuestions에도 같은 값을 넘기세요.',
+  },
+  {
     id: '2026-11-09-todo73-plain-question-text', date: '2026-11-09', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-09',
     title: '설문·퀴즈 문항 제목·선택지 일반 텍스트 입력',
     body: ['OX 외 문항의 제목과 선택지 문구는 서식 편집기 대신 일반 입력칸(여러 줄)으로 입력합니다. 퀴즈 OX 문항 제목과 O·X 정답 선택은 그대로입니다.',

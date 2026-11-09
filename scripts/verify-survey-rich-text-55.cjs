@@ -126,6 +126,24 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(await run(`window.validatePopupQuestions(window.questions,true,0)`) === overflow, '[73-22] Saving 31 questions is blocked with the reason');
   check(await run(`document.body.textContent.includes('퀴즈 문항 31/30')`), '[73-23] Quiz header shows the count over the limit');
 
+  // ── 6-2. props(TODO73-34): richQuestionText=true면 제목·선택지 서식 편집기, maxQuestions로 상한 변경 ──
+  await run(`window.mountEditor(${JSON.stringify(surveyQuestions)}, false, {richQuestionText: true})`);
+  await waitEditors(4); await pause(200);
+  const richDatas = await run('window.editors().map(e=>e.getData())');
+  check(richDatas[0].includes('<strong>만족도</strong>') && richDatas[1].includes('color:#DC2626') && richDatas[2] === '<p>보통</p>' && (await inputValues()).length === 0,
+    '[73-34] richQuestionText uses rich editors for the title and every option: ' + JSON.stringify(richDatas));
+  await run(`window.editors()[2].setData('<p>보통<strong>이다</strong></p>')`); await pause(150);
+  q = (await questions())[0];
+  check(q.options[1].text === '보통이다' && q.options[1].textBlocks?.[0].runs[1].bold === true && JSON.stringify(q.titleBlocks) === JSON.stringify([bold('만족도')]), '[73-34] Rich option editing stores textBlocks and keeps other fields');
+  await run(`window.mountEditor(${JSON.stringify(many(2))}, false, {maxQuestions: 3})`); await pause(500);
+  check(await run(`document.body.textContent.includes('설문 문항 2/3') && !${addButton}.disabled`), '[73-34] maxQuestions changes the shown limit');
+  await run(`${addButton}.click()`); await pause(400);
+  check((await questions()).length === 3 && await run(`${addButton}.disabled && document.body.textContent.includes('최대 3개까지 추가할 수 있습니다.')`), '[73-34] maxQuestions disables adding at the custom limit');
+  await run(`window.mountEditor(${JSON.stringify(many(4))}, false, {maxQuestions: 3})`); await pause(500);
+  const overflow3 = '문항은 최대 3개까지 등록할 수 있습니다. 현재 4개이므로 1개를 삭제한 후 저장해 주세요.';
+  check(await run(`document.querySelector('[role=alert]')?.textContent`) === overflow3 && await run(`window.validatePopupQuestions(window.questions,false,null,3)`) === overflow3
+    && await run(`window.validatePopupQuestions(window.questions,false,null)`) !== overflow3, '[73-34] validatePopupQuestions takes the same custom limit (default stays 30)');
+
   // ── 7. 미리보기: 콘텐츠 제목·설명, 문항 제목(필수 * 마지막 문단 끝)·설명, 선택지 서식 표시와 접근성 이름 ──
   const popup = {popupId: 'S', popupType: 'SURVEY', title: 'S', sizeMode: 'FIXED', width: 720, height: 900, showHeader: false, showFooter: true,
     content: {surveyTitle: '교육 만족도', surveyTitleBlocks: [{alignment: 'LEFT', runs: [{text: '교육 '}, {text: '만족도', color: '#16A34A'}]}],

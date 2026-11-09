@@ -256,6 +256,8 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'passingScore', type: 'number | null', description: '퀴즈 통과 점수' },
       { name: 'fixedQuestionScore', type: 'number', description: '배점을 고정합니다. 주면 배점 입력칸을 숨깁니다.' },
       { name: 'hidePassingScore', type: 'boolean', description: '통과 점수 입력칸을 숨깁니다.' },
+      { name: 'richQuestionText', type: 'boolean', description: 'true면 문항 제목·선택지를 서식 편집기로 입력하고 titleBlocks·textBlocks를 저장합니다. 기본 false(OX 외 문항은 일반 텍스트 입력, 퀴즈 OX 제목만 서식 편집기).' },
+      { name: 'maxQuestions', type: 'number', description: '최대 문항 수(1 이상 정수). 기본 30(QUESTION_MAX). 저장 전 validatePopupQuestions에도 같은 값을 넘깁니다.' },
       { name: 'answerTypeOptions', type: 'PopupCodeOption[]', description: '공통코드 0089 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 answerTypes를 넘깁니다. DB에 0089 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 변경을 막습니다.' },
     ],
     outputs: [
@@ -263,8 +265,8 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'onPassingScoreChange', type: '(score: number | null) => void', required: true, description: '통과 점수 입력' },
     ],
     values: ['questions(PopupQuestion[])', 'passingScore(퀴즈)', '설문 복수 선택의 minSelections·maxSelections(비우면 제한 없음)'],
-    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore)로 입력 오류를 확인합니다. 30개를 넘는 문항도 여기서 막습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
-      '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 OX 문항 제목만 서식 편집기를 씁니다.'],
+    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore, maxQuestions?)로 입력 오류를 확인합니다. 최대 문항 수(기본 30)를 넘는 문항도 여기서 막습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
+      '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 OX 문항 제목만 서식 편집기를 쓰며, richQuestionText로 모든 제목·선택지를 서식 편집기로 바꿀 수 있습니다.'],
     example: `const [questions, setQuestions] = useState<PopupQuestion[]>([]);
 const [passingScore, setPassingScore] = useState<number | null>(null);
 <PopupQuestionEditor questions={questions} quiz passingScore={passingScore}
@@ -367,7 +369,7 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'blocksToPlainText / plainTextToBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'RichBlock[] / string', output: 'string / RichBlock[]', description: '서식 본문과 일반 글자를 서로 바꿉니다.' },
   { name: 'readTextBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'value: unknown', output: 'RichBlock[] | null', description: '서버 값을 서식 본문으로 읽습니다. 형식이 맞지 않으면 null입니다.' },
   { name: 'readQuizRule / withQuizRule / validateQuizRule', scope: 'COMMON', file: 'popupQuizRule.ts', input: '{ popupType, questions, passingScore? }, rule, count', output: '{ rule, count } / 같은 타입 / string | null', description: '퀴즈 유형으로 통과 점수를 계산하고 입력 오류를 확인합니다.' },
-  { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?', output: 'string | null', description: '문항 입력 오류를 확인합니다.' },
+  { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?, maxQuestions?(기본 30)', output: 'string | null', description: '문항 입력 오류를 확인합니다.' },
   { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 시간대 입력 오류를 확인합니다.' },
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },
   // 기존 팝업 등록(RgstPop)

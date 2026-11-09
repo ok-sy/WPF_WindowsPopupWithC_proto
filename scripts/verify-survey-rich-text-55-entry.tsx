@@ -13,17 +13,19 @@ const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, s
 const w = window as any;
 w.validatePopupQuestions = validatePopupQuestions;
 
-function Editor({ initial, quiz }: { initial: PopupQuestion[]; quiz: boolean }) {
+function Editor({ initial, quiz, options }: { initial: PopupQuestion[]; quiz: boolean; options?: { richQuestionText?: boolean; maxQuestions?: number } }) {
   const [questions, setQuestions] = useState(initial);
   w.questions = questions;
-  return <PopupQuestionEditor questions={questions} quiz={quiz} onChange={setQuestions} onPassingScoreChange={() => undefined} />;
+  return <PopupQuestionEditor questions={questions} quiz={quiz} onChange={setQuestions} onPassingScoreChange={() => undefined}
+    richQuestionText={options?.richQuestionText} maxQuestions={options?.maxQuestions} />;
 }
 
 let mountKey = 0;
-w.mountEditor = (questions: PopupQuestion[], quiz = false) => {
+/* options: TODO73-34 richQuestionText·maxQuestions props 확인용 */
+w.mountEditor = (questions: PopupQuestion[], quiz = false, options?: { richQuestionText?: boolean; maxQuestions?: number }) => {
   mountKey++;
   root.render(<ThemeProvider theme={theme}><CssBaseline />
-    <div style={{ width: 760, padding: 16 }}><Editor key={mountKey} initial={questions} quiz={quiz} /></div>
+    <div style={{ width: 760, padding: 16 }}><Editor key={mountKey} initial={questions} quiz={quiz} options={options} /></div>
     <button id="outside" style={{ marginLeft: 16 }}>바깥</button>
   </ThemeProvider>);
 };

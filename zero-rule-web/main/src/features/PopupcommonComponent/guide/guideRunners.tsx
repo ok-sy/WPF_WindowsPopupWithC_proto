@@ -37,12 +37,12 @@ const SAMPLE_QUESTIONS: PopupQuestion[] = [
     options: [{ optionId: -11, value: '1', text: '만족', sortOrder: 1 }, { optionId: -12, value: '2', text: '보통', sortOrder: 2 }] },
 ];
 
-function QuestionHost({ input, emit }: { input: { questions: PopupQuestion[]; quiz: boolean; passingScore: number | null }; emit: RunnerEmit }) {
+function QuestionHost({ input, emit }: { input: { questions: PopupQuestion[]; quiz: boolean; passingScore: number | null; richQuestionText?: boolean; maxQuestions?: number }; emit: RunnerEmit }) {
   const [questions, setQuestions] = useState(input.questions);
   const [passingScore, setPassingScore] = useState(input.passingScore);
   return (
-    <PopupQuestionEditor questions={questions} quiz={input.quiz} passingScore={passingScore}
-      onChange={(next) => { setQuestions(next); emit('onChange(questions)', next); emit('validatePopupQuestions', validatePopupQuestions(next, input.quiz, passingScore)); }}
+    <PopupQuestionEditor questions={questions} quiz={input.quiz} passingScore={passingScore} richQuestionText={input.richQuestionText} maxQuestions={input.maxQuestions}
+      onChange={(next) => { setQuestions(next); emit('onChange(questions)', next); emit('validatePopupQuestions', validatePopupQuestions(next, input.quiz, passingScore, input.maxQuestions)); }}
       onPassingScoreChange={(score) => { setPassingScore(score); emit('onPassingScoreChange', score); }} />
   );
 }
@@ -98,8 +98,8 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
     render: (input) => <PopupRichBlocks blocks={readTextBlocks(input.blocks) ?? []} />,
   },
   PopupQuestionEditor: {
-    input: { quiz: false, passingScore: null, questions: SAMPLE_QUESTIONS },
-    hint: 'quiz를 true로 바꾸면 정답·배점·통과 점수 입력이 나옵니다. 문항을 고치면 onChange(questions)와 검사 결과가 OUTPUT에 나옵니다.',
+    input: { quiz: false, passingScore: null, richQuestionText: false, maxQuestions: 30, questions: SAMPLE_QUESTIONS },
+    hint: 'quiz를 true로 바꾸면 정답·배점·통과 점수 입력이 나옵니다. richQuestionText를 true로 바꾸면 제목·선택지를 서식 편집기로 입력하고, maxQuestions로 최대 문항 수를 바꿉니다. 문항을 고치면 onChange(questions)와 검사 결과가 OUTPUT에 나옵니다.',
     render: (input, emit) => <QuestionHost input={input} emit={emit} />,
   },
   PopupQuizRuleFields: {

@@ -29,6 +29,13 @@ interface Props {
    * 퀴즈 답안 유형(공통코드 0089) 조회 결과. 생략하면 서버 없는 샘플용 목록을 쓴다. 빈 배열이면 조회 전이거나 실패한 상태로 보고 변경을 막는다.
    */
   answerTypeOptions?: PopupCodeOption[];
+  /**
+   * 문항 제목·선택지를 서식 편집기로 입력한다. 기본 false = OX 외 문항은 일반 텍스트(여러 줄) 입력(TODO73-28).
+   * true면 모든 문항 제목·선택지를 서식 편집기(compact)로 입력하고 서식 블록(titleBlocks·textBlocks)을 저장한다. 퀴즈 OX 정답 선택 UI는 같다.
+   */
+  richQuestionText?: boolean;
+  /** 최대 문항 수(1 이상 정수). 기본 QUESTION_MAX(30). 저장 전 확인도 같은 값을 validatePopupQuestions에 넘긴다. */
+  maxQuestions?: number;
 }
 
 /**
@@ -65,13 +72,13 @@ export const QUESTION_MAX = 30;
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 저장 전 확인
- * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · maxQuestions?(number) 최대 문항 수, 기본 QUESTION_MAX
  * - out: string | null 첫 번째 위반 안내 문구, 문제없으면 null
  * - 문항 목록을 받아 제목·글자 수·선택지·정답·배점·통과 점수(0~총점)를 서버와 같은 기준으로 확인한다.
  */
-export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean, passingScore?: number | null): string | null {
+export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean, passingScore?: number | null, maxQuestions: number = QUESTION_MAX): string | null {
   if (!questions.length) return '문항을 한 개 이상 추가해 주세요.';
-  if (questions.length > QUESTION_MAX) return questionOverflowMessage(questions.length);
+  if (questions.length > maxQuestions) return questionOverflowMessage(questions.length, maxQuestions);
   for (const [index, q] of questions.entries()) {
     const prefix = `${index + 1}번 문항: `;
     if (!q.title.trim()) return prefix + '제목을 입력해 주세요.';
@@ -115,8 +122,8 @@ export function selectionLimitError(q: PopupQuestion, quiz: boolean): string | n
 }
 
 /* 30개 초과 안내. 편집기 경고와 저장 전 확인이 같은 문구를 쓴다. */
-const questionOverflowMessage = (count: number) =>
-  `문항은 최대 ${QUESTION_MAX}개까지 등록할 수 있습니다. 현재 ${count}개이므로 ${count - QUESTION_MAX}개를 삭제한 후 저장해 주세요.`;
+const questionOverflowMessage = (count: number, max: number) =>
+  `문항은 최대 ${max}개까지 등록할 수 있습니다. 현재 ${count}개이므로 ${count - max}개를 삭제한 후 저장해 주세요.`;
 
 /* 새 문항·선택지의 임시 ID(음수). 편집기 key로도 쓰므로 같은 시각에 여러 개를 만들어도 겹치지 않게 순번을 더한다. */
 let temporaryIdSequence = 0;
@@ -155,7 +162,7 @@ const LEGACY_ANSWER_TYPE_LABELS: Record<string, string> = { MULTIPLE_CHOICE: '�
 
 /* 문항 카드 안 짧은 입력을 한 행에 묶고 폭이 부족하면 줄바꿈한다. Stack spacing은 줄바꿈된 항목에 왼쪽 여백이 남아 gap을 쓴다. */
 const FIELD_ROW_SX = { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 1 };
-/* 선택지 한 줄의 라디오·삭제 칸. 일반 입력칸(size small) 첫 줄 높이 40px과 맞추고, 여러 줄로 늘어나도 첫 줄에 남긴다. */
+/* 선택지 한 줄의 라디오·삭제 칸. 일반 입력칸(size small) 첫 줄 높이 40px과 맞추고(서식 편집기 모드는 36px), 여러 줄로 늘어나도 첫 줄에 남긴다. */
 const OPTION_SLOT_SX = { height: 40, display: 'flex', alignItems: 'center', flexShrink: 0 };
 /* 작게 그려도 클릭 영역은 32px를 유지한다. */
 const ICON_BUTTON_SX = { width: 32, height: 32 };
@@ -164,12 +171,12 @@ const ICON_BUTTON_SX = { width: 32, height: 32 };
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 편집기
- * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김 · richQuestionText?(boolean) 제목·선택지 서식 편집기 사용 · maxQuestions?(number) 최대 문항 수
  * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
  * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
  *   OX 외 문항의 제목·선택지는 일반 텍스트 입력(여러 줄)이고, 퀴즈 OX 문항 제목만 서식 편집기(compact)를 유지한다(TODO73-28). 저장 전 확인은 validatePopupQuestions로 한다.
  */
-export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS }: Props) {
+export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS, richQuestionText = false, maxQuestions = QUESTION_MAX }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const updateOption = (index: number, optionId: number, patch: Partial<PopupOption>) =>
     update(index, { options: questions[index].options.map((o) => o.optionId === optionId ? { ...o, ...patch } : o) });
@@ -194,7 +201,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
       options: questionType === 'TEXT' ? [] : q.options.length ? q.options : createOptions(['', '']) });
   };
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
-  const full = questions.length >= QUESTION_MAX;
+  const full = questions.length >= maxQuestions;
+  /* 정답·삭제 칸을 입력칸 첫 줄과 맞춘다: 서식 편집기 36px, 일반 입력 40px. */
+  const optionSlotSx = richQuestionText ? { ...OPTION_SLOT_SX, height: 36 } : OPTION_SLOT_SX;
   const add = () => !full && onChange([...questions, {
     questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
     // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
@@ -203,9 +212,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
   return <Stack spacing={1.5} sx={{ width: '100%', minWidth: 0 }}>
-    <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 {questions.length}/{QUESTION_MAX}</Typography>
+    <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 {questions.length}/{maxQuestions}</Typography>
     {/* 템플릿·기존 자료로 30개를 넘게 들어온 경우 자르지 않고 사유를 보여 준다. 저장은 validatePopupQuestions가 막는다. */}
-    {questions.length > QUESTION_MAX && <Typography variant="body2" color="error" role="alert">{questionOverflowMessage(questions.length)}</Typography>}
+    {questions.length > maxQuestions && <Typography variant="body2" color="error" role="alert">{questionOverflowMessage(questions.length, maxQuestions)}</Typography>}
     {quiz && <Box sx={{ ...FIELD_ROW_SX, alignItems: 'center' }}>
       <Typography sx={{ flex: '1 1 160px', minWidth: 0 }} fontWeight={700}>
         총점 {total}점{questions.length > 0 && total === questions.length ? ` (문항 ${questions.length}개 × 1점)` : ''}
@@ -218,7 +227,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Box>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
-    {questions.map((q, index) => { const oxQuestion = quiz && isOxQuestion(q); return <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
+    {questions.map((q, index) => { const oxQuestion = quiz && isOxQuestion(q); const richTitle = richQuestionText || oxQuestion; return <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
       <Stack spacing={1}>
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0 }}>{index + 1}번 문항</Typography>
@@ -227,9 +236,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           <IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon fontSize="small" /></IconButton>
         </Stack>
         {/* 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73).
-            POL-06-01 : 문항·서식 — 퀴즈 OX 문항 제목은 기존 서식 편집기(우클릭 펼침 팔레트)를 유지하고, 그 외 문항 제목은 일반 텍스트(여러 줄)로 입력한다(TODO73-28).
+            POL-06-01 : 문항·서식 — 퀴즈 OX 문항 제목과 richQuestionText=true일 때는 서식 편집기(우클릭 펼침 팔레트), 그 외 문항 제목은 일반 텍스트(여러 줄)로 입력한다(TODO73-28·34).
             일반 입력에서 고치면 titleBlocks를 비워(null) 서버가 title을 그대로 쓰게 한다. 이전 서식이 미리보기·저장에서 우선되지 않는다(TODO73-29). */}
-        {oxQuestion ? <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
+        {richTitle ? <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
           : <TextField size="small" multiline minRows={1} fullWidth label="문항 제목" required placeholder="문항 제목을 입력하세요."
@@ -313,16 +322,19 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           {/* 선택지 입력칸은 순서가 아니라 optionId로 구분해 삭제 후에도 다른 선택지의 내용·커서가 섞이지 않는다.
               정답·입력칸·삭제를 한 줄에 두고, 긴 내용은 입력칸만 아래로 늘어난다. */}
           {q.options.map((option, oi) => <Stack key={option.optionId} direction="row" spacing={0.5} alignItems="flex-start">
-            {quiz && <Box sx={OPTION_SLOT_SX}>{q.questionType === 'SINGLE_CHOICE' ? <Radio size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />}</Box>}
+            {quiz && <Box sx={optionSlotSx}>{q.questionType === 'SINGLE_CHOICE' ? <Radio size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={() => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi })) })} /> : <Checkbox size="small" sx={{ p: 0.5 }} checked={Boolean(option.isCorrect)} inputProps={{ 'aria-label': `${index + 1}번 문항 ${oi + 1}번 선택지 정답` }} onChange={(_, checked) => update(index, { options: q.options.map((o, i) => ({ ...o, isCorrect: i === oi ? checked : q.questionType === 'SINGLE_CHOICE' && checked ? false : o.isCorrect })) })} />}</Box>}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              {/* POL-06-01 : 문항·서식 — 선택지 문구는 일반 텍스트(여러 줄). 고치면 textBlocks를 비워 이전 서식이 남지 않게 한다(TODO73-28·29). */}
-              <TextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" value={plainInputValue(option.text, option.textBlocks)}
-                slotProps={{ input: { startAdornment: <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1, flexShrink: 0 }}>{oi + 1}</Typography> },
-                  htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
-                // 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다.
-                onChange={(e) => updateOption(index, option.optionId, { text: e.target.value, textBlocks: null })} />
+              {/* POL-06-01 : 문항·서식 — 선택지 문구는 기본 일반 텍스트(여러 줄). 고치면 textBlocks를 비워 이전 서식이 남지 않게 한다(TODO73-28·29).
+                  richQuestionText=true면 서식 편집기로 입력하고 textBlocks를 저장한다(TODO73-34). 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다. */}
+              {richQuestionText ? <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
+                initialBlocks={initialRich(option.textBlocks, option.text)}
+                onChange={(blocks, plain) => { const value = richValue(blocks, plain); updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks }); }} />
+                : <TextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" value={plainInputValue(option.text, option.textBlocks)}
+                  slotProps={{ input: { startAdornment: <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1, flexShrink: 0 }}>{oi + 1}</Typography> },
+                    htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
+                  onChange={(e) => updateOption(index, option.optionId, { text: e.target.value, textBlocks: null })} />}
             </Box>
-            <Box sx={OPTION_SLOT_SX}><IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon fontSize="small" /></IconButton></Box>
+            <Box sx={optionSlotSx}><IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon fontSize="small" /></IconButton></Box>
           </Stack>)}
           {/* QUIZ 복수 선택은 정답 수만큼만 응답자가 고를 수 있다(미리보기·WPF 동일). */}
           {quiz && q.questionType === 'MULTIPLE_CHOICE' && <Typography variant="caption" color="text.secondary">
@@ -339,7 +351,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     </Box>; })}
     <Stack direction="row" alignItems="center" spacing={1} sx={{ alignSelf: 'flex-start' }}>
       <Button startIcon={<AddIcon />} onClick={add} disabled={full}>문항 추가</Button>
-      {full && <Typography variant="caption" color="text.secondary">최대 {QUESTION_MAX}개까지 추가할 수 있습니다.</Typography>}
+      {full && <Typography variant="caption" color="text.secondary">최대 {maxQuestions}개까지 추가할 수 있습니다.</Typography>}
     </Stack>
   </Stack>;
 }

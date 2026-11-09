@@ -1,7 +1,7 @@
 # TODO73 — 관리자 웹 퀴즈·설문 에디터 입력 정리 및 공통코드 매핑
 
 작성일: 2026-11-05  
-상태: **구현·자동 검증 완료(2026-11-05, §6~§8은 2026-11-09) / 실화면·원격 개발 DB·폐쇄망 확인 대기**  
+상태: **구현·자동 검증 완료(2026-11-05, §6~§9는 2026-11-09) / 실화면·원격 개발 DB·폐쇄망 확인 대기**  
 적용 범위: 관리자 웹 **편집기 및 편집용 데이터 변환**, 기획서 퀴즈(1/2, 2/2) 화면과 전달된 변경요청 기준. WPF·서버·DB·인터페이스 계약 변경은 이번 단계에서 제외.
 
 ## 1. 요구사항 기준
@@ -136,7 +136,7 @@
 - [x] **73-29 데이터 매핑** — 기존 `title`·`text`에 줄바꿈을 포함한 일반 문자열을 저장한다. 기존 서식 문항을 열 때는 일반 문자열을 우선 사용하고 문자열이 없는 경우 서식 블록에서 텍스트를 복원한다. 일반 입력에서 값을 수정하면 해당 `titleBlocks`·`textBlocks`를 기존 계약에 맞게 비워 미리보기나 저장 시 이전 서식이 우선되지 않도록 한다. 열기만 한 기존 문항의 데이터는 보존한다.
 - [x] **73-30 검증** — 설문 단일·복수 선택 및 주관식, 퀴즈 선다형·OX의 입력 UI와 정답 선택을 확인한다. 유형 전환, 기존 서식 문항 수정, 줄바꿈, 미리보기, 저장·재조회 및 웹 타입 검사를 확인한다.
 
-`compact`와 `hideToolbar`는 CKEditor 툴바 표시를 제어한다. 이 요건은 공통 문항 편집기에서 분기하며 별도 화면 옵션과 API·DTO 변경은 범위에서 제외한다.
+`compact`와 `hideToolbar`는 CKEditor 툴바 표시를 제어한다. 이 요건은 공통 문항 편집기에서 분기하며 API·DTO 변경은 범위에서 제외한다. 화면 옵션은 §9에서 props로 추가했다(기본값은 이 절의 동작).
 
 **구현 결과(2026-11-09)**: OX 판별은 `quiz && isOxQuestion(q)`로 한다. 설문에는 OX 답안 유형이 없어(0089는 퀴즈 전용, §1) 설문 문항은 선택지가 O·X여도 일반 입력이다 — 입력 도중 O·X가 되는 순간 편집기가 바뀌는 문제를 피한다. 제목·선택지는 `TextField multiline`(size small), 선택지 번호는 입력칸 앞 표시, 접근성 이름은 `N번 문항 제목`·`N번 문항 선택지 M`. 표시값은 일반 문자열 우선, 비면 `blocksToPlainText`로 복원. 입력 시 `titleBlocks`·`textBlocks`를 `null`로 바꾸고 열기만 하면 문항 객체를 바꾸지 않는다. 글자 수 상한은 기존 `validatePopupQuestions`를 유지한다. 선택지 줄의 정답·삭제 칸 높이는 입력칸 첫 줄(40px)에 맞췄다.
 
@@ -155,3 +155,12 @@
 **구현 결과(2026-11-09)**: 시작 탭에 `3. 데이터 타입(PopupAdmin.ts)` 절을 추가하고 기존 `기존 팝업 등록 화면`을 4번으로 옮겼다. import(`@local/domain`), 네 타입 역할, 포함 관계 트리, 화면 입력값(`Partial<AdminPopupDetail>`)·상세 값(`AdminPopupDetail`)·저장 요청(`pickPopupFields`/`toSaveRequest` → `PopupSaveRequest`) 차이, 최소 입력 예시와 퀴즈 예시(OX형 + 선다형, `questions` 위치, `content.description`), `title`·`text`와 서식 블록 관계, OX 판별, 30문항 상한을 안내한다. 예시 값은 `guide/guideTypeExamples.ts`에 실제 타입으로 선언해 웹 `tsc`가 검사하고, 화면은 그 값을 코드 문자열로 보여 준다(별도 예제 타입 검사 스크립트는 없었으므로 웹 타입 검사에 연결).
 
 **검증(2026-11-09)**: 웹 `tsc`, `verify-popup-guide-render`(31, 시작 탭 타입 안내·예시 2건 추가), `verify-popup-guide-registry`(272) 통과.
+
+## 9. 추가 TODO — 문항 편집기 입력 방식·최대 문항 수 props (2026-11-09)
+
+상태 **구현·하네스 검증 완료(2026-11-09) / 실화면 미확인**
+
+- [x] **73-34 props** — `PopupQuestionEditor`에 선택 props 2개를 추가한다. 기본값은 §6·§7 동작과 같아 기존 호출부(RgstPop·샘플·가이드)는 바꾸지 않는다.
+  - `richQuestionText?: boolean`(기본 `false`): `true`면 모든 문항 제목·선택지를 서식 편집기(compact)로 입력하고 `titleBlocks`·`textBlocks`를 저장한다(§7 이전 동작). 퀴즈 OX 정답 선택 UI는 같다. `false`면 §7대로 OX 외 문항은 일반 텍스트, 퀴즈 OX 제목만 서식 편집기.
+  - `maxQuestions?: number`(기본 `QUESTION_MAX` = 30, 1 이상 정수): 헤더 `N/max`, 추가 비활성, 초과 안내에 쓴다. `validatePopupQuestions(questions, quiz, passingScore?, maxQuestions?)`가 네 번째 인자로 같은 값을 받으며 생략하면 30이다. 편집기와 저장 전 확인에 같은 값을 넘기는 것은 부모 책임이다.
+- [x] **73-35 가이드·검증** — 가이드 컴포넌트 표·실행기 입력·공지에 반영. `verify-survey-rich-text-55`에 서식 편집기 모드(제목·선택지 편집기 4개, 선택지 서식 저장)와 `maxQuestions=3`(표시·추가 비활성·초과 안내·검증 인자, 기본 30 유지) 검사를 추가했다. 웹 `tsc`·eslint, 55(64)·69(61)·61(121)·guide-render(31)·guide-registry(276) 통과. 실화면 미실행.
