@@ -139,7 +139,9 @@ public final class PopupFullJsonDefaults {
             "title", text(),
             "footerLinkUrl", text(),
             "completionRatio", nullable(number(0, 1, false)),
-            "passingScore", nullable(number(0, Double.MAX_VALUE, false)));
+            "passingScore", nullable(number(0, Double.MAX_VALUE, false)),
+            // POL-06-02 : 선택·제출 — QUIZ 퀴즈 유형 파생값(참여형 false, 만점형·컷트라인형 true). 없으면 WPF가 passingScore로 판정한다.
+            "requiresPassing", nullable(bool()));
 
     /** 유형별 content 옵션 규칙(YAML content 절과 1:1). SURVEY는 기본값 옵션이 없다. */
     static final Map<String, Map<String, Rule>> CONTENT_RULES = Map.of(

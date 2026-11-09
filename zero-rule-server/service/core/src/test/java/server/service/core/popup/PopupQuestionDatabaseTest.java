@@ -55,6 +55,8 @@ class PopupQuestionDatabaseTest {
                         new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
                 var saved = service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
                 assertEquals(3, saved.questions().size());
+                // POL-06-02 : 선택·제출 — 유형 코드 없는 요청은 통과 점수(30) = 총점(30)이라 만점형(01)으로 저장된다.
+                assertEquals("01", saved.quizTypeCode());
                 assertEquals("VERTICAL", saved.questions().get(0).optionLayout());
                 assertEquals("HORIZONTAL", saved.questions().get(2).optionLayout());
                 assertNotEquals(source.questionTemplateId(), saved.questionTemplateId());
@@ -86,6 +88,70 @@ class PopupQuestionDatabaseTest {
                 assertNotEquals(saved.questionTemplateId(), updated.questionTemplateId());
                 assertEquals(3, mapper.selectQuestionsByTemplateIds(List.of(saved.questionTemplateId())).size());
                 assertEquals(source.questions(), service.getAdminPopup("SAMPLE-SURVEY-004").questions());
+            } finally {
+                session.rollback(true);
+            }
+        }
+    }
+
+    /**
+     * POL-06-02 : 선택·제출
+     * 퀴즈 유형 코드(QUIZ_TYPE_CD) 저장·재조회와 참여형 기준 미달 제출의 완료 처리를 실DB로 확인한다(PU001 §7).
+     * 참여형 기준 5점에서 3점 제출 → POPUP_RESPONSE TOTAL_SCORE 3·PASSED_YN 'N', USER_POPUP_STATUS COMPLETED, 다음 조회 후보 제외.
+     * 23_popup_quiz_type_oracle.sql 적용이 필요하다. 롤백 전용.
+     */
+    @Test void participationQuizTypeRoundTripAndCompletionBelowThreshold() throws Exception {
+        try (var session = openSession()) {
+            try {
+                var mapper = session.getMapper(PopupMapper.class);
+                var json = new ObjectMapper().findAndRegisterModules();
+                var service = new PopupService(mapper, json);
+                ObjectNode draft = json.valueToTree(service.getAdminPopup("SAMPLE-SURVEY-004"));
+                String popupId = "TEST-" + UUID.randomUUID();
+                draft.put("popupId", popupId).put("popupType", "QUIZ").put("title", "참여형 기준 검증")
+                        .put("displayMode", "SEQUENTIAL").put("passingScore", 5).put("quizTypeCode", "00")
+                        .put("displayStartAt", OffsetDateTime.now().minusDays(1).toString())
+                        .put("displayEndAt", OffsetDateTime.now().plusDays(1).toString());
+                var choice = new PopupQuestionDto(-1L, "객관식", null, "SINGLE_CHOICE", true, true,
+                        BigDecimal.TEN, 1, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
+                        new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null, "VERTICAL");
+                draft.set("questions", json.valueToTree(List.of(choice)));
+                var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
+                        new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
+                service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
+                var reloaded = service.getAdminPopup(popupId);
+                assertEquals("00", reloaded.quizTypeCode());
+                assertEquals(5.0, reloaded.passingScore());
+                assertEquals(Boolean.FALSE, WpfPopupItem.from(reloaded, true).requiresPassing());
+                // 같은 유형 코드로 다시 저장하면 유지되고, 만점형으로 바꾸면서 기준이 총점과 다르면 거부한다.
+                draft.put("quizTypeCode", "01");
+                assertThrows(IllegalArgumentException.class,
+                        () -> service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM"));
+
+                assertTrue(mapper.selectAvailablePopups("E1001", true).stream().anyMatch(p -> popupId.equals(p.popupId())));
+                var option = reloaded.questions().get(0).options().get(1);
+                var result = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
+                        List.of(new PopupSubmitAnswer(reloaded.questions().get(0).questionId(), null, List.of(option.optionId()))),
+                        3.0, false);
+                assertEquals(3.0, result.totalScore());
+                assertFalse(result.passed());
+                String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
+                        .getProperty("popupSchemaPrefix");
+                try (var statement = session.getConnection().prepareStatement(
+                        "SELECT r.TOTAL_SCORE, r.PASSED_YN, s.POPUP_STATUS, s.COMPLETED_YN FROM " + prefix + "POPUP_RESPONSE r JOIN "
+                                + prefix + "USER_POPUP_STATUS s ON s.EMPLOYEE_NO = r.EMPLOYEE_NO AND s.POPUP_ID = r.POPUP_ID "
+                                + "WHERE r.EMPLOYEE_NO = 'E1001' AND r.POPUP_ID = ?")) {
+                    statement.setString(1, popupId);
+                    try (var rs = statement.executeQuery()) {
+                        assertTrue(rs.next());
+                        assertEquals(0, new BigDecimal("3").compareTo(rs.getBigDecimal(1)));
+                        assertEquals("N", rs.getString(2));
+                        assertEquals("COMPLETED", rs.getString(3));
+                        assertEquals("Y", rs.getString(4));
+                    }
+                }
+                assertFalse(mapper.selectAvailablePopups("E1001", true).stream().anyMatch(p -> popupId.equals(p.popupId())),
+                        "완료된 참여형 퀴즈는 다음 조회 후보에서 제외");
             } finally {
                 session.rollback(true);
             }

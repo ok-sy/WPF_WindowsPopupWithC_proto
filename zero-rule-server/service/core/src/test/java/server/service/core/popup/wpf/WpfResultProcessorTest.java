@@ -172,6 +172,23 @@ class WpfResultProcessorTest {
         }
     }
 
+    /**
+     * POL-06-02 : 선택·제출 — 참여형 기준 미달(score 3·passed false) 제출도 거절하지 않고 그대로 저장 계층에 넘겨 ACCEPTED로 종결한다.
+     * 완료 여부는 합불과 무관하다(PU001 §7, PopupSubmitScoreTest가 COMPLETED 처리를 확인).
+     */
+    @Test void participationSubmissionBelowThresholdIsAccepted() {
+        delivery("QUIZ");
+        var answers = List.of(new PopupSubmitAnswer(1L, null, List.of(11L)));
+        when(popupService.submitDeliveredResponse(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PopupSubmitResponseDto(3, false));
+        var res = processor.processOne("E1001", new WpfResultCommand("r-1", "D-1", "P1", WpfResultType.SUBMITTED,
+                DISPLAYED, CLOSED, null, answers, null, 3.0, false));
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
+        verify(popupService).submitDeliveredResponse("P1", "r-1", "E1001", answers, 3.0, false);
+        verify(wpfMapper).completeDelivery("D-1", "r-1", "SUBMITTED", 2700);
+        verify(wpfMapper).insertReceipt("r-1", "E1001", "P1", "SUBMITTED", "ACCEPTED", null);
+    }
+
     /** VIDEO_WATCHED는 전달 건 영상 저장 경로에 위임하고 영수증을 기록한다. */
     @Test void videoDelegatesToExistingSaveVideoProgress() {
         var video = new WpfVideoProgress(new BigDecimal("540"), new BigDecimal("540"),

@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-09-09 — dev: PU001 참여형 퀴즈 유형 코드 저장·제출 완료 분리(서버·DB)
+
+- 이유: PU001 TODO §7 구현. 참여형에도 합격 기준을 두고 합불을 기록하되 유효한 제출은 완료로 처리해야 하며, 관리자 화면이 3개 유형을 점수만으로 구분할 수 없어 유형 코드 저장이 필요.
+- 변경:
+  - DB `23_popup_quiz_type_oracle.sql` 신규: `POPUP_NOTICE.QUIZ_TYPE_CD VARCHAR2(2 CHAR)`·`CK_POPUP_QUIZ_TYPE_CD`(NULL 또는 00·01·02)·COMMENT, 기존 QUIZ 이관(PASSING_SCORE NULL·0 이하 → 00, 배점 합 이상 → 01, 그 외 → 02), 멱등. `01_popup_schema_oracle.sql`·`db/oracle/README.md` 반영.
+  - `PopupQuizType` 신규(코드 상수·`requiresPassing` 파생). 관리자 저장·상세 `quizTypeCode`(QUIZ만, 없으면 점수로 파생, `01`은 통과 점수 = 총점만 허용, 알 수 없는 코드 거부). WPF 조회 `WpfPopupItem.requiresPassing`(00 false, 01·02 true, 코드 없음·비QUIZ 생략).
+  - 제출 완료 분리: `markPopupCompleted` 인자를 `completedYn`으로 바꾸고 유효한 제출은 항상 `Y`. `TOTAL_SCORE`·`PASSED_YN`은 WPF `score`·`passed` 그대로. 결과 API JSON 변경 없음. 전체 JSON 샘플·검증기에 `requiresPassing` 규칙 추가.
+  - 테스트: `PopupSubmitScoreTest`(불합격 제출 완료 기대값 Y, 참여형 기준 5·3점), `PopupAdminQuestionsTest` 9건, `WpfResultProcessorTest`, `WpfPopupControllerTest`(requiresPassing 직렬화), `PopupQuestionDatabaseTest`(참여형 왕복·미달 완료).
+- 주요 파일: `db/oracle/23_popup_quiz_type_oracle.sql`, `zero-rule-server/domain/.../PopupQuizType.java`, `PopupResponseDto.java`, `wpf/WpfPopupItem.java`, `repo/core/.../PopupMapper.xml`, `service/core/.../PopupService.java`, `PopupQuestionRules.java`.
+- 검증: gradle 단위 테스트 repo/core 10·service/core 188(실DB 9 건너뜀)·web/api 59·app 5 실패 0. 로컬 XE에 23 적용(QUIZ 1행 01 이관, 재실행 SKIP) 후 실DB 테스트 PopupQuestionDatabaseTest 5/5·WpfDeliveredResult 1/1·WpfQuizRegression 1/1 통과, WpfPopupDatabaseTest 2건 실패(로컬 샘플 게시 기간 2026-10-19 종료로 조회 null, 이번 변경과 무관). 원격 개발 DB 적용은 `ORA-12170` 접속 시간 초과로 미실행 — 서버 반영 전 적용 필요.
+- 상태: 커밋 완료, 원격 반영. 원격 개발 DB 미적용.
+
 ## 2026-11-09-08 — PU001 참여형 퀴즈 채점·완료 분리 정의
 
 - 이유: 참여형에서 통계 기준 미달도 기록하면서 유효한 제출을 완료로 처리할 필요.

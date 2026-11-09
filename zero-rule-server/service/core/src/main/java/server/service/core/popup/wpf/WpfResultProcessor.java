@@ -159,10 +159,12 @@ public class WpfResultProcessor {
      * SUBMITTED: submitDeliveredResponse에 위임한다(문항 검증·응답 upsert·완료 표시). POL-10-02 : 검증·원자성 — 전달 건을 이미 확인했으므로
      * 게시 조건(활성·기간·대상)을 다시 검사하지 않는다.
      * resultId를 clientRequestId로 넘겨 POPUP_RESPONSE.CLIENT_REQUEST_ID에 남긴다.
-     * SURVEY는 passingScore=null → 0점 기준 통과로 완료 처리하므로 제출 즉시 COMPLETED가 된다.
+     * 유효한 SURVEY·QUIZ 제출은 채점 합불(passed)과 관계없이 제출 즉시 COMPLETED가 된다(PU001 §7).
      *
      * <p>POL-06-02 : 선택·제출 — QUIZ 점수·통과 판정은 WPF가 로컬에서 먼저 하고 사용자에게 즉시 보여 준 뒤,
-     * 결과 항목의 score/passed로 함께 보낸다. 서버는 그 값을 그대로 저장하고 완료 판정에 쓴다(submitResponse).
+     * 결과 항목의 score/passed로 함께 보낸다. 서버는 그 값을 POPUP_RESPONSE에 그대로 저장할 뿐 완료 판정에는 쓰지 않는다(submitResponse).
+     * 합격이 필요한 유형(만점형·컷트라인형, 조회 requiresPassing=true)의 미달 제출은 WPF가 전송 전에 막으며 서버는 그 판단을 신뢰한다.
+     * 참여형(requiresPassing=false)은 기준 미달(passed=false)이어도 완료된다.
      * 서버는 답안을 다시 채점하지 않는다(PU001 B-1). 응답은 처리 상태 중심이며 totalScore/passed를 다시 내려주지 않는다.</p>
      */
     private WpfResultItemResponse handleSubmitted(String employeeNo, WpfResultCommand item) {

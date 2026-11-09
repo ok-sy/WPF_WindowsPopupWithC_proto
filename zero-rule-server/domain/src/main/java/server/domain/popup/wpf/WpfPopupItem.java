@@ -3,6 +3,7 @@ package server.domain.popup.wpf;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import server.domain.popup.PopupFooterAction;
 import server.domain.popup.PopupOptionDto;
+import server.domain.popup.PopupQuizType;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
 import server.domain.popup.PopupWindowOptions;
@@ -42,6 +43,11 @@ import java.util.Map;
  * <p>POL-06-02 : 선택·제출 — QUIZ 점수·통과 판정은 WPF 로컬 책임이다(예전에는 서버 채점이라 내려주지 않았다).
  * 그래서 <b>QUIZ 팝업에 한해</b> 최상위 {@code passingScore}와
  * 문항 정답 키(options[].isCorrect / correctAnswer / answerMatchMode)를 포함한다. QUIZ가 아니면 둘 다 없다(null → 생략).</p>
+ *
+ * <p>POL-06-02 : 선택·제출 — QUIZ에 한해 최상위 {@code requiresPassing}(boolean)도 포함한다. 퀴즈 유형 코드(0090)에서 파생하며
+ * 참여형(00)은 {@code false}(기준 미달이어도 제출하면 완료), 만점형(01)·컷트라인형(02)은 {@code true}(합격해야 제출)다.
+ * 유형 코드가 없는 팝업(이관 전 데이터)과 QUIZ 외 유형은 null → 생략이며, WPF는 passingScore 기준의 기존 판정을 쓴다(PU001 §7).
+ * 결과 요청의 {@code passed}(채점 합불)와 의미가 다르므로 이름을 나눴다.</p>
  */
 // POL-09-02 : 조회 응답 — 값 없는 필드는 생략한다. 전역 ObjectMapper 설정(BasicConfig NON_NULL)과 무관하게 WPF 계약을 고정한다.
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -76,6 +82,7 @@ public record WpfPopupItem(
         Integer hideDays,
         Double completionRatio,
         Double passingScore,
+        Boolean requiresPassing,
         List<PopupQuestionDto> questions,
         Map<String, Object> content
 ) {
@@ -85,7 +92,7 @@ public record WpfPopupItem(
      * - in : dto(PopupResponseDto) 공용 팝업 · includeGradingInfo(boolean) QUIZ 채점 정보 포함 여부
      * - out: WpfPopupItem(deliveryId 없음). footer·공통 UI 옵션은 최상위로 옮기고 content에서 뺀다
      *
-     * @param includeGradingInfo POL-06-02 : 선택·제출 — true(QUIZ)면 최상위 passingScore를 포함한다. 문항의 정답 키 포함 여부는
+     * @param includeGradingInfo POL-06-02 : 선택·제출 — true(QUIZ)면 최상위 passingScore·requiresPassing을 포함한다. 문항의 정답 키 포함 여부는
      *                           호출자가 넘긴 {@code dto.questions()}에 이미 반영되어 있다({@link #withoutAnswerKey}).
      */
     public static WpfPopupItem from(PopupResponseDto dto, boolean includeGradingInfo) {
@@ -111,6 +118,7 @@ public record WpfPopupItem(
                 dto.showDoNotShowAgain(), dto.showLater(),
                 dto.hideDays(), dto.completionRatio(),
                 includeGradingInfo ? dto.passingScore() : null,
+                includeGradingInfo ? PopupQuizType.requiresPassing(dto.quizTypeCode()) : null,
                 dto.questions(), content);
     }
 
@@ -120,7 +128,7 @@ public record WpfPopupItem(
                 widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
                 showHeader, showFooterButton, showFooter, footerAction, footerLinkUrl,
                 useBackgroundOverlay, backgroundOverlayOpacity, popupPosition, headerFontSize, bodyFontSize, footerFontSize,
-                showDoNotShowAgain, showLater, hideDays, completionRatio, passingScore, questions, content);
+                showDoNotShowAgain, showLater, hideDays, completionRatio, passingScore, requiresPassing, questions, content);
     }
 
     /**

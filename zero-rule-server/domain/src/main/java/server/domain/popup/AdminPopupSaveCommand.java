@@ -42,6 +42,8 @@ public record AdminPopupSaveCommand(
         Integer hideDays,
         BigDecimal completionRatio,
         BigDecimal passingScore,
+        // POL-06-02 : 선택·제출 — 퀴즈 유형 코드(E0090: 00 참여형·01 만점형·02 컷트라인형). QUIZ만 값, 그 밖 유형은 null.
+        String quizTypeCode,
         String contentTitle,
         String description,
         String contentBody,

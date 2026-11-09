@@ -31,7 +31,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`~`19` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4), `18` 노출 시간대 `POPUP_DISPLAY_TIME`(서버 반영 전 실행, TODO52-1), `19` SURVEY 복수 선택 최소·최대 선택 수 `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`(서버 반영 전 실행). 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`19`, `23` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4), `18` 노출 시간대 `POPUP_DISPLAY_TIME`(서버 반영 전 실행, TODO52-1), `19` SURVEY 복수 선택 최소·최대 선택 수 `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`(서버 반영 전 실행), `23` 퀴즈 유형 코드 `POPUP_NOTICE.QUIZ_TYPE_CD`·기존 QUIZ 유형 복원(서버 반영 전 실행). 상세·적용 현황은 아래 각 절 |
 | 개발 | `21_dev_master_app_user_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | 테스트 계정 `master` 활성 등록. 로컬·원격 개발 DB 전용, 폐쇄망·운영 실행 금지 |
 | 개발 | `22_popup_question_code_oracle.sql` | 공통 테이블 접근 앱 계정 | 답안 유형(0089)·퀴즈 유형(0090) 공통코드 등록. 로컬·원격 개발 DB 전용, 폐쇄망은 이미 있어 실행하지 않음 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
@@ -250,6 +250,16 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 적용 현황: 원격 개발 DB 2026-11-05 실행 — 코드 그룹 2건, 코드 5건(`0089` OX형·선다형, `0090` 참여형·만점형·컷트라인형), 새 연결로 조회 확인.
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 22_popup_question_code_oracle.sql`
+
+## 퀴즈 유형 코드 컬럼 추가 (2026-11-09, PU001 §7)
+
+`23_popup_quiz_type_oracle.sql <스키마접두어>` — `POPUP_NOTICE.QUIZ_TYPE_CD`(VARCHAR2(2 CHAR), NULL 허용)와 `CK_POPUP_QUIZ_TYPE_CD`(NULL 또는 `00`·`01`·`02`)를 추가하고, 유형 코드가 빈 기존 QUIZ 행을 점수 기준으로 채운다. 이미 있으면 SKIP·이미 값이 있는 행은 유지(멱등). `01_popup_schema_oracle.sql` POPUP_NOTICE에도 같은 정의를 넣었다.
+
+- 배경: 참여형 퀴즈도 양수 기준 점수를 둘 수 있게 되어 `PASSING_SCORE`만으로는 유형을 구분할 수 없다. 공통코드 그룹 `0090`(`00` 참여형·`01` 만점형·`02` 컷트라인형)을 저장한다. QUIZ 외 유형은 NULL. WPF 조회 응답은 코드 대신 `requiresPassing`(`00`=false, `01`·`02`=true)을 받는다.
+- 이관 기준: `PASSING_SCORE` NULL·0 이하 → `00`, 문항 배점 합계(`POPUP_QUESTION.QUESTION_SCORE`) 이상 → `01`(만점 기준 컷트라인은 만점형과 구분할 수 없어 만점형으로 본다), 그 밖 → `02`.
+- 순서: **서버 반영 전에 실행.** 새 서버는 이 컬럼을 조회·저장하므로 없으면 ORA-00904로 실패한다. 이전 서버는 쓰지 않아 실행 후에도 동작한다.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @23_popup_quiz_type_oracle.sql POPUP.`
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 23_popup_quiz_type_oracle.sql`
 
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 

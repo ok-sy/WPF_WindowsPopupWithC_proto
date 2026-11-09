@@ -1,6 +1,7 @@
 package server.service.core.popup;
 
 import server.domain.popup.PopupQuestionDto;
+import server.domain.popup.PopupQuizType;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -73,6 +74,36 @@ final class PopupQuestionRules {
                 || BigDecimal.valueOf(passingScore).compareTo(total) > 0
                 || BigDecimal.valueOf(passingScore).stripTrailingZeros().scale() > 2))
             fail("통과 점수는 0~총점 사이이며 소수점 두 자리까지 입력할 수 있습니다.");
+    }
+
+    /**
+     * POL-06-02 : 선택·제출
+     * ■ 퀴즈 유형 코드 결정·검증
+     * - in : questions(List&lt;PopupQuestionDto&gt;) 기본 배점을 채운 QUIZ 문항 · passingScore(Double) 통과 점수 ·
+     *        requested(String) 요청 quizTypeCode(null 허용)
+     * - out: 저장할 유형 코드(00 참여형·01 만점형·02 컷트라인형) · 예외: IllegalArgumentException(알 수 없는 코드, 만점형 기준 불일치)
+     * - 요청 코드가 없으면(구 관리자 웹 등) 통과 점수로 파생한다: 0 이하·미설정 → 00, 문항 배점 합계 이상 → 01, 그 밖 → 02.
+     *   만점형은 통과 점수가 배점 합계와 같아야 한다. 참여형·컷트라인형은 받은 통과 점수(0~총점, {@link #validate})를 그대로 보존한다
+     *   (참여형도 양수 기준을 둘 수 있다, PU001 §7).
+     */
+    static String resolveQuizTypeCode(List<PopupQuestionDto> questions, Double passingScore, String requested) {
+        String code = requested == null || requested.isBlank() ? null : requested.trim();
+        if (code != null && !PopupQuizType.CODES.contains(code))
+            fail("퀴즈 유형은 00(참여형)·01(만점형)·02(컷트라인형) 중 하나여야 합니다.");
+        BigDecimal total = BigDecimal.ZERO;
+        if (questions != null) {
+            for (PopupQuestionDto q : questions) {
+                if (q != null && q.questionScore() != null) total = total.add(q.questionScore());
+            }
+        }
+        BigDecimal passing = passingScore == null || !Double.isFinite(passingScore) ? null : BigDecimal.valueOf(passingScore);
+        if (code == null) {
+            if (passing == null || passing.signum() <= 0) return PopupQuizType.PARTICIPATION;
+            return passing.compareTo(total) >= 0 ? PopupQuizType.FULL : PopupQuizType.CUTOFF;
+        }
+        if (PopupQuizType.FULL.equals(code) && (passing == null || passing.compareTo(total) != 0))
+            fail("만점형 퀴즈의 통과 점수는 총점과 같아야 합니다.");
+        return code;
     }
 
     /**

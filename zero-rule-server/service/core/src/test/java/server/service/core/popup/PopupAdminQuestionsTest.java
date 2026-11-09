@@ -339,4 +339,88 @@ class PopupAdminQuestionsTest {
         assertTrue(configuration.hasStatement(PopupMapper.class.getName() + ".selectAdminQuestionTemplates"));
         assertTrue(configuration.hasStatement(PopupMapper.class.getName() + ".insertAdminQuestion"));
     }
+    // ===== POL-06-02 : 선택·제출 — 퀴즈 유형 코드(0090) 저장 규칙 (PU001 §7) =====
+
+    /** 통과 점수·유형 코드만 바꾼 QUIZ 저장 요청. 문항은 2점 문항 count개(총점 2×count). */
+    private PopupResponseDto quiz(Double passingScore, String quizTypeCode, int count) {
+        var base = popup(java.util.stream.IntStream.range(0, count).mapToObj(i -> question(true, false)).toList());
+        return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
+                base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
+                base.width(), base.height(), base.widthRatio(), base.heightRatio(), base.minimumWidth(), base.minimumHeight(),
+                base.maximumWidth(), base.maximumHeight(), base.showHeader(), base.showCloseButton(), base.showFooter(),
+                base.showDoNotShowAgain(), base.showLater(), base.questionTemplateId(), base.periodMode(), null, null, null, null, null,
+                passingScore, base.questions(), base.content(), List.of(), quizTypeCode);
+    }
+
+    private void assertSavedType(String expectedCode, String expectedPassing) {
+        verify(mapper).upsertAdminPopupNotice(argThat(c -> expectedCode.equals(c.quizTypeCode())
+                && c.passingScore() != null && c.passingScore().compareTo(new BigDecimal(expectedPassing)) == 0));
+    }
+
+    /** 유형 코드가 없는 구 요청은 통과 점수로 파생한다: 0 → 00 참여형. */
+    @Test void nullQuizTypeWithZeroPassingIsParticipation() {
+        service.saveAdminPopup(quiz(0.0, null, 2), false, List.of(), "admin");
+        assertSavedType("00", "0");
+    }
+
+    /** 유형 코드가 없고 통과 점수가 총점과 같으면 01 만점형으로 파생한다. */
+    @Test void nullQuizTypeWithFullPassingIsFull() {
+        service.saveAdminPopup(quiz(4.0, null, 2), false, List.of(), "admin");
+        assertSavedType("01", "4");
+    }
+
+    /** 유형 코드가 없고 0 < 통과 점수 < 총점이면 02 컷트라인형으로 파생한다. */
+    @Test void nullQuizTypeWithPartialPassingIsCutoff() {
+        service.saveAdminPopup(quiz(3.0, null, 2), false, List.of(), "admin");
+        assertSavedType("02", "3");
+    }
+
+    /** 참여형도 양수 기준 점수를 보존한다(기준 5점 중 3점처럼 채점 안내에 쓴다). */
+    @Test void participationKeepsPositivePassingScore() {
+        service.saveAdminPopup(quiz(3.0, "00", 3), false, List.of(), "admin");
+        assertSavedType("00", "3");
+    }
+
+    /** 만점형 기준과 같은 점수의 컷트라인형은 요청 코드대로 02로 보존한다. */
+    @Test void cutoffAtFullScoreKeepsRequestedCode() {
+        service.saveAdminPopup(quiz(4.0, "02", 2), false, List.of(), "admin");
+        assertSavedType("02", "4");
+    }
+
+    /** 만점형인데 통과 점수가 총점과 다르면 거부하고 템플릿·팝업을 저장하지 않는다. */
+    @Test void fullQuizTypeRequiresPassingScoreEqualToTotal() {
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> service.saveAdminPopup(quiz(3.0, "01", 2), false, List.of(), "admin"));
+        assertEquals("만점형 퀴즈의 통과 점수는 총점과 같아야 합니다.", error.getMessage());
+        verify(mapper, never()).insertQuestionTemplate(anyString(), anyString(), anyString());
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+        service.saveAdminPopup(quiz(4.0, "01", 2), false, List.of(), "admin");
+        assertSavedType("01", "4");
+    }
+
+    /** 알 수 없는 유형 코드는 거부한다. 통과 점수 범위(0~총점) 검증은 유형과 관계없이 유지한다. */
+    @Test void unknownQuizTypeAndOutOfRangePassingAreRejected() {
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(quiz(1.0, "03", 2), false, List.of(), "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(quiz(5.0, "00", 2), false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
+    }
+
+    /** QUIZ 외 유형은 요청에 유형 코드가 있어도 null로 저장한다. */
+    @Test void nonQuizStoresNullQuizType() {
+        service.saveAdminPopup(imagePopup("ADAPTIVE").withQuizTypeCode("00"), false, List.of(), "admin");
+        verify(mapper).upsertAdminPopupNotice(argThat(c -> c.quizTypeCode() == null));
+    }
+
+    /** WPF 항목 requiresPassing: 00 → false, 01·02 → true, null → 생략, QUIZ 외 → 생략. */
+    @Test void wpfItemRequiresPassingMapping() {
+        var quiz = quiz(3.0, null, 2);
+        assertEquals(Boolean.FALSE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("00"), true).requiresPassing());
+        assertEquals(Boolean.TRUE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("01"), true).requiresPassing());
+        assertEquals(Boolean.TRUE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("02"), true).requiresPassing());
+        assertNull(server.domain.popup.wpf.WpfPopupItem.from(quiz, true).requiresPassing());
+        assertNull(server.domain.popup.wpf.WpfPopupItem.from(imagePopup("ADAPTIVE").withQuizTypeCode("00"), false).requiresPassing());
+        var json = new ObjectMapper().findAndRegisterModules()
+                .valueToTree(server.domain.popup.wpf.WpfPopupItem.from(quiz, true));
+        assertFalse(json.has("requiresPassing"), "유형 코드 없는 QUIZ는 requiresPassing 키를 생략: " + json);
+    }
 }

@@ -182,6 +182,34 @@ class WpfPopupControllerTest {
     }
 
     /**
+     * POL-06-02 : 선택·제출
+     * QUIZ 최상위 requiresPassing은 퀴즈 유형 코드에서 파생한다: 00 참여형 false, 01 만점형·02 컷트라인형 true,
+     * 코드 없음(이관 전)은 생략(WPF가 passingScore 기준으로 판정). QUIZ 외 유형은 코드가 있어도 생략한다(PU001 §7).
+     * 퀴즈 유형 코드 자체(quizTypeCode)는 WPF 계약에 없다.
+     */
+    @Test void quizRequiresPassingIsDerivedFromQuizTypeCode() throws Exception {
+        String base = """
+                {"popupId":"%s","popupType":"%s","title":"t","sizeMode":"FIXED","width":500,"height":300,
+                 "minimumWidth":100,"minimumHeight":100,"maximumWidth":900,"maximumHeight":700,
+                 "passingScore":5,%s"content":{"surveyTitle":"q"}}
+                """;
+        next(item(base.formatted("QUIZ-00", "QUIZ", "\"quizTypeCode\":\"00\","), true))
+                .andExpect(jsonPath("$.popup.requiresPassing").value(false))
+                .andExpect(jsonPath("$.popup.passingScore").value(5.0))
+                .andExpect(jsonPath("$.popup.quizTypeCode").doesNotExist());
+        next(item(base.formatted("QUIZ-01", "QUIZ", "\"quizTypeCode\":\"01\","), true))
+                .andExpect(jsonPath("$.popup.requiresPassing").value(true));
+        next(item(base.formatted("QUIZ-02", "QUIZ", "\"quizTypeCode\":\"02\","), true))
+                .andExpect(jsonPath("$.popup.requiresPassing").value(true));
+        next(item(base.formatted("QUIZ-NULL", "QUIZ", ""), true))
+                .andExpect(jsonPath("$.popup.requiresPassing").doesNotExist())
+                .andExpect(jsonPath("$.popup.passingScore").value(5.0));
+        next(item(base.formatted("SURVEY-00", "SURVEY", "\"quizTypeCode\":\"00\","), false))
+                .andExpect(jsonPath("$.popup.requiresPassing").doesNotExist())
+                .andExpect(jsonPath("$.popup.passingScore").doesNotExist());
+    }
+
+    /**
      * POL-01-01 : 공통 옵션의 위치
      * POL-01-02 : 기본값의 적용
      * PopupWindow 공통 UI 옵션은 최상위로 승격하고 content에서 뺀다. 범위 밖·미지원 값은 기본값으로 보정한다.

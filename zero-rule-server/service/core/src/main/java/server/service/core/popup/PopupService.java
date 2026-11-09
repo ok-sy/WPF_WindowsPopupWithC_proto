@@ -253,6 +253,8 @@ public class PopupService {
         if (!Set.of("SURVEY", "QUIZ").contains(type)) return null;
         boolean quiz = "QUIZ".equals(type);
         PopupQuestionRules.validate(popup.questions(), quiz, popup.passingScore());
+        // POL-06-02 : 선택·제출 — 퀴즈 유형 코드(만점형 = 총점 기준 등)를 템플릿 저장 전에 검증한다. 저장 값은 toAdminSaveCommand가 같은 규칙으로 정한다.
+        if (quiz) PopupQuestionRules.resolveQuizTypeCode(popup.questions(), popup.passingScore(), popup.quizTypeCode());
         PopupEntity existing = popupMapper.selectAdminPopupById(popup.popupId().trim());
         if (existing != null && type.equals(existing.popupType())
                 && existing.questionTemplateId() != null
@@ -598,7 +600,7 @@ public class PopupService {
                         optionsByQuestion.getOrDefault(
                                 answer.questionId(), List.of())))
                 .toList();
-        // SURVEY는 채점 대상이 아니므로 0점·통과로 저장한다.
+        // SURVEY는 채점 대상이 아니므로 0점·통과로 저장한다. QUIZ는 WPF 채점값(score·passed)을 그대로 저장한다.
         BigDecimal totalScore = BigDecimal.ZERO;
         String passedYn = "Y";
         if ("QUIZ".equalsIgnoreCase(context.popupType())) {
@@ -637,8 +639,10 @@ public class PopupService {
             }
         }
 
+        // POL-06-02 : 선택·제출 — 유효한 SURVEY·QUIZ 제출은 채점 합불(passed)과 관계없이 완료다(PU001 §7). 참여형은 기준 미달도
+        // 제출하면 완료이고, 합격이 필요한 유형(만점형·컷트라인형)의 미달 제출은 WPF가 전송 전에 막는다. 서버는 그 판단을 신뢰한다.
         popupMapper.markPopupCompleted(
-                normalizedUserId, normalizedPopupId, passedYn);
+                normalizedUserId, normalizedPopupId, "Y");
         return new PopupSubmitResponseDto(totalScore.doubleValue(), "Y".equals(passedYn));
     }
 
@@ -1281,6 +1285,10 @@ public class PopupService {
                 popup.hideDays(),
                 toBigDecimal(popup.completionRatio()),
                 "QUIZ".equals(popupType) ? toBigDecimal(popup.passingScore()) : null,
+                // POL-06-02 : 선택·제출 — 퀴즈 유형 코드. 요청에 없으면 통과 점수·총점으로 파생한다. QUIZ 외 유형은 null.
+                "QUIZ".equals(popupType)
+                        ? PopupQuestionRules.resolveQuizTypeCode(popup.questions(), popup.passingScore(), popup.quizTypeCode())
+                        : null,
                 // POL-03-01 : 저장·표시 경계 — TEXT의 제목·설명은 본문(textBlocks)으로 통합해 정규 컬럼을 비운다.
                 "TEXT".equals(popupType) ? null : contentText(content, contentTitleKey(popupType)),
                 "TEXT".equals(popupType) ? null : contentText(content, "description"),
@@ -1432,7 +1440,9 @@ public class PopupService {
                 popup.repeatDayOfMonth(), popup.hideDays(),
                 toNullableDouble(popup.completionRatio()),
                 toNullableDouble(popup.passingScore()),
-                questions, content);
+                questions, content, List.of(),
+                // POL-06-02 : 선택·제출 — 퀴즈 유형 코드는 QUIZ만 내려준다(이관 전 NULL은 그대로 null).
+                "QUIZ".equals(popup.popupType()) ? popup.quizTypeCode() : null);
     }
 
     private boolean isYes(String value) {

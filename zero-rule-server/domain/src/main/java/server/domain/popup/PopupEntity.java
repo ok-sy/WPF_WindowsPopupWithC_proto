@@ -55,6 +55,24 @@ public record PopupEntity(
         Integer repeatDayOfMonth,
         Integer hideDays,
         BigDecimal completionRatio,
-        BigDecimal passingScore
+        BigDecimal passingScore,
+        // POL-06-02 : 선택·제출 — POPUP_NOTICE.QUIZ_TYPE_CD(E0090: 00 참여형·01 만점형·02 컷트라인형). QUIZ 외·미이관은 null.
+        String quizTypeCode
 ) {
+    /** 퀴즈 유형 코드 도입 전 생성자. 유형 코드 없음(null)으로 만든다. */
+    public PopupEntity(String popupId, String popupType, String title, OffsetDateTime displayStartAt,
+            OffsetDateTime displayEndAt, String displayMode, String sizeMode, BigDecimal popupWidth,
+            BigDecimal popupHeight, BigDecimal widthRatio, BigDecimal heightRatio, BigDecimal minimumWidth,
+            BigDecimal minimumHeight, BigDecimal maximumWidth, BigDecimal maximumHeight, String showHeaderYn,
+            String showCloseButtonYn, String showFooterYn, String showDontShowYn, String showLaterYn,
+            String contentTitle, String description, String contentBody, String mediaUrl, String contentOptionsJson,
+            int displayOrder, Long questionTemplateId, String periodMode, Integer repeatInterval,
+            String repeatDayOfWeek, Integer repeatDayOfMonth, Integer hideDays, BigDecimal completionRatio,
+            BigDecimal passingScore) {
+        this(popupId, popupType, title, displayStartAt, displayEndAt, displayMode, sizeMode, popupWidth, popupHeight,
+                widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight, showHeaderYn,
+                showCloseButtonYn, showFooterYn, showDontShowYn, showLaterYn, contentTitle, description, contentBody,
+                mediaUrl, contentOptionsJson, displayOrder, questionTemplateId, periodMode, repeatInterval,
+                repeatDayOfWeek, repeatDayOfMonth, hideDays, completionRatio, passingScore, null);
+    }
 }

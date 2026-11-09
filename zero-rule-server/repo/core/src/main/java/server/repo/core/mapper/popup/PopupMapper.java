@@ -228,10 +228,14 @@ public interface PopupMapper {
             @Param("selectedValue") String selectedValue,
             @Param("userId") String userId);
 
+    /**
+     * 사용자·팝업 표시 상태에 완료 여부를 반영한다(이미 완료면 유지).
+     * POL-06-02 : 선택·제출 — completedYn은 완료 여부이며 채점 합불(PASSED_YN)이 아니다. 설문·퀴즈 제출은 항상 'Y'다(PU001 §7).
+     */
     int markPopupCompleted(
             @Param("userId") String userId,
             @Param("popupId") String popupId,
-            @Param("passedYn") String passedYn);
+            @Param("completedYn") String completedYn);
 
     /**
      * 영상(VIDEO·동영상+퀴즈) 완료 기준. requirePublished의 의미는 {@link #selectSubmissionContext(String, String, boolean)}와 같다.

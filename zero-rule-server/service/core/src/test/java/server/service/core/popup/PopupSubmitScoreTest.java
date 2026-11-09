@@ -20,7 +20,8 @@ import static org.mockito.Mockito.*;
 /**
  * POL-06-02 : 선택·제출
  * ■ QUIZ·SURVEY 제출 점수 저장 테스트
- * - QUIZ 제출은 WPF가 판정한 score/passed를 저장·완료 판정에 쓰고 서버는 재채점하지 않는다(PU001 B-1). SURVEY는 0점·통과로 완료한다.
+ * - QUIZ 제출은 WPF가 판정한 score/passed를 그대로 저장하고 서버는 재채점하지 않는다(PU001 B-1). SURVEY는 0점·통과로 완료한다.
+ * - 유효한 제출은 채점 합불과 관계없이 완료한다(PU001 §7). 참여형 기준 미달도 PASSED_YN='N'으로 저장하고 COMPLETED다.
  */
 class PopupSubmitScoreTest {
     private PopupMapper mapper;
@@ -47,7 +48,7 @@ class PopupSubmitScoreTest {
                 .thenReturn(new PopupSubmissionContext("Q1", type, 20L, passingScore));
     }
 
-    /** 정답을 골라도 QUIZ는 WPF score/passed만 저장·완료 판정에 쓰고, 문항별 점수·정오답은 null로 저장한다. */
+    /** 정답을 골라도 QUIZ는 WPF score/passed만 저장하고, 문항별 점수·정오답은 null로 저장한다. 불합격 값이어도 완료다. */
     @Test void quizStoresWpfScoreAndPassedWithoutServerGrading() {
         context("QUIZ", BigDecimal.TEN);
         // 정답 선택지(10)를 골랐지만 서버는 채점하지 않으므로 WPF 판정(4점·불합격)이 그대로 저장된다.
@@ -57,7 +58,27 @@ class PopupSubmitScoreTest {
         verify(mapper).upsertPopupResponse("r-1", "E1001", "Q1", 20L, new BigDecimal("4.00"), "N");
         verify(mapper).insertResponseAnswer(5001L, 1L, null, null, null, "E1001");
         verify(mapper).insertResponseValue(7001L, 10L, "A", "E1001");
-        verify(mapper).markPopupCompleted("E1001", "Q1", "N");
+        verify(mapper).markPopupCompleted("E1001", "Q1", "Y");
+    }
+
+    /** 참여형 기준 5점에서 3점: score 3·passed false를 그대로 저장하고 완료(COMPLETED) 처리한다(PU001 §7 검증 항목). */
+    @Test void participationBelowThresholdStoresFailedScoreAndCompletes() {
+        context("QUIZ", new BigDecimal("5"));
+        var result = service.submitResponse("Q1", "r-1", "E1001", answers, 3.0, false);
+        assertEquals(3.0, result.totalScore());
+        assertFalse(result.passed());
+        verify(mapper).upsertPopupResponse("r-1", "E1001", "Q1", 20L, new BigDecimal("3.00"), "N");
+        verify(mapper).markPopupCompleted("E1001", "Q1", "Y");
+        verify(mapper, never()).markPopupCompleted(any(), any(), eq("N"));
+    }
+
+    /** 컷트라인형 합격 제출은 PASSED_YN='Y'로 저장하고 완료한다. */
+    @Test void cutoffPassedStoresPassedAndCompletes() {
+        context("QUIZ", new BigDecimal("5"));
+        var result = service.submitResponse("Q1", "r-1", "E1001", answers, 7.0, true);
+        assertTrue(result.passed());
+        verify(mapper).upsertPopupResponse("r-1", "E1001", "Q1", 20L, new BigDecimal("7.00"), "Y");
+        verify(mapper).markPopupCompleted("E1001", "Q1", "Y");
     }
 
     /** 재채점을 없애도 답안 형식 검증(문항에 없는 선택지·단일 선택 복수 응답·선택형 textAnswer)은 유지한다. */

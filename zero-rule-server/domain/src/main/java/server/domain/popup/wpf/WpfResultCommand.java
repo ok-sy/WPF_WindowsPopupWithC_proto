@@ -28,7 +28,8 @@ import java.util.List;
  * @param answers           SUBMITTED일 때 답안 목록
  * @param video             VIDEO_WATCHED 또는 동영상+퀴즈 SUBMITTED일 때 시청 누적값
  * @param score             QUIZ SUBMITTED일 때 WPF 로컬 채점 점수(QUIZ 필수). 서버가 그대로 저장한다
- * @param passed            QUIZ SUBMITTED일 때 WPF 로컬 통과 여부(QUIZ 필수). 저장·완료 판정에 사용한다
+ * @param passed            QUIZ SUBMITTED일 때 WPF 로컬 채점 합불(QUIZ 필수). POPUP_RESPONSE.PASSED_YN에 그대로 저장하며 완료 판정에는
+ *                          쓰지 않는다(유효한 제출은 합불과 관계없이 완료, PU001 §7). 참여형은 기준 미달이면 false로 올 수 있다
  */
 public record WpfResultCommand(
         String resultId,

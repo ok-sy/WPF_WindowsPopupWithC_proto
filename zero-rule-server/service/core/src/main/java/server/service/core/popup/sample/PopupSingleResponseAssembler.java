@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *   <tr><td>useBackgroundOverlay / backgroundOverlayOpacity / popupPosition</td><td>content</td><td>true / 0.45 / CENTER</td></tr>
  *   <tr><td>header/body/footerFontSize</td><td>content</td><td>null(키는 항상 포함, null = WPF XAML 기본 크기)</td></tr>
  *   <tr><td>hideDays / completionRatio / passingScore</td><td>(컬럼 없음)</td><td>null / VIDEO 1.0·영상+퀴즈 0.8(PU001 B-7), 그 밖 null / QUIZ만 키 포함 null</td></tr>
+ *   <tr><td>requiresPassing</td><td>(컬럼 없음)</td><td>생략(퀴즈 유형 컬럼 확정 전. WPF는 passingScore 기준 구 판정으로 대체, PU001 §7)</td></tr>
  *   <tr><td>content 유형별 옵션</td><td>CNTN_CN</td><td>{@link #CONTENT_DEFAULTS} 표(명세 §8·WPF 콘텐츠 DTO 기본값과 같음)</td></tr>
  *   <tr><td>questions[]·options[] 선택 필드</td><td>QuestionPort</td><td>applyQuestionDefaults</td></tr>
  *   <tr><td>displayMode·sizeMode·widthRatio·heightRatio·minimum*·maximum*·showHeader·showFooter·showFooterButton·showDoNotShowAgain</td>

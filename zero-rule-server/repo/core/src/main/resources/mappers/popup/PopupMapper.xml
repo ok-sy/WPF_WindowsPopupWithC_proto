@@ -198,7 +198,8 @@
             n.REPEAT_DAY_OF_MONTH,
             n.HIDE_DAYS,
             n.COMPLETION_RATIO,
-            n.PASSING_SCORE
+            n.PASSING_SCORE,
+            n.QUIZ_TYPE_CD
     </sql>
 
     <!--
@@ -251,6 +252,7 @@
             n.HIDE_DAYS                      = #{hideDays},
             n.COMPLETION_RATIO               = #{completionRatio},
             n.PASSING_SCORE                  = #{passingScore},
+            n.QUIZ_TYPE_CD                   = #{quizTypeCode, jdbcType=VARCHAR},
             n.UPDATED_BY                     = #{auditUser},
             n.UPDATED_AT                     = <include refid="nowKst"/>
         WHEN NOT MATCHED THEN INSERT
@@ -261,7 +263,7 @@
             POPUP_WIDTH, POPUP_HEIGHT, WIDTH_RATIO, HEIGHT_RATIO,
             MINIMUM_WIDTH, MINIMUM_HEIGHT, MAXIMUM_WIDTH, MAXIMUM_HEIGHT,
             SHOW_HEADER_YN, SHOW_CLOSE_BUTTON_YN, SHOW_FOOTER_YN, SHOW_DO_NOT_SHOW_AGAIN_YN, SHOW_LATER_YN,
-            HIDE_DAYS, COMPLETION_RATIO, PASSING_SCORE,
+            HIDE_DAYS, COMPLETION_RATIO, PASSING_SCORE, QUIZ_TYPE_CD,
             CREATED_BY, UPDATED_BY
         )
         VALUES
@@ -274,7 +276,7 @@
             #{popupWidth}, #{popupHeight}, #{widthRatio}, #{heightRatio},
             #{minimumWidth}, #{minimumHeight}, #{maximumWidth}, #{maximumHeight},
             #{showHeaderYn}, #{showCloseButtonYn}, #{showFooterYn}, #{showDoNotShowAgainYn}, #{showLaterYn},
-            #{hideDays}, #{completionRatio}, #{passingScore},
+            #{hideDays}, #{completionRatio}, #{passingScore}, #{quizTypeCode, jdbcType=VARCHAR},
             #{auditUser}, #{auditUser}
         )
     </update>
@@ -461,6 +463,7 @@
             <arg column="HIDE_DAYS" javaType="java.lang.Integer"/>
             <arg column="COMPLETION_RATIO" javaType="java.math.BigDecimal"/>
             <arg column="PASSING_SCORE" javaType="java.math.BigDecimal"/>
+            <arg column="QUIZ_TYPE_CD" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
@@ -880,23 +883,27 @@
         )
     </insert>
 
-    <!-- 통과 여부를 팝업 표시 상태에도 반영한다. 이미 완료된 상태는 되돌리지 않는다 (원본 CASE 로직 유지). -->
+    <!--
+        완료 여부(completedYn)를 팝업 표시 상태에 반영한다. 이미 완료된 상태는 되돌리지 않는다 (원본 CASE 로직 유지).
+        POL-06-02 : 선택·제출 — 설문·퀴즈 제출은 채점 합불(POPUP_RESPONSE.PASSED_YN)과 관계없이 completedYn='Y'로 호출한다
+        (PU001 §7, 참여형 기준 미달도 제출하면 완료). 영상은 시청 비율 충족 여부, 일반 안내 닫기는 'Y'를 넘긴다.
+    -->
     <update id="markPopupCompleted">
         MERGE INTO ${popupSchemaPrefix}USER_POPUP_STATUS s
         USING (SELECT #{userId} AS EMPLOYEE_NO, #{popupId} AS POPUP_ID FROM DUAL) src
            ON (s.EMPLOYEE_NO = src.EMPLOYEE_NO AND s.POPUP_ID = src.POPUP_ID)
         WHEN MATCHED THEN UPDATE SET
             s.POPUP_STATUS = CASE
-                WHEN s.COMPLETED_YN = 'Y' OR #{passedYn} = 'Y' THEN 'COMPLETED'
+                WHEN s.COMPLETED_YN = 'Y' OR #{completedYn} = 'Y' THEN 'COMPLETED'
                 ELSE 'SUBMITTED'
             END,
             s.COMPLETED_YN = CASE
                 WHEN s.COMPLETED_YN = 'Y' THEN 'Y'
-                ELSE #{passedYn}
+                ELSE #{completedYn}
             END,
             s.COMPLETED_AT = CASE
                 WHEN s.COMPLETED_AT IS NOT NULL THEN s.COMPLETED_AT
-                WHEN #{passedYn} = 'Y' THEN <include refid="nowKst"/>
+                WHEN #{completedYn} = 'Y' THEN <include refid="nowKst"/>
                 ELSE NULL
             END,
             s.UPDATED_BY = #{userId},
@@ -909,9 +916,9 @@
         VALUES
         (
             ${popupSchemaPrefix}SEQ_USER_POPUP_STATUS.NEXTVAL, src.EMPLOYEE_NO, src.POPUP_ID,
-            CASE WHEN #{passedYn} = 'Y' THEN 'COMPLETED' ELSE 'SUBMITTED' END,
-            0, #{passedYn},
-            CASE WHEN #{passedYn} = 'Y' THEN <include refid="nowKst"/> ELSE NULL END,
+            CASE WHEN #{completedYn} = 'Y' THEN 'COMPLETED' ELSE 'SUBMITTED' END,
+            0, #{completedYn},
+            CASE WHEN #{completedYn} = 'Y' THEN <include refid="nowKst"/> ELSE NULL END,
             #{userId}, #{userId}
         )
     </update>

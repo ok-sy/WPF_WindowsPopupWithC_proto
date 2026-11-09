@@ -277,7 +277,11 @@ public class PopupJsonValidator {
         } else {
             removeNotApplicable(work, "completionRatio", changes);
         }
-        if (!"QUIZ".equals(type)) removeNotApplicable(work, "passingScore", changes);
+        if (!"QUIZ".equals(type)) {
+            removeNotApplicable(work, "passingScore", changes);
+            // POL-06-02 : 선택·제출 — requiresPassing도 QUIZ만 의미가 있다(PU001 §7).
+            removeNotApplicable(work, "requiresPassing", changes);
+        }
     }
 
     /** POL-02-03 : 푸터 역할 — SURVEY·QUIZ는 SUBMIT만, 그 밖은 CLOSE·LINK_AND_CLOSE(절대 http/https URL 필수). */

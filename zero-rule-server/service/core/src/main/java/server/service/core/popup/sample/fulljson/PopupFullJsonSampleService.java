@@ -64,7 +64,7 @@ public class PopupFullJsonSampleService {
             "width", "height", "widthRatio", "heightRatio", "minimumWidth", "minimumHeight", "maximumWidth", "maximumHeight",
             "showHeader", "showFooterButton", "showFooter", "footerAction", "footerLinkUrl", "useBackgroundOverlay",
             "backgroundOverlayOpacity", "popupPosition", "headerFontSize", "bodyFontSize", "footerFontSize", "showDoNotShowAgain",
-            "showLater", "hideDays", "completionRatio", "passingScore");
+            "showLater", "hideDays", "completionRatio", "passingScore", "requiresPassing");
     private static final Set<String> QUESTION_TYPES = Set.of("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TEXT");
 
     private final PopupFullJsonSampleMapper mapper;
@@ -258,6 +258,7 @@ public class PopupFullJsonSampleService {
             if (!work.has("passingScore")) work.putNull("passingScore");
         } else {
             work.remove("passingScore");
+            work.remove("requiresPassing");
         }
     }
 

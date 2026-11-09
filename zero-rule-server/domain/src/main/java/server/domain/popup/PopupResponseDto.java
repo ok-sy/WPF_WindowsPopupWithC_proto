@@ -48,12 +48,32 @@ public record PopupResponseDto(
         List<PopupQuestionDto> questions,
         Map<String, Object> content,
         // POL-11-03 : 시간 경계 — PERIOD_MODE=SCHEDULE의 노출 시간대(없으면 하루 종일). 관리자 상세·저장에만 쓰며 WPF 응답(WpfPopupItem)에는 없다.
-        List<PopupDisplayTimeDto> displayTimes
+        List<PopupDisplayTimeDto> displayTimes,
+        // POL-06-02 : 선택·제출 — 퀴즈 유형 코드(공통코드 E0090: 00 참여형·01 만점형·02 컷트라인형). QUIZ만 의미가 있고 그 밖 유형은 null.
+        // 저장 요청에서 null이면 서버가 passingScore·문항 총점으로 파생한다(PopupQuestionRules.resolveQuizTypeCode). WPF 응답에는
+        // 코드 대신 파생값 requiresPassing만 내려준다(WpfPopupItem).
+        String quizTypeCode
 ) {
     public PopupResponseDto {
         questions = questions == null ? List.of() : List.copyOf(questions);
         content = content == null ? Map.of() : content;
         displayTimes = displayTimes == null ? List.of() : List.copyOf(displayTimes);
+    }
+
+    /** POL-06-02 : 선택·제출 — 퀴즈 유형 코드 도입 전 생성자. 유형 코드 없음(null)으로 만든다. */
+    public PopupResponseDto(String popupId, String popupType, String title, OffsetDateTime displayStartAt,
+            OffsetDateTime displayEndAt, String displayMode, Integer displayOrder, String sizeMode, Double width,
+            Double height, double widthRatio, double heightRatio, double minimumWidth, double minimumHeight,
+            double maximumWidth, double maximumHeight, boolean showHeader, boolean showCloseButton, boolean showFooter,
+            boolean showDoNotShowAgain, boolean showLater, Long questionTemplateId, String periodMode,
+            Integer repeatInterval, String repeatDayOfWeek, Integer repeatDayOfMonth, Integer hideDays,
+            Double completionRatio, Double passingScore, List<PopupQuestionDto> questions, Map<String, Object> content,
+            List<PopupDisplayTimeDto> displayTimes) {
+        this(popupId, popupType, title, displayStartAt, displayEndAt, displayMode, displayOrder, sizeMode, width, height,
+                widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight, showHeader,
+                showCloseButton, showFooter, showDoNotShowAgain, showLater, questionTemplateId, periodMode,
+                repeatInterval, repeatDayOfWeek, repeatDayOfMonth, hideDays, completionRatio, passingScore,
+                questions, content, displayTimes, null);
     }
 
     /** POL-11-03 : 시간 경계 — 노출 시간대 도입 전 생성자. 시간대 없음(빈 목록)으로 만든다. */
@@ -77,7 +97,7 @@ public record PopupResponseDto(
                 sizeMode, width, height, widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
                 showHeader, showCloseButton, showFooter, showDoNotShowAgain, showLater, questionTemplateId, periodMode,
                 repeatInterval, repeatDayOfWeek, repeatDayOfMonth, hideDays, completionRatio, passingScore,
-                newQuestions, newContent, displayTimes);
+                newQuestions, newContent, displayTimes, quizTypeCode);
     }
 
     /** POL-11-03 : 시간 경계 — 기간 모드·요일·시간대만 바꾼 사본(저장 전 일정 정규화·조회 시 시간대 첨부용). 매월·간격 반복 값은 비운다. */
@@ -86,6 +106,15 @@ public record PopupResponseDto(
                 sizeMode, width, height, widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
                 showHeader, showCloseButton, showFooter, showDoNotShowAgain, showLater, questionTemplateId, newPeriodMode,
                 null, newRepeatDayOfWeek, null, hideDays, completionRatio, passingScore,
-                questions, content, newDisplayTimes);
+                questions, content, newDisplayTimes, quizTypeCode);
+    }
+
+    /** POL-06-02 : 선택·제출 — 퀴즈 유형 코드만 바꾼 사본(저장 전 유형 정규화·조회 시 코드 첨부용). */
+    public PopupResponseDto withQuizTypeCode(String newQuizTypeCode) {
+        return new PopupResponseDto(popupId, popupType, title, displayStartAt, displayEndAt, displayMode, displayOrder,
+                sizeMode, width, height, widthRatio, heightRatio, minimumWidth, minimumHeight, maximumWidth, maximumHeight,
+                showHeader, showCloseButton, showFooter, showDoNotShowAgain, showLater, questionTemplateId, periodMode,
+                repeatInterval, repeatDayOfWeek, repeatDayOfMonth, hideDays, completionRatio, passingScore,
+                questions, content, displayTimes, newQuizTypeCode);
     }
 }
