@@ -10,7 +10,7 @@
   - TODO73 문서 상태 줄에 §6~§8 완료 일자 반영.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/guide/tabs/GuideStartTab.tsx`, `guide/guideTypeExamples.ts`, `scripts/verify-popup-guide-render.cjs`, TODO73 문서.
 - 검증: 웹 `tsc`·eslint 통과. `verify-popup-guide-render` 31건(기존 탭·실습 이동·시작 탭 문구 규칙 포함), `verify-popup-guide-registry` 272건 통과. 로컬 관리자 웹 실화면 미실행.
-- 상태: 커밋 완료, 미푸시.
+- 상태: 커밋 완료, 원격 반영. Trello 카드 73 갱신.
 
 ## 2026-11-09-05 — dev: TODO73 설문·퀴즈 문항 제목·선택지 일반 텍스트 입력
 
@@ -22,7 +22,7 @@
   - 하네스: `verify-survey-rich-text-55` 1~6절을 일반 입력 기준으로 교체하고 30문항 상한 절(-04 요건) 추가. `verify-popup-common-sample-69`의 제목·선택지 측정 대상을 입력칸으로 바꾸고 `문항 추가` 정렬 검사를 감싼 요소 기준으로 조정.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/verify-popup-common-sample-69.cjs`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, TODO73 문서.
 - 검증: 웹 `tsc`·eslint 통과. `verify-survey-rich-text-55` 59건(서식 문항 열기·블록 복원·데이터 무변경, 선택지·제목 수정 시 해당 블록만 null, 줄바꿈, 삭제 후 ID 유지, 빈 제목·1000자 차단, 주관식 제목, 퀴즈 OX 서식 제목·정답, 유형 전환, 기존 유형 보존, 미리보기), `verify-popup-common-sample-69` 61건, `verify-rich-text-49` 75건, `verify-popup-pick-fields` 34건, `verify-popup-transform-64` 77건, `verify-image-preview` 54건, `verify-popup-guide-registry` 272건 통과. 로컬 관리자 웹 실화면·서버 저장 왕복·WPF 표시 확인·폐쇄망 미실행.
-- 상태: 커밋 완료, 미푸시.
+- 상태: 커밋 완료, 원격 반영. Trello 카드 73 갱신.
 
 ## 2026-11-09-04 — dev: TODO73 MUI slotProps 전환·최대 30문항·인라인 미리보기 크기 안내
 
@@ -33,7 +33,7 @@
   - `InlinePopupPreview`: 제목과 `실제 크기로 보기` 사이에 `실제 팝업 크기와 다를 수 있습니다.`(caption·회색). 줄바꿈 허용 행, 버튼은 오른쪽 끝 유지, 실제 크기 모달에는 미표시. `title=""`이면 제목 요소 생략.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `InlinePopupPreview.tsx`, `index.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
 - 검증: 웹 `tsc --noEmit`·eslint 통과(기존 `popupRichText.ts` 경고 1건). `verify-popup-preview-61` 121건 통과(안내 위치·240px 줄바꿈 겹침 없음·모달 미표시 추가). 30문항 상한 하네스(29→30→29, 31문항 유입·저장 차단)는 `verify-survey-rich-text-55`에 넣어 다음 항목(-05) 커밋에 포함, 전체 작업 기준 59건 통과. 로컬 관리자 웹 실화면·서버 저장 왕복·폐쇄망 미실행.
-- 상태: 커밋 완료, 미푸시.
+- 상태: 커밋 완료, 원격 반영. Trello 카드 73 갱신.
 
 ## 2026-11-09-03 — TODO73 PopupAdmin 타입 가이드 정의
 
