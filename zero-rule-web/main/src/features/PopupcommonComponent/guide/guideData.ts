@@ -105,7 +105,7 @@ export const PROCESSES: GuideProcess[] = [
     id: 'question', scope: 'COMMON', title: '③ 설문·퀴즈 문항 입력', summary: '문항·선택지·정답·통과 점수를 입력받습니다.',
     steps: [
       { actor: 'PopupQuestionEditor', description: '문항을 추가·수정할 때마다 전체 문항 목록을 onChange로 돌려줍니다.' },
-      { actor: 'PopupQuizRuleFields + usePopupQuizRule', description: '퀴즈 유형과 기준 개수를 고르면 통과 점수를 계산합니다.' },
+      { actor: 'PopupQuizRuleFields + usePopupQuizRule', description: '퀴즈 유형과 기준 개수를 고르면 통과 점수(passingScore)와 퀴즈 유형 코드(quizTypeCode)를 계산합니다.' },
       { actor: 'validatePopupQuestions(questions, quiz, passingScore)', description: '저장 전에 입력 오류를 확인합니다. 오류가 없으면 null을 돌려줍니다.' },
     ],
     parent: ['문항 목록을 state에 담기', '오류가 있으면 저장하지 않고 안내하기'],
@@ -156,7 +156,7 @@ export const PROCESSES: GuideProcess[] = [
     steps: [
       { actor: 'api.popupAdmin.info({ popupId })', description: '등록 화면이 팝업을 조회합니다.' },
       { actor: 'toEditorPopup(body.popup)', description: '편집에 필요한 값을 정리합니다(표시 순서·정답 비교 방식 등).' },
-      { actor: 'usePopupQuizRule(popup, resetKey)', description: '퀴즈면 저장된 통과 점수로 퀴즈 유형을 다시 보여 줍니다.' },
+      { actor: 'usePopupQuizRule(popup, resetKey)', description: '퀴즈면 저장된 퀴즈 유형 코드(quizTypeCode)로 유형을 다시 보여 줍니다. 코드가 없는 기존 데이터는 통과 점수로 추정합니다.' },
     ],
     parent: ['대상 그룹·활성 여부 따로 보관하기', '편집기 key 바꾸기'],
   },
@@ -279,7 +279,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     props: [
       { name: 'questionCount', type: 'number', required: true, description: '문항 수' },
       { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
-      { name: 'count', type: 'number', required: true, description: '통과 기준 개수' },
+      { name: 'count', type: 'number', required: true, description: '기준 개수(참여형·컷트라인형, 1~문항 수). 참여형은 통계용 합격 기준이라 미달이어도 제출하면 완료됩니다.' },
       { name: 'passingScore', type: 'number | null', description: '계산된 통과 점수(안내용)' },
       { name: 'options', type: 'PopupCodeOption[]', description: '공통코드 0090 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 quizTypes를 넘깁니다. DB에 0090 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 선택을 막습니다.' },
       { name: 'className / titlePrefix', type: 'string / ReactNode', description: '퍼블리싱 클래스·제목 앞 표시' },
@@ -288,7 +288,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
       { name: 'onRuleChange', type: '(rule: QuizRule) => void', required: true, description: '유형을 고르면 호출됩니다.' },
       { name: 'onCountChange', type: '(count: number) => void', required: true, description: '개수를 입력하면 호출됩니다.' },
     ],
-    values: ['usePopupQuizRule(target, resetKey) → { rule, count, setRule, setCount, effective, error }', '저장할 통과 점수는 effective.passingScore입니다.'],
+    values: ['usePopupQuizRule(target, resetKey) → { rule, count, setRule, setCount, effective, error }', '저장할 통과 점수는 effective.passingScore, 퀴즈 유형 코드는 effective.quizTypeCode(00 참여형·01 만점형·02 컷트라인형)입니다.'],
     reuse: ['입력칸만 그립니다. 점수 계산은 usePopupQuizRule이 합니다.'],
     example: `const quizRule = usePopupQuizRule(popup, resetKey);
 <PopupQuizRuleFields questionCount={popup.questions.length} rule={quizRule.rule} count={quizRule.count}
@@ -368,7 +368,7 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'htmlToBlocks / blocksToHtml', scope: 'COMMON', file: 'popupRichText.ts', input: 'html / RichBlock[]', output: 'RichBlock[] / html', description: '편집기 HTML과 저장용 서식 본문을 서로 바꿉니다.' },
   { name: 'blocksToPlainText / plainTextToBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'RichBlock[] / string', output: 'string / RichBlock[]', description: '서식 본문과 일반 글자를 서로 바꿉니다.' },
   { name: 'readTextBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'value: unknown', output: 'RichBlock[] | null', description: '서버 값을 서식 본문으로 읽습니다. 형식이 맞지 않으면 null입니다.' },
-  { name: 'readQuizRule / withQuizRule / validateQuizRule', scope: 'COMMON', file: 'popupQuizRule.ts', input: '{ popupType, questions, passingScore? }, rule, count', output: '{ rule, count } / 같은 타입 / string | null', description: '퀴즈 유형으로 통과 점수를 계산하고 입력 오류를 확인합니다.' },
+  { name: 'readQuizRule / withQuizRule / validateQuizRule / quizRequiresPassing', scope: 'COMMON', file: 'popupQuizRule.ts', input: '{ popupType, questions, passingScore?, quizTypeCode? }, rule, count', output: '{ rule, count } / 같은 타입 / string | null / boolean | null', description: '퀴즈 유형으로 통과 점수·퀴즈 유형 코드를 계산하고 입력 오류를 확인합니다. quizRequiresPassing은 미리보기용 합격 필요 여부(참여형 false)입니다.' },
   { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?, maxQuestions?(기본 30)', output: 'string | null', description: '문항 입력 오류를 확인합니다.' },
   { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 시간대 입력 오류를 확인합니다.' },
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },

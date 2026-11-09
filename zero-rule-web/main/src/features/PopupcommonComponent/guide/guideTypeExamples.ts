@@ -37,11 +37,15 @@ export const QUIZ_QUESTIONS_EXAMPLE: PopupQuestion[] = [
   },
 ];
 
-/** 퀴즈 팝업 입력 예시: 문항은 content가 아니라 최상위 questions에, 안내 문구는 content.description에 둔다. */
+/**
+ * 퀴즈 팝업 입력 예시: 문항은 content가 아니라 최상위 questions에, 안내 문구는 content.description에 둔다.
+ * 퀴즈 유형은 최상위 quizTypeCode(공통코드 0090: '00' 참여형·'01' 만점형·'02' 컷트라인형), 기준 점수는 passingScore다.
+ */
 export const QUIZ_POPUP_INPUT: Partial<AdminPopupDetail> = {
   popupType: 'QUIZ',
   title: '보안 퀴즈',
   passingScore: 2,
+  quizTypeCode: '01',
   questions: QUIZ_QUESTIONS_EXAMPLE,
   content: { description: '두 문항을 모두 맞히면 통과입니다.' },
 };

@@ -1,5 +1,6 @@
 // RgstPop 등록 편집기(테스트 화면)에 전달 샘플과 같은 퀴즈 점수 규칙이 적용되는지 headless Edge로 확인한다.
-// 규칙: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 문항 수, 커트라인 N개 = N점, 통과/실패 제출도 N점(실패 시 제출 불가), 참여형 = 0점.
+// 규칙: 문항 1점 고정(총점 = 문항 수), 만점 통과 = 문항 수, 커트라인 N개 = N점(실패 시 제출 불가), 참여형도 N개(통계용 합격 기준, 제출하면 완료).
+// 퀴즈 유형 코드 quizTypeCode(0090: 00 참여형·01 만점형·02 컷트라인형)를 함께 저장하고, 다시 열면 코드로 유형을 복원한다(코드 없으면 통과 점수로 추정).
 // 관리자 API는 @/provider 대역으로 바꿔 서버 없이 실행한다. 저장소 루트에서: node scripts/verify-rgstpop-quiz-rule.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/rgstpop-quiz');
@@ -60,8 +61,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   };
   const save = async () => { await run(`window.__saved=null;Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='저장').click()`); await pause(600); return run('window.__saved'); };
   const toastText = () => run(`Array.from(document.querySelectorAll('.Toastify__toast')).map(t=>t.textContent).join(' | ')`);
-  const mount = async (passingScore, questionScore) => {
-    await run(`window.mountQuiz(${JSON.stringify(passingScore)}, ${questionScore})`);
+  const mount = async (passingScore, questionScore, quizTypeCode) => {
+    await run(`window.mountQuiz(${JSON.stringify(passingScore)}, ${questionScore}${quizTypeCode === undefined ? '' : ', ' + JSON.stringify(quizTypeCode)})`);
     await until(`!!document.querySelector('[aria-label="퀴즈유형"]')`, 'quiz rule fields');
     await pause(400);
   };
@@ -80,37 +81,65 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`!Array.from(document.querySelectorAll('label')).some(l=>l.textContent==='배점' || l.textContent==='통과 점수') && !document.body.textContent.includes('배점 모두 1점')`),
     'RgstPop editor hides per-question score and passing score inputs');
   let saved = await save();
-  check(saved && saved.popup.passingScore === 1 && saved.popup.questions.every(q => q.questionScore === 1 && q.isScored === true),
-    'Save sends every question as 1 point and passingScore 1: ' + JSON.stringify(saved && saved.popup.questions.map(q => q.questionScore)) + ' toast=' + await toastText());
+  check(saved && saved.popup.passingScore === 1 && saved.popup.quizTypeCode === '02' && saved.popup.questions.every(q => q.questionScore === 1 && q.isScored === true),
+    'Save sends every question as 1 point, passingScore 1 and quizTypeCode 02: ' + JSON.stringify(saved && saved.popup.questions.map(q => q.questionScore)) + ' toast=' + await toastText());
   // 2) 만점 통과 = 문항 수.
   await pickRule('만점코드');
   saved = await save();
-  check(saved && saved.popup.passingScore === count, `Full-score pass saves passingScore = ${count} questions`);
+  check(saved && saved.popup.passingScore === count && saved.popup.quizTypeCode === '01', `Full-score pass saves passingScore = ${count} questions and quizTypeCode 01`);
   // 3) 커트라인 범위 밖 거절, 1은 허용.
   await pickRule('컷트코드'); await setInput('input[aria-label="통과 기준 개수"]', String(count + 1));
   saved = await save();
   check(saved === null && (await toastText()).includes('커트라인 점수'), 'Cutoff above the question count is rejected');
   await setInput('input[aria-label="통과 기준 개수"]', '1');
   saved = await save();
-  check(saved && saved.popup.passingScore === 1, 'Cutoff 1 saves passingScore 1');
+  check(saved && saved.popup.passingScore === 1 && saved.popup.quizTypeCode === '02', 'Cutoff 1 saves passingScore 1 and quizTypeCode 02');
   // 4) 공통코드: 0089·0090을 조회하고 코드 이름을 표시하며, 매핑 없는 코드는 뺀다.
   check((await run('window.__codeCalls.slice().sort().join()')).includes('0089,0090'), 'Editor loads code groups 0089 and 0090');
   await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.querySelector('[role=combobox]').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`); await pause(300);
   const ruleLabels = await run(`Array.from(document.querySelectorAll('[role=option]')).map(o=>o.textContent).join()`);
   await run(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[role=listbox]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`); await pause(300);
   check(ruleLabels === '선택하세요,참여코드,만점코드,컷트코드', 'Quiz types use code names and drop unmapped codes: ' + ruleLabels);
-  // 5) 참여형: 통과 점수 0 저장, 기준 개수 입력 없음, 0으로 저장된 팝업은 참여형으로 복원돼 다시 저장해도 0 유지.
+  // 5) 참여형(PU001 §7): 기준 개수 입력이 있고 passingScore = N·quizTypeCode '00'으로 저장한다. 미달이어도 제출하면 완료된다는 안내.
   await pickRule('참여코드');
-  check(await run(`!document.querySelector('[aria-label="통과 기준 개수"]') && document.body.textContent.includes('제출하면 통과(passed=true)')
-    && document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점')`), 'Participation shows no count input and 0 passing score');
+  check(await run(`!!document.querySelector('[aria-label="통과 기준 개수"]') && document.body.textContent.includes('제출하면 완료됩니다')
+    && !document.body.textContent.includes('제출하면 통과(passed=true)')`), 'Participation shows the count input and completion text');
+  await setInput('input[aria-label="통과 기준 개수"]', '2');
+  check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 2점')`), 'Participation count 2 shows passing score 2');
   saved = await save();
-  check(saved && saved.popup.passingScore === 0 && saved.popup.questions.every(q => q.questionScore === 1 && q.isScored === true),
-    'Participation saves passingScore 0 with 1-point scored questions: ' + JSON.stringify(saved && saved.popup.passingScore) + ' toast=' + await toastText());
+  check(saved && saved.popup.passingScore === 2 && saved.popup.quizTypeCode === '00' && saved.popup.questions.every(q => q.questionScore === 1 && q.isScored === true),
+    'Participation saves passingScore 2 and quizTypeCode 00 with 1-point scored questions: ' + JSON.stringify(saved && [saved.popup.passingScore, saved.popup.quizTypeCode]) + ' toast=' + await toastText());
+  await setInput('input[aria-label="통과 기준 개수"]', String(count + 1));
+  saved = await save();
+  check(saved === null && (await toastText()).includes('합격 기준 개수'), 'Participation count above the question count is rejected');
+  await setInput('input[aria-label="통과 기준 개수"]', '0');
+  saved = await save();
+  check(saved === null && (await toastText()).includes('1개 이상의 정수'), 'Participation count 0 is rejected');
+  // 5-1) 코드 '00' + passingScore = 문항 수(코드 없으면 만점형으로 추정될 값)로 다시 열어도 참여형 N개로 복원되고 그대로 저장된다.
+  await mount(count, 1, '00');
+  check(await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('참여코드') && document.querySelector('[aria-label="통과 기준 개수"]').value===${JSON.stringify(String(count))}`),
+    'Loaded quizTypeCode 00 with passingScore = question count restores participation, not full');
+  saved = await save();
+  check(saved && saved.popup.passingScore === count && saved.popup.quizTypeCode === '00', 'Re-saving participation keeps passingScore N and quizTypeCode 00: ' + JSON.stringify(saved && [saved.popup.passingScore, saved.popup.quizTypeCode]) + ' toast=' + await toastText());
+  // 5-2) 컷트라인 N = 문항 수는 코드 '02'로 저장되어 다시 열어도 만점형이 아니라 컷트라인형이다.
+  await mount(count, 1, '02');
+  check(await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('컷트코드') && document.querySelector('[aria-label="통과 기준 개수"]').value===${JSON.stringify(String(count))}`),
+    'Loaded quizTypeCode 02 with N = question count reopens as cutoff, not full');
+  saved = await save();
+  check(saved && saved.popup.passingScore === count && saved.popup.quizTypeCode === '02', 'Cutoff N = question count saves quizTypeCode 02');
+  await mount(1, 1, '01');
+  check(await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('만점코드') && !document.querySelector('[aria-label="통과 기준 개수"]')`),
+    'Loaded quizTypeCode 01 restores full regardless of passingScore');
+  saved = await save();
+  check(saved && saved.popup.passingScore === count && saved.popup.quizTypeCode === '01', 'Full saves passingScore = question count and quizTypeCode 01');
+  // 5-3) 코드 없는 기존 데이터: 통과 점수로 추정(0 = 참여형 1개, 문항 수 = 만점형).
   await mount(0, 1);
-  check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 0점') && !document.querySelector('[aria-label="통과 기준 개수"]')
-    && document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('참여코드')`), 'Loaded passingScore 0 restores participation');
+  check(await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('참여코드') && document.querySelector('[aria-label="통과 기준 개수"]').value==='1'`),
+    'Legacy passingScore 0 without code restores participation with count 1');
   saved = await save();
-  check(saved && saved.popup.passingScore === 0, 'Re-saving a participation quiz keeps passingScore 0 (no silent change to 1): ' + JSON.stringify(saved && saved.popup.passingScore));
+  check(saved && saved.popup.passingScore === 1 && saved.popup.quizTypeCode === '00', 'Re-saving a legacy participation quiz stores passingScore 1 and quizTypeCode 00: ' + JSON.stringify(saved && [saved.popup.passingScore, saved.popup.quizTypeCode]));
+  await mount(count, 1);
+  check(await run(`document.querySelector('[aria-label="퀴즈유형"]').parentElement.textContent.includes('만점코드')`), 'Legacy passingScore = question count without code falls back to full');
   // 6) 통과 점수 없는 데이터: 유형 미선택이면 저장 거절.
   await mount(null, 1);
   check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 -점')`), 'Quiz without passingScore starts unselected');

@@ -47,18 +47,19 @@ export function newSamplePopup(popupId: string, title: string): SamplePopupState
  * - out: SamplePopupState 유형을 바꾼 새 편집값
  * - 공통 입력값(제목·크기·본문 등)은 유지하고 유형 표시값만 바꾼다. proto changePopupType과 달리 창 크기(560×420)·
  *   완료 비율(0.8)·주관식 비교 방식(EXACT) 같은 업무 기본값을 채우지 않는다(미설정이면 서버 기본값·검증).
- *   새 유형에서 쓰지 않는 값(영상 없는 유형의 completionRatio, 퀴즈가 아닌 유형의 passingScore, videoEnabled)은 지운다.
+ *   새 유형에서 쓰지 않는 값(영상 없는 유형의 completionRatio, 퀴즈가 아닌 유형의 passingScore·quizTypeCode, videoEnabled)은 지운다.
  */
 export function changeSampleType(previous: SamplePopupState, selection: PopupTypeSelection): SamplePopupState {
   const combined = selection === 'VIDEO_QUIZ';
   const popupType = combined ? 'QUIZ' : selection;
   const { videoEnabled: _videoEnabled, ...content } = previous.content;
-  const { completionRatio, passingScore, ...rest } = previous;
+  const { completionRatio, passingScore, quizTypeCode, ...rest } = previous;
   return {
     ...rest, popupType,
     content: combined ? { ...content, videoEnabled: true } : content,
     ...((popupType === 'VIDEO' || combined) && completionRatio !== undefined ? { completionRatio } : {}),
     ...(popupType === 'QUIZ' && passingScore !== undefined ? { passingScore } : {}),
+    ...(popupType === 'QUIZ' && quizTypeCode !== undefined ? { quizTypeCode } : {}),
   };
 }
 
@@ -80,10 +81,10 @@ export function createSamplePopups(): SamplePopupState[] {
       { videoTitle: '교육 영상' }),
     sample('SAMPLE-SURVEY', '만족도 조사', { popupType: 'SURVEY', width: 640, height: 640, questions: popupDemoQuestions(false) },
       {}),
-    sample('SAMPLE-QUIZ', '보안 퀴즈', { popupType: 'QUIZ', width: 640, height: 640, passingScore: 2, questions: popupDemoQuestions(true) },
+    sample('SAMPLE-QUIZ', '보안 퀴즈', { popupType: 'QUIZ', width: 640, height: 640, passingScore: 2, quizTypeCode: '02', questions: popupDemoQuestions(true) },
       {}),
     sample('SAMPLE-VIDEO-QUIZ', '영상 + 퀴즈', { popupType: 'QUIZ', width: 760, height: 860, completionRatio: 0.8,
-      passingScore: 1, questions: popupDemoQuestions(true).slice(0, 1) },
+      passingScore: 1, quizTypeCode: '01', questions: popupDemoQuestions(true).slice(0, 1) },
     { videoEnabled: true, videoTitle: '영상 + 퀴즈' }),
   ];
 }
@@ -114,6 +115,6 @@ const SAMPLE_QUESTION_KEYS = ['questionId', 'title', 'titleBlocks', 'questionTyp
 export function toSampleScreenValues(popup: SamplePopupState): Record<string, unknown> {
   const question = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   return question
-    ? pickPopupFields(popup, { topLevelKeys: [...SAMPLE_TOP_LEVEL_KEYS, 'passingScore'], contentKeys: SAMPLE_CONTENT_KEYS[popup.popupType], questionKeys: SAMPLE_QUESTION_KEYS })
+    ? pickPopupFields(popup, { topLevelKeys: [...SAMPLE_TOP_LEVEL_KEYS, 'passingScore', ...(popup.popupType === 'QUIZ' ? ['quizTypeCode'] as const : [])], contentKeys: SAMPLE_CONTENT_KEYS[popup.popupType], questionKeys: SAMPLE_QUESTION_KEYS })
     : pickPopupFields(popup, { topLevelKeys: SAMPLE_TOP_LEVEL_KEYS, contentKeys: SAMPLE_CONTENT_KEYS[popup.popupType] ?? [] });
 }

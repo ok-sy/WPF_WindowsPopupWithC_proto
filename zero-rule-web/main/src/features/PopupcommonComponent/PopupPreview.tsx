@@ -12,6 +12,7 @@ import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { popupFontSize, popupMinimumSize } from './popupCommon';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
+import { quizRequiresPassing } from './popupQuizRule';
 import {
   fitToImageLayout,
   imageSizeMode,
@@ -464,18 +465,24 @@ export default function PopupPreview({
     // WPF QuizGrader와 같이 통과 점수가 없거나 0 이하·비정상이면 0(항상 통과)으로 본다.
     const passing = typeof popup.passingScore === 'number' && Number.isFinite(popup.passingScore) && popup.passingScore > 0 ? popup.passingScore : 0;
     const passed = scoredQuestions.length === 0 || rounded >= passing;
-    if (!passed) setQuizFailed(true);
+    // POL-06-02 : 선택·제출 — 합격 필요 여부는 WPF 조회 응답 requiresPassing과 같이 quizTypeCode에서 파생한다(참여형 '00' = false).
+    // 코드가 없는 기존 데이터(null)는 점수 기준 판정(통과 점수 0 이하 = 항상 통과)을 그대로 쓴다.
+    // 참여형은 기준 미달(passed=false)이어도 제출·완료이므로 미달 상태(다시 풀기·보조 닫기)로 들어가지 않는다.
+    const requiresPassing = quizRequiresPassing(popup);
+    const blocked = !passed && requiresPassing !== false;
+    if (blocked) setQuizFailed(true);
     // POL-06-02 : 선택·제출 — WPF 결과 창(QuizResultNotice)과 같은 본문(커트라인형·만점형·참여형, PU001 Q3).
     // 보조 닫기는 영상 없는 QUIZ가 배경 어둡기를 끈 상태에서 미달 판정 뒤에만 보이므로(아래 showSecondaryClose) 같은 조건으로 안내한다.
     const notice = buildQuizResultNotice({
       passed,
+      requiresPassing,
       passingScore: passing,
       correctCount: scoredQuestions.length - wrongNumbers.length,
       scoredCount: scoredQuestions.length,
       maxScore: Math.round(scoredQuestions.reduce((sum, question) => sum + (question.questionScore ?? 1), 0) * 100) / 100,
       unitScored: scoredQuestions.every((question) => (question.questionScore ?? 1) === 1),
       incorrectQuestionNumbers: wrongNumbers,
-    }, popup.title, !passed && popup.showFooter && !(popup.content.videoEnabled === true) && popup.content.useBackgroundOverlay === false);
+    }, popup.title, blocked && popup.showFooter && !(popup.content.videoEnabled === true) && popup.content.useBackgroundOverlay === false);
     setSubmissionStatus(notice.message);
   };
   const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;

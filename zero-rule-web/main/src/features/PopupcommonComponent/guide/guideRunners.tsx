@@ -53,10 +53,15 @@ function QuizRuleHost({ input, emit }: { input: { questionCount: number; rule: Q
   /* 통과 점수 계산은 withQuizRule이 한다. 문항 수만큼 1점 문항을 만든 편집값으로 계산 결과를 보여 준다. */
   const popup = samplePopup({ popupType: 'QUIZ', questions: Array.from({ length: input.questionCount }, (_, i) => ({ ...SAMPLE_QUESTIONS[0], questionId: -(i + 1), isScored: true, questionScore: 1 })) });
   const passingScore = withQuizRule(popup, rule, count).passingScore;
+  const emitRule = (nextRule: QuizRule, nextCount: number) => {
+    const applied = withQuizRule(popup, nextRule, nextCount);
+    emit('withQuizRule → passingScore', applied.passingScore);
+    emit('withQuizRule → quizTypeCode', applied.quizTypeCode);
+  };
   return (
     <PopupQuizRuleFields questionCount={input.questionCount} rule={rule} count={count} passingScore={passingScore}
-      onRuleChange={(next) => { setRule(next); emit('onRuleChange', next); emit('withQuizRule → passingScore', withQuizRule(popup, next, count).passingScore); }}
-      onCountChange={(next) => { setCount(next); emit('onCountChange', next); emit('withQuizRule → passingScore', withQuizRule(popup, rule, next).passingScore); }} />
+      onRuleChange={(next) => { setRule(next); emit('onRuleChange', next); emitRule(next, count); }}
+      onCountChange={(next) => { setCount(next); emit('onCountChange', next); emitRule(rule, next); }} />
   );
 }
 
@@ -104,7 +109,7 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupQuizRuleFields: {
     input: { questionCount: 5, rule: 'CUTOFF', count: 3 },
-    hint: "rule: 'FULL'(만점형) · 'CUTOFF'(컷트라인형) · 'PARTICIPATION'(참여형, 통과 점수 0으로 항상 통과). 문항 1점 기준으로 통과 점수를 계산합니다.",
+    hint: "rule: 'FULL'(만점형) · 'CUTOFF'(컷트라인형) · 'PARTICIPATION'(참여형, 제출하면 완료·기준 개수는 통계용 합격 기준). 문항 1점 기준으로 통과 점수와 퀴즈 유형 코드(quizTypeCode)를 계산합니다.",
     render: (input, emit) => <QuizRuleHost input={input} emit={emit} />,
   },
   PopupScheduleFields: {

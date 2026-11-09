@@ -119,6 +119,12 @@ export interface AdminPopupDetail {
   hideDays?: number | null;
   completionRatio?: number | null;
   passingScore?: number | null;
+  /**
+   * POL-06-02 : 선택·제출
+   * QUIZ 퀴즈 유형 공통코드(0090). '00' 참여형(제출하면 완료, passingScore는 통계용 합격 기준), '01' 만점형, '02' 컷트라인형.
+   * QUIZ가 아니면 null·생략. 값이 없는 기존 데이터는 passingScore로 유형을 추정한다(popupQuizRule.readQuizRule).
+   */
+  quizTypeCode?: string | null;
   questions: PopupQuestion[];
   content: Record<string, unknown>;
 }

@@ -234,9 +234,12 @@ export function changePopupType(previous: AdminPopupDetail, selection: PopupType
  * - in : popup(AdminPopupDetail) 편집값
  * - out: AdminPopupDetail 저장 요청에 넣을 popup(새 객체)
  * - 편집값을 받아 ID·제목 공백 제거, 유형별 content 키만 남김, URL 정규화, Footer 정규형, 날짜 ISO 변환,
- * IMAGE 크기 정리를 한다. 입력 검증(필수값·범위)은 하지 않으므로 호출 전에 부모가 검사한다.
+ * IMAGE 크기 정리를 하고 QUIZ가 아니면 quizTypeCode를 뺀다(QUIZ는 편집값 그대로 보존). 입력 검증(필수값·범위)은 하지 않으므로 호출 전에 부모가 검사한다.
  */
-export function toSaveRequestPopup(popup: AdminPopupDetail): AdminPopupDetail {
+export function toSaveRequestPopup(source: AdminPopupDetail): AdminPopupDetail {
+  // POL-06-02 : 선택·제출 — 퀴즈 유형 코드(quizTypeCode)는 QUIZ만 보낸다. 유형을 바꾼 편집값에 남은 코드는 저장 요청에서 뺀다.
+  const { quizTypeCode: _quizTypeCode, ...withoutQuizType } = source;
+  const popup: AdminPopupDetail = source.popupType === 'QUIZ' ? source : withoutQuizType;
   const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
   const requestPopup = withNormalizedImageSizeMode({
     ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),

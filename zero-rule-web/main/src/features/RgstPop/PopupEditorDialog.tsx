@@ -26,7 +26,7 @@ import { displayImageSize, type Size } from '../PopupcommonComponent/imagePrevie
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
 import { loadPopupQuestionCodes, type PopupQuestionCodes } from '../PopupcommonComponent/popupQuestionCodes';
-import { QUIZ_QUESTION_SCORE, usePopupQuizRule } from '../PopupcommonComponent/popupQuizRule';
+import { QUIZ_QUESTION_SCORE, usePopupQuizRule, withQuizRule } from '../PopupcommonComponent/popupQuizRule';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
@@ -110,7 +110,8 @@ function PopupDimensionField({ label, value, minimum, maximum, helperText, onCha
  * - in : open(boolean) 열림 · popupId(string | null) 수정할 팝업 ID(null = 신규) · initialActive(boolean) 활성 여부 초기값
  * - out: onClose() 닫기 · onSaved(popupId) 저장 성공 / api.popupAdmin.info·save 호출 · 화면: 입력 폼·우측 미리보기·실제 크기 모달
  * - 팝업 상세를 받아 공통 에디터·문항 편집기·퀴즈유형 입력으로 편집하고, 규칙을 적용한 값을 두 미리보기에 보여 준 뒤 저장 요청을 보낸다.
- *   퀴즈는 전달 샘플과 같은 공통 규칙(popupQuizRule: 문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점, 실패 시 제출 불가)을 쓴다.
+ *   퀴즈는 전달 샘플과 같은 공통 규칙(popupQuizRule: 문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점, 만점형·커트라인 실패 시 제출 불가,
+ *   참여형은 미달이어도 완료)을 쓰고 퀴즈 유형 코드(quizTypeCode)를 함께 저장한다.
  */
 export default function PopupEditorDialog({ open, popupId, initialActive, onClose, onSaved }: PopupEditorDialogProps) {
   const api = useApi();
@@ -144,7 +145,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   /* POL-03-03 : 편집 UI — 본문 편집기는 커서 보존을 위해 처음 값만 받는다. 불러오기·템플릿 적용 시 key를 바꿔 다시 연다. */
   const [bodyEditorKey, setBodyEditorKey] = useState(0);
   const editing = popupId != null;
-  /* 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점). 편집값을 새로 채울 때(bodyEditorKey)마다 저장된 통과 점수로 유형을 복원한다.
+  /* 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점). 편집값을 새로 채울 때(bodyEditorKey)마다 저장된 퀴즈 유형 코드
+   * (quizTypeCode, 없으면 통과 점수)로 유형을 복원한다.
    * 미리보기·저장에는 규칙을 적용한 previewPopup을 보낸다(전달 샘플 IS063M02와 같은 공통 코드). */
   const quiz = usePopupQuizRule(popup, bodyEditorKey);
   const previewPopup = quiz.effective ?? popup;
@@ -377,7 +379,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
               onChange={(questions, templateId) => {
-                setPopup((current) => ({ ...current, questions: withDefaultAnswerMatchMode(questions), questionTemplateId: templateId }));
+                // POL-06-02 : 선택·제출 — 문항만 바꾸고 고른 퀴즈유형·기준 개수는 유지한다. resetKey가 바뀌면 hook이 편집값에서 유형을 다시 읽으므로
+                // 현재 선택을 편집값(quizTypeCode·passingScore)에 먼저 넣는다(기준 개수는 새 문항 수 이하로 맞춰짐).
+                setPopup((current) => withQuizRule({ ...current, questions: withDefaultAnswerMatchMode(questions), questionTemplateId: templateId }, quiz.rule, quiz.count));
                 // POL-06-01 : 문항·서식 — 서식 편집기는 처음 값만 받으므로 문항을 통째로 바꾸면 다시 연다.
                 setBodyEditorKey((key) => key + 1);
               }} />}

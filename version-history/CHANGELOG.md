@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-09-11 — dev: PU001 참여형 퀴즈 관리자 웹 기준 개수·quizTypeCode
+
+- 이유: PU001 TODO §7 구현. 참여형 합격 기준 입력과 3개 유형의 저장·복원(유형 코드)이 필요.
+- 변경:
+  - `AdminPopupDetail.quizTypeCode`. `popupQuestionCodes`에 `QUIZ_RULE_TO_TYPE_CODE`·`quizRuleOfCode`.
+  - `popupQuizRule`: `readQuizRule` 코드 우선(없으면 기존 점수 판정), `withQuizRule`이 `passingScore`(참여형·커트라인 N, 만점 문항 수)와 `quizTypeCode` 기록, 참여형도 1~문항 수 검증, `quizRequiresPassing` 추가. `PopupQuizRuleFields` 참여형 기준 개수 입력 복원.
+  - 미리보기 `PopupPreview`·`popupQuizResultNotice`: 참여형 미달은 실패·재응시·보조 닫기 없이 완료 안내. `toSaveRequestPopup`은 비QUIZ에서 `quizTypeCode` 제거.
+  - `PopupEditorDialog`: 문항 템플릿 적용 시 퀴즈 유형·개수가 초기화되던 기존 문제 수정(적용 전 `withQuizRule` 반영).
+  - 샘플(`popupSampleData`·IS063M02Sample)·가이드(데이터·공지·실행기·타입 예시·시작 탭) 반영.
+  - 하네스: `verify-rgstpop-quiz-rule`(참여형 저장·재조회, 커트라인 N=문항 수 보존, 코드 없음 대체), `verify-popup-common-sample-69`, `verify-popup-transform-64`, `verify-completion-ux-43`(참여형 미달 미리보기) 갱신.
+- 주요 파일: `zero-rule-web/sub/domain/src/model/PopupAdmin.ts`, `zero-rule-web/main/src/features/PopupcommonComponent/popupQuizRule.ts`, `PopupQuizRuleFields.tsx`, `PopupPreview.tsx`, `popupQuizResultNotice.ts`, `popupEditorTransform.ts`, `RgstPop/PopupEditorDialog.tsx`, `scripts/verify-rgstpop-quiz-rule.cjs`.
+- 검증: 웹 tsc·eslint 통과. rgstpop-quiz-rule 25·common-sample-69 62·transform-64 78·completion-ux-43 86·survey-rich-text-55 64·preview-61 121·guide-render 31·guide-registry 261·pick-fields 34·rich-text-49 75·image-preview 54 통과. 템플릿 적용 수정은 하네스 스텁에 템플릿이 없어 미검증. 실서버 연동·실화면 미실행.
+- 상태: 커밋 완료, 원격 반영.
+
 ## 2026-11-09-10 — dev: PU001 참여형 퀴즈 WPF requiresPassing 제출 분기
 
 - 이유: PU001 TODO §7 구현. 참여형은 기준 미달이어도 제출·완료하고 실제 합불을 `passed`로 보내야 함.

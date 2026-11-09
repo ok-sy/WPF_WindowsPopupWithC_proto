@@ -116,6 +116,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const p=toSaveRequestPopup(deepFreeze(${JSON.stringify(cases.SURVEY)}));return !('footerAction' in p.content)&&!!p.content.surveyTitleBlocks&&!!p.content.descriptionBlocks
     &&p.questions[0].titleBlocks[0].runs[0].italic&&p.questions[0].options[0].textBlocks[0].runs[0].underline;})()`),
     'SURVEY save keeps content/question/option blocks and drops footer action');
+  // PU001 §7: 퀴즈 유형 코드(quizTypeCode)는 불러오기·템플릿·저장에서 QUIZ면 그대로 두고, QUIZ가 아니면 저장 요청에서 뺀다.
+  check(await run(`(()=>{const q=deepFreeze({...${JSON.stringify(cases.QUIZ)},quizTypeCode:'00',passingScore:2});const s=deepFreeze({...${JSON.stringify(cases.SURVEY)},quizTypeCode:'02'});
+    const loaded=toEditorPopup(q),fromTemplate=toEditorPopupFromTemplate(q,'NEW-ID'),saved=toSaveRequestPopup(loaded),changed=changePopupType(loaded,'SURVEY');
+    return loaded.quizTypeCode==='00'&&fromTemplate.quizTypeCode==='00'&&saved.quizTypeCode==='00'&&saved.passingScore===2
+      &&!('quizTypeCode' in toSaveRequestPopup(s))&&!('quizTypeCode' in toSaveRequestPopup(changed))&&!('quizTypeCode' in toSaveRequest(changed,true,[]).popup);})()`),
+    'quizTypeCode survives load/template/save for QUIZ and is dropped from non-QUIZ save requests');
   check(await run(`(()=>{const a=createDefaultPopup(new Date('2026-01-31T00:00:00Z')),b=legacyDefault();const strip=p=>{const {displayTimes,...rest}=p;return {...rest,displayStartAt:0,displayEndAt:0};};b.minimumWidth=300;b.minimumHeight=300;
     return canonical(withoutHighlight(strip(a)))===canonical(withoutHighlight(strip(b)))&&a.minimumWidth===300&&a.minimumHeight===300&&a.displayStartAt==='2026-01-31T00:00:00.000Z'&&createDefaultPopup()!==createDefaultPopup();})()`),
     'Default editor value equals pre-split defaults (except TODO52-1 displayTimes, TODO68 minimum 300x300) and returns a new object');

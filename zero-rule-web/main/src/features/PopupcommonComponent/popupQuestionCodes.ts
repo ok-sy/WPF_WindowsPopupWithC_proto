@@ -4,7 +4,8 @@ import type { QuizRule } from './popupQuizRule';
  * POL-06-02 : 선택·제출
  * ■ 답안 유형·퀴즈 유형 공통코드
  * - 답안 유형은 코드 그룹 0089, 퀴즈 유형은 코드 그룹 0090이다(CLOVER_CODE_TYPE·CLOVER_CODE).
- * - 표시 이름은 코드 조회 결과를 쓴다. 코드값은 저장하지 않고 기존 계약(questionType·options·passingScore)으로 변환한다.
+ * - 표시 이름은 코드 조회 결과를 쓴다. 답안 유형 코드는 저장하지 않고 기존 계약(questionType·options)으로 변환한다.
+ *   퀴즈 유형 코드는 popup.quizTypeCode로 저장하고 기준 개수는 passingScore로 저장한다(popupQuizRule.withQuizRule).
  * - 이 폴더는 관리자 API를 참조하지 않으므로 조회 함수는 부모가 넘긴다(loadPopupQuestionCodes).
  */
 export const ANSWER_TYPE_CODE_TYPE = '0089';
@@ -25,6 +26,18 @@ export const QUIZ_TYPE_CODE_TO_RULE: Record<string, Exclude<QuizRule, ''>> = {
   '00': 'PARTICIPATION',
   '01': 'FULL',
   '02': 'CUTOFF',
+};
+
+/** 퀴즈 유형 코드값 → 내부 규칙. 매핑 없는 코드·null·빈 값이면 undefined(점수 기준 추정 대상). */
+export function quizRuleOfCode(code: string | null | undefined): Exclude<QuizRule, ''> | undefined {
+  return code && Object.prototype.hasOwnProperty.call(QUIZ_TYPE_CODE_TO_RULE, code) ? QUIZ_TYPE_CODE_TO_RULE[code] : undefined;
+}
+
+/** 내부 규칙 → 퀴즈 유형 코드값(popup.quizTypeCode 저장값). QUIZ_TYPE_CODE_TO_RULE의 역방향이다. */
+export const QUIZ_RULE_TO_TYPE_CODE: Record<Exclude<QuizRule, ''>, string> = {
+  PARTICIPATION: '00',
+  FULL: '01',
+  CUTOFF: '02',
 };
 
 /* [실연동] 서버 없는 샘플·가이드 전용 목록이다. 실제 화면은 loadPopupQuestionCodes 결과를 prop으로 넘긴다. */

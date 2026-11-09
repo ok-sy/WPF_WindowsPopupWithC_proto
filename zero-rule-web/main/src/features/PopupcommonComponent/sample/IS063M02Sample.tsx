@@ -32,8 +32,9 @@ import {
  * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 둔다(서버 확정 필요).
  * [실연동] 퀴즈 유형·답안 유형 목록은 샘플용 값이다. loadPopupQuestionCodes(api.clCode.search) 결과를 PopupQuizRuleFields options·PopupQuestionEditor answerTypeOptions로 넘긴다.
  * [확정] 퀴즈 점수: 문항은 무조건 1점(총점 = 문항 수). 만점 통과 = 통과 점수 문항 수(10문항 → 10점),
- * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). 통과/실패 제출도 통과 점수 N이며, [확정] 미달(실패)이면 제출하지 못한다
- * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 세 유형 모두 저장 값은 passingScore 하나다.
+ * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). [확정] 만점형·컷트라인형은 미달(실패)이면 제출하지 못한다
+ * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 참여형도 기준 N개(통계용 합격 기준)를 입력하며
+ * 미달이어도 제출하면 완료된다(passed만 false). 저장 값은 기준 점수 passingScore와 퀴즈 유형 코드 quizTypeCode(0090: 00·01·02)다.
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
  * 화면 state는 입력한 값만 갖는다(미설정 = 키 생략, newSamplePopup·changeSampleType). 미리보기에는 withPreviewFallback으로 표시용 값만 채워 넘긴다.
  * 저장은 화면이 입력하는 필드만 담은 값(toSampleScreenValues)을 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
@@ -108,8 +109,8 @@ export default function IS063M02Sample() {
   const hasVideo = popup?.popupType === 'VIDEO' || popup?.content.videoEnabled === true;
   const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentText(popup, 'footerAction')) || 'CLOSE';
   const isQuiz = popup?.popupType === 'QUIZ';
-  /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
-   * 신규·불러오기(editorKey 변경) 때 저장된 통과 점수로 유형을 복원하고, 미리보기·저장에는 규칙을 적용한 effective를 보낸다. */
+  /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
+   * 신규·불러오기(editorKey 변경) 때 저장된 퀴즈 유형 코드(없으면 통과 점수)로 유형을 복원하고, 미리보기·저장에는 규칙을 적용한 effective를 보낸다. */
   const quiz = usePopupQuizRule(popup, editorKey);
   const effective = quiz.effective;
   const preview = effective ? withPreviewFallback(effective) : null;

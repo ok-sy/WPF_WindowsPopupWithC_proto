@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-09-quiz-participation-threshold', date: '2026-11-09', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-09',
+    title: '참여형 퀴즈 기준 개수 입력·퀴즈 유형 코드 저장',
+    body: ['참여형 퀴즈도 기준 개수(1~문항 수)를 입력합니다. 참여형은 정답 개수와 관계없이 제출하면 완료되고, 기준 개수는 통계용 합격 여부(passed = 정답 수 ≥ 기준)에만 씁니다. 만점형·컷트라인형은 기존처럼 합격해야 제출됩니다.',
+      '퀴즈 유형은 공통코드 0090 값으로 popup.quizTypeCode에 저장합니다(00 참여형·01 만점형·02 컷트라인형, QUIZ가 아니면 저장하지 않음). 다시 열면 코드로 유형을 복원하므로 기준이 문항 수와 같은 컷트라인형도 컷트라인형으로 남습니다. 코드가 없는 기존 데이터는 통과 점수로 추정합니다.',
+      '미리보기는 참여형이면 기준 미달이어도 완료 안내(정답 N/M개)를 보여 주고 다시 풀기 상태로 가지 않습니다.'],
+    components: ['PopupQuizRuleFields', 'PopupPreview'],
+    action: '저장 값에 usePopupQuizRule의 effective.quizTypeCode를 passingScore와 함께 넣습니다(pickPopupFields topLevelKeys에 quizTypeCode 추가).',
+  },
+  {
     id: '2026-11-09-todo73-question-editor-props', date: '2026-11-09', category: 'ADDED', status: 'DONE', doneDate: '2026-11-09',
     title: '문항 편집기 richQuestionText·maxQuestions 추가',
     body: ['PopupQuestionEditor에 richQuestionText(기본 false)와 maxQuestions(기본 30)를 추가했습니다. richQuestionText를 true로 주면 문항 제목·선택지를 서식 편집기로 입력합니다. maxQuestions로 최대 문항 수를 바꿉니다.',

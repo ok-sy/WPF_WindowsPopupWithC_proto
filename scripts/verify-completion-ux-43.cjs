@@ -171,6 +171,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check((await bodyText()).includes('퀴즈를 통과하지 못하였습니다.\n문제를 다시 풀어주세요.\n(통과 기준: 75점 이상)\n\n2/4개\n틀린 문항: 3, 4번'), 'QUIZ cutoff failure matches WPF notice (Q3): ' + JSON.stringify(await bodyText()));
   await render('QUIZ', {passingScore: 0}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
   check((await bodyText()).includes('퀴즈를 완료하여 완료 조건을 종료합니다.\n\n2/4개') && await button('닫기') === null, 'QUIZ participation matches WPF notice (Q3)');
+  // PU001 §7: quizTypeCode '00'(참여형, requiresPassing=false)은 기준(75점) 미달이어도 완료 안내이며 미달 상태(다시 풀기·보조 닫기)로 가지 않는다.
+  await render('QUIZ', {passingScore: 75, quizTypeCode: '00'}, {useBackgroundOverlay: false}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
+  check((await bodyText()).includes('퀴즈를 완료하여 완료 조건을 종료합니다.\n\n2/4개') && !(await bodyText()).includes('통과하지 못하였습니다') && await button('닫기') === null,
+    'QUIZ participation code below threshold shows completion, not failure: ' + JSON.stringify(await bodyText()));
+  // 같은 점수라도 컷트라인형 코드 '02'(requiresPassing=true)는 미달 안내·보조 닫기로 간다.
+  await render('QUIZ', {passingScore: 75, quizTypeCode: '02'}, {useBackgroundOverlay: false}); await halfQuiz(); await pause(200); await click('제출'); await pause(200);
+  check((await bodyText()).includes('퀴즈를 통과하지 못하였습니다.') && (await button('닫기')) !== null, 'QUIZ cutoff code below threshold keeps failure and aux close');
 
   // 5. SURVEY: 보조 닫기 없음. 필수 미응답이면 제출 비활성 + 진행 문구 연결.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: true, sortOrder: 1, options: []}]}, {useBackgroundOverlay: false});

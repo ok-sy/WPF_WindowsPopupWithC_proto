@@ -37,13 +37,15 @@ const TYPE_IMPORT_CODE = `import type { AdminPopupDetail, PopupOption, PopupQues
 
 const TYPE_TREE = `AdminPopupDetail                팝업 하나 (popupType: PopupType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'SURVEY' | 'QUIZ')
 ├─ 창·노출 설정                  title, sizeMode, width, height, showFooter, displayStartAt …
-├─ passingScore                  퀴즈 통과 점수 (QUIZ만)
+├─ passingScore                  퀴즈 기준 점수 (QUIZ만, 참여형은 통계용 합격 기준)
+├─ quizTypeCode                  퀴즈 유형 코드 0090 (QUIZ만: '00' 참여형·'01' 만점형·'02' 컷트라인형)
 ├─ content: Record<string, …>    유형별 본문 (TEXT: plainText·textBlocks, 설문·퀴즈: description …)
 └─ questions: PopupQuestion[]    설문·퀴즈 문항 (SURVEY·QUIZ만, 그 외 유형은 [])
      └─ options: PopupOption[]   선택지 (주관식 TEXT 문항은 [])`;
 
 const MINIMAL_TYPE_CODE = typedExampleCode('const state: Partial<AdminPopupDetail>', MINIMAL_POPUP_INPUT);
 const QUIZ_TYPE_CODE = `// 문항은 content 안이 아니라 최상위 questions에 둡니다. OX형은 SINGLE_CHOICE + 선택지 'O'·'X' 두 개입니다.
+// 퀴즈 유형은 최상위 quizTypeCode('01' 만점형), 기준 점수는 passingScore입니다(문항 1점이라 2 = 2문항 모두 정답).
 ${typedExampleCode('const quiz: Partial<AdminPopupDetail>', QUIZ_POPUP_INPUT)}`;
 
 /**
