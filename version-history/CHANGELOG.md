@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-06-06 — dev: TODO61 IMAGE 실제 크기 미리보기 모서리·그림자 수정
+
+- 이유: 폐쇄망 관리자 웹의 IMAGE 실제 크기 미리보기에서 모서리가 직각, 그림자가 이중으로 표시됨. 로컬 재현 결과 그림자 이중 표시는 규칙 유무와 무관한 저장소 코드 문제이고, 직각은 `.MuiDialog-root .MuiPaper-root` 계열 규칙이 내부 Paper를 덮는 충돌로 확인. IMAGE만 틀 패딩 24px(WPF 그림자 여백 대응) 때문에 내부 Paper 모서리가 드러남.
+- 변경: IMAGE 일반 창의 Dialog Paper `boxShadow: none`으로 그림자를 내부 Paper 하나로 정리. 내부 Paper 둥글기를 `'&&&'`로 지정해 같은 규칙보다 우선 적용(FULLSCREEN 0 유지, `!important` 미사용). 24px 패딩·창 크기·다른 유형의 Dialog 그림자 변경 없음. 폐쇄망 CSS 미변경.
+- 주요 파일: zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx, zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx, scripts/verify-popup-preview-61.cjs, docs/design/61_관리자_미리보기_컴포넌트화_TODO.md.
+- 검증: `tsc`·변경 파일 eslint 오류 0. 폐쇄망 규칙을 가정해 주입한 headless Edge 측정에서 IMAGE ADAPTIVE·FIT_TO_IMAGE·ORIGINAL·RATIO 모서리 직각 → 6px, 그림자 2겹 → 1겹, 창 560×420·내부 512×372 유지, FULLSCREEN 0 유지, TEXT·VIDEO·SURVEY·QUIZ 크기·Dialog 그림자 유지. `verify-popup-preview-61` 118건(신규 52건, 수정 전 코드에서는 그림자 검사 실패 확인), `verify-image-preview` 54건, `verify-popup-common-sample-69` 61건, `verify-completion-ux-43` 84건, `verify-survey-rich-text-55` 53건, `verify-popup-transform-64` 77건, `verify-popup-guide-render` 29건 통과. 폐쇄망 규칙 원본 확인, 폐쇄망 실화면, 로컬 관리자 웹 실화면, `next build`는 미실행.
+- 상태: 커밋에 포함, 원격 반영. 61-12 폐쇄망 CSS 원본 추적과 61-15·16의 폐쇄망 비교는 미완료. 폐쇄망 반입 대기.
+
 ## 2026-11-06-05 — dev: TODO61 IMAGE 실제 크기 미리보기 radius·shadow 충돌 정의
 
 - 이유: 폐쇄망 관리자 웹에서 IMAGE 타입의 실제 크기 미리보기만 모서리 둥글기가 0으로 표시되고, Dialog와 내부 Paper의 그림자가 중첩되어 보이는 증상을 확인.

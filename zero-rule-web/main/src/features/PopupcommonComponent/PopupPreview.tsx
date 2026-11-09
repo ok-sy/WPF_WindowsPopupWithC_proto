@@ -639,7 +639,8 @@ export default function PopupPreview({
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
-          borderRadius: popup.sizeMode === 'FULLSCREEN' ? 0 : '6px',
+          // 화면 CSS의 '.MuiDialog-root .MuiPaper-root'(우선순위 0,2,0)보다 높게 지정해 Dialog 안에서도 창 둥글기를 유지한다.
+          '&&&': { borderRadius: popup.sizeMode === 'FULLSCREEN' ? 0 : '6px' },
           // SURVEY·QUIZ(VIDEO+QUIZ 포함)는 WPF와 같이 본문·푸터까지 설문 콘텐츠 배경(옅은 회색)이다.
           bgcolor: isSurvey ? surveyColors.content : 'white',
           // WPF PopupBodyBorder BorderThickness=0과 같이 IMAGE 창 테두리를 그리지 않는다.
