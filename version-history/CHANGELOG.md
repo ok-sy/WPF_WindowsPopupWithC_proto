@@ -8,6 +8,20 @@
 
 # 변경 이력
 
+## 2026-11-10-10 — docs: 활성작업 D 상태 대조 TODO54·59·60
+
+- 이유: 상태 정리. ACTIVE_TASKS D에 미대조로 남은 TODO54·59·60의 머리말에 "계획 등록·코드 미변경" 등록 당시 문구가 남아 본문 구현 기록과 모순되고, 미체크 항목이 실제로 미구현인지 실화면 잔여인지 구분되지 않음.
+- 변경:
+  - 2026-11-03 D 대조 결정(체크+`실화면 잔여` 표기)을 그대로 적용. 머리말을 현재 상태로 정정하고 옛 문구는 `(등록 당시 기록)`으로 표시.
+  - TODO54: 상태 "진행 중" → 구현 완료·54-10 실조작 잔여. 54-10은 유지하고 자동 회귀·캡처 완료와 DPI·Tab 순서·키보드 잔여를 표기. 54-6의 연결별 결과 큐 파일 설명에 메모리 전용 전환(2026-11-03) 대체 메모.
+  - TODO59: 59-6 체크(자동 검증·Demo 실창 캡처, API 수신 데이터·스크롤 실화면 잔여 표기).
+  - TODO60: 수치 정책 미확정 문구를 등록 당시 기록으로 표시(확정값 16:9·상한 0.7·하한 180, WPF·웹 상수 일치). 60-8·60-12 유지하고 자동 검증 범위와 실영상·실측 잔여 표기.
+  - 검토 문서 §10 추가(판정표·요약), ACTIVE_TASKS D 행 "54·59·60 2026-11-10 정리 완료".
+  - `DemoWindow.Api.cs` `EnsureApiConnection` 주석의 "미전송 결과가 연결 전용 파일에 남음"을 메모리 전용 동작(확인 후 버림)에 맞게 정정. 동작·명세 변경 없음.
+- 주요 파일: `docs/design/54_Demo_UI_UX_상세옵션_정리_TODO.md`, `docs/design/59_VIDEO_QUIZ_중간안내제거_TODO.md`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`, `docs/reviews/20261103_활성작업_D상태대조_검토.md`, `docs/policies/ACTIVE_TASKS.md`, `popup-frameWork/Popup/DemoWindow.Api.cs`.
+- 검증: 현재 main 코드·추적 테스트 정적 대조(`_notice` 부재, `LockedReason`·`SetLockedReason`, `CheckVideoQuizNotice59`·`CheckVideoQuizAspect60`, ApiDemoTests `[54-*]` 검사, verify-completion-ux-43 TODO59 검사, `AspectVideoArea.tsx`·`VideoPopupView.AspectSizing.cs` 상수, `PopupResultQueue` 파일 I/O 없음). 결과: 미체크 4건 중 체크 1·유지+잔여 표기 3, 미구현 0. 테스트·빌드 재실행 안 함(문서·주석만 변경). 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-10-09 — scripts: 히스토리 번들에서 WPF 데모 미디어 제외(RULES 2)
 
 - 이유: 반입 준비. 웹·WPF 히스토리 번들(약 26MB)의 약 70%가 `popup-frameWork/Popup/Media/demo-video.mp4` 두 버전(약 18.9MB)이었다. 빌드 결과물(`publish`·`bin`·`obj`·`node_modules`·`.next`)은 이력에 없음을 확인. 폐쇄망은 아직 번들 clone에서 subtree split·폴더 연결을 하지 않아 커밋 ID가 바뀌어도 다시 연결할 비용이 없으므로, 다음 반입본부터 새 기준으로 시작.
