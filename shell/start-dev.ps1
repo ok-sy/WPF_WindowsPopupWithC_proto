@@ -4,6 +4,7 @@
 #   powershell -ExecutionPolicy Bypass -File .\shell\start-dev.ps1              # 기본: 원격 개발 DB(VPN) + 프런트 → http://localhost:8080/zero-rule-server
 #   powershell -ExecutionPolicy Bypass -File .\shell\start-dev.ps1 -LocalDb     # 로컬 Oracle XE 21c(POPUP 계정)로 백엔드 기동
 #   powershell -ExecutionPolicy Bypass -File .\shell\start-dev.ps1 -SkipFrontend
+#   powershell -ExecutionPolicy Bypass -File .\shell\start-dev.ps1 -DevScenes popup  # 개발 서버에서 팝업 화면 묶음만 컴파일(첫 컴파일 단축)
 #
 # 백엔드 : .\gradlew :app:bootRun -Pprofile=local  (JndiResource 기본값 = 공통 개발 DB 192.168.114.71:4004/XE, 팝업 테이블은 앱 계정 스키마)
 #          -LocalDb 이면 ZERO_RULE_DB_URL/USER/PASSWORD + CUSTOM_POPUP_SCHEMA=POPUP 환경변수를 창에 넣어 로컬 XE로 붙인다.
@@ -30,7 +31,8 @@ param(
     [switch]$MockSso,                                            # [설계 10] 임시 SSO 프로그램(popup-frameWork/MockSso) 창 추가
     [string]$MockSsoUserId = 'E1001',                            # MAIN_USER_ID 값 ('windows' 이면 인증된 Windows 계정 이름)
     [string]$MockSsoClassCode = 'A1',                            # MAIN_USER_CLASSI_CODE 값
-    [string]$TokenTtl = ''                                       # 예: '20s' — 프로토타입 토큰 유효기간 덮어쓰기(비우면 yml 값 10분)
+    [string]$TokenTtl = '',                                      # 예: '20s' — 프로토타입 토큰 유효기간 덮어쓰기(비우면 yml 값 10분)
+    [string]$DevScenes = ''                                      # 예: 'popup' 또는 'popup,pds' — 개발 서버 화면 묶음 필터(DEV_SCENES, 비우면 전체). 묶음: system·log·pds·rule·popup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -115,6 +117,8 @@ if (-not $SkipBackend) {
 # ---- 프런트엔드 --------------------------------------------------------------
 if (-not $SkipFrontend) {
     $frontendEnv = @{ API_BASE_URL = $ApiBaseUrl; ROUTER_BASE_URL = $RouterBaseUrl }
+    # 개발 서버 화면 묶음 필터: next.config.mjs가 next dev에서만 적용한다(src/scene/scene-router.tsx 머리 주석).
+    if ($DevScenes) { $frontendEnv.DEV_SCENES = $DevScenes }
     $pnpmRun = "npx --yes $pnpmSpec"
     $install = ''
     if (-not (Test-Path -LiteralPath (Join-Path $frontendPath 'node_modules'))) {

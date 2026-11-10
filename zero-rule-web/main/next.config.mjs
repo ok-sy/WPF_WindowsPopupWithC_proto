@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,6 +22,23 @@ const ROUTER_BASE_URL = process.env.ROUTER_BASE_URL;
 const API_BASE_URL = process.env.API_BASE_URL;
 
 console.log('next.config=', { BASE_URL, ROUTER_BASE_URL, API_BASE_URL });
+
+// 개발 서버 화면 묶음 필터. DEV_SCENES=popup,pds처럼 켤 묶음을 쉼표로 준다(대소문자 무관, 비우거나 all이면 전체).
+// next dev에서만 꺼진 묶음마다 DEV_SCENE_OFF_<묶음>='1'을 env로 넣어 scene-router.tsx의 해당 dynamic import를 컴파일에서 뺀다.
+// next build·DEV_SCENES 미지정이면 모든 묶음을 '0'으로 넣어 운영 결과물은 항상 전체 화면이고 제외 안내 컴포넌트도 번들에서 빠진다. 묶음 설명·화면 추가 방법은 src/scene/scene-router.tsx 머리 주석.
+// 셸 환경변수, main/.env.development.local 둘 다 된다(turbo는 turbo.json dev passThroughEnv로 넘긴다).
+const DEV_SCENE_GROUPS = ['SYSTEM', 'LOG', 'PDS', 'RULE', 'POPUP'];
+function devSceneEnv(phase) {
+  const raw = (process.env.DEV_SCENES || '').trim();
+  const flags = (off) => Object.fromEntries(DEV_SCENE_GROUPS.map((g) => [`DEV_SCENE_OFF_${g}`, off.includes(g) ? '1' : '0']));
+  if (phase !== PHASE_DEVELOPMENT_SERVER || !raw || raw.toLowerCase() === 'all') return flags([]);
+  const wanted = raw.split(',').map((v) => v.trim().toUpperCase()).filter(Boolean);
+  const unknown = wanted.filter((v) => !DEV_SCENE_GROUPS.includes(v));
+  if (unknown.length) console.warn(`DEV_SCENES: 알 수 없는 묶음 ${unknown.join(', ')} (사용 가능: ${DEV_SCENE_GROUPS.join(', ').toLowerCase()})`);
+  const off = DEV_SCENE_GROUPS.filter((g) => !wanted.includes(g));
+  console.log(`DEV_SCENES: 켬 ${DEV_SCENE_GROUPS.filter((g) => wanted.includes(g)).join(', ') || '(대시보드만)'} / 끔 ${off.join(', ') || '없음'}`);
+  return flags(off);
+}
 
 // amp, analyticsId, assetPrefix, basePath, cleanDistDir, compiler, compress, crossOrigin, devIndicators, distDir, env, eslint, excludeDefaultMomentLocales, experimental, exportPathMap, generateBuildId, generateEtags, headers, httpAgentOptions, i18n, images, onDemandEntries, optimizeFonts, output, outputFileTracing, pageExtensions, poweredByHeader, productionBrowserSourceMaps, publicRuntimeConfig, reactStrictMode, redirects, rewrites, sassOptions, serverRuntimeConfig, staticPageGenerationTimeout, swcMinify, trailingSlash, typescript, useFileSystemPublicRoutes, webpack
 /**
@@ -83,4 +101,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default (phase) => ({ ...nextConfig, env: devSceneEnv(phase) });

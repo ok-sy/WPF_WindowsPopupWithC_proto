@@ -1,5 +1,24 @@
 # 변경 이력
 
+## 2026-11-10-04 — dev: 관리자 웹 개발 서버 화면 묶음 필터(DEV_SCENES) 추가
+
+- 이유: 폐쇄망 관리자 웹 `pnpm dev`(Turbopack) 첫 화면 컴파일이 60초대로 확인됨. 로컬 분석 결과 `/`(대시보드)를 컴파일할 때 `scene-router.tsx`의 `dynamic()` 업무 화면 27개(CKEditor·xlsx·date-pickers·Rule 포함)가 모두 함께 컴파일됨(캐시 없음 `/`만 요청해도 기능 청크 27종·197개 생성). 임시로 대시보드만 남기면 컴파일 7.0초 → 2.9초로 일괄 컴파일이 약 60%를 차지. Next 15.5.21 정식판은 Turbopack 영구 캐시(`experimental.turbopackPersistentCaching`)가 canary 전용이라 적용 불가.
+- 변경:
+  - `scene-router.tsx`: 화면을 SYSTEM·LOG·PDS·RULE·POPUP 묶음으로 나누고 각 화면을 `process.env.DEV_SCENE_OFF_<묶음> === '1' ? DevSceneOff : dynamic(...)`로 감쌈. 대시보드·NotReady는 항상 등록. 꺼진 화면은 제외 안내 문구로 열림. 머리 주석에 동작·화면 추가 방법(조건을 줄마다 직접 써야 상수로 접힘) 기록.
+  - `next.config.mjs`: 설정을 phase 함수로 내보내고 `next dev`(PHASE_DEVELOPMENT_SERVER)에서만 `DEV_SCENES`(쉼표 구분, 대소문자 무관, 비우거나 `all`이면 전체)를 묶음별 `DEV_SCENE_OFF_*` env 상수로 변환. `next build`·미지정이면 전부 `'0'`이라 전체 화면이 등록되고 안내 컴포넌트도 번들에서 빠짐. 알 수 없는 묶음은 경고, 켬/끔 묶음을 기동 로그에 출력.
+  - `turbo.json` dev 작업 `passThroughEnv: ["DEV_SCENES"]`(turbo 2.x strict env 모드에서 루트 `pnpm dev`로 전달). `main/.env.development.local`로도 지정 가능.
+  - `shell/start-dev.ps1`에 `-DevScenes` 옵션 추가. 프론트엔드 개발 가이드에 사용법·측정값 기록.
+- 주요 파일: `zero-rule-web/main/src/scene/scene-router.tsx`, `zero-rule-web/main/next.config.mjs`, `zero-rule-web/turbo.json`, `shell/start-dev.ps1`, `docs/developers/frontend/01_개발가이드.md`.
+- 검증(로컬 Windows, 캐시 없는 개발 서버에서 `/`만 요청):
+  - 미지정: 컴파일 6.9초·응답 10.8초·청크 197·기능 27종(변경 전과 같음).
+  - `DEV_SCENES=popup`: 컴파일 3.7초·응답 4.7초·청크 97·기능 3종(CloverMainHome·RgstPop·PopupcommonComponent).
+  - `DEV_SCENES=popup,pds,bogus`: PDS·POPUP만 컴파일, BOGUS 경고 출력.
+  - 루트 `turbo dev --filter=@zerorule/web`(strict 모드)에서 `DEV_SCENES` 전달·적용 확인.
+  - `DEV_SCENES=popup`을 준 채 `next build`(webpack) 성공(28.1초), 필터 미적용(룰 화면 포함, 안내 문구 번들 0건).
+  - 웹 `tsc` 오류 0, 변경 파일 eslint 오류 0. `start-dev.ps1` PowerShell 구문 오류 0.
+  - 미실행: 꺼진 화면을 사이드바에서 여는 실화면 확인, 폐쇄망 적용·실측(폐쇄망 `scene-router.tsx`는 등록 화면이 달라 묶음 조건을 그쪽 화면에 맞춰 반영 필요).
+- 상태: 구현 완료. 커밋·원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-10-03 — dev: QUIZ 문항 제목 RichTextEditor 통일·선택지 자동 번호 제거
 
 - 이유: 2026-11-10 확정 TODO 구현. 퀴즈 문항 제목 입력 방식을 OX 여부와 무관하게 하나로 맞추고 선택지 입력칸의 자동 번호 표시를 제거. 착수 전 정합성 점검에서 TODO 파일명(`일반입력`)과 본문(RichTextEditor 통일)이 어긋나고 가이드·인계 문서에 「퀴즈 OX 제목만 서식 편집기」 기준이 남아 있음을 확인해 함께 정리.
