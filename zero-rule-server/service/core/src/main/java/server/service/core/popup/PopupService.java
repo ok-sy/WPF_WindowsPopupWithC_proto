@@ -672,6 +672,14 @@ public class PopupService {
                         "서술형 문항에는 선택지를 제출할 수 없습니다. questionId="
                                 + question.questionId());
             }
+            // POL-06-02 : 선택·제출 — 저장값(앞뒤 공백 제거)이 DB 컬럼(VARCHAR2(1000 BYTE)) 기준 UTF-8 1000 Byte 이하여야 한다(TODO73-38).
+            int answerBytes = PopupUtf8Limits.utf8Length(normalizeText(answer.textAnswer()));
+            if (answerBytes > PopupUtf8Limits.TEXT_ANSWER_MAX_BYTES) {
+                throw new IllegalArgumentException(
+                        "주관식 답변은 UTF-8 " + PopupUtf8Limits.TEXT_ANSWER_MAX_BYTES
+                                + " Byte 이하여야 합니다. questionId=" + question.questionId()
+                                + " (현재 " + answerBytes + " Byte)");
+            }
             return new ValidatedAnswer(question, answer, List.of());
         }
 

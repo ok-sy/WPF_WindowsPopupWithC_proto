@@ -8,6 +8,18 @@
 
 # 변경 이력
 
+## 2026-11-10-08 — dev: TODO73-38 서버 UTF-8 바이트 저장 전 검증 추가
+
+- 이유: TODO73 §10 정합성 보완. 관리자 웹·WPF 입력 제한(2026-11-10-06·07)만으로는 이전 WPF 클라이언트·직접 호출·기존 데이터 재저장 시 폐쇄망 BYTE 컬럼(`VARCHAR2(300 BYTE)`·`VARCHAR2(1000 BYTE)`)에 넘는 값이 들어가 ORA-12899가 날 수 있어 서버에서도 같은 상한을 저장 전에 확인.
+- 변경:
+  - `PopupUtf8Limits` 추가(`QUIZ_OPTION_TEXT_MAX_BYTES`=300, `TEXT_ANSWER_MAX_BYTES`=1000, `utf8Length`).
+  - `PopupQuestionRules.validate`: QUIZ 선택지(서식이면 정규화 뒤 파생 일반 문자열) 300 Byte 초과 시 거부(현재 Byte 포함 메시지). 기존 1~1000자 규칙 유지, 설문 선택지·문항 제목 제외.
+  - `PopupService.validateAnswer`: TEXT 문항 `textAnswer` 저장값(trim 후) 1000 Byte 초과 시 저장 전 거부. WPF API는 기존 핸들러로 400 `WPF_BAD_REQUEST`.
+  - 자르지 않음. 로컬 스키마·DTO·필드 변경 없음. TODO73 §10·`POPUP_INTERFACE_SPEC` 3.7 보완 갱신.
+- 주요 파일: `zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupUtf8Limits.java`, `PopupQuestionRules.java`, `PopupService.java`, `zero-rule-server/service/core/src/test/java/server/service/core/popup/PopupUtf8LimitTest.java`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 `gradlew test` 268건 통과·13 skip(Oracle 연동)·실패 0. 새 `PopupUtf8LimitTest` 6건(바이트 계산, 퀴즈 선택지 300/301·이모지 경계, 설문 선택지·퀴즈 제목 제외, 서식 선택지 파생 문자열, 주관식 1000/1001 SURVEY·QUIZ·거부 시 저장 0건, trim 후 계산). 상한을 풀면 거부 검사 3건 실패 확인 후 복원. 미실행: 로컬 서버 HTTP 왕복, 원격 개발 DB, 폐쇄망 DB(BYTE 컬럼) 저장.
+- 상태: 구현 완료. 커밋·원격 반영. 서버 반입 대기.
+
 ## 2026-11-10-07 — dev: TODO73-37 WPF 주관식 응답 UTF-8 1,000 Byte 입력 제한
 
 - 이유: TODO73 §10 확정 정책 구현. 폐쇄망 DB 주관식 응답 컬럼이 `VARCHAR2(1000 BYTE)`라 WPF SURVEY/QUIZ 주관식 입력을 글자 수가 아니라 UTF-8 바이트로 제한해야 함.
@@ -19,7 +31,7 @@
   - 서버 `WpfResultRequest.textAnswer`·선택지 1~1000자 검증과 로컬 스키마(`TEXT_ANSWER CLOB`, `OPTION_TEXT VARCHAR2(1000 CHAR)`)는 변경하지 않음. 폐쇄망 BYTE 컬럼에 넘는 값이 오면 ORA-12899 가능성이 있어 서버 바이트 검증 추가 여부는 결정 대기로 TODO에 기록.
 - 주요 파일: `popup-frameWork/Popup/Services/Utf8ByteLimit.cs`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
 - 검증: `Popup` 빌드 경고·오류 0. `Popup.BehaviorTests`(로컬 전용, Git 제외) 1,724건 통과(새 `CheckTextAnswerByteLimit73`: Byte 계산, 1000/1001 경계, 한글 중간 삽입 거부·커서 복원, 한글→영문 치환, 이모지 경계, 클립보드 붙여넣기 전체 거부, 삭제 후 재입력, 제출 직전 검증 1000/1001, 결과 DTO 값 유지). 제한 연결을 빼면 첫 경계 검사 실패 확인 후 복원. 미실행: 실제 한글 IME 수동 입력, WPF 실화면, 결과 API 실제 전송·원격 개발 DB·폐쇄망 DB 저장.
-- 상태: 구현 완료. 커밋·원격 반영. 서버 바이트 검증 여부 결정 대기. 폐쇄망 반입 대기.
+- 상태: 구현 완료. 커밋·원격 반영. 서버 바이트 검증은 2026-11-10-08에서 추가. 폐쇄망 반입 대기.
 
 ## 2026-11-10-06 — dev: TODO73-36 관리자 웹 QUIZ 선택지 UTF-8 300 Byte 입력 제한
 

@@ -167,7 +167,7 @@
 
 ## 10. 추가 TODO — UTF-8 BYTE 입력 제한 (2026-11-10)
 
-상태: **WEB·WPF 입력 제한 구현 완료(2026-11-10) / 서버 검증 여부 결정 대기·실화면 확인 대기**. DB 담당자 확인: 선택지 `VARCHAR2(300 BYTE)`, 주관식 응답 `VARCHAR2(1000 BYTE)`. 코드는 관리자 웹·WPF 입력과 저장·제출 전 확인만 바꿨고 서버 API·DB는 변경하지 않았다.
+상태: **WEB·WPF 입력 제한·서버 저장 전 바이트 검증 구현 완료(2026-11-10) / 실화면·폐쇄망 DB 확인 대기**. DB 담당자 확인: 선택지 `VARCHAR2(300 BYTE)`, 주관식 응답 `VARCHAR2(1000 BYTE)`. 관리자 웹·WPF 입력 제한과 서버 저장 전 검증(400)을 넣었고, 필드·형식과 DB 스키마는 변경하지 않았다.
 
 ### 확정 정책
 - **관리자 WEB QUIZ 선택지 Input**: UTF-8 인코딩 결과 **최대 300 Byte**까지 허용, 초과 입력 차단. QUIZ 문항 제목은 `CLOB`이므로 이 제한의 대상이 아니다. 설문 선택지까지 자동 확대하지 않는다.
@@ -200,11 +200,11 @@
 - **73-38 정합성**:
   - WEB: `validatePopupQuestions`가 QUIZ 선택지 300 Byte 초과를 막는다(`N번 선택지는 300 Byte(한글 약 100자)까지 … 현재 X Byte`). RgstPop 저장도 이 함수를 쓴다. 이미 넘은 기존 값은 자르지 않고 그대로 보여 주며 안내하고, 줄이는 편집만 받는다.
   - WPF: 결과 `answers[].textAnswer`는 입력·제출 전 제한으로 1,000 Byte 이하만 만든다.
-  - 서버(변경 없음, 결정 필요):
-    - 선택지 검증은 `PopupQuestionRules`·`PopupSurveyRichText.OPTION_TEXT_MAX`의 1~1000자(UTF-16 길이)다.
-    - `WpfResultRequest.Answer.textAnswer`에는 길이 검증이 없다(`normalizeText`는 trim만 한다).
-    - 로컬 스키마는 `OPTION_TEXT VARCHAR2(1000 CHAR)`, `TEXT_ANSWER CLOB`이라 폐쇄망 BYTE 컬럼과 다르다.
-    - 폐쇄망 DB에서는 이전 WPF 클라이언트나 직접 호출로 넘는 값이 오면 저장 시 ORA-12899가 날 수 있다. 서버에 같은 바이트 검증(400 응답)을 둘지는 별도 승인 후 정한다.
+  - 서버(2026-11-10 추가 승인 후 구현): `PopupUtf8Limits`(`QUIZ_OPTION_TEXT_MAX_BYTES`=300, `TEXT_ANSWER_MAX_BYTES`=1000, `utf8Length`) 추가.
+    - 관리자 저장: `PopupQuestionRules.validate`가 QUIZ 선택지 300 Byte 초과를 거부한다(`… UTF-8 300 Byte 이하여야 합니다. (현재 N Byte)`, 400). 서식 선택지는 `PopupSurveyRichText` 정규화 뒤 파생 일반 문자열(OPTION_TEXT 저장값)로 센다. 기존 1~1000자 규칙은 유지했고, 설문 선택지·문항 제목은 바이트 제한이 없다.
+    - WPF 결과: `PopupService.validateAnswer`가 TEXT 문항 `textAnswer`의 저장값(trim 후)이 1000 Byte를 넘으면 저장 전에 거부한다(`WpfApiExceptionHandler` → 400 `WPF_BAD_REQUEST`). WPF 큐는 400 결과를 이번 실행에서 전송 대상에서 빼고 보관한다(기존 동작).
+    - 로컬 스키마(`OPTION_TEXT VARCHAR2(1000 CHAR)`, `TEXT_ANSWER CLOB`)는 그대로 두었다. 폐쇄망 BYTE 컬럼에서도 넘는 값이 DB까지 가지 않아 ORA-12899가 나지 않는다.
+    - 이미 DB에 있는 300 Byte 초과 QUIZ 선택지는 자동으로 자르지 않는다. 그 팝업을 다시 저장할 때 400으로 안내된다.
   - 인터페이스: 필드·형식 변경 없음. `POPUP_INTERFACE_SPEC` 3.7 보완, `WPF_POPUP_ALL_SPEC`·`WPF_POPUP_MINIMAL_SPEC`, 프론트 인계 문서, 가이드 공지(`2026-11-10-quiz-option-300-byte`)에 기록했다.
 - **73-39 검증**:
   - WEB: `node scripts/verify-quiz-option-byte-73.cjs` 39건 통과(Windows headless Edge, CDP `Input.insertText`·`Input.imeSetComposition`). 다룬 항목:
@@ -222,4 +222,5 @@
     - 55(67)·61(121)·guide-render(31)·guide-registry(270)·rgstpop-quiz-rule(25)·question-template-picker(7) 통과
     - 69(62): 2026-11-10 선택지 자동 번호 제거·QUIZ 제목 서식 편집기 전환 뒤 낡은 검사(번호 표시 기대, 제목 textarea)와, 300 Byte를 넘던 긴 선택지 입력(360 Byte)을 새 정책에 맞게 고쳐 통과
   - 웹 `tsc`·변경 파일 eslint 오류 0, WPF 빌드 경고·오류 0.
+  - 서버: `gradlew test` 268건 통과·13 skip(Oracle 연동)·실패 0. 새 `PopupUtf8LimitTest` 6건(바이트 계산, 퀴즈 선택지 300/301·이모지 경계, 설문 선택지·퀴즈 제목 제외, 서식 선택지 파생 문자열, 주관식 1000/1001(SURVEY·QUIZ)·거부 시 저장 0건, trim 후 계산). 상한을 풀면 거부 검사 3건이 실패함을 확인했다.
   - 미실행: 실제 한글 IME(Windows 키보드) 수동 입력, 관리자 웹·WPF 실화면, 서버 저장·재조회, 원격 개발 DB, 폐쇄망 DB(BYTE 컬럼) 저장, WPF 결과 API 실제 전송.

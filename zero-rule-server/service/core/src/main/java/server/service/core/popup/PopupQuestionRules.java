@@ -31,7 +31,7 @@ final class PopupQuestionRules {
      * - in : questions(List&lt;PopupQuestionDto&gt;) 문항 · quiz(boolean) 퀴즈 여부 · passingScore(Double) 통과 점수
      * - out: 없음 · 예외: IllegalArgumentException(규칙 위반 메시지)
      * - 문항 수·제목/설명 길이·유형·선택지 배치·배점(양수, 소수 둘째 자리)·주관식 정답/비교 방식·객관식 선택지 2개 이상과
-     *   정답 지정(단일 선택은 1개)·SURVEY 복수 선택 최소·최대 선택 수·통과 점수(0~총점)를 검사한다.
+     *   정답 지정(단일 선택은 1개)·QUIZ 선택지 UTF-8 300 Byte·SURVEY 복수 선택 최소·최대 선택 수·통과 점수(0~총점)를 검사한다.
      */
     static void validate(List<PopupQuestionDto> questions, boolean quiz, Double passingScore) {
         if (questions == null || questions.isEmpty()) fail("문항을 한 개 이상 추가해 주세요.");
@@ -62,6 +62,11 @@ final class PopupQuestionRules {
                 for (var option : q.options()) {
                     if (option.text() == null || option.text().isBlank() || option.text().length() > 1000)
                         fail("선택지 내용은 1~1000자여야 합니다.");
+                    // QUIZ 선택지는 DB 컬럼(VARCHAR2(300 BYTE)) 기준 UTF-8 300 Byte 이하(TODO73-38). 설문 선택지는 제외.
+                    int optionBytes = PopupUtf8Limits.utf8Length(option.text());
+                    if (quiz && optionBytes > PopupUtf8Limits.QUIZ_OPTION_TEXT_MAX_BYTES)
+                        fail("퀴즈 선택지 내용은 UTF-8 " + PopupUtf8Limits.QUIZ_OPTION_TEXT_MAX_BYTES
+                                + " Byte 이하여야 합니다. (현재 " + optionBytes + " Byte)");
                     if (Boolean.TRUE.equals(option.isCorrect())) correct++;
                 }
                 if (quiz && (correct == 0 || ("SINGLE_CHOICE".equals(q.questionType()) && correct != 1)))
