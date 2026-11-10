@@ -1,3 +1,11 @@
+## 2026-11-10 — doc: QUIZ 선택지·WPF 주관식 UTF-8 BYTE 제한 TODO
+
+- DB 담당자 확인: QUIZ 선택지 `VARCHAR2(300 BYTE)`, SURVEY/QUIZ 주관식 응답 `VARCHAR2(1000 BYTE)`. QUIZ 문항 제목 `CLOB`은 제외.
+- TODO73 §10(73-36~39): WEB 선택지 300 Byte, WPF 주관식 1,000 Byte 입력 초과 차단, IME·붙여넣기·경계값·저장/API/DB 정합성 검증 정의.
+- 주요 파일: `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: 요구사항 및 기존 TODO와 문서 대조. 코드 변경·타입 검사·빌드·로컬/원격 DB·폐쇄망 실화면 미실행.
+- 상태: TODO 문서 반영 / 구현 대기.
+
 # 변경 이력
 
 ## 2026-11-10-04 — dev: 관리자 웹 개발 서버 화면 묶음 필터(DEV_SCENES) 추가
