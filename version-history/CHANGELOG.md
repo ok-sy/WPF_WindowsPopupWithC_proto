@@ -8,6 +8,13 @@
 
 # 변경 이력
 
+## 2026-11-11-06 — 20261111 폐쇄망 전체 반입본 생성
+
+- 이유: 반입 준비. 20261106 반입본(기준 9403689) 이후의 PU001 참여형 퀴즈(DB 23·서버·웹·WPF), TODO73 UTF-8 Byte 제한·관리자 API 입력 오류 400, TODO69·61 편집기·미리보기 수정, DEV_SCENES 개발 서버 필터, TODO60 로컬·UNC 영상 WebView2 재생, TODO54-10 키보드 접근을 반입한다. 히스토리 번들은 RULES 2 첫 번들이다.
+- 변경: `offline-export/20261111/`(기준 커밋 6caaecf, `-PreviousExport 20261106 -PreviousCommit 9403689 -GitHistoryDir .offline-cache/git-history-20261111 -VerifyBuild`). 서버 A 158·M 11, 웹 A 54·M 22·D 3, WPF 소스 96, 문서 187(+CI 이미지 2), 히스토리 번들 5개 파일(main f2e54b0, 커밋 253). 변경 요약에는 적용 순서(DB 23 → 서버 → 웹·WPF), `error.ts` 블록 병합·`scene-router.tsx` 덮어쓰기 금지, 이전 번들 clone 폐기 후 새로 연결 시작을 적었다. CI 이미지는 506e3ec 패치를 작업 트리에만 적용해 넣고 생성 후 원복했다. npm 변경이 없어 5-npm-ckeditor는 넣지 않았다.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,800,398바이트) 생성 확인. TAR 5개 파일 수 검증, 통합 TGZ 체크섬 일치. 추출본에 원격 개발 DB 비밀번호·`features/RgstPop`·MockSso·Popup.slnx·EXE·PDB 0건, CI 이미지 2개와 `PopupAdminExceptionHandler.java`·`PopupUtf8Limits.java`·`error.ts`·`23_popup_quiz_type_oracle.sql` 포함 확인. 번들 민감값·제외 경로 점검 0건, 치환 대상 4개 파일만 원본과 다름. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-11-05 — scripts: 히스토리 번들 기본 날짜를 한국 시간으로 수정
 
 - 이유: 반입 준비 중 확인된 오류. Git Bash(Windows)는 zoneinfo가 없어 `TZ=Asia/Seoul`을 UTC로 처리해, 한국 시간 오전 9시 전에 실행하면 번들 날짜(`git-history-<날짜>`·번들 파일명)가 전날로 찍혔다(2026-11-11 08:5x 실행 시 20261110).
