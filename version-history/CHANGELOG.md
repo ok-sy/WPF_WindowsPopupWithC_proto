@@ -8,6 +8,19 @@
 
 # 변경 이력
 
+## 2026-11-10-06 — dev: TODO73-36 관리자 웹 QUIZ 선택지 UTF-8 300 Byte 입력 제한
+
+- 이유: TODO73 §10 확정 정책 구현. 폐쇄망 DB 선택지 컬럼이 `VARCHAR2(300 BYTE)`라 관리자 웹 QUIZ 선택지 입력을 UTF-8 바이트로 제한해야 함. 착수 전 점검에서 로컬 스키마(`OPTION_TEXT VARCHAR2(1000 CHAR)`)·서버 검증(1~1000자)이 폐쇄망 컬럼과 다름을 확인해 서버·DB는 바꾸지 않고 입력·저장 전 확인만 구현.
+- 변경:
+  - `popupByteLimit.ts` 추가(`QUIZ_OPTION_TEXT_MAX_BYTES`=300, `utf8ByteLength`, `acceptsByteLimitedChange`, `byteLimitMessage`).
+  - `PopupQuestionEditor`: QUIZ 일반 선택지 입력을 `ByteLimitedTextField`로 교체 — 넘는 키보드 입력·붙여넣기 거부(직전 값·커서 유지), IME 조합 중에는 그대로 두고 `compositionend`에서 재확인, 막히면 안내 문구. 이미 넘은 기존 값은 그대로 표시·현재 Byte 안내, 줄이는 편집만 허용. `validatePopupQuestions`에 QUIZ 선택지 300 Byte 확인 추가. 설문 선택지·QUIZ 제목(CLOB)·OX 고정 선택지는 제외.
+  - `PopupRichTextEditor`: 선택 prop `maxPlainBytes` 추가 — 서식 없는 문자열이 넘는 편집을 `onChange`로 보내지 않고 직전 내용·커서(모델 경로)로 되돌림, 조합 종료(`change:isComposing`) 시 재확인, 안내 문구 표시(inline 배치 줄바꿈 허용). `richQuestionText=true` QUIZ 선택지에 300 전달.
+  - 가이드 `guideData`(props·재사용 안내·함수 설명)·`guideNotices`(`2026-11-10-quiz-option-300-byte`), `POPUP_FRONT_SAMPLE_HANDOVER.md` 갱신.
+  - 하네스 `scripts/verify-quiz-option-byte-73.cjs` 추가. `verify-popup-common-sample-69.cjs`는 2026-11-10-03(선택지 자동 번호 제거·QUIZ 제목 서식 편집기) 뒤 낡은 검사(번호 표시 기대·제목 textarea 조회)와 300 Byte를 넘는 긴 선택지(360 Byte) 입력을 새 정책에 맞게 정정.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/popupByteLimit.ts`, `PopupQuestionEditor.tsx`, `PopupRichTextEditor.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, `scripts/verify-quiz-option-byte-73.cjs`, `scripts/verify-popup-common-sample-69.cjs`.
+- 검증: 웹 `tsc --noEmit` 통과, 변경 파일 eslint 오류 0. `verify-quiz-option-byte-73` 39건 통과(Windows headless Edge, CDP `Input.insertText`·`Input.imeSetComposition`: 300/301 경계, 한글·영문·이모지, 끝·중간 입력과 커서, 붙여넣기, IME 한도 안/초과 확정·조합 중 임시 표시, 삭제 후 재입력, 이전 초과 데이터, 저장 전 확인, 설문·제목 제외, 서식 편집기 경로 전부). 상한을 100000으로 바꾸면 첫 경계 검사 실패 확인 후 복원. 기존 하네스 55(67)·61(121)·69(62)·guide-render(31)·guide-registry(270)·rgstpop-quiz-rule(25)·question-template-picker(7) 통과. 미실행: 실제 한글 IME 수동 입력·관리자 웹 실화면, 서버 저장·재조회, 원격 개발 DB·폐쇄망 DB 저장.
+- 상태: 구현 완료. 커밋·원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-10-05 — scripts: 웹·WPF Git 히스토리 번들 생성 스크립트 추가
 
 - 이유: 폐쇄망에서 웹(2-zero-rule-web)·WPF(3-popup-frameWork) 폴더를 히스토리 번들 clone의 `git subtree split` 브랜치(`web-only`·`fw-only`)에 연결해 pull로 동기화하기로 함(서버는 기존 반입본 방식 유지). 이 방식은 번들마다 커밋 ID가 이어져야 하는데, 번들 재생성 절차가 저장소 밖 임시 스크립트로만 있어 규칙이 바뀔 위험이 있었음.

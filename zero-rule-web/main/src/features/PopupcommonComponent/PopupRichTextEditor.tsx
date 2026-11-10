@@ -1,6 +1,7 @@
 import { Box, Button, Stack, Typography, type PopoverPosition } from '@mui/material';
 import { CKEditor, loadCkeditorEngine, type CkeditorEngine } from '@/components/ckeditor';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { acceptsByteLimitedChange, byteLimitMessage, utf8ByteLength } from './popupByteLimit';
 import PopupRichTextMenu from './PopupRichTextMenu';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
 import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
@@ -27,6 +28,11 @@ type Props = {
   hideToolbar?: boolean;
   /** 빈 편집기 안내 문구(생략 시 본문 기본 안내) */
   placeholder?: string;
+  /**
+   * 서식 없는 문자열(plainText)의 UTF-8 바이트 상한(예: QUIZ 선택지 300). 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌린다.
+   * 한글 조합 중에는 기다렸다가 조합이 끝날 때 확인한다. 되돌리면 편집기 실행 취소 기록이 비워진다. 생략하면 제한 없음.
+   */
+  maxPlainBytes?: number;
   /** 편집할 때마다 서식 본문과 서식 없는 문자열을 돌려준다. */
   onChange: (blocks: RichBlock[], plainText: string) => void;
 };
@@ -41,7 +47,7 @@ type Props = {
  *   공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 쓴다. HTML 자체는 저장하지 않는다.
  *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
-export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, hideToolbar, placeholder, onChange }: Props) {
+export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
   const toolbarHidden = compact || hideToolbar;
   const inline = Boolean(compact && inlineLabel);
   const [engine, setEngine] = useState<CkeditorEngine | null>(null);
@@ -57,6 +63,59 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   disabledRef.current = disabled;
   const detachRef = useRef<(() => void) | null>(null);
   useEffect(() => () => detachRef.current?.(), []);
+  /* POL-03-03 : 편집 UI — 바이트 상한(TODO73-36). 마지막으로 받아들인 내용·커서(모델 경로)와 안내 상태 */
+  const maxBytesRef = useRef(maxPlainBytes);
+  maxBytesRef.current = maxPlainBytes;
+  const lastValidRef = useRef<{ html: string; plain: string; selection: number[][] | null } | null>(null);
+  const restoringRef = useRef(false);
+  const [byteNotice, setByteNotice] = useState<{ blocked: boolean; bytes: number }>({ blocked: false, bytes: 0 });
+  const selectionPaths = (editor: any): number[][] | null => {
+    const range = editor.model.document.selection.getFirstRange();
+    return range ? [range.start.path, range.end.path] : null;
+  };
+  /*
+   * POL-03-01 : 저장·표시 경계
+   * ■ 편집 내용 확인·전달
+   * - in : editor(CKEditor) 바뀐 편집기
+   * - out: onChange(blocks, plainText) · 상한을 넘으면 전달하지 않고 직전 내용으로 되돌림
+   * - 상한이 없으면 그대로 전달한다. 이미 넘은 기존 내용은 줄이는 편집만 받는다(acceptsByteLimitedChange).
+   */
+  const commitChange = (editor: any) => {
+    if (restoringRef.current) return;
+    const html = editor.getData();
+    const blocks = htmlToBlocks(html);
+    const plain = blocksToPlainText(blocks);
+    const max = maxBytesRef.current;
+    const last = lastValidRef.current;
+    if (max == null || !last || acceptsByteLimitedChange(last.plain, plain, max)) {
+      lastValidRef.current = { html, plain, selection: selectionPaths(editor) };
+      if (max != null) setByteNotice({ blocked: false, bytes: utf8ByteLength(plain) });
+      onChangeRef.current(blocks, plain);
+      return;
+    }
+    // 한글 조합 중에는 조합을 깨지 않고 조합이 끝날 때(change:isComposing) 다시 확인한다.
+    if (editor.editing.view.document.isComposing) return;
+    // 변경 이벤트 처리 중 setData를 부르지 않도록 다음 작업으로 미룬다.
+    setTimeout(() => {
+      const target = lastValidRef.current;
+      if (!target || editor.state === 'destroyed') return;
+      restoringRef.current = true;
+      try {
+        editor.setData(target.html);
+        if (target.selection) {
+          try {
+            editor.model.change((writer: any) => {
+              const docRoot = editor.model.document.getRoot();
+              writer.setSelection(writer.createRange(writer.createPositionFromPath(docRoot, target.selection![0]), writer.createPositionFromPath(docRoot, target.selection![1])));
+            });
+          } catch { /* 경로가 맞지 않으면 setData 기본 위치(처음)에 둔다. */ }
+        }
+      } finally {
+        restoringRef.current = false;
+      }
+      setByteNotice({ blocked: true, bytes: utf8ByteLength(target.plain) });
+    }, 0);
+  };
 
   const openMenu = (position: PopoverPosition) => {
     const editor = editorRef.current;
@@ -133,7 +192,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
 
   return (
     <Box {...(inline ? { role: 'group', 'aria-label': label } : {})}
-      sx={{ opacity: disabled ? 0.6 : 1, ...(inline ? { display: 'flex', alignItems: 'flex-start', gap: 0.5, minWidth: 0 } : {}) }}>
+      sx={{ opacity: disabled ? 0.6 : 1, ...(inline ? { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 0.5, minWidth: 0 } : {}) }}>
       {inline
         ? <Typography variant="caption" color="text.secondary" sx={{ lineHeight: `${COMPACT_EDITOR_OUTER_HEIGHT}px`, minWidth: 14, textAlign: 'center', flexShrink: 0 }}>{inlineLabel}</Typography>
         : <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -165,6 +224,18 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
                 container.appendChild(editor.ui.view.toolbar.element);
               }
               applyReadOnly(editor, Boolean(disabled));
+              // 바이트 상한 기준값: 처음 내용. 커서만 옮긴 경우(내용 변경 없음)에도 되돌릴 위치를 갱신하고, 조합이 끝나면 다시 확인한다.
+              const readyHtml = editor.getData();
+              const readyPlain = blocksToPlainText(htmlToBlocks(readyHtml));
+              lastValidRef.current = { html: readyHtml, plain: readyPlain, selection: selectionPaths(editor) };
+              if (maxBytesRef.current != null) setByteNotice({ blocked: false, bytes: utf8ByteLength(readyPlain) });
+              editor.model.document.selection.on('change:range', () => {
+                const last = lastValidRef.current;
+                if (last && !restoringRef.current && editor.model.document.differ.isEmpty) last.selection = selectionPaths(editor);
+              });
+              editor.editing.view.document.on('change:isComposing', (_event: unknown, _name: string, composing: boolean) => {
+                if (!composing) commitChange(editor);
+              });
               // 문단 들여쓰기 40px 단위 정규화(단계 수 제한 없음).
               normalizeIndent(editor);
               // 서식 편집 영역 안에서만 사용자 정의 메뉴를 쓰고, Shift+우클릭은 브라우저 기본 메뉴(복사·붙여넣기 등)를 연다.
@@ -178,14 +249,15 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
               editable.addEventListener('contextmenu', onContextMenu);
               detachRef.current = () => editable.removeEventListener('contextmenu', onContextMenu);
             }}
-            onChange={(_, editor) => {
-              const blocks = htmlToBlocks(editor.getData());
-              onChangeRef.current(blocks, blocksToPlainText(blocks));
-            }}
+            onChange={(_, editor) => commitChange(editor)}
           />
         )}
       </Box>
       {inline && formatButton}
+      {maxPlainBytes != null && (byteNotice.blocked || byteNotice.bytes > maxPlainBytes) &&
+        <Typography variant="caption" color="error" role="status" sx={{ display: 'block', ...(inline ? { flexBasis: '100%' } : {}) }}>
+          {byteNotice.bytes > maxPlainBytes ? byteLimitMessage(maxPlainBytes, byteNotice.bytes) + ' 줄여 주세요.' : byteLimitMessage(maxPlainBytes) + ' 넘는 입력은 반영되지 않습니다.'}
+        </Typography>}
       <PopupRichTextMenu position={menuPosition} state={formatState} onApply={applyMenu} onClose={closeMenu} />
     </Box>
   );

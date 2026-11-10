@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-10-quiz-option-300-byte', date: '2026-11-10', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-10',
+    title: '퀴즈 선택지 UTF-8 300 Byte 입력 제한',
+    body: ['퀴즈 선택지는 UTF-8 기준 300 Byte(한글 약 100자, 영문 300자)까지만 입력됩니다. 키보드·한글 조합·붙여넣기 모두 같은 기준이며 넘는 입력은 반영하지 않고 안내 문구를 띄웁니다(잘라 넣지 않음).',
+      '이미 300 Byte를 넘은 기존 선택지는 그대로 보여 주고 현재 Byte를 안내합니다. 줄이는 편집만 받으며 validatePopupQuestions가 저장을 막습니다. 퀴즈 문항 제목·설문 선택지는 제한하지 않습니다.',
+      'PopupRichTextEditor에 maxPlainBytes(선택)를 추가했습니다. richQuestionText=true인 퀴즈 선택지 서식 편집기도 같은 300 Byte 기준입니다.'],
+    components: ['PopupQuestionEditor', 'PopupRichTextEditor', 'validatePopupQuestions'],
+    action: '바꿀 코드는 없습니다. 저장 전 validatePopupQuestions 오류 문구를 그대로 안내하면 됩니다.',
+  },
+  {
     id: '2026-11-10-quiz-title-rich-option-number', date: '2026-11-10', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-10',
     title: '퀴즈 문항 제목 서식 편집기 통일·선택지 자동 번호 제거',
     body: ['퀴즈 문항 제목은 OX형·선다형 모두 서식 편집기(compact)로 입력합니다. 설문 문항 제목은 기존처럼 일반 입력칸이며 richQuestionText=true일 때만 서식 편집기입니다.',

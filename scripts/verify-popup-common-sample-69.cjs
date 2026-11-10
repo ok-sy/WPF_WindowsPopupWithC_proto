@@ -214,15 +214,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const measureOption = () => run(`(()=>{const del=document.querySelector('[aria-label="선택지 1 삭제"]'),row=del.closest('.MuiStack-root'),area=row.querySelector('textarea[aria-label]'),edit=area.closest('.MuiInputBase-root'),radio=row.querySelector('input[type=radio]');
     const r=edit.getBoundingClientRect(),d=del.getBoundingClientRect();
     return {height:Math.round(row.getBoundingClientRect().height),edit:Math.round(r.height),width:Math.round(r.width),del:{w:Math.round(d.width),h:Math.round(d.height)},number:area.getAttribute('aria-label'),
-      shortLabel:edit.querySelector('.MuiInputAdornment-root,span')?.textContent??null,sameLine:Math.abs(d.top-r.top)<8&&(!radio||Math.abs(radio.parentElement.getBoundingClientRect().top-r.top)<8),overflow:area.scrollWidth-area.clientWidth};})()`);
+      shortLabel:edit.querySelector('.MuiInputAdornment-root')?.textContent??null,sameLine:Math.abs(d.top-r.top)<8&&(!radio||Math.abs(radio.parentElement.getBoundingClientRect().top-r.top)<8),overflow:area.scrollWidth-area.clientWidth};})()`);
   await clickButton('저장'); const beforeResize = await run(`document.querySelector('[data-testid=is063-save-request]').textContent`); await clickButton('닫기');
   const quizWide = await measureMid(), optionWide = await measureOption();
   console.log('[69 density] quiz@1400', JSON.stringify(quizWide), JSON.stringify(optionWide));
-  await run(`void (window.__title69=document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox textarea[aria-label="1번 문항 제목"]')}))`);
+  await run(`void (window.__title69=document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox .ck-editor__editable')}))`);
   check(quizWide.cols.every(top => top === quizWide.cols[0]), '[69-17] Three columns stay on one row at 1400');
   check(quizWide.overflow <= 0 && quizWide.page <= 0 && quizWide.clipped === 0, '[69-11] Quiz editor has no horizontal overflow or clipped select: ' + JSON.stringify(quizWide));
   check(quizWide.title <= 40 && quizWide.selectH <= 40, '[69-12·13] Question title and select heights are compact: ' + JSON.stringify(quizWide));
-  check(optionWide.sameLine && optionWide.edit <= 40 && optionWide.height <= 40 && optionWide.number === '1번 문항 선택지 1' && optionWide.shortLabel === '1', '[69-14] Option number, input and delete share one line: ' + JSON.stringify(optionWide));
+  check(optionWide.sameLine && optionWide.edit <= 40 && optionWide.height <= 40 && optionWide.number === '1번 문항 선택지 1' && optionWide.shortLabel === null, '[69-14] Option input and delete share one line, no auto number in the input (2026-11-10): ' + JSON.stringify(optionWide));
   check(optionWide.del.w >= 32 && optionWide.del.h >= 32, '[69-16] Option delete keeps a 32px click target: ' + JSON.stringify(optionWide.del));
   check(await run(`Array.from(${mid}.querySelectorAll('button')).filter(b=>['선택지 추가','문항 추가'].includes(b.textContent.trim())).every(b=>getComputedStyle(b.textContent.trim()==='문항 추가'?b.parentElement:b).alignSelf==='flex-start')`), '[69-16] Add buttons align to the same start edge (문항 추가 is wrapped with its 30-question notice, TODO73-23)');
   await send('Emulation.setDeviceMetricsOverride', {width: 1024, height: 950, deviceScaleFactor: 1, mobile: false}); await pause(300);
@@ -230,11 +230,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   console.log('[69 density] quiz@1024', JSON.stringify(quizNarrow), JSON.stringify(optionNarrow));
   check(quizNarrow.cols.every(top => top === quizNarrow.cols[0]) && quizNarrow.overflow <= 0 && quizNarrow.page <= 0 && quizNarrow.clipped === 0, '[69-17] Narrow window keeps three columns without overflow: ' + JSON.stringify(quizNarrow));
   check(optionNarrow.sameLine && optionNarrow.width >= 140, '[69-14] Narrow option row keeps a usable input width: ' + JSON.stringify(optionNarrow));
-  check(await run(`document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox textarea[aria-label="1번 문항 제목"]')})===window.__title69`), '[69-18] Resizing keeps the same title input (no remount)');
+  check(await run(`document.querySelector(${JSON.stringify('[data-testid=is063-mid] .nQuizBox .ck-editor__editable')})===window.__title69`), '[69-18] Resizing keeps the same quiz title editor (no remount, RichTextEditor since 2026-11-10)');
   await clickButton('저장'); const afterResize = await run(`document.querySelector('[data-testid=is063-save-request]').textContent`); await clickButton('닫기');
   check(afterResize === beforeResize, '[69-18] Layout change does not alter the save value');
   // 긴 선택지는 줄바꿈으로 계속 편집하고, 미리보기에 그대로 전달한다.
-  const longOption = '긴선택지'.repeat(30);
+  // QUIZ 선택지는 UTF-8 300 Byte까지라(TODO73-36) 기존 문구와 합쳐 한도 안인 길이(216 Byte + 기존)로 넣는다.
+  const longOption = '긴선택지'.repeat(18);
   const optionArea = `document.querySelector('[aria-label="선택지 1 삭제"]').closest('.MuiStack-root').querySelector('textarea[aria-label]')`;
   await run(`(()=>{const i=${optionArea};window.__option69=i;Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(i,${JSON.stringify(longOption)}+i.value);i.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(300);
   const optionLong = await measureOption(), quizLong = await measureMid();

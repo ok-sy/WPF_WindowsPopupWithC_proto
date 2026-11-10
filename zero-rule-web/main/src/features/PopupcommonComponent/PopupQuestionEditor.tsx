@@ -1,7 +1,9 @@
 import type { PopupOption, PopupQuestion } from '@local/domain';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, Stack, TextField, Typography, type TextFieldProps } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import { acceptsByteLimitedChange, byteLimitMessage, QUIZ_OPTION_TEXT_MAX_BYTES, utf8ByteLength } from './popupByteLimit';
 import { richBlocksOrNull } from './PopupRichBlocks';
 import PopupRichTextEditor from './PopupRichTextEditor';
 import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, isOxQuestion, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
@@ -92,6 +94,11 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
     } else {
       if (q.options.length < 2 || q.options.some((o) => !o.text.trim())) return prefix + '선택지를 두 개 이상 입력해 주세요.';
       if (q.options.some((o) => o.text.length > OPTION_TEXT_MAX)) return prefix + `선택지는 ${OPTION_TEXT_MAX}자 이하로 입력해 주세요.`;
+      // QUIZ 선택지는 DB 컬럼(VARCHAR2(300 BYTE)) 기준 UTF-8 300 Byte까지(TODO73-36·38). 입력칸에서 막지만 이전 데이터·직접 넘긴 값도 여기서 막는다.
+      if (quiz) {
+        const over = q.options.findIndex((o) => utf8ByteLength(o.text) > QUIZ_OPTION_TEXT_MAX_BYTES);
+        if (over >= 0) return prefix + `${over + 1}번 선택지는 ${byteLimitMessage(QUIZ_OPTION_TEXT_MAX_BYTES, utf8ByteLength(q.options[over].text))}`;
+      }
       const correct = q.options.filter((o) => o.isCorrect).length;
       if (quiz && (!correct || (q.questionType === 'SINGLE_CHOICE' && correct !== 1))) return prefix + '정답 선택지를 확인해 주세요.';
     }
@@ -330,9 +337,13 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
               {/* POL-06-01 : 문항·서식 — 선택지 문구는 기본 일반 텍스트(여러 줄). 고치면 textBlocks를 비워 이전 서식이 남지 않게 한다(TODO73-28·29).
                   입력칸 앞 자동 번호는 표시하지 않는다(2026-11-10). 문항·선택지 번호는 aria-label로만 남긴다.
                   richQuestionText=true면 서식 편집기로 입력하고 textBlocks를 저장한다(TODO73-34). 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다. */}
+              {/* QUIZ 선택지는 UTF-8 300 Byte까지만 입력된다(TODO73-36). 설문 선택지는 제한하지 않는다. */}
               {richQuestionText ? <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
-                initialBlocks={initialRich(option.textBlocks, option.text)}
+                initialBlocks={initialRich(option.textBlocks, option.text)} maxPlainBytes={quiz ? QUIZ_OPTION_TEXT_MAX_BYTES : undefined}
                 onChange={(blocks, plain) => { const value = richValue(blocks, plain); updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks }); }} />
+                : quiz ? <ByteLimitedTextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" maxBytes={QUIZ_OPTION_TEXT_MAX_BYTES}
+                  value={plainInputValue(option.text, option.textBlocks)} slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
+                  onValueChange={(text) => updateOption(index, option.optionId, { text, textBlocks: null })} />
                 : <TextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" value={plainInputValue(option.text, option.textBlocks)}
                   slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
                   onChange={(e) => updateOption(index, option.optionId, { text: e.target.value, textBlocks: null })} />}
@@ -357,4 +368,50 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
       {full && <Typography variant="caption" color="text.secondary">최대 {maxQuestions}개까지 추가할 수 있습니다.</Typography>}
     </Stack>
   </Stack>;
+}
+
+/**
+ * POL-06-01 : 문항·서식
+ * ■ UTF-8 바이트 제한 일반 입력칸(TODO73-36)
+ * - in : value(string) 표시값 · maxBytes(number) 허용 바이트 수 · 그 밖의 TextField 속성
+ * - out: onValueChange(value: string) 받아들인 값 · 화면: 막혔을 때·기존 값이 넘을 때 안내 문구
+ * - 키보드·붙여넣기로 한도를 넘는 변경은 반영하지 않는다(넘는 부분을 잘라 넣지 않음, 직전 값 유지).
+ *   한글 IME 조합 중에는 브라우저 조합을 깨지 않도록 값을 그대로 넘기고, 조합이 끝날 때 다시 확인해 넘으면 조합 전 값으로 되돌린다.
+ *   이미 한도를 넘은 기존 값은 줄이는 변경만 받고 안내를 띄운다(저장 전 확인 validatePopupQuestions도 막음).
+ */
+function ByteLimitedTextField({ value, maxBytes, onValueChange, ...props }: Omit<TextFieldProps, 'value' | 'onChange'> & { value: string; maxBytes: number; onValueChange: (value: string) => void }) {
+  /* 마지막으로 받아들인 값. 조합 중 부모에 잠시 넘긴 값은 여기에 넣지 않는다. */
+  const lastValid = useRef(value);
+  const composing = useRef(false);
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    // 부모가 바꾼 값(문항 불러오기·유형 변경 등)을 기준값으로 받는다. 조합 중 임시 값은 제외한다.
+    if (!composing.current) lastValid.current = value;
+  }, [value]);
+  const accept = (next: string, input: HTMLInputElement | HTMLTextAreaElement) => {
+    const previous = lastValid.current;
+    if (acceptsByteLimitedChange(previous, next, maxBytes)) {
+      lastValid.current = next;
+      setBlocked(false);
+      onValueChange(next);
+      return;
+    }
+    // 거부: 부모 값을 직전 유효 값으로 둔다(조합 중 넘긴 임시 값이 있으면 되돌린다).
+    // 값을 되돌리면 커서가 끝으로 가므로 입력하려던 위치(삽입된 길이만큼 앞)로 옮긴다.
+    const caret = Math.max(0, (input.selectionStart ?? next.length) - (next.length - previous.length));
+    setBlocked(true);
+    onValueChange(previous);
+    requestAnimationFrame(() => { if (input.value === previous) input.setSelectionRange(caret, caret); });
+  };
+  const bytes = utf8ByteLength(value);
+  const over = !composing.current && bytes > maxBytes;
+  return <TextField {...props} value={value} error={over || props.error}
+    helperText={over ? byteLimitMessage(maxBytes, bytes) + ' 줄여 주세요.' : blocked ? byteLimitMessage(maxBytes) + ' 넘는 입력은 반영되지 않습니다.' : props.helperText}
+    onCompositionStart={() => { composing.current = true; }}
+    onCompositionEnd={(event) => { composing.current = false; const input = event.target as HTMLTextAreaElement; accept(input.value, input); }}
+    onChange={(event) => {
+      const next = event.target.value;
+      if (composing.current || (event.nativeEvent as InputEvent).isComposing) { onValueChange(next); return; }
+      accept(next, event.target);
+    }} />;
 }
