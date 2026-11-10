@@ -29,7 +29,8 @@
 set -euo pipefail
 
 SRC=$(cd "$(dirname "$0")/.." && pwd)
-DATE=$(TZ=Asia/Seoul date +%Y%m%d)
+# Git Bash(Windows)는 zoneinfo가 없어 TZ=Asia/Seoul을 UTC로 처리한다. POSIX 형식 KST-9로 한국 시간을 지정한다.
+DATE=$(TZ=KST-9 date +%Y%m%d)
 REF=main
 PREV=auto
 OUT=""

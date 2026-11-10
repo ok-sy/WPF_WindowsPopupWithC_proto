@@ -8,6 +8,14 @@
 
 # 변경 이력
 
+## 2026-11-11-05 — scripts: 히스토리 번들 기본 날짜를 한국 시간으로 수정
+
+- 이유: 반입 준비 중 확인된 오류. Git Bash(Windows)는 zoneinfo가 없어 `TZ=Asia/Seoul`을 UTC로 처리해, 한국 시간 오전 9시 전에 실행하면 번들 날짜(`git-history-<날짜>`·번들 파일명)가 전날로 찍혔다(2026-11-11 08:5x 실행 시 20261110).
+- 변경: `scripts/export-git-history-bundle.sh` 기본 날짜를 POSIX 형식 `TZ=KST-9`로 계산. `-d` 지정 시 동작은 같다.
+- 주요 파일: `scripts/export-git-history-bundle.sh`.
+- 검증: Git Bash에서 `TZ=Asia/Seoul date`는 GMT, `TZ=KST-9 date`는 KST로 출력됨을 확인. 수정 후 스크립트 실행 시 `.offline-cache/git-history-20261111` 생성, 민감값·제외 경로 점검 0건.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-11-04 — dev: TODO73 관리자 팝업 API 입력 오류 400·사유 표시
 
 - 이유: 정합성 보완. 관리자 저장 API가 서버 검증 오류(`IllegalArgumentException`)를 따로 매핑하지 않아 HTTP 500(로컬은 오류 추적 정보 포함)으로 응답했고, 관리자 웹은 HTTP 오류 본문을 버려 사유("현재 301 Byte", "노출 종료일은 시작일 이후" 등) 없이 일반 오류만 표시함(2026-11-11 R1 확인). 입력 오류와 서버 장애를 구분하고 WPF API(400)와 기준을 맞춘다.
