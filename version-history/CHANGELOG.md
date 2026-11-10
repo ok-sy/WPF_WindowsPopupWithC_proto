@@ -1,10 +1,23 @@
 # 변경 이력
 
+## 2026-11-10-03 — dev: QUIZ 문항 제목 RichTextEditor 통일·선택지 자동 번호 제거
+
+- 이유: 2026-11-10 확정 TODO 구현. 퀴즈 문항 제목 입력 방식을 OX 여부와 무관하게 하나로 맞추고 선택지 입력칸의 자동 번호 표시를 제거. 착수 전 정합성 점검에서 TODO 파일명(`일반입력`)과 본문(RichTextEditor 통일)이 어긋나고 가이드·인계 문서에 「퀴즈 OX 제목만 서식 편집기」 기준이 남아 있음을 확인해 함께 정리.
+- 변경:
+  - `PopupQuestionEditor`: 제목 분기를 `quiz || richQuestionText`로 변경. QUIZ 제목은 항상 `PopupRichTextEditor`(compact), SURVEY 제목은 기존 동작(기본 일반 입력) 유지. `title`·`titleBlocks` 저장 방식(`initialRich`·`richValue`)은 그대로. 일반 선택지 `startAdornment` 번호 제거, `aria-label`·`optionId`·「N번 문항」 표시 유지. props·함수 주석 갱신.
+  - `richQuestionText=true` 선택지 편집기의 `inlineLabel` 번호는 TODO 범위(일반 `TextField`) 밖이라 유지.
+  - 가이드 `guideData`·`GuideStartTab` 설명 갱신, `guideNotices`에 2026-11-10 변경 공지 추가. `POPUP_FRONT_SAMPLE_HANDOVER.md` 편집기 설명 갱신. TODO73 요약 항목에 대체 연결 추가.
+  - TODO 문서 파일명을 본문에 맞게 정정하고 체크·구현 결과 기록.
+  - 하네스에 설문 선택지 번호 미표시, 퀴즈 선다형 새 문항 제목 서식 편집기, 기존 퀴즈(복수·주관식·OX) 제목 전체 서식 편집기 검사 추가.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `guide/guideData.ts`·`guideNotices.ts`·`tabs/GuideStartTab.tsx`, `scripts/verify-survey-rich-text-55.cjs`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`.
+- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 통과, `node scripts/verify-survey-rich-text-55.cjs` 67건 통과(Windows headless Edge). 이전 편집기 코드로 되돌려 실행 시 새 검사 실패 확인 후 복원. 서버 저장·재조회 실화면, 폐쇄망 반입 미실행. 서버·DB·WPF·API 계약 변경 없음(WPF MINIMAL·ALL 스펙 영향 없음).
+- 상태: 구현 완료. 커밋·원격 반영.
+
 ## 2026-11-10-02 — doc: QUIZ 문항 제목 RichTextEditor·선택지 채번 제거 TODO
 
 - 이유: 관리자 퀴즈 문항 제목 편집 방식과 선택지 입력 자동 번호 표시를 단순화할 요구사항 확정.
 - 변경: 문항 제목 RichText/TextField 삼항 분기를 QUIZ에서 제거하고 RichTextEditor로 통일하도록 TODO 정의. title/titleBlocks 저장 유지, SURVEY 제목 동작 보존, 선택지 startAdornment 채번 제거, aria-label·optionId 유지 및 검증 기준을 명시. 최초 문서의 일반 TextField 통일 표현을 RichTextEditor로 정정.
-- 주요 파일: `docs/design/20261110_QUIZ_문항제목_일반입력_선택지채번제거_TODO.md`, `version-history/CHANGELOG.md`.
+- 주요 파일: `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`(2026-11-10-03에서 본문과 맞게 파일명 정정, 최초 `…_일반입력_…`), `version-history/CHANGELOG.md`.
 - 검증: Git 기준 `PopupQuestionEditor.tsx` 분기·선택지 입력 코드 정적 확인. 구현·타입 검사·실화면 검증 미실행.
 - 상태: TODO 문서 반영·정정. 구현 대기.
 

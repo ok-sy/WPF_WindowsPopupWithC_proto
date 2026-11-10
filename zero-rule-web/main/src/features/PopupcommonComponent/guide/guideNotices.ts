@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-10-quiz-title-rich-option-number', date: '2026-11-10', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-10',
+    title: '퀴즈 문항 제목 서식 편집기 통일·선택지 자동 번호 제거',
+    body: ['퀴즈 문항 제목은 OX형·선다형 모두 서식 편집기(compact)로 입력합니다. 설문 문항 제목은 기존처럼 일반 입력칸이며 richQuestionText=true일 때만 서식 편집기입니다.',
+      '선택지 일반 입력칸 앞의 자동 번호(1, 2, …)를 표시하지 않습니다. 문항 카드의 「N번 문항」 표시와 입력칸 접근성 이름(N번 문항 선택지 M)은 그대로입니다.'],
+    components: ['PopupQuestionEditor'],
+    action: '바꿀 코드는 없습니다. 저장 형식(title·titleBlocks, 선택지 text·optionId)은 그대로입니다.',
+  },
+  {
     id: '2026-11-09-quiz-participation-threshold', date: '2026-11-09', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-09',
     title: '참여형 퀴즈 기준 개수 입력·퀴즈 유형 코드 저장',
     body: ['참여형 퀴즈도 기준 개수(1~문항 수)를 입력합니다. 참여형은 정답 개수와 관계없이 제출하면 완료되고, 기준 개수는 통계용 합격 여부(passed = 정답 수 ≥ 기준)에만 씁니다. 만점형·컷트라인형은 기존처럼 합격해야 제출됩니다.',

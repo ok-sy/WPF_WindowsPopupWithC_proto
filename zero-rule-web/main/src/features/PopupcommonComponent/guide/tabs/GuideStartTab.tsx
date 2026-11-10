@@ -107,8 +107,8 @@ export default function GuideStartTab({ onNavigate }: { onNavigate: GuideNavigat
         <Typography fontWeight={700} sx={{ mt: 2, mb: 0.5 }}>예시 2. 퀴즈 문항(OX형·선다형)</Typography>
         <CodeBlock>{QUIZ_TYPE_CODE}</CodeBlock>
         <Bullets items={[
-          '문항 제목 `title`과 선택지 문구 `text`는 일반 문자열이며 줄바꿈을 넣을 수 있습니다. 편집기에서 OX 외 문항은 일반 입력칸으로 입력합니다.',
-          '`titleBlocks`·`textBlocks`는 글자 서식이 있을 때만 씁니다. 값이 있으면 서버가 `title`·`text`를 서식에서 만들고, 일반 입력칸에서 고치면 비워집니다(`null`). 퀴즈 OX 문항 제목만 서식 편집기를 씁니다.',
+          '문항 제목 `title`과 선택지 문구 `text`는 일반 문자열이며 줄바꿈을 넣을 수 있습니다. 편집기에서 퀴즈 문항 제목은 서식 편집기, 설문 문항 제목과 선택지는 일반 입력칸으로 입력합니다.',
+          '`titleBlocks`·`textBlocks`는 글자 서식이 있을 때만 씁니다. 값이 있으면 서버가 `title`·`text`를 서식에서 만들고, 일반 입력칸에서 고치면 비워집니다(`null`). 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기를 씁니다.',
           '답안 유형(OX형·선다형)은 따로 저장하지 않습니다. 다시 열 때 단일 선택이면서 선택지가 `O`·`X` 두 개이면 OX형으로 봅니다.',
           '설문·퀴즈 문항은 최대 30개입니다(`QUESTION_MAX`).',
         ]} />

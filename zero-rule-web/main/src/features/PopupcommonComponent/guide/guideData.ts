@@ -249,14 +249,14 @@ export const COMPONENTS: GuideComponent[] = [
   },
   {
     name: 'PopupQuestionEditor', file: 'PopupQuestionEditor.tsx',
-    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다. 문항은 최대 30개(QUESTION_MAX)이며, OX 외 문항의 제목·선택지는 일반 텍스트(여러 줄)로 입력합니다.',
+    summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다. 문항은 최대 30개(QUESTION_MAX)입니다. 퀴즈 문항 제목은 서식 편집기, 설문 문항 제목과 선택지는 일반 텍스트(여러 줄)로 입력하며 선택지 앞에 자동 번호를 붙이지 않습니다.',
     props: [
       { name: 'questions', type: 'PopupQuestion[]', required: true, description: '문항 목록' },
       { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다(정답·배점·통과 점수 표시).' },
       { name: 'passingScore', type: 'number | null', description: '퀴즈 통과 점수' },
       { name: 'fixedQuestionScore', type: 'number', description: '배점을 고정합니다. 주면 배점 입력칸을 숨깁니다.' },
       { name: 'hidePassingScore', type: 'boolean', description: '통과 점수 입력칸을 숨깁니다.' },
-      { name: 'richQuestionText', type: 'boolean', description: 'true면 문항 제목·선택지를 서식 편집기로 입력하고 titleBlocks·textBlocks를 저장합니다. 기본 false(OX 외 문항은 일반 텍스트 입력, 퀴즈 OX 제목만 서식 편집기).' },
+      { name: 'richQuestionText', type: 'boolean', description: 'true면 문항 제목·선택지를 서식 편집기로 입력하고 titleBlocks·textBlocks를 저장합니다. 기본 false(설문 제목·선택지는 일반 텍스트 입력). 퀴즈 문항 제목은 이 값과 무관하게 항상 서식 편집기입니다.' },
       { name: 'maxQuestions', type: 'number', description: '최대 문항 수(1 이상 정수). 기본 30(QUESTION_MAX). 저장 전 validatePopupQuestions에도 같은 값을 넘깁니다.' },
       { name: 'answerTypeOptions', type: 'PopupCodeOption[]', description: '공통코드 0089 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 answerTypes를 넘깁니다. DB에 0089 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 변경을 막습니다.' },
     ],
@@ -266,7 +266,7 @@ export const COMPONENTS: GuideComponent[] = [
     ],
     values: ['questions(PopupQuestion[])', 'passingScore(퀴즈)', '설문 복수 선택의 minSelections·maxSelections(비우면 제한 없음)'],
     reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore, maxQuestions?)로 입력 오류를 확인합니다. 최대 문항 수(기본 30)를 넘는 문항도 여기서 막습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
-      '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 OX 문항 제목만 서식 편집기를 쓰며, richQuestionText로 모든 제목·선택지를 서식 편집기로 바꿀 수 있습니다.'],
+      '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기를 쓰며, richQuestionText로 설문 제목과 모든 선택지도 서식 편집기로 바꿀 수 있습니다.'],
     example: `const [questions, setQuestions] = useState<PopupQuestion[]>([]);
 const [passingScore, setPassingScore] = useState<number | null>(null);
 <PopupQuestionEditor questions={questions} quiz passingScore={passingScore}

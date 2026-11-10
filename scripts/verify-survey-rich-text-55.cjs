@@ -53,11 +53,13 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run('typeof window.mountEditor === "function"')) break; await pause(100);}
 
-  // TODO73-28~30: OX 외 문항 제목·선택지는 일반 텍스트 입력(TextField multiline). 퀴즈 OX 문항 제목만 서식 편집기를 유지한다.
+  // TODO73-28~30: 설문 문항 제목·선택지는 일반 텍스트 입력(TextField multiline). 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기(2026-11-10).
+  // 선택지 입력칸 앞에는 자동 번호를 붙이지 않는다(2026-11-10). 번호 표시 노드는 입력 루트의 직속 span이었다.
   const typeInto = (selector, value) => run(`(()=>{const i=document.querySelector(${JSON.stringify(selector)});
     const proto=i.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));})()`).then(() => pause(150));
   const titleInput = n => `textarea[aria-label="${n}번 문항 제목"]`;
   const optionInput = (n, oi) => `textarea[aria-label="${n}번 문항 선택지 ${oi}"]`;
+  const optionNumberShown = () => run(`Array.from(document.querySelectorAll('textarea[aria-label*="번 문항 선택지 "]')).some(t=>Array.from(t.closest('.MuiInputBase-root').children).some(c=>c.tagName==='SPAN'))`);
   const inputValues = () => run(`Array.from(document.querySelectorAll('textarea[aria-label]')).map(t=>t.getAttribute('aria-label')+'='+t.value)`);
 
   // ── 1. 기존 서식 문항 열기: 일반 문자열 우선 표시, 문자열이 없으면 서식 글자로 복원, 열기만 하면 서식 보존 ──
@@ -70,6 +72,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 0, '[73-28] Survey title and options use plain inputs, no rich editors');
   let values = await inputValues();
   check(values.join('|') === '1번 문항 제목=만족도|1번 문항 선택지 1=매우 그렇다|1번 문항 선택지 2=보통|1번 문항 선택지 3=첫\n둘', '[73-29] Inputs show plain text first and restore empty text from blocks: ' + JSON.stringify(values));
+  check(!(await optionNumberShown()), '[2026-11-10] Survey option inputs show no automatic number and keep the numbered aria-label');
   let q = (await questions())[0];
   check(JSON.stringify(q) === JSON.stringify(surveyQuestions[0]), '[73-29] Opening only keeps the saved data and formatting untouched');
 
@@ -196,6 +199,8 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await clickButton('문항 추가'); await pause(800);
   q = (await questions())[0];
   check(q.questionType === 'SINGLE_CHOICE' && q.options.every(o => o.text === ''), 'A new quiz question starts as a multiple choice with empty options');
+  check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 1 && !(await run(`!!document.querySelector('textarea[aria-label="1번 문항 제목"]')`))
+    && (await inputValues()).join('|') === '1번 문항 선택지 1=|1번 문항 선택지 2=' && !(await optionNumberShown()), '[2026-11-10] Quiz choice title uses the rich editor; options stay plain without numbers');
   await pick('1번 문항 답안 유형', 'OX형');
   q = (await questions())[0];
   check(q.questionType === 'SINGLE_CHOICE' && q.optionLayout === 'HORIZONTAL' && q.options.map(o => o.text).join() === 'O,X' && q.options.every(o => !o.isCorrect), 'OX type becomes a horizontal single choice with O and X and no answer: ' + JSON.stringify(q.options));
@@ -252,6 +257,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(await run(`document.body.textContent.includes('기존 유형: 복수 선택') && document.body.textContent.includes('기존 유형: 주관식') && document.body.textContent.includes('OX형')`), 'Legacy multiple and text questions stay visible, O and X reload as the OX type');
   q = await questions();
   check(q[0].options.length === 2 && q[1].correctAnswer === '답' && q[2].description === '기존 설명', 'Loading keeps legacy values untouched');
+  check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 3 && !(await run(`!!document.querySelector('textarea[aria-label$="번 문항 제목"]')`)), '[2026-11-10] Every quiz title (multiple, text, OX) uses the rich editor');
   // 설문: 응답 유형·레이아웃·응답 수(복수 N개 → maxSelections).
   await run(`window.mountEditor([], false)`); await pause(400);
   await clickButton('문항 추가'); await pause(800);
