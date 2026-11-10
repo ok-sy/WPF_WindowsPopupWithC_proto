@@ -21,7 +21,9 @@ namespace Popup.Views.Contents
      * - in : videoTitle·videoPath·videoDescription(string) · showDescription · 재생 옵션(showControls·allowFullScreen·
      *        allowPlaybackRateChange·autoPlay·isLoop·defaultVolume·allowSeek)
      * - out: ProgressUpdated(VideoProgressSnapshot) · PlaybackFailed · HasPlaybackFailed · GetFinalProgress() 닫힐 때 결과용 스냅샷
-     * - HTTP/HTTPS 영상은 WebView2 HTML5 video, 그 외 로컬 경로는 MediaElement로 재생한다.
+     * - 영상은 WebView2 HTML5 video로 재생한다. HTTP/HTTPS는 그대로, 로컬·UNC 경로는 파일이 있는 폴더를 가상 호스트에 연결해 같은 엔진으로 재생한다
+     *   (MediaElement는 회전 표시 메타데이터를 무시해 세로 촬영 영상이 누운 채 재생되므로, 2026-11-10 TODO60 실파일 검증 뒤 엔진 통일).
+     *   WebView2 런타임 초기화에 실패한 로컬 파일만 MediaElement로 재생한다(회전 메타데이터 미반영 한계 그대로).
      *   누적 시청·최대 도달 위치를 로컬에서 계산하고, 창이 닫힐 때 PopupManager가 스냅샷을 한 번 읽어 결과에 담는다.
      */
     public partial class VideoPopupView : UserControl, IBodyFontSizeAware
@@ -41,9 +43,20 @@ namespace Popup.Views.Contents
         private readonly string _videoPath;
 
         /*
-         * HTTP/HTTPS URL 영상이면 WebView2 HTML5 video로 스트리밍한다. 그 외는 로컬 경로(MediaElement)다.
+         * WebView2 HTML5 video로 재생하는지. 처음에는 항상 true이고, 로컬 파일인데 WebView2 초기화에 실패한 경우에만
+         * false로 바꿔 MediaElement로 재생한다.
          */
-        private readonly bool _useWebPlayer;
+        private bool _useWebPlayer;
+
+        /*
+         * 로컬·UNC 영상 파일의 전체 경로. HTTP/HTTPS URL이면 null이다.
+         */
+        private readonly string? _localVideoPath;
+
+        /*
+         * POL-05-01 : 재생 경로 — 로컬 영상 폴더를 WebView2에 연결하는 가상 호스트 이름(예약 TLD .example, 외부로 나가지 않음).
+         */
+        internal const string LocalVideoHost = "popup-local-video.example";
 
         private bool _syncingWebState;
         private bool _webSeekPending;
@@ -282,8 +295,8 @@ namespace Popup.Views.Contents
 
             _videoPath = videoPath.Trim();
 
-            _useWebPlayer =
-                IsHttpVideoUrl(_videoPath);
+            _useWebPlayer = true;
+            _localVideoPath = IsHttpVideoUrl(_videoPath) ? null : ResolveLocalVideoPath(_videoPath);
 
             TitleTextBlock.Text =
                 videoTitle ?? string.Empty;
@@ -314,19 +327,30 @@ namespace Popup.Views.Contents
 
             AttachMasterVolume(new WindowsMasterVolume(Dispatcher));
 
-            if (_useWebPlayer)
-            {
-                await LoadWebVideoAsync();
-            }
-            else
-            {
-                await LoadMediaElementVideoAsync();
-            }
+            await LoadWebVideoAsync();
         }
 
         /*
-         * 로컬 파일 또는 직접 영상 URL을
-         * MediaElement로 재생한다.
+         * 상대 경로는 실행 폴더 기준 전체 경로로 바꾼다(MediaElement 재생 때와 같은 기준).
+         * 경로로 해석할 수 없는 값은 그대로 두어, 생성자에서 예외를 내지 않고 재생 시 '파일 없음'으로 실패 처리한다.
+         */
+        private static string ResolveLocalVideoPath(string path)
+        {
+            try { return Path.IsPathRooted(path) ? path : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, path)); }
+            catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException) { return path; }
+        }
+
+        /*
+         * POL-05-01 : 재생 경로 — WebView2 문서의 video src.
+         * HTTP/HTTPS는 원래 URL, 로컬·UNC 파일은 가상 호스트 + 파일 이름(URL 인코딩)이다.
+         */
+        private string WebVideoSource =>
+            _localVideoPath == null
+                ? _videoPath
+                : $"https://{LocalVideoHost}/{Uri.EscapeDataString(Path.GetFileName(_localVideoPath))}";
+
+        /*
+         * 로컬 파일을 MediaElement로 재생한다. WebView2 초기화에 실패한 경우의 대체 경로다.
          */
         private System.Threading.Tasks.Task LoadMediaElementVideoAsync()
         {
@@ -345,13 +369,7 @@ namespace Popup.Views.Contents
                 
                 ShowLoadingMessage("영상을 불러오는 중입니다.");
 
-                string resolvedPath =
-                    Path.IsPathRooted(_videoPath)
-                        ? _videoPath
-                        : Path.GetFullPath(
-                            Path.Combine(
-                                AppContext.BaseDirectory,
-                                _videoPath));
+                string resolvedPath = _localVideoPath ?? ResolveLocalVideoPath(_videoPath);
 
                     System.Diagnostics.Debug.WriteLine(
                         $"[VIDEO] 로컬 경로: {resolvedPath}");
@@ -387,10 +405,17 @@ namespace Popup.Views.Contents
         }
 
         /*
-         * HTTP/HTTPS 영상 URL을 WebView2 HTML5 video로 스트리밍한다.
+         * 영상을 WebView2 HTML5 video로 재생한다. HTTP/HTTPS는 스트리밍, 로컬·UNC 파일은 폴더 가상 호스트로 연다.
          */
         private async System.Threading.Tasks.Task LoadWebVideoAsync()
         {
+            // 로컬 파일이 없으면 WebView2를 띄우지 않고 기존과 같은 안내로 실패 처리한다.
+            if (_localVideoPath != null && !File.Exists(_localVideoPath))
+            {
+                ShowVideoError("영상을 불러올 수 없습니다.\n영상 파일을 찾을 수 없습니다.");
+                return;
+            }
+
             try
             {
                 PopupVideo.Visibility =
@@ -407,18 +432,39 @@ namespace Popup.Views.Contents
 
 
                 ShowLoadingMessage(
-                    "영상을 스트리밍하는 중입니다.");
+                    _localVideoPath == null ? "영상을 스트리밍하는 중입니다." : "영상을 불러오는 중입니다.");
 
                 /*
                  * WebView2 초기화를 명시적으로 수행한다.
                  */
                 // 영상 전용 프로필로 다른 WebView의 기본 브라우저 옵션과 충돌하지 않는다.
                 // 프로토타입에서 소리 있는 자동 재생도 클릭 없이 시작하도록 정책을 지정한다.
-                var environment = await CoreWebView2Environment.CreateAsync(
-                    userDataFolder: Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "Popup", "VideoWebView2"),
-                    options: new CoreWebView2EnvironmentOptions("--autoplay-policy=no-user-gesture-required"));
-                await VideoWebView.EnsureCoreWebView2Async(environment);
+                try
+                {
+                    var environment = await CoreWebView2Environment.CreateAsync(
+                        userDataFolder: Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "Popup", "VideoWebView2"),
+                        options: new CoreWebView2EnvironmentOptions("--autoplay-policy=no-user-gesture-required"));
+                    await VideoWebView.EnsureCoreWebView2Async(environment);
+                }
+                catch (Exception exception) when (_localVideoPath != null)
+                {
+                    // 로컬 파일은 WebView2 런타임이 없거나 초기화에 실패해도 MediaElement로 재생한다(회전 메타데이터는 반영되지 않는다).
+                    System.Diagnostics.Debug.WriteLine($"[VIDEO] WebView2 초기화 실패, MediaElement로 재생: {exception.Message}");
+                    _useWebPlayer = false;
+                    await LoadMediaElementVideoAsync();
+                    return;
+                }
+
+                // 로컬·UNC 파일: 파일이 있는 폴더만 가상 호스트에 연결한다. 문서(NavigateToString)의 <video>가 읽는 일반 요청만
+                // 허용하고 fetch·XHR 같은 CORS 요청은 막는다(DenyCors).
+                if (_localVideoPath != null)
+                {
+                    VideoWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                        LocalVideoHost,
+                        Path.GetDirectoryName(_localVideoPath)!,
+                        CoreWebView2HostResourceAccessKind.DenyCors);
+                }
 
                 /*
                  * 새 창 열기 동작을 현재 WebView 안에서 처리한다.
@@ -452,7 +498,7 @@ namespace Popup.Views.Contents
 
         private string BuildWebVideoHtml()
         {
-            string videoUrlAttribute = System.Net.WebUtility.HtmlEncode(_videoPath);
+            string videoUrlAttribute = System.Net.WebUtility.HtmlEncode(WebVideoSource);
 
             /*
              * HTML5 엔진은 자동/반복 재생·초기 음량·배속 제한을 적용한다.

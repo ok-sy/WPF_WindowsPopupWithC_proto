@@ -810,6 +810,7 @@ internal static class Program
         ShutdownClose(opened.Window);
 
         CheckVideoQuizScrollBarBoundary60();
+        CheckLocalVideoWebPlayer60();
 
         var single = OpenPopup("VIDEO", dto => dto.ShowFooter = true);
         var singleRow = (RowDefinition)single.Video!.FindName("VideoRow");
@@ -825,6 +826,39 @@ internal static class Program
      * (스크롤바 등장 → 너비·높이 감소 → 스크롤바 사라짐 → 높이 증가를 반복하지 않는다).
      * 줄바꿈 변화가 영상 높이 변화를 상쇄하지 않도록 짧은 문항 1개·설명 없음으로 두고, 원본 비율별로 경계 주변을 1 DIP 간격으로 훑는다.
      */
+    /*
+     * POL-05-01 : 재생 경로
+     * 로컬·UNC 경로 영상도 WebView2 HTML5 video로 재생한다(MediaElement는 회전 메타데이터를 무시해 2026-11-10 엔진 통일).
+     * 파일 폴더를 가상 호스트에 연결하고 video src는 가상 호스트 + URL 인코딩한 파일 이름이다. HTTP URL은 그대로 쓴다.
+     * 경로로 해석할 수 없는 값도 생성자에서 예외를 내지 않는다(재생 시 '파일 없음'으로 실패 처리).
+     */
+    private static void CheckLocalVideoWebPlayer60()
+    {
+        var html = typeof(VideoPopupView).GetMethod("BuildWebVideoHtml", Flags)!;
+        var web = typeof(VideoPopupView).GetField("_useWebPlayer", Flags)!;
+        var local = typeof(VideoPopupView).GetField("_localVideoPath", Flags)!;
+        string host = (string)typeof(VideoPopupView).GetField("LocalVideoHost", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+
+        var file = new VideoPopupView("T", @"C:\영상 폴더\세로 영상 #1.mp4", "");
+        Check((bool)web.GetValue(file)! && (string?)local.GetValue(file) == @"C:\영상 폴더\세로 영상 #1.mp4",
+            "[TODO60] a local path plays in the WebView2 player");
+        Check(((string)html.Invoke(file, null)!).Contains($"src=\"https://{host}/%EC%84%B8%EB%A1%9C%20%EC%98%81%EC%83%81%20%231.mp4\""),
+            "[TODO60] the local file is served from the virtual host with an encoded file name");
+
+        var unc = new VideoPopupView("T", @"\\server\share\video.mp4", "");
+        Check((bool)web.GetValue(unc)! && (string?)local.GetValue(unc) == @"\\server\share\video.mp4", "[TODO60] a UNC path plays in the WebView2 player");
+
+        var relative = new VideoPopupView("T", @"Media\demo.mp4", "");
+        Check((string?)local.GetValue(relative) == System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"Media\demo.mp4")),
+            "[TODO60] a relative path resolves from the app folder as before");
+
+        var url = new VideoPopupView("T", "https://example.com/a b.mp4?x=1&y=2", "");
+        Check(local.GetValue(url) == null && ((string)html.Invoke(url, null)!).Contains("src=\"https://example.com/a b.mp4?x=1&amp;y=2\""),
+            "[TODO60] an HTTP URL is used as is");
+
+        Check(new VideoPopupView("T", "bad\0path.mp4", "") != null, "[TODO60] an unparsable path does not throw at construction");
+    }
+
     private static void CheckVideoQuizScrollBarBoundary60()
     {
         // 너비 이력: 첫 유효 너비로 초기화, 스크롤바 폭 이내 왕복만 높이 유지, 창 크기 조절 왕복은 다시 계산.

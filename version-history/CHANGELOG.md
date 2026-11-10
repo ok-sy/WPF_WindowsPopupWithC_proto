@@ -8,6 +8,17 @@
 
 # 변경 이력
 
+## 2026-11-10-12 — dev: TODO60 로컬·UNC 경로 영상 WebView2 재생 전환
+
+- 이유: 시연 전 검증에서 확인된 이슈. 2026-11-10-11 실제 파일 검증에서 MediaElement(로컬·UNC 경로)가 회전 표시 메타데이터를 무시해 휴대폰 세로 촬영 영상이 누운 채 재생되고 재생 영역도 가로 비율로 계산됨. 계약상 `videoUrl`은 경로도 허용해 폐쇄망 공유 폴더 경로에서 발생 가능.
+- 변경:
+  - `VideoPopupView`: 로컬·UNC 경로도 WebView2 HTML5 video로 재생. 생성자에서 로컬 경로를 전체 경로로 풀고(해석 불가 값은 그대로 두어 생성 예외 없음), WebView2 초기화 뒤 파일 폴더를 가상 호스트 `popup-local-video.example`(DenyCors)에 연결해 video src를 가상 호스트 + URL 인코딩 파일 이름으로 둔다. 파일이 없으면 기존 안내로 실패. WebView2 초기화 실패 시에만 로컬 파일을 MediaElement로 재생(회전 미반영 한계 유지).
+  - PopupWindowTests `CheckLocalVideoWebPlayer60` 추가(로컬·UNC·상대 경로·HTTP src·해석 불가 경로).
+  - `POPUP_INTERFACE_SPEC`·`WPF_POPUP_ALL_SPEC`·`POPUP_OPTION_GUIDE`·`popup-frameWork/README.md`의 재생 엔진 설명 갱신(MINIMAL_SPEC은 엔진 설명이 없어 변경 없음, `videoUrl` 계약 변경 없음). TODO60 실제 파일 검증 절에 전환 기록, ACTIVE_TASKS·검토 문서 메모 갱신.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `docs/POPUP_OPTION_GUIDE.md`, `popup-frameWork/README.md`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`.
+- 검증: WPF 빌드 경고·오류 0. 일회성 실파일 하네스 재실행 — 로컬·UNC·한글·공백·`#` 파일명 모두 WebView2로 재생, 회전 90° 파일 720×1280 보고·세로 표시(캡처), 15건 기대값 일치, 로컬·UNC·한글 파일명·HTTP 실제 재생 2.4초·4초 위치 이동 확인. PopupWindowTests 527건(신규 6) 통과 — src를 원래 경로로 되돌리면 신규 검사 실패 확인 후 복원. ApiDemoTests 110·RichTextTests 113·RecoveryTests 154·로컬 BehaviorTests 1,724 통과(로컬 전용 BehaviorTests의 MediaElement 음량 검사는 대체 경로 상태를 직접 만들도록 조정, Git 제외). 미실행: WebView2 런타임 없는 PC의 MediaElement 대체 경로 실재생, 폐쇄망 UNC 권한 환경, 실화면 수동 조작.
+- 상태: 커밋·원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-10-11 — dev: TODO60-8·12 실제 영상 파일 비율 검증
 
 - 이유: 검증 필요. TODO60의 비율·실패 예외(60-8)와 실제 WebView2·브라우저 측정(60-12)이 계산값·가짜 메타데이터 자동 검증만 있고 실제 영상 파일 확인이 없었음.
@@ -17,7 +28,7 @@
   - 코드 변경 없음.
 - 주요 파일: `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`, `docs/reviews/20261103_활성작업_D상태대조_검토.md`, `docs/policies/ACTIVE_TASKS.md`.
 - 검증: WPF 13건(5개 영상 × 2엔진, 4초 지연, 없는 파일 × 2엔진) 모두 재생 행 높이 = 계산 기대값(±0.6), 상한·contain·메타데이터 전 16:9·실패 시 16:9·느린 응답 뒤 갱신 확인. 관리자 미리보기 7건 모두 기대값(±1). **발견: MediaElement(로컬·UNC 경로)는 회전 표시 메타데이터를 무시해 세로 촬영 영상이 누운 채 재생**(WebView2·브라우저는 정상) — 수정 여부 판단 대기. 미실행: DPI 125~200%·전체화면 왕복 실조작, 로그인 후 실제 관리자 웹 화면, 실제 휴대폰 촬영 파일.
-- 상태: 커밋·원격 반영. MediaElement 회전 처리 결정 대기.
+- 상태: 커밋·원격 반영. MediaElement 회전 문제는 2026-11-10-12에서 로컬·UNC 경로 WebView2 재생 전환으로 해결.
 
 ## 2026-11-10-10 — docs: 활성작업 D 상태 대조 TODO54·59·60
 
