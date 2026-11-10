@@ -1034,7 +1034,7 @@ VIDEO_WATCHED
 
 현재 WPF는 합격이 필요한 QUIZ(`requiresPassing=true`)는 통과한 경우만 SUBMITTED 하고, 참여형(`requiresPassing=false`)은 미달이어도 `passed: false`로 SUBMITTED 한다(PU001 §7).
 
-`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). 최종 점수·통과·완료는 WPF 값만 기준으로 한다. QUIZ 최종 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장한다(설계 33). 완료 처리는 `passed`와 무관하게 유효한 SUBMITTED이면 완료다(2026-11-09 PU001 §7, 이전의 `passed` 기반 완료 판정 대체). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
+`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). QUIZ 점수·합불 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장한다(설계 33). 완료 처리는 `passed`와 무관하게 유효한 SUBMITTED이면 완료다(2026-11-09 PU001 §7, 이전의 `passed` 기반 완료 판정 대체). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
 
 동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 결과에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 

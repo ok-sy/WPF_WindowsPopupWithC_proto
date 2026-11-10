@@ -262,7 +262,7 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 | 정책 ID | 항목 | 기준·예외 | 입출력·기본값 | 담당 레이어 |
 |---|---|---|---|---|
 | POL-06-01 | 문항·서식 | SURVEY/QUIZ 및 VIDEO+QUIZ 설문 영역에 공용 문단·Run 서식을 사용한다. 평문 필드 옆의 대응 Blocks 배열을 사용한다. 문항·선택지의 식별자와 답변 값은 서식과 구분한다. | questions[].titleBlocks/descriptionBlocks, options[].textBlocks; 콘텐츠 surveyTitleBlocks/descriptionBlocks | 웹·서버·WPF |
-| POL-06-02 | 선택·제출 | QUIZ MULTIPLE_CHOICE는 isCorrect=true인 정답 수만큼 선택 가능하다. 별도 count 필드는 추가하지 않는다. SURVEY 복수 선택은 이 제한을 적용하지 않는다. 필수 응답·채점·passingScore·제출 조건은 유지한다. | options[].isCorrect; result score/passed는 WPF 계산값 | 웹 미리보기·WPF; 서버 저장 |
+| POL-06-02 | 선택·제출 | QUIZ MULTIPLE_CHOICE는 isCorrect=true인 정답 수만큼 선택 가능하다. 별도 count 필드는 추가하지 않는다. SURVEY 복수 선택은 이 제한을 적용하지 않는다. 필수 응답 후 WPF가 채점한다. 참여형은 기준 미달도 제출하며, 합격이 필요한 유형만 미달 제출을 차단한다(PU001 §7, 2026-11-09). 서버는 유효한 제출을 합불과 무관하게 완료 처리한다. | 조회 requiresPassing; 결과 score/passed는 WPF 계산값(기준 미달 false, 기준 이상 true) | 웹 미리보기·WPF; 서버 저장 |
 | POL-06-03 | 표현·수명 | 선택 UI 개선은 답변 계약을 바꾸지 않는다. 영상 시청 완료만으로 퀴즈 완료가 되지 않는다. 미통과·닫기·LATER의 결과 매핑은 POL-10과 분리하지 않는다. | showLater / SUBMITTED / VIDEO_WATCHED | 웹·WPF·서버 |
 
 ## 구현·계약 근거
