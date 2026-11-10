@@ -8,6 +8,19 @@
 
 # 변경 이력
 
+## 2026-11-10-07 — dev: TODO73-37 WPF 주관식 응답 UTF-8 1,000 Byte 입력 제한
+
+- 이유: TODO73 §10 확정 정책 구현. 폐쇄망 DB 주관식 응답 컬럼이 `VARCHAR2(1000 BYTE)`라 WPF SURVEY/QUIZ 주관식 입력을 글자 수가 아니라 UTF-8 바이트로 제한해야 함.
+- 변경:
+  - `Services/Utf8ByteLimit` 추가(`TextAnswerMaxBytes`=1000, `Count`, `Exceeds`).
+  - `SurveyPopupView.CreateTextControl`에 `AttachTextAnswerByteLimit` 연결: `TextChanged`에서 1,000 Byte를 넘으면 같은 입력 처리 직후(Dispatcher Send) 직전 유효 값·커서로 되돌림(키보드·IME·붙여넣기·끌어 놓기 공통, 잘라 넣지 않음). 커서 이동만 있을 때도 되돌릴 위치 갱신. 입력칸 툴팁·접근성 도움말에 한도 표시.
+  - `ValidateRequiredQuestions`에 제출 직전 바이트 확인 추가(초과 시 현재 Byte 안내 후 제출 중단).
+  - `WPF_POPUP_ALL_SPEC`·`WPF_POPUP_MINIMAL_SPEC`(SURVEY 주관식), `POPUP_INTERFACE_SPEC` 3.7 보완(`textAnswer` 1,000 Byte·QUIZ 선택지 300 Byte, 필드 변경 없음), TODO73 §10 체크·구현 결과 기록.
+  - 서버 `WpfResultRequest.textAnswer`·선택지 1~1000자 검증과 로컬 스키마(`TEXT_ANSWER CLOB`, `OPTION_TEXT VARCHAR2(1000 CHAR)`)는 변경하지 않음. 폐쇄망 BYTE 컬럼에 넘는 값이 오면 ORA-12899 가능성이 있어 서버 바이트 검증 추가 여부는 결정 대기로 TODO에 기록.
+- 주요 파일: `popup-frameWork/Popup/Services/Utf8ByteLimit.cs`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: `Popup` 빌드 경고·오류 0. `Popup.BehaviorTests`(로컬 전용, Git 제외) 1,724건 통과(새 `CheckTextAnswerByteLimit73`: Byte 계산, 1000/1001 경계, 한글 중간 삽입 거부·커서 복원, 한글→영문 치환, 이모지 경계, 클립보드 붙여넣기 전체 거부, 삭제 후 재입력, 제출 직전 검증 1000/1001, 결과 DTO 값 유지). 제한 연결을 빼면 첫 경계 검사 실패 확인 후 복원. 미실행: 실제 한글 IME 수동 입력, WPF 실화면, 결과 API 실제 전송·원격 개발 DB·폐쇄망 DB 저장.
+- 상태: 구현 완료. 커밋·원격 반영. 서버 바이트 검증 여부 결정 대기. 폐쇄망 반입 대기.
+
 ## 2026-11-10-06 — dev: TODO73-36 관리자 웹 QUIZ 선택지 UTF-8 300 Byte 입력 제한
 
 - 이유: TODO73 §10 확정 정책 구현. 폐쇄망 DB 선택지 컬럼이 `VARCHAR2(300 BYTE)`라 관리자 웹 QUIZ 선택지 입력을 UTF-8 바이트로 제한해야 함. 착수 전 점검에서 로컬 스키마(`OPTION_TEXT VARCHAR2(1000 CHAR)`)·서버 검증(1~1000자)이 폐쇄망 컬럼과 다름을 확인해 서버·DB는 바꾸지 않고 입력·저장 전 확인만 구현.

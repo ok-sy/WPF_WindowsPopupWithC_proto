@@ -167,7 +167,7 @@
 
 ## 10. 추가 TODO — UTF-8 BYTE 입력 제한 (2026-11-10)
 
-상태: **요구사항 확정 / 구현·검증 대기**. DB 담당자 확인: 선택지 `VARCHAR2(300 BYTE)`, 주관식 응답 `VARCHAR2(1000 BYTE)`. 이번 반영은 TODO 정의만 수행하며 코드·API·DB는 변경하지 않는다.
+상태: **WEB·WPF 입력 제한 구현 완료(2026-11-10) / 서버 검증 여부 결정 대기·실화면 확인 대기**. DB 담당자 확인: 선택지 `VARCHAR2(300 BYTE)`, 주관식 응답 `VARCHAR2(1000 BYTE)`. 코드는 관리자 웹·WPF 입력과 저장·제출 전 확인만 바꿨고 서버 API·DB는 변경하지 않았다.
 
 ### 확정 정책
 - **관리자 WEB QUIZ 선택지 Input**: UTF-8 인코딩 결과 **최대 300 Byte**까지 허용, 초과 입력 차단. QUIZ 문항 제목은 `CLOB`이므로 이 제한의 대상이 아니다. 설문 선택지까지 자동 확대하지 않는다.
@@ -176,12 +176,50 @@
 - DB BYTE 제한과 API 송수신 문자열의 UTF-8 바이트 길이를 일치시킨다. 글자 수·UTF-16 길이 기준으로 대체하지 않는다.
 
 ### 구현 시 확인할 사항
-- [ ] **73-36 WEB 선택지**: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`의 QUIZ 선택지 입력 및 값 변경 경로를 확인해 300 Byte 초과 입력을 차단한다. 일반 TextField와 `richQuestionText` 옵션에 따른 서식 편집 경로를 모두 확인한다. 문항 제목·OX 고정 선택지와의 영향 구분.
-- [ ] **73-37 WPF 주관식**: `popup-frameWork`의 SURVEY/QUIZ 실제 주관식 입력 컨트롤 및 응답 수집 경로를 찾아 1,000 Byte 초과 입력을 차단한다. 결과 전송 직전에도 동일 길이를 검증한다. 관련 함수명은 코드 확인 후 기록.
-- [ ] **73-38 저장·계약 정합성**: WEB 저장 전 선택지 검증, WPF 결과 직렬화, Java API 요청 검증 및 Oracle 컬럼 매핑을 대조한다. 서버/DB 변경이 필요한지 확인하되 별도 승인 없이 변경하지 않는다. 기존 초과 길이 데이터는 자동 절단·덮어쓰기하지 않고 검증/안내 방안을 확인한다.
-- [ ] **73-39 회귀검증**: UTF-8 300/301 Byte 및 1000/1001 Byte 경계, 한글·영문·이모지 혼합, IME 조합 중/확정 후, 붙여넣기, 삭제 후 재입력, 기존 데이터 로딩, 저장·재조회, WPF 결과 API 전송을 확인한다. WEB 타입 검사·관련 하네스, WPF 빌드·테스트, 실제 DB/폐쇄망 실화면은 수행 여부를 별도로 기록한다.
+- [x] **73-36 WEB 선택지**: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`의 QUIZ 선택지 입력 및 값 변경 경로를 확인해 300 Byte 초과 입력을 차단한다. 일반 TextField와 `richQuestionText` 옵션에 따른 서식 편집 경로를 모두 확인한다. 문항 제목·OX 고정 선택지와의 영향 구분.
+- [x] **73-37 WPF 주관식**: `popup-frameWork`의 SURVEY/QUIZ 실제 주관식 입력 컨트롤 및 응답 수집 경로를 찾아 1,000 Byte 초과 입력을 차단한다. 결과 전송 직전에도 동일 길이를 검증한다. 관련 함수명은 코드 확인 후 기록.
+- [x] **73-38 저장·계약 정합성**(서버 변경은 결정 대기): WEB 저장 전 선택지 검증, WPF 결과 직렬화, Java API 요청 검증 및 Oracle 컬럼 매핑을 대조한다. 서버/DB 변경이 필요한지 확인하되 별도 승인 없이 변경하지 않는다. 기존 초과 길이 데이터는 자동 절단·덮어쓰기하지 않고 검증/안내 방안을 확인한다.
+- [x] **73-39 회귀검증**(코드·하네스 범위, 실화면·DB 미실행): UTF-8 300/301 Byte 및 1000/1001 Byte 경계, 한글·영문·이모지 혼합, IME 조합 중/확정 후, 붙여넣기, 삭제 후 재입력, 기존 데이터 로딩, 저장·재조회, WPF 결과 API 전송을 확인한다. WEB 타입 검사·관련 하네스, WPF 빌드·테스트, 실제 DB/폐쇄망 실화면은 수행 여부를 별도로 기록한다.
 
 ### 완료 기준
 - QUIZ 선택지는 300 Byte까지, SURVEY/QUIZ 주관식 응답은 1,000 Byte까지 정상 입력되고 각각 1 Byte라도 초과하는 입력은 반영되지 않는다.
 - 정상 입력값·선택지 ID·응답 데이터 계약은 유지하며, QUIZ 문항 제목 `CLOB`에는 신규 300 Byte 제한이 적용되지 않는다.
 - 코드 검증, 로컬 실화면, 원격 DB, 폐쇄망 실화면 검증 결과를 구분해 보고한다.
+
+### 구현 결과 (2026-11-10)
+- **73-36 WEB**: `popupByteLimit.ts`(`QUIZ_OPTION_TEXT_MAX_BYTES`=300, `utf8ByteLength`, `acceptsByteLimitedChange`, `byteLimitMessage`) 추가.
+  - 일반 입력칸: `PopupQuestionEditor`의 QUIZ 선택지를 `ByteLimitedTextField`로 바꿨다. 넘는 키보드 입력·붙여넣기는 반영하지 않고 직전 값을 유지하며, 커서는 입력하려던 위치로 돌린다.
+  - 한글 IME: 조합 중에는 브라우저 조합을 깨지 않도록 값을 그대로 넘기고, `compositionend`에서 다시 확인해 넘으면 조합 전 값으로 되돌린다. 막히면 입력칸 아래에 안내 문구가 나온다.
+  - 서식 편집기 경로(`richQuestionText=true`): `PopupRichTextEditor`에 `maxPlainBytes`를 추가했다. 서식 없는 문자열(`text`, OPTION_TEXT) 기준으로 넘는 편집을 `onChange`로 보내지 않고 직전 내용·커서로 되돌린다(`change:isComposing` 종료 시 재확인). 되돌리면 편집기 실행 취소 기록이 비워진다.
+  - 제외: QUIZ 문항 제목(CLOB), 설문 선택지, OX 고정 선택지(입력칸 없음).
+- **73-37 WPF**: `Services/Utf8ByteLimit`(`TextAnswerMaxBytes`=1000)를 추가했다.
+  - `SurveyPopupView.CreateTextControl` → `AttachTextAnswerByteLimit`: 키보드·IME·붙여넣기·끌어 놓기·실행 취소 모두 `TextChanged`에서 확인한다. 넘으면 같은 입력 처리 직후(Dispatcher Send) 직전 유효 값·커서로 되돌린다. 커서만 옮긴 경우에도 되돌릴 위치를 갱신한다(`SelectionChanged`).
+  - 입력칸 툴팁·접근성 도움말에 한도를 표시한다.
+  - 제출 직전 `ValidateRequiredQuestions`에서 1,000 Byte 초과 답변을 막고 현재 Byte를 안내한다. 결과 DTO(`PopupResultBuilder.BuildSubmitted`)는 값을 그대로 보낸다.
+  - TextBox 줄바꿈 `\r\n`은 보내는 그대로 2 Byte로 센다.
+- **73-38 정합성**:
+  - WEB: `validatePopupQuestions`가 QUIZ 선택지 300 Byte 초과를 막는다(`N번 선택지는 300 Byte(한글 약 100자)까지 … 현재 X Byte`). RgstPop 저장도 이 함수를 쓴다. 이미 넘은 기존 값은 자르지 않고 그대로 보여 주며 안내하고, 줄이는 편집만 받는다.
+  - WPF: 결과 `answers[].textAnswer`는 입력·제출 전 제한으로 1,000 Byte 이하만 만든다.
+  - 서버(변경 없음, 결정 필요):
+    - 선택지 검증은 `PopupQuestionRules`·`PopupSurveyRichText.OPTION_TEXT_MAX`의 1~1000자(UTF-16 길이)다.
+    - `WpfResultRequest.Answer.textAnswer`에는 길이 검증이 없다(`normalizeText`는 trim만 한다).
+    - 로컬 스키마는 `OPTION_TEXT VARCHAR2(1000 CHAR)`, `TEXT_ANSWER CLOB`이라 폐쇄망 BYTE 컬럼과 다르다.
+    - 폐쇄망 DB에서는 이전 WPF 클라이언트나 직접 호출로 넘는 값이 오면 저장 시 ORA-12899가 날 수 있다. 서버에 같은 바이트 검증(400 응답)을 둘지는 별도 승인 후 정한다.
+  - 인터페이스: 필드·형식 변경 없음. `POPUP_INTERFACE_SPEC` 3.7 보완, `WPF_POPUP_ALL_SPEC`·`WPF_POPUP_MINIMAL_SPEC`, 프론트 인계 문서, 가이드 공지(`2026-11-10-quiz-option-300-byte`)에 기록했다.
+- **73-39 검증**:
+  - WEB: `node scripts/verify-quiz-option-byte-73.cjs` 39건 통과(Windows headless Edge, CDP `Input.insertText`·`Input.imeSetComposition`). 다룬 항목:
+    - 300/301 Byte 경계, 한글·영문·이모지(296+4 / 297+4)
+    - 끝·중간 입력과 커서 위치, 붙여넣기 전체 거부
+    - IME 확정이 한도 안이면 반영, 넘으면 되돌림. 조합 중에는 임시 표시를 유지
+    - 삭제 후 재입력, 이전 초과 데이터의 표시·안내·키우기 거부·줄이기 허용·저장 전 확인
+    - 설문 선택지·QUIZ 제목 제외
+    - 서식 편집기 경로: 경계, 되돌림, 커서 경로, 붙여넣기, 삭제, IME, 이전 데이터
+  - WEB 음성 대조: 상한을 100000으로 바꾸면 첫 경계 검사가 실패함을 확인했다.
+  - WPF: `Popup.BehaviorTests` 1,724건 통과.
+    - 새 검사 `CheckTextAnswerByteLimit73`: Byte 계산, 1000/1001, 한글 중간 삽입과 커서 복원, 한글→영문 치환, 이모지 경계, 클립보드 붙여넣기 전체 거부, 삭제 후 재입력, 제출 직전 검증 1000/1001, 결과 DTO 값 유지
+    - 제한 연결을 빼면 첫 경계 검사가 실패함을 확인했다.
+  - 기존 하네스:
+    - 55(67)·61(121)·guide-render(31)·guide-registry(270)·rgstpop-quiz-rule(25)·question-template-picker(7) 통과
+    - 69(62): 2026-11-10 선택지 자동 번호 제거·QUIZ 제목 서식 편집기 전환 뒤 낡은 검사(번호 표시 기대, 제목 textarea)와, 300 Byte를 넘던 긴 선택지 입력(360 Byte)을 새 정책에 맞게 고쳐 통과
+  - 웹 `tsc`·변경 파일 eslint 오류 0, WPF 빌드 경고·오류 0.
+  - 미실행: 실제 한글 IME(Windows 키보드) 수동 입력, 관리자 웹·WPF 실화면, 서버 저장·재조회, 원격 개발 DB, 폐쇄망 DB(BYTE 컬럼) 저장, WPF 결과 API 실제 전송.

@@ -156,7 +156,7 @@ SURVEY는 단일 선택/복수 선택/주관식을 제공하되 채점하지 않
 | TEXT | PlainText 중심. 별도 TextStyle 없음. 공통 Width/Height 사용 |
 | IMAGE | ImageUrl + ImageSizeMode=ORIGINAL + 공통 Width/Height. keepAspectRatio는 사용하지 않음(content.width/height는 TODO58에서 폐기) |
 | VIDEO | VideoUrl + 기본 Controls/음량 + 영상 FullScreen + CompletionRatio + 공통 Width/Height |
-| SURVEY | 단일/복수 선택 + 주관식 + 필수값 검증 + 선택지 VERTICAL/HORIZONTAL. 채점 없음 |
+| SURVEY | 단일/복수 선택 + 주관식(UTF-8 1,000 Byte 입력 제한) + 필수값 검증 + 선택지 VERTICAL/HORIZONTAL. 채점 없음 |
 | QUIZ | SINGLE_CHOICE / MULTIPLE_CHOICE 채점 + 배점/정답/합격점 + 미통과 시 창 유지 + VIDEO+QUIZ. TEXT 자동 채점은 최소 버전 미제공 |
 
 ## 7. 확장 기능 관리 원칙

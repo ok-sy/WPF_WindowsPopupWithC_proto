@@ -677,11 +677,60 @@ namespace Popup.Views.Contents
                 Tag = question.QuestionId
             };
 
+            // 바이트 제한을 먼저 붙여 초과 입력이 되돌려진 뒤의 값으로 진행 상태를 계산한다.
+            AttachTextAnswerByteLimit(textBox);
             textBox.TextChanged += (_, _) => UpdateResponseProgress();
+            textBox.ToolTip = TextAnswerLimitMessage;
             System.Windows.Automation.AutomationProperties.SetHelpText(textBox,
-                "추가 의견이 있다면 자유롭게 작성해주세요.");
+                "추가 의견이 있다면 자유롭게 작성해주세요. " + TextAnswerLimitMessage);
 
             return textBox;
+        }
+
+        private static readonly string TextAnswerLimitMessage =
+            $"최대 {Utf8ByteLimit.TextAnswerMaxBytes:N0} Byte(한글 약 {Utf8ByteLimit.TextAnswerMaxBytes / 3}자)까지 입력할 수 있습니다.";
+
+        /*
+         * POL-06-02 : 선택·제출
+         * ■ 주관식 입력 UTF-8 바이트 제한(TODO73-37)
+         * - in : textBox(TextBox) 주관식 입력칸
+         * - out: 없음 · 초과 입력을 직전 유효 값·커서 위치로 되돌림
+         * - 키보드·한글 IME·붙여넣기·끌어 놓기·실행 취소 모두 TextChanged를 거치므로 한 곳에서 막는다.
+         *   바뀐 값이 1,000 Byte 이하이면 유효 값으로 기억하고, 넘으면 같은 입력 처리 직후(Send 우선순위, 화면 갱신 전)
+         *   직전 유효 값으로 되돌린다. 넘는 부분을 잘라 넣지 않는다(초과 붙여넣기는 통째로 반영하지 않음).
+         *   한글 조합 중에 넘으면 조합 중인 글자가 취소된다. 제출 직전 검증(ValidateRequiredQuestions)도 같은 기준을 쓴다.
+         */
+        private static void AttachTextAnswerByteLimit(TextBox textBox)
+        {
+            string lastValid = textBox.Text;
+            int lastCaret = textBox.CaretIndex;
+            bool restoring = false;
+            // 커서만 옮긴 경우에도 되돌릴 위치를 갱신한다(초과 입력 직전 커서 = 입력하려던 위치).
+            textBox.SelectionChanged += (_, _) =>
+            {
+                if (!restoring && textBox.Text == lastValid) lastCaret = textBox.SelectionStart;
+            };
+            textBox.TextChanged += (_, _) =>
+            {
+                if (restoring) return;
+                if (!Utf8ByteLimit.Exceeds(textBox.Text, Utf8ByteLimit.TextAnswerMaxBytes))
+                {
+                    lastValid = textBox.Text;
+                    lastCaret = textBox.CaretIndex;
+                    return;
+                }
+                textBox.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, () =>
+                {
+                    if (!Utf8ByteLimit.Exceeds(textBox.Text, Utf8ByteLimit.TextAnswerMaxBytes)) return;
+                    restoring = true;
+                    try
+                    {
+                        textBox.Text = lastValid;
+                        textBox.CaretIndex = Math.Min(lastCaret, lastValid.Length);
+                    }
+                    finally { restoring = false; }
+                });
+            };
         }
 
         /// <summary>
@@ -852,6 +901,17 @@ namespace Popup.Views.Contents
                         $"필수 문항을 입력해주세요.\n\n" +
                         $"{question.Title}";
 
+                    return false;
+                }
+            }
+
+            // POL-06-02 : 선택·제출 — 주관식 응답은 입력칸에서 막지만 결과를 만들기 직전에도 같은 바이트 기준으로 확인한다(TODO73-37).
+            foreach (SurveyQuestion question in _questions)
+            {
+                SurveyAnswer? answer = answers.Find(item => item.QuestionId == question.QuestionId);
+                if (answer != null && Utf8ByteLimit.Exceeds(answer.TextAnswer, Utf8ByteLimit.TextAnswerMaxBytes))
+                {
+                    message = $"주관식 답변은 {TextAnswerLimitMessage}\n현재 {Utf8ByteLimit.Count(answer.TextAnswer):N0} Byte\n\n{question.Title}";
                     return false;
                 }
             }

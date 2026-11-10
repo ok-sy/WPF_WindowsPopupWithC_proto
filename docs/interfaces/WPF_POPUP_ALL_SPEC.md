@@ -207,6 +207,7 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 
 선택형은 VERTICAL 전체 폭 Row·우측 체크 Path, HORIZONTAL 공통 Chip으로 표시한다.
 긴 문장 줄바꿈, 단일/복수 선택, 필수 미응답 검증, 주관식 입력·스크롤을 지원한다.
+주관식(SURVEY·QUIZ TEXT) 입력은 UTF-8 **1,000 Byte**까지다(DB `VARCHAR2(1000 BYTE)` 기준, 한글 약 333자). 키보드·한글 IME·붙여넣기 모두 넘는 입력은 반영하지 않고 직전 값·커서로 되돌리며(잘라 넣지 않음), 입력칸 툴팁에 한도를 안내한다. 제출 직전 검증도 같은 기준으로 막는다(TODO73-37, `Utf8ByteLimit`).
 제출 영역은 스크롤 밖에 고정한다. QUIZ는 필수 검증·로컬 채점 후 통과 시(참여형 `RequiresPassing=false`는 합불과 무관하게) 제출하며
 서버 결과 전송을 기다리기 전에 결과 큐 적재를 완료한다. **미통과 시 별도 `CloseOnFail` JSON 필드 없이 창을 유지하고 수정·재채점한다.** RATING5·correctAnswers는 삭제된 계약이다.
 
