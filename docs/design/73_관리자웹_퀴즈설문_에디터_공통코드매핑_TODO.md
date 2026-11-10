@@ -164,3 +164,24 @@
   - `richQuestionText?: boolean`(기본 `false`): `true`면 모든 문항 제목·선택지를 서식 편집기(compact)로 입력하고 `titleBlocks`·`textBlocks`를 저장한다(§7 이전 동작). 퀴즈 OX 정답 선택 UI는 같다. `false`면 §7대로 OX 외 문항은 일반 텍스트, 퀴즈 OX 제목만 서식 편집기.
   - `maxQuestions?: number`(기본 `QUESTION_MAX` = 30, 1 이상 정수): 헤더 `N/max`, 추가 비활성, 초과 안내에 쓴다. `validatePopupQuestions(questions, quiz, passingScore?, maxQuestions?)`가 네 번째 인자로 같은 값을 받으며 생략하면 30이다. 편집기와 저장 전 확인에 같은 값을 넘기는 것은 부모 책임이다.
 - [x] **73-35 가이드·검증** — 가이드 컴포넌트 표·실행기 입력·공지에 반영. `verify-survey-rich-text-55`에 서식 편집기 모드(제목·선택지 편집기 4개, 선택지 서식 저장)와 `maxQuestions=3`(표시·추가 비활성·초과 안내·검증 인자, 기본 30 유지) 검사를 추가했다. 웹 `tsc`·eslint, 55(64)·69(61)·61(121)·guide-render(31)·guide-registry(276) 통과. 실화면 미실행.
+
+## 10. 추가 TODO — UTF-8 BYTE 입력 제한 (2026-11-10)
+
+상태: **요구사항 확정 / 구현·검증 대기**. DB 담당자 확인: 선택지 `VARCHAR2(300 BYTE)`, 주관식 응답 `VARCHAR2(1000 BYTE)`. 이번 반영은 TODO 정의만 수행하며 코드·API·DB는 변경하지 않는다.
+
+### 확정 정책
+- **관리자 WEB QUIZ 선택지 Input**: UTF-8 인코딩 결과 **최대 300 Byte**까지 허용, 초과 입력 차단. QUIZ 문항 제목은 `CLOB`이므로 이 제한의 대상이 아니다. 설문 선택지까지 자동 확대하지 않는다.
+- **WPF SURVEY/QUIZ 주관식 응답 Input**: UTF-8 인코딩 결과 **최대 1,000 Byte**까지 허용, 초과 입력 차단.
+- 한글 IME 조합, 키보드 입력, 붙여넣기 모두 동일 기준. 초과 입력은 기존 유효한 값을 유지하며, 초과된 문자열을 조용히 저장하지 않는다.
+- DB BYTE 제한과 API 송수신 문자열의 UTF-8 바이트 길이를 일치시킨다. 글자 수·UTF-16 길이 기준으로 대체하지 않는다.
+
+### 구현 시 확인할 사항
+- [ ] **73-36 WEB 선택지**: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`의 QUIZ 선택지 입력 및 값 변경 경로를 확인해 300 Byte 초과 입력을 차단한다. 일반 TextField와 `richQuestionText` 옵션에 따른 서식 편집 경로를 모두 확인한다. 문항 제목·OX 고정 선택지와의 영향 구분.
+- [ ] **73-37 WPF 주관식**: `popup-frameWork`의 SURVEY/QUIZ 실제 주관식 입력 컨트롤 및 응답 수집 경로를 찾아 1,000 Byte 초과 입력을 차단한다. 결과 전송 직전에도 동일 길이를 검증한다. 관련 함수명은 코드 확인 후 기록.
+- [ ] **73-38 저장·계약 정합성**: WEB 저장 전 선택지 검증, WPF 결과 직렬화, Java API 요청 검증 및 Oracle 컬럼 매핑을 대조한다. 서버/DB 변경이 필요한지 확인하되 별도 승인 없이 변경하지 않는다. 기존 초과 길이 데이터는 자동 절단·덮어쓰기하지 않고 검증/안내 방안을 확인한다.
+- [ ] **73-39 회귀검증**: UTF-8 300/301 Byte 및 1000/1001 Byte 경계, 한글·영문·이모지 혼합, IME 조합 중/확정 후, 붙여넣기, 삭제 후 재입력, 기존 데이터 로딩, 저장·재조회, WPF 결과 API 전송을 확인한다. WEB 타입 검사·관련 하네스, WPF 빌드·테스트, 실제 DB/폐쇄망 실화면은 수행 여부를 별도로 기록한다.
+
+### 완료 기준
+- QUIZ 선택지는 300 Byte까지, SURVEY/QUIZ 주관식 응답은 1,000 Byte까지 정상 입력되고 각각 1 Byte라도 초과하는 입력은 반영되지 않는다.
+- 정상 입력값·선택지 ID·응답 데이터 계약은 유지하며, QUIZ 문항 제목 `CLOB`에는 신규 300 Byte 제한이 적용되지 않는다.
+- 코드 검증, 로컬 실화면, 원격 DB, 폐쇄망 실화면 검증 결과를 구분해 보고한다.
