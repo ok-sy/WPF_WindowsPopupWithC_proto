@@ -8,6 +8,16 @@
 
 # 변경 이력
 
+## 2026-11-10-09 — scripts: 히스토리 번들에서 WPF 데모 영상 제외(RULES 2)
+
+- 이유: 반입 준비. 웹·WPF 히스토리 번들(약 26MB)의 약 70%가 `popup-frameWork/Popup/Media/demo-video.mp4` 두 버전(약 18.9MB)이었다. 빌드 결과물(`publish`·`bin`·`obj`·`node_modules`·`.next`)은 이력에 없음을 확인. 폐쇄망은 아직 번들 clone에서 subtree split·폴더 연결을 하지 않아 커밋 ID가 바뀌어도 다시 연결할 비용이 없으므로, 다음 반입본부터 새 기준으로 시작.
+- 변경:
+  - `export-git-history-bundle.sh`: 제외 경로에 데모 영상 추가(제외 경로 점검·트리 비교에도 반영). 필터 규칙 버전 `RULES=2`를 출력 폴더 `RULES.txt`에 남기고(SHA256SUMS 포함), 직전 번들 자동 탐색은 같은 RULES 폴더만 고름. RULES.txt가 없는 20261105·20261106(RULES 1)은 고르지 않아 첫 RULES 2 번들은 연속성 확인 없이 만든다. README-IMPORT에 RULES·영상 제외·전달 방식 안내 추가.
+  - `popup-frameWork/.gitignore`: `Popup/Media/demo-video.mp4` 추가. 개발 저장소는 이미 추적 중이라 영향이 없고, 폐쇄망 연결 폴더에서는 3-popup-frameWork.tar로 전달된 영상 파일이 변경으로 보이지 않게 한다. 데모 이미지(118KB)는 이력에 그대로 둔다.
+- 주요 파일: `scripts/export-git-history-bundle.sh`, `popup-frameWork/.gitignore`.
+- 검증: `d2eb659` 기준 scratchpad 출력으로 실행 — 커밋 244개, 번들 8,206,410 B(기존 규칙 약 27MB), 민감값·작성자·제외 경로 점검 0건, 치환 파일 4개 외 트리 차이 0. 같은 커밋으로 그 번들을 직전 번들로 지정해 다시 생성하면 main(`0510207`)·COMMIT-MAP 동일, 연속성 확인 통과. clone 이력에 `demo-video` 0건, `Media`에는 데모 이미지만 남음. 미실행: `.gitignore` 반영 커밋 기준 재생성, 폐쇄망 split·폴더 연결.
+- 상태: 커밋·원격 반영. 20261105·20261106 번들 clone은 쓰지 않고 다음 반입본(RULES 2)부터 split·연결 시작.
+
 ## 2026-11-10-08 — dev: TODO73-38 서버 UTF-8 바이트 저장 전 검증 추가
 
 - 이유: TODO73 §10 정합성 보완. 관리자 웹·WPF 입력 제한(2026-11-10-06·07)만으로는 이전 WPF 클라이언트·직접 호출·기존 데이터 재저장 시 폐쇄망 BYTE 컬럼(`VARCHAR2(300 BYTE)`·`VARCHAR2(1000 BYTE)`)에 넘는 값이 들어가 ORA-12899가 날 수 있어 서버에서도 같은 상한을 저장 전에 확인.
