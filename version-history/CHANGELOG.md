@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-10-02 — doc: QUIZ 문항 제목 일반 입력·선택지 채번 제거 TODO
+
+- 이유: 관리자 퀴즈 문항 제목 편집 방식과 선택지 입력 자동 번호 표시를 단순화할 요구사항 확정.
+- 변경: 문항 제목 RichText/TextField 삼항 분기 제거 및 일반 TextField 통일, 선택지 startAdornment 채번 제거, aria-label·optionId 유지 조건과 검증 기준을 TODO로 정의.
+- 주요 파일: `docs/design/20261110_QUIZ_문항제목_일반입력_선택지채번제거_TODO.md`, `version-history/CHANGELOG.md`.
+- 검증: Git 기준 `PopupQuestionEditor.tsx` 분기·선택지 입력 코드 정적 확인. 구현·타입 검사·실화면 검증 미실행.
+- 상태: TODO 문서 반영. 구현 대기.
+
 ## 2026-11-10-01 — docs: PU001 확정 정책·검증 시나리오 정리
 
 - 이유: 참여형 합불·완료 분리 이후 남은 이전 정책 표현과 검증 예시를 정리한다.
