@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-11-survey-option-300-byte', date: '2026-11-11', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-11',
+    title: '설문 선택지도 UTF-8 300 Byte 입력 제한·저장 오류 사유 표시',
+    body: ['설문 선택지도 퀴즈 선택지와 같은 DB 컬럼(VARCHAR2(300 BYTE))이라 같은 300 Byte 기준으로 입력을 막고 validatePopupQuestions가 저장 전에 확인합니다. 문항 제목(CLOB)은 제한하지 않습니다.',
+      '관리자 팝업 API는 입력 검증 오류를 HTTP 400으로 응답하고 msgCn에 사유(예: "현재 301 Byte")를 담습니다. 공통 오류 변환이 이 문구를 오류 메시지로 쓰므로 handleError가 사유를 그대로 표시합니다.'],
+    components: ['PopupQuestionEditor', 'PopupRichTextEditor', 'validatePopupQuestions'],
+    action: '바꿀 코드는 없습니다. 폐쇄망은 sub/domain/src/error.ts의 HTTP 오류 본문(msgCn) 처리 블록을 함께 반영해야 사유가 표시됩니다.',
+  },
+  {
     id: '2026-11-10-quiz-option-300-byte', date: '2026-11-10', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-10',
     title: '퀴즈 선택지 UTF-8 300 Byte 입력 제한',
     body: ['퀴즈 선택지는 UTF-8 기준 300 Byte(한글 약 100자, 영문 300자)까지만 입력됩니다. 키보드·한글 조합·붙여넣기 모두 같은 기준이며 넘는 입력은 반영하지 않고 안내 문구를 띄웁니다(잘라 넣지 않음).',

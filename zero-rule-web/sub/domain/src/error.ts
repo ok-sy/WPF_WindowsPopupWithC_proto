@@ -30,6 +30,20 @@ export const createAppError = (error: any) => {
   }
 
   if (error?.response?.status > 0) {
+    // 서버가 HTTP 오류(예: 관리자 팝업 API 400)와 함께 기존 응답 형식(msgId·msgCn)을 보내면 그 문구를 그대로 쓴다(2026-11-11).
+    // 본문에 msgCn이 없는 기존 오류(Spring 기본 오류 등)는 아래처럼 예전과 같이 처리한다.
+    const data = error.response.data;
+    if (data && typeof data.msgCn === 'string' && data.msgCn.length > 0) {
+      return new AppError(
+        typeof data.msgId === 'string' && data.msgId ? data.msgId : `SY${error.response.status}00000`,
+        data.msgCn,
+        'ER',
+        typeof data.msgPrntCd === 'string' && data.msgPrntCd ? data.msgPrntCd : '2',
+        undefined,
+        undefined,
+        error.config?.url,
+      );
+    }
     return new AppError(
       `SY${error.response.status}00000`,
       error.message,

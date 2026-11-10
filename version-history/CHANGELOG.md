@@ -8,6 +8,26 @@
 
 # 변경 이력
 
+## 2026-11-11-04 — dev: TODO73 관리자 팝업 API 입력 오류 400·사유 표시
+
+- 이유: 정합성 보완. 관리자 저장 API가 서버 검증 오류(`IllegalArgumentException`)를 따로 매핑하지 않아 HTTP 500(로컬은 오류 추적 정보 포함)으로 응답했고, 관리자 웹은 HTTP 오류 본문을 버려 사유("현재 301 Byte", "노출 종료일은 시작일 이후" 등) 없이 일반 오류만 표시함(2026-11-11 R1 확인). 입력 오류와 서버 장애를 구분하고 WPF API(400)와 기준을 맞춘다.
+- 변경:
+  - 서버 `PopupAdminExceptionHandler`(새 파일, `PopupAdminController` 전용): `IllegalArgumentException`·`@Valid` 실패·본문 해석 실패 → HTTP 400 + 기존 응답 형식(`msgId=FW00000003`(기존 '올바르지 않은 파라미터' 코드), `msgCn`=검증 문구, `msgClsf=ER`, `body=null`). 다른 예외는 500 그대로, 다른 컨트롤러·프레임워크 공통 처리 변경 없음.
+  - 웹 공통 `sub/domain/src/error.ts` `createAppError`: HTTP 오류 응답 본문에 `msgCn`이 있으면 그 문구·`msgId`로 오류를 만든다. 본문에 `msgCn`이 없는 기존 오류는 예전과 같다. `handleError`가 이 문구를 토스트로 표시.
+  - 서버 테스트 `PopupAdminExceptionHandlerTest` 3건. 인터페이스 명세 3.7 보완·표, TODO73 결정 기록, 가이드 공지.
+- 주요 파일: `zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupAdminExceptionHandler.java`, `zero-rule-server/web/api/src/test/java/server/web/api/popup/PopupAdminExceptionHandlerTest.java`, `zero-rule-web/sub/domain/src/error.ts`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: 서버 `gradlew test` 271건 통과·13 skip·실패 0(신규 3, 처리기를 빼면 실패 확인). 웹 tsc 오류 0·eslint 0. 로컬 서버(원격 개발 DB) 재기동 후 저장 API 301 Byte → 400·사유 문구·오류 추적 정보 없음, 등록 화면 서버 전용 검증(노출 종료 < 시작) 저장 시 서버 문구 토스트 1건 표시.
+- 반입 주의: `sub/domain/src/error.ts`는 기준선 이후 처음 바뀌는 공통 파일이라 폐쇄망 파일에 HTTP 오류 본문 처리 블록만 병합한다(통째 덮어쓰기 금지).
+- 상태: 커밋·원격 반영. 폐쇄망 반입 대기.
+
+## 2026-11-11-03 — dev: TODO73 설문 선택지 UTF-8 300 Byte 제한 확대
+
+- 이유: 요구사항 반영. 등록 에디터에서 설문 선택지가 300 Byte를 넘게 입력됨. 설문 선택지도 QUIZ와 같은 `OPTION_TEXT` 컬럼(폐쇄망 `VARCHAR2(300 BYTE)`)이라 넘으면 ORA-12899가 날 수 있어 같은 상한을 적용(2026-11-11 결정, 기존 "설문 선택지까지 자동 확대하지 않는다" 대체). 설문 문항 제목은 QUIZ와 같이 CLOB으로 보고 제한하지 않음.
+- 변경: 웹 `popupByteLimit` 상수 `QUIZ_OPTION_TEXT_MAX_BYTES` → `OPTION_TEXT_MAX_BYTES`, `PopupQuestionEditor` 설문 선택지도 `ByteLimitedTextField`·서식 편집기 `maxPlainBytes`, `validatePopupQuestions` 설문 포함. 서버 `PopupUtf8Limits.OPTION_TEXT_MAX_BYTES`, `PopupQuestionRules` 설문 포함(문구 "선택지 내용은 UTF-8 300 Byte 이하…"). 하네스 `verify-quiz-option-byte-73` 설문 검사로 교체, `PopupUtf8LimitTest` 설문 거부·제목 제외로 갱신. 가이드(props·reuse·공지)·인계 문서·인터페이스 명세·TODO73 정책 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/popupByteLimit.ts`, `PopupQuestionEditor.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupUtf8Limits.java`, `PopupQuestionRules.java`, `PopupUtf8LimitTest.java`, `scripts/verify-quiz-option-byte-73.cjs`, `docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: 웹 tsc·eslint 0, `verify-quiz-option-byte-73` 44건(설문 300 Byte 허용·초과 입력·붙여넣기·IME 거부·저장 전 확인·제목 제외; 설문 입력칸을 예전으로 되돌리면 실패 확인), guide-registry 275·guide-render 31·survey-rich-text-55 67·common-sample-69 62·rgstpop-quiz-rule 25·template-picker 7·preview-61 121 통과. 서버 `PopupUtf8LimitTest` 6건 포함 전체 실패 0. 실화면: 설문 템플릿 새 등록에서 101자 거부·100자 허용·초과 1자 거부·안내.
+- 상태: 커밋·원격 반영. 폐쇄망 반입 대기(서버·웹).
+
 ## 2026-11-11-02 — dev: TODO54-10·60 150% 배율 실화면 확인 기록
 
 - 이유: 검증 필요. 2026-11-10 점검에서 150% 이상 배율이 남아 Windows 배율을 150%(주 모니터 2560×1440)로 바꾼 뒤 확인.
