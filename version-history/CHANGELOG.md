@@ -8,6 +8,24 @@
 
 # 변경 이력
 
+## 2026-11-10-05 — scripts: 웹·WPF Git 히스토리 번들 생성 스크립트 추가
+
+- 이유: 폐쇄망에서 웹(2-zero-rule-web)·WPF(3-popup-frameWork) 폴더를 히스토리 번들 clone의 `git subtree split` 브랜치(`web-only`·`fw-only`)에 연결해 pull로 동기화하기로 함(서버는 기존 반입본 방식 유지). 이 방식은 번들마다 커밋 ID가 이어져야 하는데, 번들 재생성 절차가 저장소 밖 임시 스크립트로만 있어 규칙이 바뀔 위험이 있었음.
+- 변경:
+  - `scripts/export-git-history-bundle.sh` 추가(Git Bash). 1104~1106 번들에 쓴 규칙을 그대로 옮김: 범위 `zero-rule-web`·`popup-frameWork`(MockSso·Popup.slnx·테스트 프로젝트 제외), mailmap 작성자 통일, 개발 DB IP·웹 암호화 키·LoginForm 기본 비밀번호 치환, Co-Authored-By·생성 도구 표기 제거. git-filter-repo 2.47.0 고정.
+  - 생성 전 점검을 실패 시 중단으로 강화: 민감값·개인 메일·트레일러·제외 경로·다른 작성자 0건, 치환 대상 4개 파일 외 트리 차이 0건, 직전 번들 HEAD가 새 이력의 조상(연속성). `-r` 커밋 지정, `-p` 직전 번들 지정·`none`, `-o` 출력 폴더 옵션.
+  - 번들 README-IMPORT에 폐쇄망 연결 절차(subtree split, init·fetch·reset), 다음 번들 반영 절차, 사용하지 않을 명령(`reset --hard` 등), 치환 파일 `skip-worktree` 안내 추가.
+  - `export-offline-package.ps1` 머리 주석·README 7단계, `OFFLINE_WPF_BUILD.md`에 생성 스크립트와 커밋 ID 연속성 조건 기록.
+  - `.gitattributes`에 `scripts/*.sh text eol=lf` 추가(`core.autocrlf=true` 체크아웃 시 CRLF로 바뀌어 bash 실행이 실패하지 않도록).
+- 주요 파일: `scripts/export-git-history-bundle.sh`, `scripts/export-offline-package.ps1`, `OFFLINE_WPF_BUILD.md`, `.gitattributes`.
+- 검증:
+  - 재현: `-r 9403689`로 실행 시 1106 번들과 같은 main `3aab7a9`(커밋 231)·같은 COMMIT-MAP 생성.
+  - 현재 main(173ae0a): 직전 1106 번들 자동 탐색, 연속성 확인(`3aab7a9` → `4c0ce0c`, 11개 추가), 점검 항목 모두 0건.
+  - 폐쇄망 절차 모의: 1106 번들 clone → `web-only` split → 새 번들 `git pull`(fast-forward) → 다시 split 시 이전 `web-only`가 새 브랜치의 조상임을 확인.
+  - `bash -n` 구문 확인, `export-offline-package.ps1` PowerShell 구문 오류 0.
+  - 미실행: 새 번들의 반입본 포함(`-GitHistoryDir`)·폐쇄망 적용.
+- 상태: 커밋·원격 반영. 다음 반입본에서 사용.
+
 ## 2026-11-10-04 — dev: 관리자 웹 개발 서버 화면 묶음 필터(DEV_SCENES) 추가
 
 - 이유: 폐쇄망 관리자 웹 `pnpm dev`(Turbopack) 첫 화면 컴파일이 60초대로 확인됨. 로컬 분석 결과 `/`(대시보드)를 컴파일할 때 `scene-router.tsx`의 `dynamic()` 업무 화면 27개(CKEditor·xlsx·date-pickers·Rule 포함)가 모두 함께 컴파일됨(캐시 없음 `/`만 요청해도 기능 청크 27종·197개 생성). 임시로 대시보드만 남기면 컴파일 7.0초 → 2.9초로 일괄 컴파일이 약 60%를 차지. Next 15.5.21 정식판은 Turbopack 영구 캐시(`experimental.turbopackPersistentCaching`)가 canary 전용이라 적용 불가.

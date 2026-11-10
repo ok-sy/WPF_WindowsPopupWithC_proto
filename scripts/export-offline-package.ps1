@@ -12,7 +12,7 @@ POL-15-01 : 배포 범위
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
-  9-git-history       (선택 -GitHistoryDir) 민감값을 정리한 조회 전용 Git 번들. 소스 적용 대상이 아니며 통합 TGZ에 함께 넣는다
+  9-git-history       (선택 -GitHistoryDir) 민감값을 정리한 웹·WPF Git 히스토리 번들(scripts/export-git-history-bundle.sh로 생성). 소스에 덮어쓰지 않으며 통합 TGZ에 함께 넣는다
 
 같은 날짜 반입은 폴더 하나·TGZ 하나로 합친다. 날짜 뒤에 이름을 붙인 별도 폴더·압축을 만들지 않고, 같은 날 추가분은 옵션을 모두 지정해 -Force로 다시 만든다.
 
@@ -347,8 +347,8 @@ try {
     $gitHistoryRow = ""
     $gitHistoryStep = ""
     if ($gitHistoryCount -gt 0) {
-        $gitHistoryRow = "| 9-git-history.tar | 웹·WPF 조회 전용 Git 히스토리 번들 | 소스에 덮어쓰지 않음. 내부 README-IMPORT.md 참조 |`n"
-        $gitHistoryStep = "`n7. 9-git-history.tar는 소스 폴더와 분리해 풀고(예: 7-archaiv 아래) ``git clone``으로 조회한다."
+        $gitHistoryRow = "| 9-git-history.tar | 웹·WPF Git 히스토리 번들 | 소스에 덮어쓰지 않음. 내부 README-IMPORT.md 참조 |`n"
+        $gitHistoryStep = "`n7. 9-git-history.tar는 소스 폴더와 분리해 풀고(예: 7-archaiv 아래) ``git clone``한다. 웹·WPF 폴더 연결과 다음 번들 반영은 내부 README-IMPORT.md 참조."
     }
     if ($PreviousExport) {
         $previousText = "직전 반입본 $PreviousExport($PreviousCommit)"

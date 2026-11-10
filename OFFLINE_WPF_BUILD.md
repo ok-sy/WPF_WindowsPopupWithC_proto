@@ -101,6 +101,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\export-offline-package.ps1 -GitHistoryDir <폴더> -Force       # 조회 전용 Git 번들(9-git-history)을 같은 날짜 TGZ에 합쳐 생성
 ```
 
+- 히스토리 번들은 Git Bash에서 `bash scripts/export-git-history-bundle.sh`로 `.offline-cache/git-history-<날짜>/`에 만든 뒤 `-GitHistoryDir`로 넘긴다. 폐쇄망은 이 번들 clone에서 `git subtree split`한 `web-only`·`fw-only` 브랜치를 웹·WPF 폴더에 연결해 pull하므로, 스크립트의 필터·치환 규칙과 git-filter-repo 버전을 바꾸지 않아야 커밋 ID가 직전 번들과 이어진다(스크립트가 직전 번들 HEAD가 조상인지 확인하고, 아니면 생성하지 않는다).
+
 - 묶음: `1-zero-rule-server`·`2-zero-rule-web`(베이스라인 대비 변경분), `3-popup-frameWork`(WPF 소스, EXE/DLL/PDB·검증 하네스 제외. 개발용 MockSso·`Popup.slnx`는 2026-11-03부터 제외 — `build-wpf-offline.ps1`은 `Popup.csproj`를 직접 복원·게시. 이전 반입분 MockSso 파일·`Popup.slnx`는 DELETE 목록에 넣어 `cleanup-after-import.ps1`로 지움), `4-docs`(docs·db·api·README·변경 이력), 선택 `6-offline-packages`.
 - 같은 날짜 반입은 폴더 하나·TGZ 하나로 합친다(날짜 뒤에 이름을 붙인 별도 폴더·압축 금지).
 - 프로토타입 등록 화면 `features/RgstPop`과 `/rgst-pop` 경로는 반입하지 않는다(저장소에는 유지). 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발하며, 이전 반입분은 DELETE 목록으로 지운다.
