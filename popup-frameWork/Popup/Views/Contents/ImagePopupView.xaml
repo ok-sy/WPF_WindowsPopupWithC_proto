@@ -39,7 +39,7 @@
             </Border>
             <Border x:Name="DescriptionContainer" Grid.Row="1" Background="#FAFAFB"
                     BorderBrush="#EEF0F3" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,14,0,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Focusable="True" IsTabStop="True" AutomationProperties.Name="이미지 설명" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <TextBlock x:Name="ImageDescriptionText" Style="{StaticResource ImageDescriptionTextStyle}"/>
                 </ScrollViewer>
             </Border>

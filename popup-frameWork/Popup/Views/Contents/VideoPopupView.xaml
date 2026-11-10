@@ -427,8 +427,12 @@
                 MediaFailed="PopupVideo_MediaFailed"/>
 
                 <!-- 웹 영상 -->
+                <!-- 재생·조작은 모두 WPF 컨트롤바로 한다. 영상 영역은 키보드 포커스를 받지 않는다(Tab이 컨트롤바를 건너뛰거나
+                     브라우저 video가 키 입력을 받지 않게, 2026-11-10 실화면 점검). -->
                 <wv2:WebView2CompositionControl
                 x:Name="VideoWebView"
+                Focusable="False"
+                IsTabStop="False"
                 Visibility="Collapsed"
                 NavigationCompleted="VideoWebView_NavigationCompleted"/>
 
@@ -566,6 +570,7 @@
                                 SizeChanged="BufferedTrack_SizeChanged"/>
                         <Slider
                         x:Name="ProgressSlider"
+                        AutomationProperties.Name="재생 위치"
                         VerticalAlignment="Center"
                         Minimum="0"
                         Maximum="1"
@@ -615,6 +620,7 @@
                         <!-- 음량 -->
                         <Slider
                         x:Name="VolumeSlider"
+                        AutomationProperties.Name="음량"
                         Grid.Column="5"
                         Margin="4,0,0,0"
                         VerticalAlignment="Center"

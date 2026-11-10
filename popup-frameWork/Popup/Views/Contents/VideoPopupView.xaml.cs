@@ -239,6 +239,14 @@ namespace Popup.Views.Contents
             _controlsHideTimer.Tick += ControlsHideTimer_Tick;
             _feedbackTimer.Tick += (_, _) => { _feedbackTimer.Stop(); PlaybackFeedback.Visibility = Visibility.Collapsed; };
             LocalVideoControlArea.PreviewKeyDown += (_, _) => { _controlsKeyboardActive = true; ShowVideoControls(); };
+            ProgressSlider.PreviewKeyDown += ProgressSlider_PreviewKeyDown;
+            // 화면 읽기: 아이콘 버튼의 이름을 툴팁 문구(재생/일시정지·음소거·전체 화면 등)와 같게 유지한다.
+            foreach (Button button in new[] { PlayPauseButton, MuteButton, PlaybackRateButton, FullScreenButton })
+            {
+                SyncAutomationName(button);
+                System.ComponentModel.DependencyPropertyDescriptor.FromProperty(FrameworkElement.ToolTipProperty, typeof(Button))
+                    .AddValueChanged(button, (_, _) => SyncAutomationName(button));
+            }
             _isLoop = isLoop;
             _defaultVolume = double.IsFinite(defaultVolume)
                 ? Math.Clamp(defaultVolume, 0.0, 1.0)
@@ -326,6 +334,7 @@ namespace Popup.Views.Contents
             Loaded -= VideoPopupView_Loaded;
 
             AttachMasterVolume(new WindowsMasterVolume(Dispatcher));
+            if (Window.GetWindow(this) is Window host) host.PreviewKeyDown += RevealControlsOnTab;
 
             await LoadWebVideoAsync();
         }
@@ -1149,6 +1158,47 @@ namespace Popup.Views.Contents
             }
         }
 
+        /*
+         * POL-05-01 : 재생 경로 — 키보드 접근. 재생 중 3초 무입력이면 컨트롤바를 숨기는데(Collapsed), 숨긴 동안에는 Tab 순서에서도
+         * 빠져 키보드만으로는 일시정지·음량 버튼에 갈 수 없었다(2026-11-10 실화면 점검). Tab을 누르는 순간 먼저 컨트롤바를 보이게 해
+         * 이번 Tab 이동부터 다시 순서에 들어오게 한다. 컨트롤 표시 꺼짐(showControls=false)·미디어 열기 전은 ShowVideoControls가 막는다.
+         */
+        private void RevealControlsOnTab(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Tab || LocalVideoControlArea.Visibility == Visibility.Visible) return;
+            ShowVideoControls();
+            if (LocalVideoControlArea.Visibility == Visibility.Visible) LocalVideoControlArea.UpdateLayout();
+        }
+
+        private static void SyncAutomationName(Button button) =>
+            System.Windows.Automation.AutomationProperties.SetName(button, button.ToolTip as string ?? string.Empty);
+
+        /*
+         * POL-05-01 : 재생 경로 — 진행바 키보드 탐색. ←/→(↓/↑) 5초, PageDown/PageUp 10초, Home 처음, End 끝.
+         * allowSeek=false이면 진행바가 비활성이라 포커스를 받지 않고, 받더라도 여기서 막는다(마우스와 같은 정책).
+         * 위치 변경은 마우스 드래그와 같은 FinishSeeking 경로를 써서 건너뛴 구간을 시청시간에 더하지 않는다.
+         * Slider 기본 키 처리(값만 바뀌고 실제 위치는 안 바뀌던 상태)는 쓰지 않는다.
+         */
+        private void ProgressSlider_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            double step = e.Key switch
+            {
+                Key.Left or Key.Down => -5,
+                Key.Right or Key.Up => 5,
+                Key.PageDown => -10,
+                Key.PageUp => 10,
+                Key.Home => double.NegativeInfinity,
+                Key.End => double.PositiveInfinity,
+                _ => 0
+            };
+            if (step == 0) return;
+            e.Handled = true;
+            if (!_allowSeek || !_isMediaOpened || ProgressSlider.Maximum <= 0) return;
+            _wasPlayingBeforeSeeking = _isPlaying;
+            ProgressSlider.Value = Math.Clamp(ProgressSlider.Value + step, ProgressSlider.Minimum, ProgressSlider.Maximum);
+            FinishSeeking();
+        }
+
         private void FinishSeeking()
         {
             TimeSpan targetPosition = TimeSpan.FromSeconds(ProgressSlider.Value);
@@ -1659,6 +1709,9 @@ namespace Popup.Views.Contents
             _fullScreenWindow.KeyDown +=
                 FullScreenWindow_KeyDown;
 
+            _fullScreenWindow.PreviewKeyDown +=
+                RevealControlsOnTab;
+
             _fullScreenWindow.Closed +=
                 FullScreenWindow_Closed;
 
@@ -1690,12 +1743,22 @@ namespace Popup.Views.Contents
             fullScreenWindow.KeyDown -=
                 FullScreenWindow_KeyDown;
 
+            fullScreenWindow.PreviewKeyDown -=
+                RevealControlsOnTab;
+
             fullScreenWindow.Closed -=
                 FullScreenWindow_Closed;
 
             RestoreVideoContainer();
 
             fullScreenWindow.Close();
+
+            // 키보드 포커스를 전체화면 버튼으로 되돌린다(전체화면 창이 닫히면 포커스가 창 자체로 가던 문제, 2026-11-10 실화면 점검).
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+            {
+                ShowVideoControls();
+                if (FullScreenButton.IsVisible) FullScreenButton.Focus();
+            }));
         }
 
         private void RestoreVideoContainer()

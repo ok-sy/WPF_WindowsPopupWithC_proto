@@ -601,7 +601,7 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 | showControls | boolean | 선택 | `true` | 컨트롤 표시 |
 | allowFullScreen | boolean | 선택 | `true` | 영상 전체화면 허용 |
 | allowPlaybackRateChange | boolean | 선택 | `true` | 배속 변경 허용 |
-| allowSeek | boolean | 선택 | `true` | 진행바로 재생 위치 변경 허용. 동영상+퀴즈에도 적용 |
+| allowSeek | boolean | 선택 | `true` | 진행바로 재생 위치 변경 허용(마우스·키보드 공통, false면 키보드로도 변경 불가). 동영상+퀴즈에도 적용 |
 | autoPlay | boolean | 선택 | `false` | 자동 재생 |
 | isLoop | boolean | 선택 | `false` | 반복 재생 |
 | defaultVolume | number | 선택 | `0.7` | 시스템 볼륨 연결 전/실패 시 내부 플레이어 초기 음량 0~1. 연결 성공 시 현재 Windows 볼륨 우선 |

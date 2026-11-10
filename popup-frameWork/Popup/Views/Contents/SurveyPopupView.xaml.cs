@@ -681,6 +681,9 @@ namespace Popup.Views.Contents
             AttachTextAnswerByteLimit(textBox);
             textBox.TextChanged += (_, _) => UpdateResponseProgress();
             textBox.ToolTip = TextAnswerLimitMessage;
+            // 화면 읽기: 입력칸 이름을 문항 제목으로 둔다(제목이 서식으로만 있으면 '주관식 답변').
+            System.Windows.Automation.AutomationProperties.SetName(textBox,
+                string.IsNullOrWhiteSpace(question.Title) ? "주관식 답변" : question.Title.Trim());
             System.Windows.Automation.AutomationProperties.SetHelpText(textBox,
                 "추가 의견이 있다면 자유롭게 작성해주세요. " + TextAnswerLimitMessage);
 

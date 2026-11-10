@@ -203,7 +203,10 @@
                 SurveyPopupView
                 VideoPopupView 등이 이 자리에 표시된다.
                 -->
+                <!-- 본문을 담기만 하는 그릇이라 Tab 포커스를 받지 않는다(빈 Tab 칸이 생기던 문제, 2026-11-10 실화면 점검). -->
                 <ContentControl x:Name="PopupContent"
+                                Focusable="False"
+                                IsTabStop="False"
                 Grid.Row="1"
                 Margin="28,24,28,24"
                 HorizontalAlignment="Stretch"

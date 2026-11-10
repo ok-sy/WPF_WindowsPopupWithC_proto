@@ -811,6 +811,7 @@ internal static class Program
 
         CheckVideoQuizScrollBarBoundary60();
         CheckLocalVideoWebPlayer60();
+        CheckVideoKeyboardAccess();
 
         var single = OpenPopup("VIDEO", dto => dto.ShowFooter = true);
         var singleRow = (RowDefinition)single.Video!.FindName("VideoRow");
@@ -832,6 +833,49 @@ internal static class Program
      * 파일 폴더를 가상 호스트에 연결하고 video src는 가상 호스트 + URL 인코딩한 파일 이름이다. HTTP URL은 그대로 쓴다.
      * 경로로 해석할 수 없는 값도 생성자에서 예외를 내지 않는다(재생 시 '파일 없음'으로 실패 처리).
      */
+    /*
+     * POL-05-01 : 재생 경로 — 키보드 접근(2026-11-10 실화면 점검 보완)
+     * 본문 그릇·영상 영역은 Tab 포커스를 받지 않고, 컨트롤 버튼·슬라이더는 화면 읽기 이름을 갖는다.
+     * 재생 중 숨겨진 컨트롤바는 Tab 입력에 다시 보이고, 진행바 키보드 탐색은 allowSeek=true일 때만 위치를 바꾼다.
+     */
+    private static void CheckVideoKeyboardAccess()
+    {
+        System.Windows.Input.KeyEventArgs Press(UIElement target, System.Windows.Input.Key key, RoutedEvent routed)
+        {
+            var args = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, PresentationSource.FromVisual(target)!, 0, key) { RoutedEvent = routed };
+            target.RaiseEvent(args);
+            return args;
+        }
+        foreach (bool allowSeek in new[] { true, false })
+        {
+            var opened = OpenPopup("VIDEO_QUIZ", dto => dto.ShowFooter = true,
+                transform: dto => WithContent(dto, content => content["allowSeek"] = allowSeek));
+            var video = ((VideoQuizPopupView)opened.Options.Content!).Video;
+            var web = (Control)video.FindName("VideoWebView");
+            var content = opened.Find<ContentControl>("PopupContent");
+            Check(!web.Focusable && !web.IsTabStop && !content.Focusable && !content.IsTabStop,
+                "[키보드] video surface and popup content holder are not Tab stops");
+            foreach (var (id, name) in new[] { ("PlayPauseButton", "재생"), ("ProgressSlider", "재생 위치"), ("MuteButton", "음소거"),
+                ("VolumeSlider", "음량"), ("PlaybackRateButton", "재생 속도"), ("FullScreenButton", "전체 화면") })
+                Check(System.Windows.Automation.AutomationProperties.GetName((DependencyObject)video.FindName(id)) == name, $"[키보드] {id} is named '{name}'");
+
+            typeof(VideoPopupView).GetField("_isMediaOpened", Flags)!.SetValue(video, true);
+            var controls = (Border)video.FindName("LocalVideoControlArea");
+            controls.Visibility = Visibility.Collapsed;
+            Press(opened.Window, System.Windows.Input.Key.Tab, System.Windows.Input.Keyboard.PreviewKeyDownEvent);
+            Check(controls.Visibility == Visibility.Visible, "[키보드] Tab reveals the hidden control bar so it is reachable");
+
+            var slider = (Slider)video.FindName("ProgressSlider");
+            slider.Maximum = 100; slider.Value = 10;
+            var right = Press(slider, System.Windows.Input.Key.Right, System.Windows.Input.Keyboard.PreviewKeyDownEvent);
+            Check(right.Handled && slider.Value == (allowSeek ? 15 : 10) && slider.IsEnabled == allowSeek,
+                $"[키보드] → on the progress bar seeks only when allowSeek={allowSeek} ({slider.Value})");
+            Press(slider, System.Windows.Input.Key.End, System.Windows.Input.Keyboard.PreviewKeyDownEvent);
+            Check(slider.Value == (allowSeek ? 100 : 10), $"[키보드] End seeks only when allowed ({slider.Value})");
+            ShutdownClose(opened.Window);
+        }
+    }
+
     private static void CheckLocalVideoWebPlayer60()
     {
         var html = typeof(VideoPopupView).GetMethod("BuildWebVideoHtml", Flags)!;

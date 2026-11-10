@@ -70,7 +70,11 @@
 
         <!-- POL-03-01 : 저장·표시 경계 — 텍스트 팝업 전용 제목/설명 영역(ContentHeaderPanel)은 없다. 제목·설명은 서식 본문으로 작성한다. 0행은 비워 둔다. -->
 
+        <!-- 키보드 접근: 본문 스크롤 영역도 Tab 포커스를 받아 ↑↓·PageUp/PageDown으로 긴 본문을 읽을 수 있게 한다(2026-11-10 실화면 점검). -->
         <ScrollViewer Grid.Row="1"
+                      Focusable="True"
+                      IsTabStop="True"
+                      AutomationProperties.Name="본문"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility ="Disabled">
 

@@ -8,6 +8,25 @@
 
 # 변경 이력
 
+## 2026-11-10-15 — dev: TODO54-10 Demo 화면 접근성 보완
+
+- 이유: 실화면 점검(TODO54-10, 125% 배율)에서 확인된 이슈. Demo 샘플 콤보·로그 영역 높이 조절 막대·요청/응답 JSON 칸과 상세옵션 입력칸에 화면 읽기 이름이 없고, 상세옵션 창 Tab이 하단 취소/적용부터 시작하며, 비어 있는 비활성 칸이 활성 칸과 똑같이 보임.
+- 변경: `DemoWindow.xaml` 이름 지정(시연할 샘플·로그·상세 영역 높이 조절·요청 JSON·응답 JSON). `DemoOptionsWindow`: 입력칸 이름 = 라벨, Tab 순서 탭 내용 → 하단 버튼, 창을 열면 선택 탭에 포커스, 비활성 입력칸 배경 #ECEEF1. ApiDemoTests 3건 추가.
+- 주요 파일: `popup-frameWork/Popup/DemoWindow.xaml`, `popup-frameWork/Popup/DemoOptionsWindow.cs`, `scripts/ApiDemoTests/Program.cs`.
+- 검증: ApiDemoTests 117건 통과. 125% 배율 실화면(UI 자동화·키보드)에서 메인 창 Tab 11곳 이름 확인, 상세옵션 첫 포커스 '창·배치' 탭·입력칸 라벨 이름·비활성 칸 회색 캡처 확인. Demo 전용이라 ALL/MINIMAL 명세 영향 없음.
+- 상태: 커밋·원격 반영.
+
+## 2026-11-10-14 — dev: TODO54-10 팝업 키보드 접근·화면 읽기 이름 보완
+
+- 이유: 실화면 점검(TODO54-10)에서 확인된 이슈. ① VIDEO+QUIZ 잠금 해제 뒤 Tab이 영상 영역(WebView2)에서 컨트롤바를 건너뛰고, 재생 중 자동 숨김된 컨트롤바는 Tab 순서에서 빠져 키보드로 일시정지할 수 없음. ② 전체화면에서 Esc로 나오면 포커스가 창으로 감. ③ 컨트롤 버튼·슬라이더·주관식 입력칸에 화면 읽기 이름이 없음. ④ 본문 그릇(`PopupContent`)이 빈 Tab 칸이 됨. 또한 진행바 키보드 입력이 위치를 바꾸지 않아(Slider 값만 이동) `allowSeek`와 무관하게 키보드 탐색이 없었고, 탐색 금지 시 키보드도 막혀야 한다는 요건을 함께 반영.
+- 변경:
+  - `VideoPopupView`: 영상 영역 `Focusable/IsTabStop=False`. 팝업·전체화면 창에서 Tab 입력 시 숨겨진 컨트롤바를 먼저 표시. 진행바 키보드 탐색(←/→·↓/↑ 5초, PageDown/PageUp 10초, Home/End) — `allowSeek=true`일 때만 마우스와 같은 경로로 이동(건너뛴 구간 시청시간 미합산), false면 진행바 비활성·키 입력 무시. 전체화면 종료 후 전체 화면 버튼에 포커스. 아이콘 버튼 이름을 툴팁(재생/일시정지·음소거·재생 속도·전체 화면)과 동기화, 슬라이더 이름(재생 위치·음량).
+  - `PopupWindow.xaml`: `PopupContent` Tab 제외. `TextPopupView`·`ImagePopupView`: 본문·이미지 설명 스크롤 영역이 Tab 포커스를 받아 키보드로 스크롤(이름 '본문'·'이미지 설명'). `SurveyPopupView`: 주관식 입력칸 이름 = 문항 제목.
+  - PopupWindowTests `CheckVideoKeyboardAccess` 추가. `WPF_POPUP_ALL_SPEC` 키보드 동작, `POPUP_INTERFACE_SPEC` allowSeek(마우스·키보드 공통) 설명 보완. MINIMAL_SPEC은 키보드 세부가 범위 밖이라 변경 없음, 필드·계약 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml(.cs)`, `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml`, `popup-frameWork/Popup/Views/Contents/TextPopupView.xaml`, `ImagePopupView.xaml`, `SurveyPopupView.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: PopupWindowTests 547건(신규 `CheckVideoKeyboardAccess` 20건) 통과 — 진행바 키 처리·Tab 표시·Tab 제외를 각각 빼면 해당 검사 실패 확인 후 복원. ApiDemoTests 117·RichTextTests 113·RecoveryTests 154·로컬 BehaviorTests 1,724 통과. 125% 배율 실화면(UI 자동화·키보드): 재생 중 컨트롤바 숨김 상태에서 Tab으로 '일시정지'까지 이동, 진행바 → 12.6→18.4초·Home 0.7초·PageUp +10초, 탐색 금지 시 진행바 Tab 제외·포커스 불가, 전체화면 Esc 후 '전체 화면' 버튼 포커스, 버튼 이름 표시, TEXT 팝업 Tab '본문 → 확인'. 미실행: 실제 화면 읽기 프로그램 낭독, 150% 이상 배율.
+- 상태: 커밋·원격 반영. 폐쇄망 반입 대기.
+
 ## 2026-11-10-13 — dev: TODO54 Demo 상세옵션 빈 문자열 변경 표시 수정
 
 - 이유: 실화면 점검에서 확인된 이슈. 퀴즈·동영상+퀴즈 샘플은 아무것도 바꾸지 않고 상세옵션을 열어도 "샘플 기본값과 다른 항목 5개"가 표시됨. 선택형 문항의 `correctAnswer`(값 없음, null)를 빈 입력칸에서 읽을 때 빈 문자열("")로 만들어 기본값과 다르다고 셈.
