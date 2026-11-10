@@ -191,7 +191,9 @@ namespace Popup
                 set = node => text.Text = FormatValue(node, numeric);
                 parse = () =>
                 {
-                    if (!numeric) return JsonValue.Create(text.Text);
+                    // 값이 없던(null) 문자열 칸을 비워 둔 것은 그대로 '없음'이다. 빈 문자열로 바꾸면 샘플 기본값과 다르다고 잘못 세고
+                    // 적용 시 null을 ""로 바꾼다(예: 선택형 QUIZ 문항의 주관식 정답).
+                    if (!numeric) return text.Text.Length == 0 && value is null ? null : JsonValue.Create(text.Text);
                     string raw = text.Text.Trim();
                     if (raw.Length == 0)
                     {

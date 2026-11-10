@@ -153,6 +153,16 @@ internal static class Program
             "[54-3] TEXT options are grouped into tabs");
         Check(Tabs(new DemoOptionsWindow(Sample("DEMO-QUIZ-001"))).SequenceEqual(new[] { "창·배치", "헤더·푸터", "콘텐츠", "완료·동작", "문항·선택지", "고급" }),
             "[54-3] QUIZ adds the question tab");
+        // 실화면 점검(2026-11-10): 값이 없는(null) 문자열 칸(선택형 문항의 주관식 정답)을 비워 둔 상태를 '변경'으로 세지 않는다.
+        foreach (string id in new[] { "DEMO-QUIZ-001", "DEMO-VIDEO-QUIZ" })
+        {
+            var fresh = new DemoOptionsWindow(Sample(id), Sample(id));
+            var summary = (TextBlock)typeof(DemoOptionsWindow).GetField("_changeSummary", Flags)!.GetValue(fresh)!;
+            Check(summary.Text == "모든 항목이 샘플 기본값과 같습니다.", $"[54-5] an untouched {id} shows no changed fields: {summary.Text}");
+            var unchanged = (PopupResponseDto)typeof(DemoOptionsWindow).GetMethod("ReadResult", Flags)!.Invoke(fresh, null)!;
+            Check(unchanged.Questions.All(q => q.CorrectAnswer == Sample(id).Questions.Single(o => o.QuestionId == q.QuestionId).CorrectAnswer),
+                $"[54-5] applying an untouched {id} keeps empty answers as null");
+        }
 
         PopupResponseDto sample = Sample("DEMO-TEXT-001");
         var editor = new DemoOptionsWindow(sample, Sample("DEMO-TEXT-001"));
