@@ -21,8 +21,9 @@ import static org.mockito.Mockito.*;
 /**
  * POL-06-02 : 선택·제출
  * ■ UTF-8 바이트 상한 테스트(TODO73-38)
- * - QUIZ 선택지는 300 Byte, 주관식 응답(trim 후)은 1000 Byte까지 저장한다. 넘으면 저장 전에 IllegalArgumentException(400)으로 거부한다.
- * - 설문 선택지·문항 제목에는 300 Byte 제한이 없다. 서식 선택지는 서식에서 파생한 일반 문자열로 센다.
+ * - 선택지(QUIZ·SURVEY, 설문은 2026-11-11 확대)는 300 Byte, 주관식 응답(trim 후)은 1000 Byte까지 저장한다. 넘으면 저장 전에 IllegalArgumentException으로 거부한다
+ *   (관리자 API는 PopupAdminExceptionHandler, WPF API는 WpfApiExceptionHandler가 400으로 응답).
+ * - 문항 제목(CLOB)에는 300 Byte 제한이 없다. 서식 선택지는 서식에서 파생한 일반 문자열로 센다.
  */
 class PopupUtf8LimitTest {
 
@@ -55,9 +56,15 @@ class PopupUtf8LimitTest {
                 () -> PopupQuestionRules.validate(List.of(choice(repeat("a", 297) + "😀", true)), true, 0.0));
     }
 
-    /** 설문 선택지·퀴즈 문항 제목(CLOB)은 300 Byte 제한 대상이 아니다(글자 수 1000자 규칙만). */
-    @Test void surveyOptionAndQuizTitleAreNotByteLimited() {
-        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(choice(repeat("가", 200), false)), false, null));
+    /** 설문 선택지도 같은 컬럼이라 300 Byte까지(2026-11-11). 문항 제목(CLOB)은 300 Byte 제한 대상이 아니다(글자 수 1000자 규칙만). */
+    @Test void surveyOptionIsByteLimitedButTitleIsNot() {
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(choice(repeat("가", 100), false)), false, null));
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> PopupQuestionRules.validate(List.of(choice(repeat("가", 100) + "a", false)), false, null));
+        assertTrue(error.getMessage().contains("300 Byte") && error.getMessage().contains("301 Byte"), error.getMessage());
+        var surveyTitle = new PopupQuestionDto(1L, repeat("가", 200), null, "SINGLE_CHOICE", true, false, null, 1,
+                choice("A", false).options(), null, null, "VERTICAL");
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(surveyTitle), false, null));
         var longTitle = new PopupQuestionDto(1L, repeat("가", 200), null, "SINGLE_CHOICE", true, true, BigDecimal.ONE, 1,
                 choice("A", true).options(), null, null, "VERTICAL");
         assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(longTitle), true, 0.0));

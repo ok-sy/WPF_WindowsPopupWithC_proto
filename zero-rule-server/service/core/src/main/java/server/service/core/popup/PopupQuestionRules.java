@@ -62,10 +62,10 @@ final class PopupQuestionRules {
                 for (var option : q.options()) {
                     if (option.text() == null || option.text().isBlank() || option.text().length() > 1000)
                         fail("선택지 내용은 1~1000자여야 합니다.");
-                    // QUIZ 선택지는 DB 컬럼(VARCHAR2(300 BYTE)) 기준 UTF-8 300 Byte 이하(TODO73-38). 설문 선택지는 제외.
+                    // 선택지는 DB 컬럼(VARCHAR2(300 BYTE), QUIZ·SURVEY 공통) 기준 UTF-8 300 Byte 이하(TODO73-38, 설문은 2026-11-11 확대).
                     int optionBytes = PopupUtf8Limits.utf8Length(option.text());
-                    if (quiz && optionBytes > PopupUtf8Limits.QUIZ_OPTION_TEXT_MAX_BYTES)
-                        fail("퀴즈 선택지 내용은 UTF-8 " + PopupUtf8Limits.QUIZ_OPTION_TEXT_MAX_BYTES
+                    if (optionBytes > PopupUtf8Limits.OPTION_TEXT_MAX_BYTES)
+                        fail("선택지 내용은 UTF-8 " + PopupUtf8Limits.OPTION_TEXT_MAX_BYTES
                                 + " Byte 이하여야 합니다. (현재 " + optionBytes + " Byte)");
                     if (Boolean.TRUE.equals(option.isCorrect())) correct++;
                 }

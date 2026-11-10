@@ -207,7 +207,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'inlineLabel', type: 'string', description: 'compact일 때 짧은 표시(선택지 번호 등)·입력칸·서식 버튼을 한 줄에 둡니다.' },
       { name: 'hideToolbar', type: 'boolean', description: '상단 툴바만 숨깁니다. 본문 높이는 그대로이고, 값을 바꿔도 입력 내용이 유지됩니다.' },
       { name: 'placeholder', type: 'string', description: '비어 있을 때 안내 문구' },
-      { name: 'maxPlainBytes', type: 'number', description: '서식 없는 문자열(plainText)의 UTF-8 바이트 상한. 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌리며 안내 문구를 띄웁니다(한글 조합은 끝날 때 확인). 생략하면 제한 없음. PopupQuestionEditor가 퀴즈 선택지에 300을 넘깁니다.' },
+      { name: 'maxPlainBytes', type: 'number', description: '서식 없는 문자열(plainText)의 UTF-8 바이트 상한. 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌리며 안내 문구를 띄웁니다(한글 조합은 끝날 때 확인). 생략하면 제한 없음. PopupQuestionEditor가 선택지(퀴즈·설문)에 300을 넘깁니다.' },
     ],
     outputs: [{ name: 'onChange', type: '(blocks: RichBlock[], plainText: string) => void', required: true, description: '입력할 때마다 서식 본문과 일반 글자를 돌려줍니다.' }],
     values: ['TEXT: content.textBlocks + content.plainText', '설문·퀴즈: content.surveyTitleBlocks·descriptionBlocks', '문항: question.titleBlocks·descriptionBlocks, 선택지: option.textBlocks'],
@@ -266,7 +266,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'onPassingScoreChange', type: '(score: number | null) => void', required: true, description: '통과 점수 입력' },
     ],
     values: ['questions(PopupQuestion[])', 'passingScore(퀴즈)', '설문 복수 선택의 minSelections·maxSelections(비우면 제한 없음)'],
-    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore, maxQuestions?)로 입력 오류를 확인합니다. 최대 문항 수(기본 30)를 넘는 문항도 여기서 막습니다.', '퀴즈 선택지는 UTF-8 300 Byte(한글 약 100자)까지만 입력됩니다(DB VARCHAR2(300 BYTE)). 넘는 입력·붙여넣기는 반영하지 않고, 이미 넘은 기존 값은 그대로 보여 주며 줄이는 편집만 받고 validatePopupQuestions가 저장을 막습니다. 퀴즈 문항 제목·설문 선택지는 이 제한이 없습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
+    reuse: ['저장 전에 validatePopupQuestions(questions, quiz, passingScore, maxQuestions?)로 입력 오류를 확인합니다. 최대 문항 수(기본 30)를 넘는 문항도 여기서 막습니다.', '퀴즈 선택지는 UTF-8 300 Byte(한글 약 100자)까지만 입력됩니다(DB VARCHAR2(300 BYTE)). 넘는 입력·붙여넣기는 반영하지 않고, 이미 넘은 기존 값은 그대로 보여 주며 줄이는 편집만 받고 validatePopupQuestions가 저장을 막습니다. 설문 선택지도 같은 기준이며(2026-11-11), 문항 제목은 이 제한이 없습니다.', '새 문항 ID는 음수 임시 값입니다. 저장하면 서버가 번호를 줍니다.',
       '일반 입력칸에서 고친 제목·선택지는 titleBlocks·textBlocks가 null이 됩니다. 열기만 한 문항의 서식은 그대로 둡니다. 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기를 쓰며, richQuestionText로 설문 제목과 모든 선택지도 서식 편집기로 바꿀 수 있습니다.'],
     example: `const [questions, setQuestions] = useState<PopupQuestion[]>([]);
 const [passingScore, setPassingScore] = useState<number | null>(null);
@@ -370,7 +370,7 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'blocksToPlainText / plainTextToBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'RichBlock[] / string', output: 'string / RichBlock[]', description: '서식 본문과 일반 글자를 서로 바꿉니다.' },
   { name: 'readTextBlocks', scope: 'COMMON', file: 'popupRichText.ts', input: 'value: unknown', output: 'RichBlock[] | null', description: '서버 값을 서식 본문으로 읽습니다. 형식이 맞지 않으면 null입니다.' },
   { name: 'readQuizRule / withQuizRule / validateQuizRule / quizRequiresPassing', scope: 'COMMON', file: 'popupQuizRule.ts', input: '{ popupType, questions, passingScore?, quizTypeCode? }, rule, count', output: '{ rule, count } / 같은 타입 / string | null / boolean | null', description: '퀴즈 유형으로 통과 점수·퀴즈 유형 코드를 계산하고 입력 오류를 확인합니다. quizRequiresPassing은 미리보기용 합격 필요 여부(참여형 false)입니다.' },
-  { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?, maxQuestions?(기본 30)', output: 'string | null', description: '문항 입력 오류를 확인합니다. 퀴즈 선택지 UTF-8 300 Byte 초과도 막습니다.' },
+  { name: 'validatePopupQuestions', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: 'questions, quiz, passingScore?, maxQuestions?(기본 30)', output: 'string | null', description: '문항 입력 오류를 확인합니다. 선택지(퀴즈·설문) UTF-8 300 Byte 초과도 막습니다.' },
   { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 시간대 입력 오류를 확인합니다.' },
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },
   // 기존 팝업 등록(RgstPop)

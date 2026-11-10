@@ -1,7 +1,7 @@
 // POL-06-01 : 문항·서식 / POL-06-02 : 선택·제출
 // ■ TODO73-36·38: QUIZ 선택지 UTF-8 300 Byte 입력 제한을 실제 관리자 편집기 빌드로 확인한다(Windows headless Edge, CDP 입력·IME 조합).
 //   일반 입력칸·서식 편집기(richQuestionText) 두 경로, 경계값 300/301, 한글·영문·이모지, IME 조합 중/확정, 붙여넣기(insertText), 커서 위치,
-//   삭제 후 재입력, 이전 초과 데이터, 저장 전 확인(validatePopupQuestions), 제한 대상 외(QUIZ 제목·설문 선택지)를 본다.
+//   삭제 후 재입력, 이전 초과 데이터, 저장 전 확인(validatePopupQuestions), 설문 선택지(2026-11-11부터 같은 300 Byte)·제한 대상 외(문항 제목 CLOB)를 본다.
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-quiz-option-byte-73.cjs
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/quiz-option-byte73');
@@ -128,13 +128,21 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check((await validate([quizQuestion([hangul(100) + 'a', 'B'])]))?.includes('301 Byte'), '[73-38] validatePopupQuestions rejects 301 bytes');
   check(await validate([quizQuestion([hangul(100), 'B'])]) === null, '[73-38] validatePopupQuestions accepts 300 bytes');
 
-  // ── 3. 제한 대상 외: 설문 선택지·QUIZ 문항 제목(CLOB) ──
-  const survey = [{...quizQuestion(['A', 'B']), isScored: false, questionScore: null, options: quizQuestion(['A', 'B']).options.map(o => ({...o, isCorrect: false}))}];
-  await run(`window.mountEditor(${JSON.stringify(survey)}, false)`); await pause(500);
-  await typeInto(o1, hangul(200));
-  check(await option(1, 1) === hangul(200), '[73-36] Survey options are not limited to 300 bytes');
-  check(await validate(await questions(), false) === null, '[73-36] Survey pre-save check has no 300-byte rule');
+  // ── 3. 설문 선택지(같은 OPTION_TEXT 컬럼, 2026-11-11부터 300 Byte)·제한 대상 외(문항 제목 CLOB) ──
+  const surveyOf = texts => [{...quizQuestion(texts), isScored: false, questionScore: null, options: quizQuestion(texts).options.map(o => ({...o, isCorrect: false}))}];
+  await run(`window.mountEditor(${JSON.stringify(surveyOf(['A', 'B']))}, false)`); await pause(500);
+  await typeInto(o1, hangul(100));
+  check(await option(1, 1) === hangul(100), '[73-36] Survey option accepts 300 bytes');
+  await focusAt(o1, 100); await insertText('b');
+  check(await option(1, 1) === hangul(100) && (await helperText(o1)).includes('300 Byte'), '[73-36] Survey option rejects typing past 300 bytes with the notice');
+  await focusAt(o1, 100); await insertText('붙여넣기'.repeat(20));
+  check(await option(1, 1) === hangul(100), '[73-36] Survey option rejects an over-limit paste');
+  await focusAt(o1, 100); await imeType('ㄱ', '가');
+  check(await option(1, 1) === hangul(100) && await domValue(o1) === hangul(100), '[73-36] Survey option reverts an IME syllable crossing the limit');
+  check(await validate(await questions(), false) === null, '[73-38] Survey pre-save check accepts 300 bytes');
+  check((await validate(surveyOf([hangul(100) + 'a', 'B']), false))?.includes('301 Byte'), '[73-38] Survey pre-save check rejects 301 bytes');
   check(await validate([quizQuestion(['A', 'B'], {title: hangul(200)})]) === null, '[73-36] Quiz title (CLOB) has no 300-byte rule');
+  check(await validate([{...surveyOf(['A', 'B'])[0], title: hangul(200)}], false) === null, '[73-36] Survey title (CLOB) has no 300-byte rule');
 
   // ── 4. 서식 편집기 선택지(richQuestionText=true) ──
   await run(`window.mountEditor(${JSON.stringify([quizQuestion([hangul(99), 'B'])])}, true, {richQuestionText: true})`); await waitEditors(3);

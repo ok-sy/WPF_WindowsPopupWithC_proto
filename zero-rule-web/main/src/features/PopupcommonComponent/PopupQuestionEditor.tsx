@@ -3,7 +3,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, Stack, TextField, Typography, type TextFieldProps } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { acceptsByteLimitedChange, byteLimitMessage, QUIZ_OPTION_TEXT_MAX_BYTES, utf8ByteLength } from './popupByteLimit';
+import { acceptsByteLimitedChange, byteLimitMessage, OPTION_TEXT_MAX_BYTES, utf8ByteLength } from './popupByteLimit';
 import { richBlocksOrNull } from './PopupRichBlocks';
 import PopupRichTextEditor from './PopupRichTextEditor';
 import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, isOxQuestion, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
@@ -94,11 +94,10 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
     } else {
       if (q.options.length < 2 || q.options.some((o) => !o.text.trim())) return prefix + '선택지를 두 개 이상 입력해 주세요.';
       if (q.options.some((o) => o.text.length > OPTION_TEXT_MAX)) return prefix + `선택지는 ${OPTION_TEXT_MAX}자 이하로 입력해 주세요.`;
-      // QUIZ 선택지는 DB 컬럼(VARCHAR2(300 BYTE)) 기준 UTF-8 300 Byte까지(TODO73-36·38). 입력칸에서 막지만 이전 데이터·직접 넘긴 값도 여기서 막는다.
-      if (quiz) {
-        const over = q.options.findIndex((o) => utf8ByteLength(o.text) > QUIZ_OPTION_TEXT_MAX_BYTES);
-        if (over >= 0) return prefix + `${over + 1}번 선택지는 ${byteLimitMessage(QUIZ_OPTION_TEXT_MAX_BYTES, utf8ByteLength(q.options[over].text))}`;
-      }
+      // 선택지는 DB 컬럼(VARCHAR2(300 BYTE), QUIZ·SURVEY 공통) 기준 UTF-8 300 Byte까지(TODO73-36·38, 설문은 2026-11-11 확대).
+      // 입력칸에서 막지만 이전 데이터·직접 넘긴 값도 여기서 막는다.
+      const over = q.options.findIndex((o) => utf8ByteLength(o.text) > OPTION_TEXT_MAX_BYTES);
+      if (over >= 0) return prefix + `${over + 1}번 선택지는 ${byteLimitMessage(OPTION_TEXT_MAX_BYTES, utf8ByteLength(q.options[over].text))}`;
       const correct = q.options.filter((o) => o.isCorrect).length;
       if (quiz && (!correct || (q.questionType === 'SINGLE_CHOICE' && correct !== 1))) return prefix + '정답 선택지를 확인해 주세요.';
     }
@@ -337,16 +336,13 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
               {/* POL-06-01 : 문항·서식 — 선택지 문구는 기본 일반 텍스트(여러 줄). 고치면 textBlocks를 비워 이전 서식이 남지 않게 한다(TODO73-28·29).
                   입력칸 앞 자동 번호는 표시하지 않는다(2026-11-10). 문항·선택지 번호는 aria-label로만 남긴다.
                   richQuestionText=true면 서식 편집기로 입력하고 textBlocks를 저장한다(TODO73-34). 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다. */}
-              {/* QUIZ 선택지는 UTF-8 300 Byte까지만 입력된다(TODO73-36). 설문 선택지는 제한하지 않는다. */}
+              {/* 선택지는 QUIZ·SURVEY 모두 UTF-8 300 Byte까지만 입력된다(TODO73-36, 설문은 2026-11-11 확대). 문항 제목(CLOB)은 제한하지 않는다. */}
               {richQuestionText ? <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
-                initialBlocks={initialRich(option.textBlocks, option.text)} maxPlainBytes={quiz ? QUIZ_OPTION_TEXT_MAX_BYTES : undefined}
+                initialBlocks={initialRich(option.textBlocks, option.text)} maxPlainBytes={OPTION_TEXT_MAX_BYTES}
                 onChange={(blocks, plain) => { const value = richValue(blocks, plain); updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks }); }} />
-                : quiz ? <ByteLimitedTextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" maxBytes={QUIZ_OPTION_TEXT_MAX_BYTES}
+                : <ByteLimitedTextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" maxBytes={OPTION_TEXT_MAX_BYTES}
                   value={plainInputValue(option.text, option.textBlocks)} slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
-                  onValueChange={(text) => updateOption(index, option.optionId, { text, textBlocks: null })} />
-                : <TextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" value={plainInputValue(option.text, option.textBlocks)}
-                  slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
-                  onChange={(e) => updateOption(index, option.optionId, { text: e.target.value, textBlocks: null })} />}
+                  onValueChange={(text) => updateOption(index, option.optionId, { text, textBlocks: null })} />}
             </Box>
             <Box sx={optionSlotSx}><IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`선택지 ${oi + 1} 삭제`} onClick={() => update(index, { options: q.options.filter((_, i) => i !== oi) })}><DeleteOutlineIcon fontSize="small" /></IconButton></Box>
           </Stack>)}
