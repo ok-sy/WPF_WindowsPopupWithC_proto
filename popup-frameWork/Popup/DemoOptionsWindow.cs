@@ -30,6 +30,8 @@ namespace Popup
         { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
         private static readonly Brush HintBrush = new SolidColorBrush(Color.FromRgb(0x68, 0x70, 0x7C));
         private static readonly Brush ChangedBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x4E, 0x8C));
+        /* 비활성 입력칸 배경. 비어 있는 비활성 칸이 활성 칸과 똑같이 흰색으로 보이지 않게 한다(2026-11-10 실화면 점검). */
+        private static readonly Brush DisabledInputBrush = new SolidColorBrush(Color.FromRgb(0xEC, 0xEE, 0xF1));
 
         private readonly JsonObject _draft;
         // 편집 대상 객체(_draft·content·문항·선택지) → 같은 위치의 기본값 객체(샘플 원본)
@@ -91,6 +93,10 @@ namespace Popup
             buttons.Children.Add(cancel); buttons.Children.Add(apply); footer.Children.Add(buttons);
             DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
             root.Children.Add(_tabs);
+            // Tab 순서: 탭 내용 → 하단 취소/적용(배치상 footer가 먼저 추가되어 기본 순서가 반대였다). 창을 열면 첫 탭에 포커스를 둔다.
+            System.Windows.Input.KeyboardNavigation.SetTabIndex(_tabs, 0);
+            System.Windows.Input.KeyboardNavigation.SetTabIndex(footer, 1);
+            Loaded += (_, _) => (_tabs.SelectedItem as TabItem ?? _tabs.Items.OfType<TabItem>().FirstOrDefault())?.Focus();
 
             _suspendRefresh = true;
             BuildTabs(popup);
@@ -211,6 +217,13 @@ namespace Popup
                     }
                     return JsonValue.Create(number);
                 };
+            }
+            // 화면 읽기: 입력칸 이름을 위쪽 라벨과 같게 둔다.
+            System.Windows.Automation.AutomationProperties.SetName(input, label);
+            if (input is TextBox box)
+            {
+                Brush enabledBackground = box.Background;
+                box.IsEnabledChanged += (_, _) => box.Background = box.IsEnabled ? enabledBackground : DisabledInputBrush;
             }
             row.Children.Add(input);
             var note = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Collapsed };

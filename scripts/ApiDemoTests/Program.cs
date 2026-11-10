@@ -153,6 +153,19 @@ internal static class Program
             "[54-3] TEXT options are grouped into tabs");
         Check(Tabs(new DemoOptionsWindow(Sample("DEMO-QUIZ-001"))).SequenceEqual(new[] { "창·배치", "헤더·푸터", "콘텐츠", "완료·동작", "문항·선택지", "고급" }),
             "[54-3] QUIZ adds the question tab");
+        // 실화면 점검(2026-11-10): 입력칸 이름 = 라벨, Tab은 탭 내용 → 하단 버튼, 비활성 칸은 배경으로 구분
+        {
+            var named = new DemoOptionsWindow(Sample("DEMO-TEXT-001"));
+            var namedDraft = (System.Text.Json.Nodes.JsonObject)typeof(DemoOptionsWindow).GetField("_draft", Flags)!.GetValue(named)!;
+            var namedInputs = (System.Collections.IDictionary)typeof(DemoOptionsWindow).GetField("_inputs", Flags)!.GetValue(named)!;
+            var widthBox = (TextBox)namedInputs[(namedDraft, "width")]!;
+            var ratioBox = (TextBox)namedInputs[(namedDraft, "widthRatio")]!;
+            Check(System.Windows.Automation.AutomationProperties.GetName(widthBox).StartsWith("고정 창 너비"), "[54-10] option inputs are named by their labels");
+            Check(!widthBox.IsEnabled && widthBox.Background != ratioBox.Background, "[54-10] a disabled empty input looks different from an enabled one");
+            var namedTabs = (TabControl)typeof(DemoOptionsWindow).GetField("_tabs", Flags)!.GetValue(named)!;
+            Check(System.Windows.Input.KeyboardNavigation.GetTabIndex(namedTabs) < System.Windows.Input.KeyboardNavigation.GetTabIndex((DependencyObject)namedTabs.Parent is DockPanel dock ? dock.Children[1] : namedTabs),
+                "[54-10] Tab order visits the tab content before the footer buttons");
+        }
         // 실화면 점검(2026-11-10): 값이 없는(null) 문자열 칸(선택형 문항의 주관식 정답)을 비워 둔 상태를 '변경'으로 세지 않는다.
         foreach (string id in new[] { "DEMO-QUIZ-001", "DEMO-VIDEO-QUIZ" })
         {

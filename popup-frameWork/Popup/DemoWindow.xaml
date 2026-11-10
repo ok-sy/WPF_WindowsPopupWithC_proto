@@ -73,7 +73,7 @@
                         <!-- POL-14-02 : Demo 모드 — 인메모리 Demo 전용(샘플·옵션·상태 초기화·인증 테스트). API Demo에서는 숨긴다. -->
                         <StackPanel x:Name="InMemoryPanel">
                             <TextBlock Text="시연할 샘플" Style="{StaticResource Label}" />
-                            <ComboBox x:Name="ScenarioCombo" SelectedIndex="0" SelectionChanged="ScenarioCombo_SelectionChanged">
+                            <ComboBox x:Name="ScenarioCombo" AutomationProperties.Name="시연할 샘플" SelectedIndex="0" SelectionChanged="ScenarioCombo_SelectionChanged">
                                 <ComboBoxItem Content="텍스트" Tag="DEMO-TEXT-001"/>
                                 <ComboBoxItem Content="이미지" Tag="DEMO-IMAGE-001"/>
                                 <ComboBoxItem Content="동영상" Tag="DEMO-VIDEO-001"/>
@@ -214,18 +214,18 @@
                     <ListBox Grid.Row="2" x:Name="ResultLogList" FontFamily="Consolas" FontSize="12" BorderBrush="#E0E3E8"
                              SelectionChanged="ResultLogList_SelectionChanged" HorizontalContentAlignment="Stretch"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
-                    <GridSplitter Grid.Row="3" Height="4" HorizontalAlignment="Stretch" Background="#E0E3E8" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+                    <GridSplitter Grid.Row="3" AutomationProperties.Name="로그·상세 영역 높이 조절" Height="4" HorizontalAlignment="Stretch" Background="#E0E3E8" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
                     <TabControl x:Name="DetailTabs" Grid.Row="4" BorderThickness="0">
                         <TabItem Header="Request · 요청">
                             <DockPanel Margin="0,8,0,0">
                                 <Button x:Name="CopyRequestButton" DockPanel.Dock="Top" Content="요청 JSON 복사" HorizontalAlignment="Right" IsEnabled="False" Tag="REQUEST" Click="CopyJsonButton_Click"/>
-                                <TextBox x:Name="RequestJsonText" Style="{StaticResource JsonText}"/>
+                                <TextBox x:Name="RequestJsonText" AutomationProperties.Name="요청 JSON" Style="{StaticResource JsonText}"/>
                             </DockPanel>
                         </TabItem>
                         <TabItem Header="Response · 응답">
                             <DockPanel Margin="0,8,0,0">
                                 <Button x:Name="CopyResponseButton" DockPanel.Dock="Top" Content="응답 JSON 복사" HorizontalAlignment="Right" IsEnabled="False" Tag="RESPONSE" Click="CopyJsonButton_Click"/>
-                                <TextBox x:Name="ResponseJsonText" Style="{StaticResource JsonText}"/>
+                                <TextBox x:Name="ResponseJsonText" AutomationProperties.Name="응답 JSON" Style="{StaticResource JsonText}"/>
                             </DockPanel>
                         </TabItem>
                     </TabControl>
