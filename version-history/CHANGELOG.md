@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-11-15 — dev: TODO45 45-3 결과 400 종결·임시 예외 최종 정책 확정
+
+- 이유: TODO45 45-3 결정. 결과 전송의 임시 예외(HTTP 400 실행 중 격리, INTERNAL_ERROR 실행당 3회, 같은 resultId 다른 본문)를 최종 정책으로 정한다.
+- 변경:
+  - HTTP 400 결과: 요청 JSON 문법·역직렬화 오류라 재전송해도 같으므로 종결로 보고 큐에서 지운다(이전: 이번 실행에서만 제외하고 메모리 보관). `PopupResultQueue`의 `_quarantined` 집합 제거, 400 분기에서 항목과 INTERNAL_ERROR·잘못된 응답 횟수 기록 삭제, resultId·deliveryId·popupId 로그. 뒤 결과·조회를 막지 않는 동작과 장애 결과 400의 조회 간격 대기(HoldNextQuery)는 같다.
+  - INTERNAL_ERROR 실행당 3회 후 조회 허용, 같은 resultId 다른 본문은 비교 없이 DUPLICATE — 현행 확정(코드 변경 없음). 다중 PC는 미결 유지.
+  - 문서: TODO45 45-3 결정 절·체크 항목, `POL-12.md`·`POLICY.md` POL-12-02와 결정 문단, `POPUP_INTERFACE_SPEC.md` §12.1, `WPF_POPUP_ALL_SPEC.md` 미전송 결과 복구 행(임시 기준 → 확정), `popup-frameWork/README.md`. `WPF_POPUP_MINIMAL_SPEC.md`는 400 처리를 적지 않아 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/PopupResultQueue.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `popup-frameWork/README.md`.
+- 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 254건(400 결과 종결·삭제와 나머지 종결, 재전송 없음, 이후 결과 막지 않음으로 기대값 변경), `Popup.BehaviorTests` 1,736건, `scripts/ApiDemoTests` 124건 통과. 실환경·폐쇄망 미실행.
+- 상태: 커밋·원격 반영. 20261112 반입본에는 들어가지 않았다(다음 반입 대상).
+
 ## 2026-11-11-14 — 20261112 폐쇄망 반입본 생성(20261111 대체, 웹·WPF·문서, 서버·DB 제외)
 
 - 이유: 반입 준비. 20261111 반입본을 반입하지 못해 폐기하고, 같은 비교 기준(20261106/9403689)으로 다음 날짜 반입본을 다시 만든다. 20261111 이후 TODO45 변경(WPF 복구 3사이클·401 복구 진입·결과/조회 복구 횟수 분리·잘못된 결과 응답 3회 상한·조회 응답 처리 실패 장애 결과, 정책·인터페이스 문서)을 포함한다.

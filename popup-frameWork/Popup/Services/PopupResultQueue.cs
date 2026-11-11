@@ -48,8 +48,8 @@ namespace Popup.Services
      *     풀리지 않을 수 있어 이번 실행에서 MaxInvalidResponseAttemptsPerSession회까지만 재전송하고, 넘으면 전송 대상에서 빼
      *     (보관은 유지) 다음 조회를 막지 않는다(TODO45, 2026-11-11 결정 — 복구 무한 루프 방지).
      *     응답 자체가 없는 타임아웃·연결 끊김·5xx·401은 이 상한에 넣지 않는다(통합 복구 주기로 계속 재전송).
-     *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 형식 오류)인 결과는 이번 실행에서
-     *     전송 대상에서 빼고(보관은 유지) 나머지 전송을 막지 않는다.
+     *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 JSON 문법·역직렬화 오류 — 같은 본문은
+     *     다시 보내도 같다)인 결과는 종결로 보고 큐에서 지운 뒤 나머지 전송을 막지 않는다(TODO45 45-3, 2026-11-11 확정).
      *   항목의 resultId·deliveryId는 생성 시 확정되어 재전송 때 다시 만들지 않는다. 서버가 DUPLICATE로 걸러낸다.
      *
      * [동시성] 목록 접근(_stateLock)과 전송(_flushGate)을 분리한다. 네트워크 전송은 잠금 밖에서 기다리므로 전송 중에도 Enqueue는 짧게 끝난다.
@@ -84,8 +84,6 @@ namespace Popup.Services
         private readonly Dictionary<string, int> _internalErrorAttempts = new(StringComparer.OrdinalIgnoreCase);
         /* POL-12-04 : 통합 복구 주기 — resultId별 잘못된 2xx 응답 횟수. 상한에 이르면 이번 실행에서 전송 대상에서 뺀다. */
         private readonly Dictionary<string, int> _invalidResponseAttempts = new(StringComparer.OrdinalIgnoreCase);
-        /* POL-12-02 : 현행 임시 복구 — 단독으로 보내도 400인 항목. 이번 실행에서만 전송에서 빼고 목록에는 남긴다. */
-        private readonly HashSet<string> _quarantined = new(StringComparer.OrdinalIgnoreCase);
         private volatile bool _transmissionStopped;
 
         // HTTP만 중단한다. 아직 열린 팝업의 결과를 받는 Enqueue는 유지한다.
@@ -155,7 +153,6 @@ namespace Popup.Services
                 lock (_stateLock)
                 {
                     sendable = _pending
-                        .Where(p => !_quarantined.Contains(p.ResultId))
                         .Where(p => !_internalErrorAttempts.TryGetValue(p.ResultId, out int attempts)
                             || attempts < MaxInternalErrorAttemptsPerSession)
                         .Where(p => !_invalidResponseAttempts.TryGetValue(p.ResultId, out int invalid)
@@ -183,10 +180,16 @@ namespace Popup.Services
                     }
                     catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
                     {
-                        // POL-12-02 : 현행 임시 복구 — 요청 본문 자체가 400인 결과는 이번 실행에서 전송 대상에서 빼(보관 유지) 뒤 결과 전송을 막지 않는다.
-                        lock (_stateLock) _quarantined.Add(item.ResultId);
-                        Debug.WriteLine($"결과 전송 400 — 이번 실행에서 제외(보관) popupId={item.PopupId} " +
-                            $"type={item.ResultType}: {exception.Message}");
+                        // POL-12-02 : 종결과 보관 (TODO45 45-3, 2026-11-11 확정) — 요청 본문 자체가 400인 결과는 재전송해도 같으므로
+                        // 종결로 보고 큐에서 지운다(로그만 남김). 뒤 결과 전송·조회를 막지 않는다.
+                        lock (_stateLock)
+                        {
+                            _pending.RemoveAll(p => ReferenceEquals(p, item));
+                            _internalErrorAttempts.Remove(item.ResultId);
+                            _invalidResponseAttempts.Remove(item.ResultId);
+                        }
+                        Debug.WriteLine($"결과 전송 400 — 종결·삭제 resultId={item.ResultId} deliveryId={item.DeliveryId} " +
+                            $"popupId={item.PopupId} type={item.ResultType}: {exception.Message}");
                         holdNextQuery |= item.IsErrorResult;
                         continue;
                     }
