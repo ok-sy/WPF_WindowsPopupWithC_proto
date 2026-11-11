@@ -33,16 +33,17 @@
   - 다시 체크하면 로컬 값으로 돌아오고, `연결 적용` 결과 요약이 `대상 http://localhost:8080/zero-rule-server/p`로 바뀐다.
   - EXE 옆에 임시 `appsettings.json`(Dev 주소 지정)을 두고 해제하면 Dev 주소·경로가 채워진다. 임시 파일은 확인 후 삭제했다.
   - 개발 서버 실제 호출은 미실행.
-- 상태: 커밋·원격 반영. 20261111 반입본에는 보완 전 버전이 들어 있어 다음 반입 대기(WPF).
+- 상태: 커밋·원격 반영. 20261111 반입본(3차)에 포함, 폐쇄망 반영 미실행.
 
 ## 2026-11-11-06 — 20261111 폐쇄망 반입본 생성(웹·WPF·문서, 서버·DB 제외)
 
 - 이유: 반입 준비. 20261106 반입본(기준 9403689) 이후의 웹·WPF 변경(PU001 참여형 퀴즈 웹·WPF 분기, TODO73 UTF-8 Byte 제한·오류 사유 표시, TODO69·61 편집기·미리보기, DEV_SCENES, TODO60 로컬·UNC 영상 WebView2 재생, TODO54-10 키보드 접근, API Demo 연결 대상 전환)을 반입한다. 히스토리 번들은 RULES 2 첫 번들이다.
 - 변경:
   - 1차(기준 6caaecf): 서버·DB 포함으로 생성.
-  - 같은 날 재생성(기준 40d5c4c, `-Force`): 반입 기준 변경(2026-11-11-08)에 따라 서버·DB를 빼고 API Demo 체크박스(2026-11-11-07)를 넣었다. 1차본을 대체한다.
+  - 2차(기준 40d5c4c, `-Force`): 반입 기준 변경(2026-11-11-08)에 따라 서버·DB를 빼고 API Demo 체크박스(2026-11-11-07)를 넣었다.
+  - 3차(기준 0585ba2, `-Force`): API Demo 빈 주소 안내 위치 보완을 넣었다. 1·2차본을 대체한다.
   - 옵션 `-PreviousExport 20261106 -PreviousCommit 9403689 -GitHistoryDir .offline-cache/git-history-20261111 -VerifyBuild -Force`.
-  - 구성: 웹 A 54·M 22·D 3, WPF 소스 96, 문서 158(+CI 이미지 2, db 제외), 히스토리 번들 5개 파일(main f9c1418, 커밋 254).
+  - 구성: 웹 A 54·M 22·D 3, WPF 소스 96, 문서 158(+CI 이미지 2, db 제외), 히스토리 번들 5개 파일(main 9677f00, 커밋 255).
   - 변경 요약에 적은 것:
     - 서버·DB 미반입과 서버가 필요한 동작;
     - `error.ts` 블록만 병합, `scene-router.tsx` 덮어쓰기 금지;
@@ -50,10 +51,10 @@
     - 이전 번들 clone은 버리고 새로 연결 시작.
   - CI 이미지는 506e3ec 블록을 작업 트리에만 넣어 생성하고 원복했다(스크립트가 바뀌어 `git apply`가 맞지 않아 같은 블록을 직접 삽입). npm 변경이 없어 5-npm-ckeditor는 넣지 않았다.
 - 검증:
-  - 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,803,470바이트) 생성 확인.
+  - 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish와 단일 EXE(91,803,982바이트) 생성 확인.
   - TAR 4개 파일 수 검증, 통합 TGZ 체크섬 일치.
   - 추출본에 서버·`db/` 파일 0건, DELETE 목록의 서버·DB 경로 0건.
-  - DB 비밀번호(자리표시만 있음)·`features/RgstPop`·MockSso·Popup.slnx·EXE·PDB 0건. CI 이미지 2개와 `ApiLocalTargetCheck` 포함 확인.
+  - DB 비밀번호(자리표시만 있음)·`features/RgstPop`·MockSso·Popup.slnx·EXE·PDB 0건. CI 이미지 2개와 `ApiLocalTargetCheck`·`ApiTargetHintText` 포함 확인.
   - 번들 민감값·제외 경로 점검 0건.
   - 폐쇄망 적용·실호출은 미실행.
 - 상태: 반입본 생성·검증 완료. 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
