@@ -40,7 +40,7 @@
 - 3.7 변경(2026-10-12, 설계 32): 결과 요청 `results[]`에서 중복 시각 필드 `responseStartedAt` 제거. 표시 시각은 `displayedAt`, 종료·제출 시각은 `closedAt`. (설계 35에서 단건 구조로 대체)
 - 2026-10-09 보완: TEXT content에 선택 필드 `textBlocks`(문단·Run 서식 본문) 추가. 생략 시 기존 plainText 표시와 같다.
 - 2026-10-09 보완: VIDEO·동영상+퀴즈 content에 선택 필드 `allowSeek`(boolean, 기본 `true`) 추가. 생략 시 기존 동작과 같다. 영상 소스는 로컬 경로와 HTTP(S) 직접 재생 URL만 지원하며 YouTube 임베드 재생을 제거.
-- 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
+- 2026-10-07 보완: ShowFooterButton 및 고정 Header 외형 반영. 최소 기능(2026-11-11 삭제)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서를 함께 관리.
 - 3.6 변경: IMAGE content.width/height 단일화, FIT_TO_IMAGE keepAspectRatio, 창 최대 초과 Clip, 하단 설명 통일, FILL 제거.
 - 2026-10-03 보완: JSON 필드·ENUM 변경 없이 VIDEO Overlay·Windows Master Volume/Mute·defaultVolume 대체 정책, SURVEY/QUIZ 배치별 Row/Chip 및 고정 제출 영역을 명시.
 - 2026-09-30 보완: JSON 필드·ENUM 변경 없이 30~60분 조회 정책, 로컬/URL 공통 WPF 컨트롤 및 동영상+퀴즈 단일 스크롤 동작을 명시.
@@ -393,7 +393,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 - displayMode 생략은 SEQUENTIAL, sizeMode 생략은 FIXED. 명시한 값은 지원 ENUM이어야 하며 null은 허용하지 않는다.
 - width/height 생략은 900/620, 표시 플래그는 6.3 표의 기본값 사용. 명시하는 수치에는 정상 범위 값을 전달한다.
-- **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [최소 기능](WPF_POPUP_MINIMAL_SPEC.md)·[전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
+- **필수 여부 표기 기준**: 6.3 표의 `O`는 "서버가 항상 출력하는 것을 권장하는 전체 계약 필드"다. 이 중 `displayMode`·`sizeMode`·`showHeader`·`showFooterButton`·`showFooter`·`showDoNotShowAgain`처럼 Default 열에 C# 값이 있는 필드는 생략해도 WPF가 그 기본값으로 동작한다. 그래서 [전체 기능](WPF_POPUP_ALL_SPEC.md) 정의서는 이런 필드의 필수값 여부를 `N`(생략 가능, 기본값 적용)으로 적는다. 표기만 다르고 의미는 같다. 반면 `popupId`·`popupType`·`content` 및 위 "반드시 제공할 값"은 Default가 있어도 생략하면 결과 연결 실패나 화면 생성 실패가 생기므로 세 문서 모두 필수(`O`/`Y`)다. 최소 제공 범위의 선택 항목은 최소 기능 정의서를 따른다.
 - optionLayout 생략·미지원 값은 VERTICAL. 현재 WPF는 정확히 대문자 HORIZONTAL일 때만 가로 배치하므로 서버는 정규 ENUM을 출력한다.
 - completionRatio 생략/null은 VIDEO 1.0(100% 시청), 동영상+퀴즈 0.8(2026-11-03 PU001 B-7). 다른 기준이 필요하면 값을 명시한다. showBottomDescription은 문구가 있어도 플래그 생략 시 false다.
 - pollingIntervalSeconds 생략/0은 로컬 기본 주기 사용. option.value는 선택 응답 식별자가 아니며 응답은 optionIds를 사용한다.
@@ -1421,7 +1421,7 @@ EMPTY
 
 아래는 POST /api/wpf/popups 응답의 `popup`에 들어갈 유형별 완전한 객체다. **실제 응답에는 한 번에 1건만 들어간다.** `deliveryId`는 서버가 조회마다 발급하는 값이며 예시 값은 형식 설명용이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
 
-6개 유형의 `popup` 예시를 모은 참고 파일: [WPF-01-popup-types.json](examples/WPF-01-popup-types.json)(유형별 응답 예시 모음이며 한 응답이 아니다). 각 객체는 다음 Envelope의 `popup` 자리에 넣는다.
+6개 유형의 `popup` 예시를 모은 참고 파일: [WPF-01-popup-types.json](../examples/WPF-01-popup-types.json)(유형별 응답 예시 모음이며 한 응답이 아니다). 각 객체는 다음 Envelope의 `popup` 자리에 넣는다.
 
 ```json
 {

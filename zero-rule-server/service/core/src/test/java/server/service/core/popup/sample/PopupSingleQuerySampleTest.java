@@ -284,7 +284,7 @@ class PopupSingleQuerySampleTest {
     }
 
     /**
-     * DTIY3111 사진 정의(docs/interfaces/DTIY3111_SCHEMA_OCR.md) 기준 범위 검증. 실제 DB 실행이 아니다.
+     * DTIY3111 사진 정의(docs/interfaces/examples/DTIY3111_SCHEMA_OCR.md) 기준 범위 검증. 실제 DB 실행이 아니다.
      * 길이는 BYTE·AL32UTF8 가정(한글 3바이트)으로 본다 — CHAR 정의여도 이 기준을 통과하면 들어간다.
      */
     @Test

@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  * - out: 표시 후보 1건(getter/setter)
  * - 단건 조회 결과 VO(MyBatis resultMap {@code popupContentRow}). 한 행 = 표시 후보 1건.
  *
- * <p>컬럼은 팝업콘텐츠기본 DTIY3111 사진 정의(docs/interfaces/DTIY3111_SCHEMA_OCR.md)를 따른다. 사진 판독이며 확정 DDL이 아니므로
+ * <p>컬럼은 팝업콘텐츠기본 DTIY3111 사진 정의(docs/interfaces/examples/DTIY3111_SCHEMA_OCR.md)를 따른다. 사진 판독이며 확정 DDL이 아니므로
  * <b>미확인</b> 표시는 최신 정의에서 이름·타입을 확인해 교체한다.</p>
  *
  * <table>

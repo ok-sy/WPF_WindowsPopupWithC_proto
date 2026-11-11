@@ -23,7 +23,7 @@ import server.repo.core.mapper.popup.sample.fulljson.PopupFullJsonSampleMapper;
  * - 기본 비활성이며 {@code popup.sample.full-json.enabled=true}일 때만 등록한다. 기존 3111 샘플({@code popup.sample.single-query})과
  *   설정·Bean 이름이 겹치지 않아 둘을 동시에 켤 수 있다.
  *
- * <p>인수인계 문서: docs/interfaces/SERVER_SAMPLE_FULL_JSON_API.md</p>
+ * <p>인수인계 문서: docs/interfaces/Server/SERVER_SAMPLE_FULL_JSON_API.md</p>
  *
  * <pre>
  * popup:

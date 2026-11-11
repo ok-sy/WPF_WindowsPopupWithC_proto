@@ -1081,4 +1081,4 @@ Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영
 
 ## IMAGE 계약 (설계 23)
 
-일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/POPUP_INTERFACE_SPEC.md v3.7, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.
+일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md v3.7, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.

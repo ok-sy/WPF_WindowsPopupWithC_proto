@@ -18,7 +18,7 @@
 - [WpfPopupService.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java)
 - [PopupPollingRecovery.cs](../../popup-frameWork/Popup/Services/PopupPollingRecovery.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 - 계약/실행 안내: [18_popup_display_time_oracle.sql](../../db/oracle/18_popup_display_time_oracle.sql)
 
 ## 원본 TODO와 대체 관계

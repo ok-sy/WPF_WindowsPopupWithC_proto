@@ -1,5 +1,29 @@
 # 변경 이력
 
+## 2026-11-11-18 — docs: 인터페이스 문서 영역별 폴더 재구성·최소 기능 정의서 삭제
+
+- 이유: `docs/interfaces/` 아래 WPF·관리자 웹·서버 샘플 문서가 한 폴더에 섞여 있어 영역별로 나눠 찾기 쉽게 하고, WPF 에이전트 사양서로 대체된 최소 기능 정의서를 정리한다.
+- 변경:
+  - 폴더 재구성: `docs/interfaces/WPF/`(인터페이스 계약서 `POPUP_INTERFACE_SPEC.md`, `WPF_AGENT_SPEC.md`, `WPF_POPUP_ALL_SPEC.md`, Excel·Word·PDF 산출물), `docs/interfaces/Web/`(`ADMIN_POPUP_EDITOR_TRANSFORM.md`, `ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `POPUP_FRONT_SAMPLE_HANDOVER.md`), `docs/interfaces/Server/`(`SERVER_SAMPLE_*` 3개, `popup_api_proposal_v0.3.docx`), `DTIY3111_SCHEMA_OCR.md`는 `docs/interfaces/examples/`로 이동.
+  - `WPF_POPUP_MINIMAL_SPEC.md`(최초 외부 제공 범위) 삭제. 현재 기준 문서의 참조를 정리: AGENTS.md WPF 변경 규칙을 ALL 정의서·WPF 에이전트 사양서 검토로 변경, 정책 POL-01·02·04·06·09·POLICY의 '계약/실행 안내' 링크를 에이전트 사양서로, `POPUP_OPTION_GUIDE.md`·인터페이스 계약서·ALL 정의서·에이전트 사양서의 MINIMAL 링크·관리 기준 문구 정정. 과거 기록(design TODO, CHANGELOG 이전 항목, TODO71 csv)의 언급은 이력으로 그대로 둔다.
+  - 이동에 따른 참조 갱신(43개 파일): Markdown 상대 링크(옮긴 파일 안의 링크 포함)와 `docs/interfaces/<파일>` 경로 문자열을 새 위치로 고쳤다. 대상: docs 정책·가이드·README·리뷰, AGENTS.md, WPF·서버·관리자 웹 코드 주석(`PopupApiService.cs`, 서버 샘플 Java·매퍼·테스트, 웹 샘플 TSX), Word 생성 스크립트 경로. 코드 동작 변경 없음.
+  - Word 생성 스크립트(`export-interface-word.cjs`)에서 최소 기능 부록을 빼고 전체 기능을 부록 B로, Word·PDF를 `docs/interfaces/WPF/`에 다시 만듦(표 39·제목 103, PDF Word 내보내기).
+- 주요 파일: `docs/interfaces/WPF/*`, `docs/interfaces/Web/*`, `docs/interfaces/Server/*`, `docs/interfaces/examples/DTIY3111_SCHEMA_OCR.md`, `AGENTS.md`, `docs/README.md`, `docs/POPUP_OPTION_GUIDE.md`, `docs/policies/*`, `scripts/export-interface-word.cjs`·`.ps1`, 코드 주석 파일 9개.
+- 검증: 저장소 Markdown 링크 전수 검사에서 인터페이스 관련 깨진 링크 0(이번 변경과 무관한 ERD 문서의 예전 링크 7개는 그대로). 코드 파일 변경은 주석·경로 문자열뿐임을 diff로 확인, 줄바꿈 변화 없음. Word 본문에서 최소 기능 부록 0·§10.10 유지 확인. 앱·서버 빌드와 PDF 화면 대조는 미실행.
+- 상태: 커밋·원격 반영. 반입본(20261112)에는 들어가지 않았다 — 다음 반입 때 4-docs 경로가 바뀌므로 폐쇄망에서 이전 위치 파일 정리가 필요하다.
+
+## 2026-11-11-17 — docs: WPF 에이전트 정책·인터페이스 통합 사양서 추가
+
+- 이유: WPF 에이전트의 동작 정책과 HTTP·JSON 계약을 기능별로 함께 읽을 수 있도록 설명형 사양서를 구성하고, 과거 설명과 최신 확정 기준의 혼동을 줄일 필요가 있음.
+- 변경:
+  - `WPF_AGENT_SPEC.md` 신설. 구성·책임, 실행 흐름, 인증·API, 조회 구조, 공통 화면·버튼, 유형별 기능, 결과 생성·완료, 중복 처리, 장애 결과, 재전송·복구, 실행 설정, 검증 기대 동작을 13개 절로 정리.
+  - 쉬운 용어 설명, 화면·데이터 구성도, Mermaid 도식 6개, JSON 예제 12개, 확인 시나리오 20개와 정책·계약·구현 근거 연결을 제공.
+  - 동영상+퀴즈 기본 80%, 참여형 퀴즈 합불·완료 분리, 메모리 결과 큐, HTTP 400 종결·삭제, 결과별 오류 3회 상한, 통합 복구 3사이클, 조회 응답 처리 실패 장애 결과를 최신 확정 기준으로 설명. 원본의 과거 표현과 적용 기준은 별도 표로 구분.
+  - `docs/README.md`에 CS의 세 번째 문서로 사양서 진입점 추가. 기존 정책·인터페이스와 최소·전체 기능 정의서를 검토했으며 계약·코드·최초 제공 범위 변경 없음.
+- 주요 파일: `docs/interfaces/WPF/WPF_AGENT_SPEC.md`(2026-11-11-18 폴더 재구성으로 이동), `docs/README.md`, `version-history/CHANGELOG.md`.
+- 검증: 사양서·문서 목차의 로컬 링크 62개와 대상 Markdown 앵커 확인, JSON 예제 12개 파싱 성공, 코드 블록 짝·Mermaid 블록 6개 구성 확인, UTF-8 대체 문자·비의도 가나 문자 없음. `PopupResultBuilder`·`PopupResultQueue`·`PopupPollingRecovery`·`VideoCompletion`·실행 설정 코드 및 원본 계약과 주요 정책·기본값 대조. `git diff --check` 통과. Mermaid 실제 렌더링, 앱 빌드·실행, 서버·DB·폐쇄망 통합 시험은 이번 문서 작업에서 미실행.
+- 상태: 문서 작성·정적 확인 완료. 2026-11-11-18 폴더 재구성과 같은 커밋으로 원격 반영, 배포 미수행.
+
 ## 2026-11-11-16 — dev: TODO45 45-7 인터페이스 Word·PDF·Excel·ERD 산출물 동기화
 
 - 이유: TODO45 45-7. 오늘 확정·구현한 복구 3사이클, 401·로그인 실패 복구, 장애 결과(resultCode=400·resultDesc, 계약서 §10.10), 45-3(결과 400 종결·삭제, INTERNAL_ERROR·잘못된 2xx 응답 3회 후 삭제)이 Markdown 명세에만 있고 배포용 산출물에는 없었다.

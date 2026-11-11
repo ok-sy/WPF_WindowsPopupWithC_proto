@@ -1,7 +1,7 @@
 // Word 전용 표·탐색·인쇄 레이아웃. Node 표준 라이브러리만 사용.
 const fs = require('node:fs'), path = require('node:path'), zlib = require('node:zlib');
 const root = path.resolve(__dirname, '..');
-const output = path.resolve(process.argv[2] || path.join(root, 'docs/interfaces/WPF_Popup_API_Interface_v3.7.docx'));
+const output = path.resolve(process.argv[2] || path.join(root, 'docs/interfaces/WPF/WPF_Popup_API_Interface_v3.7.docx'));
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -110,13 +110,13 @@ body += p('이 문서를 읽는 순서', 'CoverGuide', '<w:spacing w:before="720
 body += p('연동 시작    3장 API 목록 → 4장 인증 → 5·6·10장 요청/응답');
 body += p('화면 데이터    6·7장 공통 필드 → 8장 유형별 content → 9장 문항');
 body += p('오류와 검증    11~13장 결과 처리 → 16장 구현 체크리스트');
-body += p('범위 확인    부록 A 관리자 연동 / 부록 B 최초 외부 제공 범위');
+body += p('범위 확인    부록 A 관리자 연동 / 부록 B WPF 전체 구현 기능');
 body += p('계약 기준: 2026-10-13 v3.7 (2026-11-11 보완 반영)  |  문서 편집: 2026-11-11\n예제는 설명용 가상 데이터입니다.', 'CoverNote', '<w:spacing w:before="700"/>');
 body += p('목차', 'TOCTitle', '<w:pageBreakBefore/>');
 body += '<!--TOC-->';
 heading('문서 안내', 1, true);
-body += p('필드 표는 필드·형식, 필수 여부·기본값, 처리 설명 순서로 읽습니다. 부록 B의 최소 기능 범위는 본문의 전체 구현 계약과 구분합니다.');
-const spec = fs.readFileSync(path.join(root, 'docs/interfaces/POPUP_INTERFACE_SPEC.md'), 'utf8');
+body += p('필드 표는 필드·형식, 필수 여부·기본값, 처리 설명 순서로 읽습니다.');
+const spec = fs.readFileSync(path.join(root, 'docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md'), 'utf8');
 markdown(spec);
 heading('부록 A. 현 프로젝트 관리자 연동', 1, true);
 body += p('아래 API는 zero-rule-server 컨텍스트 뒤에 붙는 관리자 경로입니다. 별도 백엔드에 요구하는 WPF 계약 범위에는 포함하지 않습니다.');
@@ -126,19 +126,17 @@ table(['Method', '경로', '기능'], [
   ['POST','`/apis/popup/question-templates`','문항 템플릿 목록'], ['POST','`/apis/popup/question-template`','문항 템플릿 상세']
 ]);
 body += p('기존 WPF 조회·숨김·응답·이벤트 API는 제거되었습니다. 현재 로그인·조회·결과 수신 API 3개를 사용합니다. 영상 스트리밍 `GET /p/api/popups/video`는 유지합니다.');
-body += p('**IMAGE 기본값 구분**\n관리자 신규 등록 기본 선택은 ADAPTIVE입니다. WPF 계약에서 imageSizeMode가 생략되어도 ADAPTIVE를 사용합니다. 최소 기능 범위는 ORIGINAL을 명시해 전달합니다.', 'Callout');
+body += p('**IMAGE 기본값 구분**\n관리자 신규 등록 기본 선택은 ADAPTIVE입니다. WPF 계약에서 imageSizeMode가 생략되어도 ADAPTIVE를 사용합니다.', 'Callout');
 body += p('Footer 버튼 표시는 관리자 API·DB에서 `showCloseButton`(SHOW_CLOSE_BUTTON_YN)으로 저장하고, WPF 조회 응답(popup) 조립 시 `showFooterButton`으로 변환합니다. WPF 응답에는 `showCloseButton`을 넣지 않습니다.');
 body += p('[TODO52-1] 게시 기간 안 노출 일정은 관리자 API의 `periodMode`(`FIXED` 상시 / `SCHEDULE`), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과)로 저장합니다(DB `POPUP_DISPLAY_TIME`). 서버가 KST로 판단하며 WPF 조회 응답에는 넣지 않습니다.');
 body += p('동영상+퀴즈는 `QUIZ`와 `content.videoEnabled=true`로 저장합니다. 새 기능을 사용할 때 WPF와 서버를 함께 갱신합니다.');
 body += p('SURVEY·QUIZ 미리보기는 세로형 전체 폭 Row·우측 체크 Path와 가로형 공통 Chip, 무채색 상태 및 스크롤 밖 고정 제출 영역을 사용합니다. 실제 컨트롤의 단일/복수 선택·필수 검증·응답 OPTION_ID 계약은 유지합니다.');
 body += p('WPF Demo의 예제 문항은 가로/세로·단일/복수·짧은/긴 보기 사례입니다. 관리자 미리보기의 응답·로컬 점수는 편집 데이터나 서버 결과 API에 저장하지 않습니다. 상세 케이스·검증은 설계 20 §6·22를 참조합니다.');
 body += p('Content·Options 상세 가이드: `docs/POPUP_OPTION_GUIDE.md`');
-heading('부록 B. 최초 외부 제공 최소 기능 범위', 1, true);
-body += p('이 부록은 최초 제공할 기능 범위입니다. 본문의 전체 구현 계약과 구분하여 읽으세요.', 'Callout');
-markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md'), 'utf8'), true);
-heading('부록 C. WPF 전체 구현 기능 범위', 1, true);
-body += p('전체 구현 기능은 최소 외부 제공 범위와 함께 관리하며, 전체 지원을 이유로 최소 제공 범위를 자동 확장하지 않습니다.');
-markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF_POPUP_ALL_SPEC.md'), 'utf8'), true);
+// 최소 기능 정의서(WPF_POPUP_MINIMAL_SPEC.md)는 2026-11-11 삭제해 부록에서 뺐다.
+heading('부록 B. WPF 전체 구현 기능 범위', 1, true);
+body += p('정책·동작 설명은 docs/interfaces/WPF/WPF_AGENT_SPEC.md를 함께 봅니다.');
+markdown(fs.readFileSync(path.join(root, 'docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md'), 'utf8'), true);
 
 const toc = p('<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>', 'Normal', '', true)
   + headings.filter(h => h.level <= 2).map(h => p(`<w:hyperlink w:anchor="${h.name}" w:history="1">${run(h.text)}</w:hyperlink>`, h.level === 1 ? 'TOC1' : 'TOC2', '', true)).join('')

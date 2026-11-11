@@ -2,7 +2,7 @@
 
 기준일: 2026-10-22 (KST). TODO71 정적 대조 기준 `9a8ec4eb8695e2be150e2de92da7338c34170d52`.
 
-API의 정식 필드·기본값 계약은 [인터페이스 명세](../interfaces/POPUP_INTERFACE_SPEC.md), 정책 책임/대체 관계는 아래 문서, 당시 작업·검증 기록은 원본 TODO와 CHANGELOG에서 관리한다. 정책 문서가 인터페이스 계약을 덮어쓰지 않는다. 충돌은 [검토 표](../reviews/TODO71/CONFLICTS.md)에 남긴다.
+API의 정식 필드·기본값 계약은 [인터페이스 명세](../interfaces/WPF/POPUP_INTERFACE_SPEC.md), 정책 책임/대체 관계는 아래 문서, 당시 작업·검증 기록은 원본 TODO와 CHANGELOG에서 관리한다. 정책 문서가 인터페이스 계약을 덮어쓰지 않는다. 충돌은 [검토 표](../reviews/TODO71/CONFLICTS.md)에 남긴다.
 
 ## 정책별 목차
 

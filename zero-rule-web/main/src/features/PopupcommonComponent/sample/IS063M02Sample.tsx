@@ -38,7 +38,7 @@ import {
  * IMAGE·VIDEO 파일 첨부는 브라우저 미리보기용 object URL만 만들며 서버 업로드·서버 경로 URL 생성은 담당 서버 구현이다.
  * 화면 state는 입력한 값만 갖는다(미설정 = 키 생략, newSamplePopup·changeSampleType). 미리보기에는 withPreviewFallback으로 표시용 값만 채워 넘긴다.
  * 저장은 화면이 입력하는 필드만 담은 값(toSampleScreenValues)을 보여 주기만 한다(서버 미전송). n* 클래스 스타일은 폐쇄망 전역 CSS가 담당하고, 여기서는 sx로 3단 배치만 보장한다.
- * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
+ * 인수인계 가이드: docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  */
 /* [옵션] 컨텐츠 유형 선택지·중간 영역 제목. 줄을 지우면 선택지에서만 빠진다(기존 데이터는 불러오기로 계속 편집 가능, 가이드 §4.3).

@@ -6,7 +6,7 @@
 - 편집기 오른쪽 패널의 축소 미리보기(`InlinePopupPreview.tsx`)
 - 편집기 안의 **실제 크기로 보기** 모달(`PopupPreviewDialog.tsx`, 크기·위치 계산 `popupPreviewDialogLayout.ts`. FIXED·RATIO는 브라우저 창 안에서 해당 크기, FULLSCREEN은 전체 화면, 배경 어둡기 반영)
 
-두 컴포넌트는 TODO61에서 편집기와 분리했으며 같은 `PopupPreview`로 내용을 그린다. 다른 화면에서 쓰는 방법과 의존성은 `docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md`를 본다.
+두 컴포넌트는 TODO61에서 편집기와 분리했으며 같은 `PopupPreview`로 내용을 그린다. 다른 화면에서 쓰는 방법과 의존성은 `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`를 본다.
 
 별도 새 창 미리보기 페이지(`pages/popup-preview.tsx`)는 설계 18 L-0(W-2)에서 삭제했다.
 

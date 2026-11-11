@@ -20,9 +20,9 @@
 - [PopupRichText.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java)
 - [PopupRichText.cs](../../popup-frameWork/Popup/Views/Contents/PopupRichText.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md)
 
 ## 원본 TODO와 대체 관계
 

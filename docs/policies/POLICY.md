@@ -2,7 +2,7 @@
 
 > 기존 16개 `POL-01.md`~`POL-16.md`를 한 파일에서 조회할 수 있도록 합친 **읽기용 통합본**이다. 원본 정책 파일·TODO·API 계약·검증 기록은 변경하지 않는다. 내용은 기존 정책 파일의 기준일과 검증 한계를 그대로 따른다.
 >
-> **계약 우선순위:** API 필드·필수값·ENUM·기본값은 [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)를 따른다. 충돌·미확정은 [TODO71 충돌표](../reviews/TODO71/CONFLICTS.md)를 참고한다. 이 통합본은 원본을 대체하거나 새로운 정책을 확정하지 않는다.
+> **계약 우선순위:** API 필드·필수값·ENUM·기본값은 [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)를 따른다. 충돌·미확정은 [TODO71 충돌표](../reviews/TODO71/CONFLICTS.md)를 참고한다. 이 통합본은 원본을 대체하거나 새로운 정책을 확정하지 않는다.
 
 ## 정책 목차
 
@@ -50,9 +50,9 @@
 - [PopupWindowOptions.java](../../zero-rule-server/domain/src/main/java/server/domain/popup/PopupWindowOptions.java)
 - [popupCommon.ts](../../zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -92,9 +92,9 @@ Windows DPI·작은 작업 영역 및 구 데이터 실화면은 TODO68에서 �
 - [OpaqueWindowCorners.cs](../../popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs)
 - [PopupManager.cs](../../popup-frameWork/Popup/Managers/PopupManager.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -140,9 +140,9 @@ Windows DPI·작은 작업 영역 및 구 데이터 실화면은 TODO68에서 �
 - [PopupRichText.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java)
 - [PopupRichText.cs](../../popup-frameWork/Popup/Views/Contents/PopupRichText.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -186,9 +186,9 @@ Windows DPI·작은 작업 영역 및 구 데이터 실화면은 TODO68에서 �
 - [PopupFactory.cs](../../popup-frameWork/Popup/Factories/PopupFactory.cs)
 - [imagePreviewLayout.ts](../../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 - 계약/실행 안내: [POPUP_PREVIEW_WPF_PARITY.md](../reviews/POPUP_PREVIEW_WPF_PARITY.md)
 
 ## 원본 TODO와 대체 관계
@@ -228,8 +228,8 @@ Windows DPI·작은 작업 영역 및 구 데이터 실화면은 TODO68에서 �
 - [VideoCompletion.cs](../../popup-frameWork/Popup/Services/VideoCompletion.cs)
 - [AspectVideoArea.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
 - 계약/실행 안내: [20261007_저사양_PC_VIDEO_측정_가이드.md](../reviews/20261007_저사양_PC_VIDEO_측정_가이드.md)
 
 ## 원본 TODO와 대체 관계
@@ -271,9 +271,9 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 - [SurveyPreview.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx)
 - [PopupQuestionDto.java](../../zero-rule-server/domain/src/main/java/server/domain/popup/PopupQuestionDto.java)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -315,9 +315,9 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 - [PopupContentAssembler.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupContentAssembler.java)
 - [PopupService.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java)
 
-- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md)
-- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md)
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md)
+- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -355,7 +355,7 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 - [PopupPreview.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx)
 - [popupPreviewDialogLayout.ts](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts)
 
-- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
+- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
 - 계약/실행 안내: [POPUP_PREVIEW_WPF_PARITY.md](../reviews/POPUP_PREVIEW_WPF_PARITY.md)
 
 ## 원본 TODO와 대체 관계
@@ -396,9 +396,9 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 - [WpfResultResponse.java](../../zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResultResponse.java)
 - [WpfNextPopupResponseDto.cs](../../popup-frameWork/Popup/Dtos/WpfNextPopupResponseDto.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 - 계약/실행 안내: [WPF-01-popup-types.json](../interfaces/examples/WPF-01-popup-types.json)
 
 ## 원본 TODO와 대체 관계
@@ -447,7 +447,7 @@ Word/PDF/Excel은 별도 생성 산출물이며 2026-10-22 현행 v3.7 보완까
 - [PopupResultBuilder.cs](../../popup-frameWork/Popup/Services/PopupResultBuilder.cs)
 - [WpfPopupMapper.xml](../../zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 - 계약/실행 안내: [15_wpf_popup_delivery_oracle.sql](../../db/oracle/15_wpf_popup_delivery_oracle.sql)
 
 ## 원본 TODO와 대체 관계
@@ -490,7 +490,7 @@ Word/PDF/Excel은 별도 생성 산출물이며 2026-10-22 현행 v3.7 보완까
 - [WpfPopupService.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java)
 - [PopupPollingRecovery.cs](../../popup-frameWork/Popup/Services/PopupPollingRecovery.cs)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 - 계약/실행 안내: [18_popup_display_time_oracle.sql](../../db/oracle/18_popup_display_time_oracle.sql)
 
 ## 원본 TODO와 대체 관계
@@ -535,7 +535,7 @@ Word/PDF/Excel은 별도 생성 산출물이며 2026-10-22 현행 v3.7 보완까
 - [WpfPopupService.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfPopupService.java)
 - [WpfResultProcessor.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultProcessor.java)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -577,7 +577,7 @@ Word/PDF/Excel은 별도 생성 산출물이며 2026-10-22 현행 v3.7 보완까
 
 - 계약/실행 안내: [README.md](../../db/oracle/README.md)
 - 계약/실행 안내: [01_popup_schema_oracle.sql](../../db/oracle/01_popup_schema_oracle.sql)
-- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md)
+- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md)
 
 ## 원본 TODO와 대체 관계
 
@@ -621,10 +621,10 @@ DDL 파일 존재는 원격 DB 적용 증거가 아니다. 실제 DTIY3111 SQL·
 - [PopupRelayController.java](../../zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java)
 - [PopupSampleEditor.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx)
 
-- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md)
-- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
-- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md)
-- 계약/실행 안내: [SERVER_SAMPLE_BACKEND_RELAY_API.md](../interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md)
+- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md)
+- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
+- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md)
+- 계약/실행 안내: [SERVER_SAMPLE_BACKEND_RELAY_API.md](../interfaces/Server/SERVER_SAMPLE_BACKEND_RELAY_API.md)
 
 ## 원본 TODO와 대체 관계
 

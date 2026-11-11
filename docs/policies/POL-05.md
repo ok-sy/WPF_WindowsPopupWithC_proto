@@ -18,8 +18,8 @@
 - [VideoCompletion.cs](../../popup-frameWork/Popup/Services/VideoCompletion.cs)
 - [AspectVideoArea.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
 - 계약/실행 안내: [20261007_저사양_PC_VIDEO_측정_가이드.md](../reviews/20261007_저사양_PC_VIDEO_측정_가이드.md)
 
 ## 원본 TODO와 대체 관계

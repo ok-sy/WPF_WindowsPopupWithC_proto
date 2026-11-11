@@ -37,7 +37,7 @@ const selectionOf = (popup: SamplePopupState): PopupTypeSelection =>
  * withPreviewFallback(state)로 표시용 값만 채운 같은 객체를 넘긴다(저장 값에는 섞이지 않음).
  * 실제 등록 화면(RgstPop/PopupEditorDialog)의 일정·대상 그룹·템플릿 등은 넣지 않는다.
  * 본문 편집기는 key로 마운트한다: 유형 전환·다른 팝업 열기에서만 다시 만들고, 입력 중에는 커서를 유지한다.
- * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
+ * 인수인계 가이드: docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  * [옵션] 입력 필드를 더하려면 update(최상위 키) 또는 updateContent(content 키)로 연결한다. 새 content 키는
  *        popupEditorTransform.ts의 COMMON_CONTENT_KEYS/CONTENT_KEYS_BY_TYPE에도 넣어야 저장 요청에 남는다(가이드 §4.2).

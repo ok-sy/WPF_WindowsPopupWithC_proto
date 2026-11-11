@@ -4,7 +4,7 @@
   ■ 단건 조회 샘플용 콘텐츠 INSERT (DTIY3111, Oracle 11g 호환)
   - in : 없음(고정 샘플 6건)
   - out: DTIY3111 콘텐츠 행 6건 — TEXT · IMAGE · VIDEO · SURVEY · QUIZ · 영상+퀴즈(QUIZ + videoEnabled)
-  - 컬럼은 DTIY3111 사진 정의(docs/interfaces/DTIY3111_SCHEMA_OCR.md)를 따른다. 사진 판독이며 확정 DDL이 아니다.
+  - 컬럼은 DTIY3111 사진 정의(docs/interfaces/examples/DTIY3111_SCHEMA_OCR.md)를 따른다. 사진 판독이며 확정 DDL이 아니다.
 
   사용
   - 확인할 행을 contentId로 지정해 호출한다(정렬이 POPU_CNTN_ID DESC라 지정하지 않으면 SMP-VQZ-01이 먼저 잡힌다).
@@ -24,7 +24,7 @@
   - APND_FILE_ID는 현재 파일 URL 생성에 쓰지 않아 넣지 않는다. 첨부 ID 방식이면 FileUrlResolver 교체와 함께 값을 넣는다.
   - POPU_CNTN_ID 채번 규칙은 실제 규칙으로 바꾼다.
 
-  컬럼 → 응답(상세는 docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md §3)
+  컬럼 → 응답(상세는 docs/interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md §3)
   - POPU_CNTN_TP_CD → popupType, HDR_TITL → title, POPU_WDTH_SZ/POPU_LNTH_SZ → width/height(IMAGE는 NULL이면 생략)
   - AFTR_CNFM_OBJ_YN → showLater, FTR_BTN_TP_CD/FTR_URL → footerAction/footerLinkUrl(SURVEY·QUIZ는 항상 SUBMIT)
   - IMG_FILE_PATH_CN + IMG_FILE_NM → IMAGE content.imageUrl, VDO_FILE_PATH_CN + VDO_FILE_NM → VIDEO·영상+퀴즈 content.videoUrl

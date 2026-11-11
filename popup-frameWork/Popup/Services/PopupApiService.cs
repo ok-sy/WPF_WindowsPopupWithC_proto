@@ -30,7 +30,7 @@ namespace Popup.Services
      * PopupService와 PopupManager가 담당한다.
      *
      * WPF Client API 계약은 WPF가 쓰는 API를 로그인·단건 조회·결과 수신 3개로 둔다
-     * (docs/interfaces/POPUP_INTERFACE_SPEC.md). 구 동작별 API(/api/popups?userId= 계열)는 두지 않는다.
+     * (docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md). 구 동작별 API(/api/popups?userId= 계열)는 두지 않는다.
      * 공개 메서드는 GetNextPopupAsync·PostResultAsync 두 개이며 로그인 API는 SsoAuthHeaderProvider가 호출한다.
      */
     public class PopupApiService : IPopupGateway

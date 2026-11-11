@@ -7,7 +7,7 @@
 관리자 화면에서 어떤 값을 선택하는지에 대한 설명은 [`POPUP_USER_OPTION_GUIDE.md`](POPUP_USER_OPTION_GUIDE.md)를 참고한다.
 계층 간 값이 다르거나 아직 정하지 않은 항목(WPF 전용 `AUTO` 크기 모드, 기간·반복 정책 등)은 [`design/09_전환계획_및_미결사항.md`](design/09_전환계획_및_미결사항.md)에서 관리한다.
 
-기능 범위는 [최소 기능 정의서](interfaces/WPF_POPUP_MINIMAL_SPEC.md)와 [전체 기능 정의서](interfaces/WPF_POPUP_ALL_SPEC.md)를 함께 관리한다.
+기능 범위는 [전체 기능 정의서](interfaces/WPF/WPF_POPUP_ALL_SPEC.md)와 [WPF 에이전트 사양서](interfaces/WPF/WPF_AGENT_SPEC.md)로 관리한다(최소 기능 정의서는 2026-11-11 삭제).
 
 지원 팝업 유형은 다음과 같다.
 
@@ -219,7 +219,7 @@ HTTP/HTTPS와 로컬·UNC 경로 영상(WebView2 HTML5, WebView2 초기화 실�
 
 문항 공통 필드는 `questionId`, `title`, `description`, `questionType`, `isRequired`, `isScored`, `questionScore`, 정답/선택지 관련 값이다.
 
-선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. 필드 계약은 [`interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md) §9를 따른다.
+선택지는 단일·복수 선택 문항에서 직접 입력한다. questions[].optionLayout은 VERTICAL(기본) / HORIZONTAL이며 각 문항에 개별 적용한다. 문항 템플릿 저장·조회에도 포함한다. 가로형은 영역 너비를 넘으면 다음 줄로 배치한다. RATING5는 제거됐으며, 이관된 기존 데이터는 SINGLE_CHOICE + HORIZONTAL 형태로 처리한다. 필드 계약은 [`interfaces/WPF/POPUP_INTERFACE_SPEC.md`](interfaces/WPF/POPUP_INTERFACE_SPEC.md) §9를 따른다.
 
 ### 7.3 QUIZ
 
@@ -239,7 +239,7 @@ QUIZ는 다음 기능이 추가된다.
 ## 8. 실제 WPF API 호출 목록
 
 > **설계 18 L-0 (2026-09-28)** — 구 사용자용 API(`/api/popups?userId=`, `/hide`, `/responses`, `/video-progress`, `/events`, `/statuses`) 설명과 해당 `PopupApiService` 메서드는 삭제했다.
-> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.7 [`docs/interfaces/POPUP_INTERFACE_SPEC.md`](interfaces/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
+> WPF가 호출하는 API와 요청·응답 형식은 WPF Client API 계약서 v3.7 [`docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`](interfaces/WPF/POPUP_INTERFACE_SPEC.md)를 기준으로 한다.
 
 WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서버가 인증 헤더로 사용자를 식별한다.
 

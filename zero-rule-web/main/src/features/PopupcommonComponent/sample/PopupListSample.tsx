@@ -16,7 +16,7 @@ import { createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePo
  * 데이터 공급 경계: 목록은 createSamplePopups()(로컬), 저장은 화면이 입력하는 필드만(toSampleScreenValues) 보여 주고 메모리 목록을 바꾼다.
  * 실제 서버에 연결할 때는 목록을 api.popupAdmin.list({ ctx }), 편집 시작을 api.popupAdmin.info({ popupId }) → toEditorPopup(body.popup),
  * 저장을 이 화면의 저장 API 형식으로 바꿔 호출한다(proto 등록 화면 RgstPop은 자기 저장 변환 toSaveRequest를 쓴다 — 샘플에는 해당 없음).
- * 인수인계 가이드: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
+ * 인수인계 가이드: docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md (선언 이유·로직·옵션·옵션 추가/삭제 예시·실연동 교체 지점).
  * 주석 표식: [옵션] = 바꿔도 되는 값, [실연동] = 실제 서버에 붙일 때 바꾸는 곳.
  */
 export default function PopupListSample() {

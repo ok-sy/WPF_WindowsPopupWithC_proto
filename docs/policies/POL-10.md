@@ -18,7 +18,7 @@
 - [PopupResultBuilder.cs](../../popup-frameWork/Popup/Services/PopupResultBuilder.cs)
 - [WpfPopupMapper.xml](../../zero-rule-server/repo/core/src/main/resources/mappers/popup/WpfPopupMapper.xml)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 - 계약/실행 안내: [15_wpf_popup_delivery_oracle.sql](../../db/oracle/15_wpf_popup_delivery_oracle.sql)
 
 ## 원본 TODO와 대체 관계

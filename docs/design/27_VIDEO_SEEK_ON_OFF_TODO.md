@@ -42,7 +42,7 @@
 - [x] 웹 플레이어가 자체 탐색 UI를 노출하는지 확인한다. YouTube 등 외부 임베드는 동일한 제어가 가능한지 확인하고 미지원 조합은 등록 제한/명시적 안내로 처리한다. 막지 못하는 탐색을 막는다고 표시하지 않는다.
 - [x] 관리자 등록·Demo 옵션에 '재생 위치 변경 허용' 체크박스 추가. 기본 체크, VIDEO/영상 포함 QUIZ에서 표시.
 - [x] 서버 저장·조회에서 content.allowSeek를 유지하고 boolean 검증을 적용한다. 기존 content 경로를 우선 사용하며 별도 DB 컬럼 추가를 전제하지 않는다.
-- [x] docs/interfaces/WPF_POPUP_ALL_SPEC.md와 관련 API/JSON 예제 갱신. WPF_POPUP_MINIMAL_SPEC.md도 검토하되 최초 제공 범위를 임의 확장하지 않는다.
+- [x] docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md와 관련 API/JSON 예제 갱신. WPF_POPUP_MINIMAL_SPEC.md도 검토하되 최초 제공 범위를 임의 확장하지 않는다.
 
 ### 2.1 구현 결과 (2026-10-09)
 

@@ -1,6 +1,6 @@
 # 서버 샘플 — DTIY3117 전체 JSON 단건 조회 API
 
-기준일: 2026-10-27 (KST) · 관련: [`docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md`](../design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md)
+기준일: 2026-10-27 (KST) · 관련: [`docs/design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md`](../../design/20261027_DTIY3117_전체JSON_별도조회프로그램_TODO.md)
 
 DTIY3117 게시내용 CLOB(`POPU_BLTN_CN`)에 저장한 **popup 객체 본체 JSON**을 읽어 기존 WPF 단건 조회 응답 `{pollingIntervalSeconds, popup}`으로 돌려주는 별도 Java 조회 샘플이다.
 기존 DTIY3111 샘플([SERVER_SAMPLE_SINGLE_QUERY_API.md](SERVER_SAMPLE_SINGLE_QUERY_API.md))의 소스·SQL·경로는 바꾸지 않았고 둘은 동시에 켤 수 있다. **기본 비활성**이다.
@@ -146,7 +146,7 @@ POPU_ID는 10자, `REG_USER_ID='SAMPLE'`·`REG_DTTM=SYSDATE`. 정리 DELETE는 �
 
 ## 10. 등록·수정 공통 JSON 검증·기본값 생성 (2026-10-29)
 
-근거: [등록·수정 공통 JSON 검증 TODO](../design/20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md). 조회 단계 기본값 재조립을 없애기 위한 첫 단계로, **등록·수정 시 DB 쓰기 직전**에 호출할 공통 모듈과 인계용 등록 샘플을 추가했다. 기존 3111·3117 **조회 경로는 바꾸지 않았다**(전환은 TODO §3, 별도 진행).
+근거: [등록·수정 공통 JSON 검증 TODO](../../design/20261029_등록수정_공통JSON검증_기본값생성_3111직조회_TODO.md). 조회 단계 기본값 재조립을 없애기 위한 첫 단계로, **등록·수정 시 DB 쓰기 직전**에 호출할 공통 모듈과 인계용 등록 샘플을 추가했다. 기존 3111·3117 **조회 경로는 바꾸지 않았다**(전환은 TODO §3, 별도 진행).
 
 ### 10-1. 파일과 선언 이유
 
@@ -184,7 +184,7 @@ Bean은 기존 `popup.sample.full-json.enabled=true`일 때 `PopupFullJsonSample
   "actual": "\"videoEnabled\"", "message": "videoEnabled 값이 올바르지 않습니다." }
 ```
 
-유형별 기본값이 모두 채워진 전체 JSON(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상 QUIZ): [examples/DTIY3117-register-defaults-full.txt](examples/DTIY3117-register-defaults-full.txt). 검증기 정규화 결과로 생성하며 `PopupJsonDefaultsExampleFileTest`가 코드 기본값과 대조한다(기본값 변경 시 `POPUP_REGEN_DEFAULTS_EXAMPLE=1`로 재생성).
+유형별 기본값이 모두 채워진 전체 JSON(TEXT·IMAGE·VIDEO·SURVEY·QUIZ·영상 QUIZ): [examples/DTIY3117-register-defaults-full.txt](../examples/DTIY3117-register-defaults-full.txt). 검증기 정규화 결과로 생성하며 `PopupJsonDefaultsExampleFileTest`가 코드 기본값과 대조한다(기본값 변경 시 `POPUP_REGEN_DEFAULTS_EXAMPLE=1`로 재생성).
 
 ### 10-3. 실제 등록 서비스 연결(교체 지점)
 

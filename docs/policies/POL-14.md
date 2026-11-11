@@ -18,10 +18,10 @@
 - [PopupRelayController.java](../../zero-rule-server/web/api/src/main/java/server/web/api/popup/sample/relay/PopupRelayController.java)
 - [PopupSampleEditor.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupSampleEditor.tsx)
 
-- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md)
-- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
-- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md)
-- 계약/실행 안내: [SERVER_SAMPLE_BACKEND_RELAY_API.md](../interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md)
+- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md)
+- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
+- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md)
+- 계약/실행 안내: [SERVER_SAMPLE_BACKEND_RELAY_API.md](../interfaces/Server/SERVER_SAMPLE_BACKEND_RELAY_API.md)
 
 ## 원본 TODO와 대체 관계
 

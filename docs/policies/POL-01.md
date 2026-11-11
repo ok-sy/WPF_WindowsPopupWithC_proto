@@ -18,9 +18,9 @@
 - [PopupWindowOptions.java](../../zero-rule-server/domain/src/main/java/server/domain/popup/PopupWindowOptions.java)
 - [popupCommon.ts](../../zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts)
 
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF_POPUP_ALL_SPEC.md)
-- 계약/실행 안내: [WPF_POPUP_MINIMAL_SPEC.md](../interfaces/WPF_POPUP_MINIMAL_SPEC.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [WPF_POPUP_ALL_SPEC.md](../interfaces/WPF/WPF_POPUP_ALL_SPEC.md)
+- 계약/실행 안내: [WPF_AGENT_SPEC.md](../interfaces/WPF/WPF_AGENT_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 

@@ -18,7 +18,7 @@
 - [PopupPreview.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx)
 - [popupPreviewDialogLayout.ts](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts)
 
-- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
+- 계약/실행 안내: [ADMIN_POPUP_PREVIEW_COMPONENTS.md](../interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md)
 - 계약/실행 안내: [POPUP_PREVIEW_WPF_PARITY.md](../reviews/POPUP_PREVIEW_WPF_PARITY.md)
 
 ## 원본 TODO와 대체 관계

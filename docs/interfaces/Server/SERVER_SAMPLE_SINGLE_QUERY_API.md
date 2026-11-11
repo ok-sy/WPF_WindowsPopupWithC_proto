@@ -96,7 +96,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 
 ### 3.2 DTIY3111 사진 정의 기준 길이·숫자
 
-컬럼 정의는 [DTIY3111 사진 OCR](DTIY3111_SCHEMA_OCR.md)이다(확정 DDL 아님).
+컬럼 정의는 [DTIY3111 사진 OCR](../examples/DTIY3111_SCHEMA_OCR.md)이다(확정 DDL 아님).
 
 - `POPU_CNTN_ID` VARCHAR2(10): 샘플 ID는 10자(`SMP-TXT-01` 등).
 - `POPU_WDTH_SZ`/`POPU_LNTH_SZ` NUMBER(5): 정밀도·스케일 미확인. NUMBER(5,0)이면 소수는 저장 시 반올림되므로 이 테이블 기준 예시·테스트는 정수로 둔다. 공통 WPF/API의 소수 입력은 막지 않는다.

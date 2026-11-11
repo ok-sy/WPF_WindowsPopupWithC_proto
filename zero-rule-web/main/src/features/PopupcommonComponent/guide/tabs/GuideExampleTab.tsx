@@ -7,7 +7,7 @@ import { Bullets, C, Section } from '../GuideUi';
  * ■ 가이드: 예시 탭
  * - in : 없음
  * - out: 화면: 기존 퍼블리싱(IS063M02)에 공통 컴포넌트를 붙인 방법 요약과 실제 샘플 화면
- * - 정책 전체는 반복하지 않고 연결 지점만 요약한다(상세: docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md).
+ * - 정책 전체는 반복하지 않고 연결 지점만 요약한다(상세: docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md).
  */
 export default function GuideExampleTab() {
   return (

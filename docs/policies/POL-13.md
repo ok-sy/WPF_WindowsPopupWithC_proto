@@ -19,7 +19,7 @@
 
 - 계약/실행 안내: [README.md](../../db/oracle/README.md)
 - 계약/실행 안내: [01_popup_schema_oracle.sql](../../db/oracle/01_popup_schema_oracle.sql)
-- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md)
+- 계약/실행 안내: [SERVER_SAMPLE_SINGLE_QUERY_API.md](../interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md)
 
 ## 원본 TODO와 대체 관계
 

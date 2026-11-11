@@ -18,9 +18,9 @@
 - [PopupContentAssembler.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupContentAssembler.java)
 - [PopupService.java](../../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java)
 
-- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md)
-- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md)
-- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/POPUP_INTERFACE_SPEC.md)
+- 계약/실행 안내: [ADMIN_POPUP_EDITOR_TRANSFORM.md](../interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md)
+- 계약/실행 안내: [POPUP_FRONT_SAMPLE_HANDOVER.md](../interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md)
+- 계약/실행 안내: [POPUP_INTERFACE_SPEC.md](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)
 
 ## 원본 TODO와 대체 관계
 

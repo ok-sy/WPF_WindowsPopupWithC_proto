@@ -3,13 +3,12 @@
 - 문서 성격: All Feature Specification / Implemented WPF Scope
 - 작성 기준: 2026-10-13 (KST)
 - 기준 소스: `WpfNextPopupResponseDto`, `PopupResponseDto`, `WpfResultDtos`, `PopupOptions`, 유형별 Content DTO, `PopupFactory`, 각 View 및 서비스
-- 대응 문서: [최소 기능 버전 정의서](WPF_POPUP_MINIMAL_SPEC.md)
+- 대응 문서: [WPF 에이전트 사양서](WPF_AGENT_SPEC.md) (최소 기능 버전 정의서는 2026-11-11 삭제)
 
 ## 1. 문서 목적
 
-현재 WPF가 구현한 전체 기능을 최소 기능 정의서와 같은 구분으로 관리한다.
-전체 기능에 포함되어도 최초 외부 제공 범위에 자동으로 포함되지는 않는다.
-외부 제공 범위는 MINIMAL, 구현 기능은 ALL, HTTP·JSON의 상세 필수값과 예제는
+현재 WPF가 구현한 전체 기능을 관리한다.
+구현 기능은 ALL, 정책·동작 설명은 [WPF 에이전트 사양서](WPF_AGENT_SPEC.md), HTTP·JSON의 상세 필수값과 예제는
 [인터페이스 계약서](POPUP_INTERFACE_SPEC.md)를 기준으로 확인한다.
 
 표의 필드명은 C# 속성 기준이며 JSON은 camelCase를 사용한다. `content.` 또는
@@ -25,7 +24,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 
 | 구분 | 전체 버전 원칙 |
 |---|---|
-| 기능 노출 | 구현된 기능을 기록하되 최초 외부 제공 여부는 MINIMAL에서 별도 관리 |
+| 기능 노출 | 구현된 기능을 기록한다 |
 | 창 크기 | 최상위 Width/Height. IMAGE FIT_TO_IMAGE만 이미지 콘텐츠 영역 크기로 해석(TODO58) |
 | IMAGE 예외 | ORIGINAL은 공통 창 크기, FULLSCREEN은 모니터 전체 영역 우선 |
 | 기본값 | 응답 DTO·Factory 기본값과 Demo·관리자 화면의 초기값을 구분 |
@@ -235,15 +234,15 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | 결과 | 닫기·숨김·제출 및 영상 정보, 메모리 결과 큐에 적재 후 1건씩 순서대로 전송(파일 미사용, 프로세스 종료 시 미전송분 유실 수용 — 2026-10-28 결정). 결과에 조회 응답의 `deliveryId` 포함. "다시 보지 않기"를 체크하고 닫으면 영상을 시청했어도 HIDDEN이 우선하며 video 블록을 보내지 않아 시청 정보·시청 완료가 기록되지 않음. "나중에 보기" 버튼으로 닫으면 LATER(체크 여부 무관, video 미포함) | 재전송은 같은 resultId 유지. ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 RETRYABLE_ERROR·INTERNAL_ERROR(실행당 3회)·응답 누락은 보관(설계 34). 일반 결과도 창이 닫히기 전에 큐에 적재 |
 | 미전송 결과 복구 | 미종결 결과(전송 실패(401 재인증 실패 포함)·RETRYABLE_ERROR·재시도 남은 INTERNAL_ERROR)가 남으면 다음 팝업을 조회하지 않고 복구 간격(10초×3회 …) 뒤 재시도(결과 우선 A안은 2026-11-11 확정). 400 결과는 종결·삭제(45-3 확정), HTTP 2xx인데 응답 내용이 잘못된 결과(빈 본문·JSON 오류·resultId 불일치·status 누락/미지원 값)는 3회 재전송 후 삭제하고 조회 허용(INTERNAL_ERROR도 3회 후 삭제, TODO45 45-3, 2026-11-11), 배열 일괄 재전송 없음. 복구 재전송 결과의 EMPTY도 조회 간격 대기(설계 39-2). 큐 파일 읽기 불가 시 조회 보류(설계 39-1)는 메모리 전용 전환으로 해당 없음 | 2026-11-11 확정(TODO45 A안·45-3) |
 | 제출 실패 | 필수 미응답·QUIZ 불합격·로컬 저장 실패 시 창 유지. QUIZ 불합격 안내에 유형별 문구(PU001 Q3)와 틀린 문항 번호 표시(설계 43) | 별도 JSON 제어 필드 없음 |
-| 실행 | 기본 백그라운드 실행(트레이 없음, `--tray`·`WPF_POPUP_TRAY_ENABLED=true`일 때만 트레이)·최초 실행 HKCU 자동 시작 1회 등록(`WPF_POPUP_AUTOSTART_ENABLED`, 사용자 해제 존중)·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시. API Demo(`-Demo -Api`, 설계 51)는 Demo 화면에서 Base URL·인증·조회 요청 JSON을 입력해(`로컬 서버 사용` 체크박스로 Base URL·로그인 경로를 appsettings `PopupApi.DemoApiTargets.Local`·`Dev` 값으로 함께 전환, 입력칸 직접 수정 가능) 실제 단건 조회·결과 API를 수동 호출하고 실제 HTTP 요청·응답(토큰 마스킹)을 기록하며 자동 폴링·nextStatus 연속 조회를 하지 않음. Demo JSON Validator는 WPF 수신/3117 저장 JSON을 로컬 검사해 ERROR·WARNING(누락 기본값)·PASS로 분류하고 유형별 예시를 제공(WPF 수신 모드는 WPF DTO 기본값·SizeMode AUTO 허용, 3117 모드는 서버 기본값 YAML·deliveryId/pollingIntervalSeconds 제거). 3117 옵션 샘플 창은 유형별 이론 가짓수와 기본 1건+옵션 1개 변경 샘플(219건)·규칙 위반 예시(13건)를 제공하고([산정 문서](examples/DTIY3117-option-samples.md)), "팝업 띄우기"는 ERROR 없는 정규화 JSON을 실제 팝업으로 표시하되 결과를 저장·전송하지 않음 | 인메모리 Demo 결과는 실제 서버·DB 저장과 구분(요청 JSON에 인증 헤더 없음, 샘플 유형 선택은 로그 줄에만 표시). API Demo는 개발계/검증계 검증 도구로 실제 전달 건·결과를 생성하며 계약 필드·외부 제공 범위를 바꾸지 않음. JSON Validator는 API·결과 큐를 호출하지 않는 진단 도구로 계약 일부만 검사하며 실제 표시를 보증하지 않음 |
+| 실행 | 기본 백그라운드 실행(트레이 없음, `--tray`·`WPF_POPUP_TRAY_ENABLED=true`일 때만 트레이)·최초 실행 HKCU 자동 시작 1회 등록(`WPF_POPUP_AUTOSTART_ENABLED`, 사용자 해제 존중)·단일 인스턴스·Demo 모드·예외 로그 및 제한된 재시작. Demo 로그는 조회(POST /api/wpf/popups 요청과 Header·Footer·content를 포함한 단건 응답 JSON)와 결과 전송 요청·응답 JSON을 함께 쌓음. Demo도 AVAILABLE이면 같은 샘플 유형의 다음 1건을 이어서 표시. API Demo(`-Demo -Api`, 설계 51)는 Demo 화면에서 Base URL·인증·조회 요청 JSON을 입력해(`로컬 서버 사용` 체크박스로 Base URL·로그인 경로를 appsettings `PopupApi.DemoApiTargets.Local`·`Dev` 값으로 함께 전환, 입력칸 직접 수정 가능) 실제 단건 조회·결과 API를 수동 호출하고 실제 HTTP 요청·응답(토큰 마스킹)을 기록하며 자동 폴링·nextStatus 연속 조회를 하지 않음. Demo JSON Validator는 WPF 수신/3117 저장 JSON을 로컬 검사해 ERROR·WARNING(누락 기본값)·PASS로 분류하고 유형별 예시를 제공(WPF 수신 모드는 WPF DTO 기본값·SizeMode AUTO 허용, 3117 모드는 서버 기본값 YAML·deliveryId/pollingIntervalSeconds 제거). 3117 옵션 샘플 창은 유형별 이론 가짓수와 기본 1건+옵션 1개 변경 샘플(219건)·규칙 위반 예시(13건)를 제공하고([산정 문서](../examples/DTIY3117-option-samples.md)), "팝업 띄우기"는 ERROR 없는 정규화 JSON을 실제 팝업으로 표시하되 결과를 저장·전송하지 않음 | 인메모리 Demo 결과는 실제 서버·DB 저장과 구분(요청 JSON에 인증 헤더 없음, 샘플 유형 선택은 로그 줄에만 표시). API Demo는 개발계/검증계 검증 도구로 실제 전달 건·결과를 생성하며 계약 필드·외부 제공 범위를 바꾸지 않음. JSON Validator는 API·결과 큐를 호출하지 않는 진단 도구로 계약 일부만 검사하며 실제 표시를 보증하지 않음 |
 | 전체화면 | 영상이 있는 모니터에서 재생, 전체화면 시 공통 Radius 0 | 플레이어와 창의 전체화면을 구분 |
 | 자동 업데이트 | 구현 기능으로 포함하지 않음 | 설계 17은 폐기(2026-10-12) |
 
 서버가 기간·대상·숨김·완료·재노출 유예를 판정하고 WPF에는 표시 순서상 첫 1건을 내려준다. TEXT·IMAGE 닫기(CLOSED)는 서버에서 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO와 나중에 보기(LATER, 모든 유형)는 결과 저장 시각부터 `pollingIntervalSeconds` 동안 조회에서 제외된다.
 서버 DB·관리자 API·웹 입력 범위는 이 전체 WPF 기능 정의서의 지원 판정과 구분한다.
 전체 기능 지원 표시는 모든 영상 엔진·Horizon·DPI 조합의 실환경 검증 완료를 뜻하지 않는다.
-현재 남은 실측은 [설계 25](../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)와
-[성능 측정 가이드](../reviews/20261007_저사양_PC_VIDEO_측정_가이드.md)를 참고한다.
+현재 남은 실측은 [설계 25](../../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)와
+[성능 측정 가이드](../../reviews/20261007_저사양_PC_VIDEO_측정_가이드.md)를 참고한다.
 
 ## 6. 전체 버전 한눈에 보기
 
@@ -257,10 +256,9 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 | QUIZ | 객관식·주관식 채점·배점·합격점·재채점 | 최소는 주관식 정답·자동 채점 미제공 |
 | VIDEO+QUIZ | 영상 시청 잠금·단일 스크롤·영상 및 답안 통합 결과 | 최소에서도 결합 모드 지원, 영상 확장 옵션은 별도 |
 
-## 7. 두 기능 정의서의 관리 기준
+## 7. 기능 정의서의 관리 기준
 
-기능 추가·수정·삭제 시 MINIMAL과 ALL을 함께 검토한다. ALL에는 구현 상태를,
-MINIMAL에는 최초 외부 제공 범위를 기록하며 전체 지원을 이유로 최소 범위를 임의 확장하지 않는다.
-이름·JSON 위치·기본값·ENUM·고정 동작 변경은 두 문서와 인터페이스 계약서를 함께 갱신한다.
+기능 추가·수정·삭제 시 ALL과 WPF 에이전트 사양서를 함께 검토한다. ALL에는 구현 상태를 기록한다.
+이름·JSON 위치·기본값·ENUM·고정 동작 변경은 이 문서·에이전트 사양서·인터페이스 계약서를 함께 갱신한다.
 예제와 옵션 가이드가 영향을 받으면 같이 갱신하고 검증·미실행 항목을 CHANGELOG에 기록한다.
-Word 생성 스크립트는 두 기능 정의서를 함께 포함하며, 문서의 지원 여부만으로 배포·검증 완료를 선언하지 않는다.
+Word 생성 스크립트는 인터페이스 계약서와 이 정의서를 포함하며, 문서의 지원 여부만으로 배포·검증 완료를 선언하지 않는다.
