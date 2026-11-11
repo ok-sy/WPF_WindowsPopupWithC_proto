@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-11-19 — docs: WPF 인터페이스 Excel 정의서 WPF_SPEC_v3.8 재작성·버전 관리
+
+- 이유: Excel 정의서 피드백 반영. 파일명에 버전이 없고 버전 이력이 없었으며, 개요 시트 레이아웃(고정 높이·병합 화살표 도식)이 깨지고, TODO·설계 번호가 문구에 남고, 삭제·폐기된 필드 행이 남아 있었다. JSON 위치가 `...runs[].text`처럼 생략되고 행 순서도 일정하지 않았다. 일부 값은 계약서와 달랐다(동영상+퀴즈 completionRatio 기본값, 이미 제거된 TEXT 강조 문구 필드).
+- 변경:
+  - 생성 스크립트 `scripts/export-wpf-spec-xlsx.py` 신설: 인터페이스 계약서(`docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`) 필드 표를 읽어 시트를 만들고, 계약서 표에 없는 항목(설문 콘텐츠 필드, `answers[]` 하위 필드)과 시트별 동작 설명은 스크립트에 둔다. JSON 위치는 전체 경로로 만들고 필드 표를 오름차순으로 나열한다. TODO·설계·요구사항 번호와 계약서 내부 절 번호 표기를 문구에서 지우고, 폐기·삭제 행은 넣지 않는다.
+  - 파일 `docs/interfaces/WPF/WPF_SPEC_v3.8.xlsx`(시트: 개요·버전 이력·조회 응답·TEXT·IMAGE·VIDEO·SURVEY_QUIZ·결과 요청·결과 응답·예시). 버전은 스크립트의 VERSIONS에 추가해 관리하고, 생성하면 같은 폴더의 이전 `WPF_SPEC_v*.xlsx`를 지운다. v3.7은 이전 파일(`WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`)로 기록하고 그 파일은 삭제했다.
+  - 레이아웃: 개요는 표(문서 정보·API 목록·처리 흐름·팝업 유형·시트 안내)로 바꾸고, 열이 적은 표는 열을 병합해 빈 열 없이 쓰며, 행 높이는 글자 폭으로 계산한다. 예시 JSON은 한 줄을 한 행으로 둔다.
+  - 참조: `README.md`의 docs/interfaces 설명(폴더 구분·최소 기능 정의서 문구 정정 포함), `.gitignore` 주석.
+- 주요 파일: `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.8.xlsx`, `docs/interfaces/WPF/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`(삭제), `README.md`, `.gitignore`.
+- 검증: 생성 결과 검사 — 필드 표 7개 모두 JSON 위치 오름차순, TODO·설계·PU001·'...' 표기 0건(예시 JSON 문자열 값 안의 '...' 제외), 폐기 필드 0건. Excel로 개요·TEXT·SURVEY_QUIZ·결과 응답·버전 이력·예시 시트를 이미지로 내보내 잘림·빈 열이 없는지 확인. 계약서 값과 대조해 completionRatio(VIDEO 1.0 / 동영상+퀴즈 0.8) 등 기본값 확인.
+- 상태: 커밋·원격 반영. 반입본(20261112)에는 들어가지 않았다.
+
 ## 2026-11-11-18 — docs: 인터페이스 문서 영역별 폴더 재구성·최소 기능 정의서 삭제
 
 - 이유: `docs/interfaces/` 아래 WPF·관리자 웹·서버 샘플 문서가 한 폴더에 섞여 있어 영역별로 나눠 찾기 쉽게 하고, WPF 에이전트 사양서로 대체된 최소 기능 정의서를 정리한다.

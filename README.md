@@ -24,7 +24,7 @@
 | `zero-rule-web/` | 관리자 웹 (Next.js) | 베이스라인 |
 | `popup-frameWork/` | WPF 클라이언트 (.NET 10) | 베이스라인 |
 | `ERD/` | PostgreSQL 기준 DDL·검토 문서 (Oracle 전환 원본 참조용) | 베이스라인 |
-| `docs/interfaces/` | WPF Client API 계약서 `POPUP_INTERFACE_SPEC.md`(v3.7)·Excel 정의서 `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`·최소/전체 기능 정의서·예제 JSON. 구버전 Word/PDF는 Git 제외 로컬 폴더 `docs/interfaces/OLD/`에만 둔다 | 신규(베이스라인 문서 대체) |
+| `docs/interfaces/` | `WPF/`: WPF Client API 계약서 `POPUP_INTERFACE_SPEC.md`(v3.7)·WPF 에이전트 사양서·전체 기능 정의서·Excel 정의서 `WPF_SPEC_v<버전>.xlsx`(생성: `scripts/export-wpf-spec-xlsx.py`)·Word/PDF. `Web/`: 관리자 웹 문서. `Server/`: 서버 샘플 문서. `examples/`: 예제 JSON. 구버전 Word/PDF는 Git 제외 로컬 폴더 `docs/interfaces/OLD/`에만 둔다 | 신규(베이스라인 문서 대체) |
 | `docs/reviews/` | 미리보기·WPF 정합성, 저사양 PC VIDEO 측정 가이드, TODO 변경 라인별 설명, Trello 완료 이력·현행 구조 대조 | 신규 |
 | `scripts/`, `shell/`, `OFFLINE_WPF_BUILD.md` | 빌드·실행 스크립트 | 베이스라인 |
 
