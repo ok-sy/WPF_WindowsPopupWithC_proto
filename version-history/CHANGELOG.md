@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-11-12 — dev: TODO45 잘못된 2xx 결과 응답 실행당 3회 상한
+
+- 이유: 복구 무한 루프 방지. 결과 전송에서 HTTP 2xx인데 응답 내용이 잘못된 경우(빈 본문·JSON 오류·응답 resultId 불일치·status 누락/미지원 값)는 미종결로 보관하고 조회를 보류했으며 상한이 없어, 서버 응답 오류가 계속되면 그 실행 동안 새 팝업을 받지 못했다. 즉시 무시하면 서버 미저장 시 전달 건이 OPEN으로 남아 같은 팝업이 바로 다시 내려오고 결과도 유실되므로, 제한 재전송 후 무시로 결정.
+- 변경:
+  - `PopupResultQueue.MaxInvalidResponseAttemptsPerSession = 3`과 resultId별 횟수 추가. `FlushAsync()`의 `JsonException`·`InvalidOperationException`(빈 본문), `Settle()`의 resultId 불일치·응답 null·status 누락/미지원 값을 센다. 3번째에 이번 실행의 전송 대상에서 빼고(메모리 보관 유지) 같은 Flush에서 다음 결과로 넘어가 조회를 막지 않는다. 종결 시 횟수 삭제. 상한 도달 로그에 resultId·deliveryId·popupId·응답 요지.
+  - 응답 없음(타임아웃·연결 끊김)·5xx·401·RETRYABLE_ERROR는 상한 없이 기존 통합 복구 주기. HTTP 400 격리·INTERNAL_ERROR 3회 상한(45-3 임시 예외)은 변경 없음.
+  - 문서: TODO45 추가 결정·구현 절, `POL-12.md`·`POLICY.md` POL-12-02, `POPUP_INTERFACE_SPEC.md`(결과 응답 status 행·미종결 결과 설명·HTTP 401 행, 500/502/503/504 행에 남아 있던 `5 Cycle`을 3으로 정정), `WPF_POPUP_ALL_SPEC.md` 미전송 결과 복구 행, `popup-frameWork/README.md`. `WPF_POPUP_MINIMAL_SPEC.md`는 재전송 상한을 적지 않아 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/PopupResultQueue.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `popup-frameWork/README.md`.
+- 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 231건(잘못된 응답 6종 각각 3회 재전송·2회 보류 후 3회째 조회 허용·보관 유지·뒤 결과 전송, RETRYABLE_ERROR·503은 5회 모두 재전송, 잘못된 응답 뒤 ACCEPTED 정상 종결), `Popup.BehaviorTests` 1,730건, `scripts/ApiDemoTests` 124건 통과. 실제 서버 응답 오류 재현·폐쇄망 확인 미실행.
+- 상태: 커밋·원격 반영. 상한 도달 결과가 서버 미저장이면 같은 팝업이 다시 내려올 수 있는 위험은 남음(서버 응답 오류 원인).
+
 ## 2026-11-11-11 — dev: TODO45 401·로그인 실패 통합 복구 진입
 
 - 이유: TODO45 통합 복구 주기 결정 반영. 조회 단계에서 1회 재인증 후에도 401이면 복구 대상에서 빠져 정상 조회 간격(30~60분)으로 돌아갔고, SSO·로그인 실패로 토큰을 얻지 못한 경우도 같은 401로 끝나 복구 사이클을 타지 못했다.

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +44,10 @@ namespace Popup.Services
      *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
      *     횟수를 소진해도 삭제하지 않는다(이번 실행 동안 보관). 재시도 간격·최대 횟수 정책은 별도 확정 대상이다.
      *   - 알 수 없는 상태, 응답 누락, 이번에 보낸 항목과 resultId가 다른 응답은 종결로 보지 않는다(보관).
+     *     HTTP 2xx인데 응답 내용이 잘못된 경우(빈 본문·JSON 오류·resultId 불일치·status 누락/모르는 값)는 재전송으로
+     *     풀리지 않을 수 있어 이번 실행에서 MaxInvalidResponseAttemptsPerSession회까지만 재전송하고, 넘으면 전송 대상에서 빼
+     *     (보관은 유지) 다음 조회를 막지 않는다(TODO45, 2026-11-11 결정 — 복구 무한 루프 방지).
+     *     응답 자체가 없는 타임아웃·연결 끊김·5xx·401은 이 상한에 넣지 않는다(통합 복구 주기로 계속 재전송).
      *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 형식 오류)인 결과는 이번 실행에서
      *     전송 대상에서 빼고(보관은 유지) 나머지 전송을 막지 않는다.
      *   항목의 resultId·deliveryId는 생성 시 확정되어 재전송 때 다시 만들지 않는다. 서버가 DUPLICATE로 걸러낸다.
@@ -61,6 +66,9 @@ namespace Popup.Services
         /* POL-12-02 : 현행 임시 복구 — INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
         public const int MaxInternalErrorAttemptsPerSession = 3;
 
+        /* POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 응답 내용이 잘못된 결과의 실행당 재전송 상한(TODO45, 2026-11-11 결정). */
+        public const int MaxInvalidResponseAttemptsPerSession = 3;
+
         private static readonly HashSet<string> SettledStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
             "ACCEPTED", "DUPLICATE", "REJECTED"
@@ -72,6 +80,8 @@ namespace Popup.Services
         /* 미전송 결과(적재 순서). _stateLock 안에서만 읽고 쓴다. */
         private readonly List<WpfResultItemDto> _pending = new();
         private readonly Dictionary<string, int> _internalErrorAttempts = new(StringComparer.OrdinalIgnoreCase);
+        /* POL-12-04 : 통합 복구 주기 — resultId별 잘못된 2xx 응답 횟수. 상한에 이르면 이번 실행에서 전송 대상에서 뺀다. */
+        private readonly Dictionary<string, int> _invalidResponseAttempts = new(StringComparer.OrdinalIgnoreCase);
         /* POL-12-02 : 현행 임시 복구 — 단독으로 보내도 400인 항목. 이번 실행에서만 전송에서 빼고 목록에는 남긴다. */
         private readonly HashSet<string> _quarantined = new(StringComparer.OrdinalIgnoreCase);
         private volatile bool _transmissionStopped;
@@ -146,6 +156,8 @@ namespace Popup.Services
                         .Where(p => !_quarantined.Contains(p.ResultId))
                         .Where(p => !_internalErrorAttempts.TryGetValue(p.ResultId, out int attempts)
                             || attempts < MaxInternalErrorAttemptsPerSession)
+                        .Where(p => !_invalidResponseAttempts.TryGetValue(p.ResultId, out int invalid)
+                            || invalid < MaxInvalidResponseAttemptsPerSession)
                         .ToList();
                 }
 
@@ -172,6 +184,12 @@ namespace Popup.Services
                             $"type={item.ResultType}: {exception.Message}");
                         continue;
                     }
+                    catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+                    {
+                        // POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 본문이 비었거나 JSON이 아니다. 실행당 상한까지만 재전송한다.
+                        if (CountInvalidResponse(item, "본문 없음·JSON 오류: " + exception.Message)) continue;
+                        return new ResultFlushOutcome(true, lastSaved);
+                    }
                     catch (Exception exception)
                     {
                         // 5xx·그 밖의 4xx·타임아웃·연결 끊김: 보관하고 다음 기회에 같은 resultId로 재전송한다.
@@ -179,7 +197,12 @@ namespace Popup.Services
                         return new ResultFlushOutcome(true, lastSaved);
                     }
 
-                    if (!Settle(item, response)) return new ResultFlushOutcome(true, lastSaved);
+                    if (!Settle(item, response))
+                    {
+                        // 상한에 이른 잘못된 응답은 이번 실행에서 빼고 다음 결과·조회로 넘어간다.
+                        if (ReachedInvalidResponseLimit(item)) continue;
+                        return new ResultFlushOutcome(true, lastSaved);
+                    }
                     if (response.IsSaved) lastSaved = response;
                     lock (_stateLock)
                     {
@@ -203,7 +226,7 @@ namespace Popup.Services
         {
             if (response == null || !string.Equals(response.ResultId, item.ResultId, StringComparison.OrdinalIgnoreCase))
             {
-                Debug.WriteLine($"결과 응답 무시(이번 전송 항목 아님) resultId={response?.ResultId}");
+                CountInvalidResponse(item, $"resultId 불일치(응답 resultId={response?.ResultId}, status={response?.Status})");
                 return false;
             }
             if (SettledStatuses.Contains(response.Status ?? string.Empty))
@@ -213,7 +236,11 @@ namespace Popup.Services
                     Debug.WriteLine($"결과 거절 popupId={item.PopupId} type={item.ResultType} " +
                         $"code={response.Code} message={response.Message}");
                 }
-                lock (_stateLock) _internalErrorAttempts.Remove(item.ResultId);
+                lock (_stateLock)
+                {
+                    _internalErrorAttempts.Remove(item.ResultId);
+                    _invalidResponseAttempts.Remove(item.ResultId);
+                }
                 return true;
             }
             if (string.Equals(response.Status, "INTERNAL_ERROR", StringComparison.OrdinalIgnoreCase))
@@ -227,11 +254,44 @@ namespace Popup.Services
                 Debug.WriteLine($"결과 내부 오류(보관, 이번 실행 {attempts}/{MaxInternalErrorAttemptsPerSession}회) " +
                     $"popupId={item.PopupId} code={response.Code}");
             }
-            else
+            else if (string.Equals(response.Status, "RETRYABLE_ERROR", StringComparison.OrdinalIgnoreCase))
             {
+                // 서버가 일시 장애로 확인한 상태라 상한 없이 통합 복구 주기로 재전송한다.
                 Debug.WriteLine($"결과 미종결(보관) status={response.Status} popupId={item.PopupId} code={response.Code}");
             }
+            else
+            {
+                CountInvalidResponse(item, $"status 누락·모르는 값(status={response.Status}, code={response.Code})");
+            }
             return false;
+        }
+
+        /// <summary>
+        /// POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 응답 내용이 잘못된 횟수를 resultId별로 세고 로그를 남긴다.
+        /// 상한(<see cref="MaxInvalidResponseAttemptsPerSession"/>)에 이르면 true: 이번 실행에서 전송 대상에서 빼고(보관 유지) 조회를 막지 않는다.
+        /// </summary>
+        private bool CountInvalidResponse(WpfResultItemDto item, string reason)
+        {
+            int attempts;
+            lock (_stateLock)
+            {
+                attempts = _invalidResponseAttempts.TryGetValue(item.ResultId, out int count) ? count + 1 : 1;
+                _invalidResponseAttempts[item.ResultId] = attempts;
+            }
+            bool reachedLimit = attempts >= MaxInvalidResponseAttemptsPerSession;
+            Debug.WriteLine($"결과 응답 이상(보관, 이번 실행 {attempts}/{MaxInvalidResponseAttemptsPerSession}회" +
+                $"{(reachedLimit ? " — 상한 도달, 이번 실행에서 전송 제외·조회 허용" : "")}) " +
+                $"resultId={item.ResultId} deliveryId={item.DeliveryId} popupId={item.PopupId}: {reason}");
+            return reachedLimit;
+        }
+
+        private bool ReachedInvalidResponseLimit(WpfResultItemDto item)
+        {
+            lock (_stateLock)
+            {
+                return _invalidResponseAttempts.TryGetValue(item.ResultId, out int count)
+                    && count >= MaxInvalidResponseAttemptsPerSession;
+            }
         }
     }
 }
