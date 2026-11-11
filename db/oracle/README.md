@@ -268,7 +268,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 순서: **서버 반영 전에 실행.** 새 서버의 장애 결과 저장이 이 컬럼·제약을 쓴다(없으면 ORA-00904·ORA-02290 → INTERNAL_ERROR). 일반 결과 처리는 영향 없음.
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @24_wpf_error_result_oracle.sql POPUP.`
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 24_wpf_error_result_oracle.sql`
-- 적용 현황: 원격 개발 DB 2026-11-11 적용(컬럼 1, POPUP_ID NULL 허용 Y, 제약에 ERROR 포함). 로컬 XE 미적용. 11g는 `SEARCH_CONDITION`이 LONG이라 확인 쿼리는 제약 조건문을 목록으로 출력한다.
+- 적용 현황: 원격 개발 DB 2026-11-11 적용(컬럼 1, POPUP_ID NULL 허용 Y, 제약에 ERROR 포함). 로컬 XE(21c, `POPUP` 스키마)도 2026-11-11 적용(같은 확인 결과). 11g는 `SEARCH_CONDITION`이 LONG이라 확인 쿼리는 제약 조건문을 목록으로 출력한다.
 
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 
