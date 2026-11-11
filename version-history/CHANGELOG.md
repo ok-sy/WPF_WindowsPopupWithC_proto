@@ -5,6 +5,10 @@
 - 주요 파일: `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
 - 검증: Git main의 정책·TODO·인터페이스 문서와 WPF `PopupPollingRecovery.NextDelay()`, `PopupResultQueue.FlushAsync()` 정적 대조. WPF 코드·서버·DB 변경 없음. 빌드·테스트·로컬 실행·원격 DB·폐쇄망 실화면 검증 미실행.
 - 상태: 문서만 Git 반영. 조회 401 재인증 실패의 통합 복구 진입 등 WPF 구현 대기. 미결 예외 정책은 미확정.
+- 후속 결정(TODO45 장애 결과 식별·설명 길이): 별도 조회 requestId 채번·헤더 계약을 추가하지 않고 확보한 popup.deliveryId로 전달 건을 식별한다. 식별 불가능한 popupId·deliveryId는 null/생략하며 임의 전달 건 완료는 금지한다. 오류 종결과 사용자 완료를 구분하고 결과 자체 ID는 생성 후 재전송 시 유지한다. 폐쇄망 결과 requestId와 Git resultId 명칭은 혼용·개명하지 않는다.
+- 후속 변경: resultDesc를 VARCHAR2(1000 BYTE), UTF-8 최대 1,000 Byte로 확정. 오류·확보 가능한 JSON 위치만 담고 원본 JSON 전체는 제외한다. TODO45에 관련 함수·API 호환성·Byte 경계·문자 손상·동일 본문 재전송 확인 항목과 구현 전 추가 결정 없음 상태를 추가했다.
+- 후속 주요 파일: `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `version-history/CHANGELOG.md`.
+- 후속 검증·상태: 기준 857cc82885237db2dd2f89de259983c8e6e64641의 정적 검토·Astra 자문과 후속 확정 내용을 대조한 문서 보완. 코드·API 명세·DB 미변경, 빌드·자동 테스트·로컬 실행·원격 DB·폐쇄망 실화면 미실행. 문서만 원격 반영하며 구현·실환경 검증은 대기.
 
 ## 2026-11-10 — doc: QUIZ 선택지·WPF 주관식 UTF-8 BYTE 제한 TODO
 
