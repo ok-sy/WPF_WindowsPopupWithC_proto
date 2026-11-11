@@ -11,6 +11,8 @@
 - 주요 파일: `popup-frameWork/Popup/Services/PopupPollingRecovery.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `popup-frameWork/README.md`.
 - 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 210건(반복 401 응답 예외의 복구 판정, HTTP 상태별 분류, 426·JSON 제외), `Popup.BehaviorTests` 1,728건(실제 `MainWindow` 흐름: 조회 401 → 10초 복구 예약, 403·400 → 1,800초 정상 간격, 결과 전송 401 → 조회 보류·10초 복구 예약) 통과. `scripts/ApiDemoTests` 124건 통과. 실제 SSO·서버로 401·로그인 실패를 만드는 실환경 실행과 폐쇄망 확인은 미실행.
 - 상태: 커밋·원격 반영. 45-3(400 격리·INTERNAL_ERROR 3회 상한) 최종 정책과 45-6 실환경 검증은 대기.
+- 후속 보완(결과→조회 단계 복구 횟수 분리): 결과 재전송 저장 성공 시 EMPTY만 횟수를 초기화하고 AVAILABLE·nextStatus 생략은 이어지는 조회 성공까지 결과 단계 횟수를 이어 세던 것을, 저장 성공이면 nextStatus와 무관하게 초기화하도록 변경(`MainWindow.LoadAndShowAvailablePopupsAsync()`). 이어진 조회 실패는 1회(10초)부터 따로 센다. 빈 큐(저장 결과 없음)는 조회 복구 횟수를 건드리지 않는다. 문서: TODO45 구현 절, `POL-12.md`·`POLICY.md`·`popup-frameWork/README.md`.
+- 후속 검증: `Popup.csproj` 빌드 경고 0·오류 0, `Popup.BehaviorTests` 1,730건(결과 단계 3회 소진 후 AVAILABLE·nextStatus 생략 저장 성공 → 이어진 조회 503의 다음 대기 10초 추가), `Popup.RecoveryTests` 210건 통과. 실환경·폐쇄망 미실행. 커밋·원격 반영.
 
 ## 2026-11-11-10 — dev: TODO45 복구 사이클 3회로 변경
 

@@ -515,12 +515,17 @@ namespace Popup
             {
                 ResultFlushOutcome flushed = await _resultQueue.FlushAsync();
                 if (_isClosed || _clientVersionRejected) return;
+                if (!flushed.Blocked && flushed.LastSaved != null)
+                {
+                    // POL-12-04 : 통합 복구 주기 — 결과 저장 단계가 성공하면(nextStatus와 무관) 결과 복구는 끝난 것으로 보고 횟수를 초기화한다.
+                    // 이어지는 조회가 실패하면 조회 단계 복구를 1회부터 따로 센다. 저장한 결과가 없으면(빈 큐) 조회 복구 횟수를 건드리지 않는다.
+                    _pollingRecovery.Reset();
+                    _nextRecoveryDelay = null;
+                }
                 if (!flushed.Blocked && string.Equals(flushed.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
                 {
                     // POL-09-03 : 저장 응답 — 방금 저장한 결과(닫힘 직후·복구 재전송 모두)가 EMPTY면 조회하지 않고 최신 조회 간격을 기다린다.
                     // 저장한 결과가 없는 정상 최초 조회·빈 큐는 그대로 조회한다.
-                    _pollingRecovery.Reset();
-                    _nextRecoveryDelay = null;
                     if (showEmptyMessage)
                     {
                         MessageBox.Show("현재 표시할 팝업이 없습니다.", "팝업 조회",

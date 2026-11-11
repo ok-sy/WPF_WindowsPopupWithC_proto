@@ -36,7 +36,8 @@ TODO34·35·39에서 구현한 결과 상태·큐·복구를 다시 구현하는
 - **결과 전송 401:** `PopupResultQueue.FlushAsync()`는 400 외 전송 예외를 모두 미종결(Blocked)로 보관하고, `MainWindow`는 Blocked면 조회를 보류하고 `NextDelay()`로 복구 예약한다. 401도 이 경로라 코드 변경 없이 통합 주기가 적용된다(같은 resultId 유지).
 - **변경:** `PopupPollingRecovery.IsRecoverable()` 추가(`IsTransient` + HTTP 401). `MainWindow.LoadAndShowAvailablePopupsAsync()`의 조회 예외 분기를 `IsRecoverable`로 바꿨다. 로그인 단계의 실패 전파 기준(`IsTransient`)은 바꾸지 않는다. 400·403·데이터 오류는 정상 조회 간격, 426은 기존 업데이트 안내·종료.
 - **중복·무한 재시도 방지:** 별도 타이머를 만들지 않고 기존 일회성 `_pollingTimer` 하나로 다음 요청만 예약한다. 401 재인증은 요청당 1회(`SendWithAuthAsync` retried 플래그) 그대로다. 조회 성공 시 `Reset()`.
-- **검증:** `Popup.csproj` 빌드 경고·오류 0. `Popup.RecoveryTests` 210건(반복 401 응답 예외가 복구 대상, HTTP 상태별 복구 분류, 426·JSON 제외), `Popup.BehaviorTests` 1,728건(실제 `MainWindow` 흐름에서 조회 401 → 10초 복구 예약, 403·400 → 정상 간격, 결과 전송 401 → 조회 보류·10초 복구 예약), `ApiDemoTests` 124건 통과. 두 검증 프로젝트는 Git 제외 로컬 프로젝트다. 실제 SSO·서버로 401·로그인 실패를 만드는 실환경 실행과 폐쇄망 확인은 미실행.
+- **결과→조회 단계 횟수 분리(같은 날 보완):** 결과 재전송이 저장에 성공하면(`nextStatus`가 EMPTY·AVAILABLE·생략 모두) 결과 단계 복구 성공으로 보고 횟수를 초기화한다. 이어지는 조회가 실패하면 조회 단계 복구를 1회(10초)부터 따로 센다. 이전에는 EMPTY만 초기화하고 AVAILABLE·생략은 조회 성공까지 결과 단계 횟수를 이어 셌다. 저장한 결과가 없는 빈 큐는 조회 복구 횟수를 건드리지 않으며, 미종결 결과가 있으면 조회하지 않으므로 '결과 전송 성공만으로 조회 복구 초기화 금지'와 충돌하지 않는다.
+- **검증:** `Popup.csproj` 빌드 경고·오류 0. `Popup.RecoveryTests` 210건(반복 401 응답 예외가 복구 대상, HTTP 상태별 복구 분류, 426·JSON 제외), `Popup.BehaviorTests` 1,730건(실제 `MainWindow` 흐름에서 조회 401 → 10초 복구 예약, 403·400 → 정상 간격, 결과 전송 401 → 조회 보류·10초 복구 예약, 결과 단계 3회 소진 후 AVAILABLE·nextStatus 생략 저장 성공 → 이어진 조회 실패가 1,810초가 아닌 10초), `ApiDemoTests` 124건 통과. 두 검증 프로젝트는 Git 제외 로컬 프로젝트다. 실제 SSO·서버로 401·로그인 실패를 만드는 실환경 실행과 폐쇄망 확인은 미실행.
 
 ## 추가 결정 (2026-11-11) — 복구 사이클 최대 2회 (3회 결정으로 대체됨)
 
