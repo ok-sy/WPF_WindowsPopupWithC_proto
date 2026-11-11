@@ -3,8 +3,14 @@
 ## 2026-11-11-14 — 20261112 폐쇄망 반입본 생성(20261111 대체, 웹·WPF·문서, 서버·DB 제외)
 
 - 이유: 반입 준비. 20261111 반입본을 반입하지 못해 폐기하고, 같은 비교 기준(20261106/9403689)으로 다음 날짜 반입본을 다시 만든다. 20261111 이후 TODO45 변경(WPF 복구 3사이클·401 복구 진입·결과/조회 복구 횟수 분리·잘못된 결과 응답 3회 상한·조회 응답 처리 실패 장애 결과, 정책·인터페이스 문서)을 포함한다.
-- 변경: `.offline-cache/notes-20261112.md`(20261111 요약 + 20261111 폐기 안내 + TODO45 WPF 항목 5개, 장애 결과는 폐쇄망 서버 수용 확인 요청). 히스토리 번들은 20261111 번들을 지워 20261112가 RULES 2 첫 번들이 된다. 생성 결과는 생성 후 이 항목에 보완한다.
-- 상태: 생성 진행 중(이 커밋을 반입 기준 HEAD로 사용).
+- 변경:
+  - 20261111 반입본(`offline-export/20261111`)·히스토리 번들(`.offline-cache/git-history-20261111`)·검증 폴더 3개 삭제.
+  - `.offline-cache/notes-20261112.md`: 20261111 요약 + 20261111 폐기 안내 + TODO45 WPF 항목 5개(복구 3사이클, 401·로그인 실패 복구, 결과·조회 복구 횟수 분리, 잘못된 결과 응답 3회 상한, 장애 결과 — 폐쇄망 서버의 resultCode·resultDesc 수용 확인 요청) + TODO45 정책 문서.
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261112`: 직전 번들 없음 → RULES 2 첫 번들(기준 4c87cb9 → main e1d343a, 커밋 260), 민감값·제외 경로 점검 0.
+  - 옵션 `-Date 20261112 -PreviousExport 20261106 -PreviousCommit 9403689 -NotesFile .offline-cache/notes-20261112.md -GitHistoryDir .offline-cache/git-history-20261112 -VerifyBuild -Force`(서버·DB 제외 기본). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 54·M 22·D 3, WPF 소스 98, 문서 158(+CI 이미지 2, db 제외), 히스토리 번들 5개 파일. npm 변경 없음(5-npm-ckeditor 미포함). 삭제 목록 신규 0.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish·단일 EXE(91,809,614바이트). TAR 4개 파일 수 검증, TGZ SHA256 `b22a794fdfde8b44abd3374d4682fae6c18e53520a4e6fd8bac5e369e9638147` 일치(21,145,051바이트). 추출본에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, DELETE 목록의 서버·DB 경로 0건, `PopupErrorResult.cs`·`WpfResponseFormatException.cs`·CI 이미지 포함, README-IMPORT에 기준 4c87cb9·비교 20261106과 TODO45 안내 포함. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료(`offline-export/20261112`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
 
 ## 2026-11-11-13 — dev: TODO45 조회 응답 처리 실패 장애 결과(resultCode=400) 전송·서버 수용
 
