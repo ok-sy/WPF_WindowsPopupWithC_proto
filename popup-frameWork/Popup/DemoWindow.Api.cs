@@ -135,12 +135,22 @@ namespace Popup
             if (baseUrl.Length == 0)
             {
                 ApiConnectionExpander.IsExpanded = true;
-                ShowApiInputError(ApiInputErrorText, $"{label} 주소가 설정에 없습니다. Base URL을 직접 입력하거나 appsettings.json PopupApi.DemoApiTargets.{(local ? "Local" : "Dev")}.BaseUrl에 넣으세요.");
+                // 안내는 Base URL 바로 아래(ApiTargetHintText)에 둔다. 아래쪽 오류 칸은 입력칸에 포커스가 가면 화면 밖에 있어 보이지 않는다.
+                ShowApiInputError(ApiTargetHintText, $"{label} 주소가 설정에 없습니다. Base URL을 직접 입력하거나 appsettings.json PopupApi.DemoApiTargets.{(local ? "Local" : "Dev")}.BaseUrl에 넣으세요.");
                 ApiBaseUrlText.Focus();
                 return;
             }
-            ShowApiInputError(ApiInputErrorText, null);
+            ShowApiInputError(ApiTargetHintText, null);
             AppendLog($"[연결] {label} 주소로 입력을 바꿨습니다({baseUrl}). '연결 적용' 또는 '팝업 조회' 때 적용됩니다.");
+        }
+
+        /* 주소를 직접 입력하면 "주소가 설정에 없습니다" 안내를 숨긴다. */
+        private void ApiBaseUrlText_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (ApiTargetHintText != null && ApiTargetHintText.Visibility == Visibility.Visible && ApiBaseUrlText.Text.Trim().Length > 0)
+            {
+                ApiTargetHintText.Visibility = Visibility.Collapsed;
+            }
         }
 
         private string SelectedAuthMode => (ApiAuthModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "LOGIN";

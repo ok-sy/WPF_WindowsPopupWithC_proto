@@ -26,7 +26,14 @@
   - `scripts/ApiDemoTests` `CheckApiTargetSwitch` 6건(appsettings 읽기, 시작 값 유지·체크 표시, 해제·체크 시 두 입력 동시 전환, 비로컬 시작 주소 유지, 빈 Dev 주소 안내).
 - 주요 파일: `popup-frameWork/Popup/DemoWindow.xaml`, `DemoWindow.Api.cs`, `MainWindow.xaml.cs`, `Models/PopupClientSettings.cs`, `appsettings.json`, `scripts/ApiDemoTests/Program.cs`.
 - 검증: `Popup.csproj` 빌드 경고·오류 0(솔루션 빌드는 실행 중인 MockSso.exe 잠금으로 MockSso만 복사 실패). ApiDemoTests 123건·PopupWindowTests 547건 통과. 실화면·실서버 확인 미실행.
-- 상태: 커밋·원격 반영. 폐쇄망 반입 대기(WPF).
+- 보완(실화면 확인): 체크 해제 시 Dev 주소가 비었다는 안내가 아래쪽 연결 오류 칸에 나와, Base URL로 포커스가 가면 화면 밖이라 보이지 않았다(로그에만 표시). 안내를 Base URL 바로 아래 `ApiTargetHintText`로 옮기고, 주소를 직접 입력하면 숨긴다. ApiDemoTests 124건 통과.
+- 실화면 확인(로컬, -Demo -Api, UI 자동화로 체크 전환):
+  - 시작 시 체크·로컬 주소.
+  - Dev 주소가 빈 내장 설정에서 해제하면 Base URL이 비고 로그인 경로가 `/api/auth/sso/login`으로 바뀌며, 안내가 입력칸 아래에 보인다. 주소를 입력하면 안내가 사라진다.
+  - 다시 체크하면 로컬 값으로 돌아오고, `연결 적용` 결과 요약이 `대상 http://localhost:8080/zero-rule-server/p`로 바뀐다.
+  - EXE 옆에 임시 `appsettings.json`(Dev 주소 지정)을 두고 해제하면 Dev 주소·경로가 채워진다. 임시 파일은 확인 후 삭제했다.
+  - 개발 서버 실제 호출은 미실행.
+- 상태: 커밋·원격 반영. 20261111 반입본에는 보완 전 버전이 들어 있어 다음 반입 대기(WPF).
 
 ## 2026-11-11-06 — 20261111 폐쇄망 반입본 생성(웹·WPF·문서, 서버·DB 제외)
 

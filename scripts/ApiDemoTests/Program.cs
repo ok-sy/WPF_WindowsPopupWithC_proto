@@ -165,7 +165,7 @@ internal static class Program
         CheckBox local = (CheckBox)window.FindName("ApiLocalTargetCheck");
         TextBox baseUrl = (TextBox)window.FindName("ApiBaseUrlText");
         TextBox loginPath = (TextBox)window.FindName("ApiLoginPathText");
-        TextBlock error = (TextBlock)window.FindName("ApiInputErrorText");
+        TextBlock error = (TextBlock)window.FindName("ApiTargetHintText");
         Check(local.IsChecked == true && baseUrl.Text == "http://localhost:8080/zero-rule-server/p/" && loginPath.Text == "/custom/login",
             "[target] start keeps the appsettings BaseUrl·LoginPath and marks the box when BaseUrl is the local target");
         local.IsChecked = false;
@@ -181,13 +181,15 @@ internal static class Program
         window = new DemoWindow(noDev);
         local = (CheckBox)window.FindName("ApiLocalTargetCheck");
         baseUrl = (TextBox)window.FindName("ApiBaseUrlText");
-        error = (TextBlock)window.FindName("ApiInputErrorText");
+        error = (TextBlock)window.FindName("ApiTargetHintText");
         Check(local.IsChecked == false && baseUrl.Text == devUrl, "[target] a non-local start address leaves the box unchecked without changing the input");
         local.IsChecked = true;
         local.IsChecked = false;
         Check(baseUrl.Text.Length == 0 && error.Visibility == Visibility.Visible && error.Text.Contains("개발 서버 주소가 설정에 없습니다")
               && ((Expander)window.FindName("ApiConnectionExpander")).IsExpanded,
-            "[target] an empty dev target clears Base URL and asks for direct input");
+            "[target] an empty dev target clears Base URL and asks for direct input right under the Base URL box");
+        baseUrl.Text = devUrl;
+        Check(error.Visibility != Visibility.Visible, "[target] typing an address hides the empty-target hint");
         window.Close();
     }
 

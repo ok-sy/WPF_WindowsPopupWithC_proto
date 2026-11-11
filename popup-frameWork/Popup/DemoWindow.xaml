@@ -126,7 +126,10 @@
                                           ToolTip="체크: 로컬 서버 주소·로그인 경로 / 해제: 개발 서버 주소·로그인 경로 (appsettings.json PopupApi.DemoApiTargets)"/>
                                 <TextBlock Text="Base URL" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="ApiBaseUrlText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                         ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)"/>
+                                         ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)" TextChanged="ApiBaseUrlText_TextChanged"/>
+                                <!-- POL-14-02 : Demo 모드 — 체크 해제 시 개발 서버 주소가 설정에 없으면 입력칸 바로 아래에 안내(아래쪽 오류 칸은 포커스 이동 시 화면 밖이라 따로 둔다). 주소를 입력하면 숨긴다. -->
+                                <TextBlock x:Name="ApiTargetHintText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-6,0,10"
+                                           AutomationProperties.LiveSetting="Assertive"/>
                                 <TextBlock Text="2. 인증" FontWeight="SemiBold" Margin="0,4,0,6"/>
                                 <TextBlock Text="인증 방식" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="ApiAuthModeCombo" SelectedIndex="0" Margin="0,0,0,10" SelectionChanged="ApiAuthModeCombo_SelectionChanged">
