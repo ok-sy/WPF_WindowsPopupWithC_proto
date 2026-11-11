@@ -12,12 +12,13 @@ namespace Popup.Services
      * - in : IsTransient(exception) 판정할 예외 · NormalDelay(intervalSeconds) 서버 조회 간격
      * - out: 다음 대기 시간(TimeSpan) · IsRecovering 복구 중 여부
      * - 타이머는 MainWindow 하나만 사용하고, 이 클래스는 다음 대기 시간만 계산한다.
-     *   일시 오류는 10초 간격 3회를 1주기로 최대 5주기(주기 사이 30분 휴식), 그 뒤에는 1시간 간격으로 기다린다.
+     *   일시 오류는 10초 간격 3회를 1주기로 최대 3주기(주기 사이 30분 휴식), 그 뒤에는 1시간 간격으로 기다린다.
+     *   대기 순서: 10초×3 → 30분+10초 → 10초×2 → 30분+10초 → 10초×2 → 1시간 반복(TODO45, 2026-11-11 3주기 확정).
      */
     public sealed class PopupPollingRecovery
     {
         private const int AttemptsPerCycle = 3;
-        private const int MaxCycles = 5;
+        private const int MaxCycles = 3;
         private int _scheduledAttempts;
 
         public bool IsRecovering { get; private set; }
@@ -39,7 +40,7 @@ namespace Popup.Services
             if (_scheduledAttempts >= AttemptsPerCycle * MaxCycles)
                 return TimeSpan.FromHours(1);
 
-            // 정상 조회 실패는 횟수에 포함하지 않는다. 복구 요청 15회만 예약한다.
+            // 정상 조회 실패는 횟수에 포함하지 않는다. 복구 요청 9회만 예약한다.
             bool nextCycle = _scheduledAttempts > 0 && _scheduledAttempts % AttemptsPerCycle == 0;
             _scheduledAttempts++;
             // 30분 휴식이 끝난 뒤 다음 Cycle의 첫 10초를 기다린다.

@@ -1,3 +1,13 @@
+# 변경 이력
+
+## 2026-11-11-10 — dev: TODO45 복구 사이클 3회로 변경
+
+- 이유: 요구사항 반영. 같은 날 확정한 복구 사이클 최대 2회를 3회로 다시 조정. 대기 순서는 10초 간격 3회 → 30분 → 10초 간격 3회 → 30분 → 10초 간격 3회, 이후 1시간마다 1회.
+- 변경: `PopupPollingRecovery.MaxCycles` 5→3(복구 재시도 총 9회, 사이클 사이 기존 계산 30분+10초 유지, 소진 후 3,600초 반복, 처음 사이클로 자동 복귀 없음). 클래스 주석에 대기 순서 명시. TODO45에 3사이클 추가 결정을 넣고 2사이클 결정은 대체됨으로 표시, 확정 정책·구현 확인 문구 정정. `POL-12.md`·`POLICY.md`·`POPUP_INTERFACE_SPEC.md`·`popup-frameWork/README.md`의 5사이클 설명을 3사이클로 정합화. API 필드·응답 상태·DB 변경 없음. `WPF_POPUP_MINIMAL_SPEC.md`·`WPF_POPUP_ALL_SPEC.md`는 사이클 수를 적지 않아 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/PopupPollingRecovery.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `popup-frameWork/README.md`.
+- 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트 `Popup.RecoveryTests`(Git 제외)의 대기 순서 검사를 12회 순서(3·4회, 6·7회, 9·10회 경계와 1시간 반복)와 0~11단계 성공 초기화로 바꿔 실행, 144건 통과. 실제 서버 장애 상황 실행·폐쇄망 확인은 미실행.
+- 상태: 사이클 수 변경만 구현. 조회 401 재인증 실패·로그인 실패·결과 전송 401 실패의 통합 복구 진입은 TODO45 구현 대기. 커밋·원격 반영.
+
 ## 2026-11-11-09 — doc: TODO45 통합 장애 복구 주기·결과 우선(A안) 결정 반영
 
 - 이유: 인증·조회·결과 전송 장애의 복구 간격을 통일하고, 결과 전송 장애 중 다음 단건 팝업 조회를 병행하지 않는 원칙을 확정해 임시 예외와 구분.
@@ -12,16 +22,6 @@
 
 - 추가 요건(복구 사이클 축소): 최대 5사이클을 2사이클로 변경. 10초 간격 3회×2사이클(총 6회 복구 재시도), 사이클 사이 1,810초 한 번, 소진 후 3,600초마다 1회 유지. 초기 정상 요청 실패는 복구 횟수에 미포함. 성공 시 해당 단계 초기화 및 수동 실패·신규 결과의 기존 예약 보존 기준 유지.
 - 추가 변경·검증: TODO45의 확정값·구현 확인사항·기존 주기 수정 불필요 문구를 정정하고 경계 검증 기준을 추가. Astra 설계 자문 및 문구 대조 수행. WPF MaxCycles=5는 미변경이며 구현 대기. POLICY/POL-12/API 명세의 5사이클 문구는 후속 정합화 대상으로 명시. 코드·API 필드·DB 변경 없음, 빌드·자동 테스트·로컬 실행·폐쇄망 검증 미실행. TODO·변경 이력만 원격 반영.
-
-## 2026-11-10 — doc: QUIZ 선택지·WPF 주관식 UTF-8 BYTE 제한 TODO
-
-- DB 담당자 확인: QUIZ 선택지 `VARCHAR2(300 BYTE)`, SURVEY/QUIZ 주관식 응답 `VARCHAR2(1000 BYTE)`. QUIZ 문항 제목 `CLOB`은 제외.
-- TODO73 §10(73-36~39): WEB 선택지 300 Byte, WPF 주관식 1,000 Byte 입력 초과 차단, IME·붙여넣기·경계값·저장/API/DB 정합성 검증 정의.
-- 주요 파일: `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
-- 검증: 요구사항 및 기존 TODO와 문서 대조. 코드 변경·타입 검사·빌드·로컬/원격 DB·폐쇄망 실화면 미실행.
-- 상태: TODO 문서 반영 / 구현 대기.
-
-# 변경 이력
 
 ## 2026-11-11-08 — scripts: 반입본 서버·DB 스크립트 기본 제외
 
@@ -125,6 +125,14 @@
 - 주요 파일: `docs/design/59_VIDEO_QUIZ_중간안내제거_TODO.md`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`, `docs/design/54_Demo_UI_UX_상세옵션_정리_TODO.md`(54-10 체크), `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
 - 미실행: WPF 주관식 1,000 Byte 실서버 전송, 실제 한글 IME 수동 입력, 150% 이상 배율, 화면 읽기 프로그램 낭독, 폐쇄망.
 - 상태: 커밋·원격 반영. 코드 변경 없음.
+
+## 2026-11-10 — doc: QUIZ 선택지·WPF 주관식 UTF-8 BYTE 제한 TODO
+
+- DB 담당자 확인: QUIZ 선택지 `VARCHAR2(300 BYTE)`, SURVEY/QUIZ 주관식 응답 `VARCHAR2(1000 BYTE)`. QUIZ 문항 제목 `CLOB`은 제외.
+- TODO73 §10(73-36~39): WEB 선택지 300 Byte, WPF 주관식 1,000 Byte 입력 초과 차단, IME·붙여넣기·경계값·저장/API/DB 정합성 검증 정의.
+- 주요 파일: `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: 요구사항 및 기존 TODO와 문서 대조. 코드 변경·타입 검사·빌드·로컬/원격 DB·폐쇄망 실화면 미실행.
+- 상태: TODO 문서 반영 / 구현 대기.
 
 ## 2026-11-10-15 — dev: TODO54-10 Demo 화면 접근성 보완
 
