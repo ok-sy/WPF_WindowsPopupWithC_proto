@@ -10,6 +10,7 @@
 - 주요 파일: `popup-frameWork/Popup/Services/PopupResultQueue.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `popup-frameWork/README.md`.
 - 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 254건(400 결과 종결·삭제와 나머지 종결, 재전송 없음, 이후 결과 막지 않음으로 기대값 변경), `Popup.BehaviorTests` 1,736건, `scripts/ApiDemoTests` 124건 통과. 실환경·폐쇄망 미실행.
 - 상태: 커밋·원격 반영. 20261112 반입본에는 들어가지 않았다(다음 반입 대상).
+- 후속: TODO45 문서에 새 절을 넣을 때 줄바꿈이 LF로 섞여 들어가 CRLF로 정리(내용 변경 없음).
 
 ## 2026-11-11-14 — 20261112 폐쇄망 반입본 생성(20261111 대체, 웹·WPF·문서, 서버·DB 제외)
 
