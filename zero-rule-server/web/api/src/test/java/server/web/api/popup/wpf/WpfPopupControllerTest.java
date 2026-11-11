@@ -264,6 +264,52 @@ class WpfPopupControllerTest {
         verify(service, never()).processResult(any(), any());
     }
 
+    /** TODO45 장애 결과: resultCode=400·resultDesc만 있어도(식별자 미확보) 형식 검사를 통과해 장애 결과 경로로 간다. */
+    @Test void errorResultGoesToErrorPathWithOptionalIdentifiers() throws Exception {
+        when(service.processErrorResult(eq("E1001"), any())).thenAnswer(inv -> {
+            server.domain.popup.wpf.WpfErrorResultCommand command = inv.getArgument(1);
+            assertNull(command.deliveryId(), "빈 deliveryId는 미확보(null)");
+            assertNull(command.popupId());
+            assertEquals(400, command.resultCode());
+            return WpfResultResponse.of(new WpfResultItemResponse(command.resultId(), WpfResultItemResponse.Status.ACCEPTED, null, null),
+                    WpfResultResponse.NextStatus.EMPTY);
+        });
+        mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resultId\":\"err-1\",\"deliveryId\":\"\",\"resultCode\":400,\"resultDesc\":\"JSON 구문 오류 $.popup\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.nextStatus").value("EMPTY"));
+        verify(service).processErrorResult(eq("E1001"), any());
+        verify(service, never()).processResult(any(), any());
+    }
+
+    /** TODO45 장애 결과 형식 오류(코드≠400·resultType 동봉·설명 없음·1,000 Byte 초과)는 REJECTED이며 서비스로 넘기지 않는다. */
+    @Test void invalidErrorResultIsRejected() throws Exception {
+        String overLimit = "가".repeat(334); // 1,002 Byte
+        for (String body : List.of(
+                "{\"resultId\":\"e-code\",\"resultCode\":500,\"resultDesc\":\"x\"}",
+                "{\"resultId\":\"e-type\",\"resultCode\":400,\"resultType\":\"CLOSED\",\"resultDesc\":\"x\"}",
+                "{\"resultId\":\"e-desc\",\"resultCode\":400}",
+                "{\"resultId\":\"e-long\",\"resultCode\":400,\"resultDesc\":\"" + overLimit + "\"}",
+                "{\"resultCode\":400,\"resultDesc\":\"x\"}")) {
+            mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("REJECTED"))
+                    .andExpect(jsonPath("$.code").value("WPF_INVALID_RESULT"));
+        }
+        // 1,000 Byte(한글 333자 + 1)는 통과
+        when(service.processErrorResult(eq("E1001"), any())).thenReturn(WpfResultResponse.of(
+                new WpfResultItemResponse("e-max", WpfResultItemResponse.Status.ACCEPTED, null, null), WpfResultResponse.NextStatus.EMPTY));
+        mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resultId\":\"e-max\",\"resultCode\":400,\"resultDesc\":\"" + "가".repeat(333) + "x\"}"))
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+        verify(service, never()).processResult(any(), any());
+        verify(service, times(1)).processErrorResult(any(), any());
+    }
+
     /** POL-10-03 : 완료·숨김·연기 — 나중에 보기 결과 LATER는 형식 검사를 통과해 서비스에 LATER로 전달된다(대소문자 무시). */
     @Test void laterResultIsAcceptedAsLaterCommand() throws Exception {
         when(service.processResult(eq("E1001"), any())).thenAnswer(inv -> {

@@ -49,6 +49,16 @@ TODO34·35·39에서 구현한 결과 상태·큐·복구를 다시 구현하는
 - **구현:** `PopupResultQueue`에 resultId별 잘못된 응답 횟수(`_invalidResponseAttempts`)와 `CountInvalidResponse()` 추가. `FlushAsync()`에서 `JsonException`·`InvalidOperationException`(빈 본문)을 이 횟수로 세고, `Settle()`에서 resultId 불일치·응답 null·status 누락/미지원 값을 센다. 종결 시 횟수를 지운다.
 - **검증:** `Popup.csproj` 빌드 경고·오류 0. `Popup.RecoveryTests` 231건(유형 6종 각각 3회 재전송·2회 보류 후 3회째 조회 허용·보관 유지·뒤 결과 전송, RETRYABLE_ERROR·503은 5회 모두 재전송, 잘못된 응답 뒤 ACCEPTED 정상 종결), `Popup.BehaviorTests` 1,730건, `ApiDemoTests` 124건 통과. 실제 서버 응답 오류 재현·폐쇄망 확인은 미실행.
 
+## 추가 결정·구현 (2026-11-11) — 조회 응답 처리 실패 시 장애 결과(resultCode=400) 전송
+
+- **결정:** HTTP 200 조회 응답을 WPF가 처리하지 못하면(빈 본문·JSON 구문/형식 오류·받은 팝업의 표시 변환·표시 실패) 아래 '장애 결과 식별·설명 길이' 정책대로 장애 결과를 결과 API로 보낸다. HTTP 오류(400·401·403·5xx)는 대상이 아니다.
+- **다음 조회(결정):** deliveryId를 확보해 보낸 장애 결과가 저장되면 서버가 그 전달 건을 오류로 닫으므로 저장 응답 `nextStatus`를 따른다. deliveryId 없이 저장됐거나 저장되지 못하고 종결(REJECTED·HTTP 400 격리·잘못된 응답 상한)되면 같은 깨진 응답을 바로 다시 받지 않도록 `nextStatus`와 관계없이 최신 조회 간격을 기다린다. 전송 실패는 일반 결과와 같은 보관·조회 보류·통합 복구 주기.
+- **서버(결정: Git 서버도 수용):** `WpfResultRequest`에 `resultCode`·`resultDesc` 추가, `resultCode`가 있으면 장애 결과 검사(400만, `resultDesc` 필수·UTF-8 1,000 Byte 이하, `resultType` 동봉 금지, deliveryId·popupId 선택). `WpfResultProcessor.processError()`가 완료·숨김·표시 정보를 바꾸지 않고, deliveryId가 있으면 소유·팝업 일치·미종료 확인 후 그 전달 건만 `RESULT_TYPE=ERROR`로 종료(재노출 유예), 없으면 영수증만 남긴다. 영수증은 `insertErrorReceipt`(`RESULT_TYPE=ERROR`·`RESULT_CODE=400`·`RESULT_DESC`). 응답·nextStatus 규칙은 일반 결과와 같다.
+- **DB:** `db/oracle/24_wpf_error_result_oracle.sql` — `WPF_RESULT_RECEIPT.POPUP_ID` NULL 허용, `RESULT_DESC VARCHAR2(1000 BYTE)` 추가, `CK_WPF_RESULT_TYPE`에 `ERROR`. `01_popup_schema_oracle.sql`에도 반영. 원격 개발 DB 2026-11-11 적용(확인 쿼리: 컬럼 1·POPUP_ID NULL 허용·제약에 ERROR).
+- **WPF:** `PopupApiService.SendWithAuthAsync()`가 2xx 본문을 문자열로 읽어 역직렬화하고, 빈 본문·JSON 오류는 위치(Path·Line·BytePosition)와 (구문이 맞으면) `popup.deliveryId`·`popupId`를 담은 `WpfResponseFormatException`(InvalidOperationException 상속)으로 올린다. `MainWindow.BuildErrorResult()`가 이 예외 또는 표시 변환·표시 실패에서 `PopupErrorResult.Create()`로 장애 결과를 만들어 큐에 넣고 바로 전송한다. `PopupErrorResult.TruncateUtf8()`은 문자(서로게이트 쌍 포함)를 중간에서 자르지 않고 1,000 Byte 안으로 앞쪽을 남긴다. `WpfResultItemDto`에 `ResultCode`·`ResultDesc`(null이면 생략), `ResultType`·`DeliveryId`·`PopupId`는 null이면 생략. `PopupResultQueue`는 `ResultFlushOutcome.HoldNextQuery`로 다음 조회 보류를 알린다. Demo 게이트웨이도 같은 처리.
+- **검증:** 서버 `:service:core:test` 197건(DB 실연동 9건 건너뜀)·`:web:api:test` 64건 통과(처리기: 전달 건 오류 종료·완료 미변경, deliveryId 없음 영수증만, 멱등·남의/다른 팝업/종료 전달 건 거절 / 컨트롤러: 식별자 미확보 장애 결과 통과, 코드≠400·resultType 동봉·설명 없음·1,002 Byte 거절, 1,000 Byte 통과). WPF `Popup.csproj` 빌드 경고·오류 0, `Popup.RecoveryTests` 254건(UTF-8 999/1,000/1,001·한글·이모지 경계, 장애 결과 직렬화, 빈 본문·형식·구문 오류의 위치·식별자·원본 미포함, HoldNextQuery), `Popup.BehaviorTests` 1,736건(실제 MainWindow: 구문 오류 → deliveryId 없는 장애 결과 1건·재조회 없이 조회 간격, 형식 오류 + EMPTY → deliveryId 포함·대기, 형식 오류 + AVAILABLE → 즉시 1회 재조회), `ApiDemoTests` 124건, `PopupWindowTests` 547건 통과. 실제 서버 기동 상태의 장애 결과 왕복·폐쇄망 서버 수용 여부는 미실행.
+- **남은 확인:** 폐쇄망 결과 저장의 식별 필드명(`requestId`)·nullable·UTF-8 Byte 수용 여부 대조, 인터페이스 Excel·Word·PDF 반영, ERD 반영.
+
 ## 추가 결정 (2026-11-11) — 복구 사이클 최대 2회 (3회 결정으로 대체됨)
 
 - **확정:** 기존 최대 5사이클을 최대 2사이클로 변경한다. 최초 정상 요청 실패는 복구 횟수에 포함하지 않으며, 각 사이클은 10초 간격 3회로 총 6회 복구 재시도한다.
@@ -62,7 +72,7 @@ TODO34·35·39에서 구현한 결과 상태·큐·복구를 다시 구현하는
 
 ## 추가 결정 (2026-11-11) — 장애 결과 식별·설명 길이
 
-상태: **정책 확정 / WPF·API 계약 반영 및 실행 검증 대기**. 이번 보완은 통합 정합성 검토 후 확정한 조회 추적 ID 제외와 resultDesc 길이를 기록한다. 아래 두 항목은 구현 전 미결 사항으로 다시 올리지 않는다.
+상태: **정책 확정 / 2026-11-11 WPF·Git 서버·API 계약·원격 개발 DB 반영(위 '조회 응답 처리 실패 시 장애 결과' 절), 실서버 왕복·폐쇄망 대조 대기**. 이번 보완은 통합 정합성 검토 후 확정한 조회 추적 ID 제외와 resultDesc 길이를 기록한다. 아래 두 항목은 구현 전 미결 사항으로 다시 올리지 않는다.
 
 ### 확정 정책
 
@@ -75,12 +85,12 @@ TODO34·35·39에서 구현한 결과 상태·큐·복구를 다시 구현하는
 
 ### 구현 시 확인할 사항
 
-- [ ] `popup-frameWork/Popup/Services/PopupApiService.cs`의 `GetNextPopupAsync()`·`SendWithAuthAsync()`, `MainWindow.xaml.cs`의 `LoadAndShowAvailablePopupsAsync()`: 파싱·변환·표시 실패 단계에서 확보한 popupId·deliveryId만 장애 결과 생성 경로에 넘긴다. 조회 추적 ID를 새로 요구하지 않는다.
-- [ ] `popup-frameWork/Popup/Dtos/WpfResultDtos.cs`와 결과 생성 경로: 장애 결과의 nullable 식별자·resultType 및 resultCode·resultDesc를 연결한다. 현재 DTO의 기본 CLOSED가 장애 결과에 들어가지 않는지 확인한다.
-- [ ] 오류 설명은 핵심 오류·JSON 위치를 우선해 UTF-8 1,000 Byte 안으로 구성한다. 초과 설명을 제한할 때 UTF-8 문자 중간이 잘리지 않고 필수 설명이 남는지 확인한다. 최초 적재 전에 본문을 확정하며 재전송 때 설명·ID를 다시 만들지 않는다.
-- [ ] `PopupResultQueue.Enqueue()`·`FlushAsync()`·`Settle()`: 식별자 없는 장애 결과도 기존 결과 전송 정책을 적용하고, 동일 결과 재전송의 ID·본문이 유지되는지 확인한다.
-- [ ] API 계약 영향: `docs/interfaces/POPUP_INTERFACE_SPEC.md`에는 장애 결과 필드·nullable 예외·1,000 Byte 제한의 후속 반영이 필요하다. 폐쇄망 결과 식별 필드명은 실제 계약과 대조한다. 기존 일반 결과의 필수조건을 임의로 완화하지 않는다.
-- [ ] 구버전 영향: 현재 Git DTO·계약은 장애 결과를 지원하지 않으므로 구서버의 수용을 가정하지 않는다. 실제 서버의 nullable 필드·UTF-8 Byte 수용 여부를 확인하되 Oracle DDL·SQL·서버 내부 업무 설계는 이 작업에서 다루지 않는다.
+- [x] `popup-frameWork/Popup/Services/PopupApiService.cs`의 `GetNextPopupAsync()`·`SendWithAuthAsync()`, `MainWindow.xaml.cs`의 `LoadAndShowAvailablePopupsAsync()`: 파싱·변환·표시 실패 단계에서 확보한 popupId·deliveryId만 장애 결과 생성 경로에 넘긴다. 조회 추적 ID를 새로 요구하지 않는다. — 2026-11-11 반영(위 '조회 응답 처리 실패 시 장애 결과' 절).
+- [x] `popup-frameWork/Popup/Dtos/WpfResultDtos.cs`와 결과 생성 경로: 장애 결과의 nullable 식별자·resultType 및 resultCode·resultDesc를 연결한다. 현재 DTO의 기본 CLOSED가 장애 결과에 들어가지 않는지 확인한다. — 2026-11-11 반영(위 '조회 응답 처리 실패 시 장애 결과' 절).
+- [x] 오류 설명은 핵심 오류·JSON 위치를 우선해 UTF-8 1,000 Byte 안으로 구성한다. 초과 설명을 제한할 때 UTF-8 문자 중간이 잘리지 않고 필수 설명이 남는지 확인한다. 최초 적재 전에 본문을 확정하며 재전송 때 설명·ID를 다시 만들지 않는다. — 2026-11-11 반영(위 '조회 응답 처리 실패 시 장애 결과' 절).
+- [x] `PopupResultQueue.Enqueue()`·`FlushAsync()`·`Settle()`: 식별자 없는 장애 결과도 기존 결과 전송 정책을 적용하고, 동일 결과 재전송의 ID·본문이 유지되는지 확인한다. — 2026-11-11 반영(위 '조회 응답 처리 실패 시 장애 결과' 절).
+- [x] API 계약 영향: `docs/interfaces/POPUP_INTERFACE_SPEC.md`에는 장애 결과 필드·nullable 예외·1,000 Byte 제한의 후속 반영이 필요하다. 폐쇄망 결과 식별 필드명은 실제 계약과 대조한다. 기존 일반 결과의 필수조건을 임의로 완화하지 않는다. — 2026-11-11 반영(위 '조회 응답 처리 실패 시 장애 결과' 절).
+- [ ] 구버전 영향: 현재 Git DTO·계약은 장애 결과를 지원하지 않으므로 구서버의 수용을 가정하지 않는다. 실제 서버의 nullable 필드·UTF-8 Byte 수용 여부를 확인하되 Oracle DDL·SQL·서버 내부 업무 설계는 이 작업에서 다루지 않는다. — 2026-11-11: Git 서버는 수용하도록 반영. 폐쇄망 서버의 수용 여부는 확인 대기.
 - 완료 기준·검증 방법: 식별자 확보/일부 확보/전부 미확보 사례, JSON 위치 미확보 사례, ASCII·한글·이모지가 섞인 999/1,000/1,001 Byte 경계를 검증한다. 전송 직전 resultDesc가 1,000 Byte 이하이고 문자 손상이 없어야 하며, 원본 JSON 전체·임의 CLOSED·신규 조회 추적 ID가 없어야 한다. 같은 장애 결과를 재전송할 때 ID·본문이 동일해야 한다.
 
 ### 구현 전 결정할 사항 및 검증 상태

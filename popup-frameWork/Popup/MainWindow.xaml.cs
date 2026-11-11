@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -511,6 +512,8 @@ namespace Popup
             _isLoadingPopups = true;
             _pollingTimer.Stop();
             bool shown = false;
+            bool flushErrorResultNow = false;
+            WpfNextPopupResponseDto? response = null;
             try
             {
                 ResultFlushOutcome flushed = await _resultQueue.FlushAsync();
@@ -522,10 +525,13 @@ namespace Popup
                     _pollingRecovery.Reset();
                     _nextRecoveryDelay = null;
                 }
-                if (!flushed.Blocked && string.Equals(flushed.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase))
+                if (!flushed.Blocked && (flushed.HoldNextQuery
+                        || string.Equals(flushed.LastSaved?.NextStatus, "EMPTY", StringComparison.OrdinalIgnoreCase)))
                 {
                     // POL-09-03 : 저장 응답 — 방금 저장한 결과(닫힘 직후·복구 재전송 모두)가 EMPTY면 조회하지 않고 최신 조회 간격을 기다린다.
                     // 저장한 결과가 없는 정상 최초 조회·빈 큐는 그대로 조회한다.
+                    // POL-12-04 : 통합 복구 주기 — deliveryId 없이 저장했거나 저장되지 못한 장애 결과(HoldNextQuery)도 같은 깨진 응답을
+                    // 바로 다시 받지 않도록 nextStatus와 관계없이 조회 간격을 기다린다(TODO45).
                     if (showEmptyMessage)
                     {
                         MessageBox.Show("현재 표시할 팝업이 없습니다.", "팝업 조회",
@@ -545,7 +551,7 @@ namespace Popup
                     return;
                 }
 
-                WpfNextPopupResponseDto response = await _popupApiService.GetNextPopupAsync();
+                response = await _popupApiService.GetNextPopupAsync();
                 if (_isClosed || _clientVersionRejected) return;
                 ApplyPollingInterval(response.PollingIntervalSeconds);
                 _pollingRecovery.Reset();
@@ -597,6 +603,20 @@ namespace Popup
                     // 400/403 및 데이터 오류는 복구 루프에서 제외한다(426은 위에서 별도 처리).
                     _pollingRecovery.Reset();
                     _nextRecoveryDelay = null;
+                    /*
+                     * POL-12-04 : 통합 복구 주기 (TODO45 장애 결과)
+                     * 받은 조회 응답을 처리하지 못했으면(빈 본문·JSON 오류, 또는 받은 팝업의 표시 변환 실패) 장애 결과
+                     * (resultCode=400, resultDesc)를 큐에 넣고 바로 전송한다. 확보한 deliveryId·popupId만 담는다.
+                     * deliveryId가 있으면 서버가 그 전달 건을 오류로 닫아 저장 응답 nextStatus를 따르고, 없으면 조회 간격을 기다린다.
+                     */
+                    WpfResultItemDto? errorResult = BuildErrorResult(exception, response);
+                    if (errorResult != null)
+                    {
+                        _resultQueue.Enqueue(errorResult);
+                        flushErrorResultNow = true;
+                        System.Diagnostics.Debug.WriteLine($"[POLLING] 장애 결과 적재 resultId={errorResult.ResultId} " +
+                            $"deliveryId={errorResult.DeliveryId} popupId={errorResult.PopupId}: {errorResult.ResultDesc}");
+                    }
                 }
                 if (showErrorMessage)
                 {
@@ -607,9 +627,35 @@ namespace Popup
             finally
             {
                 _isLoadingPopups = false;
+                if (flushErrorResultNow && !_isClosed && !_clientVersionRejected)
+                {
+                    // 장애 결과는 기다리지 않고 바로 보낸다. 다음 단계(복구·조회 간격·즉시 조회)는 그 전송 결과로 정한다.
+                    _ = Dispatcher.InvokeAsync(() => LoadAndShowAvailablePopupsAsync(showEmptyMessage: false, showErrorMessage: false));
+                }
                 // 표시 중에는 타이머를 걸지 않는다. 닫힌 뒤 OnPopupFinished가 다음 단계를 정한다.
-                if (!_popupShowing) StartPeriodicPolling();
+                else if (!_popupShowing) StartPeriodicPolling();
             }
+        }
+
+        /*
+         * POL-12-04 : 통합 복구 주기 (TODO45 장애 결과)
+         * ■ 조회 응답 처리 실패 → 장애 결과
+         * - in : exception(조회 단계 예외) · response(역직렬화까지 성공한 조회 응답, 없으면 null)
+         * - out: resultCode=400 장애 결과 또는 null(장애 결과 대상 아님: 400·403 등 HTTP 오류)
+         * - 조회 응답 본문 처리 실패(WpfResponseFormatException)와 받은 팝업의 표시 변환·표시 실패만 대상이다.
+         */
+        private static WpfResultItemDto? BuildErrorResult(Exception exception, WpfNextPopupResponseDto? response)
+        {
+            if (exception is WpfResponseFormatException format)
+            {
+                return PopupErrorResult.Create(format.DeliveryId, format.PopupId, "팝업 조회 응답 처리 실패: " + format.Detail);
+            }
+            if (response?.Popup != null && exception is not HttpRequestException)
+            {
+                return PopupErrorResult.Create(response.Popup.DeliveryId, response.Popup.PopupId,
+                    $"팝업 표시 변환 실패: {exception.GetType().Name}: {exception.Message}");
+            }
+            return null;
         }
 
         /*

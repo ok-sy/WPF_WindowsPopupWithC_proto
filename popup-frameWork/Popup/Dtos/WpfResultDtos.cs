@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Popup.Dtos
 {
@@ -44,14 +45,34 @@ namespace Popup.Dtos
         /// <summary>POL-10-01 : 전달과 제출 식별 — 항목 멱등 키. 창이 열릴 때 확정되어 재전송 시에도 같다.</summary>
         public string ResultId { get; set; } = Guid.NewGuid().ToString();
 
-        /// <summary>POL-10-01 : 전달과 제출 식별 — 조회 응답 popup.deliveryId. 서버가 전달 건 소유·팝업 일치를 검증하고 결과 저장 시 종료한다.</summary>
-        public string DeliveryId { get; set; } = string.Empty;
+        /// <summary>
+        /// POL-10-01 : 전달과 제출 식별 — 조회 응답 popup.deliveryId. 서버가 전달 건 소유·팝업 일치를 검증하고 결과 저장 시 종료한다.
+        /// 장애 결과에서 확보하지 못하면 null이며 요청에서 생략한다.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? DeliveryId { get; set; } = string.Empty;
 
-        /// <summary>대상 팝업 ID.</summary>
-        public string PopupId { get; set; } = string.Empty;
+        /// <summary>대상 팝업 ID. 장애 결과에서 확보하지 못하면 null이며 요청에서 생략한다.</summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? PopupId { get; set; } = string.Empty;
 
-        /// <summary><see cref="WpfResultType"/> 상수 중 하나.</summary>
-        public string ResultType { get; set; } = WpfResultType.Closed;
+        /// <summary><see cref="WpfResultType"/> 상수 중 하나. 장애 결과는 null(요청에서 생략, 임의 CLOSED 금지).</summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ResultType { get; set; } = WpfResultType.Closed;
+
+        /// <summary>
+        /// POL-12-04 : 통합 복구 주기 (TODO45 장애 결과, 2026-11-11) — 받은 조회 응답을 처리하지 못했을 때만 400. 일반 결과는 null(생략).
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? ResultCode { get; set; }
+
+        /// <summary>장애 결과의 오류 내용·JSON 위치. UTF-8 1,000 Byte 이하이며 원본 JSON 전체는 넣지 않는다. 일반 결과는 null(생략).</summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ResultDesc { get; set; }
+
+        /// <summary>장애 결과(<see cref="ResultCode"/> 있음) 여부. 전송하지 않는다.</summary>
+        [JsonIgnore]
+        public bool IsErrorResult => ResultCode != null;
 
         /// <summary>팝업이 처음 화면에 표시된 시각. 있으면 서버가 표시 횟수를 +1 한다.</summary>
         public DateTimeOffset? DisplayedAt { get; set; }

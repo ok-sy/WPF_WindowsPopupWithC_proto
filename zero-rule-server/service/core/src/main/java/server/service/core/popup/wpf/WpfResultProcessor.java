@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import server.base.props.WpfPopupProps;
 import server.domain.popup.VideoProgressResponseDto;
+import server.domain.popup.wpf.WpfErrorResultCommand;
 import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
@@ -97,6 +98,44 @@ public class WpfResultProcessor {
         wpfMapper.insertReceipt(item.resultId(), employeeNo, item.popupId(),
                 item.resultType().name(), "ACCEPTED", null);
         return response;
+    }
+
+    /**
+     * POL-12-04 : 통합 복구 주기 (TODO45 장애 결과, 2026-11-11)
+     * ■ 장애 결과 1건 처리(REQUIRES_NEW)
+     * - in : employeeNo(String) 인증된 사번 · item(WpfErrorResultCommand) resultCode=400 장애 결과
+     * - out: WpfResultItemResponse ACCEPTED 또는 DUPLICATE · 예외: IllegalArgumentException(전달 건 검증 실패)
+     * - 사용자 처리 결과가 아니므로 완료·숨김·표시 정보를 바꾸지 않는다(오류 종결과 사용자 완료 구분).
+     *   deliveryId를 확보했으면 소유·팝업 일치·미종료를 확인하고 그 전달 건만 RESULT_TYPE=ERROR로 종료해 재노출을 다음 조회 주기까지 유예한다.
+     *   deliveryId가 없으면 전달 건을 건드리지 않고 영수증(RESULT_CODE·RESULT_DESC)만 남긴다. 임의의 전달 건을 종료하지 않는다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public WpfResultItemResponse processError(String employeeNo, WpfErrorResultCommand item) {
+        if (wpfMapper.lockActiveUser(employeeNo) == null) {
+            throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다. userId=" + employeeNo);
+        }
+        if (wpfMapper.countReceipt(item.resultId()) > 0) {
+            return new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.DUPLICATE, null, null);
+        }
+        String popupId = item.popupId();
+        if (item.deliveryId() != null) {
+            WpfPopupDelivery delivery = wpfMapper.selectDeliveryForUpdate(item.deliveryId());
+            if (delivery == null || !employeeNo.equals(delivery.employeeNo())) {
+                throw new IllegalArgumentException("유효한 전달 건이 아닙니다. deliveryId=" + item.deliveryId());
+            }
+            if (popupId != null && !delivery.popupId().equals(popupId)) {
+                throw new IllegalArgumentException("전달 건의 팝업과 일치하지 않습니다. deliveryId=" + item.deliveryId());
+            }
+            if (delivery.done()) {
+                throw new IllegalArgumentException("이미 결과가 저장된 전달 건입니다. deliveryId=" + item.deliveryId());
+            }
+            popupId = delivery.popupId();
+            wpfMapper.completeDelivery(item.deliveryId(), item.resultId(), WpfErrorResultCommand.RECEIPT_TYPE,
+                    props.getPollingIntervalSeconds());
+        }
+        wpfMapper.insertErrorReceipt(item.resultId(), employeeNo, popupId, "ACCEPTED",
+                String.valueOf(item.resultCode()), item.resultDesc());
+        return new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.ACCEPTED, null, null);
     }
 
     /**

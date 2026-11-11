@@ -481,6 +481,7 @@ namespace Popup
                     $"HTTP 오류 403: 로그인은 됐지만 이 계정이 활성 팝업 사용자가 아닙니다. {http.Message}",
                 HttpRequestException { StatusCode: { } status } http => $"HTTP 오류 {(int)status}: {http.Message}",
                 HttpRequestException http => $"통신 실패(응답 없음): {http.Message}",
+                WpfResponseFormatException format => ResponseParseFailure(format.InnerException ?? format),
                 JsonException json => ResponseParseFailure(json),
                 OperationCanceledException => "시간 초과(10초) 또는 취소 — 응답을 받지 못했습니다.",
                 _ => $"{exception.GetType().Name}: {exception.Message}"
@@ -494,7 +495,7 @@ namespace Popup
             }
         }
 
-        private string ResponseParseFailure(JsonException exception)
+        private string ResponseParseFailure(Exception exception)
         {
             HttpExchangeRecord? last = Volatile.Read(ref _lastExchange);
             string kind = last == null ? "UNKNOWN" : HttpExchangeRecord.BodyKind(last.ResponseBody, last.StatusCode);

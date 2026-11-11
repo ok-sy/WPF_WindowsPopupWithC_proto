@@ -10,6 +10,7 @@ import server.base.props.WpfPopupProps;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupResponseDto;
+import server.domain.popup.wpf.WpfErrorResultCommand;
 import server.domain.popup.wpf.WpfPopupItem;
 import server.domain.popup.wpf.WpfNextPopupResponse;
 import server.domain.popup.wpf.WpfPopupDelivery;
@@ -201,6 +202,48 @@ public class WpfPopupService {
                     "WPF_NEXT_STATUS_UNKNOWN", "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.");
         }
     }
+    /**
+     * POL-12-04 : 통합 복구 주기 (TODO45 장애 결과, 2026-11-11)
+     * ■ 장애 결과 1건 처리 + 후속 후보 유무
+     * - in : employeeNo(String) 인증된 사번 · item(WpfErrorResultCommand) resultCode=400 장애 결과
+     * - out: WpfResultResponse — 일반 결과와 같은 상태·nextStatus 규칙
+     * - 처리기가 전달 건(확보한 경우)을 오류로 종료하고 영수증을 남긴다. 업무 검증 실패는 REJECTED, 일시 장애는 RETRYABLE_ERROR,
+     *   그 밖의 예외는 INTERNAL_ERROR다. nextStatus는 저장 후 노출 후보로 계산하며, deliveryId 없이 저장한 장애 결과의
+     *   nextStatus를 따를지는 WPF가 정한다(같은 깨진 응답의 즉시 재조회 방지).
+     */
+    public WpfResultResponse processErrorResult(String employeeNo, WpfErrorResultCommand item) {
+        requireActiveUser(employeeNo);
+        String userId = employeeNo.trim();
+
+        WpfResultItemResponse processed;
+        try {
+            processed = resultProcessor.processError(userId, item);
+        } catch (IllegalArgumentException ex) {
+            return WpfResultResponse.of(new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.REJECTED,
+                    codeOf(null, ex), ex.getMessage()), null);
+        } catch (RuntimeException ex) {
+            boolean retryable = isTransientFailure(ex);
+            log.error("WPF 장애 결과 처리 실패({}) userId={} deliveryId={} resultId={}",
+                    retryable ? "일시 장애" : "미확정 오류", userId, item.deliveryId(), item.resultId(), ex);
+            return WpfResultResponse.of(retryable
+                    ? new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.RETRYABLE_ERROR,
+                            "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
+                    : new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR,
+                            "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."), null);
+        }
+        log.warn("WPF 장애 결과 수신 userId={} deliveryId={} popupId={} resultId={} code={} desc={}",
+                userId, item.deliveryId(), item.popupId(), item.resultId(), item.resultCode(), item.resultDesc());
+        try {
+            boolean available = popupMapper.countAvailablePopups(userId, true) > 0;
+            return WpfResultResponse.of(processed,
+                    available ? WpfResultResponse.NextStatus.AVAILABLE : WpfResultResponse.NextStatus.EMPTY);
+        } catch (RuntimeException ex) {
+            log.error("WPF 후속 후보 확인 실패(장애 결과는 저장됨) userId={} resultId={}", userId, item.resultId(), ex);
+            return new WpfResultResponse(processed.resultId(), processed.status(), null,
+                    "WPF_NEXT_STATUS_UNKNOWN", "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.");
+        }
+    }
+
     /**
      * POL-09-03 : 저장 응답
      * ■ 일시 장애 판정

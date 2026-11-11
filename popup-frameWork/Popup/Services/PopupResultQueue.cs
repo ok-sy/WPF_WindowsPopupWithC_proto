@@ -58,8 +58,10 @@ namespace Popup.Services
     /// <summary>
     /// POL-12-02 : 현행 임시 복구 — <see cref="PopupResultQueue.FlushAsync"/> 결과. Blocked=true면 미종결 결과가 남아 다음 조회를 미룬다.
     /// LastSaved는 이번에 저장된(ACCEPTED·DUPLICATE) 마지막 결과 응답이며 NextStatus로 다음 조회 시점을 정한다.
+    /// HoldNextQuery=true면 이번 전송에서 장애 결과(TODO45)가 deliveryId 없이 저장됐거나 저장되지 못하고 종결·제외되어,
+    /// 같은 깨진 조회 응답을 바로 다시 받지 않도록 nextStatus와 관계없이 최신 조회 간격을 기다린다.
     /// </summary>
-    public sealed record ResultFlushOutcome(bool Blocked, WpfResultResponseDto? LastSaved);
+    public sealed record ResultFlushOutcome(bool Blocked, WpfResultResponseDto? LastSaved, bool HoldNextQuery = false);
 
     public sealed class PopupResultQueue
     {
@@ -162,6 +164,9 @@ namespace Popup.Services
                 }
 
                 WpfResultResponseDto? lastSaved = null;
+                // POL-12-04 : 통합 복구 주기 — 장애 결과(TODO45)가 deliveryId 없이 저장되거나 저장되지 못하고 끝나면,
+                // 서버가 그 전달 건을 닫지 못해 바로 다시 조회하면 같은 깨진 응답을 받을 수 있으므로 다음 조회를 조회 간격만큼 미룬다.
+                bool holdNextQuery = false;
                 foreach (WpfResultItemDto item in sendable)
                 {
                     if (_transmissionStopped) return new ResultFlushOutcome(true, lastSaved);
@@ -182,12 +187,17 @@ namespace Popup.Services
                         lock (_stateLock) _quarantined.Add(item.ResultId);
                         Debug.WriteLine($"결과 전송 400 — 이번 실행에서 제외(보관) popupId={item.PopupId} " +
                             $"type={item.ResultType}: {exception.Message}");
+                        holdNextQuery |= item.IsErrorResult;
                         continue;
                     }
                     catch (Exception exception) when (exception is JsonException or InvalidOperationException)
                     {
                         // POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 본문이 비었거나 JSON이 아니다. 실행당 상한까지만 재전송한다.
-                        if (CountInvalidResponse(item, "본문 없음·JSON 오류: " + exception.Message)) continue;
+                        if (CountInvalidResponse(item, "본문 없음·JSON 오류: " + exception.Message))
+                        {
+                            holdNextQuery |= item.IsErrorResult;
+                            continue;
+                        }
                         return new ResultFlushOutcome(true, lastSaved);
                     }
                     catch (Exception exception)
@@ -200,17 +210,23 @@ namespace Popup.Services
                     if (!Settle(item, response))
                     {
                         // 상한에 이른 잘못된 응답은 이번 실행에서 빼고 다음 결과·조회로 넘어간다.
-                        if (ReachedInvalidResponseLimit(item)) continue;
+                        if (ReachedInvalidResponseLimit(item))
+                        {
+                            holdNextQuery |= item.IsErrorResult;
+                            continue;
+                        }
                         return new ResultFlushOutcome(true, lastSaved);
                     }
                     if (response.IsSaved) lastSaved = response;
+                    // deliveryId를 확보한 장애 결과가 저장됐으면 서버가 그 전달 건을 닫았으므로 nextStatus를 따른다.
+                    if (item.IsErrorResult && (!response.IsSaved || string.IsNullOrEmpty(item.DeliveryId))) holdNextQuery = true;
                     lock (_stateLock)
                     {
                         // 전송 중 같은 resultId로 다시 들어온(갱신된) 항목은 지우지 않는다 — 보낸 그 객체만 제거.
                         _pending.RemoveAll(p => ReferenceEquals(p, item));
                     }
                 }
-                return new ResultFlushOutcome(false, lastSaved);
+                return new ResultFlushOutcome(false, lastSaved, holdNextQuery);
             }
             finally
             {

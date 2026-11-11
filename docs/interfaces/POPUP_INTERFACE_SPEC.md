@@ -20,6 +20,7 @@
 - 3.7 보완(2026-10-22, TODO66): 관리자 공용 서식 편집기(TEXT·SURVEY·QUIZ)의 CKEditor 툴바 `서식 지우기`와 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼 삭제. 글자·문단 서식은 개별 버튼과 글꼴/크기 기본값 선택으로 되돌린다. JSON 필드·저장값·WPF 표시 변경 없음.
 - 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
+- 3.7 보완(2026-11-11, TODO45 장애 결과): 결과 API에 장애 결과 추가 — 조회 응답 처리 실패 시 `resultCode=400`·`resultDesc`(UTF-8 1,000 Byte)·확보한 `deliveryId`·`popupId`만, `resultType` 없음(§10.10). 일반 결과 필드·필수 조건은 변경 없음. Excel·Word·PDF 산출물은 미반영.
 - 3.7 보완(2026-11-10, TODO73 §10 UTF-8 BYTE): 결과 `answers[].textAnswer`는 UTF-8 1,000 Byte 이하(WPF 입력·제출 전 제한, 폐쇄망 DB `VARCHAR2(1000 BYTE)`). SURVEY·QUIZ `options[].text`는 관리자 웹에서 UTF-8 300 Byte 이하로 입력·저장 전 확인(폐쇄망 DB `VARCHAR2(300 BYTE)`, 같은 컬럼이라 설문은 2026-11-11 확대). 문항 제목은 CLOB이라 제한 없음. 필드·형식 변경 없음. 서버도 저장 전에 같은 바이트 상한을 확인해 넘으면 거부한다(자르지 않음). WPF-03 `textAnswer`(trim 후)는 400 `WPF_BAD_REQUEST`, 관리자 저장 API(`/apis/popup/**`)는 2026-11-11부터 입력 검증 오류(`IllegalArgumentException`·`@Valid`·본문 해석 실패)를 HTTP 400 + 기존 응답 형식(`msgClsf=ER`, `msgId=FW00000003`, `msgCn`=검증 문구 예 `… (현재 301 Byte)`)으로 응답한다(이전에는 500). 그 밖의 서버 오류는 500 그대로. 로컬 스키마는 바꾸지 않았다.
 - 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음(2026-11-03 B-4로 서버 검증 추가, 위 항목). DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
@@ -917,6 +918,8 @@ X-Client-Version: 1.0.0
 | score | number | QUIZ SUBMITTED 필수 | `null`. WPF 최종 채점 점수, 0 이상. SURVEY는 보내지 않음(§10.6) |
 | passed | boolean | QUIZ SUBMITTED 필수 | `null`. WPF 채점 합불(`score ≥ passingScore`, §10.6). 참여형 미달이면 `false`로 제출된다. 완료 여부와는 별개 |
 | video | object | VIDEO_WATCHED·VIDEO+QUIZ SUBMITTED 필수 | `null`. 영상 시청 정보(§10.7) |
+| resultCode | integer | 장애 결과 필수 | 일반 결과는 생략. 받은 조회 응답을 처리하지 못했을 때만 `400`(§10.10) |
+| resultDesc | string | 장애 결과 필수 | 일반 결과는 생략. 오류 내용·JSON 위치, UTF-8 1,000 Byte 이하(원본 JSON 전체 금지, §10.10) |
 
 유형별 블록의 필수 여부는 resultType·팝업 유형에 따른 조건부 값이다. 블록 누락·형식 오류는 그 결과를 `REJECTED`로 응답한다(§11). 제안서 v0.3의 `action`·`completedAt` 이름은 채택하지 않고 기존 `resultType`·`closedAt` 등 필드 이름을 유지한다(그 밖의 차이는 §10.9).
 
@@ -1106,6 +1109,33 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 | answers 필수 여부 | 항상 필수(없으면 빈 배열) | SUBMITTED일 때만 필수(1개 이상). 그 밖의 결과에는 보내지 않음 |
 | 오류 응답 | HTTP 409·422·429 등 상태 코드로 구분 | 업무 오류는 HTTP 200 + `status: REJECTED` + `code`(§11). 요청 처리 자체 실패만 HTTP 오류(§13) |
 | 같은 resultId·다른 본문 | 충돌(conflict)로 거절 | 본문 비교 없이 `DUPLICATE`(§12). 본문 비교 여부는 정책 보류(설계 45) |
+
+## 10.10 장애 결과 — 조회 응답 처리 실패 (2026-11-11, TODO45)
+
+WPF가 HTTP 200 조회 응답을 처리하지 못하면(빈 본문, JSON 구문·형식 오류, 받은 팝업의 표시 변환·표시 실패) 같은 결과 API로 **장애 결과**를 보낸다.
+
+```json
+{
+  "resultId": "0f3c1c1e-6b5d-4bd6-9c63-0d8f6f0b2a11",
+  "deliveryId": "DLV-20261111-0001",
+  "popupId": "P0001",
+  "resultCode": 400,
+  "resultDesc": "팝업 조회 응답 처리 실패: JSON 형식 오류(Path=$.popup.width Line=0 BytePos=88): JsonException: ...",
+  "closedAt": "2026-11-11T17:20:00+09:00"
+}
+```
+
+| 항목 | 규칙 |
+|---|---|
+| 필수 | `resultId`(WPF 생성, 재전송 시 같은 ID·본문)·`resultCode=400`·`resultDesc` |
+| `resultType` | 보내지 않는다(임의 `CLOSED` 금지). 값이 있으면 `REJECTED`(`WPF_INVALID_RESULT`) |
+| `deliveryId`·`popupId` | 확보한 값만 보낸다. JSON 구문 오류로 읽지 못하면 생략. 별도 조회 추적 ID는 쓰지 않는다 |
+| `resultDesc` | UTF-8 1,000 Byte 이하(초과는 `REJECTED`). WPF는 문자 중간을 자르지 않고 앞쪽(핵심 오류·JSON 위치)을 남긴다 |
+| 서버 처리 | 사용자 처리 결과가 아니므로 완료·숨김·표시 정보를 바꾸지 않는다. `deliveryId`가 있으면 소유·팝업 일치·미종료를 확인하고 그 전달 건만 `RESULT_TYPE=ERROR`로 종료해 `pollingIntervalSeconds` 동안 재노출을 유예한다. 없으면 전달 건을 건드리지 않고 영수증(`WPF_RESULT_RECEIPT`: `RESULT_TYPE=ERROR`·`RESULT_CODE=400`·`RESULT_DESC`)만 남긴다 |
+| 응답 | 일반 결과와 같다(ACCEPTED·DUPLICATE·REJECTED·RETRYABLE_ERROR·INTERNAL_ERROR, 저장 성공 시 `nextStatus`) |
+| WPF 다음 단계 | `deliveryId`를 보낸 장애 결과가 저장되면 `nextStatus`를 따른다. `deliveryId` 없이 저장됐거나 저장되지 못하고 종결(REJECTED·400·응답 이상 상한)되면 같은 깨진 응답을 바로 다시 받지 않도록 `nextStatus`와 관계없이 최신 조회 간격을 기다린다. 전송 실패는 일반 결과와 같이 보관·조회 보류·통합 복구 주기 |
+
+HTTP 오류(400·401·403·5xx 등)로 받은 조회 응답은 장애 결과 대상이 아니다(§13). DB: `db/oracle/24_wpf_error_result_oracle.sql`(영수증 `POPUP_ID` NULL 허용, `RESULT_DESC VARCHAR2(1000 BYTE)`, `CK_WPF_RESULT_TYPE`에 `ERROR`). 폐쇄망 결과 저장의 식별 필드명(`requestId`)·수용 여부는 실제 계약과 대조가 필요하다.
 
 ---
 

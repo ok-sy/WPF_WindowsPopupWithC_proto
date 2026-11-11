@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import server.domain.popup.wpf.WpfErrorResultCommand;
 import server.domain.popup.wpf.WpfNextPopupResponse;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
@@ -102,7 +103,8 @@ public class WpfPopupController {
         try {
             wpfPopupService.logRequest(body.resultId(), employeeNo, request.getRequestURI(), "POST",
                     request.getRemoteAddr(), receivedAt, 200, response.saved(),
-                    "popupId=" + body.popupId() + ",type=" + body.resultType(),
+                    "popupId=" + body.popupId() + ",type="
+                            + (body.isErrorResult() ? "ERROR(" + body.resultCode() + "),deliveryId=" + body.deliveryId() : body.resultType()),
                     "status=" + response.status() + ",next=" + response.nextStatus());
         } catch (RuntimeException ex) {
             log.warn("WPF 결과 API 요청 로그 저장 실패 resultId={}", body.resultId(), ex);
@@ -117,6 +119,18 @@ public class WpfPopupController {
             wpfPopupService.requireActiveUser(employeeNo);
             return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.REJECTED, null,
                     "WPF_INVALID_RESULT", "결과 형식 오류: " + error);
+        }
+        if (body.isErrorResult()) {
+            // POL-12-04 : 통합 복구 주기 — 장애 결과(TODO45): 조회 응답을 처리하지 못한 WPF가 보내는 resultCode=400 결과.
+            WpfErrorResultCommand errorCommand;
+            try {
+                errorCommand = body.toErrorCommand();
+            } catch (RuntimeException ex) {
+                log.error("WPF 장애 결과 변환 중 예상하지 못한 오류 resultId={}", body.resultId(), ex);
+                return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR, null,
+                        "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.");
+            }
+            return wpfPopupService.processErrorResult(employeeNo, errorCommand);
         }
         WpfResultCommand command;
         try {

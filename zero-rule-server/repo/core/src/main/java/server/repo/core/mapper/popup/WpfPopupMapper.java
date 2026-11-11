@@ -60,6 +60,18 @@ public interface WpfPopupMapper {
             @Param("resultStatus") String resultStatus,
             @Param("resultCode") String resultCode);
 
+    /**
+     * POL-12-04 : 통합 복구 주기 — 장애 결과 영수증(TODO45). RESULT_TYPE은 ERROR, popupId는 확보하지 못하면 null,
+     * RESULT_CODE(400)·RESULT_DESC(UTF-8 1,000 Byte 이하)를 함께 남긴다.
+     */
+    int insertErrorReceipt(
+            @Param("resultId") String resultId,
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("resultStatus") String resultStatus,
+            @Param("resultCode") String resultCode,
+            @Param("resultDesc") String resultDesc);
+
     /** POL-11-01 : 노출 판단 소유 — 사용자의 미완료(OPEN) 전달 건. 없으면 null. */
     WpfPopupDelivery selectOpenDelivery(@Param("userId") String userId);
 

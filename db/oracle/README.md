@@ -31,7 +31,7 @@ sqlplus zero-rule/<pw>@//192.168.114.71:4004/XE @02_popup_sample_oracle.sql
 | 3 | `03_grant_zero_rule_oracle.sql <앱계정>` | POPUP | 인자로 준 앱 계정(`ZERO_RULE` 또는 `ZERO-RULE`)에 POPUP 테이블 DML·시퀀스 SELECT 권한 (방식 A에서만) |
 | 4 | `04_popup_web_menu_oracle.sql` | 앱 계정(zero-rule) | **관리자 웹 메뉴 데이터**: 공통 테이블에 폴더(`CLOVER_NAV` "팝업 관리")·그룹(`CLOVER_PAGE_SECTION` "팝업 관리")·페이지(`CLOVER_PAGE` "팝업 등록" `/rgst-pop`)·항목(`CLOVER_NAV_ITEM`: 새 NAV + 기존 "관리자 메뉴" 끝)을 추가. 코드 변경 없음, 멱등, 되돌리기 SQL은 파일 끝 주석 |
 | 보관 | `archive/04_cleanup_markdown_fields_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | (2026-09-21 이후 기존 DB에만) TEXT `markdownMode`/`markdownContent` 제거에 따른 정리 — `markdownMode=false` 행은 필드만 제거, `true` 행은 목록 출력(삭제는 수동). 로컬 XE·원격 개발 DB 모두 적용 완료(원격 2026-09-28, 1행)라 `archive/`로 이동 |
-| 이관 | `06`~`09`, `12`~`19`, `23` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4), `18` 노출 시간대 `POPUP_DISPLAY_TIME`(서버 반영 전 실행, TODO52-1), `19` SURVEY 복수 선택 최소·최대 선택 수 `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`(서버 반영 전 실행), `23` 퀴즈 유형 코드 `POPUP_NOTICE.QUIZ_TYPE_CD`·기존 QUIZ 유형 복원(서버 반영 전 실행). 상세·적용 현황은 아래 각 절 |
+| 이관 | `06`~`09`, `12`~`19`, `23` `<스키마접두어>` | 팝업 테이블 소유/접근 계정 | 기존 DB 전용 정리 스크립트. 신규 DB는 `01`만 실행. `06` IMAGE `imageSizeMode` FIXED·빈 값 → ADAPTIVE, `07` CONTENT_OPTIONS 사본·파생 키 제거, `08` 과거 데이터 보정·제약 추가, `09` 미사용 컬럼 삭제, `12` `POPUP_RESPONSE.RESPONSE_STARTED_AT` 삭제, `13` Footer 동작 키 정규화, `14` `POPUP_CONTENT.LINK_URL` 삭제, `15` `WPF_POPUP_DELIVERY` 신설(서버 반영 전 실행), `16` 나중에 보기 `POPUP_NOTICE.SHOW_LATER_YN`·결과 `LATER` 제약(서버 반영 전 실행. 로컬 XE 2026-10-18 적용. 원격 개발 DB도 2026-10-18 적용 — 최초 버전(DEFAULT·NOT NULL 동시 추가)이 11g에서 POPUP_NOTICE UPDATE ORA-00600 [qkebCreateConstantOpn1]을 일으켜 컬럼을 재생성했고, 현재 스크립트는 NULL 허용 추가 → 채움 → NOT NULL 순서), `17` 문항·선택지 서식 CLOB `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`·`POPUP_OPTION.TEXT_BLOCKS`(서버 반영 전 실행, TODO55-4), `18` 노출 시간대 `POPUP_DISPLAY_TIME`(서버 반영 전 실행, TODO52-1), `19` SURVEY 복수 선택 최소·최대 선택 수 `POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`(서버 반영 전 실행), `23` 퀴즈 유형 코드 `POPUP_NOTICE.QUIZ_TYPE_CD`·기존 QUIZ 유형 복원(서버 반영 전 실행), `24` WPF 장애 결과 영수증 `WPF_RESULT_RECEIPT.POPUP_ID` NULL 허용·`RESULT_DESC`·`ERROR` 유형(서버 반영 전 실행, TODO45). 상세·적용 현황은 아래 각 절 |
 | 개발 | `21_dev_master_app_user_oracle.sql <스키마접두어>` | 팝업 테이블 소유/접근 계정 | 테스트 계정 `master` 활성 등록. 로컬·원격 개발 DB 전용, 폐쇄망·운영 실행 금지 |
 | 개발 | `22_popup_question_code_oracle.sql` | 공통 테이블 접근 앱 계정 | 답안 유형(0089)·퀴즈 유형(0090) 공통코드 등록. 로컬·원격 개발 DB 전용, 폐쇄망은 이미 있어 실행하지 않음 |
 | 조회 | `11_image_contract_candidates_oracle.sql` | 팝업 테이블 접근 계정 | IMAGE 계약 전환 대상 조회(읽기 전용, UPDATE 없음). 전환·복원 SQL 생성 절차는 [11_IMAGE_CONTRACT_TRANSITION.md](11_IMAGE_CONTRACT_TRANSITION.md) |
@@ -261,6 +261,14 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @23_popup_quiz_type_oracle.sql POPUP.`
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 23_popup_quiz_type_oracle.sql`
 - 적용 현황: 로컬 XE 2026-11-09 적용(QUIZ 1행 `01`). 원격 개발 DB 2026-11-09 적용(첫 시도 ORA-12170 접속 시간 초과 후 재실행, QUIZ 1행 `01`, 유형 없는 QUIZ 0).
+
+`24_wpf_error_result_oracle.sql <스키마접두어>` — WPF 장애 결과(TODO45) 영수증을 받도록 `WPF_RESULT_RECEIPT.POPUP_ID`를 NULL 허용으로 바꾸고 `RESULT_DESC VARCHAR2(1000 BYTE)`를 추가하며 `CK_WPF_RESULT_TYPE`에 `ERROR`를 넣는다. 이미 반영됐으면 SKIP(멱등). `01_popup_schema_oracle.sql` §11에도 같은 정의를 넣었다.
+
+- 배경: WPF가 받은 조회 응답을 처리하지 못하면 `resultCode=400`·`resultDesc`(UTF-8 1,000 Byte 이하) 장애 결과를 보낸다. resultType이 없고 JSON이 깨지면 popupId·deliveryId도 모를 수 있다. 서버는 영수증에 `RESULT_TYPE='ERROR'`·`RESULT_CODE='400'`·`RESULT_DESC`를 남기고, deliveryId가 있으면 그 전달 건만 `RESULT_TYPE='ERROR'`로 종료한다(`WPF_POPUP_DELIVERY.RESULT_TYPE`은 제약 없음).
+- 순서: **서버 반영 전에 실행.** 새 서버의 장애 결과 저장이 이 컬럼·제약을 쓴다(없으면 ORA-00904·ORA-02290 → INTERNAL_ERROR). 일반 결과 처리는 영향 없음.
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @24_wpf_error_result_oracle.sql POPUP.`
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 24_wpf_error_result_oracle.sql`
+- 적용 현황: 원격 개발 DB 2026-11-11 적용(컬럼 1, POPUP_ID NULL 허용 Y, 제약에 ERROR 포함). 로컬 XE 미적용. 11g는 `SEARCH_CONDITION`이 LONG이라 확인 쿼리는 제약 조건문을 목록으로 출력한다.
 
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 

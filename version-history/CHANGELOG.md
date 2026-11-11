@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-11-13 — dev: TODO45 조회 응답 처리 실패 장애 결과(resultCode=400) 전송·서버 수용
+
+- 이유: TODO45 장애 결과 정책 구현. HTTP 200 조회 응답이 비었거나 JSON이 깨져 WPF가 처리하지 못하면 데이터 오류로만 보고 조회 간격을 기다려 서버에 원인이 남지 않았다. 확정 정책(`resultCode=400`·`resultDesc` UTF-8 1,000 Byte·확보한 식별자만·`resultType` 없음)대로 결과 API로 알리고, 깨진 응답을 즉시 다시 받는 반복을 막는다.
+- 변경:
+  - 서버: `WpfResultRequest`에 `resultCode`·`resultDesc` 추가. `resultCode`가 있으면 장애 결과 검사(400만, `resultDesc` 필수·UTF-8 1,000 Byte 이하, `resultType` 동봉 금지, deliveryId·popupId 선택 — 일반 결과 필수 항목은 `NormalResult` 검증 그룹으로 분리해 기존 검사 유지). 새 `WpfErrorResultCommand`, `WpfPopupService.processErrorResult()`, `WpfResultProcessor.processError()`(완료·숨김·표시 정보 미변경, deliveryId가 있으면 소유·팝업 일치·미종료 확인 후 그 전달 건만 `RESULT_TYPE=ERROR`로 종료·재노출 유예, 없으면 영수증만), 매퍼 `insertErrorReceipt`. 응답·nextStatus 규칙은 일반 결과와 같다.
+  - DB: `db/oracle/24_wpf_error_result_oracle.sql`(영수증 `POPUP_ID` NULL 허용, `RESULT_DESC VARCHAR2(1000 BYTE)`, `CK_WPF_RESULT_TYPE`에 `ERROR`, 멱등)과 `01_popup_schema_oracle.sql` 반영. 확인 쿼리는 11g(LONG `SEARCH_CONDITION`)에 맞춰 조건문을 목록으로 출력.
+  - WPF: `PopupApiService`가 2xx 본문을 문자열로 읽어 역직렬화하고 빈 본문·JSON 오류를 `WpfResponseFormatException`(위치 Path·Line·BytePosition, 구문이 맞으면 `popup.deliveryId`·`popupId`, 원본 JSON 미포함)으로 올린다. `MainWindow.BuildErrorResult()`가 이 예외와 받은 팝업의 표시 변환·표시 실패에서 `PopupErrorResult.Create()`로 장애 결과를 만들어 큐에 넣고 바로 전송한다(`TruncateUtf8`: 문자·서로게이트 쌍을 중간에서 자르지 않음). `WpfResultItemDto`에 `ResultCode`·`ResultDesc`, `ResultType`·`DeliveryId`·`PopupId`는 null이면 생략. `ResultFlushOutcome.HoldNextQuery`: deliveryId 없이 저장됐거나 저장되지 못하고 종결된 장애 결과면 nextStatus와 관계없이 조회 간격 대기, deliveryId가 있으면 nextStatus를 따른다. `DemoPopupGateway` 같은 처리, API Demo 오류 로그는 새 예외도 빈 응답·잘못된 JSON으로 구분.
+  - 문서: TODO45 추가 결정·구현 절과 체크 항목, `POPUP_INTERFACE_SPEC.md` 결과 필드·§10.10 신설·변경 이력, `WPF_POPUP_ALL_SPEC.md` 조회 행, `POL-12.md`·`POLICY.md`, `popup-frameWork/README.md`, `db/oracle/README.md`. `WPF_POPUP_MINIMAL_SPEC.md`는 최소 제공 범위를 넓히지 않아 변경 없음.
+- 주요 파일: `zero-rule-server/web/api/.../WpfResultRequest.java`·`WpfPopupController.java`, `zero-rule-server/service/core/.../WpfPopupService.java`·`WpfResultProcessor.java`, `zero-rule-server/domain/.../WpfErrorResultCommand.java`, `zero-rule-server/repo/core/.../WpfPopupMapper.java`·`WpfPopupMapper.xml`, `db/oracle/24_wpf_error_result_oracle.sql`, `popup-frameWork/Popup/Services/PopupApiService.cs`·`PopupErrorResult.cs`·`WpfResponseFormatException.cs`·`PopupResultQueue.cs`·`DemoPopupGateway.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`·`DemoWindow.Api.cs`, `popup-frameWork/Popup/Dtos/WpfResultDtos.cs`.
+- 검증: 서버 `:domain:test`·`:repo:core:test`·`:service:core:test`(197건, DB 실연동 9건 건너뜀)·`:web:api:test`(64건) 통과 — 처리기 장애 결과 3건·컨트롤러 2건 추가. 원격 개발 DB에 24번 적용(컬럼 1·POPUP_ID NULL 허용 Y·제약에 ERROR). WPF `Popup.csproj` 빌드 경고 0·오류 0, 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 254건·`Popup.BehaviorTests` 1,736건(실제 MainWindow 흐름: 구문 오류 → deliveryId 없는 장애 결과·재조회 없이 1,800초 대기, 형식 오류+EMPTY → deliveryId 포함·대기, 형식 오류+AVAILABLE → 1회 재조회), `scripts/ApiDemoTests` 124건, `scripts/PopupWindowTests` 547건 통과. 실서버 기동 상태의 장애 결과 왕복, 로컬 XE 24번 적용, 폐쇄망 서버 수용 여부, 인터페이스 Excel·Word·PDF·ERD 반영은 미실행.
+- 상태: 커밋·원격 반영. 반입본은 기본 서버·DB 제외라 폐쇄망 서버에는 들어가지 않는다(WPF만 반영 시 폐쇄망 서버의 장애 결과 수용 여부 확인 필요).
+
 ## 2026-11-11-12 — dev: TODO45 잘못된 2xx 결과 응답 실행당 3회 상한
 
 - 이유: 복구 무한 루프 방지. 결과 전송에서 HTTP 2xx인데 응답 내용이 잘못된 경우(빈 본문·JSON 오류·응답 resultId 불일치·status 누락/미지원 값)는 미종결로 보관하고 조회를 보류했으며 상한이 없어, 서버 응답 오류가 계속되면 그 실행 동안 새 팝업을 받지 못했다. 즉시 무시하면 서버 미저장 시 전달 건이 OPEN으로 남아 같은 팝업이 바로 다시 내려오고 결과도 유실되므로, 제한 재전송 후 무시로 결정.

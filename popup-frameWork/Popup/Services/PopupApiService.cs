@@ -316,8 +316,32 @@ namespace Popup.Services
 
             await EnsureWpfSuccessAsync(response, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<TResponse>(_jsonOptions, cancellationToken)
-                   ?? throw new InvalidOperationException("WPF 팝업 API 응답 본문이 비어 있습니다.");
+            /*
+             * POL-12-04 : 통합 복구 주기 (TODO45 장애 결과)
+             * 2xx 본문을 문자열로 읽은 뒤 역직렬화한다. 빈 본문·JSON 구문/형식 오류는 위치 정보와
+             * (읽을 수 있으면) popup.deliveryId·popupId를 담은 WpfResponseFormatException으로 올린다.
+             */
+            string responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(responseText))
+            {
+                throw new WpfResponseFormatException("응답 본문이 비어 있습니다.", null, null);
+            }
+            TResponse? parsed;
+            try
+            {
+                parsed = JsonSerializer.Deserialize<TResponse>(responseText, _jsonOptions);
+            }
+            catch (Exception exception) when (exception is JsonException or FormatException or NotSupportedException
+                                                  or InvalidOperationException or OverflowException)
+            {
+                var (deliveryId, popupId) = WpfResponseFormatException.TryReadPopupIds(responseText);
+                string location = exception is JsonException json
+                    ? $"Path={json.Path ?? "(없음)"} Line={json.LineNumber?.ToString() ?? "-"} BytePos={json.BytePositionInLine?.ToString() ?? "-"}"
+                    : "위치 확인 불가";
+                throw new WpfResponseFormatException(
+                    $"JSON 형식 오류({location}): {exception.GetType().Name}: {exception.Message}", deliveryId, popupId, exception);
+            }
+            return parsed ?? throw new WpfResponseFormatException("응답 본문이 null입니다.", null, null);
         }
 
         /// <summary>WPF API 오류 본문 {code, message, timestamp}를 읽어 HttpRequestException에 담는다.</summary>

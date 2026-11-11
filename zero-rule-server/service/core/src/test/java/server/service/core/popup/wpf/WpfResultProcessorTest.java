@@ -7,6 +7,7 @@ import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoProgressResponseDto;
+import server.domain.popup.wpf.WpfErrorResultCommand;
 import server.domain.popup.wpf.WpfPopupDelivery;
 import server.domain.popup.wpf.WpfResultCommand;
 import server.domain.popup.wpf.WpfResultItemResponse;
@@ -63,6 +64,42 @@ class WpfResultProcessorTest {
     private WpfResultCommand item(WpfResultType type, Integer hideDays, List<PopupSubmitAnswer> answers,
                                   WpfVideoProgress video) {
         return new WpfResultCommand("r-1", "D-1", "P1", type, DISPLAYED, CLOSED, hideDays, answers, video, null, null);
+    }
+
+    /** TODO45 장애 결과: deliveryId를 확보하면 그 전달 건만 ERROR로 종료하고 완료·숨김·표시 정보는 바꾸지 않는다. */
+    @Test void errorResultWithDeliveryClosesDeliveryAsErrorWithoutCompletion() {
+        var res = processor.processError("E1001", new WpfErrorResultCommand("e-1", "D-1", null, 400, "content.textBlocks 형식 오류"));
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
+        verify(wpfMapper).completeDelivery("D-1", "e-1", "ERROR", 2700);
+        verify(wpfMapper).insertErrorReceipt("e-1", "E1001", "P1", "ACCEPTED", "400", "content.textBlocks 형식 오류");
+        verify(wpfMapper, never()).mergeDisplayAndClose(any(), any(), any(), any());
+        verify(popupMapper, never()).markPopupCompleted(any(), any(), any());
+        verifyNoInteractions(popupService);
+    }
+
+    /** TODO45 장애 결과: deliveryId가 없으면 어떤 전달 건도 종료하지 않고 영수증만 남긴다(popupId 미확보면 null). */
+    @Test void errorResultWithoutDeliveryOnlyRecordsReceipt() {
+        var res = processor.processError("E1001", new WpfErrorResultCommand("e-2", null, null, 400, "JSON 구문 오류 $.popup"));
+        assertEquals(WpfResultItemResponse.Status.ACCEPTED, res.status());
+        verify(wpfMapper, never()).selectDeliveryForUpdate(any());
+        verify(wpfMapper, never()).completeDelivery(any(), any(), any(), anyInt());
+        verify(wpfMapper).insertErrorReceipt("e-2", "E1001", null, "ACCEPTED", "400", "JSON 구문 오류 $.popup");
+    }
+
+    /** TODO45 장애 결과: 같은 resultId 재전송은 DUPLICATE, 남의·다른 팝업·이미 종료된 전달 건은 거절한다. */
+    @Test void errorResultIsIdempotentAndValidatesDelivery() {
+        when(wpfMapper.countReceipt("e-dup")).thenReturn(1);
+        assertEquals(WpfResultItemResponse.Status.DUPLICATE,
+                processor.processError("E1001", new WpfErrorResultCommand("e-dup", "D-1", null, 400, "x")).status());
+        assertThrows(IllegalArgumentException.class,
+                () -> processor.processError("E1002", new WpfErrorResultCommand("e-3", "D-1", null, 400, "x")));
+        assertThrows(IllegalArgumentException.class,
+                () -> processor.processError("E1001", new WpfErrorResultCommand("e-4", "D-1", "P9", 400, "x")));
+        when(wpfMapper.selectDeliveryForUpdate("D-done")).thenReturn(new WpfPopupDelivery("D-done", "E1001", "P1", "DONE", "TEXT"));
+        assertThrows(IllegalArgumentException.class,
+                () -> processor.processError("E1001", new WpfErrorResultCommand("e-5", "D-done", null, 400, "x")));
+        verify(wpfMapper, never()).insertErrorReceipt(any(), any(), any(), any(), any(), any());
+        verify(wpfMapper, never()).completeDelivery(any(), any(), any(), anyInt());
     }
 
     /** 이미 영수증이 있는 resultId는 DUPLICATE로 돌려주고 다시 처리하지 않는다. */

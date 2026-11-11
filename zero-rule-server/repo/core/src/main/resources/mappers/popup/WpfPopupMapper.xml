@@ -110,6 +110,15 @@
              #{resultType}, #{resultStatus}, #{resultCode})
     </insert>
 
+    <!-- POL-12-04 : 통합 복구 주기 — 장애 결과 영수증(TODO45). RESULT_TYPE='ERROR', POPUP_ID는 미확보면 NULL. 24_wpf_error_result_oracle.sql 선행 -->
+    <insert id="insertErrorReceipt">
+        INSERT INTO ${popupSchemaPrefix}WPF_RESULT_RECEIPT
+            (RECEIPT_ID, RESULT_ID, EMPLOYEE_NO, POPUP_ID, RESULT_TYPE, RESULT_STATUS, RESULT_CODE, RESULT_DESC)
+        VALUES
+            (${popupSchemaPrefix}SEQ_WPF_RESULT_RECEIPT.NEXTVAL, #{resultId}, #{userId}, #{popupId,jdbcType=VARCHAR},
+             'ERROR', #{resultStatus}, #{resultCode}, #{resultDesc,jdbcType=VARCHAR})
+    </insert>
+
     <!-- ===================================================================
          POL-13-02 : 전달·영수증 — 전달 건(WPF_POPUP_DELIVERY). 컬럼 순서는 WpfPopupDelivery 레코드 생성자 순서와 같다.
          =================================================================== -->

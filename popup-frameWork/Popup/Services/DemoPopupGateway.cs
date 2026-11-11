@@ -135,7 +135,22 @@ namespace Popup.Services
                 response.Status = "DUPLICATE";
                 return response;
             }
-            if (!_popups.TryGetValue(item.PopupId, out PopupResponseDto? popup))
+            if (item.IsErrorResult)
+            {
+                // POL-12-04 : 통합 복구 주기 (TODO45 장애 결과) — 서버처럼 확보한 전달 건만 오류로 닫고(완료 아님, 유예) 영수증만 남긴다.
+                if (item.DeliveryId != null)
+                {
+                    if (!_deliveries.TryGetValue(item.DeliveryId, out var errorDelivery)
+                        || (item.PopupId != null && errorDelivery.PopupId != item.PopupId))
+                        return Reject(response, "WPF_INVALID_DELIVERY", "유효한 전달 건이 아닙니다.");
+                    if (errorDelivery.Done) return Reject(response, "WPF_DELIVERY_COMPLETED", "이미 결과가 저장된 전달 건입니다.");
+                    _deliveries[item.DeliveryId] = (errorDelivery.PopupId, true);
+                    _deferredUntil[errorDelivery.PopupId] = DateTimeOffset.Now.AddSeconds(DeferSeconds);
+                }
+                response.Status = "ACCEPTED";
+                return response;
+            }
+            if (item.PopupId == null || !_popups.TryGetValue(item.PopupId, out PopupResponseDto? popup))
             {
                 return Reject(response, "WPF_NOT_ELIGIBLE", "데모 목록에 없는 팝업입니다.");
             }
