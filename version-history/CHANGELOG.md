@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-11-11 — dev: TODO45 401·로그인 실패 통합 복구 진입
+
+- 이유: TODO45 통합 복구 주기 결정 반영. 조회 단계에서 1회 재인증 후에도 401이면 복구 대상에서 빠져 정상 조회 간격(30~60분)으로 돌아갔고, SSO·로그인 실패로 토큰을 얻지 못한 경우도 같은 401로 끝나 복구 사이클을 타지 못했다.
+- 변경:
+  - `PopupPollingRecovery.IsRecoverable()` 추가: 기존 일시 오류(`IsTransient`) + HTTP 401. `MainWindow.LoadAndShowAvailablePopupsAsync()`의 조회 예외 분기를 이 판정으로 바꿔 401도 10초×3회×3사이클 → 1시간 주기로 다시 조회한다. 로그인 단계의 실패 전파 기준(`IsTransient`)은 그대로라 SSO 거절·로그인 4xx는 토큰 없는 요청 → 서버 401 → 재로그인 1회 → 401 경로로 같은 복구에 들어간다.
+  - 결과 전송 401은 `PopupResultQueue.FlushAsync()`가 이미 미종결(Blocked)로 보관하고 조회를 보류한 뒤 복구 예약하므로 코드 변경 없음(같은 resultId 유지).
+  - 400·403·데이터 오류는 정상 조회 간격, 426은 기존 업데이트 안내·종료 유지. 타이머는 기존 일회성 타이머 하나만 쓰고 401 재인증은 요청당 1회 그대로다.
+  - 문서: TODO45 구현 절 추가·상태 갱신, `POL-12.md`·`POLICY.md`·`POPUP_INTERFACE_SPEC.md`의 '구현 대기' 문구를 반영 상태로 정정, `WPF_POPUP_ALL_SPEC.md` 조회·미전송 결과 복구 행, `popup-frameWork/README.md` 복구 설명. `WPF_POPUP_MINIMAL_SPEC.md`는 복구 대상·횟수를 적지 않아 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/PopupPollingRecovery.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF_POPUP_ALL_SPEC.md`, `popup-frameWork/README.md`.
+- 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 210건(반복 401 응답 예외의 복구 판정, HTTP 상태별 분류, 426·JSON 제외), `Popup.BehaviorTests` 1,728건(실제 `MainWindow` 흐름: 조회 401 → 10초 복구 예약, 403·400 → 1,800초 정상 간격, 결과 전송 401 → 조회 보류·10초 복구 예약) 통과. `scripts/ApiDemoTests` 124건 통과. 실제 SSO·서버로 401·로그인 실패를 만드는 실환경 실행과 폐쇄망 확인은 미실행.
+- 상태: 커밋·원격 반영. 45-3(400 격리·INTERNAL_ERROR 3회 상한) 최종 정책과 45-6 실환경 검증은 대기.
+
 ## 2026-11-11-10 — dev: TODO45 복구 사이클 3회로 변경
 
 - 이유: 요구사항 반영. 같은 날 확정한 복구 사이클 최대 2회를 3회로 다시 조정. 대기 순서는 10초 간격 3회 → 30분 → 10초 간격 3회 → 30분 → 10초 간격 3회, 이후 1시간마다 1회.

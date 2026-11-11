@@ -34,6 +34,15 @@ namespace Popup.Services
             _ => false
         };
 
+        /// <summary>
+        /// POL-12-04 : 통합 복구 주기 — 조회 단계에서 복구 사이클로 다시 시도할 오류인지 판정한다.
+        /// 일시 오류(<see cref="IsTransient"/>)에 더해, 1회 재인증 후에도 남은 401(로그인 실패 포함)을 복구 대상으로 본다.
+        /// 400·403·426·데이터 오류는 복구 대상이 아니다. 로그인 단계의 실패 전파 기준(<see cref="IsTransient"/>)은 바꾸지 않는다.
+        /// </summary>
+        public static bool IsRecoverable(Exception exception)
+            => IsTransient(exception)
+               || exception is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized };
+
         public TimeSpan NextDelay()
         {
             IsRecovering = true;

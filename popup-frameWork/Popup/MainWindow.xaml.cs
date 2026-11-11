@@ -581,14 +581,15 @@ namespace Popup
             {
                 if (shown) _popupShowing = false;
                 if (_isClosed || _clientVersionRejected) return;
-                if (PopupPollingRecovery.IsTransient(exception))
+                // POL-12-04 : 통합 복구 주기 — 일시 오류와 1회 재인증 후에도 남은 401(로그인 실패 포함)은 같은 복구 사이클로 다시 조회한다.
+                if (PopupPollingRecovery.IsRecoverable(exception))
                 {
                     _nextRecoveryDelay = _pollingRecovery.NextDelay();
                     System.Diagnostics.Debug.WriteLine($"[POLLING] 복구 조회 예약: {_nextRecoveryDelay.Value.TotalSeconds}초, {exception.Message}");
                 }
                 else
                 {
-                    // 400/401(1회 재인증 후에도 실패)/403 및 데이터 오류는 복구 루프에서 제외한다.
+                    // 400/403 및 데이터 오류는 복구 루프에서 제외한다(426은 위에서 별도 처리).
                     _pollingRecovery.Reset();
                     _nextRecoveryDelay = null;
                 }
