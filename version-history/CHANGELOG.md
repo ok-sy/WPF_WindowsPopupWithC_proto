@@ -8,8 +8,9 @@
   - 파일 `docs/interfaces/WPF/WPF_SPEC_v3.8.xlsx`(시트: 개요·버전 이력·조회 응답·TEXT·IMAGE·VIDEO·SURVEY_QUIZ·결과 요청·결과 응답·예시). 버전은 스크립트의 VERSIONS에 추가해 관리하고, 생성하면 같은 폴더의 이전 `WPF_SPEC_v*.xlsx`를 지운다. v3.7은 이전 파일(`WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`)로 기록하고 그 파일은 삭제했다.
   - 레이아웃: 개요는 표(문서 정보·API 목록·처리 흐름·팝업 유형·시트 안내)로 바꾸고, 열이 적은 표는 열을 병합해 빈 열 없이 쓰며, 행 높이는 글자 폭으로 계산한다. 예시 JSON은 한 줄을 한 행으로 둔다.
   - 참조: `README.md`의 docs/interfaces 설명(폴더 구분·최소 기능 정의서 문구 정정 포함), `.gitignore` 주석.
+  - 후속 수정(레이아웃·색상 원복): 재작성본의 파란 계열 색상·시트 이름·열 구성이 이전 정의서와 달라 이전 형태로 되돌렸다. 색상은 이전 정의서와 같게(제목 띠 #2F343B·흰 글자, 구역 #E9ECEF, 표 머리 #D9DEE3, 흐름 상자 #F7F8FA, 설명·예시 #F7F7F7, 눈금선 표시), 시트는 개요·공통·TEXT·IMAGE·VIDEO·SURVEY_QUIZ·Sample·RESULT_REQUEST·RESULT_RESPONSE에 버전 이력을 마지막에 추가, 필드 표 열은 `필드 | JSON 위치 | 형식 | 필수 | Default | 설명 | 비고`(필드는 시트 범위 기준 상대 이름, JSON 위치는 전체 경로·오름차순, 계약서 문구의 첫 문장은 설명·나머지는 비고). 개요는 ① 처리 프로세스 화살표 도식(상자·화살표를 별도 열에 두고 병합 없이 배치, 상세 흐름은 한 행 병합)·② 처리 단계·③ 팝업 유형 요약·④ WPF API·⑤ 시트 구성으로 두고, 이전 개요의 고정 22pt 행 높이로 잘리던 부분은 글자 폭으로 계산한 높이로 바꿨다. 제목 행 아래 버전·날짜·기준 문서를 적고, 필드 시트는 표 머리 아래로 틀 고정.
 - 주요 파일: `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.8.xlsx`, `docs/interfaces/WPF/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`(삭제), `README.md`, `.gitignore`.
-- 검증: 생성 결과 검사 — 필드 표 7개 모두 JSON 위치 오름차순, TODO·설계·PU001·'...' 표기 0건(예시 JSON 문자열 값 안의 '...' 제외), 폐기 필드 0건. Excel로 개요·TEXT·SURVEY_QUIZ·결과 응답·버전 이력·예시 시트를 이미지로 내보내 잘림·빈 열이 없는지 확인. 계약서 값과 대조해 completionRatio(VIDEO 1.0 / 동영상+퀴즈 0.8) 등 기본값 확인.
+- 검증: 생성 결과 검사 — 필드 표 7개 모두 JSON 위치 오름차순, TODO·설계·PU001·'...' 표기 0건(예시 JSON 문자열 값 안의 '...' 제외), 폐기 필드 0건. Excel로 개요·TEXT·SURVEY_QUIZ·결과 응답·버전 이력·예시 시트를 이미지로 내보내 잘림·빈 열이 없는지 확인. 계약서 값과 대조해 completionRatio(VIDEO 1.0 / 동영상+퀴즈 0.8) 등 기본값 확인. 후속 수정 후 다시 생성해 같은 검사(필드 표 7개 오름차순, TODO·설계·폐기 표기 0건)를 통과했고, 개요·공통·TEXT·VIDEO·SURVEY_QUIZ·Sample·RESULT_REQUEST·RESULT_RESPONSE·버전 이력 시트를 Excel 이미지로 내보내 잘림·겹침이 없는지 확인.
 - 상태: 커밋·원격 반영. 반입본(20261112)에는 들어가지 않았다.
 
 ## 2026-11-11-18 — docs: 인터페이스 문서 영역별 폴더 재구성·최소 기능 정의서 삭제

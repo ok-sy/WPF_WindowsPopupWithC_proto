@@ -23,6 +23,7 @@ import unicodedata
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SPEC = os.path.join(ROOT, 'docs', 'interfaces', 'WPF', 'POPUP_INTERFACE_SPEC.md')
@@ -360,12 +361,17 @@ STATUS_HANDLING = {
 }
 
 # ---------------------------------------------------------------- 서식
+# 색상·글꼴은 이전 정의서(WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx)를 따른다: 진회색 제목 띠, 연회색 구역·표 머리, 눈금선 표시.
 FONT = '맑은 고딕'
-THIN = Side(style='thin', color='B7B7B7')
-BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
-HEAD_FILL = PatternFill('solid', fgColor='1F4E79')
-SECTION_FILL = PatternFill('solid', fgColor='DDEBF7')
-WIDTHS = [44, 16, 22, 30, 84]
+TITLE_FILL = PatternFill('solid', fgColor='2F343B')
+SECTION_FILL = PatternFill('solid', fgColor='E9ECEF')
+HEAD_FILL = PatternFill('solid', fgColor='D9DEE3')
+BOX_FILL = PatternFill('solid', fgColor='F7F8FA')
+NOTE_FILL = PatternFill('solid', fgColor='F7F7F7')
+LINE = Side(style='thin', color='C8CDD3')
+BORDER = Border(left=LINE, right=LINE, top=LINE, bottom=LINE)
+ROW_H = 22          # 한 줄 행 높이(이전 정의서 기준)
+LINE_H = 15         # 줄바꿈 한 줄당 높이
 
 
 def disp_width(s):
@@ -373,194 +379,257 @@ def disp_width(s):
 
 
 def lines_for(text, width):
-    width = max(width * 0.95, 1)
+    width = max(width * 0.95 - 1, 1)
     return sum(max(1, math.ceil(disp_width(part) / width)) for part in str(text).split('\n'))
 
 
-class SheetWriter:
-    def __init__(self, ws, widths=WIDTHS):
-        self.ws, self.widths, self.row = ws, widths, 1
-        for i, w in enumerate(widths, start=1):
-            ws.column_dimensions[chr(64 + i)].width = w
-        ws.sheet_view.showGridLines = False
+def fit_height(lines):
+    return max(ROW_H, LINE_H * lines + 7)
 
-    def title(self, text, sub=None):
-        c = self.ws.cell(self.row, 1, text)
-        c.font = Font(name=FONT, size=16, bold=True, color='1F4E79')
-        self.ws.row_dimensions[self.row].height = 28
-        self.row += 1
-        if sub:
-            c = self.ws.cell(self.row, 1, sub)
-            c.font = Font(name=FONT, size=9, color='595959')
-            self.row += 1
-        self.row += 1
+
+class SheetWriter:
+    def __init__(self, ws, widths):
+        self.ws, self.widths, self.row = ws, widths, 1
+        self.ncol = len(widths)
+        for i, w in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+
+    def merged(self, col_from, col_to, value, font, fill=None, align=None, border=False):
+        for col in range(col_from, col_to + 1):
+            cell = self.ws.cell(self.row, col)
+            if fill:
+                cell.fill = fill
+            if border:
+                cell.border = BORDER
+        if col_to > col_from:
+            self.ws.merge_cells(start_row=self.row, start_column=col_from, end_row=self.row, end_column=col_to)
+        c = self.ws.cell(self.row, col_from, value)
+        c.font = font
+        c.alignment = align or Alignment(vertical='center', wrap_text=True)
+        return c
+
+    def title(self, text, sub):
+        for r in (1, 2):
+            for col in range(1, self.ncol + 1):
+                self.ws.cell(r, col).fill = TITLE_FILL
+            self.ws.row_dimensions[r].height = ROW_H
+        self.ws.merge_cells(start_row=1, start_column=1, end_row=2, end_column=self.ncol)
+        c = self.ws.cell(1, 1, text)
+        c.font = Font(name=FONT, size=15, bold=True, color='FFFFFF')
+        c.alignment = Alignment(horizontal='left', vertical='center', indent=1)
+        self.row = 3
+        self.merged(1, self.ncol, sub, Font(name=FONT, size=9, color='595959'),
+                    align=Alignment(horizontal='right', vertical='center'))
+        self.ws.row_dimensions[3].height = ROW_H
+        self.row = 4
 
     def section(self, text):
-        n = len(self.widths)
-        for col in range(1, n + 1):
-            cell = self.ws.cell(self.row, col)
-            cell.fill = SECTION_FILL
-        c = self.ws.cell(self.row, 1, text)
-        c.font = Font(name=FONT, size=11, bold=True, color='1F4E79')
-        self.ws.row_dimensions[self.row].height = 20
+        self.merged(1, self.ncol, text, Font(name=FONT, size=11, bold=True, color='222222'), SECTION_FILL,
+                    Alignment(horizontal='left', vertical='center', indent=1))
+        self.ws.row_dimensions[self.row].height = ROW_H
         self.row += 1
 
-    def table(self, header, rows, mono_cols=(0,), spans=None):
-        """표. spans는 논리 열마다 (시작 열, 끝 열)이며 끝 열이 크면 병합해 넓게 쓴다. 기본은 열 하나씩."""
+    def table(self, header, rows, mono_cols=(), spans=None, center_cols=()):
+        """표. spans는 논리 열마다 (시작 열, 끝 열)이며 끝 열이 크면 병합한다. 기본은 열 하나씩."""
         spans = spans or [(i, i) for i in range(1, len(header) + 1)]
         widths = [sum(self.widths[a - 1:b]) for a, b in spans]
-
-        def put(values, head):
-            height = 1
-            for (a, b), v, width, idx in zip(spans, values, widths, range(len(spans))):
-                for col in range(a, b + 1):
-                    cell = self.ws.cell(self.row, col)
-                    cell.border = BORDER
-                    if head:
-                        cell.fill = HEAD_FILL
-                if b > a:
-                    self.ws.merge_cells(start_row=self.row, start_column=a, end_row=self.row, end_column=b)
-                c = self.ws.cell(self.row, a, v)
-                if head:
-                    c.font = Font(name=FONT, size=10, bold=True, color='FFFFFF')
-                    c.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-                else:
-                    c.font = Font(name='Consolas' if idx in mono_cols else FONT, size=10)
-                    c.alignment = Alignment(vertical='top', wrap_text=True,
-                                            horizontal='center' if isinstance(v, int) else None)
-                    height = max(height, lines_for(v, width))
-            self.ws.row_dimensions[self.row].height = 20 if head else 15 * height + 3
-            self.row += 1
-
-        put(header, True)
+        for (a, b), v in zip(spans, header):
+            self.merged(a, b, v, Font(name=FONT, size=10, bold=True, color='222222'), HEAD_FILL,
+                        Alignment(horizontal='center', vertical='center', wrap_text=True), border=True)
+        self.ws.row_dimensions[self.row].height = ROW_H
+        self.row += 1
         for r in rows:
-            put(r, False)
+            lines = 1
+            for idx, ((a, b), v, width) in enumerate(zip(spans, r, widths)):
+                mono = idx in mono_cols
+                self.merged(a, b, v, Font(name='Consolas' if mono else FONT, size=10, color='222222'),
+                            align=Alignment(horizontal='center' if idx in center_cols else 'left',
+                                            vertical='center', wrap_text=True), border=True)
+                lines = max(lines, lines_for(v, width * (0.92 if mono else 1)))
+            self.ws.row_dimensions[self.row].height = fit_height(lines)
+            self.row += 1
         self.row += 1
 
-    def bullets(self, items):
-        """설명 목록: 첫 열부터 끝 열까지 병합한 한 칸에 번호와 문장. 병합 셀은 자동 높이가 안 되므로 높이를 계산해 넣는다."""
-        n = len(self.widths)
+    def notes(self, items):
+        """동작 설명: 항목마다 한 행(전체 열 병합), 연회색 바탕."""
         span = sum(self.widths)
-        for i, text in enumerate(items, start=1):
-            self.ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=n)
-            c = self.ws.cell(self.row, 1, f'{i}. {text}')
-            c.font = Font(name=FONT, size=10)
-            c.alignment = Alignment(vertical='top', wrap_text=True, indent=1)
-            self.ws.row_dimensions[self.row].height = 15 * lines_for(c.value, span - 4) + 3
+        for text in items:
+            self.merged(1, self.ncol, f'• {text}', Font(name=FONT, size=10, color='222222'), NOTE_FILL,
+                        Alignment(vertical='center', wrap_text=True, indent=1))
+            self.ws.row_dimensions[self.row].height = fit_height(lines_for(text, span - 6))
             self.row += 1
         self.row += 1
 
-    def code(self, label, lines):
+    def code(self, label, lines, col_to=None):
         self.section(label)
+        col_to = col_to or self.ncol
         for line in lines:
-            c = self.ws.cell(self.row, 1, line)
-            c.font = Font(name='Consolas', size=10)
-            c.alignment = Alignment(vertical='top', wrap_text=False)
+            self.merged(1, col_to, line, Font(name='Consolas', size=9, color='333333'), NOTE_FILL,
+                        Alignment(vertical='center', wrap_text=False, indent=1))
+            self.ws.row_dimensions[self.row].height = 14
             self.row += 1
         self.row += 1
 
+    def flow(self, top, bottom, last):
+        """처리 흐름 상자: 윗줄 왼→오, 오른쪽 끝에서 ↓, 아랫줄 오→왼, 왼쪽 끝에서 ↓, 마지막 줄 왼→오."""
+        box_font = Font(name=FONT, size=10, bold=True, color='333333')
+        arrow_font = Font(name=FONT, size=12, bold=True, color='7A828C')
+        center = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
-FIELD_HEADER = ['JSON 위치', '형식', '필수', '기본값', '설명']
+        def line(items, arrow):
+            for i, text in enumerate(items):
+                col = 1 + i * 2
+                self.merged(col, col, text, box_font, BOX_FILL, center, border=True)
+                if i < len(items) - 1:
+                    self.merged(col + 1, col + 1, arrow, arrow_font, align=center)
+            self.ws.row_dimensions[self.row].height = 30
+            self.row += 1
+
+        def down(col):
+            self.merged(col, col, '↓', arrow_font, align=Alignment(horizontal='center', vertical='center'))
+            self.ws.row_dimensions[self.row].height = 18
+            self.row += 1
+
+        line(top, '→')
+        down(1 + (len(top) - 1) * 2)
+        line(list(reversed(bottom)), '←')
+        down(1)
+        line(last, '→')
+        self.row += 1
+
+
+SENTENCE_END = re.compile(r'(?<=[^\d.])\.\s')
+
+
+def field_table(w, rows, scope):
+    """필드 표: 필드(시트 범위 기준 상대 이름, 범위가 없으면 마지막 이름) | JSON 위치(전체 경로) | 형식 | 필수 | Default | 설명 | 비고.
+    설명은 계약서 문구의 첫 문장, 나머지 문장은 비고로 나눈다."""
+    out = []
+    for path, fmt, req, default, desc in rows:
+        if scope and path.startswith(scope) and len(path) > len(scope):
+            name = path[len(scope):]
+        else:
+            name = path.rsplit('.', 1)[-1]
+        parts = SENTENCE_END.split(desc, maxsplit=1)
+        head = parts[0].strip().rstrip('.')
+        rest = parts[1].strip() if len(parts) > 1 else ''
+        out.append([name, path, fmt, req, default, head, rest])
+    w.table(FIELD_HEADER, out, mono_cols=(0, 1), center_cols=(2, 3, 4))
+
+
+FIELD_HEADER = ['필드', 'JSON 위치', '형식', '필수', 'Default', '설명', '비고']
+FIELD_WIDTHS = [32, 42, 11, 16, 13, 40, 48]
 
 
 def build(version, date):
     wb = Workbook()
-    sub = f'{version} · {date} · 기준 문서: docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md'
+    sub = f'{version} · {date} · 기준 문서 docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md'
 
+    # 개요
     ws = wb.active
     ws.title = '개요'
-    w = SheetWriter(ws, [30, 24, 30, 34, 46])
-    w.title('WPF 팝업 인터페이스 정의서', sub)
-    wide = [(1, 1), (2, 5)]
-    w.section('문서 정보')
-    w.table(['항목', '내용'], [
-        ['문서', f'WPF_SPEC_{version}.xlsx'],
-        ['버전 / 기준일', f'{version} / {date}'],
-        ['기준 문서', '인터페이스 계약서 docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md'],
-        ['작성 규칙', 'JSON 위치는 전체 경로로 적고 오름차순으로 나열한다. 삭제·폐기된 항목은 적지 않는다.'],
-    ], mono_cols=(), spans=wide)
-    w.section('API 목록')
+    w = SheetWriter(ws, [22, 18, 28, 18, 22, 18, 36, 18])
+    w.title(f'WPF 팝업 인터페이스 개요 ({version})', sub)
+    w.section('① 전체 처리 프로세스')
+    w.row += 1
+    w.flow(['관리자 화면', '관리자 API', 'Oracle', 'WPF 조회 API(1건)'],
+           ['PopupFactory / View', 'PopupManager', 'PopupWindow', '사용자 동작'],
+           ['WPF 결과 수신 API(1건)', 'Oracle', 'nextStatus → 다음 조회'])
+    w.notes(['상세 흐름: 관리자 화면 → 관리자 API → Oracle → WPF 조회 API(1건, deliveryId) → PopupResponseDto → PopupFactory → '
+             'PopupOptions + 유형별 View → PopupManager → PopupWindow → 사용자 동작 → 결과 큐 → WPF 결과 수신 API(1건) → Oracle → '
+             'nextStatus(AVAILABLE: 바로 다음 조회 / EMPTY: 조회 간격 대기)'])
+    w.section('② 처리 단계')
+    w.table(['단계', '구분', '내용'], FLOW, spans=[(1, 1), (2, 2), (3, 8)], center_cols=(0,))
+    w.section('③ 팝업 유형 요약')
+    w.table(['popupType', '설명', '핵심 데이터', '완료 기준'], TYPE_SUMMARY, mono_cols=(0, 2),
+            spans=[(1, 1), (2, 2), (3, 5), (6, 8)])
+    w.section('④ WPF API')
     api = tables(section(r'^3\. 현재 C#이 사용하는 API'))[0]
     w.table(['ID', '기능', 'Method', '경로', '비고'],
             [[clean(r['ID']), clean(r['기능']), clean(r['Method']), clean(r['기본 경로']),
-              '로그인 경로는 설정 Auth.LoginPath로 바꿀 수 있다' if r['ID'] == 'WPF-00' else ''] for r in api], mono_cols=(3,))
-    w.section('처리 흐름')
-    w.table(['단계', '내용'], [[f'{a}. {b}', c] for a, b, c in FLOW], mono_cols=(), spans=wide)
-    w.section('팝업 유형')
-    w.table(['popupType', '구분', '주요 데이터', '완료 기준'], TYPE_SUMMARY, mono_cols=(0, 2),
-            spans=[(1, 1), (2, 2), (3, 4), (5, 5)])
-    w.section('시트 안내')
+              '로그인 경로는 설정 Auth.LoginPath로 바꿀 수 있다' if r['ID'] == 'WPF-00' else ''] for r in api],
+            mono_cols=(3,), spans=[(1, 1), (2, 2), (3, 3), (4, 5), (6, 8)], center_cols=(0, 2))
+    w.section('⑤ 시트 구성')
     w.table(['시트', '내용'], [
-        ['버전 이력', '버전별 변경 내용'],
-        ['조회 응답', '조회 응답 ROOT와 popup 공통 필드'],
+        ['공통', '조회 응답 ROOT와 popup 공통 필드, 조회 동작'],
         ['TEXT / IMAGE / VIDEO / SURVEY_QUIZ', '유형별 content·문항 필드와 동작'],
-        ['결과 요청 / 결과 응답', '결과 API 필드, status·오류 처리 기준'],
-        ['예시', '유형별 조회 응답 popup JSON 예시'],
-    ], mono_cols=(), spans=wide)
+        ['Sample', '유형별 조회 응답 popup JSON 예시'],
+        ['RESULT_REQUEST / RESULT_RESPONSE', '결과 API 요청·응답 필드, status·오류 처리 기준'],
+        ['버전 이력', '정의서 버전별 변경 내용'],
+    ], spans=[(1, 2), (3, 8)])
+    w.notes(['JSON 위치는 생략 없이 전체 경로로 적고, 필드 표는 JSON 위치 오름차순으로 나열한다. 삭제·폐기된 항목은 적지 않는다.'])
 
-    ws = wb.create_sheet('버전 이력')
-    w = SheetWriter(ws, [10, 14, 120])
-    w.title('버전 이력', sub)
-    w.table(['버전', '날짜', '변경 내용'], [[v, d, '\n'.join(f'• {x}' for x in items)] for v, d, items in VERSIONS], mono_cols=())
-
-    ws = wb.create_sheet('조회 응답')
-    w = SheetWriter(ws)
-    w.title('조회 응답 — POST /api/wpf/popups', sub)
-    w.section('필드 (ROOT · popup 공통)')
-    w.table(FIELD_HEADER, dedupe_sort(root_rows() + popup_common()))
+    # 공통
+    ws = wb.create_sheet('공통')
+    w = SheetWriter(ws, FIELD_WIDTHS)
+    w.title('WPF 팝업 - 공통 계약 (조회 응답 POST /api/wpf/popups)', sub)
+    w.section('조회 응답 ROOT · popup 공통 필드')
+    field_table(w, dedupe_sort(root_rows() + popup_common()), 'popup.')
     w.section('동작')
-    w.bullets(NOTES['root'])
+    w.notes(NOTES['root'])
 
-    for name, rows, key in (('TEXT', text_rows(), 'TEXT'), ('IMAGE', image_rows(), 'IMAGE'), ('VIDEO', video_rows(), 'VIDEO'),
-                            ('SURVEY_QUIZ', survey_quiz_rows(), 'SURVEY_QUIZ')):
+    for name, rows, scope in (('TEXT', text_rows(), 'popup.content.'), ('IMAGE', image_rows(), 'popup.content.'),
+                              ('VIDEO', video_rows(), 'popup.content.'), ('SURVEY_QUIZ', survey_quiz_rows(), 'popup.')):
         ws = wb.create_sheet(name)
-        w = SheetWriter(ws)
-        w.title(f'{name.replace("_", " / ")} 필드', sub)
-        w.section('필드')
-        w.table(FIELD_HEADER, rows)
+        w = SheetWriter(ws, FIELD_WIDTHS)
+        w.title(f'WPF 팝업 - {name.replace("_", " / ")}', sub)
+        w.section(f'{name.replace("_", " / ")} 필드')
+        field_table(w, rows, scope)
         w.section('동작')
-        w.bullets(NOTES[key])
+        w.notes(NOTES[name])
 
-    ws = wb.create_sheet('결과 요청')
-    w = SheetWriter(ws)
-    w.title('결과 요청 — POST /api/wpf/popups/results', sub)
-    w.section('필드')
-    w.table(FIELD_HEADER, request_rows())
-    w.section('동작')
-    w.bullets(NOTES['request'])
-    w.code('예시 — 동영상+퀴즈 제출', code_block(section(r'^10\.6 SUBMITTED'), '"resultType"'))
-    w.code('예시 — 장애 결과', code_block(section(r'^10\.10 장애 결과'), '"resultCode"'))
-
-    ws = wb.create_sheet('결과 응답')
-    w = SheetWriter(ws)
-    w.title('결과 응답 — POST /api/wpf/popups/results', sub)
-    w.section('필드')
-    w.table(FIELD_HEADER, response_rows())
-    w.section('status 처리 기준')
-    st = tables(section(r'^status 의미$'))[0]
-    w.table(['status', '의미', 'WPF 처리'], [[clean(r['status']), clean(r['의미']), STATUS_HANDLING.get(clean(r['status']), '')]
-                                        for r in st], mono_cols=(0,), spans=[(1, 1), (2, 4), (5, 5)])
-    w.section('code 값')
-    ct = tables(section(r'^code 값$'))[0]
-    keys = list(ct[0].keys())
-    w.table(['status', 'code', '의미'], [[clean(r[keys[0]]), clean(r[keys[1]]), clean(r[keys[2]]) if len(keys) > 2 else '']
-                                       for r in ct], mono_cols=(1,), spans=[(1, 1), (2, 3), (4, 5)])
-    w.section('오류 처리 기준')
-    w.table(['상황', 'HTTP', 'status', 'code', 'WPF 처리'], ERROR_HANDLING, mono_cols=())
-    w.section('동작')
-    w.bullets(NOTES['response'])
-    w.code('예시', code_block(section(r'^응답 필드$') + section(r'^11\.'), '"status"') if False else
-           code_block(LINES, '"nextStatus": "AVAILABLE"'))
-
-    ws = wb.create_sheet('예시')
-    w = SheetWriter(ws, [120])
-    w.title('조회 응답 popup JSON 예시', sub)
+    # Sample
+    ws = wb.create_sheet('Sample')
+    w = SheetWriter(ws, [30, 30, 30, 30, 30, 40])
+    w.title('WPF 팝업 - JSON 예시 (조회 응답 popup)', sub)
     for heading, label in ((r'^15\.1 TEXT', 'TEXT'), (r'^15\.2 IMAGE', 'IMAGE'), (r'^15\.3 VIDEO', 'VIDEO'),
                            (r'^15\.4 SURVEY', 'SURVEY'), (r'^15\.5 QUIZ', 'QUIZ'), (r'^15\.6 VIDEO\+QUIZ', 'VIDEO+QUIZ')):
         w.code(label, code_block(section(heading)))
 
+    # RESULT_REQUEST
+    ws = wb.create_sheet('RESULT_REQUEST')
+    w = SheetWriter(ws, FIELD_WIDTHS)
+    w.title('WPF 결과 API 요청 - POST /api/wpf/popups/results (결과 1건)', sub)
+    w.section('결과 요청 필드')
+    field_table(w, request_rows(), '')
+    w.section('동작')
+    w.notes(NOTES['request'])
+    w.code('예시 - 동영상+퀴즈 제출', code_block(section(r'^10\.6 SUBMITTED'), '"resultType"'), col_to=3)
+    w.code('예시 - 장애 결과', code_block(section(r'^10\.10 장애 결과'), '"resultCode"'), col_to=3)
+
+    # RESULT_RESPONSE
+    ws = wb.create_sheet('RESULT_RESPONSE')
+    w = SheetWriter(ws, FIELD_WIDTHS)
+    w.title('WPF 결과 API 응답 - POST /api/wpf/popups/results (결과 1건)', sub)
+    w.section('결과 응답 필드')
+    field_table(w, response_rows(), '')
+    w.section('status 처리 기준')
+    st = tables(section(r'^status 의미$'))[0]
+    w.table(['status', '의미', 'WPF 처리'],
+            [[clean(r['status']), clean(r['의미']), STATUS_HANDLING.get(clean(r['status']), '')] for r in st],
+            mono_cols=(0,), spans=[(1, 1), (2, 5), (6, 7)])
+    w.section('code 값')
+    ct = tables(section(r'^code 값$'))[0]
+    keys = list(ct[0].keys())
+    w.table(['status', 'code', '의미'],
+            [[clean(r[keys[0]]), clean(r[keys[1]]), clean(r[keys[2]]) if len(keys) > 2 else ''] for r in ct],
+            mono_cols=(0, 1), spans=[(1, 1), (2, 2), (3, 7)])
+    w.section('오류 처리 기준 (HTTP / status)')
+    w.table(['상황', 'HTTP', 'status', 'code', 'WPF 처리'], ERROR_HANDLING,
+            spans=[(1, 2), (3, 3), (4, 5), (6, 6), (7, 7)], center_cols=(1,))
+    w.section('동작')
+    w.notes(NOTES['response'])
+    w.code('응답 예시', code_block(LINES, '"nextStatus": "AVAILABLE"'), col_to=3)
+
+    # 버전 이력
+    ws = wb.create_sheet('버전 이력')
+    w = SheetWriter(ws, [12, 14, 110])
+    w.title('WPF 팝업 인터페이스 정의서 - 버전 이력', sub)
+    w.table(['버전', '날짜', '변경 내용'], [[v, d, '\n'.join(f'• {x}' for x in items)] for v, d, items in reversed(VERSIONS)],
+            center_cols=(0, 1))
+
     for sheet in wb.worksheets:
-        sheet.freeze_panes = None
+        sheet.freeze_panes = 'A4' if sheet.title in ('개요', 'Sample', '버전 이력') else 'A6'
         sheet.sheet_properties.pageSetUpPr.fitToPage = True
         sheet.page_setup.orientation = 'landscape'
         sheet.page_setup.fitToWidth = 1
