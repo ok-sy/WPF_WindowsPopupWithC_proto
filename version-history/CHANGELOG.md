@@ -24,6 +24,7 @@
   - 구성: 웹 A 54·M 22·D 3, WPF 소스 98, 문서 158(+CI 이미지 2, db 제외), 히스토리 번들 5개 파일. npm 변경 없음(5-npm-ckeditor 미포함). 삭제 목록 신규 0.
 - 검증: 20261006 NuGet 반입본만으로 오프라인 빌드, 폴더형 publish·단일 EXE(91,809,614바이트). TAR 4개 파일 수 검증, TGZ SHA256 `b22a794fdfde8b44abd3374d4682fae6c18e53520a4e6fd8bac5e369e9638147` 일치(21,145,051바이트). 추출본에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, DELETE 목록의 서버·DB 경로 0건, `PopupErrorResult.cs`·`WpfResponseFormatException.cs`·CI 이미지 포함, README-IMPORT에 기준 4c87cb9·비교 20261106과 TODO45 안내 포함. 폐쇄망 적용·실호출은 미실행.
 - 상태: 반입본 생성·검증 완료(`offline-export/20261112`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 2차 재생성(`-Force`): TODO45 45-3 결정(결과 400 종결·삭제 eccbe89, INTERNAL_ERROR·잘못된 응답 상한 도달 시 삭제 86f6e4e)을 넣어 다시 만든다. 변경 요약에 45-3 항목 추가, 잘못된 응답 상한 문구를 삭제 기준으로 정정. 히스토리 번들도 같은 날짜로 다시 만든다(직전 번들 없음, RULES 2 첫 번들 유지). 결과는 생성 후 보완.
 
 ## 2026-11-11-13 — dev: TODO45 조회 응답 처리 실패 장애 결과(resultCode=400) 전송·서버 수용
 
