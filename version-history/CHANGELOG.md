@@ -8,6 +8,14 @@
 
 # 변경 이력
 
+## 2026-11-11-08 — scripts: 반입본 서버·DB 스크립트 기본 제외
+
+- 이유: 반입 기준 변경. 폐쇄망 DB 구조가 로컬·원격 개발 DB와 많이 달라 DB 스크립트는 개념 참고 이상으로 쓰이지 않고, 서버 소스도 같은 이유로 그대로 반영되지 않는다. 서버·DB는 필요할 때만 반입하고 그 밖에는 이전 반입본에서 복원한다.
+- 변경: `scripts/export-offline-package.ps1`에 `-IncludeServer`·`-IncludeDb` 스위치 추가(기본 꺼짐). 꺼져 있으면 `1-zero-rule-server` 묶음을 만들지 않고 `4-docs`에서 `db/`를 뺀다. 삭제 목록(DELETE-SINCE) 범위에서도 `zero-rule-server`·`db`를 뺀다. README-IMPORT 표·절차는 넣은 범위에 맞춰 바뀐다(서버 행은 "넣지 않음", DB 단계는 "이번 반입에 넣지 않음").
+- 주요 파일: `scripts/export-offline-package.ps1`.
+- 검증: PowerShell 구문 오류 0. 20261111 반입본을 기본 옵션으로 다시 만들어 확인(2026-11-11-06 항목).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-11-07 — dev: API Demo 연결 대상 로컬·개발 서버 전환 체크박스 추가
 
 - 이유: 요구사항 반영. API Demo에서 로컬 서버와 개발 서버를 오갈 때 Base URL을 매번 입력해야 했고, 로컬(`/api/wpf/auth/login`)과 폐쇄망 개발 서버(`/api/auth/sso/login`)의 로그인 경로가 달라 주소만 바꾸면 로그인이 실패한다.

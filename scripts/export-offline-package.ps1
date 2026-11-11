@@ -5,10 +5,14 @@ POL-15-01 : 배포 범위
 - out: offline-export\<날짜>\ — 묶음 폴더·TAR, 통합 TGZ, MANIFEST, DELETE 목록, SHA256, README-IMPORT.md
 - HEAD를 깨끗한 worktree로 꺼내 팝업 관련 소스만 묶는다. 작업 트리의 미커밋 변경(개발 PC 전용 설정 등)은 들어가지 않는다.
 
-  1-zero-rule-server  서버 — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정 파일(git diff)
+  1-zero-rule-server  (선택 -IncludeServer) 서버 — 공통 베이스라인(업스트림 56bb0c5 = 커밋 0294d1e) 대비 추가·수정 파일(git diff)
   2-zero-rule-web     관리자 웹 — sample 베이스라인(커밋 f66e8ed) 대비 추가·수정 파일(git diff). 프로토타입 등록 화면 features/RgstPop과 /rgst-pop 경로는 제외(저장소에는 유지)
   3-popup-frameWork   WPF 소스, 오프라인 빌드 스크립트(bin/obj/publish/EXE/DLL/PDB·검증 하네스 제외). 개발용 MockSso·Popup.slnx는 2026-11-03부터 넣지 않는다
-  4-docs              docs·db·api·README·변경 이력
+  4-docs              docs·api·README·변경 이력(db는 -IncludeDb일 때만)
+
+2026-11-11부터 서버(1-zero-rule-server)와 DB 스크립트(db)는 기본으로 넣지 않는다. 폐쇄망 DB 구조가 개발 DB와 많이 달라
+쿼리는 개념 참고 이상으로 쓰이지 않고 서버도 같은 이유로 그대로 반영되지 않는다. 필요할 때만 -IncludeServer·-IncludeDb로 넣는다.
+삭제 목록(DELETE-SINCE)도 넣은 범위만 적는다.
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
   6-offline-packages  (선택 -IncludeDevDependencies) NuGet·SDK 개발 의존 — 통합 TGZ에는 넣지 않는다
@@ -60,7 +64,9 @@ param(
     # 기본은 넣지 않는다 — 폐쇄망 front_end는 node_modules 폴더 복사 방식만 쓰고, pnpm 설치 방식은 workspace 구조 변경이 필요해 보류.
     [switch]$IncludePnpmStore,
     [switch]$VerifyBuild,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$IncludeServer,
+    [switch]$IncludeDb
 )
 
 $ErrorActionPreference = "Stop"
@@ -177,8 +183,12 @@ function Export-TreeBundle {
 }
 
 try {
-    $server = Export-GitDiffBundle -Name "1-zero-rule-server" -Baseline $ServerBaseline -PathSpec "zero-rule-server" `
-        -ExcludePatterns @("*/build/*", "zero-rule-server/.git-upstream-*/*", "*.class", "zero-rule-server/popup-videos/*")
+    $server = $null
+    if ($IncludeServer) {
+        $server = Export-GitDiffBundle -Name "1-zero-rule-server" -Baseline $ServerBaseline -PathSpec "zero-rule-server" `
+            -ExcludePatterns @("*/build/*", "zero-rule-server/.git-upstream-*/*", "*.class", "zero-rule-server/popup-videos/*")
+    }
+    else { Write-Host "[1-zero-rule-server] 넣지 않음(-IncludeServer 없음)" }
     $web = Export-GitDiffBundle -Name "2-zero-rule-web" -Baseline $WebBaseline -PathSpec "zero-rule-web" `
         -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*", "zero-rule-web/main/src/features/RgstPop/*")
     # 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발한다. 프로토타입 RgstPop은 반입하지 않으므로 반입 scene-router에서도 참조 2줄을 뺀다.
@@ -200,7 +210,9 @@ try {
         -ExcludePatterns @() `
         -ExtraFiles @("global.json", "NuGet.config", "scripts/build-wpf-offline.ps1")
     # 문서: docs/interfaces/OLD는 Git 제외 로컬 보관, AGENTS.md는 개발 저장소 작업 규칙이라 넣지 않는다.
-    $docs = Export-TreeBundle -Name "4-docs" -Roots @("docs", "db", "api") -ExcludeDirs @("OLD") -ExcludeExtensions @() -ExcludePatterns @() `
+    $docRoots = @("docs", "api")
+    if ($IncludeDb) { $docRoots = @("docs", "db", "api") } else { Write-Host "[4-docs] db 넣지 않음(-IncludeDb 없음)" }
+    $docs = Export-TreeBundle -Name "4-docs" -Roots $docRoots -ExcludeDirs @("OLD") -ExcludeExtensions @() -ExcludePatterns @() `
         -ExtraFiles @("README.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md")
     if ($UseWorkingChangelog) {
         # 반입본 생성 기록을 적은 최신 변경 이력으로 교체(커밋 전 기록용)
@@ -265,7 +277,9 @@ try {
 
     # 삭제 목록: 누적(기준 반입본 이후) + 직전 반입본 이후 생겼다가 지워진 파일(누적 diff에 안 잡힘)
     $deleteName = "DELETE-SINCE-$DeleteBaselineName.txt"
-    $deleteScope = @("popup-frameWork", "zero-rule-web", "zero-rule-server", "docs", "db", "api")
+    $deleteScope = @("popup-frameWork", "zero-rule-web", "docs", "api")
+    if ($IncludeServer) { $deleteScope += "zero-rule-server" }
+    if ($IncludeDb) { $deleteScope += "db" }
     $cumulative = @(& git -C $worktree -c core.quotepath=false diff --no-renames --name-only --diff-filter=D $DeleteBaseline HEAD -- $deleteScope)
     $deleteLines = @("# $DeleteBaselineName ($DeleteBaseline) 이후 삭제 파일(누적). 기존 반입 소스에 있으면 삭제.") + $cumulative
     $sincePrevious = @()
@@ -297,7 +311,8 @@ try {
     $deleteLines | Set-Content -Encoding UTF8 (Join-Path $OutputRoot $deleteName)
 
     # 묶음별 패치노트(선택): <PatchNotesDir>\README-PATCH-<묶음>.md → 묶음 루트
-    $bundles = @("1-zero-rule-server", "2-zero-rule-web", "3-popup-frameWork", "4-docs")
+    $bundles = @("2-zero-rule-web", "3-popup-frameWork", "4-docs")
+    if ($IncludeServer) { $bundles = @("1-zero-rule-server") + $bundles }
     if ($npmCount -gt 0) { $bundles += "5-npm-ckeditor" }
     if ($gitHistoryCount -gt 0) { $bundles += "9-git-history" }
     if ($PatchNotesDir) {
@@ -350,6 +365,16 @@ try {
         $gitHistoryRow = "| 9-git-history.tar | 웹·WPF Git 히스토리 번들 | 소스에 덮어쓰지 않음. 내부 README-IMPORT.md 참조 |`n"
         $gitHistoryStep = "`n7. 9-git-history.tar는 소스 폴더와 분리해 풀고(예: 7-archaiv 아래) ``git clone``한다. 웹·WPF 폴더 연결과 다음 번들 반영은 내부 README-IMPORT.md 참조."
     }
+    $serverRow = "| (서버) | 넣지 않음 — 서버·DB는 폐쇄망 구조가 달라 요청 시에만 반입. 필요하면 이전 반입본에서 복원 | - |`n"
+    if ($server) {
+        $serverRow = "| 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |`n"
+    }
+    $docsLabel = "docs·api 예제·README·변경 이력(db 스크립트 미포함)"
+    $dbStep = "4. DB 스크립트는 이번 반입에 넣지 않았다(요청 시에만 반입)."
+    if ($IncludeDb) {
+        $docsLabel = "docs·db/oracle·api 예제·README·변경 이력"
+        $dbStep = "4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다."
+    }
     if ($PreviousExport) {
         $previousText = "직전 반입본 $PreviousExport($PreviousCommit)"
         $previousDeletes = " $PreviousExport 이후 새로 삭제할 파일 $($sincePrevious.Count)개."
@@ -361,10 +386,9 @@ try {
 
 | 묶음 | 내용 | 반입 |
 |---|---|---|
-| 1-zero-rule-server.tar | 서버 팝업 관련 신규(A $($server.A))·수정(M $($server.M))·삭제(D $($server.D)) (baseline $ServerBaseline) | MANIFEST의 A는 추가, M은 폐쇄망 기존 파일과 비교 후 반영, D는 삭제 |
-| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline). 프로토타입 features/RgstPop·/rgst-pop 경로 제외 | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
+$($serverRow)| 2-zero-rule-web.tar | 관리자 웹 팝업 기능 신규(A $($web.A))·수정(M $($web.M))·삭제(D $($web.D)) (baseline $WebBaseline). 프로토타입 features/RgstPop·/rgst-pop 경로 제외 | 위와 같음. package.json·pnpm-lock.yaml이 바뀌었으면 폐쇄망 node_modules 버전 확인 |
 | 3-popup-frameWork.tar | WPF 소스 $wpf 파일, 오프라인 빌드 스크립트 | 소스 트리 덮어쓰기. MockSso·Popup.slnx는 반입하지 않으며 이전 반입분은 DELETE 목록으로 삭제. EXE/DLL/PDB/bin/obj/publish·검증 하네스·개인 launchSettings 제외 |
-| 4-docs.tar | docs·db/oracle·api 예제·README·변경 이력 $docs 파일 | 계약 문서와 DB 스크립트 적용 순서 확인 |
+| 4-docs.tar | $docsLabel $docs 파일 | 계약 문서 확인 |
 $($npmRow)$($gitHistoryRow)
 삭제: $deleteName(누적 $($cumulative.Count)개).$previousDeletes
 
@@ -379,10 +403,10 @@ $gitReadme
 ## 반입 절차
 
 1. ``tar -xzf $Date.tgz`` 후 SHA256SUMS.txt로 TAR 체크섬을 확인한다.
-2. 1·2·4 TAR을 반입 루트에 풀고 MANIFEST와 $deleteName 에 따라 병합·삭제한다.
+2. 1(있을 때)·2·4 TAR을 반입 루트에 풀고 MANIFEST와 $deleteName 에 따라 병합·삭제한다.
 $($npmStep)3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
-4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다.
-5. 서버: custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
+$dbStep
+5. 서버(1-zero-rule-server를 넣었을 때): custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
 6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
 $($npmCleanup)$($gitHistoryStep)
 SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, $Date.tgz.sha256은 통합 TGZ 체크섬이다.
