@@ -43,6 +43,7 @@ const tableNames = {
   POPUP_QUESTION: '팝업 문항', POPUP_OPTION: '팝업 선택지', USER_POPUP_STATUS: '사용자 팝업 상태',
   POPUP_RESPONSE: '팝업 응답', POPUP_RESPONSE_ANSWER: '문항 답안', POPUP_RESPONSE_VALUE: '선택 답안 값',
   VIDEO_VIEW_STATUS: '영상 시청 상태', API_REQUEST_LOG: 'API 요청 로그', WPF_RESULT_RECEIPT: 'WPF 결과 수신 영수증',
+  WPF_POPUP_DELIVERY: 'WPF 팝업 전달 건', POPUP_DISPLAY_TIME: '팝업 노출 시간대',
 };
 const labels = {
   DEPARTMENT_ID:'부서 ID',PARENT_DEPARTMENT_ID:'상위 부서 ID',DEPARTMENT_NAME:'부서명',DEPARTMENT_LEVEL:'부서 단계',
@@ -68,7 +69,10 @@ const labels = {
   WATCHED_SECONDS:'시청 시간 초',WATCHED_RATIO:'시청 비율',FIRST_PLAYED_AT:'최초 재생 기록 시각',LAST_PLAYED_AT:'최종 재생 기록 시각',
   API_REQUEST_LOG_ID:'API 요청 로그 ID',API_PATH:'API 경로',HTTP_METHOD:'HTTP 메서드',CLIENT_IP:'클라이언트 IP',REQUEST_RECEIVED_AT:'요청 수신 시각',RESPONSE_COMPLETED_AT:'응답 완료 시각',
   ELAPSED_MILLISECONDS:'처리 시간 밀리초',HTTP_STATUS_CODE:'HTTP 상태 코드',SUCCESS_YN:'성공 여부',ERROR_CODE:'오류 코드',ERROR_MESSAGE:'오류 메시지',REQUEST_SUMMARY:'요청 요약',RESPONSE_SUMMARY:'응답 요약',
-  RECEIPT_ID:'수신 영수증 ID',RESULT_ID:'결과 ID',RESULT_TYPE:'결과 유형',RESULT_STATUS:'결과 상태',RESULT_CODE:'결과 코드',
+  RECEIPT_ID:'수신 영수증 ID',RESULT_ID:'결과 ID',RESULT_TYPE:'결과 유형',RESULT_STATUS:'결과 상태',RESULT_CODE:'결과 코드',RESULT_DESC:'결과 설명',
+  SHOW_LATER_YN:'나중에 보기 표시 여부',QUIZ_TYPE_CD:'퀴즈 유형 코드',TITLE_BLOCKS:'제목 서식 블록',DESCRIPTION_BLOCKS:'설명 서식 블록',
+  MIN_SELECTIONS:'최소 선택 수',MAX_SELECTIONS:'최대 선택 수',TEXT_BLOCKS:'내용 서식 블록',
+  DELIVERY_ID:'전달 건 ID',DELIVERY_STATUS:'전달 상태',DELIVERED_AT:'전달 시각',DEFER_UNTIL_AT:'재노출 유예 시각',START_MINUTE:'시작 분',END_MINUTE:'종료 분',
 };
 const statements = splitSql(stripComments(source), ';');
 const tables = [], comments = new Map();
@@ -101,7 +105,7 @@ for (const sql of statements) {
   }
   tables.push(table);
 }
-assert.equal(tables.length, 17, 'Unexpected table count; review DDL changes');
+assert.equal(tables.length, 19, 'Unexpected table count; review DDL changes');
 const byName = new Map(tables.map(t => [t.name, t]));
 for (const t of tables) {
   assert.equal(t.keys.filter(k => k.type === 'PRIMARY KEY').length, 1);

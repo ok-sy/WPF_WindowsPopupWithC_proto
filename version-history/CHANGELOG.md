@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-11-16 — dev: TODO45 45-7 인터페이스 Word·PDF·Excel·ERD 산출물 동기화
+
+- 이유: TODO45 45-7. 오늘 확정·구현한 복구 3사이클, 401·로그인 실패 복구, 장애 결과(resultCode=400·resultDesc, 계약서 §10.10), 45-3(결과 400 종결·삭제, INTERNAL_ERROR·잘못된 2xx 응답 3회 후 삭제)이 Markdown 명세에만 있고 배포용 산출물에는 없었다.
+- 변경:
+  - Word: `scripts/export-interface-word.cjs` 표지 날짜를 2026-11-11로 바꾸고 `export-interface-word.ps1`로 현행 Markdown(계약서·MINIMAL·ALL)에서 재생성(표 47·제목 124, §10.10 포함).
+  - PDF: `export-interface-pdf.vbs`(Word 필드·목차 갱신 후 내보내기)로 재생성, 92쪽.
+  - Excel `WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`(시트 9개 유지): 개요 제목 동기화 날짜·최신 변경 2줄, RESULT_REQUEST에 `resultCode`·`resultDesc` 행 추가(아래 병합 영역·행 높이를 함께 이동)와 deliveryId·popupId·resultType 필수 조건 주석·저장 정책 장애 결과 문단, RESULT_RESPONSE INTERNAL_ERROR·HTTP 400·요청 실패 처리 기준 정정(임시값·파일 보관·설계 35 임시 기준 문구 제거)과 '잘못된 2xx 응답' 행 추가.
+  - ERD: `scripts/export-popup-erwin.cjs` 한글 논리명 사전에 테이블 2개(`WPF_POPUP_DELIVERY`·`POPUP_DISPLAY_TIME`)·컬럼 14개 추가, 테이블 수 검사 17→19. 스냅샷 `ERD/model/popup_oracle_20261111_*`(19 테이블·245 컬럼·PK 19·FK 26·UNIQUE 11·CHECK 56·인덱스 16·시퀀스 12)와 README 생성, 20260928 스냅샷 삭제. `.erwin` 바이너리는 변경하지 않았다.
+  - 문서: TODO45 45-7 하위 기록·남은 확인 정정, 계약서 변경 이력의 '산출물 미반영' 문구 정정.
+- 주요 파일: `docs/interfaces/WPF_Popup_API_Interface_v3.7.docx`·`.pdf`, `docs/interfaces/WPF_POPUP_INTERFACE_LATEST_MAIN.xlsx`, `scripts/export-interface-word.cjs`, `scripts/export-popup-erwin.cjs`, `ERD/model/popup_oracle_20261111_*`·`README_popup_oracle_20261111.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`.
+- 검증: docx 본문에서 §10.10·resultDesc·최대 3사이클·종결·삭제 문구 확인, 예전 '5 Cycle·5사이클' 0건. PDF는 Word 내보내기 성공(92쪽)만 확인했고 PDF 텍스트·화면 대조는 도구(pypdf·poppler) 부재로 미실행. Excel은 수정 전후 비교로 시트 9개·병합 수 유지, 수정 대상 외 시트 셀 변경 0, 새 행·이동한 병합(A29:G29·A30:G35·A37:G37·A38:G52) 확인. Excel 화면 렌더 확인은 미실행. ERD 스크립트 생성 성공·manifest 개수 확인, ERwin에서 열기는 미실행(ERwin 없음).
+- 상태: 커밋·원격 반영. 45-7은 45-6 실환경 검증 뒤 닫는다.
+
 ## 2026-11-11-15 — dev: TODO45 45-3 결과 400 종결·임시 예외 최종 정책 확정
 
 - 이유: TODO45 45-3 결정. 결과 전송의 임시 예외(HTTP 400 실행 중 격리, INTERNAL_ERROR 실행당 3회, 같은 resultId 다른 본문)를 최종 정책으로 정한다.
