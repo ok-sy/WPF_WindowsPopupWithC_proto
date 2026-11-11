@@ -31,6 +31,8 @@ using Popup.Views.Windows;
  *  54-2 모드 표시·모드별 하단 고정 실행 영역, 54-3~5 상세옵션 그룹 탭·조건부 표시(숨김/비활성+사유)·즉시 검증·변경 표시·탭별 기본값 복원,
  *       숨김 입력은 적용하지 않고 값 보존, 복사본 편집(원본 DTO 불변)
  *  54-6 연결 적용 후 연결 설정 접힘·대상/인증 요약, 54-7 로그 구분([조회]/[결과]/[로그인]), 54-8 실행 상태 표시
+ *  target "로컬 서버 사용" 체크박스: appsettings DemoApiTargets 읽기, 시작 값 유지·체크 표시, 체크/해제 시 Base URL·로그인 경로 전환,
+ *       Dev 주소가 빈 설정이면 Base URL을 비우고 안내
  * 개발계/검증계 실제 서버 확인은 이 검증의 범위가 아니다(수동 확인 항목).
  *   실행: dotnet run --project scripts/ApiDemoTests
  * 내부(internal·private) 멤버는 리플렉션으로 접근하므로 이름을 바꾸면 이 검증도 함께 고친다. 실제 창을 잠깐 띄운다.
@@ -59,6 +61,7 @@ internal static class Program
         CheckHttpCategory54();
         CheckInMemoryDemoLayout();
         CheckDemoOptions54();
+        CheckApiTargetSwitch();
         using MockServer server = new();
         CheckApiDemoFlow(server);
         CheckDemoLoginFlow(server);
@@ -140,6 +143,51 @@ internal static class Program
             "[54-2] in-memory demo shows its fixed action bar and the local mode badge");
         Check(((TextBlock)window.FindName("RunStateText")).Text == "대기" && ((Button)window.FindName("LocalRunButton")).IsEnabled,
             "[54-8] local demo starts idle with the run button enabled");
+        window.Close();
+    }
+
+    /* POL-14-02 : Demo 모드 — API Demo "로컬 서버 사용" 체크박스: 체크 = DemoApiTargets.Local, 해제 = Dev 값으로 입력칸을 채운다. */
+    private static void CheckApiTargetSwitch()
+    {
+        MethodInfo load = typeof(MainWindow).GetMethod("LoadPopupClientSettings", Flags)!;
+        PopupClientSettings loaded = (PopupClientSettings)load.Invoke(null, null)!;
+        Check(loaded.DemoLocalBaseUrl == "http://localhost:8080/zero-rule-server/p" && loaded.DemoLocalLoginPath == "/api/wpf/auth/login"
+              && loaded.DemoDevBaseUrl == string.Empty && loaded.DemoDevLoginPath == "/api/auth/sso/login",
+            "[target] appsettings DemoApiTargets are read (Local localhost·/api/wpf/auth/login, Dev empty·/api/auth/sso/login)");
+
+        const string devUrl = "http://dev-host:8080/zero-rule-server/p";
+        PopupClientSettings settings = new()
+        {
+            DemoMode = true, DemoApi = true, BaseUrl = "http://localhost:8080/zero-rule-server/p/", AuthMode = "SsoPrototype",
+            AuthLoginPath = "/custom/login", DemoDevBaseUrl = devUrl
+        };
+        DemoWindow window = new(settings);
+        CheckBox local = (CheckBox)window.FindName("ApiLocalTargetCheck");
+        TextBox baseUrl = (TextBox)window.FindName("ApiBaseUrlText");
+        TextBox loginPath = (TextBox)window.FindName("ApiLoginPathText");
+        TextBlock error = (TextBlock)window.FindName("ApiInputErrorText");
+        Check(local.IsChecked == true && baseUrl.Text == "http://localhost:8080/zero-rule-server/p/" && loginPath.Text == "/custom/login",
+            "[target] start keeps the appsettings BaseUrl·LoginPath and marks the box when BaseUrl is the local target");
+        local.IsChecked = false;
+        Check(baseUrl.Text == devUrl && loginPath.Text == "/api/auth/sso/login" && error.Visibility != Visibility.Visible
+              && Logs(window).Any(l => l.Contains("[연결] 개발 서버 주소로")),
+            "[target] unchecking switches Base URL and login path to the dev target together");
+        local.IsChecked = true;
+        Check(baseUrl.Text == "http://localhost:8080/zero-rule-server/p" && loginPath.Text == "/api/wpf/auth/login",
+            "[target] checking switches back to the local target");
+        window.Close();
+
+        PopupClientSettings noDev = new() { DemoMode = true, DemoApi = true, BaseUrl = devUrl, AuthMode = "None" };
+        window = new DemoWindow(noDev);
+        local = (CheckBox)window.FindName("ApiLocalTargetCheck");
+        baseUrl = (TextBox)window.FindName("ApiBaseUrlText");
+        error = (TextBlock)window.FindName("ApiInputErrorText");
+        Check(local.IsChecked == false && baseUrl.Text == devUrl, "[target] a non-local start address leaves the box unchecked without changing the input");
+        local.IsChecked = true;
+        local.IsChecked = false;
+        Check(baseUrl.Text.Length == 0 && error.Visibility == Visibility.Visible && error.Text.Contains("개발 서버 주소가 설정에 없습니다")
+              && ((Expander)window.FindName("ApiConnectionExpander")).IsExpanded,
+            "[target] an empty dev target clears Base URL and asks for direct input");
         window.Close();
     }
 

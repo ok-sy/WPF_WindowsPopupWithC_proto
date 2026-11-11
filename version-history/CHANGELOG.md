@@ -8,6 +8,18 @@
 
 # 변경 이력
 
+## 2026-11-11-07 — dev: API Demo 연결 대상 로컬·개발 서버 전환 체크박스 추가
+
+- 이유: 요구사항 반영. API Demo에서 로컬 서버와 개발 서버를 오갈 때 Base URL을 매번 입력해야 했고, 로컬(`/api/wpf/auth/login`)과 폐쇄망 개발 서버(`/api/auth/sso/login`)의 로그인 경로가 달라 주소만 바꾸면 로그인이 실패한다.
+- 변경:
+  - `DemoWindow`: Base URL 위에 `로컬 서버 사용` 체크박스(`ApiLocalTargetCheck`). 체크 = `DemoApiTargets.Local`, 해제 = `Dev` 값으로 Base URL·로그인 경로 입력칸을 함께 채운다. 입력칸은 계속 직접 수정 가능, 연결은 기존처럼 `연결 적용`·`팝업 조회` 때 적용(팝업 표시 중 변경 안 함). 시작 시 appsettings `BaseUrl`·`LoginPath`는 그대로 두고 `BaseUrl`이 Local과 같을 때만 체크 표시. `Dev.BaseUrl`이 비어 있으면 Base URL을 비우고 직접 입력 안내.
+  - 설정 `PopupApi.DemoApiTargets.Local`·`Dev`(`BaseUrl`·`LoginPath`, 선택 항목). 기본값 Local `http://localhost:8080/zero-rule-server/p`·`/api/wpf/auth/login`, Dev 빈 주소·`/api/auth/sso/login`. 폐쇄망 주소는 코드·설정에 넣지 않음. `PopupClientSettings`·`MainWindow` 설정 읽기, `appsettings.json` 주석.
+  - `popup-frameWork/README.md` 설정 표·API Demo 절, `WPF_POPUP_ALL_SPEC.md` 실행 행. `WPF_POPUP_MINIMAL_SPEC.md`는 Demo가 최소 제공 범위 밖이라 변경 없음.
+  - `scripts/ApiDemoTests` `CheckApiTargetSwitch` 6건(appsettings 읽기, 시작 값 유지·체크 표시, 해제·체크 시 두 입력 동시 전환, 비로컬 시작 주소 유지, 빈 Dev 주소 안내).
+- 주요 파일: `popup-frameWork/Popup/DemoWindow.xaml`, `DemoWindow.Api.cs`, `MainWindow.xaml.cs`, `Models/PopupClientSettings.cs`, `appsettings.json`, `scripts/ApiDemoTests/Program.cs`.
+- 검증: `Popup.csproj` 빌드 경고·오류 0(솔루션 빌드는 실행 중인 MockSso.exe 잠금으로 MockSso만 복사 실패). ApiDemoTests 123건·PopupWindowTests 547건 통과. 실화면·실서버 확인 미실행.
+- 상태: 커밋·원격 반영. 폐쇄망 반입 대기(WPF).
+
 ## 2026-11-11-06 — 20261111 폐쇄망 전체 반입본 생성
 
 - 이유: 반입 준비. 20261106 반입본(기준 9403689) 이후의 PU001 참여형 퀴즈(DB 23·서버·웹·WPF), TODO73 UTF-8 Byte 제한·관리자 API 입력 오류 400, TODO69·61 편집기·미리보기 수정, DEV_SCENES 개발 서버 필터, TODO60 로컬·UNC 영상 WebView2 재생, TODO54-10 키보드 접근을 반입한다. 히스토리 번들은 RULES 2 첫 번들이다.

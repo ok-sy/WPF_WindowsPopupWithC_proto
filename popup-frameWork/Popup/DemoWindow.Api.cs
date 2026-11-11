@@ -88,6 +88,10 @@ namespace Popup
 
             ApiBaseUrlText.Text = settings.BaseUrl;
             ApiLoginPathText.Text = settings.AuthLoginPath;
+            // 시작 값은 appsettings BaseUrl·LoginPath 그대로 두고, 체크박스는 BaseUrl이 Local 대상과 같을 때만 체크해 표시만 맞춘다.
+            _syncingApiTarget = true;
+            ApiLocalTargetCheck.IsChecked = SameBaseUrl(settings.BaseUrl, settings.DemoLocalBaseUrl);
+            _syncingApiTarget = false;
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
             // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
             switch (settings.AuthMode.Trim().ToUpperInvariant())
@@ -106,6 +110,37 @@ namespace Popup
             ApplyAuthModeVisibility();
             AppendLog("--- API Demo: 수동 호출 모드(자동 폴링 OFF). 입력 후 '팝업 조회'를 누르세요 ---");
             UpdateApiState();
+        }
+
+        private bool _syncingApiTarget;
+
+        private static bool SameBaseUrl(string a, string b)
+            => a.Trim().TrimEnd('/').Equals(b.Trim().TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+        /*
+         * POL-14-02 : Demo 모드
+         * ■ "로컬 서버 사용" 체크 변경 → Base URL·로그인 경로 입력칸을 appsettings DemoApiTargets 값으로 채운다.
+         * - in : 체크 = Local, 해제 = Dev
+         * - out: 입력칸만 바꾼다. 연결은 '연결 적용'·'팝업 조회' 때 기존 규칙(표시 중 팝업이 있으면 바꾸지 않음)으로 적용된다.
+         * - Dev.BaseUrl이 비어 있으면 Base URL을 비우고 직접 입력하라고 안내한다(로컬 주소가 남아 잘못 호출하지 않게).
+         */
+        private void ApiLocalTargetCheck_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_syncingApiTarget || _apiSettings == null) return;
+            bool local = ApiLocalTargetCheck.IsChecked == true;
+            string baseUrl = local ? _apiSettings.DemoLocalBaseUrl : _apiSettings.DemoDevBaseUrl;
+            ApiBaseUrlText.Text = baseUrl;
+            ApiLoginPathText.Text = local ? _apiSettings.DemoLocalLoginPath : _apiSettings.DemoDevLoginPath;
+            string label = local ? "로컬 서버" : "개발 서버";
+            if (baseUrl.Length == 0)
+            {
+                ApiConnectionExpander.IsExpanded = true;
+                ShowApiInputError(ApiInputErrorText, $"{label} 주소가 설정에 없습니다. Base URL을 직접 입력하거나 appsettings.json PopupApi.DemoApiTargets.{(local ? "Local" : "Dev")}.BaseUrl에 넣으세요.");
+                ApiBaseUrlText.Focus();
+                return;
+            }
+            ShowApiInputError(ApiInputErrorText, null);
+            AppendLog($"[연결] {label} 주소로 입력을 바꿨습니다({baseUrl}). '연결 적용' 또는 '팝업 조회' 때 적용됩니다.");
         }
 
         private string SelectedAuthMode => (ApiAuthModeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "LOGIN";

@@ -234,7 +234,11 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 E
       "LoginPath": "/api/wpf/auth/login",
       "PeriodicLoginMinutes": 60
     },
-    "DevUserId": "E1001"
+    "DevUserId": "E1001",
+    "DemoApiTargets": {
+      "Local": { "BaseUrl": "http://localhost:8080/zero-rule-server/p", "LoginPath": "/api/wpf/auth/login" },
+      "Dev": { "BaseUrl": "", "LoginPath": "/api/auth/sso/login" }
+    }
   },
   "Startup": {
     "TrayEnabled": false,
@@ -257,6 +261,7 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 E
 | `Auth.SsoUrl` | SSO 사용자 정보 조회 주소 |
 | `Auth.LoginPath` | 로그인 API. 로컬 프로토타입 `/api/wpf/auth/login`, 폐쇄망 `/api/auth/sso/login` |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
+| `DemoApiTargets.Local`·`Dev` | API Demo(`-Demo -Api`)의 `로컬 서버 사용` 체크박스가 채울 `BaseUrl`·`LoginPath`(체크 = Local, 해제 = Dev). 선택 항목이며 없으면 Local은 위 값, Dev는 주소 빈 값·`/api/auth/sso/login`. 일반 실행·인메모리 Demo에서는 쓰지 않음 |
 | `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
 | `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
 | `DevUserId` | 개발용 `X-Dev-User-Id` 헤더 값. 서버가 프로토타입 토큰 모드(`custom.wpf-auth-prototype.enabled=true`)이면 **무시**되고 Bearer 토큰만 통한다. 유지/제거는 별도 결정(설계 10 §14) |
@@ -1018,6 +1023,9 @@ popupSample.exe -Demo -Api
 
 - 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
+- 연결 대상 전환: `로컬 서버 사용` 체크박스를 체크하면 `Base URL`·`로그인 경로`를 appsettings `DemoApiTargets.Local` 값으로, 해제하면 `Dev` 값으로 함께 채운다.
+  입력칸은 그 뒤에도 직접 고칠 수 있고, 바뀐 연결은 `연결 적용`·`팝업 조회` 때 적용된다(팝업 표시 중에는 바꾸지 않음). 시작할 때는 appsettings `BaseUrl`·`Auth.LoginPath`를 그대로 두고,
+  `BaseUrl`이 Local 주소와 같을 때만 체크 상태로 표시한다. `Dev.BaseUrl`이 비어 있으면 해제 시 `Base URL`을 비우고 직접 입력하라고 안내한다.
 - 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 — 초기 선택은 `Auth.Mode`),
   `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `p/api/auth/sso/login` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
   `단건 조회 요청 JSON`(기본 `{}`, 평소에는 접혀 있고 입력 오류 시 펼침). API Demo는 `X-Dev-User-Id`를 보내지 않는다(appsettings `DevUserId`도 사용하지 않음).

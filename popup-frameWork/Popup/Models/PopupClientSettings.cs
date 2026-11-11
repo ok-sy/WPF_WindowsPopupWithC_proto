@@ -76,6 +76,24 @@ namespace Popup.Models
         public int AuthPeriodicLoginMinutes { get; set; } =
             60;
 
+        /*
+         * POL-14-02 : Demo 모드
+         * [API Demo 연결 대상] appsettings PopupApi.DemoApiTargets.Local·Dev. API Demo 화면의 "로컬 서버 사용" 체크박스가
+         * Base URL·로그인 경로 입력칸을 이 값으로 채운다(체크 = Local, 해제 = Dev). 입력칸은 그대로 직접 고칠 수 있다.
+         * 일반 실행·인메모리 Demo에서는 쓰지 않는다. Dev.BaseUrl은 환경마다 넣는 값이라 기본값이 없다.
+         */
+        public string DemoLocalBaseUrl { get; set; } =
+            "http://localhost:8080/zero-rule-server/p";
+
+        public string DemoLocalLoginPath { get; set; } =
+            "/api/wpf/auth/login";
+
+        public string DemoDevBaseUrl { get; set; } =
+            string.Empty;
+
+        public string DemoDevLoginPath { get; set; } =
+            "/api/auth/sso/login";
+
         /// <summary>
         /// 개발 전용. 서버 custom.wpf-popup.dev-user-header=true일 때만 의미가 있는 사번.
         /// 환경변수 POPUP_DEV_USER_ID가 있으면 그 값이 우선한다. 비어 있으면 헤더를 보내지 않는다.

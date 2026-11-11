@@ -226,6 +226,21 @@ namespace Popup
                 settings.AuthPeriodicLoginMinutes = GetInt32(auth, "PeriodicLoginMinutes", 60);
             }
 
+            // POL-14-02 : Demo 모드 — API Demo "로컬 서버 사용" 체크박스가 채울 연결 대상(선택 항목, 없으면 기본값).
+            if (api.TryGetProperty("DemoApiTargets", out JsonElement targets) && targets.ValueKind == JsonValueKind.Object)
+            {
+                if (targets.TryGetProperty("Local", out JsonElement local) && local.ValueKind == JsonValueKind.Object)
+                {
+                    settings.DemoLocalBaseUrl = GetString(local, "BaseUrl", settings.DemoLocalBaseUrl).Trim();
+                    settings.DemoLocalLoginPath = GetString(local, "LoginPath", settings.DemoLocalLoginPath).Trim();
+                }
+                if (targets.TryGetProperty("Dev", out JsonElement dev) && dev.ValueKind == JsonValueKind.Object)
+                {
+                    settings.DemoDevBaseUrl = GetString(dev, "BaseUrl", settings.DemoDevBaseUrl).Trim();
+                    settings.DemoDevLoginPath = GetString(dev, "LoginPath", settings.DemoDevLoginPath).Trim();
+                }
+            }
+
             if (document.RootElement.TryGetProperty("Startup", out JsonElement startup) && startup.ValueKind == JsonValueKind.Object)
             {
                 settings.TrayEnabled = GetNullableBoolean(startup, "TrayEnabled");
