@@ -41,12 +41,12 @@ namespace Popup.Services
      * [응답 처리] "서버가 응답했다"가 아니라 "그 항목의 처리가 종결됐다"가 삭제 기준이다.
      *   - ACCEPTED / DUPLICATE / REJECTED(영구 업무 오류)만 큐에서 제거한다. REJECTED는 사유를 로그로 남긴다.
      *   - RETRYABLE_ERROR(확인된 일시 장애)는 보관하고 다음 Flush에서 같은 resultId로 재전송한다.
-     *   - INTERNAL_ERROR(원인 미확정)는 보관하고 이번 실행에서 MaxInternalErrorAttemptsPerSession회까지만 재시도한다.
-     *     횟수를 소진해도 삭제하지 않는다(이번 실행 동안 보관). 재시도 간격·최대 횟수 정책은 별도 확정 대상이다.
+     *   - INTERNAL_ERROR(원인 미확정)는 보관하고 MaxInternalErrorAttemptsPerSession회까지만 재시도한다. 상한에 이르면
+     *     큐에서 지우고(로그) 다음 결과·조회로 넘어간다 — 저장되지 않을 결과를 다시 보내지도 않으면서 들고 있지 않는다(TODO45 45-3, 2026-11-11 확정).
      *   - 알 수 없는 상태, 응답 누락, 이번에 보낸 항목과 resultId가 다른 응답은 종결로 보지 않는다(보관).
      *     HTTP 2xx인데 응답 내용이 잘못된 경우(빈 본문·JSON 오류·resultId 불일치·status 누락/모르는 값)는 재전송으로
-     *     풀리지 않을 수 있어 이번 실행에서 MaxInvalidResponseAttemptsPerSession회까지만 재전송하고, 넘으면 전송 대상에서 빼
-     *     (보관은 유지) 다음 조회를 막지 않는다(TODO45, 2026-11-11 결정 — 복구 무한 루프 방지).
+     *     풀리지 않을 수 있어 MaxInvalidResponseAttemptsPerSession회까지만 재전송하고, 상한에 이르면 큐에서 지우고(로그)
+     *     다음 조회를 막지 않는다(TODO45, 2026-11-11 결정 — 복구 무한 루프 방지).
      *     응답 자체가 없는 타임아웃·연결 끊김·5xx·401은 이 상한에 넣지 않는다(통합 복구 주기로 계속 재전송).
      *   - 요청 실패(5xx·4xx·타임아웃·연결 끊김)는 그 결과를 보관한다. 단 400(요청 JSON 문법·역직렬화 오류 — 같은 본문은
      *     다시 보내도 같다)인 결과는 종결로 보고 큐에서 지운 뒤 나머지 전송을 막지 않는다(TODO45 45-3, 2026-11-11 확정).
@@ -65,10 +65,10 @@ namespace Popup.Services
 
     public sealed class PopupResultQueue
     {
-        /* POL-12-02 : 현행 임시 복구 — INTERNAL_ERROR 항목의 실행당 재시도 상한(임시값). 재시도 정책 확정 시 조정한다. */
+        /* POL-12-02 : 종결과 보관 — INTERNAL_ERROR 결과의 재전송 상한(TODO45 45-3 확정). 상한에 이르면 큐에서 지운다. */
         public const int MaxInternalErrorAttemptsPerSession = 3;
 
-        /* POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 응답 내용이 잘못된 결과의 실행당 재전송 상한(TODO45, 2026-11-11 결정). */
+        /* POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 응답 내용이 잘못된 결과의 재전송 상한(TODO45, 2026-11-11 결정). 상한에 이르면 큐에서 지운다. */
         public const int MaxInvalidResponseAttemptsPerSession = 3;
 
         private static readonly HashSet<string> SettledStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -82,7 +82,7 @@ namespace Popup.Services
         /* 미전송 결과(적재 순서). _stateLock 안에서만 읽고 쓴다. */
         private readonly List<WpfResultItemDto> _pending = new();
         private readonly Dictionary<string, int> _internalErrorAttempts = new(StringComparer.OrdinalIgnoreCase);
-        /* POL-12-04 : 통합 복구 주기 — resultId별 잘못된 2xx 응답 횟수. 상한에 이르면 이번 실행에서 전송 대상에서 뺀다. */
+        /* POL-12-04 : 통합 복구 주기 — resultId별 잘못된 2xx 응답 횟수. 상한에 이르면 그 결과를 큐에서 지운다. */
         private readonly Dictionary<string, int> _invalidResponseAttempts = new(StringComparer.OrdinalIgnoreCase);
         private volatile bool _transmissionStopped;
 
@@ -152,12 +152,8 @@ namespace Popup.Services
                 List<WpfResultItemDto> sendable;
                 lock (_stateLock)
                 {
-                    sendable = _pending
-                        .Where(p => !_internalErrorAttempts.TryGetValue(p.ResultId, out int attempts)
-                            || attempts < MaxInternalErrorAttemptsPerSession)
-                        .Where(p => !_invalidResponseAttempts.TryGetValue(p.ResultId, out int invalid)
-                            || invalid < MaxInvalidResponseAttemptsPerSession)
-                        .ToList();
+                    // 상한에 이른 결과는 그때 지우므로 남아 있는 항목은 모두 전송 대상이다.
+                    sendable = _pending.ToList();
                 }
 
                 WpfResultResponseDto? lastSaved = null;
@@ -182,12 +178,7 @@ namespace Popup.Services
                     {
                         // POL-12-02 : 종결과 보관 (TODO45 45-3, 2026-11-11 확정) — 요청 본문 자체가 400인 결과는 재전송해도 같으므로
                         // 종결로 보고 큐에서 지운다(로그만 남김). 뒤 결과 전송·조회를 막지 않는다.
-                        lock (_stateLock)
-                        {
-                            _pending.RemoveAll(p => ReferenceEquals(p, item));
-                            _internalErrorAttempts.Remove(item.ResultId);
-                            _invalidResponseAttempts.Remove(item.ResultId);
-                        }
+                        Discard(item);
                         Debug.WriteLine($"결과 전송 400 — 종결·삭제 resultId={item.ResultId} deliveryId={item.DeliveryId} " +
                             $"popupId={item.PopupId} type={item.ResultType}: {exception.Message}");
                         holdNextQuery |= item.IsErrorResult;
@@ -198,6 +189,7 @@ namespace Popup.Services
                         // POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 본문이 비었거나 JSON이 아니다. 실행당 상한까지만 재전송한다.
                         if (CountInvalidResponse(item, "본문 없음·JSON 오류: " + exception.Message))
                         {
+                            Discard(item);
                             holdNextQuery |= item.IsErrorResult;
                             continue;
                         }
@@ -212,9 +204,10 @@ namespace Popup.Services
 
                     if (!Settle(item, response))
                     {
-                        // 상한에 이른 잘못된 응답은 이번 실행에서 빼고 다음 결과·조회로 넘어간다.
-                        if (ReachedInvalidResponseLimit(item))
+                        // 상한에 이른 잘못된 응답·INTERNAL_ERROR는 큐에서 지우고 다음 결과·조회로 넘어간다(TODO45 45-3).
+                        if (ReachedRetryLimit(item))
                         {
+                            Discard(item);
                             holdNextQuery |= item.IsErrorResult;
                             continue;
                         }
@@ -270,8 +263,9 @@ namespace Popup.Services
                     attempts = _internalErrorAttempts.TryGetValue(item.ResultId, out int count) ? count + 1 : 1;
                     _internalErrorAttempts[item.ResultId] = attempts;
                 }
-                Debug.WriteLine($"결과 내부 오류(보관, 이번 실행 {attempts}/{MaxInternalErrorAttemptsPerSession}회) " +
-                    $"popupId={item.PopupId} code={response.Code}");
+                Debug.WriteLine($"결과 내부 오류({attempts}/{MaxInternalErrorAttemptsPerSession}회" +
+                    $"{(attempts >= MaxInternalErrorAttemptsPerSession ? " — 상한 도달, 삭제·조회 허용" : ", 보관")}) " +
+                    $"resultId={item.ResultId} deliveryId={item.DeliveryId} popupId={item.PopupId} code={response.Code}");
             }
             else if (string.Equals(response.Status, "RETRYABLE_ERROR", StringComparison.OrdinalIgnoreCase))
             {
@@ -287,7 +281,7 @@ namespace Popup.Services
 
         /// <summary>
         /// POL-12-04 : 통합 복구 주기 — HTTP 2xx인데 응답 내용이 잘못된 횟수를 resultId별로 세고 로그를 남긴다.
-        /// 상한(<see cref="MaxInvalidResponseAttemptsPerSession"/>)에 이르면 true: 이번 실행에서 전송 대상에서 빼고(보관 유지) 조회를 막지 않는다.
+        /// 상한(<see cref="MaxInvalidResponseAttemptsPerSession"/>)에 이르면 true: 호출자가 큐에서 지우고 조회를 막지 않는다.
         /// </summary>
         private bool CountInvalidResponse(WpfResultItemDto item, string reason)
         {
@@ -298,18 +292,33 @@ namespace Popup.Services
                 _invalidResponseAttempts[item.ResultId] = attempts;
             }
             bool reachedLimit = attempts >= MaxInvalidResponseAttemptsPerSession;
-            Debug.WriteLine($"결과 응답 이상(보관, 이번 실행 {attempts}/{MaxInvalidResponseAttemptsPerSession}회" +
-                $"{(reachedLimit ? " — 상한 도달, 이번 실행에서 전송 제외·조회 허용" : "")}) " +
+            Debug.WriteLine($"결과 응답 이상({attempts}/{MaxInvalidResponseAttemptsPerSession}회" +
+                $"{(reachedLimit ? " — 상한 도달, 삭제·조회 허용" : ", 보관")}) " +
                 $"resultId={item.ResultId} deliveryId={item.DeliveryId} popupId={item.PopupId}: {reason}");
             return reachedLimit;
         }
 
-        private bool ReachedInvalidResponseLimit(WpfResultItemDto item)
+        /// <summary>잘못된 2xx 응답 또는 INTERNAL_ERROR 횟수가 상한에 이르렀는지.</summary>
+        private bool ReachedRetryLimit(WpfResultItemDto item)
         {
             lock (_stateLock)
             {
-                return _invalidResponseAttempts.TryGetValue(item.ResultId, out int count)
-                    && count >= MaxInvalidResponseAttemptsPerSession;
+                return (_invalidResponseAttempts.TryGetValue(item.ResultId, out int invalid) && invalid >= MaxInvalidResponseAttemptsPerSession)
+                    || (_internalErrorAttempts.TryGetValue(item.ResultId, out int internalErrors) && internalErrors >= MaxInternalErrorAttemptsPerSession);
+            }
+        }
+
+        /// <summary>
+        /// POL-12-02 : 종결과 보관 (TODO45 45-3) — 저장되지 않을 결과(HTTP 400·상한 도달)를 큐와 횟수 기록에서 지운다.
+        /// 보낸 그 객체만 지워 전송 중 같은 resultId로 새로 들어온 항목은 남긴다.
+        /// </summary>
+        private void Discard(WpfResultItemDto item)
+        {
+            lock (_stateLock)
+            {
+                _pending.RemoveAll(p => ReferenceEquals(p, item));
+                _internalErrorAttempts.Remove(item.ResultId);
+                _invalidResponseAttempts.Remove(item.ResultId);
             }
         }
     }

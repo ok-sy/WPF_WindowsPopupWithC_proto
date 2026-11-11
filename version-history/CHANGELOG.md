@@ -11,6 +11,7 @@
 - 검증: `Popup.csproj` 빌드 경고 0·오류 0. 로컬 검증 프로젝트(Git 제외) `Popup.RecoveryTests` 254건(400 결과 종결·삭제와 나머지 종결, 재전송 없음, 이후 결과 막지 않음으로 기대값 변경), `Popup.BehaviorTests` 1,736건, `scripts/ApiDemoTests` 124건 통과. 실환경·폐쇄망 미실행.
 - 상태: 커밋·원격 반영. 20261112 반입본에는 들어가지 않았다(다음 반입 대상).
 - 후속: TODO45 문서에 새 절을 넣을 때 줄바꿈이 LF로 섞여 들어가 CRLF로 정리(내용 변경 없음).
+- 후속(상한 도달 시 삭제): INTERNAL_ERROR 3회·잘못된 2xx 응답 3회 상한에 이른 결과도 실행 동안 메모리에 남기지 않고 큐에서 지운다(400과 같은 기준: 저장되거나 지운다). 3번째 응답을 받은 그 Flush에서 지우고 다음 결과·조회로 넘어가 보류가 한 번 줄어든다. `PopupResultQueue.Discard()`·`ReachedRetryLimit()` 추가, 전송 대상 필터 제거. 문서: TODO45 45-3 절, POL-12·POLICY, 인터페이스 명세(결과 status 행·§12.1), WPF_POPUP_ALL_SPEC, WPF README. 검증: 빌드 경고·오류 0, `Popup.RecoveryTests` 255건(INTERNAL_ERROR 2회 보류 후 3회째 삭제·조회 허용 검사 추가, 상한 결과 삭제로 기대값 변경), `Popup.BehaviorTests` 1,736건, `scripts/ApiDemoTests` 124건 통과. 커밋·원격 반영, 20261112 반입본 미포함.
 
 ## 2026-11-11-14 — 20261112 폐쇄망 반입본 생성(20261111 대체, 웹·WPF·문서, 서버·DB 제외)
 

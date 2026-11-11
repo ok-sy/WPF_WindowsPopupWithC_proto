@@ -827,8 +827,8 @@ status가 ACCEPTED / DUPLICATE / REJECTED(종결)
 
 [메모리 전용 — 2026-10-28 결정] VMware 환경의 로컬 드라이브 쓰기 제약 때문에 결과 큐는 파일을 쓰지 않고 메모리에만 둔다.
 정상 종료·강제 종료·장애·재시작 때 서버가 종결하지 않은 결과는 사라진다(수용한 유실). 예전 버전이 남긴 `%LOCALAPPDATA%\Popup\pending-results.json`은 읽거나 지우지 않는다.
-INTERNAL_ERROR 항목은 실행당 3회까지만 재시도하며(45-3 확정) 횟수를 소진해도 이번 실행 동안 삭제하지 않는다.
-HTTP 2xx인데 응답 내용이 잘못된 결과(빈 본문·JSON 오류·응답 resultId 불일치·status 누락/모르는 값)도 실행당 3회까지만 같은 resultId로 재전송하고, 3회째에 이번 실행의 전송 대상에서 빼(보관 유지) 다음 결과 전송과 조회를 막지 않는다(TODO45, 2026-11-11 — 복구 무한 루프 방지). 응답 없음·5xx·401·RETRYABLE_ERROR는 상한 없이 복구 주기로 재전송한다. 상한에 걸린 결과가 서버에 저장되지 않았다면 그 전달 건은 열린 상태라 다음 조회에서 같은 팝업이 다시 내려올 수 있다.
+INTERNAL_ERROR 항목은 3회까지만 재시도하며, 상한에 이르면 큐에서 지우고(로그) 다음 결과 전송과 조회를 막지 않는다(45-3 확정 — 저장되지 않을 결과를 들고 있지 않음).
+HTTP 2xx인데 응답 내용이 잘못된 결과(빈 본문·JSON 오류·응답 resultId 불일치·status 누락/모르는 값)도 3회까지만 같은 resultId로 재전송하고, 3회째에 큐에서 지운 뒤 다음 결과 전송과 조회를 막지 않는다(TODO45, 2026-11-11 — 복구 무한 루프 방지). 응답 없음·5xx·401·RETRYABLE_ERROR는 상한 없이 복구 주기로 재전송한다. 상한에 걸린 결과가 서버에 저장되지 않았다면 그 전달 건은 열린 상태라 다음 조회에서 같은 팝업이 다시 내려올 수 있다.
 [장애 결과 — TODO45, 2026-11-11] HTTP 200 조회 응답을 처리하지 못하면(빈 본문·JSON 구문/형식 오류·받은 팝업의 표시 변환·표시 실패) `PopupErrorResult.Create()`로 장애 결과(`resultCode=400`, `resultDesc` UTF-8 1,000 Byte 이하·문자 중간 자르지 않음, 확보한 `deliveryId`·`popupId`만, `resultType` 없음)를 만들어 큐에 넣고 바로 보낸다. 응답 본문 오류는 `PopupApiService`가 `WpfResponseFormatException`(위치 Path·Line·BytePosition, 읽을 수 있으면 `popup.deliveryId`·`popupId`)으로 올린다. deliveryId를 보낸 장애 결과가 저장되면 서버가 그 전달 건을 오류로 닫아 저장 응답 `nextStatus`를 따르고, deliveryId 없이 저장됐거나 저장되지 못하고 종결되면 같은 깨진 응답을 바로 다시 받지 않도록 조회 간격을 기다린다(`ResultFlushOutcome.HoldNextQuery`). 서버는 `db/oracle/24_wpf_error_result_oracle.sql` 적용이 선행돼야 한다(계약서 §10.10).
 HTTP 400(요청 JSON 문법·역직렬화 오류)인 결과는 다시 보내도 같으므로 종결로 보고 큐에서 지운 뒤(로그만 남김) 뒤의 결과 전송과 조회를 막지 않는다(TODO45 45-3, 2026-11-11 확정). [설계 35] 배열·일괄 재전송은 없으며 결과 1건씩 순서대로 보낸다(임시 기준).
 전송 중 같은 resultId가 다시 들어오면 과거 응답으로 새 항목을 지우지 않는다(보낸 그 항목만 제거). 앱 종료 중 결과(RetainForExit)도 같은 메모리 목록에 들어가지만, 종료 경로가 이미 전송을 멈췄고(StopTransmission) 종료 직전 전송도 하지 않으므로 서버에 보내지 못한 채 프로세스 종료와 함께 사라질 수 있다.
