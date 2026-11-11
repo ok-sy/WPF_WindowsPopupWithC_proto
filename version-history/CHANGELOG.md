@@ -1,5 +1,15 @@
 # 변경 이력
 
+## 2026-11-11-20 — docs: ERD 문서 깨진 링크 정리
+
+- 이유: ERD 문서의 상대 링크 7개가 삭제·이동된 파일을 가리켜 열리지 않았다(서버 폴더 `zero-rule-server-main` → `zero-rule-server`, 공통 미리보기·문항 편집 컴포넌트 이동, 설계 18 소스 정리에서 삭제된 파일).
+- 변경:
+  - `ERD/README.md`: 삭제된 PostgreSQL 전체 데이터 스냅샷(`2026hyundaicard_popup_data_insert.sql`) 링크를 바로 위 DDL 스냅샷 항목처럼 경로·삭제 사실·Git 이력 안내 문구로 바꿈.
+  - `ERD/STRUCTURE_REVIEW.md` 근거 파일: `PopupService.java`·`PopupMapper.xml`·`ApiLogInterceptor.java` 경로를 `zero-rule-server/`로, `PopupQuestionEditor.tsx`·`PopupPreview.tsx`를 `features/PopupcommonComponent/`로 고치고, 삭제된 `PopupController.java`는 관리자 API를 맡은 `PopupAdminController.java`로 바꾸고 작성 당시 이름을 함께 적음. 검토 내용 자체는 바꾸지 않았다.
+- 주요 파일: `ERD/README.md`, `ERD/STRUCTURE_REVIEW.md`.
+- 검증: `ERD/` 아래 Markdown 상대 링크 전체를 파일 존재 여부로 검사해 깨진 링크 0건.
+- 상태: 커밋·원격 반영. 반입본(20261112)에는 들어가지 않았다.
+
 ## 2026-11-11-19 — docs: WPF 인터페이스 Excel 정의서 WPF_SPEC_v3.8 재작성·버전 관리
 
 - 이유: Excel 정의서 피드백 반영. 파일명에 버전이 없고 버전 이력이 없었으며, 개요 시트 레이아웃(고정 높이·병합 화살표 도식)이 깨지고, TODO·설계 번호가 문구에 남고, 삭제·폐기된 필드 행이 남아 있었다. JSON 위치가 `...runs[].text`처럼 생략되고 행 순서도 일정하지 않았다. 일부 값은 계약서와 달랐다(동영상+퀴즈 completionRatio 기본값, 이미 제거된 TEXT 강조 문구 필드).

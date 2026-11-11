@@ -35,7 +35,7 @@
 ## 별도 보존 자료
 
 - 기존 zero_rule DDL 스냅샷(`popup-frameWork/Popup/Docs/2026hyundaicard_popup_ddl.sql`, 구 PostgreSQL DDL): 설계 18 L-0(C-12)에서 삭제했다. 필요하면 Git 이력에서 확인하며 신규 설치는 01을 사용한다.
-- [기존 전체 데이터 스냅샷](../popup-frameWork/Popup/Docs/2026hyundaicard_popup_data_insert.sql): popup과 zero_rule 양쪽 데이터를 포함한다. 02 샘플과 중복 적용하지 않는다. 환경별 데이터가 있으므로 일반 개발 샘플로 합치지 않았다.
+- 기존 전체 데이터 스냅샷(`popup-frameWork/Popup/Docs/2026hyundaicard_popup_data_insert.sql`, 구 PostgreSQL 데이터): 설계 18에서 삭제했다. 필요하면 Git 이력(dcff783 이전)에서 확인한다. popup과 zero_rule 양쪽 데이터를 포함했다. 02 샘플과 중복 적용하지 않는다. 환경별 데이터가 있으므로 일반 개발 샘플로 합치지 않았다.
 
 ## 검증 기록
 

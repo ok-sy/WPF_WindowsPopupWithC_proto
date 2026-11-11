@@ -48,10 +48,10 @@ P0는 요구사항 충돌/데이터 정책, P1은 기능 정합성, P2는 유지
 | P2 | 공개 API 사용자 식별 | /p API가 요청의 userId로 상태/응답을 처리한다. JWT 없이 사용하는 현재 WPF 계약이다. | 사내 클라이언트 신뢰 범위를 명시하고 사용자 검증이 필요하면 클라이언트 인증과 함께 설계한다. 단순히 관리자 권한으로 묶으면 WPF가 중단된다. |
 
 근거 파일:
-- [PopupService.java](../zero-rule-server-main/service/core/src/main/java/server/service/core/popup/PopupService.java): saveAdminQuestions, normalizeAdminQuestions, submitResponse, toAdminSaveCommand.
-- [PopupMapper.xml](../zero-rule-server-main/repo/core/src/main/resources/mappers/popup/PopupMapper.xml): selectSubmissionContext, upsertPopupResponse, deleteResponseAnswers, selectAdminQuestionTemplates.
-- [PopupEditorDialog.tsx](../zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx), [PopupQuestionEditor.tsx](../zero-rule-web/main/src/features/RgstPop/PopupQuestionEditor.tsx), [PopupPreview.tsx](../zero-rule-web/main/src/features/RgstPop/PopupPreview.tsx).
-- [ApiLogInterceptor.java](../zero-rule-server-main/security/src/main/java/server/security/ApiLogInterceptor.java), [PopupController.java](../zero-rule-server-main/web/api/src/main/java/server/web/api/popup/PopupController.java).
+- [PopupService.java](../zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupService.java): saveAdminQuestions, normalizeAdminQuestions, submitResponse, toAdminSaveCommand.
+- [PopupMapper.xml](../zero-rule-server/repo/core/src/main/resources/mappers/popup/PopupMapper.xml): selectSubmissionContext, upsertPopupResponse, deleteResponseAnswers, selectAdminQuestionTemplates.
+- [PopupEditorDialog.tsx](../zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx), [PopupQuestionEditor.tsx](../zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx), [PopupPreview.tsx](../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx).
+- [ApiLogInterceptor.java](../zero-rule-server/security/src/main/java/server/security/ApiLogInterceptor.java), [PopupAdminController.java](../zero-rule-server/web/api/src/main/java/server/web/api/popup/PopupAdminController.java)(작성 당시 PopupController, 설계 18에서 관리자 API로 분리).
 
 ## 3. 요청한 기능 제거의 구체적 범위
 
