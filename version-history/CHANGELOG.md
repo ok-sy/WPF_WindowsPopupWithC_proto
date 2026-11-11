@@ -1,3 +1,11 @@
+## 2026-11-11-09 — doc: TODO45 통합 장애 복구 주기·결과 우선(A안) 결정 반영
+
+- 이유: 인증·조회·결과 전송 장애의 복구 간격을 통일하고, 결과 전송 장애 중 다음 단건 팝업 조회를 병행하지 않는 원칙을 확정해 임시 예외와 구분.
+- 변경: 로그인 실패 및 조회·결과 전송 401 재인증 실패를 복구 대상에 포함. 10초×3회·최대 5사이클, 사이클 간 30분(현행 30분+10초), 소진 후 60분마다 1회 재시도(사이클 재시작 없음), 성공 시 초기화. 미종결 결과의 메모리 보관·동일 resultId 재전송·다음 조회 보류(A안) 확정. HTTP 400 격리·INTERNAL_ERROR 3회 제한 및 소진 후 조회 허용은 임시 예외로 유지하고 TODO45에 별도 결정·검증 항목으로 남김. 저장 성공 시 nextStatus 생략은 즉시 조회하는 기존 계약 유지.
+- 주요 파일: `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/design/45_단건_RESULT_재전송오류_정책검증_TODO.md`, `docs/interfaces/POPUP_INTERFACE_SPEC.md`.
+- 검증: Git main의 정책·TODO·인터페이스 문서와 WPF `PopupPollingRecovery.NextDelay()`, `PopupResultQueue.FlushAsync()` 정적 대조. WPF 코드·서버·DB 변경 없음. 빌드·테스트·로컬 실행·원격 DB·폐쇄망 실화면 검증 미실행.
+- 상태: 문서만 Git 반영. 조회 401 재인증 실패의 통합 복구 진입 등 WPF 구현 대기. 미결 예외 정책은 미확정.
+
 ## 2026-11-10 — doc: QUIZ 선택지·WPF 주관식 UTF-8 BYTE 제한 TODO
 
 - DB 담당자 확인: QUIZ 선택지 `VARCHAR2(300 BYTE)`, SURVEY/QUIZ 주관식 응답 `VARCHAR2(1000 BYTE)`. QUIZ 문항 제목 `CLOB`은 제외.
