@@ -12,7 +12,7 @@
 #          창 환경변수로 넣는다(.env 파일이 없어도 동작). turbo 2.x는 strict env 모드라 선언되지 않은 환경변수를 자식(next)에
 #          넘기지 않으므로 --env-mode=loose 가 필요하다(turbo.json 미수정). node_modules가 없으면 install --frozen-lockfile을 먼저 한다.
 #          pnpm은 package.json의 packageManager 버전을 npx로 실행한다(전역 pnpm 버전 차이로 lockfile이 바뀌는 것을 방지).
-# WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server/p, Auth.Mode=SsoPrototype(설계 10).
+# WPF    : 별도. popup-frameWork/Popup/appsettings.json 의 BaseUrl=http://localhost:8080/zero-rule-server(/p는 API 경로 쪽), Auth.Mode=SsoPrototype(설계 10).
 # 모의SSO : -MockSso 이면 임시 SSO 프로그램(popup-frameWork/MockSso, C# HttpListener, 실제 SSO처럼 Negotiate 도전)을 세 번째 창으로
 #          띄운다(http://localhost:8099, MAIN_USER_ID=-MockSsoUserId, MAIN_USER_CLASSI_CODE=-MockSsoClassCode).
 #          로컬 프로파일은 custom.wpf-auth-prototype.enabled=true 라 WPF가 SSO→로그인 API→Bearer 토큰으로 /p/api/wpf/** 를 호출한다.

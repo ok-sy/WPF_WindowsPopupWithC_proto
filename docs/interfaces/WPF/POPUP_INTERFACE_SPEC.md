@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-11-09 (KST)
+- 최신화: 2026-11-12 (KST)
+- 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
 - 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
@@ -128,20 +129,20 @@ C# 역직렬화는 대소문자를 구분하지 않지만, 신규 백엔드는 �
 
 | ID | 기능 | Method | 기본 경로 |
 |---|---|---|---|
-| WPF-00 | 로그인/토큰 발급 | POST | `/api/wpf/auth/login` |
-| WPF-01 | 표시 대상 팝업 1건 조회 | POST | `/api/wpf/popups` |
-| WPF-02 | 팝업 처리 결과 1건 전송 | POST | `/api/wpf/popups/results` |
+| WPF-00 | 로그인/토큰 발급 | POST | `/p/api/wpf/auth/login` |
+| WPF-01 | 표시 대상 팝업 1건 조회 | POST | `/p/api/wpf/popups` |
+| WPF-02 | 팝업 처리 결과 1건 전송 | POST | `/p/api/wpf/popups/results` |
 
-실제 전체 URL은 WPF의 `PopupApi.BaseUrl` 뒤에 위 경로를 붙여 사용한다.
+실제 전체 URL은 WPF의 `PopupApi.BaseUrl` 뒤에 위 경로를 붙여 사용한다. `BaseUrl`은 서버 주소(컨텍스트 경로까지)이고 `/p`는 넣지 않는다. `/p`는 서버 컨트롤러 매핑(`/p/api/wpf/**`)의 일부라 경로에 포함한다(2026-11-12 이전에는 `BaseUrl`에 `/p`를 넣고 경로를 `/p/api/wpf/...`로 적었다).
 
 예:
 
 ```text
-BaseUrl = https://example.company/popup-api
-POST https://example.company/popup-api/api/wpf/popups
+BaseUrl = https://example.company/zero-rule-server
+POST https://example.company/zero-rule-server/p/api/wpf/popups
 ```
 
-로그인 경로는 현재 C# 설정의 `Auth.LoginPath`로 교체 가능하며, 미설정 시 `/api/wpf/auth/login`을 사용한다.
+로그인 경로는 현재 C# 설정의 `Auth.LoginPath`로 교체 가능하며, 미설정 시 `/p/api/wpf/auth/login`을 사용한다.
 
 정상 호출 순서는 로그인 → 조회 → 팝업 1건 표시·사용자 처리 → 결과 1건 전송 → (nextStatus에 따라) 조회다(§6.2). 결과 수신 API가 결과 저장을 맡으며 별도 저장 API는 없다. 이전 목록 조회(`GET`, `popups[]`)와 결과 일괄 전송(`results[]` 1~50건)은 설계 35에서 삭제했으며 구버전 클라이언트와 호환하지 않는다.
 
@@ -194,7 +195,7 @@ Authorization: Bearer <accessToken>
 ## 5.1 Request
 
 ```http
-POST /api/wpf/auth/login
+POST /p/api/wpf/auth/login
 Content-Type: application/json
 X-Client-Version: 1.0.0
 ```
@@ -209,7 +210,7 @@ X-Client-Version: 1.0.0
 
 | 필드 | 형식 | 필수 여부 | Default | 설명 |
 |---|---|---|---|---|
-| lgonId | string | O | 없음 | SSO에서 얻은 사용자 식별값(SSO XML `MAIN_USER_ID`). 폐쇄망 `p/api/auth/sso/login` 요청 DTO와 같은 키. 로컬 프로토타입 서버는 이전 키 `logonId`도 받는다 |
+| lgonId | string | O | 없음 | SSO에서 얻은 사용자 식별값(SSO XML `MAIN_USER_ID`). 폐쇄망 `/p/api/auth/sso/login` 요청 DTO와 같은 키. 로컬 프로토타입 서버는 이전 키 `logonId`도 받는다 |
 | classCode | string | O | 없음 | SSO에서 얻은 사용자 분류 코드 |
 | linkYn | string | O | `"N"` | 현재 C#은 항상 `N` 전송 |
 
@@ -217,8 +218,8 @@ X-Client-Version: 1.0.0
 
 WPF는 2xx 응답에서 토큰을 아래 순서로 찾는다. 둘 다 없으면 로그인 실패로 처리한다(폐쇄망 로그인은 실패도 HTTP 200일 수 있다).
 
-1. 응답 헤더 `x-custom-authorization` — 폐쇄망 `p/api/auth/sso/login`. 본문은 프로필 메시지이고 만료 시각을 주지 않는다. `Bearer ` 접두사가 있으면 제거해 사용한다.
-2. 응답 본문 `accessToken` — 로컬 프로토타입 `p/api/wpf/auth/login`. 아래 형식이다.
+1. 응답 헤더 `x-custom-authorization` — 폐쇄망 `/p/api/auth/sso/login`. 본문은 프로필 메시지이고 만료 시각을 주지 않는다. `Bearer ` 접두사가 있으면 제거해 사용한다.
+2. 응답 본문 `accessToken` — 로컬 프로토타입 `/p/api/wpf/auth/login`. 아래 형식이다.
 
 이후 요청에는 어느 경우든 `Authorization: Bearer {토큰}`을 보낸다. 토큰 갱신은 401 재로그인과 정기 재로그인이 맡으며 `expiresAt`으로 판단하지 않는다.
 
@@ -243,7 +244,7 @@ WPF는 2xx 응답에서 토큰을 아래 순서로 찾는다. 둘 다 없으면 
 ## 6.1 Request
 
 ```http
-POST /api/wpf/popups
+POST /p/api/wpf/popups
 Content-Type: application/json
 Authorization: Bearer <token>
 X-Client-Version: 1.0.0
@@ -287,7 +288,7 @@ X-Client-Version: 1.0.0
 ```text
 로그인
 → 미전송 결과 전송(§12.1)
-→ POST /api/wpf/popups
+→ POST /p/api/wpf/popups
 → popup=null      : 가장 최근 pollingIntervalSeconds 대기 후 다시 조회
 → popup 있음      : 1건 표시 → 닫기·숨김·제출·시청 종료 → 결과 1건 전송(WPF-02)
 → 결과 status가 저장(ACCEPTED·DUPLICATE)이면 nextStatus 확인
@@ -871,7 +872,7 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 → WPF 로컬 결과 생성
 → 메모리 결과 큐 적재(파일 미사용, 2026-10-28 결정)
 → 팝업 닫기
-→ POST /api/wpf/popups/results (결과 1건)
+→ POST /p/api/wpf/popups/results (결과 1건)
 → 응답 status·nextStatus로 다음 조회 시점 결정(§6.2)
 ```
 
@@ -884,7 +885,7 @@ WPF는 사용자 동작 직후 서버 응답을 기다린 다음 창을 닫는 �
 ## 10.2 Request
 
 ```http
-POST /api/wpf/popups/results
+POST /p/api/wpf/popups/results
 Content-Type: application/json
 Authorization: Bearer <token>
 X-Client-Version: 1.0.0
@@ -1102,7 +1103,7 @@ resultId 영수증 확인(이미 있으면 DUPLICATE)
 
 | 구분 | 제안서 v0.3 | 구현 계약(이 문서) |
 |---|---|---|
-| 경로 | `/api/v1/auth/login`, `/api/v1/popups/next`, `/api/v1/popups/results` | `/api/wpf/auth/login`, `POST /api/wpf/popups`, `POST /api/wpf/popups/results`(§3) |
+| 경로 | `/api/v1/auth/login`, `/api/v1/popups/next`, `/api/v1/popups/results` | `/p/api/wpf/auth/login`, `POST /p/api/wpf/popups`, `POST /p/api/wpf/popups/results`(§3) |
 | 결과 종류·종료 시각 | `action`, `completedAt` | `resultType`, `closedAt`(§10.2에서 채택하지 않음으로 명시) |
 | 답안 필드 | `answers[].selectedOptionIds`, `answers[].answerText` | `answers[].optionIds`, `answers[].textAnswer`(§10.5·10.6) |
 | 시각 필수 여부 | `displayedAt`·`completedAt` 필수 | `displayedAt`·`closedAt` 선택(`null` 가능) |
@@ -1419,7 +1420,7 @@ EMPTY
 
 # 15. 유형별 전체 JSON 예시
 
-아래는 POST /api/wpf/popups 응답의 `popup`에 들어갈 유형별 완전한 객체다. **실제 응답에는 한 번에 1건만 들어간다.** `deliveryId`는 서버가 조회마다 발급하는 값이며 예시 값은 형식 설명용이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
+아래는 POST /p/api/wpf/popups 응답의 `popup`에 들어갈 유형별 완전한 객체다. **실제 응답에는 한 번에 1건만 들어간다.** `deliveryId`는 서버가 조회마다 발급하는 값이며 예시 값은 형식 설명용이다. 문항은 popup 최상위 questions, 통과 점수는 popup 최상위 passingScore에 둔다. 기본값을 사용하는 선택 필드는 일부 생략했다. 미디어·링크의 example.com 주소는 형식 예시이므로 실제 접근 가능한 주소로 교체해야 한다.
 
 6개 유형의 `popup` 예시를 모은 참고 파일: [WPF-01-popup-types.json](../examples/WPF-01-popup-types.json)(유형별 응답 예시 모음이며 한 응답이 아니다). 각 객체는 다음 Envelope의 `popup` 자리에 넣는다.
 
@@ -1825,7 +1826,7 @@ QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 6
 
 - [ ] 로그인 API가 accessToken을 반환한다.
 - [ ] 조회/결과 API가 Bearer 인증 사용자를 식별할 수 있다.
-- [ ] POST /api/wpf/popups에는 userId 요청 파라미터·본문을 요구하지 않는다.
+- [ ] POST /p/api/wpf/popups에는 userId 요청 파라미터·본문을 요구하지 않는다.
 - [ ] 조회 API는 서버에서 노출 판정·정렬을 끝낸 첫 1건만 `popup`으로 반환하고 `deliveryId`를 발급한다.
 - [ ] 표시 대상이 없을 때 `popup: null`을 반환하고, 매 응답에 `pollingIntervalSeconds`를 넣는다.
 - [ ] 열린 전달 건이 아직 표시 조건을 만족하면 재조회에 같은 `deliveryId`를 돌려준다.

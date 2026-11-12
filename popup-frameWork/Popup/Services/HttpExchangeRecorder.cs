@@ -41,7 +41,7 @@ namespace Popup.Services
         private static readonly HashSet<string> SecretHeaders = new(StringComparer.OrdinalIgnoreCase) { "Authorization" };
         private static readonly HashSet<string> SecretProperties = new(StringComparer.OrdinalIgnoreCase) { "accessToken", "refreshToken" };
 
-        /// <summary>목록 한 줄 요약. 예: "POST /api/wpf/popups → 200 (35 ms)"</summary>
+        /// <summary>목록 한 줄 요약. 예: "POST /p/api/wpf/popups → 200 (35 ms)"</summary>
         public string Summary(string baseUrl)
         {
             string path = !string.IsNullOrEmpty(baseUrl) && Url.StartsWith(baseUrl, StringComparison.OrdinalIgnoreCase)

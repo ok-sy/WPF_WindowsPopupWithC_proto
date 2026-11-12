@@ -126,7 +126,7 @@
                                           ToolTip="체크: 로컬 서버 주소·로그인 경로 / 해제: 개발 서버 주소·로그인 경로 (appsettings.json PopupApi.DemoApiTargets)"/>
                                 <TextBlock Text="Base URL" Style="{StaticResource Label}"/>
                                 <TextBox x:Name="ApiBaseUrlText" MinHeight="30" Padding="6,4" Margin="0,0,0,10" VerticalContentAlignment="Center"
-                                         ToolTip="예: http://dev-host:8080/zero-rule-server/p (끝의 /는 무시)" TextChanged="ApiBaseUrlText_TextChanged"/>
+                                         ToolTip="예: http://dev-host:8080/zero-rule-server (/p 제외, 끝의 /는 무시)" TextChanged="ApiBaseUrlText_TextChanged"/>
                                 <!-- POL-14-02 : Demo 모드 — 체크 해제 시 개발 서버 주소가 설정에 없으면 입력칸 바로 아래에 안내(아래쪽 오류 칸은 포커스 이동 시 화면 밖이라 따로 둔다). 주소를 입력하면 숨긴다. -->
                                 <TextBlock x:Name="ApiTargetHintText" Visibility="Collapsed" Foreground="#B42318" TextWrapping="Wrap" Margin="0,-6,0,10"
                                            AutomationProperties.LiveSetting="Assertive"/>
@@ -193,7 +193,7 @@
                         <StackPanel x:Name="ApiActionBar" Visibility="Collapsed">
                             <TextBlock x:Name="ApiStepText" TextWrapping="Wrap" Foreground="#374151" FontSize="12" Margin="0,0,0,8"
                                        AutomationProperties.LiveSetting="Polite"/>
-                            <Button x:Name="ApiQueryButton" Content="팝업 조회 (POST /api/wpf/popups)" Style="{StaticResource PrimaryButton}" Click="ApiQueryButton_Click"/>
+                            <Button x:Name="ApiQueryButton" Content="팝업 조회 (POST /p/api/wpf/popups)" Style="{StaticResource PrimaryButton}" Click="ApiQueryButton_Click"/>
                             <Button x:Name="ApiFlushButton" Content="미전송 결과 재전송" Click="ApiFlushButton_Click"
                                     ToolTip="보관 중인 결과를 같은 resultId·본문으로 다시 보냅니다."/>
                         </StackPanel>

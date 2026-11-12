@@ -31,7 +31,7 @@ namespace Popup.Models
          */
         public bool DemoApi { get; set; }
 
-        /* POL-09-01 : 3 API 순서 — 계약 BaseUrl(/p 포함). API 경로 /api/wpf/... 를 뒤에 붙인다. */
+        /* POL-09-01 : 3 API 순서 — BaseUrl은 서버 주소(컨텍스트 경로까지, /p 제외). API 경로 /p/api/wpf/... 를 뒤에 붙인다. */
         public string BaseUrl { get; set; } =
             string.Empty;
 
@@ -63,7 +63,7 @@ namespace Popup.Models
          * POL-15-02 : 인증·버전
          * [AuthMode=SsoPrototype 전용 설정]
          *   SsoUrl               : 사내 SSO 주소. Windows 통합 인증(Negotiate)으로 GET 하면 MAIN_USER_ID·MAIN_USER_CLASSI_CODE가 담긴 XML을 준다.
-         *   LoginPath            : BaseUrl 뒤에 붙는 서버 프로토타입 로그인 API 경로(기본 /api/wpf/auth/login).
+         *   LoginPath            : BaseUrl 뒤에 붙는 서버 프로토타입 로그인 API 경로(기본 /p/api/wpf/auth/login).
          *   PeriodicLoginMinutes : 정기 재로그인 주기(분, 기본 60). 0 이하이면 정기 재로그인을 끄고 401 기반 재로그인만 쓴다.
          * 토큰은 파일·Registry·appsettings 어디에도 저장하지 않고 SsoAuthHeaderProvider 메모리에만 둔다.
          */
@@ -71,7 +71,7 @@ namespace Popup.Models
             string.Empty;
 
         public string AuthLoginPath { get; set; } =
-            "/api/wpf/auth/login";
+            "/p/api/wpf/auth/login";
 
         public int AuthPeriodicLoginMinutes { get; set; } =
             60;
@@ -83,16 +83,16 @@ namespace Popup.Models
          * 일반 실행·인메모리 Demo에서는 쓰지 않는다. Dev.BaseUrl은 환경마다 넣는 값이라 기본값이 없다.
          */
         public string DemoLocalBaseUrl { get; set; } =
-            "http://localhost:8080/zero-rule-server/p";
+            "http://localhost:8080/zero-rule-server";
 
         public string DemoLocalLoginPath { get; set; } =
-            "/api/wpf/auth/login";
+            "/p/api/wpf/auth/login";
 
         public string DemoDevBaseUrl { get; set; } =
             string.Empty;
 
         public string DemoDevLoginPath { get; set; } =
-            "/api/auth/sso/login";
+            "/p/api/auth/sso/login";
 
         /// <summary>
         /// 개발 전용. 서버 custom.wpf-popup.dev-user-header=true일 때만 의미가 있는 사번.

@@ -245,9 +245,9 @@ WPF는 아래 3개 API만 호출한다. 사용자 ID는 보내지 않으며 서�
 
 | 호출 위치 | HTTP | 경로 | 기능 |
 |---|---|---|---|
-| `WpfLoginClient.LoginAsync` | POST | `/api/wpf/auth/login` | 로그인(토큰 발급, SSO 프로토타입) |
-| `PopupApiService.GetNextPopupAsync` | POST | `/api/wpf/popups` | 서버가 노출 판정·정렬을 끝낸 팝업 1건(`popup`, 없으면 null) + `deliveryId`·공통 옵션·content·문항 |
-| `PopupApiService.PostResultAsync` | POST | `/api/wpf/popups/results` | 팝업 종료 시 결과 1건(CLOSED·HIDDEN·LATER·SUBMITTED·VIDEO_WATCHED, `deliveryId` 포함) 전송. 응답 `nextStatus`로 다음 조회 시점 결정. `PopupResultQueue`가 실패 시 보관·순서대로 재전송 |
+| `WpfLoginClient.LoginAsync` | POST | `/p/api/wpf/auth/login` | 로그인(토큰 발급, SSO 프로토타입) |
+| `PopupApiService.GetNextPopupAsync` | POST | `/p/api/wpf/popups` | 서버가 노출 판정·정렬을 끝낸 팝업 1건(`popup`, 없으면 null) + `deliveryId`·공통 옵션·content·문항 |
+| `PopupApiService.PostResultAsync` | POST | `/p/api/wpf/popups/results` | 팝업 종료 시 결과 1건(CLOSED·HIDDEN·LATER·SUBMITTED·VIDEO_WATCHED, `deliveryId` 포함) 전송. 응답 `nextStatus`로 다음 조회 시점 결정. `PopupResultQueue`가 실패 시 보관·순서대로 재전송 |
 
 ---
 
@@ -260,7 +260,7 @@ AND showDoNotShowAgain = true
 → 사용자가 체크 후 닫기
 → PopupWindow.RecordDoNotShowAgainChoice (체크 여부만 기록, 서버 호출 없음)
 → 창이 닫히면 HIDDEN 결과 항목(hideDays: 팝업 hideDays, 없으면 30) 생성
-→ POST /api/wpf/popups/results
+→ POST /p/api/wpf/popups/results
 ```
 
 ### 9.1 나중에 보기 (TODO52-2)
@@ -272,7 +272,7 @@ AND showLater = true
 → 사용자가 버튼 클릭(완료 기준 전·Background Overlay 중에도 가능, 완료 기준 전 유일한 화면 이탈 버튼 — TODO57)
 → PopupWindow가 LaterRequested 기록 후 닫기
 → 창이 닫히면 LATER 결과 항목 생성(다시 보지 않기 체크·영상 시청량보다 우선, hideDays·video 미포함)
-→ POST /api/wpf/popups/results
+→ POST /p/api/wpf/popups/results
 → 서버: 완료·숨김 없이 전달 건 유예(pollingIntervalSeconds) → 다음 조회 주기에 다시 표시
 ```
 

@@ -7,7 +7,7 @@
 
 | 정책 ID | 항목 | 기준·예외 | 입출력·기본값 | 담당 레이어 |
 |---|---|---|---|---|
-| POL-09-01 | 3 API 순서 | 로그인 → POST 단건 조회 → 결과 1건 저장 → 필요 시 재조회. 인증 만료는 로그인 재진입 경로를 따른다. 계약 BaseUrl의 /p와 상대 /api/wpf 경로를 구분한다. | auth/login, popups, popups/results | 서버 Controller·WPF API |
+| POL-09-01 | 3 API 순서 | 로그인 → POST 단건 조회 → 결과 1건 저장 → 필요 시 재조회. 인증 만료는 로그인 재진입 경로를 따른다. BaseUrl은 서버 주소(컨텍스트 경로까지)이고 /p는 API 경로(/p/api/wpf/...)에 포함한다. | auth/login, popups, popups/results | 서버 Controller·WPF API |
 | POL-09-02 | 조회 응답 | 매 응답 pollingIntervalSeconds와 popup 객체 또는 명시 null을 준다. userId/serverTime/popups[]/displayOrder/nextStatus를 조회 계약으로 되살리지 않는다. 조회가 전달 건을 만들거나 재사용하므로 POST다. | {pollingIntervalSeconds, popup}; 주기 1800~3600초 | 서버 / WPF 최신 주기 반영 |
 | POL-09-03 | 저장 응답 | resultId/status/code/message와 저장 성공 시 nextStatus. AVAILABLE 즉시 조회, EMPTY 주기 대기. 후보 확인 실패는 nextStatus 생략 + WPF_NEXT_STATUS_UNKNOWN이며 저장 실패로 재해석하지 않는다. | ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR | 서버·WPF |
 

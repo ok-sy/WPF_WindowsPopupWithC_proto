@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-12-01 — dev: TODO74 WPF BaseUrl의 /p를 API 경로로 이동
+
+- 이유: 정합성 보완. 서버는 context-path가 `/zero-rule-server`이고 `/p`는 컨트롤러 매핑(`/p/api/wpf/**`, `/admin/p/**`)에 들어 있으며 관리자 웹도 경로 쪽에 `/p`를 붙이는데, WPF만 `BaseUrl`에 `/p`를 넣고 경로를 `/api/wpf/...`로 나눠 기준이 달랐다. 문서 표기(`p/api/...`, `BaseUrl(/p 포함)`)도 섞여 있었다.
+- 변경:
+  - WPF: `BaseUrl` 기본·예시를 `http://localhost:8080/zero-rule-server`(/p 제외)로, 조회·결과 경로를 `/p/api/wpf/popups`·`/p/api/wpf/popups/results`로, `Auth.LoginPath` 기본을 `/p/api/wpf/auth/login`(폐쇄망 `/p/api/auth/sso/login`)으로, `DemoApiTargets` Local·Dev 값을 같은 기준으로 변경. Demo 화면 툴팁·버튼 문구, 로그 단계 판정 경로, 주석 정리. 최종 요청 URL은 같다.
+  - 옛 설정 자동 보정은 넣지 않았다. 옛 `BaseUrl`(끝 `/p`)을 새 빌드에 쓰면 `/p/p/api/...`로 404가 나므로 폐쇄망은 새 WPF 반입 때 `BaseUrl`·`Auth.LoginPath`를 함께 바꿔야 한다.
+  - 테스트: `scripts/ApiDemoTests`(모의 서버 BaseUrl·로그인 경로·SSO 경로), `scripts/PopupWindowTests`(기본 LoginPath), 로컬 검증 프로젝트(Git 제외) `Popup.BehaviorTests`·`Popup.RecoveryTests`의 BaseUrl을 새 기준으로 변경.
+  - 문서: 인터페이스 계약서(§3 경로·BaseUrl 설명·예시, WPF-00~02 경로, 3.7 보완 기록), WPF 에이전트 사양서, ALL 정의서, POL-09·POLICY POL-09-01, `POPUP_OPTION_GUIDE.md`, `README.md`, `popup-frameWork/README.md`, `shell/start-dev.ps1` 주석, 반입 안내 문구(`export-offline-package.ps1`), Excel 생성 스크립트 문구(`export-wpf-spec-xlsx.py`). TODO74 문서 신설. 설계·검토 문서와 이전 변경 이력의 표기는 당시 기록으로 둔다.
+- 주요 파일: `popup-frameWork/Popup/Services/PopupApiService.cs`, `Models/PopupClientSettings.cs`, `Services/Auth/WpfLoginClient.cs`, `MainWindow.xaml.cs`, `DemoWindow.xaml`·`.xaml.cs`·`.Api.cs`, `Services/HttpExchangeRecorder.cs`, `appsettings.json`, `scripts/ApiDemoTests/Program.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/*.md`, `docs/design/74_WPF_BaseUrl_p경로_API경로이동_TODO.md`.
+- 검증: `Popup.csproj` 빌드 경고 0·오류 0. `Popup.RecoveryTests` 255건, `Popup.BehaviorTests` 1,736건, `scripts/ApiDemoTests` 124건, `scripts/PopupWindowTests` 547건 통과. 로컬 서버 기동 상태 실호출, 폐쇄망 확인, Excel·Word·PDF 산출물 재생성은 미실행.
+- 상태: 커밋·원격 반영. 반입본(20261112)에는 들어가지 않았다 — 다음 반입 때 폐쇄망 `appsettings.json`의 `BaseUrl`(끝 `/p` 제거)·`Auth.LoginPath`(`/p/api/auth/sso/login`)를 함께 바꿔야 한다.
+
 ## 2026-11-11-20 — docs: ERD 문서 깨진 링크 정리
 
 - 이유: ERD 문서의 상대 링크 7개가 삭제·이동된 파일을 가리켜 열리지 않았다(서버 폴더 `zero-rule-server-main` → `zero-rule-server`, 공통 미리보기·문항 편집 컴포넌트 이동, 설계 18 소스 정리에서 삭제된 파일).

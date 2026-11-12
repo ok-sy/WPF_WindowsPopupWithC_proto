@@ -83,7 +83,7 @@ internal static class Program
         Check(Parse("-show-main").ShowMain && Parse("--show-main").ShowMain, "[51-1] show-main accepts single and double dash");
     }
 
-    /// <summary>일반 모드 로그인 본문은 폐쇄망 p/api/auth/sso/login 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>
+    /// <summary>일반 모드 로그인 본문은 폐쇄망 /p/api/auth/sso/login 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>
     private static void CheckLoginRequestKey()
     {
         string body = JsonSerializer.Serialize(new WpfLoginRequestDto { LogonId = "E1001", ClassCode = "A1" },
@@ -101,7 +101,7 @@ internal static class Program
         Check(!response.Contains("tok-SECRET") && response.Contains("마스킹"), "[51-3] accessToken in response body is masked by default");
         var (revealedRequest, revealedResponse) = record.ToDisplayJson(revealSecrets: true);
         Check(revealedRequest.Contains("secret-token-123") && revealedResponse.Contains("tok-SECRET"), "[51-3] reveal shows plain values on screen");
-        Check(record.Summary("http://h/p") == "POST /api/wpf/auth/login → 200 OK (5 ms)", "[51-3] summary uses path after base URL");
+        Check(record.Summary("http://h") == "POST /p/api/wpf/auth/login → 200 OK (5 ms)", "[51-3] summary uses path after base URL");
         Check(HttpExchangeRecord.BodyKind("", 200) == "EMPTY" && HttpExchangeRecord.BodyKind("{x", 200) == "INVALID_JSON"
               && HttpExchangeRecord.BodyKind("{}", 200) == "JSON" && HttpExchangeRecord.BodyKind(null, null) == "NO_RESPONSE",
             "[51-3] response body kind");
@@ -151,14 +151,14 @@ internal static class Program
     {
         MethodInfo load = typeof(MainWindow).GetMethod("LoadPopupClientSettings", Flags)!;
         PopupClientSettings loaded = (PopupClientSettings)load.Invoke(null, null)!;
-        Check(loaded.DemoLocalBaseUrl == "http://localhost:8080/zero-rule-server/p" && loaded.DemoLocalLoginPath == "/api/wpf/auth/login"
-              && loaded.DemoDevBaseUrl == string.Empty && loaded.DemoDevLoginPath == "/api/auth/sso/login",
-            "[target] appsettings DemoApiTargets are read (Local localhost·/api/wpf/auth/login, Dev empty·/api/auth/sso/login)");
+        Check(loaded.DemoLocalBaseUrl == "http://localhost:8080/zero-rule-server" && loaded.DemoLocalLoginPath == "/p/api/wpf/auth/login"
+              && loaded.DemoDevBaseUrl == string.Empty && loaded.DemoDevLoginPath == "/p/api/auth/sso/login",
+            "[target] appsettings DemoApiTargets are read (Local localhost·/p/api/wpf/auth/login, Dev empty·/p/api/auth/sso/login)");
 
-        const string devUrl = "http://dev-host:8080/zero-rule-server/p";
+        const string devUrl = "http://dev-host:8080/zero-rule-server";
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = "http://localhost:8080/zero-rule-server/p/", AuthMode = "SsoPrototype",
+            DemoMode = true, DemoApi = true, BaseUrl = "http://localhost:8080/zero-rule-server/", AuthMode = "SsoPrototype",
             AuthLoginPath = "/custom/login", DemoDevBaseUrl = devUrl
         };
         DemoWindow window = new(settings);
@@ -166,14 +166,14 @@ internal static class Program
         TextBox baseUrl = (TextBox)window.FindName("ApiBaseUrlText");
         TextBox loginPath = (TextBox)window.FindName("ApiLoginPathText");
         TextBlock error = (TextBlock)window.FindName("ApiTargetHintText");
-        Check(local.IsChecked == true && baseUrl.Text == "http://localhost:8080/zero-rule-server/p/" && loginPath.Text == "/custom/login",
+        Check(local.IsChecked == true && baseUrl.Text == "http://localhost:8080/zero-rule-server/" && loginPath.Text == "/custom/login",
             "[target] start keeps the appsettings BaseUrl·LoginPath and marks the box when BaseUrl is the local target");
         local.IsChecked = false;
-        Check(baseUrl.Text == devUrl && loginPath.Text == "/api/auth/sso/login" && error.Visibility != Visibility.Visible
+        Check(baseUrl.Text == devUrl && loginPath.Text == "/p/api/auth/sso/login" && error.Visibility != Visibility.Visible
               && Logs(window).Any(l => l.Contains("[연결] 개발 서버 주소로")),
             "[target] unchecking switches Base URL and login path to the dev target together");
         local.IsChecked = true;
-        Check(baseUrl.Text == "http://localhost:8080/zero-rule-server/p" && loginPath.Text == "/api/wpf/auth/login",
+        Check(baseUrl.Text == "http://localhost:8080/zero-rule-server" && loginPath.Text == "/p/api/wpf/auth/login",
             "[target] checking switches back to the local target");
         window.Close();
 
@@ -304,7 +304,7 @@ internal static class Program
     /* 일반 실행 로그인: 폐쇄망 SSO 로그인처럼 토큰이 응답 헤더로 와도, 프로토타입처럼 본문으로 와도 동작해야 한다. */
     private static void CheckLoginTokenSources(MockServer server)
     {
-        WpfLoginResponseDto Login(string mode, string path = "/api/auth/sso/login")
+        WpfLoginResponseDto Login(string mode, string path = "/p/api/auth/sso/login")
         {
             server.SsoLoginMode = mode;
             return Task.Run(() => new WpfLoginClient(server.BaseUrl, path).LoginAsync(new SsoUserInfo("E1001", "A1"))).GetAwaiter().GetResult();
@@ -324,7 +324,7 @@ internal static class Program
         // 일반 실행 경로: SSO 1회 → 로그인 → 헤더 토큰, 401은 SSO 없이 재로그인
         server.SsoLoginMode = "HEADER";
         int ssoBefore = server.SsoGetCount;
-        SsoAuthHeaderProvider provider = new(new SsoClient(server.BaseUrl + "/sso"), new WpfLoginClient(server.BaseUrl, "/api/auth/sso/login"));
+        SsoAuthHeaderProvider provider = new(new SsoClient(server.BaseUrl + "/sso"), new WpfLoginClient(server.BaseUrl, "/p/api/auth/sso/login"));
         string? first = Task.Run(() => provider.GetAuthorizationHeaderAsync()).GetAwaiter().GetResult();
         Check(first == "Bearer " + server.ValidToken && server.SsoGetCount == ssoBefore + 1, "[login-token] SSO provider sends the header token as Bearer");
         Task.Run(() => provider.OnUnauthorizedAsync(first)).GetAwaiter().GetResult();
@@ -337,7 +337,7 @@ internal static class Program
     {
         server.SsoLoginMode = "HEADER";
         server.PopupMode = "NULL";
-        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/auth/sso/login" });
+        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/p/api/auth/sso/login" });
         window.Show();
         ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         Query(window);
@@ -357,7 +357,7 @@ internal static class Program
         int resultsBefore = server.ResultBodies.Count;
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/api/demo/login"
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/p/api/demo/login"
         };
         DemoWindow window = new(settings);
         window.Show();
@@ -430,7 +430,7 @@ internal static class Program
         Check(server.CredentialBodies.Count == loginsBeforeRetry + 1 && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-09] 401 logs in once and retries");
 
                 Dictionary<int, HttpExchangeRecord> details = (Dictionary<int, HttpExchangeRecord>)typeof(DemoWindow).GetField("_httpDetails", Flags)!.GetValue(window)!;
-        Check(details.Values.Any(r => r.Url.EndsWith("/api/demo/login")), "[R-11] login exchange is recorded");
+        Check(details.Values.Any(r => r.Url.EndsWith("/p/api/demo/login")), "[R-11] login exchange is recorded");
         Check(Logs(window).All(l => !l.Contains(server.ValidToken!)), "[U-04] logs do not contain the token");
 
         // 연결 변경: 이전 인증 초기화(재로그인), 새 큐
@@ -464,7 +464,7 @@ internal static class Program
     {
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/api/wpf/auth/login", DevUserId = "E-SETTINGS"
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/p/api/wpf/auth/login", DevUserId = "E-SETTINGS"
         };
         DemoWindow window = new(settings);
         window.Show();
@@ -643,7 +643,7 @@ internal static class Program
             int port = FreePort();
             _listener.Prefixes.Add($"http://localhost:{port}/");
             _listener.Start();
-            BaseUrl = $"http://localhost:{port}/p";
+            BaseUrl = $"http://localhost:{port}";
             _ = Task.Run(LoopAsync);
         }
 
@@ -696,7 +696,7 @@ internal static class Program
                         }));
                     }
                     return;
-                case "/p/sso":
+                case "/sso":
                     Interlocked.Increment(ref SsoGetCount);
                     context.Response.StatusCode = 200;
                     context.Response.ContentType = "text/xml";

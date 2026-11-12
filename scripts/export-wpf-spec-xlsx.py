@@ -272,7 +272,7 @@ SUPPLEMENTS = {
 
 NOTES = {
     'root': [
-        '조회는 POST /api/wpf/popups 한 번에 팝업 1건을 받는다. 표시할 팝업이 없으면 popup 키를 유지하고 null.',
+        '조회는 POST /p/api/wpf/popups 한 번에 팝업 1건을 받는다. 표시할 팝업이 없으면 popup 키를 유지하고 null.',
         'popup.deliveryId는 서버가 조회마다 발급하는 전달 건 ID다. WPF는 바꾸지 않고 결과 요청에 그대로 넣는다. 응답을 받지 못해 다시 조회하면 같은 값이 온다.',
         'pollingIntervalSeconds는 1800~3600초. WPF는 가장 최근 값을 쓰고, 0 이하면 WPF 로컬 설정을 유지한다.',
         '공통 화면 옵션(Overlay·위치·글꼴·Footer)은 content가 아니라 popup 최상위에 둔다. content에는 유형별 화면 데이터만 둔다.',
@@ -306,7 +306,7 @@ NOTES = {
         '서식 필드(이름이 Blocks로 끝나는 필드)가 있으면 서버가 같은 이름의 일반 문자열을 만들어 함께 보낸다. 서식이 없거나 구조 오류면 일반 문자열을 표시한다. 주관식 답변·correctAnswer는 서식 대상이 아니다.',
     ],
     'request': [
-        '결과는 객체 1건(배열 아님)을 POST /api/wpf/popups/results로 보낸다. 결과는 메모리 큐에 넣고 순서대로 1건씩 보낸다.',
+        '결과는 객체 1건(배열 아님)을 POST /p/api/wpf/popups/results로 보낸다. 결과는 메모리 큐에 넣고 순서대로 1건씩 보낸다.',
         '재전송할 때 resultId·deliveryId·본문을 바꾸지 않는다. 서버는 같은 resultId를 DUPLICATE로 처리한다.',
         'resultType: CLOSED 일반 종료 / HIDDEN 다시 보지 않기(hideDays) / LATER 나중에 보기(완료·숨김 없이 다음 조회 주기에 다시 표시) / SUBMITTED 설문·퀴즈 제출 / VIDEO_WATCHED 영상 시청 종료.',
         '다시 보지 않기를 고르면 영상 시청 기록이 있어도 HIDDEN이다. 나중에 보기 버튼으로 닫으면 체크 여부와 관계없이 LATER이며 video를 보내지 않는다.',
@@ -332,10 +332,10 @@ TYPE_SUMMARY = [
 ]
 
 FLOW = [
-    ['1', '로그인', 'WPF-00 POST /api/wpf/auth/login. 토큰을 받아 이후 요청의 Authorization에 넣는다. 401이면 1회 재로그인 후 같은 요청을 다시 보낸다.'],
-    ['2', '조회', 'WPF-01 POST /api/wpf/popups. 표시할 팝업 1건(popup, deliveryId 포함) 또는 popup=null.'],
+    ['1', '로그인', 'WPF-00 POST /p/api/wpf/auth/login. 토큰을 받아 이후 요청의 Authorization에 넣는다. 401이면 1회 재로그인 후 같은 요청을 다시 보낸다.'],
+    ['2', '조회', 'WPF-01 POST /p/api/wpf/popups. 표시할 팝업 1건(popup, deliveryId 포함) 또는 popup=null.'],
     ['3', '표시·사용자 처리', '팝업 1건을 표시한다. 표시 중에는 다른 조회를 하지 않는다.'],
-    ['4', '결과 전송', 'WPF-02 POST /api/wpf/popups/results. 결과 1건(deliveryId 포함)을 보낸다.'],
+    ['4', '결과 전송', 'WPF-02 POST /p/api/wpf/popups/results. 결과 1건(deliveryId 포함)을 보낸다.'],
     ['5', '다음 조회', 'nextStatus AVAILABLE·생략이면 바로 조회, EMPTY 또는 popup=null이면 pollingIntervalSeconds 뒤 조회.'],
     ['6', '장애 복구', '미전송 결과를 먼저 다시 보낸다. 복구 주기 10초×3회×3사이클(사이 30분) 후 1시간마다. 426이면 업데이트 안내 후 종료.'],
 ]
@@ -562,7 +562,7 @@ def build(version, date):
     # 공통
     ws = wb.create_sheet('공통')
     w = SheetWriter(ws, FIELD_WIDTHS)
-    w.title('WPF 팝업 - 공통 계약 (조회 응답 POST /api/wpf/popups)', sub)
+    w.title('WPF 팝업 - 공통 계약 (조회 응답 POST /p/api/wpf/popups)', sub)
     w.section('조회 응답 ROOT · popup 공통 필드')
     field_table(w, dedupe_sort(root_rows() + popup_common()), 'popup.')
     w.section('동작')
@@ -589,7 +589,7 @@ def build(version, date):
     # RESULT_REQUEST
     ws = wb.create_sheet('RESULT_REQUEST')
     w = SheetWriter(ws, FIELD_WIDTHS)
-    w.title('WPF 결과 API 요청 - POST /api/wpf/popups/results (결과 1건)', sub)
+    w.title('WPF 결과 API 요청 - POST /p/api/wpf/popups/results (결과 1건)', sub)
     w.section('결과 요청 필드')
     field_table(w, request_rows(), '')
     w.section('동작')
@@ -600,7 +600,7 @@ def build(version, date):
     # RESULT_RESPONSE
     ws = wb.create_sheet('RESULT_RESPONSE')
     w = SheetWriter(ws, FIELD_WIDTHS)
-    w.title('WPF 결과 API 응답 - POST /api/wpf/popups/results (결과 1건)', sub)
+    w.title('WPF 결과 API 응답 - POST /p/api/wpf/popups/results (결과 1건)', sub)
     w.section('결과 응답 필드')
     field_table(w, response_rows(), '')
     w.section('status 처리 기준')

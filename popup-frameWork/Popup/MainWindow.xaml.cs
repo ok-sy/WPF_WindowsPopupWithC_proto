@@ -151,12 +151,12 @@ namespace Popup
          *   "PopupApi": {
          *     "DemoMode": false,
          *     "DemoSsoLoginTest": false,
-         *     "BaseUrl": "http://localhost:8080/zero-rule-server/p",
+         *     "BaseUrl": "http://localhost:8080/zero-rule-server",
          *     "AutoLoadOnStartup": true,
          *     "PollingIntervalSeconds": 1800,
          *     "SurveyDesignVersion": "V2",
          *     "Auth": { "Mode": "None", "StaticHeader": "",
-         *               "SsoUrl": "https://SSO_URL/encriptloginprocess.aspx", "LoginPath": "/api/wpf/auth/login", "PeriodicLoginMinutes": 60 },
+         *               "SsoUrl": "https://SSO_URL/encriptloginprocess.aspx", "LoginPath": "/p/api/wpf/auth/login", "PeriodicLoginMinutes": 60 },
          *     "DevUserId": ""
          *   }
          * }
@@ -223,7 +223,7 @@ namespace Popup
                 settings.AuthMode = GetString(auth, "Mode", "None").Trim();
                 settings.AuthStaticHeader = GetString(auth, "StaticHeader").Trim();
                 settings.AuthSsoUrl = GetString(auth, "SsoUrl").Trim();
-                settings.AuthLoginPath = GetString(auth, "LoginPath", "/api/wpf/auth/login").Trim();
+                settings.AuthLoginPath = GetString(auth, "LoginPath", "/p/api/wpf/auth/login").Trim();
                 settings.AuthPeriodicLoginMinutes = GetInt32(auth, "PeriodicLoginMinutes", 60);
             }
 

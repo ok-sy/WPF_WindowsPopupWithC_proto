@@ -22,7 +22,7 @@ namespace Popup
      * POL-09-01 : 3 API 순서
      * ■ API Demo(-Demo -Api). Demo 화면에서 개발계/검증계 실제 API를 수동으로 호출한다.
      *
-     *   팝업 조회 버튼 → (바뀐 연결 입력 적용) → 미전송 결과 전송 → POST /api/wpf/popups(입력한 JSON 본문)
+     *   팝업 조회 버튼 → (바뀐 연결 입력 적용) → 미전송 결과 전송 → POST /p/api/wpf/popups(입력한 JSON 본문)
      *     → popup 1건을 일반 실행과 같은 PopupService·PopupManager 경로로 표시
      *     → 창 닫힘 → PopupResultBuilder 결과가 결과 큐에 저장 → 실제 결과 API로 전송 → nextStatus 표시
      *     → 다음 조회는 다시 버튼으로(자동 폴링·nextStatus 기반 연속 조회 없음)
@@ -534,8 +534,8 @@ namespace Popup
             _apiLastHttp = (record.StatusCode?.ToString() ?? "응답 없음") + $" · {record.ElapsedMs}ms";
             bool success = record.StatusCode is >= 200 and < 300;
             string path = Uri.TryCreate(record.Url, UriKind.Absolute, out Uri? uri) ? uri.AbsolutePath : record.Url;
-            if (path.EndsWith("/api/wpf/popups/results", StringComparison.OrdinalIgnoreCase)) SetApiStep("결과 전송", success ? '✓' : '✕');
-            else if (path.EndsWith("/api/wpf/popups", StringComparison.OrdinalIgnoreCase)) SetApiStep("팝업 조회", success ? '✓' : '✕');
+            if (path.EndsWith("/p/api/wpf/popups/results", StringComparison.OrdinalIgnoreCase)) SetApiStep("결과 전송", success ? '✓' : '✕');
+            else if (path.EndsWith("/p/api/wpf/popups", StringComparison.OrdinalIgnoreCase)) SetApiStep("팝업 조회", success ? '✓' : '✕');
             else if (!success) SetApiStep("로그인", '✕');
             else RenderApiSteps();
         }

@@ -16,7 +16,7 @@ namespace Popup.Services
      * POL-09-01 : 3 API 순서
      * POL-15-02 : 인증·버전
      * ■ 팝업 API 클라이언트
-     * - in : baseUrl(string) 계약 BaseUrl(/p 포함) · authHeaderProvider(IAuthHeaderProvider?) · devUserId(string?) 개발용 사번 · httpClient(HttpClient?)
+     * - in : baseUrl(string) 서버 주소(컨텍스트 경로까지, /p 제외) · authHeaderProvider(IAuthHeaderProvider?) · devUserId(string?) 개발용 사번 · httpClient(HttpClient?)
      * - out: GetNextPopupAsync → WpfNextPopupResponseDto · PostResultAsync → WpfResultResponseDto · 예외: WpfClientVersionException(426), HttpRequestException(비성공)
      * - Java Spring Boot 팝업 API와 통신하는 서비스다.
      *
@@ -88,8 +88,10 @@ namespace Popup.Services
  * → Java Spring Boot 팝업 API의 기본 주소
  *
  * 예:
- * http://localhost:8080/zero-rule-server/p
- * https://zero-rule.company.com/zero-rule-server/p
+ * http://localhost:8080/zero-rule-server
+ * https://zero-rule.company.com/zero-rule-server
+ *
+ * /p는 서버 컨트롤러 매핑(/p/api/wpf/**)에 속하므로 API 경로 쪽에 붙는다.
  */
         /*
          * POL-15-02 : 인증·버전 — Authorization 헤더 값을 공급하는 확장 지점이다.
@@ -131,13 +133,13 @@ namespace Popup.Services
              * 마지막 슬래시를 제거한다.
              *
              * 예:
-             * http://localhost:8080/zero-rule-server/p/
+             * http://localhost:8080/zero-rule-server/
              *
              * 변경:
-             * http://localhost:8080/zero-rule-server/p
+             * http://localhost:8080/zero-rule-server
              *
-             * 이후 /api/wpf/popups 등을 붙였을 때
-             * //api/wpf/popups가 되는 것을 방지한다.
+             * 이후 /p/api/wpf/popups 등을 붙였을 때
+             * //p/api/wpf/popups가 되는 것을 방지한다.
              */
             _baseUrl =
                 baseUrl
@@ -206,7 +208,7 @@ namespace Popup.Services
         public Task<WpfNextPopupResponseDto> GetNextPopupAsync()
             => SendWithAuthAsync<WpfNextPopupResponseDto>(
                 // [변경 지점] 단건 조회 API 경로. BaseUrl 뒤에 붙는다. 서버 WpfPopupController와 인터페이스 명세를 함께 맞춘다.
-                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", new { });
+                HttpMethod.Post, $"{_baseUrl}/p/api/wpf/popups", new { });
 
         /// <summary>
         /// POL-14-02 : Demo 모드
@@ -219,7 +221,7 @@ namespace Popup.Services
                 throw new ArgumentException("단건 조회 요청 본문은 JSON 객체여야 합니다.", nameof(requestBody));
             return SendWithAuthAsync<WpfNextPopupResponseDto>(
                 // [변경 지점] 단건 조회 API 경로(API Demo 입력 본문). 아래 기본 조회와 같이 바꾼다.
-                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups", requestBody);
+                HttpMethod.Post, $"{_baseUrl}/p/api/wpf/popups", requestBody);
         }
 
         /// <summary>이 인스턴스가 요청하는 서버 기본 주소(끝 슬래시 제거). API Demo 로그의 경로 표시에 쓴다.</summary>
@@ -236,7 +238,7 @@ namespace Popup.Services
             ArgumentNullException.ThrowIfNull(item);
             return SendWithAuthAsync<WpfResultResponseDto>(
                 // [변경 지점] 결과 저장 API 경로. BaseUrl 뒤에 붙는다. 서버 WpfPopupController와 인터페이스 명세를 함께 맞춘다.
-                HttpMethod.Post, $"{_baseUrl}/api/wpf/popups/results", item);
+                HttpMethod.Post, $"{_baseUrl}/p/api/wpf/popups/results", item);
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Popup.Services.Auth
 {
     /// <summary>
-    /// POST {BaseUrl}{LoginPath} 요청 본문. 전송 키는 폐쇄망 로그인 API(p/api/auth/sso/login) 요청 DTO와 같은
+    /// POST {BaseUrl}{LoginPath} 요청 본문. 전송 키는 폐쇄망 로그인 API(/p/api/auth/sso/login) 요청 DTO와 같은
     /// lgonId·classCode·linkYn이다. C# 속성 이름(LogonId)은 내부 이름이라 바꾸지 않고 전송 키만 지정한다.
     /// </summary>
     public sealed class WpfLoginRequestDto
@@ -38,7 +38,7 @@ namespace Popup.Services.Auth
     /*
      * POL-15-02 : 인증·버전
      * ■ WPF 로그인 API 클라이언트
-     * - in : baseUrl(string) PopupApi.BaseUrl · loginPath(string?, 기본 /api/wpf/auth/login) · httpClient(HttpClient?)
+     * - in : baseUrl(string) PopupApi.BaseUrl · loginPath(string?, 기본 /p/api/wpf/auth/login) · httpClient(HttpClient?)
      * - out: LoginAsync → WpfLoginResponseDto · 예외: WpfClientVersionException(426), HttpRequestException(비성공), WpfLoginFailedException(accessToken 없음)
      * - [역할] SsoClient가 얻은 사용자 식별값을 Zero 서버 프로토타입 로그인 API
      * (POST /p/api/wpf/auth/login)에 보내고 { accessToken, tokenType, expiresAt } 를 받는다.
@@ -47,8 +47,8 @@ namespace Popup.Services.Auth
      * 붙이고, 이 클래스는 로그인 API만 안다. 운영 전환 시(타 팀 통합 토큰) 이 클래스와 SsoAuthHeaderProvider만 바뀐다.
      *
      * [토큰 위치] 응답 헤더 x-custom-authorization을 먼저 읽고, 없으면 본문 accessToken을 쓴다.
-     *   - 폐쇄망 p/api/auth/sso/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
-     *   - 로컬 프로토타입 p/api/wpf/auth/login: 본문 { accessToken, tokenType, expiresAt }.
+     *   - 폐쇄망 /p/api/auth/sso/login: 본문은 프로필 메시지이고 토큰은 헤더로 온다. 실패도 HTTP 200일 수 있다.
+     *   - 로컬 프로토타입 /p/api/wpf/auth/login: 본문 { accessToken, tokenType, expiresAt }.
      *   헤더 토큰은 만료 시각을 주지 않으므로 ExpiresAt은 기본값이다. 갱신은 401 재로그인과 정기 재로그인이 맡고 만료 시각으로 판단하지 않는다.
      *
      * [규칙] 이 HttpClient에는 Windows 자격 증명을 붙이지 않는다(UseDefaultCredentials 기본 false). 응답 토큰을 로그에 적지 않는다.
@@ -75,8 +75,8 @@ namespace Popup.Services.Auth
         private readonly string _loginUrl;
         private readonly HttpClient _httpClient;
 
-        /// <param name="baseUrl">PopupApi.BaseUrl (예: http://localhost:8080/zero-rule-server/p)</param>
-        /// <param name="loginPath">PopupApi.Auth.LoginPath (기본 /api/wpf/auth/login)</param>
+        /// <param name="baseUrl">PopupApi.BaseUrl (예: http://localhost:8080/zero-rule-server, /p 제외)</param>
+        /// <param name="loginPath">PopupApi.Auth.LoginPath (기본 /p/api/wpf/auth/login)</param>
         public WpfLoginClient(string baseUrl, string? loginPath, HttpClient? httpClient = null)
         {
             if (string.IsNullOrWhiteSpace(baseUrl))
@@ -84,8 +84,8 @@ namespace Popup.Services.Auth
                 throw new ArgumentException("팝업 API 주소가 필요합니다.", nameof(baseUrl));
             }
             _httpClient = httpClient ?? HttpClient;
-            // [변경 지점] 기본 로그인 경로. 환경별 값은 appsettings Auth.LoginPath로 지정한다(폐쇄망 /api/auth/sso/login).
-            string path = string.IsNullOrWhiteSpace(loginPath) ? "/api/wpf/auth/login" : loginPath.Trim();
+            // [변경 지점] 기본 로그인 경로. 환경별 값은 appsettings Auth.LoginPath로 지정한다(폐쇄망 /p/api/auth/sso/login).
+            string path = string.IsNullOrWhiteSpace(loginPath) ? "/p/api/wpf/auth/login" : loginPath.Trim();
             _loginUrl = baseUrl.Trim().TrimEnd('/') + "/" + path.TrimStart('/');
         }
 

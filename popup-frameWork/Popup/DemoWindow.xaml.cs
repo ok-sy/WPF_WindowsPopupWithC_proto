@@ -194,7 +194,7 @@ namespace Popup
         /// <summary>
         /// 조회도 결과 전송처럼 로그 항목으로 남긴다. Header·Footer·폰트·content 등 서버가 내려주는
         /// 팝업 설정은 조회 응답에만 있으므로 응답 탭에서 확인·복사할 수 있게 한다.
-        /// 요청은 실제 모드(PopupApiService)와 같은 POST /api/wpf/popups이며 본문은 {}다.
+        /// 요청은 실제 모드(PopupApiService)와 같은 POST /p/api/wpf/popups이며 본문은 {}다.
         /// Demo에는 인증 토큰이 없어 Authorization·X-Dev-User-Id 헤더는 기록하지 않는다.
         /// 샘플 유형 선택은 Demo 화면 전용 필터라 요청 JSON이 아니라 로그 줄에만 표시한다.
         /// </summary>
@@ -203,7 +203,7 @@ namespace Popup
             string request = JsonSerializer.Serialize(new
             {
                 method = "POST",
-                url = "/api/wpf/popups",
+                url = "/p/api/wpf/popups",
                 headers = new Dictionary<string, string> { [ClientVersion.HeaderName] = ClientVersion.Value },
                 body = new { }
             });

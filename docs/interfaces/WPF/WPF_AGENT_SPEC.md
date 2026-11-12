@@ -87,7 +87,7 @@ sequenceDiagram
     participant S as 팝업 서버
     W->>S: 로그인 → 토큰 확보
     Note over W,Q: 미전송 결과가 있으면 먼저 전송
-    W->>S: POST /api/wpf/popups · 본문 {}
+    W->>S: POST /p/api/wpf/popups · 본문 {}
     S-->>W: 조회 간격 + 팝업 한 건 또는 null
     alt 팝업 있음
         W->>U: 화면 한 건 표시
@@ -95,7 +95,7 @@ sequenceDiagram
         U->>W: 확인·응답·시청·나중에 보기
         W->>Q: 결과 한 건 적재
         W->>U: 팝업 닫기
-        W->>S: POST /api/wpf/popups/results
+        W->>S: POST /p/api/wpf/popups/results
         S-->>W: resultId + status + nextStatus
         Note over W,S: AVAILABLE → 즉시 조회 / EMPTY → 조회 간격 대기
     else 팝업 없음
@@ -141,15 +141,15 @@ sequenceDiagram
 
 | 기능 | 방식 | 기본 경로 | 주고받는 내용 |
 |---|---|---|---|
-| 로그인 | POST | `/api/wpf/auth/login` | 사용자 식별 정보 → 토큰 |
-| 표시 대상 조회 | POST | `/api/wpf/popups` | 빈 객체 → 팝업 한 건 또는 `null` |
-| 결과 전송 | POST | `/api/wpf/popups/results` | 결과 한 건 → 처리 상태·다음 후보 유무 |
+| 로그인 | POST | `/p/api/wpf/auth/login` | 사용자 식별 정보 → 토큰 |
+| 표시 대상 조회 | POST | `/p/api/wpf/popups` | 빈 객체 → 팝업 한 건 또는 `null` |
+| 결과 전송 | POST | `/p/api/wpf/popups/results` | 결과 한 건 → 처리 상태·다음 후보 유무 |
 
 조회도 POST입니다. 서버가 조회 과정에서 전달 건을 만들거나 기존 전달 건을 다시 사용하기 때문입니다. 목록 배열을 받는 GET API나 결과 여러 건을 한꺼번에 보내는 API는 사용하지 않습니다.
 
-전체 주소는 `PopupApi.BaseUrl`과 위 경로를 붙여 만듭니다. 예를 들어 BaseUrl이 `https://example.company/zero-rule-server/p`라면 조회 주소는 `https://example.company/zero-rule-server/p/api/wpf/popups`입니다. `/p`는 이 예에서 BaseUrl에 이미 포함되어 있습니다.
+전체 주소는 `PopupApi.BaseUrl`과 위 경로를 붙여 만듭니다. 예를 들어 BaseUrl이 `https://example.company/zero-rule-server`라면 조회 주소는 `https://example.company/zero-rule-server/p/api/wpf/popups`입니다. BaseUrl은 서버 주소(컨텍스트 경로까지)이며 `/p`는 넣지 않습니다. `/p`는 서버 컨트롤러 경로의 일부라 위 경로에 포함되어 있습니다.
 
-폐쇄망 로그인은 `Auth.LoginPath=/api/auth/sso/login`으로 바꿉니다. `/api/wpf/auth/login`은 로컬 프로토타입의 기본 로그인 경로입니다.
+폐쇄망 로그인은 `Auth.LoginPath=/p/api/auth/sso/login`으로 바꿉니다. `/p/api/wpf/auth/login`은 로컬 프로토타입의 기본 로그인 경로입니다.
 
 ### 3.2 공통 통신 규칙
 
@@ -849,14 +849,14 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을 읽고 없으면 EXE에
 {
   "PopupApi": {
     "DemoMode": false,
-    "BaseUrl": "https://example.company/zero-rule-server/p",
+    "BaseUrl": "https://example.company/zero-rule-server",
     "AutoLoadOnStartup": true,
     "PollingIntervalSeconds": 1800,
     "DevUserId": "",
     "Auth": {
       "Mode": "SsoPrototype",
       "SsoUrl": "https://sso.example.company/encriptloginprocess.aspx",
-      "LoginPath": "/api/auth/sso/login",
+      "LoginPath": "/p/api/auth/sso/login",
       "PeriodicLoginMinutes": 60
     }
   },
@@ -873,7 +873,7 @@ EXE 옆에 `appsettings.json`이 있으면 그 파일을 읽고 없으면 EXE에
 | `PopupApi.AutoLoadOnStartup` | `true` | 기동 직후 최초 자동 조회 |
 | `PopupApi.PollingIntervalSeconds` | `1800` | 서버 간격을 받기 전 로컬 간격 |
 | `PopupApi.Auth.Mode` | `None` | `None`, `Static`, `SsoPrototype`. 실제 인증 방식에 맞춰 선택 |
-| `PopupApi.Auth.LoginPath` | `/api/wpf/auth/login` | 폐쇄망 예시는 `/api/auth/sso/login` |
+| `PopupApi.Auth.LoginPath` | `/p/api/wpf/auth/login` | 폐쇄망 예시는 `/p/api/auth/sso/login` |
 | `PopupApi.Auth.PeriodicLoginMinutes` | `60` | 정기 재로그인 주기. 0 이하면 끄고 401 갱신만 사용 |
 | `Startup.TrayEnabled` | `false` | 트레이 표시 여부 |
 | `Startup.AutostartEnabled` | `true` | 사용자 세션 자동 시작 등록 여부 |

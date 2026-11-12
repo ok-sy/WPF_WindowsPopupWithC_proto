@@ -407,7 +407,7 @@ $gitReadme
 $($npmStep)3. NuGet·SDK(20261006의 6-offline-packages)를 먼저 반입 루트에 푼 다음 3-popup-frameWork.tar를 풀어 덮어쓴다(scripts/build-wpf-offline.ps1은 3-popup-frameWork의 것이 남아야 한다).
 $dbStep
 5. 서버(1-zero-rule-server를 넣었을 때): custom.wpf-popup.dev-user-header는 운영 프로파일에서 false, custom.wpf-auth-prototype.enabled는 로컬 전용, custom.wpf-client 버전 값은 반입 WPF 버전과 맞춘다.
-6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로, DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
+6. WPF: appsettings.json의 BaseUrl·Auth.SsoUrl을 폐쇄망 주소로(BaseUrl은 컨텍스트 경로까지, /p 제외. Auth.LoginPath=/p/api/auth/sso/login), DevUserId는 비운다. Popup/Properties/launchSettings.json은 개발용 POPUP_DEV_USER_ID를 담고 있어 폐쇄망 실행 설정과 맞춰 조정한다. scripts/build-wpf-offline.ps1(폴더형) 또는 -SingleFile로 빌드한다. WebView2 Runtime은 대상 PC에 별도 설치.
 $($npmCleanup)$($gitHistoryStep)
 SOURCE-SHA256SUMS.txt는 반입 소스 파일별, SHA256SUMS.txt는 개별 TAR, $Date.tgz.sha256은 통합 TGZ 체크섬이다.
 "@ | Set-Content -Encoding UTF8 (Join-Path $OutputRoot "README-IMPORT.md")

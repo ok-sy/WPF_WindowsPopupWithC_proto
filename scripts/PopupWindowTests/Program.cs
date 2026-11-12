@@ -1852,7 +1852,7 @@ internal static class Program
         // 주석·끝 쉼표가 있는 실제 appsettings.json(EXE 옆 파일 또는 내장 리소스)을 읽고 Startup 항목을 가져온다.
         var load = typeof(Popup.MainWindow).GetMethod("LoadPopupClientSettings", BindingFlags.Static | BindingFlags.NonPublic)!;
         var loaded = (PopupClientSettings)load.Invoke(null, null)!;
-        Check(loaded.TrayEnabled == false && loaded.AutostartEnabled == true && loaded.BaseUrl.Length > 0 && loaded.AuthLoginPath == "/api/wpf/auth/login",
+        Check(loaded.TrayEnabled == false && loaded.AutostartEnabled == true && loaded.BaseUrl.Length > 0 && loaded.AuthLoginPath == "/p/api/wpf/auth/login",
             $"[A-1 6] commented appsettings.json parses with Startup values (tray {loaded.TrayEnabled}, autostart {loaded.AutostartEnabled})");
 
         const string testRoot = @"Software\OksyPopupClient.Tests";
