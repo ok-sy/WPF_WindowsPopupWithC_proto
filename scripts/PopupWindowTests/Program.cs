@@ -1047,11 +1047,11 @@ internal static class Program
         Walk(opened.Window);
         string NameOf(System.Windows.Controls.RadioButton radio) => System.Windows.Automation.AutomationProperties.GetName(radio);
         var ox = radios.Where(radio => NameOf(radio) is "O" or "X").ToList();
-        Check(ox.Count == 2 && ox[0].ActualWidth == ox[1].ActualWidth && ox[0].ActualWidth > 96 && ox.All(radio => radio.ActualHeight >= 88)
+        Check(ox.Count == 2 && ox[0].ActualWidth == ox[1].ActualWidth && ox[0].ActualWidth > 96 && ox.All(radio => radio.ActualHeight >= 56 && radio.ActualHeight < 88)
             && Math.Abs(ox[0].TranslatePoint(new Point(0, 0), opened.Window).Y - ox[1].TranslatePoint(new Point(0, 0), opened.Window).Y) < 1, $"[TODO73] OX options are large ({string.Join(",", ox.Select(r => $"{r.ActualWidth}x{r.ActualHeight}"))})");
-        Check(ox.All(radio => radio.Content is System.Windows.Controls.TextBlock { FontSize: 36, TextAlignment: TextAlignment.Center }), "[TODO73] OX text is 36 and centered");
+        Check(ox.All(radio => radio.Content is System.Windows.Controls.TextBlock { FontSize: 24, TextAlignment: TextAlignment.Center }), "[TODO73] OX text is 24 and centered (2026-11-13 reduced)");
         var others = radios.Except(ox).ToList();
-        Check(others.Count > 0 && others.All(radio => radio.MinHeight < 88), "[TODO73] Other choices keep their size");
+        Check(others.Count > 0 && others.All(radio => radio.MinHeight < 56), "[TODO73] Other choices keep their size");
         ox[1].IsChecked = true;
         Check(ox[1].IsChecked == true && ox[0].IsChecked != true, "[TODO73] OX options stay one radio group");
         ShutdownClose(opened.Window);

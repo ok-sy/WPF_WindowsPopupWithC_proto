@@ -269,7 +269,7 @@ export default function SurveyPreview({
       )}
       {questions.map((question, index) => {
         const horizontal = question.optionLayout === 'HORIZONTAL';
-        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 같은 크기의 큰 칸 2개로 폭을 나눠 표시한다.
+        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 같은 크기의 칸 2개로 폭을 나눠 표시한다(높이 56·글자 24, 2026-11-13 축소).
         const ox = horizontal && isOxQuestion(question);
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
@@ -452,7 +452,7 @@ export default function SurveyPreview({
                           gridTemplateColumns: horizontal ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          minHeight: ox ? 88 : horizontal ? 44 : 48,
+                          minHeight: ox ? 56 : horizontal ? 44 : 48,
                           p: horizontal ? '10px 14px' : '12px 16px',
                           border: '1px solid',
                           borderRadius: `${surveyDesign.choiceRadius}px`,
@@ -474,10 +474,10 @@ export default function SurveyPreview({
                           sx={{
                             display: 'grid',
                             minWidth: 0,
-                            lineHeight: ox ? '44px' : '22px',
+                            lineHeight: ox ? '32px' : '22px',
                             whiteSpace: 'pre-wrap',
                             overflowWrap: 'anywhere',
-                            ...(ox ? { fontSize: 36, textAlign: 'center' } : {}),
+                            ...(ox ? { fontSize: 24, textAlign: 'center' } : {}),
                           }}
                         >
                           {surveyDesign.selectedBold && (

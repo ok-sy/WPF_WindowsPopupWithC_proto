@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-13-06 — dev: TODO73 퀴즈·설문 OX 칸 크기 축소
+
+- 이유: 퀴즈·설문 OX 문항의 칸과 글자가 과하게 커서 크기 축소 요구사항 반영.
+- 변경: OX 칸 최소 높이 88→56, 글자 36→24(줄 높이 44→32). 폭을 똑같이 나누는 2칸 배치·굵게·가운데 정렬·간격 8·선택 동작은 유지. WPF `SurveyPopupView`와 관리자 미리보기 `SurveyPreview`를 같은 값으로 변경하고 사양서·설계 73 기록 갱신.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-survey-rich-text-55.cjs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
+- 검증: WPF BehaviorTests `PASS: 1740`, PopupWindowTests `PASS: 547`(OX 높이 56 이상·88 미만, 글자 24 검사). 웹 하네스 `survey rich text 55` 67건 통과(미리보기 OX 높이 56·글자 24px 확인). 실제 PC 화면 확인은 미실행.
+- 상태: 커밋 / 미푸시.
+
 ## 2026-11-13-05 — build: 폐쇄망 관리자 WEB 정적 Export 빌드 고정
 
 - 이유: 폐쇄망 배포 정책(`main/out/` 정적 Export를 Nginx로 제공, standalone 미사용)과 `next.config.mjs`의 `NODE_ENV === 'standalone'` 조건이 어긋나 일반 `next build`가 standalone을 고를 수 있는 불일치 해소.
