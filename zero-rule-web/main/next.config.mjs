@@ -14,8 +14,9 @@ const WORKSPACE_PACKAGES = fs.existsSync(SUB_DIR)
       .filter((name) => name && !/(eslint|typescript)-config$/.test(name))
   : [];
 
-// const PRODUCTION = process.env.NODE_ENV === 'production';
-const PRODUCTION = process.env.NODE_ENV === 'standalone';
+// [폐쇄망 배포 2026-11-13] 관리자 WEB은 정적 Export(main/out/)를 Nginx에 복사해 제공한다. standalone(Node 서버)은 쓰지 않는다.
+// 예전 조건(NODE_ENV === 'standalone')은 일반 `next build`(NODE_ENV=production)에서 standalone을 골라 정책과 어긋나 제거했다.
+// docs/design/20261113_폐쇄망_WEB_Nginx_정적Export_배포방식_TODO.md 참고.
 // [변경 지점] 배포 환경별 주소. 소스가 아니라 환경변수·빌드 인자로 넣는다. API_BASE_URL은 컨텍스트 경로까지 포함한다.
 const BASE_URL = process.env.BASE_URL || '';
 const ROUTER_BASE_URL = process.env.ROUTER_BASE_URL;
@@ -45,9 +46,10 @@ function devSceneEnv(phase) {
  * @type {import('next').NextConfig}
  **/
 const nextConfig = {
-  output: PRODUCTION ? 'export' : 'standalone',
-  // basePath: PRODUCTION ? '/p/zero' : '',
-  basePath: PRODUCTION ? '' : '',
+  // 빌드는 항상 정적 Export(main/out/). 환경변수로 standalone이 선택되는 경로를 두지 않는다.
+  output: 'export',
+  // [변경 지점] Nginx 하위 경로로 제공하면 basePath를 그 경로로 맞춘다(현재 루트 제공).
+  basePath: '',
   // distDir: '/build',
 
   // https://github.com/atlassian/react-beautiful-dnd/issues/2399
@@ -60,7 +62,6 @@ const nextConfig = {
   transpilePackages: [
     ...new Set(['@mui/material-nextjs', '@local/ui', '@local/util', '@local/domain', '@local/validators', ...WORKSPACE_PACKAGES]),
   ],
-  // productionBrowserSourceMaps: !PRODUCTION,
   productionBrowserSourceMaps: true,
   poweredByHeader: false,
   staticPageGenerationTimeout: 1000, // default 60
@@ -97,7 +98,6 @@ const nextConfig = {
     HTTP_TOKEN_HEADER: 'x-custom-authorization',
     HTTP_TOKEN_CLEAR_HEADER: 'x-custom-authorization-clear',
     DEBUG: true,
-    // DEBUG: !PRODUCTION,
   },
 };
 

@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-13-05 — build: 폐쇄망 관리자 WEB 정적 Export 빌드 고정
+
+- 이유: 폐쇄망 배포 정책(`main/out/` 정적 Export를 Nginx로 제공, standalone 미사용)과 `next.config.mjs`의 `NODE_ENV === 'standalone'` 조건이 어긋나 일반 `next build`가 standalone을 고를 수 있는 불일치 해소.
+- 변경: `main/next.config.mjs`의 `PRODUCTION` 분기 제거, `output: 'export'` 고정(`basePath: ''`·`trailingSlash: true` 유지). `zero-rule-web/turbo.json` build `outputs`에 `out/**` 추가(캐시 적중 시 `out/` 복원). TODO 문서에 구현 결과와 동적 경로(`pds/edit/[pdsId]`) Nginx 새로고침 확인 항목 기록.
+- 주요 파일: `zero-rule-web/main/next.config.mjs`, `zero-rule-web/turbo.json`, `docs/design/20261113_폐쇄망_WEB_Nginx_정적Export_배포방식_TODO.md`.
+- 검증: `main` 직접 `next build` 성공(전 페이지 Static), 루트 `turbo build`(캐시 0) 성공, `main/out/index.html`·`_next/static` 갱신 시각과 최신 소스 반영 확인, `.next/standalone/` 미생성. 폐쇄망 Nginx 실환경·정적 배포 경로 회귀는 미실행.
+- 상태: 커밋 / 미푸시.
+
 ## 2026-11-13-04 — dev: TODO75 WPF 개발·운영 빌드 설정 분리 구현
 
 - 이유: 운영 단일 EXE의 통신 대상·시작 옵션이 EXE 옆 `appsettings.json`이나 앱 설정용 환경변수로 바뀌지 않도록 설계 75 정책을 컴파일 단계에 반영.
