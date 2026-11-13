@@ -25,12 +25,25 @@
 		<FileVersion>1.0.0.0</FileVersion>
 	</PropertyGroup>
 
+	<!--
+	[설계 75] 개발·운영 빌드 설정 분리. 외부 설정(EXE 옆 appsettings.json·앱 설정용 환경변수) 허용 여부를 컴파일 시 정한다.
+	- Debug 구성: 기본 허용(개발 실행). Release 구성(게시): 기본 차단 → 내장 appsettings만 사용.
+	- Release에서 개발 EXE가 필요할 때만 명시적으로 -p:PopupAllowExternalConfig=true 를 준다.
+	Services/BuildProfile.cs 참고.
+	-->
+	<PropertyGroup>
+		<PopupAllowExternalConfig Condition="'$(PopupAllowExternalConfig)' == '' and '$(Configuration)' == 'Debug'">true</PopupAllowExternalConfig>
+		<PopupAllowExternalConfig Condition="'$(PopupAllowExternalConfig)' == ''">false</PopupAllowExternalConfig>
+		<DefineConstants Condition="'$(PopupAllowExternalConfig)' == 'true'">$(DefineConstants);POPUP_EXTERNAL_CONFIG</DefineConstants>
+	</PropertyGroup>
+
 
 
 	<ItemGroup>
 		<!--
   API 설정 파일(appsettings.json)을 어셈블리 내장 리소스(Popup.appsettings.json)로 포함한다.
-  실행·배포 폴더에 파일로 복사하지 않는다. EXE 옆에 appsettings.json이 있으면 MainWindow가 그 파일을 먼저 읽고, 없으면 내장 리소스를 읽는다.
+  실행·배포 폴더에 파일로 복사하지 않는다. 개발 빌드는 EXE 옆에 appsettings.json이 있으면 그 파일을 먼저 읽고, 없으면 내장 리소스를 읽는다.
+  운영 빌드(PopupAllowExternalConfig=false)는 EXE 옆 파일을 찾지 않고 항상 내장 리소스를 읽는다.
   -->
 		<EmbeddedResource Include="appsettings.json">
 			<LogicalName>Popup.appsettings.json</LogicalName>

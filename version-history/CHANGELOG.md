@@ -1,12 +1,20 @@
-## 2026-11-13 — doc: 폐쇄망 Nginx 정적 Export 배포 방식 TODO
+# 변경 이력
+
+## 2026-11-13-04 — dev: TODO75 WPF 개발·운영 빌드 설정 분리 구현
+
+- 이유: 운영 단일 EXE의 통신 대상·시작 옵션이 EXE 옆 `appsettings.json`이나 앱 설정용 환경변수로 바뀌지 않도록 설계 75 정책을 컴파일 단계에 반영.
+- 변경: `Popup.csproj`에 `PopupAllowExternalConfig`(Debug 기본 true, Release 기본 false)와 컴파일 상수 `POPUP_EXTERNAL_CONFIG` 추가. `Services/BuildProfile.cs` 신규. 운영 빌드는 `LoadPopupClientSettings()`의 외부 파일 분기, `POPUP_DEV_USER_ID` 읽기, `StartupOptions`의 `WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED` 읽기를 제외. `scripts/build-wpf-offline.ps1`에 `-DevConfig` 스위치(출력 `-dev` 폴더) 추가, 기본은 운영 빌드 명시. 명령행 인자(`-Demo`·`-Api`·`--tray`)는 유지(추천안 채택).
+- 주요 파일: `popup-frameWork/Popup/Popup.csproj`, `Services/BuildProfile.cs`, `MainWindow.xaml.cs`, `Services/StartupOptions.cs`, `scripts/build-wpf-offline.ps1`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/75_WPF_개발운영_빌드설정분리_TODO.md`.
+- 검증: Debug 빌드 경고·오류 0, BehaviorTests `PASS: 1740`(빌드 프로필·환경변수 우선순위 검사 추가, 테스트 프로젝트는 Git 제외 로컬 하네스). Release 운영/개발 빌드 각각 경고·오류 0, `popupSample.dll` 문자열 비교로 운영 빌드의 `POPUP_DEV_USER_ID`·외부 설정 경로 제거 확인. 단일 EXE 실실행 비교(외부 JSON·환경변수 제공, 잘못된 JSON 배치)는 미실행.
+- 상태: 커밋 / 미푸시.
+
+## 2026-11-13-03 — doc: 폐쇄망 Nginx 정적 Export 배포 방식 TODO
 
 - 이유: 폐쇄망 관리자 WEB은 `main/out/` 정적 산출물을 Nginx에 복사해 제공하므로 standalone 배포와 혼용되지 않도록 배포 방식을 명시.
 - 변경: `docs/design/20261113_폐쇄망_WEB_Nginx_정적Export_배포방식_TODO.md` 신규. `output: 'export'` 요구, `main/out/` 산출물, 루트/main 빌드, SceneRouter 반영, Nginx 경로·정적 자산 검증 정의.
 - 형상 대조: `main/next.config.mjs`의 `NODE_ENV === 'standalone'` 조건과 `output: PRODUCTION ? 'export' : 'standalone'`가 일반적인 `next build`에서 정적 Export를 보장하지 않는 불일치 확인. 실제 빌드 결과는 미확인.
 - 검증: GitHub main 설정·package.json·기존 폐쇄망 반입 문서 정적 확인. 코드 변경·타입 검사·빌드·폐쇄망 Nginx 실화면 미실행.
 - 상태: TODO 문서 반영 / 구현 대기.
-
-# 변경 이력
 
 ## 2026-11-13-02 — doc: TODO75 WPF 개발·운영 빌드 설정 분리
 

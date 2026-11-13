@@ -148,6 +148,7 @@ MainWindow 숨김
 | 트레이 표시 | `--tray`(아래 값의 false보다 우선) | `WPF_POPUP_TRAY_ENABLED` | `Startup.TrayEnabled` | false |
 | 로그인 자동 시작 | 없음 | `WPF_POPUP_AUTOSTART_ENABLED` | `Startup.AutostartEnabled` | true |
 
+- 환경변수 열은 개발 빌드에서만 읽는다(운영 빌드는 명령행 > appsettings > 기본값, 설계 75).
 - 환경변수 bool 값은 true/false·1/0·yes/no·on/off, 그 밖의 값이면 appsettings·기본값 순으로 쓴다.
 - 자동 시작: 사용자 세션의 첫 일반 실행에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `OksyPopupClient`에 `"<EXE 전체 경로>"`(따옴표, `--tray` 없음)를 등록하고 이력 `HKCU\Software\OksyPopupClient\AutostartInitialized=1`을 남긴다. 이후에는 다시 등록하지 않아 사용자가 지우거나 작업 관리자에서 끈 설정을 되돌리지 않는다. `WPF_POPUP_AUTOSTART_ENABLED=false`면 이 앱 값만 지운다. `%TEMP%`·빌드 출력(`in\` 아래)·SYSTEM 계정 실행은 등록하지 않는다(설치 위치에서 실행될 때 등록).
 - 시작 직후 자동 조회가 실패해도(서버 연결 실패 등) 안내 창을 띄우지 않고 복구 간격으로 다시 조회한다. `--show-main` 실행과 수동 '팝업 다시 조회'는 오류를 안내하고, 426 업데이트 안내는 항상 띄운다.
@@ -212,9 +213,21 @@ MainWindow
 Popup/appsettings.json
 ```
 
-EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 EXE에 넣은 파일(내장 리소스)을 읽는다. 단일 EXE도 같다.
+**[설계 75] 개발·운영 빌드 설정 분리** — 외부 설정 허용 여부는 컴파일 시 정한다(`Popup.csproj`의 `PopupAllowExternalConfig`, `Services/BuildProfile.cs`).
+
+| 설정 경로 | 개발 빌드 | 운영 빌드 |
+|---|---|---|
+| EXE 옆 `appsettings.json` | 있으면 우선 적용 | 읽지 않음 |
+| 앱 설정용 환경변수(`POPUP_DEV_USER_ID`·`WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED`) | 기존 우선순위 유지 | 읽지 않음 |
+| 내장 `appsettings.json` | 외부 파일이 없을 때 적용 | 항상 적용(배포 환경별 빌드 시 확정) |
+
+- Debug 구성은 기본 개발 빌드, Release 구성(게시)은 기본 운영 빌드다. Release 개발 EXE는 `-p:PopupAllowExternalConfig=true` 또는 `scripts/build-wpf-offline.ps1 -DevConfig`(출력 폴더 `win-x64-dev`·`win-x64-single-dev`)로만 만든다.
+- 운영 설정 변경은 내장 `appsettings.json` 수정 후 재빌드·재배포로 반영한다. 내장 설정에 비밀번호·고정 토큰을 넣지 않는다.
+- 실행 인자(`-Demo`·`-Api`·`--tray`)는 분리 대상이 아니며 운영 빌드에서도 그대로 동작한다.
+
+개발 빌드는 EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 EXE에 넣은 파일(내장 리소스)을 읽는다. 단일 EXE도 같다.
 파일 안의 `//` 주석과 끝 쉼표를 허용한다. 저장소 `Popup/appsettings.json`에는 모든 항목·실행 인자·환경변수 설명이 주석으로 들어 있다.
-우선순위: 실행 인자 > 환경변수 > appsettings > 기본값.
+우선순위: 실행 인자 > 환경변수(개발 빌드만) > appsettings > 기본값.
 
 대표 설정(주석 생략):
 

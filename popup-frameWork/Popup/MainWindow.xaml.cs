@@ -145,7 +145,8 @@ namespace Popup
         }
 
         /*
-         * appsettings.json을 읽는다. EXE 옆 파일이 있으면 그것을, 없으면 내장 리소스를 사용한다.
+         * appsettings.json을 읽는다. 개발 빌드(BuildProfile.AllowsExternalConfiguration)는 EXE 옆 파일이 있으면 그것을,
+         * 없으면 내장 리소스를 사용한다. 운영 빌드는 항상 내장 리소스만 사용한다(설계 75).
          *
          * {
          *   "PopupApi": {
@@ -167,14 +168,18 @@ namespace Popup
          */
         private static PopupClientSettings LoadPopupClientSettings()
         {
-            string configurationFilePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
             string configurationJson;
+#if POPUP_EXTERNAL_CONFIG
+            // [설계 75] 개발 빌드만 EXE 옆 appsettings.json을 우선 적용한다.
+            string configurationFilePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
             if (File.Exists(configurationFilePath))
             {
                 configurationJson = File.ReadAllText(configurationFilePath);
             }
             else
+#endif
             {
+                // 운영 빌드는 EXE 옆 파일을 탐색·읽지 않고 항상 내장 설정을 쓴다(잘못된 외부 JSON이 있어도 영향 없음).
                 using Stream configurationStream =
                     typeof(MainWindow).Assembly.GetManifestResourceStream("Popup.appsettings.json")
                     ?? throw new InvalidOperationException("내장 appsettings.json을 찾을 수 없습니다.");
@@ -290,11 +295,14 @@ namespace Popup
          * - [개발 전용] X-Dev-User-Id 헤더로 보낼 사번. 1순위 환경변수 POPUP_DEV_USER_ID, 2순위 appsettings DevUserId.
          * 둘 다 없으면 null → 헤더를 보내지 않는다(운영: 통합 토큰 필터가 사용자를 식별).
          * POPUP_USER_ID / PopupApi.UserId(요청 파라미터용)는 읽지 않는다.
+         * [설계 75] 운영 빌드는 환경변수를 읽지 않고 내장 appsettings DevUserId만 쓴다.
          */
         internal static string? ResolveDevUserId(string configuredDevUserId)
         {
+#if POPUP_EXTERNAL_CONFIG
             string? fromEnvironment = Environment.GetEnvironmentVariable("POPUP_DEV_USER_ID");
             if (!string.IsNullOrWhiteSpace(fromEnvironment)) return fromEnvironment.Trim();
+#endif
             return string.IsNullOrWhiteSpace(configuredDevUserId) ? null : configuredDevUserId.Trim();
         }
 

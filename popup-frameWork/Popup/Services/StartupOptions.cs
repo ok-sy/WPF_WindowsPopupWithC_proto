@@ -10,6 +10,7 @@ namespace Popup.Services
      * - out: StartupOptions(TrayEnabled, AutostartEnabled)
      * - 기본 실행은 트레이·관리 화면 없이 백그라운드에서 조회·결과 재전송만 한다(2026-10-28 결정, A-1 6번).
      *   우선순위: 명령행 옵션 > 환경변수 > appsettings(Startup) > 기본값.
+     *   [설계 75] 운영 빌드(BuildProfile.AllowsExternalConfiguration=false)는 환경변수 단계를 건너뛴다.
      *   --tray는 환경변수·appsettings의 false보다 우선한다(명령행이 없을 때 환경변수·appsettings 값을 false로 덮지 않음).
      *   환경변수가 비었거나 잘못된 값이면 appsettings, 그것도 없으면 기본값을 쓴다.
      *
@@ -29,13 +30,18 @@ namespace Popup.Services
             bool? configuredTray = null, bool? configuredAutostart = null)
         {
             ArgumentNullException.ThrowIfNull(arguments);
-            readEnvironment ??= Environment.GetEnvironmentVariable;
+            // [설계 75] 운영 빌드는 앱 설정용 환경변수를 읽지 않는다(명령행 > appsettings > 기본값).
+            readEnvironment ??= DefaultEnvironmentReader;
             bool tray = arguments.Tray
                 || (ParseBool(readEnvironment(TrayEnvironmentVariable), TrayEnvironmentVariable) ?? configuredTray ?? false);
             bool autostart = ParseBool(readEnvironment(AutostartEnvironmentVariable), AutostartEnvironmentVariable)
                 ?? configuredAutostart ?? true;
             return new StartupOptions(tray, autostart);
         }
+
+        /// <summary>빌드 프로필별 기본 환경변수 읽기. 운영 빌드는 항상 null(미설정)을 돌려준다.</summary>
+        internal static string? DefaultEnvironmentReader(string name) =>
+            BuildProfile.AllowsExternalConfiguration ? Environment.GetEnvironmentVariable(name) : null;
 
         /// <summary>환경변수 bool 값. 비어 있으면 null(미설정), 알 수 없는 값도 null(다음 순위 사용)로 돌려준다.</summary>
         public static bool? ParseBool(string? value, string name = "")
