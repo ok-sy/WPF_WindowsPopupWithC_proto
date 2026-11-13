@@ -6,7 +6,7 @@
 - 변경: `PopupPreview`에서 슬라이더·시청 비율 상태·기준 미달 사유 문구·VIDEO+QUIZ 잠금 문구 삭제. 미리보기는 VIDEO·VIDEO+QUIZ를 시청 기준 충족 상태(Footer 버튼 활성, 퀴즈 입력 가능, 제출 영역은 문항 진행 문구)로 표시. 시청 기준 전 잠금은 WPF 실제 팝업 동작으로 유지(WPF 변경 없음). 가이드 문구·모달 주석·미리보기 대조 문서·설계 43 기록 정리.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `PopupPreviewDialog.tsx`, `guide/guideData.ts`, `scripts/verify-completion-ux-43.cjs`, `scripts/verify-popup-preview-61.cjs`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/design/43_완료조건_버튼활성화_UX_TODO.md`.
 - 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `completion UX 43` 76건, `TODO61 preview` 121건, `IMAGE preview` 54건, `TODO69 sample` 62건, `guide render` 31건·`guide registry` 296건 통과. 로컬 관리자 웹 실화면 확인은 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 ## 2026-11-13-06 — dev: TODO73 퀴즈·설문 OX 칸 크기 축소
 
@@ -14,7 +14,7 @@
 - 변경: OX 칸 최소 높이 88→56, 글자 36→24(줄 높이 44→32). 폭을 똑같이 나누는 2칸 배치·굵게·가운데 정렬·간격 8·선택 동작은 유지. WPF `SurveyPopupView`와 관리자 미리보기 `SurveyPreview`를 같은 값으로 변경하고 사양서·설계 73 기록 갱신.
 - 주요 파일: `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`, `zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-survey-rich-text-55.cjs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md`.
 - 검증: WPF BehaviorTests `PASS: 1740`, PopupWindowTests `PASS: 547`(OX 높이 56 이상·88 미만, 글자 24 검사). 웹 하네스 `survey rich text 55` 67건 통과(미리보기 OX 높이 56·글자 24px 확인). 실제 PC 화면 확인은 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 ## 2026-11-13-05 — build: 폐쇄망 관리자 WEB 정적 Export 빌드 고정
 
@@ -22,7 +22,7 @@
 - 변경: `main/next.config.mjs`의 `PRODUCTION` 분기 제거, `output: 'export'` 고정(`basePath: ''`·`trailingSlash: true` 유지). `zero-rule-web/turbo.json` build `outputs`에 `out/**` 추가(캐시 적중 시 `out/` 복원). TODO 문서에 구현 결과와 동적 경로(`pds/edit/[pdsId]`) Nginx 새로고침 확인 항목 기록.
 - 주요 파일: `zero-rule-web/main/next.config.mjs`, `zero-rule-web/turbo.json`, `docs/design/20261113_폐쇄망_WEB_Nginx_정적Export_배포방식_TODO.md`.
 - 검증: `main` 직접 `next build` 성공(전 페이지 Static), 루트 `turbo build`(캐시 0) 성공, `main/out/index.html`·`_next/static` 갱신 시각과 최신 소스 반영 확인, `.next/standalone/` 미생성. 폐쇄망 Nginx 실환경·정적 배포 경로 회귀는 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 ## 2026-11-13-04 — dev: TODO75 WPF 개발·운영 빌드 설정 분리 구현
 
@@ -30,7 +30,7 @@
 - 변경: `Popup.csproj`에 `PopupAllowExternalConfig`(Debug 기본 true, Release 기본 false)와 컴파일 상수 `POPUP_EXTERNAL_CONFIG` 추가. `Services/BuildProfile.cs` 신규. 운영 빌드는 `LoadPopupClientSettings()`의 외부 파일 분기, `POPUP_DEV_USER_ID` 읽기, `StartupOptions`의 `WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED` 읽기를 제외. `scripts/build-wpf-offline.ps1`에 `-DevConfig` 스위치(출력 `-dev` 폴더) 추가, 기본은 운영 빌드 명시. 명령행 인자(`-Demo`·`-Api`·`--tray`)는 유지(추천안 채택).
 - 주요 파일: `popup-frameWork/Popup/Popup.csproj`, `Services/BuildProfile.cs`, `MainWindow.xaml.cs`, `Services/StartupOptions.cs`, `scripts/build-wpf-offline.ps1`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/75_WPF_개발운영_빌드설정분리_TODO.md`.
 - 검증: Debug 빌드 경고·오류 0, BehaviorTests `PASS: 1740`(빌드 프로필·환경변수 우선순위 검사 추가, 테스트 프로젝트는 Git 제외 로컬 하네스). Release 운영/개발 빌드 각각 경고·오류 0, `popupSample.dll` 문자열 비교로 운영 빌드의 `POPUP_DEV_USER_ID`·외부 설정 경로 제거 확인. 단일 EXE 실실행 비교(외부 JSON·환경변수 제공, 잘못된 JSON 배치)는 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 ## 2026-11-13-03 — doc: 폐쇄망 Nginx 정적 Export 배포 방식 TODO
 
