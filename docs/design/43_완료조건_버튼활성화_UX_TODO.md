@@ -57,4 +57,5 @@ Trello: [TODO43 passingScore와 completionRatio 버튼 활성화 UX](https://tre
 
 - 실제 Windows 화면 확인(일반·고DPI, 푸터 글꼴 크기 지정 시 보조 닫기·사유 문구 줄바꿈).
 - 관리자 미리보기 반영 완료(2026-10-15): 일반 VIDEO 시청 비율 슬라이더로 `allowCloseBeforeComplete=false` 비활성·사유·도달 후 활성 재현, VIDEO+QUIZ 잠금 문구(기준 % 포함), QUIZ 미달 틀린 문항 번호, 보조 닫기 표시 규칙, 사유 문구 `role="status"`·`aria-live`·`aria-describedby`. `scripts/verify-completion-ux-43.cjs` 27건 통과. 미리보기에는 재생 실패 상태가 없어 그 조건은 재현하지 않음(대조 문서 기록).
+- 관리자 미리보기 시청 비율 슬라이더 삭제(2026-11-13): 등록 화면 상단의 재생 진행 상태에 따른 버튼 활성화 시연을 제거했다. 미리보기는 VIDEO·VIDEO+QUIZ를 시청 기준 충족 상태로 그리고, 기준 미달 잠금·사유 문구는 WPF 실제 팝업에서만 동작한다. `scripts/verify-completion-ux-43.cjs` 기대값 갱신.
 - 시청 판정 공식 정합은 설계 50 D4에서 다룬다.

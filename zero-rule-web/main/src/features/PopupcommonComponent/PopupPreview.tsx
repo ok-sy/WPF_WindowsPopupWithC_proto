@@ -33,7 +33,6 @@ import {
   FormControlLabel,
   Paper,
   Radio,
-  Slider,
   Stack,
   Typography,
 } from '@mui/material';
@@ -56,11 +55,6 @@ function text(value: unknown, fallback: string): string {
 /* WPF 체크박스와 같이 실제 숨김 일수(서버 hideDays, 비우면 WPF 기본 30일)를 표시한다. */
 function doNotShowAgainLabel(hideDays?: number | null): string {
   return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
-}
-
-/** WPF `{ratio * 100:0.##}`와 같이 비율을 소수 둘째 자리까지의 % 문자열로 바꾼다(0~1 보정). */
-function percentText(ratio: number): string {
-  return String(Math.round(Math.max(0, Math.min(1, ratio)) * 10000) / 100);
 }
 
 /** 콘텐츠 제목. TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
@@ -382,7 +376,7 @@ function PopupBody({
  * ■ 팝업 미리보기
  * - in : popup(AdminPopupDetail) 미리 볼 팝업 설정 · showBackground?(boolean) 배경 여백·Overlay를 미리보기 안에 그릴지, 기본 true(모달은 false)
  * - out: onClose?() 푸터 버튼·나중에 보기·보조 닫기로 팝업을 닫을 때 · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기(없으면 null) · 화면: 헤더(제목·로고)·콘텐츠 제목·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터(다시 보지 않기·나중에 보기·제출·닫기) 미리보기
- * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점·시청 비율 슬라이더로 완료 조건을 시연한다.
+ * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점으로 완료 조건을 시연한다(VIDEO·VIDEO+QUIZ는 시청 기준 충족 상태로 그린다).
  *   서버 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 시연 상태는 이 컴포넌트 안에만 있고 팝업 ID·문항이 바뀌면 초기화된다.
  */
 export default function PopupPreview({
@@ -486,35 +480,21 @@ export default function PopupPreview({
     setSubmissionStatus(notice.message);
   };
   const isVideoQuiz = popup.popupType === 'QUIZ' && popup.content.videoEnabled === true;
-  const isPlainVideo = popup.popupType === 'VIDEO';
-  // 미리보기 시청 비율은 슬라이더의 정수 %로 둔다(실제 재생 없음).
-  const [previewWatchPercent, setPreviewWatchPercent] = useState(0);
-  useEffect(
-    () => setPreviewWatchPercent(0),
-    [popup.popupId, popup.popupType, popup.content.videoUrl, popup.completionRatio, isVideoQuiz],
-  );
-  // 미설정이면 동영상+퀴즈 0.8, VIDEO 1.0(WPF·서버 기본값과 같음, PU001 B-7).
-  const requiredRatio = Math.max(0, Math.min(1, popup.completionRatio ?? (isVideoQuiz ? PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO : 1)));
-  const requiredPercent = percentText(requiredRatio);
   /*
-   * WPF는 누적 시청 비율을 소수점 4자리에서 내림한 뒤 완료 기준 이상인지 본다.
-   * 미리보기 시청 비율은 정수 %(p/100)라 4자리 내림이 값을 바꾸지 않으므로 그대로 비교한다
-   * (부동소수 곱셈으로 내림을 흉내 내면 0.29*10000 = 2899.99…처럼 오히려 결과가 달라진다).
+   * [2026-11-13] 상단 "미리보기 시청 비율" 슬라이더(재생 진행 상태에 따른 버튼 활성화 시연)를 삭제했다.
+   * 미리보기는 실제 재생을 하지 않으므로 VIDEO·VIDEO+QUIZ를 시청 기준 충족 상태로 그려 퀴즈 입력·푸터 버튼을 바로 확인한다.
+   * 시청 기준 전 잠금(퀴즈·제출·확인 비활성)은 WPF 실제 팝업에서만 동작하며 완료 기준 입력란 안내 문구로 설명한다.
    */
-  const watchReached = previewWatchPercent / 100 >= requiredRatio;
-  const videoUnlocked = !isVideoQuiz || watchReached;
-  // 일반 VIDEO는 시청 기준 미달이면 Footer 버튼을 비활성화한다(완료 전 닫기 허용 옵션이 없어 항상 적용).
-  const videoCloseBlocked = isPlainVideo && !watchReached;
+  const videoUnlocked = true;
   const linkAction = popup.content.footerAction === 'LINK_AND_CLOSE';
   const footerLink = normalizePopupLink(String(popup.content.footerLinkUrl ?? ''));
   const resetPreview = () => {
     setAnswers({});
     setSubmissionStatus('');
     setQuizFailed(false);
-    setPreviewWatchPercent(0);
   };
   const handleFooter = () => {
-    if (!videoUnlocked || videoCloseBlocked) return;
+    if (!videoUnlocked) return;
     if (linkAction) {
       if (!footerLink) return;
       window.open(footerLink, '_blank', 'noopener,noreferrer');
@@ -579,20 +559,10 @@ export default function PopupPreview({
   const showContentTitle = !originalImage && Boolean(title.trim());
   // 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
   const reasonId = `${namePrefix}-completion-reason`;
-  const surveyProgress =
-    isVideoQuiz && !videoUnlocked
-      ? `영상 ${previewWatchPercent}% · 기준 ${requiredPercent}% 이상 시청하면 퀴즈와 제출이 활성화됩니다`
-      : progress;
-  const videoReason =
-    isPlainVideo
-      ? watchReached
-        ? '시청 기준을 충족했습니다'
-        : `영상 ${previewWatchPercent}% 시청 · 기준 ${requiredPercent}% 이상 시청하면 닫을 수 있습니다`
-      : '';
   /*
    * 보조 "닫기" 버튼: VIDEO+QUIZ는 WPF에서 재생 실패 때만 보이므로 미리보기에는 없다(완료 전 닫기 허용 옵션 없음),
    * QUIZ(영상 없음)는 미달 판정을 한 번 받은 뒤 배경 어둡기를 쓰지 않을 때만. SURVEY는 없고 showFooter=false면 숨긴다.
-   * 미리보기에서는 응답·시청 비율을 초기화하고 "실제 크기로 보기" 모달이면 닫는다.
+   * 미리보기에서는 응답을 초기화하고 "실제 크기로 보기" 모달이면 닫는다.
    */
   const showSecondaryClose =
     popup.showFooter &&
@@ -604,7 +574,7 @@ export default function PopupPreview({
     resetPreview();
     onClose?.();
   };
-  const footerButtonDisabled = videoCloseBlocked || (linkAction && !footerLink);
+  const footerButtonDisabled = linkAction && !footerLink;
 
   return (
     <Box
@@ -654,23 +624,6 @@ export default function PopupPreview({
           ...(popup.popupType === 'IMAGE' ? {boxSizing: 'border-box'} : {}),
         }}
       >
-        {(isVideoQuiz || isPlainVideo) && (
-          <Box sx={{ px: 2, pt: 1, bgcolor: surveyColors.card, flexShrink: 0 }}>
-            <Typography variant="caption">
-              미리보기 시청 비율: {previewWatchPercent}% (완료 기준 {requiredPercent}%)
-            </Typography>
-            <Slider
-              size="small"
-              aria-label="미리보기 시청 비율"
-              value={previewWatchPercent}
-              min={0}
-              max={100}
-              step={1}
-              onChange={(_, value) => setPreviewWatchPercent(Number(value))}
-              sx={{ color: surveyColors.focus }}
-            />
-          </Box>
-        )}
         {popup.showHeader && (
           // WPF PopupWindow.xaml HeaderRow(Height=40)는 유형과 관계없는 공통 행이다. 제목은 TextTrimming처럼 한 줄 말줄임으로 그린다.
           // 배경·제목 색은 WPF HeaderArea(Background=Black)·PopupTitleText(Foreground=White)와 같다. 본문과 색이 달라 구분선은 두지 않는다.
@@ -801,7 +754,7 @@ export default function PopupPreview({
                   aria-live="polite"
                   sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 13 }}
                 >
-                  {surveyProgress}
+                  {progress}
                 </Typography>
                 {submissionStatus && (
                   <Typography role="status" aria-live="polite" sx={{ color: surveyColors.muted, fontSize: 13, whiteSpace: 'pre-line' }}>
@@ -891,18 +844,6 @@ export default function PopupPreview({
                 ) : (
                   <span />
                 )}
-                {videoReason && (
-                  <Typography
-                    id={reasonId}
-                    role="status"
-                    aria-live="polite"
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: footerFontSize ?? undefined }}
-                  >
-                    {videoReason}
-                  </Typography>
-                )}
               </Stack>
               {/* 좁아서 줄이 바뀌어도 확인 버튼은 오른쪽에 둔다. */}
               <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto' }}>
@@ -912,7 +853,6 @@ export default function PopupPreview({
                     color="inherit"
                     sx={{ minWidth: 92 }}
                     disabled={footerButtonDisabled}
-                    aria-describedby={videoCloseBlocked ? reasonId : undefined}
                     onClick={handleFooter}
                   >
                     {linkAction ? '바로가기' : '확인'}

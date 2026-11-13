@@ -337,7 +337,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     ],
     outputs: [{ name: 'onClose', type: '() => void', required: true, description: '닫기 버튼·Esc를 누르면 호출됩니다.' }],
     values: ['popup 전체(값을 바꾸지 않음)'],
-    reuse: ['미리보기 안에서 고른 답·시청 비율은 닫으면 지워집니다.'],
+    reuse: ['미리보기 안에서 고른 답은 닫으면 지워집니다.'],
     example: PREVIEW_EXAMPLE,
     processes: ['preview'],
   },

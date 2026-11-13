@@ -36,7 +36,7 @@ function readViewport(): Size {
  * - out: onClose() 종료 버튼·Esc·(Overlay 미사용 시) 배경 클릭·팝업 안 닫기 동작 · 화면: 브라우저 창을 작업 영역으로 본 실제 크기 팝업, 배경 Overlay, "미리보기 종료 (Esc)" 버튼
  * - 팝업 정보를 받아 크기 모드·9개 위치·배경 Overlay를 WPF와 같이 적용한 모달로 PopupPreview를 보여준다.
  *   입력 폼·저장 API에 의존하지 않으며 전달받은 popup을 바꾸지 않는다.
- *   설문 응답·시청 비율 등 시연 상태는 모달 안 PopupPreview에만 있고, 닫으면 내용이 언마운트되어 다시 열 때 초기화된다.
+ *   설문 응답 등 시연 상태는 모달 안 PopupPreview에만 있고, 닫으면 내용이 언마운트되어 다시 열 때 초기화된다.
  */
 export default function PopupPreviewDialog({ popup, open, onClose, recommendedSize = null }: PopupPreviewDialogProps) {
   const [viewport, setViewport] = useState<Size>(readViewport);

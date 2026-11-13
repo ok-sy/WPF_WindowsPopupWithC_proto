@@ -139,7 +139,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 8) VIDEO+QUIZ: 두 미리보기가 각자 영상 영역을 그리고, 닫으면 모달 쪽만 정리된다.
   await render('QUIZ', {}, {videoEnabled: true}); await openPreview();
   check(await run("document.querySelectorAll('[data-testid=aspect-video-area]').length") === 2, 'Inline and dialog both render AspectVideoArea');
-  check(await run("document.querySelector('.MuiDialog-root').textContent.includes('기준 80% 이상 시청')"), 'Dialog keeps the VIDEO+QUIZ watch lock');
+  // [2026-11-13] 시청 비율 슬라이더·시청 잠금 시연을 삭제해 모달도 퀴즈 입력이 열린 상태로 그린다.
+  check(await run("!document.querySelector('.MuiDialog-root input[type=range]') && !document.querySelector('.MuiDialog-root').textContent.includes('이상 시청')"), 'Dialog VIDEO+QUIZ has no watch slider or lock text');
   await escape();
   check(await run("document.querySelectorAll('[data-testid=aspect-video-area]').length") === 1, 'Closing the dialog unmounts its video area');
   await unchanged('VIDEO+QUIZ');

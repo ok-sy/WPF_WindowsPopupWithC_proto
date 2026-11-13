@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-13-07 — dev: TODO43 관리자 미리보기 시청 비율 슬라이더 삭제
+
+- 이유: 동영상 등록 화면 미리보기 상단의 재생 진행 상태에 따른 버튼 활성화 시연(시청 비율 슬라이더)을 관리자 화면에서 사용하지 않기로 해 제거.
+- 변경: `PopupPreview`에서 슬라이더·시청 비율 상태·기준 미달 사유 문구·VIDEO+QUIZ 잠금 문구 삭제. 미리보기는 VIDEO·VIDEO+QUIZ를 시청 기준 충족 상태(Footer 버튼 활성, 퀴즈 입력 가능, 제출 영역은 문항 진행 문구)로 표시. 시청 기준 전 잠금은 WPF 실제 팝업 동작으로 유지(WPF 변경 없음). 가이드 문구·모달 주석·미리보기 대조 문서·설계 43 기록 정리.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `PopupPreviewDialog.tsx`, `guide/guideData.ts`, `scripts/verify-completion-ux-43.cjs`, `scripts/verify-popup-preview-61.cjs`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/design/43_완료조건_버튼활성화_UX_TODO.md`.
+- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `completion UX 43` 76건, `TODO61 preview` 121건, `IMAGE preview` 54건, `TODO69 sample` 62건, `guide render` 31건·`guide registry` 296건 통과. 로컬 관리자 웹 실화면 확인은 미실행.
+- 상태: 커밋 / 미푸시.
+
 ## 2026-11-13-06 — dev: TODO73 퀴즈·설문 OX 칸 크기 축소
 
 - 이유: 퀴즈·설문 OX 문항의 칸과 글자가 과하게 커서 크기 축소 요구사항 반영.

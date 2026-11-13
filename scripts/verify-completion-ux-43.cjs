@@ -47,10 +47,6 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await pause(300);
   const render = async (type, overrides = {}, content = {}) => {
     await run(`window.renderPopup(${JSON.stringify(type)}, ${JSON.stringify(overrides)}, ${JSON.stringify(content)})`); await pause(250); };
-  // 실제 MUI Slider의 숨은 range 입력에 값을 넣고 input 이벤트를 보낸다.
-  const watch = async percent => { await run(`(()=>{const input=document.querySelector('input[type=range]');
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input, '${percent}');
-    input.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(200); };
   // 버튼 상태와 aria-describedby가 가리키는 사유 문구(role/aria-live 포함)를 읽는다.
   const button = label => run(`(()=>{const bs=[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()===${JSON.stringify(label)});
     if(!bs.length) return null; const b=bs[bs.length-1], d=b.getAttribute('aria-describedby'), r=d&&document.getElementById(d);
@@ -58,56 +54,32 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const bodyText = () => run('document.body.innerText');
   const click = label => run(`[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()===${JSON.stringify(label)}).pop().click()`);
 
-  // 1. 일반 VIDEO: 기준 미달이면 비활성 + 사유, 도달하면 활성 + 충족 문구(완료 전 닫기 허용 옵션이 없으므로 항상 적용).
+  // 1. [2026-11-13] 상단 "미리보기 시청 비율" 슬라이더(재생 진행 상태에 따른 버튼 활성화 시연)를 삭제했다.
+  //    미리보기는 VIDEO·VIDEO+QUIZ를 시청 기준 충족 상태로 그린다. 시청 기준 전 잠금은 WPF 실제 팝업에서만 동작한다.
   await render('VIDEO');
+  check(await run(`document.querySelector('input[type=range]') === null`) && !(await bodyText()).includes('미리보기 시청 비율'),
+    'VIDEO preview has no watch-ratio slider');
   let b = await button('확인');
-  check(b && b.disabled && b.reason === '영상 0% 시청 · 기준 80% 이상 시청하면 닫을 수 있습니다' && b.role === 'status' && b.live === 'polite',
-    'VIDEO blocked close shows reason: ' + JSON.stringify(b));
-  await watch(79); b = await button('확인');
-  check(b.disabled && b.reason.startsWith('영상 79% 시청'), 'VIDEO stays disabled below the ratio: ' + JSON.stringify(b));
-  await watch(80); b = await button('확인');
-  check(!b.disabled && b.reason === null && (await bodyText()).includes('시청 기준을 충족했습니다'), 'VIDEO enables close at the ratio: ' + JSON.stringify(b));
+  check(b && !b.disabled && b.reason === null && !(await bodyText()).includes('시청하면 닫을 수 있습니다'), 'VIDEO close is enabled without a watch reason: ' + JSON.stringify(b));
   await click('확인'); check(await run('window.closeCount') === 1, 'Enabled VIDEO close runs onClose');
-  // 바로가기 라벨도 같은 기준으로 막는다.
   await render('VIDEO', {}, {footerAction: 'LINK_AND_CLOSE', footerLinkUrl: 'https://example.com'});
-  b = await button('바로가기'); check(b.disabled && b.reason.includes('닫을 수 있습니다'), 'VIDEO link button is blocked too: ' + JSON.stringify(b));
-  // 4자리 내림 의도: 정수 % 슬라이더에서 29% = 기준값 0.29는 도달로 본다.
-  await render('VIDEO', {completionRatio: .29}); await watch(29); b = await button('확인');
-  check(!b.disabled, 'Integer slider reaches 0.29 exactly: ' + JSON.stringify(b));
-  await render('VIDEO', {completionRatio: .805}); await watch(80); b = await button('확인');
-  check(b.disabled && b.reason.includes('기준 80.5%'), 'Fractional ratio text and judgment: ' + JSON.stringify(b));
-
-  // PU001 B-7: completionRatio 미설정(null)이면 VIDEO는 1.0, VIDEO+QUIZ는 0.8로 판정·표시한다(WPF·서버 기본값과 같음).
-  await render('VIDEO', {completionRatio: null}); b = await button('확인');
-  check(b.disabled && b.reason.includes('기준 100%'), 'VIDEO null ratio defaults to 100% (B-7): ' + JSON.stringify(b));
-  await render('QUIZ', {completionRatio: null}, {videoEnabled: true}); b = await button('제출');
-  check(b.disabled && b.reason.includes('기준 80%'), 'VIDEO+QUIZ null ratio defaults to 80% (B-7): ' + JSON.stringify(b));
-  await watch(80); b = await button('제출');
-  check(!b.reason.startsWith('영상'), 'VIDEO+QUIZ null ratio unlocks at 80% (B-7): ' + JSON.stringify(b));
-  check((await bodyText()).includes('완료 기준 80%'), 'VIDEO+QUIZ null ratio caption shows 80% (B-7)');
-
-  // 2. POL-02-02 : 종료 제어 — 폐기된 allowCloseBeforeComplete=true가 남은 구 데이터도 무시하고 기준 전 닫기는 비활성이다.
-  await render('VIDEO', {allowCloseBeforeComplete: true}); b = await button('확인');
-  check(b.disabled && b.reason.startsWith('영상 0% 시청'), 'Legacy allow-close VIDEO stays blocked (TODO57): ' + JSON.stringify(b));
+  b = await button('바로가기'); check(b && !b.disabled, 'VIDEO link button is enabled: ' + JSON.stringify(b));
+  // POL-02-02 : 종료 제어 — 폐기된 allowCloseBeforeComplete 문구는 미리보기에 없다(TODO57).
+  await render('VIDEO', {allowCloseBeforeComplete: true});
   check(!(await bodyText()).includes('완료 전 닫기 허용'), 'Preview no longer mentions the removed allow-close option (TODO57)');
 
-  // 3. VIDEO+QUIZ 잠금: 진행 문구에 기준 % 포함, 제출 비활성 + 사유 연결, 보조 닫기 없음.
+  // 2. VIDEO+QUIZ: 슬라이더·시청 잠금 문구 없이 퀴즈 입력이 열려 있고 제출 영역은 문항 진행 문구만 보인다. 보조 닫기 없음.
   await render('QUIZ', {}, {videoEnabled: true});
+  check(await run(`document.querySelector('input[type=range]') === null`), 'VIDEO+QUIZ preview has no watch-ratio slider');
   b = await button('제출');
-  check(b.disabled && b.reason === '영상 0% · 기준 80% 이상 시청하면 퀴즈와 제출이 활성화됩니다' && b.role === 'status',
-    'VIDEO+QUIZ lock progress: ' + JSON.stringify(b));
-  // POL-05-03 : 결합 화면 — 영상과 퀴즈 사이 중간 안내는 없다(사유는 제출 영역 진행 문구 한 곳).
-  check(!(await bodyText()).includes('하단 버튼이 활성화됩니다'), 'VIDEO+QUIZ has no middle notice (TODO59)');
+  check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음' && b.role === 'status', 'VIDEO+QUIZ shows question progress directly: ' + JSON.stringify(b));
+  check(await run(`!document.querySelector('fieldset[disabled]') && !document.querySelector('input[aria-label="정답 1"]').disabled`),
+    'VIDEO+QUIZ quiz inputs are not locked in the preview');
+  // POL-05-03 : 결합 화면 — 영상과 퀴즈 사이 중간 안내는 없다.
+  check(!(await bodyText()).includes('하단 버튼이 활성화됩니다') && !(await bodyText()).includes('퀴즈에 응답해 주세요'), 'VIDEO+QUIZ has no middle notice (TODO59)');
   check(await button('닫기') === null, 'VIDEO+QUIZ has no secondary close');
-  await watch(50); b = await button('제출'); check(b.reason.startsWith('영상 50% · 기준 80%'), 'VIDEO+QUIZ lock progress follows the slider');
-  await watch(80); b = await button('제출');
-  check(b.disabled && b.reason === '필수 응답 0/4 · 4문항 남음', 'VIDEO+QUIZ unlock switches to question progress: ' + JSON.stringify(b));
-  check(!(await bodyText()).includes('퀴즈에 응답해 주세요'), 'VIDEO+QUIZ has no unlocked middle notice (TODO59)');
-  // POL-02-02 : 종료 제어 — 구 allowCloseBeforeComplete=true여도 VIDEO+QUIZ 보조 닫기는 없다(완료 전 이탈은 나중에 보기).
   await render('QUIZ', {allowCloseBeforeComplete: true}, {videoEnabled: true});
   check(await button('닫기') === null, 'Legacy allow-close VIDEO+QUIZ shows no secondary close (TODO57)');
-  await render('QUIZ', {showLater: true}, {videoEnabled: true});
-  b = await button('나중에 보기'); check(b && !b.disabled && (await button('제출')).disabled, 'Locked VIDEO+QUIZ leaves only the later button as an exit (TODO57)');
   // POL-05-03 : 결합 화면 — 영상 영역에 보인 설명은 퀴즈 머리말에서 반복하지 않는다. 영상 설명을 숨기면 퀴즈 쪽에 한 번 보인다.
   const countText = t => run(`document.body.innerText.split(${JSON.stringify(t)}).length - 1`);
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명'});
