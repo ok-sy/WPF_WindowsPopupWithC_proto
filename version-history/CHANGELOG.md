@@ -1,3 +1,11 @@
+## 2026-11-13 — doc: 폐쇄망 Nginx 정적 Export 배포 방식 TODO
+
+- 이유: 폐쇄망 관리자 WEB은 `main/out/` 정적 산출물을 Nginx에 복사해 제공하므로 standalone 배포와 혼용되지 않도록 배포 방식을 명시.
+- 변경: `docs/design/20261113_폐쇄망_WEB_Nginx_정적Export_배포방식_TODO.md` 신규. `output: 'export'` 요구, `main/out/` 산출물, 루트/main 빌드, SceneRouter 반영, Nginx 경로·정적 자산 검증 정의.
+- 형상 대조: `main/next.config.mjs`의 `NODE_ENV === 'standalone'` 조건과 `output: PRODUCTION ? 'export' : 'standalone'`가 일반적인 `next build`에서 정적 Export를 보장하지 않는 불일치 확인. 실제 빌드 결과는 미확인.
+- 검증: GitHub main 설정·package.json·기존 폐쇄망 반입 문서 정적 확인. 코드 변경·타입 검사·빌드·폐쇄망 Nginx 실화면 미실행.
+- 상태: TODO 문서 반영 / 구현 대기.
+
 # 변경 이력
 
 ## 2026-11-13-02 — doc: TODO75 WPF 개발·운영 빌드 설정 분리
