@@ -71,3 +71,32 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 - `Services/PopupApiService.cs`, `Services/IPopupGateway.cs`, `Services/DemoPopupGateway.cs`, `Services/PopupResultQueue.cs`, `Services/Auth/*`
 - `Managers/PopupManager.cs`, `Factories/PopupFactory.cs`, 실행 설정·Demo 가이드
 - TODO10(인증 테스트), TODO35(단건 API), TODO39·45(결과 복구), TODO48·49(WPF 서식 표시)
+
+## 2026-11-16 후속 TODO — appsettings만으로 API Demo 실행
+
+상태: **요구사항 접수 · 구현 대기**. 기존 51-1~51-8 구현 완료 표시는 유지하며, 아래 항목은 별도 미구현 후속 작업이다.
+
+### 현행 코드·계약
+
+- `popup-frameWork/Popup/MainWindow.xaml.cs` → `LoadPopupClientSettings()`: `DemoMode = arguments.Demo || GetBoolean(api, "DemoMode", false)`, `DemoApi = demoMode && arguments.Api`. 따라서 `PopupApi.DemoMode=true`만으로는 인메모리 Demo이고, API Demo에는 `-Api` 인자가 필요하다.
+- `popup-frameWork/Popup/appsettings.json`: `PopupApi.DemoMode`는 존재하지만 API Demo 활성화용 설정 키는 없다. `DemoApiTargets`는 연결 대상 입력칸의 초기값이며 실행 모드를 정하지 않는다.
+- `popup-frameWork/Popup/Popup.csproj`: 개발 빌드는 외부 설정 우선, 운영 빌드는 내장 설정만 사용하도록 분리되어 있다. 이번 변경에서도 이 경계를 유지한다.
+
+### 구현 시 확인할 사항
+
+- [ ] **51-11** `PopupApi` 설정만으로 API Demo 모드에 진입할 수 있도록 `LoadPopupClientSettings()`의 `DemoApi` 판정 보완. 기존 `-Demo -Api`와 `DemoMode=true + -Api` 동작 유지.
+- [ ] 일반 API / 인메모리 Demo / API Demo의 세 모드가 상호 배타적으로 선택되는지 확인하고, `-Api` 단독 및 설정 충돌을 회귀 검증한다.
+- [ ] `App.xaml.cs`의 창 선택, `DemoWindow.Api.cs`의 수동 호출·자동 폴링 OFF, `PopupClientSettings` 전달 경로 확인. 관리자 웹·Java 서버·DB·API JSON 계약은 변경하지 않는다.
+- [ ] `popup-frameWork/Popup/appsettings.json`, `popup-frameWork/README.md`, WPF 사양서·관련 테스트(`scripts/ApiDemoTests/Program.cs`)를 함께 갱신하고 Debug/Release 설정 로딩 차이를 검증한다.
+- [ ] 코드·단위 테스트와 로컬/폐쇄망 실화면 검증을 구분해 기록한다. 실제 서버 API 호출은 테스트 데이터 생성 가능성을 안내하고 별도 확인한다.
+
+### 구현 전에 결정할 사항
+
+1. **설정 키 이름·의미**: 기존 `DemoMode`만으로 인메모리 Demo와 API Demo를 구분할 수 없으므로 별도 선택 수단이 필요하다. (A) `PopupApi.DemoApi` 불리언 추가, (B) `PopupApi.DemoType` 등 모드 열거형 도입. **추천 A**: 기존 `DemoMode`와 최소 변경으로 호환 가능. B는 모드 조합을 명확히 표현하지만 설정·파싱·문서 변경 폭이 커진다. 사용자 승인 전 키 이름을 확정하지 않는다.
+2. **설정과 실행 인자의 우선순위**: (A) 기존 `-Demo -Api`를 항상 우선하고 설정은 인자 없는 경우에 사용, (B) 설정값이 실행 인자를 덮어쓰도록 처리. **추천 A**: 기존 실행 방식과 설정 우선순위 규칙을 보존한다. `DemoMode=false`와 신규 API Demo 설정이 충돌하는 경우 자동으로 Demo를 켤지, 설정 오류로 처리할지도 결정해야 한다. 추천은 명시적 설정 오류로 처리하여 오설정을 드러내는 방식이다.
+
+### 완료 기준
+
+- 인자 없이 appsettings 설정만으로 API Demo에 진입하며 수동 API 호출 화면이 열린다.
+- 기존 인자 방식, 인메모리 Demo, 일반 API, Debug/Release 설정 정책이 회귀 없이 유지된다.
+- 구현·테스트·실화면 결과 확인 전에는 완료 표시하지 않는다.
