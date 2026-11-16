@@ -27,7 +27,7 @@
 - 변경: TODO51에 51-12를 정의한 뒤 구현. 결정 사항은 인증 선택지를 입력 모드/SSO 프로세스 모드 2가지로 단순화(토큰 직접 입력 제거), SSO 주소는 `Auth.SsoUrl` 고정, 401은 확인한 사용자로 로그인 API만 재호출하고 `로그인` 버튼은 SSO부터 재호출. `DemoApiAuthHeaderProvider.ForSso()` 추가(`ForToken`·`NormalizeAuthorization` 제거), SSO 단계 실패를 `DemoSsoException`(인증 실패·호출 실패·통신 실패·응답 해석 실패·시간 초과)으로 구분하고 로그인 API 실패·426은 기존 예외로 유지. `SsoClient`에 핸들러 래핑 생성자를 추가해 SSO GET을 HTTP 로그(`[SSO]`)에 기록. `DemoWindow` 인증 UI를 모드별로 분리(로그인 경로 공통, SSO 주소 읽기 전용), 진행 표시에 SSO 단계 추가, 초기 선택은 `Auth.Mode=SsoPrototype`이면 SSO. SSO 모드는 입력 JSON을 인증에 쓰지 않고, 모드 전환 시 새 결과 큐를 만든다. README·WPF 사양서 2종·TODO51 결정/결과 기록. 관리자 웹·서버·DB·API JSON 계약 변경 없음.
 - 주요 파일: `popup-frameWork/Popup/Services/Auth/DemoApiAuthHeaderProvider.cs`, `popup-frameWork/Popup/Services/Auth/SsoClient.cs`, `popup-frameWork/Popup/DemoWindow.xaml`, `popup-frameWork/Popup/DemoWindow.Api.cs`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
 - 검증: ApiDemoTests `PASS: 143`(SSO GET→로그인→조회, 입력 JSON 미사용, 401 SSO 재호출 없음, 로그인 버튼 SSO 재호출, SSO 401·필드 누락·로그인 실패·426 구분, SsoUrl 없음 입력 오류, 모드 전환 새 큐, 토큰 로그 미노출). Popup.BehaviorTests `PASS: 1740`, Popup.RecoveryTests `PASS: 255`, PopupWindowTests `PASS: 548`, Popup Debug·Release 빌드 경고·오류 0. 실제 사내 SSO(Negotiate)·폐쇄망 실행은 미검증.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 
 ## 2026-11-16-02 — dev: TODO51-11 appsettings만으로 API Demo 실행
@@ -36,7 +36,7 @@
 - 변경: TODO51에 51-11 후속 작업을 정의한 뒤 구현. 결정 사항은 설정 키를 `PopupApi.DemoType` 열거형(`InMemory`|`Api`, 생략 시 `InMemory`)으로 두고, 실행 인자를 우선하며, `DemoMode=false`+`DemoType=Api`·모르는 값은 설정 오류로 처리. `LaunchArguments.ResolveDemo()`를 추가하고 `LoadPopupClientSettings()`가 그 결과로 `DemoMode`·`DemoApi`를 결정. `-Demo -Api`·`-Demo`·`DemoMode=true`+`-Api` 기존 동작 유지, `-Demo`는 `DemoType=Api`보다 우선. `appsettings.json`에 `DemoType` 항목·주석 추가, README·WPF 사양서 2종·TODO51 결정/결과 기록. Debug/Release 설정 로딩 경계(설계 75)는 변경 없음.
 - 주요 파일: `popup-frameWork/Popup/Services/LaunchArguments.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `popup-frameWork/Popup/Models/PopupClientSettings.cs`, `popup-frameWork/Popup/appsettings.json`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
 - 검증: ApiDemoTests `PASS: 133`(51-11 검사 9건 추가: 설정만으로 진입, 인자 우선, `-Api` 보강, 충돌·모르는 값 예외). Popup Release 빌드 경고·오류 0. EXE를 설정만으로 실행하는 로컬·폐쇄망 실화면 확인은 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 
 ## 2026-11-16-01 — dev: PopupAlert 공통 안내창 외곽선 1.2 DIP 조정
@@ -45,7 +45,7 @@
 - 변경: TODO 문서로 범위 정의 후 `PopupAlert.CreateDialog()`의 `BorderThickness`를 2→1.2 DIP로 조정. 모든 PopupAlert 안내창에 공통 적용되며 TextBlock 여백·줄바꿈·모서리 반경·버튼 스타일은 유지. 안내창 외곽선 수치는 WPF 사양서에 없어 사양서는 미변경.
 - 주요 파일: `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md`.
 - 검증: PopupWindowTests `PASS: 548`(외곽선 1.2 DIP·검은 선·모서리 22 검사 추가). Windows 실화면 100%·고DPI 배율 확인은 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 
 ## 2026-11-13-07 — dev: TODO43 관리자 미리보기 시청 비율 슬라이더 삭제
