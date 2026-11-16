@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-16-07 — dev: TODO76 WPF 로그 기록 플래그 추가
+
+- 이유: 오류 로그·화면 변경 진단 로그를 항상 기록하던 구조라 환경별로 기록 여부를 정할 수 있는 설정 필요.
+- 변경: appsettings 최상위 `Logging.CrashLogEnabled`·`Logging.DisplayDiagnosticsEnabled`(둘 다 기본 true) 추가. `LoadPopupClientSettings()`가 읽고 `MainWindow`가 `CrashGuard.FileLogEnabled`·`DisplayDiagnostics.Enabled`에 반영. false면 해당 파일만 쓰지 않고 예외 처리·자동 재시작·`restart-history.txt`·화면 변경 재배치는 그대로. 설정을 읽기 전 시작 직후 예외는 기본값대로 기록될 수 있음. appsettings 주석·README·WPF 사양서 2종·TODO76 갱신.
+- 주요 파일: `popup-frameWork/Popup/Services/CrashGuard.cs`, `popup-frameWork/Popup/Services/DisplayDiagnostics.cs`, `popup-frameWork/Popup/Models/PopupClientSettings.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `popup-frameWork/Popup/appsettings.json`, `scripts/PopupWindowTests/Program.cs`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/76_WPF_VM복귀_팝업배치_회귀검증_TODO.md`.
+- 검증: PopupWindowTests `PASS: 560`(진단 로그 끔 → 기록 없음·재배치 유지), ApiDemoTests `PASS: 145`(설정 읽기·기본값), Popup.BehaviorTests `PASS: 1740`, Popup.RecoveryTests `PASS: 255`, Release 빌드 경고·오류 0. `CrashLogEnabled=false` 파일 미기록은 자동 테스트 미실행(고정 로그 경로). 실환경 미실행.
+- 상태: 커밋 / 원격 반영.
+
+
 ## 2026-11-16-06 — dev: TODO77 관리자 웹 메인페이지 탭 닫기 검증
 
 - 이유: 메인페이지 버튼으로 연 탭에 닫기 버튼이 표시되지 않는 현상 접수.

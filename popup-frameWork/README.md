@@ -278,6 +278,8 @@ Popup/appsettings.json
 | `DemoApiTargets.Local`·`Dev` | API Demo(`-Demo -Api`)의 `로컬 서버 사용` 체크박스가 채울 `BaseUrl`·`LoginPath`(체크 = Local, 해제 = Dev). 선택 항목이며 없으면 Local은 위 값, Dev는 주소 빈 값·`/p/api/auth/sso/login`. 일반 실행·인메모리 Demo에서는 쓰지 않음 |
 | `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
 | `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
+| `Logging.CrashLogEnabled` | 오류 로그 `%LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log` 기록(기본 true). false여도 예외 처리·자동 재시작·`restart-history.txt`는 그대로. 설정을 읽기 전 시작 직후 예외는 기록될 수 있음 |
+| `Logging.DisplayDiagnosticsEnabled` | 화면 변경 진단 로그 `display-yyyyMMdd.log` 기록(기본 true, 설계 76). 팝업 표시 중 해상도·모니터 변경·잠금 해제·연결 전환 때 모니터·팝업·Overlay 좌표·`userPlacement`를 남김. false여도 재배치는 그대로 |
 | `DevUserId` | 개발용 `X-Dev-User-Id` 헤더 값. 서버가 프로토타입 토큰 모드(`custom.wpf-auth-prototype.enabled=true`)이면 **무시**되고 Bearer 토큰만 통한다. 유지/제거는 별도 결정(설계 10 §14) |
 
 현재 로컬 테스트의 SSO URL:

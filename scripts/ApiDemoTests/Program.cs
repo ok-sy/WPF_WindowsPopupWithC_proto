@@ -165,6 +165,8 @@ internal static class Program
         Check(loaded.DemoLocalBaseUrl == "http://localhost:8080/zero-rule-server" && loaded.DemoLocalLoginPath == "/p/api/wpf/auth/login"
               && loaded.DemoDevBaseUrl == string.Empty && loaded.DemoDevLoginPath == "/p/api/auth/sso/login",
             "[target] appsettings DemoApiTargets are read (Local localhost·/p/api/wpf/auth/login, Dev empty·/p/api/auth/sso/login)");
+        Check(loaded.CrashLogEnabled && loaded.DisplayDiagnosticsEnabled, "[logging] appsettings Logging flags are read (both true)");
+        Check(new PopupClientSettings().CrashLogEnabled && new PopupClientSettings().DisplayDiagnosticsEnabled, "[logging] Logging flags default to true");
 
         const string devUrl = "http://dev-host:8080/zero-rule-server";
         PopupClientSettings settings = new()

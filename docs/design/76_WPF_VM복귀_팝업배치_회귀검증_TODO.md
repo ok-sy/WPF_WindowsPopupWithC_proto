@@ -57,3 +57,14 @@ VM 재현 환경이 없어 로그로 원인을 확정하지 못했으나, 코드
 - `보정 전` 모니터 크기·Overlay `px`가 실제 해상도보다 작으면 해상도 일시 축소(추정 원인)가 맞다. `+1s` 보정 전 값이 직후 보정 후 값과 다르면 화면이 한 번 더 바뀐 경우다.
 
 검증: `PopupWindowTests` `PASS: 559`(끌어 옮긴 위치 로그 기록 1건 추가, 기존 로그 검사에 `userPlacement=none` 확인 추가), `Popup.BehaviorTests` 1740, Release 빌드 경고·오류 0.
+
+## 로그 기록 플래그 (2026-11-16 보완)
+
+appsettings 최상위 `Logging` 항목으로 로그 파일 기록 여부를 정한다. 둘 다 생략하면 `true`다. 운영 빌드는 내장 설정만 읽으므로 값을 바꾸려면 재빌드한다(설계 75).
+
+| 설정 | 기본값 | 대상 | false일 때 |
+|---|---|---|---|
+| `Logging.CrashLogEnabled` | `true` | `crash-yyyyMMdd.log` | 파일만 쓰지 않음. 예외 처리·자동 재시작·`restart-history.txt`는 그대로. 설정을 읽기 전 시작 직후 예외는 기본값대로 기록될 수 있음 |
+| `Logging.DisplayDiagnosticsEnabled` | `true` | `display-yyyyMMdd.log` | 파일만 쓰지 않음. 화면 변경 재배치는 그대로 |
+
+검증: `PopupWindowTests` 560(DisplayDiagnosticsEnabled=false → 로그 없음·재배치 유지 1건), `ApiDemoTests` 145(설정 읽기·기본값 2건), `Popup.BehaviorTests` 1740, `Popup.RecoveryTests` 255, Release 빌드 경고·오류 0. `CrashLogEnabled=false`의 파일 미기록은 로그 폴더가 고정 경로라 자동 테스트로 확인하지 않음(코드 분기만).

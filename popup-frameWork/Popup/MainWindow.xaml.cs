@@ -89,6 +89,9 @@ namespace Popup
 
             PopupClientSettings settings = LoadPopupClientSettings();
             Settings = settings;
+            // 로그 파일 기록 여부(appsettings Logging). 설정을 읽기 전 예외는 기본값(true)대로 기록된다.
+            CrashGuard.FileLogEnabled = settings.CrashLogEnabled;
+            DisplayDiagnostics.Enabled = settings.DisplayDiagnosticsEnabled;
             _demoMode = settings.DemoMode;
             DemoAuthTestSettings = settings.DemoMode && !settings.DemoApi && settings.DemoSsoLoginTest ? settings : null;
             ApiDemoSettings = settings.DemoApi ? settings : null;
@@ -165,6 +168,7 @@ namespace Popup
          * Auth.SsoUrl·LoginPath·PeriodicLoginMinutes 는 Mode=SsoPrototype에서만 쓴다.
          * SurveyDesignVersion 은 SURVEY·QUIZ 문항 디자인 버전(SurveyDesign). 없거나 모르는 값이면 최신 버전.
          * 최상위 "Startup": { "TrayEnabled": false, "AutostartEnabled": true } 는 선택(없으면 환경변수·기본값).
+         * 최상위 "Logging": { "CrashLogEnabled": true, "DisplayDiagnosticsEnabled": true } 는 선택(없으면 둘 다 true).
          * 파일 안의 // 한 줄 주석·블록 주석과 끝 쉼표를 허용한다(항목 설명은 appsettings.json 주석 참고).
          */
         private static PopupClientSettings LoadPopupClientSettings()
@@ -253,6 +257,13 @@ namespace Popup
             {
                 settings.TrayEnabled = GetNullableBoolean(startup, "TrayEnabled");
                 settings.AutostartEnabled = GetNullableBoolean(startup, "AutostartEnabled");
+            }
+
+            // 최상위 "Logging"(선택): crash·display 로그 파일 기록 여부. 없으면 둘 다 true.
+            if (document.RootElement.TryGetProperty("Logging", out JsonElement logging) && logging.ValueKind == JsonValueKind.Object)
+            {
+                settings.CrashLogEnabled = GetBoolean(logging, "CrashLogEnabled", true);
+                settings.DisplayDiagnosticsEnabled = GetBoolean(logging, "DisplayDiagnosticsEnabled", true);
             }
 
             if (!settings.DemoMode && string.IsNullOrWhiteSpace(settings.BaseUrl))

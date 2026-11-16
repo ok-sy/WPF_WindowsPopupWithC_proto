@@ -27,6 +27,8 @@ namespace Popup.Services
      *        재시작 폭주를 막기 위해 최근 10분 내 재시작이 3회 이상이면 재시작하지 않는다.
      *
      * [로그] %LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log (하루 1파일, 예외 전체 스택). 토큰·사번은 기록하지 않는다.
+     *        appsettings Logging.CrashLogEnabled=false면 이 파일을 쓰지 않는다(FileLogEnabled). 예외 처리·자동 재시작과
+     *        재시작 횟수 기록(restart-history.txt)은 그대로 동작한다. 설정을 읽기 전(시작 직후) 예외는 기본값(true)대로 기록한다.
      * [주의] 단일 인스턴스 Mutex는 프로세스 종료 시 OS가 해제하므로 재시작된 프로세스가 정상적으로 첫 실행이 된다.
      *        단, 부모 프로세스가 완전히 종료되기 전에 자식이 뜨면 Mutex 충돌로 자식이 바로 종료될 수 있어
      *        자식은 --restarted 인자를 받아 시작 시 최대 5초 동안 Mutex 획득을 재시도한다(App.OnStartup 참고).
@@ -43,6 +45,9 @@ namespace Popup.Services
         private static readonly TimeSpan RestartWindow = TimeSpan.FromMinutes(10);
 
         private static bool _installed;
+
+        /// <summary>crash-yyyyMMdd.log 파일 기록 여부(appsettings Logging.CrashLogEnabled, 기본 true). MainWindow가 설정을 읽은 뒤 넣는다.</summary>
+        public static bool FileLogEnabled { get; set; } = true;
 
         /// <summary>■ 예외 처리기 설치. App.OnStartup 맨 앞에서 한 번 호출한다(중복 호출은 무시).</summary>
         public static void Install(Application application)
@@ -129,12 +134,13 @@ namespace Popup.Services
         {
             try
             {
-                Directory.CreateDirectory(LogDirectory);
-                string path = Path.Combine(LogDirectory, $"crash-{DateTime.Now:yyyyMMdd}.log");
                 string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {title}" + Environment.NewLine
                                + (exception?.ToString() ?? "(예외 정보 없음)") + Environment.NewLine + Environment.NewLine;
-                File.AppendAllText(path, entry);
                 Debug.WriteLine(entry);
+                if (!FileLogEnabled) return;   // Logging.CrashLogEnabled=false: 파일은 쓰지 않는다(디버그 출력만)
+                Directory.CreateDirectory(LogDirectory);
+                string path = Path.Combine(LogDirectory, $"crash-{DateTime.Now:yyyyMMdd}.log");
+                File.AppendAllText(path, entry);
             }
             catch
             {

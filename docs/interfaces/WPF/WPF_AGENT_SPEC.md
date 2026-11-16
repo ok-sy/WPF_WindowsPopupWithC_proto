@@ -884,6 +884,8 @@ API Demo는 자동 폴링과 `nextStatus`에 따른 연속 조회를 하지 않�
 | `PopupApi.Auth.PeriodicLoginMinutes` | `60` | 정기 재로그인 주기. 0 이하면 끄고 401 갱신만 사용 |
 | `Startup.TrayEnabled` | `false` | 트레이 표시 여부 |
 | `Startup.AutostartEnabled` | `true` | 사용자 세션 자동 시작 등록 여부 |
+| `Logging.CrashLogEnabled` | `true` | 오류 로그(`%LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log`) 기록 여부. 예외 처리·자동 재시작은 값과 관계없이 동작 |
+| `Logging.DisplayDiagnosticsEnabled` | `true` | 화면 변경 진단 로그(`display-yyyyMMdd.log`, 설계 76) 기록 여부. 재배치는 값과 관계없이 동작 |
 
 `None`·`DevUserId`는 서버의 개발 설정과 함께 쓰는 방식이며 일반 배포 인증의 대체 규칙으로 보지 않습니다. 실제 통합 토큰의 발급·검증과 환경별 SSO 조건은 연동 계약으로 확인합니다.
 

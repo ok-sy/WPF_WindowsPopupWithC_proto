@@ -110,5 +110,15 @@ namespace Popup.Models
 
         /// <summary>Startup.AutostartEnabled — 사용자 세션 첫 실행 시 로그인 자동 시작 1회 등록(기본 true). false면 이 앱 등록 값 삭제.</summary>
         public bool? AutostartEnabled { get; set; }
+
+        /*
+         * POL-15 : 배포·실행 환경 — appsettings 최상위 "Logging" 항목(선택). 없거나 true/false가 아니면 기본값 true.
+         * 파일 기록 여부만 정한다. 예외 처리·자동 재시작·화면 변경 재배치 동작은 바뀌지 않는다.
+         */
+        /// <summary>Logging.CrashLogEnabled — %LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log 기록(기본 true).</summary>
+        public bool CrashLogEnabled { get; set; } = true;
+
+        /// <summary>Logging.DisplayDiagnosticsEnabled — %LOCALAPPDATA%\Popup\logs\display-yyyyMMdd.log 화면 변경 진단 기록(기본 true, 설계 76).</summary>
+        public bool DisplayDiagnosticsEnabled { get; set; } = true;
     }
 }

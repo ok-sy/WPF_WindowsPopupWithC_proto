@@ -19,6 +19,7 @@ namespace Popup.Services
      * - VM 복귀·잠금 해제·해상도/배율 변경 때 기존 팝업·Overlay가 어긋나는 문제를 실환경에서 확인하려고 남긴다.
      *   기록 내용: 시각·시점(이벤트 이름, 보정 전/후, 1초 뒤), 모니터별 장치명·Bounds·WorkingArea·주 모니터 여부(물리 픽셀),
      *   창별 종류·WPF 좌표(DIP)·실제 창 사각형(물리 픽셀)·DPI 배율·추가 정보(팝업은 userPlacement: 끌어 옮긴 위치 DIP 또는 none).
+     * - appsettings Logging.DisplayDiagnosticsEnabled=false면 파일을 쓰지 않는다(Enabled). 재배치 동작은 설정과 관계없이 그대로다.
      * - 사용자 정보·팝업 내용은 남기지 않는다. 팝업이나 Overlay가 표시 중일 때 화면 변경 이벤트가 오면만 기록하므로 양이 적다.
      */
     public static class DisplayDiagnostics
@@ -29,8 +30,12 @@ namespace Popup.Services
 
         internal static string CurrentLogPath => Path.Combine(LogDirectory, $"display-{DateTime.Now:yyyyMMdd}.log");
 
+        /// <summary>display-yyyyMMdd.log 기록 여부(appsettings Logging.DisplayDiagnosticsEnabled, 기본 true). MainWindow가 설정을 읽은 뒤 넣는다.</summary>
+        public static bool Enabled { get; set; } = true;
+
         public static void Log(string stage, IEnumerable<(string Kind, Window Window, string? Detail)> windows)
         {
+            if (!Enabled) return;
             try
             {
                 StringBuilder entry = new();

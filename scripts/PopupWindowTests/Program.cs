@@ -2098,8 +2098,8 @@ internal static class Program
         }
     }
 
-    private static void SetUserPlacement(PopupWindow window, Point placement) =>
-        typeof(PopupWindow).GetField("_userPlacement", Flags)!.SetValue(window, (Point?)placement);
+    private static void SetUserPlacement(PopupWindow window, Point? placement) =>
+        typeof(PopupWindow).GetField("_userPlacement", Flags)!.SetValue(window, placement);
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct NativeRect { public int Left, Top, Right, Bottom; }
@@ -2182,6 +2182,21 @@ internal static class Program
             string expectedPlacement = $"userPlacement={SystemParameters.WorkArea.Left + 40:0.#},{SystemParameters.WorkArea.Top + 30:0.#}";
             Check(logText.Contains("dragged (보정 후)") && logText.Contains(expectedPlacement),
                 $"[설계 76] display diagnostics log records the dragged position ({expectedPlacement})");
+
+            // Logging.DisplayDiagnosticsEnabled=false: 파일은 쓰지 않고 재배치는 그대로 한다.
+            Popup.Services.DisplayDiagnostics.Enabled = false;
+            try
+            {
+                SetUserPlacement(popup, null);
+                popup.Left = SystemParameters.WorkArea.Left; popup.Top = SystemParameters.WorkArea.Top;
+                typeof(Popup.Managers.PopupManager).GetMethod("HandleDisplayChange", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(manager, new object[] { "disabled-log" });
+                popup.UpdateLayout();
+                logText = System.IO.File.ReadAllText(System.IO.Directory.GetFiles(logDirectory, "display-*.log").Single());
+                Check(!logText.Contains("disabled-log") && Math.Abs(popup.Left - centerLeft) < 0.6 && Math.Abs(popup.Top - centerTop) < 0.6,
+                    $"[설계 76] DisplayDiagnosticsEnabled=false writes no log but still repositions ({popup.Left}, {popup.Top})");
+            }
+            finally { Popup.Services.DisplayDiagnostics.Enabled = true; }
 
             ShutdownClose(popup);
             Check(!Overlay(manager).IsVisible && !(bool)typeof(Popup.Managers.PopupManager).GetField("_displayEventsAttached", Flags)!.GetValue(manager)!,
