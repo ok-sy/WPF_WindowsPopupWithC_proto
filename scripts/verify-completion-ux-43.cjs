@@ -93,17 +93,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const waitArea = async predicate => { let a; for (let i = 0; i < 60; i++) { a = await area(); if (a && predicate(a)) return a; await pause(100); } return a; };
   await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/missing.mp4'});
   let a = await waitArea(x => x.width > 0);
-  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16, a.available * .7))) < 1,
+  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16 + 2, a.available * .7))) < 1,
     'VIDEO+QUIZ uses 16:9 before metadata or after a failed load (TODO60): ' + JSON.stringify(a));
   await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/demo-video.mp4'});
   a = await waitArea(x => x.natural);
   // 브라우저는 표시 종횡비를 반영한 593x252를, WPF MediaElement는 592x252를 보고한다(같은 원칙, 값은 엔진별).
   const [nw, nh] = (a?.natural || '0x0').split('x').map(Number);
-  check(a && /^59[23]x252$/.test(a.natural) && Math.abs(a.height - Math.max(180, Math.min(a.width * nh / nw, a.available * .7))) < 1,
+  check(a && /^59[23]x252$/.test(a.natural) && Math.abs(a.height - Math.max(180, Math.min(a.width * nh / nw + 2, a.available * .7))) < 1,
     'VIDEO+QUIZ sizes the video area from the real metadata (TODO60): ' + JSON.stringify(a));
   await render('QUIZ', {}, {videoEnabled: true, videoUrl: '/missing.mp4'});
   a = await waitArea(x => x.width > 0);
-  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16, a.available * .7))) < 1,
+  check(a && a.natural === '' && Math.abs(a.height - Math.max(180, Math.min(a.width * 9 / 16 + 2, a.available * .7))) < 1,
     'Changing the URL drops the previous video ratio (TODO60): ' + JSON.stringify(a));
   await render('VIDEO', {}, {videoUrl: '/demo-video.mp4'});
   check(await area() === null, 'Single VIDEO keeps the existing video area (TODO60)');

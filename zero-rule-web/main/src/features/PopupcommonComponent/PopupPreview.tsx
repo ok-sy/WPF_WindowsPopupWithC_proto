@@ -29,7 +29,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Divider,
   FormControlLabel,
   Paper,
   Radio,
@@ -266,16 +265,17 @@ function PopupBody({
   if (popup.popupType === 'VIDEO') {
     const showDescription = content.showDescription !== false;
     const showControls = content.showControls !== false;
-    const defaultVolume = Number(content.defaultVolume);
+    // TODO61-17: WPF VideoPopupView와 같이 제목 → 영상(남은 높이를 채움) → 설명 순서. 영상 영역은 검정 배경·1px #D1D5DB 테두리·모서리 8.
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
-        {showDescription && description && <Typography color="text.secondary">{description}</Typography>}
         {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <Box
           sx={{
             flex: 1,
             minHeight: 170,
-            borderRadius: 1,
-            bgcolor: '#101521',
+            boxSizing: 'border-box',
+            border: '1px solid #D1D5DB',
+            borderRadius: '8px',
+            bgcolor: '#000',
             color: 'white',
             display: 'grid',
             placeItems: 'center',
@@ -295,10 +295,10 @@ function PopupBody({
             </Typography>
           </Stack>
         )}
-        <Typography variant="caption" color="text.secondary">
-          완료 기준 {Math.round((popup.completionRatio ?? 1) * 100)}% · 기본 음량{' '}
-          {Math.round((Number.isFinite(defaultVolume) ? defaultVolume : 0.7) * 100)}%
-        </Typography>
+        {/* WPF DescriptionTextBlock: 영상 아래, 14px, #4B5563. 완료 기준·기본 음량 같은 미리보기 전용 안내는 WPF에 없어 그리지 않는다. */}
+        {showDescription && description && (
+          <Typography sx={{ fontSize: 14, color: '#4B5563', flexShrink: 0 }}>{description}</Typography>
+        )}
       </Stack>
     );
   }
@@ -641,14 +641,15 @@ export default function PopupPreview({
             }}
           >
             <Typography
-              fontWeight={700}
+              fontWeight={600}
               sx={{
                 flex: 1,
                 minWidth: 0,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                fontSize: headerFontSize ?? undefined,
+                // WPF PopupTitleText 기본 17 SemiBold(TODO61-17)
+                fontSize: headerFontSize ?? 17,
               }}
             >
               {text(popup.title, hidePlaceholders ? '' : '팝업 제목')}
@@ -671,11 +672,13 @@ export default function PopupPreview({
             minHeight: 0,
             minWidth: 0,
             overflowY: popup.popupType === 'IMAGE' ? 'hidden' : 'auto',
-            ...(popup.popupType === 'IMAGE' ? {display: 'flex', flexDirection: 'column'} : {}),
+            // VIDEO도 IMAGE처럼 세로 flex로 두어 영상 영역이 남은 높이를 채운다(WPF VideoRow Height="*", TODO61-17).
+            ...(popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO' ? {display: 'flex', flexDirection: 'column'} : {}),
             overflowX: 'hidden',
             overflowWrap: 'anywhere',
-            p: originalImage ? 0 : 3,
-            ...(popup.popupType === 'IMAGE' && !originalImage ? {px: '28px', py: '24px'} : {}),
+            // WPF PopupContent Margin="28,24,28,24"는 유형 공통이다(TODO61-17).
+            p: originalImage ? 0 : undefined,
+            ...(!originalImage ? {px: '28px', py: '24px'} : {}),
             ...(isSurvey
               ? {
                   scrollbarWidth: 'thin',
@@ -697,6 +700,8 @@ export default function PopupPreview({
               sx={{
                 mb: isSurvey ? 1 : 2,
                 ...(popup.popupType === 'IMAGE' ? {fontSize: 22, fontWeight: 600, flexShrink: 0} : {}),
+                // WPF CommonContentTitleStyle 22 SemiBold, VideoPopupView 제목 아래 여백 15(TODO61-17)
+                ...(popup.popupType === 'VIDEO' ? {fontSize: 22, fontWeight: 600, mb: '15px', flexShrink: 0} : {}),
                 ...(isSurvey ? { fontSize: 25, color: surveyColors.text } : {}),
               }}
             >
@@ -707,6 +712,7 @@ export default function PopupPreview({
           <Box
             sx={{
               ...(popup.popupType === 'IMAGE' ? { flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' } : {}),
+              ...(popup.popupType === 'VIDEO' ? { flex: 1, minHeight: 0, height: '100%' } : {}),
               ...(bodyFontSize
                 ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } }
                 : {}),
@@ -809,15 +815,19 @@ export default function PopupPreview({
         )}
         {!isSurvey && popup.showFooter && (
           <>
-            {popup.popupType !== 'IMAGE' && <Divider />}
+            {/* WPF FooterRow(80)·FooterArea Margin="28,8,28,16"은 유형 공통이고 본문과의 구분선이 없다(TODO61-17).
+                좁은 인라인 미리보기에서 줄이 바뀌어도 잘리지 않게 IMAGE 외에는 최소 높이로 둔다. */}
             <Stack
               direction="row"
               alignItems="center"
               justifyContent="space-between"
               sx={{
-                px: 2,
-                py: 1.5,
-                ...(popup.popupType === 'IMAGE' ? {height: POPUP_FOOTER_HEIGHT, boxSizing: 'border-box'} : {}),
+                pl: '28px',
+                pr: '28px',
+                pt: '8px',
+                pb: '16px',
+                boxSizing: 'border-box',
+                ...(popup.popupType === 'IMAGE' ? {height: POPUP_FOOTER_HEIGHT} : {minHeight: POPUP_FOOTER_HEIGHT}),
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 1,
@@ -851,7 +861,8 @@ export default function PopupPreview({
                   <Button
                     variant="contained"
                     color="inherit"
-                    sx={{ minWidth: 92 }}
+                    // WPF ActionButtonStyle MinWidth 118 · Height 44
+                    sx={{ minWidth: 118, height: 44 }}
                     disabled={footerButtonDisabled}
                     onClick={handleFooter}
                   >

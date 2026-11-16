@@ -55,10 +55,14 @@ export interface NaturalVideoSize {
  */
 export function aspectVideoHeight(width: number, natural: NaturalVideoSize | null, availableHeight: number): number {
   const ratio = natural ? natural.width / natural.height : DEFAULT_ASPECT_RATIO;
-  let height = Math.max(0, width) / ratio;
+  // WPF AspectSizing: (폭 − 테두리 2) × 세로/가로 + 테두리 2(TODO61-17, 1px 테두리 포함)
+  let height = Math.max(0, width - VIDEO_BORDER * 2) / ratio + VIDEO_BORDER * 2;
   if (availableHeight > 0) height = Math.min(height, Math.max(MIN_VIDEO_HEIGHT, availableHeight * MAX_HEIGHT_RATIO));
   return Math.max(MIN_VIDEO_HEIGHT, Math.round(height * 100) / 100);
 }
+
+/** WPF VideoPopupView 영상 테두리 두께(px). */
+const VIDEO_BORDER = 1;
 
 function validSize(width: number, height: number): NaturalVideoSize | null {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0 ? { width, height } : null;
@@ -98,7 +102,7 @@ export default function AspectVideoArea({ url }: { url: string }) {
     const scroller = scrollParent(area);
     const measure = () =>
       setBox((current) => {
-        const next = { width: area.clientWidth, available: scroller?.clientHeight ?? 0 };
+        const next = { width: area.getBoundingClientRect().width, available: scroller?.clientHeight ?? 0 };
         return Math.abs(next.width - current.width) < 0.5 && Math.abs(next.available - current.available) < 0.5 ? current : next;
       });
     measure();
@@ -119,7 +123,8 @@ export default function AspectVideoArea({ url }: { url: string }) {
       ref={areaRef}
       data-testid="aspect-video-area"
       data-natural={natural ? `${natural.width}x${natural.height}` : ''}
-      sx={{ position: 'relative', width: '100%', height, borderRadius: 1, overflow: 'hidden', bgcolor: '#101521', color: 'white', flexShrink: 0 }}
+      sx={{ position: 'relative', width: '100%', height, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
+        overflow: 'hidden', bgcolor: '#000', color: 'white', flexShrink: 0 }}
     >
       {url && !failed && (
         <video

@@ -97,6 +97,26 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('VIDEO', {}, {popupPosition: 'BOTTOM_RIGHT'}); await openPreview(); rect = await paper();
   check(rect.right === 1000 && rect.bottom === 900, 'VIDEO window has no edge margin at BOTTOM_RIGHT: ' + JSON.stringify(rect));
   await escape();
+  // 61-17: VIDEO 실제 크기 미리보기를 WPF와 같은 배치로 — 영상이 남은 높이를 채우고, 설명은 영상 아래, 공통 헤더 17/600·푸터 80·본문 여백 28/24.
+  await render('VIDEO', {height: 760}, {description: '영상 설명'}); await openPreview();
+  const v = JSON.parse(await run(`JSON.stringify((()=>{const p=document.querySelector('.MuiDialog-paper');
+    const cap=Array.from(p.querySelectorAll('span,p')).find(e=>e.textContent==='영상 재생 영역'); const box=cap.parentElement.parentElement;
+    const b=box.getBoundingClientRect(), bs=getComputedStyle(box);
+    const desc=Array.from(p.querySelectorAll('p')).find(e=>e.textContent==='영상 설명'); const ds=getComputedStyle(desc);
+    const btn=Array.from(p.querySelectorAll('button')).find(e=>e.textContent==='확인'); const f=btn.parentElement.parentElement.getBoundingClientRect();
+    const title=Array.from(p.querySelectorAll('h5')).find(e=>e.textContent==='영상'); const ts=getComputedStyle(title), body=getComputedStyle(title.parentElement);
+    const head=getComputedStyle(Array.from(p.querySelectorAll('p')).find(e=>e.textContent==='미리보기 컴포넌트'));
+    return {boxH:b.height, boxBottom:b.bottom, descTop:desc.getBoundingClientRect().top, descSize:ds.fontSize, descColor:ds.color, footerTop:f.top, footerH:f.height,
+      btnH:btn.getBoundingClientRect().height, btnW:btn.getBoundingClientRect().width, border:bs.borderTopWidth+' '+bs.borderTopColor, radius:bs.borderTopLeftRadius, bg:bs.backgroundColor,
+      titleSize:ts.fontSize, titleWeight:ts.fontWeight, headSize:head.fontSize, headWeight:head.fontWeight, pad:body.paddingLeft+' '+body.paddingTop, caption:p.textContent.includes('완료 기준'),
+      divider:!!p.querySelector('hr')};})())`));
+  check(v.boxH > 400 && v.descTop > v.boxBottom && v.descTop < v.footerTop, '[61-17] VIDEO area fills the remaining height and the description sits below it: ' + JSON.stringify(v));
+  check(v.border === '1px rgb(209, 213, 219)' && v.radius === '8px' && v.bg === 'rgb(0, 0, 0)' && v.descSize === '14px' && v.descColor === 'rgb(75, 85, 99)' && !v.caption,
+    '[61-17] VIDEO area/description styles match WPF and the preview-only caption is gone: ' + JSON.stringify(v));
+  check(v.titleSize === '22px' && v.titleWeight === '600' && v.headSize === '17px' && v.headWeight === '600' && v.pad === '28px 24px',
+    '[61-17] content title 22/600, header 17/600, body padding 28/24: ' + JSON.stringify(v));
+  check(Math.abs(v.footerH - 80) < 0.6 && Math.abs(v.btnH - 44) < 0.6 && v.btnW >= 118 && !v.divider, '[61-17] footer is 80 high with a 44px button and no divider: ' + JSON.stringify(v));
+  await escape();
   // 4) Overlay 꺼짐: 투명 배경, 배경 클릭으로 닫힘.
   await render('TEXT', {}, {useBackgroundOverlay: false}); await openPreview();
   check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0)', 'Overlay off keeps the backdrop transparent');

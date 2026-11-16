@@ -151,9 +151,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     && picked.title === 'IS063 헤더' && picked.width === 640 && picked.content.plainText.includes('IS063 본문') && !('displayStartAt' in picked) && !('imageUrl' in picked.content),
     '[IS063] pickPopupFields button shows the call code and only entered fields: ' + JSON.stringify(picked).slice(0, 200));
   await clickButton('닫기');
-  // 미설정 완료 비율: 동영상+퀴즈 미리보기는 0.8(80%)로 표시하고 저장 값에는 넣지 않는다.
+  // 미설정 완료 비율: 저장 값에는 넣지 않는다. 미리보기의 '완료 기준·기본 음량' 안내는 WPF에 없어 TODO61-17에서 지웠다.
   await pickType('동영상 + 퀴즈 팝업'); await clickButton('폼 생성');
-  check(await run(`${right}.textContent.includes('완료 기준 80%')`), '[IS063] Unset VIDEO+QUIZ completion ratio previews as 80%');
+  check(await run(`!${right}.textContent.includes('완료 기준') && !!${right}.querySelector('[data-testid=aspect-video-area]')`),
+    '[IS063] VIDEO+QUIZ preview shows the video area without the preview-only completion caption (TODO61-17)');
   // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
   await pickType('퀴즈 팝업'); await clickButton('폼 생성');
   check(await run(`${mid}.textContent.includes('문항 추가') && document.querySelector('input[aria-label="헤더 제목"]').value==='IS063 헤더'`),

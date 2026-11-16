@@ -142,7 +142,7 @@
 
 ## 추가 TODO — VIDEO 및 전체 유형 미리보기 레이아웃 회귀 검증 (2026-11-16)
 
-- [ ] **61-17 실제 크기 미리보기 Dialog와 WPF 팝업 대조.** 관리자 화면에서 VIDEO 미리보기의 레이아웃이 실제 팝업과 다르다는 피드백이 있었다. 차이가 발생한 영역, 화면 크기·배율 및 원인은 재현 후 기록한다.
+- [x] (코드 대조·수정 완료, 캡처 비교 대기) **61-17 실제 크기 미리보기 Dialog와 WPF 팝업 대조.** 관리자 화면에서 VIDEO 미리보기의 레이아웃이 실제 팝업과 다르다는 피드백이 있었다. 차이가 발생한 영역, 화면 크기·배율 및 원인은 재현 후 기록한다.
 
 ### 구현 시 확인할 사항
 
@@ -155,3 +155,16 @@
 ### 구현 전에 결정할 사항
 
 현재 미결 정책은 없다. 비교 결과 기존 사양에서 허용 여부를 정하지 않은 레이아웃 차이가 확인되면 해당 차이만 별도로 판단한다.
+
+### 61-17 결과 (2026-11-16)
+
+- 방법: 웹 `PopupPreview.tsx`·`PopupPreviewDialog.tsx`·`popupPreviewDialogLayout.ts`·`AspectVideoArea.tsx`와 WPF `PopupWindow.xaml(.cs)`·`PopupStyles.xaml`·`VideoPopupView.xaml`·`VideoQuizPopupView.cs`·`AspectSizing.cs`를 코드로 대조했다. 화면 캡처 비교는 아직 하지 않았다.
+- 가장 유력한 피드백 원인: 단독 VIDEO 영상 영역이 남은 높이를 채우지 못하고 `minHeight: 170`에 머물렀다(상위 래퍼에 높이가 IMAGE만 있어 `height: 100%`가 auto로 계산). WPF는 `VideoRow Height="*"`로 창을 채운다. 760 높이 창에서 WPF 약 370 대 웹 170.
+- 결정: 미기록 차이 전체를 수정하기로 했다(공통 Header·Footer 포함).
+- 수정
+  - VIDEO: 본문을 세로 flex로 두고 영상 영역이 남은 높이를 채움. 순서를 제목 → 영상 → 컨트롤 모형 → 설명으로 변경(설명은 영상 아래 14px `#4B5563`). 웹 전용 "완료 기준·기본 음량" 안내 삭제. 영상 영역 검정 배경·1px `#D1D5DB` 테두리·모서리 8. 콘텐츠 제목 22/600·아래 여백 15.
+  - 동영상+퀴즈: 같은 순서·영상 영역 스타일. 높이 식을 WPF `AspectSizing`과 같이 테두리 포함 `(폭 − 2) × 세로/가로 + 2`로 바꾸고 폭은 테두리를 포함한 바깥 폭으로 측정.
+  - 공통: Header 제목 기본 17/600, 본문 여백 28/24, Footer 높이 80(IMAGE 외 최소 높이)·여백 28/8/28/16·구분선 제거·확인 버튼 118×44.
+- 허용 차이로 남긴 것: 컨트롤바 텍스트 모형, 실제 재생 안 함, 동영상+퀴즈 제목 생략 방식, 글꼴·DPI(PARITY 문서 기존 항목). 영향 낮은 미기록 차이(모달 상한 0.96, RATIO 보정, 동영상+퀴즈 상한의 패딩 포함)는 PARITY 문서에 기록하고 미수정.
+- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `TODO61 preview` 126건(61-17 4건 추가: 영상 영역 채움·설명 위치, 영상·설명 스타일·안내 삭제, 제목·헤더·본문 여백, 푸터 80·버튼 44·구분선 없음), `completion UX 43` 76건(동영상+퀴즈 높이 식 기대값을 테두리 포함으로 갱신), `TODO69 sample` 62건(삭제한 완료 기준 안내 대신 영상 영역 표시 확인), `IMAGE preview` 54건, `survey rich text 55` 67건, `guide render` 31건, `guide registry` 296건, `rich text 49` 75건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `question template picker` 7건, `pickPopupFields` 34건 통과.
+- 미실행: 관리자 웹 실화면과 WPF 캡처 나란히 비교(유형별), TEXT·IMAGE·SURVEY·QUIZ 공통 헤더·푸터 변경의 실화면 확인.
