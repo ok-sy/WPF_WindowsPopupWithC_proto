@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-16-09 — 20261116 폐쇄망 반입본 생성(웹·WPF·문서, 서버·DB 제외)
+
+- 이유: 반입 준비. 20261112(9113308) 이후 변경 — TODO74 BaseUrl `/p` 이동, TODO75 개발·운영 빌드 설정 분리, TODO51-11·51-12 API Demo, TODO76 VM 복귀 재배치·로그 플래그, TODO73 OX 축소, TODO43·61-17 관리자 미리보기, 관리자 웹 정적 Export 고정, PopupAlert 외곽선, Demo 미디어 외부 URL — 을 폐쇄망에 전달.
+- 변경:
+  - 변경 요약 `.offline-cache/notes-20261116.md`: 맨 앞에 필수 항목 2개(appsettings `BaseUrl` 끝 `/p` 제거 + `Auth.LoginPath=/p/api/auth/sso/login` 동시 변경, 운영 빌드는 EXE 옆 appsettings를 읽지 않으므로 폐쇄망 값을 빌드 전 소스 appsettings에 넣기), Demo 미디어 `VideoUrl`(localhost) 교체 안내, 웹 `next.config.mjs` `output` 줄만 병합 안내 등.
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261116`: 직전 20261112 번들(RULES 2)에서 연속(main df4d1f0 → fe67ea8, 14개 추가, 커밋 277), 민감값·제외 경로·트리 차이 점검 0.
+  - 옵션 `-Date 20261116 -PreviousExport 20261112 -PreviousCommit 9113308 -NotesFile .offline-cache/notes-20261116.md -GitHistoryDir .offline-cache/git-history-20261116 -VerifyBuild`(서버·DB 제외 기본). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 54·M 22·D 3(baseline f66e8ed 누적), WPF 소스 100, 문서 164+CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함). 삭제 목록 신규 0.
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,830,606 Byte). TAR 4개 파일 수 검증, TGZ SHA256 `4860a8142080f96785367545ca5ebe0db133ebfdf2ece9fda55abf2df27f7ed0` 일치(21,146,913 Byte). 추출본에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, `BuildProfile.cs`·`DemoMediaPathService.cs`·CI 이미지 포함, README-IMPORT 기준 커밋 54e6f81·직전 20261112(9113308)·BaseUrl 안내 포함, 삭제 목록 서버·DB 경로 0건. 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료(`offline-export/20261116`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
+
 ## 2026-11-16-08 — dev: Demo 미디어 외부 URL 설정
 
 - 이유: 인메모리 Demo의 IMAGE·VIDEO가 로컬 데모 파일(EXE 옆 Media → 내장 리소스)만 쓰고, 내장 리소스가 없으면 `FileNotFoundException`으로 Demo 샘플 생성이 실패했다. 데모 미디어 파일은 Git 제외 대상이라 반입·새 환경에서 없을 수 있어, 외부 URL로 지정하고 파일이 없어도 빌드·실행되도록 정리.
