@@ -1103,6 +1103,10 @@ internal static class Program
         var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true })!;
         Check(Texts(hidden).SequenceEqual(new[] { join.Notice.Message }) && hidden.Title == "퀴즈를 완료했어요"
             && Texts(shown).SequenceEqual(new[] { "제목", "본문" }), "[Q3] quiz result dialog hides the heading but keeps the window title");
+        // 공통 안내창 외곽선은 1.2 DIP 검은 선, 모서리 22 유지.
+        var frame = (Border)shown.Content;
+        Check(frame.BorderThickness == new Thickness(1.2) && frame.BorderBrush == System.Windows.Media.Brushes.Black && frame.CornerRadius == new CornerRadius(22),
+            $"[Q3] common alert border is 1.2 DIP ({frame.BorderThickness})");
         // 배점이 1점이 아니면 통과 기준을 점수로 안내한다.
         foreach (var question in questions) question.QuestionScore = 10;
         var points = Run(3, 60);

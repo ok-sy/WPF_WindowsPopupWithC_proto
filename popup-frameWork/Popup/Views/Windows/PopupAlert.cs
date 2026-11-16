@@ -47,7 +47,7 @@ public static class PopupAlert
         button.Click += (_, _) => dialog.Close();
         panel.Children.Add(button);
         dialog.Content = new Border { Background = Brushes.White, BorderBrush = Brushes.Black,
-            BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(22), Child = panel };
+            BorderThickness = new Thickness(1.2), CornerRadius = new CornerRadius(22), Child = panel };
         return dialog;
     }
 }
