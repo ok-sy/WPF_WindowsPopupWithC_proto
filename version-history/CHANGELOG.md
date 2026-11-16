@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-16-01 — doc: PopupAlert 외곽선 1.2 DIP 조정 TODO
+
+- 이유: 퀴즈 완료 안내 등 공통 안내 모달의 검은 외곽선이 두껍게 표시되는 문제를 개선하기 위한 변경 범위 정의.
+- 변경: `PopupAlert.CreateDialog()`의 `BorderThickness`를 2→1.2 DIP로 조정하는 TODO 추가. 모든 PopupAlert 안내창에 공통 적용하며 TextBlock 여백·줄바꿈·모서리 반경 등은 유지. 실제 C# 코드는 미변경.
+- 주요 파일: `docs/design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md`.
+- 검증: Git 기준 `PopupAlert.cs`의 기존 `new Thickness(2)` 확인. 빌드·테스트·Windows 실화면 검증 미실행.
+- 상태: TODO 문서만 원격 반영, 구현 대기.
+
+
 ## 2026-11-13-07 — dev: TODO43 관리자 미리보기 시청 비율 슬라이더 삭제
 
 - 이유: 동영상 등록 화면 미리보기 상단의 재생 진행 상태에 따른 버튼 활성화 시연(시청 비율 슬라이더)을 관리자 화면에서 사용하지 않기로 해 제거.
