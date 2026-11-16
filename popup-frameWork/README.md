@@ -265,6 +265,7 @@ Popup/appsettings.json
 | 설정 | 역할 |
 |---|---|
 | `DemoMode` | Java 서버 없이 WPF 화면만 테스트 |
+| `DemoType` | `DemoMode=true`일 때 Demo 종류. `InMemory`(기본, 내장 샘플)·`Api`(API Demo, 실행 인자 없이 설정만으로 진입). `DemoMode=false`에 `Api`·모르는 값이면 설정 오류. 실행 인자가 우선(설계 51-11) |
 | `DemoSsoLoginTest` | `DemoMode`에서 Demo 화면에 SSO 테스트·로그인 테스트 버튼을 따로 표시(기본 false). `Auth.SsoUrl`·`BaseUrl`+`Auth.LoginPath` 사용. API Demo(`-Demo -Api`)에서는 표시하지 않음 |
 | `BaseUrl` | Zero Spring 서버 주소(컨텍스트 경로까지, `/p` 제외). API 경로 `/p/api/...`를 뒤에 붙인다 |
 | `AutoLoadOnStartup` | 프로그램 시작 시 자동 팝업 조회 |
@@ -1027,7 +1028,7 @@ Demo Mode에서는 프로그램 시작 시 Demo 관리 화면이 표시된다(�
 - `로그인 테스트`: 입력칸의 사번·사용자 구분 코드로 `BaseUrl`+`Auth.LoginPath`(`POST /p/api/wpf/auth/login`)를 호출한다. SSO 없이 값을 직접 입력해 단독으로 호출할 수 있다.
 - 결과칸에 호출 주소·값·소요 시간 또는 실패 예외를 표시한다. 발급 토큰은 길이만 표시하고 보관하지 않는다.
 
-### API Demo (`-Demo -Api`, 설계 51)
+### API Demo (`-Demo -Api` 또는 `DemoType=Api`, 설계 51)
 
 개발계/검증계 실제 API를 Demo 화면에서 **수동으로** 호출해 요청·응답과 실제 팝업·결과 전송을 확인한다.
 실제 전달 건·결과 데이터가 서버에 생성되므로 개발계/검증계에서만 쓴다.
@@ -1038,6 +1039,8 @@ popupSample.exe -Demo -Api
 
 - 실행 인자: 단일·이중 하이픈과 대소문자를 구분하지 않는다(`-demo -api`, `--Demo --Api` 동일, 순서 무관).
   `-Demo`(또는 `--demo`) 단독은 기존 인메모리 Demo, `-Api` 단독은 효과 없음(일반 실행). appsettings `DemoMode=true`에 `-Api`만 붙여도 API Demo가 된다.
+- 설정만으로 실행(51-11): appsettings `PopupApi.DemoMode=true` + `PopupApi.DemoType="Api"`이면 인자 없이 API Demo. 실행 인자가 우선한다(`-Demo`만 주면 `DemoType=Api`여도 인메모리).
+  `DemoMode=false` + `DemoType="Api"`, 또는 `InMemory`·`Api` 외의 값은 설정 오류로 시작하지 않는다(오설정 방지). 운영 빌드는 내장 설정만 읽으므로 이 값도 재빌드로 바꾼다(설계 75).
 - 연결 대상 전환: `로컬 서버 사용` 체크박스를 체크하면 `Base URL`·`로그인 경로`를 appsettings `DemoApiTargets.Local` 값으로, 해제하면 `Dev` 값으로 함께 채운다.
   입력칸은 그 뒤에도 직접 고칠 수 있고, 바뀐 연결은 `연결 적용`·`팝업 조회` 때 적용된다(팝업 표시 중에는 바꾸지 않음). 시작할 때는 appsettings `BaseUrl`·`Auth.LoginPath`를 그대로 두고,
   `BaseUrl`이 Local 주소와 같을 때만 체크 상태로 표시한다. `Dev.BaseUrl`이 비어 있으면 해제 시 `Base URL`을 비우고 직접 입력하라고 안내한다.

@@ -81,6 +81,21 @@ internal static class Program
         Check(Parse("--restarted", "-demo", "C:\\path\\api", "api") == new LaunchArguments(true, false, false),
             "[51-1] unknown arguments and non-dash values are ignored");
         Check(Parse("-show-main").ShowMain && Parse("--show-main").ShowMain, "[51-1] show-main accepts single and double dash");
+        // 51-11: 설정(DemoMode·DemoType)만으로 API Demo. 인자가 우선, 설정 충돌·모르는 값은 예외.
+        (bool, bool) Resolve(bool demoMode, string? type, params string[] args) => Parse(args).ResolveDemo(demoMode, type);
+        bool Throws(Action action) { try { action(); return false; } catch (InvalidOperationException) { return true; } }
+        Check(Resolve(true, "Api") == (true, true) && Resolve(true, "api") == (true, true), "[51-11] DemoMode=true + DemoType=Api enters API Demo without arguments");
+        Check(Resolve(true, "InMemory") == (true, false) && Resolve(true, null) == (true, false) && Resolve(true, "  ") == (true, false),
+            "[51-11] DemoType InMemory/blank keeps in-memory demo");
+        Check(Resolve(false, null) == (false, false) && Resolve(false, "InMemory") == (false, false), "[51-11] DemoMode=false stays normal run");
+        Check(Resolve(false, null, "-Demo", "-Api") == (true, true) && Resolve(false, null, "-Demo") == (true, false),
+            "[51-11] legacy -Demo / -Demo -Api unchanged");
+        Check(Resolve(true, "Api", "-Demo") == (true, false), "[51-11] -Demo argument wins over DemoType=Api");
+        Check(Resolve(true, null, "-Api") == (true, true) && Resolve(false, null, "-Api") == (false, false),
+            "[51-11] DemoMode=true + -Api is API Demo, -Api alone is ignored");
+        Check(Throws(() => Resolve(false, "Api")) && Throws(() => Resolve(false, "Api", "-Api")), "[51-11] DemoMode=false + DemoType=Api is a configuration error");
+        Check(!Throws(() => Resolve(false, "Api", "-Demo")), "[51-11] -Demo argument overrides conflicting settings");
+        Check(Throws(() => Resolve(true, "Hybrid")), "[51-11] unknown DemoType is a configuration error");
     }
 
     /// <summary>일반 모드 로그인 본문은 폐쇄망 /p/api/auth/sso/login 요청 DTO와 같은 lgonId 키로 보낸다(C# 속성 이름 LogonId와 무관).</summary>

@@ -831,9 +831,11 @@ flowchart LR
 | 모드 | 실행·설정 | 동작 |
 |---|---|---|
 | 일반 실행 | `PopupApi.DemoMode=false` | 백그라운드 로그인·자동 조회·결과 전송 |
-| 로컬 Demo | `--demo` | 내장 샘플과 메모리 응답으로 시연. 실제 서버·DB 저장 없음 |
-| API Demo | `--demo --api` | 실제 API를 화면에서 수동 호출. 실제 전달 건·결과 생성 |
+| 로컬 Demo | `--demo` 또는 `DemoMode=true`(`DemoType` 생략·`InMemory`) | 내장 샘플과 메모리 응답으로 시연. 실제 서버·DB 저장 없음 |
+| API Demo | `--demo --api` 또는 `DemoMode=true`+`DemoType=Api` | 실제 API를 화면에서 수동 호출. 실제 전달 건·결과 생성 |
 | 진단용 트레이 | `--tray` 또는 관련 설정 | 상태·진단 화면 접근 |
+
+실행 인자가 설정보다 우선합니다(`-Demo`는 `DemoType=Api`여도 로컬 Demo, `DemoMode=true`에 `-Api`만 붙이면 API Demo, `-Api` 단독은 무시). `DemoMode=false`인데 `DemoType=Api`이거나 `DemoType`이 모르는 값이면 설정 오류로 시작하지 않습니다(설계 51-11).
 
 API Demo는 자동 폴링과 `nextStatus`에 따른 연속 조회를 하지 않습니다. 일반 실행의 자동 흐름과 구분합니다. JSON Validator와 3117 옵션 샘플의 표시 기능은 진단 도구이며 실제 결과 API·결과 큐를 호출하지 않습니다.
 
@@ -870,6 +872,7 @@ API Demo는 자동 폴링과 `nextStatus`에 따른 연속 조회를 하지 않�
 | 설정 | 생략 시 코드 기본값 | 설명 |
 |---|---|---|
 | `PopupApi.DemoMode` | `false` | 실제 API 연결 여부. 개발 파일의 현재 값과 구분 |
+| `PopupApi.DemoType` | `InMemory` | `DemoMode=true`일 때 Demo 종류. `InMemory`(내장 샘플)·`Api`(API Demo). `DemoMode=false`에 `Api`면 설정 오류 |
 | `PopupApi.AutoLoadOnStartup` | `true` | 기동 직후 최초 자동 조회 |
 | `PopupApi.PollingIntervalSeconds` | `1800` | 서버 간격을 받기 전 로컬 간격 |
 | `PopupApi.Auth.Mode` | `None` | `None`, `Static`, `SsoPrototype`. 실제 인증 방식에 맞춰 선택 |

@@ -74,7 +74,7 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ## 2026-11-16 후속 TODO — appsettings만으로 API Demo 실행
 
-상태: **요구사항 접수 · 구현 대기**. 기존 51-1~51-8 구현 완료 표시는 유지하며, 아래 항목은 별도 미구현 후속 작업이다.
+상태: **구현·자동 검증 완료(2026-11-16)** · 로컬/폐쇄망 실화면 확인 대기. 기존 51-1~51-8 구현 완료 표시는 유지한다.
 
 ### 현행 코드·계약
 
@@ -84,16 +84,28 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ### 구현 시 확인할 사항
 
-- [ ] **51-11** `PopupApi` 설정만으로 API Demo 모드에 진입할 수 있도록 `LoadPopupClientSettings()`의 `DemoApi` 판정 보완. 기존 `-Demo -Api`와 `DemoMode=true + -Api` 동작 유지.
-- [ ] 일반 API / 인메모리 Demo / API Demo의 세 모드가 상호 배타적으로 선택되는지 확인하고, `-Api` 단독 및 설정 충돌을 회귀 검증한다.
-- [ ] `App.xaml.cs`의 창 선택, `DemoWindow.Api.cs`의 수동 호출·자동 폴링 OFF, `PopupClientSettings` 전달 경로 확인. 관리자 웹·Java 서버·DB·API JSON 계약은 변경하지 않는다.
-- [ ] `popup-frameWork/Popup/appsettings.json`, `popup-frameWork/README.md`, WPF 사양서·관련 테스트(`scripts/ApiDemoTests/Program.cs`)를 함께 갱신하고 Debug/Release 설정 로딩 차이를 검증한다.
+- [x] **51-11** `PopupApi` 설정만으로 API Demo 모드에 진입할 수 있도록 `LoadPopupClientSettings()`의 `DemoApi` 판정 보완. 기존 `-Demo -Api`와 `DemoMode=true + -Api` 동작 유지.
+- [x] 일반 API / 인메모리 Demo / API Demo의 세 모드가 상호 배타적으로 선택되는지 확인하고, `-Api` 단독 및 설정 충돌을 회귀 검증한다.
+- [x] `App.xaml.cs`의 창 선택, `DemoWindow.Api.cs`의 수동 호출·자동 폴링 OFF, `PopupClientSettings` 전달 경로 확인. 관리자 웹·Java 서버·DB·API JSON 계약은 변경하지 않는다.
+- [x] `popup-frameWork/Popup/appsettings.json`, `popup-frameWork/README.md`, WPF 사양서·관련 테스트(`scripts/ApiDemoTests/Program.cs`)를 함께 갱신하고 Debug/Release 설정 로딩 차이를 검증한다.
 - [ ] 코드·단위 테스트와 로컬/폐쇄망 실화면 검증을 구분해 기록한다. 실제 서버 API 호출은 테스트 데이터 생성 가능성을 안내하고 별도 확인한다.
 
 ### 구현 전에 결정할 사항
 
 1. **설정 키 이름·의미**: 기존 `DemoMode`만으로 인메모리 Demo와 API Demo를 구분할 수 없으므로 별도 선택 수단이 필요하다. (A) `PopupApi.DemoApi` 불리언 추가, (B) `PopupApi.DemoType` 등 모드 열거형 도입. **추천 A**: 기존 `DemoMode`와 최소 변경으로 호환 가능. B는 모드 조합을 명확히 표현하지만 설정·파싱·문서 변경 폭이 커진다. 사용자 승인 전 키 이름을 확정하지 않는다.
 2. **설정과 실행 인자의 우선순위**: (A) 기존 `-Demo -Api`를 항상 우선하고 설정은 인자 없는 경우에 사용, (B) 설정값이 실행 인자를 덮어쓰도록 처리. **추천 A**: 기존 실행 방식과 설정 우선순위 규칙을 보존한다. `DemoMode=false`와 신규 API Demo 설정이 충돌하는 경우 자동으로 Demo를 켤지, 설정 오류로 처리할지도 결정해야 한다. 추천은 명시적 설정 오류로 처리하여 오설정을 드러내는 방식이다.
+
+### 결정 (2026-11-16)
+
+1. 설정 키: **B 채택** — `PopupApi.DemoType` 열거형(`InMemory` | `Api`, 생략·빈 값은 `InMemory`). `DemoMode`는 그대로 두고 Demo 종류만 고른다.
+2. 우선순위: **A 채택** — 실행 인자 우선. 충돌(`DemoMode=false` + `DemoType=Api`)과 모르는 `DemoType` 값은 설정 오류(예외)로 시작하지 않는다.
+
+### 구현 결과 (2026-11-16)
+
+- `LaunchArguments.ResolveDemo(configuredDemoMode, configuredDemoType)` 추가. `-Demo -Api` → API Demo, `-Demo` → 인메모리(설정 `Api` 무시), `-Api` 단독 → 설정 `DemoMode=true`면 API Demo·아니면 무시, 인자 없음 → 설정. 인자가 `-Demo`를 주면 설정 충돌 검사를 하지 않는다.
+- `MainWindow.LoadPopupClientSettings()`가 `PopupApi.DemoType`을 읽어 `ResolveDemo` 결과로 `DemoMode`·`DemoApi`를 정한다. `App.xaml.cs` 창 선택·`DemoWindow.Api.cs` 경로는 `PopupClientSettings.DemoApi`를 그대로 쓰므로 변경 없음.
+- `appsettings.json`에 `"DemoType": "InMemory"`와 설명 주석 추가. README·`WPF_AGENT_SPEC.md` §11·`WPF_POPUP_ALL_SPEC.md` 실행 행 갱신. Debug(외부 설정)/Release(내장 설정) 경계는 변경 없음.
+- 검증: `scripts/ApiDemoTests` `[51-11]` 9건 추가(설정만으로 진입·인자 우선·`-Api` 보강·충돌/모르는 값 예외) 포함 `PASS: 143`. Popup Release 빌드 경고·오류 0. 실제 EXE를 설정만으로 띄우는 로컬·폐쇄망 실화면 확인은 미실행.
 
 ### 완료 기준
 

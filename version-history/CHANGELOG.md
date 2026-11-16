@@ -30,13 +30,13 @@
 - 상태: TODO 문서 원격 반영, 구현 대기.
 
 
-## 2026-11-16-02 — doc: TODO51 API Demo 설정 기반 실행 후속 요구사항
+## 2026-11-16-02 — dev: TODO51-11 appsettings만으로 API Demo 실행
 
-- 이유: API Demo가 실행 인자 `-Api`에만 의존해 appsettings 단독으로 실행 모드를 선택할 수 없는 제약 개선 필요.
-- 변경: 기존 TODO51에 51-11 후속 작업 추가. 설정 기반 API Demo 활성화, 기존 인자 방식 하위 호환, Debug/Release 설정 경계, 모드 충돌 처리 및 검증 범위를 정의. 설정 키·우선순위의 미결 선택지와 추천안 기록. C# 구현·실행 설정은 미변경.
-- 주요 파일: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
-- 검증: Git 코드의 `LoadPopupClientSettings()`·`appsettings.json`·`Popup.csproj` 정적 확인. 빌드·테스트·실화면 검증 미실행.
-- 상태: TODO 문서 원격 반영, 구현 대기.
+- 이유: API Demo가 실행 인자 `-Api`에만 의존해 appsettings 단독으로 실행 모드를 선택할 수 없는 제약 개선.
+- 변경: TODO51에 51-11 후속 작업을 정의한 뒤 구현. 결정 사항은 설정 키를 `PopupApi.DemoType` 열거형(`InMemory`|`Api`, 생략 시 `InMemory`)으로 두고, 실행 인자를 우선하며, `DemoMode=false`+`DemoType=Api`·모르는 값은 설정 오류로 처리. `LaunchArguments.ResolveDemo()`를 추가하고 `LoadPopupClientSettings()`가 그 결과로 `DemoMode`·`DemoApi`를 결정. `-Demo -Api`·`-Demo`·`DemoMode=true`+`-Api` 기존 동작 유지, `-Demo`는 `DemoType=Api`보다 우선. `appsettings.json`에 `DemoType` 항목·주석 추가, README·WPF 사양서 2종·TODO51 결정/결과 기록. Debug/Release 설정 로딩 경계(설계 75)는 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/LaunchArguments.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `popup-frameWork/Popup/Models/PopupClientSettings.cs`, `popup-frameWork/Popup/appsettings.json`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
+- 검증: ApiDemoTests `PASS: 133`(51-11 검사 9건 추가: 설정만으로 진입, 인자 우선, `-Api` 보강, 충돌·모르는 값 예외). Popup Release 빌드 경고·오류 0. EXE를 설정만으로 실행하는 로컬·폐쇄망 실화면 확인은 미실행.
+- 상태: 커밋 / 미푸시.
 
 
 ## 2026-11-16-01 — dev: PopupAlert 공통 안내창 외곽선 1.2 DIP 조정

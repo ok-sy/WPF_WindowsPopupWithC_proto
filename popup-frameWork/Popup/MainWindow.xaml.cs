@@ -151,6 +151,7 @@ namespace Popup
          * {
          *   "PopupApi": {
          *     "DemoMode": false,
+         *     "DemoType": "InMemory",
          *     "DemoSsoLoginTest": false,
          *     "BaseUrl": "http://localhost:8080/zero-rule-server",
          *     "AutoLoadOnStartup": true,
@@ -197,8 +198,9 @@ namespace Popup
             // [Demo Mode] appsettings의 DemoMode 외에 실행 인자 -Demo(--demo)로도 켤 수 있다.
             // 배포한 exe를 설정 파일 수정 없이 시연할 때 쓴다: Popup.exe --demo
             // POL-14-02 : Demo 모드 — Demo에 -Api를 더하면 API Demo(수동 호출). 인자 규칙은 LaunchArguments 참고.
+            // 설계 51-11: DemoMode=true + DemoType=Api면 인자 없이도 API Demo. 인자가 설정보다 우선하고, 설정 충돌은 예외.
             LaunchArguments arguments = LaunchArguments.Current;
-            bool demoMode = arguments.Demo || GetBoolean(api, "DemoMode", false);
+            (bool demoMode, bool demoApi) = arguments.ResolveDemo(GetBoolean(api, "DemoMode", false), GetString(api, "DemoType"));
             if (arguments.Api && !demoMode)
             {
                 System.Diagnostics.Debug.WriteLine("[ARGS] -Api는 -Demo와 함께일 때만 의미가 있어 무시합니다(일반 실행).");
@@ -207,7 +209,7 @@ namespace Popup
             PopupClientSettings settings = new()
             {
                 DemoMode = demoMode,
-                DemoApi = demoMode && arguments.Api,
+                DemoApi = demoApi,
                 DemoSsoLoginTest = GetBoolean(api, "DemoSsoLoginTest", false),
                 BaseUrl = GetString(api, "BaseUrl").Trim(),
                 AutoLoadOnStartup = GetBoolean(api, "AutoLoadOnStartup", true),
