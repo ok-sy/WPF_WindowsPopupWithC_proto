@@ -42,6 +42,101 @@ namespace Popup.Managers
         }
 
         /*
+         * POL-02-01 : 창 구조 — 화면 변경·세션 전환 후 기존 팝업·Overlay 복구(설계 76)
+         * 팝업이 표시되는 동안만 SystemEvents.DisplaySettingsChanged(해상도·모니터 변경)와 SessionSwitch(잠금 해제·콘솔/원격 재연결)를 구독한다.
+         * 이벤트가 오면 즉시 1회, 화면이 단계적으로 바뀌는 경우(VM 복귀 등)를 위해 1초 뒤 1회 더
+         *   Overlay를 현재 모니터 영역에 다시 맞추고(Refit) → 팝업 위치를 다시 정하고(RefreshForDisplayChange) → 팝업을 Overlay 위로 올린다.
+         * 각 시점의 모니터·창 좌표는 DisplayDiagnostics 로그(%LOCALAPPDATA%\Popup\logs\display-*.log)에 남겨 실환경 재현에 쓴다.
+         * SystemEvents는 별도 스레드에서 올 수 있어 소유자 창 Dispatcher로 넘긴다. 팝업이 닫히면 구독을 해제한다.
+         */
+        private bool _displayEventsAttached;
+        private System.Windows.Threading.DispatcherTimer? _displaySettleTimer;
+        private string _pendingDisplayReason = string.Empty;
+
+        private void AttachDisplayEvents()
+        {
+            if (_displayEventsAttached) return;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+            Microsoft.Win32.SystemEvents.SessionSwitch += SystemEvents_SessionSwitch;
+            _displayEventsAttached = true;
+        }
+
+        private void DetachDisplayEvents()
+        {
+            if (!_displayEventsAttached) return;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+            Microsoft.Win32.SystemEvents.SessionSwitch -= SystemEvents_SessionSwitch;
+            _displayEventsAttached = false;
+            _displaySettleTimer?.Stop();
+        }
+
+        private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => QueueDisplayChange("DisplaySettingsChanged");
+
+        private void SystemEvents_SessionSwitch(object? sender, Microsoft.Win32.SessionSwitchEventArgs e)
+        {
+            if (e.Reason is Microsoft.Win32.SessionSwitchReason.SessionUnlock or Microsoft.Win32.SessionSwitchReason.ConsoleConnect
+                or Microsoft.Win32.SessionSwitchReason.RemoteConnect or Microsoft.Win32.SessionSwitchReason.SessionLock
+                or Microsoft.Win32.SessionSwitchReason.ConsoleDisconnect or Microsoft.Win32.SessionSwitchReason.RemoteDisconnect)
+                QueueDisplayChange("SessionSwitch:" + e.Reason);
+        }
+
+        private void QueueDisplayChange(string reason)
+        {
+            if (_owner.Dispatcher.HasShutdownStarted) return;
+            _owner.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() => HandleDisplayChange(reason)));
+        }
+
+        /// <summary>화면 변경 처리(즉시 1회 + 1초 뒤 1회). 테스트는 이 메서드를 직접 부른다.</summary>
+        internal void HandleDisplayChange(string reason)
+        {
+            if (!HasOpenPopups && !_backgroundOverlayManager.IsVisible) return;
+            ApplyDisplayChange(reason);
+            _pendingDisplayReason = reason;
+            if (_displaySettleTimer == null)
+            {
+                _displaySettleTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background, _owner.Dispatcher)
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _displaySettleTimer.Tick += (_, _) =>
+                {
+                    _displaySettleTimer!.Stop();
+                    if (HasOpenPopups || _backgroundOverlayManager.IsVisible) ApplyDisplayChange(_pendingDisplayReason + " +1s");
+                };
+            }
+            _displaySettleTimer.Stop();
+            _displaySettleTimer.Start();
+        }
+
+        private void ApplyDisplayChange(string stage)
+        {
+            DisplayDiagnostics.Log(stage + " (보정 전)", DiagnosticWindows());
+            _backgroundOverlayManager.Refit();
+            foreach (PopupWindow window in _openWindows.ToList()) window.RefreshForDisplayChange();
+            RaisePopupsAboveOverlay();
+            DisplayDiagnostics.Log(stage + " (보정 후)", DiagnosticWindows());
+        }
+
+        private IEnumerable<(string Kind, Window Window)> DiagnosticWindows()
+            => _openWindows.Select(window => ("popup", (Window)window))
+                .Concat(_backgroundOverlayManager.Windows.Select((window, index) => ($"overlay#{index}", window)))
+                .ToList();
+
+        /* Overlay를 다시 맞추면(SetWindowPos HWND_TOPMOST) 팝업보다 위로 올라올 수 있다. 활성화 없이 팝업을 최상위 맨 앞으로 되돌린다. */
+        private void RaisePopupsAboveOverlay()
+        {
+            foreach (PopupWindow window in _openWindows)
+            {
+                IntPtr handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                if (window.IsVisible && handle != IntPtr.Zero)
+                    SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010);   // HWND_TOPMOST, SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int width, int height, uint flags);
+
+        /*
          * POL-11-01 : 노출 판단 소유
          * ■ 팝업 표시
          * - in : popupOptions(PopupOptions) 표시할 팝업 1건
@@ -81,6 +176,7 @@ namespace Popup.Managers
                 if (_owner.IsVisible) popupWindow.Owner = _owner;
                 popupWindow.ApplyPosition();
                 popupWindow.Show();
+                AttachDisplayEvents();
             }
             catch
             {
@@ -111,6 +207,7 @@ namespace Popup.Managers
             if (sender is PopupWindow popupWindow)
                 popupWindow.Closed -= PopupWindow_Closed;
             _backgroundOverlayManager.Close();
+            DetachDisplayEvents();
         }
 
         private PopupWindow CreatePopupWindow(PopupOptions popupOptions)

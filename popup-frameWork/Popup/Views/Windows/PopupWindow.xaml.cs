@@ -35,6 +35,9 @@ namespace Popup.Views.Windows
         private readonly PopupOptions _options;
         private Rect _lastImageWorkArea;
 
+        /* 설계 76: 사용자가 Header를 끌어 옮긴 마지막 위치(DIP). 없으면 설정 위치(PopupOptions.Position)를 따른다. */
+        private Point? _userPlacement;
+
         /*
          * ■ PopupWindow 생성자
          * - in : options(PopupOptions) 팝업 제목, 내용, 버튼 표시 여부 등 팝업 생성에 필요한 설정 정보
@@ -805,10 +808,14 @@ namespace Popup.Views.Windows
          * POL-02-03 : 푸터 역할
          * ■ 배율·작업 영역 변경 후 창 복구
          * - in : 없음(현재 모니터 작업 영역, PopupOptions)
-         * - out: 없음 · 크기 상한을 다시 계산하고, 창이 작업 영역을 벗어난 경우에만 설정 위치로 되돌린다.
-         * - 작업 영역 안에 있으면 사용자가 드래그한 위치를 유지한다. IMAGE 크기는 RefreshImageBounds가 맡는다.
+         * - out: 없음 · 크기 상한을 다시 계산하고 위치를 다시 정한다.
+         * - 위치(설계 76): 사용자가 끌어 옮긴 적이 없으면 설정 위치(9개 위치)로 다시 배치한다. 옮긴 적이 있으면 그 위치가
+         *   현재 작업 영역 안에 들어갈 때 그 위치로 되돌리고, 들어가지 않으면 설정 위치로 배치한다(사용자 위치는 기억해 두었다가
+         *   화면이 다시 넓어지면 복원). VM 복귀처럼 해상도가 잠시 줄어 Windows가 창을 좌상단으로 밀어 넣은 뒤 원래 해상도로
+         *   돌아와도, 밀린 위치가 넓어진 영역 안이라 그대로 남던 문제를 막는다. IMAGE 크기는 RefreshImageBounds가 맡는다.
+         * - PopupManager가 화면 변경·세션 전환 이벤트에서도 호출한다.
          */
-        private void RefreshForDisplayChange()
+        internal void RefreshForDisplayChange()
         {
             if (!IsLoaded || !IsVisible) return;
             if (_options.SizeMode == PopupSizeMode.Fullscreen) { ApplyFullscreenBounds(); return; }
@@ -816,9 +823,15 @@ namespace Popup.Views.Windows
             UpdateLayout();
             Rect area = CurrentWorkArea();
             const double Tolerance = 0.5;
-            if (Left < area.Left - Tolerance || Top < area.Top - Tolerance
-                || Left + ActualWidth > area.Right + Tolerance || Top + ActualHeight > area.Bottom + Tolerance)
-                ApplyPosition();
+            if (_userPlacement is Point placed
+                && placed.X >= area.Left - Tolerance && placed.Y >= area.Top - Tolerance
+                && placed.X + ActualWidth <= area.Right + Tolerance && placed.Y + ActualHeight <= area.Bottom + Tolerance)
+            {
+                Left = placed.X;
+                Top = placed.Y;
+                return;
+            }
+            ApplyPosition();
         }
 
         /*
@@ -951,7 +964,10 @@ namespace Popup.Views.Windows
 
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                DragMove();
+                double beforeLeft = Left, beforeTop = Top;
+                DragMove();   // 끌기가 끝날 때 돌아온다
+                // 설계 76: 실제로 옮겼을 때만 사용자 위치로 기억한다(클릭만 한 경우는 설정 위치 유지).
+                if (Math.Abs(Left - beforeLeft) > 0.5 || Math.Abs(Top - beforeTop) > 0.5) _userPlacement = new Point(Left, Top);
             }
         }
 

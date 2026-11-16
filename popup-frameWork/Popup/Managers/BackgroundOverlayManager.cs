@@ -133,6 +133,34 @@ namespace Popup.Managers
             _overlayWindows.Clear();
         }
 
+        /// <summary>표시 중인 Overlay 창(진단 로그용).</summary>
+        internal IReadOnlyList<Window> Windows => _overlayWindows;
+
+        /*
+         * POL-02-01 : 창 구조 — 화면 변경 후 Overlay 다시 맞추기(설계 76)
+         * ■ Overlay 재맞춤
+         * - in : 없음(현재 Forms.Screen.AllScreens)
+         * - out: 없음 · 표시 중이 아니면 아무것도 하지 않는다
+         * - Overlay는 생성 때 모니터 물리 영역에 맞춘 뒤 화면 변경을 따라가지 않았다. VM 복귀처럼 해상도가 잠시 줄었다 돌아오면
+         *   Windows가 줄여 놓은 크기·위치(좌상단)로 남는다. 모니터 수가 같으면 같은 순서의 모니터 영역으로 다시 맞추고,
+         *   수가 바뀌었으면 닫고 현재 모니터 목록으로 다시 만든다. 호출 뒤 팝업을 Overlay 위로 다시 올리는 것은 PopupManager가 한다.
+         */
+        public void Refit()
+        {
+            if (!IsVisible) return;
+            Forms.Screen[] screens = Forms.Screen.AllScreens;
+            if (screens.Length != _overlayWindows.Count)
+            {
+                Close();
+                Show();
+                return;
+            }
+            for (int index = 0; index < screens.Length; index++)
+            {
+                FitToScreen(new WindowInteropHelper(_overlayWindows[index]).Handle, screens[index]);
+            }
+        }
+
         /*
          * Screen.Bounds는 물리 픽셀 좌표이고 WPF Window 좌표는 DPI에 따라 DIP로 변환될 수 있다.
          * Win32 SetWindowPos로 실제 모니터의 물리 픽셀 영역에 정확히 맞추고, 활성화 없이 최상위로 둔다.

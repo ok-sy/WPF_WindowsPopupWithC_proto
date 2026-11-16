@@ -122,13 +122,14 @@ internal static class Program
         CheckSurveyCompletedNotice();
         CheckBackgroundStartupA16();
         CheckOverlayCleanupOnFailure44();
+        CheckDisplayChangeRecovery76();
         CheckOverlayDefault52();
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
         CheckQuizSelectionLimit();
         CheckSameTextOptionIds56();
-        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68)");
+        Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68, 76)");
     }
 
     /* POL-09-02 : 조회 응답 — displayMode는 효과 없는 계약 필드라 WPF가 읽지 않는다. 모르는 값·null이어도 팝업 생성이 실패하지 않는다. */
@@ -635,14 +636,36 @@ internal static class Program
             ShutdownClose(pushed.Window);
         }
 
-        // 화면 안에 있으면 사용자가 옮긴 위치를 유지한다.
+        // 화면 안에 있으면 사용자가 옮긴(끌어 놓은) 위치를 유지한다.
         var moved = OpenPopup("TEXT", dto => { dto.SizeMode = "FIXED"; dto.Width = 500; dto.Height = 400; dto.ShowFooter = true; });
         moved.Window.UpdateLayout();
         moved.Window.Left = area.Left + 7; moved.Window.Top = area.Top + 9;
+        SetUserPlacement(moved.Window, new Point(area.Left + 7, area.Top + 9));
         Refresh(moved.Window);
         Check(Math.Abs(moved.Window.Left - (area.Left + 7)) < 0.6 && Math.Abs(moved.Window.Top - (area.Top + 9)) < 0.6,
             $"[display-change] a window inside the work area keeps its dragged position ({moved.Window.Left}, {moved.Window.Top})");
         ShutdownClose(moved.Window);
+
+        // 설계 76: VM 복귀처럼 해상도가 잠시 줄어 Windows가 좌상단으로 밀어 넣은 창(사용자가 옮기지 않음)은 설정 위치(가운데)로 돌아온다.
+        var shoved = OpenPopup("TEXT", dto => { dto.SizeMode = "FIXED"; dto.Width = 500; dto.Height = 400; dto.ShowFooter = true; });
+        shoved.Window.UpdateLayout();
+        double centerLeft = shoved.Window.Left, centerTop = shoved.Window.Top;
+        shoved.Window.Left = area.Left; shoved.Window.Top = area.Top;
+        Refresh(shoved.Window);
+        Check(Math.Abs(shoved.Window.Left - centerLeft) < 0.6 && Math.Abs(shoved.Window.Top - centerTop) < 0.6 && centerLeft > area.Left + 1,
+            $"[설계 76] a window pushed to the top-left without dragging returns to its configured position ({shoved.Window.Left}, {shoved.Window.Top} → {centerLeft}, {centerTop})");
+        // 끌어 놓은 창이 밀렸으면 끌어 놓은 위치로 되돌린다.
+        SetUserPlacement(shoved.Window, new Point(area.Left + 40, area.Top + 30));
+        shoved.Window.Left = area.Left; shoved.Window.Top = area.Top;
+        Refresh(shoved.Window);
+        Check(Math.Abs(shoved.Window.Left - (area.Left + 40)) < 0.6 && Math.Abs(shoved.Window.Top - (area.Top + 30)) < 0.6,
+            $"[설계 76] a dragged window pushed by the OS returns to the dragged position ({shoved.Window.Left}, {shoved.Window.Top})");
+        // 끌어 놓은 위치가 지금 작업 영역에 들어가지 않으면 설정 위치로 둔다.
+        SetUserPlacement(shoved.Window, new Point(area.Right - 10, area.Bottom - 10));
+        Refresh(shoved.Window);
+        Check(Math.Abs(shoved.Window.Left - centerLeft) < 0.6 && Math.Abs(shoved.Window.Top - centerTop) < 0.6,
+            $"[설계 76] a dragged position that no longer fits falls back to the configured position ({shoved.Window.Left}, {shoved.Window.Top})");
+        ShutdownClose(shoved.Window);
 
         // FULLSCREEN은 화면 전체 크기를 다시 맞춘다.
         var full = OpenPopup("TEXT", dto => { dto.SizeMode = "FULLSCREEN"; dto.ShowFooter = true; });
@@ -2072,6 +2095,94 @@ internal static class Program
         finally
         {
             owner.Close();
+        }
+    }
+
+    private static void SetUserPlacement(PopupWindow window, Point placement) =>
+        typeof(PopupWindow).GetField("_userPlacement", Flags)!.SetValue(window, (Point?)placement);
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativeRect { public int Left, Top, Right, Bottom; }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int width, int height, uint flags);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr hWnd, uint command);
+
+    /*
+     * 설계 76: 화면 변경·세션 전환 뒤 Overlay를 현재 모니터 영역으로 다시 맞추고, 팝업 위치를 다시 정하고, 팝업을 Overlay 위로 올린다.
+     * 실제 VM 해상도 변화는 만들 수 없어 Overlay를 줄여 좌상단에 둔 상태·팝업이 밀린 상태를 만든 뒤 PopupManager.HandleDisplayChange를 직접 부른다.
+     */
+    private static void CheckDisplayChangeRecovery76()
+    {
+        string logDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "popup-display-test-" + Guid.NewGuid().ToString("N"));
+        var logProperty = typeof(Popup.Services.DisplayDiagnostics).GetProperty("LogDirectory", BindingFlags.Static | BindingFlags.NonPublic)!;
+        object? previousLog = logProperty.GetValue(null);
+        logProperty.SetValue(null, logDirectory);
+        var owner = NewOwner();
+        try
+        {
+            var manager = new Popup.Managers.PopupManager(owner);
+            var options = PopupFactory.Create(DemoPopups("TEXT").Single());
+            options.UseBackgroundOverlay = true;
+            options.SizeMode = PopupSizeMode.Fixed;
+            manager.Show(options);
+            var popup = OpenWindows(manager).Single();
+            popup.UpdateLayout();
+            double centerLeft = popup.Left, centerTop = popup.Top;
+            var overlays = (System.Collections.Generic.IReadOnlyList<Window>)typeof(Popup.Managers.BackgroundOverlayManager)
+                .GetProperty("Windows", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Overlay(manager))!;
+            var screens = System.Windows.Forms.Screen.AllScreens;
+            Check(overlays.Count == screens.Length, $"[설계 76] one overlay per monitor ({overlays.Count}/{screens.Length})");
+
+            // 해상도가 잠시 줄었을 때처럼 Overlay를 작게 좌상단으로, 팝업을 좌상단으로 밀어 둔다.
+            IntPtr overlayHandle = new System.Windows.Interop.WindowInteropHelper(overlays[0]).Handle;
+            SetWindowPos(overlayHandle, IntPtr.Zero, screens[0].Bounds.Left, screens[0].Bounds.Top, 200, 150, 0x0010 | 0x0004);
+            popup.Left = SystemParameters.WorkArea.Left; popup.Top = SystemParameters.WorkArea.Top;
+
+            typeof(Popup.Managers.PopupManager).GetMethod("HandleDisplayChange", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(manager, new object[] { "test" });
+            popup.UpdateLayout();
+            GetWindowRect(overlayHandle, out NativeRect rect);
+            var bounds = screens[0].Bounds;
+            Check(rect.Left == bounds.Left && rect.Top == bounds.Top && rect.Right - rect.Left == bounds.Width && rect.Bottom - rect.Top == bounds.Height,
+                $"[설계 76] overlay is refit to the monitor bounds ({rect.Left},{rect.Top} {rect.Right - rect.Left}x{rect.Bottom - rect.Top} vs {bounds})");
+            Check(Math.Abs(popup.Left - centerLeft) < 0.6 && Math.Abs(popup.Top - centerTop) < 0.6,
+                $"[설계 76] the shown popup returns to its configured position ({popup.Left}, {popup.Top})");
+
+            // 팝업이 Overlay보다 z-순서 위(먼저 나오는 창)에 있다.
+            IntPtr popupHandle = new System.Windows.Interop.WindowInteropHelper(popup).Handle;
+            bool popupAbove = false;
+            for (IntPtr walk = GetWindow(overlayHandle, 3 /* GW_HWNDPREV */); walk != IntPtr.Zero; walk = GetWindow(walk, 3))
+                if (walk == popupHandle) { popupAbove = true; break; }
+            Check(popupAbove, "[설계 76] the popup stays above the refit overlay");
+
+            string logText = System.IO.File.ReadAllText(System.IO.Directory.GetFiles(logDirectory, "display-*.log").Single());
+            Check(logText.Contains("test (보정 전)") && logText.Contains("test (보정 후)") && logText.Contains("overlay#0") && logText.Contains("popup ")
+                  && logText.Contains("screen ") && logText.Contains("px="),
+                "[설계 76] display diagnostics log records monitors and popup/overlay rectangles before and after");
+
+            // 1초 뒤 한 번 더 맞춘다(VM 복귀처럼 화면이 단계적으로 바뀌는 경우).
+            popup.Left = SystemParameters.WorkArea.Left; popup.Top = SystemParameters.WorkArea.Top;
+            DateTime until = DateTime.Now.AddSeconds(2.5);
+            while (DateTime.Now < until && !System.IO.File.ReadAllText(System.IO.Directory.GetFiles(logDirectory, "display-*.log").Single()).Contains("test +1s (보정 후)"))
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => System.Threading.Thread.Sleep(20), System.Windows.Threading.DispatcherPriority.Background);
+            Check(Math.Abs(popup.Left - centerLeft) < 0.6 && Math.Abs(popup.Top - centerTop) < 0.6,
+                $"[설계 76] a second pass one second later fixes a window moved after the first pass ({popup.Left}, {popup.Top})");
+
+            ShutdownClose(popup);
+            Check(!Overlay(manager).IsVisible && !(bool)typeof(Popup.Managers.PopupManager).GetField("_displayEventsAttached", Flags)!.GetValue(manager)!,
+                "[설계 76] closing the popup detaches the display events");
+        }
+        finally
+        {
+            owner.Close();
+            logProperty.SetValue(null, previousLog);
+            try { System.IO.Directory.Delete(logDirectory, true); } catch { }
         }
     }
 
