@@ -100,3 +100,35 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 - 인자 없이 appsettings 설정만으로 API Demo에 진입하며 수동 API 호출 화면이 열린다.
 - 기존 인자 방식, 인메모리 Demo, 일반 API, Debug/Release 설정 정책이 회귀 없이 유지된다.
 - 구현·테스트·실화면 결과 확인 전에는 완료 표시하지 않는다.
+
+## 2026-11-16 후속 TODO — API Demo 로그인 입력 모드 / SSO 프로세스 모드
+
+상태: **요구사항 접수 · 구현 대기**. 앞선 51-11(appsettings 기반 API Demo 실행)과 별개로 인증 경로를 추가한다. 기존 구현 완료 항목은 변경하지 않는다.
+
+### 현행 코드
+
+- `popup-frameWork/Popup/DemoWindow.xaml` → `ApiAuthModeCombo`: `LOGIN`(로그인 요청 JSON 직접 입력), `TOKEN`(토큰 직접 입력), `NONE`(인증 헤더 없음) 제공. SSO 프로세스 선택지는 없다.
+- `popup-frameWork/Popup/DemoWindow.Api.cs` → `InitializeApiDemo()`, `ApplyAuthModeVisibility()`, `ApiLoginButton_Click()`, `EnsureApiConnection()`: `Auth.Mode=SsoPrototype`여도 현재는 로그인 본문 직접 입력 모드로 초기화한다. `DemoApiAuthHeaderProvider.ForLogin()`은 SSO 호출 없이 JSON으로 로그인한다.
+- `popup-frameWork/Popup/Services/Auth/SsoAuthHeaderProvider.cs` → `GetAuthorizationHeaderAsync()`, `OnUnauthorizedAsync()`: 일반 API에서 `SsoClient.GetUserAsync()`(SSO GET) → `WpfLoginClient.LoginAsync(user)` → 토큰 보관, 401 재로그인에 기존 사용자 정보 재사용.
+- `popup-frameWork/Popup/appsettings.json` → `PopupApi.Auth.SsoUrl`, `Auth.LoginPath`: SSO 주소와 로그인 API 경로가 이미 분리되어 있다.
+
+### 구현 시 확인할 사항
+
+- [ ] **51-12** API Demo 인증 선택에서 **입력 모드**(기존 로그인 JSON 직접 입력)와 **SSO 프로세스 모드**(`PopupApi.Auth.SsoUrl`로 SSO GET → 사용자 정보 파싱 → 로그인 API → 토큰 저장)를 제공한다. 기존 `LOGIN` 입력 방식은 유지한다.
+- [ ] SSO 프로세스 모드는 기존 `SsoClient` / `SsoAuthHeaderProvider` / `WpfLoginClient`의 공통 인증 규칙을 재사용하고, 일반 API 자동 폴링은 시작하지 않는다. SSO URL·로그인 경로·인증 오류·401 재로그인·426 처리 확인.
+- [ ] `DemoWindow.xaml` 및 `DemoWindow.Api.cs`의 선택 UI·입력 표시·로그인 버튼·상태 표시를 모드별로 분리하고, SSO 모드에서 직접 입력 JSON이 인증에 섞이지 않도록 한다.
+- [ ] API Demo의 요청·응답 로그에서 SSO GET 단계와 로그인 POST 단계를 구별하고 토큰·인증 정보 평문 노출을 방지한다. SSO 호출 실패·XML 필드 누락·SSO 인증 실패·로그인 API 실패를 구분한다.
+- [ ] 모드 전환 시 인증 상태·연결 키·미전송 결과 큐의 사용자/서버 분리 영향을 확인한다. `scripts/ApiDemoTests/Program.cs` 및 기존 일반 API/입력 모드 회귀 테스트 추가.
+- [ ] 관리자 웹·Java 서버·Oracle·WPF API JSON 계약 변경 없이 진행하는 것을 기본으로 하며, 실환경 SSO(Negotiate)와 폐쇄망 실행은 별도 검증한다.
+
+### 구현 전에 결정할 사항
+
+1. **기존 토큰 직접 입력/헤더 없음 옵션의 유지 여부**: (A) 기존 3가지 선택지를 보존하고 SSO 프로세스 모드를 추가, (B) 요청대로 로그인 방식을 입력/SSO 두 가지로 단순화하면서 토큰·헤더 없음 경로를 다른 고급 옵션으로 이동 또는 제거. **추천 A**: 기존 API Demo 검증·테스트의 하위 호환을 보존. UI를 정확히 두 가지로 제한할지는 사용자 승인 필요.
+2. **SSO 주소의 우선순위와 변경 가능 범위**: (A) `PopupApi.Auth.SsoUrl`을 고정 사용, (B) 설정을 초기값으로 하되 API Demo 화면에서 수정 허용. **추천 A**: 설정과 실제 인증 대상의 불일치·임의 인증 서버 접근 위험을 줄임. 개발/운영 빌드의 외부 설정 허용 정책은 유지.
+3. **SSO 재호출 시점**: (A) 최초 1회 SSO GET 후 401에는 캐시 사용자 정보로 로그인 API만 재호출(일반 API와 동일), (B) 매 재로그인 시 SSO GET 재호출. **추천 A**: 기존 인증 정책·구현 재사용. 수동 '로그인' 버튼의 강제 호출 시점과 SSO 재호출 여부는 구현 전에 확인한다.
+
+### 완료 기준
+
+- API Demo에서 입력 모드와 SSO 프로세스 모드로 로그인할 수 있고, SSO 모드는 설정된 SsoUrl을 통해 실제 SSO 조회 후 로그인 API에서 토큰을 받는다.
+- 모드별 토큰·결과 큐 격리와 401·426·실패 로그를 검증하며 기존 수동 API 호출 및 일반 실행은 유지한다.
+- 코드 변경, 테스트, 로컬/폐쇄망 실환경 검증이 확인되기 전에는 구현 완료로 표시하지 않는다.
