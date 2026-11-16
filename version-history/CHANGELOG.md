@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-16-03 — doc: TODO51 API Demo SSO 프로세스 로그인 모드
+
+- 이유: API Demo에서 로그인 JSON 직접 입력뿐 아니라 appsettings의 `PopupApi.Auth.SsoUrl`을 이용한 사내 SSO 인증 절차를 선택할 수 있도록 확장 요구.
+- 변경: 기존 TODO51에 51-12 추가. 입력 모드·SSO 프로세스 모드, SSO GET→로그인 API→토큰, 모드 전환/401/426/로그·검증 범위 기록. 토큰 직접 입력·헤더 없음 옵션 유지 여부 등 미결 선택지와 추천안 기록. 제품 코드는 변경하지 않음.
+- 주요 파일: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
+- 검증: Git `DemoWindow.xaml`·`DemoWindow.Api.cs`·`SsoAuthHeaderProvider.cs` 정적 확인. 빌드·실환경 검증 미실행.
+- 상태: TODO 문서 원격 반영, 구현 대기.
+
+
 ## 2026-11-16-02 — doc: TODO51 API Demo 설정 기반 실행 후속 요구사항
 
 - 이유: API Demo가 실행 인자 `-Api`에만 의존해 appsettings 단독으로 실행 모드를 선택할 수 없는 제약 개선 필요.
