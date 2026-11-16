@@ -7,7 +7,7 @@ namespace Popup.Services
     /// <summary>
     /// POL-14-02 : Demo 모드
     /// ■ Demo 샘플 데이터
-    /// - in : 없음(내장 샘플 JSON · DemoMediaPathService 로컬 미디어 경로)
+    /// - in : 없음(내장 샘플 JSON · DemoMediaPathService 미디어 주소: appsettings DemoMedia URL, 없으면 로컬 파일)
     /// - out: CreatePopups → List&lt;PopupResponseDto&gt; · 예외: InvalidOperationException(샘플 JSON 해석 실패)
     /// - Java API와 DB 없이 화면 시연에 사용할 WPF 전용 샘플 데이터를 만든다.
     ///   서버 응답과 같은 DTO 구조를 사용하므로 실제 PopupFactory와 화면을 그대로 검증한다.
@@ -672,9 +672,9 @@ namespace Popup.Services
             demoPopups.Add(plainSurvey);
 
             /*
-             * JSON에 특정 PC의 절대경로를 하드코딩하지 않고,
-             * 실행 중인 EXE 옆 Media 폴더의 실제 절대경로를 넣는다.
-             * EXE 옆 Media 파일이 없으면 DemoMediaPathService가 내장 리소스를 사용자 캐시에 풀어 그 경로를 쓴다.
+             * JSON에 주소를 하드코딩하지 않고 DemoMediaPathService가 정한 주소를 넣는다.
+             * appsettings PopupApi.DemoMedia.ImageUrl·VideoUrl(외부 URL)이 있으면 그 값을, 비어 있으면
+             * EXE 옆 Media 파일 → 내장 리소스(사용자 캐시 추출) 순으로 로컬 경로를 쓴다. 모두 없으면 화면이 미디어 오류를 표시한다.
              */
             foreach (JsonNode? popupNode
                      in demoPopups)
@@ -700,7 +700,7 @@ namespace Popup.Services
                         StringComparison.OrdinalIgnoreCase))
                 {
                     contentObject["imageUrl"] =
-                        DemoMediaPathService.GetImagePath().Replace('\\', '/');
+                        DemoMediaPathService.GetImageSource().Replace('\\', '/');
                 }
                 else if (popupType.Equals(
                              "VIDEO",
@@ -708,7 +708,7 @@ namespace Popup.Services
                          || contentObject["videoEnabled"]?.GetValue<bool>() == true)
                 {
                     contentObject["videoUrl"] =
-                        DemoMediaPathService.GetVideoPath().Replace('\\', '/');
+                        DemoMediaPathService.GetVideoSource().Replace('\\', '/');
                 }
             }
 

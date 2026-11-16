@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-16-08 — dev: Demo 미디어 외부 URL 설정
+
+- 이유: 인메모리 Demo의 IMAGE·VIDEO가 로컬 데모 파일(EXE 옆 Media → 내장 리소스)만 쓰고, 내장 리소스가 없으면 `FileNotFoundException`으로 Demo 샘플 생성이 실패했다. 데모 미디어 파일은 Git 제외 대상이라 반입·새 환경에서 없을 수 있어, 외부 URL로 지정하고 파일이 없어도 빌드·실행되도록 정리.
+- 변경: appsettings `PopupApi.DemoMedia.ImageUrl`·`VideoUrl` 추가(코드 기본값은 빈 값, 개발 파일은 `VideoUrl`에 로컬 서버 영상 경로 `http://localhost:8080/zero-rule-server/p/api/popups/video/demo-video.mp4`, `ImageUrl`은 빈 값 — 서버 영상 경로가 이미지를 제공하지 않음). `DemoMediaPathService`는 `GetImageSource`·`GetVideoSource`로 바꾸고 순서를 설정 URL → EXE 옆 Media → 내장 리소스 추출 → (모두 없으면) EXE 옆 Media 경로 반환으로 정해 예외를 던지지 않는다(IMAGE·VIDEO 화면이 "불러올 수 없음" 오류 표시). `MainWindow`가 설정 로딩 후 URL을 서비스에 넣고, 인메모리 Demo 샘플(`DemoPopupDataService`)과 JSON 검증기 미리보기 토큰 치환(`DemoJsonSamples3117`)이 같은 주소를 쓴다. `Popup.csproj` 데모 미디어 EmbeddedResource에 `Exists('Media')` 조건 추가. 일반 실행·API Demo(서버 응답 URL)는 변경 없음. README·`OFFLINE_WPF_BUILD.md`·WPF 사양서 2종 갱신.
+- 주요 파일: `popup-frameWork/Popup/Services/DemoMediaPathService.cs`, `popup-frameWork/Popup/Models/PopupClientSettings.cs`, `popup-frameWork/Popup/MainWindow.xaml.cs`, `popup-frameWork/Popup/Services/DemoPopupDataService.cs`, `popup-frameWork/Popup/DemoJsonSamples3117.cs`, `popup-frameWork/Popup/Popup.csproj`, `popup-frameWork/Popup/appsettings.json`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `OFFLINE_WPF_BUILD.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`.
+- 검증: Debug 빌드 오류 0. ApiDemoTests `PASS: 150`(신규 5건: DemoMedia 설정 읽기·기본 빈 값, 설정 URL이 모든 Demo IMAGE·VIDEO·동영상+퀴즈에 적용(앞뒤 공백 제거), 빈 URL이면 예외 없이 로컬 경로), PopupWindowTests `PASS: 560`, Popup.BehaviorTests `PASS: 1740`, Popup.RecoveryTests `PASS: 255`. `Popup/Media`의 데모 파일을 임시로 뺀 상태에서 Release 빌드 경고·오류 0, ApiDemoTests 150 통과, Media 폴더 자체를 뺀 Debug 빌드 오류 0(확인 후 원복). 데모 영상이 없으면 PopupWindowTests의 설계 43 VIDEO 시청 기준 검사는 영상 재생 실패 상태(닫기 허용)로 중단 — 재생 가능한 로컬 영상이 전제인 검사. 로컬 서버 미기동으로 외부 URL 실제 재생·실화면 확인은 미실행.
+- 상태: 커밋 / 원격 반영.
+
+
 ## 2026-11-16-07 — dev: TODO76 WPF 로그 기록 플래그 추가
 
 - 이유: 오류 로그·화면 변경 진단 로그를 항상 기록하던 구조라 환경별로 기록 여부를 정할 수 있는 설정 필요.

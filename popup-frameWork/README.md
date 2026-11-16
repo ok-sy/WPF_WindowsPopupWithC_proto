@@ -251,6 +251,10 @@ Popup/appsettings.json
     "DemoApiTargets": {
       "Local": { "BaseUrl": "http://localhost:8080/zero-rule-server", "LoginPath": "/p/api/wpf/auth/login" },
       "Dev": { "BaseUrl": "", "LoginPath": "/p/api/auth/sso/login" }
+    },
+    "DemoMedia": {
+      "ImageUrl": "",
+      "VideoUrl": "http://localhost:8080/zero-rule-server/p/api/popups/video/demo-video.mp4"
     }
   },
   "Startup": {
@@ -276,6 +280,7 @@ Popup/appsettings.json
 | `Auth.LoginPath` | 로그인 API. 로컬 프로토타입 `/p/api/wpf/auth/login`, 폐쇄망 `/p/api/auth/sso/login` |
 | `Auth.PeriodicLoginMinutes` | 정기 로그인 API 호출 주기 |
 | `DemoApiTargets.Local`·`Dev` | API Demo(`-Demo -Api`)의 `로컬 서버 사용` 체크박스가 채울 `BaseUrl`·`LoginPath`(체크 = Local, 해제 = Dev). 선택 항목이며 없으면 Local은 위 값, Dev는 주소 빈 값·`/p/api/auth/sso/login`. 일반 실행·인메모리 Demo에서는 쓰지 않음 |
+| `DemoMedia.ImageUrl`·`VideoUrl` | 인메모리 Demo 샘플·JSON 검증기 미리보기의 IMAGE·VIDEO(동영상+퀴즈 포함)가 쓸 외부 미디어 URL. 값이 있으면 그대로 쓰고, 빈 값·생략이면 로컬 데모 미디어(EXE 옆 `Media` → 내장 리소스)를 쓴다. 둘 다 없으면 팝업은 뜨고 미디어 영역에 오류를 표시. 기본은 빈 값(개발 파일은 `VideoUrl`에 로컬 서버 영상 경로 `/p/api/popups/video/demo-video.mp4`). 일반 실행·API Demo에서는 쓰지 않음 |
 | `Startup.TrayEnabled` | 트레이 아이콘 표시(기본 false). `--tray`·`WPF_POPUP_TRAY_ENABLED`가 우선. Demo 모드는 항상 표시 |
 | `Startup.AutostartEnabled` | 로그인 자동 시작(기본 true, 최초 실행 1회 등록·사용자 해제 존중, false면 이 앱 값 삭제). `WPF_POPUP_AUTOSTART_ENABLED`가 우선 |
 | `Logging.CrashLogEnabled` | 오류 로그 `%LOCALAPPDATA%\Popup\logs\crash-yyyyMMdd.log` 기록(기본 true). false여도 예외 처리·자동 재시작·`restart-history.txt`는 그대로. 설정을 읽기 전 시작 직후 예외는 기록될 수 있음 |
@@ -1074,6 +1079,16 @@ popupSample.exe -Demo -Api
 - 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움).
 
 ### 폐쇄망 Demo 미디어
+
+인메모리 Demo 샘플의 IMAGE·VIDEO 주소는 다음 순서로 정한다(`Services/DemoMediaPathService.cs`).
+
+1. appsettings `PopupApi.DemoMedia.ImageUrl`·`VideoUrl`에 값이 있으면 그 외부 URL을 그대로 쓴다.
+2. 빈 값이면 EXE 옆 `Media/demo-image.jpg`·`Media/demo-video.mp4`.
+3. 없으면 빌드에 내장된 미디어를 사용자 캐시에 풀어 쓴다.
+4. 그것도 없으면 예외 없이 EXE 옆 `Media` 경로를 넘기고, 팝업은 미디어 영역에 "불러올 수 없음" 오류를 표시한다.
+
+데모 미디어 파일은 선택이다. `Popup/Media` 폴더나 파일이 없어도 빌드 오류가 나지 않는다(`Popup.csproj`의 EmbeddedResource가 포함할 파일이 없을 뿐).
+단, `scripts/PopupWindowTests`의 VIDEO 시청 기준 검사(설계 43)는 재생 가능한 로컬 데모 영상이 있어야 통과한다.
 
 다음 파일명으로 미디어를 추가하면 빌드 시 내장 리소스로 포함된다.
 

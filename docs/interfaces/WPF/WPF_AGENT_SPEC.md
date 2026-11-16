@@ -877,6 +877,7 @@ API Demo는 자동 폴링과 `nextStatus`에 따른 연속 조회를 하지 않�
 |---|---|---|
 | `PopupApi.DemoMode` | `false` | 실제 API 연결 여부. 개발 파일의 현재 값과 구분 |
 | `PopupApi.DemoType` | `InMemory` | `DemoMode=true`일 때 Demo 종류. `InMemory`(내장 샘플)·`Api`(API Demo). `DemoMode=false`에 `Api`면 설정 오류 |
+| `PopupApi.DemoMedia.ImageUrl`·`VideoUrl` | 빈 값 | 인메모리 Demo 샘플·JSON 검증기 미리보기의 IMAGE·VIDEO 외부 URL. 빈 값이면 로컬 데모 미디어(EXE 옆 `Media` → 내장), 둘 다 없으면 미디어 오류 표시(예외 없음). 일반 실행·API Demo는 서버 응답 URL 사용 |
 | `PopupApi.AutoLoadOnStartup` | `true` | 기동 직후 최초 자동 조회 |
 | `PopupApi.PollingIntervalSeconds` | `1800` | 서버 간격을 받기 전 로컬 간격 |
 | `PopupApi.Auth.Mode` | `None` | `None`, `Static`, `SsoPrototype`. 실제 인증 방식에 맞춰 선택 |

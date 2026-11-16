@@ -324,7 +324,7 @@ namespace Popup
         /*
          * ■ 미리보기 DTO — in : 검증기 정규화 JSON(popup 본체) · out: PopupResponseDto
          * - deliveryId·popupId가 비면 미리보기용 값을 넣는다(3117 저장 JSON에는 deliveryId가 없다).
-         * - LOCAL_DEMO_IMAGE / LOCAL_DEMO_VIDEO 토큰을 Demo 미디어 경로로 바꾼다. 실제 URL은 그대로 둔다.
+         * - LOCAL_DEMO_IMAGE / LOCAL_DEMO_VIDEO 토큰을 Demo 미디어 주소(설정 URL, 없으면 로컬 경로)로 바꾼다. 실제 URL은 그대로 둔다.
          */
         internal static PopupResponseDto ToPreviewDto(string normalizedJson)
         {
@@ -333,8 +333,8 @@ namespace Popup
             if (string.IsNullOrWhiteSpace(p["deliveryId"]?.GetValue<string>())) p["deliveryId"] = "PREVIEW-" + Guid.NewGuid();
             if (p["content"] is JsonObject content)
             {
-                if (content["imageUrl"]?.GetValue<string>() == ImageToken) content["imageUrl"] = DemoMediaPathService.GetImagePath().Replace('\\', '/');
-                if (content["videoUrl"]?.GetValue<string>() == VideoToken) content["videoUrl"] = DemoMediaPathService.GetVideoPath().Replace('\\', '/');
+                if (content["imageUrl"]?.GetValue<string>() == ImageToken) content["imageUrl"] = DemoMediaPathService.GetImageSource().Replace('\\', '/');
+                if (content["videoUrl"]?.GetValue<string>() == VideoToken) content["videoUrl"] = DemoMediaPathService.GetVideoSource().Replace('\\', '/');
             }
             return JsonSerializer.Deserialize<PopupResponseDto>(p.ToJsonString(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                    ?? throw new InvalidOperationException("미리보기 DTO 변환에 실패했습니다.");

@@ -92,6 +92,9 @@ namespace Popup
             // 로그 파일 기록 여부(appsettings Logging). 설정을 읽기 전 예외는 기본값(true)대로 기록된다.
             CrashGuard.FileLogEnabled = settings.CrashLogEnabled;
             DisplayDiagnostics.Enabled = settings.DisplayDiagnosticsEnabled;
+            // Demo 샘플 IMAGE·VIDEO 주소(appsettings PopupApi.DemoMedia). 비어 있으면 로컬 데모 미디어를 쓴다.
+            DemoMediaPathService.ImageUrl = settings.DemoImageUrl;
+            DemoMediaPathService.VideoUrl = settings.DemoVideoUrl;
             _demoMode = settings.DemoMode;
             DemoAuthTestSettings = settings.DemoMode && !settings.DemoApi && settings.DemoSsoLoginTest ? settings : null;
             ApiDemoSettings = settings.DemoApi ? settings : null;
@@ -251,6 +254,13 @@ namespace Popup
                     settings.DemoDevBaseUrl = GetString(dev, "BaseUrl", settings.DemoDevBaseUrl).Trim();
                     settings.DemoDevLoginPath = GetString(dev, "LoginPath", settings.DemoDevLoginPath).Trim();
                 }
+            }
+
+            // POL-14-02 : Demo 모드 — 인메모리 Demo 샘플 IMAGE·VIDEO 외부 URL(선택 항목, 없거나 빈 값이면 로컬 데모 미디어).
+            if (api.TryGetProperty("DemoMedia", out JsonElement demoMedia) && demoMedia.ValueKind == JsonValueKind.Object)
+            {
+                settings.DemoImageUrl = GetString(demoMedia, "ImageUrl").Trim();
+                settings.DemoVideoUrl = GetString(demoMedia, "VideoUrl").Trim();
             }
 
             if (document.RootElement.TryGetProperty("Startup", out JsonElement startup) && startup.ValueKind == JsonValueKind.Object)

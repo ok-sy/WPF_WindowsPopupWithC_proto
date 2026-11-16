@@ -94,6 +94,18 @@ namespace Popup.Models
         public string DemoDevLoginPath { get; set; } =
             "/p/api/auth/sso/login";
 
+        /*
+         * POL-14-02 : Demo 모드
+         * [Demo 미디어] appsettings PopupApi.DemoMedia.ImageUrl·VideoUrl. 인메모리 Demo 샘플·JSON 검증기 미리보기의
+         * IMAGE·VIDEO(동영상+퀴즈 포함)가 이 외부 URL을 쓴다. 비어 있으면 로컬 데모 미디어(EXE 옆 Media → 내장 리소스)를 쓴다.
+         * 일반 실행·API Demo(서버 응답 URL 사용)에서는 쓰지 않는다. 기본값은 빈 값.
+         */
+        public string DemoImageUrl { get; set; } =
+            string.Empty;
+
+        public string DemoVideoUrl { get; set; } =
+            string.Empty;
+
         /// <summary>
         /// 개발 전용. 서버 custom.wpf-popup.dev-user-header=true일 때만 의미가 있는 사번.
         /// 환경변수 POPUP_DEV_USER_ID가 있으면 그 값이 우선한다. 비어 있으면 헤더를 보내지 않는다.

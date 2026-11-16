@@ -62,6 +62,7 @@ internal static class Program
         CheckInMemoryDemoLayout();
         CheckDemoOptions54();
         CheckApiTargetSwitch();
+        CheckDemoMediaUrl();
         using MockServer server = new();
         CheckApiDemoFlow(server);
         CheckDemoLoginFlow(server);
@@ -158,6 +159,49 @@ internal static class Program
     }
 
     /* POL-14-02 : Demo 모드 — API Demo "로컬 서버 사용" 체크박스: 체크 = DemoApiTargets.Local, 해제 = Dev 값으로 입력칸을 채운다. */
+    /* POL-14-02 : Demo 모드 — Demo 샘플 IMAGE·VIDEO 미디어 주소: appsettings DemoMedia URL 우선, 빈 값이면 로컬, 로컬도 없으면 예외 없이 경로 반환. */
+    private static void CheckDemoMediaUrl()
+    {
+        MethodInfo load = typeof(MainWindow).GetMethod("LoadPopupClientSettings", Flags)!;
+        PopupClientSettings loaded = (PopupClientSettings)load.Invoke(null, null)!;
+        Check(loaded.DemoImageUrl == string.Empty
+              && loaded.DemoVideoUrl == "http://localhost:8080/zero-rule-server/p/api/popups/video/demo-video.mp4",
+            "[media] appsettings PopupApi.DemoMedia is read (ImageUrl empty, VideoUrl local server video path)");
+        Check(new PopupClientSettings().DemoImageUrl == string.Empty && new PopupClientSettings().DemoVideoUrl == string.Empty,
+            "[media] DemoMedia URLs default to empty");
+
+        string originalImage = DemoMediaPathService.ImageUrl, originalVideo = DemoMediaPathService.VideoUrl;
+        try
+        {
+            const string imageUrl = "https://media.example/demo/image.jpg", videoUrl = "https://media.example/demo/video.mp4";
+            DemoMediaPathService.ImageUrl = "  " + imageUrl + " ";
+            DemoMediaPathService.VideoUrl = videoUrl;
+            List<PopupResponseDto> popups = DemoPopupDataService.CreatePopups();
+            static string Field(PopupResponseDto p, string name)
+                => p.Content.ValueKind == JsonValueKind.Object && p.Content.TryGetProperty(name, out JsonElement v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
+            static bool HasVideo(PopupResponseDto p)
+                => p.PopupType == "VIDEO" || (p.Content.ValueKind == JsonValueKind.Object && p.Content.TryGetProperty("videoEnabled", out JsonElement v) && v.ValueKind == JsonValueKind.True);
+            Check(popups.Where(p => p.PopupType == "IMAGE").All(p => Field(p, "imageUrl") == imageUrl)
+                  && popups.Any(p => p.PopupType == "IMAGE"),
+                "[media] configured ImageUrl (trimmed) is used for every demo IMAGE popup");
+            Check(popups.Where(HasVideo).All(p => Field(p, "videoUrl") == videoUrl)
+                  && popups.Any(p => p.PopupType == "VIDEO"),
+                "[media] configured VideoUrl is used for every demo VIDEO and video+quiz popup");
+
+            DemoMediaPathService.ImageUrl = string.Empty;
+            DemoMediaPathService.VideoUrl = "   ";
+            string image = DemoMediaPathService.GetImageSource(), video = DemoMediaPathService.GetVideoSource();
+            Check(Path.IsPathRooted(image) && image.EndsWith(DemoMediaPathService.ImageFileName)
+                  && Path.IsPathRooted(video) && video.EndsWith(DemoMediaPathService.VideoFileName),
+                "[media] empty URL falls back to a local demo media path without throwing (EXE Media, embedded or missing)");
+        }
+        finally
+        {
+            DemoMediaPathService.ImageUrl = originalImage;
+            DemoMediaPathService.VideoUrl = originalVideo;
+        }
+    }
+
     private static void CheckApiTargetSwitch()
     {
         MethodInfo load = typeof(MainWindow).GetMethod("LoadPopupClientSettings", Flags)!;

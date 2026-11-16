@@ -52,10 +52,12 @@
 
 	<ItemGroup>
 		<!--
-		폐쇄망 데모 미디어를 어셈블리에 포함해 단일 EXE로 전달한다.
-		실행 시 DemoMediaPathService가 사용자 캐시에 추출한다.
+		데모 미디어(선택)를 어셈블리에 포함해 단일 EXE로 전달한다.
+		실행 시 DemoMediaPathService가 사용자 캐시에 추출한다. appsettings PopupApi.DemoMedia URL이 있으면 그 URL이 우선한다.
+		Media 폴더나 파일이 없어도 빌드 오류가 나지 않는다(포함할 리소스 없음 → 실행 시 URL 또는 미디어 오류 화면).
 		-->
-		<EmbeddedResource Include="Media\**\*.*"
+		<EmbeddedResource Condition="Exists('Media')"
+				 Include="Media\**\*.*"
 				 Exclude="Media\.gitkeep">
 			<LogicalName>Popup.DemoMedia.%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>

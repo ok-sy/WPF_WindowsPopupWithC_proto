@@ -84,8 +84,9 @@ popup-frameWork\publish\win-x64-single\popupSample.exe
 
 ```text
 appsettings.json           DemoMode가 true인지 확인
-Media\demo-image.jpg       저장소에 포함(EmbeddedResource로 exe에 내장. EXE 옆 Media 폴더에 같은 이름 파일이 있으면 그 파일을, 없으면 내장본을 사용자 폴더에 풀어 사용)
-Media\demo-video.mp4       저장소에 포함(위와 같음). 다른 파일로 바꾸려면 popup-frameWork\Popup\Media의 같은 이름 파일을 교체한 뒤 다시 빌드
+appsettings.json           PopupApi.DemoMedia.ImageUrl·VideoUrl — 값이 있으면 Demo IMAGE·VIDEO가 그 외부 URL을 쓴다(아래 Media 파일보다 우선)
+Media\demo-image.jpg       선택(URL이 빈 값일 때 사용. EmbeddedResource로 exe에 내장. EXE 옆 Media 폴더에 같은 이름 파일이 있으면 그 파일을, 없으면 내장본을 사용자 폴더에 풀어 사용)
+Media\demo-video.mp4       선택(위와 같음). 파일이 없어도 빌드는 된다 — URL도 파일도 없으면 Demo 팝업의 미디어 영역에 오류 표시
 ```
 
 ## 4. 반입 묶음 만들기
