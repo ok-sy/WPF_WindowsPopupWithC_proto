@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-16-02 — doc: TODO51 API Demo 설정 기반 실행 후속 요구사항
+
+- 이유: API Demo가 실행 인자 `-Api`에만 의존해 appsettings 단독으로 실행 모드를 선택할 수 없는 제약 개선 필요.
+- 변경: 기존 TODO51에 51-11 후속 작업 추가. 설정 기반 API Demo 활성화, 기존 인자 방식 하위 호환, Debug/Release 설정 경계, 모드 충돌 처리 및 검증 범위를 정의. 설정 키·우선순위의 미결 선택지와 추천안 기록. C# 구현·실행 설정은 미변경.
+- 주요 파일: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
+- 검증: Git 코드의 `LoadPopupClientSettings()`·`appsettings.json`·`Popup.csproj` 정적 확인. 빌드·테스트·실화면 검증 미실행.
+- 상태: TODO 문서 원격 반영, 구현 대기.
+
+
 ## 2026-11-16-01 — doc: PopupAlert 외곽선 1.2 DIP 조정 TODO
 
 - 이유: 퀴즈 완료 안내 등 공통 안내 모달의 검은 외곽선이 두껍게 표시되는 문제를 개선하기 위한 변경 범위 정의.
