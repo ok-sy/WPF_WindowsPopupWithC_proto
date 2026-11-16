@@ -67,6 +67,7 @@ internal static class Program
         CheckDemoLoginFlow(server);
         CheckLoginTokenSources(server);
         CheckDemoHeaderTokenLogin(server);
+        CheckDemoSsoProcessMode(server);
         Console.WriteLine($"PASS: {_checks} API demo checks (design 51, TODO54)");
     }
 
@@ -120,12 +121,7 @@ internal static class Program
         Check(HttpExchangeRecord.BodyKind("", 200) == "EMPTY" && HttpExchangeRecord.BodyKind("{x", 200) == "INVALID_JSON"
               && HttpExchangeRecord.BodyKind("{}", 200) == "JSON" && HttpExchangeRecord.BodyKind(null, null) == "NO_RESPONSE",
             "[51-3] response body kind");
-        Check(DemoApiAuthHeaderProviderNormalize("abc") == "Bearer abc" && DemoApiAuthHeaderProviderNormalize("Bearer abc") == "Bearer abc"
-              && DemoApiAuthHeaderProviderNormalize(" ") == null, "[51-2] token input normalization");
     }
-
-    private static string? DemoApiAuthHeaderProviderNormalize(string value)
-        => (string?)typeof(DemoApiAuthHeaderProvider).GetMethod("NormalizeAuthorization", Flags)!.Invoke(null, new object?[] { value });
 
     private static void CheckHttpCategory54()
     {
@@ -142,7 +138,7 @@ internal static class Program
         string baseKey = Key("http://h/p", "LOGIN", "body");
         Check(baseKey == Key("HTTP://H/p/", "LOGIN", "body"), "[51-7] trailing slash and host case do not split the queue");
         Check(baseKey != Key("http://h2/p", "LOGIN", "body"), "[51-7] other base URL uses another queue");
-        Check(baseKey != Key("http://h/p", "TOKEN", "body"), "[51-7] other auth mode uses another queue");
+        Check(baseKey != Key("http://h/p", "SSO", "body"), "[51-7] other auth mode uses another queue");
         Check(baseKey != Key("http://h/p", "LOGIN", "other"), "[51-7] other account uses another queue");
     }
 
@@ -352,7 +348,7 @@ internal static class Program
     {
         server.SsoLoginMode = "HEADER";
         server.PopupMode = "NULL";
-        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/p/api/auth/sso/login" });
+        DemoWindow window = new(new PopupClientSettings { DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/p/api/auth/sso/login" });
         window.Show();
         ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
         Query(window);
@@ -361,7 +357,7 @@ internal static class Program
         window.Close();
     }
 
-    /* 인증 방식은 로그인(JSON)·토큰 직접 입력 2가지. 일반 로그인 → 조회 → 표시 → 결과 → 수동 다음 조회와 입력·오류·마스킹·연결 변경을 본다. */
+    /* 인증 방식은 입력 모드(로그인 JSON)·SSO 프로세스 모드 2가지(51-12). 일반 로그인 → 조회 → 표시 → 결과 → 수동 다음 조회와 입력·오류·마스킹·연결 변경을 본다. */
     private static void CheckDemoLoginFlow(MockServer server)
     {
         string LoginJson(string id) => JsonSerializer.Serialize(new { lgonId = id, classCode = "A1", linkYn = "N" });
@@ -377,13 +373,14 @@ internal static class Program
         DemoWindow window = new(settings);
         window.Show();
         ComboBox mode = (ComboBox)window.FindName("ApiAuthModeCombo");
-        Check(mode.Items.Cast<ComboBoxItem>().Select(item => (string)item.Tag).SequenceEqual(new[] { "LOGIN", "TOKEN" }) && mode.SelectedIndex == 0, "[auth-mode] only login and direct token remain, login selected when settings say None");
+        Check(mode.Items.Cast<ComboBoxItem>().Select(item => (string)item.Tag).SequenceEqual(new[] { "LOGIN", "SSO" }) && mode.SelectedIndex == 0, "[51-12] only input and SSO process modes remain, input selected when settings say None");
         TextBox loginBody = (TextBox)window.FindName("ApiLoginBodyText");
         TextBlock error = (TextBlock)window.FindName("ApiInputErrorText");
         TextBlock steps = (TextBlock)window.FindName("ApiStepText");
         Expander queryExpander = (Expander)window.FindName("ApiQueryExpander");
         bool Shown(string name) => ((FrameworkElement)window.FindName(name)).Visibility == Visibility.Visible;
-        Check(Shown("ApiLoginPanel") && !Shown("ApiTokenPanel") && Shown("ApiLoginButton"), "[U-02] login mode shows its inputs");
+        Check(Shown("ApiLoginPanel") && !Shown("ApiSsoPanel") && Shown("ApiLoginButton") && !((TextBlock)window.FindName("ApiStepText")).Text.Contains("SSO"),
+            "[U-02] input mode shows its inputs and no SSO step");
         Check(!queryExpander.IsExpanded && ((TextBox)window.FindName("ApiQueryBodyText")).Text == "{}", "[query-json] query JSON is collapsed with the empty object default");
 
         // 입력 검증은 요청 없이 입력란 근처에 표시한다.
@@ -456,14 +453,92 @@ internal static class Program
         Check(server.CredentialBodies.Count == loginsBeforeChange + 1 && server.CredentialBodies[^1].Contains("other-user"), "[U-08] changing the account logs in again");
         Check(!ReferenceEquals(queue, typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)), "[U-08] changing the account replaces the result queue");
 
-        // 토큰 직접 입력은 로그인 없이 동작
-        int loginsBeforeToken = server.CredentialBodies.Count;
-        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "TOKEN");
+        // SSO 프로세스 모드로 바꾸면 SSO 주소 설정이 없으므로 요청 없이 입력 오류
+        int popupsBeforeSso = server.PopupRequests.Count;
+        mode.SelectedItem = mode.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == "SSO");
         Pump(() => true);
-        Check(!Shown("ApiLoginPanel") && !Shown("ApiLoginButton") && Shown("ApiTokenPanel"), "[R-10] token mode shows only the token input");
-        ((PasswordBox)window.FindName("ApiTokenBox")).Password = server.ValidToken!;
+        Check(!Shown("ApiLoginPanel") && Shown("ApiSsoPanel") && Shown("ApiLoginButton"), "[51-12] SSO mode hides the login JSON and shows the fixed SSO address");
         Query(window);
-        Check(server.CredentialBodies.Count == loginsBeforeToken && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[R-10] token mode does not call the login API");
+        Check(server.PopupRequests.Count == popupsBeforeSso && error.Visibility == Visibility.Visible && error.Text.Contains("PopupApi.Auth.SsoUrl"),
+            "[51-12] SSO mode without Auth.SsoUrl is rejected before any request");
+        window.Close();
+    }
+
+    /*
+     * 51-12 SSO 프로세스 모드: Auth.SsoUrl GET → 사용자 → 로그인 API → 토큰. 입력 JSON은 쓰지 않는다.
+     * 401은 확인한 사용자로 로그인 API만, '로그인' 버튼은 SSO부터. SSO 인증 실패·응답 필드 누락·로그인 실패·426을 구분한다.
+     */
+    private static void CheckDemoSsoProcessMode(MockServer server)
+    {
+        server.SsoLoginMode = "HEADER";
+        server.SsoMode = "OK";
+        server.PopupMode = "NULL";
+        PopupClientSettings settings = new()
+        {
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype",
+            AuthSsoUrl = server.BaseUrl + "/sso", AuthLoginPath = "/p/api/auth/sso/login"
+        };
+        DemoWindow window = new(settings);
+        window.Show();
+        bool Shown(string name) => ((FrameworkElement)window.FindName(name)).Visibility == Visibility.Visible;
+        ComboBox mode = (ComboBox)window.FindName("ApiAuthModeCombo");
+        TextBox ssoUrl = (TextBox)window.FindName("ApiSsoUrlText");
+        TextBlock steps = (TextBlock)window.FindName("ApiStepText");
+        Check(mode.SelectedIndex == 1 && Shown("ApiSsoPanel") && !Shown("ApiLoginPanel") && ssoUrl.IsReadOnly && ssoUrl.Text == settings.AuthSsoUrl
+              && steps.Text.Contains("○ SSO"), "[51-12] Auth.Mode=SsoPrototype starts in SSO mode with the read-only configured address");
+
+        // 입력 JSON이 깨져 있어도 SSO 모드 인증에는 섞이지 않는다.
+        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{ broken";
+        int ssoBefore = server.SsoGetCount;
+        int loginsBefore = server.SsoLoginBodies.Count;
+        Query(window);
+        Check(server.SsoGetCount == ssoBefore + 1 && server.SsoLoginBodies.Count == loginsBefore + 1 && server.SsoLoginBodies[^1].Contains("\"lgonId\":\"E1001\"")
+              && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken, "[51-12] SSO GET → login API → token → query");
+        Pump(() => steps.Text.Contains("✓ SSO"));
+        Check(steps.Text.Contains("✓ SSO") && steps.Text.Contains("✓ 로그인") && Logs(window).Any(l => l.Contains("[SSO] GET")) && Logs(window).Any(l => l.Contains("[로그인] POST")),
+            "[51-12] SSO GET and login POST are logged as separate steps: " + steps.Text);
+        Check(Logs(window).All(l => !l.Contains(server.ValidToken!)), "[51-12] logs do not contain the token");
+
+        // 401 → SSO 재호출 없이 확인한 사용자로 로그인 API만
+        server.InvalidateToken();
+        Query(window);
+        Check(server.SsoGetCount == ssoBefore + 1 && server.SsoLoginBodies.Count == loginsBefore + 2 && server.PopupRequests[^1].Authorization == "Bearer " + server.ValidToken,
+            "[51-12] 401 re-logs in with the cached SSO user and no second SSO call");
+
+        // '로그인' 버튼은 SSO부터 다시
+        ClickLogin(window);
+        Pump(() => server.SsoLoginBodies.Count == loginsBefore + 3 && !IsBusy(window));
+        Check(server.SsoGetCount == ssoBefore + 2 && Logs(window).Any(l => l.Contains("[SSO] 사용자 확인") && l.Contains("E1001")), "[51-12] login button calls SSO again");
+
+        // 실패 구분: SSO 인증 실패 / 응답 필드 누락 / 로그인 API 실패 / 426
+        string Fail(Action arrange)
+        {
+            arrange();
+            int count = Logs(window).Count;
+            ClickLogin(window);
+            Pump(() => !IsBusy(window) && Logs(window).Count > count && Logs(window).Skip(count).Any(l => l.StartsWith("[오류]")));
+            server.SsoMode = "OK";
+            server.SsoLoginMode = "HEADER";
+            return Logs(window).Skip(count).LastOrDefault(l => l.StartsWith("[오류]")) ?? string.Empty;
+        }
+        string ssoAuth = Fail(() => server.SsoMode = "401");
+        Check(ssoAuth.Contains("SSO 인증 실패(HTTP 401)") && steps.Text.Contains("✕ SSO"), "[51-12] SSO 401 is an SSO authentication failure: " + ssoAuth);
+        string missing = Fail(() => server.SsoMode = "MISSING");
+        Check(missing.Contains("SSO 응답 해석 실패") && missing.Contains("MAIN_USER_CLASSI_CODE"), "[51-12] missing SSO field is identified: " + missing);
+        string loginFail = Fail(() => server.SsoLoginMode = "NONE");
+        Check(loginFail.Contains("로그인 실패") && !loginFail.Contains("SSO"), "[51-12] login API failure is not reported as SSO: " + loginFail);
+        string version = Fail(() => server.SsoLoginMode = "426");
+        Check(version.Contains("클라이언트 버전 차단(426)"), "[51-12] 426 from the login API is identified: " + version);
+
+        // 입력 모드로 바꾸면 다른 연결(새 결과 큐)
+        object? queue = typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window);
+        mode.SelectedIndex = 0;
+        Pump(() => true);
+        ((TextBox)window.FindName("ApiLoginBodyText")).Text = "{\"lgonId\":\"E1001\",\"classCode\":\"A1\",\"linkYn\":\"N\"}";
+        int ssoBeforeSwitch = server.SsoGetCount;
+        Query(window);
+        Check(!ReferenceEquals(queue, typeof(DemoWindow).GetProperty("ApiQueue", Flags)!.GetValue(window)) && server.SsoGetCount == ssoBeforeSwitch
+              && !steps.Text.Contains("SSO"), "[51-12] switching to input mode replaces the queue and stops calling SSO");
         window.Close();
     }
 
@@ -479,7 +554,7 @@ internal static class Program
     {
         PopupClientSettings settings = new()
         {
-            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "SsoPrototype", AuthLoginPath = "/p/api/wpf/auth/login", DevUserId = "E-SETTINGS"
+            DemoMode = true, DemoApi = true, BaseUrl = server.BaseUrl, AuthMode = "None", AuthLoginPath = "/p/api/wpf/auth/login", DevUserId = "E-SETTINGS"
         };
         DemoWindow window = new(settings);
         window.Show();
@@ -674,6 +749,7 @@ internal static class Program
         public volatile string SsoLoginMode = "HEADER";
         public List<string> SsoLoginBodies { get; } = new();
         public int SsoGetCount;
+        public volatile string SsoMode = "OK";
 
         public void InvalidateToken()
         {
@@ -713,9 +789,12 @@ internal static class Program
                     return;
                 case "/sso":
                     Interlocked.Increment(ref SsoGetCount);
+                    if (SsoMode == "401") { Write(context, 401, string.Empty); return; }
                     context.Response.StatusCode = 200;
                     context.Response.ContentType = "text/xml";
-                    byte[] xml = Encoding.UTF8.GetBytes("<RESULT><MAIN_USER_ID>E1001</MAIN_USER_ID><MAIN_USER_CLASSI_CODE>A1</MAIN_USER_CLASSI_CODE></RESULT>");
+                    byte[] xml = Encoding.UTF8.GetBytes(SsoMode == "MISSING"
+                        ? "<RESULT><MAIN_USER_ID>E1001</MAIN_USER_ID></RESULT>"
+                        : "<RESULT><MAIN_USER_ID>E1001</MAIN_USER_ID><MAIN_USER_CLASSI_CODE>A1</MAIN_USER_CLASSI_CODE></RESULT>");
                     context.Response.OutputStream.Write(xml);
                     context.Response.Close();
                     return;
@@ -738,6 +817,7 @@ internal static class Program
                             case "EMPTY": Write(context, 200, string.Empty); return;
                             case "INVALID": Write(context, 200, "<html>"); return;
                             case "NONE": Write(context, 200, "{\"msgId\":\"FW00000009\",\"msgCn\":\"fail\"}"); return;
+                            case "426": Write(context, 426, "{\"code\":\"CLIENT_VERSION_UNSUPPORTED\",\"message\":\"update\"}"); return;
                             default: Write(context, 200, "{\"msgId\":\"BE00000006\",\"body\":{\"profile\":{}}}"); return;
                         }
                     }

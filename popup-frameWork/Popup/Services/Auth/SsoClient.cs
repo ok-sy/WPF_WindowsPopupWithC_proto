@@ -41,7 +41,17 @@ namespace Popup.Services.Auth
         private readonly HttpClient _httpClient;
 
         public SsoClient(string ssoUrl, TimeSpan? timeout = null)
+            : this(ssoUrl, handler => handler, timeout)
         {
+        }
+
+        /// <summary>
+        /// POL-14-02 : Demo 모드 — API Demo SSO 프로세스 모드(설계 51-12)가 SSO GET을 HTTP 로그에 남기도록 Windows 통합 인증 핸들러를 감쌀 수 있게 한다.
+        /// wrapHandler는 UseDefaultCredentials 핸들러를 받아 그 바깥 핸들러(예: HttpExchangeRecorder)를 돌려준다.
+        /// </summary>
+        public SsoClient(string ssoUrl, Func<HttpMessageHandler, HttpMessageHandler> wrapHandler, TimeSpan? timeout = null)
+        {
+            ArgumentNullException.ThrowIfNull(wrapHandler);
             if (string.IsNullOrWhiteSpace(ssoUrl) || !Uri.TryCreate(ssoUrl.Trim(), UriKind.Absolute, out Uri? uri))
             {
                 throw new ArgumentException("PopupApi.Auth.SsoUrl 값이 비어 있거나 절대 URL이 아닙니다.", nameof(ssoUrl));
@@ -54,7 +64,7 @@ namespace Popup.Services.Auth
                 PreAuthenticate = true,            // 한 번 도전받은 뒤에는 처음부터 인증 헤더를 보낸다
                 AllowAutoRedirect = true
             };
-            _httpClient = new HttpClient(handler)
+            _httpClient = new HttpClient(wrapHandler(handler))
             {
                 // [변경 지점] SSO 요청 제한 시간. 설정값이 아니라 코드 상수다.
                 Timeout = timeout ?? TimeSpan.FromSeconds(10)

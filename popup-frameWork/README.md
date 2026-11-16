@@ -1044,8 +1044,9 @@ popupSample.exe -Demo -Api
 - 연결 대상 전환: `로컬 서버 사용` 체크박스를 체크하면 `Base URL`·`로그인 경로`를 appsettings `DemoApiTargets.Local` 값으로, 해제하면 `Dev` 값으로 함께 채운다.
   입력칸은 그 뒤에도 직접 고칠 수 있고, 바뀐 연결은 `연결 적용`·`팝업 조회` 때 적용된다(팝업 표시 중에는 바꾸지 않음). 시작할 때는 appsettings `BaseUrl`·`Auth.LoginPath`를 그대로 두고,
   `BaseUrl`이 Local 주소와 같을 때만 체크 상태로 표시한다. `Dev.BaseUrl`이 비어 있으면 해제 시 `Base URL`을 비우고 직접 입력하라고 안내한다.
-- 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(로그인 API 호출 후 토큰 사용 / 토큰 직접 입력 — 초기 선택은 `Auth.Mode`),
-  `로그인 경로`·`로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `/p/api/auth/sso/login` 요청 키와 같음), `Authorization 토큰`(스킴 없이 넣으면 `Bearer ` 추가),
+- 입력: `Base URL`(초기값 appsettings `BaseUrl`), `인증 방식`(입력 모드 / SSO 프로세스 모드 — 초기 선택은 `Auth.Mode=SsoPrototype`이면 SSO, 그 밖은 입력 모드), `로그인 경로`(두 모드 공통),
+  입력 모드의 `로그인 요청 JSON`(`{"lgonId","classCode","linkYn"}` 그대로 전송, 폐쇄망 `/p/api/auth/sso/login` 요청 키와 같음),
+  SSO 프로세스 모드의 `SSO 주소`(appsettings `Auth.SsoUrl` 읽기 전용 표시, 설정이 없으면 연결 적용 시 입력 오류). 토큰 직접 입력 방식은 51-12에서 제거했다.
   `단건 조회 요청 JSON`(기본 `{}`, 평소에는 접혀 있고 입력 오류 시 펼침). API Demo는 `X-Dev-User-Id`를 보내지 않는다(appsettings `DevUserId`도 사용하지 않음).
 - 흐름: `팝업 조회` → (바뀐 연결 입력 적용) → 미전송 결과 먼저 전송(남으면 조회 보류) → `POST /p/api/wpf/popups` → 응답 `popup`을 일반 실행과 같은 경로로 표시
   → 창 닫기·제출 → 결과를 `POST /p/api/wpf/popups/results`로 실제 전송 → `status`·`nextStatus`를 로그에 표시.
@@ -1055,7 +1056,11 @@ popupSample.exe -Demo -Api
 - 로그: 실제로 보낸 method·URL·헤더·본문과 HTTP 상태·본문·소요 시간·오류가 한 줄씩 남고, 선택하면 Request·Response JSON으로 볼 수 있다.
   실패는 `HTTP 오류 N`·`통신 실패`·`시간 초과`·`클라이언트 버전 차단(426)`·`응답 해석 실패(빈 응답/잘못된 JSON/구조 불일치)`·`팝업 생성` 단계로 구분한다.
   `Authorization` 헤더와 응답의 `accessToken`은 기본 마스킹하며 `토큰 평문 표시(화면만)`로만 볼 수 있다. 토큰은 메모리에만 두고 파일 로그에 남기지 않는다.
-- 인증: 로그인 방식은 첫 요청 직전 로그인하고, 401이면 같은 로그인 본문으로 1회 재로그인 후 같은 요청을 재전송한다. 토큰 직접 입력은 재로그인하지 않는다. `로그인` 버튼은 지금 로그인해 토큰을 교체한다.
+- 인증: 첫 요청 직전 로그인하고, 401이면 1회 재로그인 후 같은 요청을 재전송한다. 입력 모드는 같은 로그인 본문으로, SSO 프로세스 모드는 처음 SSO로 확인한 사용자 정보로 로그인 API만 다시 호출한다(SSO 재호출 없음, 일반 실행과 같은 정책).
+  `로그인` 버튼은 지금 로그인해 토큰을 교체하며 SSO 프로세스 모드는 SSO GET부터 다시 한다. SSO 모드에서는 입력 JSON을 인증에 쓰지 않는다.
+- SSO 프로세스 모드(51-12): `SSO GET(Windows 통합 인증) → MAIN_USER_ID·MAIN_USER_CLASSI_CODE → 로그인 API → 토큰`. SSO GET은 HTTP 로그에 `[SSO]`로, 로그인은 `[로그인]`으로 따로 남고 진행 표시에 `SSO` 단계가 추가된다.
+  실패는 `SSO 인증 실패(HTTP 401·403)`·`SSO 호출 실패(HTTP n)`·`SSO 통신 실패`·`SSO 시간 초과`·`SSO 응답 해석 실패(XML·필수 태그)`와 로그인 API 실패(`로그인 실패`·`HTTP 오류`·`426`)로 구분한다.
+  모드를 바꾸면 다른 연결로 보고 결과 큐를 새로 만든다(SSO 연결 키는 SSO 주소·로그인 경로).
 - 재시도: 결과의 `resultId`는 생성 시 확정되며 `미전송 결과 재전송`(또는 다음 조회 전 자동 전송)은 같은 ID·본문으로 보낸다. 종결(ACCEPTED·DUPLICATE·REJECTED) 판정·400 제외·INTERNAL_ERROR 재시도 상한은 일반 실행의 결과 큐와 같다.
 - 연결 경계: 결과 큐(메모리 전용)는 `Base URL·인증 방식·인증 대상(로그인 본문 또는 토큰)` 연결마다 새로 만든다.
   연결을 바꾸면 이전 연결의 미전송 결과는 버린다(미전송이 있으면 변경 전 확인). 다른 연결이나 일반 실행의 결과 큐로 보내지 않는다.

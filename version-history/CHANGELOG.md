@@ -21,13 +21,13 @@
 - 주요 파일: `docs/design/76_WPF_VM복귀_팝업배치_회귀검증_TODO.md`.
 - 검증·상태: WPF 배치 코드 정적 검토. 원인 확인, 수정, 빌드 및 VM 실환경 검증 대기.
 
-## 2026-11-16-03 — doc: TODO51 API Demo SSO 프로세스 로그인 모드
+## 2026-11-16-03 — dev: TODO51-12 API Demo 입력 모드 / SSO 프로세스 모드
 
-- 이유: API Demo에서 로그인 JSON 직접 입력뿐 아니라 appsettings의 `PopupApi.Auth.SsoUrl`을 이용한 사내 SSO 인증 절차를 선택할 수 있도록 확장 요구.
-- 변경: 기존 TODO51에 51-12 추가. 입력 모드·SSO 프로세스 모드, SSO GET→로그인 API→토큰, 모드 전환/401/426/로그·검증 범위 기록. 토큰 직접 입력·헤더 없음 옵션 유지 여부 등 미결 선택지와 추천안 기록. 제품 코드는 변경하지 않음.
-- 주요 파일: `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
-- 검증: Git `DemoWindow.xaml`·`DemoWindow.Api.cs`·`SsoAuthHeaderProvider.cs` 정적 확인. 빌드·실환경 검증 미실행.
-- 상태: TODO 문서 원격 반영, 구현 대기.
+- 이유: API Demo에서 로그인 JSON 직접 입력뿐 아니라 appsettings의 `PopupApi.Auth.SsoUrl`을 이용한 사내 SSO 인증 절차를 선택할 수 있도록 확장.
+- 변경: TODO51에 51-12를 정의한 뒤 구현. 결정 사항은 인증 선택지를 입력 모드/SSO 프로세스 모드 2가지로 단순화(토큰 직접 입력 제거), SSO 주소는 `Auth.SsoUrl` 고정, 401은 확인한 사용자로 로그인 API만 재호출하고 `로그인` 버튼은 SSO부터 재호출. `DemoApiAuthHeaderProvider.ForSso()` 추가(`ForToken`·`NormalizeAuthorization` 제거), SSO 단계 실패를 `DemoSsoException`(인증 실패·호출 실패·통신 실패·응답 해석 실패·시간 초과)으로 구분하고 로그인 API 실패·426은 기존 예외로 유지. `SsoClient`에 핸들러 래핑 생성자를 추가해 SSO GET을 HTTP 로그(`[SSO]`)에 기록. `DemoWindow` 인증 UI를 모드별로 분리(로그인 경로 공통, SSO 주소 읽기 전용), 진행 표시에 SSO 단계 추가, 초기 선택은 `Auth.Mode=SsoPrototype`이면 SSO. SSO 모드는 입력 JSON을 인증에 쓰지 않고, 모드 전환 시 새 결과 큐를 만든다. README·WPF 사양서 2종·TODO51 결정/결과 기록. 관리자 웹·서버·DB·API JSON 계약 변경 없음.
+- 주요 파일: `popup-frameWork/Popup/Services/Auth/DemoApiAuthHeaderProvider.cs`, `popup-frameWork/Popup/Services/Auth/SsoClient.cs`, `popup-frameWork/Popup/DemoWindow.xaml`, `popup-frameWork/Popup/DemoWindow.Api.cs`, `scripts/ApiDemoTests/Program.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/51_DEMO_API_수동호출_팝업검증_TODO.md`.
+- 검증: ApiDemoTests `PASS: 143`(SSO GET→로그인→조회, 입력 JSON 미사용, 401 SSO 재호출 없음, 로그인 버튼 SSO 재호출, SSO 401·필드 누락·로그인 실패·426 구분, SsoUrl 없음 입력 오류, 모드 전환 새 큐, 토큰 로그 미노출). Popup.BehaviorTests `PASS: 1740`, Popup.RecoveryTests `PASS: 255`, PopupWindowTests `PASS: 548`, Popup Debug·Release 빌드 경고·오류 0. 실제 사내 SSO(Negotiate)·폐쇄망 실행은 미검증.
+- 상태: 커밋 / 미푸시.
 
 
 ## 2026-11-16-02 — dev: TODO51-11 appsettings만으로 API Demo 실행

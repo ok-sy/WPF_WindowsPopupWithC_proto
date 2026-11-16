@@ -52,7 +52,8 @@ namespace Popup
         /* 마지막 HTTP 기록. 응답 해석 실패를 빈 응답·잘못된 JSON·구조 불일치로 나눌 때 쓴다(관찰 스레드에서 기록). */
         private HttpExchangeRecord? _lastExchange;
         /* POL-14-02 : Demo 모드 — 단계별 상태(○ 대기 · ✓ 성공 · ✕ 실패 · - 해당 없음)와 마지막 HTTP 상태 */
-        private static readonly string[] ApiSteps = { "연결", "로그인", "인증 준비", "팝업 조회", "표시", "결과 전송" };
+        /* "SSO" 단계는 SSO 프로세스 모드에서만 표시한다(설계 51-12). */
+        private static readonly string[] ApiSteps = { "연결", "SSO", "로그인", "인증 준비", "팝업 조회", "표시", "결과 전송" };
         private readonly Dictionary<string, char> _apiStepStates = new();
         private string _apiLastHttp = "-";
 
@@ -66,13 +67,7 @@ namespace Popup
         private void InitializeApiDemo(PopupClientSettings settings)
         {
             _apiSettings = settings;
-            HttpExchangeRecorder recorder = new(new HttpClientHandler());
-            recorder.Recorded += record =>
-            {
-                Volatile.Write(ref _lastExchange, record);
-                Dispatcher.BeginInvoke(() => AppendHttpLog(record));
-            };
-            _apiHttpClient = new HttpClient(recorder) { Timeout = TimeSpan.FromSeconds(10) };
+            _apiHttpClient = new HttpClient(NewRecorder(new HttpClientHandler())) { Timeout = TimeSpan.FromSeconds(10) };
 
             Title = "Popup Demo Mode — API";
             HeaderSubtitleText.Text = "개발계/검증계 API를 수동으로 호출해 실제 응답 팝업과 결과 전송을 확인합니다. 자동 조회는 하지 않습니다.";
@@ -93,26 +88,27 @@ namespace Popup
             ApiLocalTargetCheck.IsChecked = SameBaseUrl(settings.BaseUrl, settings.DemoLocalBaseUrl);
             _syncingApiTarget = false;
             ApiLoginBodyText.Text = "{\n  \"lgonId\": \"\",\n  \"classCode\": \"\",\n  \"linkYn\": \"N\"\n}";
-            // appsettings Auth.Mode를 초기 선택으로만 쓴다(SsoPrototype은 SSO 대신 로그인 본문 직접 입력).
-            switch (settings.AuthMode.Trim().ToUpperInvariant())
-            {
-                case "STATIC":
-                    ApiAuthModeCombo.SelectedIndex = 1;
-                    ApiTokenBox.Password = settings.AuthStaticHeader;
-                    break;
-                case "SSOPROTOTYPE":
-                    ApiAuthModeCombo.SelectedIndex = 0;
-                    break;
-                default:
-                    ApiAuthModeCombo.SelectedIndex = 0;
-                    break;
-            }
+            ApiSsoUrlText.Text = settings.AuthSsoUrl.Length == 0 ? "(설정 없음 — appsettings PopupApi.Auth.SsoUrl)" : settings.AuthSsoUrl;
+            // appsettings Auth.Mode를 초기 선택으로만 쓴다: SsoPrototype → SSO 프로세스 모드, 그 밖(None·Static) → 입력 모드(설계 51-12).
+            ApiAuthModeCombo.SelectedIndex = settings.AuthMode.Trim().Equals("SsoPrototype", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             ApplyAuthModeVisibility();
             AppendLog("--- API Demo: 수동 호출 모드(자동 폴링 OFF). 입력 후 '팝업 조회'를 누르세요 ---");
             UpdateApiState();
         }
 
         private bool _syncingApiTarget;
+
+        /* API·SSO 요청을 같은 HTTP 로그로 남기는 관찰 지점. SSO는 Windows 통합 인증 핸들러 바깥에 둔다(인증 헤더는 기록되지 않음). */
+        private HttpExchangeRecorder NewRecorder(HttpMessageHandler inner)
+        {
+            HttpExchangeRecorder recorder = new(inner);
+            recorder.Recorded += record =>
+            {
+                Volatile.Write(ref _lastExchange, record);
+                Dispatcher.BeginInvoke(() => AppendHttpLog(record));
+            };
+            return recorder;
+        }
 
         private static bool SameBaseUrl(string a, string b)
             => a.Trim().TrimEnd('/').Equals(b.Trim().TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
@@ -157,12 +153,13 @@ namespace Popup
 
         private void ApiAuthModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyAuthModeVisibility();
 
+        /* 입력 모드는 로그인 요청 JSON, SSO 프로세스 모드는 고정 SSO 주소만 보여 준다. SSO 모드에서 입력 JSON은 인증에 쓰지 않는다. */
         private void ApplyAuthModeVisibility()
         {
-            if (ApiLoginPanel == null || ApiTokenPanel == null || ApiLoginButton == null) return;   // XAML 로드 중
+            if (ApiLoginPanel == null || ApiSsoPanel == null) return;   // XAML 로드 중
             ApiLoginPanel.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
-            ApiTokenPanel.Visibility = SelectedAuthMode == "TOKEN" ? Visibility.Visible : Visibility.Collapsed;
-            ApiLoginButton.Visibility = SelectedAuthMode == "LOGIN" ? Visibility.Visible : Visibility.Collapsed;
+            ApiSsoPanel.Visibility = SelectedAuthMode == "SSO" ? Visibility.Visible : Visibility.Collapsed;
+            if (ApiStepText != null) RenderApiSteps();
         }
 
         private void ApiRevealSecretsCheck_Changed(object sender, RoutedEventArgs e) => ResultLogList_SelectionChanged(sender, null!);
@@ -176,10 +173,11 @@ namespace Popup
         {
             await RunApiAsync(async () =>
             {
-                if (!EnsureApiConnection(forceLog: false) || _apiAuth is not { UsesLogin: true } auth) return;
+                if (!EnsureApiConnection(forceLog: false) || _apiAuth is not { } auth) return;
                 try
                 {
                     WpfLoginResponseDto login = await auth.LoginNowAsync();
+                    if (auth.LastSsoUser is { } user) AppendLog($"[SSO] 사용자 확인 · MAIN_USER_ID={user.LogonId} · MAIN_USER_CLASSI_CODE={user.ClassCode}");
                     AppendLog($"[로그인] 성공 · tokenType={login.TokenType} · 토큰 {login.AccessToken.Length}자(메모리 보관)"
                               + (login.ExpiresAt == default ? string.Empty : $" · expiresAt={login.ExpiresAt.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}"));
                     ApiConnectionExpander.IsExpanded = false;
@@ -354,7 +352,7 @@ namespace Popup
             string loginPath = ApiLoginPathText.Text.Trim();
             string identity;
             JsonElement loginBody = default;
-            string? token = null;
+            string ssoUrl = string.Empty;
             switch (mode)
             {
                 case "LOGIN":
@@ -362,9 +360,11 @@ namespace Popup
                     identity = loginPath + "\n" + loginBody.GetRawText();
                     break;
                 default:
-                    token = DemoApiAuthHeaderProvider.NormalizeAuthorization(ApiTokenBox.Password);
-                    if (token == null) return RejectConnectionInput("토큰 직접 입력 방식에는 Authorization 토큰이 필요합니다.", ApiTokenBox);
-                    identity = token;
+                    // SSO 프로세스 모드: SSO 주소는 appsettings 고정. 사용자는 SSO 응답으로 정해지므로 연결 대상은 SSO 주소·로그인 경로다.
+                    ssoUrl = _apiSettings?.AuthSsoUrl.Trim() ?? string.Empty;
+                    if (!Uri.TryCreate(ssoUrl, UriKind.Absolute, out Uri? ssoUri) || (ssoUri.Scheme != Uri.UriSchemeHttp && ssoUri.Scheme != Uri.UriSchemeHttps))
+                        return RejectConnectionInput("SSO 프로세스 모드에는 appsettings PopupApi.Auth.SsoUrl(http/https 절대 주소)이 필요합니다.", null);
+                    identity = loginPath + "\nSSO\n" + ssoUrl;
                     break;
             }
 
@@ -397,7 +397,7 @@ namespace Popup
                 auth = mode switch
                 {
                     "LOGIN" => DemoApiAuthHeaderProvider.ForLogin(new WpfLoginClient(baseUrl, loginPath, _apiHttpClient), loginBody),
-                    _ => DemoApiAuthHeaderProvider.ForToken(token)
+                    _ => DemoApiAuthHeaderProvider.ForSso(new SsoClient(ssoUrl, NewRecorder), new WpfLoginClient(baseUrl, loginPath, _apiHttpClient))
                 };
             }
             catch (ArgumentException exception)
@@ -409,7 +409,7 @@ namespace Popup
             _apiService = new PopupApiService(baseUrl, auth, null, _apiHttpClient);
             _apiQueue = new PopupResultQueue(_apiService);
             _apiConnectionKey = key;
-            _apiAuthModeLabel = mode == "LOGIN" ? "로그인 토큰" : "토큰 직접 입력";
+            _apiAuthModeLabel = mode == "LOGIN" ? "입력 모드 로그인 토큰" : "SSO 프로세스 로그인 토큰";
             _apiStepStates.Clear();
             _apiLastHttp = "-";
             SetApiStep("연결", '✓');
@@ -474,9 +474,10 @@ namespace Popup
             {
                 WpfClientVersionException version =>
                     $"클라이언트 버전 차단(426) — {version.UserMessage} 결과 전송을 멈췄습니다(항목 보관, 연결을 다시 적용하면 재개).",
+                DemoSsoException sso => sso.Message,
                 WpfLoginFailedException failed => "로그인 실패 — " + failed.Message,
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } http =>
-                    $"인증 실패(401){(_apiAuth?.UsesLogin == true ? " — 재로그인 1회 후에도 실패" : " — 토큰 직접 입력은 재로그인하지 않음")}: {http.Message}",
+                    $"인증 실패(401){(_apiAuth?.UsesSso == true ? " — 확인한 SSO 사용자로 재로그인 1회 후에도 실패" : " — 재로그인 1회 후에도 실패")}: {http.Message}",
                 HttpRequestException { StatusCode: HttpStatusCode.Forbidden } http when http.Message.Contains("WPF_USER_INACTIVE", StringComparison.Ordinal) =>
                     $"HTTP 오류 403: 로그인은 됐지만 이 계정이 활성 팝업 사용자가 아닙니다. {http.Message}",
                 HttpRequestException { StatusCode: { } status } http => $"HTTP 오류 {(int)status}: {http.Message}",
@@ -492,6 +493,11 @@ namespace Popup
             {
                 SetApiStep("로그인", '✕');
                 ApiConnectionExpander.IsExpanded = true;   // 로그인 입력을 바로 고칠 수 있게 펼친다.
+            }
+            else if (exception is DemoSsoException)
+            {
+                SetApiStep("SSO", '✕');
+                ApiConnectionExpander.IsExpanded = true;
             }
         }
 
@@ -523,7 +529,8 @@ namespace Popup
             int index = ResultLogList.Items.Count;
             _httpDetails[index] = record;
             ApplyHttpStep(record);
-            AppendLog($"[{record.StartedAt:HH:mm:ss}] {HttpCategory(record.Url)} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}");
+            string category = IsSsoRequest(record.Url) ? "[SSO]" : HttpCategory(record.Url);
+            AppendLog($"[{record.StartedAt:HH:mm:ss}] {category} {record.Summary(_apiService?.BaseUrl ?? string.Empty)}");
             ResultLogList.SelectedIndex = index;
             DetailTabs.SelectedIndex = 1;
         }
@@ -534,7 +541,8 @@ namespace Popup
             _apiLastHttp = (record.StatusCode?.ToString() ?? "응답 없음") + $" · {record.ElapsedMs}ms";
             bool success = record.StatusCode is >= 200 and < 300;
             string path = Uri.TryCreate(record.Url, UriKind.Absolute, out Uri? uri) ? uri.AbsolutePath : record.Url;
-            if (path.EndsWith("/p/api/wpf/popups/results", StringComparison.OrdinalIgnoreCase)) SetApiStep("결과 전송", success ? '✓' : '✕');
+            if (IsSsoRequest(record.Url)) SetApiStep("SSO", success ? '✓' : '✕');
+            else if (path.EndsWith("/p/api/wpf/popups/results", StringComparison.OrdinalIgnoreCase)) SetApiStep("결과 전송", success ? '✓' : '✕');
             else if (path.EndsWith("/p/api/wpf/popups", StringComparison.OrdinalIgnoreCase)) SetApiStep("팝업 조회", success ? '✓' : '✕');
             else if (!success) SetApiStep("로그인", '✕');
             else RenderApiSteps();
@@ -546,9 +554,18 @@ namespace Popup
             RenderApiSteps();
         }
 
+        /* SSO 프로세스 모드 연결의 SSO GET 요청인지(쿼리 문자열 제외 주소 비교). */
+        private bool IsSsoRequest(string url)
+        {
+            string sso = _apiSettings?.AuthSsoUrl.Trim() ?? string.Empty;
+            if (sso.Length == 0 || !Uri.TryCreate(url, UriKind.Absolute, out Uri? actual) || !Uri.TryCreate(sso, UriKind.Absolute, out Uri? expected)) return false;
+            return Uri.Compare(actual, expected, UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         private void RenderApiSteps()
         {
-            ApiStepText.Text = string.Join(" → ", ApiSteps.Select(step => $"{(_apiStepStates.TryGetValue(step, out char state) ? state : '○')} {step}"))
+            bool sso = SelectedAuthMode == "SSO";
+            ApiStepText.Text = string.Join(" → ", ApiSteps.Where(step => sso || step != "SSO").Select(step => $"{(_apiStepStates.TryGetValue(step, out char state) ? state : '○')} {step}"))
                 + $"\n최근 HTTP {_apiLastHttp}";
         }
 
@@ -608,17 +625,12 @@ namespace Popup
                 RenderApiSteps();
                 return;
             }
-            string token = _apiAuth?.UsesLogin == true ? (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)") : string.Empty;
+            string token = _apiAuth == null ? string.Empty : (_apiAuth.HasAuthorization ? " (토큰 보관)" : " (토큰 없음)");
             // POL-14-02 : Demo 모드 — 현재 대상 환경·인증 상태 요약(토큰 값은 표시하지 않음)
-            if (_apiAuth?.UsesLogin == true)
+            if (_apiAuth != null)
             {
                 if (_apiAuth.HasAuthorization) { _apiStepStates["로그인"] = '✓'; _apiStepStates["인증 준비"] = '✓'; }
                 else _apiStepStates["인증 준비"] = '○';
-            }
-            else if (_apiAuth != null)
-            {
-                _apiStepStates["로그인"] = '-';
-                _apiStepStates["인증 준비"] = _apiAuth.HasAuthorization ? '✓' : '-';
             }
             RenderApiSteps();
             ApiConnectionSummaryText.Text = $"대상 {_apiService.BaseUrl}\n인증 {_apiAuthModeLabel}{token}"

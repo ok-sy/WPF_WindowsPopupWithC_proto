@@ -115,7 +115,7 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ## 2026-11-16 후속 TODO — API Demo 로그인 입력 모드 / SSO 프로세스 모드
 
-상태: **요구사항 접수 · 구현 대기**. 앞선 51-11(appsettings 기반 API Demo 실행)과 별개로 인증 경로를 추가한다. 기존 구현 완료 항목은 변경하지 않는다.
+상태: **구현·자동 검증 완료(2026-11-16)** · 실환경 SSO(Negotiate)·폐쇄망 확인 대기. 앞선 51-11과 별개의 인증 경로다.
 
 ### 현행 코드
 
@@ -126,18 +126,31 @@ Trello: https://trello.com/c/AV0U32nH (진행 확정).
 
 ### 구현 시 확인할 사항
 
-- [ ] **51-12** API Demo 인증 선택에서 **입력 모드**(기존 로그인 JSON 직접 입력)와 **SSO 프로세스 모드**(`PopupApi.Auth.SsoUrl`로 SSO GET → 사용자 정보 파싱 → 로그인 API → 토큰 저장)를 제공한다. 기존 `LOGIN` 입력 방식은 유지한다.
-- [ ] SSO 프로세스 모드는 기존 `SsoClient` / `SsoAuthHeaderProvider` / `WpfLoginClient`의 공통 인증 규칙을 재사용하고, 일반 API 자동 폴링은 시작하지 않는다. SSO URL·로그인 경로·인증 오류·401 재로그인·426 처리 확인.
-- [ ] `DemoWindow.xaml` 및 `DemoWindow.Api.cs`의 선택 UI·입력 표시·로그인 버튼·상태 표시를 모드별로 분리하고, SSO 모드에서 직접 입력 JSON이 인증에 섞이지 않도록 한다.
-- [ ] API Demo의 요청·응답 로그에서 SSO GET 단계와 로그인 POST 단계를 구별하고 토큰·인증 정보 평문 노출을 방지한다. SSO 호출 실패·XML 필드 누락·SSO 인증 실패·로그인 API 실패를 구분한다.
-- [ ] 모드 전환 시 인증 상태·연결 키·미전송 결과 큐의 사용자/서버 분리 영향을 확인한다. `scripts/ApiDemoTests/Program.cs` 및 기존 일반 API/입력 모드 회귀 테스트 추가.
-- [ ] 관리자 웹·Java 서버·Oracle·WPF API JSON 계약 변경 없이 진행하는 것을 기본으로 하며, 실환경 SSO(Negotiate)와 폐쇄망 실행은 별도 검증한다.
+- [x] **51-12** API Demo 인증 선택에서 **입력 모드**(기존 로그인 JSON 직접 입력)와 **SSO 프로세스 모드**(`PopupApi.Auth.SsoUrl`로 SSO GET → 사용자 정보 파싱 → 로그인 API → 토큰 저장)를 제공한다. 기존 `LOGIN` 입력 방식은 유지한다.
+- [x] SSO 프로세스 모드는 기존 `SsoClient` / `SsoAuthHeaderProvider` / `WpfLoginClient`의 공통 인증 규칙을 재사용하고, 일반 API 자동 폴링은 시작하지 않는다. SSO URL·로그인 경로·인증 오류·401 재로그인·426 처리 확인.
+- [x] `DemoWindow.xaml` 및 `DemoWindow.Api.cs`의 선택 UI·입력 표시·로그인 버튼·상태 표시를 모드별로 분리하고, SSO 모드에서 직접 입력 JSON이 인증에 섞이지 않도록 한다.
+- [x] API Demo의 요청·응답 로그에서 SSO GET 단계와 로그인 POST 단계를 구별하고 토큰·인증 정보 평문 노출을 방지한다. SSO 호출 실패·XML 필드 누락·SSO 인증 실패·로그인 API 실패를 구분한다.
+- [x] 모드 전환 시 인증 상태·연결 키·미전송 결과 큐의 사용자/서버 분리 영향을 확인한다. `scripts/ApiDemoTests/Program.cs` 및 기존 일반 API/입력 모드 회귀 테스트 추가.
+- [ ] (계약 변경 없음 확인, 실환경 미검증) 관리자 웹·Java 서버·Oracle·WPF API JSON 계약 변경 없이 진행하는 것을 기본으로 하며, 실환경 SSO(Negotiate)와 폐쇄망 실행은 별도 검증한다.
 
 ### 구현 전에 결정할 사항
 
 1. **기존 토큰 직접 입력/헤더 없음 옵션의 유지 여부**: (A) 기존 3가지 선택지를 보존하고 SSO 프로세스 모드를 추가, (B) 요청대로 로그인 방식을 입력/SSO 두 가지로 단순화하면서 토큰·헤더 없음 경로를 다른 고급 옵션으로 이동 또는 제거. **추천 A**: 기존 API Demo 검증·테스트의 하위 호환을 보존. UI를 정확히 두 가지로 제한할지는 사용자 승인 필요.
 2. **SSO 주소의 우선순위와 변경 가능 범위**: (A) `PopupApi.Auth.SsoUrl`을 고정 사용, (B) 설정을 초기값으로 하되 API Demo 화면에서 수정 허용. **추천 A**: 설정과 실제 인증 대상의 불일치·임의 인증 서버 접근 위험을 줄임. 개발/운영 빌드의 외부 설정 허용 정책은 유지.
 3. **SSO 재호출 시점**: (A) 최초 1회 SSO GET 후 401에는 캐시 사용자 정보로 로그인 API만 재호출(일반 API와 동일), (B) 매 재로그인 시 SSO GET 재호출. **추천 A**: 기존 인증 정책·구현 재사용. 수동 '로그인' 버튼의 강제 호출 시점과 SSO 재호출 여부는 구현 전에 확인한다.
+
+### 결정 (2026-11-16)
+
+1. 선택지: **B 채택** — 입력 모드 / SSO 프로세스 모드 2가지로 단순화. 토큰 직접 입력(`TOKEN`)을 제거했다(헤더 없음 `NONE`은 이미 화면에 없었다).
+2. SSO 주소: **A 채택** — `PopupApi.Auth.SsoUrl` 고정(화면 읽기 전용 표시).
+3. 재호출: **A 채택** — 401은 확인한 사용자 정보로 로그인 API만, `로그인` 버튼은 SSO GET부터 다시 호출.
+
+### 구현 결과 (2026-11-16)
+
+- `DemoApiAuthHeaderProvider`: `ForToken`·`NormalizeAuthorization` 제거, `ForSso(SsoClient, WpfLoginClient)` 추가. SSO 단계 실패는 `DemoSsoException`(AUTH·HTTP·NETWORK·PARSE·TIMEOUT)으로 감싸고 로그인 API 실패·426은 원래 예외로 전파.
+- `SsoClient`: Windows 통합 인증 핸들러를 감싸는 생성자 추가(API Demo가 SSO GET을 `HttpExchangeRecorder`로 기록). 기존 생성자 동작은 같다.
+- `DemoWindow.xaml`·`DemoWindow.Api.cs`: 인증 방식 `LOGIN`/`SSO`, 로그인 경로는 공통, SSO 패널은 SsoUrl 읽기 전용. 초기 선택 `Auth.Mode=SsoPrototype` → SSO. SSO 연결 키는 SSO 주소·로그인 경로(모드 전환 시 새 결과 큐). HTTP 로그 `[SSO]` 분류와 진행 표시 `SSO` 단계(SSO 모드만), SSO 오류 시 설정 영역 펼침.
+- 검증: `scripts/ApiDemoTests` `PASS: 143`(SSO GET→로그인→조회, 입력 JSON 미사용, 401 SSO 재호출 없음, 로그인 버튼 SSO 재호출, SSO 401·필드 누락·로그인 실패·426 구분, SsoUrl 없음 입력 오류, 모드 전환 새 큐, 토큰 로그 미노출). `Popup.BehaviorTests` 1740·`Popup.RecoveryTests` 255·`PopupWindowTests` 548 통과. 실제 사내 SSO(Negotiate)·폐쇄망 실행은 미검증.
 
 ### 완료 기준
 
