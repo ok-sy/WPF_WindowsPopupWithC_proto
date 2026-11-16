@@ -61,6 +61,54 @@ export function aspectVideoHeight(width: number, natural: NaturalVideoSize | nul
   return Math.max(MIN_VIDEO_HEIGHT, Math.round(height * 100) / 100);
 }
 
+/**
+ * POL-05-01 : 재생 경로
+ * ■ 단독 VIDEO 재생 영역(TODO61-17)
+ * - in : url(string) 영상 주소, 빈 문자열이면 자리 표시만 그림
+ * - out: 화면: 남은 높이를 채우는 검정 영역(1px #D1D5DB 테두리·모서리 8) 안에 영상 첫 화면을 비율 유지(contain)로 표시
+ * - WPF 단독 VIDEO는 비율로 높이를 계산하지 않고 VideoRow(*)가 남은 높이를 채운 뒤 MediaElement/HTML video를 Uniform으로 그린다.
+ *   미리보기도 같은 영역에 음소거·메타데이터만 읽은 video를 contain으로 넣어 영상이 위아래나 좌우 검은 여백과 함께 보이게 한다. 재생은 하지 않는다.
+ *   주소가 없거나 읽지 못하면 재생 아이콘과 안내 문구를 표시한다.
+ */
+export function FillVideoArea({ url }: { url: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  // 다른 영상으로 바뀌면 이전 영상의 표시 상태를 재사용하지 않는다.
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [url]);
+
+  return (
+    <Box
+      data-testid="fill-video-area"
+      data-loaded={loaded ? 'true' : 'false'}
+      sx={{ position: 'relative', flex: 1, minHeight: 170, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
+        overflow: 'hidden', bgcolor: '#000', color: 'white' }}
+    >
+      {url && !failed && (
+        <video
+          key={url}
+          src={url}
+          preload="metadata"
+          muted
+          playsInline
+          onLoadedMetadata={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+        />
+      )}
+      {!loaded && (
+        <Stack alignItems="center" justifyContent="center" spacing={1} sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
+          <Typography variant="caption">{failed ? '영상을 읽지 못했습니다' : '영상 재생 영역'}</Typography>
+        </Stack>
+      )}
+    </Box>
+  );
+}
+
 /** WPF VideoPopupView 영상 테두리 두께(px). */
 const VIDEO_BORDER = 1;
 
@@ -136,7 +184,7 @@ export default function AspectVideoArea({ url }: { url: string }) {
           onLoadedMetadata={(event) => readSize(event.currentTarget)}
           onResize={(event) => readSize(event.currentTarget)}
           onError={() => setFailed(true)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#101521' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
         />
       )}
       {!natural && (

@@ -12,10 +12,10 @@
 ## 2026-11-16-05 — dev: TODO61-17 미리보기 VIDEO 레이아웃·공통 헤더/푸터 WPF 정렬
 
 - 이유: VIDEO 실제 크기 미리보기와 WPF 팝업의 레이아웃 차이 피드백 접수.
-- 변경: TODO61에 캡처 대조·유형별 회귀 검증 기준을 추가한 뒤 웹과 WPF 코드를 대조. 가장 유력한 원인은 단독 VIDEO 영상 영역이 남은 높이를 채우지 못하고 170px에 머문 것(WPF는 `VideoRow *`). 미기록 차이 전체를 수정 대상으로 정해 VIDEO 영상 영역 높이 채움, 순서를 제목 → 영상 → 설명으로 변경, 웹 전용 완료 기준·기본 음량 안내 삭제, 영상 영역 검정·1px `#D1D5DB`·모서리 8, VIDEO 제목 22/600, 설명 14px로 맞춤. 동영상+퀴즈 영상 높이를 WPF `AspectSizing`과 같은 테두리 포함 식으로 바꾸고 바깥 폭으로 측정. 공통 Header 제목 17/600, 본문 여백 28/24, Footer 높이 80(IMAGE 외 최소 높이)·여백 28/8/28/16·구분선 제거·확인 버튼 118×44. 영향 낮은 남은 차이(모달 상한 0.96, RATIO 보정, 동영상+퀴즈 상한 패딩)는 PARITY 문서에 기록하고 미수정.
+- 변경: TODO61에 캡처 대조·유형별 회귀 검증 기준을 추가한 뒤 웹과 WPF 코드를 대조. 가장 유력한 원인은 단독 VIDEO 영상 영역이 남은 높이를 채우지 못하고 170px에 머문 것(WPF는 `VideoRow *`). 미기록 차이 전체를 수정 대상으로 정해 VIDEO 영상 영역 높이 채움, 순서를 제목 → 영상 → 설명으로 변경, 웹 전용 완료 기준·기본 음량 안내 삭제, 영상 영역 검정·1px `#D1D5DB`·모서리 8, VIDEO 제목 22/600, 설명 14px로 맞춤. 동영상+퀴즈 영상 높이를 WPF `AspectSizing`과 같은 테두리 포함 식으로 바꾸고 바깥 폭으로 측정. 공통 Header 제목 17/600, 본문 여백 28/24, Footer 높이 80(IMAGE 외 최소 높이)·여백 28/8/28/16·구분선 제거·확인 버튼 118×44. 영향 낮은 남은 차이(모달 상한 0.96, RATIO 보정, 동영상+퀴즈 상한 패딩)는 PARITY 문서에 기록하고 미수정. 후속으로 단독 VIDEO 미리보기에도 실제 영상을 음소거·메타데이터만 읽어 contain으로 표시(`FillVideoArea`, WPF Uniform과 같은 레터박스, 영역 높이는 비율 계산 없이 남은 높이 채움), 레터박스 배경을 검정으로 통일.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-completion-ux-43.cjs`, `scripts/verify-popup-common-sample-69.cjs`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`.
-- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `TODO61 preview` 126건(신규 4건), `completion UX 43` 76건, `TODO69 sample` 62건, `IMAGE preview` 54건, `survey rich text 55` 67건, `guide render` 31건·`guide registry` 296건, `rich text 49` 75건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `question template picker` 7건, `pickPopupFields` 34건 통과. 관리자 웹 실화면·WPF 캡처 나란히 비교는 미실행.
-- 상태: 커밋 / 원격 반영.
+- 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `TODO61 preview` 126건(신규 4건), `completion UX 43` 78건(단독 VIDEO 실제 영상 2건 추가, 1회 메타데이터 대기 시간 초과 후 2회 연속 통과), `TODO69 sample` 62건, `IMAGE preview` 54건, `survey rich text 55` 67건, `guide render` 31건·`guide registry` 296건, `rich text 49` 75건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `question template picker` 7건, `pickPopupFields` 34건 통과. 관리자 웹 실화면·WPF 캡처 나란히 비교는 미실행.
+- 상태: 커밋 / 원격 반영(단독 VIDEO 실제 영상 보완 포함).
 
 
 ## 2026-11-16-04 — dev: TODO76 VM 복귀 시 기존 팝업·Overlay 재배치

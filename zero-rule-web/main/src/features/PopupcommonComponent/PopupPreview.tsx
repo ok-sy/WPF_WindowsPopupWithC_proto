@@ -5,7 +5,7 @@ import SurveyPreview, {
   type PreviewAnswer,
   type SurveyPreviewProps,
 } from './SurveyPreview';
-import AspectVideoArea from './AspectVideoArea';
+import AspectVideoArea, { FillVideoArea } from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
@@ -24,7 +24,6 @@ import {
 import type { AdminPopupDetail } from '@local/domain';
 import { routerUrlOf } from '@/lib/urls';
 import { type SyntheticEvent, useEffect, useId, useRef, useState } from 'react';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
   Box,
   Button,
@@ -268,24 +267,7 @@ function PopupBody({
     // TODO61-17: WPF VideoPopupView와 같이 제목 → 영상(남은 높이를 채움) → 설명 순서. 영상 영역은 검정 배경·1px #D1D5DB 테두리·모서리 8.
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
-        {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <Box
-          sx={{
-            flex: 1,
-            minHeight: 170,
-            boxSizing: 'border-box',
-            border: '1px solid #D1D5DB',
-            borderRadius: '8px',
-            bgcolor: '#000',
-            color: 'white',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <Stack alignItems="center" spacing={1}>
-            <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
-            <Typography variant="caption">영상 재생 영역</Typography>
-          </Stack>
-        </Box>}
+        {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <FillVideoArea url={String(content.videoUrl ?? '').trim()} />}
         {showControls && (
           <Stack direction="row" justifyContent="space-between" color="text.secondary">
             <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>

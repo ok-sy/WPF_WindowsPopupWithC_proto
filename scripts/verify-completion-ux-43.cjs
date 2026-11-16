@@ -107,6 +107,19 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'Changing the URL drops the previous video ratio (TODO60): ' + JSON.stringify(a));
   await render('VIDEO', {}, {videoUrl: '/demo-video.mp4'});
   check(await area() === null, 'Single VIDEO keeps the existing video area (TODO60)');
+  // TODO61-17: 단독 VIDEO도 실제 영상을 남은 높이를 채운 검정 영역 안에 비율 유지(contain)로 그린다(WPF Uniform). 재생은 하지 않는다.
+  const fill = () => run(`(()=>{const a=document.querySelector('[data-testid=fill-video-area]'); if(!a) return null; const v=a.querySelector('video');
+    return {loaded: a.dataset.loaded, fit: v ? getComputedStyle(v).objectFit : '', paused: v ? v.paused : null, muted: v ? v.muted : null,
+      vw: v ? v.videoWidth : 0, w: v ? v.clientWidth : 0, h: v ? v.clientHeight : 0, placeholder: a.textContent.includes('영상 재생 영역')};})()`);
+  let fv; for (let i = 0; i < 60; i++) { fv = await fill(); if (fv && fv.loaded === 'true') break; await pause(100); }
+  check(fv && fv.loaded === 'true' && fv.fit === 'contain' && fv.paused === true && fv.muted === true && fv.vw > 0 && fv.w > 0 && fv.h > 0 && !fv.placeholder,
+    'Single VIDEO shows the real video with contain, muted and not playing (TODO61-17): ' + JSON.stringify(fv));
+  await render('VIDEO', {}, {videoUrl: '/missing.mp4'});
+  const fillText = () => run(`document.querySelector('[data-testid=fill-video-area]')?.textContent ?? ''`);
+  for (let i = 0; i < 60; i++) { if ((await fillText()).includes('영상을 읽지 못했습니다')) break; await pause(100); }
+  fv = await fill();
+  check(fv && fv.loaded === 'false' && (await fillText()).includes('영상을 읽지 못했습니다'),
+    'Single VIDEO with an unreadable URL shows the failure notice (TODO61-17): ' + JSON.stringify(fv));
   await render('QUIZ', {}, {description: '퀴즈 설명'});
   check(await countText('퀴즈 설명') === 1, 'plain QUIZ keeps its description');
 
