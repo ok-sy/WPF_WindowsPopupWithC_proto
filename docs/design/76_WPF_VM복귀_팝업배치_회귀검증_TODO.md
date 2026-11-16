@@ -37,7 +37,7 @@ VM 재현 환경이 없어 로그로 원인을 확정하지 못했으나, 코드
 - `PopupManager`: 팝업 표시 중에만 `SystemEvents.DisplaySettingsChanged`·`SessionSwitch`(잠금/해제·콘솔/원격 연결/해제)를 구독하고 닫히면 해제. 이벤트 직후 1회 + 1초 뒤 1회 `Overlay.Refit()` → 각 팝업 `RefreshForDisplayChange()` → 팝업을 Overlay 위로(`SetWindowPos HWND_TOPMOST`, 활성화 없음).
 - `BackgroundOverlayManager.Refit()`: 모니터 수가 같으면 같은 순서의 모니터 물리 영역으로 다시 맞추고, 바뀌었으면 닫고 현재 모니터 목록으로 다시 만든다.
 - `PopupWindow`: Header를 실제로 끌어 옮겼을 때만 사용자 위치(`_userPlacement`)를 기억한다. 화면 변경 시 사용자 위치가 없으면 설정 위치로, 있으면 현재 작업 영역에 들어갈 때 그 위치로, 들어가지 않으면 설정 위치로 둔다(사용자 위치는 기억해 두어 화면이 다시 넓어지면 복원). 화면 구성이 그대로인 복귀에서는 드래그 위치가 유지된다.
-- `Services/DisplayDiagnostics`: 각 시점(보정 전/후, `+1s`)의 모니터 장치명·Bounds·WorkingArea(물리 픽셀)와 팝업·Overlay의 WPF 좌표(DIP)·실제 창 사각형(물리 픽셀)·모니터·DPI 배율을 `%LOCALAPPDATA%\Popup\logs\display-yyyyMMdd.log`에 남긴다. 사용자 정보·팝업 내용은 남기지 않는다.
+- `Services/DisplayDiagnostics`: 각 시점(보정 전/후, `+1s`)의 모니터 장치명·Bounds·WorkingArea(물리 픽셀)와 팝업·Overlay의 WPF 좌표(DIP)·실제 창 사각형(물리 픽셀)·모니터·DPI 배율, 팝업의 끌어 옮긴 위치(`userPlacement=x,y` 또는 `userPlacement=none`)를 `%LOCALAPPDATA%\Popup\logs\display-yyyyMMdd.log`에 남긴다. 사용자 정보·팝업 내용은 남기지 않는다.
 - 문서: `WPF_POPUP_ALL_SPEC.md` 위치 규칙, `WPF_AGENT_SPEC.md` §5.4.
 - 검증: `PopupWindowTests` `PASS: 558`(신규 10건 — 밀린 창 설정 위치 복귀, 끌어 놓은 위치 복원·영역 밖이면 설정 위치, Overlay 재맞춤·모니터 수 일치, 팝업이 Overlay 위, 진단 로그 기록, 1초 뒤 재적용, 닫힘 시 구독 해제). 기존 "화면 안 드래그 위치 유지" 검사는 실제 끌기와 같은 사용자 위치 기록으로 바꿔 유지. `Popup.BehaviorTests` 1740, `ApiDemoTests` 143 통과, Release 빌드 경고·오류 0.
 - 미실행: VMware 실환경 잠금·복귀 재현과 로그 확인, 다중 모니터·배율 변경 구성, 잠금 없는 VM 창 전환 비교.
@@ -47,3 +47,13 @@ VM 재현 환경이 없어 로그로 원인을 확정하지 못했으나, 코드
 1. 팝업(Overlay 켜짐)을 띄운 채 호스트 잠금 → 해제 → VM 복귀.
 2. 기존 팝업이 설정 위치로, Overlay가 전체 모니터로 돌아오는지 확인. 팝업을 끌어 옮긴 뒤 같은 절차에서 그 위치가 유지되는지 확인.
 3. 게스트 `%LOCALAPPDATA%\Popup\logs\display-*.log`에서 `SessionSwitch:*`·`DisplaySettingsChanged`와 `+1s`의 보정 전/후 좌표를 비교해 추정 원인(해상도 축소 → 좌상단 이동)이 맞는지 기록.
+
+## 진단 로그 판독 (2026-11-16 보완)
+
+이벤트 하나에 직후 보정 전·후와 `+1s` 보정 전·후 네 덩어리가 남는다. 팝업 줄 끝의 `userPlacement`로 위치 규칙을 구분한다.
+
+- `userPlacement=none`: 끌어 옮기지 않은 창. 보정 후 위치는 설정 위치(`popupPosition`)여야 한다.
+- `userPlacement=x,y`(DIP): 끌어 옮긴 창. 그 위치가 현재 작업 영역에 들어가면 보정 후 `dip` 좌표가 이 값과 같고, 들어가지 않으면 설정 위치다.
+- `보정 전` 모니터 크기·Overlay `px`가 실제 해상도보다 작으면 해상도 일시 축소(추정 원인)가 맞다. `+1s` 보정 전 값이 직후 보정 후 값과 다르면 화면이 한 번 더 바뀐 경우다.
+
+검증: `PopupWindowTests` `PASS: 559`(끌어 옮긴 위치 로그 기록 1건 추가, 기존 로그 검사에 `userPlacement=none` 확인 추가), `Popup.BehaviorTests` 1740, Release 빌드 경고·오류 0.

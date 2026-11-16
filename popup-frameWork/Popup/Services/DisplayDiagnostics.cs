@@ -14,11 +14,11 @@ namespace Popup.Services
     /*
      * POL-02-01 : 창 구조 — 다중 모니터·화면 변경 진단(설계 76)
      * ■ 화면 변경 진단 로그
-     * - in : Log(stage, windows) 기록 시점 이름·대상 창 목록(팝업·Overlay)
+     * - in : Log(stage, windows) 기록 시점 이름·대상 창 목록(팝업·Overlay, 창별 추가 정보 Detail)
      * - out: %LOCALAPPDATA%\Popup\logs\display-yyyyMMdd.log 한 덩어리 추가. 어떤 경우에도 예외를 던지지 않는다.
      * - VM 복귀·잠금 해제·해상도/배율 변경 때 기존 팝업·Overlay가 어긋나는 문제를 실환경에서 확인하려고 남긴다.
      *   기록 내용: 시각·시점(이벤트 이름, 보정 전/후, 1초 뒤), 모니터별 장치명·Bounds·WorkingArea·주 모니터 여부(물리 픽셀),
-     *   창별 종류·WPF 좌표(DIP)·실제 창 사각형(물리 픽셀)·DPI 배율.
+     *   창별 종류·WPF 좌표(DIP)·실제 창 사각형(물리 픽셀)·DPI 배율·추가 정보(팝업은 userPlacement: 끌어 옮긴 위치 DIP 또는 none).
      * - 사용자 정보·팝업 내용은 남기지 않는다. 팝업이나 Overlay가 표시 중일 때 화면 변경 이벤트가 오면만 기록하므로 양이 적다.
      */
     public static class DisplayDiagnostics
@@ -29,7 +29,7 @@ namespace Popup.Services
 
         internal static string CurrentLogPath => Path.Combine(LogDirectory, $"display-{DateTime.Now:yyyyMMdd}.log");
 
-        public static void Log(string stage, IEnumerable<(string Kind, Window Window)> windows)
+        public static void Log(string stage, IEnumerable<(string Kind, Window Window, string? Detail)> windows)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace Popup.Services
                         .Append(" bounds=").Append(Format(screen.Bounds))
                         .Append(" work=").AppendLine(Format(screen.WorkingArea));
                 }
-                foreach ((string kind, Window window) in windows)
+                foreach ((string kind, Window window, string? detail) in windows)
                 {
                     entry.Append("  ").Append(kind).Append(' ')
                         .Append(window.IsVisible ? "visible" : "hidden")
@@ -56,6 +56,7 @@ namespace Popup.Services
                     {
                         entry.Append(" dpiScale=").Append(VisualTreeHelper.GetDpi(window).DpiScaleX.ToString("0.##"));
                     }
+                    if (!string.IsNullOrEmpty(detail)) entry.Append(' ').Append(detail);
                     entry.AppendLine();
                 }
                 string text = entry.ToString();

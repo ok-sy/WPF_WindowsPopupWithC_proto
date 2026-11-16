@@ -2163,7 +2163,7 @@ internal static class Program
 
             string logText = System.IO.File.ReadAllText(System.IO.Directory.GetFiles(logDirectory, "display-*.log").Single());
             Check(logText.Contains("test (보정 전)") && logText.Contains("test (보정 후)") && logText.Contains("overlay#0") && logText.Contains("popup ")
-                  && logText.Contains("screen ") && logText.Contains("px="),
+                  && logText.Contains("screen ") && logText.Contains("px=") && logText.Contains("userPlacement=none"),
                 "[설계 76] display diagnostics log records monitors and popup/overlay rectangles before and after");
 
             // 1초 뒤 한 번 더 맞춘다(VM 복귀처럼 화면이 단계적으로 바뀌는 경우).
@@ -2173,6 +2173,15 @@ internal static class Program
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => System.Threading.Thread.Sleep(20), System.Windows.Threading.DispatcherPriority.Background);
             Check(Math.Abs(popup.Left - centerLeft) < 0.6 && Math.Abs(popup.Top - centerTop) < 0.6,
                 $"[설계 76] a second pass one second later fixes a window moved after the first pass ({popup.Left}, {popup.Top})");
+
+            // 끌어 옮긴 위치가 있으면 그 값을 로그에 남긴다.
+            SetUserPlacement(popup, new Point(SystemParameters.WorkArea.Left + 40, SystemParameters.WorkArea.Top + 30));
+            typeof(Popup.Managers.PopupManager).GetMethod("HandleDisplayChange", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(manager, new object[] { "dragged" });
+            logText = System.IO.File.ReadAllText(System.IO.Directory.GetFiles(logDirectory, "display-*.log").Single());
+            string expectedPlacement = $"userPlacement={SystemParameters.WorkArea.Left + 40:0.#},{SystemParameters.WorkArea.Top + 30:0.#}";
+            Check(logText.Contains("dragged (보정 후)") && logText.Contains(expectedPlacement),
+                $"[설계 76] display diagnostics log records the dragged position ({expectedPlacement})");
 
             ShutdownClose(popup);
             Check(!Overlay(manager).IsVisible && !(bool)typeof(Popup.Managers.PopupManager).GetField("_displayEventsAttached", Flags)!.GetValue(manager)!,

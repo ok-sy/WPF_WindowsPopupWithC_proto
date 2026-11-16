@@ -117,9 +117,9 @@ namespace Popup.Managers
             DisplayDiagnostics.Log(stage + " (보정 후)", DiagnosticWindows());
         }
 
-        private IEnumerable<(string Kind, Window Window)> DiagnosticWindows()
-            => _openWindows.Select(window => ("popup", (Window)window))
-                .Concat(_backgroundOverlayManager.Windows.Select((window, index) => ($"overlay#{index}", window)))
+        private IEnumerable<(string Kind, Window Window, string? Detail)> DiagnosticWindows()
+            => _openWindows.Select(window => ("popup", (Window)window, (string?)window.DiagnosticPlacement))
+                .Concat(_backgroundOverlayManager.Windows.Select((window, index) => ($"overlay#{index}", window, (string?)null)))
                 .ToList();
 
         /* Overlay를 다시 맞추면(SetWindowPos HWND_TOPMOST) 팝업보다 위로 올라올 수 있다. 활성화 없이 팝업을 최상위 맨 앞으로 되돌린다. */

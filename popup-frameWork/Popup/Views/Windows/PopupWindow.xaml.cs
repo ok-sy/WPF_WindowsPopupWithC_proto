@@ -38,6 +38,11 @@ namespace Popup.Views.Windows
         /* 설계 76: 사용자가 Header를 끌어 옮긴 마지막 위치(DIP). 없으면 설정 위치(PopupOptions.Position)를 따른다. */
         private Point? _userPlacement;
 
+        /// <summary>설계 76 진단 로그용: "userPlacement=x,y"(끌어 옮긴 위치, DIP) 또는 "userPlacement=none"(설정 위치 사용).</summary>
+        internal string DiagnosticPlacement => _userPlacement is Point placed
+            ? $"userPlacement={placed.X:0.#},{placed.Y:0.#}"
+            : "userPlacement=none";
+
         /*
          * ■ PopupWindow 생성자
          * - in : options(PopupOptions) 팝업 제목, 내용, 버튼 표시 여부 등 팝업 생성에 필요한 설정 정보

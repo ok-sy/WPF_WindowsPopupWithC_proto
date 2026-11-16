@@ -21,10 +21,10 @@
 ## 2026-11-16-04 — dev: TODO76 VM 복귀 시 기존 팝업·Overlay 재배치
 
 - 이유: 호스트 잠금 해제 후 VM으로 복귀할 때 표시 중이던 팝업과 Overlay만 좌상단으로 쏠리고 후속 팝업은 정상 표시되는 현상 확인.
-- 변경: TODO76에 재현 절차·비교 로그·회귀 기준을 기록한 뒤, 코드 추적으로 설명되는 추정 원인(게스트 해상도 일시 축소로 Windows가 창을 좌상단으로 이동, Overlay는 생성 때만 모니터 영역에 맞춤, 팝업은 작업 영역을 벗어날 때만 재배치)을 기준으로 진단 로그와 수정을 함께 반영. `PopupManager`가 팝업 표시 중에만 `DisplaySettingsChanged`·`SessionSwitch`를 구독해 이벤트 직후와 1초 뒤 Overlay 재맞춤(`BackgroundOverlayManager.Refit`) → 팝업 위치 재결정 → 팝업을 Overlay 위로 올림. `PopupWindow`는 실제로 끌어 옮긴 위치만 기억해, 옮기지 않은 창은 설정 위치로, 옮긴 창은 화면 안이면 그 위치로 복원. `DisplayDiagnostics`가 모니터·창 좌표를 `%LOCALAPPDATA%\Popup\logs\display-*.log`에 기록. WPF 사양서 2종·TODO76 결과·VM 확인 절차 갱신.
+- 변경: TODO76에 재현 절차·비교 로그·회귀 기준을 기록한 뒤, 코드 추적으로 설명되는 추정 원인(게스트 해상도 일시 축소로 Windows가 창을 좌상단으로 이동, Overlay는 생성 때만 모니터 영역에 맞춤, 팝업은 작업 영역을 벗어날 때만 재배치)을 기준으로 진단 로그와 수정을 함께 반영. `PopupManager`가 팝업 표시 중에만 `DisplaySettingsChanged`·`SessionSwitch`를 구독해 이벤트 직후와 1초 뒤 Overlay 재맞춤(`BackgroundOverlayManager.Refit`) → 팝업 위치 재결정 → 팝업을 Overlay 위로 올림. `PopupWindow`는 실제로 끌어 옮긴 위치만 기억해, 옮기지 않은 창은 설정 위치로, 옮긴 창은 화면 안이면 그 위치로 복원. `DisplayDiagnostics`가 모니터·창 좌표와 팝업의 끌어 옮긴 위치(`userPlacement`, 후속 보완)를 `%LOCALAPPDATA%\Popup\logs\display-*.log`에 기록. WPF 사양서 2종·TODO76 결과·VM 확인 절차 갱신.
 - 주요 파일: `popup-frameWork/Popup/Managers/PopupManager.cs`, `popup-frameWork/Popup/Managers/BackgroundOverlayManager.cs`, `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `popup-frameWork/Popup/Services/DisplayDiagnostics.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/design/76_WPF_VM복귀_팝업배치_회귀검증_TODO.md`.
-- 검증: PopupWindowTests `PASS: 558`(신규 10건: 밀린 창 설정 위치 복귀, 끌어 놓은 위치 복원·영역 밖이면 설정 위치, Overlay 재맞춤, 팝업이 Overlay 위, 진단 로그, 1초 뒤 재적용, 닫힘 시 구독 해제), Popup.BehaviorTests `PASS: 1740`, ApiDemoTests `PASS: 143`, Release 빌드 경고·오류 0. VMware 실환경 잠금·복귀 재현과 로그 기반 원인 확인은 미실행.
-- 상태: 커밋 / 원격 반영.
+- 검증: PopupWindowTests `PASS: 559`(신규 11건: 진단 로그 userPlacement 기록, 밀린 창 설정 위치 복귀, 끌어 놓은 위치 복원·영역 밖이면 설정 위치, Overlay 재맞춤, 팝업이 Overlay 위, 진단 로그, 1초 뒤 재적용, 닫힘 시 구독 해제), Popup.BehaviorTests `PASS: 1740`, ApiDemoTests `PASS: 143`, Release 빌드 경고·오류 0. VMware 실환경 잠금·복귀 재현과 로그 기반 원인 확인은 미실행.
+- 상태: 커밋 / 원격 반영(userPlacement 로그 보완 포함).
 
 
 ## 2026-11-16-03 — dev: TODO51-12 API Demo 입력 모드 / SSO 프로세스 모드
