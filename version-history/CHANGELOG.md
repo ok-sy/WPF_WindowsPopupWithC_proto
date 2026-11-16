@@ -6,7 +6,7 @@
 - 변경: 버튼·메뉴 진입 비교, 탭 등록·재사용·닫기 버튼 표시 조건 및 회귀 검증 기준 기록. 이후 Git `main` 기준 정적 추적 결과를 TODO77에 추가: 모든 진입 경로(사이드바·페이지 번호·`PageToScene`·`replaceScene`)가 같은 `SceneTab`을 그리고 닫기 버튼은 모든 탭에서 마우스 오버 때만 표시(`display: none` → hover `inline-flex`), 저장소 메인페이지(`/clover-main`)에는 다른 페이지를 탭으로 여는 버튼이 없음. 저장소 기준 재현 경로가 없어 코드는 변경하지 않고 발생 환경·버튼·오버 시 표시 여부 확인 항목 기록.
 - 주요 파일: `docs/design/77_관리자웹_메인버튼_탭닫기_회귀검증_TODO.md`.
 - 검증: `SceneTab.tsx`·`SceneTabs.tsx`·`SceneManager.tsx`·`scene-router.tsx`·`Sidebar.tsx`·`Topbar.tsx`·`CloverMainHome` 정적 확인. 실화면 재현은 미실행.
-- 상태: 커밋 / 미푸시. 발생 환경·버튼 정보 확인 후 원인 판단 대기.
+- 상태: 커밋 / 원격 반영. 발생 환경·버튼 정보 확인 후 원인 판단 대기.
 
 
 ## 2026-11-16-05 — dev: TODO61-17 미리보기 VIDEO 레이아웃·공통 헤더/푸터 WPF 정렬
@@ -15,7 +15,7 @@
 - 변경: TODO61에 캡처 대조·유형별 회귀 검증 기준을 추가한 뒤 웹과 WPF 코드를 대조. 가장 유력한 원인은 단독 VIDEO 영상 영역이 남은 높이를 채우지 못하고 170px에 머문 것(WPF는 `VideoRow *`). 미기록 차이 전체를 수정 대상으로 정해 VIDEO 영상 영역 높이 채움, 순서를 제목 → 영상 → 설명으로 변경, 웹 전용 완료 기준·기본 음량 안내 삭제, 영상 영역 검정·1px `#D1D5DB`·모서리 8, VIDEO 제목 22/600, 설명 14px로 맞춤. 동영상+퀴즈 영상 높이를 WPF `AspectSizing`과 같은 테두리 포함 식으로 바꾸고 바깥 폭으로 측정. 공통 Header 제목 17/600, 본문 여백 28/24, Footer 높이 80(IMAGE 외 최소 높이)·여백 28/8/28/16·구분선 제거·확인 버튼 118×44. 영향 낮은 남은 차이(모달 상한 0.96, RATIO 보정, 동영상+퀴즈 상한 패딩)는 PARITY 문서에 기록하고 미수정.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-completion-ux-43.cjs`, `scripts/verify-popup-common-sample-69.cjs`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`.
 - 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `TODO61 preview` 126건(신규 4건), `completion UX 43` 76건, `TODO69 sample` 62건, `IMAGE preview` 54건, `survey rich text 55` 67건, `guide render` 31건·`guide registry` 296건, `rich text 49` 75건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `question template picker` 7건, `pickPopupFields` 34건 통과. 관리자 웹 실화면·WPF 캡처 나란히 비교는 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 
 ## 2026-11-16-04 — dev: TODO76 VM 복귀 시 기존 팝업·Overlay 재배치
@@ -24,7 +24,7 @@
 - 변경: TODO76에 재현 절차·비교 로그·회귀 기준을 기록한 뒤, 코드 추적으로 설명되는 추정 원인(게스트 해상도 일시 축소로 Windows가 창을 좌상단으로 이동, Overlay는 생성 때만 모니터 영역에 맞춤, 팝업은 작업 영역을 벗어날 때만 재배치)을 기준으로 진단 로그와 수정을 함께 반영. `PopupManager`가 팝업 표시 중에만 `DisplaySettingsChanged`·`SessionSwitch`를 구독해 이벤트 직후와 1초 뒤 Overlay 재맞춤(`BackgroundOverlayManager.Refit`) → 팝업 위치 재결정 → 팝업을 Overlay 위로 올림. `PopupWindow`는 실제로 끌어 옮긴 위치만 기억해, 옮기지 않은 창은 설정 위치로, 옮긴 창은 화면 안이면 그 위치로 복원. `DisplayDiagnostics`가 모니터·창 좌표를 `%LOCALAPPDATA%\Popup\logs\display-*.log`에 기록. WPF 사양서 2종·TODO76 결과·VM 확인 절차 갱신.
 - 주요 파일: `popup-frameWork/Popup/Managers/PopupManager.cs`, `popup-frameWork/Popup/Managers/BackgroundOverlayManager.cs`, `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `popup-frameWork/Popup/Services/DisplayDiagnostics.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/design/76_WPF_VM복귀_팝업배치_회귀검증_TODO.md`.
 - 검증: PopupWindowTests `PASS: 558`(신규 10건: 밀린 창 설정 위치 복귀, 끌어 놓은 위치 복원·영역 밖이면 설정 위치, Overlay 재맞춤, 팝업이 Overlay 위, 진단 로그, 1초 뒤 재적용, 닫힘 시 구독 해제), Popup.BehaviorTests `PASS: 1740`, ApiDemoTests `PASS: 143`, Release 빌드 경고·오류 0. VMware 실환경 잠금·복귀 재현과 로그 기반 원인 확인은 미실행.
-- 상태: 커밋 / 미푸시.
+- 상태: 커밋 / 원격 반영.
 
 
 ## 2026-11-16-03 — dev: TODO51-12 API Demo 입력 모드 / SSO 프로세스 모드
