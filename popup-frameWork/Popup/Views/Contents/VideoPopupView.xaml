@@ -412,7 +412,9 @@
             MouseEnter="VideoContainer_MouseEnter"
             MouseLeave="VideoContainer_MouseLeave"
             PreviewMouseMove="VideoContainer_PreviewMouseMove">
-            <Grid x:Name="VideoSurface" ClipToBounds="True">
+            <!-- 영상 엔진(WebView2·MediaElement)은 사각형이라 ClipToBounds만으로는 둥근 테두리 모서리를 덮는다.
+                 VideoSurface_SizeChanged가 테두리 안쪽 반경으로 둥글게 자른다(2026-11-17). -->
+            <Grid x:Name="VideoSurface" ClipToBounds="True" SizeChanged="VideoSurface_SizeChanged">
 
                 <!-- 로컬 파일 또는 직접 영상 URL -->
                 <MediaElement

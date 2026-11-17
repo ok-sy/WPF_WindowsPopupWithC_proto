@@ -1288,6 +1288,25 @@ namespace Popup.Views.Contents
             LocalVideoControlArea.Visibility = Visibility.Collapsed;
         }
 
+        /*
+         * POL-05-01 : 재생 경로
+         * ■ 영상 영역 둥근 모서리 자르기(2026-11-17)
+         * - in : VideoSurface 크기, VideoContainer 모서리·테두리 두께
+         * - out: VideoSurface.Clip = 테두리 안쪽 반경의 둥근 사각형(전체화면은 모서리 0이라 사각형)
+         * - 영상 엔진(WebView2 문서 배경 #000·MediaElement)은 사각형으로 그려져 ClipToBounds(사각형)만으로는
+         *   VideoContainer의 둥근 테두리(8) 모서리를 검정 직각으로 덮는다. 공통 본문(PopupWindow.PopupBodyContent_SizeChanged)과 같은
+         *   방식으로 WPF Border 안쪽 반경(CornerRadius - BorderThickness / 2)으로 자른다. 크기가 바뀔 때만 다시 만든다(프레임마다 아님).
+         */
+        private void VideoSurface_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateVideoSurfaceClip();
+
+        private void UpdateVideoSurfaceClip()
+        {
+            double radius = Math.Max(0, VideoContainer.CornerRadius.TopLeft - VideoContainer.BorderThickness.Left / 2);
+            var clip = new System.Windows.Media.RectangleGeometry(new Rect(VideoSurface.RenderSize), radius, radius);
+            clip.Freeze();
+            VideoSurface.Clip = clip;
+        }
+
         private void VideoContainer_MouseEnter(object sender, MouseEventArgs e) => ShowVideoControls();
 
         private void VideoContainer_MouseLeave(object sender, MouseEventArgs e)
@@ -1638,6 +1657,9 @@ namespace Popup.Views.Contents
             VideoContainer.BorderThickness =
                 new Thickness(0);
 
+            // 전체화면은 모서리 0 — 크기가 같아도 자르기 반경을 바로 맞춘다.
+            UpdateVideoSurfaceClip();
+
             Window? ownerWindow =
                 Window.GetWindow(this);
 
@@ -1798,6 +1820,8 @@ namespace Popup.Views.Contents
 
             VideoContainer.BorderThickness =
                 _originalBorderThickness;
+
+            UpdateVideoSurfaceClip();
 
             /*
              * 원래 부모의 원래 순서에 다시 삽입한다.

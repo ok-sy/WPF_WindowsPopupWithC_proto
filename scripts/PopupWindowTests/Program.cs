@@ -788,6 +788,11 @@ internal static class Program
             $"[TODO60] before metadata the video row uses 16:9 of the real width ({row.Height}, width {root.ActualWidth})");
         Check(Math.Abs(container.ActualHeight - row.Height.Value) < 0.6 && Grid.GetRow(title) == 0 && Grid.GetRow(container) == 1,
             "[TODO60] title is a separate row and does not take the playback height");
+        // 2026-11-17: 영상 엔진(사각형)이 둥근 테두리 모서리를 검정 직각으로 덮지 않도록 VideoSurface를 안쪽 반경(8 - 1/2)으로 자른다.
+        var surface = (FrameworkElement)video.FindName("VideoSurface");
+        Check(surface.Clip is System.Windows.Media.RectangleGeometry clip && Math.Abs(clip.RadiusX - 7.5) < 0.01 && Math.Abs(clip.RadiusY - 7.5) < 0.01
+            && Math.Abs(clip.Rect.Width - surface.ActualWidth) < 0.6 && Math.Abs(clip.Rect.Height - surface.ActualHeight) < 0.6,
+            $"[61-17] video surface is clipped to the rounded inner border (radius 7.5, size {surface.ActualWidth}x{surface.ActualHeight})");
 
         Report(video, Snapshot(30));
         var before = video.LatestProgress;
