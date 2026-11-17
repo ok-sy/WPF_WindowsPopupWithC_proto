@@ -32,9 +32,8 @@ interface Props {
    */
   answerTypeOptions?: PopupCodeOption[];
   /**
-   * 문항 제목·선택지를 서식 편집기로 입력한다. 기본 false = 설문 문항 제목과 선택지는 일반 텍스트(여러 줄) 입력(TODO73-28).
-   * 퀴즈 문항 제목은 이 값과 무관하게 항상 서식 편집기다(2026-11-10 QUIZ 제목 RichTextEditor 통일).
-   * true면 설문 문항 제목과 모든 선택지도 서식 편집기(compact)로 입력하고 서식 블록(titleBlocks·textBlocks)을 저장한다. 퀴즈 OX 정답 선택 UI는 같다.
+   * 선택지 입력 방식만 정한다. 기본 false = 선택지는 일반 텍스트(여러 줄) 입력(TODO73-28), true = 모든 선택지를 서식 편집기(compact)로 입력하고 textBlocks를 저장한다.
+   * 문항 제목은 이 값·quiz와 무관하게 항상 서식 편집기다(2026-11-17 후속 1). 퀴즈 OX 정답 선택 UI는 같다.
    */
   richQuestionText?: boolean;
   /** 최대 문항 수(1 이상 정수). 기본 QUESTION_MAX(30). 저장 전 확인도 같은 값을 validatePopupQuestions에 넘긴다. */
@@ -178,10 +177,10 @@ const ICON_BUTTON_SX = { width: 32, height: 32 };
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 편집기
- * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김 · richQuestionText?(boolean) 제목·선택지 서식 편집기 사용 · maxQuestions?(number) 최대 문항 수
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김 · richQuestionText?(boolean) 선택지 서식 편집기 사용 · maxQuestions?(number) 최대 문항 수
  * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
  * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
- *   퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기(compact)로 입력한다. 설문 문항 제목과 선택지는 일반 텍스트 입력(여러 줄)이다(TODO73-28, 2026-11-10 QUIZ 제목 통일).
+ *   문항 제목은 설문·퀴즈, richQuestionText와 무관하게 항상 서식 편집기(compact)로 입력한다(2026-11-17 후속 1). 선택지는 richQuestionText에 따라 일반 텍스트(여러 줄) 또는 서식 편집기다.
  *   선택지 입력칸 앞에 자동 번호를 붙이지 않는다. 저장 전 확인은 validatePopupQuestions로 한다.
  */
 export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS, richQuestionText = false, maxQuestions = QUESTION_MAX }: Props) {
@@ -235,7 +234,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Box>}
     {!questions.length && <Typography color="text.secondary">문항을 추가하거나 템플릿을 불러오세요.</Typography>}
-    {questions.map((q, index) => { const oxQuestion = quiz && isOxQuestion(q); const richTitle = quiz || richQuestionText; return <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
+    {questions.map((q, index) => { const oxQuestion = quiz && isOxQuestion(q); return <Box key={q.questionId} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1.5, minWidth: 0 }}>
       <Stack spacing={1}>
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <Typography fontWeight={700} sx={{ flex: 1, minWidth: 0 }}>{index + 1}번 문항</Typography>
@@ -244,15 +243,11 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
           <IconButton size="small" sx={ICON_BUTTON_SX} aria-label={`${index + 1}번 문항 삭제`} onClick={() => onChange(questions.filter((_, i) => i !== index))}><DeleteOutlineIcon fontSize="small" /></IconButton>
         </Stack>
         {/* 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73).
-            POL-06-01 : 문항·서식 — 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기(우클릭 펼침 팔레트)로 입력한다(2026-11-10 QUIZ 제목 통일).
-            설문 문항 제목은 richQuestionText=true일 때만 서식 편집기, 기본은 일반 텍스트(여러 줄)로 입력한다(TODO73-28·34).
-            일반 입력에서 고치면 titleBlocks를 비워(null) 서버가 title을 그대로 쓰게 한다. 이전 서식이 미리보기·저장에서 우선되지 않는다(TODO73-29). */}
-        {richTitle ? <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
+            POL-06-01 : 문항·서식 — 문항 제목은 설문·퀴즈, OX 여부, richQuestionText와 무관하게 서식 편집기(우클릭 펼침 팔레트)로 입력한다(2026-11-17 후속 1).
+            서식 없이 일반 문자열만 저장된 기존 제목은 서식 없는 문단으로 열고, 열기만 하면 저장값을 바꾸지 않는다. */}
+        <PopupRichTextEditor compact label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
-          : <TextField size="small" multiline minRows={1} fullWidth label="문항 제목" required placeholder="문항 제목을 입력하세요."
-            slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 제목` } }}
-            value={plainInputValue(q.title, q.titleBlocks)} onChange={(e) => update(index, { title: e.target.value, titleBlocks: null })} />}
         {quiz ? <Box sx={FIELD_ROW_SX}>
           {/* 답안 유형 표시 이름은 공통코드 0089. 기존 복수 선택·주관식은 항목을 하나 더 보여 값을 유지한다. */}
           <TextField select size="small" label="답안 유형" value={answerTypeValue(q)} sx={{ flex: '1 1 160px', minWidth: 140 }} disabled={!answerTypeOptions.length && q.questionType === 'SINGLE_CHOICE'}

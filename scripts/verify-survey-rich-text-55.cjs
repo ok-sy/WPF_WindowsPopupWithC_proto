@@ -53,11 +53,12 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run('typeof window.mountEditor === "function"')) break; await pause(100);}
 
-  // TODO73-28~30: 설문 문항 제목·선택지는 일반 텍스트 입력(TextField multiline). 퀴즈 문항 제목은 OX 여부와 무관하게 서식 편집기(2026-11-10).
+  // TODO73-28~30: 설문 선택지는 일반 텍스트 입력(TextField multiline). 문항 제목은 설문·퀴즈, richQuestionText와 무관하게 서식 편집기(2026-11-17 후속 1).
   // 선택지 입력칸 앞에는 자동 번호를 붙이지 않는다(2026-11-10). 번호 표시 노드는 입력 루트의 직속 span이었다.
   const typeInto = (selector, value) => run(`(()=>{const i=document.querySelector(${JSON.stringify(selector)});
     const proto=i.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(i,${JSON.stringify(value)});i.dispatchEvent(new Event('input',{bubbles:true}));})()`).then(() => pause(150));
-  const titleInput = n => `textarea[aria-label="${n}번 문항 제목"]`;
+  const titleData = () => run('window.editors()[0].getData()');
+  const setTitle = html => run(`window.editors()[0].setData(${JSON.stringify(html)})`).then(() => pause(150));
   const optionInput = (n, oi) => `textarea[aria-label="${n}번 문항 선택지 ${oi}"]`;
   const optionNumberShown = () => run(`Array.from(document.querySelectorAll('textarea[aria-label*="번 문항 선택지 "]')).some(t=>Array.from(t.closest('.MuiInputBase-root').children).some(c=>c.tagName==='SPAN'))`);
   const inputValues = () => run(`Array.from(document.querySelectorAll('textarea[aria-label]')).map(t=>t.getAttribute('aria-label')+'='+t.value)`);
@@ -68,10 +69,11 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
       {optionId: 101, value: '1', text: '매우 그렇다', sortOrder: 1, isCorrect: false, textBlocks: [{alignment: 'LEFT', runs: [{text: '매우 '}, {text: '그렇다', color: '#DC2626'}]}]},
       {optionId: 102, value: '2', text: '보통', sortOrder: 2, isCorrect: false},
       {optionId: 103, value: '3', text: '', sortOrder: 3, isCorrect: false, textBlocks: [bold('첫'), bold('둘')]}]}];
-  await run(`window.mountEditor(${JSON.stringify(surveyQuestions)})`); await pause(400);
-  check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 0, '[73-28] Survey title and options use plain inputs, no rich editors');
+  await run(`window.mountEditor(${JSON.stringify(surveyQuestions)})`); await waitEditors(1); await pause(200);
+  check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 1 && (await titleData()).includes('<strong>만족도</strong>'),
+    '[2026-11-17 1] Survey title uses the rich editor with its saved formatting; options stay plain inputs');
   let values = await inputValues();
-  check(values.join('|') === '1번 문항 제목=만족도|1번 문항 선택지 1=매우 그렇다|1번 문항 선택지 2=보통|1번 문항 선택지 3=첫\n둘', '[73-29] Inputs show plain text first and restore empty text from blocks: ' + JSON.stringify(values));
+  check(values.join('|') === '1번 문항 선택지 1=매우 그렇다|1번 문항 선택지 2=보통|1번 문항 선택지 3=첫\n둘', '[73-29] Inputs show plain text first and restore empty text from blocks: ' + JSON.stringify(values));
   check(!(await optionNumberShown()), '[2026-11-10] Survey option inputs show no automatic number and keep the numbered aria-label');
   let q = (await questions())[0];
   check(JSON.stringify(q) === JSON.stringify(surveyQuestions[0]), '[73-29] Opening only keeps the saved data and formatting untouched');
@@ -82,34 +84,37 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(q.options[0].text === '매우 그렇다!' && q.options[0].textBlocks === null, '[73-29] Editing an option sets plain text and clears its blocks: ' + JSON.stringify(q.options[0]));
   check(q.options[1].text === '보통' && q.options[2].textBlocks?.length === 2 && JSON.stringify(q.titleBlocks) === JSON.stringify([bold('만족도')]), 'Other options and the title keep their values and formatting');
 
-  // ── 3. 제목 수정·줄바꿈: titleBlocks를 비우고 줄바꿈을 그대로 저장 ──
-  await typeInto(titleInput(1), '첫 줄\n둘째 줄');
+  // ── 3. 제목 수정·줄바꿈: 서식 편집기 문단이 title 줄바꿈과 titleBlocks로 저장된다 ──
+  await setTitle('<p>첫 줄</p><p><u>둘째</u> 줄</p>');
   q = (await questions())[0];
-  check(q.title === '첫 줄\n둘째 줄' && q.titleBlocks === null, '[73-29] Title keeps the newline and clears titleBlocks: ' + JSON.stringify({title: q.title, blocks: q.titleBlocks}));
+  check(q.title === '첫 줄\n둘째 줄' && q.titleBlocks?.length === 2 && q.titleBlocks[1].runs[0].underline === true,
+    '[2026-11-17 1] Rich title keeps paragraphs as newlines and stores titleBlocks: ' + JSON.stringify({title: q.title, blocks: q.titleBlocks}));
 
   // ── 4. 선택지 삭제 후에도 입력칸이 ID로 남는다(순서 index로 섞이지 않음) ──
   await run(`Array.from(document.querySelectorAll('button')).find(b=>b.getAttribute('aria-label')==='선택지 1 삭제').click()`); await pause(200);
   values = await inputValues();
-  check(values.slice(1).join('|') === '1번 문항 선택지 1=보통|1번 문항 선택지 2=첫\n둘', 'After deleting option 1 the remaining inputs keep their own content: ' + JSON.stringify(values));
+  check(values.join('|') === '1번 문항 선택지 1=보통|1번 문항 선택지 2=첫\n둘', 'After deleting option 1 the remaining inputs keep their own content: ' + JSON.stringify(values));
   await typeInto(optionInput(1, 1), '수정');
   q = (await questions())[0];
   check(q.options.length === 2 && q.options[0].optionId === 102 && q.options[0].text === '수정' && q.options[1].textBlocks?.length === 2, 'Edits after deletion go to the right option by ID');
 
   // ── 5. 설명 보존, 빈 제목·글자 수 상한은 저장 전 검증이 막는다 ──
   check(q.description === '설명 문장' && !(await run(`document.body.textContent.includes('문항 설명')`)), 'The question description input is gone and the stored description is kept (TODO73)');
-  await typeInto(titleInput(1), '');
+  await setTitle('');
   check(await run(`window.validatePopupQuestions(window.questions,false)`) === '1번 문항: 제목을 입력해 주세요.', 'Empty title is rejected before save');
-  await typeInto(titleInput(1), '가'.repeat(1001));
+  await setTitle('<p>' + '가'.repeat(1001) + '</p>');
   check(await run(`window.validatePopupQuestions(window.questions,false)`) === '1번 문항: 제목은 1000자 이하로 입력해 주세요.', 'Title length is checked like the server');
 
   // ── 6. 새 선택지 추가: 임시 ID가 겹치지 않아 입력칸이 따로 생긴다 ──
   await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='선택지 추가').click()`); await pause(50);
   await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='선택지 추가').click()`); await pause(300);
   q = (await questions())[0];
-  check(new Set(q.options.map(o => o.optionId)).size === 4 && (await inputValues()).length === 5, 'Rapidly added options get distinct temporary IDs and their own inputs');
-  // 주관식은 제목만 일반 입력(73-28)
-  await run(`window.mountEditor(${JSON.stringify([{questionId: 12, title: '', titleBlocks: [bold('의견')], questionType: 'TEXT', isRequired: false, isScored: false, sortOrder: 1, options: []}])})`); await pause(300);
-  check((await inputValues()).join('|') === '1번 문항 제목=의견' && await run(`document.querySelectorAll('.ck-editor__editable').length`) === 0, '[73-28] Survey text question uses a plain title input restored from blocks');
+  check(new Set(q.options.map(o => o.optionId)).size === 4 && (await inputValues()).length === 4, 'Rapidly added options get distinct temporary IDs and their own inputs');
+  // 주관식도 제목은 서식 편집기. 일반 문자열만 저장된 기존 제목은 서식 없는 문단으로 열고, 열기만 하면 저장값을 바꾸지 않는다.
+  const plainOnly = [{questionId: 12, title: '의견', questionType: 'TEXT', isRequired: false, isScored: false, sortOrder: 1, options: []}];
+  await run(`window.mountEditor(${JSON.stringify(plainOnly)})`); await waitEditors(1); await pause(200);
+  check(await titleData() === '<p>의견</p>' && (await inputValues()).length === 0 && JSON.stringify(await questions()) === JSON.stringify(plainOnly),
+    '[2026-11-17 1] Survey text question opens a plain saved title in the rich editor without changing it');
 
   // ── 6-1. 최대 30문항(TODO73-22·23): N/30 표시, 30개면 추가 비활성, 삭제하면 다시 활성, 31개 유입은 자르지 않고 안내·저장 차단 ──
   const many = n => Array.from({length: n}, (_, i) => ({questionId: 1000 + i, title: '문항' + (i + 1), questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: false, isScored: false, sortOrder: i + 1,
@@ -129,7 +134,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(await run(`window.validatePopupQuestions(window.questions,true,0)`) === overflow, '[73-22] Saving 31 questions is blocked with the reason');
   check(await run(`document.body.textContent.includes('퀴즈 문항 31/30')`), '[73-23] Quiz header shows the count over the limit');
 
-  // ── 6-2. props(TODO73-34): richQuestionText=true면 제목·선택지 서식 편집기, maxQuestions로 상한 변경 ──
+  // ── 6-2. props(TODO73-34): richQuestionText=true면 선택지도 서식 편집기(제목은 항상 서식 편집기), maxQuestions로 상한 변경 ──
   await run(`window.mountEditor(${JSON.stringify(surveyQuestions)}, false, {richQuestionText: true})`);
   await waitEditors(4); await pause(200);
   const richDatas = await run('window.editors().map(e=>e.getData())');

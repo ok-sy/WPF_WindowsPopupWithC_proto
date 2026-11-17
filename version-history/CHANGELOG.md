@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-17-04 — dev: 설문·퀴즈 문항 제목 서식 편집기 상시 사용
+
+- 이유: SURVEY 문항 제목이 `quiz=false`·`richQuestionText=false`에서 일반 입력으로 바뀌는 문제. 후속 TODO 1번 요건(제목은 항상 서식 편집기, `richQuestionText`는 선택지 입력 방식만 제어) 반영.
+- 변경: `PopupQuestionEditor`의 `richTitle = quiz || richQuestionText` 분기와 일반 `TextField` 제목을 제거하고 제목을 항상 `PopupRichTextEditor`(compact)로 렌더링. 저장 형식(`title`·`titleBlocks`, `initialRich`·`richValue`)은 그대로. props·함수 주석, 가이드(요약·props·힌트·시작 탭)·공지·인계 문서 갱신. 하네스 `verify-survey-rich-text-55.cjs`를 설문 제목 서식 편집기 기준으로 수정.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`·`guideNotices.ts`·`guideRunners.tsx`·`tabs/GuideStartTab.tsx`, `scripts/verify-survey-rich-text-55.cjs`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`.
+- 검증: `tsc --noEmit`·변경 파일 eslint 통과. 하네스 `survey rich text 55` 67건, `quiz option byte 73` 44건, `guide registry` 299건, `guide render` 31건, `TODO69 sample` 62건, `RgstPop quiz rule` 25건, `question template picker` 7건 통과. 서버 저장→재조회 실화면·폐쇄망 미실행.
+- 상태: 커밋 / 미푸시. 후속 2~5번(기본 글자 크기·선택지 32px/12px·WPF 동시 반영·영역별 기본 스타일)은 진행 중.
+
 ## 2026-11-17-03 — doc: TODO78 F/P 문서 체계 정리 계획
 
 - 변경: 기능·정책 대단위 번호, 대기·진행·완료 상태, 다음 할 일 및 기존 참조 보존 기준 기록.
@@ -37,6 +45,7 @@
   - 구성: 웹 A 54·M 22·D 3(baseline f66e8ed 누적), WPF 소스 100, 문서 164+CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함). 삭제 목록 신규 0.
 - 검증: 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,830,606 Byte). TAR 4개 파일 수 검증, TGZ SHA256 `4860a8142080f96785367545ca5ebe0db133ebfdf2ece9fda55abf2df27f7ed0` 일치(21,146,913 Byte). 추출본에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, `BuildProfile.cs`·`DemoMediaPathService.cs`·CI 이미지 포함, README-IMPORT 기준 커밋 54e6f81·직전 20261112(9113308)·BaseUrl 안내 포함, 삭제 목록 서버·DB 경로 0건. 폐쇄망 적용·실호출은 미실행.
 - 상태: 반입본 생성·검증 완료(`offline-export/20261116`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 후속(2026-11-17): 20261116 반입본은 폐쇄망에 반입하지 못해 `offline-export/20261116`(폴더·TGZ)·히스토리 번들 `.offline-cache/git-history-20261116`·검증 폴더 `.offline-verify/package-20261116-*`를 삭제. 변경 요약 `.offline-cache/notes-20261116.md`는 다음 반입 작성용으로 보존. 다음 반입은 직전 반입본 20261112(9113308) 기준으로 다시 만든다.
 
 
 ## 2026-11-16-08 — dev: Demo 미디어 외부 URL 설정

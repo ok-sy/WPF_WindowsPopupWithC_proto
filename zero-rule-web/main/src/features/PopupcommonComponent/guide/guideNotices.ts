@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-17-question-title-always-rich', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
+    title: '설문 문항 제목도 서식 편집기로 입력',
+    body: ['문항 제목은 설문·퀴즈와 richQuestionText 값에 관계없이 항상 서식 편집기(compact)로 입력합니다. richQuestionText는 선택지 입력 방식(일반 입력 / 서식 편집기)만 정합니다.',
+      '서식 없이 title만 저장된 기존 문항은 서식 없는 문단으로 열리고, 열기만 하면 저장값을 바꾸지 않습니다. 편집하면 title과 titleBlocks를 함께 저장합니다.'],
+    components: ['PopupQuestionEditor'],
+    action: '바꿀 코드는 없습니다. 저장 형식(title·titleBlocks)은 그대로입니다.',
+  },
+  {
     id: '2026-11-11-survey-option-300-byte', date: '2026-11-11', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-11',
     title: '설문 선택지도 UTF-8 300 Byte 입력 제한·저장 오류 사유 표시',
     body: ['설문 선택지도 퀴즈 선택지와 같은 DB 컬럼(VARCHAR2(300 BYTE))이라 같은 300 Byte 기준으로 입력을 막고 validatePopupQuestions가 저장 전에 확인합니다. 문항 제목(CLOB)은 제한하지 않습니다.',

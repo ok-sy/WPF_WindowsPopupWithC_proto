@@ -43,9 +43,9 @@
 ### 1. SURVEY·QUIZ 문항 제목 서식 편집기 상시 사용
 
 **확정 요구사항**
-- [ ] 문항 제목은 `quiz=true/false` 및 `richQuestionText=true/false`와 무관하게 항상 `PopupRichTextEditor`(compact)로 입력·수정 가능해야 한다.
-- [ ] `richQuestionText`는 **선택지 입력 방식**(일반 텍스트 / 서식 편집기)만 제어한다. `quiz`는 정답·채점 등 퀴즈 전용 UI에만 영향을 주며 문항 제목 편집기를 전환하지 않는다.
-- [ ] `title`·`titleBlocks` 기존 저장 계약을 유지하고 일반 입력 ↔ 서식 입력 전환 시 기존 제목과 서식을 유실하지 않는다.
+- [x] 문항 제목은 `quiz=true/false` 및 `richQuestionText=true/false`와 무관하게 항상 `PopupRichTextEditor`(compact)로 입력·수정 가능해야 한다.
+- [x] `richQuestionText`는 **선택지 입력 방식**(일반 텍스트 / 서식 편집기)만 제어한다. `quiz`는 정답·채점 등 퀴즈 전용 UI에만 영향을 주며 문항 제목 편집기를 전환하지 않는다.
+- [x] `title`·`titleBlocks` 기존 저장 계약을 유지하고 일반 입력 ↔ 서식 입력 전환 시 기존 제목과 서식을 유실하지 않는다.
 
 **현행 코드와 차이**
 - `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`의 `questions.map` 내부 `const richTitle = quiz || richQuestionText` 때문에 SURVEY + `richQuestionText=false`에서 제목이 일반 `TextField`로 렌더링된다. 실제 disabled 속성 여부는 별도로 확인한다.
@@ -53,10 +53,16 @@
 - 이 변경은 위 문서의 **SURVEY 제목 동작 유지**라는 2026-11-10 기존 범위를 대체한다.
 
 **구현 시 확인 및 완료 기준**
-- [ ] `PopupQuestionEditor.tsx` 제목 분기·`onChange`(`title/titleBlocks`)·선택지 `richQuestionText` 분리 확인.
-- [ ] QUIZ/SURVEY × `richQuestionText` true/false 4조합에서 제목 서식 편집 가능, 선택지 편집 방식만 해당 props에 따라 변경되는지 검증.
+- [x] `PopupQuestionEditor.tsx` 제목 분기·`onChange`(`title/titleBlocks`)·선택지 `richQuestionText` 분리 확인.
+- [x] QUIZ/SURVEY × `richQuestionText` true/false 4조합에서 제목 서식 편집 가능, 선택지 편집 방식만 해당 props에 따라 변경되는지 검증.
 - [ ] 신규/기존 문항, 일반 문자열만 저장된 기존 문항, 서식 블록 포함 문항의 편집→저장→재조회→미리보기 왕복 확인. 제목 내용·서식 보존, 선택지 번호·정답·점수 회귀 확인.
-- [ ] 관련 가이드·props 설명·기존 테스트를 수정 범위에서 동기화하고 타입 검사 및 관련 자동 검증 수행. 실제 브라우저·폐쇄망 검증은 별도 보고.
+- [x] 관련 가이드·props 설명·기존 테스트를 수정 범위에서 동기화하고 타입 검사 및 관련 자동 검증 수행. 실제 브라우저·폐쇄망 검증은 별도 보고.
+
+**구현 결과 (2026-11-17)**
+- `PopupQuestionEditor.tsx`의 `richTitle` 분기와 일반 `TextField` 제목을 제거해 제목은 항상 `PopupRichTextEditor`(compact)다. `richQuestionText`는 선택지 분기(및 정답·삭제 칸 높이)에만 남았다. disabled 속성은 원래 없었고, 일반 입력으로 바뀌는 분기가 원인이었다.
+- 제목 저장은 기존 `initialRich(titleBlocks, title)`·`richValue`를 그대로 쓴다. `title`만 있는 기존 문항은 서식 없는 문단으로 열리고 열기만 하면 저장값이 바뀌지 않는다. 일반 입력에서 고칠 때 `titleBlocks`를 비우던 동작(TODO73-29)은 제목에는 더 이상 해당하지 않는다(선택지 일반 입력에는 유지).
+- 가이드(요약·props·사용 예 힌트·시작 탭)·공지(`2026-11-17-question-title-always-rich`)·`POPUP_FRONT_SAMPLE_HANDOVER.md`를 새 기준으로 고쳤다.
+- 검증: `tsc --noEmit`·변경 파일 eslint 통과. `verify-survey-rich-text-55.cjs` 67건(설문 제목 서식 편집기·저장 서식 표시, 문단→`title` 줄바꿈·`titleBlocks` 저장, 빈 제목·1001자 검증, `title`만 있는 주관식 문항 열기 시 저장값 불변, `richQuestionText=true` 제목+선택지, 퀴즈 4종 제목) 통과. `quiz option byte 73` 44건, `guide registry` 299건, `guide render` 31건, `TODO69 sample` 62건, `RgstPop quiz rule` 25건, `question template picker` 7건 통과. 서버 저장→재조회 실화면은 미실행.
 
 ### 2. CKEditor 기본 글자 크기와 미리보기 Dialog 일치
 
