@@ -1279,7 +1279,7 @@ REJECTED의 세부 code(R4001(INVALID_DELIVERY)~R4006(INVALID_VIDEO))는 서버 
 }
 ```
 
-백엔드 구현용으로 HTTP 오류와 결과 status를 단계별로 나눈 정의·실제 응답 예시·참고 소스는 [장애별 분기 처리 정의서](../Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md)(Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.1.xlsx`)에 정리했다.
+백엔드 구현용으로 HTTP 오류와 결과 status를 단계별로 나눈 정의·실제 응답 예시·참고 소스는 [장애별 분기 처리 정의서](../Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md)(Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.3.xlsx`)에 정리했다.
 
 현재 C#이 중요하게 구분하는 상태는 다음과 같다.
 

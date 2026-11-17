@@ -91,15 +91,39 @@ def put_table(w, rows, mono=(), center=()):
 
 
 def put_section(w, number, heading=None, mono=(), center=()):
+    """절의 문단·표·'- ' 안내를 원문 순서대로 옮긴다(표와 안내가 번갈아 나와도 순서 유지)."""
     title, body = section(number)
     w.section(heading or title)
-    for p in paragraphs(body):
-        w.notes([p])
-    for t in tables(body):
-        put_table(w, t, mono, center)
-    notes = bullets(body)
-    if notes:
-        w.notes(notes)
+    put_body(w, body, mono, center)
+
+
+def put_body(w, lines, mono=(), center=()):
+    block, kind, fenced = [], None, False
+
+    def flush():
+        nonlocal block, kind
+        if kind == 'table':
+            for t in tables(block):
+                put_table(w, t, mono, center)
+        elif kind == 'notes':
+            w.notes([plain(line[2:]) for line in block])
+        elif kind == 'para':
+            w.notes([plain(line) for line in block])
+        block, kind = [], None
+
+    for line in lines:
+        if line.strip().startswith('```'):
+            fenced = not fenced
+            continue
+        if fenced or line.startswith('#'):
+            continue
+        k = 'table' if line.startswith('|') else 'notes' if line.startswith('- ') else 'para' if line.strip() else None
+        if k != kind:
+            flush()
+            kind = k
+        if k:
+            block.append(line)
+    flush()
 
 
 def examples(body):
@@ -141,12 +165,12 @@ def build(version, date):
     ws.title = '개요'
     w = SheetWriter(ws, WIDTHS)
     w.title(f'WPF API 장애별 분기 처리 정의서 ({version})', sub)
-    put_section(w, 1, '① 원칙 — HTTP 오류로 응답할지, HTTP 200 + status·code로 응답할지', mono=(), center=())
+    put_section(w, 1, '① 백엔드 주요 개발 범위와 원칙 — 결과 API HTTP 200 분기가 핵심, HTTP 오류는 401·400만 필수')
     put_section(w, 2, '② 판정 순서 (요청 1건)', center=(0,))
     w.section('③ 시트 구성')
     put_table(w, [
-        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 3가지(401·426·400)와 WPF 처리, SAMPLE'},
-        {'시트': 'RESULT_STATUS', '내용': '결과 API의 HTTP 200 status·code 정의, code 값, WPF 장애 결과(resultCode=400)'},
+        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 2가지(401·400), 선택 426, WPF 처리, SAMPLE'},
+        {'시트': 'RESULT_STATUS', '내용': '주요 개발 범위 — 결과 API의 HTTP 200 status·code 정의, code 값, WPF 장애 결과(resultCode=400)'},
         {'시트': '결과 예시', '내용': '저장소 서버를 실제로 거쳐 만든 경우별 응답 JSON'},
         {'시트': '참고 소스', '내용': '예외 매핑·status 분류·예시 생성 소스 위치'},
         {'시트': '적용 확인', '내용': '폐쇄망 백엔드 적용 시 확인 항목과 하지 말 것'},
@@ -155,15 +179,11 @@ def build(version, date):
 
     ws = wb.create_sheet('HTTP_ERROR')
     w = SheetWriter(ws, WIDTHS)
-    w.title('필수 HTTP 오류 — 401 · 426 · 400(결과 API 본문 해석 불가)', sub)
+    w.title('필수 HTTP 오류 — 401 · 400(결과 API 본문 해석 불가), 426은 선택', sub)
     title, body = section(3)
     cut = next(i for i, line in enumerate(body) if line.startswith('### 샘플'))
     w.section('필수 HTTP 오류 정의')
-    for p in paragraphs(body[:cut]):
-        w.notes([p])
-    for t in tables(body[:cut]):
-        put_table(w, t, center=(0,))
-    w.notes(bullets(body[:cut]))
+    put_body(w, body[:cut], center=(0,))
     w.section('SAMPLE')
     put_examples(w, body[cut + 1:])
 
