@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-17-05 — dev: 설문·퀴즈 선택지 기본 크기 32px·12px(편집기·미리보기·WPF)
+
+- 이유: 후속 TODO 3·4번 요건(선택지 한 줄 기본 높이 32, 기본 글자 12를 편집기·미리보기·WPF에 같은 단위로 반영). 선택지 글자는 `bodyFontSize - 2`(미지정 시 12), OX도 같은 크기로 통일하기로 결정.
+- 변경:
+  - 관리자 웹 편집기: 일반 선택지 입력칸 글자 12·줄 18·여백 7(한 줄 32), `PopupRichTextEditor` `optionSize` prop 추가(서식 선택지 바깥 32·글자 12), 정답·삭제 칸 32. 문항 제목·주관식 정답 입력은 변경 없음.
+  - 관리자 미리보기: `SurveyPreview` 선택지 최소 높이 32·여백 6, 글자 본문 - 2·줄 높이 × 1.5, OX 56·24 → 32·12. `bodyFontSize`를 받아 문항 제목 +4·설명 +1·주관식 = 본문으로 직접 지정하고, `PopupPreview`는 SURVEY·QUIZ에 Typography 상속 규칙을 쓰지 않게 해 WPF 매핑과 맞춤.
+  - WPF: `SurveyStyles.V1/V2.xaml` 선택지 `MinHeight` 32·여백 6, `SurveyPopupView` 선택지 글자 본문 - 2·줄 높이 × 1.5, `ApplyBodyFontSize`에서 선택지 글자·줄 높이 갱신, OX 전용 크기 상수 제거, 재구성 시 서식 선택지 문단 목록 초기화.
+  - 문서: WPF 사양서 2종, 가이드 props·공지, TODO 문서 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`·`PopupRichTextEditor.tsx`·`SurveyPreview.tsx`·`PopupPreview.tsx`·`guide/guideData.ts`·`guide/guideNotices.ts`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`·`SurveyDesigns/SurveyStyles.V1.xaml`·`SurveyStyles.V2.xaml`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`.
+- 검증: 웹 `tsc --noEmit`·eslint(기존 `popupRichText.ts` 경고 1건 외 없음). 하네스 `survey rich text 55` 71건, `TODO61 preview` 126건, `completion UX 43` 78건, `TODO69 sample` 62건, `IMAGE preview` 54건, `rich text 49` 75건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `RgstPop quiz rule` 25건, `guide registry` 304건, `guide render` 31건, `question template picker` 7건 통과. WPF 빌드 경고·오류 0, PopupWindowTests 562건, Popup.BehaviorTests 1740건(긴 선택지 검사를 새 높이 기준으로 고침, 이 테스트 프로젝트는 Git 제외라 로컬에만 반영), Popup.RecoveryTests 255건, ApiDemoTests 150건 통과. 같은 데이터의 브라우저·WPF 실화면 나란히 비교, 확대 DPI, 폐쇄망은 미실행.
+- 상태: 커밋 / 미푸시. 후속 2번(CKEditor 기본 글자·미리보기 일치)·5번 나머지(설문 외 유형 영역별 기본 스타일) 진행 중.
+
 ## 2026-11-17-04 — dev: 설문·퀴즈 문항 제목 서식 편집기 상시 사용
 
 - 이유: SURVEY 문항 제목이 `quiz=false`·`richQuestionText=false`에서 일반 입력으로 바뀌는 문제. 후속 TODO 1번 요건(제목은 항상 서식 편집기, `richQuestionText`는 선택지 입력 방식만 제어) 반영.

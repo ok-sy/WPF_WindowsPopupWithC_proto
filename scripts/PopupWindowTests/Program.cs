@@ -1070,11 +1070,32 @@ internal static class Program
         Walk(opened.Window);
         string NameOf(System.Windows.Controls.RadioButton radio) => System.Windows.Automation.AutomationProperties.GetName(radio);
         var ox = radios.Where(radio => NameOf(radio) is "O" or "X").ToList();
-        Check(ox.Count == 2 && ox[0].ActualWidth == ox[1].ActualWidth && ox[0].ActualWidth > 96 && ox.All(radio => radio.ActualHeight >= 56 && radio.ActualHeight < 88)
-            && Math.Abs(ox[0].TranslatePoint(new Point(0, 0), opened.Window).Y - ox[1].TranslatePoint(new Point(0, 0), opened.Window).Y) < 1, $"[TODO73] OX options are large ({string.Join(",", ox.Select(r => $"{r.ActualWidth}x{r.ActualHeight}"))})");
-        Check(ox.All(radio => radio.Content is System.Windows.Controls.TextBlock { FontSize: 24, TextAlignment: TextAlignment.Center }), "[TODO73] OX text is 24 and centered (2026-11-13 reduced)");
+        // 2026-11-17: OX도 일반 선택지와 같은 한 줄 높이 32·글자 본문 - 2(기본 12). 두 칸 같은 폭·같은 줄, 굵게·가운데는 유지.
+        Check(ox.Count == 2 && ox[0].ActualWidth == ox[1].ActualWidth && ox[0].ActualWidth > 96 && ox.All(radio => Math.Abs(radio.ActualHeight - 32) < 0.5)
+            && Math.Abs(ox[0].TranslatePoint(new Point(0, 0), opened.Window).Y - ox[1].TranslatePoint(new Point(0, 0), opened.Window).Y) < 1, $"[2026-11-17] OX options split the width at the 32 one-line height ({string.Join(",", ox.Select(r => $"{r.ActualWidth}x{r.ActualHeight}"))})");
+        Check(ox.All(radio => radio.FontSize == 12 && radio.Content is System.Windows.Controls.TextBlock { FontSize: 12, LineHeight: 18, TextAlignment: TextAlignment.Center } label && label.FontWeight == FontWeights.Bold),
+            "[2026-11-17] OX text is the option default 12 (line 18), bold and centered");
         var others = radios.Except(ox).ToList();
-        Check(others.Count > 0 && others.All(radio => radio.MinHeight < 56), "[TODO73] Other choices keep their size");
+        Check(others.Count > 0 && others.All(radio => radio.MinHeight == 32 && radio.FontSize == 12), "[2026-11-17] Other choices use the 32 minimum height and 12 font");
+        Check(others.Where(radio => radio.Content is System.Windows.Controls.TextBlock label && label.ActualHeight <= 18.5).All(radio => Math.Abs(radio.ActualHeight - 32) < 0.5),
+            $"[2026-11-17] One-line choices are 32 high ({string.Join(",", others.Select(r => r.ActualHeight))})");
+        // bodyFontSize를 바꾸면 선택지 = 본문 - 2, 줄 높이 = × 1.5로 함께 바뀐다.
+        Popup.Views.Contents.SurveyPopupView? surveyView = null;
+        void FindView(DependencyObject root)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root) && surveyView == null; i++)
+            {
+                DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                if (child is Popup.Views.Contents.SurveyPopupView found) surveyView = found; else FindView(child);
+            }
+        }
+        FindView(opened.Window);
+        surveyView!.ApplyBodyFontSize(18);
+        opened.Window.UpdateLayout();
+        Check(radios.All(radio => radio.FontSize == 16) && others.Concat(ox).Select(radio => radio.Content).OfType<System.Windows.Controls.TextBlock>().All(label => label.LineHeight == 24),
+            "[2026-11-17] bodyFontSize 18 makes choices 16 with line height 24");
+        surveyView.ApplyBodyFontSize(14);
+        opened.Window.UpdateLayout();
         ox[1].IsChecked = true;
         Check(ox[1].IsChecked == true && ox[0].IsChecked != true, "[TODO73] OX options stay one radio group");
         ShutdownClose(opened.Window);

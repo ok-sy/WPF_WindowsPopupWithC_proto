@@ -39,8 +39,8 @@
     <Thickness x:Key="SurveyCardPadding">20,20,20,18</Thickness>
     <Thickness x:Key="SurveyCardSpacing">0,0,0,14</Thickness>
     <Thickness x:Key="SurveyAnswerSpacing">0,14,0,0</Thickness>
-    <Thickness x:Key="SurveyChoicePadding">14,10</Thickness>
-    <Thickness x:Key="SurveyChoiceFocusPadding">13,9</Thickness>
+    <Thickness x:Key="SurveyChoicePadding">14,6</Thickness>
+    <Thickness x:Key="SurveyChoiceFocusPadding">13,5</Thickness>
     <CornerRadius x:Key="SurveyCardRadius">0</CornerRadius>
     <!-- POL-06-03 : 표현·수명 — No question card surface: questions are separated by vertical spacing and a thin bottom line
          (the code removes the line under the last question). No horizontal padding, so the number/title/choices
@@ -69,7 +69,8 @@
         <Setter Property="BorderBrush" Value="{StaticResource SurveyCardBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="{StaticResource SurveyChoicePadding}" />
-        <Setter Property="MinHeight" Value="44" />
+        <!-- POL-06-03 : 표현·수명 — 선택지 한 줄 기본 높이 32 = 테두리 1 + 여백 6 + 줄 높이 18(글자 12) + 6 + 1 (2026-11-17, 관리자 미리보기와 같음) -->
+        <Setter Property="MinHeight" Value="32" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Cursor" Value="Hand" />
@@ -77,8 +78,8 @@
     </Style>
     <Style x:Key="SurveyOptionRowStyle" TargetType="ToggleButton" BasedOn="{StaticResource SurveyChoiceStyle}">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="Padding" Value="16,12" />
-        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Padding" Value="16,6" />
+        <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style x:Key="SurveyOptionChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource SurveyChoiceStyle}">
         <Setter Property="HorizontalAlignment" Value="Left" />

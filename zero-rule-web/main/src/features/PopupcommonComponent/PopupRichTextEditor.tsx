@@ -8,7 +8,10 @@ import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type 
 
 /* compact 입력칸 높이. 바깥 값은 테두리 2px를 더한 값으로 번호·서식·삭제 칸을 첫 줄에 맞출 때 쓴다. */
 const COMPACT_EDITOR_MIN_HEIGHT = 34;
-const COMPACT_EDITOR_OUTER_HEIGHT = COMPACT_EDITOR_MIN_HEIGHT + 2;
+/* 설문·퀴즈 선택지 기본 크기(2026-11-17): 바깥 32 = 테두리 1 + 여백 6 + 줄 18 + 6 + 1, 기본 글자 12. 미리보기·WPF 선택지와 같은 값. */
+export const OPTION_INPUT_HEIGHT = 32;
+export const OPTION_INPUT_FONT_SIZE = 12;
+const OPTION_LINE_HEIGHT = 18;
 
 type Props = {
   /** 입력 위 제목 */
@@ -24,6 +27,11 @@ type Props = {
   compact?: boolean;
   /** compact 전용. 주면 짧은 표시(예: 선택지 번호)·입력칸·'서식' 버튼을 한 줄에 둔다. label은 묶음의 접근 이름으로 쓴다. */
   inlineLabel?: string;
+  /**
+   * compact 전용. 설문·퀴즈 선택지 크기로 그린다: 한 줄 입력 높이 32(테두리 포함)·기본 글자 12·줄 높이 18.
+   * 서식에 지정한 글자 크기는 그대로 우선한다. 문항 제목·본문 편집기에는 쓰지 않는다.
+   */
+  optionSize?: boolean;
   /** 상단 툴바만 숨긴다(본문 높이·문단 간격은 기본 유지). 값이 바뀌어도 다시 마운트하지 않아 입력 내용과 선택 범위가 유지된다. 서식은 우클릭·'서식' 버튼으로 지정한다. */
   hideToolbar?: boolean;
   /** 빈 편집기 안내 문구(생략 시 본문 기본 안내) */
@@ -47,9 +55,13 @@ type Props = {
  *   공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 쓴다. HTML 자체는 저장하지 않는다.
  *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
-export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
+export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, optionSize, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
   const toolbarHidden = compact || hideToolbar;
   const inline = Boolean(compact && inlineLabel);
+  const option = Boolean(compact && optionSize);
+  /* compact 입력칸 안쪽 최소 높이와 테두리 2px를 더한 바깥 높이. 바깥 값으로 번호·서식·삭제 칸을 첫 줄에 맞춘다. */
+  const compactMinHeight = option ? OPTION_INPUT_HEIGHT - 2 : COMPACT_EDITOR_MIN_HEIGHT;
+  const compactOuterHeight = compactMinHeight + 2;
   const [engine, setEngine] = useState<CkeditorEngine | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
@@ -181,7 +193,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
 
   const formatButton = (
     <Button size="small" disabled={disabled} aria-haspopup="dialog"
-      sx={compact ? { minWidth: 0, flexShrink: 0, px: 0.75, ...(inline ? { height: COMPACT_EDITOR_OUTER_HEIGHT } : { py: 0, minHeight: 24 }) } : undefined}
+      sx={compact ? { minWidth: 0, flexShrink: 0, px: 0.75, ...(inline ? { height: compactOuterHeight } : { py: 0, minHeight: 24 }) } : undefined}
       // 버튼을 눌러도 편집기의 선택 범위가 풀리지 않게 한다.
       onMouseDown={(event) => event.preventDefault()}
       onClick={(event) => {
@@ -194,7 +206,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
     <Box {...(inline ? { role: 'group', 'aria-label': label } : {})}
       sx={{ opacity: disabled ? 0.6 : 1, ...(inline ? { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 0.5, minWidth: 0 } : {}) }}>
       {inline
-        ? <Typography variant="caption" color="text.secondary" sx={{ lineHeight: `${COMPACT_EDITOR_OUTER_HEIGHT}px`, minWidth: 14, textAlign: 'center', flexShrink: 0 }}>{inlineLabel}</Typography>
+        ? <Typography variant="caption" color="text.secondary" sx={{ lineHeight: `${compactOuterHeight}px`, minWidth: 14, textAlign: 'center', flexShrink: 0 }}>{inlineLabel}</Typography>
         : <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="caption" color="text.secondary">{compact ? label : `${label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다`}</Typography>
           {formatButton}
@@ -204,13 +216,16 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
       <Box ref={toolbarRef} className="ck-reset_all" sx={{ display: toolbarHidden ? 'none' : undefined, border: '1px solid #c4c4c4', borderBottom: 0, borderRadius: '4px 4px 0 0',
         // 안쪽 배경이 바깥 둥근 테두리를 덮지 않게 안쪽 곡률(4px - 테두리 1px)에 맞춘다. 툴바 드롭다운이 잘리므로 overflow: hidden은 쓰지 않는다.
         '& .ck.ck-toolbar': { border: 0, borderRadius: '3px 3px 0 0' } }} />
-      <Box sx={{ ...(inline ? { flex: 1 } : {}), minWidth: 0, border: '1px solid #c4c4c4', borderRadius: toolbarHidden ? '4px' : '0 0 4px 4px', minHeight: compact ? COMPACT_EDITOR_MIN_HEIGHT : 140,
+      <Box sx={{ ...(inline ? { flex: 1 } : {}), minWidth: 0, border: '1px solid #c4c4c4', borderRadius: toolbarHidden ? '4px' : '0 0 4px 4px', minHeight: compact ? compactMinHeight : 140,
         '&:focus-within': { borderColor: 'primary.main' },
         '& .ck.ck-editor__editable:not(.ck-editor__nested-editable), & .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused':
           { border: 0, borderRadius: toolbarHidden ? '3px' : '0 0 3px 3px', boxShadow: 'none' },
-        '& .ck-editor__editable': { minHeight: compact ? COMPACT_EDITOR_MIN_HEIGHT : 140, px: compact ? 1 : 1.5, ...(compact ? { overflowWrap: 'anywhere', boxSizing: 'border-box' } : {}) },
+        '& .ck-editor__editable': { minHeight: compact ? compactMinHeight : 140, px: compact ? 1 : 1.5, ...(compact ? { overflowWrap: 'anywhere', boxSizing: 'border-box' } : {}) },
         // CKEditor 기본 패딩(상하 16px)·문단 여백(12px)이 일반 선택자보다 우선해 .ck.를 붙여 줄인다.
-        ...(compact ? { '& .ck.ck-editor__editable_inline': { py: 0 }, '& .ck.ck-editor__editable p': { my: 0.5 } } : {}) }}>
+        ...(compact ? { '& .ck.ck-editor__editable_inline': { py: 0 }, '& .ck.ck-editor__editable p': { my: 0.5 } } : {}),
+        // 선택지 크기: 기본 글자 12·줄 18, 문단 위아래 6으로 한 줄 바깥 높이 32. 서식 크기는 span의 인라인 font-size가 우선한다.
+        ...(option ? { '& .ck.ck-editor__editable_inline': { py: 0, fontSize: OPTION_INPUT_FONT_SIZE, lineHeight: `${OPTION_LINE_HEIGHT}px` },
+          '& .ck.ck-editor__editable p': { my: '6px' } } : {}) }}>
         {engine && config && (
           <CKEditor
             editor={engine.DecoupledEditor}

@@ -75,6 +75,11 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   let values = await inputValues();
   check(values.join('|') === '1번 문항 선택지 1=매우 그렇다|1번 문항 선택지 2=보통|1번 문항 선택지 3=첫\n둘', '[73-29] Inputs show plain text first and restore empty text from blocks: ' + JSON.stringify(values));
   check(!(await optionNumberShown()), '[2026-11-10] Survey option inputs show no automatic number and keep the numbered aria-label');
+  // 2026-11-17 3번: 일반 선택지 입력칸 한 줄 32px·글자 12px, 정답·삭제 칸도 32px. 문항 제목 편집기에는 전파되지 않는다.
+  const plainOptionLook = await run(`(()=>{const t=document.querySelector('textarea[aria-label="1번 문항 선택지 2"]');const root=t.closest('.MuiInputBase-root');const del=Array.from(document.querySelectorAll('button')).find(b=>b.getAttribute('aria-label')==='선택지 2 삭제').parentElement;const title=window.editors()[0].ui.getEditableElement();
+    return {h:root.getBoundingClientRect().height,font:getComputedStyle(t).fontSize,slot:del.getBoundingClientRect().height,titleFont:getComputedStyle(title).fontSize}})()`);
+  check(plainOptionLook.h === 32 && plainOptionLook.font === '12px' && plainOptionLook.slot === 32 && plainOptionLook.titleFont !== '12px',
+    '[2026-11-17 3] Plain option inputs are 32px high with 12px text; the title editor keeps its size: ' + JSON.stringify(plainOptionLook));
   let q = (await questions())[0];
   check(JSON.stringify(q) === JSON.stringify(surveyQuestions[0]), '[73-29] Opening only keeps the saved data and formatting untouched');
 
@@ -140,6 +145,12 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   const richDatas = await run('window.editors().map(e=>e.getData())');
   check(richDatas[0].includes('<strong>만족도</strong>') && richDatas[1].includes('color:#DC2626') && richDatas[2] === '<p>보통</p>' && (await inputValues()).length === 0,
     '[73-34] richQuestionText uses rich editors for the title and every option: ' + JSON.stringify(richDatas));
+  // 2026-11-17 3번: 서식 선택지 편집기도 한 줄 바깥 32px·기본 글자 12px. 제목 편집기는 선택지 크기를 쓰지 않는다.
+  const richOptionLook = await run(`(()=>{const ed=window.editors();const box=e=>e.ui.getEditableElement().parentElement.closest('div:not(.ck)');
+    const outer=ed[2].ui.getEditableElement().closest('.ck-editor__editable').parentElement;
+    return {h:ed.slice(1).map(e=>{let n=e.ui.getEditableElement();while(n&&getComputedStyle(n).borderTopWidth!=='1px')n=n.parentElement;return n.getBoundingClientRect().height;}),font:getComputedStyle(ed[2].ui.getEditableElement()).fontSize,titleFont:getComputedStyle(ed[0].ui.getEditableElement()).fontSize}})()`);
+  check(richOptionLook.h.join() === '32,32,56' && richOptionLook.font === '12px' && richOptionLook.titleFont !== '12px',
+    '[2026-11-17 3] Rich option editors are 32px per line (2 paragraphs = 56) with 12px text; the title editor keeps its size: ' + JSON.stringify(richOptionLook));
   await run(`window.editors()[2].setData('<p>보통<strong>이다</strong></p>')`); await pause(150);
   q = (await questions())[0];
   check(q.options[1].text === '보통이다' && q.options[1].textBlocks?.[0].runs[1].bold === true && JSON.stringify(q.titleBlocks) === JSON.stringify([bold('만족도')]), '[73-34] Rich option editing stores textBlocks and keeps other fields');
@@ -282,7 +293,22 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await run(`window.mountPreview(${JSON.stringify(oxPopup)})`); await pause(500);
   const oxLook = await run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const opt=opts[0];const r=opt.getBoundingClientRect();const r2=opts[1].getBoundingClientRect();const box=opt.parentElement.parentElement.getBoundingClientRect();const num=Array.from(document.querySelectorAll('#preview span')).find(e=>e.textContent==='01');const paper=document.querySelector('#preview .MuiPaper-root');const frame=paper.parentElement;
     return {w:r.width,w2:r2.width,h:r.height,sameRow:r.top===r2.top,gap:r2.left-r.right,fill:r2.right-box.left,boxW:box.width,align:getComputedStyle(opt.firstElementChild).textAlign,font:getComputedStyle(opt.firstElementChild).fontSize,weight:getComputedStyle(opt.querySelector('span')).fontWeight,numH:num.getBoundingClientRect().height,paperR:getComputedStyle(paper).borderRadius,frameBg:getComputedStyle(frame).backgroundColor}})()`);
-  check(oxLook.w === oxLook.w2 && oxLook.w > 96 && oxLook.h >= 56 && oxLook.h < 88 && oxLook.sameRow && oxLook.gap === 8 && Math.abs(oxLook.fill - oxLook.boxW) < 1 && oxLook.align === 'center' && oxLook.font === '24px' && oxLook.weight === '700', '[73-10] Preview shows OX as two equal cells filling the width (56·24px, 2026-11-13): ' + JSON.stringify(oxLook));
+  check(oxLook.w === oxLook.w2 && oxLook.w > 96 && oxLook.h === 32 && oxLook.sameRow && oxLook.gap === 8 && Math.abs(oxLook.fill - oxLook.boxW) < 1 && oxLook.align === 'center' && oxLook.font === '12px' && oxLook.weight === '700', '[73-10·2026-11-17] Preview shows OX as two equal cells filling the width at the option size (32·12px): ' + JSON.stringify(oxLook));
+  // 2026-11-17: 일반 선택지 한 줄 32·글자 12(본문 - 2, 줄 18). bodyFontSize 18이면 선택지 16·줄 24, 문항 제목 22(+4)·설명 19(+1), 헤더는 기본 17 그대로.
+  const sizePopup = {...popup, showHeader: true, title: '헤더', questions: [{questionId: 41, title: '제목', description: '설명', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: false, isScored: false, sortOrder: 1,
+    options: [{optionId: 1, value: '1', text: '가', sortOrder: 1, isCorrect: false}, {optionId: 2, value: '2', text: '나', sortOrder: 2, isCorrect: false}]},
+    {questionId: 42, title: '가로', questionType: 'SINGLE_CHOICE', optionLayout: 'HORIZONTAL', isRequired: false, isScored: false, sortOrder: 2,
+    options: [{optionId: 3, value: '1', text: '다', sortOrder: 1, isCorrect: false}]}]};
+  const sizeLook = () => run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const t=document.querySelector('#preview [id$="-question-41"]');const d=t.closest('fieldset').querySelector(':scope > div.MuiTypography-root');const h=document.querySelector('#preview .MuiPaper-root > .MuiStack-root .MuiTypography-root');
+    return {h:opts.map(o=>o.getBoundingClientRect().height),font:opts.map(o=>getComputedStyle(o).fontSize),line:getComputedStyle(opts[0].firstElementChild).lineHeight,title:getComputedStyle(t).fontSize,desc:d&&getComputedStyle(d).fontSize,header:getComputedStyle(h).fontSize}})()`);
+  await run(`window.mountPreview(${JSON.stringify(sizePopup)})`); await pause(400);
+  let size = await sizeLook();
+  check(size.h.every(h => h === 32) && size.font.every(f => f === '12px') && size.line === '18px' && size.title === '16px' && size.desc === '13px' && size.header === '17px',
+    '[2026-11-17] Preview choices default to 32 high, 12px (line 18); title 16, description 13, header 17: ' + JSON.stringify(size));
+  await run(`window.mountPreview(${JSON.stringify({...sizePopup, content: {...sizePopup.content, bodyFontSize: 18}})})`); await pause(400);
+  size = await sizeLook();
+  check(size.font.every(f => f === '16px') && size.line === '24px' && size.title === '22px' && size.desc === '19px' && size.header === '17px',
+    '[2026-11-17] bodyFontSize 18 maps to choices 16 (line 24), title 22, description 19 like WPF; the header keeps 17: ' + JSON.stringify(size));
   check(oxLook.numH < 24, 'The question number stays on one line next to a long title: ' + JSON.stringify(oxLook));
   check(oxLook.paperR === '6px' && oxLook.frameBg === 'rgba(0, 0, 0, 0)', 'The preview frame does not show through the rounded corners: ' + JSON.stringify(oxLook));
   fs.writeFileSync(path.join(output, 'ox-preview.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));

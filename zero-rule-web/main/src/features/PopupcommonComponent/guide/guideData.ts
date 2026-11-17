@@ -205,6 +205,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'disabled', type: 'boolean', description: '읽기 전용으로 보여 줍니다.' },
       { name: 'compact', type: 'boolean', description: '툴바를 숨긴 짧은 입력칸입니다. 서식은 우클릭으로 엽니다.' },
       { name: 'inlineLabel', type: 'string', description: 'compact일 때 짧은 표시(선택지 번호 등)·입력칸·서식 버튼을 한 줄에 둡니다.' },
+      { name: 'optionSize', type: 'boolean', description: 'compact일 때 설문·퀴즈 선택지 크기(한 줄 높이 32px·기본 글자 12px)로 그립니다. 서식에 지정한 글자 크기는 그대로입니다. 문항 제목·본문에는 쓰지 않습니다.' },
       { name: 'hideToolbar', type: 'boolean', description: '상단 툴바만 숨깁니다. 본문 높이는 그대로이고, 값을 바꿔도 입력 내용이 유지됩니다.' },
       { name: 'placeholder', type: 'string', description: '비어 있을 때 안내 문구' },
       { name: 'maxPlainBytes', type: 'number', description: '서식 없는 문자열(plainText)의 UTF-8 바이트 상한. 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌리며 안내 문구를 띄웁니다(한글 조합은 끝날 때 확인). 생략하면 제한 없음. PopupQuestionEditor가 선택지(퀴즈·설문)에 300을 넘깁니다.' },

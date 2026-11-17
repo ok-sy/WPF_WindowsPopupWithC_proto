@@ -690,12 +690,13 @@ export default function PopupPreview({
               {richSurveyTitle ? <PopupRichBlocks blocks={richSurveyTitle} /> : title}
             </Typography>
           )}
-          {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지) */}
+          {/* 본문 폰트 크기: 하위 Typography가 상속받도록 inherit 처리(콘텐츠 제목 h5는 제외 — WPF도 제목은 유지).
+              SURVEY·QUIZ는 상속하지 않고 SurveyPreview가 WPF와 같은 영역별 크기(선택지 본문-2, 문항 제목 +4, 설명 +1)를 직접 정한다. */}
           <Box
             sx={{
               ...(popup.popupType === 'IMAGE' ? { flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' } : {}),
               ...(popup.popupType === 'VIDEO' ? { flex: 1, minHeight: 0, height: '100%' } : {}),
-              ...(bodyFontSize
+              ...(bodyFontSize && !isSurvey
                 ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } }
                 : {}),
             }}
@@ -714,6 +715,7 @@ export default function PopupPreview({
                 disabled: !videoUnlocked,
                 namePrefix,
                 quiz: popup.popupType === 'QUIZ',
+                bodyFontSize,
               }}
             />
           </Box>

@@ -153,7 +153,21 @@ export interface SurveyPreviewProps {
   namePrefix: string;
   /** QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
   quiz?: boolean;
+  /** 관리자 본문 글자 크기(10~40 보정값). 없으면 WPF 기본값(본문 14, 문항 제목 16, 문항 설명 13)을 쓴다. */
+  bodyFontSize?: number | null;
 }
+
+/*
+ * POL-06-03 : 표현·수명
+ * 본문 글자 크기 매핑 — WPF SurveyPopupView와 같다.
+ *   본문(주관식 입력) = bodyFontSize ?? 14, 선택지 = 본문 - 2(기본 12), 선택지 줄 높이 = 글자 × 1.5(기본 18).
+ *   문항 제목·설명은 bodyFontSize가 있을 때만 본문 + 4·+ 1, 없으면 16·13(WPF ApplyBodyFontSize와 같음).
+ * 선택지 한 줄 기본 높이 32 = 테두리 1 + 위아래 여백 6 + 줄 높이 18 + 6 + 1(OX도 같음, 2026-11-17).
+ */
+export const SURVEY_BODY_FONT_DEFAULT = 14;
+export const SURVEY_OPTION_MIN_HEIGHT = 32;
+export const surveyOptionFontSize = (bodyFontSize?: number | null) => (bodyFontSize ?? SURVEY_BODY_FONT_DEFAULT) - 2;
+export const surveyOptionLineHeight = (optionFontSize: number) => Math.round(optionFontSize * 1.5);
 
 /**
  * POL-06-02 : 선택·제출
@@ -253,8 +267,12 @@ export default function SurveyPreview({
   disabled,
   namePrefix,
   quiz = false,
+  bodyFontSize,
 }: SurveyPreviewProps) {
   const richDescription = richBlocksOrNull(descriptionBlocks);
+  const bodySize = bodyFontSize ?? SURVEY_BODY_FONT_DEFAULT;
+  const optionFontSize = surveyOptionFontSize(bodyFontSize);
+  const optionLineHeight = surveyOptionLineHeight(optionFontSize);
   return (
     <Stack spacing={surveyDesign.flatQuestions ? 0 : 1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
       {(description || richDescription) && (
@@ -269,7 +287,7 @@ export default function SurveyPreview({
       )}
       {questions.map((question, index) => {
         const horizontal = question.optionLayout === 'HORIZONTAL';
-        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 같은 크기의 칸 2개로 폭을 나눠 표시한다(높이 56·글자 24, 2026-11-13 축소).
+        // WPF SurveyPopupView와 같이 가로 배치 OX 문항은 같은 크기의 칸 2개로 폭을 나눠 표시한다(크기는 일반 선택지와 같은 32·본문-2, 2026-11-17).
         const ox = horizontal && isOxQuestion(question);
         const multiple = question.questionType === 'MULTIPLE_CHOICE';
         const answer = answers[question.questionId] ?? { optionIds: [], text: '' };
@@ -324,13 +342,13 @@ export default function SurveyPreview({
               <Typography
                 id={titleId}
                 component="div"
-                sx={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', minWidth: 0 }}
+                sx={{ fontSize: bodyFontSize ? bodyFontSize + 4 : 16, fontWeight: 600, lineHeight: '24px', minWidth: 0 }}
               >
                 {richTitle ? <PopupRichBlocks blocks={richTitle} trailing={titleSuffix} /> : <>{question.title}{titleSuffix}</>}
               </Typography>
             </Stack>
             {(question.description || richQuestionDescription) && (
-              <Typography component="div" sx={{ fontSize: 13, color: surveyColors.muted, mt: 0.75 }}>
+              <Typography component="div" sx={{ fontSize: bodyFontSize ? bodyFontSize + 1 : 13, color: surveyColors.muted, mt: 0.75 }}>
                 {richQuestionDescription ? <PopupRichBlocks blocks={richQuestionDescription} /> : question.description}
               </Typography>
             )}
@@ -366,7 +384,8 @@ export default function SurveyPreview({
                     bgcolor: surveyColors.page,
                     color: surveyColors.text,
                     font: 'inherit',
-                    lineHeight: '22px',
+                    fontSize: bodySize,
+                    lineHeight: 1.5,
                     outline: 'none',
                     '&::placeholder': { color: surveyColors.placeholder },
                     '&:focus': { borderColor: surveyColors.focus },
@@ -452,8 +471,9 @@ export default function SurveyPreview({
                           gridTemplateColumns: horizontal ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 28px',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          minHeight: ox ? 56 : horizontal ? 44 : 48,
-                          p: horizontal ? '10px 14px' : '12px 16px',
+                          minHeight: SURVEY_OPTION_MIN_HEIGHT,
+                          p: horizontal ? '6px 14px' : '6px 16px',
+                          fontSize: optionFontSize,
                           border: '1px solid',
                           borderRadius: `${surveyDesign.choiceRadius}px`,
                           // V2 선택: 1px 테두리 안쪽에 1px를 더 그려 2px로 보이게 한다(크기 불변).
@@ -474,10 +494,10 @@ export default function SurveyPreview({
                           sx={{
                             display: 'grid',
                             minWidth: 0,
-                            lineHeight: ox ? '32px' : '22px',
+                            lineHeight: `${optionLineHeight}px`,
                             whiteSpace: 'pre-wrap',
                             overflowWrap: 'anywhere',
-                            ...(ox ? { fontSize: 24, textAlign: 'center' } : {}),
+                            ...(ox ? { textAlign: 'center' } : {}),
                           }}
                         >
                           {surveyDesign.selectedBold && (

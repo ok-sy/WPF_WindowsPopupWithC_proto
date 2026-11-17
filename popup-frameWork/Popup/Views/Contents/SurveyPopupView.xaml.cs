@@ -71,6 +71,19 @@ namespace Popup.Views.Contents
         private readonly List<TextBlock> _questionDescriptionTexts = new();
         // POL-06-01 : 문항·서식 — 서식 선택지 문단. 크기는 선택지에서 상속하므로 본문 크기가 바뀌면 기울임 여유만 다시 맞춘다.
         private readonly List<TextBlock> _optionParagraphs = new();
+        // POL-06-03 : 표현·수명 — 선택지 컨트롤과 일반 문구. 본문 크기가 바뀌면 선택지 글자(본문 - 2)와 줄 높이를 다시 맞춘다.
+        private readonly List<Control> _optionControls = new();
+        private readonly List<TextBlock> _optionTexts = new();
+
+        /*
+         * POL-06-03 : 표현·수명
+         * 선택지 기본 크기(2026-11-17) — 관리자 미리보기 SurveyPreview와 같은 값이다.
+         *   글자 = 본문 - 2(본문 기본 14 → 12), 줄 높이 = 글자 × 1.5(기본 18),
+         *   한 줄 최소 높이 32 = 테두리 1 + 위아래 여백 6 + 18 + 6 + 1(SurveyStyles.Vn.xaml, OX도 같음).
+         */
+        internal const double OptionMinHeight = 32;
+        internal static double OptionFontSizeOf(double bodyFontSize) => bodyFontSize - 2;
+        internal static double OptionLineHeightOf(double optionFontSize) => Math.Round(optionFontSize * 1.5);
 
         /*
          * 현재 화면이 일반 설문인지
@@ -207,6 +220,9 @@ namespace Popup.Views.Contents
             _answerControls.Clear();
             _questionTitleTexts.Clear();
             _questionDescriptionTexts.Clear();
+            _optionParagraphs.Clear();
+            _optionControls.Clear();
+            _optionTexts.Clear();
 
             for (int index = 0; index < _questions.Count; index++)
             {
@@ -507,14 +523,22 @@ namespace Popup.Views.Contents
             return paragraphs.Count == 0 ? plain : StackOf(paragraphs, option.Text);
         }
 
+        // 선택지 글자 크기를 본문 - 2로 정한다. 일반 문구·서식 문단(inheritFont)은 이 컨트롤에서 상속한다.
+        private void RegisterOptionControl(Control control)
+        {
+            control.FontSize = OptionFontSizeOf(FontSize);
+            _optionControls.Add(control);
+        }
+
         private TextBlock CreateOptionText(string text, bool horizontal)
         {
             // 선택 시 굵게 바뀌는 디자인(V1)만 굵은 글자 높이를 미리 확보한다. V2는 선택해도 굵기가 그대로다.
             bool reserveSelectedBold = TryFindResource("SurveyReserveSelectedBold") is not false;
             TextBlock label = horizontal || !reserveSelectedBold ? new TextBlock() : new StableChoiceText();
             label.Text = text;
-            label.LineHeight = 22;
+            label.LineHeight = OptionLineHeightOf(OptionFontSizeOf(FontSize));
             label.TextWrapping = TextWrapping.Wrap;
+            _optionTexts.Add(label);
             return label;
         }
 
@@ -522,27 +546,22 @@ namespace Popup.Views.Contents
          * POL-06-03 : 표현·수명
          * OX 문항 표시. 가로 배치 단일 선택의 선택지가 O·X이면 같은 크기의 칸 2개로 폭을 나누고 가운데에 글자를 크게 표시한다.
          * 2026-11-13 크기 축소: 높이 88→56, 글자 36→24(줄 높이 44→32).
+         * 2026-11-17: 일반 선택지와 같은 크기(최소 높이 32, 글자 본문 - 2)로 통일하고 굵게·가운데 정렬만 유지한다.
          * 관리자 웹 미리보기(SurveyPreview)와 같은 기준·크기이며 결과·채점·선택 동작은 일반 객관식과 같다.
          */
         internal static bool IsOxQuestion(SurveyQuestion question) =>
             question.HorizontalOptions && question.QuestionType == SurveyQuestionType.SingleChoice && question.Options.Count == 2
             && question.Options[0].Text == "O" && question.Options[1].Text == "X";
 
-        internal const double OxMinHeight = 56;
-        internal const double OxFontSize = 24;
-        internal const double OxLineHeight = 32;
-
         private static void ApplyOxOptionLayout(RadioButton radioButton, bool isLast)
         {
             // 같은 폭을 유지하면서 두 칸 사이 간격이 일반 칩과 같은 8이 되도록 여백을 반씩 나눈다.
             radioButton.Margin = isLast ? new Thickness(4, 0, 0, 0) : new Thickness(0, 0, 4, 0);
             radioButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-            radioButton.MinHeight = OxMinHeight;
+            radioButton.MinHeight = OptionMinHeight;
             if (radioButton.Content is TextBlock label)
             {
-                label.FontSize = OxFontSize;
                 label.FontWeight = FontWeights.Bold;
-                label.LineHeight = OxLineHeight;
                 label.TextAlignment = TextAlignment.Center;
             }
         }
@@ -567,6 +586,7 @@ namespace Popup.Views.Contents
                     GroupName = $"Question_{question.QuestionId}"
                 };
 
+                RegisterOptionControl(radioButton);
                 if (IsOxQuestion(question)) ApplyOxOptionLayout(radioButton, isLast);
                 radioButton.Checked += AnswerSelectionChanged;
                 radioButton.Unchecked += AnswerSelectionChanged;
@@ -609,6 +629,7 @@ namespace Popup.Views.Contents
                     Content = CreateOptionContent(option, question.HorizontalOptions),
                     Tag = option
                 };
+                RegisterOptionControl(checkBox);
 
                 // POL-06-02 : 선택·제출 — 한도 확인을 응답 갱신보다 먼저 연결해 초과 선택이 응답·진행률에 남지 않게 한다.
                 checkBox.Checked += (_, _) => ApplySelectionLimit(question.MaxSelections, checkBoxes, checkBox);
@@ -943,15 +964,20 @@ namespace Popup.Views.Contents
          * POL-01-01 : 공통 옵션의 위치
          * ■ 관리자 본문 폰트 크기 적용
          * - in : fontSize(double) PopupWindow가 10~40으로 보정한 크기
-         * - out: 없음 · 선택지·주관식(상속)·문항 제목(+4)·문항 설명(+1) 크기 변경
-         * SURVEY/QUIZ의 본문 = 선택지(RadioButton/CheckBox)·주관식 TextBox. 이들은 FontSize를 직접 지정하지 않아
-         * UserControl의 FontSize를 상속하므로 this.FontSize를 바꾸면 함께 바뀐다(기본 14).
+         * - out: 없음 · 주관식(상속)·선택지(-2)·문항 제목(+4)·문항 설명(+1) 크기 변경
+         * SURVEY/QUIZ의 본문 = 선택지(RadioButton/CheckBox)·주관식 TextBox. 주관식은 UserControl의 FontSize(기본 14)를 상속하고,
+         * 선택지는 본문 - 2(기본 12)로 따로 맞춘다(2026-11-17).
          * 문항 제목(기본 16)·문항 설명(기본 13)은 기존 상대 계층을 유지하도록 각각 +4, +1 로 맞춘다.
          * 설문 제목(25)·설명(14)·제출 버튼(14)은 본문이 아니므로 그대로 둔다.
          */
         public void ApplyBodyFontSize(double fontSize)
         {
             FontSize = fontSize;
+            // 선택지는 본문 - 2, 줄 높이는 선택지 글자 × 1.5(2026-11-17). 서식 문단에 명시한 크기는 Run에 있어 그대로 우선한다.
+            double optionFontSize = OptionFontSizeOf(fontSize);
+            double optionLineHeight = OptionLineHeightOf(optionFontSize);
+            foreach (Control control in _optionControls) control.FontSize = optionFontSize;
+            foreach (TextBlock label in _optionTexts.Concat(_optionParagraphs)) label.LineHeight = optionLineHeight;
             foreach (TextBlock titleText in _questionTitleTexts)
             {
                 titleText.FontSize = fontSize + 4;

@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-17-option-size-32-12', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
+    title: '설문·퀴즈 선택지 기본 크기 32px·12px',
+    body: ['편집기의 선택지 입력칸(일반·서식)은 한 줄 높이 32px, 기본 글자 12px입니다. 정답·삭제 칸도 32px에 맞춥니다. 문항 제목·주관식 정답 입력은 그대로입니다.',
+      '미리보기 선택지도 한 줄 높이 32px이고 글자는 본문 - 2(bodyFontSize 미지정 시 12px)입니다. OX 문항도 같은 크기입니다. bodyFontSize를 주면 문항 제목은 본문 + 4, 설명은 본문 + 1로 WPF와 같습니다.',
+      'PopupRichTextEditor에 optionSize(선택)를 추가했습니다.'],
+    components: ['PopupQuestionEditor', 'PopupRichTextEditor', 'PopupPreview'],
+    action: '바꿀 코드는 없습니다. 저장 형식은 그대로입니다.',
+  },
+  {
     id: '2026-11-17-question-title-always-rich', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
     title: '설문 문항 제목도 서식 편집기로 입력',
     body: ['문항 제목은 설문·퀴즈와 richQuestionText 값에 관계없이 항상 서식 편집기(compact)로 입력합니다. richQuestionText는 선택지 입력 방식(일반 입력 / 서식 편집기)만 정합니다.',

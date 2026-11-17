@@ -5,7 +5,7 @@ import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Radio, S
 import { useEffect, useRef, useState } from 'react';
 import { acceptsByteLimitedChange, byteLimitMessage, OPTION_TEXT_MAX_BYTES, utf8ByteLength } from './popupByteLimit';
 import { richBlocksOrNull } from './PopupRichBlocks';
-import PopupRichTextEditor from './PopupRichTextEditor';
+import PopupRichTextEditor, { OPTION_INPUT_FONT_SIZE, OPTION_INPUT_HEIGHT } from './PopupRichTextEditor';
 import { ANSWER_TYPE_CHOICE, ANSWER_TYPE_CODE_TYPE, ANSWER_TYPE_OX, isOxQuestion, SAMPLE_ANSWER_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
 import { blocksToPlainText, plainTextToBlocks, type RichBlock } from './popupRichText';
 
@@ -168,8 +168,14 @@ const LEGACY_ANSWER_TYPE_LABELS: Record<string, string> = { MULTIPLE_CHOICE: '�
 
 /* 문항 카드 안 짧은 입력을 한 행에 묶고 폭이 부족하면 줄바꿈한다. Stack spacing은 줄바꿈된 항목에 왼쪽 여백이 남아 gap을 쓴다. */
 const FIELD_ROW_SX = { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 1 };
-/* 선택지 한 줄의 라디오·삭제 칸. 일반 입력칸(size small) 첫 줄 높이 40px과 맞추고(서식 편집기 모드는 36px), 여러 줄로 늘어나도 첫 줄에 남긴다. */
-const OPTION_SLOT_SX = { height: 40, display: 'flex', alignItems: 'center', flexShrink: 0 };
+/* 선택지 한 줄의 라디오·삭제 칸. 선택지 입력칸 첫 줄 높이 32px(일반·서식 공통, 2026-11-17)과 맞추고, 여러 줄로 늘어나도 첫 줄에 남긴다. */
+const OPTION_SLOT_SX = { height: OPTION_INPUT_HEIGHT, display: 'flex', alignItems: 'center', flexShrink: 0 };
+/*
+ * POL-06-01 : 문항·서식 — 일반 선택지 입력칸 크기(2026-11-17): 한 줄 바깥 높이 32 = 여백 7 + 줄 18 + 7, 기본 글자 12.
+ * (MUI 외곽선은 입력 영역 위에 겹쳐 그려 높이에 더해지지 않으므로 여백에 테두리 1을 포함한다.)
+ * 서식 선택지 편집기(optionSize)·미리보기·WPF 선택지와 같은 값이다. 문항 제목·주관식 정답 입력에는 적용하지 않는다.
+ */
+const OPTION_INPUT_SX = { '& .MuiInputBase-root': { fontSize: OPTION_INPUT_FONT_SIZE, py: '7px', px: '10px' }, '& .MuiInputBase-input': { lineHeight: '18px' } };
 /* 작게 그려도 클릭 영역은 32px를 유지한다. */
 const ICON_BUTTON_SX = { width: 32, height: 32 };
 
@@ -209,8 +215,8 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
   };
   const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
   const full = questions.length >= maxQuestions;
-  /* 정답·삭제 칸을 입력칸 첫 줄과 맞춘다: 서식 편집기 36px, 일반 입력 40px. */
-  const optionSlotSx = richQuestionText ? { ...OPTION_SLOT_SX, height: 36 } : OPTION_SLOT_SX;
+  /* 정답·삭제 칸을 입력칸 첫 줄(일반·서식 모두 32px)과 맞춘다. */
+  const optionSlotSx = OPTION_SLOT_SX;
   const add = () => !full && onChange([...questions, {
     questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
     // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
@@ -332,10 +338,10 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
                   입력칸 앞 자동 번호는 표시하지 않는다(2026-11-10). 문항·선택지 번호는 aria-label로만 남긴다.
                   richQuestionText=true면 서식 편집기로 입력하고 textBlocks를 저장한다(TODO73-34). 편집 중 다른 선택지가 바뀌었을 수 있으므로 ID로 찾아 바꾼다. */}
               {/* 선택지는 QUIZ·SURVEY 모두 UTF-8 300 Byte까지만 입력된다(TODO73-36, 설문은 2026-11-11 확대). 문항 제목(CLOB)은 제한하지 않는다. */}
-              {richQuestionText ? <PopupRichTextEditor compact label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
+              {richQuestionText ? <PopupRichTextEditor compact optionSize label={`선택지 ${oi + 1}`} inlineLabel={String(oi + 1)} placeholder="선택지 내용"
                 initialBlocks={initialRich(option.textBlocks, option.text)} maxPlainBytes={OPTION_TEXT_MAX_BYTES}
                 onChange={(blocks, plain) => { const value = richValue(blocks, plain); updateOption(index, option.optionId, { text: value.plain, textBlocks: value.blocks }); }} />
-                : <ByteLimitedTextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" maxBytes={OPTION_TEXT_MAX_BYTES}
+                : <ByteLimitedTextField size="small" multiline minRows={1} fullWidth placeholder="선택지 내용" maxBytes={OPTION_TEXT_MAX_BYTES} sx={OPTION_INPUT_SX}
                   value={plainInputValue(option.text, option.textBlocks)} slotProps={{ htmlInput: { 'aria-label': `${index + 1}번 문항 선택지 ${oi + 1}` } }}
                   onValueChange={(text) => updateOption(index, option.optionId, { text, textBlocks: null })} />}
             </Box>
