@@ -1,5 +1,29 @@
 # 변경 이력
 
+## 2026-11-18-01 — dev: WPF VIDEO 모서리 창 첫 화면 뒤 표시
+
+- 이유: 저사양 환경에서 VIDEO 팝업의 모서리 4개가 본 창보다 먼저 보이는 현상. 모서리 창(`OpaqueWindowCorners`, 미리 그린 레이어드 창)은 본 창 표시(`IsVisibleChanged`) 즉시 나타나지만 본 창 첫 화면(WPF 렌더링·WebView2 초기화)은 늦게 그려지는 것이 원인.
+- 변경: `OpaqueWindowCorners`가 본 창 `ContentRendered`(첫 렌더링 완료) 뒤에 모서리를 표시. 그 전의 표시 요청은 보류하고 숨김은 그대로 반영. 해제 시 이벤트 제거. `WPF_POPUP_ALL_SPEC.md` VIDEO 모서리 행에 표시 시점 추가.
+- 주요 파일: `popup-frameWork/Popup/Views/Windows/OpaqueWindowCorners.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`.
+- 검증: 1코어 제한으로 표시 시점 측정(별도 스레드 1ms 간격으로 모서리 창 표시 확인, 수정 전후 번갈아 3회) — 수정 전 모서리 158~226ms·첫 화면 499~859ms(모서리가 약 300~640ms 먼저), 수정 후 모서리 580~587ms·첫 화면 574~581ms(첫 화면 뒤 약 5ms). WPF 빌드 경고·오류 0, PopupWindowTests 566·BehaviorTests 1740건 통과. 실제 저사양 PC·Horizon·다중 DPI 미확인.
+- 상태: 커밋 / 원격 반영. 다음 반입본 대상(WPF 재빌드 필요).
+
+## 2026-11-17-20 — dev: WPF 영상 영역 둥근 모서리 Clip
+
+- 이유: 관리자 미리보기 영상 모서리 번짐(2026-11-17-19)과 같은 항목을 WPF에서 확인한 결과, VIDEO 팝업 영상 영역(`VideoContainer`, 1px #D1D5DB·Radius 8)의 네 모서리가 검정 직각으로 덮여 둥근 테두리가 보이지 않음. `ClipToBounds`는 사각형으로만 자르므로 사각형 영상 엔진(WebView2 문서 배경 #000·MediaElement)이 모서리 밖까지 그려지는 것이 원인. 설계 19 §6 공통 본문 Clip(2026-10-02)과 같은 유형으로, 영상 영역 안쪽은 그 범위에 포함되지 않았음.
+- 변경:
+  - `VideoPopupView.xaml`: `VideoSurface`에 `SizeChanged` 연결. `VideoPopupView.xaml.cs`: `UpdateVideoSurfaceClip` — WPF Border 안쪽 반경(CornerRadius - BorderThickness / 2 = 7.5)의 `RectangleGeometry`(Freeze)를 크기 변경 시에만 `VideoSurface.Clip`에 설정. 전체화면 진입(모서리 0)·복귀 때도 다시 맞춤.
+  - `scripts/PopupWindowTests`: VIDEO+QUIZ 영상 영역 Clip 반경 7.5·크기 일치 검사 1건 추가.
+  - `WPF_POPUP_ALL_SPEC.md` §3 외곽 표에 영상 영역 모서리 항목 추가. `WPF_AGENT_SPEC.md`는 해당 서술이 없어 검토만 함.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml`, `popup-frameWork/Popup/Views/Contents/VideoPopupView.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`.
+- 검증:
+  - 실제 화면 캡처(배율 100%, happyfit2.mp4 HTTP 영상, WebView2 경로, 재생 중): 수정 전 네 모서리 검정 직각, 수정 후 둥근 곡선.
+  - 저사양 모의 CPU(2코어 제한 + WebView2 `--disable-gpu`, 재생 30초, 수정 전후 번갈아 3회): 본 프로세스+WebView2 합계 1코어 기준 평균 수정 전 11.7% / 수정 후 11.9%, WPF 프로세스 4.7% / 5.0% — 측정 오차 범위.
+  - WPF Release 빌드 경고·오류 0, PopupWindowTests 566, BehaviorTests 1740, RecoveryTests 255, ApiDemoTests 150건 통과.
+  - 확인 사항(이번 변경과 무관, 수정 전도 동일): WPF 소프트웨어 렌더링(`RenderMode.SoftwareOnly`)으로 강제하면 WebView2CompositionControl 영상이 검정으로 표시되고 소리만 남. GPU 없는 VM 등 WPF가 소프트웨어 렌더링으로 내려가는 환경에서 같은 증상 가능성 — 실제 저사양·Horizon 환경 미확인.
+  - 미실행: 로컬 파일(MediaElement 경로) 화면 캡처, 확대 DPI, 실제 저사양 PC·Horizon.
+- 상태: 커밋 / 원격 반영. 다음 반입본 대상(WPF 재빌드 필요).
+
 ## 2026-11-17-19 — dev: 61-17_미리보기영상영역모서리검정번짐_수정
 
 - 이유: 관리자 미리보기 영상 영역(VIDEO+QUIZ 결합·단독 VIDEO)의 둥근 모서리 1px 회색 테두리에 검정이 번져 보이는 현상 확인. 영역 Box의 검정 배경이 기본값(`background-clip: border-box`)으로 테두리 아래까지 칠해지고, `overflow: hidden`으로 잘린 영상 가장자리 아래에도 깔려 안티앨리어싱된 모서리에서 두 번 섞이는 것이 원인.

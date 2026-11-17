@@ -122,7 +122,8 @@ BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT. 위치·크기 계산은 대상 모니
 | 외곽 | BorderThickness 0 / Radius 6 | 고정 외형. FULLSCREEN은 Radius 0 |
 | 일반 팝업 Clip | 실제 본문 크기와 안쪽 반경으로 계산 | 별도 옵션 없음 |
 | VIDEO / VIDEO+QUIZ | AllowsTransparency=false, 내부 WPF Radius 0 | 고정 정책. 작은 모서리 창으로 외곽 곡선 보완 |
-| VIDEO 모서리 이동 | Win32 레이어드 모서리 창 4개를 본 창 DPI 기준 물리 픽셀로 직접 그림. DPI 변경 시 HWND 재사용·즉시 재배치, 드래그 중 본 창과 묶음 이동. 앱은 PerMonitorV2로 실행 | 별도 옵션 없음. 실제 다중 DPI 모니터·Horizon 품질 및 CPU 실측은 남아 있음 |
+| VIDEO 모서리 이동 | Win32 레이어드 모서리 창 4개를 본 창 DPI 기준 물리 픽셀로 직접 그림. 모서리 창은 본 창 첫 화면(ContentRendered) 뒤에 표시해 저사양 PC에서 모서리만 먼저 보이지 않게 함(2026-11-18). DPI 변경 시 HWND 재사용·즉시 재배치, 드래그 중 본 창과 묶음 이동. 앱은 PerMonitorV2로 실행 | 별도 옵션 없음. 실제 다중 DPI 모니터·Horizon 품질 및 CPU 실측은 남아 있음 |
+| VIDEO 영상 영역 모서리 | 영상 영역 테두리(1px #D1D5DB, Radius 8) 안쪽 VideoSurface를 안쪽 반경 7.5로 둥글게 Clip(크기 변경 시에만 재생성, 전체화면은 0). 사각형 영상 엔진이 모서리를 검정 직각으로 덮지 않게 함(2026-11-17) | 별도 옵션 없음. 저사양 모의(2코어·WebView2 GPU 끔)에서 재생 CPU 차이 없음 |
 
 ## 4. 팝업 유형별 전체 기능
 

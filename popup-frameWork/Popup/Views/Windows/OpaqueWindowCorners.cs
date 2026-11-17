@@ -51,6 +51,8 @@ namespace Popup.Views.Windows
         private int _regionWidth;
         private int _regionHeight;
         private bool _disposed;
+        // 본 창 첫 화면이 그려졌는지. 그 전에는 모서리를 띄우지 않는다(저사양에서 모서리만 먼저 보이는 현상 방지, 2026-11-18).
+        private bool _contentRendered;
         private bool _inMoveLoop;
         private bool _batchMoving;
 
@@ -84,6 +86,7 @@ namespace Popup.Views.Windows
 
             _source.AddHook(WndProc);
             _window.IsVisibleChanged += Window_IsVisibleChanged;
+            _window.ContentRendered += Window_ContentRendered;
             _window.Closed += (_, _) => Dispose();
             ApplyOwnerScale(_source.CompositionTarget.TransformToDevice.M11);
             for (int i = 0; i < _corners.Length; i++)
@@ -98,8 +101,27 @@ namespace Popup.Views.Windows
             }
         }
 
+        /*
+         * ■ 첫 화면 뒤 모서리 표시
+         * - in : 본 창 ContentRendered(첫 렌더링 완료, 1회)
+         * - out: 없음 · 이때부터 표시 상태를 모서리에 반영한다.
+         * - 모서리 창은 미리 그린 작은 레이어드 창이라 즉시 보이지만, 본 창은 첫 화면(WPF 렌더링·WebView2 초기화)이 늦을 수 있다.
+         *   표시 순간(IsVisibleChanged)에 바로 띄우면 저사양 PC에서 빈 자리에 모서리 4개만 먼저 보인다. 첫 화면이 그려진 뒤 띄운다.
+         */
+        private void Window_ContentRendered(object? sender, EventArgs e)
+        {
+            _window.ContentRendered -= Window_ContentRendered;
+            _contentRendered = true;
+            Window_IsVisibleChanged(_window, default);
+        }
+
         private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // 첫 화면 전에는 표시하지 않는다(숨김은 그대로 반영).
+            if (_window.IsVisible && !_contentRendered)
+            {
+                return;
+            }
             int command = _window.IsVisible ? SwShowNoActivate : SwHide;
             foreach (IntPtr corner in _corners)
             {
@@ -397,6 +419,7 @@ namespace Popup.Views.Windows
             _disposed = true;
             _source?.RemoveHook(WndProc);
             _window.IsVisibleChanged -= Window_IsVisibleChanged;
+            _window.ContentRendered -= Window_ContentRendered;
             for (int i = 0; i < _corners.Length; i++)
             {
                 if (_corners[i] != IntPtr.Zero)
