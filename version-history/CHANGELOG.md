@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-17-02 — doc: 관리자 WEB 문항 제목·기본 폰트 정합성 TODO 추가
+
+- 이유: SURVEY 문항 제목 편집기가 `quiz=false`·`richQuestionText=false`에서 일반 입력으로 전환되는 현상과 CKEditor 기본 글자 크기·미리보기 Dialog 간 불일치에 대한 후속 요건 정리.
+- 변경: 기존 QUIZ 문항 제목 TODO에 후속 항목 2건 추가. (1) QUIZ/SURVEY와 `richQuestionText` 값에 관계없이 제목은 항상 RichTextEditor, 해당 props는 선택지 입력 방식만 제어. (2) CKEditor·미리보기 공통 기본 font-size를 명시하는 B안 확정, 구체 px 수치는 실제 computed style 확인 후 결정. 구현 전 확인·회귀 검증·기존 데이터 보존·계약 영향 분리 기준 기재.
+- 주요 파일: `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`, `version-history/CHANGELOG.md`.
+- 검증: Git 문서·관련 편집기 소스 정적 확인. 타입 검사·빌드·브라우저 실화면·원격 DB·폐쇄망 검증 미실행.
+- 상태: TODO 정의만 원격 main 반영. 코드·설정·API·DB·WPF 변경 없음. 구현 및 실제 폰트 px 확정 대기.
+
 ## 2026-11-17-01 — doc: WPF 오류 응답 판정 기준 Excel 보완
 
 - 변경: WPF_SPEC v3.8 RESULT_RESPONSE에 서버의 HTTP 오류·결과 status 생성과 WPF의 판정 기준, 조회 응답 처리 실패 시 장애 결과 요청 예시, 참고 코드 위치를 추가. 엑셀 생성 스크립트에 같은 내용을 반영.
