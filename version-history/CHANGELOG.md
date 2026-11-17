@@ -44,6 +44,7 @@
   - 구성: 웹 A 54·M 22·D 3(baseline f66e8ed 누적), WPF 소스 100, 문서 168+CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함). 20261112 이후 새 삭제 1건(`WPF_SPEC_v3.8.xlsx`).
 - 검증: 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,831,118 Byte). TAR 4개 파일 수 검증, TGZ SHA256 `77b999ae344fcf57eade58e5553d6632e1533ba987ec9832ec65fe08fa8569a7` 일치(21,261,625 Byte). 추출 목록에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB·비교 도구 0건, 장애별 분기 정의서·`SERVER_ERROR_BRANCH_v1.6.xlsx`·`WPF_SPEC_v3.9.xlsx`·문서 목차·CI 이미지 포함, README-IMPORT 기준 커밋 4118ba0·직전 20261112(9113308). 폐쇄망 적용·실호출은 미실행.
 - 상태: 반입본 생성·검증 완료(`offline-export/20261118`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 보완(2026-11-18 재생성): 생성 뒤 반영한 관리자 미리보기 영상 모서리 번짐 수정(6b0cc86), WPF 영상 영역 둥근 Clip(33705a4), WPF VIDEO 모서리 창 첫 화면 뒤 표시(3e1a7ff)를 포함하도록 같은 날짜로 다시 생성. 변경 요약에 세 항목(「[신규]」, WPF 재빌드 필요)과 저사양 PC·VM 영상 표시 확인 요청(WPF 소프트웨어 렌더링 시 WebView2 영상 검정·소리만, 기존 동작) 추가. 히스토리 번들을 같은 날짜로 재생성(직전 20261112에서 연속, main df4d1f0 → 6694d37, 22개 추가, 점검 0). 옵션은 같고 `-Force` 추가, CI 이미지 블록은 생성 후 원복. 구성 동일(웹 A 54·M 22·D 3, WPF 100, 문서 168+CI 2, 번들 5). 검증: 오프라인 운영 빌드·단일 EXE(91,831,630 Byte), TAR 4개 파일 수, TGZ SHA256 `a515ee78fcf73690a0a89bf98b19c6cf97220afbd67a3aedaeec7be5b31160f6` 일치(21,267,850 Byte), 추출본에 세 수정 포함·서버·`db/`·RgstPop·MockSso·EXE·PDB·테스트 도구 0건, README-IMPORT 기준 커밋 3e1a7ff. 이전 생성의 검증 폴더 삭제. 폐쇄망 적용 미실행.
 
 ## 2026-11-17-17 — doc: 장애별 분기 정의서 v1.6 — HTTP 오류 기본 응답을 상태 코드만으로 명시
 
