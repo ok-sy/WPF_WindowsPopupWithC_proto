@@ -43,6 +43,8 @@ scripts/PopupWindowTests/bin/
 scripts/PopupWindowTests/obj/
 scripts/ApiDemoTests/bin/
 scripts/ApiDemoTests/obj/
+scripts/PopupParityCapture/bin/
+scripts/PopupParityCapture/obj/
 
 # 구버전 인터페이스 정의서(Word/PDF) 로컬 보관 — 현행 기준은 POPUP_INTERFACE_SPEC.md·WPF_SPEC_v<버전>.xlsx
 docs/interfaces/OLD/

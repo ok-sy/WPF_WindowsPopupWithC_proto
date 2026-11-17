@@ -135,3 +135,8 @@
 - 재현: 저장소 기준으로 웹 헤더가 `bodyFontSize`를 받는 경로는 없었다(헤더는 본문 Box 밖, `headerFontSize ?? 17`). 하네스에서 테마 body 13.6px·`bodyFontSize` 18로도 헤더 17 유지. 보고된 사례는 발생 화면 정보가 없어 저장소 기준으로 재현하지 못했다. 대신 실제 차이를 찾았다: SURVEY·QUIZ 미리보기는 `bodyFontSize`가 있으면 본문 Box의 `.MuiTypography-root { font-size: inherit }` 규칙 때문에 문항 제목·설명까지 본문과 같은 크기가 돼 WPF(제목 +4·설명 +1)와 달랐다 → 3번 커밋에서 SurveyPreview 직접 매핑으로 수정.
 - 영역별 기본값 명시는 2번 구현 결과 참고. 웹: 값 미지정·각 영역 다른 값(헤더 22·본문 12·푸터 16)·`bodyFontSize`만 지정(헤더 17·푸터 14 유지)을 TEXT Dialog로, 설문 매핑(선택지 -2·제목 +4·설명 +1)을 SURVEY 미리보기로 확인. WPF: PopupWindowTests에 TEXT 기본(17·15·14)·`bodyFontSize`만(17·18·14)·각자 값(22·12·16) 검사 추가(565건 통과), 설문 `ApplyBodyFontSize(18)` → 선택지 16 검사.
 - 남은 확인: IMAGE·IMAGE_FILL·VIDEO의 영역별 값은 기존 하네스(`IMAGE preview` 54건, `TODO61 preview` 126건, `completion UX 43` 78건) 회귀 통과로만 확인했고 새 계측 검사는 추가하지 않았다. 브라우저·WPF 실화면 나란히 비교, 확대 DPI, 폐쇄망 화면은 미실행.
+
+**나란히 비교 결과 (2026-11-17)**
+- `scripts/verify-popup-parity.cjs`로 같은 데이터(SURVEY·SURVEY `bodyFontSize` 18·QUIZ OX·TEXT 기본·TEXT 영역별 값)를 관리자 미리보기와 WPF 팝업에 그려 나란히 비교했다. 이번 TODO 범위(선택지 32/12·본문 매핑·영역별 기본 글자)는 선택지 17개 높이·글자 자동 대조와 이미지 육안 확인 모두 일치.
+- 이번 범위 밖 차이 4건(흰 판 크기 48 차이, 확인 버튼 색, 설문 푸터 구분선, 빈 설명 자리·문항 간격)은 `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`에 기록하고 수정 여부 결정 대기.
+- 남은 확인: 로그인한 실제 관리자 화면, 확대 DPI, 서버 저장→재조회, 폐쇄망.

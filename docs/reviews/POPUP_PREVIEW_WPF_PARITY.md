@@ -57,3 +57,15 @@
 - TODO60 비율 값은 엔진마다 다를 수 있다: 같은 Demo 영상을 브라우저(Edge)는 593×252, WPF MediaElement는 592×252로 보고한다. 같은 계산 원칙만 맞추며 CSS px·DIP·물리 픽셀이 같다고 보지 않는다.
 
 관련 문서: [IMAGE 크기 모드 단순화(설계 23)](../design/23_IMAGE_크기모드_단순화_TODO.md), [TEXT 서식 편집(설계 28)](../design/28_TEXT_FONT_EDITING_TODO.md), [옵션 가이드](../POPUP_OPTION_GUIDE.md).
+
+## 2026-11-17 같은 데이터 나란히 비교
+
+- 도구: `node scripts/verify-popup-parity.cjs`. 같은 고정 데이터 5종(SURVEY 기본·`bodyFontSize` 18, QUIZ OX+선다형, TEXT 기본, TEXT 헤더 22·본문 12·푸터 16)을 관리자 미리보기(`PopupPreview`, 실제 Dialog처럼 `hidePlaceholders`, 테마 body1 0.85rem, headless Edge 100%)와 WPF `PopupWindow`(서버 응답 형식, `scripts/PopupParityCapture`, 96 DPI)로 그려 `.offline-verify/popup-parity/<id>.side.png`에 세 장(웹 원래 크기 · 웹을 WPF 흰 판 크기로 맞춤 · WPF 흰 판)을 나란히 저장한다. 선택지는 이름별로 높이·글자를 자동 대조한다.
+- 일치: 선택지 17개 높이·글자(기본 32/12, `bodyFontSize` 18이면 38/16, 긴 선택지 두 줄 62), 헤더 제목 크기(기본 17, `headerFontSize` 22), TEXT 본문 기본 15·지정 크기 20·본문 12, 문항 제목·설명 크기, 칩·OX 칸 배치, 필수 응답 문구.
+- 차이(미수정, 수정 여부 결정 대기):
+  1. **흰 판 크기**: FIXED 720×820 일반 팝업에서 미리보기 Dialog는 흰 판을 720×820으로 그리지만 WPF는 창 720×820 안에 그림자 여백 24를 둬 흰 판이 672×772다(영상 창은 여백 0이라 같음). 같은 데이터에서 줄바꿈 위치가 달라질 수 있다.
+  2. **푸터 확인 버튼 색**: 미리보기는 MUI `color="inherit"` 회색, WPF `ActionButtonStyle`은 배경 #111827·흰 글자.
+  3. **설문·퀴즈 푸터 구분선**: 미리보기 SURVEY·QUIZ 푸터에만 위쪽 1px 구분선이 있고 WPF에는 없다(일반 푸터는 TODO61-17에서 이미 제거).
+  4. **콘텐츠 설명 자리**: 설명이 비어 있으면 미리보기는 자리를 접지만 WPF는 빈 설명 줄 높이만큼(약 36) 띄운다. 설명이 있어도 제목·설명과 첫 문항 사이가 WPF에서 약 12 더 넓다.
+  5. 주관식 입력칸 크기 조절 손잡이는 브라우저 기본 표시라 비교 대상에서 뺀다.
+- 한계: 로그인한 실제 관리자 화면이 아니라 같은 `PopupPreview` 컴포넌트를 하네스에서 그린 것이고, WPF도 실제 모니터 배율이 아니라 96 DPI 렌더링이다. 확대 DPI(125~200%)·폐쇄망 화면은 미확인.

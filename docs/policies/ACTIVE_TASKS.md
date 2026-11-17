@@ -21,7 +21,8 @@
 | F100 | 유형별 실화면 왕복(TEXT·IMAGE·SURVEY/QUIZ·Overlay·키보드·DPI) | 대기 | R1 회차에서 관리자 저장→DB→재조회→WPF 실행 | [TODO53-11~12](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
 | F100 | VIDEO 장치·저사양·Horizon 측정 | 대기 | 장비·환경 확보 후 R3 측정 | [TODO53-13~14](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md)·[24](../design/24_VIDEO_저사양_PC_CPU_개선_TODO.md) |
 | F100 | 최종 Header 로고 반영 | 대기 | 로고 이미지·디자인 확정 입력 | [TODO25](../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)·[53-15](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
-| F200 | 문항 제목 서식 편집기·선택지 32px/12px·영역별 기본 글자 | 진행 | 같은 데이터의 관리자 미리보기·WPF 실화면 비교, 서버 저장→재조회, 폐쇄망 | [20261110](../design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md) |
+| F200 | 문항 제목 서식 편집기·선택지 32px/12px·영역별 기본 글자 | 진행 | 나란히 비교 완료(2026-11-17, 범위 내 일치). 로그인 관리자 화면·확대 DPI·서버 저장→재조회·폐쇄망 | [20261110](../design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md) |
+| F200 | 미리보기·WPF 표시 차이 4건(흰 판 크기 48, 확인 버튼 색, 설문 푸터 구분선, 빈 설명 자리·문항 간격) | 대기 | 수정 여부 결정([비교 기록](../reviews/POPUP_PREVIEW_WPF_PARITY.md)) | `scripts/verify-popup-parity.cjs` |
 | F200 | 미리보기 VIDEO 레이아웃·공통 헤더/푸터 WPF 정렬 | 진행 | 관리자 웹·WPF 캡처 나란히 비교 | [TODO61-17](../design/61_관리자_미리보기_컴포넌트화_TODO.md) |
 | F200 | 퀴즈·설문 에디터·공통코드 | 진행 | 실화면, 원격 개발 DB 저장 왕복, 폐쇄망 코드 0089·0090 확인 | [TODO73](../design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md) |
 | F200 | 공통 컴포넌트·최소 크기·MUI slotProps 인계 | 진행 | 폐쇄망·실환경 빌드와 화면 확인 | [TODO67](../design/67_MUIdeprecated속성_미리보기호환검증_TODO.md)·[68](../design/68_팝업최소크기_300x300_공통화_TODO.md)·[69](../design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md) |

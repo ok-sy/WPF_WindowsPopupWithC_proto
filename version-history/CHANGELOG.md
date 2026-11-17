@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-17-09 — dev: 관리자 미리보기·WPF 같은 데이터 나란히 비교 도구 추가
+
+- 이유: 20261110 후속(선택지 32/12·영역별 기본 글자)과 61-17 정렬의 남은 확인 항목인 같은 데이터의 웹·WPF 화면 비교 수행.
+- 변경: `scripts/verify-popup-parity.cjs`(+ `verify-popup-parity-entry.tsx`) 추가 — 고정 데이터 5종을 관리자 미리보기(`hidePlaceholders`, 테마 body1 0.85rem, Edge 100%)로 그리고, 같은 데이터를 서버 응답 형식으로 바꿔 `scripts/PopupParityCapture`(신규 WPF 콘솔, 실제 `PopupWindow`를 96 DPI로 렌더링해 그림자 여백 밖 흰 판만 자름)로 그린 뒤 세 장을 나란히 합성하고 선택지 높이·글자를 자동 대조. `.gitignore`에 캡처 프로젝트 bin/obj 추가. 결과를 비교 기록·TODO·활성 작업에 반영.
+- 주요 파일: `scripts/verify-popup-parity.cjs`, `scripts/verify-popup-parity-entry.tsx`, `scripts/PopupParityCapture/Program.cs`, `scripts/PopupParityCapture/PopupParityCapture.csproj`, `.gitignore`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: 선택지 17개 높이·글자 웹·WPF 일치(기본 32/12, `bodyFontSize` 18 → 38/16, 긴 선택지 두 줄 62). 이미지 육안 비교로 헤더 17·22, TEXT 본문 15·지정 20·본문 12, 문항 제목·설명 크기 일치 확인. 범위 밖 차이 4건(흰 판 크기 웹 720×820 / WPF 672×772, 확인 버튼 색, 설문 푸터 구분선, 빈 설명 자리·문항 간격) 발견, 미수정. 로그인 관리자 화면·확대 DPI·폐쇄망 미실행.
+- 상태: 커밋 / 원격 반영. 차이 4건 수정 여부 결정 대기.
+
 ## 2026-11-17-08 — dev: TODO78 기능·정책 F/P 문서 체계 정리
 
 - 이유: 문서 진입점을 기능(F100~F300)과 정책(P100~P400)으로 나누고 활성 작업을 대기·진행·완료 세 단계로 한 곳에서 관리하기로 한 TODO78 반영.
