@@ -135,13 +135,13 @@ def examples(body):
     for line in body:
         if line.startswith('### '):
             label, status, situation = line[4:].strip(), None, None
-        elif cur is None and out and out[-1][0] == label and line.strip() and not line.startswith(('상황: ', 'HTTP ', '```')):
+        elif cur is None and out and out[-1][0] == label and line.strip() and not line.startswith(('상황: ', 'HTTP ', 'POST ', '기본 응답', '본문을 줄 경우', '```')):
             out[-1][4].append(plain(line))
         elif line.startswith('상황: ') and cur is None:
             situation = plain(line[4:])
-        elif line.startswith(('HTTP ', 'POST ')) and cur is None:
+        elif line.startswith(('HTTP ', 'POST ', '기본 응답', '본문을 줄 경우')) and cur is None:
             status = line.strip()
-        elif line.strip().startswith('```json'):
+        elif line.strip().startswith(('```json', '```http')):
             cur = []
         elif line.strip() == '```' and cur is not None:
             out.append([label, status, situation, cur, []])
@@ -152,12 +152,16 @@ def examples(body):
 
 
 def put_examples(w, body):
-    """'### 라벨' 예시마다 JSON 블록과 상황·안내 문장."""
+    """'### 라벨' 예시마다 코드 블록(JSON·HTTP 상태 줄)과 상황·안내 문장. 한 예시에 블록이 여럿이면 둘째부터 소제목만 표시."""
+    after_label = None
     for label, status, situation, lines, after in examples(body):
         title = label if not status or status in label else f'{label} — {status}'
+        if after_label == label:
+            title = f'  └ {status}' if status else label
+        after_label = label
         w.code(title, lines, col_to=6)
         w.row -= 1
-        w.notes(([f'상황: {situation}'] if situation else []) + after)
+        w.notes(([f'상황: {situation}'] if situation and title == label or situation and not title.startswith('  └') else []) + after)
 
 
 def build(version, date):
@@ -172,7 +176,7 @@ def build(version, date):
     put_section(w, 2, '② 판정 순서 (요청 1건)', center=(0,))
     w.section('③ 시트 구성')
     put_table(w, [
-        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 2가지(401·400), 선택 426, SAMPLE'},
+        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 2가지(401·400), 선택 426, SAMPLE(기본은 상태 코드만, 본문은 선택)'},
         {'시트': 'RESULT_STATUS', '내용': '주요 개발 범위 — 결과 응답 본문 전체·status·code 정의, 장애 결과 요청(resultCode=400)'},
         {'시트': '결과 예시', '내용': '경우별 응답 본문 전체(JSON, 필수·선택 주석)'},
         {'시트': '적용 확인', '내용': '폐쇄망 백엔드 적용 시 확인 항목과 하지 말 것'},

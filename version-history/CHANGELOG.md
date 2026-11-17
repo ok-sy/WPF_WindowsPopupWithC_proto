@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-17-17 — doc: 장애별 분기 정의서 v1.6 — HTTP 오류 기본 응답을 상태 코드만으로 명시
+
+- 이유: HTTP_ERROR 샘플이 JSON 본문만 보여 줘 본문 작성이 기본처럼 읽힘. 필수 HTTP 오류는 상태 코드만 맞으면 되므로 기본 형태를 상태 줄만으로 정정.
+- 변경:
+  - 정의서 §3: 기본은 상태 코드만 보내는 응답(본문 없음), 기존 처리기의 기본 본문(Spring Boot 기본 오류 JSON 등)은 그대로 둬도 된다고 명시. 표의 본문 열을 「없음(기본). 있어도 무관」으로, 원칙 표를 「상태 코드만(본문 없음이 기본)」으로 변경.
+  - 401·400·426(선택) 샘플마다 기본 응답(`HTTP/1.1 401 Unauthorized`, `Content-Length: 0`)을 먼저 두고 JSON 본문은 「본문을 줄 경우(선택)」로 분리.
+  - Excel 생성 스크립트가 http 코드 블록과 한 예시 안의 여러 블록(기본 응답·선택 본문)을 출력하도록 변경. `SERVER_ERROR_BRANCH_v1.6.xlsx`(v1.5 대체), Excel 파일명 참조 갱신·`WPF_SPEC_v3.9.xlsx` 재생성.
+- 주요 파일: `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.6.xlsx`, `scripts/export-server-error-branch-xlsx.py`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.9.xlsx`.
+- 검증: 엑셀 HTTP_ERROR 시트에서 샘플마다 상태 줄 → 안내 → 선택 본문 순서를 확인, 결과 예시 시트(Q1·R1~R8) 변동 없음 확인. 코드 변경 없음.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-16 — doc: 장애별 분기 정의서 v1.5 — RETRYABLE_ERROR 실제 오류 예시
 
 - 이유: RETRYABLE_ERROR 판정 기준이 「DB 연결·데드락·잠금 대기·타임아웃」 수준의 설명뿐이라 백엔드가 실제 오류와 대조하기 어려워 ORA 코드 단위 예시 보완.
