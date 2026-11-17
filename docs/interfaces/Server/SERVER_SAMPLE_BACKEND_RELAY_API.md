@@ -64,7 +64,7 @@ mock 시나리오는 `-Dpopup.sample.relay.path=/api/wpf/popups?scenario=<이름
 | 200 정상 | 200, 백엔드 JSON 그대로(WPF 구조) | 없음 |
 | 200 `popup:null` | 200 `{"pollingIntervalSeconds":…, "popup":null}` (데이터 없음 = 정상) | 없음 |
 | 400 / 401 / 403 | 같은 상태. 본문이 WPF 오류면 code·message 유지, 아니면 E4000(BAD_REQUEST) / E4010(UNAUTHORIZED) / E4030(USER_INACTIVE) | HTTP_4XX |
-| 426 | 426, 본문 그대로(E4260(E4260(CLIENT_VERSION_NOT_SUPPORTED))·버전 값, 설계 13) | HTTP_4XX |
+| 426 | 426, 본문 그대로(E4260(CLIENT_VERSION_NOT_SUPPORTED)·버전 값, 설계 13) | HTTP_4XX |
 | 그 밖의 4xx, 5xx | 500 `E5000(INTERNAL)`(백엔드 메시지 비노출) | HTTP_4XX / HTTP_5XX |
 | 연결 실패 / 응답 timeout | 500 `E5000(INTERNAL)` | CONNECT / TIMEOUT |
 | JSON 아님 / 계약 불일치(객체 아님·pollingIntervalSeconds 누락·popup 키 누락·popupId 없음) | 500 `E5000(INTERNAL)` | INVALID_JSON / INVALID_RESPONSE |

@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-17-13 — doc: 장애별 분기 정의서 HTTP 오류 필수 항목 정리·샘플 추가
+
+- 이유: WPF는 HTTP 오류를 상태 코드로만 판정하고 본문은 로그·안내 문구에만 써서(426 본문도 없으면 안내 창 버전 칸 '-'), 백엔드가 그대로 보내도 문제없는 오류까지 정의서에 있으면 구현 범위가 불필요하게 커짐. 반드시 지켜야 하는 것만 남기기로 함.
+- 변경:
+  - 정의서 v1.2(`SERVER_WPF_ERROR_BRANCH_GUIDE.md`): HTTP 오류를 필수 3가지로 축소 — 401(인증 실패, 302·로그인 HTML·403 금지), 426(버전 미지원, 인증보다 먼저), 400(결과 API 본문 해석 불가, 500이면 같은 본문을 계속 재전송). 각각 '다른 상태로 보내면 생기는 문제'를 명시하고 본문은 선택(E 코드 권장)으로 정리. 403·404·405·500·502~504·타임아웃은 기존 처리기가 내는 그대로 허용(한 줄 안내). 판정 순서 표에서 403·500 단계 제거. §3에 SAMPLE(401·426·400, 본문 없이 상태만 보내도 됨) 추가, §7은 결과 API·조회 예시만. §5 코드표는 결과 응답 R 코드만. 적용 확인의 '공통 예외 처리기' 행을 '3가지만 이 상태로, 나머지는 기존 그대로'로 수정.
+  - Excel `SERVER_ERROR_BRANCH_v1.2.xlsx`: HTTP_ERROR 시트를 필수 3가지 표 + SAMPLE(JSON·상황·본문 생략 가능 안내)로 구성. 생성 스크립트에 예시 뒤 안내 문장 처리·시트 구성 반영.
+  - 2026-11-17-12 치환 결함 수정: 문서 모드가 줄 단위 치환 뒤 전체 치환을 한 번 더 해 `CLIENT_VERSION_NOT_SUPPORTED`만 `E4260(E4260(…))`으로 두 번 바뀐 4곳(정의서·서버 중계 샘플 인계 문서·WPF_SPEC 생성 스크립트)을 `E4260(CLIENT_VERSION_NOT_SUPPORTED)`로 정정하고 `WPF_SPEC_v3.9.xlsx` 재생성.
+- 주요 파일: `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.2.xlsx`, `scripts/export-server-error-branch-xlsx.py`, `docs/interfaces/Server/SERVER_SAMPLE_BACKEND_RELAY_API.md`, `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.9.xlsx`.
+- 검증: WPF `PopupApiService.EnsureWpfSuccessAsync`·`WpfClientVersionException.TryCreate`·`PopupResultQueue`로 HTTP 오류 판정이 상태 코드 기준임을 확인. 엑셀 셀을 읽어 HTTP_ERROR 시트 표·SAMPLE과 결과 code 표(R 코드만)가 정의서와 같음을 확인. 이중 치환 흔적 저장소 전체 0건. 코드 변경 없음(서버·WPF 테스트 재실행 안 함).
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-12 — dev: WPF API 응답 code 5 Byte 코드로 변경
 
 - 이유: 폐쇄망 백엔드의 코드 컬럼이 VARCHAR2(5 BYTE)(UTF-8)로 확인됨. 기존 이름형 응답 code(`WPF_INVALID_DELIVERY` 20 Byte 등)는 저장·응답할 수 없어 5 Byte 코드로 정리. 영향 판단: WPF는 응답 code를 판정에 쓰지 않고(로그 전용) HTTP 상태·`status`로만 분기하므로 Agent 동작 변경 없음. `status` 값(ACCEPTED 등)은 5 Byte를 넘지만 응답 값은 유지(DB 저장이 필요하면 서버에서 저장용 코드로 바꾸도록 정의서에 명시). 장애 결과 `resultCode=400`은 3 Byte라 영향 없음.

@@ -108,6 +108,8 @@ def examples(body):
     for line in body:
         if line.startswith('### '):
             label, status, situation = line[4:].strip(), None, None
+        elif cur is None and out and out[-1][0] == label and line.strip() and not line.startswith(('상황: ', 'HTTP ', '```')):
+            out[-1][4].append(plain(line))
         elif line.startswith('상황: ') and cur is None:
             situation = plain(line[4:])
         elif line.startswith('HTTP ') and cur is None:
@@ -115,11 +117,20 @@ def examples(body):
         elif line.strip() == '```json':
             cur = []
         elif line.strip() == '```' and cur is not None:
-            out.append((label, status, situation, cur))
+            out.append([label, status, situation, cur, []])
             cur = None
         elif cur is not None:
             cur.append(line)
     return out
+
+
+def put_examples(w, body):
+    """'### 라벨' 예시마다 JSON 블록과 상황·안내 문장."""
+    for label, status, situation, lines, after in examples(body):
+        title = label if not status or status in label else f'{label} — {status}'
+        w.code(title, lines, col_to=6)
+        w.row -= 1
+        w.notes(([f'상황: {situation}'] if situation else []) + after)
 
 
 def build(version, date):
@@ -134,7 +145,7 @@ def build(version, date):
     put_section(w, 2, '② 판정 순서 (요청 1건)', center=(0,))
     w.section('③ 시트 구성')
     put_table(w, [
-        {'시트': 'HTTP_ERROR', '내용': '요청 자체를 처리하지 못해 HTTP 4xx·5xx로 응답하는 경우와 WPF 처리'},
+        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 3가지(401·426·400)와 WPF 처리, SAMPLE'},
         {'시트': 'RESULT_STATUS', '내용': '결과 API의 HTTP 200 status·code 정의, code 값, WPF 장애 결과(resultCode=400)'},
         {'시트': '결과 예시', '내용': '저장소 서버를 실제로 거쳐 만든 경우별 응답 JSON'},
         {'시트': '참고 소스', '내용': '예외 매핑·status 분류·예시 생성 소스 위치'},
@@ -144,8 +155,17 @@ def build(version, date):
 
     ws = wb.create_sheet('HTTP_ERROR')
     w = SheetWriter(ws, WIDTHS)
-    w.title('HTTP 오류로 응답하는 경우 — 본문 {code, message, timestamp}', sub)
-    put_section(w, 3, 'HTTP 오류 응답 정의', mono=(1,), center=(0,))
+    w.title('필수 HTTP 오류 — 401 · 426 · 400(결과 API 본문 해석 불가)', sub)
+    title, body = section(3)
+    cut = next(i for i, line in enumerate(body) if line.startswith('### 샘플'))
+    w.section('필수 HTTP 오류 정의')
+    for p in paragraphs(body[:cut]):
+        w.notes([p])
+    for t in tables(body[:cut]):
+        put_table(w, t, center=(0,))
+    w.notes(bullets(body[:cut]))
+    w.section('SAMPLE')
+    put_examples(w, body[cut + 1:])
 
     ws = wb.create_sheet('RESULT_STATUS')
     w = SheetWriter(ws, WIDTHS)
@@ -156,14 +176,10 @@ def build(version, date):
 
     ws = wb.create_sheet('결과 예시')
     w = SheetWriter(ws, WIDTHS)
-    w.title('결과 예시 — 저장소 서버 실제 응답 (WpfErrorBranchExamplesTest)', sub)
+    w.title('결과 예시 — 결과 API·조회 실제 응답 (WpfErrorBranchExamplesTest)', sub)
     title, body = section(7)
     w.notes([p for p in paragraphs(body) if not p.startswith(('상황:', 'HTTP '))])
-    for label, status, situation, lines in examples(body):
-        w.code(f'{label} — {status}' if status else label, lines, col_to=6)
-        if situation:
-            w.row -= 1
-            w.notes([f'상황: {situation}'])
+    put_examples(w, body)
 
     ws = wb.create_sheet('참고 소스')
     w = SheetWriter(ws, WIDTHS)
