@@ -91,10 +91,13 @@ def put_table(w, rows, mono=(), center=()):
 
 
 def put_section(w, number, heading=None, mono=(), center=()):
-    """절의 문단·표·'- ' 안내를 원문 순서대로 옮긴다(표와 안내가 번갈아 나와도 순서 유지)."""
+    """절의 문단·표·'- ' 안내를 원문 순서대로 옮기고, 절 끝의 '### ' JSON 블록(본문 전체·샘플)을 이어서 넣는다."""
     title, body = section(number)
     w.section(heading or title)
-    put_body(w, body, mono, center)
+    cut = next((i for i, line in enumerate(body) if line.startswith('### ')), len(body))
+    put_body(w, body[:cut], mono, center)
+    if cut < len(body):
+        put_examples(w, body[cut:])
 
 
 def put_body(w, lines, mono=(), center=()):
@@ -136,9 +139,9 @@ def examples(body):
             out[-1][4].append(plain(line))
         elif line.startswith('상황: ') and cur is None:
             situation = plain(line[4:])
-        elif line.startswith('HTTP ') and cur is None:
+        elif line.startswith(('HTTP ', 'POST ')) and cur is None:
             status = line.strip()
-        elif line.strip() == '```json':
+        elif line.strip().startswith('```json'):
             cur = []
         elif line.strip() == '```' and cur is not None:
             out.append([label, status, situation, cur, []])
@@ -169,10 +172,9 @@ def build(version, date):
     put_section(w, 2, '② 판정 순서 (요청 1건)', center=(0,))
     w.section('③ 시트 구성')
     put_table(w, [
-        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 2가지(401·400), 선택 426, WPF 처리, SAMPLE'},
-        {'시트': 'RESULT_STATUS', '내용': '주요 개발 범위 — 결과 API의 HTTP 200 status·code 정의, code 값, WPF 장애 결과(resultCode=400)'},
-        {'시트': '결과 예시', '내용': '저장소 서버를 실제로 거쳐 만든 경우별 응답 JSON'},
-        {'시트': '참고 소스', '내용': '예외 매핑·status 분류·예시 생성 소스 위치'},
+        {'시트': 'HTTP_ERROR', '내용': '반드시 지켜야 하는 HTTP 오류 2가지(401·400), 선택 426, SAMPLE'},
+        {'시트': 'RESULT_STATUS', '내용': '주요 개발 범위 — 결과 응답 본문 전체·status·code 정의, 장애 결과 요청(resultCode=400)'},
+        {'시트': '결과 예시', '내용': '경우별 응답 본문 전체(JSON, 필수·선택 주석)'},
         {'시트': '적용 확인', '내용': '폐쇄망 백엔드 적용 시 확인 항목과 하지 말 것'},
         {'시트': '버전 이력', '내용': '정의서 버전별 변경 내용'},
     ])
@@ -189,33 +191,28 @@ def build(version, date):
 
     ws = wb.create_sheet('RESULT_STATUS')
     w = SheetWriter(ws, WIDTHS)
-    w.title('HTTP 200 + status·code로 응답하는 경우 — POST /p/api/wpf/popups/results', sub)
+    w.title('결과 응답(HTTP 200) — POST /p/api/wpf/popups/results', sub)
     put_section(w, 4, 'status 정의', mono=(0, 2))
     put_section(w, 5, 'code 값', mono=(0, 1))
-    put_section(w, 6, 'WPF가 보내는 장애 결과 (resultCode=400)')
+    put_section(w, 6, '장애 결과 요청 (resultCode=400)')
 
     ws = wb.create_sheet('결과 예시')
     w = SheetWriter(ws, WIDTHS)
-    w.title('결과 예시 — 결과 API·조회 실제 응답 (WpfErrorBranchExamplesTest)', sub)
+    w.title('응답 예시 — 본문 전체(필수·선택 주석)', sub)
     title, body = section(7)
     w.notes([p for p in paragraphs(body) if not p.startswith(('상황:', 'HTTP '))])
     put_examples(w, body)
 
-    ws = wb.create_sheet('참고 소스')
-    w = SheetWriter(ws, WIDTHS)
-    w.title('참고 소스 (zero-rule-server)', sub)
-    put_section(w, 8, '소스 위치', mono=(1,))
-
     ws = wb.create_sheet('적용 확인')
     w = SheetWriter(ws, WIDTHS)
     w.title('폐쇄망 백엔드 적용 시 확인', sub)
-    put_section(w, 9, '확인 항목')
-    put_section(w, 10, '하지 말 것')
+    put_section(w, 8, '확인 항목')
+    put_section(w, 9, '하지 말 것')
 
     ws = wb.create_sheet('버전 이력')
     w = SheetWriter(ws, [12, 14, 110])
     w.title('WPF API 장애별 분기 처리 정의서 - 버전 이력', sub)
-    rows = tables(section(11)[1])[0]
+    rows = tables(section(10)[1])[0]
     w.table(['버전', '날짜', '변경 내용'], [[plain(r['버전']), plain(r['날짜']), plain(r['변경 내용'])] for r in reversed(rows)],
             center_cols=(0, 1))
 
@@ -229,7 +226,7 @@ def build(version, date):
 
 
 def main():
-    last = tables(section(11)[1])[0][-1]
+    last = tables(section(10)[1])[0][-1]
     version, date = plain(last['버전']), plain(last['날짜'])
     wb = build(version, date)
     out = os.path.join(OUT_DIR, f'SERVER_ERROR_BRANCH_{version}.xlsx')

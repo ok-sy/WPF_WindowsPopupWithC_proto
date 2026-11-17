@@ -630,7 +630,7 @@ def build(version, date):
         "결과 응답 | 서버가 HTTP 성공 응답에 요청과 같은 resultId와 status를 담는다. WPF는 resultId 일치 여부와 status로 종결·재전송을 판단한다. 예: HTTP 200 + {\"resultId\":\"r-001\",\"status\":\"INTERNAL_ERROR\",\"code\":\"R5000\"}",
         "같은 오류 코드의 구분 | HTTP 500의 R5000(RESULT_INTERNAL)은 HTTP 실패 경로로 처리한다. 결과 저장 중이면 결과를 보관하고 조회를 보류한다. HTTP 200의 INTERNAL_ERROR는 해당 상태를 3회 받으면 큐에서 삭제한다. WPF는 message의 문구로 상태를 판정하지 않는다.",
         "조회 응답 처리 장애 | WPF가 HTTP 200 조회 응답의 JSON 파싱·변환·표시 실패를 감지하면 장애 결과 요청을 만든다. 예: {\"resultId\":\"r-002\",\"resultCode\":400,\"resultDesc\":\"조회 응답 JSON 파싱 실패\"}. resultDesc는 UTF-8 최대 1,000 Byte, 확보한 popupId·deliveryId만 포함한다.",
-        "서버 구현 참고 | 장애별 분기 정의서 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md(Excel SERVER_ERROR_BRANCH_v1.3.xlsx)와 WpfApiExceptionHandler(HTTP 예외 매핑)·WpfResultFailures(결과 status 분류)를 함께 확인한다.",
+        "서버 구현 참고 | 장애별 분기 정의서 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md(Excel SERVER_ERROR_BRANCH_v1.4.xlsx)와 WpfApiExceptionHandler(HTTP 예외 매핑)·WpfResultFailures(결과 status 분류)를 함께 확인한다.",
         "WPF 구현 참고 | PopupApiService.EnsureWpfSuccessAsync의 HTTP 상태 처리와 PopupResultQueue.Settle의 결과 판정을 확인한다.",
     ])
 

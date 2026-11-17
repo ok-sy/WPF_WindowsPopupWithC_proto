@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-17-15 — doc: 장애별 분기 정의서 v1.4 — 응답 본문 전체 예시·참고 소스 제거
+
+- 이유: 정의서는 폐쇄망 백엔드 전달용 문서이고 저장소 참고 소스는 반입하지 않으므로 소스 위치·WPF 내부 처리 설명을 제외. 응답은 실제 payload 형태로 필드 전체를 보여 줘야 구현 시 바로 대조할 수 있어 예시 형식 변경.
+- 변경:
+  - 정의서에서 참고 소스 절, 판정 순서·개발 범위 표의 구현 위치·참고 소스 열, WPF 처리 설명(HTTP 오류 표의 WPF 처리·문제 열, 원칙 표의 WPF가 보는 것), 트랜잭션 항목 삭제.
+  - 응답·요청 예시를 jsonc 형식으로 바꿔 본문 필드를 전부 나열하고 필드마다 필수·선택·조건부 필수를 주석으로 표기. 해당 경우에 보내지 않는 필드도 `// "필드": 보내지 않음` 줄로 표시. 결과 응답 본문 전체(§4)와 장애 결과 요청 본문 전체(§6) 추가. 예시는 저장소 테스트 출력 대신 문서에서 직접 정의.
+  - 절 번호 정리(참고 소스 삭제로 §8 적용 확인, §9 하지 말 것, §10 버전 이력). 계약서 §13 참조 문구 수정.
+  - Excel `SERVER_ERROR_BRANCH_v1.4.xlsx`(v1.3 대체): 참고 소스 시트 삭제, jsonc 블록·`POST` 요청 블록 인식, 절 끝 본문 전체 블록을 해당 시트에 출력. WPF_SPEC의 Excel 파일명 참조 갱신·`WPF_SPEC_v3.9.xlsx` 재생성.
+- 주요 파일: `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.4.xlsx`, `scripts/export-server-error-branch-xlsx.py`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.9.xlsx`.
+- 검증: 엑셀 셀을 읽어 HTTP_ERROR(401·400 SAMPLE 주석 포함), RESULT_STATUS(응답 본문 전체·code 값·장애 결과 요청 본문 전체), 결과 예시(Q1·R1~R8) 시트가 정의서와 같음을 확인. 코드 변경 없음.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-14 — doc: 장애별 분기 정의서 v1.3 — 백엔드 주요 개발 범위·필수 HTTP 오류 401·400
 
 - 이유: 폐쇄망에서 클라이언트 버전 분기(426)를 사실상 구현하기 어렵다는 확인. WPF는 426을 받지 않으면 업데이트 안내·중단만 동작하지 않고 조회·결과 처리는 정상이므로 426은 선택으로 내리고, 백엔드가 실제로 개발할 범위(결과 API HTTP 200 분기)를 맨 앞에 정리.
