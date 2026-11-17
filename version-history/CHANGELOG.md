@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-17-11 — dev: 서버 WPF API 장애별 분기 처리 정의서·참고 소스·결과 예시
+
+- 이유: 폐쇄망 백엔드 전달 준비. 오류를 HTTP 상태로 그대로 응답할 경우와 결과 API에서 HTTP 200 + status·code를 만들어 응답할 경우의 기준이 계약서 여러 절과 서버 코드에 흩어져 있어, 백엔드가 그대로 구현할 수 있는 단일 정의서와 실제 응답 예시가 필요.
+- 변경:
+  - 정의서 `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md` 신규: 원칙(HTTP 오류 / HTTP 200 status / 오류 아님), 요청 1건의 판정 순서(버전 426 → 인증 401 → 본문 해석 400 → 사용자 403 → 결과 형식 REJECTED → 업무 REJECTED → 일시 장애 RETRYABLE_ERROR → 미확정 INTERNAL_ERROR → 후보 확인 실패 WPF_NEXT_STATUS_UNKNOWN), HTTP 오류·status·code 정의와 WPF 처리, WPF 장애 결과(resultCode=400), 실제 응답 예시 14건, 참고 소스 위치, 폐쇄망 적용 확인 항목, 하지 말 것.
+  - Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.0.xlsx` 신규: 생성 스크립트 `scripts/export-server-error-branch-xlsx.py`가 정의서 Markdown의 표·안내·예시를 읽어 WPF_SPEC과 같은 서식(SheetWriter 재사용)으로 생성. 시트: 개요·HTTP_ERROR·RESULT_STATUS·결과 예시·참고 소스·적용 확인·버전 이력.
+  - 참고 소스: 결과 status 분류(일시 장애 판정·REJECTED 세부 code·고정 code/message)를 `WpfPopupService`에서 `WpfResultFailures`로 분리(동작 동일). `WpfPopupService`·`WpfPopupController`가 이 클래스의 상수·판정을 사용.
+  - 결과 예시 테스트 `WpfErrorBranchExamplesTest` 신규: 실제 컨트롤러·서비스·`WpfApiExceptionHandler`·`WpfClientVersionInterceptor`를 거쳐(매퍼·결과 처리기만 mock) 14개 경우의 HTTP 상태·status·code를 단언하고 응답을 `web/api/build/wpf-error-branch-examples/`에 저장. web/api 테스트 의존성에 `repo:core` 추가(운영 classpath 영향 없음).
+  - 연결: 계약서 §13·WPF_SPEC v3.8 RESULT_RESPONSE 서버 참고 문구·활성 작업 P300 행에서 새 정의서를 가리킴(WPF_SPEC v3.8 재생성).
+- 주요 파일: `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.0.xlsx`, `scripts/export-server-error-branch-xlsx.py`, `zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultFailures.java`·`WpfPopupService.java`, `zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfPopupController.java`, `zero-rule-server/web/api/src/test/java/server/web/api/popup/wpf/WpfErrorBranchExamplesTest.java`, `zero-rule-server/web/api/build.gradle.kts`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF/WPF_SPEC_v3.8.xlsx`, `scripts/export-wpf-spec-xlsx.py`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: 서버 `gradlew --offline test` 290건 통과·13 skip(Oracle 연동)·실패 0(신규 예시 14건 포함, 분리한 분류는 기존 `WpfPopupServiceTest`의 REJECTED code·RETRYABLE/INTERNAL 구분 검사로 동작 동일 확인). Excel 생성 후 셀 내용을 읽어 정의서 표·예시와 일치 확인. 문서 감사 816건 통과. 폐쇄망 백엔드 적용·실서버 HTTP 호출은 미실행.
+- 상태: 커밋 / 원격 반영. 폐쇄망 백엔드 전달·기존 예외 처리기 대조 대기.
+
 ## 2026-11-17-10 — dev: 61-17_미리보기창여백버튼설문머리말_WPF정렬_수정
 
 - 이유: 같은 데이터 나란히 비교(2026-11-17-09)에서 확인된 미리보기·WPF 차이 4건을 WPF 기준으로 맞추기로 결정.

@@ -128,7 +128,7 @@ public class WpfPopupController {
             } catch (RuntimeException ex) {
                 log.error("WPF 장애 결과 변환 중 예상하지 못한 오류 resultId={}", body.resultId(), ex);
                 return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR, null,
-                        "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.");
+                        server.service.core.popup.wpf.WpfResultFailures.INTERNAL_CODE, server.service.core.popup.wpf.WpfResultFailures.INTERNAL_MESSAGE);
             }
             return wpfPopupService.processErrorResult(employeeNo, errorCommand);
         }
@@ -138,7 +138,7 @@ public class WpfPopupController {
         } catch (RuntimeException ex) {
             log.error("WPF 결과 변환 중 예상하지 못한 오류 resultId={}", body.resultId(), ex);
             return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR, null,
-                    "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.");
+                    server.service.core.popup.wpf.WpfResultFailures.INTERNAL_CODE, server.service.core.popup.wpf.WpfResultFailures.INTERNAL_MESSAGE);
         }
         return wpfPopupService.processResult(employeeNo, command);
     }}

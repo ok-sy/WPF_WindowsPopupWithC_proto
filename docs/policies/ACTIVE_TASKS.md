@@ -33,7 +33,7 @@
 | P200 | 영수증 스키마 D5 | 대기 | REJECTED·RESULT_CODE 스키마 변경 필요성 결정 | [TODO50-D5](../design/50_구조정합성_전수점검_정리_TODO.md) |
 | P200 | 실제 업무 계약 입력(코드표·연계 endpoint·인증·응답) | 대기 | 외부 계약 수신 후 매핑·실HTTP 연계 | [TODO65](../design/65_단건조회_공통매핑_CLOB파싱_샘플API_TODO.md)·[70](../design/70_DB없는_백엔드통신_Java조회API_TODO.md)·[72](../design/72_DTIY3111_사진스키마_단건샘플정합성_TODO.md) |
 | P200 | 원격 DB·실서버 + WPF 동시성·계약 통합 | 대기 | R1에서 원격 미검증 구간만 확인 | [TODO46](../design/46_API_WPF_관리자웹_계약통합검증_TODO.md)·[47-6](../design/47_팝업유효성_게시중단_전달상태_정책검증_TODO.md) |
-| P300 | WPF 오류 응답 정의서 전달 | 진행 | 폐쇄망 백엔드 기존 예외 처리기로 응답 계약을 맞출 수 있는지 확인 | [POL-12](POL-12.md)·[CHANGELOG 2026-11-17-01](../../version-history/CHANGELOG.md) |
+| P300 | WPF 오류 응답 정의서 전달 | 진행 | 장애별 분기 정의서·Excel·참고 소스 작성 완료(2026-11-17, `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`). 폐쇄망 백엔드 전달 후 기존 예외 처리기로 응답 계약을 맞출 수 있는지 확인 | [POL-12](POL-12.md)·[CHANGELOG 2026-11-17-01](../../version-history/CHANGELOG.md) |
 | P300 | 결과 큐 메모리 전용·재전송 실환경 | 대기 | 실행 중 재전송·서버 재기동 복구를 R1·R2에서 확인 | [20261028](../design/20261028_결과큐_메모리전용_파일접근제거_TODO.md)·[TODO45](../design/45_단건_RESULT_재전송오류_정책검증_TODO.md)·[53-8~9](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
 | P400 | 폐쇄망 반입본 재생성 | 대기 | 20261116 미반입·삭제(2026-11-17). 20261112(9113308) 기준으로 새 날짜 반입본 생성 | [CHANGELOG 2026-11-16-09](../../version-history/CHANGELOG.md) |
 | P400 | BaseUrl `/p` 이동·개발/운영 빌드 설정 분리 | 진행 | 폐쇄망 appsettings 동시 교체, 운영 빌드 단일 EXE 실실행 확인 | [TODO74](../design/74_WPF_BaseUrl_p경로_API경로이동_TODO.md)·[75](../design/75_WPF_개발운영_빌드설정분리_TODO.md) |

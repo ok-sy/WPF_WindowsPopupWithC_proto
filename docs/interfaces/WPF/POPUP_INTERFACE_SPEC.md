@@ -1280,6 +1280,8 @@ REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무
 }
 ```
 
+백엔드 구현용으로 HTTP 오류와 결과 status를 단계별로 나눈 정의·실제 응답 예시·참고 소스는 [장애별 분기 처리 정의서](../Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md)(Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.0.xlsx`)에 정리했다.
+
 현재 C#이 중요하게 구분하는 상태는 다음과 같다.
 
 | HTTP | 의미 | WPF 동작 |

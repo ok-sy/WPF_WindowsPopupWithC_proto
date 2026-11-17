@@ -181,16 +181,16 @@ public class WpfPopupService {
         try {
             processed = resultProcessor.processOne(userId, item);
         } catch (IllegalArgumentException ex) {
-            return WpfResultResponse.of(WpfResultItemResponse.rejected(item, codeOf(item, ex), ex.getMessage()), null);
+            return WpfResultResponse.of(WpfResultItemResponse.rejected(item, WpfResultFailures.rejectCode(ex), ex.getMessage()), null);
         } catch (RuntimeException ex) {
-            boolean retryable = isTransientFailure(ex);
+            boolean retryable = WpfResultFailures.isTransient(ex);
             log.error("WPF 결과 처리 실패({}) userId={} popupId={} resultId={} type={}",
                     retryable ? "일시 장애" : "미확정 오류", userId, item.popupId(), item.resultId(), item.resultType(), ex);
             return WpfResultResponse.of(retryable
                     ? WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.RETRYABLE_ERROR,
-                            "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
+                            WpfResultFailures.RETRYABLE_CODE, WpfResultFailures.RETRYABLE_MESSAGE)
                     : WpfResultItemResponse.failed(item, WpfResultItemResponse.Status.INTERNAL_ERROR,
-                            "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."), null);
+                            WpfResultFailures.INTERNAL_CODE, WpfResultFailures.INTERNAL_MESSAGE), null);
         }
         try {
             boolean available = popupMapper.countAvailablePopups(userId, true) > 0;
@@ -199,7 +199,7 @@ public class WpfPopupService {
         } catch (RuntimeException ex) {
             log.error("WPF 후속 후보 확인 실패(결과는 저장됨) userId={} resultId={}", userId, item.resultId(), ex);
             return new WpfResultResponse(processed.resultId(), processed.status(), null,
-                    "WPF_NEXT_STATUS_UNKNOWN", "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.");
+                    WpfResultFailures.NEXT_STATUS_UNKNOWN_CODE, WpfResultFailures.NEXT_STATUS_UNKNOWN_MESSAGE);
         }
     }
     /**
@@ -220,16 +220,16 @@ public class WpfPopupService {
             processed = resultProcessor.processError(userId, item);
         } catch (IllegalArgumentException ex) {
             return WpfResultResponse.of(new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.REJECTED,
-                    codeOf(null, ex), ex.getMessage()), null);
+                    WpfResultFailures.rejectCode(ex), ex.getMessage()), null);
         } catch (RuntimeException ex) {
-            boolean retryable = isTransientFailure(ex);
+            boolean retryable = WpfResultFailures.isTransient(ex);
             log.error("WPF 장애 결과 처리 실패({}) userId={} deliveryId={} resultId={}",
                     retryable ? "일시 장애" : "미확정 오류", userId, item.deliveryId(), item.resultId(), ex);
             return WpfResultResponse.of(retryable
                     ? new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.RETRYABLE_ERROR,
-                            "WPF_RETRYABLE", "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.")
+                            WpfResultFailures.RETRYABLE_CODE, WpfResultFailures.RETRYABLE_MESSAGE)
                     : new WpfResultItemResponse(item.resultId(), WpfResultItemResponse.Status.INTERNAL_ERROR,
-                            "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다."), null);
+                            WpfResultFailures.INTERNAL_CODE, WpfResultFailures.INTERNAL_MESSAGE), null);
         }
         log.warn("WPF 장애 결과 수신 userId={} deliveryId={} popupId={} resultId={} code={} desc={}",
                 userId, item.deliveryId(), item.popupId(), item.resultId(), item.resultCode(), item.resultDesc());
@@ -240,32 +240,8 @@ public class WpfPopupService {
         } catch (RuntimeException ex) {
             log.error("WPF 후속 후보 확인 실패(장애 결과는 저장됨) userId={} resultId={}", userId, item.resultId(), ex);
             return new WpfResultResponse(processed.resultId(), processed.status(), null,
-                    "WPF_NEXT_STATUS_UNKNOWN", "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.");
+                    WpfResultFailures.NEXT_STATUS_UNKNOWN_CODE, WpfResultFailures.NEXT_STATUS_UNKNOWN_MESSAGE);
         }
-    }
-
-    /**
-     * POL-09-03 : 저장 응답
-     * ■ 일시 장애 판정
-     * - in : ex(Throwable) 결과 처리 예외
-     * - out: boolean 일시 장애(RETRYABLE_ERROR 대상) 여부
-     * - 재시도하면 성공할 수 있는 일시 장애인지 예외 형식(원인 체인 포함)으로 판단한다.
-     * Spring 일시 장애 계열(TransientDataAccessException: 데드락·잠금 대기·쿼리 타임아웃 등), 복구 가능 오류,
-     * DB 자원 접근 실패(연결 불가), 트랜잭션 시작 실패, JDBC 일시·복구 가능 예외를 일시 장애로 본다.
-     */
-    static boolean isTransientFailure(Throwable ex) {
-        for (Throwable t = ex; t != null; t = t.getCause() == t ? null : t.getCause()) {
-            if (t instanceof org.springframework.dao.TransientDataAccessException
-                    || t instanceof org.springframework.dao.RecoverableDataAccessException
-                    || t instanceof org.springframework.dao.DataAccessResourceFailureException
-                    || t instanceof org.springframework.transaction.CannotCreateTransactionException
-                    || t instanceof org.springframework.transaction.TransactionTimedOutException
-                    || t instanceof java.sql.SQLTransientException
-                    || t instanceof java.sql.SQLRecoverableException) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -283,33 +259,4 @@ public class WpfPopupService {
                 elapsed, httpStatus, success ? "Y" : "N", requestSummary, responseSummary);
     }
 
-    /**
-     * POL-09-03 : 저장 응답 — 업무 예외 메시지를 WPF 코드로 분류한다. 기존 PopupService의 한국어 메시지를 기준으로 하며,
-     * 매핑되지 않으면 WPF_INVALID_RESULT.
-     * 범위 밖 hideDays는 요청 형식 검사({@code @Min(1) @Max(3650)})에서 WPF_INVALID_RESULT로 먼저 거절되고 누락은
-     * 결과 처리의 "hideDays가 필요" 메시지로 WPF_INVALID_RESULT가 되어, 별도 숨김 일수 코드는 두지 않는다.
-     */
-    private static String codeOf(WpfResultCommand item, IllegalArgumentException ex) {
-        String message = ex.getMessage() == null ? "" : ex.getMessage();
-        if (message.contains("제출 가능한 팝업이 아닙니다") || message.contains("유효한 영상 팝업이 아닙니다")
-                || message.contains("유효한 사용자 또는 팝업이 아닙니다")) {
-            return "WPF_NOT_ELIGIBLE";
-        }
-        if (message.contains("이미 결과가 저장된 전달 건")) {
-            return "WPF_DELIVERY_COMPLETED";
-        }
-        if (message.contains("전달 건")) {
-            return "WPF_INVALID_DELIVERY";
-        }
-        if (message.contains("설문형 팝업만")) {
-            return "WPF_TYPE_MISMATCH";
-        }
-        if (message.contains("문항") || message.contains("선택지") || message.contains("답안")) {
-            return "WPF_INVALID_ANSWER";
-        }
-        if (message.contains("영상")) {
-            return "WPF_INVALID_VIDEO";
-        }
-        return "WPF_INVALID_RESULT";
-    }
 }

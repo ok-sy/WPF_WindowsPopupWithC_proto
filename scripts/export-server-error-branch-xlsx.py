@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""WPF API 장애별 분기 처리 정의서(Excel) 생성 — docs/interfaces/Server/SERVER_ERROR_BRANCH_v<버전>.xlsx
+
+기준 문서는 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md다. 표·안내 문장·JSON 예시를 그대로 읽어 시트로 옮기므로
+내용을 바꿀 때는 Markdown을 고친 뒤 이 스크립트를 다시 실행한다. 서식(제목·섹션·표·예시 블록)은
+WPF 정의서 생성 스크립트(export-wpf-spec-xlsx.py)의 SheetWriter를 그대로 쓴다.
+
+버전 관리
+- 파일명은 SERVER_ERROR_BRANCH_v<버전>.xlsx. 버전은 Markdown '버전 이력' 표의 마지막 행이다.
+- 생성하면 같은 폴더의 이전 SERVER_ERROR_BRANCH_v*.xlsx는 지운다(이전 버전은 Git 이력과 '버전 이력' 시트로 확인).
+
+사용: python scripts/export-server-error-branch-xlsx.py
+"""
+import importlib.util
+import os
+import re
+import sys
+
+from openpyxl import Workbook
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GUIDE = os.path.join(ROOT, 'docs', 'interfaces', 'Server', 'SERVER_WPF_ERROR_BRANCH_GUIDE.md')
+OUT_DIR = os.path.join(ROOT, 'docs', 'interfaces', 'Server')
+
+# WPF 정의서 스크립트의 서식·표 파서를 재사용한다(파일명에 '-'가 있어 경로로 불러온다).
+sys.dont_write_bytecode = True   # 불러온 스크립트의 __pycache__를 scripts/에 남기지 않는다.
+_spec = importlib.util.spec_from_file_location('wpf_spec', os.path.join(ROOT, 'scripts', 'export-wpf-spec-xlsx.py'))
+wpf = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(wpf)
+SheetWriter, tables, code_block = wpf.SheetWriter, wpf.tables, wpf.code_block
+
+LINES = open(GUIDE, encoding='utf-8').read().splitlines()
+WIDTHS = [16, 16, 18, 18, 18, 18, 30, 34]   # 8칸 격자. 표는 열 수에 맞춰 칸을 병합한다.
+SPANS = {
+    2: [(1, 2), (3, 8)],
+    3: [(1, 2), (3, 4), (5, 8)],
+    4: [(1, 2), (3, 4), (5, 6), (7, 8)],
+    5: [(1, 1), (2, 3), (4, 5), (6, 7), (8, 8)],
+    6: [(1, 1), (2, 2), (3, 4), (5, 5), (6, 7), (8, 8)],
+}
+
+
+def section(number):
+    """'## <번호>.' 절의 본문 줄(다음 '## ' 제목 전까지)."""
+    rx = re.compile(rf'^##\s+{number}\.\s')
+    for i, line in enumerate(LINES):
+        if rx.match(line):
+            body = []
+            for line2 in LINES[i + 1:]:
+                if line2.startswith('## '):
+                    break
+                body.append(line2)
+            return LINES[i][3:].strip(), body
+    raise KeyError(number)
+
+
+def plain(text):
+    """Markdown 표시(굵게·코드·링크)를 지운 셀 문자열."""
+    s = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text or '')
+    return s.replace('**', '').replace('`', '').strip()
+
+
+def bullets(body):
+    """표·코드 밖의 '- ' 안내 문장."""
+    out, fenced = [], False
+    for line in body:
+        if line.strip().startswith('```'):
+            fenced = not fenced
+        elif not fenced and line.startswith('- '):
+            out.append(plain(line[2:]))
+    return out
+
+
+def paragraphs(body):
+    """표·목록·코드·제목이 아닌 문단."""
+    out, fenced = [], False
+    for line in body:
+        if line.strip().startswith('```'):
+            fenced = not fenced
+            continue
+        if fenced or not line.strip() or line.startswith(('|', '- ', '#')):
+            continue
+        out.append(plain(line))
+    return out
+
+
+def put_table(w, rows, mono=(), center=()):
+    header = list(rows[0].keys())
+    w.table(header, [[plain(r[h]) for h in header] for r in rows], mono_cols=mono, center_cols=center,
+            spans=SPANS[len(header)])
+
+
+def put_section(w, number, heading=None, mono=(), center=()):
+    title, body = section(number)
+    w.section(heading or title)
+    for p in paragraphs(body):
+        w.notes([p])
+    for t in tables(body):
+        put_table(w, t, mono, center)
+    notes = bullets(body)
+    if notes:
+        w.notes(notes)
+
+
+def examples(body):
+    """'### 라벨' 다음의 '상황:' 줄·'HTTP nnn' 줄과 json 코드 블록 목록."""
+    out, label, status, situation, cur = [], None, None, None, None
+    for line in body:
+        if line.startswith('### '):
+            label, status, situation = line[4:].strip(), None, None
+        elif line.startswith('상황: ') and cur is None:
+            situation = plain(line[4:])
+        elif line.startswith('HTTP ') and cur is None:
+            status = line.strip()
+        elif line.strip() == '```json':
+            cur = []
+        elif line.strip() == '```' and cur is not None:
+            out.append((label, status, situation, cur))
+            cur = None
+        elif cur is not None:
+            cur.append(line)
+    return out
+
+
+def build(version, date):
+    wb = Workbook()
+    sub = f'{version} · {date} · 기준 문서 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md'
+
+    ws = wb.active
+    ws.title = '개요'
+    w = SheetWriter(ws, WIDTHS)
+    w.title(f'WPF API 장애별 분기 처리 정의서 ({version})', sub)
+    put_section(w, 1, '① 원칙 — HTTP 오류로 응답할지, HTTP 200 + status·code로 응답할지', mono=(), center=())
+    put_section(w, 2, '② 판정 순서 (요청 1건)', center=(0,))
+    w.section('③ 시트 구성')
+    put_table(w, [
+        {'시트': 'HTTP_ERROR', '내용': '요청 자체를 처리하지 못해 HTTP 4xx·5xx로 응답하는 경우와 WPF 처리'},
+        {'시트': 'RESULT_STATUS', '내용': '결과 API의 HTTP 200 status·code 정의, code 값, WPF 장애 결과(resultCode=400)'},
+        {'시트': '결과 예시', '내용': '저장소 서버를 실제로 거쳐 만든 경우별 응답 JSON'},
+        {'시트': '참고 소스', '내용': '예외 매핑·status 분류·예시 생성 소스 위치'},
+        {'시트': '적용 확인', '내용': '폐쇄망 백엔드 적용 시 확인 항목과 하지 말 것'},
+        {'시트': '버전 이력', '내용': '정의서 버전별 변경 내용'},
+    ])
+
+    ws = wb.create_sheet('HTTP_ERROR')
+    w = SheetWriter(ws, WIDTHS)
+    w.title('HTTP 오류로 응답하는 경우 — 본문 {code, message, timestamp}', sub)
+    put_section(w, 3, 'HTTP 오류 응답 정의', mono=(1,), center=(0,))
+
+    ws = wb.create_sheet('RESULT_STATUS')
+    w = SheetWriter(ws, WIDTHS)
+    w.title('HTTP 200 + status·code로 응답하는 경우 — POST /p/api/wpf/popups/results', sub)
+    put_section(w, 4, 'status 정의', mono=(0, 2))
+    put_section(w, 5, 'code 값', mono=(0, 1))
+    put_section(w, 6, 'WPF가 보내는 장애 결과 (resultCode=400)')
+
+    ws = wb.create_sheet('결과 예시')
+    w = SheetWriter(ws, WIDTHS)
+    w.title('결과 예시 — 저장소 서버 실제 응답 (WpfErrorBranchExamplesTest)', sub)
+    title, body = section(7)
+    w.notes([p for p in paragraphs(body) if not p.startswith(('상황:', 'HTTP '))])
+    for label, status, situation, lines in examples(body):
+        w.code(f'{label} — {status}' if status else label, lines, col_to=6)
+        if situation:
+            w.row -= 1
+            w.notes([f'상황: {situation}'])
+
+    ws = wb.create_sheet('참고 소스')
+    w = SheetWriter(ws, WIDTHS)
+    w.title('참고 소스 (zero-rule-server)', sub)
+    put_section(w, 8, '소스 위치', mono=(1,))
+
+    ws = wb.create_sheet('적용 확인')
+    w = SheetWriter(ws, WIDTHS)
+    w.title('폐쇄망 백엔드 적용 시 확인', sub)
+    put_section(w, 9, '확인 항목')
+    put_section(w, 10, '하지 말 것')
+
+    ws = wb.create_sheet('버전 이력')
+    w = SheetWriter(ws, [12, 14, 110])
+    w.title('WPF API 장애별 분기 처리 정의서 - 버전 이력', sub)
+    rows = tables(section(11)[1])[0]
+    w.table(['버전', '날짜', '변경 내용'], [[plain(r['버전']), plain(r['날짜']), plain(r['변경 내용'])] for r in reversed(rows)],
+            center_cols=(0, 1))
+
+    for sheet in wb.worksheets:
+        sheet.freeze_panes = 'A4'
+        sheet.sheet_properties.pageSetUpPr.fitToPage = True
+        sheet.page_setup.orientation = 'landscape'
+        sheet.page_setup.fitToWidth = 1
+        sheet.page_setup.fitToHeight = 0
+    return wb
+
+
+def main():
+    last = tables(section(11)[1])[0][-1]
+    version, date = plain(last['버전']), plain(last['날짜'])
+    wb = build(version, date)
+    out = os.path.join(OUT_DIR, f'SERVER_ERROR_BRANCH_{version}.xlsx')
+    for f in os.listdir(OUT_DIR):
+        if re.fullmatch(r'SERVER_ERROR_BRANCH_v[\d.]+\.xlsx', f) and f != os.path.basename(out):
+            os.remove(os.path.join(OUT_DIR, f))
+    wb.save(out)
+    print('generated', os.path.relpath(out, ROOT))
+    for ws in wb.worksheets:
+        print(f'  {ws.title}: {ws.max_row} rows')
+
+
+if __name__ == '__main__':
+    sys.exit(main())
