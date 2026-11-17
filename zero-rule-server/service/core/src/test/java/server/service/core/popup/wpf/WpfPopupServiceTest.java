@@ -204,7 +204,7 @@ class WpfPopupServiceTest {
         assertEquals(WpfResultResponse.NextStatus.EMPTY, duplicate.nextStatus(), "중복 처리 성공도 후속 후보를 알려준다");
     }
 
-    /** 후보 확인 실패는 EMPTY로 바꾸지 않고 nextStatus 생략 + WPF_NEXT_STATUS_UNKNOWN이다. */
+    /** 후보 확인 실패는 EMPTY로 바꾸지 않고 nextStatus 생략 + R2001(NEXT_STATUS_UNKNOWN)이다. */
     @Test void candidateCheckFailureIsNotReportedAsEmpty() {
         var ok = result("r-ok", "P1", WpfResultType.CLOSED);
         when(processor.processOne("E1001", ok)).thenReturn(WpfResultItemResponse.accepted(ok));
@@ -214,18 +214,18 @@ class WpfPopupServiceTest {
 
         assertEquals(WpfResultItemResponse.Status.ACCEPTED, response.status(), "저장 성공은 유지");
         assertNull(response.nextStatus(), "후보 확인 실패를 EMPTY로 바꾸지 않는다");
-        assertEquals("WPF_NEXT_STATUS_UNKNOWN", response.code());
+        assertEquals("R2001", response.code());
     }
 
     /** 업무 거절은 WPF 코드로 매핑하고 nextStatus를 싣지 않는다. */
     @Test void rejectionCodesAreMappedAndNoNextStatus() {
         var cases = Map.of(
-                "현재 사용자에게 제출 가능한 팝업이 아닙니다.", "WPF_NOT_ELIGIBLE",
-                "현재 설문에 포함되지 않은 문항입니다. questionId=9", "WPF_INVALID_ANSWER",
-                "복수 선택 문항은 최대 3개까지 선택할 수 있습니다. questionId=1, selected=4", "WPF_INVALID_ANSWER",
-                "유효한 전달 건이 아닙니다. deliveryId=x", "WPF_INVALID_DELIVERY",
-                "전달 건의 팝업과 일치하지 않습니다. deliveryId=x", "WPF_INVALID_DELIVERY",
-                "이미 결과가 저장된 전달 건입니다. deliveryId=x", "WPF_DELIVERY_COMPLETED");
+                "현재 사용자에게 제출 가능한 팝업이 아닙니다.", "R4003",
+                "현재 설문에 포함되지 않은 문항입니다. questionId=9", "R4005",
+                "복수 선택 문항은 최대 3개까지 선택할 수 있습니다. questionId=1, selected=4", "R4005",
+                "유효한 전달 건이 아닙니다. deliveryId=x", "R4001",
+                "전달 건의 팝업과 일치하지 않습니다. deliveryId=x", "R4001",
+                "이미 결과가 저장된 전달 건입니다. deliveryId=x", "R4002");
         int n = 0;
         for (var entry : cases.entrySet()) {
             var item = result("r-" + n++, "P1", WpfResultType.SUBMITTED);
@@ -252,7 +252,7 @@ class WpfPopupServiceTest {
             when(processor.processOne("E1001", item)).thenThrow(entry.getKey());
             var response = service.processResult("E1001", item);
             assertEquals(entry.getValue(), response.status(), String.valueOf(entry.getKey()));
-            assertEquals(entry.getValue() == WpfResultItemResponse.Status.RETRYABLE_ERROR ? "WPF_RETRYABLE" : "WPF_INTERNAL", response.code());
+            assertEquals(entry.getValue() == WpfResultItemResponse.Status.RETRYABLE_ERROR ? "R5030" : "R5000", response.code());
             assertNull(response.nextStatus());
             assertFalse(response.message().contains("db down") || response.message().contains("deadlock"), "내부 오류 메시지 비노출");
         }

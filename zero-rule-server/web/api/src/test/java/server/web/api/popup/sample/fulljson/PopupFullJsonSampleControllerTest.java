@@ -61,7 +61,7 @@ class PopupFullJsonSampleControllerTest {
         when(service.nextPopup(any(), any())).thenThrow(new PopupSampleException(PopupSampleException.Reason.INVALID_CONTENT_JSON, "S17-TXT-01", "내부 상세"));
         mvc.perform(post(URL).param("popupId", "S17-TXT-01").header("X-Dev-User", "E1001"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.code").value("WPF_INTERNAL"))
+                .andExpect(jsonPath("$.code").value("E5000"))
                 .andExpect(jsonPath("$.message").value("서버 처리 중 오류가 발생했습니다."));
     }
 
@@ -69,14 +69,14 @@ class PopupFullJsonSampleControllerTest {
     void missingUserIsUnauthorized() throws Exception {
         mvc.perform(post(URL).param("popupId", "S17-TXT-01"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("E4010"));
     }
 
     @Test
     void badBodyOrMissingPopupIdIsBadRequest() throws Exception {
         mvc.perform(post(URL).param("popupId", "S17-TXT-01").header("X-Dev-User", "E1001").contentType(MediaType.APPLICATION_JSON).content("[]"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("WPF_BAD_REQUEST"));
+                .andExpect(jsonPath("$.code").value("E4000"));
         when(service.nextPopup(eq("E1001"), eq(null))).thenThrow(new IllegalArgumentException("popupId가 필요합니다."));
         mvc.perform(post(URL).header("X-Dev-User", "E1001"))
                 .andExpect(status().isBadRequest())

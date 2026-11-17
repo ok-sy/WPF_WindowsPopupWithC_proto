@@ -893,7 +893,7 @@ internal static class Program
                             context.Request.Headers["X-Dev-User-Id"]));
                         if (_validToken == null || authorization != "Bearer " + _validToken)
                         {
-                            Write(context, 401, "{\"code\":\"WPF_UNAUTHORIZED\",\"message\":\"token expired\"}");
+                            Write(context, 401, "{\"code\":\"E4010\",\"message\":\"token expired\"}");
                             return;
                         }
                     }
@@ -902,14 +902,14 @@ internal static class Program
                         case "NULL": Write(context, 200, "{\"pollingIntervalSeconds\":1800,\"popup\":null}"); return;
                         case "EMPTY": Write(context, 200, string.Empty); return;
                         case "INVALID": Write(context, 200, "{\"popup\": {"); return;
-                        case "500": Write(context, 500, "{\"code\":\"WPF_INTERNAL\",\"message\":\"boom\"}"); return;
+                        case "500": Write(context, 500, "{\"code\":\"E5000\",\"message\":\"boom\"}"); return;
                         default: Write(context, 200, PopupJson(PopupMode == "BADTYPE" ? "UNKNOWN_TYPE" : null)); return;
                     }
                 case "/p/api/wpf/popups/results":
                     lock (_lock) ResultBodies.Add(body);
                     if (ResultMode == "500")
                     {
-                        Write(context, 500, "{\"code\":\"WPF_INTERNAL\",\"message\":\"down\"}");
+                        Write(context, 500, "{\"code\":\"E5000\",\"message\":\"down\"}");
                         return;
                     }
                     string resultId = JsonDocument.Parse(body).RootElement.GetProperty("resultId").GetString()!;

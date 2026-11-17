@@ -168,7 +168,7 @@ public class WpfPopupService {
      *   <li>IllegalArgumentException: 업무 검증 실패(대상 아님·전달 건 불일치·문항 불일치 등) → REJECTED + 코드(영구)</li>
      *   <li>POL-09-03 : 저장 응답 — 확인된 일시 장애 → RETRYABLE_ERROR, 그 밖의 RuntimeException → INTERNAL_ERROR</li>
      *   <li>ACCEPTED·DUPLICATE: 저장 후 노출 후보(완료·숨김·재노출 유예 제외)가 있으면 AVAILABLE, 없으면 EMPTY.
-     *       후보 확인이 실패하면 EMPTY로 바꾸지 않고 nextStatus를 생략하며 code=WPF_NEXT_STATUS_UNKNOWN을 준다.
+     *       후보 확인이 실패하면 EMPTY로 바꾸지 않고 nextStatus를 생략하며 code=R2001(NEXT_STATUS_UNKNOWN)을 준다.
      *       방금 저장한 팝업은 완료·숨김·유예로 이미 제외되어 있다.</li>
      *   <li>거절·실패에는 nextStatus가 없다(다음 조회를 자동 진행하지 않음).</li>
      * </ul>

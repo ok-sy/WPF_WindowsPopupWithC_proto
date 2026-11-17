@@ -36,8 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - SSO·토큰 프로토타입의 HTTP 계약을 MockMvc(standalone)로 검증한다(T번호는 시험 항목 구분).
  * <ul>
  *   <li>T1: 로그인 → {accessToken, tokenType=Bearer, expiresAt(ISO)} → 그 토큰으로 팝업 API 200</li>
- *   <li>T2: TTL 경과 → 같은 토큰으로 팝업 API 401 WPF_UNAUTHORIZED → 재로그인 → 새 토큰으로 200</li>
- *   <li>헤더 없음·Bearer 아님·모르는 토큰 → 401, 필수 값 누락 → 400 WPF_BAD_REQUEST</li>
+ *   <li>T2: TTL 경과 → 같은 토큰으로 팝업 API 401 E4010(UNAUTHORIZED) → 재로그인 → 새 토큰으로 200</li>
+ *   <li>헤더 없음·Bearer 아님·모르는 토큰 → 401, 필수 값 누락 → 400 E4000(BAD_REQUEST)</li>
  * </ul>
  * 팝업 서비스는 mock이며, 컨트롤러가 토큰에서 얻은 사번으로 서비스를 호출하는지 확인한다.
  */
@@ -96,7 +96,7 @@ class WpfAuthPrototypeControllerTest {
 
         mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("E4010"));
         verify(popupService, never()).getNextPopup(anyString());
 
         // WPF: 401 → OnUnauthorizedAsync → SSO·login → 새 토큰으로 원 요청 재전송
@@ -111,7 +111,7 @@ class WpfAuthPrototypeControllerTest {
     @Test void missingOrWrongAuthorizationIs401AndDevHeaderIsIgnored() throws Exception {
         mvc.perform(post("/p/api/wpf/popups"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("E4010"));
         mvc.perform(post("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/p/api/wpf/popups").header("Authorization", "Basic abc"))
@@ -139,7 +139,7 @@ class WpfAuthPrototypeControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"lgonId\":\"\",\"classCode\":\"A1\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("WPF_BAD_REQUEST"));
+                .andExpect(jsonPath("$.code").value("E4000"));
         mvc.perform(post("/p/api/wpf/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"lgonId\":\"E1001\"}"))

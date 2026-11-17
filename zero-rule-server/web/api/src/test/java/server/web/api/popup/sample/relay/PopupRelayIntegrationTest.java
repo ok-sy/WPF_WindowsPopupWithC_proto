@@ -151,14 +151,14 @@ class PopupRelayIntegrationTest {
         HttpResponse<String> response = call();
         assertEquals(401, response.statusCode());
         JsonNode body = JSON.readTree(response.body());
-        assertEquals("WPF_UNAUTHORIZED", body.get("code").asText());
+        assertEquals("E4010", body.get("code").asText());
         assertEquals("토큰이 만료되었습니다.", body.get("message").asText());
         assertTrue(body.get("timestamp").asText().endsWith("+09:00"));
 
         BACKEND.setDefaultScenario("e403");
         response = call();
         assertEquals(403, response.statusCode());
-        assertEquals("WPF_USER_INACTIVE", JSON.readTree(response.body()).get("code").asText(), "JSON이 아닌 403 본문은 상태 기본 코드");
+        assertEquals("E4030", JSON.readTree(response.body()).get("code").asText(), "JSON이 아닌 403 본문은 상태 기본 코드");
 
         BACKEND.setDefaultScenario("e400");
         assertEquals(400, call().statusCode());
@@ -170,7 +170,7 @@ class PopupRelayIntegrationTest {
         HttpResponse<String> response = call();
         assertEquals(426, response.statusCode());
         JsonNode body = JSON.readTree(response.body());
-        assertEquals("CLIENT_VERSION_NOT_SUPPORTED", body.get("code").asText());
+        assertEquals("E4260", body.get("code").asText());
         assertEquals("1.3.0", body.get("minimumSupportedVersion").asText());
     }
 
@@ -184,7 +184,7 @@ class PopupRelayIntegrationTest {
             HttpResponse<String> response = call();
             assertEquals(500, response.statusCode(), c[0]);
             JsonNode body = JSON.readTree(response.body());
-            assertEquals("WPF_INTERNAL", body.get("code").asText(), c[0]);
+            assertEquals("E5000", body.get("code").asText(), c[0]);
             assertFalse(response.body().contains("internal detail"), "백엔드 내부 메시지 비노출");
             assertFalse(body.has("popup"), "실패를 popup:null 정상 응답으로 덮지 않는다");
             assertEquals(c[1], response.headers().firstValue(RelayExceptionHandler.UPSTREAM_ERROR_HEADER).orElse(""), c[0]);
@@ -196,7 +196,7 @@ class PopupRelayIntegrationTest {
     void rejectsNonObjectRequestBody() throws Exception {
         HttpResponse<String> response = call("[1]");
         assertEquals(400, response.statusCode());
-        assertEquals("WPF_BAD_REQUEST", JSON.readTree(response.body()).get("code").asText());
+        assertEquals("E4000", JSON.readTree(response.body()).get("code").asText());
         assertEquals(0, BACKEND.requests().size());
     }
 }

@@ -115,7 +115,7 @@ class WpfPopupDatabaseTest {
                 assertEquals(1, countOf(session, prefix, "SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", closeId), "영수증은 1건");
                 WpfResultResponse again = service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
                         text.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.CLOSED, null, null, null, null, null, null, null));
-                assertEquals("WPF_DELIVERY_COMPLETED", again.code());
+                assertEquals("R4002", again.code());
 
                 // ---- 영상 미완료 닫기: 완료 아님, 폴링 간격 동안 재노출 유예 → 다음 후보로 진행 ----
                 WpfPopupItem video = service.getNextPopup("E1001").popup();
@@ -168,9 +168,9 @@ class WpfPopupDatabaseTest {
                 // ---- 전달 건 검증: 다른 사용자의 전달 건·팝업 불일치는 거절, 숨김은 정상 처리 ----
                 WpfPopupItem otherText = service.getNextPopup("E1003").popup();
                 assertEquals("SAMPLE-TEXT-001", otherText.popupId());
-                assertEquals("WPF_INVALID_DELIVERY", service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
+                assertEquals("R4001", service.processResult("E1001", new WpfResultCommand(UUID.randomUUID().toString(),
                         otherText.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.CLOSED, null, null, null, null, null, null, null)).code());
-                assertEquals("WPF_INVALID_DELIVERY", service.processResult("E1003", new WpfResultCommand(UUID.randomUUID().toString(),
+                assertEquals("R4001", service.processResult("E1003", new WpfResultCommand(UUID.randomUUID().toString(),
                         otherText.deliveryId(), "SAMPLE-SURVEY-004", WpfResultType.CLOSED, null, null, null, null, null, null, null)).code());
                 WpfResultResponse hidden = service.processResult("E1003", new WpfResultCommand(UUID.randomUUID().toString(),
                         otherText.deliveryId(), "SAMPLE-TEXT-001", WpfResultType.HIDDEN, displayedAt, closedAt, 7, null, null, null, null));
@@ -310,7 +310,7 @@ class WpfPopupDatabaseTest {
             var duplicate = startWaiting.apply("E1003", () -> b.processor().processOne("E1003", close.apply(r1, text)));
             a.session().commit(true);
             assertEquals(WpfResultItemResponse.Status.DUPLICATE, ((WpfResultItemResponse) duplicate.get(10, java.util.concurrent.TimeUnit.SECONDS)).status(),
-                    "잠금 후 영수증을 보고 DUPLICATE(WPF_DELIVERY_COMPLETED 아님)");
+                    "잠금 후 영수증을 보고 DUPLICATE(R4002(DELIVERY_COMPLETED) 아님)");
             b.session().commit(true);
             assertEquals(1, count.apply("SELECT COUNT(*) FROM %sWPF_RESULT_RECEIPT WHERE RESULT_ID = ?", r1));
             assertEquals(1, count.apply("SELECT DISPLAY_COUNT FROM %sUSER_POPUP_STATUS WHERE EMPLOYEE_NO = 'E1003' AND POPUP_ID = ?", "SAMPLE-TEXT-001"),

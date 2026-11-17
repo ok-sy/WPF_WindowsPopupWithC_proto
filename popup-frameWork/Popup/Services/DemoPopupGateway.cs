@@ -22,7 +22,7 @@ namespace Popup.Services
      *   서버 규칙을 최대한 그대로 재현한다:
      *     - HIDDEN : hideDays(1~3650) 동안 숨김 → 다음 조회에서 제외
      *     - SUBMITTED : QUIZ는 WPF가 로컬 채점해 보낸 score/passed를 그대로 저장(서버 재채점 없음 — 실제 서버도 같음, PU001 B-1).
-     *                   score/passed가 빠진 QUIZ 항목은 WPF_INVALID_RESULT로 거절한다(데모 채점기 없음).
+     *                   score/passed가 빠진 QUIZ 항목은 R4000(INVALID_RESULT)로 거절한다(데모 채점기 없음).
      *                   유효한 QUIZ 제출은 passed와 무관하게 완료한다(참여형 미달 passed=false 포함, PU001 §7).
      *                   SURVEY는 제출 즉시 완료 → 완료 팝업은 다음 조회에서 제외
      *     - 거절(REJECTED)은 서버 트랜잭션 롤백과 같이 영수증을 남기지 않는다(같은 resultId 재전송은 다시 검사).
@@ -142,8 +142,8 @@ namespace Popup.Services
                 {
                     if (!_deliveries.TryGetValue(item.DeliveryId, out var errorDelivery)
                         || (item.PopupId != null && errorDelivery.PopupId != item.PopupId))
-                        return Reject(response, "WPF_INVALID_DELIVERY", "유효한 전달 건이 아닙니다.");
-                    if (errorDelivery.Done) return Reject(response, "WPF_DELIVERY_COMPLETED", "이미 결과가 저장된 전달 건입니다.");
+                        return Reject(response, "R4001", "유효한 전달 건이 아닙니다.");
+                    if (errorDelivery.Done) return Reject(response, "R4002", "이미 결과가 저장된 전달 건입니다.");
                     _deliveries[item.DeliveryId] = (errorDelivery.PopupId, true);
                     _deferredUntil[errorDelivery.PopupId] = DateTimeOffset.Now.AddSeconds(DeferSeconds);
                 }
@@ -152,15 +152,15 @@ namespace Popup.Services
             }
             if (item.PopupId == null || !_popups.TryGetValue(item.PopupId, out PopupResponseDto? popup))
             {
-                return Reject(response, "WPF_NOT_ELIGIBLE", "데모 목록에 없는 팝업입니다.");
+                return Reject(response, "R4003", "데모 목록에 없는 팝업입니다.");
             }
             if (!_deliveries.TryGetValue(item.DeliveryId ?? string.Empty, out var delivery) || delivery.PopupId != item.PopupId)
             {
-                return Reject(response, "WPF_INVALID_DELIVERY", "유효한 전달 건이 아닙니다.");
+                return Reject(response, "R4001", "유효한 전달 건이 아닙니다.");
             }
             if (delivery.Done)
             {
-                return Reject(response, "WPF_DELIVERY_COMPLETED", "이미 결과가 저장된 전달 건입니다.");
+                return Reject(response, "R4002", "이미 결과가 저장된 전달 건입니다.");
             }
 
             response.Status = "ACCEPTED";
@@ -180,7 +180,7 @@ namespace Popup.Services
                 case WpfResultType.Hidden:
                     if (item.HideDays is null or < 1 or > 3650)
                     {
-                        return Reject(response, "WPF_INVALID_RESULT", "숨김 일수는 1~3650일이어야 합니다."); // 서버와 같이 요청 검증 오류
+                        return Reject(response, "R4000", "숨김 일수는 1~3650일이어야 합니다."); // 서버와 같이 요청 검증 오류
                     }
                     _hiddenUntil[item.PopupId] = DateTimeOffset.Now.AddDays(item.HideDays.Value);
                     break;
@@ -188,19 +188,19 @@ namespace Popup.Services
                 case WpfResultType.Submitted:
                     if (popup.Content.TryGetProperty("videoEnabled", out var enabled) && enabled.ValueKind == System.Text.Json.JsonValueKind.True)
                     {
-                        // POL-05-02 : 완료·화면 이탈 — 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 WPF_INVALID_VIDEO).
+                        // POL-05-02 : 완료·화면 이탈 — 서버와 같은 판정식(VideoCompletion)·code(시청 비율 미달은 R4006(INVALID_VIDEO)).
                         if (item.Video == null
                             || !VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? VideoCompletion.DefaultVideoQuizRatio))
-                            return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 완료 비율을 충족해야 합니다.");
+                            return Reject(response, "R4006", "영상 시청 완료 비율을 충족해야 합니다.");
                     }
                     if (item.Answers == null || item.Answers.Count == 0)
                     {
-                        return Reject(response, "WPF_INVALID_ANSWER", "답안이 없습니다.");
+                        return Reject(response, "R4005", "답안이 없습니다.");
                     }
                     if (!popup.PopupType.Equals("SURVEY", StringComparison.OrdinalIgnoreCase)
                         && !popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
-                        return Reject(response, "WPF_TYPE_MISMATCH", "설문형 팝업만 답안을 제출할 수 있습니다.");
+                        return Reject(response, "R4004", "설문형 팝업만 답안을 제출할 수 있습니다.");
                     }
                     if (popup.PopupType.Equals("QUIZ", StringComparison.OrdinalIgnoreCase))
                     {
@@ -214,7 +214,7 @@ namespace Popup.Services
                          */
                         if (!item.Score.HasValue || item.Passed == null)
                         {
-                            return Reject(response, "WPF_INVALID_RESULT", "QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
+                            return Reject(response, "R4000", "QUIZ 제출에는 WPF 채점 결과(score·passed)가 필요합니다.");
                         }
                         _completed.Add(item.PopupId);
                     }
@@ -227,7 +227,7 @@ namespace Popup.Services
                 case WpfResultType.VideoWatched:
                     if (item.Video == null || item.Video.DurationSeconds <= 0)
                     {
-                        return Reject(response, "WPF_INVALID_VIDEO", "영상 시청 정보가 없습니다.");
+                        return Reject(response, "R4006", "영상 시청 정보가 없습니다.");
                     }
                     if (VideoCompletion.IsReached(item.Video.WatchedSeconds, item.Video.DurationSeconds, popup.CompletionRatio ?? VideoCompletion.DefaultVideoRatio)
                         && popup.PopupType.Equals("VIDEO", StringComparison.OrdinalIgnoreCase))
@@ -237,7 +237,7 @@ namespace Popup.Services
                     break;
 
                 default:
-                    return Reject(response, "WPF_INVALID_RESULT", $"알 수 없는 결과 유형: {item.ResultType}");
+                    return Reject(response, "R4000", $"알 수 없는 결과 유형: {item.ResultType}");
             }
 
             _deliveries[item.DeliveryId!] = (item.PopupId, true);

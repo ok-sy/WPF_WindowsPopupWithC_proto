@@ -117,25 +117,25 @@ class WpfErrorBranchExamplesTest {
 
     @Test void h1_versionTooOldIs426() throws Exception {
         example("H1-426-version", post("/p/api/wpf/popups").header("X-Client-Version", "1.2.9").header("X-Dev-User-Id", "E1001"),
-                426, "code=CLIENT_VERSION_NOT_SUPPORTED", "clientVersion=1.2.9", "minimumSupportedVersion=" + VERSION);
+                426, "code=E4260", "clientVersion=1.2.9", "minimumSupportedVersion=" + VERSION);
     }
 
     @Test void h2_noUserIs401() throws Exception {
-        example("H2-401-unauthorized", query(null), 401, "code=WPF_UNAUTHORIZED");
+        example("H2-401-unauthorized", query(null), 401, "code=E4010");
     }
 
     @Test void h3_inactiveUserIs403() throws Exception {
-        example("H3-403-user-inactive", result("E9999", CLOSED), 403, "code=WPF_USER_INACTIVE");
+        example("H3-403-user-inactive", result("E9999", CLOSED), 403, "code=E4030");
     }
 
     @Test void h4_unreadableBodyIs400() throws Exception {
         example("H4-400-bad-request", result("E1001", "{\"resultId\": \"r-0001\", "), 400,
-                "code=WPF_BAD_REQUEST", "message=요청 본문을 해석할 수 없습니다.");
+                "code=E4000", "message=요청 본문을 해석할 수 없습니다.");
     }
 
     @Test void h5_queryFailureIs500() throws Exception {
         when(wpfMapper.lockActiveUser("E1001")).thenThrow(new IllegalStateException("ORA-01017 내부 오류(응답에 노출되지 않음)"));
-        JsonNode node = example("H5-500-internal", query("E1001"), 500, "code=WPF_INTERNAL", "message=서버 처리 중 오류가 발생했습니다.");
+        JsonNode node = example("H5-500-internal", query("E1001"), 500, "code=E5000", "message=서버 처리 중 오류가 발생했습니다.");
         assertFalse(node.toString().contains("ORA-"), "내부 오류 상세는 응답에 넣지 않는다");
     }
 
@@ -162,29 +162,29 @@ class WpfErrorBranchExamplesTest {
 
     @Test void r3_formatErrorIsRejectedNot400() throws Exception {
         example("R3-200-REJECTED-format", result("E1001", "{\"resultId\":\"r-0001\",\"deliveryId\":\"d-0001\",\"popupId\":\"NOTICE-001\"}"),
-                200, "status=REJECTED", "code=WPF_INVALID_RESULT", "nextStatus=null");
+                200, "status=REJECTED", "code=R4000", "nextStatus=null");
     }
 
     @Test void r4_businessRuleIsRejectedWithCode() throws Exception {
         when(processor.processOne(anyString(), any())).thenThrow(new IllegalArgumentException("유효한 전달 건이 아닙니다. deliveryId=d-0001"));
-        example("R4-200-REJECTED-delivery", result("E1001", CLOSED), 200, "status=REJECTED", "code=WPF_INVALID_DELIVERY", "nextStatus=null");
+        example("R4-200-REJECTED-delivery", result("E1001", CLOSED), 200, "status=REJECTED", "code=R4001", "nextStatus=null");
     }
 
     @Test void r5_transientDbFailureIsRetryable() throws Exception {
         when(processor.processOne(anyString(), any())).thenThrow(new org.springframework.dao.CannotAcquireLockException("ORA-00060: deadlock detected"));
-        JsonNode node = example("R5-200-RETRYABLE_ERROR", result("E1001", CLOSED), 200, "status=RETRYABLE_ERROR", "code=WPF_RETRYABLE", "nextStatus=null");
+        JsonNode node = example("R5-200-RETRYABLE_ERROR", result("E1001", CLOSED), 200, "status=RETRYABLE_ERROR", "code=R5030", "nextStatus=null");
         assertFalse(node.toString().contains("ORA-"), "DB 오류 상세는 응답에 넣지 않는다");
     }
 
     @Test void r6_unclassifiedFailureIsInternal() throws Exception {
         when(processor.processOne(anyString(), any())).thenThrow(new IllegalStateException("NullPointer 등 원인 미확정"));
-        example("R6-200-INTERNAL_ERROR", result("E1001", CLOSED), 200, "status=INTERNAL_ERROR", "code=WPF_INTERNAL", "nextStatus=null");
+        example("R6-200-INTERNAL_ERROR", result("E1001", CLOSED), 200, "status=INTERNAL_ERROR", "code=R5000", "nextStatus=null");
     }
 
     @Test void r7_savedButNextUnknown() throws Exception {
         when(processor.processOne(anyString(), any())).thenAnswer(i -> WpfResultItemResponse.accepted(i.getArgument(1, WpfResultCommand.class)));
         when(popupMapper.countAvailablePopups("E1001", true)).thenThrow(new IllegalStateException("후보 조회 실패"));
-        example("R7-200-ACCEPTED-next-unknown", result("E1001", CLOSED), 200, "status=ACCEPTED", "code=WPF_NEXT_STATUS_UNKNOWN", "nextStatus=null");
+        example("R7-200-ACCEPTED-next-unknown", result("E1001", CLOSED), 200, "status=ACCEPTED", "code=R2001", "nextStatus=null");
     }
 
     @Test void r8_wpfErrorResultIsAccepted() throws Exception {

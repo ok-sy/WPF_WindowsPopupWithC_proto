@@ -125,7 +125,7 @@ namespace Popup.Dtos
         /// <summary>ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR</summary>
         public string Status { get; set; } = string.Empty;
 
-        /// <summary>REJECTED 사유 코드(WPF_NOT_ELIGIBLE, WPF_INVALID_ANSWER, ...).</summary>
+        /// <summary>REJECTED 사유 코드(R4003(NOT_ELIGIBLE), R4005(INVALID_ANSWER), ...).</summary>
         public string? Code { get; set; }
         public string? Message { get; set; }
 

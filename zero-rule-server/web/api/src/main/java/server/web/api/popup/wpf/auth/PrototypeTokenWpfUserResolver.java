@@ -26,7 +26,7 @@ import server.web.api.popup.wpf.WpfUserResolver;
  *   <li>토큰이 서버 메모리 저장소에 있는가</li>
  *   <li>{@code expiresAt > now} 인가</li>
  * </ol>
- * <p>하나라도 실패하면 {@link WpfUnauthorizedException} → WpfApiExceptionHandler가 401 {@code WPF_UNAUTHORIZED}.
+ * <p>하나라도 실패하면 {@link WpfUnauthorizedException} → WpfApiExceptionHandler가 401 {@code E4010(UNAUTHORIZED)}.
  * WPF는 이 401을 받아 SSO·로그인 API로 새 토큰을 받은 뒤 같은 요청을 1회 재전송한다.</p>
  *
  * <p>[기존 구조와의 관계] {@link WpfUserResolver} 인터페이스와 컨트롤러는 그대로다. 프로토타입이 켜지면

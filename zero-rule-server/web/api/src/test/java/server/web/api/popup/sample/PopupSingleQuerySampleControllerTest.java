@@ -62,7 +62,7 @@ class PopupSingleQuerySampleControllerTest {
                 new PopupSampleException(PopupSampleException.Reason.INVALID_CONTENT_JSON, "C-001", "CNTN_CN JSON 구문 오류"));
         mvc.perform(post("/p/api/sample/wpf/popups/single").header("X-Dev-User", "E1001").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.code").value("WPF_INTERNAL"))
+                .andExpect(jsonPath("$.code").value("E5000"))
                 .andExpect(jsonPath("$.message").value("서버 처리 중 오류가 발생했습니다."))
                 .andExpect(jsonPath("$.popup").doesNotExist());
     }
@@ -70,8 +70,8 @@ class PopupSingleQuerySampleControllerTest {
     @Test
     void authAndBodyErrorsUseWpfCodes() throws Exception {
         mvc.perform(post("/p/api/sample/wpf/popups/single").contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("E4010"));
         mvc.perform(post("/p/api/sample/wpf/popups/single").header("X-Dev-User", "E1001").contentType(MediaType.APPLICATION_JSON).content("[1]"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("WPF_BAD_REQUEST"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("E4000"));
     }
 }

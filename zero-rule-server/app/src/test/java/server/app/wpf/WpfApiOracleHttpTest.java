@@ -151,13 +151,13 @@ class WpfApiOracleHttpTest {
         assertEquals(HttpStatus.UNAUTHORIZED, noHeader.getStatusCode(), noHeader.getBody());
         // JDK HttpURLConnection(RestTemplate 기본)은 본문이 있는 POST의 401 응답 본문을 읽지 못한다. 본문 코드는 MockMvc 테스트에서 확인한다.
         if (noHeader.getBody() != null && !noHeader.getBody().isBlank()) {
-            assertEquals("WPF_UNAUTHORIZED", json.readTree(noHeader.getBody()).get("code").asText());
+            assertEquals("E4010", json.readTree(noHeader.getBody()).get("code").asText());
         }
 
         ResponseEntity<String> unknown = exchange(HttpMethod.POST, "/p/api/wpf/popups", "E9999", "{}");
         assertEquals(HttpStatus.FORBIDDEN, unknown.getStatusCode(), unknown.getBody());
         assertNotNull(json.readTree(unknown.getBody()).get("code"), unknown.getBody());
-        assertEquals("WPF_USER_INACTIVE", json.readTree(unknown.getBody()).get("code").asText());
+        assertEquals("E4030", json.readTree(unknown.getBody()).get("code").asText());
     }
 
     /** POL-09-02 : 조회 응답 — 조회는 POST 단건: {pollingIntervalSeconds, popup(deliveryId 포함)}. 응답 유실 후 재조회는 같은 전달 건. */
@@ -244,7 +244,7 @@ class WpfApiOracleHttpTest {
                 {"resultId":"%s","deliveryId":"NO-SUCH-DELIVERY","popupId":"SAMPLE-QUIZ-003","resultType":"CLOSED"}
                 """.formatted(UUID.randomUUID()));
         assertEquals("REJECTED", foreign.get("status").asText());
-        assertEquals("WPF_INVALID_DELIVERY", foreign.get("code").asText());
+        assertEquals("R4001", foreign.get("code").asText());
         assertFalse(foreign.has("nextStatus"));
 
         // 결과별 REQUIRES_NEW 커밋 — 영수증 3건, 전달 건 3건 종료, 요청 로그는 결과 요청마다 1건
@@ -257,5 +257,5 @@ class WpfApiOracleHttpTest {
     void invalidBodyIsBadRequestWithWpfCode() throws Exception {
         ResponseEntity<String> res = exchange(HttpMethod.POST, "/p/api/wpf/popups/results", USER, "[1,2]");
         assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
-        assertEquals("WPF_BAD_REQUEST", json.readTree(res.getBody()).get("code").asText());
+        assertEquals("E4000", json.readTree(res.getBody()).get("code").asText());
     }}

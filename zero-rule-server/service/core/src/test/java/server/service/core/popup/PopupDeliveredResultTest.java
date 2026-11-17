@@ -74,7 +74,7 @@ class PopupDeliveredResultTest {
         verify(mapper, never()).upsertPopupResponse(any(), any(), any(), any(), any(), any());
     }
 
-    /** 팝업 행 삭제(또는 비활성 사용자)면 게시 조건 없는 문맥도 없으므로 WPF_NOT_ELIGIBLE 메시지로 거절한다. */
+    /** 팝업 행 삭제(또는 비활성 사용자)면 게시 조건 없는 문맥도 없으므로 R4003(NOT_ELIGIBLE) 메시지로 거절한다. */
     @Test void deliveredSubmissionRejectsDeletedPopup() {
         assertTrue(assertThrows(IllegalArgumentException.class,
                 () -> service.submitDeliveredResponse("Q1", "r-1", "E1001", answers, 10.0, true))

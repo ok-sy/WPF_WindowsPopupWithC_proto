@@ -168,11 +168,11 @@ SELECT *
 오류(잘못된 JSON·객체가 아닌 JSON·필수 콘텐츠 누락·모르는 코드·잘못된 Y/N·URL·문항 미연결): HTTP 500
 
 ```json
-{"code":"WPF_INTERNAL","message":"서버 처리 중 오류가 발생했습니다.","timestamp":"2026-10-22T19:40:00+09:00"}
+{"code":"E5000","message":"서버 처리 중 오류가 발생했습니다.","timestamp":"2026-10-22T19:40:00+09:00"}
 ```
 
 원인은 서버 로그 `contentId=... reason=INVALID_CONTENT_JSON|CONTENT_NOT_OBJECT|MISSING_REQUIRED_CONTENT|UNKNOWN_CODE|INVALID_COLUMN|QUESTIONS_NOT_CONNECTED`로 남긴다.
-빈 content·기본값으로 덮어 정상처럼 반환하지 않으며, 오류 응답에는 전달 건을 발급하지 않는다. 인증 없음 401 `WPF_UNAUTHORIZED`, 본문이 객체가 아니면 400 `WPF_BAD_REQUEST`.
+빈 content·기본값으로 덮어 정상처럼 반환하지 않으며, 오류 응답에는 전달 건을 발급하지 않는다. 인증 없음 401 `E4010(UNAUTHORIZED)`, 본문이 객체가 아니면 400 `E4000(BAD_REQUEST)`.
 
 유형별 필수 콘텐츠: TEXT `plainText` 또는 비어 있지 않은 `textBlocks`, IMAGE `imageUrl`, VIDEO `videoUrl`, SURVEY·QUIZ 문항 1개 이상.
 

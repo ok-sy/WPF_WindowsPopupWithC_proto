@@ -704,7 +704,7 @@ flowchart LR
 | `nextStatus` | ACCEPTED·DUPLICATE에서 제공 | `AVAILABLE` 다음 후보 있음 / `EMPTY` 없음 |
 | `code`, `message` | 선택 | 거절·장애·후보 확인 실패를 설명 |
 
-결과 응답에는 다음 팝업 본문을 넣지 않습니다. 다음 팝업이 있으면 에이전트가 조회 API를 다시 호출합니다. 저장은 성공했으나 후보 확인만 실패하면 `nextStatus`를 생략하고 `code=WPF_NEXT_STATUS_UNKNOWN`을 줍니다. 이때 저장 성공을 취소하거나 EMPTY로 바꾸지 않습니다.
+결과 응답에는 다음 팝업 본문을 넣지 않습니다. 다음 팝업이 있으면 에이전트가 조회 API를 다시 호출합니다. 저장은 성공했으나 후보 확인만 실패하면 `nextStatus`를 생략하고 `code=R2001(NEXT_STATUS_UNKNOWN)`을 줍니다. 이때 저장 성공을 취소하거나 EMPTY로 바꾸지 않습니다.
 
 ### 8.2 status에 따른 큐 처리
 
@@ -718,7 +718,7 @@ flowchart LR
 
 삭제하려면 응답의 `resultId`가 요청과 일치해야 합니다. HTTP 200이어도 빈 본문·잘못된 JSON·ID 불일치·status 누락·알 수 없는 status이면 정상 종결이 아닙니다. 이런 잘못된 2xx 응답도 결과별로 3회 확인한 뒤 삭제하고 조회를 허용합니다. 이 3회는 첫 해당 응답부터 센 총 횟수이며, 최초 1회에 추가로 3회를 더하는 뜻이 아닙니다.
 
-`REJECTED`는 보통 HTTP 200 본문의 업무 처리 결과입니다. 요청 JSON 자체를 읽지 못한 HTTP 400과 구분합니다. 예를 들어 답안의 선택지가 다른 문항에 속하면 `REJECTED / WPF_INVALID_ANSWER`, 잘못된 숫자 자료형으로 JSON을 보내면 HTTP 400이 될 수 있습니다.
+`REJECTED`는 보통 HTTP 200 본문의 업무 처리 결과입니다. 요청 JSON 자체를 읽지 못한 HTTP 400과 구분합니다. 예를 들어 답안의 선택지가 다른 문항에 속하면 `REJECTED / R4005(INVALID_ANSWER)`, 잘못된 숫자 자료형으로 JSON을 보내면 HTTP 400이 될 수 있습니다.
 
 ### 8.3 같은 결과가 여러 번 오면 한 번만 저장한다
 
@@ -728,8 +728,8 @@ flowchart LR
 |---|---|
 | 같은 `resultId`를 다시 전송 | 재저장 없이 `DUPLICATE` |
 | 같은 `resultId`인데 본문이 달라짐 | 현재 확정 정책은 본문 비교 없이 `DUPLICATE`. WPF는 본문을 바꾸지 않아야 함 |
-| 이미 끝난 전달 건에 다른 `resultId` 전송 | `REJECTED / WPF_DELIVERY_COMPLETED` |
-| 다른 사람의 전달 건 또는 팝업 ID 불일치 | `REJECTED / WPF_INVALID_DELIVERY` |
+| 이미 끝난 전달 건에 다른 `resultId` 전송 | `REJECTED / R4002(DELIVERY_COMPLETED)` |
+| 다른 사람의 전달 건 또는 팝업 ID 불일치 | `REJECTED / R4001(INVALID_DELIVERY)` |
 
 여러 PC가 같은 사용자로 조회하면 현재 같은 OPEN 전달 건을 받을 수 있습니다. 먼저 저장한 결과가 반영됩니다. 다중 PC 동시 표시를 허용할지와 전달 건 보존·시간 만료의 최종 정책은 별도 확인 대상입니다.
 

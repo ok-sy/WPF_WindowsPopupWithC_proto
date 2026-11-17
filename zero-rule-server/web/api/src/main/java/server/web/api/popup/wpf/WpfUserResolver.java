@@ -20,7 +20,7 @@ public interface WpfUserResolver {
 
     /**
      * @return 사번. 비어 있지 않다.
-     * @throws WpfUnauthorizedException 인증 정보에서 사번을 얻을 수 없을 때 (→ 401 WPF_UNAUTHORIZED)
+     * @throws WpfUnauthorizedException 인증 정보에서 사번을 얻을 수 없을 때 (→ 401 E4010(UNAUTHORIZED))
      */
     String resolveEmployeeNo(HttpServletRequest request);
 }

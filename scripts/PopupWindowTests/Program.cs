@@ -2361,8 +2361,8 @@ internal static class Program
                     Score = 100, Passed = true,
                     Video = new Popup.Dtos.WpfVideoProgressDto { DurationSeconds = 100, PositionSeconds = 100, MaximumPositionSeconds = 100, WatchedSeconds = watched }
                 }).Result;
-                Check(unlocked ? response.Status == "ACCEPTED" : response.Status == "REJECTED" && response.Code == "WPF_INVALID_VIDEO",
-                    $"[설계 53-16 D4] Demo VIDEO+QUIZ submit at {watched}/100 → {response.Status}/{response.Code} (server code WPF_INVALID_VIDEO)");
+                Check(unlocked ? response.Status == "ACCEPTED" : response.Status == "REJECTED" && response.Code == "R4006",
+                    $"[설계 53-16 D4] Demo VIDEO+QUIZ submit at {watched}/100 → {response.Status}/{response.Code} (server code R4006(INVALID_VIDEO))");
             }
 
             // D3: 서버 형태(같은 제목·설명)는 퀴즈 머리말을 숨기고, 다른 값·영상 설명 숨김은 그대로 보인다.

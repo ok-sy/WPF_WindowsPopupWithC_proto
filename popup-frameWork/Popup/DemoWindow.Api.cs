@@ -478,7 +478,7 @@ namespace Popup
                 WpfLoginFailedException failed => "로그인 실패 — " + failed.Message,
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } http =>
                     $"인증 실패(401){(_apiAuth?.UsesSso == true ? " — 확인한 SSO 사용자로 재로그인 1회 후에도 실패" : " — 재로그인 1회 후에도 실패")}: {http.Message}",
-                HttpRequestException { StatusCode: HttpStatusCode.Forbidden } http when http.Message.Contains("WPF_USER_INACTIVE", StringComparison.Ordinal) =>
+                HttpRequestException { StatusCode: HttpStatusCode.Forbidden } http when http.Message.Contains("E4030", StringComparison.Ordinal) =>
                     $"HTTP 오류 403: 로그인은 됐지만 이 계정이 활성 팝업 사용자가 아닙니다. {http.Message}",
                 HttpRequestException { StatusCode: { } status } http => $"HTTP 오류 {(int)status}: {http.Message}",
                 HttpRequestException http => $"통신 실패(응답 없음): {http.Message}",

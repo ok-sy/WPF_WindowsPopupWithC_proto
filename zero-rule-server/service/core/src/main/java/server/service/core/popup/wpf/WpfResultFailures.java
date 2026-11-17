@@ -1,5 +1,7 @@
 package server.service.core.popup.wpf;
 
+import server.domain.popup.wpf.WpfResponseCodes;
+
 /**
  * POL-09-03 : 저장 응답
  * POL-12-01 : 종결과 보관
@@ -31,13 +33,13 @@ package server.service.core.popup.wpf;
 public final class WpfResultFailures {
 
     /** 확인된 일시 장애(RETRYABLE_ERROR)의 code·message. WPF는 같은 resultId로 다시 보낸다. */
-    public static final String RETRYABLE_CODE = "WPF_RETRYABLE";
+    public static final String RETRYABLE_CODE = WpfResponseCodes.RETRYABLE;
     public static final String RETRYABLE_MESSAGE = "일시적인 서버 오류로 처리하지 못했습니다. 다시 전송해 주세요.";
     /** 원인 미확정 내부 오류(INTERNAL_ERROR)의 code·message. 내부 상세는 응답에 넣지 않고 서버 로그에만 남긴다. */
-    public static final String INTERNAL_CODE = "WPF_INTERNAL";
+    public static final String INTERNAL_CODE = WpfResponseCodes.RESULT_INTERNAL;
     public static final String INTERNAL_MESSAGE = "서버 처리 중 오류가 발생했습니다.";
     /** 결과는 저장했으나(ACCEPTED·DUPLICATE) 다음 후보 확인이 실패한 경우. nextStatus를 생략하고 이 code를 준다(EMPTY로 보내지 않음). */
-    public static final String NEXT_STATUS_UNKNOWN_CODE = "WPF_NEXT_STATUS_UNKNOWN";
+    public static final String NEXT_STATUS_UNKNOWN_CODE = WpfResponseCodes.NEXT_STATUS_UNKNOWN;
     public static final String NEXT_STATUS_UNKNOWN_MESSAGE = "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다.";
 
     private WpfResultFailures() {
@@ -72,33 +74,33 @@ public final class WpfResultFailures {
      * POL-09-03 : 저장 응답
      * ■ 업무 검증 실패 → REJECTED 세부 code
      * - in : ex(IllegalArgumentException) 업무 검증 예외(현재 저장소는 PopupService의 한국어 메시지)
-     * - out: String WPF_NOT_ELIGIBLE · WPF_DELIVERY_COMPLETED · WPF_INVALID_DELIVERY · WPF_TYPE_MISMATCH · WPF_INVALID_ANSWER ·
-     *        WPF_INVALID_VIDEO · 그 밖 WPF_INVALID_RESULT
+     * - out: String R4003(NOT_ELIGIBLE) · R4002(DELIVERY_COMPLETED) · R4001(INVALID_DELIVERY) · R4004(TYPE_MISMATCH) · R4005(INVALID_ANSWER) ·
+     *        R4006(INVALID_VIDEO) · 그 밖 R4000(INVALID_RESULT)
      * - 세부 code는 진단값이다. WPF 큐 처리는 status(REJECTED)만 보므로 백엔드는 code를 늘리거나 합쳐도 된다.
-     * 범위 밖 hideDays는 요청 형식 검사에서 WPF_INVALID_RESULT로 먼저 거절되고 누락은 결과 처리의 "hideDays가 필요" 메시지로
-     * WPF_INVALID_RESULT가 되어, 별도 숨김 일수 코드는 두지 않는다.
+     * 범위 밖 hideDays는 요청 형식 검사에서 R4000(INVALID_RESULT)로 먼저 거절되고 누락은 결과 처리의 "hideDays가 필요" 메시지로
+     * R4000(INVALID_RESULT)가 되어, 별도 숨김 일수 코드는 두지 않는다.
      */
     public static String rejectCode(IllegalArgumentException ex) {
         String message = ex.getMessage() == null ? "" : ex.getMessage();
         if (message.contains("제출 가능한 팝업이 아닙니다") || message.contains("유효한 영상 팝업이 아닙니다")
                 || message.contains("유효한 사용자 또는 팝업이 아닙니다")) {
-            return "WPF_NOT_ELIGIBLE";
+            return WpfResponseCodes.NOT_ELIGIBLE;
         }
         if (message.contains("이미 결과가 저장된 전달 건")) {
-            return "WPF_DELIVERY_COMPLETED";
+            return WpfResponseCodes.DELIVERY_COMPLETED;
         }
         if (message.contains("전달 건")) {
-            return "WPF_INVALID_DELIVERY";
+            return WpfResponseCodes.INVALID_DELIVERY;
         }
         if (message.contains("설문형 팝업만")) {
-            return "WPF_TYPE_MISMATCH";
+            return WpfResponseCodes.TYPE_MISMATCH;
         }
         if (message.contains("문항") || message.contains("선택지") || message.contains("답안")) {
-            return "WPF_INVALID_ANSWER";
+            return WpfResponseCodes.INVALID_ANSWER;
         }
         if (message.contains("영상")) {
-            return "WPF_INVALID_VIDEO";
+            return WpfResponseCodes.INVALID_VIDEO;
         }
-        return "WPF_INVALID_RESULT";
+        return WpfResponseCodes.INVALID_RESULT;
     }
 }

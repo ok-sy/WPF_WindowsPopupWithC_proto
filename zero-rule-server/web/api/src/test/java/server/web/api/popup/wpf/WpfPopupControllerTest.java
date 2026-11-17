@@ -71,7 +71,7 @@ class WpfPopupControllerTest {
     @Test void nextPopupRequiresDevHeaderAndKeepsNullPopup() throws Exception {
         mvc.perform(post("/p/api/wpf/popups"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("WPF_UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("E4010"));
 
         when(service.getNextPopup("E1001")).thenReturn(new WpfNextPopupResponse(1800, null));
         var body = mvc.perform(post("/p/api/wpf/popups").header("X-Dev-User-Id", "E1001"))   // 본문 없이도 호출 가능
@@ -91,7 +91,7 @@ class WpfPopupControllerTest {
         when(service.getNextPopup("E9999")).thenThrow(new WpfUserInactiveException("E9999"));
         mvc.perform(post("/p/api/wpf/popups").header("X-Dev-User-Id", "E9999"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("WPF_USER_INACTIVE"));
+                .andExpect(jsonPath("$.code").value("E4030"));
     }
 
     @Test void popupCarriesDeliveryIdAndNoDisplayOrder() throws Exception {
@@ -244,7 +244,7 @@ class WpfPopupControllerTest {
                 .andExpect(jsonPath("$.popup.headerFontSize").doesNotExist());
     }
 
-    /** POL-09-03 : 저장 응답 — 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)이며 서비스로 넘기지 않는다. */
+    /** POL-09-03 : 저장 응답 — 형식 오류는 400이 아니라 REJECTED(R4000(INVALID_RESULT))이며 서비스로 넘기지 않는다. */
     @Test void invalidResultIsRejectedWithoutProcessing() throws Exception {
         for (String body : List.of(
                 "{\"resultId\":\"bad-type\",\"deliveryId\":\"D-1\",\"popupId\":\"P1\",\"resultType\":\"OPENED\"}",
@@ -258,7 +258,7 @@ class WpfPopupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("REJECTED"))
-                    .andExpect(jsonPath("$.code").value("WPF_INVALID_RESULT"))
+                    .andExpect(jsonPath("$.code").value("R4000"))
                     .andExpect(jsonPath("$.nextStatus").doesNotExist());
         }
         verify(service, never()).processResult(any(), any());
@@ -297,7 +297,7 @@ class WpfPopupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("REJECTED"))
-                    .andExpect(jsonPath("$.code").value("WPF_INVALID_RESULT"));
+                    .andExpect(jsonPath("$.code").value("R4000"));
         }
         // 1,000 Byte(한글 333자 + 1)는 통과
         when(service.processErrorResult(eq("E1001"), any())).thenReturn(WpfResultResponse.of(
@@ -340,7 +340,7 @@ class WpfPopupControllerTest {
         var response = controller.process("E1001", broken);
 
         assertEquals(WpfResultItemResponse.Status.INTERNAL_ERROR, response.status());
-        assertEquals("WPF_INTERNAL", response.code());
+        assertEquals("R5000", response.code());
         assertFalse(response.message().contains("conversion bug"), "내부 오류 상세 비노출");
         verify(service, never()).processResult(any(), any());
     }
@@ -350,7 +350,7 @@ class WpfPopupControllerTest {
         mvc.perform(post("/p/api/wpf/popups/results").header("X-Dev-User-Id", "E1001")
                         .contentType(MediaType.APPLICATION_JSON).content("[1,2]"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("WPF_BAD_REQUEST"));
+                .andExpect(jsonPath("$.code").value("E4000"));
 
         String body = """
                 {"resultId":"r2","deliveryId":"D-9","popupId":"Q1","resultType":"submitted","userId":"HACKER",

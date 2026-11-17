@@ -61,7 +61,7 @@ class WpfClientVersionInterceptorTest {
     @Test void t3_olderThanMinimumIs426WithBody() throws Exception {
         mvc.perform(get("/p/api/wpf/popups").header("X-Client-Version", "1.2.9"))
                 .andExpect(status().is(426))
-                .andExpect(jsonPath("$.code").value("CLIENT_VERSION_NOT_SUPPORTED"))
+                .andExpect(jsonPath("$.code").value("E4260"))
                 .andExpect(jsonPath("$.clientVersion").value("1.2.9"))
                 .andExpect(jsonPath("$.minimumSupportedVersion").value("1.3.0"))
                 .andExpect(jsonPath("$.latestVersion").value("1.4.2"))
@@ -79,7 +79,7 @@ class WpfClientVersionInterceptorTest {
 
     @Test void t5_missingOrMalformedHeaderIs426_unlessNotRequired() throws Exception {
         mvc.perform(get("/p/api/wpf/popups")).andExpect(status().is(426))
-                .andExpect(jsonPath("$.code").value("CLIENT_VERSION_NOT_SUPPORTED"));
+                .andExpect(jsonPath("$.code").value("E4260"));
         mvc.perform(get("/p/api/wpf/popups").header("X-Client-Version", "latest")).andExpect(status().is(426));
 
         props.setRequireHeader(false);

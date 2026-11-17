@@ -55,9 +55,9 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 |---|---|---|
 | 정상 | 200 | `{pollingIntervalSeconds, popup}` |
 | POPU_ID 없음 | 200 | `{pollingIntervalSeconds: 1800, popup: null}` |
-| popupId 누락·본문이 객체 아님 | 400 | `WPF_BAD_REQUEST` |
-| 사번 없음 | 401 | `WPF_UNAUTHORIZED` |
-| 저장 데이터 오류 | 500 | `WPF_INTERNAL`(메시지 비노출, 서버 로그에 popupId·reason) |
+| popupId 누락·본문이 객체 아님 | 400 | `E4000(BAD_REQUEST)` |
+| 사번 없음 | 401 | `E4010(UNAUTHORIZED)` |
+| 저장 데이터 오류 | 500 | `E5000(INTERNAL)`(메시지 비노출, 서버 로그에 popupId·reason) |
 
 ## 3. 저장 JSON 경계
 

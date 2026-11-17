@@ -52,8 +52,8 @@ public class WpfAuthController {
      * POL-15-02 : 인증·버전
      * ■ 프로토타입 로그인 (POST /p/api/wpf/auth/login)
      * - in : body(WpfLoginRequest) logonId·classCode·linkYn · request(HttpServletRequest) 원격 주소 로그용
-     * - out: WpfLoginResponse accessToken·tokenType(Bearer)·expiresAt · 예외: 400 WPF_BAD_REQUEST
-     * - 필수 값(logonId·classCode)만 검사하고 토큰을 발급한다. 실패는 Bean Validation → 400 WPF_BAD_REQUEST.
+     * - out: WpfLoginResponse accessToken·tokenType(Bearer)·expiresAt · 예외: 400 E4000(BAD_REQUEST)
+     * - 필수 값(logonId·classCode)만 검사하고 토큰을 발급한다. 실패는 Bean Validation → 400 E4000(BAD_REQUEST).
      * 같은 사용자가 다시 로그인해도 이전 토큰을 즉시 폐기하지 않는다(만료로 정리) — 동시 401 재시도 중인
      * 다른 요청이 새 토큰을 받기 전까지 실패하지 않도록.
      */

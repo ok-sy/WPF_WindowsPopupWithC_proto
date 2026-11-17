@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-17-12 — dev: WPF API 응답 code 5 Byte 코드로 변경
+
+- 이유: 폐쇄망 백엔드의 코드 컬럼이 VARCHAR2(5 BYTE)(UTF-8)로 확인됨. 기존 이름형 응답 code(`WPF_INVALID_DELIVERY` 20 Byte 등)는 저장·응답할 수 없어 5 Byte 코드로 정리. 영향 판단: WPF는 응답 code를 판정에 쓰지 않고(로그 전용) HTTP 상태·`status`로만 분기하므로 Agent 동작 변경 없음. `status` 값(ACCEPTED 등)은 5 Byte를 넘지만 응답 값은 유지(DB 저장이 필요하면 서버에서 저장용 코드로 바꾸도록 정의서에 명시). 장애 결과 `resultCode=400`은 3 Byte라 영향 없음.
+- 변경:
+  - 코드 체계: 「구분 1자 + HTTP 상태 기반 3자리 + 일련 1자리」. HTTP 오류 본문 E4000(BAD_REQUEST)·E4010(UNAUTHORIZED)·E4030(USER_INACTIVE)·E4260(CLIENT_VERSION_NOT_SUPPORTED)·E5000(INTERNAL), 결과 응답 R2001(NEXT_STATUS_UNKNOWN)·R4000~R4006(INVALID_RESULT·INVALID_DELIVERY·DELIVERY_COMPLETED·NOT_ELIGIBLE·TYPE_MISMATCH·INVALID_ANSWER·INVALID_VIDEO)·R5000(RESULT_INTERNAL)·R5030(RETRYABLE). 같은 `WPF_INTERNAL`이 HTTP 500과 결과 INTERNAL_ERROR에 함께 쓰이던 것을 E5000·R5000으로 분리.
+  - 서버: 코드표 `WpfResponseCodes`(domain) 신규, WPF API 예외 처리기·버전 인터셉터 응답·결과 분류(`WpfResultFailures`)·컨트롤러·샘플(단건 조회·전체 JSON·중계) 예외 처리기가 상수 사용. 테스트 기대값 갱신.
+  - WPF: Demo 게이트웨이 거절 code, Demo API 화면의 403 판별 문자열(E4030), 테스트(ApiDemo·PopupWindow·Behavior)의 가짜 서버 응답·기대값 갱신. Agent 판정 코드 변경 없음.
+  - 문서: 계약서 code 표(5 Byte 형식 설명, 발생하지 않는 WPF_INVALID_HIDE_DAYS 행 삭제)·§13 예시, WPF 사양서 2종, 정책 POL-09·POL-10·POLICY, 서버 샘플 인계 문서 3종, 장애별 분기 정의서 v1.1(§5 5 Byte 코드표 전체, 예시 재생성), 예제 JSON·개발 DB 스크립트 주석·WPF README. Excel `SERVER_ERROR_BRANCH_v1.1.xlsx`, `WPF_SPEC_v3.9.xlsx`(v3.8 대체) 재생성. 과거 설계 TODO·변경 이력의 이전 코드 이름은 기록으로 두고 바꾸지 않음.
+- 주요 파일: `zero-rule-server/domain/src/main/java/server/domain/popup/wpf/WpfResponseCodes.java`, `WpfClientVersionErrorResponse.java`, `zero-rule-server/service/core/src/main/java/server/service/core/popup/wpf/WpfResultFailures.java`, `zero-rule-server/web/api/src/main/java/server/web/api/popup/wpf/WpfApiExceptionHandler.java`, 샘플 예외 처리기 3종, `popup-frameWork/Popup/Services/DemoPopupGateway.cs`, `popup-frameWork/Popup/DemoWindow.Api.cs`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.1.xlsx`, `docs/interfaces/WPF/WPF_SPEC_v3.9.xlsx`, `scripts/export-wpf-spec-xlsx.py`.
+- 검증: 서버 `gradlew --offline test` 290건 통과·13 skip(Oracle)·실패 0(예시 테스트가 새 코드로 응답 확인). WPF 빌드 경고·오류 0, ApiDemoTests 150건·Popup.RecoveryTests 255건·Popup.BehaviorTests 1,740건(Git 제외 폴더, 로컬만 갱신)·PopupWindowTests 565건 통과. 문서 감사 816건 통과. 폐쇄망 백엔드 적용·실서버 호출 미실행.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-11 — dev: 서버 WPF API 장애별 분기 처리 정의서·참고 소스·결과 예시
 
 - 이유: 폐쇄망 백엔드 전달 준비. 오류를 HTTP 상태로 그대로 응답할 경우와 결과 API에서 HTTP 200 + status·code를 만들어 응답할 경우의 기준이 계약서 여러 절과 서버 코드에 흩어져 있어, 백엔드가 그대로 구현할 수 있는 단일 정의서와 실제 응답 예시가 필요.

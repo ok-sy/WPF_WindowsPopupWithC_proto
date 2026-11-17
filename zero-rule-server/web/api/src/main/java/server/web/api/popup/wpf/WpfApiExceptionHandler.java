@@ -1,5 +1,7 @@
 package server.web.api.popup.wpf;
 
+import server.domain.popup.wpf.WpfResponseCodes;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -31,10 +33,10 @@ import java.time.ZoneId;
  *
  * <table>
  *   <tr><th>HTTP</th><th>code</th><th>상황</th></tr>
- *   <tr><td>400</td><td>WPF_BAD_REQUEST</td><td>Bean Validation 실패, JSON 구문·enum 오류, 서비스 IllegalArgumentException</td></tr>
- *   <tr><td>401</td><td>WPF_UNAUTHORIZED</td><td>WpfUserResolver가 사번을 얻지 못함</td></tr>
- *   <tr><td>403</td><td>WPF_USER_INACTIVE</td><td>APP_USER 없음 또는 ACTIVE_YN='N'</td></tr>
- *   <tr><td>500</td><td>WPF_INTERNAL</td><td>그 외 (메시지 비노출, 로그만)</td></tr>
+ *   <tr><td>400</td><td>E4000(BAD_REQUEST)</td><td>Bean Validation 실패, JSON 구문·enum 오류, 서비스 IllegalArgumentException</td></tr>
+ *   <tr><td>401</td><td>E4010(UNAUTHORIZED)</td><td>WpfUserResolver가 사번을 얻지 못함</td></tr>
+ *   <tr><td>403</td><td>E4030(USER_INACTIVE)</td><td>APP_USER 없음 또는 ACTIVE_YN='N'</td></tr>
+ *   <tr><td>500</td><td>E5000(INTERNAL)</td><td>그 외 (메시지 비노출, 로그만)</td></tr>
  * </table>
  */
 @RestControllerAdvice(assignableTypes = {WpfPopupController.class, WpfAuthController.class})
@@ -49,30 +51,30 @@ public class WpfApiExceptionHandler {
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst()
                 .orElse("요청 형식이 올바르지 않습니다.");
-        return error(HttpStatus.BAD_REQUEST, "WPF_BAD_REQUEST", detail);
+        return error(HttpStatus.BAD_REQUEST, WpfResponseCodes.BAD_REQUEST, detail);
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, IllegalArgumentException.class})
     public ResponseEntity<WpfErrorResponse> badRequest(Exception ex) {
         String message = ex instanceof HttpMessageNotReadableException
                 ? "요청 본문을 해석할 수 없습니다." : ex.getMessage();
-        return error(HttpStatus.BAD_REQUEST, "WPF_BAD_REQUEST", message);
+        return error(HttpStatus.BAD_REQUEST, WpfResponseCodes.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(WpfUnauthorizedException.class)
     public ResponseEntity<WpfErrorResponse> unauthorized(WpfUnauthorizedException ex) {
-        return error(HttpStatus.UNAUTHORIZED, "WPF_UNAUTHORIZED", ex.getMessage());
+        return error(HttpStatus.UNAUTHORIZED, WpfResponseCodes.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(WpfUserInactiveException.class)
     public ResponseEntity<WpfErrorResponse> userInactive(WpfUserInactiveException ex) {
-        return error(HttpStatus.FORBIDDEN, "WPF_USER_INACTIVE", ex.getMessage());
+        return error(HttpStatus.FORBIDDEN, WpfResponseCodes.USER_INACTIVE, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<WpfErrorResponse> internal(Exception ex) {
         log.error("WPF API 처리 중 오류", ex);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.");
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, WpfResponseCodes.INTERNAL, "서버 처리 중 오류가 발생했습니다.");
     }
 
     private static ResponseEntity<WpfErrorResponse> error(HttpStatus status, String code, String message) {

@@ -387,7 +387,7 @@ HTTP/WebView2 실제 영상·저사양 CPU 실측·폐쇄망 장치 검증을 �
 |---|---|---|---|---|
 | POL-09-01 | 3 API 순서 | 로그인 → POST 단건 조회 → 결과 1건 저장 → 필요 시 재조회. 인증 만료는 로그인 재진입 경로를 따른다. BaseUrl은 서버 주소(컨텍스트 경로까지)이고 /p는 API 경로(/p/api/wpf/...)에 포함한다. | auth/login, popups, popups/results | 서버 Controller·WPF API |
 | POL-09-02 | 조회 응답 | 매 응답 pollingIntervalSeconds와 popup 객체 또는 명시 null을 준다. userId/serverTime/popups[]/displayOrder/nextStatus를 조회 계약으로 되살리지 않는다. 조회가 전달 건을 만들거나 재사용하므로 POST다. | {pollingIntervalSeconds, popup}; 주기 1800~3600초 | 서버 / WPF 최신 주기 반영 |
-| POL-09-03 | 저장 응답 | resultId/status/code/message와 저장 성공 시 nextStatus. AVAILABLE 즉시 조회, EMPTY 주기 대기. 후보 확인 실패는 nextStatus 생략 + WPF_NEXT_STATUS_UNKNOWN이며 저장 실패로 재해석하지 않는다. | ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR | 서버·WPF |
+| POL-09-03 | 저장 응답 | resultId/status/code/message와 저장 성공 시 nextStatus. AVAILABLE 즉시 조회, EMPTY 주기 대기. 후보 확인 실패는 nextStatus 생략 + R2001(NEXT_STATUS_UNKNOWN)이며 저장 실패로 재해석하지 않는다. | ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR | 서버·WPF |
 
 ## 구현·계약 근거
 
@@ -437,7 +437,7 @@ Word/PDF/Excel은 별도 생성 산출물이며 2026-10-22 현행 v3.7 보완까
 | 정책 ID | 항목 | 기준·예외 | 입출력·기본값 | 담당 레이어 |
 |---|---|---|---|---|
 | POL-10-01 | 전달과 제출 식별 | deliveryId는 서버 발급 전달 건, resultId는 클라이언트가 확정 결과 생성 시 만드는 멱등 키다. 재전송은 같은 resultId·본문을 유지한다. 같은 팝업이 새 전달로 재노출될 수 있으므로 popupId와 둘을 합치지 않는다. | popup.deliveryId → 결과 deliveryId | 서버 전달 / WPF 결과 |
-| POL-10-02 | 검증·원자성 | 활성 사용자 잠금 → 영수증 중복 확인 → 전달 소유·팝업 일치·종료 검사 → 결과 반영·전달 종료·영수증 기록. 같은 resultId는 재처리 없이 DUPLICATE. 다른 resultId로 이미 끝난 전달 제출은 WPF_DELIVERY_COMPLETED다. | 사용자→전달 건 잠금; 결과 저장 트랜잭션 | 서버·Oracle |
+| POL-10-02 | 검증·원자성 | 활성 사용자 잠금 → 영수증 중복 확인 → 전달 소유·팝업 일치·종료 검사 → 결과 반영·전달 종료·영수증 기록. 같은 resultId는 재처리 없이 DUPLICATE. 다른 resultId로 이미 끝난 전달 제출은 R4002(DELIVERY_COMPLETED)다. | 사용자→전달 건 잠금; 결과 저장 트랜잭션 | 서버·Oracle |
 | POL-10-03 | 완료·숨김·연기 | TEXT/IMAGE CLOSED는 완료다. HIDDEN은 hideDays(누락 시 클라이언트 생성 기본 30, 유효 1~3650)의 숨김이다. LATER는 완료·숨김을 변경하지 않고 pollingIntervalSeconds 유예; SURVEY·QUIZ·VIDEO를 완료 없이 닫은 CLOSED와 미완료 VIDEO_WATCHED도 완료·숨김을 변경하지 않고 같은 유예를 받는다(창 닫기·앱 정상 종료 경로 포함). 프로세스 강제종료처럼 결과가 만들어지지 않으면 전달 건이 OPEN으로 남아 유예 없이 다음 조회에서 같은 deliveryId로 다시 내려간다(미완료 닫기와 구분); 버튼 동작은 숨김 체크보다 우선하며 이번 video를 싣지 않는다. VIDEO/QUIZ 완료는 각 조건을 따른다. | CLOSED/HIDDEN/LATER/SUBMITTED/VIDEO_WATCHED | WPF 생성 / 서버 저장 |
 
 ## 구현·계약 근거

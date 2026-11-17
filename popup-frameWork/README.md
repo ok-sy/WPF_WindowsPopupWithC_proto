@@ -1074,7 +1074,7 @@ popupSample.exe -Demo -Api
 - 트레이 `팝업 다시 조회`는 API Demo에서 `팝업 조회`와 같은 실제 조회로 동작한다. 이 모드의 관리 화면(MainWindow)은 API 서비스·주기 조회를 만들지 않아 자동 조회 루프와 겹치지 않는다.
 - 인메모리 전용 조작(샘플 선택·옵션 설정·상태 초기화·전체 실행·SSO·로그인 테스트)은 API Demo에서 숨긴다.
 - 로그인 검증: `로그인 요청 JSON`은 `{"lgonId":"...","classCode":"...","linkYn":"N"}`이다. 에이전트 로그인에는 비밀번호가 없다. 토큰은 응답 헤더 `x-custom-authorization`(없으면 본문 `accessToken`)으로 받아 `Authorization: Bearer`로 보내고, 실패도 HTTP 200일 수 있어 토큰 유무로 판단한다. 입력한 JSON은 HTTP 상세에 그대로 표시되므로 비밀번호 같은 민감값을 넣지 않는다.
-  - 서버 조건: `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`(아니면 팝업 API가 401). 계정은 `APP_USER`에 활성 사번으로 있어야 한다(아니면 403 `WPF_USER_INACTIVE`).
+  - 서버 조건: `custom.wpf-auth-prototype.enabled=false`, `custom.wpf-popup.dev-user-header=false`(아니면 팝업 API가 401). 계정은 `APP_USER`에 활성 사번으로 있어야 한다(아니면 403 `E4030(USER_INACTIVE)`).
 - 진행 표시: 조회 버튼 위에 `연결 → 로그인 → 인증 준비 → 팝업 조회 → 표시 → 결과 전송` 상태와 최근 HTTP 상태·소요 시간을 보여 준다. 입력 오류는 입력란 아래에 표시하고 요청을 보내지 않는다.
 - 회귀 검증: `dotnet run --project scripts/ApiDemoTests` (로컬 모의 HTTP 서버, 실제 창을 잠깐 띄움).
 

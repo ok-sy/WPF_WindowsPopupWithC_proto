@@ -1,5 +1,7 @@
 package server.web.api.popup.sample.relay;
 
+import server.domain.popup.wpf.WpfResponseCodes;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -30,10 +32,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <table>
  *   <tr><th>상황</th><th>HTTP</th><th>code</th></tr>
- *   <tr><td>요청 본문 오류</td><td>400</td><td>WPF_BAD_REQUEST</td></tr>
+ *   <tr><td>요청 본문 오류</td><td>400</td><td>E4000(BAD_REQUEST)</td></tr>
  *   <tr><td>백엔드 400·401·403</td><td>같은 상태</td><td>백엔드 본문의 WPF 코드(없으면 상태별 기본 코드)</td></tr>
- *   <tr><td>백엔드 426(클라이언트 버전 미지원)</td><td>426</td><td>백엔드 본문 그대로(CLIENT_VERSION_NOT_SUPPORTED·버전 값, 클라이언트 최소 버전 거절 계약)</td></tr>
- *   <tr><td>백엔드 그 밖의 4xx·5xx, 연결 실패, timeout, JSON 오류, 계약 불일치</td><td>500</td><td>WPF_INTERNAL(메시지 비노출)</td></tr>
+ *   <tr><td>백엔드 426(클라이언트 버전 미지원)</td><td>426</td><td>백엔드 본문 그대로(E4260(CLIENT_VERSION_NOT_SUPPORTED)·버전 값, 클라이언트 최소 버전 거절 계약)</td></tr>
+ *   <tr><td>백엔드 그 밖의 4xx·5xx, 연결 실패, timeout, JSON 오류, 계약 불일치</td><td>500</td><td>E5000(INTERNAL)(메시지 비노출)</td></tr>
  * </table>
  *
  * <p>통신 실패 종류는 로그와 샘플 진단 헤더 {@code X-Sample-Upstream-Error}(CONNECT·TIMEOUT·HTTP_4XX·HTTP_5XX·INVALID_JSON·INVALID_RESPONSE)로만 구분한다.
@@ -47,8 +49,8 @@ public class RelayExceptionHandler {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
     static final String UPSTREAM_ERROR_HEADER = "X-Sample-Upstream-Error";
-    private static final Map<Integer, String> PASS_THROUGH = Map.of(400, "WPF_BAD_REQUEST", 401, "WPF_UNAUTHORIZED", 403, "WPF_USER_INACTIVE");
-    private static final Set<String> WPF_CODES = Set.of("WPF_BAD_REQUEST", "WPF_UNAUTHORIZED", "WPF_USER_INACTIVE");
+    private static final Map<Integer, String> PASS_THROUGH = Map.of(400, WpfResponseCodes.BAD_REQUEST, 401, WpfResponseCodes.UNAUTHORIZED, 403, WpfResponseCodes.USER_INACTIVE);
+    private static final Set<String> WPF_CODES = Set.of(WpfResponseCodes.BAD_REQUEST, WpfResponseCodes.UNAUTHORIZED, WpfResponseCodes.USER_INACTIVE);
 
     private final ObjectMapper objectMapper;
 
@@ -56,7 +58,7 @@ public class RelayExceptionHandler {
         this.objectMapper = objectMapper;
     }
 
-    /** 백엔드 실패를 위 표대로 426 원문·400/401/403 전달·500 WPF_INTERNAL로 변환한다. */
+    /** 백엔드 실패를 위 표대로 426 원문·400/401/403 전달·500 E5000(INTERNAL)로 변환한다. */
     @ExceptionHandler(BackendCallException.class)
     public ResponseEntity<Map<String, Object>> backend(BackendCallException ex) {
         log.warn("relay failed kind={} status={} reason={}", ex.kind(), ex.status(), ex.getMessage());
@@ -75,14 +77,14 @@ public class RelayExceptionHandler {
             }
             return error(HttpStatus.valueOf(ex.status()), code, message, ex.kind());
         }
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "WPF_INTERNAL", "서버 처리 중 오류가 발생했습니다.", ex.kind());
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, WpfResponseCodes.INTERNAL, "서버 처리 중 오류가 발생했습니다.", ex.kind());
     }
 
-    /** 요청 본문 오류 → 400 WPF_BAD_REQUEST. */
+    /** 요청 본문 오류 → 400 E4000(BAD_REQUEST). */
     @ExceptionHandler({HttpMessageNotReadableException.class, IllegalArgumentException.class})
     public ResponseEntity<Map<String, Object>> badRequest(Exception ex) {
         String message = ex instanceof HttpMessageNotReadableException ? "요청 본문을 해석할 수 없습니다." : ex.getMessage();
-        return error(HttpStatus.BAD_REQUEST, "WPF_BAD_REQUEST", message, null);
+        return error(HttpStatus.BAD_REQUEST, WpfResponseCodes.BAD_REQUEST, message, null);
     }
 
     private JsonNode readJson(String body) {

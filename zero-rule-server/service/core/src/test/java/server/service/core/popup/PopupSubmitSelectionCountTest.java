@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
  * POL-06-02 : 선택·제출
  * ■ SURVEY 복수 선택 최소·최대 선택 수 제출 검증 테스트(PU001 B-4)
  * - 서버도 WPF 화면 제한과 같은 기준(최대 ≤ max, 필수는 max(1, min) 이상, 선택 문항은 0개 또는 min 이상)으로 거절한다.
- * - 거절 메시지에 "문항"이 들어가 WPF_INVALID_ANSWER로 분류된다.
+ * - 거절 메시지에 "문항"이 들어가 R4005(INVALID_ANSWER)로 분류된다.
  */
 class PopupSubmitSelectionCountTest {
     private static final List<Long> OPTION_IDS = List.of(10L, 11L, 12L, 13L);

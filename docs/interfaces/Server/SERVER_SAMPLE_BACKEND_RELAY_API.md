@@ -63,11 +63,11 @@ mock 시나리오는 `-Dpopup.sample.relay.path=/api/wpf/popups?scenario=<이름
 |---|---|---|
 | 200 정상 | 200, 백엔드 JSON 그대로(WPF 구조) | 없음 |
 | 200 `popup:null` | 200 `{"pollingIntervalSeconds":…, "popup":null}` (데이터 없음 = 정상) | 없음 |
-| 400 / 401 / 403 | 같은 상태. 본문이 WPF 오류면 code·message 유지, 아니면 WPF_BAD_REQUEST / WPF_UNAUTHORIZED / WPF_USER_INACTIVE | HTTP_4XX |
-| 426 | 426, 본문 그대로(CLIENT_VERSION_NOT_SUPPORTED·버전 값, 설계 13) | HTTP_4XX |
-| 그 밖의 4xx, 5xx | 500 `WPF_INTERNAL`(백엔드 메시지 비노출) | HTTP_4XX / HTTP_5XX |
-| 연결 실패 / 응답 timeout | 500 `WPF_INTERNAL` | CONNECT / TIMEOUT |
-| JSON 아님 / 계약 불일치(객체 아님·pollingIntervalSeconds 누락·popup 키 누락·popupId 없음) | 500 `WPF_INTERNAL` | INVALID_JSON / INVALID_RESPONSE |
+| 400 / 401 / 403 | 같은 상태. 본문이 WPF 오류면 code·message 유지, 아니면 E4000(BAD_REQUEST) / E4010(UNAUTHORIZED) / E4030(USER_INACTIVE) | HTTP_4XX |
+| 426 | 426, 본문 그대로(E4260(E4260(CLIENT_VERSION_NOT_SUPPORTED))·버전 값, 설계 13) | HTTP_4XX |
+| 그 밖의 4xx, 5xx | 500 `E5000(INTERNAL)`(백엔드 메시지 비노출) | HTTP_4XX / HTTP_5XX |
+| 연결 실패 / 응답 timeout | 500 `E5000(INTERNAL)` | CONNECT / TIMEOUT |
+| JSON 아님 / 계약 불일치(객체 아님·pollingIntervalSeconds 누락·popup 키 누락·popupId 없음) | 500 `E5000(INTERNAL)` | INVALID_JSON / INVALID_RESPONSE |
 
 오류 본문은 기존 WPF 계약 `{code, message, timestamp}`다. 통신 실패를 `popup:null` 정상 응답으로 덮지 않는다.
 `X-Sample-Upstream-Error`는 샘플 진단용이며 WPF 클라이언트는 읽지 않는다([교체] 운영 연계 시 유지 여부 결정). 자동 재시도는 하지 않는다(조회가 전달 건 생성 같은 부작용을 가질 수 있음).
@@ -115,7 +115,7 @@ JsonNode unwrapPayload(JsonNode root) {
 
 요청 본문 바꾸기: `BackendPopupClient.fetch`의 `.body("{}")`([교체 지점])를 백엔드 계약 본문으로 바꾼다. 요청 Method가 GET이면 `restClient.post()` → `restClient.get()`으로 바꾸고 `.body(...)`를 지운다.
 
-오류 매핑 바꾸기: `RelayExceptionHandler.PASS_THROUGH`에 상태를 더하거나 빼서 그대로 전달할 상태를 정한다(그 밖은 500 WPF_INTERNAL). 진단 헤더 `X-Sample-Upstream-Error`가 필요 없으면 `error(...)`에서 헤더 추가 줄을 지운다.
+오류 매핑 바꾸기: `RelayExceptionHandler.PASS_THROUGH`에 상태를 더하거나 빼서 그대로 전달할 상태를 정한다(그 밖은 500 E5000(INTERNAL)). 진단 헤더 `X-Sample-Upstream-Error`가 필요 없으면 `error(...)`에서 헤더 추가 줄을 지운다.
 
 ## 5-3. 실제 연동할 때 바뀌는 부분
 

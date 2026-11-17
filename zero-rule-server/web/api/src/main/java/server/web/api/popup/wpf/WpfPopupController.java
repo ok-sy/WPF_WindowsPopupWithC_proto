@@ -1,5 +1,7 @@
 package server.web.api.popup.wpf;
 
+import server.domain.popup.wpf.WpfResponseCodes;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,14 +73,14 @@ public class WpfPopupController {
      * POL-11-01 : 노출 판단 소유
      * ■ 표시 대상 팝업 1건 조회 (POST /p/api/wpf/popups)
      * - in : request(HttpServletRequest) 사번 확인용(요청 본문은 비어 있거나 {}이며 내용은 쓰지 않음)
-     * - out: WpfNextPopupResponse 폴링 간격 + popup(대상이 없으면 null) · 예외: 401 WPF_UNAUTHORIZED, 403 WPF_USER_INACTIVE
+     * - out: WpfNextPopupResponse 폴링 간격 + popup(대상이 없으면 null) · 예외: 401 E4010(UNAUTHORIZED), 403 E4030(USER_INACTIVE)
      * - 전달 건(deliveryId)을 만들거나 재사용하므로 POST다. 사번은 WpfUserResolver에서 얻는다(요청 파라미터 사용 금지).
      */
     @Operation(summary = "WPF 표시 대상 팝업 1건 조회 (전달 건 발급·재사용, 완료·숨김·재노출 유예 제외)")
     @PostMapping
     public WpfNextPopupResponse nextPopup(HttpServletRequest request) {
-        String employeeNo = wpfUserResolver.resolveEmployeeNo(request);   // 실패 → 401 WPF_UNAUTHORIZED
-        return wpfPopupService.getNextPopup(employeeNo);                  // 비활성 → 403 WPF_USER_INACTIVE
+        String employeeNo = wpfUserResolver.resolveEmployeeNo(request);   // 실패 → 401 E4010(UNAUTHORIZED)
+        return wpfPopupService.getNextPopup(employeeNo);                  // 비활성 → 403 E4030(USER_INACTIVE)
     }
 
     /**
@@ -86,9 +88,9 @@ public class WpfPopupController {
      * POL-10-02 : 검증·원자성
      * ■ 결과 1건 수신 (POST /p/api/wpf/popups/results)
      * - in : body(WpfResultRequest) 결과 1건 · request(HttpServletRequest) 사번 확인·요청 로그용
-     * - out: WpfResultResponse resultId·status·code·message·nextStatus · 예외: 401 WPF_UNAUTHORIZED, 403 WPF_USER_INACTIVE
-     * - 형식 오류는 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다(WPF가 반복 재전송하지 않도록).
-     * 검증 통과 후 예상하지 못한 변환 예외는 INTERNAL_ERROR(WPF_INTERNAL)로 돌려 WPF가 결과를 보관·재시도하게 한다.
+     * - out: WpfResultResponse resultId·status·code·message·nextStatus · 예외: 401 E4010(UNAUTHORIZED), 403 E4030(USER_INACTIVE)
+     * - 형식 오류는 400이 아니라 REJECTED(R4000(INVALID_RESULT))로 돌려준다(WPF가 반복 재전송하지 않도록).
+     * 검증 통과 후 예상하지 못한 변환 예외는 INTERNAL_ERROR(R5000(RESULT_INTERNAL))로 돌려 WPF가 결과를 보관·재시도하게 한다.
      * 저장 성공(ACCEPTED·DUPLICATE)이면 후속 후보 유무 nextStatus(AVAILABLE/EMPTY)를 함께 준다.
      * 요청 단위 로그는 200으로 응답하는 결과 요청마다 처리 상태(ACCEPTED·REJECTED·오류 등)와 무관하게 남기되(clientRequestId = resultId),
      * 로그 실패가 응답을 막지 않도록 예외를 삼킨다. 인증 실패(401)·비활성 사용자(403)는 로그 전에 예외로 끝나 기록하지 않는다.
@@ -118,7 +120,7 @@ public class WpfPopupController {
         if (error != null) {
             wpfPopupService.requireActiveUser(employeeNo);
             return new WpfResultResponse(body.resultId(), WpfResultItemResponse.Status.REJECTED, null,
-                    "WPF_INVALID_RESULT", "결과 형식 오류: " + error);
+                    WpfResponseCodes.INVALID_RESULT, "결과 형식 오류: " + error);
         }
         if (body.isErrorResult()) {
             // POL-12-04 : 통합 복구 주기 — 장애 결과(TODO45): 조회 응답을 처리하지 못한 WPF가 보내는 resultCode=400 결과.

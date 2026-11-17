@@ -38,7 +38,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 
 | 항목 | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
-| DeliveryId | 지원(설계 35) | Y | 계약 기본값 없음(C# 초기값 `""`) | 조회 응답 `popup.deliveryId`. 서버가 조회마다 발급·재사용하는 전달 건 ID이며 결과 요청에 그대로 보냄. 빈 값이면 결과가 `REJECTED`(`WPF_INVALID_RESULT`) |
+| DeliveryId | 지원(설계 35) | Y | 계약 기본값 없음(C# 초기값 `""`) | 조회 응답 `popup.deliveryId`. 서버가 조회마다 발급·재사용하는 전달 건 ID이며 결과 요청에 그대로 보냄. 빈 값이면 결과가 `REJECTED`(`R4000(INVALID_RESULT)`) |
 | PopupId | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | 식별·숨김·결과 연결 ID. 서버가 유효값 보장. 빈 값이면 결과 연결 생략 |
 | PopupType | 지원 | Y | 계약 기본값 없음(C# 초기값 `""`) | TEXT / IMAGE / VIDEO / SURVEY / QUIZ. 빈 값·미지원 값은 Factory 오류 |
 | Content | 지원 | Y | 없음(생략·null 시 화면 생성 실패) | 유형별 `content` object. null 금지. 유형별 필수값은 각 절 적용 |

@@ -29,7 +29,7 @@ import java.util.List;
  * - 숨김·제출·영상 진행률·이벤트를 결과 하나로 받는다. 사용자 ID 필드는 없다(인증 정보에서 얻음).
  * - 결과 객체 1건만 받는다(일괄 envelope 없음). resultType은 CLOSED·HIDDEN·LATER·SUBMITTED·VIDEO_WATCHED,
  *   hideDays는 1~3650이며 조회 응답의 {@code deliveryId}를 함께 보낸다.
- * - 형식 검사는 {@link #validationError()}로 하며 실패하면 400이 아니라 REJECTED(WPF_INVALID_RESULT)로 돌려준다
+ * - 형식 검사는 {@link #validationError()}로 하며 실패하면 400이 아니라 REJECTED(R4000(INVALID_RESULT))로 돌려준다
  *   (WPF가 같은 요청을 반복 재전송하지 않도록 항목 단위로 판정). 유형별 필수 블록(hideDays/answers/video)은 서비스가 검사한다.
  *
  * @param resultId   결과 멱등 키(UUID). 재전송 시 유지

@@ -40,6 +40,10 @@ VERSIONS = [
         '장애 복구 주기: 10초 간격 3회 × 3사이클(사이클 사이 30분), 이후 1시간마다 1회. 1회 재인증 후에도 401이면 같은 복구.',
         '정의서 정리: JSON 위치 전체 경로·오름차순, 작업 라벨 제거, 삭제·폐기 항목 제외, 계약서 기준으로 기본값 정정(동영상+퀴즈 completionRatio 0.8).',
     ]),
+    ('v3.9', '2026-11-17', [
+        '응답 code를 폐쇄망 코드 컬럼 VARCHAR2(5 BYTE)에 맞춰 5자 코드로 변경(HTTP 오류 E4000·E4010·E4030·E4260·E5000, 결과 R2001·R4000~R4006·R5000·R5030). HTTP 500과 결과 INTERNAL_ERROR 코드 분리. WPF 판정(HTTP 상태·status)은 변경 없음.',
+        '서버 구현 참고에 장애별 분기 정의서(docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md) 연결.',
+    ]),
 ]
 
 # ---------------------------------------------------------------- 계약서 파싱
@@ -342,13 +346,13 @@ FLOW = [
 
 ERROR_HANDLING = [
     ['저장 완료 / 같은 resultId 처리 완료', '200', 'ACCEPTED / DUPLICATE', '-', '삭제하고 nextStatus를 따른다'],
-    ['업무 검증 오류(필수 누락, 알 수 없는 resultType, 범위 밖 값 등)', '200', 'REJECTED', 'WPF_INVALID_RESULT 등', '사유를 기록하고 삭제. 다음 결과 전송·조회는 계속'],
-    ['검증 통과 후 원인 미확정 오류', '200', 'INTERNAL_ERROR', 'WPF_INTERNAL', '보관 후 같은 resultId 재전송. 3회에 이르면 삭제하고 조회 허용'],
-    ['확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃)', '200', 'RETRYABLE_ERROR', 'WPF_RETRYABLE', '보관 후 복구 주기로 같은 resultId 재전송'],
-    ['요청 JSON 문법·역직렬화 오류', '400', '-', 'WPF_BAD_REQUEST', '다시 보내도 같으므로 종결·삭제. 다음 결과 전송·조회는 계속'],
+    ['업무 검증 오류(필수 누락, 알 수 없는 resultType, 범위 밖 값 등)', '200', 'REJECTED', 'R4000(INVALID_RESULT) 등', '사유를 기록하고 삭제. 다음 결과 전송·조회는 계속'],
+    ['검증 통과 후 원인 미확정 오류', '200', 'INTERNAL_ERROR', 'R5000(RESULT_INTERNAL)', '보관 후 같은 resultId 재전송. 3회에 이르면 삭제하고 조회 허용'],
+    ['확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃)', '200', 'RETRYABLE_ERROR', 'R5030(RETRYABLE)', '보관 후 복구 주기로 같은 resultId 재전송'],
+    ['요청 JSON 문법·역직렬화 오류', '400', '-', 'E4000(BAD_REQUEST)', '다시 보내도 같으므로 종결·삭제. 다음 결과 전송·조회는 계속'],
     ['응답 내용이 잘못됨(빈 본문·JSON 오류·resultId 불일치·status 누락·모르는 값)', '200', '-', '-', '같은 resultId 3회까지 재전송, 3회에 이르면 삭제하고 조회 허용'],
-    ['인증 실패(1회 재인증 후에도 401)', '401', '-', 'WPF_UNAUTHORIZED', '보관하고 조회를 미룬 뒤 복구 주기로 재전송'],
-    ['클라이언트 버전 미지원', '426', '-', 'CLIENT_VERSION_NOT_SUPPORTED', '전송을 멈추고 업데이트 안내 후 종료'],
+    ['인증 실패(1회 재인증 후에도 401)', '401', '-', 'E4010(UNAUTHORIZED)', '보관하고 조회를 미룬 뒤 복구 주기로 재전송'],
+    ['클라이언트 버전 미지원', '426', '-', 'E4260(E4260(CLIENT_VERSION_NOT_SUPPORTED))', '전송을 멈추고 업데이트 안내 후 종료'],
     ['그 밖의 실패(5xx·응답 없음·타임아웃·연결 끊김)', '그 밖의 4xx·5xx / 응답 없음', '-', '-', '보관하고 조회를 미룬 뒤 복구 주기로 재전송'],
 ]
 
@@ -622,11 +626,11 @@ def build(version, date):
     w.code('응답 예시', code_block(LINES, '"nextStatus": "AVAILABLE"'), col_to=3)
     w.section('서버 오류 응답과 WPF 판정 기준')
     w.notes([
-        "HTTP 오류 | 서버가 HTTP 상태 코드와 오류 본문 code·message를 반환한다. WPF는 HTTP 상태 코드로 분기하고 본문은 진단에 사용한다. 예: HTTP 500 + {\"code\":\"WPF_INTERNAL\",\"message\":\"서버 처리 중 오류가 발생했습니다.\"}",
-        "결과 응답 | 서버가 HTTP 성공 응답에 요청과 같은 resultId와 status를 담는다. WPF는 resultId 일치 여부와 status로 종결·재전송을 판단한다. 예: HTTP 200 + {\"resultId\":\"r-001\",\"status\":\"INTERNAL_ERROR\",\"code\":\"WPF_INTERNAL\"}",
-        "같은 오류 코드의 구분 | HTTP 500의 WPF_INTERNAL은 HTTP 실패 경로로 처리한다. 결과 저장 중이면 결과를 보관하고 조회를 보류한다. HTTP 200의 INTERNAL_ERROR는 해당 상태를 3회 받으면 큐에서 삭제한다. WPF는 message의 문구로 상태를 판정하지 않는다.",
+        "HTTP 오류 | 서버가 HTTP 상태 코드와 오류 본문 code·message를 반환한다. WPF는 HTTP 상태 코드로 분기하고 본문은 진단에 사용한다. 예: HTTP 500 + {\"code\":\"E5000\",\"message\":\"서버 처리 중 오류가 발생했습니다.\"}",
+        "결과 응답 | 서버가 HTTP 성공 응답에 요청과 같은 resultId와 status를 담는다. WPF는 resultId 일치 여부와 status로 종결·재전송을 판단한다. 예: HTTP 200 + {\"resultId\":\"r-001\",\"status\":\"INTERNAL_ERROR\",\"code\":\"R5000\"}",
+        "같은 오류 코드의 구분 | HTTP 500의 R5000(RESULT_INTERNAL)은 HTTP 실패 경로로 처리한다. 결과 저장 중이면 결과를 보관하고 조회를 보류한다. HTTP 200의 INTERNAL_ERROR는 해당 상태를 3회 받으면 큐에서 삭제한다. WPF는 message의 문구로 상태를 판정하지 않는다.",
         "조회 응답 처리 장애 | WPF가 HTTP 200 조회 응답의 JSON 파싱·변환·표시 실패를 감지하면 장애 결과 요청을 만든다. 예: {\"resultId\":\"r-002\",\"resultCode\":400,\"resultDesc\":\"조회 응답 JSON 파싱 실패\"}. resultDesc는 UTF-8 최대 1,000 Byte, 확보한 popupId·deliveryId만 포함한다.",
-        "서버 구현 참고 | 장애별 분기 정의서 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md(Excel SERVER_ERROR_BRANCH_v1.0.xlsx)와 WpfApiExceptionHandler(HTTP 예외 매핑)·WpfResultFailures(결과 status 분류)를 함께 확인한다.",
+        "서버 구현 참고 | 장애별 분기 정의서 docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md(Excel SERVER_ERROR_BRANCH_v1.1.xlsx)와 WpfApiExceptionHandler(HTTP 예외 매핑)·WpfResultFailures(결과 status 분류)를 함께 확인한다.",
         "WPF 구현 참고 | PopupApiService.EnsureWpfSuccessAsync의 HTTP 상태 처리와 PopupResultQueue.Settle의 결과 판정을 확인한다.",
     ])
 

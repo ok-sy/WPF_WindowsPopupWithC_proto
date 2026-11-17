@@ -724,7 +724,7 @@ public class PopupService {
      * POL-06-02 : 선택·제출
      * ■ 복수 선택 최소·최대 선택 수 제출 검증(PU001 B-4)
      * - in : question(PopupQuestionEntity) 문항(minSelections·maxSelections) · count(int) 선택한 선택지 수
-     * - out: 없음 · 예외: IllegalArgumentException("문항" 포함 → WPF_INVALID_ANSWER)
+     * - out: 없음 · 예외: IllegalArgumentException("문항" 포함 → R4005(INVALID_ANSWER))
      * - WPF 화면 제한(최대 도달 시 비활성, 최소 미달 시 제출 불가)과 같은 기준을 서버에서도 확인한다.
      *   최대: count ≤ max. 최소: 필수 문항은 max(1, min) 이상, 선택 문항은 0개(미응답) 또는 min 이상.
      *   값이 null이면 제한 없음. 저장 시 SURVEY MULTIPLE_CHOICE에만 값이 들어가므로(QUIZ는 NULL) 유형을 다시 보지 않는다.

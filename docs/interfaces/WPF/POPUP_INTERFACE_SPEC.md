@@ -5,7 +5,7 @@
 - 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
-- 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`WPF_INVALID_ANSWER`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
+- 3.7 보완(2026-11-03, PU001 B-4 SURVEY 선택 수 서버 검증): 요청·응답 JSON 변경 없음. 백엔드가 SUBMITTED 수신 시 SURVEY `MULTIPLE_CHOICE`의 `minSelections`·`maxSelections`를 WPF 화면과 같은 기준(최대 이하, 필수 문항은 max(1, 최소) 이상, 선택 문항은 0개 또는 최소 이상)으로 검증하고 위반 시 `REJECTED`(`R4005(INVALID_ANSWER)`). 2026-10-29의 "서버 결과 수신은 선택 수를 검사하지 않음"을 대체.
 - 3.7 보완(2026-11-03, PU001 B-1 서버 재채점 제거): 요청·응답 JSON 변경 없음. 백엔드는 QUIZ 답안을 다시 채점하지 않고 WPF `score`·`passed`만 저장·완료 판정에 쓴다. 채점 불일치 경고 로그를 없애고, 문항 상세(`POPUP_RESPONSE_ANSWER`)의 문항별 점수·정오답은 null로 저장한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복, 필수 답안)과 `score`·`passed` 누락 거절은 유지(§10.6).
 - 3.7 보완(2026-11-05, 폐쇄망 로그인 경로): 폐쇄망 SSO 로그인 경로를 `p/api/ssoLogin`에서 `p/api/auth/sso/login`으로 변경(이전 경로 폐기). SSO 사용자 식별 → 로그인 → Bearer 토큰 흐름과 요청 JSON은 변경 없음. 아래 이전 보완 항목의 경로는 당시 기록이다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-04, 로그인 토큰 위치): WPF-00 응답의 토큰을 응답 헤더 `x-custom-authorization`에서 먼저 읽고, 없으면 본문 `accessToken`을 사용하도록 명시. 폐쇄망 `p/api/ssoLogin`은 헤더로 토큰을 주고 본문은 프로필 메시지다. 요청 JSON 변경 없음. Word·PDF·Excel은 미갱신.
@@ -16,13 +16,13 @@
 - 2026-10-18 초안(TODO55, 확정 전 · 서버 미반영): SURVEY·QUIZ 서식 필드 `content.surveyTitleBlocks`·`content.descriptionBlocks`·`questions[].titleBlocks`·`questions[].descriptionBlocks`·`options[].textBlocks`(§8.4.1). WPF 표시만 구현했으며 서버 저장·관리자 편집은 인계 대기. 산출물(Excel·Word·PDF)에는 확정 후 반영.
 - 2026-10-18 보완(버전 번호 3.7 유지, TODO52-2·53-5): 나중에 보기 추가. 조회 응답 `popup.showLater`(boolean, 기본 false)로 Footer "나중에 보기" 버튼을 표시하고, 누르면 결과 `resultType=LATER`를 보낸다. 서버는 모든 유형에서 완료 처리 없이 전달 건 재노출 유예(`pollingIntervalSeconds`)만 적용해 다음 조회 주기에 다시 표시한다. 기존 `showDoNotShowAgain`·`HIDDEN`·`hideDays`는 변경 없음. Excel·Word·PDF 산출물도 2026-10-18에 이 기준으로 동기화.
 - 2026-10-17 보완(버전 번호 3.7 유지, 설계 53-16): 일반 VIDEO의 시청 기준 도달도 동영상+퀴즈·서버와 같은 4자리 내림 식으로 판정. 동영상+퀴즈는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않음. JSON 필드 변경 없음.
-- 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `WPF_NOT_ELIGIBLE` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
+- 2026-10-14~15 보완(버전 번호 3.7 유지): TEXT `textBlocks[].indent`(0~5, 단계당 40, 설계 49) 추가. TEXT 허용 정책은 서버 저장 검증, WPF는 표시 방어만 수행(설계 48). `sizeMode=AUTO`는 WPF 전용 값으로 서버 응답에 나오지 않음, `isRequired`는 서버가 항상 출력, 결과 `video.durationSeconds`는 0.001 이상, 결과 code `R4003(NOT_ELIGIBLE)` 기준 보완, Footer 제출 버튼·완료 전 닫기 사유 표시 정리(설계 43·44·50). Excel·Word·PDF 산출물은 2026-10-17에 이 기준으로 동기화(TODO53-1·53-2).
 - 3.7 보완(2026-10-22, TODO68): 팝업 최종 창 최소 크기 300 x 300 공통화(웹 CSS px, WPF DIP — DPI 배율에 따라 물리 픽셀 수는 다름). 관리자 저장 시 `minimumWidth`·`minimumHeight`는 축별 300 이상만 허용(299 거절), WPF 누락 기본값 480/320 → 300/300. WPF·미리보기는 300 미만 기존 데이터를 300으로 올리고, 비IMAGE 최대값이 300보다 작은 모순 값은 하한까지 올려 계산한다. 작업 영역이 300보다 작으면 화면 안 배치를 우선한다. 기본 창 크기 width/height(900×620, 관리자 신규 560×420)·IMAGE width/height 의미·FULLSCREEN 동작은 변경 없음. JSON 필드 추가 없음.
 - 3.7 보완(2026-10-22, TODO66): 관리자 공용 서식 편집기(TEXT·SURVEY·QUIZ)의 CKEditor 툴바 `서식 지우기`와 우클릭/서식 패널의 `서식 초기화`·`색 초기화(기본 색)` 버튼 삭제. 글자·문단 서식은 개별 버튼과 글꼴/크기 기본값 선택으로 되돌린다. JSON 필드·저장값·WPF 표시 변경 없음.
 - 3.7 보완(2026-10-21, 배점 기본값): QUIZ `questionScore` 기본값을 1점으로 통일 — 관리자 저장 시 비우면 서버가 1점으로 저장하고, WPF·관리자 미리보기도 누락/null을 1점으로 계산한다(이전: 저장 거부·0점). 관리자 편집기 새 문항 기본 1점, '배점 모두 1점' 버튼으로 총점 = 문항 수로 맞춘다. 입력한 배점·채점 규칙(정답 집합 일치, 부분 점수 없음)은 그대로다.
 - 3.7 보완(2026-10-21, TODO52-1): 관리자 API에 게시 기간 안 노출 일정 추가 — `periodMode`(`FIXED` 상시 / `SCHEDULE` 요일·시간대 지정), `repeatDayOfWeek`(ISO 번호 `1,3,5`, 1=월, 비면 매일), `displayTimes[]`(`{startTime, endTime}` HH:mm, 개수 제한 없음, 없으면 종일, 종료 < 시작이면 자정 초과·요일은 시작 기준). 서버가 KST로 판단해 후보에서 거르며 WPF 조회 응답·결과 계약은 바뀌지 않는다(요일·시간대 미포함). 반복은 미완료 팝업의 노출 가능 일정이며 완료·HIDDEN·LATER 의미는 그대로다. 결과 제출 재검증에는 일정을 적용하지 않아 시간대 종료 후 닫힌 팝업의 결과도 정상 처리한다. DB `18_popup_display_time_oracle.sql`.
 - 3.7 보완(2026-11-11, TODO45 장애 결과): 결과 API에 장애 결과 추가 — 조회 응답 처리 실패 시 `resultCode=400`·`resultDesc`(UTF-8 1,000 Byte)·확보한 `deliveryId`·`popupId`만, `resultType` 없음(§10.10). 일반 결과 필드·필수 조건은 변경 없음. Excel·Word·PDF와 ERD 스냅샷은 2026-11-11 동기화(TODO45 45-7).
-- 3.7 보완(2026-11-10, TODO73 §10 UTF-8 BYTE): 결과 `answers[].textAnswer`는 UTF-8 1,000 Byte 이하(WPF 입력·제출 전 제한, 폐쇄망 DB `VARCHAR2(1000 BYTE)`). SURVEY·QUIZ `options[].text`는 관리자 웹에서 UTF-8 300 Byte 이하로 입력·저장 전 확인(폐쇄망 DB `VARCHAR2(300 BYTE)`, 같은 컬럼이라 설문은 2026-11-11 확대). 문항 제목은 CLOB이라 제한 없음. 필드·형식 변경 없음. 서버도 저장 전에 같은 바이트 상한을 확인해 넘으면 거부한다(자르지 않음). WPF-03 `textAnswer`(trim 후)는 400 `WPF_BAD_REQUEST`, 관리자 저장 API(`/apis/popup/**`)는 2026-11-11부터 입력 검증 오류(`IllegalArgumentException`·`@Valid`·본문 해석 실패)를 HTTP 400 + 기존 응답 형식(`msgClsf=ER`, `msgId=FW00000003`, `msgCn`=검증 문구 예 `… (현재 301 Byte)`)으로 응답한다(이전에는 500). 그 밖의 서버 오류는 500 그대로. 로컬 스키마는 바꾸지 않았다.
+- 3.7 보완(2026-11-10, TODO73 §10 UTF-8 BYTE): 결과 `answers[].textAnswer`는 UTF-8 1,000 Byte 이하(WPF 입력·제출 전 제한, 폐쇄망 DB `VARCHAR2(1000 BYTE)`). SURVEY·QUIZ `options[].text`는 관리자 웹에서 UTF-8 300 Byte 이하로 입력·저장 전 확인(폐쇄망 DB `VARCHAR2(300 BYTE)`, 같은 컬럼이라 설문은 2026-11-11 확대). 문항 제목은 CLOB이라 제한 없음. 필드·형식 변경 없음. 서버도 저장 전에 같은 바이트 상한을 확인해 넘으면 거부한다(자르지 않음). WPF-03 `textAnswer`(trim 후)는 400 `E4000(BAD_REQUEST)`, 관리자 저장 API(`/apis/popup/**`)는 2026-11-11부터 입력 검증 오류(`IllegalArgumentException`·`@Valid`·본문 해석 실패)를 HTTP 400 + 기존 응답 형식(`msgClsf=ER`, `msgId=FW00000003`, `msgCn`=검증 문구 예 `… (현재 301 Byte)`)으로 응답한다(이전에는 500). 그 밖의 서버 오류는 500 그대로. 로컬 스키마는 바꾸지 않았다.
 - 3.7 보완(2026-10-29, SURVEY 선택 수): SURVEY `MULTIPLE_CHOICE` 문항에 `minSelections`·`maxSelections`(정수, null·생략 = 제한 없음) 추가. 관리자 저장 시 1~선택지 수·최소 ≤ 최대를 검증하고 QUIZ·단일 선택·주관식에는 저장할 수 없다. WPF·관리자 미리보기는 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항은 max(1, 최소), 선택 문항은 0개 또는 최소 이상), 안내 문구 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도 유지, 서버 결과 수신은 선택 수를 검사하지 않음(2026-11-03 B-4로 서버 검증 추가, 위 항목). DB 19 스크립트(`POPUP_QUESTION.MIN_SELECTIONS`·`MAX_SELECTIONS`). Excel·Word·PDF 산출물 미반영.
 - 3.7 보완(2026-10-21, TODO52-5): QUIZ `MULTIPLE_CHOICE`는 응답자가 정답 선택지 수(`options[].isCorrect=true` 개수)까지만 선택할 수 있다. 한도에 닿으면 남은 선택지는 비활성화되고 제목 끝에 `최대 N개 선택`을 안내한다. 새 JSON 필드 없이 기존 `isCorrect`로 WPF·관리자 미리보기가 같은 규칙을 적용하며 SURVEY 복수 선택은 제한이 없다. 서버 저장·채점 규칙 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
 - 3.7 보완(2026-10-21, TODO63): 문단 `indent`의 최대 5단계 제한 해제 — 0 이상 정수(서버 int 범위), 1단계 40·누락/0 키 생략은 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. WPF 표시 방어의 400(10단계) 상한도 제거해 11단계 이상이 0으로 돌아가지 않음. DB DDL 변경 없음. Excel·Word·PDF 산출물은 당시 미반영이며 2026-10-22에 동기화했다.
@@ -30,7 +30,7 @@
 - 3.7 보완(2026-10-29): TEXT content에서 강조 문구 `highlightText`·`showHighlight` 제거. WPF·관리자 웹은 두 키를 읽거나 표시하지 않고(기존 데이터에 남아 있어도 무시), 관리자 웹은 저장 시 보내지 않는다. 서버 인계 샘플 기본값에서도 제거. DB DDL 변경 없음(CONTENT_OPTIONS JSON 키).
 - 3.7 보완(2026-10-21, TODO62): 공용 Run에 선택 boolean `strikethrough` 추가(누락·false = 취소선 없음). 밑줄과 동시 표시 지원. CKEditor·우클릭 패널에 취소선과 문단 정렬·들여쓰기 제공, 하단 서식 초기화는 글자 서식만 제거하고 정렬·들여쓰기 유지. TEXT 및 SURVEY·QUIZ의 모든 서식 필드에 동일 적용. DB DDL 변경 없음.
 - 3.7 변경(2026-10-13, 설계 39): 통합 전 TEXT 중 제목·설명은 보이고 본문은 숨겼던 행(`showPlainText=false`)은 **헤더만 보이기** — 보이던 제목·설명만 본문 문단으로 만들고 숨긴 본문은 응답에서 빼며 `showPlainText=true`로 보낸다(관리자 재저장 시 숨긴 본문 삭제). 조회·결과 처리는 사용자 단위로 직렬화하여 같은 결과의 동시 제출은 DUPLICATE, 결과 커밋 전 조회는 커밋 후 상태로 후보를 고른다. 클라이언트는 큐 파일을 읽을 수 없으면 조회를 보류하고, 복구 재전송 결과의 nextStatus(EMPTY)도 따른다.
-- 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `WPF_INVALID_DELIVERY`·`WPF_DELIVERY_COMPLETED`와 후보 확인 실패 code `WPF_NEXT_STATUS_UNKNOWN` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
+- 3.7 변경(2026-10-13, 설계 35): WPF-01·WPF-02를 목록·일괄 구조에서 **단건 순차 구조**로 교체. 조회는 `POST /api/wpf/popups`(본문 `{}`)이며 응답은 `pollingIntervalSeconds`와 지금 표시할 팝업 1건 `popup`(없으면 키를 유지하고 `null`)뿐이다. ROOT `serverTime`·`userId`·`popups[]` 제거. `popup`에 서버 발급 전달 건 ID `deliveryId`를 추가하고, 표시 순서는 서버가 정하므로 `displayOrder`를 응답에서 제거(관리자 설정·서버 정렬 기준은 유지). 결과 요청은 envelope(`clientRequestId`·`sentAt`·`results[]`) 없이 결과 1건 객체이며 `deliveryId` 필수, 기존 결과 필드는 그대로다. 결과 응답은 `resultId`·`status`·`nextStatus`(AVAILABLE/EMPTY)·`code`·`message` 단건이며 `results[]`·항목 `popupId`·`resultType` 제거. 거절 code `R4001(INVALID_DELIVERY)`·`R4002(DELIVERY_COMPLETED)`와 후보 확인 실패 code `R2001(NEXT_STATUS_UNKNOWN)` 추가. TEXT·IMAGE의 CLOSED는 완료로 처리하고, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 저장 시각부터 `pollingIntervalSeconds` 동안 재노출 유예. 미전송 결과 복구는 주간회의 결정 전 임시 기준(§12.1).
 - 3.7 변경(2026-10-13, 설계 37): TEXT content에서 `contentTitle`·`description`·`showContentHeader` 제거. 콘텐츠 제목·설명은 서식 본문 `textBlocks`의 앞 문단으로 작성하며 `plainText`도 같은 순서의 일반 문자열이다. 서버는 TEXT 저장 시 받은 제목·설명을 사용하지 않고, 통합 전 저장 데이터는 조회 시 본문 앞 문단으로 합쳐 보낸다(제목 문단: 굵게·크기 24, `showContentHeader=false`였던 행은 제외). WPF는 TEXT content의 세 키를 읽지 않는다. IMAGE·VIDEO·SURVEY·QUIZ의 제목·설명과 공통 `title`은 변경 없음.
 - 3.7 변경(2026-10-12, 설계 29): 목록 `popups[]`에서 서버 내부 판정 값 `displayStartAt`·`displayEndAt`(및 서버가 보내던 `periodMode`·`repeatInterval`·`repeatDayOfWeek`·`repeatDayOfMonth`) 제거. Footer 버튼 표시 이름을 `showFooterButton`으로 통일하고 legacy `showCloseButton` 수신 별칭 삭제. ROOT `serverTime`·`userId`는 진단용으로 유지. (설계 35에서 단건 구조로 대체)
 - 3.7 변경(2026-10-12, 설계 34): 결과 응답에서 ROOT `receivedAt`과 `popupStatus`·`completed`·`completedAt`·`responseId` 제거(WPF·로그 미사용). 결과 항목 status에 `RETRYABLE_ERROR`(확인된 일시 장애)·`INTERNAL_ERROR`(원인 미확정) 추가. WPF는 ACCEPTED·DUPLICATE·REJECTED만 큐에서 제거하고 나머지·응답 누락은 같은 resultId로 재전송. 결과 응답에서 `hiddenUntil`·`watchedRatio`·`requiredRatio` 제거. 설문·퀴즈에 CLOSE·LINK_AND_CLOSE 명시값은 백엔드 등록 단계에서 거부.
@@ -367,7 +367,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 |---|---|---|
 | 로그인 accessToken | 공백 아닌 토큰 | 로그인 단계에서 명시적으로 거부 |
 | popup | 팝업 1건 객체. 대상 없음은 키를 유지하고 null | 생략·null 모두 표시 대상 없음으로 처리하고 조회 간격 뒤 다시 조회 |
-| deliveryId | popup이 있으면 공백 아닌 서버 발급 ID | 빈 값이어도 화면은 표시되지만 결과 요청의 deliveryId가 비어 서버가 `REJECTED`(`WPF_INVALID_RESULT`)로 거절 |
+| deliveryId | popup이 있으면 공백 아닌 서버 발급 ID | 빈 값이어도 화면은 표시되지만 결과 요청의 deliveryId가 비어 서버가 `REJECTED`(`R4000(INVALID_RESULT)`)로 거절 |
 | popupId | 공백 아닌 고유 ID. 서버 저장 기준 1~50자 | 빈 값도 생성 가능하지만 결과 수집 연결을 건너뛰므로 CLOSED/HIDDEN/SUBMITTED 등이 전송되지 않음 |
 | popupType | TEXT / IMAGE / VIDEO / SURVEY / QUIZ | 누락·미지원 값은 Factory 오류. null도 처리 실패 |
 | content | 유형별 object. null 금지 | 생략·null·잘못된 형식이면 화면 생성 실패. {}는 필수 내용까지 보장하지 않음 |
@@ -841,7 +841,7 @@ passingScore 이상
 | questionType | string | O | 없음 | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. QUIZ MULTIPLE_CHOICE는 정답 선택지 수까지만 선택 가능(TODO52-5, 별도 필드 없음) |
 | optionLayout | string | 선택 | `VERTICAL` | VERTICAL / HORIZONTAL |
 | minSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최소 선택 수. 필수 문항은 max(1, 값)개 이상이 응답 완료, 선택 문항은 0개 또는 값 이상이어야 제출 가능. 1~선택지 수, ≤ maxSelections. QUIZ·단일 선택·주관식에는 없음(2026-10-29) |
-| maxSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최대 선택 수. 한도 도달 시 남은 선택지 비활성. QUIZ는 이 필드 대신 정답 수가 한도. 서버도 결과 수신 시 최소·최대 선택 수를 같은 기준으로 검증하며 위반은 `REJECTED`(`WPF_INVALID_ANSWER`)(2026-11-03, PU001 B-4) |
+| maxSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최대 선택 수. 한도 도달 시 남은 선택지 비활성. QUIZ는 이 필드 대신 정답 수가 한도. 서버도 결과 수신 시 최소·최대 선택 수를 같은 기준으로 검증하며 위반은 `REJECTED`(`R4005(INVALID_ANSWER)`)(2026-11-03, PU001 B-4) |
 | isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
 | isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
 | questionScore | number | 채점 QUIZ | `null` → 기본 1점 | 문항 배점. 관리자 저장 시 비우면 서버가 1점으로 저장한다. 모두 1점이면 총점 = 문항 수 |
@@ -1039,7 +1039,7 @@ VIDEO_WATCHED
 
 현재 WPF는 합격이 필요한 QUIZ(`requiresPassing=true`)는 통과한 경우만 SUBMITTED 하고, 참여형(`requiresPassing=false`)은 미달이어도 `passed: false`로 SUBMITTED 한다(PU001 §7).
 
-`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). QUIZ 점수·합불 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장한다(설계 33). 완료 처리는 `passed`와 무관하게 유효한 SUBMITTED이면 완료다(2026-11-09 PU001 §7, 이전의 `passed` 기반 완료 판정 대체). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`WPF_INVALID_RESULT`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
+`score`·`passed`는 QUIZ SUBMITTED에서 필수다. 백엔드는 답안을 다시 채점하지 않으며 문항 상세의 문항별 점수·정오답은 저장하지 않는다(null, 2026-11-03 PU001 B-1 — 이전 설계 34-16의 진단값 저장 폐지). QUIZ 점수·합불 판정은 WPF 책임이며 백엔드는 두 값을 그대로 저장한다(설계 33). 완료 처리는 `passed`와 무관하게 유효한 SUBMITTED이면 완료다(2026-11-09 PU001 §7, 이전의 `passed` 기반 완료 판정 대체). 값이 없거나 score가 음수·비정상 수이면 `REJECTED`(`R4000(INVALID_RESULT)`)로 처리한다. 답안 형식 검증(문항·선택지 소속, 단일 선택 수, 중복 선택지, 필수 답안)은 채점과 별개로 유지한다. SURVEY에는 보내지 않는다.
 
 동영상+퀴즈의 SUBMITTED는 위 `answers`·`score`·`passed`와 함께 §10.7의 `video` 블록을 같은 결과에 넣는다. 백엔드는 영상 블록과 시청 기준을 확인한 뒤 답안을 저장하며, 시청 기준 미달 또는 영상 블록 누락 시 제출을 거절한다. 영상 시청만으로 퀴즈 완료 상태를 갱신하지 않는다.
 
@@ -1129,7 +1129,7 @@ WPF가 HTTP 200 조회 응답을 처리하지 못하면(빈 본문, JSON 구문�
 | 항목 | 규칙 |
 |---|---|
 | 필수 | `resultId`(WPF 생성, 재전송 시 같은 ID·본문)·`resultCode=400`·`resultDesc` |
-| `resultType` | 보내지 않는다(임의 `CLOSED` 금지). 값이 있으면 `REJECTED`(`WPF_INVALID_RESULT`) |
+| `resultType` | 보내지 않는다(임의 `CLOSED` 금지). 값이 있으면 `REJECTED`(`R4000(INVALID_RESULT)`) |
 | `deliveryId`·`popupId` | 확보한 값만 보낸다. JSON 구문 오류로 읽지 못하면 생략. 별도 조회 추적 ID는 쓰지 않는다 |
 | `resultDesc` | UTF-8 1,000 Byte 이하(초과는 `REJECTED`). WPF는 문자 중간을 자르지 않고 앞쪽(핵심 오류·JSON 위치)을 남긴다 |
 | 서버 처리 | 사용자 처리 결과가 아니므로 완료·숨김·표시 정보를 바꾸지 않는다. `deliveryId`가 있으면 소유·팝업 일치·미종료를 확인하고 그 전달 건만 `RESULT_TYPE=ERROR`로 종료해 `pollingIntervalSeconds` 동안 재노출을 유예한다. 없으면 전달 건을 건드리지 않고 영수증(`WPF_RESULT_RECEIPT`: `RESULT_TYPE=ERROR`·`RESULT_CODE=400`·`RESULT_DESC`)만 남긴다 |
@@ -1159,7 +1159,7 @@ HTTP 오류(400·401·403·5xx 등)로 받은 조회 응답은 장애 결과 대
 | resultId | string | O | 없음 | 요청 resultId와 동일 |
 | status | string | O | 없음 | ACCEPTED / DUPLICATE / REJECTED / RETRYABLE_ERROR / INTERNAL_ERROR. 저장·처리 상태 |
 | nextStatus | string | status가 ACCEPTED·DUPLICATE일 때 | 생략 | AVAILABLE(즉시 다음 조회) / EMPTY(남은 후보 없음, 조회 간격 대기). 거절·실패 응답에는 없음. 저장은 됐으나 후보 확인이 실패하면 생략(EMPTY로 보내지 않음) |
-| code | string | 선택 | 생략 | 거절·실패 사유 코드, 또는 ACCEPTED·DUPLICATE의 후보 확인 실패 `WPF_NEXT_STATUS_UNKNOWN`. 값은 아래 "code 값" 표 |
+| code | string | 선택 | 생략 | 거절·실패 사유 코드, 또는 ACCEPTED·DUPLICATE의 후보 확인 실패 `R2001(NEXT_STATUS_UNKNOWN)`. 값은 아래 "code 값" 표 |
 | message | string | 선택 | 생략 | 거절·실패 설명(내부 오류 상세는 노출하지 않음) |
 
 이전 일괄 응답의 `results[]`와 항목 `popupId`·`resultType`은 삭제했다(설계 35).
@@ -1168,7 +1168,7 @@ HTTP 오류(400·401·403·5xx 등)로 받은 조회 응답은 장애 결과 대
 {
   "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
   "status": "REJECTED",
-  "code": "WPF_INVALID_DELIVERY",
+  "code": "R4001",
   "message": "유효한 전달 건이 아닙니다. deliveryId=d6a1f0c2-5b7e-4c3a-8e9d-2f4b6a8c0e11"
 }
 ```
@@ -1177,7 +1177,7 @@ HTTP 오류(400·401·403·5xx 등)로 받은 조회 응답은 장애 결과 대
 {
   "resultId": "7be7d5e2-b821-4f9b-92ff-d21a858d86ef",
   "status": "ACCEPTED",
-  "code": "WPF_NEXT_STATUS_UNKNOWN",
+  "code": "R2001",
   "message": "결과는 저장했으나 다음 팝업 유무를 확인하지 못했습니다."
 }
 ```
@@ -1194,23 +1194,22 @@ HTTP 오류(400·401·403·5xx 등)로 받은 조회 응답은 장애 결과 대
 
 ### code 값
 
-현재 저장소 서버(WpfPopupController·WpfPopupService)가 결과 응답에 넣는 code다. WPF는 code를 로그에만 남기고 큐 처리는 `status`로만 결정하므로, 백엔드는 code를 진단용으로 확장할 수 있다.
+현재 저장소 서버(WpfPopupController·WpfPopupService)가 결과 응답에 넣는 code다. **code는 VARCHAR2(5 BYTE) 안에 들어가는 ASCII 5자**(구분 1자 + HTTP 상태 기반 3자리 + 일련 1자리, E = HTTP 오류 본문, R = HTTP 200 결과 응답)이며, 괄호 안은 의미 이름이다(응답에는 넣지 않음). 코드표 원본은 서버 `WpfResponseCodes`이고, 2026-11-17 이전 이름형 코드(`WPF_INVALID_DELIVERY` 등)를 대체했다. WPF는 code를 로그에만 남기고 큐 처리는 `status`로만 결정하므로, 백엔드는 code를 진단용으로 확장할 수 있다.
 
 | status | code | 의미 |
 |---|---|---|
-| REJECTED | WPF_INVALID_RESULT | 결과 형식 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
-| REJECTED | WPF_INVALID_DELIVERY | 유효한 전달 건이 아님(존재하지 않는 deliveryId, 다른 사용자의 전달 건, 전달 건의 팝업과 popupId 불일치) |
-| REJECTED | WPF_DELIVERY_COMPLETED | 다른 resultId의 결과가 이미 저장된 전달 건(같은 resultId 재전송은 DUPLICATE) |
-| REJECTED | WPF_NOT_ELIGIBLE | 해당 사용자에게 제출·기록 가능한 팝업이 아님(비활성 사용자, 팝업 행 없음, 유효한 영상 팝업 아님). 결과 수용은 유효한 전달 건(`deliveryId`의 사용자·popupId 일치, 미완료)을 기준으로 하며 팝업의 현재 활성·게시 기간·대상 여부는 다시 보지 않는다 — 게시중단 전에 표시된 건(EXPIRED 전달 건 포함)의 결과는 수용(설계 47-4·50 A9) |
-| REJECTED | WPF_TYPE_MISMATCH | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
-| REJECTED | WPF_INVALID_ANSWER | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지, SURVEY 복수 선택 최소·최대 선택 수 위반 등) |
-| REJECTED | WPF_INVALID_HIDE_DAYS | 현재 서버에서는 발생하지 않음(범위 밖 hideDays는 요청 형식 검사에서 WPF_INVALID_RESULT, 누락도 WPF_INVALID_RESULT) |
-| REJECTED | WPF_INVALID_VIDEO | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
-| RETRYABLE_ERROR | WPF_RETRYABLE | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
-| INTERNAL_ERROR | WPF_INTERNAL | 원인 미확정 내부 오류. 검증 통과 후 변환 단계의 예상하지 못한 예외 포함 |
-| ACCEPTED·DUPLICATE | WPF_NEXT_STATUS_UNKNOWN | 결과는 저장했으나 다음 후보 확인 실패. `nextStatus` 생략. WPF는 즉시 조회 |
+| REJECTED | R4000(INVALID_RESULT) | 결과 형식 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식). 업무 검증 실패 중 아래 코드로 분류되지 않은 경우(HIDDEN의 hideDays 누락, answers 0개, QUIZ score·passed 누락 등)도 이 코드 |
+| REJECTED | R4001(INVALID_DELIVERY) | 유효한 전달 건이 아님(존재하지 않는 deliveryId, 다른 사용자의 전달 건, 전달 건의 팝업과 popupId 불일치) |
+| REJECTED | R4002(DELIVERY_COMPLETED) | 다른 resultId의 결과가 이미 저장된 전달 건(같은 resultId 재전송은 DUPLICATE) |
+| REJECTED | R4003(NOT_ELIGIBLE) | 해당 사용자에게 제출·기록 가능한 팝업이 아님(비활성 사용자, 팝업 행 없음, 유효한 영상 팝업 아님). 결과 수용은 유효한 전달 건(`deliveryId`의 사용자·popupId 일치, 미완료)을 기준으로 하며 팝업의 현재 활성·게시 기간·대상 여부는 다시 보지 않는다 — 게시중단 전에 표시된 건(EXPIRED 전달 건 포함)의 결과는 수용(설계 47-4·50 A9) |
+| REJECTED | R4004(TYPE_MISMATCH) | 팝업 유형과 결과 유형 불일치(설문형 팝업 전용 제출을 다른 유형에 보냄) |
+| REJECTED | R4005(INVALID_ANSWER) | 문항·선택지·답안 검증 실패(존재하지 않는 문항·선택지, SURVEY 복수 선택 최소·최대 선택 수 위반 등) |
+| REJECTED | R4006(INVALID_VIDEO) | 영상 시청 정보 검증 실패(VIDEO+QUIZ의 video 누락·시청 비율 미달 등) |
+| RETRYABLE_ERROR | R5030(RETRYABLE) | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃 등) |
+| INTERNAL_ERROR | R5000(RESULT_INTERNAL) | 원인 미확정 내부 오류. 검증 통과 후 변환 단계의 예상하지 못한 예외 포함 |
+| ACCEPTED·DUPLICATE | R2001(NEXT_STATUS_UNKNOWN) | 결과는 저장했으나 다음 후보 확인 실패. `nextStatus` 생략. WPF는 즉시 조회 |
 
-REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무 예외 메시지를 기준으로 분류한 진단값이다. 요청 처리 자체가 실패한 오류는 결과 응답 code가 아니라 §13의 HTTP 오류 본문 code로 응답한다: JSON 구문·역직렬화 오류는 400 `WPF_BAD_REQUEST`, 인증 실패는 401 `WPF_UNAUTHORIZED`, 사용자 비활성은 403 `WPF_USER_INACTIVE`, 그 밖의 처리 실패는 500 `WPF_INTERNAL`.
+REJECTED의 세부 code(R4001(INVALID_DELIVERY)~R4006(INVALID_VIDEO))는 서버 업무 예외 메시지를 기준으로 분류한 진단값이다. 요청 처리 자체가 실패한 오류는 결과 응답 code가 아니라 §13의 HTTP 오류 본문 code로 응답한다: JSON 구문·역직렬화 오류는 400 `E4000(BAD_REQUEST)`, 인증 실패는 401 `E4010(UNAUTHORIZED)`, 사용자 비활성은 403 `E4030(USER_INACTIVE)`, 그 밖의 처리 실패는 500 `E5000(INTERNAL)`.
 
 삭제 기준은 "서버가 응답했다"가 아니라 "그 결과의 처리가 종결됐다"이다(설계 34-19~24, 35).
 
@@ -1225,7 +1224,7 @@ REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무
 | 요청 처리 실패 | 그 밖의 4xx·5xx | — | 보관·재전송. 다음 조회 보류(§12.1) |
 | 타임아웃·연결 끊김 | 응답 없음 | — | 보관·재전송. 다음 조회 보류(§12.1) |
 
-- 서버: JSON 구문·역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400 `WPF_BAD_REQUEST`, 역직렬화 후 형식 검증 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 HTTP 200의 `REJECTED`(`WPF_INVALID_RESULT`)로 응답한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 `INTERNAL_ERROR`(`WPF_INTERNAL`)로 응답한다. 처리 오류의 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 구분은 예외 형식·DB 오류 형식(원인 체인 포함)으로 하고 오류 메시지 문자열로 판단하지 않는다. 이 원칙은 두 상태의 구분에만 해당하며, 업무 검증 실패(REJECTED)의 세부 code 분류는 위 "code 값" 표와 같이 업무 예외 메시지를 기준으로 한다. 결과 저장·전달 건 종료·재노출 유예 기록과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패하면 롤백한 뒤 상태를 응답한다. `nextStatus` 후보 확인은 저장 커밋 뒤에 수행한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
+- 서버: JSON 구문·역직렬화 오류(잘못된 날짜·숫자 자료형 등)는 HTTP 400 `E4000(BAD_REQUEST)`, 역직렬화 후 형식 검증 오류(resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds의 null 요소, video 형식)는 HTTP 200의 `REJECTED`(`R4000(INVALID_RESULT)`)로 응답한다. 검증을 통과한 뒤 변환 단계에서 예상하지 못한 예외가 나면 영구 오류로 보지 않고 `INTERNAL_ERROR`(`R5000(RESULT_INTERNAL)`)로 응답한다. 처리 오류의 `RETRYABLE_ERROR`·`INTERNAL_ERROR` 구분은 예외 형식·DB 오류 형식(원인 체인 포함)으로 하고 오류 메시지 문자열로 판단하지 않는다. 이 원칙은 두 상태의 구분에만 해당하며, 업무 검증 실패(REJECTED)의 세부 code 분류는 위 "code 값" 표와 같이 업무 예외 메시지를 기준으로 한다. 결과 저장·전달 건 종료·재노출 유예 기록과 resultId 처리 기록(영수증)은 같은 트랜잭션이며 실패하면 롤백한 뒤 상태를 응답한다. `nextStatus` 후보 확인은 저장 커밋 뒤에 수행한다. 분류되지 않은 예외를 REJECTED로 반환하지 않는다.
 - WPF: 저장에 실패한 미확정 결과(닫기 취소·제출 저장 실패)는 큐에 남기지 않아 전송되지 않으며, 창이 상태를 유지하다 다음 닫기·제출 때 결과를 다시 만들어 저장한다(앱 종료 중 닫기만 메모리 보관 후 종료 직전 전송 시도). 보낸 결과와 다른 resultId 응답, 응답 누락, 알 수 없는 상태는 종결로 보지 않는다. 재전송 시 원래 resultId·deliveryId와 결과 데이터를 유지한다. 전송 시점은 시작·조회 전·팝업 닫힘 직후·종료 전이며, 미종결 결과가 남았을 때의 순서·재시도 간격은 §12.1 임시 기준을 따른다.
 
 ### 제거된 응답 필드
@@ -1249,7 +1248,7 @@ REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무
 1. `resultId`는 결과 1건 단위 멱등 키다.
 2. 동일 `resultId`가 여러 번 들어오면 업무 데이터를 중복 저장하지 않는다.
 3. 이미 처리한 결과는 `DUPLICATE`로 응답하며 저장 성공과 같이 `nextStatus`를 함께 준다.
-4. `deliveryId`는 조회 전달 건 ID다. 한 전달 건에는 결과 1건만 저장되며, 다른 resultId로 같은 전달 건의 결과를 보내면 `REJECTED`(`WPF_DELIVERY_COMPLETED`)다.
+4. `deliveryId`는 조회 전달 건 ID다. 한 전달 건에는 결과 1건만 저장되며, 다른 resultId로 같은 전달 건의 결과를 보내면 `REJECTED`(`R4002(DELIVERY_COMPLETED)`)다.
 5. 네트워크 오류로 WPF가 같은 resultId를 다시 보내는 것은 정상 시나리오다. 토큰 만료로 실패하면 재로그인 후 같은 resultId로 결과 전송을 재시도하며 조회부터 다시 시작하지 않는다.
 6. 한 요청에는 결과 1건만 들어온다. 배열·일괄 재전송은 제공하지 않는다.
 
@@ -1274,21 +1273,21 @@ REJECTED의 세부 code(WPF_INVALID_DELIVERY~WPF_INVALID_VIDEO)는 서버 업무
 
 ```json
 {
-  "code": "WPF_UNAUTHORIZED",
+  "code": "E4010",
   "message": "인증 토큰이 없습니다.",
   "timestamp": "2026-09-28T15:30:00+09:00"
 }
 ```
 
-백엔드 구현용으로 HTTP 오류와 결과 status를 단계별로 나눈 정의·실제 응답 예시·참고 소스는 [장애별 분기 처리 정의서](../Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md)(Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.0.xlsx`)에 정리했다.
+백엔드 구현용으로 HTTP 오류와 결과 status를 단계별로 나눈 정의·실제 응답 예시·참고 소스는 [장애별 분기 처리 정의서](../Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md)(Excel `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.1.xlsx`)에 정리했다.
 
 현재 C#이 중요하게 구분하는 상태는 다음과 같다.
 
 | HTTP | 의미 | WPF 동작 |
 |---|---|---|
-| 400 | 요청 형식 오류(`WPF_BAD_REQUEST`): Bean Validation·JSON 구문·역직렬화 실패. 결과 API는 JSON 구문·역직렬화 오류만 400이며, 결과 형식·업무 검증 오류는 HTTP 200의 `REJECTED`로 응답(§11) | 조회는 장애 복구 제외, 정상 조회 주기 유지. 결과 전송은 그 결과를 이번 실행에서 제외(§12.1) |
+| 400 | 요청 형식 오류(`E4000(BAD_REQUEST)`): Bean Validation·JSON 구문·역직렬화 실패. 결과 API는 JSON 구문·역직렬화 오류만 400이며, 결과 형식·업무 검증 오류는 HTTP 200의 `REJECTED`로 응답(§11) | 조회는 장애 복구 제외, 정상 조회 주기 유지. 결과 전송은 그 결과를 이번 실행에서 제외(§12.1) |
 | 401 | 인증 없음/만료 | 재로그인 후 원 요청 1회 재시도. 재시도 후에도 401이면(로그인 실패 포함) 조회는 아래 5xx와 같은 복구 주기, 결과 전송은 보관·조회 보류(2026-11-11) |
-| 403 | 인증됐지만 사용자 사용 불가(`WPF_USER_INACTIVE`) | 장애 복구 제외, 오류 표시 가능 |
+| 403 | 인증됐지만 사용자 사용 불가(`E4030(USER_INACTIVE)`) | 장애 복구 제외, 오류 표시 가능 |
 | 426 | C# 버전 지원 중단 | 조회·결과 전송·정기 로그인 중단, pending 유지, 안내 닫기 후 정상 종료 |
 | 500/502/503/504 | 일시 서버 오류 | 조회는 10초×3회×3 Cycle 복구(2026-11-11 5→3), Cycle 간 30분 휴식 후 첫 10초, 이후 60분 확인. 결과 전송은 메모리 큐 보관 후 같은 간격으로 재시도하며 그동안 조회 보류(§12.1) |
 
@@ -1304,7 +1303,7 @@ DNS/연결 오류·Timeout도 조회 장애 복구 대상으로 처리한다. 40
 
 ```json
 {
-  "code": "CLIENT_VERSION_NOT_SUPPORTED",
+  "code": "E4260",
   "message": "WPF 클라이언트 업데이트가 필요합니다.",
   "clientVersion": "0.9.0",
   "minimumSupportedVersion": "1.0.0",
@@ -1838,7 +1837,7 @@ QUIZ의 복수 선택은 정답 집합과 선택 집합이 정확히 같아야 6
 - [ ] 동일 resultId 재수신 시 업무 데이터를 중복 저장하지 않는다.
 - [ ] 결과 API는 결과 1건 객체를 받고 `deliveryId`의 소유·팝업 일치·미종료를 검증한다.
 - [ ] status를 ACCEPTED/DUPLICATE/REJECTED/RETRYABLE_ERROR/INTERNAL_ERROR 중 하나로 반환한다.
-- [ ] ACCEPTED·DUPLICATE에는 `nextStatus`(AVAILABLE/EMPTY)를 넣고, 후보 확인 실패는 EMPTY 대신 생략과 `WPF_NEXT_STATUS_UNKNOWN`으로 알린다.
+- [ ] ACCEPTED·DUPLICATE에는 `nextStatus`(AVAILABLE/EMPTY)를 넣고, 후보 확인 실패는 EMPTY 대신 생략과 `R2001(NEXT_STATUS_UNKNOWN)`으로 알린다.
 - [ ] [TODO52-1] 노출 요일·시간대(`periodMode=SCHEDULE`)는 서버 KST로 후보 선정에서만 거르고, 완료·숨김·재노출 유예는 일정과 관계없이 그대로 적용한다. 결과 수신 재검증에는 일정을 적용하지 않는다.
 - [ ] TEXT·IMAGE CLOSED는 완료로, 미완료로 끝난 SURVEY·QUIZ·VIDEO는 `pollingIntervalSeconds` 동안 재노출 유예로 처리한다.
 - [ ] REJECTED는 WPF가 재전송하지 않는 종결 상태이므로 영구 업무 오류에만 쓰고, 일시 장애·미확정 오류는 RETRYABLE_ERROR·INTERNAL_ERROR로 반환한다.

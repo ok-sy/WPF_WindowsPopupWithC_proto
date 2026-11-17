@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * <ul>
  *   <li>{@code status}: 저장 처리 상태(ACCEPTED·DUPLICATE·REJECTED·RETRYABLE_ERROR·INTERNAL_ERROR, 기존 RESULT 계약).</li>
  *   <li>{@code nextStatus}: ACCEPTED·DUPLICATE일 때만. 저장 후 현재 노출 조건에 맞는 후보가 있으면 AVAILABLE, 없으면 EMPTY.
- *       저장은 성공했으나 후보 확인이 실패하면 EMPTY로 바꾸지 않고 생략하며 code=WPF_NEXT_STATUS_UNKNOWN을 함께 보낸다.</li>
+ *       저장은 성공했으나 후보 확인이 실패하면 EMPTY로 바꾸지 않고 생략하며 code=R2001(NEXT_STATUS_UNKNOWN)을 함께 보낸다.</li>
  *   <li>{@code code}/{@code message}: 거절·실패 또는 후보 확인 실패일 때만.</li>
  * </ul>
  * 이전 일괄 응답(results[])은 단건 순차 처리로 바꾸며 삭제했다.

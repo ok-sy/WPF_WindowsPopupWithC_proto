@@ -90,10 +90,10 @@ public final class MockBackendServer implements AutoCloseable {
                 case "image", "video", "quiz", "video-quiz" -> send(exchange, 200, resource("sample/relay/" + scenario + ".json"));
                 case "empty" -> send(exchange, 200, EMPTY_BODY);
                 case "envelope" -> send(exchange, 200, "{\"resultCode\":\"0000\",\"data\":" + OK_BODY + "}");
-                case "e400" -> send(exchange, 400, "{\"code\":\"WPF_BAD_REQUEST\",\"message\":\"요청 형식 오류\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");
-                case "e401" -> send(exchange, 401, "{\"code\":\"WPF_UNAUTHORIZED\",\"message\":\"토큰이 만료되었습니다.\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");
+                case "e400" -> send(exchange, 400, "{\"code\":\"E4000\",\"message\":\"요청 형식 오류\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");
+                case "e401" -> send(exchange, 401, "{\"code\":\"E4010\",\"message\":\"토큰이 만료되었습니다.\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");
                 case "e403" -> send(exchange, 403, "<html>forbidden</html>");
-                case "e426" -> send(exchange, 426, "{\"code\":\"CLIENT_VERSION_NOT_SUPPORTED\",\"message\":\"업데이트가 필요합니다.\",\"clientVersion\":\"1.0.0\","
+                case "e426" -> send(exchange, 426, "{\"code\":\"E4260\",\"message\":\"업데이트가 필요합니다.\",\"clientVersion\":\"1.0.0\","
                         + "\"minimumSupportedVersion\":\"1.3.0\",\"latestVersion\":\"1.4.2\",\"timestamp\":\"2026-10-22T10:00:00+09:00\"}");
                 case "e404" -> send(exchange, 404, "{\"error\":\"not found\"}");
                 case "e500" -> send(exchange, 500, "{\"code\":\"BACKEND_DOWN\",\"message\":\"internal detail\"}");

@@ -1,5 +1,5 @@
 {
-  "_comment": "[설계 35] POST /p/api/wpf/popups/results 응답 예시. wpf-results-request.json에 대응. HTTP 200만으로 성공을 판단하지 않고 status를 확인한다. 저장(ACCEPTED·DUPLICATE)이면 nextStatus가 있으며 AVAILABLE은 즉시 다음 조회, EMPTY는 pollingIntervalSeconds 대기. 거절·실패에는 nextStatus 없이 code·message가 오고, 저장은 됐으나 후보 확인이 실패하면 nextStatus를 생략하고 code=WPF_NEXT_STATUS_UNKNOWN을 보낸다.",
+  "_comment": "[설계 35] POST /p/api/wpf/popups/results 응답 예시. wpf-results-request.json에 대응. HTTP 200만으로 성공을 판단하지 않고 status를 확인한다. 저장(ACCEPTED·DUPLICATE)이면 nextStatus가 있으며 AVAILABLE은 즉시 다음 조회, EMPTY는 pollingIntervalSeconds 대기. 거절·실패에는 nextStatus 없이 code·message가 오고, 저장은 됐으나 후보 확인이 실패하면 nextStatus를 생략하고 code=R2001(NEXT_STATUS_UNKNOWN)을 보낸다.",
   "resultId": "8d2f5b1a-0c3e-4f6a-9b7c-1d2e3f4a5b6c",
   "status": "ACCEPTED",
   "nextStatus": "AVAILABLE"
