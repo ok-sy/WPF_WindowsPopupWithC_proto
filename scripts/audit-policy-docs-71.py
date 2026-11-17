@@ -12,8 +12,22 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 AUDIT = ROOT / 'docs/reviews/TODO71'
 POLICIES = ROOT / 'docs/policies'
-# 조사 기준 커밋 이후 후속 작업으로 정당하게 갱신된 원본 TODO(진행 중 작업). 변경 이력(CHANGELOG)에 기록된 갱신만 허용한다.
-FOLLOWUP_UPDATED = {69}
+# 조사 기준 커밋 이후 후속 작업으로 갱신된 원본 TODO는 변경 이력(CHANGELOG)에 `TODO{번호}` 기록이 있을 때만 허용한다(2026-11-17 TODO78:
+# 처음에는 69만 열거했으나 이후 14·18·19·24·27·28·43·45·50~54·56~62 등이 기록과 함께 갱신돼 규칙으로 일반화).
+# TODO71 결과 커밋. 주석 전용 변경 검사(SOURCE_PATHS)는 기준 커밋과 이 커밋 사이만 비교한다. 이후 기능 변경은 각 TODO에서 검증한다.
+TODO71_RESULT = 'ec000a2'
+# TODO71 이후 이동·삭제된 근거 문서(2026-11-17 TODO78 확인). 원본 inventory.json은 조사 당시 경로로 보존한다.
+MOVED_PATHS = {
+    'docs/interfaces/POPUP_INTERFACE_SPEC.md': 'docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md',
+    'docs/interfaces/WPF_POPUP_ALL_SPEC.md': 'docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md',
+    'docs/interfaces/ADMIN_POPUP_EDITOR_TRANSFORM.md': 'docs/interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md',
+    'docs/interfaces/ADMIN_POPUP_PREVIEW_COMPONENTS.md': 'docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md',
+    'docs/interfaces/POPUP_FRONT_SAMPLE_HANDOVER.md': 'docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md',
+    'docs/interfaces/SERVER_SAMPLE_BACKEND_RELAY_API.md': 'docs/interfaces/Server/SERVER_SAMPLE_BACKEND_RELAY_API.md',
+    'docs/interfaces/SERVER_SAMPLE_SINGLE_QUERY_API.md': 'docs/interfaces/Server/SERVER_SAMPLE_SINGLE_QUERY_API.md',
+}
+# 삭제가 결정된 근거 문서: 최소 기능 정의서는 2026-11-11 삭제(AGENTS.md). 남아 있으면 실패로 본다.
+DELETED_PATHS = {'docs/interfaces/WPF_POPUP_MINIMAL_SPEC.md'}
 
 SOURCE_PATHS = (
     'popup-frameWork/Popup/Views/Contents/PopupRichText.cs',
@@ -74,32 +88,38 @@ def main():
         path = POLICIES / f'POL-{number:02}.md'
         text = path.read_text(encoding='utf-8-sig')
         ids = re.findall(r'^\| (POL-\d{2}-\d{2}) \|', text, re.M)
-        require(ids == [f'POL-{number:02}-{i:02}' for i in range(1, 4)], f'POL-{number:02} 항목 ID 유일·연속')
+        # 정책마다 경계 항목 3개로 시작했고, 후속 확정으로 늘어난 항목(POL-12-04, 2026-11-11)은 01부터 연속 번호를 유지한다.
+        require(len(ids) >= 3 and ids == [f'POL-{number:02}-{i:02}' for i in range(1, len(ids) + 1)], f'POL-{number:02} 항목 ID 유일·연속')
         definitions.update(ids)
         for section in ('구현·계약 근거', '원본 TODO와 대체 관계', '검증 상태·미확정 범위'):
             require(section in text, f'POL-{number:02} {section}')
-    require(len(definitions) == 48, '정책 세부 ID 48개 유일')
+    require(len(definitions) == 49, '정책 세부 ID 49개 유일(48 + POL-12-04)')
     for row in records:
         require((POLICIES / f'{row["primary"]}.md').exists(), f'TODO{row["number"]:02} 주 정책 역추적')
         for policy in row['related']:
             require((POLICIES / f'{policy}.md').exists(), f'TODO{row["number"]:02} 연관 {policy}')
-        if row['present'] and row['number'] in FOLLOWUP_UPDATED:
-            # 진행 중 원본은 후속 갱신을 허용하되 파일이 남아 있고 CHANGELOG에 해당 TODO 기록이 있어야 한다.
-            require((ROOT / row['path']).exists() and f'TODO{row["number"]}' in changelog, f'TODO{row["number"]:02} 후속 갱신 기록')
-        elif row['present']:
-            # Originals 01~70 are untouched, including historical status/checklist text.
-            require((ROOT / row['path']).read_text(encoding='utf-8-sig') == git('show', f'{baseline}:{row["path"]}'), f'TODO{row["number"]:02} 원본 불변')
+        if row['present']:
+            # 원본 01~70은 기준 커밋과 같거나, 후속 갱신이면 파일이 남아 있고 CHANGELOG에 해당 TODO 기록이 있어야 한다.
+            current = (ROOT / row['path']).read_text(encoding='utf-8-sig')
+            if current != git('show', f'{baseline}:{row["path"]}'):
+                require(f'TODO{row["number"]}' in changelog, f'TODO{row["number"]:02} 후속 갱신 기록')
+            else:
+                require(True, f'TODO{row["number"]:02} 원본 불변')
         else:
             require(not (ROOT / row['path']).exists() and bool(row['last_git_change']), f'TODO{row["number"]:02} 삭제 경로·Git 날짜')
         for path in row['sources'] + row['contracts']:
-            require((ROOT / path).exists(), f'TODO{row["number"]:02} 근거 {path}')
+            if path in DELETED_PATHS:
+                require(not (ROOT / path).exists(), f'TODO{row["number"]:02} 근거 삭제 확인 {path}')
+            else:
+                require((ROOT / MOVED_PATHS.get(path, path)).exists(), f'TODO{row["number"]:02} 근거 {path}')
     for name in SOURCE_PATHS:
         before = git('show', f'{baseline}:{name}').splitlines(keepends=True)
-        after = (ROOT / name).read_text(encoding='utf-8-sig').splitlines(keepends=True)
+        # TODO71이 주석만 바꿨는지는 결과 커밋 기준으로 본다(이후 기능 변경은 대상 아님). 현재 파일은 정책 ID 존재만 확인한다.
+        after = git('show', f'{TODO71_RESULT}:{name}').splitlines(keepends=True)
         changed = [line for op, a, b, c, d in difflib.SequenceMatcher(a=before, b=after).get_opcodes()
                    if op != 'equal' for line in before[a:b] + after[c:d]]
         require(bool(changed) and all(is_comment_line(line) for line in changed), f'주석 외 줄 불변: {name}')
-        for policy in re.findall(r'POL-\d{2}-\d{2}', ''.join(after)):
+        for policy in re.findall(r'POL-\d{2}-\d{2}', (ROOT / name).read_text(encoding='utf-8-sig')):
             require(policy in definitions, f'주석 정책 ID 존재: {name}: {policy}')
     requirements = list(csv.DictReader((AUDIT / 'requirements.csv').open(encoding='utf-8-sig')))
     comments = list(csv.DictReader((AUDIT / 'comments.csv').open(encoding='utf-8-sig')))

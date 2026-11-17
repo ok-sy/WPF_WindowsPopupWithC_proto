@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-17-08 — dev: TODO78 기능·정책 F/P 문서 체계 정리
+
+- 이유: 문서 진입점을 기능(F100~F300)과 정책(P100~P400)으로 나누고 활성 작업을 대기·진행·완료 세 단계로 한 곳에서 관리하기로 한 TODO78 반영.
+- 변경:
+  - `docs/design/README.md` 신규: 설계 폴더 원본 전부를 F100 WPF 팝업·F200 관리자 웹·F300 개발 도구, 정책 성격 원본(P100~P400), 기반·문서 체계로 연결. 원본 파일·번호·경로는 그대로.
+  - `docs/policies/README.md`: 정책 대단위 목차(P100 = POL-01~08, P200 = POL-09·10·11·13, P300 = POL-12, P400 = POL-14·15·16) 추가.
+  - `docs/policies/ACTIVE_TASKS.md`: 맨 앞에 활성 작업 표(대단위·작업·상태·다음 할 일·원본) 추가, 기존 A~D 분류는 2026-11-03 기준 이력으로 보존. 61-17 → F200, 오류 응답 정의서 전달 → P300. 결과 큐 최종 정책은 POL-12-02(2026-11-11 확정)로 결정 완료 처리, TODO77 폐기 반영.
+  - `docs/README.md`: 기능·정책·상태 목차 연결. `AGENTS.md`: F/P 번호는 목차용이고 커밋에는 TODO 번호를 쓴다는 규칙, 상태는 ACTIVE_TASKS 한 곳에서 관리한다는 규칙 추가.
+  - `scripts/audit-policy-docs-71.py`: 착수 시 이미 166건 실패(인터페이스 문서 `WPF·Web·Server/` 이동, 이후 작업으로 갱신된 원본 TODO 20건, 기능 변경된 소스 3개, POL-12-04 추가). 이동 경로 매핑·삭제 문서 처리, 원본 갱신은 CHANGELOG 기록이 있으면 허용, 주석 전용 검사는 TODO71 결과 커밋 `ec000a2` 기준, 정책 항목은 01부터 연속·최소 3개(총 49개)로 현행화. POL-12 표 03·04 행 순서 정정(`POL-12.md`·`POLICY.md`, ID 변경 없음). `LINKS.md` 재생성.
+- 주요 파일: `docs/design/README.md`, `docs/policies/README.md`, `docs/policies/ACTIVE_TASKS.md`, `docs/README.md`, `AGENTS.md`, `scripts/audit-policy-docs-71.py`, `docs/policies/POL-12.md`, `docs/policies/POLICY.md`, `docs/reviews/TODO71/LINKS.md`, `docs/design/78_기능정책_F_P_문서체계_정리_TODO.md`.
+- 검증: `python scripts/audit-policy-docs-71.py` 816건 통과(정책 ID 49, 신규 깨진 링크 0, 기존 깨진 링크 17). 새·수정 목차 4개 파일의 파일 링크·문서 내 앵커 별도 확인 오류 0, 설계 폴더 원본 전부 목차 연결 확인.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-07 — dev: TODO77 관리자 웹 메인 버튼 탭 닫기 검증 폐기
 
 - 이유: 2026-11-16 정적 추적에서 저장소 기준 재현 경로가 없었고, 발생 버튼·환경 정보 없이 더 진행하지 않기로 결정.

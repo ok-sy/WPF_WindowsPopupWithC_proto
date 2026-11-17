@@ -10,10 +10,12 @@
 - 이 규칙은 이후 커밋부터 적용하며, 기존 커밋의 메시지는 별도 이력 재작성 작업에서 변경한다.
 - TODO 번호는 설계 문서·변경 내용·변경 이력에서 확인되는 값만 사용한다. 여러 TODO를 함께 구현한 경우 `11-14`처럼 범위를 표기할 수 있다.
 - 초기 반입·병합·공통 문서 등 TODO 번호를 확인할 수 없는 작업은 일반 설명형 제목을 사용하며 기존 제목을 임의의 `00` 번호로 바꾸지 않는다.
+- 기능·정책 대단위 번호(F100~F300, P100~P400)는 문서 목차용이다. 커밋 메시지에는 기존 TODO 번호를 쓰고 F/P 번호로 바꾸지 않는다.
 
 ## 변경 이력 기록
 
 - 프로젝트 문서는 저장소 루트 `docs/`에서 통합 관리한다. 설계·TODO는 `docs/design/`, 인터페이스·예제는 `docs/interfaces/`, 검토·측정 가이드는 `docs/reviews/`에 둔다. WPF 내부에 별도 `Docs/`를 만들지 않는다.
+- 활성 작업의 상태(대기·진행·완료)와 다음 할 일은 `docs/policies/ACTIVE_TASKS.md` 한 곳에서 관리하고, 기능 목차 `docs/design/README.md`와 정책 목차 `docs/policies/README.md`에서 원본으로 연결한다.
 - WPF 기능 추가·수정·삭제 시 `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`(전체 구현 기능)와 `docs/interfaces/WPF/WPF_AGENT_SPEC.md`(정책·인터페이스 통합 사양서)를 함께 검토·갱신한다. 이름·JSON 위치·기본값·ENUM·고정 동작은 관련 인터페이스 계약(`docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`)·예제와 맞춘다. 최소 기능 정의서(`WPF_POPUP_MINIMAL_SPEC.md`)는 2026-11-11 삭제했다.
 
 이 저장소에서 파일을 수정하는 작업은 변경 이력을 함께 관리한다.
