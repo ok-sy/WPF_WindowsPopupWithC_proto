@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-17-16 — doc: 장애별 분기 정의서 v1.5 — RETRYABLE_ERROR 실제 오류 예시
+
+- 이유: RETRYABLE_ERROR 판정 기준이 「DB 연결·데드락·잠금 대기·타임아웃」 수준의 설명뿐이라 백엔드가 실제 오류와 대조하기 어려워 ORA 코드 단위 예시 보완.
+- 변경:
+  - 정의서 §4에 RETRYABLE_ERROR 예시 표 추가: DB 연결(ORA-12170·12541·12514·12537·17002·03113·03114·03135), DB 상태(ORA-01033·01034·01089), 연결 풀(Hikari 연결 획득 시간 초과, ORA-00018·00020), 잠금(ORA-00060·00054·30006·02049), 직렬화(ORA-08177), 타임아웃(ORA-01013, 트랜잭션 제한 시간 초과)과 각 Spring·JDBC 예외 형식.
+  - 대비용 INTERNAL_ERROR 예시 표 추가: 무결성(ORA-00001·01400·02291), 데이터(ORA-12899·01722), SQL·스키마(ORA-00942·00904), 권한(ORA-01031), 애플리케이션 예외. 판정은 예외 형식으로 하고 폐쇄망 드라이버에서 실제 예외 형식을 확인하라는 안내, 원인 보존·ORA 코드 비노출 안내 추가.
+  - §2 판정 순서·§4 status 표의 RETRYABLE_ERROR 설명에 예시 참조 추가. Excel `SERVER_ERROR_BRANCH_v1.5.xlsx`(v1.4 대체), Excel 파일명 참조 갱신·`WPF_SPEC_v3.9.xlsx` 재생성.
+- 주요 파일: `docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md`, `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.5.xlsx`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.9.xlsx`.
+- 검증: 엑셀 RESULT_STATUS 시트에서 두 예시 표와 안내가 status 표 뒤·응답 본문 전체 앞에 원문 순서로 들어간 것을 확인. 예외 형식은 Spring 기본 오류 코드 매핑·JDBC 예외 계층 기준이며 폐쇄망 드라이버에서 실행 확인하지 않음. 코드 변경 없음.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-15 — doc: 장애별 분기 정의서 v1.4 — 응답 본문 전체 예시·참고 소스 제거
 
 - 이유: 정의서는 폐쇄망 백엔드 전달용 문서이고 저장소 참고 소스는 반입하지 않으므로 소스 위치·WPF 내부 처리 설명을 제외. 응답은 실제 payload 형태로 필드 전체를 보여 줘야 구현 시 바로 대조할 수 있어 예시 형식 변경.

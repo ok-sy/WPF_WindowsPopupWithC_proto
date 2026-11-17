@@ -1,7 +1,7 @@
 # WPF API 장애별 분기 처리 정의서 (백엔드 전달용)
 
 기준일: 2026-11-17 (KST) · 대상: WPF 팝업 Agent가 호출하는 조회·결과 API를 구현하는 백엔드
-Excel 판: `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.4.xlsx` (이 문서에서 생성)
+Excel 판: `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.5.xlsx` (이 문서에서 생성)
 
 ## 1. 백엔드 주요 개발 범위와 원칙
 
@@ -34,7 +34,7 @@ Excel 판: `docs/interfaces/Server/SERVER_ERROR_BRANCH_v1.4.xlsx` (이 문서에
 | 3 | 본문 해석(결과 API) | JSON 구문 오류, 날짜·숫자 형식 오류, 알 수 없는 enum | HTTP 400 |
 | 4 | 결과 형식 검사(결과 API) | resultId·deliveryId·popupId 누락·길이, 알 수 없는 resultType, hideDays 범위, score 음수, answers·optionIds null 요소, video 형식, resultDesc 1,000 Byte 초과 | HTTP 200 `REJECTED` `R4000` |
 | 5 | 업무 검증(결과 API) | 전달 건 불일치·이미 완료·대상 아님·유형 불일치·문항·선택지·영상 검증 실패 | HTTP 200 `REJECTED` + 세부 code |
-| 6 | 저장(결과 API) | DB 연결·데드락·잠금 대기·타임아웃 등 확인된 일시 장애 | HTTP 200 `RETRYABLE_ERROR` `R5030` |
+| 6 | 저장(결과 API) | DB 연결·데드락·잠금 대기·타임아웃 등 확인된 일시 장애(§4 RETRYABLE_ERROR 예시: ORA-12170·ORA-03113·ORA-00060 등) | HTTP 200 `RETRYABLE_ERROR` `R5030` |
 | 7 | 저장(결과 API) | 그 밖의 예외(원인 미확정) | HTTP 200 `INTERNAL_ERROR` `R5000` |
 | 8 | 저장 후 후보 확인(결과 API) | 저장은 됐으나 다음 후보 수 조회 실패 | HTTP 200 `ACCEPTED`·`DUPLICATE` + `R2001`, nextStatus 생략 |
 
@@ -117,11 +117,53 @@ HTTP 426
 | ACCEPTED | 처음 정상 저장 | 없음(후보 확인 실패면 R2001) | AVAILABLE·EMPTY(확인 실패면 생략) |
 | DUPLICATE | 같은 resultId를 이미 처리함(본문이 달라도 비교하지 않음) | 없음(후보 확인 실패면 R2001) | AVAILABLE·EMPTY(확인 실패면 생략) |
 | REJECTED | 다시 보내도 같은 결과가 나오는 형식·업무 오류 | R4000~R4006 | 없음 |
-| RETRYABLE_ERROR | 확인된 일시 장애(DB 연결·데드락·잠금 대기·타임아웃) | R5030 | 없음 |
+| RETRYABLE_ERROR | 확인된 일시 장애(DB 연결·DB 기동 중·연결 풀 고갈·데드락·잠금 대기·쿼리·트랜잭션 타임아웃, 아래 예시) | R5030 | 없음 |
 | INTERNAL_ERROR | 그 밖의 예외(원인 미확정) | R5000 | 없음 |
 
 - 분류되지 않은 예외를 REJECTED로 보내지 않는다. 확인된 일시 장애가 아니면 INTERNAL_ERROR다.
 - RETRYABLE_ERROR와 INTERNAL_ERROR의 구분은 예외 형식(원인 포함)으로 하고 메시지 문자열로 하지 않는다. 무결성 위반은 일시 장애가 아니다.
+
+RETRYABLE_ERROR 예시 — 잠시 뒤 같은 요청을 다시 받으면 성공할 수 있는 장애다. 저장하지 않은 상태로 응답한다.
+
+| 구분 | 오류 (예) | 상황 | Spring·JDBC 예외 형식 (예) |
+|---|---|---|---|
+| DB 연결 | ORA-12170: TNS:Connect timeout occurred | DB 서버 연결 시간 초과 | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 연결 | ORA-12541: TNS:no listener | 리스너 중지·재기동 중 | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 연결 | ORA-12514: TNS:listener does not currently know of service requested in connect descriptor | DB 서비스 미등록(기동 중) | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 연결 | ORA-12537: TNS:connection closed | 연결 중 끊김 | SQLRecoverableException → RecoverableDataAccessException |
+| DB 연결 | ORA-17002: IO Error: The Network Adapter could not establish the connection | 네트워크 단절 | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 연결 | ORA-03113: end-of-file on communication channel | 처리 중 세션 강제 종료·네트워크 끊김 | SQLRecoverableException → RecoverableDataAccessException |
+| DB 연결 | ORA-03114: not connected to ORACLE | 이미 끊긴 연결 사용 | SQLRecoverableException → RecoverableDataAccessException |
+| DB 연결 | ORA-03135: connection lost contact | 연결 유실 | SQLRecoverableException → RecoverableDataAccessException |
+| DB 상태 | ORA-01033: ORACLE initialization or shutdown in progress | DB 기동·종료 중 | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 상태 | ORA-01034: ORACLE not available | DB 중지 | SQLRecoverableException → DataAccessResourceFailureException |
+| DB 상태 | ORA-01089: immediate shutdown or close in progress - no operations are permitted | DB 즉시 종료 중 | SQLRecoverableException → RecoverableDataAccessException |
+| 연결 풀 | HikariPool-1 - Connection is not available, request timed out after 30000ms | 연결 풀 고갈(동시 요청 폭주) | SQLTransientConnectionException → CannotCreateTransactionException |
+| 연결 풀 | ORA-00018: maximum number of sessions exceeded / ORA-00020: maximum number of processes exceeded | DB 세션·프로세스 한도 초과 | 연결 풀이 연결 획득 실패로 감싼 경우 CannotCreateTransactionException |
+| 잠금 | ORA-00060: deadlock detected while waiting for resource | 같은 전달 건 동시 갱신으로 교착 | CannotAcquireLockException(Spring 5.x: DeadlockLoserDataAccessException) |
+| 잠금 | ORA-00054: resource busy and acquire with NOWAIT specified or timeout expired | 행·테이블 잠금 대기 실패(SELECT … FOR UPDATE NOWAIT 등) | CannotAcquireLockException |
+| 잠금 | ORA-30006: resource busy; acquire with WAIT timeout expired | 잠금 대기 시간 초과(FOR UPDATE WAIT n) | CannotAcquireLockException |
+| 잠금 | ORA-02049: timeout: distributed transaction waiting for lock | 분산 트랜잭션 잠금 대기 초과 | CannotAcquireLockException |
+| 직렬화 | ORA-08177: can't serialize access for this transaction | SERIALIZABLE 격리 충돌 | CannotSerializeTransactionException(PessimisticLockingFailureException) |
+| 타임아웃 | ORA-01013: user requested cancel of current operation | 쿼리 타임아웃(statement timeout)으로 취소 | SQLTimeoutException → QueryTimeoutException |
+| 타임아웃 | Transaction timed out: deadline was … | 트랜잭션 제한 시간 초과(@Transactional timeout) | TransactionTimedOutException |
+
+INTERNAL_ERROR 예시 — 다시 보내도 같은 결과가 나오거나 원인을 확정할 수 없는 오류다. RETRYABLE_ERROR로 보내지 않는다.
+
+| 구분 | 오류 (예) | 상황 |
+|---|---|---|
+| 무결성 | ORA-00001: unique constraint (…) violated | 중복 키(같은 resultId 중복은 예외 전에 DUPLICATE로 판정) |
+| 무결성 | ORA-01400: cannot insert NULL into (…) | 필수 컬럼 누락 |
+| 무결성 | ORA-02291: integrity constraint (…) violated - parent key not found | 참조 대상 없음 |
+| 데이터 | ORA-12899: value too large for column (…) | 컬럼 길이 초과 |
+| 데이터 | ORA-01722: invalid number | 숫자 변환 실패 |
+| SQL·스키마 | ORA-00942: table or view does not exist / ORA-00904: invalid identifier | 테이블·컬럼 누락, SQL 오류 |
+| 권한 | ORA-01031: insufficient privileges | DB 계정 권한 없음 |
+| 애플리케이션 | NullPointerException, IllegalStateException 등 | 분류되지 않은 코드 오류 |
+
+- 위 오류 메시지는 판정 예시다. 판정은 메시지 문자열이 아니라 예외 형식(원인 체인 포함)으로 한다. 드라이버·Spring 버전에 따라 예외 형식이 다를 수 있으므로, 폐쇄망 환경에서 위 오류가 어떤 예외로 올라오는지 확인해 일시 장애 목록을 맞춘다.
+- 자체 래핑 예외가 원인(SQLException)을 끊으면 일시 장애도 INTERNAL_ERROR로 분류된다. 래핑할 때 원인을 보존한다.
+- ORA 코드·SQL·스택은 응답 message에 넣지 않고 서버 로그에만 남긴다.
 
 ### 응답 본문 전체
 
@@ -354,3 +396,4 @@ HTTP 200
 | v1.2 | 2026-11-17 | HTTP 오류를 필수 3가지(401·426·결과 API 본문 해석 불가 400)로 줄이고 나머지는 기존 처리기 그대로 허용, 본문·E 코드는 선택으로 정리. HTTP 오류 절(시트)에 샘플 추가. 결과 응답 code 표는 R 코드만 |
 | v1.3 | 2026-11-17 | 맨 앞에 백엔드 주요 개발 범위(결과 API HTTP 200 분기: 예외 분류·중복 처리·트랜잭션·다음 후보·장애 결과·응답 형식) 추가. 필수 HTTP 오류를 401·400 두 가지로 줄이고 426은 버전 검증을 쓸 때만 보내는 선택으로 변경. 400은 Spring 기본 동작 확인, 401은 토큰 필터 확인 항목 추가 |
 | v1.4 | 2026-11-17 | 참고 소스 절·구현 위치·WPF 처리 설명·트랜잭션 항목 삭제. 응답·요청 예시를 실제 payload 형태(본문 필드 전체 나열, 필수·선택 주석)로 변경, 결과 응답 본문 전체·장애 결과 요청 본문 전체 추가 |
+| v1.5 | 2026-11-17 | §4에 RETRYABLE_ERROR 판정 예시(ORA-12170 등 DB 연결·DB 상태·연결 풀·잠금·직렬화·타임아웃 20건, 예외 형식 포함)와 대비용 INTERNAL_ERROR 예시(무결성·데이터·SQL·권한·애플리케이션) 추가 |
