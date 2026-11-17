@@ -37,7 +37,7 @@
 
 ## 후속 TODO — 2026-11-17 관리자 WEB 편집기·미리보기와 WPF 팝업 정합성
 
-- 상태: **요건·방향 확정 / 구현 및 검증 대기**. 기존 2026-11-10 완료 항목의 완료 표시는 유지한다.
+- 상태: **구현·자동 검증 완료(2026-11-17)** / 같은 데이터의 브라우저·WPF 실화면 나란히 비교, 확대 DPI, 서버 저장→재조회, 폐쇄망 확인 대기. 기존 2026-11-10 완료 항목의 완료 표시는 유지한다.
 - 구현 대상: 관리자 WEB 편집기·미리보기 및 실제 팝업을 표시하는 WPF. 이번 반영은 TODO 문서 등록 단계다.
 
 ### 1. SURVEY·QUIZ 문항 제목 서식 편집기 상시 사용
@@ -67,19 +67,27 @@
 ### 2. CKEditor 기본 글자 크기와 미리보기 Dialog 일치
 
 **확정 방향: B안 — 공통 기본 폰트 크기를 명시적으로 적용**
-- [ ] 폰트 크기가 **명시되지 않은** 편집기 콘텐츠에 대해 CKEditor 입력 영역과 관리자 미리보기 Dialog가 동일한 공통 기본 `font-size`를 사용한다.
-- [ ] `.ck-editor` 및 Dialog 상위 요소의 상속 CSS 차이에 의존하지 않도록 공통 기준을 적용한다. 명시적 run/inline 크기는 덮어쓰지 않는다.
-- [ ] 기본 크기·명시적 크기 혼합, 기존 저장 데이터(크기 속성 없음)에도 동일한 기준을 적용한다.
+- [x] 폰트 크기가 **명시되지 않은** 편집기 콘텐츠에 대해 CKEditor 입력 영역과 관리자 미리보기 Dialog가 동일한 공통 기본 `font-size`를 사용한다.
+- [x] `.ck-editor` 및 Dialog 상위 요소의 상속 CSS 차이에 의존하지 않도록 공통 기준을 적용한다. 명시적 run/inline 크기는 덮어쓰지 않는다.
+- [x] 기본 크기·명시적 크기 혼합, 기존 저장 데이터(크기 속성 없음)에도 동일한 기준을 적용한다.
 
 **구현 전 확인할 사항 — 기본 px 수치**
 - 현행 CKEditor의 실제 기본 글자 크기, 편집 영역의 computed style, 미리보기 Dialog 및 공통 렌더러의 computed style을 동일 브라우저/배율에서 비교한 뒤 **공통 기본 px 수치를 확정**한다. 임의로 새 숫자를 지정하지 않는다.
 - 선택지: (A) 편집기의 암묵적 CSS 크기를 미리보기에만 복제 / **(B, 채택)** 명시적 공통 기본값을 편집기·미리보기에 적용. B는 상위 CSS 상속 변화에 따른 재발 위험을 줄인다. 확정 수치가 기존 TEXT 기본 크기·bodyFontSize 및 WPF 표시 계약과 충돌하는지는 구현 전 확인한다.
 
 **구현 시 확인 및 완료 기준**
-- [ ] `zero-rule-web/main/src/components/ckeditor/ckeditorEngine.ts`, `PopupRichTextEditor`, `PopupPreviewDialog`, 미리보기 렌더러, `popupEditorTransform.ts`의 기본 크기·스타일 상속·블록 변환 경로를 확인한다.
-- [ ] 크기 미지정 / 명시적 크기 / 혼합 구간 / 기존 저장 블록 / 재편집·미리보기 Dialog에 대해 computed `font-size` 및 실제 표시를 대조한다. TEXT·SURVEY·QUIZ 관련 사용처의 회귀를 확인한다.
-- [ ] 기본값만 변경하고 데이터에 불필요한 `size` 속성을 강제 저장하지 않는지 확인한다. API·DB·WPF 계약 변경 필요성이 발견되면 별도 승인 대상으로 분리한다.
+- [x] `zero-rule-web/main/src/components/ckeditor/ckeditorEngine.ts`, `PopupRichTextEditor`, `PopupPreviewDialog`, 미리보기 렌더러, `popupEditorTransform.ts`의 기본 크기·스타일 상속·블록 변환 경로를 확인한다.
+- [x] 크기 미지정 / 명시적 크기 / 혼합 구간 / 기존 저장 블록 / 재편집·미리보기 Dialog에 대해 computed `font-size` 및 실제 표시를 대조한다. TEXT·SURVEY·QUIZ 관련 사용처의 회귀를 확인한다.
+- [x] 기본값만 변경하고 데이터에 불필요한 `size` 속성을 강제 저장하지 않는지 확인한다. API·DB·WPF 계약 변경 필요성이 발견되면 별도 승인 대상으로 분리한다.
 - [ ] 타입 검사·관련 하네스·브라우저 실화면을 구분해 검증 결과를 기록하고, 폐쇄망 화면은 별도 확인한다.
+
+**구현 결과 (2026-11-17)**
+- 실측(headless Edge, 100%): 하네스 기본 테마에서는 CKEditor 편집 영역·미리보기·Dialog 모두 상속값 16px였다. 관리자 웹 테마는 `body1` 0.85rem(13.6px)이라 Dialog 안 미리보기는 상속값을 따르고, CKEditor는 편집 영역 상위 요소에 따라 달라진다. 어느 쪽도 WPF 기본값(TEXT 본문 15)과 같다는 보장이 없어 상속에 맡기지 않는다.
+- 공통 기본 px는 새 숫자를 만들지 않고 WPF XAML 기본값을 그대로 쓴다: `popupCommon.ts` `POPUP_DEFAULT_FONT_SIZES`(헤더 17, 푸터 14, TEXT 본문 15, IMAGE·VIDEO 설명 14, 설문 설명 14, 문항 제목 16, 문항 설명 13, 선택지 12, 설문 본문 14). 기존 TEXT 기본 크기·`bodyFontSize`·WPF 표시 계약과 충돌하지 않으며 API·DB·WPF 계약 변경 없음.
+- `PopupRichTextEditor`: 편집 영역에 기본 `font-size`를 명시하고 `baseFontSize` prop 추가(생략 시 optionSize 12, compact 14, 그 밖 15). 문항 제목 편집기는 16. 서식의 `size`는 span 인라인 크기로 그대로 우선하고, 기본값을 `size`로 저장하지 않는다.
+- `PopupPreview`: SURVEY·QUIZ 이외 본문 영역에 `bodyFontSize ?? 유형별 기본값`을 항상 명시하고, 푸터도 `footerFontSize ?? 14`를 항상 명시한다. 헤더는 기존대로 `headerFontSize ?? 17`.
+- 확인한 것: 미사용 `ckeditorEngine.ts` 기본 크기 설정은 없음(툴바 `fontSize` 항목만). 글꼴 종류는 편집기(CKEditor 기본 Helvetica 계열)와 미리보기(테마 Malgun Gothic)가 다르지만 이번 범위(크기)가 아니라 그대로 두고 별도 확인 항목으로 남긴다.
+- 검증: `verify-rich-text-49` 78건(TEXT 편집기·미리보기 기본 15, 지정 크기 20 유지, 기본값을 run `size`로 저장하지 않음, compact 14), `verify-survey-rich-text-55` 74건(문항 제목 편집기 16, 테마 body 13.6px에서도 Dialog 헤더 17·TEXT 본문 15·푸터 14) 통과. 실제 관리자 화면·폐쇄망 화면은 미확인.
 
 ### 3. SURVEY·QUIZ 선택지 기본 크기
 
@@ -115,10 +123,15 @@
 ### 5. 편집 기능이 없는 표시 영역의 기본 스타일 회귀 검증
 
 **구현 시 확인할 사항**
-- [ ] 관리자 웹 `PopupPreviewDialog`와 유형별 렌더러의 CSS 및 스타일 매핑, WPF `popup-frameWork/Popup`의 공통 창과 유형별 뷰·XAML 스타일을 따라가며 에디터를 거치지 않는 표시 영역에 해당 영역의 기본 스타일을 명시적으로 적용한다. 헤더·본문·푸터의 폰트 키와 상속 경로를 각각 대조한다.
-- [ ] 헤더에 `bodyFontSize`가 적용된 것으로 보고된 웹 사례를 재현한다. 헤더는 명시된 `headerFontSize`를 우선 적용하고, 생략한 경우 계약에 명시된 기본값 17을 적용한다. 웹에서는 해당 제목 요소의 CSS `font-size`로, WPF에서는 대응 요소의 `FontSize`로 확인한다. 본문과 푸터에는 각 영역의 기존 기본값과 명시값을 적용한다.
-- [ ] 유형별로 헤더·본문·푸터 및 서식 편집 없는 제목·안내문·선택지 등 실제 표시 영역을 확인한다. 기존 필드와 표시 기본값을 사용하고, 이미 명시된 인라인 서식과 선택지 기본 12px의 적용 범위를 확인한다.
+- [x] 관리자 웹 `PopupPreviewDialog`와 유형별 렌더러의 CSS 및 스타일 매핑, WPF `popup-frameWork/Popup`의 공통 창과 유형별 뷰·XAML 스타일을 따라가며 에디터를 거치지 않는 표시 영역에 해당 영역의 기본 스타일을 명시적으로 적용한다. 헤더·본문·푸터의 폰트 키와 상속 경로를 각각 대조한다.
+- [x] 헤더에 `bodyFontSize`가 적용된 것으로 보고된 웹 사례를 재현한다. 헤더는 명시된 `headerFontSize`를 우선 적용하고, 생략한 경우 계약에 명시된 기본값 17을 적용한다. 웹에서는 해당 제목 요소의 CSS `font-size`로, WPF에서는 대응 요소의 `FontSize`로 확인한다. 본문과 푸터에는 각 영역의 기존 기본값과 명시값을 적용한다.
+- [x] 유형별로 헤더·본문·푸터 및 서식 편집 없는 제목·안내문·선택지 등 실제 표시 영역을 확인한다. 기존 필드와 표시 기본값을 사용하고, 이미 명시된 인라인 서식과 선택지 기본 12px의 적용 범위를 확인한다.
 
 **완료 기준 및 검증 방법**
-- [ ] TEXT·IMAGE·IMAGE_FILL·VIDEO·SURVEY·QUIZ에 공통 스타일 변경이 전파되는지 회귀 검증한다. 각 유형에서 값 미지정(구버전 데이터 포함), 영역별 명시값을 서로 다르게 지정, 해당 영역 숨김을 확인한다. 특히 `bodyFontSize`만 지정했을 때 헤더는 17이고, 헤더와 본문을 모두 지정하면 각자의 값으로 표시되는지 확인한다.
+- [x] TEXT·IMAGE·IMAGE_FILL·VIDEO·SURVEY·QUIZ에 공통 스타일 변경이 전파되는지 회귀 검증한다. (자동 검증 범위는 아래 결과 참고) 각 유형에서 값 미지정(구버전 데이터 포함), 영역별 명시값을 서로 다르게 지정, 해당 영역 숨김을 확인한다. 특히 `bodyFontSize`만 지정했을 때 헤더는 17이고, 헤더와 본문을 모두 지정하면 각자의 값으로 표시되는지 확인한다.
 - [ ] 동일한 팝업 데이터로 브라우저의 computed `font-size`와 WPF 요소의 실제 `FontSize`를 대조하고, 100% 기준 화면과 확대 DPI에서 줄바꿈·잘림을 확인한다. 웹 타입 검사, WPF 빌드, 양쪽 실화면 및 폐쇄망 실화면 결과를 구분해 기록한다.
+
+**구현 결과 (2026-11-17)**
+- 재현: 저장소 기준으로 웹 헤더가 `bodyFontSize`를 받는 경로는 없었다(헤더는 본문 Box 밖, `headerFontSize ?? 17`). 하네스에서 테마 body 13.6px·`bodyFontSize` 18로도 헤더 17 유지. 보고된 사례는 발생 화면 정보가 없어 저장소 기준으로 재현하지 못했다. 대신 실제 차이를 찾았다: SURVEY·QUIZ 미리보기는 `bodyFontSize`가 있으면 본문 Box의 `.MuiTypography-root { font-size: inherit }` 규칙 때문에 문항 제목·설명까지 본문과 같은 크기가 돼 WPF(제목 +4·설명 +1)와 달랐다 → 3번 커밋에서 SurveyPreview 직접 매핑으로 수정.
+- 영역별 기본값 명시는 2번 구현 결과 참고. 웹: 값 미지정·각 영역 다른 값(헤더 22·본문 12·푸터 16)·`bodyFontSize`만 지정(헤더 17·푸터 14 유지)을 TEXT Dialog로, 설문 매핑(선택지 -2·제목 +4·설명 +1)을 SURVEY 미리보기로 확인. WPF: PopupWindowTests에 TEXT 기본(17·15·14)·`bodyFontSize`만(17·18·14)·각자 값(22·12·16) 검사 추가(565건 통과), 설문 `ApplyBodyFontSize(18)` → 선택지 16 검사.
+- 남은 확인: IMAGE·IMAGE_FILL·VIDEO의 영역별 값은 기존 하네스(`IMAGE preview` 54건, `TODO61 preview` 126건, `completion UX 43` 78건) 회귀 통과로만 확인했고 새 계측 검사는 추가하지 않았다. 브라우저·WPF 실화면 나란히 비교, 확대 DPI, 폐쇄망 화면은 미실행.

@@ -9,7 +9,7 @@ import AspectVideoArea, { FillVideoArea } from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
-import { popupFontSize, popupMinimumSize } from './popupCommon';
+import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import { quizRequiresPassing } from './popupQuizRule';
@@ -538,6 +538,10 @@ export default function PopupPreview({
   const headerFontSize = popupFontSize(popup, 'headerFontSize');
   const bodyFontSize = popupFontSize(popup, 'bodyFontSize');
   const footerFontSize = popupFontSize(popup, 'footerFontSize');
+  /* POL-01-02 : 기본값의 적용 — 값이 없는 영역도 WPF 기본값을 명시한다(테마 body1 0.85rem·Dialog 상속에 맡기지 않음, 2026-11-17).
+     본문: TEXT 15, IMAGE·VIDEO 설명 14. SURVEY·QUIZ는 SurveyPreview가 영역별로 정한다. 헤더 17·푸터 14. */
+  const bodyDefaultFontSize = popup.popupType === 'TEXT' ? POPUP_DEFAULT_FONT_SIZES.textBody
+    : popup.popupType === 'IMAGE' ? POPUP_DEFAULT_FONT_SIZES.imageDescription : POPUP_DEFAULT_FONT_SIZES.videoDescription;
   const showContentTitle = !originalImage && Boolean(title.trim());
   // 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
   const reasonId = `${namePrefix}-completion-reason`;
@@ -631,7 +635,7 @@ export default function PopupPreview({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 // WPF PopupTitleText 기본 17 SemiBold(TODO61-17)
-                fontSize: headerFontSize ?? 17,
+                fontSize: headerFontSize ?? POPUP_DEFAULT_FONT_SIZES.header,
               }}
             >
               {text(popup.title, hidePlaceholders ? '' : '팝업 제목')}
@@ -696,8 +700,8 @@ export default function PopupPreview({
             sx={{
               ...(popup.popupType === 'IMAGE' ? { flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' } : {}),
               ...(popup.popupType === 'VIDEO' ? { flex: 1, minHeight: 0, height: '100%' } : {}),
-              ...(bodyFontSize && !isSurvey
-                ? { fontSize: bodyFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } }
+              ...(!isSurvey
+                ? { fontSize: bodyFontSize ?? bodyDefaultFontSize, '& .MuiTypography-root': { fontSize: 'inherit' } }
                 : {}),
             }}
           >
@@ -815,12 +819,9 @@ export default function PopupPreview({
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 1,
-                ...(footerFontSize
-                  ? {
-                      fontSize: footerFontSize,
-                      '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' },
-                    }
-                  : {}),
+                // 푸터 글자: footerFontSize, 없으면 WPF 기본 14를 명시한다(테마 버튼·라벨 크기에 맡기지 않음).
+                fontSize: footerFontSize ?? POPUP_DEFAULT_FONT_SIZES.footer,
+                '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' },
               }}
             >
               <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>

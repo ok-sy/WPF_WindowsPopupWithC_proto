@@ -115,6 +115,7 @@ internal static class Program
         CheckQuizResultNoticeQ3();
         CheckRequiresPassingS7();
         CheckOxQuestion73();
+        CheckAreaFontSizes20261117();
         CheckOverlayKeyboardClose44();
         CheckShutdownSavesResult44();
         CheckOwnerCloseSavesResult();
@@ -1045,6 +1046,49 @@ internal static class Program
      * 참여형 0 → 2/10도 passed=true "완료하여 … 종료"+2/10개+확인. 배점이 1점이 아니면 통과 기준을 점수로 적는다.
      */
     /* TODO73: 가로 배치 O·X 단일 선택은 크게 표시하고, 다른 문항 크기는 그대로다. 선택은 일반 라디오와 같다. */
+    /*
+     * [2026-11-17 후속 5] 영역별 글자 크기: 헤더·본문·푸터는 각자 키만 따른다. bodyFontSize만 주면 헤더는 기본 17, 푸터는 기본 14다.
+     * 관리자 미리보기(verify-survey-rich-text-55)와 같은 값으로 확인한다.
+     */
+    private static void CheckAreaFontSizes20261117()
+    {
+        (double header, double body, double footer) Sizes(Opened opened)
+        {
+            var window = opened.Window;
+            window.UpdateLayout();
+            var title = (System.Windows.Controls.TextBlock)window.FindName("PopupTitleText");
+            var close = (System.Windows.Controls.Button)window.FindName("FooterCloseButton");
+            var view = FindDescendant<Popup.Views.Contents.TextPopupView>(window)!;
+            var plain = (System.Windows.Controls.TextBlock)view.FindName("PlainTextBlock");
+            var rich = (System.Windows.Controls.StackPanel)view.FindName("RichTextPanel");
+            double bodySize = plain.Visibility == Visibility.Visible ? plain.FontSize : rich.Children.OfType<System.Windows.Controls.TextBlock>().First().FontSize;
+            return (title.FontSize, bodySize, close.FontSize);
+        }
+        var defaults = OpenPopup("TEXT", dto => { dto.HeaderFontSize = null; dto.BodyFontSize = null; dto.FooterFontSize = null; });
+        var d = Sizes(defaults);
+        Check(d == (17, 15, 14), $"[2026-11-17 5] TEXT defaults: header 17, body 15, footer 14 ({d})");
+        ShutdownClose(defaults.Window);
+        var bodyOnly = OpenPopup("TEXT", dto => { dto.HeaderFontSize = null; dto.BodyFontSize = 18; dto.FooterFontSize = null; });
+        var b = Sizes(bodyOnly);
+        Check(b == (17, 18, 14), $"[2026-11-17 5] bodyFontSize alone leaves header 17 and footer 14 ({b})");
+        ShutdownClose(bodyOnly.Window);
+        var all = OpenPopup("TEXT", dto => { dto.HeaderFontSize = 22; dto.BodyFontSize = 12; dto.FooterFontSize = 16; });
+        var a = Sizes(all);
+        Check(a == (22, 12, 16), $"[2026-11-17 5] header, body and footer each use their own value ({a})");
+        ShutdownClose(all.Window);
+    }
+
+    private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T found) return found;
+            if (FindDescendant<T>(child) is T nested) return nested;
+        }
+        return null;
+    }
+
     private static void CheckOxQuestion73()
     {
         var opened = OpenPopup("QUIZ", dto =>

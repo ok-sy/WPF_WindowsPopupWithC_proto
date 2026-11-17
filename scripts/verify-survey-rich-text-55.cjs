@@ -78,7 +78,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   // 2026-11-17 3번: 일반 선택지 입력칸 한 줄 32px·글자 12px, 정답·삭제 칸도 32px. 문항 제목 편집기에는 전파되지 않는다.
   const plainOptionLook = await run(`(()=>{const t=document.querySelector('textarea[aria-label="1번 문항 선택지 2"]');const root=t.closest('.MuiInputBase-root');const del=Array.from(document.querySelectorAll('button')).find(b=>b.getAttribute('aria-label')==='선택지 2 삭제').parentElement;const title=window.editors()[0].ui.getEditableElement();
     return {h:root.getBoundingClientRect().height,font:getComputedStyle(t).fontSize,slot:del.getBoundingClientRect().height,titleFont:getComputedStyle(title).fontSize}})()`);
-  check(plainOptionLook.h === 32 && plainOptionLook.font === '12px' && plainOptionLook.slot === 32 && plainOptionLook.titleFont !== '12px',
+  check(plainOptionLook.h === 32 && plainOptionLook.font === '12px' && plainOptionLook.slot === 32 && plainOptionLook.titleFont === '16px',
     '[2026-11-17 3] Plain option inputs are 32px high with 12px text; the title editor keeps its size: ' + JSON.stringify(plainOptionLook));
   let q = (await questions())[0];
   check(JSON.stringify(q) === JSON.stringify(surveyQuestions[0]), '[73-29] Opening only keeps the saved data and formatting untouched');
@@ -309,6 +309,26 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   size = await sizeLook();
   check(size.font.every(f => f === '16px') && size.line === '24px' && size.title === '22px' && size.desc === '19px' && size.header === '17px',
     '[2026-11-17] bodyFontSize 18 maps to choices 16 (line 24), title 22, description 19 like WPF; the header keeps 17: ' + JSON.stringify(size));
+  // 2026-11-17 2·5번: 관리자 화면 테마(body1 0.85rem)를 흉내 내도 값이 없는 영역은 WPF 기본값을 명시한다 — 헤더 17, TEXT 본문 15, 푸터 14.
+  // 크기를 지정한 글자(20)는 그대로, bodyFontSize는 본문만 바꾸고 헤더·푸터는 그대로다.
+  await run(`(()=>{const st=document.createElement('style');st.id='app-body';st.textContent='body{font-size:0.85rem !important}';document.head.appendChild(st);})()`);
+  const textPopup = {popupId: 'T', popupType: 'TEXT', title: 'T', sizeMode: 'FIXED', width: 600, height: 500, showHeader: true, showFooter: true, showCloseButton: true, questions: [],
+    content: {showPlainText: true, textBlocks: [{alignment: 'LEFT', runs: [{text: '기본 크기'}, {text: '이십', size: 20}]}], plainText: '기본 크기이십'}};
+  const textLook = () => run(`(()=>{const all=Array.from(document.querySelectorAll('span,p,div')).filter(x=>x.childNodes.length===1&&x.firstChild.nodeType===3);const at=t=>{const e=all.find(x=>x.textContent===t);return e&&getComputedStyle(e).fontSize;};
+    const paper=document.querySelector('[role=dialog] .MuiPaper-root .MuiPaper-root')||document.querySelector('[role=dialog]');const btn=Array.from(paper.querySelectorAll('.MuiButton-root')).find(b=>b.textContent.trim()==='확인');
+    return {body:getComputedStyle(document.body).fontSize,header:at('T'),plain:at('기본 크기'),sized:at('이십'),footer:btn&&getComputedStyle(btn).fontSize}})()`);
+  await run(`window.mountDialog(${JSON.stringify(textPopup)})`); await pause(700);
+  let text = await textLook();
+  check(text.body === '13.6px' && text.header === '17px' && text.plain === '15px' && text.sized === '20px' && text.footer === '14px',
+    '[2026-11-17 2·5] Preview dialog states WPF defaults (header 17, TEXT body 15, footer 14) instead of inheriting the 13.6px theme body: ' + JSON.stringify(text));
+  await run(`window.mountDialog(${JSON.stringify({...textPopup, content: {...textPopup.content, bodyFontSize: 18}})})`); await pause(700);
+  text = await textLook();
+  check(text.header === '17px' && text.plain === '18px' && text.sized === '20px' && text.footer === '14px',
+    '[2026-11-17 5] bodyFontSize changes only the body; header 17 and footer 14 stay, explicit run size wins: ' + JSON.stringify(text));
+  await run(`window.mountDialog(${JSON.stringify({...textPopup, content: {...textPopup.content, headerFontSize: 22, bodyFontSize: 12, footerFontSize: 16}})})`); await pause(700);
+  text = await textLook();
+  check(text.header === '22px' && text.plain === '12px' && text.footer === '16px', '[2026-11-17 5] Header, body and footer each use their own value: ' + JSON.stringify(text));
+  await run(`document.getElementById('app-body').remove()`);
   check(oxLook.numH < 24, 'The question number stays on one line next to a long title: ' + JSON.stringify(oxLook));
   check(oxLook.paperR === '6px' && oxLook.frameBg === 'rgba(0, 0, 0, 0)', 'The preview frame does not show through the rounded corners: ' + JSON.stringify(oxLook));
   fs.writeFileSync(path.join(output, 'ox-preview.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));

@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-17-06 — dev: 편집기·미리보기 영역별 기본 글자 크기 명시
+
+- 이유: 후속 TODO 2번(CKEditor 기본 글자와 미리보기 Dialog 일치, B안 공통 기본값 명시)·5번(에디터 없는 표시 영역 기본 스타일 회귀 검증). 관리자 웹 테마 `body1`이 0.85rem(13.6px)이라 크기 미지정 글자가 상위 CSS 상속에 따라 WPF 기본값(TEXT 본문 15 등)과 달라질 수 있음.
+- 변경: `popupCommon.ts`에 WPF XAML 기본값과 같은 `POPUP_DEFAULT_FONT_SIZES`(헤더 17, 푸터 14, TEXT 본문 15, IMAGE·VIDEO·설문 설명 14, 문항 제목 16, 문항 설명 13, 선택지 12, 설문 본문 14) 추가. `PopupRichTextEditor` 편집 영역 기본 글자 명시·`baseFontSize` prop(생략 시 선택지 12, compact 14, 그 밖 15), 문항 제목 편집기 16. `PopupPreview`는 SURVEY·QUIZ 외 본문에 `bodyFontSize ?? 유형별 기본값`, 푸터에 `footerFontSize ?? 14`를 항상 명시. 데이터에 크기를 저장하지 않고 서식 `size`가 우선. 웹 헤더가 `bodyFontSize`를 받는 경로는 저장소 기준 재현되지 않아 회귀 검사로 고정. 가이드 props·공지, WPF 사양서, TODO 문서 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/popupCommon.ts`·`PopupRichTextEditor.tsx`·`PopupQuestionEditor.tsx`·`PopupPreview.tsx`·`guide/guideData.ts`·`guide/guideNotices.ts`, `scripts/verify-rich-text-49.cjs`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`.
+- 검증: headless Edge 실측(하네스 기본 테마 16px 상속, 테마 body 13.6px 주입 시에도 수정 후 헤더 17·TEXT 본문 15·푸터 14). `tsc --noEmit`·변경 파일 eslint 통과. 하네스 `rich text 49` 78건, `survey rich text 55` 74건, `TODO61 preview` 126건, `completion UX 43` 78건, `TODO69 sample` 62건, `IMAGE preview` 54건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `RgstPop quiz rule` 25건, `guide render` 31건, `question template picker` 7건, `guide registry` 309건, `pickPopupFields` 34건 통과. WPF PopupWindowTests 565건(TEXT 헤더·본문·푸터 기본·`bodyFontSize`만·각자 값) 통과. 실제 관리자 화면·WPF 실화면 나란히 비교·폐쇄망 미실행. IMAGE·VIDEO 영역별 값은 기존 하네스 회귀 통과로만 확인.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-05 — dev: 설문·퀴즈 선택지 기본 크기 32px·12px(편집기·미리보기·WPF)
 
 - 이유: 후속 TODO 3·4번 요건(선택지 한 줄 기본 높이 32, 기본 글자 12를 편집기·미리보기·WPF에 같은 단위로 반영). 선택지 글자는 `bodyFontSize - 2`(미지정 시 12), OX도 같은 크기로 통일하기로 결정.
@@ -10,7 +18,7 @@
   - 문서: WPF 사양서 2종, 가이드 props·공지, TODO 문서 갱신.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`·`PopupRichTextEditor.tsx`·`SurveyPreview.tsx`·`PopupPreview.tsx`·`guide/guideData.ts`·`guide/guideNotices.ts`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`·`SurveyDesigns/SurveyStyles.V1.xaml`·`SurveyStyles.V2.xaml`, `scripts/verify-survey-rich-text-55.cjs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`.
 - 검증: 웹 `tsc --noEmit`·eslint(기존 `popupRichText.ts` 경고 1건 외 없음). 하네스 `survey rich text 55` 71건, `TODO61 preview` 126건, `completion UX 43` 78건, `TODO69 sample` 62건, `IMAGE preview` 54건, `rich text 49` 75건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `RgstPop quiz rule` 25건, `guide registry` 304건, `guide render` 31건, `question template picker` 7건 통과. WPF 빌드 경고·오류 0, PopupWindowTests 562건, Popup.BehaviorTests 1740건(긴 선택지 검사를 새 높이 기준으로 고침, 이 테스트 프로젝트는 Git 제외라 로컬에만 반영), Popup.RecoveryTests 255건, ApiDemoTests 150건 통과. 같은 데이터의 브라우저·WPF 실화면 나란히 비교, 확대 DPI, 폐쇄망은 미실행.
-- 상태: 커밋 / 미푸시. 후속 2번(CKEditor 기본 글자·미리보기 일치)·5번 나머지(설문 외 유형 영역별 기본 스타일) 진행 중.
+- 상태: 커밋 / 원격 반영. 후속 항목은 2026-11-17-06까지 반영.
 
 ## 2026-11-17-04 — dev: 설문·퀴즈 문항 제목 서식 편집기 상시 사용
 
@@ -18,7 +26,7 @@
 - 변경: `PopupQuestionEditor`의 `richTitle = quiz || richQuestionText` 분기와 일반 `TextField` 제목을 제거하고 제목을 항상 `PopupRichTextEditor`(compact)로 렌더링. 저장 형식(`title`·`titleBlocks`, `initialRich`·`richValue`)은 그대로. props·함수 주석, 가이드(요약·props·힌트·시작 탭)·공지·인계 문서 갱신. 하네스 `verify-survey-rich-text-55.cjs`를 설문 제목 서식 편집기 기준으로 수정.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`·`guideNotices.ts`·`guideRunners.tsx`·`tabs/GuideStartTab.tsx`, `scripts/verify-survey-rich-text-55.cjs`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/20261110_QUIZ_문항제목_RichTextEditor_선택지채번제거_TODO.md`.
 - 검증: `tsc --noEmit`·변경 파일 eslint 통과. 하네스 `survey rich text 55` 67건, `quiz option byte 73` 44건, `guide registry` 299건, `guide render` 31건, `TODO69 sample` 62건, `RgstPop quiz rule` 25건, `question template picker` 7건 통과. 서버 저장→재조회 실화면·폐쇄망 미실행.
-- 상태: 커밋 / 미푸시. 후속 2~5번(기본 글자 크기·선택지 32px/12px·WPF 동시 반영·영역별 기본 스타일)은 진행 중.
+- 상태: 커밋 / 원격 반영. 후속 항목은 2026-11-17-06까지 반영.
 
 ## 2026-11-17-03 — doc: TODO78 F/P 문서 체계 정리 계획
 

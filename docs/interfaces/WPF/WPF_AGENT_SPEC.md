@@ -314,7 +314,7 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 | `minimumWidth`, `minimumHeight` | 선택, 각각 `300` | 최종 창의 하한. 작은 기존 값도 300으로 보정 |
 | `maximumWidth`, `maximumHeight` | 선택, `1200`, `900` | 일반 유형의 최대 크기. IMAGE는 작업 영역 90% 상한 사용 |
 | `popupPosition` | 선택, `CENTER` | 아래 9개 위치. 알 수 없는 값은 중앙 |
-| `headerFontSize`, `bodyFontSize`, `footerFontSize` | 선택, 화면 기본 글자 크기 | 지정 시 10~40으로 보정. 헤더 기본 17, 푸터 기본 14, 본문은 유형별 기본값. SURVEY·QUIZ는 주관식 = 본문(기본 14), 선택지 = 본문 - 2(기본 12, 한 줄 최소 높이 32, OX 포함), 문항 제목·설명 = 본문 + 4·+ 1(미지정 시 16·13). 헤더는 `bodyFontSize`의 영향을 받지 않는다 |
+| `headerFontSize`, `bodyFontSize`, `footerFontSize` | 선택, 화면 기본 글자 크기 | 지정 시 10~40으로 보정. 헤더 기본 17, 푸터 기본 14, 본문은 유형별 기본값. SURVEY·QUIZ는 주관식 = 본문(기본 14), 선택지 = 본문 - 2(기본 12, 한 줄 최소 높이 32, OX 포함), 문항 제목·설명 = 본문 + 4·+ 1(미지정 시 16·13). 헤더는 `bodyFontSize`의 영향을 받지 않는다. 기본값(헤더 17, TEXT 본문 15, IMAGE·VIDEO 설명 14, 푸터 14)은 관리자 미리보기·편집기도 같은 값으로 명시한다(`POPUP_DEFAULT_FONT_SIZES`, 2026-11-17) |
 
 ```text
  TOP_LEFT          TOP_CENTER          TOP_RIGHT

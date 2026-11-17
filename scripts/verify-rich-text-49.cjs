@@ -322,6 +322,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`window.mount(${JSON.stringify(toolbarBlocks)},true,null,{hideToolbar:true})`); await waitEditor(); await pause(250);
   await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(100);
   check(await run(`window.editor().isReadOnly`) && !(await panelOpen()), '[toolbar] read-only stays locked with no format panel while hidden');
+  // 2026-11-17 2번: 편집 영역 기본 글자를 명시한다 — TEXT 본문 15(WPF BodyTextStyle), compact(설명) 14. 지정한 크기(20)는 그대로, 데이터에 size를 넣지 않는다.
+  const sizeBlocks = [{alignment:'LEFT',runs:[{text:'기본'},{text:'이십',size:20}]}];
+  const editorFont = () => run(`(()=>{const e=window.editor().ui.getEditableElement();const s=Array.from(e.querySelectorAll('span')).find(x=>x.textContent==='이십');return {p:getComputedStyle(e.querySelector('p')).fontSize,sized:s&&getComputedStyle(s).fontSize,preview:(()=>{const el=Array.from(document.querySelectorAll('#preview span')).find(x=>x.textContent==='기본');return el&&getComputedStyle(el).fontSize;})()}})()`);
+  await run(`window.mount(${JSON.stringify(sizeBlocks)},false,${JSON.stringify(sizeBlocks)})`); await waitEditor(); await pause(250);
+  let font = await editorFont();
+  check(font.p === '15px' && font.sized === '20px' && font.preview === '15px', '[2026-11-17 2] TEXT editor and preview share the explicit 15px default; sized text stays 20: ' + JSON.stringify(font));
+  await run(`window.editor().setData('<p>새 글자</p>')`); await pause(150);
+  check(await run(`JSON.stringify(window.lastChange.blocks)`) === JSON.stringify([{alignment:'LEFT',runs:[{text:'새 글자'}]}]), '[2026-11-17 2] The default size is not stored as a run size');
+  await run(`window.mount(${JSON.stringify(sizeBlocks)},false,null,{compact:true})`); await waitEditor(); await pause(250);
+  font = await editorFont();
+  check(font.p === '14px' && font.sized === '20px', '[2026-11-17 2] Compact (description) editor uses the 14px default: ' + JSON.stringify(font));
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});
   fs.writeFileSync(path.join(output,'preview-62.png'),Buffer.from(finalShot.data,'base64'));

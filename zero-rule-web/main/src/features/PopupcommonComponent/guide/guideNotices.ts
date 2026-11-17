@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-17-area-default-font-size', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
+    title: '편집기·미리보기 영역별 기본 글자 크기 명시',
+    body: ['크기를 지정하지 않은 글자는 화면 테마·Dialog의 상속 크기가 아니라 실제 팝업(WPF) 기본값으로 표시합니다. 헤더 17, TEXT 본문 15, IMAGE·VIDEO 설명 14, 푸터 14, 설문 문항 제목 16·설명 13·선택지 12입니다.',
+      'PopupRichTextEditor 편집 영역도 같은 기본값을 씁니다(TEXT 본문 15, 설명 14, 문항 제목 16, 선택지 12). baseFontSize(선택)로 바꿀 수 있고 데이터에 크기를 저장하지 않습니다.',
+      'headerFontSize·bodyFontSize·footerFontSize는 각 영역에만 적용됩니다. bodyFontSize만 주면 헤더 17·푸터 14는 그대로입니다.'],
+    components: ['PopupRichTextEditor', 'PopupPreview', 'PopupPreviewDialog'],
+    action: '바꿀 코드는 없습니다. 기본값은 popupCommon의 POPUP_DEFAULT_FONT_SIZES에 있습니다.',
+  },
+  {
     id: '2026-11-17-option-size-32-12', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
     title: '설문·퀴즈 선택지 기본 크기 32px·12px',
     body: ['편집기의 선택지 입력칸(일반·서식)은 한 줄 높이 32px, 기본 글자 12px입니다. 정답·삭제 칸도 32px에 맞춥니다. 문항 제목·주관식 정답 입력은 그대로입니다.',

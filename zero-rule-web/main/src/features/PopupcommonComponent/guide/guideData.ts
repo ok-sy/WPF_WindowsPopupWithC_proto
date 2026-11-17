@@ -205,6 +205,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'disabled', type: 'boolean', description: '읽기 전용으로 보여 줍니다.' },
       { name: 'compact', type: 'boolean', description: '툴바를 숨긴 짧은 입력칸입니다. 서식은 우클릭으로 엽니다.' },
       { name: 'inlineLabel', type: 'string', description: 'compact일 때 짧은 표시(선택지 번호 등)·입력칸·서식 버튼을 한 줄에 둡니다.' },
+      { name: 'baseFontSize', type: 'number', description: '크기를 지정하지 않은 글자의 기본 크기(px). 생략하면 optionSize 12, compact 14(설명), 그 밖 15(TEXT 본문)로 실제 팝업 기본값과 같습니다. 서식에 지정한 크기가 우선하며 데이터에 저장하지 않습니다.' },
       { name: 'optionSize', type: 'boolean', description: 'compact일 때 설문·퀴즈 선택지 크기(한 줄 높이 32px·기본 글자 12px)로 그립니다. 서식에 지정한 글자 크기는 그대로입니다. 문항 제목·본문에는 쓰지 않습니다.' },
       { name: 'hideToolbar', type: 'boolean', description: '상단 툴바만 숨깁니다. 본문 높이는 그대로이고, 값을 바꿔도 입력 내용이 유지됩니다.' },
       { name: 'placeholder', type: 'string', description: '비어 있을 때 안내 문구' },

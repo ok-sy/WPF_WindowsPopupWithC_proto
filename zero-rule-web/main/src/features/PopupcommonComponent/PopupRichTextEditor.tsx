@@ -5,6 +5,7 @@ import { acceptsByteLimitedChange, byteLimitMessage, utf8ByteLength } from './po
 import PopupRichTextMenu from './PopupRichTextMenu';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
 import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
+import { POPUP_DEFAULT_FONT_SIZES } from './popupCommon';
 
 /* compact 입력칸 높이. 바깥 값은 테두리 2px를 더한 값으로 번호·서식·삭제 칸을 첫 줄에 맞출 때 쓴다. */
 const COMPACT_EDITOR_MIN_HEIGHT = 34;
@@ -32,6 +33,11 @@ type Props = {
    * 서식에 지정한 글자 크기는 그대로 우선한다. 문항 제목·본문 편집기에는 쓰지 않는다.
    */
   optionSize?: boolean;
+  /**
+   * 크기를 지정하지 않은 글자의 기본 크기(px). 실제 팝업·미리보기의 같은 영역 기본값과 맞춘다.
+   * 생략하면 optionSize 12, compact 14(설명), 그 밖 15(TEXT 본문). 문항 제목은 16을 넘긴다. 서식에 지정한 크기가 우선한다.
+   */
+  baseFontSize?: number;
   /** 상단 툴바만 숨긴다(본문 높이·문단 간격은 기본 유지). 값이 바뀌어도 다시 마운트하지 않아 입력 내용과 선택 범위가 유지된다. 서식은 우클릭·'서식' 버튼으로 지정한다. */
   hideToolbar?: boolean;
   /** 빈 편집기 안내 문구(생략 시 본문 기본 안내) */
@@ -55,13 +61,17 @@ type Props = {
  *   공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 쓴다. HTML 자체는 저장하지 않는다.
  *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
-export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, optionSize, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
+export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, optionSize, baseFontSize, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
   const toolbarHidden = compact || hideToolbar;
   const inline = Boolean(compact && inlineLabel);
   const option = Boolean(compact && optionSize);
   /* compact 입력칸 안쪽 최소 높이와 테두리 2px를 더한 바깥 높이. 바깥 값으로 번호·서식·삭제 칸을 첫 줄에 맞춘다. */
   const compactMinHeight = option ? OPTION_INPUT_HEIGHT - 2 : COMPACT_EDITOR_MIN_HEIGHT;
   const compactOuterHeight = compactMinHeight + 2;
+  /* POL-01-02 : 기본값의 적용 — 편집 영역 기본 글자 크기를 명시해 상위 CSS(테마·Dialog) 상속 차이로 미리보기와 달라지지 않게 한다(2026-11-17).
+     데이터에 size를 저장하지 않으며, 서식으로 지정한 크기(span 인라인 font-size)가 우선한다. */
+  const defaultFontSize = option ? OPTION_INPUT_FONT_SIZE
+    : baseFontSize ?? (compact ? POPUP_DEFAULT_FONT_SIZES.surveyDescription : POPUP_DEFAULT_FONT_SIZES.textBody);
   const [engine, setEngine] = useState<CkeditorEngine | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
@@ -220,11 +230,12 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
         '&:focus-within': { borderColor: 'primary.main' },
         '& .ck.ck-editor__editable:not(.ck-editor__nested-editable), & .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused':
           { border: 0, borderRadius: toolbarHidden ? '3px' : '0 0 3px 3px', boxShadow: 'none' },
+        '& .ck.ck-editor__editable': { fontSize: defaultFontSize },
         '& .ck-editor__editable': { minHeight: compact ? compactMinHeight : 140, px: compact ? 1 : 1.5, ...(compact ? { overflowWrap: 'anywhere', boxSizing: 'border-box' } : {}) },
         // CKEditor 기본 패딩(상하 16px)·문단 여백(12px)이 일반 선택자보다 우선해 .ck.를 붙여 줄인다.
         ...(compact ? { '& .ck.ck-editor__editable_inline': { py: 0 }, '& .ck.ck-editor__editable p': { my: 0.5 } } : {}),
         // 선택지 크기: 기본 글자 12·줄 18, 문단 위아래 6으로 한 줄 바깥 높이 32. 서식 크기는 span의 인라인 font-size가 우선한다.
-        ...(option ? { '& .ck.ck-editor__editable_inline': { py: 0, fontSize: OPTION_INPUT_FONT_SIZE, lineHeight: `${OPTION_LINE_HEIGHT}px` },
+        ...(option ? { '& .ck.ck-editor__editable_inline': { py: 0, lineHeight: `${OPTION_LINE_HEIGHT}px` },
           '& .ck.ck-editor__editable p': { my: '6px' } } : {}) }}>
         {engine && config && (
           <CKEditor

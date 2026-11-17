@@ -38,6 +38,28 @@ export const FONT_SIZE_MAX = 40;
 export type PopupFontSizeKey = 'headerFontSize' | 'bodyFontSize' | 'footerFontSize';
 
 /**
+ * POL-01-02 : 기본값의 적용
+ * ■ 영역별 기본 글자 크기(px) — WPF XAML 기본값과 같다(2026-11-17).
+ * - 값이 없는 영역은 상위 CSS(테마 body1·Dialog·CKEditor 기본값) 상속에 맡기지 않고 이 값을 명시한다.
+ * - header 17(PopupTitleText) · footer 14(푸터 버튼·체크박스) · textBody 15(TEXT BodyTextStyle)
+ *   imageDescription 14 · videoDescription 14 · surveyDescription 14(설문 콘텐츠 설명)
+ *   questionTitle 16 · questionDescription 13 · option 12(선택지 = 설문 본문 14 - 2) · surveyBody 14(주관식)
+ * - bodyFontSize·headerFontSize·footerFontSize가 있으면 그 값(설문은 SurveyPreview 매핑)이 우선한다.
+ */
+export const POPUP_DEFAULT_FONT_SIZES = {
+  header: 17,
+  footer: 14,
+  textBody: 15,
+  imageDescription: 14,
+  videoDescription: 14,
+  surveyDescription: 14,
+  questionTitle: 16,
+  questionDescription: 13,
+  option: 12,
+  surveyBody: 14,
+} as const;
+
+/**
  * POL-01-01 : 공통 옵션의 위치
  * ■ 폰트 크기 읽기
  * - in : popup(AdminPopupDetail) 편집값 · key(PopupFontSizeKey) 폰트 크기 키
