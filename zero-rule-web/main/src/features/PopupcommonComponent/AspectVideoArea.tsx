@@ -85,8 +85,9 @@ export function FillVideoArea({ url }: { url: string }) {
       data-testid="fill-video-area"
       data-loaded={loaded ? 'true' : 'false'}
       sx={{ position: 'relative', flex: 1, minHeight: 170, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
-        overflow: 'hidden', bgcolor: '#000', color: 'white' }}
+        overflow: 'hidden', color: 'white' }}
     >
+      {(!url || failed) && <VideoBlackLayer />}
       {url && !failed && (
         <video
           key={url}
@@ -107,6 +108,17 @@ export function FillVideoArea({ url }: { url: string }) {
       )}
     </Box>
   );
+}
+
+/*
+ * 둥근 모서리 검정 번짐 방지(2026-11-17): 영역(테두리 Box)에는 배경을 칠하지 않고 검정은 한 겹만 둔다.
+ *  - 영상이 있으면 video 자체 배경(#000)이 레터박스·로딩 전 검정을 맡는다.
+ *  - 주소가 없거나 읽지 못하면 VideoBlackLayer 한 겹을 깐다.
+ * 영역에도 검정 배경을 칠하면 회색 테두리 아래(border-box)와 overflow로 잘린 영상 가장자리 아래에 검정이 겹쳐
+ * 안티앨리어싱된 모서리가 검게 번진다(backgroundClip: padding-box로는 테두리 쪽만 줄고 잘린 가장자리 쪽은 남음).
+ */
+function VideoBlackLayer() {
+  return <Box sx={{ position: 'absolute', inset: 0, bgcolor: '#000' }} />;
 }
 
 /** WPF VideoPopupView 영상 테두리 두께(px). */
@@ -172,8 +184,9 @@ export default function AspectVideoArea({ url }: { url: string }) {
       data-testid="aspect-video-area"
       data-natural={natural ? `${natural.width}x${natural.height}` : ''}
       sx={{ position: 'relative', width: '100%', height, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
-        overflow: 'hidden', bgcolor: '#000', color: 'white', flexShrink: 0 }}
+        overflow: 'hidden', color: 'white', flexShrink: 0 }}
     >
+      {(!url || failed) && <VideoBlackLayer />}
       {url && !failed && (
         <video
           key={url}

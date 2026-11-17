@@ -1,5 +1,15 @@
 # 변경 이력
 
+## 2026-11-17-19 — dev: 61-17_미리보기영상영역모서리검정번짐_수정
+
+- 이유: 관리자 미리보기 영상 영역(VIDEO+QUIZ 결합·단독 VIDEO)의 둥근 모서리 1px 회색 테두리에 검정이 번져 보이는 현상 확인. 영역 Box의 검정 배경이 기본값(`background-clip: border-box`)으로 테두리 아래까지 칠해지고, `overflow: hidden`으로 잘린 영상 가장자리 아래에도 깔려 안티앨리어싱된 모서리에서 두 번 섞이는 것이 원인.
+- 변경:
+  - `AspectVideoArea.tsx`: `AspectVideoArea`·`FillVideoArea` 영역 Box의 `bgcolor: '#000'` 제거. 검정은 한 겹만 둔다 — 영상이 있으면 video 자체 배경(#000)이 레터박스·로딩 전 검정을 맡고, 주소가 없거나 읽지 못하면 `VideoBlackLayer`(absolute, inset 0, #000)를 깐다. 원인·방식 주석 추가.
+  - `scripts/verify-popup-preview-61.cjs`: VIDEO 영역 검사를 「영역 배경 투명 + 안쪽 검정 레이어 1개」로 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx`, `scripts/verify-popup-preview-61.cjs`.
+- 검증: headless Edge(100%)로 같은 1px #D1D5DB·모서리 8 상자를 세 방식으로 그려 모서리를 확대 비교 — 기존(검정 border-box) 번짐, padding-box 적용은 테두리 쪽만 감소, 영역 배경 제거·검정 한 겹은 번짐 없음. 웹 tsc·eslint 통과, verify-popup-preview-61 126건, completion-ux-43 78건, popup-common-sample-69 62건 통과. 실제 영상이 있는 로그인 관리자 화면·확대 배율·폐쇄망은 미확인. WPF는 변경 없음.
+- 상태: 커밋 / 원격 반영. 다음 반입본 대상.
+
 ## 2026-11-17-18 — 20261118 폐쇄망 반입본 생성(웹·WPF·문서, 서버·DB 제외)
 
 - 이유: 반입 준비. 20261116 반입본은 반입하지 못해 삭제했으므로 직전 반입본 20261112(9113308) 기준으로 20261116 내용과 이후 변경 — 설문·퀴즈 선택지 32px·12px(OX 포함), 문항 제목 서식 편집기 상시 사용, 영역별 기본 글자 크기, 관리자 미리보기 WPF 정렬(TODO61-17), 응답 code 5 Byte, 백엔드 전달용 장애별 분기 정의서, TODO78 문서 체계 — 을 폐쇄망에 전달.

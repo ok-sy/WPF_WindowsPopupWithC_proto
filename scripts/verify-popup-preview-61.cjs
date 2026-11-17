@@ -111,11 +111,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const head=getComputedStyle(Array.from(p.querySelectorAll('p')).find(e=>e.textContent==='미리보기 컴포넌트'));
     return {boxH:b.height, boxBottom:b.bottom, descTop:desc.getBoundingClientRect().top, descSize:ds.fontSize, descColor:ds.color, footerTop:f.top, footerH:f.height,
       btnH:btn.getBoundingClientRect().height, btnW:btn.getBoundingClientRect().width, border:bs.borderTopWidth+' '+bs.borderTopColor, radius:bs.borderTopLeftRadius, bg:bs.backgroundColor,
+      blackLayers:Array.from(box.querySelectorAll('*')).filter(e=>['rgb(0, 0, 0)'].includes(getComputedStyle(e).backgroundColor)).length,
       titleSize:ts.fontSize, titleWeight:ts.fontWeight, headSize:head.fontSize, headWeight:head.fontWeight, pad:body.paddingLeft+' '+body.paddingTop, caption:p.textContent.includes('완료 기준'),
       divider:!!p.querySelector('hr')};})())`));
   check(v.boxH > 400 && v.descTop > v.boxBottom && v.descTop < v.footerTop, '[61-17] VIDEO area fills the remaining height and the description sits below it: ' + JSON.stringify(v));
-  check(v.border === '1px rgb(209, 213, 219)' && v.radius === '8px' && v.bg === 'rgb(0, 0, 0)' && v.descSize === '14px' && v.descColor === 'rgb(75, 85, 99)' && !v.caption,
-    '[61-17] VIDEO area/description styles match WPF and the preview-only caption is gone: ' + JSON.stringify(v));
+  check(v.border === '1px rgb(209, 213, 219)' && v.radius === '8px' && v.bg === 'rgba(0, 0, 0, 0)' && v.blackLayers === 1 && v.descSize === '14px' && v.descColor === 'rgb(75, 85, 99)' && !v.caption,
+    '[61-17] VIDEO area/description styles match WPF (black painted by one inner layer only, so rounded corners do not bleed) and the preview-only caption is gone: ' + JSON.stringify(v));
   check(v.titleSize === '22px' && v.titleWeight === '600' && v.headSize === '17px' && v.headWeight === '600' && v.pad === '28px 24px',
     '[61-17] content title 22/600, header 17/600, body padding 28/24: ' + JSON.stringify(v));
   check(Math.abs(v.footerH - 80) < 0.6 && Math.abs(v.btnH - 44) < 0.6 && v.btnW >= 118 && !v.divider, '[61-17] footer is 80 high with a 44px button and no divider: ' + JSON.stringify(v));
