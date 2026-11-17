@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-17-18 — 20261118 폐쇄망 반입본 생성(웹·WPF·문서, 서버·DB 제외)
+
+- 이유: 반입 준비. 20261116 반입본은 반입하지 못해 삭제했으므로 직전 반입본 20261112(9113308) 기준으로 20261116 내용과 이후 변경 — 설문·퀴즈 선택지 32px·12px(OX 포함), 문항 제목 서식 편집기 상시 사용, 영역별 기본 글자 크기, 관리자 미리보기 WPF 정렬(TODO61-17), 응답 code 5 Byte, 백엔드 전달용 장애별 분기 정의서, TODO78 문서 체계 — 을 폐쇄망에 전달.
+- 변경:
+  - 변경 요약 `.offline-cache/notes-20261118.md`: `notes-20261116.md`를 바탕으로 맨 앞에 20261116 미반입·20261112 기준 안내, 신규 항목에 「[신규]」 표시. TODO73 OX 56·24 항목을 선택지 32·12(OX 포함)로 대체, TODO77 폐기 반영, 백엔드 확인 요청 3건(401 토큰 필터, 400 유지, ORA 예외 형식)과 Dialog Paper 전역 CSS 확인 요청 기재.
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261118`: 직전 20261112 번들(RULES 2)에서 연속(main df4d1f0 → 4ba8e2d, 19개 추가, 커밋 282), 민감값·제외 경로·트리 차이 점검 0.
+  - 옵션 `-Date 20261118 -PreviousExport 20261112 -PreviousCommit 9113308 -NotesFile .offline-cache/notes-20261118.md -GitHistoryDir .offline-cache/git-history-20261118 -VerifyBuild`(서버·DB 제외 기본). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 54·M 22·D 3(baseline f66e8ed 누적), WPF 소스 100, 문서 168+CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함). 20261112 이후 새 삭제 1건(`WPF_SPEC_v3.8.xlsx`).
+- 검증: 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,831,118 Byte). TAR 4개 파일 수 검증, TGZ SHA256 `77b999ae344fcf57eade58e5553d6632e1533ba987ec9832ec65fe08fa8569a7` 일치(21,261,625 Byte). 추출 목록에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB·비교 도구 0건, 장애별 분기 정의서·`SERVER_ERROR_BRANCH_v1.6.xlsx`·`WPF_SPEC_v3.9.xlsx`·문서 목차·CI 이미지 포함, README-IMPORT 기준 커밋 4118ba0·직전 20261112(9113308). 폐쇄망 적용·실호출은 미실행.
+- 상태: 반입본 생성·검증 완료(`offline-export/20261118`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-17-17 — doc: 장애별 분기 정의서 v1.6 — HTTP 오류 기본 응답을 상태 코드만으로 명시
 
 - 이유: HTTP_ERROR 샘플이 JSON 본문만 보여 줘 본문 작성이 기본처럼 읽힘. 필수 HTTP 오류는 상태 코드만 맞으면 되므로 기본 형태를 상태 줄만으로 정정.
