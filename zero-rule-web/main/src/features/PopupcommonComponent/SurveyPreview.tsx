@@ -153,6 +153,8 @@ export interface SurveyPreviewProps {
   namePrefix: string;
   /** QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
   quiz?: boolean;
+  /** 설명이 비어도 한 줄(22px) 자리를 둔다(WPF SurveyDescriptionText와 같음). VIDEO+QUIZ에서 영상 설명과 같아 숨길 때만 false. 기본 true. */
+  reserveDescription?: boolean;
   /** 관리자 본문 글자 크기(10~40 보정값). 없으면 WPF 기본값(본문 14, 문항 제목 16, 문항 설명 13)을 쓴다. */
   bodyFontSize?: number | null;
 }
@@ -268,6 +270,7 @@ export default function SurveyPreview({
   namePrefix,
   quiz = false,
   bodyFontSize,
+  reserveDescription = true,
 }: SurveyPreviewProps) {
   const richDescription = richBlocksOrNull(descriptionBlocks);
   const bodySize = bodyFontSize ?? SURVEY_BODY_FONT_DEFAULT;
@@ -275,8 +278,9 @@ export default function SurveyPreview({
   const optionLineHeight = surveyOptionLineHeight(optionFontSize);
   return (
     <Stack spacing={surveyDesign.flatQuestions ? 0 : 1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
-      {(description || richDescription) && (
-        <Typography component="div" sx={{ color: surveyColors.muted, fontSize: 14, mb: 0.5 }}>
+      {/* WPF 머리말: 설명(14·줄 22)은 비어도 한 줄 자리를 차지하고, 아래 여백 10 + 문항 목록 위 4 = 14 뒤에 첫 문항이 온다(2026-11-17). */}
+      {(description || richDescription || reserveDescription) && (
+        <Typography component="div" sx={{ color: surveyColors.muted, fontSize: 14, lineHeight: '22px', minHeight: 22, mb: '14px' }}>
           {richDescription ? <PopupRichBlocks blocks={richDescription} /> : description}
         </Typography>
       )}

@@ -3,7 +3,7 @@
 // 저장소 루트에서 웹 의존성 설치 후 실행: node scripts/verify-popup-parity.cjs
 // - 웹: headless Edge, deviceScaleFactor 1(100%), 팝업 width×height 상자. 테마 body1 0.85rem(관리자 화면과 같음).
 // - WPF: scripts/PopupParityCapture가 같은 데이터를 서버 응답 형식으로 받아 실제 PopupWindow를 96 DPI로 렌더링.
-// - 결과: .offline-verify/popup-parity/<id>.side.png(왼쪽 웹·오른쪽 WPF), report.html, measures.json. 자동 판정은 크기 측정값만 한다.
+// - 결과: .offline-verify/popup-parity/<id>.side.png(왼쪽 웹 흰 판·오른쪽 WPF 흰 판), report.html, measures.json. 자동 판정: 흰 판 크기, 선택지 높이·글자.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn, execFileSync} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/popup-parity');
 const compiled = require('../zero-rule-web/node_modules/next/dist/compiled/webpack/webpack');
@@ -83,21 +83,15 @@ const toWpf = p => {
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run('typeof window.mountParity === "function"')) break; await pause(100);}
 
-  // 1. 웹 캡처와 측정
+  // 1. 웹 캡처와 측정: 창(width×height) 안 흰 판(.MuiPaper-root, 그림자 여백 24 안쪽)만 잘라 WPF 흰 판과 같은 기준으로 비교한다.
   const web = {};
   for (const popup of fixtures) {
     await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(600);
-    web[popup.popupId] = await run(`(()=>{const f=document.getElementById('frame').getBoundingClientRect();const opts=Array.from(document.querySelectorAll('#frame .survey-option'));
-      return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},choices:opts.map(o=>({name:o.textContent.trim(),width:Math.round(o.getBoundingClientRect().width*10)/10,height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)}))}})()`);
+    web[popup.popupId] = await run(`(()=>{const f=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect();const opts=Array.from(document.querySelectorAll('#frame .survey-option'));
+      const q=Array.from(document.querySelectorAll('#frame span')).find(e=>e.textContent==='01');
+      return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)}))}})()`);
     const f = web[popup.popupId].frame;
     await shot(path.join(output, popup.popupId + '.web.png'), {x: f.x, y: f.y, width: f.width, height: f.height});
-    // WPF 일반 창은 그림자용 바깥 여백 24를 창 크기 안에 두어 흰 판이 width-48 × height-48이다. 내부 배치를 같은 판 크기로 비교하려고 한 번 더 그린다.
-    const fit = {...popup, width: popup.width - 48, height: popup.height - 48};
-    await run(`window.mountParity(${JSON.stringify(fit)})`); await pause(600);
-    web[popup.popupId + ':fit'] = await run(`(()=>{const f=document.getElementById('frame').getBoundingClientRect();const opts=Array.from(document.querySelectorAll('#frame .survey-option'));
-      return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)}))}})()`);
-    const g = web[popup.popupId + ':fit'].frame;
-    await shot(path.join(output, popup.popupId + '.webfit.png'), {x: g.x, y: g.y, width: g.width, height: g.height});
   }
 
   // 2. WPF 캡처(같은 데이터를 서버 응답 형식으로)
@@ -117,8 +111,11 @@ const toWpf = p => {
   // 4. 측정값 비교: 선택지 높이·글자(같은 이름끼리), 콘텐츠 크기
   const rows = [];
   for (const popup of fixtures) {
-    const w = web[popup.popupId + ':fit'], d = wpf[popup.popupId];
-    rows.push({id: popup.popupId, webFrame: [web[popup.popupId].frame.width, web[popup.popupId].frame.height], wpfContent: [d.content.width, d.content.height]});
+    const w = web[popup.popupId], d = wpf[popup.popupId];
+    rows.push({id: popup.popupId, webFrame: [w.frame.width, w.frame.height], wpfContent: [d.content.width, d.content.height]});
+    // 흰 판 크기(창 - 그림자 여백)가 WPF와 같아야 한다(2026-11-17).
+    check(Math.abs(w.frame.width - d.content.width) <= 1 && Math.abs(w.frame.height - d.content.height) <= 1,
+      `${popup.popupId} white panel web ${w.frame.width}×${w.frame.height} vs WPF ${d.content.width}×${d.content.height}`);
     for (const choice of d.choices.filter(c => c.name)) {
       const match = w.choices.find(c => c.name === choice.name);
       if (!match) continue;
@@ -129,13 +126,12 @@ const toWpf = p => {
   }
   fs.writeFileSync(path.join(output, 'measures.json'), JSON.stringify(rows, null, 2));
   console.table(rows.map(r => ({...r, webFrame: r.webFrame?.join('×'), wpfContent: r.wpfContent?.join('×'), web: r.web?.join(' / '), wpf: r.wpf?.join(' / ')})));
-  console.log('PASS: ' + checks + ' popup parity choice checks · images: ' + output);
+  console.log('PASS: ' + checks + ' popup parity checks · images: ' + output);
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
 
 function sidePage(popupId) {
   return `<!doctype html><meta charset="utf-8"><body style="margin:0;padding:12px;background:#9ca3af;font:13px Malgun Gothic">
   <div style="display:flex;gap:16px;align-items:flex-start">
-  <figure style="margin:0"><figcaption style="color:#fff;margin-bottom:4px">관리자 미리보기 (웹) — ${popupId}</figcaption><img src="/${popupId}.web.png" style="display:block"></figure>
-  <figure style="margin:0"><figcaption style="color:#fff;margin-bottom:4px">웹 — WPF 흰 판 크기(-48)로 맞춤</figcaption><img src="/${popupId}.webfit.png" style="display:block"></figure>
+  <figure style="margin:0"><figcaption style="color:#fff;margin-bottom:4px">관리자 미리보기 흰 판 — ${popupId}</figcaption><img src="/${popupId}.web.png" style="display:block"></figure>
   <figure style="margin:0"><figcaption style="color:#fff;margin-bottom:4px">WPF 팝업 흰 판(그림자 여백 제외)</figcaption><img src="/${popupId}.wpf.png" style="display:block"></figure></div>`;
 }

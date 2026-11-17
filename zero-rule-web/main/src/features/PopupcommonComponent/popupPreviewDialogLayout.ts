@@ -24,16 +24,20 @@ export function previewPositionAlign(popup: AdminPopupDetail): [string, string] 
 
 /**
  * POL-08-01 : 공통 렌더러
- * ■ 미리보기 가장자리 여백
- * - in : popup(AdminPopupDetail) popupType · content.videoEnabled
- * - out: number 여백(px) — 영상 창(VIDEO, 영상 사용 QUIZ) 0, 그 밖 24
- * - 팝업 종류를 받아 화면 가장자리와 띄울 여백을 돌려준다.
- *   WPF 일반 창은 그림자용 투명 여백 24px(PopupOuterGrid.Margin)이 있어 본문이 가장자리에서 24px 떨어지고, 영상 창은 여백이 없다.
+ * ■ 창 안쪽 그림자 여백
+ * - in : popup(AdminPopupDetail) popupType · sizeMode · content.videoEnabled
+ * - out: number 여백(px) — 영상 창(VIDEO, 영상 사용 QUIZ)·FULLSCREEN 0, 그 밖 24
+ * - WPF 일반 창은 창 크기 안에 그림자용 투명 여백 24px(PopupOuterGrid.Margin)을 두고 그 안에 흰 판을 그린다(흰 판 = 창 - 48).
+ *   영상 창(ApplyVideoWindowSurface)·FULLSCREEN은 여백이 없다. 미리보기(PopupPreview)도 창 크기 안에 같은 여백을 두고 그 안에 그림자를 그린다
+ *   (2026-11-17, 이전에는 IMAGE에만 적용돼 TEXT·SURVEY·QUIZ 흰 판이 WPF보다 48px 컸음).
  */
-export function previewEdgeMargin(popup: AdminPopupDetail): number {
+export function previewShadowMargin(popup: AdminPopupDetail): number {
   const hasVideo = popup.popupType === 'VIDEO' || (popup.popupType === 'QUIZ' && popup.content.videoEnabled === true);
-  return hasVideo ? 0 : 24;
+  return hasVideo || popup.sizeMode === 'FULLSCREEN' ? 0 : 24;
 }
+
+/** WPF DropShadowEffect(BlurRadius 22 · ShadowDepth 4 · Direction 270 · Opacity 0.28)에 해당하는 CSS 그림자. 여백이 있는 창에만 쓴다. */
+export const PREVIEW_WINDOW_SHADOW = '0 4px 22px rgba(0, 0, 0, 0.28)';
 
 /**
  * POL-02-02 : 종료 제어

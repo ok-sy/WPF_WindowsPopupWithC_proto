@@ -10,6 +10,7 @@ import normalizePopupLink from './normalizePopupLink';
 import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
+import { PREVIEW_WINDOW_SHADOW, previewShadowMargin } from './popupPreviewDialogLayout';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import { quizRequiresPassing } from './popupQuizRule';
@@ -286,7 +287,7 @@ function PopupBody({
   }
 
   if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description}
+    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description} reserveDescription={!hideSurveyDescription}
       descriptionBlocks={hideSurveyDescription ? null : content.descriptionBlocks} /> : null;
   }
 
@@ -561,14 +562,15 @@ export default function PopupPreview({
     onClose?.();
   };
   const footerButtonDisabled = linkAction && !footerLink;
+  const shadowMargin = previewShadowMargin(popup);
 
   return (
     <Box
       sx={{
         minHeight: 0,
         height: '100%',
-        p: showBackground ? 2 : 0,
-        ...(popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN' ? {p: '24px'} : {}),
+        // WPF 일반 창은 창 크기 안에 그림자 여백 24px(영상 창·FULLSCREEN 0)을 두고 흰 판을 그린다. 모든 유형에 같은 규칙(2026-11-17).
+        p: shadowMargin ? `${shadowMargin}px` : showBackground ? 2 : 0,
         flex: 1,
         boxSizing: 'border-box',
         position: 'relative',
@@ -593,8 +595,10 @@ export default function PopupPreview({
       }}
     >
       <Paper
-        elevation={isSurvey ? 0 : 8}
+        elevation={0}
         sx={{
+          // WPF DropShadowEffect와 같은 그림자. 영상 창·FULLSCREEN은 WPF와 같이 그림자 없음.
+          boxShadow: shadowMargin ? PREVIEW_WINDOW_SHADOW : 'none',
           width: '100%',
           height: '100%',
           maxWidth: '100%',
@@ -688,7 +692,8 @@ export default function PopupPreview({
                 ...(popup.popupType === 'IMAGE' ? {fontSize: 22, fontWeight: 600, flexShrink: 0} : {}),
                 // WPF CommonContentTitleStyle 22 SemiBold, VideoPopupView 제목 아래 여백 15(TODO61-17)
                 ...(popup.popupType === 'VIDEO' ? {fontSize: 22, fontWeight: 600, mb: '15px', flexShrink: 0} : {}),
-                ...(isSurvey ? { fontSize: 25, color: surveyColors.text } : {}),
+                // WPF 설문 머리말 Border Padding 위 4, 제목 아래 6 + 설명 위 2 = 8(mb 1).
+                ...(isSurvey ? { fontSize: 25, color: surveyColors.text, pt: '4px' } : {}),
               }}
             >
               {richSurveyTitle ? <PopupRichBlocks blocks={richSurveyTitle} /> : title}
@@ -726,7 +731,8 @@ export default function PopupPreview({
         </Box>
         {isSurvey && (
           <Box
-            sx={{ px: 3, py: 1.75, flexShrink: 0, borderTop: `1px solid ${surveyColors.border}` }}
+            // WPF 설문 푸터와 같이 위 구분선 없음(2026-11-17).
+            sx={{ px: 3, py: 1.75, flexShrink: 0 }}
           >
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
@@ -845,9 +851,11 @@ export default function PopupPreview({
                 {popup.showCloseButton && (
                   <Button
                     variant="contained"
-                    color="inherit"
-                    // WPF ActionButtonStyle MinWidth 118 · Height 44
-                    sx={{ minWidth: 118, height: 44 }}
+                    disableElevation
+                    // WPF ActionButtonStyle: MinWidth 118 · Height 44 · 모서리 9 · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
+                    sx={{ minWidth: 118, height: 44, px: '22px', borderRadius: '9px', fontWeight: 600, bgcolor: '#111827', color: '#FFFFFF',
+                      '&:hover': { bgcolor: '#1F2937' }, '&:active': { bgcolor: '#374151' },
+                      '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF' } }}
                     disabled={footerButtonDisabled}
                     onClick={handleFooter}
                   >

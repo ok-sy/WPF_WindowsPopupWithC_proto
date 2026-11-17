@@ -3,7 +3,7 @@ import { Button, Dialog, DialogContent } from '@mui/material';
 import { useEffect, useState } from 'react';
 import PopupPreview from './PopupPreview';
 import type { Size } from './imagePreviewLayout';
-import { previewDialogSize, previewEdgeMargin, previewOverlay, previewPositionAlign } from './popupPreviewDialogLayout';
+import { previewDialogSize, previewOverlay, previewPositionAlign, previewShadowMargin } from './popupPreviewDialogLayout';
 
 /**
  * POL-08-01 : 공통 렌더러
@@ -53,17 +53,16 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   const overlay = previewOverlay(popup);
   /* WPF와 같이 FULLSCREEN은 위치를 무시하고, 그 밖에는 9개 위치에 맞춰 가장자리에 붙인다. */
   const [alignX, alignY] = previewPositionAlign(popup);
-  const edgeMargin = previewEdgeMargin(popup);
   const size = previewDialogSize(popup, measuredSize ?? recommendedSize, viewport);
-  /* IMAGE 일반 창은 PopupPreview가 WPF처럼 그림자 여백 24px 안쪽에 그림자를 그린다.
-   * 투명한 Dialog Paper(여백까지 포함한 창 크기)에도 그림자가 있으면 사각형이 이중으로 보이므로 Dialog 쪽 그림자를 뺀다. */
-  const shadowInsidePreview = popup.popupType === 'IMAGE';
+  /* WPF와 같이 Paper = 창 크기이고, 일반 창은 PopupPreview가 그 안에 그림자 여백 24px를 두고 흰 판·그림자를 그린다(previewShadowMargin).
+   * 그래서 Paper 자체는 투명·그림자 없음이고, 창이 작업 영역(브라우저 창) 가장자리에 바로 붙는다(WPF 창 위치와 같음, 2026-11-17). */
   /* MUI 6.4.1+ Dialog slotProps(backdrop·paper). deprecated BackdropProps·PaperProps 대신 한 객체로 넘긴다.
    * FULLSCREEN은 Paper 크기를 지정하지 않는다(paper: undefined). */
   const slotProps = {
     backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
-    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: '6px', bgcolor: 'transparent', ...(shadowInsidePreview ? { boxShadow: 'none' } : {}),
-      maxWidth: `min(96vw, calc(100vw - ${edgeMargin * 2}px))`, maxHeight: `min(96vh, calc(100vh - ${edgeMargin * 2}px))`, m: `${edgeMargin}px`, overflow: 'hidden' } },
+    // 영상 창은 WPF처럼 그림자가 없고(ApplyVideoWindowSurface), 일반 창 그림자는 안쪽 흰 판이 그리므로 Paper 그림자는 항상 없다.
+    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: previewShadowMargin(popup) ? 0 : '6px', bgcolor: 'transparent',
+      boxShadow: 'none', maxWidth: '96vw', maxHeight: '96vh', m: 0, overflow: 'hidden' } },
   };
 
   return (

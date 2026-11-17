@@ -334,8 +334,9 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   fs.writeFileSync(path.join(output, 'ox-preview.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
   await run(`window.mountDialog(${JSON.stringify(oxPopup)})`); await pause(700);
   fs.writeFileSync(path.join(output, 'ox-dialog.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
-  const dialogLook = await run(`(()=>{const d=getComputedStyle(document.querySelector('[role=dialog]'));return {bg:d.backgroundColor,r:d.borderRadius}})()`);
-  check(dialogLook.bg === 'rgba(0, 0, 0, 0)' && dialogLook.r === '6px', 'The preview dialog paper does not show white corners: ' + JSON.stringify(dialogLook));
+  // 2026-11-17: Dialog Paper는 창 크기·투명(모서리 0)이고, 안쪽 흰 판이 둥근 모서리 6·WPF 그림자를 그린다.
+  const dialogLook = await run(`(()=>{const d=getComputedStyle(document.querySelector('[role=dialog]'));const inner=getComputedStyle(document.querySelector('[role=dialog] .MuiPaper-root'));return {bg:d.backgroundColor,r:d.borderRadius,innerR:inner.borderRadius,shadow:inner.boxShadow}})()`);
+  check(dialogLook.bg === 'rgba(0, 0, 0, 0)' && dialogLook.innerR === '6px' && dialogLook.shadow.includes('22px'), 'The preview dialog paper does not show white corners; the inner panel is rounded with the WPF shadow: ' + JSON.stringify(dialogLook));
   await run(`window.mountPreview(${JSON.stringify(popup)})`); await pause(400);
   const shot2 = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'survey-preview.png'), Buffer.from(shot2.data, 'base64'));
   check(!errors.length, 'No page exceptions: ' + errors.join(' | '));

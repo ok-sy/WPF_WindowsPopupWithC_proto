@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-17-10 — dev: 61-17_미리보기창여백버튼설문머리말_WPF정렬_수정
+
+- 이유: 같은 데이터 나란히 비교(2026-11-17-09)에서 확인된 미리보기·WPF 차이 4건을 WPF 기준으로 맞추기로 결정.
+- 변경(관리자 미리보기만, WPF 변경 없음):
+  - 흰 판 크기: `previewShadowMargin`(영상 창·FULLSCREEN 0, 그 밖 24)을 모든 유형에 적용해 `PopupPreview`가 창 크기 안에 WPF 그림자 여백을 두고 흰 판에 WPF `DropShadowEffect`와 같은 그림자를 그림. Dialog Paper는 창 크기·투명·여백 0·그림자 없음(영상 창도 WPF처럼 그림자 없음). 이전 IMAGE 전용 규칙과 Dialog 바깥 여백 24(`previewEdgeMargin`)를 대체.
+  - 확인 버튼: WPF `ActionButtonStyle`과 같은 #111827·흰 글자·SemiBold·모서리 9(hover·누름·비활성 색 포함).
+  - 설문·퀴즈 푸터 위 구분선 제거.
+  - 설문 머리말: 제목 위 4, 설명 줄 높이 22·아래 14, 빈 설명도 한 줄 자리 유지(VIDEO+QUIZ 중복 숨김 때만 접음, `SurveyPreview.reserveDescription`).
+  - 비교 도구는 웹 흰 판을 직접 잘라 WPF 흰 판과 크기까지 자동 대조. 비교 기록·가이드 공지 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`·`PopupPreviewDialog.tsx`·`SurveyPreview.tsx`·`popupPreviewDialogLayout.ts`·`guide/guideNotices.ts`, `scripts/verify-popup-parity.cjs`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-survey-rich-text-55.cjs`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`.
+- 검증: `tsc --noEmit`·변경 파일 eslint 통과. `verify-popup-parity` 22건(5종 흰 판 크기 웹=WPF, 선택지 17개), 나란히 이미지에서 첫 문항 위치·버튼 색·구분선·빈 설명 자리 일치 확인. `TODO61 preview` 126건(Dialog 구조·그림자 여백 검사를 새 규칙으로 갱신), `survey rich text 55` 74건(Dialog Paper 검사 갱신), `completion UX 43` 78건, `IMAGE preview` 54건, `TODO69 sample` 62건, `rich text 49` 78건, `guide render` 31건, `guide registry` 313건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건 통과. 로그인 관리자 화면·확대 DPI·폐쇄망 미실행.
+- 상태: 커밋 / 원격 반영.
+
 ## 2026-11-17-09 — dev: 관리자 미리보기·WPF 같은 데이터 나란히 비교 도구 추가
 
 - 이유: 20261110 후속(선택지 32/12·영역별 기본 글자)과 61-17 정렬의 남은 확인 항목인 같은 데이터의 웹·WPF 화면 비교 수행.

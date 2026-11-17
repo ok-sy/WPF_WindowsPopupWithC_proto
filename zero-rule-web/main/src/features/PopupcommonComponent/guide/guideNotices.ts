@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-17-preview-wpf-window-parity', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
+    title: '미리보기 창 여백·확인 버튼·설문 머리말을 WPF와 같게 정렬',
+    body: ['TEXT·SURVEY·QUIZ 미리보기도 IMAGE처럼 창 크기 안에 WPF 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF 그림자를 그립니다. 영상 창·전체 화면은 여백·그림자가 없습니다. 실제 크기 모달은 창이 화면 가장자리에 바로 붙습니다.',
+      '확인 버튼은 WPF와 같은 진한 남색(#111827)·흰 글자입니다. 설문·퀴즈 푸터 위 구분선을 없앴고, 설명이 비어도 한 줄 자리를 두는 등 머리말 간격을 WPF와 맞췄습니다.'],
+    components: ['PopupPreview', 'PopupPreviewDialog'],
+    action: '바꿀 코드는 없습니다. 미리보기를 감싼 화면에서 그림자 여백을 따로 더하고 있었다면 빼야 합니다.',
+  },
+  {
     id: '2026-11-17-area-default-font-size', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
     title: '편집기·미리보기 영역별 기본 글자 크기 명시',
     body: ['크기를 지정하지 않은 글자는 화면 테마·Dialog의 상속 크기가 아니라 실제 팝업(WPF) 기본값으로 표시합니다. 헤더 17, TEXT 본문 15, IMAGE·VIDEO 설명 14, 푸터 14, 설문 문항 제목 16·설명 13·선택지 12입니다.',

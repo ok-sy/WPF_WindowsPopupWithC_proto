@@ -15,7 +15,7 @@
 | 영역 | WPF 소스 | 웹 미리보기 |
 | --- | --- | --- |
 | 창 크기 | `PopupWindow` | `sizeMode` FIXED / RATIO / FULLSCREEN, 최소·최대 크기(FULLSCREEN은 입력 숨김, IMAGE는 최소만 — 최대는 작업 영역 90%). WPF의 `AUTO`는 관리자 웹에서 선택하지 않는다 |
-| 표시 위치 | `PopupWindow` | `content.popupPosition`(9방향, 기본 CENTER). **실제 크기로 보기** 모달은 브라우저 창을 작업 영역으로 보고 9방향 가장자리에 배치한다(가장자리 여백은 WPF 그림자 여백과 같은 일반 24px·영상 0px, FULLSCREEN은 위치 무시). 편집기 안 패널 미리보기는 위치를 반영하지 않는다 |
+| 표시 위치 | `PopupWindow` | `content.popupPosition`(9방향, 기본 CENTER). **실제 크기로 보기** 모달은 브라우저 창을 작업 영역으로 보고 9방향 가장자리에 배치한다. 모달 크기는 WPF 창 크기이고, 일반 창은 그 안에 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF와 같은 그림자를 그린다(영상 창·FULLSCREEN은 여백·그림자 0, 2026-11-17 모든 유형으로 확대). FULLSCREEN은 위치 무시. 편집기 안 패널 미리보기는 위치를 반영하지 않는다 |
 | 헤더·푸터 | `Views/Windows/PopupWindow.xaml` | 헤더 제목, 푸터, 다시 보지 않기, Footer 버튼(`닫기`/`바로가기`, SURVEY·QUIZ는 `제출`) |
 | 폰트 크기 | `PopupWindow`, 콘텐츠 View | `content.headerFontSize` / `bodyFontSize` / `footerFontSize`, 10~40 보정, 비우면 기본 크기 |
 | 배경 | `PopupWindow` | `useBackgroundOverlay`, `backgroundOverlayOpacity`(기본 0.45) |
@@ -62,10 +62,21 @@
 
 - 도구: `node scripts/verify-popup-parity.cjs`. 같은 고정 데이터 5종(SURVEY 기본·`bodyFontSize` 18, QUIZ OX+선다형, TEXT 기본, TEXT 헤더 22·본문 12·푸터 16)을 관리자 미리보기(`PopupPreview`, 실제 Dialog처럼 `hidePlaceholders`, 테마 body1 0.85rem, headless Edge 100%)와 WPF `PopupWindow`(서버 응답 형식, `scripts/PopupParityCapture`, 96 DPI)로 그려 `.offline-verify/popup-parity/<id>.side.png`에 세 장(웹 원래 크기 · 웹을 WPF 흰 판 크기로 맞춤 · WPF 흰 판)을 나란히 저장한다. 선택지는 이름별로 높이·글자를 자동 대조한다.
 - 일치: 선택지 17개 높이·글자(기본 32/12, `bodyFontSize` 18이면 38/16, 긴 선택지 두 줄 62), 헤더 제목 크기(기본 17, `headerFontSize` 22), TEXT 본문 기본 15·지정 크기 20·본문 12, 문항 제목·설명 크기, 칩·OX 칸 배치, 필수 응답 문구.
-- 차이(미수정, 수정 여부 결정 대기):
+- 차이(2026-11-17 같은 날 미리보기를 WPF 기준으로 모두 수정, 아래 「WPF 기준 정렬」 참고):
   1. **흰 판 크기**: FIXED 720×820 일반 팝업에서 미리보기 Dialog는 흰 판을 720×820으로 그리지만 WPF는 창 720×820 안에 그림자 여백 24를 둬 흰 판이 672×772다(영상 창은 여백 0이라 같음). 같은 데이터에서 줄바꿈 위치가 달라질 수 있다.
   2. **푸터 확인 버튼 색**: 미리보기는 MUI `color="inherit"` 회색, WPF `ActionButtonStyle`은 배경 #111827·흰 글자.
   3. **설문·퀴즈 푸터 구분선**: 미리보기 SURVEY·QUIZ 푸터에만 위쪽 1px 구분선이 있고 WPF에는 없다(일반 푸터는 TODO61-17에서 이미 제거).
   4. **콘텐츠 설명 자리**: 설명이 비어 있으면 미리보기는 자리를 접지만 WPF는 빈 설명 줄 높이만큼(약 36) 띄운다. 설명이 있어도 제목·설명과 첫 문항 사이가 WPF에서 약 12 더 넓다.
   5. 주관식 입력칸 크기 조절 손잡이는 브라우저 기본 표시라 비교 대상에서 뺀다.
 - 한계: 로그인한 실제 관리자 화면이 아니라 같은 `PopupPreview` 컴포넌트를 하네스에서 그린 것이고, WPF도 실제 모니터 배율이 아니라 96 DPI 렌더링이다. 확대 DPI(125~200%)·폐쇄망 화면은 미확인.
+
+### WPF 기준 정렬 (2026-11-17)
+
+위 차이 1~4를 미리보기 쪽에서 WPF와 같게 고쳤다. WPF 코드는 바꾸지 않았다.
+
+1. 흰 판 크기: `previewShadowMargin`(영상 창·FULLSCREEN 0, 그 밖 24)을 모든 유형에 적용. `PopupPreview`가 창 크기 안에 여백을 두고 흰 판에 WPF `DropShadowEffect`와 같은 그림자(`0 4px 22px rgba(0,0,0,.28)`)를 그린다. Dialog Paper는 창 크기·투명·여백 0(창이 작업 영역 가장자리에 붙음). 이전 IMAGE 전용 규칙과 Dialog 바깥 여백 24(IMAGE는 합쳐 48이 떨어졌음)를 대체.
+2. 확인 버튼: WPF `ActionButtonStyle`과 같이 배경 #111827·흰 글자·SemiBold·모서리 9·좌우 여백 22, hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF.
+3. 설문·퀴즈 푸터 위 구분선 제거.
+4. 설문 머리말: 제목 위 4, 설명 줄 높이 22, 설명 아래 14(머리말 10 + 문항 목록 4). 설명이 비어도 한 줄 자리를 둔다(VIDEO+QUIZ에서 영상 설명과 같아 숨길 때만 접음, `reserveDescription`).
+
+검증: `verify-popup-parity.cjs` 22건(5종 흰 판 크기 웹=WPF, 선택지 17개 높이·글자) 통과, 나란히 이미지에서 첫 문항 위치·버튼 색·구분선 일치 확인(설명 줄 1~2px 이내 차이는 글꼴 렌더링 차이).

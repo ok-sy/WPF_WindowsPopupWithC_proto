@@ -79,7 +79,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity');
   // POL-08-03 : Dialog 호환 — slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
   const paperStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return {margin:s.margin,overflow:s.overflow,maxWidth:s.maxWidth,maxHeight:s.maxHeight,radius:s.borderRadius};})()");
-  check(paperStyle.margin === '24px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '952px' && paperStyle.maxHeight === '852px' && paperStyle.radius === '6px',
+  // 2026-11-17: Paper = WPF 창 크기(여백 0, 투명), 그림자 여백 24·둥근 모서리·그림자는 안쪽 흰 판(PopupPreview)이 그린다.
+  check(paperStyle.margin === '0px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '960px' && paperStyle.maxHeight === '864px' && paperStyle.radius === '0px',
     '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
   check(await run("Array.from(document.querySelectorAll('.MuiDialog-root button')).some(b=>b.getAttribute('aria-label')==='실제 크기 미리보기 종료')"), 'Dialog has its own exit button');
   check(!(await run(`document.querySelector('.MuiDialog-root').textContent.includes(${JSON.stringify(NOTICE)})`)), '[73-27] The actual size dialog does not show the size notice');
@@ -89,9 +90,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await escape();
   check(!(await dialogOpen()), 'Esc closes the dialog');
   await unchanged('TEXT');
-  // 3) 9개 위치·가장자리 여백(일반 24px, 영상 0px)·종료 버튼 위치.
+  // 3) 9개 위치·그림자 여백(일반 24px, 영상 0px)·종료 버튼 위치. 2026-11-17: WPF처럼 창(Paper)은 작업 영역 가장자리에 붙고 흰 판이 창 안 24px에 그려진다.
   await render('TEXT', {}, {popupPosition: 'TOP_LEFT'}); await openPreview(); rect = await paper();
-  check(rect.left === 24 && rect.top === 24, 'TOP_LEFT keeps the 24px WPF window margin: ' + JSON.stringify(rect));
+  const panel = await run(`(()=>{const r=document.querySelector('.MuiDialog-paper .MuiPaper-root').getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height}})()`);
+  check(rect.left === 0 && rect.top === 0 && panel.left === 24 && panel.top === 24 && panel.width === 512 && panel.height === 372,
+    'TOP_LEFT window sits at the edge and the white panel keeps the 24px WPF shadow margin (560x420 → 512x372): ' + JSON.stringify({rect, panel}));
   check(await run("Math.round(document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect().bottom)") === 888, 'Exit button moves to the bottom for top-aligned popups');
   await escape();
   await render('VIDEO', {}, {popupPosition: 'BOTTOM_RIGHT'}); await openPreview(); rect = await paper();
@@ -224,11 +227,16 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await render('IMAGE', {sizeMode: 'FULLSCREEN'}, {imageSizeMode: 'ADAPTIVE'});
     const full = await frame();
     check(full.innerRadius === '0px' && full.pad === '0px', `[61-13] IMAGE FULLSCREEN keeps 0 corners ${label}: ` + JSON.stringify(full));
-    for (const type of ['TEXT', 'VIDEO', 'SURVEY', 'QUIZ']) {
+    // 2026-11-17: TEXT·SURVEY·QUIZ도 IMAGE와 같이 WPF 그림자 여백 24·안쪽 흰 판 그림자. VIDEO는 WPF 영상 창처럼 여백·그림자 없음.
+    for (const type of ['TEXT', 'SURVEY', 'QUIZ']) {
       await render(type);
       const f = await frame();
-      check(f.dialogShadow && f.innerRadius === '6px' && f.inner[0] === f.dialog[0], `[61-16] ${type} keeps its Dialog shadow and size ${label}: ` + JSON.stringify(f));
+      check(!f.dialogShadow && f.innerShadow && f.innerRadius === '6px' && f.pad === '24px' && f.inner[0] === f.dialog[0] - 48 && f.inner[1] === f.dialog[1] - 48,
+        `[61-16] ${type} keeps the 24px WPF shadow margin with one inner shadow ${label}: ` + JSON.stringify(f));
     }
+    await render('VIDEO');
+    const video = await frame();
+    check(!video.dialogShadow && !video.innerShadow && video.pad === '0px' && video.inner[0] === video.dialog[0], `[61-16] VIDEO has no shadow margin or shadow like the WPF video window ${label}: ` + JSON.stringify(video));
   }
   await run("document.getElementById('closed-net-rule')?.remove()");
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
