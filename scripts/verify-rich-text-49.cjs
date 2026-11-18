@@ -322,6 +322,25 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`window.mount(${JSON.stringify(toolbarBlocks)},true,null,{hideToolbar:true})`); await waitEditor(); await pause(250);
   await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(100);
   check(await run(`window.editor().isReadOnly`) && !(await panelOpen()), '[toolbar] read-only stays locked with no format panel while hidden');
+  // 2026-11-18: 위 라벨(hideLabel)·'서식' 버튼(hideFormatButton) 켜고 끄기. 숨겨도 라벨은 묶음 접근 이름, 서식은 우클릭 패널로 지정한다.
+  const head = () => run(`(()=>{const ed=document.querySelector('.ck-editor__editable');let root=ed;while(root.parentElement&&!root.parentElement.querySelector(':scope > .MuiStack-root, :scope > .ck-reset_all'))root=root.parentElement;root=root.parentElement;
+    const text=Array.from(root.querySelectorAll('.MuiTypography-caption')).map(e=>e.textContent).join('|');const fmt=Array.from(root.querySelectorAll('button')).filter(b=>b.textContent==='서식').length;
+    const g=root.getAttribute('role')==='group'?root.getAttribute('aria-label'):null;const row=root.querySelector(':scope > .MuiStack-root');return {label:text.includes('일반 텍스트'),fmt,group:g,row:!!row};})()`);
+  for (const [name, options, expected] of [
+    ['default', {}, {label: true, fmt: 1, group: null, row: true}],
+    ['hideLabel', {hideLabel: true}, {label: false, fmt: 1, group: '일반 텍스트', row: true}],
+    ['hideFormatButton', {hideFormatButton: true}, {label: true, fmt: 0, group: null, row: true}],
+    ['both', {hideLabel: true, hideFormatButton: true}, {label: false, fmt: 0, group: '일반 텍스트', row: false}],
+    ['compact+both', {compact: true, hideLabel: true, hideFormatButton: true}, {label: false, fmt: 0, group: '일반 텍스트', row: false}],
+    ['inline+hideFormatButton', {compact: true, inlineLabel: '1', hideFormatButton: true}, {label: false, fmt: 0, group: '일반 텍스트', row: false}],
+  ]) {
+    await run(`window.mount(${JSON.stringify(toolbarBlocks)},false,null,${JSON.stringify(options)})`); await waitEditor(); await pause(250);
+    const h = await head();
+    check(JSON.stringify(h) === JSON.stringify(expected), `[2026-11-18] ${name} label/format button visibility: ` + JSON.stringify(h));
+  }
+  await run(`window.select(0,0,2)`); await pause(100);
+  await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(200);
+  check(await panelOpen(), '[2026-11-18] With the format button hidden, right click still opens the format panel');
   // 2026-11-17 2번: 편집 영역 기본 글자를 명시한다 — TEXT 본문 15(WPF BodyTextStyle), compact(설명) 14. 지정한 크기(20)는 그대로, 데이터에 size를 넣지 않는다.
   const sizeBlocks = [{alignment:'LEFT',runs:[{text:'기본'},{text:'이십',size:20}]}];
   const editorFont = () => run(`(()=>{const e=window.editor().ui.getEditableElement();const s=Array.from(e.querySelectorAll('span')).find(x=>x.textContent==='이십');return {p:getComputedStyle(e.querySelector('p')).fontSize,sized:s&&getComputedStyle(s).fontSize,preview:(()=>{const el=Array.from(document.querySelectorAll('#preview span')).find(x=>x.textContent==='기본');return el&&getComputedStyle(el).fontSize;})()}})()`);

@@ -34,3 +34,12 @@
 - 표시 상태만 바꾸므로 부모 state로 값을 바꿔도 다시 마운트하지 않고 입력 내용·선택 범위를 유지한다(켜고 끄기).
 - 기본 호출의 툴바·높이·모서리·문단 간격은 기존과 같다. 추가 버튼 등 새 UI는 없다.
 - 확인 사항: 하네스에서 `compact`의 문단 상단 여백이 코드의 6px가 아니라 12px로 계산된다. 이번 변경 범위 밖이라 수정하지 않았고, 실제 화면에서는 미확인.
+
+## 후속 — 2026-11-18 위 라벨·'서식' 버튼 켜고 끄기
+
+- [x] `hideLabel?: boolean`(기본 false): 입력칸 위 라벨 글자를 숨긴다. 라벨은 편집기 묶음(`role=group`)의 `aria-label`로 유지한다. 한 줄 배치(`inlineLabel`)의 짧은 표시는 영향 없음.
+- [x] `hideFormatButton?: boolean`(기본 false): '서식' 버튼을 숨긴다(일반·compact·한 줄 배치 모두). 서식은 우클릭·키보드 서식 패널과 상단 툴바(켜져 있으면)로 지정한다.
+- [x] 둘 다 숨기면 라벨 줄을 그리지 않는다. 넘기지 않으면 기존 화면과 같다. 툴바·라벨·서식 버튼을 모두 끄면 서식 진입이 우클릭뿐이라 가이드에 안내.
+- [x] 가이드 props·실행기·공지, 인계 문서(`POPUP_FRONT_SAMPLE_HANDOVER.md`) 반영.
+- 검증: tsc·eslint 통과. `verify-rich-text-49` 85건(조합 6종 라벨·버튼·라벨 줄·접근 이름, 버튼 숨김 시 우클릭 패널), guide-render 31·guide-registry 300·survey-rich-text-55 74·common-sample-69 62·quiz-option-byte-73 44 통과. 실화면 미실행.
+

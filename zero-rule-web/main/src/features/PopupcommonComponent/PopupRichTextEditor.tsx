@@ -38,6 +38,13 @@ type Props = {
    * 생략하면 optionSize 12, compact 14(설명), 그 밖 15(TEXT 본문). 문항 제목은 16을 넘긴다. 서식에 지정한 크기가 우선한다.
    */
   baseFontSize?: number;
+  /**
+   * 입력칸 위 라벨 글자를 숨긴다(기본 false). 라벨은 화면에서만 빼고 편집기 묶음(group)의 접근 이름으로 계속 쓴다.
+   * 한 줄 배치(inlineLabel)의 짧은 표시는 따로 두므로 영향이 없다. '서식' 버튼도 숨기면 라벨 줄이 없어진다.
+   */
+  hideLabel?: boolean;
+  /** '서식' 버튼을 숨긴다(기본 false). 서식은 우클릭·키보드로 여는 서식 패널과 상단 툴바(켜져 있으면)로 지정한다. */
+  hideFormatButton?: boolean;
   /** 상단 툴바만 숨긴다(본문 높이·문단 간격은 기본 유지). 값이 바뀌어도 다시 마운트하지 않아 입력 내용과 선택 범위가 유지된다. 서식은 우클릭·'서식' 버튼으로 지정한다. */
   hideToolbar?: boolean;
   /** 빈 편집기 안내 문구(생략 시 본문 기본 안내) */
@@ -55,13 +62,13 @@ type Props = {
  * POL-03-01 : 저장·표시 경계
  * POL-03-03 : 편집 UI
  * ■ 서식 편집기
- * - in : label(string) 입력 제목 · initialBlocks(RichBlock[]) 처음 표시할 본문 · disabled?(boolean) 읽기 전용 · compact?(boolean) 툴바 없는 짧은 입력 · inlineLabel?(string) 한 줄 배치 표시 · hideToolbar?(boolean) 상단 툴바만 숨김 · placeholder?(string) 빈 편집기 안내
+ * - in : label(string) 입력 제목 · initialBlocks(RichBlock[]) 처음 표시할 본문 · disabled?(boolean) 읽기 전용 · compact?(boolean) 툴바 없는 짧은 입력 · inlineLabel?(string) 한 줄 배치 표시 · hideToolbar?(boolean) 상단 툴바만 숨김 · hideLabel?(boolean) 위 라벨 숨김 · hideFormatButton?(boolean) '서식' 버튼 숨김 · placeholder?(string) 빈 편집기 안내
  * - out: onChange(blocks: RichBlock[], plainText: string) 편집할 때마다 서식 본문과 서식 없는 문자열 · 화면: 제목·'서식' 버튼·CKEditor·펼침 서식 패널
  * - 서식 본문을 받아 CKEditor로 편집하게 하고, 바뀐 내용을 문단·Run JSON과 일반 문자열로 돌려준다.
  *   공용 CommonCKEditor 설정은 바꾸지 않고 팝업 전용 툴바·허용 값만 쓴다. HTML 자체는 저장하지 않는다.
  *   initialBlocks는 처음 마운트할 때만 읽는다. 바꾸려면 key로 다시 마운트한다.
  */
-export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, optionSize, baseFontSize, hideToolbar, placeholder, maxPlainBytes, onChange }: Props) {
+export default function PopupRichTextEditor({ label, initialBlocks, disabled, compact, inlineLabel, optionSize, baseFontSize, hideToolbar, hideLabel = false, hideFormatButton = false, placeholder, maxPlainBytes, onChange }: Props) {
   const toolbarHidden = compact || hideToolbar;
   const inline = Boolean(compact && inlineLabel);
   const option = Boolean(compact && optionSize);
@@ -213,13 +220,14 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   );
 
   return (
-    <Box {...(inline ? { role: 'group', 'aria-label': label } : {})}
+    // 라벨을 화면에서 숨기거나 한 줄 배치면 라벨을 묶음의 접근 이름으로 둔다.
+    <Box {...(inline || hideLabel ? { role: 'group', 'aria-label': label } : {})}
       sx={{ opacity: disabled ? 0.6 : 1, ...(inline ? { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 0.5, minWidth: 0 } : {}) }}>
       {inline
         ? <Typography variant="caption" color="text.secondary" sx={{ lineHeight: `${compactOuterHeight}px`, minWidth: 14, textAlign: 'center', flexShrink: 0 }}>{inlineLabel}</Typography>
-        : <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">{compact ? label : `${label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다`}</Typography>
-          {formatButton}
+        : (!hideLabel || !hideFormatButton) && <Stack direction="row" alignItems="center" justifyContent={hideLabel ? 'flex-end' : 'space-between'}>
+          {!hideLabel && <Typography variant="caption" color="text.secondary">{compact ? label : `${label} · 글자를 선택하고 우클릭하면 서식 패널이 열립니다`}</Typography>}
+          {!hideFormatButton && formatButton}
         </Stack>}
       {/* 테두리는 바깥 두 Box만 그린다. CKEditor 49 기본 테마의 툴바·편집 영역 테두리·둥근 모서리·포커스 그림자는 끄고
           포커스 표시는 편집 영역을 감싼 Box 테두리 색으로 한다(겹치면 이중선·어긋남이 생김). */}
@@ -279,7 +287,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
           />
         )}
       </Box>
-      {inline && formatButton}
+      {inline && !hideFormatButton && formatButton}
       {maxPlainBytes != null && (byteNotice.blocked || byteNotice.bytes > maxPlainBytes) &&
         <Typography variant="caption" color="error" role="status" sx={{ display: 'block', ...(inline ? { flexBasis: '100%' } : {}) }}>
           {byteNotice.bytes > maxPlainBytes ? byteLimitMessage(maxPlainBytes, byteNotice.bytes) + ' 줄여 주세요.' : byteLimitMessage(maxPlainBytes) + ' 넘는 입력은 반영되지 않습니다.'}

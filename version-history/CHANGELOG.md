@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-18-06 — dev: PopupRichTextEditor 위 라벨·서식 버튼 숨김 옵션
+
+- 이유: 편집기를 쓰는 화면마다 입력칸 위 라벨과 '서식' 버튼이 항상 표시되어, 화면 구성에 맞게 켜고 끌 수 있는 옵션이 필요.
+- 변경: `PopupRichTextEditor`에 `hideLabel`(위 라벨 글자 숨김, 라벨은 `role=group`의 `aria-label`로 유지)·`hideFormatButton`('서식' 버튼 숨김, 일반·compact·한 줄 배치 공통) 추가. 둘 다 켜면 라벨 줄을 그리지 않음. 기본값 false로 기존 호출부 변경 없음. 서식은 우클릭·키보드 서식 패널·상단 툴바로 계속 지정. 가이드 props·실행기·공지, 인계 문서, 20261104 툴바 TODO 후속 기록 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx`, `guide/{guideData.ts,guideRunners.tsx,guideNotices.ts}`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/20261104_PopupRichTextEditor_Toolbar_TODO.md`, `scripts/verify-rich-text-49{.cjs,-entry.tsx}`.
+- 검증: 웹 `tsc --noEmit`·eslint 통과. verify-rich-text-49 85건(조합 6종의 라벨·버튼 표시, 라벨 줄 유무, 접근 이름, 버튼 숨김 시 우클릭 서식 패널), guide-render 31·guide-registry 300·survey-rich-text-55 74·common-sample-69 62·quiz-option-byte-73 44 통과.
+- 미완료: 로그인 관리자 화면·폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-05 — dev: 20261110 후속 6 미첨부 영상 영역 자리 유지
 
 - 이유: 2026-11-18-03에서 예시 표시 OFF일 때 미첨부 영상 영역 전체를 접도록 했으나, 영상을 첨부하는 순간 미리보기 배치가 크게 바뀌어 첨부 전에도 영역을 잡아 두는 편이 낫다고 판단.

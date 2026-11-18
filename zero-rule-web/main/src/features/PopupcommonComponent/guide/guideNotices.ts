@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-18-rich-editor-label-format-toggle', date: '2026-11-18', category: 'ADDED', status: 'DONE', doneDate: '2026-11-18',
+    title: 'PopupRichTextEditor 라벨·서식 버튼 켜고 끄기(hideLabel·hideFormatButton)',
+    body: ['hideLabel을 넘기면 입력칸 위 라벨 글자를 숨깁니다. 라벨은 화면 낭독기용 이름으로 계속 씁니다.', 'hideFormatButton을 넘기면 "서식" 버튼을 숨깁니다. 둘 다 넘기면 라벨 줄이 없어지고 입력칸만 남습니다.',
+      '서식은 우클릭·키보드로 여는 서식 패널과 상단 툴바(켜져 있으면)로 계속 지정합니다. 넘기지 않으면 기존 화면과 같습니다.'],
+    components: ['PopupRichTextEditor'],
+    action: '툴바·라벨·서식 버튼을 모두 끄면 서식 지정 방법이 우클릭뿐이라 눈에 띄지 않으므로 화면에 안내를 둡니다.',
+  },
+  {
     id: '2026-11-18-preview-placeholder-off', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
     title: '미리보기 예시 표시 기본 OFF·동영상+퀴즈 설명 한 번 표시·문항 자동 번호 제거',
     body: ['InlinePopupPreview·PopupPreviewDialog·PopupPreview는 값이 없는 팝업 제목·영상 제목·설명·이미지 자리에 예시 문구를 표시하지 않습니다. 인라인과 실제 크기 미리보기가 같은 기준입니다.',

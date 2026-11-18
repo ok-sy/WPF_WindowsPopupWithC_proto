@@ -208,12 +208,14 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'baseFontSize', type: 'number', description: '크기를 지정하지 않은 글자의 기본 크기(px). 생략하면 optionSize 12, compact 14(설명), 그 밖 15(TEXT 본문)로 실제 팝업 기본값과 같습니다. 서식에 지정한 크기가 우선하며 데이터에 저장하지 않습니다.' },
       { name: 'optionSize', type: 'boolean', description: 'compact일 때 설문·퀴즈 선택지 크기(한 줄 높이 32px·기본 글자 12px)로 그립니다. 서식에 지정한 글자 크기는 그대로입니다. 문항 제목·본문에는 쓰지 않습니다.' },
       { name: 'hideToolbar', type: 'boolean', description: '상단 툴바만 숨깁니다. 본문 높이는 그대로이고, 값을 바꿔도 입력 내용이 유지됩니다.' },
+      { name: 'hideLabel', type: 'boolean', description: '입력칸 위 라벨 글자를 숨깁니다. 기본값 false. 라벨은 화면 낭독기용 이름으로 계속 씁니다.' },
+      { name: 'hideFormatButton', type: 'boolean', description: "'서식' 버튼을 숨깁니다. 기본값 false. 서식은 우클릭·키보드 서식 패널과 상단 툴바(켜져 있으면)로 지정합니다. 라벨도 숨기면 라벨 줄이 없어집니다." },
       { name: 'placeholder', type: 'string', description: '비어 있을 때 안내 문구' },
       { name: 'maxPlainBytes', type: 'number', description: '서식 없는 문자열(plainText)의 UTF-8 바이트 상한. 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌리며 안내 문구를 띄웁니다(한글 조합은 끝날 때 확인). 생략하면 제한 없음. PopupQuestionEditor가 선택지(퀴즈·설문)에 300을 넘깁니다.' },
     ],
     outputs: [{ name: 'onChange', type: '(blocks: RichBlock[], plainText: string) => void', required: true, description: '입력할 때마다 서식 본문과 일반 글자를 돌려줍니다.' }],
     values: ['TEXT: content.textBlocks + content.plainText', '설문·퀴즈: content.surveyTitleBlocks·descriptionBlocks', '문항: question.titleBlocks·descriptionBlocks, 선택지: option.textBlocks'],
-    reuse: ['HTML은 저장하지 않습니다. onChange로 받은 두 값을 함께 저장합니다.', '툴바를 켜고 끄려면 화면의 state를 hideToolbar에 넘깁니다. 입력 내용은 유지됩니다.', '편집기를 여러 개 두어도 서로 영향을 주지 않습니다.', 'ckeditor5를 직접 import하지 말고 이 컴포넌트를 쓰세요.'],
+    reuse: ['HTML은 저장하지 않습니다. onChange로 받은 두 값을 함께 저장합니다.', '툴바를 켜고 끄려면 화면의 state를 hideToolbar에 넘깁니다. 입력 내용은 유지됩니다.', '툴바·라벨·서식 버튼을 모두 끄면 서식은 우클릭(또는 키보드)으로만 열려 눈에 띄지 않습니다. 화면에 안내를 두세요.', '편집기를 여러 개 두어도 서로 영향을 주지 않습니다.', 'ckeditor5를 직접 import하지 말고 이 컴포넌트를 쓰세요.'],
     example: `const [body, setBody] = useState<{ textBlocks: RichBlock[]; plainText: string }>({ textBlocks: [], plainText: '' });
 <PopupRichTextEditor key={editorKey} label="본문" initialBlocks={body.textBlocks}
   onChange={(textBlocks, plainText) => setBody({ textBlocks, plainText })} />`,
