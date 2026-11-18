@@ -194,7 +194,7 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | Description | 지원 | N | `""` | content 안 제목 아래 설명 |
 | Questions | 지원 | Y | `[]` | 최상위 문항 목록 |
 | questions[].QuestionId | 지원 | Y | `0` | 실제 ID는 서버가 보장 |
-| questions[].Title | 지원 | Y | `""` | 문항 제목 |
+| questions[].Title | 지원 | Y | `""` | 문항 제목. 앞에 자동 번호(`01`·`02`)를 붙이지 않는다(2026-11-18, 필요하면 제목에 직접 입력) |
 | questions[].Description | 지원 | N | `""` | 문항 설명 |
 | questions[].QuestionType | 지원 | Y | `""` | SINGLE_CHOICE / MULTIPLE_CHOICE / TEXT. QUIZ MULTIPLE_CHOICE는 `isCorrect=true` 선택지 수까지만 선택 가능하며 한도 도달 시 남은 선택지 비활성·`최대 N개 선택` 안내(TODO52-5). SURVEY 복수 선택은 `minSelections`·`maxSelections`가 없으면 제한 없음 |
 | questions[].IsRequired | 지원 | Y(서버가 항상 true/false 제공) | `false` | 누락 시 false로 보아 필수 검증 없음 |

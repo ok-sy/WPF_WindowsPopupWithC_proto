@@ -158,7 +158,7 @@
 ### 8. 설문·퀴즈 미리보기 문항 자동 채번 제거
 
 - [x] `SurveyPreview.tsx`에서 제목 앞에 자동 렌더링하는 `01`, `02` 문항 번호와 번호가 차지하던 여백을 제거한다. 등록 편집기의 일반 선택지 앞 번호 제거와 별개인 미구현 항목이다.
-- [ ] 설문·퀴즈·동영상+퀴즈의 인라인 미리보기와 실제 크기 Dialog에서 번호가 없어지고, 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점이 보존되는지 확인한다. 동일 데이터로 WPF의 문항 제목 표시를 대조하고, WPF 실제 팝업의 번호 표시까지 변경할 범위는 대조 결과로 확인한다.
+- [x] 설문·퀴즈·동영상+퀴즈의 인라인 미리보기와 실제 크기 Dialog에서 번호가 없어지고, 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점이 보존되는지 확인한다. 동일 데이터로 WPF의 문항 제목 표시를 대조하고, WPF 실제 팝업의 번호 표시까지 변경할 범위는 대조 결과로 확인한다.
 
 - 완료 검증은 웹 타입 검사, WPF 빌드, 동일 데이터의 웹·WPF 화면 비교, 폐쇄망 실화면 확인으로 기록한다.
 
@@ -166,6 +166,6 @@
 
 - 6: `InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`에 `showPlaceholders`(기본 false)를 두어 인라인·Dialog가 같은 기준으로 예시 문구를 숨긴다. 기존 `PopupPreview` `hidePlaceholders`는 호환용(false = 예시 표시)으로만 남겼다. 예시 OFF에서 영상 URL이 없으면 `FillVideoArea`·`AspectVideoArea`와 예시 재생 컨트롤을 그리지 않고, 첨부하면 다시 표시한다. 가이드 실행기(`InlinePopupPreview`·`PopupPreview`)는 `showPlaceholders`를 켠다. 폼의 헤더 제목·설명·표시 스위치는 기존과 같이 값을 반영한다.
 - 7: 웹은 결합 화면의 영상 부분에서 설명을 그리지 않고 퀴즈 머리말이 서식 설명 우선·일반 설명·빈 설명 숨김(빈 자리 없음)으로 한 번 그린다. WPF는 `VideoPopupView.HideDescription()`으로 영상 아래 설명을 숨기고, `SurveyPopupView.CollapseHeaderShownAbove(title)`는 제목만 비교하며 `CollapseEmptyDescription()`이 빈 일반 설명을 접는다. 요청·저장 형식 변경 없음.
-- 8: `SurveyPreview`의 `01`·`02` 번호 노드와 여백을 제거했다. 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점은 그대로다. 같은 데이터 나란히 비교(`verify-popup-parity.cjs`)에서 **WPF 실제 팝업은 아직 `01`·`02`를 표시**한다(`SurveyPopupView.CreateQuestionCard` `questionNumber.ToString("D2")`). WPF 번호 제거 여부는 결정 대기.
+- 8: `SurveyPreview`의 `01`·`02` 번호 노드와 여백을 제거했다. 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점은 그대로다. 같은 데이터 나란히 비교(`verify-popup-parity.cjs`)에서 **WPF 실제 팝업은 아직 `01`·`02`를 표시**한다(`SurveyPopupView.CreateQuestionCard` `questionNumber.ToString("D2")`). → 문항 제목이 서식 편집기로 바뀌어 자동 번호가 제목 서식과 어울리지 않으므로 WPF도 제거하기로 확정(2026-11-18). `CreateQuestionCard`의 번호 열·`questionNumber` 인자를 삭제해 제목만 표시하고, 나란히 비교에서 웹·WPF 모두 번호 없이 같은 제목 위치를 확인했다. QUIZ 미달 안내의 `틀린 문항: N번`은 문항 순서 기준으로 유지.
 - 검증: 웹 `tsc --noEmit`·eslint 통과. 하네스 preview-61 152·completion-ux-43 82·common-sample-69 62·survey-rich-text-55 74·guide-render 31·guide-registry 297·popup-parity 22 통과. WPF 빌드(경고·오류 0), PopupWindowTests 585(VIDEO+QUIZ 일반·서식·빈 설명, 영상 설명 옵션 ON/OFF, 단독 VIDEO 설명 유지 포함)·BehaviorTests 1,740 통과.
-- 남은 확인: 7-3 VIDEO+QUIZ 웹·WPF 나란히 화면 비교(현재는 표시 여부 자동 대조만), 8-2 WPF 번호 표시 범위 결정, 로그인 관리자 화면·폐쇄망 실화면.
+- 남은 확인: 7-3 VIDEO+QUIZ 웹·WPF 나란히 화면 비교(현재는 표시 여부 자동 대조만), 로그인 관리자 화면·폐쇄망 실화면.

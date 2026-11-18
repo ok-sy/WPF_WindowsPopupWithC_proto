@@ -2409,6 +2409,13 @@ internal static class Program
             Check(((TextBlock)quizOnly.FindName("SurveyTitleText")).Visibility == Visibility.Visible
                 && ((TextBlock)quizOnly.FindName("SurveyDescriptionText")).Visibility == Visibility.Visible,
                 "[설계 53-16 D3] plain QUIZ keeps its title and description");
+            // [20261110 후속 8] 문항 제목 앞 자동 번호(01·02)를 만들지 않는다(관리자 미리보기와 같음).
+            var questionList = (Panel)quizOnly.FindName("QuestionListPanel");
+            static IEnumerable<DependencyObject> Tree(DependencyObject node) =>
+                new[] { node }.Concat(LogicalTreeHelper.GetChildren(node).OfType<DependencyObject>().SelectMany(Tree));
+            var numbered = Tree(questionList).OfType<TextBlock>().Where(t => System.Text.RegularExpressions.Regex.IsMatch(t.Text ?? "", @"^\d{2}$")).ToList();
+            Check(questionList.Children.Count > 0 && numbered.Count == 0,
+                $"[20261110 후속 8] QUIZ question cards render no automatic number: {string.Join(",", numbered.Select(t => t.Text))}");
         }
         finally { owner.Close(); }
     }

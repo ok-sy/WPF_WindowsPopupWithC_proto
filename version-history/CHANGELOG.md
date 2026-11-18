@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-18-04 — dev: 20261110 후속 8 WPF 문항 자동 번호 삭제
+
+- 이유: 문항 제목이 서식 편집기로 입력되면서 자동 번호(`01`·`02`)가 제목 서식과 어울리지 않고 통일성을 해쳐, 관리자 미리보기(2026-11-18-03)에 이어 WPF 실제 팝업에서도 제거하기로 확정.
+- 변경: `SurveyPopupView.CreateQuestionCard`의 번호 열(Grid 2열 + 12 SemiBold 번호 TextBlock)과 `questionNumber` 인자를 삭제하고 제목 요소만 카드에 추가. 선택 안내 주석의 번호 참조 정리. QUIZ 미달 안내의 `틀린 문항: N번`(문항 순서 기준)은 유지. 사양(`WPF_POPUP_ALL_SPEC.md`·`WPF_AGENT_SPEC.md`)·TODO 후속 8·활성 작업 갱신. PopupWindowTests에 번호 TextBlock 미생성 검사 추가.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/{WPF_POPUP_ALL_SPEC,WPF_AGENT_SPEC}.md`.
+- 검증: WPF 빌드 경고·오류 0. BehaviorTests 1,740 통과. PopupWindowTests는 `CheckVideoQuizAspect60`을 뺀 30개 검사 530건 통과(신규 번호 검사 포함). `CheckVideoQuizAspect60`은 주 모니터가 1280×720으로 바뀐 환경에서 이번 변경을 되돌려도 같은 단계에서 실패해 환경 요인으로 판단. `verify-popup-parity.cjs`는 같은 이유로 WPF 창(720×820)이 화면 높이에 맞춰 줄어 흰 판 크기 비교에서 중단됐고, 생성된 QUIZ 나란히 이미지에서 웹·WPF 모두 번호 없이 같은 제목 위치를 육안 확인.
+- 미완료: 1920×1080 이상 화면에서 `CheckVideoQuizAspect60`·parity 전체 재실행, 폐쇄망 실화면.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-03 — dev: 20261110 후속 6~8 미리보기 예시 OFF·동영상+퀴즈 설명·문항 번호
 
 - 이유: 폐쇄망 등록 미리보기에서 입력란이 없거나 빈 항목의 예시 문구와 미첨부 영상의 검정 영역·예시 컨트롤이 보이고, 인라인과 실제 크기 Dialog의 기준이 달랐다. 동영상+퀴즈는 서식 설명이 영상 아래(일반 문자열)와 퀴즈 머리말(서식)에 두 번 보였다. 미리보기 문항 제목 앞 자동 번호(`01`·`02`)는 제거하기로 확정.

@@ -236,9 +236,7 @@ namespace Popup.Views.Contents
             {
                 SurveyQuestion question = _questions[index];
 
-                Border questionCard = CreateQuestionCard(
-                    question,
-                    index + 1);
+                Border questionCard = CreateQuestionCard(question);
 
                 QuestionListPanel.Children.Add(questionCard);
             }
@@ -252,8 +250,7 @@ namespace Popup.Views.Contents
         /// 질문 하나의 카드 영역을 만든다.
         /// </summary>
         private Border CreateQuestionCard(
-            SurveyQuestion question,
-            int questionNumber)
+            SurveyQuestion question)
         {
             Border cardBorder = new Border
             {
@@ -290,22 +287,9 @@ namespace Popup.Views.Contents
                 _questionTitleTexts.AddRange(titleParagraphs);
             }
             if (titleElement == titleText && choiceHint != null) titleText.Inlines.Add(ChoiceHintRun(choiceHint));
-            Grid titleRow = new Grid();
-            titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            titleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            titleRow.Children.Add(new TextBlock
-            {
-                Margin = new Thickness(0, 0, 16, 0),
-                VerticalAlignment = VerticalAlignment.Center,
-                Text = questionNumber.ToString("D2"),
-                FontSize = 12,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("SurveyMutedText")
-            });
-            Grid.SetColumn(titleElement, 1);
-            titleElement.VerticalAlignment = VerticalAlignment.Center;
-            titleRow.Children.Add(titleElement);
-            cardPanel.Children.Add(titleRow);
+            // POL-06-01 : 문항·서식 — 문항 번호(01·02)는 자동으로 붙이지 않는다. 제목이 서식 편집기로 바뀌어 자동 번호가 제목 서식과
+            // 맞지 않으므로 번호가 필요하면 제목에 직접 입력한다(2026-11-18, 20261110 후속 8, 관리자 미리보기 SurveyPreview와 같음).
+            cardPanel.Children.Add(titleElement);
             if (titleElement == titleText) _questionTitleTexts.Add(titleText);
 
             var descriptionTemplate = new TextBlock { FontSize = 13, Foreground = (Brush)FindResource("SurveyMutedText") };
@@ -512,7 +496,7 @@ namespace Popup.Views.Contents
             };
         }
 
-        // 제목 글자 크기(본문 크기 +4)와 관계없이 문항 번호와 같은 12 크기·보통 굵기·보조색으로 둔다(우선순위를 제목보다 낮게).
+        // 제목 글자 크기(본문 크기 +4)와 관계없이 12 크기·보통 굵기·보조색으로 둔다(우선순위를 제목보다 낮게).
         private System.Windows.Documents.Run ChoiceHintRun(string hint) => new("   " + hint)
         {
             FontSize = 12,

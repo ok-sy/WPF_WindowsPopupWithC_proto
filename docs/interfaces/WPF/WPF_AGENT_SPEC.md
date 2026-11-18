@@ -584,7 +584,7 @@ flowchart TD
 | `questions[].description` | `questions[].descriptionBlocks` |
 | `questions[].options[].text` | `questions[].options[].textBlocks` |
 
-서식이 없거나 비어 있거나 구조를 읽지 못하면 일반 문자열을 표시합니다. 주관식 답변과 정답 문자열은 서식 대상이 아닙니다.
+서식이 없거나 비어 있거나 구조를 읽지 못하면 일반 문자열을 표시합니다. 주관식 답변과 정답 문자열은 서식 대상이 아닙니다. 문항 제목 앞에 `01`·`02` 같은 번호를 자동으로 붙이지 않습니다. 번호가 필요하면 제목에 직접 입력합니다(2026-11-18).
 
 <a id="results"></a>
 
