@@ -64,13 +64,13 @@ export function aspectVideoHeight(width: number, natural: NaturalVideoSize | nul
 /**
  * POL-05-01 : 재생 경로
  * ■ 단독 VIDEO 재생 영역(TODO61-17)
- * - in : url(string) 영상 주소, 빈 문자열이면 자리 표시만 그림
+ * - in : url(string) 영상 주소, 빈 문자열이면 자리 표시만 그림 · showCaption?(boolean) '영상 재생 영역' 안내 문구 표시, 기본 true(읽기 실패 문구는 항상 표시)
  * - out: 화면: 남은 높이를 채우는 검정 영역(1px #D1D5DB 테두리·모서리 8) 안에 영상 첫 화면을 비율 유지(contain)로 표시
  * - WPF 단독 VIDEO는 비율로 높이를 계산하지 않고 VideoRow(*)가 남은 높이를 채운 뒤 MediaElement/HTML video를 Uniform으로 그린다.
  *   미리보기도 같은 영역에 음소거·메타데이터만 읽은 video를 contain으로 넣어 영상이 위아래나 좌우 검은 여백과 함께 보이게 한다. 재생은 하지 않는다.
  *   주소가 없거나 읽지 못하면 재생 아이콘과 안내 문구를 표시한다.
  */
-export function FillVideoArea({ url }: { url: string }) {
+export function FillVideoArea({ url, showCaption = true }: { url: string; showCaption?: boolean }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -103,7 +103,7 @@ export function FillVideoArea({ url }: { url: string }) {
       {!loaded && (
         <Stack alignItems="center" justifyContent="center" spacing={1} sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
-          <Typography variant="caption">{failed ? '영상을 읽지 못했습니다' : '영상 재생 영역'}</Typography>
+          {(failed || showCaption) && <Typography variant="caption">{failed ? '영상을 읽지 못했습니다' : '영상 재생 영역'}</Typography>}
         </Stack>
       )}
     </Box>
@@ -139,12 +139,12 @@ function scrollParent(element: HTMLElement | null): HTMLElement | null {
 /**
  * POL-05-03 : 결합 화면
  * ■ 영상 비율 재생 영역
- * - in : url(string) 영상 주소, 빈 문자열이면 자리 표시만 그림
+ * - in : url(string) 영상 주소, 빈 문자열이면 자리 표시만 그림 · showCaption?(boolean) '영상 재생 영역' 안내 문구 표시, 기본 true(읽기 실패 문구는 항상 표시)
  * - out: 화면: 영상 비율에 맞춘 높이의 재생 영역(음소거·메타데이터만 미리 읽음), 크기를 모르면 재생 아이콘·안내 문구
  * - 영상 주소를 받아 원본 비율을 읽고, 영역 너비·스크롤 영역 높이에 맞춰 재생 영역 높이를 정해 그린다.
  *   url이 바뀌면 이전 영상 비율과 실패 상태를 초기화한다.
  */
-export default function AspectVideoArea({ url }: { url: string }) {
+export default function AspectVideoArea({ url, showCaption = true }: { url: string; showCaption?: boolean }) {
   const areaRef = useRef<HTMLDivElement>(null);
   const [natural, setNatural] = useState<NaturalVideoSize | null>(null);
   const [failed, setFailed] = useState(false);
@@ -203,7 +203,7 @@ export default function AspectVideoArea({ url }: { url: string }) {
       {!natural && (
         <Stack alignItems="center" justifyContent="center" spacing={1} sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
-          <Typography variant="caption">{failed ? '영상 정보를 읽지 못해 기본 비율(16:9)로 표시합니다' : '영상 재생 영역'}</Typography>
+          {(failed || showCaption) && <Typography variant="caption">{failed ? '영상 정보를 읽지 못해 기본 비율(16:9)로 표시합니다' : '영상 재생 영역'}</Typography>}
         </Stack>
       )}
     </Box>

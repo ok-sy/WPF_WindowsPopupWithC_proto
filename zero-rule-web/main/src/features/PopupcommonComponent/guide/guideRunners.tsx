@@ -131,7 +131,7 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupPreview: {
     input: { popup: TEXT_PATCH, showBackground: false, showPlaceholders: true },
-    hint: 'popup은 입력한 값입니다. showPlaceholders를 false로 바꾸면 값이 없는 자리의 예시 문구·미첨부 영상 영역을 숨깁니다(등록 화면 기본). 하단 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
+    hint: 'popup은 입력한 값입니다. showPlaceholders를 false로 바꾸면 값이 없는 자리의 예시 문구·영상 영역 안내 문구를 숨깁니다(등록 화면 기본, 영상 영역 자리는 유지). 하단 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
     render: (input, emit) => (
       <PopupPreview popup={samplePopup(input.popup)} showBackground={input.showBackground} showPlaceholders={input.showPlaceholders} onClose={() => emit('onClose', '호출됨')}
         onRecommendedSize={(size) => emit('onRecommendedSize', size)} />

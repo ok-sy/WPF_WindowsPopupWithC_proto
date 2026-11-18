@@ -55,9 +55,9 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
     id: '2026-11-18-preview-placeholder-off', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
-    title: '미리보기 예시 표시 기본 OFF·미첨부 영상 영역 접기·문항 자동 번호 제거',
+    title: '미리보기 예시 표시 기본 OFF·동영상+퀴즈 설명 한 번 표시·문항 자동 번호 제거',
     body: ['InlinePopupPreview·PopupPreviewDialog·PopupPreview는 값이 없는 팝업 제목·영상 제목·설명·이미지 자리에 예시 문구를 표시하지 않습니다. 인라인과 실제 크기 미리보기가 같은 기준입니다.',
-      '영상을 첨부하지 않은 동영상·동영상+퀴즈는 검은 영역·안내·예시 재생 컨트롤을 포함한 영상 영역 전체를 접습니다. 첨부하면 다시 표시합니다.',
+      '영상을 첨부하기 전에도 동영상·동영상+퀴즈의 영상 영역은 첨부 후와 같은 크기의 검정 영역과 재생 아이콘으로 자리를 유지합니다. 첨부해도 배치가 바뀌지 않으며 "영상 재생 영역" 안내 문구만 숨깁니다.',
       '동영상+퀴즈의 설명은 퀴즈 머리말에 한 번만 표시합니다(서식 설명 우선, 빈 설명은 숨김). 설문·퀴즈 문항 제목 앞의 01·02 자동 번호는 표시하지 않습니다.'],
     components: ['InlinePopupPreview', 'PopupPreviewDialog', 'PopupPreview'],
     action: '빈 자리 예시가 필요한 가이드·샘플 화면은 showPlaceholders를 넘깁니다. PopupPreview의 hidePlaceholders는 더 이상 쓰지 않습니다(false를 넘기면 showPlaceholders와 같음).',

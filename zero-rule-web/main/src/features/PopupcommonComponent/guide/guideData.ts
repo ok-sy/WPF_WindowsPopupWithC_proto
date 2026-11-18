@@ -319,7 +319,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     props: [
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'title', type: 'string', description: "제목. 기본값 '팝업 미리보기'" },
-      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·미첨부 영상 영역 표시. 기본값 false(실제 팝업처럼 비움)' },
+      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false(실제 팝업처럼 비움)' },
     ],
     outputs: [
       { name: 'onOpenPreview', type: '() => void', description: '주면 "실제 크기로 보기" 버튼이 생깁니다.' },
@@ -337,7 +337,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'open', type: 'boolean', required: true, description: '열림 여부' },
       { name: 'recommendedSize', type: 'Size | null', description: '옆 미리보기가 알려 준 이미지 창 크기' },
-      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·미첨부 영상 영역 표시. 기본값 false' },
+      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false' },
     ],
     outputs: [{ name: 'onClose', type: '() => void', required: true, description: '닫기 버튼·Esc를 누르면 호출됩니다.' }],
     values: ['popup 전체(값을 바꾸지 않음)'],
@@ -351,7 +351,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     props: [
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'showBackground', type: 'boolean', description: '바깥 배경까지 그릴지. 기본값 true' },
-      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·미첨부 영상 영역 표시. 기본값 false' },
+      { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false' },
     ],
     outputs: [
       { name: 'onClose', type: '() => void', description: '하단 버튼으로 닫을 때 호출됩니다.' },

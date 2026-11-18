@@ -153,9 +153,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await clickButton('닫기');
   // 미설정 완료 비율: 저장 값에는 넣지 않는다. 미리보기의 '완료 기준·기본 음량' 안내는 WPF에 없어 TODO61-17에서 지웠다.
   await pickType('동영상 + 퀴즈 팝업'); await clickButton('폼 생성');
-  // [20261110 후속 6] 등록 미리보기는 예시 표시 OFF: 영상을 첨부하기 전에는 영상 영역(검정 영역·안내·예시 컨트롤)을 접는다.
-  check(await run(`!${right}.textContent.includes('완료 기준') && !${right}.querySelector('[data-testid=aspect-video-area]') && !${right}.textContent.includes('영상 재생 영역')`),
-    '[IS063] VIDEO+QUIZ preview collapses the video area until a video is attached, without the preview-only completion caption (TODO61-17)');
+  // [20261110 후속 6] 등록 미리보기는 예시 표시 OFF: 영상 첨부 전에도 영상 영역(검정 + 재생 아이콘) 자리를 유지하고 안내 문구만 숨긴다.
+  check(await run(`!${right}.textContent.includes('완료 기준') && !!${right}.querySelector('[data-testid=aspect-video-area]') && !${right}.textContent.includes('영상 재생 영역')`),
+    '[IS063] VIDEO+QUIZ preview keeps the video area without the caption until a video is attached, without the preview-only completion caption (TODO61-17)');
   // 유형 전환: 공통 입력값 유지, 문항 편집기로 다시 구성.
   await pickType('퀴즈 팝업'); await clickButton('폼 생성');
   check(await run(`${mid}.textContent.includes('문항 추가') && document.querySelector('input[aria-label="헤더 제목"]').value==='IS063 헤더'`),

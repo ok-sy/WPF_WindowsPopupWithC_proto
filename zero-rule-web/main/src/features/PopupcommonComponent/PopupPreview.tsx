@@ -44,7 +44,7 @@ interface PopupPreviewProps {
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE, 또는 크기 미지정 ADAPTIVE에서 WPF가 다시 계산할 팝업 창 크기). 그 외에는 null. */
   onRecommendedSize?: (size: Size | null) => void;
   /**
-   * 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): WPF와 같이 비워 두고 영상이 없으면 영상 영역을 접는다.
+   * 예시 표시(값이 없는 항목의 입력 안내 문구·영상 영역 안내 문구). 기본 false(OFF): WPF와 같이 비워 둔다. 미첨부 영상 영역은 검정 + 재생 아이콘으로 자리만 유지.
    * 가이드·샘플처럼 빈 자리를 보여 줄 화면만 true로 켠다(2026-11-18, 20261110 후속 6).
    */
   showPlaceholders?: boolean;
@@ -272,13 +272,13 @@ function PopupBody({
     // 결합 화면의 영상 부분은 설명을 그리지 않는다(퀴즈 머리말이 한 번 표시).
     const showDescription = !videoQuizPart && content.showDescription !== false;
     const videoUrl = String(content.videoUrl ?? '').trim();
-    // 예시 표시 OFF에서 영상을 첨부하지 않았으면 검정 영역·안내·예시 재생 컨트롤을 포함한 영상 영역 전체를 접는다(2026-11-18, 20261110 후속 6).
-    const showVideoArea = Boolean(videoUrl) || !hidePlaceholders;
-    const showControls = showVideoArea && content.showControls !== false;
+    // 영상을 첨부하기 전에도 첨부 후와 같은 크기의 영상 영역(검정 + 재생 아이콘)과 컨트롤 줄을 잡아 두어 첨부해도 배치가 바뀌지 않는다.
+    // 예시 표시 OFF면 '영상 재생 영역' 안내 문구만 숨긴다(2026-11-18, 20261110 후속 6 보완).
+    const showControls = content.showControls !== false;
     // TODO61-17: WPF VideoPopupView와 같이 제목 → 영상(남은 높이를 채움) → 설명 순서. 영상 영역은 검정 배경·1px #D1D5DB 테두리·모서리 8.
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
-        {showVideoArea && (aspectVideo ? <AspectVideoArea url={videoUrl} /> : <FillVideoArea url={videoUrl} />)}
+        {aspectVideo ? <AspectVideoArea url={videoUrl} showCaption={!hidePlaceholders} /> : <FillVideoArea url={videoUrl} showCaption={!hidePlaceholders} />}
         {showControls && (
           <Stack direction="row" justifyContent="space-between" color="text.secondary">
             <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>
@@ -369,7 +369,7 @@ function PopupBody({
  * POL-08-02 : 미리보기 상태
  * ■ 팝업 미리보기
  * - in : popup(AdminPopupDetail) 미리 볼 팝업 설정 · showBackground?(boolean) 배경 여백·Overlay를 미리보기 안에 그릴지, 기본 true(모달은 false)
- *        · showPlaceholders?(boolean) 값이 없는 항목의 예시 문구·미첨부 영상 자리 표시, 기본 false(WPF와 같이 비우고 영상 영역을 접음)
+ *        · showPlaceholders?(boolean) 값이 없는 항목의 예시 문구·영상 영역 안내 문구 표시, 기본 false(WPF와 같이 비움, 영상 영역은 자리 유지)
  * - out: onClose?() 푸터 버튼·나중에 보기·보조 닫기로 팝업을 닫을 때 · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기(없으면 null) · 화면: 헤더(제목·로고)·콘텐츠 제목·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터(다시 보지 않기·나중에 보기·제출·닫기) 미리보기
  * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점으로 완료 조건을 시연한다(VIDEO·VIDEO+QUIZ는 시청 기준 충족 상태로 그린다).
  *   서버 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 시연 상태는 이 컴포넌트 안에만 있고 팝업 ID·문항이 바뀌면 초기화된다.

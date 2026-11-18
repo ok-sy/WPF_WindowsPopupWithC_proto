@@ -20,7 +20,7 @@ export interface PopupPreviewDialogProps {
   onClose: () => void;
   /** 인라인 미리보기가 이미 계산한 IMAGE 권장 창 크기(선택). 모달 안 미리보기가 계산하기 전 첫 표시에 쓴다. */
   recommendedSize?: Size | null;
-  /** 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): 인라인 미리보기·WPF와 같은 기준. 가이드·샘플만 켠다. */
+  /** 예시 표시(값이 없는 항목의 입력 안내 문구·영상 영역 안내 문구). 기본 false(OFF): 인라인 미리보기·WPF와 같은 기준. 가이드·샘플만 켠다. */
   showPlaceholders?: boolean;
 }
 

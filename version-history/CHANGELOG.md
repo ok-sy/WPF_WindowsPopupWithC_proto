@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-18-05 — dev: 20261110 후속 6 미첨부 영상 영역 자리 유지
+
+- 이유: 2026-11-18-03에서 예시 표시 OFF일 때 미첨부 영상 영역 전체를 접도록 했으나, 영상을 첨부하는 순간 미리보기 배치가 크게 바뀌어 첨부 전에도 영역을 잡아 두는 편이 낫다고 판단.
+- 변경: `PopupPreview` VIDEO·VIDEO+QUIZ는 URL 유무와 관계없이 영상 영역과 컨트롤 줄(`showControls` 기준)을 그린다. `FillVideoArea`·`AspectVideoArea`에 `showCaption`(기본 true)을 추가해 예시 OFF면 '영상 재생 영역' 문구만 숨기고 검정 영역 + 재생 아이콘은 유지(읽기 실패 문구는 항상 표시). 가이드 공지·props 설명·`ADMIN_POPUP_PREVIEW_COMPONENTS.md`·TODO 구현 기록 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/{PopupPreview,AspectVideoArea,InlinePopupPreview,PopupPreviewDialog}.tsx`, `guide/{guideNotices.ts,guideData.ts,guideRunners.tsx}`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-common-sample-69.cjs`.
+- 검증: 웹 `tsc --noEmit`·eslint 통과. preview-61 148(미첨부 영역·재생 아이콘 유지, 첨부 전후 영역 위치·크기·컨트롤 동일)·completion-ux-43 82·common-sample-69 62·guide-render 31·guide-registry 297 통과.
+- 미완료: 로그인 관리자 화면·폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-04 — dev: 20261110 후속 8 WPF 문항 자동 번호 삭제
 
 - 이유: 문항 제목이 서식 편집기로 입력되면서 자동 번호(`01`·`02`)가 제목 서식과 어울리지 않고 통일성을 해쳐, 관리자 미리보기(2026-11-18-03)에 이어 WPF 실제 팝업에서도 제거하기로 확정.

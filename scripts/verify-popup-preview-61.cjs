@@ -181,8 +181,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await size({sizeMode: 'RATIO', widthRatio: .1, heightRatio: .1, minimumWidth: 100, minimumHeight: 100}) === JSON.stringify({width: 300, height: 300}), '[TODO68] RATIO result below 300 uses the floor');
   check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 269, height: 250}), '[TODO68] a viewport smaller than 300 keeps the modal on screen');
   check(await size({width: 640, height: 480}) === JSON.stringify({width: 640, height: 480}), '[TODO68] sizes above the floor are unchanged');
-  // [20261110 후속 6] 예시 표시 기본 OFF: 인라인·실제 크기 모달 모두 값이 없는 항목에 입력 안내 문구를 넣지 않고, 영상 미첨부면 영상 영역을 접는다.
-  // showPlaceholders를 켠 호출부(가이드·샘플)만 인라인·모달에 안내 문구와 빈 영상 자리를 그린다.
+  // [20261110 후속 6] 예시 표시 기본 OFF: 인라인·실제 크기 모달 모두 값이 없는 항목에 입력 안내 문구를 넣지 않는다.
+  // 영상 미첨부여도 영상 영역(검정 + 재생 아이콘)과 컨트롤 줄은 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다. showPlaceholders를 켠 호출부만 문구를 그린다.
   const PLACEHOLDERS = ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.', '이미지 URL을 입력하면 여기에 표시됩니다.', '영상 재생 영역'];
   const shownIn = async (selector, words) => run(`(()=>{const t=document.querySelector(${JSON.stringify(selector)}).innerText;return ${JSON.stringify(words)}.filter(w=>t.includes(w));})()`);
   const videoAreas = selector => run(`document.querySelector(${JSON.stringify(selector)}).querySelectorAll('[data-testid=aspect-video-area],[data-testid=fill-video-area]').length`);
@@ -197,22 +197,23 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       const inline = await shownIn('#root', PLACEHOLDERS);
       check(placeholders ? onWords.every(w => inline.includes(w)) : inline.length === 0,
         `${type} inline preview placeholders ${placeholders ? 'ON shows' : 'OFF hides'} the input guide: ` + JSON.stringify(inline));
-      if (video) check(await videoAreas('#root') === (placeholders ? 1 : 0), `${type} inline video area ${placeholders ? 'shown' : 'collapsed'} without an attachment`);
+      if (video) check(await videoAreas('#root') === 1 && await run(`!!document.querySelector('#root [data-testid=PlayCircleOutlineIcon]')`), `${type} inline keeps the video area with the play icon without an attachment`);
       await openPreview();
       const dialog = await shownIn('.MuiDialog-root', PLACEHOLDERS);
       check(placeholders ? onWords.every(w => dialog.includes(w)) : dialog.length === 0,
         `${type} dialog placeholders ${placeholders ? 'ON shows' : 'OFF hides'} the input guide: ` + JSON.stringify(dialog));
-      if (video) check(await videoAreas('.MuiDialog-root') === (placeholders ? 1 : 0), `${type} dialog video area matches the inline preview`);
-      if (video && !placeholders) check(!(await run(`document.body.innerText.includes('00:00')`)), `${type} hides the sample playback controls without an attachment`);
+      if (video) check(await videoAreas('.MuiDialog-root') === 1, `${type} dialog video area matches the inline preview`);
       await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
     }
   }
-  // 첨부하면 영상 영역을 표시하고, 첨부를 지우면 다시 접는다(예시 표시 OFF).
+  // 첨부 전후로 영상 영역 크기·위치와 컨트롤 줄이 같다(예시 표시 OFF, 자리 유지).
+  const areaBox = () => run(`(()=>{const a=document.querySelector('#root [data-testid=aspect-video-area],#root [data-testid=fill-video-area]');if(!a)return null;const r=a.getBoundingClientRect();return [Math.round(r.top),Math.round(r.width),Math.round(r.height),document.querySelector('#root').innerText.includes('00:00')].join(',');})()`);
   for (const [type, content] of [['VIDEO', {}], ['QUIZ', {videoEnabled: true}]]) {
-    await render(type, {}, {...content, videoUrl: '/demo-video.mp4'});
-    check(await videoAreas('#root') === 1, `${type} attached video shows the video area`);
     await render(type, {}, {...content, videoUrl: ''});
-    check(await videoAreas('#root') === 0, `${type} removing the attachment collapses the video area again`);
+    const empty = await areaBox();
+    await render(type, {}, {...content, videoUrl: '/missing.mp4'});
+    const attached = await areaBox();
+    check(empty && empty === attached && empty.endsWith('true'), `${type} video area keeps the same box and controls before and after attaching: ` + JSON.stringify({empty, attached}));
   }
   await render('VIDEO', {title: '실제 제목'}, {videoTitle: '실제 영상 제목', description: '실제 설명'});
   await openPreview();

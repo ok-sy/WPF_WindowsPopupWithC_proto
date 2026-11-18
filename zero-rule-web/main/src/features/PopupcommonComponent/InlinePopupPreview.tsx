@@ -23,7 +23,7 @@ export interface InlinePopupPreviewProps {
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE 등). 부모가 크기 안내나 PopupPreviewDialog의 recommendedSize로 쓴다. */
   onRecommendedSize?: (size: Size | null) => void;
   title?: string;
-  /** 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): 실제 크기 Dialog·WPF와 같은 기준. 가이드·샘플만 켠다. */
+  /** 예시 표시(값이 없는 항목의 입력 안내 문구·영상 영역 안내 문구). 기본 false(OFF): 실제 크기 Dialog·WPF와 같은 기준. 가이드·샘플만 켠다. */
   showPlaceholders?: boolean;
 }
 
