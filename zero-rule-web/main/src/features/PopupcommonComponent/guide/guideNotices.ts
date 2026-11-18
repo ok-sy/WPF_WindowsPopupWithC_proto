@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-18-video-quiz-scroll-oscillation', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
+    title: '동영상+퀴즈 미리보기 스크롤바 깜빡임 수정',
+    body: ['동영상+퀴즈 미리보기의 내용 높이가 미리보기 높이와 거의 같을 때 세로 스크롤바가 계속 생겼다 없어지던 문제를 고쳤습니다.',
+      '스크롤바 때문에 영역 너비가 조금 바뀌는 경우에는 영상 높이를 유지합니다(WPF와 같은 규칙). 창 크기를 바꾸는 등 큰 너비 변화는 그대로 다시 계산합니다.'],
+    components: ['InlinePopupPreview', 'PopupPreviewDialog', 'PopupPreview'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-18-later-button-size', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
     title: '미리보기 푸터: "나중에 보기" 보조 버튼 모양, 버튼 높이 34, 푸터 높이 64',
     body: ['미리보기의 "나중에 보기"는 글자만 있던 작은 버튼(약 93 × 32)에서 WPF와 같은 보조 버튼(최소 너비 118, 밝은 회색 면과 테두리)으로 바뀌었습니다. 설문·퀴즈 미달 뒤 보이는 보조 "닫기"도 같습니다.',

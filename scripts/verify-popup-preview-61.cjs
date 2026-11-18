@@ -303,6 +303,28 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('VIDEO', {showLater: true}, {videoUrl: '/missing.mp4'}); await openPreview();
   await run(`Array.from(document.querySelectorAll('.MuiDialog-root button')).find(b=>b.textContent.trim()==='나중에 보기').click()`); await pause(400);
   check(!(await dialogOpen()), '[TODO61-18] Later button keeps its handler and closes the dialog');
+  // 2026-11-18 폐쇄망: VIDEO+QUIZ 우측 미리보기 넘침 경계 높이에서 스크롤바가 매 프레임 생겼다 없어지던 진동을 막는다(WPF와 같은 너비 이력 규칙).
+  const scrollFlips = ms => run(`new Promise(resolve=>{const s=Array.from(document.querySelectorAll('#root *')).find(e=>getComputedStyle(e).overflowY==='auto'&&e.querySelector('[data-testid=aspect-video-area]'));
+    let last='',flips=-1;const t0=performance.now();const tick=()=>{const v=(s.scrollHeight>s.clientHeight)+':'+s.clientWidth;if(v!==last){flips++;last=v;}
+    if(performance.now()-t0<${ms})requestAnimationFrame(tick);else resolve(flips);};requestAnimationFrame(tick);})`);
+  const overflowing = () => run(`(()=>{const s=Array.from(document.querySelectorAll('#root *')).find(e=>getComputedStyle(e).overflowY==='auto'&&e.querySelector('[data-testid=aspect-video-area]'));return s.scrollHeight>s.clientHeight+1;})()`);
+  const renderSized = async (width, height) => { await run(`window.hostSize=${JSON.stringify({width, height})}`); await render('QUIZ', {}, {videoEnabled: true, videoUrl: ''}); await pause(60); };
+  for (const width of [460, 640]) {
+    let lo = 300, hi = 1400;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; await renderSized(width, mid); if (await overflowing()) lo = mid; else hi = mid; }
+    const unstable = [];
+    for (let height = hi - 8; height <= hi + 3; height++) { await renderSized(width, height); const flips = await scrollFlips(500); if (flips > 2) unstable.push(height + ':' + flips); }
+    check(unstable.length === 0, `[2026-11-18] VIDEO+QUIZ inline preview width ${width} keeps the scrollbar stable around the overflow boundary ${hi}: ` + unstable.join(' '));
+  }
+  // 스크롤바 폭보다 큰 너비 변화(창 크기 조절)는 다시 계산한다.
+  await renderSized(640, 900);
+  const videoBox = () => run(`(()=>{const r=document.querySelector('#root [data-testid=aspect-video-area]').getBoundingClientRect();return {w:r.width,h:r.height};})()`);
+  const wide = await videoBox();
+  await run(`window.hostSize={width:480,height:900}`); await run(`document.querySelector('#root > div').style.width='480px'`); await pause(300);
+  const narrow = await videoBox();
+  check(narrow.w < wide.w - 100 && Math.abs(narrow.h - Math.max(180, (narrow.w - 2) * 9 / 16 + 2)) < 1.5,
+    '[2026-11-18] A real width change larger than the scrollbar still recalculates the video height: ' + JSON.stringify({wide, narrow}));
+  await run('window.hostSize=undefined');
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

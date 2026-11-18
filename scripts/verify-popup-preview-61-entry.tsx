@@ -30,7 +30,8 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
   const [open, setOpen] = useState(false);
   const [recommended, setRecommended] = useState<Size | null>(null);
   (window as any).hostState = {open, recommended};
-  return <div style={{display: 'flex', height: 700, width: 520, flexDirection: 'column'}}>
+  const size = (window as any).hostSize ?? {width: 520, height: 700};
+  return <div style={{display: 'flex', height: size.height, width: size.width, flexDirection: 'column'}}>
     <InlinePopupPreview popup={popup} showPlaceholders={placeholders} onOpenPreview={() => setOpen(true)} onRecommendedSize={setRecommended} />
     <PopupPreviewDialog popup={popup} showPlaceholders={placeholders} open={open} onClose={() => setOpen(false)} recommendedSize={hint ? recommended : null} />
   </div>;
@@ -40,7 +41,7 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
   (window as any).popupJson = JSON.stringify(popup);
   (window as any).currentPopup = popup;
   root.render(<ThemeProvider theme={theme}><CssBaseline/>
-    <Host key={JSON.stringify(popup) + hint + placeholders} popup={popup} hint={hint} placeholders={placeholders} />
+    <Host key={JSON.stringify(popup) + hint + placeholders + JSON.stringify((window as any).hostSize ?? null)} popup={popup} hint={hint} placeholders={placeholders} />
   </ThemeProvider>);
 };
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);

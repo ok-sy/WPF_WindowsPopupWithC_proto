@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-18-12 — dev: 60 미리보기 동영상+퀴즈 스크롤바 진동 방지
+
+- 이유: 폐쇄망(1920×1080) 우측 미리보기 높이 600px 부근에서 VIDEO+QUIZ 미리보기의 세로 스크롤바가 무한 반복으로 생겼다 없어지는 이슈. 웹 `AspectVideoArea`가 너비로 영상 높이를 계산하면서 WPF의 진동 방지(`RecordAspectWidth`)가 없어, 넘침 경계 높이(약 4~6px 범위)에서 스크롤바 표시 → 너비 감소 → 높이 감소 → 스크롤바 숨김이 매 프레임 반복됨. headless Edge에서 폭 6종 × 문항 1·2개 모두 재현.
+- 변경: `AspectVideoArea.tsx`에 WPF와 같은 너비 이력 규칙 `recordAspectWidth`·`SCROLLBAR_WIDTH_TOLERANCE`(32px) 추가. 직전 너비로 스크롤바 폭 이내 되돌아오면 높이 계산 너비를 유지하고, 큰 너비 변화는 다시 계산. 가이드 공지, TODO60 후속 기록. preview-61 진입점에 호스트 크기 지정(`window.hostSize`) 추가.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/AspectVideoArea.tsx`, `guide/guideNotices.ts`, `scripts/verify-popup-preview-61{.cjs,-entry.tsx}`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`.
+- 검증: 수정 후 재현 조건 12건 모두 전환 없음. preview-61 195(경계 높이 안정성 2폭·큰 너비 변화 재계산 검사 추가, 수정 전 코드에서 실패 확인)·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31, 웹 `tsc --noEmit`·eslint 통과.
+- 미완료: 폐쇄망 1920×1080 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-11 — dev: TODO61-18 푸터 버튼 34·푸터 높이 64 웹·WPF
 
 - 이유: 버튼 높이 32·34·36과 푸터 높이 80·72·64·56을 실제 WPF 화면으로 비교한 결과에 따라 버튼 34, 푸터 64(버튼 위아래 15)로 확정. 기존 푸터는 버튼 아래 여백(27)이 위(19)보다 넓었음.

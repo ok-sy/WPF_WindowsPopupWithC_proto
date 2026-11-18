@@ -7,6 +7,9 @@ import { Box, Stack, Typography } from '@mui/material';
  *  - 비율: HTML video의 videoWidth/videoHeight(loadedmetadata·resize). 서버 API·파일 분석은 쓰지 않는다.
  *  - 메타데이터 전·읽기 실패·0 크기: 마지막 유효 크기, 없으면 16:9. URL이 바뀌면 이전 영상 비율을 버린다.
  *  - 높이 = 실제 영역 너비 × h / w, 상한 = 가장 가까운 세로 스크롤 영역 높이 × 0.7, 하한 180. 영상은 contain으로 비율 유지.
+ *  - 진동 방지(WPF VideoPopupView.RecordAspectWidth와 같음): 높이 변경 → 스크롤바 표시/숨김 → 너비 변경이 같은 두 너비 사이를
+ *    스크롤바 폭 이내로 오가면 마지막 높이를 유지한다. 넘침 경계 높이(약 4~6px 범위)에서 스크롤바가 매 프레임 생겼다 없어지던 문제(2026-11-18 폐쇄망) 수정.
+ *    스크롤바 폭보다 큰 왕복(창 크기 조절 후 원래 너비 복귀)은 다시 계산한다.
  * CSS px와 WPF DIP·DPI 물리 픽셀이 같다고 보지는 않는다(같은 계산 원칙만 맞춘다).
  */
 /**
@@ -124,6 +127,26 @@ function VideoBlackLayer() {
 /** WPF VideoPopupView 영상 테두리 두께(px). */
 const VIDEO_BORDER = 1;
 
+/** 스크롤바 표시/숨김으로 생기는 너비 차이 상한(px). 미리보기 스크롤바(얇게 약 10px)와 브라우저 기본 스크롤바(약 17px)에 여유를 둔다. WPF ScrollBarWidthTolerance와 같은 목적. */
+export const SCROLLBAR_WIDTH_TOLERANCE = 32;
+
+/**
+ * POL-05-03 : 결합 화면
+ * ■ 영상 영역 너비 이력(진동 방지)
+ * - in : history({ last, previous }) 직전·그 전 너비(없으면 null) · width(number) 새 너비
+ * - out: boolean 직전 너비로 스크롤바 폭 이내만큼 되돌아온 경우 true(높이 유지). history를 갱신한다.
+ * - 첫 유효 너비는 이력만 채운다. 0.5px 미만 변화는 이력을 바꾸지 않는다(WPF RecordAspectWidth와 같은 규칙).
+ */
+export function recordAspectWidth(history: { last: number | null; previous: number | null }, width: number): boolean {
+  if (history.last == null) { history.last = width; return false; }
+  const change = Math.abs(width - history.last);
+  if (change < 0.5) return false;
+  const returning = history.previous != null && Math.abs(width - history.previous) < 0.5 && change <= SCROLLBAR_WIDTH_TOLERANCE;
+  history.previous = history.last;
+  history.last = width;
+  return returning;
+}
+
 function validSize(width: number, height: number): NaturalVideoSize | null {
   return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0 ? { width, height } : null;
 }
@@ -149,6 +172,8 @@ export default function AspectVideoArea({ url, showCaption = true }: { url: stri
   const [natural, setNatural] = useState<NaturalVideoSize | null>(null);
   const [failed, setFailed] = useState(false);
   const [box, setBox] = useState({ width: 0, available: 0 });
+  // 진동 방지용 너비 이력. URL이 바뀌어도 영역 너비 이력은 그대로 쓴다.
+  const widthHistory = useRef<{ last: number | null; previous: number | null }>({ last: null, previous: null });
 
   // 다른 영상으로 바뀌면 이전 영상의 비율을 재사용하지 않는다.
   useEffect(() => {
@@ -160,11 +185,16 @@ export default function AspectVideoArea({ url, showCaption = true }: { url: stri
     const area = areaRef.current;
     if (!area) return;
     const scroller = scrollParent(area);
-    const measure = () =>
+    const measure = () => {
+      const width = area.getBoundingClientRect().width;
+      const available = scroller?.clientHeight ?? 0;
+      // 같은 두 너비를 오가는(스크롤바 표시/숨김) 경우 높이 계산에 쓰는 너비를 바꾸지 않는다.
+      const hold = width > 0 && recordAspectWidth(widthHistory.current, width);
       setBox((current) => {
-        const next = { width: area.getBoundingClientRect().width, available: scroller?.clientHeight ?? 0 };
+        const next = { width: hold && current.width > 0 ? current.width : width, available };
         return Math.abs(next.width - current.width) < 0.5 && Math.abs(next.available - current.available) < 0.5 ? current : next;
       });
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(area);

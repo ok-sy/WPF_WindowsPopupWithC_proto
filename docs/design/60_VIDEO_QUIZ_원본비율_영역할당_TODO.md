@@ -109,3 +109,12 @@ WPF 담당은 WebView2→WPF 크기 전달·레이아웃·Demo·샘플·WPF 검�
 완료 기준: 영상 결합 화면의 실제 재생 영역이 원본 비율과 가용 너비에 따라 배정되고 제목·설명은 별도 공간을 차지한다. 세로 영상 상한·대기/실패 정책이 양쪽에 일관되게 적용되며 시청·퀴즈·제출 동작을 유지한다. Front와 WPF의 검증 상태를 별도로 기록한다.
 
 Trello: https://trello.com/c/3nNo4Qqt
+
+## 후속 — 2026-11-18 관리자 미리보기 스크롤바 진동 방지
+
+- [x] 이슈(폐쇄망, 1920×1080, 우측 미리보기 높이 600px 부근): VIDEO+QUIZ 인라인 미리보기에서 세로 스크롤바가 생겼다 없어졌다를 무한 반복.
+- [x] 원인: 웹 `AspectVideoArea`는 영역 너비로 영상 높이를 다시 계산하는데, WPF `RecordAspectWidth`의 진동 방지가 없었다. 내용이 넘침 경계(약 4~6px 범위)에 있으면 스크롤바 표시 → 너비 약 10px 감소 → 영상 높이 감소 → 넘침 해소 → 스크롤바 숨김 → 너비 복귀 → 높이 증가가 매 프레임 반복된다. headless Edge에서 폭 6종 × 문항 1·2개 모두 경계 높이에서 재현(0.6초에 36회 전환).
+- [x] 수정: `AspectVideoArea.tsx`에 `recordAspectWidth`(WPF와 같은 규칙)를 두어, 직전 너비로 스크롤바 폭(`SCROLLBAR_WIDTH_TOLERANCE` 32px) 이내만큼 되돌아오면 높이 계산 너비를 유지한다. 스크롤바 폭보다 큰 너비 변화는 다시 계산한다. 단독 VIDEO(`FillVideoArea`)·WPF는 변경 없음.
+- [x] 검증: 수정 후 같은 조건 12건 모두 전환 없음. preview-61에 경계 높이 ±(폭 2종) 안정성과 큰 너비 변화 재계산 검사 추가(195건 통과, 수정 전 코드에서는 경계 832~834px에서 30회 전환으로 실패 확인). tsc·eslint, completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과.
+- [ ] 폐쇄망 1920×1080 실화면 확인.
+
