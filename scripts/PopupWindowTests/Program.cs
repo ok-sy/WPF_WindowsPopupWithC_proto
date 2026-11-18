@@ -2430,7 +2430,7 @@ internal static class Program
 
     /*
      * POL-02-03 : 푸터 역할
-     * TODO61-18(2026-11-18): 푸터 버튼(나중에 보기·확인·바로가기·제출)과 본문 제출 버튼은 높이 32. 나중에 보기는 보조 버튼 모양·최소 너비 118을 유지하고
+     * TODO61-18(2026-11-18): 푸터 버튼(나중에 보기·확인·바로가기·제출)과 본문 제출 버튼은 높이 34, 푸터 행은 64(진행 문구가 있으면 자동·최소 64). 나중에 보기는 보조 버튼 모양·최소 너비 118을 유지하고
      * 주 버튼과 세로 중앙이 같다. 결과 안내창(PopupAlert)이 공유하는 ActionButtonStyle 높이 44는 그대로다.
      */
     private static void CheckFooterButtonHeight61_18()
@@ -2453,10 +2453,20 @@ internal static class Program
                         .Where(b => b.IsVisible && b.ActualWidth > 0 && b.Content is "나중에 보기" or "확인" or "바로가기" or "제출").ToList();
                     var later = buttons.FirstOrDefault(b => Equals(b.Content, "나중에 보기"));
                     var main = buttons.FirstOrDefault(b => !Equals(b.Content, "나중에 보기"));
+                    var footerRow = (RowDefinition)window.FindName("FooterRow");
+                    var footerArea = (FrameworkElement)window.FindName("FooterArea");
+                    if (footer)
+                    {
+                        bool fixedRow = dto.PopupType is "TEXT" or "IMAGE";
+                        Check(fixedRow ? Math.Abs(footerRow.ActualHeight - 64) < 0.6 : footerRow.ActualHeight >= 64 - 0.5,
+                            $"[TODO61-18] {dto.PopupId} fs={footerSize}: footer row {(fixedRow ? "is" : "is at least")} 64 ({footerRow.ActualHeight:0.#})");
+                        Check(footerArea.ActualHeight + 30 <= footerRow.ActualHeight + 0.6,
+                            $"[TODO61-18] {dto.PopupId} fs={footerSize}: footer content ({footerArea.ActualHeight:0.#}) fits the row ({footerRow.ActualHeight:0.#}) with 15 above and below");
+                    }
                     double Center(Button b) => b.TranslatePoint(new Point(0, b.ActualHeight / 2), window).Y;
-                    Check((buttons.Count > 0 || !footer) && buttons.All(b => Math.Abs(b.ActualHeight - 32) < 0.6)
+                    Check((buttons.Count > 0 || !footer) && buttons.All(b => Math.Abs(b.ActualHeight - 34) < 0.6)
                         && (later == null || later.ActualWidth >= 118 - 0.5) && (later == null || main == null || Math.Abs(Center(later) - Center(main)) < 1),
-                        $"[TODO61-18] {dto.PopupId} footer={footer} fs={footerSize}: footer buttons are 32 high and aligned: "
+                        $"[TODO61-18] {dto.PopupId} footer={footer} fs={footerSize}: footer buttons are 34 high and aligned: "
                         + string.Join(", ", buttons.Select(b => $"{b.Content}={b.ActualWidth:0.#}x{b.ActualHeight:0.#}")));
                 }
                 finally { window.Close(); }

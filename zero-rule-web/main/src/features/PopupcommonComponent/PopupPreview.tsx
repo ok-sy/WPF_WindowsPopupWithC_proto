@@ -56,9 +56,9 @@ interface PopupPreviewProps {
  * POL-02-03 : 푸터 역할
  * '나중에 보기'·보조 '닫기' 버튼(TODO61-18). WPF SecondaryActionButtonStyle과 같은 모양:
  * 최소 너비 118·좌우 여백 22·모서리 9·SemiBold, 밝은 면(#F3F4F6)과 테두리(#D1D5DB)로 주 버튼과 구분한다.
- * 높이는 푸터 버튼 공통 32(2026-11-18, WPF PopupWindow 푸터 버튼과 같음).
+ * 높이는 푸터 버튼 공통 34, 푸터는 높이 64·위아래 15(2026-11-18, WPF PopupWindow 푸터와 같음).
  */
-const FOOTER_BUTTON_HEIGHT = 32;
+const FOOTER_BUTTON_HEIGHT = 34;
 const SECONDARY_FOOTER_BUTTON_SX = {
   minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, boxSizing: 'border-box', whiteSpace: 'nowrap', flexShrink: 0,
   borderRadius: '9px', border: '1px solid #D1D5DB', bgcolor: '#F3F4F6', color: '#111827', fontWeight: 600,
@@ -759,7 +759,8 @@ export default function PopupPreview({
         {isSurvey && (
           <Box
             // WPF 설문 푸터와 같이 위 구분선 없음(2026-11-17).
-            sx={{ px: 3, py: 1.75, flexShrink: 0 }}
+            // WPF 설문 푸터: 자동 높이(최소 64)·위아래 15(TODO61-18).
+            sx={{ px: 3, py: '15px', minHeight: POPUP_FOOTER_HEIGHT, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}
           >
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
@@ -836,8 +837,8 @@ export default function PopupPreview({
         )}
         {!isSurvey && popup.showFooter && (
           <>
-            {/* WPF FooterRow(80)·FooterArea Margin="28,8,28,16"은 유형 공통이고 본문과의 구분선이 없다(TODO61-17).
-                좁은 인라인 미리보기에서 줄이 바뀌어도 잘리지 않게 IMAGE 외에는 최소 높이로 둔다. */}
+            {/* WPF FooterRow(64)·FooterArea Margin="28,15,28,15"는 유형 공통이고 본문과의 구분선이 없다(TODO61-17).
+                좁은 인라인 미리보기·확대 배율에서 줄이 바뀌어도 잘리지 않게 IMAGE를 포함한 모든 유형을 최소 높이로 둔다(TODO61-18: 줄바꿈이 없으면 64 그대로). */}
             <Stack
               direction="row"
               alignItems="center"
@@ -845,10 +846,10 @@ export default function PopupPreview({
               sx={{
                 pl: '28px',
                 pr: '28px',
-                pt: '8px',
-                pb: '16px',
+                pt: '15px',
+                pb: '15px',
                 boxSizing: 'border-box',
-                ...(popup.popupType === 'IMAGE' ? {height: POPUP_FOOTER_HEIGHT} : {minHeight: POPUP_FOOTER_HEIGHT}),
+                minHeight: POPUP_FOOTER_HEIGHT,
                 flexShrink: 0,
                 flexWrap: 'wrap',
                 gap: 1,
@@ -879,7 +880,7 @@ export default function PopupPreview({
                   <Button
                     variant="contained"
                     disableElevation
-                    // WPF ActionButtonStyle: MinWidth 118 · 모서리 9 · 푸터 높이 32(FOOTER_BUTTON_HEIGHT) · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
+                    // WPF ActionButtonStyle: MinWidth 118 · 모서리 9 · 푸터 높이 34(FOOTER_BUTTON_HEIGHT) · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
                     sx={{ minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, borderRadius: '9px', fontWeight: 600, bgcolor: '#111827', color: '#FFFFFF',
                       '&:hover': { bgcolor: '#1F2937' }, '&:active': { bgcolor: '#374151' },
                       '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF' } }}

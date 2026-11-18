@@ -88,9 +88,9 @@
                    TextWrapping="Wrap"/>
 
                 <!-- 제출 버튼 -->
-                <!-- POL-02-03 : 푸터 역할 — 본문 제출 버튼도 푸터 버튼과 같은 높이 32(2026-11-18, TODO61-18). -->
+                <!-- POL-02-03 : 푸터 역할 — 본문 제출 버튼도 푸터 버튼과 같은 높이 34(2026-11-18, TODO61-18). -->
                 <Button x:Name="SubmitButton"
-                        Height="32" Padding="24,0"
+                        Height="34" Padding="24,0"
                         Style="{StaticResource SurveySubmitButtonStyle}"
                         Grid.Column="1"
                         Content="제출"

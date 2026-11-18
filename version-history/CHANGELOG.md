@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-18-11 — dev: TODO61-18 푸터 버튼 34·푸터 높이 64 웹·WPF
+
+- 이유: 버튼 높이 32·34·36과 푸터 높이 80·72·64·56을 실제 WPF 화면으로 비교한 결과에 따라 버튼 34, 푸터 64(버튼 위아래 15)로 확정. 기존 푸터는 버튼 아래 여백(27)이 위(19)보다 넓었음.
+- 변경:
+  - WPF: 푸터 버튼 3종·본문 제출 버튼 높이 34. `FooterRow` 80 → 64(`MinHeight` 64, 푸터 숨김 시 0), `FooterArea` 여백 28,8,28,16 → 28,15,28,15. VIDEO 푸터는 시청 진행 문구 때문에 자동 높이(최소 64). 결과 안내창 `ActionButtonStyle` 44 유지.
+  - 웹: `FOOTER_BUTTON_HEIGHT` 34, `POPUP_FOOTER_HEIGHT` 80 → 64(IMAGE 권장 창 크기 계산 포함), 일반·설문 푸터 위아래 15·최소 64. IMAGE 푸터를 고정 높이에서 최소 높이로 바꿔 좁은 폭·확대 배율 줄바꿈 잘림 해소.
+  - 비교 이미지 6장과 설명을 `docs/reviews/TODO61-18_footer_button_size/`에 추가(반입본 4-docs에 포함). 사양 `POPUP_INTERFACE_SPEC.md`·`WPF_POPUP_ALL_SPEC.md`, TODO61-18 후속, 활성 작업, 가이드 공지 갱신.
+  - 검사: PopupWindowTests `CheckFooterButtonHeight61_18`에 푸터 행 64·내용 수용 검사 추가, BehaviorTests 제출 높이 34·FIT_TO_IMAGE 창 높이 318 → 302, preview-61 버튼 34·푸터 64·IMAGE 잘림 예외 제거, image-preview 크롬 418 → 402.
+- 주요 파일: `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml(.cs)`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml`, `zero-rule-web/main/src/features/PopupcommonComponent/{PopupPreview.tsx,imagePreviewLayout.ts,guide/guideNotices.ts}`, `scripts/{PopupWindowTests/Program.cs,verify-popup-preview-61.cjs,verify-image-preview.cjs}`, `docs/reviews/TODO61-18_footer_button_size/`.
+- 검증: 같은 데이터 실측 웹·WPF 모두 ‘나중에 보기’ 120.9×34, ‘확인’·‘바로가기’ 118×34, ‘제출’ 132×34. WPF 빌드 경고·오류 0, PopupWindowTests 595(`CheckVideoQuizAspect60` 제외)·BehaviorTests 1,740 통과. 웹 `tsc --noEmit`·eslint, preview-61 192·image-preview 54·completion-ux-43 82·common-sample-69 63·survey-rich-text-55 74·guide-render 31 통과.
+- 미완료: `CheckVideoQuizAspect60`(주 모니터 1280×720 환경 제약)·폐쇄망 실화면 미실행. 반입본은 생성하지 않음(다음 반입본 생성 시 포함).
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-10 — dev: TODO61-18 푸터 버튼 높이 32 웹·WPF 통일
 
 - 이유: TODO61-18 후속으로 ‘나중에 보기’와 ‘확인’·‘제출’ 버튼 높이를 32로 맞추고 WPF 실제 팝업에도 같은 크기를 적용하기로 결정.

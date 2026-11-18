@@ -120,7 +120,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[61-17] VIDEO area/description styles match WPF (black painted by one inner layer only, so rounded corners do not bleed) and the preview-only caption is gone: ' + JSON.stringify(v));
   check(v.titleSize === '22px' && v.titleWeight === '600' && v.headSize === '17px' && v.headWeight === '600' && v.pad === '28px 24px',
     '[61-17] content title 22/600, header 17/600, body padding 28/24: ' + JSON.stringify(v));
-  check(Math.abs(v.footerH - 80) < 0.6 && Math.abs(v.btnH - 32) < 0.6 && v.btnW >= 118 && !v.divider, '[61-17] footer is 80 high with a 44px button and no divider: ' + JSON.stringify(v));
+  check(Math.abs(v.footerH - 64) < 0.6 && Math.abs(v.btnH - 34) < 0.6 && v.btnW >= 118 && !v.divider, '[61-17] footer is 80 high with a 44px button and no divider: ' + JSON.stringify(v));
   await escape();
   // 4) Overlay 꺼짐: 투명 배경, 배경 클릭으로 닫힘.
   await render('TEXT', {}, {useBackgroundOverlay: false}); await openPreview();
@@ -258,7 +258,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(!video.dialogShadow && !video.innerShadow && video.pad === '0px' && video.inner[0] === video.dialog[0], `[61-16] VIDEO has no shadow margin or shadow like the WPF video window ${label}: ` + JSON.stringify(video));
   }
   await run("document.getElementById('closed-net-rule')?.remove()");
-  // [TODO61-18] '나중에 보기'는 WPF SecondaryActionButtonStyle 모양(최소 너비 118), 푸터 버튼 높이는 '확인'·'제출'과 같은 32(2026-11-18). 왼쪽 끝, '확인'·'제출'과 세로 중앙 정렬, 푸터 요소 겹침·잘림 없음.
+  // [TODO61-18] '나중에 보기'는 WPF SecondaryActionButtonStyle 모양(최소 너비 118), 푸터 버튼 높이는 '확인'·'제출'과 같은 34, 푸터 64(2026-11-18). 왼쪽 끝, '확인'·'제출'과 세로 중앙 정렬, 푸터 요소 겹침·잘림 없음.
   const footerLayout = scope => run(`(()=>{const root=${scope};const paper=root.querySelector('.MuiPaper-root');const p=paper.getBoundingClientRect();
     const btn=t=>Array.from(root.querySelectorAll('button')).find(b=>b.textContent.trim()===t);const later=btn('나중에 보기');const main=btn('확인')||btn('바로가기')||btn('제출');
     if(!later||!main)return {missing:!later?'later':'main'};const r=e=>e.getBoundingClientRect();const L=r(later),M=r(main);const s=getComputedStyle(later);
@@ -268,17 +268,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     return {w:Math.round(L.width*10)/10,h:Math.round(L.height),mainH:Math.round(M.height),bg:s.backgroundColor,border:s.borderTopColor,radius:s.borderTopLeftRadius,weight:s.fontWeight,
       leftmost:L.left<=footerLeft+0.5,leftOfMain:L.right<=M.left,centerDiff:Math.round(Math.abs((L.top+L.bottom)/2-(M.top+M.bottom)/2)*10)/10,overlap,
       clipped:parts.some(x=>x.left<p.left-0.5||x.right>p.right+0.5||x.bottom>p.bottom+0.5)};})()`);
-  const laterOk = f => f && !f.missing && f.w >= 118 && f.h === 32 && f.mainH === 32 && f.bg === 'rgb(243, 244, 246)' && f.border === 'rgb(209, 213, 219)' && f.radius === '9px' && f.weight === '600'
+  const laterOk = f => f && !f.missing && f.w >= 118 && f.h === 34 && f.mainH === 34 && f.bg === 'rgb(243, 244, 246)' && f.border === 'rgb(209, 213, 219)' && f.radius === '9px' && f.weight === '600'
     && f.leftmost && f.leftOfMain && f.centerDiff <= 1 && !f.overlap && !f.clipped;
   const laterTypes = [['TEXT', {}], ['IMAGE', {}], ['VIDEO', {videoUrl: '/missing.mp4'}], ['SURVEY', {}], ['QUIZ', {}], ['QUIZ', {videoEnabled: true, videoUrl: '/missing.mp4'}]];
   for (const [type, content] of laterTypes) {
     const label = type + (content.videoEnabled ? '(VIDEO+QUIZ)' : '');
     await render(type, {showLater: true, showDoNotShowAgain: true}, content);
     let f = await footerLayout("document.querySelector('#root')");
-    check(laterOk(f), `[TODO61-18] ${label} inline later button matches WPF secondary style at height 32 and aligns: ` + JSON.stringify(f));
+    check(laterOk(f), `[TODO61-18] ${label} inline later button matches WPF secondary style at height 34 and aligns: ` + JSON.stringify(f));
     await openPreview();
     f = await footerLayout("document.querySelector('.MuiDialog-root')");
-    check(laterOk(f), `[TODO61-18] ${label} dialog later button matches WPF secondary style at height 32 and aligns: ` + JSON.stringify(f));
+    check(laterOk(f), `[TODO61-18] ${label} dialog later button matches WPF secondary style at height 34 and aligns: ` + JSON.stringify(f));
     await escape();
   }
   // 확대 배율(브라우저 150%와 같은 CSS 폭) Dialog와 큰 푸터 글자에서도 겹침·잘림이 없다.
@@ -286,11 +286,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   for (const [type, content] of laterTypes) {
     await render(type, {showLater: true, showDoNotShowAgain: true}, {...content, footerFontSize: 18});
     let f = await footerLayout("document.querySelector('#root')");
-    // IMAGE 푸터는 높이 80 고정이라 좁은 폭 + 글자 18에서 줄이 3줄로 바뀌면 아래가 잘린다. 이번 변경 전에도 같은 기존 동작이라(TODO61-18 기록) 잘림만 제외한다.
-    check(f && !f.missing && f.h === 32 && f.mainH === 32 && f.w >= 118 && !f.overlap && (type === 'IMAGE' || !f.clipped), `[TODO61-18] ${type} narrow inline with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
+    // IMAGE 푸터도 최소 높이 64라(TODO61-18) 좁은 폭 + 글자 18에서 줄이 바뀌어도 잘리지 않는다.
+    check(f && !f.missing && f.h === 34 && f.mainH === 34 && f.w >= 118 && !f.overlap && !f.clipped, `[TODO61-18] ${type} narrow inline with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
     await openPreview();
     f = await footerLayout("document.querySelector('.MuiDialog-root')");
-    check(f && !f.missing && f.h === 32 && f.mainH === 32 && f.w >= 118 && !f.overlap && !f.clipped, `[TODO61-18] ${type} zoomed dialog with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
+    check(f && !f.missing && f.h === 34 && f.mainH === 34 && f.w >= 118 && !f.overlap && !f.clipped, `[TODO61-18] ${type} zoomed dialog with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
     await escape();
   }
   await viewport(1000, 900);

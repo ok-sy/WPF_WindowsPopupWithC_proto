@@ -96,6 +96,11 @@ namespace Popup.Views.Windows
                     survey.UseFooterSubmission();
                 }
             }
+            else if (_options.ShowFooter && _options.Content is VideoPopupView)
+            {
+                // POL-02-03 : 푸터 역할 — 영상 푸터는 시청 진행 문구가 체크박스 위에 붙어 64를 넘을 수 있어 자동 높이(최소 64)로 둔다(TODO61-18).
+                FooterRow.Height = GridLength.Auto;
+            }
             /*
              * POL-05-02 : 완료·화면 이탈
              * 푸터 버튼 활성 여부·사유 문구·보조 닫기 표시는 RefreshFooterState 한 곳에서 계산한다.
@@ -329,7 +334,7 @@ namespace Popup.Views.Windows
              *
              * Visibility만 Collapsed로 변경하면
              * Footer 안의 버튼과 체크박스는 보이지 않지만,
-             * Grid의 Footer 행 높이 80은 그대로 남을 수 있다.
+             * Grid의 Footer 행 높이 64는 그대로 남을 수 있다.
              *
              * 그래서 FooterArea의 표시 여부와
              * FooterRow의 높이를 함께 변경해야 한다.
@@ -340,15 +345,17 @@ namespace Popup.Views.Windows
 
             /*
              * ShowFooter가 true면
-             * Footer가 사용할 높이 80을 유지한다.
+             * Footer가 사용할 높이 64를 유지한다(TODO61-18, 2026-11-18: 80 → 64, 버튼 34 위아래 15).
              *
              * ShowFooter가 false면
              * Footer 행 높이를 0으로 만들어
              * Footer가 차지하던 빈 공간까지 완전히 제거한다.
              */
             FooterRow.Height = _options.ShowFooter
-            ? new GridLength(80)
+            ? new GridLength(64)
             : new GridLength(0);
+            // 푸터를 숨기면 최소 높이도 0이어야 행이 사라진다.
+            FooterRow.MinHeight = _options.ShowFooter ? 64 : 0;
 
             /*
              * '{N}일간 보지 않기' 체크박스

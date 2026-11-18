@@ -89,10 +89,10 @@ export const POPUP_HEADER_HEIGHT = 40;
  * POL-02-01 : 창 구조
  * ■ 팝업 푸터 높이
  * - in : 없음
- * - out: 80(px) WPF FooterRow 높이
+ * - out: 64(px) WPF FooterRow 높이(TODO61-18, 2026-11-18: 80 → 64)
  * - 푸터를 표시할 때 창 높이에 더하는 값을 제공한다.
  */
-export const POPUP_FOOTER_HEIGHT = 80;
+export const POPUP_FOOTER_HEIGHT = 64;
 /**
  * POL-04-02 : 모드별 기준
  * POL-04-03 : 비율·상한

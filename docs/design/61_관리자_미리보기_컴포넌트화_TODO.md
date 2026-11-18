@@ -190,4 +190,9 @@
   - 웹: `PopupPreview.tsx` `FOOTER_BUTTON_HEIGHT`(32)를 확인·바로가기·제출·나중에 보기·보조 닫기에 적용.
   - 실측(같은 데이터, 96 DPI·브라우저 100%): 웹·WPF 모두 ‘나중에 보기’ 120.9×32, ‘확인’·‘바로가기’ 118×32, ‘제출’ 132×32.
   - 검증: WPF 빌드 경고·오류 0, PopupWindowTests 563(신규 `CheckFooterButtonHeight61_18` 33건: 데모 8종 × 푸터 표시/숨김 × 글자 기본/18의 높이 32·세로 정렬, 공유 스타일 44 유지, `CheckVideoQuizAspect60` 제외), BehaviorTests 1,740(제출 높이 고정값 46→32). 웹 tsc·eslint, preview-61 192(높이 기대값 32)·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과. 폐쇄망 실화면 미실행.
+- 후속 2(2026-11-18): 32·34·36 버튼 높이와 80·72·64·56 푸터 높이를 실제 WPF 화면으로 비교(이미지 `docs/reviews/TODO61-18_footer_button_size/`, 반입 문서에 포함)한 뒤 **버튼 34·푸터 64(위아래 15)**로 확정.
+  - WPF: 푸터 버튼 3종·본문 제출 버튼 `Height=34`. `FooterRow` 64·`MinHeight` 64(푸터 숨김 시 0), `FooterArea` 여백 28,15,28,15. VIDEO 푸터는 시청 진행 문구 때문에 설문과 같이 자동 높이(최소 64). IMAGE 창 크기 계산은 `FooterRow` 값을 그대로 써 64 반영.
+  - 웹: `FOOTER_BUTTON_HEIGHT` 34, `POPUP_FOOTER_HEIGHT` 64(IMAGE 권장 크기 계산 포함), 일반 푸터 위아래 15·최소 64, 설문 푸터 위아래 15·최소 64. IMAGE 푸터도 고정 높이 대신 최소 높이로 바꿔 줄바꿈 시 잘림을 없앰(줄바꿈이 없으면 64 그대로). → 위 ‘확인된 기존 동작’(IMAGE 좁은 폭 잘림)도 해소.
+  - 실측(같은 데이터): 웹·WPF 모두 ‘나중에 보기’ 120.9×34, ‘확인’·‘바로가기’ 118×34, ‘제출’ 132×34.
+  - 검증: WPF 빌드 경고·오류 0, PopupWindowTests 595(`CheckFooterButtonHeight61_18` 65건: 버튼 34·세로 정렬, TEXT·IMAGE 푸터 64, 진행 문구 푸터 64 이상·내용이 위아래 15 안에 들어감, 공유 스타일 44 유지 / `CheckVideoQuizAspect60` 제외), BehaviorTests 1,740(제출 높이 34, FIT_TO_IMAGE 헤더·푸터 창 높이 318 → 302). 웹 tsc·eslint, preview-61 192(IMAGE 좁은 폭 잘림 예외 제거)·image-preview 54(헤더·푸터 크롬 418 → 402)·completion-ux-43 82·common-sample-69 63·survey-rich-text-55 74·guide-render 31 통과. 폐쇄망 실화면 미실행.
 

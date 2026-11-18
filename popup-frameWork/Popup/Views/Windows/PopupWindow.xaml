@@ -104,8 +104,9 @@
                     <!--
                     하단 Footer 높이
                     -->
+                    <!-- POL-02-03 : 푸터 역할 — 높이 64(2026-11-18, TODO61-18). 진행 문구가 있는 설문·영상 푸터는 자동 높이 + 최소 64. -->
                     <RowDefinition x:Name="FooterRow"
-                                   Height="80"/>
+                                   Height="64" MinHeight="64"/>
 
                 </Grid.RowDefinitions>
 
@@ -223,7 +224,7 @@
                 -->
                 <Grid x:Name="FooterArea"
                       Grid.Row="2"
-                      Margin="28,8,28,16">
+                      Margin="28,15,28,15">
 
                     <Grid.ColumnDefinitions>
 
@@ -251,12 +252,12 @@
                     FooterLaterButton: "나중에 보기". showFooter·showLater가 모두 true일 때만 왼쪽 끝에 보인다.
                     누르면 결과 LATER로 닫고 다음 조회 주기에 다시 표시된다. 완료 기준(VIDEO·QUIZ) 전에도 누를 수 있다.
                     -->
-                    <!-- POL-02-03 : 푸터 역할 — 푸터 버튼(나중에 보기·보조 닫기·확인/바로가기/제출) 높이 32(2026-11-18, TODO61-18).
+                    <!-- POL-02-03 : 푸터 역할 — 푸터 버튼(나중에 보기·보조 닫기·확인/바로가기/제출) 높이 34, 위아래 15(2026-11-18, TODO61-18).
                          결과 안내창(PopupAlert)과 공유하는 ActionButtonStyle은 바꾸지 않고 푸터 버튼에만 높이·위아래 여백 0을 지정한다. -->
                     <Button x:Name="FooterLaterButton"
                             Grid.Column="0"
                             VerticalAlignment="Center"
-                            Height="32" Padding="22,0"
+                            Height="34" Padding="22,0"
                             Style="{StaticResource SecondaryActionButtonStyle}"
                             Content="나중에 보기"
                             Margin="0,0,16,0"
@@ -295,14 +296,14 @@
                     -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="FooterAuxCloseButton"
-                                Height="32" Padding="22,0"
+                                Height="34" Padding="22,0"
                                 Style="{StaticResource SecondaryActionButtonStyle}"
                                 Content="닫기"
                                 Margin="0,0,10,0"
                                 Visibility="Collapsed"
                                 Click="CloseButton_Click"/>
                         <Button x:Name="FooterCloseButton"
-                                Height="32" Padding="22,0"
+                                Height="34" Padding="22,0"
                                 Style="{StaticResource ActionButtonStyle}"
                                 Content="확인"
                                 Click="CloseButton_Click"/>
