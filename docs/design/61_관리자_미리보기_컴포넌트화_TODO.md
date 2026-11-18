@@ -169,3 +169,13 @@
 - 검증: `tsc --noEmit` 통과, 변경 파일 eslint 경고·오류 없음. 하네스 `TODO61 preview` 126건(61-17 4건 추가: 영상 영역 채움·설명 위치, 영상·설명 스타일·안내 삭제, 제목·헤더·본문 여백, 푸터 80·버튼 44·구분선 없음), `completion UX 43` 76건(동영상+퀴즈 높이 식 기대값을 테두리 포함으로 갱신), `TODO69 sample` 62건(삭제한 완료 기준 안내 대신 영상 영역 표시 확인), `IMAGE preview` 54건, `survey rich text 55` 67건, `guide render` 31건, `guide registry` 296건, `rich text 49` 75건, `RgstPop quiz rule` 25건, `TODO64 transform` 78건, `quiz option byte 73` 44건, `question template picker` 7건, `pickPopupFields` 34건 통과.
 - 보완(2026-11-16): 단독 VIDEO 미리보기에도 실제 영상을 넣었다. `AspectVideoArea.tsx`의 `FillVideoArea`가 남은 높이를 채운 검정 영역 안에 음소거·메타데이터만 읽은 video를 contain으로 그린다(WPF `Stretch=Uniform`). 재생하지 않으며 영역 높이를 영상 비율로 계산하지 않는다(WPF 단독 VIDEO도 `EnableAspectSizing` 미사용). 주소 없음·읽기 실패는 재생 아이콘과 안내 문구. 영상 레터박스 배경은 WPF와 같은 검정으로 통일(동영상+퀴즈 포함). 하네스 `completion UX 43` 78건(신규 2건: Demo 영상 contain·음소거·정지, 읽기 실패 안내). 1회 실행에서 동영상+퀴즈 메타데이터 검사가 대기 시간 안에 응답을 받지 못해 실패했고 이후 2회 연속 통과(이번 변경과 무관한 경로).
 - 미실행: 관리자 웹 실화면과 WPF 캡처 나란히 비교(유형별), TEXT·IMAGE·SURVEY·QUIZ 공통 헤더·푸터 변경의 실화면 확인.
+
+### 61-18 나중에 보기 버튼 크기 정렬과 푸터 회귀 검증
+
+- 상태: 구현 대기.
+- 이슈: 폐쇄망 VIDEO 실제 크기 미리보기에서 ‘나중에 보기’가 브라우저 검사 기준 93.45 × 32px로 표시돼 ‘확인’보다 작다. Git main `1ee96e5`의 `PopupPreview.tsx`는 일반·설문 푸터에서 ‘나중에 보기’를 크기 지정 없는 MUI 텍스트 버튼으로 그린다. 일반 푸터의 ‘확인’은 최소 너비 118px, 높이 44px을 지정한다.
+- WPF 기준: `PopupWindow.xaml`의 `FooterLaterButton`은 `PopupStyles.xaml`의 `SecondaryActionButtonStyle`을 적용한다. 이 스타일은 `ActionButtonStyle`의 최소 너비 118 DIP와 높이 44 DIP를 상속하고 밝은 배경과 테두리로 보조 버튼을 구분한다.
+- [ ] 관리자 웹 `PopupPreview.tsx`의 일반·설문 푸터에서 ‘나중에 보기’를 최소 너비 118px, 높이 44px로 맞추고 보조 버튼 스타일을 적용한다. 용도별 버튼 구분과 기존 클릭 핸들러를 유지한다. WPF 스타일을 비교 기준으로 사용한다.
+- [ ] 브라우저 100%에서 동일 데이터로 인라인·실제 크기 Dialog와 WPF를 비교한다. TEXT·IMAGE(푸터 사용 시)·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ에서 ‘나중에 보기’ 크기와 좌측 배치, ‘확인’ 또는 ‘제출’과의 세로 정렬을 확인한다.
+- [ ] 좁은 인라인 폭과 확대 배율에서 푸터 문구·체크박스·버튼의 겹침·잘림을 확인한다. `showFooter`·`showLater` 조합, 시청·제출 잠금 중 ‘나중에 보기’ 동작, 활성·비활성 상태를 회귀 검증한다.
+- [ ] 웹 타입 검사와 관련 미리보기·완료 동작 검증을 실행하고, 웹·WPF 비교 및 폐쇄망 실화면 결과를 기록한다.
