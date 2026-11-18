@@ -10,7 +10,7 @@ import { previewDialogSize, previewOverlay, previewPositionAlign, previewShadowM
  * POL-08-03 : Dialog 호환
  * POL-02-02 : 종료 제어
  * ■ 실제 크기 미리보기 모달 입력값
- * - in : popup · open · recommendedSize? (PopupPreviewDialog 설명 참고)
+ * - in : popup · open · recommendedSize? · showPlaceholders? (PopupPreviewDialog 설명 참고)
  * - out: onClose
  * - PopupPreviewDialog가 받는 props 형식을 정의한다.
  */
@@ -20,6 +20,8 @@ export interface PopupPreviewDialogProps {
   onClose: () => void;
   /** 인라인 미리보기가 이미 계산한 IMAGE 권장 창 크기(선택). 모달 안 미리보기가 계산하기 전 첫 표시에 쓴다. */
   recommendedSize?: Size | null;
+  /** 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): 인라인 미리보기·WPF와 같은 기준. 가이드·샘플만 켠다. */
+  showPlaceholders?: boolean;
 }
 
 // 브라우저 창 크기(미리보기의 작업 영역). SSR 등 window가 없으면 1920 x 1040으로 본다.
@@ -38,7 +40,7 @@ function readViewport(): Size {
  *   입력 폼·저장 API에 의존하지 않으며 전달받은 popup을 바꾸지 않는다.
  *   설문 응답 등 시연 상태는 모달 안 PopupPreview에만 있고, 닫으면 내용이 언마운트되어 다시 열 때 초기화된다.
  */
-export default function PopupPreviewDialog({ popup, open, onClose, recommendedSize = null }: PopupPreviewDialogProps) {
+export default function PopupPreviewDialog({ popup, open, onClose, recommendedSize = null, showPlaceholders = false }: PopupPreviewDialogProps) {
   const [viewport, setViewport] = useState<Size>(readViewport);
   const [measuredSize, setMeasuredSize] = useState<Size | null>(null);
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
         sx={{ position: 'fixed', ...(!fullScreen && alignY === 'flex-start' ? { bottom: 12 } : { top: 12 }), right: 12, zIndex: (theme) => theme.zIndex.modal + 1, boxShadow: 3 }}>
         미리보기 종료 (Esc)
       </Button>
-      <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} showBackground={false} hidePlaceholders onClose={onClose} onRecommendedSize={setMeasuredSize} /></DialogContent>
+      <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} showBackground={false} showPlaceholders={showPlaceholders} onClose={onClose} onRecommendedSize={setMeasuredSize} /></DialogContent>
     </Dialog>
   );
 }

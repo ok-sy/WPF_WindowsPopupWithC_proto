@@ -145,19 +145,27 @@
 
 ### 6. 폐쇄망 등록 미리보기의 예시 표시 기본 OFF
 
-- [ ] 등록 화면의 인라인 미리보기와 실제 크기 Dialog에 같은 표시 기준을 적용한다. 폼에 입력란이 없거나 값이 비어 있는 항목의 예시 표시를 기본 OFF로 둔다. 입력한 헤더 제목과 설명은 표시하고, 입력란이 없는 영상 본문 제목의 예시 문구는 숨긴다. 폼에 노출된 실제 표시 스위치는 값을 반영한다.
-- [ ] `PopupPreview.tsx`, `PopupPreviewDialog.tsx`, `AspectVideoArea.tsx`의 `hidePlaceholders`와 영상 렌더링 조건을 확인한다. 폐쇄망 등록 미리보기에서 영상을 첨부하지 않았으면 검은 영역·안내·예시 컨트롤을 포함한 영상 영역 전체를 접는다. 첨부하면 영상 영역을 표시하고 첨부를 제거하면 다시 접는다. 가이드 등 샘플 호출부는 예시 표시를 명시적으로 켤 수 있어야 한다.
-- [ ] 동영상·동영상+퀴즈·퀴즈·설문에서 빈 값·입력·삭제와 인라인/Dialog 일치를 확인한다. 동영상이 있는 경우 재생 컨트롤과 시청 완료 조건을 회귀 검증한다.
+- [x] 등록 화면의 인라인 미리보기와 실제 크기 Dialog에 같은 표시 기준을 적용한다. 폼에 입력란이 없거나 값이 비어 있는 항목의 예시 표시를 기본 OFF로 둔다. 입력한 헤더 제목과 설명은 표시하고, 입력란이 없는 영상 본문 제목의 예시 문구는 숨긴다. 폼에 노출된 실제 표시 스위치는 값을 반영한다.
+- [x] `PopupPreview.tsx`, `PopupPreviewDialog.tsx`, `AspectVideoArea.tsx`의 `hidePlaceholders`와 영상 렌더링 조건을 확인한다. 폐쇄망 등록 미리보기에서 영상을 첨부하지 않았으면 검은 영역·안내·예시 컨트롤을 포함한 영상 영역 전체를 접는다. 첨부하면 영상 영역을 표시하고 첨부를 제거하면 다시 접는다. 가이드 등 샘플 호출부는 예시 표시를 명시적으로 켤 수 있어야 한다.
+- [x] 동영상·동영상+퀴즈·퀴즈·설문에서 빈 값·입력·삭제와 인라인/Dialog 일치를 확인한다. 동영상이 있는 경우 재생 컨트롤과 시청 완료 조건을 회귀 검증한다.
 
 ### 7. 동영상+퀴즈에서 설명 한 번 표시
 
-- [ ] 동영상+퀴즈 결합 화면의 제목·설명 표시에는 내부 동영상의 제목·설명 표시 옵션을 적용하지 않는다. 공통 설명은 퀴즈 머리말에 한 번 표시한다. 유효한 `descriptionBlocks`가 있으면 서식을 표시하고, 일반 설명만 있는 기존 데이터는 `description`을 사용한다. 빈 설명은 숨긴다.
-- [ ] 웹의 `PopupPreview.tsx` → `SurveyPreview.tsx` 렌더링과 WPF의 `VideoQuizPopupView.cs` → `SurveyPopupView.CollapseHeaderShownAbove()` 경로에 같은 기준을 적용한다. 표시만 조정하며 기존 요청·저장 형식을 사용한다.
+- [x] 동영상+퀴즈 결합 화면의 제목·설명 표시에는 내부 동영상의 제목·설명 표시 옵션을 적용하지 않는다. 공통 설명은 퀴즈 머리말에 한 번 표시한다. 유효한 `descriptionBlocks`가 있으면 서식을 표시하고, 일반 설명만 있는 기존 데이터는 `description`을 사용한다. 빈 설명은 숨긴다.
+- [x] 웹의 `PopupPreview.tsx` → `SurveyPreview.tsx` 렌더링과 WPF의 `VideoQuizPopupView.cs` → `SurveyPopupView.CollapseHeaderShownAbove()` 경로에 같은 기준을 적용한다. 표시만 조정하며 기존 요청·저장 형식을 사용한다.
 - [ ] 일반 설명·서식 설명·빈 설명과 내부 영상 설명 옵션 ON/OFF를 포함해, 같은 데이터로 웹과 WPF의 표시 위치·횟수·서식을 비교한다. 단독 동영상의 제목·설명과 동영상+퀴즈의 시청 잠금·제출 동작을 회귀 검증한다.
 
-### 8. 설문·퀴즈 미리보기 문항 자동 채번 제거 — 미진행
+### 8. 설문·퀴즈 미리보기 문항 자동 채번 제거
 
-- [ ] `SurveyPreview.tsx`에서 제목 앞에 자동 렌더링하는 `01`, `02` 문항 번호와 번호가 차지하던 여백을 제거한다. 등록 편집기의 일반 선택지 앞 번호 제거와 별개인 미구현 항목이다.
+- [x] `SurveyPreview.tsx`에서 제목 앞에 자동 렌더링하는 `01`, `02` 문항 번호와 번호가 차지하던 여백을 제거한다. 등록 편집기의 일반 선택지 앞 번호 제거와 별개인 미구현 항목이다.
 - [ ] 설문·퀴즈·동영상+퀴즈의 인라인 미리보기와 실제 크기 Dialog에서 번호가 없어지고, 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점이 보존되는지 확인한다. 동일 데이터로 WPF의 문항 제목 표시를 대조하고, WPF 실제 팝업의 번호 표시까지 변경할 범위는 대조 결과로 확인한다.
 
 - 완료 검증은 웹 타입 검사, WPF 빌드, 동일 데이터의 웹·WPF 화면 비교, 폐쇄망 실화면 확인으로 기록한다.
+
+### 후속 6~8 구현 기록 (2026-11-18)
+
+- 6: `InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`에 `showPlaceholders`(기본 false)를 두어 인라인·Dialog가 같은 기준으로 예시 문구를 숨긴다. 기존 `PopupPreview` `hidePlaceholders`는 호환용(false = 예시 표시)으로만 남겼다. 예시 OFF에서 영상 URL이 없으면 `FillVideoArea`·`AspectVideoArea`와 예시 재생 컨트롤을 그리지 않고, 첨부하면 다시 표시한다. 가이드 실행기(`InlinePopupPreview`·`PopupPreview`)는 `showPlaceholders`를 켠다. 폼의 헤더 제목·설명·표시 스위치는 기존과 같이 값을 반영한다.
+- 7: 웹은 결합 화면의 영상 부분에서 설명을 그리지 않고 퀴즈 머리말이 서식 설명 우선·일반 설명·빈 설명 숨김(빈 자리 없음)으로 한 번 그린다. WPF는 `VideoPopupView.HideDescription()`으로 영상 아래 설명을 숨기고, `SurveyPopupView.CollapseHeaderShownAbove(title)`는 제목만 비교하며 `CollapseEmptyDescription()`이 빈 일반 설명을 접는다. 요청·저장 형식 변경 없음.
+- 8: `SurveyPreview`의 `01`·`02` 번호 노드와 여백을 제거했다. 제목에 직접 입력한 숫자·문항 순서·필수 표시·채점은 그대로다. 같은 데이터 나란히 비교(`verify-popup-parity.cjs`)에서 **WPF 실제 팝업은 아직 `01`·`02`를 표시**한다(`SurveyPopupView.CreateQuestionCard` `questionNumber.ToString("D2")`). WPF 번호 제거 여부는 결정 대기.
+- 검증: 웹 `tsc --noEmit`·eslint 통과. 하네스 preview-61 152·completion-ux-43 82·common-sample-69 62·survey-rich-text-55 74·guide-render 31·guide-registry 297·popup-parity 22 통과. WPF 빌드(경고·오류 0), PopupWindowTests 585(VIDEO+QUIZ 일반·서식·빈 설명, 영상 설명 옵션 ON/OFF, 단독 VIDEO 설명 유지 포함)·BehaviorTests 1,740 통과.
+- 남은 확인: 7-3 VIDEO+QUIZ 웹·WPF 나란히 화면 비교(현재는 표시 여부 자동 대조만), 8-2 WPF 번호 표시 범위 결정, 로그인 관리자 화면·폐쇄망 실화면.

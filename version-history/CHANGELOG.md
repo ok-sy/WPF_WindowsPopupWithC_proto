@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-18-03 — dev: 20261110 후속 6~8 미리보기 예시 OFF·동영상+퀴즈 설명·문항 번호
+
+- 이유: 폐쇄망 등록 미리보기에서 입력란이 없거나 빈 항목의 예시 문구와 미첨부 영상의 검정 영역·예시 컨트롤이 보이고, 인라인과 실제 크기 Dialog의 기준이 달랐다. 동영상+퀴즈는 서식 설명이 영상 아래(일반 문자열)와 퀴즈 머리말(서식)에 두 번 보였다. 미리보기 문항 제목 앞 자동 번호(`01`·`02`)는 제거하기로 확정.
+- 변경:
+  - 웹 미리보기: `InlinePopupPreview`·`PopupPreviewDialog`·`PopupPreview`에 `showPlaceholders`(기본 false) 추가. 예시 OFF면 빈 제목·설명·이미지 안내 문구를 숨기고, 영상 URL이 없으면 영상 영역·예시 재생 컨트롤 전체를 접는다. `PopupPreview` `hidePlaceholders`는 호환용으로만 유지. 가이드 실행기는 예시 표시를 켬. 가이드 공지·컴포넌트 props 설명 추가.
+  - 동영상+퀴즈 설명(웹·WPF): 영상 아래 설명을 그리지 않고(내부 `showDescription` 미적용) 퀴즈 머리말에 한 번 표시(`descriptionBlocks` 서식 우선, 없으면 `description`, 빈 설명은 자리 없이 숨김). WPF는 `VideoPopupView.HideDescription()`, `SurveyPopupView.CollapseHeaderShownAbove(title)`(제목만 비교)·`CollapseEmptyDescription()`. 요청·저장 형식 변경 없음.
+  - `SurveyPreview` 문항 제목 앞 자동 번호와 여백 제거.
+  - 사양: `WPF_POPUP_ALL_SPEC.md`·`WPF_AGENT_SPEC.md`·`POPUP_INTERFACE_SPEC.md`·`ADMIN_POPUP_PREVIEW_COMPONENTS.md` 갱신. TODO 후속 6~8 체크·구현 기록, 활성 작업 상태 진행으로 변경.
+  - 검증 도구: preview-61(예시 ON/OFF·첨부/제거·인라인/Dialog 일치), completion-ux-43(서식·빈 설명), common-sample-69(IS063 미첨부 영상 접힘), survey-rich-text-55·popup-parity(번호 노드 의존 제거), PopupWindowTests D3(설명 표시 규칙) 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/{PopupPreview,PopupPreviewDialog,InlinePopupPreview,SurveyPreview}.tsx`, `guide/{guideRunners.tsx,guideData.ts,guideNotices.ts}`, `popup-frameWork/Popup/Views/Contents/{VideoQuizPopupView.cs,VideoPopupView.xaml.cs,SurveyPopupView.xaml.cs}`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-*.cjs`.
+- 검증: 웹 `tsc --noEmit`·eslint(변경 파일) 통과. 하네스 preview-61 152·completion-ux-43 82·common-sample-69 62·survey-rich-text-55 74·guide-render 31·guide-registry 297·popup-parity 22 통과. WPF 빌드 경고·오류 0, PopupWindowTests 585·BehaviorTests 1,740 통과.
+- 미완료: 나란히 비교에서 WPF 실제 팝업은 아직 `01`·`02` 번호를 표시(제거 여부 결정 대기). VIDEO+QUIZ 웹·WPF 나란히 화면 비교, 로그인 관리자 화면·폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-02 — doc: 폐쇄망 팝업 표시 후속 TODO 추가
 
 - 변경: 폐쇄망 등록 미리보기 예시 기본 OFF·영상 미첨부 영역 접기, 동영상+퀴즈 설명 웹·WPF 한 번 표시, 미리보기 문항 자동 채번 삭제 미진행을 기존 TODO와 활성 작업에 기록.

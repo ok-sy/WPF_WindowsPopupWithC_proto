@@ -26,21 +26,21 @@ function samplePopup(popupType: string, overrides: Record<string, unknown> = {},
     questions: popupType === 'SURVEY' || popupType === 'QUIZ' ? questions : [], ...overrides,
     content: {plainText: '본문', surveyTitle: '설문', videoTitle: '영상', videoUrl: '', imageUrl: image(800, 400), ...content}} as any;
 }
-function Host({popup, hint}: {popup: any; hint: boolean}) {
+function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placeholders: boolean}) {
   const [open, setOpen] = useState(false);
   const [recommended, setRecommended] = useState<Size | null>(null);
   (window as any).hostState = {open, recommended};
   return <div style={{display: 'flex', height: 700, width: 520, flexDirection: 'column'}}>
-    <InlinePopupPreview popup={popup} onOpenPreview={() => setOpen(true)} onRecommendedSize={setRecommended} />
-    <PopupPreviewDialog popup={popup} open={open} onClose={() => setOpen(false)} recommendedSize={hint ? recommended : null} />
+    <InlinePopupPreview popup={popup} showPlaceholders={placeholders} onOpenPreview={() => setOpen(true)} onRecommendedSize={setRecommended} />
+    <PopupPreviewDialog popup={popup} showPlaceholders={placeholders} open={open} onClose={() => setOpen(false)} recommendedSize={hint ? recommended : null} />
   </div>;
 }
-(window as any).renderHost = (popupType: string, overrides: Record<string, unknown> = {}, content: Record<string, unknown> = {}, hint = true) => {
+(window as any).renderHost = (popupType: string, overrides: Record<string, unknown> = {}, content: Record<string, unknown> = {}, hint = true, placeholders = false) => {
   const popup = deepFreeze(samplePopup(popupType, overrides, content));
   (window as any).popupJson = JSON.stringify(popup);
   (window as any).currentPopup = popup;
   root.render(<ThemeProvider theme={theme}><CssBaseline/>
-    <Host key={JSON.stringify(popup) + hint} popup={popup} hint={hint} />
+    <Host key={JSON.stringify(popup) + hint + placeholders} popup={popup} hint={hint} placeholders={placeholders} />
   </ThemeProvider>);
 };
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);

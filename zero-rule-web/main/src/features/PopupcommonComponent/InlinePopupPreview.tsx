@@ -12,7 +12,7 @@ export const INLINE_PREVIEW_SIZE_NOTICE = '실제 팝업 크기와 다를 수 �
 /**
  * POL-08-01 : 공통 렌더러
  * ■ 인라인 미리보기 입력값
- * - in : popup · onOpenPreview? · onRecommendedSize? · title? (각 항목 설명 참고)
+ * - in : popup · onOpenPreview? · onRecommendedSize? · title? · showPlaceholders? (각 항목 설명 참고)
  * - out: 없음(형식 정의)
  * - InlinePopupPreview가 받는 props 형식을 정의한다.
  */
@@ -23,19 +23,21 @@ export interface InlinePopupPreviewProps {
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE 등). 부모가 크기 안내나 PopupPreviewDialog의 recommendedSize로 쓴다. */
   onRecommendedSize?: (size: Size | null) => void;
   title?: string;
+  /** 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): 실제 크기 Dialog·WPF와 같은 기준. 가이드·샘플만 켠다. */
+  showPlaceholders?: boolean;
 }
 
 /**
  * POL-08-01 : 공통 렌더러
  * ■ 등록 화면 인라인 미리보기
- * - in : popup(AdminPopupDetail) 미리 볼 팝업 · title?(string) 미리보기 제목, 기본 '팝업 미리보기'
+ * - in : popup(AdminPopupDetail) 미리 볼 팝업 · title?(string) 미리보기 제목, 기본 '팝업 미리보기' · showPlaceholders?(boolean) 예시 표시, 기본 false
  * - out: onOpenPreview?() "실제 크기로 보기" 버튼 클릭(없으면 버튼 숨김) · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기 · 화면: 제목·크기 안내 문구·확대 버튼과 PopupPreview 미리보기
  * - 팝업 정보를 받아 등록 화면 우측에 제목·확대 버튼과 PopupPreview를 배치해 보여준다.
  *   저장·조회 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 부모 영역의 남은 높이를 채운다.
  *   미리보기 내부는 height:100%와 flex 비율로 배치되므로 높이가 확정된 상자가 필요하다. 그래서 absolute 상자로 높이를 확정한다.
  *   이 상자가 없으면 grid가 아닌 부모에서 이미지 칸이 0으로 접혀 ADAPTIVE·FIT_TO_IMAGE 이미지가 보이지 않는다.
  */
-export default function InlinePopupPreview({ popup, onOpenPreview, onRecommendedSize, title = '팝업 미리보기' }: InlinePopupPreviewProps) {
+export default function InlinePopupPreview({ popup, onOpenPreview, onRecommendedSize, title = '팝업 미리보기', showPlaceholders = false }: InlinePopupPreviewProps) {
   return (
     <Stack spacing={1.5} sx={{ flex: 1, height: '100%', minHeight: 0, minWidth: 0 }}>
       {/* 제목 · 크기 안내 · 실제 크기 버튼 순서. 폭이 부족하면 안내가 줄바꿈되거나 다음 줄로 내려가고 버튼은 오른쪽 끝을 유지한다(TODO73-25·26).
@@ -47,7 +49,7 @@ export default function InlinePopupPreview({ popup, onOpenPreview, onRecommended
       </Stack>
       <Box sx={{ flex: 1, minHeight: INLINE_PREVIEW_MIN_HEIGHT, position: 'relative' }}>
         <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
-          <PopupPreview popup={popup} onRecommendedSize={onRecommendedSize} />
+          <PopupPreview popup={popup} showPlaceholders={showPlaceholders} onRecommendedSize={onRecommendedSize} />
         </Box>
       </Box>
     </Stack>

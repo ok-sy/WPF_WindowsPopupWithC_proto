@@ -153,7 +153,7 @@ export interface SurveyPreviewProps {
   namePrefix: string;
   /** QUIZ면 복수 선택을 정답 수까지만 허용한다(WPF와 같은 규칙). */
   quiz?: boolean;
-  /** 설명이 비어도 한 줄(22px) 자리를 둔다(WPF SurveyDescriptionText와 같음). VIDEO+QUIZ에서 영상 설명과 같아 숨길 때만 false. 기본 true. */
+  /** 설명이 비어도 한 줄(22px) 자리를 둔다(WPF SurveyDescriptionText와 같음). VIDEO+QUIZ 결합 화면은 빈 설명을 숨겨 false. 기본 true. */
   reserveDescription?: boolean;
   /** 관리자 본문 글자 크기(10~40 보정값). 없으면 WPF 기본값(본문 14, 문항 제목 16, 문항 설명 13)을 쓴다. */
   bodyFontSize?: number | null;
@@ -256,7 +256,7 @@ function CheckMark({ selected, disabled }: { selected: boolean; disabled: boolea
  * POL-08-02 : 미리보기 상태
  * ■ 설문·퀴즈 문항 미리보기
  * - in : questions(PopupQuestion[]) 문항 목록 · description(string) 콘텐츠 설명 · descriptionBlocks?(unknown) 설명 서식, 있으면 description 대신 표시 · answers(Record<number, PreviewAnswer>) 문항 ID별 현재 응답 · disabled(boolean) 전체 입력 잠금 · namePrefix(string) 입력 요소 name·id 접두사 · quiz?(boolean) QUIZ면 복수 선택을 정답 수까지만 허용, 기본 false
- * - out: onAnswer(id: number, answer: PreviewAnswer) 선택·입력이 바뀔 때마다 해당 문항의 새 응답 · 화면: 설명, 번호·제목·필수 표시·선택 안내, 단일/복수 선택지 또는 주관식 입력란
+ * - out: onAnswer(id: number, answer: PreviewAnswer) 선택·입력이 바뀔 때마다 해당 문항의 새 응답 · 화면: 설명, 제목(자동 번호 없음)·필수 표시·선택 안내, 단일/복수 선택지 또는 주관식 입력란
  * - 문항과 응답 상태를 받아 현재 디자인 버전(SURVEY_DESIGN_VERSION)으로 문항을 그리고, 응답 변경을 부모에게 알린다.
  *   응답 상태는 부모가 가진다. 문항이 없으면 안내 문구를 보여준다.
  */
@@ -336,21 +336,14 @@ export default function SurveyPreview({
                 : { p: '20px 20px 18px', borderRadius: '11px' }),
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Typography
-                component="span"
-                sx={{ fontSize: 12, fontWeight: 600, color: surveyColors.muted, flexShrink: 0, whiteSpace: 'nowrap' }}
-              >
-                {String(index + 1).padStart(2, '0')}
-              </Typography>
-              <Typography
-                id={titleId}
-                component="div"
-                sx={{ fontSize: bodyFontSize ? bodyFontSize + 4 : 16, fontWeight: 600, lineHeight: '24px', minWidth: 0 }}
-              >
-                {richTitle ? <PopupRichBlocks blocks={richTitle} trailing={titleSuffix} /> : <>{question.title}{titleSuffix}</>}
-              </Typography>
-            </Stack>
+            {/* 문항 번호(01·02)는 자동으로 붙이지 않는다. 번호가 필요하면 제목에 직접 입력한다(2026-11-18, 20261110 후속 8). */}
+            <Typography
+              id={titleId}
+              component="div"
+              sx={{ fontSize: bodyFontSize ? bodyFontSize + 4 : 16, fontWeight: 600, lineHeight: '24px', minWidth: 0 }}
+            >
+              {richTitle ? <PopupRichBlocks blocks={richTitle} trailing={titleSuffix} /> : <>{question.title}{titleSuffix}</>}
+            </Typography>
             {(question.description || richQuestionDescription) && (
               <Typography component="div" sx={{ fontSize: bodyFontSize ? bodyFontSize + 1 : 13, color: surveyColors.muted, mt: 0.75 }}>
                 {richQuestionDescription ? <PopupRichBlocks blocks={richQuestionDescription} /> : question.description}

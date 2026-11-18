@@ -175,7 +175,7 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 | IsLoop | 지원 | N | `false` | 반복 재생 |
 
 CompletionRatio는 최상위 필드다(AllowCloseBeforeComplete는 TODO57에서 폐기). content 안에 중복 정의하지 않는다.
-시청 기준 도달은 일반 VIDEO·VIDEO+QUIZ·Demo 모두 서버와 같은 식(누적 시청/길이를 소수점 4자리에서 내림, 1 상한 ≥ CompletionRatio)으로 판정한다(설계 53-16). VIDEO+QUIZ는 영상 영역에 보인 제목·설명과 같은 퀴즈 머리말을 반복 표시하지 않는다.
+시청 기준 도달은 일반 VIDEO·VIDEO+QUIZ·Demo 모두 서버와 같은 식(누적 시청/길이를 소수점 4자리에서 내림, 1 상한 ≥ CompletionRatio)으로 판정한다(설계 53-16). VIDEO+QUIZ는 영상 영역에 보인 제목과 같은 퀴즈 머리말 제목을 반복 표시하지 않는다. 설명은 영상 아래에 그리지 않고(내부 영상 `showDescription` 미적용) 퀴즈 머리말에 한 번만 표시한다(`descriptionBlocks` 서식 우선, 없으면 `description`, 빈 설명은 자리 없이 숨김, 2026-11-18).
 시청량은 단순 재생 위치와 구분해 누적하며 완료 기준은 콘텐츠·결과에 연결한다.
 로컬 MediaElement와 WebView2 HTML5 경로의 공통 컨트롤·진행바·버퍼 표시·hover 표시를 지원한다.
 로컬·UNC 경로 영상도 파일 폴더를 WebView2 가상 호스트에 연결해 같은 HTML5 video로 재생한다(2026-11-10, 회전 메타데이터 반영). WebView2 초기화에 실패한 로컬 파일만 MediaElement로 재생하며 이때는 회전 메타데이터가 반영되지 않는다.

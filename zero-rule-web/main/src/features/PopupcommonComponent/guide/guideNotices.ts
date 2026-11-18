@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-18-preview-placeholder-off', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
+    title: '미리보기 예시 표시 기본 OFF·미첨부 영상 영역 접기·문항 자동 번호 제거',
+    body: ['InlinePopupPreview·PopupPreviewDialog·PopupPreview는 값이 없는 팝업 제목·영상 제목·설명·이미지 자리에 예시 문구를 표시하지 않습니다. 인라인과 실제 크기 미리보기가 같은 기준입니다.',
+      '영상을 첨부하지 않은 동영상·동영상+퀴즈는 검은 영역·안내·예시 재생 컨트롤을 포함한 영상 영역 전체를 접습니다. 첨부하면 다시 표시합니다.',
+      '동영상+퀴즈의 설명은 퀴즈 머리말에 한 번만 표시합니다(서식 설명 우선, 빈 설명은 숨김). 설문·퀴즈 문항 제목 앞의 01·02 자동 번호는 표시하지 않습니다.'],
+    components: ['InlinePopupPreview', 'PopupPreviewDialog', 'PopupPreview'],
+    action: '빈 자리 예시가 필요한 가이드·샘플 화면은 showPlaceholders를 넘깁니다. PopupPreview의 hidePlaceholders는 더 이상 쓰지 않습니다(false를 넘기면 showPlaceholders와 같음).',
+  },
+  {
     id: '2026-11-17-preview-wpf-window-parity', date: '2026-11-17', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-17',
     title: '미리보기 창 여백·확인 버튼·설문 머리말을 WPF와 같게 정렬',
     body: ['TEXT·SURVEY·QUIZ 미리보기도 IMAGE처럼 창 크기 안에 WPF 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF 그림자를 그립니다. 영상 창·전체 화면은 여백·그림자가 없습니다. 실제 크기 모달은 창이 화면 가장자리에 바로 붙습니다.',

@@ -2370,12 +2370,22 @@ internal static class Program
                     $"[설계 53-16 D4] Demo VIDEO+QUIZ submit at {watched}/100 → {response.Status}/{response.Code} (server code R4006(INVALID_VIDEO))");
             }
 
-            // D3: 서버 형태(같은 제목·설명)는 퀴즈 머리말을 숨기고, 다른 값·영상 설명 숨김은 그대로 보인다.
-            (string Label, Action<Popup.Dtos.PopupResponseDto> Edit, bool TitleShown, bool DescriptionShown)[] headers =
+            // D3: 서버 형태(같은 제목)는 퀴즈 머리말 제목을 숨기고, 다른 제목은 그대로 보인다.
+            // [20261110 후속 7] 설명은 영상 아래에 그리지 않고(showDescription 무시) 퀴즈 머리말에 한 번만 표시한다.
+            // 서식 설명이 있으면 서식(SurveyDescriptionRich), 없으면 일반 description, 빈 설명은 접는다.
+            var richDescription = System.Text.Json.Nodes.JsonNode.Parse("[{\"alignment\":\"LEFT\",\"runs\":[{\"text\":\"서식 설명\",\"bold\":true}]}]")!;
+            (string Label, Action<Popup.Dtos.PopupResponseDto> Edit, bool TitleShown, bool PlainShown, bool RichShown)[] headers =
             {
-                ("server shape (same title/description)", _ => { }, false, false),
-                ("video description hidden", d => d.Content = WithContent(d, "showDescription", false), false, true),
-                ("different survey title", d => d.Content = WithContent(d, "surveyTitle", "퀴즈 별도 제목"), true, false),
+                ("server shape (same title/description)", _ => { }, false, true, false),
+                ("video description hidden", d => d.Content = WithContent(d, "showDescription", false), false, true, false),
+                ("different survey title", d => d.Content = WithContent(d, "surveyTitle", "퀴즈 별도 제목"), true, true, false),
+                ("empty description", d => d.Content = WithContent(d, "description", ""), false, false, false),
+                ("rich description", d => d.Content = WithContent(d, "descriptionBlocks", richDescription.DeepClone()), false, false, true),
+                ("rich description, video description hidden", d =>
+                {
+                    d.Content = WithContent(d, "descriptionBlocks", richDescription.DeepClone());
+                    d.Content = WithContent(d, "showDescription", false);
+                }, false, false, true),
             };
             foreach (var h in headers)
             {
@@ -2384,9 +2394,17 @@ internal static class Program
                 var view = (VideoQuizPopupView)PopupFactory.Create(dto).Content!;
                 var title = (TextBlock)view.Quiz.FindName("SurveyTitleText");
                 var description = (TextBlock)view.Quiz.FindName("SurveyDescriptionText");
+                var rich = (StackPanel)view.Quiz.FindName("SurveyDescriptionRich");
+                var videoDescription = (TextBlock)view.Video.FindName("DescriptionTextBlock");
                 Check((title.Visibility == Visibility.Visible) == h.TitleShown, $"[설계 53-16 D3] {h.Label}: quiz title visible={title.Visibility}");
-                Check((description.Visibility == Visibility.Visible) == h.DescriptionShown, $"[설계 53-16 D3] {h.Label}: quiz description visible={description.Visibility}");
+                Check((description.Visibility == Visibility.Visible) == h.PlainShown, $"[20261110 후속 7] {h.Label}: quiz plain description visible={description.Visibility}");
+                Check((rich.Visibility == Visibility.Visible) == h.RichShown, $"[20261110 후속 7] {h.Label}: quiz rich description visible={rich.Visibility}");
+                Check(videoDescription.Visibility == Visibility.Collapsed, $"[20261110 후속 7] {h.Label}: video description is not shown above the quiz");
             }
+            // 단독 VIDEO는 기존과 같이 showDescription으로 설명을 표시한다.
+            var plainVideo = (VideoPopupView)PopupFactory.Create(DemoPopups("VIDEO").First()).Content!;
+            Check(((TextBlock)plainVideo.FindName("DescriptionTextBlock")).Visibility == Visibility.Visible,
+                "[20261110 후속 7] standalone VIDEO keeps its description");
             var quizOnly = (SurveyPopupView)PopupFactory.Create(DemoPopups("QUIZ").First()).Content!;
             Check(((TextBlock)quizOnly.FindName("SurveyTitleText")).Visibility == Visibility.Visible
                 && ((TextBlock)quizOnly.FindName("SurveyDescriptionText")).Visibility == Visibility.Visible,

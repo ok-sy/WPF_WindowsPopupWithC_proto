@@ -48,8 +48,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await run("Array.from(document.querySelectorAll('#root button')).find(b=>b.textContent.includes('실제 크기로 보기')).click()"); await pause(400);
     check(await dialogOpen(), 'Inline button opens the preview dialog');
   };
-  const render = async (type, overrides = {}, content = {}, hint = true) => {
-    await run(`window.renderHost(${JSON.stringify(type)}, ${JSON.stringify(overrides)}, ${JSON.stringify(content)}, ${hint})`); await pause(300);
+  // placeholders: 예시 표시(showPlaceholders). 기본 OFF(등록 화면 기본, 2026-11-18). 빈 영상 자리 배치를 재는 검사만 켠다.
+  const render = async (type, overrides = {}, content = {}, hint = true, placeholders = false) => {
+    await run(`window.renderHost(${JSON.stringify(type)}, ${JSON.stringify(overrides)}, ${JSON.stringify(content)}, ${hint}, ${placeholders})`); await pause(300);
   };
   const unchanged = async label => check(await run('JSON.stringify(window.currentPopup)===window.popupJson && Object.isFrozen(window.currentPopup.content)'), label + ': popup object unchanged');
   await send('Page.enable'); await viewport(1000, 900);
@@ -101,7 +102,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(rect.right === 1000 && rect.bottom === 900, 'VIDEO window has no edge margin at BOTTOM_RIGHT: ' + JSON.stringify(rect));
   await escape();
   // 61-17: VIDEO 실제 크기 미리보기를 WPF와 같은 배치로 — 영상이 남은 높이를 채우고, 설명은 영상 아래, 공통 헤더 17/600·푸터 80·본문 여백 28/24.
-  await render('VIDEO', {height: 760}, {description: '영상 설명'}); await openPreview();
+  await render('VIDEO', {height: 760}, {description: '영상 설명'}, true, true); await openPreview();
   const v = JSON.parse(await run(`JSON.stringify((()=>{const p=document.querySelector('.MuiDialog-paper');
     const cap=Array.from(p.querySelectorAll('span,p')).find(e=>e.textContent==='영상 재생 영역'); const box=cap.parentElement.parentElement;
     const b=box.getBoundingClientRect(), bs=getComputedStyle(box);
@@ -161,7 +162,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await escape();
   await unchanged('SURVEY');
   // 8) VIDEO+QUIZ: 두 미리보기가 각자 영상 영역을 그리고, 닫으면 모달 쪽만 정리된다.
-  await render('QUIZ', {}, {videoEnabled: true}); await openPreview();
+  await render('QUIZ', {}, {videoEnabled: true}, true, true); await openPreview();
   check(await run("document.querySelectorAll('[data-testid=aspect-video-area]').length") === 2, 'Inline and dialog both render AspectVideoArea');
   // [2026-11-13] 시청 비율 슬라이더·시청 잠금 시연을 삭제해 모달도 퀴즈 입력이 열린 상태로 그린다.
   check(await run("!document.querySelector('.MuiDialog-root input[type=range]') && !document.querySelector('.MuiDialog-root').textContent.includes('이상 시청')"), 'Dialog VIDEO+QUIZ has no watch slider or lock text');
@@ -180,22 +181,38 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await size({sizeMode: 'RATIO', widthRatio: .1, heightRatio: .1, minimumWidth: 100, minimumHeight: 100}) === JSON.stringify({width: 300, height: 300}), '[TODO68] RATIO result below 300 uses the floor');
   check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 269, height: 250}), '[TODO68] a viewport smaller than 300 keeps the modal on screen');
   check(await size({width: 640, height: 480}) === JSON.stringify({width: 640, height: 480}), '[TODO68] sizes above the floor are unchanged');
-  // 실제 크기 모달은 값이 없는 항목에 입력 안내 문구를 넣지 않는다. 인라인 미리보기는 안내를 유지한다.
-  const PLACEHOLDERS = ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.', '이미지 URL을 입력하면 여기에 표시됩니다.'];
+  // [20261110 후속 6] 예시 표시 기본 OFF: 인라인·실제 크기 모달 모두 값이 없는 항목에 입력 안내 문구를 넣지 않고, 영상 미첨부면 영상 영역을 접는다.
+  // showPlaceholders를 켠 호출부(가이드·샘플)만 인라인·모달에 안내 문구와 빈 영상 자리를 그린다.
+  const PLACEHOLDERS = ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.', '이미지 URL을 입력하면 여기에 표시됩니다.', '영상 재생 영역'];
   const shownIn = async (selector, words) => run(`(()=>{const t=document.querySelector(${JSON.stringify(selector)}).innerText;return ${JSON.stringify(words)}.filter(w=>t.includes(w));})()`);
-  for (const [type, inlineWords, content] of [
-    ['VIDEO', ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.'], {videoTitle: null, description: null}],
-    ['IMAGE', ['팝업 제목', '이미지 URL을 입력하면 여기에 표시됩니다.'], {imageUrl: '', description: null}],
-    ['SURVEY', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.'], {surveyTitle: null, description: null}],
-    ['QUIZ', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.'], {videoEnabled: true, videoTitle: null, surveyTitle: null, description: null}],
+  const videoAreas = selector => run(`document.querySelector(${JSON.stringify(selector)}).querySelectorAll('[data-testid=aspect-video-area],[data-testid=fill-video-area]').length`);
+  for (const [type, onWords, content, video] of [
+    ['VIDEO', ['팝업 제목', '콘텐츠 제목', '팝업 설명이 여기에 표시됩니다.', '영상 재생 영역'], {videoTitle: null, description: null}, true],
+    ['IMAGE', ['팝업 제목', '이미지 URL을 입력하면 여기에 표시됩니다.'], {imageUrl: '', description: null}, false],
+    ['SURVEY', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.'], {surveyTitle: null, description: null}, false],
+    ['QUIZ', ['팝업 제목', '팝업 설명이 여기에 표시됩니다.', '영상 재생 영역'], {videoEnabled: true, videoTitle: null, surveyTitle: null, description: null}, true],
   ]) {
-    await render(type, {title: null}, content);
-    const inline = await shownIn('#root', PLACEHOLDERS);
-    check(inlineWords.every(w => inline.includes(w)), `${type} inline preview keeps the input guide: ` + JSON.stringify(inline));
-    await openPreview();
-    const dialog = await shownIn('.MuiDialog-root', PLACEHOLDERS);
-    check(dialog.length === 0, `${type} dialog hides placeholders for null values: ` + JSON.stringify(dialog));
-    await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
+    for (const placeholders of [false, true]) {
+      await render(type, {title: null}, content, true, placeholders);
+      const inline = await shownIn('#root', PLACEHOLDERS);
+      check(placeholders ? onWords.every(w => inline.includes(w)) : inline.length === 0,
+        `${type} inline preview placeholders ${placeholders ? 'ON shows' : 'OFF hides'} the input guide: ` + JSON.stringify(inline));
+      if (video) check(await videoAreas('#root') === (placeholders ? 1 : 0), `${type} inline video area ${placeholders ? 'shown' : 'collapsed'} without an attachment`);
+      await openPreview();
+      const dialog = await shownIn('.MuiDialog-root', PLACEHOLDERS);
+      check(placeholders ? onWords.every(w => dialog.includes(w)) : dialog.length === 0,
+        `${type} dialog placeholders ${placeholders ? 'ON shows' : 'OFF hides'} the input guide: ` + JSON.stringify(dialog));
+      if (video) check(await videoAreas('.MuiDialog-root') === (placeholders ? 1 : 0), `${type} dialog video area matches the inline preview`);
+      if (video && !placeholders) check(!(await run(`document.body.innerText.includes('00:00')`)), `${type} hides the sample playback controls without an attachment`);
+      await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
+    }
+  }
+  // 첨부하면 영상 영역을 표시하고, 첨부를 지우면 다시 접는다(예시 표시 OFF).
+  for (const [type, content] of [['VIDEO', {}], ['QUIZ', {videoEnabled: true}]]) {
+    await render(type, {}, {...content, videoUrl: '/demo-video.mp4'});
+    check(await videoAreas('#root') === 1, `${type} attached video shows the video area`);
+    await render(type, {}, {...content, videoUrl: ''});
+    check(await videoAreas('#root') === 0, `${type} removing the attachment collapses the video area again`);
   }
   await render('VIDEO', {title: '실제 제목'}, {videoTitle: '실제 영상 제목', description: '실제 설명'});
   await openPreview();

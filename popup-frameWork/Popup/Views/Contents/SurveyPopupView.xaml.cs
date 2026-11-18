@@ -39,18 +39,26 @@ namespace Popup.Views.Contents
         }
 
         /// <summary>
-        /// POL-05-03 : 결합 화면 — 결합 화면에서 위쪽 영상 영역에 이미 보이는 제목·설명과 같은 값이면 퀴즈 머리말에서 숨긴다.
-        /// 서버는 VIDEO+QUIZ 제목을 1개만 저장해 videoTitle·surveyTitle과 description을 같은 값으로 내려준다. 값이 다르면 그대로 둔다.
+        /// POL-05-03 : 결합 화면 — 결합 화면에서 위쪽 영상 영역에 이미 보이는 제목과 같은 값이면 퀴즈 머리말에서 숨긴다.
+        /// 서버는 VIDEO+QUIZ 제목을 1개만 저장해 videoTitle·surveyTitle을 같은 값으로 내려준다. 값이 다르면 그대로 둔다.
+        /// 설명은 영상 영역에 표시하지 않고 퀴즈 머리말에서 한 번만 표시하므로 여기서 비교하지 않는다(CollapseEmptyDescription).
         /// </summary>
-        internal void CollapseHeaderShownAbove(string? shownTitle, string? shownDescription)
+        internal void CollapseHeaderShownAbove(string? shownTitle)
         {
-            // POL-06-01 : 문항·서식 — 숨기는 대상은 일반 문자열 TextBlock뿐이다. 서식 머리말(SurveyTitleRich·SurveyDescriptionRich)은
+            // POL-06-01 : 문항·서식 — 숨기는 대상은 일반 문자열 TextBlock뿐이다. 서식 제목(SurveyTitleRich)은
             // 영상 영역(일반 문자열)과 표시가 다르므로 문자열이 같아도 그대로 둔다.
-            if (SameText(SurveyTitleText.Text, shownTitle)) SurveyTitleText.Visibility = Visibility.Collapsed;
-            if (SameText(SurveyDescriptionText.Text, shownDescription)) SurveyDescriptionText.Visibility = Visibility.Collapsed;
+            if (!string.IsNullOrWhiteSpace(shownTitle)
+                && string.Equals(SurveyTitleText.Text?.Trim(), shownTitle.Trim(), StringComparison.Ordinal))
+                SurveyTitleText.Visibility = Visibility.Collapsed;
+        }
 
-            static bool SameText(string? text, string? shown)
-                => !string.IsNullOrWhiteSpace(shown) && string.Equals(text?.Trim(), shown.Trim(), StringComparison.Ordinal);
+        /// <summary>
+        /// POL-05-03 : 결합 화면 — 일반 설명이 비어 있으면 머리말의 설명 자리를 접는다(단독 SURVEY·QUIZ는 빈 설명도 한 줄 자리 유지).
+        /// 서식 설명(SurveyDescriptionRich)이 표시 중이면 일반 문자열 TextBlock은 이미 숨겨져 있으므로 그대로 둔다.
+        /// </summary>
+        internal void CollapseEmptyDescription()
+        {
+            if (string.IsNullOrWhiteSpace(SurveyDescriptionText.Text)) SurveyDescriptionText.Visibility = Visibility.Collapsed;
         }
 
         /* POL-05-03 : 결합 화면 — 본문 제출 영역을 떼어 돌려준다. VIDEO+QUIZ가 스크롤 밖 고정 행에 붙인다. */

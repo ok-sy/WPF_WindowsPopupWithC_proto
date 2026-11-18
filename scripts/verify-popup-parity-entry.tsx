@@ -11,7 +11,7 @@ const w = window as any;
 w.mountParity = (popup: any) => {
   root.render(<ThemeProvider theme={theme}><CssBaseline />
     <div id="frame" style={{ width: popup.width, height: popup.height, display: 'flex' }}>
-      <PopupPreview key={popup.popupId} popup={popup} showBackground={false} hidePlaceholders />
+      <PopupPreview key={popup.popupId} popup={popup} showBackground={false} />
     </div>
   </ThemeProvider>);
 };

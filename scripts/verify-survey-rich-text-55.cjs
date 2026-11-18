@@ -287,19 +287,19 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await pick('1번 문항 응답 유형', '객관식');
   q = (await questions())[0];
   check(q.questionType === 'SINGLE_CHOICE' && q.options.length === 2, 'Survey choice type restores two empty options');
-  // 미리보기: OX 문항은 크게 표시하고, 문항 번호는 줄바꿈하지 않으며, 바깥 틀 색이 모서리로 비치지 않는다.
+  // 미리보기: OX 문항은 크게 표시하고, 문항 번호(01·02)는 자동으로 붙이지 않으며(20261110 후속 8), 바깥 틀 색이 모서리로 비치지 않는다.
   const oxPopup = {...popup, popupType: 'QUIZ', sizeMode: 'FIXED', passingScore: 0, questions: [{questionId: 31, title: '가'.repeat(120), questionType: 'SINGLE_CHOICE', optionLayout: 'HORIZONTAL', isRequired: true, isScored: true, questionScore: 1, sortOrder: 1,
     options: [{optionId: 1, value: '1', text: 'O', sortOrder: 1, isCorrect: true}, {optionId: 2, value: '2', text: 'X', sortOrder: 2, isCorrect: false}]}]};
   await run(`window.mountPreview(${JSON.stringify(oxPopup)})`); await pause(500);
-  const oxLook = await run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const opt=opts[0];const r=opt.getBoundingClientRect();const r2=opts[1].getBoundingClientRect();const box=opt.parentElement.parentElement.getBoundingClientRect();const num=Array.from(document.querySelectorAll('#preview span')).find(e=>e.textContent==='01');const paper=document.querySelector('#preview .MuiPaper-root');const frame=paper.parentElement;
-    return {w:r.width,w2:r2.width,h:r.height,sameRow:r.top===r2.top,gap:r2.left-r.right,fill:r2.right-box.left,boxW:box.width,align:getComputedStyle(opt.firstElementChild).textAlign,font:getComputedStyle(opt.firstElementChild).fontSize,weight:getComputedStyle(opt.querySelector('span')).fontWeight,numH:num.getBoundingClientRect().height,paperR:getComputedStyle(paper).borderRadius,frameBg:getComputedStyle(frame).backgroundColor}})()`);
+  const oxLook = await run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const opt=opts[0];const r=opt.getBoundingClientRect();const r2=opts[1].getBoundingClientRect();const box=opt.parentElement.parentElement.getBoundingClientRect();const num=Array.from(document.querySelectorAll('#preview span,#preview p')).find(e=>/^0[1-9]$/.test(e.textContent));const paper=document.querySelector('#preview .MuiPaper-root');const frame=paper.parentElement;
+    return {w:r.width,w2:r2.width,h:r.height,sameRow:r.top===r2.top,gap:r2.left-r.right,fill:r2.right-box.left,boxW:box.width,align:getComputedStyle(opt.firstElementChild).textAlign,font:getComputedStyle(opt.firstElementChild).fontSize,weight:getComputedStyle(opt.querySelector('span')).fontWeight,numbered:!!num,paperR:getComputedStyle(paper).borderRadius,frameBg:getComputedStyle(frame).backgroundColor}})()`);
   check(oxLook.w === oxLook.w2 && oxLook.w > 96 && oxLook.h === 32 && oxLook.sameRow && oxLook.gap === 8 && Math.abs(oxLook.fill - oxLook.boxW) < 1 && oxLook.align === 'center' && oxLook.font === '12px' && oxLook.weight === '700', '[73-10·2026-11-17] Preview shows OX as two equal cells filling the width at the option size (32·12px): ' + JSON.stringify(oxLook));
   // 2026-11-17: 일반 선택지 한 줄 32·글자 12(본문 - 2, 줄 18). bodyFontSize 18이면 선택지 16·줄 24, 문항 제목 22(+4)·설명 19(+1), 헤더는 기본 17 그대로.
   const sizePopup = {...popup, showHeader: true, title: '헤더', questions: [{questionId: 41, title: '제목', description: '설명', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: false, isScored: false, sortOrder: 1,
     options: [{optionId: 1, value: '1', text: '가', sortOrder: 1, isCorrect: false}, {optionId: 2, value: '2', text: '나', sortOrder: 2, isCorrect: false}]},
     {questionId: 42, title: '가로', questionType: 'SINGLE_CHOICE', optionLayout: 'HORIZONTAL', isRequired: false, isScored: false, sortOrder: 2,
     options: [{optionId: 3, value: '1', text: '다', sortOrder: 1, isCorrect: false}]}]};
-  const sizeLook = () => run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const t=document.querySelector('#preview [id$="-question-41"]');const d=t.closest('fieldset').querySelector(':scope > div.MuiTypography-root');const h=document.querySelector('#preview .MuiPaper-root > .MuiStack-root .MuiTypography-root');
+  const sizeLook = () => run(`(()=>{const opts=Array.from(document.querySelectorAll('#preview .survey-option'));const t=document.querySelector('#preview [id$="-question-41"]');const d=t.closest('fieldset').querySelector(':scope > div.MuiTypography-root:not([id])');const h=document.querySelector('#preview .MuiPaper-root > .MuiStack-root .MuiTypography-root');
     return {h:opts.map(o=>o.getBoundingClientRect().height),font:opts.map(o=>getComputedStyle(o).fontSize),line:getComputedStyle(opts[0].firstElementChild).lineHeight,title:getComputedStyle(t).fontSize,desc:d&&getComputedStyle(d).fontSize,header:getComputedStyle(h).fontSize}})()`);
   await run(`window.mountPreview(${JSON.stringify(sizePopup)})`); await pause(400);
   let size = await sizeLook();
@@ -329,7 +329,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   text = await textLook();
   check(text.header === '22px' && text.plain === '12px' && text.footer === '16px', '[2026-11-17 5] Header, body and footer each use their own value: ' + JSON.stringify(text));
   await run(`document.getElementById('app-body').remove()`);
-  check(oxLook.numH < 24, 'The question number stays on one line next to a long title: ' + JSON.stringify(oxLook));
+  check(!oxLook.numbered, '[20261110 후속 8] Preview renders no automatic question number before the title: ' + JSON.stringify(oxLook));
   check(oxLook.paperR === '6px' && oxLook.frameBg === 'rgba(0, 0, 0, 0)', 'The preview frame does not show through the rounded corners: ' + JSON.stringify(oxLook));
   fs.writeFileSync(path.join(output, 'ox-preview.png'), Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
   await run(`window.mountDialog(${JSON.stringify(oxPopup)})`); await pause(700);

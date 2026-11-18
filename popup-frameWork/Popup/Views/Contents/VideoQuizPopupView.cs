@@ -37,7 +37,12 @@ namespace Popup.Views.Contents
             _requiredRatio = double.IsFinite(requiredRatio) ? Math.Clamp(requiredRatio, 0, 1) : 1;
             Quiz.IsEnabled = false;
             Quiz.UseParentScrolling();
-            Quiz.CollapseHeaderShownAbove(video.ShownTitle, video.ShownDescription);
+            // POL-05-03 : 결합 화면 — 설명은 퀴즈 머리말에 한 번만 표시한다(2026-11-18, 20261110 후속 7).
+            // 내부 영상의 설명 표시 옵션(showDescription)은 적용하지 않고 영상 아래 설명을 항상 숨긴다.
+            // 퀴즈 머리말은 서식 설명(descriptionBlocks)이 있으면 서식, 없으면 일반 description을 쓰고 빈 설명은 자리 없이 접는다.
+            Video.HideDescription();
+            Quiz.CollapseHeaderShownAbove(video.ShownTitle);
+            Quiz.CollapseEmptyDescription();
             // POL-05-03 : 결합 화면 — 영상과 퀴즈 사이의 시스템 안내 행은 두지 않는다. 시청 %·기준 사유는 푸터
             // (또는 푸터 숨김 시 본문 제출 영역, SetLockedReason)에만 표시해 같은 안내가 두 번 나오지 않게 한다.
             // POL-05-03 : 결합 화면 — 영상 행은 Auto다. 제목·설명은 영상 뷰 안의 Auto 행, 재생 화면은 원본 비율 높이(VideoPopupView.EnableAspectSizing)로

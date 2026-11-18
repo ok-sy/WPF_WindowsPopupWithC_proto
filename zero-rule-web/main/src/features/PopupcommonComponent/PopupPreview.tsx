@@ -43,7 +43,12 @@ interface PopupPreviewProps {
   onClose?: () => void;
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE, 또는 크기 미지정 ADAPTIVE에서 WPF가 다시 계산할 팝업 창 크기). 그 외에는 null. */
   onRecommendedSize?: (size: Size | null) => void;
-  /** true면 값이 없는 항목에 입력 안내 문구를 채우지 않는다(WPF와 같음). 실제 크기 모달이 쓴다. 기본 false(인라인 미리보기). */
+  /**
+   * 예시 표시(값이 없는 항목의 입력 안내 문구·미첨부 영상 자리). 기본 false(OFF): WPF와 같이 비워 두고 영상이 없으면 영상 영역을 접는다.
+   * 가이드·샘플처럼 빈 자리를 보여 줄 화면만 true로 켠다(2026-11-18, 20261110 후속 6).
+   */
+  showPlaceholders?: boolean;
+  /** @deprecated showPlaceholders를 쓴다. false를 넘기면 showPlaceholders=true와 같다(이전 동작 호환). */
   hidePlaceholders?: boolean;
 }
 
@@ -71,8 +76,8 @@ interface PopupBodyProps {
   fitLayout: FitToImageLayout | null;
   onImageLoad: (size: Size) => void;
   videoUnlocked?: boolean;
-  /** VIDEO+QUIZ에서 위 영상 영역에 이미 보인 설명을 퀴즈 머리말에서 반복하지 않는다(WPF VideoQuizPopupView와 같음). */
-  hideSurveyDescription?: boolean;
+  /** VIDEO+QUIZ 결합 화면 안의 영상·퀴즈 부분. 영상은 설명을 그리지 않고, 퀴즈 머리말이 설명을 한 번(빈 설명은 자리 없이) 그린다. */
+  videoQuizPart?: boolean;
   /** VIDEO+QUIZ의 영상 영역을 원본 비율 × 실제 너비 높이로 그린다(단독 VIDEO는 남은 높이를 채우는 고정 영역). */
   aspectVideo?: boolean;
   /** 값이 없는 항목의 입력 안내 문구를 숨긴다. */
@@ -86,7 +91,7 @@ function PopupBody({
   fitLayout,
   onImageLoad,
   videoUnlocked = false,
-  hideSurveyDescription = false,
+  videoQuizPart = false,
   aspectVideo = false,
   hidePlaceholders = false,
   survey,
@@ -103,6 +108,7 @@ function PopupBody({
           fitLayout={null}
           onImageLoad={onImageLoad}
           aspectVideo
+          videoQuizPart
           hidePlaceholders={hidePlaceholders}
           survey={survey}
         />
@@ -117,8 +123,8 @@ function PopupBody({
             naturalImageSize={null}
             fitLayout={null}
             onImageLoad={onImageLoad}
-            // 서식 설명은 영상 영역(일반 문자열)과 표시가 달라 숨기지 않는다(WPF CollapseHeaderShownAbove와 같음).
-            hideSurveyDescription={content.showDescription !== false && !richBlocksOrNull(content.descriptionBlocks)}
+            // POL-05-03 : 결합 화면 — 설명은 퀴즈 머리말에 한 번만 그린다(내부 영상의 showDescription은 적용하지 않음, WPF VideoQuizPopupView와 같음).
+            videoQuizPart
             hidePlaceholders={hidePlaceholders}
             survey={survey}
           />
@@ -263,12 +269,16 @@ function PopupBody({
   }
 
   if (popup.popupType === 'VIDEO') {
-    const showDescription = content.showDescription !== false;
-    const showControls = content.showControls !== false;
+    // 결합 화면의 영상 부분은 설명을 그리지 않는다(퀴즈 머리말이 한 번 표시).
+    const showDescription = !videoQuizPart && content.showDescription !== false;
+    const videoUrl = String(content.videoUrl ?? '').trim();
+    // 예시 표시 OFF에서 영상을 첨부하지 않았으면 검정 영역·안내·예시 재생 컨트롤을 포함한 영상 영역 전체를 접는다(2026-11-18, 20261110 후속 6).
+    const showVideoArea = Boolean(videoUrl) || !hidePlaceholders;
+    const showControls = showVideoArea && content.showControls !== false;
     // TODO61-17: WPF VideoPopupView와 같이 제목 → 영상(남은 높이를 채움) → 설명 순서. 영상 영역은 검정 배경·1px #D1D5DB 테두리·모서리 8.
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
-        {aspectVideo ? <AspectVideoArea url={String(content.videoUrl ?? '').trim()} /> : <FillVideoArea url={String(content.videoUrl ?? '').trim()} />}
+        {showVideoArea && (aspectVideo ? <AspectVideoArea url={videoUrl} /> : <FillVideoArea url={videoUrl} />)}
         {showControls && (
           <Stack direction="row" justifyContent="space-between" color="text.secondary">
             <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>
@@ -287,8 +297,9 @@ function PopupBody({
   }
 
   if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-    return survey ? <SurveyPreview {...survey} description={hideSurveyDescription ? '' : description} reserveDescription={!hideSurveyDescription}
-      descriptionBlocks={hideSurveyDescription ? null : content.descriptionBlocks} /> : null;
+    // 결합 화면의 퀴즈 머리말은 빈 설명 자리를 두지 않는다(단독 SURVEY·QUIZ는 WPF와 같이 한 줄 자리 유지).
+    return survey ? <SurveyPreview {...survey} description={description} reserveDescription={!videoQuizPart}
+      descriptionBlocks={content.descriptionBlocks} /> : null;
   }
 
   const showPlainText = content.showPlainText !== false;
@@ -358,6 +369,7 @@ function PopupBody({
  * POL-08-02 : 미리보기 상태
  * ■ 팝업 미리보기
  * - in : popup(AdminPopupDetail) 미리 볼 팝업 설정 · showBackground?(boolean) 배경 여백·Overlay를 미리보기 안에 그릴지, 기본 true(모달은 false)
+ *        · showPlaceholders?(boolean) 값이 없는 항목의 예시 문구·미첨부 영상 자리 표시, 기본 false(WPF와 같이 비우고 영상 영역을 접음)
  * - out: onClose?() 푸터 버튼·나중에 보기·보조 닫기로 팝업을 닫을 때 · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기(없으면 null) · 화면: 헤더(제목·로고)·콘텐츠 제목·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터(다시 보지 않기·나중에 보기·제출·닫기) 미리보기
  * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점으로 완료 조건을 시연한다(VIDEO·VIDEO+QUIZ는 시청 기준 충족 상태로 그린다).
  *   서버 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 시연 상태는 이 컴포넌트 안에만 있고 팝업 ID·문항이 바뀌면 초기화된다.
@@ -365,7 +377,8 @@ function PopupBody({
 export default function PopupPreview({
   popup: configuredPopup,
   showBackground = true,
-  hidePlaceholders = false,
+  showPlaceholders,
+  hidePlaceholders: legacyHidePlaceholders,
   onClose,
   onRecommendedSize,
 }: PopupPreviewProps) {
@@ -374,6 +387,7 @@ export default function PopupPreview({
   const namePrefix = useId();
   const isSurvey = configuredPopup.popupType === 'SURVEY' || configuredPopup.popupType === 'QUIZ';
   const popup = configuredPopup;
+  const hidePlaceholders = !(showPlaceholders ?? legacyHidePlaceholders === false);
   const questionSignature = JSON.stringify(popup.questions);
   // QUIZ 미달 판정을 한 번이라도 받았는지(보조 닫기 버튼 표시 조건). 답을 고쳐도 유지한다.
   const [quizFailed, setQuizFailed] = useState(false);

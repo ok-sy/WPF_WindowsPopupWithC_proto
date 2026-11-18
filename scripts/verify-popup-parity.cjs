@@ -88,7 +88,7 @@ const toWpf = p => {
   for (const popup of fixtures) {
     await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(600);
     web[popup.popupId] = await run(`(()=>{const f=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect();const opts=Array.from(document.querySelectorAll('#frame .survey-option'));
-      const q=Array.from(document.querySelectorAll('#frame span')).find(e=>e.textContent==='01');
+      const fs0=document.querySelector('#frame fieldset[aria-labelledby]');const q=fs0&&document.getElementById(fs0.getAttribute('aria-labelledby'));
       return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)}))}})()`);
     const f = web[popup.popupId].frame;
     await shot(path.join(output, popup.popupId + '.web.png'), {x: f.x, y: f.y, width: f.width, height: f.height});

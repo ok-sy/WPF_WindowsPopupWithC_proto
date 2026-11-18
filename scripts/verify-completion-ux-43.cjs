@@ -86,6 +86,26 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ shows the shared description once');
   await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명', showDescription: false});
   check(await countText('중복 확인 설명') === 1, 'VIDEO+QUIZ with hidden video description shows it in the quiz header');
+  // [20261110 후속 7] 설명은 퀴즈 머리말(영상 영역 아래)에 한 번. 서식 설명이 있으면 서식으로 한 번, 빈 설명은 자리를 두지 않는다.
+  const descBelowVideo = t => run(`(()=>{const a=document.querySelector('[data-testid=aspect-video-area]');const d=Array.from(document.querySelectorAll('div,p')).filter(e=>e.textContent===${JSON.stringify(t)}).pop();
+    return !!a && !!d && d.getBoundingClientRect().top >= a.getBoundingClientRect().bottom;})()`);
+  await render('QUIZ', {}, {videoEnabled: true, description: '중복 확인 설명'});
+  check(await descBelowVideo('중복 확인 설명'), 'VIDEO+QUIZ description sits in the quiz header below the video');
+  const richDescription = [{alignment: 'LEFT', runs: [{text: '서식 설명', bold: true}]}];
+  for (const showDescription of [true, false]) {
+    await render('QUIZ', {}, {videoEnabled: true, description: '서식 설명', descriptionBlocks: richDescription, showDescription});
+    check(await countText('서식 설명') === 1 && await run(`Array.from(document.querySelectorAll('span')).some(e=>e.textContent==='서식 설명'&&getComputedStyle(e).fontWeight==='700')`),
+      `VIDEO+QUIZ rich description shows once with its format (video showDescription ${showDescription})`);
+  }
+  await render('QUIZ', {}, {videoEnabled: true, description: ''});
+  // 영상 아래 ~ 첫 문항 간격: 빈 설명은 설명 한 줄(22)+아래 여백(14) 자리를 두지 않는다(단독 SURVEY·QUIZ만 자리 유지).
+  const gap = () => run(`(()=>{const a=document.querySelector('[data-testid=aspect-video-area]');const f=document.querySelector('fieldset fieldset');
+    return a && f ? Math.round(f.getBoundingClientRect().top - a.getBoundingClientRect().bottom) : null;})()`);
+  const emptyGap = await gap();
+  await render('QUIZ', {}, {videoEnabled: true, description: '한 줄 설명'});
+  const filledGap = await gap();
+  check(emptyGap !== null && filledGap !== null && filledGap - emptyGap >= 36,
+    'VIDEO+QUIZ empty description leaves no reserved line between the video and the first question: ' + JSON.stringify({emptyGap, filledGap}));
   // POL-05-03 : 결합 화면 — VIDEO+QUIZ 영상 영역 = 실제 너비 × 원본 비율(메타데이터 전·실패 16:9, 세로 영상 상한 70%, 하한 180), 단독 VIDEO는 기존 영역.
   const area = () => run(`(()=>{const a=document.querySelector('[data-testid=aspect-video-area]'); if(!a) return null;
     let s=a.parentElement; while(s && !['auto','scroll'].includes(getComputedStyle(s).overflowY)) s=s.parentElement;

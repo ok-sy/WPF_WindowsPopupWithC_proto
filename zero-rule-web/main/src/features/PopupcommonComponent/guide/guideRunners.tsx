@@ -119,9 +119,9 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   InlinePopupPreview: {
     input: TEXT_PATCH,
-    hint: '입력한 값입니다. 미리보기에 필요한 기본값은 자동으로 채웁니다. popupType·title·content를 바꿔 보세요.',
+    hint: '입력한 값입니다. 미리보기에 필요한 기본값은 자동으로 채웁니다. popupType·title·content를 바꿔 보세요. 가이드는 빈 자리를 보이도록 예시 표시(showPlaceholders)를 켭니다.',
     render: (input, emit) => (
-      <InlinePopupPreview popup={samplePopup(input)} onOpenPreview={() => emit('onOpenPreview', '호출됨')} onRecommendedSize={(size) => emit('onRecommendedSize', size)} />
+      <InlinePopupPreview popup={samplePopup(input)} showPlaceholders onOpenPreview={() => emit('onOpenPreview', '호출됨')} onRecommendedSize={(size) => emit('onRecommendedSize', size)} />
     ),
   },
   PopupPreviewDialog: {
@@ -130,10 +130,10 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
     render: (input, emit) => <DialogHost popup={samplePopup(input)} emit={emit} />,
   },
   PopupPreview: {
-    input: { popup: TEXT_PATCH, showBackground: false },
-    hint: 'popup은 입력한 값입니다. 하단 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
+    input: { popup: TEXT_PATCH, showBackground: false, showPlaceholders: true },
+    hint: 'popup은 입력한 값입니다. showPlaceholders를 false로 바꾸면 값이 없는 자리의 예시 문구·미첨부 영상 영역을 숨깁니다(등록 화면 기본). 하단 버튼을 누르면 onClose가 OUTPUT에 나옵니다.',
     render: (input, emit) => (
-      <PopupPreview popup={samplePopup(input.popup)} showBackground={input.showBackground} onClose={() => emit('onClose', '호출됨')}
+      <PopupPreview popup={samplePopup(input.popup)} showBackground={input.showBackground} showPlaceholders={input.showPlaceholders} onClose={() => emit('onClose', '호출됨')}
         onRecommendedSize={(size) => emit('onRecommendedSize', size)} />
     ),
   },

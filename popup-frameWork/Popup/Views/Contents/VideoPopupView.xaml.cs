@@ -1014,6 +1014,9 @@ namespace Popup.Views.Contents
         /// <summary>POL-05-03 : 결합 화면 — 설명이 표시 중일 때만 그 값, 숨김이면 null.</summary>
         internal string? ShownDescription => DescriptionTextBlock.Visibility == Visibility.Visible ? DescriptionTextBlock.Text : null;
 
+        /// <summary>POL-05-03 : 결합 화면 — VIDEO+QUIZ는 설명을 퀴즈 머리말에 한 번만 표시하므로 영상 아래 설명을 showDescription과 관계없이 숨긴다.</summary>
+        internal void HideDescription() => DescriptionTextBlock.Visibility = Visibility.Collapsed;
+
         /// <summary>POL-05-02 : 완료·화면 이탈 — HasReachedCompletion과 같은 판정식. 서버·VIDEO+QUIZ와 같은 4자리 내림 비교(VideoCompletion). in: progress(null이면 false)·requiredRatio · out: bool</summary>
         public static bool IsCompletionReached(VideoProgressSnapshot? progress, double requiredRatio)
             => progress != null && VideoCompletion.IsReached(progress.WatchedSeconds, progress.DurationSeconds, requiredRatio);
