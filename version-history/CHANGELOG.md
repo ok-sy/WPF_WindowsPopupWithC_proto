@@ -1,5 +1,15 @@
 # 변경 이력
 
+## 2026-11-18-09 — dev: TODO61-18 미리보기 나중에 보기 버튼 크기 WPF 정렬
+
+- 이유: 폐쇄망 VIDEO 실제 크기 미리보기에서 ‘나중에 보기’가 93.45 × 32px로 ‘확인’보다 작게 보이는 이슈(TODO61-18). 웹 미리보기가 크기 지정 없는 MUI 글자 버튼으로 그려 WPF `SecondaryActionButtonStyle`(최소 118 × 44)과 달랐음.
+- 변경: `PopupPreview.tsx`에 WPF `SecondaryActionButtonStyle`과 같은 치수·모양의 `SECONDARY_FOOTER_BUTTON_SX`를 두고 일반·설문 푸터 ‘나중에 보기’와 설문 푸터 보조 ‘닫기’에 적용. 클릭 핸들러·표시 조건·‘확인’·‘제출’·WPF는 변경 없음. 가이드 공지 추가, TODO61-18 체크·구현 기록, 활성 작업 상태 진행.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `guide/guideNotices.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: 같은 데이터 실측에서 웹·WPF 모두 ‘나중에 보기’ 120.9 × 44, ‘확인’·‘바로가기’ 118 × 44, ‘제출’ 132 × 46. 웹 `tsc --noEmit`·eslint 통과. preview-61 192(신규 34: 유형 6종 × 인라인·Dialog 크기·모양·배치·세로 정렬·겹침/잘림, 좁은 폭·확대 배율·푸터 글자 18, 표시 조합, 클릭 동작)·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과.
+- 확인된 기존 동작: IMAGE 푸터 높이 80 고정으로 좁은 인라인(520) + 푸터 글자 18 + 다시 보지 않기에서 줄바꿈 시 아래 잘림. 변경 전과 같은 결과라 이번 범위에서 수정하지 않음.
+- 미완료: 폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-08 — doc: TODO61-18 나중에 보기 크기 및 푸터 회귀 검증
 
 - 폐쇄망 미리보기에서 확인한 ‘나중에 보기’ 크기 차이와 WPF의 최소 너비 118·높이 44 기준을 기록했다. 유형별 인라인·Dialog와 WPF 비교, 좁은 폭·확대 배율·표시 및 잠금 조건 회귀를 등록했다.

@@ -54,6 +54,14 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-18-later-button-size', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
+    title: '미리보기 "나중에 보기" 버튼을 WPF와 같은 크기로',
+    body: ['미리보기의 "나중에 보기"는 글자만 있던 작은 버튼(약 93 × 32)에서 WPF와 같은 보조 버튼(최소 너비 118, 높이 44, 밝은 회색 면과 테두리)으로 바뀌었습니다. 설문·퀴즈 미달 뒤 보이는 보조 "닫기"도 같습니다.',
+      '"확인"·"바로가기"·"제출" 버튼과 누르는 동작은 그대로입니다.'],
+    components: ['PopupPreview', 'PopupPreviewDialog', 'InlinePopupPreview'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-18-rich-editor-label-format-toggle', date: '2026-11-18', category: 'ADDED', status: 'DONE', doneDate: '2026-11-18',
     title: 'PopupRichTextEditor 라벨·서식 버튼 켜고 끄기(hideLabel·hideFormatButton)',
     body: ['hideLabel을 넘기면 입력칸 위 라벨 글자를 숨깁니다. 라벨은 화면 낭독기용 이름으로 계속 씁니다.', 'hideFormatButton을 넘기면 "서식" 버튼을 숨깁니다. 둘 다 넘기면 라벨 줄이 없어지고 입력칸만 남습니다.',

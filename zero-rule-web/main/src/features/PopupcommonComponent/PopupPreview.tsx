@@ -52,6 +52,17 @@ interface PopupPreviewProps {
   hidePlaceholders?: boolean;
 }
 
+/*
+ * POL-02-03 : 푸터 역할
+ * '나중에 보기'·보조 '닫기' 버튼(TODO61-18). WPF SecondaryActionButtonStyle과 같은 치수·모양:
+ * ActionButtonStyle의 최소 너비 118·높이 44·좌우 여백 22·모서리 9·SemiBold를 이어받고, 밝은 면(#F3F4F6)과 테두리(#D1D5DB)로 주 버튼과 구분한다.
+ */
+const SECONDARY_FOOTER_BUTTON_SX = {
+  minWidth: 118, height: 44, px: '22px', boxSizing: 'border-box', whiteSpace: 'nowrap', flexShrink: 0,
+  borderRadius: '9px', border: '1px solid #D1D5DB', bgcolor: '#F3F4F6', color: '#111827', fontWeight: 600,
+  '&:hover': { bgcolor: '#E5E7EB' }, '&:active': { bgcolor: '#D1D5DB' }, '&:focus-visible': { borderColor: '#6B7280' },
+} as const;
+
 function text(value: unknown, fallback: string): string {
   return value == null || String(value).trim() === '' ? fallback : String(value);
 }
@@ -755,7 +766,7 @@ export default function PopupPreview({
                 <Button
                   variant="text"
                   color="inherit"
-                  sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14, flexShrink: 0 }}
+                  sx={{ ...SECONDARY_FOOTER_BUTTON_SX, fontSize: footerFontSize ?? 14 }}
                   onClick={laterPreview}
                 >
                   나중에 보기
@@ -797,7 +808,7 @@ export default function PopupPreview({
                   <Button
                     variant="text"
                     color="inherit"
-                    sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 14 }}
+                    sx={{ ...SECONDARY_FOOTER_BUTTON_SX, fontSize: footerFontSize ?? 14 }}
                     onClick={() => {
                       resetPreview();
                       onClose?.();
@@ -847,7 +858,7 @@ export default function PopupPreview({
               <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
                 {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
                 {showLaterButton && (
-                  <Button variant="text" color="inherit" onClick={laterPreview}>
+                  <Button variant="text" color="inherit" sx={SECONDARY_FOOTER_BUTTON_SX} onClick={laterPreview}>
                     나중에 보기
                   </Button>
                 )}

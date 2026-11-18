@@ -258,6 +258,51 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(!video.dialogShadow && !video.innerShadow && video.pad === '0px' && video.inner[0] === video.dialog[0], `[61-16] VIDEO has no shadow margin or shadow like the WPF video window ${label}: ` + JSON.stringify(video));
   }
   await run("document.getElementById('closed-net-rule')?.remove()");
+  // [TODO61-18] '나중에 보기'는 WPF SecondaryActionButtonStyle 치수(최소 118 × 44)·보조 버튼 모양. 왼쪽 끝, '확인'·'제출'과 세로 중앙 정렬, 푸터 요소 겹침·잘림 없음.
+  const footerLayout = scope => run(`(()=>{const root=${scope};const paper=root.querySelector('.MuiPaper-root');const p=paper.getBoundingClientRect();
+    const btn=t=>Array.from(root.querySelectorAll('button')).find(b=>b.textContent.trim()===t);const later=btn('나중에 보기');const main=btn('확인')||btn('바로가기')||btn('제출');
+    if(!later||!main)return {missing:!later?'later':'main'};const r=e=>e.getBoundingClientRect();const L=r(later),M=r(main);const s=getComputedStyle(later);
+    const parts=[later,main,...Array.from(root.querySelectorAll('.MuiFormControlLabel-root,[role=status]')).filter(e=>e.textContent.trim()&&r(e).width>0)].map(r);
+    let overlap=false;for(let i=0;i<parts.length;i++)for(let j=i+1;j<parts.length;j++){const a=parts[i],b=parts[j];if(a.left<b.right-0.5&&b.left<a.right-0.5&&a.top<b.bottom-0.5&&b.top<a.bottom-0.5)overlap=true;}
+    const footerLeft=Math.min(...parts.map(x=>x.left));
+    return {w:Math.round(L.width*10)/10,h:Math.round(L.height),mainH:Math.round(M.height),bg:s.backgroundColor,border:s.borderTopColor,radius:s.borderTopLeftRadius,weight:s.fontWeight,
+      leftmost:L.left<=footerLeft+0.5,leftOfMain:L.right<=M.left,centerDiff:Math.round(Math.abs((L.top+L.bottom)/2-(M.top+M.bottom)/2)*10)/10,overlap,
+      clipped:parts.some(x=>x.left<p.left-0.5||x.right>p.right+0.5||x.bottom>p.bottom+0.5)};})()`);
+  const laterOk = f => f && !f.missing && f.w >= 118 && f.h === 44 && f.bg === 'rgb(243, 244, 246)' && f.border === 'rgb(209, 213, 219)' && f.radius === '9px' && f.weight === '600'
+    && f.leftmost && f.leftOfMain && f.centerDiff <= 1 && !f.overlap && !f.clipped;
+  const laterTypes = [['TEXT', {}], ['IMAGE', {}], ['VIDEO', {videoUrl: '/missing.mp4'}], ['SURVEY', {}], ['QUIZ', {}], ['QUIZ', {videoEnabled: true, videoUrl: '/missing.mp4'}]];
+  for (const [type, content] of laterTypes) {
+    const label = type + (content.videoEnabled ? '(VIDEO+QUIZ)' : '');
+    await render(type, {showLater: true, showDoNotShowAgain: true}, content);
+    let f = await footerLayout("document.querySelector('#root')");
+    check(laterOk(f), `[TODO61-18] ${label} inline later button matches WPF 118x44 secondary style and aligns: ` + JSON.stringify(f));
+    await openPreview();
+    f = await footerLayout("document.querySelector('.MuiDialog-root')");
+    check(laterOk(f), `[TODO61-18] ${label} dialog later button matches WPF 118x44 secondary style and aligns: ` + JSON.stringify(f));
+    await escape();
+  }
+  // 확대 배율(브라우저 150%와 같은 CSS 폭) Dialog와 큰 푸터 글자에서도 겹침·잘림이 없다.
+  await viewport(667, 600);
+  for (const [type, content] of laterTypes) {
+    await render(type, {showLater: true, showDoNotShowAgain: true}, {...content, footerFontSize: 18});
+    let f = await footerLayout("document.querySelector('#root')");
+    // IMAGE 푸터는 높이 80 고정이라 좁은 폭 + 글자 18에서 줄이 3줄로 바뀌면 아래가 잘린다. 이번 변경 전에도 같은 기존 동작이라(TODO61-18 기록) 잘림만 제외한다.
+    check(f && !f.missing && f.h === 44 && f.w >= 118 && !f.overlap && (type === 'IMAGE' || !f.clipped), `[TODO61-18] ${type} narrow inline with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
+    await openPreview();
+    f = await footerLayout("document.querySelector('.MuiDialog-root')");
+    check(f && !f.missing && f.h === 44 && f.w >= 118 && !f.overlap && !f.clipped, `[TODO61-18] ${type} zoomed dialog with footer 18 has no overlap or clipping: ` + JSON.stringify(f));
+    await escape();
+  }
+  await viewport(1000, 900);
+  // showFooter·showLater 조합: 둘 다 true일 때만 표시.
+  for (const [showFooter, showLater] of [[true, false], [false, true], [false, false]]) for (const [type, content] of [['TEXT', {}], ['SURVEY', {}]]) {
+    await render(type, {showFooter, showLater}, content);
+    check(!(await run(`Array.from(document.querySelectorAll('#root button')).some(b=>b.textContent.trim()==='나중에 보기')`)), `[TODO61-18] ${type} showFooter=${showFooter} showLater=${showLater} hides the later button`);
+  }
+  // 누르면 기존 핸들러대로 실제 크기 모달을 닫는다.
+  await render('VIDEO', {showLater: true}, {videoUrl: '/missing.mp4'}); await openPreview();
+  await run(`Array.from(document.querySelectorAll('.MuiDialog-root button')).find(b=>b.textContent.trim()==='나중에 보기').click()`); await pause(400);
+  check(!(await dialogOpen()), '[TODO61-18] Later button keeps its handler and closes the dialog');
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
