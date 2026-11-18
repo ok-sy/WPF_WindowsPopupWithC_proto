@@ -163,6 +163,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 불러오기 → 문항별 정답 선택이 서로 독립(원본의 공유 라디오 state 정리).
   await clickButton('불러오기');
   await run(`Array.from(document.querySelectorAll('[role=menuitem]')).find(o=>o.textContent.startsWith('SAMPLE-QUIZ')).click()`); await pause(500);
+  // 2026-11-18: 문항 제목·설명 편집기는 위 라벨·'서식' 버튼을 숨기고 라벨을 묶음 접근 이름으로만 둔다.
+  await until(`!!${mid}.querySelector('[role=group][aria-label="1번 문항 제목(필수)"] .ck-editor__editable')`, 'question title editor');
+  const editorHead = await run(`(()=>{const m=${mid};const g=l=>m.querySelector('[role=group][aria-label="'+l+'"]');
+    return {title:!!g('1번 문항 제목(필수)'),desc:!!g('설명'),fmt:Array.from(m.querySelectorAll('button')).filter(b=>b.textContent==='서식').length,
+      caption:Array.from(m.querySelectorAll('.MuiTypography-caption')).some(e=>/^문항 제목|^설명$/.test(e.textContent))};})()`);
+  check(editorHead.title && editorHead.desc && editorHead.fmt === 0 && !editorHead.caption,
+    '[IS063] Question title and description editors hide the label and format button: ' + JSON.stringify(editorHead));
   await setInput('input[aria-label="헤더 제목"]', '보안 퀴즈'); await clickButton('저장');
   const first = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
   await run(`document.querySelector('input[aria-label="1번 문항 2번 선택지 정답"]').click()`); await pause(200); await clickButton('저장');

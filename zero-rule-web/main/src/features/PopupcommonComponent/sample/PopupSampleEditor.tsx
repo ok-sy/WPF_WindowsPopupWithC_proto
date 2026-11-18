@@ -94,7 +94,7 @@ export default function PopupSampleEditor({ initial, open, onClose, onSave }: Pr
           {popup.popupType === 'IMAGE' && <TextField size="small" label="이미지 URL" value={text('imageUrl')} onChange={(event) => updateContent('imageUrl', event.target.value)} />}
           {hasVideo && <TextField size="small" label="영상 URL" value={text('videoUrl')} onChange={(event) => updateContent('videoUrl', event.target.value)} />}
           {isQuestion && <>
-            <PopupRichTextEditor key={`description-${editorKey}`} compact label="설명" placeholder="설명(선택)"
+            <PopupRichTextEditor key={`description-${editorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
               initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(text('description'))}
               onChange={(blocks, plainText) => setPopup((previous) => ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
             {/* 문항별 입력·선택 state는 PopupQuestionEditor가 문항 객체마다 따로 관리한다. */}

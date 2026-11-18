@@ -251,8 +251,9 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         </Stack>
         {/* 문항 설명 입력은 두지 않고, 기존 description·descriptionBlocks는 문항 객체에 그대로 남겨 저장한다(TODO73).
             POL-06-01 : 문항·서식 — 문항 제목은 설문·퀴즈, OX 여부, richQuestionText와 무관하게 서식 편집기(우클릭 펼침 팔레트)로 입력한다(2026-11-17 후속 1).
-            서식 없이 일반 문자열만 저장된 기존 제목은 서식 없는 문단으로 열고, 열기만 하면 저장값을 바꾸지 않는다. */}
-        <PopupRichTextEditor compact baseFontSize={POPUP_DEFAULT_FONT_SIZES.questionTitle} label={`문항 제목 *`} placeholder="문항 제목을 입력하세요."
+            서식 없이 일반 문자열만 저장된 기존 제목은 서식 없는 문단으로 열고, 열기만 하면 저장값을 바꾸지 않는다.
+            위 라벨·'서식' 버튼은 숨기고(2026-11-18) 라벨은 화면 낭독기용 이름으로만 쓴다. 서식은 우클릭 패널로 지정한다. */}
+        <PopupRichTextEditor compact hideLabel hideFormatButton baseFontSize={POPUP_DEFAULT_FONT_SIZES.questionTitle} label={`${index + 1}번 문항 제목(필수)`} placeholder="문항 제목을 입력하세요."
           initialBlocks={initialRich(q.titleBlocks, q.title)}
           onChange={(blocks, plain) => { const value = richValue(blocks, plain); update(index, { title: value.plain, titleBlocks: value.blocks }); }} />
         {quiz ? <Box sx={FIELD_ROW_SX}>

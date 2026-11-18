@@ -318,7 +318,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {!originalImageMode && titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
             {/* POL-06-01 : 문항·서식 — 설문·퀴즈(동영상+퀴즈 포함)는 콘텐츠 제목 입력 없이 설명만 서식 편집기로 입력한다. 기존 surveyTitle·surveyTitleBlocks는 편집값에 그대로 남긴다(TODO73). */}
             {isSurvey && <>
-              <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact label="설명" placeholder="설명(선택)"
+              <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
                 initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
                 onChange={(blocks, plainText) => setPopup((previous) => ({
                   ...previous, content: { ...previous.content, description: plainText, descriptionBlocks: richBlocksOrNull(blocks) },

@@ -42,4 +42,4 @@
 - [x] 둘 다 숨기면 라벨 줄을 그리지 않는다. 넘기지 않으면 기존 화면과 같다. 툴바·라벨·서식 버튼을 모두 끄면 서식 진입이 우클릭뿐이라 가이드에 안내.
 - [x] 가이드 props·실행기·공지, 인계 문서(`POPUP_FRONT_SAMPLE_HANDOVER.md`) 반영.
 - 검증: tsc·eslint 통과. `verify-rich-text-49` 85건(조합 6종 라벨·버튼·라벨 줄·접근 이름, 버튼 숨김 시 우클릭 패널), guide-render 31·guide-registry 300·survey-rich-text-55 74·common-sample-69 62·quiz-option-byte-73 44 통과. 실화면 미실행.
-
+- [x] 적용(2026-11-18): `PopupQuestionEditor` 문항 제목 편집기(접근 이름 `N번 문항 제목(필수)`)와 설명 편집기(IS063 샘플·`PopupSampleEditor`·RgstPop `PopupEditorDialog`)에 `hideLabel`·`hideFormatButton`. 빈 입력은 placeholder(`문항 제목을 입력하세요.`·`설명(선택)`)로 구분. 검증: tsc·eslint, common-sample-69 63(라벨·버튼 미표시·접근 이름), survey-rich-text-55 74·rgstpop-quiz-rule 25·question-template-picker 7·quiz-option-byte-73 44·guide-render 31·guide-registry 300·transform-64 78·rich-text-49 85 통과.

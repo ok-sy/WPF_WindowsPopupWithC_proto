@@ -289,7 +289,7 @@ export default function IS063M02Sample() {
               <>
                 <Stack className="nConSectionDiv" spacing={1} sx={{ mt: 1 }}>
                   <Typography className="nConSectionTitle"><Required not />설명</Typography>
-                  <PopupRichTextEditor key={`description-${editorKey}`} compact label="설명" placeholder="설명(선택)"
+                  <PopupRichTextEditor key={`description-${editorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
                     initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentText(popup, 'description'))}
                     onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
                 </Stack>

@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-18-07 — dev: 문항 제목·설명 편집기 라벨·서식 버튼 숨김 적용
+
+- 이유: 2026-11-18-06에 추가한 `hideLabel`·`hideFormatButton`을 문항 제목과 설명 편집기에 적용해 입력 영역을 간결하게 정리.
+- 변경: `PopupQuestionEditor` 문항 제목 편집기, IS063 샘플·`PopupSampleEditor`·RgstPop `PopupEditorDialog`의 설명 편집기에 두 옵션 적용. 문항 제목 라벨은 문항별로 구분되도록 `N번 문항 제목(필수)`(화면 낭독기용)로 변경. 서식은 우클릭 패널로 지정. 가이드 공지·툴바 TODO 후속 기록 갱신. common-sample-69에 라벨·버튼 미표시·접근 이름 검사 추가.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupQuestionEditor.tsx`, `sample/{IS063M02Sample,PopupSampleEditor}.tsx`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `guide/guideNotices.ts`, `scripts/verify-popup-common-sample-69.cjs`.
+- 검증: 웹 `tsc --noEmit`·eslint 통과. common-sample-69 63·survey-rich-text-55 74·rgstpop-quiz-rule 25·question-template-picker 7·quiz-option-byte-73 44·guide-render 31·guide-registry 300·transform-64 78·rich-text-49 85 통과.
+- 미완료: 로그인 관리자 화면·폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-06 — dev: PopupRichTextEditor 위 라벨·서식 버튼 숨김 옵션
 
 - 이유: 편집기를 쓰는 화면마다 입력칸 위 라벨과 '서식' 버튼이 항상 표시되어, 화면 구성에 맞게 켜고 끌 수 있는 옵션이 필요.

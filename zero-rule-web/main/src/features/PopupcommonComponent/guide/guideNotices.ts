@@ -57,8 +57,9 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     id: '2026-11-18-rich-editor-label-format-toggle', date: '2026-11-18', category: 'ADDED', status: 'DONE', doneDate: '2026-11-18',
     title: 'PopupRichTextEditor 라벨·서식 버튼 켜고 끄기(hideLabel·hideFormatButton)',
     body: ['hideLabel을 넘기면 입력칸 위 라벨 글자를 숨깁니다. 라벨은 화면 낭독기용 이름으로 계속 씁니다.', 'hideFormatButton을 넘기면 "서식" 버튼을 숨깁니다. 둘 다 넘기면 라벨 줄이 없어지고 입력칸만 남습니다.',
-      '서식은 우클릭·키보드로 여는 서식 패널과 상단 툴바(켜져 있으면)로 계속 지정합니다. 넘기지 않으면 기존 화면과 같습니다.'],
-    components: ['PopupRichTextEditor'],
+      '서식은 우클릭·키보드로 여는 서식 패널과 상단 툴바(켜져 있으면)로 계속 지정합니다. 넘기지 않으면 기존 화면과 같습니다.',
+      'PopupQuestionEditor의 문항 제목 편집기와 샘플·등록 화면의 설명 편집기는 둘 다 숨김으로 적용했습니다. 문항 제목의 접근 이름은 "N번 문항 제목(필수)"입니다.'],
+    components: ['PopupRichTextEditor', 'PopupQuestionEditor'],
     action: '툴바·라벨·서식 버튼을 모두 끄면 서식 지정 방법이 우클릭뿐이라 눈에 띄지 않으므로 화면에 안내를 둡니다.',
   },
   {
