@@ -55,9 +55,9 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
     id: '2026-11-18-later-button-size', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
-    title: '미리보기 "나중에 보기" 버튼을 WPF와 같은 크기로',
-    body: ['미리보기의 "나중에 보기"는 글자만 있던 작은 버튼(약 93 × 32)에서 WPF와 같은 보조 버튼(최소 너비 118, 높이 44, 밝은 회색 면과 테두리)으로 바뀌었습니다. 설문·퀴즈 미달 뒤 보이는 보조 "닫기"도 같습니다.',
-      '"확인"·"바로가기"·"제출" 버튼과 누르는 동작은 그대로입니다.'],
+    title: '미리보기 푸터 버튼: "나중에 보기" 보조 버튼 모양, 높이 32 통일',
+    body: ['미리보기의 "나중에 보기"는 글자만 있던 작은 버튼(약 93 × 32)에서 WPF와 같은 보조 버튼(최소 너비 118, 밝은 회색 면과 테두리)으로 바뀌었습니다. 설문·퀴즈 미달 뒤 보이는 보조 "닫기"도 같습니다.',
+      '"나중에 보기"·"확인"·"바로가기"·"제출" 버튼 높이는 모두 32입니다(WPF 실제 팝업도 같음). 너비와 누르는 동작은 그대로입니다.'],
     components: ['PopupPreview', 'PopupPreviewDialog', 'InlinePopupPreview'],
     action: '바꿀 코드는 없습니다.',
   },

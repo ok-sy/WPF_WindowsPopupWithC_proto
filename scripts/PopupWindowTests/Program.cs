@@ -128,6 +128,7 @@ internal static class Program
         CheckVideoCompletion53();
         CheckLater52();
         CheckSurveyColors();
+        CheckFooterButtonHeight61_18();
         CheckQuizSelectionLimit();
         CheckSameTextOptionIds56();
         Console.WriteLine($"PASS: {_checks} popup window checks (design 50 A1·B, 43, 44, 52-2, 52-4, 52-5, 53-16, 57, 58, 59, 60, 65·70, 68, 76)");
@@ -2416,6 +2417,55 @@ internal static class Program
             var numbered = Tree(questionList).OfType<TextBlock>().Where(t => System.Text.RegularExpressions.Regex.IsMatch(t.Text ?? "", @"^\d{2}$")).ToList();
             Check(questionList.Children.Count > 0 && numbered.Count == 0,
                 $"[20261110 후속 8] QUIZ question cards render no automatic number: {string.Join(",", numbered.Select(t => t.Text))}");
+        }
+        finally { owner.Close(); }
+    }
+
+    private static IEnumerable<DependencyObject> VisualTree(DependencyObject node)
+    {
+        yield return node;
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(node); i++)
+            foreach (var child in VisualTree(System.Windows.Media.VisualTreeHelper.GetChild(node, i))) yield return child;
+    }
+
+    /*
+     * POL-02-03 : 푸터 역할
+     * TODO61-18(2026-11-18): 푸터 버튼(나중에 보기·확인·바로가기·제출)과 본문 제출 버튼은 높이 32. 나중에 보기는 보조 버튼 모양·최소 너비 118을 유지하고
+     * 주 버튼과 세로 중앙이 같다. 결과 안내창(PopupAlert)이 공유하는 ActionButtonStyle 높이 44는 그대로다.
+     */
+    private static void CheckFooterButtonHeight61_18()
+    {
+        var owner = NewOwner();
+        try
+        {
+            foreach (double? footerSize in new double?[] { null, 18 })
+            foreach (bool footer in new[] { true, false })
+            foreach (var dto in Popup.Services.DemoPopupDataService.CreatePopups())
+            {
+                dto.ShowLater = true; dto.ShowFooter = footer; dto.FooterFontSize = footerSize;
+                var options = PopupFactory.Create(dto);
+                options.UseBackgroundOverlay = false;
+                var window = new PopupWindow(options) { ShowActivated = false, Left = -3000, Top = 0 };
+                window.Show(); window.UpdateLayout();
+                try
+                {
+                    var buttons = VisualTree(window).OfType<Button>()
+                        .Where(b => b.IsVisible && b.ActualWidth > 0 && b.Content is "나중에 보기" or "확인" or "바로가기" or "제출").ToList();
+                    var later = buttons.FirstOrDefault(b => Equals(b.Content, "나중에 보기"));
+                    var main = buttons.FirstOrDefault(b => !Equals(b.Content, "나중에 보기"));
+                    double Center(Button b) => b.TranslatePoint(new Point(0, b.ActualHeight / 2), window).Y;
+                    Check((buttons.Count > 0 || !footer) && buttons.All(b => Math.Abs(b.ActualHeight - 32) < 0.6)
+                        && (later == null || later.ActualWidth >= 118 - 0.5) && (later == null || main == null || Math.Abs(Center(later) - Center(main)) < 1),
+                        $"[TODO61-18] {dto.PopupId} footer={footer} fs={footerSize}: footer buttons are 32 high and aligned: "
+                        + string.Join(", ", buttons.Select(b => $"{b.Content}={b.ActualWidth:0.#}x{b.ActualHeight:0.#}")));
+                }
+                finally { window.Close(); }
+            }
+            var probe = new PopupWindow(PopupFactory.Create(DemoPopups("TEXT").First()));
+            var shared = (Style)probe.FindResource("ActionButtonStyle");
+            probe.Close();
+            Check(shared.Setters.OfType<Setter>().Any(x => x.Property == FrameworkElement.HeightProperty && Equals(x.Value, 44.0)),
+                "[TODO61-18] shared ActionButtonStyle (result dialog) keeps height 44");
         }
         finally { owner.Close(); }
     }

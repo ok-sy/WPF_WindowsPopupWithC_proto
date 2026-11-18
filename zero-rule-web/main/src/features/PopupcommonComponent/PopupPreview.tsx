@@ -54,11 +54,13 @@ interface PopupPreviewProps {
 
 /*
  * POL-02-03 : 푸터 역할
- * '나중에 보기'·보조 '닫기' 버튼(TODO61-18). WPF SecondaryActionButtonStyle과 같은 치수·모양:
- * ActionButtonStyle의 최소 너비 118·높이 44·좌우 여백 22·모서리 9·SemiBold를 이어받고, 밝은 면(#F3F4F6)과 테두리(#D1D5DB)로 주 버튼과 구분한다.
+ * '나중에 보기'·보조 '닫기' 버튼(TODO61-18). WPF SecondaryActionButtonStyle과 같은 모양:
+ * 최소 너비 118·좌우 여백 22·모서리 9·SemiBold, 밝은 면(#F3F4F6)과 테두리(#D1D5DB)로 주 버튼과 구분한다.
+ * 높이는 푸터 버튼 공통 32(2026-11-18, WPF PopupWindow 푸터 버튼과 같음).
  */
+const FOOTER_BUTTON_HEIGHT = 32;
 const SECONDARY_FOOTER_BUTTON_SX = {
-  minWidth: 118, height: 44, px: '22px', boxSizing: 'border-box', whiteSpace: 'nowrap', flexShrink: 0,
+  minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, boxSizing: 'border-box', whiteSpace: 'nowrap', flexShrink: 0,
   borderRadius: '9px', border: '1px solid #D1D5DB', bgcolor: '#F3F4F6', color: '#111827', fontWeight: 600,
   '&:hover': { bgcolor: '#E5E7EB' }, '&:active': { bgcolor: '#D1D5DB' }, '&:focus-visible': { borderColor: '#6B7280' },
 } as const;
@@ -821,7 +823,7 @@ export default function PopupPreview({
                     필수 문항이 0개(선택 문항만)이면 WPF와 같이 바로 제출할 수 있다. */}
                 <Button
                   variant="contained"
-                  sx={{ ...surveySubmitSx, fontSize: footerFontSize ?? 14 }}
+                  sx={{ ...surveySubmitSx, height: FOOTER_BUTTON_HEIGHT, py: 0, fontSize: footerFontSize ?? 14 }}
                   disabled={submitDisabled}
                   aria-describedby={submitDisabled ? reasonId : undefined}
                   onClick={submitPreview}
@@ -877,8 +879,8 @@ export default function PopupPreview({
                   <Button
                     variant="contained"
                     disableElevation
-                    // WPF ActionButtonStyle: MinWidth 118 · Height 44 · 모서리 9 · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
-                    sx={{ minWidth: 118, height: 44, px: '22px', borderRadius: '9px', fontWeight: 600, bgcolor: '#111827', color: '#FFFFFF',
+                    // WPF ActionButtonStyle: MinWidth 118 · 모서리 9 · 푸터 높이 32(FOOTER_BUTTON_HEIGHT) · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
+                    sx={{ minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, borderRadius: '9px', fontWeight: 600, bgcolor: '#111827', color: '#FFFFFF',
                       '&:hover': { bgcolor: '#1F2937' }, '&:active': { bgcolor: '#374151' },
                       '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF' } }}
                     disabled={footerButtonDisabled}

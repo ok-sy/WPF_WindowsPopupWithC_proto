@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-18-10 — dev: TODO61-18 푸터 버튼 높이 32 웹·WPF 통일
+
+- 이유: TODO61-18 후속으로 ‘나중에 보기’와 ‘확인’·‘제출’ 버튼 높이를 32로 맞추고 WPF 실제 팝업에도 같은 크기를 적용하기로 결정.
+- 변경:
+  - WPF: `PopupWindow.xaml` 푸터 버튼 3종(`FooterLaterButton`·`FooterAuxCloseButton`·`FooterCloseButton`)과 `SurveyPopupView.xaml` 본문 `SubmitButton`에 높이 32·위아래 여백 0 지정. 결과 안내창(`PopupAlert`)과 공유하는 `ActionButtonStyle`(높이 44)은 변경하지 않음.
+  - 웹: `PopupPreview.tsx`에 `FOOTER_BUTTON_HEIGHT`(32)를 두고 확인·바로가기·제출·나중에 보기·보조 닫기에 적용. 너비 하한·색·모서리 유지.
+  - 사양 `WPF_POPUP_ALL_SPEC.md`, TODO61-18 후속 기록, 활성 작업, 가이드 공지 갱신.
+  - 검사: PopupWindowTests `CheckFooterButtonHeight61_18` 추가, BehaviorTests 제출 높이 고정값 46→32, preview-61 높이 기대값 44→32.
+- 주요 파일: `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml`, `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `guide/guideNotices.ts`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-popup-preview-61.cjs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`.
+- 검증: 같은 데이터 실측 웹·WPF 모두 ‘나중에 보기’ 120.9×32, ‘확인’·‘바로가기’ 118×32, ‘제출’ 132×32. WPF 빌드 경고·오류 0, PopupWindowTests 563(`CheckVideoQuizAspect60` 제외, 신규 33 포함)·BehaviorTests 1,740 통과. 웹 `tsc --noEmit`·eslint, preview-61 192·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과.
+- 미완료: `CheckVideoQuizAspect60`(주 모니터 1280×720 환경 제약)·폐쇄망 실화면 미실행.
+- 상태: 커밋·원격 반영.
+
 ## 2026-11-18-09 — dev: TODO61-18 미리보기 나중에 보기 버튼 크기 WPF 정렬
 
 - 이유: 폐쇄망 VIDEO 실제 크기 미리보기에서 ‘나중에 보기’가 93.45 × 32px로 ‘확인’보다 작게 보이는 이슈(TODO61-18). 웹 미리보기가 크기 지정 없는 MUI 글자 버튼으로 그려 WPF `SecondaryActionButtonStyle`(최소 118 × 44)과 달랐음.

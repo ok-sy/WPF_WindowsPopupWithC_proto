@@ -185,4 +185,9 @@
 - 확인된 기존 동작(이번 변경 무관): IMAGE 푸터는 높이 80 고정이라 좁은 인라인(520) + 푸터 글자 18 + 다시 보지 않기 체크에서 줄이 3줄로 바뀌면 아래가 잘린다. 변경 전 코드도 같은 결과(전후 비교)라 별도 판단 대상으로 남긴다.
 - 해당 없음: 관리자 미리보기는 시청·제출 잠금을 시연하지 않아(2026-11-13 슬라이더 삭제) 잠금 중 ‘나중에 보기’ 동작과 비활성 상태는 WPF 테스트 범위다.
 - 검증: 웹 `tsc --noEmit`·eslint 통과, preview-61 192·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과. 남은 항목: 폐쇄망 실화면.
+- 후속(2026-11-18): 푸터 버튼 높이를 ‘나중에 보기’·‘확인’·‘바로가기’·‘제출’(본문 제출 영역 포함)·보조 ‘닫기’ 모두 **32**로 통일하고 WPF에도 반영. 너비 하한(118·제출 132)·색·모서리는 유지.
+  - WPF: `PopupWindow.xaml`의 `FooterLaterButton`·`FooterAuxCloseButton`·`FooterCloseButton`, `SurveyPopupView.xaml`의 `SubmitButton`에 `Height=32`·위아래 여백 0을 직접 지정. 결과 안내창(`PopupAlert`)이 공유하는 `ActionButtonStyle` 높이 44는 변경하지 않음.
+  - 웹: `PopupPreview.tsx` `FOOTER_BUTTON_HEIGHT`(32)를 확인·바로가기·제출·나중에 보기·보조 닫기에 적용.
+  - 실측(같은 데이터, 96 DPI·브라우저 100%): 웹·WPF 모두 ‘나중에 보기’ 120.9×32, ‘확인’·‘바로가기’ 118×32, ‘제출’ 132×32.
+  - 검증: WPF 빌드 경고·오류 0, PopupWindowTests 563(신규 `CheckFooterButtonHeight61_18` 33건: 데모 8종 × 푸터 표시/숨김 × 글자 기본/18의 높이 32·세로 정렬, 공유 스타일 44 유지, `CheckVideoQuizAspect60` 제외), BehaviorTests 1,740(제출 높이 고정값 46→32). 웹 tsc·eslint, preview-61 192(높이 기대값 32)·completion-ux-43 82·common-sample-69 63·image-preview 54·survey-rich-text-55 74·guide-render 31 통과. 폐쇄망 실화면 미실행.
 
