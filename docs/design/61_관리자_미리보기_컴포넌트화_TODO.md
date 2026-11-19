@@ -203,4 +203,16 @@
 - [ ] 필수 응답·제출 상태 안내나 체크박스가 줄바꿈되면 푸터를 위로 확장하고, 버튼은 푸터 하단 기준으로 정렬한다. 실제 버튼 하단과 팝업 내부 하단 사이가 15px(웹) 또는 15 DIP(WPF)인지 확인한다.
 - [ ] 같은 데이터로 TEXT·SURVEY 기본 한 줄, 긴 안내 문구·체크박스, 좁은 인라인·실제 크기 Dialog·확대 배율을 검증한다. 공통 푸터를 공유하는 VIDEO·IMAGE·QUIZ·VIDEO+QUIZ도 버튼 잘림·겹침과 본문 스크롤 회귀를 확인한다. 푸터 숨김 시 빈 공간이 남는지, 설문 본문 제출 경로가 동작하는지도 확인한다.
 - [ ] TEXT 560×750에서 웹 미리보기가 WPF보다 하단이 약 15px 더 크게 보인다는 폐쇄망 관찰을 재현한다. 같은 크기 모드와 배율에서 창 외곽 높이, 그림자 여백을 제외한 패널 높이, 푸터 높이, 버튼 하단부터 패널 하단까지의 거리를 각각 비교한다. 웹 푸터의 `padding-bottom: 15px`과 WPF `FooterArea`의 하단 15 DIP가 각 레이아웃에 한 번만 반영되는지 확인한다. 관찰된 차이의 원인은 실측으로 확정한다.
+- 추가 관찰(폐쇄망 인라인 DevTools): `pb: 0` 확인 상태에서 선택한 푸터 `Stack`의 상하 패딩은 0px, 좌우는 28px, 계산된 높이는 64px이었다. Git의 일반 푸터는 `minHeight`와 `alignItems="center"`를 사용하므로, 34px 버튼이 64px 푸터 안에 가운데 정렬되면 패딩이 0이어도 위아래가 각각 15px 남을 수 있다. 인라인·실제 크기 Dialog·WPF에서 버튼 하단과 내부 패널 하단을 각각 실측해 기존 15px 차이와의 관계를 확인한다.
 - [ ] 웹 타입 검사·미리보기 회귀 검증, WPF 빌드·화면 대조, 폐쇄망 실화면 결과를 기록한다. 이번 후속 항목은 구현·검증 대기다.
+
+## 추가 TODO — 61-19 폐쇄망 미리보기 헤더 글자 크기 (2026-11-19)
+
+- **상태** · 폐쇄망 DevTools에서 원인 확인. 문서 등록, 코드 적용과 실화면 재검증 대기.
+- **현상과 원인** · 폐쇄망 관리자 미리보기의 헤더 제목이 기본 17px에서 12px로 표시됐다. 폐쇄망 `theme/index.ts`의 `MuiTypography.styleOverrides.root['&.MuiTypography-body1']`가 제목의 `sx.fontSize`보다 높은 선택자 우선순위로 적용됐다. 전역 규칙의 12px 선언을 주석 처리했을 때 17px로 표시됐다. Git 기준 [PopupPreview.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx#L669)의 헤더 `Typography`는 `headerFontSize ?? POPUP_DEFAULT_FONT_SIZES.header`를 직접 지정한다.
+
+### 구현 시 확인할 사항
+
+- [ ] 관리자 웹 공통 `PopupPreview`의 헤더 제목 한 곳에 `sx['&&'].fontSize`로 기존 값을 적용한다. 전역 `body1` 12px 규칙을 켠 상태에서 검증한다.
+- [ ] `&&`와 전역 규칙은 CSS 우선순위가 같으므로, 인라인과 실제 크기 Dialog 양쪽에서 생성 CSS의 적용 순서와 Computed `font-size`를 확인한다. 기본 17px과 명시값(예: 14px, 22px)이 그대로 표시되고, `showHeader=false`이면 헤더가 숨겨져야 한다.
+- [ ] TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ에서 공통 헤더와 로고·말줄임, 본문·푸터 및 전역 `body1` 적용 화면을 회귀 확인한다. 웹 타입 검사·변경 파일 eslint·미리보기 하네스와 폐쇄망 실화면 결과를 기록한다.
