@@ -13,7 +13,7 @@
 - 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupLayout.ts`·`PopupFooter.tsx`·`PopupPreview.tsx`·`PopupRichBlocks.tsx`·`imagePreviewLayout.ts`·`popupPreviewDialogLayout.ts`·`AspectVideoArea.tsx`, `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`·`PopupWindow.xaml`·`PopupWindow.xaml.cs`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml`·`SurveyDesigns/SurveyStyles.V1.xaml`·`V2.xaml`, 문서.
 - 검증 · 웹 `tsc`·eslint 오류 0, 하네스 13종 통과(preview-61 234 등). `verify-popup-parity.cjs` 54건 통과, 글자 대조 차이 8 → 1건(기존 기록 VIDEO+QUIZ 상단 제목). WPF 빌드 0/0, BehaviorTests 1,740·RichTextTests 116·RecoveryTests 255·ApiDemoTests 150 통과, PopupWindowTests는 `CheckCloseButtonAfterDisplayChange` 제외 602건 통과(해당 검사는 변경 전 코드에서도 현재 주 모니터 작업 영역 2561×1393에서 실패 — 환경 요인).
 - 미실행 · 로그인 관리자 화면, 브라우저 확대·Windows 배율, 폐쇄망 실화면.
-- 상태 · 로컬 커밋, 미푸시.
+- 상태 · 커밋 8443080, 원격 반영. 폐쇄망 실화면 확인 대기.
 
 ## 2026-11-19-08 — docs: 활성 작업 P100 잔여 항목 분류
 
