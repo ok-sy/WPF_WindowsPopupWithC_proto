@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-19-05 — dev: TODO61-19 미리보기 헤더 글자 크기 수정
+
+- 이유 · 폐쇄망 theme의 `MuiTypography` root `&.MuiTypography-body1`(12px) 규칙이 미리보기 헤더 제목의 `sx.fontSize`보다 선택자 우선순위가 높아 기본 17px 헤더가 12px로 표시됨.
+- 변경 · 공통 `PopupPreview` 헤더 제목의 글자 크기를 `sx['&&'].fontSize`로 옮겨 우선순위를 올림(값은 `headerFontSize ?? 17` 그대로). 미리보기 하네스에 폐쇄망 전역 body1 12px 규칙을 재현한 테마 전환을 추가하고, TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ × 기본 17/명시 14·22에서 인라인·실제 크기 모달 헤더 Computed `font-size`, 전역 규칙 활성(본문 body1 12px), `showHeader=false` 숨김을 검사.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-preview-61-entry.tsx`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-preview-61.cjs` 234건 통과(수정 전 코드로 되돌리면 `[61-19] TEXT header 17px` 검사가 인라인·모달 12px로 실패함을 확인). `tsc --noEmit` 통과, 변경 파일 eslint 오류 없음, `verify-popup-parity.cjs` 22건 통과. 폐쇄망 실화면 확인은 미실행.
+- 상태 · 로컬 커밋, 미푸시. 폐쇄망 반입·실화면 확인 대기.
+
 ## 2026-11-19-04 — doc: TODO28 폐쇄망 사용자 지정 폰트 이름 직접 전달 추가
 
 - 기존 TODO28에 웹 전역 CSS 굵기 매핑, 폐쇄망 웹의 별칭·Windows 패밀리 설정, 기존 4개 ID 호환 및 서버·WPF 처리 범위를 기록했다.

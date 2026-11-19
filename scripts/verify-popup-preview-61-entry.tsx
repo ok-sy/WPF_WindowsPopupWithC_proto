@@ -10,6 +10,9 @@ import { previewDialogSize } from '../zero-rule-web/main/src/features/Popupcommo
 // ■ 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, sans-serif'}});
+// TODO61-19: 폐쇄망 theme/index.ts의 전역 body1 12px 규칙(MuiTypography root '&.MuiTypography-body1')을 재현한 테마.
+const body1RuleTheme = createTheme({typography: {fontFamily: '"Malgun Gothic", Arial, sans-serif'},
+  components: {MuiTypography: {styleOverrides: {root: {'&.MuiTypography-body1': {fontSize: '12px'}}}}}});
 const deepFreeze = <T,>(value: T): T => {
   if (value && typeof value === 'object') { Object.values(value).forEach(deepFreeze); Object.freeze(value); }
   return value;
@@ -40,8 +43,8 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
   const popup = deepFreeze(samplePopup(popupType, overrides, content));
   (window as any).popupJson = JSON.stringify(popup);
   (window as any).currentPopup = popup;
-  root.render(<ThemeProvider theme={theme}><CssBaseline/>
-    <Host key={JSON.stringify(popup) + hint + placeholders + JSON.stringify((window as any).hostSize ?? null)} popup={popup} hint={hint} placeholders={placeholders} />
+  root.render(<ThemeProvider theme={(window as any).body1Rule ? body1RuleTheme : theme}><CssBaseline/>
+    <Host key={JSON.stringify(popup) + !!(window as any).body1Rule + hint + placeholders + JSON.stringify((window as any).hostSize ?? null)} popup={popup} hint={hint} placeholders={placeholders} />
   </ThemeProvider>);
 };
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);

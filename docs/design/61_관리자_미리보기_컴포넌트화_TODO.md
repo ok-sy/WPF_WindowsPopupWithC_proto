@@ -208,14 +208,15 @@
 
 ## 추가 TODO — 61-19 폐쇄망 미리보기 헤더 글자 크기 (2026-11-19)
 
-- **상태** · 폐쇄망 DevTools에서 원인 확인. 문서 등록, 코드 적용과 실화면 재검증 대기.
+- **상태** · 폐쇄망 DevTools에서 원인 확인. 2026-11-19 웹 코드 적용·하네스 검증 완료. 폐쇄망 실화면 재검증 대기.
 - **현상과 원인** · 폐쇄망 관리자 미리보기의 헤더 제목이 기본 17px에서 12px로 표시됐다. 폐쇄망 `theme/index.ts`의 `MuiTypography.styleOverrides.root['&.MuiTypography-body1']`가 제목의 `sx.fontSize`보다 높은 선택자 우선순위로 적용됐다. 전역 규칙의 12px 선언을 주석 처리했을 때 17px로 표시됐다. Git 기준 [PopupPreview.tsx](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx#L669)의 헤더 `Typography`는 `headerFontSize ?? POPUP_DEFAULT_FONT_SIZES.header`를 직접 지정한다.
 
 ### 구현 시 확인할 사항
 
-- [ ] 관리자 웹 공통 `PopupPreview`의 헤더 제목 한 곳에 `sx['&&'].fontSize`로 기존 값을 적용한다. 전역 `body1` 12px 규칙을 켠 상태에서 검증한다.
-- [ ] `&&`와 전역 규칙은 CSS 우선순위가 같으므로, 인라인과 실제 크기 Dialog 양쪽에서 생성 CSS의 적용 순서와 Computed `font-size`를 확인한다. 기본 17px과 명시값(예: 14px, 22px)이 그대로 표시되고, `showHeader=false`이면 헤더가 숨겨져야 한다.
+- [x] 관리자 웹 공통 `PopupPreview`의 헤더 제목 한 곳에 `sx['&&'].fontSize`로 기존 값을 적용한다. 전역 `body1` 12px 규칙을 켠 상태에서 검증한다.
+- [x] `&&`와 전역 규칙은 CSS 우선순위가 같으므로, 인라인과 실제 크기 Dialog 양쪽에서 생성 CSS의 적용 순서와 Computed `font-size`를 확인한다. 기본 17px과 명시값(예: 14px, 22px)이 그대로 표시되고, `showHeader=false`이면 헤더가 숨겨져야 한다.
 - [ ] TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ에서 공통 헤더와 로고·말줄임, 본문·푸터 및 전역 `body1` 적용 화면을 회귀 확인한다. 웹 타입 검사·변경 파일 eslint·미리보기 하네스와 폐쇄망 실화면 결과를 기록한다.
+  - 2026-11-19 로컬: `verify-popup-preview-61.cjs`에 전역 body1 12px 테마를 추가해 여섯 유형 × 기본 17/14/22의 인라인·모달 헤더가 기대값으로 계산됨을 확인(수정 전 코드는 12px로 실패). 전역 규칙 활성·`showHeader=false` 숨김 확인, `tsc`·eslint·`verify-popup-parity.cjs` 통과. 로고·말줄임·본문·푸터 회귀는 기존 하네스 검사 범위. 폐쇄망 실화면은 미실행이라 미체크로 둔다.
 
 ## 61-20 팝업 UI 기본값 캡처 및 회귀 검증
 

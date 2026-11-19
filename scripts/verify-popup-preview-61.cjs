@@ -325,6 +325,27 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(narrow.w < wide.w - 100 && Math.abs(narrow.h - Math.max(180, (narrow.w - 2) * 9 / 16 + 2)) < 1.5,
     '[2026-11-18] A real width change larger than the scrollbar still recalculates the video height: ' + JSON.stringify({wide, narrow}));
   await run('window.hostSize=undefined');
+  // TODO61-19: 폐쇄망 전역 body1 12px 규칙을 켠 테마에서도 공통 헤더 제목은 기본 17px·명시값을 유지한다(인라인·실제 크기 모달).
+  await run('window.body1Rule=true');
+  const HEAD = '미리보기 컴포넌트';
+  const headSizes = selector => run(`Array.from(document.querySelectorAll(${JSON.stringify(selector + ' p')})).filter(e=>e.textContent===${JSON.stringify(HEAD)}).map(e=>getComputedStyle(e).fontSize)`);
+  for (const type of ['TEXT', 'IMAGE', 'VIDEO', 'SURVEY', 'QUIZ', 'VIDEO+QUIZ']) {
+    const [popupType, extra] = type === 'VIDEO+QUIZ' ? ['QUIZ', {videoEnabled: true}] : [type, {}];
+    for (const [size, expected] of [[undefined, '17px'], [14, '14px'], [22, '22px']]) {
+      await render(popupType, {}, {...extra, ...(size ? {headerFontSize: size} : {})}); await openPreview();
+      const inline = await headSizes('#root'), dialog = await headSizes('.MuiDialog-root');
+      check(inline.length === 1 && dialog.length === 1 && inline[0] === expected && dialog[0] === expected,
+        `[61-19] ${type} header ${expected} wins over the global body1 12px rule: ` + JSON.stringify({inline, dialog}));
+      await escape();
+    }
+  }
+  // 전역 규칙이 실제로 적용되는 환경인지(본문 body1은 12px) 함께 확인해 검사가 공회전하지 않게 한다.
+  await render('TEXT', {}, {plainText: '본문 규칙 확인'});
+  check(await run(`Array.from(document.querySelectorAll('#root p.MuiTypography-body1')).some(e=>getComputedStyle(e).fontSize==='12px')`), '[61-19] the global body1 12px rule is active in this theme');
+  await render('TEXT', {showHeader: false}); await openPreview();
+  check((await headSizes('#root')).length === 0 && (await headSizes('.MuiDialog-root')).length === 0, '[61-19] showHeader=false hides the header in both previews');
+  await escape();
+  await run('window.body1Rule=false');
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

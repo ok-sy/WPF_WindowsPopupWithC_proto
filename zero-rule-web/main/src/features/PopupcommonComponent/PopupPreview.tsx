@@ -665,8 +665,9 @@ export default function PopupPreview({
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                // WPF PopupTitleText 기본 17 SemiBold(TODO61-17)
-                fontSize: headerFontSize ?? POPUP_DEFAULT_FONT_SIZES.header,
+                // WPF PopupTitleText 기본 17 SemiBold(TODO61-17).
+                // 폐쇄망 theme의 MuiTypography root '&.MuiTypography-body1'(12px)보다 우선하도록 '&&'로 선택자 우선순위를 올린다(TODO61-19).
+                '&&': {fontSize: headerFontSize ?? POPUP_DEFAULT_FONT_SIZES.header},
               }}
             >
               {text(popup.title, hidePlaceholders ? '' : '팝업 제목')}
