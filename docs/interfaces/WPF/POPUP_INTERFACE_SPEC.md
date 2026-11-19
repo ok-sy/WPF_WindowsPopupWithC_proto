@@ -498,7 +498,7 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 | runs[].bold / italic / underline / strikethrough | boolean | 선택 | `true`·`false`(누락 false) | 굵게·기울임·밑줄·취소선. 밑줄과 취소선 동시 적용 가능(TODO62) |
 | runs[].color | string | 선택 | 대문자 `#RRGGBB` | 글자 색. 팔레트로 제한하지 않음(관리자 편집기 팔레트는 선택지일 뿐). 가독성은 작성자가 판단 |
 | runs[].size | number | 선택 | 12·14·16·18·20·24·28·32 (px) | 글자 크기. 없으면 bodyFontSize·기본 크기 |
-| runs[].font | string | 선택 | `MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG` | 글꼴 ID. PC에 없으면 대체 글꼴 |
+| runs[].font | string | 선택 | 기존 ID `MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG` 또는 Windows 글꼴 패밀리 이름 한 개(1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * \|` 제외, TODO28 후속) | 글꼴. 기존 ID는 맑은 고딕·굴림·돋움·바탕으로 매핑한다. 이름은 글꼴별 허용 목록·설치 여부 확인 없이 그대로 저장·전달하고 WPF가 `이름, 기본 글꼴`로 적용한다. PC에 없으면 그 구간은 기본 글꼴. 굵기는 `bold`로만 정하며 CSS·폰트 파일은 전달하지 않는다 |
 
 취소선 예시(문단 들여쓰기 40px 및 오른쪽 정렬과 함께 사용):
 

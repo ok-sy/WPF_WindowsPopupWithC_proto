@@ -239,7 +239,7 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 
 ## 14. 후속 — 폐쇄망 사용자 지정 폰트 이름 직접 전달
 
-2026-11-19 (KST) · **구현 대기** · 기준 형상 `main` `382b970`
+2026-11-19 (KST) · **로컬 구현·검증 완료, 폐쇄망 글꼴 확인 대기** · 기준 형상 `main` `382b970`
 
 ### 합의된 방향
 
@@ -251,10 +251,20 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 ### 구현 시 확인할 사항
 
 - [ ] 폐쇄망 Windows에서 WPF가 인식하는 Text·Title의 패밀리 이름과 `FontWeight` 400/700에 실제 선택되는 서체를 확인한다. CSS `local()`의 이름은 비교 자료로 사용한다.
-- [ ] 관리자 웹 `popupRichText.ts`의 `htmlToBlocks()`, `blocksToHtml()`, `readTextBlocks()`, `richFontCss()`와 `popupRichTextFormat.ts`의 `applyFormat()`·`fontIdFromModel()`을 대조한다. 선택·저장 시 Windows 이름으로 변환하고, 재편집과 `PopupRichBlocks` 미리보기에서 등록된 CSS 별칭으로 복원한다. 저장 시 PC 글꼴 조회에 의존하지 않는다.
-- [ ] 서버 `PopupRichText.java`의 `validateAndDerivePlainText()`에서 신규 단일 이름의 타입·길이·제어문자 등을 검증한다. CSS 목록·경로·URI는 허용하지 않는다. 기존 JSON·DTO·API 계약을 확인해 한계를 정하고, 저장·재조회에서 이름 문자열과 다른 Run 값이 보존되는지 확인한다.
-- [ ] WPF `PopupRichText.cs`의 `CreateRun()`에서 기존 ID·신규 이름·미지정·미설치의 표시를 확인한다. 구버전 Agent의 대체 표시와 구버전 관리자 웹의 재편집 보존 여부를 확인해 신규 글꼴 활성화 순서를 정한다.
-- [ ] 구현과 함께 POL-03-02, WPF API 계약 §8.1, 관리자 계약 및 개발자 안내를 동기화한다. 이 TODO 등록 시점의 계약은 기존 4개 ID다.
+- [x] 관리자 웹 `popupRichText.ts`의 `htmlToBlocks()`, `blocksToHtml()`, `readTextBlocks()`, `richFontCss()`와 `popupRichTextFormat.ts`의 `applyFormat()`·`fontIdFromModel()`을 대조한다. 선택·저장 시 Windows 이름으로 변환하고, 재편집과 `PopupRichBlocks` 미리보기에서 등록된 CSS 별칭으로 복원한다. 저장 시 PC 글꼴 조회에 의존하지 않는다.
+- [x] 서버 `PopupRichText.java`의 `validateAndDerivePlainText()`에서 신규 단일 이름의 타입·길이·제어문자 등을 검증한다. CSS 목록·경로·URI는 허용하지 않는다. 기존 JSON·DTO·API 계약을 확인해 한계를 정하고, 저장·재조회에서 이름 문자열과 다른 Run 값이 보존되는지 확인한다.
+- [x] WPF `PopupRichText.cs`의 `CreateRun()`에서 기존 ID·신규 이름·미지정·미설치의 표시를 확인한다. 구버전 Agent의 대체 표시와 구버전 관리자 웹의 재편집 보존 여부를 확인해 신규 글꼴 활성화 순서를 정한다.
+- [x] 구현과 함께 POL-03-02, WPF API 계약 §8.1, 관리자 계약 및 개발자 안내를 동기화한다. 이 TODO 등록 시점의 계약은 기존 4개 ID다.
+
+### 구현 결과 (2026-11-19, 로컬)
+
+- **이름 규칙(웹·서버·WPF 공통)** · 기존 4 ID가 아니면 Windows 글꼴 패밀리 이름 한 개로 본다. 1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * |` 제외. 쉼표(CSS·WPF 대체 목록), `#`·`/`·`\`·`:`(파일 글꼴 경로·URI), 괄호(`url()`)를 막는다. 자르지 않고 거부한다(웹 `isRichFontName`, 서버 `PopupRichText.FONT_NAME`/`isFont`, WPF `PopupRichText.IsFontName`).
+- **웹** · `registerPopupRichFonts([{ family, css, label? }])`로 폐쇄망 글꼴을 등록한다(앱 시작 시 1회, 호출마다 목록 교체). family는 저장값, css는 전역 `@font-face` 별칭 등 표시용 CSS(CKEditor 정규형으로 정리), label은 선택지 이름이다. 형식이 틀린 family·기존 ID·중복·빈 css는 등록하지 않는다. 편집기·서식 패널·미리보기는 `richFonts()`(기존 4종 + 등록 글꼴)를 쓰고, 저장 데이터의 미등록 이름은 '(미등록)' 선택지로 넣어 재편집 시 그대로 보존한다. 붙여넣은 미등록 CSS 글꼴(예: Calibri)은 기존처럼 버린다. `readTextBlocks`는 형식에 맞는 이름을 유지한다. 저장 시 PC 글꼴 조회는 하지 않는다.
+- **서버** · 기존 ID 또는 형식에 맞는 이름을 받는다. 허용 목록·설치 여부는 확인하지 않고 문자열을 바꾸지 않는다. DTO·JSON 구조 변경 없음.
+- **WPF** · 기존 ID는 기존 매핑, 이름은 `이름, 기본 글꼴(SystemFonts.MessageFontFamily)` 대체 목록으로 적용한다. WPF 기본 대체만 쓰면 미설치 글꼴이 팝업 기본 글꼴과 다른 폭(141.37 대 146.84, 같은 문자열)으로 그려져 대체 목록을 붙였다. 형식이 틀린 값은 그 구간만 기본 글꼴. 굵기는 `bold`만 반영한다. Demo 저장 검증도 같은 규칙.
+- **구버전 호환·활성화 순서** · 구버전 서버는 새 이름을 거부하고, 구버전 WPF는 새 이름을 기본 글꼴로 표시한다(오류 없음). 구버전 관리자 웹은 `readTextBlocks`에서 새 이름을 버려 재편집하면 글꼴이 지워진다. 따라서 **서버 → WPF → 관리자 웹(글꼴 등록)** 순서로 반영한다. 기존 4 ID 데이터는 변환하지 않는다.
+- **검증(로컬)** · 웹 `verify-rich-text-49` 94건(신규 [28] 10건: 등록 규칙, 이름 규칙, 기존 ID·등록·미등록 재편집 보존, 미리보기 CSS, 선택 시 family 저장, 붙여넣기 제외, readTextBlocks), 타입 검사·eslint(오류 0) 및 관련 하네스 통과. 서버 `PopupRichTextTest` 11건(신규 수용·거부 사례). WPF `RichTextTests` 116건(신규: 이름 적용·형식 오류·미설치 시 기본 글꼴과 같은 폭), BehaviorTests 1,740·PopupWindowTests 651·RecoveryTests 255·ApiDemoTests 150건 통과.
+- **미실행** · 로컬 서버 HTTP 저장·재조회 왕복, 관리자 웹 실화면, 폐쇄망 실제 글꼴(Text·Title)의 WPF 패밀리 이름·400/700 표시.
 
 ### 구현 전에 결정할 사항
 

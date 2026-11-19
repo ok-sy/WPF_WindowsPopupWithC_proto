@@ -3,7 +3,7 @@ import { CKEditor, loadCkeditorEngine, type CkeditorEngine } from '@/components/
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { acceptsByteLimitedChange, byteLimitMessage, utf8ByteLength } from './popupByteLimit';
 import PopupRichTextMenu from './PopupRichTextMenu';
-import { blocksToHtml, blocksToPlainText, htmlToBlocks, richEditorConfig, type RichBlock } from './popupRichText';
+import { blocksToHtml, blocksToPlainText, fontsInBlocks, htmlToBlocks, richEditorConfig, richFonts, type RichBlock } from './popupRichText';
 import { applyFormat, normalizeIndent, readFormatState, type FormatAction, type FormatState } from './popupRichTextFormat';
 import { POPUP_DEFAULT_FONT_SIZES } from './popupCommon';
 
@@ -84,7 +84,9 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   const editorRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const [initialHtml] = useState(() => blocksToHtml(initialBlocks));
+  /* 글꼴 선택지: 기존 4종 + 등록 글꼴 + 처음 내용에 있는 미등록 이름(지우지 않고 그대로 저장되도록, TODO28 후속). */
+  const [fonts] = useState(() => richFonts(fontsInBlocks(initialBlocks)));
+  const [initialHtml] = useState(() => blocksToHtml(initialBlocks, fonts));
   /* 우클릭·'서식' 버튼·키보드로 여는 펼침 서식 패널 */
   const [menuPosition, setMenuPosition] = useState<PopoverPosition | null>(null);
   const [formatState, setFormatState] = useState<FormatState | null>(null);
@@ -112,7 +114,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   const commitChange = (editor: any) => {
     if (restoringRef.current) return;
     const html = editor.getData();
-    const blocks = htmlToBlocks(html);
+    const blocks = htmlToBlocks(html, fonts);
     const plain = blocksToPlainText(blocks);
     const max = maxBytesRef.current;
     const last = lastValidRef.current;
@@ -170,7 +172,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
   const applyMenu = (action: FormatAction) => {
     const editor = editorRef.current;
     if (!editor || disabledRef.current) return;
-    applyFormat(editor, action);
+    applyFormat(editor, action, fonts);
     setFormatState(readFormatState(editor));
   };
   /* 키보드(메뉴 키·Shift+F10)로 연 경우 마우스 좌표가 없으므로 커서·선택 위치 아래에 연다. */
@@ -193,8 +195,9 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
     };
   }, []);
   const config = useMemo(
-    () => engine && { ...engine.popupRichEditorConfig, ...richEditorConfig, placeholder: placeholder ?? '본문을 입력하고 글자를 선택해 서식을 지정하세요.' },
-    [engine, placeholder],
+    () => engine && { ...engine.popupRichEditorConfig, ...richEditorConfig,
+      fontFamily: { options: ['default', ...fonts.map((font) => font.css)], supportAllValues: false }, placeholder: placeholder ?? '본문을 입력하고 글자를 선택해 서식을 지정하세요.' },
+    [engine, placeholder, fonts],
   );
 
   /* CKEditor 34부터 읽기 전용은 잠금 ID 방식이다(isReadOnly 직접 설정은 사용하지 않음). */
@@ -260,7 +263,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
               applyReadOnly(editor, Boolean(disabled));
               // 바이트 상한 기준값: 처음 내용. 커서만 옮긴 경우(내용 변경 없음)에도 되돌릴 위치를 갱신하고, 조합이 끝나면 다시 확인한다.
               const readyHtml = editor.getData();
-              const readyPlain = blocksToPlainText(htmlToBlocks(readyHtml));
+              const readyPlain = blocksToPlainText(htmlToBlocks(readyHtml, fonts));
               lastValidRef.current = { html: readyHtml, plain: readyPlain, selection: selectionPaths(editor) };
               if (maxBytesRef.current != null) setByteNotice({ blocked: false, bytes: utf8ByteLength(readyPlain) });
               editor.model.document.selection.on('change:range', () => {
@@ -292,7 +295,7 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
         <Typography variant="caption" color="error" role="status" sx={{ display: 'block', ...(inline ? { flexBasis: '100%' } : {}) }}>
           {byteNotice.bytes > maxPlainBytes ? byteLimitMessage(maxPlainBytes, byteNotice.bytes) + ' 줄여 주세요.' : byteLimitMessage(maxPlainBytes) + ' 넘는 입력은 반영되지 않습니다.'}
         </Typography>}
-      <PopupRichTextMenu position={menuPosition} state={formatState} onApply={applyMenu} onClose={closeMenu} />
+      <PopupRichTextMenu position={menuPosition} state={formatState} onApply={applyMenu} onClose={closeMenu} fonts={fonts} />
     </Box>
   );
 }

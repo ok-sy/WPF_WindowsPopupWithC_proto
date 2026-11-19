@@ -352,6 +352,39 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`window.mount(${JSON.stringify(sizeBlocks)},false,null,{compact:true})`); await waitEditor(); await pause(250);
   font = await editorFont();
   check(font.p === '14px' && font.sized === '20px', '[2026-11-17 2] Compact (description) editor uses the 14px default: ' + JSON.stringify(font));
+  // TODO28 후속: 폐쇄망 사용자 지정 글꼴 — 등록(웹 CSS 별칭 + Windows 패밀리 이름), 선택·저장·재편집·미리보기, 기존 ID 호환, 미등록 이름 보존, 형식 오류.
+  const reg = await run(`JSON.stringify(window.registerPopupRichFonts([
+    {family:'YouandiNewKr Text',css:'"YouandiNewKrText", sans-serif',label:'유앤아이 본문'},
+    {family:'YouandiNewKr Title',css:'YouandiNewKrTitle'},
+    {family:'Arial, sans-serif',css:'Arial'},{family:'MALGUN_GOTHIC',css:'x'},{family:'YouandiNewKr Text',css:'dup'},{family:'NoCss',css:' '}]))`);
+  check(reg === JSON.stringify([{id:'YouandiNewKr Text',css:'YouandiNewKrText, sans-serif',label:'유앤아이 본문'},{id:'YouandiNewKr Title',css:'YouandiNewKrTitle',label:'YouandiNewKr Title'}]),
+    '[28] registration keeps valid family+css pairs (canonical css) and drops CSS-list names, legacy ids, duplicates and empty css: ' + reg);
+  const names = await run(`JSON.stringify(['Comic Sans MS','유앤아이 새 Title','a'.repeat(64),'Arial, sans-serif','C:\\a.ttf','url(x)',' Gulim','','a'.repeat(65),'A\u0001','#x'].map(window.isRichFontName))`);
+  check(names === JSON.stringify([true,true,true,false,false,false,false,false,false,false,false]), '[28] font name rule matches server/WPF: ' + names);
+  const fontBlocks = [{alignment:'LEFT',runs:[{text:'기존',font:'BATANG'},{text:'본문',font:'YouandiNewKr Text',bold:true},{text:'미등록',font:'Other Font'},{text:'기본'}]}];
+  await run(`window.mount(${JSON.stringify(fontBlocks)},false,${JSON.stringify(fontBlocks)})`); await waitEditor(); await pause(250);
+  await run(`(()=>{const e=window.editor();e.model.change(w=>w.insertText('끝',e.model.createPositionAt(e.model.document.getRoot().getChild(0),'end')));})()`); await pause(150);
+  const kept = (await blocks())[0].runs;
+  check(JSON.stringify(kept.map(r => [r.text, r.font ?? null, r.bold ?? false])) === JSON.stringify([['기존','BATANG',false],['본문','YouandiNewKr Text',true],['미등록','Other Font',false],['기본끝',null,false]]),
+    '[28] legacy id, registered family and unregistered name survive re-edit unchanged: ' + JSON.stringify(kept));
+  const css = await run(`(()=>{const f=t=>{const el=Array.from(document.querySelectorAll('#preview span')).find(x=>x.textContent===t);return el&&getComputedStyle(el).fontFamily;};return {legacy:f('기존'),reg:f('본문'),other:f('미등록'),plain:f('기본')};})()`);
+  check(css.legacy.includes('Batang') && css.reg === 'YouandiNewKrText, sans-serif' && css.other.replace(/["']/g,'') === 'Other Font' && !/Youandi|Other|Batang/.test(css.plain),
+    '[28] preview uses the registered CSS alias for a family name, legacy css for ids, the name itself for unregistered fonts: ' + JSON.stringify(css));
+  await run(`window.select(0,4,6)`); await pause(100);
+  await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(200);
+  const opts = await run(`Array.from(document.querySelectorAll('select[aria-label^="글꼴"] option')).map(o=>o.value+'|'+o.textContent)`);
+  check(['MALGUN_GOTHIC|맑은 고딕','YouandiNewKr Text|유앤아이 본문','YouandiNewKr Title|YouandiNewKr Title','Other Font|Other Font (미등록)'].every(o => opts.includes(o)),
+    '[28] font select lists legacy, registered and the unregistered name from the data: ' + JSON.stringify(opts));
+  check(await run(`document.querySelector('select[aria-label^="글꼴"]').value`) === 'Other Font', '[28] font select shows the unregistered font of the selection');
+  await run(`(()=>{const s=document.querySelector('select[aria-label^="글꼴"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'YouandiNewKr Title');s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await pause(150);
+  const picked = (await blocks())[0].runs.find(r => r.text === '미등');
+  check(picked && picked.font === 'YouandiNewKr Title', '[28] choosing a registered font stores the Windows family name: ' + JSON.stringify((await blocks())[0].runs));
+  await run(`document.body.click()`); await pause(100);
+  const pasted = await run(`JSON.stringify(window.htmlToBlocks('<p><span style="font-family:Calibri">a</span><span style="font-family:YouandiNewKrText, sans-serif">b</span></p>')[0].runs)`);
+  check(pasted === JSON.stringify([{text:'a'},{text:'b',font:'YouandiNewKr Text'}]), '[28] pasted unknown CSS fonts are dropped; a registered alias maps back to its family: ' + pasted);
+  const readBack = await run(`JSON.stringify(window.readTextBlocks([{alignment:'LEFT',runs:[{text:'a',font:'Other Font'},{text:'b',font:'Arial, serif'},{text:'c',font:'GULIM'},{text:'d',font:5}]}])[0].runs)`);
+  check(readBack === JSON.stringify([{text:'a',font:'Other Font'},{text:'b'},{text:'c',font:'GULIM'},{text:'d'}]), '[28] readTextBlocks keeps valid names and ids, drops malformed fonts: ' + readBack);
+  await run(`window.registerPopupRichFonts([])`);
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});
   fs.writeFileSync(path.join(output,'preview-62.png'),Buffer.from(finalShot.data,'base64'));

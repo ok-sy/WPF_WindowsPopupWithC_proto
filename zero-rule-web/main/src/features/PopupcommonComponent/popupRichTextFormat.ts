@@ -2,7 +2,7 @@
  * 서식 패널(우클릭·'서식' 버튼)의 상태 읽기와 적용. React와 분리해 실제 편집기로 검증할 수 있게 둔다.
  * 선택 구간이 있으면 그 구간에만, 없으면(커서만 있으면) 이후 입력할 글자에 적용한다(CKEditor 선택 속성).
  */
-import { RICH_FONTS, RICH_INDENT_STEP, isIndentLevel, type RichFontId } from './popupRichText';
+import { RICH_INDENT_STEP, isIndentLevel, richFonts, type RichFontOption, type RichFontValue } from './popupRichText';
 
 type FormatKey = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'fontColor' | 'fontSize' | 'fontFamily';
 const FORMAT_KEYS: FormatKey[] = ['bold', 'italic', 'underline', 'strikethrough', 'fontColor', 'fontSize', 'fontFamily'];
@@ -26,7 +26,7 @@ export type FormatAction =
   | { type: 'toggle'; key: 'bold' | 'italic' | 'underline' | 'strikethrough' }
   | { type: 'color'; value: string }
   | { type: 'size'; value: number | null }
-  | { type: 'font'; value: RichFontId | null }
+  | { type: 'font'; value: RichFontValue | null }
   | { type: 'alignment'; value: 'left' | 'center' | 'right' }
   | { type: 'indent'; direction: 'in' | 'out' };
 
@@ -82,11 +82,12 @@ export const sizeFromModel = (value: unknown) => (typeof value === 'string' && v
  * POL-03-03 : 편집 UI
  * ■ 모델 글꼴 값 → 글꼴 ID
  * - in : value(unknown) 편집기 모델의 fontFamily 값(CSS 글꼴 목록)
- * - out: RichFontId | null 허용 글꼴 ID(목록에 없으면 null)
- * - CSS 글꼴 목록을 받아 따옴표·공백을 무시하고 비교해 허용 글꼴 ID로 바꾼다.
+ *        fonts?(RichFontOption[]) 글꼴 선택지(기본: 현재 등록 목록)
+ * - out: RichFontValue | null 글꼴 저장값(목록에 없으면 null)
+ * - CSS 글꼴 목록을 받아 따옴표·공백을 무시하고 비교해 글꼴 저장값(기존 ID 또는 글꼴 이름)으로 바꾼다.
  */
-export const fontIdFromModel = (value: unknown) =>
-  typeof value === 'string' ? RICH_FONTS.find((font) => normalizeFontCss(font.css) === normalizeFontCss(value))?.id ?? null : null;
+export const fontIdFromModel = (value: unknown, fonts: RichFontOption[] = richFonts()): RichFontValue | null =>
+  typeof value === 'string' ? fonts.find((font) => normalizeFontCss(font.css) === normalizeFontCss(value))?.id ?? null : null;
 
 /**
  * POL-03-03 : 편집 UI
@@ -96,7 +97,7 @@ export const fontIdFromModel = (value: unknown) =>
  * - 서식 동작을 받아 편집기 명령으로 선택 범위(커서만 있으면 이후 입력)에 적용한다.
  *   편집기로 포커스를 옮기지 않는다(열린 서식 패널에서 키보드로 연속 적용할 수 있게).
  */
-export function applyFormat(editor: any, action: FormatAction): void {
+export function applyFormat(editor: any, action: FormatAction, fonts: RichFontOption[] = richFonts()): void {
   switch (action.type) {
     case 'toggle': {
       // 섞여 있거나 꺼져 있으면 모두 켜고, 모두 켜져 있을 때만 끈다.
@@ -111,7 +112,7 @@ export function applyFormat(editor: any, action: FormatAction): void {
       editor.execute('fontSize', action.value ? { value: `${action.value}px` } : {});
       break;
     case 'font': {
-      const font = RICH_FONTS.find((item) => item.id === action.value);
+      const font = fonts.find((item) => item.id === action.value);
       editor.execute('fontFamily', font ? { value: font.css } : {});
       break;
     }

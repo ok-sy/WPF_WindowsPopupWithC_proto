@@ -453,7 +453,7 @@ namespace Popup
             {
                 Text = "문단: { alignment: LEFT|CENTER|RIGHT, indent: 0 이상 정수(1단계 40, 단계 수 제한 없음), runs: [...] }, 구간: { text, bold, italic, underline, strikethrough, color, size, font }. "
                     + "색 #RRGGBB(대문자) · 크기 "
-                    + string.Join(" ", ServerRichSizes) + " · 글꼴 " + string.Join(" ", ServerRichFonts),
+                    + string.Join(" ", ServerRichSizes) + " · 글꼴 " + string.Join(" ", ServerRichFonts) + " 또는 Windows 글꼴 이름(1~64자, , ; : 등 제외)",
                 TextWrapping = TextWrapping.Wrap, Foreground = HintBrush, Margin = new Thickness(0, 0, 0, 6),
             });
             var pretty = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -530,7 +530,7 @@ namespace Popup
                         throw new ArgumentException("서식 본문: 글자 색은 #RRGGBB(대문자) 형식이어야 합니다.");
                     if (run["size"] is JsonNode size && !(size.GetValueKind() == JsonValueKind.Number && ServerRichSizes.Contains(size.GetValue<double>())))
                         throw new ArgumentException("서식 본문: 허용되지 않은 글자 크기입니다.");
-                    if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && ServerRichFonts.Contains(font.GetValue<string>())))
+                    if (run["font"] is JsonNode font && !(font.GetValueKind() == JsonValueKind.String && (ServerRichFonts.Contains(font.GetValue<string>()) || Popup.Views.Contents.PopupRichText.IsFontName(font.GetValue<string>()))))
                         throw new ArgumentException("서식 본문: 허용되지 않은 글꼴입니다.");
                     plain.Append(text);
                 }

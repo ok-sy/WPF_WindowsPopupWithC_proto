@@ -1,5 +1,20 @@
 # 변경 이력
 
+## 2026-11-19-06 — dev: TODO28 폐쇄망 사용자 지정 폰트 이름 직접 전달
+
+- 이유 · 폐쇄망 회사 글꼴(Text·Title)을 서식 본문에 쓰기 위해 기존 4개 글꼴 ID 외에 Windows 글꼴 패밀리 이름을 그대로 저장·전달할 필요가 있음(TODO28 후속).
+- 변경 ·
+  - 이름 규칙(웹·서버·WPF 공통): 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI 문자(`, ; : ' " \ / < > { } ( ) # & = ? * |`) 제외. 기존 4 ID는 그대로 호환.
+  - 관리자 웹: `registerPopupRichFonts`(family = 저장할 Windows 패밀리 이름, css = 전역 `@font-face` 별칭)·`richFonts`·`isRichFontName` 추가. 편집기·서식 패널·미리보기가 등록 글꼴을 쓰고, 저장 데이터의 미등록 이름은 '(미등록)' 선택지로 재편집 시 보존. 붙여넣은 미등록 CSS 글꼴은 기존처럼 제외.
+  - 서버: `PopupRichText.FONT_NAME`/`isFont`로 형식만 검증(허용 목록·설치 여부 미확인, 값 변경 없음).
+  - WPF: 이름을 `이름, 기본 글꼴(SystemFonts.MessageFontFamily)`로 적용해 미설치 시 기본 글꼴과 같은 모양으로 표시(WPF 기본 대체만 쓰면 폭이 141.37 대 146.84로 달랐음). 형식이 틀린 값은 그 구간만 기본 글꼴. Demo 저장 검증도 같은 규칙.
+  - 반영 순서: 서버 → WPF → 관리자 웹(글꼴 등록). 구버전 관리자 웹은 새 이름을 재편집 때 지우고, 구버전 서버는 거부, 구버전 WPF는 기본 글꼴로 표시.
+  - 기존 테스트 정합성 보완: `RichTextTests`의 `CollapseHeaderShownAbove` 호출(2026-11-18 d4cd3ef로 설명 인자 삭제)과 선택지 글자 크기 기대값(2026-11-17 8a96d3b, 본문-2)이 현재 코드와 달라 실패하던 2건을 현재 동작 기준으로 갱신. 로컬 전용 `Popup.BehaviorTests`(Git 제외)의 글꼴 검사도 새 규칙으로 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts`·`popupRichTextFormat.ts`·`PopupRichTextEditor.tsx`·`PopupRichTextMenu.tsx`, `zero-rule-server/.../popup/PopupRichText.java`·`PopupRichTextTest.java`, `popup-frameWork/Popup/Views/Contents/PopupRichText.cs`·`DemoOptionsWindow.cs`, `scripts/RichTextTests/Program.cs`, `scripts/verify-rich-text-49.cjs`·`-entry.tsx`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`(§8.1)·`WPF_AGENT_SPEC.md`·`WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md`·`POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/policies/POL-03.md`·`ACTIVE_TASKS.md`.
+- 검증 · 웹 `tsc` 통과, 변경 파일 eslint 오류 0(기존 경고 1건 유지). 하네스 rich-text-49 94건(신규 [28] 10건), survey-rich-text-55 74, preview-61 234, guide-registry 311, guide-render 31, common-sample-69 63, transform-64 78, quiz-option-byte-73 44건 통과. 서버 `PopupRichTextTest` 11건 포함 popup 테스트 실패 0. WPF 빌드 경고·오류 0, RichTextTests 116(신규 이름 적용·형식 오류·미설치 시 기본 글꼴 폭 일치), BehaviorTests 1,740, PopupWindowTests 651, RecoveryTests 255, ApiDemoTests 150건 통과.
+- 미실행 · 로컬 서버 HTTP 저장·재조회 왕복, 관리자 웹 실화면, 인터페이스 계약 Word·PDF·Excel 재생성, 폐쇄망 실제 글꼴 Text·Title 패밀리 이름·400/700 표시.
+- 상태 · 로컬 커밋, 미푸시.
+
 ## 2026-11-19-05 — dev: TODO61-19 미리보기 헤더 글자 크기 수정
 
 - 이유 · 폐쇄망 theme의 `MuiTypography` root `&.MuiTypography-body1`(12px) 규칙이 미리보기 헤더 제목의 `sx.fontSize`보다 선택자 우선순위가 높아 기본 17px 헤더가 12px로 표시됨.

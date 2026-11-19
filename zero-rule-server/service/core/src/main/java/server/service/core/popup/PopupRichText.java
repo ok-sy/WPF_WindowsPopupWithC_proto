@@ -28,7 +28,14 @@ final class PopupRichText {
     static final Set<String> ALIGNMENTS = Set.of("LEFT", "CENTER", "RIGHT");
     private static final java.util.regex.Pattern HEX_COLOR = java.util.regex.Pattern.compile("^#[0-9A-F]{6}$");
     static final Set<Integer> SIZES = Set.of(12, 14, 16, 18, 20, 24, 28, 32);
+    /** 기존 글꼴 ID. 저장·조회 호환을 위해 그대로 받는다. */
     static final Set<String> FONTS = Set.of("MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG");
+    /**
+     * Windows 글꼴 패밀리 이름 한 개(TODO28 후속). 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI에 쓰이는 문자
+     * (, ; : ' " \ / &lt; &gt; { } ( ) # &amp; = ? * |)는 받지 않는다. 글꼴별 허용 목록·설치 여부는 확인하지 않는다.
+     * 관리자 웹 popupRichText.isRichFontName, WPF PopupRichText.IsFontName과 같은 규칙이다.
+     */
+    static final java.util.regex.Pattern FONT_NAME = java.util.regex.Pattern.compile("^[^\\x00-\\x1F\\x7F,;:'\"\\\\/<>{}()#&=?*|]{1,64}$");
     static final int MAX_BLOCKS = 500;
     static final int MAX_RUNS = 2000;
     static final int MAX_TEXT_LENGTH = 20000;
@@ -112,7 +119,7 @@ final class PopupRichText {
                     throw invalid("허용되지 않은 글자 크기입니다.");
                 }
                 Object font = run.get("font");
-                if (font != null && !(font instanceof String f && FONTS.contains(f))) {
+                if (font != null && !(font instanceof String f && isFont(f))) {
                     throw invalid("허용되지 않은 글꼴입니다.");
                 }
                 plain.append(text);
@@ -122,6 +129,11 @@ final class PopupRichText {
             throw invalid("본문은 " + MAX_TEXT_LENGTH + "자 이하여야 합니다.");
         }
         return plain.toString();
+    }
+
+    /** 기존 글꼴 ID이거나 형식에 맞는 글꼴 이름이면 true. 이름은 앞뒤 공백을 허용하지 않는다(자르지 않고 거부). */
+    static boolean isFont(String value) {
+        return FONTS.contains(value) || (value.equals(value.strip()) && FONT_NAME.matcher(value).matches());
     }
 
     /**

@@ -80,6 +80,16 @@ class PopupRichTextTest {
         assertEquals("기존 본문", PopupService.bodyText(new HashMap<>(Map.of("plainText", "기존 본문"))));
     }
 
+    /** 기존 글꼴 ID와 Windows 글꼴 패밀리 이름(TODO28 후속)을 받고, 저장값을 바꾸지 않는다. */
+    @Test void acceptsLegacyFontIdsAndFamilyNames() {
+        for (String font : List.of("MALGUN_GOTHIC", "BATANG", "Comic Sans MS", "YouandiNewKr Text", "유앤아이 새 Title", "Noto Sans KR-Bold", "a".repeat(64))) {
+            Map<String, Object> run = run("가", "font", font, "bold", true);
+            assertEquals("가", PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run))), font);
+            assertEquals(font, run.get("font"));
+            assertEquals(true, run.get("bold"));
+        }
+    }
+
     /** 허용 목록 밖의 키·정렬·크기·글꼴·색 값을 거부한다. */
     @Test void rejectsValuesOutsideAllowList() {
         List<Object> bad = List.of(
@@ -88,7 +98,17 @@ class PopupRichTextTest {
                 List.of(block("LEFT", run("a", "color", "#dc2626"))),
                 List.of(block("LEFT", run("a", "size", 18.5))),
                 List.of(block("LEFT", run("a", "size", 13))),
-                List.of(block("LEFT", run("a", "font", "Comic Sans MS"))),
+                // 글꼴 이름 형식 오류(TODO28 후속): CSS 목록·경로·URI·앞뒤 공백·빈 값·65자·제어 문자·문자열 아님
+                List.of(block("LEFT", run("a", "font", "Arial, sans-serif"))),
+                List.of(block("LEFT", run("a", "font", "C:\\Windows\\Fonts\\a.ttf"))),
+                List.of(block("LEFT", run("a", "font", "url(http://x/a.woff)"))),
+                List.of(block("LEFT", run("a", "font", "./#Family"))),
+                List.of(block("LEFT", run("a", "font", "'Malgun Gothic'"))),
+                List.of(block("LEFT", run("a", "font", " Gulim"))),
+                List.of(block("LEFT", run("a", "font", ""))),
+                List.of(block("LEFT", run("a", "font", "a".repeat(65)))),
+                List.of(block("LEFT", run("a", "font", "Font"))),
+                List.of(block("LEFT", run("a", "font", 1))),
                 List.of(block("LEFT", run("a", "bold", "true"))),
                 List.of(block("LEFT", run("a", "style", "color:red"))),
                 List.of(block("LEFT", run(""))),

@@ -21,7 +21,10 @@ namespace Popup.Views.Contents
      * 조용히 무시되는 것을 막기 위해서다(WPF 쪽 화이트리스트는 두지 않는다).
      *   크기: 유한값이고 WPF·레이아웃 안전 범위(MinFontSize~MaxFontSize) 안이면 적용, 밖이면 본문 기본 크기.
      *   색: #RRGGBB(대소문자 무관)를 예외 없이 변환, 실패하면 그 구간만 기본 색.
-     *   글꼴: ID → WPF 글꼴명 매핑(표현 의존성). 서버에 새 ID를 추가하면 매핑도 추가해야 하며, 없는 ID는 기본 글꼴.
+     *   글꼴: 기존 ID 4종은 WPF 글꼴명으로 매핑(호환). 그 밖의 값은 Windows 글꼴 패밀리 이름으로 보고 FontFamily에 그대로 적용한다
+     *         (TODO28 후속, 글꼴별 목록·설치 여부 사전 검사 없음). 이름 형식(IsFontName)이 틀리면 그 구간만 기본 글꼴,
+     *         이름 뒤에 팝업 기본 글꼴(SystemFonts.MessageFontFamily)을 대체 목록으로 붙여, PC에 없거나 글자가 없는 구간은
+     *         기본 글꼴로 표시하고 팝업은 계속 표시한다. 굵기는 기존 bold로만 정한다.
      *   정렬: LEFT·CENTER·RIGHT 변환, 그 밖의 값은 왼쪽.
      */
     internal static class PopupRichText
@@ -54,6 +57,28 @@ namespace Popup.Views.Contents
             ["DOTUM"] = "Dotum",
             ["BATANG"] = "Batang",
         };
+
+        /*
+         * POL-03-02 : 문단·글자 서식
+         * ■ 글꼴 이름 형식 확인(TODO28 후속)
+         * - in : value(string?) runs[].font 값 · out: bool Windows 글꼴 패밀리 이름 한 개로 받을 수 있으면 true
+         * - 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI 문자(, ; : ' " \ / < > { } ( ) # & = ? * |) 제외.
+         *   서버 PopupRichText.FONT_NAME, 관리자 웹 isRichFontName과 같은 규칙이다. ','는 WPF 대체 목록, '#'·'/'는 파일 글꼴 경로로
+         *   해석되므로 표시 방어로도 막는다.
+         */
+        internal static bool IsFontName(string? value) =>
+            value is { Length: > 0 and <= 64 } && value == value.Trim()
+            && value.All(c => !char.IsControl(c) && ",;:'\"\\/<>{}()#&=?*|".IndexOf(c) < 0);
+
+        /// <summary>글꼴 값 → WPF 글꼴. 기존 ID는 매핑, 형식에 맞는 이름은 "이름, 기본 글꼴" 대체 목록, 그 밖은 null(기본 글꼴).</summary>
+        internal static FontFamily? ResolveFont(string? value)
+        {
+            if (value == null) return null;
+            if (Fonts.TryGetValue(value, out string? mapped)) return new FontFamily(mapped);
+            if (!IsFontName(value)) return null;
+            try { return new FontFamily(value + ", " + SystemFonts.MessageFontFamily.Source); }
+            catch (ArgumentException) { return null; }
+        }
 
         /// <summary>#RRGGBB(대소문자 무관)를 색으로 바꾼다. 다른 형식이면 false(예외 없음).</summary>
         internal static bool TryParseColor(string? value, out Color color)
@@ -143,7 +168,7 @@ namespace Popup.Views.Contents
             else if (format.Strikethrough) run.TextDecorations = TextDecorations.Strikethrough;
             if (TryParseColor(format.Color, out Color color)) run.Foreground = new SolidColorBrush(color);
             if (SafeFontSize(format.Size) is double size) run.FontSize = size;
-            if (format.Font != null && Fonts.TryGetValue(format.Font, out string? family)) run.FontFamily = new FontFamily(family);
+            if (ResolveFont(format.Font) is FontFamily family) run.FontFamily = family;
             return run;
         }
     }

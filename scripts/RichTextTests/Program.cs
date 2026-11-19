@@ -166,11 +166,11 @@ internal static class Program
         var blocksOnly = new List<PopupTextBlockDto> { new() { Runs = new() { new() { Text = "영상 퀴즈", Bold = true } } } };
         var collapse = typeof(SurveyPopupView).GetMethod("CollapseHeaderShownAbove", flags)!;
         var withRich = new SurveyPopupView("영상 퀴즈", "설명", new(), titleBlocks: blocksOnly);
-        collapse.Invoke(withRich, new object[] { "영상 퀴즈", "설명" });
+        collapse.Invoke(withRich, new object?[] { "영상 퀴즈" });
         var plainOnly = new SurveyPopupView("영상 퀴즈", "설명", new());
-        collapse.Invoke(plainOnly, new object[] { "영상 퀴즈", "설명" });
+        collapse.Invoke(plainOnly, new object?[] { "영상 퀴즈" });
+        // 2026-11-18(d4cd3ef): 설명은 퀴즈 머리말에 한 번만 그리므로 이 메서드는 제목만 비교한다(설명 인자 삭제).
         Check(((StackPanel)withRich.FindName("SurveyTitleRich")).Visibility == Visibility.Visible
-              && ((TextBlock)withRich.FindName("SurveyDescriptionText")).Visibility == Visibility.Collapsed
               && ((TextBlock)plainOnly.FindName("SurveyTitleText")).Visibility == Visibility.Collapsed,
             "[55-8] a formatted quiz header stays visible while plain duplicates are still collapsed");
 
@@ -185,9 +185,10 @@ internal static class Program
         RadioButton plainOption = ((Panel)sizedControls[1001L]!).Children.OfType<RadioButton>().Single(r => ((Popup.Models.SurveyOption)r.Tag).OptionId == 1012);
         TextBlock coloredParagraph = (TextBlock)((StackPanel)colored.Content).Children[0];
         List<Run> coloredRuns = coloredParagraph.Inlines.OfType<Run>().ToList();
-        Check(coloredRuns.All(r => r.FontSize == 40) && ((TextBlock)plainOption.Content).FontSize == 40,
-            "[55-6] formatted option without size follows bodyFontSize like a plain option");
-        Check(coloredParagraph.Padding.Right == Math.Ceiling(40 * 0.35),
+        // 2026-11-17(8a96d3b): 선택지 글자 = bodyFontSize - 2(일반·서식 선택지 공통).
+        Check(coloredRuns.All(r => r.FontSize == 38) && ((TextBlock)plainOption.Content).FontSize == 38,
+            "[55-6] formatted option without size follows bodyFontSize - 2 like a plain option");
+        Check(coloredParagraph.Padding.Right == Math.Ceiling(38 * 0.35),
             "[55-6] italic overhang is recalculated for the inherited body font size");
         colored.ApplyTemplate();
         colored.IsChecked = true;
@@ -333,7 +334,7 @@ internal static class Program
         Check(tallBlock.Inlines.OfType<System.Windows.Documents.LineBreak>().Count() == 1, "Run newline becomes LineBreak");
 
         var filtered = Create(WithContent(c => c["textBlocks"] = System.Text.Json.Nodes.JsonNode.Parse(
-            "[{\"alignment\":\"JUSTIFY\",\"runs\":[{\"text\":\"<b>x</b>\",\"color\":\"red\",\"size\":0,\"font\":\"Comic Sans MS\"}]}]")));
+            "[{\"alignment\":\"JUSTIFY\",\"runs\":[{\"text\":\"<b>x</b>\",\"color\":\"red\",\"size\":0,\"font\":\"Comic Sans MS, serif\"}]}]")));
         var filteredBlock = ((StackPanel)filtered.FindName("RichTextPanel")).Children.OfType<TextBlock>().Single();
         var filteredRun = filteredBlock.Inlines.OfType<System.Windows.Documents.Run>().Single();
         Check(filteredRun.Text == "<b>x</b>" && filteredBlock.TextAlignment == TextAlignment.Left
@@ -442,10 +443,24 @@ internal static class Program
         Check(colors.Skip(2).Take(5).All(r => Unset(r, TextElement.ForegroundProperty))
             && ((SolidColorBrush)colors[7].Foreground).Color == Color.FromRgb(0xDC, 0x26, 0x26), "Unconvertible color falls back for that run only");
 
-        // 글꼴·정렬: 매핑 유지, 미지원 값은 기본값.
-        var fonts = Runs("[{\"text\":\"a\",\"font\":\"GULIM\"},{\"text\":\"b\",\"font\":\"COMIC\"},{\"text\":\"c\",\"font\":\"gulim\"}]");
-        Check(fonts[0].FontFamily.Source == "Gulim" && Unset(fonts[1], TextElement.FontFamilyProperty) && Unset(fonts[2], TextElement.FontFamilyProperty),
-            "Font id maps; unknown id uses default font");
+        // 글꼴·정렬: 기존 ID는 매핑, Windows 글꼴 이름은 그대로 적용(TODO28 후속), 형식이 틀린 값은 기본 글꼴.
+        var fonts = Runs("[{\"text\":\"a\",\"font\":\"GULIM\"},{\"text\":\"b\",\"font\":\"Comic Sans MS\"},{\"text\":\"c\",\"font\":\"gulim\"},"
+            + "{\"text\":\"d\",\"font\":\"Arial, sans-serif\"},{\"text\":\"e\",\"font\":\"./#Family\"},{\"text\":\"f\",\"font\":\" Gulim\"},"
+            + "{\"text\":\"g\",\"font\":\"\"},{\"text\":\"h\",\"font\":\"C:\\\\Fonts\\\\a.ttf\"},{\"text\":\"i\",\"font\":\"" + new string('a', 65) + "\"},"
+            + "{\"text\":\"j\",\"font\":\"없는글꼴TODO28\",\"bold\":true}]");
+        string fallback = ", " + SystemFonts.MessageFontFamily.Source;
+        Check(fonts[0].FontFamily.Source == "Gulim" && fonts[1].FontFamily.Source == "Comic Sans MS" + fallback && fonts[2].FontFamily.Source == "gulim" + fallback,
+            "[28] Legacy font id maps; a Windows family name is applied first with the popup default font as fallback");
+        Check(fonts.Skip(3).Take(6).All(r => Unset(r, TextElement.FontFamilyProperty)),
+            "[28] CSS list, file path/URI form, leading space, empty and 65-char names use the default font");
+        Check(fonts[9].FontFamily.Source == "없는글꼴TODO28" + fallback && fonts[9].FontWeight == FontWeights.Bold,
+            "[28] Uninstalled family name is still applied with the default fallback and bold stays");
+        // 미설치 이름은 기본 글꼴로 그려진다: 기본 글꼴 구간과 같은 폭(한글·영문)이어야 한다. 설치된 글꼴은 다르게 그려진다.
+        double Width(FontFamily family, string text = "가나다 ABC abc 123") => new FormattedText(text, System.Globalization.CultureInfo.GetCultureInfo("ko-KR"), FlowDirection.LeftToRight,
+            new Typeface(family, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 16, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace;
+        double missingWidth = Width(fonts[9].FontFamily), defaultWidth = Width(SystemFonts.MessageFontFamily), installedWidth = Width(fonts[1].FontFamily, "ABC abc 123 WWW"), latinDefault = Width(SystemFonts.MessageFontFamily, "ABC abc 123 WWW");
+        Check(Math.Abs(missingWidth - defaultWidth) < 0.01 && Math.Abs(installedWidth - latinDefault) > 0.5,
+            $"[28] Uninstalled name renders with the popup default font ({missingWidth:F2} = {defaultWidth:F2}) while an installed name differs (Latin {installedWidth:F2} vs {latinDefault:F2})");
         var aligned = Paragraphs(Create("[{\"alignment\":\"CENTER\",\"runs\":[{\"text\":\"a\"}]},{\"alignment\":\"JUSTIFY\",\"runs\":[{\"text\":\"b\"}]},{\"runs\":[{\"text\":\"c\"}]}]"));
         Check(aligned[0].TextAlignment == TextAlignment.Center && aligned[1].TextAlignment == TextAlignment.Left && aligned[2].TextAlignment == TextAlignment.Left,
             "Unknown or missing alignment uses left");

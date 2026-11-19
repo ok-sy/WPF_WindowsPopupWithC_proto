@@ -2,13 +2,18 @@
  * TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
  * 저장·전달 기준은 문단·Run JSON이며 HTML은 CKEditor 입출력에서만 다룬다.
  * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java와 같아야 한다. WPF PopupRichText.cs는 목록을 복제하지 않고
- * 표시 방어만 한다. 글꼴 ID를 추가하면 WPF 글꼴 매핑도 추가한다.
+ * 표시 방어만 한다. 기존 글꼴 ID 4종을 추가·변경하면 WPF 글꼴 매핑도 바꾼다. 그 밖의 글꼴은 Windows 글꼴 패밀리 이름을
+ * runs[].font에 그대로 저장한다(TODO28 후속, isRichFontName 규칙은 서버·WPF와 같다).
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
 /** 문단 정렬 값 */
 export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
-/** 허용 글꼴 ID(서버·WPF 글꼴 매핑과 같은 목록) */
+/** 기존 글꼴 ID(서버·WPF 글꼴 매핑과 같은 목록). 저장 호환을 위해 유지한다. */
 export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
+/** runs[].font 저장값: 기존 글꼴 ID 또는 Windows 글꼴 패밀리 이름(TODO28 후속) */
+export type RichFontValue = RichFontId | (string & {});
+/** 편집기 글꼴 선택지. id = runs[].font 저장값, css = 웹 표시·CKEditor용 CSS 글꼴 목록, label = 화면 이름 */
+export interface RichFontOption { id: RichFontValue; css: string; label: string }
 /** 같은 서식이 이어지는 글자 구간. 지정하지 않은 서식 키는 생략한다. */
 export interface RichRun {
   text: string;
@@ -18,7 +23,7 @@ export interface RichRun {
   strikethrough?: boolean;
   color?: string;
   size?: number;
-  font?: RichFontId;
+  font?: RichFontValue;
 }
 /** 서식 문단 한 개(content.textBlocks의 원소) */
 export interface RichBlock {
@@ -96,12 +101,70 @@ export const RICH_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
  *   css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
  *   정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다.
  */
-export const RICH_FONTS: { id: RichFontId; css: string; label: string }[] = [
+export const RICH_FONTS: RichFontOption[] = [
   { id: 'MALGUN_GOTHIC', css: "'맑은 고딕', 'Malgun Gothic', sans-serif", label: '맑은 고딕' },
   { id: 'GULIM', css: '굴림, Gulim, sans-serif', label: '굴림' },
   { id: 'DOTUM', css: '돋움, Dotum, sans-serif', label: '돋움' },
   { id: 'BATANG', css: '바탕, Batang, serif', label: '바탕' },
 ];
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 글꼴 이름 형식 확인(TODO28 후속)
+ * - in : value(unknown) runs[].font 값
+ * - out: boolean 기존 ID가 아닌 Windows 글꼴 패밀리 이름으로 받을 수 있으면 true
+ * - 이름 한 개만 받는다. 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI에 쓰이는 문자(, ; : ' " \ / < > { } ( ) # & = ? * |)는 받지 않는다.
+ *   서버 PopupRichText.java FONT_NAME, WPF PopupRichText.IsFontName과 같은 규칙이다. 설치 여부·허용 목록은 확인하지 않는다.
+ */
+export const isRichFontName = (value: unknown): value is string =>
+  // eslint-disable-next-line no-control-regex -- 제어 문자를 거부하려고 범위를 명시한다.
+  typeof value === 'string' && value.length <= 64 && value === value.trim() && /^[^\u0000-\u001F\u007F,;:'"\\/<>{}()#&=?*|]+$/.test(value);
+/** 저장 가능한 글꼴 값: 기존 ID 또는 형식에 맞는 이름 */
+export const isRichFontValue = (value: unknown): value is RichFontValue =>
+  RICH_FONTS.some((font) => font.id === value) || isRichFontName(value);
+
+/* CKEditor 정규형: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싸고 ', '로 잇는다. */
+const canonicalFontCss = (css: string) => css.split(',').map((part) => part.replace(/["']/g, '').trim()).filter(Boolean)
+  .map((part) => (/\s/.test(part) ? `'${part}'` : part)).join(', ');
+let registeredFonts: RichFontOption[] = [];
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 사용자 지정 글꼴 등록(TODO28 후속)
+ * - in : fonts({ family: string; css: string; label?: string }[]) family = WPF가 인식하는 Windows 글꼴 패밀리 이름(저장값),
+ *        css = 웹 전역 @font-face 별칭 등 CSS 글꼴 목록(편집기·미리보기 표시), label = 선택지 이름(없으면 family)
+ * - out: RichFontOption[] 실제로 등록된 글꼴(형식이 틀리거나 기존 ID·중복 family·빈 css는 제외)
+ * - 앱 시작 시 한 번 호출한다(호출할 때마다 등록 목록을 바꾼다). 이후 열리는 편집기·서식 패널·미리보기에 적용된다.
+ *   400/700 굵기와 실제 웹 서체의 연결은 전역 CSS(@font-face의 font-weight)가 담당하고, 굵게는 기존 bold로 저장한다.
+ *   서버·WPF에는 family 이름 문자열만 전달된다(CSS·폰트 파일은 전달하지 않음).
+ */
+export function registerPopupRichFonts(fonts: { family: string; css: string; label?: string }[]): RichFontOption[] {
+  const next: RichFontOption[] = [];
+  for (const font of fonts) {
+    const css = canonicalFontCss(font?.css ?? '');
+    if (!isRichFontName(font?.family) || !css || RICH_FONTS.some((item) => item.id === font.family) || next.some((item) => item.id === font.family)) continue;
+    next.push({ id: font.family, css, label: font.label?.trim() || font.family });
+  }
+  registeredFonts = next;
+  return [...next];
+}
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 현재 글꼴 선택지
+ * - in : extra?(RichFontValue[]) 기존 데이터에 있는 미등록 글꼴 이름(재편집 보존용)
+ * - out: RichFontOption[] 기존 4종 + 등록 글꼴 + 미등록 이름(표시 이름 뒤 '(미등록)')
+ * - 미등록 이름은 편집기에서 지우지 않고 그대로 저장되도록 선택지에 넣는다. CSS는 이름 그대로라 PC에 없으면 기본 글꼴로 보인다.
+ */
+export function richFonts(extra: readonly unknown[] = []): RichFontOption[] {
+  const list = [...RICH_FONTS, ...registeredFonts];
+  for (const name of extra) {
+    if (isRichFontName(name) && !list.some((item) => item.id === name)) list.push({ id: name, css: canonicalFontCss(name), label: `${name} (미등록)` });
+  }
+  return list;
+}
+/** 서식 본문에 쓰인 글꼴 값 목록(중복 제거) */
+export const fontsInBlocks = (blocks: RichBlock[]) => [...new Set(blocks.flatMap((block) => block.runs.map((run) => run.font).filter((font): font is RichFontValue => font != null)))];
 /** 서버와 같은 색 규칙: 대문자 #RRGGBB. */
 const isAllowedColor = (value: unknown): value is string =>
   typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value);
@@ -126,7 +189,8 @@ export const richEditorConfig = {
   indentBlock: { offset: RICH_INDENT_STEP, unit: 'px' },
   /* 'default'는 크기 서식 없음 = 본문 기본 크기(bodyFontSize). */
   fontSize: { options: ['default', ...RICH_SIZES], supportAllValues: false },
-  fontFamily: { options: ['default', ...RICH_FONTS.map((font) => font.css)], supportAllValues: false },
+  /* 등록 글꼴(registerPopupRichFonts)을 반영하도록 읽을 때 만든다. 편집기는 기존 데이터의 미등록 이름을 추가해 덮어쓴다. */
+  get fontFamily() { return { options: ['default', ...richFonts().map((font) => font.css)], supportAllValues: false }; },
   alignment: { options: ['left', 'center', 'right'] as ('left' | 'center' | 'right')[] },
 };
 
@@ -168,7 +232,7 @@ export function indentFromCss(marginLeft: string | undefined | null): number {
  * - 편집기 HTML을 받아 허용 서식만 남긴 문단·Run JSON으로 바꾼다. 허용 밖 서식은 버리고 글자는 보존한다.
  *   표·목록 등 블록은 글자만 일반 문단으로 남기고, 스크립트·이미지 등은 지운다.
  */
-export function htmlToBlocks(html: string): RichBlock[] {
+export function htmlToBlocks(html: string, fonts: RichFontOption[] = richFonts()): RichBlock[] {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const blocks: RichBlock[] = [];
   const addBlock = (element: Element) => {
@@ -203,7 +267,7 @@ export function htmlToBlocks(html: string): RichBlock[] {
         if (isAllowedColor(color)) next.color = color;
         const size = element.style.fontSize;
         if (size.endsWith('px') && RICH_SIZES.includes(Number.parseFloat(size))) next.size = Number.parseFloat(size);
-        const font = element.style.fontFamily ? RICH_FONTS.find((item) => normalizeFontCss(item.css) === normalizeFontCss(element.style.fontFamily)) : undefined;
+        const font = element.style.fontFamily ? fonts.find((item) => normalizeFontCss(item.css) === normalizeFontCss(element.style.fontFamily)) : undefined;
         if (font) next.font = font.id;
       }
       element.childNodes.forEach((child) => walk(child, next));
@@ -243,7 +307,7 @@ function keepSpaces(value: string, atStart: boolean, atEnd: boolean): string {
  * - out: string CKEditor에 넣을 HTML
  * - 서식 본문을 받아 재편집용 HTML을 만든다. text는 항상 이스케이프하고, 빈 문단은 &nbsp; 한 칸으로 유지한다.
  */
-export function blocksToHtml(blocks: RichBlock[]): string {
+export function blocksToHtml(blocks: RichBlock[], fonts: RichFontOption[] = richFonts(fontsInBlocks(blocks))): string {
   return blocks.map((block) => {
     const css = [block.alignment !== 'LEFT' && `text-align:${block.alignment.toLowerCase()};`,
       isIndentLevel(block.indent) && block.indent > 0 && `margin-left:${block.indent * RICH_INDENT_STEP}px;`].filter(Boolean).join('');
@@ -251,7 +315,7 @@ export function blocksToHtml(blocks: RichBlock[]): string {
     const inner = block.runs.map((run, index) => {
       let html = run.text.split('\n').map((line, lineIndex, lines) => keepSpaces(escapeHtml(line),
         index === 0 && lineIndex === 0, index === block.runs.length - 1 && lineIndex === lines.length - 1)).join('<br>');
-      const font = RICH_FONTS.find((item) => item.id === run.font);
+      const font = fonts.find((item) => item.id === run.font);
       const css = [run.color && `color:${run.color};`, run.size && `font-size:${run.size}px;`, font && `font-family:${font.css};`].filter(Boolean).join('');
       if (css) html = `<span style="${escapeHtml(css)}">${html}</span>`;
       if (run.underline) html = `<u>${html}</u>`;
@@ -303,7 +367,7 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
       if (run.strikethrough === true) clean.strikethrough = true;
       if (isAllowedColor(run.color)) clean.color = run.color;
       if (typeof run.size === 'number' && RICH_SIZES.includes(run.size)) clean.size = run.size;
-      if (RICH_FONTS.some((item) => item.id === run.font)) clean.font = run.font;
+      if (isRichFontValue(run.font)) clean.font = run.font;
       return clean;
     }),
   }));
@@ -311,9 +375,9 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
 
 /**
  * POL-03-02 : 문단·글자 서식
- * ■ 글꼴 ID → CSS 글꼴 목록
- * - in : id?(RichFontId) 글꼴 ID
- * - out: string | undefined CSS font-family 값(없거나 모르는 ID면 undefined)
- * - 글꼴 ID를 받아 화면 표시에 쓸 CSS 글꼴 목록을 돌려준다.
+ * ■ 글꼴 값 → CSS 글꼴 목록
+ * - in : id?(RichFontValue) 기존 글꼴 ID 또는 글꼴 이름
+ * - out: string | undefined CSS font-family 값(없거나 형식이 틀리면 undefined = 기본 글꼴)
+ * - 기존 ID·등록 글꼴은 등록된 CSS(웹 별칭)를, 미등록 이름은 이름 그대로를 CSS로 쓴다(PC에 없으면 브라우저 기본 글꼴).
  */
-export const richFontCss = (id?: RichFontId) => RICH_FONTS.find((font) => font.id === id)?.css;
+export const richFontCss = (id?: RichFontValue) => (id == null ? undefined : richFonts([id]).find((font) => font.id === id)?.css);

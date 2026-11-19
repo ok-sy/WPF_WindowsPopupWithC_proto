@@ -420,7 +420,7 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 | 글자 스타일 | `bold`, `italic`, `underline`, `strikethrough` boolean, 생략 시 false |
 | 색 `color` | 대문자 `#RRGGBB` |
 | 크기 `size` | 12·14·16·18·20·24·28·32 |
-| 글꼴 `font` | `MALGUN_GOTHIC`, `GULIM`, `DOTUM`, `BATANG` |
+| 글꼴 `font` | 기존 ID `MALGUN_GOTHIC`, `GULIM`, `DOTUM`, `BATANG` 또는 Windows 글꼴 패밀리 이름(1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * \|` 제외). 이름은 `이름, 기본 글꼴`로 적용해 미설치 시 기본 글꼴로 표시(TODO28 후속) |
 | 구조·분량 | 최대 500문단, 전체 2,000 Run, 파생 본문 20,000자 |
 
 서버가 저장 허용값을 검증합니다. WPF는 받은 값이 화면을 망가뜨리지 않게 보정하고, 서식 구조를 읽지 못하면 평문으로 표시합니다. WPF의 표시 보정 범위를 서버의 저장 허용 범위로 해석하지 않습니다.

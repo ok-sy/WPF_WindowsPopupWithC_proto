@@ -11,7 +11,7 @@ import {
   Box, ClickAwayListener, Divider, IconButton, NativeSelect, Paper, Popper, Stack, Typography, type PopoverPosition,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_FONTS, RICH_SIZES, type RichFontId } from './popupRichText';
+import { RICH_COLOR_COLUMNS, RICH_COLORS, RICH_SIZES, richFonts, type RichFontOption, type RichFontValue } from './popupRichText';
 import { fontIdFromModel, sizeFromModel, type FormatAction, type FormatState } from './popupRichTextFormat';
 
 type Props = {
@@ -23,6 +23,8 @@ type Props = {
   onApply: (action: FormatAction) => void;
   /** Esc·바깥 클릭으로 닫을 때 */
   onClose: () => void;
+  /** 글꼴 선택지(기본: 기존 4종 + registerPopupRichFonts 등록 글꼴). 편집기는 기존 데이터의 미등록 이름을 더해 넘긴다. */
+  fonts?: RichFontOption[];
 };
 
 const ALIGNMENTS = [
@@ -43,13 +45,13 @@ const ALIGNMENTS = [
  *   키보드: 열리면 색 격자로 포커스, 격자 안은 방향키·Home/End로 이동, Tab으로 다음 묶음, Enter/Space로 적용.
  *   선택이 섞여 있으면 '혼합'으로 표시하고 어느 값도 선택 상태로 보이지 않는다.
  */
-export default function PopupRichTextMenu({ position, state, onApply, onClose }: Props) {
+export default function PopupRichTextMenu({ position, state, onApply, onClose, fonts = richFonts() }: Props) {
   const open = position != null;
   const paperRef = useRef<HTMLDivElement | null>(null);
   const mixed = (key: keyof Omit<FormatState, 'paragraph'>) => Boolean(state?.[key].mixed);
   const color = state && !state.fontColor.mixed ? ((state.fontColor.value as string | null) ?? null) : undefined;
   const size = state && !state.fontSize.mixed ? sizeFromModel(state.fontSize.value) : undefined;
-  const font = state && !state.fontFamily.mixed ? fontIdFromModel(state.fontFamily.value) : undefined;
+  const font = state && !state.fontFamily.mixed ? fontIdFromModel(state.fontFamily.value, fonts) : undefined;
   const colorIndex = RICH_COLORS.findIndex((item) => item.color === color?.toUpperCase());
   const colorLabel = color === undefined ? '혼합' : color === null ? '기본 색' : RICH_COLORS[colorIndex]?.label ?? color;
 
@@ -148,10 +150,10 @@ export default function PopupRichTextMenu({ position, state, onApply, onClose }:
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <NativeSelect fullWidth value={font === undefined ? 'mixed' : font ?? ''} sx={{ ...selectSx, flex: 3 }}
               inputProps={{ 'aria-label': `글꼴${mixed('fontFamily') ? ' (혼합)' : ''}` }}
-              onChange={(event) => onApply({ type: 'font', value: (event.target.value || null) as RichFontId | null })}>
+              onChange={(event) => onApply({ type: 'font', value: (event.target.value || null) as RichFontValue | null })}>
               {font === undefined && <option value="mixed" disabled>혼합</option>}
               <option value="">기본 글꼴</option>
-              {RICH_FONTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {fonts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </NativeSelect>
             <NativeSelect fullWidth value={size === undefined ? 'mixed' : size ?? ''} sx={{ ...selectSx, flex: 2 }}
               inputProps={{ 'aria-label': `크기${mixed('fontSize') ? ' (혼합)' : ''}` }}
