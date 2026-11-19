@@ -32,7 +32,7 @@
 | F200 | 퀴즈·설문 에디터·공통코드 | 진행 | 실화면, 원격 개발 DB 저장 왕복, 폐쇄망 코드 0089·0090 확인 | [TODO73](../design/73_관리자웹_퀴즈설문_에디터_공통코드매핑_TODO.md) |
 | F200 | 공통 컴포넌트·최소 크기·MUI slotProps 인계 | 진행 | 폐쇄망·실환경 빌드와 화면 확인 | [TODO67](../design/67_MUIdeprecated속성_미리보기호환검증_TODO.md)·[68](../design/68_팝업최소크기_300x300_공통화_TODO.md)·[69](../design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md) |
 | F300 | API Demo 실제 서버 확인 | 대기 | 개발계·검증계 endpoint·계정 입력 후 51-9 실행 | [TODO51](../design/51_DEMO_API_수동호출_팝업검증_TODO.md) |
-| P100 | WEB 표시 기본값·SERVER 정책 분리 잔여 | 진행 | 미체크 7건이 구현·인계·검증 중 무엇인지 확인 | [20261030](../design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md) |
+| P100 | WEB 표시 기본값·SERVER 정책 분리 잔여 | 대기 | 2026-11-19 대조: 원본 미체크는 3건(WEB 항목은 모두 체크). 1건은 proto 저장 경로 유지 상시 원칙(완료 대상 아님), 2건은 서버의 명시값 거절·누락 기본값·정규화 후 재조회(SERVER 구현 의존). 서버 대응 구현 후 재조회 검증 | [20261030](../design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md) |
 | P200 | PU001 P01~P06 요구사항 정합성 | 진행 | 실제 백엔드 조회·제출 왕복과 실화면 | [20261102](../design/20261102_PU001P01-P06_요구사항정의_정합성검토_TODO.md) |
 | P200 | 다중 PC·전달 건 만료/보존 | 대기 | 동시 표시 허용, 다른 PC 결과 수신, 시간 만료·보존 기간 결정 | [TODO47-5·7](../design/47_팝업유효성_게시중단_전달상태_정책검증_TODO.md)·[53-18](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
 | P200 | 영수증 스키마 D5 | 대기 | REJECTED·RESULT_CODE 스키마 변경 필요성 결정 | [TODO50-D5](../design/50_구조정합성_전수점검_정리_TODO.md) |
