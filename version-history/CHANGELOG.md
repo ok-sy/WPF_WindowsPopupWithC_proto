@@ -6,7 +6,7 @@
 - 변경 · 원본(20261030 WEB 표시 기본값·SERVER 정책 분리 TODO) 대조 결과 미체크는 3건: proto 저장 경로 유지 상시 원칙 1건(완료 대상 아님), 서버 명시값 거절·누락 기본값 적용과 정규화 후 재조회 2건(SERVER 구현 의존). P100 상태를 대기로 바꾸고 다음 할 일을 서버 대응 후 재조회 검증으로 정리.
 - 주요 파일 · `docs/policies/ACTIVE_TASKS.md`.
 - 검증 · 문서 대조만 수행(코드·테스트 변경 없음).
-- 상태 · 로컬 커밋, 미푸시.
+- 상태 · 원격 반영.
 
 ## 2026-11-19-07 — dev: TODO61-20 팝업 UI 기본값 웹·WPF 캡처·실측
 
@@ -19,7 +19,7 @@
 - 주요 파일 · `scripts/verify-popup-parity.cjs`, `scripts/PopupParityCapture/Program.cs`, `docs/reviews/TODO61-20_popup_ui_parity/`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
 - 검증 · `verify-popup-parity.cjs` 54건 통과(기존 22건 포함), 캡처 육안 확인(IMAGE·VIDEO+QUIZ). 한계: WPF 영상(WebView2)은 캡처에 그려지지 않고 영상 높이는 메타데이터 전 16:9.
 - 미실행 · 등록 편집기(PopupQuestionEditor·PopupRichTextEditor) 비교, 브라우저 확대·Windows 배율, 로그인 관리자 화면, 폐쇄망.
-- 상태 · 로컬 커밋, 미푸시.
+- 상태 · 커밋 5fd206a, 원격 반영. 차이 2건 반영 여부·편집기 비교·폐쇄망 대기.
 
 ## 2026-11-19-06 — dev: TODO28 폐쇄망 사용자 지정 폰트 이름 직접 전달
 
@@ -34,7 +34,7 @@
 - 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts`·`popupRichTextFormat.ts`·`PopupRichTextEditor.tsx`·`PopupRichTextMenu.tsx`, `zero-rule-server/.../popup/PopupRichText.java`·`PopupRichTextTest.java`, `popup-frameWork/Popup/Views/Contents/PopupRichText.cs`·`DemoOptionsWindow.cs`, `scripts/RichTextTests/Program.cs`, `scripts/verify-rich-text-49.cjs`·`-entry.tsx`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`(§8.1)·`WPF_AGENT_SPEC.md`·`WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md`·`POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/policies/POL-03.md`·`ACTIVE_TASKS.md`.
 - 검증 · 웹 `tsc` 통과, 변경 파일 eslint 오류 0(기존 경고 1건 유지). 하네스 rich-text-49 94건(신규 [28] 10건), survey-rich-text-55 74, preview-61 234, guide-registry 311, guide-render 31, common-sample-69 63, transform-64 78, quiz-option-byte-73 44건 통과. 서버 `PopupRichTextTest` 11건 포함 popup 테스트 실패 0. WPF 빌드 경고·오류 0, RichTextTests 116(신규 이름 적용·형식 오류·미설치 시 기본 글꼴 폭 일치), BehaviorTests 1,740, PopupWindowTests 651, RecoveryTests 255, ApiDemoTests 150건 통과.
 - 미실행 · 로컬 서버 HTTP 저장·재조회 왕복, 관리자 웹 실화면, 인터페이스 계약 Word·PDF·Excel 재생성, 폐쇄망 실제 글꼴 Text·Title 패밀리 이름·400/700 표시.
-- 상태 · 로컬 커밋, 미푸시.
+- 상태 · 커밋 7fba333, 원격 반영. 폐쇄망 글꼴 확인 대기.
 
 ## 2026-11-19-05 — dev: TODO61-19 미리보기 헤더 글자 크기 수정
 
