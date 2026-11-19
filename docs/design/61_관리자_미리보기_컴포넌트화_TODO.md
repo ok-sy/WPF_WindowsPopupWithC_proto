@@ -220,16 +220,23 @@
 
 ## 61-20 팝업 UI 기본값 캡처 및 회귀 검증
 
-**상태** · 기본값 사양 초판 작성. 동일 조건 캡처·수치 대조 대기.  
+**상태** · 기본값 사양 초판 작성. 2026-11-19 로컬 동일 데이터 캡처·실측 완료([결과](../reviews/TODO61-20_popup_ui_parity/README.md)). 편집기 비교·폐쇄망 배율·차이 2건 반영 여부 대기.  
 **기준** · [팝업 UI 기본값 사양](61_POPUP_UI_DEFAULTS_SPEC.md)의 영역별 수치, 적용 조건 및 캡처 표를 사용한다.
 
 ### 구현 시 확인할 사항
 
-- [ ] `PopupEditorDialog` → `InlinePopupPreview` / `PopupPreviewDialog` → `PopupPreview`와 실제 WPF `PopupWindow`에 같은 Demo 데이터를 적용한다. 기존 비교 하네스를 재사용하고, 표의 TEXT·SURVEY·QUIZ·IMAGE·VIDEO·VIDEO+QUIZ, 좁은 폭·긴 문구·헤더와 푸터 숨김·미디어 미첨부를 캡처한다.
-- [ ] 헤더·본문·푸터 및 유형별 구성마다 글자 크기·패밀리·굵기, CSS margin/padding 또는 WPF Margin/Padding, 너비·높이·최소 높이를 기록한다. TEXT 560×750은 창·패널·푸터·버튼 하단을 따로 측정한다. 최초 비교는 브라우저 100%·Windows 96 DPI로 하고, 폐쇄망 배율에서 추가 확인한다.
+- [ ] `PopupEditorDialog` → `InlinePopupPreview` / `PopupPreviewDialog` → `PopupPreview`와 실제 WPF `PopupWindow`에 같은 Demo 데이터를 적용한다. (2026-11-19 공통 렌더러 `PopupPreview` 기준 11세트 완료 — 등록 Dialog 경유 캡처는 남음) 기존 비교 하네스를 재사용하고, 표의 TEXT·SURVEY·QUIZ·IMAGE·VIDEO·VIDEO+QUIZ, 좁은 폭·긴 문구·헤더와 푸터 숨김·미디어 미첨부를 캡처한다.
+- [x] 헤더·본문·푸터 및 유형별 구성마다 글자 크기·패밀리·굵기, CSS margin/padding 또는 WPF Margin/Padding, 너비·높이·최소 높이를 기록한다. TEXT 560×750은 창·패널·푸터·버튼 하단을 따로 측정한다. 최초 비교는 브라우저 100%·Windows 96 DPI로 하고, 폐쇄망 배율에서 추가 확인한다.
 - [ ] `PopupQuestionEditor`·`PopupRichTextEditor`의 일반/서식 선택지와 제목·설명·본문을 미리보기와 비교한다. 한 줄·여러 줄, 기본 크기·명시 크기, 실제 글꼴·대체 글꼴을 확인한다. `textarea`와 `MuiInputBase`의 높이와 여백은 따로 측정한다.
 - [ ] `PopupWindow.ApplyFontSizes`, `SurveyPopupView.ApplyBodyFontSize`와 웹 영역별 보정을 대조한다. 기존 저장 데이터 중 크기·글꼴 미지정, 지정값, Run 서식 값이 있는 샘플을 포함한다. 캡처는 기존 데이터 구조를 사용한다.
-- [ ] 푸터 15px 차이와 헤더 12px 충돌의 수정은 각각 61-18·61-19에서 추적한다. 이 항목에는 비교 캡처·실측을 연결한다. 다른 차이가 나오면 해당 요소의 선언·실측값과 적용 환경을 기록한다.
+- [x] 푸터 15px 차이와 헤더 12px 충돌의 수정은 각각 61-18·61-19에서 추적한다. 이 항목에는 비교 캡처·실측을 연결한다. 다른 차이가 나오면 해당 요소의 선언·실측값과 적용 환경을 기록한다.
+
+### 2026-11-19 로컬 실측 결과
+
+- `scripts/verify-popup-parity.cjs`를 확장해 TEXT 560×750·좁은 폭 긴 문구·헤더/푸터 숨김·IMAGE·VIDEO·VIDEO+QUIZ를 추가(기존 5종 포함 11세트). WPF 캡처(`scripts/PopupParityCapture`)는 보이는 TextBlock·Run의 크기·굵기·패밀리·위치와 헤더·푸터·버튼 상자를 남기고, 같은 글자끼리 웹과 대조한다. 자동 판정 54건 통과.
+- 일치: 헤더 40·제목 17/600, 주 버튼 118×34(제출 132×34)·글자 14, 버튼 아래 간격 15(TEXT 560×750 포함), TEXT 본문, 선택지. 글꼴 패밀리는 웹·WPF 모두 맑은 고딕(웹 테마 지정, WPF 시스템 기본).
+- 차이(미수정, 결정 대기): ① SURVEY·QUIZ 콘텐츠 제목 굵기 웹 800 / WPF 600. ② 설문·퀴즈 푸터 응답 진행 문구 웹 13px·왼쪽 24 / WPF 12·왼쪽 28. 기존 기록된 차이: VIDEO+QUIZ 상단 제목(웹 퀴즈 제목 1회, WPF 영상 제목).
+- 캡처·표: [docs/reviews/TODO61-20_popup_ui_parity](../reviews/TODO61-20_popup_ui_parity/README.md). 미실행: 등록 편집기 비교, 브라우저 확대·Windows 배율, 폐쇄망.
 
 ### 구현 전에 결정할 사항
 

@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-19-07 — dev: TODO61-20 팝업 UI 기본값 웹·WPF 캡처·실측
+
+- 이유 · 팝업 UI 기본값 사양(61_POPUP_UI_DEFAULTS_SPEC)의 수치를 같은 데이터의 관리자 미리보기·WPF 실측으로 확인할 필요가 있음.
+- 변경 ·
+  - `scripts/verify-popup-parity.cjs`: TEXT 560×750·좁은 폭 긴 제목/본문(나중에 보기·다시 보지 않기)·헤더/푸터 숨김·IMAGE(ADAPTIVE)·VIDEO·VIDEO+QUIZ 세트 추가(총 11). 미디어는 WPF Demo 파일을 웹에는 HTTP, WPF에는 로컬 경로로 전달. 같은 글자끼리 크기·굵기·패밀리·흰 판 기준 위치와 헤더 높이·주 버튼 크기·버튼 아래 간격을 대조해 `texts.md`·`texts.json` 생성, 헤더 제목·주 버튼·TEXT 본문 첫 줄은 자동 판정.
+  - `scripts/PopupParityCapture`: 보이는 TextBlock·Run(서식 문단은 Inlines 글자, 단일 Run은 Run 값)과 헤더·본문·푸터·버튼 상자를 기록, 지연 레이아웃 대기 보강.
+  - 결과 반입: `docs/reviews/TODO61-20_popup_ui_parity/`(나란히 캡처 11장, MEASURES.md, measures.json, README). 사양·TODO61·활성 작업에 결과 연결.
+- 결과 · 일치: 헤더 40·제목 17/600, 주 버튼 118×34(제출 132×34)·글자 14, 버튼 아래 15(TEXT 560×750 포함 — 61-18의 폐쇄망 약 15px 차이는 로컬 컴포넌트 기준 미재현), TEXT 본문 15, 선택지. 차이(미수정, 결정 대기): SURVEY·QUIZ 콘텐츠 제목 굵기 웹 800/WPF 600, 설문·퀴즈 푸터 응답 진행 문구 웹 13px·왼쪽 24/WPF 12·왼쪽 28. VIDEO+QUIZ 상단 제목 차이는 기존 기록 항목.
+- 주요 파일 · `scripts/verify-popup-parity.cjs`, `scripts/PopupParityCapture/Program.cs`, `docs/reviews/TODO61-20_popup_ui_parity/`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-parity.cjs` 54건 통과(기존 22건 포함), 캡처 육안 확인(IMAGE·VIDEO+QUIZ). 한계: WPF 영상(WebView2)은 캡처에 그려지지 않고 영상 높이는 메타데이터 전 16:9.
+- 미실행 · 등록 편집기(PopupQuestionEditor·PopupRichTextEditor) 비교, 브라우저 확대·Windows 배율, 로그인 관리자 화면, 폐쇄망.
+- 상태 · 로컬 커밋, 미푸시.
+
 ## 2026-11-19-06 — dev: TODO28 폐쇄망 사용자 지정 폰트 이름 직접 전달
 
 - 이유 · 폐쇄망 회사 글꼴(Text·Title)을 서식 본문에 쓰기 위해 기존 4개 글꼴 ID 외에 Windows 글꼴 패밀리 이름을 그대로 저장·전달할 필요가 있음(TODO28 후속).

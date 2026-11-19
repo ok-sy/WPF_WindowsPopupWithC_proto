@@ -4,6 +4,9 @@
 // - 웹: headless Edge, deviceScaleFactor 1(100%), 팝업 width×height 상자. 테마 body1 0.85rem(관리자 화면과 같음).
 // - WPF: scripts/PopupParityCapture가 같은 데이터를 서버 응답 형식으로 받아 실제 PopupWindow를 96 DPI로 렌더링.
 // - 결과: .offline-verify/popup-parity/<id>.side.png(왼쪽 웹 흰 판·오른쪽 WPF 흰 판), report.html, measures.json. 자동 판정: 흰 판 크기, 선택지 높이·글자.
+// - TODO61-20(2026-11-19): 유형 6종(TEXT·SURVEY·QUIZ·IMAGE·VIDEO·VIDEO+QUIZ)과 TEXT 560×750·좁은 폭·긴 문구·헤더/푸터 숨김을 추가하고,
+//   같은 글자끼리 크기·굵기·패밀리·흰 판 기준 위치, 헤더·확인 버튼 상자를 대조해 texts.md·texts.json에 남긴다.
+//   자동 판정은 헤더 제목·확인/제출 버튼·TEXT 본문 첫 줄의 크기·굵기 일치와 헤더 높이·버튼 크기·버튼 아래 간격(±1)이다.
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn, execFileSync} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/popup-parity');
 const compiled = require('../zero-rule-web/node_modules/next/dist/compiled/webpack/webpack');
@@ -43,9 +46,29 @@ const fixtures = [
     content: {showPlainText: true, plainText: '본문 12 크기입니다.', headerFontSize: 22, bodyFontSize: 12, footerFontSize: 16,
       textBlocks: [{alignment: 'LEFT', runs: [{text: '본문 12 크기입니다.'}]}]}},
 ];
+// TODO61-20 추가 세트. 미디어는 WPF Demo 파일을 웹에는 HTTP(/media/…)로, WPF에는 로컬 경로로 넘긴다.
+const LONG = '긴 문구 줄바꿈 확인용 본문입니다. 좁은 창에서 여러 줄로 나뉘어도 글자 크기와 여백은 기본값을 유지해야 합니다. '.repeat(3).trim();
+fixtures.push(
+  {...base, popupId: 'PARITY-TEXT-560x750', popupType: 'TEXT', title: 'TEXT 560×750', width: 560, height: 750, questions: [],
+    content: {showPlainText: true, plainText: '공지 본문 첫 줄입니다.\n둘째 줄입니다.'}},
+  {...base, popupId: 'PARITY-TEXT-NARROW-LONG', popupType: 'TEXT', title: '좁은 폭에서 아주 긴 팝업 제목이 한 줄 말줄임으로 표시되는지 확인합니다', width: 360, height: 480,
+    questions: [], showDoNotShowAgain: true, showLater: true, content: {showPlainText: true, plainText: LONG}},
+  {...base, popupId: 'PARITY-TEXT-NO-HEADER-FOOTER', popupType: 'TEXT', title: '숨김', width: 480, height: 320, showHeader: false, showFooter: false,
+    questions: [], content: {showPlainText: true, plainText: '헤더와 푸터를 숨긴 본문입니다.'}},
+  {...base, popupId: 'PARITY-IMAGE', popupType: 'IMAGE', title: 'IMAGE 비교', width: 640, height: 560, questions: [],
+    content: {imageUrl: '/media/demo-image.jpg', imageTitle: '이미지 제목', description: '이미지 설명입니다.', showDescription: true, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true}},
+  {...base, popupId: 'PARITY-VIDEO', popupType: 'VIDEO', title: 'VIDEO 비교', width: 720, height: 640, questions: [], completionRatio: 0,
+    content: {videoUrl: '/media/demo-video.mp4', videoTitle: '영상 제목', description: '영상 설명입니다.', showDescription: true, showControls: true}},
+  {...base, popupId: 'PARITY-VIDEO-QUIZ', popupType: 'QUIZ', title: 'VIDEO+QUIZ 비교', width: 720, height: 900, passingScore: 0, completionRatio: 0,
+    content: {videoEnabled: true, videoUrl: '/media/demo-video.mp4', videoTitle: '영상 퀴즈', surveyTitle: '영상 퀴즈', description: '영상을 보고 답하세요.'},
+    questions: [{questionId: 31, title: '영상에서 확인한 내용은?', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: true, isScored: true, questionScore: 1, sortOrder: 1,
+      options: [option(41, '첫째', {isCorrect: true}), option(42, '둘째')]}]},
+);
+const MEDIA = path.join(root, 'popup-frameWork/Popup/Media');
 const FONT_KEYS = ['headerFontSize', 'bodyFontSize', 'footerFontSize'];
 const toWpf = p => {
-  const content = Object.fromEntries(Object.entries(p.content).filter(([k]) => !FONT_KEYS.includes(k)));
+  const content = Object.fromEntries(Object.entries(p.content).filter(([k]) => !FONT_KEYS.includes(k))
+    .map(([k, v]) => [k, typeof v === 'string' && v.startsWith('/media/') ? path.join(MEDIA, v.slice(7)) : v]));
   const survey = p.popupType === 'SURVEY' || p.popupType === 'QUIZ';
   return {...p, deliveryId: 'D-' + p.popupId, content, showFooterButton: p.showCloseButton, footerAction: survey ? 'SUBMIT' : 'CLOSE',
     useBackgroundOverlay: false, popupPosition: 'CENTER', ...Object.fromEntries(FONT_KEYS.filter(k => p.content[k] != null).map(k => [k, p.content[k]]))};
@@ -62,8 +85,10 @@ const toWpf = p => {
   // 헤더 로고는 관리자 웹 public 폴더의 같은 파일을 내려준다.
   const logo = path.join(root, 'zero-rule-web/main/public/images/popup-header-logo.png');
   server = http.createServer((req, res) => {
-    const file = req.url === '/images/popup-header-logo.png' ? logo : /^\/[\w.-]+\.(js|png)$/.test(req.url) ? path.join(output, req.url.slice(1)) : null;
-    if (file && fs.existsSync(file)) { res.setHeader('Content-Type', file.endsWith('.png') ? 'image/png' : 'application/javascript'); res.end(fs.readFileSync(file)); return; }
+    const file = req.url === '/images/popup-header-logo.png' ? logo : /^\/media\/[\w.-]+$/.test(req.url) ? path.join(MEDIA, req.url.slice(7))
+      : /^\/[\w.-]+\.(js|png)$/.test(req.url) ? path.join(output, req.url.slice(1)) : null;
+    const types = {png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4', js: 'application/javascript'};
+    if (file && fs.existsSync(file)) { res.setHeader('Content-Type', types[file.split('.').pop()]); res.end(fs.readFileSync(file)); return; }
     if (req.url.startsWith('/side')) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(sidePage(decodeURIComponent(req.url.split('?')[1]))); return; }
     res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end('<!doctype html><body style="margin:0;background:#fff"><div id="root"></div><script src="/bundle.js"></script>');
   });
@@ -86,10 +111,18 @@ const toWpf = p => {
   // 1. 웹 캡처와 측정: 창(width×height) 안 흰 판(.MuiPaper-root, 그림자 여백 24 안쪽)만 잘라 WPF 흰 판과 같은 기준으로 비교한다.
   const web = {};
   for (const popup of fixtures) {
-    await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(600);
+    await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1500 : 600);
     web[popup.popupId] = await run(`(()=>{const f=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect();const opts=Array.from(document.querySelectorAll('#frame .survey-option'));
       const fs0=document.querySelector('#frame fieldset[aria-labelledby]');const q=fs0&&document.getElementById(fs0.getAttribute('aria-labelledby'));
-      return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)}))}})()`);
+      const box=e=>{if(!e)return null;const r=e.getBoundingClientRect();return r.width>0?{x:Math.round((r.x-f.x)*10)/10,y:Math.round((r.y-f.y)*10)/10,w:Math.round(r.width*10)/10,h:Math.round(r.height*10)/10}:null;};
+      const panel=document.querySelector('#frame .MuiPaper-root');
+      /* TODO61-20: 직접 글자 노드가 있는 보이는 요소 전부 — 같은 글자끼리 WPF TextBlock과 대조한다. */
+      const texts=Array.from(panel.querySelectorAll('*')).filter(e=>Array.from(e.childNodes).some(n=>n.nodeType===3&&n.data.trim())).map(e=>{const s=getComputedStyle(e);
+        return {text:e.textContent.trim(),size:parseFloat(s.fontSize),weight:Number(s.fontWeight),family:s.fontFamily,box:box(e)};}).filter(t=>t.box);
+      const buttons=Array.from(panel.querySelectorAll('button')).map(b=>({text:b.textContent.trim(),size:parseFloat(getComputedStyle(b).fontSize),box:box(b)})).filter(b=>b.box);
+      const header=panel.firstElementChild&&getComputedStyle(panel.firstElementChild).backgroundColor==='rgb(0, 0, 0)'?panel.firstElementChild:null;
+      return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)})),
+        texts,regions:{header:box(header),buttons}}})()`);
     const f = web[popup.popupId].frame;
     await shot(path.join(output, popup.popupId + '.web.png'), {x: f.x, y: f.y, width: f.width, height: f.height});
   }
@@ -125,6 +158,53 @@ const toWpf = p => {
     }
   }
   fs.writeFileSync(path.join(output, 'measures.json'), JSON.stringify(rows, null, 2));
+
+  // 5. TODO61-20 같은 글자끼리 대조(크기·굵기·패밀리·위치)와 영역 실측. 차이는 기록하고, 기본값 계약 항목만 판정한다.
+  const textRows = [], md = ['# 웹 미리보기·WPF 글자·영역 실측 (TODO61-20)', '',
+    `생성 ${new Date().toISOString()} · 웹 headless Edge 100% · WPF RenderTargetBitmap 96 DPI · 좌표는 흰 판 왼쪽 위 기준(px = DIP)`, ''];
+  const near = (a, b, t = 1) => a != null && b != null && Math.abs(a - b) <= t;
+  const cell = v => String(v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  for (const popup of fixtures) {
+    const w = web[popup.popupId], d = wpf[popup.popupId];
+    const wpfTexts = d.texts ?? [], used = new Set();
+    md.push(`## ${popup.popupId} (${popup.popupType}${popup.content.videoEnabled ? '+VIDEO' : ''} ${popup.width}×${popup.height})`, '',
+      `![${popup.popupId}](${popup.popupId}.side.png)`, '', '| 글자 | 웹 크기/굵기 | WPF 크기/굵기 | 웹 x,y | WPF x,y | 웹 패밀리 | WPF 패밀리 |', '|---|---|---|---|---|---|---|');
+    for (const t of w.texts) {
+      const i = wpfTexts.findIndex((x, k) => !used.has(k) && x.text === t.text);
+      const x = i >= 0 ? wpfTexts[i] : null; if (i >= 0) used.add(i);
+      const row = {id: popup.popupId, text: t.text.slice(0, 24), web: `${t.size}/${t.weight}`, wpf: x ? `${x.size}/${x.weight}` : '—',
+        webPos: `${t.box.x},${t.box.y}`, wpfPos: x?.box ? `${x.box.x},${x.box.y}` : '—', webFamily: t.family.split(',')[0].replace(/"/g, ''), wpfFamily: x?.family ?? '—',
+        same: x ? t.size === x.size && t.weight === x.weight : null};
+      textRows.push(row);
+      md.push(`| ${cell(row.text)} | ${row.web} | ${row.wpf}${x && !row.same ? ' ⚠' : ''} | ${row.webPos} | ${row.wpfPos} | ${cell(row.webFamily)} | ${cell(row.wpfFamily)} |`);
+    }
+    const unmatched = wpfTexts.filter((_, k) => !used.has(k)).map(x => x.text.slice(0, 20));
+    if (unmatched.length) md.push('', 'WPF에만 있는 글자: ' + unmatched.map(t => '`' + cell(t).replace(/`/g, '') + '`').join(', '));
+    // 영역: 헤더 높이, 확인·제출 버튼 크기와 흰 판 아래까지 간격
+    const primary = ['확인', '제출', '바로가기'];
+    const wb = w.regions.buttons.find(b => primary.includes(b.text)), db = (d.regions?.buttons ?? []).find(b => primary.includes(b.text));
+    const wh = w.regions.header, dh = d.regions?.header;
+    const gap = (b, h) => b?.box ? Math.round((h - b.box.y - b.box.h) * 10) / 10 : null;
+    md.push('', '| 영역 | 웹 | WPF |', '|---|---|---|',
+      `| 헤더 높이 | ${wh?.h ?? '숨김'} | ${dh?.h ?? '숨김'} |`,
+      `| 주 버튼(${wb?.text ?? db?.text ?? '없음'}) 크기 | ${wb ? wb.box.w + '×' + wb.box.h : '—'} | ${db ? db.box.w + '×' + db.box.h : '—'} |`,
+      `| 주 버튼 아래~흰 판 아래 | ${gap(wb, w.frame.height) ?? '—'} | ${gap(db, d.content.height) ?? '—'} |`, '');
+    const titleRow = textRows.find(r => r.id === popup.popupId && r.text === popup.title.slice(0, 24));
+    if (popup.showHeader) check(near(wh?.h, dh?.h) && (titleRow ? titleRow.same === true : popup.title.length > 24),
+      `[61-20] ${popup.popupId} header title size/weight and header height match: ` + JSON.stringify({titleRow, wh, dh}));
+    if (wb || db) check(wb && db && near(wb.box.w, db.box.w) && near(wb.box.h, db.box.h) && near(gap(wb, w.frame.height), gap(db, d.content.height)) && wb.size === db.FontSize,
+      `[61-20] ${popup.popupId} primary button size and bottom gap match: ` + JSON.stringify({wb, db}));
+    const bodyText = popup.content.plainText?.split('\n')[0];
+    if (popup.popupType === 'TEXT' && bodyText && bodyText.length < 24) {
+      const r = textRows.find(x => x.id === popup.popupId && x.text.startsWith(bodyText));
+      check(r?.same === true, `[61-20] ${popup.popupId} body text size/weight match: ` + JSON.stringify(r));
+    }
+  }
+  const diffs = textRows.filter(r => r.same === false);
+  md.splice(4, 0, `요약: 대조 글자 ${textRows.filter(r => r.same != null).length}건, 크기·굵기 차이 ${diffs.length}건(⚠), WPF에서 같은 글자를 찾지 못한 웹 글자 ${textRows.filter(r => r.same == null).length}건.`, '');
+  fs.writeFileSync(path.join(output, 'texts.json'), JSON.stringify(textRows, null, 2));
+  fs.writeFileSync(path.join(output, 'texts.md'), md.join('\n') + '\n');
+  if (diffs.length) console.table(diffs);
   console.table(rows.map(r => ({...r, webFrame: r.webFrame?.join('×'), wpfContent: r.wpfContent?.join('×'), web: r.web?.join(' / '), wpf: r.wpf?.join(' / ')})));
   console.log('PASS: ' + checks + ' popup parity checks · images: ' + output);
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
