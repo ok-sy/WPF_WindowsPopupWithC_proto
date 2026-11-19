@@ -216,3 +216,24 @@
 - [ ] 관리자 웹 공통 `PopupPreview`의 헤더 제목 한 곳에 `sx['&&'].fontSize`로 기존 값을 적용한다. 전역 `body1` 12px 규칙을 켠 상태에서 검증한다.
 - [ ] `&&`와 전역 규칙은 CSS 우선순위가 같으므로, 인라인과 실제 크기 Dialog 양쪽에서 생성 CSS의 적용 순서와 Computed `font-size`를 확인한다. 기본 17px과 명시값(예: 14px, 22px)이 그대로 표시되고, `showHeader=false`이면 헤더가 숨겨져야 한다.
 - [ ] TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ에서 공통 헤더와 로고·말줄임, 본문·푸터 및 전역 `body1` 적용 화면을 회귀 확인한다. 웹 타입 검사·변경 파일 eslint·미리보기 하네스와 폐쇄망 실화면 결과를 기록한다.
+
+## 61-20 팝업 UI 기본값 캡처 및 회귀 검증
+
+**상태** · 기본값 사양 초판 작성. 동일 조건 캡처·수치 대조 대기.  
+**기준** · [팝업 UI 기본값 사양](61_POPUP_UI_DEFAULTS_SPEC.md)의 영역별 수치, 적용 조건 및 캡처 표를 사용한다.
+
+### 구현 시 확인할 사항
+
+- [ ] `PopupEditorDialog` → `InlinePopupPreview` / `PopupPreviewDialog` → `PopupPreview`와 실제 WPF `PopupWindow`에 같은 Demo 데이터를 적용한다. 기존 비교 하네스를 재사용하고, 표의 TEXT·SURVEY·QUIZ·IMAGE·VIDEO·VIDEO+QUIZ, 좁은 폭·긴 문구·헤더와 푸터 숨김·미디어 미첨부를 캡처한다.
+- [ ] 헤더·본문·푸터 및 유형별 구성마다 글자 크기·패밀리·굵기, CSS margin/padding 또는 WPF Margin/Padding, 너비·높이·최소 높이를 기록한다. TEXT 560×750은 창·패널·푸터·버튼 하단을 따로 측정한다. 최초 비교는 브라우저 100%·Windows 96 DPI로 하고, 폐쇄망 배율에서 추가 확인한다.
+- [ ] `PopupQuestionEditor`·`PopupRichTextEditor`의 일반/서식 선택지와 제목·설명·본문을 미리보기와 비교한다. 한 줄·여러 줄, 기본 크기·명시 크기, 실제 글꼴·대체 글꼴을 확인한다. `textarea`와 `MuiInputBase`의 높이와 여백은 따로 측정한다.
+- [ ] `PopupWindow.ApplyFontSizes`, `SurveyPopupView.ApplyBodyFontSize`와 웹 영역별 보정을 대조한다. 기존 저장 데이터 중 크기·글꼴 미지정, 지정값, Run 서식 값이 있는 샘플을 포함한다. 캡처는 기존 데이터 구조를 사용한다.
+- [ ] 푸터 15px 차이와 헤더 12px 충돌의 수정은 각각 61-18·61-19에서 추적한다. 이 항목에는 비교 캡처·실측을 연결한다. 다른 차이가 나오면 해당 요소의 선언·실측값과 적용 환경을 기록한다.
+
+### 구현 전에 결정할 사항
+
+현재 사양은 기존 선언값·관찰 결과를 근거로 하며 새 디자인 값은 확정하지 않는다. 웹과 WPF의 실제 선택 글꼴이나 여백에 차이가 있으면 실측 결과를 바탕으로 해당 변경 범위를 검토한다.
+
+### 완료 기준
+
+여섯 대표 유형의 동일 데이터 캡처와 등록 편집기 증거를 Git에서 찾아볼 수 있고, 각 수치는 소스 선언·웹 Computed·WPF 실측 중 근거가 표시되어야 한다. 실화면에서 확인하지 못한 칸과 환경별 차이는 별도로 남긴다. 코드 변경이 필요한 후속 작업의 타입 검사·빌드·회귀 검증 결과는 각 수정 작업에 기록한다.
