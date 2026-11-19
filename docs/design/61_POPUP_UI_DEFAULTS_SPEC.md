@@ -23,7 +23,7 @@
 | 창·내부 패널 | — | 일반 창은 그림자 공간 사방 24. 영상 창 및 FULLSCREEN은 0. 창 크기 하한은 너비·높이 각각 300을 기본으로 사용 | 웹 FIXED 미지정 입력·모달 기준 560×420. WPF `PopupOptions` 객체 초기값은 900×620. 실표시는 전달 크기·크기 모드·가용 화면 및 제한값으로 계산 |
 | 헤더 제목 | **17 / SemiBold(600)** | 행 높이 **40**, 제목 시작 18, 로고와 제목 사이 12 기준. 우측 로고 **100×24**, 끝 여백 18 기준 | `headerFontSize` 지정 우선. 한 줄 말줄임. 헤더를 끄면 행도 접힘 |
 | 일반 본문 외곽 | 유형별 아래 표 | 좌우 **28**, 상하 **24**. 웹은 콘텐츠 박스의 padding, WPF는 `PopupContent` margin | 이미지 모드·전체 채움처럼 여백을 별도로 처리하는 경로는 유형별 확인 |
-| 공통 푸터 | 버튼·체크박스 **14** 기본, 진행·상태 문구는 별도 크기(설문 응답 진행 문구 WPF 12, 웹 13 — 2026-11-19 실측 차이) | 한 줄 기준 **64**, 좌우 **28**·상하 **15**가 공통 기준. 웹 일반 분기는 좌우 28px, 설문 분기는 테마 간격 `px: 3`으로 선언 | **TODO61-18**에서 분기별 실제 간격과 줄바꿈 정렬 검증. WPF 영상·설문 계열 행은 자동 높이·최소 64. 숨김 시 행을 접음 |
+| 공통 푸터 | 버튼·체크박스 **14** 기본, 진행·상태 문구는 별도 크기(설문 응답 진행 문구 12, 푸터 글자 크기 미적용) | 한 줄 기준 **64**, 좌우 **28**·상하 **15**가 공통 기준. 웹 일반 분기는 좌우 28px, 설문 분기는 테마 간격 `px: 3`으로 선언 | **TODO61-18**에서 분기별 실제 간격과 줄바꿈 정렬 검증. WPF 영상·설문 계열 행은 자동 높이·최소 64. 숨김 시 행을 접음 |
 | 푸터 버튼 | **14** 기본, 주 버튼 SemiBold | 높이 **34**, 일반 버튼 최소 너비 **118**, 제출 최소 **132**. 일반 버튼 좌우 패딩 22·상하 0, 주 버튼 모서리 9 | `footerFontSize`가 적용되는 요소와 별도 크기의 진행 문구를 구분. WPF 결과 안내창의 버튼은 별도 스타일(높이 44) |
 
 웹 소스 · [PopupPreview](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx) · [크기 상수](../../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts) · [모달 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts)  
@@ -37,7 +37,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 | IMAGE·VIDEO 콘텐츠 제목 | **22 / 600** | 표시 조건을 충족할 때만 제목 표시. VIDEO는 제목 아래 15. IMAGE는 ORIGINAL 등 사이즈 모드와 설명 표시 여부별로 이미지 영역·패널 여백 확인 |
 | IMAGE·VIDEO 설명 | **14** | VIDEO는 영상 다음에 설명이 온다. 미디어 크기와 설명 영역은 분리해 측정 |
 | VIDEO 재생 영역 | — | 단독 VIDEO는 남은 높이를 사용하고 영상 비율을 유지한다. VIDEO+QUIZ는 영상 폭·원본 비율로 높이를 산정한다. 영상 테두리 1·모서리 8 기준. 미첨부·실패, 멀티라인 설명·높이 600 부근 스크롤 검증 |
-| SURVEY·QUIZ 콘텐츠 제목·설명 | **25 / 14** (제목 굵기 WPF 600, 웹 800 — 2026-11-19 실측 차이) | 웹 제목 위 4, 설명 줄 높이 22·아래 14. VIDEO+QUIZ의 중복 설명 접힘 조건은 별도 확인 |
+| SURVEY·QUIZ 콘텐츠 제목·설명 | **25 / 14** (제목 굵기 600) | 웹 제목 위 4, 설명 줄 높이 22·아래 14. VIDEO+QUIZ의 중복 설명 접힘 조건은 별도 확인 |
 | SURVEY·QUIZ 문항 제목·설명 | **16 / 13** | 본문 크기 명시 시 각각 `bodyFontSize + 4`, `bodyFontSize + 1`. 문항 간 간격과 서식으로 지정한 글자 크기도 확인 |
 | 응답 선택지·OX | **12**, 기본 줄 높이 **18** | 한 줄 최소 **32**(테두리 1씩 + 상하 패딩 6씩 + 줄 18). 웹 가로형 좌우 14·세로형 좌우 16. 긴 선택지는 높이 증가. 글자 크기는 `(bodyFontSize ?? 14) - 2`, 줄 높이는 글자 크기 × 1.5 기준 |
 | 주관식 응답 | **14** | `bodyFontSize`가 있으면 적용. 웹 미리보기는 minHeight 96 선언. 입력 박스·안내 문구와 실제 WPF 입력 영역을 구분해 실측 |
@@ -60,7 +60,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 
 ## 실측 기록
 
-2026-11-19 로컬 하네스 실측(웹 100%·WPF 96 DPI, 11세트): [TODO61-20 결과](../reviews/TODO61-20_popup_ui_parity/README.md). 헤더 40·제목 17/600, 주 버튼 118×34·제출 132×34, 버튼 아래 15, TEXT 본문 15는 웹·WPF가 같다. 차이는 위 표에 표시한 두 항목이다.
+2026-11-19 로컬 하네스 실측(웹 100%·WPF 96 DPI, 11세트): [TODO61-20 결과](../reviews/TODO61-20_popup_ui_parity/README.md). 헤더 40·제목 17/600, 주 버튼 118×34·제출 132×34, 버튼 아래 15, TEXT 본문 15는 웹·WPF가 같다. 그때 나온 두 차이(설문 제목 굵기, 설문 푸터 진행 문구)는 TODO61-21에서 WPF 기준으로 맞췄다. 웹 수치는 `popupLayout.ts`(`POPUP_LAYOUT`·`POPUP_COLORS`)와 `PopupFooter.tsx`, WPF 푸터 버튼은 `FooterActionButtonStyle`·`FooterSecondaryButtonStyle`·`SurveyFooterSubmitButtonStyle`에 모여 있다.
 
 ## 캡처와 검증 기록 규칙
 

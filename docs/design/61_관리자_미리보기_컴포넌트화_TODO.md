@@ -235,7 +235,7 @@
 
 - `scripts/verify-popup-parity.cjs`를 확장해 TEXT 560×750·좁은 폭 긴 문구·헤더/푸터 숨김·IMAGE·VIDEO·VIDEO+QUIZ를 추가(기존 5종 포함 11세트). WPF 캡처(`scripts/PopupParityCapture`)는 보이는 TextBlock·Run의 크기·굵기·패밀리·위치와 헤더·푸터·버튼 상자를 남기고, 같은 글자끼리 웹과 대조한다. 자동 판정 54건 통과.
 - 일치: 헤더 40·제목 17/600, 주 버튼 118×34(제출 132×34)·글자 14, 버튼 아래 간격 15(TEXT 560×750 포함), TEXT 본문, 선택지. 글꼴 패밀리는 웹·WPF 모두 맑은 고딕(웹 테마 지정, WPF 시스템 기본).
-- 차이(미수정, 결정 대기): ① SURVEY·QUIZ 콘텐츠 제목 굵기 웹 800 / WPF 600. ② 설문·퀴즈 푸터 응답 진행 문구 웹 13px·왼쪽 24 / WPF 12·왼쪽 28. 기존 기록된 차이: VIDEO+QUIZ 상단 제목(웹 퀴즈 제목 1회, WPF 영상 제목).
+- 차이: ① SURVEY·QUIZ 콘텐츠 제목 굵기 웹 800 / WPF 600. ② 설문·퀴즈 푸터 응답 진행 문구 웹 13px·왼쪽 24 / WPF 12·왼쪽 28. → 61-21에서 WPF 기준으로 반영. 기존 기록된 차이: VIDEO+QUIZ 상단 제목(웹 퀴즈 제목 1회, WPF 영상 제목).
 - 캡처·표: [docs/reviews/TODO61-20_popup_ui_parity](../reviews/TODO61-20_popup_ui_parity/README.md). 미실행: 등록 편집기 비교, 브라우저 확대·Windows 배율, 폐쇄망.
 
 ### 구현 전에 결정할 사항
@@ -245,3 +245,18 @@
 ### 완료 기준
 
 여섯 대표 유형의 동일 데이터 캡처와 등록 편집기 증거를 Git에서 찾아볼 수 있고, 각 수치는 소스 선언·웹 Computed·WPF 실측 중 근거가 표시되어야 한다. 실화면에서 확인하지 못한 칸과 환경별 차이는 별도로 남긴다. 코드 변경이 필요한 후속 작업의 타입 검사·빌드·회귀 검증 결과는 각 수정 작업에 기록한다.
+
+## 61-21 미리보기 레이아웃 공통화 (2026-11-19)
+
+**상태** · 로컬 구현·검증 완료. 폐쇄망 실화면 확인 대기.
+**배경** · 61-17~61-20으로 웹 미리보기와 WPF의 버튼·푸터·여백이 거의 같아져, 같은 값과 모양을 한곳에서 관리하도록 정리한다. 61-20 실측 차이 2건(설문 제목 굵기, 설문 푸터 진행 문구)은 WPF 기준으로 맞춘다.
+
+- [x] 서식 문단 그리기 중복 제거: TEXT 본문도 `PopupRichBlocks`(`paragraph="div"`)를 쓴다. 문항·선택지는 기존 `span`.
+- [x] 레이아웃 수치·색 상수: `popupLayout.ts`의 `POPUP_LAYOUT`(창 여백 24·헤더 40·본문 28/24·푸터 64·푸터 여백 28/15·묶음 간격 16·버튼 간격 10·버튼 34/118/132/22/9), `POPUP_COLORS`. `imagePreviewLayout.ts`·`popupPreviewDialogLayout.ts`·`AspectVideoArea.tsx`·`PopupPreview.tsx`가 이 값을 쓴다.
+- [x] 푸터 공통화: `PopupFooter.tsx`의 `PopupFooter`(나중에 보기 → 안내·체크박스 → 오른쪽 버튼, WPF `FooterArea` 배치)와 `PopupFooterButton kind="primary|secondary|submit"`. 일반·설문 푸터 두 분기를 하나의 틀로 합쳤다. 푸터 글자 크기는 한 번 계산해 버튼·체크박스가 이어받는다.
+- [x] 61-20 차이 반영: 설문·퀴즈 콘텐츠 제목 굵기 800 → 600, 설문 푸터 좌우 여백 24 → 28, 응답 진행 문구 13 → 12(WPF `FooterResponseProgressText`, 푸터 글자 크기 미적용). 콘텐츠 제목은 유형별 표(`CONTENT_TITLE_SX`)로 정리.
+- [x] 체크박스 위치: MUI `FormControlLabel` 기본 여백(왼쪽 -11·오른쪽 16)을 푸터 안에서 0으로 두어 '다시 보지 않기' 글자 위치가 WPF와 같다(좁은 폭 세트 202.9 = 202.9).
+- [x] WPF 푸터 버튼 스타일: `PopupStyles.xaml`에 `FooterActionButtonStyle`·`FooterSecondaryButtonStyle`(높이 34·여백 22,0), 설문 디자인 V1·V2에 `SurveyFooterSubmitButtonStyle`(높이 34·여백 24,0)을 두고 버튼별 `Height`·`Padding` 직접 지정을 없앴다. 결과 안내창 `ActionButtonStyle`(44)은 그대로.
+- [ ] 폐쇄망 실화면(전역 CSS·배율)에서 푸터·제목 확인.
+
+검증 · 웹 `tsc`·변경 파일 eslint 오류 0. 하네스 preview-61 234, completion-ux-43 82, common-sample-69 63, image-preview 54, survey-rich-text-55 74, rich-text-49 94, guide-render 31, guide-registry 313, transform-64 78, quiz-option-byte-73 44, rgstpop-quiz-rule 25, template-picker 7, pick-fields 34건 통과. `verify-popup-parity.cjs` 54건 통과, 글자 대조 차이 8건 → 1건(기존 기록된 VIDEO+QUIZ 상단 제목). WPF 빌드 경고·오류 0, BehaviorTests 1,740·RichTextTests 116·RecoveryTests 255·ApiDemoTests 150 통과, PopupWindowTests는 `CheckCloseButtonAfterDisplayChange`를 뺀 602건 통과(이 검사는 변경 전 코드에서도 현재 주 모니터 작업 영역 2561×1393에서 같은 위치로 실패하는 환경 문제).

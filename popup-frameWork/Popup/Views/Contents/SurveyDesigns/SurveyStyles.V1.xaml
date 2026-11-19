@@ -311,4 +311,9 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- POL-02-03 : 푸터 역할 — 푸터·본문 제출 버튼(TODO61-21). 제출 버튼 모양에 푸터 버튼 공통 높이 34만 적용한다. -->
+    <Style x:Key="SurveyFooterSubmitButtonStyle" TargetType="Button" BasedOn="{StaticResource SurveySubmitButtonStyle}">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="24,0" />
+    </Style>
 </ResourceDictionary>

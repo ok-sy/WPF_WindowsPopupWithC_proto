@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import { Box, Stack, Typography } from '@mui/material';
+import { POPUP_COLORS } from './popupLayout';
 
 /*
  * 영상 결합(VIDEO+QUIZ) 미리보기의 재생 영역. WPF VideoPopupView.AspectSizing과 같은 원칙으로 높이를 정한다.
@@ -87,7 +88,7 @@ export function FillVideoArea({ url, showCaption = true }: { url: string; showCa
     <Box
       data-testid="fill-video-area"
       data-loaded={loaded ? 'true' : 'false'}
-      sx={{ position: 'relative', flex: 1, minHeight: 170, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
+      sx={{ position: 'relative', flex: 1, minHeight: 170, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid ${POPUP_COLORS.border}`, borderRadius: '8px',
         overflow: 'hidden', color: 'white' }}
     >
       {(!url || failed) && <VideoBlackLayer />}
@@ -213,7 +214,7 @@ export default function AspectVideoArea({ url, showCaption = true }: { url: stri
       ref={areaRef}
       data-testid="aspect-video-area"
       data-natural={natural ? `${natural.width}x${natural.height}` : ''}
-      sx={{ position: 'relative', width: '100%', height, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid #D1D5DB`, borderRadius: '8px',
+      sx={{ position: 'relative', width: '100%', height, boxSizing: 'border-box', border: `${VIDEO_BORDER}px solid ${POPUP_COLORS.border}`, borderRadius: '8px',
         overflow: 'hidden', color: 'white', flexShrink: 0 }}
     >
       {(!url || failed) && <VideoBlackLayer />}

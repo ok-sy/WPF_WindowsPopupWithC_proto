@@ -23,6 +23,11 @@ interface Props {
   trailing?: ReactNode;
   /** 바깥 span의 id(aria-labelledby 연결용) */
   id?: string;
+  /**
+   * 문단 요소 형태(TODO61-21). 'span'(기본): 문항·선택지처럼 바깥 글자 자리에 넣고 글꼴·색을 이어받는다.
+   * 'div': TEXT 본문처럼 문단마다 본문 Typography(body1) 줄 높이를 쓰고 크기만 바깥에서 받는다.
+   */
+  paragraph?: 'span' | 'div';
 }
 
 /**
@@ -35,13 +40,14 @@ interface Props {
  *   들여쓰기는 문단 전체 왼쪽 여백(WPF 40 DIP와 같은 40px 단위)이다. 구간에 지정이 없는 글꼴·크기·색·굵기는
  *   바깥(일반 문자열 자리)의 값을 이어받는다.
  */
-export default function PopupRichBlocks({ blocks, trailing, id }: Props) {
+export default function PopupRichBlocks({ blocks, trailing, id, paragraph = 'span' }: Props) {
+  const inline = paragraph === 'span';
   return (
-    <Box id={id} component="span" sx={{ display: 'block' }}>
+    <Box id={id} component={paragraph} sx={{ display: 'block' }}>
       {blocks.map((block, index) => (
-        <Typography key={index} component="span" sx={{
+        <Typography key={index} component={paragraph} sx={{
           display: 'block', whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em',
-          pl: `${(block.indent ?? 0) * RICH_INDENT_STEP}px`, font: 'inherit', color: 'inherit',
+          pl: `${(block.indent ?? 0) * RICH_INDENT_STEP}px`, ...(inline ? { font: 'inherit', color: 'inherit' } : {}),
         }}>
           {block.runs.map((run, runIndex) => (
             <Box key={runIndex} component="span" sx={{

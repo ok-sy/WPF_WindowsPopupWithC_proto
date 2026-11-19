@@ -78,7 +78,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 
 | 구분 | 항목 |
 |---|---|
-| 같은 폴더 파일 | `InlinePopupPreview.tsx`, `PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `PopupPreview.tsx`, `SurveyPreview.tsx`, `AspectVideoArea.tsx`, `PopupRichBlocks.tsx`, `popupRichText.ts`, `popupCommon.ts`, `popupDemoQuestions.ts`, `normalizePopupLink.ts`, `imagePreviewLayout.ts` |
+| 같은 폴더 파일 | `InlinePopupPreview.tsx`, `PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `PopupPreview.tsx`, `PopupFooter.tsx`, `popupLayout.ts`, `SurveyPreview.tsx`, `AspectVideoArea.tsx`, `PopupRichBlocks.tsx`, `popupRichText.ts`, `popupCommon.ts`, `popupDemoQuestions.ts`, `normalizePopupLink.ts`, `imagePreviewLayout.ts` |
 | 공용 타입 | `@local/domain`의 `AdminPopupDetail`·`PopupQuestion`·`PopupDateValue`·`PopupType` (`zero-rule-web/sub/domain/src/model/PopupAdmin.ts`, `model/index.ts` → `src/index.ts`의 `export type * from './model'`) |
 | 경로 별칭 | `@/` → `zero-rule-web/main/src/`, `@local/domain` → workspace 패키지 `sub/domain` |
 | 앱 모듈 | `@/lib/urls`의 `routerUrlOf`(헤더 로고 경로). 다른 앱에서는 같은 이름의 함수로 대체하거나 로고 경로를 바꾼다 |
@@ -97,7 +97,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 | 구분 | 파일 | 비고 |
 |---|---|---|
 | 에디터 | `PopupRichTextEditor.tsx`, `PopupRichTextMenu.tsx`, `popupRichText.ts`, `popupRichTextFormat.ts`, `PopupQuestionEditor.tsx`, `PopupScheduleFields.tsx` | CKEditor 커스텀 빌드 필요(`next/dynamic` 동적 import) |
-| 표시·미리보기 | `PopupRichBlocks.tsx`, `InlinePopupPreview.tsx`, `PopupPreviewDialog.tsx`, `PopupPreview.tsx`, `SurveyPreview.tsx`, `AspectVideoArea.tsx`, `popupPreviewDialogLayout.ts`, `imagePreviewLayout.ts` | |
+| 표시·미리보기 | `PopupRichBlocks.tsx`, `InlinePopupPreview.tsx`, `PopupPreviewDialog.tsx`, `PopupPreview.tsx`, `PopupFooter.tsx`(푸터·푸터 버튼), `popupLayout.ts`(공통 수치·색), `SurveyPreview.tsx`, `AspectVideoArea.tsx`, `popupPreviewDialogLayout.ts`, `imagePreviewLayout.ts` | |
 | 변환·공용 | `popupEditorTransform.ts`(TODO64), `popupCommon.ts`, `normalizePopupLink.ts`, `popupDemoQuestions.ts`, `index.ts`(진입점) | |
 | 샘플 | `sample/PopupListSample.tsx`(목록 기반), `sample/PopupSampleEditor.tsx`(공통 컴포넌트만으로 만든 편집 화면), `sample/popupSampleData.ts`(로컬 편집값 6종) | 서버·인증 없이 동작 |
 | 가이드 | `guide/PopupCommonGuide.tsx`(화면), `guide/guideData.ts`(프로세스·컴포넌트·함수 설명), `guide/guideNotices.ts`(공지) | 라우트 `/popup-common-guide`, 메뉴 `db/oracle/20_popup_common_guide_menu_oracle.sql`. 서버 API 미사용 |

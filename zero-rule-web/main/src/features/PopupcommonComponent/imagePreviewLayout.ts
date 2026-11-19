@@ -1,5 +1,6 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
 import { popupFontSize, popupMinimumSize } from './popupCommon';
+import { POPUP_LAYOUT } from './popupLayout';
 /**
  * POL-04-02 : 모드별 기준
  * POL-04-03 : 비율·상한
@@ -71,12 +72,12 @@ function textHeight(text: string, width: number, font: number, line: number): nu
 }
 // WPF PopupWindow.xaml 기준 창 크롬 치수.
 // 외곽 여백 PopupOuterGrid Margin 24, 본문 테두리 PopupBodyBorder 두께 0,
-// 콘텐츠 여백 PopupContent Margin 28,24,28,24, HeaderRow 40, FooterRow 80.
+// 콘텐츠 여백 PopupContent Margin 28,24,28,24, HeaderRow 40, FooterRow 최소 64. 값은 popupLayout.ts POPUP_LAYOUT 한곳에서 가져온다(TODO61-21).
 // PopupWindow.xaml.cs RefreshImageBounds·ImagePopupView_RecommendedSizeChanged와 같은 합산식이다.
-const WINDOW_MARGIN = 24;
+const WINDOW_MARGIN = POPUP_LAYOUT.windowMargin;
 const BODY_BORDER = 0;
-const CONTENT_MARGIN_X = 28;
-const CONTENT_MARGIN_Y = 24;
+const CONTENT_MARGIN_X = POPUP_LAYOUT.contentPaddingX;
+const CONTENT_MARGIN_Y = POPUP_LAYOUT.contentPaddingY;
 /**
  * POL-02-01 : 창 구조
  * ■ 팝업 헤더 높이
@@ -84,7 +85,7 @@ const CONTENT_MARGIN_Y = 24;
  * - out: 40(px) WPF HeaderRow 높이
  * - 헤더를 표시할 때 창 높이에 더하는 값을 제공한다.
  */
-export const POPUP_HEADER_HEIGHT = 40;
+export const POPUP_HEADER_HEIGHT = POPUP_LAYOUT.headerHeight;
 /**
  * POL-02-01 : 창 구조
  * ■ 팝업 푸터 높이
@@ -92,7 +93,7 @@ export const POPUP_HEADER_HEIGHT = 40;
  * - out: 64(px) WPF FooterRow 높이(TODO61-18, 2026-11-18: 80 → 64)
  * - 푸터를 표시할 때 창 높이에 더하는 값을 제공한다.
  */
-export const POPUP_FOOTER_HEIGHT = 64;
+export const POPUP_FOOTER_HEIGHT = POPUP_LAYOUT.footerHeight;
 /**
  * POL-04-02 : 모드별 기준
  * POL-04-03 : 비율·상한

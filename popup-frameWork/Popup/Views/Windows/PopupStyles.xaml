@@ -221,4 +221,17 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!--
+    POL-02-03 : 푸터 역할 — 팝업 푸터 버튼(TODO61-21). 높이 34·위아래 여백 0(2026-11-18 TODO61-18 확정값).
+    결과 안내창(PopupAlert)이 쓰는 ActionButtonStyle(높이 44)은 그대로 두고 푸터에서만 이 파생 스타일을 쓴다.
+    관리자 미리보기 PopupFooter.tsx POPUP_FOOTER_BUTTON_SX(primary·secondary)와 같은 값이다.
+    -->
+    <Style x:Key="FooterActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="22,0"/>
+    </Style>
+    <Style x:Key="FooterSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryActionButtonStyle}">
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="22,0"/>
+    </Style>
 </ResourceDictionary>

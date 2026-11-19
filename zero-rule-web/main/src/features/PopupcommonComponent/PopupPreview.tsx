@@ -1,13 +1,14 @@
 import SurveyPreview, {
   answerStateOf,
   surveyColors,
-  surveySubmitSx,
   type PreviewAnswer,
   type SurveyPreviewProps,
 } from './SurveyPreview';
 import AspectVideoArea, { FillVideoArea } from './AspectVideoArea';
 import normalizePopupLink from './normalizePopupLink';
-import { readTextBlocks, RICH_INDENT_STEP, richFontCss } from './popupRichText';
+import PopupFooter, { PopupFooterButton } from './PopupFooter';
+import { POPUP_COLORS, POPUP_LAYOUT } from './popupLayout';
+import { readTextBlocks } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
 import { PREVIEW_WINDOW_SHADOW, previewShadowMargin } from './popupPreviewDialogLayout';
@@ -17,8 +18,6 @@ import { quizRequiresPassing } from './popupQuizRule';
 import {
   fitToImageLayout,
   imageSizeMode,
-  POPUP_FOOTER_HEIGHT,
-  POPUP_HEADER_HEIGHT,
   type FitToImageLayout,
   type Size,
 } from './imagePreviewLayout';
@@ -52,18 +51,6 @@ interface PopupPreviewProps {
   hidePlaceholders?: boolean;
 }
 
-/*
- * POL-02-03 : 푸터 역할
- * '나중에 보기'·보조 '닫기' 버튼(TODO61-18). WPF SecondaryActionButtonStyle과 같은 모양:
- * 최소 너비 118·좌우 여백 22·모서리 9·SemiBold, 밝은 면(#F3F4F6)과 테두리(#D1D5DB)로 주 버튼과 구분한다.
- * 높이는 푸터 버튼 공통 34, 푸터는 높이 64·위아래 15(2026-11-18, WPF PopupWindow 푸터와 같음).
- */
-const FOOTER_BUTTON_HEIGHT = 34;
-const SECONDARY_FOOTER_BUTTON_SX = {
-  minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, boxSizing: 'border-box', whiteSpace: 'nowrap', flexShrink: 0,
-  borderRadius: '9px', border: '1px solid #D1D5DB', bgcolor: '#F3F4F6', color: '#111827', fontWeight: 600,
-  '&:hover': { bgcolor: '#E5E7EB' }, '&:active': { bgcolor: '#D1D5DB' }, '&:focus-visible': { borderColor: '#6B7280' },
-} as const;
 
 function text(value: unknown, fallback: string): string {
   return value == null || String(value).trim() === '' ? fallback : String(value);
@@ -73,6 +60,19 @@ function text(value: unknown, fallback: string): string {
 function doNotShowAgainLabel(hideDays?: number | null): string {
   return `${hideDays && hideDays > 0 ? hideDays : 30}일간 보지 않기`;
 }
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 유형별 콘텐츠 제목 모양(TODO61-21)
+ * - WPF CommonContentTitleStyle(22 SemiBold)을 기준으로 유형별 차이만 둔다. TEXT는 콘텐츠 제목이 없다.
+ *   IMAGE: 제목 아래 16 · VIDEO: VideoPopupView 제목 아래 15 · SURVEY·QUIZ: 설문 머리말 25, Border Padding 위 4, 제목 아래 6 + 설명 위 2 = 8.
+ *   굵기는 모두 600이다(2026-11-19 TODO61-20 실측에서 설문 제목만 800이던 차이를 WPF 기준으로 맞춤).
+ */
+const CONTENT_TITLE_SX = {
+  IMAGE: { fontSize: 22, fontWeight: 600, mb: 2, flexShrink: 0 },
+  VIDEO: { fontSize: 22, fontWeight: 600, mb: '15px', flexShrink: 0 },
+  SURVEY: { fontSize: 25, fontWeight: 600, mb: 1, pt: '4px', color: surveyColors.text },
+} as const;
 
 /** 콘텐츠 제목. TEXT는 콘텐츠 제목이 본문(textBlocks)에 포함되어 별도 제목이 없다. */
 function contentTitle(popup: AdminPopupDetail, hidePlaceholders: boolean): string {
@@ -303,7 +303,7 @@ function PopupBody({
         )}
         {/* WPF DescriptionTextBlock: 영상 아래, 14px, #4B5563. 완료 기준·기본 음량 같은 미리보기 전용 안내는 WPF에 없어 그리지 않는다. */}
         {showDescription && description && (
-          <Typography sx={{ fontSize: 14, color: '#4B5563', flexShrink: 0 }}>{description}</Typography>
+          <Typography sx={{ fontSize: POPUP_DEFAULT_FONT_SIZES.videoDescription, color: POPUP_COLORS.description, flexShrink: 0 }}>{description}</Typography>
         )}
       </Stack>
     );
@@ -356,20 +356,8 @@ function PopupBody({
   return (
     <Stack spacing={2}>
       {showPlainText && (richBlocks
-        ? <Box>{richBlocks.map((block, index) => (
-            /* 서식 본문은 React 요소로만 만든다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이 유지. */
-            /* 들여쓰기는 문단 전체 왼쪽 여백(줄바꿈된 줄 포함). WPF 40 DIP와 같은 40px 단위. */
-            <Typography key={index} component="div" sx={{ whiteSpace: 'pre-wrap', textAlign: block.alignment.toLowerCase(), minHeight: '1.5em',
-              pl: `${(block.indent ?? 0) * RICH_INDENT_STEP}px` }}>
-              {block.runs.map((run, runIndex) => (
-                <Box key={runIndex} component="span" sx={{
-                  fontWeight: run.bold ? 700 : undefined, fontStyle: run.italic ? 'italic' : undefined,
-                  textDecoration: [run.underline && 'underline', run.strikethrough && 'line-through'].filter(Boolean).join(' ') || undefined, color: run.color,
-                  fontSize: run.size ? `${run.size}px` : undefined, fontFamily: richFontCss(run.font),
-                }}>{run.text}</Box>
-              ))}
-            </Typography>
-          ))}</Box>
+        /* 서식 문단 그리기는 문항·선택지와 같은 PopupRichBlocks를 쓴다(TODO61-21). 문단마다 본문 Typography 줄 높이. */
+        ? <PopupRichBlocks blocks={richBlocks} paragraph="div" />
         : <Typography sx={{ whiteSpace: 'pre-wrap' }}>{String(content.plainText ?? '')}</Typography>
       )}
       {bottomDescription}
@@ -648,9 +636,9 @@ export default function PopupPreview({
             direction="row"
             alignItems="center"
             sx={{
-              height: POPUP_HEADER_HEIGHT,
+              height: POPUP_LAYOUT.headerHeight,
               boxSizing: 'border-box',
-              pl: '18px',
+              pl: `${POPUP_LAYOUT.headerPaddingLeft}px`,
               pr: 2,
               flexShrink: 0,
               bgcolor: '#000',
@@ -696,7 +684,7 @@ export default function PopupPreview({
             overflowWrap: 'anywhere',
             // WPF PopupContent Margin="28,24,28,24"는 유형 공통이다(TODO61-17).
             p: originalImage ? 0 : undefined,
-            ...(!originalImage ? {px: '28px', py: '24px'} : {}),
+            ...(!originalImage ? {px: `${POPUP_LAYOUT.contentPaddingX}px`, py: `${POPUP_LAYOUT.contentPaddingY}px`} : {}),
             ...(isSurvey
               ? {
                   scrollbarWidth: 'thin',
@@ -712,18 +700,7 @@ export default function PopupPreview({
           }}
         >
           {showContentTitle && (
-            <Typography
-              variant="h5"
-              fontWeight={800}
-              sx={{
-                mb: isSurvey ? 1 : 2,
-                ...(popup.popupType === 'IMAGE' ? {fontSize: 22, fontWeight: 600, flexShrink: 0} : {}),
-                // WPF CommonContentTitleStyle 22 SemiBold, VideoPopupView 제목 아래 여백 15(TODO61-17)
-                ...(popup.popupType === 'VIDEO' ? {fontSize: 22, fontWeight: 600, mb: '15px', flexShrink: 0} : {}),
-                // WPF 설문 머리말 Border Padding 위 4, 제목 아래 6 + 설명 위 2 = 8(mb 1).
-                ...(isSurvey ? { fontSize: 25, color: surveyColors.text, pt: '4px' } : {}),
-              }}
-            >
+            <Typography variant="h5" sx={CONTENT_TITLE_SX[isSurvey ? 'SURVEY' : popup.popupType === 'VIDEO' ? 'VIDEO' : 'IMAGE']}>
               {richSurveyTitle ? <PopupRichBlocks blocks={richSurveyTitle} /> : title}
             </Typography>
           )}
@@ -757,32 +734,16 @@ export default function PopupPreview({
             />
           </Box>
         </Box>
+        {/* POL-02-03 : 푸터 역할 — 일반·설문 푸터가 같은 PopupFooter(WPF FooterArea 배치)를 쓴다(TODO61-21).
+            나중에 보기는 왼쪽 끝, 안내·다시 보지 않기는 가운데, 버튼은 오른쪽. 설문은 응답 진행 문구(WPF 12)가 길면 줄바꿈한다. */}
         {isSurvey && (
-          <Box
-            // WPF 설문 푸터와 같이 위 구분선 없음(2026-11-17).
-            // WPF 설문 푸터: 자동 높이(최소 64)·위아래 15(TODO61-18).
-            sx={{ px: 3, py: '15px', minHeight: POPUP_FOOTER_HEIGHT, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-              {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
-              {showLaterButton && (
-                <Button
-                  variant="text"
-                  color="inherit"
-                  sx={{ ...SECONDARY_FOOTER_BUTTON_SX, fontSize: footerFontSize ?? 14 }}
-                  onClick={laterPreview}
-                >
-                  나중에 보기
-                </Button>
-              )}
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  id={reasonId}
-                  role="status"
-                  aria-live="polite"
-                  sx={{ color: surveyColors.muted, fontSize: footerFontSize ?? 13 }}
-                >
+          <PopupFooter
+            fontSize={footerFontSize ?? POPUP_DEFAULT_FONT_SIZES.footer}
+            wrap="text"
+            start={showLaterButton && <PopupFooterButton kind="secondary" onClick={laterPreview}>나중에 보기</PopupFooterButton>}
+            status={
+              <>
+                <Typography id={reasonId} role="status" aria-live="polite" sx={{ color: surveyColors.muted, fontSize: 12 }}>
                   {progress}
                 </Typography>
                 {submissionStatus && (
@@ -793,107 +754,38 @@ export default function PopupPreview({
                 {popup.showFooter && popup.showDoNotShowAgain && (
                   <FormControlLabel
                     disabled={!videoUnlocked}
-                    control={
-                      <Checkbox
-                        size="small"
-                        sx={{
-                          color: surveyColors.muted,
-                          '&.Mui-checked': { color: surveyColors.text },
-                        }}
-                      />
-                    }
+                    control={<Checkbox size="small" sx={{ color: surveyColors.muted, '&.Mui-checked': { color: surveyColors.text } }} />}
                     label={doNotShowAgainLabel(popup.hideDays)}
                   />
                 )}
-              </Box>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ flexShrink: 0 }}>
+              </>
+            }
+            end={
+              <>
                 {showSecondaryClose && (
-                  <Button
-                    variant="text"
-                    color="inherit"
-                    sx={{ ...SECONDARY_FOOTER_BUTTON_SX, fontSize: footerFontSize ?? 14 }}
-                    onClick={() => {
-                      resetPreview();
-                      onClose?.();
-                    }}
-                  >
-                    닫기
-                  </Button>
+                  <PopupFooterButton kind="secondary" onClick={() => { resetPreview(); onClose?.(); }}>닫기</PopupFooterButton>
                 )}
                 {/* 문항 0개는 편집기 저장 검증("문항을 한 개 이상 추가해 주세요.")이 막으므로 미리보기에서도 비활성으로 둔다.
                     필수 문항이 0개(선택 문항만)이면 WPF와 같이 바로 제출할 수 있다. */}
-                <Button
-                  variant="contained"
-                  sx={{ ...surveySubmitSx, height: FOOTER_BUTTON_HEIGHT, py: 0, fontSize: footerFontSize ?? 14 }}
-                  disabled={submitDisabled}
-                  aria-describedby={submitDisabled ? reasonId : undefined}
-                  onClick={submitPreview}
-                >
+                <PopupFooterButton kind="submit" disabled={submitDisabled} aria-describedby={submitDisabled ? reasonId : undefined} onClick={submitPreview}>
                   제출
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
+                </PopupFooterButton>
+              </>
+            }
+          />
         )}
         {!isSurvey && popup.showFooter && (
-          <>
-            {/* WPF FooterRow(64)·FooterArea Margin="28,15,28,15"는 유형 공통이고 본문과의 구분선이 없다(TODO61-17).
-                좁은 인라인 미리보기·확대 배율에서 줄이 바뀌어도 잘리지 않게 IMAGE를 포함한 모든 유형을 최소 높이로 둔다(TODO61-18: 줄바꿈이 없으면 64 그대로). */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{
-                pl: '28px',
-                pr: '28px',
-                pt: '15px',
-                pb: '15px',
-                boxSizing: 'border-box',
-                minHeight: POPUP_FOOTER_HEIGHT,
-                flexShrink: 0,
-                flexWrap: 'wrap',
-                gap: 1,
-                // 푸터 글자: footerFontSize, 없으면 WPF 기본 14를 명시한다(테마 버튼·라벨 크기에 맡기지 않음).
-                fontSize: footerFontSize ?? POPUP_DEFAULT_FONT_SIZES.footer,
-                '& .MuiFormControlLabel-label, & .MuiButton-root': { fontSize: 'inherit' },
-              }}
-            >
-              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
-                {/* POL-02-03 : 푸터 역할 — 나중에 보기는 왼쪽 끝. WPF FooterArea와 같은 순서다. */}
-                {showLaterButton && (
-                  <Button variant="text" color="inherit" sx={SECONDARY_FOOTER_BUTTON_SX} onClick={laterPreview}>
-                    나중에 보기
-                  </Button>
-                )}
-                {popup.showDoNotShowAgain ? (
-                  <FormControlLabel
-                    control={<Checkbox size="small" />}
-                    label={doNotShowAgainLabel(popup.hideDays)}
-                  />
-                ) : (
-                  <span />
-                )}
-              </Stack>
-              {/* 좁아서 줄이 바뀌어도 확인 버튼은 오른쪽에 둔다. */}
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 'auto' }}>
-                {popup.showCloseButton && (
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    // WPF ActionButtonStyle: MinWidth 118 · 모서리 9 · 푸터 높이 34(FOOTER_BUTTON_HEIGHT) · 배경 #111827(hover #1F2937, 누름 #374151, 비활성 #E5E7EB/#9CA3AF) · 흰 글자 SemiBold
-                    sx={{ minWidth: 118, height: FOOTER_BUTTON_HEIGHT, px: '22px', py: 0, borderRadius: '9px', fontWeight: 600, bgcolor: '#111827', color: '#FFFFFF',
-                      '&:hover': { bgcolor: '#1F2937' }, '&:active': { bgcolor: '#374151' },
-                      '&.Mui-disabled': { bgcolor: '#E5E7EB', color: '#9CA3AF' } }}
-                    disabled={footerButtonDisabled}
-                    onClick={handleFooter}
-                  >
-                    {linkAction ? '바로가기' : '확인'}
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-          </>
+          // 좁은 인라인 미리보기·확대 배율에서 줄이 바뀌어도 잘리지 않게 최소 높이로 두고, 확인 버튼은 오른쪽에 둔다(TODO61-18).
+          <PopupFooter
+            fontSize={footerFontSize ?? POPUP_DEFAULT_FONT_SIZES.footer}
+            start={showLaterButton && <PopupFooterButton kind="secondary" onClick={laterPreview}>나중에 보기</PopupFooterButton>}
+            status={popup.showDoNotShowAgain ? <FormControlLabel control={<Checkbox size="small" />} label={doNotShowAgainLabel(popup.hideDays)} /> : undefined}
+            end={popup.showCloseButton && (
+              <PopupFooterButton kind="primary" disabled={footerButtonDisabled} onClick={handleFooter}>
+                {linkAction ? '바로가기' : '확인'}
+              </PopupFooterButton>
+            )}
+          />
         )}
       </Paper>
     </Box>

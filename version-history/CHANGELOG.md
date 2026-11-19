@@ -1,5 +1,20 @@
 # 변경 이력
 
+## 2026-11-19-09 — dev: TODO61-21 미리보기 레이아웃 공통화
+
+- 이유 · 웹 미리보기와 WPF의 버튼·푸터·여백이 거의 같아져, 같은 값·모양을 한곳에서 관리하고 TODO61-20 실측 차이 2건을 WPF 기준으로 정합성 보완.
+- 변경 ·
+  - 웹 `popupLayout.ts` 추가: `POPUP_LAYOUT`(창 여백·헤더·본문·푸터·버튼 수치), `POPUP_COLORS`(버튼·테두리·설명 색). `imagePreviewLayout.ts`·`popupPreviewDialogLayout.ts`·`AspectVideoArea.tsx`·`PopupPreview.tsx`의 직접 기재 값을 대체.
+  - 웹 `PopupFooter.tsx` 추가: `PopupFooter`(WPF FooterArea 배치)·`PopupFooterButton kind="primary|secondary|submit"`. `PopupPreview`의 일반·설문 푸터 두 분기를 하나로 합침. 푸터 안 체크박스 MUI 기본 여백 제거로 WPF와 글자 위치 일치.
+  - TEXT 서식 본문이 `PopupRichBlocks`(`paragraph="div"`)를 쓰도록 중복 렌더링 제거.
+  - 콘텐츠 제목 유형별 표(`CONTENT_TITLE_SX`), 설문·퀴즈 제목 굵기 800 → 600. 설문 푸터 좌우 24 → 28, 응답 진행 문구 13 → 12.
+  - WPF: `FooterActionButtonStyle`·`FooterSecondaryButtonStyle`(PopupStyles.xaml), `SurveyFooterSubmitButtonStyle`(SurveyStyles V1·V2) 추가, 푸터·본문 제출 버튼의 직접 `Height`·`Padding` 제거. 결과 안내창 `ActionButtonStyle` 44 유지.
+  - 문서: TODO61-21 등록, UI 기본값 사양·비교 문서·컴포넌트 이식 파일 목록·활성 작업 갱신, 반영 후 실측 `docs/reviews/TODO61-20_popup_ui_parity/MEASURES_61-21.md`.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupLayout.ts`·`PopupFooter.tsx`·`PopupPreview.tsx`·`PopupRichBlocks.tsx`·`imagePreviewLayout.ts`·`popupPreviewDialogLayout.ts`·`AspectVideoArea.tsx`, `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`·`PopupWindow.xaml`·`PopupWindow.xaml.cs`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml`·`SurveyDesigns/SurveyStyles.V1.xaml`·`V2.xaml`, 문서.
+- 검증 · 웹 `tsc`·eslint 오류 0, 하네스 13종 통과(preview-61 234 등). `verify-popup-parity.cjs` 54건 통과, 글자 대조 차이 8 → 1건(기존 기록 VIDEO+QUIZ 상단 제목). WPF 빌드 0/0, BehaviorTests 1,740·RichTextTests 116·RecoveryTests 255·ApiDemoTests 150 통과, PopupWindowTests는 `CheckCloseButtonAfterDisplayChange` 제외 602건 통과(해당 검사는 변경 전 코드에서도 현재 주 모니터 작업 영역 2561×1393에서 실패 — 환경 요인).
+- 미실행 · 로그인 관리자 화면, 브라우저 확대·Windows 배율, 폐쇄망 실화면.
+- 상태 · 로컬 커밋, 미푸시.
+
 ## 2026-11-19-08 — docs: 활성 작업 P100 잔여 항목 분류
 
 - 이유 · 활성 작업 표의 P100 다음 할 일("미체크 7건 확인")이 원본 문서 상태와 맞는지 정합성 확인.

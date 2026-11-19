@@ -1,6 +1,7 @@
 import type { AdminPopupDetail } from '@local/domain';
 import type { Size } from './imagePreviewLayout';
 import { popupMinimumSize } from './popupCommon';
+import { POPUP_LAYOUT } from './popupLayout';
 
 /* WPF PopupWindow.ApplyPosition과 같은 9개 위치. 작업 영역(미리보기에서는 브라우저 창) 가장자리에 붙이고,
  * 모르는 값은 WPF PopupFactory와 같이 중앙으로 본다. 값은 [가로, 세로] flex 정렬값이다. */
@@ -33,7 +34,7 @@ export function previewPositionAlign(popup: AdminPopupDetail): [string, string] 
  */
 export function previewShadowMargin(popup: AdminPopupDetail): number {
   const hasVideo = popup.popupType === 'VIDEO' || (popup.popupType === 'QUIZ' && popup.content.videoEnabled === true);
-  return hasVideo || popup.sizeMode === 'FULLSCREEN' ? 0 : 24;
+  return hasVideo || popup.sizeMode === 'FULLSCREEN' ? 0 : POPUP_LAYOUT.windowMargin;
 }
 
 /** WPF DropShadowEffect(BlurRadius 22 · ShadowDepth 4 · Direction 270 · Opacity 0.28)에 해당하는 CSS 그림자. 여백이 있는 창에만 쓴다. */

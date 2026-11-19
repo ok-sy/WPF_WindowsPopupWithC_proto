@@ -87,7 +87,7 @@ namespace Popup.Views.Windows
                 FooterCloseButton.Content = "제출";
                 // 닫기 숨김 옵션으로 필수 제출 경로까지 사라지지 않도록 한다.
                 FooterCloseButton.Visibility = Visibility.Visible;
-                FooterCloseButton.Style = (Style)survey.FindResource("SurveySubmitButtonStyle");
+                FooterCloseButton.Style = (Style)survey.FindResource("SurveyFooterSubmitButtonStyle");
                 FooterResponseProgressText.Foreground = (System.Windows.Media.Brush)survey.FindResource("SurveyMutedText");
                 survey.ResponseProgressChanged += (_, _) => RefreshFooterState();
                 if (_options.ShowFooter)
