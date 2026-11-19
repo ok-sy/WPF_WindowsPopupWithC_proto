@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-19-11 — dev: TODO61-22 팝업 레이아웃 가이드 추가
+
+- 이유 · 웹 미리보기와 WPF의 레이아웃 수치가 공통화(TODO61-21)로 정리되어, 영역·수치를 캡처 위에 표시한 가이드로 한곳에서 확인할 필요가 있음.
+- 변경 ·
+  - `scripts/verify-popup-parity.cjs` 6단계 추가: 웹 흰 판 캡처에 헤더·본문 여백·푸터·버튼 영역과 글자 번호(크기/굵기 조합별, 푸터 글자는 별도)를 SVG로 표시한 `<ID>.guide.png`, 유형별 번호표(웹·WPF 실측) `guide-figures.md` 생성.
+  - `docs/design/61_POPUP_LAYOUT_GUIDE.md` 작성: 다시 만들기 방법, 공통 창 구조 표(값·웹 상수·WPF 선언), 푸터 배치 규칙, 유형별 그림 7종과 번호표, 알려진 차이, 레이아웃 변경 절차. 그림·나란히 캡처 14장은 `docs/design/61_popup_layout_guide/`.
+  - 기능 목차·UI 기본값 사양·TODO61(61-22)·활성 작업에 연결.
+- 주요 파일 · `scripts/verify-popup-parity.cjs`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/`, `docs/design/README.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-parity.cjs` 54건 통과, 가이드 그림 육안 확인. 코드 동작 변경 없음.
+- 미실행 · 폐쇄망 배율·전역 CSS 환경 캡처.
+- 상태 · 원격 반영.
+
 ## 2026-11-19-10 — dev: TODO28 웹 400=Light 매핑과 WPF 굵기 대조 확인 항목 추가
 
 - 이유 · 폐쇄망 전역 CSS가 같은 `font-family` 아래 400 → Light, 700 → Bold 파일을 선언하고 있어, 웹(일반 = Light)과 WPF(굵기 400으로 패밀리 안 서체 선택)의 일반 글자 굵기가 Windows 패밀리 구성에 따라 달라질 수 있음.

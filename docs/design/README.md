@@ -39,7 +39,7 @@
 | [20261029 복수 선택](20261029_SURVEY_복수선택_최소최대선택수_TODO.md) | SURVEY 복수 선택 최소·최대 | F100·P200 |
 | [49](49_TEXT_들여쓰기_우클릭팔레트_TODO.md)·[62](62_취소선_문단서식_편집메뉴_TODO.md)·[63](63_문단들여쓰기_5회제한해제_TODO.md)·[66](66_서식초기화_버튼삭제_TODO.md) | 서식 편집 메뉴·들여쓰기 | 63 이전 5단계 상한·66 이전 일괄 초기화는 대체 |
 | [20261029 CKEditor5](20261029_CKEditor5_전체통합_TODO.md)·[20261104 Toolbar](20261104_PopupRichTextEditor_Toolbar_TODO.md) | CKEditor 통합·툴바 | |
-| [61](61_관리자_미리보기_컴포넌트화_TODO.md)·[67](67_MUIdeprecated속성_미리보기호환검증_TODO.md) | 관리자 미리보기·[팝업 UI 기본값 사양](61_POPUP_UI_DEFAULTS_SPEC.md) | F100과 표시 정합 |
+| [61](61_관리자_미리보기_컴포넌트화_TODO.md)·[67](67_MUIdeprecated속성_미리보기호환검증_TODO.md) | 관리자 미리보기·[팝업 UI 기본값 사양](61_POPUP_UI_DEFAULTS_SPEC.md)·[팝업 레이아웃 가이드](61_POPUP_LAYOUT_GUIDE.md) | F100과 표시 정합 |
 | [64](64_팝업데이터변환_함수분리_이식가이드_TODO.md)·[69](69_PopupcommonComponent_공통화_샘플페이지_TODO.md)·[20261030 독립 재사용](20261030_PopupcommonComponent_독립재사용_필드추출_TODO.md)·[20261030 가이드 화면](20261030_PopupCommonGuide_화면정리_구현명세_TODO.md) | 공통 컴포넌트·변환·가이드 | F300 샘플 |
 | [77](77_관리자웹_메인버튼_탭닫기_회귀검증_TODO.md) | 메인 버튼으로 연 탭 닫기 | **폐기(2026-11-17)** |
 

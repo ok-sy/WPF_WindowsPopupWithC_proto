@@ -60,6 +60,8 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 
 ## 실측 기록
 
+영역 표시가 들어간 유형별 캡처와 웹 상수·WPF 선언 대응표는 [팝업 레이아웃 가이드](61_POPUP_LAYOUT_GUIDE.md)에 있다.
+
 2026-11-19 로컬 하네스 실측(웹 100%·WPF 96 DPI, 11세트): [TODO61-20 결과](../reviews/TODO61-20_popup_ui_parity/README.md). 헤더 40·제목 17/600, 주 버튼 118×34·제출 132×34, 버튼 아래 15, TEXT 본문 15는 웹·WPF가 같다. 그때 나온 두 차이(설문 제목 굵기, 설문 푸터 진행 문구)는 TODO61-21에서 WPF 기준으로 맞췄다. 웹 수치는 `popupLayout.ts`(`POPUP_LAYOUT`·`POPUP_COLORS`)와 `PopupFooter.tsx`, WPF 푸터 버튼은 `FooterActionButtonStyle`·`FooterSecondaryButtonStyle`·`SurveyFooterSubmitButtonStyle`에 모여 있다.
 
 ## 캡처와 검증 기록 규칙

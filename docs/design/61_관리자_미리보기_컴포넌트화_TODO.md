@@ -260,3 +260,15 @@
 - [ ] 폐쇄망 실화면(전역 CSS·배율)에서 푸터·제목 확인.
 
 검증 · 웹 `tsc`·변경 파일 eslint 오류 0. 하네스 preview-61 234, completion-ux-43 82, common-sample-69 63, image-preview 54, survey-rich-text-55 74, rich-text-49 94, guide-render 31, guide-registry 313, transform-64 78, quiz-option-byte-73 44, rgstpop-quiz-rule 25, template-picker 7, pick-fields 34건 통과. `verify-popup-parity.cjs` 54건 통과, 글자 대조 차이 8건 → 1건(기존 기록된 VIDEO+QUIZ 상단 제목). WPF 빌드 경고·오류 0, BehaviorTests 1,740·RichTextTests 116·RecoveryTests 255·ApiDemoTests 150 통과, PopupWindowTests는 `CheckCloseButtonAfterDisplayChange`를 뺀 602건 통과(이 검사는 변경 전 코드에서도 현재 주 모니터 작업 영역 2561×1393에서 같은 위치로 실패하는 환경 문제).
+
+## 61-22 팝업 레이아웃 가이드 (2026-11-19)
+
+**상태** · 로컬 작성 완료. 폐쇄망 배율·전역 CSS 반영 캡처는 대기.
+**결과** · [팝업 레이아웃 가이드](61_POPUP_LAYOUT_GUIDE.md)
+
+- [x] `scripts/verify-popup-parity.cjs` 6단계: 웹 흰 판 캡처 위에 헤더·본문 여백·푸터·버튼 영역과 글자 번호를 표시한 `<ID>.guide.png`와 유형별 번호표(`guide-figures.md`, 웹·WPF 실측)를 생성한다.
+- [x] 7세트(TEXT 560×750, TEXT 좁은 폭·긴 문구, SURVEY, QUIZ OX, IMAGE, VIDEO, VIDEO+QUIZ) 가이드 그림과 웹·WPF 나란히 캡처를 `docs/design/61_popup_layout_guide/`에 반입.
+- [x] 공통 창 구조 표(값 · 웹 상수 `POPUP_LAYOUT`·`PopupFooterButton` · WPF 선언·스타일), 푸터 배치 규칙, 알려진 차이, 레이아웃 변경 절차를 정리했다.
+- [ ] 폐쇄망 배율·전역 CSS 환경 캡처 추가.
+
+검증 · `verify-popup-parity.cjs` 54건 통과, 가이드 그림 7장 육안 확인(TEXT·좁은 폭·SURVEY·VIDEO+QUIZ).

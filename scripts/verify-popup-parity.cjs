@@ -15,6 +15,7 @@ compiled.init(); fs.mkdirSync(output, {recursive: true});
 fs.writeFileSync(path.join(output, 'urls-shim.js'), 'exports.routerUrlOf = (url) => url;');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 let browser, socket, server, checks = 0;
+const guideData = {}; // TODO61-22 레이아웃 가이드 그림용(팝업 ID → 영역·번호 좌표)
 const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 
 /* 같은 데이터(관리자 편집값 형식). WPF에는 서버 응답 형식으로 바꿔 넘긴다(toWpf). */
@@ -89,6 +90,7 @@ const toWpf = p => {
       : /^\/[\w.-]+\.(js|png)$/.test(req.url) ? path.join(output, req.url.slice(1)) : null;
     const types = {png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4', js: 'application/javascript'};
     if (file && fs.existsSync(file)) { res.setHeader('Content-Type', types[file.split('.').pop()]); res.end(fs.readFileSync(file)); return; }
+    if (req.url.startsWith('/guide')) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(guidePage(decodeURIComponent(req.url.split('?')[1]))); return; }
     if (req.url.startsWith('/side')) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(sidePage(decodeURIComponent(req.url.split('?')[1]))); return; }
     res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end('<!doctype html><body style="margin:0;background:#fff"><div id="root"></div><script src="/bundle.js"></script>');
   });
@@ -205,9 +207,65 @@ const toWpf = p => {
   fs.writeFileSync(path.join(output, 'texts.json'), JSON.stringify(textRows, null, 2));
   fs.writeFileSync(path.join(output, 'texts.md'), md.join('\n') + '\n');
   if (diffs.length) console.table(diffs);
+
+  // 6. TODO61-22 레이아웃 가이드 그림: 웹 흰 판 캡처 위에 헤더·본문 여백·푸터·버튼 영역과 글자 번호를 그린다.
+  //    번호는 글자 크기/굵기 조합마다 처음 나오는 요소에 붙이고, 번호별 웹·WPF 실측표를 guide-figures.md에 남긴다.
+  const GUIDE = ['PARITY-TEXT-560x750', 'PARITY-TEXT-NARROW-LONG', 'PARITY-SURVEY', 'PARITY-QUIZ-OX', 'PARITY-IMAGE', 'PARITY-VIDEO', 'PARITY-VIDEO-QUIZ'];
+  const figures = ['<!-- scripts/verify-popup-parity.cjs 6단계가 생성. 직접 고치지 말고 다시 생성한다. -->', ''];
+  for (const id of GUIDE) {
+    const popup = fixtures.find(f => f.popupId === id), w = web[id];
+    const buttons = w.regions.buttons.filter(x => x.box.h <= 40);
+    const footerTop = popup.showFooter && buttons.length ? Math.min(...buttons.map(x => x.box.y)) - 15 : null;
+    const seen = new Set(), markers = [];
+    for (const t of w.texts) {
+      // 같은 크기/굵기라도 푸터 안 글자는 따로 번호를 붙인다(본문과 푸터 기본값이 다르기 때문).
+      const key = t.size + '/' + t.weight + (footerTop != null && t.box.y >= footerTop ? '/footer' : '');
+      if (seen.has(key) || markers.length >= 9) continue;
+      seen.add(key);
+      const row = textRows.find(r => r.id === id && r.text === t.text.slice(0, 24));
+      markers.push({n: markers.length + 1, x: t.box.x, y: t.box.y, h: t.box.h, text: t.text.slice(0, 24), web: `${t.size}/${t.weight}`, wpf: row?.wpf ?? '—'});
+    }
+    guideData[id] = {width: w.frame.width, height: w.frame.height, header: w.regions.header?.h ?? 0, footerTop, video: !!popup.content.videoUrl, buttons, markers};
+    await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}/guide?${encodeURIComponent(id)}`}); await pause(400);
+    await shot(path.join(output, id + '.guide.png'), {x: 0, y: 0, width: w.frame.width + 300, height: w.frame.height + 40});
+    figures.push(`### ${id} (${popup.popupType}${popup.content.videoEnabled ? '+VIDEO' : ''} 창 ${popup.width}×${popup.height})`, '',
+      `![${id} 레이아웃](61_popup_layout_guide/${id}.guide.png)`, '',
+      '| 번호 | 글자 | 웹 크기/굵기 | WPF 크기/굵기 |', '|---|---|---|---|',
+      ...markers.map(m => `| ${m.n} | ${cell(m.text)} | ${m.web} | ${m.wpf} |`),
+      '', `웹·WPF 나란히: [${id}.side.png](61_popup_layout_guide/${id}.side.png)`, '');
+  }
+  fs.writeFileSync(path.join(output, 'guide-figures.md'), figures.join('\n'));
   console.table(rows.map(r => ({...r, webFrame: r.webFrame?.join('×'), wpfContent: r.wpfContent?.join('×'), web: r.web?.join(' / '), wpf: r.wpf?.join(' / ')})));
   console.log('PASS: ' + checks + ' popup parity checks · images: ' + output);
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
+
+/* TODO61-22 가이드 그림 페이지: 왼쪽 위 (20,20)에 웹 흰 판 캡처, 그 위에 SVG로 영역·수치·번호를 그린다. 오른쪽 280px은 설명 칸. */
+function guidePage(popupId) {
+  const g = guideData[popupId], O = 20, W = g.width, H = g.height, L = W + O + 16;
+  const label = (y, color, lines) => `<line x1="${O + W}" y1="${y}" x2="${L - 4}" y2="${y}" stroke="${color}" stroke-dasharray="3 3"/>`
+    + lines.map((t, i) => `<text x="${L}" y="${y + 4 + i * 15}" fill="${color}" font-weight="${i ? 400 : 700}">${t}</text>`).join('');
+  const parts = [];
+  if (g.header) parts.push(`<rect x="${O}" y="${O}" width="${W}" height="${g.header}" fill="none" stroke="#2563EB" stroke-width="2"/>`,
+    `<line x1="${O + 18}" y1="${O + g.header + 4}" x2="${O + 18}" y2="${O + g.header + 12}" stroke="#2563EB"/>`,
+    label(O + g.header / 2, '#2563EB', ['헤더 40', '제목 시작 18 · 로고 100×24']));
+  const contentTop = O + g.header + (g.video ? 24 : 24), contentBottom = O + (g.footerTop ?? H) - 24;
+  parts.push(`<rect x="${O + 28}" y="${contentTop}" width="${W - 56}" height="${Math.max(0, contentBottom - contentTop)}" fill="none" stroke="#16A34A" stroke-width="2" stroke-dasharray="6 4"/>`,
+    label(contentTop + 12, '#16A34A', ['본문 여백', '좌우 28 · 위아래 24']));
+  if (g.footerTop != null) parts.push(`<rect x="${O}" y="${O + g.footerTop}" width="${W}" height="${H - g.footerTop}" fill="rgba(234,88,12,0.06)" stroke="#EA580C" stroke-width="2"/>`,
+    label(O + g.footerTop + (H - g.footerTop) / 2, '#EA580C', [`푸터 ${Math.round(H - g.footerTop)} (최소 64)`, '좌우 28 · 위아래 15']));
+  for (const b of g.buttons) parts.push(`<rect x="${O + b.box.x}" y="${O + b.box.y}" width="${b.box.w}" height="${b.box.h}" fill="none" stroke="#9333EA" stroke-width="2"/>`,
+    `<text x="${O + b.box.x + b.box.w / 2}" y="${O + b.box.y - 4}" fill="#9333EA" text-anchor="middle" font-weight="700">${Math.round(b.box.w * 10) / 10}×${b.box.h}</text>`);
+  for (const m of g.markers) parts.push(`<circle cx="${O + Math.max(9, m.x - 12)}" cy="${O + m.y + Math.min(m.h, 24) / 2}" r="9" fill="#DC2626"/>`,
+    `<text x="${O + Math.max(9, m.x - 12)}" y="${O + m.y + Math.min(m.h, 24) / 2 + 4}" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">${m.n}</text>`);
+  // 범례는 본문 여백 설명 아래(오른쪽 칸 가운데)에 둔다 — 아래쪽 푸터 설명과 겹치지 않게.
+  const legendTop = contentTop + 60;
+  const legend = g.markers.map((m, i) => `<text x="${L}" y="${legendTop + 18 + i * 15}" fill="#111827">${m.n}. ${m.web.replace('/', 'px / ')}</text>`).join('');
+  return `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff">
+  <div style="position:relative;width:${W + 300}px;height:${H + 40}px;font:12px 'Malgun Gothic'">
+  <img src="/${popupId}.web.png" style="position:absolute;left:${O}px;top:${O}px;outline:1px solid #9CA3AF">
+  <svg width="${W + 300}" height="${H + 40}" style="position:absolute;left:0;top:0;font:12px 'Malgun Gothic'">${parts.join('')}
+  <text x="${L}" y="${legendTop}" fill="#DC2626" font-weight="700">글자 번호 (크기 / 굵기)</text>${legend}</svg></div>`;
+}
 
 function sidePage(popupId) {
   return `<!doctype html><meta charset="utf-8"><body style="margin:0;padding:12px;background:#9ca3af;font:13px Malgun Gothic">
