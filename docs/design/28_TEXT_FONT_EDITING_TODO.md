@@ -251,6 +251,19 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 ### 구현 시 확인할 사항
 
 - [ ] 폐쇄망 Windows에서 WPF가 인식하는 Text·Title의 패밀리 이름과 `FontWeight` 400/700에 실제 선택되는 서체를 확인한다. CSS `local()`의 이름은 비교 자료로 사용한다.
+- [ ] **웹 400 = Light 매핑과 WPF 일반 굵기 대조(2026-11-19 추가).** 폐쇄망 전역 CSS는 같은 `font-family` 이름 아래 `@font-face`를 400 → Light 파일, 700 → Bold 파일로 선언한다. 웹은 그 CSS 이름을 `registerPopupRichFonts`의 `css`로 등록하면 일반 = Light, 굵게 = Bold로 자동 선택된다(코드 변경 없음). WPF는 굵기 값(일반 400·`bold` 700)만 받아 Windows 패밀리 안에서 서체를 고르므로, 설치된 패밀리 구성을 아래 명령으로 확인한다(`*X Text*`는 실제 이름 일부).
+  ```powershell
+  Add-Type -AssemblyName PresentationCore
+  [System.Windows.Media.Fonts]::SystemFontFamilies | Where-Object { $_.Source -like '*X Text*' } |
+    ForEach-Object { $_.Source; $_.FamilyTypefaces | ForEach-Object { "   " + $_.Weight + " / " + $_.Style } }
+  ```
+  | Windows 패밀리 구성 | WPF 일반 | WPF 굵게 | 판단 |
+  |---|---|---|---|
+  | 한 패밀리에 Light·Bold만 | Light(가장 가까운 굵기) | Bold | 웹과 같음. 그 패밀리 이름을 `family`로 등록하면 완료 |
+  | 한 패밀리에 Light·Regular·Bold | **Regular** | Bold | 일반 글자가 웹(Light)과 다름. 일반 굵기 정렬 방법 결정 필요 |
+  | Light가 별도 패밀리(`X Text Light` 등) | 저장 패밀리에 따름 | — | 저장할 `family` 이름과 굵게 처리 결정 필요 |
+
+  2·3번째 경우는 저장값에 굵기 정보를 추가하거나 WPF 적용 굵기를 바꾸는 등 수정 범위를 확인 결과로 정한다. Text·Title 각각 확인하고 결과(명령 출력)를 이 문서에 기록한다.
 - [x] 관리자 웹 `popupRichText.ts`의 `htmlToBlocks()`, `blocksToHtml()`, `readTextBlocks()`, `richFontCss()`와 `popupRichTextFormat.ts`의 `applyFormat()`·`fontIdFromModel()`을 대조한다. 선택·저장 시 Windows 이름으로 변환하고, 재편집과 `PopupRichBlocks` 미리보기에서 등록된 CSS 별칭으로 복원한다. 저장 시 PC 글꼴 조회에 의존하지 않는다.
 - [x] 서버 `PopupRichText.java`의 `validateAndDerivePlainText()`에서 신규 단일 이름의 타입·길이·제어문자 등을 검증한다. CSS 목록·경로·URI는 허용하지 않는다. 기존 JSON·DTO·API 계약을 확인해 한계를 정하고, 저장·재조회에서 이름 문자열과 다른 Run 값이 보존되는지 확인한다.
 - [x] WPF `PopupRichText.cs`의 `CreateRun()`에서 기존 ID·신규 이름·미지정·미설치의 표시를 확인한다. 구버전 Agent의 대체 표시와 구버전 관리자 웹의 재편집 보존 여부를 확인해 신규 글꼴 활성화 순서를 정한다.
