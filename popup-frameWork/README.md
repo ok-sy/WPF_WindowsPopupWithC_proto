@@ -220,10 +220,12 @@ Popup/appsettings.json
 | EXE 옆 `appsettings.json` | 있으면 우선 적용 | 읽지 않음 |
 | 앱 설정용 환경변수(`POPUP_DEV_USER_ID`·`WPF_POPUP_TRAY_ENABLED`·`WPF_POPUP_AUTOSTART_ENABLED`) | 기존 우선순위 유지 | 읽지 않음 |
 | 내장 `appsettings.json` | 외부 파일이 없을 때 적용 | 항상 적용(배포 환경별 빌드 시 확정) |
+| 탈출키 `Ctrl+Alt+Shift+Q`(앱 종료) | 등록(`Services/DevEscapeHotkey.cs`) | 없음 |
 
 - Debug 구성은 기본 개발 빌드, Release 구성(게시)은 기본 운영 빌드다. Release 개발 EXE는 `-p:PopupAllowExternalConfig=true` 또는 `scripts/build-wpf-offline.ps1 -DevConfig`(출력 폴더 `win-x64-dev`·`win-x64-single-dev`)로만 만든다.
 - 운영 설정 변경은 내장 `appsettings.json` 수정 후 재빌드·재배포로 반영한다. 내장 설정에 비밀번호·고정 토큰을 넣지 않는다.
 - 실행 인자(`-Demo`·`-Api`·`--tray`)는 분리 대상이 아니며 운영 빌드에서도 그대로 동작한다.
+- 탈출키(2026-11-23): 개발 빌드는 `Ctrl+Alt+Shift+Q`를 전역 단축키로 등록해 포커스와 무관하게 앱을 종료한다. Overlay·시청 기준·화면 출구 없는 팝업 때문에 테스트 중 빠져나갈 수 없을 때 쓴다. 트레이 `종료`와 같은 `App.ExitAgent` 경로라 닫기 제한을 풀고 닫힘 결과를 큐에 보관한다. 다른 프로그램이 같은 조합을 쓰면 등록하지 않는다(Debug 출력만).
 
 개발 빌드는 EXE 옆에 `appsettings.json`이 있으면 그 파일을, 없으면 빌드 때 EXE에 넣은 파일(내장 리소스)을 읽는다. 단일 EXE도 같다.
 파일 안의 `//` 주석과 끝 쉼표를 허용한다. 저장소 `Popup/appsettings.json`에는 모든 항목·실행 인자·환경변수 설명이 주석으로 들어 있다.

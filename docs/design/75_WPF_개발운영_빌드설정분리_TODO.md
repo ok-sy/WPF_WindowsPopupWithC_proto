@@ -33,3 +33,9 @@
 - **명령행 옵션 결정:** 추천안대로 이번에는 JSON·환경변수만 차단하고 `-Demo`·`-Api`·`--tray` 실행 인자는 유지한다. 운영 실행 모드 고정이 필요해지면 별도 TODO로 결정한다.
 - **검증:** BehaviorTests(Debug) `PASS: 1740`(개발 빌드 허용·환경변수 우선순위 검사 추가). Release 운영/개발 빌드를 각각 만들어 `popupSample.dll` 문자열을 비교: `POPUP_DEV_USER_ID` 운영 0회·개발 1회, `appsettings.json` 리터럴 운영 5회·개발 6회(외부 파일 경로 분기 제거 확인).
 - **미실행:** 운영·개발 단일 EXE에 같은 외부 JSON·환경변수를 주고 실행해 API·SSO 대상과 시작 옵션을 비교하는 실실행 검증, 운영 EXE 옆 잘못된 JSON 배치 실행은 하지 않았다.
+
+## 후속 — 개발 빌드 탈출키 (2026-11-23)
+
+- 테스트 중 Overlay·시청 기준·화면 출구 없는 팝업으로 빠져나갈 수 없는 경우를 위해 개발 빌드(`POPUP_EXTERNAL_CONFIG`)에만 전역 단축키 `Ctrl+Alt+Shift+Q`를 둔다. `Services/DevEscapeHotkey.cs`가 메시지 전용 창에 `RegisterHotKey`로 등록하고 `App.ExitAgent`(트레이 종료와 같은 정상 종료)를 호출한다. 운영 빌드는 `#if`로 등록 코드가 없다(`BuildProfile.AllowsDevEscapeHotkey=false`).
+- 일반 사용자용 종료 수단을 두지 않는 결정(2026-11-03 결정 C)은 운영 빌드 기준으로 유지된다.
+- 검증: Debug·Release 빌드 경고·오류 0. Debug `popupSample.exe -Demo` 실행 후 키 입력으로 종료(exit 0) 확인, Release는 같은 키 입력에 종료하지 않음을 확인. Overlay·영상 팝업이 열린 상태에서의 실화면 종료는 미확인.

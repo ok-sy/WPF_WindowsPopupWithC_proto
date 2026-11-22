@@ -10,6 +10,7 @@ namespace Popup.Services
      *   | EXE 옆 appsettings.json       | 있으면 우선 적용          | 읽지 않음(내장만)      |
      *   | 앱 설정용 환경변수             | 기존 우선순위 유지        | 읽지 않음              |
      *   |  (POPUP_DEV_USER_ID, WPF_POPUP_TRAY_ENABLED, WPF_POPUP_AUTOSTART_ENABLED)                  |
+     *   | 탈출키 Ctrl+Alt+Shift+Q(앱 종료) | 등록(DevEscapeHotkey)     | 없음                   |
      *
      * - Debug 구성은 기본 true(F5 개발 실행·launchSettings 환경변수 유지), Release 구성은 기본 false.
      *   Release에서 개발 EXE가 필요하면 명시적으로 -p:PopupAllowExternalConfig=true 를 준다
@@ -21,9 +22,11 @@ namespace Popup.Services
     {
 #if POPUP_EXTERNAL_CONFIG
         public const bool AllowsExternalConfiguration = true;
+        public const bool AllowsDevEscapeHotkey = true;
         public const string Name = "Dev";
 #else
         public const bool AllowsExternalConfiguration = false;
+        public const bool AllowsDevEscapeHotkey = false;
         public const string Name = "Prod";
 #endif
     }

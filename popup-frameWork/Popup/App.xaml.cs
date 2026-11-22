@@ -46,6 +46,9 @@ namespace Popup
 
         private bool _isExiting;
 
+        /// <summary>POL-15 : 배포·실행 환경 — 개발 빌드 전용 탈출키(Ctrl+Alt+Shift+Q → ExitAgent). 운영 빌드는 null.</summary>
+        private DevEscapeHotkey? _devEscapeHotkey;
+
         /// <summary>POL-15 : 배포·실행 환경 — 시작 옵션(트레이 표시·자동 시작). OnStartup에서 정한다.</summary>
         private StartupOptions _startupOptions = new(TrayEnabled: false, AutostartEnabled: true);
 
@@ -124,6 +127,9 @@ namespace Popup
                 true;
 
             LaunchArguments arguments = LaunchArguments.Parse(e.Args);
+
+            // POL-15 : 배포·실행 환경 — 개발 빌드 테스트 중 Overlay·시청 기준 등으로 갇혔을 때 트레이 종료와 같은 정상 종료로 빠져나온다.
+            _devEscapeHotkey = DevEscapeHotkey.TryRegister(ExitAgent);
 
             _mainWindow =
                 new MainWindow();
@@ -507,6 +513,9 @@ namespace Popup
         protected override void OnExit(
             ExitEventArgs e)
         {
+            _devEscapeHotkey?.Dispose();
+            _devEscapeHotkey = null;
+
             if (_ownsSingleInstanceMutex
                 && _singleInstanceMutex != null)
             {

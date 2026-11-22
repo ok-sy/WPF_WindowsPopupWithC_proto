@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-01 — dev: TODO75 개발 빌드 탈출키 추가
+
+- 이유 · 개발 빌드 테스트 중 Overlay·영상 시청 기준·화면 출구 없는 팝업 조합에서 Alt+F4도 막혀 앱을 빠져나올 수단이 없어, 개발 빌드에만 강제 종료 수단이 필요.
+- 변경 · 개발 빌드(`POPUP_EXTERNAL_CONFIG`)에서 전역 단축키 `Ctrl+Alt+Shift+Q`를 메시지 전용 창에 `RegisterHotKey`로 등록하고, 누르면 트레이 `종료`와 같은 `App.ExitAgent`(닫기 제한 해제·닫힘 결과 보관 후 종료)를 호출한다. 운영 빌드는 `#if`로 등록 코드가 없고 `BuildProfile.AllowsDevEscapeHotkey=false`다. 다른 프로그램이 같은 조합을 쓰면 등록하지 않고 Debug 출력만 남긴다. WPF README·ALL/AGENT 사양서·설계 75에 반영.
+- 주요 파일 · `popup-frameWork/Popup/Services/DevEscapeHotkey.cs`(신규), `App.xaml.cs`, `Services/BuildProfile.cs`, `popup-frameWork/README.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/design/75_WPF_개발운영_빌드설정분리_TODO.md`.
+- 검증 · Debug·Release 빌드 경고·오류 0. Debug `popupSample.exe -Demo` 실행 후 키 입력(keybd_event)으로 종료 코드 0 확인. Release는 같은 입력에 종료하지 않음 확인. Overlay·영상 팝업이 열린 상태의 실화면 종료와 BehaviorTests 재실행은 하지 않았다.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-22-01 — 팝업 편집·채점·활성화 정합성 보완 및 ORIGINAL 이미지 모드 삭제
 
 - 이유 · 팝업 전환 중 이전 데이터가 저장될 수 있고, 제목만 수정해도 비채점 주관식이 채점 대상으로 바뀌는 문제를 확인했다. 미디어 활성화 조건과 이미지 표시 모드도 웹·서버·WPF에서 일치시킬 필요가 있었다.
