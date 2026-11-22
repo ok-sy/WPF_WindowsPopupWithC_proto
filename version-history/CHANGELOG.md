@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-23-02 — docs: 20261124 반입본 생성
+
+- 이유 · 반입 준비. 20261119 반입본은 반입하지 못해 삭제했으므로 직전 반입본 20261118(3e1a7ff) 기준으로 20261119 내용과 이후 변경 — TODO61-19~22(미리보기 헤더 글자 크기·UI 기본값 실측·레이아웃 공통화·레이아웃 가이드), TODO28 사용자 지정 글꼴 이름 전달, 2026-11-22-01 편집·채점·활성화 정합성 보완 및 ORIGINAL 이미지 모드 삭제, TODO75 개발 빌드 탈출키 — 를 폐쇄망에 전달.
+- 변경 ·
+  - 반입 전 미커밋 작업을 요건별로 커밋: c5285c7(2026-11-22-01), 1c61b13(TODO75).
+  - 변경 요약 `.offline-cache/notes-20261124.md`: `notes-20261119.md`를 바탕으로 20261119 미반입·20261118 기준 안내, 신규 항목 「[신규]」 표시. ORIGINAL 수신 시 WPF 변환 실패 → 폐쇄망 DB의 ORIGINAL 팝업 정리 필요(DB 25 스크립트는 미반입·개념 참고), 서버 검증(채점 규칙·활성 URL·글꼴 이름 형식)은 미반입이라 폐쇄망 서버 반영 여부 판단 필요, 미리보기 헤더 17px·글꼴 Text·Title 패밀리 확인 요청 기재.
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261124`: 20261118 번들(RULES 2)에서 연속(main 6694d37 → 56ab25e, 14개 추가, 커밋 299), 민감값·제외 경로·트리 차이 점검 0.
+  - 옵션 `-Date 20261124 -PreviousExport 20261118 -PreviousCommit 3e1a7ff -NotesFile .offline-cache/notes-20261124.md -GitHistoryDir .offline-cache/git-history-20261124 -VerifyBuild`(서버·DB 제외 기본). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 56·M 22·D 3(baseline f66e8ed 누적, RgstPop 제외), WPF 소스 99, 문서 206+CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함). 삭제 목록에 `ImageFillPopupView.xaml`·`.xaml.cs` 포함.
+- 검증 · 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,830,606 Byte). TAR 4개 SHA256 OK, TGZ SHA256 `bded287c9afd88b95d8396234217d6f6b619e94ce6a7ad5b3ef1cb8052a7fb0c` 일치(24,927,989 Byte). 목록에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, `popupLayout.ts`·`PopupFooter.tsx`·`DevEscapeHotkey.cs`·레이아웃 가이드·CI 이미지 포함, README-IMPORT 기준 커밋 1c61b13·직전 20261118(3e1a7ff).
+- 미완료 · 폐쇄망 반입·적용 미실행.
+- 상태 · 반입본 생성·검증 완료(`offline-export/20261124`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-23-01 — dev: TODO75 개발 빌드 탈출키 추가
 
 - 이유 · 개발 빌드 테스트 중 Overlay·영상 시청 기준·화면 출구 없는 팝업 조합에서 Alt+F4도 막혀 앱을 빠져나올 수단이 없어, 개발 빌드에만 강제 종료 수단이 필요.
