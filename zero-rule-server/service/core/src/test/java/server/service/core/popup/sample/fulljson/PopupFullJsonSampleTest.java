@@ -200,7 +200,7 @@ class PopupFullJsonSampleTest {
 
     // ---------- 유형별 조건부 규칙 ----------
 
-    /** IMAGE는 크기 미지정이면 900×620을 채우지 않고 키도 싣지 않는다. ORIGINAL은 크기 필수. */
+    /** IMAGE는 크기 미지정이면 900×620을 채우지 않고 키도 싣지 않는다. 폐기된 모드는 거절한다. */
     @Test
     void imageSizeStaysUnspecified() {
         ObjectNode popup = popup("{\"popupType\":\"IMAGE\",\"width\":null,\"content\":{\"imageUrl\":\"https://f.example.com/a.png\"}}");
@@ -210,7 +210,7 @@ class PopupFullJsonSampleTest {
         ObjectNode sized = popup("{\"popupType\":\"IMAGE\",\"width\":800,\"height\":600,\"content\":{\"imageUrl\":\"https://f.example.com/a.png\",\"showDescription\":true}}");
         assertEquals(800, sized.get("width").intValue());
         assertTrue(sized.get("content").get("showDescription").booleanValue(), "명시 true 유지");
-        assertEquals(PopupSampleException.Reason.MISSING_REQUIRED_CONTENT,
+        assertEquals(PopupSampleException.Reason.INVALID_CONTENT_JSON,
                 failure("{\"popupType\":\"IMAGE\",\"width\":800,\"content\":{\"imageUrl\":\"https://f.example.com/a.png\",\"imageSizeMode\":\"ORIGINAL\"}}"));
     }
 

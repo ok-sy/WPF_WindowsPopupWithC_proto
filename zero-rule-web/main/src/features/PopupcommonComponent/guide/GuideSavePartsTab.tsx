@@ -11,7 +11,7 @@ const MINIMUM_IO: { name: string; input: string; output: string; parent: string 
     output: 'onChange(patch) 바뀐 항목만', parent: '일정을 state에 담기, 게시 기간을 저장 API 날짜 형식으로 바꾸기, 저장 전 validatePopupSchedule' },
   { name: 'PopupRichTextEditor', input: 'label · initialBlocks: RichBlock[] · compact? · inlineLabel? · hideToolbar? · disabled? · placeholder?',
     output: 'onChange(blocks: RichBlock[], plainText: string)', parent: '두 값을 함께 담기, 본문을 바꿔 넣을 때 key 바꾸기' },
-  { name: 'PopupQuestionEditor', input: 'questions: PopupQuestion[] · quiz · passingScore? · fixedQuestionScore? · hidePassingScore?',
+  { name: 'PopupQuestionEditor', input: 'questions: PopupQuestion[] · quiz · passingScore? · hidePassingScore?',
     output: 'onChange(questions) · onPassingScoreChange(score)', parent: '문항을 state에 담기, 저장 전 validatePopupQuestions' },
   { name: 'InlinePopupPreview · PopupPreviewDialog · PopupPreview', input: 'popup: withPreviewFallback(state)로 만든 값',
     output: '화면 · onOpenPreview? · onClose? · onRecommendedSize?', parent: '넘길 때만 withPreviewFallback(state) 사용하기' },

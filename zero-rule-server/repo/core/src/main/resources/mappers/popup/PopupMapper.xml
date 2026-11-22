@@ -77,12 +77,12 @@
              CREATED_BY, UPDATED_BY)
         VALUES (#{questionId}, #{templateId}, #{question.questionType}, #{question.title}, #{question.description},
                 CASE WHEN #{question.isRequired} = 1 THEN 'Y' ELSE 'N' END,
-                CASE WHEN #{quiz} = 1 THEN 'Y' ELSE 'N' END,
-                CASE WHEN #{quiz} = 1 THEN #{question.questionScore} ELSE NULL END,
+                CASE WHEN #{quiz} = 1 AND #{question.isScored} = 1 THEN 'Y' ELSE 'N' END,
+                CASE WHEN #{quiz} = 1 AND #{question.isScored} = 1 THEN #{question.questionScore} ELSE NULL END,
                 #{sortOrder},
-                CASE WHEN #{quiz} = 1 AND #{question.questionType} = 'TEXT'
+                CASE WHEN #{quiz} = 1 AND #{question.isScored} = 1 AND #{question.questionType} = 'TEXT'
                      THEN #{question.correctAnswer, jdbcType=CLOB} ELSE NULL END,
-                CASE WHEN #{quiz} = 1 AND #{question.questionType} = 'TEXT'
+                CASE WHEN #{quiz} = 1 AND #{question.isScored} = 1 AND #{question.questionType} = 'TEXT'
                      THEN #{question.answerMatchMode} ELSE NULL END,
                 #{question.optionLayout},
                 #{titleBlocksJson, jdbcType=CLOB}, #{descriptionBlocksJson, jdbcType=CLOB},
@@ -302,6 +302,10 @@
              #{mediaUrl}, #{contentOptionsJson, jdbcType=CLOB},
              #{auditUser}, #{auditUser})
     </update>
+
+    <select id="lockAdminPopupForActivation" resultType="string" useCache="false" flushCache="true">
+        SELECT POPUP_ID FROM ${popupSchemaPrefix}POPUP_NOTICE WHERE POPUP_ID = #{popupId} FOR UPDATE
+    </select>
 
     <!-- 목록에서 팝업 활성 여부(ACTIVE_YN)만 바꾼다. -->
     <update id="updateAdminPopupActive">

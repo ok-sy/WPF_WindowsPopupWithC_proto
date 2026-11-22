@@ -37,11 +37,6 @@ class PopupContentAssemblerTest {
                 "{\"imageSizeMode\":\"FIT_TO_IMAGE\",\"width\":900,\"imageWidth\":600,\"keepAspectRatio\":false}", null, null));
         assertEquals(900, current.get("width"));
         assertEquals(false, current.get("keepAspectRatio"));
-        var original = assembler.assemble(entity("IMAGE", "제목", "설명", null, "http://x/a.png",
-                "{\"imageSizeMode\":\"ORIGINAL\",\"width\":900,\"height\":600,\"keepAspectRatio\":true}", null, null));
-        assertFalse(original.containsKey("width"));
-        assertFalse(original.containsKey("height"));
-        assertFalse(original.containsKey("keepAspectRatio"));
     }
 
     private PopupEntity entity(String type, String title, String description, String body, String media,

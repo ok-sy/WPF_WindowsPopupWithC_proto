@@ -1,7 +1,8 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-11-12 (KST)
+- 최신화: 2026-11-22 (KST)
+- 2026-11-22 변경 · IMAGE 크기 모드는 `ADAPTIVE`, `FIT_TO_IMAGE`만 지원한다. 기존 ORIGINAL 팝업은 `db/oracle/25_delete_original_image_popups_oracle.sql`로 삭제한다. 단독 IMAGE·VIDEO는 활성화 시 미디어 URL이 필요하다. 관리자 퀴즈의 채점 문항은 각 1점이며 비채점 주관식은 정답과 배점 없이 저장한다.
 - 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
@@ -314,8 +315,8 @@ X-Client-Version: 1.0.0
 | title | string | O | `""` | 공통 Header 제목 |
 | displayMode | string | O | `SEQUENTIAL` | SEQUENTIAL / SIMULTANEOUS. 조회 응답이 1건이라 동시에 열리는 다른 서버 팝업은 없다 |
 | sizeMode | string | O | `FIXED` | FIXED / RATIO / FULLSCREEN. `AUTO`는 WPF만 지원하는 값으로 서버·관리자 웹은 저장하지 않아(서버 검증·DB 제약 `CK_POPUP_SIZE_MODE`) 현재 응답에 나오지 않는다 |
-| width | number | 선택(일반 IMAGE는 축별 생략 가능) | `900`(IMAGE는 원본 기준) | 창 너비. IMAGE는 imageSizeMode에 따라 ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 너비(TODO58) |
-| height | number | 선택(일반 IMAGE는 축별 생략 가능) | `620`(IMAGE는 원본 기준) | 창 높이. IMAGE는 ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 높이(TODO58) |
+| width | number | 선택(일반 IMAGE는 축별 생략 가능) | `900`(IMAGE는 원본 기준) | 창 너비. IMAGE는 imageSizeMode에 따라 ADAPTIVE 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 너비(TODO58) |
+| height | number | 선택(일반 IMAGE는 축별 생략 가능) | `620`(IMAGE는 원본 기준) | 창 높이. IMAGE는 ADAPTIVE 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역 높이(TODO58) |
 | widthRatio | number | RATIO | `0.7` | RATIO 너비 비율 |
 | heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
 | minimumWidth | number | 선택 | `300` | 최소 창 너비. 300 이상만 저장(TODO68). WPF·미리보기는 300 미만 기존 값도 300으로 올리고 IMAGE는 헤더·푸터를 포함한 최종 창에 적용 |
@@ -381,7 +382,7 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 | options | 선택형은 2개 이상, TEXT는 [] | 생략은 빈 목록, null은 변환 실패. 기본 선택지를 자동 생성하지 않음 |
 | 필수 문항 isRequired | 반드시 true를 명시 | 누락은 false이므로 필수 응답 검증이 적용되지 않음 |
 | 채점 QUIZ isScored | 채점할 문항에 true, 최소 1개 이상 | 누락은 false. 채점 문항이 하나도 없으면 passingScore와 무관하게 score=0, passed=true |
-| 채점 QUIZ questionScore | 유한 양수 배점. 서버 저장은 소수점 2자리, 최대 99999999.99 검증. 관리자 저장 시 비우면 기본 1점 | 누락/null은 기본 1점으로 계산(모두 1점이면 총점 = 문항 수) |
+| 채점 QUIZ questionScore | 채점 문항은 1점. 관리자 저장 시 미입력은 1점 | 누락/null은 기본 1점으로 계산(총점 = 채점 문항 수) |
 | 채점 QUIZ passingScore | 최상위에 명시, 0~총점. 0점 통과가 의도되지 않았다면 양수 | 누락/null/0 이하는 통과 기준 0으로 계산되어 0점도 통과 가능 |
 | 채점 선택형 options[].isCorrect | 정답은 true, 오답은 false 권장. 단일 정답 1개, 복수 정답 1개 이상 | 누락/null은 정답 아님. 정답 키가 없으면 해당 문항은 정답 처리되지 않음 |
 | 채점 TEXT correctAnswer / answerMatchMode | 비어 있지 않은 정답, EXACT 또는 CONTAINS | 누락 시 해당 문항 오답. 구현은 지원하나 최소 외부 오픈 범위에서는 TEXT 자동 채점 제외 |
@@ -405,14 +406,15 @@ WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을
 
 PopupService.validateAdminPopup은 ID·제목·ENUM·크기·기간 등을 검사한다. PopupQuestionRules.validate는 SURVEY/QUIZ 문항, 선택형 보기 2개 이상, QUIZ 배점·정답·통과 점수를 검사한다. QUIZ의 videoEnabled=true에는 validateActionOptions가 videoUrl을 요구한다. 따라서 모든 필수값 처리가 없는 것은 아니다.
 
-다만 현재 규칙에는 QUIZ의 isScored=true 문항 존재 보장이 없다. 일반 IMAGE/VIDEO의 공백 아닌 미디어 URL 검증도 위 저장 검증에서 보장하지 않는다. WPF 수신 측에는 ID 양수/중복·필수 데이터·채점 구성·결과 status의 전체 검증이 없다. 서버 저장 검증을 통과해도 isScored=false인 QUIZ가 0점 통과할 수 있으므로 다음을 보완 대상으로 관리한다.
+2026-11-22부터 QUIZ 등록·수정(관리자 저장·3117 등록 검증)은 isScored=true 문항이 최소 1개 있어야 하고, 채점 문항 배점은 1점, passingScore는 0~채점 문항 수다. 비채점 문항은 주관식만 허용한다. IMAGE·VIDEO는 활성 저장과 활성 전환 시 공백이 아닌 미디어 URL이 필수다. 비활성 초안은 URL을 비울 수 있다. 조회 응답 단계에서는 저장 이전 데이터의 채점 구성을 다시 검사하지 않고, WPF 수신 측에는 ID 양수/중복·필수 데이터·채점 구성·결과 status의 전체 검증이 없다. 다음을 보완 대상으로 관리한다.
 
 - [ ] 서버 조회 응답: 공백 ID, 중복 문항/선택지 ID, 빈 질문/선택지, null 배열/항목, 유형별 미디어 필수값 검증.
-- [ ] 서버 QUIZ 저장/조회: 최소 1개 isScored=true, 채점 배점·정답·passingScore 일관성 보장. 의도적인 0점 통과와 누락을 구분.
+- [x] 서버 QUIZ 저장: 최소 1개 isScored=true, 채점 배점 1점·정답·passingScore 일관성 보장(2026-11-22).
+- [ ] 서버 QUIZ 조회: 저장 검증 이전 데이터의 채점 문항 0개(0점 통과) 구분.
 - [ ] WPF 수신: 필수값 검증 및 잘못된 팝업의 개별 격리 검토.
 - [ ] WPF 결과 처리: status 필수·허용값 검증 후 대기열 종료 여부 결정 검토.
 
-이 절은 현재 동작과 보완 대상을 명시한 것이며, 이번 문서 수정에서 클라이언트/서버 검증 코드는 변경하지 않았다. 기준 소스: PopupResponseDto, SurveyQuestionDto, PopupFactory, PopupManager.AttachResultCollection, SurveyPopupView.AddSelectedOption, QuizGrader, PopupResultQueue, 서버 PopupService 및 PopupQuestionRules.
+이 절은 현재 동작과 보완 대상을 명시한 것이다. 기준 소스: PopupResponseDto, SurveyQuestionDto, PopupFactory, PopupManager.AttachResultCollection, SurveyPopupView.AddSelectedOption, QuizGrader, PopupResultQueue, 서버 PopupService 및 PopupQuestionRules.
 
 ---
 
@@ -532,7 +534,7 @@ HTML은 편집기 경계에서만 사용하며 취소선은 `<s>`로 복원한�
 | imageUrl | string | O | `""` | 표시할 이미지 URL/경로. 빈 값이면 이미지 팝업 생성 불가 |
 | description | string | 선택 | `""` | 이미지 설명 |
 | showDescription | boolean | 선택 | `true` | 설명 표시 여부 |
-| imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL |
+| imageSizeMode | string | 선택 | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE |
 | keepAspectRatio | boolean | FIT_TO_IMAGE 전용 | `true` | 원본 비율 고정/해제 |
 
 ### imageSizeMode
@@ -541,13 +543,10 @@ HTML은 편집기 경계에서만 사용하며 취소선은 `<s>`로 복원한�
 |---|---|
 | ADAPTIVE | 팝업 크기가 기준. 이미지를 배정 영역 안에 비율 유지하여 표시 |
 | FIT_TO_IMAGE | popup.width/height가 이미지 콘텐츠 영역 크기, 없으면 원본 DIP. 헤더·푸터·제목·설명·여백을 더해 창 계산. 최대 창 초과 시 축소 없이 Clip |
-| ORIGINAL | 팝업 크기는 유지. 원본 이미지를 왼쪽 위에 확대·축소 없이 표시하고 오른쪽·아래 초과 부분을 자름 |
 
-필드가 없으면 ADAPTIVE로 처리한다. 위 세 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다. ORIGINAL은 v3.4 클라이언트부터 지원한다.
+필드가 없으면 ADAPTIVE로 처리한다. 위 두 값 외의 값(과거 값 `FIXED`, 빈 문자열 포함)은 C#이 지원하지 않는 값으로 보고 팝업 변환에 실패한다.
 
-ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 사용한다. 콘텐츠 제목·설명·keepAspectRatio는 사용하지 않는다. 창 크기는 popup.width/height다. 작은 이미지는 확대하지 않고 남는 영역을 흰색으로 표시하며 스크롤하지 않는다. 이미지 클릭 동작은 없다(3.7에서 `linkUrl` 삭제). 원본 픽셀 크기 1px를 WPF 1 DIP / 웹 1 CSS px로 표시하며 이미지 파일의 DPI 메타데이터는 크기 계산에 사용하지 않는다(OS 화면 배율은 적용된다).
-
-관리자 신규 등록 기본 선택은 ADAPTIVE이며, 기존 저장값과 필드 미지정 시 ADAPTIVE 동작은 유지한다. JSON 예: `{"imageSizeMode":"ORIGINAL","imageUrl":"https://example.com/notice.png"}`.
+관리자 신규 등록 기본값은 ADAPTIVE다.
 
 ### 크기 필드 (2026-10-19 / TODO58)
 
@@ -555,11 +554,10 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 |---|---|---|---|
 | ADAPTIVE | 팝업 창 전체 크기 | 창에서 표시 중인 헤더·푸터·제목·설명·여백을 빼고 이미지 영역 할당 | 배정 영역에 비율 유지(원본보다 확대 안 함) |
 | FIT_TO_IMAGE | 이미지 콘텐츠 영역 크기 | 지정 영역을 먼저 확보하고 헤더·푸터·제목·설명·여백을 더해 창 계산 | keepAspectRatio=true면 영역 안에 원본 비율로 맞춤(여백 가능), false면 영역을 채움 |
-| ORIGINAL | 팝업 창 전체 크기 | 헤더·푸터를 뺀 본문 전체 | 원본 크기 왼쪽 위 배치, 넘치는 부분 Clip |
 
 - `content.width/height`는 응답에서 제거했고 등록 요청에서도 거절한다(이중 지시 금지). 다른 유형의 공통 width/height 의미는 그대로다.
-- 같은 600×400이라도 ADAPTIVE·ORIGINAL은 창 전체가 그 크기이고, FIT_TO_IMAGE는 이미지 콘텐츠 영역이 그 크기다(최소·최대 제한 적용 전).
-- 생략: 일반 IMAGE는 축별로 생략할 수 있다(JSON에서 키 없음). ADAPTIVE의 생략 축은 원본과 측정한 제목·설명으로 산정하고, FIT_TO_IMAGE는 비율 고정이면 원본 비율로 나머지 축을, 해제면 원본 길이를, 둘 다 없으면 원본 DIP 크기를 쓴다. ORIGINAL은 필수다. 다른 유형은 생략 시 900×620.
+- 같은 600×400이라도 ADAPTIVE는 창 전체가 그 크기이고, FIT_TO_IMAGE는 이미지 콘텐츠 영역이 그 크기다(최소·최대 제한 적용 전).
+- 생략: 일반 IMAGE는 축별로 생략할 수 있다(JSON에서 키 없음). ADAPTIVE의 생략 축은 원본과 측정한 제목·설명으로 산정하고, FIT_TO_IMAGE는 비율 고정이면 원본 비율로 나머지 축을, 해제면 원본 길이를, 둘 다 없으면 원본 DIP 크기를 쓴다. 다른 유형은 생략 시 900×620.
 - 전환: 새 WPF는 최상위 값이 없는 축에 한해 구 서버의 `content.width/height`를 임시로 읽는다(최상위 우선). 구 WPF는 `content.width/height`만 읽으므로 새 서버보다 새 WPF를 먼저 배포한다. DB 저장 구조는 바꾸지 않았다(일반 IMAGE 크기는 기존처럼 CONTENT_OPTIONS width/height에 저장하고 응답에서 최상위로 옮김).
 - FULLSCREEN은 공통 sizeMode이며 창 크기를 모니터 전체로 우선한다. imageSizeMode와 합치지 않는다.
 
@@ -568,10 +566,10 @@ ORIGINAL은 헤더·푸터를 제외한 본문 전체를 이미지 영역으로 
 - ADAPTIVE: popup 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
 - FIT_TO_IMAGE: popup 크기는 이미지 콘텐츠 영역 DIP 크기. keepAspectRatio 기본 true. 등록 화면에서 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 그 영역 안에 원본 비율로 맞추고 남는 쪽을 여백으로 둔다(TODO58 — 설계 23의 너비 우선 높이 정규화를 대체).
 - 해제(false)는 영역을 그대로 채워 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
-- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. FIT_TO_IMAGE의 지정 콘텐츠 영역 크기는 유지하며 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
+- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. FIT_TO_IMAGE의 지정 콘텐츠 영역 크기는 유지하며 최대 초과 부분은 **중앙 기준**으로 자른다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
 - 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(40)·Footer(64, 2026-11-18 TODO61-18: 80 → 64) 행을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
-- WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
+- WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다.
 - FILL, imageWidth/imageHeight, descriptionPosition, imageAreaRatio는 새 입력에서 제거했다. 서버 저장은 해당 키·모드와 중복 최상위 크기를 거절한다. 기존 DB는 조회 변환 또는 전환 계획 스크립트를 통해 새 계약으로 제공한다.
 
 ---
@@ -700,7 +698,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
   "popupId": "QUIZ-001",
   "popupType": "QUIZ",
   "title": "보안 퀴즈",
-  "passingScore": 80,
+  "passingScore": 1,
   "requiresPassing": true,
   "questions": [
     {
@@ -710,7 +708,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
       "questionType": "SINGLE_CHOICE",
       "isRequired": true,
       "isScored": true,
-      "questionScore": 100,
+      "questionScore": 1,
       "options": [
         {
           "optionId": 2001,
@@ -751,7 +749,7 @@ TEXT 문항은 다음 필드를 사용할 수 있다.
   "questionType": "TEXT",
   "isRequired": true,
   "isScored": true,
-  "questionScore": 20,
+  "questionScore": 1,
   "correctAnswer": "OPENAI",
   "answerMatchMode": "EXACT",
   "options": []
@@ -796,7 +794,7 @@ passingScore 이상
 {
   "popupType": "QUIZ",
   "completionRatio": 0.8,
-  "passingScore": 80,
+  "passingScore": 1,
   "requiresPassing": true,
   "content": {
     "videoEnabled": true,
@@ -843,8 +841,8 @@ passingScore 이상
 | minSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최소 선택 수. 필수 문항은 max(1, 값)개 이상이 응답 완료, 선택 문항은 0개 또는 값 이상이어야 제출 가능. 1~선택지 수, ≤ maxSelections. QUIZ·단일 선택·주관식에는 없음(2026-10-29) |
 | maxSelections | integer | 선택(SURVEY MULTIPLE_CHOICE) | `null`(생략) = 제한 없음 | 최대 선택 수. 한도 도달 시 남은 선택지 비활성. QUIZ는 이 필드 대신 정답 수가 한도. 서버도 결과 수신 시 최소·최대 선택 수를 같은 기준으로 검증하며 위반은 `REJECTED`(`R4005(INVALID_ANSWER)`)(2026-11-03, PU001 B-4) |
 | isRequired | boolean | O | `false` | 필수 응답 여부. 현재 서버는 항상 true/false로 보낸다. 누락 시 WPF는 false로 보아 필수 검증을 하지 않는다(6.4) |
-| isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부 |
-| questionScore | number | 채점 QUIZ | `null` → 기본 1점 | 문항 배점. 관리자 저장 시 비우면 서버가 1점으로 저장한다. 모두 1점이면 총점 = 문항 수 |
+| isScored | boolean | 채점 QUIZ 필수 | `false` | QUIZ 채점 대상 여부. 퀴즈 등록·수정에는 `isScored=true`인 문항이 최소 1개 필요하다. 비채점 주관식은 정답·배점 없이 응답을 수집한다. |
+| questionScore | number | 채점 QUIZ | `null` → 기본 1점 | 문항 배점. 관리자 저장 시 비우면 서버가 1점으로 저장한다. 총점 = 채점 문항 수 |
 | correctAnswer | string | QUIZ TEXT 채점 문항 | `null` | TEXT 정답 |
 | answerMatchMode | string | QUIZ TEXT 채점 문항 | `null` | EXACT / CONTAINS |
 | options | array | 선택형 문항 | `[]` | 선택형 보기. TEXT는 빈 배열 |
@@ -1370,7 +1368,6 @@ BOTTOM_RIGHT
 ```text
 ADAPTIVE
 FIT_TO_IMAGE
-ORIGINAL
 ```
 
 ## questionType
@@ -1662,7 +1659,7 @@ EMPTY
       "description": "",
       "isRequired": true,
       "isScored": true,
-      "questionScore": 40,
+      "questionScore": 1,
       "options": [
         {
           "optionId": 2001,
@@ -1686,7 +1683,7 @@ EMPTY
       "description": "",
       "isRequired": true,
       "isScored": true,
-      "questionScore": 60,
+      "questionScore": 1,
       "options": [
         {
           "optionId": 2003,
@@ -1709,7 +1706,7 @@ EMPTY
       ]
     }
   ],
-  "passingScore": 80,
+  "passingScore": 1,
   "requiresPassing": true,
   "content": {
     "surveyTitle": "보안 확인 퀴즈",
@@ -1749,7 +1746,7 @@ EMPTY
       "description": "",
       "isRequired": true,
       "isScored": true,
-      "questionScore": 40,
+      "questionScore": 1,
       "options": [
         {
           "optionId": 3001,
@@ -1773,7 +1770,7 @@ EMPTY
       "description": "",
       "isRequired": true,
       "isScored": true,
-      "questionScore": 60,
+      "questionScore": 1,
       "options": [
         {
           "optionId": 3011,
@@ -1796,7 +1793,7 @@ EMPTY
       ]
     }
   ],
-  "passingScore": 80,
+  "passingScore": 1,
   "requiresPassing": true,
   "content": {
     "videoTitle": "영상 확인 퀴즈",

@@ -70,7 +70,7 @@ public class PopupService {
             Set.of("FIXED", "RATIO", "FULLSCREEN");
     /** POL-04-02 : 모드별 기준 — IMAGE content.imageSizeMode 허용값. 과거 값 FIXED는 더 이상 저장하지 않는다. */
     private static final Set<String> IMAGE_SIZE_MODES =
-            Set.of("ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL");
+            Set.of("ADAPTIVE", "FIT_TO_IMAGE");
     /**
      * POL-01-03 : 최소 크기
      * 팝업 창 최소 크기(px). 관리자 웹 POPUP_MIN_WINDOW_SIZE·WPF PopupOptions.MinWindowSize와 같다.
@@ -194,6 +194,10 @@ public class PopupService {
             popup = popup.withQuestionsAndContent(PopupQuestionRules.withDefaultScores(popup.questions(), true), popup.content());
         }
         validateAdminPopup(popup, active, auditUser);
+        if (Boolean.TRUE.equals(active)) {
+            String type = normalizeUpper(popup.popupType());
+            requireActiveMedia(type, contentText(popup.content(), mediaUrlKey(type)));
+        }
         List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
         if (Boolean.TRUE.equals(active) && normalizedGroups.isEmpty()) {
             throw new IllegalArgumentException(
@@ -399,13 +403,15 @@ public class PopupService {
         if (auditUser == null || auditUser.isBlank()) {
             throw new IllegalArgumentException("수정자 정보는 필수입니다.");
         }
-        if (Boolean.TRUE.equals(active)
-                && popupMapper.countAdminPopupTargetGroups(popupId.trim()) == 0) {
-            throw new IllegalArgumentException(
-                    "대상 조건이 없는 팝업은 활성화할 수 없습니다.");
-        }
-
         String normalizedPopupId = popupId.trim();
+        if (active) {
+            if (popupMapper.lockAdminPopupForActivation(normalizedPopupId) == null)
+                throw new IllegalArgumentException("등록된 팝업을 찾을 수 없습니다.");
+            if (popupMapper.countAdminPopupTargetGroups(normalizedPopupId) == 0)
+                throw new IllegalArgumentException("대상 조건이 없는 팝업은 활성화할 수 없습니다.");
+            PopupEntity stored = popupMapper.selectAdminPopupById(normalizedPopupId);
+            requireActiveMedia(stored.popupType(), stored.mediaUrl());
+        }
         int affectedRows = popupMapper.updateAdminPopupActive(
                 normalizedPopupId, toYn(active), auditUser.trim());
         if (affectedRows <= 0) {
@@ -998,7 +1004,7 @@ public class PopupService {
                 || popup.displayEndAt().isBefore(popup.displayStartAt())) {
             throw new IllegalArgumentException("팝업 노출 종료일은 시작일 이후여야 합니다.");
         }
-        if (!isOrdinaryImage(popup)) {
+        if (!isImage(popup)) {
             if (popup.width() == null || popup.height() == null) throw new IllegalArgumentException("팝업 너비와 높이는 필수입니다.");
             validatePositiveNumber(popup.width(), "팝업 너비");
             validatePositiveNumber(popup.height(), "팝업 높이");
@@ -1122,7 +1128,7 @@ public class PopupService {
         return derived != null ? derived : contentText(content, "plainText");
     }
 
-    /** POL-04-02 : 모드별 기준 — IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / ORIGINAL만 저장한다. */
+    /** POL-04-02 : 모드별 기준 — IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE만 저장한다. */
     private static void validateImageSizeMode(Map<String, Object> content) {
         Object value = content == null ? null : content.get("imageSizeMode");
         if (value == null || String.valueOf(value).isBlank()) {
@@ -1130,14 +1136,13 @@ public class PopupService {
         }
         if (!IMAGE_SIZE_MODES.contains(normalizeUpper(String.valueOf(value)))) {
             throw new IllegalArgumentException(
-                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE, ORIGINAL 중 하나여야 합니다.");
+                    "이미지 크기 모드는 ADAPTIVE, FIT_TO_IMAGE 중 하나여야 합니다.");
         }
     }
 
     /** IMAGE ordinary dimensions are optional positive numbers; retired fields and mode-incompatible options are rejected. */
-    private static boolean isOrdinaryImage(PopupResponseDto popup) {
-        return "IMAGE".equals(normalizeUpper(popup.popupType()))
-            && !"ORIGINAL".equals(normalizeUpper(contentText(popup.content(), "imageSizeMode")));
+    private static boolean isImage(PopupResponseDto popup) {
+        return "IMAGE".equals(normalizeUpper(popup.popupType()));
     }
 
     /** 폐기된 IMAGE 필드·content 쪽 크기·FIT_TO_IMAGE 외 keepAspectRatio를 거부한다. */
@@ -1158,10 +1163,10 @@ public class PopupService {
 
     /*
      * POL-04-01 : 공통 크기 입력 — 일반 IMAGE의 popup.width/height는 저장 구조를 바꾸지 않고 기존처럼 CONTENT_OPTIONS의 width/height(축별 생략 가능)에 둔다.
-     * 조회 시 toResponseDto가 다시 최상위 popup.width/height로 꺼낸다. ORIGINAL과 다른 유형은 POPUP_WIDTH/HEIGHT 컬럼을 쓴다.
+     * 조회 시 toResponseDto가 다시 최상위 popup.width/height로 꺼낸다. 다른 유형은 POPUP_WIDTH/HEIGHT 컬럼을 쓴다.
      */
     private static Map<String, Object> withImageSize(PopupResponseDto popup, Map<String, Object> content) {
-        if (!isOrdinaryImage(popup)) return content;
+        if (!isImage(popup)) return content;
         Map<String, Object> options = new LinkedHashMap<>(content);
         options.remove("width");
         options.remove("height");
@@ -1343,6 +1348,12 @@ public class PopupService {
         };
     }
 
+    private static void requireActiveMedia(String type, String url) {
+        if (("IMAGE".equals(type) || "VIDEO".equals(type)) && (url == null || url.isBlank())) {
+            throw new IllegalArgumentException("IMAGE".equals(type) ? "활성 이미지 팝업에는 이미지 URL이 필요합니다." : "활성 영상 팝업에는 영상 URL이 필요합니다.");
+        }
+    }
+
     /** 유형별 미디어 URL 키(IMAGE imageUrl·VIDEO videoUrl, 그 밖은 빈 키). */
     private static String mediaUrlKey(String popupType) {
         return switch (popupType) {
@@ -1422,7 +1433,7 @@ public class PopupService {
             List<PopupQuestionDto> questions) {
         Map<String, Object> content = contentAssembler.assemble(popup);
         // POL-04-01 : 공통 크기 입력 — 일반 IMAGE 크기는 content.width/height가 아니라 최상위 popup.width/height로 내려준다(생략 축은 null → JSON에서 빠짐).
-        boolean ordinaryImage = "IMAGE".equals(popup.popupType()) && !"ORIGINAL".equals(content.get("imageSizeMode"));
+        boolean ordinaryImage = "IMAGE".equals(popup.popupType());
         Double width = ordinaryImage ? positiveDimension(content.remove("width")) : Double.valueOf(popup.popupWidth().doubleValue());
         Double height = ordinaryImage ? positiveDimension(content.remove("height")) : Double.valueOf(popup.popupHeight().doubleValue());
 

@@ -154,8 +154,8 @@ namespace Popup
                 Default(content, "imageSizeMode", JsonValue.Create("ADAPTIVE"), cp, issues);
                 Default(content, "showDescription", JsonValue.Create(responseMode), cp, issues);
                 Default(content, "keepAspectRatio", JsonValue.Create(true), cp, issues);
-                if (Text(content["imageSizeMode"]) == "ORIGINAL" && (!Has(popup,"width") || !Has(popup,"height")))
-                    issues.Add(new("ERROR", prefix, "IMAGE ORIGINAL에는 width와 height가 필요합니다."));
+                if (Text(content["imageSizeMode"])?.ToUpperInvariant() is not ("ADAPTIVE" or "FIT_TO_IMAGE"))
+                    issues.Add(new("ERROR", cp + ".imageSizeMode", "지원하지 않는 이미지 크기 모드입니다."));
             }
             bool videoQuiz = type == "QUIZ" && content["videoEnabled"] is JsonValue vb && vb.TryGetValue<bool>(out bool enabled) && enabled;
             if (type == "QUIZ") Default(content, "videoEnabled", JsonValue.Create(false), cp, issues);
@@ -172,6 +172,10 @@ namespace Popup
                 if (popup["questions"] is not JsonArray questions || questions.Count == 0)
                     issues.Add(new("ERROR", prefix + ".questions", "문항 배열에 1개 이상 필요합니다."));
                 else
+                {
+                    if (type == "QUIZ" && !responseMode && !questions.OfType<JsonObject>().Any(q =>
+                        q["isScored"] is JsonValue flag && flag.TryGetValue<bool>(out bool scored) && scored))
+                        issues.Add(new("ERROR", prefix + ".questions", "퀴즈에는 채점 문항을 한 개 이상 추가해 주세요."));
                     for (int i = 0; i < questions.Count; i++)
                     {
                         string qp = prefix + ".questions[" + i + "]";
@@ -182,6 +186,7 @@ namespace Popup
                         if (qt != "TEXT" && (q["options"] is not JsonArray opts || opts.Count == 0))
                             issues.Add(new("ERROR", qp + ".options", "선택형 문항은 선택지 1개 이상 필요합니다."));
                     }
+                }
             }
             foreach (var kv in popup.ToList())
                 if (!KnownTop.Contains(kv.Key)) issues.Add(new("WARNING", prefix + "." + kv.Key, "계약 외 최상위 필드입니다."));
@@ -199,8 +204,11 @@ namespace Popup
             if (type == "IMAGE") content["imageUrl"] = "https://example.com/image.png";
             if (type == "VIDEO" || videoQuiz) content["videoUrl"] = "https://example.com/video.mp4";
             if (type == "QUIZ") content["videoEnabled"] = videoQuiz;
-            if (type == "SURVEY" || type == "QUIZ")
-                q.Add(new JsonObject { ["questionType"] = "TEXT", ["questionText"] = "의견을 입력하세요" });
+            if (type == "SURVEY")
+                q.Add(new JsonObject { ["questionType"] = "TEXT", ["title"] = "의견을 입력하세요" });
+            if (type == "QUIZ")
+                q.Add(new JsonObject { ["questionType"] = "TEXT", ["title"] = "'정답'이라고 입력하세요.",
+                    ["isScored"] = true, ["questionScore"] = 1, ["correctAnswer"] = "정답", ["answerMatchMode"] = "EXACT" });
             var p = new JsonObject { ["popupId"] = "DEMO-001", ["deliveryId"] = "11111111-1111-4111-8111-111111111111", ["popupType"] = type, ["title"] = selected + " 예시", ["content"] = content, ["questions"] = q };
             if (!minimal)
             {

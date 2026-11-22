@@ -208,7 +208,7 @@
           "description": "",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 40,
+          "questionScore": 1,
           "options": [
             {
               "optionId": 2001,
@@ -232,7 +232,7 @@
           "description": "",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 60,
+          "questionScore": 1,
           "options": [
             {
               "optionId": 2003,
@@ -255,7 +255,7 @@
           ]
         }
       ],
-      "passingScore": 80,
+      "passingScore": 1,
       "requiresPassing": true,
       "content": {
         "surveyTitle": "보안 확인 퀴즈",
@@ -290,7 +290,7 @@
           "description": "",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 40,
+          "questionScore": 1,
           "options": [
             {
               "optionId": 3001,
@@ -314,7 +314,7 @@
           "description": "",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 60,
+          "questionScore": 1,
           "options": [
             {
               "optionId": 3011,
@@ -337,7 +337,7 @@
           ]
         }
       ],
-      "passingScore": 80,
+      "passingScore": 1,
       "requiresPassing": true,
       "content": {
         "videoTitle": "영상 확인 퀴즈",

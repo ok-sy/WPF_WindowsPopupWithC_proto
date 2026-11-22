@@ -15,7 +15,7 @@ fs.writeFileSync(path.join(output, 'urls-shim.js'), 'exports.routerUrlOf = (url)
 fs.writeFileSync(path.join(output, 'handle-error-shim.js'), 'module.exports = function handleError(e) { (window.__errors = window.__errors || []).push(String(e)); }; module.exports.default = module.exports;');
 fs.writeFileSync(path.join(output, 'provider-shim.js'), `const codes = { '0089': [{code: '01', codeNm: 'OX형'}, {code: '02', codeNm: '선다형'}], '0090': [{code: '00', codeNm: '참여코드'}, {code: '01', codeNm: '만점코드'}, {code: '02', codeNm: '컷트코드'}, {code: '99', codeNm: '매핑없음'}] };
 const api = { clCode: { search: async (params) => { (window.__codeCalls = window.__codeCalls || []).push(params.codeType); if (window.__codeFail) throw new Error('code fail'); return { body: { pagerData: { elements: codes[params.codeType] || [] } } }; } }, popupAdmin: {
-  info: async () => ({ body: { popup: window.__detail, targetGroups: [{ targetName: 'ALL', targetDescription: '', conditions: [{ conditionType: 'EMPLOYEE_NO', conditionOperator: '=', value: 'E1001', includeChild: false }] }] } }),
+  info: async ({popupId}) => { if (popupId === "FAILED") throw Error("fixture lookup failure"); return ({ body: { popup: window.__detail, targetGroups: [{ targetName: 'ALL', targetDescription: '', conditions: [{ conditionType: 'EMPLOYEE_NO', conditionOperator: '=', value: 'E1001', includeChild: false }] }] } }); },
   save: async (request) => { window.__saved = request; return { body: { popup: { popupId: request.popup.popupId } } }; },
   list: async () => ({ body: [] }),
   questionTemplates: async () => ({ body: { templates: [] } }),
@@ -145,6 +145,36 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`document.querySelector('[data-testid=quiz-rule-score]').textContent.includes('통과 점수 -점')`), 'Quiz without passingScore starts unselected');
   saved = await save();
   check(saved === null && (await toastText()).includes('퀴즈유형'), 'Save without a quiz type is rejected');
+  await run("window.mountQuiz(2,1,'01',true)");
+  await until("Array.from(document.querySelectorAll('input')).some(e=>e.value==='추가 의견') || document.body.textContent.includes('기존 유형: 주관식')", 'opinion loaded');
+  await run("Array.from(document.querySelectorAll('input')).find(e=>e.value==='보안 퀴즈').id='quiz-title-test'");
+  await setInput('#quiz-title-test', '제목만 변경');
+  saved = await save();
+  check(saved?.popup.title === '제목만 변경' && saved.popup.passingScore === 2 && saved.popup.questions.length === 3
+    && saved.popup.questions[2].isScored === false && saved.popup.questions[2].questionScore == null, 'Title-only change preserves unscored opinion and 2-point maximum');
+  await run("window.__detail=structuredClone(window.__saved.popup); window.openQuiz('FAILED')");
+  await until("window.__errors?.some(m=>m.includes('fixture lookup failure'))", 'detail failure');
+  check(await run("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='저장').disabled"),'Failed detail disables save');
+  check(await save() === null, 'Failed detail cannot submit previous ID');
+  await run("window.openQuiz('RGST-QUIZ')");
+  await until("Array.from(document.querySelectorAll('input')).some(e=>e.value==='제목만 변경')", 'saved title reloaded');
+  saved = await save();
+  check(saved?.popup.popupId === 'RGST-QUIZ' && saved.popup.questions[2].isScored === false && saved.popup.passingScore === 2,'Successful reload enables saving correct record');
+  await run("window.__detail={...window.__detail,popupId:'OPINION',title:'의견만 있는 퀴즈',questions:[window.__detail.questions[2]],passingScore:0};window.openQuiz('OPINION',false)");
+  await until("Array.from(document.querySelectorAll('input')).some(e=>e.value==='의견만 있는 퀴즈')", 'opinion-only quiz loaded');
+  for (const label of ['만점코드', '참여코드', '컷트코드']) {
+    await pickRule(label);
+    check(await save() === null && (await toastText()).includes('채점 문항'), label + ' rejects an opinion-only quiz before save');
+  }
+  for (const type of ['IMAGE', 'VIDEO']) {
+    await run(`window.__detail={...window.__detail,popupId:'MEDIA-${type}',popupType:'${type}',title:'Media ${type}',questions:[],content:{}};window.openQuiz('MEDIA-${type}')`);
+    await until(`Array.from(document.querySelectorAll('input')).some(e=>e.value==='Media ${type}')`, 'media loaded');
+    check(await save() === null && (await toastText()).includes('URL'), type + ' empty URL blocks active save');
+    await run(`window.openQuiz('MEDIA-${type}',false)`);
+    await pause(350);
+    const draft = await save();
+    check(draft?.popup.popupId === 'MEDIA-' + type && draft.active === false, type + ' inactive draft saves');
+  }
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   console.log('PASS: ' + checks + ' RgstPop quiz rule checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

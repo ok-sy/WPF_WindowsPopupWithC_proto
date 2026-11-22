@@ -230,7 +230,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     return value;
   };
   const IMAGE_CASES = [
-    ['ADAPTIVE', {}, {imageSizeMode: 'ADAPTIVE'}], ['FIT_TO_IMAGE', {}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true}], ['ORIGINAL', {}, {imageSizeMode: 'ORIGINAL'}],
+    ['ADAPTIVE', {}, {imageSizeMode: 'ADAPTIVE'}], ['FIT_TO_IMAGE', {}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true}],
     ['RATIO', {sizeMode: 'RATIO'}, {imageSizeMode: 'ADAPTIVE'}],
   ];
   for (const rule of [false, true]) {

@@ -47,7 +47,7 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
         <Typography component="span">{selected.suffix}</Typography>
       </>}
       <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }} data-testid="quiz-rule-score">
-        문항 {questionCount}개 × {QUIZ_QUESTION_SCORE}점 = 총점 {questionCount * QUIZ_QUESTION_SCORE}점 · 통과 점수 {passingScore ?? '-'}점
+        채점 문항 {questionCount}개 × {QUIZ_QUESTION_SCORE}점 = 총점 {questionCount * QUIZ_QUESTION_SCORE}점 · 통과 점수 {passingScore ?? '-'}점
       </Typography>
       {!items.length && (
         <Typography variant="caption" color="error" sx={{ width: '100%' }}>공통코드 {QUIZ_TYPE_CODE_TYPE}을 불러오는 중이거나 불러오지 못했습니다.</Typography>

@@ -86,7 +86,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   }
   // 인라인 미리보기는 부모 구조와 관계없이 이미지 칸이 접히지 않는다(grid가 아닌 부모에서 높이 0으로 안 보이던 문제).
   const inlineMeasure = `(()=>{const i=document.querySelector('img[alt="팝업 이미지 미리보기"]');const h=e=>e?Math.round(e.getBoundingClientRect().height):0;return {img:h(i),area:h(i&&i.parentElement),loaded:!!i&&i.complete&&i.naturalWidth>0};})()`;
-  for (const parent of ['gridRow', 'flexFixed', 'flexMin', 'flexMinTitle', 'blockFixed', 'blockAuto']) for (const mode of ['ADAPTIVE', 'FIT_TO_IMAGE', 'ORIGINAL']) {
+  for (const parent of ['gridRow', 'flexFixed', 'flexMin', 'flexMinTitle', 'blockFixed', 'blockAuto']) for (const mode of ['ADAPTIVE', 'FIT_TO_IMAGE']) {
     await run(`window.inlineScenario('${parent}', '${mode}')`); await pause(200);
     const m = await run(inlineMeasure);
     check(m.loaded && m.img > 50 && m.area > 50, `Inline preview keeps the image visible in ${parent}/${mode}: ` + JSON.stringify(m));

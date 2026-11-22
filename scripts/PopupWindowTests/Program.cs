@@ -29,7 +29,7 @@ using Popup.Views.Windows;
  * 52-4 useBackgroundOverlay를 생략한 서버 응답(JSON)이 기본 true로 해석되어 모든 유형에서 Overlay가 표시되는지(명시 false는 그대로)
  * 53-16 시청 비율 경계(일반 VIDEO·VIDEO+QUIZ·Demo가 서버와 같은 4자리 내림 판정·code)와 VIDEO+QUIZ 퀴즈 머리말 중복 숨김(50-D3·D4)
  * 57  완료 전 닫기 옵션 폐기: 화면 버튼은 completionRatio, 외부 닫기는 Overlay, 완료 전 연기는 showLater
- * 58  IMAGE 공통 popup.width/height: ADAPTIVE·ORIGINAL은 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(부가 영역은 더함),
+ * 58  IMAGE 공통 popup.width/height: ADAPTIVE는 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역(부가 영역은 더함),
  *     생략 축·구 서버 content.width/height 임시 호환(최상위 우선), 다른 유형 기본 900×620 유지
  * 60  VIDEO+QUIZ 재생 영역 = 원본 비율 × 실제 너비(메타데이터 전 16:9, 세로 영상 상한, 잘못된 크기·이전 문서 메시지 무시,
  *     크기 갱신이 시청량·잠금에 영향 없음, 단독 VIDEO는 기존 * 행)
@@ -514,11 +514,9 @@ internal static class Program
         double? Requested(PopupOptions options, string field) =>
             (double?)typeof(ImagePopupView).GetField(field, Flags)!.GetValue((ImagePopupView)options.Content!);
 
-        // 매핑: ADAPTIVE·ORIGINAL은 창 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역(창은 로딩 후 부가 영역을 더해 계산, 그 전 임시 560×420).
+        // 매핑: ADAPTIVE는 창 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역(창은 로딩 후 부가 영역을 더해 계산, 그 전 임시 560×420).
         var adaptive = PopupFactory.Create(Image("ADAPTIVE", 600, 400));
         Check(adaptive.Width == 600 && adaptive.Height == 400, "[TODO58] ADAPTIVE popup.width/height is the window size");
-        var original = PopupFactory.Create(Image("ORIGINAL", 600, 400));
-        Check(original.Width == 600 && original.Height == 400 && original.Content is ImageFillPopupView, "[TODO58] ORIGINAL popup.width/height is the window size");
         var fit = PopupFactory.Create(Image("FIT_TO_IMAGE", 600, 400));
         Check(fit.Width == 560 && fit.Height == 420 && Requested(fit, "_requestedWidth") == 600 && Requested(fit, "_requestedHeight") == 400,
             "[TODO58] FIT_TO_IMAGE popup.width/height goes to the image content area, not the window");
@@ -535,7 +533,7 @@ internal static class Program
         var textOptions = PopupFactory.Create(text);
         Check(textOptions.Width == 900 && textOptions.Height == 620, "[TODO58] non-image types keep the 900x620 default when the size is omitted");
 
-        // 실제 창: 같은 600×400에서 TEXT·ADAPTIVE·ORIGINAL 창 크기가 같다.
+        // 실제 창: 같은 600×400에서 TEXT·ADAPTIVE 창 크기가 같다.
         Opened Show(Popup.Dtos.PopupResponseDto dto)
         {
             var options = PopupFactory.Create(dto);
@@ -550,12 +548,11 @@ internal static class Program
         var sameText = DemoPopups("TEXT").Single();
         sameText.SizeMode = "FIXED"; sameText.Width = 600; sameText.Height = 400; sameText.MinimumWidth = 100; sameText.MinimumHeight = 100;
         var t = Show(sameText);
-        foreach (string mode in new[] { "ADAPTIVE", "ORIGINAL" })
         {
-            var dto = Image(mode, 600, 400); dto.MinimumWidth = 100; dto.MinimumHeight = 100;
+            var dto = Image("ADAPTIVE", 600, 400); dto.MinimumWidth = 100; dto.MinimumHeight = 100;
             var w = Show(dto);
             Check(Math.Abs(w.Window.ActualWidth - t.Window.ActualWidth) < 1 && Math.Abs(w.Window.ActualHeight - t.Window.ActualHeight) < 1,
-                $"[TODO58] {mode} window equals TEXT with the same width/height ({w.Window.ActualWidth}x{w.Window.ActualHeight} vs {t.Window.ActualWidth}x{t.Window.ActualHeight})");
+                $"[TODO58] ADAPTIVE window equals TEXT with the same width/height ({w.Window.ActualWidth}x{w.Window.ActualHeight} vs {t.Window.ActualWidth}x{t.Window.ActualHeight})");
             ShutdownClose(w.Window);
         }
         ShutdownClose(t.Window);
@@ -1729,6 +1726,10 @@ internal static class Program
         };
         static SurveyAnswer Right(long id) => new() { QuestionId = id, SelectedOptionIds = new() { id * 10 } };
         var defaults = new List<Popup.Models.SurveyQuestion> { Scored(1, null), Scored(2, null), Scored(3, null) };
+        var withOpinion = new List<SurveyQuestion> { Scored(1, 1), Scored(2, 1), new() { QuestionId = 3, QuestionType = SurveyQuestionType.Text, IsScored = false } };
+        var opinionAnswers = new List<SurveyAnswer> { Right(1), Right(2), new() { QuestionId = 3, TextAnswer = "추가 의견" } };
+        var opinionGrade = QuizGrader.Grade(withOpinion, opinionAnswers, 2);
+        Check(opinionGrade.Passed && opinionGrade.Score == 2 && opinionGrade.MaxScore == 2 && opinionGrade.ScoredCount == 2, "unscored text excluded from quiz grade");
         var full = QuizGrader.Grade(defaults, defaults.Select(q => Right(q.QuestionId)).ToList(), 3);
         var partial = QuizGrader.Grade(defaults, new List<SurveyAnswer> { Right(1), Right(2) }, 3);
         var mixed = QuizGrader.Grade(new List<Popup.Models.SurveyQuestion> { Scored(1, null), Scored(2, 2.5) }, new List<SurveyAnswer> { Right(1), Right(2) }, null);

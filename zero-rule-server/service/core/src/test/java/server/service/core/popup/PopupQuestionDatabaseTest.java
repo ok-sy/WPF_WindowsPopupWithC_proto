@@ -40,22 +40,26 @@ class PopupQuestionDatabaseTest {
                 ObjectNode draft = json.valueToTree(source);
                 String popupId = "TEST-" + UUID.randomUUID();
                 draft.put("popupId", popupId).put("popupType", "QUIZ").put("title", "문항 편집 검증")
-                        .put("displayMode", "SEQUENTIAL").put("passingScore", 30)
+                        .put("displayMode", "SEQUENTIAL").put("passingScore", 3)
                         .put("displayStartAt", OffsetDateTime.now().minusDays(1).toString())
                         .put("displayEndAt", OffsetDateTime.now().plusDays(1).toString());
                 var exact = new PopupQuestionDto(-1L, "정확히 일치", null, "TEXT", true, true,
-                        BigDecimal.TEN, 1, List.of(), "Windows + L", "EXACT", "VERTICAL");
+                        BigDecimal.ONE, 1, List.of(), "Windows + L", "EXACT", "VERTICAL");
                 var contains = new PopupQuestionDto(-2L, "포함", null, "TEXT", true, true,
-                        BigDecimal.TEN, 2, List.of(), "보안", "CONTAINS", "VERTICAL");
+                        BigDecimal.ONE, 2, List.of(), "보안", "CONTAINS", "VERTICAL");
                 var choice = new PopupQuestionDto(-3L, "객관식", null, "SINGLE_CHOICE", true, true,
-                        BigDecimal.TEN, 3, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
+                        BigDecimal.ONE, 3, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
                         new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null, "HORIZONTAL");
-                draft.set("questions", json.valueToTree(List.of(exact, contains, choice)));
+                var opinion = new PopupQuestionDto(-4L, "추가 의견", null, "TEXT", false, false, null, 4, List.of(), null, null, "VERTICAL");
+                draft.set("questions", json.valueToTree(List.of(exact, contains, choice, opinion)));
                 var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
                         new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
                 var saved = service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
-                assertEquals(3, saved.questions().size());
-                // POL-06-02 : 선택·제출 — 유형 코드 없는 요청은 통과 점수(30) = 총점(30)이라 만점형(01)으로 저장된다.
+                assertEquals(4, saved.questions().size());
+                assertFalse(saved.questions().get(3).isScored());
+                assertNull(saved.questions().get(3).questionScore());
+                assertNull(saved.questions().get(3).correctAnswer());
+                // POL-06-02 : 선택·제출 — 유형 코드 없는 요청은 통과 점수(3) = 총점(3)이라 만점형(01)으로 저장된다.
                 assertEquals("01", saved.quizTypeCode());
                 assertEquals("VERTICAL", saved.questions().get(0).optionLayout());
                 assertEquals("HORIZONTAL", saved.questions().get(2).optionLayout());
@@ -64,6 +68,12 @@ class PopupQuestionDatabaseTest {
                 assertEquals("CONTAINS", saved.questions().get(1).answerMatchMode());
                 assertTrue(saved.questions().get(2).options().get(0).isCorrect());
                 assertEquals(saved.questionTemplateId(), service.saveAdminPopup(saved, true, targets, "SYSTEM").questionTemplateId());
+                ObjectNode opinionOnly = json.valueToTree(saved);
+                opinionOnly.put("passingScore", 0);
+                opinionOnly.set("questions", json.valueToTree(List.of(opinion)));
+                var invalidUpdate = json.treeToValue(opinionOnly, PopupResponseDto.class);
+                assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(invalidUpdate, true, targets, "SYSTEM"));
+                assertEquals(saved.questions(), service.getAdminPopup(popupId).questions());
                 // POL-09-01 : 3 API 순서 — 구 WPF-01 getPopups 삭제. 노출 대상 포함은 매퍼로, 정답 제거는 비QUIZ WPF 경로의 withoutAnswerKey로 확인한다.
                 assertTrue(mapper.selectAvailablePopups("E1001", false).stream().anyMatch(p -> popupId.equals(p.popupId())));
                 String publicJson = json.writeValueAsString(WpfPopupItem.withoutAnswerKey(saved.questions()));
@@ -73,20 +83,20 @@ class PopupQuestionDatabaseTest {
                 var questions = saved.questions();
                 var second = new PopupSubmitAnswer(questions.get(1).questionId(), "정보보안을 지킵니다", List.of());
                 var third = new PopupSubmitAnswer(questions.get(2).questionId(), null, List.of(questions.get(2).options().get(0).optionId()));
-                assertThrows(IllegalArgumentException.class, () -> service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001", List.of(second, third), 20.0, false));
+                assertThrows(IllegalArgumentException.class, () -> service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001", List.of(second, third), 2.0, false));
                 var failed = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
-                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), "Windows + L 누르기", List.of()), second, third), 20.0, false);
-                assertEquals(20.0, failed.totalScore());
+                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), "Windows + L 누르기", List.of()), second, third), 2.0, false);
+                assertEquals(2.0, failed.totalScore());
                 assertFalse(failed.passed());
                 var passed = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
-                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), " Windows + L ", List.of()), second, third), 30.0, true);
-                assertEquals(30.0, passed.totalScore());
+                        List.of(new PopupSubmitAnswer(questions.get(0).questionId(), " Windows + L ", List.of()), second, third), 3.0, true);
+                assertEquals(3.0, passed.totalScore());
                 assertTrue(passed.passed());
                 ObjectNode edited = json.valueToTree(saved);
                 ((ObjectNode) edited.get("questions").get(0)).put("correctAnswer", "새 정답");
                 var updated = service.saveAdminPopup(json.treeToValue(edited, PopupResponseDto.class), true, targets, "SYSTEM");
                 assertNotEquals(saved.questionTemplateId(), updated.questionTemplateId());
-                assertEquals(3, mapper.selectQuestionsByTemplateIds(List.of(saved.questionTemplateId())).size());
+                assertEquals(4, mapper.selectQuestionsByTemplateIds(List.of(saved.questionTemplateId())).size());
                 assertEquals(source.questions(), service.getAdminPopup("SAMPLE-SURVEY-004").questions());
             } finally {
                 session.rollback(true);
@@ -97,7 +107,7 @@ class PopupQuestionDatabaseTest {
     /**
      * POL-06-02 : 선택·제출
      * 퀴즈 유형 코드(QUIZ_TYPE_CD) 저장·재조회와 참여형 기준 미달 제출의 완료 처리를 실DB로 확인한다(PU001 §7).
-     * 참여형 기준 5점에서 3점 제출 → POPUP_RESPONSE TOTAL_SCORE 3·PASSED_YN 'N', USER_POPUP_STATUS COMPLETED, 다음 조회 후보 제외.
+     * 참여형 기준 1점에서 0점 제출 → POPUP_RESPONSE TOTAL_SCORE 0·PASSED_YN 'N', USER_POPUP_STATUS COMPLETED, 다음 조회 후보 제외.
      * 23_popup_quiz_type_oracle.sql 적용이 필요하다. 롤백 전용.
      */
     @Test void participationQuizTypeRoundTripAndCompletionBelowThreshold() throws Exception {
@@ -109,11 +119,11 @@ class PopupQuestionDatabaseTest {
                 ObjectNode draft = json.valueToTree(service.getAdminPopup("SAMPLE-SURVEY-004"));
                 String popupId = "TEST-" + UUID.randomUUID();
                 draft.put("popupId", popupId).put("popupType", "QUIZ").put("title", "참여형 기준 검증")
-                        .put("displayMode", "SEQUENTIAL").put("passingScore", 5).put("quizTypeCode", "00")
+                        .put("displayMode", "SEQUENTIAL").put("passingScore", 1).put("quizTypeCode", "00")
                         .put("displayStartAt", OffsetDateTime.now().minusDays(1).toString())
                         .put("displayEndAt", OffsetDateTime.now().plusDays(1).toString());
                 var choice = new PopupQuestionDto(-1L, "객관식", null, "SINGLE_CHOICE", true, true,
-                        BigDecimal.TEN, 1, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
+                        BigDecimal.ONE, 1, List.of(new PopupOptionDto(-1L, "1", "정답", 1, true),
                         new PopupOptionDto(-2L, "2", "오답", 2, false)), null, null, "VERTICAL");
                 draft.set("questions", json.valueToTree(List.of(choice)));
                 var targets = List.of(new AdminPopupTargetGroup("테스트", "롤백", List.of(
@@ -121,10 +131,10 @@ class PopupQuestionDatabaseTest {
                 service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM");
                 var reloaded = service.getAdminPopup(popupId);
                 assertEquals("00", reloaded.quizTypeCode());
-                assertEquals(5.0, reloaded.passingScore());
+                assertEquals(1.0, reloaded.passingScore());
                 assertEquals(Boolean.FALSE, WpfPopupItem.from(reloaded, true).requiresPassing());
                 // 같은 유형 코드로 다시 저장하면 유지되고, 만점형으로 바꾸면서 기준이 총점과 다르면 거부한다.
-                draft.put("quizTypeCode", "01");
+                draft.put("quizTypeCode", "01").put("passingScore", 0);
                 assertThrows(IllegalArgumentException.class,
                         () -> service.saveAdminPopup(json.treeToValue(draft, PopupResponseDto.class), true, targets, "SYSTEM"));
 
@@ -132,8 +142,8 @@ class PopupQuestionDatabaseTest {
                 var option = reloaded.questions().get(0).options().get(1);
                 var result = service.submitResponse(popupId, UUID.randomUUID().toString(), "E1001",
                         List.of(new PopupSubmitAnswer(reloaded.questions().get(0).questionId(), null, List.of(option.optionId()))),
-                        3.0, false);
-                assertEquals(3.0, result.totalScore());
+                        0.0, false);
+                assertEquals(0.0, result.totalScore());
                 assertFalse(result.passed());
                 String prefix = PopupSchema.variables(System.getenv().getOrDefault("POPUP_TEST_DB_SCHEMA", PopupSchema.DEFAULT_SCHEMA))
                         .getProperty("popupSchemaPrefix");
@@ -144,7 +154,7 @@ class PopupQuestionDatabaseTest {
                     statement.setString(1, popupId);
                     try (var rs = statement.executeQuery()) {
                         assertTrue(rs.next());
-                        assertEquals(0, new BigDecimal("3").compareTo(rs.getBigDecimal(1)));
+                        assertEquals(0, BigDecimal.ZERO.compareTo(rs.getBigDecimal(1)));
                         assertEquals("N", rs.getString(2));
                         assertEquals("COMPLETED", rs.getString(3));
                         assertEquals("Y", rs.getString(4));
@@ -243,10 +253,10 @@ class PopupQuestionDatabaseTest {
 
                 // QUIZ 복수 선택 정답 2개 + 문항 제목 7단계 들여쓰기
                 ObjectNode quiz = base.deepCopy();
-                quiz.put("popupId", "TEST-" + UUID.randomUUID()).put("popupType", "QUIZ").put("title", "정답 수 검증").put("passingScore", 10);
+                quiz.put("popupId", "TEST-" + UUID.randomUUID()).put("popupType", "QUIZ").put("title", "정답 수 검증").put("passingScore", 1);
                 List<Object> titleBlocks = json.readValue("""
                         [{"alignment":"LEFT","indent":7,"runs":[{"text":"모두 고르세요"}]}]""", RICH_TEXT);
-                var multiple = new PopupQuestionDto(-1L, "client", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1,
+                var multiple = new PopupQuestionDto(-1L, "client", null, "MULTIPLE_CHOICE", true, true, BigDecimal.ONE, 1,
                         List.of(new PopupOptionDto(-1L, "1", "가", 1, true), new PopupOptionDto(-2L, "2", "나", 2, false),
                                 new PopupOptionDto(-3L, "3", "다", 3, true), new PopupOptionDto(-4L, "4", "라", 4, false)),
                         null, null, "VERTICAL", titleBlocks, null);

@@ -179,7 +179,7 @@ namespace Popup.Factories
         /*
          * POL-04-01 : 공통 크기 입력
          * 일반 IMAGE 크기는 최상위 popup.width/height 한 쌍이다. ADAPTIVE는 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역으로
-         * ImagePopupView에 넘기고(내부 창/이미지 모델은 그대로 구분), ORIGINAL은 공통 창 크기(PopupOptions.Width/Height)로 쓴다.
+         * ImagePopupView에 넘긴다.
          * 임시 호환: 구 서버는 일반 모드 크기를 content.width/height로 보내고 최상위 값을 생략한다. 최상위 축이 없을 때만 그 값을 읽는다
          * (최상위 우선). 새 서버 반영과 구 서버 미사용을 확인한 뒤 이 호환 읽기를 삭제한다.
          */
@@ -192,12 +192,6 @@ namespace Popup.Factories
             JsonElement contentJson = popupDto.Content;
             ImagePopupContentDto contentDto = contentJson.Deserialize<ImagePopupContentDto>(JsonOptions)
                 ?? throw new InvalidOperationException("IMAGE 팝업 content 변환에 실패했습니다.");
-
-            bool original = string.Equals(contentDto.ImageSizeMode, "ORIGINAL", StringComparison.OrdinalIgnoreCase);
-            if (original)
-            {
-                return new ImageFillPopupView(contentDto.ImageUrl);
-            }
 
             return new ImagePopupView(
                 contentDto.ImageTitle,

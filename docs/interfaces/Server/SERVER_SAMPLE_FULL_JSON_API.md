@@ -99,7 +99,7 @@ Invoke-RestMethod -Method Post -Uri 'http://localhost:8080/zero-rule-server/p/ap
 
 코드에 고정한 조건부 규칙(설정 파일로 바꾸지 않음):
 
-- IMAGE: width/height가 없거나 null이면 채우지 않고 키도 싣지 않는다(크기 미지정 = 원본 기준). `imageSizeMode=ORIGINAL`은 width/height 필수.
+- IMAGE: width/height가 없거나 null이면 채우지 않고 키도 싣지 않는다(크기 미지정 = 원본 기준).
 - SURVEY·QUIZ: footerAction 없으면 SUBMIT, 다른 명시값은 거절. TEXT·IMAGE·VIDEO의 SUBMIT은 거절. LINK_AND_CLOSE는 절대 http/https `footerLinkUrl` 필수, 그 밖의 동작이면 `footerLinkUrl`을 싣지 않는다.
 - VIDEO·영상 QUIZ(`videoEnabled=true`): completionRatio 없으면 VIDEO 1.0, 영상 QUIZ 0.8(PU001 B-7). 그 밖 유형은 null.
 - 영상 QUIZ: VIDEO content 기본값을 함께 채운다(명시값 유지). 영상 없는 QUIZ에는 VIDEO 필드를 넣지 않는다.
@@ -169,6 +169,7 @@ Bean은 기존 `popup.sample.full-json.enabled=true`일 때 `PopupFullJsonSample
 | 입력 | 처리 |
 |---|---|
 | 명시값 타입·ENUM·범위 오류(`videoEnabled:"videoEnabled"`, `"true"`, `sizeMode:"AUTO"`) | 오류. 자동 변환·기본값 대체 없음 |
+| QUIZ 등록·수정 시 `isScored=true`인 문항이 0개 | 영상 퀴즈를 포함해 `$.questions`에 `MISSING_REQUIRED`를 반환하고 저장을 중단한다. |
 | 누락·null | 기본값 + 이력. 명시한 false·0·빈 문자열 유지. 기본값이 null인 키(글자 크기·hideDays)는 null |
 | 기본값 | `popup-full-json-defaults.yml` 그대로. IMAGE·VIDEO `showDescription`, VIDEO `allowSeek`·`allowPlaybackRateChange` = **false**(2026-10-27 확정값 유지, 영상 QUIZ 상속) |
 | SURVEY 정답 키 | 관리자 원본 왕복을 위해 **저장 시 유지**. WPF 응답에서 빼는 것은 조회 책임 |

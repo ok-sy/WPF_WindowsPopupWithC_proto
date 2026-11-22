@@ -128,18 +128,18 @@ export function isSubmitPopupType(popupType: string): boolean {
  * 서버 응답·문항 템플릿·SURVEY→QUIZ 전환처럼 값이 null로 들어오는 경로에서 사용한다.
  */
 export function withDefaultAnswerMatchMode(questions: PopupQuestion[]): PopupQuestion[] {
-  if (!questions.some((q) => q.questionType === 'TEXT' && !q.answerMatchMode)) return questions;
-  return questions.map((q) => q.questionType === 'TEXT' && !q.answerMatchMode ? { ...q, answerMatchMode: 'EXACT' } : q);
+  if (!questions.some((q) => q.questionType === 'TEXT' && q.isScored && !q.answerMatchMode)) return questions;
+  return questions.map((q) => q.questionType === 'TEXT' && q.isScored && !q.answerMatchMode ? { ...q, answerMatchMode: 'EXACT' } : q);
 }
 
-/* IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE / ORIGINAL 세 값만 쓴다.
+/* IMAGE 크기 모드는 ADAPTIVE / FIT_TO_IMAGE 두 값만 쓴다.
  * 과거 값 FIXED와 빈 값은 불러오기·저장 시 ADAPTIVE로 바꿔 다시 저장되지 않게 한다. */
-const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE', 'ORIGINAL'];
+const IMAGE_SIZE_MODES = ['ADAPTIVE', 'FIT_TO_IMAGE'];
 /**
  * POL-04-01 : 공통 크기 입력
  * ■ 이미지 크기 모드 정규화
  * - in : value(unknown) 저장·입력된 크기 모드
- * - out: string 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'ORIGINAL'
+ * - out: string 'ADAPTIVE' | 'FIT_TO_IMAGE'
  * - 크기 모드 값을 받아 대문자로 맞추고, 허용 값이 아니면 ADAPTIVE로 바꾼다.
  */
 export function normalizeImageSizeMode(value: unknown): string {
@@ -152,7 +152,7 @@ function withNormalizedImageSizeMode(popup: AdminPopupDetail): AdminPopupDetail 
   const { width: legacyWidth, height: legacyHeight, ...content } = popup.content;
   const legacy = (value: unknown) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : undefined);
   return { ...popup, width: popup.width ?? legacy(legacyWidth), height: popup.height ?? legacy(legacyHeight),
-    sizeMode: popup.content.imageSizeMode !== 'ORIGINAL' && popup.sizeMode !== 'FULLSCREEN' ? 'FIXED' : popup.sizeMode,
+    sizeMode: popup.sizeMode !== 'FULLSCREEN' ? 'FIXED' : popup.sizeMode,
     content: { ...content, imageSizeMode: normalizeImageSizeMode(popup.content.imageSizeMode) } };
 }
 

@@ -1,3 +1,4 @@
+import type { PopupQuestion } from '@local/domain';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
@@ -12,14 +13,18 @@ import { createDefaultPopup } from '../zero-rule-web/main/src/features/Popupcomm
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, sans-serif' } });
 const w = window as any;
-w.mountQuiz = (passingScore: number | null, questionScore = 5, quizTypeCode?: string) => {
-  const questions = popupDemoQuestions(true).map((question) => ({ ...question, questionScore,
+let editorKey = 0;
+w.openQuiz = (popupId: string, active = true) => root.render(<ThemeProvider theme={theme}><CssBaseline />
+  <PopupEditorDialog key={editorKey} open popupId={popupId} initialActive={active} onClose={() => {}} onSaved={() => {}} />
+  <ToastContainer />
+</ThemeProvider>);
+w.mountQuiz = (passingScore: number | null, questionScore = 5, quizTypeCode?: string, includeOpinion = false) => {
+  const questions: PopupQuestion[] = popupDemoQuestions(true).map((question) => ({ ...question, questionScore,
     ...(question.questionType === 'TEXT' ? { correctAnswer: '정보보호팀', answerMatchMode: 'CONTAINS' } : {}) }));
+  if (includeOpinion) questions.push({ questionId: 7001, questionType: 'TEXT', title: '추가 의견', optionLayout: 'VERTICAL', options: [], sortOrder: 3, isRequired: false, isScored: false, questionScore: null });
   w.__detail = { ...createDefaultPopup(new Date('2026-10-22T00:00:00+09:00')), popupId: 'RGST-QUIZ', title: '보안 퀴즈', popupType: 'QUIZ',
     width: 640, height: 640, passingScore, ...(quizTypeCode !== undefined ? { quizTypeCode } : {}), questions, content: { ...createDefaultPopup().content, surveyTitle: '보안 퀴즈' } };
   w.__saved = null;
-  root.render(<ThemeProvider theme={theme}><CssBaseline />
-    <PopupEditorDialog key={Date.now()} open popupId="RGST-QUIZ" initialActive onClose={() => {}} onSaved={() => {}} />
-    <ToastContainer />
-  </ThemeProvider>);
+  editorKey++;
+  w.openQuiz('RGST-QUIZ');
 };

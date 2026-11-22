@@ -16,7 +16,7 @@
         public string Description { get; set; } = string.Empty;
         /* 설명 표시 여부. 기본 true */
         public bool ShowDescription { get; set; } = true;
-        /* POL-04-02 : 모드별 기준 — ADAPTIVE / FIT_TO_IMAGE / ORIGINAL. 기본 ADAPTIVE */
+        /* POL-04-02 : 모드별 기준 — ADAPTIVE / FIT_TO_IMAGE. 기본 ADAPTIVE */
         public string ImageSizeMode { get; set; } = "ADAPTIVE";
         /* POL-04-03 : 비율·상한 — FIT_TO_IMAGE 비율 고정(Uniform) 여부. 기본 true */
         public bool KeepAspectRatio { get; set; } = true;

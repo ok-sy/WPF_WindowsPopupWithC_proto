@@ -38,7 +38,7 @@
       "questions": [],
       "content": {
         "imageUrl": "https://example.com/media/training.png",
-        "imageSizeMode": "ORIGINAL"
+        "imageSizeMode": "ADAPTIVE"
       }
     },
     {
@@ -128,7 +128,7 @@
       "showFooter": true,
       "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
-      "passingScore": 80,
+      "passingScore": 1,
       "requiresPassing": true,
       "questions": [
         {
@@ -137,7 +137,7 @@
           "questionType": "SINGLE_CHOICE",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 100,
+          "questionScore": 1,
           "optionLayout": "VERTICAL",
           "options": [
             {
@@ -176,7 +176,7 @@
       "footerAction": "SUBMIT",
       "showDoNotShowAgain": false,
       "completionRatio": 0.8,
-      "passingScore": 80,
+      "passingScore": 1,
       "requiresPassing": true,
       "questions": [
         {
@@ -185,7 +185,7 @@
           "questionType": "SINGLE_CHOICE",
           "isRequired": true,
           "isScored": true,
-          "questionScore": 100,
+          "questionScore": 1,
           "optionLayout": "VERTICAL",
           "options": [
             {

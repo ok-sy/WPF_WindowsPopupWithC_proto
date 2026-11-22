@@ -14,7 +14,7 @@ namespace Popup.Views.Contents
      *
      * [1차 정책]
      *   TEXT   : 일반 텍스트·서식 본문·강조 문구·하단 설명 (BodyTextStyle 15 기준). TEXT 전용 콘텐츠 제목·설명 영역은 없다(서식 본문으로 작성).
-     *   IMAGE  : 이미지 설명 (14). 제목(22)은 그대로 둔다. ORIGINAL 모드 뷰(ImageFillPopupView)는 텍스트가 없어 적용 대상이 없다
+     *   IMAGE  : 이미지 설명 (14). 제목(22)은 그대로 둔다.
      *            (FILL 모드는 없다).
      *   VIDEO  : 영상 설명 (14). 제목(22)·재생 컨트롤은 그대로 둔다.
      *   SURVEY/QUIZ : 선택지·주관식 입력(UserControl 상속 크기)을 본문 크기로 하고,

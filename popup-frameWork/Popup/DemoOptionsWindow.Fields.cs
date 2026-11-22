@@ -53,7 +53,7 @@ namespace Popup
         {
             var panel = AddTab("창·배치", "창 크기·위치와 배경 Overlay입니다.");
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(POL-04-01). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
+                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(POL-04-01). ADAPTIVE은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
             AddField(panel, _draft, "sizeMode", "창 크기 방식", typeof(string), new[] { "FIXED", "RATIO", "FULLSCREEN" });
             // POL-04-01 : 공통 크기 입력 — 생략(null)을 구분한다. IMAGE 외 유형은 비우면 900×620.
             AddField(panel, _draft, "width", popup.PopupType == "IMAGE" ? "너비(px) · FIT_TO_IMAGE는 콘텐츠 너비, 그 밖에는 팝업 너비" : "고정 창 너비(px)",

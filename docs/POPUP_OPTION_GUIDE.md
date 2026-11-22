@@ -14,7 +14,7 @@
 | popupType | 설명 |
 |---|---|
 | `TEXT` | 일반 텍스트·서식 본문(textBlocks), 하단 설명 |
-| `IMAGE` | 이미지, 제목·설명(ORIGINAL은 이미지만). 이미지 클릭 링크는 계약 3.7에서 삭제 |
+| `IMAGE` | 이미지, 제목·설명. 이미지 클릭 링크는 계약 3.7에서 삭제 |
 | `VIDEO` | 동영상, 재생 제어, 시청 완료 판정 |
 | `SURVEY` | 객관식/주관식 설문 |
 | `QUIZ` | 정답, 배점, 통과 점수가 있는 퀴즈. `content.videoEnabled=true`이면 동영상+퀴즈 |
@@ -142,30 +142,29 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `showDescription` | bool | 설명 표시 여부 |
 | `imageSizeMode` | string | 이미지 표시 방식 |
 | `keepAspectRatio` | bool | FIT_TO_IMAGE 비율 고정, 기본 true(콘텐츠 영역 안에 원본 비율로 맞춤). false는 영역을 채워 왜곡 허용 |
-| (최상위) `width` / `height` | number | IMAGE 크기도 공통 한 쌍(TODO58). ADAPTIVE·ORIGINAL 팝업 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역. content.width/height는 폐기 |
+| (최상위) `width` / `height` | number | IMAGE 크기도 공통 한 쌍(TODO58). ADAPTIVE 팝업 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역. content.width/height는 폐기 |
 
 현재 관리자 화면에는 다음 이미지 모드가 노출된다.
 
 | 관리자 값 | 설명 | WPF 처리 |
 |---|---|---|
-| `ORIGINAL` | 원본 픽셀 크기 유지, 왼쪽 위 배치, 넘치는 영역 자름 | 전용 원본 렌더링(스크롤/확대·축소 없음) |
 | `FIT_TO_IMAGE` | 지정 콘텐츠 영역(없으면 원본)에 헤더·푸터·제목·설명을 더해 창 크기 재계산 | `FitToImage` |
 | `ADAPTIVE` | 고정 팝업 영역 안에 비율 유지하여 맞춤 | `Adaptive` |
 
-신규 관리자 등록 기본 선택은 `ADAPTIVE`이다. API 필드가 없으면 기존 호환을 위해 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`는 지원하지 않는다.
+신규 관리자 등록 기본 선택은 `ADAPTIVE`이다. API 필드가 없으면 기존 호환을 위해 `ADAPTIVE`로 처리한다. 과거 값 `FIXED`와 2026-11-22 삭제한 `ORIGINAL`은 지원하지 않는다(기존 ORIGINAL 팝업은 `db/oracle/25_delete_original_image_popups_oracle.sql`로 삭제).
 
 ---
 
 ### 비율 및 창 경계 (v3.6 / 설계 23)
 
-- [TODO58] IMAGE의 크기는 모든 모드에서 최상위 width/height 한 쌍이다(content.width/height 폐기). ADAPTIVE·ORIGINAL은 팝업 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역이다. 일반 모드는 축별로 생략할 수 있다.
+- [TODO58] IMAGE의 크기는 모든 모드에서 최상위 width/height 한 쌍이다(content.width/height 폐기). ADAPTIVE는 팝업 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역이다. 두 모드 모두 축별로 생략할 수 있다.
 - ADAPTIVE: content 크기는 창 크기. 미지정 축은 원본 이미지와 실제 제목·설명·여백을 측정해 산정한다. 로딩 전 임시 창은 560×420 DIP이며, 명시한 축은 유지한다. 이미지는 원본보다 확대하지 않고 가용 영역 안에 비율을 유지해 표시한다.
 - FIT_TO_IMAGE: 크기는 이미지 콘텐츠 영역 DIP 크기. keepAspectRatio 기본 true. 등록 화면에서 고정이면 한쪽 수정 시 다른 쪽을 원본 비율로 계산한다. 양쪽 API 값이 비율과 다르면 영역 안에 원본 비율로 맞추고 남는 쪽은 여백이다(TODO58 — 예전 너비 우선 정규화 대체).
 - 해제(false)는 양쪽을 그대로 사용해 왜곡을 허용하며 누락한 축만 원본 DIP 길이로 채운다. 둘 다 없으면 원본 DIP 크기다. 서버는 원본 URL을 다운로드하지 않는다. 원본 로딩 후 WPF와 웹에서 계산한다.
-- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. 지정한 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. ORIGINAL은 왼쪽 위 Clip을 유지한다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
+- IMAGE 창 최대는 현재 모니터 작업 영역 너비·높이의 **90%**다. 고정 maximumWidth/maximumHeight 값(기본 1200×900)은 IMAGE 창 상한으로 사용하지 않는다. 최소는 이 화면 상한 이하로 보정하고, 최소로 늘어난 창에는 이미지 주변 여백을 허용한다. 지정한 크기는 유지하며 FIT_TO_IMAGE의 최대 초과 부분은 **중앙 기준**으로 자른다. FULLSCREEN은 모니터 전체 크기를 우선한다. 다른 유형의 기존 최대 크기 정책은 유지한다.
 - 설명은 항상 아래. showDescription=false 또는 공백이면 설명과 14 DIP 전용 간격을 제거한다. 설명은 가용 너비로 줄바꿈하고 하단 가용 콘텐츠 높이의 최대 30%에서 세로 스크롤한다. 제목·닫기·푸터는 이미지와 함께 스크롤하지 않는다.
 - 크기 계산에는 이미지 Border, 제목·설명 실제 측정, 콘텐츠 Margin(28/24), 그림자용 바깥 Margin(24), 창 Border, 표시 중인 Header(40)·Footer(80) 행(창 Border·본문 테두리는 0)을 사용한다. 이미지와 무관한 190/300 높이 추정은 제거했다.
-- WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다. ORIGINAL은 기존처럼 메타데이터 DPI와 무관하게 원본 1px=1 DIP, 왼쪽 위 기준으로 자른다.
+- WPF 원본 DIP는 파일 DPI를 반영한다. 브라우저 원본은 naturalWidth/naturalHeight CSS px이므로 파일 DPI·글꼴·작업 영역이 다른 PC와 미리보기 사이에는 차이가 생길 수 있다.
 - FILL, imageWidth/imageHeight, descriptionPosition, imageAreaRatio는 새 입력에서 제거했다. 서버 저장은 해당 키·모드와 중복 최상위 크기를 거절한다. 기존 DB는 조회 변환 또는 전환 계획 스크립트를 통해 새 계약으로 제공한다.
 
 ## 6. VIDEO 팝업
@@ -301,6 +300,6 @@ DB 컬럼은 `POPUP_NOTICE.SHOW_LATER_YN`(기본 'N')이며 기존 DB는 `db/ora
 3. RATING5 유형은 삭제했다(2026-09-28). 직접 입력한 단일 선택 보기와 가로·세로 배치를 사용한다.
 4. `hideDays`는 관리자 입력 가능하며, 비우면 WPF가 HIDDEN 결과에 30일을 사용한다.
 5. 기간·대상·숨김·완료·재노출 유예 판정과 표시 순서 정렬은 서버가 조회 시 끝내고 1건만 내려준다.
-6. IMAGE ORIGINAL, 푸터 바로가기, 동영상+퀴즈는 최신 main에서 관리자·미리보기·WPF·서버 계약에 반영되어 있다.
+6. 푸터 바로가기, 동영상+퀴즈는 최신 main에서 관리자·미리보기·WPF·서버 계약에 반영되어 있다.
 
 남은 미결 항목(WPF 전용 `AUTO` 크기 모드 처리, 기간·반복 정책)은 [`design/09_전환계획_및_미결사항.md`](design/09_전환계획_및_미결사항.md)에서 관리한다.

@@ -18,7 +18,7 @@ namespace Popup
      * - 옵션 영역(Domain) 하나 = 서로 배타적인 값(Variant) 목록. 첫 값은 생략했을 때 3117 기본값(popup-full-json-defaults.yml)과 같다.
      * - 이론 가짓수 = 그 유형에 적용되는 옵션 영역의 값 수를 모두 곱한 값. 화면상 차이가 없는 조합(예: showFooter=false일 때 showLater)도 센 상한이다.
      * - 숫자 옵션(글자 크기·완료 비율·음량·통과 점수)은 범위 전체가 아니라 대표값 2개(기본/지정)로 센다.
-     * - 서로 의존하는 값은 한 영역으로 묶는다: showDoNotShowAgain+hideDays, footerAction+footerLinkUrl, IMAGE imageSizeMode+창 크기(ORIGINAL은 크기 필수라 4가지가 아니라 5가지).
+     * - 서로 의존하는 값은 한 영역으로 묶는다: showDoNotShowAgain+hideDays, footerAction+footerLinkUrl, IMAGE imageSizeMode+창 크기.
      * - 샘플 = 유형별 기본 1건 + 옵션 영역마다 기본이 아닌 값을 하나씩 바꾼 건(한 번에 옵션 하나만 변경) + 규칙 위반 예시(ERROR 기대).
      *   전수 조합은 수억 건이라 샘플로 만들지 않는다. 옵션 값 하나하나가 최소 한 번씩 등장하는 것을 보장한다.
      *
@@ -133,15 +133,14 @@ namespace Popup
                     Variant Size(string label, string? mode, bool sized) => new(label, p =>
                     {
                         if (mode != null) C(p)["imageSizeMode"] = mode;
-                        if (sized) { p["width"] = mode == "ORIGINAL" ? 800 : 640; p["height"] = mode == "ORIGINAL" ? 600 : 480; }
+                        if (sized) { p["width"] = 640; p["height"] = 480; }
                     });
                     list.Add(new("content+popup", "imageSizeMode·width/height", "열거+숫자", new[]
                     {
                         Keep("ADAPTIVE · 크기 미지정(기본)"),
                         Size("ADAPTIVE · 640×480", null, true),
                         Size("FIT_TO_IMAGE · 크기 미지정", "FIT_TO_IMAGE", false),
-                        Size("FIT_TO_IMAGE · 640×480", "FIT_TO_IMAGE", true),
-                        Size("ORIGINAL · 800×600(크기 필수)", "ORIGINAL", true)
+                        Size("FIT_TO_IMAGE · 640×480", "FIT_TO_IMAGE", true)
                     }));
                     list.Add(new("content", "showDescription", "불리언", new[]
                     {
@@ -175,7 +174,7 @@ namespace Popup
         /*
          * ■ 문항 구성 — 문항 1개 기준의 유효 조합
          * - SURVEY 22 = SINGLE(배치 2 × 필수 2) 4 + MULTIPLE(배치 2 × 필수 2 × 선택 수 제한 4) 16 + TEXT(필수 2) 2
-         * - QUIZ  24 = SINGLE(배치 2 × 필수 2 × 채점 2) 8 + MULTIPLE(같음) 8 + TEXT(필수 2 × 채점 2 × 정답 비교 2) 8
+         * - QUIZ 12 = SINGLE(배치 2 × 필수 2) 4 + MULTIPLE(같음) 4 + TEXT(필수 2 × 정답 비교 2) 4. 단일 문항은 채점 문항이어야 한다.
          * 선택 수 제한(minSelections·maxSelections)은 SURVEY 복수 선택에만, 정답 비교(answerMatchMode)는 QUIZ 주관식에만 있다.
          */
         private static Variant[] QuestionVariants(bool quiz)
@@ -184,24 +183,23 @@ namespace Popup
             foreach (string qt in new[] { "SINGLE_CHOICE", "MULTIPLE_CHOICE", "TEXT" })
             foreach (string layout in qt == "TEXT" ? new[] { "" } : new[] { "VERTICAL", "HORIZONTAL" })
             foreach (bool required in new[] { true, false })
-            foreach (bool scored in quiz ? new[] { true, false } : new[] { true })
             foreach (string limit in !quiz && qt == "MULTIPLE_CHOICE" ? new[] { "제한 없음", "최소 2", "최대 2", "2~3개" } : new[] { "" })
             foreach (string match in quiz && qt == "TEXT" ? new[] { "EXACT", "CONTAINS" } : new[] { "" })
             {
                 var parts = new List<string> { qt };
                 if (layout.Length > 0) parts.Add(layout);
                 parts.Add(required ? "필수" : "선택");
-                if (quiz) parts.Add(scored ? "채점" : "비채점");
+                if (quiz) parts.Add("채점");
                 if (limit.Length > 0) parts.Add(limit);
                 if (match.Length > 0) parts.Add(match);
                 string label = string.Join(" · ", parts) + (list.Count == 0 ? "(기본)" : "");
-                JsonObject question = Question(qt, layout, required, quiz, scored, limit, match);
+                JsonObject question = Question(qt, layout, required, quiz, limit, match);
                 list.Add(new Variant(label, p => p["questions"] = new JsonArray(question.DeepClone())));
             }
             return list.ToArray();
         }
 
-        private static JsonObject Question(string qt, string layout, bool required, bool quiz, bool scored, string limit, string match)
+        private static JsonObject Question(string qt, string layout, bool required, bool quiz, string limit, string match)
         {
             var q = new JsonObject
             {
@@ -225,7 +223,7 @@ namespace Popup
             q["options"] = options;
             if (quiz)
             {
-                q["isScored"] = scored;
+                q["isScored"] = true;
                 q["questionScore"] = 1;
                 if (qt == "TEXT") { q["correctAnswer"] = "정답"; q["answerMatchMode"] = match; }
             }
@@ -252,7 +250,7 @@ namespace Popup
                     content["videoEnabled"] = true; content["videoUrl"] = VideoToken; content["surveyTitle"] = "3117 영상 퀴즈 샘플";
                     break;
             }
-            if (IsQuestionType(type)) p["questions"] = new JsonArray(Question("SINGLE_CHOICE", "VERTICAL", true, IsQuiz(type), true, "", "").DeepClone());
+            if (IsQuestionType(type)) p["questions"] = new JsonArray(Question("SINGLE_CHOICE", "VERTICAL", true, IsQuiz(type), "", "").DeepClone());
             return p;
         }
 
@@ -305,7 +303,7 @@ namespace Popup
             yield return Bad("TEXT", "LINK_AND_CLOSE인데 footerLinkUrl 없음", p => p["footerAction"] = "LINK_AND_CLOSE");
             yield return Bad("TEXT", "sizeMode AUTO(WPF 전용, 서버 저장 불가)", p => p["sizeMode"] = "AUTO");
             yield return Bad("TEXT", "showHeader 문자열 \"true\"(타입 불일치)", p => p["showHeader"] = "true");
-            yield return Bad("IMAGE", "ORIGINAL인데 width/height 없음", p => C(p)["imageSizeMode"] = "ORIGINAL");
+            yield return Bad("IMAGE", "지원하지 않는 이미지 모드", p => C(p)["imageSizeMode"] = "UNKNOWN");
             yield return Bad("IMAGE", "imageUrl 없음", p => C(p).Remove("imageUrl"));
             yield return Bad("VIDEO", "videoUrl 없음", p => C(p).Remove("videoUrl"));
             yield return Bad("SURVEY", "footerAction CLOSE(SUBMIT 고정)", p => p["footerAction"] = "CLOSE");
@@ -319,6 +317,8 @@ namespace Popup
                 foreach (string key in p.Select(kv => kv.Key).ToList()) p.Remove(key);
                 p["popup"] = inner;
             });
+            yield return Bad("QUIZ", "비채점 주관식만 등록", p => p["questions"] = new JsonArray(
+                new JsonObject { ["questionType"] = "TEXT", ["title"] = "의견을 입력하세요.", ["isScored"] = false }));
         }
 
         /*

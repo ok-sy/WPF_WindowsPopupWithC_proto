@@ -654,8 +654,7 @@ TEXT
   → TextPopupView
 
 IMAGE
-  → ImagePopupView (ADAPTIVE / FIT_TO_IMAGE)
-  → ImageFillPopupView (ORIGINAL: 원본 크기·왼쪽 위 잘림. 이미지 클릭 링크는 계약 3.7에서 삭제, 클래스명은 FILL 시절 이름 유지)
+  → ImagePopupView (ADAPTIVE / FIT_TO_IMAGE. ORIGINAL·ImageFillPopupView는 2026-11-22 삭제)
 
 VIDEO
   → VideoPopupView
@@ -914,7 +913,7 @@ Timer Tick
 
 조회 실패가 DNS/연결 오류·Timeout·500/502/503/504이면 같은 타이머로 10초 간격 3회씩 3사이클(총 9회) 복구한다. 사이클 사이에는 30분 휴식 후 첫 10초를 기다린다. 이후 계속 실패하면 60분 간격으로 확인한다. 성공하면 복구 횟수를 초기화하고 응답의 최신 주기를 적용한다. 미전송 결과 때문에 조회를 보류한 경우(결과 전송 401·5xx·연결 실패 포함)도 같은 복구 간격으로 재시도한다. 1회 재인증 후에도 실패한 401(SSO·로그인 실패로 토큰을 얻지 못한 경우 포함)도 같은 복구 사이클로 다시 조회한다(TODO45, 2026-11-11). 미전송 결과 재전송이 저장에 성공하면 `nextStatus`와 관계없이 복구 횟수를 초기화하고, 이어진 조회가 실패하면 1회(10초)부터 다시 센다. 400/403은 복구 대상에서 제외하고 426은 업데이트 안내 후 종료한다.
 
-`PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE 일반 모드도 같은 Clip을 사용하며 ORIGINAL의 Canvas는 창 측정용으로 유지한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
+`PopupWindow`의 공통 `PopupBodyContent` Grid가 모든 WPF 콘텐츠를 테두리 안쪽 둥근 영역으로 자른다. IMAGE도 같은 Clip을 사용한다. 실제 DPI 및 WebView2 네이티브 영상 경계는 Windows 검증이 필요하다.
 
 WPF 화면 동작 및 복구/HTTP/인증/큐 검증 프로젝트는 2026-10-03부터 로컬 전용으로 관리하며 Git·소스 반입 대상에서 제외한다. 저장소의 일반 빌드에는 필요하지 않다. 실행한 검증 결과는 `version-history/CHANGELOG.md`와 설계 19에 기록한다.
 
@@ -1119,4 +1118,4 @@ Demo 관리 화면에서 텍스트·이미지·동영상·설문·퀴즈·동영
 
 ## IMAGE 계약 (설계 23)
 
-일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. ORIGINAL의 기존 최상위 창 크기·왼쪽 위 원본 잘림은 유지한다. 계약·예제는 docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md v3.7, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.
+일반 모드는 ADAPTIVE(창 우선)와 FIT_TO_IMAGE(이미지 우선)이며 외부 크기는 content.width/height 한 쌍만 사용한다. FIT_TO_IMAGE는 keepAspectRatio 기본 true, 해제 시 지정 너비·높이로 왜곡을 허용한다. IMAGE 창 최대는 작업 영역 너비·높이의 90%이며 고정 최대 픽셀값을 사용하지 않는다. 최소는 화면 상한 이하로 보정하며 최대 초과 이미지는 축소 없이 중앙에서 자른다. 설명은 하단 선택 표시와 세로 스크롤을 사용한다. 계약·예제는 docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md v3.7, 기존 DB 전환은 db/oracle/11_IMAGE_CONTRACT_TRANSITION.md를 참조한다.

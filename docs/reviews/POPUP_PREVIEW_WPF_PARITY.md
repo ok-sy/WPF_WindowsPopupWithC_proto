@@ -20,7 +20,7 @@
 | 폰트 크기 | `PopupWindow`, 콘텐츠 View | `content.headerFontSize` / `bodyFontSize` / `footerFontSize`, 10~40 보정, 비우면 기본 크기 |
 | 배경 | `PopupWindow` | `useBackgroundOverlay`, `backgroundOverlayOpacity`(기본 0.45) |
 | TEXT | `TextPopupView` | 카드 없이 일반 텍스트(콘텐츠 제목·설명은 본문 앞 문단, 설계 37), 하단 설명(+연결 URL)을 각 표시 스위치대로 표시. `textBlocks`(설계 28 서식 본문)가 있으면 문단 정렬·들여쓰기(설계 49, 단계 × 40px = WPF 40 DIP)와 Run별 굵게·기울임·밑줄·색·크기·글꼴을 React 요소로 그린다(`innerHTML` 미사용) |
-| IMAGE | `ImagePopupView` / `ImageFillPopupView` | `imageSizeMode` ORIGINAL / ADAPTIVE / FIT_TO_IMAGE. ORIGINAL은 `ImageFillPopupView`에 대응하며 좌상단 원본 크기·클리핑·무스크롤을 재현한다 |
+| IMAGE | `ImagePopupView` | `imageSizeMode` ADAPTIVE / FIT_TO_IMAGE(ORIGINAL·`ImageFillPopupView`는 2026-11-22 삭제) |
 | VIDEO | `VideoPopupView` | WPF와 같은 순서(콘텐츠 제목 → 영상 → 설명)로 그리고, 단독 VIDEO 영상 영역은 남은 높이를 채운다(TODO61-17). 그 안에 실제 영상을 음소거·메타데이터만 읽어 비율 유지(contain)로 그린다(`FillVideoArea`, WPF `Stretch=Uniform`과 같이 위아래·좌우 검은 여백). 단독 VIDEO는 WPF와 같이 영상 비율로 영역 높이를 계산하지 않는다(비율 높이 계산은 동영상+퀴즈만). 주소가 없거나 읽지 못하면 재생 아이콘·안내 문구를 표시한다. 컨트롤 표시, 배속·전체화면·재생 위치 변경(`allowSeek`) 허용 여부를 한 줄 모형으로 표시(실제 재생은 하지 않음). 완료 기준·기본 음량 같은 미리보기 전용 안내는 WPF에 없어 그리지 않는다. 2026-11-13 미리보기 상단 시청 비율 슬라이더(재생 진행 상태에 따른 버튼 활성화 시연)를 삭제해 미리보기는 시청 기준 충족 상태(Footer 버튼 활성, 사유 문구 없음)로 그린다. 기준 미달 Footer 비활성·사유 문구(설계 43, TODO57로 항상 적용)는 WPF 실제 팝업에서만 확인한다 |
 | 동영상+퀴즈 | `VideoQuizPopupView` | 2026-11-13부터 시청 비율 슬라이더 없이 잠금 해제 상태(퀴즈 입력·제출 진행 문구)로 미리보기. 시청 전 퀴즈·푸터 잠금과 "영상 {현재}% · 기준 {기준}% 이상 시청하면…" 문구는 WPF 실제 팝업에서만 동작한다. 영상과 퀴즈 사이 본문 안내는 두지 않는다(TODO59). 영상 영역은 HTML video 메타데이터(videoWidth/Height)로 WPF와 같은 원본 비율·상한 원칙을 적용한다(TODO60, `AspectVideoArea`) |
 | SURVEY/QUIZ | `SurveyPopupView` | 문항·설명·필수 여부·보기, 문항별 `optionLayout` VERTICAL / HORIZONTAL, QUIZ 총점·통과 점수. QUIZ 미달 시 점수와 틀린 채점 문항 번호("틀린 문항: 2, 4번", 문항 목록 순서 1부터)를 표시한다(설계 43) |
@@ -29,7 +29,6 @@
 
 - Header: 미리보기도 WPF와 같이 Header에 닫기 버튼 없이 클릭되지 않는 고정 로고(`public/images/popup-header-logo.png`, WPF `Resources/HeaderLogo.png` 사본, 100×24)를 그린다. 닫기는 Footer 버튼 하나다(WPF 그 밖의 종료 경로는 Alt+F4). Header 배경·제목 색은 WPF와 같은 검정·흰색이고, 로고는 검은 배경에서 보이도록 CLOVER 글자를 흰색으로 바꾼 그림을 WPF·미리보기가 같이 쓴다(기본 로고. 다른 로고를 쓰려면 두 파일을 같은 이름으로 교체). Header 높이는 유형과 관계없이 WPF `HeaderRow`와 같은 40이며 제목은 한 줄 말줄임으로 그린다. IMAGE 미리보기 창에는 WPF `PopupBodyBorder`(두께 0)와 같이 테두리를 그리지 않는다.
 - IMAGE 크기 계산: `imagePreviewLayout.ts`가 WPF `ImagePopupView`(설계 15·23)와 같은 규칙으로 계산한다. FILL 모드와 `imageAreaRatio`·`descriptionPosition`·오른쪽 설명 폭은 설계 23에서 제거했으며 설명은 항상 이미지 아래다.
-  - ORIGINAL: 자연 이미지 픽셀 크기를 그대로 쓰고 좌상단에 배치한 뒤 초과 영역을 숨긴다. 작은 이미지는 확대하지 않는다. 제목·설명은 쓰지 않는다.
   - ADAPTIVE: `popup.width/height`는 창 크기이며(TODO58로 content에서 이동) 이미지는 원본보다 확대하지 않고 비율을 유지해 맞춘다.
   - FIT_TO_IMAGE: `popup.width/height`(없으면 원본)는 이미지 콘텐츠 영역 크기이며(비율 고정 시 영역 안 contain) 팝업 창 크기를 다시 계산한다(TODO58). 창 크롬은 WPF `PopupWindow`와 같이 가로 104(콘텐츠 여백 28+28, 외곽 여백 24+24, 본문 테두리 0), 세로 96(24+24, 24+24)에 Header 40·Footer 80을 더하고 이미지 테두리 1+1을 포함한다. 편집기 패널에 그 값을 안내하고 **실제 크기로 보기** 모달이 그 크기로 열린다.
   - 창 최대는 작업 영역의 90%다. 미리보기는 모니터 작업 영역 대신 브라우저 창 크기(`window.innerWidth/innerHeight`)를 쓰므로 실제 PC와 차이가 날 수 있다.

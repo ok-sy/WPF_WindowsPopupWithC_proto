@@ -147,11 +147,10 @@ function PopupBody({
   }
 
   if (popup.popupType === 'IMAGE') {
-    // WPF ImagePopupView와 같은 규칙으로 크기 모드(ADAPTIVE·FIT_TO_IMAGE·ORIGINAL)·설명 배치를 재현한다.
+    // WPF ImagePopupView와 같은 규칙으로 크기 모드(ADAPTIVE·FIT_TO_IMAGE)·설명 배치를 재현한다.
     const imageUrl = text(content.imageUrl, '');
     const mode = imageSizeMode(popup);
-    const original = mode === 'ORIGINAL';
-    const showDescription = !original && content.showDescription !== false && Boolean(String(content.description ?? '').trim());
+    const showDescription = content.showDescription !== false && Boolean(String(content.description ?? '').trim());
 
     const fixedImage = mode === 'FIT_TO_IMAGE' ? fitLayout?.image : undefined;
     // ADAPTIVE는 원본보다 확대하지 않는다(별도 이미지 크기 상한 없음).
@@ -170,23 +169,15 @@ function PopupBody({
         }
         sx={{
           display: 'block',
-          width: original
-            ? (naturalImageSize?.width ?? 'auto')
-            : fixedImage
-              ? fixedImage.width
-              : '100%',
-          height: original
-            ? (naturalImageSize?.height ?? 'auto')
-            : fixedImage
-              ? fixedImage.height
-              : '100%',
-          maxWidth: original ? 'none' : fixedImage ? 'none' : (maximum.width ?? '100%'),
-          maxHeight: original ? 'none' : fixedImage ? 'none' : (maximum.height ?? '100%'),
+          width: fixedImage?.width ?? '100%',
+          height: fixedImage?.height ?? '100%',
+          maxWidth: fixedImage ? 'none' : (maximum.width ?? '100%'),
+          maxHeight: fixedImage ? 'none' : (maximum.height ?? '100%'),
           minWidth: 0,
           minHeight: 0,
-          objectFit: original ? 'none' : fixedImage && content.keepAspectRatio === false ? 'fill' : 'contain',
-          objectPosition: original ? 'left top' : 'center',
-          flexShrink: original || fixedImage ? 0 : undefined,
+          objectFit: fixedImage && content.keepAspectRatio === false ? 'fill' : 'contain',
+          objectPosition: 'center',
+          flexShrink: fixedImage ? 0 : undefined,
         }}
       />
     ) : (
@@ -203,22 +194,6 @@ function PopupBody({
         {hidePlaceholders ? null : '이미지 URL을 입력하면 여기에 표시됩니다.'}
       </Box>
     );
-
-    if (original) {
-      return (
-        <Box
-          sx={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            overflow: 'hidden',
-            alignItems: 'flex-start',
-          }}
-        >
-          {image}
-        </Box>
-      );
-    }
 
     // 이미지 영역은 남은 공간에 맞춰 늘고 줄며, FIT_TO_IMAGE 이미지 크기는 영역이 잘라도 고정이다.
     const imageArea = (
@@ -545,8 +520,6 @@ export default function PopupPreview({
   const overlayOpacity = Number.isFinite(requestedOpacity)
     ? Math.max(0, Math.min(1, requestedOpacity))
     : 0.45;
-  const originalImage =
-    popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'ORIGINAL';
   const title = contentTitle(popup, hidePlaceholders);
   // 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
   const richSurveyTitle = isSurvey ? richBlocksOrNull(popup.content.surveyTitleBlocks) : null;
@@ -558,7 +531,7 @@ export default function PopupPreview({
      본문: TEXT 15, IMAGE·VIDEO 설명 14. SURVEY·QUIZ는 SurveyPreview가 영역별로 정한다. 헤더 17·푸터 14. */
   const bodyDefaultFontSize = popup.popupType === 'TEXT' ? POPUP_DEFAULT_FONT_SIZES.textBody
     : popup.popupType === 'IMAGE' ? POPUP_DEFAULT_FONT_SIZES.imageDescription : POPUP_DEFAULT_FONT_SIZES.videoDescription;
-  const showContentTitle = !originalImage && Boolean(title.trim());
+  const showContentTitle = Boolean(title.trim());
   // 완료 조건 미달 시 버튼은 비활성 + 사유 표시. 사유 문구는 role=status로 알리고 버튼 aria-describedby로 연결한다.
   const reasonId = `${namePrefix}-completion-reason`;
   /*
@@ -683,8 +656,7 @@ export default function PopupPreview({
             overflowX: 'hidden',
             overflowWrap: 'anywhere',
             // WPF PopupContent Margin="28,24,28,24"는 유형 공통이다(TODO61-17).
-            p: originalImage ? 0 : undefined,
-            ...(!originalImage ? {px: `${POPUP_LAYOUT.contentPaddingX}px`, py: `${POPUP_LAYOUT.contentPaddingY}px`} : {}),
+            px: `${POPUP_LAYOUT.contentPaddingX}px`, py: `${POPUP_LAYOUT.contentPaddingY}px`,
             ...(isSurvey
               ? {
                   scrollbarWidth: 'thin',

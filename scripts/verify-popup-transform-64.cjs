@@ -86,7 +86,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     IMAGE_ADAPTIVE_LEGACY: {...base, popupType: 'IMAGE', width: null, content: {...everything, imageSizeMode: 'fixed', width: 640, height: '480'}},
     IMAGE_FIT: {...base, popupType: 'IMAGE', content: {...everything, imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: false}},
     IMAGE_FIT_NO_RATIO_KEY: {...base, popupType: 'IMAGE', content: {...withoutRatio, imageSizeMode: 'FIT_TO_IMAGE'}},
-    IMAGE_ORIGINAL_FULL: {...base, popupType: 'IMAGE', sizeMode: 'FULLSCREEN', content: {...everything, imageSizeMode: 'ORIGINAL'}},
+    IMAGE_ADAPTIVE_FULL: {...base, popupType: 'IMAGE', sizeMode: 'FULLSCREEN', content: {...everything, imageSizeMode: 'ADAPTIVE'}},
     VIDEO: {...base, popupType: 'VIDEO', content: {...everything, footerLinkUrl: 'ftp://bad'}},
     SURVEY: {...base, popupType: 'SURVEY', questions: [question(1, 'SINGLE_CHOICE'), question(2, 'MULTIPLE_CHOICE')], content: everything},
     QUIZ: {...base, popupType: 'QUIZ', questions: [question(1, 'SINGLE_CHOICE'), question(2, 'TEXT', {answerMatchMode: null})], content: {...everything, videoEnabled: false}},

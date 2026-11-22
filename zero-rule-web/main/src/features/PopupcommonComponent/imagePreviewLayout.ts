@@ -15,12 +15,12 @@ export interface Size { width: number; height: number; }
  * POL-04-03 : 비율·상한
  * ■ 이미지 크기 모드 판별
  * - in : popup(AdminPopupDetail) content.imageSizeMode(대소문자·앞뒤 공백 무관)
- * - out: 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'ORIGINAL'
+ * - out: 'ADAPTIVE' | 'FIT_TO_IMAGE'
  * - 팝업 설정을 받아 이미지 크기 모드를 정리한다. 비었거나 모르는 값은 ADAPTIVE다.
  */
-export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' | 'ORIGINAL' {
+export function imageSizeMode(popup: AdminPopupDetail): 'ADAPTIVE' | 'FIT_TO_IMAGE' {
   const mode = String(popup.content.imageSizeMode ?? '').trim().toUpperCase();
-  return mode === 'FIT_TO_IMAGE' || mode === 'ORIGINAL' ? mode : 'ADAPTIVE';
+  return mode === 'FIT_TO_IMAGE' ? mode : 'ADAPTIVE';
 }
 function positive(value: unknown): number | null {
   const number = Number(value);

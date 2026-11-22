@@ -36,9 +36,9 @@ class PopupJsonValidatorTest {
             "IMAGE", "{\"popupType\":\"IMAGE\",\"content\":{\"imageUrl\":\"https://f.example.com/a.png\"}}",
             "VIDEO", "{\"popupType\":\"VIDEO\",\"content\":{\"videoUrl\":\"https://f.example.com/a.mp4\"}}",
             "SURVEY", "{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"TEXT\",\"title\":\"의견\"}]}",
-            "QUIZ", "{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"SINGLE_CHOICE\",\"options\":[{\"optionId\":1,\"isCorrect\":true}]}]}",
+            "QUIZ", "{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"SINGLE_CHOICE\",\"isScored\":true,\"options\":[{\"optionId\":1,\"isCorrect\":true}]}]}",
             "VIDEO_QUIZ", "{\"popupType\":\"QUIZ\",\"content\":{\"videoEnabled\":true,\"videoUrl\":\"https://f.example.com/a.mp4\"},"
-                    + "\"questions\":[{\"questionType\":\"TEXT\"}]}");
+                    + "\"questions\":[{\"questionType\":\"TEXT\",\"isScored\":true,\"correctAnswer\":\"예\",\"answerMatchMode\":\"EXACT\"}]}");
 
     private PopupJsonValidationResult validate(String input) {
         return validator.validate(input, "P-001");
@@ -110,14 +110,14 @@ class PopupJsonValidatorTest {
         assertFalse(popup.at("/content/showPlainText").booleanValue());
     }
 
-    /** IMAGE 크기 미지정은 900×620을 채우지 않는다. ORIGINAL은 width/height 필수. */
+    /** IMAGE 크기 미지정은 900×620을 채우지 않는다. 폐기된 모드는 거절한다. */
     @Test
     void imageSizeRules() {
         ObjectNode image = normalized("{\"popupType\":\"IMAGE\",\"width\":null,\"content\":{\"imageUrl\":\"https://f.example.com/a.png\"}}");
         assertFalse(image.has("width") || image.has("height"));
         PopupJsonValidationResult original = validate("{\"popupType\":\"IMAGE\",\"width\":800,"
                 + "\"content\":{\"imageUrl\":\"https://f.example.com/a.png\",\"imageSizeMode\":\"ORIGINAL\"}}");
-        assertEquals(List.of("$.height:MISSING_REQUIRED"), codes(original));
+        assertEquals(List.of("$.content.imageSizeMode:INVALID_ENUM"), codes(original));
     }
 
     // ---------- 타입·ENUM·범위 ----------
@@ -125,12 +125,12 @@ class PopupJsonValidatorTest {
     /** 재현: videoEnabled="videoEnabled"는 등록 오류, true/false는 정상. 문자열을 boolean으로 바꾸지 않는다. */
     @Test
     void stringBooleanIsRejectedNotConverted() {
-        PopupJsonIssue issue = onlyError("{\"popupType\":\"QUIZ\",\"content\":{\"videoEnabled\":\"videoEnabled\"},\"questions\":[{\"questionType\":\"TEXT\"}]}");
+        PopupJsonIssue issue = onlyError("{\"popupType\":\"QUIZ\",\"content\":{\"videoEnabled\":\"videoEnabled\"},\"questions\":[{\"questionType\":\"TEXT\",\"isScored\":true}]}");
         assertEquals("$.content.videoEnabled", issue.path());
         assertEquals("TYPE_MISMATCH", issue.code());
         assertEquals("boolean", issue.expected());
         assertEquals("\"videoEnabled\"", issue.actual());
-        assertTrue(validate("{\"popupType\":\"QUIZ\",\"content\":{\"videoEnabled\":false},\"questions\":[{\"questionType\":\"TEXT\"}]}").valid());
+        assertTrue(validate("{\"popupType\":\"QUIZ\",\"content\":{\"videoEnabled\":false},\"questions\":[{\"questionType\":\"TEXT\",\"isScored\":true}]}").valid());
         assertEquals("TYPE_MISMATCH", onlyError("{\"popupType\":\"TEXT\",\"showHeader\":\"true\",\"content\":{\"plainText\":\"a\"}}").code());
     }
 
@@ -217,7 +217,7 @@ class PopupJsonValidatorTest {
     @Test
     void nestedQuestionErrors() {
         PopupJsonValidationResult result = validate("{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"RADIO\"},"
-                + "{\"questionType\":\"MULTIPLE_CHOICE\",\"isRequired\":\"Y\",\"options\":[{\"isCorrect\":\"true\"},3]},"
+                + "{\"questionType\":\"MULTIPLE_CHOICE\",\"isScored\":true,\"isRequired\":\"Y\",\"options\":[{\"isCorrect\":\"true\"},3]},"
                 + "{\"questionType\":\"SINGLE_CHOICE\"}]}");
         assertEquals(List.of("$.questions[0].questionType:INVALID_ENUM", "$.questions[1].isRequired:TYPE_MISMATCH",
                 "$.questions[1].options[0].isCorrect:TYPE_MISMATCH", "$.questions[1].options[1]:TYPE_MISMATCH",
@@ -235,7 +235,7 @@ class PopupJsonValidatorTest {
         assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"minSelections\":3,\"maxSelections\":2," + options + "}]}").code());
         assertEquals("TYPE_MISMATCH", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"minSelections\":\"2\"," + options + "}]}").code());
         assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"SURVEY\",\"questions\":[{\"questionType\":\"SINGLE_CHOICE\",\"maxSelections\":1," + options + "}]}").code());
-        assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"maxSelections\":2," + options + "}]}").code());
+        assertEquals("RULE_VIOLATION", onlyError("{\"popupType\":\"QUIZ\",\"questions\":[{\"questionType\":\"MULTIPLE_CHOICE\",\"isScored\":true,\"maxSelections\":2," + options + "}]}").code());
     }
 
     @Test
@@ -245,6 +245,18 @@ class PopupJsonValidatorTest {
     }
 
     // ---------- 등록 샘플: 오류 시 쓰기 0건 ----------
+
+    @Test
+    void quizWithoutScoredQuestionsCannotBeRegisteredOrUpdated() {
+        FakeMapper mapper = new FakeMapper(1);
+        PopupFullJsonRegisterSampleService service = new PopupFullJsonRegisterSampleService(mapper, validator, json);
+        for (String questions : List.of("[]", "[{\"questionType\":\"TEXT\",\"isScored\":false}]", "[{\"questionType\":\"TEXT\"}]")) {
+            String input = "{\"popupType\":\"QUIZ\",\"questions\":" + questions + "}";
+            assertEquals(List.of("$.questions:MISSING_REQUIRED"), codes(service.register("P-001", input, "E10001")));
+            assertEquals(List.of("$.questions:MISSING_REQUIRED"), codes(service.update("P-001", input, "E10001")));
+        }
+        assertTrue(mapper.calls.isEmpty());
+    }
 
     @Test
     void registerWritesOnlyWhenValid() throws Exception {

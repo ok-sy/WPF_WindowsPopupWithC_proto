@@ -26,7 +26,7 @@ import { displayImageSize, type Size } from '../PopupcommonComponent/imagePrevie
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
 import { loadPopupQuestionCodes, type PopupQuestionCodes } from '../PopupcommonComponent/popupQuestionCodes';
-import { QUIZ_QUESTION_SCORE, usePopupQuizRule, withQuizRule } from '../PopupcommonComponent/popupQuizRule';
+import { usePopupQuizRule, withQuizRule } from '../PopupcommonComponent/popupQuizRule';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
 import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
@@ -110,7 +110,7 @@ function PopupDimensionField({ label, value, minimum, maximum, helperText, onCha
  * - in : open(boolean) 열림 · popupId(string | null) 수정할 팝업 ID(null = 신규) · initialActive(boolean) 활성 여부 초기값
  * - out: onClose() 닫기 · onSaved(popupId) 저장 성공 / api.popupAdmin.info·save 호출 · 화면: 입력 폼·우측 미리보기·실제 크기 모달
  * - 팝업 상세를 받아 공통 에디터·문항 편집기·퀴즈유형 입력으로 편집하고, 규칙을 적용한 값을 두 미리보기에 보여 준 뒤 저장 요청을 보낸다.
- *   퀴즈는 전달 샘플과 같은 공통 규칙(popupQuizRule: 문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점, 만점형·커트라인 실패 시 제출 불가,
+ *   퀴즈는 전달 샘플과 같은 공통 규칙(popupQuizRule: 문항 1점 고정, 만점 = 채점 문항 수, 참여형·커트라인 N개 = N점, 만점형·커트라인 실패 시 제출 불가,
  *   참여형은 미달이어도 완료)을 쓰고 퀴즈 유형 코드(quizTypeCode)를 함께 저장한다.
  */
 export default function PopupEditorDialog({ open, popupId, initialActive, onClose, onSaved }: PopupEditorDialogProps) {
@@ -142,10 +142,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   });
   const [templateOpen, setTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadedPopupId, setLoadedPopupId] = useState<string | null>(null);
+  const readyToSave = popupId == null || (loadedPopupId === popupId && popup.popupId === popupId);
   /* POL-03-03 : 편집 UI — 본문 편집기는 커서 보존을 위해 처음 값만 받는다. 불러오기·템플릿 적용 시 key를 바꿔 다시 연다. */
   const [bodyEditorKey, setBodyEditorKey] = useState(0);
   const editing = popupId != null;
-  /* 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점). 편집값을 새로 채울 때(bodyEditorKey)마다 저장된 퀴즈 유형 코드
+  /* 퀴즈 점수 규칙(문항 1점 고정, 만점 = 채점 문항 수, 참여형·커트라인 N개 = N점). 편집값을 새로 채울 때(bodyEditorKey)마다 저장된 퀴즈 유형 코드
    * (quizTypeCode, 없으면 통과 점수)로 유형을 복원한다.
    * 미리보기·저장에는 규칙을 적용한 previewPopup을 보낸다(전달 샘플 IS063M02와 같은 공통 코드). */
   const quiz = usePopupQuizRule(popup, bodyEditorKey);
@@ -160,6 +162,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   }, [open, api]);
 
   useEffect(() => {
+    setLoadedPopupId(null);
     if (!open) return;
     setActive(initialActive); setTemplateOpen(false); setPreviewOpen(false); setLoading(false);
     setBodyEditorKey((key) => key + 1);
@@ -167,7 +170,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
+        if (body.popup.popupId !== popupId) throw new Error('조회한 팝업 ID가 요청한 ID와 다릅니다.');
         setPopup(toEditorPopup(body.popup));
+        setLoadedPopupId(body.popup.popupId);
         setBodyEditorKey((key) => key + 1);
         setTargetGroups(body.targetGroups ?? []);
       }
@@ -207,6 +212,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       ? { ...group, conditions: group.conditions.filter((_, j) => j !== conditionIndex) } : group));
 
   const savePopup = async () => {
+    if (loading || !readyToSave) return;
     if (quiz.error) { toast.warn(quiz.error); return; }
     const target = previewPopup;
     if (target.popupType === 'SURVEY' || target.popupType === 'QUIZ') {
@@ -233,8 +239,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
           toast.warn('크기는 양수로 입력하거나 비워 두세요.'); return;
         }
       }
-      if (popup.content.imageSizeMode === 'ORIGINAL' && popup.sizeMode === 'FIXED' && (popup.width == null || popup.height == null)) {
-        toast.warn('원본 그대로 모드는 팝업 너비·높이를 입력해 주세요.'); return;
+    }
+    if (active && (popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO')) {
+      const image = popup.popupType === 'IMAGE';
+      if (!contentValue(popup, image ? 'imageUrl' : 'videoUrl').trim()) {
+        toast.warn(image ? '활성 이미지 팝업에는 이미지 URL이 필요합니다.' : '활성 영상 팝업에는 영상 URL이 필요합니다.'); return;
       }
     }
     const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
@@ -268,7 +277,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const isMedia = popup.popupType === 'IMAGE' || hasVideo;
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   const titleKey = popup.popupType === 'TEXT' ? null : contentTitleKey(popup.popupType);
-  const originalImageMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'ORIGINAL';
   // POL-01-02 : 기본값의 적용 — 표시 플래그 없는 과거 행 fallback은 두지 않는다(08 스크립트가 플래그를 채움). WPF와 같이 값이 없으면 숨김.
   const showTextPlainText = popup.content.showPlainText !== false;
   const showTextBottomDescription = popup.content.showBottomDescription === true;
@@ -278,7 +286,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {editing ? '팝업 수정' : '팝업 신규 등록'}
-        <Button disabled={loading} variant="outlined" onClick={() => setTemplateOpen(true)}>템플릿 불러오기</Button>
+        <Button disabled={loading || !readyToSave} variant="outlined" onClick={() => setTemplateOpen(true)}>템플릿 불러오기</Button>
       </DialogTitle>
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
@@ -287,7 +295,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
       {loading && <LinearProgress />}
-      <DialogContent dividers sx={{ p: 0, overflowY: { xs: 'auto', lg: 'hidden' } }}>
+      {readyToSave ? <DialogContent dividers sx={{ p: 0, overflowY: { xs: 'auto', lg: 'hidden' } }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1.1fr) minmax(0, 1fr)' }, height: { xs: 'auto', lg: 'calc(100vh - 180px)' }, minHeight: 0 }}>
           <Box sx={{ minWidth: 0, minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, p: 2.5 }}><Stack spacing={2}>
             <Typography variant="subtitle1" fontWeight={700}>기본 정보</Typography>
@@ -315,7 +323,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
             {/* POL-03-01 : 저장·표시 경계 — TEXT는 콘텐츠 제목·설명을 본문 서식 편집기로 작성한다. */}
-            {!originalImageMode && titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
             {/* POL-06-01 : 문항·서식 — 설문·퀴즈(동영상+퀴즈 포함)는 콘텐츠 제목 입력 없이 설명만 서식 편집기로 입력한다. 기존 surveyTitle·surveyTitleBlocks는 편집값에 그대로 남긴다(TODO73). */}
             {isSurvey && <>
               <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
@@ -324,7 +332,6 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   ...previous, content: { ...previous.content, description: plainText, descriptionBlocks: richBlocksOrNull(blocks) },
                 }))} />
             </>}
-            {originalImageMode && <Typography variant="caption" color="text.secondary">이 모드는 이미지만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
 
             {popup.popupType === 'TEXT' && <Stack spacing={2}>
               {/* TEXT는 본문(제목·설명 포함)·하단 설명만 편집한다(강조 문구는 삭제). */}
@@ -345,23 +352,21 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                     const mode = e.target.value;
                     setPopup(previous => {
                       const content = {...previous.content, imageSizeMode: mode, ...(mode === 'FIT_TO_IMAGE' ? {keepAspectRatio: previous.content.keepAspectRatio ?? true} : {})};
-                      // POL-04-02 : 모드별 기준 — 같은 숫자를 유지하고 의미만 바뀐다(ADAPTIVE·ORIGINAL 창 전체 ↔ FIT_TO_IMAGE 콘텐츠 영역). 라벨·도움말이 함께 바뀐다.
-                      return {...previous, width: previous.width ?? (mode === 'ORIGINAL' ? 560 : undefined), height: previous.height ?? (mode === 'ORIGINAL' ? 420 : undefined),
-                        sizeMode: previous.sizeMode === 'FULLSCREEN' ? 'FULLSCREEN' : 'FIXED', content};
+                      // POL-04-02 : 모드별 기준 — 같은 숫자를 유지하고 의미만 바뀐다(ADAPTIVE 창 전체 ↔ FIT_TO_IMAGE 콘텐츠 영역). 라벨·도움말이 함께 바뀐다.
+                      return {...previous, sizeMode: previous.sizeMode === 'FULLSCREEN' ? 'FULLSCREEN' : 'FIXED', content};
                     });
                   }}>
-                  <MenuItem value="ORIGINAL">원본 그대로 (넘치는 부분 자르기)</MenuItem><MenuItem value="FIT_TO_IMAGE">이미지 우선</MenuItem><MenuItem value="ADAPTIVE">창 우선</MenuItem>
+                  <MenuItem value="FIT_TO_IMAGE">이미지 우선</MenuItem><MenuItem value="ADAPTIVE">창 우선</MenuItem>
                 </TextField>
                 {/* POL-04-01 : 공통 크기 입력 — 공통 popup.width/height. 모드에 따라 라벨·도움말만 바뀌고 같은 숫자의 적용 기준이 달라진다. */}
                 <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width ?? ''}
-                  disabled={popup.sizeMode === 'FULLSCREEN' || (originalImageMode && popup.sizeMode !== 'FIXED')} onChange={(e) => updateImageDimension('width', e.target.value)} />
+                  disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateImageDimension('width', e.target.value)} />
                 <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height ?? ''}
-                  disabled={popup.sizeMode === 'FULLSCREEN' || (originalImageMode && popup.sizeMode !== 'FIXED')} onChange={(e) => updateImageDimension('height', e.target.value)} />
+                  disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateImageDimension('height', e.target.value)} />
               </Box>
               {/* POL-04-02 : 모드별 기준 — 모드별 크기 기준 안내 */}
               <Typography variant="caption" color="text.secondary">
-                {originalImageMode ? '창 전체 크기입니다. 이미지는 남은 영역에 원본 크기로 표시되며 넘치는 부분은 잘립니다.'
-                  : normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'
+                {normalizeImageSizeMode(popup.content.imageSizeMode) === 'FIT_TO_IMAGE'
                     ? `이미지 영역 크기입니다. 헤더·푸터·설명 공간이 추가되어 실제 창은 더 커질 수 있습니다. 최대 창 크기를 넘는 부분은 잘립니다. 비우면 원본 크기를 사용합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
                     : '창 전체 크기입니다. 이미지는 헤더·푸터·설명 등을 제외한 영역에 맞춰 표시됩니다(원본보다 확대하지 않음).'}
               </Typography>
@@ -374,7 +379,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <Typography variant="caption" color="text.secondary">{popup.content.keepAspectRatio === false ? '콘텐츠 영역을 이미지로 채웁니다. 원본 비율과 다르면 이미지가 늘어나거나 눌립니다.' : '너비·높이를 원본 비율로 연동합니다. 두 값이 비율과 다르면 영역 안에 원본 비율로 맞추고 남는 쪽은 여백으로 둡니다.'}
                   {naturalSize ? ` 콘텐츠 영역 ${Math.round(displayImageSize(popup, naturalSize).width)}×${Math.round(displayImageSize(popup, naturalSize).height)}` : ' 원본 로딩 후 크기를 계산합니다.'}</Typography>
               </>}
-              {!originalImageMode && <Typography variant="caption" color="text.secondary">설명은 하단에 표시합니다. 미리보기와 실제 PC는 작업 영역·DPI·글꼴에 따라 창 크기가 달라질 수 있습니다.</Typography>}
+              <Typography variant="caption" color="text.secondary">설명은 하단에 표시합니다. 미리보기와 실제 PC는 작업 영역·DPI·글꼴에 따라 창 크기가 달라질 수 있습니다.</Typography>
             </Stack>}
 
             {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
@@ -385,10 +390,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 // POL-06-01 : 문항·서식 — 서식 편집기는 처음 값만 받으므로 문항을 통째로 바꾸면 다시 연다.
                 setBodyEditorKey((key) => key + 1);
               }} />}
-            {popup.popupType === 'QUIZ' && <PopupQuizRuleFields questionCount={popup.questions.length} rule={quiz.rule} count={quiz.count}
+            {popup.popupType === 'QUIZ' && <PopupQuizRuleFields questionCount={quiz.scoredCount} rule={quiz.rule} count={quiz.count}
               passingScore={previewPopup.passingScore} options={codes?.quizTypes ?? []} onRuleChange={quiz.setRule} onCountChange={quiz.setCount} />}
             {isSurvey && <PopupQuestionEditor key={`questions-${bodyEditorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={previewPopup.passingScore}
-              fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore answerTypeOptions={codes?.answerTypes ?? []} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
+              hidePassingScore answerTypeOptions={codes?.answerTypes ?? []} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* POL-02-02 : 종료 제어 — 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
@@ -513,7 +518,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />
               </Box>
                 </>}
-                {popup.popupType === 'IMAGE' && !originalImageMode && <>
+                {popup.popupType === 'IMAGE' && <>
                   <Divider /><Typography variant="subtitle2" fontWeight={700}>이미지 표시</Typography>
               <FormControlLabel control={<Switch checked={popup.content.showDescription !== false} onChange={(_, value) => updateContent('showDescription', value)} />} label="이미지 설명 표시" />
                 </>}
@@ -543,10 +548,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             <Divider /><Typography variant="subtitle1" fontWeight={700}>크기 설정</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 2 }}>
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>
-                <MenuItem value="FIXED">고정 크기</MenuItem>{(popup.popupType !== 'IMAGE' || originalImageMode) && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
+                <MenuItem value="FIXED">고정 크기</MenuItem>{popup.popupType !== 'IMAGE' && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
               {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popupMinimumSize(popup).width} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popupMinimumSize(popup).height} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
-              {popup.sizeMode === 'RATIO' && (popup.popupType !== 'IMAGE' || originalImageMode) && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
+              {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
             </Box>
             {/* WPF PopupWindow.ApplyWindowSize: MinimumWidth/Height는 FIXED·RATIO 모두 적용(IMAGE 포함, 작업 영역 상한 이하로 보정),
                 MaximumWidth/Height는 IMAGE가 아닌 유형에만 적용(IMAGE는 작업 영역 90%). FULLSCREEN은 둘 다 쓰지 않는다.
@@ -571,8 +576,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Box>
           </Box>
         </Box>
-      </DialogContent>
-      <DialogActions><Button onClick={onClose} disabled={loading}>취소</Button><Button variant="contained" onClick={savePopup} disabled={loading}>저장</Button></DialogActions>
+      </DialogContent> : <DialogContent>{loading ? "상세 정보를 불러오는 중입니다." : "상세 정보를 확인할 수 없습니다. 닫은 뒤 다시 열어 주세요."}</DialogContent>}
+      <DialogActions><Button onClick={onClose} disabled={loading}>취소</Button><Button variant="contained" onClick={savePopup} disabled={loading || !readyToSave}>저장</Button></DialogActions>
       <PopupPreviewDialog popup={previewPopup} open={previewOpen} onClose={() => setPreviewOpen(false)} recommendedSize={fitWindow} />
     </Dialog>
   );

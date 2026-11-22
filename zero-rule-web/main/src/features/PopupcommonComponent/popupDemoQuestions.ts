@@ -1,4 +1,5 @@
 import type { PopupQuestion } from '@local/domain';
+import { QUIZ_QUESTION_SCORE } from './popupQuizRule';
 
 // 샘플 화면 전용 예시 문항. WPF DemoPopupDataService의 예시와 같은 내용이다.
 const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
@@ -220,7 +221,7 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
       questionType: 'SINGLE_CHOICE',
       isRequired: true,
       isScored: true,
-      questionScore: 25,
+      questionScore: QUIZ_QUESTION_SCORE,
       options: [
         {
           optionId: 2101,
@@ -246,7 +247,7 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
       questionType: 'MULTIPLE_CHOICE',
       isRequired: true,
       isScored: true,
-      questionScore: 25,
+      questionScore: QUIZ_QUESTION_SCORE,
       options: [
         {
           optionId: 2201,
@@ -309,7 +310,7 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
         },
       ],
       isScored: true,
-      questionScore: 25,
+      questionScore: QUIZ_QUESTION_SCORE,
       sortOrder: 3,
     },
     {
@@ -356,7 +357,7 @@ const examples: Record<'SURVEY' | 'QUIZ', PopupQuestion[]> = {
         },
       ],
       isScored: true,
-      questionScore: 25,
+      questionScore: QUIZ_QUESTION_SCORE,
       sortOrder: 4,
     },
     {

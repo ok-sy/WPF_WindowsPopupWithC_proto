@@ -270,6 +270,14 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 24_wpf_error_result_oracle.sql`
 - 적용 현황: 원격 개발 DB 2026-11-11 적용(컬럼 1, POPUP_ID NULL 허용 Y, 제약에 ERROR 포함). 로컬 XE(21c, `POPUP` 스키마)도 2026-11-11 적용(같은 확인 결과). 11g는 `SEARCH_CONDITION`이 LONG이라 확인 쿼리는 제약 조건문을 목록으로 출력한다.
 
+`25_delete_original_image_popups_oracle.sql <스키마접두어>` — IMAGE 크기 모드 `ORIGINAL` 삭제(2026-11-22)에 맞춰 `POPUP_TYPE='IMAGE'`이고 `CONTENT_OPTIONS`의 `imageSizeMode`가 `ORIGINAL`(대소문자 무관)인 팝업을 삭제한다. 변환하지 않는다. 멱등(두 번째부터 0행).
+
+- 배경: 서버는 ORIGINAL 저장을 거절하지만 조회 조립은 저장값을 그대로 내려 주고, WPF는 지원하지 않는 모드로 보고 팝업 변환에 실패한다. 관리자 웹은 ADAPTIVE로 바꿔 보여 주어 화면과 실제 표시가 어긋난다.
+- 처리: CASCADE가 없는 `POPUP_RESPONSE`·`API_REQUEST_LOG`와 FK가 없는 `WPF_RESULT_RECEIPT`·`WPF_POPUP_DELIVERY`를 먼저 지우고 `POPUP_NOTICE`를 지운다. 콘텐츠·대상 그룹/조건·사용자 상태·영상 시청 상태·노출 시간대·응답 답변/값은 CASCADE로 함께 삭제된다. 되돌리기 스크립트는 없다(실행 전 1번 목록 참고).
+  - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @25_delete_original_image_popups_oracle.sql POPUP.`
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 25_delete_original_image_popups_oracle.sql`
+- 적용 현황: 로컬 XE(`POPUP` 스키마) 2026-11-23 실행 — 대상 0행(IMAGE 팝업 없음), 삭제 0행, 잔여 0. 원격 개발 DB 2026-11-23 실행 — 대상 0행, 삭제 0행, IMAGE 크기 모드 분포 비어 있음, 잔여 0.
+
 ## 원격 개발 DB 적용 도구 (2026-10-19)
 
 `tools/apply-dev-db.ps1 <NN_..._oracle.sql>` — 원격 개발 DB(192.168.114.71 XE, 앱 계정 `zero-rule`, 방식 B 빈 스키마 접두어)에 이관 스크립트 1개를 실행한다.

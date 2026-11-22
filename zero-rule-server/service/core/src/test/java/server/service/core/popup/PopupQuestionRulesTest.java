@@ -35,22 +35,22 @@ class PopupQuestionRulesTest {
 
     /** 퀴즈는 총점·통과 점수 범위와 주관식 정답·비교 방식을 검사한다. */
     @Test void quizValidatesTotalAndTextAnswer() {
-        var questions = List.of(text("정답", "EXACT", "10.25"), text("키워드", "CONTAINS", "9.75"));
-        assertDoesNotThrow(() -> PopupQuestionRules.validate(questions, true, 20.0));
-        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(questions, true, 20.01));
+        var questions = List.of(text("정답", "EXACT", "1"), text("키워드", "CONTAINS", "1"));
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(questions, true, 2.0));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(questions, true, 2.01));
         assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(questions, true, null));
-        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(text("", "EXACT", "10")), true, 0.0));
-        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(text("정답", "OTHER", "10")), true, 0.0));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(text("", "EXACT", "1")), true, 0.0));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(text("정답", "OTHER", "1")), true, 0.0));
         assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(text("정답", "EXACT", "0.001")), true, 0.0));
     }
 
     /** 단일 선택 퀴즈 문항은 정답 선택지가 정확히 한 개여야 한다. */
     @Test void singleChoiceMustHaveExactlyOneCorrectOption() {
         var options = List.of(new PopupOptionDto(1L, "1", "A", 1, true), new PopupOptionDto(2L, "2", "B", 2, true));
-        var single = new PopupQuestionDto(1L, "문항", null, "SINGLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null, "VERTICAL");
-        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(single), true, 10.0));
-        var multiple = new PopupQuestionDto(1L, "문항", null, "MULTIPLE_CHOICE", true, true, BigDecimal.TEN, 1, options, null, null, "VERTICAL");
-        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(multiple), true, 10.0));
+        var single = new PopupQuestionDto(1L, "문항", null, "SINGLE_CHOICE", true, true, BigDecimal.ONE, 1, options, null, null, "VERTICAL");
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(single), true, 1.0));
+        var multiple = new PopupQuestionDto(1L, "문항", null, "MULTIPLE_CHOICE", true, true, BigDecimal.ONE, 1, options, null, null, "VERTICAL");
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(multiple), true, 1.0));
     }
 
     /** 배점을 비운 QUIZ 문항은 기본 1점이 되어 총점 = 문항 수로 맞출 수 있다. 설문·입력한 배점은 그대로다. */
@@ -58,12 +58,24 @@ class PopupQuestionRulesTest {
         var questions = List.of(text("a", "EXACT", null), text("b", "EXACT", null), text("c", "EXACT", "2.5"));
         var quiz = PopupQuestionRules.withDefaultScores(questions, true);
         assertEquals(List.of(new BigDecimal("1"), new BigDecimal("1"), new BigDecimal("2.5")), quiz.stream().map(PopupQuestionDto::questionScore).toList());
-        assertDoesNotThrow(() -> PopupQuestionRules.validate(quiz, true, 4.5));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(quiz, true, 4.5), "weighted item");
         assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(quiz, true, 4.6), "total is 4.5");
         var allDefault = PopupQuestionRules.withDefaultScores(List.of(text("a", "EXACT", null), text("b", "EXACT", null)), true);
         assertDoesNotThrow(() -> PopupQuestionRules.validate(allDefault, true, 2.0), "total = question count");
         assertSame(questions, PopupQuestionRules.withDefaultScores(questions, false), "survey keeps questions as is");
         assertNull(PopupQuestionRules.withDefaultScores(questions, false).get(0).questionScore());
+    }
+
+    @Test void unscoredTextDoesNotRequireAnswerKeyOrIncreaseFullScore() {
+        var opinion = new PopupQuestionDto(3L, "의견", null, "TEXT", true, false, null, 3, List.of(), null, null, "VERTICAL");
+        var error = assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(List.of(opinion), true, 0.0));
+        assertTrue(error.getMessage().contains("채점 문항"));
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(List.of(opinion), false, null));
+        var questions = PopupQuestionRules.withDefaultScores(List.of(text("a", "EXACT", null), text("b", "EXACT", null), opinion), true);
+        assertNull(questions.get(2).questionScore());
+        assertDoesNotThrow(() -> PopupQuestionRules.validate(questions, true, 2.0));
+        assertEquals("01", PopupQuestionRules.resolveQuizTypeCode(questions, 2.0, "01"));
+        assertThrows(IllegalArgumentException.class, () -> PopupQuestionRules.validate(questions, true, 3.0));
     }
 
     // ---------- POL-06-02 : 선택·제출 — SURVEY 복수 선택 최소·최대 선택 수 ----------
@@ -72,7 +84,7 @@ class PopupQuestionRulesTest {
         var options = java.util.stream.IntStream.rangeClosed(1, optionCount)
                 .mapToObj(n -> new PopupOptionDto((long) n, String.valueOf(n), "선택지 " + n, n, correctFirst && n == 1 ? Boolean.TRUE : null))
                 .toList();
-        return new PopupQuestionDto(1L, "문항", null, type, true, false, null, 1, options, null, null, "VERTICAL", null, null, min, max);
+        return new PopupQuestionDto(1L, "문항", null, type, true, correctFirst, null, 1, options, null, null, "VERTICAL", null, null, min, max);
     }
 
     /** null(제한 없음)·1~선택지 수·최소 ≤ 최대는 저장된다. */

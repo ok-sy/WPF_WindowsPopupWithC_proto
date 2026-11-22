@@ -2,7 +2,7 @@
 
 - 작성: 2026-11-03 (KST)
 - 대상: DTIY3117 `POPU_BLTN_CN` 저장 형태(popup 본체, deliveryId·pollingIntervalSeconds 없음)
-- 기준: `popup-full-json-defaults.yml`(정책 `3117-REG-2026-11-03`), [WPF 전체 기능 정의서](../WPF/WPF_POPUP_ALL_SPEC.md), [기본값 전체 JSON](DTIY3117-register-defaults-full.txt)
+- 기준: `popup-full-json-defaults.yml`(정책 `3117-REG-2026-11-22`), [WPF 전체 기능 정의서](../WPF/WPF_POPUP_ALL_SPEC.md), [기본값 전체 JSON](DTIY3117-register-defaults-full.txt)
 - 소스: `popup-frameWork/Popup/DemoJsonSamples3117.cs`(옵션 영역·가짓수·샘플 생성), WPF Demo JSON Validator "3117 옵션 샘플" 창
 
 ## 1. 산정 기준
@@ -12,7 +12,7 @@
 | 옵션 영역 | 서로 배타적인 값의 목록. 첫 값은 생략했을 때의 3117 기본값 |
 | 이론 가짓수 | 그 유형에 적용되는 옵션 영역의 값 수를 모두 곱한 값. 화면상 차이가 없는 조합(예: `showFooter=false`일 때 `showLater`)도 세는 상한 |
 | 숫자 옵션 | 범위 전체가 아니라 대표값 2개(기본/지정)로 셈: 글자 크기, `completionRatio`, `defaultVolume`, `passingScore` |
-| 묶은 영역 | 함께 써야 의미가 있는 값은 한 영역으로 셈: `showDoNotShowAgain`+`hideDays`(3), `footerAction`+`footerLinkUrl`(2), IMAGE `imageSizeMode`+창 크기(5, ORIGINAL은 크기 필수라 6이 아니라 5) |
+| 묶은 영역 | 함께 써야 의미가 있는 값은 한 영역으로 셈: `showDoNotShowAgain`+`hideDays`(3), `footerAction`+`footerLinkUrl`(2), IMAGE `imageSizeMode`+창 크기(4) |
 | 제외 | 서버 소유 값(deliveryId·pollingIntervalSeconds), 본문 문구·URL·문항 문구 같은 데이터, 고정 규칙으로 값이 하나뿐인 옵션(SURVEY·QUIZ `footerAction=SUBMIT`) |
 | 문항 | 문항 1개 기준의 유효 조합을 한 영역으로 셈(아래 2.3) |
 
@@ -41,34 +41,34 @@
 | 유형 | 옵션 영역(값 수) | 유형 고유 곱 |
 |---|---|---:|
 | TEXT | 본문 형식 plainText/textBlocks(2), showPlainText(2), showBottomDescription(2) | 8 |
-| IMAGE | imageSizeMode·크기(5: ADAPTIVE 미지정/지정, FIT_TO_IMAGE 미지정/지정, ORIGINAL 지정), showDescription(2), keepAspectRatio(2) | 20 |
+| IMAGE | imageSizeMode·크기(4: ADAPTIVE 미지정/지정, FIT_TO_IMAGE 미지정/지정), showDescription(2), keepAspectRatio(2) | 16 |
 | VIDEO | showDescription·showControls·allowFullScreen·allowPlaybackRateChange·allowSeek·autoPlay·isLoop(각 2), defaultVolume(2), completionRatio(2) | 512 |
 | SURVEY | 문항 구성(22) | 22 |
-| QUIZ | 문항 구성(24), passingScore(2) | 48 |
-| VIDEO_QUIZ | VIDEO 영역(512) × 문항 구성(24) × passingScore(2) | 24,576 |
+| QUIZ | 문항 구성(12), passingScore(2) | 24 |
+| VIDEO_QUIZ | VIDEO 영역(512) × 문항 구성(12) × passingScore(2) | 12,288 |
 
 ### 2.3 문항 구성(문항 1개 기준)
 
 | 유형 | 산식 | 값 수 |
 |---|---|---:|
 | SURVEY | SINGLE(배치 2 × 필수 2) 4 + MULTIPLE(배치 2 × 필수 2 × 선택 수 제한 4: 없음/최소 2/최대 2/2~3개) 16 + TEXT(필수 2) 2 | 22 |
-| QUIZ | SINGLE(배치 2 × 필수 2 × 채점 2) 8 + MULTIPLE(같음) 8 + TEXT(필수 2 × 채점 2 × 정답 비교 EXACT/CONTAINS 2) 8 | 24 |
+| QUIZ | SINGLE(배치 2 × 필수 2) 4 + MULTIPLE(같음) 4 + TEXT(필수 2 × 정답 비교 EXACT/CONTAINS 2) 4 | 12 |
 
-선택 수 제한은 SURVEY 복수 선택에만, 정답 비교 방식은 QUIZ 주관식에만 있다. 문항이 여러 개면 문항마다 곱해진다(문항 n개 = 문항 구성 값 수의 n제곱).
+선택 수 제한은 SURVEY 복수 선택에만, 정답 비교 방식은 QUIZ 주관식에만 있다. 퀴즈에 문항이 하나면 채점 문항이어야 한다. 여러 문항이면 채점 문항과 비채점 주관식을 함께 등록할 수 있다.
 
 ## 3. 가짓수와 샘플 수
 
 | 유형 | 이론 가짓수 | 옵션 영역 수 | 샘플(기본 1 + 옵션 변경) |
 |---|---:|---:|---:|
 | TEXT | 165,888 | 14 | 24 (1 + 23) |
-| IMAGE | 414,720 | 14 | 27 (1 + 26) |
+| IMAGE | 331,776 | 14 | 26 (1 + 25) |
 | VIDEO | 10,616,832 | 20 | 30 (1 + 29) |
 | SURVEY | 228,096 | 11 | 41 (1 + 40) |
-| QUIZ | 497,664 | 12 | 44 (1 + 43) |
-| VIDEO_QUIZ | 254,803,968 | 21 | 53 (1 + 52) |
-| 합계 | 266,727,168 | - | 219 + 규칙 위반 13 |
+| QUIZ | 248,832 | 12 | 32 (1 + 31) |
+| VIDEO_QUIZ | 127,401,984 | 21 | 41 (1 + 40) |
+| 합계 | 138,993,408 | - | 194 + 규칙 위반 14 |
 
-- 전수 조합은 2억 건이 넘어 샘플로 만들지 않는다. 샘플은 **기본 1건 + 옵션 영역마다 기본이 아닌 값을 하나씩만 바꾼 건**이며, 모든 옵션 값이 최소 한 번 나온다. 옵션 사이의 상호작용(예: showFooter=false × showLater=true)은 이 샘플로 다 덮지 않는다.
+- 전수 조합은 1억 건이 넘어 샘플로 만들지 않는다. 샘플은 **기본 1건 + 옵션 영역마다 기본이 아닌 값을 하나씩만 바꾼 건**이며, 모든 옵션 값이 최소 한 번 나온다. 옵션 사이의 상호작용(예: showFooter=false × showLater=true)은 이 샘플로 다 덮지 않는다.
 - 기본 샘플은 필수 입력값(본문·URL·문항)만 넣고, 나머지는 검증기가 3117 기본값으로 채운다.
 - keepAspectRatio=false 샘플은 이 값이 의미 있는 FIT_TO_IMAGE 640×480을 함께 지정한다.
 - 이미지·영상 URL은 `LOCAL_DEMO_IMAGE`·`LOCAL_DEMO_VIDEO` 토큰이며, 팝업을 띄울 때만 Demo 내장 미디어 경로로 바꾼다.
@@ -81,7 +81,7 @@
 | S3117-ERR-02 | TEXT | LINK_AND_CLOSE인데 footerLinkUrl 없음 |
 | S3117-ERR-03 | TEXT | sizeMode AUTO(WPF 전용) |
 | S3117-ERR-04 | TEXT | showHeader 문자열 "true"(타입 불일치) |
-| S3117-ERR-05 | IMAGE | ORIGINAL인데 width/height 없음 |
+| S3117-ERR-05 | IMAGE | 지원하지 않는 이미지 크기 모드 |
 | S3117-ERR-06 | IMAGE | imageUrl 없음 |
 | S3117-ERR-07 | VIDEO | videoUrl 없음 |
 | S3117-ERR-08 | SURVEY | footerAction CLOSE(SUBMIT 고정) |
@@ -90,6 +90,7 @@
 | S3117-ERR-11 | VIDEO_QUIZ | popupType VIDEO_QUIZ(독립 유형 아님) |
 | S3117-ERR-12 | VIDEO_QUIZ | videoEnabled 문자열 "true"(타입 불일치) |
 | S3117-ERR-13 | TEXT | 응답 envelope `{popup:{...}}`로 저장 |
+| S3117-ERR-14 | QUIZ | 비채점 주관식만 등록 |
 
 ## 5. WPF Demo에서 보기
 

@@ -8,7 +8,7 @@
 # - 위치는 popup.sample.full-json.defaults-location(기본 classpath:popup/sample/popup-full-json-defaults.yml)으로 바꿀 수 있다.
 #
 # 코드에 고정된 조건부 규칙(이 파일로 바꾸지 않음)
-# - IMAGE: width/height가 없으면 채우지 않는다(크기 미지정 = 원본 기준). ORIGINAL은 width/height 필수.
+# - IMAGE: width/height가 없으면 채우지 않는다(크기 미지정 = 원본 기준).
 # - SURVEY·QUIZ: footerAction은 SUBMIT(없으면 SUBMIT, 다른 명시값은 거절).
 # - VIDEO·영상 QUIZ(videoEnabled=true): completionRatio가 없으면 1.0. 영상 QUIZ는 content.VIDEO 기본값도 채운다.
 
@@ -49,7 +49,7 @@ content:
     showBottomDescription: false
   IMAGE:
     showDescription: false
-    imageSizeMode: ADAPTIVE          # ADAPTIVE / FIT_TO_IMAGE / ORIGINAL
+    imageSizeMode: ADAPTIVE          # ADAPTIVE / FIT_TO_IMAGE
     keepAspectRatio: true
   VIDEO:
     showDescription: false

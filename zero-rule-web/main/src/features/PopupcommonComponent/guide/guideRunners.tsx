@@ -104,7 +104,7 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
   },
   PopupQuestionEditor: {
     input: { quiz: false, passingScore: null, richQuestionText: false, maxQuestions: 30, questions: SAMPLE_QUESTIONS },
-    hint: 'quiz를 true로 바꾸면 정답·배점·통과 점수 입력이 나옵니다. richQuestionText를 true로 바꾸면 선택지도 서식 편집기로 입력하고(문항 제목은 항상 서식 편집기), maxQuestions로 최대 문항 수를 바꿉니다. 문항을 고치면 onChange(questions)와 검사 결과가 OUTPUT에 나옵니다.',
+    hint: 'quiz를 true로 바꾸면 정답·통과 점수를 입력할 수 있고 총점은 채점 문항 수로 표시됩니다. richQuestionText를 true로 바꾸면 선택지도 서식 편집기로 입력하고(문항 제목은 항상 서식 편집기), maxQuestions로 최대 문항 수를 바꿉니다. 문항을 고치면 onChange(questions)와 검사 결과가 OUTPUT에 나옵니다.',
     render: (input, emit) => <QuestionHost input={input} emit={emit} />,
   },
   PopupQuizRuleFields: {

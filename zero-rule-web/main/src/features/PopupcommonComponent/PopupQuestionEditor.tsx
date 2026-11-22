@@ -1,3 +1,4 @@
+import { isScoredQuizQuestion, QUIZ_QUESTION_SCORE, SCORED_QUESTION_REQUIRED, scoredQuestionCount } from './popupQuizRule';
 import type { PopupOption, PopupQuestion } from '@local/domain';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -13,7 +14,7 @@ import { blocksToPlainText, plainTextToBlocks, type RichBlock } from './popupRic
 interface Props {
   /** 편집할 문항 목록 */
   questions: PopupQuestion[];
-  /** true면 퀴즈(정답·배점·통과 점수 입력 표시), false면 설문 */
+  /** true면 퀴즈(정답과 통과 점수 입력, 총점 표시), false면 설문 */
   quiz: boolean;
   /** 퀴즈 통과 점수 */
   passingScore?: number | null;
@@ -21,11 +22,6 @@ interface Props {
   onChange: (questions: PopupQuestion[]) => void;
   /** 통과 점수 입력이 바뀔 때(비우면 null) */
   onPassingScoreChange: (score: number | null) => void;
-  /**
-   * 배점 고정(예: 1). 지정하면 문항별 배점 입력·'배점 모두 1점' 버튼을 숨기고 새 문항도 이 배점으로 만든다.
-   * 부모가 모든 문항의 questionScore를 이 값으로 맞춘다(예: IS063M02 샘플은 문항 1점 고정, 총점 = 문항 수). 생략하면 문항별 배점을 입력한다.
-   */
-  fixedQuestionScore?: number;
   /** 통과 점수 입력을 숨긴다(부모가 퀴즈 유형 등 다른 입력으로 passingScore를 정할 때). */
   hidePassingScore?: boolean;
   /**
@@ -54,15 +50,6 @@ export const OPTION_TEXT_MAX = 1000;
 
 /**
  * POL-06-02 : 선택·제출
- * ■ 퀴즈 기본 배점
- * - in : 없음
- * - out: number 1점
- * - 배점을 비운 문항에 쓰는 값이다. 서버(PopupQuestionRules.DEFAULT_QUESTION_SCORE)·WPF(QuizGrader)·미리보기와 같다. 모두 1점이면 총점 = 문항 수.
- */
-export const DEFAULT_QUESTION_SCORE = 1;
-
-/**
- * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 최대 문항 수
  * - in : 없음
  * - out: number 30
@@ -80,17 +67,17 @@ export const QUESTION_MAX = 30;
  * - 문항 목록을 받아 제목·글자 수·선택지·정답·배점·통과 점수(0~총점)를 서버와 같은 기준으로 확인한다.
  */
 export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean, passingScore?: number | null, maxQuestions: number = QUESTION_MAX): string | null {
-  if (!questions.length) return '문항을 한 개 이상 추가해 주세요.';
+  if (!questions.length) return quiz ? SCORED_QUESTION_REQUIRED : '문항을 한 개 이상 추가해 주세요.';
   if (questions.length > maxQuestions) return questionOverflowMessage(questions.length, maxQuestions);
   for (const [index, q] of questions.entries()) {
     const prefix = `${index + 1}번 문항: `;
     if (!q.title.trim()) return prefix + '제목을 입력해 주세요.';
     if (q.title.length > QUESTION_TITLE_MAX) return prefix + `제목은 ${QUESTION_TITLE_MAX}자 이하로 입력해 주세요.`;
     if ((q.description ?? '').length > QUESTION_DESCRIPTION_MAX) return prefix + `설명은 ${QUESTION_DESCRIPTION_MAX}자 이하로 입력해 주세요.`;
-    // 배점을 비우면 기본 1점으로 저장한다(서버 PopupQuestionRules.withDefaultScores). 입력한 값은 양수여야 한다.
-    if (quiz && q.questionScore != null && (!Number.isFinite(q.questionScore) || q.questionScore <= 0)) return prefix + '배점은 0보다 커야 합니다.';
+    if (quiz && q.questionType !== 'TEXT' && q.isScored === false) return prefix + '비채점 퀴즈 문항은 주관식만 허용합니다.';
+    if (quiz && isScoredQuizQuestion(q) && q.questionScore != null && q.questionScore !== QUIZ_QUESTION_SCORE) return prefix + '퀴즈 채점 문항의 배점은 1점이어야 합니다.';
     if (q.questionType === 'TEXT') {
-      if (quiz && !q.correctAnswer?.trim()) return prefix + '주관식 정답을 입력해 주세요.';
+      if (quiz && isScoredQuizQuestion(q) && !q.correctAnswer?.trim()) return prefix + '주관식 정답을 입력해 주세요.';
     } else {
       if (q.options.length < 2 || q.options.some((o) => !o.text.trim())) return prefix + '선택지를 두 개 이상 입력해 주세요.';
       if (q.options.some((o) => o.text.length > OPTION_TEXT_MAX)) return prefix + `선택지는 ${OPTION_TEXT_MAX}자 이하로 입력해 주세요.`;
@@ -104,7 +91,8 @@ export function validatePopupQuestions(questions: PopupQuestion[], quiz: boolean
     const limitError = selectionLimitError(q, quiz);
     if (limitError) return prefix + limitError;
   }
-  const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
+  const total = scoredQuestionCount(questions);
+  if (quiz && total === 0) return SCORED_QUESTION_REQUIRED;
   if (quiz && (passingScore == null || !Number.isFinite(passingScore) || passingScore < 0 || passingScore > total)) return '통과 점수는 0~총점 사이로 입력해 주세요.';
   return null;
 }
@@ -184,13 +172,13 @@ const ICON_BUTTON_SX = { width: 32, height: 32 };
  * POL-06-01 : 문항·서식
  * POL-06-02 : 선택·제출
  * ■ 설문·퀴즈 문항 편집기
- * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · fixedQuestionScore?(number) 배점 고정값 · hidePassingScore?(boolean) 통과 점수 입력 숨김 · richQuestionText?(boolean) 선택지 서식 편집기 사용 · maxQuestions?(number) 최대 문항 수
- * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·배점·선택지·정답 입력
+ * - in : questions(PopupQuestion[]) 문항 목록 · quiz(boolean) 퀴즈 여부 · passingScore?(number | null) 통과 점수 · hidePassingScore?(boolean) 통과 점수 입력 숨김 · richQuestionText?(boolean) 선택지 서식 편집기 사용 · maxQuestions?(number) 최대 문항 수
+ * - out: onChange(questions: PopupQuestion[]) 바뀐 문항 전체 · onPassingScoreChange(score: number | null) 통과 점수 · 화면: 총점·문항별 서식 제목/설명·유형·선택지·정답 입력
  * - 문항 목록을 받아 문항·선택지를 추가·삭제·편집하게 하고, 바뀔 때마다 전체 목록을 돌려준다.
  *   문항 제목은 설문·퀴즈, richQuestionText와 무관하게 항상 서식 편집기(compact)로 입력한다(2026-11-17 후속 1). 선택지는 richQuestionText에 따라 일반 텍스트(여러 줄) 또는 서식 편집기다.
  *   선택지 입력칸 앞에 자동 번호를 붙이지 않는다. 저장 전 확인은 validatePopupQuestions로 한다.
  */
-export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, fixedQuestionScore, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS, richQuestionText = false, maxQuestions = QUESTION_MAX }: Props) {
+export default function PopupQuestionEditor({ questions, quiz, passingScore, onChange, onPassingScoreChange, hidePassingScore = false, answerTypeOptions = SAMPLE_ANSWER_TYPE_OPTIONS, richQuestionText = false, maxQuestions = QUESTION_MAX }: Props) {
   const update = (index: number, patch: Partial<PopupQuestion>) => onChange(questions.map((q, i) => i === index ? { ...q, ...patch } : q));
   const updateOption = (index: number, optionId: number, patch: Partial<PopupOption>) =>
     update(index, { options: questions[index].options.map((o) => o.optionId === optionId ? { ...o, ...patch } : o) });
@@ -198,7 +186,8 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
   const answerTypeValue = (q: PopupQuestion) => q.questionType !== 'SINGLE_CHOICE' ? q.questionType : isOxQuestion(q) ? ANSWER_TYPE_OX : ANSWER_TYPE_CHOICE;
   const changeAnswerType = (index: number, code: string) => {
     const q = questions[index];
-    const base = { questionType: 'SINGLE_CHOICE', minSelections: null, maxSelections: null, correctAnswer: '', answerMatchMode: 'EXACT' as const };
+    const base = { questionType: 'SINGLE_CHOICE', isScored: true, questionScore: QUIZ_QUESTION_SCORE,
+      minSelections: null, maxSelections: null, correctAnswer: '', answerMatchMode: 'EXACT' as const };
     if (code === ANSWER_TYPE_OX) {
       const typed = q.options.some((option) => option.text.trim());
       if (typed && !window.confirm('입력한 선택지가 O·X로 바뀝니다. 계속할까요?')) return;
@@ -214,14 +203,13 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     update(index, { questionType, minSelections: null, maxSelections: null, correctAnswer: '', answerMatchMode: 'EXACT',
       options: questionType === 'TEXT' ? [] : q.options.length ? q.options : createOptions(['', '']) });
   };
-  const total = questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? DEFAULT_QUESTION_SCORE) * 100), 0) / 100;
+  const total = scoredQuestionCount(questions);
   const full = questions.length >= maxQuestions;
   /* 정답·삭제 칸을 입력칸 첫 줄(일반·서식 모두 32px)과 맞춘다. */
   const optionSlotSx = OPTION_SLOT_SX;
   const add = () => !full && onChange([...questions, {
     questionId: temporaryId(), title: '', description: '', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL',
-    // 퀴즈 기본 배점 1점(서버·WPF 기본값과 같음). 모두 1점이면 총점 = 문항 수.
-    isRequired: quiz, isScored: quiz, questionScore: quiz ? fixedQuestionScore ?? DEFAULT_QUESTION_SCORE : null,
+    isRequired: quiz, isScored: quiz, questionScore: quiz ? QUIZ_QUESTION_SCORE : null,
     sortOrder: questions.length + 1, answerMatchMode: 'EXACT', correctAnswer: '',
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
@@ -231,12 +219,8 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     {questions.length > maxQuestions && <Typography variant="body2" color="error" role="alert">{questionOverflowMessage(questions.length, maxQuestions)}</Typography>}
     {quiz && <Box sx={{ ...FIELD_ROW_SX, alignItems: 'center' }}>
       <Typography sx={{ flex: '1 1 160px', minWidth: 0 }} fontWeight={700}>
-        총점 {total}점{questions.length > 0 && total === questions.length ? ` (문항 ${questions.length}개 × 1점)` : ''}
+        총점 {total}점{questions.length > 0 && ` (채점 문항 ${total}개 × ${QUIZ_QUESTION_SCORE}점)`}
       </Typography>
-      {fixedQuestionScore == null && <Button size="small" variant="outlined" disabled={!questions.length}
-        onClick={() => onChange(questions.map((q) => ({ ...q, questionScore: DEFAULT_QUESTION_SCORE, isScored: true })))}>
-        배점 모두 1점
-      </Button>}
       {!hidePassingScore && <TextField size="small" label="통과 점수" type="number" value={passingScore ?? ''} slotProps={{ htmlInput: { min: 0, max: total, step: 0.01 } }} sx={{ width: 110 }}
         onChange={(e) => onPassingScoreChange(e.target.value === '' ? null : Number(e.target.value))} />}
     </Box>}
@@ -268,8 +252,6 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             {!answerTypeOptions.some((item) => item.code === answerTypeValue(q)) && !LEGACY_ANSWER_TYPE_LABELS[q.questionType]
               && <MenuItem value={answerTypeValue(q)} sx={{ display: 'none' }}>{answerTypeValue(q) === ANSWER_TYPE_OX ? 'O·X' : '선택지'}</MenuItem>}
           </TextField>
-          {fixedQuestionScore == null && <TextField size="small" label="배점" type="number" sx={{ flex: '0 1 100px', minWidth: 88 }} value={q.questionScore ?? ''} placeholder={`기본 ${DEFAULT_QUESTION_SCORE}`} slotProps={{ inputLabel: { shrink: true } }}
-            onChange={(e) => update(index, { questionScore: e.target.value === '' ? null : Number(e.target.value), isScored: true })} />}
         </Box> : <Box sx={FIELD_ROW_SX}>
           <TextField select size="small" label="응답 유형" value={q.questionType === 'TEXT' ? 'TEXT' : 'CHOICE'} sx={{ flex: '1 1 112px', minWidth: 112 }}
             slotProps={{ select: { inputProps: { 'aria-label': `${index + 1}번 문항 응답 유형` } } }}
@@ -296,7 +278,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
             </Stack>}
           </>}
         </Box>}
-        {q.questionType === 'TEXT' ? quiz && <Stack spacing={1}>
+        {q.questionType === 'TEXT' ? quiz && isScoredQuizQuestion(q) && <Stack spacing={1}>
           <TextField size="small" label="주관식 정답" required value={q.correctAnswer ?? ''} onChange={(e) => update(index, { correctAnswer: e.target.value })} />
           <TextField select size="small" label="정답 비교 방식" value={q.answerMatchMode ?? 'EXACT'} onChange={(e) => update(index, { answerMatchMode: e.target.value as 'EXACT' | 'CONTAINS' })}
             helperText="앞뒤 공백은 제외하며, 대소문자와 문장 안의 공백은 구분합니다.">

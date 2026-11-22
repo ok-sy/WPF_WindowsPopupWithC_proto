@@ -257,9 +257,8 @@ export const COMPONENTS: GuideComponent[] = [
     summary: '설문·퀴즈 문항을 입력합니다. 문항 제목·유형·선택지·정답·선택 개수를 다룹니다. 퀴즈는 답안 유형(공통코드 0089), 설문은 응답 유형·레이아웃·응답 수로 입력합니다. 문항은 최대 30개(QUESTION_MAX)입니다. 문항 제목은 설문·퀴즈 모두 서식 편집기로 입력하고, 선택지는 기본 일반 텍스트(여러 줄)로 입력하며 앞에 자동 번호를 붙이지 않습니다.',
     props: [
       { name: 'questions', type: 'PopupQuestion[]', required: true, description: '문항 목록' },
-      { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다(정답·배점·통과 점수 표시).' },
+      { name: 'quiz', type: 'boolean', required: true, description: 'true면 퀴즈입니다. 저장하려면 1점짜리 채점 문항이 최소 1개 필요합니다. 비채점 주관식은 총점에서 제외합니다.' },
       { name: 'passingScore', type: 'number | null', description: '퀴즈 통과 점수' },
-      { name: 'fixedQuestionScore', type: 'number', description: '배점을 고정합니다. 주면 배점 입력칸을 숨깁니다.' },
       { name: 'hidePassingScore', type: 'boolean', description: '통과 점수 입력칸을 숨깁니다.' },
       { name: 'richQuestionText', type: 'boolean', description: '선택지 입력 방식만 정합니다. true면 모든 선택지를 서식 편집기로 입력하고 textBlocks를 저장합니다. 기본 false(선택지는 일반 텍스트 입력). 문항 제목은 이 값·quiz와 무관하게 항상 서식 편집기입니다.' },
       { name: 'maxQuestions', type: 'number', description: '최대 문항 수(1 이상 정수). 기본 30(QUESTION_MAX). 저장 전 validatePopupQuestions에도 같은 값을 넘깁니다.' },
@@ -282,9 +281,9 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     name: 'PopupQuizRuleFields', file: 'PopupQuizRuleFields.tsx',
     summary: '퀴즈 유형(공통코드 0090: 참여형·만점형·컷트라인형)과 기준 개수를 입력합니다.',
     props: [
-      { name: 'questionCount', type: 'number', required: true, description: '문항 수' },
+      { name: 'questionCount', type: 'number', required: true, description: '채점 문항 수' },
       { name: 'rule', type: "QuizRule('' | 'FULL' | 'CUTOFF' | 'PARTICIPATION')", required: true, description: '고른 퀴즈 유형' },
-      { name: 'count', type: 'number', required: true, description: '기준 개수(참여형·컷트라인형, 1~문항 수). 참여형은 통계용 합격 기준이라 미달이어도 제출하면 완료됩니다.' },
+      { name: 'count', type: 'number', required: true, description: '기준 개수(참여형·컷트라인형, 1~채점 문항 수). 참여형은 통계용 합격 기준이라 미달이어도 제출하면 완료됩니다.' },
       { name: 'passingScore', type: 'number | null', description: '계산된 통과 점수(안내용)' },
       { name: 'options', type: 'PopupCodeOption[]', description: '공통코드 0090 조회 결과. loadPopupQuestionCodes(api.clCode.search)의 quizTypes를 넘깁니다. DB에 0090 코드가 있어야 하며 없으면 빈 배열이 됩니다. 생략하면 샘플용 목록, 빈 배열이면 선택을 막습니다.' },
       { name: 'className / titlePrefix', type: 'string / ReactNode', description: '퍼블리싱 클래스·제목 앞 표시' },

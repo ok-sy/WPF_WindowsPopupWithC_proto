@@ -90,7 +90,7 @@ export interface AdminPopupDetail {
   sizeMode: PopupSizeMode;
   /**
    * POL-04-01 : 공통 크기 입력
-   * IMAGE도 이 한 쌍을 쓴다(content.width/height 없음). ADAPTIVE·ORIGINAL은 팝업 창 전체 크기,
+   * IMAGE도 이 한 쌍을 쓴다(content.width/height 없음). ADAPTIVE는 팝업 창 전체 크기,
    * FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기(헤더·푸터·제목·설명은 더해서 창 계산). 일반 IMAGE는 축별로 생략할 수 있다.
    */
   width?: number;

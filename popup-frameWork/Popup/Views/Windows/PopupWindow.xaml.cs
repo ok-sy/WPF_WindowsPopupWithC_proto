@@ -663,7 +663,7 @@ namespace Popup.Views.Windows
         private const double FixedSizeSafeAreaRatio = 0.95;
         private const double ImageSafeAreaRatio = 0.90;
         private Size? _lastImageRecommendation;
-        private bool IsImagePopup => _options.PopupType == "IMAGE" || _options.Content is ImagePopupView or ImageFillPopupView;
+        private bool IsImagePopup => _options.PopupType == "IMAGE" || _options.Content is ImagePopupView;
 
         private double EffectiveMaximumWidth(Rect area, double otherRatio) => IsImagePopup
             ? area.Width * ImageSafeAreaRatio : Math.Min(RequestedMaximumWidth, area.Width * otherRatio);

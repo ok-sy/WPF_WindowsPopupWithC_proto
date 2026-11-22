@@ -3,7 +3,6 @@
     /*
      * POL-04-02 : 모드별 기준
      * ■ 일반 IMAGE 크기 방식(ImagePopupView 내부 모델)
-     * - ORIGINAL은 이 열거형에 두지 않고 PopupFactory가 문자열로 분기해 ImageFillPopupView로 표시한다.
      */
     public enum ImagePopupSizeMode
     {

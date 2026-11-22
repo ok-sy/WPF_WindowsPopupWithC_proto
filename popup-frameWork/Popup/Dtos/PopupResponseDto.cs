@@ -85,7 +85,7 @@ namespace Popup.Dtos
          *
          * 생략·null을 구분하려고 nullable로 받는다(기본값을 미리 주입하면 "값 미지정"을 알 수 없다).
          * IMAGE가 아닌 유형은 PopupFactory가 생략 시 900/620으로 채운다.
-         * IMAGE는 content.imageSizeMode에 따라 의미가 다르다: ADAPTIVE·ORIGINAL은 팝업 창 전체 크기,
+         * IMAGE는 content.imageSizeMode에 따라 의미가 다르다: ADAPTIVE은 팝업 창 전체 크기,
          * FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기(헤더·푸터·제목·설명·여백은 더해서 창을 계산). 한 축 생략은 원본 기준으로 채운다.
          */
         public double? Width { get; set; }

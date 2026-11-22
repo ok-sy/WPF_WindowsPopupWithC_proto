@@ -435,8 +435,8 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 |---|---|---|
 | `imageUrl` | 필수 | 이미지 URL 또는 로컬 경로 |
 | `imageSizeMode` | 선택, `ADAPTIVE` | 아래 세 가지 방식 중 하나 |
-| `imageTitle` | 선택, 빈 문자열 | 이미지 내부 제목. ORIGINAL에서는 표시하지 않음 |
-| `description`, `showDescription` | 선택, 빈 문자열·`true` | 아래쪽 설명. ORIGINAL에서는 사용하지 않음 |
+| `imageTitle` | 선택, 빈 문자열 | 이미지 내부 제목 |
+| `description`, `showDescription` | 선택, 빈 문자열·`true` | 아래쪽 설명 |
 | `keepAspectRatio` | FIT_TO_IMAGE에서 선택, `true` | 원본 비율 유지 여부 |
 
 **크기 값은 `content`가 아닌 `popup.width`, `popup.height` 한 쌍에 둡니다.** 같은 600×400이라도 모드에 따라 크기가 가리키는 영역이 다릅니다.
@@ -445,11 +445,10 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 |---|---|---|
 | `ADAPTIVE` | 창 전체 크기 | 남은 본문 영역 안에 비율을 유지해 맞춤. 원본보다 확대하지 않음 |
 | `FIT_TO_IMAGE` | 이미지 콘텐츠 영역 크기 | 헤더·푸터·제목·설명을 더해 창 계산. 비율 유지 시 여백 가능, 해제 시 왜곡 허용 |
-| `ORIGINAL` | 창 전체 크기 | 원본을 왼쪽 위에서 표시. 넘치는 오른쪽·아래를 자름 |
 
-일반 IMAGE는 축별 크기를 생략할 수 있고 원본 크기와 표시 요소를 바탕으로 계산합니다. ORIGINAL은 창 너비·높이를 제공합니다. FIT_TO_IMAGE의 지정 영역이 화면 상한을 넘으면 영역을 줄여 재배치하는 대신 중앙 기준으로 잘라 표시합니다. ORIGINAL은 왼쪽 위 기준을 유지합니다.
+일반 IMAGE는 축별 크기를 생략할 수 있고 원본 크기와 표시 요소를 바탕으로 계산합니다. FIT_TO_IMAGE의 지정 영역이 화면 상한을 넘으면 영역을 줄여 재배치하는 대신 중앙 기준으로 잘라 표시합니다.
 
-최종 IMAGE 창의 상한은 현재 모니터 작업 영역의 90%입니다. 공통 FULLSCREEN이면 모니터 전체 크기를 우선합니다. ORIGINAL은 원본 1픽셀을 1 DIP로 해석하며 파일 DPI 메타데이터로 크기를 바꾸지 않습니다. OS 화면 배율은 적용됩니다.
+최종 IMAGE 창의 상한은 현재 모니터 작업 영역의 90%입니다. 공통 FULLSCREEN이면 모니터 전체 크기를 우선합니다. OS 화면 배율은 적용됩니다.
 
 이미지를 클릭해 링크를 여는 기능은 없습니다. 하단 바로가기를 쓸 때는 공통 `footerAction`과 `footerLinkUrl`을 사용합니다.
 
@@ -509,14 +508,14 @@ Windows 음량 연결에 성공하면 현재 시스템 음량·음소거를 우�
 
 ### 6.5 QUIZ — 에이전트가 채점하는 팝업
 
-퀴즈는 설문 문항 구조에 정답·배점·합격 기준을 더합니다.
+퀴즈는 설문 문항 구조에 정답·배점·합격 기준을 더합니다. 퀴즈 등록·수정 시 채점 문항이 최소 1개 필요합니다. 비채점 주관식은 정답을 요구하지 않고 답변을 수집하며 만점 계산에서 제외합니다.
 
 | 필드 | 조건·기본값 | 설명 |
 |---|---|---|
 | `popup.passingScore` | QUIZ에 명시, 0~총점 | 합격점. 참여형도 양수 기준을 가질 수 있음 |
 | `popup.requiresPassing` | 선택, 생략·null이면 passingScore로 판정 | false면 참여형, true면 합격해야 제출 가능 |
 | `questions[].isScored` | 채점 문항에 true 명시 | 점수 계산 대상 |
-| `questions[].questionScore` | 채점 문항에 양수 제공, 누락·null 기본 1점 | 해당 문항의 배점 |
+| `questions[].questionScore` | 관리자 저장 시 채점 문항당 1점, 누락·null 기본 1점 | 해당 문항의 배점 |
 | `options[].isCorrect` | 채점 선택형에 제공 | 정답 true, 오답 false |
 | `questions[].correctAnswer` | 채점 TEXT 문항에 필수 | 공백 아닌 주관식 정답 |
 | `questions[].answerMatchMode` | 채점 TEXT 문항에 필수 | `EXACT` 일치 / `CONTAINS` 포함 |

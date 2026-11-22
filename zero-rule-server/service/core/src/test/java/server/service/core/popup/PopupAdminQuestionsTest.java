@@ -42,13 +42,13 @@ class PopupAdminQuestionsTest {
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
                 560.0, 420.0, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, false, 10L, "FIXED",
-                null, null, null, null, null, 2.0, questions,
+                null, null, null, null, null, 1.0, questions,
                 Map.of("useBackgroundOverlay", true, "backgroundOverlayOpacity", .45));
     }
 
     private PopupQuestionDto question(boolean firstCorrect, boolean secondCorrect) {
         return new PopupQuestionDto(1L, "Question", null, "SINGLE_CHOICE", true, true,
-                new BigDecimal("2.00"), 1,
+                BigDecimal.ONE, 1,
                 List.of(new PopupOptionDto(2L, "1", "A", 1, firstCorrect),
                         new PopupOptionDto(3L, "2", "B", 2, secondCorrect)), null, null, "VERTICAL");
     }
@@ -56,7 +56,7 @@ class PopupAdminQuestionsTest {
     private void existingQuestions() {
         when(mapper.selectQuestionsByTemplateIds(List.of(10L))).thenReturn(List.of(
                 new PopupQuestionEntity(1L, 10L, "SINGLE_CHOICE", "Question", null,
-                        "Y", "Y", new BigDecimal("2.00"), 1, null, null, "VERTICAL")));
+                        "Y", "Y", BigDecimal.ONE, 1, null, null, "VERTICAL")));
         when(mapper.selectOptionsByQuestionIds(List.of(1L))).thenReturn(List.of(
                 new PopupOptionEntity(2L, 1L, "1", "A", "Y", 1),
                 new PopupOptionEntity(3L, 1L, "2", "B", "N", 2)));
@@ -131,6 +131,21 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
+    @Test void opinionOnlyQuizCannotWriteEvenWithZeroPassingScore() throws Exception {
+        var opinion = new PopupQuestionDto(1L, "의견", null, "TEXT", false, false, null, 1, List.of(), null, null, "VERTICAL");
+        var json = new ObjectMapper().findAndRegisterModules();
+        com.fasterxml.jackson.databind.node.ObjectNode draft = json.valueToTree(popup(List.of(opinion)));
+        draft.put("passingScore", 0);
+        for (String code : List.of("00", "01", "02")) {
+            draft.put("quizTypeCode", code);
+            var request = json.treeToValue(draft, PopupResponseDto.class);
+            var error = assertThrows(IllegalArgumentException.class,
+                    () -> service.saveAdminPopup(request, false, List.of(), "admin"));
+            assertTrue(error.getMessage().contains("채점 문항"));
+        }
+        verifyNoInteractions(mapper);
+    }
+
     private PopupResponseDto withMinimum(PopupResponseDto base, double minimumWidth, double minimumHeight) {
         return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
                 base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
@@ -156,7 +171,7 @@ class PopupAdminQuestionsTest {
     private PopupResponseDto imagePopup(String imageSizeMode) {
         return new PopupResponseDto("TEST", "IMAGE", "Image", OffsetDateTime.now(),
                 OffsetDateTime.now().plusDays(1), "SEQUENTIAL", 100, "FIXED",
-                ("ORIGINAL".equals(imageSizeMode) ? 560.0 : null), ("ORIGINAL".equals(imageSizeMode) ? 420.0 : null), .7, .75, 480, 320, 1200, 900,
+                null, null, .7, .75, 480, 320, 1200, 900,
                 true, true, true, false, false, null, "FIXED",
                 null, null, null, null, null, null, List.of(),
                 Map.of("imageUrl", "https://example.com/a.png", "imageSizeMode", imageSizeMode));
@@ -169,12 +184,37 @@ class PopupAdminQuestionsTest {
         verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
-    /** POL-04-02 : 모드별 기준 — IMAGE 크기 모드 ADAPTIVE·FIT_TO_IMAGE·ORIGINAL은 저장한다. */
+    /** POL-04-02 : 모드별 기준 — IMAGE 크기 모드 ADAPTIVE·FIT_TO_IMAGE은 저장한다. */
     @Test void imagePopupAcceptsCurrentImageSizeModes() {
-        for (String mode : List.of("ADAPTIVE", "fit_to_image", "ORIGINAL")) {
+        for (String mode : List.of("ADAPTIVE", "fit_to_image")) {
             service.saveAdminPopup(imagePopup(mode), false, List.of(), "admin");
         }
-        verify(mapper, times(3)).upsertAdminPopupNotice(any());
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(imagePopup("ORIGINAL"), false, List.of(), "admin"));
+        verify(mapper, times(2)).upsertAdminPopupNotice(any());
+    }
+
+    @Test void activeImageAndVideoRequireMediaAtSaveAndActivation() {
+        for (String type : List.of("IMAGE", "VIDEO")) {
+            var content = Map.<String,Object>of(type.equals("IMAGE") ? "imageUrl" : "videoUrl", "   ");
+            var now = OffsetDateTime.now();
+            var draft = new PopupResponseDto("TEST", type, "미디어", now, now.plusDays(1), "SEQUENTIAL", 1,
+                    "FIXED", 560d, 420d, .7, .75, 300, 300, 1200, 900, true, true, true, false, false,
+                    null, "FIXED", null, null, null, null, null, null, List.of(), content);
+            var groups = List.of(new AdminPopupTargetGroup("A", "", List.of(new AdminPopupTargetCondition("EMPLOYEE", "=", "E1001", false))));
+            assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(draft, true, groups, "admin"));
+            assertDoesNotThrow(() -> service.saveAdminPopup(draft, false, List.of(), "admin"));
+            var entity = mock(PopupEntity.class);
+            when(entity.popupType()).thenReturn(type);
+            when(mapper.selectAdminPopupById("TEST")).thenReturn(entity);
+            when(mapper.lockAdminPopupForActivation("TEST")).thenReturn("TEST");
+            when(mapper.countAdminPopupTargetGroups("TEST")).thenReturn(1);
+            assertThrows(IllegalArgumentException.class, () -> service.updateAdminPopupActive("TEST", true, "admin"));
+            verify(mapper, never()).updateAdminPopupActive("TEST", "Y", "admin");
+            when(entity.mediaUrl()).thenReturn("https://example.com/media");
+            when(mapper.updateAdminPopupActive("TEST", "Y", "admin")).thenReturn(1);
+            assertDoesNotThrow(() -> service.updateAdminPopupActive("TEST", true, "admin"));
+            clearInvocations(mapper);
+        }
     }
 
     private PopupResponseDto imageWithContent(String mode, Map<String, Object> extras, Double topWidth) {
@@ -261,9 +301,6 @@ class PopupAdminQuestionsTest {
         var adaptive = service.toPublicResponseDto(entity.apply("ADAPTIVE", "{\"imageSizeMode\":\"ADAPTIVE\",\"width\":640,\"height\":480}"), List.of());
         assertEquals(640.0, adaptive.width());
         assertEquals(480.0, adaptive.height());
-        var original = service.toPublicResponseDto(entity.apply("ORIGINAL", "{\"imageSizeMode\":\"ORIGINAL\"}"), List.of());
-        assertEquals(560.0, original.width());
-        assertEquals(420.0, original.height());
     }
 
     /** POL-04-02 : 모드별 기준 — 편집 가능해진 설명 배치 옵션은 WPF가 받는 값만 저장한다. */
@@ -341,7 +378,7 @@ class PopupAdminQuestionsTest {
     }
     // ===== POL-06-02 : 선택·제출 — 퀴즈 유형 코드(0090) 저장 규칙 (PU001 §7) =====
 
-    /** 통과 점수·유형 코드만 바꾼 QUIZ 저장 요청. 문항은 2점 문항 count개(총점 2×count). */
+    /** 통과 점수·유형 코드만 바꾼 QUIZ 저장 요청. 문항은 1점 문항 count개. */
     private PopupResponseDto quiz(Double passingScore, String quizTypeCode, int count) {
         var base = popup(java.util.stream.IntStream.range(0, count).mapToObj(i -> question(true, false)).toList());
         return new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
@@ -365,14 +402,14 @@ class PopupAdminQuestionsTest {
 
     /** 유형 코드가 없고 통과 점수가 총점과 같으면 01 만점형으로 파생한다. */
     @Test void nullQuizTypeWithFullPassingIsFull() {
-        service.saveAdminPopup(quiz(4.0, null, 2), false, List.of(), "admin");
-        assertSavedType("01", "4");
+        service.saveAdminPopup(quiz(2.0, null, 2), false, List.of(), "admin");
+        assertSavedType("01", "2");
     }
 
     /** 유형 코드가 없고 0 < 통과 점수 < 총점이면 02 컷트라인형으로 파생한다. */
     @Test void nullQuizTypeWithPartialPassingIsCutoff() {
-        service.saveAdminPopup(quiz(3.0, null, 2), false, List.of(), "admin");
-        assertSavedType("02", "3");
+        service.saveAdminPopup(quiz(1.0, null, 2), false, List.of(), "admin");
+        assertSavedType("02", "1");
     }
 
     /** 참여형도 양수 기준 점수를 보존한다(기준 5점 중 3점처럼 채점 안내에 쓴다). */
@@ -383,19 +420,19 @@ class PopupAdminQuestionsTest {
 
     /** 만점형 기준과 같은 점수의 컷트라인형은 요청 코드대로 02로 보존한다. */
     @Test void cutoffAtFullScoreKeepsRequestedCode() {
-        service.saveAdminPopup(quiz(4.0, "02", 2), false, List.of(), "admin");
-        assertSavedType("02", "4");
+        service.saveAdminPopup(quiz(2.0, "02", 2), false, List.of(), "admin");
+        assertSavedType("02", "2");
     }
 
     /** 만점형인데 통과 점수가 총점과 다르면 거부하고 템플릿·팝업을 저장하지 않는다. */
     @Test void fullQuizTypeRequiresPassingScoreEqualToTotal() {
         var error = assertThrows(IllegalArgumentException.class,
-                () -> service.saveAdminPopup(quiz(3.0, "01", 2), false, List.of(), "admin"));
+                () -> service.saveAdminPopup(quiz(1.0, "01", 2), false, List.of(), "admin"));
         assertEquals("만점형 퀴즈의 통과 점수는 총점과 같아야 합니다.", error.getMessage());
         verify(mapper, never()).insertQuestionTemplate(anyString(), anyString(), anyString());
         verify(mapper, never()).upsertAdminPopupNotice(any());
-        service.saveAdminPopup(quiz(4.0, "01", 2), false, List.of(), "admin");
-        assertSavedType("01", "4");
+        service.saveAdminPopup(quiz(2.0, "01", 2), false, List.of(), "admin");
+        assertSavedType("01", "2");
     }
 
     /** 알 수 없는 유형 코드는 거부한다. 통과 점수 범위(0~총점) 검증은 유형과 관계없이 유지한다. */
@@ -413,7 +450,7 @@ class PopupAdminQuestionsTest {
 
     /** WPF 항목 requiresPassing: 00 → false, 01·02 → true, null → 생략, QUIZ 외 → 생략. */
     @Test void wpfItemRequiresPassingMapping() {
-        var quiz = quiz(3.0, null, 2);
+        var quiz = quiz(1.0, null, 2);
         assertEquals(Boolean.FALSE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("00"), true).requiresPassing());
         assertEquals(Boolean.TRUE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("01"), true).requiresPassing());
         assertEquals(Boolean.TRUE, server.domain.popup.wpf.WpfPopupItem.from(quiz.withQuizTypeCode("02"), true).requiresPassing());

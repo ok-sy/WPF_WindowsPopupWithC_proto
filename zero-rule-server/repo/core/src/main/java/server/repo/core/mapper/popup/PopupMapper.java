@@ -85,6 +85,9 @@ public interface PopupMapper {
     /** 관리자 편집·미리보기에서 사용할 팝업 한 건의 전체 표시 정보다. */
     PopupEntity selectAdminPopupById(@Param("popupId") String popupId);
 
+    /** 활성 전환 검증 동안 상세 저장(MERGE)과 같은 공지 행을 잠근다. */
+    String lockAdminPopupForActivation(@Param("popupId") String popupId);
+
     /** 팝업의 공통 표시·기간·크기 설정을 등록하거나 수정한다 (MERGE). */
     int upsertAdminPopupNotice(AdminPopupSaveCommand command);
 

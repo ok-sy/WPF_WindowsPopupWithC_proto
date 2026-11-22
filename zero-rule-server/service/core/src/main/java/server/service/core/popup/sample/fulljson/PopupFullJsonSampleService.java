@@ -136,7 +136,7 @@ public class PopupFullJsonSampleService {
         if (video && "QUIZ".equals(type)) checkExplicitValues(content, PopupFullJsonDefaults.CONTENT_RULES.get("VIDEO"), id);
 
         // 필수 콘텐츠는 기본값을 채우기 전 원본으로 확인한다(기본값이 누락을 가리지 않게).
-        validateRequired(type, video, work, content, questions, id);
+        validateRequired(type, video, content, questions, id);
         applyPopupDefaults(type, video, work, id);
         fill(content, defaults.contentDefaults(type));
         if (video && "QUIZ".equals(type)) fill(content, defaults.contentDefaults("VIDEO"));
@@ -213,8 +213,8 @@ public class PopupFullJsonSampleService {
         });
     }
 
-    /** 유형별 필수 콘텐츠(본문·이미지 URL·영상 URL·문항)와 IMAGE ORIGINAL 크기를 확인한다. */
-    private static void validateRequired(String type, boolean video, ObjectNode work, ObjectNode content, ArrayNode questions, String id) {
+    /** 유형별 필수 콘텐츠(본문·이미지 URL·영상 URL·문항)를 확인한다. */
+    private static void validateRequired(String type, boolean video, ObjectNode content, ArrayNode questions, String id) {
         boolean ok = switch (type) {
             case "TEXT" -> !content.path("plainText").asText("").isBlank()
                     || (content.path("textBlocks").isArray() && !content.path("textBlocks").isEmpty());
@@ -227,10 +227,6 @@ public class PopupFullJsonSampleService {
         if (!ok) {
             throw new PopupSampleException(PopupSampleException.Reason.MISSING_REQUIRED_CONTENT, id,
                     type + (video && "QUIZ".equals(type) ? "(영상)" : "") + " 필수 콘텐츠가 없습니다.");
-        }
-        if ("IMAGE".equals(type) && "ORIGINAL".equals(content.path("imageSizeMode").asText())
-                && (!work.hasNonNull("width") || !work.hasNonNull("height"))) {
-            throw new PopupSampleException(PopupSampleException.Reason.MISSING_REQUIRED_CONTENT, id, "IMAGE ORIGINAL은 width/height가 필요합니다.");
         }
     }
 

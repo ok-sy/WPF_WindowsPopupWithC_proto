@@ -365,7 +365,7 @@ namespace Popup
                 // POL-04-01 : 공통 크기 입력 — IMAGE 크기는 모든 모드에서 창·배치 탭의 너비·높이(최상위) 한 쌍이다. content 쪽 크기는 쓰지 않는다.
                 string mode = content["imageSizeMode"]!.GetValue<string>();
                 content.Remove("width"); content.Remove("height");
-                if (mode != "ORIGINAL" && draft["sizeMode"]!.GetValue<string>() == "RATIO")
+                if (draft["sizeMode"]!.GetValue<string>() == "RATIO")
                     throw new ArgumentException("일반 이미지의 창 크기는 고정 또는 전체화면을 선택하세요. 창·배치 탭의 너비·높이를 사용합니다.");
                 if (mode != "FIT_TO_IMAGE") content.Remove("keepAspectRatio");
             }
@@ -424,7 +424,7 @@ namespace Popup
                 }
                 string[]? choices = key switch
                 {
-                    "imageSizeMode" => new[] { "ADAPTIVE", "FIT_TO_IMAGE", "ORIGINAL" },
+                    "imageSizeMode" => new[] { "ADAPTIVE", "FIT_TO_IMAGE" },
                     "optionLayout" => new[] { "VERTICAL", "HORIZONTAL" },
                     "questionType" => new[] { "SINGLE_CHOICE", "MULTIPLE_CHOICE", "TEXT" },
                     "answerMatchMode" => new[] { "EXACT", "CONTAINS" }, _ => null
@@ -571,13 +571,12 @@ namespace Popup
             string sizeMode = Choice(_draft, "sizeMode", "FIXED");
             string imageMode = Choice(content, "imageSizeMode", "ADAPTIVE");
             bool image = _draft["popupType"]!.GetValue<string>() == "IMAGE";
-            bool ordinaryImage = image && imageMode != "ORIGINAL";
-            string? sizeReason = ordinaryImage ? "일반 이미지는 비율 창 크기를 쓰지 않습니다. 너비·높이를 사용합니다." : null;
-            // POL-04-01 : 공통 크기 입력 — IMAGE는 모든 모드에서 같은 너비·높이를 쓴다(ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
+            string? sizeReason = image ? "일반 이미지는 비율 창 크기를 쓰지 않습니다. 너비·높이를 사용합니다." : null;
+            // POL-04-01 : 공통 크기 입력 — IMAGE는 모든 모드에서 같은 너비·높이를 쓴다(ADAPTIVE 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역).
             Enable(_draft, "width", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
             Enable(_draft, "height", sizeMode == "FIXED", "창 크기 방식이 FIXED일 때 사용합니다.");
-            Enable(_draft, "widthRatio", sizeMode == "RATIO" && !ordinaryImage, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
-            Enable(_draft, "heightRatio", sizeMode == "RATIO" && !ordinaryImage, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
+            Enable(_draft, "widthRatio", sizeMode == "RATIO" && !image, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
+            Enable(_draft, "heightRatio", sizeMode == "RATIO" && !image, sizeReason ?? "창 크기 방식이 RATIO일 때 사용합니다.");
             Show(_draft, "backgroundOverlayOpacity", On(_draft, "useBackgroundOverlay", true));
 
             // 헤더·푸터
@@ -597,11 +596,7 @@ namespace Popup
             Show(content, "bottomDescriptionUrl", !_byKey.ContainsKey((content, "showBottomDescription")) || On(content, "showBottomDescription"));
             if (image)
             {
-                const string originalReason = "이미지 표시 방식이 ORIGINAL이면 제목·설명 없이 원본 크기로 표시합니다.";
                 Show(content, "keepAspectRatio", imageMode == "FIT_TO_IMAGE");
-                Enable(content, "imageTitle", ordinaryImage, originalReason);
-                Enable(content, "description", ordinaryImage, originalReason);
-                Enable(content, "showDescription", ordinaryImage, originalReason);
             }
 
             // 문항·선택지

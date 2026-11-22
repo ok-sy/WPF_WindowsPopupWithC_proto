@@ -26,7 +26,7 @@ Default의 "계약 기본값 없음(C# 초기값 …)"은 C# DTO 초기값이 �
 |---|---|
 | 기능 노출 | 구현된 기능을 기록한다 |
 | 창 크기 | 최상위 Width/Height. IMAGE FIT_TO_IMAGE만 이미지 콘텐츠 영역 크기로 해석(TODO58) |
-| IMAGE 예외 | ORIGINAL은 공통 창 크기, FULLSCREEN은 모니터 전체 영역 우선 |
+| IMAGE 예외 | FULLSCREEN은 모니터 전체 영역 우선 |
 | 기본값 | 응답 DTO·Factory 기본값과 Demo·관리자 화면의 초기값을 구분 |
 | 고정 동작 | UI·드래그·결과 큐 등의 동작을 가상의 API 필드로 만들지 않음 |
 | 필드 이름 | 계약 이름 하나만 수신. legacy 수신 별칭(`showCloseButton` 등)은 삭제(설계 29-11) |
@@ -147,16 +147,15 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 | 항목(content) | 전체 버전 | 필수값 여부 | Default 값 | 비고 |
 |---|---|---:|---|---|
 | ImageUrl | 지원 | Y | `""` | 이미지 URL 또는 로컬 경로 |
-| ImageSizeMode | 지원 | N | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL. 필드 생략 시 ADAPTIVE이며 관리자 신규 등록 기본 선택도 ADAPTIVE |
-| ImageTitle | 일반 모드에서 지원 | N | `""` | ORIGINAL View는 내부 제목을 표시하지 않음 |
-| Description / ShowDescription | 일반 모드에서 지원 | N | `""` / `true` | 하단 설명·스크롤. ORIGINAL View에는 전달하지 않음 |
-| (최상위) Width / Height | 지원 | 일반 모드 N, ORIGINAL Y | 원본 기준 | content가 아니라 최상위 값(TODO58). ADAPTIVE·ORIGINAL 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역. 일반 모드는 축별 생략 시 원본 기준. 새 WPF는 구 서버의 content.width/height를 최상위 값이 없을 때만 임시로 읽음 |
+| ImageSizeMode | 지원 | N | `ADAPTIVE` | ADAPTIVE / FIT_TO_IMAGE. 필드 생략 시 ADAPTIVE이며 관리자 신규 등록 기본 선택도 ADAPTIVE |
+| ImageTitle | 일반 모드에서 지원 | N | `""` | 이미지 내부 제목 |
+| Description / ShowDescription | 일반 모드에서 지원 | N | `""` / `true` | 하단 설명·스크롤. |
+| (최상위) Width / Height | 지원 | N | 원본 기준 | content가 아니라 최상위 값(TODO58). ADAPTIVE 창 전체, FIT_TO_IMAGE 이미지 콘텐츠 영역. 일반 모드는 축별 생략 시 원본 기준. 새 WPF는 구 서버의 content.width/height를 최상위 값이 없을 때만 임시로 읽음 |
 | KeepAspectRatio | FIT_TO_IMAGE에서 지원 | N | `true` | true면 콘텐츠 영역 안에 원본 비율로 맞춤(여백 가능), false면 영역을 채워 왜곡 허용 |
 
 - ADAPTIVE: 창 우선, 비율을 유지해 이미지 표시.
 - FIT_TO_IMAGE: 이미지 콘텐츠 영역 우선. 지정 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산하며 설명은 영역을 침범하지 않는다. 치수 생략 시 원본 DIP 크기 사용.
-- ORIGINAL: 최상위 공통 창 크기를 사용하고 원본을 왼쪽 위에서 표시·Clip.
-- 세 모드 모두 최상위 Width/Height 한 쌍을 사용하고 content.width/height는 쓰지 않는다(TODO58). 같은 값에서 TEXT·ADAPTIVE·ORIGINAL 창 크기는 같다.
+- 두 모드 모두 최상위 Width/Height 한 쌍을 사용하고 content.width/height는 쓰지 않는다(TODO58). 같은 값에서 TEXT·ADAPTIVE 창 크기는 같다.
 - 최대 창 크기는 현재 모니터 작업 영역의 90%. 지정 이미지가 넘치면 축소하지 않고 중앙 Clip.
 - FULLSCREEN은 전체 모니터 크기가 우선이다. FILL 및 과거 IMAGE FIXED는 삭제된 값이다.
 
@@ -203,9 +202,9 @@ AllowFullScreen과 공통 SizeMode=FULLSCREEN은 별도 기능이다.
 | questions[].OptionLayout | 지원 | N | `VERTICAL` | VERTICAL / HORIZONTAL. HORIZONTAL 단일 선택의 선택지가 O·X이면 같은 크기의 칸 2개가 폭을 나눠 표시(높이 56 이상, 글자 24·굵게, 가운데 정렬, 간격 8 — 2026-11-13 88·36에서 축소). JSON 변경 없음 |
 | questions[].MinSelections / MaxSelections | SURVEY 복수 선택에서 지원 | N | `null` = 제한 없음 | 최대 도달 시 남은 선택지 비활성, 최소 미달 시 제출 불가(필수 문항 max(1, 최소), 선택 문항 0개 또는 최소 이상). 안내 `N~M개 선택`·`N개 선택`·`최소 N개 선택`·`최대 M개 선택`. QUIZ는 정답 수 한도가 우선(2026-10-29) |
 | questions[].IsScored | QUIZ에서 지원 | Y(QUIZ 계약) | `false` | 채점 문항은 true 명시. 현재 서버 저장 규칙은 최소 1개 true 존재까지는 보장하지 않으므로 응답 검증 필요 |
-| questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` → 1 | 양수 배점. 누락/null이면 WPF 로컬 점수 기본 1점(서버도 미입력 시 1점 저장, 모두 1점이면 총점 = 문항 수) |
-| questions[].CorrectAnswer | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | 공백 아닌 주관식 정답. 최소 버전에서는 TEXT QUIZ 미제공 |
-| questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | Y(TEXT QUIZ) | `null` | EXACT / CONTAINS |
+| questions[].QuestionScore | QUIZ에서 지원 | Y(QUIZ 계약) | `null` → 1 | 관리자 저장 시 채점 문항 최소 1개, 문항당 1점. 비채점 주관식은 총점에서 제외 |
+| questions[].CorrectAnswer | TEXT QUIZ에서 지원 | Y(채점 TEXT QUIZ) | `null` | 공백 아닌 주관식 정답. 최소 버전에서는 TEXT QUIZ 미제공 |
+| questions[].AnswerMatchMode | TEXT QUIZ에서 지원 | Y(채점 TEXT QUIZ) | `null` | EXACT / CONTAINS |
 | options[].OptionId | 지원 | Y(선택형) | `0` | 응답 OPTION_ID 연결. 양수·문항 내 고유 ID를 서버가 보장 |
 | options[].Value / Text | 지원 | Value N · Text Y(선택형) | `""` | 업무 값(선택)·화면 문구. 응답 식별은 OptionId |
 | options[].IsCorrect | QUIZ에서 지원 | Y(QUIZ 선택형) | `null` | 정답 true, 오답 false를 명시. SURVEY는 채점하지 않음 |
@@ -257,7 +256,7 @@ VIDEO+SURVEY라는 별도 조합은 현재 계약에 없다.
 |---|---|---|
 | 공통 | 단건 순차 표시·크기 모드·9개 위치·폰트·Footer 링크·숨김·Overlay | 최소는 기본 표시 방식·위치·폰트 및 FIXED 중심 |
 | TEXT | 서식 본문(제목·설명 문단 포함)·강조·하단 설명 및 링크 | 최소는 일반 본문(PlainText) 중심 |
-| IMAGE | ADAPTIVE / FIT_TO_IMAGE / ORIGINAL, 이미지 치수·비율·설명·화면 상한 | 최소는 ORIGINAL 및 공통 창 크기 |
+| IMAGE | ADAPTIVE / FIT_TO_IMAGE, 이미지 치수·비율·설명·화면 상한 | 공통 창 크기 |
 | VIDEO | 공통 컨트롤·시청량·음량·전체화면·배속·자동 및 반복 재생 | 최소는 기본 컨트롤·음량·전체화면·완료 비율 중심 |
 | SURVEY | 문항 설명·필수 검증·선택 Row/Chip·주관식 | 최소 제공 범위와 공통 기능 확장 구분 |
 | QUIZ | 객관식·주관식 채점·배점·합격점·재채점 | 최소는 주관식 정답·자동 채점 미제공 |

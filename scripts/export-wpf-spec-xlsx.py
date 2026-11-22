@@ -289,10 +289,9 @@ NOTES = {
         'indent는 0 이상 정수(1단계 = 40, 웹 CSS px·WPF DIP)이며 0이면 키를 생략한다. 줄바꿈된 모든 줄에 같은 여백을 준다.',
     ],
     'IMAGE': [
-        '크기는 popup 최상위 width/height 한 쌍으로 받는다. ADAPTIVE·ORIGINAL은 팝업 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기다.',
+        '크기는 popup 최상위 width/height 한 쌍으로 받는다. ADAPTIVE는 팝업 창 전체, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기다.',
         'ADAPTIVE: 헤더·푸터·제목·설명·여백을 뺀 영역에 이미지 비율을 유지해 표시.',
         'FIT_TO_IMAGE: 이미지 콘텐츠 영역에 부가 영역을 더해 창 크기를 계산. keepAspectRatio=true는 영역 안 비율 유지(여백 가능), false는 영역을 채움.',
-        'ORIGINAL: 왼쪽 위 기준 원본 크기로 표시하고 넘치는 부분은 잘라낸다.',
         '최종 창은 가로·세로 300 이상, 현재 모니터 작업 영역의 90% 이하.',
     ],
     'VIDEO': [

@@ -215,6 +215,7 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   await clickButton('문항 추가'); await pause(800);
   q = (await questions())[0];
   check(q.questionType === 'SINGLE_CHOICE' && q.options.every(o => o.text === ''), 'A new quiz question starts as a multiple choice with empty options');
+  check(q.isScored && q.questionScore === 1 && await run(`!Array.from(document.querySelectorAll('label')).some(l => l.textContent === '배점') && !document.body.textContent.includes('배점 모두 1점')`), 'Standalone editor creates a one-point question without score controls');
   check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 1 && !(await run(`!!document.querySelector('textarea[aria-label="1번 문항 제목"]')`))
     && (await inputValues()).join('|') === '1번 문항 선택지 1=|1번 문항 선택지 2=' && !(await optionNumberShown()), '[2026-11-10] Quiz choice title uses the rich editor; options stay plain without numbers');
   await pick('1번 문항 답안 유형', 'OX형');
@@ -275,6 +276,18 @@ const bold = text => ({alignment: 'LEFT', runs: [{text, bold: true}]});
   check(q[0].options.length === 2 && q[1].correctAnswer === '답' && q[2].description === '기존 설명', 'Loading keeps legacy values untouched');
   check(await run(`document.querySelectorAll('.ck-editor__editable').length`) === 3 && !(await run(`!!document.querySelector('textarea[aria-label$="번 문항 제목"]')`)), '[2026-11-10] Every quiz title (multiple, text, OX) uses the rich editor');
   // 설문: 응답 유형·레이아웃·응답 수(복수 N개 → maxSelections).
+  const choice = {...legacy[2], isScored: true, questionScore: 1};
+  const opinion = {...legacy[1], isScored: false, questionScore: null, correctAnswer: null, answerMatchMode: null};
+  const validateQuiz = (questions, passing) => run(`window.validatePopupQuestions(${JSON.stringify(questions)},true,${passing})`);
+  check((await validateQuiz([opinion], 0))?.includes('채점 문항') && (await validateQuiz([], 0))?.includes('채점 문항'), 'Quiz registration requires a scored question even with a zero passing score');
+  check(await validateQuiz([choice, opinion], 1) === null && (await validateQuiz([choice, opinion], 2))?.includes('통과 점수'), 'An unscored text question leaves the passing ceiling at one');
+  check((await validateQuiz([{...choice, questionScore: 2}], 1))?.includes('1점') && await validateQuiz([{...choice, questionScore: null}], 1) === null, 'Explicit weighted scores are rejected and omitted scores default to one');
+  check((await validateQuiz([{...choice, isScored: false}], 0))?.includes('주관식'), 'Only text quiz questions can be unscored');
+  await run(`window.mountEditor(${JSON.stringify([{...choice, questionScore: 2}, opinion])}, true)`); await waitEditors(2);
+  check(await run(`document.body.textContent.includes('총점 1점 (채점 문항 1개 × 1점)') && document.querySelector('input[type=number]').max === '1'`), 'Standalone total and passing input count scored questions');
+  await pick('2번 문항 답안 유형', 'OX형');
+  q = (await questions())[1];
+  check(q.isScored === true && q.questionScore === 1, 'Converting an unscored text question to OX emits a scored one-point question');
   await run(`window.mountEditor([], false)`); await pause(400);
   await clickButton('문항 추가'); await pause(800);
   await pick('1번 문항 응답 수', '복수 선택');

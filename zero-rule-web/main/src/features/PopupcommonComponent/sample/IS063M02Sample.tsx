@@ -7,7 +7,7 @@ import InlinePopupPreview from '../InlinePopupPreview';
 import PopupPreviewDialog from '../PopupPreviewDialog';
 import PopupQuestionEditor from '../PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupQuizRuleFields';
-import { QUIZ_QUESTION_SCORE, usePopupQuizRule } from '../popupQuizRule';
+import { usePopupQuizRule } from '../popupQuizRule';
 import { richBlocksOrNull } from '../PopupRichBlocks';
 import PopupRichTextEditor from '../PopupRichTextEditor';
 import type { Size } from '../imagePreviewLayout';
@@ -31,7 +31,7 @@ import {
  *  - 크기 placeholder '최소 200' → 공통 최소 300.
  * 사진에 없던 업무 정책은 정하지 않는다: '컨텐츠 명'은 현재 저장 계약에 대응 필드가 없어 화면 값으로만 둔다(서버 확정 필요).
  * [실연동] 퀴즈 유형·답안 유형 목록은 샘플용 값이다. loadPopupQuestionCodes(api.clCode.search) 결과를 PopupQuizRuleFields options·PopupQuestionEditor answerTypeOptions로 넘긴다.
- * [확정] 퀴즈 점수: 문항은 무조건 1점(총점 = 문항 수). 만점 통과 = 통과 점수 문항 수(10문항 → 10점),
+ * [확정] 퀴즈 점수: 채점 문항당 1점(총점 = 채점 문항 수). 만점형의 통과 점수 = 채점 문항 수,
  * 커트라인 통과 = N개 이상 통과(7개 → 통과 점수 7점). [확정] 만점형·컷트라인형은 미달(실패)이면 제출하지 못한다
  * (WPF: 점수 안내 후 창 유지·답 수정 후 다시 채점, 통과 시에만 SUBMITTED 결과). 참여형도 기준 N개(통계용 합격 기준)를 입력하며
  * 미달이어도 제출하면 완료된다(passed만 false). 저장 값은 기준 점수 passingScore와 퀴즈 유형 코드 quizTypeCode(0090: 00·01·02)다.
@@ -109,7 +109,7 @@ export default function IS063M02Sample() {
   const hasVideo = popup?.popupType === 'VIDEO' || popup?.content.videoEnabled === true;
   const footerAction = popup && isSubmitPopupType(popup.popupType) ? 'SUBMIT' : (popup && contentText(popup, 'footerAction')) || 'CLOSE';
   const isQuiz = popup?.popupType === 'QUIZ';
-  /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 문항 수, 참여형·커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
+  /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 채점 문항 수, 참여형·커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
    * 신규·불러오기(editorKey 변경) 때 저장된 퀴즈 유형 코드(없으면 통과 점수)로 유형을 복원하고, 미리보기·저장에는 규칙을 적용한 effective를 보낸다. */
   const quiz = usePopupQuizRule(popup, editorKey);
   const effective = quiz.effective;
@@ -294,14 +294,14 @@ export default function IS063M02Sample() {
                     onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
                 </Stack>
                 {isQuiz && <Box sx={{ mt: 1 }}>
-                  <PopupQuizRuleFields className="nConSectionDiv" titlePrefix={<Required />} questionCount={popup.questions.length}
+                  <PopupQuizRuleFields className="nConSectionDiv" titlePrefix={<Required />} questionCount={quiz.scoredCount}
                     rule={quiz.rule} count={quiz.count} passingScore={effective?.passingScore} onRuleChange={quiz.setRule} onCountChange={quiz.setCount} />
                 </Box>}
                 {/* 원본의 문항별 하드코딩 블록·공유 라디오 state 대신 공통 문항 편집기가 문항·선택지·정답을 각각 관리한다.
-                    [확정] 퀴즈 배점은 1점 고정이라 배점 입력을 숨기고(fixedQuestionScore), 통과 점수는 퀴즈유형에서 계산한다(hidePassingScore). */}
+                    [확정] 채점 문항은 1점이며, 통과 점수는 퀴즈유형에서 계산한다(hidePassingScore). */}
                 <Box className="nQuizBox" sx={{ mt: 1, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                   <PopupQuestionEditor key={`questions-${editorKey}`} questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={effective?.passingScore}
-                    fixedQuestionScore={QUIZ_QUESTION_SCORE} hidePassingScore
+                    hidePassingScore
                     onPassingScoreChange={(score) => update('passingScore', score)} onChange={(questions) => update('questions', questions)} />
                 </Box>
               </>

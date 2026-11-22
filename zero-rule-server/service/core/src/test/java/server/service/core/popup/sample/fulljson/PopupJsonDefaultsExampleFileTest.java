@@ -61,7 +61,7 @@ class PopupJsonDefaultsExampleFileTest {
                 # - null 값 키(headerFontSize·bodyFontSize·footerFontSize·hideDays)는 "WPF 기본/미사용"을 뜻하는 유효한 기본값이다.
                 # - 기본값이 없는 선택 키는 블록에 없다: 본문 문구(description·videoTitle 등), QUIZ passingScore(생략 = 통과 점수 없음),
                 #   footerLinkUrl(LINK_AND_CLOSE일 때만). completionRatio는 VIDEO·영상 QUIZ에만 있다(기본 VIDEO 1.0, 영상 QUIZ 0.8).
-                # - IMAGE는 width/height를 채우지 않는다(크기 미지정 = 원본 기준). ORIGINAL 모드는 width/height가 필수다.
+                # - IMAGE는 width/height를 채우지 않는다(크기 미지정 = 원본 기준).
                 # - SURVEY·QUIZ의 footerAction은 SUBMIT 고정, 그 밖의 유형은 CLOSE(LINK_AND_CLOSE는 footerLinkUrl 필수).
                 # - 영상 QUIZ는 별도 유형이 아니라 popupType=QUIZ + content.videoEnabled=true이며 VIDEO content 기본값을 함께 갖는다.
                 # - SURVEY 정답 키는 저장 시 유지되고 WPF 조회 응답에서만 제거된다.

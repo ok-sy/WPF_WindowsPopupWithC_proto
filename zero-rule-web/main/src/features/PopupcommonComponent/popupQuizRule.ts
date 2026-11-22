@@ -19,11 +19,20 @@ export const QUIZ_RULES: { value: Exclude<QuizRule, ''>; suffix?: string }[] = [
  */
 export const PARTICIPATION_PASSING_SCORE = 0;
 
-/** [확정] 퀴즈 문항 배점. 모든 문항 1점이라 총점 = 문항 수다. */
+/** [확정] 퀴즈 채점 문항당 배점. 비채점 주관식은 총점에서 제외한다. */
 export const QUIZ_QUESTION_SCORE = 1;
+export const SCORED_QUESTION_REQUIRED = '퀴즈에는 채점 문항을 한 개 이상 추가해 주세요.';
 
 /** 퀴즈 규칙이 읽는 값. 등록 화면(AdminPopupDetail)과 미설정 기준 샘플 state(passingScore·quizTypeCode 생략 가능)를 함께 받는다. */
 export type QuizRuleTarget = Pick<AdminPopupDetail, 'popupType' | 'questions'> & { passingScore?: number | null; quizTypeCode?: string | null };
+
+export function isScoredQuizQuestion(question: QuizRuleTarget['questions'][number]): boolean {
+  return question.isScored === true;
+}
+
+export function scoredQuestionCount(questions: QuizRuleTarget['questions']): number {
+  return questions.filter(isScoredQuizQuestion).length;
+}
 
 /**
  * POL-06-02 : 선택·제출
@@ -48,7 +57,7 @@ export function quizRequiresPassing(popup: Pick<QuizRuleTarget, 'popupType' | 'q
  *   기존 참여형(0점)은 기준 개수 1로 보이며 다시 저장하면 passingScore 1·quizTypeCode '00'이 된다.
  */
 export function readQuizRule(popup: QuizRuleTarget): { rule: QuizRule; count: number } {
-  const total = popup.questions.length;
+  const total = scoredQuestionCount(popup.questions);
   const score = popup.passingScore;
   if (popup.popupType !== 'QUIZ') return { rule: '', count: 1 };
   const countOf = (value: number | null | undefined) => (typeof value === 'number' && Number.isFinite(value) && value >= 1 ? Math.round(value) : 1);
@@ -64,14 +73,17 @@ export function readQuizRule(popup: QuizRuleTarget): { rule: QuizRule; count: nu
  * ■ 퀴즈 점수 규칙 적용
  * - in : popup(AdminPopupDetail) 편집값 · rule(QuizRule) 퀴즈유형 · count(number) 기준 개수
  * - out: AdminPopupDetail 규칙을 적용한 새 객체(입력 객체는 바꾸지 않음). QUIZ가 아니면 입력 그대로
- * - 편집값을 받아 모든 문항을 1점·채점 대상으로 맞추고 통과 점수(만점형 = 문항 수, 참여형·컷트라인형 = N(문항 수 이하))와
+ * - 편집값을 받아 비채점 주관식을 보존하고 채점 문항을 1점으로 맞춰 통과 점수(만점형 = 채점 문항 수, 참여형·컷트라인형 = N(채점 문항 수 이하))와
  *   퀴즈 유형 코드(quizTypeCode: 참여형 '00', 만점형 '01', 컷트라인형 '02', 미선택 null)를 넣는다.
  *   미리보기와 저장 요청에 이 결과를 보낸다. 컷트라인형·만점형 미달이면 WPF가 제출하지 않고 다시 풀게 하고, 참여형은 미달이어도 제출·완료한다.
  */
 export function withQuizRule<T extends QuizRuleTarget>(popup: T, rule: QuizRule, count: number): T {
   if (popup.popupType !== 'QUIZ') return popup;
-  const questions = popup.questions.map((question) => ({ ...question, isScored: true, questionScore: QUIZ_QUESTION_SCORE }));
-  const passingScore = rule === 'FULL' ? questions.length : rule ? Math.min(count, questions.length) : null;
+  const questions = popup.questions.map((question) => isScoredQuizQuestion(question)
+    ? { ...question, isScored: true, questionScore: QUIZ_QUESTION_SCORE }
+    : { ...question, questionScore: null, correctAnswer: null, answerMatchMode: null });
+  const total = scoredQuestionCount(popup.questions);
+  const passingScore = rule === 'FULL' ? total : rule ? Math.min(count, total) : null;
   const quizTypeCode = rule ? QUIZ_RULE_TO_TYPE_CODE[rule] : null;
   return { ...popup, questions, passingScore, quizTypeCode };
 }
@@ -81,15 +93,17 @@ export function withQuizRule<T extends QuizRuleTarget>(popup: T, rule: QuizRule,
  * ■ 퀴즈 규칙 저장 전 검사
  * - in : popup(AdminPopupDetail) · rule(QuizRule) · count(number)
  * - out: string | null 오류 문구(없으면 null)
- * - 퀴즈유형 선택 여부와 기준 개수(1~문항 수 정수)를 검사한다. 기준 개수는 참여형(통계용 합격 기준)·컷트라인형이 쓰고 만점형은 쓰지 않는다.
+ * - 채점 문항 최소 1개, 퀴즈유형 선택 여부와 기준 개수(1~채점 문항 수 정수)를 검사한다. 기준 개수는 참여형(통계용 합격 기준)·컷트라인형이 쓴다.
  *   QUIZ가 아니면 항상 null.
  */
 export function validateQuizRule(popup: QuizRuleTarget, rule: QuizRule, count: number): string | null {
   if (popup.popupType !== 'QUIZ') return null;
+  const total = scoredQuestionCount(popup.questions);
+  if (total === 0) return SCORED_QUESTION_REQUIRED;
   if (!rule) return '퀴즈유형을 선택해 주세요.';
   if (rule === 'CUTOFF' || rule === 'PARTICIPATION') {
     if (!Number.isInteger(count) || count < 1) return '통과 기준은 1개 이상의 정수로 입력해 주세요.';
-    if (count > popup.questions.length) return rule === 'CUTOFF'
+    if (count > total) return rule === 'CUTOFF'
       ? '커트라인 점수보다 문항 수가 적습니다. 커트라인 점수를 확인해 주세요.'
       : '합격 기준 개수보다 문항 수가 적습니다. 합격 기준 개수를 확인해 주세요.';
   }
@@ -115,5 +129,5 @@ export function usePopupQuizRule<T extends QuizRuleTarget>(popup: T | null, rese
   }, [resetKey]);
   const effective = popup ? withQuizRule(popup, rule, count) : null;
   const error = popup ? validateQuizRule(popup, rule, count) : null;
-  return { rule, count, setRule, setCount, effective, error };
+  return { rule, count, setRule, setCount, effective, error, scoredCount: popup ? scoredQuestionCount(popup.questions) : 0 };
 }

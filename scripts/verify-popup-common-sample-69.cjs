@@ -233,7 +233,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(quizWide.title <= 40 && quizWide.selectH <= 40, '[69-12·13] Question title and select heights are compact: ' + JSON.stringify(quizWide));
   check(optionWide.sameLine && optionWide.edit <= 40 && optionWide.height <= 40 && optionWide.number === '1번 문항 선택지 1' && optionWide.shortLabel === null, '[69-14] Option input and delete share one line, no auto number in the input (2026-11-10): ' + JSON.stringify(optionWide));
   check(optionWide.del.w >= 32 && optionWide.del.h >= 32, '[69-16] Option delete keeps a 32px click target: ' + JSON.stringify(optionWide.del));
-  check(await run(`Array.from(${mid}.querySelectorAll('button')).filter(b=>['선택지 추가','문항 추가'].includes(b.textContent.trim())).every(b=>getComputedStyle(b.textContent.trim()==='문항 추가'?b.parentElement:b).alignSelf==='flex-start')`), '[69-16] Add buttons align to the same start edge (문항 추가 is wrapped with its 30-question notice, TODO73-23)');
+  const addButtons = await run(`Array.from(${mid}.querySelectorAll('button')).filter(b=>['선택지 추가','문항 추가'].includes(b.textContent.trim())).map(b=>{
+    const name=b.textContent.trim(), row=name==='문항 추가'?b.parentElement.parentElement:b.parentElement;
+    const style=getComputedStyle(row), start=row.getBoundingClientRect().left+parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft);
+    return {name,offset:b.getBoundingClientRect().left-start};
+  })`);
+  check(new Set(addButtons.map(b=>b.name)).size === 2 && addButtons.every(b=>Math.abs(b.offset)<1), '[69-16] Add buttons align to the start of their containers: ' + JSON.stringify(addButtons));
   await send('Emulation.setDeviceMetricsOverride', {width: 1024, height: 950, deviceScaleFactor: 1, mobile: false}); await pause(300);
   const quizNarrow = await measureMid(), optionNarrow = await measureOption();
   console.log('[69 density] quiz@1024', JSON.stringify(quizNarrow), JSON.stringify(optionNarrow));

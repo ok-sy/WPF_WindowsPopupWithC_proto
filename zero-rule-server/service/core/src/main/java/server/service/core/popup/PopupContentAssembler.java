@@ -87,16 +87,11 @@ public class PopupContentAssembler {
                 String mode = String.valueOf(content.getOrDefault("imageSizeMode", "ADAPTIVE")).trim().toUpperCase(java.util.Locale.ROOT);
                 if ("FILL".equals(mode)) mode = "ADAPTIVE";
                 content.put("imageSizeMode", mode);
-                if (!"ORIGINAL".equals(mode)) {
-                    if (!content.containsKey("width")) content.put("width", "FIT_TO_IMAGE".equals(mode)
-                        ? positiveLegacy(content.get("imageWidth")) : popup.popupWidth());
-                    if (!content.containsKey("height")) content.put("height", "FIT_TO_IMAGE".equals(mode)
-                        ? positiveLegacy(content.get("imageHeight")) : popup.popupHeight());
-                    if ("FIT_TO_IMAGE".equals(mode)) content.putIfAbsent("keepAspectRatio", true);
-                } else {
-                    content.remove("width");
-                    content.remove("height");
-                }
+                if (!content.containsKey("width")) content.put("width", "FIT_TO_IMAGE".equals(mode)
+                    ? positiveLegacy(content.get("imageWidth")) : popup.popupWidth());
+                if (!content.containsKey("height")) content.put("height", "FIT_TO_IMAGE".equals(mode)
+                    ? positiveLegacy(content.get("imageHeight")) : popup.popupHeight());
+                if ("FIT_TO_IMAGE".equals(mode)) content.putIfAbsent("keepAspectRatio", true);
                 List.of("imageWidth", "imageHeight", "descriptionPosition", "imageAreaRatio").forEach(content::remove);
                 if (!"FIT_TO_IMAGE".equals(mode)) content.remove("keepAspectRatio");
                 content.put("imageTitle", popup.contentTitle());

@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class PopupJsonValidator {
 
     /** 규칙·기본값을 바꾸면 올린다. 저장 이력·오류 응답에 함께 남길 수 있다. */
-    public static final String POLICY_VERSION = "3117-REG-2026-11-03";   // 2026-11-03: 영상+퀴즈 completionRatio 기본 0.8(PU001 B-7)
+    public static final String POLICY_VERSION = "3117-REG-2026-11-22";
 
     private static final Set<String> SERVER_OWNED_KEYS = Set.of("deliveryId", "pollingIntervalSeconds");
     /** content 안에 들어올 수 있는 최상위 창·푸터 옵션(조회 샘플과 같은 호환 규칙). */
@@ -230,7 +230,7 @@ public class PopupJsonValidator {
         }
     }
 
-    /** 유형별 필수 콘텐츠와 IMAGE ORIGINAL 크기. */
+    /** 유형별 필수 콘텐츠. */
     private static void checkRequired(String type, boolean video, ObjectNode work, ObjectNode content, ArrayNode questions, List<PopupJsonIssue> errors) {
         switch (type) {
             case "TEXT" -> {
@@ -240,14 +240,19 @@ public class PopupJsonValidator {
             }
             case "IMAGE" -> {
                 if (content.path("imageUrl").asText("").isBlank()) errors.add(missing("$.content.imageUrl", "이미지 URL이 필요합니다."));
-                if ("ORIGINAL".equals(content.path("imageSizeMode").asText())) {
-                    for (String key : List.of("width", "height")) {
-                        if (!work.hasNonNull(key)) errors.add(missing("$." + key, "IMAGE ORIGINAL은 width/height가 필요합니다."));
+            }
+            case "SURVEY" -> {
+                if (questions.isEmpty()) errors.add(missing("$.questions", "SURVEY는 문항이 1개 이상 필요합니다."));
+            }
+            case "QUIZ" -> {
+                boolean hasScoredQuestion = false;
+                for (JsonNode question : questions) {
+                    if (question.path("isScored").booleanValue()) {
+                        hasScoredQuestion = true;
+                        break;
                     }
                 }
-            }
-            case "SURVEY", "QUIZ" -> {
-                if (questions.isEmpty()) errors.add(missing("$.questions", type + "는 문항이 1개 이상 필요합니다."));
+                if (!hasScoredQuestion) errors.add(missing("$.questions", "퀴즈에는 채점 문항을 한 개 이상 추가해 주세요."));
             }
             default -> { }
         }
