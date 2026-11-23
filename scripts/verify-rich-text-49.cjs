@@ -415,6 +415,42 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const roundTrip = await run(`(()=>{const b=[{alignment:'LEFT',runs:[{text:'a',bold:true,italic:true,font:'YouandiNewKr Text'},{text:'b',italic:true}]}];return JSON.stringify(window.htmlToBlocks(window.blocksToHtml(b))[0].runs)===JSON.stringify(b[0].runs);})()`);
   check(roundTrip, '[28-16] blocksToHtml → htmlToBlocks keeps font, bold and italic');
   await run(`document.getElementById('global-reset-16').remove();document.getElementById('probe-16').remove()`);
+  // [TODO28-15] 별칭 하나에 굵기별 @font-face + src: local(...)를 연결한 폐쇄망 구조를 로컬 Windows 글꼴로 재현하고, 브라우저가 실제로 고른 서체를 기록한다.
+  // 같은 패밀리(Arial Regular/Bold), 굵기별 다른 패밀리(Georgia/Arial Bold), Modern형(200·300·500·700, 400 없음), NewKr형(300·400·500, 700 없음).
+  // WPF 쪽 실제 서체는 scripts/RichTextTests CheckFontWeight28_15가 같은 구성을 측정한다. 결과: .offline-verify/rich49/font-weight-28-15.json
+  await send('DOM.enable'); await send('CSS.enable'); await send('DOM.getDocument', {depth: 0});
+  await run(`(()=>{const s=document.createElement('style');s.id='faces-15';s.textContent=[
+    ['PopTestSame',400,'Arial'],['PopTestSame',700,'Arial Bold'],['PopTestSplit',400,'Georgia'],['PopTestSplit',700,'Arial Bold'],
+    ['PopTestModern',200,'Segoe UI Light'],['PopTestModern',300,'Segoe UI Semilight'],['PopTestModern',500,'Segoe UI Semibold'],['PopTestModern',700,'Segoe UI Bold'],
+    ['PopTestNewKr',300,'Segoe UI Semilight'],['PopTestNewKr',400,'Segoe UI'],['PopTestNewKr',500,'Segoe UI Semibold']]
+    .map(([f,w,l])=>"@font-face{font-family:"+f+";font-weight:"+w+";src:local('"+l+"')}").join(' ');document.head.appendChild(s);})()`);
+  await run(`window.registerPopupRichFonts([{family:'Arial',css:'PopTestSame, sans-serif',label:'같은 패밀리'},{family:'Georgia',css:'PopTestSplit, serif',label:'다른 패밀리'},
+    {family:'Segoe UI',css:'PopTestModern, sans-serif',label:'Modern형'},{family:'Segoe UI Semilight',css:'PopTestNewKr, sans-serif',label:'NewKr형'}])`);
+  const weightFonts = [['same','Arial'],['split','Georgia'],['modern','Segoe UI'],['newkr','Segoe UI Semilight']];
+  const weightBlocks = [{alignment:'LEFT',runs:weightFonts.flatMap(([k,f])=>[{text:k+'R',font:f},{text:' | '},{text:k+'B',font:f,bold:true},{text:' | '}])}];
+  await run(`window.mount(${JSON.stringify(weightBlocks)},false,${JSON.stringify(weightBlocks)})`); await waitEditor(); await pause(300);
+  await run('document.fonts.ready');
+  const usedFont = async (scope, text) => {
+    const {result} = await send('Runtime.evaluate', {expression: `Array.from(document.querySelectorAll(${JSON.stringify(scope + ' *')})).filter(x=>x.textContent.trim()===${JSON.stringify(text.trim())}).pop()`});
+    if (!result.objectId) return null;
+    const {nodeId} = await send('DOM.requestNode', {objectId: result.objectId});
+    const {fonts} = await send('CSS.getPlatformFontsForNode', {nodeId});
+    return fonts.map(f => f.postScriptName || f.familyName).join(';');
+  };
+  const measured = {};
+  for (const [k] of weightFonts) for (const w of ['R','B']) measured[k+w] = {editor: await usedFont('.ck-content', k+w), preview: await usedFont('#preview', k+w)};
+  fs.writeFileSync(path.join(output, 'font-weight-28-15.json'), JSON.stringify(measured, null, 2));
+  console.log('[28-15] browser faces ' + JSON.stringify(measured));
+  check(Object.values(measured).every(m => m.editor && m.editor === m.preview), '[28-15] editor and preview pick the same face for every alias/weight: ' + JSON.stringify(measured));
+  check(/Arial(MT|-)?$|ArialMT/.test(measured.sameR.preview) && /Arial-BoldMT/.test(measured.sameB.preview), '[28-15] same-family alias: Regular → Arial, Bold → Arial Bold');
+  check(/Georgia$/.test(measured.splitR.preview) && /Arial-BoldMT/.test(measured.splitB.preview), '[28-15] split alias: Regular → Georgia, Bold → Arial Bold (another family)');
+  const stored15 = (await blocks())?.[0]?.runs ?? null;
+  await run(`(()=>{const e=window.editor();e.model.change(w=>w.insertText('.',e.model.createPositionAt(e.model.document.getRoot().getChild(0),'end')));})()`); await pause(150);
+  const kept15 = (await blocks())[0].runs.map(r => [r.text.trim(), r.font ?? null, r.bold ?? false]);
+  const want15 = weightBlocks[0].runs.map(r => [r.text.trim(), r.font ?? null, r.bold ?? false]); want15[want15.length - 1][0] = '| .';
+  check(JSON.stringify(kept15) === JSON.stringify(want15),
+    '[28-15] re-edit keeps the Windows family name and bold for every alias (contract font+bold): ' + JSON.stringify(kept15) + ' ' + JSON.stringify(stored15));
+  await run(`document.getElementById('faces-15').remove()`);
   await run(`window.registerPopupRichFonts([])`);
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});

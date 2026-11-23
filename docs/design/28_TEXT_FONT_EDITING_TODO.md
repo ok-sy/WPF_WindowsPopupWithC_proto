@@ -346,6 +346,24 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 
 Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재현 코드, 타입 검사·빌드, 저장 왕복, Windows Agent 및 폐쇄망 실화면 검증은 이 TODO의 후속 작업이다.
 
+### 로컬 실측 (2026-11-23)
+
+- 재현 · `scripts/verify-rich-text-49.cjs` [28-15]가 별칭 하나에 굵기별 `@font-face` + `src: local(...)`를 선언하고 `registerPopupRichFonts()`로 Windows 패밀리와 연결한다. 실제 편집기·미리보기에서 Chromium이 고른 서체를 DevTools 프로토콜 `CSS.getPlatformFontsForNode`로 기록한다. WPF는 `scripts/RichTextTests` `CheckFontWeight28_15`가 같은 저장값(`font` + `bold`)을 `PopupFactory` 경로로 그려 `Typeface`·`GlyphTypeface`의 패밀리·서체·굵기와 굵게 시 잉크 양을 기록한다. 결과 파일은 `.offline-verify/rich49/font-weight-28-15*.json`.
+- 별칭은 설치 패밀리와 다른 이름(`PopTest*`)이라 WPF에서 우연히 해석되지 않는다. 회사 글꼴 없이 Arial·Georgia·Segoe UI로 재현했다.
+
+| 구성 | CSS 선언(별칭 → local) | 저장 `font` | 웹 일반 / 굵게 (편집기 = 미리보기) | WPF 일반 / 굵게 | 판정 |
+|---|---|---|---|---|---|
+| 같은 패밀리 | 400 Arial, 700 Arial Bold | `Arial` | ArialMT / Arial-BoldMT | Arial Regular / Arial Bold | 일치 |
+| 다른 패밀리 | 400 Georgia, 700 Arial Bold | `Georgia` | Georgia / Arial-BoldMT | Georgia Regular / Georgia Bold | 굵게 불일치 |
+| Modern형(400 없음) | 200 Light, 300 Semilight, 500 Semibold, 700 Bold | `Segoe UI` | **Segoe UI Semibold(500)** / Segoe UI Bold | Segoe UI Regular(400) / Bold | 일반 불일치(웹이 500을 골라 더 굵음) |
+| NewKr형(700 없음) | 300 Semilight, 400 Regular, 500 Semibold | `Segoe UI Semilight` | Segoe UI(400) / **Segoe UI Semibold(500)** | Semilight 350 / Semilight 350(잉크 동일 — 굵게 표시 안 됨) | 일반·굵게 모두 저장 패밀리 선택에 좌우 |
+
+- 공통 · 네 구성 모두 편집기와 인라인 미리보기가 같은 서체를 골랐고, 재편집 후에도 `font`(Windows 패밀리)·`bold`가 그대로 보존됐다(계약 왕복 정상). `span`/`strong`/`em` 중첩 순서와 무관하게 같은 Run이 된다(§16 검사).
+- 해석 · 기존 계약(A)은 **CSS 별칭의 400·700이 같은 Windows 패밀리의 Regular·Bold를 가리킬 때** 웹·WPF가 같은 서체를 고른다. 400이 없는 선언(Modern형)은 브라우저 CSS 규칙상 일반체에 500을 쓰므로 계약과 무관하게 웹이 더 굵어진다 — 차이를 없애려면 웹 선언에 400을 추가하거나 차이를 허용해야 한다. 700이 없는 선언(NewKr형)은 웹 굵게가 500으로 표시된다. WPF는 저장 패밀리에 Bold 서체가 없으면(측정한 Segoe UI Semilight처럼) 굵게가 보이지 않을 수 있다.
+- 폐쇄망 확인 방법 · ① PC에서 `powershell -ExecutionPolicy Bypass -File scripts\list-wpf-font-faces.ps1 -Filter Youandi`로 WPF가 보는 패밀리·서체·굵기를 확인한다(같은 `Family`에 400과 700이 함께 있으면 A로 충분). ② 관리자 웹 DevTools Elements → Computed → Rendered Fonts로 일반·굵게 글자의 실제 서체를 확인한다. ③ 두 결과를 위 표 형식으로 기록하고, 불일치가 있을 때만 '구현 전에 결정할 사항'의 A/B를 판단한다.
+- 코드 변경 없음 · 실측 범위에서는 웹 변환·등록·WPF `ResolveFont()`/`CreateRun()` 수정이 필요한 결함이 없었다. 남은 판단은 폐쇄망 설치 글꼴의 실제 패밀리 구성에 달려 있다.
+- 미실행 · 폐쇄망 회사 글꼴 실측, 서버 저장→재조회(Java 저장·검증 테스트는 기존 결과 유지, 이번에 다시 돌리지 않음), Windows Agent 실화면 캡처, 로그인 관리자 화면.
+
 ## 16. CKEditor 기울임 표시와 서식 회귀 검증
 
 - 상태 · 구현 전

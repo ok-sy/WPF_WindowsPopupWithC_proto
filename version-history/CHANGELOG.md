@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-10 — dev: 28_굵기별글꼴_로컬실측_추가
+
+- 이유 · TODO28 §15 — 폐쇄망의 CSS 별칭 하나에 굵기별 `@font-face`·`local()`를 연결한 구조에서 편집기·미리보기·WPF가 같은 서체를 고르는지 로컬에서 재현·실측할 필요.
+- 변경 · `verify-rich-text-49.cjs`에 [28-15] 측정 추가(같은 패밀리·굵기별 다른 패밀리·400 없는 Modern형·700 없는 NewKr형, 실제 사용 서체를 `CSS.getPlatformFontsForNode`로 기록, 편집기=미리보기·재편집 보존 검사). `scripts/RichTextTests`에 `CheckFontWeight28_15`(같은 저장값의 WPF 서체·굵기·잉크 양 측정). 폐쇄망 PC용 `scripts/list-wpf-font-faces.ps1`(WPF 기준 패밀리·서체·굵기 나열) 추가. TODO28 §15에 실측 표·해석·폐쇄망 확인 방법 기록. 제품 코드 변경 없음.
+- 주요 파일 · `scripts/verify-rich-text-49.cjs`, `scripts/RichTextTests/Program.cs`, `scripts/list-wpf-font-faces.ps1`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`.
+- 검증 · `verify-rich-text-49` 107건, `RichTextTests` 127건 통과. 실측: 같은 패밀리는 웹·WPF 일치, 굵기별 다른 패밀리는 굵게 불일치, Modern형은 웹 일반체가 500, NewKr형은 웹 굵게가 500·WPF Semilight 굵게 미표시. `list-wpf-font-faces.ps1 -Filter "Segoe UI"` 로컬 실행 확인. 폐쇄망 회사 글꼴 실측·서버 왕복·실화면은 미실행.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-23-09 — dev: 28_CKEditor기울임표시_수정
 
 - 이유 · 폐쇄망 전역 스타일 `em, i { font-style: normal }`이 팝업 서식 편집기 본문의 기울임 표시를 덮는 현상(TODO28 §16). 팝업 편집기는 공용 `CommonCKEditor`를 거치지 않아 그쪽 `sx` 보완이 적용되지 않았다.

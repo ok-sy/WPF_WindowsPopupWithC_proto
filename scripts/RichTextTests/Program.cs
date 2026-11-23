@@ -45,7 +45,8 @@ internal static class Program
         CheckItalicOverhang38();
         CheckSurveyRichText55();
         CheckStrikethrough62();
-        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO55·62)");
+        CheckFontWeight28_15();
+        Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO28-15·55·62)");
     }
 
     private static void CheckStrikethrough62()
@@ -583,5 +584,77 @@ internal static class Program
             catch (TargetInvocationException e) when (e.InnerException is ArgumentException) { Check(true, "Demo rejects indent " + bad); }
         }
         demoEditor.Close();
+    }
+
+    /*
+     * POL-03-02 : 문단·글자 서식
+     * ■ [TODO28-15] 저장 계약(runs[].font = Windows 패밀리, bold)으로 WPF가 실제 고르는 서체 측정
+     * - 관리자 웹 verify-rich-text-49 [28-15]와 같은 구성(같은 패밀리 Arial, 굵기별 다른 패밀리 Georgia/Arial Bold,
+     *   Modern형 Segoe UI, NewKr형 Segoe UI Semilight)의 저장값을 실제 PopupFactory 경로로 그려 Typeface 결과를 기록한다.
+     * - 결과는 .offline-verify/rich49/font-weight-28-15-wpf.json. 웹과의 차이는 기록·판단 대상이며 여기서는 WPF 동작만 고정한다.
+     */
+    private static void CheckFontWeight28_15()
+    {
+        string[] families = { "Arial", "Georgia", "Segoe UI", "Segoe UI Semilight" };
+        var blocks = new System.Text.Json.Nodes.JsonArray();
+        var runs = new System.Text.Json.Nodes.JsonArray();
+        foreach (string family in families)
+        {
+            runs.Add(new System.Text.Json.Nodes.JsonObject { ["text"] = family + " R", ["font"] = family });
+            runs.Add(new System.Text.Json.Nodes.JsonObject { ["text"] = " | " });
+            runs.Add(new System.Text.Json.Nodes.JsonObject { ["text"] = family + " B", ["font"] = family, ["bold"] = true });
+            runs.Add(new System.Text.Json.Nodes.JsonObject { ["text"] = " | " });
+        }
+        blocks.Add(new System.Text.Json.Nodes.JsonObject { ["alignment"] = "LEFT", ["runs"] = runs });
+        var dto = DemoPopupDataService.CreatePopups().Single(p => p.PopupId == "DEMO-TEXT-001");
+        var content = System.Text.Json.Nodes.JsonNode.Parse(dto.Content.GetRawText())!.AsObject();
+        content["textBlocks"] = blocks;
+        dto.Content = JsonSerializer.SerializeToElement(content);
+        var view = (TextPopupView)PopupFactory.Create(dto).Content!;
+        var all = ((StackPanel)view.FindName("RichTextPanel")).Children.OfType<TextBlock>().Single().Inlines.OfType<Run>().ToList();
+        var measured = new Dictionary<string, string>();
+        foreach (Run run in all.Where(r => r.Text.Trim() != "|"))
+        {
+            // 대체 목록("이름, 기본 글꼴")의 첫 패밀리가 설치돼 있으면 그 패밀리에서 굵기·기울임에 맞는 서체를 고른다.
+            string first = run.FontFamily.Source.Split(',')[0].Trim();
+            var typeface = new Typeface(new FontFamily(first), run.FontStyle, run.FontWeight, run.FontStretch);
+            Check(typeface.TryGetGlyphTypeface(out GlyphTypeface glyph), "[28-15] WPF resolves an installed face for " + run.Text);
+            var en = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+            string Name(IDictionary<System.Globalization.CultureInfo, string> names) => names.TryGetValue(en, out string? v) ? v : names.Values.FirstOrDefault() ?? "";
+            string face = Name(glyph.Win32FamilyNames) + " / " + Name(glyph.Win32FaceNames) + " / " + glyph.Weight
+                + (glyph.StyleSimulations.HasFlag(StyleSimulations.BoldSimulation) || typeface.IsBoldSimulated ? " (bold simulated)" : "");
+            // 합성 굵게는 GlyphTypeface 플래그에 드러나지 않을 수 있어, 같은 문구를 일반 굵기로 그린 너비와 비교한다(굵게 합성 시 넓어짐).
+            double Width(FontWeight weight) => new FormattedText("Weight sample 0123 가나다", en, FlowDirection.LeftToRight,
+                new Typeface(new FontFamily(first), run.FontStyle, weight, run.FontStretch), 20, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace;
+            // 잉크 양: 같은 문구를 실제로 그려 어두운 픽셀 수를 비교한다(합성 굵게는 획을 두껍게 그려 잉크가 늘어남).
+            double Ink(FontWeight weight)
+            {
+                var text = new FormattedText("Weight sample 0123 가나다", en, FlowDirection.LeftToRight,
+                    new Typeface(new FontFamily(first), run.FontStyle, weight, run.FontStretch), 20, Brushes.Black, 1.0);
+                var visual = new DrawingVisual();
+                using (var dc = visual.RenderOpen()) { dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, 400, 40)); dc.DrawText(text, new Point(4, 4)); }
+                var bitmap = new RenderTargetBitmap(400, 40, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+                var pixels = new byte[400 * 40 * 4]; bitmap.CopyPixels(pixels, 400 * 4, 0);
+                double ink = 0; for (int i = 0; i < pixels.Length; i += 4) ink += 255 - pixels[i + 1];
+                return ink;
+            }
+            measured[run.Text] = face + $" / width x{Width(run.FontWeight) / Width(FontWeights.Normal):0.000} / ink x{Ink(run.FontWeight) / Ink(FontWeights.Normal):0.000}";
+        }
+        Directory.CreateDirectory(Path.Combine(RepoRoot(), ".offline-verify", "rich49"));
+        File.WriteAllText(Path.Combine(RepoRoot(), ".offline-verify", "rich49", "font-weight-28-15-wpf.json"),
+            JsonSerializer.Serialize(measured, new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+        Console.WriteLine("[28-15] WPF faces " + string.Join(" ; ", measured.Select(m => m.Key + " => " + m.Value)));
+        Check(all.Single(r => r.Text == "Arial B").FontWeight == FontWeights.Bold && all.Single(r => r.Text == "Arial R").FontWeight == FontWeights.Normal,
+            "[28-15] bold flag maps to FontWeights.Bold, plain to Normal");
+        Check(measured["Arial R"].StartsWith("Arial / Regular / Normal") && measured["Arial B"].StartsWith("Arial / Bold") && !measured["Arial B"].Contains("simulated"),
+            "[28-15] same family: Regular and real Bold face");
+        Check(measured["Georgia B"].StartsWith("Georgia / Bold"), "[28-15] split alias: WPF stays in the stored family (Georgia Bold), unlike the browser alias");
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "AGENTS.md"))) dir = dir.Parent;
+        return dir?.FullName ?? Directory.GetCurrentDirectory();
     }
 }
