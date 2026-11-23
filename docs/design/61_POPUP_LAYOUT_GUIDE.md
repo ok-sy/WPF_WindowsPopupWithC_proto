@@ -20,7 +20,7 @@
 node scripts/verify-popup-parity.cjs
 ```
 
-- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조)다.
+- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림 — 그림 아래 칸에 유형별 최소·최대, 설문·퀴즈 콘텐츠 너비(최대 760)·영상 높이(최소 180/170) 실측 상자 포함), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조)다.
 - 레이아웃을 바꾼 뒤 다시 실행해 아래 그림을 `61_popup_layout_guide/`에 덮어쓰고, 유형별 절은 `guide-figures.md` 내용으로 바꾼다.
 - 한계: 로그인한 관리자 화면이 아닌 같은 컴포넌트 하네스다. 브라우저 확대·Windows 배율·폐쇄망 전역 CSS는 포함하지 않는다. WPF 영상(WebView2)은 캡처에 그려지지 않는다.
 
@@ -115,6 +115,13 @@ node scripts/verify-popup-parity.cjs
 | 2 | 공지 본문 첫 줄입니다. 둘째 줄입니다. | 15/400 | 15/400 |
 | 3 | 확인 | 14/600 | 14/600 |
 
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **본문** · 자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
+
 웹·WPF 나란히: [PARITY-TEXT-560x750.side.png](61_popup_layout_guide/PARITY-TEXT-560x750.side.png)
 
 ### TEXT 좁은 폭·긴 문구·나중에 보기·다시 보지 않기 (360×480)
@@ -129,6 +136,13 @@ node scripts/verify-popup-parity.cjs
 | 2 | 긴 문구 줄바꿈 확인용 본문입니다. 좁은 창 | 15/400 | 15/400 |
 | 3 | 나중에 보기 | 14/600 | 14/600 |
 | 4 | 30일간 보지 않기 | 14/400 | 14/400 |
+
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **본문** · 자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
 
 웹·WPF 나란히: [PARITY-TEXT-NARROW-LONG.side.png](61_popup_layout_guide/PARITY-TEXT-NARROW-LONG.side.png)
 
@@ -148,6 +162,13 @@ node scripts/verify-popup-parity.cjs
 | 6 | 필수 응답 0/1 · 1문항 남음 | 12/400 | 12/400 |
 | 7 | 제출 | 14/600 | 14/600 |
 
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
+
 웹·WPF 나란히: [PARITY-SURVEY.side.png](61_popup_layout_guide/PARITY-SURVEY.side.png)
 
 ### QUIZ — OX·선다형 (720×680)
@@ -166,6 +187,13 @@ node scripts/verify-popup-parity.cjs
 | 6 | 필수 응답 0/2 · 2문항 남음 | 12/400 | 12/400 |
 | 7 | 제출 | 14/600 | 14/600 |
 
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
+
 웹·WPF 나란히: [PARITY-QUIZ-OX.side.png](61_popup_layout_guide/PARITY-QUIZ-OX.side.png)
 
 ### IMAGE — ADAPTIVE (640×560)
@@ -181,6 +209,13 @@ node scripts/verify-popup-parity.cjs
 | 3 | 이미지 설명입니다. | 14/400 | 14/400 |
 | 4 | 확인 | 14/600 | 14/600 |
 
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 화면 작업 영역 90%(설정 maximum 미사용) · FULLSCREEN 제외
+- **이미지** · ADAPTIVE는 원본보다 확대하지 않음 · WPF 설명 영역 최대 30% · FIT_TO_IMAGE 권장 크기는 창 제한으로 보정
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 90%
+
 웹·WPF 나란히: [PARITY-IMAGE.side.png](61_popup_layout_guide/PARITY-IMAGE.side.png)
 
 ### VIDEO (720×640)
@@ -195,6 +230,13 @@ node scripts/verify-popup-parity.cjs
 | 2 | 영상 제목 | 22/600 | 22/600 |
 | 3 | ▶ 00:00 / 00:00 | 14/400 | — |
 | 4 | 확인 | 14/600 | 14/600 |
+
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **영상** · WPF 남는 높이 사용(별도 min/max 없음) · 웹 미리보기만 최소 높이 170
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
 
 웹·WPF 나란히: [PARITY-VIDEO.side.png](61_popup_layout_guide/PARITY-VIDEO.side.png)
 
@@ -213,6 +255,14 @@ node scripts/verify-popup-parity.cjs
 | 5 | 영상에서 확인한 내용은? *하나 선택 | 16/600 | — |
 | 6 | 필수 응답 0/1 · 1문항 남음 | 12/400 | — |
 | 7 | 제출 | 14/600 | 14/600 |
+
+최소·최대(그림 아래 칸과 같음):
+
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외
+- **영상(퀴즈 포함)** · 높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%
 
 웹·WPF 나란히: [PARITY-VIDEO-QUIZ.side.png](61_popup_layout_guide/PARITY-VIDEO-QUIZ.side.png)
 

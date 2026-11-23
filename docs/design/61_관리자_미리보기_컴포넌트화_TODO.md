@@ -269,6 +269,7 @@
 - [x] `scripts/verify-popup-parity.cjs` 6단계: 웹 흰 판 캡처 위에 헤더·본문 여백·푸터·버튼 영역과 글자 번호를 표시한 `<ID>.guide.png`와 유형별 번호표(`guide-figures.md`, 웹·WPF 실측)를 생성한다.
 - [x] 7세트(TEXT 560×750, TEXT 좁은 폭·긴 문구, SURVEY, QUIZ OX, IMAGE, VIDEO, VIDEO+QUIZ) 가이드 그림과 웹·WPF 나란히 캡처를 `docs/design/61_popup_layout_guide/`에 반입.
 - [x] 공통 창 구조 표(값 · 웹 상수 `POPUP_LAYOUT`·`PopupFooterButton` · WPF 선언·스타일), 푸터 배치 규칙, 알려진 차이, 레이아웃 변경 절차를 정리했다.
+- [x] (2026-11-23) 최소·최대 표시: 가이드 그림 아래에 유형별 창·콘텐츠 최소·최대 칸을 추가하고, 설문·퀴즈 콘텐츠 너비(최대 760)와 영상 높이(VIDEO+QUIZ 최소 180·최대 70%, 단독 웹 최소 170) 실측 상자를 그린다. 문서 유형별 절에도 같은 목록을 넣었다. 관리자 웹 가이드 「사용 순서」 탭에 「팝업 크기 최소·최대」 표(창 모드 5행·유형 6행·미리보기 2행, `guideData.LAYOUT_LIMITS`, 300·푸터·버튼 값은 실제 상수 참조)를 추가했다.
 - [ ] 폐쇄망 배율·전역 CSS 환경 캡처 추가.
 
 검증 · `verify-popup-parity.cjs` 54건 통과, 가이드 그림 7장 육안 확인(TEXT·좁은 폭·SURVEY·VIDEO+QUIZ).

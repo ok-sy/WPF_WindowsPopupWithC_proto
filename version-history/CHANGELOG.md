@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-23-11 — dev: 61_레이아웃최소최대_가이드표시_추가
+
+- 이유 · 61 레이아웃 가이드의 최소·최대 값이 문서 표에만 있고, 유형별 그림과 관리자 웹 공통 컴포넌트 가이드 화면에는 표시되지 않음.
+- 변경 ·
+  - `scripts/verify-popup-parity.cjs`: 웹 측정에 설문·퀴즈 콘텐츠(`maxWidth 760` 요소)·영상 영역(`aspect/fill-video-area`) 상자 추가. 가이드 그림에 콘텐츠 너비(최대 760)·영상 높이(최소 180·최대 70% / 웹 최소 170) 표시와 그림 아래 유형별 최소·최대 칸(창·본문·이미지·영상·설문·퀴즈·푸터·웹 미리보기) 추가. `guide-figures.md`에도 같은 목록 출력. 화면 높이를 넘는 그림은 `captureBeyondViewport`로 전체 캡처.
+  - `docs/design/61_popup_layout_guide/*.guide.png` 7장 재생성, `61_POPUP_LAYOUT_GUIDE.md` 유형별 절에 최소·최대 목록 추가.
+  - 관리자 웹 가이드: `guideData.ts` `LAYOUT_LIMITS`(창 모드·유형·미리보기 13행, 300·푸터 64·버튼 118×34/132×34는 `POPUP_MIN_WINDOW_SIZE`·`POPUP_LAYOUT` 상수 참조), `GuideProcessTab.tsx`에 「팝업 크기 최소·최대」 절과 바로가기 칩 추가.
+- 주요 파일 · `scripts/verify-popup-parity.cjs`, `scripts/verify-popup-guide-render.cjs`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`, `guide/tabs/GuideProcessTab.tsx`.
+- 검증 · `verify-popup-parity` 54건 통과, 가이드 그림 육안 확인(VIDEO+QUIZ·좁은 폭 TEXT). `verify-popup-guide-render` 33건(최소·최대 표 13행·주요 수치·위치 검사 추가)·`verify-popup-guide-registry` 413건, `tsc --noEmit`, 변경 파일 eslint 통과. 관리자 웹 가이드 실화면은 확인하지 않음.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-23-10 — dev: 28_굵기별글꼴_로컬실측_추가
 
 - 이유 · TODO28 §15 — 폐쇄망의 CSS 별칭 하나에 굵기별 `@font-face`·`local()`를 연결한 구조에서 편집기·미리보기·WPF가 같은 서체를 고르는지 로컬에서 재현·실측할 필요.

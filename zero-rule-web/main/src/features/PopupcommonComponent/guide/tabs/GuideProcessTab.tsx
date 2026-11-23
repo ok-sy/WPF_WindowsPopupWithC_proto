@@ -1,5 +1,5 @@
-import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
-import { COMPONENTS, PROCESSES, type GuideProcess, type GuideScope } from '../guideData';
+import { Alert, Box, Chip, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { COMPONENTS, LAYOUT_LIMITS, PROCESSES, type GuideLayoutLimit, type GuideProcess, type GuideScope } from '../guideData';
 import { Bullets, C, Page, RichText, ScopeChip, Section } from '../GuideUi';
 
 const SCOPE_TITLES: Record<GuideScope, string> = {
@@ -51,6 +51,41 @@ function ProcessSection({ process }: { process: GuideProcess }) {
   );
 }
 
+function LimitTable({ title, rows }: { title: string; rows: GuideLayoutLimit[] }) {
+  return (
+    <Box>
+      <Typography sx={{ fontSize: 14.5, fontWeight: 700, mb: 0.75 }}>{title}</Typography>
+      <Table size="small" sx={{ '& td, & th': { fontSize: 14, py: 1, verticalAlign: 'top', lineHeight: 1.6 }, '& th': { fontWeight: 700, bgcolor: '#f8fafc' } }}>
+        <TableHead><TableRow><TableCell sx={{ width: 170 }}>대상</TableCell><TableCell sx={{ width: '24%' }}>최소</TableCell><TableCell sx={{ width: '28%' }}>최대</TableCell><TableCell>설명</TableCell></TableRow></TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.target}>
+              <TableCell><C>{row.target}</C></TableCell><TableCell>{row.min}</TableCell><TableCell>{row.max}</TableCell><TableCell>{row.note}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+}
+
+/*
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 팝업 크기 최소·최대 표(guideData.LAYOUT_LIMITS)
+ * - 미리보기(⑤)에서 보이는 창·콘텐츠 크기가 어디까지 줄고 늘어나는지 한곳에 보여 준다. 근거는 docs/design/61_POPUP_LAYOUT_GUIDE.md.
+ */
+function LayoutLimitsSection() {
+  return (
+    <Section id="guide-process-layout-limits" title="팝업 크기 최소·최대" description="창 크기 모드와 유형별 콘텐츠가 줄고 늘어나는 한계입니다. WPF 값은 DIP, 미리보기 값은 CSS px입니다.">
+      <Stack spacing={2.5}>
+        <LimitTable title="창 크기" rows={LAYOUT_LIMITS.windows} />
+        <LimitTable title="유형별 콘텐츠" rows={LAYOUT_LIMITS.types} />
+        <LimitTable title="관리자 미리보기" rows={LAYOUT_LIMITS.preview} />
+      </Stack>
+    </Section>
+  );
+}
+
 /**
  * POL-14-01 : 공통 프론트 경계
  * ■ 가이드: 사용 순서 탭
@@ -75,8 +110,10 @@ export default function GuideProcessTab() {
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {processes.map((process) => <Chip key={process.id} label={process.title} onClick={() => jump(process.id)} variant="outlined"
                 color={scope === 'COMMON' ? 'primary' : 'warning'} sx={{ fontSize: 13.5 }} />)}
+              {scope === 'COMMON' && <Chip label="크기 최소·최대" onClick={() => jump('layout-limits')} variant="outlined" color="primary" sx={{ fontSize: 13.5 }} />}
             </Stack>
             {processes.map((process) => <ProcessSection key={process.id} process={process} />)}
+            {scope === 'COMMON' && <LayoutLimitsSection />}
           </Stack>
         );
       })}

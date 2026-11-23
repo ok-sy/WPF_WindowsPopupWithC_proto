@@ -16,6 +16,9 @@
  *  4) 설계 배경·정책 상세는 docs 문서에 두고 화면에는 사용 방법과 주의사항만 쓴다.  5) 다른 탭에서 이미 설명한 내용은 반복하지 않는다.
  */
 
+import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
+import { POPUP_LAYOUT } from '../popupLayout';
+
 /** 설명 범위: COMMON = 범용, PROTO = proto(RgstPop) 전용 */
 export type GuideScope = 'COMMON' | 'PROTO';
 
@@ -76,6 +79,46 @@ export interface GuideProcess {
   parent: string[];
   notes?: string[];
 }
+
+/** 팝업 레이아웃 최소·최대 한 줄(사용 순서 탭 표) */
+export interface GuideLayoutLimit {
+  /** 창 모드·유형·화면 */
+  target: string;
+  min: string;
+  max: string;
+  note?: string;
+}
+
+const MIN = POPUP_MIN_WINDOW_SIZE;
+const BUTTON = POPUP_LAYOUT.button;
+
+/*
+ * POL-14-01 : 공통 프론트 경계
+ * ■ 팝업 레이아웃 최소·최대(가이드 사용 순서 탭 「팝업 크기 최소·최대」)
+ * - 근거 문서: docs/design/61_POPUP_LAYOUT_GUIDE.md 「최소·최대 크기 — 전체 레이아웃」. 수치를 바꾸면 문서와 이 표를 함께 고친다.
+ * - 창 최소(300)·푸터·버튼 값은 실제 상수(POPUP_MIN_WINDOW_SIZE·POPUP_LAYOUT)에서 읽는다. WPF 전용 값은 문서 기준 숫자다.
+ */
+export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLimit[]; preview: GuideLayoutLimit[] } = {
+  windows: [
+    { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: '입력한 최대값과 화면의 95% 중 작은 값', note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
+    { target: 'RATIO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 100% 중 작은 값', note: '화면 크기에 비율(0.1~1.0)을 곱합니다.' },
+    { target: 'AUTO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '내용 크기에 맞춥니다.' },
+    { target: 'FULLSCREEN', min: '제한 없음', max: '모니터 전체', note: '최소·최대 값을 쓰지 않습니다.' },
+    { target: 'IMAGE 유형', min: `${MIN}×${MIN}`, max: '화면의 90%', note: '입력한 최대값 대신 화면 기준으로 제한합니다.' },
+  ],
+  types: [
+    { target: 'TEXT', min: '본문 자체 최소 없음', max: '없음', note: '창 안에서 줄을 바꾸고, 넘치면 세로로 스크롤합니다.' },
+    { target: 'IMAGE', min: '—', max: '원본 크기(ADAPTIVE는 확대하지 않음)', note: '이미지 설명 영역은 최대 30%입니다(WPF).' },
+    { target: 'VIDEO', min: '미리보기 영상 높이 170', max: '남는 높이', note: 'WPF는 남는 높이를 모두 쓰고 별도 최소가 없습니다.' },
+    { target: 'SURVEY · QUIZ', min: '선택지 높이 32 · 주관식 높이 96', max: '콘텐츠 너비 760 · 미리보기 주관식 높이 180', note: '760은 창 너비가 아니라 문항 영역의 최대 너비입니다.' },
+    { target: '동영상 + 퀴즈', min: '영상 높이 180', max: '영상 높이: 남는 높이의 70%(180보다 작으면 180)', note: '영상 아래 퀴즈는 760 너비 규칙을 따릅니다.' },
+    { target: '푸터·버튼', min: `푸터 높이 ${POPUP_LAYOUT.footerHeight} · 버튼 ${BUTTON.minWidth}×${BUTTON.height}(제출 ${BUTTON.submitMinWidth}×${BUTTON.height})`, max: '없음', note: '안내 문구가 길면 푸터가 위로 늘어납니다.' },
+  ],
+  preview: [
+    { target: 'InlinePopupPreview', min: '미리보기 높이 320', max: '부모 영역', note: '실제 팝업 창의 최소 높이가 아닙니다.' },
+    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '브라우저 화면의 96%(IMAGE는 90%)', note: 'WPF는 모드에 따라 95%·100%·90%라 크기가 조금 다를 수 있습니다.' },
+  ],
+};
 
 export const PROCESSES: GuideProcess[] = [
   // ── 공통 사용: 입력값 받기 → 미리보기 → 필요한 항목만 가져와 저장 ──

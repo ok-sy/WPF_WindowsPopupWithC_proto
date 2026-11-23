@@ -104,7 +104,7 @@ const toWpf = p => {
   socket.on('message', raw => {const m = JSON.parse(raw); if (waiting.has(m.id)) {const p = waiting.get(m.id); waiting.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result);}});
   const send = (method, params = {}) => new Promise((resolve, reject) => {const key = ++id; waiting.set(key, {resolve, reject}); socket.send(JSON.stringify({id: key, method, params}));});
   const run = async expression => {const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true}); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value;};
-  const shot = async (file, clip) => fs.writeFileSync(file, Buffer.from((await send('Page.captureScreenshot', {format: 'png', ...(clip ? {clip: {...clip, scale: 1}} : {captureBeyondViewport: true})})).data, 'base64'));
+  const shot = async (file, clip) => fs.writeFileSync(file, Buffer.from((await send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: true, ...(clip ? {clip: {...clip, scale: 1}} : {})})).data, 'base64'));
   await send('Runtime.enable'); await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', {width: 2200, height: 1000, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
@@ -124,7 +124,11 @@ const toWpf = p => {
       const buttons=Array.from(panel.querySelectorAll('button')).map(b=>({text:b.textContent.trim(),size:parseFloat(getComputedStyle(b).fontSize),box:box(b)})).filter(b=>b.box);
       const header=panel.firstElementChild&&getComputedStyle(panel.firstElementChild).backgroundColor==='rgb(0, 0, 0)'?panel.firstElementChild:null;
       return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)})),
-        texts,regions:{header:box(header),buttons}}})()`);
+        texts,regions:{header:box(header),buttons,
+          /* 최소·최대 표시용: 설문/퀴즈 콘텐츠(maxWidth 760), 영상 영역(단독 fill / VIDEO+QUIZ aspect) */
+          survey:box(Array.from(panel.querySelectorAll('*')).find(e=>getComputedStyle(e).maxWidth==='760px')),
+          video:box(panel.querySelector('[data-testid=aspect-video-area],[data-testid=fill-video-area]')),
+          videoKind:panel.querySelector('[data-testid=aspect-video-area]')?'aspect':panel.querySelector('[data-testid=fill-video-area]')?'fill':null}}})()`);
     const f = web[popup.popupId].frame;
     await shot(path.join(output, popup.popupId + '.web.png'), {x: f.x, y: f.y, width: f.width, height: f.height});
   }
@@ -225,13 +229,17 @@ const toWpf = p => {
       const row = textRows.find(r => r.id === id && r.text === t.text.slice(0, 24));
       markers.push({n: markers.length + 1, x: t.box.x, y: t.box.y, h: t.box.h, text: t.text.slice(0, 24), web: `${t.size}/${t.weight}`, wpf: row?.wpf ?? '—'});
     }
-    guideData[id] = {width: w.frame.width, height: w.frame.height, header: w.regions.header?.h ?? 0, footerTop, video: !!popup.content.videoUrl, buttons, markers};
+    guideData[id] = {width: w.frame.width, height: w.frame.height, header: w.regions.header?.h ?? 0, footerTop, video: !!popup.content.videoUrl, buttons, markers,
+      survey: w.regions.survey, videoBox: w.regions.video, videoKind: w.regions.videoKind, limits: layoutLimits(popup)};
     await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}/guide?${encodeURIComponent(id)}`}); await pause(400);
-    await shot(path.join(output, id + '.guide.png'), {x: 0, y: 0, width: w.frame.width + 300, height: w.frame.height + 40});
+    // 그림 아래 최소·최대 칸은 줄바꿈되므로 실제 높이를 재서 자른다.
+    const guideHeight = await run(`document.getElementById('guide').scrollHeight`);
+    await shot(path.join(output, id + '.guide.png'), {x: 0, y: 0, width: w.frame.width + 300, height: guideHeight});
     figures.push(`### ${id} (${popup.popupType}${popup.content.videoEnabled ? '+VIDEO' : ''} 창 ${popup.width}×${popup.height})`, '',
       `![${id} 레이아웃](61_popup_layout_guide/${id}.guide.png)`, '',
       '| 번호 | 글자 | 웹 크기/굵기 | WPF 크기/굵기 |', '|---|---|---|---|',
       ...markers.map(m => `| ${m.n} | ${cell(m.text)} | ${m.web} | ${m.wpf} |`),
+      '', '최소·최대(그림 아래 칸과 같음):', '', ...guideData[id].limits.map(l => `- **${l.title}** · ${l.text}`),
       '', `웹·WPF 나란히: [${id}.side.png](61_popup_layout_guide/${id}.side.png)`, '');
   }
   fs.writeFileSync(path.join(output, 'guide-figures.md'), figures.join('\n'));
@@ -257,15 +265,41 @@ function guidePage(popupId) {
     `<text x="${O + b.box.x + b.box.w / 2}" y="${O + b.box.y - 4}" fill="#9333EA" text-anchor="middle" font-weight="700">${Math.round(b.box.w * 10) / 10}×${b.box.h}</text>`);
   for (const m of g.markers) parts.push(`<circle cx="${O + Math.max(9, m.x - 12)}" cy="${O + m.y + Math.min(m.h, 24) / 2}" r="9" fill="#DC2626"/>`,
     `<text x="${O + Math.max(9, m.x - 12)}" y="${O + m.y + Math.min(m.h, 24) / 2 + 4}" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">${m.n}</text>`);
+  // 최소·최대: 설문/퀴즈 콘텐츠 너비(최대 760)와 영상 영역 높이(VIDEO+QUIZ 최소 180·최대 70%, 단독 웹 최소 170)를 실측 상자로 표시한다.
+  if (g.survey) parts.push(`<rect x="${O + g.survey.x}" y="${O + g.survey.y}" width="${g.survey.w}" height="${Math.min(g.survey.h, H - g.survey.y)}" fill="none" stroke="#0891B2" stroke-width="2" stroke-dasharray="2 3"/>`,
+    `<text x="${O + g.survey.x + g.survey.w - 6}" y="${O + g.survey.y + Math.min(g.survey.h, H - g.survey.y) - 6}" fill="#0891B2" text-anchor="end" font-weight="700">콘텐츠 너비 ${Math.round(g.survey.w)} (최대 760)</text>`);
+  if (g.videoBox) parts.push(`<rect x="${O + g.videoBox.x}" y="${O + g.videoBox.y}" width="${g.videoBox.w}" height="${g.videoBox.h}" fill="none" stroke="#DB2777" stroke-width="2" stroke-dasharray="2 3"/>`,
+    `<text x="${O + g.videoBox.x + 8}" y="${O + g.videoBox.y + g.videoBox.h - 8}" fill="#fff" font-weight="700">영상 높이 ${Math.round(g.videoBox.h)} (${g.videoKind === 'aspect' ? '최소 180 · 최대 가용 높이 70%' : '웹 최소 170 · WPF 남는 높이'})</text>`);
+  // 그림 아래 칸: 이 유형의 창·콘텐츠 최소·최대(61 가이드 「최소·최대 크기」 표 요약).
+  const limits = `<div style="padding:0 ${O}px 16px;color:#374151;line-height:18px"><div style="font-weight:700;color:#111827;margin-bottom:4px">최소·최대 (WPF DIP / 웹 CSS px)</div>`
+    + g.limits.map(l => `<div><b>${esc(l.title)}</b> · ${esc(l.text)}</div>`).join('') + '</div>';
   // 범례는 본문 여백 설명 아래(오른쪽 칸 가운데)에 둔다 — 아래쪽 푸터 설명과 겹치지 않게.
   const legendTop = contentTop + 60;
   const legend = g.markers.map((m, i) => `<text x="${L}" y="${legendTop + 18 + i * 15}" fill="#111827">${m.n}. ${m.web.replace('/', 'px / ')}</text>`).join('');
   return `<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff">
-  <div style="position:relative;width:${W + 300}px;height:${H + 40}px;font:12px 'Malgun Gothic'">
+  <div id="guide" style="width:${W + 300}px;font:12px 'Malgun Gothic'"><div style="position:relative;width:${W + 300}px;height:${H + 40}px">
   <img src="/${popupId}.web.png" style="position:absolute;left:${O}px;top:${O}px;outline:1px solid #9CA3AF">
   <svg width="${W + 300}" height="${H + 40}" style="position:absolute;left:0;top:0;font:12px 'Malgun Gothic'">${parts.join('')}
-  <text x="${L}" y="${legendTop}" fill="#DC2626" font-weight="700">글자 번호 (크기 / 굵기)</text>${legend}</svg></div>`;
+  <text x="${L}" y="${legendTop}" fill="#DC2626" font-weight="700">글자 번호 (크기 / 굵기)</text>${legend}</svg></div>${limits}</div>`;
 }
+
+/* TODO61 최소·최대 표시: 61_POPUP_LAYOUT_GUIDE.md 「최소·최대 크기」와 같은 수치를 유형별로 고른다(코드 기준, 2026-11-23 대조). */
+function layoutLimits(popup) {
+  const video = !!popup.content.videoEnabled || popup.popupType === 'VIDEO';
+  const quiz = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
+  const lines = [{title: '창', text: popup.popupType === 'IMAGE'
+    ? '최소 300×300(축별 max(300, minimum)) · 최대 화면 작업 영역 90%(설정 maximum 미사용) · FULLSCREEN 제외'
+    : '최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외'}];
+  if (popup.popupType === 'TEXT') lines.push({title: '본문', text: '자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤'});
+  if (popup.popupType === 'IMAGE') lines.push({title: '이미지', text: 'ADAPTIVE는 원본보다 확대하지 않음 · WPF 설명 영역 최대 30% · FIT_TO_IMAGE 권장 크기는 창 제한으로 보정'});
+  if (popup.popupType === 'VIDEO') lines.push({title: '영상', text: 'WPF 남는 높이 사용(별도 min/max 없음) · 웹 미리보기만 최소 높이 170'});
+  if (quiz && video) lines.push({title: '영상(퀴즈 포함)', text: '높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)'});
+  if (quiz) lines.push({title: '설문·퀴즈', text: '콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)'});
+  lines.push({title: '푸터', text: '최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34'});
+  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 브라우저 90%' : '인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%'});
+  return lines;
+}
+function esc(text) { return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function sidePage(popupId) {
   return `<!doctype html><meta charset="utf-8"><body style="margin:0;padding:12px;background:#9ca3af;font:13px Malgun Gothic">

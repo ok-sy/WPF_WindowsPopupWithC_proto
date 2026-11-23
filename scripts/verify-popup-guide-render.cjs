@@ -108,6 +108,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(body.indexOf('공통 사용 —') >= 0 && body.indexOf('기존 팝업 등록 —') > body.indexOf('공통 사용 —'), 'Process tab lists the common flow first and the proto flow separately');
   check(body.includes('P5 저장하기') && body.includes('⑥ 필요한 항목만 가져와 저장'), 'Process tab has proto save (P5) and common extraction (⑥)');
   check(!/공개 경계|저장 경계|최종 권위|정규화|명시값|미설정|fallback|합성/.test(body), 'Process tab uses plain wording (no design-document terms)');
+  // TODO61: 레이아웃 최소·최대 표 — 창 모드 5행·유형 6행·미리보기 2행, 상수에서 읽은 300·64·118×34·132×34와 760·180·96% 표시.
+  check(await run(`(()=>{const s=document.getElementById('guide-process-layout-limits');if(!s)return false;const rows=s.querySelectorAll('tbody tr').length;const t=s.innerText;
+    return rows===13&&['300×300','760','영상 높이 180','푸터 높이 64','118×34','132×34','브라우저 화면의 96%','화면의 90%','미리보기 높이 320','본문 자체 최소 없음'].every(x=>t.includes(x));})()`),
+    '[61] Process tab shows the layout min/max tables (window modes, types, preview)');
+  check(body.indexOf('팝업 크기 최소·최대') > body.indexOf('⑥ 필요한 항목만 가져와 저장') && body.indexOf('팝업 크기 최소·최대') < body.indexOf('기존 팝업 등록 —'), '[61] Layout min/max section sits after the common flow');
   // 컴포넌트·독립 재사용·예시·변환·유틸
   await openTab('컴포넌트'); await until(`document.body.innerText.includes('받는 값')`, 'component tab');
   check(await run(`document.body.innerText.includes('실행기')`), 'Component tab renders props and a runner');
