@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-03 — docs: 인터페이스 산출물(Word·PDF·Excel) 최신화
+
+- 이유 · 계약서 `POPUP_INTERFACE_SPEC.md`는 2026-11-22까지 갱신됐으나 생성 산출물이 이전 상태(Word·PDF 2026-11-11, Excel v3.9 2026-11-17)로 남아 20261124 반입본 문서와 원본이 어긋남.
+- 변경 · `scripts/export-wpf-spec-xlsx.py` VERSIONS에 v3.10(2026-11-23: IMAGE ORIGINAL 삭제, QUIZ 채점 문항 최소 1개·문항당 1점, 서식 글꼴 패밀리 이름 직접 전달, 개발 빌드 탈출키) 추가 후 `WPF_SPEC_v3.10.xlsx` 생성(v3.9는 스크립트 규칙대로 삭제). `export-interface-word.ps1`·`export-interface-pdf.vbs`로 `WPF_Popup_API_Interface_v3.7.docx`·`.pdf` 재생성(계약 버전 3.7 유지, 최신화 2026-11-22 반영).
+- 주요 파일 · `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.10.xlsx`, `docs/interfaces/WPF/WPF_Popup_API_Interface_v3.7.docx`·`.pdf`.
+- 검증 · Excel 생성 성공(버전 이력 8행), Word 표 39·제목 103, PDF 내보내기 성공. Word 본문에 「최신화: 2026-11-22」·「2026-11-22 변경」 문구 포함 확인. `SERVER_ERROR_BRANCH_v1.6.xlsx`는 원본(2026-11-17)과 같은 시점이라 재생성하지 않음.
+- 상태 · 커밋·원격 반영. 20261124 반입본에 반영(2026-11-23-02 보완 참조).
+
 ## 2026-11-23-02 — docs: 20261124 반입본 생성
 
 - 이유 · 반입 준비. 20261119 반입본은 반입하지 못해 삭제했으므로 직전 반입본 20261118(3e1a7ff) 기준으로 20261119 내용과 이후 변경 — TODO61-19~22(미리보기 헤더 글자 크기·UI 기본값 실측·레이아웃 공통화·레이아웃 가이드), TODO28 사용자 지정 글꼴 이름 전달, 2026-11-22-01 편집·채점·활성화 정합성 보완 및 ORIGINAL 이미지 모드 삭제, TODO75 개발 빌드 탈출키 — 를 폐쇄망에 전달.

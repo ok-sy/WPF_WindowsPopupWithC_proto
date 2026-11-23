@@ -44,6 +44,12 @@ VERSIONS = [
         '응답 code를 폐쇄망 코드 컬럼 VARCHAR2(5 BYTE)에 맞춰 5자 코드로 변경(HTTP 오류 E4000·E4010·E4030·E4260·E5000, 결과 R2001·R4000~R4006·R5000·R5030). HTTP 500과 결과 INTERNAL_ERROR 코드 분리. WPF 판정(HTTP 상태·status)은 변경 없음.',
         '서버 구현 참고에 장애별 분기 정의서(docs/interfaces/Server/SERVER_WPF_ERROR_BRANCH_GUIDE.md) 연결.',
     ]),
+    ('v3.10', '2026-11-23', [
+        'IMAGE 크기 모드 ORIGINAL 삭제(ADAPTIVE·FIT_TO_IMAGE만 지원, ORIGINAL 수신 시 변환 실패).',
+        'QUIZ 채점 규칙: 관리자 저장 시 채점 문항 최소 1개·문항당 1점, 비채점 주관식은 만점·통과 점수 상한에서 제외.',
+        '서식 본문 글꼴: 기존 4개 글꼴 ID 외에 Windows 글꼴 패밀리 이름 직접 전달(형식 규칙, 미설치 시 기본 글꼴).',
+        '개발 빌드 전용 탈출키 Ctrl+Alt+Shift+Q(운영 빌드 없음).',
+    ]),
 ]
 
 # ---------------------------------------------------------------- 계약서 파싱
