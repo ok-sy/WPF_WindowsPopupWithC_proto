@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-23-05 — doc: TODO61 전체 레이아웃 min/max 가이드 보완
+
+- 이유: VIDEO+QUIZ 문항의 최대 가로 길이 질의에서 콘텐츠 영역의 `MaxWidth=760`과 창 전체 최소·최대 크기가 혼동될 수 있어, 모든 팝업 유형별 제한을 61 UI 가이드에 명시.
+- 변경:
+  - `docs/design/61_POPUP_LAYOUT_GUIDE.md`: 공통 창 기본값과 FIXED/RATIO/AUTO/FULLSCREEN 모드별 유효 최소·최대, TEXT·IMAGE·VIDEO·SURVEY·QUIZ·VIDEO+QUIZ 내부 min/max, 인라인·실제 크기 모달 상한, WPF/WEB 차이를 표로 추가. 760은 설문·퀴즈 콘텐츠 상한이지 팝업 창 상한이 아님을 강조.
+  - `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`: 유형별 최소·최대 요약과 상세 가이드 연결.
+- 검증: `PopupWindow.ApplyWindowSize()`, `SurveyPopupView.xaml`, `SurveyPreview.tsx`, `VideoPopupView.CalculateAspectHeight()`, `AspectVideoArea.aspectVideoHeight()`, `popupPreviewDialogLayout.previewDialogSize()` 등 Git `main` 구현과 문서 수치 정적 대조. 이미지·기존 UI 캡처는 재생성하지 않음.
+- 범위: **문서만 변경**. 타입검사·빌드·실행·원격 DB·폐쇄망 실화면 검증은 미실행. 기존 61 UI 캡처(2026-11-19)와 별개로 기록.
+
 ## 2026-11-23-04 — dev: TODO28 사용자 지정 글꼴 가이드 추가
 
 - 이유 · TODO28 사용자 지정 글꼴 이름 전달(2026-11-19-06)은 코드·인계 문서에 반영됐으나 관리자 웹 공통 컴포넌트 가이드에는 등록 함수와 사용 방법이 없고 서식 안내가 "글꼴 4가지"로 남아 정합성 보완.
