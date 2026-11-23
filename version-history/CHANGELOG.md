@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-07 — dev: 61_TEXT본문최소크기_수정
+
+- 이유 · 2026-11-23-05 코드 대조에서 WPF 창 최소 너비 300보다 `TextPopupView` 루트 `MinWidth 320`이 커서, 너비 300~319인 TEXT 창에서는 본문 오른쪽이 잘릴 수 있음을 확인. 창 최소 300×300(TODO68) 정책과 정합성 보완.
+- 변경 · `TextPopupView.xaml` 루트의 `MinWidth="320"`·`MinHeight="240"` 제거. 본문은 기존 `ScrollViewer` 안에서 창 크기를 따라 줄바꿈·스크롤된다. 61 레이아웃 가이드·UI 기본값 사양의 TEXT 행을 "자체 최소 없음, 창 최소 300을 따르고 본문은 스크롤"로 수정.
+- 주요 파일 · `popup-frameWork/Popup/Views/Contents/TextPopupView.xaml`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`.
+- 검증 · 로컬 `Popup.BehaviorTests`에 TEXT 뷰 자체 최소 0·250×200 영역 배치 검사 추가, 전체 1643건 통과(클립보드 1건 SKIP). WPF 실화면·DPI 확인은 미실행.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-23-06 — dev: 공통 컴포넌트 가이드 함수 목록 누락 항목 추가
 
 - 이유 · TODO28 가이드 누락 확인을 계기로 `PopupcommonComponent` 공개 export(`index.ts`)와 가이드 함수 탭을 전수 대조. 공개 값 export 중 함수 탭에 없는 49개 가운데, 부모 화면(RgstPop·IS063 샘플·샘플 편집기)이 실제로 쓰는 함수·상수 16개가 빠져 있거나 컴포넌트 설명 안에만 언급돼 있어 정합성 보완.

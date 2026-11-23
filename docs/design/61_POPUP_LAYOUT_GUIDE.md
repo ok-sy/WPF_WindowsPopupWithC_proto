@@ -68,7 +68,7 @@ node scripts/verify-popup-parity.cjs
 
 | 유형 | 창 제한 | 콘텐츠 내부의 별도 최소·최대 |
 |---|---|---|
-| **TEXT** | 비IMAGE 공통 규칙 | WPF `TextPopupView.xaml` 루트 **MinWidth 320, MinHeight 240**. 별도 최대 없음. 내부 뷰 제한이지 창의 최소 320×240 정책은 아님 |
+| **TEXT** | 비IMAGE 공통 규칙 | WPF `TextPopupView.xaml` 루트에 **자체 최소 크기 없음**(2026-11-23 320×240 제거 — 창 최소 300보다 커서 300~319 폭에서 본문이 잘릴 수 있었음). 본문은 창 안 스크롤로 표시. 별도 최대 없음 |
 | **IMAGE** | 일반 모드 작업 영역 **최대 90%**, 최소 유효 300×300(화면 부족 시 보정) | ADAPTIVE 이미지는 원본 크기보다 확대하지 않음. WPF 설명 영역 `MaxHeight`는 이미지 표시 높이·남은 높이의 **30%** 기준. `FIT_TO_IMAGE`는 이미지 기준 권장 크기를 창 제한으로 보정 |
 | **VIDEO** | 비IMAGE 공통 규칙 | WPF 단독 영상 행은 남는 높이(`*`) 사용, 별도 재생 영역 높이 min/max 없음. **웹 `FillVideoArea`에만 `minHeight:170`** |
 | **SURVEY** | 비IMAGE 공통 규칙 | **설문 콘텐츠 MaxWidth 760**, 문항 제목 자체 고정 max 없음(줄바꿈). 선택지 **MinHeight 32**, WPF 주관식 **MinHeight 96**. WEB 주관식은 **96~180** |
@@ -88,7 +88,7 @@ node scripts/verify-popup-parity.cjs
 | 실제 크기 모달(IMAGE) | 기본 **브라우저 가용 크기 90% 상한**, IMAGE 권장 창 크기 전달 시 모달 96% 상한도 확인. WPF는 모니터 작업 영역 90% |
 | FULLSCREEN 미리보기 | 브라우저 뷰포트 전체. WPF는 주 모니터 전체화면 |
 
-**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 320×240, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 96%를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
+**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 300 폭 본문 스크롤, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 96%를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
 
 근거: [WPF 창 크기](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs) · [WPF 기본 설정](../../popup-frameWork/Popup/Models/PopupOptions.cs) · [TEXT 뷰](../../popup-frameWork/Popup/Views/Contents/TextPopupView.xaml) · [설문/퀴즈 뷰](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml) · [문항 구현](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs) · [영상 비율](../../popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs) · [웹 설문](../../zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx) · [웹 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts) · [인라인 미리보기](../../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx)
 
