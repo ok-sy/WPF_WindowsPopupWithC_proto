@@ -29,6 +29,23 @@
 웹 소스 · [PopupPreview](../../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx) · [크기 상수](../../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts) · [모달 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts)  
 WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml) · [PopupWindow.xaml.cs](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs) · [PopupOptions](../../popup-frameWork/Popup/Models/PopupOptions.cs)
 
+## 최소·최대 크기 요약 (2026-11-23 코드 대조)
+
+유형별 **FIXED/RATIO/AUTO/FULLSCREEN의 창 최대값**, 콘텐츠 영역의 개별 하한·상한, WEB 미리보기와 WPF 차이의 상세 표는 [61 팝업 레이아웃 가이드 — 최소·최대 크기](61_POPUP_LAYOUT_GUIDE.md#최소최대-크기--전체-레이아웃-2026-11-23-정적-코드-확인)를 따른다. 이 절은 형상 정적 대조이며 폐쇄망·새 실화면 실측은 아니다.
+
+| 유형 | 창 최소·최대 기본 규칙 | 별도 내부 min/max |
+|---|---|---|
+| TEXT | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | WPF TEXT 루트 최소 320×240(창 최소와 별개) |
+| IMAGE | 공통 최소 300×300; 일반 모드 작업 영역 최대 90% | 원본 초과 확대 없음(ADAPTIVE), 설명 높이 최대 관련 영역 30% |
+| VIDEO | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | WPF 영상 행 가변. WEB 단독 영상 미리보기 영역 최소 높이 170 |
+| SURVEY | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | 콘텐츠 최대 너비 760, 선택지 최소 높이 32, 주관식 최소 높이 96(WEB 최대 180) |
+| QUIZ | SURVEY와 동일 | SURVEY와 동일 |
+| VIDEO+QUIZ | 비IMAGE 창 크기 모드 적용 | 퀴즈 너비 최대 760, 영상 높이 최소 180·부모 스크롤 높이 70% 상한(최소보다 작으면 180 우선) |
+
+- 비IMAGE WPF 창 최대: **FIXED** 설정 maximum과 작업 영역 95% 중 작은 값 / **RATIO** 설정 maximum과 작업 영역 100% 중 작은 값 / **AUTO** 설정 maximum과 작업 영역 90% 중 작은 값. **FULLSCREEN**은 별도 화면 크기 적용.
+- IMAGE는 비전체화면 모드에서 설정 maximum 대신 작업 영역 **90%**. WEB 실제 크기 모달은 일반적으로 브라우저 가용 크기 **96%** 상한(IMAGE는 90% 경로), 인라인은 미리보기 칸 **최소 높이 320**.
+- 기본 `maximumWidth=1200`·`maximumHeight=900`은 **설정값의 기본**이지 모든 창에 적용되는 절대 최대 픽셀값이 아니다.
+
 ## 유형별 본문과 등록 입력
 
 | 영역 | 기본 글자 크기 | 크기·여백과 동작 |
