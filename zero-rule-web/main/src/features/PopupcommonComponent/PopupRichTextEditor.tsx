@@ -242,6 +242,10 @@ export default function PopupRichTextEditor({ label, initialBlocks, disabled, co
         '& .ck.ck-editor__editable:not(.ck-editor__nested-editable), & .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused':
           { border: 0, borderRadius: toolbarHidden ? '3px' : '0 0 3px 3px', boxShadow: 'none' },
         '& .ck.ck-editor__editable': { fontSize: defaultFontSize },
+        // [TODO28-16] 폐쇄망 globalStyle의 `em, i { font-style: normal }` 같은 전역 리셋이 편집 중 기울임 표시를 지우지 않게 편집 본문에서만 되돌린다.
+        // 팝업 편집기는 공용 CommonCKEditor를 거치지 않으므로 그쪽 sx로는 적용되지 않는다. 미리보기(PopupRichBlocks)는 인라인 style이라 영향 없음.
+        '& .ck.ck-content em, & .ck.ck-content i': { fontStyle: 'italic' },
+        '& .ck.ck-content strong, & .ck.ck-content b': { fontWeight: 700 },
         '& .ck-editor__editable': { minHeight: compact ? compactMinHeight : 140, px: compact ? 1 : 1.5, ...(compact ? { overflowWrap: 'anywhere', boxSizing: 'border-box' } : {}) },
         // CKEditor 기본 패딩(상하 16px)·문단 여백(12px)이 일반 선택자보다 우선해 .ck.를 붙여 줄인다.
         ...(compact ? { '& .ck.ck-editor__editable_inline': { py: 0 }, '& .ck.ck-editor__editable p': { my: 0.5 } } : {}),

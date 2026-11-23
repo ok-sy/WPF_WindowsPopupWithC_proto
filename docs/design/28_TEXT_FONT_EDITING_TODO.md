@@ -382,3 +382,11 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 작성 시점에는 캡처와 Git 기준 로직을 바탕으로 검증 범위를 정리했다. 코드 수정과 실행 검증은 후속 작업으로 남아 있다.
 
 폐쇄망 `CommonCKEditor.tsx`의 `CommonCKEditor-root`에 `sx`를 추가했으나 적용되지 않은 사례가 있다. DevTools에서 편집 루트가 이 래퍼의 자손인지, 실제 본문 태그에 선택자가 매칭되는지, 어떤 규칙이 최종 `font-style` 값을 정하는지 확인한다. `onEditorReady`에서 편집 DOM을 재배치하는 경로가 있으면 함께 확인한다.
+
+### 구현 (2026-11-23)
+
+- 호출 경로 · 팝업 서식 편집기(`PopupRichTextEditor.tsx`)는 `@/components/ckeditor`의 `CKEditor`·`DecoupledEditor`를 직접 쓰고 `CommonCKEditor`/`CommonCKEditorView`를 경유하지 않는다. 그래서 폐쇄망에서 `CommonCKEditor-root`에 넣은 `sx`가 팝업 편집 본문에 닿지 않았다. TEXT 본문, SURVEY·QUIZ·VIDEO+QUIZ 문항 제목·설명·서식 선택지가 모두 이 편집기를 쓴다.
+- 변경 · `PopupRichTextEditor.tsx` 편집 영역 래퍼 `sx`에 `& .ck.ck-content em, & .ck.ck-content i { font-style: italic }`, `& .ck.ck-content strong, & .ck.ck-content b { font-weight: 700 }` 추가. 선택자 우선순위가 전역 `em, i` 리셋보다 높아 `!important` 없이 적용된다. 공용 `CommonCKEditor`·전역 스타일·에디터 밖 `em`·`i`는 변경하지 않았다.
+- 변경 없음 · 미리보기 `PopupRichBlocks`는 Run마다 인라인 `fontStyle`·`fontWeight`를 써서 전역 리셋의 영향을 받지 않는다. `applyFormat()`·`htmlToBlocks()`·`blocksToHtml()`의 기울임 변환과 WPF `CreateRun()`의 `FontStyles.Italic`은 기존대로 동작해 수정하지 않았다. 저장 계약(`runs[].italic`) 변경 없음.
+- 검증 · `verify-rich-text-49.cjs`에 전역 리셋 `em, i { font-style: normal } strong, b { font-weight: normal }` 재현 검사 추가: 리셋 활성 확인, 편집기 기울임·굵게+기울임+등록 글꼴 표시, 미리보기 일치, 기울임 켜기(인접 Run 병합·다른 Run 보존)·끄기(`italic` 생략), 굵게 토글 시 글꼴·기울임 유지, `span`/`strong`/`em` 중첩 순서 무관, 왕복 변환. 수정 전 코드에서 편집기 `font-style: normal`로 실패 재현, 수정 후 103건 통과. `survey-rich-text-55` 81건·`common-sample-69` 63건, `tsc --noEmit`, eslint 통과.
+- 미실행 · 로그인한 관리자 화면, 폐쇄망 DevTools·실화면, 회사 글꼴의 이탤릭 서체 유무에 따른 합성 기울임 차이, WPF 실화면.

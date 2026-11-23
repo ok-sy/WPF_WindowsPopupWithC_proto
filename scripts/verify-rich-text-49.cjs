@@ -384,6 +384,37 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(pasted === JSON.stringify([{text:'a'},{text:'b',font:'YouandiNewKr Text'}]), '[28] pasted unknown CSS fonts are dropped; a registered alias maps back to its family: ' + pasted);
   const readBack = await run(`JSON.stringify(window.readTextBlocks([{alignment:'LEFT',runs:[{text:'a',font:'Other Font'},{text:'b',font:'Arial, serif'},{text:'c',font:'GULIM'},{text:'d',font:5}]}])[0].runs)`);
   check(readBack === JSON.stringify([{text:'a',font:'Other Font'},{text:'b'},{text:'c',font:'GULIM'},{text:'d'}]), '[28] readTextBlocks keeps valid names and ids, drops malformed fonts: ' + readBack);
+  // [TODO28-16] 폐쇄망 globalStyle의 `em, i { font-style: normal }`(+ strong 굵기 리셋)를 켠 상태에서도 편집기 기울임·굵게가 보이고, 저장·미리보기와 일치한다.
+  await run(`(()=>{const s=document.createElement('style');s.id='global-reset-16';s.textContent='em, i { font-style: normal; } strong, b { font-weight: normal; }';document.head.appendChild(s);
+    const probe=document.createElement('i');probe.id='probe-16';probe.textContent='x';document.body.appendChild(probe);})()`);
+  check(await run(`getComputedStyle(document.getElementById('probe-16')).fontStyle`) === 'normal', '[28-16] the global em/i reset is active outside the editor');
+  const italicBlocks = [{alignment:'LEFT',runs:[{text:'일반'},{text:'기울임',italic:true},{text:'굵게기울임',bold:true,italic:true,font:'YouandiNewKr Text'},{text:'끝'}]}];
+  await run(`window.mount(${JSON.stringify(italicBlocks)},false,${JSON.stringify(italicBlocks)})`); await waitEditor(); await pause(250);
+  const styleOf = `(sel,t)=>{const el=Array.from(document.querySelectorAll(sel)).filter(x=>x.textContent===t).pop();if(!el)return null;const c=getComputedStyle(el);return [c.fontStyle,c.fontWeight,c.fontFamily].join('|');}`;
+  const editorStyles = await run(`(()=>{const f=${styleOf};return {i:f('.ck-content i','기울임'),bi:f('.ck-content *','굵게기울임'),plain:f('.ck-content p','일반기울임굵게기울임끝')};})()`);
+  check(editorStyles.i?.startsWith('italic|') && /^italic\|700\|/.test(editorStyles.bi ?? '') && editorStyles.bi.includes('YouandiNewKrText'),
+    '[28-16] editor shows italic and bold+italic with the registered font despite the global reset: ' + JSON.stringify(editorStyles));
+  const previewStyles = await run(`(()=>{const f=${styleOf};return {i:f('#preview span','기울임'),bi:f('#preview span','굵게기울임'),plain:f('#preview span','일반')};})()`);
+  check(previewStyles.i?.startsWith('italic|') && /^italic\|700\|YouandiNewKrText/.test(previewStyles.bi ?? '') && previewStyles.plain?.startsWith('normal|'),
+    '[28-16] preview matches the editor (inline style is unaffected by the reset): ' + JSON.stringify(previewStyles));
+  await run(`window.select(0,0,2)`); await run(`window.editor().execute('italic')`); await pause(150);
+  let runs16 = (await blocks())[0].runs;
+  check(runs16[0].text === '일반기울임' && runs16[0].italic === true && !runs16[0].bold && runs16[1].text === '굵게기울임' && runs16[1].bold && runs16[1].italic && runs16[1].font === 'YouandiNewKr Text' && runs16[2].text === '끝' && !runs16[2].italic,
+    '[28-16] turning italic on merges with the neighbour italic run and leaves other runs untouched: ' + JSON.stringify(runs16));
+  check(await run(`(()=>{const el=document.querySelector('.ck-content i');return el&&el.textContent.startsWith('일반')&&getComputedStyle(el).fontStyle==='italic';})()`), '[28-16] newly italicised text is shown italic in the editor');
+  await run(`window.select(0,0,5)`); await run(`window.editor().execute('italic')`); await pause(150);
+  runs16 = (await blocks())[0].runs;
+  check(runs16[0].text === '일반기울임' && runs16[0].italic === undefined && runs16[1].italic === true && runs16[1].bold === true && runs16[1].font === 'YouandiNewKr Text',
+    '[28-16] turning italic off returns to upright (italic omitted) and keeps the bold+italic custom-font run: ' + JSON.stringify(runs16));
+  await run(`window.select(0,5,10)`); await run(`window.editor().execute('bold')`); await pause(150);
+  runs16 = (await blocks())[0].runs;
+  check(runs16[1].text === '굵게기울임' && !runs16[1].bold && runs16[1].italic === true && runs16[1].font === 'YouandiNewKr Text',
+    '[28-16] toggling bold keeps the selected font family and italic: ' + JSON.stringify(runs16));
+  const nested = await run(`JSON.stringify(window.htmlToBlocks('<p><i><strong><span style="font-family:YouandiNewKrText, sans-serif">a</span></strong></i><span style="font-family:YouandiNewKrText, sans-serif"><strong><em>b</em></strong></span><b><span style="font-family:YouandiNewKrText, sans-serif"><i>c</i></span></b></p>')[0].runs)`);
+  check(nested === JSON.stringify([{text:'abc',italic:true,bold:true,font:'YouandiNewKr Text'}]), '[28-16] span/strong/em nesting order does not change the run: ' + nested);
+  const roundTrip = await run(`(()=>{const b=[{alignment:'LEFT',runs:[{text:'a',bold:true,italic:true,font:'YouandiNewKr Text'},{text:'b',italic:true}]}];return JSON.stringify(window.htmlToBlocks(window.blocksToHtml(b))[0].runs)===JSON.stringify(b[0].runs);})()`);
+  check(roundTrip, '[28-16] blocksToHtml → htmlToBlocks keeps font, bold and italic');
+  await run(`document.getElementById('global-reset-16').remove();document.getElementById('probe-16').remove()`);
   await run(`window.registerPopupRichFonts([])`);
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});

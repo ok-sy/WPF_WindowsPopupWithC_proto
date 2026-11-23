@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-09 — dev: 28_CKEditor기울임표시_수정
+
+- 이유 · 폐쇄망 전역 스타일 `em, i { font-style: normal }`이 팝업 서식 편집기 본문의 기울임 표시를 덮는 현상(TODO28 §16). 팝업 편집기는 공용 `CommonCKEditor`를 거치지 않아 그쪽 `sx` 보완이 적용되지 않았다.
+- 변경 · `PopupRichTextEditor.tsx` 편집 영역 `sx`에 `.ck-content em/i` 기울임, `strong/b` 굵기 700 보완. 미리보기·변환·WPF·저장 계약은 변경 없음(미리보기는 인라인 style이라 영향 없음).
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor.tsx`, `scripts/verify-rich-text-49.cjs`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`.
+- 검증 · 전역 리셋 재현 검사 추가 — 수정 전 실패, 수정 후 `verify-rich-text-49` 103건 통과. `survey-rich-text-55` 81건·`common-sample-69` 63건, `tsc --noEmit`, eslint 통과. 로그인 관리자 화면·폐쇄망 실화면·WPF 실화면은 미실행.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-23-08 — doc: TODO28 글꼴 표시 정합성·CKEditor 서식 회귀 검증 추가
 
 - 이유 · 폐쇄망의 굵기별 글꼴 별칭과 CKEditor 기울임 표시의 재현·검증 범위를 구체화.
