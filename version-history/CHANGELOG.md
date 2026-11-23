@@ -20,6 +20,7 @@
 - 검증 · 20261006 NuGet 반입본만으로 오프라인 빌드(운영 설정), 폴더형 publish·단일 EXE(91,830,606 Byte). TAR 4개 SHA256 OK, TGZ SHA256 `bded287c9afd88b95d8396234217d6f6b619e94ce6a7ad5b3ef1cb8052a7fb0c` 일치(24,927,989 Byte). 목록에 서버·`db/`·RgstPop·MockSso·Popup.slnx·EXE·PDB 0건, `popupLayout.ts`·`PopupFooter.tsx`·`DevEscapeHotkey.cs`·레이아웃 가이드·CI 이미지 포함, README-IMPORT 기준 커밋 1c61b13·직전 20261118(3e1a7ff).
 - 미완료 · 폐쇄망 반입·적용 미실행.
 - 상태 · 반입본 생성·검증 완료(`offline-export/20261124`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 보완(2026-11-23 재생성): 반입 문서의 Word·PDF·Excel 산출물이 원본 계약서보다 오래된 상태(Word·PDF 11-11, Excel v3.9 11-17)임을 확인해 산출물을 최신화(2026-11-23-03, 5d41089)하고 같은 날짜로 다시 생성. 변경 요약 문서 항목에 `WPF_SPEC_v3.10.xlsx`(v3.9 대체)·계약서 Word·PDF 재생성 추가. 히스토리 번들은 같은 날짜로 재생성(문서 커밋은 번들 범위 밖이라 main 56ab25e 동일). 옵션은 같고 `-Force` 추가, CI 이미지 블록은 생성 후 원복. 구성 동일(웹 A 56·M 22·D 3, WPF 99, 문서 206+CI 2, 번들 5), 삭제 목록에 `WPF_SPEC_v3.9.xlsx` 추가. 검증: 오프라인 운영 빌드·단일 EXE(91,830,606 Byte), TAR 4개 SHA256 OK, TGZ SHA256 `2cd19a36353a38eb44ad0bca010d2acb4076afcd4047f63ca20cfbfd34f403ad` 일치(24,951,495 Byte), 반입 PDF가 저장소 파일과 동일, README-IMPORT 기준 커밋 5d41089. 이전 생성의 검증 폴더 삭제. 폐쇄망 적용 미실행.
 
 ## 2026-11-23-01 — dev: TODO75 개발 빌드 탈출키 추가
 
