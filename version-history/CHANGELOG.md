@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-23-06 — dev: 공통 컴포넌트 가이드 함수 목록 누락 항목 추가
+
+- 이유 · TODO28 가이드 누락 확인을 계기로 `PopupcommonComponent` 공개 export(`index.ts`)와 가이드 함수 탭을 전수 대조. 공개 값 export 중 함수 탭에 없는 49개 가운데, 부모 화면(RgstPop·IS063 샘플·샘플 편집기)이 실제로 쓰는 함수·상수 16개가 빠져 있거나 컴포넌트 설명 안에만 언급돼 있어 정합성 보완.
+- 변경 · `guide/guideData.ts` 함수 탭(COMMON)에 13개 항목 추가: `richBlocksOrNull`, `POPUP_TYPE_LABELS`, `FONT_SIZE_MIN / FONT_SIZE_MAX`, `POPUP_MIN_WINDOW_SIZE`, `popupDateMillis`, `isSubmitPopupType`, `withDefaultAnswerMatchMode`, `normalizeImageSizeMode`(ORIGINAL 삭제 명시), `loadPopupQuestionCodes`, `usePopupQuizRule`, `isScoredQuizQuestion / scoredQuestionCount`, `QUIZ_QUESTION_SCORE / SCORED_QUESTION_REQUIRED`, `QUESTION_MAX`. 나머지 33개(서식 팔레트·들여쓰기·편집기 설정·코드 매핑·결과 안내 문구 등)는 공통 컴포넌트 내부에서만 쓰여 함수 탭에 넣지 않음.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`.
+- 검증 · `verify-popup-guide-registry.cjs` 413건(함수 이름 ↔ 실제 export 대조 포함)·`verify-popup-guide-render.cjs` 31건 통과, `tsc --noEmit` 통과, 변경 파일 eslint 오류 0. 가이드 실화면은 확인하지 않음.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-23-05 — doc: TODO61 전체 레이아웃 min/max 가이드 보완
 
 - 이유: VIDEO+QUIZ 문항의 최대 가로 길이 질의에서 콘텐츠 영역의 `MaxWidth=760`과 창 전체 최소·최대 크기가 혼동될 수 있어, 모든 팝업 유형별 제한을 61 UI 가이드에 명시.
