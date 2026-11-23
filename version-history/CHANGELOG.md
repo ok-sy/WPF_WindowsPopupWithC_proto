@@ -16,6 +16,7 @@
   - `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`: 유형별 최소·최대 요약과 상세 가이드 연결.
 - 검증: `PopupWindow.ApplyWindowSize()`, `SurveyPopupView.xaml`, `SurveyPreview.tsx`, `VideoPopupView.CalculateAspectHeight()`, `AspectVideoArea.aspectVideoHeight()`, `popupPreviewDialogLayout.previewDialogSize()` 등 Git `main` 구현과 문서 수치 정적 대조. 이미지·기존 UI 캡처는 재생성하지 않음.
 - 범위: **문서만 변경**. 타입검사·빌드·실행·원격 DB·폐쇄망 실화면 검증은 미실행. 기존 61 UI 캡처(2026-11-19)와 별개로 기록.
+- 대조 검증(2026-11-23): 문서 수치를 코드와 다시 대조해 모두 일치 확인 — WPF `PopupOptions` 900×620·최소 300·최대 1200×900·RATIO 0.7/0.75, `PopupWindow` FIXED 0.95·RATIO 1.0(비율 0.1~1.0 보정)·AUTO 0.9·IMAGE 0.90, XAML 시작값 760×620/Min 620×480, `TextPopupView` Min 320×240, `SurveyPopupView` MaxWidth 760·선택지 32·주관식 96, 영상 최소 180·상한 0.7, 이미지 설명 30%. 웹 `popupPreviewFallback` 560×420, `SurveyPreview` 760·주관식 96~180, `AspectVideoArea` 170·0.7, `InlinePopupPreview` 320, 모달 0.96, 이미지 0.90. 관찰: WPF 창 최소 300보다 `TextPopupView` 루트 최소 너비 320이 커서 300~319 폭 TEXT 창은 본문이 잘릴 수 있음(실화면 미확인, 수정하지 않음). 20261124 반입본 4-docs에 포함.
 
 ## 2026-11-23-04 — dev: TODO28 사용자 지정 글꼴 가이드 추가
 
