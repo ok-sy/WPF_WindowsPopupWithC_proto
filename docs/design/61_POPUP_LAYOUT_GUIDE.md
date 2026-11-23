@@ -45,6 +45,53 @@ node scripts/verify-popup-parity.cjs
 
 웹 수치·색 원본은 `zero-rule-web/main/src/features/PopupcommonComponent/popupLayout.ts`, 푸터는 `PopupFooter.tsx`다. WPF 푸터 버튼 스타일은 `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`, 설문 제출은 `Views/Contents/SurveyDesigns/SurveyStyles.V1·V2.xaml`에 있다. 결과 안내창 버튼(`ActionButtonStyle`, 높이 44)은 푸터 버튼과 별개다.
 
+## 최소·최대 크기 — 전체 레이아웃 (2026-11-23 정적 코드 확인)
+
+> **창 제한과 콘텐츠 내부 제한은 서로 다르다.** WPF 수치는 DIP, WEB 수치는 CSS px. 아래 값은 Git `main` 코드 기준이며 기존 2026-11-19 실측 이미지나 폐쇄망 반입본을 새로 검증한 결과가 아니다.
+
+### 창 크기: 공통 기준과 크기 모드
+
+- 유효 창 하한(축별): `max(300, minimumWidth/Height)`. 작업 영역이 더 작으면 화면 안에 들어가도록 최소값을 최종 상한 이하로 보정한다.
+- 기본 설정: WPF `PopupOptions`는 **900×620**, 최소 **300×300**, 최대 설정값 **1200×900**, RATIO **0.7/0.75**. WEB 미리보기의 표시용 기본 창은 **560×420**이며 최소/최대 설정 기본값은 동일하다.
+- `PopupWindow.xaml`의 시작값 `760×620 / MinWidth 620 / MinHeight 480`은 런타임 `ApplyWindowSize()`가 덮어쓴다. 창의 정책 최소 620×480이 아니다.
+
+| 창 모드 | WPF 최소 | WPF 최대(가로·세로 각각) | 실제 크기 |
+|---|---|---|---|
+| `FIXED` | 유효 하한, 화면 상한 이하로 보정 | **비IMAGE:** `min(설정 maximum, 작업 영역×95%)`; **IMAGE:** 작업 영역×90% | 요청 width/height 보정 |
+| `RATIO` | 유효 하한, 화면 상한 이하로 보정 | **비IMAGE:** `min(설정 maximum, 작업 영역×100%)`; **IMAGE:** 작업 영역×90% | WPF가 축별 비율을 0.1~1.0으로 보정해 작업 영역에 적용 |
+| `AUTO` | 유효 하한, 화면 상한 이하로 보정 | **비IMAGE:** `min(설정 maximum, 작업 영역×90%)`; **IMAGE:** 작업 영역×90% | 콘텐츠 측정 크기(`SizeToContent`) 기준 |
+| `FULLSCREEN` | 창 속성 min 0 | 창 속성 max ∞; 실제 주 모니터 전체 크기 | 일반 최소 300·화면 90/95% 상한 적용하지 않음 |
+
+비IMAGE에서 설정 maximum이 유효 하한보다 작으면 하한까지 올린다. IMAGE는 설정 maximum이 아닌 **작업 영역 90% 상한**을 사용한다. IMAGE의 `ADAPTIVE/FIT_TO_IMAGE`는 위의 창 크기 모드와 다른 **이미지 표시 모드**다.
+
+### 유형별 내부 min/max
+
+| 유형 | 창 제한 | 콘텐츠 내부의 별도 최소·최대 |
+|---|---|---|
+| **TEXT** | 비IMAGE 공통 규칙 | WPF `TextPopupView.xaml` 루트 **MinWidth 320, MinHeight 240**. 별도 최대 없음. 내부 뷰 제한이지 창의 최소 320×240 정책은 아님 |
+| **IMAGE** | 일반 모드 작업 영역 **최대 90%**, 최소 유효 300×300(화면 부족 시 보정) | ADAPTIVE 이미지는 원본 크기보다 확대하지 않음. WPF 설명 영역 `MaxHeight`는 이미지 표시 높이·남은 높이의 **30%** 기준. `FIT_TO_IMAGE`는 이미지 기준 권장 크기를 창 제한으로 보정 |
+| **VIDEO** | 비IMAGE 공통 규칙 | WPF 단독 영상 행은 남는 높이(`*`) 사용, 별도 재생 영역 높이 min/max 없음. **웹 `FillVideoArea`에만 `minHeight:170`** |
+| **SURVEY** | 비IMAGE 공통 규칙 | **설문 콘텐츠 MaxWidth 760**, 문항 제목 자체 고정 max 없음(줄바꿈). 선택지 **MinHeight 32**, WPF 주관식 **MinHeight 96**. WEB 주관식은 **96~180** |
+| **QUIZ** | 비IMAGE 공통 규칙 | SURVEY와 동일: **MaxWidth 760**, 선택지 **최소 32**, 주관식 WPF **최소 96** / WEB **96~180** |
+| **VIDEO+QUIZ** | 비IMAGE 공통 규칙(퀴즈가 포함된 팝업) | QUIZ 콘텐츠 **MaxWidth 760** 및 선택지/주관식 제한. 영상 재생 행 **최소 180**, 높이 상한 **`max(180, 부모 세로 스크롤 가용 높이×70%)`**. 전체 콘텐츠 높이 상한은 아님(부모 세로 스크롤) |
+
+- **760의 의미:** WPF `SurveyPopupView.xaml` `MaxWidth="760"`, WEB `SurveyPreview.tsx` `maxWidth:760`. 창 너비와 별개다. 카드 패딩·창 여백·스크롤바 때문에 실제 문항 가용 폭은 더 작으며 제목은 `TextWrapping.Wrap`이다. XAML `d:DesignWidth="700"`은 디자이너용 수치.
+- **VIDEO+QUIZ 영상 높이:** `(영상 가용 폭−테두리 좌우)×원본 세로/가로+테두리 상하`를 계산한 뒤 180 하한·가용 높이 70% 상한을 적용한다. 상한이 180보다 작으면 180을 우선한다. WPF `VideoPopupView.CalculateAspectHeight()`와 WEB `aspectVideoHeight()` 기준.
+- **공통 영역:** 푸터 최소 높이 **64**(문구에 따라 증가), 일반 버튼 최소 너비 **118**·높이 **34**, 제출 버튼 최소 너비 **132**·높이 **34**. 별도 버튼 최대 너비·푸터 최대 높이는 지정하지 않는다.
+
+### WEB 미리보기 전용 min/max와 WPF 차이
+
+| 화면 | 적용 범위·제한 |
+|---|---|
+| 인라인 미리보기 | 미리보기 내용 자리 **최소 높이 320**, 너비는 부모 영역 기준. 실제 팝업 창의 최소 높이가 아님 |
+| 실제 크기 모달(비IMAGE) | 설정 minimum/maximum으로 보정 후 **브라우저 가용 크기의 96% 상한**. WPF의 FIXED 95%·RATIO 100%·AUTO 90%와 차이 가능. WEB 미리보기 RATIO 계산은 WPF의 비율 0.1~1.0 보정과도 구분 |
+| 실제 크기 모달(IMAGE) | 기본 **브라우저 가용 크기 90% 상한**, IMAGE 권장 창 크기 전달 시 모달 96% 상한도 확인. WPF는 모니터 작업 영역 90% |
+| FULLSCREEN 미리보기 | 브라우저 뷰포트 전체. WPF는 주 모니터 전체화면 |
+
+**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 320×240, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 96%를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
+
+근거: [WPF 창 크기](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs) · [WPF 기본 설정](../../popup-frameWork/Popup/Models/PopupOptions.cs) · [TEXT 뷰](../../popup-frameWork/Popup/Views/Contents/TextPopupView.xaml) · [설문/퀴즈 뷰](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml) · [문항 구현](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs) · [영상 비율](../../popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs) · [웹 설문](../../zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx) · [웹 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts) · [인라인 미리보기](../../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx)
+
 ## 푸터 배치 규칙
 
 - 순서: 왼쪽 끝 **나중에 보기** → **안내 문구·다시 보지 않기** → 오른쪽 **보조 닫기·확인/바로가기/제출**. WPF `FooterArea`의 세 열과 같다.
