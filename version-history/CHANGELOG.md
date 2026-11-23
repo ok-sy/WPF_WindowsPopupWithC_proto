@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-23-04 — dev: TODO28 사용자 지정 글꼴 가이드 추가
+
+- 이유 · TODO28 사용자 지정 글꼴 이름 전달(2026-11-19-06)은 코드·인계 문서에 반영됐으나 관리자 웹 공통 컴포넌트 가이드에는 등록 함수와 사용 방법이 없고 서식 안내가 "글꼴 4가지"로 남아 정합성 보완.
+- 변경 ·
+  - `guideData.ts` 함수 목록에 `registerPopupRichFonts`(family = 저장·WPF 전달 값, css = 웹 표시용 `@font-face` 별칭, 앱 시작 시 1회, 호출마다 목록 교체, 제외 조건)·`richFonts`(미등록 이름 "(미등록)" 보존)·`isRichFontName`(이름 규칙, 서버·WPF 동일) 추가.
+  - 서식 본문 프로세스 안내를 "기본 4가지 + 등록 글꼴"로 갱신하고 등록 방법 한 줄 추가.
+  - `guideNotices.ts`에 2026-11-19 추가 공지(호출 예시, 굵기·미등록·WPF 미설치 동작, 서버 이름 규칙 반영 필요) 추가.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`, `guideNotices.ts`.
+- 검증 · `tsc --noEmit` 통과, 변경 파일 eslint 오류 0, `verify-popup-guide-registry.cjs` 334건·`verify-popup-guide-render.cjs` 31건 통과. 가이드 실화면은 확인하지 않음.
+- 상태 · 커밋·원격 반영. 20261124 반입본에 반영(2026-11-23-02 보완 참조).
+
 ## 2026-11-23-03 — docs: 인터페이스 산출물(Word·PDF·Excel) 최신화
 
 - 이유 · 계약서 `POPUP_INTERFACE_SPEC.md`는 2026-11-22까지 갱신됐으나 생성 산출물이 이전 상태(Word·PDF 2026-11-11, Excel v3.9 2026-11-17)로 남아 20261124 반입본 문서와 원본이 어긋남.

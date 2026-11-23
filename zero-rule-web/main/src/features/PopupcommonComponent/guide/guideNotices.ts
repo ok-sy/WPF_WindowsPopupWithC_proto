@@ -54,6 +54,17 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-19-rich-custom-font', date: '2026-11-19', category: 'ADDED', status: 'DONE', doneDate: '2026-11-19',
+    title: '서식 본문 회사 글꼴 등록(registerPopupRichFonts)',
+    body: ['기본 4가지 글꼴(맑은 고딕·굴림·돋움·바탕) 외에 회사 글꼴을 서식 선택지에 추가할 수 있습니다. 저장 값은 Windows 글꼴 패밀리 이름이며 서버를 거쳐 WPF에 그대로 전달됩니다.',
+      'family는 WPF가 인식하는 Windows 패밀리 이름(저장값), css는 웹에서 그릴 CSS 글꼴(전역 @font-face 별칭)입니다. 굵게는 기존처럼 bold로 저장하고, 400/700 굵기와 웹 서체 연결은 전역 CSS가 담당합니다.',
+      '등록하지 않은 이름이 저장된 본문은 선택지에 "이름 (미등록)"으로 보여 다시 편집해도 지워지지 않습니다. WPF는 PC에 없는 글꼴을 기본 글꼴로 표시합니다.',
+      "예: registerPopupRichFonts([{ family: '회사 Text', css: \"'Company Text', sans-serif\", label: '회사 본문' }])"],
+    components: ['PopupRichTextEditor', 'PopupRichTextMenu', 'PopupRichBlocks', 'registerPopupRichFonts', 'richFonts', 'isRichFontName'],
+    action: '회사 글꼴을 쓰려면 앱 시작 시(라우터·Provider 초기화 등) registerPopupRichFonts를 한 번 호출합니다. 서버가 같은 이름 규칙을 받도록 반영돼 있어야 저장됩니다(구버전 서버는 새 이름을 거부). 쓰지 않으면 바꿀 코드는 없습니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-18-video-quiz-scroll-oscillation', date: '2026-11-18', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-18',
     title: '동영상+퀴즈 미리보기 스크롤바 깜빡임 수정',
     body: ['동영상+퀴즈 미리보기의 내용 높이가 미리보기 높이와 거의 같을 때 세로 스크롤바가 계속 생겼다 없어지던 문제를 고쳤습니다.',
