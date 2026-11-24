@@ -243,6 +243,7 @@ namespace Popup.Views.Contents
             IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null)
         {
             InitializeComponent();
+            HookCompositionRefresh();   // POL-05-01 : 크기가 바뀐 뒤 WebView2 합성 화면을 새 크기로 다시 받는다(VideoPopupView.CompositionRefresh.cs).
 
             _showControls = showControls;
             _allowFullScreen = allowFullScreen;

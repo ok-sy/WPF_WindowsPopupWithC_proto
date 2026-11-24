@@ -329,6 +329,18 @@ internal static class Program
         Check(Math.Abs(smallVideo.Window.MinWidth - 252) < 1 && Math.Abs(smallVideo.Window.ActualWidth - 252) < 1,
             $"[video inset] minimum 300 window becomes a 252 video window ({smallVideo.Window.ActualWidth}, min {smallVideo.Window.MinWidth})");
         ShutdownClose(smallVideo.Window);
+        // WebView2 합성 화면 다시 그리기(2026-11-25): 크기가 자리 잡은 뒤 실행되고, 너비를 원래(자동)로 되돌리며, 스스로 다시 예약하며 반복하지 않는다.
+        var composed = OpenPopup("VIDEO_QUIZ", dto => { dto.SizeMode = "FIXED"; dto.Width = 720; dto.Height = 900; dto.ShowFooter = true; });
+        var web = (FrameworkElement)composed.Video!.FindName("VideoWebView");
+        void Pump(int ms) { var sw = System.Diagnostics.Stopwatch.StartNew(); while (sw.ElapsedMilliseconds < ms) { composed.Window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle); System.Threading.Thread.Sleep(20); } }
+        Pump(2500);
+        var countProperty = typeof(VideoPopupView).GetProperty("CompositionRefreshCount", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        int Count() => (int)countProperty.GetValue(composed.Video)!;
+        int settled = Count();
+        Pump(1500);
+        Check(web.Visibility != Visibility.Visible || (settled >= 1 && settled <= 4 && Count() == settled && double.IsNaN(web.Width)),
+            $"[video composition] refresh runs after the size settles, restores the width and does not loop (count {settled} → {Count()}, width {web.Width}, visible {web.Visibility})");
+        ShutdownClose(composed.Window);
         // FULLSCREEN은 줄이지 않는다.
         var full = OpenPopup("VIDEO", dto => { dto.SizeMode = "FULLSCREEN"; dto.ShowFooter = true; });
         full.Window.UpdateLayout();

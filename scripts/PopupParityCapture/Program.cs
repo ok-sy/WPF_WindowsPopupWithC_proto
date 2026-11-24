@@ -39,6 +39,18 @@ internal static class Program
                 Thread.Sleep(100);
             }
             window.UpdateLayout();
+            // 영상 창: WebView2 합성 화면이 새 크기로 다시 그려질 때까지(VideoPopupView.CompositionRefreshDelay 250ms 뒤 실행) 더 기다리고,
+            // 캡처 직전 영상 영역 위쪽 60%의 밝은 픽셀 비율(videoFill)을 남긴다. 작은 프레임이 남으면 낮게 나온다(2026-11-25).
+            var videoHost = FindWebViewHost(window);
+            double? videoFill = null, videoFillEarly = null;
+            if (videoHost != null)
+            {
+                videoFillEarly = VideoFill(videoHost);   // 원래 캡처 시점(표시 후 약 0.5초) 값. 참고용.
+                var waited = System.Diagnostics.Stopwatch.StartNew();
+                while (waited.ElapsedMilliseconds < 1500) { window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle); Thread.Sleep(20); }
+                window.UpdateLayout();
+                videoFill = VideoFill(videoHost);
+            }
             var root = (FrameworkElement)window.Content;
             // 창 전체(그림자용 바깥 여백 포함)를 그대로 그린 뒤 흰 판(PopupOuterGrid 안쪽)만 잘라 낸다. 배율 변환 없음.
             var outer = (FrameworkElement)window.FindName("PopupOuterGrid");
@@ -54,6 +66,8 @@ internal static class Program
             File.WriteAllText(Path.Combine(args[1], dto.PopupId + ".wpf.json"), JsonSerializer.Serialize(new
             {
                 window = new { width = window.ActualWidth, height = window.ActualHeight },
+                videoFill,
+                videoFillEarly,
                 content = new { width, height, margin = m.Left },
                 choices = Descendants(root).OfType<System.Windows.Controls.Primitives.ToggleButton>()
                     .Select(c => new { name = System.Windows.Automation.AutomationProperties.GetName(c), c.ActualWidth, c.ActualHeight, c.FontSize }),
@@ -106,5 +120,33 @@ internal static class Program
             yield return child;
             foreach (var nested in Descendants(child)) yield return nested;
         }
+    }
+
+    /* 영상 창의 WebView2 합성 컨트롤(보이는 것만). 없으면 null. */
+    private static FrameworkElement? FindWebViewHost(DependencyObject root)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is FrameworkElement element && element.GetType().Name.Contains("WebView2") && element.IsVisible) return element;
+            var found = FindWebViewHost(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /* 영상 영역 위쪽 60%(컨트롤바 위)의 밝은 픽셀 비율. 플레이어를 채운 프레임은 0.7 이상, 왼쪽 위 작은 프레임은 0.1 아래. */
+    private static double? VideoFill(FrameworkElement host)
+    {
+        int w = (int)Math.Ceiling(host.ActualWidth), h = (int)Math.Ceiling(host.ActualHeight);
+        if (w <= 0 || h <= 0) return null;
+        var bitmap = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(host);
+        var pixels = new byte[w * h * 4];
+        bitmap.CopyPixels(pixels, w * 4, 0);
+        int lit = 0, total = 0;
+        for (int y = 0; y < h * 6 / 10; y++)
+            for (int x = 0; x < w; x++) { int i = (y * w + x) * 4; total++; if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 60) lit++; }
+        return Math.Round((double)lit / total, 2);
     }
 }

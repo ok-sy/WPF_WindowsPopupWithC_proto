@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-25-01 — dev: 60_영상합성화면재그리기_수정
+
+- 이유 · 61 레이아웃 가이드 VIDEO+QUIZ 비교 그림(bf9e8d6 커밋본)에서 WPF 영상이 플레이어 왼쪽 위에 작게 그려지고 나머지가 검게 보였고, 같은 데이터 재캡처는 정상이라 원인 확인 필요.
+- 원인 · 작게 보이는 순간에도 브라우저 안 video는 플레이어 크기(614×261)·메타데이터 로드·멈춤 상태로 정상. `WebView2CompositionControl`이 로드 중 크기 변경(비율 높이 345 → 261) 전의 프레임을 유지하고, 멈춘 영상은 새 프레임이 없어 재생 전까지 남음(6초 뒤 동일). 문서 다시 그리기로는 회복되지 않고 컨트롤 크기 변경으로 회복. 이번 영상 창 크기 변경 이전(c69f693 단독 VIDEO 그림)에도 있던 간헐적 현상.
+- 변경 · `VideoPopupView.CompositionRefresh.cs` 추가: `VideoWebView` 크기 변경마다 250ms 디바운스 후 너비를 1 DIP 줄였다 되돌려 합성 화면을 다시 받음(되돌리는 중 재예약 없음, 재생·시청량·비율 계산 무관), 생성자에서 연결. `PopupParityCapture`가 영상 창은 1.5초 더 기다린 뒤 영상 영역 채움(videoFill)·원래 시점 값(videoFillEarly)을 기록, `verify-popup-parity`가 videoFill ≥ 0.5 검사. `PopupWindowTests`에 다시 그리기 실행·너비 복원·반복 없음 검사. 61 가이드 VIDEO·VIDEO+QUIZ 그림 4장 재생성(정상 프레임). TODO60 후속 절·대조 문서 기록.
+- 주요 파일 · `popup-frameWork/Popup/Views/Contents/VideoPopupView.CompositionRefresh.cs`, `VideoPopupView.xaml.cs`, `scripts/PopupParityCapture/Program.cs`, `scripts/verify-popup-parity.cjs`, `scripts/PopupWindowTests/Program.cs`, `docs/design/61_popup_layout_guide/PARITY-VIDEO*.png`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`.
+- 검증 · 비교 캡처 반복: 수정 전 12회 중 4회 고착(0.07 유지), 수정 후 22회 모두 1초 안에 회복. WPF 빌드 0/0, `PopupWindowTests` 686, 로컬 BehaviorTests 1644, `verify-popup-parity` 56(videoFill VIDEO 0.77·VIDEO+QUIZ 1.0) 통과. 미실행: Windows 실화면 재생 전 화면 확인, 폐쇄망.
+- 상태 · 커밋·원격 반영. 저사양 CPU 영향 측정은 이어서 수행.
+
 ## 2026-11-24-19 — dev: 61_영상창판크기맞춤_수정
 
 - 이유 · VIDEO·VIDEO+QUIZ 창은 저사양 PC 부하 때문에 그림자 없는 불투명 창이라 그림자 여백 24도 없어, 같은 설정 크기에서 판이 다른 유형(창 - 48)보다 48 크게 보였다. 그림자 유무보다 크기 차이가 눈에 띄어 크기만 맞춤.
