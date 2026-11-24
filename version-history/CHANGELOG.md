@@ -7,7 +7,8 @@
 - 변경 · `VideoPopupView.CompositionRefresh.cs` 추가: `VideoWebView` 크기 변경마다 250ms 디바운스 후 너비를 1 DIP 줄였다 되돌려 합성 화면을 다시 받음(되돌리는 중 재예약 없음, 재생·시청량·비율 계산 무관), 생성자에서 연결. `PopupParityCapture`가 영상 창은 1.5초 더 기다린 뒤 영상 영역 채움(videoFill)·원래 시점 값(videoFillEarly)을 기록, `verify-popup-parity`가 videoFill ≥ 0.5 검사. `PopupWindowTests`에 다시 그리기 실행·너비 복원·반복 없음 검사. 61 가이드 VIDEO·VIDEO+QUIZ 그림 4장 재생성(정상 프레임). TODO60 후속 절·대조 문서 기록.
 - 주요 파일 · `popup-frameWork/Popup/Views/Contents/VideoPopupView.CompositionRefresh.cs`, `VideoPopupView.xaml.cs`, `scripts/PopupParityCapture/Program.cs`, `scripts/verify-popup-parity.cjs`, `scripts/PopupWindowTests/Program.cs`, `docs/design/61_popup_layout_guide/PARITY-VIDEO*.png`, `docs/design/60_VIDEO_QUIZ_원본비율_영역할당_TODO.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`.
 - 검증 · 비교 캡처 반복: 수정 전 12회 중 4회 고착(0.07 유지), 수정 후 22회 모두 1초 안에 회복. WPF 빌드 0/0, `PopupWindowTests` 686, 로컬 BehaviorTests 1644, `verify-popup-parity` 56(videoFill VIDEO 0.77·VIDEO+QUIZ 1.0) 통과. 미실행: Windows 실화면 재생 전 화면 확인, 폐쇄망.
-- 상태 · 커밋·원격 반영. 저사양 CPU 영향 측정은 이어서 수행.
+- 상태 · 커밋·원격 반영.
+- 후속(CPU 측정) · 측정용 실행기를 논리 CPU 2개로 제한해 VIDEO+QUIZ 수정 전·후를 단계별 36초 측정(전체 16코어 기준 tree 평균): 멈춤 0.06 → 0.07, 재생 0.82 → 0.86, 0.3초마다 폭 변경(최악) 0.66 → 0.85. 멈춤·재생은 잡음 수준, 연속 크기 변경 중에만 약 0.2%p 증가. 측정 중 `scripts/measure-popup-performance.ps1`의 `[math]::Max(0, …)`가 정수 버전으로 해석돼 1초 미만 CPU 증가분이 0으로 잘리는 결함을 발견해 수정(저장소에 이 스크립트로 기록된 수치 없음), 측정 가이드에 안내. 1회 측정·실제 저사양 PC 미측정. 커밋 `dev: 60_영상합성화면CPU측정_추가`, 원격 반영.
 
 ## 2026-11-24-19 — dev: 61_영상창판크기맞춤_수정
 

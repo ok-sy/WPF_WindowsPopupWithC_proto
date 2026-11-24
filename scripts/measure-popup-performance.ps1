@@ -62,7 +62,7 @@ while ($true) {
             $cpu = $process.TotalProcessorTime.TotalSeconds
             $next[$key] = $cpu
             if ($previous.ContainsKey($key)) {
-                $delta = [math]::Max(0, $cpu - $previous[$key])
+                $delta = [math]::Max(0.0, [double]$cpu - [double]$previous[$key])   # 0(Int32)을 쓰면 Max(Int32,Int32)가 선택돼 1초 미만 증가분이 0으로 잘린다(2026-11-25 수정)
                 $treeDelta += $delta
                 if ($process.Id -eq $PopupProcessId) { $rootDelta += $delta }
             }
