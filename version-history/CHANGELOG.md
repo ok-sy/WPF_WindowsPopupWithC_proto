@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-05 — dev: 퀴즈완료창섀도우_추가
+
+- 이유 · 흰 퀴즈 본문 위에 뜨는 완료 안내가 검은 외곽선으로만 구분되어, QUIZ·VIDEO+QUIZ 완료창을 섀도우로 구분하는 후속 TODO 구현.
+- 변경 · `PopupAlertStyle`(Default·QuizCompletion) 추가, `PopupAlert.Show()`·`CreateDialog()`에 선택 인자(기본 Default)로 반영. QuizCompletion은 외곽선 없이 흰 판에만 섀도우(검정·0.16·Blur 20·Depth 4·아래 방향)를 두고 본문은 효과 없는 레이어로 분리, 창 둘레 투명 여백 24 DIP(창 478·흰 판 430 유지). `PopupManager.SubmitSurveyResult()`의 QUIZ 완료 안내(단독 QUIZ·VIDEO+QUIZ)만 QuizCompletion 지정, 미통과·검증·저장 오류·SURVEY 안내는 기존 형식. 결과 생성·큐 적재·닫기 순서와 `score/passed` 계약은 변경 없음.
+- 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`, `popup-frameWork/Popup/Managers/PopupManager.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `scripts/PopupWindowTests` 빌드·실행 `PASS: 659`(완료 형식 구조·수치, 확인 버튼 닫기, QUIZ·VIDEO_QUIZ 완료 안내 섀도우·재응시/SURVEY 안내 기존 외곽선). 미실행: Windows 100%·고DPI·화면 가장자리 그림자 잘림 실화면, 부모 창 중심·모달 포커스 실화면, 폐쇄망 반입본.
+- 상태 · 커밋·원격 반영. 섀도우 최종 수치는 실화면 확인 후 확정.
+
 ## 2026-11-24-04 — doc: TODO61-23 실제 크기 미리보기 기준 화면 선택 추가
 
 - 이유 · 실제 크기 미리보기에서 여러 모니터 작업 영역을 같은 화면에서 비교할 필요가 있다.

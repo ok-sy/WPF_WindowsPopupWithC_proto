@@ -1190,14 +1190,36 @@ internal static class Program
         // 퀴즈 결과 창은 제목을 화면에 그리지 않는다(창 이름으로만 남음). 기본 호출은 제목을 그대로 그린다.
         var create = typeof(PopupAlert).GetMethod("CreateDialog", BindingFlags.Static | BindingFlags.NonPublic)!;
         List<string> Texts(Window dialog) => ((StackPanel)((Border)dialog.Content).Child).Children.OfType<TextBlock>().Select(t => t.Text).ToList();
-        var hidden = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false })!;
-        var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true })!;
+        var hidden = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false, PopupAlertStyle.Default })!;
+        var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true, PopupAlertStyle.Default })!;
         Check(Texts(hidden).SequenceEqual(new[] { join.Notice.Message }) && hidden.Title == "퀴즈를 완료했어요"
             && Texts(shown).SequenceEqual(new[] { "제목", "본문" }), "[Q3] quiz result dialog hides the heading but keeps the window title");
         // 공통 안내창 외곽선은 1.2 DIP 검은 선, 모서리 22 유지.
         var frame = (Border)shown.Content;
         Check(frame.BorderThickness == new Thickness(1.2) && frame.BorderBrush == System.Windows.Media.Brushes.Black && frame.CornerRadius == new CornerRadius(22),
             $"[Q3] common alert border is 1.2 DIP ({frame.BorderThickness})");
+        // 퀴즈 완료 안내(QuizCompletion): 검은 외곽선 없이 흰 판에만 섀도우, 본문은 효과 없는 형제 레이어, 그림자 여백만큼 창을 넓혀 흰 판 430 유지.
+        var completion = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false,
+            PopupAlertStyle.QuizCompletion })!;
+        var root = completion.Content as Grid;
+        var plate = root?.Children.OfType<Border>().FirstOrDefault();
+        var body = root?.Children.OfType<Border>().Skip(1).FirstOrDefault();
+        var shadow = plate?.Effect as System.Windows.Media.Effects.DropShadowEffect;
+        Check(root != null && plate != null && body != null && shadow != null
+            && plate.BorderThickness == new Thickness(0) && body.BorderThickness == new Thickness(0)
+            && plate.Background == System.Windows.Media.Brushes.White && plate.CornerRadius == new CornerRadius(22) && body.CornerRadius == new CornerRadius(22)
+            && body.Effect == null && body.Child is StackPanel bodyPanel
+            && bodyPanel.Children.OfType<TextBlock>().Select(t => t.Text).SequenceEqual(new[] { join.Notice.Message })
+            && shadow.Color == System.Windows.Media.Colors.Black && shadow.Opacity == 0.16 && shadow.BlurRadius == 20 && shadow.ShadowDepth == 4
+            && root.Margin == new Thickness(24) && completion.Width == 430 + 48 && shown.Width == 430 && completion.Title == "퀴즈를 완료했어요",
+            "[Q3] quiz completion alert uses a shadow instead of the black border and keeps the 430 plate");
+        // 완료 형식도 확인 버튼이 Enter/Esc 기본·취소 버튼이며 누르면 닫힌다. 기본 형식은 그대로.
+        var completionButton = ((StackPanel)body!.Child).Children.OfType<Button>().Single();
+        bool completionClosed = false;
+        completion.Closed += (_, _) => completionClosed = true;
+        completion.Show();
+        completionButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+        Check(completionButton.IsDefault && completionButton.IsCancel && completionClosed, "[Q3] quiz completion alert closes with the confirm button (Enter/Esc)");
         // 배점이 1점이 아니면 통과 기준을 점수로 안내한다.
         foreach (var question in questions) question.QuestionScore = 10;
         var points = Run(3, 60);
@@ -1278,6 +1300,7 @@ internal static class Program
                 { opened.Window, opened.Options, new PopupResultBuilder("P7", null, "D-7"), Submit(3, 5, false) }));
             Check(seen.Count == 1 && seen[0].StartsWith("퀴즈를 완료하여") && seen[0].EndsWith("3/10개"),
                 $"[§7] {type} participation below threshold shows the completion notice ({string.Join(" / ", seen)})");
+            Check(s_closedDialogShadow.SequenceEqual(new[] { true }), $"[§7] {type} completion notice uses the shadow style without the black border");
             Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted
                 && saved[0].Score == 3 && saved[0].Passed == false && !(bool)failedOnce.GetValue(opened.Window)!,
                 $"[§7] {type} participation below threshold enqueues SUBMITTED(score 3, passed false) and never enters the retry path ({saved.Count})");
@@ -1292,6 +1315,7 @@ internal static class Program
                 Check(retry.Count == 1 && retry[0].Contains("(통과 기준: 5개 이상)") && !blocked.Closed() && blockedSaved.Count == 0
                     && (bool)failedOnce.GetValue(blocked.Window)!,
                     $"[§7] {type} requiresPassing {requires?.ToString() ?? "null"} cutoff below threshold blocks submission and asks for a retry");
+                Check(s_closedDialogShadow.SequenceEqual(new[] { false }), $"[§7] {type} retry notice keeps the common bordered style");
                 ShutdownClose(blocked.Window);
             }
         }
@@ -1874,16 +1898,23 @@ internal static class Program
      * action 실행 중 뜨는 모달(ShowDialog의 중첩 메시지 루프)에서 창 이름이 title인 창을 찾아 본문 TextBlock 문구를 모으고 닫는다.
      * Application 없이도 HwndSource 목록으로 찾는다.
      */
+    /// <summary>마지막 CloseDialogs에서 닫은 안내창마다 퀴즈 완료 형식(섀도우·외곽선 없음)이었는지.</summary>
+    private static readonly List<bool> s_closedDialogShadow = new();
+
     private static List<string> CloseDialogs(string title, Action action)
     {
         var seen = new List<string>();
+        s_closedDialogShadow.Clear();
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         timer.Tick += (_, _) =>
         {
             foreach (var source in PresentationSource.CurrentSources.OfType<System.Windows.Interop.HwndSource>().ToList())
             {
                 if (source.RootVisual is not Window dialog || dialog.Title != title || !dialog.IsVisible) continue;
-                var texts = ((StackPanel)((Border)dialog.Content).Child).Children.OfType<TextBlock>().Select(t => t.Text);
+                // 기본 형식은 Border(외곽선)→StackPanel, 퀴즈 완료 형식은 Grid[섀도우 판, 본문 Border]→StackPanel.
+                var frame = dialog.Content as Border ?? ((Grid)dialog.Content).Children.OfType<Border>().Last();
+                s_closedDialogShadow.Add(dialog.Content is Grid grid && grid.Children.OfType<Border>().First().Effect is System.Windows.Media.Effects.DropShadowEffect);
+                var texts = ((StackPanel)frame.Child).Children.OfType<TextBlock>().Select(t => t.Text);
                 seen.Add(string.Join("|", texts));
                 dialog.Close();
             }
@@ -1905,6 +1936,7 @@ internal static class Program
         var seen = CloseDialogs("설문조사 완료", () => submit.Invoke(null, new object[]
             { opened.Window, opened.Options, builder, new SurveySubmission { Answers = new List<SurveyAnswer>() } }));
         Check(seen.SequenceEqual(new[] { "설문조사가 완료되었습니다." }), $"SURVEY submission shows the completion notice without a heading ({string.Join(" / ", seen)})");
+        Check(s_closedDialogShadow.SequenceEqual(new[] { false }), "SURVEY completion notice keeps the common bordered style");
         Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted,
             $"SURVEY submission saves SUBMITTED and closes after the notice ({saved.Count})");
     }

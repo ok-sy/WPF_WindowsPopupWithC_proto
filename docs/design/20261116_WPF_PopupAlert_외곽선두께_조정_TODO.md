@@ -45,14 +45,23 @@ dialog.Content = new Border { Background = Brushes.White, BorderBrush = Brushes.
 
 ### 구현 시 확인할 사항
 
-- [ ] `popup-frameWork/Popup/Managers/PopupManager.cs`에서 완료 안내를 호출하는 경로를 확인한다. 단독 QUIZ와 VIDEO+QUIZ의 완료 안내(참여형 유효 제출 및 합격 필요 유형의 통과)에 완료용 스타일을 지정한다. 미통과·입력 검증·저장 오류·설문 안내는 기존 공통 스타일을 사용한다.
-- [ ] `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`의 `Show()`·`CreateDialog()`에서 기존 호출자가 사용하는 기본 스타일을 보존하고, 완료용 스타일에서 검은 테두리를 제거한다. 흰 판·모서리 반경 22 DIP·본문 배치·확인 버튼은 기존과 같이 표시한다. 섀도우는 검정, 불투명도 0.16, `BlurRadius=20` DIP, `ShadowDepth=4` DIP를 초기값으로 비교한다. 흰 판 배경에 효과를 적용하고 투명 창에 바깥 여백을 확보해 그림자 잘림과 본문 흐림을 방지한다.
-- [ ] `scripts/PopupWindowTests/Program.cs`에서 완료 스타일과 기존 스타일의 외곽선, 섀도우 및 모서리를 구분해 확인한다. Enter/Esc·확인 버튼 닫기, 부모 창 중심 배치와 모달 포커스, 화면 가장자리에서의 그림자 잘림을 점검한다.
-- [ ] 결과 생성·큐 적재·닫기 순서, `score/passed` 전송 계약은 기존대로 동작하는지 대조한다. 적용 영역은 WPF 표시다. 관리자 웹은 현행 푸터 문구이며, API·DB 변경은 예정되어 있지 않다.
+- [x] `popup-frameWork/Popup/Managers/PopupManager.cs`에서 완료 안내를 호출하는 경로를 확인한다. 단독 QUIZ와 VIDEO+QUIZ의 완료 안내(참여형 유효 제출 및 합격 필요 유형의 통과)에 완료용 스타일을 지정한다. 미통과·입력 검증·저장 오류·설문 안내는 기존 공통 스타일을 사용한다.
+- [x] `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`의 `Show()`·`CreateDialog()`에서 기존 호출자가 사용하는 기본 스타일을 보존하고, 완료용 스타일에서 검은 테두리를 제거한다. 흰 판·모서리 반경 22 DIP·본문 배치·확인 버튼은 기존과 같이 표시한다. 섀도우는 검정, 불투명도 0.16, `BlurRadius=20` DIP, `ShadowDepth=4` DIP를 초기값으로 비교한다. 흰 판 배경에 효과를 적용하고 투명 창에 바깥 여백을 확보해 그림자 잘림과 본문 흐림을 방지한다.
+- [x] `scripts/PopupWindowTests/Program.cs`에서 완료 스타일과 기존 스타일의 외곽선, 섀도우 및 모서리를 구분해 확인한다. Enter/Esc·확인 버튼 닫기, 부모 창 중심 배치와 모달 포커스, 화면 가장자리에서의 그림자 잘림을 점검한다.
+- [x] 결과 생성·큐 적재·닫기 순서, `score/passed` 전송 계약은 기존대로 동작하는지 대조한다. 적용 영역은 WPF 표시다. 관리자 웹은 현행 푸터 문구이며, API·DB 변경은 예정되어 있지 않다.
 
 ### 구현 전에 결정할 사항
 
 섀도우 최종 수치는 Windows 실화면으로 결정한다. 외곽선 제거에 따라 흰 배경과 구분이 어렵거나 작은 창에서 여백이 부족할 수 있다. 초기값 그대로 적용하는 안과 불투명도·블러·깊이·바깥 여백을 조정하는 안을 비교한다. 먼저 초기값으로 Windows 배율 100%와 고DPI에서 확인하고, 판과 배경의 분리 및 잘림에 문제가 있는 축만 조정한다. 값에 따라 시각적 대비와 안내창 전체 외곽 크기가 달라진다.
+
+### 구현 기록 (2026-11-24)
+
+- `PopupAlertStyle`(Default·QuizCompletion)을 추가하고 `Show()`·`CreateDialog()`의 선택 인자(기본 Default)로 받는다. 기존 호출자는 변경 없이 기존 외곽선 형식이다.
+- `SubmitSurveyResult()`의 QUIZ 완료 안내(`isQuiz && Score is double`) 한 곳만 QuizCompletion을 지정한다. VIDEO+QUIZ도 PopupType `QUIZ`라 같은 경로다. 미통과(다시 풀기)·필수 미응답 검증·저장 오류·SURVEY 완료는 Default.
+- QuizCompletion: 흰 판 Border(모서리 22)에만 `DropShadowEffect`(검정·0.16·Blur 20·Depth 4·Direction 270)를 걸고, 본문 StackPanel은 효과 없는 형제 Border로 올려 글자가 효과 경로로 흐려지지 않게 했다. 창 둘레 투명 여백 24 DIP(Blur+Depth)를 사방 같게 두고 창 너비를 478로 늘려 흰 판 430·가운데 배치를 유지한다. 그림자 방향은 문서에 지정이 없어 좌우 대칭이 되도록 아래(270)로 정했다.
+- 결과 생성·큐 적재·닫기 순서와 `score/passed`는 변경 없음(표시 인자만 추가). 관리자 웹·API·DB 변경 없음.
+- `PopupWindowTests`: 완료 형식 구조(외곽선 0·섀도우 수치·본문 무효과·여백 24·창 478·창 이름 유지)와 확인 버튼(IsDefault/IsCancel) 닫기, 실제 `SubmitSurveyResult` 경로에서 QUIZ·VIDEO_QUIZ 완료 안내는 섀도우·재응시 안내와 SURVEY 완료 안내는 기존 외곽선임을 검사. `PASS: 659`.
+- 미실행: 부모 창 중심 배치·모달 포커스의 실화면 확인, Windows 100%·고DPI·화면 가장자리 그림자 잘림 확인, 폐쇄망 반입본.
 
 ### 완료 기준
 
