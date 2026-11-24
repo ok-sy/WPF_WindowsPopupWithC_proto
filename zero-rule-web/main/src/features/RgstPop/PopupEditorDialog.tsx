@@ -564,9 +564,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 helperText={popup.popupType === 'IMAGE' ? `${POPUP_MIN_WINDOW_SIZE}px 이상 · 헤더·푸터 포함 최종 창 기준 · 작업 영역 90%를 넘으면 그 값으로 보정` : `${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하`} onChange={(value) => updatePopup('minimumHeight', value)} />
               {popup.popupType !== 'IMAGE' && <>
                 <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.MAX_VALUE}
-                  helperText={`최소 너비(${popup.minimumWidth}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 95%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />
+                  helperText={`최소 너비(${popup.minimumWidth}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 90%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />
                 <PopupDimensionField label="창 최대 높이" value={popup.maximumHeight} minimum={popup.minimumHeight} maximum={Number.MAX_VALUE}
-                  helperText={`최소 높이(${popup.minimumHeight}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 95%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumHeight', value)} />
+                  helperText={`최소 높이(${popup.minimumHeight}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 90%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumHeight', value)} />
               </>}
             </Box>}
             {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">{popup.popupType === 'IMAGE' ? '이미지 창 최대: 현재 화면 작업 영역의 90%. 고정 최대 픽셀값을 사용하지 않습니다.' : `미리보기 최대 크기: ${popup.maximumWidth}px × ${popup.maximumHeight}px`}</Typography>}

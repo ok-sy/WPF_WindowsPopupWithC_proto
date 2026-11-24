@@ -203,10 +203,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   }
   await escape();
   await unchanged('IMAGE');
-  // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: 비IMAGE FIXED 95%, RATIO 100%(비율 0.1~1.0 보정), IMAGE 90%, 설정 최대값은 비IMAGE에만.
+  // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: FIXED·IMAGE 90%(2026-11-24 통일), RATIO 100%(비율 0.1~1.0 보정), 설정 최대값은 비IMAGE에만.
   const of = (type, o, a) => run(`JSON.stringify(window.dialogSizeOf(${JSON.stringify(type)}, ${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
   const area = {width: 1000, height: 800};
-  check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 950, height: 760}), '[61-23] FIXED non-IMAGE is capped at 95% of the work area');
+  check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] FIXED non-IMAGE is capped at 90% of the work area (same as IMAGE/AUTO)');
   check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 700, maximumHeight: 600}, area) === JSON.stringify({width: 700, height: 600}), '[61-23] FIXED non-IMAGE keeps the configured maximum');
   check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 1.5, heightRatio: 1, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 1000, height: 800}), '[61-23] RATIO non-IMAGE clamps the ratio to 1.0 and allows 100%');
   check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 0.01, heightRatio: 0.01, minimumWidth: 100, minimumHeight: 100}, area) === JSON.stringify({width: 300, height: 300}), '[61-23] RATIO below 0.1 is raised to 0.1, then to the 300 floor');
@@ -245,7 +245,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await size({width: 250, height: 250, minimumWidth: 100, minimumHeight: 100, maximumWidth: 200, maximumHeight: 200}) === JSON.stringify({width: 300, height: 300}),
     '[TODO68] stored maximum below 300 is raised to the floor');
   check(await size({sizeMode: 'RATIO', widthRatio: .1, heightRatio: .1, minimumWidth: 100, minimumHeight: 100}) === JSON.stringify({width: 300, height: 300}), '[TODO68] RATIO result below 300 uses the floor');
-  check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 266, height: 247}), '[TODO68] a work area smaller than 300 keeps the modal on screen (FIXED 95%, WPF FixedSizeSafeAreaRatio)');
+  check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 252, height: 234}), '[TODO68] a work area smaller than 300 keeps the modal on screen (FIXED 90%, WPF ScreenSafeAreaRatio)');
   check(await size({width: 640, height: 480}) === JSON.stringify({width: 640, height: 480}), '[TODO68] sizes above the floor are unchanged');
   // [20261110 후속 6] 예시 표시 기본 OFF: 인라인·실제 크기 모달 모두 값이 없는 항목에 입력 안내 문구를 넣지 않는다.
   // 영상 미첨부여도 영상 영역(검정 + 재생 아이콘)과 컨트롤 줄은 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다. showPlaceholders를 켠 호출부만 문구를 그린다.

@@ -363,6 +363,13 @@
 - `tsc --noEmit` 통과, 변경 파일 eslint 오류 없음. `verify-image-preview` 48, `verify-popup-guide-render` 33, `verify-completion-ux-43` 82, `verify-popup-transform-64` 78, `verify-survey-rich-text-55` 81, `verify-rich-text-49` 107, `verify-popup-common-sample-69` 63, `verify-popup-parity` 54건 통과.
 - 하네스의 화면 조건은 CDP 에뮬레이션(배율 1)이다. 미실행: 실제 브라우저 확대율·Windows 고DPI·다중 모니터·작업 표시줄 숨김에서 `screen.avail*` 실측, 같은 데이터의 WPF 창·흰 판·이미지 박스 실측 비교(구현 시 확인 1·3번), 전 유형 실화면 회귀, `next build`, 로그인 관리자 화면, 폐쇄망.
 
+### 후속 — 화면 상한 90% 통일 (2026-11-24, WPF·웹)
+
+- 배경: 대조 중 WPF 화면 상한이 FIXED 95%·AUTO 90%·IMAGE 90%로 나뉘어 있고, 값이 다른 근거가 설계 11·15·23에 없음을 확인. RATIO 100%는 '작업 영역 × 비율(0.1~1.0)' 정의에서 나온 값이라 유지.
+- 결정: FIXED·AUTO·IMAGE를 90%로 통일. 동작이 바뀌는 범위는 FIXED에서 작업 영역 90%를 넘는 요청뿐이고, 화면 가장자리 여유(1040 높이 기준 위아래 약 52)를 남겨 Overlay·닫기 버튼 가시성과 VM 복귀·해상도 변경 시 안전성을 높인다.
+- 변경: WPF `PopupWindow.xaml.cs` `FixedSizeSafeAreaRatio`(0.95)·`ImageSafeAreaRatio`(0.90)·AUTO 리터럴 0.9를 `ScreenSafeAreaRatio = 0.90` 하나로 통합. 웹 `previewDialogSize()` FIXED 상한 90%(`PREVIEW_SCREEN_SAFE_AREA_RATIO`), RgstPop 최대 크기 입력 안내·가이드 표시 문구, 레이아웃 가이드 그림·문서, WPF 인터페이스·정책 사양 갱신.
+- 검증: `PopupWindowTests` 660건(FIXED 20000×20000 → 작업 영역 90% 검사 추가), 로컬 `Popup.BehaviorTests` 1644건, `verify-popup-preview-61` 255(FIXED 기대값 950×760 → 900×720, 작은 작업 영역 266×247 → 252×234), guide-render 33, image-preview 48, popup-parity 54, `tsc --noEmit`·eslint 통과. 실화면 미실행.
+
 ### 완료 기준
 
 - [ ] 730×900 사례와 전체 유형의 동일 데이터·동일 조건 결과가 남아 있고, 차이가 발생한 단계와 수정 근거를 확인할 수 있다. 목표 크기가 브라우저에 들어가는 조건에서는 F11 전환만으로 모달 크기가 달라지던 사례를 재검증한다.

@@ -100,7 +100,7 @@ const BUTTON = POPUP_LAYOUT.button;
  */
 export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLimit[]; preview: GuideLayoutLimit[] } = {
   windows: [
-    { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: '입력한 최대값과 화면의 95% 중 작은 값', note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
+    { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
     { target: 'RATIO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 100% 중 작은 값', note: '화면 크기에 비율(0.1~1.0)을 곱합니다.' },
     { target: 'AUTO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '내용 크기에 맞춥니다.' },
     { target: 'FULLSCREEN', min: '제한 없음', max: '모니터 전체', note: '최소·최대 값을 쓰지 않습니다.' },
@@ -116,7 +116,7 @@ export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLim
   ],
   preview: [
     { target: 'InlinePopupPreview', min: '미리보기 높이 320', max: '부모 영역', note: '실제 팝업 창의 최소 높이가 아닙니다.' },
-    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '작업 영역의 95%(RATIO 100%, IMAGE 90%)', note: '작업 영역은 현재 모니터(작업 표시줄 제외) 또는 기준 화면 프리셋입니다. 브라우저보다 크면 표시 영역까지 줄이고 1:1이 아님을 안내합니다.' },
+    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '작업 영역의 90%(RATIO 100%)', note: '작업 영역은 현재 모니터(작업 표시줄 제외) 또는 기준 화면 프리셋입니다. 브라우저보다 크면 표시 영역까지 줄이고 1:1이 아님을 안내합니다.' },
   ],
 };
 

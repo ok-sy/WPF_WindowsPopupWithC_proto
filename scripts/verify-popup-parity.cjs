@@ -289,14 +289,14 @@ function layoutLimits(popup) {
   const quiz = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   const lines = [{title: '창', text: popup.popupType === 'IMAGE'
     ? '최소 300×300(축별 max(300, minimum)) · 최대 화면 작업 영역 90%(설정 maximum 미사용) · FULLSCREEN 제외'
-    : '최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 FIXED 95% / RATIO 100% / AUTO 90% 중 작은 값 · FULLSCREEN 제외'}];
+    : '최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외'}];
   if (popup.popupType === 'TEXT') lines.push({title: '본문', text: '자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤'});
   if (popup.popupType === 'IMAGE') lines.push({title: '이미지', text: 'ADAPTIVE는 원본보다 확대하지 않음 · WPF 설명 영역 최대 30% · FIT_TO_IMAGE 권장 크기는 창 제한으로 보정'});
   if (popup.popupType === 'VIDEO') lines.push({title: '영상', text: 'WPF 남는 높이 사용(별도 min/max 없음) · 웹 미리보기만 최소 높이 170'});
   if (quiz && video) lines.push({title: '영상(퀴즈 포함)', text: '높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)'});
   if (quiz) lines.push({title: '설문·퀴즈', text: '콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)'});
   lines.push({title: '푸터', text: '최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34'});
-  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%' : '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 95%(RATIO 100%)'});
+  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%' : '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)'});
   return lines;
 }
 function esc(text) { return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }

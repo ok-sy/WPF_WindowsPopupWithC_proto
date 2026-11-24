@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-07 — dev: 61-23_화면상한90통일_수정
+
+- 이유 · WPF 팝업 화면 상한이 FIXED 95%·AUTO 90%·IMAGE 90%로 나뉘어 있었고 설계 11·15·23 어디에도 값이 다른 근거가 없음(TODO61-23 대조 중 확인). 화면 가장자리 여유와 VM 복귀·해상도 변경 시 버튼 가시성을 위해 90%로 통일.
+- 변경 · WPF `PopupWindow.xaml.cs`의 `FixedSizeSafeAreaRatio`(0.95)·`ImageSafeAreaRatio`(0.90)·AUTO 0.9를 `ScreenSafeAreaRatio = 0.90`으로 통합(FIXED만 95→90%로 동작 변경). RATIO 100%·FULLSCREEN 화면 전체는 유지. 웹 실제 크기 미리보기 FIXED 상한 90%, RgstPop 최대 크기 입력 안내·관리자 가이드 표시 문구, 레이아웃 가이드 그림 7종 재생성, WPF 인터페이스·정책 사양·레이아웃 가이드·UI 기본값 사양 갱신.
+- 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts`, `guide/guideData.ts`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-guide-render.cjs`, `scripts/verify-popup-parity.cjs`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `PopupWindowTests` 660건 통과(FIXED 큰 요청 → 작업 영역 90% 검사 추가), 로컬 `Popup.BehaviorTests`(Git 제외) 1644건 통과, `verify-popup-preview-61` 255·guide-render 33·image-preview 48·popup-parity 54건 통과, `tsc --noEmit`·변경 파일 eslint 통과. 미실행: WPF·관리자 웹 실화면, 고DPI·다중 모니터, 폐쇄망.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-06 — dev: 61-23_실제크기미리보기작업영역_수정
 
 - 이유 · IMAGE 730×900 실제 크기 미리보기가 브라우저 일반 모드에서 730×851, F11에서 730×900으로 달라지는 차이(TODO61-23). 미리보기가 브라우저 내부 크기를 작업 영역으로 써서 WPF(모니터 작업 영역 기준)와 계산 기준이 다르고, 비IMAGE 화면 상한도 WPF(FIXED 95%·RATIO 100%)와 달리 96%였음. 여러 모니터 크기를 같은 화면에서 비교할 기준 화면 선택 요건 포함.
@@ -13,7 +21,7 @@
 - 이유 · 흰 퀴즈 본문 위에 뜨는 완료 안내가 검은 외곽선으로만 구분되어, QUIZ·VIDEO+QUIZ 완료창을 섀도우로 구분하는 후속 TODO 구현.
 - 변경 · `PopupAlertStyle`(Default·QuizCompletion) 추가, `PopupAlert.Show()`·`CreateDialog()`에 선택 인자(기본 Default)로 반영. QuizCompletion은 외곽선 없이 흰 판에만 섀도우(검정·0.16·Blur 20·Depth 4·아래 방향)를 두고 본문은 효과 없는 레이어로 분리, 창 둘레 투명 여백 24 DIP(창 478·흰 판 430 유지). `PopupManager.SubmitSurveyResult()`의 QUIZ 완료 안내(단독 QUIZ·VIDEO+QUIZ)만 QuizCompletion 지정, 미통과·검증·저장 오류·SURVEY 안내는 기존 형식. 결과 생성·큐 적재·닫기 순서와 `score/passed` 계약은 변경 없음.
 - 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`, `popup-frameWork/Popup/Managers/PopupManager.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
-- 검증 · `scripts/PopupWindowTests` 빌드·실행 `PASS: 659`(완료 형식 구조·수치, 확인 버튼 닫기, QUIZ·VIDEO_QUIZ 완료 안내 섀도우·재응시/SURVEY 안내 기존 외곽선). 미실행: Windows 100%·고DPI·화면 가장자리 그림자 잘림 실화면, 부모 창 중심·모달 포커스 실화면, 폐쇄망 반입본.
+- 검증 · `scripts/PopupWindowTests` 빌드·실행 `PASS: 659`(완료 형식 구조·수치, 확인 버튼 닫기, QUIZ·VIDEO_QUIZ 완료 안내 섀도우·재응시/SURVEY 안내 기존 외곽선). 보완: 로컬 `Popup.BehaviorTests`(Git 제외)의 `CreateDialog` 리플렉션 호출이 추가 인자로 실패해 인자 보정 후 1644건 통과. 미실행: Windows 100%·고DPI·화면 가장자리 그림자 잘림 실화면, 부모 창 중심·모달 포커스 실화면, 폐쇄망 반입본.
 - 상태 · 커밋·원격 반영. 섀도우 최종 수치는 실화면 확인 후 확정.
 
 ## 2026-11-24-04 — doc: TODO61-23 실제 크기 미리보기 기준 화면 선택 추가

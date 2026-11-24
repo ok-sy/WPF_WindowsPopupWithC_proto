@@ -717,6 +717,11 @@ internal static class Program
         Check(Math.Abs(ratio.Width - 300) < 0.6 && Math.Abs(ratio.Height - 300) < 0.6, $"[TODO68] RATIO result below 300 uses the floor ({ratio})");
         var larger = Fixed(640, 480, 300);
         Check(Math.Abs(larger.Width - 640) < 0.6 && Math.Abs(larger.Height - 480) < 0.6, "[TODO68] sizes above the floor are unchanged");
+        // 2026-11-24 화면 상한 통일(ScreenSafeAreaRatio 0.90): 비IMAGE FIXED도 AUTO·IMAGE와 같이 작업 영역 90%(이전 95%). 설정 최대값이 더 커도 화면 상한이 이긴다.
+        var huge = Fixed(20000, 20000, 300, maxWidth: 30000);
+        var area = SystemParameters.WorkArea;
+        Check(Math.Abs(huge.Width - area.Width * 0.9) < 1 && Math.Abs(huge.Height - area.Height * 0.9) < 1,
+            $"[screen cap] FIXED non-IMAGE is capped at 90% of the work area ({huge.Width} x {huge.Height} / {area.Width} x {area.Height})");
 
         // IMAGE FIT_TO_IMAGE: 콘텐츠 50 x 50이어도 헤더·푸터를 더한 최종 창은 300 이상이고 width/height는 콘텐츠 영역 의미를 유지한다.
         var image = DemoPopups("IMAGE").Single();
