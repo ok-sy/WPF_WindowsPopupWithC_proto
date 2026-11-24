@@ -36,13 +36,16 @@ export interface GuideNotice {
   tab?: GuideTabId;
 }
 
-/** 최근 게시로 표시(NEW·배지)하는 기간(일). 게시일 기준이며 완료·실행 여부를 추측하지 않는다. */
-export const RECENT_NOTICE_DAYS = 14;
+/**
+ * 마지막으로 폐쇄망에 반영된 반입본. NEW(배지·칩)는 이 반입본에 들어가지 않은 공지, 즉 게시일이 through보다 늦은 공지에만 붙는다.
+ * 새 반입본이 폐쇄망에 반영됐다고 확인되면 exportId와 그 반입본에 포함된 마지막 공지 게시일(through)로 올린다.
+ * (2026-11-24 기간 14일 기준에서 폐쇄망 반영 기준으로 변경. 20261118 반입본 = 2026-11-17 게시분까지 반영)
+ */
+export const CLOSED_NET_APPLIED = { exportId: '20261118', through: '2026-11-17' } as const;
 
-/** 게시일(YYYY-MM-DD, KST)이 now 기준 최근 RECENT_NOTICE_DAYS일 안인지 */
-export function isRecentNotice(date: string, now: Date): boolean {
-  const time = new Date(`${date}T00:00:00+09:00`).getTime();
-  return Number.isFinite(time) && now.getTime() - time < RECENT_NOTICE_DAYS * 24 * 60 * 60 * 1000;
+/** 폐쇄망에 아직 반영되지 않은 공지인지(게시일 YYYY-MM-DD가 CLOSED_NET_APPLIED.through보다 늦으면 true) */
+export function isUnappliedNotice(date: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && date > CLOSED_NET_APPLIED.through;
 }
 
 export const NOTICE_CATEGORY_LABELS: Record<NoticeCategory, string> = {

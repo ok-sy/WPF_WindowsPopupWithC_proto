@@ -130,8 +130,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     'Function tab groups functions by scope (createDefaultPopup under proto-only)');
   // 공지: 배지·영향 컴포넌트 링크 → 컴포넌트 탭 선택
   await openTab('공지'); body = await text();
-  check(body.includes('CKEditor 5 공통 엔진 전환') && !body.includes('가이드 화면 정리') && !body.includes('가이드 컴포넌트 코드 실행기') && body.includes('최근 14일 안에 게시'),
-    'Notice tab lists component/process changes only (no guide-screen notices) and explains NEW as recent posting');
+  check(body.includes('CKEditor 5 공통 엔진 전환') && !body.includes('가이드 화면 정리') && !body.includes('가이드 컴포넌트 코드 실행기') && body.includes('폐쇄망에 아직 반영되지 않은 공지') && body.includes('20261118'),
+    'Notice tab lists component/process changes only (no guide-screen notices) and explains NEW as not yet applied to the closed network');
+  // 2026-11-24 NEW는 폐쇄망 미반영(CLOSED_NET_APPLIED.through = 2026-11-17 이후 게시) 공지에만 붙는다.
+  const newMarks = await run(`(()=>{const cards=Array.from(document.querySelectorAll('.MuiChip-root')).filter(c=>c.textContent==='NEW').map(c=>c.parentElement.textContent);
+    const has=t=>cards.some(x=>x.includes(t));return {count:cards.length,recent:has('실제 크기 미리보기 — 기준 화면'),nov19:has('서식 본문 회사 글꼴 등록'),old:has('실제 크기 미리보기에서 입력 안내 문구 제거')};})()`);
+  check(newMarks.recent && newMarks.nov19 && !newMarks.old && newMarks.count > 0, '[NEW] only notices posted after the last closed-network export carry NEW: ' + JSON.stringify(newMarks));
   await run(`Array.from(document.querySelectorAll('.MuiChip-root')).find(c=>c.textContent==='PopupRichTextEditor').click()`); await pause(1200);
   check(await run(`document.querySelector('[role=tab][aria-selected=true]').textContent.trim()`) === '컴포넌트'
     && await run(`Array.from(document.querySelectorAll('[role=tab][aria-selected=true]')).some(t=>t.textContent.trim()==='PopupRichTextEditor')`), 'Notice component chip opens that component in the component tab');

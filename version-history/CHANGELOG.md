@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-15 — dev: 공통가이드_NEW표시_폐쇄망반영기준_수정
+
+- 이유 · 공통 컴포넌트 가이드 공지의 NEW가 게시 후 14일 기준이라, 폐쇄망에 이미 반영한 2026-11-17 이전 공지에도 붙고 반영 여부와 맞지 않음.
+- 변경 · NEW 기준을 '폐쇄망 미반영 공지'로 변경. `guideNotices.ts`에 `CLOSED_NET_APPLIED`(마지막 반영 반입본 20261118, 2026-11-17 게시분까지)를 두고 `isUnappliedNotice()`로 그보다 늦게 게시된 공지에만 NEW 칩·공지 탭 배지를 붙인다. 14일 기간(`RECENT_NOTICE_DAYS`·`isRecentNotice`)과 공지 탭 `now` prop 삭제, 공지 탭 안내 문구 갱신. 반입본이 반영될 때마다 이 상수를 올린다.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts`, `guide/PopupCommonGuide.tsx`, `guide/tabs/GuideNoticeTab.tsx`, `scripts/verify-popup-guide-render.cjs`.
+- 검증 · `verify-popup-guide-render` 34건 통과(11-17 이전 공지 NEW 없음·이후 공지 NEW 있음 검사 추가), guide-registry 460건, `tsc --noEmit`·eslint 통과. 관리자 웹 가이드 실화면 미확인.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-14 — dev: 28_글꼴ID_삭제
 
 - 이유 · 사용자 지정 글꼴 이름 직접 전달(TODO28 후속) 이후 기본 4종 글꼴 ID(MALGUN_GOTHIC·GULIM·DOTUM·BATANG)가 웹·서버·WPF에 각각 매핑 표로 남아 중복. 폐쇄망 반입 시 웹·서버·WPF·DB를 한 번에 반영하는 전제로 ID를 삭제.

@@ -1,7 +1,7 @@
 import { Badge, Box, Tab, Tabs, Typography } from '@mui/material';
 import { useState } from 'react';
 import GuideSavePartsTab from './GuideSavePartsTab';
-import { GUIDE_NOTICES, isRecentNotice } from './guideNotices';
+import { GUIDE_NOTICES, isUnappliedNotice } from './guideNotices';
 import { GUIDE_TAB_LABELS, type GuideNavigate, type GuideTabId } from './GuideUi';
 import GuideComponentTab from './tabs/GuideComponentTab';
 import GuideExampleTab from './tabs/GuideExampleTab';
@@ -26,8 +26,8 @@ export default function PopupCommonGuide() {
   const [tab, setTab] = useState<GuideTabId>('start');
   // 공지 링크로 컴포넌트 탭을 열 때 선택할 컴포넌트. key로 컴포넌트 탭을 다시 마운트해 선택을 적용한다.
   const [focus, setFocus] = useState<{ component?: string; key: number }>({ key: 0 });
-  const [now] = useState(() => new Date());
-  const recentCount = GUIDE_NOTICES.filter((notice) => isRecentNotice(notice.date, now)).length;
+  // 공지 탭 배지: 폐쇄망에 아직 반영되지 않은 공지 수(CLOSED_NET_APPLIED 기준).
+  const recentCount = GUIDE_NOTICES.filter((notice) => isUnappliedNotice(notice.date)).length;
   const navigate: GuideNavigate = (next, component) => {
     if (next === 'component') setFocus((previous) => ({ component, key: previous.key + 1 }));
     setTab(next);
@@ -52,7 +52,7 @@ export default function PopupCommonGuide() {
       {tab === 'example' && <GuideExampleTab />}
       {tab === 'function' && <GuideFunctionTab />}
       {tab === 'live' && <GuideLiveTab />}
-      {tab === 'notice' && <GuideNoticeTab now={now} onNavigate={navigate} />}
+      {tab === 'notice' && <GuideNoticeTab onNavigate={navigate} />}
     </Box>
   );
 }

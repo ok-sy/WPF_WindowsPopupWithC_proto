@@ -2,7 +2,7 @@ import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { COMPONENTS, FUNCTIONS } from '../guideData';
 import {
-  GUIDE_NOTICES, NOTICE_CATEGORY_LABELS, NOTICE_STATUS_LABELS, RECENT_NOTICE_DAYS, isRecentNotice, type NoticeCategory,
+  CLOSED_NET_APPLIED, GUIDE_NOTICES, NOTICE_CATEGORY_LABELS, NOTICE_STATUS_LABELS, isUnappliedNotice, type NoticeCategory,
 } from '../guideNotices';
 import { C, CODE_FONT, GUIDE_TAB_LABELS, Page, RichText, TabLink, type GuideNavigate } from '../GuideUi';
 
@@ -14,11 +14,11 @@ const FUNCTION_NAMES = new Set(FUNCTIONS.flatMap((fn) => fn.name.split(' / ')));
 /**
  * POL-14-01 : 공통 프론트 경계
  * ■ 가이드: 공지 탭
- * - in : now(Date) 최근 게시 판단 기준 시각 · onNavigate(tab, component?) 관련 탭·컴포넌트로 이동
+ * - in : onNavigate(tab, component?) 관련 탭·컴포넌트로 이동
  * - out: 화면: 구분 필터, 공지 카드(날짜·상태·본문·사용하는 쪽 할 일·영향 컴포넌트 링크·관련 탭 링크)
  * - 공지 데이터의 단일 출처는 guideNotices.ts다. 최근 게시 표시(NEW)는 게시일 기준이며 완료·실행 여부를 뜻하지 않는다.
  */
-export default function GuideNoticeTab({ now, onNavigate }: { now: Date; onNavigate: GuideNavigate }) {
+export default function GuideNoticeTab({ onNavigate }: { onNavigate: GuideNavigate }) {
   const [category, setCategory] = useState<NoticeCategory | 'ALL'>('ALL');
   const notices = [...GUIDE_NOTICES]
     .filter((notice) => category === 'ALL' || notice.category === category)
@@ -45,7 +45,7 @@ export default function GuideNoticeTab({ now, onNavigate }: { now: Date; onNavig
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
             <Chip size="small" color={CATEGORY_COLORS[notice.category]} label={NOTICE_CATEGORY_LABELS[notice.category]} />
             <Typography sx={{ fontWeight: 700, fontSize: 16 }}>{notice.title}</Typography>
-            {isRecentNotice(notice.date, now) && <Chip size="small" color="error" label="NEW" title={`최근 ${RECENT_NOTICE_DAYS}일 안에 게시`} sx={{ height: 18, fontSize: 11, fontWeight: 700 }} />}
+            {isUnappliedNotice(notice.date) && <Chip size="small" color="error" label="NEW" title={`폐쇄망 미반영(반입본 ${CLOSED_NET_APPLIED.exportId} 이후 게시)`} sx={{ height: 18, fontSize: 11, fontWeight: 700 }} />}
           </Stack>
           <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>
             {notice.date} 게시 · {NOTICE_STATUS_LABELS[notice.status]}{notice.doneDate ? ` (${notice.doneDate})` : ''}
@@ -74,7 +74,7 @@ export default function GuideNoticeTab({ now, onNavigate }: { now: Date; onNavig
         </Paper>
       ))}
       <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-        공지는 <C>guide/guideNotices.ts</C>에 추가합니다. NEW는 최근 {RECENT_NOTICE_DAYS}일 안에 게시된 공지입니다.
+        공지는 <C>guide/guideNotices.ts</C>에 추가합니다. NEW는 폐쇄망에 아직 반영되지 않은 공지입니다. 마지막 반영 반입본 {CLOSED_NET_APPLIED.exportId}({CLOSED_NET_APPLIED.through} 게시분까지) 이후 공지에 붙고, 새 반입본이 반영되면 <C>CLOSED_NET_APPLIED</C>를 올립니다.
       </Typography>
     </Page>
   );
