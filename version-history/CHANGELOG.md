@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-13 — dev: 61-23_코드가이드UI가이드_반영
+
+- 이유 · 2026-11-24-10·11·12 변경이 관리자 웹 공통 컴포넌트 가이드(코드 가이드)와 61 레이아웃 가이드(UI 가이드)에 빠져 있었음.
+- 변경 · 코드 가이드: `PopupPreviewDialog` 설명(기준 화면 해상도·배율, `recommendedSize` 호환용)·`PopupPreview` `workArea` prop·서식 필드 목록(VIDEO `descriptionBlocks`) 갱신, 함수 목록에 `applyVideoFixedDescription / stripVideoFixedDescription`·`VIDEO_FIXED_DESCRIPTION`·`adaptiveWindowForImage`·`useNaturalImageSize` 추가(`index.ts` 공개 export 추가, `useNaturalImageSize` 이름 있는 export 추가), 변경 공지 4건(기준 화면·VIDEO 설명 서식/고정 문구·IMAGE 창 맞춤·시간대 정렬) 추가. UI 가이드: VIDEO·VIDEO+QUIZ 번호표에서 삭제된 컨트롤 줄 항목을 빼고 그림 4장(guide·side) 재생성.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`, `guide/guideNotices.ts`, `index.ts`, `useNaturalImageSize.ts`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/PARITY-VIDEO*.png`.
+- 검증 · `verify-popup-guide-registry` 453건 통과(새 export·공지 대상 검사 포함), `tsc --noEmit`·eslint 통과, 재생성 그림 육안 확인(컨트롤 줄 없음). 관리자 웹 가이드 실화면 미확인.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-12 — dev: 팝업일정_종료시간정렬_수정
 
 - 이유 · 노출 시간대 입력에서 종료 시각 칸에만 helperText(빈 문자열 포함)가 붙어 칸 아래 빈 `<p>`가 생기고 시작 칸·`~`·삭제 버튼과 줄이 어긋남.

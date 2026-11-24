@@ -54,6 +54,41 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-24-preview-reference-screen', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
+    title: '실제 크기 미리보기 — 기준 화면(해상도·배율) 선택',
+    body: ['PopupPreviewDialog 상단에서 기준 화면 해상도(13종)와 Windows 배율(100·125·150·175%)을 고릅니다. 팝업 크기·위치는 그 화면의 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 WPF와 같이 계산합니다.',
+      '선택한 해상도 크기의 가상 데스크톱을 실제 크기로 그리고, 브라우저보다 크면 줄이지 않고 스크롤합니다. 내 모니터와 같은 해상도·배율에는 * 표시가 붙습니다. 화면 상한은 FIXED·AUTO·IMAGE 모두 작업 영역의 90%(RATIO 100%)입니다.',
+      'recommendedSize는 더 이상 쓰지 않지만 넘겨도 오류는 없습니다.'],
+    components: ['PopupPreviewDialog', 'PopupPreview'],
+    action: '바꿀 코드는 없습니다. recommendedSize는 지워도 됩니다.',
+  },
+  {
+    id: '2026-11-24-video-description-blocks', date: '2026-11-24', category: 'ADDED', status: 'DONE', doneDate: '2026-11-24',
+    title: '동영상 설명 서식(descriptionBlocks)·고정 안내 문구',
+    body: ['동영상 설명도 설문·퀴즈처럼 서식(content.descriptionBlocks)으로 저장합니다. 서버가 description을 서식에서 만들고 WPF는 문단 정렬·서식으로 표시합니다.',
+      '동영상·동영상+퀴즈는 미리보기·저장 값에 고정 안내 문구를 오른쪽 정렬 문단으로 붙입니다(applyVideoFixedDescription). 불러올 때는 떼어(stripVideoFixedDescription) 에디터에 사용자 입력만 보입니다.',
+      '미리보기 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면)은 없앴습니다.'],
+    components: ['PopupPreview', 'PopupRichTextEditor', 'applyVideoFixedDescription', 'stripVideoFixedDescription', 'VIDEO_FIXED_DESCRIPTION'],
+    action: '동영상 설명 입력을 PopupRichTextEditor로 바꾸고(descriptionBlocks·description 함께 갱신), 미리보기·저장 값에 applyVideoFixedDescription, 불러오기에 stripVideoFixedDescription을 씁니다. 서버는 VIDEO descriptionBlocks를 받도록 반영돼 있어야 저장됩니다.',
+    tab: 'function',
+  },
+  {
+    id: '2026-11-24-image-adaptive-fit', date: '2026-11-24', category: 'ADDED', status: 'DONE', doneDate: '2026-11-24',
+    title: '이미지 창 우선(ADAPTIVE) — 이미지에 맞춘 창 크기',
+    body: ['ADAPTIVE는 가로·세로가 창 크기라 이미지 칸 비율이 이미지와 다르면 위아래·좌우 띠가 보입니다. adaptiveWindowForImage가 가로에서 띠가 생기지 않는 세로를 계산합니다.',
+      '등록 화면은 "이미지에 맞춰 세로 자동"(세로 잠금)과 "이미지 크기에 맞추기"를 둡니다. 신규는 자동을 켜고, 수정·불러오기는 저장 값을 바꾸지 않도록 끈 채 시작합니다. 가로가 원본보다 크면 여백 없는 최대 가로를 안내합니다.'],
+    components: ['adaptiveWindowForImage', 'useNaturalImageSize'],
+    action: '이미지 크기 입력 화면에서 쓰려면 useNaturalImageSize로 원본 크기를 읽고 adaptiveWindowForImage 결과의 window.height를 세로에 넣습니다.',
+    tab: 'function',
+  },
+  {
+    id: '2026-11-24-schedule-row-align', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
+    title: '노출 시간대 입력 줄 정렬',
+    body: ['종료 시각 칸 아래 빈 안내 자리가 있어 시작 칸과 줄이 맞지 않던 문제를 고쳤습니다. "다음 날까지(자정 초과)"는 자정을 넘길 때만 같은 줄에 표시합니다.'],
+    components: ['PopupScheduleFields'],
+    action: '바꿀 코드는 없습니다.',
+  },
+  {
     id: '2026-11-19-rich-custom-font', date: '2026-11-19', category: 'ADDED', status: 'DONE', doneDate: '2026-11-19',
     title: '서식 본문 회사 글꼴 등록(registerPopupRichFonts)',
     body: ['기본 4가지 글꼴(맑은 고딕·굴림·돋움·바탕) 외에 회사 글꼴을 서식 선택지에 추가할 수 있습니다. 저장 값은 Windows 글꼴 패밀리 이름이며 서버를 거쳐 WPF에 그대로 전달됩니다.',

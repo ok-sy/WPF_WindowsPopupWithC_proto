@@ -8,7 +8,7 @@ import type { Size } from './imagePreviewLayout';
  * - out: Size | null 원본 가로·세로(px). 주소가 없거나 읽기 실패·로딩 중이면 null
  * - 등록 화면에서 ADAPTIVE 창 크기를 이미지에 맞출 때(adaptiveWindowForImage) 쓴다. 주소가 바뀌면 이전 값은 버린다.
  */
-export default function useNaturalImageSize(url: string | null | undefined): Size | null {
+export function useNaturalImageSize(url: string | null | undefined): Size | null {
   const [loaded, setLoaded] = useState<{ url: string; size: Size } | null>(null);
   const source = (url ?? '').trim();
   useEffect(() => {
@@ -24,3 +24,5 @@ export default function useNaturalImageSize(url: string | null | undefined): Siz
   }, [source]);
   return loaded && loaded.url === source ? loaded.size : null;
 }
+
+export default useNaturalImageSize;

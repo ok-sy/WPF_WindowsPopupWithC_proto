@@ -24,3 +24,6 @@ export * from './popupCommon';
 export * from './popupPreviewFallback';
 export * from './popupRichText';
 export type { Size } from './imagePreviewLayout';
+export { adaptiveWindowForImage, type AdaptiveImageWindow } from './imagePreviewLayout';
+export { useNaturalImageSize } from './useNaturalImageSize';
+export { VIDEO_FIXED_DESCRIPTION, applyVideoFixedDescription, stripVideoFixedDescription } from './videoFixedDescription';

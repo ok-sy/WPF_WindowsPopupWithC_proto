@@ -258,7 +258,7 @@ export const COMPONENTS: GuideComponent[] = [
       { name: 'maxPlainBytes', type: 'number', description: '서식 없는 문자열(plainText)의 UTF-8 바이트 상한. 넘는 편집은 onChange로 보내지 않고 직전 내용·커서로 되돌리며 안내 문구를 띄웁니다(한글 조합은 끝날 때 확인). 생략하면 제한 없음. PopupQuestionEditor가 선택지(퀴즈·설문)에 300을 넘깁니다.' },
     ],
     outputs: [{ name: 'onChange', type: '(blocks: RichBlock[], plainText: string) => void', required: true, description: '입력할 때마다 서식 본문과 일반 글자를 돌려줍니다.' }],
-    values: ['TEXT: content.textBlocks + content.plainText', '설문·퀴즈: content.surveyTitleBlocks·descriptionBlocks', '문항: question.titleBlocks·descriptionBlocks, 선택지: option.textBlocks'],
+    values: ['TEXT: content.textBlocks + content.plainText', '설문·퀴즈: content.surveyTitleBlocks·descriptionBlocks', 'VIDEO: content.descriptionBlocks(2026-11-24)', '문항: question.titleBlocks·descriptionBlocks, 선택지: option.textBlocks'],
     reuse: ['HTML은 저장하지 않습니다. onChange로 받은 두 값을 함께 저장합니다.', '툴바를 켜고 끄려면 화면의 state를 hideToolbar에 넘깁니다. 입력 내용은 유지됩니다.', '툴바·라벨·서식 버튼을 모두 끄면 서식은 우클릭(또는 키보드)으로만 열려 눈에 띄지 않습니다. 화면에 안내를 두세요.', '편집기를 여러 개 두어도 서로 영향을 주지 않습니다.', 'ckeditor5를 직접 import하지 말고 이 컴포넌트를 쓰세요.'],
     example: `const [body, setBody] = useState<{ textBlocks: RichBlock[]; plainText: string }>({ textBlocks: [], plainText: '' });
 <PopupRichTextEditor key={editorKey} label="본문" initialBlocks={body.textBlocks}
@@ -377,16 +377,16 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
   },
   {
     name: 'PopupPreviewDialog', file: 'PopupPreviewDialog.tsx',
-    summary: '실제 크기로 띄워 보는 미리보기 창입니다. 위치·배경 어둡게 처리도 WPF와 같습니다.',
+    summary: '실제 크기로 띄워 보는 미리보기 창입니다. 상단에서 기준 화면(해상도)·배율을 골라 그 화면에서 WPF와 같은 크기·위치로 봅니다. 위치·배경 어둡게 처리도 WPF와 같습니다.',
     props: [
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'open', type: 'boolean', required: true, description: '열림 여부' },
-      { name: 'recommendedSize', type: 'Size | null', description: '옆 미리보기가 알려 준 이미지 창 크기' },
+      { name: 'recommendedSize', type: 'Size | null', description: '(호환용, 쓰지 않음) 예전에 옆 미리보기의 이미지 창 크기를 넘기던 값. 지금은 선택한 기준 화면으로 다시 계산합니다' },
       { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false' },
     ],
     outputs: [{ name: 'onClose', type: '() => void', required: true, description: '닫기 버튼·Esc를 누르면 호출됩니다.' }],
-    values: ['popup 전체(값을 바꾸지 않음)'],
-    reuse: ['미리보기 안에서 고른 답은 닫으면 지워집니다.'],
+    values: ['popup 전체(값을 바꾸지 않음)', '기준 화면: 해상도 13종 × 배율 100·125·150·175%. 내 모니터와 같은 항목에 * 표시, 처음 선택', '크기·위치: 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외) 기준. 브라우저보다 크면 축소 없이 스크롤'],
+    reuse: ['미리보기 안에서 고른 답·기준 화면 선택은 닫아도 저장 값에 들어가지 않습니다.'],
     example: PREVIEW_EXAMPLE,
     processes: ['preview'],
   },
@@ -397,6 +397,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'showBackground', type: 'boolean', description: '바깥 배경까지 그릴지. 기본값 true' },
       { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false' },
+      { name: 'workArea', type: 'Size', description: '이미지 권장 창 크기를 계산할 작업 영역. 없으면 현재 모니터 작업 영역' },
     ],
     outputs: [
       { name: 'onClose', type: '() => void', description: '하단 버튼으로 닫을 때 호출됩니다.' },
@@ -437,6 +438,10 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'isScoredQuizQuestion / scoredQuestionCount', scope: 'COMMON', file: 'popupQuizRule.ts', input: 'question / questions', output: 'boolean / number', description: '채점 문항(isScored=true)인지, 채점 문항이 몇 개인지 셉니다. 만점은 채점 문항 수(문항당 1점)이고 비채점 주관식은 빠집니다.' },
   { name: 'QUIZ_QUESTION_SCORE / SCORED_QUESTION_REQUIRED', scope: 'COMMON', file: 'popupQuizRule.ts', input: '(상수)', output: 'number(1) / string', description: '채점 문항당 배점(1점)과 채점 문항이 없을 때의 안내 문구입니다. 퀴즈·영상 퀴즈는 채점 문항이 한 개 이상 있어야 저장됩니다.' },
   { name: 'QUESTION_MAX', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: '(상수)', output: 'number(30)', description: '설문·퀴즈 최대 문항 수 기본값입니다. PopupQuestionEditor maxQuestions·validatePopupQuestions에 다른 값을 넘기지 않으면 이 값을 씁니다.' },
+  { name: 'applyVideoFixedDescription / stripVideoFixedDescription', scope: 'COMMON', file: 'videoFixedDescription.ts', input: 'popup(popupType, content)', output: '같은 타입(새 객체)', description: '동영상·동영상+퀴즈 설명 맨 앞에 고정 안내 문구를 오른쪽 정렬 문단으로 붙이거나(미리보기·저장 값), 불러온 값에서 뗍니다(에디터 표시). 여러 번 붙여도 하나만 남고 다른 유형은 그대로입니다.' },
+  { name: 'VIDEO_FIXED_DESCRIPTION', scope: 'COMMON', file: 'videoFixedDescription.ts', input: '(상수)', output: 'string', description: '동영상 고정 안내 문구입니다. 바꾸면 이전 문구를 PREVIOUS_VIDEO_FIXED_DESCRIPTIONS에 넣어 기존 데이터도 떼어 냅니다.' },
+  { name: 'adaptiveWindowForImage', scope: 'COMMON', file: 'imagePreviewLayout.ts', input: 'popup, natural: Size, width?: number | null', output: '{ window, image, limited } | null', description: '이미지 ADAPTIVE(창 우선)에서 이미지 바깥 띠가 생기지 않는 창 크기를 구합니다. 가로를 주면 세로를 계산하고, 가로가 원본보다 크면 원본 기준으로 줄이고 limited=true입니다.' },
+  { name: 'useNaturalImageSize', scope: 'COMMON', file: 'useNaturalImageSize.ts', input: 'url', output: 'Size | null', description: '이미지 원본 크기를 읽는 hook입니다. 주소가 없거나 읽는 중·실패면 null입니다.' },
   { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 시간대 입력 오류를 확인합니다.' },
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },
   // 기존 팝업 등록(RgstPop)
