@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-18 — dev: PopupAlert_전체섀도우_수정
+
+- 이유 · 공통 안내창의 검은 외곽선(1.2 DIP)이 배율(DPI)에 따라 두께가 달라 보여 DPI 대응을 섀도우로 하기로 했으나, 2026-11-24-05에서는 퀴즈 완료창에만 섀도우를 적용해 나머지 안내창은 외곽선이 남아 있었음.
+- 변경 · `PopupAlert.CreateDialog()`를 항상 섀도우 형식(흰 판 모서리 22·`DropShadowEffect` 검정 0.16·Blur 20·Depth 4·아래, 본문 효과 없는 형제 레이어, 투명 여백 24 DIP, 창 478·흰 판 430)으로 통일하고 외곽선 분기·`PopupAlertStyle`·`style` 인자 삭제, `PopupManager` 완료 안내 호출 인자 정리. 테스트 기대값(완료·재응시·SURVEY 완료 안내 모두 섀도우)과 로컬 BehaviorTests 측정 폭(478) 갱신. TODO 문서 후속 절, WPF 전체 기능 명세, ACTIVE_TASKS(외곽선 두께·완료창 섀도우 두 행을 공통 안내창 섀도우 한 행으로) 갱신.
+- 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`, `popup-frameWork/Popup/Managers/PopupManager.cs`, `scripts/PopupWindowTests/Program.cs`, `docs/design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · WPF 빌드 경고·오류 0, `scripts/PopupWindowTests` `PASS: 662`, 로컬 `Popup.BehaviorTests`(Git 제외) 1644 통과. 미실행: Windows 100%·고DPI·화면 가장자리 실화면, 폐쇄망 반입본.
+- 상태 · 커밋·원격 반영. 섀도우 최종 수치는 실화면 확인 후 확정.
+
 ## 2026-11-24-17 — dev: 폐쇄망전역CSS재현본_추가
 
 - 이유 · 폐쇄망 `main/styles/globalStyle.ts`의 전역 규칙(body·em·i 등)이 팝업 공통 컴포넌트를 덮어쓰는 현상이 로컬에는 재현 수단이 없어 폐쇄망 반입 후에야 드러나므로, 같은 경로의 재현본을 두고 로컬 화면·하네스에서 미리 확인할 필요.

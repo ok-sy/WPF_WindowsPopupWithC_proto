@@ -1,6 +1,7 @@
 # WPF PopupAlert 공통 안내창 외곽선 두께 조정 TODO
 
-- 상태: 구현·자동 검증 완료 (2026-11-16). Windows 실화면 100%·고DPI 확인 대기
+- 상태: 2026-11-24 외곽선 1.2 DIP를 섀도우로 대체(모든 공통 안내창, 아래 '후속 — 공통 안내창 전체 섀도우 전환'). Windows 실화면 100%·고DPI 확인 대기
+- 이력: 2026-11-16 외곽선 2 → 1.2 DIP 축소 구현. 아래 '확정 요구사항'~'구현 기록'은 당시 기록이다.
 - 기준: `popup-frameWork/Popup/Views/Windows/PopupAlert.cs`의 `PopupAlert.CreateDialog()`
 - 범위: WPF Agent에 한정. 관리자 웹·서버·DB·API 계약 변경 없음.
 
@@ -23,7 +24,7 @@ dialog.Content = new Border { Background = Brushes.White, BorderBrush = Brushes.
 
 ## 구현 전에 결정할 사항
 
-없음. 공통 `PopupAlert` 전체 적용과 두께 1.2 DIP로 확정한다.
+없음. 공통 `PopupAlert` 전체 적용과 두께 1.2 DIP로 확정한다. (2026-11-24 섀도우 전환으로 대체됨)
 
 ## 완료 기준
 
@@ -67,3 +68,17 @@ dialog.Content = new Border { Background = Brushes.White, BorderBrush = Brushes.
 
 - [ ] 단독 QUIZ와 VIDEO+QUIZ 완료창에서 검은 외곽선을 제거한 섀도우가 흰 배경 위에서도 구분되며, Windows 100%·고DPI 및 화면 가장자리에서 잘리지 않는다.
 - [ ] 미통과·검증·저장 오류·설문 안내와 확인·키보드·포커스 동작을 회귀 검증한다. WPF 빌드·자동 검증·Windows 실화면·폐쇄망 반입본 결과를 각각 기록한다.
+
+## 후속 — 공통 안내창 전체 섀도우 전환
+
+2026-11-24(KST). 외곽선은 배율(DPI)에 따라 두께가 달라 보이므로 DPI 대응을 섀도우로 하기로 하고, 퀴즈 완료창에만 적용했던 섀도우를 모든 공통 안내창으로 넓힌다.
+
+- 변경: `PopupAlert.CreateDialog()`가 항상 섀도우 형식(흰 판 모서리 22에만 `DropShadowEffect` 검정·0.16·Blur 20·Depth 4·아래, 본문은 효과 없는 형제 레이어, 창 둘레 투명 여백 24 DIP, 창 478·흰 판 430)으로 만든다. 검은 외곽선 1.2 DIP 분기와 `PopupAlertStyle`(Default·QuizCompletion)·`style` 인자를 삭제하고 `PopupManager`의 완료 안내 호출에서 인자를 뺐다. 결과 생성·적재·닫기 순서와 `score/passed`, 관리자 웹·API·DB 변경 없음.
+- 적용 범위: QUIZ·VIDEO+QUIZ 완료, 미통과·다시 풀기, 필수 미응답 검증, 저장 오류, SURVEY 완료 등 `PopupAlert`를 쓰는 모든 안내.
+- 검증: `scripts/PopupWindowTests` `PASS: 662`(모든 안내창 섀도우 구조·수치·외곽선 0·창 478, 확인 버튼 Enter/Esc 닫기, 실제 `SubmitSurveyResult` 경로에서 QUIZ·VIDEO_QUIZ 완료·재응시 안내·SURVEY 완료 모두 섀도우), 로컬 `Popup.BehaviorTests` 1644(측정 폭 478), WPF 빌드 경고·오류 0.
+- 미실행: Windows 100%·고DPI·화면 가장자리 그림자 잘림과 흰 배경 위 구분 실화면 확인, 부모 창 중심 배치·모달 포커스 실화면, 폐쇄망 반입본.
+
+### 완료 기준(전체 전환)
+
+- [ ] 모든 안내창에서 섀도우가 흰 팝업 배경 위에서도 구분되고, Windows 100%·고DPI·화면 가장자리에서 잘리지 않는다. 필요하면 불투명도·블러·깊이·여백만 조정한다.
+- [ ] 확인·키보드(Enter/Esc)·포커스 동작과 결과 처리 회귀를 실화면으로 확인하고, WPF 빌드·자동 검증·실화면·폐쇄망 결과를 각각 기록한다.

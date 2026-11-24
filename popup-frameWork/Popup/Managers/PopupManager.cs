@@ -373,8 +373,7 @@ namespace Popup.Managers
             if (isQuiz && submission.Score is double)
             {
                 QuizResultNotice.Notice done = QuizResultNotice.Build(submission, popupOptions.Title, auxCloseVisible: false);
-                PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText, showHeading: false,
-                    style: PopupAlertStyle.QuizCompletion);   // 단독 QUIZ·VIDEO+QUIZ(PopupType QUIZ) 완료 안내만 섀도우 형식
+                PopupAlert.Show(popupWindow, done.Message, done.Title, done.ButtonText, showHeading: false);
             }
             else if (!isQuiz)
             {

@@ -1194,18 +1194,13 @@ internal static class Program
             && Run(2, 0, "Quiz").Notice.Message.StartsWith("퀴즈를 완료하여 Quiz을(를) 종료합니다."), "[Q3] object particle follows the quiz name");
         // 퀴즈 결과 창은 제목을 화면에 그리지 않는다(창 이름으로만 남음). 기본 호출은 제목을 그대로 그린다.
         var create = typeof(PopupAlert).GetMethod("CreateDialog", BindingFlags.Static | BindingFlags.NonPublic)!;
-        List<string> Texts(Window dialog) => ((StackPanel)((Border)dialog.Content).Child).Children.OfType<TextBlock>().Select(t => t.Text).ToList();
-        var hidden = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false, PopupAlertStyle.Default })!;
-        var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true, PopupAlertStyle.Default })!;
+        List<string> Texts(Window dialog) => ((StackPanel)((Grid)dialog.Content).Children.OfType<Border>().Skip(1).First().Child).Children.OfType<TextBlock>().Select(t => t.Text).ToList();
+        var hidden = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false })!;
+        var shown = (Window)create.Invoke(null, new object?[] { null, "본문", "제목", "확인", true })!;
         Check(Texts(hidden).SequenceEqual(new[] { join.Notice.Message }) && hidden.Title == "퀴즈를 완료했어요"
             && Texts(shown).SequenceEqual(new[] { "제목", "본문" }), "[Q3] quiz result dialog hides the heading but keeps the window title");
-        // 공통 안내창 외곽선은 1.2 DIP 검은 선, 모서리 22 유지.
-        var frame = (Border)shown.Content;
-        Check(frame.BorderThickness == new Thickness(1.2) && frame.BorderBrush == System.Windows.Media.Brushes.Black && frame.CornerRadius == new CornerRadius(22),
-            $"[Q3] common alert border is 1.2 DIP ({frame.BorderThickness})");
-        // 퀴즈 완료 안내(QuizCompletion): 검은 외곽선 없이 흰 판에만 섀도우, 본문은 효과 없는 형제 레이어, 그림자 여백만큼 창을 넓혀 흰 판 430 유지.
-        var completion = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false,
-            PopupAlertStyle.QuizCompletion })!;
+        // 모든 공통 안내창(2026-11-24): 검은 외곽선 없이 흰 판에만 섀도우, 본문은 효과 없는 형제 레이어, 그림자 여백만큼 창을 넓혀 흰 판 430 유지.
+        var completion = (Window)create.Invoke(null, new object?[] { null, join.Notice.Message, join.Notice.Title, join.Notice.ButtonText, false })!;
         var root = completion.Content as Grid;
         var plate = root?.Children.OfType<Border>().FirstOrDefault();
         var body = root?.Children.OfType<Border>().Skip(1).FirstOrDefault();
@@ -1216,9 +1211,11 @@ internal static class Program
             && body.Effect == null && body.Child is StackPanel bodyPanel
             && bodyPanel.Children.OfType<TextBlock>().Select(t => t.Text).SequenceEqual(new[] { join.Notice.Message })
             && shadow.Color == System.Windows.Media.Colors.Black && shadow.Opacity == 0.16 && shadow.BlurRadius == 20 && shadow.ShadowDepth == 4
-            && root.Margin == new Thickness(24) && completion.Width == 430 + 48 && shown.Width == 430 && completion.Title == "퀴즈를 완료했어요",
-            "[Q3] quiz completion alert uses a shadow instead of the black border and keeps the 430 plate");
-        // 완료 형식도 확인 버튼이 Enter/Esc 기본·취소 버튼이며 누르면 닫힌다. 기본 형식은 그대로.
+            && root.Margin == new Thickness(24) && completion.Width == 430 + 48 && shown.Width == 430 + 48 && completion.Title == "퀴즈를 완료했어요"
+            && shown.Content is Grid shownRoot && shownRoot.Children.OfType<Border>().First().Effect is System.Windows.Media.Effects.DropShadowEffect
+            && shownRoot.Children.OfType<Border>().All(b => b.BorderThickness == new Thickness(0)),
+            "[Q3] every common alert uses a shadow instead of the black border and keeps the 430 plate");
+        // 확인 버튼이 Enter/Esc 기본·취소 버튼이며 누르면 닫힌다.
         var completionButton = ((StackPanel)body!.Child).Children.OfType<Button>().Single();
         bool completionClosed = false;
         completion.Closed += (_, _) => completionClosed = true;
@@ -1320,7 +1317,7 @@ internal static class Program
                 Check(retry.Count == 1 && retry[0].Contains("(통과 기준: 5개 이상)") && !blocked.Closed() && blockedSaved.Count == 0
                     && (bool)failedOnce.GetValue(blocked.Window)!,
                     $"[§7] {type} requiresPassing {requires?.ToString() ?? "null"} cutoff below threshold blocks submission and asks for a retry");
-                Check(s_closedDialogShadow.SequenceEqual(new[] { false }), $"[§7] {type} retry notice keeps the common bordered style");
+                Check(s_closedDialogShadow.SequenceEqual(new[] { true }), $"[§7] {type} retry notice also uses the shadow style");
                 ShutdownClose(blocked.Window);
             }
         }
@@ -1941,7 +1938,7 @@ internal static class Program
         var seen = CloseDialogs("설문조사 완료", () => submit.Invoke(null, new object[]
             { opened.Window, opened.Options, builder, new SurveySubmission { Answers = new List<SurveyAnswer>() } }));
         Check(seen.SequenceEqual(new[] { "설문조사가 완료되었습니다." }), $"SURVEY submission shows the completion notice without a heading ({string.Join(" / ", seen)})");
-        Check(s_closedDialogShadow.SequenceEqual(new[] { false }), "SURVEY completion notice keeps the common bordered style");
+        Check(s_closedDialogShadow.SequenceEqual(new[] { true }), "SURVEY completion notice also uses the shadow style");
         Check(opened.Closed() && saved.Count == 1 && saved[0].ResultType == Popup.Dtos.WpfResultType.Submitted,
             $"SURVEY submission saves SUBMITTED and closes after the notice ({saved.Count})");
     }
