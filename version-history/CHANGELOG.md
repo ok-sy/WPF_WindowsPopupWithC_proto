@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-10 — dev: 61-23_기준화면해상도배율_수정
+
+- 이유 · 실제 크기 미리보기에서 해상도를 바꿔도 차이가 보이지 않고, '현재 모니터'·1:1·축척 표시가 섞여 비교가 어려움. 같은 화면에서 해상도·Windows 배율별 팝업 크기·배치를 비교할 필요.
+- 변경 · '현재 모니터' 분기 삭제. 기준 화면 = 해상도 13종 × 배율 4종, DIP 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 크기·위치 계산. 선택한 해상도의 가상 데스크톱(작업 영역 흰색·작업 표시줄 검정·바깥 검정 30%)을 물리 크기로 그리고 배율은 안쪽 확대로 표현. 브라우저보다 크면 스크롤, 해상도 변경 시 팝업 가운데로 스크롤. 내 모니터와 같은 해상도·배율 `*` 표시·처음 선택. 도구 패널 흰 바탕·스크롤바 회피. 레이아웃 가이드·UI 기본값 사양·가이드 표시 문구·WPF 대조 기록 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `guide/guideData.ts`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-preview-61` 290건(재작성), image-preview·guide-render·completion-ux-43·survey-rich-text-55·rich-text-49·common-sample-69·popup-parity 통과, `tsc --noEmit`·eslint 통과. 로그인 관리자 실화면·폐쇄망 미확인.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-09 — dev: 61-23_기준화면실제크기스크롤_수정
 
 - 이유 · 축소 표시(2026-11-24-08)로는 해상도별 비교는 되지만 1920 화면에서 2560 화면을 실제 크기로 볼 수 없었음. 브라우저보다 큰 화면·팝업은 스크롤을 허용하기로 결정해 이전의 바깥 스크롤 금지·1:1 안내 방식을 대체.

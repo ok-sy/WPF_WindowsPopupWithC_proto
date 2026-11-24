@@ -43,7 +43,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 | VIDEO+QUIZ | 비IMAGE 창 크기 모드 적용 | 퀴즈 너비 최대 760, 영상 높이 최소 180·부모 스크롤 높이 70% 상한(최소보다 작으면 180 우선) |
 
 - 비IMAGE WPF 창 최대: **FIXED** 설정 maximum과 작업 영역 90% 중 작은 값(2026-11-24 95%에서 통일) / **RATIO** 설정 maximum과 작업 영역 100% 중 작은 값 / **AUTO** 설정 maximum과 작업 영역 90% 중 작은 값. **FULLSCREEN**은 별도 화면 크기 적용.
-- IMAGE는 비전체화면 모드에서 설정 maximum 대신 작업 영역 **90%**. WEB 실제 크기 모달은 WPF와 같이 작업 영역(현재 모니터 또는 기준 화면 프리셋) 기준 FIXED·IMAGE **90%**, RATIO **100%** 상한이며 브라우저 표시 영역을 넘는 축만 줄인다(TODO61-23). 인라인은 미리보기 칸 **최소 높이 320**.
+- IMAGE는 비전체화면 모드에서 설정 maximum 대신 작업 영역 **90%**. WEB 실제 크기 모달은 WPF와 같이 작업 영역(기준 화면 해상도 × 배율 프리셋, DIP) 기준 FIXED·IMAGE **90%**, RATIO **100%** 상한이며 브라우저 표시 영역을 넘는 축만 줄인다(TODO61-23). 인라인은 미리보기 칸 **최소 높이 320**.
 - 기본 `maximumWidth=1200`·`maximumHeight=900`은 **설정값의 기본**이지 모든 창에 적용되는 절대 최대 픽셀값이 아니다.
 
 ## 유형별 본문과 등록 입력

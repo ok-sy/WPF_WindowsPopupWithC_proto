@@ -59,23 +59,37 @@ export function previewOverlay(popup: AdminPopupDetail): { enabled: boolean; opa
  * POL-08-01 : 공통 렌더러
  * ■ 실제 크기 미리보기 기준 화면(TODO61-23)
  * - in : 없음(형식 정의)
- * - out: 'CURRENT'(현재 모니터) | 해상도 프리셋 키
+ * - out: 해상도 프리셋 키
  * - 실제 크기 모달 상단 '기준 화면' 선택박스 값. 팝업 크기 계산에만 쓰고 저장 데이터에는 넣지 않는다.
+ *   2026-11-24 '현재 모니터' 항목 삭제: 항상 해상도 프리셋의 가상 데스크톱으로 보여 준다.
  */
-export type PreviewScreenKey = 'CURRENT' | '1366x768' | '1920x1080' | '2560x1440';
+export type PreviewScreenKey = (typeof PREVIEW_SCREEN_RESOLUTIONS)[number][0];
+
+/** 해상도 프리셋 [키, 가로, 세로](물리 픽셀, 작은 해상도부터). 소형·노트북, FHD, QHD·울트라와이드, 4K를 비교한다(2026-11-24). */
+const PREVIEW_SCREEN_RESOLUTIONS = [
+  ['1280x720', 1280, 720], ['1280x1024', 1280, 1024], ['1366x768', 1366, 768], ['1440x900', 1440, 900], ['1600x900', 1600, 900],
+  ['1680x1050', 1680, 1050], ['1920x1080', 1920, 1080], ['1920x1200', 1920, 1200], ['2560x1080', 2560, 1080], ['2560x1440', 2560, 1440],
+  ['2560x1600', 2560, 1600], ['3440x1440', 3440, 1440], ['3840x2160', 3840, 2160],
+] as const;
 
 /**
  * POL-08-01 : 공통 렌더러
- * ■ 기준 화면 프리셋
- * - display: 표시 해상도, workArea: 크기 계산에 쓰는 가상 작업 영역(Windows 배율 100%, 작업 표시줄 높이 40 가정 검증값).
- *   WPF CurrentWorkArea()(모니터 WorkingArea, DIP)에 대응한다. 브라우저 CSS px = WPF DIP(배율 100%) 기준이다.
+ * ■ 기준 화면 해상도 프리셋
+ * - resolution: 모니터 표시 해상도(물리 픽셀). 화면 크기·작업 영역은 배율(PREVIEW_SCREEN_SCALES)과 함께 previewScreenPreset이 DIP로 계산한다.
  */
-export const PREVIEW_SCREEN_PRESETS: ReadonlyArray<{ key: Exclude<PreviewScreenKey, 'CURRENT'>; display: Size; workArea: Size }> = [
-  // 작은 노트북 화면: 90% 상한(1229×655)에 걸려 팝업이 실제로 줄어드는 경우를 비교한다(2026-11-24 가상 화면 추가).
-  { key: '1366x768', display: { width: 1366, height: 768 }, workArea: { width: 1366, height: 728 } },
-  { key: '1920x1080', display: { width: 1920, height: 1080 }, workArea: { width: 1920, height: 1040 } },
-  { key: '2560x1440', display: { width: 2560, height: 1440 }, workArea: { width: 2560, height: 1400 } },
-];
+export const PREVIEW_SCREEN_PRESETS: ReadonlyArray<{ key: PreviewScreenKey; resolution: Size }> =
+  PREVIEW_SCREEN_RESOLUTIONS.map(([key, width, height]) => ({ key, resolution: { width, height } }));
+
+/** Windows 디스플레이 배율 프리셋(100%·125%·150%·175%). */
+export const PREVIEW_SCREEN_SCALES = [1, 1.25, 1.5, 1.75] as const;
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 기준 화면 배율
+ * - 1 = 100%. WPF 창 크기·작업 영역은 DIP(물리 픽셀 ÷ 배율) 단위라 배율이 크면 같은 해상도에서 쓸 수 있는 화면이 작아진다.
+ */
+export type PreviewScreenScale = (typeof PREVIEW_SCREEN_SCALES)[number];
+/** 가정한 작업 표시줄 높이(DIP). Windows는 배율이 바뀌어도 작업 표시줄을 DIP 기준 같은 높이로 그린다. */
+export const PREVIEW_TASKBAR_HEIGHT = 40;
 
 /** WPF PopupWindow.ScreenSafeAreaRatio와 같은 화면 안전 여백(FIXED·IMAGE 공통 90%, 2026-11-24 통일). */
 export const PREVIEW_SCREEN_SAFE_AREA_RATIO = 0.90;
@@ -93,7 +107,7 @@ const validSize = (width: unknown, height: unknown): Size | null => {
  * ■ 브라우저 표시 영역(뷰포트)
  * - in : 없음(window.innerWidth/innerHeight)
  * - out: Size 모달을 실제로 그릴 수 있는 브라우저 내부 크기. 읽을 수 없으면 FALLBACK_WORK_AREA
- * - 배경 Overlay가 덮는 영역이자 1:1 표시 가능 여부를 판단하는 표시 한계다. 팝업 목표 크기 계산에는 쓰지 않는다.
+ * - 기준 화면이 브라우저보다 큰 축에 스크롤을 둘지 판단하는 표시 한계다. 팝업 목표 크기 계산에는 쓰지 않는다.
  */
 export function readBrowserViewport(): Size {
   if (typeof window === 'undefined') return FALLBACK_WORK_AREA;
@@ -112,14 +126,71 @@ export function readScreenWorkArea(): Size {
   return validSize(window.screen?.availWidth, window.screen?.availHeight) ?? readBrowserViewport();
 }
 
+/** 사용자 모니터와 맞는 프리셋이 없을 때 처음 고르는 기준 화면. */
+export const DEFAULT_PREVIEW_SCREEN: PreviewScreenKey = '1920x1080';
+/** 사용자 배율과 맞는 프리셋이 없을 때 처음 고르는 배율(100%). */
+export const DEFAULT_PREVIEW_SCALE: PreviewScreenScale = 1;
+
 /**
  * POL-08-01 : 공통 렌더러
- * ■ 선택한 기준 화면의 작업 영역
- * - in : key(PreviewScreenKey) · current(Size) 현재 모니터 작업 영역(readScreenWorkArea 결과)
- * - out: Size 크기 계산에 쓸 작업 영역. 모르는 키는 현재 모니터
+ * ■ 처음 고를 기준 화면
+ * - in : 없음(window.screen.width)
+ * - out: PreviewScreenKey 내 모니터 해상도(screen.width·height × devicePixelRatio, 물리 픽셀)와 가로·세로가 같은 프리셋, 없으면 DEFAULT_PREVIEW_SCREEN
+ * - 실제 크기 모달을 처음 열 때 사용자 화면과 같은 해상도로 시작한다. 이후 선택은 모달 상태로 유지한다.
  */
-export function previewWorkArea(key: PreviewScreenKey, current: Size): Size {
-  return PREVIEW_SCREEN_PRESETS.find((preset) => preset.key === key)?.workArea ?? current;
+export function initialPreviewScreen(): PreviewScreenKey {
+  return currentPreviewScreen() ?? DEFAULT_PREVIEW_SCREEN;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 내 모니터와 같은 해상도 프리셋
+ * - in : 없음(window.screen.width·height × devicePixelRatio, 물리 픽셀)
+ * - out: PreviewScreenKey | null 가로·세로가 같은 프리셋, 없으면 null
+ * - 실제 크기 미리보기 선택박스에서 현재 모니터와 같은 항목에 * 표시를 붙일 때와 처음 선택에 쓴다.
+ */
+export function currentPreviewScreen(): PreviewScreenKey | null {
+  if (typeof window === 'undefined') return null;
+  const ratio = Number(window.devicePixelRatio) || 1;
+  const width = Math.round(Number(window.screen?.width) * ratio), height = Math.round(Number(window.screen?.height) * ratio);
+  return PREVIEW_SCREEN_PRESETS.find((preset) => preset.resolution.width === width && preset.resolution.height === height)?.key ?? null;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 처음 고를 배율
+ * - in : 없음(window.devicePixelRatio)
+ * - out: PreviewScreenScale 브라우저 배율(devicePixelRatio)과 같은 프리셋, 없으면 100%
+ * - 브라우저 확대율도 devicePixelRatio에 섞이므로 정확히 맞는 프리셋이 없으면 100%로 시작한다.
+ */
+export function initialPreviewScale(): PreviewScreenScale {
+  return currentPreviewScale() ?? DEFAULT_PREVIEW_SCALE;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 내 모니터와 같은 배율 프리셋
+ * - in : 없음(window.devicePixelRatio)
+ * - out: PreviewScreenScale | null 같은 배율, 없으면 null(브라우저 확대율이 섞이면 맞는 값이 없을 수 있다)
+ */
+export function currentPreviewScale(): PreviewScreenScale | null {
+  const ratio = typeof window === 'undefined' ? NaN : Number(window.devicePixelRatio);
+  return PREVIEW_SCREEN_SCALES.find((scale) => Math.abs(scale - ratio) < 0.01) ?? null;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 기준 화면 프리셋
+ * - in : key(PreviewScreenKey) · scale(PreviewScreenScale, 기본 100%)
+ * - out: { resolution 물리 해상도, display 화면 크기(DIP), workArea 작업 영역(DIP) }. 모르는 키는 DEFAULT_PREVIEW_SCREEN
+ * - WPF CurrentWorkArea()처럼 DIP로 계산한다: 화면 = 해상도 ÷ 배율(반올림), 작업 영역 = 화면 높이 - 작업 표시줄 40.
+ *   예: 1920×1080 @125% → 화면 1536×864, 작업 영역 1536×824. 미리보기는 브라우저 CSS px = DIP로 그린다.
+ */
+export function previewScreenPreset(key: PreviewScreenKey, scale: PreviewScreenScale = DEFAULT_PREVIEW_SCALE): { resolution: Size; display: Size; workArea: Size } {
+  const { resolution } = PREVIEW_SCREEN_PRESETS.find((preset) => preset.key === key)
+    ?? PREVIEW_SCREEN_PRESETS.find((preset) => preset.key === DEFAULT_PREVIEW_SCREEN)!;
+  const display = { width: Math.round(resolution.width / scale), height: Math.round(resolution.height / scale) };
+  return { resolution, display, workArea: { width: display.width, height: display.height - PREVIEW_TASKBAR_HEIGHT } };
 }
 
 /**
