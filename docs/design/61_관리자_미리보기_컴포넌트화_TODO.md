@@ -273,3 +273,47 @@
 - [ ] 폐쇄망 배율·전역 CSS 환경 캡처 추가.
 
 검증 · `verify-popup-parity.cjs` 54건 통과, 가이드 그림 7장 육안 확인(TEXT·좁은 폭·SURVEY·VIDEO+QUIZ).
+
+## 61-23 실제 크기 미리보기 작업 영역 차이 재현 및 유형별 회귀 검증
+
+### 확인된 현상과 기준
+
+2026-11-24(KST) 관리자 실측. IMAGE 요청 크기 730×900, 관리자 「실제 크기로 보기」, 브라우저 F11 전후에 모달의 `getBoundingClientRect()`를 각각 다시 측정했다. 비교한 Git 기준은 `main` `30e2b57`이다.
+
+| 브라우저 상태 | 브라우저 내부 높이 | 웹 모달 실측 |
+|---|---:|---:|
+| F11 전체화면 | 1080px | 730×900px |
+| 일반 모드 | 945px | 730×851px |
+
+- 웹 일반 IMAGE 분기에서 `945 × 0.90`을 반올림한 851px가 일반 모드 실측과 일치한다. 브라우저 상태에 따라 창 높이가 49px 바뀌었다. F11에서 실팝업과 더 비슷하게 보였으나 이 관찰에 대응하는 WPF 외곽·본문 실측, 사용 모니터 작업 영역, IMAGE 세부 모드는 추가 확인한다.
+- 확정 기준은 [POL-04](../policies/POL-04.md), [POL-08](../policies/POL-08.md), [WPF 인터페이스](../interfaces/WPF/POPUP_INTERFACE_SPEC.md)다. ADAPTIVE의 width/height는 창 크기, FIT_TO_IMAGE의 width/height는 이미지 콘텐츠 영역이다. WPF 일반 IMAGE는 모니터 작업 영역의 90% 상한을 사용한다. 브라우저 F11과 팝업의 FULLSCREEN 설정을 각각 검증한다.
+- 현행 웹에서 `PopupPreviewDialog.tsx`의 `readViewport()`는 `innerWidth/innerHeight`를 사용한다. `previewDialogSize()`는 일반 IMAGE에 90%, IMAGE 권장 크기 전달 경로와 일반 비IMAGE에 별도의 96% 제한을 적용하며, 모달 Paper에도 `96vw/96vh` 제한이 있다. WPF 비IMAGE의 창 모드별 화면 제한은 [레이아웃 가이드](61_POPUP_LAYOUT_GUIDE.md)와 `ApplyWindowSize()`를 대조한다.
+
+### 구현 시 확인할 사항
+
+- [ ] 동일 이미지와 동일 설정으로 730×900 회귀 사례를 재현한다. F11 전후, 브라우저 창 축소, 확대율 100%와 비기본값, Windows 배율 100%와 확대 환경, 작업 영역이 다른 다중 모니터를 확인한다. `innerWidth/innerHeight`, `screen.availWidth/availHeight`, 브라우저 확대율·DPI, WPF 창 대상 모니터 작업 영역(DIP)을 기록한다. 브라우저 CSS px와 WPF DIP 및 캡처 물리 픽셀을 대응시켜 비교한다.
+- [ ] 관리자 웹 `PopupPreviewDialog.tsx`의 `readViewport()`·Paper 제한, `popupPreviewDialogLayout.ts`의 `previewDialogSize()`, `imagePreviewLayout.ts`의 `fitToImageLayout()`, `PopupPreview.tsx`의 권장 크기 보고·본문 렌더링, `InlinePopupPreview.tsx`의 모달 연결을 확인한다. `RgstPop`과 `IS063M02Sample`이 어떤 옵션·권장 크기를 넘기는지도 대조한다.
+- [ ] WPF `Views/Windows/PopupWindow.xaml.cs`의 `ApplyWindowSize()`·`CurrentWorkArea()`와 `Views/Contents/ImagePopupView.xaml.cs`의 `UpdateLayoutForImage()`를 기준으로 같은 데이터를 비교한다. 요청 크기, 화면 보정 후 창 크기, 흰 판·헤더·푸터·본문 및 이미지 박스 크기를 순서대로 기록한다. 창 크기를 맞춘 뒤에도 차이가 남으면 리사이즈·패딩·설명 높이 등 해당 영역의 계산을 확인한다.
+- [ ] 아래 유형별 검증에서 재현된 차이와 원인을 기록한 다음 수정한다. 웹 작업 영역 계산은 확인된 범위에 적용하고, WPF 동작이나 API·DB 변경은 증거상 필요할 때 영향과 하위 호환성을 먼저 확인한다. 구 응답의 IMAGE 축별 대체 읽기와 누락값 처리, 저장 데이터 및 미리보기 입력 객체의 불변성을 검증한다.
+
+| 대상 | 회귀 확인 항목 |
+|---|---|
+| IMAGE | 730×900, ADAPTIVE·FIT_TO_IMAGE, 축 생략·원본 비율 고정/해제, 설명·헤더·푸터 표시, 이미지 중심·클리핑. 모달 첫 열기·재열기·리사이즈 후 권장 크기 수렴 |
+| TEXT | 긴 본문 줄바꿈·세로 스크롤, 헤더·푸터 숨김 및 고정 배치 |
+| VIDEO | 종횡비, 영상 영역·제어부·푸터 접근성 |
+| SURVEY·QUIZ | 긴 문항·선택지·주관식, 본문 스크롤·제출 푸터 접근성 |
+| VIDEO+QUIZ | 영상·문항 배분, 시청 잠금·해제, 스크롤, 높이 600px 전후에서 크기 진동 또는 스크롤 반복 여부 |
+| 공통 창 모드 | 지원되는 FIXED·RATIO·AUTO·FULLSCREEN, 최소·최대값 경계, 배치·종료·오버레이, 인라인과 실제 크기 모달 간 회귀 |
+
+### 구현 전에 결정할 사항
+
+| 결정 항목 | 이유와 선택지 | 추천 및 영향 |
+|---|---|---|
+| 미리보기 목표 크기 기준 | 브라우저 여유 공간과 WPF 모니터 작업 영역이 다르다. A. 현행 브라우저 기준을 유지하고 제한을 안내한다. B. `screen.availWidth/availHeight`를 WPF 작업 영역의 근사값으로 사용하고 브라우저 내부 크기는 모달 표시 한계로 사용한다. | B 우선 검증. IMAGE 기본 모달과 FIT_TO_IMAGE 권장 크기가 같은 기준을 쓰도록 대조한다. 화면 가용 크기를 읽을 수 없으면 현행 브라우저 가용 크기를 대체값으로 사용하는 방안을 검증한다. 멀티 모니터·DPI와 작업 표시줄 숨김 조건은 실측으로 판단한다. 다른 유형은 개별 재현 결과로 적용 범위를 확정한다. |
+| 목표 크기가 브라우저 표시 영역을 넘는 경우 | 크기를 줄이면 내부 줄바꿈·이미지 배치가 바뀔 수 있다. A. 기존처럼 모달 크기를 제한한다. B. 목표 크기로 내부 레이아웃을 계산하고 전체를 균일하게 축소해 표시한다. | 먼저 A로 730×900 재현 조건을 해결할 수 있는지 확인한다. 같은 레이아웃 유지가 필요한 사례에는 B의 축척 표시와 스크롤·도달성 영향을 검토한다. 정책 변경은 결정 후 구현에 반영한다. |
+
+### 완료 기준
+
+- [ ] 730×900 사례와 전체 유형의 동일 데이터·동일 조건 결과가 남아 있고, 차이가 발생한 단계와 수정 근거를 확인할 수 있다. 목표 크기가 브라우저에 들어가는 조건에서는 F11 전환만으로 모달 크기가 달라지던 사례를 재검증한다.
+- [ ] 확인된 차이 수정 후 해당 유형과 전체 유형을 다시 검증해 모달 열기·리사이즈·재열기, 콘텐츠 스크롤·이미지 클리핑·닫기 버튼과 푸터 도달성에 회귀가 없는지 확인한다.
+- [ ] `scripts/verify-popup-preview-61.cjs`, `scripts/verify-image-preview.cjs`, `scripts/verify-popup-parity.cjs`, `scripts/PopupParityCapture` 중 기존 경로를 활용한다. 정적 검토, 웹 타입 검사·빌드, 로컬 웹·Windows 실행 비교, 폐쇄망 실화면을 각각 기록하고 미실행 항목은 완료 처리하지 않는다.
