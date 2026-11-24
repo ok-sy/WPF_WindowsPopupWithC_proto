@@ -152,8 +152,15 @@ const toWpf = p => {
   for (const popup of fixtures) {
     const w = web[popup.popupId], d = wpf[popup.popupId];
     rows.push({id: popup.popupId, webFrame: [w.frame.width, w.frame.height], wpfContent: [d.content.width, d.content.height]});
-    // 영상 창: WPF 영상(WebView2 합성 화면)이 플레이어 폭을 채워야 한다. 작은 프레임이 왼쪽 위에 남으면 0.1 아래로 나온다(2026-11-25).
-    if (d.videoFill != null) check(d.videoFill >= 0.5, `${popup.popupId} WPF video frame fills the player (videoFill ${d.videoFill})`);
+    // 영상 창: WPF 영상(WebView2 합성 화면)이 플레이어를 채우고 세로 가운데에 있어야 한다(2026-11-25).
+    // 측정값이 없으면(WebView2를 못 찾음) 건너뛰지 않고 실패. 채움률만으로는 위에 붙은 프레임(채움 1.0)을 놓치므로 위·아래 여백 대칭(±4px)도 본다.
+    if (popup.popupType === 'VIDEO' || popup.content.videoEnabled) {
+      check(d.videoFill != null && d.videoTop != null && d.videoBottom != null,
+        `${popup.popupId} WPF video measurement exists (videoFill ${d.videoFill}, top ${d.videoTop}, bottom ${d.videoBottom})`);
+      check(d.videoFill >= 0.5, `${popup.popupId} WPF video frame fills the player (videoFill ${d.videoFill})`);
+      check(d.videoTop >= 0 && Math.abs(d.videoTop - d.videoBottom) <= 4,
+        `${popup.popupId} WPF video frame is vertically centered (top ${d.videoTop}px, bottom ${d.videoBottom}px)`);
+    }
     // 흰 판 크기(창 - 그림자 여백)가 WPF와 같아야 한다(2026-11-17).
     check(Math.abs(w.frame.width - d.content.width) <= 1 && Math.abs(w.frame.height - d.content.height) <= 1,
       `${popup.popupId} white panel web ${w.frame.width}×${w.frame.height} vs WPF ${d.content.width}×${d.content.height}`);

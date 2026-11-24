@@ -43,6 +43,7 @@ internal static class Program
             // 캡처 직전 영상 영역 위쪽 60%의 밝은 픽셀 비율(videoFill)을 남긴다. 작은 프레임이 남으면 낮게 나온다(2026-11-25).
             var videoHost = FindWebViewHost(window);
             double? videoFill = null, videoFillEarly = null;
+            int? videoTop = null, videoBottom = null;
             if (videoHost != null)
             {
                 videoFillEarly = VideoFill(videoHost);   // 원래 캡처 시점(표시 후 약 0.5초) 값. 참고용.
@@ -50,6 +51,7 @@ internal static class Program
                 while (waited.ElapsedMilliseconds < 1500) { window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle); Thread.Sleep(20); }
                 window.UpdateLayout();
                 videoFill = VideoFill(videoHost);
+                (videoTop, videoBottom) = VideoMargins(videoHost);
             }
             var root = (FrameworkElement)window.Content;
             // 창 전체(그림자용 바깥 여백 포함)를 그대로 그린 뒤 흰 판(PopupOuterGrid 안쪽)만 잘라 낸다. 배율 변환 없음.
@@ -68,6 +70,8 @@ internal static class Program
                 window = new { width = window.ActualWidth, height = window.ActualHeight },
                 videoFill,
                 videoFillEarly,
+                videoTop,
+                videoBottom,
                 content = new { width, height, margin = m.Left },
                 choices = Descendants(root).OfType<System.Windows.Controls.Primitives.ToggleButton>()
                     .Select(c => new { name = System.Windows.Automation.AutomationProperties.GetName(c), c.ActualWidth, c.ActualHeight, c.FontSize }),
@@ -133,6 +137,29 @@ internal static class Program
             if (found != null) return found;
         }
         return null;
+    }
+
+    /*
+     * 영상 프레임의 위·아래 검은 여백(px). WebView2 컨트롤만 그려 WPF 컨트롤바 겹침은 빠진다.
+     * 한 줄의 절반 넘는 픽셀이 밝으면 영상 줄로 보고 첫·마지막 영상 줄로 여백을 잰다. 영상 줄이 없으면(작은 프레임 고착) (-1, -1).
+     * 중앙 정렬(contain)이면 위·아래가 같고, 이전 크기 프레임이 위에 붙으면 위 0·아래 큰 값이 된다(2026-11-25).
+     */
+    private static (int top, int bottom) VideoMargins(FrameworkElement host)
+    {
+        int w = (int)Math.Ceiling(host.ActualWidth), h = (int)Math.Ceiling(host.ActualHeight);
+        if (w <= 0 || h <= 0) return (-1, -1);
+        var bitmap = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(host);
+        var pixels = new byte[w * h * 4];
+        bitmap.CopyPixels(pixels, w * 4, 0);
+        int first = -1, last = -1;
+        for (int y = 0; y < h; y++)
+        {
+            int lit = 0;
+            for (int x = 0; x < w; x++) { int i = (y * w + x) * 4; if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 60) lit++; }
+            if (lit > w / 2) { if (first < 0) first = y; last = y; }
+        }
+        return first < 0 ? (-1, -1) : (first, h - 1 - last);
     }
 
     /* 영상 영역 위쪽 60%(컨트롤바 위)의 밝은 픽셀 비율. 플레이어를 채운 프레임은 0.7 이상, 왼쪽 위 작은 프레임은 0.1 아래. */
