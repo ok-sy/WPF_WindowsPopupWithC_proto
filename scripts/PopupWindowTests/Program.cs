@@ -274,6 +274,62 @@ internal static class Program
         return opened;
     }
 
+    /*
+     * POL-02-01 : 창 구조 — 영상 창 크기 맞춤(2026-11-24).
+     * 일반 창은 창 안쪽 24 DIP 그림자 여백 안에 흰 판(창 - 48)을 그리고, 영상 창은 여백 없는 불투명 창이다.
+     * 영상 창은 사방 24씩 작게 만들고 위치도 그만큼 안쪽으로 옮겨, 같은 설정이면 보이는 판이 TEXT 흰 판과 같은 크기·자리에 놓인다.
+     * FIXED·RATIO·AUTO 최대(작업 영역 90%) 모두 같은 규칙, FULLSCREEN은 그대로 화면 전체.
+     */
+    private static void CheckVideoWindowInset()
+    {
+        Rect PlateOnScreen(PopupWindow window)
+        {
+            window.UpdateLayout();
+            var plate = (FrameworkElement)window.FindName("PopupBodyBorder");
+            var origin = plate.TranslatePoint(new Point(0, 0), window);
+            return new Rect(window.Left + origin.X, window.Top + origin.Y, plate.ActualWidth, plate.ActualHeight);
+        }
+        bool Near(Rect a, Rect b) => Math.Abs(a.X - b.X) < 1 && Math.Abs(a.Y - b.Y) < 1 && Math.Abs(a.Width - b.Width) < 1 && Math.Abs(a.Height - b.Height) < 1;
+        foreach (var (mode, position, w, h) in new[] { ("FIXED", "CENTER", 800, 600), ("FIXED", "TOP_LEFT", 800, 600), ("FIXED", "BOTTOM_RIGHT", 800, 600), ("RATIO", "CENTER", 800, 600), ("FIXED", "CENTER", 720, 900) })
+        {
+            void Configure(Popup.Dtos.PopupResponseDto dto)
+            {
+                dto.SizeMode = mode; dto.Width = w; dto.Height = h; dto.WidthRatio = 0.5; dto.HeightRatio = 0.6;
+                dto.PopupPosition = position; dto.ShowFooter = true;
+                dto.MinimumWidth = 300; dto.MinimumHeight = 300; dto.MaximumWidth = 1200; dto.MaximumHeight = 900;   // 데모 데이터의 유형별 최소·최대 차이를 없앤다
+            }
+            var text = OpenPopup("TEXT", Configure);
+            Rect textPlate = PlateOnScreen(text.Window);
+            foreach (var type in new[] { "VIDEO", "VIDEO_QUIZ" })
+            {
+                var video = OpenPopup(type, Configure);
+                Rect videoPlate = PlateOnScreen(video.Window);
+                Check(Near(videoPlate, textPlate) && Math.Abs(video.Window.ActualWidth - (text.Window.ActualWidth - 48)) < 1,
+                    $"[video inset] {type} {mode} {position} {w}x{h}: video plate {videoPlate} matches TEXT plate {textPlate} (window {video.Window.ActualWidth} vs {text.Window.ActualWidth})");
+                ShutdownClose(video.Window);
+            }
+            ShutdownClose(text.Window);
+        }
+        // 최대 크기: 작업 영역 90% 상한에서도 영상 판 = TEXT 판.
+        Rect area = SystemParameters.WorkArea;
+        var bigText = OpenPopup("TEXT", dto => { dto.SizeMode = "FIXED"; dto.Width = 9000; dto.Height = 9000; dto.MinimumWidth = 300; dto.MinimumHeight = 300; dto.MaximumWidth = 9000; dto.MaximumHeight = 9000; dto.ShowFooter = true; });
+        var bigVideo = OpenPopup("VIDEO", dto => { dto.SizeMode = "FIXED"; dto.Width = 9000; dto.Height = 9000; dto.MinimumWidth = 300; dto.MinimumHeight = 300; dto.MaximumWidth = 9000; dto.MaximumHeight = 9000; dto.ShowFooter = true; });
+        Check(Near(PlateOnScreen(bigVideo.Window), PlateOnScreen(bigText.Window)) && bigVideo.Window.ActualWidth <= area.Width * 0.9 - 48 + 1,
+            $"[video inset] capped size: video plate {PlateOnScreen(bigVideo.Window)} matches TEXT plate {PlateOnScreen(bigText.Window)}");
+        ShutdownClose(bigVideo.Window); ShutdownClose(bigText.Window);
+        // 최소 크기 300: 영상 창 252(= TEXT 흰 판).
+        var smallVideo = OpenPopup("VIDEO", dto => { dto.SizeMode = "FIXED"; dto.Width = 100; dto.Height = 100; dto.MinimumWidth = 300; dto.MinimumHeight = 300; dto.ShowFooter = true; });
+        smallVideo.Window.UpdateLayout();
+        Check(Math.Abs(smallVideo.Window.MinWidth - 252) < 1 && Math.Abs(smallVideo.Window.ActualWidth - 252) < 1,
+            $"[video inset] minimum 300 window becomes a 252 video window ({smallVideo.Window.ActualWidth}, min {smallVideo.Window.MinWidth})");
+        ShutdownClose(smallVideo.Window);
+        // FULLSCREEN은 줄이지 않는다.
+        var full = OpenPopup("VIDEO", dto => { dto.SizeMode = "FULLSCREEN"; dto.ShowFooter = true; });
+        full.Window.UpdateLayout();
+        Check(full.Window.ActualWidth >= SystemParameters.PrimaryScreenWidth - 1, $"[video inset] FULLSCREEN video keeps the full screen ({full.Window.ActualWidth})");
+        ShutdownClose(full.Window);
+    }
+
     private static void SetPlaybackFailed(VideoPopupView video, bool failed) =>
         typeof(VideoPopupView).GetProperty("HasPlaybackFailed")!.SetValue(video, failed);
 
@@ -843,6 +899,7 @@ internal static class Program
 
         CheckVideoQuizScrollBarBoundary60();
         CheckLocalVideoWebPlayer60();
+        CheckVideoWindowInset();
         CheckVideoKeyboardAccess();
 
         var single = OpenPopup("VIDEO", dto => dto.ShowFooter = true);

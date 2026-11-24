@@ -11,7 +11,7 @@ import { POPUP_COLORS, POPUP_LAYOUT } from './popupLayout';
 import { readTextBlocks } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
-import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, readScreenWorkArea } from './popupPreviewDialogLayout';
+import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, previewWindowShadow, readScreenWorkArea } from './popupPreviewDialogLayout';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import { quizRequiresPassing } from './popupQuizRule';
@@ -563,7 +563,8 @@ export default function PopupPreview({
       sx={{
         minHeight: 0,
         height: '100%',
-        // WPF 일반 창은 창 크기 안에 그림자 여백 24px(영상 창·FULLSCREEN 0)을 두고 흰 판을 그린다. 모든 유형에 같은 규칙(2026-11-17).
+        // WPF 일반 창은 창 크기 안에 그림자 여백 24px(FULLSCREEN 0)을 두고 흰 판을 그린다. 모든 유형에 같은 규칙(2026-11-17).
+        // 영상 창도 WPF가 창을 사방 24씩 줄여 같은 판 크기·자리에 두므로 여백 24(그림자 없음, 2026-11-24).
         p: shadowMargin ? `${shadowMargin}px` : showBackground ? 2 : 0,
         flex: 1,
         boxSizing: 'border-box',
@@ -592,7 +593,7 @@ export default function PopupPreview({
         elevation={0}
         sx={{
           // WPF DropShadowEffect와 같은 그림자. 영상 창·FULLSCREEN은 WPF와 같이 그림자 없음.
-          boxShadow: shadowMargin ? PREVIEW_WINDOW_SHADOW : 'none',
+          boxShadow: previewWindowShadow(popup) ? PREVIEW_WINDOW_SHADOW : 'none',
           width: '100%',
           height: '100%',
           maxWidth: '100%',

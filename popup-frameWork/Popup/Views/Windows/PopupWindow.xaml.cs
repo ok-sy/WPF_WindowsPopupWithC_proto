@@ -396,7 +396,36 @@ namespace Popup.Views.Windows
          * PopupOptions.SizeMode에 따라
          * PopupWindow의 실제 크기를 결정한다.
          */
+        /*
+         * POL-02-01 : 창 구조
+         * ■ 영상 창 크기 맞춤(2026-11-24)
+         * - 일반 창은 창 크기 안쪽 둘레 24 DIP(PopupOuterGrid.Margin)를 그림자용 투명 여백으로 비우고 그 안에 흰 판을 그린다(보이는 판 = 창 - 48).
+         *   영상 창(ApplyVideoWindowSurface)은 저사양 PC 부하 때문에 불투명 창·여백 0이라, 같은 설정 크기에서 판이 48 크게 보였다.
+         * - 영상 창(전체 화면 제외)은 같은 규칙으로 크기를 계산한 뒤 창 자체를 사방 VideoWindowInset만큼 줄이고(ApplyWindowSize),
+         *   위치도 작업 영역을 그만큼 안쪽으로 좁혀 정한다(ApplyPosition). 보이는 판이 다른 유형의 흰 판과 같은 크기·자리에 놓인다.
+         *   그림자는 계속 넣지 않는다(저사양 CPU 부하 기준 유지).
+         */
+        private const double VideoWindowInset = 24;
+        private double WindowInset => HostsVideo && _options.SizeMode != PopupSizeMode.Fullscreen ? VideoWindowInset : 0;
+
         private void ApplyWindowSize()
+        {
+            ApplyRequestedWindowSize();
+            double inset = WindowInset;
+            if (inset <= 0) return;
+            // 최소·최대·크기 모두 같은 양을 빼서 다른 유형의 흰 판(창 - 48)과 같은 범위를 쓴다. AUTO는 내용 크기를 따르므로 최소·최대만 줄인다.
+            MinWidth = Math.Max(0, MinWidth - inset * 2);
+            MinHeight = Math.Max(0, MinHeight - inset * 2);
+            if (double.IsFinite(MaxWidth)) MaxWidth = Math.Max(MinWidth, MaxWidth - inset * 2);
+            if (double.IsFinite(MaxHeight)) MaxHeight = Math.Max(MinHeight, MaxHeight - inset * 2);
+            if (SizeToContent == SizeToContent.Manual)
+            {
+                if (double.IsFinite(Width)) Width = Math.Clamp(Width - inset * 2, MinWidth, MaxWidth);
+                if (double.IsFinite(Height)) Height = Math.Clamp(Height - inset * 2, MinHeight, MaxHeight);
+            }
+        }
+
+        private void ApplyRequestedWindowSize()
         {
             /*
              * PopupWindow.xaml에는 Visual Studio 미리보기와
@@ -803,6 +832,9 @@ namespace Popup.Views.Windows
             double width = ActualWidth > 0 ? ActualWidth : Width;
             double height = ActualHeight > 0 ? ActualHeight : Height;
             if (!double.IsFinite(width) || !double.IsFinite(height)) return;
+            // 영상 창은 그림자 여백만큼 작게 만들었으므로 작업 영역도 그만큼 안쪽으로 좁혀, 판이 다른 유형의 흰 판과 같은 자리에 오게 한다.
+            double inset = WindowInset;
+            if (inset > 0 && area.Width > inset * 2 && area.Height > inset * 2) area.Inflate(-inset, -inset);
             double x = _options.Position switch
             {
                 PopupPosition.TopLeft or PopupPosition.CenterLeft or PopupPosition.BottomLeft => 0,

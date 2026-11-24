@@ -30,7 +30,7 @@ node scripts/verify-popup-parity.cjs
 
 | 영역 | 값 | 웹(관리자 미리보기) | WPF |
 |---|---|---|---|
-| 창 바깥 그림자 여백 | 24 (영상 창·FULLSCREEN 0) | `POPUP_LAYOUT.windowMargin`, `previewShadowMargin()` | `PopupOuterGrid` Margin 24 |
+| 창 바깥 그림자 여백 | 24 (FULLSCREEN 0). 영상 창은 그림자 없이 같은 24만큼 창을 줄여 판 크기·자리를 맞춤(2026-11-24) | `POPUP_LAYOUT.windowMargin`, `previewShadowMargin()`, 그림자 `previewWindowShadow()` | `PopupOuterGrid` Margin 24, 영상 창 `VideoWindowInset` 24 |
 | 헤더 | 높이 40, 검정 배경 | `POPUP_LAYOUT.headerHeight` | `HeaderRow` 40, `HeaderArea` |
 | 헤더 제목 | 17 / 600, 왼쪽 시작 18, 한 줄 말줄임 | `POPUP_DEFAULT_FONT_SIZES.header`, `POPUP_LAYOUT.headerPaddingLeft` | `PopupTitleText` |
 | 헤더 로고 | 100×24, 오른쪽 끝 | `PopupPreview` 헤더 로고 | `HeaderLogo` |
@@ -241,7 +241,7 @@ node scripts/verify-popup-parity.cjs
 
 웹·WPF 나란히: [PARITY-VIDEO.side.png](61_popup_layout_guide/PARITY-VIDEO.side.png)
 
-### VIDEO+QUIZ (720×900)
+### VIDEO+QUIZ (720×840)
 
 샘플 ID `PARITY-VIDEO-QUIZ`
 

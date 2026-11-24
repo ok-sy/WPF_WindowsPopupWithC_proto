@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-19 — dev: 61_영상창판크기맞춤_수정
+
+- 이유 · VIDEO·VIDEO+QUIZ 창은 저사양 PC 부하 때문에 그림자 없는 불투명 창이라 그림자 여백 24도 없어, 같은 설정 크기에서 판이 다른 유형(창 - 48)보다 48 크게 보였다. 그림자 유무보다 크기 차이가 눈에 띄어 크기만 맞춤.
+- 변경 · WPF `PopupWindow`: 기존 크기 계산을 `ApplyRequestedWindowSize`로 분리하고 `ApplyWindowSize`에서 영상 창(전체 화면 제외)의 최소·최대·크기를 사방 `VideoWindowInset` 24씩 줄임(AUTO는 최소·최대만). `ApplyPosition`은 영상 창일 때 작업 영역을 24 안쪽으로 좁혀 위치 계산. 그림자는 계속 없음. 웹: `previewShadowMargin`이 영상 창에도 24(FULLSCREEN만 0), 그림자는 새 `previewWindowShadow`/`previewHostsVideo`로 판단. 61 레이아웃 가이드(공통 창 구조 표·VIDEO 그림 4장 재생성·VIDEO+QUIZ 비교 창 720×840), UI 기본값 사양, 미리보기·WPF 대조 문서, 코드 가이드 공지 갱신. `verify-popup-parity` VIDEO+QUIZ 비교 데이터 높이 900 → 840(작업 영역 높이 약 947인 측정 환경에서 90% 상한 852에 걸려 2026-11-24 상한 통일 이후 실패하던 조건 회피).
+- 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `scripts/PopupWindowTests/Program.cs`, `zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts`, `PopupPreview.tsx`, `guide/guideNotices.ts`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-parity.cjs`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/PARITY-VIDEO*.png`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`.
+- 검증 · WPF 빌드 0/0, `PopupWindowTests` 신규 `CheckVideoWindowInset` 13건(FIXED 3위치·RATIO·720×900·90% 상한·최소 300 → 252·FULLSCREEN 유지, TEXT 흰 판과 화면 좌표 일치) 포함 전체 통과, 로컬 BehaviorTests 1644, 웹 `verify-popup-parity` 54(VIDEO·VIDEO+QUIZ 흰 판 웹=WPF)·`verify-popup-preview-61` 294·completion-ux-43 82·common-sample-69 63·image-preview 48·guide-render·guide-registry, `tsc --noEmit`·eslint 통과. 미실행: Windows 실화면·고DPI, 관리자 웹 실화면, 폐쇄망 반입본.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-18 — dev: PopupAlert_전체섀도우_수정
 
 - 이유 · 공통 안내창의 검은 외곽선(1.2 DIP)이 배율(DPI)에 따라 두께가 달라 보여 DPI 대응을 섀도우로 하기로 했으나, 2026-11-24-05에서는 퀴즈 완료창에만 섀도우를 적용해 나머지 안내창은 외곽선이 남아 있었음.

@@ -57,6 +57,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-24-video-window-inset', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
+    title: '영상 팝업 판 크기 — 다른 유형과 같게',
+    body: ['같은 창 크기에서 VIDEO·동영상+퀴즈 판이 다른 유형보다 가로·세로 48px 크게 보이던 것을 맞췄습니다. WPF는 영상 창을 사방 24씩 줄이고 위치도 그만큼 안쪽으로 둡니다.',
+      '미리보기(인라인·실제 크기)도 영상 창에 여백 24를 두고 그림자만 그리지 않습니다(previewShadowMargin 24, previewWindowShadow false). 저장값·서버는 바뀌지 않습니다.'],
+    components: ['PopupPreview', 'PopupPreviewDialog', 'InlinePopupPreview'],
+    action: '바꿀 코드는 없습니다. 미리보기를 감싼 화면에서 영상 팝업만 여백을 따로 빼고 있었다면 지웁니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-24-rich-font-faces', date: '2026-11-24', category: 'ADDED', status: 'DONE', doneDate: '2026-11-24',
     title: '회사 글꼴 등록 — 일반·굵게 서체 직접 지정(faces)',
     body: ['전역 CSS 별칭이 굵기마다 다른 디자인(예: 300 Text·700 Head)을 섞거나 400 선언이 없으면, 편집기·미리보기가 WPF와 다른 서체를 고릅니다.',

@@ -80,3 +80,10 @@
 4. 설문 머리말: 제목 위 4, 설명 줄 높이 22, 설명 아래 14(머리말 10 + 문항 목록 4). 설명이 비어도 한 줄 자리를 둔다(VIDEO+QUIZ에서 영상 설명과 같아 숨길 때만 접음, `reserveDescription`).
 
 검증: `verify-popup-parity.cjs` 22건(5종 흰 판 크기 웹=WPF, 선택지 17개 높이·글자) 통과, 나란히 이미지에서 첫 문항 위치·버튼 색·구분선 일치 확인(설명 줄 1~2px 이내 차이는 글꼴 렌더링 차이).
+
+## 2026-11-24 영상 창 판 크기 맞춤
+
+- 현상: 같은 설정 크기에서 VIDEO·VIDEO+QUIZ 판이 다른 유형보다 가로·세로 48 크게 보였다(영상 창은 저사양 PC 부하 때문에 그림자 없는 불투명 창이라 여백 24도 없었음).
+- 변경: WPF `PopupWindow`가 영상 창(전체 화면 제외)을 사방 `VideoWindowInset` 24씩 줄이고 위치도 작업 영역을 그만큼 안쪽으로 좁혀 정한다. 미리보기는 `previewShadowMargin` 24를 영상 창에도 적용하고 그림자만 `previewWindowShadow`로 끈다. 보이는 판이 다른 유형 흰 판과 같은 크기·자리.
+- 검증: `PopupWindowTests` `CheckVideoWindowInset`(FIXED 3위치·RATIO·720×900·90% 상한·최소 300 → 252·FULLSCREEN 유지, TEXT 흰 판과 화면 좌표 일치), `verify-popup-parity` 54(VIDEO·VIDEO+QUIZ 흰 판 웹=WPF), `verify-popup-preview-61` 294.
+- 비교 데이터: VIDEO+QUIZ 창 높이 900 → 840(작업 영역 90% 상한에 걸리지 않게).

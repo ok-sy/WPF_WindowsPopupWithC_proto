@@ -381,7 +381,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     }
     await render('VIDEO');
     const video = await frame();
-    check(!video.dialogShadow && !video.innerShadow && video.pad === '0px' && video.inner[0] === video.dialog[0], `[61-16] VIDEO has no shadow margin or shadow like the WPF video window ${label}: ` + JSON.stringify(video));
+    // 2026-11-24: WPF 영상 창이 사방 24씩 줄어 판이 다른 유형 흰 판과 같은 크기·자리 → 미리보기도 여백 24(그림자는 없음).
+    check(!video.dialogShadow && !video.innerShadow && video.innerRadius === '6px' && video.pad === '24px' && video.inner[0] === video.dialog[0] - 48 && video.inner[1] === video.dialog[1] - 48,
+      `[61-16] VIDEO plate matches other types (24px margin) without a shadow like the WPF video window ${label}: ` + JSON.stringify(video));
   }
   await run("document.getElementById('closed-net-rule')?.remove()");
   // [TODO61-18] '나중에 보기'는 WPF SecondaryActionButtonStyle 모양(최소 너비 118), 푸터 버튼 높이는 '확인'·'제출'과 같은 34, 푸터 64(2026-11-18). 왼쪽 끝, '확인'·'제출'과 세로 중앙 정렬, 푸터 요소 겹침·잘림 없음.

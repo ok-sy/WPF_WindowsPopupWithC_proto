@@ -23,18 +23,28 @@ export function previewPositionAlign(popup: AdminPopupDetail): [string, string] 
   return PREVIEW_POSITION_ALIGN[position] ?? PREVIEW_POSITION_ALIGN.CENTER;
 }
 
+/** 영상 창(VIDEO, 영상 사용 QUIZ) 여부. WPF는 이 창을 저사양 PC 부하 때문에 그림자 없는 불투명 창으로 만든다(ApplyVideoWindowSurface). */
+export function previewHostsVideo(popup: AdminPopupDetail): boolean {
+  return popup.popupType === 'VIDEO' || (popup.popupType === 'QUIZ' && popup.content.videoEnabled === true);
+}
+
 /**
  * POL-08-01 : 공통 렌더러
- * ■ 창 안쪽 그림자 여백
+ * ■ 창 안쪽 여백
  * - in : popup(AdminPopupDetail) popupType · sizeMode · content.videoEnabled
- * - out: number 여백(px) — 영상 창(VIDEO, 영상 사용 QUIZ)·FULLSCREEN 0, 그 밖 24
+ * - out: number 여백(px) — FULLSCREEN 0, 그 밖 24(영상 창 포함)
  * - WPF 일반 창은 창 크기 안에 그림자용 투명 여백 24px(PopupOuterGrid.Margin)을 두고 그 안에 흰 판을 그린다(흰 판 = 창 - 48).
- *   영상 창(ApplyVideoWindowSurface)·FULLSCREEN은 여백이 없다. 미리보기(PopupPreview)도 창 크기 안에 같은 여백을 두고 그 안에 그림자를 그린다
- *   (2026-11-17, 이전에는 IMAGE에만 적용돼 TEXT·SURVEY·QUIZ 흰 판이 WPF보다 48px 컸음).
+ *   미리보기(PopupPreview)도 창 크기 안에 같은 여백을 두고 그 안에 판을 그린다(2026-11-17).
+ * - 영상 창(2026-11-24): WPF가 창 자체를 사방 24씩 줄이고 위치도 그만큼 안쪽으로 옮겨(VideoWindowInset) 보이는 판이 다른 유형의 흰 판과
+ *   같은 크기·자리다. 미리보기는 같은 결과를 투명 여백 24로 그린다(그림자만 없음 — previewWindowShadow). 이전에는 영상 창 여백 0이라 판이 48 컸다.
  */
 export function previewShadowMargin(popup: AdminPopupDetail): number {
-  const hasVideo = popup.popupType === 'VIDEO' || (popup.popupType === 'QUIZ' && popup.content.videoEnabled === true);
-  return hasVideo || popup.sizeMode === 'FULLSCREEN' ? 0 : POPUP_LAYOUT.windowMargin;
+  return popup.sizeMode === 'FULLSCREEN' ? 0 : POPUP_LAYOUT.windowMargin;
+}
+
+/** 판 그림자 표시 여부. 영상 창·FULLSCREEN은 WPF와 같이 그림자를 그리지 않는다. */
+export function previewWindowShadow(popup: AdminPopupDetail): boolean {
+  return popup.sizeMode !== 'FULLSCREEN' && !previewHostsVideo(popup);
 }
 
 /** WPF DropShadowEffect(BlurRadius 22 · ShadowDepth 4 · Direction 270 · Opacity 0.28)에 해당하는 CSS 그림자. 여백이 있는 창에만 쓴다. */
