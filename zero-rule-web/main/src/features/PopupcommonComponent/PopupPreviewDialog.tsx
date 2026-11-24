@@ -30,8 +30,7 @@ export interface PopupPreviewDialogProps {
 const sameSize = (a: Size, b: Size) => a.width === b.width && a.height === b.height;
 /** 기준 화면 선택박스에 쓰는 'W×H' 표기. */
 export const formatPreviewSize = (size: Size) => `${Math.round(size.width)}×${Math.round(size.height)}`;
-/** 가상 화면 바탕(바탕화면)·작업 표시줄 색. 팝업 흰 판과 구분되는 무채색. */
-const VIRTUAL_DESKTOP = '#64748b';
+/** 해상도 화면 작업 표시줄 색. */
 const VIRTUAL_TASKBAR = '#1e293b';
 
 /**
@@ -123,7 +122,8 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   if (preset) {
     return (
       <Dialog open={open} onClose={() => onClose()} fullScreen maxWidth={false}
-        slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(15, 23, 42, 0.92)' } },
+        // 배경은 현재 모니터 모드와 같은 팝업 Background Overlay(기본 0.45, 끄면 투명)라 뒤의 관리자 화면이 그대로 비친다(2026-11-24).
+        slotProps={{ backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
           paper: { sx: { bgcolor: 'transparent', backgroundImage: 'none', boxShadow: 'none', overflow: 'hidden' } } }}>
         {/* 도구는 따로 자리를 잡지 않고 화면 위에 띄운다(위쪽 배치 팝업이면 아래로). 자리·여백을 잡으면 브라우저와 같은 해상도에서도 스크롤이 생긴다. */}
         <Box data-testid="preview-dialog-tools" sx={{ ...toolsSx, ...(!fullScreen && alignY === 'flex-start' ? { bottom: 12 } : { top: 12 }) }}>
@@ -137,12 +137,11 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
             overflowY: preset.display.height > viewport.height ? 'auto' : 'hidden', display: 'flex' }}>
           <Box data-testid="preview-virtual-screen"
             sx={{ width: preset.display.width, height: preset.display.height, position: 'relative', overflow: 'hidden', flexShrink: 0, m: 'auto',
-              outline: '1px solid rgba(255, 255, 255, 0.5)' }}>
-            <Box sx={{ width: preset.display.width, height: preset.display.height, position: 'relative', bgcolor: VIRTUAL_DESKTOP }}>
+              outline: '2px dashed rgba(255, 255, 255, 0.85)', outlineOffset: '-2px' }}>
+            {/* 바탕은 투명: 해상도 화면 안에서도 관리자 화면이 비친다. 경계는 점선 테두리와 작업 표시줄로만 표시한다. */}
+            <Box sx={{ width: preset.display.width, height: preset.display.height, position: 'relative' }}>
               {/* 작업 표시줄: 표시 해상도 - 작업 영역 높이(프리셋 가정 40). */}
               <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: preset.display.height - preset.workArea.height, bgcolor: VIRTUAL_TASKBAR }} />
-              {/* WPF Background Overlay는 모니터 전체를 덮는다. */}
-              {overlay.enabled && <Box sx={{ position: 'absolute', inset: 0, bgcolor: `rgba(0, 0, 0, ${overlay.opacity})` }} />}
               <Box data-testid="preview-virtual-work-area"
                 sx={{ position: 'absolute', left: 0, top: 0, width: fullScreen ? preset.display.width : preset.workArea.width,
                   height: fullScreen ? preset.display.height : preset.workArea.height, display: 'flex',

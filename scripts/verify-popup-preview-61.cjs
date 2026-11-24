@@ -203,6 +203,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       `[61-23] ${key}: tools show only the reference screen select: ` + JSON.stringify(bar));
     const scroll = await outerScroll();
     check(!scroll.page, `[61-23] ${key}: the admin page itself does not scroll: ` + JSON.stringify(scroll));
+    check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', `[61-23] ${key}: the backdrop uses the popup overlay (0.45) like CURRENT so the admin page shows through`);
     check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight&&r.top>=0;})()"),
       `[61-23] ${key}: exit button stays reachable over the scrolling screen`);
   }
