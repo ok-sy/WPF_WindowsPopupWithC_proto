@@ -181,7 +181,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const virtual = () => run(`(()=>{const s=document.querySelector('[data-testid=preview-virtual-screen]'),w=document.querySelector('[data-testid=preview-popup-window]');
     if(!s||!w)return null;const sr=s.getBoundingClientRect(),wr=w.getBoundingClientRect();
     const c=document.querySelector('[data-testid=preview-virtual-scroll]');
-    return {scroll:{x:c.scrollWidth>c.clientWidth+0.5,y:c.scrollHeight>c.clientHeight+0.5,width:c.scrollWidth,height:c.scrollHeight},screen:{left:sr.left,top:sr.top,width:sr.width,height:sr.height},window:{width:w.offsetWidth,height:w.offsetHeight},
+    const cs=getComputedStyle(c);
+    return {scroll:{x:cs.overflowX!=='hidden'&&c.scrollWidth>c.clientWidth+0.5,y:cs.overflowY!=='hidden'&&c.scrollHeight>c.clientHeight+0.5,width:c.scrollWidth,height:c.scrollHeight},screen:{left:sr.left,top:sr.top,width:sr.width,height:sr.height},window:{width:w.offsetWidth,height:w.offsetHeight},
       shown:{left:wr.left-sr.left,top:wr.top-sr.top,width:wr.width,height:wr.height}};})()`);
   const near = (a, b) => Math.abs(a - b) < 1;
   await viewport(1000, 900); await pause(200);
@@ -189,10 +190,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   let bar = await tools();
   check(rect.width === 500 && rect.height === 450 && bar.text.includes('현재 모니터') && bar.text.includes('1000×900') && !bar.text.includes('1:1') && !(await virtual()),
     '[61-23] CURRENT draws at actual size against the screen work area without a resolution screen: ' + JSON.stringify({rect, bar}));
-  // 화면 영역 = 뷰포트 1000 × (900 - 도구 64), 둘레 여백 16. 세 해상도 모두 1000보다 넓어 가로 스크롤, 768 + 16 < 836이라 1366×768은 세로 스크롤 없음.
+  // 화면 영역 = 뷰포트 전체 1000×900(도구는 위에 떠 있고 여백 없음). 세 해상도 모두 1000보다 넓어 가로 스크롤, 768 < 900이라 1366×768은 세로 스크롤 없음.
   for (const [key, display, popupSize, scrollY] of [['1920x1080', [1920, 1080], [960, 520], true], ['2560x1440', [2560, 1440], [1200, 700], true], ['1366x768', [1366, 768], [683, 364], false]]) {
     await chooseScreen(key); const v = await virtual(); bar = await tools();
-    check(v && near(v.screen.width, display[0]) && near(v.screen.height, display[1]) && await run("Math.round(document.querySelector('[data-testid=preview-virtual-scroll]').getBoundingClientRect().top)") === 64,
+    check(v && near(v.screen.width, display[0]) && near(v.screen.height, display[1]) && await run("Math.round(document.querySelector('[data-testid=preview-virtual-scroll]').getBoundingClientRect().top)") === 0,
       `[61-23] ${key} draws the resolution screen at actual size below the tools: ` + JSON.stringify(v));
     check(v.window.width === popupSize[0] && v.window.height === popupSize[1] && near(v.shown.width, popupSize[0]) && near(v.shown.height, popupSize[1]),
       `[61-23] ${key}: RATIO 50% popup is ${popupSize.join('x')} at actual size (설정 최대 1200 적용): ` + JSON.stringify(v));
@@ -202,9 +203,17 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       `[61-23] ${key}: tools show only the reference screen select: ` + JSON.stringify(bar));
     const scroll = await outerScroll();
     check(!scroll.page, `[61-23] ${key}: the admin page itself does not scroll: ` + JSON.stringify(scroll));
-    check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=64&&r.top>=0;})()"),
-      `[61-23] ${key}: exit button stays reachable above the scrolling screen`);
+    check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight&&r.top>=0;})()"),
+      `[61-23] ${key}: exit button stays reachable over the scrolling screen`);
   }
+  // 브라우저와 같은 해상도는 스크롤이 없다(F11 2560×1440). 일반 모드(높이 1300)는 세로만 스크롤하고 세로 스크롤바 때문에 가로 스크롤이 생기지 않는다.
+  await chooseScreen('2560x1440');
+  for (const [label, height, scrollY] of [['F11', 1440, false], ['normal', 1300, true]]) {
+    await viewport(2560, height, 2560, 1400); await pause(300);
+    const s2560 = (await virtual()).scroll;
+    check(!s2560.x && s2560.y === scrollY, `[61-23] 2560 browser (${label}) shows the 2560x1440 screen without a horizontal scroll: ` + JSON.stringify(s2560));
+  }
+  await viewport(1000, 900); await pause(300); await chooseScreen('1366x768');
   // 해상도를 바꾸면 처음 스크롤 위치가 팝업 가운데라 팝업이 보이고, 스크롤로 화면 오른쪽 아래 끝(작업 표시줄)까지 도달할 수 있다.
   await chooseScreen('2560x1440');
   check(await run(`(()=>{const c=document.querySelector('[data-testid=preview-virtual-scroll]').getBoundingClientRect(),w=document.querySelector('[data-testid=preview-popup-window]').getBoundingClientRect();

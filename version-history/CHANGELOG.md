@@ -6,6 +6,7 @@
 - 변경 · 해상도 프리셋 화면을 축소 없이 실제 크기로 그리고 브라우저보다 크면 화면 영역에 가로·세로 스크롤, 해상도·팝업 크기 변경 시 처음 스크롤을 팝업 가운데로 맞춤. 현재 모니터도 목표 크기가 브라우저보다 크면 줄이지 않고 모달 컨테이너 스크롤(넘치는 축은 시작점 정렬). '1:1' 표기·안내 문구와 '가상 화면'·축척 표시 문구, `previewDisplaySize()`·`previewVirtualScale()` 제거, Paper 최대 크기 제한 해제.
 - 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/policies/ACTIVE_TASKS.md`.
 - 검증 · `verify-popup-preview-61` 278건 통과(실제 크기 해상도 화면, 큰 화면 스크롤·끝 도달, 해상도 전환 시 팝업 가운데 스크롤, 현재 모니터 큰 팝업 세로 스크롤, 페이지 자체 스크롤 없음, 문구 제거). image-preview 48·guide-render 33·completion-ux-43 82·common-sample-69 63건, `tsc --noEmit`·eslint 통과. 미실행: 로그인 관리자 실화면, 폐쇄망.
+- 보완 · 2560 모니터에서 2560×1440 선택 시 가로 스크롤 발생(스크롤 영역 좌우 여백 16과 도구 자리 64로 생긴 세로 스크롤바 폭). 여백·도구 자리를 없애고 도구를 화면 위에 띄우며, 화면 폭이 브라우저에 들어가면 가로 스크롤을 만들지 않도록 수정(세로 스크롤바가 있으면 오른쪽 끝 그 폭만큼 가려짐). `verify-popup-preview-61` 280건(2560 브라우저 F11 스크롤 없음·일반 모드 세로만 추가), image-preview 48·common-sample-69 63·completion-ux-43 82, `tsc --noEmit`·eslint 통과. 커밋 `dev: 61-23_기준화면가로스크롤_수정`, 원격 반영.
 - 상태 · 커밋·원격 반영.
 
 ## 2026-11-24-08 — dev: 61-23_기준화면가상화면_추가

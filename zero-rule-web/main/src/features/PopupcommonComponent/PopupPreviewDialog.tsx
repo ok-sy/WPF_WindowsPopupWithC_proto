@@ -30,10 +30,6 @@ export interface PopupPreviewDialogProps {
 const sameSize = (a: Size, b: Size) => a.width === b.width && a.height === b.height;
 /** 기준 화면 선택박스에 쓰는 'W×H' 표기. */
 export const formatPreviewSize = (size: Size) => `${Math.round(size.width)}×${Math.round(size.height)}`;
-/** 해상도 화면 위쪽에 도구 묶음이 들어갈 자리(px). 도구가 화면을 가리지 않게 한다. */
-const VIRTUAL_TOOL_SPACE = 64;
-/** 해상도 화면 둘레 여백(px). */
-const VIRTUAL_EDGE = 16;
 /** 가상 화면 바탕(바탕화면)·작업 표시줄 색. 팝업 흰 판과 구분되는 무채색. */
 const VIRTUAL_DESKTOP = '#64748b';
 const VIRTUAL_TASKBAR = '#1e293b';
@@ -129,13 +125,16 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
       <Dialog open={open} onClose={() => onClose()} fullScreen maxWidth={false}
         slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(15, 23, 42, 0.92)' } },
           paper: { sx: { bgcolor: 'transparent', backgroundImage: 'none', boxShadow: 'none', overflow: 'hidden' } } }}>
-        <Box data-testid="preview-dialog-tools" sx={{ ...toolsSx, top: 12 }}>
+        {/* 도구는 따로 자리를 잡지 않고 화면 위에 띄운다(위쪽 배치 팝업이면 아래로). 자리·여백을 잡으면 브라우저와 같은 해상도에서도 스크롤이 생긴다. */}
+        <Box data-testid="preview-dialog-tools" sx={{ ...toolsSx, ...(!fullScreen && alignY === 'flex-start' ? { bottom: 12 } : { top: 12 }) }}>
           {screenSelect}
           {exitButton}
         </Box>
-        {/* 화면이 브라우저보다 크면 이 영역에 스크롤이 생긴다. 작은 화면은 가운데(margin auto), 큰 화면은 왼쪽 위부터 그려 잘리지 않고 처음 스크롤은 팝업 가운데. */}
+        {/* 화면이 브라우저보다 큰 축에만 스크롤이 생긴다. 작은 화면은 가운데(margin auto), 큰 화면은 왼쪽 위부터 그려 잘리지 않고 처음 스크롤은 팝업 가운데.
+            폭이 브라우저에 들어가면 가로 스크롤을 만들지 않는다: 세로 스크롤바(약 15px)가 생겨도 가로 스크롤이 덧붙지 않게 하고, 오른쪽 끝 스크롤바 폭만큼은 가려진다. */}
         <Box data-testid="preview-virtual-scroll" ref={scrollRef}
-          sx={{ position: 'absolute', top: VIRTUAL_TOOL_SPACE, left: 0, right: 0, bottom: 0, overflow: 'auto', display: 'flex', p: `0 ${VIRTUAL_EDGE}px ${VIRTUAL_EDGE}px` }}>
+          sx={{ position: 'absolute', inset: 0, overflowX: preset.display.width > viewport.width ? 'auto' : 'hidden',
+            overflowY: preset.display.height > viewport.height ? 'auto' : 'hidden', display: 'flex' }}>
           <Box data-testid="preview-virtual-screen"
             sx={{ width: preset.display.width, height: preset.display.height, position: 'relative', overflow: 'hidden', flexShrink: 0, m: 'auto',
               outline: '1px solid rgba(255, 255, 255, 0.5)' }}>
