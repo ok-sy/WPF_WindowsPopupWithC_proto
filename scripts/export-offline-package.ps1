@@ -190,7 +190,9 @@ try {
     }
     else { Write-Host "[1-zero-rule-server] 넣지 않음(-IncludeServer 없음)" }
     $web = Export-GitDiffBundle -Name "2-zero-rule-web" -Baseline $WebBaseline -PathSpec "zero-rule-web" `
-        -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*", "zero-rule-web/main/src/features/RgstPop/*")
+        -ExcludePatterns @("*/node_modules/*", "*/.next/*", "*/dist/*", "*/coverage/*", "zero-rule-web/main/src/features/RgstPop/*",
+            # 폐쇄망 전역 CSS 로컬 재현본과 이를 적용하는 _app.tsx(2026-11-24). 폐쇄망 원본 globalStyle.ts·_app.tsx를 덮어쓰지 않게 뺀다(삭제 목록에도 넣지 않음).
+            "zero-rule-web/main/styles/globalStyle.ts", "zero-rule-web/main/pages/_app.tsx")
     # 폐쇄망 실제 등록 화면은 폐쇄망 프론트에서 개발한다. 프로토타입 RgstPop은 반입하지 않으므로 반입 scene-router에서도 참조 2줄을 뺀다.
     $routerPath = Join-Path $OutputRoot "2-zero-rule-web\zero-rule-web\main\src\scene\scene-router.tsx"
     $routerText = [System.IO.File]::ReadAllText($routerPath, $utf8)

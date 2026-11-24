@@ -517,6 +517,21 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[faces] inline and actual-size previews use the registered faces (regular Georgia, bold Arial Bold): ' + JSON.stringify(previewFaces));
   await escape();
   await run(`window.registerPopupRichFonts([])`);
+  // 2026-11-24 폐쇄망 전역 CSS 재현본(main/styles/globalStyle.ts, 확인 규칙 + 가정 규칙)을 넣은 상태에서 TEXT 서식 본문의 기울임·굵게와
+  // IMAGE 실제 크기 미리보기 모서리가 인라인·실제 크기 미리보기 모두 유지되는지 확인한다.
+  await run(`(()=>{const s=document.createElement('style');s.id='closed-net-global';s.textContent=window.closedNetGlobalStyle('assumed');document.head.appendChild(s);})()`);
+  await render('TEXT', {}, {plainText: 'gItalic gBold', textBlocks: [{alignment: 'LEFT', runs: [{text: 'gItalic', italic: true}, {text: ' '}, {text: 'gBold', bold: true}]}]});
+  await openPreview(); await pause(200);
+  const styleOf = (scope, text) => run(`(()=>{const el=Array.from(document.querySelectorAll(${JSON.stringify(scope + ' *')})).filter(x=>x.children.length===0&&x.textContent===${JSON.stringify(text)}).pop();
+    if(!el)return null;const c=getComputedStyle(el);return c.fontStyle+'/'+c.fontWeight;})()`);
+  const globalCase = {inlineI: await styleOf('#root', 'gItalic'), inlineB: await styleOf('#root', 'gBold'),
+    dialogI: await styleOf('.MuiDialog-root', 'gItalic'), dialogB: await styleOf('.MuiDialog-root', 'gBold'),
+    probe: await run(`(()=>{const e=document.createElement('em');document.body.appendChild(e);const v=getComputedStyle(e).fontStyle;e.remove();return v;})()`)};
+  check(globalCase.probe === 'normal' && /^italic\//.test(globalCase.inlineI) && /^italic\//.test(globalCase.dialogI)
+    && /\/700$/.test(globalCase.inlineB) && /\/700$/.test(globalCase.dialogB),
+    '[globalStyle] closed-net global CSS (em,i / strong,b reset) does not remove italic/bold in inline and actual-size previews: ' + JSON.stringify(globalCase));
+  await escape();
+  await run("document.getElementById('closed-net-global').remove()");
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

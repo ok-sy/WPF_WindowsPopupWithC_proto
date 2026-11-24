@@ -3,10 +3,12 @@ import CustomThemeWrapper from '@/components/CustomThemeWrapper';
 import { LightboxImageViewEventHandler } from '@/custom-events';
 import StoreProvider from '@/store/StoreProvider';
 import theme from '@/theme';
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
 import { AppCacheProvider } from '@mui/material-nextjs/v15-pagesRouter';
 import type { AppProps as NextAppProps } from 'next/app';
 import Head from 'next/head';
+// 폐쇄망 전역 CSS 로컬 재현본. 반입 제외 파일(styles/globalStyle.ts 주석 참고)
+import { closedNetGlobalStyle } from '../styles/globalStyle';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as timeago from 'timeago.js';
@@ -32,6 +34,7 @@ export default function MyApp(props: NextAppProps) {
         <ThemeProvider theme={theme}>
           <CustomThemeWrapper>
             <CssBaseline />
+            {closedNetGlobalStyle() && <GlobalStyles styles={closedNetGlobalStyle()} />}
             <Component {...pageProps} />
 
             <LightboxImageViewEventHandler />

@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-17 — dev: 폐쇄망전역CSS재현본_추가
+
+- 이유 · 폐쇄망 `main/styles/globalStyle.ts`의 전역 규칙(body·em·i 등)이 팝업 공통 컴포넌트를 덮어쓰는 현상이 로컬에는 재현 수단이 없어 폐쇄망 반입 후에야 드러나므로, 같은 경로의 재현본을 두고 로컬 화면·하네스에서 미리 확인할 필요.
+- 변경 · `zero-rule-web/main/styles/globalStyle.ts` 추가(확인 규칙: Youandi @font-face 7개·`// NewFont 설정` 줄 포함, `body { background: #ebebeb }`, `em, i { font-style: normal }` / 가정 규칙 `assumedGlobalStyle`: `strong, b` 굵기 리셋, Dialog Paper `border-radius: 0`). `pages/_app.tsx`에서 `CssBaseline` 뒤 `GlobalStyles`로 적용, `NEXT_PUBLIC_CLOSED_NET_GLOBAL_STYLE`(on 기본·assumed·off). 반입 스크립트에서 두 파일 제외(폐쇄망 원본 보호). 실제 웹 확인 하네스 `verify-closed-net-global-style.cjs` 추가, `verify-popup-preview-61`에 재현본 적용 상태 검사 추가. 반입 이슈 문서 후속 절 기록.
+- 주요 파일 · `zero-rule-web/main/styles/globalStyle.ts`, `zero-rule-web/main/pages/_app.tsx`, `scripts/export-offline-package.ps1`, `scripts/verify-closed-net-global-style.cjs`, `scripts/verify-popup-preview-61(-entry)`, `docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md`.
+- 검증 · 실행 중 로컬 웹(localhost:3000, next dev)에서 `verify-closed-net-global-style` 3건 통과(body 배경 #ebebeb, 전역 em·i 리셋 활성, @font-face 7개 등록 — emotion 적용 시 `//` 줄 뒤 NewKr 300도 유지). `verify-popup-preview-61` 294건 통과(재현본 확인+가정 규칙 적용 상태에서 인라인·실제 크기 미리보기 기울임·굵게 유지). `tsc --noEmit`·eslint 통과. 미실행: `off`·`assumed` 모드로 웹 재기동 확인, 반입 스크립트 실행(제외 동작은 다음 반입본 생성 때 확인), 폐쇄망 원본 대조.
+- 상태 · 커밋·원격 반영. 폐쇄망 globalStyle.ts 원본·적용 코드 대기.
+
 ## 2026-11-24-16 — dev: 28_글꼴굵기별서체지정_추가
 
 - 이유 · 폐쇄망 전역 CSS 별칭(YouandiModern: 400 없음·700은 Head 디자인, YouandiNewKr: 700 미확인)으로는 편집기·미리보기가 WPF(저장 family 안의 Regular·Bold)와 다른 서체를 그려 웹과 WPF를 맞출 방법이 필요.
