@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-12 — dev: 팝업일정_종료시간정렬_수정
+
+- 이유 · 노출 시간대 입력에서 종료 시각 칸에만 helperText(빈 문자열 포함)가 붙어 칸 아래 빈 `<p>`가 생기고 시작 칸·`~`·삭제 버튼과 줄이 어긋남.
+- 변경 · `PopupScheduleFields` 종료 칸의 helperText를 없애고, 자정 초과일 때만 같은 줄 오른쪽에 '다음 날까지(자정 초과)'를 표시.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupScheduleFields.tsx`, `scripts/verify-popup-transform-64.cjs`.
+- 검증 · `verify-popup-transform-64` 79건 통과(시작·종료 칸 같은 줄·helperText 없음 검사 추가), `tsc --noEmit`·eslint 통과. 로그인 관리자 실화면 미확인.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-11 — dev: IMAGE창크기맞춤_VIDEO설명서식_추가
 
 - 이유 · ① IMAGE ADAPTIVE(창 우선)는 입력값이 창 크기라 이미지 칸 비율이 이미지와 다르면 칸 바탕이 띠로 보이고, 띠 없는 창 크기를 사용자가 계산하기 어려움(IS063M02 샘플 방식 요건). ② 동영상·동영상+퀴즈 설명 앞에 VMware 사운드 조절 안내를 오른쪽 정렬로 고정 표시하고, 에디터에는 사용자 입력만 보이게 하는 요건. VIDEO 설명이 일반 텍스트뿐이라 정렬을 줄 수 없어 VIDEO 설명 서식(`descriptionBlocks`)을 추가. ③ 영상 아래 컨트롤 모형 줄 삭제 요건.

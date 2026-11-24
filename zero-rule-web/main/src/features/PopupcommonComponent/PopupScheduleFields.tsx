@@ -100,8 +100,11 @@ export default function PopupScheduleFields({ value, popup: legacyValue, onChang
               inputProps={{ step: 60 }} onChange={(event) => setTime(index, { startTime: event.target.value })} />
             <Typography color="text.secondary">~</Typography>
             <TextField size="small" type="time" label={`종료 ${index + 1}`} value={time.endTime} InputLabelProps={{ shrink: true }}
-              inputProps={{ step: 60 }} onChange={(event) => setTime(index, { endTime: event.target.value })}
-              helperText={time.endTime && time.startTime && time.endTime < time.startTime ? '다음 날까지(자정 초과)' : ' '} />
+              inputProps={{ step: 60 }} onChange={(event) => setTime(index, { endTime: event.target.value })} />
+            {/* 2026-11-24 helperText(빈 문자열 포함)는 종료 칸 아래에만 <p>를 만들어 시작 칸·~·삭제 버튼과 줄이 어긋났다. 자정 초과일 때만 같은 줄에 안내한다. */}
+            {time.endTime && time.startTime && time.endTime < time.startTime && (
+              <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>다음 날까지(자정 초과)</Typography>
+            )}
             <IconButton aria-label={`노출 시간대 ${index + 1} 삭제`} onClick={() => onChange({ displayTimes: times.filter((_, i) => i !== index) })}>
               <DeleteOutlineIcon />
             </IconButton>

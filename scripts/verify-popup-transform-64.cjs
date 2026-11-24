@@ -151,6 +151,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(schedule.periodMode === 'SCHEDULE' && schedule.repeatDayOfWeek === '1,3' && JSON.stringify(schedule.displayTimes) === JSON.stringify([{startTime: '22:00', endTime: '02:00'}])
     && await run(`document.querySelector('#schedule').textContent.includes('노출 일정: 월·수 · 22:00~02:00')&&document.querySelector('#schedule').textContent.includes('다음 날까지(자정 초과)')`),
     '[52-1] schedule inputs set SCHEDULE, sorted weekdays and a midnight-crossing window: ' + JSON.stringify(schedule));
+  // 2026-11-24 종료 시각 칸 아래 helperText(<p>)가 없어 시작·종료 칸이 같은 줄에 맞는다. 자정 초과 안내는 같은 줄 오른쪽 글자다.
+  const rowAlign = await run(`(()=>{const s=document.querySelector('#schedule');const start=s.querySelector('input[aria-label="시작 1"],label+div input');
+    const inputs=Array.from(s.querySelectorAll('input[type=time]')).map(i=>i.closest('.MuiFormControl-root').getBoundingClientRect());
+    return {helpers:s.querySelectorAll('.MuiFormHelperText-root').length,sameTop:inputs.length===2&&Math.abs(inputs[0].top-inputs[1].top)<0.5&&Math.abs(inputs[0].height-inputs[1].height)<0.5};})()`);
+  check(rowAlign.helpers === 0 && rowAlign.sameTop, '[52-1] start/end time fields line up without a helper text paragraph: ' + JSON.stringify(rowAlign));
   await run(`document.querySelector('[aria-label="노출 시간대 1 삭제"]').click()`); await pause(150);
   await run(`document.querySelector('[aria-label="월요일"]').click()`); await pause(100); await run(`document.querySelector('[aria-label="수요일"]').click()`); await pause(150);
   check(JSON.stringify(await run('window.schedule')) === JSON.stringify({periodMode: 'SCHEDULE', repeatDayOfWeek: null, displayTimes: []})
