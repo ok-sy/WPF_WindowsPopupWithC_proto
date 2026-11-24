@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Popup.Dtos;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.IO;
@@ -30,12 +32,21 @@ namespace Popup.Views.Contents
     {
         /*
          * POL-01-01 : 공통 옵션의 위치 — 관리자 본문 폰트 크기 적용.
-         * VIDEO 팝업의 본문 = 영상 설명(DescriptionTextBlock, 기본 14). 제목(22)·재생 컨트롤 글자는 그대로 둔다.
+         * VIDEO 팝업의 본문 = 영상 설명(DescriptionTextBlock 또는 서식 문단, 기본 14). 제목(22)·재생 컨트롤 글자는 그대로 둔다.
+         * 서식 문단은 구간 크기가 지정된 글자만 그 크기를 유지하고 나머지는 본문 크기를 따른다.
          */
         public void ApplyBodyFontSize(double fontSize)
         {
             DescriptionTextBlock.FontSize = fontSize;
+            foreach (TextBlock paragraph in _descriptionParagraphs)
+            {
+                paragraph.FontSize = fontSize;
+                PopupRichText.ReserveItalicOverhang(paragraph);
+            }
         }
+
+        /// <summary>POL-03-01 : 저장·표시 경계 — 서식 설명 문단(descriptionBlocks). 없으면 빈 목록.</summary>
+        private readonly List<TextBlock> _descriptionParagraphs = new();
 
         /*
          * 전달받은 원본 영상 경로다.
@@ -214,6 +225,7 @@ namespace Popup.Views.Contents
          * ■ VIDEO 뷰 생성자
          * - in : videoTitle·videoPath·videoDescription(string) · showDescription(bool) · showControls·allowFullScreen·
          *        allowPlaybackRateChange·autoPlay·isLoop(bool) · defaultVolume(double, 0~1) · allowSeek(bool)
+         *        · descriptionBlocks(서식 설명 문단, 2026-11-24). 글자가 있으면 일반 텍스트 대신 서식 문단(정렬·굵기 등)으로 그린다.
          * - out: 없음 · 재생기(WebView2 또는 MediaElement)와 컨트롤바를 옵션대로 구성한다.
          */
         public VideoPopupView(
@@ -227,7 +239,8 @@ namespace Popup.Views.Contents
             bool autoPlay = true,
             bool isLoop = false,
             double defaultVolume = 0.7,
-            bool allowSeek = true)
+            bool allowSeek = true,
+            IReadOnlyList<PopupTextBlockDto>? descriptionBlocks = null)
         {
             InitializeComponent();
 
@@ -312,7 +325,28 @@ namespace Popup.Views.Contents
             DescriptionTextBlock.Text =
                 videoDescription ?? string.Empty;
 
-            DescriptionTextBlock.Visibility =
+            /*
+             * POL-03-01 : 저장·표시 경계 — 서식 설명(descriptionBlocks)에 글자가 있으면 문단마다 정렬·서식을 살려 그리고 일반 텍스트는 숨긴다.
+             * 글자 모양 기본값(글꼴·크기·색)은 DescriptionTextBlock과 같다. 서버는 서식에서 일반 텍스트(description)를 파생해 함께 보낸다.
+             */
+            List<TextBlock> paragraphs = PopupRichText.CreateParagraphs(descriptionBlocks, null);
+            if (paragraphs.Any(p => p.Inlines.OfType<System.Windows.Documents.Run>().Any(r => !string.IsNullOrWhiteSpace(r.Text))))
+            {
+                foreach (TextBlock paragraph in paragraphs)
+                {
+                    paragraph.FontFamily = DescriptionTextBlock.FontFamily;
+                    paragraph.FontSize = DescriptionTextBlock.FontSize;
+                    paragraph.Foreground = DescriptionTextBlock.Foreground;
+                    PopupRichText.ReserveItalicOverhang(paragraph);
+                    DescriptionRich.Children.Add(paragraph);
+                    _descriptionParagraphs.Add(paragraph);
+                }
+                System.Windows.Automation.AutomationProperties.SetName(DescriptionRich, DescriptionTextBlock.Text);
+                DescriptionRich.Visibility = Visibility.Visible;
+                DescriptionTextBlock.Visibility = Visibility.Collapsed;
+            }
+
+            DescriptionPanel.Visibility =
                 showDescription
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -1012,10 +1046,14 @@ namespace Popup.Views.Contents
         internal string ShownTitle => TitleTextBlock.Text;
 
         /// <summary>POL-05-03 : 결합 화면 — 설명이 표시 중일 때만 그 값, 숨김이면 null.</summary>
-        internal string? ShownDescription => DescriptionTextBlock.Visibility == Visibility.Visible ? DescriptionTextBlock.Text : null;
+        internal string? ShownDescription => DescriptionPanel.Visibility == Visibility.Visible ? DescriptionTextBlock.Text : null;
 
         /// <summary>POL-05-03 : 결합 화면 — VIDEO+QUIZ는 설명을 퀴즈 머리말에 한 번만 표시하므로 영상 아래 설명을 showDescription과 관계없이 숨긴다.</summary>
-        internal void HideDescription() => DescriptionTextBlock.Visibility = Visibility.Collapsed;
+        internal void HideDescription()
+        {
+            DescriptionPanel.Visibility = Visibility.Collapsed;
+            DescriptionTextBlock.Visibility = Visibility.Collapsed;
+        }
 
         /// <summary>POL-05-02 : 완료·화면 이탈 — HasReachedCompletion과 같은 판정식. 서버·VIDEO+QUIZ와 같은 4자리 내림 비교(VideoCompletion). in: progress(null이면 false)·requiredRatio · out: bool</summary>
         public static bool IsCompletionReached(VideoProgressSnapshot? progress, double requiredRatio)

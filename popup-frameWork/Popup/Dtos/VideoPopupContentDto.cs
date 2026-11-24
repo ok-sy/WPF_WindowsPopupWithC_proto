@@ -1,4 +1,5 @@
-﻿namespace Popup.Dtos
+﻿using System.Collections.Generic;
+namespace Popup.Dtos
 {
     /*
      * POL-05-01 : 재생 경로
@@ -31,6 +32,12 @@
          */
         public string Description { get; set; } =
             string.Empty;
+
+        /*
+         * POL-03-01 : 저장·표시 경계 — 영상 설명 서식(content.descriptionBlocks, 2026-11-24). 문단·구간 서식과 정렬을 담는다.
+         * 글자가 있으면 VideoPopupView가 Description 대신 서식으로 그린다. 없거나 비면 Description(일반 텍스트)을 쓴다.
+         */
+        public List<PopupTextBlockDto>? DescriptionBlocks { get; set; }
 
         /*
          * 영상 설명 영역 표시 여부

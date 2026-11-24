@@ -13,7 +13,7 @@ import type {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
-  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
+  Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
   FormControlLabel, IconButton, LinearProgress, MenuItem, Stack, Switch,
   TextField, Typography,
 } from '@mui/material';
@@ -22,7 +22,8 @@ import { toast } from 'react-toastify';
 import InlinePopupPreview from '../PopupcommonComponent/InlinePopupPreview';
 import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
 import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
-import { displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
+import { adaptiveWindowForImage, displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
+import { applyVideoFixedDescription, stripVideoFixedDescription } from '../PopupcommonComponent/videoFixedDescription';
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
 import { loadPopupQuestionCodes, type PopupQuestionCodes } from '../PopupcommonComponent/popupQuestionCodes';
@@ -151,7 +152,28 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
    * (quizTypeCode, 없으면 통과 점수)로 유형을 복원한다.
    * 미리보기·저장에는 규칙을 적용한 previewPopup을 보낸다(전달 샘플 IS063M02와 같은 공통 코드). */
   const quiz = usePopupQuizRule(popup, bodyEditorKey);
-  const previewPopup = quiz.effective ?? popup;
+  // POL-05-01 : 재생 경로 — 동영상·동영상+퀴즈는 미리보기·저장 값에 고정 안내 문구(오른쪽 정렬 문단)를 붙인다. 에디터(popup)에는 사용자 입력만 있다.
+  const previewPopup = applyVideoFixedDescription(quiz.effective ?? popup);
+  /*
+   * POL-04-02 : 모드별 기준 — IMAGE '창 우선'(ADAPTIVE) 창 크기를 이미지에 맞추기(2026-11-24, IS063M02 샘플과 같은 방식).
+   * ADAPTIVE는 너비·높이가 창 크기라 이미지 칸 비율이 이미지와 다르면 칸 바탕이 위아래·좌우 띠로 보인다.
+   * '높이 자동'을 켜면 너비·이미지·제목·설명·헤더/푸터가 바뀔 때 띠가 생기지 않는 높이를 채운다(adaptiveWindowForImage). 너비가 비면 원본 기준 크기를 넣는다.
+   * 너비가 원본보다 크면 이미지가 커지지 않아 좌우 띠를 피할 수 없으므로 안내만 하고 너비는 바꾸지 않는다. RATIO·FULLSCREEN은 너비·높이를 쓰지 않아 대상이 아니다.
+   */
+  const adaptiveImage = popup.popupType === 'IMAGE' && normalizeImageSizeMode(popup.content.imageSizeMode) === 'ADAPTIVE' && popup.sizeMode === 'FIXED';
+  const [autoImageHeight, setAutoImageHeight] = useState(true);
+  const imageFit = adaptiveImage && naturalSize ? adaptiveWindowForImage(previewPopup, naturalSize, popup.width) : null;
+  useEffect(() => {
+    if (!autoImageHeight || !imageFit) return;
+    setPopup(previous => {
+      const width = previous.width ?? imageFit.window.width;
+      return previous.width === width && previous.height === imageFit.window.height ? previous : {...previous, width, height: imageFit.window.height};
+    });
+  }, [autoImageHeight, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fitImageWindow = () => {
+    const natural = naturalSize ? adaptiveWindowForImage(previewPopup, naturalSize, null) : null;
+    if (natural) setPopup(previous => ({...previous, width: natural.window.width, height: natural.window.height}));
+  };
   /* POL-06-02 : 선택·제출 — 답안 유형(0089)·퀴즈 유형(0090) 공통코드. 조회 전·실패 시 빈 목록이면 입력이 선택을 막고 안내한다. */
   const [codes, setCodes] = useState<PopupQuestionCodes | null>(null);
   useEffect(() => {
@@ -165,13 +187,16 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     setLoadedPopupId(null);
     if (!open) return;
     setActive(initialActive); setTemplateOpen(false); setPreviewOpen(false); setLoading(false);
+    // 신규 등록만 '높이 자동'을 켠다. 수정은 저장된 높이를 열기만 해서 바꾸지 않도록 끈 채 시작한다(체크하면 그때 맞춤).
+    setAutoImageHeight(popupId == null);
     setBodyEditorKey((key) => key + 1);
     if (popupId == null) { setPopup(createDefaultPopup()); setTargetGroups([]); return; }
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
         if (body.popup.popupId !== popupId) throw new Error('조회한 팝업 ID가 요청한 ID와 다릅니다.');
-        setPopup(toEditorPopup(body.popup));
+        // 저장된 고정 안내 문구는 떼어 에디터에는 사용자 설명만 보인다(저장할 때 다시 붙는다).
+        setPopup(stripVideoFixedDescription(toEditorPopup(body.popup)));
         setLoadedPopupId(body.popup.popupId);
         setBodyEditorKey((key) => key + 1);
         setTargetGroups(body.targetGroups ?? []);
@@ -290,7 +315,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
       </DialogTitle>
       <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
         onSelect={({ popup: template, targetGroups: groups }) => {
-          setPopup((current) => toEditorPopupFromTemplate(template, current.popupId));
+          setPopup((current) => stripVideoFixedDescription(toEditorPopupFromTemplate(template, current.popupId)));
+          setAutoImageHeight(false);   // 템플릿의 저장된 크기를 그대로 둔다(체크하면 그때 맞춤).
           setBodyEditorKey((key) => key + 1);
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
@@ -323,7 +349,15 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
 
             <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
             {/* POL-03-01 : 저장·표시 경계 — TEXT는 콘텐츠 제목·설명을 본문 서식 편집기로 작성한다. */}
-            {titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {titleKey && !isSurvey && <><TextField label="콘텐츠 제목" value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} />
+              {/* POL-03-01 : 저장·표시 경계 — VIDEO 설명은 서식 편집기(descriptionBlocks, 2026-11-24). 서버가 description을 서식에서 파생한다. IMAGE는 일반 텍스트. */}
+              {popup.popupType === 'VIDEO'
+                ? <PopupRichTextEditor key={`video-description-${bodyEditorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
+                    initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentValue(popup, 'description'))}
+                    onChange={(blocks, plainText) => setPopup((previous) => ({
+                      ...previous, content: { ...previous.content, description: plainText, descriptionBlocks: richBlocksOrNull(blocks) },
+                    }))} />
+                : <TextField label="설명" value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} />}</>}
             {/* POL-06-01 : 문항·서식 — 설문·퀴즈(동영상+퀴즈 포함)는 콘텐츠 제목 입력 없이 설명만 서식 편집기로 입력한다. 기존 surveyTitle·surveyTitleBlocks는 편집값에 그대로 남긴다(TODO73). */}
             {isSurvey && <>
               <PopupRichTextEditor key={`survey-description-${bodyEditorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
@@ -362,7 +396,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width ?? ''}
                   disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateImageDimension('width', e.target.value)} />
                 <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height ?? ''}
-                  disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateImageDimension('height', e.target.value)} />
+                  disabled={popup.sizeMode === 'FULLSCREEN' || (adaptiveImage && autoImageHeight && imageFit != null)} onChange={(e) => updateImageDimension('height', e.target.value)} />
               </Box>
               {/* POL-04-02 : 모드별 기준 — 모드별 크기 기준 안내 */}
               <Typography variant="caption" color="text.secondary">
@@ -370,6 +404,16 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                     ? `이미지 영역 크기입니다. 헤더·푸터·설명 공간이 추가되어 실제 창은 더 커질 수 있습니다. 최대 창 크기를 넘는 부분은 잘립니다. 비우면 원본 크기를 사용합니다.${fitWindow ? ` 미리보기 기준 창 ${fitWindow.width}×${fitWindow.height}` : ''}`
                     : '창 전체 크기입니다. 이미지는 헤더·푸터·설명 등을 제외한 영역에 맞춰 표시됩니다(원본보다 확대하지 않음).'}
               </Typography>
+              {adaptiveImage && <Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ columnGap: 1 }}>
+                <FormControlLabel label="이미지에 맞춰 높이 자동" disabled={!naturalSize}
+                  control={<Checkbox size="small" checked={autoImageHeight} onChange={(_, value) => setAutoImageHeight(value)} />} />
+                <Button size="small" variant="outlined" disabled={!naturalSize} onClick={fitImageWindow}>이미지 크기에 맞추기</Button>
+                <Typography variant="caption" color={imageFit?.limited ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                  {!naturalSize ? '이미지 URL을 입력하면 창 크기를 이미지에 맞출 수 있습니다.'
+                    : imageFit?.limited ? `너비가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 너비는 ${imageFit.window.width}px입니다.`
+                      : `이미지 원본 ${naturalSize.width}×${naturalSize.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
+                </Typography>
+              </Stack>}
               {popup.content.imageSizeMode === 'FIT_TO_IMAGE' && <>
                 <FormControlLabel control={<Switch checked={popup.content.keepAspectRatio !== false} onChange={(_, value) => {
                   // 비율 고정을 켜면 너비 기준으로 높이를 원본 비율에 다시 맞춘다(입력 연동). 끄면 숫자를 그대로 둔다.

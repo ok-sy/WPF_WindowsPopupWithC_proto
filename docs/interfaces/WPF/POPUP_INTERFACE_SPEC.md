@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-11-22 (KST)
 - 2026-11-22 변경 · IMAGE 크기 모드는 `ADAPTIVE`, `FIT_TO_IMAGE`만 지원한다. 기존 ORIGINAL 팝업은 `db/oracle/25_delete_original_image_popups_oracle.sql`로 삭제한다. 단독 IMAGE·VIDEO는 활성화 시 미디어 URL이 필요하다. 관리자 퀴즈의 채점 문항은 각 1점이며 비채점 주관식은 정답과 배점 없이 저장한다.
+- 3.7 보완(2026-11-24, VIDEO 설명 서식): VIDEO content에 선택 필드 `descriptionBlocks`(§8.4.1 문단·구간 서식, 기본 `null`)를 추가했다. 서버는 VIDEO에서 이 필드만 받아 검증하고 `description`을 서식에서 파생한다(`surveyTitleBlocks`는 계속 거부). WPF는 유효한 서식이 있으면 문단 정렬·서식으로 그리고 없으면 `description`을 쓴다. 생략하면 기존과 같다. 관리자 웹은 동영상·동영상+퀴즈 설명 맨 앞에 VMware 사운드 안내 문단(오른쪽 정렬)을 붙여 저장한다(웹 상수, WPF는 받은 서식을 그대로 표시).
 - 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-03, PU001 B-7 completionRatio 기본값): 동영상+퀴즈(QUIZ + `content.videoEnabled=true`)의 `completionRatio` 생략/null 기본값을 1.0 → **0.8**로 변경(WPF·서버 시청 완료 판정·서버 샘플 기본값·관리자 미리보기 통일). VIDEO 단독은 1.0 유지, 명시 값은 그대로. JSON 키·타입 변경 없음.
@@ -597,6 +598,7 @@ HTML은 편집기 경계에서만 사용하며 취소선은 `<s>`로 복원한�
 | videoTitle | string | 선택 | `""` | 영상 콘텐츠 내부 제목 |
 | videoUrl | string | O | `""` | 재생할 영상 URL/경로 |
 | description | string | 선택 | `""` | 영상 설명 |
+| descriptionBlocks | array | 선택 | `null` | 영상 설명 서식(§8.4.1 형식, 2026-11-24). 글자가 있으면 서버가 `description`을 파생하고 WPF는 서식으로 표시 |
 | showDescription | boolean | 선택 | `true` | 설명 표시 |
 | showControls | boolean | 선택 | `true` | 컨트롤 표시 |
 | allowFullScreen | boolean | 선택 | `true` | 영상 전체화면 허용 |
@@ -672,7 +674,7 @@ TEXT `textBlocks`(§8.1)와 같은 문단·구간 구조의 배열을 일반 문
 - 여러 문단·들여쓰기 허용, 첫 문단만 쓰지 않는다. 필수 표시 `*`는 문항 제목 마지막 문단 끝에 붙는다.
 - `questionId`·`optionId`·`value`·정답·배점·필수/복수 선택과 결과 `answers`는 서식과 무관하다. 주관식 답변·`correctAnswer`는 서식 대상이 아니다.
 - VIDEO+QUIZ에서 퀴즈 머리말이 서식이면 영상 영역과 문자열이 같아도 숨기지 않는다(일반 문자열이 같을 때만 숨김, 설계 53-16).
-- 서버 저장(TODO55-4, 2026-10-19): 관리자 저장 요청의 같은 필드를 TEXT `textBlocks`와 같은 규칙(정렬·들여쓰기 0 이상 정수(TODO63)·색 `#RRGGBB`·크기·글꼴 허용 값, 문단·구간 수 상한)으로 검증하고 위 표의 상한으로 파생 문자열 길이를 검사한다. 오류 메시지는 필드 이름으로 시작한다(예: `선택지 내용 서식: ...`). 서식은 SURVEY·QUIZ에서만 받으며 다른 유형의 `surveyTitleBlocks`·`descriptionBlocks`는 거부한다. 응답에서 서식이 없으면 키를 생략한다. 예:
+- 서버 저장(TODO55-4, 2026-10-19): 관리자 저장 요청의 같은 필드를 TEXT `textBlocks`와 같은 규칙(정렬·들여쓰기 0 이상 정수(TODO63)·색 `#RRGGBB`·크기·글꼴 허용 값, 문단·구간 수 상한)으로 검증하고 위 표의 상한으로 파생 문자열 길이를 검사한다. 오류 메시지는 필드 이름으로 시작한다(예: `선택지 내용 서식: ...`). 서식은 SURVEY·QUIZ에서만 받으며 다른 유형의 `surveyTitleBlocks`·`descriptionBlocks`는 거부한다. 예외로 VIDEO는 `descriptionBlocks`만 받는다(2026-11-24, 상한 2000, `description` 파생). 응답에서 서식이 없으면 키를 생략한다. 예:
 
 ```json
 {

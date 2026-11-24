@@ -11,9 +11,12 @@
 | 파일(`zero-rule-web/main/src/features/PopupcommonComponent/`) | 역할 |
 |---|---|
 | `InlinePopupPreview.tsx` | 제목 + "실제 크기로 보기" 버튼 + `PopupPreview`. 부모 영역의 남은 높이를 채운다. 부모 높이가 없으면 미리보기 영역을 최소 320px로 표시한다. 예시 표시(`showPlaceholders`)는 실제 크기 모달과 같이 기본 OFF |
-| `PopupPreviewDialog.tsx` | 실제 크기 모달. 값이 없는 제목·설명·이미지에 입력 안내 문구를 표시하지 않는다. 영상 미첨부여도 영상 영역은 첨부 후와 같은 크기의 검정 영역 + 재생 아이콘으로 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다(`showPlaceholders` 기본 false. 가이드·샘플만 켬, 2026-11-18). 크기 모드·브라우저 창 크기 변경·9개 위치·배경 Overlay·배경 클릭 차단·Esc/종료 버튼. 팝업 크기는 '기준 화면'으로 WPF와 같은 상한을 적용해 계산한다. 현재 모니터(작업 영역 `screen.availWidth/availHeight`)는 실제 크기로 그린다. 프리셋(1366×768·1920×1080·2560×1440, 작업 영역은 높이 -40)은 그 해상도 크기의 화면(작업 영역 + 작업 표시줄)을 실제 크기로 그리고 팝업을 그 안에 놓아 해상도별 크기 차이를 비교한다. 어느 쪽이든 브라우저보다 크면 축소하지 않고 스크롤로 보며, 해상도를 바꾸면 처음 스크롤은 팝업 가운데다. 선택박스는 종료 버튼 옆 떠 있는 도구 묶음에 있으며 선택은 미리보기 상태로만 남는다(TODO61-23, 2026-11-24) |
+| `PopupPreviewDialog.tsx` | 실제 크기 모달. 값이 없는 제목·설명·이미지에 입력 안내 문구를 표시하지 않는다. 영상 미첨부여도 영상 영역은 첨부 후와 같은 크기의 검정 영역 + 재생 아이콘으로 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다(`showPlaceholders` 기본 false. 가이드·샘플만 켬, 2026-11-18). 크기 모드·9개 위치·배경 Overlay·Esc/종료 버튼. TODO61-23(2026-11-24): 기준 화면은 해상도 13종(1280×720~3840×2160) × Windows 배율(100·125·150·175%)이며, 크기·위치는 DIP 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 WPF와 같이 계산한다. 처음에는 내 모니터와 같은 해상도·배율(목록에 `*` 표시), 없으면 1920×1080·100%. 선택한 해상도의 가상 데스크톱(작업 영역 흰색·작업 표시줄 검정·바깥 검정 30%)을 물리 크기로 그리고 팝업을 WPF와 같은 크기·위치로 놓는다. 배율은 화면 크기를 유지한 채 안쪽을 확대해 보여 준다. 브라우저보다 크면 축소 없이 스크롤(처음 스크롤은 팝업 가운데). 선택박스·종료 버튼은 흰 도구 패널에 있고 스크롤바 폭만큼 안쪽에 둔다. `recommendedSize` prop은 호환용으로 남아 있고 쓰지 않는다(모달이 선택한 작업 영역으로 다시 계산) |
 | `popupPreviewDialogLayout.ts` | 모달 크기(`previewDialogSize`)·위치(`previewPositionAlign`)·가장자리 여백(`previewEdgeMargin`)·Overlay 값(`previewOverlay`) 순수 함수 |
-| `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다. 선택 prop `workArea`로 IMAGE 권장 창 크기 계산 작업 영역을 받는다(없으면 현재 모니터 작업 영역, TODO61-23) |
+| `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다. 선택 prop `workArea`로 IMAGE 권장 창 크기 계산 작업 영역을 받는다(없으면 현재 모니터 작업 영역, TODO61-23). VIDEO 설명은 `descriptionBlocks` 서식이 있으면 문단 정렬·서식으로 그린다(2026-11-24). 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면)은 삭제했다 |
+| `videoFixedDescription.ts` | 동영상·동영상+퀴즈 고정 안내 문구(`VIDEO_FIXED_DESCRIPTION`). `applyVideoFixedDescription()`은 미리보기·저장 값(effective)의 `descriptionBlocks` 맨 앞에 오른쪽 정렬 문단으로 붙이고 `description`을 '고정 문구
+사용자 설명'으로 만든다(중복 없이). `stripVideoFixedDescription()`은 불러온 값에서 떼어 에디터에 사용자 입력만 보이게 한다. 문구를 바꾸면 이전 문구를 `PREVIOUS_VIDEO_FIXED_DESCRIPTIONS`에 넣어 기존 데이터도 떼어 낸다 |
+| `imagePreviewLayout.ts` `adaptiveWindowForImage()` · `useNaturalImageSize.ts` | IMAGE ADAPTIVE(창 우선)에서 이미지 칸 바깥 띠가 생기지 않는 창 크기 계산(가로 → 세로, 가로가 원본보다 크면 원본 기준·limited). 이미지 원본 크기 읽기 훅. RgstPop·IS063 샘플의 '이미지에 맞춰 세로/높이 자동'·'이미지 크기에 맞추기'가 쓴다(신규는 자동 켬, 수정·불러오기는 끔) |
 
 ### Props
 

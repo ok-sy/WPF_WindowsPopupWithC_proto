@@ -461,6 +461,7 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 | `content.videoUrl` | 필수 | 로컬·UNC 경로 또는 HTTP(S) 직접 재생 URL |
 | `content.videoTitle` | 선택, 빈 문자열 | 영상 내부 제목 |
 | `content.description`, `showDescription` | 선택, 빈 문자열·`true` | 영상 설명 |
+| `content.descriptionBlocks` | 선택, `null` | 영상 설명 서식(2026-11-24). 글자가 있으면 문단 정렬·서식으로 표시하고 `description`은 대체 문자열로 쓴다 |
 | `content.showControls` | 선택, `true` | 공통 재생 조작부 표시 |
 | `content.allowSeek` | 선택, `true` | 진행바로 위치 이동 허용 |
 | `content.allowFullScreen` | 선택, `true` | 플레이어 전체화면 허용 |

@@ -262,25 +262,22 @@ function PopupBody({
     // 결합 화면의 영상 부분은 설명을 그리지 않는다(퀴즈 머리말이 한 번 표시).
     const showDescription = !videoQuizPart && content.showDescription !== false;
     const videoUrl = String(content.videoUrl ?? '').trim();
-    // 영상을 첨부하기 전에도 첨부 후와 같은 크기의 영상 영역(검정 + 재생 아이콘)과 컨트롤 줄을 잡아 두어 첨부해도 배치가 바뀌지 않는다.
+    const videoDescriptionBlocks = richBlocksOrNull(content.descriptionBlocks);
+    // 영상을 첨부하기 전에도 첨부 후와 같은 크기의 영상 영역(검정 + 재생 아이콘)을 잡아 두어 첨부해도 배치가 바뀌지 않는다.
     // 예시 표시 OFF면 '영상 재생 영역' 안내 문구만 숨긴다(2026-11-18, 20261110 후속 6 보완).
-    const showControls = content.showControls !== false;
     // TODO61-17: WPF VideoPopupView와 같이 제목 → 영상(남은 높이를 채움) → 설명 순서. 영상 영역은 검정 배경·1px #D1D5DB 테두리·모서리 8.
     return (
       <Stack spacing={1.5} sx={aspectVideo ? undefined : { height: '100%' }}>
         {aspectVideo ? <AspectVideoArea url={videoUrl} showCaption={!hidePlaceholders} /> : <FillVideoArea url={videoUrl} showCaption={!hidePlaceholders} />}
-        {showControls && (
-          <Stack direction="row" justifyContent="space-between" color="text.secondary">
-            <Typography variant="caption">▶ 00:00 / 00:00{content.allowSeek === false ? ' · 탐색 제한' : ''}</Typography>
-            <Typography variant="caption">
-              {content.allowPlaybackRateChange !== false ? '1.0× · ' : ''}
-              {content.allowFullScreen !== false ? '전체화면' : '전체화면 제한'}
-            </Typography>
-          </Stack>
-        )}
+        {/* 2026-11-24 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면) 삭제: 미리보기는 재생하지 않고, WPF 컨트롤은 영상 위에 겹쳐 그려 이 줄과 배치가 달랐다. */}
         {/* WPF DescriptionTextBlock: 영상 아래, 14px, #4B5563. 완료 기준·기본 음량 같은 미리보기 전용 안내는 WPF에 없어 그리지 않는다. */}
-        {showDescription && description && (
-          <Typography sx={{ fontSize: POPUP_DEFAULT_FONT_SIZES.videoDescription, color: POPUP_COLORS.description, flexShrink: 0 }}>{description}</Typography>
+        {/* 2026-11-24 VIDEO 설명 서식(descriptionBlocks): 글자가 있으면 문단 정렬·서식을 살려 그리고, 없으면 일반 텍스트. WPF VideoPopupView DescriptionRich와 같다.
+            고정 안내 문구는 등록 화면 effective(applyVideoFixedDescription)가 서식 맨 앞 문단(오른쪽 정렬)으로 넣는다. */}
+        {showDescription && (videoDescriptionBlocks || description) && (
+          <Box sx={{ fontSize: POPUP_DEFAULT_FONT_SIZES.videoDescription, color: POPUP_COLORS.description, flexShrink: 0 }}>
+            {videoDescriptionBlocks ? <PopupRichBlocks blocks={videoDescriptionBlocks} />
+              : <Typography sx={{ font: 'inherit', color: 'inherit', whiteSpace: 'pre-line' }}>{description}</Typography>}
+          </Box>
         )}
       </Stack>
     );

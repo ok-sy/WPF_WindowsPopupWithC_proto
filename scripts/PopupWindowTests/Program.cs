@@ -2444,6 +2444,24 @@ internal static class Program
             var plainVideo = (VideoPopupView)PopupFactory.Create(DemoPopups("VIDEO").First()).Content!;
             Check(((TextBlock)plainVideo.FindName("DescriptionTextBlock")).Visibility == Visibility.Visible,
                 "[20261110 후속 7] standalone VIDEO keeps its description");
+            // 2026-11-24 VIDEO 설명 서식(descriptionBlocks): 글자가 있으면 문단 정렬을 살려 그리고 일반 텍스트는 숨긴다. 없으면 일반 텍스트.
+            var richBlocks = new List<Popup.Dtos.PopupTextBlockDto>
+            {
+                new() { Alignment = "RIGHT", Runs = new() { new() { Text = "※ 소리 안내" } } },
+                new() { Runs = new() { new() { Text = "사용자 설명", Bold = true } } }
+            };
+            var richVideo = new VideoPopupView("T", @"Mediademo.mp4", "※ 소리 안내" + System.Environment.NewLine + "사용자 설명", descriptionBlocks: richBlocks);
+            var richHost = (StackPanel)richVideo.FindName("DescriptionRich");
+            var richParagraphs = richHost.Children.OfType<TextBlock>().ToList();
+            Check(richHost.Visibility == Visibility.Visible && ((TextBlock)richVideo.FindName("DescriptionTextBlock")).Visibility == Visibility.Collapsed
+                && richParagraphs.Count == 2 && richParagraphs[0].TextAlignment == TextAlignment.Right && richParagraphs[1].TextAlignment == TextAlignment.Left
+                && richParagraphs[1].Inlines.OfType<System.Windows.Documents.Run>().Any(r => r.FontWeight == FontWeights.Bold),
+                "[VIDEO description] rich description blocks keep paragraph alignment and run formatting");
+            richVideo.ApplyBodyFontSize(18);
+            Check(richParagraphs.All(p => p.FontSize == 18), "[VIDEO description] body font size applies to rich paragraphs");
+            var blankRich = new VideoPopupView("T", @"Mediademo.mp4", "일반 설명", descriptionBlocks: new List<Popup.Dtos.PopupTextBlockDto> { new() { Runs = new() } });
+            Check(((TextBlock)blankRich.FindName("DescriptionTextBlock")).Visibility == Visibility.Visible
+                && ((StackPanel)blankRich.FindName("DescriptionRich")).Visibility == Visibility.Collapsed, "[VIDEO description] blank blocks fall back to the plain description");
             var quizOnly = (SurveyPopupView)PopupFactory.Create(DemoPopups("QUIZ").First()).Content!;
             Check(((TextBlock)quizOnly.FindName("SurveyTitleText")).Visibility == Visibility.Visible
                 && ((TextBlock)quizOnly.FindName("SurveyDescriptionText")).Visibility == Visibility.Visible,

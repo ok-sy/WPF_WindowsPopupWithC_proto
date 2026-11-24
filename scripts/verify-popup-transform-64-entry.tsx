@@ -29,7 +29,13 @@ w.deepFreeze = <T,>(value: T): T => {
   return value;
 };
 /* 강조 문구(highlightText·showHighlight)는 2026-10-29 삭제 — 분리 전 코드(legacy)와의 비교에서만 제외하는 의도된 차이. */
-w.withoutHighlight = (value: unknown): unknown => JSON.parse(JSON.stringify(value ?? null), (key, v) => (key === 'highlightText' || key === 'showHighlight' ? undefined : v));
+/* 2026-11-24 VIDEO 설명 서식(content.descriptionBlocks) 저장 추가 — 분리 전 코드에는 VIDEO 서식이 없어 VIDEO 저장 요청의 content.descriptionBlocks도 비교에서 제외한다. */
+w.withoutHighlight = (value: unknown): unknown => {
+  const copy = JSON.parse(JSON.stringify(value ?? null), (key, v) => (key === 'highlightText' || key === 'showHighlight' ? undefined : v));
+  const popup = copy && typeof copy === 'object' && 'popup' in copy ? copy.popup : copy;
+  if (popup && popup.popupType === 'VIDEO' && popup.content) delete popup.content.descriptionBlocks;
+  return copy;
+};
 /* JSON 키 순서는 비교에서 제외한다. */
 w.canonical = (value: unknown): string => JSON.stringify(value, (_key, v) => v && typeof v === 'object' && !Array.isArray(v)
   ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v);

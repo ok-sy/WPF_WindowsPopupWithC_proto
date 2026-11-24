@@ -228,7 +228,9 @@ namespace Popup.Factories
                 contentDto.AutoPlay,
                 contentDto.IsLoop,
                 contentDto.DefaultVolume,
-                contentDto.AllowSeek);
+                contentDto.AllowSeek,
+                // POL-03-01 : 저장·표시 경계 — VIDEO 설명 서식(2026-11-24). 없으면 일반 텍스트 description.
+                contentDto.DescriptionBlocks);
         }
 
         /*

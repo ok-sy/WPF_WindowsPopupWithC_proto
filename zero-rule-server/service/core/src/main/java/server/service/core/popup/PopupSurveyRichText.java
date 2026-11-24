@@ -23,7 +23,8 @@ import java.util.Set;
  *   <li>서식이 있으면 일반 문자열(surveyTitle·description·title·text)은 요청 값이 아니라 서식에서 파생한다(독립 편집 금지).</li>
  *   <li>{@code null}·빈 배열·글자가 하나도 없는 문단만 있으면 서식 없음으로 보고 서식을 지운 뒤 요청의 일반 문자열을 그대로 쓴다.</li>
  *   <li>파생 문자열 길이는 필드별 저장 상한(아래 상수)을 따른다. 빈 값 허용 여부는 기존 규칙(PopupQuestionRules 등)이 판단한다.</li>
- *   <li>서식 필드는 SURVEY·QUIZ에서만 받는다. 다른 유형의 콘텐츠 서식 키는 거부한다(TEXT는 textBlocks만 사용).</li>
+ *   <li>서식 필드는 SURVEY·QUIZ에서만 받는다. 예외로 VIDEO는 콘텐츠 설명 서식({@code descriptionBlocks})만 받는다(2026-11-24, 영상 설명 서식).
+ *       다른 유형의 콘텐츠 서식 키는 거부한다(TEXT는 textBlocks만 사용).</li>
  * </ul>
  * 정규화 결과는 문항 템플릿 재사용 비교(saveAdminQuestions)에도 그대로 쓰이므로 저장·재조회 값과 같은 형태여야 한다.
  */
@@ -55,10 +56,19 @@ final class PopupSurveyRichText {
         String type = popup.popupType() == null ? "" : popup.popupType().trim().toUpperCase(java.util.Locale.ROOT);
         Map<String, Object> content = popup.content();
         boolean survey = SURVEY_TYPES.contains(type);
+        if ("VIDEO".equals(type)) {
+            // POL-03-01 : 저장·표시 경계 — VIDEO는 영상 설명 서식(descriptionBlocks)만 허용하고 일반 설명(description)을 서식에서 파생한다.
+            if (content.get(SURVEY_TITLE_BLOCKS) != null) {
+                throw new IllegalArgumentException("서식(" + SURVEY_TITLE_BLOCKS + ")은 SURVEY·QUIZ 팝업에서만 사용할 수 있습니다.");
+            }
+            Map<String, Object> normalized = new LinkedHashMap<>(content);
+            applyContentField(normalized, DESCRIPTION_BLOCKS, "description", "영상 설명", DESCRIPTION_MAX);
+            return popup.withQuestionsAndContent(popup.questions(), normalized);
+        }
         if (!survey) {
             for (String key : List.of(SURVEY_TITLE_BLOCKS, DESCRIPTION_BLOCKS)) {
                 if (content.get(key) != null) {
-                    throw new IllegalArgumentException("서식(" + key + ")은 SURVEY·QUIZ 팝업에서만 사용할 수 있습니다.");
+                    throw new IllegalArgumentException("서식(" + key + ")은 SURVEY·QUIZ 팝업에서만 사용할 수 있습니다(VIDEO는 descriptionBlocks만).");
                 }
             }
             return popup;

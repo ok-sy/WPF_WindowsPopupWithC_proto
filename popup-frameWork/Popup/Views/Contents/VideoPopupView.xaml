@@ -696,14 +696,15 @@
         </Border>
 
 
-        <!-- 설명 -->
-        <TextBlock
-        x:Name="DescriptionTextBlock"
-        Grid.Row="2"
-        Margin="0,15,0,0"
-        FontSize="14"
-        Foreground="#4B5563"
-        TextWrapping="Wrap"/>
+        <!-- 설명: content.descriptionBlocks(서식 문단, 2026-11-24 VIDEO 서식 추가)가 있으면 DescriptionRich, 없으면 일반 텍스트 DescriptionTextBlock -->
+        <StackPanel x:Name="DescriptionPanel" Grid.Row="2" Margin="0,15,0,0">
+            <TextBlock
+            x:Name="DescriptionTextBlock"
+            FontSize="14"
+            Foreground="#4B5563"
+            TextWrapping="Wrap"/>
+            <StackPanel x:Name="DescriptionRich" Visibility="Collapsed"/>
+        </StackPanel>
 
     </Grid>
 

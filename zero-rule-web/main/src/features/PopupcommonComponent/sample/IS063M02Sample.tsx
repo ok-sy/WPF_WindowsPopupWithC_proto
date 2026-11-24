@@ -1,8 +1,9 @@
 import { NavigateNext } from '@mui/icons-material';
 import {
-  Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, Menu, MenuItem, Select, Stack, Switch, TextField, Typography,
+  Box, Breadcrumbs, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Menu, MenuItem, Select, Stack, Switch,
+  TextField, Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import InlinePopupPreview from '../InlinePopupPreview';
 import PopupPreviewDialog from '../PopupPreviewDialog';
 import PopupQuestionEditor from '../PopupQuestionEditor';
@@ -10,7 +11,9 @@ import PopupQuizRuleFields from '../PopupQuizRuleFields';
 import { usePopupQuizRule } from '../popupQuizRule';
 import { richBlocksOrNull } from '../PopupRichBlocks';
 import PopupRichTextEditor from '../PopupRichTextEditor';
-import type { Size } from '../imagePreviewLayout';
+import { adaptiveWindowForImage, imageSizeMode, type Size } from '../imagePreviewLayout';
+import useNaturalImageSize from '../useNaturalImageSize';
+import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
 import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
 import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
@@ -96,7 +99,8 @@ export default function IS063M02Sample() {
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
   const start = (next: SamplePopupState) => {
-    setPopup(next); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError('');
+    // 저장된 고정 안내 문구는 떼어 에디터에는 사용자 설명만 보인다(effective에서 다시 붙는다).
+    setPopup(stripVideoFixedDescription(next)); setEditorKey((key) => key + 1); setPreviewOpen(false); setFitWindow(null); setError('');
   };
   const update = <K extends keyof SamplePopupState>(key: K, value: SamplePopupState[K]) =>
     setPopup((previous) => (previous ? { ...previous, [key]: value } : previous));
@@ -112,8 +116,36 @@ export default function IS063M02Sample() {
   /* [확정] 퀴즈 점수 규칙(문항 1점 고정, 만점 = 채점 문항 수, 참여형·커트라인 N개 = N점). 공통 popupQuizRule을 RgstPop 등록 화면과 같이 쓴다.
    * 신규·불러오기(editorKey 변경) 때 저장된 퀴즈 유형 코드(없으면 통과 점수)로 유형을 복원하고, 미리보기·저장에는 규칙을 적용한 effective를 보낸다. */
   const quiz = usePopupQuizRule(popup, editorKey);
-  const effective = quiz.effective;
+  // POL-05-01 : 재생 경로 — 동영상·동영상+퀴즈는 미리보기·저장 값에 고정 안내 문구(오른쪽 정렬 문단)를 붙인다(applyVideoFixedDescription).
+  const effective = quiz.effective ? applyVideoFixedDescription(quiz.effective) : null;
   const preview = effective ? withPreviewFallback(effective) : null;
+
+  /*
+   * [옵션] IMAGE ADAPTIVE 창 크기를 이미지에 맞추기(2026-11-24)
+   * - ADAPTIVE는 가로·세로가 창 크기라 이미지 칸 비율이 이미지와 다르면 칸 바탕이 위아래·좌우 띠로 보인다.
+   * - '세로 자동'을 켜면 가로·이미지·제목·설명·헤더/푸터가 바뀔 때마다 띠가 생기지 않는 세로를 채운다(adaptiveWindowForImage).
+   *   가로가 비어 있으면 이미지 원본 크기 기준 창 크기를 넣는다. '이미지 크기에 맞추기'는 원본 크기 기준으로 가로·세로를 한 번에 넣는다.
+   * - 가로가 원본보다 크면 이미지가 커지지 않아 좌우 띠를 피할 수 없다. 이때는 안내만 하고 가로는 바꾸지 않는다.
+   * - 화면이 작으면 WPF가 작업 영역 90% 상한으로 창을 줄여 띠가 다시 생길 수 있다(저장값은 사용자 화면과 무관하게 계산).
+   * - 폼 생성은 '세로 자동'을 켜고, 불러오기는 저장된 크기를 열기만 해서 바꾸지 않도록 끈 채 시작한다.
+   */
+  const adaptiveImage = popup?.popupType === 'IMAGE' && preview != null && imageSizeMode(preview) === 'ADAPTIVE';
+  const naturalImage = useNaturalImageSize(adaptiveImage ? contentText(popup, 'imageUrl') : null);
+  const [autoHeight, setAutoHeight] = useState(true);
+  const imageFit = adaptiveImage && naturalImage && preview ? adaptiveWindowForImage(preview, naturalImage, popup?.width) : null;
+  useEffect(() => {
+    if (!autoHeight || !imageFit) return;
+    setPopup((previous) => {
+      if (!previous) return previous;
+      const width = previous.width ?? imageFit.window.width;
+      return previous.width === width && previous.height === imageFit.window.height ? previous : { ...previous, width, height: imageFit.window.height };
+    });
+  }, [autoHeight, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fitImageSize = () => {
+    if (!preview || !naturalImage) return;
+    const natural = adaptiveWindowForImage(preview, naturalImage, null);
+    if (natural) setPopup((previous) => (previous ? { ...previous, width: natural.window.width, height: natural.window.height } : previous));
+  };
 
   const attach = (file: File | undefined) => {
     if (!file || !popup) return;
@@ -158,7 +190,8 @@ export default function IS063M02Sample() {
   const sizeField = (label: string, key: 'width' | 'height') => (
     <Box className="nConWid">
       <Typography component="span">{label}</Typography>
-      <TextField placeholder={`최소 ${POPUP_MIN_WINDOW_SIZE}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key] ?? ''} disabled={!popup}
+      <TextField placeholder={`최소 ${POPUP_MIN_WINDOW_SIZE}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key] ?? ''}
+        disabled={!popup || (key === 'height' && adaptiveImage && autoHeight && imageFit != null)}
         slotProps={{ htmlInput: { 'aria-label': label, min: POPUP_MIN_WINDOW_SIZE } }} type="number"
         onChange={(event) => update(key, event.target.value === '' ? undefined : Number(event.target.value))} />
       <Typography component="span">px</Typography>
@@ -196,11 +229,11 @@ export default function IS063M02Sample() {
                 <Box className="nConBtnBox" sx={{ display: 'flex', gap: 1 }}>
                   {/* 이미 편집 중이면 유형만 바꾸고 공통 입력값은 유지한다(changeSampleType — 업무 기본값은 채우지 않음). */}
                   <Button variant="contained" disabled={!pendingType}
-                    onClick={() => pendingType && start(popup ? changeSampleType(popup, pendingType) : newPopup(pendingType))}>폼 생성</Button>
+                    onClick={() => { if (!pendingType) return; start(popup ? changeSampleType(popup, pendingType) : newPopup(pendingType)); setAutoHeight(true); }}>폼 생성</Button>
                   <Button variant="contained" className="nWhiteBtn" onClick={(event) => setLoadAnchor(event.currentTarget)}>불러오기</Button>
                   <Menu anchorEl={loadAnchor} open={Boolean(loadAnchor)} onClose={() => setLoadAnchor(null)}>
                     {createSamplePopups().map((item) => (
-                      <MenuItem key={item.popupId} onClick={() => { setLoadAnchor(null); setPendingType(selectionOf(item)); setContentName(item.title); start(item); }}>
+                      <MenuItem key={item.popupId} onClick={() => { setLoadAnchor(null); setPendingType(selectionOf(item)); setContentName(item.title); start(item); setAutoHeight(false); }}>
                         {item.popupId} · {item.title}
                       </MenuItem>
                     ))}
@@ -227,6 +260,18 @@ export default function IS063M02Sample() {
                   <Typography component="span" sx={{ marginX: 1 }}>/</Typography>
                   {sizeField('세로', 'height')}
                 </Stack>
+                {adaptiveImage && (
+                  <Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ mt: 0.5, columnGap: 1 }}>
+                    <FormControlLabel label="이미지에 맞춰 세로 자동" disabled={!naturalImage}
+                      control={<Checkbox size="small" checked={autoHeight} onChange={(event) => setAutoHeight(event.target.checked)} />} />
+                    <Button size="small" variant="outlined" disabled={!naturalImage} onClick={fitImageSize}>이미지 크기에 맞추기</Button>
+                    <Typography variant="caption" color={imageFit?.limited ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                      {!naturalImage ? '이미지를 첨부하면 창 크기를 이미지에 맞출 수 있습니다.'
+                        : imageFit?.limited ? `가로가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 가로는 ${imageFit.window.width}px입니다.`
+                          : `이미지 원본 ${naturalImage.width}×${naturalImage.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
               <Stack className="nConSectionDiv" direction="row" alignItems="center">
                 <Typography className="nConSectionTitle"><Required not />나중에 보기</Typography>
@@ -284,6 +329,15 @@ export default function IS063M02Sample() {
                   {popup.popupType === 'IMAGE' ? '※ BMP, GIF, JPG, PNG 파일만 등록 가능합니다.' : '※ MP4 파일만 등록 가능합니다.'}
                 </Typography>
               </Box>
+            )}
+            {/* POL-03-01 : 저장·표시 경계 — VIDEO 설명 서식 편집기(descriptionBlocks, 2026-11-24). 동영상+퀴즈는 아래 문항 영역의 설명을 쓴다. */}
+            {popup && popup.popupType === 'VIDEO' && (
+              <Stack className="nConSectionDiv" spacing={1} sx={{ mt: 1 }}>
+                <Typography className="nConSectionTitle"><Required not />설명</Typography>
+                <PopupRichTextEditor key={`video-description-${editorKey}`} compact hideLabel hideFormatButton label="설명" placeholder="설명(선택)"
+                  initialBlocks={richBlocksOrNull(popup.content.descriptionBlocks) ?? plainTextToBlocks(contentText(popup, 'description'))}
+                  onChange={(blocks, plainText) => setPopup((previous) => previous && ({ ...previous, content: { ...previous.content, descriptionBlocks: blocks, description: plainText } }))} />
+              </Stack>
             )}
             {popup && isQuestion && (
               <>

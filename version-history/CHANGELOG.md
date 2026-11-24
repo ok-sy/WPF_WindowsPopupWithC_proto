@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-24-11 — dev: IMAGE창크기맞춤_VIDEO설명서식_추가
+
+- 이유 · ① IMAGE ADAPTIVE(창 우선)는 입력값이 창 크기라 이미지 칸 비율이 이미지와 다르면 칸 바탕이 띠로 보이고, 띠 없는 창 크기를 사용자가 계산하기 어려움(IS063M02 샘플 방식 요건). ② 동영상·동영상+퀴즈 설명 앞에 VMware 사운드 조절 안내를 오른쪽 정렬로 고정 표시하고, 에디터에는 사용자 입력만 보이게 하는 요건. VIDEO 설명이 일반 텍스트뿐이라 정렬을 줄 수 없어 VIDEO 설명 서식(`descriptionBlocks`)을 추가. ③ 영상 아래 컨트롤 모형 줄 삭제 요건.
+- 변경 ·
+  - IMAGE: `adaptiveWindowForImage()`(가로 → 띠 없는 세로, 가로가 원본보다 크면 원본 기준·limited)와 `useNaturalImageSize()` 추가. RgstPop('창 우선'·FIXED)·IS063 샘플에 '이미지에 맞춰 세로/높이 자동'(세로 잠금)·'이미지 크기에 맞추기'·안내 문구 추가. 신규·폼 생성은 자동 켬, 수정·템플릿·불러오기는 저장값을 바꾸지 않도록 끈 채 시작.
+  - VIDEO 설명 서식: 서버 `PopupSurveyRichText`가 VIDEO의 `descriptionBlocks`만 허용·검증하고 `description` 파생(`surveyTitleBlocks`는 거부 유지). WPF `VideoPopupContentDto.DescriptionBlocks`·`VideoPopupView`가 서식 문단(정렬·구간 서식, 본문 글자 크기 적용)으로 표시하고 없으면 일반 텍스트. 웹 RgstPop VIDEO 설명을 서식 에디터로 바꾸고 IS063 샘플에 VIDEO 설명 에디터 추가, 미리보기 VIDEO 설명 서식 표시, 저장 키에 VIDEO `descriptionBlocks` 추가.
+  - 고정 안내 문구: `videoFixedDescription.ts`(`※ 소리가 작다면 VMware 공간 외부 설정에서 볼륨을 올려 주세요.`). 웹 effective(미리보기·저장 값)에서 `descriptionBlocks` 맨 앞에 오른쪽 정렬 문단으로 붙이고, 불러올 때 뗀다. WPF는 문구 없이 받은 서식을 그대로 표시.
+  - 미리보기 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면) 삭제. 설문 머리말 설명 줄바꿈(`pre-line`) 표시(WPF와 같음).
+  - 인터페이스 사양(VIDEO `descriptionBlocks`, 서버 VIDEO 예외)·WPF 사양·관리자 미리보기 컴포넌트 문서 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout.ts`, `useNaturalImageSize.ts`, `videoFixedDescription.ts`, `PopupPreview.tsx`, `SurveyPreview.tsx`, `popupEditorTransform.ts`, `sample/IS063M02Sample.tsx`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `popup-frameWork/Popup/Dtos/VideoPopupContentDto.cs`, `Factories/PopupFactory.cs`, `Views/Contents/VideoPopupView.xaml(.cs)`, `zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupSurveyRichText.java`, `PopupSurveyRichTextTest.java`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-popup-preview-61(-entry)`, `scripts/verify-popup-transform-64-entry.tsx`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `WPF_AGENT_SPEC.md`, `WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`.
+- 검증 · 웹 `tsc --noEmit`·eslint 통과, `verify-popup-preview-61` 290건(IMAGE 맞춤 계산·고정 문구 붙이기/떼기/중복 없음·VIDEO 서식 오른쪽 정렬·컨트롤 줄 없음 검사 추가), transform-64 79건(VIDEO 서식은 분리 전 코드 비교에서 의도된 차이로 제외). WPF 빌드 0/0, `PopupWindowTests` 663건(VIDEO 서식 문단 정렬·굵게·본문 크기·빈 서식 대체 추가), 로컬 BehaviorTests 1644건. 서버 `:service:core:test` popup 203건(9 skip, 실DB) 통과(VIDEO descriptionBlocks 허용·파생·제목 서식 거부 추가). 미실행: 재기동한 로컬 서버로 VIDEO 저장·재조회 왕복, 관리자 실화면, WPF 실화면, 폐쇄망 백엔드 반영(서버 변경 전달 필요).
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-10 — dev: 61-23_기준화면해상도배율_수정
 
 - 이유 · 실제 크기 미리보기에서 해상도를 바꿔도 차이가 보이지 않고, '현재 모니터'·1:1·축척 표시가 섞여 비교가 어려움. 같은 화면에서 해상도·Windows 배율별 팝업 크기·배치를 비교할 필요.

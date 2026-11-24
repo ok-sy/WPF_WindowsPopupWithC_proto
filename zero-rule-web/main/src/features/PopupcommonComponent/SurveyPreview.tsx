@@ -280,7 +280,7 @@ export default function SurveyPreview({
     <Stack spacing={surveyDesign.flatQuestions ? 0 : 1.75} sx={{ maxWidth: 760, mx: 'auto', color: surveyColors.text }}>
       {/* WPF 머리말: 설명(14·줄 22)은 비어도 한 줄 자리를 차지하고, 아래 여백 10 + 문항 목록 위 4 = 14 뒤에 첫 문항이 온다(2026-11-17). */}
       {(description || richDescription || reserveDescription) && (
-        <Typography component="div" sx={{ color: surveyColors.muted, fontSize: 14, lineHeight: '22px', minHeight: 22, mb: '14px' }}>
+        <Typography component="div" sx={{ color: surveyColors.muted, fontSize: 14, lineHeight: '22px', minHeight: 22, mb: '14px', whiteSpace: 'pre-line' }}>
           {richDescription ? <PopupRichBlocks blocks={richDescription} /> : description}
         </Typography>
       )}

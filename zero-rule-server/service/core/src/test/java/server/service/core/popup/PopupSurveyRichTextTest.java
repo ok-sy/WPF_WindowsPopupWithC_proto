@@ -138,6 +138,24 @@ class PopupSurveyRichTextTest {
                 popup("IMAGE", List.of(), Map.of("descriptionBlocks", blocks("x", false)))));
     }
 
+    /** 2026-11-24 VIDEO는 영상 설명 서식(descriptionBlocks)만 받고 description을 서식에서 파생한다. 제목 서식은 거부한다. */
+    @Test void videoAcceptsOnlyDescriptionBlocksAndDerivesDescription() {
+        Map<String, Object> content = new LinkedHashMap<>();
+        content.put("description", "client");
+        content.put("descriptionBlocks", blocks("소리가 ", false, "작다면", true));
+        PopupResponseDto normalized = PopupSurveyRichText.normalize(popup("VIDEO", List.of(), content));
+        assertEquals("소리가 작다면", normalized.content().get("description"));
+        assertEquals(1, ((List<?>) normalized.content().get("descriptionBlocks")).size());
+        Map<String, Object> empty = new LinkedHashMap<>();
+        empty.put("description", "설명");
+        empty.put("descriptionBlocks", List.of());
+        PopupResponseDto plain = PopupSurveyRichText.normalize(popup("VIDEO", List.of(), empty));
+        assertFalse(plain.content().containsKey("descriptionBlocks"), "empty VIDEO description blocks are dropped");
+        assertEquals("설명", plain.content().get("description"));
+        assertThrows(IllegalArgumentException.class, () -> PopupSurveyRichText.normalize(
+                popup("VIDEO", List.of(), Map.of("surveyTitleBlocks", blocks("x", false)))));
+    }
+
     /** 저장 시 파생 문자열과 서식 JSON을 함께 저장한다. */
     @Test void saveStoresDerivedTextAndBlocksJson() throws Exception {
         Map<String, Object> content = new LinkedHashMap<>(Map.of("surveyTitle", "old"));

@@ -4,7 +4,8 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import InlinePopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview';
 import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog';
 import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
-import { fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
+import { adaptiveWindowForImage, fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
+import { VIDEO_FIXED_DESCRIPTION, applyVideoFixedDescription, stripVideoFixedDescription } from '../zero-rule-web/main/src/features/PopupcommonComponent/videoFixedDescription';
 import { previewDialogSize, readBrowserViewport, readScreenWorkArea } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
 // POL-08-01 : 공통 렌더러
 // ■ 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
@@ -55,4 +56,10 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
 (window as any).readScreenWorkArea = readScreenWorkArea;
 (window as any).readBrowserViewport = readBrowserViewport;
 (window as any).fitLayout = (natural: Size, workArea: Size) => fitToImageLayout((window as any).currentPopup, natural, workArea);
+// 2026-11-24: IMAGE ADAPTIVE 창 크기 맞춤과 동영상 고정 안내 문구 붙이기·떼기(순수 함수) 확인용.
+(window as any).adaptiveFit = (overrides: Record<string, unknown>, content: Record<string, unknown>, natural: Size, width: number | null) =>
+  adaptiveWindowForImage(samplePopup('IMAGE', overrides, content), natural, width);
+(window as any).fixedText = VIDEO_FIXED_DESCRIPTION;
+(window as any).applyFixed = (type: string, content: Record<string, unknown>) => applyVideoFixedDescription(deepFreeze(samplePopup(type, {}, content)));
+(window as any).stripFixed = (popup: any) => stripVideoFixedDescription(deepFreeze(popup));
 (window as any).renderHost('TEXT');

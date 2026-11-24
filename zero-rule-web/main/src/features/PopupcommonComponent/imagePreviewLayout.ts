@@ -143,3 +143,32 @@ export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workAre
     height: Math.round(clamp(recommended.height, minimum.height, maxHeight)),
   } };
 }
+
+/** ADAPTIVE 창 크기 맞춤 결과. window: 띠 없이 이미지가 꽉 차는 창 크기, image: 그때 이미지 표시 크기, limited: 요청 가로가 원본보다 커서 원본 기준으로 줄였는지. */
+export interface AdaptiveImageWindow { window: Size; image: Size; limited: boolean; }
+/* 창 크기 맞춤은 사용자 PC 화면과 무관한 저장값이라 작업 영역 90% 상한을 적용하지 않는다(실제 화면 상한은 WPF가 표시할 때 적용). */
+const UNBOUNDED_WORK_AREA: Size = { width: 1_000_000, height: 1_000_000 };
+/**
+ * POL-04-02 : 모드별 기준
+ * ■ ADAPTIVE 이미지가 띠 없이 꽉 차는 창 크기
+ * - in : popup(AdminPopupDetail) 제목·설명·헤더/푸터·본문 글자 크기 · natural(Size) 이미지 원본 크기 · width?(number) 원하는 창 가로(없으면 원본 크기 기준)
+ * - out: AdaptiveImageWindow | null(원본 크기 0 이하·가로가 너무 작아 이미지 칸이 없으면 null)
+ * - ADAPTIVE는 popup.width/height가 창 크기이고 이미지는 남는 칸에 원본보다 키우지 않고 비율 유지로 맞춘다(WPF ImagePopupView Uniform·MaxWidth/MaxHeight=원본).
+ *   칸 비율이 이미지 비율과 다르면 칸 바탕(#FAFAFB)이 위아래·좌우 띠로 보인다. 이 함수는 가로에서 이미지 표시 폭(가로 - 크롬 104 - 테두리 2, 원본 이하)을 구하고
+ *   이미지 비율로 표시 높이를 정한 뒤, FIT_TO_IMAGE 권장 크기와 같은 합산식(fitToImageLayout)으로 세로를 계산한다.
+ *   가로가 원본보다 크면 이미지가 커지지 않아 좌우 띠를 피할 수 없으므로 원본 기준 창 크기로 줄이고 limited=true.
+ *   제목·설명 높이는 브라우저 글자 측정(canvas) 근사값이라 WPF 글꼴과 1~2px 다를 수 있다. 최소 300×300보다 작으면 하한 때문에 띠가 남을 수 있다.
+ */
+export function adaptiveWindowForImage(popup: AdminPopupDetail, natural: Size, width?: number | null): AdaptiveImageWindow | null {
+  if (natural.width <= 0 || natural.height <= 0) return null;
+  const naturalWindowWidth = natural.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH;
+  const requested = positive(width);
+  const limited = requested != null && requested > naturalWindowWidth;
+  const imageWidth = requested == null || limited ? natural.width : requested - IMAGE_CHROME_WIDTH - IMAGE_FRAME;
+  if (imageWidth <= 0) return null;
+  const image = { width: imageWidth, height: imageWidth * natural.height / natural.width };
+  const layout = fitToImageLayout({ ...popup, width: image.width, height: image.height, content: { ...popup.content, keepAspectRatio: true } },
+    natural, UNBOUNDED_WORK_AREA);
+  if (!layout) return null;
+  return { window: { width: Math.round(image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH), height: layout.window.height }, image, limited };
+}

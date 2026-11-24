@@ -44,7 +44,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await pause(350);
   };
   const dialogOpen = () => run("!!document.querySelector('.MuiDialog-paper')");
-  const paper = () => run("(()=>{const r=document.querySelector('.MuiDialog-paper').getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};})()");
+  // 2026-11-24: 팝업은 해상도 화면(preview-virtual-screen) 안에 그린다. 화면 기준 좌표와 창 크기(offset, 배율 확대 전 DIP)를 돌려준다.
+  const paper = () => run(`(()=>{const w=document.querySelector('[data-testid=preview-popup-window]'),s=document.querySelector('[data-testid=preview-virtual-screen]').getBoundingClientRect(),r=w.getBoundingClientRect();
+    return {left:Math.round(r.left-s.left),top:Math.round(r.top-s.top),right:Math.round(r.right-s.left),bottom:Math.round(r.bottom-s.top),width:w.offsetWidth,height:w.offsetHeight};})()`);
+  const near = (a, b) => Math.abs(a - b) < 1;
   const openPreview = async () => {
     await run("Array.from(document.querySelectorAll('#root button')).find(b=>b.textContent.includes('실제 크기로 보기')).click()"); await pause(400);
     check(await dialogOpen(), 'Inline button opens the preview dialog');
@@ -74,35 +77,35 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   h = await header();
   check(apart(h.n, h.t) && apart(h.n, h.b) && apart(h.t, h.b) && h.n.r <= 240 + 1, '[73-26] Narrow width wraps the notice without overlapping title or button: ' + JSON.stringify(h));
   await run(`document.querySelector('#root > div').style.width='520px'`); await pause(300);
-  // 2) FIXED·중앙·Overlay 사용: 크기·위치·배경, 배경 클릭 무시, Esc 종료.
+  // 2) FIXED·중앙·Overlay: 기준 화면(뷰포트 1000×900은 프리셋과 맞지 않아 1920×1080 @100%, 작업 영역 1920×1040) 안에서 크기·위치·Overlay, Esc 종료.
+  //    2026-11-24 '현재 모니터' 삭제: 팝업은 항상 해상도 화면(preview-virtual-screen) 안에 그린다. paper()는 화면 기준 좌표·창 크기(offset)다.
   await openPreview();
   let rect = await paper();
-  check(rect.width === 560 && rect.height === 420 && Math.abs(rect.left - 220) < 1 && Math.abs(rect.top - 240) < 1, 'FIXED dialog is 560x420 at the center: ' + JSON.stringify(rect));
-  check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity');
-  // POL-08-03 : Dialog 호환 — slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
-  const paperStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return {margin:s.margin,overflow:s.overflow,maxWidth:s.maxWidth,maxHeight:s.maxHeight,radius:s.borderRadius};})()");
-  // TODO61-23(2026-11-24): Paper 최대 크기 제한 없음. 브라우저보다 크면 줄이지 않고 모달 컨테이너가 스크롤한다.
-  // 2026-11-17: Paper = WPF 창 크기(여백 0, 투명), 그림자 여백 24·둥근 모서리·그림자는 안쪽 흰 판(PopupPreview)이 그린다.
-  check(paperStyle.margin === '0px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === 'none' && paperStyle.maxHeight === 'none' && paperStyle.radius === '0px',
-    '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
+  check(rect.width === 560 && rect.height === 420 && near(rect.left, 680) && near(rect.top, 310), 'FIXED popup is 560x420 at the center of the 1920x1040 work area: ' + JSON.stringify(rect));
+  check(await run("getComputedStyle(document.querySelector('[data-testid=preview-virtual-overlay]')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity on the virtual desktop');
+  const windowStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('[data-testid=preview-popup-window]'));return {overflow:s.overflow,radius:s.borderRadius};})()");
+  check(windowStyle.overflow === 'hidden' && windowStyle.radius === '0px', 'Popup window clips its content and the white panel draws the rounded corners: ' + JSON.stringify(windowStyle));
   check(await run("Array.from(document.querySelectorAll('.MuiDialog-root button')).some(b=>b.getAttribute('aria-label')==='실제 크기 미리보기 종료')"), 'Dialog has its own exit button');
   check(!(await run(`document.querySelector('.MuiDialog-root').textContent.includes(${JSON.stringify(NOTICE)})`)), '[73-27] The actual size dialog does not show the size notice');
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'text-dialog.png'), Buffer.from(shot.data, 'base64'));
   await clickAt(5, 5);
-  check(await dialogOpen(), 'Backdrop click is ignored while overlay is enabled');
+  check(await dialogOpen(), 'Clicking outside the popup does not close the preview');
   await escape();
   check(!(await dialogOpen()), 'Esc closes the dialog');
   await unchanged('TEXT');
-  // 3) 9개 위치·그림자 여백(일반 24px, 영상 0px)·종료 버튼 위치. 2026-11-17: WPF처럼 창(Paper)은 작업 영역 가장자리에 붙고 흰 판이 창 안 24px에 그려진다.
+  // 3) 9개 위치·그림자 여백(일반 24px, 영상 0px)·종료 버튼 위치. WPF처럼 창은 작업 영역 가장자리에 붙고 흰 판이 창 안 24px에 그려진다.
   await render('TEXT', {}, {popupPosition: 'TOP_LEFT'}); await openPreview(); rect = await paper();
-  const panel = await run(`(()=>{const r=document.querySelector('.MuiDialog-paper .MuiPaper-root').getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height}})()`);
+  const panel = await run(`(()=>{const s=document.querySelector('[data-testid=preview-virtual-screen]').getBoundingClientRect();
+    const r=document.querySelector('[data-testid=preview-popup-window] .MuiPaper-root').getBoundingClientRect();return {left:r.left-s.left,top:r.top-s.top,width:r.width,height:r.height}})()`);
   check(rect.left === 0 && rect.top === 0 && panel.left === 24 && panel.top === 24 && panel.width === 512 && panel.height === 372,
-    'TOP_LEFT window sits at the edge and the white panel keeps the 24px WPF shadow margin (560x420 → 512x372): ' + JSON.stringify({rect, panel}));
-  // TODO61-23: 종료 버튼은 기준 화면 선택과 함께 도구 묶음(preview-dialog-tools) 안에 있다. 묶음이 아래 12px로 옮겨 가고 버튼은 그 안에 있다.
-  check(await run("(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]').getBoundingClientRect();const b=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return Math.round(t.bottom)===888&&b.bottom<=t.bottom&&b.top>=t.top&&b.top>450;})()"), 'Exit button moves to the bottom for top-aligned popups');
+    'TOP_LEFT window sits at the work area edge and the white panel keeps the 24px WPF shadow margin (560x420 → 512x372): ' + JSON.stringify({rect, panel}));
+  // 위쪽 배치 팝업이면 도구 패널(기준 화면·배율·종료)은 아래 12px + 가로 스크롤바 높이로 옮긴다.
+  check(await run(`(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]').getBoundingClientRect();const b=document.querySelector('[aria-label="실제 크기 미리보기 종료"]').getBoundingClientRect();
+    const c=document.querySelector('[data-testid=preview-virtual-scroll]');return Math.abs(t.bottom-(innerHeight-12-(c.offsetHeight-c.clientHeight)))<1&&b.bottom<=t.bottom&&b.top>=t.top&&b.top>450;})()`),
+    'Exit button moves to the bottom (above the horizontal scrollbar) for top-aligned popups');
   await escape();
   await render('VIDEO', {}, {popupPosition: 'BOTTOM_RIGHT'}); await openPreview(); rect = await paper();
-  check(rect.right === 1000 && rect.bottom === 900, 'VIDEO window has no edge margin at BOTTOM_RIGHT: ' + JSON.stringify(rect));
+  check(near(rect.right, 1920) && near(rect.bottom, 1040), 'VIDEO window has no edge margin at BOTTOM_RIGHT of the work area: ' + JSON.stringify(rect));
   await escape();
   // 61-17: VIDEO 실제 크기 미리보기를 WPF와 같은 배치로 — 영상이 남은 높이를 채우고, 설명은 영상 아래, 공통 헤더 17/600·푸터 80·본문 여백 28/24.
   await render('VIDEO', {height: 760}, {description: '영상 설명'}, true, true); await openPreview();
@@ -125,88 +128,95 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[61-17] content title 22/600, header 17/600, body padding 28/24: ' + JSON.stringify(v));
   check(Math.abs(v.footerH - 64) < 0.6 && Math.abs(v.btnH - 34) < 0.6 && v.btnW >= 118 && !v.divider, '[61-17] footer is 80 high with a 44px button and no divider: ' + JSON.stringify(v));
   await escape();
-  // 4) Overlay 꺼짐: 투명 배경, 배경 클릭으로 닫힘.
+  // 4) Overlay 꺼짐: 가상 데스크톱 위 Overlay 층이 없고 흰 바탕이 그대로 보인다.
   await render('TEXT', {}, {useBackgroundOverlay: false}); await openPreview();
-  check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0)', 'Overlay off keeps the backdrop transparent');
-  await clickAt(5, 5);
-  check(!(await dialogOpen()), 'Backdrop click closes when overlay is off');
-  // 5) RATIO와 뷰포트 변경 재계산, FULLSCREEN.
+  check(await run(`!document.querySelector('[data-testid=preview-virtual-overlay]')&&getComputedStyle(document.querySelector('[data-testid=preview-virtual-screen]')).backgroundColor==='rgb(255, 255, 255)'`),
+    'Overlay off shows the white virtual desktop');
+  await escape();
+  // 5) RATIO는 기준 화면 작업 영역 기준이라 브라우저 크기와 무관하다. FULLSCREEN은 표시 해상도 전체.
   await render('TEXT', {sizeMode: 'RATIO'}); await openPreview(); rect = await paper();
-  check(rect.width === 500 && rect.height === 450, 'RATIO uses 50% of the browser work area: ' + JSON.stringify(rect));
+  check(rect.width === 960 && rect.height === 520, 'RATIO uses 50% of the 1920x1040 work area: ' + JSON.stringify(rect));
   await viewport(1200, 800); await pause(300); rect = await paper();
-  check(rect.width === 600 && rect.height === 400, 'Dialog recalculates after viewport resize: ' + JSON.stringify(rect));
+  check(rect.width === 960 && rect.height === 520, 'Browser resize does not change the popup size: ' + JSON.stringify(rect));
   await escape(); await viewport(1000, 900); await pause(200);
   await render('TEXT', {sizeMode: 'FULLSCREEN'}, {popupPosition: 'TOP_LEFT'}); await openPreview(); rect = await paper();
-  check(rect.width === 1000 && rect.height === 900 && rect.left === 0 && rect.top === 0, 'FULLSCREEN ignores position and fills the viewport');
-  check(await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return s.margin==='0px'&&s.overflowY!=='hidden'&&getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor==='rgba(0, 0, 0, 0.45)';})()"),
-    '[TODO67] FULLSCREEN leaves the Paper slot unset and keeps the backdrop slot');
+  check(rect.width === 1920 && rect.height === 1080 && rect.left === 0 && rect.top === 0, 'FULLSCREEN ignores position and covers the whole 1920x1080 display: ' + JSON.stringify(rect));
   await escape();
-  // 6) IMAGE FIT_TO_IMAGE: 모달이 스스로 권장 창 크기를 계산하고, 인라인 계산값 전달(hint) 여부와 결과가 같다.
+  // 6) IMAGE FIT_TO_IMAGE: 인라인은 현재 모니터 작업 영역(screen.avail = 1000×900)으로, 모달은 기준 화면 작업 영역(1920×1040)으로 권장 창 크기를 계산한다.
   for (const hint of [false, true]) {
     await render('IMAGE', {width: 300, height: 150}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true, imageTitle: '', description: ''}, hint);
     for (let i = 0; i < 30 && !(await run('!!window.hostState.recommended')); i++) await pause(100);
-    const expected = await run("window.expectedSize({width:1000,height:900}, window.fitLayout({width:800,height:400},{width:1000,height:900}).window)");
     check(JSON.stringify(await run('window.hostState.recommended')) === JSON.stringify(await run("window.fitLayout({width:800,height:400},{width:1000,height:900}).window")), 'Inline reports the FIT_TO_IMAGE window size');
+    const expected = await run("window.fitLayout({width:800,height:400},{width:1920,height:1040}).window");
     await openPreview(); await pause(300); rect = await paper();
-    check(rect.width === expected.width && rect.height === expected.height, `FIT_TO_IMAGE dialog size matches layout (hint=${hint}): ` + JSON.stringify([rect, expected]));
+    check(rect.width === expected.width && rect.height === expected.height, `FIT_TO_IMAGE dialog size follows the reference work area (hint=${hint}): ` + JSON.stringify([rect, expected]));
     await escape();
   }
   await unchanged('IMAGE');
-  // TODO61-23: 실제 크기 미리보기 작업 영역. 팝업 크기는 화면 작업 영역(screen.avail*) 또는 기준 화면 프리셋, 배경·배치는 브라우저 표시 영역.
-  const tools = () => run(`(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]');return {text:t?t.innerText:'',select:!!t&&!!t.querySelector('[role=combobox]')};})()`);
-  const outerScroll = () => run(`(()=>{const d=document.scrollingElement,c=document.querySelector('.MuiDialog-container');
-    return {page:d.scrollHeight>innerHeight+0.5||d.scrollWidth>innerWidth+0.5,wrapper:!!c&&(c.scrollHeight>c.clientHeight+0.5||c.scrollWidth>c.clientWidth+0.5),
-      backdrop:(()=>{const b=document.querySelector('.MuiBackdrop-root').getBoundingClientRect();return Math.round(b.width)===innerWidth&&Math.round(b.height)===innerHeight;})()};})()`);
-  const chooseScreen = async value => {
-    await run(`(()=>{const c=document.querySelector('[data-testid=preview-dialog-tools] [role=combobox]');c.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));})()`); await pause(300);
-    await run(`document.querySelector('li[data-value=${JSON.stringify(value)}]').click()`); await pause(400);
+  // TODO61-23: 기준 화면(해상도 × 배율)으로 팝업 크기·위치를 계산하고, 해상도 화면을 실제 크기로 그려 브라우저보다 크면 스크롤한다.
+  const tools = () => run(`(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]');return {text:t?t.innerText:'',select:!!t&&t.querySelectorAll('[role=combobox]').length===2};})()`);
+  const outerScroll = () => run(`(()=>{const d=document.scrollingElement;return {page:d.scrollHeight>innerHeight+0.5||d.scrollWidth>innerWidth+0.5};})()`);
+  const choose = async (index, value) => {
+    await run(`(()=>{const c=document.querySelectorAll('[data-testid=preview-dialog-tools] [role=combobox]')[${index}];c.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));})()`); await pause(300);
+    await run(`document.querySelector('li[data-value=${JSON.stringify(String(value))}]').click()`); await pause(400);
   };
-  // ① 730×900 회귀: 브라우저 일반 모드(내부 높이 945)·작업 영역 1920×1040 → 1:1 730×900. F11(내부 1080, 작업 영역 1080)도 730×900. 예전 계산은 945×0.9=851.
-  for (const [label, view, screen] of [['normal', [1920, 945], [1920, 1040]], ['F11', [1920, 1080], [1920, 1080]]]) {
-    await viewport(view[0], view[1], screen[0], screen[1]); await pause(200);
+  const chooseScreen = value => choose(0, value), chooseScale = value => choose(1, value);
+  // ① 730×900 회귀: 브라우저 일반 모드(내부 높이 945)·F11(1080) 어느 쪽이든 기준 화면 1920×1080에서 730×900. 예전 브라우저 기준 계산은 945×0.9=851.
+  for (const [label, view] of [['normal', [1920, 945]], ['F11', [1920, 1080]]]) {
+    await viewport(view[0], view[1], 1920, 1040); await pause(200);
     await render('IMAGE', {width: 730, height: 900}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
-    const scroll = await outerScroll(), bar = await tools();
-    check(rect.width === 730 && rect.height === 900 && !bar.text.includes('표시하지 못했습니다'), `[61-23] IMAGE 730x900 is 1:1 in ${label} mode: ` + JSON.stringify({rect, bar}));
-    check(!scroll.page && !scroll.wrapper && scroll.backdrop, `[61-23] ${label}: backdrop covers the viewport without page or wrapper scroll: ` + JSON.stringify(scroll));
-    check(bar.select && bar.text.includes('기준 화면'), `[61-23] ${label}: dialog tools show the reference screen select: ` + JSON.stringify(bar));
+    const bar = await tools();
+    check(rect.width === 730 && rect.height === 900, `[61-23] IMAGE 730x900 keeps its size in ${label} mode: ` + JSON.stringify(rect));
+    check(bar.select && bar.text.includes('기준 화면') && bar.text.includes('배율') && !bar.text.includes('현재 모니터') && !bar.text.includes('작업 영역'),
+      `[61-23] ${label}: tools show the resolution and scale selects only: ` + JSON.stringify(bar));
     await escape();
   }
-  // ② 작업 영역 90% 상한이 실제 가용 높이에 들어가면 그대로: 작업 영역 1040 → 상한 936. 1000 요청은 936이고 내부 945에 들어간다.
-  await viewport(1920, 945, 1920, 1040); await pause(200);
+  // ② 작업 영역 90% 상한: 1040 → 936.
   await render('IMAGE', {width: 730, height: 1000}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
-  check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height is capped by 90% of the work area (936), not the browser: ' + JSON.stringify(rect));
+  check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height is capped by 90% of the work area (936): ' + JSON.stringify(rect));
   await escape();
-  // ③ 기준 화면: 현재 모니터는 실제 크기(뷰포트 1000×900, 화면 동일 → TEXT RATIO 50% = 500×450). 프리셋은 그 해상도 크기의 화면(작업 영역 + 작업 표시줄)을
-  //    실제 크기로 그리고 팝업을 WPF와 같은 크기로 놓는다. 브라우저보다 크면 축소하지 않고 화면 영역에 스크롤이 생긴다.
+  // ③ 해상도 전환: 해상도 화면을 실제 크기로 그리고 팝업을 WPF와 같은 크기로 놓는다. 브라우저보다 큰 축만 스크롤.
   const virtual = () => run(`(()=>{const s=document.querySelector('[data-testid=preview-virtual-screen]'),w=document.querySelector('[data-testid=preview-popup-window]');
     if(!s||!w)return null;const sr=s.getBoundingClientRect(),wr=w.getBoundingClientRect();
     const c=document.querySelector('[data-testid=preview-virtual-scroll]');
     const cs=getComputedStyle(c);
-    return {scroll:{x:cs.overflowX!=='hidden'&&c.scrollWidth>c.clientWidth+0.5,y:cs.overflowY!=='hidden'&&c.scrollHeight>c.clientHeight+0.5,width:c.scrollWidth,height:c.scrollHeight},screen:{left:sr.left,top:sr.top,width:sr.width,height:sr.height},window:{width:w.offsetWidth,height:w.offsetHeight},
+    return {scroll:{x:cs.overflowX!=='hidden'&&c.scrollWidth>c.clientWidth+0.5,y:cs.overflowY!=='hidden'&&c.scrollHeight>c.clientHeight+0.5,width:c.scrollWidth,height:c.scrollHeight,bar:c.offsetWidth-c.clientWidth},
+      screen:{left:sr.left,top:sr.top,width:sr.width,height:sr.height},window:{width:w.offsetWidth,height:w.offsetHeight},
       shown:{left:wr.left-sr.left,top:wr.top-sr.top,width:wr.width,height:wr.height}};})()`);
-  const near = (a, b) => Math.abs(a - b) < 1;
   await viewport(1000, 900); await pause(200);
-  await render('TEXT', {sizeMode: 'RATIO'}); await openPreview(); rect = await paper();
-  let bar = await tools();
-  check(rect.width === 500 && rect.height === 450 && bar.text.includes('현재 모니터') && bar.text.includes('1000×900') && !bar.text.includes('1:1') && !(await virtual()),
-    '[61-23] CURRENT draws at actual size against the screen work area without a resolution screen: ' + JSON.stringify({rect, bar}));
-  // 화면 영역 = 뷰포트 전체 1000×900(도구는 위에 떠 있고 여백 없음). 세 해상도 모두 1000보다 넓어 가로 스크롤, 768 < 900이라 1366×768은 세로 스크롤 없음.
+  await render('TEXT', {sizeMode: 'RATIO'}); await openPreview();
+  let bar;
+  // 뷰포트 1000×900: 세 해상도 모두 1000보다 넓어 가로 스크롤, 768 < 900이라 1366×768은 세로 스크롤 없음.
   for (const [key, display, popupSize, scrollY] of [['1920x1080', [1920, 1080], [960, 520], true], ['2560x1440', [2560, 1440], [1200, 700], true], ['1366x768', [1366, 768], [683, 364], false]]) {
     await chooseScreen(key); const v = await virtual(); bar = await tools();
     check(v && near(v.screen.width, display[0]) && near(v.screen.height, display[1]) && await run("Math.round(document.querySelector('[data-testid=preview-virtual-scroll]').getBoundingClientRect().top)") === 0,
-      `[61-23] ${key} draws the resolution screen at actual size below the tools: ` + JSON.stringify(v));
+      `[61-23] ${key} draws the resolution screen at actual size: ` + JSON.stringify(v));
     check(v.window.width === popupSize[0] && v.window.height === popupSize[1] && near(v.shown.width, popupSize[0]) && near(v.shown.height, popupSize[1]),
       `[61-23] ${key}: RATIO 50% popup is ${popupSize.join('x')} at actual size (설정 최대 1200 적용): ` + JSON.stringify(v));
     check(v.scroll.x && v.scroll.y === scrollY && v.scroll.width >= display[0] && v.scroll.height >= (scrollY ? display[1] : 0),
       `[61-23] ${key}: a screen larger than the browser scrolls instead of shrinking: ` + JSON.stringify(v.scroll));
-    check(bar.text.includes(display.join('×') + ' (작업 영역') && !bar.text.includes('가상 화면') && !bar.text.includes('축척') && !bar.text.includes('표시하지 못했습니다'),
-      `[61-23] ${key}: tools show only the reference screen select: ` + JSON.stringify(bar));
-    const scroll = await outerScroll();
-    check(!scroll.page, `[61-23] ${key}: the admin page itself does not scroll: ` + JSON.stringify(scroll));
-    check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', `[61-23] ${key}: the backdrop uses the popup overlay (0.45) like CURRENT so the admin page shows through`);
+    check(bar.text.includes(display.join('×')) && !bar.text.includes(display.join('×') + ' *') && bar.text.includes('100% *'), `[61-23] ${key}: no resolution mark on a 1000x900 screen, 100% scale marked: ` + JSON.stringify(bar));
+    check(!(await outerScroll()).page, `[61-23] ${key}: the admin page itself does not scroll`);
+    // 가상 데스크톱: 작업 영역 흰색, 작업 표시줄 검정 40, 바깥 검정 30%, 점선 테두리 없음, Overlay는 데스크톱 위.
+    const desk = await run(`(()=>{const g=e=>e&&getComputedStyle(e);const s=g(document.querySelector('[data-testid=preview-virtual-screen]')),b=g(document.querySelector('.MuiBackdrop-root')),
+      t=document.querySelector('[data-testid=preview-virtual-taskbar]'),o=g(document.querySelector('[data-testid=preview-virtual-overlay]'));
+      return {screen:s.backgroundColor,outline:s.outlineStyle,outside:b.backgroundColor,taskbar:g(t).backgroundColor,taskbarH:t.getBoundingClientRect().height,overlay:o&&o.backgroundColor};})()`);
+    check(desk.screen === 'rgb(255, 255, 255)' && desk.outside === 'rgba(0, 0, 0, 0.3)' && desk.outline === 'none' && desk.taskbar === 'rgb(0, 0, 0)'
+      && Math.round(desk.taskbarH) === 40 && desk.overlay === 'rgba(0, 0, 0, 0.45)',
+      `[61-23] ${key}: white desktop, black taskbar, translucent outside, no border, overlay on the desktop: ` + JSON.stringify(desk));
+    // 도구 패널은 흰 바탕(라벨 가시성)이고 세로 스크롤바 폭만큼 안쪽(오른쪽 12 + 스크롤바)에 있다.
+    const panelPos = await run(`(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]');const r=t.getBoundingClientRect();return {right:innerWidth-r.right,bg:getComputedStyle(t).backgroundColor};})()`);
+    check(near(panelPos.right, 12 + v.scroll.bar) && panelPos.bg === 'rgb(255, 255, 255)', `[61-23] ${key}: tools panel is white and clears the vertical scrollbar: ` + JSON.stringify({panelPos, bar: v.scroll.bar}));
     check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight&&r.top>=0;})()"),
       `[61-23] ${key}: exit button stays reachable over the scrolling screen`);
   }
+  // 배율: 1920×1080 @125% → 화면 1536×864 DIP·작업 영역 1536×824, RATIO 50% = 768×412 DIP. 화면은 물리 크기(1920×1080)로 그리고 안쪽을 1.25배 확대한다.
+  await chooseScreen('1920x1080'); await chooseScale(1.25);
+  let v125 = await virtual();
+  check(near(v125.screen.width, 1920) && near(v125.screen.height, 1080) && v125.window.width === 768 && v125.window.height === 412
+    && near(v125.shown.width, 960) && near(v125.shown.height, 515),
+    '[61-23] 125% keeps the screen size and enlarges the popup (768x412 DIP shown as 960x515): ' + JSON.stringify(v125));
+  await chooseScale(1);
   // 브라우저와 같은 해상도는 스크롤이 없다(F11 2560×1440). 일반 모드(높이 1300)는 세로만 스크롤하고 세로 스크롤바 때문에 가로 스크롤이 생기지 않는다.
   await chooseScreen('2560x1440');
   for (const [label, height, scrollY] of [['F11', 1440, false], ['normal', 1300, true]]) {
@@ -222,8 +232,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const c=document.querySelector('[data-testid=preview-virtual-scroll]');c.scrollLeft=c.scrollWidth;c.scrollTop=c.scrollHeight;
     const s=document.querySelector('[data-testid=preview-virtual-screen]').getBoundingClientRect(),r=c.getBoundingClientRect();return s.right<=r.right+0.5&&s.bottom<=r.bottom+0.5&&c.scrollLeft>0&&c.scrollTop>0;})()`),
     '[61-23] 2560x1440 can be scrolled to its bottom-right corner on a smaller browser');
-  // 같은 FIXED 팝업이 해상도에 따라 화면 대비 크기가 달라지고, 작은 화면에서는 90% 상한으로 실제로 줄어든다.
   await escape();
+  // 같은 FIXED 팝업이 해상도에 따라 화면 대비 크기가 달라지고, 작은 화면에서는 90% 상한으로 실제로 줄어든다.
   await render('TEXT', {width: 1300, height: 900, maximumWidth: 1600, maximumHeight: 1200}); await openPreview();
   const fixedOn = async key => { await chooseScreen(key); const v = await virtual();
     const image = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'virtual-' + key + '.png'), Buffer.from(image.data, 'base64'));
@@ -231,32 +241,27 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const small = await fixedOn('1366x768'), mid = await fixedOn('1920x1080'), big = await fixedOn('2560x1440');
   check(small.window.width === 1229 && small.window.height === 655 && mid.window.width === 1300 && mid.window.height === 900 && big.window.width === 1300,
     '[61-23] FIXED 1300x900 shrinks to 90% (1229x655) on 1366x768 and keeps its size on larger screens: ' + JSON.stringify({small, mid, big}));
-  check(small.ratio > mid.ratio && mid.ratio > big.ratio, '[61-23] the same popup takes a smaller share of larger virtual screens: ' + JSON.stringify({small, mid, big}));
-  await chooseScreen('CURRENT'); rect = await paper();
-  check(rect.width === 900 && rect.height === 810 && !(await virtual()), '[61-23] switching back to CURRENT returns to actual size (90% of 1000x900): ' + JSON.stringify(rect));
+  check(small.ratio > mid.ratio && mid.ratio > big.ratio, '[61-23] the same popup takes a smaller share of larger screens: ' + JSON.stringify({small, mid, big}));
   await escape();
   await unchanged('TEXT');
-  // FULLSCREEN 가상 화면: 작업 표시줄까지 덮는 표시 해상도 크기.
-  await render('TEXT', {sizeMode: 'FULLSCREEN'}); await openPreview(); await chooseScreen('1920x1080');
+  // FULLSCREEN: 작업 표시줄까지 덮는 표시 해상도 크기.
+  await render('TEXT', {sizeMode: 'FULLSCREEN'}); await openPreview(); await chooseScreen('2560x1440');
   let vf = await virtual();
-  check(vf.window.width === 1920 && vf.window.height === 1080 && near(vf.shown.left, 0) && near(vf.shown.top, 0), "[61-23] FULLSCREEN covers the whole virtual display: " + JSON.stringify(vf));
+  check(vf.window.width === 2560 && vf.window.height === 1440 && near(vf.shown.left, 0) && near(vf.shown.top, 0), '[61-23] FULLSCREEN covers the whole display: ' + JSON.stringify(vf));
   await escape();
-  // ④ FIT_TO_IMAGE 권장 크기도 선택한 작업 영역으로 다시 계산한다(모달 크기와 같은 기준). 큰 지정값(2400×1800)으로 90% 상한이 드러나게 한다.
+  // ④ FIT_TO_IMAGE 권장 크기도 선택한 작업 영역으로 다시 계산한다. 큰 지정값(2400×1800)으로 90% 상한이 드러나게 한다.
   await render('IMAGE', {width: 2400, height: 1800}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true, imageTitle: '', description: ''}); await openPreview(); await pause(400);
-  await chooseScreen("1920x1080"); vf = await virtual();
-  let fit = await run(`window.fitLayout({width:800,height:400},{width:1920,height:1040}).window`);
-  check(vf.window.width === fit.width && vf.window.height === fit.height, '[61-23] FIT_TO_IMAGE follows the 1920x1080 virtual work area: ' + JSON.stringify([vf.window, fit]));
-  await chooseScreen('CURRENT'); rect = await paper();
-  fit = await run(`window.fitLayout({width:800,height:400},{width:1000,height:900}).window`);
-  check(rect.width === Math.min(fit.width, 1000) && rect.height === Math.min(fit.height, 900), '[61-23] FIT_TO_IMAGE follows the current work area: ' + JSON.stringify([rect, fit]));
+  for (const [key, workArea] of [['1366x768', {width: 1366, height: 728}], ['2560x1440', {width: 2560, height: 1400}]]) {
+    await chooseScreen(key); vf = await virtual();
+    const fit = await run(`window.fitLayout({width:800,height:400},${JSON.stringify(workArea)}).window`);
+    check(vf.window.width === fit.width && vf.window.height === fit.height, `[61-23] FIT_TO_IMAGE follows the ${key} work area: ` + JSON.stringify([vf.window, fit]));
+  }
   await escape();
   await unchanged('IMAGE');
-  // 현재 모니터에서 목표가 브라우저보다 크면(작업 영역 > 뷰포트) 줄이지 않고 모달 컨테이너에 스크롤을 만든다. 넘치는 축은 위쪽부터 그려 잘리지 않는다.
-  await viewport(1000, 700, 1920, 1040); await pause(200);
-  await render('TEXT', {width: 900, height: 800}); await openPreview(); rect = await paper(); bar = await tools();
-  const containerScroll = await run(`(()=>{const c=document.querySelector('.MuiDialog-container');return {y:c.scrollHeight>c.clientHeight+0.5,x:c.scrollWidth>c.clientWidth+0.5,page:document.scrollingElement.scrollHeight>innerHeight+0.5};})()`);
-  check(rect.width === 900 && rect.height === 800 && rect.top >= -0.5 && containerScroll.y && !containerScroll.x && !containerScroll.page && !bar.text.includes('표시하지 못했습니다'),
-    '[61-23] CURRENT larger than the browser keeps its actual size and scrolls vertically: ' + JSON.stringify({rect, containerScroll, bar}));
+  // 현재 모니터 표시(*): 내 모니터 해상도(screen × devicePixelRatio)·배율과 같은 항목에 *를 붙이고 처음 선택도 그 값이다.
+  await viewport(1920, 1080, 1920, 1080); await pause(200);
+  await render('TEXT'); await openPreview(); bar = await tools();
+  check(bar.text.includes('1920×1080 *') && bar.text.includes('100% *'), '[61-23] the current monitor resolution and scale are selected first and marked with *: ' + JSON.stringify(bar));
   await escape(); await viewport(1000, 900); await pause(200);
   // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: FIXED·IMAGE 90%(2026-11-24 통일), RATIO 100%(비율 0.1~1.0 보정), 설정 최대값은 비IMAGE에만.
   const of = (type, o, a) => run(`JSON.stringify(window.dialogSizeOf(${JSON.stringify(type)}, ${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
@@ -327,14 +332,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       await run("document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').click()"); await pause(300);
     }
   }
-  // 첨부 전후로 영상 영역 크기·위치와 컨트롤 줄이 같다(예시 표시 OFF, 자리 유지).
+  // 첨부 전후로 영상 영역 크기·위치가 같다(예시 표시 OFF, 자리 유지). 2026-11-24 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면)은 삭제되어 없어야 한다.
   const areaBox = () => run(`(()=>{const a=document.querySelector('#root [data-testid=aspect-video-area],#root [data-testid=fill-video-area]');if(!a)return null;const r=a.getBoundingClientRect();return [Math.round(r.top),Math.round(r.width),Math.round(r.height),document.querySelector('#root').innerText.includes('00:00')].join(',');})()`);
   for (const [type, content] of [['VIDEO', {}], ['QUIZ', {videoEnabled: true}]]) {
     await render(type, {}, {...content, videoUrl: ''});
     const empty = await areaBox();
     await render(type, {}, {...content, videoUrl: '/missing.mp4'});
     const attached = await areaBox();
-    check(empty && empty === attached && empty.endsWith('true'), `${type} video area keeps the same box and controls before and after attaching: ` + JSON.stringify({empty, attached}));
+    check(empty && empty === attached && empty.endsWith('false'), `${type} video area keeps the same box before and after attaching and has no control mock line: ` + JSON.stringify({empty, attached}));
   }
   await render('VIDEO', {title: '실제 제목'}, {videoTitle: '실제 영상 제목', description: '실제 설명'});
   await openPreview();
@@ -344,7 +349,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // [61-13·14] 폐쇄망 DevTools에서 확인된 규칙을 넣어도 창 둥글기를 유지하고, IMAGE 일반 창의 그림자는 안쪽 Paper 하나만 보인다.
   const frame = async () => {
     await openPreview();
-    const value = await run(`(()=>{const d=document.querySelector('.MuiDialog-paper'),i=d.querySelector('.MuiPaper-root'),b=i.parentElement,r=e=>e.getBoundingClientRect();
+    const value = await run(`(()=>{const d=document.querySelector('[data-testid=preview-popup-window]'),i=d.querySelector('.MuiPaper-root'),b=i.parentElement,r=e=>e.getBoundingClientRect();
       return {dialogShadow:getComputedStyle(d).boxShadow!=='none',innerShadow:getComputedStyle(i).boxShadow!=='none',innerRadius:getComputedStyle(i).borderTopLeftRadius,pad:getComputedStyle(b).paddingTop,
         dialog:[r(d).width,r(d).height],inner:[r(i).width,r(i).height]};})()`);
     await escape();
@@ -467,6 +472,32 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check((await headSizes('#root')).length === 0 && (await headSizes('.MuiDialog-root')).length === 0, '[61-19] showHeader=false hides the header in both previews');
   await escape();
   await run('window.body1Rule=false');
+  // 2026-11-24 IMAGE ADAPTIVE 창 크기 맞춤: 원본 800×400, 헤더·푸터 표시, 제목·설명 없음. 가로 700 → 이미지 594×297 → 세로 297+2+96+40+64 = 499.
+  //   가로가 원본 창 폭(800+106=906)보다 크면 좌우 띠를 피할 수 없어 원본 기준(906×602)으로 줄이고 limited=true. 가로 없음 = 원본 기준.
+  const fitOf = (o, c, w) => run(`JSON.stringify(window.adaptiveFit(${JSON.stringify(o)}, ${JSON.stringify(c)}, {width:800,height:400}, ${JSON.stringify(w)}))`);
+  const noText = {imageTitle: '', description: '', imageSizeMode: 'ADAPTIVE'};
+  check(await fitOf({}, noText, 700) === JSON.stringify({window: {width: 700, height: 499}, image: {width: 594, height: 297}, limited: false}), '[IMAGE fit] width 700 gives a height without bands');
+  check(await fitOf({}, noText, 1000) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: true}), '[IMAGE fit] a width beyond the original is limited to the original');
+  check(await fitOf({}, noText, null) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: false}), '[IMAGE fit] no width uses the original size');
+  check(await fitOf({showHeader: false, showFooter: false}, noText, 700) === JSON.stringify({window: {width: 700, height: 395}, image: {width: 594, height: 297}, limited: false}), '[IMAGE fit] hidden header/footer shorten the window');
+  // 2026-11-24 동영상 고정 안내 문구: 미리보기·저장 값에 오른쪽 정렬 문단으로 붙고, 다시 붙여도 하나만, 불러올 때 떼면 사용자 설명만 남는다. 다른 유형은 그대로.
+  const fixed = await run('window.fixedText');
+  const applied = await run(`window.applyFixed('VIDEO', {description: '사용자 설명'})`);
+  check(applied.content.descriptionBlocks.length === 2 && applied.content.descriptionBlocks[0].alignment === 'RIGHT' && applied.content.descriptionBlocks[0].runs[0].text === fixed
+    && applied.content.descriptionBlocks[1].runs[0].text === '사용자 설명' && applied.content.description === fixed + String.fromCharCode(10) + '사용자 설명', '[fixed text] VIDEO gets the right-aligned fixed paragraph first');
+  check(await run(`JSON.stringify(window.applyFixed('VIDEO', window.applyFixed('VIDEO', {description: '사용자 설명'}).content).content.descriptionBlocks)`) === JSON.stringify(applied.content.descriptionBlocks),
+    '[fixed text] applying twice keeps one fixed paragraph');
+  const stripped = await run(`window.stripFixed(window.applyFixed('VIDEO', {description: '사용자 설명'}))`);
+  check(stripped.content.description === '사용자 설명' && stripped.content.descriptionBlocks.length === 1 && stripped.content.descriptionBlocks[0].runs[0].text === '사용자 설명',
+    '[fixed text] loading strips the fixed paragraph so the editor shows only the user text');
+  const quizOnly = await run(`window.applyFixed('QUIZ', {description: '퀴즈'})`), videoQuiz = await run(`window.applyFixed('QUIZ', {videoEnabled: true, description: ''})`);
+  check(quizOnly.content.description === '퀴즈' && !quizOnly.content.descriptionBlocks && videoQuiz.content.description === fixed && videoQuiz.content.descriptionBlocks.length === 1,
+    '[fixed text] plain QUIZ is unchanged, VIDEO+QUIZ without user text has only the fixed paragraph');
+  // VIDEO 설명 서식(descriptionBlocks)은 미리보기에서 문단 정렬을 살려 그린다(고정 문구 문단은 오른쪽 정렬).
+  await render('VIDEO', {}, {descriptionBlocks: applied.content.descriptionBlocks, description: applied.content.description});
+  const aligns = await run(`(()=>{const ps=Array.from(document.querySelectorAll('#root *')).filter(p=>p.children.length===0&&(p.textContent===${JSON.stringify(fixed)}||p.textContent==='사용자 설명'));return ps.map(p=>p.textContent===${JSON.stringify(fixed)}?'F:'+getComputedStyle(p).textAlign:'U:'+getComputedStyle(p).textAlign);})()`);
+  check(aligns.includes('F:right') && aligns.includes('U:left') && !(await run("document.querySelector('#root').innerText.includes('00:00')")),
+    '[VIDEO description] rich description keeps the right-aligned fixed paragraph and the control mock line is gone: ' + JSON.stringify(aligns));
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

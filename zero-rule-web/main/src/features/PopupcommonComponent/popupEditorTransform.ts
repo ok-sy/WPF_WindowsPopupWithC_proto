@@ -165,7 +165,7 @@ export const COMMON_CONTENT_KEYS: readonly string[] = ['useBackgroundOverlay', '
 export const CONTENT_KEYS_BY_TYPE: Readonly<Record<string, readonly string[]>> = {
   TEXT: ['plainText', 'textBlocks', 'showPlainText', 'bottomDescription', 'bottomDescriptionUrl', 'showBottomDescription'],
   IMAGE: ['imageTitle', 'imageUrl', 'description', 'showDescription', 'imageSizeMode', 'keepAspectRatio'],
-  VIDEO: ['videoTitle', 'videoUrl', 'description', 'showDescription', 'showControls', 'allowFullScreen',
+  VIDEO: ['videoTitle', 'videoUrl', 'description', 'descriptionBlocks', 'showDescription', 'showControls', 'allowFullScreen',
     'allowPlaybackRateChange', 'allowSeek', 'autoPlay', 'isLoop', 'defaultVolume'],
   // 콘텐츠 제목·설명 서식(surveyTitleBlocks·descriptionBlocks). 서버가 surveyTitle·description을 서식에서 파생한다.
   SURVEY: ['surveyTitle', 'surveyTitleBlocks', 'description', 'descriptionBlocks'],
