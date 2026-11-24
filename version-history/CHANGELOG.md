@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-09 — dev: 61-23_기준화면실제크기스크롤_수정
+
+- 이유 · 축소 표시(2026-11-24-08)로는 해상도별 비교는 되지만 1920 화면에서 2560 화면을 실제 크기로 볼 수 없었음. 브라우저보다 큰 화면·팝업은 스크롤을 허용하기로 결정해 이전의 바깥 스크롤 금지·1:1 안내 방식을 대체.
+- 변경 · 해상도 프리셋 화면을 축소 없이 실제 크기로 그리고 브라우저보다 크면 화면 영역에 가로·세로 스크롤, 해상도·팝업 크기 변경 시 처음 스크롤을 팝업 가운데로 맞춤. 현재 모니터도 목표 크기가 브라우저보다 크면 줄이지 않고 모달 컨테이너 스크롤(넘치는 축은 시작점 정렬). '1:1' 표기·안내 문구와 '가상 화면'·축척 표시 문구, `previewDisplaySize()`·`previewVirtualScale()` 제거, Paper 최대 크기 제한 해제.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-preview-61` 278건 통과(실제 크기 해상도 화면, 큰 화면 스크롤·끝 도달, 해상도 전환 시 팝업 가운데 스크롤, 현재 모니터 큰 팝업 세로 스크롤, 페이지 자체 스크롤 없음, 문구 제거). image-preview 48·guide-render 33·completion-ux-43 82·common-sample-69 63건, `tsc --noEmit`·eslint 통과. 미실행: 로그인 관리자 실화면, 폐쇄망.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-08 — dev: 61-23_기준화면가상화면_추가
 
 - 이유 · 실제 크기 미리보기에서 기준 화면 프리셋을 바꿔도 FIXED 팝업은 어느 해상도에서든 상한 아래라 크기가 같고, 모달을 브라우저에 1:1로 그려 해상도별로 팝업이 화면 대비 커지거나 줄어드는 차이를 비교할 수 없었음.

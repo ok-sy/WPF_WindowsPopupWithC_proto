@@ -127,7 +127,7 @@ export function previewWorkArea(key: PreviewScreenKey, current: Size): Size {
  * POL-01-03 : 최소 크기
  * ■ 실제 크기 미리보기 창 크기 계산(목표 크기)
  * - in : popup(AdminPopupDetail) sizeMode·width/height·widthRatio/heightRatio·maximumWidth/maximumHeight · fitWindow(Size | null) PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값, 이미 작업 영역 90% 이내) · workArea(Size) 작업 영역(현재 모니터 또는 기준 화면 프리셋)
- * - out: Size WPF가 같은 작업 영역에서 만들 창 크기(px, 정수 반올림). 브라우저 표시 한계는 previewDisplaySize가 따로 적용한다.
+ * - out: Size WPF가 같은 작업 영역에서 만들 창 크기(px, 정수 반올림). 브라우저보다 크면 줄이지 않고 모달 쪽에서 스크롤로 보여 준다(TODO61-23).
  * - WPF PopupWindow.ApplyWindowSize()와 같은 규칙(TODO61-23, 2026-11-24):
  *   IMAGE(FULLSCREEN 제외)는 설정 최대값 대신 작업 영역 90%. 비IMAGE FIXED는 min(설정 최대, 작업 영역 90%), RATIO는 min(설정 최대, 작업 영역 100%).
  *   (2026-11-24 WPF ScreenSafeAreaRatio 통일: FIXED 95% → 90%.)
@@ -150,30 +150,4 @@ export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | nul
   const maximumHeight = image ? areaHeight * screenRatio : Math.min(Math.max(popup.maximumHeight, minimum.height), areaHeight * screenRatio);
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
   return { width: Math.round(clamp(requestedWidth, minimum.width, maximumWidth)), height: Math.round(clamp(requestedHeight, minimum.height, maximumHeight)) };
-}
-
-/**
- * POL-08-01 : 공통 렌더러
- * ■ 가상 화면 축척(기준 화면 프리셋)
- * - in : display(Size) 프리셋 표시 해상도 · available(Size) 가상 화면을 그릴 수 있는 브라우저 영역
- * - out: number 0~1 축척. 가상 화면 전체(작업 영역·작업 표시줄·팝업)를 같은 비율로 줄여 브라우저에 넣는다(확대는 하지 않음)
- * - 프리셋 해상도에서 팝업이 화면 대비 얼마나 크거나 작은지, 90% 상한으로 줄어드는지를 비교하려고 쓴다(2026-11-24).
- *   팝업 내부는 실제 크기(WPF DIP)로 배치한 뒤 화면과 함께 축소하므로 줄바꿈·이미지 배치는 그 해상도의 실제 팝업과 같다.
- */
-export function previewVirtualScale(display: Size, available: Size): number {
-  const scale = Math.min(1, available.width / display.width, available.height / display.height);
-  return Number.isFinite(scale) && scale > 0 ? scale : 1;
-}
-
-/**
- * POL-08-01 : 공통 렌더러
- * ■ 브라우저에 그릴 모달 크기
- * - in : target(Size) previewDialogSize 목표 크기 · viewport(Size) 브라우저 표시 영역
- * - out: { size: Size 실제로 그릴 크기, actualSize: boolean 목표 크기 그대로(1:1)인지 }
- * - 현재 모니터 기준 1:1 표시에만 쓴다. 목표 크기가 브라우저 표시 영역에 들어가면 그대로 그리고, 넘치는 축만 표시 영역까지 줄여
- *   actualSize=false로 1:1 표시가 아님을 알린다(TODO61-23 결정 A). 프리셋은 가상 화면(previewVirtualScale)으로 화면 전체를 함께 축소한다.
- */
-export function previewDisplaySize(target: Size, viewport: Size): { size: Size; actualSize: boolean } {
-  const size = { width: Math.min(target.width, Math.floor(viewport.width)), height: Math.min(target.height, Math.floor(viewport.height)) };
-  return { size, actualSize: size.width === target.width && size.height === target.height };
 }

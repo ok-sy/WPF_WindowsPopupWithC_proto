@@ -1,11 +1,11 @@
 import type { AdminPopupDetail } from '@local/domain';
-import { Box, Button, Dialog, DialogContent, MenuItem, TextField, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, Button, Dialog, DialogContent, MenuItem, TextField } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
 import PopupPreview from './PopupPreview';
 import type { Size } from './imagePreviewLayout';
 import {
-  PREVIEW_SCREEN_PRESETS, type PreviewScreenKey, previewDialogSize, previewDisplaySize, previewOverlay, previewPositionAlign,
-  previewShadowMargin, previewVirtualScale, previewWorkArea, readBrowserViewport, readScreenWorkArea,
+  PREVIEW_SCREEN_PRESETS, type PreviewScreenKey, previewDialogSize, previewOverlay, previewPositionAlign,
+  previewShadowMargin, previewWorkArea, readBrowserViewport, readScreenWorkArea,
 } from './popupPreviewDialogLayout';
 
 /**
@@ -28,13 +28,11 @@ export interface PopupPreviewDialogProps {
 }
 
 const sameSize = (a: Size, b: Size) => a.width === b.width && a.height === b.height;
-/** 기준 화면 선택박스·안내 문구에 쓰는 'W×H' 표기. */
+/** 기준 화면 선택박스에 쓰는 'W×H' 표기. */
 export const formatPreviewSize = (size: Size) => `${Math.round(size.width)}×${Math.round(size.height)}`;
-/** 목표 크기가 브라우저 표시 영역보다 커서 1:1로 그리지 못할 때 도구 영역에 보이는 안내(현재 모니터 기준). */
-export const ACTUAL_SIZE_LIMITED_NOTICE = '브라우저 표시 영역이 부족해 실제 크기(1:1)로 표시하지 못했습니다.';
-/** 가상 화면 위쪽에 도구 묶음이 들어갈 자리(px). 도구가 가상 화면을 가리지 않게 한다. */
+/** 해상도 화면 위쪽에 도구 묶음이 들어갈 자리(px). 도구가 화면을 가리지 않게 한다. */
 const VIRTUAL_TOOL_SPACE = 64;
-/** 가상 화면 좌우·아래 여백(px). */
+/** 해상도 화면 둘레 여백(px). */
 const VIRTUAL_EDGE = 16;
 /** 가상 화면 바탕(바탕화면)·작업 표시줄 색. 팝업 흰 판과 구분되는 무채색. */
 const VIRTUAL_DESKTOP = '#64748b';
@@ -49,11 +47,11 @@ const VIRTUAL_TASKBAR = '#1e293b';
  * - out: onClose() 종료 버튼·Esc·(Overlay 미사용 시) 배경 클릭·팝업 안 닫기 동작 · 화면: 실제 크기 팝업 또는 가상 화면, 배경 Overlay, '기준 화면' 선택박스, "미리보기 종료 (Esc)" 버튼
  * - 팝업 정보를 받아 크기 모드·9개 위치·배경 Overlay를 WPF와 같이 적용한 모달로 PopupPreview를 보여준다.
  *   '기준 화면' 선택(TODO61-23, 2026-11-24):
- *   · 현재 모니터: 팝업 크기를 현재 모니터 작업 영역(screen.availWidth/availHeight)으로 계산하고 브라우저에 1:1로 그린다.
- *     배경·배치는 브라우저 표시 영역이며, 목표 크기가 넘치는 축만 줄이고 안내한다.
- *   · 해상도 프리셋: 그 해상도의 가상 화면(작업 영역 + 작업 표시줄)을 그리고 팝업을 그 안에 WPF와 같은 크기·위치로 놓은 뒤,
- *     가상 화면 전체를 같은 축척으로 줄여 브라우저에 넣는다. 해상도를 바꾸면 팝업이 화면 대비 커지거나 작아지고,
- *     90% 상한에 걸리면 실제로 줄어드는 것을 비교할 수 있다. FULLSCREEN은 가상 화면 전체(작업 표시줄 포함)를 덮는다.
+ *   · 현재 모니터: 팝업 크기를 현재 모니터 작업 영역(screen.availWidth/availHeight)으로 계산하고 브라우저에 실제 크기로 그린다.
+ *     배경·배치는 브라우저 표시 영역이며, 브라우저보다 크면 줄이지 않고 모달 바깥 영역에 스크롤을 만든다.
+ *   · 해상도 프리셋: 그 해상도 크기의 화면(작업 영역 + 작업 표시줄)을 실제 크기로 그리고 팝업을 그 안에 WPF와 같은 크기·위치로 놓는다.
+ *     해상도를 바꾸면 팝업이 화면 대비 커지거나 작아지고, 90% 상한에 걸리면 실제로 줄어드는 것을 비교할 수 있다.
+ *     화면이 브라우저보다 크면 화면 영역에 가로·세로 스크롤을 만든다(축소하지 않음). FULLSCREEN은 화면 전체(작업 표시줄 포함)를 덮는다.
  *   선택은 이 모달의 미리보기 상태로만 남고 popup·저장 데이터에 들어가지 않는다.
  *   입력 폼·저장 API에 의존하지 않으며 전달받은 popup을 바꾸지 않는다.
  *   설문 응답 등 시연 상태는 모달 안 PopupPreview에만 있고, 닫으면 내용이 언마운트되어 다시 열 때 초기화된다.
@@ -85,22 +83,35 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   const [alignX, alignY] = previewPositionAlign(popup);
   // 인라인 미리보기의 권장 크기(recommendedSize)는 현재 모니터 기준이라, 프리셋을 고르면 모달 안 PopupPreview가 다시 계산할 때까지 쓰지 않는다.
   const target = previewDialogSize(popup, measuredSize ?? (screenKey === 'CURRENT' ? recommendedSize : null), workArea);
-  const { size, actualSize } = previewDisplaySize(target, viewport);
+  // 브라우저보다 큰 축은 바깥(모달 컨테이너)에 스크롤을 두고, 그 축은 가장자리 정렬 대신 시작점에 붙여 잘리지 않게 한다.
+  const overflowX = target.width > viewport.width, overflowY = target.height > viewport.height;
   const radius = previewShadowMargin(popup) ? 0 : '6px';
   const preview = <PopupPreview popup={popup} showBackground={false} showPlaceholders={showPlaceholders} onClose={onClose} onRecommendedSize={setMeasuredSize} workArea={workArea} />;
 
-  // 가상 화면: 도구 자리·여백을 뺀 영역에 맞춰 화면 전체를 축소한다. FULLSCREEN 창은 작업 표시줄까지 덮는 표시 해상도 크기다.
-  const scale = preset ? previewVirtualScale(preset.display, {
-    width: viewport.width - VIRTUAL_EDGE * 2, height: viewport.height - VIRTUAL_TOOL_SPACE - VIRTUAL_EDGE }) : 1;
+  // 해상도 화면의 FULLSCREEN 창은 작업 표시줄까지 덮는 표시 해상도 크기다.
   const virtualWindow = preset && fullScreen ? preset.display : target;
+  // 해상도를 바꾸거나 팝업 크기가 바뀌면 스크롤을 팝업 가운데로 맞춘다(큰 화면은 왼쪽 위부터 그려지므로 팝업이 가장자리에 걸리지 않게).
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const windowRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open || !preset) return;
+    const frame = requestAnimationFrame(() => {
+      const container = scrollRef.current, popupWindow = windowRef.current;
+      if (!container || !popupWindow) return;
+      const c = container.getBoundingClientRect(), w = popupWindow.getBoundingClientRect();
+      container.scrollLeft += (w.left + w.width / 2) - (c.left + c.width / 2);
+      container.scrollTop += (w.top + w.height / 2) - (c.top + c.height / 2);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, preset, virtualWindow.width, virtualWindow.height]);
 
   const screenSelect = (
     <TextField select size="small" label="기준 화면" value={screenKey} onChange={(event) => changeScreen(event.target.value as PreviewScreenKey)}
       sx={{ minWidth: 260, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 3 }}>
-      <MenuItem value="CURRENT">현재 모니터 (작업 영역 {formatPreviewSize(screenWorkArea)}, 1:1)</MenuItem>
+      <MenuItem value="CURRENT">현재 모니터 (작업 영역 {formatPreviewSize(screenWorkArea)})</MenuItem>
       {PREVIEW_SCREEN_PRESETS.map((item) => (
         <MenuItem key={item.key} value={item.key}>
-          {formatPreviewSize(item.display)} 가상 화면 (작업 영역 {formatPreviewSize(item.workArea)})
+          {formatPreviewSize(item.display)} (작업 영역 {formatPreviewSize(item.workArea)})
         </MenuItem>
       ))}
     </TextField>
@@ -109,12 +120,6 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
     <Button variant="contained" color="primary" aria-label="실제 크기 미리보기 종료" onClick={onClose} sx={{ boxShadow: 3 }}>
       미리보기 종료 (Esc)
     </Button>
-  );
-  const notice = (text: string, warning: boolean) => (
-    <Typography role="status" variant="caption"
-      sx={{ bgcolor: 'background.paper', color: warning ? 'warning.dark' : 'text.primary', px: 1, py: 0.5, borderRadius: 1, boxShadow: 3 }}>
-      {text}
-    </Typography>
   );
   const toolsSx = { position: 'fixed', right: 12, zIndex: (theme: { zIndex: { modal: number } }) => theme.zIndex.modal + 1,
     display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 'calc(100vw - 24px)' } as const;
@@ -125,16 +130,16 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
         slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(15, 23, 42, 0.92)' } },
           paper: { sx: { bgcolor: 'transparent', backgroundImage: 'none', boxShadow: 'none', overflow: 'hidden' } } }}>
         <Box data-testid="preview-dialog-tools" sx={{ ...toolsSx, top: 12 }}>
-          {notice(`가상 화면 ${formatPreviewSize(preset.display)} · 팝업 ${formatPreviewSize(virtualWindow)} · 축척 ${Math.round(scale * 100)}%`, false)}
           {screenSelect}
           {exitButton}
         </Box>
-        <Box sx={{ position: 'absolute', top: VIRTUAL_TOOL_SPACE, left: 0, right: 0, bottom: VIRTUAL_EDGE, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-          <Box data-testid="preview-virtual-screen" data-scale={scale}
-            sx={{ width: preset.display.width * scale, height: preset.display.height * scale, position: 'relative', overflow: 'hidden', flexShrink: 0,
+        {/* 화면이 브라우저보다 크면 이 영역에 스크롤이 생긴다. 작은 화면은 가운데(margin auto), 큰 화면은 왼쪽 위부터 그려 잘리지 않고 처음 스크롤은 팝업 가운데. */}
+        <Box data-testid="preview-virtual-scroll" ref={scrollRef}
+          sx={{ position: 'absolute', top: VIRTUAL_TOOL_SPACE, left: 0, right: 0, bottom: 0, overflow: 'auto', display: 'flex', p: `0 ${VIRTUAL_EDGE}px ${VIRTUAL_EDGE}px` }}>
+          <Box data-testid="preview-virtual-screen"
+            sx={{ width: preset.display.width, height: preset.display.height, position: 'relative', overflow: 'hidden', flexShrink: 0, m: 'auto',
               outline: '1px solid rgba(255, 255, 255, 0.5)' }}>
-            <Box sx={{ width: preset.display.width, height: preset.display.height, transform: `scale(${scale})`, transformOrigin: '0 0',
-              position: 'relative', bgcolor: VIRTUAL_DESKTOP }}>
+            <Box sx={{ width: preset.display.width, height: preset.display.height, position: 'relative', bgcolor: VIRTUAL_DESKTOP }}>
               {/* 작업 표시줄: 표시 해상도 - 작업 영역 높이(프리셋 가정 40). */}
               <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: preset.display.height - preset.workArea.height, bgcolor: VIRTUAL_TASKBAR }} />
               {/* WPF Background Overlay는 모니터 전체를 덮는다. */}
@@ -143,7 +148,7 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
                 sx={{ position: 'absolute', left: 0, top: 0, width: fullScreen ? preset.display.width : preset.workArea.width,
                   height: fullScreen ? preset.display.height : preset.workArea.height, display: 'flex',
                   justifyContent: fullScreen ? 'flex-start' : alignX, alignItems: fullScreen ? 'flex-start' : alignY }}>
-                <Box data-testid="preview-popup-window"
+                <Box data-testid="preview-popup-window" ref={windowRef}
                   sx={{ position: 'relative', width: virtualWindow.width, height: virtualWindow.height, flexShrink: 0, overflow: 'hidden',
                     borderRadius: fullScreen ? 0 : radius, display: 'flex', flexDirection: 'column' }}>
                   {preview}
@@ -163,21 +168,20 @@ export default function PopupPreviewDialog({ popup, open, onClose, recommendedSi
   const slotProps = {
     backdrop: { sx: { backgroundColor: overlay.enabled ? `rgba(0, 0, 0, ${overlay.opacity})` : 'transparent' } },
     // 영상 창은 WPF처럼 그림자가 없고(ApplyVideoWindowSurface), 일반 창 그림자는 안쪽 흰 판이 그리므로 Paper 그림자는 항상 없다.
-    // 화면 상한은 previewDialogSize(작업 영역)·previewDisplaySize(브라우저 표시 영역)가 이미 적용했다.
-    // 예전 96vw/96vh 이중 제한은 1:1 크기를 다시 줄여 100%로 바꿨다(TODO61-23).
-    paper: fullScreen ? undefined : { sx: { width: size.width, height: size.height, borderRadius: radius, bgcolor: 'transparent',
-      boxShadow: 'none', maxWidth: '100vw', maxHeight: '100vh', m: 0, overflow: 'hidden' } },
+    // 화면 상한은 previewDialogSize(작업 영역)가 이미 적용했다. 브라우저보다 커도 줄이지 않고(최대 크기 제한 없음) 컨테이너 스크롤로 본다(TODO61-23).
+    paper: fullScreen ? undefined : { sx: { width: target.width, height: target.height, borderRadius: radius, bgcolor: 'transparent',
+      boxShadow: 'none', maxWidth: 'none', maxHeight: 'none', m: 0, flexShrink: 0, overflow: 'hidden' } },
   };
 
   return (
     <Dialog open={open} onClose={(_, reason) => {
       if (reason !== 'backdropClick' || !overlay.enabled) onClose();
     }} slotProps={slotProps} fullScreen={fullScreen} maxWidth={false}
-      sx={fullScreen ? undefined : { '& .MuiDialog-container': { justifyContent: alignX, alignItems: alignY } }}>
+      sx={fullScreen ? undefined : { '& .MuiDialog-container': { justifyContent: overflowX ? 'flex-start' : alignX, alignItems: overflowY ? 'flex-start' : alignY,
+        overflow: overflowX || overflowY ? 'auto' : undefined } }}>
       {/* 헤더 닫기 버튼이 없으므로(WPF와 동일) 푸터를 숨겨도 종료 버튼과 Esc로 미리보기를 닫는다. 위쪽 배치 팝업과 겹치지 않게 아래로 옮긴다.
-          도구 묶음(1:1 안내 + 기준 화면 선택 + 종료 버튼)은 화면 위에 떠 있어 팝업 표시 공간을 줄이지 않는다(TODO61-23). */}
+          도구 묶음(기준 화면 선택 + 종료 버튼)은 화면 위에 떠 있어 팝업 표시 공간을 줄이지 않는다(TODO61-23). */}
       <Box data-testid="preview-dialog-tools" sx={{ ...toolsSx, ...(!fullScreen && alignY === 'flex-start' ? { bottom: 12 } : { top: 12 }) }}>
-        {!fullScreen && !actualSize && notice(`${ACTUAL_SIZE_LIMITED_NOTICE} (목표 ${formatPreviewSize(target)})`, true)}
         {screenSelect}
         {exitButton}
       </Box>
