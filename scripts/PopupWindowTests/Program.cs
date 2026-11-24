@@ -306,6 +306,12 @@ internal static class Program
                 Rect videoPlate = PlateOnScreen(video.Window);
                 Check(Near(videoPlate, textPlate) && Math.Abs(video.Window.ActualWidth - (text.Window.ActualWidth - 48)) < 1,
                     $"[video inset] {type} {mode} {position} {w}x{h}: video plate {videoPlate} matches TEXT plate {textPlate} (window {video.Window.ActualWidth} vs {text.Window.ActualWidth})");
+                // 표시된 창의 재계산(배율·작업 영역 변경 경로)에서도 두 번 줄지 않는다. 요청 높이 = 최대 높이(900)일 때 WPF가 MaxHeight 축소에 맞춰
+                // Height를 먼저 낮추던 문제(900 → 804) 회귀 검사.
+                var refresh = typeof(PopupWindow).GetMethod("RefreshForDisplayChange", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                refresh.Invoke(video.Window, null); refresh.Invoke(text.Window, null);
+                Rect refreshed = PlateOnScreen(video.Window);
+                Check(Near(refreshed, PlateOnScreen(text.Window)), $"[video inset] {type} {mode} {position} {w}x{h}: plate stays after a display refresh ({refreshed})");
                 ShutdownClose(video.Window);
             }
             ShutdownClose(text.Window);

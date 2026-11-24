@@ -60,8 +60,7 @@ fixtures.push(
     content: {imageUrl: '/media/demo-image.jpg', imageTitle: '이미지 제목', description: '이미지 설명입니다.', showDescription: true, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true}},
   {...base, popupId: 'PARITY-VIDEO', popupType: 'VIDEO', title: 'VIDEO 비교', width: 720, height: 640, questions: [], completionRatio: 0,
     content: {videoUrl: '/media/demo-video.mp4', videoTitle: '영상 제목', description: '영상 설명입니다.', showDescription: true, showControls: true}},
-  // 높이 840: 작업 영역 90% 상한(2026-11-24, 작업 영역 높이 약 947인 측정 환경에서 852)에 걸리지 않게 한다.
-  {...base, popupId: 'PARITY-VIDEO-QUIZ', popupType: 'QUIZ', title: 'VIDEO+QUIZ 비교', width: 720, height: 840, passingScore: 0, completionRatio: 0,
+  {...base, popupId: 'PARITY-VIDEO-QUIZ', popupType: 'QUIZ', title: 'VIDEO+QUIZ 비교', width: 720, height: 900, passingScore: 0, completionRatio: 0,
     content: {videoEnabled: true, videoUrl: '/media/demo-video.mp4', videoTitle: '영상 퀴즈', surveyTitle: '영상 퀴즈', description: '영상을 보고 답하세요.'},
     questions: [{questionId: 31, title: '영상에서 확인한 내용은?', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: true, isScored: true, questionScore: 1, sortOrder: 1,
       options: [option(41, '첫째', {isCorrect: true}), option(42, '둘째')]}]},

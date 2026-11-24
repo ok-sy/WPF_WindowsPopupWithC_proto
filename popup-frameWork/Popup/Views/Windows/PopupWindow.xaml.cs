@@ -414,14 +414,17 @@ namespace Popup.Views.Windows
             double inset = WindowInset;
             if (inset <= 0) return;
             // 최소·최대·크기 모두 같은 양을 빼서 다른 유형의 흰 판(창 - 48)과 같은 범위를 쓴다. AUTO는 내용 크기를 따르므로 최소·최대만 줄인다.
+            // 요청 크기는 최대값을 줄이기 전에 읽는다. 표시된 창에서는 MaxHeight를 줄이는 순간 WPF가 Height를 새 최대값으로 낮춰,
+            // 그 값에서 다시 빼면 두 번 줄어든다(요청 높이 = 최대 높이일 때 900 → 804, 2026-11-25 수정).
+            double requestedWidth = Width, requestedHeight = Height;
             MinWidth = Math.Max(0, MinWidth - inset * 2);
             MinHeight = Math.Max(0, MinHeight - inset * 2);
             if (double.IsFinite(MaxWidth)) MaxWidth = Math.Max(MinWidth, MaxWidth - inset * 2);
             if (double.IsFinite(MaxHeight)) MaxHeight = Math.Max(MinHeight, MaxHeight - inset * 2);
             if (SizeToContent == SizeToContent.Manual)
             {
-                if (double.IsFinite(Width)) Width = Math.Clamp(Width - inset * 2, MinWidth, MaxWidth);
-                if (double.IsFinite(Height)) Height = Math.Clamp(Height - inset * 2, MinHeight, MaxHeight);
+                if (double.IsFinite(requestedWidth)) Width = Math.Clamp(requestedWidth - inset * 2, MinWidth, MaxWidth);
+                if (double.IsFinite(requestedHeight)) Height = Math.Clamp(requestedHeight - inset * 2, MinHeight, MaxHeight);
             }
         }
 

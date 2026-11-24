@@ -241,7 +241,7 @@ node scripts/verify-popup-parity.cjs
 
 웹·WPF 나란히: [PARITY-VIDEO.side.png](61_popup_layout_guide/PARITY-VIDEO.side.png)
 
-### VIDEO+QUIZ (720×840)
+### VIDEO+QUIZ (720×900)
 
 샘플 ID `PARITY-VIDEO-QUIZ`
 
