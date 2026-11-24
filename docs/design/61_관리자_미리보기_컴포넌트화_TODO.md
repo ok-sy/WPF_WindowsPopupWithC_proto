@@ -370,6 +370,12 @@
 - 변경: WPF `PopupWindow.xaml.cs` `FixedSizeSafeAreaRatio`(0.95)·`ImageSafeAreaRatio`(0.90)·AUTO 리터럴 0.9를 `ScreenSafeAreaRatio = 0.90` 하나로 통합. 웹 `previewDialogSize()` FIXED 상한 90%(`PREVIEW_SCREEN_SAFE_AREA_RATIO`), RgstPop 최대 크기 입력 안내·가이드 표시 문구, 레이아웃 가이드 그림·문서, WPF 인터페이스·정책 사양 갱신.
 - 검증: `PopupWindowTests` 660건(FIXED 20000×20000 → 작업 영역 90% 검사 추가), 로컬 `Popup.BehaviorTests` 1644건, `verify-popup-preview-61` 255(FIXED 기대값 950×760 → 900×720, 작은 작업 영역 266×247 → 252×234), guide-render 33, image-preview 48, popup-parity 54, `tsc --noEmit`·eslint 통과. 실화면 미실행.
 
+### 후속 — 기준 화면 프리셋을 가상 화면으로 표시 (2026-11-24, 웹)
+
+- 배경: 프리셋을 바꿔도 FIXED 팝업(예: 560×420)은 어느 해상도에서든 90% 상한 아래라 크기가 같고, 모달을 브라우저에 1:1로 그려 화면 대비 크기 차이가 보이지 않았다.
+- 변경: 프리셋을 고르면 그 해상도의 가상 화면(작업 영역 + 작업 표시줄 높이 40, 바탕 무채색)을 그리고 팝업을 WPF와 같은 크기·9방향 위치로 놓은 뒤, 가상 화면 전체를 같은 축척(`previewVirtualScale`, 최대 1)으로 줄여 브라우저에 넣는다. 팝업 내부는 실제 크기로 배치한 뒤 화면과 함께 축소하므로 줄바꿈·이미지 배치는 그 해상도의 실제 팝업과 같다. Overlay는 가상 화면 전체를 덮고, FULLSCREEN은 작업 표시줄까지 덮는 표시 해상도 크기. 도구 묶음은 위쪽 64px 자리에 고정하고 '가상 화면 W×H · 팝업 W×H · 축척 N%'를 표시한다. 상한으로 실제로 줄어드는 경우를 보기 위해 프리셋 1366×768(작업 영역 1366×728)을 추가했다. '현재 모니터'는 기존대로 1:1(넘치는 축만 제한·안내).
+- 검증: `verify-popup-preview-61` 273건(가상 화면 축척·위치, RATIO 50% 960×520·1200×700·683×364, FIXED 1300×900이 1366×768에서 1229×655로 줄고 큰 화면일수록 화면 대비 비율이 작아짐, FULLSCREEN 1920×1080, FIT_TO_IMAGE 가상 작업 영역 추종, 현재 모니터 복귀·1:1 제한 안내, 바깥 스크롤 없음, 종료 버튼 도달성)과 프리셋별 캡처 육안 확인. image-preview 48·guide-render 33·completion-ux-43 82·common-sample-69 63·parity 54, `tsc --noEmit`·eslint 통과. 로그인 관리자 실화면 미확인.
+
 ### 완료 기준
 
 - [ ] 730×900 사례와 전체 유형의 동일 데이터·동일 조건 결과가 남아 있고, 차이가 발생한 단계와 수정 근거를 확인할 수 있다. 목표 크기가 브라우저에 들어가는 조건에서는 F11 전환만으로 모달 크기가 달라지던 사례를 재검증한다.

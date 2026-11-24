@@ -62,7 +62,7 @@ export function previewOverlay(popup: AdminPopupDetail): { enabled: boolean; opa
  * - out: 'CURRENT'(현재 모니터) | 해상도 프리셋 키
  * - 실제 크기 모달 상단 '기준 화면' 선택박스 값. 팝업 크기 계산에만 쓰고 저장 데이터에는 넣지 않는다.
  */
-export type PreviewScreenKey = 'CURRENT' | '1920x1080' | '2560x1440';
+export type PreviewScreenKey = 'CURRENT' | '1366x768' | '1920x1080' | '2560x1440';
 
 /**
  * POL-08-01 : 공통 렌더러
@@ -71,6 +71,8 @@ export type PreviewScreenKey = 'CURRENT' | '1920x1080' | '2560x1440';
  *   WPF CurrentWorkArea()(모니터 WorkingArea, DIP)에 대응한다. 브라우저 CSS px = WPF DIP(배율 100%) 기준이다.
  */
 export const PREVIEW_SCREEN_PRESETS: ReadonlyArray<{ key: Exclude<PreviewScreenKey, 'CURRENT'>; display: Size; workArea: Size }> = [
+  // 작은 노트북 화면: 90% 상한(1229×655)에 걸려 팝업이 실제로 줄어드는 경우를 비교한다(2026-11-24 가상 화면 추가).
+  { key: '1366x768', display: { width: 1366, height: 768 }, workArea: { width: 1366, height: 728 } },
   { key: '1920x1080', display: { width: 1920, height: 1080 }, workArea: { width: 1920, height: 1040 } },
   { key: '2560x1440', display: { width: 2560, height: 1440 }, workArea: { width: 2560, height: 1400 } },
 ];
@@ -152,11 +154,24 @@ export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | nul
 
 /**
  * POL-08-01 : 공통 렌더러
+ * ■ 가상 화면 축척(기준 화면 프리셋)
+ * - in : display(Size) 프리셋 표시 해상도 · available(Size) 가상 화면을 그릴 수 있는 브라우저 영역
+ * - out: number 0~1 축척. 가상 화면 전체(작업 영역·작업 표시줄·팝업)를 같은 비율로 줄여 브라우저에 넣는다(확대는 하지 않음)
+ * - 프리셋 해상도에서 팝업이 화면 대비 얼마나 크거나 작은지, 90% 상한으로 줄어드는지를 비교하려고 쓴다(2026-11-24).
+ *   팝업 내부는 실제 크기(WPF DIP)로 배치한 뒤 화면과 함께 축소하므로 줄바꿈·이미지 배치는 그 해상도의 실제 팝업과 같다.
+ */
+export function previewVirtualScale(display: Size, available: Size): number {
+  const scale = Math.min(1, available.width / display.width, available.height / display.height);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
  * ■ 브라우저에 그릴 모달 크기
  * - in : target(Size) previewDialogSize 목표 크기 · viewport(Size) 브라우저 표시 영역
  * - out: { size: Size 실제로 그릴 크기, actualSize: boolean 목표 크기 그대로(1:1)인지 }
- * - 목표 크기가 브라우저 표시 영역에 들어가면 그대로 그린다. 넘치는 축만 표시 영역까지 줄이고(기존 모달 제한 방식, TODO61-23 결정 A)
- *   actualSize=false로 1:1 표시가 아님을 알린다. 바깥 스크롤은 만들지 않는다.
+ * - 현재 모니터 기준 1:1 표시에만 쓴다. 목표 크기가 브라우저 표시 영역에 들어가면 그대로 그리고, 넘치는 축만 표시 영역까지 줄여
+ *   actualSize=false로 1:1 표시가 아님을 알린다(TODO61-23 결정 A). 프리셋은 가상 화면(previewVirtualScale)으로 화면 전체를 함께 축소한다.
  */
 export function previewDisplaySize(target: Size, viewport: Size): { size: Size; actualSize: boolean } {
   const size = { width: Math.min(target.width, Math.floor(viewport.width)), height: Math.min(target.height, Math.floor(viewport.height)) };

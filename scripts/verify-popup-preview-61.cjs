@@ -166,7 +166,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await viewport(view[0], view[1], screen[0], screen[1]); await pause(200);
     await render('IMAGE', {width: 730, height: 900}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
     const scroll = await outerScroll(), bar = await tools();
-    check(rect.width === 730 && rect.height === 900 && !bar.text.includes('1:1'), `[61-23] IMAGE 730x900 is 1:1 in ${label} mode: ` + JSON.stringify({rect, bar}));
+    check(rect.width === 730 && rect.height === 900 && !bar.text.includes('표시하지 못했습니다'), `[61-23] IMAGE 730x900 is 1:1 in ${label} mode: ` + JSON.stringify({rect, bar}));
     check(!scroll.page && !scroll.wrapper && scroll.backdrop, `[61-23] ${label}: backdrop covers the viewport without page or wrapper scroll: ` + JSON.stringify(scroll));
     check(bar.select && bar.text.includes('기준 화면'), `[61-23] ${label}: dialog tools show the reference screen select: ` + JSON.stringify(bar));
     await escape();
@@ -176,33 +176,67 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('IMAGE', {width: 730, height: 1000}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
   check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height is capped by 90% of the work area (936), not the browser: ' + JSON.stringify(rect));
   await escape();
-  // ③ 기준 화면 프리셋 전환: 뷰포트 1000×900(화면 동일)에서 TEXT RATIO 50% → 현재 500×450, 1920×1080(작업 1920×1040) → 960×520,
-  //    2560×1440(작업 2560×1400) → 목표 1280×700을 샘플 설정 최대 너비 1200으로 줄인 1200×700이 폭 1000을 넘어 1000×700으로 줄이고 1:1 아님을 안내. 현재 모니터로 돌아오면 원래 크기.
+  // ③ 기준 화면: 현재 모니터는 1:1(뷰포트 1000×900, 화면 동일 → TEXT RATIO 50% = 500×450). 프리셋은 그 해상도의 가상 화면(작업 영역 + 작업 표시줄)을
+  //    그리고 팝업을 WPF와 같은 크기로 놓은 뒤 화면 전체를 같은 축척으로 줄인다. 팝업 크기는 offsetWidth(변환 전 CSS px)로 잰다.
+  const virtual = () => run(`(()=>{const s=document.querySelector('[data-testid=preview-virtual-screen]'),w=document.querySelector('[data-testid=preview-popup-window]');
+    if(!s||!w)return null;const sr=s.getBoundingClientRect(),wr=w.getBoundingClientRect();
+    return {scale:Number(s.dataset.scale),screen:{left:sr.left,top:sr.top,width:sr.width,height:sr.height},window:{width:w.offsetWidth,height:w.offsetHeight},
+      shown:{left:wr.left-sr.left,top:wr.top-sr.top,width:wr.width,height:wr.height}};})()`);
+  const near = (a, b) => Math.abs(a - b) < 1;
   await viewport(1000, 900); await pause(200);
   await render('TEXT', {sizeMode: 'RATIO'}); await openPreview(); rect = await paper();
   let bar = await tools();
-  check(rect.width === 500 && rect.height === 450 && bar.text.includes('현재 모니터') && bar.text.includes('1000×900'), '[61-23] CURRENT uses the screen work area and shows it: ' + JSON.stringify({rect, bar}));
-  await chooseScreen('1920x1080'); rect = await paper(); bar = await tools();
-  check(rect.width === 960 && rect.height === 520 && bar.text.includes('1920×1080') && !bar.text.includes('1:1'), '[61-23] 1920x1080 preset sizes RATIO against 1920x1040: ' + JSON.stringify({rect, bar}));
-  await chooseScreen('2560x1440'); rect = await paper(); bar = await tools();
-  let scroll = await outerScroll();
-  check(rect.width === 1000 && rect.height === 700 && bar.text.includes('1:1') && bar.text.includes('1200×700'), '[61-23] a preset larger than the browser is limited to the viewport and says it is not 1:1: ' + JSON.stringify({rect, bar}));
-  check(!scroll.page && !scroll.wrapper && scroll.backdrop, '[61-23] limited preset still has no outer scroll: ' + JSON.stringify(scroll));
-  check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight&&r.top>=0;})()"), '[61-23] exit button stays reachable when the popup is limited');
+  check(rect.width === 500 && rect.height === 450 && bar.text.includes('현재 모니터') && bar.text.includes('1000×900') && !(await virtual()),
+    '[61-23] CURRENT draws 1:1 against the screen work area without a virtual screen: ' + JSON.stringify({rect, bar}));
+  // 가상 화면 영역 = 뷰포트 - 좌우 16·위 도구 64·아래 16 = 968×820. 1920×1080 → 축척 min(968/1920, 820/1080) = 0.5042.
+  for (const [key, display, popupSize] of [['1920x1080', [1920, 1080], [960, 520]], ['2560x1440', [2560, 1440], [1200, 700]], ['1366x768', [1366, 768], [683, 364]]]) {
+    await chooseScreen(key); const v = await virtual(); bar = await tools();
+    const scale = Math.min(1, 968 / display[0], 820 / display[1]);
+    check(v && near(v.scale, scale) && near(v.screen.width, display[0] * scale) && near(v.screen.height, display[1] * scale) && v.screen.top >= 64 - 0.5,
+      `[61-23] ${key} draws a scaled virtual screen below the tools: ` + JSON.stringify(v));
+    check(v.window.width === popupSize[0] && v.window.height === popupSize[1] && near(v.shown.width, popupSize[0] * scale) && near(v.shown.height, popupSize[1] * scale),
+      `[61-23] ${key}: RATIO 50% popup is ${popupSize.join('x')} (설정 최대 1200 적용) and scales with the screen: ` + JSON.stringify(v));
+    check(bar.text.includes('가상 화면 ' + display.join('×')) && bar.text.includes(popupSize.join('×')) && bar.text.includes('축척 ' + Math.round(scale * 100) + '%') && !bar.text.includes('표시하지 못했습니다'),
+      `[61-23] ${key}: tools show the virtual screen, popup size and scale: ` + JSON.stringify(bar));
+    const scroll = await outerScroll();
+    check(!scroll.page && !scroll.wrapper, `[61-23] ${key}: no page or wrapper scroll: ` + JSON.stringify(scroll));
+    check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=64&&r.top>=0;})()"),
+      `[61-23] ${key}: exit button stays reachable above the virtual screen`);
+  }
+  // 같은 FIXED 팝업이 해상도에 따라 화면 대비 크기가 달라지고, 작은 화면에서는 90% 상한으로 실제로 줄어든다.
+  await escape();
+  await render('TEXT', {width: 1300, height: 900, maximumWidth: 1600, maximumHeight: 1200}); await openPreview();
+  const fixedOn = async key => { await chooseScreen(key); const v = await virtual();
+    const image = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'virtual-' + key + '.png'), Buffer.from(image.data, 'base64'));
+    return {window: v.window, ratio: v.shown.width / v.screen.width}; };
+  const small = await fixedOn('1366x768'), mid = await fixedOn('1920x1080'), big = await fixedOn('2560x1440');
+  check(small.window.width === 1229 && small.window.height === 655 && mid.window.width === 1300 && mid.window.height === 900 && big.window.width === 1300,
+    '[61-23] FIXED 1300x900 shrinks to 90% (1229x655) on 1366x768 and keeps its size on larger screens: ' + JSON.stringify({small, mid, big}));
+  check(small.ratio > mid.ratio && mid.ratio > big.ratio, '[61-23] the same popup takes a smaller share of larger virtual screens: ' + JSON.stringify({small, mid, big}));
   await chooseScreen('CURRENT'); rect = await paper();
-  check(rect.width === 500 && rect.height === 450, '[61-23] switching back to CURRENT restores the size: ' + JSON.stringify(rect));
+  check(rect.width === 900 && rect.height === 810 && !(await virtual()), '[61-23] switching back to CURRENT returns to 1:1 (90% of 1000x900): ' + JSON.stringify(rect));
   await escape();
   await unchanged('TEXT');
+  // FULLSCREEN 가상 화면: 작업 표시줄까지 덮는 표시 해상도 크기.
+  await render('TEXT', {sizeMode: 'FULLSCREEN'}); await openPreview(); await chooseScreen('1920x1080');
+  let vf = await virtual();
+  check(vf.window.width === 1920 && vf.window.height === 1080 && near(vf.shown.left, 0) && near(vf.shown.top, 0), "[61-23] FULLSCREEN covers the whole virtual display: " + JSON.stringify(vf));
+  await escape();
   // ④ FIT_TO_IMAGE 권장 크기도 선택한 작업 영역으로 다시 계산한다(모달 크기와 같은 기준). 큰 지정값(2400×1800)으로 90% 상한이 드러나게 한다.
   await render('IMAGE', {width: 2400, height: 1800}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true, imageTitle: '', description: ''}); await openPreview(); await pause(400);
-  for (const [key, workArea] of [['1920x1080', {width: 1920, height: 1040}], ['CURRENT', {width: 1000, height: 900}]]) {
-    await chooseScreen(key); rect = await paper();
-    const fit = await run(`window.fitLayout({width:800,height:400},${JSON.stringify(workArea)}).window`);
-    const expected = {width: Math.min(fit.width, 1000), height: Math.min(fit.height, 900)};
-    check(rect.width === expected.width && rect.height === expected.height, `[61-23] FIT_TO_IMAGE follows the ${key} work area (${JSON.stringify(fit)}): ` + JSON.stringify(rect));
-  }
+  await chooseScreen("1920x1080"); vf = await virtual();
+  let fit = await run(`window.fitLayout({width:800,height:400},{width:1920,height:1040}).window`);
+  check(vf.window.width === fit.width && vf.window.height === fit.height, '[61-23] FIT_TO_IMAGE follows the 1920x1080 virtual work area: ' + JSON.stringify([vf.window, fit]));
+  await chooseScreen('CURRENT'); rect = await paper();
+  fit = await run(`window.fitLayout({width:800,height:400},{width:1000,height:900}).window`);
+  check(rect.width === Math.min(fit.width, 1000) && rect.height === Math.min(fit.height, 900), '[61-23] FIT_TO_IMAGE follows the current work area: ' + JSON.stringify([rect, fit]));
   await escape();
   await unchanged('IMAGE');
+  // 현재 모니터에서 목표가 브라우저보다 크면(작업 영역 > 뷰포트) 넘치는 축만 줄이고 1:1 아님을 안내한다.
+  await viewport(1000, 700, 1920, 1040); await pause(200);
+  await render('TEXT', {width: 900, height: 800}); await openPreview(); rect = await paper(); bar = await tools();
+  check(rect.width === 900 && rect.height === 700 && bar.text.includes('표시하지 못했습니다') && bar.text.includes('900×800'), '[61-23] CURRENT larger than the browser is limited and says it is not 1:1: ' + JSON.stringify({rect, bar}));
+  await escape(); await viewport(1000, 900); await pause(200);
   // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: FIXED·IMAGE 90%(2026-11-24 통일), RATIO 100%(비율 0.1~1.0 보정), 설정 최대값은 비IMAGE에만.
   const of = (type, o, a) => run(`JSON.stringify(window.dialogSizeOf(${JSON.stringify(type)}, ${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
   const area = {width: 1000, height: 800};

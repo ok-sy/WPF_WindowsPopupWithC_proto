@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-08 — dev: 61-23_기준화면가상화면_추가
+
+- 이유 · 실제 크기 미리보기에서 기준 화면 프리셋을 바꿔도 FIXED 팝업은 어느 해상도에서든 상한 아래라 크기가 같고, 모달을 브라우저에 1:1로 그려 해상도별로 팝업이 화면 대비 커지거나 줄어드는 차이를 비교할 수 없었음.
+- 변경 · 프리셋 선택 시 그 해상도의 가상 화면(작업 영역 + 작업 표시줄)을 그리고 팝업을 WPF와 같은 크기·위치로 놓은 뒤 화면 전체를 같은 축척으로 줄여 표시(`previewVirtualScale`). Overlay는 가상 화면 전체, FULLSCREEN은 표시 해상도 크기. 도구 묶음에 '가상 화면 · 팝업 크기 · 축척' 표시. 90% 상한으로 줄어드는 경우를 보기 위해 프리셋 1366×768(작업 영역 1366×728) 추가. '현재 모니터'는 기존 1:1 표시 유지.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `scripts/verify-popup-preview-61.cjs`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-preview-61` 273건 통과(가상 화면 축척·팝업 크기, FIXED 1300×900이 1366×768에서 1229×655로 축소, 해상도별 화면 대비 비율, FULLSCREEN, FIT_TO_IMAGE, 현재 모니터 복귀, 바깥 스크롤·종료 버튼). 프리셋별 캡처 육안 확인. image-preview 48·guide-render 33·completion-ux-43 82·common-sample-69 63·popup-parity 54건, `tsc --noEmit`·eslint 통과. 미실행: 로그인 관리자 실화면, 폐쇄망.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-07 — dev: 61-23_화면상한90통일_수정
 
 - 이유 · WPF 팝업 화면 상한이 FIXED 95%·AUTO 90%·IMAGE 90%로 나뉘어 있었고 설계 11·15·23 어디에도 값이 다른 근거가 없음(TODO61-23 대조 중 확인). 화면 가장자리 여유와 VM 복귀·해상도 변경 시 버튼 가시성을 위해 90%로 통일.
