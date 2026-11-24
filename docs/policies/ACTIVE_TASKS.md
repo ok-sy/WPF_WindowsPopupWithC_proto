@@ -18,6 +18,7 @@
 |---|---|---|---|---|
 | F100 | VM 복귀 시 팝업·Overlay 재배치 | 진행 | VM 실환경 재현과 display 진단 로그 확인(다음 반입본 적용 후) | [TODO76](../design/76_WPF_VM복귀_팝업배치_회귀검증_TODO.md) |
 | F100 | PopupAlert 외곽선 두께 | 진행 | Windows 100%·고DPI 실화면 확인 | [20261116](../design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md) |
+| F100 | 퀴즈 완료창 섀도우 적용 | 대기 | QUIZ·VIDEO+QUIZ 완료용 스타일 구현 후 공통 안내와 DPI·잘림 회귀 확인 | [섀도우 후속 TODO](../design/20261116_WPF_PopupAlert_외곽선두께_조정_TODO.md#후속-퀴즈-완료창-섀도우-적용) |
 | F100 | 유형별 실화면 왕복(TEXT·IMAGE·SURVEY/QUIZ·Overlay·키보드·DPI) | 대기 | R1 회차에서 관리자 저장→DB→재조회→WPF 실행 | [TODO53-11~12](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
 | F100 | VIDEO 장치·저사양·Horizon 측정 | 대기 | 장비·환경 확보 후 R3 측정 | [TODO53-13~14](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md)·[24](../design/24_VIDEO_저사양_PC_CPU_개선_TODO.md) |
 | F100 | 최종 Header 로고 반영 | 대기 | 로고 이미지·디자인 확정 입력 | [TODO25](../design/25_WPF_팝업_Header_외곽_UI_개선_TODO.md)·[53-15](../design/53_프로젝트검증_후속구현_문서정합_통합검증_TODO.md) |
