@@ -11,9 +11,9 @@
 | 파일(`zero-rule-web/main/src/features/PopupcommonComponent/`) | 역할 |
 |---|---|
 | `InlinePopupPreview.tsx` | 제목 + "실제 크기로 보기" 버튼 + `PopupPreview`. 부모 영역의 남은 높이를 채운다. 부모 높이가 없으면 미리보기 영역을 최소 320px로 표시한다. 예시 표시(`showPlaceholders`)는 실제 크기 모달과 같이 기본 OFF |
-| `PopupPreviewDialog.tsx` | 실제 크기 모달. 값이 없는 제목·설명·이미지에 입력 안내 문구를 표시하지 않는다. 영상 미첨부여도 영상 영역은 첨부 후와 같은 크기의 검정 영역 + 재생 아이콘으로 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다(`showPlaceholders` 기본 false. 가이드·샘플만 켬, 2026-11-18). 크기 모드·브라우저 창 크기 변경·9개 위치·배경 Overlay·배경 클릭 차단·Esc/종료 버튼 |
+| `PopupPreviewDialog.tsx` | 실제 크기 모달. 값이 없는 제목·설명·이미지에 입력 안내 문구를 표시하지 않는다. 영상 미첨부여도 영상 영역은 첨부 후와 같은 크기의 검정 영역 + 재생 아이콘으로 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다(`showPlaceholders` 기본 false. 가이드·샘플만 켬, 2026-11-18). 크기 모드·브라우저 창 크기 변경·9개 위치·배경 Overlay·배경 클릭 차단·Esc/종료 버튼. 팝업 크기는 '기준 화면'(현재 모니터 작업 영역 `screen.availWidth/availHeight`, 또는 1920×1080·2560×1440 프리셋의 가상 작업 영역 1920×1040·2560×1400)으로 WPF와 같은 상한을 적용해 계산하고, 브라우저 표시 영역을 넘는 축만 줄여 '1:1 아님'을 안내한다. 선택박스는 종료 버튼 옆 떠 있는 도구 묶음에 있으며 선택은 미리보기 상태로만 남는다(TODO61-23, 2026-11-24) |
 | `popupPreviewDialogLayout.ts` | 모달 크기(`previewDialogSize`)·위치(`previewPositionAlign`)·가장자리 여백(`previewEdgeMargin`)·Overlay 값(`previewOverlay`) 순수 함수 |
-| `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다 |
+| `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다. 선택 prop `workArea`로 IMAGE 권장 창 크기 계산 작업 영역을 받는다(없으면 현재 모니터 작업 영역, TODO61-23) |
 
 ### Props
 

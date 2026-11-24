@@ -15,7 +15,7 @@
 | 영역 | WPF 소스 | 웹 미리보기 |
 | --- | --- | --- |
 | 창 크기 | `PopupWindow` | `sizeMode` FIXED / RATIO / FULLSCREEN, 최소·최대 크기(FULLSCREEN은 입력 숨김, IMAGE는 최소만 — 최대는 작업 영역 90%). WPF의 `AUTO`는 관리자 웹에서 선택하지 않는다 |
-| 표시 위치 | `PopupWindow` | `content.popupPosition`(9방향, 기본 CENTER). **실제 크기로 보기** 모달은 브라우저 창을 작업 영역으로 보고 9방향 가장자리에 배치한다. 모달 크기는 WPF 창 크기이고, 일반 창은 그 안에 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF와 같은 그림자를 그린다(영상 창·FULLSCREEN은 여백·그림자 0, 2026-11-17 모든 유형으로 확대). FULLSCREEN은 위치 무시. 편집기 안 패널 미리보기는 위치를 반영하지 않는다 |
+| 표시 위치 | `PopupWindow` | `content.popupPosition`(9방향, 기본 CENTER). **실제 크기로 보기** 모달은 브라우저 표시 영역의 9방향 가장자리에 배치한다(크기 계산 기준은 아래 IMAGE 항목의 작업 영역, TODO61-23). 모달 크기는 WPF 창 크기이고, 일반 창은 그 안에 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF와 같은 그림자를 그린다(영상 창·FULLSCREEN은 여백·그림자 0, 2026-11-17 모든 유형으로 확대). FULLSCREEN은 위치 무시. 편집기 안 패널 미리보기는 위치를 반영하지 않는다 |
 | 헤더·푸터 | `Views/Windows/PopupWindow.xaml` | 헤더 제목, 푸터, 다시 보지 않기, Footer 버튼(`닫기`/`바로가기`, SURVEY·QUIZ는 `제출`) |
 | 폰트 크기 | `PopupWindow`, 콘텐츠 View | `content.headerFontSize` / `bodyFontSize` / `footerFontSize`, 10~40 보정, 비우면 기본 크기 |
 | 배경 | `PopupWindow` | `useBackgroundOverlay`, `backgroundOverlayOpacity`(기본 0.45) |
@@ -31,7 +31,7 @@
 - IMAGE 크기 계산: `imagePreviewLayout.ts`가 WPF `ImagePopupView`(설계 15·23)와 같은 규칙으로 계산한다. FILL 모드와 `imageAreaRatio`·`descriptionPosition`·오른쪽 설명 폭은 설계 23에서 제거했으며 설명은 항상 이미지 아래다.
   - ADAPTIVE: `popup.width/height`는 창 크기이며(TODO58로 content에서 이동) 이미지는 원본보다 확대하지 않고 비율을 유지해 맞춘다.
   - FIT_TO_IMAGE: `popup.width/height`(없으면 원본)는 이미지 콘텐츠 영역 크기이며(비율 고정 시 영역 안 contain) 팝업 창 크기를 다시 계산한다(TODO58). 창 크롬은 WPF `PopupWindow`와 같이 가로 104(콘텐츠 여백 28+28, 외곽 여백 24+24, 본문 테두리 0), 세로 96(24+24, 24+24)에 Header 40·Footer 80을 더하고 이미지 테두리 1+1을 포함한다. 편집기 패널에 그 값을 안내하고 **실제 크기로 보기** 모달이 그 크기로 열린다.
-  - 창 최대는 작업 영역의 90%다. 미리보기는 모니터 작업 영역 대신 브라우저 창 크기(`window.innerWidth/innerHeight`)를 쓰므로 실제 PC와 차이가 날 수 있다.
+  - 창 최대는 작업 영역의 90%다. 미리보기는 2026-11-24(TODO61-23)부터 브라우저 창 크기 대신 현재 모니터 작업 영역(`screen.availWidth/availHeight`) 또는 '기준 화면' 프리셋으로 계산하고, 브라우저 표시 영역을 넘는 축만 줄여 안내한다. `screen.avail*`은 브라우저 확대율·멀티 모니터 조건에서 WPF `CurrentWorkArea()`와 다를 수 있어 실측으로 확인한다.
 - VIDEO 컨트롤: WPF는 로컬/HTTP(S) HTML5 영상 모두 영상 하단에 겹치는 WPF Overlay 컨트롤바를 사용하고 WebView2 네이티브 controls는 표시하지 않는다. 웹 미리보기는 영상 영역 아래에 한 줄 텍스트 모형(시간·탐색 제한·배속·전체화면)만 그리며 실제 재생·탐색·버퍼링·전체화면·시청량 동기화를 검증하지 않는다.
 - 일반 VIDEO·동영상+퀴즈 미리보기의 시청 비율 슬라이더는 2026-11-13 삭제했다(관리자 화면에서 재생 진행에 따른 버튼 활성화 시연 불필요). 시청 판정(누적 시청 비율을 소수점 4자리에서 내림해 완료 기준과 비교, 설계 53-16)은 WPF에서만 수행한다.
 - 동영상+퀴즈: 영상 영역에 설명이 보이면 퀴즈 머리말의 같은 설명을 생략한다(WPF는 같은 제목도 생략, 미리보기는 원래 제목을 상단에 1번만 표시). 영상 설명을 숨기면 퀴즈 머리말에 표시한다(설계 53-16).

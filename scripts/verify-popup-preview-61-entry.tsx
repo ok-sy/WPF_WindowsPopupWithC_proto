@@ -5,7 +5,7 @@ import InlinePopupPreview from '../zero-rule-web/main/src/features/PopupcommonCo
 import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog';
 import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
-import { previewDialogSize } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
+import { previewDialogSize, readBrowserViewport, readScreenWorkArea } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
 // POL-08-01 : 공통 렌더러
 // ■ 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
 const root = createRoot(document.getElementById('root')!);
@@ -50,5 +50,9 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
 (window as any).expectedSize = (available: Size, fit: Size | null = null) => previewDialogSize((window as any).currentPopup, fit, available);
 // POL-01-03 : 최소 크기 — 샘플 popup 값만 바꿔 실제 크기 모달 크기를 계산한다(렌더링 없음).
 (window as any).dialogSize = (overrides: Record<string, unknown>, available: Size) => previewDialogSize(samplePopup('TEXT', overrides), null, available);
+// TODO61-23: 유형·모드별 목표 크기(작업 영역 기준)와 화면 정보 대체값 확인용.
+(window as any).dialogSizeOf = (popupType: string, overrides: Record<string, unknown>, workArea: Size) => previewDialogSize(samplePopup(popupType, overrides), null, workArea);
+(window as any).readScreenWorkArea = readScreenWorkArea;
+(window as any).readBrowserViewport = readBrowserViewport;
 (window as any).fitLayout = (natural: Size, workArea: Size) => fitToImageLayout((window as any).currentPopup, natural, workArea);
 (window as any).renderHost('TEXT');

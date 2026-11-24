@@ -296,7 +296,7 @@ function layoutLimits(popup) {
   if (quiz && video) lines.push({title: '영상(퀴즈 포함)', text: '높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)'});
   if (quiz) lines.push({title: '설문·퀴즈', text: '콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)'});
   lines.push({title: '푸터', text: '최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34'});
-  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 브라우저 90%' : '인라인 최소 높이 320 · 실제 크기 모달 브라우저 96%'});
+  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%' : '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 95%(RATIO 100%)'});
   return lines;
 }
 function esc(text) { return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }

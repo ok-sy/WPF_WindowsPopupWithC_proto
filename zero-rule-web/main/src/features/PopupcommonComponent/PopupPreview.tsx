@@ -11,7 +11,7 @@ import { POPUP_COLORS, POPUP_LAYOUT } from './popupLayout';
 import { readTextBlocks } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
-import { PREVIEW_WINDOW_SHADOW, previewShadowMargin } from './popupPreviewDialogLayout';
+import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, readScreenWorkArea } from './popupPreviewDialogLayout';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import { quizRequiresPassing } from './popupQuizRule';
@@ -42,6 +42,8 @@ interface PopupPreviewProps {
   onClose?: () => void;
   /** IMAGE 권장 창 크기(FIT_TO_IMAGE, 또는 크기 미지정 ADAPTIVE에서 WPF가 다시 계산할 팝업 창 크기). 그 외에는 null. */
   onRecommendedSize?: (size: Size | null) => void;
+  /** IMAGE 권장 창 크기 계산에 쓸 작업 영역(TODO61-23). 실제 크기 모달이 선택한 기준 화면을 넘긴다. 없으면 현재 모니터 작업 영역(screen.availWidth/availHeight). */
+  workArea?: Size;
   /**
    * 예시 표시(값이 없는 항목의 입력 안내 문구·영상 영역 안내 문구). 기본 false(OFF): WPF와 같이 비워 둔다. 미첨부 영상 영역은 검정 + 재생 아이콘으로 자리만 유지.
    * 가이드·샘플처럼 빈 자리를 보여 줄 화면만 true로 켠다(2026-11-18, 20261110 후속 6).
@@ -346,6 +348,7 @@ function PopupBody({
  * ■ 팝업 미리보기
  * - in : popup(AdminPopupDetail) 미리 볼 팝업 설정 · showBackground?(boolean) 배경 여백·Overlay를 미리보기 안에 그릴지, 기본 true(모달은 false)
  *        · showPlaceholders?(boolean) 값이 없는 항목의 예시 문구·영상 영역 안내 문구 표시, 기본 false(WPF와 같이 비움, 영상 영역은 자리 유지)
+ *        · workArea?(Size) IMAGE 권장 창 크기 계산 작업 영역, 없으면 현재 모니터 작업 영역(readScreenWorkArea)
  * - out: onClose?() 푸터 버튼·나중에 보기·보조 닫기로 팝업을 닫을 때 · onRecommendedSize?(size: Size | null) IMAGE 권장 창 크기(없으면 null) · 화면: 헤더(제목·로고)·콘텐츠 제목·본문(TEXT/IMAGE/VIDEO/SURVEY/QUIZ)·푸터(다시 보지 않기·나중에 보기·제출·닫기) 미리보기
  * - 팝업 설정을 받아 WPF 팝업 창과 같은 구성으로 그리고, 설문 응답·퀴즈 채점으로 완료 조건을 시연한다(VIDEO·VIDEO+QUIZ는 시청 기준 충족 상태로 그린다).
  *   서버 API를 호출하지 않으며 전달받은 popup을 바꾸지 않는다. 시연 상태는 이 컴포넌트 안에만 있고 팝업 ID·문항이 바뀌면 초기화된다.
@@ -357,6 +360,7 @@ export default function PopupPreview({
   hidePlaceholders: legacyHidePlaceholders,
   onClose,
   onRecommendedSize,
+  workArea: requestedWorkArea,
 }: PopupPreviewProps) {
   const [answers, setAnswers] = useState<Record<number, PreviewAnswer>>({});
   const [submissionStatus, setSubmissionStatus] = useState('');
@@ -477,15 +481,20 @@ export default function PopupPreview({
   const imageUrl = popup.popupType === 'IMAGE' ? String(popup.content.imageUrl ?? '').trim() : '';
   const [naturalImage, setNaturalImage] = useState<{ url: string; size: Size } | null>(null);
   const naturalImageSize = naturalImage && naturalImage.url === imageUrl ? naturalImage.size : null;
-  const [workArea, setWorkArea] = useState<Size>(() =>
-    typeof window === 'undefined'
-      ? { width: 1920, height: 1040 }
-      : { width: window.innerWidth, height: window.innerHeight });
+  // TODO61-23: IMAGE 권장 크기는 WPF처럼 모니터 작업 영역 기준이다(이전에는 브라우저 내부 크기라 F11 여부에 따라 달라졌다).
+  // 호출자가 작업 영역(기준 화면 프리셋 등)을 넘기면 그 값을 쓰고, 없으면 현재 모니터 작업 영역을 읽어 창 이동·배율 변경(resize) 때 갱신한다.
+  const [screenWorkArea, setScreenWorkArea] = useState<Size>(readScreenWorkArea);
   useEffect(() => {
-    const resize = () => setWorkArea({width: window.innerWidth, height: window.innerHeight});
+    if (requestedWorkArea) return;
+    const resize = () => setScreenWorkArea((previous) => {
+      const next = readScreenWorkArea();
+      return previous.width === next.width && previous.height === next.height ? previous : next;
+    });
+    resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
-  }, []);
+  }, [requestedWorkArea]);
+  const workArea = requestedWorkArea ?? screenWorkArea;
   const fitLayout =
     popup.popupType === 'IMAGE' && imageSizeMode(popup) === 'FIT_TO_IMAGE' && naturalImageSize
       ? fitToImageLayout(popup, naturalImageSize, workArea)

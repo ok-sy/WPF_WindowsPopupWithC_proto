@@ -33,7 +33,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   socket.on('message', raw => {const m = JSON.parse(raw); if (waiting.has(m.id)) {const p = waiting.get(m.id); waiting.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result);}});
   const send = (method, params = {}) => new Promise((resolve, reject) => {const key = ++id; waiting.set(key, {resolve, reject}); socket.send(JSON.stringify({id: key, method, params}));});
   const run = async expression => {const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true}); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value;};
-  const viewport = (width, height) => send('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: false});
+  // TODO61-23: 화면(screen.avail*)도 함께 지정한다. 기본은 화면 = 뷰포트(작업 영역 기준 계산이 예전 브라우저 기준과 같은 조건), 다르게 줄 때만 screen 인자를 쓴다.
+  const viewport = (width, height, screenWidth = width, screenHeight = height) => send('Emulation.setDeviceMetricsOverride', {width, height, screenWidth, screenHeight, deviceScaleFactor: 1, mobile: false});
   const clickAt = async (x, y) => {
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', {type, x, y, button: 'left', clickCount: 1});
     await pause(350);
@@ -80,8 +81,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run("getComputedStyle(document.querySelector('.MuiBackdrop-root')).backgroundColor") === 'rgba(0, 0, 0, 0.45)', 'Overlay uses backgroundOverlayOpacity');
   // POL-08-03 : Dialog 호환 — slotProps.paper로 옮긴 Paper 스타일(여백·최대 크기·overflow·테두리 둥글기)이 그대로 적용된다.
   const paperStyle = await run("(()=>{const s=getComputedStyle(document.querySelector('.MuiDialog-paper'));return {margin:s.margin,overflow:s.overflow,maxWidth:s.maxWidth,maxHeight:s.maxHeight,radius:s.borderRadius};})()");
+  // TODO61-23(2026-11-24): 96vw/96vh 이중 제한을 없애 Paper 최대 크기는 뷰포트 100%(1000x900)다.
   // 2026-11-17: Paper = WPF 창 크기(여백 0, 투명), 그림자 여백 24·둥근 모서리·그림자는 안쪽 흰 판(PopupPreview)이 그린다.
-  check(paperStyle.margin === '0px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '960px' && paperStyle.maxHeight === '864px' && paperStyle.radius === '0px',
+  check(paperStyle.margin === '0px' && paperStyle.overflow === 'hidden' && paperStyle.maxWidth === '1000px' && paperStyle.maxHeight === '900px' && paperStyle.radius === '0px',
     '[TODO67] Paper slot keeps margin/max size/overflow: ' + JSON.stringify(paperStyle));
   check(await run("Array.from(document.querySelectorAll('.MuiDialog-root button')).some(b=>b.getAttribute('aria-label')==='실제 크기 미리보기 종료')"), 'Dialog has its own exit button');
   check(!(await run(`document.querySelector('.MuiDialog-root').textContent.includes(${JSON.stringify(NOTICE)})`)), '[73-27] The actual size dialog does not show the size notice');
@@ -96,7 +98,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const panel = await run(`(()=>{const r=document.querySelector('.MuiDialog-paper .MuiPaper-root').getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height}})()`);
   check(rect.left === 0 && rect.top === 0 && panel.left === 24 && panel.top === 24 && panel.width === 512 && panel.height === 372,
     'TOP_LEFT window sits at the edge and the white panel keeps the 24px WPF shadow margin (560x420 → 512x372): ' + JSON.stringify({rect, panel}));
-  check(await run("Math.round(document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect().bottom)") === 888, 'Exit button moves to the bottom for top-aligned popups');
+  // TODO61-23: 종료 버튼은 기준 화면 선택과 함께 도구 묶음(preview-dialog-tools) 안에 있다. 묶음이 아래 12px로 옮겨 가고 버튼은 그 안에 있다.
+  check(await run("(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]').getBoundingClientRect();const b=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return Math.round(t.bottom)===888&&b.bottom<=t.bottom&&b.top>=t.top&&b.top>450;})()"), 'Exit button moves to the bottom for top-aligned popups');
   await escape();
   await render('VIDEO', {}, {popupPosition: 'BOTTOM_RIGHT'}); await openPreview(); rect = await paper();
   check(rect.right === 1000 && rect.bottom === 900, 'VIDEO window has no edge margin at BOTTOM_RIGHT: ' + JSON.stringify(rect));
@@ -149,6 +152,69 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     await escape();
   }
   await unchanged('IMAGE');
+  // TODO61-23: 실제 크기 미리보기 작업 영역. 팝업 크기는 화면 작업 영역(screen.avail*) 또는 기준 화면 프리셋, 배경·배치는 브라우저 표시 영역.
+  const tools = () => run(`(()=>{const t=document.querySelector('[data-testid=preview-dialog-tools]');return {text:t?t.innerText:'',select:!!t&&!!t.querySelector('[role=combobox]')};})()`);
+  const outerScroll = () => run(`(()=>{const d=document.scrollingElement,c=document.querySelector('.MuiDialog-container');
+    return {page:d.scrollHeight>innerHeight+0.5||d.scrollWidth>innerWidth+0.5,wrapper:!!c&&(c.scrollHeight>c.clientHeight+0.5||c.scrollWidth>c.clientWidth+0.5),
+      backdrop:(()=>{const b=document.querySelector('.MuiBackdrop-root').getBoundingClientRect();return Math.round(b.width)===innerWidth&&Math.round(b.height)===innerHeight;})()};})()`);
+  const chooseScreen = async value => {
+    await run(`(()=>{const c=document.querySelector('[data-testid=preview-dialog-tools] [role=combobox]');c.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));})()`); await pause(300);
+    await run(`document.querySelector('li[data-value=${JSON.stringify(value)}]').click()`); await pause(400);
+  };
+  // ① 730×900 회귀: 브라우저 일반 모드(내부 높이 945)·작업 영역 1920×1040 → 1:1 730×900. F11(내부 1080, 작업 영역 1080)도 730×900. 예전 계산은 945×0.9=851.
+  for (const [label, view, screen] of [['normal', [1920, 945], [1920, 1040]], ['F11', [1920, 1080], [1920, 1080]]]) {
+    await viewport(view[0], view[1], screen[0], screen[1]); await pause(200);
+    await render('IMAGE', {width: 730, height: 900}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
+    const scroll = await outerScroll(), bar = await tools();
+    check(rect.width === 730 && rect.height === 900 && !bar.text.includes('1:1'), `[61-23] IMAGE 730x900 is 1:1 in ${label} mode: ` + JSON.stringify({rect, bar}));
+    check(!scroll.page && !scroll.wrapper && scroll.backdrop, `[61-23] ${label}: backdrop covers the viewport without page or wrapper scroll: ` + JSON.stringify(scroll));
+    check(bar.select && bar.text.includes('기준 화면'), `[61-23] ${label}: dialog tools show the reference screen select: ` + JSON.stringify(bar));
+    await escape();
+  }
+  // ② 작업 영역 90% 상한이 실제 가용 높이에 들어가면 그대로: 작업 영역 1040 → 상한 936. 1000 요청은 936이고 내부 945에 들어간다.
+  await viewport(1920, 945, 1920, 1040); await pause(200);
+  await render('IMAGE', {width: 730, height: 1000}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
+  check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height is capped by 90% of the work area (936), not the browser: ' + JSON.stringify(rect));
+  await escape();
+  // ③ 기준 화면 프리셋 전환: 뷰포트 1000×900(화면 동일)에서 TEXT RATIO 50% → 현재 500×450, 1920×1080(작업 1920×1040) → 960×520,
+  //    2560×1440(작업 2560×1400) → 목표 1280×700을 샘플 설정 최대 너비 1200으로 줄인 1200×700이 폭 1000을 넘어 1000×700으로 줄이고 1:1 아님을 안내. 현재 모니터로 돌아오면 원래 크기.
+  await viewport(1000, 900); await pause(200);
+  await render('TEXT', {sizeMode: 'RATIO'}); await openPreview(); rect = await paper();
+  let bar = await tools();
+  check(rect.width === 500 && rect.height === 450 && bar.text.includes('현재 모니터') && bar.text.includes('1000×900'), '[61-23] CURRENT uses the screen work area and shows it: ' + JSON.stringify({rect, bar}));
+  await chooseScreen('1920x1080'); rect = await paper(); bar = await tools();
+  check(rect.width === 960 && rect.height === 520 && bar.text.includes('1920×1080') && !bar.text.includes('1:1'), '[61-23] 1920x1080 preset sizes RATIO against 1920x1040: ' + JSON.stringify({rect, bar}));
+  await chooseScreen('2560x1440'); rect = await paper(); bar = await tools();
+  let scroll = await outerScroll();
+  check(rect.width === 1000 && rect.height === 700 && bar.text.includes('1:1') && bar.text.includes('1200×700'), '[61-23] a preset larger than the browser is limited to the viewport and says it is not 1:1: ' + JSON.stringify({rect, bar}));
+  check(!scroll.page && !scroll.wrapper && scroll.backdrop, '[61-23] limited preset still has no outer scroll: ' + JSON.stringify(scroll));
+  check(await run("(()=>{const r=document.querySelector('[aria-label=\"실제 크기 미리보기 종료\"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight&&r.top>=0;})()"), '[61-23] exit button stays reachable when the popup is limited');
+  await chooseScreen('CURRENT'); rect = await paper();
+  check(rect.width === 500 && rect.height === 450, '[61-23] switching back to CURRENT restores the size: ' + JSON.stringify(rect));
+  await escape();
+  await unchanged('TEXT');
+  // ④ FIT_TO_IMAGE 권장 크기도 선택한 작업 영역으로 다시 계산한다(모달 크기와 같은 기준). 큰 지정값(2400×1800)으로 90% 상한이 드러나게 한다.
+  await render('IMAGE', {width: 2400, height: 1800}, {imageSizeMode: 'FIT_TO_IMAGE', keepAspectRatio: true, imageTitle: '', description: ''}); await openPreview(); await pause(400);
+  for (const [key, workArea] of [['1920x1080', {width: 1920, height: 1040}], ['CURRENT', {width: 1000, height: 900}]]) {
+    await chooseScreen(key); rect = await paper();
+    const fit = await run(`window.fitLayout({width:800,height:400},${JSON.stringify(workArea)}).window`);
+    const expected = {width: Math.min(fit.width, 1000), height: Math.min(fit.height, 900)};
+    check(rect.width === expected.width && rect.height === expected.height, `[61-23] FIT_TO_IMAGE follows the ${key} work area (${JSON.stringify(fit)}): ` + JSON.stringify(rect));
+  }
+  await escape();
+  await unchanged('IMAGE');
+  // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: 비IMAGE FIXED 95%, RATIO 100%(비율 0.1~1.0 보정), IMAGE 90%, 설정 최대값은 비IMAGE에만.
+  const of = (type, o, a) => run(`JSON.stringify(window.dialogSizeOf(${JSON.stringify(type)}, ${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
+  const area = {width: 1000, height: 800};
+  check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 950, height: 760}), '[61-23] FIXED non-IMAGE is capped at 95% of the work area');
+  check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 700, maximumHeight: 600}, area) === JSON.stringify({width: 700, height: 600}), '[61-23] FIXED non-IMAGE keeps the configured maximum');
+  check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 1.5, heightRatio: 1, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 1000, height: 800}), '[61-23] RATIO non-IMAGE clamps the ratio to 1.0 and allows 100%');
+  check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 0.01, heightRatio: 0.01, minimumWidth: 100, minimumHeight: 100}, area) === JSON.stringify({width: 300, height: 300}), '[61-23] RATIO below 0.1 is raised to 0.1, then to the 300 floor');
+  check(await of('IMAGE', {width: 2000, height: 2000, maximumWidth: 400, maximumHeight: 400}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] IMAGE ignores the configured maximum and uses 90% of the work area');
+  check(await of('IMAGE', {sizeMode: 'RATIO', widthRatio: 1.2, heightRatio: 1.2}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] IMAGE RATIO is clamped to 1.0 then to 90%');
+  // ⑥ 화면 정보 대체값: screen.availWidth가 0이면 브라우저 표시 영역을 쓴다(비정상 0 크기 방지).
+  check(await run(`(()=>{const s=window.screen;Object.defineProperty(s,'availWidth',{configurable:true,get:()=>0});const r=window.readScreenWorkArea();delete s.availWidth;
+    const v=window.readBrowserViewport();return r.width===v.width&&r.height===v.height&&r.width>0&&window.readScreenWorkArea().width===screen.availWidth;})()`), '[61-23] a zero screen work area falls back to the browser viewport');
   // 7) 설문 시연 상태 분리: 모달 응답이 인라인·편집 원본에 섞이지 않고, 다시 열면 초기화된다.
   await render('SURVEY'); await openPreview();
   await run("document.querySelector('.MuiDialog-root input[type=radio]').click()"); await pause(150);
@@ -179,7 +245,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await size({width: 250, height: 250, minimumWidth: 100, minimumHeight: 100, maximumWidth: 200, maximumHeight: 200}) === JSON.stringify({width: 300, height: 300}),
     '[TODO68] stored maximum below 300 is raised to the floor');
   check(await size({sizeMode: 'RATIO', widthRatio: .1, heightRatio: .1, minimumWidth: 100, minimumHeight: 100}) === JSON.stringify({width: 300, height: 300}), '[TODO68] RATIO result below 300 uses the floor');
-  check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 269, height: 250}), '[TODO68] a viewport smaller than 300 keeps the modal on screen');
+  check(await size({width: 640, height: 480}, {width: 280, height: 260}) === JSON.stringify({width: 266, height: 247}), '[TODO68] a work area smaller than 300 keeps the modal on screen (FIXED 95%, WPF FixedSizeSafeAreaRatio)');
   check(await size({width: 640, height: 480}) === JSON.stringify({width: 640, height: 480}), '[TODO68] sizes above the floor are unchanged');
   // [20261110 후속 6] 예시 표시 기본 OFF: 인라인·실제 크기 모달 모두 값이 없는 항목에 입력 안내 문구를 넣지 않는다.
   // 영상 미첨부여도 영상 영역(검정 + 재생 아이콘)과 컨트롤 줄은 자리를 유지하고 '영상 재생 영역' 문구만 숨긴다. showPlaceholders를 켠 호출부만 문구를 그린다.

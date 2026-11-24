@@ -116,7 +116,7 @@ export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLim
   ],
   preview: [
     { target: 'InlinePopupPreview', min: '미리보기 높이 320', max: '부모 영역', note: '실제 팝업 창의 최소 높이가 아닙니다.' },
-    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '브라우저 화면의 96%(IMAGE는 90%)', note: 'WPF는 모드에 따라 95%·100%·90%라 크기가 조금 다를 수 있습니다.' },
+    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '작업 영역의 95%(RATIO 100%, IMAGE 90%)', note: '작업 영역은 현재 모니터(작업 표시줄 제외) 또는 기준 화면 프리셋입니다. 브라우저보다 크면 표시 영역까지 줄이고 1:1이 아님을 안내합니다.' },
   ],
 };
 

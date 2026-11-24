@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-06 — dev: 61-23_실제크기미리보기작업영역_수정
+
+- 이유 · IMAGE 730×900 실제 크기 미리보기가 브라우저 일반 모드에서 730×851, F11에서 730×900으로 달라지는 차이(TODO61-23). 미리보기가 브라우저 내부 크기를 작업 영역으로 써서 WPF(모니터 작업 영역 기준)와 계산 기준이 다르고, 비IMAGE 화면 상한도 WPF(FIXED 95%·RATIO 100%)와 달리 96%였음. 여러 모니터 크기를 같은 화면에서 비교할 기준 화면 선택 요건 포함.
+- 변경 · 실제 크기 모달 팝업 크기를 작업 영역(현재 모니터 `screen.availWidth/availHeight`, 또는 기준 화면 프리셋 1920×1080→작업 영역 1920×1040, 2560×1440→2560×1400) 기준으로 계산하고 브라우저 표시 영역은 표시 한계로만 사용. 목표 크기가 들어가면 1:1, 넘치는 축만 줄이고 '1:1로 표시하지 못했습니다(목표 W×H)' 안내. 비IMAGE 상한을 WPF와 같은 FIXED 95%·RATIO 100%로, RATIO 비율을 0.1~1.0으로 보정. Paper 96vw/96vh 이중 제한 제거. '기준 화면' 선택박스를 종료 버튼 옆 떠 있는 도구 묶음에 추가(FULLSCREEN 제외, 선택은 미리보기 상태로만 유지). `PopupPreview`에 선택 prop `workArea` 추가(없으면 현재 모니터 작업 영역)로 FIT_TO_IMAGE 권장 크기도 같은 기준. 화면 값이 0·누락이면 브라우저 표시 영역으로 대체. 가이드 표시 문구와 관련 문서의 '브라우저 96%' 표기 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts`, `PopupPreviewDialog.tsx`, `PopupPreview.tsx`, `guide/guideData.ts`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-preview-61-entry.tsx`, `scripts/verify-popup-guide-render.cjs`, `scripts/verify-popup-parity.cjs`, `docs/design/61_관리자_미리보기_컴포넌트화_TODO.md`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증 · `verify-popup-preview-61` 255건 통과(61-23 신규 29건: 일반 모드·F11 730×900 1:1, 90% 상한 936, 바깥 스크롤 없음, 프리셋 전환·1:1 안내·복귀, FIT_TO_IMAGE 작업 영역 추종, 모드별 상한, 화면 값 대체. 기존 기대값 3건 갱신). `tsc --noEmit` 통과, 변경 파일 eslint 오류 없음. image-preview 48, guide-render 33, completion-ux-43 82, transform-64 78, survey-rich-text-55 81, rich-text-49 107, common-sample-69 63, popup-parity 54건 통과. 화면 조건은 CDP 에뮬레이션(배율 1). 미실행: 실브라우저 확대율·Windows 고DPI·다중 모니터·작업 표시줄 숨김 실측, 같은 데이터 WPF 창 실측 비교, 전 유형 실화면, `next build`, 로그인 관리자 화면, 폐쇄망. WPF·API·DB 변경 없음.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-24-05 — dev: 퀴즈완료창섀도우_추가
 
 - 이유 · 흰 퀴즈 본문 위에 뜨는 완료 안내가 검은 외곽선으로만 구분되어, QUIZ·VIDEO+QUIZ 완료창을 섀도우로 구분하는 후속 TODO 구현.

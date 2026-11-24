@@ -57,31 +57,103 @@ export function previewOverlay(popup: AdminPopupDetail): { enabled: boolean; opa
 
 /**
  * POL-08-01 : 공통 렌더러
- * POL-01-03 : 최소 크기
- * ■ 실제 크기 미리보기 창 크기 계산
- * - in : popup(AdminPopupDetail) sizeMode·width/height·widthRatio/heightRatio·maximumWidth/maximumHeight · fitWindow(Size | null) PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값) · available(Size) 작업 영역(브라우저 창) 크기
- * - out: Size 모달 Paper에 쓸 창 크기(px, 정수 반올림)
- * - 팝업 크기 설정과 작업 영역을 받아 실제 크기 미리보기 창 크기를 정한다.
- *   fitWindow가 있으면 그 값을 작업 영역 96% 안으로만 줄인다. IMAGE는 고정 최대 픽셀값 대신 작업 영역 90%로 제한한다.
- *   최소 300 x 300(popupMinimumSize)은 WPF와 같은 순서로 적용한다: 하한 → 설정 최대값(하한보다 작으면 하한까지) → 화면 상한.
+ * ■ 실제 크기 미리보기 기준 화면(TODO61-23)
+ * - in : 없음(형식 정의)
+ * - out: 'CURRENT'(현재 모니터) | 해상도 프리셋 키
+ * - 실제 크기 모달 상단 '기준 화면' 선택박스 값. 팝업 크기 계산에만 쓰고 저장 데이터에는 넣지 않는다.
  */
-export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | null, available: Size): Size {
-  const { width: availableWidth, height: availableHeight } = available;
-  if (fitWindow) {
-    return { width: Math.round(Math.min(availableWidth * 0.96, fitWindow.width)), height: Math.round(Math.min(availableHeight * 0.96, fitWindow.height)) };
-  }
-  const requestedWidth = popup.sizeMode === 'FULLSCREEN' ? availableWidth
-    : popup.sizeMode === 'RATIO' ? availableWidth * popup.widthRatio : (popup.width ?? 560);
-  const requestedHeight = popup.sizeMode === 'FULLSCREEN' ? availableHeight
-    : popup.sizeMode === 'RATIO' ? availableHeight * popup.heightRatio : (popup.height ?? 420);
+export type PreviewScreenKey = 'CURRENT' | '1920x1080' | '2560x1440';
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 기준 화면 프리셋
+ * - display: 표시 해상도, workArea: 크기 계산에 쓰는 가상 작업 영역(Windows 배율 100%, 작업 표시줄 높이 40 가정 검증값).
+ *   WPF CurrentWorkArea()(모니터 WorkingArea, DIP)에 대응한다. 브라우저 CSS px = WPF DIP(배율 100%) 기준이다.
+ */
+export const PREVIEW_SCREEN_PRESETS: ReadonlyArray<{ key: Exclude<PreviewScreenKey, 'CURRENT'>; display: Size; workArea: Size }> = [
+  { key: '1920x1080', display: { width: 1920, height: 1080 }, workArea: { width: 1920, height: 1040 } },
+  { key: '2560x1440', display: { width: 2560, height: 1440 }, workArea: { width: 2560, height: 1400 } },
+];
+
+/** 화면 정보가 없을 때(SSR 등) 쓰는 작업 영역. 기존 readViewport 대체값과 같다. */
+export const FALLBACK_WORK_AREA: Size = { width: 1920, height: 1040 };
+
+const validSize = (width: unknown, height: unknown): Size | null => {
+  const w = Number(width), h = Number(height);
+  return Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0 ? { width: w, height: h } : null;
+};
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 브라우저 표시 영역(뷰포트)
+ * - in : 없음(window.innerWidth/innerHeight)
+ * - out: Size 모달을 실제로 그릴 수 있는 브라우저 내부 크기. 읽을 수 없으면 FALLBACK_WORK_AREA
+ * - 배경 Overlay가 덮는 영역이자 1:1 표시 가능 여부를 판단하는 표시 한계다. 팝업 목표 크기 계산에는 쓰지 않는다.
+ */
+export function readBrowserViewport(): Size {
+  if (typeof window === 'undefined') return FALLBACK_WORK_AREA;
+  return validSize(window.innerWidth, window.innerHeight) ?? FALLBACK_WORK_AREA;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 현재 모니터 작업 영역 근사값
+ * - in : 없음(window.screen.availWidth/availHeight)
+ * - out: Size 현재 모니터에서 작업 표시줄을 뺀 영역(CSS px). 값이 없거나 0 이하면 브라우저 표시 영역, 그것도 없으면 FALLBACK_WORK_AREA
+ * - WPF CurrentWorkArea()에 해당하는 값을 브라우저에서 근사한다. 브라우저 F11·창 크기와 무관해 실제 팝업 크기 계산 기준으로 쓴다.
+ */
+export function readScreenWorkArea(): Size {
+  if (typeof window === 'undefined') return FALLBACK_WORK_AREA;
+  return validSize(window.screen?.availWidth, window.screen?.availHeight) ?? readBrowserViewport();
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 선택한 기준 화면의 작업 영역
+ * - in : key(PreviewScreenKey) · current(Size) 현재 모니터 작업 영역(readScreenWorkArea 결과)
+ * - out: Size 크기 계산에 쓸 작업 영역. 모르는 키는 현재 모니터
+ */
+export function previewWorkArea(key: PreviewScreenKey, current: Size): Size {
+  return PREVIEW_SCREEN_PRESETS.find((preset) => preset.key === key)?.workArea ?? current;
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * POL-01-03 : 최소 크기
+ * ■ 실제 크기 미리보기 창 크기 계산(목표 크기)
+ * - in : popup(AdminPopupDetail) sizeMode·width/height·widthRatio/heightRatio·maximumWidth/maximumHeight · fitWindow(Size | null) PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값, 이미 작업 영역 90% 이내) · workArea(Size) 작업 영역(현재 모니터 또는 기준 화면 프리셋)
+ * - out: Size WPF가 같은 작업 영역에서 만들 창 크기(px, 정수 반올림). 브라우저 표시 한계는 previewDisplaySize가 따로 적용한다.
+ * - WPF PopupWindow.ApplyWindowSize()와 같은 규칙(TODO61-23, 2026-11-24):
+ *   IMAGE(FULLSCREEN 제외)는 설정 최대값 대신 작업 영역 90%. 비IMAGE FIXED는 min(설정 최대, 작업 영역 95%), RATIO는 min(설정 최대, 작업 영역 100%).
+ *   RATIO 비율은 WPF처럼 0.1~1.0으로 보정한다. 최소 300 x 300(popupMinimumSize)은 하한 → 설정 최대값(하한보다 작으면 하한까지) → 화면 상한 순서이며,
+ *   화면 상한이 하한보다 작으면 하한을 상한까지 낮춘다(WPF Math.Min(Requested Minimum, max)).
+ *   이전에는 브라우저 내부 크기를 작업 영역으로 보고 비IMAGE에 96%를 적용해, 브라우저 일반 모드(F11 해제)에서 IMAGE 730×900이 730×851로 줄었다.
+ */
+export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | null, workArea: Size): Size {
+  const { width: areaWidth, height: areaHeight } = workArea;
+  if (fitWindow) return { width: Math.round(fitWindow.width), height: Math.round(fitWindow.height) };
+  if (popup.sizeMode === 'FULLSCREEN') return { width: Math.round(areaWidth), height: Math.round(areaHeight) };
+  const ratio = (value: unknown) => Math.max(0.1, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 1));
+  const requestedWidth = popup.sizeMode === 'RATIO' ? areaWidth * ratio(popup.widthRatio) : (popup.width ?? 560);
+  const requestedHeight = popup.sizeMode === 'RATIO' ? areaHeight * ratio(popup.heightRatio) : (popup.height ?? 420);
   const minimum = popupMinimumSize(popup);
-  if (popup.popupType === 'IMAGE' && popup.sizeMode !== 'FULLSCREEN') {
-    const maximumWidth = availableWidth * .90, maximumHeight = availableHeight * .90;
-    return {width: Math.round(Math.max(Math.min(minimum.width, maximumWidth), Math.min(maximumWidth, requestedWidth))),
-      height: Math.round(Math.max(Math.min(minimum.height, maximumHeight), Math.min(maximumHeight, requestedHeight)))};
-  }
-  const maximumWidth = Math.max(popup.maximumWidth, minimum.width), maximumHeight = Math.max(popup.maximumHeight, minimum.height);
-  const width = popup.sizeMode === 'FULLSCREEN' ? requestedWidth : Math.max(minimum.width, Math.min(maximumWidth, requestedWidth));
-  const height = popup.sizeMode === 'FULLSCREEN' ? requestedHeight : Math.max(minimum.height, Math.min(maximumHeight, requestedHeight));
-  return { width: Math.round(Math.min(availableWidth * 0.96, width)), height: Math.round(Math.min(availableHeight * 0.96, height)) };
+  const image = popup.popupType === 'IMAGE';
+  const screenRatio = image ? 0.90 : popup.sizeMode === 'RATIO' ? 1.0 : 0.95;
+  const maximumWidth = image ? areaWidth * screenRatio : Math.min(Math.max(popup.maximumWidth, minimum.width), areaWidth * screenRatio);
+  const maximumHeight = image ? areaHeight * screenRatio : Math.min(Math.max(popup.maximumHeight, minimum.height), areaHeight * screenRatio);
+  const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
+  return { width: Math.round(clamp(requestedWidth, minimum.width, maximumWidth)), height: Math.round(clamp(requestedHeight, minimum.height, maximumHeight)) };
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 브라우저에 그릴 모달 크기
+ * - in : target(Size) previewDialogSize 목표 크기 · viewport(Size) 브라우저 표시 영역
+ * - out: { size: Size 실제로 그릴 크기, actualSize: boolean 목표 크기 그대로(1:1)인지 }
+ * - 목표 크기가 브라우저 표시 영역에 들어가면 그대로 그린다. 넘치는 축만 표시 영역까지 줄이고(기존 모달 제한 방식, TODO61-23 결정 A)
+ *   actualSize=false로 1:1 표시가 아님을 알린다. 바깥 스크롤은 만들지 않는다.
+ */
+export function previewDisplaySize(target: Size, viewport: Size): { size: Size; actualSize: boolean } {
+  const size = { width: Math.min(target.width, Math.floor(viewport.width)), height: Math.min(target.height, Math.floor(viewport.height)) };
+  return { size, actualSize: size.width === target.width && size.height === target.height };
 }

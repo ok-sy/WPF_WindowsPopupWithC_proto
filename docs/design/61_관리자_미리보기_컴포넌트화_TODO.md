@@ -297,7 +297,7 @@
 ### 구현 시 확인할 사항
 
 - [ ] 동일 이미지와 동일 설정으로 730×900 회귀 사례를 재현한다. F11 전후, 브라우저 창 축소, 확대율 100%와 비기본값, Windows 배율 100%와 확대 환경, 작업 영역이 다른 다중 모니터를 확인한다. `innerWidth/innerHeight`, `screen.availWidth/availHeight`, 브라우저 확대율·DPI, WPF 창 대상 모니터 작업 영역(DIP)을 기록한다. 브라우저 CSS px와 WPF DIP 및 캡처 물리 픽셀을 대응시켜 비교한다.
-- [ ] 관리자 웹 `PopupPreviewDialog.tsx`의 `readViewport()`·Paper 제한, `popupPreviewDialogLayout.ts`의 `previewDialogSize()`, `imagePreviewLayout.ts`의 `fitToImageLayout()`, `PopupPreview.tsx`의 권장 크기 보고·본문 렌더링, `InlinePopupPreview.tsx`의 모달 연결을 확인한다. `RgstPop`과 `IS063M02Sample`이 어떤 옵션·권장 크기를 넘기는지도 대조한다.
+- [x] 관리자 웹 `PopupPreviewDialog.tsx`의 `readViewport()`·Paper 제한, `popupPreviewDialogLayout.ts`의 `previewDialogSize()`, `imagePreviewLayout.ts`의 `fitToImageLayout()`, `PopupPreview.tsx`의 권장 크기 보고·본문 렌더링, `InlinePopupPreview.tsx`의 모달 연결을 확인한다. `RgstPop`과 `IS063M02Sample`이 어떤 옵션·권장 크기를 넘기는지도 대조한다.
 - [ ] WPF `Views/Windows/PopupWindow.xaml.cs`의 `ApplyWindowSize()`·`CurrentWorkArea()`와 `Views/Contents/ImagePopupView.xaml.cs`의 `UpdateLayoutForImage()`를 기준으로 같은 데이터를 비교한다. 요청 크기, 화면 보정 후 창 크기, 흰 판·헤더·푸터·본문 및 이미지 박스 크기를 순서대로 기록한다. 창 크기를 맞춘 뒤에도 차이가 남으면 리사이즈·패딩·설명 높이 등 해당 영역의 계산을 확인한다.
 - [ ] 아래 유형별 검증에서 재현된 차이와 원인을 기록한 다음 수정한다. 웹 작업 영역 계산은 확인된 범위에 적용하고, WPF 동작이나 API·DB 변경은 증거상 필요할 때 영향과 하위 호환성을 먼저 확인한다. 구 응답의 IMAGE 축별 대체 읽기와 누락값 처리, 저장 데이터 및 미리보기 입력 객체의 불변성을 검증한다.
 
@@ -331,12 +331,37 @@
 
 관리자 「실제 크기로 보기」에서 현재 모니터와 해상도 프리셋을 바꿔 같은 팝업의 창 크기와 레이아웃을 비교한다.
 
-- [ ] 모달 상단 도구 영역에 `기준 화면` 선택박스를 둔다. 초기값은 `현재 모니터`이며, 프리셋 후보는 `1920×1080`과 `2560×1440`이다. 프리셋의 표시 해상도와 실제 계산에 사용하는 가상 작업 영역을 구분해 보여준다. 예를 들어 `1920×1080`에서 작업 영역 높이 1040은 작업 표시줄을 가정한 검증값이다.
-- [ ] `PopupPreviewDialog.tsx`의 `previewDialogSize()` 호출부와 `PopupPreview.tsx`의 `fitToImageLayout()` 경로에 모달에서 선택한 동일 작업 영역을 전달한다. 선택을 바꾸면 모달 크기와 IMAGE 권장 크기를 일관되게 다시 계산한다. RgstPop과 IS063 샘플에서 같은 UI를 사용하고, 선택은 미리보기 상태로 유지한다.
-- [ ] 선택값은 팝업 크기 계산에만 사용한다. 배경은 실제 브라우저 뷰포트를 덮고 페이지·모달 래퍼는 스크롤 없이 표시한다. 도구 영역을 포함한 실제 표시 공간에 목표 크기가 들어갈 때 1:1로 표시한다. 공간 부족 시 1:1 표시가 어려움을 안내하며, 검증 결과로 축소 표시 여부를 결정한다.
+- [x] 모달 상단 도구 영역에 `기준 화면` 선택박스를 둔다. 초기값은 `현재 모니터`이며, 프리셋 후보는 `1920×1080`과 `2560×1440`이다. 프리셋의 표시 해상도와 실제 계산에 사용하는 가상 작업 영역을 구분해 보여준다. 예를 들어 `1920×1080`에서 작업 영역 높이 1040은 작업 표시줄을 가정한 검증값이다.
+- [x] `PopupPreviewDialog.tsx`의 `previewDialogSize()` 호출부와 `PopupPreview.tsx`의 `fitToImageLayout()` 경로에 모달에서 선택한 동일 작업 영역을 전달한다. 선택을 바꾸면 모달 크기와 IMAGE 권장 크기를 일관되게 다시 계산한다. RgstPop과 IS063 샘플에서 같은 UI를 사용하고, 선택은 미리보기 상태로 유지한다.
+- [x] 선택값은 팝업 크기 계산에만 사용한다. 배경은 실제 브라우저 뷰포트를 덮고 페이지·모달 래퍼는 스크롤 없이 표시한다. 도구 영역을 포함한 실제 표시 공간에 목표 크기가 들어갈 때 1:1로 표시한다. 공간 부족 시 1:1 표시가 어려움을 안내하며, 검증 결과로 축소 표시 여부를 결정한다.
 - [ ] 일반 모드에서 IMAGE 730×900, 현재 모니터와 프리셋 전환, `FIT_TO_IMAGE` 이미지 로드 전후, 모달 닫고 재열기, 창 크기·브라우저 확대 변경을 확인한다. 팝업 외곽 치수와 오버레이, 닫기·푸터 도달성, 바깥 스크롤 여부를 기록한다. 기존 유형별 회귀 검증에 최소 한 번의 프리셋 전환을 포함한다.
 
 **구현 전 결정** · 프리셋의 작업 영역과 배율을 고정값으로 제공할지, 사용자가 작업 영역을 별도로 입력하게 할지 결정한다. 동일 조건을 반복 재현하기 쉬운 100% 배율 고정 프리셋부터 검증하는 안을 추천한다. 직접 입력을 허용하면 비표준 화면을 비교할 수 있고, 치수·배율 검증과 UI가 추가된다.
+
+### 구현 기록 (2026-11-24, 웹)
+
+결정(구현 전 결정 사항 반영)
+
+- 목표 크기 기준은 B: 작업 영역 = 현재 모니터 `screen.availWidth/availHeight`(0·누락이면 브라우저 표시 영역, 그것도 없으면 1920×1040) 또는 기준 화면 프리셋. 브라우저 내부 크기는 표시 한계로만 쓴다.
+- 브라우저 표시 영역을 넘는 경우는 A: 넘치는 축만 표시 영역까지 줄이고 도구 영역에 '1:1로 표시하지 못했습니다 (목표 W×H)'를 안내한다. 균일 축소(B)는 실측 후 재검토.
+- 프리셋은 배율 100% 고정 2종: 1920×1080(작업 영역 1920×1040), 2560×1440(작업 영역 2560×1400). 작업 영역 높이는 작업 표시줄 40을 가정한 검증값. 직접 입력은 두지 않음.
+- 적용 범위는 모든 유형(FULLSCREEN 제외: 기준 화면과 무관하게 브라우저 화면을 채우고 선택박스를 두지 않음).
+- 정합성 보완: 비IMAGE 화면 상한을 브라우저 96%에서 WPF `ApplyWindowSize()`와 같은 작업 영역 FIXED 95%·RATIO 100%로 바꾸고, RATIO 비율을 WPF처럼 0.1~1.0으로 보정(IMAGE 포함). IMAGE는 작업 영역 90% 그대로.
+- 도구 묶음(1:1 안내·기준 화면·종료 버튼)은 기존 종료 버튼처럼 화면 위에 떠 있어 팝업 표시 공간을 줄이지 않는다(위쪽 배치 팝업이면 아래로 이동). 따라서 1:1 판정은 브라우저 표시 영역 전체 기준이다.
+
+변경
+
+- `popupPreviewDialogLayout.ts`: `PreviewScreenKey`·`PREVIEW_SCREEN_PRESETS`·`readBrowserViewport()`·`readScreenWorkArea()`·`previewWorkArea()`·`previewDisplaySize()` 추가. `previewDialogSize()`는 작업 영역 기준 목표 크기만 계산(권장 크기 fitWindow는 그대로 사용, 표시 한계는 `previewDisplaySize()`).
+- `PopupPreviewDialog.tsx`: `readViewport()` 제거, 브라우저 표시 영역·현재 모니터 작업 영역을 resize 때 갱신(같은 값이면 상태 유지). '기준 화면' 선택박스와 1:1 안내 추가. Paper `96vw/96vh` 이중 제한을 `100vw/100vh`로 변경. 인라인 권장 크기(recommendedSize)는 현재 모니터 선택일 때만 첫 표시에 사용.
+- `PopupPreview.tsx`: 선택 prop `workArea` 추가. 없으면 현재 모니터 작업 영역(인라인 권장 크기도 같은 기준). 모달은 선택한 작업 영역을 넘겨 FIT_TO_IMAGE·크기 미지정 ADAPTIVE 권장 크기를 다시 계산.
+- RgstPop·IS063 샘플·샘플 편집기는 같은 `PopupPreviewDialog`를 쓰므로 호출부 변경 없이 같은 UI. 선택은 모달 컴포넌트 상태로만 남고 popup·저장 데이터에 들어가지 않는다.
+- 가이드 표시(`guide/guideData.ts`)와 레이아웃 가이드·UI 기본값 사양·미리보기 컴포넌트 인터페이스·WPF 대조 기록의 '브라우저 96%' 표기를 작업 영역 기준으로 갱신.
+
+검증
+
+- `verify-popup-preview-61.cjs` 255건 통과(기존 226 + 61-23 29건): 일반 모드(뷰포트 1920×945·작업 영역 1920×1040)와 F11(1920×1080)에서 IMAGE 730×900이 모두 1:1 730×900, 작업 영역 90% 상한 936, 배경 뷰포트 전체·페이지/모달 래퍼 스크롤 없음, 프리셋 전환(TEXT RATIO 500×450 → 960×520 → 목표 1200×700이 폭 1000으로 제한되며 1:1 아님 안내 → 현재 모니터로 복귀), 종료 버튼 도달성, FIT_TO_IMAGE 권장 크기가 프리셋·현재 작업 영역을 따르는지, FIXED 95%·설정 최대·RATIO 100%·비율 0.1 하한·IMAGE 90%, `screen.availWidth` 0일 때 대체값. 기존 기대값 3건 갱신(Paper 최대 1000×900, 작은 작업 영역 FIXED 266×247, 종료 버튼을 도구 묶음 기준으로 측정).
+- `tsc --noEmit` 통과, 변경 파일 eslint 오류 없음. `verify-image-preview` 48, `verify-popup-guide-render` 33, `verify-completion-ux-43` 82, `verify-popup-transform-64` 78, `verify-survey-rich-text-55` 81, `verify-rich-text-49` 107, `verify-popup-common-sample-69` 63, `verify-popup-parity` 54건 통과.
+- 하네스의 화면 조건은 CDP 에뮬레이션(배율 1)이다. 미실행: 실제 브라우저 확대율·Windows 고DPI·다중 모니터·작업 표시줄 숨김에서 `screen.avail*` 실측, 같은 데이터의 WPF 창·흰 판·이미지 박스 실측 비교(구현 시 확인 1·3번), 전 유형 실화면 회귀, `next build`, 로그인 관리자 화면, 폐쇄망.
 
 ### 완료 기준
 
