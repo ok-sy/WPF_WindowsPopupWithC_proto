@@ -272,6 +272,8 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 `25_delete_original_image_popups_oracle.sql <스키마접두어>` — IMAGE 크기 모드 `ORIGINAL` 삭제(2026-11-22)에 맞춰 `POPUP_TYPE='IMAGE'`이고 `CONTENT_OPTIONS`의 `imageSizeMode`가 `ORIGINAL`(대소문자 무관)인 팝업을 삭제한다. 변환하지 않는다. 멱등(두 번째부터 0행).
 
+`26_rich_font_id_to_name_oracle.sql <스키마접두어>` — 서식 글꼴 ID 삭제(2026-11-24)에 맞춰 `POPUP_CONTENT.CONTENT_OPTIONS`, `POPUP_QUESTION.TITLE_BLOCKS`·`DESCRIPTION_BLOCKS`, `POPUP_OPTION.TEXT_BLOCKS`의 `"font":"MALGUN_GOTHIC"` 등 4종을 Windows 글꼴 이름(`Malgun Gothic`·`Gulim`·`Dotum`·`Batang`)으로 치환한다. 웹·서버·WPF 반영과 같은 시점에 실행. 멱등(두 번째부터 0행). 원격 개발 DB 적용 2026-11-24(대상 0행).
+
 - 배경: 서버는 ORIGINAL 저장을 거절하지만 조회 조립은 저장값을 그대로 내려 주고, WPF는 지원하지 않는 모드로 보고 팝업 변환에 실패한다. 관리자 웹은 ADAPTIVE로 바꿔 보여 주어 화면과 실제 표시가 어긋난다.
 - 처리: CASCADE가 없는 `POPUP_RESPONSE`·`API_REQUEST_LOG`와 FK가 없는 `WPF_RESULT_RECEIPT`·`WPF_POPUP_DELIVERY`를 먼저 지우고 `POPUP_NOTICE`를 지운다. 콘텐츠·대상 그룹/조건·사용자 상태·영상 시청 상태·노출 시간대·응답 답변/값은 CASCADE로 함께 삭제된다. 되돌리기 스크립트는 없다(실행 전 1번 목록 참고).
   - 로컬: `sqlplus popup/popup@//localhost:1521/XEPDB1 @25_delete_original_image_popups_oracle.sql POPUP.`

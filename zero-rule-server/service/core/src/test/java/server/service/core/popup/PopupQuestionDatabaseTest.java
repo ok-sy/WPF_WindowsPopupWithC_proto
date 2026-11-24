@@ -188,7 +188,7 @@ class PopupQuestionDatabaseTest {
                         [{"alignment":"LEFT","runs":[{"text":"교육 ","size":16},{"text":"만족도","bold":true,"color":"#C00000"}]},
                          {"alignment":"CENTER","indent":1,"runs":[{"text":"둘째 줄","italic":true}]}]""", RICH_TEXT);
                 List<Object> optionBlocks = json.readValue("""
-                        [{"alignment":"LEFT","runs":[{"text":"매우 ","font":"GULIM"},{"text":"그렇다","underline":true}]}]""", RICH_TEXT);
+                        [{"alignment":"LEFT","runs":[{"text":"매우 ","font":"Gulim"},{"text":"그렇다","underline":true}]}]""", RICH_TEXT);
                 var formatted = new PopupQuestionDto(-1L, "client", null, "SINGLE_CHOICE", true, false, null, 1,
                         List.of(new PopupOptionDto(-1L, "1", "stale", 1, false, optionBlocks),
                                 new PopupOptionDto(-2L, "2", "아니다", 2, false, null)),

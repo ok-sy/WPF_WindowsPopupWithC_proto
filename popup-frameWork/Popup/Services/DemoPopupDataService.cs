@@ -176,7 +176,7 @@ namespace Popup.Services
                             },
                             {
                               "text": "IT운영팀 서비스데스크",
-                              "font": "MALGUN_GOTHIC"
+                              "font": "Malgun Gothic"
                             },
                             {
                               "text": " (사내 포털 IT 지원 요청 메뉴)",

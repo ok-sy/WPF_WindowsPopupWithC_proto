@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-14 — dev: 28_글꼴ID_삭제
+
+- 이유 · 사용자 지정 글꼴 이름 직접 전달(TODO28 후속) 이후 기본 4종 글꼴 ID(MALGUN_GOTHIC·GULIM·DOTUM·BATANG)가 웹·서버·WPF에 각각 매핑 표로 남아 중복. 폐쇄망 반입 시 웹·서버·WPF·DB를 한 번에 반영하는 전제로 ID를 삭제.
+- 변경 · 웹 `RICH_FONTS` 저장값을 Windows 글꼴 이름(`Malgun Gothic`·`Gulim`·`Dotum`·`Batang`)으로 바꾸고 `RichFontId` 타입 삭제. 서버 `PopupRichText.FONTS` 허용 목록 삭제(이름 규칙만). WPF `PopupRichText.Fonts` ID 매핑 삭제(기본 4종도 "이름, 기본 글꼴"), Demo 데이터·Demo 저장 검증 목록을 이름으로. DB 스크립트 `db/oracle/26_rich_font_id_to_name_oracle.sql`(서식 JSON CLOB 4개 컬럼의 ID → 이름 치환, 멱등) 추가. 테스트·하네스의 ID 기대값을 이름으로 바꾸고, 세 계층 ID 목록 대조 검사를 'ID 목록 없음 + 웹 기본 4종이 이름 규칙 통과' 검사로 교체. 인터페이스·WPF 사양·UI 기본값 사양·TODO28·DB README·코드 가이드 공지 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts`, `popupRichTextFormat.ts`, `guide/guideData.ts`, `guide/guideNotices.ts`, `zero-rule-server/service/core/src/main/java/server/service/core/popup/PopupRichText.java`, `PopupRichTextTest.java`, `PopupQuestionDatabaseTest.java`, `popup-frameWork/Popup/Views/Contents/PopupRichText.cs`, `DemoOptionsWindow.cs`, `Services/DemoPopupDataService.cs`, `scripts/RichTextTests/Program.cs`, `scripts/verify-rich-text-49.cjs`, `db/oracle/26_rich_font_id_to_name_oracle.sql`, `db/oracle/README.md`, `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `WPF_AGENT_SPEC.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`.
+- 검증 · 서버 `:service:core:test` popup 통과, WPF 빌드 0/0·RichTextTests 127·로컬 BehaviorTests 1644·PopupWindowTests 663 통과, 웹 `verify-rich-text-49` 107·guide-registry·`tsc --noEmit`·eslint 통과. 원격 개발 DB에 스크립트 26 적용(변환 대상 0행, 남은 ID 0). 미실행: 폐쇄망 DB 변환, 실화면 글꼴 확인.
+- 상태 · 커밋·원격 반영. 폐쇄망 반입 시 웹·서버·WPF와 DB 스크립트 26을 함께 적용해야 함.
+
 ## 2026-11-24-13 — dev: 61-23_코드가이드UI가이드_반영
 
 - 이유 · 2026-11-24-10·11·12 변경이 관리자 웹 공통 컴포넌트 가이드(코드 가이드)와 61 레이아웃 가이드(UI 가이드)에 빠져 있었음.

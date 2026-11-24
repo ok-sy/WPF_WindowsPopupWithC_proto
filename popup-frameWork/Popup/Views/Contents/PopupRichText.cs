@@ -49,15 +49,6 @@ namespace Popup.Views.Contents
         internal static double SafeIndent(double level) =>
             double.IsFinite(level) && level >= 0 && level == Math.Floor(level) && level <= int.MaxValue ? level * IndentStep : 0;
 
-        /* 글꼴 ID → WPF 글꼴. 사용자 PC에 없으면 WPF가 시스템 대체 글꼴로 표시한다. */
-        internal static readonly Dictionary<string, string> Fonts = new()
-        {
-            ["MALGUN_GOTHIC"] = "Malgun Gothic",
-            ["GULIM"] = "Gulim",
-            ["DOTUM"] = "Dotum",
-            ["BATANG"] = "Batang",
-        };
-
         /*
          * POL-03-02 : 문단·글자 서식
          * ■ 글꼴 이름 형식 확인(TODO28 후속)
@@ -70,11 +61,13 @@ namespace Popup.Views.Contents
             value is { Length: > 0 and <= 64 } && value == value.Trim()
             && value.All(c => !char.IsControl(c) && ",;:'\"\\/<>{}()#&=?*|".IndexOf(c) < 0);
 
-        /// <summary>글꼴 값 → WPF 글꼴. 기존 ID는 매핑, 형식에 맞는 이름은 "이름, 기본 글꼴" 대체 목록, 그 밖은 null(기본 글꼴).</summary>
+        /// <summary>
+        /// 글꼴 값 → WPF 글꼴. 형식에 맞는 Windows 글꼴 패밀리 이름(기본 4종 Malgun Gothic·Gulim·Dotum·Batang 포함)은 "이름, 기본 글꼴" 대체 목록,
+        /// 그 밖은 null(기본 글꼴). 2026-11-24 글꼴 ID(MALGUN_GOTHIC 등) 매핑 삭제 — 기존 저장값은 DB 스크립트(26_rich_font_id_to_name)로 이름으로 바꾼다.
+        /// </summary>
         internal static FontFamily? ResolveFont(string? value)
         {
             if (value == null) return null;
-            if (Fonts.TryGetValue(value, out string? mapped)) return new FontFamily(mapped);
             if (!IsFontName(value)) return null;
             try { return new FontFamily(value + ", " + SystemFonts.MessageFontFamily.Source); }
             catch (ArgumentException) { return null; }

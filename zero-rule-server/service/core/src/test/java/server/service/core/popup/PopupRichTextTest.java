@@ -39,7 +39,7 @@ class PopupRichTextTest {
         return List.of(
                 block("LEFT", run("확인 후 다시 "), run("확인", "bold", true, "color", "#DC2626"), run("하세요")),
                 block("CENTER"),
-                block("RIGHT", run("줄1\n", "font", "MALGUN_GOTHIC"), run("  <b>&  ", "size", 20, "italic", true, "underline", true)));
+                block("RIGHT", run("줄1\n", "font", "Malgun Gothic"), run("  <b>&  ", "size", 20, "italic", true, "underline", true)));
     }
 
     private PopupResponseDto popup(String type, Map<String, Object> content) {
@@ -80,9 +80,9 @@ class PopupRichTextTest {
         assertEquals("기존 본문", PopupService.bodyText(new HashMap<>(Map.of("plainText", "기존 본문"))));
     }
 
-    /** 기존 글꼴 ID와 Windows 글꼴 패밀리 이름(TODO28 후속)을 받고, 저장값을 바꾸지 않는다. */
-    @Test void acceptsLegacyFontIdsAndFamilyNames() {
-        for (String font : List.of("MALGUN_GOTHIC", "BATANG", "Comic Sans MS", "YouandiNewKr Text", "유앤아이 새 Title", "Noto Sans KR-Bold", "a".repeat(64))) {
+    /** Windows 글꼴 패밀리 이름(기본 4종 포함, 2026-11-24 글꼴 ID 삭제)을 받고, 저장값을 바꾸지 않는다. */
+    @Test void acceptsFontFamilyNames() {
+        for (String font : List.of("Malgun Gothic", "Batang", "Comic Sans MS", "YouandiNewKr Text", "유앤아이 새 Title", "Noto Sans KR-Bold", "a".repeat(64))) {
             Map<String, Object> run = run("가", "font", font, "bold", true);
             assertEquals("가", PopupRichText.validateAndDerivePlainText(List.of(block("LEFT", run))), font);
             assertEquals(font, run.get("font"));

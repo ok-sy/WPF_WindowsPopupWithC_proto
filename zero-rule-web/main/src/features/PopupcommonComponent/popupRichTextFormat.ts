@@ -80,11 +80,11 @@ export function readFormatState(editor: any): FormatState {
 export const sizeFromModel = (value: unknown) => (typeof value === 'string' && value.endsWith('px') ? Number.parseFloat(value) : null);
 /**
  * POL-03-03 : 편집 UI
- * ■ 모델 글꼴 값 → 글꼴 ID
+ * ■ 모델 글꼴 값 → 글꼴 저장값(이름)
  * - in : value(unknown) 편집기 모델의 fontFamily 값(CSS 글꼴 목록)
  *        fonts?(RichFontOption[]) 글꼴 선택지(기본: 현재 등록 목록)
  * - out: RichFontValue | null 글꼴 저장값(목록에 없으면 null)
- * - CSS 글꼴 목록을 받아 따옴표·공백을 무시하고 비교해 글꼴 저장값(기존 ID 또는 글꼴 이름)으로 바꾼다.
+ * - CSS 글꼴 목록을 받아 따옴표·공백을 무시하고 비교해 글꼴 저장값(Windows 글꼴 패밀리 이름)으로 바꾼다.
  */
 export const fontIdFromModel = (value: unknown, fonts: RichFontOption[] = richFonts()): RichFontValue | null =>
   typeof value === 'string' ? fonts.find((font) => normalizeFontCss(font.css) === normalizeFontCss(value))?.id ?? null : null;

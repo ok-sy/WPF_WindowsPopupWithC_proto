@@ -408,3 +408,10 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 - 변경 없음 · 미리보기 `PopupRichBlocks`는 Run마다 인라인 `fontStyle`·`fontWeight`를 써서 전역 리셋의 영향을 받지 않는다. `applyFormat()`·`htmlToBlocks()`·`blocksToHtml()`의 기울임 변환과 WPF `CreateRun()`의 `FontStyles.Italic`은 기존대로 동작해 수정하지 않았다. 저장 계약(`runs[].italic`) 변경 없음.
 - 검증 · `verify-rich-text-49.cjs`에 전역 리셋 `em, i { font-style: normal } strong, b { font-weight: normal }` 재현 검사 추가: 리셋 활성 확인, 편집기 기울임·굵게+기울임+등록 글꼴 표시, 미리보기 일치, 기울임 켜기(인접 Run 병합·다른 Run 보존)·끄기(`italic` 생략), 굵게 토글 시 글꼴·기울임 유지, `span`/`strong`/`em` 중첩 순서 무관, 왕복 변환. 수정 전 코드에서 편집기 `font-style: normal`로 실패 재현, 수정 후 103건 통과. `survey-rich-text-55` 81건·`common-sample-69` 63건, `tsc --noEmit`, eslint 통과.
 - 미실행 · 로그인한 관리자 화면, 폐쇄망 DevTools·실화면, 회사 글꼴의 이탤릭 서체 유무에 따른 합성 기울임 차이, WPF 실화면.
+
+## 후속 — 글꼴 ID 삭제 (2026-11-24)
+
+- 결정: 사용자 지정 글꼴 이름 직접 전달 구조로 기본 4종 ID(`MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG`)가 불필요해져 웹·서버·WPF·DB를 한 번에 정리한다(폐쇄망 반입 시 함께 적용).
+- 변경: 웹 `RICH_FONTS` 저장값을 `Malgun Gothic`·`Gulim`·`Dotum`·`Batang`으로 바꾸고 `RichFontId` 타입 삭제. 서버 `PopupRichText.FONTS` 허용 목록 삭제(이름 규칙만). WPF `PopupRichText.Fonts` ID 매핑 삭제(기본 4종도 "이름, 기본 글꼴" 대체 목록), Demo 데이터·Demo 저장 검증의 ID 목록을 이름으로 변경. DB 스크립트 `db/oracle/26_rich_font_id_to_name_oracle.sql`로 기존 저장값 변환(서식 JSON CLOB 4개 컬럼, 멱등).
+- 호환: 변환하지 않은 ID는 서버가 형식상 이름으로 받고 WPF·미리보기에서 기본 글꼴로 보인다(오류 없음). TODO28 이전 WPF는 이름을 몰라 기본 글꼴로 보인다 → 웹·서버·WPF·DB를 같은 시점에 반영.
+- 검증: 서버 popup 테스트, WPF RichTextTests 127·BehaviorTests 1644·PopupWindowTests 663, 웹 `verify-rich-text-49` 107 통과. 원격 개발 DB에 스크립트 26 적용(변환 대상 0행, 남은 ID 0). 폐쇄망 DB·실화면 미실행.

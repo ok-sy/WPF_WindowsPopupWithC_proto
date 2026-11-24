@@ -54,6 +54,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-24-font-id-removed', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
+    title: '서식 글꼴 저장값 — 기본 4종도 글꼴 이름',
+    body: ['기본 4종 글꼴을 MALGUN_GOTHIC 같은 ID 대신 Windows 글꼴 이름(Malgun Gothic·Gulim·Dotum·Batang)으로 저장합니다. 서버·WPF의 ID 목록은 없앴고, 기존 저장값은 DB 스크립트로 이름으로 바꿉니다.',
+      '편집기 선택지·표시는 그대로입니다. registerPopupRichFonts에 기본 4종과 같은 family를 넘기면 중복으로 빠집니다.'],
+    components: ['PopupRichTextEditor', 'PopupRichTextMenu', 'registerPopupRichFonts', 'richFonts'],
+    action: 'runs[].font 값을 직접 비교하는 코드가 있으면 ID 대신 이름으로 바꿉니다. 그 밖에는 바꿀 코드가 없습니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-24-preview-reference-screen', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
     title: '실제 크기 미리보기 — 기준 화면(해상도·배율) 선택',
     body: ['PopupPreviewDialog 상단에서 기준 화면 해상도(13종)와 Windows 배율(100·125·150·175%)을 고릅니다. 팝업 크기·위치는 그 화면의 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 WPF와 같이 계산합니다.',

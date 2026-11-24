@@ -149,9 +149,9 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await click('[aria-label^="굵게"]');
   check((await blocks())[0].runs[0].bold === true && (await blocks())[0].runs[0].color === '#DC2626' && await panelOpen(), 'Bold applies to same selection, panel stays open');
   await run(`(()=>{const s=document.querySelector('select[aria-label^="크기"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'24');s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await pause(100);
-  await run(`(()=>{const s=document.querySelector('select[aria-label^="글꼴"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'BATANG');s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await pause(100);
+  await run(`(()=>{const s=document.querySelector('select[aria-label^="글꼴"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'Batang');s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await pause(100);
   let first = (await blocks())[0].runs[0];
-  check(first.text === '가나다' && first.size === 24 && first.font === 'BATANG' && await panelOpen(), 'Size and font selects apply to selection: ' + JSON.stringify(first));
+  check(first.text === '가나다' && first.size === 24 && first.font === 'Batang' && await panelOpen(), 'Size and font selects apply to selection: ' + JSON.stringify(first));
   await click('[aria-label^="기울임"]'); await click('[aria-label^="밑줄"]');
   first = (await blocks())[0].runs[0];
   check(first.italic === true && first.underline === true, 'Italic and underline toggle from the panel');
@@ -161,7 +161,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(JSON.stringify((await blocks())[0].runs) === JSON.stringify([{text: '가나다', color: '#DC2626'}, {text: '라마바사'}, {text: '굵은글자', bold: true}]) && await panelOpen(),
     '[66] Individual toggles and default font/size selection revert formats without a clear button: ' + JSON.stringify((await blocks())[0].runs));
   await run(`window.editor().execute('undo')`); await pause(50);
-  check((await blocks())[0].runs[0].font === 'BATANG', '[66] Undo restores the last individual format change');
+  check((await blocks())[0].runs[0].font === 'Batang', '[66] Undo restores the last individual format change');
   await run(`window.editor().execute('redo')`); await pause(50);
   // 키보드: 방향키 이동·Enter 적용·Esc 닫기 후 편집기 포커스 복귀
   await run(`document.querySelector('[data-color-cell]').focus()`);
@@ -356,25 +356,25 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const reg = await run(`JSON.stringify(window.registerPopupRichFonts([
     {family:'YouandiNewKr Text',css:'"YouandiNewKrText", sans-serif',label:'유앤아이 본문'},
     {family:'YouandiNewKr Title',css:'YouandiNewKrTitle'},
-    {family:'Arial, sans-serif',css:'Arial'},{family:'MALGUN_GOTHIC',css:'x'},{family:'YouandiNewKr Text',css:'dup'},{family:'NoCss',css:' '}]))`);
+    {family:'Arial, sans-serif',css:'Arial'},{family:'Malgun Gothic',css:'x'},{family:'YouandiNewKr Text',css:'dup'},{family:'NoCss',css:' '}]))`);
   check(reg === JSON.stringify([{id:'YouandiNewKr Text',css:'YouandiNewKrText, sans-serif',label:'유앤아이 본문'},{id:'YouandiNewKr Title',css:'YouandiNewKrTitle',label:'YouandiNewKr Title'}]),
-    '[28] registration keeps valid family+css pairs (canonical css) and drops CSS-list names, legacy ids, duplicates and empty css: ' + reg);
+    '[28] registration keeps valid family+css pairs (canonical css) and drops CSS-list names, built-in family names, duplicates and empty css: ' + reg);
   const names = await run(`JSON.stringify(['Comic Sans MS','유앤아이 새 Title','a'.repeat(64),'Arial, sans-serif','C:\\a.ttf','url(x)',' Gulim','','a'.repeat(65),'A\u0001','#x'].map(window.isRichFontName))`);
   check(names === JSON.stringify([true,true,true,false,false,false,false,false,false,false,false]), '[28] font name rule matches server/WPF: ' + names);
-  const fontBlocks = [{alignment:'LEFT',runs:[{text:'기존',font:'BATANG'},{text:'본문',font:'YouandiNewKr Text',bold:true},{text:'미등록',font:'Other Font'},{text:'기본'}]}];
+  const fontBlocks = [{alignment:'LEFT',runs:[{text:'기존',font:'Batang'},{text:'본문',font:'YouandiNewKr Text',bold:true},{text:'미등록',font:'Other Font'},{text:'기본'}]}];
   await run(`window.mount(${JSON.stringify(fontBlocks)},false,${JSON.stringify(fontBlocks)})`); await waitEditor(); await pause(250);
   await run(`(()=>{const e=window.editor();e.model.change(w=>w.insertText('끝',e.model.createPositionAt(e.model.document.getRoot().getChild(0),'end')));})()`); await pause(150);
   const kept = (await blocks())[0].runs;
-  check(JSON.stringify(kept.map(r => [r.text, r.font ?? null, r.bold ?? false])) === JSON.stringify([['기존','BATANG',false],['본문','YouandiNewKr Text',true],['미등록','Other Font',false],['기본끝',null,false]]),
-    '[28] legacy id, registered family and unregistered name survive re-edit unchanged: ' + JSON.stringify(kept));
+  check(JSON.stringify(kept.map(r => [r.text, r.font ?? null, r.bold ?? false])) === JSON.stringify([['기존','Batang',false],['본문','YouandiNewKr Text',true],['미등록','Other Font',false],['기본끝',null,false]]),
+    '[28] built-in name, registered family and unregistered name survive re-edit unchanged: ' + JSON.stringify(kept));
   const css = await run(`(()=>{const f=t=>{const el=Array.from(document.querySelectorAll('#preview span')).find(x=>x.textContent===t);return el&&getComputedStyle(el).fontFamily;};return {legacy:f('기존'),reg:f('본문'),other:f('미등록'),plain:f('기본')};})()`);
   check(css.legacy.includes('Batang') && css.reg === 'YouandiNewKrText, sans-serif' && css.other.replace(/["']/g,'') === 'Other Font' && !/Youandi|Other|Batang/.test(css.plain),
-    '[28] preview uses the registered CSS alias for a family name, legacy css for ids, the name itself for unregistered fonts: ' + JSON.stringify(css));
+    '[28] preview uses the registered CSS alias for a family name, built-in css for built-in names, the name itself for unregistered fonts: ' + JSON.stringify(css));
   await run(`window.select(0,4,6)`); await pause(100);
   await run(`document.querySelector('.ck-editor__editable').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,clientX:100,clientY:100}))`); await pause(200);
   const opts = await run(`Array.from(document.querySelectorAll('select[aria-label^="글꼴"] option')).map(o=>o.value+'|'+o.textContent)`);
-  check(['MALGUN_GOTHIC|맑은 고딕','YouandiNewKr Text|유앤아이 본문','YouandiNewKr Title|YouandiNewKr Title','Other Font|Other Font (미등록)'].every(o => opts.includes(o)),
-    '[28] font select lists legacy, registered and the unregistered name from the data: ' + JSON.stringify(opts));
+  check(['Malgun Gothic|맑은 고딕','YouandiNewKr Text|유앤아이 본문','YouandiNewKr Title|YouandiNewKr Title','Other Font|Other Font (미등록)'].every(o => opts.includes(o)),
+    '[28] font select lists built-in, registered and the unregistered name from the data: ' + JSON.stringify(opts));
   check(await run(`document.querySelector('select[aria-label^="글꼴"]').value`) === 'Other Font', '[28] font select shows the unregistered font of the selection');
   await run(`(()=>{const s=document.querySelector('select[aria-label^="글꼴"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,'YouandiNewKr Title');s.dispatchEvent(new Event('change',{bubbles:true}));})()`); await pause(150);
   const picked = (await blocks())[0].runs.find(r => r.text === '미등');
@@ -382,8 +382,8 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`document.body.click()`); await pause(100);
   const pasted = await run(`JSON.stringify(window.htmlToBlocks('<p><span style="font-family:Calibri">a</span><span style="font-family:YouandiNewKrText, sans-serif">b</span></p>')[0].runs)`);
   check(pasted === JSON.stringify([{text:'a'},{text:'b',font:'YouandiNewKr Text'}]), '[28] pasted unknown CSS fonts are dropped; a registered alias maps back to its family: ' + pasted);
-  const readBack = await run(`JSON.stringify(window.readTextBlocks([{alignment:'LEFT',runs:[{text:'a',font:'Other Font'},{text:'b',font:'Arial, serif'},{text:'c',font:'GULIM'},{text:'d',font:5}]}])[0].runs)`);
-  check(readBack === JSON.stringify([{text:'a',font:'Other Font'},{text:'b'},{text:'c',font:'GULIM'},{text:'d'}]), '[28] readTextBlocks keeps valid names and ids, drops malformed fonts: ' + readBack);
+  const readBack = await run(`JSON.stringify(window.readTextBlocks([{alignment:'LEFT',runs:[{text:'a',font:'Other Font'},{text:'b',font:'Arial, serif'},{text:'c',font:'Gulim'},{text:'d',font:5}]}])[0].runs)`);
+  check(readBack === JSON.stringify([{text:'a',font:'Other Font'},{text:'b'},{text:'c',font:'Gulim'},{text:'d'}]), '[28] readTextBlocks keeps valid names (built-in included), drops malformed fonts: ' + readBack);
   // [TODO28-16] 폐쇄망 globalStyle의 `em, i { font-style: normal }`(+ strong 굵기 리셋)를 켠 상태에서도 편집기 기울임·굵게가 보이고, 저장·미리보기와 일치한다.
   await run(`(()=>{const s=document.createElement('style');s.id='global-reset-16';s.textContent='em, i { font-style: normal; } strong, b { font-weight: normal; }';document.head.appendChild(s);
     const probe=document.createElement('i');probe.id='probe-16';probe.textContent='x';document.body.appendChild(probe);})()`);

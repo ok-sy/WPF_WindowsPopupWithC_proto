@@ -68,7 +68,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 | 적용 범위 | 웹 선언 | WPF 선언 | 화면 검증 |
 |---|---|---|---|
 | 헤더·본문·문항·선택지·푸터·편집기의 일반 글자 | 화면 또는 편집기 스타일에 별도 family가 없으면 테마·상위 CSS 또는 해당 컨트롤을 따름. 프로토타입 `typography.ts`의 공통 `fontFamily` 예시는 주석 상태 | 공통 `PopupWindow`에 표시 텍스트의 family를 일괄 지정하지 않음. 해당 컨트롤과 상속·시스템 글꼴을 따름 | 한글·영문·숫자별로 웹 DevTools의 Computed `font-family`와 Rendered Fonts, WPF 요소의 유효 `FontFamily` 및 대체 글리프를 확인. 폐쇄망에 반입된 테마의 값은 별도 기록 |
-| 서식을 지정한 텍스트 구간 | `MALGUN_GOTHIC` → 맑은 고딕/Malgun Gothic/sans-serif, `GULIM` → 굴림/Gulim/sans-serif, `DOTUM` → 돋움/Dotum/sans-serif, `BATANG` → 바탕/Batang/serif | 같은 ID를 Malgun Gothic·Gulim·Dotum·Batang으로 매핑. 미설치 글꼴은 시스템 대체 표시 | 기본/명시 값을 나란히 비교하고 브라우저·WPF에서 같은 한글과 영문 샘플을 확인 |
+| 서식을 지정한 텍스트 구간 | 저장값 `Malgun Gothic` → 맑은 고딕/Malgun Gothic/sans-serif, `Gulim` → 굴림/Gulim/sans-serif, `Dotum` → 돋움/Dotum/sans-serif, `Batang` → 바탕/Batang/serif(2026-11-24 글꼴 ID 삭제) | 같은 ID를 Malgun Gothic·Gulim·Dotum·Batang으로 매핑. 미설치 글꼴은 시스템 대체 표시 | 기본/명시 값을 나란히 비교하고 브라우저·WPF에서 같은 한글과 영문 샘플을 확인 |
 | 아이콘·영상 컨트롤 | 웹 렌더러의 SVG·아이콘 구성 | WPF 재생 아이콘 일부에 Segoe Fluent Icons·Segoe UI Symbol 명시 | 일반 글자와 분리해 아이콘 잘림·대체 여부 확인 |
 
 폰트 크기 적용은 **해당 옵션을 지원하는 요소에서** 영역 기본값 → 유효한 영역 지정값(웹·WPF 10~40 보정) → 해당 구간에 지정된 서식 값 순이다. 설문·퀴즈는 표의 파생 규칙을 적용한다. 폐쇄망에서 전역 CSS가 이 의도에 간섭하는 사례는 TODO61-19에서 확인한다. 공통 family를 새로 고정하거나 기존 저장 데이터에 기본값을 채우는 변경은 이 사양에서 확정하지 않는다.

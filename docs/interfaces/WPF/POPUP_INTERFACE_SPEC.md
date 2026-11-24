@@ -3,6 +3,7 @@
 - 문서 버전: 3.7
 - 최신화: 2026-11-22 (KST)
 - 2026-11-22 변경 · IMAGE 크기 모드는 `ADAPTIVE`, `FIT_TO_IMAGE`만 지원한다. 기존 ORIGINAL 팝업은 `db/oracle/25_delete_original_image_popups_oracle.sql`로 삭제한다. 단독 IMAGE·VIDEO는 활성화 시 미디어 URL이 필요하다. 관리자 퀴즈의 채점 문항은 각 1점이며 비채점 주관식은 정답과 배점 없이 저장한다.
+- 3.7 보완(2026-11-24, 글꼴 ID 삭제): 서식 `runs[].font`의 글꼴 ID(`MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG`)를 없앴다. 기본 4종도 Windows 글꼴 패밀리 이름(`Malgun Gothic`·`Gulim`·`Dotum`·`Batang`)으로 저장·전달한다. 서버는 ID 허용 목록을, WPF는 ID 매핑을 지웠다(이름 규칙은 그대로). 기존 저장값은 DB 스크립트 26으로 이름으로 바꾼다. 변환하지 않은 ID는 오류 없이 기본 글꼴로 보인다. TODO28 이전 WPF는 이름을 몰라 기본 글꼴로 보이므로 웹·서버·WPF·DB를 같은 시점에 반영한다.
 - 3.7 보완(2026-11-24, VIDEO 설명 서식): VIDEO content에 선택 필드 `descriptionBlocks`(§8.4.1 문단·구간 서식, 기본 `null`)를 추가했다. 서버는 VIDEO에서 이 필드만 받아 검증하고 `description`을 서식에서 파생한다(`surveyTitleBlocks`는 계속 거부). WPF는 유효한 서식이 있으면 문단 정렬·서식으로 그리고 없으면 `description`을 쓴다. 생략하면 기존과 같다. 관리자 웹은 동영상·동영상+퀴즈 설명 맨 앞에 VMware 사운드 안내 문단(오른쪽 정렬)을 붙여 저장한다(웹 상수, WPF는 받은 서식을 그대로 표시).
 - 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.
 - 3.7 보완(2026-11-09, PU001 §7 참여형 기준 점수·완료 분리): 조회 응답 `popup` 최상위에 `requiresPassing`(boolean, QUIZ만)을 추가. 참여형 `false`(채점 합불과 무관하게 제출하면 완료), 커트라인형·만점형 `true`(합격해야 제출). 생략되면 기존처럼 `passingScore`로 판정(0 이하·미설정 = 참여형). 참여형도 양수 `passingScore`(합격 기준)를 가질 수 있고, 결과 요청의 `passed`는 모든 유형에서 실제 채점 합불(`score ≥ passingScore`)이다. 백엔드는 유효한 QUIZ SUBMITTED를 `passed`와 관계없이 완료로 처리하고 `score`·`passed`는 합불 기록으로 저장한다. 결과 요청·응답 JSON 구조 변경 없음. Word·PDF·Excel은 미갱신.
@@ -501,7 +502,7 @@ TEXT에는 별도 콘텐츠 제목·설명 필드가 없다(설계 37에서 `con
 | runs[].bold / italic / underline / strikethrough | boolean | 선택 | `true`·`false`(누락 false) | 굵게·기울임·밑줄·취소선. 밑줄과 취소선 동시 적용 가능(TODO62) |
 | runs[].color | string | 선택 | 대문자 `#RRGGBB` | 글자 색. 팔레트로 제한하지 않음(관리자 편집기 팔레트는 선택지일 뿐). 가독성은 작성자가 판단 |
 | runs[].size | number | 선택 | 12·14·16·18·20·24·28·32 (px) | 글자 크기. 없으면 bodyFontSize·기본 크기 |
-| runs[].font | string | 선택 | 기존 ID `MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG` 또는 Windows 글꼴 패밀리 이름 한 개(1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * \|` 제외, TODO28 후속) | 글꼴. 기존 ID는 맑은 고딕·굴림·돋움·바탕으로 매핑한다. 이름은 글꼴별 허용 목록·설치 여부 확인 없이 그대로 저장·전달하고 WPF가 `이름, 기본 글꼴`로 적용한다. PC에 없으면 그 구간은 기본 글꼴. 굵기는 `bold`로만 정하며 CSS·폰트 파일은 전달하지 않는다 |
+| runs[].font | string | 선택 | Windows 글꼴 패밀리 이름 한 개(기본 4종 `Malgun Gothic`·`Gulim`·`Dotum`·`Batang` 포함, 2026-11-24 글꼴 ID 삭제 — 기존 ID 저장값은 `db/oracle/26_rich_font_id_to_name_oracle.sql`로 변환)(1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * \|` 제외, TODO28 후속) | 글꼴. 기존 ID는 맑은 고딕·굴림·돋움·바탕으로 매핑한다. 이름은 글꼴별 허용 목록·설치 여부 확인 없이 그대로 저장·전달하고 WPF가 `이름, 기본 글꼴`로 적용한다. PC에 없으면 그 구간은 기본 글꼴. 굵기는 `bold`로만 정하며 CSS·폰트 파일은 전달하지 않는다 |
 
 취소선 예시(문단 들여쓰기 40px 및 오른쪽 정렬과 함께 사용):
 

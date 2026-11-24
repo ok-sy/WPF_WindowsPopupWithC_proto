@@ -28,10 +28,9 @@ final class PopupRichText {
     static final Set<String> ALIGNMENTS = Set.of("LEFT", "CENTER", "RIGHT");
     private static final java.util.regex.Pattern HEX_COLOR = java.util.regex.Pattern.compile("^#[0-9A-F]{6}$");
     static final Set<Integer> SIZES = Set.of(12, 14, 16, 18, 20, 24, 28, 32);
-    /** 기존 글꼴 ID. 저장·조회 호환을 위해 그대로 받는다. */
-    static final Set<String> FONTS = Set.of("MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG");
     /**
-     * Windows 글꼴 패밀리 이름 한 개(TODO28 후속). 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI에 쓰이는 문자
+     * Windows 글꼴 패밀리 이름 한 개(TODO28 후속). 기본 4종도 이름(Malgun Gothic·Gulim·Dotum·Batang)으로 받는다.
+     * 2026-11-24 글꼴 ID(MALGUN_GOTHIC 등) 허용 목록 삭제 — 기존 저장값은 db/oracle/26_rich_font_id_to_name_oracle.sql로 이름으로 바꾼다. 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI에 쓰이는 문자
      * (, ; : ' " \ / &lt; &gt; { } ( ) # &amp; = ? * |)는 받지 않는다. 글꼴별 허용 목록·설치 여부는 확인하지 않는다.
      * 관리자 웹 popupRichText.isRichFontName, WPF PopupRichText.IsFontName과 같은 규칙이다.
      */
@@ -131,9 +130,9 @@ final class PopupRichText {
         return plain.toString();
     }
 
-    /** 기존 글꼴 ID이거나 형식에 맞는 글꼴 이름이면 true. 이름은 앞뒤 공백을 허용하지 않는다(자르지 않고 거부). */
+    /** 형식에 맞는 글꼴 이름이면 true. 이름은 앞뒤 공백을 허용하지 않는다(자르지 않고 거부). */
     static boolean isFont(String value) {
-        return FONTS.contains(value) || (value.equals(value.strip()) && FONT_NAME.matcher(value).matches());
+        return value.equals(value.strip()) && FONT_NAME.matcher(value).matches();
     }
 
     /**

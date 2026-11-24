@@ -271,7 +271,7 @@ internal static class Program
             return ((StackPanel)view.FindName("RichTextPanel")).Children.OfType<TextBlock>().ToList();
         }
 
-        foreach (string font in new[] { "MALGUN_GOTHIC", "GULIM", "DOTUM", "BATANG" })
+        foreach (string font in new[] { "Malgun Gothic", "Gulim", "Dotum", "Batang" })
             foreach (string size in new[] { "", ",\"size\":32" })
                 foreach (string text in new[] { "기울임 끝 글자", "Italic ending fff", "WWW" })
                 {
@@ -321,7 +321,7 @@ internal static class Program
             && !sample.Content.TryGetProperty("showContentHeader", out _)
             && sample.Content.GetProperty("plainText").GetString()!.StartsWith("사내 업무시스템 정기 점검 안내\nIT운영팀"), "Demo TEXT sample has no separate title/description"); 
         Check(paragraphs[11].TextAlignment == TextAlignment.Right
-            && paragraphs[11].Inlines.OfType<System.Windows.Documents.Run>().ElementAt(1).FontFamily.Source == "Malgun Gothic", "Alignment and font id map");
+            && paragraphs[11].Inlines.OfType<System.Windows.Documents.Run>().ElementAt(1).FontFamily.Source == "Malgun Gothic, " + SystemFonts.MessageFontFamily.Source, "Alignment and built-in font name (Demo stores Malgun Gothic, default font fallback)");
         Check(paragraphs[4].Inlines.OfType<System.Windows.Documents.Run>().ElementAt(2).TextDecorations == TextDecorations.Underline, "Underline maps");
 
         view.ApplyBodyFontSize(20);
@@ -425,7 +425,7 @@ internal static class Program
         bool Unset(System.Windows.Documents.Run run, DependencyProperty property) => run.ReadLocalValue(property) == DependencyProperty.UnsetValue;
         var richText = typeof(PopupFactory).Assembly.GetType("Popup.Views.Contents.PopupRichText")!;
         double? SafeFontSize(double? size) => (double?)richText.GetMethod("SafeFontSize", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object?[] { size });
-        var wpfFonts = (Dictionary<string, string>)richText.GetField("Fonts", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        bool IsWpfFontName(string value) => (bool)richText.GetMethod("IsFontName", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object?[] { value })!;
 
         // 크기: 서버 목록과 무관하게 안전 범위(1~200) 안이면 표시, 밖이면 본문 기본 크기.
         var sizes = Runs("[{\"text\":\"a\",\"size\":22},{\"text\":\"b\",\"size\":12.5},{\"text\":\"c\",\"size\":1},{\"text\":\"d\",\"size\":200},"
@@ -444,14 +444,14 @@ internal static class Program
         Check(colors.Skip(2).Take(5).All(r => Unset(r, TextElement.ForegroundProperty))
             && ((SolidColorBrush)colors[7].Foreground).Color == Color.FromRgb(0xDC, 0x26, 0x26), "Unconvertible color falls back for that run only");
 
-        // 글꼴·정렬: 기존 ID는 매핑, Windows 글꼴 이름은 그대로 적용(TODO28 후속), 형식이 틀린 값은 기본 글꼴.
-        var fonts = Runs("[{\"text\":\"a\",\"font\":\"GULIM\"},{\"text\":\"b\",\"font\":\"Comic Sans MS\"},{\"text\":\"c\",\"font\":\"gulim\"},"
+        // 글꼴·정렬: Windows 글꼴 이름(기본 4종 포함)은 "이름, 기본 글꼴"로 적용, 형식이 틀린 값은 기본 글꼴. 2026-11-24 글꼴 ID 매핑 삭제.
+        var fonts = Runs("[{\"text\":\"a\",\"font\":\"Gulim\"},{\"text\":\"b\",\"font\":\"Comic Sans MS\"},{\"text\":\"c\",\"font\":\"gulim\"},"
             + "{\"text\":\"d\",\"font\":\"Arial, sans-serif\"},{\"text\":\"e\",\"font\":\"./#Family\"},{\"text\":\"f\",\"font\":\" Gulim\"},"
             + "{\"text\":\"g\",\"font\":\"\"},{\"text\":\"h\",\"font\":\"C:\\\\Fonts\\\\a.ttf\"},{\"text\":\"i\",\"font\":\"" + new string('a', 65) + "\"},"
             + "{\"text\":\"j\",\"font\":\"없는글꼴TODO28\",\"bold\":true}]");
         string fallback = ", " + SystemFonts.MessageFontFamily.Source;
-        Check(fonts[0].FontFamily.Source == "Gulim" && fonts[1].FontFamily.Source == "Comic Sans MS" + fallback && fonts[2].FontFamily.Source == "gulim" + fallback,
-            "[28] Legacy font id maps; a Windows family name is applied first with the popup default font as fallback");
+        Check(fonts[0].FontFamily.Source == "Gulim" + fallback && fonts[1].FontFamily.Source == "Comic Sans MS" + fallback && fonts[2].FontFamily.Source == "gulim" + fallback,
+            "[28] Built-in and other Windows family names are applied first with the popup default font as fallback (no font id mapping)");
         Check(fonts.Skip(3).Take(6).All(r => Unset(r, TextElement.FontFamilyProperty)),
             "[28] CSS list, file path/URI form, leading space, empty and 65-char names use the default font");
         Check(fonts[9].FontFamily.Source == "없는글꼴TODO28" + fallback && fonts[9].FontWeight == FontWeights.Bold,
@@ -499,16 +499,15 @@ internal static class Program
         }
         catch (JsonException) { Check(true, "Non-string plainText keeps content conversion error path"); }
 
-        // 서버 글꼴 ID ↔ WPF 매핑: 테스트에 목록을 복제하지 않고 서버·관리자 웹 정의 원본과 대조한다.
+        // 2026-11-24 글꼴 ID 삭제: 서버 ID 허용 목록·WPF ID 매핑이 없고, 관리자 웹 기본 4종 저장값은 WPF·서버 이름 규칙을 통과하는 Windows 글꼴 이름이다.
         string root = AppContext.BaseDirectory;
         while (!Directory.Exists(Path.Combine(root, "zero-rule-server"))) root = Path.GetDirectoryName(root.TrimEnd(Path.DirectorySeparatorChar))!;
         string server = File.ReadAllText(Path.Combine(root, "zero-rule-server", "service", "core", "src", "main", "java", "server", "service", "core", "popup", "PopupRichText.java"));
-        var serverFonts = System.Text.RegularExpressions.Regex.Match(server, @"FONTS\s*=\s*Set\.of\(([^)]*)\)").Groups[1].Value
-            .Split(',').Select(v => v.Trim().Trim('"')).Where(v => v.Length > 0).ToList();
         string web = File.ReadAllText(Path.Combine(root, "zero-rule-web", "main", "src", "features", "PopupcommonComponent", "popupRichText.ts"));
-        var webFonts = System.Text.RegularExpressions.Regex.Matches(web, @"\{ id: '([A-Z_]+)'").Select(m => m.Groups[1].Value).ToList();
-        Check(serverFonts.Count > 0 && serverFonts.All(wpfFonts.ContainsKey) && webFonts.ToHashSet().SetEquals(serverFonts),
-            "Every server font id has a WPF mapping and matches admin editor ids: " + string.Join(",", serverFonts));
+        var webFonts = System.Text.RegularExpressions.Regex.Matches(web, @"\{ id: '([^']+)', css:").Select(m => m.Groups[1].Value).ToList();
+        Check(!System.Text.RegularExpressions.Regex.IsMatch(server, @"FONTS\s*=\s*Set\.of") && richText.GetField("Fonts", BindingFlags.Static | BindingFlags.NonPublic) == null
+            && webFonts.SequenceEqual(new[] { "Malgun Gothic", "Gulim", "Dotum", "Batang" }) && webFonts.All(IsWpfFontName),
+            "No font id list remains in server/WPF; built-in web fonts are Windows family names: " + string.Join(",", webFonts));
     }
 
     // POL-03-02 : 문단·글자 서식 — 문단 들여쓰기(indent 단계 × 40 DIP): 왼쪽 여백·모든 줄 적용·정렬·기울임 여유·plainText 무영향·표시 방어.

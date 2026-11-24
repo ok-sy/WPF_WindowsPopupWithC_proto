@@ -1,17 +1,15 @@
 /*
  * TEXT 본문 서식(content.textBlocks) 계약과 편집기 경계 변환.
  * 저장·전달 기준은 문단·Run JSON이며 HTML은 CKEditor 입출력에서만 다룬다.
- * 크기·글꼴·정렬 허용 값과 색 규칙은 서버 PopupRichText.java와 같아야 한다. WPF PopupRichText.cs는 목록을 복제하지 않고
- * 표시 방어만 한다. 기존 글꼴 ID 4종을 추가·변경하면 WPF 글꼴 매핑도 바꾼다. 그 밖의 글꼴은 Windows 글꼴 패밀리 이름을
- * runs[].font에 그대로 저장한다(TODO28 후속, isRichFontName 규칙은 서버·WPF와 같다).
+ * 크기·정렬 허용 값과 색 규칙은 서버 PopupRichText.java와 같아야 한다. WPF PopupRichText.cs는 목록을 복제하지 않고 표시 방어만 한다.
+ * 글꼴은 기본 4종을 포함해 모두 Windows 글꼴 패밀리 이름을 runs[].font에 그대로 저장한다(isRichFontName 규칙은 서버·WPF와 같다).
+ * 2026-11-24 글꼴 ID(MALGUN_GOTHIC·GULIM·DOTUM·BATANG) 삭제: 기존 저장값은 db/oracle/26_rich_font_id_to_name_oracle.sql로 이름으로 바꾼다.
  * 글자 색은 팔레트로 제한하지 않고 #RRGGBB(대문자) 형식만 확인한다. 팔레트는 편집기 선택지일 뿐이며 가독성은 작성자가 판단한다.
  */
 /** 문단 정렬 값 */
 export type RichAlignment = 'LEFT' | 'CENTER' | 'RIGHT';
-/** 기존 글꼴 ID(서버·WPF 글꼴 매핑과 같은 목록). 저장 호환을 위해 유지한다. */
-export type RichFontId = 'MALGUN_GOTHIC' | 'GULIM' | 'DOTUM' | 'BATANG';
-/** runs[].font 저장값: 기존 글꼴 ID 또는 Windows 글꼴 패밀리 이름(TODO28 후속) */
-export type RichFontValue = RichFontId | (string & {});
+/** runs[].font 저장값: Windows 글꼴 패밀리 이름(기본 4종 포함, 2026-11-24 글꼴 ID 삭제) */
+export type RichFontValue = string;
 /** 편집기 글꼴 선택지. id = runs[].font 저장값, css = 웹 표시·CKEditor용 CSS 글꼴 목록, label = 화면 이름 */
 export interface RichFontOption { id: RichFontValue; css: string; label: string }
 /** 같은 서식이 이어지는 글자 구간. 지정하지 않은 서식 키는 생략한다. */
@@ -96,32 +94,31 @@ export const RICH_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
  * POL-03-02 : 문단·글자 서식
  * ■ 허용 글꼴
  * - in : 없음
- * - out: { id: RichFontId; css: string; label: string }[] 글꼴 ID·CKEditor용 CSS 글꼴 목록·화면 이름
- * - 글꼴 ID와 편집기 CSS 값을 짝지어 편집기 선택지·HTML 변환·표시에 쓴다.
+ * - out: { id: string; css: string; label: string }[] 저장값(Windows 글꼴 패밀리 이름)·CKEditor용 CSS 글꼴 목록·화면 이름
+ * - 기본 4종의 저장 이름과 편집기 CSS 값을 짝지어 편집기 선택지·HTML 변환·표시에 쓴다. 저장값은 WPF가 그대로 FontFamily로 쓰는 영문 패밀리 이름이다.
  *   css는 CKEditor 정규형이어야 한다: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싼다.
  *   정규형과 다른 값(예: '굴림', Gulim)은 명령·재편집 시 오류 없이 무시된다.
  */
 export const RICH_FONTS: RichFontOption[] = [
-  { id: 'MALGUN_GOTHIC', css: "'맑은 고딕', 'Malgun Gothic', sans-serif", label: '맑은 고딕' },
-  { id: 'GULIM', css: '굴림, Gulim, sans-serif', label: '굴림' },
-  { id: 'DOTUM', css: '돋움, Dotum, sans-serif', label: '돋움' },
-  { id: 'BATANG', css: '바탕, Batang, serif', label: '바탕' },
+  { id: 'Malgun Gothic', css: "'맑은 고딕', 'Malgun Gothic', sans-serif", label: '맑은 고딕' },
+  { id: 'Gulim', css: '굴림, Gulim, sans-serif', label: '굴림' },
+  { id: 'Dotum', css: '돋움, Dotum, sans-serif', label: '돋움' },
+  { id: 'Batang', css: '바탕, Batang, serif', label: '바탕' },
 ];
 
 /**
  * POL-03-02 : 문단·글자 서식
  * ■ 글꼴 이름 형식 확인(TODO28 후속)
  * - in : value(unknown) runs[].font 값
- * - out: boolean 기존 ID가 아닌 Windows 글꼴 패밀리 이름으로 받을 수 있으면 true
+ * - out: boolean Windows 글꼴 패밀리 이름으로 받을 수 있으면 true
  * - 이름 한 개만 받는다. 1~64자, 앞뒤 공백 없음, 제어 문자와 CSS 목록·경로·URI에 쓰이는 문자(, ; : ' " \ / < > { } ( ) # & = ? * |)는 받지 않는다.
  *   서버 PopupRichText.java FONT_NAME, WPF PopupRichText.IsFontName과 같은 규칙이다. 설치 여부·허용 목록은 확인하지 않는다.
  */
 export const isRichFontName = (value: unknown): value is string =>
   // eslint-disable-next-line no-control-regex -- 제어 문자를 거부하려고 범위를 명시한다.
   typeof value === 'string' && value.length <= 64 && value === value.trim() && /^[^\u0000-\u001F\u007F,;:'"\\/<>{}()#&=?*|]+$/.test(value);
-/** 저장 가능한 글꼴 값: 기존 ID 또는 형식에 맞는 이름 */
-export const isRichFontValue = (value: unknown): value is RichFontValue =>
-  RICH_FONTS.some((font) => font.id === value) || isRichFontName(value);
+/** 저장 가능한 글꼴 값: 형식에 맞는 Windows 글꼴 패밀리 이름(기본 4종 포함) */
+export const isRichFontValue = (value: unknown): value is RichFontValue => isRichFontName(value);
 
 /* CKEditor 정규형: 따옴표를 뗀 뒤 공백이 있는 이름만 작은따옴표로 감싸고 ', '로 잇는다. */
 const canonicalFontCss = (css: string) => css.split(',').map((part) => part.replace(/["']/g, '').trim()).filter(Boolean)
@@ -133,7 +130,7 @@ let registeredFonts: RichFontOption[] = [];
  * ■ 사용자 지정 글꼴 등록(TODO28 후속)
  * - in : fonts({ family: string; css: string; label?: string }[]) family = WPF가 인식하는 Windows 글꼴 패밀리 이름(저장값),
  *        css = 웹 전역 @font-face 별칭 등 CSS 글꼴 목록(편집기·미리보기 표시), label = 선택지 이름(없으면 family)
- * - out: RichFontOption[] 실제로 등록된 글꼴(형식이 틀리거나 기존 ID·중복 family·빈 css는 제외)
+ * - out: RichFontOption[] 실제로 등록된 글꼴(형식이 틀리거나 기본 4종과 같은 family·중복 family·빈 css는 제외)
  * - 앱 시작 시 한 번 호출한다(호출할 때마다 등록 목록을 바꾼다). 이후 열리는 편집기·서식 패널·미리보기에 적용된다.
  *   400/700 굵기와 실제 웹 서체의 연결은 전역 CSS(@font-face의 font-weight)가 담당하고, 굵게는 기존 bold로 저장한다.
  *   서버·WPF에는 family 이름 문자열만 전달된다(CSS·폰트 파일은 전달하지 않음).
@@ -153,7 +150,7 @@ export function registerPopupRichFonts(fonts: { family: string; css: string; lab
  * POL-03-02 : 문단·글자 서식
  * ■ 현재 글꼴 선택지
  * - in : extra?(RichFontValue[]) 기존 데이터에 있는 미등록 글꼴 이름(재편집 보존용)
- * - out: RichFontOption[] 기존 4종 + 등록 글꼴 + 미등록 이름(표시 이름 뒤 '(미등록)')
+ * - out: RichFontOption[] 기본 4종 + 등록 글꼴 + 미등록 이름(표시 이름 뒤 '(미등록)')
  * - 미등록 이름은 편집기에서 지우지 않고 그대로 저장되도록 선택지에 넣는다. CSS는 이름 그대로라 PC에 없으면 기본 글꼴로 보인다.
  */
 export function richFonts(extra: readonly unknown[] = []): RichFontOption[] {
@@ -376,8 +373,8 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
 /**
  * POL-03-02 : 문단·글자 서식
  * ■ 글꼴 값 → CSS 글꼴 목록
- * - in : id?(RichFontValue) 기존 글꼴 ID 또는 글꼴 이름
+ * - in : id?(RichFontValue) 글꼴 이름(저장값)
  * - out: string | undefined CSS font-family 값(없거나 형식이 틀리면 undefined = 기본 글꼴)
- * - 기존 ID·등록 글꼴은 등록된 CSS(웹 별칭)를, 미등록 이름은 이름 그대로를 CSS로 쓴다(PC에 없으면 브라우저 기본 글꼴).
+ * - 기본 4종·등록 글꼴은 등록된 CSS(웹 별칭)를, 미등록 이름은 이름 그대로를 CSS로 쓴다(PC에 없으면 브라우저 기본 글꼴).
  */
 export const richFontCss = (id?: RichFontValue) => (id == null ? undefined : richFonts([id]).find((font) => font.id === id)?.css);
