@@ -415,3 +415,10 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 - 변경: 웹 `RICH_FONTS` 저장값을 `Malgun Gothic`·`Gulim`·`Dotum`·`Batang`으로 바꾸고 `RichFontId` 타입 삭제. 서버 `PopupRichText.FONTS` 허용 목록 삭제(이름 규칙만). WPF `PopupRichText.Fonts` ID 매핑 삭제(기본 4종도 "이름, 기본 글꼴" 대체 목록), Demo 데이터·Demo 저장 검증의 ID 목록을 이름으로 변경. DB 스크립트 `db/oracle/26_rich_font_id_to_name_oracle.sql`로 기존 저장값 변환(서식 JSON CLOB 4개 컬럼, 멱등).
 - 호환: 변환하지 않은 ID는 서버가 형식상 이름으로 받고 WPF·미리보기에서 기본 글꼴로 보인다(오류 없음). TODO28 이전 WPF는 이름을 몰라 기본 글꼴로 보인다 → 웹·서버·WPF·DB를 같은 시점에 반영.
 - 검증: 서버 popup 테스트, WPF RichTextTests 127·BehaviorTests 1644·PopupWindowTests 663, 웹 `verify-rich-text-49` 107 통과. 원격 개발 DB에 스크립트 26 적용(변환 대상 0행, 남은 ID 0). 폐쇄망 DB·실화면 미실행.
+
+## 후속 — 일반·굵게 서체 직접 지정(faces) (2026-11-24)
+
+- 배경: 폐쇄망 전역 CSS `YouandiModern`은 200 HeadRegular·300 TextRegular·500 TextBold·700 HeadBold(400 없음)라 웹 일반 글자가 500(TextBold), 굵게가 HeadBold로 그려지고, `YouandiNewKr`는 300 Light·400 Text Regular·500 Text Medium(700 미확인)이라 굵게가 Medium이 된다. WPF는 저장된 family 안의 Regular·Bold를 고르므로 어긋난다. NewKr은 Windows에서 한 패밀리로 묶이는 것을 폐쇄망에서 확인.
+- 변경: `registerPopupRichFonts`에 `faces: { regular, bold? }` 추가. 지정하면 팝업 전용 별칭 `PopupRichFaceN`의 `@font-face`(400 → regular, 700 → bold, `src: local()`)를 `<style id="popup-rich-font-faces">`에 만들어 편집기·미리보기가 그 별칭을 쓴다. 전역 CSS·다른 화면 영향 없음. 저장값(family·bold)·서버·WPF 변경 없음. 기존 `css` 등록 유지.
+- 검증: `verify-popup-preview-61` 292건(인라인 미리보기·실제 크기 미리보기 Dialog도 지정 서체), `verify-rich-text-49` 112건(일반 Georgia·굵게 Arial Bold로 지정 시 편집기·미리보기 모두 지정 서체, 저장 family+bold, bold 없을 때 700 규칙 없음, 틀린 서체 이름 제외, 재등록 시 규칙 정리).
+- 남은 일: 폐쇄망 `scripts\list-wpf-font-faces.ps1 -Filter Youandi` 결과로 WPF 패밀리 이름과 Regular·Bold 서체를 확인해 등록값(family·faces)을 채운다. NewKr에 Bold 서체가 없으면 WPF가 Bold로 고르는 서체(Medium + 인위적 굵게 여부)를 확인하고 faces.bold를 그에 맞춘다.

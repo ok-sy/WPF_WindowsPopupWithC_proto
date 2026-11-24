@@ -451,7 +451,34 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(JSON.stringify(kept15) === JSON.stringify(want15),
     '[28-15] re-edit keeps the Windows family name and bold for every alias (contract font+bold): ' + JSON.stringify(kept15) + ' ' + JSON.stringify(stored15));
   await run(`document.getElementById('faces-15').remove()`);
+  // 2026-11-24 faces 등록: 전역 CSS 별칭 대신 일반(400)·굵게(700) 서체를 직접 지정하면 팝업 전용 @font-face(PopupRichFaceN)를 만들고,
+  // 편집기·미리보기가 지정한 서체를 그대로 쓴다. 일부러 다른 패밀리(일반 Georgia, 굵게 Arial Bold)로 지정해 지정값을 따르는지 확인한다.
+  // 저장값은 family(WPF 패밀리 이름)와 bold 그대로다. bold가 없으면 700 규칙을 만들지 않는다. 형식이 틀린 서체 이름은 등록하지 않는다.
+  const facesReg = await run(`JSON.stringify(window.registerPopupRichFonts([
+    {family:'Georgia',label:'지정 서체',faces:{regular:'Georgia',bold:'Arial Bold'}},
+    {family:'Segoe UI',faces:{regular:'Segoe UI'}},
+    {family:'Bad Face',faces:{regular:'Bad, Face'}},
+    {family:'Css Font',css:'Arial'}]))`);
+  check(facesReg === JSON.stringify([{id:'Georgia',css:'PopupRichFace0, sans-serif',label:'지정 서체'},{id:'Segoe UI',css:'PopupRichFace1, sans-serif',label:'Segoe UI'},{id:'Css Font',css:'Arial',label:'Css Font'}]),
+    '[faces] faces registration makes a popup-only alias, keeps css registration, drops malformed face names: ' + facesReg);
+  const faceStyle = await run(`document.getElementById('popup-rich-font-faces').textContent`);
+  check(faceStyle.includes('font-family:"PopupRichFace0";font-style:normal;font-weight:400;src:local("Georgia")') && faceStyle.includes('font-weight:700;src:local("Arial Bold")')
+    && faceStyle.includes('PopupRichFace1";font-style:normal;font-weight:400;src:local("Segoe UI")') && !faceStyle.includes('PopupRichFace1";font-style:normal;font-weight:700'),
+    '[faces] @font-face rules map 400 → regular and 700 → bold only when given: ' + faceStyle);
+  const faceBlocks = [{alignment:'LEFT',runs:[{text:'faceR',font:'Georgia'},{text:' | '},{text:'faceB',font:'Georgia',bold:true}]}];
+  await run(`window.mount(${JSON.stringify(faceBlocks)},false,${JSON.stringify(faceBlocks)})`); await waitEditor(); await pause(300);
+  await run('document.fonts.ready');
+  const faceMeasured = {R: {editor: await usedFont('.ck-content', 'faceR'), preview: await usedFont('#preview', 'faceR')},
+    B: {editor: await usedFont('.ck-content', 'faceB'), preview: await usedFont('#preview', 'faceB')}};
+  check(faceMeasured.R.editor === faceMeasured.R.preview && faceMeasured.B.editor === faceMeasured.B.preview
+    && /Georgia$/.test(faceMeasured.R.preview) && /Arial-BoldMT/.test(faceMeasured.B.preview),
+    '[faces] editor and preview use the specified faces: regular Georgia, bold Arial Bold: ' + JSON.stringify(faceMeasured));
+  await run(`(()=>{const e=window.editor();e.model.change(w=>w.insertText('.',e.model.createPositionAt(e.model.document.getRoot().getChild(0),'end')));})()`); await pause(150);
+  const faceKept = (await blocks())[0].runs.map(r => [r.text.trim(), r.font ?? null, r.bold ?? false]);
+  check(JSON.stringify(faceKept) === JSON.stringify([['faceR','Georgia',false],['|',null,false],['faceB.','Georgia',true]]) || JSON.stringify(faceKept) === JSON.stringify([['faceR','Georgia',false],['|',null,false],['faceB','Georgia',true],['.',null,false]]),
+    '[faces] re-edit stores family name + bold (WPF contract unchanged): ' + JSON.stringify(faceKept));
   await run(`window.registerPopupRichFonts([])`);
+  check(await run(`document.getElementById('popup-rich-font-faces').textContent`) === '', '[faces] re-registering without faces clears the popup-only @font-face rules');
   check(errors.length===0,'[62] no browser runtime errors: '+errors.join(' | '));
   const finalShot = await send('Page.captureScreenshot', {format:'png'});
   fs.writeFileSync(path.join(output,'preview-62.png'),Buffer.from(finalShot.data,'base64'));

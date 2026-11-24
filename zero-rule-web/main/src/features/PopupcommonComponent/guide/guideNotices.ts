@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-24-rich-font-faces', date: '2026-11-24', category: 'ADDED', status: 'DONE', doneDate: '2026-11-24',
+    title: '회사 글꼴 등록 — 일반·굵게 서체 직접 지정(faces)',
+    body: ['전역 CSS 별칭이 굵기마다 다른 디자인(예: 300 Text·700 Head)을 섞거나 400 선언이 없으면, 편집기·미리보기가 WPF와 다른 서체를 고릅니다.',
+      'registerPopupRichFonts에 faces: { regular, bold? }로 일반(400)·굵게(700)에 쓸 실제 서체 이름을 넘기면, 팝업 전용 @font-face(PopupRichFaceN)를 만들어 그 서체로 그립니다. 전역 CSS와 다른 화면은 바뀌지 않습니다.',
+      "예: registerPopupRichFonts([{ family: 'YouandiNewKr Text', label: '유앤아이 본문', faces: { regular: 'YouandiNewKr Text Regular', bold: 'YouandiNewKr Text Bold' } }])"],
+    components: ['PopupRichTextEditor', 'PopupRichBlocks', 'registerPopupRichFonts'],
+    action: 'WPF에서 그 family의 Regular·Bold가 어떤 서체인지(scripts\\list-wpf-font-faces.ps1) 확인한 뒤, 같은 서체 이름을 faces에 넣습니다. 기존 css 등록은 그대로 동작합니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-24-font-id-removed', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
     title: '서식 글꼴 저장값 — 기본 4종도 글꼴 이름',
     body: ['기본 4종 글꼴을 MALGUN_GOTHIC 같은 ID 대신 Windows 글꼴 이름(Malgun Gothic·Gulim·Dotum·Batang)으로 저장합니다. 서버·WPF의 ID 목록은 없앴고, 기존 저장값은 DB 스크립트로 이름으로 바꿉니다.',

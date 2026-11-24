@@ -127,22 +127,59 @@ let registeredFonts: RichFontOption[] = [];
 
 /**
  * POL-03-02 : 문단·글자 서식
- * ■ 사용자 지정 글꼴 등록(TODO28 후속)
- * - in : fonts({ family: string; css: string; label?: string }[]) family = WPF가 인식하는 Windows 글꼴 패밀리 이름(저장값),
- *        css = 웹 전역 @font-face 별칭 등 CSS 글꼴 목록(편집기·미리보기 표시), label = 선택지 이름(없으면 family)
- * - out: RichFontOption[] 실제로 등록된 글꼴(형식이 틀리거나 기본 4종과 같은 family·중복 family·빈 css는 제외)
- * - 앱 시작 시 한 번 호출한다(호출할 때마다 등록 목록을 바꾼다). 이후 열리는 편집기·서식 패널·미리보기에 적용된다.
- *   400/700 굵기와 실제 웹 서체의 연결은 전역 CSS(@font-face의 font-weight)가 담당하고, 굵게는 기존 bold로 저장한다.
- *   서버·WPF에는 family 이름 문자열만 전달된다(CSS·폰트 파일은 전달하지 않음).
+ * ■ 굵기별 실제 서체 지정(2026-11-24)
+ * - regular: 일반 글자(400)에 쓸 Windows 서체 이름(local() 이름, 예: 'YouandiNewKr Text Regular')
+ * - bold?: 굵게(700)에 쓸 서체 이름. 없으면 브라우저가 regular를 인위적으로 굵게 그린다.
+ * - 전역 CSS 별칭이 굵기마다 다른 디자인(예: 300 Text·700 Head)을 섞거나 400이 없으면 웹이 WPF와 다른 서체를 고른다.
+ *   WPF는 family 패밀리 안의 Regular·Bold를 고르므로, 그와 같은 서체를 여기 지정하면 편집기·미리보기·WPF가 같아진다.
  */
-export function registerPopupRichFonts(fonts: { family: string; css: string; label?: string }[]): RichFontOption[] {
+export interface PopupRichFontFaces { regular: string; bold?: string }
+/** registerPopupRichFonts 입력 한 건. css(전역 별칭) 또는 faces(굵기별 서체 지정) 중 하나를 넘긴다. faces가 있으면 css보다 우선한다. */
+export interface PopupRichFontRegistration { family: string; css?: string; label?: string; faces?: PopupRichFontFaces }
+
+/** 팝업 서식 전용 @font-face를 넣는 style 요소 id. 전역 CSS·다른 화면에는 영향이 없도록 고유 별칭(PopupRichFaceN)만 정의한다. */
+export const POPUP_RICH_FACE_STYLE_ID = 'popup-rich-font-faces';
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 사용자 지정 글꼴 등록(TODO28 후속)
+ * - in : fonts(PopupRichFontRegistration[]) family = WPF가 인식하는 Windows 글꼴 패밀리 이름(저장값), label = 선택지 이름(없으면 family),
+ *        css = 웹 전역 @font-face 별칭 등 CSS 글꼴 목록 또는 faces = 일반(400)·굵게(700)에 쓸 실제 서체 이름(2026-11-24)
+ * - out: RichFontOption[] 실제로 등록된 글꼴(형식이 틀리거나 기본 4종과 같은 family·중복 family·css/faces가 없거나 틀린 항목은 제외)
+ * - 앱 시작 시 한 번 호출한다(호출할 때마다 등록 목록을 바꾼다). 이후 열리는 편집기·서식 패널·미리보기에 적용된다.
+ *   css 방식: 400/700과 실제 웹 서체의 연결은 전역 CSS(@font-face의 font-weight)가 담당한다.
+ *   faces 방식: 팝업 전용 별칭 PopupRichFaceN의 @font-face(400 → regular, 700 → bold, src: local())를 만들어 문서에 넣고 편집기·미리보기가 그 별칭을 쓴다.
+ *   굵게는 어느 방식이든 기존 bold로 저장하고, 서버·WPF에는 family 이름 문자열만 전달된다(CSS·폰트 파일은 전달하지 않음).
+ */
+export function registerPopupRichFonts(fonts: PopupRichFontRegistration[]): RichFontOption[] {
   const next: RichFontOption[] = [];
+  const faceRules: string[] = [];
   for (const font of fonts) {
-    const css = canonicalFontCss(font?.css ?? '');
-    if (!isRichFontName(font?.family) || !css || RICH_FONTS.some((item) => item.id === font.family) || next.some((item) => item.id === font.family)) continue;
+    if (!isRichFontName(font?.family) || RICH_FONTS.some((item) => item.id === font.family) || next.some((item) => item.id === font.family)) continue;
+    let css = '';
+    if (font.faces != null) {
+      const { regular, bold } = font.faces;
+      if (!isRichFontName(regular) || (bold != null && !isRichFontName(bold))) continue;
+      const alias = `PopupRichFace${faceRules.length}`;
+      faceRules.push(`@font-face{font-family:"${alias}";font-style:normal;font-weight:400;src:local("${regular}");}`
+        + (bold ? `@font-face{font-family:"${alias}";font-style:normal;font-weight:700;src:local("${bold}");}` : ''));
+      css = canonicalFontCss(`${alias}, sans-serif`);
+    } else {
+      css = canonicalFontCss(font?.css ?? '');
+    }
+    if (!css) continue;
     next.push({ id: font.family, css, label: font.label?.trim() || font.family });
   }
   registeredFonts = next;
+  if (typeof document !== 'undefined') {
+    let style = document.getElementById(POPUP_RICH_FACE_STYLE_ID);
+    if (!style && faceRules.length) {
+      style = document.createElement('style');
+      style.id = POPUP_RICH_FACE_STYLE_ID;
+      document.head.appendChild(style);
+    }
+    if (style) style.textContent = faceRules.join('\n');
+  }
   return [...next];
 }
 

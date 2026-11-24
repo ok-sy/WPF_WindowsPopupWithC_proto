@@ -70,7 +70,7 @@
 | `richEditorConfig.toolbar.items` | `popupRichText.ts` | 없음(화면 전용). 일괄 서식 초기화(`removeFormat`)는 두지 않는다 |
 | `RICH_SIZES`(12~32) | `popupRichText.ts` | 서버 `PopupRichText.SIZES`, WPF 표시·Demo(`DemoOptionsWindow.ServerRichSizes`). 웹만 바꾸면 서버 저장 검증에서 거절된다 |
 | `RICH_FONTS`(기존 4종) | `popupRichText.ts` | 서버 `PopupRichText.FONTS`, WPF 글꼴 매핑 |
-| `registerPopupRichFonts`·`isRichFontName`(사용자 지정 글꼴, TODO28 후속) | `popupRichText.ts` | 서버 `PopupRichText.FONT_NAME`, WPF `PopupRichText.IsFontName` 같은 이름 규칙 |
+| `registerPopupRichFonts`·`isRichFontName`(사용자 지정 글꼴, TODO28 후속) | `popupRichText.ts` | 서버 `PopupRichText.FONT_NAME`, WPF `PopupRichText.IsFontName` 같은 이름 규칙. 웹 표시는 `css`(전역 별칭) 또는 `faces: { regular, bold? }`(일반·굵게 실제 서체 지정 → 팝업 전용 `@font-face`, 2026-11-24) |
 | `RICH_COLORS`(8계열×5단계) | `popupRichText.ts` | 서버 색 규칙(대문자 `#RRGGBB`)만 맞으면 됨 |
 | `POPUP_MIN_WINDOW_SIZE`(300) | `popupCommon.ts` | 서버 `PopupService.POPUP_MIN_WINDOW_SIZE`, WPF `PopupOptions.MinWindowSize` |
 | `FONT_SIZE_MIN/MAX`(10~40) | `popupCommon.ts` | 서버 `validateFontSizeOptions`, WPF `PopupOptions.FontSizeMin/Max` |

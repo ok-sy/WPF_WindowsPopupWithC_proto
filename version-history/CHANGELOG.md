@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-24-16 — dev: 28_글꼴굵기별서체지정_추가
+
+- 이유 · 폐쇄망 전역 CSS 별칭(YouandiModern: 400 없음·700은 Head 디자인, YouandiNewKr: 700 미확인)으로는 편집기·미리보기가 WPF(저장 family 안의 Regular·Bold)와 다른 서체를 그려 웹과 WPF를 맞출 방법이 필요.
+- 변경 · `registerPopupRichFonts`에 선택 항목 `faces: { regular, bold? }` 추가. 지정하면 팝업 전용 `@font-face`(별칭 `PopupRichFaceN`, 400 → regular, 700 → bold, `src: local()`)를 `<style id="popup-rich-font-faces">`에 만들고 편집기·미리보기가 그 별칭을 쓴다. 서체 이름은 글꼴 이름 규칙으로 확인. 기존 `css` 등록·저장값(family·bold)·서버·WPF는 변경 없음. 코드 가이드 함수 설명·공지, 프런트 인계 문서, TODO28 후속 기록 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupRichText.ts`, `guide/guideData.ts`, `guide/guideNotices.ts`, `scripts/verify-rich-text-49.cjs`, `scripts/verify-popup-preview-61(-entry)`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`.
+- 검증 · `verify-popup-preview-61` 292건(인라인 미리보기·실제 크기 미리보기 Dialog에서도 지정 서체 실측 일치), `verify-rich-text-49` 112건 통과(지정 서체 실측: 일반 Georgia·굵게 Arial Bold가 편집기·미리보기 모두 적용, 저장 family+bold 유지, 700 규칙 조건, 틀린 이름 제외, 재등록 정리), guide-registry·guide-render, `tsc --noEmit`·eslint(기존 경고 1건 외) 통과. 미실행: 폐쇄망 Youandi 서체로 등록값 확정·실화면 비교.
+- 상태 · 커밋·원격 반영. 폐쇄망 `list-wpf-font-faces.ps1 -Filter Youandi` 결과 대기.
+
 ## 2026-11-24-15 — dev: 공통가이드_NEW표시_폐쇄망반영기준_수정
 
 - 이유 · 공통 컴포넌트 가이드 공지의 NEW가 게시 후 14일 기준이라, 폐쇄망에 이미 반영한 2026-11-17 이전 공지에도 붙고 반영 여부와 맞지 않음.

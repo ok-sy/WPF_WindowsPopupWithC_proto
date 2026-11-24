@@ -498,6 +498,25 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const aligns = await run(`(()=>{const ps=Array.from(document.querySelectorAll('#root *')).filter(p=>p.children.length===0&&(p.textContent===${JSON.stringify(fixed)}||p.textContent==='사용자 설명'));return ps.map(p=>p.textContent===${JSON.stringify(fixed)}?'F:'+getComputedStyle(p).textAlign:'U:'+getComputedStyle(p).textAlign);})()`);
   check(aligns.includes('F:right') && aligns.includes('U:left') && !(await run("document.querySelector('#root').innerText.includes('00:00')")),
     '[VIDEO description] rich description keeps the right-aligned fixed paragraph and the control mock line is gone: ' + JSON.stringify(aligns));
+  // 2026-11-24 faces 등록 글꼴은 인라인 미리보기와 실제 크기 미리보기(Dialog)에서도 같은 팝업 전용 @font-face로 그린다.
+  // 일반 Georgia·굵게 Arial Bold로 지정하고 두 미리보기의 TEXT 서식 본문이 실제로 고른 서체를 CDP로 잰다.
+  await run(`window.registerPopupRichFonts([{family:'Georgia',label:'지정 서체',faces:{regular:'Georgia',bold:'Arial Bold'}}])`);
+  await render('TEXT', {}, {plainText: 'faceR faceB', textBlocks: [{alignment: 'LEFT', runs: [{text: 'faceR', font: 'Georgia'}, {text: ' '}, {text: 'faceB', font: 'Georgia', bold: true}]}]});
+  await openPreview(); await run('document.fonts.ready'); await pause(300);
+  await send('DOM.enable'); await send('CSS.enable'); await send('DOM.getDocument', {depth: 0});
+  const faceOf = async (scope, text) => {
+    const {result} = await send('Runtime.evaluate', {expression: `Array.from(document.querySelectorAll(${JSON.stringify(scope + ' *')})).filter(x=>x.children.length===0&&x.textContent===${JSON.stringify(text)}).pop()`});
+    if (!result.objectId) return null;
+    const {nodeId} = await send('DOM.requestNode', {objectId: result.objectId});
+    const {fonts} = await send('CSS.getPlatformFontsForNode', {nodeId});
+    return fonts.map(f => f.postScriptName || f.familyName).join(';');
+  };
+  const previewFaces = {inlineR: await faceOf('#root', 'faceR'), inlineB: await faceOf('#root', 'faceB'),
+    dialogR: await faceOf('.MuiDialog-root', 'faceR'), dialogB: await faceOf('.MuiDialog-root', 'faceB')};
+  check(/Georgia$/.test(previewFaces.inlineR) && /Arial-BoldMT/.test(previewFaces.inlineB) && /Georgia$/.test(previewFaces.dialogR) && /Arial-BoldMT/.test(previewFaces.dialogB),
+    '[faces] inline and actual-size previews use the registered faces (regular Georgia, bold Arial Bold): ' + JSON.stringify(previewFaces));
+  await escape();
+  await run(`window.registerPopupRichFonts([])`);
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

@@ -7,6 +7,7 @@ import type { Size } from '../zero-rule-web/main/src/features/PopupcommonCompone
 import { adaptiveWindowForImage, fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { VIDEO_FIXED_DESCRIPTION, applyVideoFixedDescription, stripVideoFixedDescription } from '../zero-rule-web/main/src/features/PopupcommonComponent/videoFixedDescription';
 import { previewDialogSize, readBrowserViewport, readScreenWorkArea } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
+import { registerPopupRichFonts } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 // POL-08-01 : 공통 렌더러
 // ■ 등록 화면 없이 샘플 popup 객체만으로 인라인·실제 크기 미리보기를 쓰는 최소 호스트.
 const root = createRoot(document.getElementById('root')!);
@@ -62,4 +63,5 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
 (window as any).fixedText = VIDEO_FIXED_DESCRIPTION;
 (window as any).applyFixed = (type: string, content: Record<string, unknown>) => applyVideoFixedDescription(deepFreeze(samplePopup(type, {}, content)));
 (window as any).stripFixed = (popup: any) => stripVideoFixedDescription(deepFreeze(popup));
+(window as any).registerPopupRichFonts = registerPopupRichFonts;
 (window as any).renderHost('TEXT');
