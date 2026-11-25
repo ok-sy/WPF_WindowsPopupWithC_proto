@@ -1,6 +1,7 @@
 import type { AdminPopupDetail } from '@local/domain';
 import type { Size } from './imagePreviewLayout';
 import { POPUP_SCREEN_SAFE_AREA_RATIO, popupWindowBounds } from './popupCommon';
+import { POPUP_DEFAULTS } from './popupDefaults';
 import { POPUP_LAYOUT } from './popupLayout';
 
 /* WPF PopupWindow.ApplyPosition과 같은 9개 위치. 작업 영역(미리보기에서는 브라우저 창) 가장자리에 붙이고,
@@ -58,10 +59,11 @@ export const PREVIEW_WINDOW_SHADOW = '0 4px 22px rgba(0, 0, 0, 0.28)';
  * - 팝업 설정을 받아 배경 Overlay 사용 여부와 불투명도를 정리한다. 숫자가 아니면 기본 0.45(PopupPreview와 같은 규칙).
  */
 export function previewOverlay(popup: AdminPopupDetail): { enabled: boolean; opacity: number } {
-  const requested = Number(popup.content.backgroundOverlayOpacity ?? 0.45);
+  const fallback = POPUP_DEFAULTS.overlay.backgroundOverlayOpacity;
+  const requested = Number(popup.content.backgroundOverlayOpacity ?? fallback);
   return {
     enabled: popup.content.useBackgroundOverlay !== false,
-    opacity: Number.isFinite(requested) ? Math.max(0, Math.min(1, requested)) : 0.45,
+    opacity: Number.isFinite(requested) ? Math.max(0, Math.min(1, requested)) : fallback,
   };
 }
 
@@ -221,8 +223,8 @@ export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | nul
   if (fitWindow) return { width: Math.round(fitWindow.width), height: Math.round(fitWindow.height) };
   if (popup.sizeMode === 'FULLSCREEN') return { width: Math.round(areaWidth), height: Math.round(areaHeight) };
   const ratio = (value: unknown) => Math.max(0.1, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 1));
-  const requestedWidth = popup.sizeMode === 'RATIO' ? areaWidth * ratio(popup.widthRatio) : (popup.width ?? 560);
-  const requestedHeight = popup.sizeMode === 'RATIO' ? areaHeight * ratio(popup.heightRatio) : (popup.height ?? 420);
+  const requestedWidth = popup.sizeMode === 'RATIO' ? areaWidth * ratio(popup.widthRatio) : (popup.width ?? POPUP_DEFAULTS.window.width);
+  const requestedHeight = popup.sizeMode === 'RATIO' ? areaHeight * ratio(popup.heightRatio) : (popup.height ?? POPUP_DEFAULTS.window.height);
   // 설정 최소·최대를 300~작업 영역 90% 사이에서 반영(모든 유형·RATIO 공통, WPF EffectiveMaximumWidth/Height).
   const { minimum, maximum } = popupWindowBounds(popup, workArea);
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));

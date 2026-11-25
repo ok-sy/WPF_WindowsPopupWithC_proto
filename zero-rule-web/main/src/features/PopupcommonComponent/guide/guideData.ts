@@ -431,6 +431,7 @@ export const FUNCTIONS: GuideFunction[] = [
   // 공통 사용
   { name: 'pickPopupFields', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'popup, { topLevelKeys?, contentKeys?, questionKeys? }', output: '{ ...고른 항목, content?, questions? }', description: '고른 항목의 값만 가져옵니다. 값은 바꾸지 않고, 입력하지 않은 항목은 결과에 없습니다.' },
   { name: 'withPreviewFallback', scope: 'COMMON', file: 'popupPreviewFallback.ts', input: 'state: Partial<AdminPopupDetail>', output: 'AdminPopupDetail(미리보기용)', description: '미리보기에 필요한 기본값만 채워서 돌려줍니다. 입력한 값은 변경하지 않습니다. 저장에는 쓰지 않습니다.' },
+  { name: 'POPUP_DEFAULTS', scope: 'COMMON', file: 'popupDefaults.ts', input: '-', output: '{ window, chrome, overlay, video }', description: '웹이 쓰는 팝업 기본값(창 560×420·비율 0.7×0.75·최소 300·최대 1200×900, 헤더·푸터 표시, 배경 어둡기 0.45, 음량 0.7, 동영상+퀴즈 완료 0.8)을 한곳에 둡니다. 미리보기 대체값·신규 초기값이 이 값을 읽습니다. 나중에 서버(공통코드)가 정하면 이 파일만 바꿉니다.' },
   { name: 'contentValue', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'popup, key', output: 'string', description: 'content 값을 입력칸에 넣을 글자로 바꿉니다(없으면 "").' },
   { name: 'toDateTimeLocal', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'value: PopupDateValue', output: 'string', description: '서버 날짜를 날짜·시간 입력칸 형식으로 바꿉니다.' },
   { name: 'describeSchedule / parseWeekdays', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'periodMode, repeatDayOfWeek, displayTimes', output: 'string / number[]', description: '노출 일정 요약 문구를 만들고, 요일 번호를 읽습니다.' },

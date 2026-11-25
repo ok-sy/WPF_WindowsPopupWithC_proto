@@ -23,6 +23,7 @@ export * from './popupQuizResultNotice';
 export * from './popupEditorTransform';
 export * from './popupCommon';
 export * from './popupPreviewFallback';
+export * from './popupDefaults';
 export * from './popupRichText';
 export type { Size } from './imagePreviewLayout';
 export { adaptiveWindowForImage, type AdaptiveImageWindow } from './imagePreviewLayout';

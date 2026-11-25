@@ -102,7 +102,7 @@ export const POPUP_SCREEN_SAFE_AREA_RATIO = 0.90;
  * ■ 창 최대 크기 계산(설정값)
  * - in : popup(minimumWidth·minimumHeight·maximumWidth·maximumHeight) 저장된 최소·최대 크기
  * - out: { width, height } 최소 크기 이상으로 보정한 설정 최대 크기(값이 없으면 Infinity)
- * - 창 최대 크기는 관리자 화면이 정하는 정책값이다(기본 1200 x 900, createDefaultPopup). 최소보다 작은 모순 값은 최소까지 올린다
+ * - 창 최대 크기는 관리자 화면이 정하는 정책값이다(기본 1200 x 900: 서버 저장 기본값, 웹은 popupDefaults.ts). 최소보다 작은 모순 값은 최소까지 올린다
  *   (WPF RequestedMaximumWidth/Height와 같다). 2026-11-25부터 IMAGE도 같은 값을 쓴다.
  */
 export function popupMaximumSize(popup: Pick<AdminPopupDetail, 'minimumWidth' | 'minimumHeight' | 'maximumWidth' | 'maximumHeight'>): { width: number; height: number } {

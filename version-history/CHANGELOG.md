@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-06 — dev: 68_화면기본값단일파일_추가
+
+- 이유 · 창 크기·최소·최대·비율 등 웹 기본값이 `createDefaultPopup`·`PREVIEW_FALLBACK`·`previewDialogSize`·`changePopupType`·`PopupPreview`·`previewOverlay`에 같은 숫자로 흩어져 있어 정책 출처가 불명확(주석에 `createDefaultPopup`을 출처로 잘못 적음). 웹 기본값을 한 파일로 모으고, 나중에 서버(공통코드)가 정할 때 그 파일만 교체하도록 준비.
+- 변경 · `PopupcommonComponent/popupDefaults.ts`(`POPUP_DEFAULTS`: window 560×420·0.7/0.75·최소 300·최대 1200×900, chrome 헤더·닫기·푸터 표시, overlay 사용·0.45, video 음량 0.7·동영상+퀴즈 완료 0.8) 추가·index export. 위 6곳이 이 값을 읽도록 변경(값 변경 없음). `popupMaximumSize` 주석·68 설계 문서·책임분리 문서의 출처 표기 정정. 가이드 함수 목록에 추가.
+- 주요 파일 · `popupDefaults.ts`(신규), `popupEditorTransform.ts`, `popupPreviewFallback.ts`, `popupPreviewDialogLayout.ts`, `PopupPreview.tsx`, `popupCommon.ts`, `index.ts`, `guide/guideData.ts`, `docs/design/68_*`, `docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md`.
+- 검증 · `tsc --noEmit`·변경 파일 eslint 오류 0, `verify-popup-transform-64` 79(createDefaultPopup 결과 기존과 동일), `verify-popup-preview-61` 309, `verify-image-preview` 49, `verify-popup-common-sample-69` 70, `verify-rgstpop-quiz-rule` 47, `verify-popup-guide-registry` 503, `verify-popup-guide-render` 34. 서버·WPF 기본값은 변경 없음(같은 값 유지).
+- 상태 · 커밋·원격 반영. 서버 공통코드 연동은 미착수(`[실연동]` 표시).
+
 ## 2026-11-25-05 — dev: 68_숫자입력지우기·이미지자동높이최대_수정
 
 - 이유 · 등록 화면(RgstPop) 숫자 입력에서 마지막 자리가 지워지지 않는 불편과, 5a46b9d 이후 이미지 세로 자동 경로가 설정 최대에 걸린 세로형 이미지에서 입력 너비를 유지해 안내·저장 너비가 버튼 경로와 달라지는 문제 확인.

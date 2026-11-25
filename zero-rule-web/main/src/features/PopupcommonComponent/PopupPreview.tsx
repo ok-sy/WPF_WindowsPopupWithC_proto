@@ -11,6 +11,7 @@ import { POPUP_COLORS, POPUP_LAYOUT } from './popupLayout';
 import { readTextBlocks } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupWindowBounds } from './popupCommon';
+import { POPUP_DEFAULTS } from './popupDefaults';
 import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, previewWindowShadow, readScreenWorkArea } from './popupPreviewDialogLayout';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
@@ -526,10 +527,10 @@ export default function PopupPreview({
   }, [recommendedWidth, recommendedHeight]);
 
   const overlayEnabled = popup.content.useBackgroundOverlay !== false;
-  const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? 0.45);
+  const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? POPUP_DEFAULTS.overlay.backgroundOverlayOpacity);
   const overlayOpacity = Number.isFinite(requestedOpacity)
     ? Math.max(0, Math.min(1, requestedOpacity))
-    : 0.45;
+    : POPUP_DEFAULTS.overlay.backgroundOverlayOpacity;
   const title = contentTitle(popup, hidePlaceholders);
   // 설문·퀴즈 콘텐츠 제목 서식(content.surveyTitleBlocks).
   const richSurveyTitle = isSurvey ? richBlocksOrNull(popup.content.surveyTitleBlocks) : null;

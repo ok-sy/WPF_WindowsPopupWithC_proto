@@ -12,7 +12,8 @@
  */
 import type { AdminPopupDetail, PopupDateValue, PopupDisplayTime, PopupQuestion, PopupTargetGroup, PopupType } from '@local/domain';
 import normalizePopupLink from './normalizePopupLink';
-import { POPUP_MIN_WINDOW_SIZE, popupDateMillis } from './popupCommon';
+import { popupDateMillis } from './popupCommon';
+import { POPUP_DEFAULTS } from './popupDefaults';
 
 /**
  * POL-07-02 : 변환 책임 분리
@@ -52,10 +53,10 @@ export function createDefaultPopup(now: Date = new Date()): AdminPopupDetail {
   return {
     popupId: '', popupType: 'TEXT', title: '',
     displayStartAt: startAt.toISOString(), displayEndAt: endAt.toISOString(),
-    displayMode: 'SEQUENTIAL', displayOrder: 100, sizeMode: 'FIXED',
-    width: 560, height: 420, widthRatio: 0.7, heightRatio: 0.75,
-    minimumWidth: POPUP_MIN_WINDOW_SIZE, minimumHeight: POPUP_MIN_WINDOW_SIZE, maximumWidth: 1200, maximumHeight: 900,
-    showHeader: true, showCloseButton: true, showFooter: true, showDoNotShowAgain: false, showLater: false,
+    displayMode: 'SEQUENTIAL', displayOrder: 100,
+    // 창 크기·최소·최대·비율과 헤더·푸터 표시는 화면 기본값(popupDefaults.ts)을 쓴다.
+    ...POPUP_DEFAULTS.window,
+    ...POPUP_DEFAULTS.chrome,
     questionTemplateId: null, periodMode: 'FIXED', repeatInterval: null,
     repeatDayOfWeek: null, repeatDayOfMonth: null, displayTimes: [], hideDays: null,
     completionRatio: null, passingScore: null,
@@ -67,10 +68,9 @@ export function createDefaultPopup(now: Date = new Date()): AdminPopupDetail {
       showBottomDescription: false,
       showDescription: true, imageSizeMode: 'ADAPTIVE',
       showControls: true, allowFullScreen: true,
-      allowPlaybackRateChange: true, allowSeek: true, autoPlay: false, isLoop: false, defaultVolume: 0.7,
+      allowPlaybackRateChange: true, allowSeek: true, autoPlay: false, isLoop: false, defaultVolume: POPUP_DEFAULTS.video.defaultVolume,
       // 공통 배경 Overlay 옵션. content_options_json에 함께 저장되어 WPF까지 전달된다.
-      useBackgroundOverlay: true,
-      backgroundOverlayOpacity: 0.45,
+      ...POPUP_DEFAULTS.overlay,
       // Header/본문/Footer 폰트 크기. 신규 등록 기본값은 "미설정(null)" — WPF가 기존 XAML 기본 크기를 쓴다.
       // 값을 넣으면 Overlay 옵션처럼 content_options_json으로 저장되어 서버 → WPF PopupOptions까지 전달된다.
       headerFontSize: null,
@@ -220,10 +220,10 @@ export function changePopupType(previous: AdminPopupDetail, selection: PopupType
   return { ...previous, popupType: nextType,
     content: { ...previous.content, videoEnabled: combined },
     // 일반 IMAGE는 width/height를 생략할 수 있다. 다른 유형으로 바꿔 저장할 때 "팝업 너비와 높이는 필수" 거절을 막는다.
-    width: previous.width ?? 560,
-    height: previous.height ?? 420,
+    width: previous.width ?? POPUP_DEFAULTS.window.width,
+    height: previous.height ?? POPUP_DEFAULTS.window.height,
     // 동영상+퀴즈 기본 0.8, 일반 VIDEO는 입력값 유지(비우면 1.0), 동영상이 없는 유형은 저장 요청에 남지 않게 비운다.
-    completionRatio: combined ? previous.completionRatio ?? 0.8 : nextType === 'VIDEO' ? previous.completionRatio : null,
+    completionRatio: combined ? previous.completionRatio ?? POPUP_DEFAULTS.video.videoQuizCompletionRatio : nextType === 'VIDEO' ? previous.completionRatio : null,
     questions: nextType === 'QUIZ' ? withDefaultAnswerMatchMode(previous.questions) : previous.questions };
 }
 

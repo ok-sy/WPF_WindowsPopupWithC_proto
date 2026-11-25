@@ -8,27 +8,16 @@
  *  - 여기 값은 표시용이며 서버 저장 기본값과 다를 수 있다. 저장 값·pickPopupFields 결과에는 섞지 않는다(원본 state를 바꾸지 않음).
  */
 import type { AdminPopupDetail } from '@local/domain';
-import { POPUP_MIN_WINDOW_SIZE } from './popupCommon';
+import { POPUP_DEFAULTS } from './popupDefaults';
 
 /** 미리보기 표시용 fallback(최상위 표시 필드만). 키를 추가할 때는 PopupPreview가 실제로 읽는 필드인지 먼저 확인한다. */
 export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
   popupId: '',
   popupType: 'TEXT',
   title: '',
-  sizeMode: 'FIXED',
-  width: 560,
-  height: 420,
-  widthRatio: 0.7,
-  heightRatio: 0.75,
-  minimumWidth: POPUP_MIN_WINDOW_SIZE,
-  minimumHeight: POPUP_MIN_WINDOW_SIZE,
-  maximumWidth: 1200,
-  maximumHeight: 900,
-  showHeader: true,
-  showCloseButton: true,
-  showFooter: true,
-  showDoNotShowAgain: false,
-  showLater: false,
+  // 창 크기·최소·최대·비율과 헤더·푸터 표시는 화면 기본값(popupDefaults.ts)과 같다.
+  ...POPUP_DEFAULTS.window,
+  ...POPUP_DEFAULTS.chrome,
   hideDays: null,
   completionRatio: null,
   passingScore: null,
@@ -36,7 +25,7 @@ export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
 };
 
 /** 동영상+퀴즈 미리보기 완료 비율. 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 0.8로 표시한다. 일반 VIDEO는 1.0 그대로. WPF·서버의 미설정 기본값도 같다(PU001 B-7, 2026-11-03). */
-export const PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO = 0.8;
+export const PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO = POPUP_DEFAULTS.video.videoQuizCompletionRatio;
 
 /**
  * POL-08-01 : 공통 렌더러
