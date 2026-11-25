@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-25-11 — docs: 20261125 반입본 생성
+
+- 이유 · 반입 준비. 직전 반입본 20261124(1eca966) 이후 변경(TODO68 창 최소·최대 공통·이미지 맞춤·숫자 입력·기본값 0101, TODO28 글꼴 ID 삭제·굵기별 서체, TODO60·61 영상 창, 가이드·문서 정정)과 폐쇄망 0101 등록 쿼리를 전달. 0101 그룹이 비어 있음을 폐쇄망에서 확인.
+- 변경 ·
+  - 변경 요약 `.offline-cache/notes-20261125.md`(20261124 반입 결과 대기 안내, 0101 실행·확인 쿼리, 글꼴 ID 삭제에 따른 DB 26 실행 조건과 서버 미반입 영향, Modern 700 Win32Family 확인 요청).
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261125`: 20261124 번들에서 연속(main 5701e97 → ad1d5c1, 31개 추가), 민감값·제외 경로·트리 차이 점검 0.
+  - 옵션 `-Date 20261125 -NotesFile .offline-cache/notes-20261125.md -GitHistoryDir .offline-cache/git-history-20261125 -DbFiles db/oracle/27_popup_default_code_closednet_oracle.sql,db/oracle/26_rich_font_id_to_name_oracle.sql -VerifyBuild`(서버 제외). 직전 반입본은 README-IMPORT에서 자동으로 20261124(1eca966). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 60·M 22·D 3(baseline f66e8ed 누적, RgstPop·전역 CSS 재현본 제외), WPF 소스 100, 문서 209 + DB 스크립트 2 + CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함).
+- 검증 · 오프라인 운영 빌드, 폴더형 publish·단일 EXE(91,833,166 Byte). TAR 4개 SHA256 OK, TGZ SHA256 `d760d86b7d782ec0b83e4f7aed2b7ff915300119d5d55f09691eeb16926d711e` 일치(25,284,763 Byte). 목록에 서버·RgstPop·`globalStyle.ts`·`_app.tsx`·MockSso·Popup.slnx·EXE·PDB 0건. DB 26·27 closednet·`popupDefaults.ts`·`PopupNumberField.tsx`·`IS063M02Sample.tsx` 포함. 반입 scene-router에 RgstPop 참조 0건, IS063 라우트의 `api.clCode.search` 연결 포함. README-IMPORT 기준 커밋 2a97149·직전 20261124(1eca966).
+- 미완료 · 폐쇄망 반입·적용, 폐쇄망 DB 26·27 실행 미실행.
+- 상태 · 반입본 생성·검증 완료(`offline-export/20261125`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-25-10 — dev: 68_공통코드0101_폐쇄망쿼리·IS063연결_추가
 
 - 이유 · 반입 준비. 폐쇄망 0101 그룹이 비어 있음을 확인해 폐쇄망 구조(`CLOVER_CODE.SORT_SEQ`)에 맞춘 등록 쿼리가 필요하고, 폐쇄망에 반입하는 컨텐츠 등록 샘플(IS063M02)이 0101을 읽도록 연결해 실제 등록 화면 연동 예시로 전달.
