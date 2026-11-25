@@ -132,9 +132,9 @@ const toWpf = p => {
       const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: 720, height: 900, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
       await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1800 : 700);
       await run(`document.querySelectorAll('#frame img').forEach(i=>{if((i.getAttribute('src')||'').includes('popup-header-logo'))i.style.visibility='hidden';})`);
-      // 배경: 기본 배경 어둡기(검정 0.45, POPUP_DEFAULTS.overlay.backgroundOverlayOpacity)를 흰 바탕에 겹친 색 #8C8C8C.
+      // 배경: PPT 슬라이드 배경과 같은 #E5E7EB(완료 팝업 그림 AlertCapture 배경과 같음)라 그림과 슬라이드 사이 경계가 보이지 않는다.
       // 창(그림자 여백 24 포함) 둘레에 24를 더 두고 찍어 흰 판·그림자·둥근 모서리가 배경 위에 보이게 한다.
-      await run(`document.body.style.background='#8C8C8C';document.getElementById('frame').style.margin='${DECK_MARGIN}px'`);
+      await run(`document.body.style.background='#E5E7EB';document.getElementById('frame').style.margin='${DECK_MARGIN}px'`);
       await pause(100);
       deck[id] = await run(`(()=>{const panel=document.querySelector('#frame .MuiPaper-root'),f=panel.getBoundingClientRect();
         const box=e=>{if(!e)return null;const r=e.getBoundingClientRect();return r.width>0?{x:Math.round(r.x-f.x),y:Math.round(r.y-f.y),w:Math.round(r.width),h:Math.round(r.height)}:null;};
