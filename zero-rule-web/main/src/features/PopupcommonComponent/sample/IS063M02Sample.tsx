@@ -15,6 +15,7 @@ import { adaptiveWindowForImage, imageSizeMode, type Size } from '../imagePrevie
 import useNaturalImageSize from '../useNaturalImageSize';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
 import { POPUP_MIN_WINDOW_SIZE, popupMaximumSize } from '../popupCommon';
+import PopupNumberField from '../PopupNumberField';
 import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
@@ -138,10 +139,15 @@ export default function IS063M02Sample() {
     if (!autoHeight || !imageFit) return;
     setPopup((previous) => {
       if (!previous) return previous;
-      const width = previous.width ?? imageFit.window.width;
+      // 설정 최대를 넘어 두 축을 함께 줄였으면(cappedByMaximum) 가로도 계산 결과로 바꾼다('이미지 크기에 맞추기' 버튼과 같은 결과, 2026-11-25).
+      const width = imageFit.cappedByMaximum ? imageFit.window.width : previous.width ?? imageFit.window.width;
       return previous.width === width && previous.height === imageFit.window.height ? previous : { ...previous, width, height: imageFit.window.height };
     });
-  }, [autoHeight, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+    // 입력 가로도 넣는다: 이미 최대에 걸린 상태에서 가로만 바꾸면 계산 결과가 같아 다시 맞추지 않던 문제(2026-11-25).
+  }, [autoHeight, popup?.width, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 원본 기준 맞춤 결과. 창 최대에 걸리면(cappedByMaximum) 여백 없는 가장 큰 크기이며, 세로 자동·'이미지 크기에 맞추기' 모두 이 값으로 맞춘다.
+  const largestFit = adaptiveImage && naturalImage && preview ? adaptiveWindowForImage(preview, naturalImage, null) : null;
+  const atMaximum = largestFit?.cappedByMaximum === true && (imageFit?.cappedByMaximum === true || Number(popup?.width ?? 0) >= largestFit.window.width);
   const fitImageSize = () => {
     if (!preview || !naturalImage) return;
     const natural = adaptiveWindowForImage(preview, naturalImage, null);
@@ -198,10 +204,11 @@ export default function IS063M02Sample() {
   const sizeField = (label: string, key: 'width' | 'height') => (
     <Box className="nConWid">
       <Typography component="span">{label}</Typography>
-      <TextField placeholder={`최소 ${POPUP_MIN_WINDOW_SIZE}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key] ?? ''}
+      {/* [옵션] 빈 칸은 입력을 마칠 때 반영한다(PopupNumberField empty="onBlur"). 바로 반영하면 세로 자동이 가로를 다시 채워 마지막 자리가 지워지지 않는다. */}
+      <PopupNumberField placeholder={`최소 ${POPUP_MIN_WINDOW_SIZE}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key]} empty="onBlur"
         disabled={!popup || (key === 'height' && adaptiveImage && autoHeight && imageFit != null)}
-        slotProps={{ htmlInput: { 'aria-label': label, min: POPUP_MIN_WINDOW_SIZE } }} type="number"
-        onChange={(event) => update(key, event.target.value === '' ? undefined : Number(event.target.value))} />
+        slotProps={{ htmlInput: { 'aria-label': label, min: POPUP_MIN_WINDOW_SIZE } }}
+        onChange={(value) => update(key, value ?? undefined)} />
       <Typography component="span">px</Typography>
     </Box>
   );
@@ -273,9 +280,9 @@ export default function IS063M02Sample() {
                     <FormControlLabel label="이미지에 맞춰 세로 자동" disabled={!naturalImage}
                       control={<Checkbox size="small" checked={autoHeight} onChange={(event) => setAutoHeight(event.target.checked)} />} />
                     <Button size="small" variant="outlined" disabled={!naturalImage} onClick={fitImageSize}>이미지 크기에 맞추기</Button>
-                    <Typography variant="caption" color={imageFit?.limited || imageFit?.cappedByMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                    <Typography variant="caption" color={imageFit?.limited || atMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
                       {!naturalImage ? '이미지를 첨부하면 창 크기를 이미지에 맞출 수 있습니다.'
-                        : imageFit?.cappedByMaximum ? `창 최대 크기를 넘어 여백이 생기지 않도록 ${imageFit.window.width}×${imageFit.window.height}px로 줄였습니다.`
+                        : atMaximum && largestFit ? `창 최대 크기 안에서 여백 없는 가장 큰 크기는 ${largestFit.window.width}×${largestFit.window.height}px입니다. 세로 자동·맞추기는 이 크기로 넣습니다.`
                         : imageFit?.limited ? `가로가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 가로는 ${imageFit.window.width}px입니다.`
                           : `이미지 원본 ${naturalImage.width}×${naturalImage.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
                     </Typography>

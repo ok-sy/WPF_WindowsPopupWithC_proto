@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-05 — dev: 68_숫자입력지우기·이미지자동높이최대_수정
+
+- 이유 · 등록 화면(RgstPop) 숫자 입력에서 마지막 자리가 지워지지 않는 불편과, 5a46b9d 이후 이미지 세로 자동 경로가 설정 최대에 걸린 세로형 이미지에서 입력 너비를 유지해 안내·저장 너비가 버튼 경로와 달라지는 문제 확인.
+- 변경 · 공통 `PopupNumberField`(입력 중 글자 보관, 빈 칸 처리 commit/onBlur/keep) 추가. RgstPop 표시 우선순위·너비/높이 비율·기본 음량·배경 어둡기·이미지 너비/높이, 공통 퀴즈 통과 기준 개수, IS063M02 샘플 가로/세로에 적용(빈 칸 → 0 표시와 세로 자동의 즉시 재입력 방지). 세로 자동 effect가 `cappedByMaximum`이면 너비도 결과 값으로 넣고, 의존성에 입력 너비를 넣어 이미 최대에 걸린 상태에서 너비만 바꿔도 다시 맞춤(RgstPop·IS063M02). 최대 안내는 원본 기준 결과(여백 없는 가장 큰 크기)로 표시해 자동 적용 뒤에도 유지. `adaptiveWindowForImage` 결과 창 가로를 최소 크기 이상으로 보정(이전 280처럼 300 미만 가능). 가이드 컴포넌트·공지·실행기 안내 추가.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/PopupNumberField.tsx`(신규), `PopupQuizRuleFields.tsx`, `imagePreviewLayout.ts`, `index.ts`, `sample/IS063M02Sample.tsx`, `guide/guideData.ts`·`guideNotices.ts`·`guideRunners.tsx`, `RgstPop/PopupEditorDialog.tsx`, `scripts/verify-rgstpop-quiz-rule.cjs`, `scripts/verify-popup-common-sample-69.cjs`, `scripts/verify-popup-preview-61.cjs`.
+- 검증 · `verify-rgstpop-quiz-rule` 47(신규: 자동 체크 경로 두 축 축소·안내=입력=저장, 최대 상태에서 너비 재입력 재맞춤, 너비 마지막 자리 삭제·blur 후 재맞춤, 버튼 경로 같은 값·저장, 표시 우선순위 빈 칸), `verify-popup-common-sample-69` 70(IS063M02 같은 시나리오, 의존성 누락 수정 전 실패 재현), `verify-popup-preview-61` 309, `verify-image-preview` 49, `verify-survey-rich-text-55` 81, `verify-popup-guide-registry` 492, `verify-popup-guide-render` 34, `tsc --noEmit`·변경 파일 eslint 오류 0. 미실행: 관리자 실화면 키보드 입력(헤드리스 입력 이벤트로 대체), 폐쇄망 반입.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-04 — dev: 68_창최소최대공통적용_수정
 
 - 이유 · 창 최소·최대(최상위 `minimumWidth/Height`·`maximumWidth/Height`)가 IMAGE에서만 최대값을 쓰지 않아(2026-10-06 예외) 최상위 공통 옵션의 의미가 유형마다 달랐다. 최소·최대·비율은 관리자 화면 정책값으로 두고, 에이전트는 화면 밖 출력만 막는 보호선(하한 300·상한 작업 영역 90%)으로 역할을 정리.

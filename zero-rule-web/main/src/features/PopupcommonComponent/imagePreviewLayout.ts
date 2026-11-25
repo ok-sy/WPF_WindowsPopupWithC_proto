@@ -1,5 +1,5 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
-import { popupFontSize, popupMaximumSize, popupWindowBounds } from './popupCommon';
+import { popupFontSize, popupMaximumSize, popupMinimumSize, popupWindowBounds } from './popupCommon';
 import { POPUP_LAYOUT } from './popupLayout';
 /**
  * POL-04-02 : 모드별 기준
@@ -180,7 +180,9 @@ export function adaptiveWindowForImage(popup: AdminPopupDetail, natural: Size, w
     const image = { width: imageWidth, height: imageWidth * natural.height / natural.width };
     const layout = fitToImageLayout({ ...unboundedMaximum, width: image.width, height: image.height, content: { ...popup.content, keepAspectRatio: true } },
       natural, UNBOUNDED_WORK_AREA);
-    return layout ? { image, window: { width: Math.round(image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH), height: layout.window.height } } : null;
+    // 창 가로도 최소 크기(300) 아래로 내리지 않는다(세로형 이미지를 최대 높이에 맞추면 300보다 좁아질 수 있음 — 이때 좌우 띠는 피할 수 없다).
+    const windowWidth = Math.max(popupMinimumSize(popup).width, Math.round(image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH));
+    return layout ? { image, window: { width: windowWidth, height: layout.window.height } } : null;
   };
   const maximum = popupMaximumSize(popup);
   const fits = (result: ReturnType<typeof fit>) => result != null && result.window.width <= maximum.width && result.window.height <= maximum.height;

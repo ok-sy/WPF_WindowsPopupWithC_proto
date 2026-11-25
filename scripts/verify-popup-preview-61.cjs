@@ -490,7 +490,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const tallOf = (o, w) => run(`JSON.stringify(window.adaptiveFit(${JSON.stringify(o)}, ${JSON.stringify(noText)}, {width:400,height:1600}, ${JSON.stringify(w)}))`);
   for (const [o, w, maxHeight] of [[{}, null, 900], [{}, 600, 900], [{maximumHeight: 500}, 700, 500]]) {
     const fit = JSON.parse(await tallOf(o, w));
-    check(fit.cappedByMaximum === true && fit.window.height <= maxHeight && fit.window.height > maxHeight - 10 && fit.window.width === Math.round(fit.image.width + 106)
+    check(fit.cappedByMaximum === true && fit.window.height <= maxHeight && fit.window.height > maxHeight - 10 && fit.window.width === Math.max(320, Math.round(fit.image.width + 106))
       && Math.abs(fit.image.height / fit.image.width - 4) < 1e-6 && (w == null || fit.window.width <= w),
       `[IMAGE fit] a window above the stored maximum height ${maxHeight} is shrunk on both axes without bands: ` + JSON.stringify(fit));
   }

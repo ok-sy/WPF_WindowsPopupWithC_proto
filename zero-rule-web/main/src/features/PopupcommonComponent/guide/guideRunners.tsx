@@ -142,4 +142,5 @@ export const COMPONENT_RUNNERS: Record<string, RunnerDefinition> = {
 /** 실행기가 없는 컴포넌트의 안내 */
 export const RUNNER_NOTES: Record<string, string> = {
   PopupRichTextMenu: '혼자서는 실행해 볼 수 없습니다. PopupRichTextEditor 실행기에서 글자를 고르고 우클릭하면 이 패널이 열립니다.',
+  PopupNumberField: '단순 입력칸이라 실행기를 따로 두지 않습니다. 등록 화면 샘플(IS063M02)의 가로·세로와 퀴즈 통과 기준 개수에서 확인할 수 있습니다.',
 };

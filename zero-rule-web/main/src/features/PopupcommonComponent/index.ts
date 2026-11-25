@@ -16,6 +16,7 @@ export { default as InlinePopupPreview } from './InlinePopupPreview';
 export { default as PopupPreviewDialog } from './PopupPreviewDialog';
 export { default as PopupPreview } from './PopupPreview';
 export { default as PopupQuizRuleFields } from './PopupQuizRuleFields';
+export { default as PopupNumberField, type PopupNumberFieldEmpty, type PopupNumberFieldProps } from './PopupNumberField';
 export * from './popupQuestionCodes';
 export * from './popupQuizRule';
 export * from './popupQuizResultNotice';

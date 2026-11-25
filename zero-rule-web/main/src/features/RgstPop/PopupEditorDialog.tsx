@@ -23,6 +23,7 @@ import InlinePopupPreview from '../PopupcommonComponent/InlinePopupPreview';
 import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
 import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
 import { adaptiveWindowForImage, displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
+import PopupNumberField from '../PopupcommonComponent/PopupNumberField';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../PopupcommonComponent/videoFixedDescription';
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
@@ -134,8 +135,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     return () => { canceled = true; };
   }, [imageUrl]);
   // POL-04-01 : 공통 크기 입력 — IMAGE 크기 입력은 popup.width/height다. FIT_TO_IMAGE 비율 고정이면 원본 비율로 반대 축을 연동한다.
-  const updateImageDimension = (key: 'width' | 'height', input: string) => setPopup(previous => {
-    const value = input === '' ? undefined : Number(input);
+  const updateImageDimension = (key: 'width' | 'height', input: number | null) => setPopup(previous => {
+    const value = input ?? undefined;
     const next = {...previous, [key]: value};
     if (naturalSize && previous.content.imageSizeMode === 'FIT_TO_IMAGE' && previous.content.keepAspectRatio !== false && value != null && value > 0)
       next[key === 'width' ? 'height' : 'width'] = Math.round((key === 'width' ? value * naturalSize.height / naturalSize.width : value * naturalSize.width / naturalSize.height) * 100) / 100;
@@ -166,10 +167,16 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   useEffect(() => {
     if (!autoImageHeight || !imageFit) return;
     setPopup(previous => {
-      const width = previous.width ?? imageFit.window.width;
+      // 설정 최대를 넘어 가로·세로를 함께 줄인 경우(cappedByMaximum)는 너비도 계산 결과로 바꾼다. 이전에는 입력 너비를 유지해
+      // 안내에 표시된 너비와 저장 너비가 달랐다(버튼 '이미지 크기에 맞추기'는 두 축을 모두 반영, 2026-11-25 맞춤).
+      const width = imageFit.cappedByMaximum ? imageFit.window.width : previous.width ?? imageFit.window.width;
       return previous.width === width && previous.height === imageFit.window.height ? previous : {...previous, width, height: imageFit.window.height};
     });
-  }, [autoImageHeight, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+    // 입력 너비도 넣는다: 이미 최대에 걸린 상태에서 너비만 바꾸면 계산 결과가 같아 다시 맞추지 않던 문제(2026-11-25).
+  }, [autoImageHeight, popup.width, imageFit?.window.width, imageFit?.window.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 원본 기준 맞춤 결과. 설정 최대에 걸리면(cappedByMaximum) 여백 없는 가장 큰 크기이며, 높이 자동·'이미지 크기에 맞추기' 모두 이 값으로 맞춘다.
+  const largestImageFit = adaptiveImage && naturalSize ? adaptiveWindowForImage(previewPopup, naturalSize, null) : null;
+  const atImageMaximum = largestImageFit?.cappedByMaximum === true && (imageFit?.cappedByMaximum === true || Number(popup.width ?? 0) >= largestImageFit.window.width);
   const fitImageWindow = () => {
     const natural = naturalSize ? adaptiveWindowForImage(previewPopup, naturalSize, null) : null;
     if (natural) setPopup(previous => ({...previous, width: natural.window.width, height: natural.window.height}));
@@ -342,8 +349,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField select label="표시 방식" value={popup.displayMode} onChange={(e) => updatePopup('displayMode', e.target.value as PopupDisplayMode)}>
                 <MenuItem value="SEQUENTIAL">순차 표시</MenuItem><MenuItem value="SIMULTANEOUS">동시 표시</MenuItem>
               </TextField>
-              <TextField required type="number" label="표시 우선순위" value={popup.displayOrder} inputProps={{ min: 1, step: 1 }}
-                helperText="숫자가 작을수록 먼저 표시됩니다. 같은 번호의 동시 표시는 함께 열립니다." onChange={(e) => updatePopup('displayOrder', Number(e.target.value))} />
+              <PopupNumberField required label="표시 우선순위" value={popup.displayOrder} empty="keep" inputProps={{ min: 1, step: 1 }}
+                helperText="숫자가 작을수록 먼저 표시됩니다. 같은 번호의 동시 표시는 함께 열립니다." onChange={(value) => { if (value != null) updatePopup('displayOrder', value); }} />
               <Box />
               <TextField type="datetime-local" label="노출 시작" value={toDateTimeLocal(popup.displayStartAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayStartAt', e.target.value)} />
               <TextField type="datetime-local" label="노출 종료" value={toDateTimeLocal(popup.displayEndAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayEndAt', e.target.value)} />
@@ -399,10 +406,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                   <MenuItem value="FIT_TO_IMAGE">이미지 우선</MenuItem><MenuItem value="ADAPTIVE">창 우선</MenuItem>
                 </TextField>
                 {/* POL-04-01 : 공통 크기 입력 — 공통 popup.width/height. 모드에 따라 라벨·도움말만 바뀌고 같은 숫자의 적용 기준이 달라진다. */}
-                <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width ?? ''}
-                  disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(e) => updateImageDimension('width', e.target.value)} />
-                <TextField type="number" label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height ?? ''}
-                  disabled={popup.sizeMode === 'FULLSCREEN' || (adaptiveImage && autoImageHeight && imageFit != null)} onChange={(e) => updateImageDimension('height', e.target.value)} />
+                {/* 빈 칸(= 원본 크기 기준)은 입력을 마칠 때 반영한다. 바로 반영하면 높이 자동이 원본 너비를 다시 채워 마지막 자리가 지워지지 않았다(2026-11-25). */}
+                <PopupNumberField label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width} empty="onBlur"
+                  disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(value) => updateImageDimension('width', value)} />
+                <PopupNumberField label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height} empty="onBlur"
+                  disabled={popup.sizeMode === 'FULLSCREEN' || (adaptiveImage && autoImageHeight && imageFit != null)} onChange={(value) => updateImageDimension('height', value)} />
               </Box>
               {/* POL-04-02 : 모드별 기준 — 모드별 크기 기준 안내 */}
               <Typography variant="caption" color="text.secondary">
@@ -414,9 +422,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel label="이미지에 맞춰 높이 자동" disabled={!naturalSize}
                   control={<Checkbox size="small" checked={autoImageHeight} onChange={(_, value) => setAutoImageHeight(value)} />} />
                 <Button size="small" variant="outlined" disabled={!naturalSize} onClick={fitImageWindow}>이미지 크기에 맞추기</Button>
-                <Typography variant="caption" color={imageFit?.limited || imageFit?.cappedByMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                <Typography variant="caption" color={imageFit?.limited || atImageMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
                   {!naturalSize ? '이미지 URL을 입력하면 창 크기를 이미지에 맞출 수 있습니다.'
-                    : imageFit?.cappedByMaximum ? `창 최대 크기(${popup.maximumWidth}×${popup.maximumHeight}px)를 넘어 여백이 생기지 않도록 ${imageFit.window.width}×${imageFit.window.height}px로 줄였습니다.`
+                    : atImageMaximum && largestImageFit ? `창 최대 크기(${popup.maximumWidth}×${popup.maximumHeight}px) 안에서 여백 없는 가장 큰 크기는 ${largestImageFit.window.width}×${largestImageFit.window.height}px입니다. 높이 자동·맞추기는 이 크기로 넣습니다.`
                     : imageFit?.limited ? `너비가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 너비는 ${imageFit.window.width}px입니다.`
                       : `이미지 원본 ${naturalSize.width}×${naturalSize.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
                 </Typography>
@@ -450,7 +458,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 {/* POL-02-02 : 종료 제어 — 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
                 <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)}
                   helperText={isVideoQuiz ? '시청 기준 전에는 퀴즈 입력·제출이 잠깁니다.' : '시청 기준 전에는 확인 버튼이 비활성입니다.'} />
-                <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
+                <PopupNumberField label="기본 음량" value={contentValue(popup, 'defaultVolume') === '' ? null : Number(contentValue(popup, 'defaultVolume'))} empty="keep" inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(value) => { if (value != null) updateContent('defaultVolume', value); }} />
               </Box>
             </Stack>}
             <Divider /><Typography variant="subtitle1" fontWeight={700}>노출 대상</Typography>
@@ -539,9 +547,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <Typography variant="caption" color="text.secondary">팝업이 열려 있는 동안 모든 모니터의 배경 클릭을 막고 배경을 어둡게 표시합니다. 화면에 닫기·제출 버튼이 있으면 Alt+F4 등 키보드·외부 닫기도 막습니다(완료 기준 충족 후에도 동일). 끄면 완료 기준 전이라도 Alt+F4로 닫을 수 있고 시청 기록은 그대로 저장됩니다. 키보드 전환은 차단하지 않습니다.</Typography>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <FormControlLabel control={<Switch size="small" checked={useBackgroundOverlay} onChange={(_, value) => updateContent('useBackgroundOverlay', value)} />} label="사용" />
-                  <TextField size="small" type="number" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} disabled={!useBackgroundOverlay}
+                  <PopupNumberField size="small" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} empty="keep" disabled={!useBackgroundOverlay}
                     inputProps={{ min: 0, max: 100, step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
-                    onChange={(e) => updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, Number(e.target.value))) / 100)} sx={{ width: 220 }} />
+                    onChange={(value) => { if (value != null) updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, value)) / 100); }} sx={{ width: 220 }} />
                 </Stack>
               </Stack>
             </Box>
@@ -602,7 +610,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <MenuItem value="FIXED">고정 크기</MenuItem>{popup.popupType !== 'IMAGE' && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
               {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popupMinimumSize(popup).width} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popupMinimumSize(popup).height} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
-              {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
+              {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><PopupNumberField label="너비 비율" value={popup.widthRatio} empty="keep" inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('widthRatio', value); }} /><PopupNumberField label="높이 비율" value={popup.heightRatio} empty="keep" inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('heightRatio', value); }} /></>}
             </Box>
             {/* POL-04-03 : 비율·상한(2026-11-25) — 창 최소·최대는 이 화면이 정하는 정책값이고 모든 유형(IMAGE 포함) 공통이다.
                 WPF PopupWindow는 그 값을 보호선(하한 300, 상한 작업 영역 90%) 사이에서만 반영한다(FIXED·RATIO·AUTO·IMAGE 공통). FULLSCREEN은 둘 다 쓰지 않는다.

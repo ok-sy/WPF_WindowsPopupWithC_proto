@@ -175,6 +175,52 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     const draft = await save();
     check(draft?.popup.popupId === 'MEDIA-' + type && draft.active === false, type + ' inactive draft saves');
   }
+  // 2026-11-25 숫자 입력 지우기(PopupNumberField)와 IMAGE 창 우선 크기 맞춤: '높이 자동' 체크 경로와 '이미지 크기에 맞추기' 버튼 경로가
+  // 설정 최대(900)를 넘는 세로형 이미지에서 같은 너비·높이를 화면·안내·저장 값에 남기는지 각각 확인한다.
+  const tall = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="1600"><rect width="400" height="1600" fill="red"/></svg>');
+  await run(`window.__field=(label)=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.replace('*','').trim()===label)?.parentElement.querySelector('input');
+    window.__type=(label,value)=>{const e=window.__field(label);e.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));};
+    window.__leave=(label)=>window.__field(label).blur();
+    window.__fitNote=()=>{const m=/가장 큰 크기는 (\\d+)×(\\d+)px입니다/.exec(document.body.innerText);return m?{width:+m[1],height:+m[2]}:null;};
+    window.__detail={...window.__detail,popupId:'IMG-FIT',popupType:'IMAGE',title:'Img fit',questions:[],sizeMode:'FIXED',width:1000,height:700,
+      minimumWidth:300,minimumHeight:300,maximumWidth:1200,maximumHeight:900,content:{imageSizeMode:'ADAPTIVE',imageUrl:${JSON.stringify(tall)},imageTitle:'',description:''}};
+    window.openQuiz('IMG-FIT')`);
+  await until(`Array.from(document.querySelectorAll('input')).some(e=>e.value==='Img fit')`, 'image popup loaded');
+  await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'natural image size');
+  const sizes = () => run(`({width:window.__field('팝업 너비').value,height:window.__field('팝업 높이').value})`);
+  check((await sizes()).width === '1000' && (await sizes()).height === '700', 'Editing an image popup keeps the stored size until a fit is requested: ' + JSON.stringify(await sizes()));
+  // 자동 경로: 체크하면 입력 너비 1000이 설정 최대 900에 걸려 두 축이 함께 줄고, 화면·안내가 같은 값이다.
+  await run(`Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('이미지에 맞춰 높이 자동')).querySelector('input').click()`); await pause(400);
+  const auto = await sizes(), autoNote = await run('window.__fitNote()');
+  check(autoNote && +auto.width === autoNote.width && +auto.height === autoNote.height && autoNote.height <= 900 && autoNote.height > 880 && autoNote.width < 1000,
+    'Auto height path shrinks both axes to the stored maximum and the fields match the notice: ' + JSON.stringify({auto, autoNote}));
+  const autoSaved = await save();
+  check(autoSaved?.popup.width === autoNote.width && autoSaved.popup.height === autoNote.height, 'Auto height path saves the noticed width and height: ' + JSON.stringify(autoSaved?.popup && {w: autoSaved.popup.width, h: autoSaved.popup.height}));
+  // 이미 최대에 걸린 상태에서 너비만 다시 크게 넣어도(계산 결과는 같음) 자동 경로가 다시 맞춘다.
+  await run(`window.__type('팝업 너비','1200')`); await run(`window.__leave('팝업 너비')`); await pause(400);
+  check(JSON.stringify(await sizes()) === JSON.stringify(auto), 'Typing a larger width again while capped refits to the same maximum size: ' + JSON.stringify(await sizes()));
+  // 숫자 지우기: 마지막 자리까지 지우면 빈 칸이 보이고(높이 자동이 다시 채우지 않음), 입력을 마치면 원본 기준으로 다시 맞춘다.
+  for (const value of [String(auto.width).slice(0, 2), String(auto.width).slice(0, 1), '']) await run(`window.__type('팝업 너비', ${JSON.stringify(value)})`);
+  await pause(300);
+  check((await sizes()).width === '', 'The last digit of the image width can be deleted while auto height is on: ' + JSON.stringify(await sizes()));
+  await run(`window.__leave('팝업 너비')`); await pause(400);
+  check((await sizes()).width === auto.width && (await sizes()).height === auto.height, 'Leaving an empty width refits from the original size (same capped result): ' + JSON.stringify(await sizes()));
+  // 버튼 경로: 자동을 끄고 너비 1000을 넣은 뒤 버튼을 누르면 자동 경로와 같은 두 축이 들어간다.
+  await run(`Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('이미지에 맞춰 높이 자동')).querySelector('input').click()`); await pause(200);
+  await run(`window.__type('팝업 너비','1000')`); await run(`window.__leave('팝업 너비')`); await pause(200);
+  check((await sizes()).width === '1000', 'With auto height off the typed width stays: ' + JSON.stringify(await sizes()));
+  await run(`Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('이미지 크기에 맞추기')).click()`); await pause(400);
+  const button = await sizes();
+  check(button.width === auto.width && button.height === auto.height, 'Fit button path sets the same capped width and height as the auto path: ' + JSON.stringify({button, auto}));
+  const buttonSaved = await save();
+  check(buttonSaved?.popup.width === +button.width && buttonSaved.popup.height === +button.height, 'Fit button path saves the shown width and height');
+  // 표시 우선순위·비율 등 필수 숫자칸: 지우면 빈 칸(0이 다시 보이지 않음), 입력을 마치면 이전 값으로 돌아간다.
+  const order = await run(`window.__field('표시 우선순위').value`);
+  await run(`window.__type('표시 우선순위','')`); await pause(200);
+  check(await run(`window.__field('표시 우선순위').value`) === '', 'Display order shows an empty field instead of 0 while clearing');
+  await run(`window.__leave('표시 우선순위')`); await pause(200);
+  check(await run(`window.__field('표시 우선순위').value`) === order, 'Display order returns to the previous value when left empty');
+
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   console.log('PASS: ' + checks + ' RgstPop quiz rule checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

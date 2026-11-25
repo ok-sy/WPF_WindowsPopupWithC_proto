@@ -344,6 +344,23 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
     processes: ['question'],
   },
   {
+    name: 'PopupNumberField', file: 'PopupNumberField.tsx',
+    summary: '숫자 입력칸입니다. 입력 중 글자를 따로 들고 있어 마지막 자리까지 지울 수 있고, 빈 칸 처리 방식을 고릅니다.',
+    props: [
+      { name: 'value', type: 'number | null | undefined', required: true, description: '저장된 값' },
+      { name: 'empty', type: "'commit' | 'onBlur' | 'keep'", description: "빈 칸 처리. commit(기본) 비우는 즉시 null · onBlur 입력을 마칠 때 null · keep 반영하지 않고 이전 값으로 되돌림" },
+      { name: '그 밖의 TextField props', type: 'TextFieldProps', description: 'label·size·sx·slotProps 등(type·value·onChange·onBlur 제외)' },
+    ],
+    outputs: [
+      { name: 'onChange', type: '(value: number | null) => void', required: true, description: '숫자로 읽히면 바로 호출합니다. 범위 보정은 부모가 합니다.' },
+    ],
+    values: ['입력 중에는 입력한 글자를, 입력을 마치면 저장된 값을 보여 줍니다.'],
+    reuse: ['Number(e.target.value)를 바로 넣으면 빈 칸이 0이 되어 마지막 자리가 지워지지 않습니다. 필수 숫자는 keep, 비우면 다른 값으로 채워지는 칸(이미지 너비 등)은 onBlur를 씁니다.'],
+    example: `<PopupNumberField label="표시 우선순위" value={popup.displayOrder} empty="keep"
+  onChange={(value) => { if (value != null) update('displayOrder', value); }} />`,
+    processes: ['state'],
+  },
+  {
     name: 'PopupScheduleFields', file: 'PopupScheduleFields.tsx',
     summary: '게시 기간과 노출 요일·시간대를 입력합니다.',
     props: [

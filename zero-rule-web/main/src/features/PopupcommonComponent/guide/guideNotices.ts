@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-25-number-field-image-fit', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
+    title: '숫자 입력 지우기·이미지 세로 자동(최대 적용) 보완',
+    body: ['숫자 입력칸에서 마지막 자리를 지우면 0이 다시 보이거나(빈 칸 → 0), 이미지 세로 자동이 가로를 곧바로 다시 채워 지워지지 않던 문제를 PopupNumberField로 고쳤습니다(퀴즈 통과 기준 개수 포함).',
+      '세로 자동은 창 최대에 걸려 두 축을 함께 줄이면 가로도 계산 결과로 바꿉니다. 이전에는 입력 가로를 유지해 안내·저장 값이 달랐습니다. 이미 최대에 걸린 상태에서 가로만 바꿔도 다시 맞춥니다. "이미지 크기에 맞추기" 버튼과 같은 결과입니다.',
+      'adaptiveWindowForImage 결과 창 가로는 최소 크기(300) 아래로 내려가지 않습니다(세로형 이미지는 좌우 띠가 생길 수 있음).'],
+    components: ['PopupNumberField', 'PopupQuizRuleFields', 'adaptiveWindowForImage'],
+    action: '숫자 입력에 Number(e.target.value)를 바로 넣는 화면은 PopupNumberField로 바꿉니다(필수 숫자는 empty="keep", 비우면 다른 값이 채워지는 칸은 empty="onBlur"). 세로 자동을 쓰는 화면은 cappedByMaximum이면 가로도 결과 값으로 넣고, effect 의존성에 입력 가로를 넣습니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-25-window-bounds-common', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
     title: '창 최소·최대 크기 — IMAGE 포함 모든 유형 공통',
     body: ['창 최소·최대(minimumWidth/Height·maximumWidth/Height)는 등록 화면이 정하는 정책값이고 이제 IMAGE에도 적용됩니다. 이전에는 IMAGE만 설정 최대를 쓰지 않고 작업 영역 90%만 적용했습니다.',

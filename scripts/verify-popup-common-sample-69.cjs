@@ -274,6 +274,37 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   console.log('[69 density] survey@1024', JSON.stringify(surveyNarrow));
   check(surveyNarrow.overflow <= 0 && surveyNarrow.page <= 0 && surveyNarrow.clipped === 0, '[69-13] Survey selects wrap without overlap or clipping when narrow: ' + JSON.stringify(surveyNarrow));
   await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 950, deviceScaleFactor: 1, mobile: false}); await pause(200);
+  // 2026-11-25 IMAGE 창 우선 맞춤: '세로 자동' 경로와 '이미지 크기에 맞추기' 버튼 경로가 창 최대(미리보기 기본 1200×900)에 걸리는
+  // 세로형 이미지에서 같은 가로·세로를 화면·안내·저장 값에 남기는지, 가로 마지막 자리를 지울 수 있는지 확인한다.
+  const tall = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="1600"><rect width="400" height="1600" fill="red"/></svg>');
+  await pickType('이미지 팝업'); await clickButton('폼 생성');
+  await run(`(()=>{const e=Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='이미지 URL').parentElement.querySelector('input');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(tall)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'is063 natural image size');
+  await pause(400);
+  await run(`window.__sz=()=>({width:document.querySelector('input[aria-label="가로"]').value,height:document.querySelector('input[aria-label="세로"]').value});
+    window.__note=()=>{const m=/가장 큰 크기는 (\\d+)×(\\d+)px입니다/.exec(document.body.innerText);return m?{width:+m[1],height:+m[2]}:null;};
+    window.__typeW=(v)=>{const e=document.querySelector('input[aria-label="가로"]');e.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));};`);
+  await run(`window.__typeW('1000')`); await run(`document.querySelector('input[aria-label="가로"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(400);
+  const autoSize = await run('window.__sz()'), autoNote = await run('window.__note()');
+  check(autoNote && +autoSize.width === autoNote.width && +autoSize.height === autoNote.height && autoNote.height <= 900 && autoNote.width >= 300 && autoNote.width < 1000,
+    '[IS063 fit] Auto height path shrinks both axes to the maximum and the fields match the notice: ' + JSON.stringify({autoSize, autoNote}));
+  await clickButton('저장');
+  let fitSaved = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  check(fitSaved.width === autoNote.width && fitSaved.height === autoNote.height, '[IS063 fit] Auto height path saves the noticed size: ' + JSON.stringify({w: fitSaved.width, h: fitSaved.height}));
+  for (const value of [autoSize.width.slice(0, 2), autoSize.width.slice(0, 1), '']) await run(`window.__typeW(${JSON.stringify(value)})`);
+  await pause(300);
+  check((await run('window.__sz()')).width === '', '[IS063 fit] The last digit of the width can be deleted while auto height is on');
+  await run(`document.querySelector('input[aria-label="가로"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(400);
+  check(JSON.stringify(await run('window.__sz()')) === JSON.stringify(autoSize), '[IS063 fit] Leaving an empty width refits to the same capped size');
+  await run(`Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('이미지에 맞춰 세로 자동')).querySelector('input').click()`); await pause(200);
+  await run(`window.__typeW('1000')`); await run(`document.querySelector('input[aria-label="가로"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(200);
+  check((await run('window.__sz()')).width === '1000', '[IS063 fit] With auto height off the typed width stays');
+  await clickButton('이미지 크기에 맞추기'); await pause(300);
+  check(JSON.stringify(await run('window.__sz()')) === JSON.stringify(autoSize), '[IS063 fit] Fit button path sets the same capped size as the auto path: ' + JSON.stringify(await run('window.__sz()')));
+  await clickButton('저장');
+  fitSaved = JSON.parse(await run(`document.querySelector('[data-testid=is063-save-request]').textContent`)); await clickButton('닫기');
+  check(fitSaved.width === +autoSize.width && fitSaved.height === +autoSize.height, '[IS063 fit] Fit button path saves the shown size');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));

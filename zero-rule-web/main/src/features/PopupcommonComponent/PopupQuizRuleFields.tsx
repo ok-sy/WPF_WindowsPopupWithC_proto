@@ -1,4 +1,5 @@
-import { MenuItem, Select, Stack, TextField, Typography } from '@mui/material';
+import { MenuItem, Select, Stack, Typography } from '@mui/material';
+import PopupNumberField from './PopupNumberField';
 import type { ReactNode } from 'react';
 import { QUIZ_TYPE_CODE_TO_RULE, QUIZ_TYPE_CODE_TYPE, SAMPLE_QUIZ_TYPE_OPTIONS, type PopupCodeOption } from './popupQuestionCodes';
 import { QUIZ_QUESTION_SCORE, QUIZ_RULES, type QuizRule } from './popupQuizRule';
@@ -41,9 +42,10 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
         {items.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}
       </Select>
       {selected?.suffix && <>
-        <TextField size="small" type="number" sx={{ width: 72 }} value={count}
+        {/* 빈 칸은 반영하지 않는다(입력 중 0으로 바뀌어 마지막 자리가 지워지지 않던 문제, 2026-11-25). */}
+        <PopupNumberField size="small" sx={{ width: 72 }} value={count} empty="keep"
           slotProps={{ htmlInput: { 'aria-label': '통과 기준 개수', min: 1, max: questionCount } }}
-          onChange={(event) => onCountChange(Number(event.target.value))} />
+          onChange={(value) => { if (value != null) onCountChange(value); }} />
         <Typography component="span">{selected.suffix}</Typography>
       </>}
       <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }} data-testid="quiz-rule-score">
