@@ -119,6 +119,42 @@ const toWpf = p => {
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run('typeof window.mountParity === "function"')) break; await pause(100);}
 
+  // 0. PPT용 캡처 모드(PARITY_DECK=1, 2026-11-25): 「공통 팝업 UI 가이드 · WEB과 WPF.pptx」 그림을 같은 창 크기로 만든다.
+  //    유형마다 창 720×900(흰 판 672×852)으로 통일하고(좁은 창 세트는 좁은 폭이 주제라 그대로), 헤더 로고는 숨긴다(장마다 축척이 같아도 로고는 빼기로 함).
+  //    결과: deck/<ID>.png(흰 판) + deck/deck.json(표시 상자용 요소 위치, 흰 판 기준 px). WPF 캡처·판정은 하지 않고 끝낸다.
+  if (process.env.PARITY_DECK) {
+    const deckDir = path.join(output, 'deck'); fs.mkdirSync(deckDir, {recursive: true});
+    const DECK = ['PARITY-TEXT-560x750', 'PARITY-TEXT-NARROW-LONG', 'PARITY-IMAGE', 'PARITY-VIDEO', 'PARITY-SURVEY', 'PARITY-QUIZ-OX', 'PARITY-VIDEO-QUIZ'];
+    const deck = {};
+    for (const id of DECK) {
+      const base0 = fixtures.find(p => p.popupId === id);
+      // TEXT 세트 제목은 원래 창 크기(560×750)를 적고 있어 PPT용으로는 유형 이름으로 바꾼다.
+      const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: 720, height: 900, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
+      await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1800 : 700);
+      await run(`document.querySelectorAll('#frame img').forEach(i=>{if((i.getAttribute('src')||'').includes('popup-header-logo'))i.style.visibility='hidden';})`);
+      await pause(100);
+      deck[id] = await run(`(()=>{const panel=document.querySelector('#frame .MuiPaper-root'),f=panel.getBoundingClientRect();
+        const box=e=>{if(!e)return null;const r=e.getBoundingClientRect();return r.width>0?{x:Math.round(r.x-f.x),y:Math.round(r.y-f.y),w:Math.round(r.width),h:Math.round(r.height)}:null;};
+        const union=list=>{const b=list.map(box).filter(Boolean);if(!b.length)return null;const x=Math.min(...b.map(q=>q.x)),y=Math.min(...b.map(q=>q.y));return {x,y,w:Math.max(...b.map(q=>q.x+q.w))-x,h:Math.max(...b.map(q=>q.y+q.h))-y};};
+        const img=panel.querySelector('img:not([src*="popup-header-logo"])');let frameEl=img&&img.parentElement;while(frameEl&&frameEl!==panel&&getComputedStyle(frameEl).borderTopWidth==='0px')frameEl=frameEl.parentElement;
+        const body=Array.from(panel.querySelectorAll('p,span,div')).find(e=>Array.from(e.childNodes).some(n=>n.nodeType===3&&n.data.includes('공지 본문')));
+        return {plate:{w:Math.round(f.width),h:Math.round(f.height)},
+          buttons:Array.from(panel.querySelectorAll('button')).map(b=>({text:b.textContent.trim(),box:box(b)})).filter(b=>b.text&&b.box),
+          options:Array.from(panel.querySelectorAll('.survey-option')).map(box),
+          questions:union(Array.from(panel.querySelectorAll('fieldset'))),
+          textarea:box(panel.querySelector('textarea')),
+          video:box(panel.querySelector('[data-testid=aspect-video-area],[data-testid=fill-video-area]')),
+          image:box(frameEl&&frameEl!==panel?frameEl:null),
+          bodyText:box(body&&body.closest('p')||body)};})()`);
+      const f = deck[id].plate; const frame = await run(`(()=>{const r=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})()`);
+      await shot(path.join(deckDir, id + '.png'), frame);
+      check(f.w > 0, `${id} deck capture ${f.w}×${f.h}`);
+    }
+    fs.writeFileSync(path.join(deckDir, 'deck.json'), JSON.stringify(deck, null, 2));
+    console.log('PASS: deck captures ' + Object.keys(deck).length + ' · ' + deckDir);
+    return;
+  }
+
   // 1. 웹 캡처와 측정: 창(width×height) 안 흰 판(.MuiPaper-root, 그림자 여백 24 안쪽)만 잘라 WPF 흰 판과 같은 기준으로 비교한다.
   const web = {};
   for (const popup of fixtures) {
