@@ -11,6 +11,7 @@
 - 주요 파일 · `scripts/verify-popup-parity.cjs`, `scripts/build-ui-guide-default-deck.py`, `docs/design/61_popup_layout_guide/공통 팝업 UI 가이드 · WEB과 WPF (화면 기본값).pptx`.
 - 검증 · OOXML 검증 통과, LibreOffice 렌더링으로 11장 겹침·넘침 확인(설문·OX 버튼 치수 겹침 발견 후 제외). 예시판 파일은 변경 없음.
 - 상태 · 커밋·원격 반영.
+- 보완(사용자용 용어): 화면 기본값 판은 개발자용이 아닌 사용자용 가이드라 슬라이드 글자에서 개발 용어(폐쇄망·ADAPTIVE·POPUP_DEFAULTS·공통코드 0101·WEB/WPF·CSS px/DIP/96 DPI·min()/max() 수식·글자 굵기 600)를 쉬운 말로 바꾸고(예: 관리자 미리보기 / 실제 팝업, 설정한 최대 크기와 화면의 90% 중 작은 값), 슬라이드 노트(개발 문서 경로)를 비움. 캡처 헤더 제목도 비교용 이름(TEXT 비교 등) 대신 공지사항·이미지 공지·영상 공지·설문조사·OX 퀴즈·영상 퀴즈로(PPT 캡처 모드 공통). 생성 스크립트에 반영해 다시 만들어도 같음. 예시판은 개발자 기준 파일이라 그대로 둠. 용어 검사(정규식) 0건, OOXML 검증 통과, LibreOffice 렌더링 확인.
 
 ## 2026-11-25-15 — dev: 61_공통팝업UI가이드PPT_추가
 

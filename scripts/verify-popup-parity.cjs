@@ -135,8 +135,10 @@ const toWpf = p => {
     const deck = {}, DECK_MARGIN = 24;
     for (const id of DECK) {
       const base0 = fixtures.find(p => p.popupId === id);
-      // TEXT 세트 제목은 원래 창 크기(560×750)를 적고 있어 PPT용으로는 유형 이름으로 바꾼다.
-      const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: deckW, height: deckH, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
+      // PPT는 사용자용 가이드라 헤더 제목을 비교용 이름(TEXT 비교 등) 대신 실제 쓰일 법한 제목으로 바꾼다.
+      const DECK_TITLES = {'PARITY-TEXT-560x750': '공지사항', 'PARITY-TEXT-NARROW-LONG': '아주 긴 공지 제목은 한 줄로 줄여서 보여 줍니다', 'PARITY-IMAGE': '이미지 공지',
+        'PARITY-VIDEO': '영상 공지', 'PARITY-SURVEY': '설문조사', 'PARITY-QUIZ-OX': 'OX 퀴즈', 'PARITY-VIDEO-QUIZ': '영상 퀴즈'};
+      const popup = {...base0, title: DECK_TITLES[id], ...(id === 'PARITY-TEXT-NARROW-LONG' ? {} : {width: deckW, height: deckH})};
       await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1800 : 700);
       await run(`document.querySelectorAll('#frame img').forEach(i=>{if((i.getAttribute('src')||'').includes('popup-header-logo'))i.style.visibility='hidden';})`);
       // 배경: PPT 슬라이드 배경과 같은 #E5E7EB(완료 팝업 그림 AlertCapture 배경과 같음)라 그림과 슬라이드 사이 경계가 보이지 않는다.

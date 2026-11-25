@@ -2,8 +2,9 @@
 # ■ 공통 팝업 UI 가이드 PPT — 화면 정책 기본값 판 만들기(2026-11-25)
 # - in : argv[1] 만들 PPT 경로(예시판 「공통 팝업 UI 가이드 · WEB과 WPF.pptx」를 먼저 복사해 둔 파일),
 #        .offline-verify/popup-parity/deck-default/(PARITY_DECK=default node scripts/verify-popup-parity.cjs 결과: 캡처·deck.json)
-# - out: 1~8장 캡처를 기본 창(POPUP_DEFAULTS, 폐쇄망 현재 정책) 캡처로 바꾸고 치수선·숫자·참고 글을 실측 위치로 다시 그림, 모든 장에 기준 표시.
+# - out: 1~8장 캡처를 기본 창(POPUP_DEFAULTS, 현재 적용 정책) 캡처로 바꾸고 치수선·숫자·참고 글을 실측 위치로 다시 그림, 모든 장에 기준 표시.
 #   스크롤로 가려진 요소(주관식·두 번째 문항 등)는 치수선 대신 참고 글로 알린다. 9~11장(버튼·완료 팝업)은 창 크기와 무관해 그대로.
+#   사용자용 가이드라 슬라이드 글자에 개발 용어(폐쇄망·ADAPTIVE·POPUP_DEFAULTS·공통코드·WEB/WPF·DIP·수식)를 쓰지 않고 노트는 비운다(예시판은 개발자 기준 파일이라 그대로).
 # - 실행(저장소 루트):
 #   PARITY_DECK=default node scripts/verify-popup-parity.cjs
 #   cp "docs/design/61_popup_layout_guide/공통 팝업 UI 가이드 · WEB과 WPF.pptx" "docs/design/61_popup_layout_guide/공통 팝업 UI 가이드 · WEB과 WPF (화면 기본값).pptx"
@@ -68,23 +69,23 @@ out[1] = ('PARITY-TEXT-560x750',
           [('v', R, 0, 40, '헤더 40', 'right'), ('v', W / 2, 40, 64, '24', 'right'), ('h', H / 2, 0, 28, '28', 'below'),
            ('h', H / 2, W - 28, W, '28', 'below'), ('v', W / 2, V - 24, V, '24', 'right'), ('v', R, V, H, '푸터 64', 'right'),
            ('v', bx['x'] + bx['w'] / 2, H - 15, H, '15', 'left')],
-          ['기본 창 560 × 420(화면 기본값 POPUP_DEFAULTS)', '창 최소 300 × 300 · 최대 1200 × 900',
-           '공통코드 0101로 바꿀 수 있음 — 폐쇄망 현재 정책은 이 기본값', '헤더 제목 시작 18 · 본문·푸터 좌우 28'])
+          ['기본 창 560 × 420(관리자 화면에서 새 팝업을 만들 때 들어가는 크기)', '창 최소 300 × 300 · 최대 1200 × 900',
+           '지금 적용 중인 기본값 — 관리자 설정에서 바꿀 수 있음', '헤더 제목 시작 18 · 본문·푸터 좌우 28'])
 out[2] = ('PARITY-TEXT-560x750',
           [('h', -36, -24, W + 24, '창 %d' % (W + 48), 'above'), ('v', -36, -24, H + 24, str(H + 48), 'left')] + btn,
           ['기본 창 %d × %d → 흰 판 %d × %d' % (W + 48, H + 48, W, H), '본문은 자체 최소·최대 없음 — 넘치면 세로 스크롤', '확인 버튼 최소 118 × 34'])
 out[3] = ('PARITY-TEXT-NARROW-LONG',
           [('h', 308, 0, 28, '28', 'below'), ('v', 156, 40, 64, '24', 'right'), ('v', 326, 322, 432, '푸터 110', 'right')],
-          ['좁은 창 예시 360 × 480(기본값 아님)', '제목은 1줄, 넘치면 말줄임', '버튼 배치: WEB 줄바꿈 · WPF 1줄', '푸터 최소 높이 64(줄바꿈하면 늘어남, 이 예시 110)'])
+          ['좁은 창 예시 360 × 480(기본값 아님)', '제목은 1줄, 넘치면 말줄임', '버튼 배치: 미리보기는 줄바꿈 · 실제 팝업은 한 줄', '푸터 최소 높이 64(줄바꿈하면 늘어남, 이 예시 110)'])
 d, W, H, V, R, btn, vis = base('PARITY-IMAGE'); im = d['image']
 out[4] = ('PARITY-IMAGE',
           [('v', R, im['y'], im['y'] + im['h'], '이미지 칸 %d' % im['h'], 'right'), ('h', H + 14, im['x'], im['x'] + im['w'], str(im['w']), 'below'),
            ('h', im['y'] + im['h'] / 2, 0, 28, '28', 'below'), ('v', W / 2, 40, 64, '24', 'right')],
-          ['기본 창에서 이미지 칸 %d × %d' % (im['w'], im['h']), 'ADAPTIVE: 원본의 100% 이하(확대하지 않음)', '설명 영역(선택): 최대 30%'])
+          ['기본 창에서 이미지 칸 %d × %d' % (im['w'], im['h']), '이미지는 원본보다 크게 늘리지 않음', '설명 영역(선택): 최대 30%'])
 d, W, H, V, R, btn, vis = base('PARITY-VIDEO'); vd = d['video']
 out[5] = ('PARITY-VIDEO',
           [('v', R, vd['y'], vd['y'] + vd['h'], '영상 %d' % vd['h'], 'right'), ('h', H + 14, vd['x'], vd['x'] + vd['w'], str(vd['w']), 'below')] + btn,
-          ['기본 창에서 영상 높이 %d(WEB 최소 170) — 설명까지 세로 스크롤' % vd['h'], 'WPF는 남은 높이를 채움', '확인 버튼 최소 118 × 34'])
+          ['기본 창에서 영상 높이 %d(미리보기 최소 170) — 설명까지 세로 스크롤' % vd['h'], '실제 팝업은 남은 높이를 채움', '확인 버튼 최소 118 × 34'])
 d, W, H, V, R, btn, vis = base('PARITY-SURVEY'); q = d['questions']
 dims6 = [('h', H + 14, q['x'], q['x'] + q['w'], '문항 영역 %d (최대 760)' % q['w'], 'below')]
 if vis(d['options'][0]):
@@ -106,7 +107,7 @@ dims8 = [('v', R, vd['y'], vd['y'] + vd['h'], '영상 %d' % vd['h'], 'right'), (
 if vis(d['options'][0]):
     o = d['options'][0]; dims8.append(('v', R, o['y'], o['y'] + o['h'], '선택지 32', 'right'))
 out[8] = ('PARITY-VIDEO-QUIZ', dims8,
-          ['영상 높이 = 폭 × 원본 비율(이 창에서 %d), 최소 180' % vd['h'], '기본 창에서는 문항이 영상 아래로 넘쳐 세로 스크롤', '영상 최대 max(180, 가용 높이 × 70%)'])
+          ['영상 높이는 너비와 영상 비율로 정해짐(이 창에서 %d), 최소 180' % vd['h'], '기본 창에서는 문항이 영상 아래로 넘쳐 세로 스크롤', '영상 최대: 남는 높이의 70%(최소 180)'])
 
 for no, (name, dims, notes) in out.items():
     s = p.slides[no - 1]; d = deck[name]
@@ -131,6 +132,27 @@ for no, (name, dims, notes) in out.items():
         para = tf.paragraphs[0] if i == 0 else tf.add_paragraph(); para.space_after = Pt(10)
         r = para.add_run(); r.text = t; r.font.size = Pt(14); r.font.color.rgb = NOTE
     print('slide', no, name, '%.2fx%.2f' % (nw / IN, nh / IN), 'dims', len(dims))
+# 사용자용 가이드: 개발 용어(WEB/WPF·DIP·수식·글자 굵기 숫자)를 쉬운 말로, 슬라이드 노트(개발 문서 경로)는 비운다.
+PLAIN = [('WEB CSS px / WPF DIP (96 DPI)', '단위: 픽셀(화면 배율 100% 기준) · 관리자 미리보기와 실제 팝업이 같은 크기'),
+         ('WPF DIP (96 DPI)  ·  WEB 미리보기는 안내 문구로 표시', '단위: 픽셀(화면 배율 100% 기준)  ·  관리자 미리보기에서는 팝업 대신 안내 문구로 표시'),
+         ('확인 팝업 · WPF', '확인 팝업'),
+         ('영상 시청 전 확인 비활성은 WPF에만 적용', '영상 시청 전 확인 비활성은 실제 팝업에만 적용(미리보기는 항상 활성)'),
+         ('14 / 600', '14 · 굵게')]
+for s in p.slides:
+    for sh in s.shapes:
+        if not sh.has_text_frame:
+            continue
+        for para in sh.text_frame.paragraphs:
+            full = ''.join(r.text for r in para.runs)
+            new = full
+            for a, b in PLAIN:
+                new = new.replace(a, b)
+            if new != full and para.runs:
+                para.runs[0].text = new
+                for r in para.runs[1:]:
+                    r.text = ''
+    if s.has_notes_slide:
+        s.notes_slide.notes_text_frame.text = ''
 for s in p.slides:
     text(s, '화면 기본값 기준 · 창 560 × 420', Inches(8.4), Inches(0.42), Inches(4.5), Inches(0.3), 13, TAG, True, PP_ALIGN.RIGHT, '기준 표시')
 p.save(F); print('saved')
