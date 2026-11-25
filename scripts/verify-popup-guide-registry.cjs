@@ -102,5 +102,55 @@ for (const file of fs.readdirSync(dir).filter((f) => /\.(ts|tsx)$/.test(f))) {
   check(!/from '\.\/(guide|sample)\//.test(read(file)), `Common source ${file} does not import guide/ or sample/`);
 }
 
+// 6) 정책 문구 ↔ 실제 상수·문서(정책을 바꾸고 옛 설명을 남기는 누락 방지, 2026-11-25)
+//    - 창 하한 300·화면 상한 90%는 웹 상수와 WPF 상수가 같아야 하고, 가이드 표는 숫자를 직접 쓰지 않고 상수에서 만든다.
+//    - 창 크기 규칙(최대 = 설정 최대와 화면 90% 중 작은 값, IMAGE·RATIO 포함)은 가이드 표·61 문서가 모두 같은 문장을 쓴다.
+//    - 공통 폴더 루트 파일은 모두 이식 가이드 파일 표에 있다.
+const repo = path.resolve(__dirname, '..');
+const readRepo = (rel) => fs.readFileSync(path.join(repo, rel), 'utf8').replace(/^﻿/, '');
+const constOf = (source, pattern) => Number((source.match(pattern) || [])[1]);
+const common = read('popupCommon.ts');
+const safeRatio = constOf(common, /export const POPUP_SCREEN_SAFE_AREA_RATIO = ([\d.]+)/);
+const minWindow = constOf(common, /export const POPUP_MIN_WINDOW_SIZE = (\d+)/);
+const pct = `${Math.round(safeRatio * 100)}%`;
+check(safeRatio > 0 && safeRatio < 1 && minWindow > 0, `Web window constants readable (ratio ${safeRatio}, min ${minWindow})`);
+check(constOf(readRepo('popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs'), /const double ScreenSafeAreaRatio = ([\d.]+)/) === safeRatio, `WPF ScreenSafeAreaRatio equals web POPUP_SCREEN_SAFE_AREA_RATIO (${safeRatio})`);
+check(constOf(readRepo('popup-frameWork/Popup/Models/PopupOptions.cs'), /const double MinWindowSize = (\d+)/) === minWindow, `WPF MinWindowSize equals web POPUP_MIN_WINDOW_SIZE (${minWindow})`);
+
+check(/const SAFE = `\$\{Math\.round\(POPUP_SCREEN_SAFE_AREA_RATIO \* 100\)\}%`/.test(data), 'guideData SAFE is built from POPUP_SCREEN_SAFE_AREA_RATIO');
+const limitsBlock = section('export const LAYOUT_LIMITS', 'export const PROCESSES');
+const limitRows = (group) => (limitsBlock.split(new RegExp(`\\n\\s{2}${group}: \\[`))[1] || '').split(/\n\s{2}\],/)[0].split('\n').filter((l) => /target: '/.test(l));
+const windowRows = limitRows('windows'), previewRows = limitRows('preview');
+check(windowRows.length >= 5 && previewRows.length >= 2, `LAYOUT_LIMITS windows/preview rows found (${windowRows.length}/${previewRows.length})`);
+for (const row of [...windowRows, ...previewRows]) {
+  const target = row.match(/target: '([^']+)'/)[1];
+  check(!/\d+%/.test(row), `LAYOUT_LIMITS ${target} has no hard-coded percent (use \${SAFE})`);
+  check(!/\b300\b/.test(row), `LAYOUT_LIMITS ${target} has no hard-coded 300 (use \${MIN})`);
+}
+for (const target of ['FIXED', 'RATIO', 'AUTO', 'IMAGE 유형']) {
+  const row = windowRows.find((l) => l.includes(`target: '${target}'`)) || '';
+  check(row.includes('max: `입력한 최대값과 화면의 ${SAFE} 중 작은 값`'), `LAYOUT_LIMITS ${target} max is the common rule (설정 최대 vs 화면 \${SAFE})`);
+}
+
+const STALE = ['설정 maximum 미사용', '입력한 최대값 대신', '브라우저 90%', '화면의 100%', '화면 100%'];
+const doc61 = readRepo('docs/design/61_POPUP_LAYOUT_GUIDE.md');
+const porting = readRepo('docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md');
+for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61], ['ADMIN_POPUP_PREVIEW_COMPONENTS.md', porting]]) {
+  for (const phrase of STALE) check(!text.includes(phrase), `${name} has no stale window policy phrase '${phrase}'`);
+}
+const windowBullets = doc61.split(/\r?\n/).filter((l) => l.startsWith('- **창** ·'));
+const previewBullets = doc61.split(/\r?\n/).filter((l) => l.startsWith('- **웹 미리보기** ·'));
+check(windowBullets.length > 0 && previewBullets.length === windowBullets.length, `61 doc has window/preview bullets per type (${windowBullets.length}/${previewBullets.length})`);
+windowBullets.forEach((l, i) => check(l.includes(`최소 ${minWindow}×${minWindow}`) && l.includes(`설정 maximum과 화면 ${pct}`), `61 doc window bullet #${i + 1} uses min ${minWindow} and 설정 maximum vs 화면 ${pct}`));
+previewBullets.forEach((l, i) => check(l.includes(`min(설정 maximum, 작업 영역 ${pct})`), `61 doc preview bullet #${i + 1} uses min(설정 maximum, 작업 영역 ${pct})`));
+for (const mode of ['FIXED', 'RATIO', 'AUTO']) {
+  const row = doc61.split(/\r?\n/).find((l) => l.startsWith(`| \`${mode}\` |`)) || '';
+  check(row.includes(`min(설정 maximum, 작업 영역×${pct})`), `61 doc window-mode table ${mode} uses min(설정 maximum, 작업 영역×${pct})`);
+}
+
+for (const file of fs.readdirSync(dir).filter((f) => /\.(ts|tsx)$/.test(f) && f !== 'index.ts')) {
+  check(porting.includes('`' + file + '`'), `Porting guide ADMIN_POPUP_PREVIEW_COMPONENTS.md lists ${file}`);
+}
+
 if (failures.length) { console.error('FAIL:\n- ' + failures.join('\n- ')); process.exitCode = 1; }
 else console.log('PASS: ' + checks + ' PopupcommonComponent guide registry checks');

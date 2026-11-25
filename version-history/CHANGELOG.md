@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-09 — dev: 68_가이드정책문구하네스검사_추가
+
+- 이유 · 정책 변경 뒤 가이드·레이아웃 문서·이식 가이드에 옛 정책 문구가 남는 누락이 반복되어 하네스로 차단. 점검 중 61 레이아웃 가이드 IMAGE 절의 "설정 maximum 미사용"·"브라우저 90%" 문구가 추가로 남은 것을 확인.
+- 변경 · `guideData.ts` 레이아웃 표의 화면 상한을 `POPUP_SCREEN_SAFE_AREA_RATIO`에서 만든 `SAFE`로 표시(숫자 직접 기재 제거). `verify-popup-guide-registry`에 6) 정책 문구 검사 추가: 웹·WPF 창 하한(300)·화면 상한(0.90) 상수 일치, 레이아웃 표 창·미리보기 행의 %·300 직접 기재 금지와 FIXED·RATIO·AUTO·IMAGE 공통 최대 규칙, 가이드·61 문서·이식 가이드의 옛 정책 문구 금지, 61 문서 유형별 창·웹 미리보기 줄과 창 모드 표의 규칙 문장, 공통 폴더 루트 파일이 모두 이식 가이드 파일 표에 있는지. 61 문서 IMAGE 절 정정, 이식 가이드에 누락 파일 6개(`popupPreviewFallback.ts`·`PopupQuizRuleFields.tsx`·`popupQuizRule.ts`·`popupQuestionCodes.ts`·`popupQuizResultNotice.ts`·`popupByteLimit.ts`) 추가.
+- 주요 파일 · `scripts/verify-popup-guide-registry.cjs`, `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`.
+- 검증 · `verify-popup-guide-registry` 609(523 → 609), `verify-popup-guide-render` 34, `tsc --noEmit`·`guideData.ts` eslint 오류 0. 변조 확인: 표 IMAGE 행 "화면의 90%" 직접 기재, 61 문서 옛 문구, WPF 상한 0.95 각각 실패로 검출 후 원복. 코드 동작 변경 없음.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-08 — dev: 68_가이드창최대정책문구_수정
 
 - 이유 · 창 최소·최대 공통 적용(5a46b9d)·공통코드 0101(9e063ba) 이후 가이드 점검에서 예전 정책 문구가 남은 곳 확인: 가이드 레이아웃 표 RATIO "화면의 100%", IMAGE "입력한 최대값 대신 화면 90%", 61 레이아웃 가이드 창 모드 표의 비IMAGE/IMAGE 구분, 이식 가이드의 하한 설명.

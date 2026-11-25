@@ -212,10 +212,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 화면 작업 영역 90%(설정 maximum 미사용) · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **이미지** · ADAPTIVE는 원본보다 확대하지 않음 · WPF 설명 영역 최대 30% · FIT_TO_IMAGE 권장 크기는 창 제한으로 보정
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 브라우저 90%
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-IMAGE.side.png](61_popup_layout_guide/PARITY-IMAGE.side.png)
 

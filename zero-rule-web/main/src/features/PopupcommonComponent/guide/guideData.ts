@@ -16,7 +16,7 @@
  *  4) 설계 배경·정책 상세는 docs 문서에 두고 화면에는 사용 방법과 주의사항만 쓴다.  5) 다른 탭에서 이미 설명한 내용은 반복하지 않는다.
  */
 
-import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
+import { POPUP_MIN_WINDOW_SIZE, POPUP_SCREEN_SAFE_AREA_RATIO } from '../popupCommon';
 import { POPUP_LAYOUT } from '../popupLayout';
 
 /** 설명 범위: COMMON = 범용, PROTO = proto(RgstPop) 전용 */
@@ -90,21 +90,23 @@ export interface GuideLayoutLimit {
 }
 
 const MIN = POPUP_MIN_WINDOW_SIZE;
+/** 화면(작업 영역) 상한 비율 표시. 정책이 바뀌면 상수만 고치면 되고, verify-popup-guide-registry가 숫자 직접 기재를 막는다. */
+const SAFE = `${Math.round(POPUP_SCREEN_SAFE_AREA_RATIO * 100)}%`;
 const BUTTON = POPUP_LAYOUT.button;
 
 /*
  * POL-14-01 : 공통 프론트 경계
  * ■ 팝업 레이아웃 최소·최대(가이드 사용 순서 탭 「팝업 크기 최소·최대」)
  * - 근거 문서: docs/design/61_POPUP_LAYOUT_GUIDE.md 「최소·최대 크기 — 전체 레이아웃」. 수치를 바꾸면 문서와 이 표를 함께 고친다.
- * - 창 최소(300)·푸터·버튼 값은 실제 상수(POPUP_MIN_WINDOW_SIZE·POPUP_LAYOUT)에서 읽는다. WPF 전용 값은 문서 기준 숫자다.
+ * - 창 최소(300)·화면 상한(90%)·푸터·버튼 값은 실제 상수(POPUP_MIN_WINDOW_SIZE·POPUP_SCREEN_SAFE_AREA_RATIO·POPUP_LAYOUT)에서 읽는다. WPF 전용 값은 문서 기준 숫자다.
  */
 export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLimit[]; preview: GuideLayoutLimit[] } = {
   windows: [
-    { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
-    { target: 'RATIO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '화면 크기에 비율(0.1~1.0)을 곱합니다. 비율 1.0도 화면의 90%로 줄어듭니다.' },
-    { target: 'AUTO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '내용 크기에 맞춥니다.' },
+    { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: `입력한 최대값과 화면의 ${SAFE} 중 작은 값`, note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
+    { target: 'RATIO', min: `${MIN}×${MIN}`, max: `입력한 최대값과 화면의 ${SAFE} 중 작은 값`, note: `화면 크기에 비율(0.1~1.0)을 곱합니다. 비율 1.0도 화면의 ${SAFE}로 줄어듭니다.` },
+    { target: 'AUTO', min: `${MIN}×${MIN}`, max: `입력한 최대값과 화면의 ${SAFE} 중 작은 값`, note: '내용 크기에 맞춥니다.' },
     { target: 'FULLSCREEN', min: '제한 없음', max: '모니터 전체', note: '최소·최대 값을 쓰지 않습니다.' },
-    { target: 'IMAGE 유형', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '다른 유형과 같습니다. 이미지 우선은 헤더·푸터를 더한 최종 창 기준입니다.' },
+    { target: 'IMAGE 유형', min: `${MIN}×${MIN}`, max: `입력한 최대값과 화면의 ${SAFE} 중 작은 값`, note: '다른 유형과 같습니다. 이미지 우선은 헤더·푸터를 더한 최종 창 기준입니다.' },
   ],
   types: [
     { target: 'TEXT', min: '본문 자체 최소 없음', max: '없음', note: '창 안에서 줄을 바꾸고, 넘치면 세로로 스크롤합니다.' },
@@ -116,7 +118,7 @@ export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLim
   ],
   preview: [
     { target: 'InlinePopupPreview', min: '미리보기 높이 320', max: '부모 영역', note: '실제 팝업 창의 최소 높이가 아닙니다.' },
-    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '설정 최대와 작업 영역의 90% 중 작은 값(모든 유형·RATIO 공통)', note: '작업 영역은 선택한 기준 화면(해상도 × 배율)에서 작업 표시줄을 뺀 영역입니다. 화면이 브라우저보다 크면 스크롤로 봅니다.' },
+    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: `설정 최대와 작업 영역의 ${SAFE} 중 작은 값(모든 유형·RATIO 공통)`, note: '작업 영역은 선택한 기준 화면(해상도 × 배율)에서 작업 표시줄을 뺀 영역입니다. 화면이 브라우저보다 크면 스크롤로 봅니다.' },
   ],
 };
 
