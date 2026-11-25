@@ -171,6 +171,46 @@ for sh in s9.shapes:
         r.text = '영상 시청 전 확인 비활성은 실제 팝업에만 적용(미리보기는 항상 활성)'
         r.font.size = r0.font.size; r.font.color.rgb = r0.font.color.rgb
         sh.top = Inches(5.86); sh.height = Inches(0.8)
+# 마지막 장: 팝업 기본값 공통코드(0101) 표. 값은 등록 스크립트(db/oracle/27_popup_default_code_closednet_oracle.sql, 로컬용과 값 같음)에서 그대로 읽는다.
+import re, copy
+from pptx.enum.text import MSO_ANCHOR as _A
+sql = open('db/oracle/27_popup_default_code_closednet_oracle.sql', encoding='utf-8').read()
+codes = re.findall(r"SELECT '(\w+)' code, '([^']*)' code_nm, '([^']*)' dtl_expl", sql)
+assert len(codes) == 24, len(codes)
+s12 = p.slides.add_slide(s9.slide_layout)
+s12.background.fill.solid(); s12.background.fill.fore_color.rgb = RGBColor(0xE5, 0xE7, 0xEB)
+title = [x for x in s9.shapes if x.name == '버튼 크기와 상태'][0]
+el = copy.deepcopy(title._element); s12.shapes._spTree.append(el)
+t12 = s12.shapes[-1]; t12.name = '공통코드 0101'; t12.text_frame.paragraphs[0].runs[0].text = '팝업 기본값 공통코드 (0101)'
+HEAD = RGBColor(0x37, 0x41, 0x51); BODY = RGBColor(0x20, 0x20, 0x20); LINE = RGBColor(0xF3, 0xF4, 0xF6)
+
+
+def code_table(rows, x, label):
+    text(s12, label, x, Inches(1.12), Inches(6.0), Inches(0.3), 13, HEAD, True, PP_ALIGN.LEFT, '표 제목 ' + label)
+    gt = s12.shapes.add_table(len(rows) + 1, 3, x, Inches(1.5), Inches(6.05), Inches(0.33 * (len(rows) + 1)))
+    gt.name = '표 ' + label; tb = gt.table
+    for j, w in enumerate((1.45, 0.75, 3.85)):
+        tb.columns[j].width = Inches(w)
+    for i, row in enumerate([('코드', '값', '설명')] + rows):
+        tb.rows[i].height = Inches(0.33)
+        for j, v in enumerate(row):
+            c = tb.cell(i, j); c.text = v; c.vertical_anchor = _A.MIDDLE
+            c.margin_left = c.margin_right = Inches(0.08); c.margin_top = c.margin_bottom = 0
+            c.fill.solid(); c.fill.fore_color.rgb = LINE if i == 0 else RGBColor(0xFF, 0xFF, 0xFF)
+            r = c.text_frame.paragraphs[0].runs[0]; r.font.size = Pt(11); r.font.bold = (i == 0 or j == 1)
+            r.font.color.rgb = HEAD if i == 0 else BODY
+            c.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT if (j == 1 and i > 0) else PP_ALIGN.LEFT
+    tbl = gt._element.graphic.graphicData.tbl
+    tbl.tblPr.set('firstRow', '0'); tbl.tblPr.set('bandRow', '0')
+
+
+code_table([c for c in codes[:11]], Inches(0.46), '기본값 (새 팝업에 처음 들어가는 값)')
+code_table([c for c in codes[11:]], Inches(6.82), '입력 범위 (관리자 화면에서 넣을 수 있는 값)')
+note = s12.shapes.add_textbox(Inches(0.46), Inches(6.62), Inches(12.4), Inches(0.5)); note.name = '참고'
+tf = note.text_frame; tf.word_wrap = True; tf.margin_left = tf.margin_right = 0
+r = tf.paragraphs[0].add_run()
+r.text = '코드 관리 화면에서 값만 바꾸면 적용 · 이미 만든 팝업은 바뀌지 않음 · 범위 밖의 값이나 숫자가 아닌 값은 무시하고 표의 값을 씀'
+r.font.size = Pt(12); r.font.color.rgb = HEAD
 for s in p.slides:
     text(s, '화면 기본값 기준 · 창 560 × 420', Inches(8.4), Inches(0.42), Inches(4.5), Inches(0.3), 13, TAG, True, PP_ALIGN.RIGHT, '기준 표시')
 p.save(F); print('saved')
