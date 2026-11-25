@@ -435,9 +435,10 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 |---|---|---|---|---|
 | NewKr Text | Text Regular / Text Bold | `YouandiNewKr Text` Regular / Bold | 일치(§15 '같은 패밀리' 구성과 같음) | `{ family: 'YouandiNewKr Text', css: 'YouandiNewKr', label: … }`. 웹 별칭이 400·700을 이미 Regular·Bold로 연결해 `faces` 불필요. `boldFamily` 불필요 |
 | NewKr Title | 웹 별칭 없음 | `YouandiNewKr Title` Regular / Bold | 웹 선언 필요 | 선택지로 쓸 때만 `faces: { regular: 'YouandiNewKr Title Regular', bold: 'YouandiNewKr Title Bold' }`. `local()` 이름은 Text 규칙에서 유추한 값이라 폐쇄망 DevTools Rendered Fonts로 확인 필요 |
-| Modern | 500 TextBold / 700 HeadBold(400 없음) | `YouandiModern Text`·`Head` 400 / 700 | 일반 굵기 불일치(웹이 500을 고름) | 팝업 글꼴로 쓸지 미정. 쓴다면 `faces`로 Text 또는 Head 계열의 400·700을 직접 지정 |
+| Modern | 500 TextBold / 700 HeadBold(400 없음) | `YouandiModern Text`·`Head` 400 / 700 | 일반 굵기 불일치(웹이 500을 고름) | **팝업 서식 글꼴 목록에 넣지 않음(2026-11-25 결정)**. 전역 CSS 별칭은 그대로 두고 팝업 선택지로 등록하지 않는다. 나중에 쓰게 되면 `faces`로 Text 또는 Head 계열의 400·700을 직접 지정 |
 
 - 기존 `font`·`bold` 계약으로 충분하며 계약 변경·`boldFamily` 구현은 하지 않는다.
+- Modern 미사용 결정 이유 · 웹 별칭에 400이 없어 일반 글자가 500(TextBold)으로 그려지고 700은 Head 디자인이라, 그대로 등록하면 웹과 WPF가 어긋난다. 팝업 서식 글꼴은 NewKr Text로 충분해 추가 선언·검증을 만들지 않는다.
 
 ### 전역 CSS 재현본 갱신과 영향 확인
 
