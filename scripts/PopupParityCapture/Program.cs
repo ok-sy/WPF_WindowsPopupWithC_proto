@@ -63,6 +63,10 @@ internal static class Program
             var m = outer.Margin;
             int width = (int)Math.Round(outer.ActualWidth), height = (int)Math.Round(outer.ActualHeight);
             BitmapSource bitmap = new CroppedBitmap(full, new Int32Rect((int)m.Left, (int)m.Top, Math.Min(width, windowWidth - (int)m.Left), Math.Min(height, windowHeight - (int)m.Top)));
+            // 영상 창(불투명, 2026-11-25): 실제 화면의 둥근 모서리는 OpaqueWindowCorners가 별도 Win32 모서리 창 4개로 덧그려
+            // 본 창만 그리는 RenderTargetBitmap에는 빠진다(모서리가 직각으로 캡처됨). 같은 반지름으로 모서리 밖을 투명하게 잘라 실제 모습과 맞춘다.
+            if (!window.AllowsTransparency && options.SizeMode != Popup.Models.PopupSizeMode.Fullscreen)
+                bitmap = RoundCorners(bitmap, DefaultWindowRadius());
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             using (var file = File.Create(Path.Combine(args[1], dto.PopupId + ".wpf.png"))) encoder.Save(file);
@@ -100,13 +104,43 @@ internal static class Program
                     content = Box(window.FindName("PopupContent") as FrameworkElement, outer),
                     footer = Box(window.FindName("FooterArea") as FrameworkElement, outer),
                     buttons = Descendants(outer).OfType<System.Windows.Controls.Button>().Where(x => x.IsVisible && x.ActualWidth > 0)
-                        .Select(x => new { text = (x.Content as string) ?? System.Windows.Automation.AutomationProperties.GetName(x), x.FontSize, box = Box(x, outer) }),
+                        .Select(x => new { text = (x.Content as string) ?? System.Windows.Automation.AutomationProperties.GetName(x), x.FontSize, enabled = x.IsEnabled,
+                            // 버튼 크기·상태 표(2026-11-25): 템플릿 Body 테두리의 실제 배경색과 글자색(비활성 트리거 반영 후).
+                            bg = ((x.Template?.FindName("Body", x) as System.Windows.Controls.Border)?.Background as SolidColorBrush)?.Color.ToString(),
+                            color = (x.Foreground as SolidColorBrush)?.Color.ToString(), box = Box(x, outer) }).ToList(),
                 },
             }));
             window.Close();
         }
         Console.WriteLine($"WPF captured {popups.Count}");
         return 0;
+    }
+
+    /* 일반 팝업 창의 모서리 반지름(PopupWindow.xaml PopupBodyBorder). 영상 창은 표시 때 0으로 바꾸고 같은 값을 모서리 창에 넘기므로 XAML 값을 읽는다. */
+    private static double? s_windowRadius;
+    private static double DefaultWindowRadius()
+    {
+        if (s_windowRadius is double cached) return cached;
+        var probe = new PopupWindow(new Popup.Models.PopupOptions { Content = new System.Windows.Controls.TextBlock() });
+        double radius = ((System.Windows.Controls.Border)probe.FindName("PopupBodyBorder")).CornerRadius.TopLeft;
+        probe.Close();
+        return (s_windowRadius = radius).Value;
+    }
+
+    /* 비트맵 네 모서리를 반지름 radius로 둥글게 자른다(모서리 밖 투명). */
+    private static BitmapSource RoundCorners(BitmapSource source, double radius)
+    {
+        int w = source.PixelWidth, h = source.PixelHeight;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.PushClip(new RectangleGeometry(new Rect(0, 0, w, h), radius, radius));
+            dc.DrawImage(source, new Rect(0, 0, w, h));
+            dc.Pop();
+        }
+        var rounded = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+        rounded.Render(visual);
+        return rounded;
     }
 
     /// <summary>흰 판(PopupOuterGrid) 기준 위치·크기. 보이지 않으면 null.</summary>

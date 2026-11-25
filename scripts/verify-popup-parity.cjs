@@ -57,13 +57,22 @@ fixtures.push(
   {...base, popupId: 'PARITY-TEXT-NO-HEADER-FOOTER', popupType: 'TEXT', title: '숨김', width: 480, height: 320, showHeader: false, showFooter: false,
     questions: [], content: {showPlainText: true, plainText: '헤더와 푸터를 숨긴 본문입니다.'}},
   {...base, popupId: 'PARITY-IMAGE', popupType: 'IMAGE', title: 'IMAGE 비교', width: 640, height: 560, questions: [],
-    content: {imageUrl: '/media/demo-image.jpg', imageTitle: '이미지 제목', description: '이미지 설명입니다.', showDescription: true, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true}},
+    // 2026-11-25: 가이드 IMAGE 그림은 설명 없는 기본형 기준(설명 영역은 선택 옵션이라 그림·번호표에서 뺀다).
+    content: {imageUrl: '/media/demo-image.jpg', imageTitle: '이미지 제목', showDescription: false, imageSizeMode: 'ADAPTIVE', keepAspectRatio: true}},
   {...base, popupId: 'PARITY-VIDEO', popupType: 'VIDEO', title: 'VIDEO 비교', width: 720, height: 640, questions: [], completionRatio: 0,
     content: {videoUrl: '/media/demo-video.mp4', videoTitle: '영상 제목', description: '영상 설명입니다.', showDescription: true, showControls: true}},
   {...base, popupId: 'PARITY-VIDEO-QUIZ', popupType: 'QUIZ', title: 'VIDEO+QUIZ 비교', width: 720, height: 900, passingScore: 0, completionRatio: 0,
     content: {videoEnabled: true, videoUrl: '/media/demo-video.mp4', videoTitle: '영상 퀴즈', surveyTitle: '영상 퀴즈', description: '영상을 보고 답하세요.'},
     questions: [{questionId: 31, title: '영상에서 확인한 내용은?', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: true, isScored: true, questionScore: 1, sortOrder: 1,
       options: [option(41, '첫째', {isCorrect: true}), option(42, '둘째')]}]},
+  // 2026-11-25 버튼 크기·상태 표: 바로가기·나중에 보기, 제출 활성(필수 없음), 확인 비활성(WPF 시청 기준 전). 그림 대상은 아니고 버튼 실측·대조에만 쓴다.
+  {...base, popupId: 'PARITY-BTN-LINK', popupType: 'TEXT', title: '버튼 — 바로가기·나중에 보기', width: 560, height: 360, showLater: true, questions: [],
+    footerLinkUrl: 'https://example.com', content: {showPlainText: true, plainText: '바로가기 버튼 확인', footerAction: 'LINK_AND_CLOSE', footerLinkUrl: 'https://example.com'}},
+  {...base, popupId: 'PARITY-BTN-SUBMIT-ON', popupType: 'SURVEY', title: '버튼 — 제출 활성', width: 560, height: 420,
+    content: {surveyTitle: '선택 응답'}, questions: [{questionId: 51, title: '선택 문항', questionType: 'SINGLE_CHOICE', optionLayout: 'VERTICAL', isRequired: false, isScored: false, sortOrder: 1,
+      options: [option(61, '예'), option(62, '아니요')]}]},
+  {...base, popupId: 'PARITY-BTN-VIDEO-LOCKED', popupType: 'VIDEO', title: '버튼 — 시청 전 확인', width: 640, height: 520, questions: [], completionRatio: 0.9,
+    content: {videoUrl: '/media/demo-video.mp4', videoTitle: '시청 기준 90%', showDescription: false, showControls: true}},
 );
 const MEDIA = path.join(root, 'popup-frameWork/Popup/Media');
 const FONT_KEYS = ['headerFontSize', 'bodyFontSize', 'footerFontSize'];
@@ -71,7 +80,7 @@ const toWpf = p => {
   const content = Object.fromEntries(Object.entries(p.content).filter(([k]) => !FONT_KEYS.includes(k))
     .map(([k, v]) => [k, typeof v === 'string' && v.startsWith('/media/') ? path.join(MEDIA, v.slice(7)) : v]));
   const survey = p.popupType === 'SURVEY' || p.popupType === 'QUIZ';
-  return {...p, deliveryId: 'D-' + p.popupId, content, showFooterButton: p.showCloseButton, footerAction: survey ? 'SUBMIT' : 'CLOSE',
+  return {...p, deliveryId: 'D-' + p.popupId, content, showFooterButton: p.showCloseButton, footerAction: survey ? 'SUBMIT' : (p.content.footerAction ?? 'CLOSE'),
     useBackgroundOverlay: false, popupPosition: 'CENTER', ...Object.fromEntries(FONT_KEYS.filter(k => p.content[k] != null).map(k => [k, p.content[k]]))};
 };
 
@@ -121,7 +130,7 @@ const toWpf = p => {
       /* TODO61-20: 직접 글자 노드가 있는 보이는 요소 전부 — 같은 글자끼리 WPF TextBlock과 대조한다. */
       const texts=Array.from(panel.querySelectorAll('*')).filter(e=>Array.from(e.childNodes).some(n=>n.nodeType===3&&n.data.trim())).map(e=>{const s=getComputedStyle(e);
         return {text:e.textContent.trim(),size:parseFloat(s.fontSize),weight:Number(s.fontWeight),family:s.fontFamily,box:box(e)};}).filter(t=>t.box);
-      const buttons=Array.from(panel.querySelectorAll('button')).map(b=>({text:b.textContent.trim(),size:parseFloat(getComputedStyle(b).fontSize),box:box(b)})).filter(b=>b.box);
+      const buttons=Array.from(panel.querySelectorAll('button')).map(b=>{const s=getComputedStyle(b);return {text:b.textContent.trim(),size:parseFloat(s.fontSize),disabled:b.disabled,bg:s.backgroundColor,color:s.color,box:box(b)};}).filter(b=>b.box);
       const header=panel.firstElementChild&&getComputedStyle(panel.firstElementChild).backgroundColor==='rgb(0, 0, 0)'?panel.firstElementChild:null;
       return {frame:{x:f.x,y:f.y,width:f.width,height:f.height},firstQuestionTop:q?Math.round(q.getBoundingClientRect().top-f.y):null,choices:opts.map(o=>({name:o.textContent.trim(),height:o.getBoundingClientRect().height,font:parseFloat(getComputedStyle(o).fontSize)})),
         texts,regions:{header:box(header),buttons,
@@ -138,6 +147,30 @@ const toWpf = p => {
   fs.writeFileSync(wpfJson, JSON.stringify(fixtures.map(toWpf), null, 2));
   execFileSync('dotnet', ['run', '--project', path.join(__dirname, 'PopupParityCapture'), '-v', 'q', '--', wpfJson, output], {stdio: 'inherit'});
   const wpf = Object.fromEntries(fixtures.map(p => [p.popupId, JSON.parse(fs.readFileSync(path.join(output, p.popupId + '.wpf.json'), 'utf8'))]));
+
+  // 2-0. 버튼 크기·상태(2026-11-25): 같은 글자 버튼끼리 웹·WPF 크기를 대조하고 buttons.md(가이드 「버튼 크기·상태」 표 원본)를 남긴다.
+  //      웹 미리보기는 시청 잠금을 시연하지 않아 시청 전 '확인' 비활성은 WPF에만 있다(알려진 차이).
+  const hex = c => { if (!c) return '—'; if (c.startsWith('#')) return '#' + c.slice(-6).toUpperCase(); const m = c.match(/\d+/g); return '#' + m.slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('').toUpperCase(); };
+  const buttonRows = [];
+  for (const popup of fixtures) {
+    const webButtons = web[popup.popupId].regions.buttons.filter(b => b.text), footer = wpf[popup.popupId].regions.footer;
+    // 푸터 버튼만(영상 컨트롤·문항 안 버튼 제외).
+    const wpfButtons = footer ? (wpf[popup.popupId].regions.buttons || []).filter(b => b.text && b.box.y >= footer.y - 1 && b.box.y + b.box.h <= footer.y + footer.h + 1) : [];
+    for (const d of wpfButtons) {
+      const w = webButtons.find(b => b.text === d.text);
+      buttonRows.push({id: popup.popupId, text: d.text, wpfEnabled: d.enabled, webDisabled: w?.disabled ?? null,
+        wpf: `${Math.round(d.box.w * 10) / 10}×${Math.round(d.box.h)}`, web: w ? `${Math.round(w.box.w * 10) / 10}×${Math.round(w.box.h)}` : '—',
+        wpfColor: `${hex(d.bg)} / ${hex(d.color)}`, webColor: w ? `${hex(w.bg)} / ${hex(w.color)}` : '—'});
+      if (w) check(Math.abs(w.box.w - d.box.w) <= 1 && Math.abs(w.box.h - d.box.h) <= 1, `${popup.popupId} button '${d.text}' size web ${w.box.w}×${w.box.h} = WPF ${d.box.w}×${d.box.h}`);
+    }
+  }
+  const findButton = (id, text, enabled) => buttonRows.find(r => r.id === id && r.text === text && (enabled == null || r.wpfEnabled === enabled));
+  check(findButton('PARITY-BTN-LINK', '바로가기', true) && findButton('PARITY-BTN-LINK', '나중에 보기', true), 'Button set includes 바로가기 and 나중에 보기');
+  check(findButton('PARITY-BTN-SUBMIT-ON', '제출', true) && findButton('PARITY-SURVEY', '제출', false), 'Button set includes enabled and disabled 제출');
+  check(findButton('PARITY-BTN-VIDEO-LOCKED', '확인', false) && findButton('PARITY-TEXT-560x750', '확인', true), 'Button set includes enabled and WPF-locked 확인');
+  for (const r of buttonRows) check(Math.round(Number(r.wpf.split('×')[1])) === 34, `${r.id} footer button '${r.text}' height 34`);
+  fs.writeFileSync(path.join(output, 'buttons.md'), ['| 세트 | 버튼 | WPF 상태 | 웹 W×H | WPF W×H | 웹 배경/글자 | WPF 배경/글자 |', '|---|---|---|---|---|---|---|',
+    ...buttonRows.map(r => `| ${r.id} | ${r.text} | ${r.wpfEnabled ? '활성' : '비활성'}${r.webDisabled === null ? '' : r.webDisabled === !r.wpfEnabled ? '' : ' (웹 ' + (r.webDisabled ? '비활성' : '활성') + ')'} | ${r.web} | ${r.wpf} | ${r.webColor} | ${r.wpfColor} |`)].join('\n'));
 
   // 2-1. 완료·안내 팝업(WPF PopupAlert, 2026-11-25). 웹은 결과를 미리보기 안 안내 문구로만 보여 줘 창 비교 대상이 없다(WPF 단독 그림).
   //      퀴즈 결과 5종·설문 완료·필수 미응답·저장 실패를 실제 호출과 같은 값으로 그려 alerts/에 남기고, 레이아웃 가이드 수치를 판정한다.
@@ -313,16 +346,15 @@ function guidePage(popupId) {
 function layoutLimits(popup) {
   const video = !!popup.content.videoEnabled || popup.popupType === 'VIDEO';
   const quiz = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
-  const lines = [{title: '창', text: popup.popupType === 'IMAGE'
-    ? '최소 300×300(축별 max(300, minimum)) · 최대 화면 작업 영역 90%(설정 maximum 미사용) · FULLSCREEN 제외'
-    : '최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외'}];
+  // 2026-11-25: 창 최대는 IMAGE·RATIO 포함 모든 유형이 설정 maximum과 화면 90% 중 작은 값(61 문서 「최소·최대」와 같은 문장, verify-popup-guide-registry가 문서 쪽을 검사).
+  const lines = [{title: '창', text: '최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외'}];
   if (popup.popupType === 'TEXT') lines.push({title: '본문', text: '자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤'});
   if (popup.popupType === 'IMAGE') lines.push({title: '이미지', text: 'ADAPTIVE는 원본보다 확대하지 않음 · WPF 설명 영역 최대 30% · FIT_TO_IMAGE 권장 크기는 창 제한으로 보정'});
   if (popup.popupType === 'VIDEO') lines.push({title: '영상', text: 'WPF 남는 높이 사용(별도 min/max 없음) · 웹 미리보기만 최소 높이 170'});
   if (quiz && video) lines.push({title: '영상(퀴즈 포함)', text: '높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)'});
-  if (quiz) lines.push({title: '설문·퀴즈', text: '콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)'});
+  if (quiz) lines.push({title: '설문·퀴즈', text: '콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 96~180(내용에 맞춰 커짐, 웹·WPF 같음)'});
   lines.push({title: '푸터', text: '최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34'});
-  lines.push({title: '웹 미리보기', text: popup.popupType === 'IMAGE' ? '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%' : '인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)'});
+  lines.push({title: '웹 미리보기', text: '인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)'});
   return lines;
 }
 function esc(text) { return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }

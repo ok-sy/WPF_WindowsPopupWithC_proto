@@ -135,9 +135,12 @@ for (const target of ['FIXED', 'RATIO', 'AUTO', 'IMAGE 유형']) {
 const STALE = ['설정 maximum 미사용', '입력한 최대값 대신', '브라우저 90%', '화면의 100%', '화면 100%'];
 const doc61 = readRepo('docs/design/61_POPUP_LAYOUT_GUIDE.md');
 const porting = readRepo('docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md');
-for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61], ['ADMIN_POPUP_PREVIEW_COMPONENTS.md', porting]]) {
-  for (const phrase of STALE) check(!text.includes(phrase), `${name} has no stale window policy phrase '${phrase}'`);
+// 레이아웃 가이드 그림 아래 칸 글자는 그림 생성기(verify-popup-parity.cjs layoutLimits)에 있어 문서 검사만으로는 빠진다(2026-11-25 누락).
+const parityScript = readRepo('scripts/verify-popup-parity.cjs');
+for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61], ['ADMIN_POPUP_PREVIEW_COMPONENTS.md', porting], ['verify-popup-parity.cjs', parityScript]]) {
+  for (const phrase of [...STALE, 'RATIO 100%']) check(!text.includes(phrase), `${name} has no stale window policy phrase '${phrase}'`);
 }
+check(/최대 설정 maximum과 화면 90%\(RATIO 포함\) 중 작은 값/.test(parityScript), 'Figure limits text (layoutLimits) uses the common window maximum rule');
 const windowBullets = doc61.split(/\r?\n/).filter((l) => l.startsWith('- **창** ·'));
 const previewBullets = doc61.split(/\r?\n/).filter((l) => l.startsWith('- **웹 미리보기** ·'));
 check(windowBullets.length > 0 && previewBullets.length === windowBullets.length, `61 doc has window/preview bullets per type (${windowBullets.length}/${previewBullets.length})`);
@@ -164,7 +167,7 @@ for (const v of ['V1', 'V2']) {
 const surveyPreview = read('SurveyPreview.tsx');
 check(!/resize: 'vertical'/.test(surveyPreview) && /TEXT_ANSWER = POPUP_LAYOUT\.textAnswer/.test(surveyPreview) && !/(min|max)Height: (96|180)\b/.test(surveyPreview),
   'Web subjective answer has no drag handle and reads POPUP_LAYOUT.textAnswer (no hard-coded 96/180)');
-for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61]]) {
+for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61], ['verify-popup-parity.cjs', parityScript]]) {
   for (const phrase of ['WEB 주관식', '웹 96~180', 'WEB 최대 180', '미리보기 주관식 높이']) check(!text.includes(phrase), `${name} has no stale subjective-height phrase '${phrase}'`);
 }
 

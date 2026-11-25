@@ -20,9 +20,9 @@
 node scripts/verify-popup-parity.cjs
 ```
 
-- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림 — 그림 아래 칸에 유형별 최소·최대, 설문·퀴즈 콘텐츠 너비(최대 760)·영상 높이(최소 180/170) 실측 상자 포함), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조), `alerts/`(완료·안내 팝업 그림·수치, 2026-11-25)다.
+- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림 — 그림 아래 칸에 유형별 최소·최대, 설문·퀴즈 콘텐츠 너비(최대 760)·영상 높이(최소 180/170) 실측 상자 포함), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조), `alerts/`(완료·안내 팝업 그림·수치, 2026-11-25), `buttons.md`(버튼 크기·상태 실측, 2026-11-25)다. 버튼 상태 확인용 세트(`PARITY-BTN-*`)는 나란히 그림만 만들고 이 문서 그림에는 쓰지 않는다.
 - 레이아웃을 바꾼 뒤 다시 실행해 아래 그림을 `61_popup_layout_guide/`에 덮어쓰고, 유형별 절은 `guide-figures.md` 내용으로 바꾼다.
-- 한계: 로그인한 관리자 화면이 아닌 같은 컴포넌트 하네스다. 브라우저 확대·Windows 배율·폐쇄망 전역 CSS는 포함하지 않는다. WPF 영상(WebView2)은 캡처에 그려지지 않는다.
+- 한계: 로그인한 관리자 화면이 아닌 같은 컴포넌트 하네스다. 브라우저 확대·Windows 배율·폐쇄망 전역 CSS는 포함하지 않는다. WPF 영상(WebView2)은 캡처에 그려지지 않는다. WPF 영상 창(불투명)의 둥근 모서리는 실제 화면에서 별도 모서리 창(`OpaqueWindowCorners`)이 그려 본 창 캡처에 빠지므로, 캡처 도구가 같은 반지름(6)으로 모서리를 잘라 맞춘다(2026-11-25).
 
 ## 공통 창 구조
 
@@ -99,6 +99,22 @@ node scripts/verify-popup-parity.cjs
 - 버튼 아래~흰 판 아래는 15다(모든 유형 실측 일치).
 - 좁은 폭에서 웹 일반 푸터는 오른쪽 버튼 묶음을 다음 줄로 내리고 푸터가 위로 늘어난다(아래 TEXT 좁은 폭 그림, 푸터 110). WPF는 줄을 나누지 않는다. 설문 푸터는 줄을 나누지 않고 안내 문구를 줄바꿈한다.
 - 다시 보지 않기 글자 위치는 웹·WPF가 같다(MUI `FormControlLabel` 기본 여백을 푸터 안에서 0으로 둔다).
+
+## 버튼 크기·상태
+
+푸터 버튼 높이는 모두 34이고, 너비는 최소값에서 시작해 글자가 길면 늘어난다. 글자는 14/600(`footerFontSize`가 있으면 그 값)이다. 웹·WPF 실측 값과 색은 같다. 다른 곳은 아래 표의 「시청 전 확인 비활성」 한 줄뿐이다.
+
+| 버튼 | 상태 | 크기 W×H | 배경 / 글자 | 모양 | 웹 | WPF |
+|---|---|---|---|---|---|---|
+| 확인·바로가기 | 활성 | 최소 118 × 34 | #111827 / #FFFFFF | 좌우 22, 모서리 9 | `PopupFooterButton kind="primary"` | `FooterActionButtonStyle` |
+| 확인 | 비활성(VIDEO·VIDEO+QUIZ 시청 기준 전, WPF만) | 118 × 34 | #E5E7EB / #9CA3AF | 같음 | 미리보기는 시청 잠금을 시연하지 않아 항상 활성 | `IsEnabled=False` 트리거 |
+| 나중에 보기·보조 닫기 | 활성(나중에 보기는 완료 전 잠금과 관계없이 항상 활성) | 최소 118 × 34(나중에 보기 실측 120.9 × 34) | #F3F4F6 / #111827, 테두리 #D1D5DB | 좌우 22, 모서리 9 | `kind="secondary"` | `FooterSecondaryButtonStyle` |
+| 제출 | 활성 | 최소 132 × 34 | #4A4A4F / #FFFFFF | 좌우 24, 모서리 11 | `kind="submit"` | `SurveyFooterSubmitButtonStyle`(V2) |
+| 제출 | 비활성(필수 문항 미응답·시청 기준 전) | 132 × 34 | #E5E5E5 / #A3A3A3 | 같음 | 같음 | 같음 |
+| 완료·안내 팝업 버튼(확인·다시 풀기·다시 시도) | 활성 | 최소 118 × **44** | #111827 / #FFFFFF | 좌우 22, 모서리 9 | 없음(미리보기는 안내 문구) | `ActionButtonStyle`([완료·안내 팝업](#완료안내-팝업-popupalert-wpf)) |
+
+- 마우스를 올리거나 누를 때 WPF 색: 확인 #1F2937 → #374151, 나중에 보기 #E5E7EB → #D1D5DB, 제출 #3D3D42 → #303035. 키보드 초점은 확인 투명도 0.88, 나중에 보기 테두리 #6B7280, 제출 테두리 강조.
+- 세트별 전체 실측(웹·WPF 크기와 배경/글자 색): [buttons.md](61_popup_layout_guide/buttons.md). `node scripts/verify-popup-parity.cjs`가 만들고, 같은 글자 버튼의 웹·WPF 크기 차이 1 이하와 높이 34를 판정한다.
 
 ## 유형별
 
@@ -199,7 +215,7 @@ node scripts/verify-popup-parity.cjs
 
 ### IMAGE — ADAPTIVE (640×560)
 
-샘플 ID `PARITY-IMAGE`
+샘플 ID `PARITY-IMAGE` — 설명 없는 기본형 기준(설명은 선택 옵션, WPF 설명 영역은 최대 30%)
 
 ![PARITY-IMAGE 레이아웃](61_popup_layout_guide/PARITY-IMAGE.guide.png)
 
@@ -207,8 +223,7 @@ node scripts/verify-popup-parity.cjs
 |---|---|---|---|
 | 1 | IMAGE 비교 | 17/600 | 17/600 |
 | 2 | 이미지 제목 | 22/600 | 22/600 |
-| 3 | 이미지 설명입니다. | 14/400 | 14/400 |
-| 4 | 확인 | 14/600 | 14/600 |
+| 3 | 확인 | 14/600 | 14/600 |
 
 최소·최대(그림 아래 칸과 같음):
 

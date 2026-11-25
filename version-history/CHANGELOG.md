@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-25-14 — dev: 61_레이아웃가이드버튼표·IMAGE기준·영상모서리_수정
+
+- 이유 · 요구사항 반영·정합성 보완. 레이아웃 가이드(61)의 IMAGE 그림이 설명 있는 버전이었고, 버튼별 크기·상태(활성·비활성) 표가 없었으며, VIDEO+QUIZ 나란히 그림의 WPF 쪽 모서리가 직각으로 캡처됨. 점검 중 그림 아래 최소·최대 칸 글자(그림 생성기 `layoutLimits`)가 5a46b9d 이전 정책(IMAGE 설정 maximum 미사용·RATIO 100%·웹 주관식 96~180)으로 남아 문서 그림이 옛 문구로 나가던 것도 확인.
+- 변경 ·
+  - `verify-popup-parity.cjs`: IMAGE 세트를 설명 없는 기본형으로. 버튼 세트 3개(바로가기·나중에 보기, 제출 활성, 시청 전 확인 비활성 — WPF 전용) 추가, WPF `footerAction`을 데이터에서 받게 함. 웹·WPF 푸터 버튼 크기·비활성·배경/글자색 측정, 같은 글자 버튼 크기 차이 1 이하·높이 34 판정, `buttons.md` 생성. `layoutLimits` 문구를 공통 정책(설정 maximum과 화면 90%, RATIO 포함 / 주관식 96~180 자동)으로 정정.
+  - `PopupParityCapture`: 영상 창(불투명) 캡처에 실제 화면의 모서리 창(`OpaqueWindowCorners`)이 빠져 직각으로 나오던 것을 같은 반지름(XAML `PopupBodyBorder`, 6)으로 잘라 맞춤. 버튼 측정에 활성 여부·템플릿 배경색·글자색 추가.
+  - `61_POPUP_LAYOUT_GUIDE.md`: 「버튼 크기·상태」 절(확인·바로가기·나중에 보기·제출 활성/비활성·완료 팝업 버튼의 W×H·색·모양·웹/WPF 근거, 마우스·초점 색, 전체 실측 `61_popup_layout_guide/buttons.md`), IMAGE 절 설명 없는 기준·번호표, 다시 만들기·한계(영상 창 모서리 처리) 보완. 유형별 그림 7종·나란히 그림 재생성.
+  - `verify-popup-guide-registry`: 그림 생성기 파일도 옛 정책 문구 검사 대상에 넣고 공통 최대 규칙 문장을 확인.
+- 주요 파일 · `scripts/verify-popup-parity.cjs`, `scripts/PopupParityCapture/Program.cs`, `scripts/verify-popup-guide-registry.cjs`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/*.png`·`buttons.md`.
+- 검증 · `verify-popup-parity` 149(버튼 15행 웹=WPF 크기·색, 차이는 시청 전 확인 비활성 1건 — 웹 미리보기는 잠금 미시연), WPF 영상 창 캡처 모서리 픽셀 투명 확인, `verify-popup-guide-registry` 643, 생성 번호표와 문서 표 대조 일치. 제품 코드 변경 없음.
+- 상태 · 커밋·원격 반영. 20261125 반입본에는 없음.
+
 ## 2026-11-25-13 — dev: 61_주관식칸높이자동_수정
 
 - 이유 · 정합성 보완. 설문·퀴즈 주관식 칸이 웹 미리보기에서만 96 고정 + 끌어서 180까지 늘이는 손잡이(`resize: vertical`)가 있었고, WPF는 손잡이 없이 내용에 맞춰 96~180으로 커져 동작이 달랐음. 높이 값도 웹(SurveyPreview)·WPF(코드 96, 스타일 V1·V2의 MaxHeight 180) 여러 곳에 흩어져 있었음.
