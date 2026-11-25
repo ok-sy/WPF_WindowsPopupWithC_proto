@@ -255,7 +255,7 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 `27_popup_default_code_oracle.sql` — 공통코드 그룹 `0101`(팝업 기본값)과 코드 23건(기본값 11: `WIDTH`·`HEIGHT`·`WRATIO`·`HRATIO`·`MINW`·`MINH`·`MAXW`·`MAXH`·`OVERLAY`·`VOLUME`·`VQRATIO`, 입력 범위 12: `RATIOMIN/MAX`·`FONTMIN/MAX`·`OVERLAYMIN/MAX`·`VOLUMEMIN/MAX`·`VQRATIOMIN/MAX`·`HIDEDAYSMIN/MAX`)을 없을 때만 넣는다. CODE = 키, CODE_NM = 값(숫자 문자열), DTL_EXPL = 설명. 값은 웹 `popupDefaults.ts` 파일 기본값과 같다. 창 크기 입력 하한 코드는 없다 — 기본 창 최소 크기 `MINW`·`MINH`가 가로·세로 입력 하한을 겸한다(2026-11-25 `SIZEMIN` 삭제). 관리자 웹이 `applyPopupDefaultCodes`로 읽고, 계약 범위를 넓히는 값·숫자 아닌 값은 무시한다.
 
-- 적용 현황: 원격 개발 DB 2026-11-25 실행 — 코드 그룹 1건, 코드 24건(기존 `0101` 없음). 같은 날 `SIZEMIN`을 빼기로 해 `28_popup_default_code_sizemin_delete_oracle.sql`로 1건 삭제 → 23건(새 연결로 확인).
+- 적용 현황: 원격 개발 DB 2026-11-25 실행 — 코드 그룹 1건, 코드 24건(기존 `0101` 없음). 같은 날 `SIZEMIN`을 빼기로 해 `28_popup_default_code_sizemin_delete_oracle.sql`로 1건 삭제 → 23건(새 연결로 확인). 로컬 XE(`ZERO_RULE` 계정, 0101 없음 확인)에는 2026-11-25 23건 27을 바로 실행(28 불필요) → 그룹 1·코드 23건, SIZEMIN 0건 확인.
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 27_popup_default_code_oracle.sql`
 - 폐쇄망: `27_popup_default_code_closednet_oracle.sql`을 쓴다. 같은 23건에 폐쇄망에만 있는 `SORT_SEQ`(1~23)를 함께 넣는다. `0101` 그룹이 비어 있는 것은 확인했고(2026-11-25), 2026-11-25 반입본에 이 파일만 넣었다(`export-offline-package.ps1 -DbFiles`). 폐쇄망 실행 결과 대기.
   - 실행 후 확인: `SELECT code, code_nm, sort_seq FROM CLOVER_CODE WHERE code_type = '0101' ORDER BY sort_seq;` → 23건. 2026-11-25 반입본에 넣은 이전 파일(24건, `SIZEMIN` 포함)은 아직 실행 전이라 다음 반입본의 23건 파일로 바꿔 실행한다(28 삭제 스크립트 불필요).

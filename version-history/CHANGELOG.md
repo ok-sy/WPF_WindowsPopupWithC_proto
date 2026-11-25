@@ -36,7 +36,7 @@
 - 변경: 웹 `popupDefaults.ts` 범위 코드 접두어에서 SIZE 제거(SIZEMIN은 알 수 없는 코드로 무시), `popupSizeInputMin()`(MINW·MINH, 계약 300 이상) 추가, 기본 크기 < 최소 크기면 그 축을 파일 값으로 되돌리는 관계 확인 추가. IS063 샘플 가로·세로 입력 min·placeholder·저장 검사를 축별 MINW·MINH로(오류 문구 '가로 Wpx·세로 Hpx 이상'). RgstPop은 최소·최대 입력 칸이 있어 계약 범위(300) 그대로. 27 스크립트 2종 24→23건(폐쇄망 SORT_SEQ 1~23 재번호), MINW·MINH 설명에 '가로/세로 입력 하한' 추가. 이미 24건을 넣은 DB용 `28_popup_default_code_sizemin_delete_oracle.sql`(SIZEMIN 삭제 + MINW·MINH 설명이 이전 문구일 때만 갱신) 추가. 가이드 공지·인계 문서·db README, UI 가이드 PPT(화면 기본값 판) 12장(입력 범위 표 대신 가로·세로 입력 설명) 갱신.
 - 주요 파일: `popupDefaults.ts`, `IS063M02Sample.tsx`, `guideNotices.ts`, `db/oracle/27_*`, `db/oracle/28_popup_default_code_sizemin_delete_oracle.sql`, `db/oracle/README.md`, `POPUP_FRONT_SAMPLE_HANDOVER.md`, `scripts/verify-popup-common-sample-69.cjs`, `scripts/build-ui-guide-default-deck.py`, 화면 기본값 판 PPT.
 - 검증: 원격 개발 DB에 28 실행(SIZEMIN 1건 삭제, 재실행 시 0건·MINW/MINH 설명 각 1건 갱신), 새 연결로 0101 23건·SIZEMIN 0건 확인. tsc·eslint 통과. common-sample-69 73(MINW 320·MINH 330이 가로·세로 입력 min, 남아 있는 SIZEMIN 500 무시), guide-registry 643, guide-render 34. PPT OOXML 검증·12장 렌더링 확인.
-- 상태: 커밋·원격 반영. 폐쇄망은 27 미실행 — 2026-11-25 반입본의 27(24건)은 실행하지 말고 다음 반입본의 23건 파일로 실행(28 불필요). 로컬 XE 미적용(27 미실행 상태).
+- 상태: 커밋·원격 반영. 폐쇄망은 27 미실행 — 2026-11-25 반입본의 27(24건)은 실행하지 말고 다음 반입본의 23건 파일로 실행(28 불필요). 로컬 XE 미적용(27 미실행 상태) → 같은 날 후속: 로컬 XE `ZERO_RULE` 계정에 0101이 없는 것을 확인하고 23건 27 실행(그룹 1·코드 23건 병합, 새 연결로 23건·SIZEMIN 0건 확인, 28 불필요). db README 반영.
 ## 2026-11-25-16 — dev: 61_공통팝업UI가이드PPT화면기본값판_추가
 
 - 이유 · 예시판(창 720×900) PPT는 그대로 고정하고, 폐쇄망 현재 정책인 화면 기본값(관리자 화면이 새 팝업에 넣는 POPUP_DEFAULTS, 창 560×420) 기준 판이 따로 필요.
