@@ -50,6 +50,11 @@ VERSIONS = [
         '서식 본문 글꼴: 기존 4개 글꼴 ID 외에 Windows 글꼴 패밀리 이름 직접 전달(형식 규칙, 미설치 시 기본 글꼴).',
         '개발 빌드 전용 탈출키 Ctrl+Alt+Shift+Q(운영 빌드 없음).',
     ]),
+    ('v3.11', '2026-11-25', [
+        '창 최소·최대(minimumWidth/Height·maximumWidth/Height)를 IMAGE 포함 모든 유형·FIXED/RATIO/AUTO에 공통 적용, WPF는 하한 300과 작업 영역 90% 사이에서 반영(FIXED 95%·RATIO 100%·IMAGE 고정 최대 미사용 대체, FULLSCREEN 제외).',
+        '서식 runs[].font 글꼴 ID 4종 삭제: 기본 4종도 Windows 글꼴 패밀리 이름(Malgun Gothic·Gulim·Dotum·Batang)으로 전달. 기존 ID 저장값은 DB 스크립트 26으로 변환.',
+        'VIDEO content 선택 필드 descriptionBlocks(영상 설명 서식, 기본 null) 추가. 서버가 description을 파생하고 WPF는 서식으로 표시.',
+    ]),
 ]
 
 # ---------------------------------------------------------------- 계약서 파싱

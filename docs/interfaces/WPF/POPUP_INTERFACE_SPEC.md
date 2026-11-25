@@ -1,8 +1,9 @@
 # WPF Popup Client API Interface — JSON Contract
 
 - 문서 버전: 3.7
-- 최신화: 2026-11-22 (KST)
+- 최신화: 2026-11-25 (KST)
 - 2026-11-22 변경 · IMAGE 크기 모드는 `ADAPTIVE`, `FIT_TO_IMAGE`만 지원한다. 기존 ORIGINAL 팝업은 `db/oracle/25_delete_original_image_popups_oracle.sql`로 삭제한다. 단독 IMAGE·VIDEO는 활성화 시 미디어 URL이 필요하다. 관리자 퀴즈의 채점 문항은 각 1점이며 비채점 주관식은 정답과 배점 없이 저장한다.
+- 3.7 보완(2026-11-25, 창 최소·최대 공통): `minimumWidth`·`minimumHeight`·`maximumWidth`·`maximumHeight`는 관리자 화면 정책값(기본 최소 300×300·최대 1200×900)으로 IMAGE 포함 모든 유형·FIXED/RATIO/AUTO에 공통 적용한다. WPF는 하한 300과 작업 영역 90% 사이에서만 반영한다(FULLSCREEN 제외). 이전의 IMAGE 고정 최대 미사용·FIXED 95%·RATIO 100%를 대체한다. JSON 키·타입 변경 없음.
 - 3.7 보완(2026-11-24, 글꼴 ID 삭제): 서식 `runs[].font`의 글꼴 ID(`MALGUN_GOTHIC`·`GULIM`·`DOTUM`·`BATANG`)를 없앴다. 기본 4종도 Windows 글꼴 패밀리 이름(`Malgun Gothic`·`Gulim`·`Dotum`·`Batang`)으로 저장·전달한다. 서버는 ID 허용 목록을, WPF는 ID 매핑을 지웠다(이름 규칙은 그대로). 기존 저장값은 DB 스크립트 26으로 이름으로 바꾼다. 변환하지 않은 ID는 오류 없이 기본 글꼴로 보인다. TODO28 이전 WPF는 이름을 몰라 기본 글꼴로 보이므로 웹·서버·WPF·DB를 같은 시점에 반영한다.
 - 3.7 보완(2026-11-24, VIDEO 설명 서식): VIDEO content에 선택 필드 `descriptionBlocks`(§8.4.1 문단·구간 서식, 기본 `null`)를 추가했다. 서버는 VIDEO에서 이 필드만 받아 검증하고 `description`을 서식에서 파생한다(`surveyTitleBlocks`는 계속 거부). WPF는 유효한 서식이 있으면 문단 정렬·서식으로 그리고 없으면 `description`을 쓴다. 생략하면 기존과 같다. 관리자 웹은 동영상·동영상+퀴즈 설명 맨 앞에 VMware 사운드 안내 문단(오른쪽 정렬)을 붙여 저장한다(웹 상수, WPF는 받은 서식을 그대로 표시).
 - 3.7 보완(2026-11-12, BaseUrl·경로 기준): `PopupApi.BaseUrl`에서 `/p`를 빼고(컨텍스트 경로까지) API 경로에 `/p`를 포함하도록 변경 — `/p/api/wpf/auth/login`·`/p/api/wpf/popups`·`/p/api/wpf/popups/results`, 폐쇄망 로그인 `/p/api/auth/sso/login`. 서버 컨트롤러 매핑·관리자 웹 기준과 맞춤. 최종 요청 URL·JSON 변경 없음. 옛 설정(`BaseUrl`에 `/p`)은 새 빌드에서 `/p/p/...`가 되므로 함께 바꾼다. Word·PDF·Excel은 미갱신.

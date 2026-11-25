@@ -1,6 +1,14 @@
 # 변경 이력
 
 
+## 2026-11-25-19 — docs: 인터페이스 산출물(Word·PDF·Excel) 최신화
+
+- 이유 · 반입 준비. 계약서 `POPUP_INTERFACE_SPEC.md`가 2026-11-23 이후 창 최소·최대 공통(5a46b9d)·화면 상한 90%(ab1ebf9)·글꼴 ID 삭제(18b45bb)·VIDEO descriptionBlocks(3ee8f39)로 바뀌었으나 Word·PDF·Excel은 2026-11-23 상태로 남음.
+- 변경 · 계약서 최신화 2026-11-22 → 2026-11-25, 머리에 「3.7 보완(2026-11-25, 창 최소·최대 공통)」 추가(계약 버전 3.7 유지, JSON 변경 없음). `scripts/export-wpf-spec-xlsx.py` VERSIONS에 v3.11(창 최소·최대 공통, 글꼴 ID 삭제, VIDEO descriptionBlocks) 추가 후 `WPF_SPEC_v3.11.xlsx` 생성(v3.10 삭제). `export-interface-word.ps1`·`export-interface-pdf.vbs`로 `WPF_Popup_API_Interface_v3.7.docx`·`.pdf` 재생성.
+- 주요 파일 · `docs/interfaces/WPF/POPUP_INTERFACE_SPEC.md`, `scripts/export-wpf-spec-xlsx.py`, `docs/interfaces/WPF/WPF_SPEC_v3.11.xlsx`, `WPF_Popup_API_Interface_v3.7.docx`·`.pdf`.
+- 검증 · Excel 생성(버전 이력 9행), Word 표 39·제목 103, PDF 내보내기 성공. 옛 파일명 `WPF_SPEC_v3.10.xlsx` 참조 0건. 같은 시점 웹·WPF 정합성 점검: PopupWindowTests 689, BehaviorTests 1644, popup-parity 149, 웹 하네스 13종(preview-61 309·completion-ux-43 86·survey-55 81·rich-text-49 116·common-sample-69 75·rgstpop 52·transform-64 79·image-preview 49·guide 643·34·quiz-byte-73 44·pick-fields 34) 통과.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-18 — 정수 입력칸·정수 공통코드 소수점 방어
 
 - 이유: 창 크기·우선순위·퀴즈 통과 개수 같은 정수 값에 소수가 들어오는 것을 막는 처리가 없었음. 숫자 입력칸(type=number)이 560.5를 받아 저장 값으로 넘겼고(서버·DB NUMBER(10,2)도 그대로 저장), 공통코드 0101도 숫자이기만 하면 WIDTH 560.5·HIDEDAYSMAX 30.5를 받아들임. 코드 관리 화면은 코드(CODE)만 영문·숫자로 검사하고 코드이름(CODE_NM, 값)은 길이만 검사함.
