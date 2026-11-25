@@ -1,6 +1,19 @@
 # 변경 이력
 
 
+## 2026-11-25-20 — docs: 20261126 반입본 생성(20261125 대체)
+
+- 이유 · 반입 준비. 20261125 반입본(2a97149) 이후 같은 날 0101 SIZEMIN 삭제·MINW/MINH 통합(27 closednet 24→23건), 정수 칸 소수점 방어, 주관식 칸 높이 자동(웹·WPF), 완료 팝업·버튼 가이드, 공통 팝업 UI 가이드 PPT 2종, 인터페이스 Word·PDF·Excel 재생성이 추가됨. 20261125는 폐쇄망 미반입·27 미실행 상태라 날짜 관례(생성일 다음 날)대로 20261126으로 다시 만들고 20261125는 삭제.
+- 변경 ·
+  - 삭제: `offline-export/20261125`(폴더·TAR·TGZ), `.offline-cache/git-history-20261125`, `.offline-cache/notes-20261125.md`.
+  - 변경 요약 `.offline-cache/notes-20261126.md`(20261125 내용 + 20261125 대체·그 27 실행 금지 안내, 0101 23건·MINW/MINH 입력 하한, 정수 방어와 폐쇄망 코드이름 소수 입력 확인 요청, 주관식 높이 자동, PPT 2종, Word·PDF·Excel v3.11).
+  - 히스토리 번들 `bash scripts/export-git-history-bundle.sh -d 20261126`: 20261124 번들에서 연속(main 5701e97 → 9fce238, 34개 추가), 민감값·제외 경로·트리 차이 점검 0.
+  - 옵션 `-Date 20261126 -NotesFile .offline-cache/notes-20261126.md -GitHistoryDir .offline-cache/git-history-20261126 -DbFiles 27 closednet·26 -VerifyBuild -Force`(서버 제외, 첫 시도의 -File 인자 오류로 생긴 빈 폴더 덮어씀). 직전 반입본 자동 20261124(1eca966). CI 이미지는 506e3ec 블록을 작업 트리 스크립트에만 넣어 생성하고 원복.
+  - 구성: 웹 A 60·M 22·D 3, WPF 소스 100, 문서 214 + DB 스크립트 2 + CI 이미지 2, 히스토리 번들 5. npm 변경 없음.
+- 검증 · 폴더형 publish·단일 EXE(91,833,678 Byte). TAR 4개 검증, TGZ SHA256 `17a62b2b481d51910ca280b48738a5d6c157639abdd1036a7d8b5da68e476f99` 일치(26,519,687 Byte). 누락 점검: PPT 2종·27 closednet(23건, SIZEMIN 코드 행 없음)·26·`WPF_SPEC_v3.11.xlsx`·Word·PDF·61 레이아웃 가이드·buttons.md·CI 이미지 포함, `popupDefaults.ts`·`PopupNumberField.tsx`·`IS063M02Sample.tsx`·가이드 2종·`SurveyPopupView.xaml.cs`·SurveyStyles V1·V2가 작업 트리와 같음(줄바꿈 제외). 28 삭제 스크립트·`WPF_SPEC_v3.10.xlsx`·RgstPop·`globalStyle.ts` 없음, scene-router RgstPop 참조 0. README-IMPORT 기준 5473671·직전 20261124(1eca966).
+- 미완료 · 폐쇄망 반입·적용, 폐쇄망 DB 26·27 실행.
+- 상태 · 반입본 생성·검증 완료(`offline-export/20261126`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+
 ## 2026-11-25-19 — docs: 인터페이스 산출물(Word·PDF·Excel) 최신화
 
 - 이유 · 반입 준비. 계약서 `POPUP_INTERFACE_SPEC.md`가 2026-11-23 이후 창 최소·최대 공통(5a46b9d)·화면 상한 90%(ab1ebf9)·글꼴 ID 삭제(18b45bb)·VIDEO descriptionBlocks(3ee8f39)로 바뀌었으나 Word·PDF·Excel은 2026-11-23 상태로 남음.
@@ -95,7 +108,7 @@
   - 구성: 웹 A 60·M 22·D 3(baseline f66e8ed 누적, RgstPop·전역 CSS 재현본 제외), WPF 소스 100, 문서 209 + DB 스크립트 2 + CI 이미지 2, 히스토리 번들 5. npm 변경 없음(5-npm-ckeditor 미포함).
 - 검증 · 오프라인 운영 빌드, 폴더형 publish·단일 EXE(91,833,166 Byte). TAR 4개 SHA256 OK, TGZ SHA256 `d760d86b7d782ec0b83e4f7aed2b7ff915300119d5d55f09691eeb16926d711e` 일치(25,284,763 Byte). 목록에 서버·RgstPop·`globalStyle.ts`·`_app.tsx`·MockSso·Popup.slnx·EXE·PDB 0건. DB 26·27 closednet·`popupDefaults.ts`·`PopupNumberField.tsx`·`IS063M02Sample.tsx` 포함. 반입 scene-router에 RgstPop 참조 0건, IS063 라우트의 `api.clCode.search` 연결 포함. README-IMPORT 기준 커밋 2a97149·직전 20261124(1eca966).
 - 미완료 · 폐쇄망 반입·적용, 폐쇄망 DB 26·27 실행 미실행.
-- 상태 · 반입본 생성·검증 완료(`offline-export/20261125`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 상태 · 반입본 생성·검증 완료(`offline-export/20261125`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음. 후속: 같은 날 0101 SIZEMIN 통합·정수 방어·UI 가이드 PPT·Word/PDF/Excel 재생성을 넣어 20261126으로 다시 만들고 20261125 폴더·번들·요약은 삭제(2026-11-25-20). 폐쇄망 미반입 상태에서 대체.
 
 ## 2026-11-25-10 — dev: 68_공통코드0101_폐쇄망쿼리·IS063연결_추가
 
