@@ -12,6 +12,7 @@ POL-15-01 : 배포 범위
 
 2026-11-11부터 서버(1-zero-rule-server)와 DB 스크립트(db)는 기본으로 넣지 않는다. 폐쇄망 DB 구조가 개발 DB와 많이 달라
 쿼리는 개념 참고 이상으로 쓰이지 않고 서버도 같은 이유로 그대로 반영되지 않는다. 필요할 때만 -IncludeServer·-IncludeDb로 넣는다.
+폐쇄망용으로 맞춘 스크립트만 넣을 때는 -DbFiles(저장소 기준 경로 목록, 예: db/oracle/27_popup_default_code_closednet_oracle.sql)를 쓴다(2026-11-25).
 삭제 목록(DELETE-SINCE)도 넣은 범위만 적는다.
   5-npm-ckeditor      (선택 -NpmBundleDir) 관리자 웹 npm 오프라인 반입 — scripts/prepare-offline-npm.cjs로 만든 폴더 중 node_modules 폴더 복사본(copy-node-modules.cjs). -IncludePnpmStore면 pnpm store도 포함. 통합 TGZ에 포함
   cleanup-after-import.ps1 + CKEDITOR-KEEP.txt  (-NpmBundleDir와 함께) 폐쇄망 반입 후 정리: DELETE-SINCE 삭제 + 이전 CKEditor 제거(node_modules·pnpm store)
@@ -66,7 +67,9 @@ param(
     [switch]$VerifyBuild,
     [switch]$Force,
     [switch]$IncludeServer,
-    [switch]$IncludeDb
+    [switch]$IncludeDb,
+    # 선택: db 전체 대신 넣을 DB 스크립트(저장소 기준 경로). 4-docs에 원래 경로로 들어간다.
+    [string[]]$DbFiles = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -85,6 +88,7 @@ if (Test-Path -LiteralPath $OutputRoot) {
 New-Item -ItemType Directory -Force $OutputRoot | Out-Null
 
 $head = (& git rev-parse --short HEAD).Trim()
+foreach ($dbFile in $DbFiles) { if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot $dbFile))) { throw "-DbFiles 파일이 없습니다: $dbFile" } }
 $dirty = @(& git status --porcelain -- zero-rule-server zero-rule-web popup-frameWork docs db api | Where-Object { $_ })
 if ($dirty) {
     Write-Warning "커밋되지 않은 변경은 반입본에 들어가지 않습니다(HEAD $head 기준):"
@@ -215,7 +219,7 @@ try {
     $docRoots = @("docs", "api")
     if ($IncludeDb) { $docRoots = @("docs", "db", "api") } else { Write-Host "[4-docs] db 넣지 않음(-IncludeDb 없음)" }
     $docs = Export-TreeBundle -Name "4-docs" -Roots $docRoots -ExcludeDirs @("OLD") -ExcludeExtensions @() -ExcludePatterns @() `
-        -ExtraFiles @("README.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md")
+        -ExtraFiles (@("README.md", "OFFLINE_WPF_BUILD.md", "version-history/CHANGELOG.md", "popup-frameWork/README.md") + $(if ($IncludeDb) { @() } else { $DbFiles }))
     if ($UseWorkingChangelog) {
         # 반입본 생성 기록을 적은 최신 변경 이력으로 교체(커밋 전 기록용)
         Copy-Item -LiteralPath (Join-Path $repositoryRoot "version-history\CHANGELOG.md") -Destination (Join-Path $OutputRoot "4-docs\version-history\CHANGELOG.md") -Force
@@ -376,6 +380,10 @@ try {
     if ($IncludeDb) {
         $docsLabel = "docs·db/oracle·api 예제·README·변경 이력"
         $dbStep = "4. DB 스크립트는 4-docs의 db/oracle/README.md 순서로 적용한다."
+    }
+    elseif ($DbFiles.Count -gt 0) {
+        $docsLabel = "docs·api 예제·README·변경 이력 + 폐쇄망용 DB 스크립트 $($DbFiles.Count)개"
+        $dbStep = "4. DB 스크립트는 폐쇄망용으로 맞춘 다음 파일만 넣었다(4-docs 아래 같은 경로). 각 파일 머리 주석의 확인 사항을 보고 순서대로 실행한다: " + (($DbFiles | ForEach-Object { '`' + $_ + '`' }) -join ', ') + "."
     }
     if ($PreviousExport) {
         $previousText = "직전 반입본 $PreviousExport($PreviousCommit)"

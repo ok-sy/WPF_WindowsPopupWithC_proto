@@ -307,6 +307,24 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(fitSaved.width === +autoSize.width && fitSaved.height === +autoSize.height, '[IS063 fit] Fit button path saves the shown size');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
+  // 2026-11-25 공통코드 0101 연결: 라우트처럼 searchCodes를 넘기면 창 최대(MAXW·MAXH)·크기 하한(SIZEMIN)이 코드 값으로 바뀐다(숫자 아닌 MINW는 무시).
+  await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'SIZEMIN',codeNm:'320'},{code:'MINW',codeNm:'abc'}]"});
+  await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063-codes'}); await pause(300);
+  await run('location.reload()'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'is063 codes'); await pause(300);
+  await pickType('이미지 팝업'); await clickButton('폼 생성');
+  await until(`!!document.querySelector('input[aria-label="가로"]')`, 'is063 codes form');
+  check(await run(`document.querySelector('input[aria-label="가로"]').min`) === '320', '[IS063 0101] Code SIZEMIN 320 narrows the size input minimum: ' + await run(`document.querySelector('input[aria-label="가로"]').min`));
+  await run(`(()=>{const e=Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='이미지 URL').parentElement.querySelector('input');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(tall)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'is063 codes natural image size');
+  await pause(400);
+  await run(`window.__sz=()=>({width:document.querySelector('input[aria-label="가로"]').value,height:document.querySelector('input[aria-label="세로"]').value});
+    window.__note=()=>{const m=/가장 큰 크기는 (\\d+)×(\\d+)px입니다/.exec(document.body.innerText);return m?{width:+m[1],height:+m[2]}:null;};`);
+  await clickButton('이미지 크기에 맞추기'); await pause(300);
+  const codeSize = await run('window.__sz()'), codeNote = await run('window.__note()');
+  check(codeNote && +codeSize.width === codeNote.width && +codeSize.height === codeNote.height && codeNote.height <= 700 && codeNote.width <= 900 && codeNote.height < autoNote.height,
+    '[IS063 0101] Code MAXW 900·MAXH 700 caps the image fit below the file default: ' + JSON.stringify({codeSize, codeNote, fileDefault: autoNote}));
+  await clickButton('취소');
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'sample-list.png'), Buffer.from(shot.data, 'base64'));
   console.log('PASS: ' + checks + ' TODO69 common component sample checks');

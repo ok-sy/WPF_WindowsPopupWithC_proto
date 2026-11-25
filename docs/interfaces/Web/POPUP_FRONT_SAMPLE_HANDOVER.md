@@ -141,7 +141,8 @@ sample('SAMPLE-TEXT-LINK', '바로가기 공지', { popupType: 'TEXT' },
 | 편집 시작 | 목록 행 객체 그대로 | `api.popupAdmin.info({ popupId })` → `toEditorPopup(body.popup)` + `body.targetGroups` | `PopupEditorDialog.tsx` |
 | 불러오기(템플릿) | 샘플 메뉴 | `PopupTemplateDialog` → `toEditorPopupFromTemplate` | `PopupEditorDialog.tsx` |
 | 저장 | `toSampleScreenValues(popup)` JSON 표시(화면 입력 필드만). IS063M02 샘플은 'pickPopupFields로 가져오기' 버튼으로 `pickPopupFields` 호출 코드와 결과도 보여 준다(2026-10-30) | 그 화면의 저장 API 형식으로 바꿔 호출 + 성공/실패 처리(`handleError`, toast). proto 등록 화면은 `api.popupAdmin.save(toSaveRequest(popup, active, targetGroups))` | `PopupEditorDialog.tsx`(proto) |
-| 입력 검증 | 제목·크기 300 | `validatePopupSchedule`, `validatePopupQuestions`, 최소·최대 크기, 숨김 일수 등 | `PopupEditorDialog.tsx`의 save |
+| 팝업 기본값·입력 범위(공통코드 0101) | IS063M02 샘플: 라우트(`scene-router.tsx`)가 `searchCodes={(params) => api.clCode.search(params)}`를 넘기면 열 때 `loadPopupDefaultCodes`로 0101을 읽는다. 창 최대(MAXW·MAXH)·크기 하한(SIZEMIN)·미리보기 기본값이 코드 값으로 바뀐다. 가이드 예시 탭처럼 넘기지 않으면 `popupDefaults.ts` 파일 값(2026-11-25) | 실제 등록 화면도 화면을 열 때 `loadPopupDefaultCodes(api.clCode.search)` 한 번 호출 후 다시 그리기. 입력칸 min/max와 저장 검사는 `POPUP_INPUT_RANGES`를 읽는다. 폐쇄망 코드 등록은 `db/oracle/27_popup_default_code_closednet_oracle.sql` | `sample/IS063M02Sample.tsx`, `scene/scene-router.tsx` |
+| 입력 검증 | 제목·크기 300(0101 SIZEMIN이 있으면 그 값) | `validatePopupSchedule`, `validatePopupQuestions`, 최소·최대 크기, 숨김 일수 등 | `PopupEditorDialog.tsx`의 save |
 | 파일 첨부 | `URL.createObjectURL` 미리보기 | 서버 업로드 API → 서버 경로 URL을 `imageUrl`/`videoUrl`에 저장(영상은 `samples/popup-video-range` Range API 규칙) | 서버 구현 필요 |
 | 팝업 ID | 고정 `N2609001`/`LOCAL-n` | 서버 채번 또는 입력 규칙 | 확인 필요 |
 | 컨텐츠 명(IS063M02) | 화면 값만, 요청에 미포함 | 저장 계약 필드 확정 후 추가(§4.2 절차) | 확인 필요 |

@@ -257,7 +257,9 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 
 - 적용 현황: 원격 개발 DB 2026-11-25 실행 — 코드 그룹 1건, 코드 24건(기존 `0101` 없음).
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 27_popup_default_code_oracle.sql`
-- 폐쇄망: `0101` 그룹이 비어 있는지 확인한 뒤 실행하거나 코드 관리 화면에서 입력한다(폐쇄망 `CLOVER_CODE`의 `SORT_SEQ`는 NULL 허용이라 넣지 않음). 미실행.
+- 폐쇄망: `27_popup_default_code_closednet_oracle.sql`을 쓴다. 같은 24건에 폐쇄망에만 있는 `SORT_SEQ`(1~24)를 함께 넣는다. `0101` 그룹이 비어 있는 것은 확인했고(2026-11-25), 2026-11-25 반입본에 이 파일만 넣었다(`export-offline-package.ps1 -DbFiles`). 폐쇄망 실행 결과 대기.
+  - 실행 후 확인: `SELECT code, code_nm, sort_seq FROM CLOVER_CODE WHERE code_type = '0101' ORDER BY sort_seq;` → 24건.
+  - 관리자 웹은 컨텐츠 등록 샘플(`/popup-common-sample/is063m02`)이 라우트에서 `api.clCode.search`를 받아 0101을 적용한다.
 
 ## 퀴즈 유형 코드 컬럼 추가 (2026-11-09, PU001 §7)
 

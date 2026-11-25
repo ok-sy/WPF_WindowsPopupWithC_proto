@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-25-10 — dev: 68_공통코드0101_폐쇄망쿼리·IS063연결_추가
+
+- 이유 · 반입 준비. 폐쇄망 0101 그룹이 비어 있음을 확인해 폐쇄망 구조(`CLOVER_CODE.SORT_SEQ`)에 맞춘 등록 쿼리가 필요하고, 폐쇄망에 반입하는 컨텐츠 등록 샘플(IS063M02)이 0101을 읽도록 연결해 실제 등록 화면 연동 예시로 전달.
+- 변경 ·
+  - `db/oracle/27_popup_default_code_closednet_oracle.sql`(신규): 27과 같은 24건 + `SORT_SEQ` 1~24, 그룹 행은 필수 컬럼만(code_type·code_type_nm·일시), MERGE로 없을 때만 넣음, 실행 후 확인 쿼리 주석.
+  - `IS063M02Sample`: 선택 prop `searchCodes`(PopupCodeSearch). 있으면 열 때 `loadPopupDefaultCodes`로 0101 적용 후 다시 그림. 가로·세로 입력칸 `min`·placeholder를 고정 300 대신 `POPUP_INPUT_RANGES.size.min`으로(저장 검사와 같은 값, 하네스로 확인한 불일치 수정).
+  - `scene-router.tsx`: `/popup-common-sample/is063m02` 라우트가 `useApi()`의 `api.clCode.search`를 `searchCodes`로 넘김. 가이드 예시 탭은 넘기지 않아 파일 기본값.
+  - `export-offline-package.ps1`: `-DbFiles`(db 전체 대신 지정 스크립트만 4-docs에 넣음, 없는 파일이면 중단, README-IMPORT에 파일 목록 표시).
+  - 문서: `db/oracle/README.md` 폐쇄망 실행 안내, `POPUP_FRONT_SAMPLE_HANDOVER.md` §5 실연동 표에 0101 행.
+- 주요 파일 · `db/oracle/27_popup_default_code_closednet_oracle.sql`, `zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx`, `zero-rule-web/main/src/scene/scene-router.tsx`, `scripts/export-offline-package.ps1`, `scripts/verify-popup-common-sample-69(.cjs, -entry.tsx)`, `db/oracle/README.md`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`.
+- 검증 · `verify-popup-common-sample-69` 72(신규: 코드 SIZEMIN 320이 입력 하한에 반영 — 수정 전 300으로 실패 재현, 코드 MAXW 900·MAXH 700에서 이미지 맞춤 300×698로 파일 기본값 300×898보다 작게 제한·안내 = 입력), `verify-popup-guide-registry` 609, `verify-popup-guide-render` 34, `verify-rgstpop-quiz-rule` 52, `tsc --noEmit`·변경 파일 eslint 오류 0, 반입 스크립트 PowerShell 구문 분석 오류 0.
+- 미실행 · 폐쇄망 쿼리 실행(폐쇄망 `CLOVER_CODE_TYPE` 필수 컬럼은 미확인), 관리자 실화면, `-DbFiles` 반입본 생성.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-09 — dev: 68_가이드정책문구하네스검사_추가
 
 - 이유 · 정책 변경 뒤 가이드·레이아웃 문서·이식 가이드에 옛 정책 문구가 남는 누락이 반복되어 하네스로 차단. 점검 중 61 레이아웃 가이드 IMAGE 절의 "설정 maximum 미사용"·"브라우저 90%" 문구가 추가로 남은 것을 확인.
