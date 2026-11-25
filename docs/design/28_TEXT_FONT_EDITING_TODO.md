@@ -435,10 +435,11 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 |---|---|---|---|---|
 | NewKr Text | Text Regular / Text Bold | `YouandiNewKr Text` Regular / Bold | 일치(§15 '같은 패밀리' 구성과 같음) | `{ family: 'YouandiNewKr Text', css: 'YouandiNewKr', label: … }`. 웹 별칭이 400·700을 이미 Regular·Bold로 연결해 `faces` 불필요. `boldFamily` 불필요 |
 | NewKr Title | 웹 별칭 없음 | `YouandiNewKr Title` Regular / Bold | 웹 선언 필요 | 선택지로 쓸 때만 `faces: { regular: 'YouandiNewKr Title Regular', bold: 'YouandiNewKr Title Bold' }`. `local()` 이름은 Text 규칙에서 유추한 값이라 폐쇄망 DevTools Rendered Fonts로 확인 필요 |
-| Modern | 500 TextBold / 700 HeadBold(400 없음) | `YouandiModern Text`·`Head` 400 / 700 | 일반 굵기 불일치(웹이 500을 고름) | **팝업 서식 글꼴 목록에 넣지 않음(2026-11-25 결정)**. 전역 CSS 별칭은 그대로 두고 팝업 선택지로 등록하지 않는다. 나중에 쓰게 되면 `faces`로 Text 또는 Head 계열의 400·700을 직접 지정 |
+| Modern | 500 TextBold / 700 HeadBold(400 없음) | `YouandiModern Text`·`Head` 400 / 700 | 전역 별칭 그대로 쓰면 일반 굵기 불일치(웹이 500을 고름) | **한 글꼴 안에서 Text 또는 Head 계열 하나로 맞추는 조건으로 사용 가능(2026-11-25 결정)**. 전역 별칭(`css`) 대신 `faces`로 등록한다. Text: `{ family: 'YouandiModern Text', faces: { regular: 'YouandiModern TextRegular', bold: 'YouandiModern TextBold' } }`, Head: `{ family: 'YouandiModern Head', faces: { regular: 'YouandiModern HeadRegular', bold: 'YouandiModern HeadBold' } }`. 둘 다 필요하면 별도 글꼴로 각각 등록 |
 
 - 기존 `font`·`bold` 계약으로 충분하며 계약 변경·`boldFamily` 구현은 하지 않는다.
-- Modern 미사용 결정 이유 · 웹 별칭에 400이 없어 일반 글자가 500(TextBold)으로 그려지고 700은 Head 디자인이라, 그대로 등록하면 웹과 WPF가 어긋난다. 팝업 서식 글꼴은 NewKr Text로 충분해 추가 선언·검증을 만들지 않는다.
+- Modern 사용 조건 · 전역 별칭 `YouandiModern`은 400이 없어 일반 글자가 500(TextBold), 굵게가 Head 디자인(HeadBold)으로 그려지므로 `css`로 등록하지 않는다. `faces`로 등록하면 팝업 전용 `@font-face`(400 → regular, 700 → bold)를 써서 별칭을 거치지 않고, 저장값 `font`(패밀리)·`bold`로 WPF가 같은 패밀리의 400·700을 고른다. 일반은 Text·굵게는 HeadBold처럼 계열을 섞으면 WPF가 한 패밀리만 받아 어긋나므로 허용하지 않는다(섞으려면 `boldFamily` 필요, 미구현). `local()` 이름 4개는 폐쇄망 전역 CSS 캡처에 쓰인 이름이다.
+- Modern 남은 확인(폐쇄망) · `list-wpf-font-faces.ps1 -Filter "YouandiModern"` 출력에서 `YouandiModern Text`·`Head` 700 행의 `Win32Family`가 각각 `YouandiModern TextBold`·`HeadBold`인지(WPF 굵게가 웹 bold 서체와 같은지). 이슈 #1 요약에는 패밀리·굵기만 있어 확인되지 않았다. 다르면 해당 계열은 웹·WPF 굵게가 달라진다.
 
 ### 전역 CSS 재현본 갱신과 영향 확인
 

@@ -7,6 +7,7 @@
 - 주요 파일 · `docs/design/20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`, `docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md`, `docs/design/README.md`, `zero-rule-web/main/styles/globalStyle.ts`(주석만).
 - 검증 · 문서 링크 대상 파일 존재 확인. 코드 동작 변경 없음.
 - 상태 · 커밋·원격 반영. GitHub 이슈 #1 삭제는 저장소 관리자 권한 작업이라 별도 처리.
+- 후속(Modern 사용 조건 변경) · 6f8126c의 "Modern 미사용" 결정을 "한 글꼴 안에서 Text 또는 Head 계열 하나로 맞추는 조건으로 `faces` 등록해 사용 가능"으로 변경. 전역 별칭(`css`) 등록은 400 부재로 계속 제외, 계열 혼합(일반 Text·굵게 HeadBold)은 WPF가 한 패밀리만 받아 제외. 폐쇄망에서 각 패밀리 700 서체(`Win32Family`) 확인 대기. TODO28 판단표·확인 문서 갱신, 코드 변경 없음(`dev: 28_Modern글꼴사용조건_수정`).
 
 ## 2026-11-25-02 — dev: 28_폐쇄망전역CSS재현본_수정
 
