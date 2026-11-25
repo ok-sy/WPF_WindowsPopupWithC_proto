@@ -125,13 +125,16 @@ const toWpf = p => {
   if (process.env.PARITY_DECK) {
     const deckDir = path.join(output, 'deck'); fs.mkdirSync(deckDir, {recursive: true});
     const DECK = ['PARITY-TEXT-560x750', 'PARITY-TEXT-NARROW-LONG', 'PARITY-IMAGE', 'PARITY-VIDEO', 'PARITY-SURVEY', 'PARITY-QUIZ-OX', 'PARITY-VIDEO-QUIZ'];
-    const deck = {};
+    const deck = {}, DECK_MARGIN = 24;
     for (const id of DECK) {
       const base0 = fixtures.find(p => p.popupId === id);
       // TEXT 세트 제목은 원래 창 크기(560×750)를 적고 있어 PPT용으로는 유형 이름으로 바꾼다.
       const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: 720, height: 900, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
       await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1800 : 700);
       await run(`document.querySelectorAll('#frame img').forEach(i=>{if((i.getAttribute('src')||'').includes('popup-header-logo'))i.style.visibility='hidden';})`);
+      // 배경: 기본 배경 어둡기(검정 0.45, POPUP_DEFAULTS.overlay.backgroundOverlayOpacity)를 흰 바탕에 겹친 색 #8C8C8C.
+      // 창(그림자 여백 24 포함) 둘레에 24를 더 두고 찍어 흰 판·그림자·둥근 모서리가 배경 위에 보이게 한다.
+      await run(`document.body.style.background='#8C8C8C';document.getElementById('frame').style.margin='${DECK_MARGIN}px'`);
       await pause(100);
       deck[id] = await run(`(()=>{const panel=document.querySelector('#frame .MuiPaper-root'),f=panel.getBoundingClientRect();
         const box=e=>{if(!e)return null;const r=e.getBoundingClientRect();return r.width>0?{x:Math.round(r.x-f.x),y:Math.round(r.y-f.y),w:Math.round(r.width),h:Math.round(r.height)}:null;};
@@ -146,8 +149,11 @@ const toWpf = p => {
           video:box(panel.querySelector('[data-testid=aspect-video-area],[data-testid=fill-video-area]')),
           image:box(frameEl&&frameEl!==panel?frameEl:null),
           bodyText:box(body&&body.closest('p')||body)};})()`);
-      const f = deck[id].plate; const frame = await run(`(()=>{const r=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})()`);
-      await shot(path.join(deckDir, id + '.png'), frame);
+      const f = deck[id].plate;
+      const frame = await run(`(()=>{const w=document.getElementById('frame').getBoundingClientRect(),p=document.querySelector('#frame .MuiPaper-root').getBoundingClientRect(),m=${DECK_MARGIN};
+        return {clip:{x:w.x-m,y:w.y-m,width:w.width+2*m,height:w.height+2*m},plateOffset:{x:Math.round(p.x-(w.x-m)),y:Math.round(p.y-(w.y-m))}};})()`);
+      deck[id].canvas = {w: Math.round(frame.clip.width), h: Math.round(frame.clip.height)}; deck[id].plateOffset = frame.plateOffset;
+      await shot(path.join(deckDir, id + '.png'), frame.clip);
       check(f.w > 0, `${id} deck capture ${f.w}×${f.h}`);
     }
     fs.writeFileSync(path.join(deckDir, 'deck.json'), JSON.stringify(deck, null, 2));
