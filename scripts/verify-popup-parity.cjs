@@ -123,13 +123,20 @@ const toWpf = p => {
   //    유형마다 창 720×900(흰 판 672×852)으로 통일하고(좁은 창 세트는 좁은 폭이 주제라 그대로), 헤더 로고는 숨긴다(장마다 축척이 같아도 로고는 빼기로 함).
   //    결과: deck/<ID>.png(흰 판) + deck/deck.json(표시 상자용 요소 위치, 흰 판 기준 px). WPF 캡처·판정은 하지 않고 끝낸다.
   if (process.env.PARITY_DECK) {
-    const deckDir = path.join(output, 'deck'); fs.mkdirSync(deckDir, {recursive: true});
+    // PARITY_DECK=default(2026-11-25): 화면 정책 기본값 판 — 관리자 화면이 새 팝업에 넣는 POPUP_DEFAULTS 창 크기(폐쇄망 현재 정책)로 찍는다.
+    //   값은 popupDefaults.ts에서 읽는다(공통코드 0101로 바뀌는 값이라 숫자를 여기 적지 않음). 그 밖(PARITY_DECK=1)은 예시 창 720×900.
+    const policy = process.env.PARITY_DECK === 'default';
+    const defaultsSource = fs.readFileSync(path.join(root, 'zero-rule-web/main/src/features/PopupcommonComponent/popupDefaults.ts'), 'utf8');
+    const defaultWindow = (defaultsSource.match(/window: \{\s*sizeMode: 'FIXED' as const,\s*width: (\d+),\s*height: (\d+)/) || []).slice(1).map(Number);
+    check(!policy || defaultWindow.length === 2, 'POPUP_DEFAULTS window size readable: ' + defaultWindow);
+    const [deckW, deckH] = policy ? defaultWindow : [720, 900];
+    const deckDir = path.join(output, policy ? 'deck-default' : 'deck'); fs.mkdirSync(deckDir, {recursive: true});
     const DECK = ['PARITY-TEXT-560x750', 'PARITY-TEXT-NARROW-LONG', 'PARITY-IMAGE', 'PARITY-VIDEO', 'PARITY-SURVEY', 'PARITY-QUIZ-OX', 'PARITY-VIDEO-QUIZ'];
     const deck = {}, DECK_MARGIN = 24;
     for (const id of DECK) {
       const base0 = fixtures.find(p => p.popupId === id);
       // TEXT 세트 제목은 원래 창 크기(560×750)를 적고 있어 PPT용으로는 유형 이름으로 바꾼다.
-      const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: 720, height: 900, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
+      const popup = id === 'PARITY-TEXT-NARROW-LONG' ? base0 : {...base0, width: deckW, height: deckH, ...(id === 'PARITY-TEXT-560x750' ? {title: 'TEXT 비교'} : {})};
       await run(`window.mountParity(${JSON.stringify(popup)})`); await pause(popup.popupType === 'IMAGE' || popup.content.videoUrl ? 1800 : 700);
       await run(`document.querySelectorAll('#frame img').forEach(i=>{if((i.getAttribute('src')||'').includes('popup-header-logo'))i.style.visibility='hidden';})`);
       // 배경: PPT 슬라이드 배경과 같은 #E5E7EB(완료 팝업 그림 AlertCapture 배경과 같음)라 그림과 슬라이드 사이 경계가 보이지 않는다.
