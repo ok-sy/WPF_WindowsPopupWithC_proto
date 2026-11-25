@@ -8,6 +8,7 @@
 - 주요 파일: `sample/IS063M02Sample.tsx`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `scripts/verify-popup-common-sample-69.cjs`.
 - 검증: tsc·eslint 통과. common-sample-69 77(새 TEXT 폼 빈 크기 저장 거절, 입력한 세로 420 저장 — 하네스의 세로 입력에 포커스 이동을 넣어 입력 중 글자가 IMAGE 단계까지 남던 문제 정리), guide-registry 643. 변경 전 컴포넌트로는 빈 크기 저장 검사가 실패함을 확인.
 - 상태: 커밋·원격 반영. 20261126 반입본 이후 변경(반입본 미포함).
+- 보완(IMAGE 포함): IMAGE도 가로·세로 필수로 변경(조건에서 IMAGE 예외 삭제). 서버는 IMAGE 빈 값을 '이미지 원본 크기 기준'으로 받지만 이 화면은 크기를 넣게 함(세로 자동·'이미지 크기에 맞추기'가 값을 채움, 빈 칸 미리보기 560×420과 실제 크기 불일치 방지). 인계 문서 갱신. common-sample-69 78(IMAGE 빈 크기 저장 거절 추가), image-preview 49, guide-registry 643, tsc·eslint 통과.
 
 ## 2026-11-25-20 — docs: 20261126 반입본 생성(20261125 대체)
 

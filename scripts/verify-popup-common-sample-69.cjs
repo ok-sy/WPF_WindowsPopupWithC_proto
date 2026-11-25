@@ -135,7 +135,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('[aria-label="실제 크기 미리보기 종료"]')`, 'is063 modal');
   check(await run(`Array.from(document.querySelectorAll('.MuiDialog-root')).at(-1).textContent.includes('IS063 본문')`), '[IS063] Preview button opens the shared modal with the same popup');
   await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
-  // 2026-11-25 IMAGE가 아닌 폼은 가로·세로를 비운 채 저장하면 막는다(서버 필수 규칙). 폼 생성 때 값을 채우지는 않는다.
+  // 2026-11-25 가로·세로를 비운 채 저장하면 막는다(모든 유형, IMAGE 포함). 폼 생성 때 값을 채우지는 않는다.
   check(await run(`document.querySelector('input[aria-label="가로"]').value==='' && document.querySelector('input[aria-label="세로"]').value===''`), '[IS063 size] New TEXT form does not prefill size');
   await clickButton('저장');
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('가로·세로를 입력')`), '[IS063 size] Empty size is rejected for TEXT like the server: ' + await run(`document.querySelector('[role=alert]')?.textContent`));
@@ -283,6 +283,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 세로형 이미지에서 같은 가로·세로를 화면·안내·저장 값에 남기는지, 가로 마지막 자리를 지울 수 있는지 확인한다.
   const tall = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="1600"><rect width="400" height="1600" fill="red"/></svg>');
   await pickType('이미지 팝업'); await clickButton('폼 생성');
+  // 2026-11-25 IMAGE도 가로·세로 필수: 비운 채 저장하면 막는다(이미지 원본 기준 빈 값 저장 허용 안 함).
+  for (const label of ['가로', '세로']) { await setInput(`input[aria-label="${label}"]`, ''); await run(`document.querySelector('input[aria-label="${label}"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(150); }
+  await clickButton('저장');
+  check(await run(`document.querySelector('[role=alert]')?.textContent.includes('가로·세로를 입력')`), '[IS063 size] Empty size is rejected for IMAGE too: ' + await run(`document.querySelector('[role=alert]')?.textContent`));
   await run(`(()=>{const e=Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='이미지 URL').parentElement.querySelector('input');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(tall)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'is063 natural image size');
