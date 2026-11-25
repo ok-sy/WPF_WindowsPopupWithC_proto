@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-25-popup-default-codes', date: '2026-11-25', category: 'ADDED', status: 'DONE', doneDate: '2026-11-25',
+    title: '팝업 기본값·입력 범위 공통코드(0101)',
+    body: ['웹 기본값은 popupDefaults.ts(POPUP_DEFAULTS) 한곳에 있고, 공통코드 0101이 있으면 그 값으로 바뀝니다. CODE = 키(WIDTH·HEIGHT·MAXW·MAXH 등), CODE_NM = 값, DTL_EXPL = 설명입니다.',
+      '입력 허용 범위도 <접두어>MIN/MAX 코드(RATIOMIN·FONTMAX·HIDEDAYSMAX 등)로 좁힐 수 있습니다. 서버·WPF 계약 범위를 넓히는 값, 숫자가 아닌 값, 최소 > 최대는 무시하고 파일 값을 씁니다.',
+      '공통코드는 화면(웹)만 읽습니다. 서버 저장 기본값·WPF 기본값은 그대로이며, 저장된 팝업 값은 WPF가 300·작업 영역 90% 보호선 안에서 반영합니다.'],
+    components: ['applyPopupDefaultCodes', 'loadPopupDefaultCodes', 'POPUP_DEFAULTS', 'POPUP_INPUT_RANGES', 'POPUP_CONTRACT_RANGES'],
+    action: '등록 화면을 처음 열 때(또는 앱 시작 때) loadPopupDefaultCodes((params) => api.clCode.search(params))를 한 번 부릅니다. 입력칸 min/max·저장 검사는 POPUP_INPUT_RANGES를 쓸 때 읽습니다. 폐쇄망은 0101 그룹 확인 후 db/oracle/27 스크립트나 코드 관리 화면으로 입력합니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-25-number-field-image-fit', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
     title: '숫자 입력 지우기·이미지 세로 자동(최대 적용) 보완',
     body: ['숫자 입력칸에서 마지막 자리를 지우면 0이 다시 보이거나(빈 칸 → 0), 이미지 세로 자동이 가로를 곧바로 다시 채워 지워지지 않던 문제를 PopupNumberField로 고쳤습니다(퀴즈 통과 기준 개수 포함).',

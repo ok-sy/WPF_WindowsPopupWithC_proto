@@ -14,7 +14,7 @@ module.exports.default = module.exports;`);
 fs.writeFileSync(path.join(output, 'urls-shim.js'), 'exports.routerUrlOf = (url) => url;');
 fs.writeFileSync(path.join(output, 'handle-error-shim.js'), 'module.exports = function handleError(e) { (window.__errors = window.__errors || []).push(String(e)); }; module.exports.default = module.exports;');
 fs.writeFileSync(path.join(output, 'provider-shim.js'), `const codes = { '0089': [{code: '01', codeNm: 'OX형'}, {code: '02', codeNm: '선다형'}], '0090': [{code: '00', codeNm: '참여코드'}, {code: '01', codeNm: '만점코드'}, {code: '02', codeNm: '컷트코드'}, {code: '99', codeNm: '매핑없음'}] };
-const api = { clCode: { search: async (params) => { (window.__codeCalls = window.__codeCalls || []).push(params.codeType); if (window.__codeFail) throw new Error('code fail'); return { body: { pagerData: { elements: codes[params.codeType] || [] } } }; } }, popupAdmin: {
+const api = { clCode: { search: async (params) => { (window.__codeCalls = window.__codeCalls || []).push(params.codeType); if (window.__codeFail) throw new Error('code fail'); return { body: { pagerData: { elements: params.codeType === '0101' ? (window.__defaultCodes || []) : (codes[params.codeType] || []) } } }; } }, popupAdmin: {
   info: async ({popupId}) => { if (popupId === "FAILED") throw Error("fixture lookup failure"); return ({ body: { popup: window.__detail, targetGroups: [{ targetName: 'ALL', targetDescription: '', conditions: [{ conditionType: 'EMPLOYEE_NO', conditionOperator: '=', value: 'E1001', includeChild: false }] }] } }); },
   save: async (request) => { window.__saved = request; return { body: { popup: { popupId: request.popup.popupId } } }; },
   list: async () => ({ body: [] }),
@@ -221,6 +221,24 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await run(`window.__leave('표시 우선순위')`); await pause(200);
   check(await run(`window.__field('표시 우선순위').value`) === order, 'Display order returns to the previous value when left empty');
 
+  // 2026-11-25 공통코드 0101(팝업 기본값·입력 범위): 신규 등록 폼이 코드 값으로 열리고, 계약 범위를 넓히는 값·숫자 아닌 값·최소 > 최대는 무시한다.
+  const unit = await run(`(()=>{const a=window.applyPopupDefaultCodes;const d=window.POPUP_DEFAULTS,r=window.POPUP_INPUT_RANGES;
+    const one=a([{code:'WIDTH',codeNm:'640'},{code:'MAXH',codeNm:'800'},{code:'RATIOMAX',codeNm:'0.9'},{code:'FONTMAX',codeNm:'50'},{code:'MINW',codeNm:'abc'},{code:'NOPE',codeNm:'1'},{code:'WRATIO',codeNm:'0.95'}]);
+    const first={width:d.window.width,maxH:d.window.maximumHeight,minW:d.window.minimumWidth,wRatio:d.window.widthRatio,ratioMax:r.ratio.max,fontMax:r.font.max,applied:one.applied.sort(),ignored:one.ignored.map(i=>i.code).sort()};
+    const two=a([{code:'MINW',codeNm:'900'},{code:'MAXW',codeNm:'800'}]);
+    const second={minW:d.window.minimumWidth,maxW:d.window.maximumWidth,width:d.window.width,ratioMax:r.ratio.max,ignored:two.ignored.map(i=>i.code)};
+    a([]);return {first,second,reset:{width:d.window.width,maxH:d.window.maximumHeight,ratioMax:r.ratio.max}};})()`);
+  check(JSON.stringify(unit.first) === JSON.stringify({width: 640, maxH: 800, minW: 300, wRatio: 0.7, ratioMax: 0.9, fontMax: 40, applied: ['MAXH', 'RATIOMAX', 'WIDTH'], ignored: ['FONTMAX', 'MINW', 'NOPE', 'WRATIO']}),
+    '0101 codes apply valid values, ignore widening ranges, non-numbers, unknown codes and defaults outside the narrowed range: ' + JSON.stringify(unit.first));
+  check(unit.second.minW === 300 && unit.second.maxW === 1200 && unit.second.width === 560 && unit.second.ratioMax === 1 && unit.second.ignored.includes('MINW/MAXW'),
+    '0101 re-apply starts from file defaults and reverts minimum > maximum: ' + JSON.stringify(unit.second));
+  check(JSON.stringify(unit.reset) === JSON.stringify({width: 560, maxH: 900, ratioMax: 1}), 'Applying no codes restores file defaults');
+  await run(`window.__defaultCodes=[{code:'WIDTH',codeNm:'640'},{code:'HEIGHT',codeNm:'480'},{code:'MAXW',codeNm:'1000'},{code:'HIDEDAYSMAX',codeNm:'365'}];window.openNew()`);
+  await until(`!!window.__field('창 최대 너비')`, 'new popup form');
+  await pause(500);
+  check(await run(`window.__field('창 최대 너비').value==='1000' && window.__codeCalls.includes('0101')`), 'New popup form opens with 0101 code defaults (maximum width 1000): ' + await run(`window.__field('창 최대 너비')?.value`));
+  check(await run(`window.__field('다시 보지 않기 숨김 일수').max==='365'`), 'Input range code narrows the hide-days input (max 365)');
+  await run(`window.__defaultCodes=[]`);
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   console.log('PASS: ' + checks + ' RgstPop quiz rule checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});

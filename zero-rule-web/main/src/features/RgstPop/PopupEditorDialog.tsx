@@ -17,13 +17,14 @@ import {
   FormControlLabel, IconButton, LinearProgress, MenuItem, Stack, Switch,
   TextField, Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import InlinePopupPreview from '../PopupcommonComponent/InlinePopupPreview';
 import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
 import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
 import { adaptiveWindowForImage, displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
 import PopupNumberField from '../PopupcommonComponent/PopupNumberField';
+import { POPUP_INPUT_RANGES, loadPopupDefaultCodes } from '../PopupcommonComponent/popupDefaults';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../PopupcommonComponent/videoFixedDescription';
 import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
 import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
@@ -35,7 +36,7 @@ import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
 import PopupScheduleFields, { validatePopupSchedule } from '../PopupcommonComponent/PopupScheduleFields';
 import { plainTextToBlocks, readTextBlocks } from '../PopupcommonComponent/popupRichText';
 import { richBlocksOrNull } from '../PopupcommonComponent/PopupRichBlocks';
-import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from '../PopupcommonComponent/popupCommon';
+import { POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from '../PopupcommonComponent/popupCommon';
 import {
   changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, normalizeImageSizeMode, toDateTimeLocal, toEditorPopup,
   toEditorPopupFromTemplate, toSaveRequest, withDefaultAnswerMatchMode, type PopupTypeSelection,
@@ -75,12 +76,12 @@ function PopupFontSizeField({ label, popupKey, popup, onChange }: {
   const current = fontSizeValue(popup, popupKey);
   return <TextField size="small" type="number" label={label} value={draft ?? (current ?? '')}
     placeholder={`기본 ${FONT_SIZE_DEFAULT_HINT[popupKey]}`} InputLabelProps={{ shrink: true }}
-    inputProps={{ min: FONT_SIZE_MIN, max: FONT_SIZE_MAX, step: 1 }}
-    helperText={`${FONT_SIZE_MIN}~${FONT_SIZE_MAX}px · 비우면 기본 크기`}
+    inputProps={{ min: POPUP_INPUT_RANGES.font.min, max: POPUP_INPUT_RANGES.font.max, step: 1 }}
+    helperText={`${POPUP_INPUT_RANGES.font.min}~${POPUP_INPUT_RANGES.font.max}px · 비우면 기본 크기`}
     onChange={(event) => {
       const input = event.target.value; setDraft(input);
       if (input === '') { onChange(null); return; }
-      if (Number.isFinite(Number(input))) onChange(Math.round(Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, Number(input)))));
+      if (Number.isFinite(Number(input))) onChange(Math.round(Math.max(POPUP_INPUT_RANGES.font.min, Math.min(POPUP_INPUT_RANGES.font.max, Number(input)))));
     }} onBlur={() => setDraft(null)} />;
 }
 
@@ -183,12 +184,24 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   };
   /* POL-06-02 : 선택·제출 — 답안 유형(0089)·퀴즈 유형(0090) 공통코드. 조회 전·실패 시 빈 목록이면 입력이 선택을 막고 안내한다. */
   const [codes, setCodes] = useState<PopupQuestionCodes | null>(null);
+  /* POL-01-02 : 기본값의 적용 — 팝업 기본값·입력 범위 공통코드(0101). 조회 실패·코드 없음이면 popupDefaults.ts 값 그대로.
+     신규 등록 폼을 아직 고치지 않았으면 반영된 기본값으로 다시 만든다(pristineDefault). 범위는 입력칸·저장 검사가 그릴 때 읽는다. */
+  const pristineDefault = useRef<string | null>(null);
+  const [, setDefaultsVersion] = useState(0);
   useEffect(() => {
     if (!open) return undefined;
     let live = true;
     void loadPopupQuestionCodes((params) => api.clCode.search(params)).then((loaded) => { if (live) setCodes(loaded); });
+    void loadPopupDefaultCodes((params) => api.clCode.search(params)).then(() => {
+      if (!live) return;
+      setDefaultsVersion((version) => version + 1);
+      if (popupId == null) setPopup((previous) => {
+        if (pristineDefault.current !== JSON.stringify(previous)) return previous;
+        const next = createDefaultPopup(); pristineDefault.current = JSON.stringify(next); return next;
+      });
+    });
     return () => { live = false; };
-  }, [open, api]);
+  }, [open, api]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLoadedPopupId(null);
@@ -197,7 +210,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     // 신규 등록만 '높이 자동'을 켠다. 수정은 저장된 높이를 열기만 해서 바꾸지 않도록 끈 채 시작한다(체크하면 그때 맞춤).
     setAutoImageHeight(popupId == null);
     setBodyEditorKey((key) => key + 1);
-    if (popupId == null) { setPopup(createDefaultPopup()); setTargetGroups([]); return; }
+    if (popupId == null) { const created = createDefaultPopup(); pristineDefault.current = JSON.stringify(created); setPopup(created); setTargetGroups([]); return; }
     let canceled = false; setLoading(true);
     api.popupAdmin.info({ popupId }).then(({ body }) => {
       if (!canceled) {
@@ -255,15 +268,24 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     const scheduleError = validatePopupSchedule(popup);
     if (scheduleError) { toast.warn(scheduleError); return; }
     if (!Number.isInteger(popup.displayOrder) || popup.displayOrder < 1) { toast.warn('표시 우선순위는 1 이상의 정수로 입력해 주세요.'); return; }
+    // 입력 허용 범위는 공통코드 0101로 좁힐 수 있다(계약 범위: 숨김 일수 1~3650, 창 크기 300 이상, 비율 0.1~1 등 — popupDefaults.ts).
+    const ranges = POPUP_INPUT_RANGES;
+    const within = (value: number, range: { min: number; max: number }) => Number.isFinite(value) && value >= range.min && value <= range.max;
     // 서버(PopupService.validateAdminPopup)가 hideDays < 1 을 거절하고 WPF 숨김 API 는 1~3650 일만 받는다.
-    if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || popup.hideDays < 1 || popup.hideDays > 3650)) {
-      toast.warn('숨김 일수는 1~3650 사이의 정수로 입력하거나 비워 두세요.'); return;
+    if (popup.hideDays != null && (!Number.isInteger(popup.hideDays) || !within(popup.hideDays, ranges.hideDays))) {
+      toast.warn(`숨김 일수는 ${ranges.hideDays.min}~${ranges.hideDays.max} 사이의 정수로 입력하거나 비워 두세요.`); return;
     }
     // POL-01-03 : 최소 크기 — 서버 PopupService와 같이 창 최소 크기는 축별 300 이상이다(기존 데이터의 더 작은 값은 저장 전에 고쳐야 한다).
-    if (![popup.minimumWidth, popup.minimumHeight, popup.maximumWidth, popup.maximumHeight].every(v => Number.isFinite(v) && v > 0)
-      || popup.minimumWidth < POPUP_MIN_WINDOW_SIZE || popup.minimumHeight < POPUP_MIN_WINDOW_SIZE
+    if (![popup.minimumWidth, popup.minimumHeight, popup.maximumWidth, popup.maximumHeight].every(v => within(v, ranges.size))
       || popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight) {
-      toast.warn(`창 최소 크기는 ${POPUP_MIN_WINDOW_SIZE}×${POPUP_MIN_WINDOW_SIZE}px 이상이며 최대 크기보다 작거나 같아야 합니다.`); return;
+      toast.warn(`창 최소·최대 크기는 ${ranges.size.min}px 이상${Number.isFinite(ranges.size.max) ? `·${ranges.size.max}px 이하` : ''}이며 최소가 최대보다 클 수 없습니다.`); return;
+    }
+    if (popup.sizeMode === 'RATIO' && (!within(popup.widthRatio, ranges.ratio) || !within(popup.heightRatio, ranges.ratio))) {
+      toast.warn(`화면 비율은 ${ranges.ratio.min}~${ranges.ratio.max} 사이로 입력해 주세요.`); return;
+    }
+    const overlayOpacity = popup.content.backgroundOverlayOpacity;
+    if (overlayOpacity != null && overlayOpacity !== '' && !within(Number(overlayOpacity), ranges.overlay)) {
+      toast.warn(`배경 어둡기는 ${Math.round(ranges.overlay.min * 100)}~${Math.round(ranges.overlay.max * 100)}% 사이로 입력해 주세요.`); return;
     }
     if (popup.popupType === 'IMAGE') {
       for (const value of [popup.width, popup.height]) {
@@ -295,8 +317,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (isVideoQuiz && !contentValue(popup, 'videoUrl').trim()) {
       toast.warn('동영상+퀴즈에는 영상 파일 경로 또는 URL을 입력해 주세요.'); return;
     }
-    if (hasVideo && popup.completionRatio != null && (!Number.isFinite(popup.completionRatio) || popup.completionRatio < 0 || popup.completionRatio > 1)) {
-      toast.warn('완료 비율은 0~1 사이로 입력해 주세요.'); return;
+    if (hasVideo && popup.completionRatio != null && !within(popup.completionRatio, ranges.completion)) {
+      toast.warn(`완료 비율은 ${ranges.completion.min}~${ranges.completion.max} 사이로 입력해 주세요.`); return;
+    }
+    const volume = contentValue(popup, 'defaultVolume');
+    if (hasVideo && volume !== '' && !within(Number(volume), ranges.volume)) {
+      toast.warn(`기본 음량은 ${ranges.volume.min}~${ranges.volume.max} 사이로 입력해 주세요.`); return;
     }
     try {
       setLoading(true);
@@ -456,9 +482,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             {hasVideo && <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 {/* POL-02-02 : 종료 제어 — 완료 기준은 화면 버튼만 잠근다. 외부 닫기는 배경 클릭 차단, 완료 전 연기는 나중에 보기로 정한다. */}
-                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)}
+                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: POPUP_INPUT_RANGES.completion.min, max: POPUP_INPUT_RANGES.completion.max, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)}
                   helperText={isVideoQuiz ? '시청 기준 전에는 퀴즈 입력·제출이 잠깁니다.' : '시청 기준 전에는 확인 버튼이 비활성입니다.'} />
-                <PopupNumberField label="기본 음량" value={contentValue(popup, 'defaultVolume') === '' ? null : Number(contentValue(popup, 'defaultVolume'))} empty="keep" inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(value) => { if (value != null) updateContent('defaultVolume', value); }} />
+                <PopupNumberField label="기본 음량" value={contentValue(popup, 'defaultVolume') === '' ? null : Number(contentValue(popup, 'defaultVolume'))} empty="keep" inputProps={{ min: POPUP_INPUT_RANGES.volume.min, max: POPUP_INPUT_RANGES.volume.max, step: 0.1 }} onChange={(value) => { if (value != null) updateContent('defaultVolume', value); }} />
               </Box>
             </Stack>}
             <Divider /><Typography variant="subtitle1" fontWeight={700}>노출 대상</Typography>
@@ -537,7 +563,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               모두 지원하는데 편집 화면에만 입력란이 없어 항상 null 로 저장되던 항목이다. 푸터+다시 보지 않기가 켜진 경우에만 의미가 있다.
             */}
             <TextField size="small" type="number" label="다시 보지 않기 숨김 일수" value={popup.hideDays ?? ''}
-              disabled={!popup.showFooter || !popup.showDoNotShowAgain} inputProps={{ min: 1, max: 3650, step: 1 }}
+              disabled={!popup.showFooter || !popup.showDoNotShowAgain} inputProps={{ min: POPUP_INPUT_RANGES.hideDays.min, max: POPUP_INPUT_RANGES.hideDays.max, step: 1 }}
               helperText="사용자가 '다시 보지 않기'를 체크하면 이 일수만큼 숨깁니다. 비우면 WPF 기본값 30일." sx={{ width: 260 }}
               onChange={(e) => updatePopup('hideDays', e.target.value === '' ? null : Number(e.target.value))} />
 
@@ -548,8 +574,8 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <Stack direction="row" spacing={2} alignItems="center">
                   <FormControlLabel control={<Switch size="small" checked={useBackgroundOverlay} onChange={(_, value) => updateContent('useBackgroundOverlay', value)} />} label="사용" />
                   <PopupNumberField size="small" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} empty="keep" disabled={!useBackgroundOverlay}
-                    inputProps={{ min: 0, max: 100, step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
-                    onChange={(value) => { if (value != null) updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, value)) / 100); }} sx={{ width: 220 }} />
+                    inputProps={{ min: Math.round(POPUP_INPUT_RANGES.overlay.min * 100), max: Math.round(POPUP_INPUT_RANGES.overlay.max * 100), step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
+                    onChange={(value) => { if (value != null) updateContent('backgroundOverlayOpacity', Math.max(POPUP_INPUT_RANGES.overlay.min * 100, Math.min(POPUP_INPUT_RANGES.overlay.max * 100, value)) / 100); }} sx={{ width: 220 }} />
                 </Stack>
               </Stack>
             </Box>
@@ -610,20 +636,20 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <MenuItem value="FIXED">고정 크기</MenuItem>{popup.popupType !== 'IMAGE' && <MenuItem value="RATIO">화면 비율</MenuItem>}<MenuItem value="FULLSCREEN">전체 화면</MenuItem>
               </TextField>
               {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popupMinimumSize(popup).width} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popupMinimumSize(popup).height} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
-              {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><PopupNumberField label="너비 비율" value={popup.widthRatio} empty="keep" inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('widthRatio', value); }} /><PopupNumberField label="높이 비율" value={popup.heightRatio} empty="keep" inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('heightRatio', value); }} /></>}
+              {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><PopupNumberField label="너비 비율" value={popup.widthRatio} empty="keep" inputProps={{ min: POPUP_INPUT_RANGES.ratio.min, max: POPUP_INPUT_RANGES.ratio.max, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('widthRatio', value); }} /><PopupNumberField label="높이 비율" value={popup.heightRatio} empty="keep" inputProps={{ min: POPUP_INPUT_RANGES.ratio.min, max: POPUP_INPUT_RANGES.ratio.max, step: 0.05 }} onChange={(value) => { if (value != null) updatePopup('heightRatio', value); }} /></>}
             </Box>
             {/* POL-04-03 : 비율·상한(2026-11-25) — 창 최소·최대는 이 화면이 정하는 정책값이고 모든 유형(IMAGE 포함) 공통이다.
                 WPF PopupWindow는 그 값을 보호선(하한 300, 상한 작업 영역 90%) 사이에서만 반영한다(FIXED·RATIO·AUTO·IMAGE 공통). FULLSCREEN은 둘 다 쓰지 않는다.
                 서버 PopupService.validateAdminPopup: 최소는 축별 300 이상(POL-01-03 : 최소 크기), 최대 ≥ 최소.
                 IMAGE 최소·최대는 FIT_TO_IMAGE 콘텐츠가 아니라 헤더·푸터를 포함한 최종 창 기준이다. */}
             {popup.sizeMode !== 'FULLSCREEN' && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
-              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.maximumWidth}
-                helperText={`${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 너비(${popup.maximumWidth}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumWidth', value)} />
-              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.maximumHeight}
-                helperText={`${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumHeight', value)} />
-              <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.MAX_VALUE}
+              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={POPUP_INPUT_RANGES.size.min} maximum={popup.maximumWidth}
+                helperText={`${POPUP_INPUT_RANGES.size.min}px 이상 · 최대 너비(${popup.maximumWidth}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumWidth', value)} />
+              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={POPUP_INPUT_RANGES.size.min} maximum={popup.maximumHeight}
+                helperText={`${POPUP_INPUT_RANGES.size.min}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumHeight', value)} />
+              <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.isFinite(POPUP_INPUT_RANGES.size.max) ? POPUP_INPUT_RANGES.size.max : Number.MAX_VALUE}
                 helperText={`최소 너비(${popup.minimumWidth}px) 이상 · 작업 영역 90%를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />
-              <PopupDimensionField label="창 최대 높이" value={popup.maximumHeight} minimum={popup.minimumHeight} maximum={Number.MAX_VALUE}
+              <PopupDimensionField label="창 최대 높이" value={popup.maximumHeight} minimum={popup.minimumHeight} maximum={Number.isFinite(POPUP_INPUT_RANGES.size.max) ? POPUP_INPUT_RANGES.size.max : Number.MAX_VALUE}
                 helperText={`최소 높이(${popup.minimumHeight}px) 이상 · 작업 영역 90%를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumHeight', value)} />
             </Box>}
             {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">{`창 최대 크기: ${popup.maximumWidth}px × ${popup.maximumHeight}px (사용자 화면 작업 영역 90%를 넘으면 그 값으로 줄어듭니다)`}</Typography>}

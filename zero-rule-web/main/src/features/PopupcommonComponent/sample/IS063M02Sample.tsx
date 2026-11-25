@@ -16,6 +16,7 @@ import useNaturalImageSize from '../useNaturalImageSize';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
 import { POPUP_MIN_WINDOW_SIZE, popupMaximumSize } from '../popupCommon';
 import PopupNumberField from '../PopupNumberField';
+import { POPUP_INPUT_RANGES } from '../popupDefaults';
 import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
@@ -168,8 +169,10 @@ export default function IS063M02Sample() {
   const save = () => {
     if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
     if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
-    if ((popup.width ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE || (popup.height ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE) {
-      setError(`크기는 가로·세로 ${POPUP_MIN_WINDOW_SIZE}px 이상이어야 합니다.`); return;
+    // [실연동] 하한은 입력 허용 범위(POPUP_INPUT_RANGES.size.min, 공통코드 0101 SIZEMIN — 계약 300 이상)를 쓴다. 이 샘플은 0101을 조회하지 않아 300이다.
+    const sizeMin = POPUP_INPUT_RANGES.size.min;
+    if ((popup.width ?? sizeMin) < sizeMin || (popup.height ?? sizeMin) < sizeMin) {
+      setError(`크기는 가로·세로 ${sizeMin}px 이상이어야 합니다.`); return;
     }
     // POL-04-03 : 비율·상한 — 가로·세로가 창 크기인 경우(IMAGE 이미지 우선 제외) 창 최대 크기 이하여야 한다(모든 유형 공통, 2026-11-25).
     // [옵션] 이 화면은 최대 크기 입력이 없어 미리보기 기본값(1200×900)을 쓴다. 화면에 최대 입력을 두면 그 값으로 바뀐다.

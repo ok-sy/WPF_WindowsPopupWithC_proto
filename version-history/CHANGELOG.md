@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-07 — dev: 68_팝업기본값공통코드0101_추가
+
+- 이유 · 화면 기본값(popupDefaults.ts)과 입력 허용 범위를 배포 없이 코드 관리 화면에서 바꿀 수 있게 폐쇄망 공통코드 구조(CLOVER_CODE: CODE_TYPE·CODE·CODE_NM·DTL_EXPL, 폐쇄망은 SORT_SEQ 추가)를 확인하고 그룹 0101로 연결.
+- 변경 · `popupDefaults.ts`에 `POPUP_CONTRACT_RANGES`(서버·WPF 계약 범위: 창 300 이상, 비율 0.1~1, 글자 10~40, 어둡기·음량·완료 비율 0~1, 숨김 1~3650), `POPUP_INPUT_RANGES`(화면 입력 범위), `applyPopupDefaultCodes`·`loadPopupDefaultCodes`(코드 0101 → 기본값·범위, 계약 범위 안에서만 좁힘, 숫자 아님·범위 밖·최소 > 최대·알 수 없는 코드 무시, 매번 파일 값에서 재시작) 추가. `PREVIEW_FALLBACK`은 getter로 바꿔 코드 적용 후 값을 읽음, 동영상+퀴즈 완료 비율도 쓸 때 읽음. RgstPop 등록 화면이 열릴 때 0101을 조회하고(고치지 않은 신규 폼은 반영 값으로 다시 생성), 글자 크기·비율·배경 어둡기·음량·완료 비율·숨김 일수·창 최소/최대 입력 min/max와 저장 전 검사를 입력 범위로 변경(비율·어둡기·음량 저장 검사 추가). IS063M02 샘플 크기 하한도 입력 범위 사용. DB `27_popup_default_code_oracle.sql`(그룹 0101 + 코드 24건, 없을 때만). 가이드 함수 목록·공지, db README, 68·책임분리 설계 문서 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/popupDefaults.ts`, `popupPreviewFallback.ts`, `PopupPreview.tsx`, `sample/IS063M02Sample.tsx`, `guide/guideData.ts`·`guideNotices.ts`, `RgstPop/PopupEditorDialog.tsx`, `db/oracle/27_popup_default_code_oracle.sql`, `db/oracle/README.md`, `scripts/verify-rgstpop-quiz-rule(.cjs, -entry.tsx)`, `docs/design/68_*`, `docs/design/20261030_PopupcommonComponent_WEB표시기본값_SERVER정책_책임분리_TODO.md`.
+- 검증 · 원격 개발 DB에 27 실행(그룹 1·코드 24 병합, 기존 0101 없음). `verify-rgstpop-quiz-rule` 52(신규: 코드 반영·넓히는 범위/숫자 아님/알 수 없는 코드/좁힌 범위 밖 기본값 무시, 재적용 시 파일 값 재시작·최소 > 최대 되돌림, 코드 없음 = 파일 값, 신규 폼이 0101 값(최대 너비 1000)으로 열림, 숨김 일수 입력 상한 365로 좁힘). `verify-popup-transform-64` 79, `verify-popup-preview-61` 309, `verify-image-preview` 49, `verify-popup-common-sample-69` 70, `verify-survey-rich-text-55` 81, `verify-rich-text-49` 116, `verify-popup-guide-registry` 523, `verify-popup-guide-render` 34, `tsc --noEmit`·변경 파일 eslint 오류 0.
+- 상태 · 커밋·원격 반영. 폐쇄망 0101 그룹 확인·입력 미실행. 서버·WPF는 0101을 읽지 않음(화면 정책 전용).
+
 ## 2026-11-25-06 — dev: 68_화면기본값단일파일_추가
 
 - 이유 · 창 크기·최소·최대·비율 등 웹 기본값이 `createDefaultPopup`·`PREVIEW_FALLBACK`·`previewDialogSize`·`changePopupType`·`PopupPreview`·`previewOverlay`에 같은 숫자로 흩어져 있어 정책 출처가 불명확(주석에 `createDefaultPopup`을 출처로 잘못 적음). 웹 기본값을 한 파일로 모으고, 나중에 서버(공통코드)가 정할 때 그 파일만 교체하도록 준비.

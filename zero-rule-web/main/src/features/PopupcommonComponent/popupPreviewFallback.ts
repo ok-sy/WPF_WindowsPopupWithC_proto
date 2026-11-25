@@ -10,21 +10,26 @@
 import type { AdminPopupDetail } from '@local/domain';
 import { POPUP_DEFAULTS } from './popupDefaults';
 
+/* 창 크기·최소·최대·비율과 헤더·푸터 표시는 화면 기본값(popupDefaults.ts)을 읽는 시점의 값으로 채운다.
+   공통코드 0101을 앱 시작 뒤에 적용해도 반영되도록 getter로 둔다(펼치기 ...PREVIEW_FALLBACK 할 때 현재 값이 들어간다). */
+const liveDefaults = (group: 'window' | 'chrome') => Object.fromEntries(Object.keys(POPUP_DEFAULTS[group]).map((key) =>
+  [key, { enumerable: true, get: () => (POPUP_DEFAULTS[group] as Record<string, unknown>)[key] }])) as PropertyDescriptorMap;
+
 /** 미리보기 표시용 fallback(최상위 표시 필드만). 키를 추가할 때는 PopupPreview가 실제로 읽는 필드인지 먼저 확인한다. */
-export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = {
+export const PREVIEW_FALLBACK: Readonly<Partial<AdminPopupDetail>> = Object.defineProperties({
   popupId: '',
   popupType: 'TEXT',
   title: '',
-  // 창 크기·최소·최대·비율과 헤더·푸터 표시는 화면 기본값(popupDefaults.ts)과 같다.
-  ...POPUP_DEFAULTS.window,
-  ...POPUP_DEFAULTS.chrome,
   hideDays: null,
   completionRatio: null,
   passingScore: null,
   questions: [],
-};
+}, { ...liveDefaults('window'), ...liveDefaults('chrome') }) as Partial<AdminPopupDetail>;
 
-/** 동영상+퀴즈 미리보기 완료 비율. 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 0.8로 표시한다. 일반 VIDEO는 1.0 그대로. WPF·서버의 미설정 기본값도 같다(PU001 B-7, 2026-11-03). */
+/**
+ * 동영상+퀴즈 미리보기 완료 비율(파일 기본값 0.8). 미설정(키 없음·null)이면 등록 화면(changePopupType) 기본값과 같은 값으로 표시한다. 일반 VIDEO는 1.0 그대로.
+ * WPF·서버의 미설정 기본값도 같다(PU001 B-7, 2026-11-03). 공통코드 0101(VQRATIO) 반영 값은 POPUP_DEFAULTS.video.videoQuizCompletionRatio를 쓴다.
+ */
 export const PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO = POPUP_DEFAULTS.video.videoQuizCompletionRatio;
 
 /**
@@ -41,6 +46,6 @@ export function withPreviewFallback(state: Partial<AdminPopupDetail>): AdminPopu
   const videoQuiz = state.popupType === 'QUIZ' && state.content?.videoEnabled === true;
   return {
     ...PREVIEW_FALLBACK, ...state, content: { ...(state.content ?? {}) },
-    ...(videoQuiz && state.completionRatio == null ? { completionRatio: PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } : {}),
+    ...(videoQuiz && state.completionRatio == null ? { completionRatio: POPUP_DEFAULTS.video.videoQuizCompletionRatio } : {}),
   } as AdminPopupDetail;
 }

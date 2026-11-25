@@ -251,6 +251,14 @@ RATING5가 QUIZ에 속해 있었다면 이관 후 정답 선택지가 없으므�
 - 적용 현황: 원격 개발 DB 2026-11-05 실행 — 코드 그룹 2건, 코드 5건(`0089` OX형·선다형, `0090` 참여형·만점형·컷트라인형), 새 연결로 조회 확인.
   - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 22_popup_question_code_oracle.sql`
 
+## 팝업 기본값·입력 범위 공통코드 등록 (2026-11-25)
+
+`27_popup_default_code_oracle.sql` — 공통코드 그룹 `0101`(팝업 기본값)과 코드 24건(기본값 11: `WIDTH`·`HEIGHT`·`WRATIO`·`HRATIO`·`MINW`·`MINH`·`MAXW`·`MAXH`·`OVERLAY`·`VOLUME`·`VQRATIO`, 입력 범위 13: `SIZEMIN`·`RATIOMIN/MAX`·`FONTMIN/MAX`·`OVERLAYMIN/MAX`·`VOLUMEMIN/MAX`·`VQRATIOMIN/MAX`·`HIDEDAYSMIN/MAX`)을 없을 때만 넣는다. CODE = 키, CODE_NM = 값(숫자 문자열), DTL_EXPL = 설명. 값은 웹 `popupDefaults.ts` 파일 기본값과 같다. 관리자 웹이 `applyPopupDefaultCodes`로 읽고, 계약 범위를 넓히는 값·숫자 아닌 값은 무시한다.
+
+- 적용 현황: 원격 개발 DB 2026-11-25 실행 — 코드 그룹 1건, 코드 24건(기존 `0101` 없음).
+  - 원격: `powershell -NoProfile -ExecutionPolicy Bypass -File db\oracle\tools\apply-dev-db.ps1 27_popup_default_code_oracle.sql`
+- 폐쇄망: `0101` 그룹이 비어 있는지 확인한 뒤 실행하거나 코드 관리 화면에서 입력한다(폐쇄망 `CLOVER_CODE`의 `SORT_SEQ`는 NULL 허용이라 넣지 않음). 미실행.
+
 ## 퀴즈 유형 코드 컬럼 추가 (2026-11-09, PU001 §7)
 
 `23_popup_quiz_type_oracle.sql <스키마접두어>` — `POPUP_NOTICE.QUIZ_TYPE_CD`(VARCHAR2(2 CHAR), NULL 허용)와 `CK_POPUP_QUIZ_TYPE_CD`(NULL 또는 `00`·`01`·`02`)를 추가하고, 유형 코드가 빈 기존 QUIZ 행을 점수 기준으로 채운다. 이미 있으면 SKIP·이미 값이 있는 행은 유지(멱등). `01_popup_schema_oracle.sql` POPUP_NOTICE에도 같은 정의를 넣었다.

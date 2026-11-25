@@ -65,7 +65,7 @@ WEB 공통 컴포넌트는 사용자 입력·표시·미리보기를 담당하�
 
 | 항목 | 확정 책임 | 현행 위치 | 비고 |
 |---|---|---|---|
-| 창 크기·비율(560×420·0.7/0.75·최대 1200×900) | WEB 미리보기 fallback / SERVER 저장 기본값 | `popupDefaults.ts`(`POPUP_DEFAULTS`, 2026-11-25 웹 단일 출처) → `createDefaultPopup()`·`PREVIEW_FALLBACK` | 서버 기본값과 미리보기 fallback이 다를 수 있음을 가이드에 명시 |
+| 창 크기·비율(560×420·0.7/0.75·최대 1200×900) | WEB 미리보기 fallback / SERVER 저장 기본값 | `popupDefaults.ts`(`POPUP_DEFAULTS`, 2026-11-25 웹 단일 출처, 공통코드 `0101`이 있으면 그 값 — `applyPopupDefaultCodes`) → `createDefaultPopup()`·`PREVIEW_FALLBACK` | 서버 기본값과 미리보기 fallback이 다를 수 있음을 가이드에 명시 |
 | 최소 창 크기(300×300) | WEB 입력 안내 / SERVER 최종 검증 | `POPUP_MIN_WINDOW_SIZE`·저장 전 검사 | 서버·WPF와 같은 값(TODO68) |
 | 게시 기간·반복(노출 기간·`periodMode`·요일·시간대) | WEB 입력 / SERVER 정책·검증 | `createDefaultPopup()`(신규 초기값)·`PopupScheduleFields`·`validatePopupSchedule` | 독립 화면은 일정 입력이 없으면 보내지 않음(샘플 적용) |
 | 영상·오버레이 옵션(`defaultVolume`·`backgroundOverlayOpacity`·`useBackgroundOverlay`·`imageSizeMode`·`showDescription`·영상 재생 옵션) | WEB 미리보기 fallback / SERVER 기본값 | `createDefaultPopup()` content | state에 넣지 않고 미리보기 합성으로 |

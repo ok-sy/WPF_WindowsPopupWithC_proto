@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import PopupEditorDialog from '../zero-rule-web/main/src/features/RgstPop/PopupEditorDialog';
 import popupDemoQuestions from '../zero-rule-web/main/src/features/PopupcommonComponent/popupDemoQuestions';
 import { createDefaultPopup } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupEditorTransform';
+import { POPUP_DEFAULTS, POPUP_INPUT_RANGES, applyPopupDefaultCodes } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupDefaults';
 
 /*
  * RgstPop 등록 편집기(PopupEditorDialog)를 가짜 관리자 API(@/provider 대역)로 띄우는 검증 진입점.
@@ -28,3 +29,9 @@ w.mountQuiz = (passingScore: number | null, questionScore = 5, quizTypeCode?: st
   editorKey++;
   w.openQuiz('RGST-QUIZ');
 };
+Object.assign(w, { POPUP_DEFAULTS, POPUP_INPUT_RANGES, applyPopupDefaultCodes });
+/* 신규 등록(popupId 없음)으로 편집기를 연다. 공통코드 0101 응답은 window.__defaultCodes. */
+w.openNew = () => { editorKey++; root.render(<ThemeProvider theme={theme}><CssBaseline />
+  <PopupEditorDialog key={editorKey} open popupId={null} initialActive onClose={() => {}} onSaved={() => {}} />
+  <ToastContainer />
+</ThemeProvider>); };

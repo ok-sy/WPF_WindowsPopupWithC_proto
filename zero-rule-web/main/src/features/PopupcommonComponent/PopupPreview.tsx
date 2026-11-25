@@ -13,7 +13,6 @@ import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupWindowBounds } from './popupCommon';
 import { POPUP_DEFAULTS } from './popupDefaults';
 import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, previewWindowShadow, readScreenWorkArea } from './popupPreviewDialogLayout';
-import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
 import { quizRequiresPassing } from './popupQuizRule';
 import {
@@ -119,7 +118,7 @@ function PopupBody({
     return (
       <Stack spacing={2}>
         <PopupBody
-          popup={{ ...popup, popupType: 'VIDEO', completionRatio: popup.completionRatio ?? PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO }}
+          popup={{ ...popup, popupType: 'VIDEO', completionRatio: popup.completionRatio ?? POPUP_DEFAULTS.video.videoQuizCompletionRatio }}
           naturalImageSize={null}
           fitLayout={null}
           onImageLoad={onImageLoad}
