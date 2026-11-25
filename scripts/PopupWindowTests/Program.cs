@@ -796,6 +796,23 @@ internal static class Program
         var area = SystemParameters.WorkArea;
         Check(Math.Abs(huge.Width - area.Width * 0.9) < 1 && Math.Abs(huge.Height - area.Height * 0.9) < 1,
             $"[screen cap] FIXED non-IMAGE is capped at 90% of the work area ({huge.Width} x {huge.Height} / {area.Width} x {area.Height})");
+        // 2026-11-25 RATIO도 90%로 통일: 비율 1.0·설정 최대가 커도 작업 영역 90%를 넘지 않는다(이전 100%).
+        var fullRatio = OpenPopup("TEXT", dto => { dto.SizeMode = "RATIO"; dto.WidthRatio = 1.0; dto.HeightRatio = 1.0; dto.MaximumWidth = 30000; dto.MaximumHeight = 30000; });
+        fullRatio.Window.UpdateLayout();
+        Check(Math.Abs(fullRatio.Window.ActualWidth - area.Width * 0.9) < 1 && Math.Abs(fullRatio.Window.ActualHeight - area.Height * 0.9) < 1,
+            $"[screen cap] RATIO 1.0 is capped at 90% of the work area ({fullRatio.Window.ActualWidth} x {fullRatio.Window.ActualHeight})");
+        ShutdownClose(fullRatio.Window);
+        // 2026-11-25 IMAGE도 설정 최소·최대를 300~작업 영역 90% 사이에서 반영(이전에는 설정 최대 무시, 작업 영역 90%만).
+        var cappedImage = OpenPopup("IMAGE", dto => { dto.SizeMode = "FIXED"; dto.Width = 800; dto.Height = 700; dto.MinimumWidth = 300; dto.MinimumHeight = 300; dto.MaximumWidth = 500; dto.MaximumHeight = 450; });
+        for (int i = 0; i < 5; i++) { cappedImage.Window.UpdateLayout(); System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background); }
+        Check(cappedImage.Window.ActualWidth <= 500.5 && cappedImage.Window.ActualHeight <= 450.5 && cappedImage.Window.MaxWidth <= 500.5,
+            $"[image max] IMAGE honors the stored maximum 500 x 450 ({cappedImage.Window.ActualWidth} x {cappedImage.Window.ActualHeight})");
+        ShutdownClose(cappedImage.Window);
+        var screenCappedImage = OpenPopup("IMAGE", dto => { dto.SizeMode = "FIXED"; dto.Width = 20000; dto.Height = 20000; dto.MaximumWidth = 30000; dto.MaximumHeight = 30000; });
+        for (int i = 0; i < 5; i++) { screenCappedImage.Window.UpdateLayout(); System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background); }
+        Check(screenCappedImage.Window.ActualWidth <= area.Width * 0.9 + 1 && screenCappedImage.Window.ActualHeight <= area.Height * 0.9 + 1,
+            $"[image max] IMAGE with a larger stored maximum is still capped at 90% of the work area ({screenCappedImage.Window.ActualWidth} x {screenCappedImage.Window.ActualHeight})");
+        ShutdownClose(screenCappedImage.Window);
 
         // IMAGE FIT_TO_IMAGE: 콘텐츠 50 x 50이어도 헤더·푸터를 더한 최종 창은 300 이상이고 width/height는 콘텐츠 영역 의미를 유지한다.
         var image = DemoPopups("IMAGE").Single();

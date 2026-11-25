@@ -14,7 +14,7 @@
 
 | 영역 | WPF 소스 | 웹 미리보기 |
 | --- | --- | --- |
-| 창 크기 | `PopupWindow` | `sizeMode` FIXED / RATIO / FULLSCREEN, 최소·최대 크기(FULLSCREEN은 입력 숨김, IMAGE는 최소만 — 최대는 작업 영역 90%). WPF의 `AUTO`는 관리자 웹에서 선택하지 않는다 |
+| 창 크기 | `PopupWindow` | `sizeMode` FIXED / RATIO / FULLSCREEN, 최소·최대 크기(FULLSCREEN은 입력 숨김, IMAGE 포함 모든 유형이 최소·최대 입력, 최대는 설정값과 작업 영역 90% 중 작은 값 — 2026-11-25). WPF의 `AUTO`는 관리자 웹에서 선택하지 않는다 |
 | 표시 위치 | `PopupWindow` | `content.popupPosition`(9방향, 기본 CENTER). **실제 크기로 보기** 모달은 브라우저 표시 영역의 9방향 가장자리에 배치한다(크기 계산 기준은 아래 IMAGE 항목의 작업 영역, TODO61-23). 모달 크기는 WPF 창 크기이고, 일반 창은 그 안에 그림자 여백 24px를 두고 흰 판(창 - 48)과 WPF와 같은 그림자를 그린다(영상 창·FULLSCREEN은 여백·그림자 0, 2026-11-17 모든 유형으로 확대). FULLSCREEN은 위치 무시. 편집기 안 패널 미리보기는 위치를 반영하지 않는다 |
 | 헤더·푸터 | `Views/Windows/PopupWindow.xaml` | 헤더 제목, 푸터, 다시 보지 않기, Footer 버튼(`닫기`/`바로가기`, SURVEY·QUIZ는 `제출`) |
 | 폰트 크기 | `PopupWindow`, 콘텐츠 View | `content.headerFontSize` / `bodyFontSize` / `footerFontSize`, 10~40 보정, 비우면 기본 크기 |

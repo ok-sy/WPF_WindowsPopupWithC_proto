@@ -14,7 +14,7 @@ import PopupRichTextEditor from '../PopupRichTextEditor';
 import { adaptiveWindowForImage, imageSizeMode, type Size } from '../imagePreviewLayout';
 import useNaturalImageSize from '../useNaturalImageSize';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
-import { POPUP_MIN_WINDOW_SIZE } from '../popupCommon';
+import { POPUP_MIN_WINDOW_SIZE, popupMaximumSize } from '../popupCommon';
 import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
 import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
@@ -126,6 +126,7 @@ export default function IS063M02Sample() {
    * - '세로 자동'을 켜면 가로·이미지·제목·설명·헤더/푸터가 바뀔 때마다 띠가 생기지 않는 세로를 채운다(adaptiveWindowForImage).
    *   가로가 비어 있으면 이미지 원본 크기 기준 창 크기를 넣는다. '이미지 크기에 맞추기'는 원본 크기 기준으로 가로·세로를 한 번에 넣는다.
    * - 가로가 원본보다 크면 이미지가 커지지 않아 좌우 띠를 피할 수 없다. 이때는 안내만 하고 가로는 바꾸지 않는다.
+   * - 창 최대 크기(maximumWidth/Height, 이 화면은 입력이 없어 미리보기 기본값 1200×900)를 넘으면 띠가 생기지 않게 가로·세로를 함께 줄인다(2026-11-25).
    * - 화면이 작으면 WPF가 작업 영역 90% 상한으로 창을 줄여 띠가 다시 생길 수 있다(저장값은 사용자 화면과 무관하게 계산).
    * - 폼 생성은 '세로 자동'을 켜고, 불러오기는 저장된 크기를 열기만 해서 바꾸지 않도록 끈 채 시작한다.
    */
@@ -163,6 +164,13 @@ export default function IS063M02Sample() {
     if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
     if ((popup.width ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE || (popup.height ?? POPUP_MIN_WINDOW_SIZE) < POPUP_MIN_WINDOW_SIZE) {
       setError(`크기는 가로·세로 ${POPUP_MIN_WINDOW_SIZE}px 이상이어야 합니다.`); return;
+    }
+    // POL-04-03 : 비율·상한 — 가로·세로가 창 크기인 경우(IMAGE 이미지 우선 제외) 창 최대 크기 이하여야 한다(모든 유형 공통, 2026-11-25).
+    // [옵션] 이 화면은 최대 크기 입력이 없어 미리보기 기본값(1200×900)을 쓴다. 화면에 최대 입력을 두면 그 값으로 바뀐다.
+    const maximum = preview ? popupMaximumSize(preview) : null;
+    const windowSize = !(popup.popupType === 'IMAGE' && preview && imageSizeMode(preview) === 'FIT_TO_IMAGE');
+    if (maximum && windowSize && ((popup.width ?? 0) > maximum.width || (popup.height ?? 0) > maximum.height)) {
+      setError(`크기는 창 최대 크기(${maximum.width}×${maximum.height}px) 이하여야 합니다.`); return;
     }
     if (quiz.error) { setError(quiz.error); return; }
     const target = effective ?? popup;
@@ -265,8 +273,9 @@ export default function IS063M02Sample() {
                     <FormControlLabel label="이미지에 맞춰 세로 자동" disabled={!naturalImage}
                       control={<Checkbox size="small" checked={autoHeight} onChange={(event) => setAutoHeight(event.target.checked)} />} />
                     <Button size="small" variant="outlined" disabled={!naturalImage} onClick={fitImageSize}>이미지 크기에 맞추기</Button>
-                    <Typography variant="caption" color={imageFit?.limited ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                    <Typography variant="caption" color={imageFit?.limited || imageFit?.cappedByMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
                       {!naturalImage ? '이미지를 첨부하면 창 크기를 이미지에 맞출 수 있습니다.'
+                        : imageFit?.cappedByMaximum ? `창 최대 크기를 넘어 여백이 생기지 않도록 ${imageFit.window.width}×${imageFit.window.height}px로 줄였습니다.`
                         : imageFit?.limited ? `가로가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 가로는 ${imageFit.window.width}px입니다.`
                           : `이미지 원본 ${naturalImage.width}×${naturalImage.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
                     </Typography>

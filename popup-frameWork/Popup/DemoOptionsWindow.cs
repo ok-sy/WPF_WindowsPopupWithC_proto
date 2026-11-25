@@ -350,9 +350,8 @@ namespace Popup
         internal static void NormalizeAndValidate(JsonObject draft)
         {
             var content = draft["content"]!.AsObject();
-            if (draft["popupType"]!.GetValue<string>() != "IMAGE" &&
-                (draft["minimumWidth"]!.GetValue<double>() > draft["maximumWidth"]!.GetValue<double>()
-                || draft["minimumHeight"]!.GetValue<double>() > draft["maximumHeight"]!.GetValue<double>()))
+            if (draft["minimumWidth"]!.GetValue<double>() > draft["maximumWidth"]!.GetValue<double>()
+                || draft["minimumHeight"]!.GetValue<double>() > draft["maximumHeight"]!.GetValue<double>())
                 throw new ArgumentException("최소 창 크기는 최대 창 크기 이하여야 합니다.");
             if (draft["footerAction"]?.GetValue<string>() == "LINK_AND_CLOSE")
             {

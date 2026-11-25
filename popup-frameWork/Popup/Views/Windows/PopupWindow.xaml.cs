@@ -143,8 +143,8 @@ namespace Popup.Views.Windows
                         + PopupBodyBorder.BorderThickness.Top + PopupBodyBorder.BorderThickness.Bottom
                         + (_options.ShowHeader ? HeaderRow.Height.Value : 0)
                         + (_options.ShowFooter ? FooterRow.Height.Value : 0);
-                    imageView.SetAvailableBounds(EffectiveMaximumWidth(area, ScreenSafeAreaRatio) - outerWidth,
-                        EffectiveMaximumHeight(area, ScreenSafeAreaRatio) - outerHeight);
+                    imageView.SetAvailableBounds(EffectiveMaximumWidth(area) - outerWidth,
+                        EffectiveMaximumHeight(area) - outerHeight);
                     if (_lastImageRecommendation is Size recommendation)
                         ImagePopupView_RecommendedSizeChanged(recommendation.Width, recommendation.Height);
                 }
@@ -445,10 +445,10 @@ namespace Popup.Views.Windows
                 RequestedMinimumHeight;
 
             MaxWidth =
-                IsImagePopup ? CurrentWorkArea().Width * ScreenSafeAreaRatio : RequestedMaximumWidth;
+                RequestedMaximumWidth;
 
             MaxHeight =
-                IsImagePopup ? CurrentWorkArea().Height * ScreenSafeAreaRatio : RequestedMaximumHeight;
+                RequestedMaximumHeight;
 
             switch (_options.SizeMode)
             {
@@ -460,8 +460,9 @@ namespace Popup.Views.Windows
                  * (예: 5000 x 3000)에서 Header/Footer/닫기 버튼이 화면 밖으로 밀리고
                  * Topmost + Overlay 조합에서 사용자 PC 조작이 막힐 수 있다.
                  * 그래서 RATIO/AUTO처럼 현재 모니터 작업 영역(WorkArea, DIP 단위)을 기준으로
-                 * 최종 상한을 두고, IMAGE는 작업 영역 90%만으로 최대값을 정하고, 다른 유형은 작업 영역 90%와 설정 최대값 중 작은 값을 적용한다
-                 * (2026-11-24 FIXED 95% → 90%로 AUTO·IMAGE와 통일, ScreenSafeAreaRatio).
+                 * 최종 상한을 두고, 모든 유형(IMAGE 포함)에 작업 영역 90%와 설정 최대값 중 작은 값을 적용한다
+                 * (2026-11-24 FIXED 95% → 90%로 AUTO·IMAGE와 통일, ScreenSafeAreaRatio.
+                 *  2026-11-25 IMAGE도 설정 최소·최대를 300~작업 영역 90% 사이에서 반영, EffectiveMaximumWidth 주석 참고).
                  *
                  * 순서:
                  *   서버 Width/Height
@@ -481,10 +482,10 @@ namespace Popup.Views.Windows
                         Rect workArea = CurrentWorkArea();
 
                         double safeMaxWidth =
-                            EffectiveMaximumWidth(workArea, ScreenSafeAreaRatio);
+                            EffectiveMaximumWidth(workArea);
 
                         double safeMaxHeight =
-                            EffectiveMaximumHeight(workArea, ScreenSafeAreaRatio);
+                            EffectiveMaximumHeight(workArea);
 
                         double safeMinWidth =
                             Math.Min(
@@ -536,7 +537,8 @@ namespace Popup.Views.Windows
 
                         /*
                          * 잘못된 비율이 들어와도
-                         * 10%에서 100% 사이로 제한한다.
+                         * 10%에서 100% 사이로 제한한다. 결과 크기는 아래에서 작업 영역 90% 이하로 다시 막는다
+                         * (2026-11-25 RATIO도 90%로 통일: 비율 0.95·1.0은 90%로 표시).
                          */
                         double widthRatio =
                             Math.Clamp(
@@ -560,13 +562,13 @@ namespace Popup.Views.Windows
 
                         /*
                          * 최대 크기는 설정값뿐 아니라
-                         * 실제 모니터 작업 영역도 넘지 않게 제한한다.
+                         * 실제 모니터 작업 영역 90%도 넘지 않게 제한한다.
                          */
                         double maximumWidth =
-                            EffectiveMaximumWidth(workArea, 1.0);
+                            EffectiveMaximumWidth(workArea);
 
                         double maximumHeight =
-                            EffectiveMaximumHeight(workArea, 1.0);
+                            EffectiveMaximumHeight(workArea);
 
                         /*
                          * POL-01-03 : 최소 크기 — 작업 영역이 최소 300보다 작은 모니터에서도 Math.Clamp(min > max) 예외 없이
@@ -664,10 +666,10 @@ namespace Popup.Views.Windows
                             SizeToContent.WidthAndHeight;
 
                         MaxWidth =
-                            EffectiveMaximumWidth(workArea, ScreenSafeAreaRatio);
+                            EffectiveMaximumWidth(workArea);
 
                         MaxHeight =
-                            EffectiveMaximumHeight(workArea, ScreenSafeAreaRatio);
+                            EffectiveMaximumHeight(workArea);
 
                         MinWidth =
                             Math.Min(RequestedMinimumWidth, MaxWidth);
@@ -690,9 +692,10 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * POL-02-01 : 창 구조 — 화면 안전 여백. FIXED·AUTO·IMAGE 모두 작업 영역의 90%를 최대 크기로 쓴다
-         * (1920 x 1040 작업 영역이면 1728 x 936). RATIO는 '작업 영역 × 비율(0.1~1.0)'이라 100%, FULLSCREEN은 화면 전체.
+         * POL-02-01 : 창 구조 — 화면 안전 여백. FIXED·RATIO·AUTO와 IMAGE 모두 작업 영역의 90%를 최대 크기로 쓴다
+         * (1920 x 1040 작업 영역이면 1728 x 936). FULLSCREEN만 화면 전체.
          * 2026-11-24 통일: 이전에는 FIXED 95%·AUTO 90%·IMAGE 90%로 따로 정해져 있었고 값이 다른 근거가 없었다.
+         * 2026-11-25: RATIO 100%도 90%로 통일(비율 값은 관리자 화면 정책, 에이전트는 화면 밖으로 밀리는 출력만 막는다).
          * 90%는 창 안 그림자 여백 24와 별도로 화면 가장자리 여유(1040 높이에서 위아래 약 52)를 남겨 배경 Overlay·닫기 버튼이 보이게 하고,
          * VM 복귀·해상도 변경 때 버튼이 화면 밖으로 밀릴 위험을 줄인다.
          */
@@ -700,16 +703,20 @@ namespace Popup.Views.Windows
         private Size? _lastImageRecommendation;
         private bool IsImagePopup => _options.PopupType == "IMAGE" || _options.Content is ImagePopupView;
 
-        private double EffectiveMaximumWidth(Rect area, double otherRatio) => IsImagePopup
-            ? area.Width * ScreenSafeAreaRatio : Math.Min(RequestedMaximumWidth, area.Width * otherRatio);
-        private double EffectiveMaximumHeight(Rect area, double otherRatio) => IsImagePopup
-            ? area.Height * ScreenSafeAreaRatio : Math.Min(RequestedMaximumHeight, area.Height * otherRatio);
+        /*
+         * POL-01-03 : 최소 크기 · POL-04-03 : 비율·상한 (2026-11-25)
+         * 창 최소·최대값(minimumWidth/Height·maximumWidth/Height)은 관리자 화면이 정하는 정책값이다. 에이전트는 그 값을
+         * 보호선(하한 300, 상한 작업 영역 90%) 사이에서만 반영하고, 바깥 값은 보호선으로 보정한다. 유형(IMAGE 포함)·모드(FULLSCREEN 제외) 공통.
+         * 이전(2026-10-06~11-24)에는 IMAGE만 설정 최대값을 쓰지 않고 작업 영역 90%만 적용했다.
+         */
+        private double EffectiveMaximumWidth(Rect area) => Math.Min(RequestedMaximumWidth, area.Width * ScreenSafeAreaRatio);
+        private double EffectiveMaximumHeight(Rect area) => Math.Min(RequestedMaximumHeight, area.Height * ScreenSafeAreaRatio);
 
         /*
          * POL-01-03 : 최소 크기
          * 팝업 창 최소 크기 300 x 300(DIP, 관리자 미리보기 CSS px와 같은 수치). 서버는 300 미만을 저장하지 않고,
          * 기존 데이터·Demo 입력은 이 하한으로 올린다. IMAGE FIT_TO_IMAGE도 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.
-         * 비IMAGE 설정 최대값이 하한보다 작은 모순 데이터는 최대값을 하한까지 올려 min > max를 막는다.
+         * 설정 최대값이 하한보다 작은 모순 데이터는 최대값을 하한까지 올려 min > max를 막는다.
          * 순서: 하한 300 → 설정 최대값 → 작업 영역 상한(작업 영역이 300보다 작으면 화면 안 배치 우선) → 최소값을 상한 이하로 보정.
          */
         private double RequestedMinimumWidth => Math.Max(PopupOptions.MinWindowSize, _options.MinimumWidth);
@@ -727,7 +734,7 @@ namespace Popup.Views.Windows
          * 여기서 서버가 준 Width/Height 대신 계산된 크기를 쓴다.
          *
          * 다만 서버 설정과 화면 밖으로 밀리는 문제는 그대로 막아야 하므로
-         * IMAGE 전용 기준(작업 영역 90%, 고정 최대 픽셀값 미사용)으로
+         * 다른 유형과 같은 기준(설정 최소·최대를 300~작업 영역 90% 사이에서 반영)으로
          * 보정한 뒤 적용하고, 크기가 바뀐 만큼 창을 다시 화면 중앙에 맞춘다.
          *
          * FULLSCREEN은 모니터 전체를 덮는 것이 목적이라 크기를 바꾸지 않는다.
@@ -759,10 +766,10 @@ namespace Popup.Views.Windows
                 recommendedHeight = image.RequestedWindowHeight ?? recommendedHeight + vertical;
             }
             double safeMaxWidth =
-                EffectiveMaximumWidth(workArea, ScreenSafeAreaRatio);
+                EffectiveMaximumWidth(workArea);
 
             double safeMaxHeight =
-                EffectiveMaximumHeight(workArea, ScreenSafeAreaRatio);
+                EffectiveMaximumHeight(workArea);
 
             double safeMinWidth =
                 Math.Min(

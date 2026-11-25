@@ -90,7 +90,7 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `width`, `height` | FIXED 모드의 창 크기 |
 | `widthRatio`, `heightRatio` | RATIO 모드 비율 |
 | `minimumWidth`, `minimumHeight` | 최소 창 크기 |
-| `maximumWidth`, `maximumHeight` | 최대 창 크기. IMAGE는 고정 상한을 사용하지 않고 작업 영역 90%로 계산 |
+| `maximumWidth`, `maximumHeight` | 최대 창 크기(관리자 화면 정책값, IMAGE 포함 공통). WPF는 작업 영역 90%를 넘으면 90%로 줄인다(2026-11-25) |
 
 > 2026-09-28(설계 18 L-5 — C-24): API 문자열을 관리자 웹/zero-rule-server와 같은 `RATIO`로 단일화했다. `VIEWPORT_RATIO`는 더 이상 받지 않는다(내부 enum 이름 `ViewportRatio`는 유지).
 

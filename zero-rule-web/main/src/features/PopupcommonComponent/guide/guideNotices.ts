@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-25-window-bounds-common', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
+    title: '창 최소·최대 크기 — IMAGE 포함 모든 유형 공통',
+    body: ['창 최소·최대(minimumWidth/Height·maximumWidth/Height)는 등록 화면이 정하는 정책값이고 이제 IMAGE에도 적용됩니다. 이전에는 IMAGE만 설정 최대를 쓰지 않고 작업 영역 90%만 적용했습니다.',
+      'WPF는 설정값을 하한 300·상한 작업 영역 90% 사이에서만 반영합니다(FIXED·RATIO·IMAGE 공통). 화면 비율(RATIO) 1.0도 이제 90%로 표시됩니다. 미리보기(PopupPreview·PopupPreviewDialog)도 같은 규칙입니다.',
+      'adaptiveWindowForImage는 결과가 창 최대 크기를 넘으면 띠가 생기지 않게 가로·세로를 함께 줄이고 cappedByMaximum=true를 돌려줍니다.'],
+    components: ['popupMaximumSize', 'popupWindowBounds', 'adaptiveWindowForImage', 'PopupPreview', 'PopupPreviewDialog'],
+    action: 'IMAGE 등록 화면에도 창 최대 너비·높이 입력과 "최소 ≤ 최대" 검사를 두고, 창 우선(ADAPTIVE) 너비·높이는 최대 이하로 받습니다. 서버도 IMAGE의 최소 > 최대를 거부하므로 서버 변경과 함께 반영합니다.',
+    tab: 'function',
+  },
+  {
     id: '2026-11-24-video-window-inset', date: '2026-11-24', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-24',
     title: '영상 팝업 판 크기 — 다른 유형과 같게',
     body: ['같은 창 크기에서 VIDEO·동영상+퀴즈 판이 다른 유형보다 가로·세로 48px 크게 보이던 것을 맞췄습니다. WPF는 영상 창을 사방 24씩 줄이고 위치도 그만큼 안쪽으로 둡니다.',

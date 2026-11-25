@@ -1,5 +1,14 @@
 # 변경 이력
 
+## 2026-11-25-04 — dev: 68_창최소최대공통적용_수정
+
+- 이유 · 창 최소·최대(최상위 `minimumWidth/Height`·`maximumWidth/Height`)가 IMAGE에서만 최대값을 쓰지 않아(2026-10-06 예외) 최상위 공통 옵션의 의미가 유형마다 달랐다. 최소·최대·비율은 관리자 화면 정책값으로 두고, 에이전트는 화면 밖 출력만 막는 보호선(하한 300·상한 작업 영역 90%)으로 역할을 정리.
+- 변경 · WPF `PopupWindow`: IMAGE 분기를 없애 모든 유형·FIXED/RATIO/AUTO에서 min(설정 최대, 작업 영역 90%)·max(설정 최소, 300) 적용, RATIO 상한 100% → 90%(FULLSCREEN 제외). Demo 옵션 화면에 IMAGE 최대 입력·최소 ≤ 최대 검사 복원. 서버 `validateAdminPopup`의 IMAGE 최대 ≥ 최소 예외 삭제. 웹: `popupMaximumSize`·`popupWindowBounds` 추가(popupCommon.ts), 실제 크기 모달(`previewDialogSize`)·FIT_TO_IMAGE 권장 크기(`fitToImageLayout`)·ADAPTIVE 창 보정(`PopupPreview`)을 같은 규칙으로 계산. `adaptiveWindowForImage`는 결과가 설정 최대를 넘으면 띠가 생기지 않게 가로·세로를 함께 줄이고 `cappedByMaximum` 반환. 등록 화면(RgstPop)은 IMAGE에도 최대 입력·최소 ≤ 최대 검사, 창 우선 너비·높이 ≤ 최대 검사, 안내 문구 갱신. 공통 샘플(IS063M02)은 최대 초과 저장 차단·자동 높이 축소 안내. 가이드 공지·함수 목록, 인터페이스 계약·ALL·AGENT 사양·옵션 가이드·61·68 설계·대조 문서·WPF README 갱신.
+- 주요 파일 · `popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs`, `DemoOptionsWindow(.Fields).cs`, `zero-rule-server/.../PopupService.java`, `PopupAdminQuestionsTest.java`, `zero-rule-web/.../PopupcommonComponent/popupCommon.ts`, `imagePreviewLayout.ts`, `popupPreviewDialogLayout.ts`, `PopupPreview.tsx`, `sample/IS063M02Sample.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `RgstPop/PopupEditorDialog.tsx`, `scripts/PopupWindowTests/Program.cs`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-image-preview(.cjs, -entry.tsx)`, `docs/interfaces/WPF/*`, `docs/design/61_*`·`68_*`, `docs/POPUP_OPTION_GUIDE.md`, `docs/reviews/POPUP_PREVIEW_WPF_PARITY.md`.
+- 검증 · WPF `PopupWindowTests` 689(신규: RATIO 1.0 → 90%, IMAGE 설정 최대 500×450 적용, 설정 최대가 크면 90%), `ApiDemoTests` 150, 서버 `:service:core:test` 203건 중 194 통과·9 skip·실패 0(IMAGE 최소 > 최대 거부로 테스트 변경), 웹 `tsc --noEmit` 통과·변경 파일 eslint 오류 0, `verify-popup-preview-61` 309(신규: IMAGE 설정 최대 900·2000일 때 900·936, RATIO 90%, 세로 이미지 자동 높이가 최대를 넘으면 양축 축소), `verify-image-preview` 49, `verify-popup-common-sample-69` 63, `verify-popup-guide-registry` 486, `verify-popup-guide-render` 34. 미실행: 관리자 실화면, WPF 실화면(다중 모니터·DPI), 인터페이스 Word·PDF·Excel 재생성, 폐쇄망 반영.
+- 영향 · 원본이 1200×900보다 큰 이미지는 기본 설정에서 그 크기 이하로 표시된다. 크게 보이려면 등록 화면에서 최대값을 올린다. 화면 비율 0.95·1.0 팝업은 작업 영역 90%로 표시된다.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-03 — dev: 28_폐쇄망글꼴확인문서_추가
 
 - 이유 · TODO28 폐쇄망 전역 CSS·Youandi 글꼴 캡처 기록을 GitHub 이슈 대신 저장소 문서로 관리.

@@ -93,3 +93,41 @@ export function popupMinimumSize(popup: Pick<AdminPopupDetail, 'minimumWidth' | 
   const floor = (value: number) => Math.max(POPUP_MIN_WINDOW_SIZE, Number.isFinite(value) ? value : 0);
   return { width: floor(popup.minimumWidth), height: floor(popup.minimumHeight) };
 }
+
+/** WPF PopupWindow.ScreenSafeAreaRatio와 같은 에이전트 화면 상한(작업 영역 90%). FULLSCREEN을 뺀 모든 유형·모드 공통(2026-11-25 RATIO·IMAGE 포함). */
+export const POPUP_SCREEN_SAFE_AREA_RATIO = 0.90;
+
+/**
+ * POL-04-03 : 비율·상한
+ * ■ 창 최대 크기 계산(설정값)
+ * - in : popup(minimumWidth·minimumHeight·maximumWidth·maximumHeight) 저장된 최소·최대 크기
+ * - out: { width, height } 최소 크기 이상으로 보정한 설정 최대 크기(값이 없으면 Infinity)
+ * - 창 최대 크기는 관리자 화면이 정하는 정책값이다(기본 1200 x 900, createDefaultPopup). 최소보다 작은 모순 값은 최소까지 올린다
+ *   (WPF RequestedMaximumWidth/Height와 같다). 2026-11-25부터 IMAGE도 같은 값을 쓴다.
+ */
+export function popupMaximumSize(popup: Pick<AdminPopupDetail, 'minimumWidth' | 'minimumHeight' | 'maximumWidth' | 'maximumHeight'>): { width: number; height: number } {
+  const minimum = popupMinimumSize(popup);
+  const ceiling = (value: number, floor: number) => Math.max(floor, Number.isFinite(value) && value > 0 ? value : Infinity);
+  return { width: ceiling(popup.maximumWidth, minimum.width), height: ceiling(popup.maximumHeight, minimum.height) };
+}
+
+/**
+ * POL-01-03 : 최소 크기 · POL-04-03 : 비율·상한
+ * ■ 에이전트가 실제로 쓰는 창 최소·최대 크기
+ * - in : popup 저장된 최소·최대 크기 · workArea({ width, height }) 작업 영역
+ * - out: { minimum, maximum } 각 { width, height }
+ * - 설정 최소·최대를 보호선(하한 300, 상한 작업 영역 90%) 사이에서만 반영한다. 최대 = min(설정 최대, 작업 영역 90%),
+ *   최소 = min(설정 최소(300 이상), 최대). WPF PopupWindow EffectiveMaximumWidth/Height·safeMin과 같은 규칙(2026-11-25, IMAGE·RATIO 포함).
+ */
+export function popupWindowBounds(
+  popup: Pick<AdminPopupDetail, 'minimumWidth' | 'minimumHeight' | 'maximumWidth' | 'maximumHeight'>,
+  workArea: { width: number; height: number },
+): { minimum: { width: number; height: number }; maximum: { width: number; height: number } } {
+  const requestedMinimum = popupMinimumSize(popup);
+  const requestedMaximum = popupMaximumSize(popup);
+  const maximum = {
+    width: Math.min(requestedMaximum.width, workArea.width * POPUP_SCREEN_SAFE_AREA_RATIO),
+    height: Math.min(requestedMaximum.height, workArea.height * POPUP_SCREEN_SAFE_AREA_RATIO),
+  };
+  return { minimum: { width: Math.min(requestedMinimum.width, maximum.width), height: Math.min(requestedMinimum.height, maximum.height) }, maximum };
+}

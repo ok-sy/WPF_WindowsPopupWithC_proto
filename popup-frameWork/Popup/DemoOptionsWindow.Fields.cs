@@ -53,7 +53,7 @@ namespace Popup
         {
             var panel = AddTab("창·배치", "창 크기·위치와 배경 Overlay입니다.");
             if (popup.PopupType == "IMAGE")
-                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(POL-04-01). ADAPTIVE은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 현재 모니터 작업 영역의 90%이며 넘는 부분은 잘립니다.");
+                AddNote(panel, "이미지 크기는 아래 너비·높이 한 쌍을 씁니다(POL-04-01). ADAPTIVE은 팝업 창 전체 크기, FIT_TO_IMAGE는 이미지 콘텐츠 영역 크기이며 헤더·푸터·제목·설명이 더해져 실제 창은 더 커질 수 있습니다. 비우면 원본 크기로 계산합니다. 창 최대는 아래 최대 창 너비·높이와 현재 모니터 작업 영역 90% 중 작은 값이며 넘는 부분은 잘립니다.");
             AddField(panel, _draft, "sizeMode", "창 크기 방식", typeof(string), new[] { "FIXED", "RATIO", "FULLSCREEN" });
             // POL-04-01 : 공통 크기 입력 — 생략(null)을 구분한다. IMAGE 외 유형은 비우면 900×620.
             AddField(panel, _draft, "width", popup.PopupType == "IMAGE" ? "너비(px) · FIT_TO_IMAGE는 콘텐츠 너비, 그 밖에는 팝업 너비" : "고정 창 너비(px)",
@@ -65,11 +65,9 @@ namespace Popup
             // POL-01-03 : 최소 크기 — 최종 창 최소 300 x 300. 더 작은 값은 저장 서버와 같이 받지 않는다.
             AddField(panel, _draft, "minimumWidth", "최소 창 너비(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
             AddField(panel, _draft, "minimumHeight", "최소 창 높이(px, 300 이상)", typeof(double), min: PopupOptions.MinWindowSize);
-            if (popup.PopupType != "IMAGE")
-            {
-                AddField(panel, _draft, "maximumWidth", "최대 창 너비(px)", typeof(double), min: PopupOptions.MinWindowSize);
-                AddField(panel, _draft, "maximumHeight", "최대 창 높이(px)", typeof(double), min: PopupOptions.MinWindowSize);
-            }
+            // POL-04-03 : 비율·상한 — 최소·최대는 모든 유형 공통(2026-11-25 IMAGE 포함). 에이전트는 300~작업 영역 90% 사이에서 반영한다.
+            AddField(panel, _draft, "maximumWidth", "최대 창 너비(px)", typeof(double), min: PopupOptions.MinWindowSize);
+            AddField(panel, _draft, "maximumHeight", "최대 창 높이(px)", typeof(double), min: PopupOptions.MinWindowSize);
             AddField(panel, _draft, "popupPosition", "창 위치", typeof(string), new[] {
                 "CENTER", "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT", "CENTER_LEFT", "CENTER_RIGHT", "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT" });
             // POL-01-01 : 공통 옵션의 위치 — 위치·Overlay·글자 크기는 PopupWindow 공통 옵션이라 content가 아니라 최상위 값이다.

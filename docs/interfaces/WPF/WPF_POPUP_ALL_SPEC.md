@@ -101,7 +101,7 @@ LINK_AND_CLOSE는 일반 콘텐츠에서만 링크를 연 뒤 종료하며 URL �
 | SizeMode | 지원 | N | `FIXED` | FIXED / RATIO / FULLSCREEN / AUTO. AUTO는 WPF 지원이며 서버·웹 허용과 구분 |
 | WidthRatio / HeightRatio | 지원 | N | `0.7` / `0.75` | RATIO 모니터 작업 영역 비율 |
 | MinimumWidth / MinimumHeight | 지원 | N | `300` / `300` | 최종 창 하한 300 x 300(TODO68). 300 미만 값은 300으로 올리고 화면 작업 영역 상한과 함께 보정. IMAGE는 헤더·푸터 포함 최종 창 기준 |
-| MaximumWidth / MaximumHeight | 지원 | N | `1200` / `900` | 일반 콘텐츠 상한. IMAGE는 현재 작업 영역의 90% 적용 |
+| MaximumWidth / MaximumHeight | 지원 | N | `1200` / `900` | 창 최대 크기(관리자 화면 정책값, IMAGE 포함 공통). 현재 작업 영역 90%를 넘으면 90% 적용(2026-11-25) |
 | PopupPosition | 지원 | N | `CENTER` | 최상위 `popupPosition`(설계 31). 9개 위치. 알 수 없는 값은 CENTER |
 | DragMove | 고정 동작 | 해당 없음 | 설정 필드 없음 | Header 또는 Header 없는 상단 이동 영역 사용 |
 
@@ -156,7 +156,7 @@ ContentTitle·Description·ShowContentHeader와 별도 내부 제목 영역은 �
 - ADAPTIVE: 창 우선, 비율을 유지해 이미지 표시.
 - FIT_TO_IMAGE: 이미지 콘텐츠 영역 우선. 지정 영역에 헤더·푸터·제목·설명·여백을 더해 창을 계산하며 설명은 영역을 침범하지 않는다. 치수 생략 시 원본 DIP 크기 사용.
 - 두 모드 모두 최상위 Width/Height 한 쌍을 사용하고 content.width/height는 쓰지 않는다(TODO58). 같은 값에서 TEXT·ADAPTIVE 창 크기는 같다.
-- 최대 창 크기는 현재 모니터 작업 영역의 90%. 지정 이미지가 넘치면 축소하지 않고 중앙 Clip.
+- 최대 창 크기는 설정 최대(maximumWidth/Height)와 현재 모니터 작업 영역 90% 중 작은 값(2026-11-25 다른 유형과 통일). 지정 이미지가 넘치면 축소하지 않고 중앙 Clip.
 - FULLSCREEN은 전체 모니터 크기가 우선이다. FILL 및 과거 IMAGE FIXED는 삭제된 값이다.
 
 ### 4.3 VIDEO

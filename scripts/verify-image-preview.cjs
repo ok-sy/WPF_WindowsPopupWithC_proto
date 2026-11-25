@@ -56,11 +56,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     check(Math.abs(rendered.width - 120) < 1 && Math.abs(rendered.height - 90) < 1 && rendered.fit === (locked ? 'contain' : 'fill'),
       'Landscape, portrait and square bitmaps use the 120x90 content area, contained with the original ratio or filled when unlocked (TODO58)');
   }
+  // 2026-11-25: IMAGE도 다른 유형과 같이 min(설정 최대, 작업 영역 90%)이 창 상한이다(이전에는 설정 최대 무시).
   await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 100, 400)"); await pause(150);
+  check(await run('window.imageState.layout.window.width===400 && window.imageState.layout.window.height===600'),
+    'Image window is capped by the stored maximum 400x600 like other popup types');
+  await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 100, 9999, false, 800, 400, 9999)"); await pause(150);
   check(await run('window.imageState.layout.window.width===900 && window.imageState.layout.window.height===810'),
-    'Image window uses 90% of browser work area rather than fixed maximum pixels');
+    'Image window with a larger stored maximum is capped by 90% of the work area');
   check(await run('window.layoutForScreen(3840,2160).window.width===3456 && window.layoutForScreen(3840,2160).window.height===1944'),
-    '4K image window is not constrained by legacy 1200x900 maximum');
+    '4K image window uses the 90% work-area cap when the stored maximum is larger');
   check(await run("(()=>{const r=document.querySelector('img').getBoundingClientRect();return r.width===4000 && r.height===3000;})()"),
     'Screen policy limits only the window and keeps requested bitmap dimensions');
   await run("window.scenario('FIT_TO_IMAGE', false, 4000, 3000, '', 5000, 400)"); await pause(100);

@@ -1,6 +1,6 @@
 import type { AdminPopupDetail } from '@local/domain';
 import type { Size } from './imagePreviewLayout';
-import { popupMinimumSize } from './popupCommon';
+import { POPUP_SCREEN_SAFE_AREA_RATIO, popupWindowBounds } from './popupCommon';
 import { POPUP_LAYOUT } from './popupLayout';
 
 /* WPF PopupWindow.ApplyPosition과 같은 9개 위치. 작업 영역(미리보기에서는 브라우저 창) 가장자리에 붙이고,
@@ -101,8 +101,8 @@ export type PreviewScreenScale = (typeof PREVIEW_SCREEN_SCALES)[number];
 /** 가정한 작업 표시줄 높이(DIP). Windows는 배율이 바뀌어도 작업 표시줄을 DIP 기준 같은 높이로 그린다. */
 export const PREVIEW_TASKBAR_HEIGHT = 40;
 
-/** WPF PopupWindow.ScreenSafeAreaRatio와 같은 화면 안전 여백(FIXED·IMAGE 공통 90%, 2026-11-24 통일). */
-export const PREVIEW_SCREEN_SAFE_AREA_RATIO = 0.90;
+/** WPF PopupWindow.ScreenSafeAreaRatio와 같은 화면 안전 여백(FULLSCREEN 제외 모든 유형·모드 90%, 2026-11-24 통일·2026-11-25 RATIO 포함). popupCommon 값과 같다. */
+export const PREVIEW_SCREEN_SAFE_AREA_RATIO = POPUP_SCREEN_SAFE_AREA_RATIO;
 
 /** 화면 정보가 없을 때(SSR 등) 쓰는 작업 영역. 기존 readViewport 대체값과 같다. */
 export const FALLBACK_WORK_AREA: Size = { width: 1920, height: 1040 };
@@ -210,8 +210,8 @@ export function previewScreenPreset(key: PreviewScreenKey, scale: PreviewScreenS
  * - in : popup(AdminPopupDetail) sizeMode·width/height·widthRatio/heightRatio·maximumWidth/maximumHeight · fitWindow(Size | null) PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값, 이미 작업 영역 90% 이내) · workArea(Size) 작업 영역(현재 모니터 또는 기준 화면 프리셋)
  * - out: Size WPF가 같은 작업 영역에서 만들 창 크기(px, 정수 반올림). 브라우저보다 크면 줄이지 않고 모달 쪽에서 스크롤로 보여 준다(TODO61-23).
  * - WPF PopupWindow.ApplyWindowSize()와 같은 규칙(TODO61-23, 2026-11-24):
- *   IMAGE(FULLSCREEN 제외)는 설정 최대값 대신 작업 영역 90%. 비IMAGE FIXED는 min(설정 최대, 작업 영역 90%), RATIO는 min(설정 최대, 작업 영역 100%).
- *   (2026-11-24 WPF ScreenSafeAreaRatio 통일: FIXED 95% → 90%.)
+ *   FULLSCREEN을 뺀 모든 유형·모드(IMAGE·RATIO 포함)는 min(설정 최대, 작업 영역 90%)이 상한이다(popupWindowBounds).
+ *   (2026-11-24 WPF ScreenSafeAreaRatio 통일: FIXED 95% → 90%. 2026-11-25 IMAGE도 설정 최대 적용, RATIO 100% → 90%.)
  *   RATIO 비율은 WPF처럼 0.1~1.0으로 보정한다. 최소 300 x 300(popupMinimumSize)은 하한 → 설정 최대값(하한보다 작으면 하한까지) → 화면 상한 순서이며,
  *   화면 상한이 하한보다 작으면 하한을 상한까지 낮춘다(WPF Math.Min(Requested Minimum, max)).
  *   이전에는 브라우저 내부 크기를 작업 영역으로 보고 비IMAGE에 96%를 적용해, 브라우저 일반 모드(F11 해제)에서 IMAGE 730×900이 730×851로 줄었다.
@@ -223,12 +223,8 @@ export function previewDialogSize(popup: AdminPopupDetail, fitWindow: Size | nul
   const ratio = (value: unknown) => Math.max(0.1, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 1));
   const requestedWidth = popup.sizeMode === 'RATIO' ? areaWidth * ratio(popup.widthRatio) : (popup.width ?? 560);
   const requestedHeight = popup.sizeMode === 'RATIO' ? areaHeight * ratio(popup.heightRatio) : (popup.height ?? 420);
-  const minimum = popupMinimumSize(popup);
-  const image = popup.popupType === 'IMAGE';
-  // WPF ScreenSafeAreaRatio 0.90(FIXED·AUTO·IMAGE 공통). RATIO는 작업 영역 × 비율이라 100%.
-  const screenRatio = !image && popup.sizeMode === 'RATIO' ? 1.0 : PREVIEW_SCREEN_SAFE_AREA_RATIO;
-  const maximumWidth = image ? areaWidth * screenRatio : Math.min(Math.max(popup.maximumWidth, minimum.width), areaWidth * screenRatio);
-  const maximumHeight = image ? areaHeight * screenRatio : Math.min(Math.max(popup.maximumHeight, minimum.height), areaHeight * screenRatio);
+  // 설정 최소·최대를 300~작업 영역 90% 사이에서 반영(모든 유형·RATIO 공통, WPF EffectiveMaximumWidth/Height).
+  const { minimum, maximum } = popupWindowBounds(popup, workArea);
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
-  return { width: Math.round(clamp(requestedWidth, minimum.width, maximumWidth)), height: Math.round(clamp(requestedHeight, minimum.height, maximumHeight)) };
+  return { width: Math.round(clamp(requestedWidth, minimum.width, maximum.width)), height: Math.round(clamp(requestedHeight, minimum.height, maximum.height)) };
 }

@@ -116,7 +116,7 @@ export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLim
   ],
   preview: [
     { target: 'InlinePopupPreview', min: '미리보기 높이 320', max: '부모 영역', note: '실제 팝업 창의 최소 높이가 아닙니다.' },
-    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '작업 영역의 90%(RATIO 100%)', note: '작업 영역은 선택한 기준 화면(해상도 × 배율)에서 작업 표시줄을 뺀 영역입니다. 화면이 브라우저보다 크면 스크롤로 봅니다.' },
+    { target: 'PopupPreviewDialog', min: `${MIN}×${MIN}`, max: '설정 최대와 작업 영역의 90% 중 작은 값(모든 유형·RATIO 공통)', note: '작업 영역은 선택한 기준 화면(해상도 × 배율)에서 작업 표시줄을 뺀 영역입니다. 화면이 브라우저보다 크면 스크롤로 봅니다.' },
   ],
 };
 
@@ -440,10 +440,11 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'QUESTION_MAX', scope: 'COMMON', file: 'PopupQuestionEditor.tsx', input: '(상수)', output: 'number(30)', description: '설문·퀴즈 최대 문항 수 기본값입니다. PopupQuestionEditor maxQuestions·validatePopupQuestions에 다른 값을 넘기지 않으면 이 값을 씁니다.' },
   { name: 'applyVideoFixedDescription / stripVideoFixedDescription', scope: 'COMMON', file: 'videoFixedDescription.ts', input: 'popup(popupType, content)', output: '같은 타입(새 객체)', description: '동영상·동영상+퀴즈 설명 맨 앞에 고정 안내 문구를 오른쪽 정렬 문단으로 붙이거나(미리보기·저장 값), 불러온 값에서 뗍니다(에디터 표시). 여러 번 붙여도 하나만 남고 다른 유형은 그대로입니다.' },
   { name: 'VIDEO_FIXED_DESCRIPTION', scope: 'COMMON', file: 'videoFixedDescription.ts', input: '(상수)', output: 'string', description: '동영상 고정 안내 문구입니다. 바꾸면 이전 문구를 PREVIOUS_VIDEO_FIXED_DESCRIPTIONS에 넣어 기존 데이터도 떼어 냅니다.' },
-  { name: 'adaptiveWindowForImage', scope: 'COMMON', file: 'imagePreviewLayout.ts', input: 'popup, natural: Size, width?: number | null', output: '{ window, image, limited } | null', description: '이미지 ADAPTIVE(창 우선)에서 이미지 바깥 띠가 생기지 않는 창 크기를 구합니다. 가로를 주면 세로를 계산하고, 가로가 원본보다 크면 원본 기준으로 줄이고 limited=true입니다.' },
+  { name: 'adaptiveWindowForImage', scope: 'COMMON', file: 'imagePreviewLayout.ts', input: 'popup, natural: Size, width?: number | null', output: '{ window, image, limited, cappedByMaximum } | null', description: '이미지 ADAPTIVE(창 우선)에서 이미지 바깥 띠가 생기지 않는 창 크기를 구합니다. 가로를 주면 세로를 계산하고, 가로가 원본보다 크면 원본 기준으로 줄이고 limited=true입니다. 결과가 창 최대 크기(maximumWidth/Height)를 넘으면 띠가 생기지 않게 가로·세로를 함께 줄이고 cappedByMaximum=true입니다.' },
   { name: 'useNaturalImageSize', scope: 'COMMON', file: 'useNaturalImageSize.ts', input: 'url', output: 'Size | null', description: '이미지 원본 크기를 읽는 hook입니다. 주소가 없거나 읽는 중·실패면 null입니다.' },
   { name: 'validatePopupSchedule', scope: 'COMMON', file: 'PopupScheduleFields.tsx', input: 'value: PopupScheduleValue', output: 'string | null', description: '노출 시간대 입력 오류를 확인합니다.' },
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },
+  { name: 'popupMaximumSize / popupWindowBounds', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup / popup, workArea: Size', output: '{ width, height } / { minimum, maximum }', description: '설정 최대 창 크기(최소 이상으로 보정)와, 설정 최소·최대를 하한 300·상한 작업 영역 90% 사이에서 반영한 실제 창 범위를 구합니다(WPF와 같은 규칙, IMAGE·RATIO 포함).' },
   // 기존 팝업 등록(RgstPop)
   { name: 'createDefaultPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'now?: Date', output: 'AdminPopupDetail', description: '기본값이 모두 채워진 새 팝업 값을 만듭니다. 다른 화면의 state에는 쓰지 않습니다.' },
   { name: 'toEditorPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'loaded: AdminPopupDetail', output: 'AdminPopupDetail', description: '서버에서 받은 팝업을 편집할 값으로 바꿉니다.' },

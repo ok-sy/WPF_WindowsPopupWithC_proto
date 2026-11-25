@@ -323,8 +323,8 @@ X-Client-Version: 1.0.0
 | heightRatio | number | RATIO | `0.75` | RATIO 높이 비율 |
 | minimumWidth | number | 선택 | `300` | 최소 창 너비. 300 이상만 저장(TODO68). WPF·미리보기는 300 미만 기존 값도 300으로 올리고 IMAGE는 헤더·푸터를 포함한 최종 창에 적용 |
 | minimumHeight | number | 선택 | `300` | 최소 창 높이. minimumWidth와 같은 규칙(TODO68) |
-| maximumWidth | number | 선택 | `1200` | 최대 창 너비. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
-| maximumHeight | number | 선택 | `900` | 최대 창 높이. IMAGE는 이 고정 상한 대신 작업 영역 90% 적용 |
+| maximumWidth | number | 선택 | `1200` | 최대 창 너비(관리자 화면 정책값, 모든 유형 공통). WPF는 작업 영역 90%를 넘으면 90%로 줄여 적용 |
+| maximumHeight | number | 선택 | `900` | 최대 창 높이(관리자 화면 정책값, 모든 유형 공통). WPF는 작업 영역 90%를 넘으면 90%로 줄여 적용 |
 | showHeader | boolean | O | `true` | 공통 Header 표시 |
 | showFooterButton | boolean | O | `true` | Footer 버튼 표시. 상단 X는 없음. SURVEY/QUIZ 제출은 유지 |
 | showFooter | boolean | O | `true` | Footer 표시 |
@@ -352,8 +352,9 @@ X-Client-Version: 1.0.0
 
 WPF는 최종 렌더링 단계에서 화면 밖으로 나가지 않도록 값을 보정한다.
 
-- FIXED: 작업 영역 90% 이내로 최종 제한(2026-11-24 95%에서 AUTO·IMAGE와 같은 90%로 통일). IMAGE는 고정 최대값을 사용하지 않고 작업 영역 90% 적용
-- RATIO: 작업 영역 비율 사용
+- 공통: 모든 유형(IMAGE 포함)·FIXED/RATIO/AUTO 공통으로 설정 최소·최대를 하한 300·상한 작업 영역 90% 사이에서 반영(2026-11-25). 이전에는 IMAGE가 설정 최대를 쓰지 않았고 RATIO는 100%까지 허용했다.
+- FIXED: min(설정 최대, 작업 영역 90%) 이내로 최종 제한(2026-11-24 95%에서 90%로 통일)
+- RATIO: 작업 영역 × 비율(0.1~1.0) 후 min(설정 최대, 작업 영역 90%) 이내로 제한
 - FULLSCREEN: 주 모니터 전체
 - AUTO: 콘텐츠 기준 자동 크기(WPF 전용 — 서버 응답에는 나오지 않음)
 - 잘못된 값은 일부 모드에서 기본값/보정값으로 처리되지만, 백엔드는 정상 범위 값을 제공해야 한다.

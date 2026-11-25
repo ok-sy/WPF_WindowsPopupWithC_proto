@@ -1,5 +1,5 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
-import { popupFontSize, popupMinimumSize } from './popupCommon';
+import { popupFontSize, popupMaximumSize, popupWindowBounds } from './popupCommon';
 import { POPUP_LAYOUT } from './popupLayout';
 /**
  * POL-04-02 : 모드별 기준
@@ -121,13 +121,15 @@ const IMAGE_FRAME = 2;
  * - in : popup(AdminPopupDetail) 크기 지정·showHeader/showFooter·content.imageTitle·description·showDescription·본문 글자 크기 · natural(Size) 이미지 원본 크기 · workArea(Size) 작업 영역 크기
  * - out: FitToImageLayout | null 이미지 영역과 권장 창 크기, 원본 크기가 0 이하면 null
  * - 이미지 원본 크기와 팝업 설정을 받아 제목·설명·헤더·푸터·크롬을 더한 권장 창 크기를 구한다.
- *   WPF PopupWindow.xaml.cs RefreshImageBounds·ImagePopupView_RecommendedSizeChanged와 같은 합산식이며, 창은 최소 크기와 작업 영역 90% 사이로 맞춘다.
+ *   WPF PopupWindow.xaml.cs RefreshImageBounds·ImagePopupView_RecommendedSizeChanged와 같은 합산식이며, 창은 설정 최소·최대를
+ *   300~작업 영역 90% 사이에서 반영한 범위로 맞춘다(popupWindowBounds, 2026-11-25부터 다른 유형과 같은 규칙).
  */
 export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workArea: Size): FitToImageLayout | null {
   if (natural.width <= 0 || natural.height <= 0) return null;
   const image = displayImageSize(popup, natural);
-  const maxWidth = workArea.width * 0.90;
-  const maxHeight = workArea.height * 0.90;
+  const bounds = popupWindowBounds(popup, workArea);
+  const maxWidth = bounds.maximum.width;
+  const maxHeight = bounds.maximum.height;
   const chrome = IMAGE_CHROME_HEIGHT + (popup.showHeader ? POPUP_HEADER_HEIGHT : 0) + (popup.showFooter ? POPUP_FOOTER_HEIGHT : 0);
   const measureWidth = Math.max(1, Math.min(image.width + IMAGE_FRAME, maxWidth - IMAGE_CHROME_WIDTH));
   const title = textHeight(String(popup.content.imageTitle ?? ''), measureWidth, 22, 27);
@@ -137,16 +139,20 @@ export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workAre
   const recommended = { width: image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH, height: image.height + IMAGE_FRAME + (title ? title + 16 : 0) + description + chrome };
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
   // 최소 300 x 300은 이미지 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.
-  const minimum = popupMinimumSize(popup);
+  const minimum = bounds.minimum;
   return { image, window: {
     width: Math.round(clamp(recommended.width, minimum.width, maxWidth)),
     height: Math.round(clamp(recommended.height, minimum.height, maxHeight)),
   } };
 }
 
-/** ADAPTIVE 창 크기 맞춤 결과. window: 띠 없이 이미지가 꽉 차는 창 크기, image: 그때 이미지 표시 크기, limited: 요청 가로가 원본보다 커서 원본 기준으로 줄였는지. */
-export interface AdaptiveImageWindow { window: Size; image: Size; limited: boolean; }
-/* 창 크기 맞춤은 사용자 PC 화면과 무관한 저장값이라 작업 영역 90% 상한을 적용하지 않는다(실제 화면 상한은 WPF가 표시할 때 적용). */
+/**
+ * ADAPTIVE 창 크기 맞춤 결과. window: 띠 없이 이미지가 꽉 차는 창 크기, image: 그때 이미지 표시 크기,
+ * limited: 요청 가로가 원본보다 커서 원본 기준으로 줄였는지, cappedByMaximum: 설정 최대 크기를 넘어 가로·세로를 비율대로 줄였는지.
+ */
+export interface AdaptiveImageWindow { window: Size; image: Size; limited: boolean; cappedByMaximum: boolean; }
+/* 창 크기 맞춤은 사용자 PC 화면과 무관한 저장값이라 작업 영역 90% 상한을 적용하지 않는다(실제 화면 상한은 WPF가 표시할 때 적용).
+   설정 최대 크기(maximumWidth/Height)는 관리자 화면 정책이라 적용한다(2026-11-25). */
 const UNBOUNDED_WORK_AREA: Size = { width: 1_000_000, height: 1_000_000 };
 /**
  * POL-04-02 : 모드별 기준
@@ -158,17 +164,39 @@ const UNBOUNDED_WORK_AREA: Size = { width: 1_000_000, height: 1_000_000 };
  *   이미지 비율로 표시 높이를 정한 뒤, FIT_TO_IMAGE 권장 크기와 같은 합산식(fitToImageLayout)으로 세로를 계산한다.
  *   가로가 원본보다 크면 이미지가 커지지 않아 좌우 띠를 피할 수 없으므로 원본 기준 창 크기로 줄이고 limited=true.
  *   제목·설명 높이는 브라우저 글자 측정(canvas) 근사값이라 WPF 글꼴과 1~2px 다를 수 있다. 최소 300×300보다 작으면 하한 때문에 띠가 남을 수 있다.
+ *   계산한 창이 설정 최대 크기(popupMaximumSize, 기본 1200×900)를 넘으면 띠가 생기지 않도록 이미지 표시 폭을 줄여 가로·세로를 함께 줄이고
+ *   cappedByMaximum=true(2026-11-25). 표시 때 최대값으로 세로만 잘려 좌우 띠가 생기는 것을 막는다.
  */
 export function adaptiveWindowForImage(popup: AdminPopupDetail, natural: Size, width?: number | null): AdaptiveImageWindow | null {
   if (natural.width <= 0 || natural.height <= 0) return null;
   const naturalWindowWidth = natural.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH;
   const requested = positive(width);
   const limited = requested != null && requested > naturalWindowWidth;
-  const imageWidth = requested == null || limited ? natural.width : requested - IMAGE_CHROME_WIDTH - IMAGE_FRAME;
-  if (imageWidth <= 0) return null;
-  const image = { width: imageWidth, height: imageWidth * natural.height / natural.width };
-  const layout = fitToImageLayout({ ...popup, width: image.width, height: image.height, content: { ...popup.content, keepAspectRatio: true } },
-    natural, UNBOUNDED_WORK_AREA);
-  if (!layout) return null;
-  return { window: { width: Math.round(image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH), height: layout.window.height }, image, limited };
+  const requestedImageWidth = requested == null || limited ? natural.width : requested - IMAGE_CHROME_WIDTH - IMAGE_FRAME;
+  if (requestedImageWidth <= 0) return null;
+  // 설정 최대 크기만 적용하고 최소 하한은 아래 fitToImageLayout이 적용한다(작업 영역 90%는 저장값이라 제외).
+  const unboundedMaximum = { ...popup, maximumWidth: Infinity, maximumHeight: Infinity };
+  const fit = (imageWidth: number) => {
+    const image = { width: imageWidth, height: imageWidth * natural.height / natural.width };
+    const layout = fitToImageLayout({ ...unboundedMaximum, width: image.width, height: image.height, content: { ...popup.content, keepAspectRatio: true } },
+      natural, UNBOUNDED_WORK_AREA);
+    return layout ? { image, window: { width: Math.round(image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH), height: layout.window.height } } : null;
+  };
+  const maximum = popupMaximumSize(popup);
+  const fits = (result: ReturnType<typeof fit>) => result != null && result.window.width <= maximum.width && result.window.height <= maximum.height;
+  let result = fit(requestedImageWidth);
+  if (!result) return null;
+  let cappedByMaximum = false;
+  if (!fits(result)) {
+    // 세로는 이미지 폭에 따라 단조 증가하므로(설명 줄바꿈 포함) 최대 안에 드는 가장 큰 폭을 이분 탐색한다.
+    let low = 1, high = requestedImageWidth;
+    if (!fits(fit(low))) { const smallest = fit(low)!; return { window: smallest.window, image: smallest.image, limited, cappedByMaximum: true }; }
+    while (high - low > 0.5) {
+      const middle = (low + high) / 2;
+      if (fits(fit(middle))) low = middle; else high = middle;
+    }
+    result = fit(Math.floor(low))!;
+    cappedByMaximum = true;
+  }
+  return { window: result.window, image: result.image, limited, cappedByMaximum };
 }

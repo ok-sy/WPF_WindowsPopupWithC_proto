@@ -1023,8 +1023,9 @@ public class PopupService {
         }
         validatePositiveNumber(popup.maximumWidth(), "최대 너비");
         validatePositiveNumber(popup.maximumHeight(), "최대 높이");
-        if (!"IMAGE".equals(normalizeUpper(popup.popupType())) && (popup.maximumWidth() < popup.minimumWidth()
-                || popup.maximumHeight() < popup.minimumHeight())) {
+        // POL-04-03 : 비율·상한 — 창 최소·최대는 관리자 화면 정책값이며 모든 유형(IMAGE 포함) 공통이다(2026-11-25).
+        // WPF는 이 값을 하한 300·상한 작업 영역 90% 사이에서만 반영한다.
+        if (popup.maximumWidth() < popup.minimumWidth() || popup.maximumHeight() < popup.minimumHeight()) {
             throw new IllegalArgumentException("최대 크기는 최소 크기보다 작을 수 없습니다.");
         }
         // POL-10-03 : 완료·숨김·연기 — WPF 결과 HIDDEN의 hideDays 허용 범위(1~3650)와 같게 저장 단계에서 막는다. 초과 값이 저장되면

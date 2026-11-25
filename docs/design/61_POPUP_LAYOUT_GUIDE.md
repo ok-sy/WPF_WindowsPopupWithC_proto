@@ -62,7 +62,7 @@ node scripts/verify-popup-parity.cjs
 | `AUTO` | 유효 하한, 화면 상한 이하로 보정 | **비IMAGE:** `min(설정 maximum, 작업 영역×90%)`; **IMAGE:** 작업 영역×90% | 콘텐츠 측정 크기(`SizeToContent`) 기준 |
 | `FULLSCREEN` | 창 속성 min 0 | 창 속성 max ∞; 실제 주 모니터 전체 크기 | 일반 최소 300·화면 90% 상한 적용하지 않음 |
 
-비IMAGE에서 설정 maximum이 유효 하한보다 작으면 하한까지 올린다. IMAGE는 설정 maximum이 아닌 **작업 영역 90% 상한**을 사용한다. IMAGE의 `ADAPTIVE/FIT_TO_IMAGE`는 위의 창 크기 모드와 다른 **이미지 표시 모드**다.
+설정 maximum이 유효 하한보다 작으면 하한까지 올린다. IMAGE도 다른 유형과 같이 설정 maximum과 **작업 영역 90%** 중 작은 값을 상한으로 쓴다(2026-11-25). IMAGE의 `ADAPTIVE/FIT_TO_IMAGE`는 위의 창 크기 모드와 다른 **이미지 표시 모드**다.
 
 ### 유형별 내부 min/max
 
@@ -84,12 +84,12 @@ node scripts/verify-popup-parity.cjs
 | 화면 | 적용 범위·제한 |
 |---|---|
 | 인라인 미리보기 | 미리보기 내용 자리 **최소 높이 320**, 너비는 부모 영역 기준. 실제 팝업 창의 최소 높이가 아님 |
-| 실제 크기 모달(비IMAGE) | **작업 영역 기준**(TODO61-23, 2026-11-24): 설정 minimum/maximum으로 보정 후 FIXED `min(설정 maximum, 작업 영역×90%)`, RATIO `min(설정 maximum, 작업 영역×100%)`·비율 0.1~1.0 보정으로 WPF와 같다(웹에는 AUTO 없음). 기준 화면은 해상도 13종(1280×720~3840×2160) × Windows 배율(100·125·150·175%)이며, 크기·위치는 DIP 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 WPF와 같이 계산한다. 처음에는 내 모니터와 같은 해상도·배율(목록에 `*` 표시), 없으면 1920×1080·100% |
-| 실제 크기 모달(IMAGE) | **작업 영역 90% 상한**(WPF와 같음). FIT_TO_IMAGE 권장 창 크기도 같은 작업 영역으로 계산한다 |
+| 실제 크기 모달(비IMAGE) | **작업 영역 기준**(TODO61-23, 2026-11-24): 설정 minimum/maximum으로 보정 후 FIXED `min(설정 maximum, 작업 영역×90%)`, RATIO `min(설정 maximum, 작업 영역×90%)`(2026-11-25 100%에서 통일)·비율 0.1~1.0 보정으로 WPF와 같다(웹에는 AUTO 없음). 기준 화면은 해상도 13종(1280×720~3840×2160) × Windows 배율(100·125·150·175%)이며, 크기·위치는 DIP 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외)으로 WPF와 같이 계산한다. 처음에는 내 모니터와 같은 해상도·배율(목록에 `*` 표시), 없으면 1920×1080·100% |
+| 실제 크기 모달(IMAGE) | **설정 maximum과 작업 영역 90% 중 작은 값**(WPF와 같음, 2026-11-25 다른 유형과 통일). FIT_TO_IMAGE 권장 창 크기도 같은 작업 영역으로 계산한다 |
 | 실제 크기 모달 표시 | 선택한 해상도의 가상 데스크톱(작업 영역 흰색, 작업 표시줄 검정 40, 바깥 검정 30%)을 물리 크기로 그리고 팝업을 그 안에 놓는다. 배율을 올리면 화면 크기는 그대로이고 안쪽이 확대된다(`배율 ÷ devicePixelRatio`). 브라우저보다 크면 축소하지 않고 스크롤하며, 해상도를 바꾸면 처음 스크롤은 팝업 가운데다. 팝업 Overlay는 가상 데스크톱 위에서 재현한다 |
 | FULLSCREEN 미리보기 | 브라우저 뷰포트 전체. WPF는 주 모니터 전체화면 |
 
-**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 300 폭 본문 스크롤, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 작업 영역 90%(RATIO 100%)를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
+**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 300 폭 본문 스크롤, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
 
 근거: [WPF 창 크기](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs) · [WPF 기본 설정](../../popup-frameWork/Popup/Models/PopupOptions.cs) · [TEXT 뷰](../../popup-frameWork/Popup/Views/Contents/TextPopupView.xaml) · [설문/퀴즈 뷰](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml) · [문항 구현](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs) · [영상 비율](../../popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs) · [웹 설문](../../zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx) · [웹 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts) · [인라인 미리보기](../../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx)
 
@@ -118,10 +118,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **본문** · 자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-TEXT-560x750.side.png](61_popup_layout_guide/PARITY-TEXT-560x750.side.png)
 
@@ -140,10 +140,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **본문** · 자체 최소·최대 없음 — 창 안에서 줄바꿈하고 넘치면 세로 스크롤
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-TEXT-NARROW-LONG.side.png](61_popup_layout_guide/PARITY-TEXT-NARROW-LONG.side.png)
 
@@ -165,10 +165,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-SURVEY.side.png](61_popup_layout_guide/PARITY-SURVEY.side.png)
 
@@ -190,10 +190,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-QUIZ-OX.side.png](61_popup_layout_guide/PARITY-QUIZ-OX.side.png)
 
@@ -234,10 +234,10 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **영상** · WPF 남는 높이 사용(별도 min/max 없음) · 웹 미리보기만 최소 높이 170
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-VIDEO.side.png](61_popup_layout_guide/PARITY-VIDEO.side.png)
 
@@ -259,11 +259,11 @@ node scripts/verify-popup-parity.cjs
 
 최소·최대(그림 아래 칸과 같음):
 
-- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 100%) 중 작은 값 · FULLSCREEN 제외
+- **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **영상(퀴즈 포함)** · 높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)
 - **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
-- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 작업 영역 90%(RATIO 100%)
+- **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
 웹·WPF 나란히: [PARITY-VIDEO-QUIZ.side.png](61_popup_layout_guide/PARITY-VIDEO-QUIZ.side.png)
 

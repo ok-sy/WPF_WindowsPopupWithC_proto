@@ -255,7 +255,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     // POL-01-03 : 최소 크기 — 서버 PopupService와 같이 창 최소 크기는 축별 300 이상이다(기존 데이터의 더 작은 값은 저장 전에 고쳐야 한다).
     if (![popup.minimumWidth, popup.minimumHeight, popup.maximumWidth, popup.maximumHeight].every(v => Number.isFinite(v) && v > 0)
       || popup.minimumWidth < POPUP_MIN_WINDOW_SIZE || popup.minimumHeight < POPUP_MIN_WINDOW_SIZE
-      || (popup.popupType !== 'IMAGE' && (popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight))) {
+      || popup.minimumWidth > popup.maximumWidth || popup.minimumHeight > popup.maximumHeight) {
       toast.warn(`창 최소 크기는 ${POPUP_MIN_WINDOW_SIZE}×${POPUP_MIN_WINDOW_SIZE}px 이상이며 최대 크기보다 작거나 같아야 합니다.`); return;
     }
     if (popup.popupType === 'IMAGE') {
@@ -263,6 +263,12 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
         if (value != null && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
           toast.warn('크기는 양수로 입력하거나 비워 두세요.'); return;
         }
+      }
+      // POL-04-03 : 비율·상한 — 창 우선(ADAPTIVE)의 너비·높이는 창 크기라 다른 유형과 같이 설정 최대 크기 이하여야 한다(2026-11-25).
+      // 이미지 우선(FIT_TO_IMAGE)은 이미지 영역 크기라 창이 최대를 넘으면 표시 때 잘린다(입력 제한 없음).
+      if (popup.sizeMode === 'FIXED' && normalizeImageSizeMode(popup.content.imageSizeMode) === 'ADAPTIVE'
+        && ((popup.width != null && Number(popup.width) > popup.maximumWidth) || (popup.height != null && Number(popup.height) > popup.maximumHeight))) {
+        toast.warn(`팝업 너비·높이는 창 최대 크기(${popup.maximumWidth}×${popup.maximumHeight}px) 이하로 입력해 주세요.`); return;
       }
     }
     if (active && (popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO')) {
@@ -408,8 +414,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel label="이미지에 맞춰 높이 자동" disabled={!naturalSize}
                   control={<Checkbox size="small" checked={autoImageHeight} onChange={(_, value) => setAutoImageHeight(value)} />} />
                 <Button size="small" variant="outlined" disabled={!naturalSize} onClick={fitImageWindow}>이미지 크기에 맞추기</Button>
-                <Typography variant="caption" color={imageFit?.limited ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
+                <Typography variant="caption" color={imageFit?.limited || imageFit?.cappedByMaximum ? 'warning.main' : 'text.secondary'} sx={{ flexBasis: '100%' }}>
                   {!naturalSize ? '이미지 URL을 입력하면 창 크기를 이미지에 맞출 수 있습니다.'
+                    : imageFit?.cappedByMaximum ? `창 최대 크기(${popup.maximumWidth}×${popup.maximumHeight}px)를 넘어 여백이 생기지 않도록 ${imageFit.window.width}×${imageFit.window.height}px로 줄였습니다.`
                     : imageFit?.limited ? `너비가 이미지 원본보다 커서 좌우 여백이 생깁니다. 여백 없는 최대 너비는 ${imageFit.window.width}px입니다.`
                       : `이미지 원본 ${naturalSize.width}×${naturalSize.height}px · 이미지 바깥 여백이 생기지 않는 크기로 맞춥니다.`}
                 </Typography>
@@ -597,23 +604,21 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               {popup.sizeMode === 'FIXED' && popup.popupType !== 'IMAGE' && <><PopupDimensionField label="너비" value={popup.width ?? 560} minimum={popupMinimumSize(popup).width} maximum={popup.maximumWidth} onChange={(value) => updatePopup('width', value)} /><PopupDimensionField label="높이" value={popup.height ?? 420} minimum={popupMinimumSize(popup).height} maximum={popup.maximumHeight} onChange={(value) => updatePopup('height', value)} /></>}
               {popup.sizeMode === 'RATIO' && popup.popupType !== 'IMAGE' && <><TextField type="number" label="너비 비율" value={popup.widthRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('widthRatio', Number(e.target.value))} /><TextField type="number" label="높이 비율" value={popup.heightRatio} inputProps={{ min: 0.1, max: 1, step: 0.05 }} onChange={(e) => updatePopup('heightRatio', Number(e.target.value))} /></>}
             </Box>
-            {/* WPF PopupWindow.ApplyWindowSize: MinimumWidth/Height는 FIXED·RATIO 모두 적용(IMAGE 포함, 작업 영역 상한 이하로 보정),
-                MaximumWidth/Height는 IMAGE가 아닌 유형에만 적용(IMAGE는 작업 영역 90%). FULLSCREEN은 둘 다 쓰지 않는다.
-                서버 PopupService.validateAdminPopup: 최소는 축별 300 이상(POL-01-03 : 최소 크기), IMAGE가 아니면 최대 ≥ 최소.
-                IMAGE 최소는 FIT_TO_IMAGE 콘텐츠가 아니라 헤더·푸터를 포함한 최종 창 기준이다. */}
+            {/* POL-04-03 : 비율·상한(2026-11-25) — 창 최소·최대는 이 화면이 정하는 정책값이고 모든 유형(IMAGE 포함) 공통이다.
+                WPF PopupWindow는 그 값을 보호선(하한 300, 상한 작업 영역 90%) 사이에서만 반영한다(FIXED·RATIO·AUTO·IMAGE 공통). FULLSCREEN은 둘 다 쓰지 않는다.
+                서버 PopupService.validateAdminPopup: 최소는 축별 300 이상(POL-01-03 : 최소 크기), 최대 ≥ 최소.
+                IMAGE 최소·최대는 FIT_TO_IMAGE 콘텐츠가 아니라 헤더·푸터를 포함한 최종 창 기준이다. */}
             {popup.sizeMode !== 'FULLSCREEN' && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
-              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumWidth}
-                helperText={popup.popupType === 'IMAGE' ? `${POPUP_MIN_WINDOW_SIZE}px 이상 · 헤더·푸터 포함 최종 창 기준 · 작업 영역 90%를 넘으면 그 값으로 보정` : `${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 너비(${popup.maximumWidth}px) 이하`} onChange={(value) => updatePopup('minimumWidth', value)} />
-              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.popupType === 'IMAGE' ? Number.MAX_VALUE : popup.maximumHeight}
-                helperText={popup.popupType === 'IMAGE' ? `${POPUP_MIN_WINDOW_SIZE}px 이상 · 헤더·푸터 포함 최종 창 기준 · 작업 영역 90%를 넘으면 그 값으로 보정` : `${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하`} onChange={(value) => updatePopup('minimumHeight', value)} />
-              {popup.popupType !== 'IMAGE' && <>
-                <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.MAX_VALUE}
-                  helperText={`최소 너비(${popup.minimumWidth}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 90%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />
-                <PopupDimensionField label="창 최대 높이" value={popup.maximumHeight} minimum={popup.minimumHeight} maximum={Number.MAX_VALUE}
-                  helperText={`최소 높이(${popup.minimumHeight}px) 이상 · ${popup.sizeMode === 'RATIO' ? '작업 영역 100%' : '작업 영역 90%'}를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumHeight', value)} />
-              </>}
+              <PopupDimensionField label="창 최소 너비" value={popup.minimumWidth} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.maximumWidth}
+                helperText={`${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 너비(${popup.maximumWidth}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumWidth', value)} />
+              <PopupDimensionField label="창 최소 높이" value={popup.minimumHeight} minimum={POPUP_MIN_WINDOW_SIZE} maximum={popup.maximumHeight}
+                helperText={`${POPUP_MIN_WINDOW_SIZE}px 이상 · 최대 높이(${popup.maximumHeight}px) 이하${popup.popupType === 'IMAGE' ? ' · 헤더·푸터 포함 최종 창 기준' : ''}`} onChange={(value) => updatePopup('minimumHeight', value)} />
+              <PopupDimensionField label="창 최대 너비" value={popup.maximumWidth} minimum={popup.minimumWidth} maximum={Number.MAX_VALUE}
+                helperText={`최소 너비(${popup.minimumWidth}px) 이상 · 작업 영역 90%를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumWidth', value)} />
+              <PopupDimensionField label="창 최대 높이" value={popup.maximumHeight} minimum={popup.minimumHeight} maximum={Number.MAX_VALUE}
+                helperText={`최소 높이(${popup.minimumHeight}px) 이상 · 작업 영역 90%를 넘지 않게 보정`} onChange={(value) => updatePopup('maximumHeight', value)} />
             </Box>}
-            {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">{popup.popupType === 'IMAGE' ? '이미지 창 최대: 현재 화면 작업 영역의 90%. 고정 최대 픽셀값을 사용하지 않습니다.' : `미리보기 최대 크기: ${popup.maximumWidth}px × ${popup.maximumHeight}px`}</Typography>}
+            {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">{`창 최대 크기: ${popup.maximumWidth}px × ${popup.maximumHeight}px (사용자 화면 작업 영역 90%를 넘으면 그 값으로 줄어듭니다)`}</Typography>}
 
 
               </Stack>

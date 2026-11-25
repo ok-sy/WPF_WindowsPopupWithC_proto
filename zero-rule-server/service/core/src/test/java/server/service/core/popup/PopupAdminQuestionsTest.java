@@ -229,16 +229,16 @@ class PopupAdminQuestionsTest {
                 List.of(), content);
     }
 
-    /** IMAGE는 최소 크기가 기존 저장 최대 크기보다 커도 저장한다(최대≥최소 검사 제외). */
-    @Test void imageScreenPolicyAllowsMinimumAboveStoredLegacyMaximum() {
+    /** POL-04-03 : 비율·상한 — IMAGE도 다른 유형과 같이 최소 크기가 최대 크기보다 크면 거부한다(2026-11-25 IMAGE 예외 삭제). */
+    @Test void imageRejectsMinimumAboveMaximumLikeOtherTypes() {
         var base = imagePopup("ADAPTIVE");
         var large = new PopupResponseDto(base.popupId(), base.popupType(), base.title(), base.displayStartAt(),
                 base.displayEndAt(), base.displayMode(), base.displayOrder(), base.sizeMode(),
                 base.width(), base.height(), base.widthRatio(), base.heightRatio(), 2000, 1500,
                 1200, 900, base.showHeader(), base.showCloseButton(), base.showFooter(), base.showDoNotShowAgain(), base.showLater(),
                 null, base.periodMode(), null, null, null, null, null, null, List.of(), base.content());
-        service.saveAdminPopup(large, false, List.of(), "admin");
-        verify(mapper).upsertAdminPopupNotice(any());
+        assertThrows(IllegalArgumentException.class, () -> service.saveAdminPopup(large, false, List.of(), "admin"));
+        verify(mapper, never()).upsertAdminPopupNotice(any());
     }
 
     /** POL-04-01 : 공통 크기 입력 — 폐기 IMAGE 필드·잘못된 크기·content 쪽 중복 크기 지시를 거부한다. */

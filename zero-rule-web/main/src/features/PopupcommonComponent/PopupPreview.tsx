@@ -10,7 +10,7 @@ import PopupFooter, { PopupFooterButton } from './PopupFooter';
 import { POPUP_COLORS, POPUP_LAYOUT } from './popupLayout';
 import { readTextBlocks } from './popupRichText';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
-import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMinimumSize } from './popupCommon';
+import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupWindowBounds } from './popupCommon';
 import { PREVIEW_WINDOW_SHADOW, previewShadowMargin, previewWindowShadow, readScreenWorkArea } from './popupPreviewDialogLayout';
 import { PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO } from './popupPreviewFallback';
 import { buildQuizResultNotice, SURVEY_COMPLETED_MESSAGE } from './popupQuizResultNotice';
@@ -502,15 +502,17 @@ export default function PopupPreview({
     && (popup.width == null || popup.height == null)
     ? fitToImageLayout({...popup, width: undefined, height: undefined, content: {...popup.content, keepAspectRatio: true}}, naturalImageSize, workArea)
     : null;
-  const clampWindowAxis = (value: unknown, fallback: number, minimum: number, available: number) =>
-    Math.max(Math.min(minimum, available * .90), Math.min(available * .90, Number(value ?? fallback)));
+  // 설정 최소·최대를 300~작업 영역 90% 사이에서 반영(popupWindowBounds, WPF와 같은 규칙, 2026-11-25 IMAGE도 설정 최대 적용).
+  const windowBounds = popupWindowBounds(popup, workArea);
+  const clampWindowAxis = (value: unknown, fallback: number, minimum: number, maximum: number) =>
+    Math.max(Math.min(minimum, maximum), Math.min(maximum, Number(value ?? fallback)));
   // WPF와 같이 FULLSCREEN 팝업은 창 크기를 바꾸지 않는다.
   const recommendedWidth =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.width ?? (naturalLayout
-      ? clampWindowAxis(popup.width, naturalLayout.window.width, popupMinimumSize(popup).width, workArea.width) : null);
+      ? clampWindowAxis(popup.width, naturalLayout.window.width, windowBounds.minimum.width, windowBounds.maximum.width) : null);
   const recommendedHeight =
     popup.sizeMode === 'FULLSCREEN' ? null : fitLayout?.window.height ?? (naturalLayout
-      ? clampWindowAxis(popup.height, naturalLayout.window.height, popupMinimumSize(popup).height, workArea.height) : null);
+      ? clampWindowAxis(popup.height, naturalLayout.window.height, windowBounds.minimum.height, windowBounds.maximum.height) : null);
   // 권장 크기는 값(너비·높이)이 바뀔 때만 알린다. 콜백은 ref로 최신 것을 쓰고 의존성에서 뺀다:
   // 부모가 인라인 함수(onRecommendedSize={(s) => ...})를 넘기고 그 안에서 state를 바꾸면, 렌더마다 새 함수 → effect 재실행 → 다시 렌더가 무한 반복된다.
   const recommendedSizeCallback = useRef(onRecommendedSize);

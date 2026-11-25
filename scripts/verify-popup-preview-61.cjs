@@ -171,9 +171,12 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       `[61-23] ${label}: tools show the resolution and scale selects only: ` + JSON.stringify(bar));
     await escape();
   }
-  // ② 작업 영역 90% 상한: 1040 → 936.
+  // ② 상한 = min(설정 최대, 작업 영역 90%)(2026-11-25 IMAGE도 설정 최대 적용). 설정 최대 900이면 900, 설정 최대가 크면 1040 × 0.9 = 936.
   await render('IMAGE', {width: 730, height: 1000}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
-  check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height is capped by 90% of the work area (936): ' + JSON.stringify(rect));
+  check(rect.width === 730 && rect.height === 900, '[61-23] IMAGE height is capped by the stored maximum 900: ' + JSON.stringify(rect));
+  await escape();
+  await render('IMAGE', {width: 730, height: 1000, maximumHeight: 2000}, {imageSizeMode: 'ADAPTIVE', imageTitle: '', description: ''}); await openPreview(); await pause(300); rect = await paper();
+  check(rect.width === 730 && rect.height === 936, '[61-23] IMAGE height with a larger stored maximum is capped by 90% of the work area (936): ' + JSON.stringify(rect));
   await escape();
   // ③ 해상도 전환: 해상도 화면을 실제 크기로 그리고 팝업을 WPF와 같은 크기로 놓는다. 브라우저보다 큰 축만 스크롤.
   const virtual = () => run(`(()=>{const s=document.querySelector('[data-testid=preview-virtual-screen]'),w=document.querySelector('[data-testid=preview-popup-window]');
@@ -263,14 +266,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await render('TEXT'); await openPreview(); bar = await tools();
   check(bar.text.includes('1920×1080 *') && bar.text.includes('100% *'), '[61-23] the current monitor resolution and scale are selected first and marked with *: ' + JSON.stringify(bar));
   await escape(); await viewport(1000, 900); await pause(200);
-  // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: FIXED·IMAGE 90%(2026-11-24 통일), RATIO 100%(비율 0.1~1.0 보정), 설정 최대값은 비IMAGE에만.
+  // ⑤ 화면 상한은 WPF ApplyWindowSize와 같다: FULLSCREEN 외 모든 유형·모드 min(설정 최대, 작업 영역 90%)(2026-11-25 IMAGE 설정 최대 적용·RATIO 100% → 90%).
   const of = (type, o, a) => run(`JSON.stringify(window.dialogSizeOf(${JSON.stringify(type)}, ${JSON.stringify(o)}, ${JSON.stringify(a)}))`);
   const area = {width: 1000, height: 800};
   check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] FIXED non-IMAGE is capped at 90% of the work area (same as IMAGE/AUTO)');
   check(await of('TEXT', {width: 2000, height: 2000, maximumWidth: 700, maximumHeight: 600}, area) === JSON.stringify({width: 700, height: 600}), '[61-23] FIXED non-IMAGE keeps the configured maximum');
-  check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 1.5, heightRatio: 1, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 1000, height: 800}), '[61-23] RATIO non-IMAGE clamps the ratio to 1.0 and allows 100%');
+  check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 1.5, heightRatio: 1, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] RATIO clamps the ratio to 1.0 and is capped at 90% of the work area');
   check(await of('TEXT', {sizeMode: 'RATIO', widthRatio: 0.01, heightRatio: 0.01, minimumWidth: 100, minimumHeight: 100}, area) === JSON.stringify({width: 300, height: 300}), '[61-23] RATIO below 0.1 is raised to 0.1, then to the 300 floor');
-  check(await of('IMAGE', {width: 2000, height: 2000, maximumWidth: 400, maximumHeight: 400}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] IMAGE ignores the configured maximum and uses 90% of the work area');
+  check(await of('IMAGE', {width: 2000, height: 2000, maximumWidth: 400, maximumHeight: 400}, area) === JSON.stringify({width: 400, height: 400}), '[61-23] IMAGE keeps the configured maximum like other types');
+  check(await of('IMAGE', {width: 2000, height: 2000, maximumWidth: 5000, maximumHeight: 5000}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] IMAGE with a larger configured maximum is capped at 90% of the work area');
   check(await of('IMAGE', {sizeMode: 'RATIO', widthRatio: 1.2, heightRatio: 1.2}, area) === JSON.stringify({width: 900, height: 720}), '[61-23] IMAGE RATIO is clamped to 1.0 then to 90%');
   // ⑥ 화면 정보 대체값: screen.availWidth가 0이면 브라우저 표시 영역을 쓴다(비정상 0 크기 방지).
   check(await run(`(()=>{const s=window.screen;Object.defineProperty(s,'availWidth',{configurable:true,get:()=>0});const r=window.readScreenWorkArea();delete s.availWidth;
@@ -478,10 +482,18 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   //   가로가 원본 창 폭(800+106=906)보다 크면 좌우 띠를 피할 수 없어 원본 기준(906×602)으로 줄이고 limited=true. 가로 없음 = 원본 기준.
   const fitOf = (o, c, w) => run(`JSON.stringify(window.adaptiveFit(${JSON.stringify(o)}, ${JSON.stringify(c)}, {width:800,height:400}, ${JSON.stringify(w)}))`);
   const noText = {imageTitle: '', description: '', imageSizeMode: 'ADAPTIVE'};
-  check(await fitOf({}, noText, 700) === JSON.stringify({window: {width: 700, height: 499}, image: {width: 594, height: 297}, limited: false}), '[IMAGE fit] width 700 gives a height without bands');
-  check(await fitOf({}, noText, 1000) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: true}), '[IMAGE fit] a width beyond the original is limited to the original');
-  check(await fitOf({}, noText, null) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: false}), '[IMAGE fit] no width uses the original size');
-  check(await fitOf({showHeader: false, showFooter: false}, noText, 700) === JSON.stringify({window: {width: 700, height: 395}, image: {width: 594, height: 297}, limited: false}), '[IMAGE fit] hidden header/footer shorten the window');
+  check(await fitOf({}, noText, 700) === JSON.stringify({window: {width: 700, height: 499}, image: {width: 594, height: 297}, limited: false, cappedByMaximum: false}), '[IMAGE fit] width 700 gives a height without bands');
+  check(await fitOf({}, noText, 1000) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: true, cappedByMaximum: false}), '[IMAGE fit] a width beyond the original is limited to the original');
+  check(await fitOf({}, noText, null) === JSON.stringify({window: {width: 906, height: 602}, image: {width: 800, height: 400}, limited: false, cappedByMaximum: false}), '[IMAGE fit] no width uses the original size');
+  check(await fitOf({showHeader: false, showFooter: false}, noText, 700) === JSON.stringify({window: {width: 700, height: 395}, image: {width: 594, height: 297}, limited: false, cappedByMaximum: false}), '[IMAGE fit] hidden header/footer shorten the window');
+  // 2026-11-25 설정 최대 크기 적용: 계산한 창이 최대(기본 1200×900)를 넘으면 띠가 생기지 않게 가로·세로를 함께 줄인다(cappedByMaximum).
+  const tallOf = (o, w) => run(`JSON.stringify(window.adaptiveFit(${JSON.stringify(o)}, ${JSON.stringify(noText)}, {width:400,height:1600}, ${JSON.stringify(w)}))`);
+  for (const [o, w, maxHeight] of [[{}, null, 900], [{}, 600, 900], [{maximumHeight: 500}, 700, 500]]) {
+    const fit = JSON.parse(await tallOf(o, w));
+    check(fit.cappedByMaximum === true && fit.window.height <= maxHeight && fit.window.height > maxHeight - 10 && fit.window.width === Math.round(fit.image.width + 106)
+      && Math.abs(fit.image.height / fit.image.width - 4) < 1e-6 && (w == null || fit.window.width <= w),
+      `[IMAGE fit] a window above the stored maximum height ${maxHeight} is shrunk on both axes without bands: ` + JSON.stringify(fit));
+  }
   // 2026-11-24 동영상 고정 안내 문구: 미리보기·저장 값에 오른쪽 정렬 문단으로 붙고, 다시 붙여도 하나만, 불러올 때 떼면 사용자 설명만 남는다. 다른 유형은 그대로.
   const fixed = await run('window.fixedText');
   const applied = await run(`window.applyFixed('VIDEO', {description: '사용자 설명'})`);
