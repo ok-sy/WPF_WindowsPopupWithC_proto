@@ -192,6 +192,11 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
     if ((popup.width != null && !Number.isInteger(popup.width)) || (popup.height != null && !Number.isInteger(popup.height))) {
       setError('크기는 소수점 없이 정수로 입력해 주세요.'); return;
     }
+    // 서버와 같은 규칙: IMAGE가 아닌 팝업은 가로·세로 필수(IMAGE는 비우면 이미지 원본 크기 기준). 빈 값을 기본값으로 채우지 않고 입력을 요청한다
+    //   (미리보기는 빈 칸을 화면 기본값 560×420으로 보여 주지만 저장 값에는 크기가 없어 서버가 '너비와 높이는 필수'로 거절한다, 2026-11-25).
+    if (popup.popupType !== 'IMAGE' && (popup.width == null || popup.height == null)) {
+      setError('가로·세로를 입력해 주세요.'); return;
+    }
     if ((popup.width ?? sizeMin.width) < sizeMin.width || (popup.height ?? sizeMin.height) < sizeMin.height) {
       setError(`크기는 가로 ${sizeMin.width}px·세로 ${sizeMin.height}px 이상이어야 합니다.`); return;
     }

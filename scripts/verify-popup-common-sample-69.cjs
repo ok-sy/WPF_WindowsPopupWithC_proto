@@ -135,6 +135,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('[aria-label="실제 크기 미리보기 종료"]')`, 'is063 modal');
   check(await run(`Array.from(document.querySelectorAll('.MuiDialog-root')).at(-1).textContent.includes('IS063 본문')`), '[IS063] Preview button opens the shared modal with the same popup');
   await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
+  // 2026-11-25 IMAGE가 아닌 폼은 가로·세로를 비운 채 저장하면 막는다(서버 필수 규칙). 폼 생성 때 값을 채우지는 않는다.
+  check(await run(`document.querySelector('input[aria-label="가로"]').value==='' && document.querySelector('input[aria-label="세로"]').value===''`), '[IS063 size] New TEXT form does not prefill size');
+  await clickButton('저장');
+  check(await run(`document.querySelector('[role=alert]')?.textContent.includes('가로·세로를 입력')`), '[IS063 size] Empty size is rejected for TEXT like the server: ' + await run(`document.querySelector('[role=alert]')?.textContent`));
+  await setInput('input[aria-label="세로"]', '420'); await run(`document.querySelector('input[aria-label="세로"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(150);
   await setInput('input[aria-label="가로"]', '299'); await clickButton('저장');
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('300')`), '[IS063] Size below 300 is rejected (TODO68)');
   await setInput('input[aria-label="가로"]', '640'); await clickButton('저장');
@@ -142,7 +147,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(saved.popupType === 'TEXT' && saved.title === 'IS063 헤더' && saved.width === 640 && saved.content.plainText.includes('IS063 본문')
     && !('attachedFileName' in saved.content) && !JSON.stringify(saved).includes('IS063 컨텐츠'), '[IS063] Save request matches the edit; content name is not invented into the contract');
   check(!('displayStartAt' in saved) && !('periodMode' in saved) && !('active' in saved) && !('targetGroups' in saved), '[IS063] Save value has no period·schedule·active·targets (no input on this screen)');
-  check(!('height' in saved) && !('showLater' in saved) && !('footerAction' in saved.content), '[IS063] Unset height·showLater·footerAction stay out of the save value (server defaults): ' + JSON.stringify(saved));
+  check(saved.height === 420 && !('showLater' in saved) && !('footerAction' in saved.content), '[IS063] Typed height 420 is saved; unset showLater·footerAction stay out of the save value (server defaults): ' + JSON.stringify(saved));
   await clickButton('닫기');
   // [예시] pickPopupFields 버튼: 호출 코드와 결과를 보여 준다. 입력하지 않은 항목(기간 등)은 결과에 없다.
   await clickButton('pickPopupFields로 가져오기');
