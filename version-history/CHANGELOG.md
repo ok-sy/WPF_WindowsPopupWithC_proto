@@ -22,6 +22,7 @@
 - 검증 · 폴더형 publish·단일 EXE(91,833,678 Byte). TAR 4개 검증, TGZ SHA256 `17a62b2b481d51910ca280b48738a5d6c157639abdd1036a7d8b5da68e476f99` 일치(26,519,687 Byte). 누락 점검: PPT 2종·27 closednet(23건, SIZEMIN 코드 행 없음)·26·`WPF_SPEC_v3.11.xlsx`·Word·PDF·61 레이아웃 가이드·buttons.md·CI 이미지 포함, `popupDefaults.ts`·`PopupNumberField.tsx`·`IS063M02Sample.tsx`·가이드 2종·`SurveyPopupView.xaml.cs`·SurveyStyles V1·V2가 작업 트리와 같음(줄바꿈 제외). 28 삭제 스크립트·`WPF_SPEC_v3.10.xlsx`·RgstPop·`globalStyle.ts` 없음, scene-router RgstPop 참조 0. README-IMPORT 기준 5473671·직전 20261124(1eca966).
 - 미완료 · 폐쇄망 반입·적용, 폐쇄망 DB 26·27 실행.
 - 상태 · 반입본 생성·검증 완료(`offline-export/20261126`). 이 기록은 커밋에 포함, 원격 반영. 이 기록 자체는 반입본의 CHANGELOG에 없음.
+- 재생성(같은 날): IS063 가로·세로 빈 값 저장 거절(39735b3·53d4d41, IMAGE 포함)을 넣기 위해 20261126을 기준 53d4d41로 다시 만듦(-Force). 변경 요약에 '컨텐츠 등록 샘플 가로·세로 필수' 항목 추가, 히스토리 번들 다시 생성(20261124 번들에서 연속, main 5701e97 → 6ba5040, 36개). 구성 동일(웹 A 60·M 22·D 3, WPF 100, 문서 214 + DB 2 + CI 이미지 2, 번들 5). 단일 EXE 빌드 확인, TGZ SHA256 `4b7079e7a8ec46f888a76e9ed4147d5b7f781f0f0dc788cc4748e9b5229f2a37` 일치(26,520,002 Byte). 누락 점검 재실행: PPT 2종·27 closednet·26·Excel v3.11·Word·PDF·인계 문서·CI 이미지 포함, 웹 5개 파일 작업 트리와 같음(IS063 빈 값 검사 포함), 28·v3.10·RgstPop 없음.
 
 ## 2026-11-25-19 — docs: 인터페이스 산출물(Word·PDF·Excel) 최신화
 
