@@ -8,7 +8,12 @@ export type PopupNumberFieldProps = Omit<TextFieldProps, 'value' | 'onChange' | 
   value: number | null | undefined;
   onChange: (value: number | null) => void;
   empty?: PopupNumberFieldEmpty;
+  /** true면 정수만 받는다(창 크기·우선순위·개수 등). 소수점·지수(.,eE+-) 키를 막고, 붙여 넣은 소수는 반영하지 않는다. */
+  integer?: boolean;
 };
+
+/** 정수 칸에서 막는 키. 숫자 칸(type=number)은 이 글자들을 받아 560.5·5e2 같은 값을 만든다. */
+const NON_INTEGER_KEYS = new Set(['.', ',', 'e', 'E', '+', '-']);
 
 /**
  * POL-03-03 : 편집 UI
@@ -19,12 +24,19 @@ export type PopupNumberFieldProps = Omit<TextFieldProps, 'value' | 'onChange' | 
  *   이전에는 `Number(e.target.value)`를 바로 넣어 마지막 자리를 지우면 0이 다시 표시되거나(빈 칸 → 0),
  *   비운 값을 다른 로직(이미지 높이 자동 등)이 곧바로 다시 채워 마지막 자리가 지워지지 않았다(2026-11-25).
  *   범위 보정은 하지 않는다(부모가 onChange에서 보정). 입력 중 보정된 값은 blur 뒤에 보인다.
+ * - integer: 정수 칸의 소수점 방어(2026-11-25). 키 입력을 막고, 붙여 넣기 등으로 들어온 정수 아닌 글자는 화면·값 모두 반영하지 않는다.
+ *   저장 검사에서도 Number.isInteger로 한 번 더 확인한다(부모).
  */
-export default function PopupNumberField({ value, onChange, empty = 'commit', ...props }: PopupNumberFieldProps) {
+export default function PopupNumberField({ value, onChange, empty = 'commit', integer = false, onKeyDown, ...props }: PopupNumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
   return <TextField {...props} type="number" value={draft ?? (value ?? '')}
+    onKeyDown={(event) => {
+      if (integer && NON_INTEGER_KEYS.has(event.key)) event.preventDefault();
+      onKeyDown?.(event);
+    }}
     onChange={(event) => {
       const input = event.target.value;
+      if (integer && !/^\d*$/.test(input)) return;
       setDraft(input);
       if (input === '') { if (empty === 'commit') onChange(null); return; }
       const number = Number(input);

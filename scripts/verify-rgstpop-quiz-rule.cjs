@@ -223,13 +223,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
 
   // 2026-11-25 공통코드 0101(팝업 기본값·입력 범위): 신규 등록 폼이 코드 값으로 열리고, 계약 범위를 넓히는 값·숫자 아닌 값·최소 > 최대는 무시한다.
   const unit = await run(`(()=>{const a=window.applyPopupDefaultCodes;const d=window.POPUP_DEFAULTS,r=window.POPUP_INPUT_RANGES;
-    const one=a([{code:'WIDTH',codeNm:'640'},{code:'MAXH',codeNm:'800'},{code:'RATIOMAX',codeNm:'0.9'},{code:'FONTMAX',codeNm:'50'},{code:'MINW',codeNm:'abc'},{code:'NOPE',codeNm:'1'},{code:'WRATIO',codeNm:'0.95'}]);
-    const first={width:d.window.width,maxH:d.window.maximumHeight,minW:d.window.minimumWidth,wRatio:d.window.widthRatio,ratioMax:r.ratio.max,fontMax:r.font.max,applied:one.applied.sort(),ignored:one.ignored.map(i=>i.code).sort()};
+    const one=a([{code:'WIDTH',codeNm:'640'},{code:'MAXH',codeNm:'800'},{code:'RATIOMAX',codeNm:'0.9'},{code:'FONTMAX',codeNm:'50'},{code:'MINW',codeNm:'abc'},{code:'NOPE',codeNm:'1'},{code:'WRATIO',codeNm:'0.95'},{code:'HEIGHT',codeNm:'420.5'},{code:'HIDEDAYSMAX',codeNm:'30.5'},{code:'OVERLAY',codeNm:'0.5'}]);
+    const first={width:d.window.width,height:d.window.height,maxH:d.window.maximumHeight,minW:d.window.minimumWidth,wRatio:d.window.widthRatio,overlay:d.overlay.backgroundOverlayOpacity,ratioMax:r.ratio.max,fontMax:r.font.max,hideMax:r.hideDays.max,applied:one.applied.sort(),ignored:one.ignored.map(i=>i.code).sort()};
     const two=a([{code:'MINW',codeNm:'900'},{code:'MAXW',codeNm:'800'}]);
     const second={minW:d.window.minimumWidth,maxW:d.window.maximumWidth,width:d.window.width,ratioMax:r.ratio.max,ignored:two.ignored.map(i=>i.code)};
     a([]);return {first,second,reset:{width:d.window.width,maxH:d.window.maximumHeight,ratioMax:r.ratio.max}};})()`);
-  check(JSON.stringify(unit.first) === JSON.stringify({width: 640, maxH: 800, minW: 300, wRatio: 0.7, ratioMax: 0.9, fontMax: 40, applied: ['MAXH', 'RATIOMAX', 'WIDTH'], ignored: ['FONTMAX', 'MINW', 'NOPE', 'WRATIO']}),
-    '0101 codes apply valid values, ignore widening ranges, non-numbers, unknown codes and defaults outside the narrowed range: ' + JSON.stringify(unit.first));
+  check(JSON.stringify(unit.first) === JSON.stringify({width: 640, height: 420, maxH: 800, minW: 300, wRatio: 0.7, overlay: 0.5, ratioMax: 0.9, fontMax: 40, hideMax: 3650, applied: ['MAXH', 'OVERLAY', 'RATIOMAX', 'WIDTH'], ignored: ['FONTMAX', 'HEIGHT', 'HIDEDAYSMAX', 'MINW', 'NOPE', 'WRATIO']}),
+    '0101 codes apply valid values (decimal OVERLAY 0.5 kept), ignore widening ranges, non-numbers, decimals in integer codes (HEIGHT 420.5, HIDEDAYSMAX 30.5), unknown codes and defaults outside the narrowed range: ' + JSON.stringify(unit.first));
   check(unit.second.minW === 300 && unit.second.maxW === 1200 && unit.second.width === 560 && unit.second.ratioMax === 1 && unit.second.ignored.includes('MINW/MAXW'),
     '0101 re-apply starts from file defaults and reverts minimum > maximum: ' + JSON.stringify(unit.second));
   check(JSON.stringify(unit.reset) === JSON.stringify({width: 560, maxH: 900, ratioMax: 1}), 'Applying no codes restores file defaults');

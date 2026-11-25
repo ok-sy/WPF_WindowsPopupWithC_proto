@@ -104,6 +104,15 @@ export const POPUP_RANGE_CODE_PREFIXES: Readonly<Record<string, PopupInputRangeK
   RATIO: 'ratio', FONT: 'font', OVERLAY: 'overlay', VOLUME: 'volume', VQRATIO: 'completion', HIDEDAYS: 'hideDays',
 };
 
+/**
+ * 정수만 받는 코드(소수점 방어, 2026-11-25). 창 크기(px)·글자 크기·숨김 일수는 정수 값만 쓰므로, 코드 관리 화면의
+ * 코드이름(CODE_NM)에 560.5처럼 소수가 들어와도 무시하고 파일 값을 쓴다(코드 관리 화면은 CODE_NM 형식을 검사하지 않는다).
+ * 비율·배경 어둡기·음량·완료 비율은 소수가 정상이라 넣지 않는다.
+ */
+export const POPUP_INTEGER_CODES: ReadonlySet<string> = new Set([
+  'WIDTH', 'HEIGHT', 'MINW', 'MINH', 'MAXW', 'MAXH', 'FONTMIN', 'FONTMAX', 'HIDEDAYSMIN', 'HIDEDAYSMAX',
+]);
+
 /** applyPopupDefaultCodes 결과. applied: 반영한 코드, ignored: 반영하지 않은 코드와 이유. */
 export interface PopupDefaultCodeResult { applied: string[]; ignored: { code: string; reason: string }[]; }
 
@@ -114,7 +123,7 @@ export interface PopupDefaultCodeResult { applied: string[]; ignored: { code: st
  * - out: PopupDefaultCodeResult 반영·무시한 코드
  * - 먼저 파일 기본값·계약 범위로 되돌린 뒤 적용한다(다시 불러도 같은 결과). 순서: 범위 코드(계약 범위 안에서만 좁힘, MIN ≤ MAX) →
  *   기본값 코드(숫자이고 그 범위 안일 때만) → 최소 ≤ 최대 등 관계 확인(어긋나면 해당 축을 파일 값으로 되돌림).
- *   알 수 없는 코드·숫자가 아닌 값·범위 밖 값은 무시하고 ignored에 이유를 남긴다.
+ *   알 수 없는 코드·숫자가 아닌 값·정수 코드의 소수(POPUP_INTEGER_CODES)·범위 밖 값은 무시하고 ignored에 이유를 남긴다.
  */
 export function applyPopupDefaultCodes(codes: readonly Pick<PopupCodeOption, 'code' | 'codeNm'>[]): PopupDefaultCodeResult {
   const result: PopupDefaultCodeResult = { applied: [], ignored: [] };
@@ -129,6 +138,7 @@ export function applyPopupDefaultCodes(codes: readonly Pick<PopupCodeOption, 'co
     const text = String(codeNm ?? '').trim();
     const number = text === '' ? NaN : Number(text);
     if (!Number.isFinite(number)) { result.ignored.push({ code: key, reason: `숫자가 아님(${text})` }); continue; }
+    if (POPUP_INTEGER_CODES.has(key) && !Number.isInteger(number)) { result.ignored.push({ code: key, reason: `정수가 아님(${text})` }); continue; }
     values.set(key, number);
   }
   // 1) 범위 코드: 계약 범위 안에서만 좁힌다.

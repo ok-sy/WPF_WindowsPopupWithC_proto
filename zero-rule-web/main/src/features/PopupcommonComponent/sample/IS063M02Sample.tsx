@@ -188,6 +188,10 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
     // [실연동] 하한은 기본 창 최소 크기(popupSizeInputMin — 공통코드 0101 MINW·MINH, 계약 300 이상)다. 이 화면은 최소 크기 입력이 없어
     //   모든 팝업이 이 최소 크기로 저장되고, 그보다 작은 가로·세로는 실제 팝업이 최소 크기까지 늘려 띄운다. searchCodes가 없으면(가이드 예시 탭) 300×300이다.
     const sizeMin = popupSizeInputMin();
+    // 창 크기는 정수만 받는다(입력칸이 소수점 키를 막지만, 불러온 값·붙여 넣기 대비로 한 번 더 확인).
+    if ((popup.width != null && !Number.isInteger(popup.width)) || (popup.height != null && !Number.isInteger(popup.height))) {
+      setError('크기는 소수점 없이 정수로 입력해 주세요.'); return;
+    }
     if ((popup.width ?? sizeMin.width) < sizeMin.width || (popup.height ?? sizeMin.height) < sizeMin.height) {
       setError(`크기는 가로 ${sizeMin.width}px·세로 ${sizeMin.height}px 이상이어야 합니다.`); return;
     }
@@ -225,7 +229,7 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
     <Box className="nConWid">
       <Typography component="span">{label}</Typography>
       {/* [옵션] 빈 칸은 입력을 마칠 때 반영한다(PopupNumberField empty="onBlur"). 바로 반영하면 세로 자동이 가로를 다시 채워 마지막 자리가 지워지지 않는다. */}
-      <PopupNumberField placeholder={`최소 ${popupSizeInputMin()[key]}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key]} empty="onBlur"
+      <PopupNumberField integer placeholder={`최소 ${popupSizeInputMin()[key]}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key]} empty="onBlur"
         disabled={!popup || (key === 'height' && adaptiveImage && autoHeight && imageFit != null)}
         slotProps={{ htmlInput: { 'aria-label': label, min: popupSizeInputMin()[key] } }}
         onChange={(value) => update(key, value ?? undefined)} />

@@ -43,7 +43,7 @@ export default function PopupQuizRuleFields({ questionCount, rule, count, passin
       </Select>
       {selected?.suffix && <>
         {/* 빈 칸은 반영하지 않는다(입력 중 0으로 바뀌어 마지막 자리가 지워지지 않던 문제, 2026-11-25). */}
-        <PopupNumberField size="small" sx={{ width: 72 }} value={count} empty="keep"
+        <PopupNumberField integer size="small" sx={{ width: 72 }} value={count} empty="keep"
           slotProps={{ htmlInput: { 'aria-label': '통과 기준 개수', min: 1, max: questionCount } }}
           onChange={(value) => { if (value != null) onCountChange(value); }} />
         <Typography component="span">{selected.suffix}</Typography>

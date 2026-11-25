@@ -1,6 +1,14 @@
 # 변경 이력
 
 
+## 2026-11-25-18 — 정수 입력칸·정수 공통코드 소수점 방어
+
+- 이유: 창 크기·우선순위·퀴즈 통과 개수 같은 정수 값에 소수가 들어오는 것을 막는 처리가 없었음. 숫자 입력칸(type=number)이 560.5를 받아 저장 값으로 넘겼고(서버·DB NUMBER(10,2)도 그대로 저장), 공통코드 0101도 숫자이기만 하면 WIDTH 560.5·HIDEDAYSMAX 30.5를 받아들임. 코드 관리 화면은 코드(CODE)만 영문·숫자로 검사하고 코드이름(CODE_NM, 값)은 길이만 검사함.
+- 변경: 공통 `PopupNumberField`에 `integer` 옵션 — 소수점·지수 키(. , e E + -) 차단, 붙여 넣은 정수 아닌 값은 화면·값 모두 반영 안 함. IS063 샘플 가로·세로, 퀴즈 통과 기준 개수, RgstPop 표시 우선순위·이미지 너비/높이에 적용, RgstPop 창 최소·최대 입력(`PopupDimensionField`)도 같은 방어. IS063 저장 검사에 정수 확인('크기는 소수점 없이 정수로 입력해 주세요.'). `popupDefaults.ts` `POPUP_INTEGER_CODES`(WIDTH·HEIGHT·MINW·MINH·MAXW·MAXH·FONTMIN/MAX·HIDEDAYSMIN/MAX)는 소수면 무시(정수가 아님). 비율·배경 어둡기·음량·완료 비율은 소수가 정상이라 제외. 가이드 함수 설명에 integer 추가.
+- 주요 파일: `PopupNumberField.tsx`, `popupDefaults.ts`, `IS063M02Sample.tsx`, `PopupQuizRuleFields.tsx`, `RgstPop/PopupEditorDialog.tsx`, `guide/guideData.ts`, `scripts/verify-popup-common-sample-69.cjs`, `scripts/verify-rgstpop-quiz-rule.cjs`.
+- 검증: tsc·eslint 통과. common-sample-69 75(세로 칸 '.'·'e' 키 차단·'5' 허용, 붙여 넣은 480.5 미반영), rgstpop-quiz-rule 52(HEIGHT 420.5·HIDEDAYSMAX 30.5 무시, OVERLAY 0.5 반영), guide-registry 643·render 34, image-preview 49, transform-64 79.
+- 상태: 커밋·원격 반영. 실제 키보드 입력(헤드리스 이벤트로 대체)·폐쇄망 코드 관리 화면 CODE_NM 소수 입력 가능 여부 미확인.
+
 ## 2026-11-25-17 — 공통코드 0101 SIZEMIN 삭제·MINW/MINH로 입력 하한 통합
 
 - 이유: 창 크기 입력 하한(SIZEMIN)과 기본 창 최소 크기(MINW·MINH)가 둘 다 300이고, 최소 크기 입력 칸이 없는 관리자 화면(IS063 샘플)에서는 모든 팝업이 MINW·MINH로 저장돼 역할이 겹침. 둘을 어긋나게 설정(SIZEMIN 400·MINW 300 등)할 여지만 남아 정합성 보완.

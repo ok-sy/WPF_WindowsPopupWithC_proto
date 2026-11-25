@@ -97,9 +97,12 @@ function PopupDimensionField({ label, value, minimum, maximum, helperText, onCha
   const [draft, setDraft] = useState<string | null>(null);
   return <TextField type="number" label={label} value={draft ?? value}
     helperText={helperText ?? `최소 ${minimum}px · 최대 ${maximum}px · 입력 완료 시 범위 자동 조정`}
-    inputProps={{ min: minimum, max: maximum }}
+    inputProps={{ min: minimum, max: maximum, step: 1 }}
+    onKeyDown={(event) => { if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
     onChange={(event) => {
-      const input = event.target.value; setDraft(input);
+      const input = event.target.value;
+      if (!/^\d*$/.test(input)) return; // 창 크기는 정수만(소수점 방어, 2026-11-25)
+      setDraft(input);
       if (input !== '' && Number.isFinite(Number(input)))
         onChange(Math.max(minimum, Math.min(maximum, Number(input))));
     }} onBlur={() => setDraft(null)} />;
@@ -375,7 +378,7 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField select label="표시 방식" value={popup.displayMode} onChange={(e) => updatePopup('displayMode', e.target.value as PopupDisplayMode)}>
                 <MenuItem value="SEQUENTIAL">순차 표시</MenuItem><MenuItem value="SIMULTANEOUS">동시 표시</MenuItem>
               </TextField>
-              <PopupNumberField required label="표시 우선순위" value={popup.displayOrder} empty="keep" inputProps={{ min: 1, step: 1 }}
+              <PopupNumberField integer required label="표시 우선순위" value={popup.displayOrder} empty="keep" inputProps={{ min: 1, step: 1 }}
                 helperText="숫자가 작을수록 먼저 표시됩니다. 같은 번호의 동시 표시는 함께 열립니다." onChange={(value) => { if (value != null) updatePopup('displayOrder', value); }} />
               <Box />
               <TextField type="datetime-local" label="노출 시작" value={toDateTimeLocal(popup.displayStartAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayStartAt', e.target.value)} />
@@ -433,9 +436,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 </TextField>
                 {/* POL-04-01 : 공통 크기 입력 — 공통 popup.width/height. 모드에 따라 라벨·도움말만 바뀌고 같은 숫자의 적용 기준이 달라진다. */}
                 {/* 빈 칸(= 원본 크기 기준)은 입력을 마칠 때 반영한다. 바로 반영하면 높이 자동이 원본 너비를 다시 채워 마지막 자리가 지워지지 않았다(2026-11-25). */}
-                <PopupNumberField label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width} empty="onBlur"
+                <PopupNumberField integer label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 너비' : '팝업 너비'} value={popup.width} empty="onBlur"
                   disabled={popup.sizeMode === 'FULLSCREEN'} onChange={(value) => updateImageDimension('width', value)} />
-                <PopupNumberField label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height} empty="onBlur"
+                <PopupNumberField integer label={popup.content.imageSizeMode === 'FIT_TO_IMAGE' ? '콘텐츠 높이' : '팝업 높이'} value={popup.height} empty="onBlur"
                   disabled={popup.sizeMode === 'FULLSCREEN' || (adaptiveImage && autoImageHeight && imageFit != null)} onChange={(value) => updateImageDimension('height', value)} />
               </Box>
               {/* POL-04-02 : 모드별 기준 — 모드별 크기 기준 안내 */}

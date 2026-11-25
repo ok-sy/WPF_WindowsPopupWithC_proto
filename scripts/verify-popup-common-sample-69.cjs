@@ -316,6 +316,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('input[aria-label="가로"]')`, 'is063 codes form');
   check(await run(`document.querySelector('input[aria-label="가로"]').min`) === '320', '[IS063 0101] Code MINW 320 is the width input minimum (SIZEMIN 500 ignored): ' + await run(`document.querySelector('input[aria-label="가로"]').min`));
   check(await run(`document.querySelector('input[aria-label="세로"]').min`) === '330', '[IS063 0101] Code MINH 330 is the height input minimum: ' + await run(`document.querySelector('input[aria-label="세로"]').min`));
+  // 2026-11-25 정수 칸 소수점 방어: '.'·'e' 키는 막고, 붙여 넣은 소수는 화면·값에 반영하지 않는다.
+  const decimal = await run(`(()=>{const e=document.querySelector('input[aria-label="세로"]');const keys={};
+    for(const k of ['.','e','5']){const ev=new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true});e.dispatchEvent(ev);keys[k]=ev.defaultPrevented;}
+    return keys;})()`);
+  check(decimal['.'] === true && decimal.e === true && decimal['5'] === false, '[IS063 integer] Size input blocks decimal and exponent keys only: ' + JSON.stringify(decimal));
+  await run(`(()=>{const e=document.querySelector('input[aria-label="세로"]');e.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'480');e.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(150);
+  await run(`(()=>{const e=document.querySelector('input[aria-label="세로"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'480.5');e.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(150);
+  check(await run(`document.querySelector('input[aria-label="세로"]').value`) === '480', '[IS063 integer] Pasted 480.5 is not taken (value stays 480): ' + await run(`document.querySelector('input[aria-label="세로"]').value`));
   await run(`(()=>{const e=Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='이미지 URL').parentElement.querySelector('input');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(tall)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'is063 codes natural image size');
