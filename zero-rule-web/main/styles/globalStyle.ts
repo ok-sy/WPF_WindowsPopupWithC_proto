@@ -11,8 +11,8 @@
  *   NEXT_PUBLIC_CLOSED_NET_GLOBAL_STYLE = on(기본, 확인된 규칙) | assumed(확인된 규칙 + 가정 규칙) | off(넣지 않음).
  *
  * 출처
- * - @font-face·body·em, i·CKEditor 규칙: 폐쇄망 캡처(2026-11-25), GitHub 이슈 #1
- *   "[참고][TODO28] 폐쇄망 전역 CSS·_app.tsx·Youandi 글꼴 영향 검증".
+ * - @font-face·body·em, i·CKEditor 규칙: 폐쇄망 캡처(2026-11-25),
+ *   docs/design/20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md(원래 GitHub 이슈 #1).
  *   `// NewFont 설정` 줄은 원본에 있는 그대로 둔다(CSS 템플릿 문자열 안의 `//`는 CSS 주석이 아니다).
  * - body 배경: docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md 3절.
  * - 재현하지 않은 규칙: 일부 입력·조회 UI의 맑은 고딕 지정, 팝업 등록·상세·문항·답변·게시 대상·트리·스위치 규칙.

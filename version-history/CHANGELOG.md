@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-03 — dev: 28_폐쇄망글꼴확인문서_추가
+
+- 이유 · TODO28 폐쇄망 전역 CSS·Youandi 글꼴 캡처 기록을 GitHub 이슈 대신 저장소 문서로 관리.
+- 변경 · GitHub 이슈 #1 본문을 `docs/design/20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md`로 옮김(본문 원문 유지, 링크만 상대 경로, 처리 현황 머리말 추가). TODO28 문서·반입 당일 이슈 문서·재현본 `globalStyle.ts` 주석의 이슈 참조를 새 문서로 변경, `docs/design/README.md` P400 목차에 추가.
+- 주요 파일 · `docs/design/20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`, `docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md`, `docs/design/README.md`, `zero-rule-web/main/styles/globalStyle.ts`(주석만).
+- 검증 · 문서 링크 대상 파일 존재 확인. 코드 동작 변경 없음.
+- 상태 · 커밋·원격 반영. GitHub 이슈 #1 삭제는 저장소 관리자 권한 작업이라 별도 처리.
+
 ## 2026-11-25-02 — dev: 28_폐쇄망전역CSS재현본_수정
 
 - 이유 · 폐쇄망 캡처(GitHub 이슈 #1)로 전역 CSS(`globalStyle.ts`)·`_app.tsx` 적용 방식과 Youandi 글꼴의 WPF 패밀리 구성이 확인되어, 로컬 재현본을 맞추고 팝업 공통 컴포넌트 영향과 글꼴 등록값을 판단할 필요.

@@ -425,7 +425,7 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 
 ## 폐쇄망 글꼴 확인 결과 (2026-11-25)
 
-- 출처 · 폐쇄망 캡처(`main/styles/globalStyle.ts`·`main/pages/_app.tsx`)와 Windows PowerShell WPF 열거 결과. GitHub 이슈 #1 "[참고][TODO28] 폐쇄망 전역 CSS·_app.tsx·Youandi 글꼴 영향 검증"에 원문 요약이 있다.
+- 출처 · 폐쇄망 캡처(`main/styles/globalStyle.ts`·`main/pages/_app.tsx`)와 Windows PowerShell WPF 열거 결과. 원문 요약은 [20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md](20261125_폐쇄망_전역CSS_Youandi글꼴_확인.md)(원래 GitHub 이슈 #1에서 이동).
 - 웹 별칭 선언 · `YouandiNewKr` 300 Light · 400 Regular · 500 Medium · 700 Bold · 800 ExtraBold(모두 `YouandiNewKr Text …`). `YouandiModern` 200 HeadRegular · 300 TextRegular · 500 TextBold · 700 HeadBold(400 없음).
 - WPF 열거 · `YouandiNewKr Text`와 `YouandiNewKr Title`은 별도 패밀리이고 각각 300·400·500·700·800(Normal·Oblique)이 한 패밀리 안에 있다. Modern은 `YouandiModern Head`·`YouandiModern Text`가 400·700, `YouandiModern HeadBold`·`HeadExtraBold`·`TextBold`가 각각 별도 패밀리 700.
 
