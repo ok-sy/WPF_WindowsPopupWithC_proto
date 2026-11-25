@@ -153,6 +153,24 @@ for s in p.slides:
                     r.text = ''
     if s.has_notes_slide:
         s.notes_slide.notes_text_frame.text = ''
+# 9장 버튼 표: 관리자 화면에 버튼 글자·푸터 글자 크기 입력이 없어 버튼 크기는 고정값 하나다 → 최소 너비 대신 실제 크기로.
+s9 = p.slides[8]
+for sh in s9.shapes:
+    if not sh.has_text_frame or not sh.text_frame.paragraphs[0].runs:
+        continue
+    t = sh.text_frame.text; r0 = sh.text_frame.paragraphs[0].runs[0]
+    if t == '최소 너비 × 높이':
+        r0.text = '너비 × 높이'
+    elif t == '나중에 보기 · 보조 닫기':
+        r0.text = '나중에 보기'
+    elif t == '118 × 34' and abs(sh.top - Inches(2.85)) < Inches(0.05):
+        r0.text = '121 × 34'   # 실측 120.9(글자 때문에 최소 118보다 넓음)
+    elif t.startswith('영상 시청 전 확인 비활성'):
+        r0.text = '버튼 크기는 창 크기와 상관없이 항상 같음  ·  버튼 글자 14 · 굵게  ·  설문 보조 닫기 118 × 34'
+        para = sh.text_frame.add_paragraph(); r = para.add_run()
+        r.text = '영상 시청 전 확인 비활성은 실제 팝업에만 적용(미리보기는 항상 활성)'
+        r.font.size = r0.font.size; r.font.color.rgb = r0.font.color.rgb
+        sh.top = Inches(5.86); sh.height = Inches(0.8)
 for s in p.slides:
     text(s, '화면 기본값 기준 · 창 560 × 420', Inches(8.4), Inches(0.42), Inches(4.5), Inches(0.3), 13, TAG, True, PP_ALIGN.RIGHT, '기준 표시')
 p.save(F); print('saved')
