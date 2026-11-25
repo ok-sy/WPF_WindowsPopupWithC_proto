@@ -1,7 +1,7 @@
 # 팝업 레이아웃 가이드
 
 기준 형상 · `main` `b4632d8` 이후 작업 트리 (2026-11-19 KST)  
-범위 · 관리자 웹 미리보기(`PopupPreview`)와 WPF 실제 팝업(`PopupWindow`)의 공통 창 구조·여백·버튼·글자 크기  
+범위 · 관리자 웹 미리보기(`PopupPreview`)와 WPF 실제 팝업(`PopupWindow`)의 공통 창 구조·여백·버튼·글자 크기, WPF 완료·안내 팝업(`PopupAlert`, 2026-11-25 추가)  
 관련 · [팝업 UI 기본값 사양](61_POPUP_UI_DEFAULTS_SPEC.md)(영역별 기본값 표) · [TODO61-20 실측 기록](../reviews/TODO61-20_popup_ui_parity/README.md) · [TODO61](61_관리자_미리보기_컴포넌트화_TODO.md#61-22-팝업-레이아웃-가이드-2026-11-19)
 
 그림은 웹 미리보기 흰 판(그림자 여백을 뺀 내부 패널)을 브라우저 100%로 캡처하고, 그 위에 영역과 수치를 표시한 것이다. 수치는 웹 CSS px와 WPF DIP가 같다(Windows 96 DPI 기준). 번호표의 WPF 값은 같은 데이터로 띄운 실제 WPF 팝업에서 잰 값이다.
@@ -20,7 +20,7 @@
 node scripts/verify-popup-parity.cjs
 ```
 
-- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림 — 그림 아래 칸에 유형별 최소·최대, 설문·퀴즈 콘텐츠 너비(최대 760)·영상 높이(최소 180/170) 실측 상자 포함), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조)다.
+- 결과는 `.offline-verify/popup-parity/`에 생긴다. `<ID>.guide.png`(이 문서의 그림 — 그림 아래 칸에 유형별 최소·최대, 설문·퀴즈 콘텐츠 너비(최대 760)·영상 높이(최소 180/170) 실측 상자 포함), `<ID>.side.png`(웹·WPF 나란히), `guide-figures.md`(유형별 그림·번호표), `texts.md`(전체 글자 대조), `alerts/`(완료·안내 팝업 그림·수치, 2026-11-25)다.
 - 레이아웃을 바꾼 뒤 다시 실행해 아래 그림을 `61_popup_layout_guide/`에 덮어쓰고, 유형별 절은 `guide-figures.md` 내용으로 바꾼다.
 - 한계: 로그인한 관리자 화면이 아닌 같은 컴포넌트 하네스다. 브라우저 확대·Windows 배율·폐쇄망 전역 CSS는 포함하지 않는다. WPF 영상(WebView2)은 캡처에 그려지지 않는다.
 
@@ -43,7 +43,7 @@ node scripts/verify-popup-parity.cjs
 | 푸터 글자 | 버튼·체크박스 14(`footerFontSize` 우선), 설문 응답 진행 문구 12 고정 | `PopupFooter` `fontSize` | `ApplyFontSizes`, `FooterResponseProgressText` |
 | TEXT 본문 | 15 / 400 (`bodyFontSize` 우선) | `POPUP_DEFAULT_FONT_SIZES.textBody` | `BodyTextStyle` |
 
-웹 수치·색 원본은 `zero-rule-web/main/src/features/PopupcommonComponent/popupLayout.ts`, 푸터는 `PopupFooter.tsx`다. WPF 푸터 버튼 스타일은 `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`, 설문 제출은 `Views/Contents/SurveyDesigns/SurveyStyles.V1·V2.xaml`에 있다. 결과 안내창 버튼(`ActionButtonStyle`, 높이 44)은 푸터 버튼과 별개다.
+웹 수치·색 원본은 `zero-rule-web/main/src/features/PopupcommonComponent/popupLayout.ts`, 푸터는 `PopupFooter.tsx`다. WPF 푸터 버튼 스타일은 `popup-frameWork/Popup/Views/Windows/PopupStyles.xaml`, 설문 제출은 `Views/Contents/SurveyDesigns/SurveyStyles.V1·V2.xaml`에 있다. 결과 안내창 버튼(`ActionButtonStyle`, 높이 44)은 푸터 버튼과 별개다([완료·안내 팝업](#완료안내-팝업-popupalert-wpf)).
 
 ## 최소·최대 크기 — 전체 레이아웃 (2026-11-23 정적 코드 확인)
 
@@ -267,6 +267,40 @@ node scripts/verify-popup-parity.cjs
 
 웹·WPF 나란히: [PARITY-VIDEO-QUIZ.side.png](61_popup_layout_guide/PARITY-VIDEO-QUIZ.side.png)
 
+## 완료·안내 팝업 (PopupAlert, WPF)
+
+퀴즈 결과·설문 완료·필수 미응답·저장 실패를 알리는 공통 모달이다(`popup-frameWork/Popup/Views/Windows/PopupAlert.cs`). 팝업 창 위 가운데(팝업이 없으면 화면 가운데)에 맨 위로 뜨고, 확인 버튼(Enter·Esc)으로 닫는다. 관리자 웹 미리보기는 이 창을 띄우지 않고 같은 문구(`popupQuizResultNotice.ts`, WPF `QuizResultNotice.cs`와 같은 판별·문구)를 미리보기 안 안내 문구로 보여 준다.
+
+![완료·안내 팝업 구조](61_popup_layout_guide/ALERT-ANATOMY.png)
+
+| 영역 | 값 | WPF |
+|---|---|---|
+| 창 | 너비 478 = 흰 판 430 + 그림자 여백 24×2, 높이는 내용에 맞춤 | `PlateWidth` 430, `ShadowMargin` 24, `SizeToContent.Height` |
+| 흰 판 | 흰색, 모서리 22, 외곽선 없음, 섀도우 검정 0.16·Blur 20·아래 4(2026-11-24) | `DropShadowEffect` |
+| 안쪽 여백 | 30(내용 너비 370) | `StackPanel` Margin 30 |
+| 제목 | 25 / 700, 검정, 줄바꿈. **필수 미응답·저장 실패만** 그린다. 퀴즈 결과·설문 완료는 제목을 그리지 않고 창 이름으로만 남긴다(`showHeading: false`) | `TextBlock` FontSize 25 Bold |
+| 본문 | 15 / 400, 줄 간격 24, 검정, 줄바꿈. 제목 아래 18, 버튼 위 26 | `TextBlock` LineHeight 24 |
+| 버튼 | 최소 118 × 44, 좌우 22, 모서리 9, #111827 · 흰 글자 14/600, 오른쪽 정렬, 흰 판 아래 30 | `ActionButtonStyle`(푸터 버튼 34와 별개) |
+
+종류별 문구·버튼(그림 번호와 같음, 10문항·문항당 1점 「보안 퀴즈」 예시):
+
+![완료·안내 팝업 종류](61_popup_layout_guide/ALERTS.sheet.png)
+
+| 번호 | 경우 | 제목 표시 | 버튼 | 닫은 뒤 |
+|---|---|---|---|---|
+| 1 | 커트라인형 통과 | 없음(창 이름 「퀴즈를 통과했어요」) | 확인 | 결과 제출, 팝업 닫힘 |
+| 2 | 커트라인형 미달 — 통과 기준·N/M개·틀린 문항 | 없음(「다시 풀어 주세요」) | 다시 풀기 | 팝업 유지, 다시 풀기 |
+| 3 | 만점형 통과 | 없음(「퀴즈를 통과했어요」) | 확인 | 결과 제출, 팝업 닫힘 |
+| 4 | 만점형 미달 — 틀린 문항 | 없음(「다시 풀어 주세요」) | 다시 풀기 | 팝업 유지 |
+| 5 | 참여형 — 미달이어도 완료, N/M개 | 없음(「퀴즈를 완료했어요」) | 확인 | 결과 제출, 팝업 닫힘 |
+| 6 | 설문 제출 완료 | 없음(「설문조사 완료」) | 확인 | 팝업 닫힘 |
+| 7 | 필수 문항 미응답(설문·퀴즈) — 첫 미응답 문항 제목 | 「답안을 확인해 주세요」 | 확인 | 팝업 유지 |
+| 8 | 결과 저장 실패 — 예외 메시지 | 「저장하지 못했어요」 | 다시 시도(닫기 중 실패는 확인) | 팝업 유지 |
+
+- 미달 안내는 보조 닫기가 보이는 경우(영상 없는 QUIZ, 배경 어둡기 끔) "다시 제출하지 않으려면 하단 '닫기'로 닫을 수 있습니다." 줄이 붙는다. 틀린 문항 번호 줄은 `QuizResultNotice.cs`의 [옵션] 두 줄로 뺄 수 있다.
+- 문구를 바꾸면 웹 `popupQuizResultNotice.ts`와 WPF `QuizResultNotice.cs`를 함께 고친다(WPF `PopupWindowTests` Q3, 웹 `verify-completion-ux-43`).
+- 그림은 `node scripts/verify-popup-parity.cjs`가 `alerts/`에 함께 만들고(96 DPI, 회색 바탕 위), 창·흰 판·여백·글자·버튼 수치를 판정한다. 수치를 바꾸면 그림 두 개를 `61_popup_layout_guide/`에 덮어쓴다.
+
 ## 알려진 차이
 
 | 항목 | 웹 | WPF | 상태 |
@@ -275,6 +309,7 @@ node scripts/verify-popup-parity.cjs
 | VIDEO+QUIZ 푸터 문구 | 응답 진행 문구 | 시청 완료 전에는 시청 진행 문구 | 미리보기는 시청 잠금을 시연하지 않음 |
 | 좁은 폭 푸터 | 버튼을 다음 줄로 | 한 줄 유지 | TODO61-18 결정(잘림 방지) |
 | IMAGE 이미지·설명 상자 | 회색 테두리 | 연한 배경 | 치수는 같음 |
+| 완료·안내 팝업 | 창 없이 미리보기 안 안내 문구(같은 문구) | `PopupAlert` 모달(430 흰 판) | 미리보기는 결과 창을 시연하지 않음 |
 | 영상 영역 높이(VIDEO+QUIZ) | 실제 영상 비율 | 캡처 시점에는 메타데이터 전 16:9 | 캡처 한계(실제 재생 시 같은 계산식) |
 
 ## 레이아웃을 바꿀 때

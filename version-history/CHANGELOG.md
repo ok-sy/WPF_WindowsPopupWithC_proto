@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-12 — dev: 61_완료팝업UI가이드_추가
+
+- 이유 · 정합성 보완. 레이아웃 가이드(61)에 유형별 팝업만 있고 완료·안내 팝업(WPF `PopupAlert`) 구조·수치·종류별 문구가 없었음.
+- 변경 · `61_POPUP_LAYOUT_GUIDE.md`에 「완료·안내 팝업」 절(구조 그림, 창 478·흰 판 430·여백 30·제목 25/700·본문 15/400 줄 24·버튼 118×44 표, 종류 8가지 그림과 제목 표시·버튼·닫은 뒤 동작 표, 문구 변경 시 함께 고칠 파일), 범위·다시 만들기·알려진 차이(웹은 결과 창 없이 안내 문구) 보완. `PopupParityCapture --alerts`(신규 `AlertCapture.cs`): 실제 호출과 같은 값(퀴즈 결과는 `QuizResultNotice.Build`, 설문 완료 상수)으로 `PopupAlert.CreateDialog`를 96 DPI로 그려 종류별 PNG·모음·구조 그림·`alerts.json`을 남김. `verify-popup-parity.cjs`가 함께 실행하고 수치를 판정.
+- 주요 파일 · `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_popup_layout_guide/ALERT-ANATOMY.png`·`ALERTS.sheet.png`, `scripts/PopupParityCapture/AlertCapture.cs`·`Program.cs`, `scripts/verify-popup-parity.cjs`.
+- 검증 · `verify-popup-parity` 101(완료 팝업 41 추가: 8종 창 478·흰 판 430·여백 24, 제목 25/700, 본문 15/400·줄 24·너비 370, 버튼 ≥118×44·14/600·오른쪽 정렬, 본문→버튼 26·버튼→아래 30), `verify-popup-guide-registry` 609. WPF 코드 변경 없음.
+- 상태 · 커밋·원격 반영. 20261125 반입본에는 없음.
+
 ## 2026-11-25-11 — docs: 20261125 반입본 생성
 
 - 이유 · 반입 준비. 직전 반입본 20261124(1eca966) 이후 변경(TODO68 창 최소·최대 공통·이미지 맞춤·숫자 입력·기본값 0101, TODO28 글꼴 ID 삭제·굵기별 서체, TODO60·61 영상 창, 가이드·문서 정정)과 폐쇄망 0101 등록 쿼리를 전달. 0101 그룹이 비어 있음을 폐쇄망에서 확인.

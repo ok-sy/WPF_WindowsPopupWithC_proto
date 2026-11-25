@@ -139,6 +139,23 @@ const toWpf = p => {
   execFileSync('dotnet', ['run', '--project', path.join(__dirname, 'PopupParityCapture'), '-v', 'q', '--', wpfJson, output], {stdio: 'inherit'});
   const wpf = Object.fromEntries(fixtures.map(p => [p.popupId, JSON.parse(fs.readFileSync(path.join(output, p.popupId + '.wpf.json'), 'utf8'))]));
 
+  // 2-1. 완료·안내 팝업(WPF PopupAlert, 2026-11-25). 웹은 결과를 미리보기 안 안내 문구로만 보여 줘 창 비교 대상이 없다(WPF 단독 그림).
+  //      퀴즈 결과 5종·설문 완료·필수 미응답·저장 실패를 실제 호출과 같은 값으로 그려 alerts/에 남기고, 레이아웃 가이드 수치를 판정한다.
+  const alertDir = path.join(output, 'alerts');
+  execFileSync('dotnet', ['run', '--project', path.join(__dirname, 'PopupParityCapture'), '-v', 'q', '--', '--alerts', alertDir], {stdio: 'inherit'});
+  const alerts = JSON.parse(fs.readFileSync(path.join(alertDir, 'alerts.json'), 'utf8'));
+  check(alerts.length === 8 && fs.existsSync(path.join(alertDir, 'ALERT-ANATOMY.png')) && fs.existsSync(path.join(alertDir, 'ALERTS.sheet.png')), 'Alert captures exist (8 + sheet + anatomy)');
+  for (const a of alerts) {
+    const [title, ...rest] = a.texts.filter(t => !a.buttons.some(b => b.box.y <= t.box.y && t.box.y <= b.box.y + b.box.h));
+    const message = a.heading ? rest[0] : title;
+    const button = a.buttons[0];
+    check(a.window.width === 478 && a.plate.width === 430 && a.plate.margin === 24, `${a.id} alert window 478 = plate 430 + shadow margin 24×2`);
+    check(!a.heading || (title.size === 25 && title.weight === 700 && title.box.x === 30 && title.box.y === 30), `${a.id} alert heading 25/700 at padding 30`);
+    check(message.size === 15 && message.weight === 400 && message.lineHeight === 24 && message.box.x === 30 && message.box.w === 370, `${a.id} alert message 15/400 line 24, content width 370`);
+    check(button.box.w >= 118 && button.box.h === 44 && button.FontSize === 14 && button.weight === 600 && Math.round(button.box.x + button.box.w) === 400, `${a.id} alert button ≥118×44 14/600 right-aligned`);
+    check(Math.round(a.plate.height - (button.box.y + button.box.h)) === 30 && Math.round(button.box.y - (message.box.y + message.box.h)) === 26, `${a.id} alert gaps message→button 26, button→bottom 30`);
+  }
+
   // 3. 나란히 합성(왼쪽 웹, 오른쪽 WPF)
   for (const popup of fixtures) {
     await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}/side?${encodeURIComponent(popup.popupId)}`}); await pause(500);

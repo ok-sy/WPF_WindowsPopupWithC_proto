@@ -21,7 +21,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args.Length < 2) { Console.Error.WriteLine("usage: PopupParityCapture <popups.json> <outDir>"); return 2; }
+        if (args.Length == 2 && args[0] == "--alerts") return AlertCapture.Run(args[1]);
+        if (args.Length < 2) { Console.Error.WriteLine("usage: PopupParityCapture <popups.json> <outDir> | --alerts <outDir>"); return 2; }
         var json = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var popups = JsonSerializer.Deserialize<List<PopupResponseDto>>(File.ReadAllText(args[0]), json)!;
         Directory.CreateDirectory(args[1]);
