@@ -16,7 +16,7 @@ import useNaturalImageSize from '../useNaturalImageSize';
 import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
 import { popupMaximumSize } from '../popupCommon';
 import PopupNumberField from '../PopupNumberField';
-import { POPUP_INPUT_RANGES, loadPopupDefaultCodes } from '../popupDefaults';
+import { loadPopupDefaultCodes, popupSizeInputMin } from '../popupDefaults';
 import type { PopupCodeSearch } from '../popupQuestionCodes';
 import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
 import { withPreviewFallback } from '../popupPreviewFallback';
@@ -103,7 +103,7 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
   /*
    * POL-01-02 : 기본값의 적용 — 팝업 기본값·입력 범위 공통코드(0101)
    * - [실연동] 라우트(scene-router)가 searchCodes에 api.clCode.search를 넘긴다. 실제 등록 화면도 화면을 열 때 이 한 번만 호출하면 된다.
-   * - loadPopupDefaultCodes가 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 코드 값으로 바꾼다. 코드 없음·조회 실패·숫자 아님·계약 범위 밖이면 popupDefaults.ts 값 그대로다.
+   * - loadPopupDefaultCodes가 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 코드 값으로 바꾼다(가로·세로 입력 하한은 MINW·MINH). 코드 없음·조회 실패·숫자 아님·계약 범위 밖이면 popupDefaults.ts 값 그대로다.
    * - 이 화면 state는 입력한 값만 가져서(미설정 = 키 생략) 다시 그리기만 하면 된다: 미리보기 기본값(withPreviewFallback)·창 최대·입력칸 범위가 그릴 때 읽는다.
    * - searchCodes가 없으면(가이드 예시 탭·검증 하네스) 조회하지 않고 파일 기본값을 쓴다.
    */
@@ -185,10 +185,11 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
   const save = () => {
     if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
     if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
-    // [실연동] 하한은 입력 허용 범위(POPUP_INPUT_RANGES.size.min, 공통코드 0101 SIZEMIN — 계약 300 이상)를 쓴다. searchCodes가 없으면(가이드 예시 탭) 300이다.
-    const sizeMin = POPUP_INPUT_RANGES.size.min;
-    if ((popup.width ?? sizeMin) < sizeMin || (popup.height ?? sizeMin) < sizeMin) {
-      setError(`크기는 가로·세로 ${sizeMin}px 이상이어야 합니다.`); return;
+    // [실연동] 하한은 기본 창 최소 크기(popupSizeInputMin — 공통코드 0101 MINW·MINH, 계약 300 이상)다. 이 화면은 최소 크기 입력이 없어
+    //   모든 팝업이 이 최소 크기로 저장되고, 그보다 작은 가로·세로는 실제 팝업이 최소 크기까지 늘려 띄운다. searchCodes가 없으면(가이드 예시 탭) 300×300이다.
+    const sizeMin = popupSizeInputMin();
+    if ((popup.width ?? sizeMin.width) < sizeMin.width || (popup.height ?? sizeMin.height) < sizeMin.height) {
+      setError(`크기는 가로 ${sizeMin.width}px·세로 ${sizeMin.height}px 이상이어야 합니다.`); return;
     }
     // POL-04-03 : 비율·상한 — 가로·세로가 창 크기인 경우(IMAGE 이미지 우선 제외) 창 최대 크기 이하여야 한다(모든 유형 공통, 2026-11-25).
     // [옵션] 이 화면은 최대 크기 입력이 없어 미리보기 기본값(POPUP_DEFAULTS 1200×900, 0101 MAXW·MAXH가 있으면 그 값)을 쓴다. 화면에 최대 입력을 두면 그 값으로 바뀐다.
@@ -224,9 +225,9 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
     <Box className="nConWid">
       <Typography component="span">{label}</Typography>
       {/* [옵션] 빈 칸은 입력을 마칠 때 반영한다(PopupNumberField empty="onBlur"). 바로 반영하면 세로 자동이 가로를 다시 채워 마지막 자리가 지워지지 않는다. */}
-      <PopupNumberField placeholder={`최소 ${POPUP_INPUT_RANGES.size.min}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key]} empty="onBlur"
+      <PopupNumberField placeholder={`최소 ${popupSizeInputMin()[key]}`} sx={{ width: 80, marginX: 1 }} value={popup?.[key]} empty="onBlur"
         disabled={!popup || (key === 'height' && adaptiveImage && autoHeight && imageFit != null)}
-        slotProps={{ htmlInput: { 'aria-label': label, min: POPUP_INPUT_RANGES.size.min } }}
+        slotProps={{ htmlInput: { 'aria-label': label, min: popupSizeInputMin()[key] } }}
         onChange={(value) => update(key, value ?? undefined)} />
       <Typography component="span">px</Typography>
     </Box>

@@ -95,9 +95,13 @@ export const POPUP_DEFAULT_VALUE_CODES: Readonly<Record<string, DefaultTarget>> 
   VOLUME: { group: 'video', key: 'defaultVolume', range: 'volume' },
   VQRATIO: { group: 'video', key: 'videoQuizCompletionRatio', range: 'completion' },
 };
-/** 범위 코드 접두어 → 범위 키. 코드는 접두어 + MIN / MAX(예: RATIOMIN, HIDEDAYSMAX). */
+/**
+ * 범위 코드 접두어 → 범위 키. 코드는 접두어 + MIN / MAX(예: RATIOMIN, HIDEDAYSMAX).
+ * - 창 크기는 범위 코드를 두지 않는다(SIZEMIN 삭제, 2026-11-25). 너비·높이 입력 하한은 기본 창 최소 크기 MINW·MINH가 맡고
+ *   (popupSizeInputMin), 창 크기 계약 하한 300은 POPUP_CONTRACT_RANGES.size로 항상 강제한다.
+ */
 export const POPUP_RANGE_CODE_PREFIXES: Readonly<Record<string, PopupInputRangeKey>> = {
-  SIZE: 'size', RATIO: 'ratio', FONT: 'font', OVERLAY: 'overlay', VOLUME: 'volume', VQRATIO: 'completion', HIDEDAYS: 'hideDays',
+  RATIO: 'ratio', FONT: 'font', OVERLAY: 'overlay', VOLUME: 'volume', VQRATIO: 'completion', HIDEDAYS: 'hideDays',
 };
 
 /** applyPopupDefaultCodes 결과. applied: 반영한 코드, ignored: 반영하지 않은 코드와 이유. */
@@ -166,7 +170,26 @@ export function applyPopupDefaultCodes(codes: readonly Pick<PopupCodeOption, 'co
     result.applied = result.applied.filter((code) => code !== minCode && code !== maxCode);
     result.ignored.push({ code: `${minCode}/${maxCode}`, reason: '최소가 최대보다 큼' });
   }
+  // 4) 기본 창 크기는 최소 크기 이상이어야 한다(너비·높이 입력 하한이 최소 크기라서). 아니면 그 축의 크기·최소를 파일 값으로 되돌린다.
+  for (const [size, min, sizeCode, minCode] of [['width', 'minimumWidth', 'WIDTH', 'MINW'], ['height', 'minimumHeight', 'HEIGHT', 'MINH']] as const) {
+    if (window[size] >= window[min]) continue;
+    window[size] = base.window[size]; window[min] = base.window[min];
+    result.applied = result.applied.filter((code) => code !== sizeCode && code !== minCode);
+    result.ignored.push({ code: `${sizeCode}/${minCode}`, reason: '기본 크기가 최소 크기보다 작음' });
+  }
   return result;
+}
+
+/**
+ * POL-01-03 : 최소 크기
+ * ■ 너비·높이 입력 하한
+ * - out: { width, height } 기본 창 최소 크기(POPUP_DEFAULTS.window.minimumWidth·minimumHeight, 공통코드 MINW·MINH 반영)
+ * - 최소 크기 입력 칸이 없는 등록 화면(IS063 샘플)은 모든 팝업이 이 최소 크기로 저장되므로, 그보다 작은 너비·높이는 받지 않는다
+ *   (실제 팝업이 최소 크기까지 늘려 띄우기 때문). 쓸 때 읽는다(코드 적용 뒤 값).
+ */
+export function popupSizeInputMin(): { width: number; height: number } {
+  const window = POPUP_DEFAULTS.window;
+  return { width: Math.max(POPUP_CONTRACT_RANGES.size.min, window.minimumWidth), height: Math.max(POPUP_CONTRACT_RANGES.size.min, window.minimumHeight) };
 }
 
 /**

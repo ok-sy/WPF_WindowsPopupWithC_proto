@@ -70,7 +70,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     id: '2026-11-25-popup-default-codes', date: '2026-11-25', category: 'ADDED', status: 'DONE', doneDate: '2026-11-25',
     title: '팝업 기본값·입력 범위 공통코드(0101)',
     body: ['웹 기본값은 popupDefaults.ts(POPUP_DEFAULTS) 한곳에 있고, 공통코드 0101이 있으면 그 값으로 바뀝니다. CODE = 키(WIDTH·HEIGHT·MAXW·MAXH 등), CODE_NM = 값, DTL_EXPL = 설명입니다.',
-      '입력 허용 범위도 <접두어>MIN/MAX 코드(RATIOMIN·FONTMAX·HIDEDAYSMAX 등)로 좁힐 수 있습니다. 서버·WPF 계약 범위를 넓히는 값, 숫자가 아닌 값, 최소 > 최대는 무시하고 파일 값을 씁니다.',
+      '입력 허용 범위도 <접두어>MIN/MAX 코드(RATIOMIN·FONTMAX·HIDEDAYSMAX 등)로 좁힐 수 있습니다. 창 크기는 범위 코드가 없고 기본 창 최소 크기 MINW·MINH가 가로·세로 입력 하한을 겸합니다(popupSizeInputMin, SIZEMIN 삭제). 서버·WPF 계약 범위를 넓히는 값, 숫자가 아닌 값, 최소 > 최대는 무시하고 파일 값을 씁니다.',
       '공통코드는 화면(웹)만 읽습니다. 서버 저장 기본값·WPF 기본값은 그대로이며, 저장된 팝업 값은 WPF가 300·작업 영역 90% 보호선 안에서 반영합니다.'],
     components: ['applyPopupDefaultCodes', 'loadPopupDefaultCodes', 'POPUP_DEFAULTS', 'POPUP_INPUT_RANGES', 'POPUP_CONTRACT_RANGES'],
     action: '등록 화면을 처음 열 때(또는 앱 시작 때) loadPopupDefaultCodes((params) => api.clCode.search(params))를 한 번 부릅니다. 입력칸 min/max·저장 검사는 POPUP_INPUT_RANGES를 쓸 때 읽습니다. 폐쇄망은 0101 그룹 확인 후 db/oracle/27 스크립트나 코드 관리 화면으로 입력합니다.',

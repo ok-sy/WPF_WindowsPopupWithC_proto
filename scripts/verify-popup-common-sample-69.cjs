@@ -307,13 +307,15 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(fitSaved.width === +autoSize.width && fitSaved.height === +autoSize.height, '[IS063 fit] Fit button path saves the shown size');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
-  // 2026-11-25 공통코드 0101 연결: 라우트처럼 searchCodes를 넘기면 창 최대(MAXW·MAXH)·크기 하한(SIZEMIN)이 코드 값으로 바뀐다(숫자 아닌 MINW는 무시).
-  await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'SIZEMIN',codeNm:'320'},{code:'MINW',codeNm:'abc'}]"});
+  // 2026-11-25 공통코드 0101 연결: 라우트처럼 searchCodes를 넘기면 창 최대(MAXW·MAXH)·가로·세로 입력 하한(MINW·MINH)이 코드 값으로 바뀐다.
+  //   SIZEMIN은 삭제한 코드라 남아 있어도 무시(알 수 없는 코드), 숫자 아닌 WRATIO도 무시.
+  await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'MINW',codeNm:'320'},{code:'MINH',codeNm:'330'},{code:'SIZEMIN',codeNm:'500'},{code:'WRATIO',codeNm:'abc'}]"});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063-codes'}); await pause(300);
   await run('location.reload()'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'is063 codes'); await pause(300);
   await pickType('이미지 팝업'); await clickButton('폼 생성');
   await until(`!!document.querySelector('input[aria-label="가로"]')`, 'is063 codes form');
-  check(await run(`document.querySelector('input[aria-label="가로"]').min`) === '320', '[IS063 0101] Code SIZEMIN 320 narrows the size input minimum: ' + await run(`document.querySelector('input[aria-label="가로"]').min`));
+  check(await run(`document.querySelector('input[aria-label="가로"]').min`) === '320', '[IS063 0101] Code MINW 320 is the width input minimum (SIZEMIN 500 ignored): ' + await run(`document.querySelector('input[aria-label="가로"]').min`));
+  check(await run(`document.querySelector('input[aria-label="세로"]').min`) === '330', '[IS063 0101] Code MINH 330 is the height input minimum: ' + await run(`document.querySelector('input[aria-label="세로"]').min`));
   await run(`(()=>{const e=Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='이미지 URL').parentElement.querySelector('input');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(tall)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await until(`Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('이미지 크기에 맞추기')&&!b.disabled)`, 'is063 codes natural image size');

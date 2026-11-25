@@ -176,7 +176,7 @@ import re, copy
 from pptx.enum.text import MSO_ANCHOR as _A
 sql = open('db/oracle/27_popup_default_code_closednet_oracle.sql', encoding='utf-8').read()
 codes = re.findall(r"SELECT '(\w+)' code, '([^']*)' code_nm, '([^']*)' dtl_expl", sql)
-assert len(codes) == 24, len(codes)
+assert len(codes) == 23, len(codes)
 s12 = p.slides.add_slide(s9.slide_layout)
 s12.background.fill.solid(); s12.background.fill.fore_color.rgb = RGBColor(0xE5, 0xE7, 0xEB)
 title = [x for x in s9.shapes if x.name == '버튼 크기와 상태'][0]
@@ -205,8 +205,15 @@ def code_table(rows, x, label):
 
 
 code_table([c for c in codes[:11]], Inches(0.46), '기본값 (새 팝업에 처음 들어가는 값)')
-# 입력 범위는 관리자 화면(IS063 샘플)에 입력 칸이 있는 창 크기 하한(SIZEMIN)만 싣는다. 나머지 12건은 코드는 읽지만 입력 칸이 없다.
-code_table([c for c in codes[11:] if c[0] == 'SIZEMIN'], Inches(6.82), '입력 범위 (관리자 화면에서 넣을 수 있는 값)')
+# 입력 범위 코드(12건)는 관리자 화면(IS063 샘플)에 입력 칸이 없어 싣지 않는다. 가로·세로 입력 하한은 MINW·MINH가 겸한다(SIZEMIN 삭제).
+text(s12, '가로 · 세로 입력', Inches(6.82), Inches(1.12), Inches(6.0), Inches(0.3), 13, HEAD, True, PP_ALIGN.LEFT, '표 제목 가로 세로 입력')
+side = s12.shapes.add_textbox(Inches(6.82), Inches(1.55), Inches(6.0), Inches(2.4)); side.name = '참고 입력'
+tf2 = side.text_frame; tf2.word_wrap = True; tf2.margin_left = tf2.margin_right = 0
+for i, t in enumerate(['관리자 화면에서 가로 · 세로는 MINW · MINH 이상만 넣을 수 있음',
+                       '그보다 작은 크기는 실제 팝업이 최소 크기까지 늘려서 띄우기 때문',
+                       'WIDTH · HEIGHT를 MINW · MINH보다 작게 넣으면 무시하고 표의 값을 씀']):
+    para = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph(); para.space_after = Pt(10)
+    r = para.add_run(); r.text = t; r.font.size = Pt(14); r.font.color.rgb = HEAD
 note = s12.shapes.add_textbox(Inches(0.46), Inches(6.62), Inches(12.4), Inches(0.5)); note.name = '참고'
 tf = note.text_frame; tf.word_wrap = True; tf.margin_left = tf.margin_right = 0
 r = tf.paragraphs[0].add_run()
