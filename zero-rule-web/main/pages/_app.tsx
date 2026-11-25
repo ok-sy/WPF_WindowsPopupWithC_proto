@@ -3,7 +3,8 @@ import CustomThemeWrapper from '@/components/CustomThemeWrapper';
 import { LightboxImageViewEventHandler } from '@/custom-events';
 import StoreProvider from '@/store/StoreProvider';
 import theme from '@/theme';
-import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
+import { Global } from '@emotion/react';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import { AppCacheProvider } from '@mui/material-nextjs/v15-pagesRouter';
 import type { AppProps as NextAppProps } from 'next/app';
 import Head from 'next/head';
@@ -34,8 +35,9 @@ export default function MyApp(props: NextAppProps) {
         <ThemeProvider theme={theme}>
           <CustomThemeWrapper>
             <CssBaseline />
-            {closedNetGlobalStyle() && <GlobalStyles styles={closedNetGlobalStyle()} />}
             <Component {...pageProps} />
+            {/* 폐쇄망 _app.tsx와 같이 페이지 뒤에 Emotion Global로 넣는다(2026-11-25 캡처) */}
+            {closedNetGlobalStyle() && <Global styles={closedNetGlobalStyle()} />}
 
             <LightboxImageViewEventHandler />
             <LoginProfileLoader />

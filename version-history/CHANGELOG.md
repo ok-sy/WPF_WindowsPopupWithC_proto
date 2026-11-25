@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-02 — dev: 28_폐쇄망전역CSS재현본_수정
+
+- 이유 · 폐쇄망 캡처(GitHub 이슈 #1)로 전역 CSS(`globalStyle.ts`)·`_app.tsx` 적용 방식과 Youandi 글꼴의 WPF 패밀리 구성이 확인되어, 로컬 재현본을 맞추고 팝업 공통 컴포넌트 영향과 글꼴 등록값을 판단할 필요.
+- 변경 · 재현본 `globalStyle.ts`에 NewKr 700·800, `body` 글꼴 YouandiNewKr·굵기 700·크기 12px, `.ck-content` 기울임·굵기 규칙 추가. `_app.tsx`를 원본과 같이 페이지 뒤 Emotion `<Global>`로 변경(두 파일 반입 제외 유지). 재현본 상태에서 VIDEO 설명 미리보기가 body 굵기 700·글꼴을 이어받아 일반 글자도 굵게 보이고, SURVEY·QUIZ 선택지가 body 글꼴을 이어받는 문제를 발견해 `PopupPreview.tsx`(VIDEO 설명: 테마 본문 글꼴·굵기 400)·`SurveyPreview.tsx`(선택지: 테마 본문 글꼴) 수정. 하네스에 전역 CSS 전후 비교·편집기 표시 검사 추가, 실행 중 웹 검사 기대값 갱신. TODO28 문서의 400 = Light 가정 정정(실제 300 Light·400 Regular·700 Bold)과 판단 기록: NewKr Text는 한 패밀리에 400·700이 있어 `{ family: 'YouandiNewKr Text', css: 'YouandiNewKr' }`로 충분(`faces`·`boldFamily` 불필요), Title은 웹 별칭이 없어 사용 시 `faces` 필요, Modern은 사용 여부 미정.
+- 주요 파일 · `zero-rule-web/main/styles/globalStyle.ts`, `zero-rule-web/main/pages/_app.tsx`, `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview.tsx`, `SurveyPreview.tsx`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-rich-text-49(.cjs, -entry.tsx)`, `scripts/verify-closed-net-global-style.cjs`, `docs/design/28_TEXT_FONT_EDITING_TODO.md`, `docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md`.
+- 검증 · `verify-popup-preview-61` 303(신규 비교 검사는 수정 전 VIDEO 설명 700·선택지 글꼴 차이로 실패 재현), `verify-rich-text-49` 116, `verify-survey-rich-text-55` 81, `verify-popup-common-sample-69` 63, 로컬 `next dev` 대상 `verify-closed-net-global-style` 4건 통과. `tsc --noEmit` 통과, 변경 파일 eslint 오류 0. 로컬 개발 모드에서 `@font-face` 목록이 중복 집계됨(표시 영향 없음, 원인 미확인). 미실행: 실제 Youandi 서체 렌더링(로컬 미설치), 폐쇄망 DevTools·실화면, 로그인 관리자 화면, WPF 실화면, 저장·재조회 왕복.
+- 상태 · 커밋·원격 반영. Modern 사용 여부와 폐쇄망 실화면 확인 남음.
+
 ## 2026-11-25-01 — dev: 60_영상합성화면재그리기_수정
 
 - 이유 · 61 레이아웃 가이드 VIDEO+QUIZ 비교 그림(bf9e8d6 커밋본)에서 WPF 영상이 플레이어 왼쪽 위에 작게 그려지고 나머지가 검게 보였고, 같은 데이터 재캡처는 정상이라 원인 확인 필요.

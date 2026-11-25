@@ -32,10 +32,10 @@ const pause = (ms) => new Promise(r => setTimeout(r, ms));
       const css = Array.from(document.querySelectorAll('style')).map(s => s.textContent).join('\\n');
       const probe = document.createElement('div'); probe.innerHTML = '<em>e</em><i>i</i>'; document.body.appendChild(probe);
       const r = {
-        bodyBackground: getComputedStyle(document.body).backgroundColor,
+        bodyBackground: getComputedStyle(document.body).backgroundColor, bodyWeight: getComputedStyle(document.body).fontWeight,
         emStyle: getComputedStyle(probe.querySelector('em')).fontStyle, iStyle: getComputedStyle(probe.querySelector('i')).fontStyle,
         faces: Array.from(document.fonts).map(f => f.family.replace(/"/g, '') + ' ' + f.weight),
-        hasBodyRule: /body\\{background:#ebebeb;?\\}/.test(css.replace(/\\s/g, '')),
+        hasBodyRule: /body\\{background:#ebebeb;/.test(css.replace(/\\s/g, '')),
         globalCss: css.split('\\n').filter(l => /ebebeb|Youandi|font-style:normal/.test(l)).join('\\n').slice(0, 4000),
       };
       probe.remove(); return r;
@@ -43,8 +43,10 @@ const pause = (ms) => new Promise(r => setTimeout(r, ms));
     fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2));
     if (expectOn) {
       check(result.bodyBackground === 'rgb(235, 235, 235)', 'body background is #ebebeb (globalStyle wins over CssBaseline): ' + result.bodyBackground);
+      check(result.bodyWeight === '700', 'body font-weight 700 from globalStyle (2026-11-25 capture): ' + result.bodyWeight);
       check(result.emStyle === 'normal' && result.iStyle === 'normal', 'em, i reset is active outside popup components: ' + result.emStyle + '/' + result.iStyle);
-      check(result.faces.includes('YouandiModern 200') && result.faces.includes('YouandiModern 700') && result.faces.includes('YouandiNewKr 400') && result.faces.includes('YouandiNewKr 500'),
+      check(result.faces.includes('YouandiModern 200') && result.faces.includes('YouandiModern 700') && result.faces.includes('YouandiNewKr 400') && result.faces.includes('YouandiNewKr 500')
+        && result.faces.includes('YouandiNewKr 700') && result.faces.includes('YouandiNewKr 800'),
         '@font-face aliases from globalStyle are registered: ' + JSON.stringify(result.faces));
     } else {
       check(!result.hasBodyRule && result.emStyle === 'italic' && !result.faces.some(f => f.startsWith('Youandi')), 'globalStyle is not injected when off: ' + JSON.stringify(result));

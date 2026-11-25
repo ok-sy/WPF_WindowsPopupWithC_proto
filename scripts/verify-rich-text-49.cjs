@@ -415,6 +415,26 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   const roundTrip = await run(`(()=>{const b=[{alignment:'LEFT',runs:[{text:'a',bold:true,italic:true,font:'YouandiNewKr Text'},{text:'b',italic:true}]}];return JSON.stringify(window.htmlToBlocks(window.blocksToHtml(b))[0].runs)===JSON.stringify(b[0].runs);})()`);
   check(roundTrip, '[28-16] blocksToHtml → htmlToBlocks keeps font, bold and italic');
   await run(`document.getElementById('global-reset-16').remove();document.getElementById('probe-16').remove()`);
+  // [28-globalStyle] 폐쇄망 전역 CSS 재현본(2026-11-25 캡처: body 700·12px, .ck-content * 400, .ck-content strong 700, .ck-content em/i initial)을
+  // 넣은 상태에서 편집기와 미리보기의 일반·굵게·기울임·굵게+기울임·글꼴+굵게 표시를 확인한다.
+  await run(`(()=>{const s=document.createElement('style');s.id='closed-net-global-25';s.textContent=window.closedNetGlobalStyle('on');document.head.appendChild(s);})()`);
+  check(await run(`getComputedStyle(document.body).fontWeight`) === '700', '[28-globalStyle] closed-net body font-weight 700 is active');
+  const gBlocks = [{alignment:'LEFT',runs:[{text:'g일반'},{text:'g굵게',bold:true},{text:'g기울임',italic:true},{text:'g굵기울',bold:true,italic:true},{text:'g글꼴굵게',bold:true,font:'YouandiNewKr Text'},{text:'g글꼴굵기울',bold:true,italic:true,font:'YouandiNewKr Text'}]}];
+  await run(`window.mount(${JSON.stringify(gBlocks)},false,${JSON.stringify(gBlocks)})`); await waitEditor(); await pause(250);
+  // 글자가 들어 있는 텍스트 노드의 부모 요소(실제로 그 글자를 그리는 요소)의 계산값을 본다.
+  const leafStyle = `(scope,t)=>{const root=document.querySelector(scope);if(!root)return null;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+    while((n=w.nextNode())){const i=n.data.indexOf(t);if(i>=0&&!n.data.slice(i+t.length).startsWith('굵')&&!n.data.slice(i+t.length).startsWith('기')){const c=getComputedStyle(n.parentElement);return c.fontStyle+'/'+c.fontWeight;}}return null;}`;
+  const gTexts = ['g일반','g굵게','g기울임','g굵기울','g글꼴굵게','g글꼴굵기울'];
+  const gExpect = ['normal/400','normal/700','italic/400','italic/700','normal/700','italic/700'];
+  // #rich-blocks-preview(단독 PopupRichBlocks 인라인 모드)는 지정 없는 굵기를 바깥에서 이어받는 설계라 제외. 실제 배치는 verify-popup-preview-61이 전역 CSS 전후로 비교한다.
+  for (const scope of ['.ck-content', '#preview']) {
+    const got = await run(`(()=>{const f=${leafStyle};return ${JSON.stringify(gTexts)}.map(t=>f(${JSON.stringify(scope)},t));})()`);
+    check(JSON.stringify(got) === JSON.stringify(gExpect), `[28-globalStyle] ${scope} shows plain/bold/italic/bold+italic/font+bold as saved under the closed-net global CSS: ` + JSON.stringify(got));
+  }
+  const gRuns = await run(`JSON.stringify(window.htmlToBlocks(window.editor().getData())[0].runs)`);
+  const sortRun = (r) => JSON.stringify(Object.keys(r).sort().map(k => [k, r[k]]));
+  check(JSON.parse(gRuns).map(sortRun).join() === gBlocks[0].runs.map(sortRun).join(), '[28-globalStyle] the editor keeps the saved runs: ' + gRuns);
+  await run(`document.getElementById('closed-net-global-25').remove()`);
   // [TODO28-15] 별칭 하나에 굵기별 @font-face + src: local(...)를 연결한 폐쇄망 구조를 로컬 Windows 글꼴로 재현하고, 브라우저가 실제로 고른 서체를 기록한다.
   // 같은 패밀리(Arial Regular/Bold), 굵기별 다른 패밀리(Georgia/Arial Bold), Modern형(200·300·500·700, 400 없음), NewKr형(300·400·500, 700 없음).
   // WPF 쪽 실제 서체는 scripts/RichTextTests CheckFontWeight28_15가 같은 구성을 측정한다. 결과: .offline-verify/rich49/font-weight-28-15.json

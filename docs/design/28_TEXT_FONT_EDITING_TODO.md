@@ -251,7 +251,7 @@ Run의 text를 순서대로 연결한 결과가 문단의 본문이며, Run 경�
 ### 구현 시 확인할 사항
 
 - [ ] 폐쇄망 Windows에서 WPF가 인식하는 Text·Title의 패밀리 이름과 `FontWeight` 400/700에 실제 선택되는 서체를 확인한다. CSS `local()`의 이름은 비교 자료로 사용한다.
-- [ ] **웹 400 = Light 매핑과 WPF 일반 굵기 대조(2026-11-19 추가).** 폐쇄망 전역 CSS는 같은 `font-family` 이름 아래 `@font-face`를 400 → Light 파일, 700 → Bold 파일로 선언한다. 웹은 그 CSS 이름을 `registerPopupRichFonts`의 `css`로 등록하면 일반 = Light, 굵게 = Bold로 자동 선택된다(코드 변경 없음). WPF는 굵기 값(일반 400·`bold` 700)만 받아 Windows 패밀리 안에서 서체를 고르므로, 설치된 패밀리 구성을 아래 명령으로 확인한다(`*X Text*`는 실제 이름 일부).
+- [x] **웹 400 = Light 매핑과 WPF 일반 굵기 대조(2026-11-19 추가, 2026-11-25 정정).** ~~폐쇄망 전역 CSS는 같은 `font-family` 이름 아래 `@font-face`를 400 → Light 파일, 700 → Bold 파일로 선언한다.~~ → 2026-11-25 캡처 기준 `YouandiNewKr`는 300 → Light, **400 → Regular**, 500 → Medium, 700 → Bold, 800 → ExtraBold다. 400 = Light 가정은 틀렸으며 결과는 아래 '폐쇄망 글꼴 확인 결과 (2026-11-25)'에 기록한다. 이하 당시 기술은 이력으로 둔다. 웹은 그 CSS 이름을 `registerPopupRichFonts`의 `css`로 등록하면 일반 = Light, 굵게 = Bold로 자동 선택된다(코드 변경 없음). WPF는 굵기 값(일반 400·`bold` 700)만 받아 Windows 패밀리 안에서 서체를 고르므로, 설치된 패밀리 구성을 아래 명령으로 확인한다(`*X Text*`는 실제 이름 일부).
   ```powershell
   Add-Type -AssemblyName PresentationCore
   [System.Windows.Media.Fonts]::SystemFontFamilies | Where-Object { $_.Source -like '*X Text*' } |
@@ -421,4 +421,29 @@ Git 기준 코드와 캡처의 CSS 선언을 근거로 정의했다. 로컬 재�
 - 배경: 폐쇄망 전역 CSS `YouandiModern`은 200 HeadRegular·300 TextRegular·500 TextBold·700 HeadBold(400 없음)라 웹 일반 글자가 500(TextBold), 굵게가 HeadBold로 그려지고, `YouandiNewKr`는 300 Light·400 Text Regular·500 Text Medium(700 미확인)이라 굵게가 Medium이 된다. WPF는 저장된 family 안의 Regular·Bold를 고르므로 어긋난다. NewKr은 Windows에서 한 패밀리로 묶이는 것을 폐쇄망에서 확인.
 - 변경: `registerPopupRichFonts`에 `faces: { regular, bold? }` 추가. 지정하면 팝업 전용 별칭 `PopupRichFaceN`의 `@font-face`(400 → regular, 700 → bold, `src: local()`)를 `<style id="popup-rich-font-faces">`에 만들어 편집기·미리보기가 그 별칭을 쓴다. 전역 CSS·다른 화면 영향 없음. 저장값(family·bold)·서버·WPF 변경 없음. 기존 `css` 등록 유지.
 - 검증: `verify-popup-preview-61` 292건(인라인 미리보기·실제 크기 미리보기 Dialog도 지정 서체), `verify-rich-text-49` 112건(일반 Georgia·굵게 Arial Bold로 지정 시 편집기·미리보기 모두 지정 서체, 저장 family+bold, bold 없을 때 700 규칙 없음, 틀린 서체 이름 제외, 재등록 시 규칙 정리).
-- 남은 일: 폐쇄망 `scripts\list-wpf-font-faces.ps1 -Filter Youandi` 결과로 WPF 패밀리 이름과 Regular·Bold 서체를 확인해 등록값(family·faces)을 채운다. NewKr에 Bold 서체가 없으면 WPF가 Bold로 고르는 서체(Medium + 인위적 굵게 여부)를 확인하고 faces.bold를 그에 맞춘다.
+- 남은 일: 폐쇄망 `scripts\list-wpf-font-faces.ps1 -Filter Youandi` 결과로 WPF 패밀리 이름과 Regular·Bold 서체를 확인해 등록값(family·faces)을 채운다. NewKr에 Bold 서체가 없으면 WPF가 Bold로 고르는 서체(Medium + 인위적 굵게 여부)를 확인하고 faces.bold를 그에 맞춘다. → 2026-11-25 결과 도착(아래 절).
+
+## 폐쇄망 글꼴 확인 결과 (2026-11-25)
+
+- 출처 · 폐쇄망 캡처(`main/styles/globalStyle.ts`·`main/pages/_app.tsx`)와 Windows PowerShell WPF 열거 결과. GitHub 이슈 #1 "[참고][TODO28] 폐쇄망 전역 CSS·_app.tsx·Youandi 글꼴 영향 검증"에 원문 요약이 있다.
+- 웹 별칭 선언 · `YouandiNewKr` 300 Light · 400 Regular · 500 Medium · 700 Bold · 800 ExtraBold(모두 `YouandiNewKr Text …`). `YouandiModern` 200 HeadRegular · 300 TextRegular · 500 TextBold · 700 HeadBold(400 없음).
+- WPF 열거 · `YouandiNewKr Text`와 `YouandiNewKr Title`은 별도 패밀리이고 각각 300·400·500·700·800(Normal·Oblique)이 한 패밀리 안에 있다. Modern은 `YouandiModern Head`·`YouandiModern Text`가 400·700, `YouandiModern HeadBold`·`HeadExtraBold`·`TextBold`가 각각 별도 패밀리 700.
+
+### 판단
+
+| 글꼴 | 웹 400 / 700 | WPF 저장 family의 400 / 700 | 판정 | 등록값 |
+|---|---|---|---|---|
+| NewKr Text | Text Regular / Text Bold | `YouandiNewKr Text` Regular / Bold | 일치(§15 '같은 패밀리' 구성과 같음) | `{ family: 'YouandiNewKr Text', css: 'YouandiNewKr', label: … }`. 웹 별칭이 400·700을 이미 Regular·Bold로 연결해 `faces` 불필요. `boldFamily` 불필요 |
+| NewKr Title | 웹 별칭 없음 | `YouandiNewKr Title` Regular / Bold | 웹 선언 필요 | 선택지로 쓸 때만 `faces: { regular: 'YouandiNewKr Title Regular', bold: 'YouandiNewKr Title Bold' }`. `local()` 이름은 Text 규칙에서 유추한 값이라 폐쇄망 DevTools Rendered Fonts로 확인 필요 |
+| Modern | 500 TextBold / 700 HeadBold(400 없음) | `YouandiModern Text`·`Head` 400 / 700 | 일반 굵기 불일치(웹이 500을 고름) | 팝업 글꼴로 쓸지 미정. 쓴다면 `faces`로 Text 또는 Head 계열의 400·700을 직접 지정 |
+
+- 기존 `font`·`bold` 계약으로 충분하며 계약 변경·`boldFamily` 구현은 하지 않는다.
+
+### 전역 CSS 재현본 갱신과 영향 확인
+
+- 재현본 `zero-rule-web/main/styles/globalStyle.ts`(반입 제외)를 캡처 기준으로 갱신: NewKr 700·800, `body` 글꼴 `YouandiNewKr`·굵기 700·크기 12px, `.ck-content em, .ck-content i { font-style: initial }`, `.ck-content * { font-weight: 400 }`, `.ck-content strong { font-weight: 700 }`. `_app.tsx`는 폐쇄망과 같이 페이지 `Component` 뒤에 Emotion `<Global>`로 넣는다. 입력·조회 UI의 맑은 고딕 지정과 팝업 등록·상세·게시 대상 등의 화면 규칙은 선택자 원문을 확인하지 못해 넣지 않았다. CKEditor 규칙의 선택자도 요약 기준이다.
+- 발견 · 전역 CSS를 켜기 전과 후를 비교한 결과 **VIDEO 설명 미리보기**(서식·일반 문구 모두)가 body의 굵기 700과 `YouandiNewKr`를 이어받아 일반 글자까지 굵게 보였고, **SURVEY·QUIZ 선택지**가 body 글꼴을 이어받아 다른 미리보기 글자와 다른 글꼴로 보였다. 저장값·WPF 표시는 영향 없음(미리보기 표시만).
+- 수정 · `PopupPreview.tsx` VIDEO 설명 영역에 테마 본문 글꼴과 굵기 400, `SurveyPreview.tsx` 선택지 영역에 테마 본문 글꼴을 지정.
+- 검증(로컬) · `verify-popup-preview-61` 303건(신규: TEXT·SURVEY·QUIZ·VIDEO 서식 글자의 굵기·기울임·글꼴이 전역 CSS 전후 같음, 수정 전 실패 재현), `verify-rich-text-49` 116건(신규: 전역 CSS 상태에서 편집기·PopupPreview의 일반·굵게·기울임·굵게+기울임·글꼴+굵게, 편집기 저장값 유지), `verify-survey-rich-text-55` 81건, `verify-popup-common-sample-69` 63건, `verify-closed-net-global-style`(로컬 `next dev`, 페이지 뒤 삽입·body 700·NewKr 700/800) 통과. `tsc --noEmit`, 변경 파일 eslint 오류 0. 로컬 `next dev`에서 `@font-face` 목록이 두 번 잡힘(같은 선언 중복, 표시 영향 없음 — 개발 모드 SSR·클라이언트 이중 삽입으로 추정, 미확인).
+- 미실행 · 실제 Youandi 서체 렌더링(로컬 미설치), 폐쇄망 DevTools Rendered Fonts, 로그인 관리자 화면, WPF 실화면, 저장·재조회 왕복.
+

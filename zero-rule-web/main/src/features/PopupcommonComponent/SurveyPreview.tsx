@@ -471,6 +471,8 @@ export default function SurveyPreview({
                           minHeight: SURVEY_OPTION_MIN_HEIGHT,
                           p: horizontal ? '6px 14px' : '6px 16px',
                           fontSize: optionFontSize,
+                          // 2026-11-25 선택지 글꼴을 테마 본문 값으로 고정(다른 미리보기 글자와 같게). 지정이 없으면 폐쇄망 전역 body 글꼴을 이어받았다.
+                          fontFamily: (theme) => theme.typography.fontFamily,
                           border: '1px solid',
                           borderRadius: `${surveyDesign.choiceRadius}px`,
                           // V2 선택: 1px 테두리 안쪽에 1px를 더 그려 2px로 보이게 한다(크기 불변).

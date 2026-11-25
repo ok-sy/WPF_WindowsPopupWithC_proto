@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import PopupRichTextEditor from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichTextEditor';
 import PopupPreview from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupPreview';
 import PopupRichBlocks from '../zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks';
+import { closedNetGlobalStyle } from '../zero-rule-web/main/styles/globalStyle';
 import { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, isRichFontName, readTextBlocks, registerPopupRichFonts, richFontCss, RICH_COLORS, type RichBlock } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 
 /* POL-03-02 : 문단·글자 서식
@@ -11,7 +12,7 @@ import { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, isRichFon
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, sans-serif' } });
 const w = window as any;
-Object.assign(w, { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, isRichFontName, readTextBlocks, registerPopupRichFonts, richFontCss, RICH_COLORS });
+Object.assign(w, { blocksToHtml, blocksToPlainText, htmlToBlocks, indentFromCss, isRichFontName, readTextBlocks, registerPopupRichFonts, richFontCss, RICH_COLORS, closedNetGlobalStyle });
 let mountKey = 0;
 type EditorOptions = { compact?: boolean; hideToolbar?: boolean; hideLabel?: boolean; hideFormatButton?: boolean; inlineLabel?: string };
 let renderCurrent: (options: EditorOptions) => void = () => {};

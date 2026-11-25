@@ -1,19 +1,22 @@
 /**
- * 폐쇄망 전역 CSS 로컬 재현본(2026-11-24)
+ * 폐쇄망 전역 CSS 로컬 재현본(2026-11-24 작성, 2026-11-25 캡처 기준 갱신)
  *
  * - 폐쇄망 front_end의 `main/styles/globalStyle.ts`와 같은 경로·같은 export 이름으로 둔다. 폐쇄망 원본이 아니며
- *   지금까지 확인된 규칙만 옮겼다. 원본 전체를 받으면 이 파일을 원본 내용으로 바꾼다.
- * - 목적: 로컬 화면과 하네스에서도 폐쇄망 전역 규칙(body·em·i 등)이 팝업 공통 컴포넌트를 덮어쓰는 현상을 미리 재현한다.
+ *   캡처로 확인된 규칙만 옮겼다. 원본 전체를 받으면 이 파일을 원본 내용으로 바꾼다.
+ * - 목적: 로컬 화면과 하네스에서도 폐쇄망 전역 규칙(body 글꼴·굵기, em·i, CKEditor 본문 굵기 등)이 팝업 공통 컴포넌트를
+ *   덮어쓰는 현상을 미리 재현한다.
  * - 반입 제외: scripts/export-offline-package.ps1이 이 파일과 이를 적용하는 pages/_app.tsx를 반입본에서 뺀다
  *   (폐쇄망 원본 globalStyle.ts·_app.tsx를 덮어쓰지 않도록).
- * - 적용: pages/_app.tsx가 CssBaseline 뒤에 GlobalStyles로 넣는다. NEXT_PUBLIC_CLOSED_NET_GLOBAL_STYLE
- *   = on(기본, 확인된 규칙) | assumed(확인된 규칙 + 가정 규칙) | off(넣지 않음).
+ * - 적용: pages/_app.tsx가 폐쇄망과 같이 페이지 Component 뒤에 Emotion `<Global>`로 넣는다.
+ *   NEXT_PUBLIC_CLOSED_NET_GLOBAL_STYLE = on(기본, 확인된 규칙) | assumed(확인된 규칙 + 가정 규칙) | off(넣지 않음).
  *
  * 출처
- * - @font-face: 폐쇄망 VSCode 화면(2026-11-24, 1~42행). 42행 이후(YouandiNewKr 700 등)는 미확인.
- *   `// NewFont 설정` 줄은 원본에 있는 그대로 둔다(CSS 템플릿 문자열 안의 `//`는 적용 방식에 따라 주석으로 처리되지 않을 수 있음).
+ * - @font-face·body·em, i·CKEditor 규칙: 폐쇄망 캡처(2026-11-25), GitHub 이슈 #1
+ *   "[참고][TODO28] 폐쇄망 전역 CSS·_app.tsx·Youandi 글꼴 영향 검증".
+ *   `// NewFont 설정` 줄은 원본에 있는 그대로 둔다(CSS 템플릿 문자열 안의 `//`는 CSS 주석이 아니다).
  * - body 배경: docs/design/20261030_폐쇄망_FRONT_반입_당일_이슈_정리.md 3절.
- * - em, i: docs/design/28_TEXT_FONT_EDITING_TODO.md TODO28-16(폐쇄망 캡처).
+ * - 재현하지 않은 규칙: 일부 입력·조회 UI의 맑은 고딕 지정, 팝업 등록·상세·문항·답변·게시 대상·트리·스위치 규칙.
+ *   선택자 원문을 확인하지 못했다. CKEditor 규칙의 선택자(`.ck-content`)도 캡처 요약 기준이라 원문과 다를 수 있다.
  */
 export const globalStyle = `
   @font-face{
@@ -58,12 +61,39 @@ export const globalStyle = `
     src : local("YouandiNewKr Text Medium");
   }
 
+  @font-face{
+    font-family: "YouandiNewKr";
+    font-weight: 700;
+    src : local("YouandiNewKr Text Bold");
+  }
+
+  @font-face{
+    font-family: "YouandiNewKr";
+    font-weight: 800;
+    src : local("YouandiNewKr Text ExtraBold");
+  }
+
   body {
     background: #ebebeb;
+    font-family: "YouandiNewKr", "Malgun Gothic", "맑은 고딕", sans-serif;
+    font-weight: 700;
+    font-size: 12px;
   }
 
   em, i {
     font-style: normal;
+  }
+
+  .ck-content em, .ck-content i {
+    font-style: initial;
+  }
+
+  .ck-content * {
+    font-weight: 400;
+  }
+
+  .ck-content strong {
+    font-weight: 700;
   }
 `;
 

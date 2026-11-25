@@ -274,7 +274,9 @@ function PopupBody({
         {/* 2026-11-24 VIDEO 설명 서식(descriptionBlocks): 글자가 있으면 문단 정렬·서식을 살려 그리고, 없으면 일반 텍스트. WPF VideoPopupView DescriptionRich와 같다.
             고정 안내 문구는 등록 화면 effective(applyVideoFixedDescription)가 서식 맨 앞 문단(오른쪽 정렬)으로 넣는다. */}
         {showDescription && (videoDescriptionBlocks || description) && (
-          <Box sx={{ fontSize: POPUP_DEFAULT_FONT_SIZES.videoDescription, color: POPUP_COLORS.description, flexShrink: 0 }}>
+          // 2026-11-25 글꼴·굵기를 테마 본문 값으로 고정: 지정이 없으면 body를 이어받아 폐쇄망 전역 CSS(body 700·YouandiNewKr)에서 설명 전체가 굵게·다른 글꼴로 보였다.
+          <Box sx={{ fontSize: POPUP_DEFAULT_FONT_SIZES.videoDescription, color: POPUP_COLORS.description, flexShrink: 0,
+            fontFamily: (theme) => theme.typography.fontFamily, fontWeight: 400 }}>
             {videoDescriptionBlocks ? <PopupRichBlocks blocks={videoDescriptionBlocks} />
               : <Typography sx={{ font: 'inherit', color: 'inherit', whiteSpace: 'pre-line' }}>{description}</Typography>}
           </Box>

@@ -534,6 +534,34 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[globalStyle] closed-net global CSS (em,i / strong,b reset) does not remove italic/bold in inline and actual-size previews: ' + JSON.stringify(globalCase));
   await escape();
   await run("document.getElementById('closed-net-global').remove()");
+  // 2026-11-25 캡처 기준 전역 CSS(on: body 700·12px 등)를 넣기 전과 후에 서식 본문(TEXT·SURVEY·QUIZ 설명·문항·선택지, VIDEO 설명)의
+  // 일반·굵게·기울임 글자의 굵기·기울임이 같아야 한다(전역 body 굵기가 미리보기 서식 글자로 번지지 않음).
+  const rb = (k) => [{alignment: 'LEFT', runs: [{text: k + 'R'}, {text: ' '}, {text: k + 'B', bold: true}, {text: ' '}, {text: k + 'I', italic: true}]}];
+  const richQuestions = [{questionId: 1, title: 'q', titleBlocks: rb('qt'), description: 'd', descriptionBlocks: rb('qd'), questionType: 'SINGLE_CHOICE', isRequired: true,
+    isScored: true, questionScore: 100, sortOrder: 1, optionLayout: 'VERTICAL',
+    options: [{optionId: 11, text: 'o', textBlocks: rb('op'), isCorrect: true, sortOrder: 1}, {optionId: 12, text: 'x', isCorrect: false, sortOrder: 2}]}];
+  const richCases = [
+    ['TEXT', {}, {plainText: 'tx', textBlocks: rb('tx')}, ['tx']],
+    ['SURVEY', {questions: richQuestions}, {surveyTitleBlocks: rb('st'), description: 'sd', descriptionBlocks: rb('sd')}, ['st', 'sd', 'qt', 'qd', 'op']],
+    ['QUIZ', {questions: richQuestions}, {description: 'sd', descriptionBlocks: rb('sd')}, ['sd', 'qt', 'qd', 'op']],
+    ['VIDEO', {}, {description: 'vd', descriptionBlocks: rb('vd')}, ['vd']]];
+  const textStyle = (scope, t) => run(`(()=>{const root=document.querySelector(${JSON.stringify(scope)});if(!root)return null;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
+    while((n=w.nextNode())){if(n.data===${JSON.stringify(t)}){const c=getComputedStyle(n.parentElement);return c.fontStyle+'/'+c.fontWeight+'/'+c.fontFamily;}}return null;})()`);
+  const measureRich = async () => {
+    const out = {};
+    for (const [type, overrides, content, keys] of richCases) {
+      await render(type, overrides, content); await openPreview(); await pause(150);
+      for (const k of keys) for (const v of ['R', 'B', 'I']) for (const scope of ['#root', '.MuiDialog-root']) out[`${type}.${k}${v}@${scope}`] = await textStyle(scope, k + v);
+      await escape();
+    }
+    return out;
+  };
+  const richBefore = await measureRich();
+  await run(`(()=>{const s=document.createElement('style');s.id='closed-net-global-25';s.textContent=window.closedNetGlobalStyle('on');document.head.appendChild(s);})()`);
+  const richAfter = await measureRich();
+  await run("document.getElementById('closed-net-global-25').remove()");
+  const richDiff = Object.keys(richBefore).filter(k => richBefore[k] !== richAfter[k] || richBefore[k] === null).map(k => `${k}: ${richBefore[k]} -> ${richAfter[k]}`);
+  check(richDiff.length === 0, '[globalStyle 11-25] closed-net body 700/12px does not change weight/italic/family of rich preview runs (TEXT, SURVEY, QUIZ, VIDEO): ' + JSON.stringify(richDiff));
   check(await run('window.__errors.length') === 0, 'No runtime errors: ' + await run('JSON.stringify(window.__errors)'));
   console.log('PASS: ' + checks + ' TODO61 preview component checks');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(() => {socket?.close(); browser?.kill(); server?.close();});
