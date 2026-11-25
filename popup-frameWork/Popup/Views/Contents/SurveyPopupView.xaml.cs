@@ -90,6 +90,13 @@ namespace Popup.Views.Contents
          *   한 줄 최소 높이 32 = 테두리 1 + 위아래 여백 6 + 18 + 6 + 1(SurveyStyles.Vn.xaml, OX도 같음).
          */
         internal const double OptionMinHeight = 32;
+
+        /// <summary>
+        /// POL-06-02 : 선택·제출 — 주관식 입력칸 높이. 최소 96에서 시작해 입력한 내용에 맞춰 커지고 180을 넘으면 칸 안에서 스크롤한다.
+        /// 끌어서 늘이는 손잡이는 없다. 관리자 미리보기(웹 popupLayout.ts POPUP_LAYOUT.textAnswer)와 같은 값이어야 한다(verify-popup-guide-registry가 대조).
+        /// </summary>
+        internal const double TextAnswerMinHeight = 96;
+        internal const double TextAnswerMaxHeight = 180;
         internal static double OptionFontSizeOf(double bodyFontSize) => bodyFontSize - 2;
         internal static double OptionLineHeightOf(double optionFontSize) => Math.Round(optionFontSize * 1.5);
 
@@ -684,7 +691,8 @@ namespace Popup.Views.Contents
             TextBox textBox = new TextBox
             {
                 Margin = (Thickness)FindResource("SurveyAnswerSpacing"),
-                MinHeight = 96,
+                MinHeight = TextAnswerMinHeight,
+                MaxHeight = TextAnswerMaxHeight,
                 Style = (Style)FindResource("SurveyTextBoxStyle"),
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,

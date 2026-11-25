@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-25-text-answer-auto-height', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
+    title: '설문·퀴즈 주관식 칸 높이 자동(WPF와 같음)',
+    body: ['미리보기 주관식 칸은 높이 96에 고정되고 오른쪽 아래 손잡이로 180까지 끌어 늘이는 웹 전용 동작이었습니다. WPF는 손잡이 없이 내용에 맞춰 커집니다.',
+      '이제 미리보기도 손잡이 없이 입력한 내용에 맞춰 96~180 사이로 커지고, 180을 넘으면 칸 안에서 스크롤합니다. 지우면 다시 96으로 줄어듭니다.',
+      '높이 값은 웹 popupLayout.ts POPUP_LAYOUT.textAnswer, WPF SurveyPopupView.TextAnswerMinHeight/MaxHeight 한 곳에 있습니다.'],
+    components: ['PopupPreview', 'InlinePopupPreview', 'PopupPreviewDialog'],
+    action: '공통 미리보기를 쓰는 화면은 바꿀 것이 없습니다. popupLayout.ts를 따로 복사해 쓴다면 textAnswer 값을 함께 가져갑니다.',
+    tab: 'component',
+  },
+  {
     id: '2026-11-25-popup-default-codes', date: '2026-11-25', category: 'ADDED', status: 'DONE', doneDate: '2026-11-25',
     title: '팝업 기본값·입력 범위 공통코드(0101)',
     body: ['웹 기본값은 popupDefaults.ts(POPUP_DEFAULTS) 한곳에 있고, 공통코드 0101이 있으면 그 값으로 바뀝니다. CODE = 키(WIDTH·HEIGHT·MAXW·MAXH 등), CODE_NM = 값, DTL_EXPL = 설명입니다.',

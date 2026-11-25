@@ -1,6 +1,8 @@
 import { isOxQuestion } from './popupQuestionCodes';
 import type { PopupQuestion } from '@local/domain';
 import { Box, Stack, Typography } from '@mui/material';
+import { useLayoutEffect, useRef } from 'react';
+import { POPUP_LAYOUT } from './popupLayout';
 import PopupRichBlocks, { richBlocksOrNull } from './PopupRichBlocks';
 
 /*
@@ -225,6 +227,67 @@ export function answerStateOf(question: PopupQuestion, answer: PreviewAnswer | u
   return { answered: count >= min, belowMinimum: count > 0 && count < min };
 }
 
+/*
+ * POL-06-02 : 선택·제출
+ * ■ 주관식 입력칸(미리보기)
+ * - in : value 입력 글자 · labelledBy 문항 제목 id · disabled · fontSize 본문 글자 크기 · onChange(text)
+ * - out: textarea. WPF TextBox와 같이 끌어서 늘이는 손잡이가 없고, 내용에 맞춰 POPUP_LAYOUT.textAnswer(96~180) 사이로 자동으로 커진다. 최대를 넘으면 칸 안에서 스크롤.
+ *   (2026-11-25 이전에는 96 고정 + 오른쪽 아래 손잡이로 180까지 늘이는 웹 전용 동작이었다.)
+ * - 높이는 글자·글자 크기·칸 너비가 바뀔 때 scrollHeight로 다시 잰다(높이를 auto로 되돌린 뒤 재야 줄어드는 경우도 맞는다).
+ */
+const TEXT_ANSWER = POPUP_LAYOUT.textAnswer;
+function SurveyTextAnswer({ value, labelledBy, disabled, fontSize, onChange }: {
+  value: string; labelledBy: string; disabled: boolean; fontSize: number; onChange: (text: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+    const fit = () => {
+      element.style.height = 'auto';
+      // border-box라 테두리(위아래 1px씩)를 더해야 내용이 잘리지 않는다.
+      const border = element.offsetHeight - element.clientHeight;
+      element.style.height = `${Math.min(TEXT_ANSWER.maxHeight, Math.max(TEXT_ANSWER.minHeight, element.scrollHeight + border))}px`;
+    };
+    fit();
+    // 칸 너비가 바뀌면(창 크기·미리보기 영역 변경) 줄바꿈이 달라지므로 다시 잰다.
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fit());
+    observer?.observe(element);
+    return () => observer?.disconnect();
+  }, [value, fontSize]);
+  return (
+    <Box
+      component="textarea"
+      ref={ref}
+      value={value}
+      aria-labelledby={labelledBy}
+      placeholder="추가 의견이 있다면 자유롭게 작성해주세요."
+      disabled={disabled}
+      onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)}
+      sx={{
+        width: '100%',
+        minHeight: TEXT_ANSWER.minHeight,
+        maxHeight: TEXT_ANSWER.maxHeight,
+        boxSizing: 'border-box',
+        resize: 'none',
+        overflowY: 'auto',
+        border: `1px solid ${surveyColors.border}`,
+        borderRadius: '10px',
+        p: '14px 16px',
+        bgcolor: surveyColors.page,
+        color: surveyColors.text,
+        font: 'inherit',
+        fontSize,
+        lineHeight: 1.5,
+        outline: 'none',
+        '&::placeholder': { color: surveyColors.placeholder },
+        '&:focus': { borderColor: surveyColors.focus },
+        '&:disabled': { opacity: 0.45 },
+      }}
+    />
+  );
+}
+
 // 세로형 오른쪽 체크(28px 열 예약). V1은 선택 전에도 옅게 보이고, V2는 선택했을 때만 보인다.
 function CheckMark({ selected, disabled }: { selected: boolean; disabled: boolean }) {
   if (!surveyDesign.rowCheckAlways && !selected) return <Box aria-hidden="true" />;
@@ -360,34 +423,12 @@ export default function SurveyPreview({
               }}
             >
               {question.questionType === 'TEXT' ? (
-                <Box
-                  component="textarea"
+                <SurveyTextAnswer
                   value={answer.text}
-                  aria-labelledby={titleId}
-                  placeholder="추가 의견이 있다면 자유롭게 작성해주세요."
+                  labelledBy={titleId}
                   disabled={disabled}
-                  onChange={(event) =>
-                    onAnswer(question.questionId, { ...answer, text: event.target.value })
-                  }
-                  sx={{
-                    width: '100%',
-                    minHeight: 96,
-                    maxHeight: 180,
-                    boxSizing: 'border-box',
-                    resize: 'vertical',
-                    border: `1px solid ${surveyColors.border}`,
-                    borderRadius: '10px',
-                    p: '14px 16px',
-                    bgcolor: surveyColors.page,
-                    color: surveyColors.text,
-                    font: 'inherit',
-                    fontSize: bodySize,
-                    lineHeight: 1.5,
-                    outline: 'none',
-                    '&::placeholder': { color: surveyColors.placeholder },
-                    '&:focus': { borderColor: surveyColors.focus },
-                    '&:disabled': { opacity: 0.45 },
-                  }}
+                  fontSize={bodySize}
+                  onChange={(text) => onAnswer(question.questionId, { ...answer, text })}
                 />
               ) : (
                 question.options.map((option) => {

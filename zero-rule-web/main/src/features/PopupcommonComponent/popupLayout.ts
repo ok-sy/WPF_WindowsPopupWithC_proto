@@ -6,7 +6,8 @@
  * - out: POPUP_LAYOUT(px) · POPUP_COLORS(#RRGGBB)
  * - 관리자 미리보기가 WPF PopupWindow와 같은 창 구조를 그리기 위한 수치·색을 한곳에 둔다. 값은 WPF 선언과 같아야 한다.
  *   WPF 근거: PopupWindow.xaml(HeaderRow 40·FooterRow 최소 64·PopupContent Margin 28,24·FooterArea Margin 28,15·PopupOuterGrid 그림자 여백 24),
- *   PopupStyles.xaml(ActionButtonStyle·SecondaryActionButtonStyle 최소 너비 118·좌우 22·모서리 9, 푸터에서는 높이 34).
+ *   PopupStyles.xaml(ActionButtonStyle·SecondaryActionButtonStyle 최소 너비 118·좌우 22·모서리 9, 푸터에서는 높이 34),
+ *   SurveyPopupView.xaml.cs(주관식 TextAnswerMinHeight 96·TextAnswerMaxHeight 180).
  *   값이 맞는지는 scripts/verify-popup-parity.cjs(웹·WPF 같은 데이터 실측)로 확인한다.
  */
 export const POPUP_LAYOUT = {
@@ -26,6 +27,11 @@ export const POPUP_LAYOUT = {
   /** 푸터 오른쪽 버튼 사이 간격. WPF FooterAuxCloseButton Margin 오른쪽 10 */
   footerButtonGap: 10,
   button: { height: 34, minWidth: 118, submitMinWidth: 132, paddingX: 22, radius: 9 },
+  /**
+   * 설문·퀴즈 주관식 입력칸 높이. 최소에서 시작해 내용에 맞춰 커지고 최대를 넘으면 칸 안에서 스크롤한다(끌어서 늘이지 않음, 2026-11-25).
+   * WPF SurveyPopupView.TextAnswerMinHeight·TextAnswerMaxHeight와 같은 값(verify-popup-guide-registry가 대조).
+   */
+  textAnswer: { minHeight: 96, maxHeight: 180 },
 } as const;
 
 /** WPF PopupStyles.xaml 버튼·글자 색과 같은 공통 색(설문 영역 색은 SurveyPreview의 surveyColors). */

@@ -71,8 +71,8 @@ node scripts/verify-popup-parity.cjs
 | **TEXT** | 공통 규칙 | WPF `TextPopupView.xaml` 루트에 **자체 최소 크기 없음**(2026-11-23 320×240 제거 — 창 최소 300보다 커서 300~319 폭에서 본문이 잘릴 수 있었음). 본문은 창 안 스크롤로 표시. 별도 최대 없음 |
 | **IMAGE** | 일반 모드 `min(설정 maximum, 작업 영역×90%)`(2026-11-25 다른 유형과 통일), 최소 유효 300×300(화면 부족 시 보정) | ADAPTIVE 이미지는 원본 크기보다 확대하지 않음. WPF 설명 영역 `MaxHeight`는 이미지 표시 높이·남은 높이의 **30%** 기준. `FIT_TO_IMAGE`는 이미지 기준 권장 크기를 창 제한으로 보정 |
 | **VIDEO** | 공통 규칙 | WPF 단독 영상 행은 남는 높이(`*`) 사용, 별도 재생 영역 높이 min/max 없음. **웹 `FillVideoArea`에만 `minHeight:170`** |
-| **SURVEY** | 공통 규칙 | **설문 콘텐츠 MaxWidth 760**, 문항 제목 자체 고정 max 없음(줄바꿈). 선택지 **MinHeight 32**, WPF 주관식 **MinHeight 96**. WEB 주관식은 **96~180** |
-| **QUIZ** | 공통 규칙 | SURVEY와 동일: **MaxWidth 760**, 선택지 **최소 32**, 주관식 WPF **최소 96** / WEB **96~180** |
+| **SURVEY** | 공통 규칙 | **설문 콘텐츠 MaxWidth 760**, 문항 제목 자체 고정 max 없음(줄바꿈). 선택지 **MinHeight 32**, 주관식 **96~180**(내용에 맞춰 커지고 넘치면 칸 안 스크롤, 끌어서 늘이지 않음 — 웹·WPF 같음, 2026-11-25) |
+| **QUIZ** | 공통 규칙 | SURVEY와 동일: **MaxWidth 760**, 선택지 **최소 32**, 주관식 **96~180**(웹·WPF 같음) |
 | **VIDEO+QUIZ** | 공통 규칙(퀴즈가 포함된 팝업) | QUIZ 콘텐츠 **MaxWidth 760** 및 선택지/주관식 제한. 영상 재생 행 **최소 180**, 높이 상한 **`max(180, 부모 세로 스크롤 가용 높이×70%)`**. 전체 콘텐츠 높이 상한은 아님(부모 세로 스크롤) |
 
 - **760의 의미:** WPF `SurveyPopupView.xaml` `MaxWidth="760"`, WEB `SurveyPreview.tsx` `maxWidth:760`. 창 너비와 별개다. 카드 패딩·창 여백·스크롤바 때문에 실제 문항 가용 폭은 더 작으며 제목은 `TextWrapping.Wrap`이다. XAML `d:DesignWidth="700"`은 디자이너용 수치.
@@ -89,7 +89,7 @@ node scripts/verify-popup-parity.cjs
 | 실제 크기 모달 표시 | 선택한 해상도의 가상 데스크톱(작업 영역 흰색, 작업 표시줄 검정 40, 바깥 검정 30%)을 물리 크기로 그리고 팝업을 그 안에 놓는다. 배율을 올리면 화면 크기는 그대로이고 안쪽이 확대된다(`배율 ÷ devicePixelRatio`). 브라우저보다 크면 축소하지 않고 스크롤하며, 해상도를 바꾸면 처음 스크롤은 팝업 가운데다. 팝업 Overlay는 가상 데스크톱 위에서 재현한다 |
 | FULLSCREEN 미리보기 | 브라우저 뷰포트 전체. WPF는 주 모니터 전체화면 |
 
-**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 300 폭 본문 스크롤, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, WEB 주관식 96~180, VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
+**확인 기준:** 유형별 300 하한·설정 maximum·모드별 화면 상한, TEXT 300 폭 본문 스크롤, QUIZ 760 및 긴 문항 줄바꿈, 선택지 32, 주관식 96~180(내용에 맞춰 자동), VIDEO+QUIZ 영상 180/70%, 인라인 320·모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)를 같은 데이터로 확인한다. 브라우저/WPF 실화면·DPI·폐쇄망 검증은 미실행 상태로 유지한다.
 
 근거: [WPF 창 크기](../../popup-frameWork/Popup/Views/Windows/PopupWindow.xaml.cs) · [WPF 기본 설정](../../popup-frameWork/Popup/Models/PopupOptions.cs) · [TEXT 뷰](../../popup-frameWork/Popup/Views/Contents/TextPopupView.xaml) · [설문/퀴즈 뷰](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml) · [문항 구현](../../popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs) · [영상 비율](../../popup-frameWork/Popup/Views/Contents/VideoPopupView.AspectSizing.cs) · [웹 설문](../../zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx) · [웹 크기 계산](../../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout.ts) · [인라인 미리보기](../../zero-rule-web/main/src/features/PopupcommonComponent/InlinePopupPreview.tsx)
 
@@ -166,7 +166,7 @@ node scripts/verify-popup-parity.cjs
 최소·최대(그림 아래 칸과 같음):
 
 - **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
-- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 96~180(내용에 맞춰 커짐, 웹·WPF 같음)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
 - **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
@@ -191,7 +191,7 @@ node scripts/verify-popup-parity.cjs
 최소·최대(그림 아래 칸과 같음):
 
 - **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
-- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 96~180(내용에 맞춰 커짐, 웹·WPF 같음)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
 - **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 
@@ -261,7 +261,7 @@ node scripts/verify-popup-parity.cjs
 
 - **창** · 최소 300×300(축별 max(300, minimum)) · 최대 설정 maximum과 화면 90%(RATIO 포함) 중 작은 값 · FULLSCREEN 제외
 - **영상(퀴즈 포함)** · 높이 = 폭×원본 비율, 최소 180 · 최대 max(180, 가용 높이×70%)
-- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 최소 96(웹 96~180)
+- **설문·퀴즈** · 콘텐츠 최대 너비 760(창 너비와 별개) · 선택지 최소 높이 32 · 주관식 96~180(내용에 맞춰 커짐, 웹·WPF 같음)
 - **푸터** · 최소 높이 64(문구에 따라 증가) · 버튼 최소 118×34, 제출 132×34
 - **웹 미리보기** · 인라인 최소 높이 320 · 실제 크기 모달 min(설정 maximum, 작업 영역 90%)(RATIO 포함)
 

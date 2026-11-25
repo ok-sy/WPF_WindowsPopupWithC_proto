@@ -112,7 +112,7 @@ export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLim
     { target: 'TEXT', min: '본문 자체 최소 없음', max: '없음', note: '창 안에서 줄을 바꾸고, 넘치면 세로로 스크롤합니다.' },
     { target: 'IMAGE', min: '—', max: '원본 크기(ADAPTIVE는 확대하지 않음)', note: '이미지 설명 영역은 최대 30%입니다(WPF).' },
     { target: 'VIDEO', min: '미리보기 영상 높이 170', max: '남는 높이', note: 'WPF는 남는 높이를 모두 쓰고 별도 최소가 없습니다.' },
-    { target: 'SURVEY · QUIZ', min: '선택지 높이 32 · 주관식 높이 96', max: '콘텐츠 너비 760 · 미리보기 주관식 높이 180', note: '760은 창 너비가 아니라 문항 영역의 최대 너비입니다.' },
+    { target: 'SURVEY · QUIZ', min: `선택지 높이 32 · 주관식 높이 ${POPUP_LAYOUT.textAnswer.minHeight}`, max: `콘텐츠 너비 760 · 주관식 높이 ${POPUP_LAYOUT.textAnswer.maxHeight}`, note: '760은 창 너비가 아니라 문항 영역의 최대 너비입니다. 주관식 칸은 내용에 맞춰 커지고 최대를 넘으면 칸 안에서 스크롤합니다(웹·WPF 같음).' },
     { target: '동영상 + 퀴즈', min: '영상 높이 180', max: '영상 높이: 남는 높이의 70%(180보다 작으면 180)', note: '영상 아래 퀴즈는 760 너비 규칙을 따릅니다.' },
     { target: '푸터·버튼', min: `푸터 높이 ${POPUP_LAYOUT.footerHeight} · 버튼 ${BUTTON.minWidth}×${BUTTON.height}(제출 ${BUTTON.submitMinWidth}×${BUTTON.height})`, max: '없음', note: '안내 문구가 길면 푸터가 위로 늘어납니다.' },
   ],

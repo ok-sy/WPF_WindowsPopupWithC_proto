@@ -191,6 +191,20 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   // 필수 문항이 0개(선택 문항만)면 바로 제출할 수 있다.
   await render('SURVEY', {questions: [{questionId: 9, title: '의견', questionType: 'TEXT', isRequired: false, sortOrder: 1, options: []}]});
   b = await button('제출'); check(!b.disabled, 'SURVEY with no required question can submit: ' + JSON.stringify(b));
+  // 2026-11-25 주관식 칸은 WPF TextBox와 같이 끌어서 늘이지 않고 내용에 맞춰 96~180 사이로 커진다(넘치면 칸 안 스크롤, 지우면 다시 96).
+  const textArea = `document.querySelector('textarea[placeholder="추가 의견이 있다면 자유롭게 작성해주세요."]')`;
+  const typeAnswer = async (value) => { await run(`(()=>{const t=${textArea};Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,${JSON.stringify(value)});t.dispatchEvent(new Event('input',{bubbles:true}));})()`); await pause(150); };
+  const answerBox = () => run(`(()=>{const t=${textArea},s=getComputedStyle(t);return {h:Math.round(t.getBoundingClientRect().height),resize:s.resize,scroll:t.scrollHeight>t.clientHeight+1};})()`);
+  const emptyBox = await answerBox();
+  check(emptyBox.h === 96 && emptyBox.resize === 'none' && !emptyBox.scroll, '[2026-11-25] Subjective answer starts at 96 without a drag handle: ' + JSON.stringify(emptyBox));
+  await typeAnswer('첫 줄\n둘째 줄\n셋째 줄\n넷째 줄');
+  const midBox = await answerBox();
+  check(midBox.h > 96 && midBox.h < 180 && !midBox.scroll, '[2026-11-25] Subjective answer grows with its content between 96 and 180: ' + JSON.stringify(midBox));
+  await typeAnswer(Array.from({length: 12}, (_, i) => `${i + 1}번째 줄`).join('\n'));
+  const fullBox = await answerBox();
+  check(fullBox.h === 180 && fullBox.scroll, '[2026-11-25] Subjective answer stops at 180 and scrolls inside: ' + JSON.stringify(fullBox));
+  await typeAnswer('');
+  check((await answerBox()).h === 96, '[2026-11-25] Clearing the subjective answer shrinks it back to 96');
   // SURVEY 제출 완료 안내는 WPF와 같은 문구(PopupManager.SurveyCompletedMessage).
   await click('제출'); await pause(200);
   check((await bodyText()).includes('설문조사가 완료되었습니다.') && !(await bodyText()).includes('미리보기: 제출 완료'), 'SURVEY submit shows the WPF completion notice');

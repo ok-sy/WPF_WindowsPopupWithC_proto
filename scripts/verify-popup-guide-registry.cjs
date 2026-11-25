@@ -148,6 +148,26 @@ for (const mode of ['FIXED', 'RATIO', 'AUTO']) {
   check(row.includes(`min(설정 maximum, 작업 영역×${pct})`), `61 doc window-mode table ${mode} uses min(설정 maximum, 작업 영역×${pct})`);
 }
 
+// 설문·퀴즈 주관식 칸 높이(2026-11-25): 웹 POPUP_LAYOUT.textAnswer와 WPF SurveyPopupView 상수가 같고, 한 곳에서만 정한다.
+const layoutSource = read('popupLayout.ts');
+const surveyView = readRepo('popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs');
+const webText = (layoutSource.match(/textAnswer: \{ minHeight: (\d+), maxHeight: (\d+) \}/) || []).slice(1).map(Number);
+const wpfText = [constOf(surveyView, /const double TextAnswerMinHeight = (\d+)/), constOf(surveyView, /const double TextAnswerMaxHeight = (\d+)/)];
+check(webText.length === 2 && webText[0] > 0 && webText[1] > webText[0], `Web POPUP_LAYOUT.textAnswer readable (${webText})`);
+check(JSON.stringify(webText) === JSON.stringify(wpfText), `Subjective answer height web ${webText} equals WPF TextAnswerMin/MaxHeight ${wpfText}`);
+check(/MinHeight = TextAnswerMinHeight,/.test(surveyView) && /MaxHeight = TextAnswerMaxHeight,/.test(surveyView), 'WPF subjective TextBox uses the TextAnswer constants');
+for (const v of ['V1', 'V2']) {
+  const style = readRepo(`popup-frameWork/Popup/Views/Contents/SurveyDesigns/SurveyStyles.${v}.xaml`);
+  const textBoxStyle = (style.split('x:Key="SurveyTextBoxStyle"')[1] || '').split('</Style>')[0];
+  check(textBoxStyle.length > 0 && !/Property="(Min|Max)?Height"/.test(textBoxStyle), `SurveyStyles.${v} SurveyTextBoxStyle does not set its own height (single source in SurveyPopupView)`);
+}
+const surveyPreview = read('SurveyPreview.tsx');
+check(!/resize: 'vertical'/.test(surveyPreview) && /TEXT_ANSWER = POPUP_LAYOUT\.textAnswer/.test(surveyPreview) && !/(min|max)Height: (96|180)\b/.test(surveyPreview),
+  'Web subjective answer has no drag handle and reads POPUP_LAYOUT.textAnswer (no hard-coded 96/180)');
+for (const [name, text] of [['guideData.ts', data], ['61_POPUP_LAYOUT_GUIDE.md', doc61]]) {
+  for (const phrase of ['WEB 주관식', '웹 96~180', 'WEB 최대 180', '미리보기 주관식 높이']) check(!text.includes(phrase), `${name} has no stale subjective-height phrase '${phrase}'`);
+}
+
 for (const file of fs.readdirSync(dir).filter((f) => /\.(ts|tsx)$/.test(f) && f !== 'index.ts')) {
   check(porting.includes('`' + file + '`'), `Porting guide ADMIN_POPUP_PREVIEW_COMPONENTS.md lists ${file}`);
 }

@@ -243,7 +243,7 @@
         </Setter>
     </Style>
     <Style x:Key="SurveyTextBoxStyle" TargetType="TextBox">
-        <Setter Property="MaxHeight" Value="180" />
+        <!-- 높이(최소 96·최대 180)는 SurveyPopupView.TextAnswerMinHeight/MaxHeight 한 곳에서 지정한다(2026-11-25). -->
         <Setter Property="Background" Value="{StaticResource SurveySurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource SurveyCardBorder}" />
         <Setter Property="BorderThickness" Value="1" />

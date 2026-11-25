@@ -38,7 +38,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 | TEXT | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | WPF TEXT 루트 자체 최소 없음(창 최소 300을 따르고 본문은 스크롤, 2026-11-23 320×240 제거) |
 | IMAGE | 공통 최소 300×300; 일반 모드 작업 영역 최대 90% | 원본 초과 확대 없음(ADAPTIVE), 설명 높이 최대 관련 영역 30% |
 | VIDEO | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | WPF 영상 행 가변. WEB 단독 영상 미리보기 영역 최소 높이 170 |
-| SURVEY | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | 콘텐츠 최대 너비 760, 선택지 최소 높이 32, 주관식 최소 높이 96(WEB 최대 180) |
+| SURVEY | 공통 최소 300×300; 비IMAGE 창 모드별 최대 | 콘텐츠 최대 너비 760, 선택지 최소 높이 32, 주관식 높이 96~180(내용에 맞춰 커지고 넘치면 스크롤, 끌어서 늘이지 않음 — 웹 `POPUP_LAYOUT.textAnswer`·WPF `SurveyPopupView.TextAnswerMinHeight/MaxHeight`, 2026-11-25) |
 | QUIZ | SURVEY와 동일 | SURVEY와 동일 |
 | VIDEO+QUIZ | 비IMAGE 창 크기 모드 적용 | 퀴즈 너비 최대 760, 영상 높이 최소 180·부모 스크롤 높이 70% 상한(최소보다 작으면 180 우선) |
 
@@ -57,7 +57,7 @@ WPF 소스 · [PopupWindow.xaml](../../popup-frameWork/Popup/Views/Windows/Popup
 | SURVEY·QUIZ 콘텐츠 제목·설명 | **25 / 14** (제목 굵기 600) | 웹 제목 위 4, 설명 줄 높이 22·아래 14. VIDEO+QUIZ의 중복 설명 접힘 조건은 별도 확인 |
 | SURVEY·QUIZ 문항 제목·설명 | **16 / 13** | 본문 크기 명시 시 각각 `bodyFontSize + 4`, `bodyFontSize + 1`. 문항 간 간격과 서식으로 지정한 글자 크기도 확인 |
 | 응답 선택지·OX | **12**, 기본 줄 높이 **18** | 한 줄 최소 **32**(테두리 1씩 + 상하 패딩 6씩 + 줄 18). 웹 가로형 좌우 14·세로형 좌우 16. 긴 선택지는 높이 증가. 글자 크기는 `(bodyFontSize ?? 14) - 2`, 줄 높이는 글자 크기 × 1.5 기준 |
-| 주관식 응답 | **14** | `bodyFontSize`가 있으면 적용. 웹 미리보기는 minHeight 96 선언. 입력 박스·안내 문구와 실제 WPF 입력 영역을 구분해 실측 |
+| 주관식 응답 | **14** | `bodyFontSize`가 있으면 적용. 높이는 96~180 자동(웹·WPF 같음). 입력 박스·안내 문구와 실제 WPF 입력 영역을 구분해 실측 |
 | 등록 화면 일반 선택지 입력 | **12**, 줄 높이 **18** | `PopupQuestionEditor`의 의도는 한 줄 외곽 **32**(상하 7씩 + 줄 18), 좌우 패딩 10. DevTools에서 textarea line-height·실제 높이와 `MuiInputBase`의 padding·외곽 높이를 각각 확인 |
 | 등록 화면 CKEditor | 선택지 **12**, 문항 제목 **16**, compact 설명 기본 **14**, 일반 본문 기본 **15** | 선택지 모드 안쪽 최소 30 + 테두리 2. 다른 compact 기본 안쪽 최소 34, 일반 편집 영역 최소 140. 호출부 `baseFontSize`와 서식 지정값 적용. 편집 상자의 높이와 출력 글자 줄 높이는 각각 확인 |
 

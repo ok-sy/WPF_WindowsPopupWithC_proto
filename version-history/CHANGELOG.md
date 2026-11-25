@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-25-13 — dev: 61_주관식칸높이자동_수정
+
+- 이유 · 정합성 보완. 설문·퀴즈 주관식 칸이 웹 미리보기에서만 96 고정 + 끌어서 180까지 늘이는 손잡이(`resize: vertical`)가 있었고, WPF는 손잡이 없이 내용에 맞춰 96~180으로 커져 동작이 달랐음. 높이 값도 웹(SurveyPreview)·WPF(코드 96, 스타일 V1·V2의 MaxHeight 180) 여러 곳에 흩어져 있었음.
+- 변경 ·
+  - 웹: `SurveyPreview`의 주관식 칸을 `SurveyTextAnswer`로 분리. 손잡이 없이 글자·글자 크기·칸 너비가 바뀔 때 scrollHeight로 높이를 재서 96~180 사이로 맞추고 넘치면 칸 안 스크롤. 높이 값은 `popupLayout.ts` `POPUP_LAYOUT.textAnswer`(96·180) 한 곳.
+  - WPF: `SurveyPopupView.TextAnswerMinHeight`(96)·`TextAnswerMaxHeight`(180) 상수로 TextBox에 지정, `SurveyStyles.V1·V2`의 `MaxHeight 180` 세터 삭제(동작 동일).
+  - 가이드: 레이아웃 표 SURVEY·QUIZ 행을 상수에서 표시, 공지 1건(컴포넌트 탭). 문서: 61 레이아웃 가이드(유형 표·확인 기준·유형별 3곳), UI 기본값 사양, `WPF_POPUP_ALL_SPEC.md` 설문 절.
+  - 하네스: `verify-completion-ux-43`에 빈 칸 96·손잡이 없음 → 4줄 96~180 → 12줄 180·스크롤 → 지우면 96 검사(이전 코드로 실패 재현). `verify-popup-guide-registry`에 웹·WPF 값 일치, WPF TextBox 상수 사용, 스타일 자체 높이 금지, 웹 손잡이·96/180 직접 기재 금지, 옛 문구 금지 검사.
+  - 로컬 `Popup.BehaviorTests`(Git 제외)의 `CheckImageSizing23`이 5a46b9d 이전 정책(IMAGE는 설정 최대 무시·화면 90%)을 검사해 실패하던 것을 새 정책(설정 최대와 화면 90% 중 작은 값)으로 고침. 5a46b9d 때 이 테스트를 실행하지 않아 남아 있었음.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/SurveyPreview.tsx`·`popupLayout.ts`·`guide/guideData.ts`·`guide/guideNotices.ts`, `popup-frameWork/Popup/Views/Contents/SurveyPopupView.xaml.cs`·`SurveyDesigns/SurveyStyles.V1·V2.xaml`, `scripts/verify-completion-ux-43.cjs`, `scripts/verify-popup-guide-registry.cjs`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/design/61_POPUP_UI_DEFAULTS_SPEC.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`.
+- 검증 · `verify-completion-ux-43` 86, `verify-popup-guide-registry` 629, `verify-popup-guide-render` 34, `verify-popup-parity` 101, `verify-survey-rich-text-55` 81, `verify-popup-preview-61` 309, WPF 빌드 오류 0·`PopupWindowTests` 689·로컬 `BehaviorTests` 1644, `tsc --noEmit`·변경 파일 eslint 오류 0.
+- 미실행 · 관리자·WPF 실화면 입력(한글 IME 줄바꿈 포함), 폐쇄망.
+- 상태 · 커밋·원격 반영. 20261125 반입본에는 없음.
+
 ## 2026-11-25-12 — dev: 61_완료팝업UI가이드_추가
 
 - 이유 · 정합성 보완. 레이아웃 가이드(61)에 유형별 팝업만 있고 완료·안내 팝업(WPF `PopupAlert`) 구조·수치·종류별 문구가 없었음.
