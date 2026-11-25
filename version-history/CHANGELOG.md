@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-25-08 — dev: 68_가이드창최대정책문구_수정
+
+- 이유 · 창 최소·최대 공통 적용(5a46b9d)·공통코드 0101(9e063ba) 이후 가이드 점검에서 예전 정책 문구가 남은 곳 확인: 가이드 레이아웃 표 RATIO "화면의 100%", IMAGE "입력한 최대값 대신 화면 90%", 61 레이아웃 가이드 창 모드 표의 비IMAGE/IMAGE 구분, 이식 가이드의 하한 설명.
+- 변경 · `guideData.ts` LAYOUT_LIMITS RATIO·IMAGE 행을 "입력한 최대값과 화면의 90% 중 작은 값"으로, `withPreviewFallback`·`createDefaultPopup` 설명에 POPUP_DEFAULTS·공통코드 0101 반영, P1 새 팝업 만들기 단계에 `loadPopupDefaultCodes` 추가. `guideNotices.ts` 11-24 이미지 맞춤 공지 action에 cappedByMaximum 시 가로 반영 보완. `docs/design/61_POPUP_LAYOUT_GUIDE.md` 창 모드 표·IMAGE 행을 공통 규칙으로 정리. `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`에 `popupDefaults.ts`·`PopupNumberField.tsx` 행 추가, adaptiveWindowForImage·하한 설명 갱신.
+- 주요 파일 · `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideData.ts`, `guideNotices.ts`, `docs/design/61_POPUP_LAYOUT_GUIDE.md`, `docs/interfaces/Web/ADMIN_POPUP_PREVIEW_COMPONENTS.md`.
+- 검증 · `verify-popup-guide-registry` 523, `verify-popup-guide-render` 34 통과. 코드 동작 변경 없음.
+- 상태 · 커밋·원격 반영.
+
 ## 2026-11-25-07 — dev: 68_팝업기본값공통코드0101_추가
 
 - 이유 · 화면 기본값(popupDefaults.ts)과 입력 허용 범위를 배포 없이 코드 관리 화면에서 바꿀 수 있게 폐쇄망 공통코드 구조(CLOVER_CODE: CODE_TYPE·CODE·CODE_NM·DTL_EXPL, 폐쇄망은 SORT_SEQ 추가)를 확인하고 그룹 0101로 연결.

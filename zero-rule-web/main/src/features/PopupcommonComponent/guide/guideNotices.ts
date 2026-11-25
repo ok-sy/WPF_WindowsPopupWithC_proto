@@ -139,7 +139,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
     body: ['ADAPTIVE는 가로·세로가 창 크기라 이미지 칸 비율이 이미지와 다르면 위아래·좌우 띠가 보입니다. adaptiveWindowForImage가 가로에서 띠가 생기지 않는 세로를 계산합니다.',
       '등록 화면은 "이미지에 맞춰 세로 자동"(세로 잠금)과 "이미지 크기에 맞추기"를 둡니다. 신규는 자동을 켜고, 수정·불러오기는 저장 값을 바꾸지 않도록 끈 채 시작합니다. 가로가 원본보다 크면 여백 없는 최대 가로를 안내합니다.'],
     components: ['adaptiveWindowForImage', 'useNaturalImageSize'],
-    action: '이미지 크기 입력 화면에서 쓰려면 useNaturalImageSize로 원본 크기를 읽고 adaptiveWindowForImage 결과의 window.height를 세로에 넣습니다.',
+    action: '이미지 크기 입력 화면에서 쓰려면 useNaturalImageSize로 원본 크기를 읽고 adaptiveWindowForImage 결과의 window.height를 세로에 넣습니다(2026-11-25부터 cappedByMaximum이면 window.width도 가로에 넣습니다).',
     tab: 'function',
   },
   {

@@ -16,7 +16,9 @@
 | `PopupPreview.tsx` | 공통 렌더러(헤더·콘텐츠·푸터, TEXT/IMAGE/VIDEO/SURVEY/QUIZ). 두 컴포넌트가 함께 쓴다. 선택 prop `workArea`로 IMAGE 권장 창 크기 계산 작업 영역을 받는다(없으면 현재 모니터 작업 영역, TODO61-23). VIDEO 설명은 `descriptionBlocks` 서식이 있으면 문단 정렬·서식으로 그린다(2026-11-24). 영상 아래 컨트롤 모형 줄(▶ 00:00 / 00:00 · 1.0× · 전체화면)은 삭제했다 |
 | `videoFixedDescription.ts` | 동영상·동영상+퀴즈 고정 안내 문구(`VIDEO_FIXED_DESCRIPTION`). `applyVideoFixedDescription()`은 미리보기·저장 값(effective)의 `descriptionBlocks` 맨 앞에 오른쪽 정렬 문단으로 붙이고 `description`을 '고정 문구
 사용자 설명'으로 만든다(중복 없이). `stripVideoFixedDescription()`은 불러온 값에서 떼어 에디터에 사용자 입력만 보이게 한다. 문구를 바꾸면 이전 문구를 `PREVIOUS_VIDEO_FIXED_DESCRIPTIONS`에 넣어 기존 데이터도 떼어 낸다 |
-| `imagePreviewLayout.ts` `adaptiveWindowForImage()` · `useNaturalImageSize.ts` | IMAGE ADAPTIVE(창 우선)에서 이미지 칸 바깥 띠가 생기지 않는 창 크기 계산(가로 → 세로, 가로가 원본보다 크면 원본 기준·limited). 이미지 원본 크기 읽기 훅. RgstPop·IS063 샘플의 '이미지에 맞춰 세로/높이 자동'·'이미지 크기에 맞추기'가 쓴다(신규는 자동 켬, 수정·불러오기는 끔) |
+| `imagePreviewLayout.ts` `adaptiveWindowForImage()` · `useNaturalImageSize.ts` | IMAGE ADAPTIVE(창 우선)에서 이미지 칸 바깥 띠가 생기지 않는 창 크기 계산(가로 → 세로, 가로가 원본보다 크면 원본 기준·limited, 창 최대를 넘으면 가로·세로를 함께 줄이고 cappedByMaximum — 이때 가로도 결과 값으로 넣는다, 창 가로는 최소 300 이상). 이미지 원본 크기 읽기 훅. RgstPop·IS063 샘플의 '이미지에 맞춰 세로/높이 자동'·'이미지 크기에 맞추기'가 쓴다(신규는 자동 켬, 수정·불러오기는 끔, 두 경로 같은 결과) |
+| `popupDefaults.ts` | 웹 기본값 단일 출처 `POPUP_DEFAULTS`(창 560×420·비율 0.7×0.75·최소 300·최대 1200×900, 헤더·푸터, 배경 어둡기 0.45, 음량 0.7, 동영상+퀴즈 완료 0.8)와 입력 범위 `POPUP_INPUT_RANGES`·계약 범위 `POPUP_CONTRACT_RANGES`. 공통코드 0101이 있으면 `loadPopupDefaultCodes`·`applyPopupDefaultCodes`로 덮어쓴다(계약 범위 안에서만, 잘못된 값은 무시) |
+| `PopupNumberField.tsx` | 숫자 입력칸. 입력 중 글자를 따로 들고 있어 마지막 자리까지 지울 수 있다. 빈 칸 처리 `empty`: commit(즉시 null)·onBlur(입력을 마칠 때 null)·keep(이전 값으로 되돌림) |
 
 ### Props
 
@@ -73,7 +75,7 @@ export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
 // 변경 전(ts6385): BackdropProps={{ sx: backdropSx }} PaperProps={fullScreen ? undefined : { sx: paperSx }}
 <Dialog slotProps={{ backdrop: { sx: backdropSx }, paper: fullScreen ? undefined : { sx: paperSx } }} />
 ```
-- [TODO68] 실제 크기 모달과 IMAGE 권장 창 크기는 `popupCommon.ts`의 `POPUP_MIN_WINDOW_SIZE`(300)·`popupMinimumSize`로 최종 창 하한 300×300을 WPF와 같은 순서(하한 → 설정 최대값 → 화면 상한)로 적용한다. 인라인 축소 표시의 외형 크기는 300 이상으로 강제하지 않는다. 이전 모달 전용 하한(320×260)은 제거했다.
+- [TODO68] 실제 크기 모달과 IMAGE 권장 창 크기는 `popupCommon.ts`의 `popupWindowBounds`(하한 `POPUP_MIN_WINDOW_SIZE` 300 → 설정 최대값 → 작업 영역 90%)로 WPF와 같은 순서를 적용한다. 2026-11-25부터 IMAGE도 설정 최대값을 쓰고, 화면 비율(RATIO)도 90%가 상한이다(FULLSCREEN 제외). 인라인 축소 표시의 외형 크기는 300 이상으로 강제하지 않는다. 이전 모달 전용 하한(320×260)은 제거했다.
 
 ## 4. 이식 시 필요한 의존성
 

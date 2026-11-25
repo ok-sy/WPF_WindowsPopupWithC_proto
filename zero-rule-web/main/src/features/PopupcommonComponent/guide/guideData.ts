@@ -101,10 +101,10 @@ const BUTTON = POPUP_LAYOUT.button;
 export const LAYOUT_LIMITS: { windows: GuideLayoutLimit[]; types: GuideLayoutLimit[]; preview: GuideLayoutLimit[] } = {
   windows: [
     { target: 'FIXED', min: `${MIN}×${MIN} (입력한 최소값이 더 크면 그 값)`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '입력한 너비·높이로 열고 최소·최대 사이로 맞춥니다.' },
-    { target: 'RATIO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 100% 중 작은 값', note: '화면 크기에 비율(0.1~1.0)을 곱합니다.' },
+    { target: 'RATIO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '화면 크기에 비율(0.1~1.0)을 곱합니다. 비율 1.0도 화면의 90%로 줄어듭니다.' },
     { target: 'AUTO', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '내용 크기에 맞춥니다.' },
     { target: 'FULLSCREEN', min: '제한 없음', max: '모니터 전체', note: '최소·최대 값을 쓰지 않습니다.' },
-    { target: 'IMAGE 유형', min: `${MIN}×${MIN}`, max: '화면의 90%', note: '입력한 최대값 대신 화면 기준으로 제한합니다.' },
+    { target: 'IMAGE 유형', min: `${MIN}×${MIN}`, max: '입력한 최대값과 화면의 90% 중 작은 값', note: '다른 유형과 같습니다. 이미지 우선은 헤더·푸터를 더한 최종 창 기준입니다.' },
   ],
   types: [
     { target: 'TEXT', min: '본문 자체 최소 없음', max: '없음', note: '창 안에서 줄을 바꾸고, 넘치면 세로로 스크롤합니다.' },
@@ -189,7 +189,8 @@ export const PROCESSES: GuideProcess[] = [
   {
     id: 'proto-create', scope: 'PROTO', title: 'P1 새 팝업 만들기', summary: '기존 팝업 등록 화면은 기본값이 모두 채워진 값으로 시작합니다.',
     steps: [
-      { actor: 'createDefaultPopup(now?)', description: '창 크기 560×420, 게시 기간 한 달 등 기본값이 채워진 팝업 값을 만듭니다.' },
+      { actor: 'loadPopupDefaultCodes(search)', description: '공통코드 0101(팝업 기본값·입력 범위)을 읽어 기본값을 맞춥니다. 없거나 실패하면 파일 기본값(창 560×420·최대 1200×900 등)을 씁니다.' },
+      { actor: 'createDefaultPopup(now?)', description: '창 크기·최소·최대, 게시 기간 한 달 등 기본값이 채워진 팝업 값을 만듭니다.' },
       { actor: '등록 화면 state', description: '만든 값을 state에 담고 편집기 key를 새로 만듭니다.' },
       { actor: 'InlinePopupPreview', description: '값이 모두 채워져 있어 그대로 미리보기에 넘깁니다.' },
     ],
@@ -430,7 +431,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
 export const FUNCTIONS: GuideFunction[] = [
   // 공통 사용
   { name: 'pickPopupFields', scope: 'COMMON', file: 'popupEditorTransform.ts', input: 'popup, { topLevelKeys?, contentKeys?, questionKeys? }', output: '{ ...고른 항목, content?, questions? }', description: '고른 항목의 값만 가져옵니다. 값은 바꾸지 않고, 입력하지 않은 항목은 결과에 없습니다.' },
-  { name: 'withPreviewFallback', scope: 'COMMON', file: 'popupPreviewFallback.ts', input: 'state: Partial<AdminPopupDetail>', output: 'AdminPopupDetail(미리보기용)', description: '미리보기에 필요한 기본값만 채워서 돌려줍니다. 입력한 값은 변경하지 않습니다. 저장에는 쓰지 않습니다.' },
+  { name: 'withPreviewFallback', scope: 'COMMON', file: 'popupPreviewFallback.ts', input: 'state: Partial<AdminPopupDetail>', output: 'AdminPopupDetail(미리보기용)', description: '미리보기에 필요한 기본값(POPUP_DEFAULTS, 공통코드 0101을 적용했으면 그 값)만 채워서 돌려줍니다. 입력한 값은 변경하지 않습니다. 저장에는 쓰지 않습니다.' },
   { name: 'POPUP_DEFAULTS', scope: 'COMMON', file: 'popupDefaults.ts', input: '-', output: '{ window, chrome, overlay, video }', description: '웹이 쓰는 팝업 기본값(창 560×420·비율 0.7×0.75·최소 300·최대 1200×900, 헤더·푸터 표시, 배경 어둡기 0.45, 음량 0.7, 동영상+퀴즈 완료 0.8)을 한곳에 둡니다. 미리보기 대체값·신규 초기값이 이 값을 읽습니다. 나중에 서버(공통코드)가 정하면 이 파일만 바꿉니다.' },
   { name: 'applyPopupDefaultCodes / loadPopupDefaultCodes', scope: 'COMMON', file: 'popupDefaults.ts', input: 'codes: {code, codeNm}[] / search(api.clCode.search)', output: '{ applied, ignored }', description: '공통코드 0101(팝업 기본값·입력 범위)로 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 덮어씁니다. 범위는 계약 범위(POPUP_CONTRACT_RANGES) 안에서만 좁히고, 숫자 아닌 값·범위 밖 값·최소 > 최대는 무시합니다. 매번 파일 값에서 다시 시작합니다.' },
   { name: 'POPUP_INPUT_RANGES / POPUP_CONTRACT_RANGES', scope: 'COMMON', file: 'popupDefaults.ts', input: '-', output: '{ size, ratio, font, overlay, volume, completion, hideDays }', description: '화면 입력 허용 범위(코드로 좁힌 값)와 서버·WPF 계약 범위(창 300 이상, 비율 0.1~1, 글자 10~40, 0~1, 숨김 1~3650)입니다. 입력칸 min/max와 저장 전 검사에 씁니다.' },
@@ -466,7 +467,7 @@ export const FUNCTIONS: GuideFunction[] = [
   { name: 'popupFontSize / popupMinimumSize', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup, key', output: 'number | null / { width, height }', description: '글자 크기(10~40)와 최소 창 크기(300)를 읽습니다.' },
   { name: 'popupMaximumSize / popupWindowBounds', scope: 'COMMON', file: 'popupCommon.ts', input: 'popup / popup, workArea: Size', output: '{ width, height } / { minimum, maximum }', description: '설정 최대 창 크기(최소 이상으로 보정)와, 설정 최소·최대를 하한 300·상한 작업 영역 90% 사이에서 반영한 실제 창 범위를 구합니다(WPF와 같은 규칙, IMAGE·RATIO 포함).' },
   // 기존 팝업 등록(RgstPop)
-  { name: 'createDefaultPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'now?: Date', output: 'AdminPopupDetail', description: '기본값이 모두 채워진 새 팝업 값을 만듭니다. 다른 화면의 state에는 쓰지 않습니다.' },
+  { name: 'createDefaultPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'now?: Date', output: 'AdminPopupDetail', description: '기본값이 모두 채워진 새 팝업 값을 만듭니다. 창 크기·최소·최대·비율 등은 POPUP_DEFAULTS(공통코드 0101 반영)에서 읽습니다. 다른 화면의 state에는 쓰지 않습니다.' },
   { name: 'toEditorPopup', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'loaded: AdminPopupDetail', output: 'AdminPopupDetail', description: '서버에서 받은 팝업을 편집할 값으로 바꿉니다.' },
   { name: 'toEditorPopupFromTemplate', scope: 'PROTO', file: 'popupEditorTransform.ts', input: 'template, currentPopupId', output: 'AdminPopupDetail', description: '템플릿 설정을 현재 팝업으로 복사합니다.' },
   { name: 'changePopupType', scope: 'PROTO', file: 'popupEditorTransform.ts', input: "previous, selection(PopupType | 'VIDEO_QUIZ')", output: 'AdminPopupDetail', description: '유형을 바꾸면서 필요한 기본값을 채웁니다.' },
