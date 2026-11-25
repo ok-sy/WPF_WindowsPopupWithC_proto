@@ -205,7 +205,8 @@ def code_table(rows, x, label):
 
 
 code_table([c for c in codes[:11]], Inches(0.46), '기본값 (새 팝업에 처음 들어가는 값)')
-code_table([c for c in codes[11:]], Inches(6.82), '입력 범위 (관리자 화면에서 넣을 수 있는 값)')
+# 입력 범위는 관리자 화면(IS063 샘플)에 입력 칸이 있는 창 크기 하한(SIZEMIN)만 싣는다. 나머지 12건은 코드는 읽지만 입력 칸이 없다.
+code_table([c for c in codes[11:] if c[0] == 'SIZEMIN'], Inches(6.82), '입력 범위 (관리자 화면에서 넣을 수 있는 값)')
 note = s12.shapes.add_textbox(Inches(0.46), Inches(6.62), Inches(12.4), Inches(0.5)); note.name = '참고'
 tf = note.text_frame; tf.word_wrap = True; tf.margin_left = tf.margin_right = 0
 r = tf.paragraphs[0].add_run()
