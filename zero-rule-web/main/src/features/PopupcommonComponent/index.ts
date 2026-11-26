@@ -26,6 +26,6 @@ export * from './popupPreviewFallback';
 export * from './popupDefaults';
 export * from './popupRichText';
 export type { Size } from './imagePreviewLayout';
-export { adaptiveWindowForImage, type AdaptiveImageWindow } from './imagePreviewLayout';
+export { adaptiveWindowForImage, imageSizeMode, type AdaptiveImageWindow } from './imagePreviewLayout';
 export { useNaturalImageSize } from './useNaturalImageSize';
 export { VIDEO_FIXED_DESCRIPTION, applyVideoFixedDescription, stripVideoFixedDescription } from './videoFixedDescription';
