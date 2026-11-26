@@ -39,9 +39,9 @@ export interface GuideNotice {
 /**
  * 마지막으로 폐쇄망에 반영된 반입본. NEW(배지·칩)는 이 반입본에 들어가지 않은 공지, 즉 게시일이 through보다 늦은 공지에만 붙는다.
  * 새 반입본이 폐쇄망에 반영됐다고 확인되면 exportId와 그 반입본에 포함된 마지막 공지 게시일(through)로 올린다.
- * (2026-11-24 기간 14일 기준에서 폐쇄망 반영 기준으로 변경. 20261118 반입본 = 2026-11-17 게시분까지 반영)
+ * (2026-11-24 기간 14일 기준에서 폐쇄망 반영 기준으로 변경. 20261126 반입본 = 2026-11-25 게시분까지 반영, 2026-11-26 확인)
  */
-export const CLOSED_NET_APPLIED = { exportId: '20261118', through: '2026-11-17' } as const;
+export const CLOSED_NET_APPLIED = { exportId: '20261126', through: '2026-11-25' } as const;
 
 /** 폐쇄망에 아직 반영되지 않은 공지인지(게시일 YYYY-MM-DD가 CLOSED_NET_APPLIED.through보다 늦으면 true) */
 export function isUnappliedNotice(date: string): boolean {
@@ -56,6 +56,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 };
 
 export const GUIDE_NOTICES: GuideNotice[] = [
+  {
+    id: '2026-11-26-is063-default-size-store', date: '2026-11-26', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-26',
+    title: '신규 폼 가로·세로 기본값 채우기·공통코드 스토어(code0101) 연결',
+    body: ['IS063 샘플의 "폼 생성"은 가로·세로를 기본 창 크기(POPUP_DEFAULTS.window — 0101 WIDTH·HEIGHT, 없으면 560×420)로 한 번 채웁니다. IMAGE는 가로만 채우고 세로는 세로 자동이 계산합니다. 입력칸·우측 미리보기·실제 크기 보기·저장 값이 같은 값을 씁니다.',
+      '공통코드를 스토어(useCommonCodeStore)로 한 번에 받는 화면은 조회 API 대신 스토어의 code0101 목록을 applyPopupDefaultCodes(code0101)에 넘깁니다. 키별 filter는 필요 없고, 목록이 아직 없으면(로딩 전) 파일 기본값을 씁니다.',
+      '공통 기능 import는 @/features/PopupcommonComponent 한 곳에서 가져옵니다.'],
+    components: ['applyPopupDefaultCodes', 'POPUP_DEFAULTS'],
+    action: 'const { code0101 } = useCommonCodeStore(); useEffect(() => { if (code0101) applyPopupDefaultCodes(code0101); /* 다시 그리기 */ }, [code0101, code0101?.length]); 신규 폼을 만들 때 POPUP_DEFAULTS.window.width/height를 가로·세로 입력값에 넣습니다(IMAGE는 가로만).',
+    tab: 'function',
+  },
   {
     id: '2026-11-25-text-answer-auto-height', date: '2026-11-25', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-25',
     title: '설문·퀴즈 주관식 칸 높이 자동(WPF와 같음)',
@@ -73,7 +83,7 @@ export const GUIDE_NOTICES: GuideNotice[] = [
       '입력 허용 범위도 <접두어>MIN/MAX 코드(RATIOMIN·FONTMAX·HIDEDAYSMAX 등)로 좁힐 수 있습니다. 창 크기는 범위 코드가 없고 기본 창 최소 크기 MINW·MINH가 가로·세로 입력 하한을 겸합니다(popupSizeInputMin, SIZEMIN 삭제). 서버·WPF 계약 범위를 넓히는 값, 숫자가 아닌 값, 최소 > 최대는 무시하고 파일 값을 씁니다.',
       '공통코드는 화면(웹)만 읽습니다. 서버 저장 기본값·WPF 기본값은 그대로이며, 저장된 팝업 값은 WPF가 300·작업 영역 90% 보호선 안에서 반영합니다.'],
     components: ['applyPopupDefaultCodes', 'loadPopupDefaultCodes', 'POPUP_DEFAULTS', 'POPUP_INPUT_RANGES', 'POPUP_CONTRACT_RANGES'],
-    action: '등록 화면을 처음 열 때(또는 앱 시작 때) loadPopupDefaultCodes((params) => api.clCode.search(params))를 한 번 부릅니다. 입력칸 min/max·저장 검사는 POPUP_INPUT_RANGES를 쓸 때 읽습니다. 폐쇄망은 0101 그룹 확인 후 db/oracle/27 스크립트나 코드 관리 화면으로 입력합니다.',
+    action: '등록 화면을 처음 열 때(또는 앱 시작 때) loadPopupDefaultCodes((params) => api.clCode.search(params))를 한 번 부릅니다. 공통코드 스토어가 이미 받아 둔 화면(폐쇄망)은 applyPopupDefaultCodes(code0101)로 바로 적용합니다(2026-11-26 공지). 입력칸 min/max·저장 검사는 POPUP_INPUT_RANGES를 쓸 때 읽습니다. 폐쇄망은 0101 그룹 확인 후 db/oracle/27 스크립트나 코드 관리 화면으로 입력합니다.',
     tab: 'function',
   },
   {

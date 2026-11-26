@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-26-08 — dev: 68_폐쇄망반영기준20261126·공지_수정
+
+- 이유: 20261126 반입본(기준 53d4d41)이 폐쇄망에서 정상 동작함을 확인(공통코드 조회 API 경로 제외 — 폐쇄망은 공통코드 스토어 사용). 가이드 NEW 기준을 올리고, 반입 이후 변경(신규 폼 기본 크기·스토어 code0101 연결)을 공지로 안내할 필요.
+- 변경: `guide/guideNotices.ts` `CLOSED_NET_APPLIED`를 20261126 / 2026-11-25로 변경, 2026-11-26 공지(신규 폼 가로·세로 기본값·`applyPopupDefaultCodes(code0101)` 스토어 연결·진입점 import) 추가, 0101 공지 조치에 스토어 경로 보완. `verify-popup-guide-render.cjs` NEW 기대값 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/guide/guideNotices.ts`, `scripts/verify-popup-guide-render.cjs`.
+- 검증: guide-render 34(11-26 공지만 NEW, 11-25 이전 NEW 없음, 20261126 표기)·guide-registry 648 통과.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-07 — dev: 69_공통함수이름export_수정
 
 - 이유: 2026-11-26-05에서 진입점에 `normalizePopupLink`·`popupDemoQuestions`를 `default as`로 추가해, 가이드 등록 검사(`verify-popup-guide-registry`)가 두 함수를 컴포넌트로 보고 실패했다(05 검증 때 이 하네스 미실행).
