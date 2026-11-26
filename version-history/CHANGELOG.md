@@ -5,6 +5,7 @@
 - 이유: IS063M02 Sample에서 공통 팝업 모듈을 개별 파일별로 import하던 구조를 `PopupcommonComponent/index.ts` 단일 공개 진입점으로 정리해 샘플 이식과 호출 위치를 단순화.
 - 변경: `sample/IS063M02Sample.tsx`, `sample/PopupSampleEditor.tsx`, `sample/PopupListSample.tsx`의 공통 기능 import를 `from '..'`로 일원화. `index.ts`에서 기존 사용 중이던 `imageSizeMode`를 추가 공개. 샘플 전용 데이터(`./popupSampleData`)와 MUI·React import는 유지. 공통 로직·컴포넌트 구현·API 계약 변경 없음.
 - 검증: Git main 소스의 기존 공개 export와 신규 import 정적 대조, 업데이트된 파일 재조회. 타입검사·Next 빌드·로컬 실행·폐쇄망 화면 검증은 미실행.
+- 후속 보완: 샘플 3개 파일의 `from '..'`를 `from '@/features/PopupcommonComponent'`로 수정. `main/tsconfig.json`의 `@/* → src/*` 경로 별칭을 확인해 프로젝트 내 다른 화면에서도 동일 import 문구 사용 가능하게 함. 외부 프로젝트는 해당 별칭을 별도로 설정하거나 상대/패키지 경로를 사용해야 함.
 - 상태: Git main 반영 완료. 실환경 회귀 검증 대기.
 
 
