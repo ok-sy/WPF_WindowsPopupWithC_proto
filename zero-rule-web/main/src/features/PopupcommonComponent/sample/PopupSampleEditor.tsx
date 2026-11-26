@@ -7,7 +7,7 @@ import {
   PopupRichTextEditor, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS,
   isSubmitPopupType, withPreviewFallback, plainTextToBlocks, readTextBlocks,
   type Size, type PopupTypeSelection,
-} from '..';
+} from '@/features/PopupcommonComponent';
 import { changeSampleType, type SamplePopupState } from './popupSampleData';
 
 type Props = {
