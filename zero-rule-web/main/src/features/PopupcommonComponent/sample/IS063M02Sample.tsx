@@ -8,9 +8,9 @@ import {
   InlinePopupPreview, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, usePopupQuizRule,
   richBlocksOrNull, PopupRichTextEditor, adaptiveWindowForImage, imageSizeMode,
   useNaturalImageSize, applyVideoFixedDescription, stripVideoFixedDescription,
-  popupMaximumSize, PopupNumberField, loadPopupDefaultCodes, popupSizeInputMin, POPUP_DEFAULTS,
+  popupMaximumSize, PopupNumberField, applyPopupDefaultCodes, loadPopupDefaultCodes, popupSizeInputMin, POPUP_DEFAULTS,
   isSubmitPopupType, pickPopupFields, withPreviewFallback, plainTextToBlocks, readTextBlocks,
-  type Size, type PopupCodeSearch, type PopupTypeSelection,
+  type Size, type PopupCodeOption, type PopupCodeSearch, type PopupTypeSelection,
 } from '@/features/PopupcommonComponent';
 import {
   changeSampleType, createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState,
@@ -93,7 +93,17 @@ function Required({ not = false }: { not?: boolean }) {
  * - out: 저장 값 toSampleScreenValues(퀴즈 점수 규칙 적용값) — 화면이 입력하는 필드만(서버 미전송, 대화상자에 표시) · 화면: 좌(컨텐츠 정보·팝업 설정)/중(유형별 컨텐츠)/우(미리보기) 3단과 실제 크기 미리보기
  * - 컨텐츠 유형과 샘플 편집값을 받아 원본 퍼블리싱 배치 그대로 공통 편집기·문항 편집기·미리보기를 연결하고, 저장 시 입력을 검증해 저장 요청 객체를 만든다.
  */
-export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCodeSearch }) {
+type IS063M02SampleProps = {
+  /** 공통코드 조회 함수(api.clCode.search). 열 때 0101을 한 번 조회한다. */
+  searchCodes?: PopupCodeSearch;
+  /**
+   * 이미 받아 둔 0101 목록(폐쇄망 useCommonCodeStore의 code0101 = commonCodeStore.codes['0101']). searchCodes와 둘 중 하나만 넘긴다.
+   * undefined = 아직 로딩 전(파일 기본값 유지), 배열 = 로딩 완료(빈 배열이면 파일 기본값).
+   */
+  defaultCodes?: readonly Pick<PopupCodeOption, 'code' | 'codeNm'>[];
+};
+
+export default function IS063M02Sample({ searchCodes, defaultCodes }: IS063M02SampleProps) {
   const [pendingType, setPendingType] = useState<PopupTypeSelection | ''>('');
   const [popup, setPopup] = useState<SamplePopupState | null>(null);
   // 확인 필요: '컨텐츠 명'은 저장 계약(AdminPopupDetail)에 대응 필드가 없어 화면 state로만 둔다. 필드가 확정되면 popup으로 옮긴다.
@@ -111,6 +121,10 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
    * - loadPopupDefaultCodes가 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 코드 값으로 바꾼다(가로·세로 입력 하한은 MINW·MINH). 코드 없음·조회 실패·숫자 아님·계약 범위 밖이면 popupDefaults.ts 값 그대로다.
    * - 이 화면 state는 입력한 값만 가져서(미설정 = 키 생략) 다시 그리기만 하면 된다: 미리보기 기본값(withPreviewFallback)·창 최대·입력칸 범위가 그릴 때 읽는다.
    * - searchCodes가 없으면(가이드 예시 탭·검증 하네스) 조회하지 않고 파일 기본값을 쓴다.
+   * - [실연동·폐쇄망] 공통코드 스토어가 codeList('0101' 포함)를 Common_Select_Code로 한 번에 받아 codeType별로 넣는 화면은
+   *   조회 함수 대신 받은 목록을 defaultCodes로 넘긴다: const { code0101 } = useCommonCodeStore(); <... defaultCodes={code0101} />.
+   *   applyPopupDefaultCodes가 목록 전체를 키(code)별로 읽으므로 화면에서 키마다 filter로 꺼낼 필요는 없다.
+   *   스토어가 배열을 제자리에서 채워도 다시 적용되도록 목록과 길이를 함께 의존한다. 이미 만든 폼 값은 바꾸지 않는다(새 '폼 생성'부터 반영).
    */
   const [, setDefaultsVersion] = useState(0);
   useEffect(() => {
@@ -119,6 +133,11 @@ export default function IS063M02Sample({ searchCodes }: { searchCodes?: PopupCod
     void loadPopupDefaultCodes(searchCodes).then(() => { if (live) setDefaultsVersion((version) => version + 1); });
     return () => { live = false; };
   }, [searchCodes]);
+  useEffect(() => {
+    if (!defaultCodes) return;
+    applyPopupDefaultCodes(defaultCodes);
+    setDefaultsVersion((version) => version + 1);
+  }, [defaultCodes, defaultCodes?.length]);
 
   /* 신규 폼 생성·불러오기는 편집기를 새 key로 다시 만들어 이전 문서·옵션이 섞이지 않게 한다. 입력 중에는 key를 바꾸지 않는다. */
   const start = (next: SamplePopupState) => {

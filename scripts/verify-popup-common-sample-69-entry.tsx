@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { useEffect, useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import PopupListSample from '../zero-rule-web/main/src/features/PopupcommonComponent/sample/PopupListSample';
 import IS063M02Sample from '../zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample';
@@ -10,5 +11,12 @@ const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, s
 /* #is063-codes: 공통코드 0101 조회를 흉내 낸다(라우트가 api.clCode.search를 넘기는 경로). 응답은 window.__defaultCodes. */
 type CodeRow = { code: string; codeNm: string };
 const searchCodes = async () => ({ body: { pagerData: { elements: ((window as unknown as { __defaultCodes?: CodeRow[] }).__defaultCodes ?? []) } } });
-const page = location.hash === '#is063' ? <IS063M02Sample /> : location.hash === '#is063-codes' ? <IS063M02Sample searchCodes={searchCodes} /> : <PopupListSample />;
+/* #is063-store: 폐쇄망 공통코드 스토어 경로. 처음엔 목록 없음(로딩 전) → 300ms 뒤 window.__defaultCodes를 스토어처럼 넘긴다(늦은 로딩). */
+function StoreHost() {
+  const [codes, setCodes] = useState<CodeRow[] | undefined>(undefined);
+  useEffect(() => { const timer = setTimeout(() => setCodes((window as unknown as { __defaultCodes?: CodeRow[] }).__defaultCodes ?? []), 300); return () => clearTimeout(timer); }, []);
+  return <IS063M02Sample defaultCodes={codes} />;
+}
+const page = location.hash === '#is063' ? <IS063M02Sample /> : location.hash === '#is063-codes' ? <IS063M02Sample searchCodes={searchCodes} />
+  : location.hash === '#is063-store' ? <StoreHost /> : <PopupListSample />;
 root.render(<ThemeProvider theme={theme}><CssBaseline />{page}</ThemeProvider>);

@@ -350,6 +350,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(codeNote && +codeSize.width === codeNote.width && +codeSize.height === codeNote.height && codeNote.height <= 700 && codeNote.width <= 900 && codeNote.height < autoNote.height,
     '[IS063 0101] Code MAXW 900·MAXH 700 caps the image fit below the file default: ' + JSON.stringify({codeSize, codeNote, fileDefault: autoNote}));
   await clickButton('취소');
+  // 2026-11-26 TODO68 폐쇄망 공통코드 스토어 경로: 조회 함수 없이 스토어 목록(code0101)을 defaultCodes로 늦게(300ms) 넘겨도 입력 하한·신규 폼 가로·세로가 코드 값이 된다.
+  await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063-store'}); await pause(300);
+  await run('location.reload()'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'is063 store'); await pause(800);
+  await pickType('텍스트 팝업'); await clickButton('폼 생성');
+  await until(`!!document.querySelector('input[aria-label="가로"]')`, 'is063 store form');
+  const storeForm = await run(`['가로','세로'].map(l=>{const e=document.querySelector('input[aria-label="'+l+'"]');return e.value+'/'+e.min;}).join(',')`);
+  check(storeForm === '650/320,490/330', '[IS063 0101 store] Late store list sets new TEXT form 650x490 and minimums 320/330: ' + storeForm);
   check(errors.length === 0, 'No browser runtime errors: ' + errors.join(' | '));
   const shot = await send('Page.captureScreenshot', {format: 'png'}); fs.writeFileSync(path.join(output, 'sample-list.png'), Buffer.from(shot.data, 'base64'));
   console.log('PASS: ' + checks + ' TODO69 common component sample checks');

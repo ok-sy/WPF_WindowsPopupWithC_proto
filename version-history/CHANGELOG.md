@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-26-06 — dev: 68_IS063공통코드스토어0101연결_추가
+
+- 이유: 폐쇄망 업무 화면은 `useCommonCodeStore`가 `codeList`('0101' 포함)를 `Common_Select_Code`로 일괄 조회해 `code0101`로 제공한다. 샘플은 조회 함수(`searchCodes`) 경로만 있어 스토어 목록을 그대로 넘기는 연결 방법과 검증이 필요했다.
+- 변경:
+  - `sample/IS063M02Sample.tsx`에 `defaultCodes` prop 추가(`searchCodes`와 둘 중 하나). 목록이 오면 `applyPopupDefaultCodes()`로 적용하고 다시 그린다. `undefined`는 로딩 전(파일 기본값), 배열은 로딩 완료. 목록·길이 의존으로 제자리 갱신에도 재적용. 기존 폼 값은 유지.
+  - 하네스 진입점 `#is063-store`(300ms 늦게 스토어 목록 전달)와 검사 1건 추가.
+  - 문서: TODO68에 폐쇄망 스토어 구조·`IS063M02.tsx`의 `code1001` → `code0101` 정정 필요·연결 코드 기록, 인계 문서 0101 행 보완.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx`, `scripts/verify-popup-common-sample-69-entry.tsx`, `scripts/verify-popup-common-sample-69.cjs`, `docs/design/68_팝업최소크기_300x300_공통화_TODO.md`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`.
+- 검증: `tsc --noEmit` 통과, sample eslint 0건. `verify-popup-common-sample-69.cjs` 81건 통과(늦은 스토어 목록으로 신규 TEXT 폼 650×490, 입력 하한 320/330). 폐쇄망 실제 스토어 연결·저장은 미실행.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-05 — dev: 69_팝업공통import진입점일원화_수정
 
 - 이유: TODO69에서 샘플만 공통 진입점(`@/features/PopupcommonComponent`)으로 바꿔, 등록 화면(RgstPop)·라우트·가이드·다른 샘플은 하위 파일 직접 경로와 `'..'`·`'../..'`가 섞여 있었다. 이식 시 import 기준을 하나로 맞출 필요가 있었다.
