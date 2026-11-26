@@ -15,3 +15,5 @@ export default function normalizePopupLink(value: unknown): string | undefined {
     return url.href;
   } catch { return undefined; }
 }
+/* 진입점(index.ts)은 함수 이름으로 다시 내보낸다(default as는 컴포넌트 공개 규칙). */
+export { normalizePopupLink };

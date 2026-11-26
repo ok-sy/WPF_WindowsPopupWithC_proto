@@ -1,5 +1,13 @@
 # 변경 이력
 
+## 2026-11-26-07 — dev: 69_공통함수이름export_수정
+
+- 이유: 2026-11-26-05에서 진입점에 `normalizePopupLink`·`popupDemoQuestions`를 `default as`로 추가해, 가이드 등록 검사(`verify-popup-guide-registry`)가 두 함수를 컴포넌트로 보고 실패했다(05 검증 때 이 하네스 미실행).
+- 변경: 두 파일에 이름 export(`export { normalizePopupLink }`·`export { popupDemoQuestions }`)를 추가하고 `index.ts`는 이름으로 다시 내보냄. 기존 default export와 호출부는 그대로.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/index.ts`, `normalizePopupLink.ts`, `popupDemoQuestions.ts`.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0. guide-registry 648·guide-render 34·common-sample-69 81·rgstpop-quiz-rule 52·transform-64 79 통과.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-06 — dev: 68_IS063공통코드스토어0101연결_추가
 
 - 이유: 폐쇄망 업무 화면은 `useCommonCodeStore`가 `codeList`('0101' 포함)를 `Common_Select_Code`로 일괄 조회해 `code0101`로 제공한다. 샘플은 조회 함수(`searchCodes`) 경로만 있어 스토어 목록을 그대로 넘기는 연결 방법과 검증이 필요했다.

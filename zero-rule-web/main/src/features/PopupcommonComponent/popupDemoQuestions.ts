@@ -388,3 +388,5 @@ export default function popupDemoQuestions(quiz: boolean): PopupQuestion[] {
     options: question.options.map((option) => ({ ...option })),
   }));
 }
+/* 진입점(index.ts)은 함수 이름으로 다시 내보낸다(default as는 컴포넌트 공개 규칙). */
+export { popupDemoQuestions };
