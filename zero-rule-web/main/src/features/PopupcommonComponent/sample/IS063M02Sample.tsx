@@ -4,23 +4,14 @@ import {
   TextField, Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import InlinePopupPreview from '../InlinePopupPreview';
-import PopupPreviewDialog from '../PopupPreviewDialog';
-import PopupQuestionEditor from '../PopupQuestionEditor';
-import PopupQuizRuleFields from '../PopupQuizRuleFields';
-import { usePopupQuizRule } from '../popupQuizRule';
-import { richBlocksOrNull } from '../PopupRichBlocks';
-import PopupRichTextEditor from '../PopupRichTextEditor';
-import { adaptiveWindowForImage, imageSizeMode, type Size } from '../imagePreviewLayout';
-import useNaturalImageSize from '../useNaturalImageSize';
-import { applyVideoFixedDescription, stripVideoFixedDescription } from '../videoFixedDescription';
-import { popupMaximumSize } from '../popupCommon';
-import PopupNumberField from '../PopupNumberField';
-import { loadPopupDefaultCodes, popupSizeInputMin } from '../popupDefaults';
-import type { PopupCodeSearch } from '../popupQuestionCodes';
-import { isSubmitPopupType, pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
-import { withPreviewFallback } from '../popupPreviewFallback';
-import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
+import {
+  InlinePopupPreview, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, usePopupQuizRule,
+  richBlocksOrNull, PopupRichTextEditor, adaptiveWindowForImage, imageSizeMode,
+  useNaturalImageSize, applyVideoFixedDescription, stripVideoFixedDescription,
+  popupMaximumSize, PopupNumberField, loadPopupDefaultCodes, popupSizeInputMin,
+  isSubmitPopupType, pickPopupFields, withPreviewFallback, plainTextToBlocks, readTextBlocks,
+  type Size, type PopupCodeSearch, type PopupTypeSelection,
+} from '..';
 import {
   changeSampleType, createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState,
 } from './popupSampleData';
