@@ -12,7 +12,7 @@ import {
   InlinePopupPreview, PopupPreview, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, PopupRichBlocks, PopupRichTextEditor,
   PopupScheduleFields, createDefaultPopup, readTextBlocks, withPreviewFallback, validatePopupQuestions, validatePopupSchedule, withQuizRule,
   type QuizRule, type RichBlock,
-} from '..';
+} from '@/features/PopupcommonComponent';
 import type { RunnerDefinition, RunnerEmit } from './GuideCodeRunner';
 
 /* 실행기 입력이 매번 같은 결과를 내도록 기준 시각을 고정한다. */

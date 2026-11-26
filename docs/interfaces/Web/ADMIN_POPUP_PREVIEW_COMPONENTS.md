@@ -48,9 +48,8 @@ interface PopupPreviewDialogProps {
 ```tsx
 import { useState } from 'react';
 import type { AdminPopupDetail } from '@local/domain';
-import InlinePopupPreview from '@/features/PopupcommonComponent/InlinePopupPreview';
-import PopupPreviewDialog from '@/features/PopupcommonComponent/PopupPreviewDialog';
-import type { Size } from '@/features/PopupcommonComponent/imagePreviewLayout';
+// 공통 기능은 진입점(index.ts) 한 곳에서 가져온다(2026-11-26, TODO69 후속).
+import { InlinePopupPreview, PopupPreviewDialog, type Size } from '@/features/PopupcommonComponent';
 
 export default function MyPopupForm({ popup }: { popup: AdminPopupDetail }) {
   const [previewOpen, setPreviewOpen] = useState(false);

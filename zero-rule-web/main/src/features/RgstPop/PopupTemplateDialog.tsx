@@ -3,7 +3,7 @@ import { useApi } from '@/provider';
 import type { AdminPopupInfo, AdminPopupListItem } from '@local/domain';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, List, ListItemButton, ListItemText, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { POPUP_TYPE_LABELS } from '../PopupcommonComponent/popupCommon';
+import { POPUP_TYPE_LABELS } from '@/features/PopupcommonComponent';
 
 /**
  * POL-07-01 : 부모의 데이터 소유

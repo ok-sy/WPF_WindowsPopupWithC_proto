@@ -27,8 +27,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PopupEditorDialog from './PopupEditorDialog';
-import { POPUP_TYPE_LABELS, popupDateMillis } from '../PopupcommonComponent/popupCommon';
-import { describeSchedule } from '../PopupcommonComponent/popupEditorTransform';
+import { POPUP_TYPE_LABELS, describeSchedule, popupDateMillis } from '@/features/PopupcommonComponent';
 
 const displayModeLabels: Record<string, string> = {
   SEQUENTIAL: '순차',

@@ -86,12 +86,11 @@ toSaveRequest(popup, active, targetGroups): PopupSaveRequest       // 저장 API
 ```tsx
 import { useState } from 'react';
 import type { AdminPopupDetail, PopupTargetGroup } from '@local/domain';
-import PopupRichTextEditor from '@/features/PopupcommonComponent/PopupRichTextEditor';
-import InlinePopupPreview from '@/features/PopupcommonComponent/InlinePopupPreview';
-import PopupPreviewDialog from '@/features/PopupcommonComponent/PopupPreviewDialog';
-import type { Size } from '@/features/PopupcommonComponent/imagePreviewLayout';
-import { plainTextToBlocks, readTextBlocks } from '@/features/PopupcommonComponent/popupRichText';
-import { contentValue, createDefaultPopup, toEditorPopup, toSaveRequest } from '@/features/PopupcommonComponent/popupEditorTransform';
+// 공통 기능은 진입점(index.ts) 한 곳에서 가져온다(2026-11-26, TODO69 후속).
+import {
+  InlinePopupPreview, PopupPreviewDialog, PopupRichTextEditor, contentValue, createDefaultPopup,
+  plainTextToBlocks, readTextBlocks, toEditorPopup, toSaveRequest, type Size,
+} from '@/features/PopupcommonComponent';
 
 export default function MyTextPopupForm({ api }: { api: any }) {
   const [popup, setPopup] = useState<AdminPopupDetail>(() => createDefaultPopup());

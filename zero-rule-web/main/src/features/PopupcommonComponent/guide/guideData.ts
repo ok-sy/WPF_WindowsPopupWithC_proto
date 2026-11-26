@@ -16,8 +16,7 @@
  *  4) 설계 배경·정책 상세는 docs 문서에 두고 화면에는 사용 방법과 주의사항만 쓴다.  5) 다른 탭에서 이미 설명한 내용은 반복하지 않는다.
  */
 
-import { POPUP_MIN_WINDOW_SIZE, POPUP_SCREEN_SAFE_AREA_RATIO } from '../popupCommon';
-import { POPUP_LAYOUT } from '../popupLayout';
+import { POPUP_LAYOUT, POPUP_MIN_WINDOW_SIZE, POPUP_SCREEN_SAFE_AREA_RATIO } from '@/features/PopupcommonComponent';
 
 /** 설명 범위: COMMON = 범용, PROTO = proto(RgstPop) 전용 */
 export type GuideScope = 'COMMON' | 'PROTO';

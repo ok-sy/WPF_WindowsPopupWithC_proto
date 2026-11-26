@@ -1,4 +1,3 @@
-import normalizePopupLink from '../PopupcommonComponent/normalizePopupLink';
 import handleError from '@/lib/handle-error';
 import { useApi } from '@/provider';
 import type {
@@ -19,28 +18,16 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import InlinePopupPreview from '../PopupcommonComponent/InlinePopupPreview';
-import PopupPreviewDialog from '../PopupcommonComponent/PopupPreviewDialog';
-import { previewOverlay } from '../PopupcommonComponent/popupPreviewDialogLayout';
-import { adaptiveWindowForImage, displayImageSize, type Size } from '../PopupcommonComponent/imagePreviewLayout';
-import PopupNumberField from '../PopupcommonComponent/PopupNumberField';
-import { POPUP_INPUT_RANGES, loadPopupDefaultCodes } from '../PopupcommonComponent/popupDefaults';
-import { applyVideoFixedDescription, stripVideoFixedDescription } from '../PopupcommonComponent/videoFixedDescription';
-import PopupQuestionEditor, { validatePopupQuestions } from '../PopupcommonComponent/PopupQuestionEditor';
-import PopupQuizRuleFields from '../PopupcommonComponent/PopupQuizRuleFields';
-import { loadPopupQuestionCodes, type PopupQuestionCodes } from '../PopupcommonComponent/popupQuestionCodes';
-import { usePopupQuizRule, withQuizRule } from '../PopupcommonComponent/popupQuizRule';
+import {
+  InlinePopupPreview, PopupNumberField, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, PopupRichTextEditor, PopupScheduleFields,
+  POPUP_INPUT_RANGES, POPUP_TYPE_LABELS, adaptiveWindowForImage, applyVideoFixedDescription, changePopupType, contentValue, createDefaultPopup,
+  displayImageSize, isSubmitPopupType, loadPopupDefaultCodes, loadPopupQuestionCodes, normalizeImageSizeMode, normalizePopupLink,
+  plainTextToBlocks, popupMinimumSize, previewOverlay, readTextBlocks, richBlocksOrNull, stripVideoFixedDescription, toDateTimeLocal,
+  toEditorPopup, toEditorPopupFromTemplate, toSaveRequest, usePopupQuizRule, validatePopupQuestions, validatePopupSchedule, withDefaultAnswerMatchMode,
+  withQuizRule, type PopupFontSizeKey, type PopupQuestionCodes, type PopupTypeSelection, type Size,
+} from '@/features/PopupcommonComponent';
 import PopupTemplateDialog from './PopupTemplateDialog';
 import PopupQuestionTemplatePicker from './PopupQuestionTemplatePicker';
-import PopupRichTextEditor from '../PopupcommonComponent/PopupRichTextEditor';
-import PopupScheduleFields, { validatePopupSchedule } from '../PopupcommonComponent/PopupScheduleFields';
-import { plainTextToBlocks, readTextBlocks } from '../PopupcommonComponent/popupRichText';
-import { richBlocksOrNull } from '../PopupcommonComponent/PopupRichBlocks';
-import { POPUP_TYPE_LABELS, popupMinimumSize, type PopupFontSizeKey } from '../PopupcommonComponent/popupCommon';
-import {
-  changePopupType, contentValue, createDefaultPopup, isSubmitPopupType, normalizeImageSizeMode, toDateTimeLocal, toEditorPopup,
-  toEditorPopupFromTemplate, toSaveRequest, withDefaultAnswerMatchMode, type PopupTypeSelection,
-} from '../PopupcommonComponent/popupEditorTransform';
 
 interface PopupEditorDialogProps {
   open: boolean;

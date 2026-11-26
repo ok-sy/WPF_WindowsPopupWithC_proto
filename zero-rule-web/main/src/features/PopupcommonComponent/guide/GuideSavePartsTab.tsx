@@ -1,5 +1,5 @@
 import { Alert, Box, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import { COMMON_CONTENT_KEYS, CONTENT_KEYS_BY_TYPE, pickPopupFields, toSaveRequestPopup, type PickPopupFieldsOptions } from '..';
+import { COMMON_CONTENT_KEYS, CONTENT_KEYS_BY_TYPE, pickPopupFields, toSaveRequestPopup, type PickPopupFieldsOptions } from '@/features/PopupcommonComponent';
 import PopupIndependentSamples from '../sample/PopupIndependentSamples';
 import GuideCodeRunner, { type RunnerDefinition } from './GuideCodeRunner';
 import { protoPopup, samplePopup } from './guideRunners';

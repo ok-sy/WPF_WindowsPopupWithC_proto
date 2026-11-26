@@ -88,7 +88,7 @@ const toWpf = p => {
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-parity-entry.tsx'), output: {path: output, filename: 'bundle.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
-      alias: {'@/lib/urls$': path.join(output, 'urls-shim.js')}},
+      alias: {'@/features/PopupcommonComponent$': path.join(root, 'zero-rule-web/main/src/features/PopupcommonComponent/index.ts'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/},
       {test: /\.css$/, use: path.join(__dirname, 'verify-css-loader.cjs')}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));

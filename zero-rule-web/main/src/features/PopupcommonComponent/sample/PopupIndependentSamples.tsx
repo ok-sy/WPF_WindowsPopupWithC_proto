@@ -1,15 +1,10 @@
 import type { AdminPopupDetail, PopupQuestion } from "@local/domain";
 import { Box, Paper, Stack, Typography } from "@mui/material";
 import { useMemo, useState, type ReactNode } from "react";
-import InlinePopupPreview from "../InlinePopupPreview";
-import PopupQuestionEditor from "../PopupQuestionEditor";
-import PopupRichTextEditor from "../PopupRichTextEditor";
-import PopupScheduleFields, {
-  type PopupScheduleValue,
-} from "../PopupScheduleFields";
-import { pickPopupFields } from "../popupEditorTransform";
-import { withPreviewFallback } from "../popupPreviewFallback";
-import type { RichBlock } from "../popupRichText";
+import {
+  InlinePopupPreview, PopupQuestionEditor, PopupRichTextEditor, PopupScheduleFields, pickPopupFields, withPreviewFallback,
+  type PopupScheduleValue, type RichBlock,
+} from "@/features/PopupcommonComponent";
 
 /*
  * POL-14-01 : 공통 프론트 경계

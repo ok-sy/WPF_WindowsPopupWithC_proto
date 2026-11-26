@@ -7,7 +7,7 @@ import {
   InlinePopupPreview, PopupPreviewDialog, PopupRichTextEditor, changePopupType, createDefaultPopup, isSubmitPopupType,
   pickPopupFields, plainTextToBlocks, readTextBlocks, toSaveRequest, withPreviewFallback, type PickPopupFieldsOptions, type PopupTopLevelKey,
   type PopupTypeSelection, type Size,
-} from '../..';
+} from '@/features/PopupcommonComponent';
 import {
   changeSampleType, newSamplePopup, type SamplePopupState,
 } from '../../sample/popupSampleData';

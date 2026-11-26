@@ -21,7 +21,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-transform-64-entry.tsx'), output: {path: output, filename: 'bundle.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
-      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
+      alias: {'@/features/PopupcommonComponent$': path.join(root, 'zero-rule-web/main/src/features/PopupcommonComponent/index.ts'), 'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/},
       // CKEditor 공통 엔진(ckeditor5)의 CSS를 style 태그로 넣는다.
       {test: /\.css$/, use: path.join(__dirname, 'verify-css-loader.cjs')}]},

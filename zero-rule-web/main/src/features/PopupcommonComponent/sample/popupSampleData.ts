@@ -1,7 +1,5 @@
 import type { AdminPopupDetail } from '@local/domain';
-import popupDemoQuestions from '../popupDemoQuestions';
-import { pickPopupFields, type PopupTypeSelection } from '../popupEditorTransform';
-import { plainTextToBlocks } from '../popupRichText';
+import { pickPopupFields, plainTextToBlocks, popupDemoQuestions, type PopupTypeSelection } from '@/features/PopupcommonComponent';
 
 /*
  * 서버 없이 샘플 페이지를 확인하기 위한 편집값 목록.

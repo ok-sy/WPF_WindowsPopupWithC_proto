@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-26-05 — dev: 69_팝업공통import진입점일원화_수정
+
+- 이유: TODO69에서 샘플만 공통 진입점(`@/features/PopupcommonComponent`)으로 바꿔, 등록 화면(RgstPop)·라우트·가이드·다른 샘플은 하위 파일 직접 경로와 `'..'`·`'../..'`가 섞여 있었다. 이식 시 import 기준을 하나로 맞출 필요가 있었다.
+- 변경:
+  - 진입점 import로 교체: `features/RgstPop/RgstPop.tsx`·`PopupTemplateDialog.tsx`·`PopupEditorDialog.tsx`(개별 21줄 → 1개), `scene/scene-router.tsx`, `sample/PopupIndependentSamples.tsx`·`popupSampleData.ts`, `guide/guideData.ts`·`guideRunners.tsx`·`GuideSavePartsTab.tsx`·`tabs/GuideLiveTab.tsx`. 공통 모듈 내부 파일끼리와 guide·sample 전용 파일 참조는 순환 참조 방지를 위해 상대경로 유지.
+  - `index.ts` 추가 공개: `displayImageSize`, `previewOverlay`, `POPUP_LAYOUT`·`POPUP_COLORS`, `normalizePopupLink`, `popupDemoQuestions`.
+  - 하네스 `verify-rgstpop-quiz-rule`·`verify-popup-guide-render`·`verify-popup-transform-64`·`verify-popup-parity` webpack에 `@/features/PopupcommonComponent$` 별칭 추가.
+  - 문서: `ADMIN_POPUP_EDITOR_TRANSFORM.md`·`ADMIN_POPUP_PREVIEW_COMPONENTS.md` 예제 import를 진입점으로 정정, TODO69에 후속 기록.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/index.ts`, `features/RgstPop/*.tsx`, `scene/scene-router.tsx`, `PopupcommonComponent/sample/*`, `PopupcommonComponent/guide/*`, `scripts/verify-*.cjs`, `docs/design/69_PopupcommonComponent_공통화_샘플페이지_TODO.md`, `docs/interfaces/Web/ADMIN_POPUP_*.md`.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0(기존 경고 2건). 하네스 69(80)·rgstpop-quiz-rule(52)·guide-render(34)·transform-64(79)·pick-fields(34) 통과. `verify-popup-parity`(WPF 대조)·Next 빌드·폐쇄망 빌드 미실행.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-04 — dev: 68_IS063신규폼가로세로코드초기값_추가
 
 - 이유: IS063 신규 폼의 가로·세로가 비어 있어 입력칸과 우측 미리보기·실제 크기 보기(기본 560×420 대체 표시)가 서로 다른 값을 보이고, 공통코드 0101 WIDTH·HEIGHT가 입력값에 반영되지 않았다. 기본값·레이아웃 파일의 하드코딩 수치도 공통코드 대상인지 점검할 필요가 있었다.

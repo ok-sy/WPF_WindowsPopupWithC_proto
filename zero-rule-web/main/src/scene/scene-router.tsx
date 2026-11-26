@@ -2,7 +2,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useApi } from '@/provider';
-import type { PopupCodeSearch } from '@/features/PopupcommonComponent/popupQuestionCodes';
+import type { PopupCodeSearch } from '@/features/PopupcommonComponent';
 
 /*
  * ■ 개발 서버 화면 묶음 필터(DEV_SCENES)

@@ -93,3 +93,12 @@ IS063M02의 기준 입력은 사진 15장 및 추가 IMG_1445.jpeg 대조를 반
 - 69-17: 1400·1024px에서 3열 유지, 가로 넘침·Select 잘림 없음을 하네스로 확인. **폐쇄망 `n*` CSS 우선순위, 실제 폐쇄망 화면(`features/IS063M02/IS063M02.tsx` 등), 브라우저 확대 배율은 미확인**이라 열어 둔다.
 
 **완료 기준**: 3분할 배치·기존 업무 기능을 유지하면서 중앙 문항 편집 영역의 입력 폭, 세로 길이, Select 배치, 선택지 간격이 개선되고 좁은 너비에서도 겹침 없이 조작 가능할 것. **이번 문서 작업은 TODO만 등록하며 코드·인터페이스·스타일·테스트는 수정하거나 실행하지 않는다.**
+
+### 후속 — 공통 import 진입점 일원화 (2026-11-26)
+
+- 기준: 공통 모듈을 쓰는 쪽(`features/RgstPop`, `scene/scene-router.tsx`, 공통 폴더 안의 `sample/`·`guide/`)은 `@/features/PopupcommonComponent`(`index.ts`) 한 곳에서 가져온다. 공통 모듈 내부 파일끼리는 순환 참조를 피하려고 상대경로를 유지한다. `guide/` 내부 UI(GuideUi·guideData 등)와 `sample/` 전용 데이터(`./popupSampleData`)는 해당 폴더 전용이라 상대경로를 유지한다.
+- 변경: `RgstPop.tsx`·`PopupTemplateDialog.tsx`·`PopupEditorDialog.tsx`(개별 21줄 → 진입점 1개), `scene-router.tsx`, `sample/PopupIndependentSamples.tsx`·`popupSampleData.ts`, `guide/guideData.ts`·`guideRunners.tsx`·`GuideSavePartsTab.tsx`·`tabs/GuideLiveTab.tsx`(`'..'`·`'../..'` 포함).
+- 문서 예제: `docs/interfaces/Web/ADMIN_POPUP_EDITOR_TRANSFORM.md`·`ADMIN_POPUP_PREVIEW_COMPONENTS.md`의 하위 파일 직접 import 예시를 진입점 import로 정정.
+- `index.ts`에 소비처가 쓰던 이름 추가 공개: `displayImageSize`, `previewOverlay`, `POPUP_LAYOUT`·`POPUP_COLORS`, `normalizePopupLink`, `popupDemoQuestions`.
+- 검증 하네스 5종(`verify-popup-common-sample-69`·`verify-rgstpop-quiz-rule`·`verify-popup-guide-render`·`verify-popup-transform-64`·`verify-popup-parity`)의 webpack에 `@/features/PopupcommonComponent$` 별칭 추가. 별칭이 없으면 TODO69 샘플 import 변경 뒤 69 하네스가 빌드 단계에서 실패했다.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0. 하네스 69(80건)·rgstpop-quiz-rule(52)·guide-render(34)·transform-64(79)·pick-fields(34) 통과. `verify-popup-parity`(WPF 실측 대조)·Next 빌드·폐쇄망 빌드는 미실행. 외부 프로젝트로 옮길 때는 `@/*` 경로 별칭이 필요하다.
