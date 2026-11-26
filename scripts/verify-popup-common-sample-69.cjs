@@ -18,7 +18,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-common-sample-69-entry.tsx'), output: {path: output, filename: 'bundle.js'},
     resolve: {extensions: ['.tsx', '.ts', '.js'], modules: [path.join(root, 'zero-rule-web/node_modules'), 'node_modules'],
-      alias: {'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
+      alias: {'@/features/PopupcommonComponent$': path.join(root, 'zero-rule-web/main/src/features/PopupcommonComponent/index.ts'), 'next/dynamic$': path.join(output, 'next-dynamic-shim.js'), '@/components/ckeditor$': path.join(root, 'zero-rule-web/main/src/components/ckeditor'), '@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/},
       // CKEditor 공통 엔진(ckeditor5)의 CSS를 style 태그로 넣는다.
       {test: /\.css$/, use: path.join(__dirname, 'verify-css-loader.cjs')}]},
@@ -135,8 +135,11 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('[aria-label="실제 크기 미리보기 종료"]')`, 'is063 modal');
   check(await run(`Array.from(document.querySelectorAll('.MuiDialog-root')).at(-1).textContent.includes('IS063 본문')`), '[IS063] Preview button opens the shared modal with the same popup');
   await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
-  // 2026-11-25 가로·세로를 비운 채 저장하면 막는다(모든 유형, IMAGE 포함). 폼 생성 때 값을 채우지는 않는다.
-  check(await run(`document.querySelector('input[aria-label="가로"]').value==='' && document.querySelector('input[aria-label="세로"]').value===''`), '[IS063 size] New TEXT form does not prefill size');
+  // 2026-11-26 TODO68 폼 생성 때 가로·세로를 기본 창 크기로 한 번 채운다(공통코드 0101 WIDTH·HEIGHT, 이 하네스는 searchCodes가 없어 파일 값 560×420).
+  check(await run(`document.querySelector('input[aria-label="가로"]').value==='560' && document.querySelector('input[aria-label="세로"]').value==='420'`), '[IS063 size] New TEXT form prefills the default window size 560x420');
+  // 2026-11-25 가로·세로를 비운 채 저장하면 막는다(모든 유형, IMAGE 포함). 지운 빈칸을 기본값으로 다시 채우지 않는다.
+  for (const label of ['가로', '세로']) { await setInput(`input[aria-label="${label}"]`, ''); await run(`document.querySelector('input[aria-label="${label}"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); } await pause(150);
+  check(await run(`document.querySelector('input[aria-label="가로"]').value==='' && document.querySelector('input[aria-label="세로"]').value===''`), '[IS063 size] Cleared size stays empty (no re-prefill)');
   await clickButton('저장');
   check(await run(`document.querySelector('[role=alert]')?.textContent.includes('가로·세로를 입력')`), '[IS063 size] Empty size is rejected for TEXT like the server: ' + await run(`document.querySelector('[role=alert]')?.textContent`));
   await setInput('input[aria-label="세로"]', '420'); await run(`document.querySelector('input[aria-label="세로"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); await pause(150);
@@ -318,11 +321,14 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
   // 2026-11-25 공통코드 0101 연결: 라우트처럼 searchCodes를 넘기면 창 최대(MAXW·MAXH)·가로·세로 입력 하한(MINW·MINH)이 코드 값으로 바뀐다.
   //   SIZEMIN은 삭제한 코드라 남아 있어도 무시(알 수 없는 코드), 숫자 아닌 WRATIO도 무시.
-  await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'MINW',codeNm:'320'},{code:'MINH',codeNm:'330'},{code:'SIZEMIN',codeNm:'500'},{code:'WRATIO',codeNm:'abc'}]"});
+  await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'MINW',codeNm:'320'},{code:'MINH',codeNm:'330'},{code:'SIZEMIN',codeNm:'500'},{code:'WRATIO',codeNm:'abc'},{code:'WIDTH',codeNm:'650'},{code:'HEIGHT',codeNm:'490'}]"});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063-codes'}); await pause(300);
   await run('location.reload()'); await until(`!!document.querySelector('[data-testid=is063-left]')`, 'is063 codes'); await pause(300);
   await pickType('이미지 팝업'); await clickButton('폼 생성');
   await until(`!!document.querySelector('input[aria-label="가로"]')`, 'is063 codes form');
+  // 2026-11-26 TODO68 신규 폼 가로는 공통코드 0101 WIDTH 값(650)으로 채운다. IMAGE라 세로(HEIGHT 490)는 넣지 않는다.
+  check(await run(`document.querySelector('input[aria-label="가로"]').value==='650' && document.querySelector('input[aria-label="세로"]').value===''`),
+    '[IS063 0101] New IMAGE form prefills code WIDTH 650 (height left to auto): ' + JSON.stringify(await run(`[document.querySelector('input[aria-label="가로"]').value,document.querySelector('input[aria-label="세로"]').value]`)));
   check(await run(`document.querySelector('input[aria-label="가로"]').min`) === '320', '[IS063 0101] Code MINW 320 is the width input minimum (SIZEMIN 500 ignored): ' + await run(`document.querySelector('input[aria-label="가로"]').min`));
   check(await run(`document.querySelector('input[aria-label="세로"]').min`) === '330', '[IS063 0101] Code MINH 330 is the height input minimum: ' + await run(`document.querySelector('input[aria-label="세로"]').min`));
   // 2026-11-25 정수 칸 소수점 방어: '.'·'e' 키는 막고, 붙여 넣은 소수는 화면·값에 반영하지 않는다.

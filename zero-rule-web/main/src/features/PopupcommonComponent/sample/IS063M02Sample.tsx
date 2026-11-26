@@ -8,7 +8,7 @@ import {
   InlinePopupPreview, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, usePopupQuizRule,
   richBlocksOrNull, PopupRichTextEditor, adaptiveWindowForImage, imageSizeMode,
   useNaturalImageSize, applyVideoFixedDescription, stripVideoFixedDescription,
-  popupMaximumSize, PopupNumberField, loadPopupDefaultCodes, popupSizeInputMin,
+  popupMaximumSize, PopupNumberField, loadPopupDefaultCodes, popupSizeInputMin, POPUP_DEFAULTS,
   isSubmitPopupType, pickPopupFields, withPreviewFallback, plainTextToBlocks, readTextBlocks,
   type Size, type PopupCodeSearch, type PopupTypeSelection,
 } from '@/features/PopupcommonComponent';
@@ -52,9 +52,23 @@ const TYPE_OPTIONS: { value: PopupTypeSelection; label: string; title: string }[
 const selectionOf = (popup: SamplePopupState): PopupTypeSelection =>
   popup.popupType === 'QUIZ' && popup.content.videoEnabled === true ? 'VIDEO_QUIZ' : popup.popupType;
 
-// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다. [옵션] 신규 값은 newSamplePopup()(팝업 ID·제목·TEXT만, 미설정 기준).
-const newPopup = (selection: PopupTypeSelection): SamplePopupState =>
-  changeSampleType(newSamplePopup('N2609001', ''), selection);
+/*
+ * POL-01-02 : 기본값의 적용 — IS063 신규 폼 가로·세로 최초 입력값(TODO68, 2026-11-26)
+ * - '폼 생성'을 처음 누를 때 가로·세로 입력칸에 기본 창 크기를 한 번 채운다(IMAGE는 가로만). 값은 누르는 시점의 POPUP_DEFAULTS.window.width/height
+ *   (공통코드 0101 WIDTH·HEIGHT가 유효하면 그 값, 조회 전·누락·잘못된 값이면 popupDefaults.ts 파일 값 560×420)다.
+ * - 입력칸·우측 미리보기·실제 크기 보기·저장 값이 모두 같은 popup.width/height를 읽으므로 화면에 보이는 크기와 저장 크기가 같다.
+ * - 한 번만 채운다: 유형 전환(폼이 있을 때 '폼 생성' = changeSampleType)·불러오기·공통코드 재조회는 입력값을 덮어쓰지 않고, 지운 빈칸도 그대로 둔다
+ *   (저장 때 '가로·세로를 입력해 주세요' 검사는 유지).
+ * - [실연동] 폐쇄망 업무 화면은 공통코드 스토어의 code0101을 applyPopupDefaultCodes()에 넘긴 뒤 같은 방식으로 폼을 만든다.
+ * - [옵션] 다른 신규 경로(PopupListSample·가이드 실습)는 newSamplePopup() 미설정 기준을 그대로 쓴다.
+ */
+// [실연동] 팝업 ID는 원본 퍼블리싱 표기값(N2609001). 서버 채번 규칙으로 바꾼다.
+// IMAGE는 가로만 채운다. 세로는 '세로 자동'(adaptiveWindowForImage)이 이미지 비율로 계산한다(첨부 전에는 빈칸, 저장 때 필수 검사).
+const newPopup = (selection: PopupTypeSelection): SamplePopupState => ({
+  ...changeSampleType(newSamplePopup('N2609001', ''), selection),
+  width: POPUP_DEFAULTS.window.width,
+  ...(selection === 'IMAGE' ? {} : { height: POPUP_DEFAULTS.window.height }),
+});
 
 /* 미설정 content 값은 빈 문자열로 표시만 한다(state에는 넣지 않음). */
 const contentText = (popup: SamplePopupState, key: string) => { const value = popup.content[key]; return value == null ? '' : String(value); };

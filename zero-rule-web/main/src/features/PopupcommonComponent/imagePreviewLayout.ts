@@ -1,5 +1,5 @@
 ﻿import type { AdminPopupDetail } from '@local/domain';
-import { popupFontSize, popupMaximumSize, popupMinimumSize, popupWindowBounds } from './popupCommon';
+import { POPUP_DEFAULT_FONT_SIZES, popupFontSize, popupMaximumSize, popupMinimumSize, popupWindowBounds } from './popupCommon';
 import { POPUP_LAYOUT } from './popupLayout';
 /**
  * POL-04-02 : 모드별 기준
@@ -135,7 +135,7 @@ export function fitToImageLayout(popup: AdminPopupDetail, natural: Size, workAre
   const title = textHeight(String(popup.content.imageTitle ?? ''), measureWidth, 22, 27);
   const descriptionText = String(popup.content.description ?? '');
   const description = popup.content.showDescription !== false && descriptionText.trim()
-    ? Math.min(textHeight(descriptionText, Math.max(1, measureWidth - 34), popupFontSize(popup, 'bodyFontSize') ?? 14, 23) + 34, Math.max(1, Math.min(image.height, maxHeight - chrome) * 0.3)) + 14 : 0;
+    ? Math.min(textHeight(descriptionText, Math.max(1, measureWidth - 34), popupFontSize(popup, 'bodyFontSize') ?? POPUP_DEFAULT_FONT_SIZES.imageDescription, 23) + 34, Math.max(1, Math.min(image.height, maxHeight - chrome) * 0.3)) + 14 : 0;
   const recommended = { width: image.width + IMAGE_FRAME + IMAGE_CHROME_WIDTH, height: image.height + IMAGE_FRAME + (title ? title + 16 : 0) + description + chrome };
   const clamp = (value: number, min: number, max: number) => Math.max(Math.min(min, max), Math.min(max, value));
   // 최소 300 x 300은 이미지 콘텐츠가 아니라 헤더·푸터를 더한 최종 창에 적용한다.

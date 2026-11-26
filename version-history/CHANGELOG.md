@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-26-04 — dev: 68_IS063신규폼가로세로코드초기값_추가
+
+- 이유: IS063 신규 폼의 가로·세로가 비어 있어 입력칸과 우측 미리보기·실제 크기 보기(기본 560×420 대체 표시)가 서로 다른 값을 보이고, 공통코드 0101 WIDTH·HEIGHT가 입력값에 반영되지 않았다. 기본값·레이아웃 파일의 하드코딩 수치도 공통코드 대상인지 점검할 필요가 있었다.
+- 변경:
+  - `sample/IS063M02Sample.tsx` `newPopup()`이 '폼 생성' 시점의 `POPUP_DEFAULTS.window.width/height`(0101 반영값, 없으면 파일 값 560×420)를 `popup.width/height`에 한 번 채운다. IMAGE는 가로만 채우고 세로는 '세로 자동'이 이미지 비율로 계산한다. 유형 전환·불러오기·코드 재조회는 덮어쓰지 않고, 지운 빈칸과 저장 시 '가로·세로를 입력해 주세요' 검사는 유지한다.
+  - `imagePreviewLayout.ts` 설명 글자 기본값 `?? 14`를 `POPUP_DEFAULT_FONT_SIZES.imageDescription`으로 교체(같은 값 중복 제거).
+  - `popupPreviewFallback.ts` `PREVIEW_VIDEO_QUIZ_COMPLETION_RATIO`에 `@deprecated` 표시. 모듈 로드 시점 고정값이라 0101 VQRATIO가 반영되지 않는다(내부 사용처 없음, 폐쇄망 호환을 위해 이름 유지).
+  - `scripts/verify-popup-common-sample-69.cjs`: TODO69 `@/features/PopupcommonComponent` import에 맞춰 webpack 별칭을 추가하고, 신규 TEXT 폼 560×420 채움·지운 빈칸 유지, 0101 WIDTH 650·HEIGHT 490 주입 시 신규 IMAGE 가로 650·세로 빈칸 검사로 기대값을 갱신.
+  - 문서: TODO68에 구현 결과·하드코딩 수치 점검표(정책 기본값/계약 범위/WPF 창 구조/미리보기 환경 구분과 코드화하지 않는 이유)를 추가하고, '신규 빈 입력칸 유지' 문구를 정정. 웹 샘플 인계 문서에 신규 폼 초기값과 폐쇄망 스토어 `code0101` → `applyPopupDefaultCodes` 연결 방법을 반영. ACTIVE_TASKS 갱신.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/sample/IS063M02Sample.tsx`, `imagePreviewLayout.ts`, `popupPreviewFallback.ts`, `scripts/verify-popup-common-sample-69.cjs`, `docs/design/68_팝업최소크기_300x300_공통화_TODO.md`, `docs/interfaces/Web/POPUP_FRONT_SAMPLE_HANDOVER.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0(기존 `popupRichText.ts` 경고 1건). `verify-popup-common-sample-69.cjs` 80건 통과(TODO69 import 변경 후 별칭 누락으로 빌드 실패하던 것 포함 해소), `verify-rgstpop-quiz-rule.cjs` 52건 통과. 0101 적용 TEXT 폼의 650×490 저장 왕복, `verify-popup-parity.cjs`(WPF 대조), Next 빌드, 실화면, 폐쇄망 저장은 미실행.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-03 — doc: TODO68 신규 등록 폼 가로·세로 초기값 범위 확정
 
 - IS063 최초 폼 생성에서 공통코드 0101의 WIDTH·HEIGHT 적용값을 실제 입력 상태에 채우는 요건을 정의했다.
