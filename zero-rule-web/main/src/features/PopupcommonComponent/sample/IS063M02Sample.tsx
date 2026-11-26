@@ -8,9 +8,9 @@ import {
   InlinePopupPreview, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, usePopupQuizRule,
   richBlocksOrNull, PopupRichTextEditor, adaptiveWindowForImage, imageSizeMode,
   useNaturalImageSize, applyVideoFixedDescription, stripVideoFixedDescription,
-  popupMaximumSize, PopupNumberField, applyPopupDefaultCodes, loadPopupDefaultCodes, popupSizeInputMin, POPUP_DEFAULTS,
+  popupMaximumSize, PopupNumberField, applyPopupDefaultCodes, popupSizeInputMin, POPUP_DEFAULTS,
   isSubmitPopupType, pickPopupFields, withPreviewFallback, plainTextToBlocks, readTextBlocks,
-  type Size, type PopupCodeOption, type PopupCodeSearch, type PopupTypeSelection,
+  type Size, type PopupCodeOption, type PopupTypeSelection,
 } from '@/features/PopupcommonComponent';
 import {
   changeSampleType, createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState,
@@ -89,21 +89,19 @@ function Required({ not = false }: { not?: boolean }) {
  * POL-06-02 : 선택·제출
  * ■ 컨텐츠 등록 샘플 화면(IS063M02)
  * - in : 데이터 공급 newSamplePopup()(폼 생성 기본값) · createSamplePopups()(불러오기 목록)
- *        searchCodes(선택) 공통코드 조회 함수(api.clCode.search). 있으면 열 때 팝업 기본값·입력 범위 코드 0101을 읽어 적용한다.
+ *        defaultCodes(선택) 이미 받아 둔 팝업 기본값·입력 범위 공통코드 0101 목록. 오면 적용한다(조회는 화면을 띄우는 쪽이 한다).
  * - out: 저장 값 toSampleScreenValues(퀴즈 점수 규칙 적용값) — 화면이 입력하는 필드만(서버 미전송, 대화상자에 표시) · 화면: 좌(컨텐츠 정보·팝업 설정)/중(유형별 컨텐츠)/우(미리보기) 3단과 실제 크기 미리보기
  * - 컨텐츠 유형과 샘플 편집값을 받아 원본 퍼블리싱 배치 그대로 공통 편집기·문항 편집기·미리보기를 연결하고, 저장 시 입력을 검증해 저장 요청 객체를 만든다.
  */
 type IS063M02SampleProps = {
-  /** 공통코드 조회 함수(api.clCode.search). 열 때 0101을 한 번 조회한다. */
-  searchCodes?: PopupCodeSearch;
   /**
-   * 이미 받아 둔 0101 목록(폐쇄망 useCommonCodeStore의 code0101 = commonCodeStore.codes['0101']). searchCodes와 둘 중 하나만 넘긴다.
+   * 이미 받아 둔 0101 목록(폐쇄망 useCommonCodeStore의 code0101 = commonCodeStore.codes['0101']). 이 화면은 조회 API를 직접 부르지 않는다.
    * undefined = 아직 로딩 전(파일 기본값 유지), 배열 = 로딩 완료(빈 배열이면 파일 기본값).
    */
   defaultCodes?: readonly Pick<PopupCodeOption, 'code' | 'codeNm'>[];
 };
 
-export default function IS063M02Sample({ searchCodes, defaultCodes }: IS063M02SampleProps) {
+export default function IS063M02Sample({ defaultCodes }: IS063M02SampleProps) {
   const [pendingType, setPendingType] = useState<PopupTypeSelection | ''>('');
   const [popup, setPopup] = useState<SamplePopupState | null>(null);
   // 확인 필요: '컨텐츠 명'은 저장 계약(AdminPopupDetail)에 대응 필드가 없어 화면 state로만 둔다. 필드가 확정되면 popup으로 옮긴다.
@@ -117,22 +115,15 @@ export default function IS063M02Sample({ searchCodes, defaultCodes }: IS063M02Sa
   const [error, setError] = useState('');
   /*
    * POL-01-02 : 기본값의 적용 — 팝업 기본값·입력 범위 공통코드(0101)
-   * - [실연동] 라우트(scene-router)가 searchCodes에 api.clCode.search를 넘긴다. 실제 등록 화면도 화면을 열 때 이 한 번만 호출하면 된다.
-   * - loadPopupDefaultCodes가 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 코드 값으로 바꾼다(가로·세로 입력 하한은 MINW·MINH). 코드 없음·조회 실패·숫자 아님·계약 범위 밖이면 popupDefaults.ts 값 그대로다.
+   * - 0101 목록은 한 가지 방식으로만 받는다: 이미 받아 둔 목록(defaultCodes). 이 화면·공통 모듈은 조회 API를 부르지 않는다(2026-11-26 통일).
+   *   [실연동·폐쇄망] 공통코드 스토어가 codeList('0101' 포함)를 Common_Select_Code로 한 번에 받아 두므로 그 목록을 넘긴다:
+   *   const { code0101 } = useCommonCodeStore(); <... defaultCodes={code0101} />. 로컬 라우트(scene-router)는 스토어 대신 0101을 한 번 받아 같은 prop으로 넘긴다.
+   * - applyPopupDefaultCodes가 목록 전체를 키(code)별로 읽어 POPUP_DEFAULTS·POPUP_INPUT_RANGES를 바꾼다(가로·세로 입력 하한은 MINW·MINH). 키마다 filter로 꺼낼 필요는 없다.
+   *   undefined(로딩 전)·빈 목록·숫자 아님·계약 범위 밖이면 popupDefaults.ts 값 그대로다. 가이드 예시 탭·검증 하네스처럼 넘기지 않으면 파일 기본값이다.
    * - 이 화면 state는 입력한 값만 가져서(미설정 = 키 생략) 다시 그리기만 하면 된다: 미리보기 기본값(withPreviewFallback)·창 최대·입력칸 범위가 그릴 때 읽는다.
-   * - searchCodes가 없으면(가이드 예시 탭·검증 하네스) 조회하지 않고 파일 기본값을 쓴다.
-   * - [실연동·폐쇄망] 공통코드 스토어가 codeList('0101' 포함)를 Common_Select_Code로 한 번에 받아 codeType별로 넣는 화면은
-   *   조회 함수 대신 받은 목록을 defaultCodes로 넘긴다: const { code0101 } = useCommonCodeStore(); <... defaultCodes={code0101} />.
-   *   applyPopupDefaultCodes가 목록 전체를 키(code)별로 읽으므로 화면에서 키마다 filter로 꺼낼 필요는 없다.
    *   스토어가 배열을 제자리에서 채워도 다시 적용되도록 목록과 길이를 함께 의존한다. 이미 만든 폼 값은 바꾸지 않는다(새 '폼 생성'부터 반영).
    */
   const [, setDefaultsVersion] = useState(0);
-  useEffect(() => {
-    if (!searchCodes) return undefined;
-    let live = true;
-    void loadPopupDefaultCodes(searchCodes).then(() => { if (live) setDefaultsVersion((version) => version + 1); });
-    return () => { live = false; };
-  }, [searchCodes]);
   useEffect(() => {
     if (!defaultCodes) return;
     applyPopupDefaultCodes(defaultCodes);
@@ -210,7 +201,7 @@ export default function IS063M02Sample({ searchCodes, defaultCodes }: IS063M02Sa
     if (!popup) { setError('컨텐츠 유형을 선택하고 폼 생성을 눌러 주세요.'); return; }
     if (!contentName.trim() || !popup.title.trim()) { setError('컨텐츠 명과 헤더 제목을 입력해 주세요.'); return; }
     // [실연동] 하한은 기본 창 최소 크기(popupSizeInputMin — 공통코드 0101 MINW·MINH, 계약 300 이상)다. 이 화면은 최소 크기 입력이 없어
-    //   모든 팝업이 이 최소 크기로 저장되고, 그보다 작은 가로·세로는 실제 팝업이 최소 크기까지 늘려 띄운다. searchCodes가 없으면(가이드 예시 탭) 300×300이다.
+    //   모든 팝업이 이 최소 크기로 저장되고, 그보다 작은 가로·세로는 실제 팝업이 최소 크기까지 늘려 띄운다. defaultCodes가 없으면(가이드 예시 탭) 300×300이다.
     const sizeMin = popupSizeInputMin();
     // 창 크기는 정수만 받는다(입력칸이 소수점 키를 막지만, 불러온 값·붙여 넣기 대비로 한 번 더 확인).
     if ((popup.width != null && !Number.isInteger(popup.width)) || (popup.height != null && !Number.isInteger(popup.height))) {

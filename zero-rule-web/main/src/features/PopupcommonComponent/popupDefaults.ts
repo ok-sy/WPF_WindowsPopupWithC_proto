@@ -1,5 +1,5 @@
 import { FONT_SIZE_MAX, FONT_SIZE_MIN, POPUP_MIN_WINDOW_SIZE } from './popupCommon';
-import type { PopupCodeOption, PopupCodeSearch } from './popupQuestionCodes';
+import type { PopupCodeOption } from './popupQuestionCodes';
 
 /**
  * POL-01-02 : 기본값의 적용
@@ -12,7 +12,7 @@ import type { PopupCodeOption, PopupCodeSearch } from './popupQuestionCodes';
  *   previewDialogSize·previewOverlay·PopupPreview(값이 없을 때 표시). 저장 값에 직접 넣는 것은 createDefaultPopup(proto)뿐이다.
  * - 정책 기준은 서버 저장 기본값(PopupFullJsonDefaults·PopupSingleResponseAssembler)이며 WPF PopupOptions·PopupFactory 기본값과 같게 유지한다.
  *   창 최소·최대·비율은 관리자 화면이 정하는 값이고, 에이전트(WPF)는 300·작업 영역 90% 보호선 안에서만 반영한다.
- * - 공통코드 0101(팝업 기본값)이 있으면 앱 시작 때 applyPopupDefaultCodes로 덮어쓴다(2026-11-25). 이 객체는 그 값으로 바뀌므로
+ * - 공통코드 0101(팝업 기본값)이 있으면 받아 둔 목록을 applyPopupDefaultCodes로 덮어쓴다(2026-11-25). 조회는 화면 쪽(폐쇄망 공통코드 스토어 code0101)이 하고 이 모듈은 API를 부르지 않는다(2026-11-26 loadPopupDefaultCodes 삭제). 이 객체는 그 값으로 바뀌므로
  *   호출부는 값을 미리 복사해 두지 말고 쓸 때 읽는다. 코드가 없거나 잘못되면 아래 값(POPUP_BASE_DEFAULTS)을 쓴다.
  * - [옵션] 기본값 자체를 바꿀 때는 서버·WPF 기본값과 문서(인터페이스 계약·옵션 가이드)를 함께 맞춘다.
  */
@@ -200,21 +200,4 @@ export function applyPopupDefaultCodes(codes: readonly Pick<PopupCodeOption, 'co
 export function popupSizeInputMin(): { width: number; height: number } {
   const window = POPUP_DEFAULTS.window;
   return { width: Math.max(POPUP_CONTRACT_RANGES.size.min, window.minimumWidth), height: Math.max(POPUP_CONTRACT_RANGES.size.min, window.minimumHeight) };
-}
-
-/**
- * POL-01-02 : 기본값의 적용
- * ■ 공통코드 0101 조회 후 적용
- * - in : search(PopupCodeSearch) 공통코드 조회 함수(관리자 화면 api.clCode.search)
- * - out: Promise<PopupDefaultCodeResult> 조회 실패·코드 없음이면 파일 기본값 그대로(applied 빈 배열)
- * - 이 폴더는 관리자 API를 참조하지 않으므로 조회 함수는 부모가 넘긴다(loadPopupQuestionCodes와 같은 방식).
- * - [실연동] 앱 시작(또는 등록 화면을 처음 열 때) 한 번 부른다. 그 뒤 createDefaultPopup·미리보기가 반영된 값을 쓴다.
- */
-export async function loadPopupDefaultCodes(search: PopupCodeSearch): Promise<PopupDefaultCodeResult> {
-  try {
-    const { body } = await search({ codeType: POPUP_DEFAULT_CODE_TYPE, rowsPerPage: 9999, pageNumber: 0 });
-    return applyPopupDefaultCodes(body.pagerData.elements);
-  } catch {
-    return applyPopupDefaultCodes([]);
-  }
 }

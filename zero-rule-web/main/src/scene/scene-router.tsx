@@ -2,7 +2,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useApi } from '@/provider';
-import type { PopupCodeSearch } from '@/features/PopupcommonComponent';
+import type { PopupCodeOption } from '@/features/PopupcommonComponent';
 
 /*
  * ■ 개발 서버 화면 묶음 필터(DEV_SCENES)
@@ -53,12 +53,21 @@ const EmailTransInfoHome = process.env.DEV_SCENE_OFF_RULE === '1' ? DevSceneOff 
 const RgstPop = process.env.DEV_SCENE_OFF_POPUP === '1' ? DevSceneOff : dynamic(() => import('@/features/RgstPop'), { ssr: false });
 // POL-14-01 : 공통 프론트 경계 — 공통 팝업 컴포넌트 샘플(서버 없이 목록→편집→우측/모달 미리보기). 기존 '/rgst-pop' 경로는 그대로 둔다.
 const PopupListSample = process.env.DEV_SCENE_OFF_POPUP === '1' ? DevSceneOff : dynamic(() => import('@/features/PopupcommonComponent/sample/PopupListSample'), { ssr: false });
-const IS063M02SampleView: React.ComponentType<{ searchCodes?: PopupCodeSearch }> = process.env.DEV_SCENE_OFF_POPUP === '1' ? DevSceneOff : dynamic(() => import('@/features/PopupcommonComponent/sample/IS063M02Sample'), { ssr: false });
-// POL-01-02 : 기본값의 적용 — 컨텐츠 등록 샘플에 공통코드 조회(api.clCode.search)를 넘겨 팝업 기본값·입력 범위 코드(0101)를 적용한다.
+const IS063M02SampleView: React.ComponentType<{ defaultCodes?: readonly PopupCodeOption[] }> = process.env.DEV_SCENE_OFF_POPUP === '1' ? DevSceneOff : dynamic(() => import('@/features/PopupcommonComponent/sample/IS063M02Sample'), { ssr: false });
+// POL-01-02 : 기본값의 적용 — 컨텐츠 등록 샘플에 팝업 기본값·입력 범위 공통코드(0101) 목록을 넘긴다.
+// 샘플은 받아 둔 목록(defaultCodes)만 쓴다(폐쇄망 useCommonCodeStore의 code0101과 같은 형태). 로컬에는 공통코드 스토어가 없어 이 라우트가 스토어 대신 한 번 받는다.
+// 코드 그룹 '0101'은 문자열로 둔다(공통 모듈 값을 import하면 동적 로딩 전에 에디터 묶음이 라우터에 딸려 온다).
 function IS063M02Sample() {
   const api = useApi();
-  const searchCodes = React.useCallback<PopupCodeSearch>((params) => api.clCode.search(params), [api]);
-  return <IS063M02SampleView searchCodes={searchCodes} />;
+  const [code0101, setCode0101] = React.useState<readonly PopupCodeOption[] | undefined>(undefined);
+  React.useEffect(() => {
+    let live = true;
+    api.clCode.search({ codeType: '0101', rowsPerPage: 9999, pageNumber: 0 })
+      .then(({ body }) => body.pagerData.elements as PopupCodeOption[], () => [])
+      .then((list) => { if (live) setCode0101(list); });
+    return () => { live = false; };
+  }, [api]);
+  return <IS063M02SampleView defaultCodes={code0101} />;
 }
 // POL-14-01 : 공통 프론트 경계 — 공통 컴포넌트 사용 안내·변경 공지 화면. 사이드바 메뉴는 db/oracle/20_popup_common_guide_menu_oracle.sql.
 const PopupCommonGuide = process.env.DEV_SCENE_OFF_POPUP === '1' ? DevSceneOff : dynamic(() => import('@/features/PopupcommonComponent/guide/PopupCommonGuide'), { ssr: false });

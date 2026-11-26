@@ -135,7 +135,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await until(`!!document.querySelector('[aria-label="실제 크기 미리보기 종료"]')`, 'is063 modal');
   check(await run(`Array.from(document.querySelectorAll('.MuiDialog-root')).at(-1).textContent.includes('IS063 본문')`), '[IS063] Preview button opens the shared modal with the same popup');
   await run(`document.querySelector('[aria-label="실제 크기 미리보기 종료"]').click()`); await pause(400);
-  // 2026-11-26 TODO68 폼 생성 때 가로·세로를 기본 창 크기로 한 번 채운다(공통코드 0101 WIDTH·HEIGHT, 이 하네스는 searchCodes가 없어 파일 값 560×420).
+  // 2026-11-26 TODO68 폼 생성 때 가로·세로를 기본 창 크기로 한 번 채운다(공통코드 0101 WIDTH·HEIGHT, 이 진입은 defaultCodes가 없어 파일 값 560×420).
   check(await run(`document.querySelector('input[aria-label="가로"]').value==='560' && document.querySelector('input[aria-label="세로"]').value==='420'`), '[IS063 size] New TEXT form prefills the default window size 560x420');
   // 2026-11-25 가로·세로를 비운 채 저장하면 막는다(모든 유형, IMAGE 포함). 지운 빈칸을 기본값으로 다시 채우지 않는다.
   for (const label of ['가로', '세로']) { await setInput(`input[aria-label="${label}"]`, ''); await run(`document.querySelector('input[aria-label="${label}"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`); } await pause(150);
@@ -319,7 +319,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(fitSaved.width === +autoSize.width && fitSaved.height === +autoSize.height, '[IS063 fit] Fit button path saves the shown size');
   await clickButton('취소');
   check(await run(`!document.querySelector('[data-testid=is063-mid] .ck-editor__editable')`), '[IS063] Cancel clears the form');
-  // 2026-11-25 공통코드 0101 연결: 라우트처럼 searchCodes를 넘기면 창 최대(MAXW·MAXH)·가로·세로 입력 하한(MINW·MINH)이 코드 값으로 바뀐다.
+  // 2026-11-25 공통코드 0101 연결: 받아 둔 0101 목록(defaultCodes)을 넘기면 창 최대(MAXW·MAXH)·가로·세로 입력 하한(MINW·MINH)이 코드 값으로 바뀐다.
   //   SIZEMIN은 삭제한 코드라 남아 있어도 무시(알 수 없는 코드), 숫자 아닌 WRATIO도 무시.
   await send('Page.addScriptToEvaluateOnNewDocument', {source: "window.__defaultCodes=[{code:'MAXW',codeNm:'900'},{code:'MAXH',codeNm:'700'},{code:'MINW',codeNm:'320'},{code:'MINH',codeNm:'330'},{code:'SIZEMIN',codeNm:'500'},{code:'WRATIO',codeNm:'abc'},{code:'WIDTH',codeNm:'650'},{code:'HEIGHT',codeNm:'490'}]"});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/#is063-codes'}); await pause(300);

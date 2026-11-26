@@ -1,5 +1,19 @@
 # 변경 이력
 
+## 2026-11-26-09 — dev: 68_공통코드0101적용경로통일_삭제
+
+- 이유: 0101 적용 경로가 조회 함수(`searchCodes` → `api.clCode.search` → `loadPopupDefaultCodes`)와 받아 둔 목록(`defaultCodes`) 두 가지였다. 폐쇄망은 공통코드 스토어(`useCommonCodeStore`의 `code0101`)를 쓰고 조회 API 경로는 쓰지 않아, 목록 하나로 통일.
+- 변경:
+  - 공통 `popupDefaults.ts`에서 `loadPopupDefaultCodes` 삭제(공통 모듈은 조회 API를 부르지 않음). `applyPopupDefaultCodes(목록)`만 공개.
+  - `sample/IS063M02Sample.tsx`에서 `searchCodes` prop·조회 effect 삭제, `defaultCodes`만 사용.
+  - `scene/scene-router.tsx`: 로컬에는 공통코드 스토어가 없어 라우트가 0101을 한 번 받아 `defaultCodes`로 넘김(코드 그룹은 문자열 '0101' — 공통 모듈 값 import 시 에디터 묶음이 라우터에 딸려 오는 것 방지).
+  - `RgstPop/PopupEditorDialog.tsx`: 받은 0101 목록을 `applyPopupDefaultCodes`에 넘기도록 교체(동작 동일, 조회 실패면 빈 목록 = 파일 기본값).
+  - 가이드: 프로세스 P1 단계·함수 목록·0101 공지 영향 이름·조치·11-26 공지 문구 갱신. 하네스 진입점 `#is063-codes`는 목록을 처음부터 넘김.
+  - 문서: TODO68, 웹 샘플 인계 문서, 미리보기 이식 가이드(`ADMIN_POPUP_PREVIEW_COMPONENTS`).
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/popupDefaults.ts`, `sample/IS063M02Sample.tsx`, `guide/guideData.ts`, `guide/guideNotices.ts`, `zero-rule-web/main/src/scene/scene-router.tsx`, `zero-rule-web/main/src/features/RgstPop/PopupEditorDialog.tsx`, `scripts/verify-popup-common-sample-69*.{cjs,tsx}`, 문서 3종.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0(기존 경고 2). common-sample-69 81·rgstpop-quiz-rule 52·guide-registry 645·guide-render 34·transform-64 79·pick-fields 34 통과. 로컬 라우트 실화면·폐쇄망 미실행.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-26-08 — dev: 68_폐쇄망반영기준20261126·공지_수정
 
 - 이유: 20261126 반입본(기준 53d4d41)이 폐쇄망에서 정상 동작함을 확인(공통코드 조회 API 경로 제외 — 폐쇄망은 공통코드 스토어 사용). 가이드 NEW 기준을 올리고, 반입 이후 변경(신규 폼 기본 크기·스토어 code0101 연결)을 공지로 안내할 필요.

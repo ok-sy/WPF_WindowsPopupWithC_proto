@@ -20,8 +20,8 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import {
   InlinePopupPreview, PopupNumberField, PopupPreviewDialog, PopupQuestionEditor, PopupQuizRuleFields, PopupRichTextEditor, PopupScheduleFields,
-  POPUP_INPUT_RANGES, POPUP_TYPE_LABELS, adaptiveWindowForImage, applyVideoFixedDescription, changePopupType, contentValue, createDefaultPopup,
-  displayImageSize, isSubmitPopupType, loadPopupDefaultCodes, loadPopupQuestionCodes, normalizeImageSizeMode, normalizePopupLink,
+  POPUP_DEFAULT_CODE_TYPE, POPUP_INPUT_RANGES, POPUP_TYPE_LABELS, applyPopupDefaultCodes, adaptiveWindowForImage, applyVideoFixedDescription, changePopupType, contentValue, createDefaultPopup,
+  displayImageSize, isSubmitPopupType, loadPopupQuestionCodes, normalizeImageSizeMode, normalizePopupLink,
   plainTextToBlocks, popupMinimumSize, previewOverlay, readTextBlocks, richBlocksOrNull, stripVideoFixedDescription, toDateTimeLocal,
   toEditorPopup, toEditorPopupFromTemplate, toSaveRequest, usePopupQuizRule, validatePopupQuestions, validatePopupSchedule, withDefaultAnswerMatchMode,
   withQuizRule, type PopupFontSizeKey, type PopupQuestionCodes, type PopupTypeSelection, type Size,
@@ -182,7 +182,10 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     if (!open) return undefined;
     let live = true;
     void loadPopupQuestionCodes((params) => api.clCode.search(params)).then((loaded) => { if (live) setCodes(loaded); });
-    void loadPopupDefaultCodes((params) => api.clCode.search(params)).then(() => {
+    // 0101 목록을 받아 applyPopupDefaultCodes로 적용한다(조회 실패면 빈 목록 = 파일 기본값). 공통 모듈은 조회 API를 부르지 않는다(2026-11-26 통일).
+    void api.clCode.search({ codeType: POPUP_DEFAULT_CODE_TYPE, rowsPerPage: 9999, pageNumber: 0 })
+      .then(({ body }) => body.pagerData.elements, () => []).then((list) => {
+      applyPopupDefaultCodes(list);
       if (!live) return;
       setDefaultsVersion((version) => version + 1);
       if (popupId == null) setPopup((previous) => {
