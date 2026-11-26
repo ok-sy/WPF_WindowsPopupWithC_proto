@@ -2,7 +2,7 @@ import {
   Alert, Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { POPUP_TYPE_LABELS } from '..';
+import { POPUP_TYPE_LABELS } from '@/features/PopupcommonComponent';
 import PopupSampleEditor from './PopupSampleEditor';
 import { createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState } from './popupSampleData';
 
