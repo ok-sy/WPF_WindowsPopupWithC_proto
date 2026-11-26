@@ -11,7 +11,7 @@ import {
   popupMaximumSize, PopupNumberField, loadPopupDefaultCodes, popupSizeInputMin,
   isSubmitPopupType, pickPopupFields, withPreviewFallback, plainTextToBlocks, readTextBlocks,
   type Size, type PopupCodeSearch, type PopupTypeSelection,
-} from '..';
+} from '@/features/PopupcommonComponent';
 import {
   changeSampleType, createSamplePopups, newSamplePopup, toSampleScreenValues, type SamplePopupState,
 } from './popupSampleData';
