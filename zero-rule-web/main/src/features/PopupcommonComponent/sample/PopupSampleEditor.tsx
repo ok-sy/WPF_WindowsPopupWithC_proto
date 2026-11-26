@@ -2,16 +2,12 @@ import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import InlinePopupPreview from '../InlinePopupPreview';
-import PopupPreviewDialog from '../PopupPreviewDialog';
-import PopupQuestionEditor from '../PopupQuestionEditor';
-import { richBlocksOrNull } from '../PopupRichBlocks';
-import PopupRichTextEditor from '../PopupRichTextEditor';
-import type { Size } from '../imagePreviewLayout';
-import { POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS } from '../popupCommon';
-import { isSubmitPopupType, type PopupTypeSelection } from '../popupEditorTransform';
-import { withPreviewFallback } from '../popupPreviewFallback';
-import { plainTextToBlocks, readTextBlocks } from '../popupRichText';
+import {
+  InlinePopupPreview, PopupPreviewDialog, PopupQuestionEditor, richBlocksOrNull,
+  PopupRichTextEditor, POPUP_MIN_WINDOW_SIZE, POPUP_TYPE_LABELS,
+  isSubmitPopupType, withPreviewFallback, plainTextToBlocks, readTextBlocks,
+  type Size, type PopupTypeSelection,
+} from '..';
 import { changeSampleType, type SamplePopupState } from './popupSampleData';
 
 type Props = {
