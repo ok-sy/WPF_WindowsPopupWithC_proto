@@ -45,8 +45,128 @@ internal static class Program
         CheckItalicOverhang38();
         CheckSurveyRichText55();
         CheckStrikethrough62();
+        CheckStrikethroughFallback62_5();
         CheckFontWeight28_15();
         Console.WriteLine($"PASS: {_checks} rich text checks (design 28·38·48·49, TODO28-15·55·62)");
+    }
+
+    /*
+     * TODO62-5(2026-11-28): 글꼴 취소선 위치가 범위(0.15~0.45em) 밖이면 기준선 위 0.3em으로 보정한다.
+     * 폐쇄망에서 실제 팝업 취소선이 글자 윗부분에 그려진 증상을, 이 PC에서 값이 비정상인 설치 글꼴(Noto Sans Tai Le 0.512em,
+     * Kunstler Script 0.098em — 너무 낮음)로 재현해 실제 렌더링(RenderTargetBitmap 96 DPI)으로 선 위치를 잰다. 글꼴이 없으면 그 케이스만 건너뛴다.
+     */
+    private static void CheckStrikethroughFallback62_5()
+    {
+        var rich = typeof(TextPopupView).Assembly.GetType("Popup.Views.Contents.PopupRichText")!;
+        T Call<T>(string name, params object?[] args) => (T)rich.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args)!;
+        void Apply(TextBlock block) => rich.GetMethod("ApplySafeStrikethrough", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[] { block });
+        Check(Call<bool>("IsSafeStrikethrough", 0.3) && Call<bool>("IsSafeStrikethrough", 0.15) && Call<bool>("IsSafeStrikethrough", 0.45)
+            && !Call<bool>("IsSafeStrikethrough", 0.1) && !Call<bool>("IsSafeStrikethrough", 0.512) && !Call<bool>("IsSafeStrikethrough", double.NaN)
+            && !Call<bool>("IsSafeStrikethrough", -19.55), "[62-5] strikethrough range is 0.15~0.45em (NaN and out-of-range are unsafe)");
+
+        const string sample = "Hxg Abc 가나";
+        static TextBlock Block(string font, TextDecorationCollection? decorations) => new TextBlock(new Run(sample)
+            { FontFamily = new FontFamily(font + ", Malgun Gothic"), FontSize = 32, TextDecorations = decorations }) { Foreground = Brushes.Black, Background = Brushes.White };
+        static byte[] Render(TextBlock block, out int width, out int height)
+        {
+            block.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            block.Arrange(new Rect(block.DesiredSize));
+            block.UpdateLayout();
+            width = (int)Math.Ceiling(block.ActualWidth) + 2; height = (int)Math.Ceiling(block.ActualHeight) + 2;
+            var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(block);
+            var pixels = new byte[width * height * 4];
+            bitmap.CopyPixels(pixels, width * 4, 0);
+            return pixels;
+        }
+        // 기준(장식 없음)과 비교해 달라진 행 = 선(가장 위 연속 구간 = 취소선). em = (기준선 - 선 중심) ÷ 글자 크기(기준선 위가 +).
+        static (double center, int thickness, int inkTop, int inkBottom, double em) Measure(string font, TextDecorationCollection decorations)
+        {
+            var plain = Block(font, null);
+            byte[] a = Render(plain, out int w, out int h), b = Render(Block(font, decorations), out int w2, out int h2);
+            double baseline = plain.BaselineOffset;
+            if (w != w2 || h != h2) throw new Exception($"[62-5] render size differs {w}x{h} vs {w2}x{h2}");
+            int inkTop = -1, inkBottom = -1; var lineRows = new List<int>();
+            for (int y = 0; y < h; y++)
+            {
+                int dark = 0, diff = 0;
+                for (int x = 0; x < w; x++)
+                {
+                    int i = (y * w + x) * 4;
+                    if (a[i + 3] > 0 && a[i] < 128) dark++;
+                    if (Math.Abs(a[i] - b[i]) > 48) diff++;
+                }
+                if (dark > 0) { if (inkTop < 0) inkTop = y; inkBottom = y; }
+                if (diff >= w * 0.4) lineRows.Add(y);
+            }
+            if (lineRows.Count == 0) return (double.NaN, 0, inkTop, inkBottom, double.NaN);
+            int end = 0; while (end + 1 < lineRows.Count && lineRows[end + 1] == lineRows[end] + 1) end++;
+            double center = (lineRows[0] + lineRows[end] + 1) / 2.0;
+            return (center, end + 1, inkTop, inkBottom, (baseline - center) / 32);
+        }
+        const double Tolerance = 1.5 / 32; // 반올림·두께로 선 중심이 1.5px까지 움직이는 것은 허용
+        static TextDecorationCollection Native() => TextDecorations.Strikethrough.Clone();
+        TextDecorationCollection At(double position) => new() { Call<TextDecoration>("CreateStrikethroughAt", position) };
+
+        // ① 보정 선의 위치 기준: 정상 글꼴(맑은 고딕)에서 글꼴 값으로 만든 보정 선 = WPF 기본 취소선(±1px, 두께 ±1).
+        double malgun = new Typeface(new FontFamily("Malgun Gothic"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal).StrikethroughPosition;
+        var native = Measure("Malgun Gothic", Native());
+        var same = Measure("Malgun Gothic", At(malgun));
+        Check(Math.Abs(native.center - same.center) <= 1 && Math.Abs(native.thickness - same.thickness) <= 1,
+            $"[62-5] a decoration at the font value draws where WPF's own strikethrough does: native {native}, at {malgun:F3}em {same}");
+        Console.WriteLine($"[62-5] Malgun 32 native {native} / fallback-at-font-value {same}");
+
+        // ② 정상 글꼴은 보정하지 않는다(장식 객체 그대로).
+        var safeRun = new Run("본문") { FontFamily = new FontFamily("Malgun Gothic"), TextDecorations = TextDecorations.Strikethrough };
+        Apply(new TextBlock(safeRun));
+        Check(ReferenceEquals(safeRun.TextDecorations, TextDecorations.Strikethrough), "[62-5] a font with a normal strikethrough value keeps WPF's own strikethrough");
+
+        Check(Math.Abs(native.em - malgun) <= Tolerance, $"[62-5] measured strikethrough height matches the font value: {native.em:F3}em vs {malgun:F3}em");
+
+        // ③ 값이 비정상인 설치 글꼴: 기본 취소선은 글꼴 값 높이(글자 윗부분 또는 밖)에 그려지고, 보정 후에는 기준선 위 0.3em(글자 가운데)에 온다.
+        foreach (string font in new[] { "Noto Sans Tai Le", "Kunstler Script" })
+        {
+            var typeface = new Typeface(new FontFamily(font), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+            if (!typeface.TryGetGlyphTypeface(out _)) { Console.WriteLine($"[62-5] skip {font}: not installed"); continue; }
+            double raw = typeface.StrikethroughPosition;
+            Check(!Call<bool>("IsSafeStrikethrough", raw), $"[62-5] {font} has an out-of-range strikethrough value ({raw:F3}em)");
+            var before = Measure(font, Native());
+            Check(double.IsNaN(before.em) || before.em > 0.45 + Tolerance || before.em < 0.15 - Tolerance,
+                $"[62-5] {font}: WPF's own strikethrough is drawn away from the glyph middle (reproduces the closed-network photo): {before}"); 
+            var run = new Run(sample) { FontFamily = new FontFamily(font + ", Malgun Gothic"), FontSize = 32, TextDecorations = Native() };
+            Apply(new TextBlock(run));
+            Check(run.TextDecorations.Count == 1 && run.TextDecorations[0].Location == TextDecorationLocation.Baseline,
+                $"[62-5] {font}: out-of-range strikethrough is replaced by the baseline-anchored fallback");
+            var after = Measure(font, run.TextDecorations.Clone());
+            Check(Math.Abs(after.em - 0.3) <= Tolerance && after.thickness >= 1,
+                $"[62-5] {font}: corrected strikethrough is drawn 0.3em above the baseline: {after}");
+            Console.WriteLine($"[62-5] {font} font value {raw:F3}em: before {before.em:F3}em, after {after.em:F3}em (thickness {after.thickness}px)");
+            // 밑줄 + 취소선: 밑줄은 그대로 두고 취소선만 바꾼다.
+            var both = TextDecorations.Underline.Clone(); foreach (var d in TextDecorations.Strikethrough) both.Add(d);
+            var run2 = new Run("둘 다") { FontFamily = new FontFamily(font), TextDecorations = both };
+            Apply(new TextBlock(run2));
+            Check(run2.TextDecorations.Count == 2 && run2.TextDecorations.Any(d => d.Location == TextDecorationLocation.Underline)
+                && run2.TextDecorations.Any(d => d.Location == TextDecorationLocation.Baseline) && run2.TextDecorations.All(d => d.Location != TextDecorationLocation.Strikethrough),
+                $"[62-5] {font}: underline is kept while the strikethrough is corrected");
+        }
+
+        // ④ 실제 팝업 경로: PopupFactory → TextPopupView를 창에 띄우면(Loaded) 비정상 글꼴 구간만 보정된다.
+        if (new Typeface(new FontFamily("Noto Sans Tai Le"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal).TryGetGlyphTypeface(out _))
+        {
+            var sample2 = DemoPopupDataService.CreatePopups().Single(p => p.PopupId == "DEMO-TEXT-001");
+            var content = System.Text.Json.Nodes.JsonNode.Parse(sample2.Content.GetRawText())!.AsObject();
+            content["textBlocks"] = System.Text.Json.Nodes.JsonNode.Parse("""
+                [{"runs":[{"text":"이상","font":"Noto Sans Tai Le","size":32,"strikethrough":true},{"text":"정상","font":"Malgun Gothic","size":32,"strikethrough":true}]}]
+                """);
+            sample2.Content = JsonSerializer.SerializeToElement(content);
+            var view = (TextPopupView)PopupFactory.Create(sample2).Content!;
+            var window = new Window { Content = view, Width = 600, Height = 300, ShowActivated = false, ShowInTaskbar = false, Left = -10000, Top = -10000, WindowStyle = WindowStyle.None };
+            window.Show(); window.UpdateLayout();
+            var runs = ((StackPanel)view.FindName("RichTextPanel")).Children.OfType<TextBlock>().Single().Inlines.OfType<Run>().ToList();
+            window.Close();
+            Check(runs[0].TextDecorations[0].Location == TextDecorationLocation.Baseline && runs[1].TextDecorations[0].Location == TextDecorationLocation.Strikethrough,
+                "[62-5] in a shown TEXT popup only the out-of-range font is corrected");
+        }
     }
 
     private static void CheckStrikethrough62()

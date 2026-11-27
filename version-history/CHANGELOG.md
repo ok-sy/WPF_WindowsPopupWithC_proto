@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-28-05 — dev: 62-5_WPF취소선범위밖보정_추가
+
+- 이유: 폐쇄망 WPF 실제 팝업에서 `Noto Sans 32` 기울임·`유앤아이Modern 32` 취소선이 글자 윗부분에 그려져 취소선 역할을 못 함. WPF는 글꼴 파일의 취소선 위치를 그대로 쓰므로, 값이 비정상인 글꼴이면 웹은 정상인데 실제 팝업만 틀어진다. 폐쇄망 글꼴 값 확인 전이라도 범위 밖 값은 보정하기로 결정.
+- 변경:
+  - `popup-frameWork/Popup/Views/Contents/PopupRichText.cs`: `StrikethroughMin`(0.15)·`StrikethroughMax`(0.45)·`StrikethroughFallback`(0.3em), `IsSafeStrikethrough`, `CreateStrikethroughAt`(기준선 기준 PenOffset, 글꼴 권장 두께·글자 색), `ApplySafeStrikethrough` 추가. 취소선 구간이 있는 문단은 `Loaded`에서 Run의 실제 글꼴 값을 확인해 범위 밖이면 보정 선으로 바꾼다. 범위 안 글꼴·밑줄은 그대로.
+  - `scripts/RichTextTests/Program.cs`: `CheckStrikethroughFallback62_5` 추가 — 범위 판정, 보정 선 = 기본 취소선(맑은 고딕 픽셀 동일), 이 PC의 값 비정상 글꼴 Noto Sans Tai Le(0.512em)·Kunstler Script(0.098em) 실제 렌더링 보정 전후, 밑줄 유지, 실제 TEXT 팝업 창 표시 경로.
+  - 문서: TODO62-5 보정 기록, `WPF_POPUP_ALL_SPEC.md`·`WPF_AGENT_SPEC.md` 취소선 설명, ACTIVE_TASKS.
+- 주요 파일: `popup-frameWork/Popup/Views/Contents/PopupRichText.cs`, `scripts/RichTextTests/Program.cs`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/interfaces/WPF/WPF_POPUP_ALL_SPEC.md`, `docs/interfaces/WPF/WPF_AGENT_SPEC.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: WPF 빌드 오류 0. RichTextTests 142(Noto Sans Tai Le 보정 전 0.506em → 후 0.288em, Kunstler Script 0.085 → 0.304em), PopupWindowTests 689, BehaviorTests 1644, verify-strike-62 343, popup-parity 149 통과. 폐쇄망 글꼴 값 확인·WPF 재빌드 반입·실제 팝업 확인·배율 125%+ 미실행. 서버·저장 데이터·웹 변경 없음.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-28-04 — dev: 62-5_취소선사진정정·글꼴값확인도구_수정
 
 - 이유: 2026-11-28-03 후속에서 폐쇄망 사진 2장을 반대로 해석해 기록함. 취소선이 글자 윗부분에 걸려 역할을 못 한 쪽은 WPF 실제 팝업이고 웹 「실제 크기로 보기」는 정상이었다. 원인 후보인 폐쇄망 글꼴 파일의 취소선 값을 확인할 도구가 필요.

@@ -123,6 +123,9 @@ namespace Popup.Views.Contents
                 // 빈 문단도 한 줄 높이를 차지해야 저장된 문단 간격이 유지된다.
                 if (paragraph.Inlines.Count == 0) paragraph.Inlines.Add(new Run(" "));
                 ReserveItalicOverhang(paragraph);
+                // 취소선 구간이 있으면 화면에 붙은 뒤(바깥 글꼴까지 정해진 뒤) 글꼴 취소선 위치를 확인해 범위 밖이면 보정한다(TODO62-5).
+                if (paragraph.Inlines.OfType<Run>().Any(HasStrikethrough))
+                    paragraph.Loaded += (_, _) => ApplySafeStrikethrough(paragraph);
                 paragraphs.Add(paragraph);
             }
             return paragraphs;
@@ -143,6 +146,55 @@ namespace Popup.Views.Contents
                 .Select(r => r.FontSize).DefaultIfEmpty(0).Max();
             // 문단 들여쓰기(왼쪽 여백)는 유지하고 오른쪽 여유만 바꾼다.
             paragraph.Padding = new Thickness(paragraph.Padding.Left, 0, size > 0 ? Math.Ceiling(size * ItalicOverhangRatio) : 0, 0);
+        }
+
+        /*
+         * POL-03-02 : 문단·글자 서식
+         * ■ 취소선 위치 보정(TODO62-5, 2026-11-28)
+         * - WPF TextDecorations.Strikethrough는 글꼴 파일의 취소선 위치(OS/2 yStrikeoutPosition → Typeface.StrikethroughPosition)를
+         *   그대로 쓴다. 보통 0.25~0.33em(글자 가운데)인데, 폐쇄망에서 일부 글꼴(Noto Sans 기울임·유앤아이Modern 32)의 취소선이
+         *   글자 윗부분에 그려져 취소선 역할을 못 했다(같은 이름 글꼴이 이 PC에서는 정상 — 설치 파일 값 차이 의심).
+         * - 글꼴 값이 StrikethroughMin~StrikethroughMax(em) 안이면 기존 취소선을 그대로 두고(정상 글꼴 동작 불변),
+         *   밖이면 기준선에서 StrikethroughFallback(0.3em) 위에 직접 지정한 선으로 바꾼다. 밑줄은 그대로 둔다.
+         *   관리자 웹 미리보기 richStrikeStyle(표에 없는 글꼴·글꼴 미지정 0.3em)과 같은 값이다.
+         */
+        internal const double StrikethroughMin = 0.15;
+        internal const double StrikethroughMax = 0.45;
+        internal const double StrikethroughFallback = 0.3;
+
+        /// <summary>글꼴 취소선 위치(em)가 정상 범위인지. NaN·Infinity는 범위 밖.</summary>
+        internal static bool IsSafeStrikethrough(double position) =>
+            double.IsFinite(position) && position >= StrikethroughMin && position <= StrikethroughMax;
+
+        /// <summary>기준선에서 position(em) 위에 그리는 취소선. 두께·색은 글꼴 권장값·글자 색(Pen 미지정)을 따른다.</summary>
+        internal static TextDecoration CreateStrikethroughAt(double position)
+        {
+            var decoration = new TextDecoration
+            {
+                Location = TextDecorationLocation.Baseline,
+                PenOffset = -position,
+                PenOffsetUnit = TextDecorationUnit.FontRenderingEmSize,
+            };
+            decoration.Freeze();
+            return decoration;
+        }
+
+        private static readonly TextDecoration FallbackStrikethrough = CreateStrikethroughAt(StrikethroughFallback);
+
+        private static bool HasStrikethrough(Run run) =>
+            run.TextDecorations != null && run.TextDecorations.Any(d => d.Location == TextDecorationLocation.Strikethrough);
+
+        /// <summary>Run의 실제 글꼴(지정값 또는 이어받은 값)·굵기·기울임으로 취소선 위치를 읽어, 범위 밖이면 보정 취소선으로 바꾼다.</summary>
+        internal static void ApplySafeStrikethrough(TextBlock paragraph)
+        {
+            foreach (Run run in paragraph.Inlines.OfType<Run>().Where(HasStrikethrough).ToList())
+            {
+                var typeface = new Typeface(run.FontFamily, run.FontStyle, run.FontWeight, run.FontStretch);
+                if (IsSafeStrikethrough(typeface.StrikethroughPosition)) continue;
+                var decorations = new TextDecorationCollection(run.TextDecorations.Where(d => d.Location != TextDecorationLocation.Strikethrough));
+                decorations.Add(FallbackStrikethrough);
+                run.TextDecorations = decorations;
+            }
         }
 
         private static Run CreateRun(string text, PopupTextRunDto format)

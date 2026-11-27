@@ -417,7 +417,7 @@ WPF DTO에 초기값이 있다는 사실은 필수값을 생략해도 된다는 
 |---|---|
 | 문단 정렬 `alignment` | `LEFT` 기본 / `CENTER` / `RIGHT` |
 | 들여쓰기 `indent` | 0 이상 정수, 최대 2,147,483,647. 한 단계 40 DIP. 별도 5단계 제한 없음 |
-| 글자 스타일 | `bold`, `italic`, `underline`, `strikethrough` boolean, 생략 시 false |
+| 글자 스타일 | `bold`, `italic`, `underline`, `strikethrough` boolean, 생략 시 false. 취소선은 글꼴의 취소선 위치(em)로 그리고, 그 값이 0.15~0.45em 밖인 글꼴은 기준선 위 0.3em으로 보정한다(TODO62-5, 관리자 미리보기 근사값과 같음) |
 | 색 `color` | 대문자 `#RRGGBB` |
 | 크기 `size` | 12·14·16·18·20·24·28·32 |
 | 글꼴 `font` | Windows 글꼴 패밀리 이름(기본 4종 `Malgun Gothic`·`Gulim`·`Dotum`·`Batang` 포함, 2026-11-24 글꼴 ID 매핑 삭제)(1~64자, 앞뒤 공백 없음, 제어 문자와 `, ; : ' " \ / < > { } ( ) # & = ? * \|` 제외). 이름은 `이름, 기본 글꼴`로 적용해 미설치 시 기본 글꼴로 표시(TODO28 후속) |

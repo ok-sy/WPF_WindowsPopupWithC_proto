@@ -131,7 +131,14 @@ java -cp .offline-verify/rich62-server server.service.core.popup.RichText62Serve
 - 영향: 웹 미리보기 보정(a497aba·d211d03)은 이 PC에서 잰 1~3.5px 차이를 **WPF의 정상 동작**(글꼴 취소선 값)에 맞춘 것으로 유효하지만, 폐쇄망 사진의 문제(실제 팝업)는 해결하지 않는다. 폐쇄망에서는 미리보기는 정상, 실제 팝업만 이상한 상태가 남는다.
 - 원인 후보(미확정): WPF는 `TextDecorations.Strikethrough`를 글꼴의 취소선 위치(OS/2 yStrikeoutPosition → `Typeface.StrikethroughPosition`) 그대로 그린다. 이 PC에서는 같은 이름(`Noto Sans` 기울임, YouandiModern Head·TextBold)으로 WPF가 정상(0.3~0.322em)이었으므로, **폐쇄망 PC에 설치된 글꼴 파일의 취소선 값이 비정상**(예: 0.45em 초과 → 글자 윗부분)이거나 폐쇄망에서 다른 서체로 대체되는 경우가 유력하다.
 - 확인 도구: `scripts\list-wpf-font-faces.ps1`에 글꼴별 `Strike`·`StrikeThk`·`Underline`(em)·`Check`(0.15 미만·0.45 초과면 '취소선 위치 이상')·`File` 열 추가. 폐쇄망 PC에서 `-Filter Youandi`, `-Filter Noto`로 실행해 결과를 받는다(PowerShell 5.1 기본, 설치 불필요).
-- 다음(결과 확인 후 결정): 값이 비정상이면 WPF `PopupRichText.CreateRun`에서 취소선을 직접 지정(정상 범위 밖이면 0.3em 등)하고 웹 `richStrikeStyle`도 같은 규칙으로 맞춘다. WPF 재빌드·반입 필요.
+- ~~다음(결과 확인 후 결정)~~ → 2026-11-28 결정: 폐쇄망 결과를 기다리지 않고 WPF도 범위 밖이면 0.3em으로 보정(아래).
+
+**2026-11-28 WPF 취소선 보정(범위 밖 → 0.3em):**
+- 구현: `PopupRichText`에 `StrikethroughMin` 0.15·`StrikethroughMax` 0.45·`StrikethroughFallback` 0.3, `IsSafeStrikethrough`, `CreateStrikethroughAt`(Location=Baseline, PenOffset=-position em, Pen 미지정 = 글꼴 권장 두께·글자 색), `ApplySafeStrikethrough` 추가. 취소선 구간이 있는 문단은 `Loaded`(바깥 글꼴까지 정해진 뒤)에 Run의 실제 글꼴·굵기·기울임으로 `Typeface.StrikethroughPosition`을 읽어 범위 밖이면 보정 선으로 바꾼다. 범위 안 글꼴은 기존 `TextDecorations.Strikethrough` 그대로(동작 불변), 밑줄 유지. 서식 본문을 쓰는 TEXT·설문·퀴즈 모두 같은 경로.
+- 재현·검증(`scripts/RichTextTests` `CheckStrikethroughFallback62_5`, 실제 렌더링 96 DPI, 기준선 기준 em 측정): 맑은 고딕 기본 취소선 0.307em = 글꼴 값 0.306em, 글꼴 값으로 만든 보정 선과 픽셀 동일(보정 선 기준 확인). 이 PC의 값 비정상 글꼴 **Noto Sans Tai Le(0.512em): 보정 전 0.506em(글자 윗부분, 폐쇄망 사진과 같은 증상) → 보정 후 0.288em**, Kunstler Script(0.098em, 너무 낮음): 0.085 → 0.304em. 밑줄+취소선은 밑줄 유지. 실제 TEXT 팝업 창 표시 시 비정상 글꼴 구간만 보정.
+- 웹 미리보기: 표의 글꼴 값은 모두 범위 안이고 그 밖은 0.3em이라 같은 규칙이다(변경 없음).
+- 결과: RichTextTests 142, PopupWindowTests 689, BehaviorTests 1644, verify-strike-62 343, popup-parity 149 통과.
+- 남은 확인: 폐쇄망 `list-wpf-font-faces.ps1` 결과(원인 확정), WPF 재빌드 반입 후 사진과 같은 데이터로 실제 팝업 확인, Windows 배율 125%+.
 - 남은 확인: 위 스크립트 폐쇄망 결과, 반입 후 사진과 같은 데이터로 실제 팝업·미리보기 확인, YouandiNewKr Text·YouandiModern Text 실제 값, Windows 배율 125%+·브라우저 확대, CKEditor 편집 화면(편집기 자체 `<s>` 표시는 대상 아님), SCR-01~06.
 
 **2026-11-27 검증 기록:** Git main의 PopupRichBlocks.tsx, PopupRichText.cs, CheckStrikethrough62() 정적 대조 및 제공된 사진 관찰만 실시. 새 테스트 코드·자동 검사·WPF 실행·폐쇄망 실측은 아직 수행하지 않음. Astra 자문 도구는 이 환경에 제공되지 않아 위치·허용오차 기준은 별도 검토 필요.
