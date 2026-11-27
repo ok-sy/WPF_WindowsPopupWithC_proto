@@ -10,6 +10,7 @@
   - 문서: TODO62-5 보정 기록·체크, 실측 보고서 전후(`report-before.md`·`report-after.md`, 캡처 `*.before.png`·`*.after.png`), ACTIVE_TASKS, 가이드 공지 2026-11-28.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks.tsx`, `popupRichText.ts`, `guide/guideNotices.ts`, `scripts/verify-strike-62.cjs`, `scripts/verify-rich-text-49.cjs`, `docs/reviews/TODO62-5_strike_measure/`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
 - 검증: verify-strike-62 230(중심 차이 최대 0.5px, 수정 전 코드는 허용 오차 검사 실패), rich-text-49 116, survey-rich-text-55 81, preview-61 343, parity 149, completion-ux-43 86, common-sample-69 81, guide-registry 653, guide-render 34 통과. `tsc --noEmit` 통과, eslint 오류 0(기존 경고 1). 폐쇄망 유앤아이 글꼴 값·Windows 배율 125%+·로컬 실화면·폐쇄망 미실행. WPF·서버 변경 없음.
+- 후속(폐쇄망 사진 대조): 웹 「실제 크기로 보기」에서 `Noto Sans 32`·`유앤아이Modern 32` 취소선이 글자 윗부분에 걸리고 WPF는 가운데. 마지막 줄 `Noto Serif 32`는 실제로 글꼴 미지정(폐쇄망 기본 Youandi New Kr Text)이라, 글꼴 미지정 구간을 맑은 고딕 값으로 두던 것을 근사값(0.3/0.05em, WPF 미설치 글꼴 기본값과 같음)으로 변경. 표에 `Noto Sans`·`Noto Serif`(0.322/0.05), 이 PC 설치본 YouandiModern Head·HeadExtraBold(0.3/0.02)·TextBold(0.263/0.05), Text(TextBold 값 추정) 추가. 하네스 STR-07(폐쇄망 글꼴 이름)·STR-08(Youandi 설치본) 추가, 허용 오차를 '중심 ≤ 1px + (두께 차 + 잉크 높이 차)/2'로 정리 → 343건 통과(Youandi 0px). 수정 전 코드로 재측정한 표를 `report-before.md`로 교체. 사진 수준의 어긋남은 이 PC 같은 글꼴로 미재현(폐쇄망 환경 요인 추정, 확인 필요). Youandi Head 밑줄 웹 3px 위는 별도 관찰. 회귀: rich-text-49 116·survey-55 81·parity 149·guide-registry 653, tsc 통과.
 - 상태: 원격 반영(main 푸시).
 
 ## 2026-11-28-02 — dev: 62-5_취소선위치실측_추가

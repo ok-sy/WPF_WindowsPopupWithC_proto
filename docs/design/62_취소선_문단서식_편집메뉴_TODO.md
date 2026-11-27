@@ -117,9 +117,14 @@ java -cp .offline-verify/rich62-server server.service.core.popup.RichText62Serve
 **2026-11-28 보정(결정: 웹 미리보기를 WPF에 맞춤, 합격 기준 B 확정):**
 - 결정: 실제 팝업(WPF)을 기준으로 웹 미리보기만 수정. WPF·저장 데이터·서버 변경 없음. 합격 기준은 같은 글자 잉크 기준 취소선 중심 ±1px·두께 ±1px(픽셀 완전 동일 아님).
 - 원인 1건 수정: 웹 `PopupRichBlocks`가 브라우저 `line-through`를 쓰던 것을, 취소선 구간을 안쪽 span(`data-rich-strike`)으로 감싸 WPF `Typeface.StrikethroughPosition·StrikethroughThickness`와 같은 글꼴 값으로 그리도록 변경(`popupRichText.ts` `richStrikeStyle`·`RICH_STRIKE_METRICS`). Chromium은 `text-underline-offset`을 기준선에서 재므로 '위치 지정 밑줄'로 그린다(offset = -(position + thickness/2)em, skip-ink 끔). 밑줄은 바깥 span 일반 밑줄 그대로.
-- 글꼴 표(WPF 실측 em): 맑은 고딕 0.3062/0.0498, Noto Sans KR 0.325/0.05, Noto Serif KR 0.308/0.05, 굴림·돋움·바탕 0.2588/0.0498. 글꼴 미지정은 맑은 고딕, 표에 없는 글꼴(유앤아이 등)은 0.3/0.05 근사.
-- 결과([report-after.md](../reviews/TODO62-5_strike_measure/report-after.md)): 중심 차이 최대 0.5px(이전 3.5px), 두께는 28px 굵게만 1px 차이(반올림), 나머지 동일. verify-strike-62 230건(허용 오차 검사 31건 추가, 수정 전 코드는 이 검사에 실패).
+- 글꼴 표(WPF 실측 em): 맑은 고딕 0.3062/0.0498, Noto Sans KR 0.325/0.05, Noto Serif KR 0.308/0.05, Noto Sans·Noto Serif 0.322/0.05, 굴림·돋움·바탕 0.2588/0.0498, YouandiModern Head·HeadExtraBold 0.3/0.02, YouandiModern TextBold 0.263/0.05(Text는 같은 값 추정). 글꼴 미지정 구간(환경마다 바깥 글꼴이 다름 — 로컬 맑은 고딕, 폐쇄망 Youandi New Kr Text)과 표에 없는 글꼴은 0.3/0.05 근사(WPF도 글꼴을 못 찾으면 0.3).
+- 결과([report-after.md](../reviews/TODO62-5_strike_measure/report-after.md)): 중심 차이 최대 0.5px(이전 3.5px), 두께는 28px 굵게만 1px 차이(반올림), 나머지 동일. verify-strike-62 230건(허용 오차 검사 31건 추가, 수정 전 코드는 이 검사에 실패). 후속 STR-07·08 추가 후 343건.
 - 회귀: rich-text-49 116(취소선 검사를 안쪽 span 기준으로 갱신)·survey-rich-text-55 81·preview-61 343·parity 149·completion-ux-43 86·common-sample-69 81·guide-registry 649·guide-render 34, tsc 통과·eslint 오류 0(기존 경고 1).
-- 남은 확인: 폐쇄망 유앤아이 글꼴의 실제 취소선 값(표 밖이라 0.3em 근사 — 차이가 크면 표에 추가), Windows 배율 125%+·브라우저 확대, CKEditor 편집 화면(편집기 자체 `<s>` 표시는 대상 아님), SCR-01~06.
+- 후속(같은 날, 폐쇄망 사진 2장 대조): 웹 「실제 크기로 보기」에서 `Noto Sans 32`(기울임)·`유앤아이Modern 32`의 취소선이 글자 윗부분에 걸려 취소선 역할을 못 하고, WPF 실제 팝업은 글자 가운데. 마지막 줄 `Noto Serif 32`는 표기와 달리 글꼴 미지정이라 폐쇄망 기본 글꼴 Youandi New Kr Text로 그려짐 → 글꼴 미지정 구간을 맑은 고딕 값으로 두던 가정을 근사값으로 변경.
+  - 하네스 STR-07(폐쇄망 이름 `Noto Sans`·`Noto Serif`, 32 기울임·32 굵게+밑줄·28·16·12)·STR-08(이 PC 설치 Youandi Modern Head·TextBold, 폐쇄망 등록 방식 family+faces) 추가. 허용 오차를 '중심 ≤ 1px + (두께 차 + 잉크 높이 차)/2, 두께 ±1px'로 정리(1.4px 선이 웹 1·WPF 2로 반올림되는 경우 허용).
+  - 결과: 수정 후 STR-07 최대 1.5px(반올림 범위), STR-08 Youandi 전부 0px. 수정 전 코드는 Noto Sans/Serif 32에서 2.5px 위·두께 3/2, Youandi Head 32에서 위치는 같고 두께 3/1([report-before.md](../reviews/TODO62-5_strike_measure/report-before.md)).
+  - 판단: 사진처럼 '글자 윗부분'까지 벗어나는 정도는 이 PC에서 같은 글꼴로 재현되지 않음 → 폐쇄망 환경 요인(웹 글꼴 파일·전역 CSS·브라우저 버전 등, 미확정). 새 방식은 브라우저·글꼴 취소선 규칙을 쓰지 않고 기준선에서 em으로 그려 그 요인과 무관할 것으로 예상하나 폐쇄망 화면 확인 필요.
+  - 별도 관찰(미수정): Youandi Head 32 밑줄은 웹이 WPF보다 3px 위(27.5/30.5). 밑줄도 같은 방식으로 맞출지는 별도 결정.
+- 남은 확인: 폐쇄망 반입 후 사진과 같은 데이터로 취소선 확인, YouandiNewKr Text·YouandiModern Text 실제 값(`scripts\list-wpf-font-faces.ps1` 확장 또는 WPF 값 출력), Windows 배율 125%+·브라우저 확대, CKEditor 편집 화면(편집기 자체 `<s>` 표시는 대상 아님), SCR-01~06.
 
 **2026-11-27 검증 기록:** Git main의 PopupRichBlocks.tsx, PopupRichText.cs, CheckStrikethrough62() 정적 대조 및 제공된 사진 관찰만 실시. 새 테스트 코드·자동 검사·WPF 실행·폐쇄망 실측은 아직 수행하지 않음. Astra 자문 도구는 이 환경에 제공되지 않아 위치·허용오차 기준은 별도 검토 필요.

@@ -13,6 +13,12 @@ registerPopupRichFonts([
   { family: 'Noto Sans KR', css: "'Noto Sans KR', sans-serif" },
   { family: 'Noto Serif KR', css: "'Noto Serif KR', serif" },
   { family: '유앤아이Modern', css: "'유앤아이Modern', sans-serif" },
+  // 폐쇄망 글꼴 이름(2026-11-28 사진: 미리보기 취소선이 글자 윗부분에 걸림). 이 PC에도 같은 이름의 라틴 글꼴이 설치되어 있다.
+  { family: 'Noto Sans', css: "'Noto Sans', sans-serif" },
+  { family: 'Noto Serif', css: "'Noto Serif', serif" },
+  // 폐쇄망 등록 방식(family = WPF 패밀리 이름, faces = 굵기별 서체 local 이름). 이 PC 사용자 글꼴: HeadRegular·HeadExtraBold·TextBold.
+  { family: 'YouandiModern Head', faces: { regular: 'YouandiModern HeadRegular', bold: 'YouandiModern HeadExtraBold' } },
+  { family: 'YouandiModern TextBold', faces: { regular: 'YouandiModern TextBold' } },
 ]);
 const root = createRoot(document.getElementById('root')!);
 const theme = createTheme({ typography: { fontFamily: '"Malgun Gothic", Arial, sans-serif', body1: { fontSize: '0.85rem' } } });

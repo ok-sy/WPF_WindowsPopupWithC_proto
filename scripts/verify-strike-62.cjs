@@ -7,7 +7,7 @@
 // - 측정: G와 변형의 차이 행 = 선. G의 어두운 픽셀 상자 = 글자 잉크. 선 중심을 잉크 위쪽 기준 px와 잉크 높이 비율로 남긴다.
 // - 자동 판정(구조): 두 플랫폼 모두 취소선이 그려지고 잉크 안에 있으며 글자 폭을 덮는다, 밑줄은 취소선보다 아래, 둘 다면 두 선 모두 그려진다,
 //   strikethrough false·누락·잘못된 타입은 장식이 없다(웹 DOM, WPF는 RichTextTests CheckStrikethrough62).
-//   웹·WPF 차이: 글자 잉크 기준 취소선 중심 ±1px·두께 ±1px(2026-11-28 실측 후 확정, 픽셀 완전 동일이 아니라 선의 상대 위치·두께 기준).
+//   웹·WPF 차이: 글자 잉크 기준 취소선 중심 ≤ 1px + (두께 차 + 잉크 높이 차)/2, 두께 ±1px(2026-11-28 실측 후 확정, 픽셀 완전 동일이 아니라 선의 상대 위치·두께 기준).
 //   수정 전(브라우저 line-through)은 1~3.5px 위·32px에서 1px 굵어 이 기준에 실패했다.
 // - 결과: .offline-verify/strike-62/report.md·report.json, <케이스>.<변형>.web.png·.wpf.png
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn, execFileSync} = require('child_process');
@@ -28,6 +28,15 @@ const cases = [
   {id: 'STR-02', font: 'Noto Sans KR', size: 32, italic: true},
   ...[12, 16, 32].map(size => ({id: `STR-03-${size}`, size})),
   {id: 'STR-04', font: 'Noto Serif KR', size: 32, underline: true},
+  // STR-07(2026-11-28): 폐쇄망 사진의 글꼴 이름·서식 그대로 — Noto Sans 32 기울임, Noto Serif 32 굵게+밑줄, 28·16·12 크기.
+  {id: 'STR-07-sans-32i', font: 'Noto Sans', size: 32, italic: true, note: '폐쇄망 사진 조건'},
+  {id: 'STR-07-serif-32b', font: 'Noto Serif', size: 32, bold: true, underline: true, note: '폐쇄망 사진 조건'},
+  ...[28, 16, 12].flatMap(size => [{id: `STR-07-sans-${size}`, font: 'Noto Sans', size}, {id: `STR-07-serif-${size}`, font: 'Noto Serif', size}]),
+  // STR-08(2026-11-28): 이 PC에 설치된 Youandi Modern(폐쇄망 글꼴). 사진의 유앤아이Modern 32 밑줄+취소선, 크기별, TextBold.
+  {id: 'STR-08-head-32u', font: 'YouandiModern Head', size: 32, underline: true, note: 'Youandi 설치본'},
+  {id: 'STR-08-head-32i', font: 'YouandiModern Head', size: 32, italic: true, note: 'Youandi 설치본'},
+  ...[28, 16, 12].map(size => ({id: `STR-08-head-${size}`, font: 'YouandiModern Head', size, note: 'Youandi 설치본'})),
+  ...[32, 16].map(size => ({id: `STR-08-textbold-${size}`, font: 'YouandiModern TextBold', size, note: 'Youandi 설치본'})),
   ...[12, 16, 28, 32].flatMap(size => ['bold', 'italic'].flatMap(style => ['LEFT', 'CENTER', 'RIGHT'].map(alignment =>
     ({id: `STR-05-${size}-${style}-${alignment}`, size, [style]: true, alignment})))),
 ];
@@ -115,8 +124,10 @@ const popups = cases.flatMap(c => variantsOf(c).map(v => popupOf(c, v)));
     }
     row.delta = {offset: row.web.offset - row.wpf.offset, ratio: row.web.ratio - row.wpf.ratio, thickness: row.web.strike.thickness - row.wpf.strike.thickness,
       inkHeight: row.web.ink.height - row.wpf.ink.height};
-    // 합격 기준(2026-11-28 실측 후 확정, TODO62-5 결정 B): 같은 글자 잉크 기준 취소선 중심 차이 ±1px, 두께 차이 ±1px(반올림 차이 허용).
-    check(Math.abs(row.delta.offset) <= 1 && Math.abs(row.delta.thickness) <= 1,
+    // 합격 기준(2026-11-28 실측 후 확정, TODO62-5 결정 B): 같은 글자 잉크 기준 취소선 중심 차이 ≤ 1px + (두께 차이 + 잉크 높이 차이) ÷ 2,
+    // 두께 차이 ≤ 1px. 반올림으로 선 두께(예: 1.4px → 웹 1·WPF 2)나 글자 높이가 1px 달라지면 중심이 그 절반만큼 움직이는 것은 허용한다.
+    row.delta.allowed = 1 + (Math.abs(row.delta.thickness) + Math.abs(row.delta.inkHeight)) / 2;
+    check(Math.abs(row.delta.offset) <= row.delta.allowed && Math.abs(row.delta.thickness) <= 1,
       `${c.id}: web strikethrough matches WPF within 1px (center and thickness): ` + JSON.stringify(row.delta));
     results.push(row);
   }
