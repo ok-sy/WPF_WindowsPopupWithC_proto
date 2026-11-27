@@ -284,8 +284,10 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
     '[62] saved strikethrough reloads into the editor');
   const decorated = [{alignment:'RIGHT',indent:1,runs:[{text:'밑줄 취소선',underline:true,strikethrough:true}]}];
   await run(`window.mount([],false,${JSON.stringify(decorated)})`); await waitEditor(); await pause(250);
-  check(await run(`['#preview','#rich-blocks-preview'].every(s=>{const e=Array.from(document.querySelectorAll(s+' span')).find(e=>e.children.length===0&&e.textContent==='밑줄 취소선');
-    const d=getComputedStyle(e).textDecorationLine;return d.includes('underline')&&d.includes('line-through');})`),
+  // TODO62-5(2026-11-28): 취소선은 안쪽 span(data-rich-strike)에 WPF 글꼴 취소선 위치의 선으로 그린다. 밑줄은 바깥 span의 일반 밑줄.
+  check(await run(`['#preview','#rich-blocks-preview'].every(s=>{const e=Array.from(document.querySelectorAll(s+' span[data-rich-strike]')).find(e=>e.textContent==='밑줄 취소선');
+    const o=e&&e.parentElement;const cs=e&&getComputedStyle(e);
+    return !!e&&getComputedStyle(o).textDecorationLine==='underline'&&cs.textDecorationLine==='underline'&&parseFloat(cs.textUnderlineOffset)<0&&cs.textDecorationSkipInk==='none';})`),
     '[62] TEXT and shared survey/quiz preview display both decorations together');
   // 상단 툴바 숨김(hideToolbar): 호출 조건별 표시·높이·모서리, 켜고 끄기, 숨김 상태의 입력·서식
   const toolbarLayout = () => run(`(()=>{const e=document.querySelector('.ck-editor__editable');

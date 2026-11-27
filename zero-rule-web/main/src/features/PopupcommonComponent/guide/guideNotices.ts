@@ -57,6 +57,15 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-28-rich-strike-wpf', date: '2026-11-28', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-28',
+    title: '미리보기 취소선 위치·두께를 실제 팝업(WPF)과 같게',
+    body: ['서식 본문(TEXT·설문·퀴즈 제목·선택지)의 취소선이 실제 팝업보다 1~3.5px 위·큰 글자에서 1px 굵게 보이던 것을 맞췄습니다. 브라우저 기본 취소선 대신 글꼴의 취소선 위치·두께(WPF가 쓰는 값)로 그립니다.',
+      '취소선 구간은 안쪽 span(data-rich-strike)으로 감싸 그립니다. 저장 데이터(runs[].strikethrough)·WPF·서버는 바뀌지 않습니다. 등록되지 않은 글꼴은 근사값(0.3em)을 씁니다.'],
+    components: ['PopupRichBlocks'],
+    action: '호출부 수정은 필요 없습니다. PopupcommonComponent 폴더(PopupRichBlocks.tsx·popupRichText.ts) 교체만 반영합니다. 화면에서 취소선을 line-through 스타일로 찾던 자체 검사가 있다면 data-rich-strike 요소로 바꿉니다.',
+    tab: 'component',
+  },
+  {
     id: '2026-11-28-preview-display-mode', date: '2026-11-28', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-28',
     title: '실제 크기 미리보기 표시 모드(레이아웃 확인 / 화면 비율 확인)·해상도 안내',
     body: ['실제 크기 미리보기 상단 도구 패널에 표시 모드 토글을 추가했습니다. 레이아웃 확인은 기존과 같이 가상 화면을 1:1로 그리고 브라우저보다 크면 스크롤합니다. 화면 비율 확인은 팝업 크기·줄바꿈·본문 스크롤을 다시 계산하지 않고 가상 화면 전체를 한 비율로 줄여 화면 대비 팝업 비율을 보여 줍니다(브라우저보다 작은 화면은 확대하지 않음).',

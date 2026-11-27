@@ -7,7 +7,8 @@
 // - 측정: G와 변형의 차이 행 = 선. G의 어두운 픽셀 상자 = 글자 잉크. 선 중심을 잉크 위쪽 기준 px와 잉크 높이 비율로 남긴다.
 // - 자동 판정(구조): 두 플랫폼 모두 취소선이 그려지고 잉크 안에 있으며 글자 폭을 덮는다, 밑줄은 취소선보다 아래, 둘 다면 두 선 모두 그려진다,
 //   strikethrough false·누락·잘못된 타입은 장식이 없다(웹 DOM, WPF는 RichTextTests CheckStrikethrough62).
-//   웹·WPF 위치 차이의 허용 오차는 이 실측 결과로 정한다(TODO62-5 결정: 픽셀 완전 동일이 아니라 선의 상대 위치·두께 기준).
+//   웹·WPF 차이: 글자 잉크 기준 취소선 중심 ±1px·두께 ±1px(2026-11-28 실측 후 확정, 픽셀 완전 동일이 아니라 선의 상대 위치·두께 기준).
+//   수정 전(브라우저 line-through)은 1~3.5px 위·32px에서 1px 굵어 이 기준에 실패했다.
 // - 결과: .offline-verify/strike-62/report.md·report.json, <케이스>.<변형>.web.png·.wpf.png
 const fs = require('fs'), path = require('path'), http = require('http'), {spawn, execFileSync} = require('child_process');
 const root = path.resolve(__dirname, '..'), output = path.join(root, '.offline-verify/strike-62');
@@ -114,6 +115,9 @@ const popups = cases.flatMap(c => variantsOf(c).map(v => popupOf(c, v)));
     }
     row.delta = {offset: row.web.offset - row.wpf.offset, ratio: row.web.ratio - row.wpf.ratio, thickness: row.web.strike.thickness - row.wpf.strike.thickness,
       inkHeight: row.web.ink.height - row.wpf.ink.height};
+    // 합격 기준(2026-11-28 실측 후 확정, TODO62-5 결정 B): 같은 글자 잉크 기준 취소선 중심 차이 ±1px, 두께 차이 ±1px(반올림 차이 허용).
+    check(Math.abs(row.delta.offset) <= 1 && Math.abs(row.delta.thickness) <= 1,
+      `${c.id}: web strikethrough matches WPF within 1px (center and thickness): ` + JSON.stringify(row.delta));
     results.push(row);
   }
 

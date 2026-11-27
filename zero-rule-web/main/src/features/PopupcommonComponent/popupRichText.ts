@@ -415,3 +415,41 @@ export function readTextBlocks(value: unknown): RichBlock[] | null {
  * - 기본 4종·등록 글꼴은 등록된 CSS(웹 별칭)를, 미등록 이름은 이름 그대로를 CSS로 쓴다(PC에 없으면 브라우저 기본 글꼴).
  */
 export const richFontCss = (id?: RichFontValue) => (id == null ? undefined : richFonts([id]).find((font) => font.id === id)?.css);
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 글꼴별 취소선 위치·두께(TODO62-5, 2026-11-28)
+ * - WPF TextDecorations.Strikethrough가 쓰는 글꼴 값(Typeface.StrikethroughPosition·StrikethroughThickness, em 단위, 기준선 위가 +)이다.
+ *   이 PC(Windows)의 WPF에서 읽은 값이며, 같은 글꼴 파일이면 폐쇄망도 같다.
+ * - 브라우저 기본 line-through는 이 값을 쓰지 않아 WPF보다 1~3.5px 위·32px에서 1px 굵게 그려졌다(verify-strike-62 실측).
+ * - 표에 없는 글꼴(유앤아이 등 폐쇄망 등록 글꼴 포함)은 RICH_STRIKE_FALLBACK(0.3em, 표 값 0.26~0.33의 가운데)으로 근사한다.
+ */
+export const RICH_STRIKE_METRICS: Readonly<Record<string, { position: number; thickness: number }>> = {
+  'Malgun Gothic': { position: 0.3062, thickness: 0.0498 },
+  'Noto Sans KR': { position: 0.325, thickness: 0.05 },
+  'Noto Serif KR': { position: 0.308, thickness: 0.05 },
+  Gulim: { position: 0.2588, thickness: 0.0498 },
+  Dotum: { position: 0.2588, thickness: 0.0498 },
+  Batang: { position: 0.2588, thickness: 0.0498 },
+};
+/** 표에 없는 글꼴의 취소선 위치·두께(em). */
+export const RICH_STRIKE_FALLBACK = { position: 0.3, thickness: 0.05 } as const;
+/** 글꼴을 지정하지 않은 구간(바깥 글꼴을 이어받음)의 기준 글꼴. 미리보기 테마·WPF 본문 기본 글꼴과 같다. */
+export const RICH_STRIKE_DEFAULT_FONT = 'Malgun Gothic';
+
+/**
+ * POL-03-02 : 문단·글자 서식
+ * ■ 취소선 스타일(WPF 위치 재현)
+ * - in : font?(RichFontValue) 구간 글꼴(없으면 기본 글꼴)
+ * - out: CSS 속성 객체. 취소선을 '기준선 기준 위치를 지정한 밑줄'로 그린다.
+ * - Chromium은 text-underline-offset(길이)을 기준선에서 잰다. 선 윗변 = 기준선 + offset이므로
+ *   중심을 기준선 위 position(em)에 두려면 offset = -(position + thickness / 2)em. 획 건너뛰기(skip-ink)는 끈다(line-through와 같이 글자를 가로지름).
+ *   취소선 구간을 감싼 안쪽 span에만 쓰고, 밑줄은 바깥 span의 일반 밑줄로 그대로 둔다(둘 다 켠 구간도 두 선이 각자 자리에 그려진다).
+ */
+export function richStrikeStyle(font?: RichFontValue): { textDecorationLine: 'underline'; textDecorationThickness: string; textUnderlineOffset: string; textDecorationSkipInk: 'none' } {
+  const { position, thickness } = RICH_STRIKE_METRICS[font ?? RICH_STRIKE_DEFAULT_FONT] ?? RICH_STRIKE_FALLBACK;
+  return {
+    textDecorationLine: 'underline', textDecorationThickness: `${thickness}em`,
+    textUnderlineOffset: `${-(position + thickness / 2)}em`, textDecorationSkipInk: 'none',
+  };
+}

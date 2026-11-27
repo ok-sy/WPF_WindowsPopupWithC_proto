@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { readTextBlocks, RICH_INDENT_STEP, richFontCss, type RichBlock } from './popupRichText';
+import { readTextBlocks, RICH_INDENT_STEP, richFontCss, richStrikeStyle, type RichBlock } from './popupRichText';
 
 /**
  * POL-03-01 : 저장·표시 경계
@@ -39,6 +39,7 @@ interface Props {
  * - 서식 문단을 받아 React 요소로만 그린다(innerHTML 사용 안 함). 빈 문단도 한 줄 높이를 유지한다.
  *   들여쓰기는 문단 전체 왼쪽 여백(WPF 40 DIP와 같은 40px 단위)이다. 구간에 지정이 없는 글꼴·크기·색·굵기는
  *   바깥(일반 문자열 자리)의 값을 이어받는다.
+ *   취소선(TODO62-5, 2026-11-28): 브라우저 line-through 대신 안쪽 span(data-rich-strike)에 WPF와 같은 글꼴 취소선 위치·두께로 그린다(richStrikeStyle).
  */
 export default function PopupRichBlocks({ blocks, trailing, id, paragraph = 'span' }: Props) {
   const inline = paragraph === 'span';
@@ -52,9 +53,11 @@ export default function PopupRichBlocks({ blocks, trailing, id, paragraph = 'spa
           {block.runs.map((run, runIndex) => (
             <Box key={runIndex} component="span" sx={{
               fontWeight: run.bold ? 700 : undefined, fontStyle: run.italic ? 'italic' : undefined,
-              textDecoration: [run.underline && 'underline', run.strikethrough && 'line-through'].filter(Boolean).join(' ') || undefined, color: run.color,
+              textDecoration: run.underline ? 'underline' : undefined, color: run.color,
               fontSize: run.size ? `${run.size}px` : undefined, fontFamily: richFontCss(run.font),
-            }}>{run.text}</Box>
+            }}>{run.strikethrough
+              ? <Box component="span" data-rich-strike="true" sx={richStrikeStyle(run.font)}>{run.text}</Box>
+              : run.text}</Box>
           ))}
           {index === blocks.length - 1 && trailing}
         </Typography>

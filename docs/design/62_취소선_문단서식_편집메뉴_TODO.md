@@ -89,8 +89,8 @@ java -cp .offline-verify/rich62-server server.service.core.popup.RichText62Serve
 - [ ] 동일한 팝업 크기(DIP/CSS px)·Windows 배율·브라우저 확대율·프리셋·스크롤 위치(0/50/100%)에서 웹 실제 크기 및 WPF 캡처를 각각 생성한다. 사진 파일은 관찰 근거, 자동 캡처와 계측 JSON은 합격 근거로 구분한다.
 - [x] 기존 scripts/verify-rich-text-49.cjs, scripts/RichTextTests/Program.cs, scripts/PopupParityCapture/Program.cs를 우선 확장한다. (WPF 캡처는 PopupParityCapture를 그대로 사용, 측정 하네스는 별도 `verify-strike-62.cjs`) 속성 검사만 통과하거나 이미지 전체 픽셀 차이만으로 합격 처리하지 않는다.
 - [ ] 원인 구분 순서: 데이터/서식 매핑 → 실제 폰트 선택·메트릭 → 선 위치/두께 → 문단/클리핑. WPF PenOffset 등의 값은 측정 후 최소 범위에서만 검토하고 전역 덮어쓰기·전체 폰트 교체는 선행하지 않는다.
-- [ ] 원인 1건만 수정 → 동일 입력으로 수정 전 실패/수정 후 통과 확인 → 모든 STR·SCR·기존 서식 회귀 재실행. 미해결이면 차이·가설·재현 조건을 기록하고 반복한다.
-- [ ] 서버·Oracle·API 필드 변경 없이 해결 가능한지 우선 확인한다. 실제 전달 JSON의 strikethrough 필드 유실이 확인될 때만 서버·계약 영향을 별도 보고한다.
+- [x] (2026-11-28 STR·기존 서식 회귀 완료, SCR는 미실행) 원인 1건만 수정 → 동일 입력으로 수정 전 실패/수정 후 통과 확인 → 모든 STR·SCR·기존 서식 회귀 재실행. 미해결이면 차이·가설·재현 조건을 기록하고 반복한다.
+- [x] 서버·Oracle·API 필드 변경 없이 해결 가능한지 우선 확인한다. (웹 미리보기 표시만 변경) 실제 전달 JSON의 strikethrough 필드 유실이 확인될 때만 서버·계약 영향을 별도 보고한다.
 
 ### 구현 전에 결정할 사항
 
@@ -101,17 +101,25 @@ java -cp .offline-verify/rich62-server server.service.core.popup.RichText62Serve
 
 ### 완료·검증 기준
 
-- [ ] 동일 JSON 및 동일 표시 조건으로 STR-01~06의 웹/WPF 서식값·위치·캡처를 재현 가능하게 보관했다.
+- [x] 동일 JSON 및 동일 표시 조건으로 STR-01~06의 웹/WPF 서식값·위치·캡처를 재현 가능하게 보관했다.
 - [ ] 취소선이 문자 안에서 의도한 위치에 나타나고 밑줄·기울임·정렬·크기·글꼴 미지정 케이스에 회귀가 없다.
-- [ ] 최소 수정의 전후 차이와 관련 테스트 결과를 남겼으며, TEXT 외 유형 공유 컴포넌트의 영향도 확인했다.
+- [x] 최소 수정의 전후 차이와 관련 테스트 결과를 남겼으며, TEXT 외 유형 공유 컴포넌트의 영향도 확인했다.
 - [ ] 정적 검토, 웹 검사, Windows/WPF 빌드·캡처, 실제 서버 왕복, 폐쇄망 실화면을 **각각 별도 상태**로 기록했다. 미실행 사항은 완료로 표시하지 않는다.
 
 **2026-11-28 실측 기록(STR-01~06, 수정 전):**
-- 도구: `node scripts/verify-strike-62.cjs`. 같은 TEXT 팝업(720×300, 헤더·푸터 숨김, 표본 `가나다 Hxg 123`)을 장식만 다른 변형 G(없음)·S(취소선)·U(밑줄)·C(둘 다)로 웹 미리보기(headless Edge 100%)와 WPF PopupWindow(PopupParityCapture, 96 DPI)에 그려, G와 변형의 차이 행 = 선, G의 어두운 픽셀 상자 = 글자 잉크로 잰다. 결과 [report.md](../reviews/TODO62-5_strike_measure/report.md)와 대표 캡처 4장.
+- 도구: `node scripts/verify-strike-62.cjs`. 같은 TEXT 팝업(720×300, 헤더·푸터 숨김, 표본 `가나다 Hxg 123`)을 장식만 다른 변형 G(없음)·S(취소선)·U(밑줄)·C(둘 다)로 웹 미리보기(headless Edge 100%)와 WPF PopupWindow(PopupParityCapture, 96 DPI)에 그려, G와 변형의 차이 행 = 선, G의 어두운 픽셀 상자 = 글자 잉크로 잰다. 결과 [report-before.md](../reviews/TODO62-5_strike_measure/report-before.md)와 대표 캡처(`*.before.png`).
 - 구조 검사 199건 통과: 두 플랫폼 모두 취소선 1줄이 잉크 안에 있고 글자 폭을 덮음, 밑줄은 취소선 아래, 둘 다 켜면 두 선이 각자 자리에 그려짐, 정렬 LEFT/CENTER/RIGHT·굵게·기울임 회귀 없음. STR-06(false·누락·잘못된 타입·빈 문단) 웹 장식 없음(WPF는 RichTextTests CheckStrikethrough62).
 - **차이(일관됨):** 글자 잉크 높이는 웹·WPF 같음(12→13, 16→17, 32→34~36). 취소선 중심은 **웹이 WPF보다 위** — 12·16px 1px, 28px 2px, 32px 1.5~3.5px(잉크 높이 대비 0.04~0.09). WPF는 잉크 높이의 약 0.47~0.55(한글 가운데), 웹은 0.40~0.48. 두께는 28px 이하 같음, 32px에서 웹 3px / WPF 2px. 글꼴별 차이: 맑은 고딕 Δ 1~2px, Noto Sans KR·Noto Serif KR 2.5px.
 - 원인 판단: 글리프·전달값·Run 서식은 같고(잉크 높이·계산 글꼴·textDecorationLine 일치) **선 위치·두께 계산 방식만 다름**(웹 = 브라우저 line-through 규칙, WPF = TextDecorations.Strikethrough의 글꼴 취소선 위치). 브라우저 규칙의 정확한 식은 확인하지 않은 가설이다.
 - 함께 보인 별개 차이: 본문 글자 색이 웹 더 진함(취소선과 무관, 이번 범위 밖으로 기록만).
-- 미실행: 폐쇄망 유앤아이 글꼴·배율 125%+ 실측, 스크롤 SCR-01~06. 보정 소유(웹/WPF/유지)는 결정 대기.
+- 미실행: 폐쇄망 유앤아이 글꼴·배율 125%+ 실측, 스크롤 SCR-01~06.
+
+**2026-11-28 보정(결정: 웹 미리보기를 WPF에 맞춤, 합격 기준 B 확정):**
+- 결정: 실제 팝업(WPF)을 기준으로 웹 미리보기만 수정. WPF·저장 데이터·서버 변경 없음. 합격 기준은 같은 글자 잉크 기준 취소선 중심 ±1px·두께 ±1px(픽셀 완전 동일 아님).
+- 원인 1건 수정: 웹 `PopupRichBlocks`가 브라우저 `line-through`를 쓰던 것을, 취소선 구간을 안쪽 span(`data-rich-strike`)으로 감싸 WPF `Typeface.StrikethroughPosition·StrikethroughThickness`와 같은 글꼴 값으로 그리도록 변경(`popupRichText.ts` `richStrikeStyle`·`RICH_STRIKE_METRICS`). Chromium은 `text-underline-offset`을 기준선에서 재므로 '위치 지정 밑줄'로 그린다(offset = -(position + thickness/2)em, skip-ink 끔). 밑줄은 바깥 span 일반 밑줄 그대로.
+- 글꼴 표(WPF 실측 em): 맑은 고딕 0.3062/0.0498, Noto Sans KR 0.325/0.05, Noto Serif KR 0.308/0.05, 굴림·돋움·바탕 0.2588/0.0498. 글꼴 미지정은 맑은 고딕, 표에 없는 글꼴(유앤아이 등)은 0.3/0.05 근사.
+- 결과([report-after.md](../reviews/TODO62-5_strike_measure/report-after.md)): 중심 차이 최대 0.5px(이전 3.5px), 두께는 28px 굵게만 1px 차이(반올림), 나머지 동일. verify-strike-62 230건(허용 오차 검사 31건 추가, 수정 전 코드는 이 검사에 실패).
+- 회귀: rich-text-49 116(취소선 검사를 안쪽 span 기준으로 갱신)·survey-rich-text-55 81·preview-61 343·parity 149·completion-ux-43 86·common-sample-69 81·guide-registry 649·guide-render 34, tsc 통과·eslint 오류 0(기존 경고 1).
+- 남은 확인: 폐쇄망 유앤아이 글꼴의 실제 취소선 값(표 밖이라 0.3em 근사 — 차이가 크면 표에 추가), Windows 배율 125%+·브라우저 확대, CKEditor 편집 화면(편집기 자체 `<s>` 표시는 대상 아님), SCR-01~06.
 
 **2026-11-27 검증 기록:** Git main의 PopupRichBlocks.tsx, PopupRichText.cs, CheckStrikethrough62() 정적 대조 및 제공된 사진 관찰만 실시. 새 테스트 코드·자동 검사·WPF 실행·폐쇄망 실측은 아직 수행하지 않음. Astra 자문 도구는 이 환경에 제공되지 않아 위치·허용오차 기준은 별도 검토 필요.

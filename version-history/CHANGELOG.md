@@ -1,5 +1,17 @@
 # 변경 이력
 
+## 2026-11-28-03 — dev: 62-5_미리보기취소선WPF위치_수정
+
+- 이유: 2026-11-28-02 실측에서 웹 미리보기 취소선이 WPF 실제 팝업보다 1~3.5px 위·32px에서 1px 굵게 그려짐을 확인(글자·전달값은 동일). 실제 팝업(WPF)을 기준으로 미리보기만 맞추기로 결정.
+- 변경:
+  - `PopupRichBlocks.tsx`: 취소선 구간을 안쪽 span(`data-rich-strike`)으로 감싸 그리고, 브라우저 `line-through` 대신 `richStrikeStyle`(글꼴 취소선 위치에 그린 밑줄, skip-ink 끔)을 적용. 밑줄은 바깥 span 일반 밑줄 유지.
+  - `popupRichText.ts`: `RICH_STRIKE_METRICS`(WPF `Typeface.StrikethroughPosition·Thickness` 실측: 맑은 고딕·Noto Sans KR·Noto Serif KR·굴림·돋움·바탕), 근사값 `RICH_STRIKE_FALLBACK`(0.3/0.05em), 기본 글꼴 `RICH_STRIKE_DEFAULT_FONT`, `richStrikeStyle` 추가.
+  - 하네스: `verify-strike-62.cjs`에 허용 오차 검사(중심 ±1px·두께 ±1px) 추가, `verify-rich-text-49.cjs` 취소선 표시 검사를 안쪽 span 기준으로 갱신.
+  - 문서: TODO62-5 보정 기록·체크, 실측 보고서 전후(`report-before.md`·`report-after.md`, 캡처 `*.before.png`·`*.after.png`), ACTIVE_TASKS, 가이드 공지 2026-11-28.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks.tsx`, `popupRichText.ts`, `guide/guideNotices.ts`, `scripts/verify-strike-62.cjs`, `scripts/verify-rich-text-49.cjs`, `docs/reviews/TODO62-5_strike_measure/`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: verify-strike-62 230(중심 차이 최대 0.5px, 수정 전 코드는 허용 오차 검사 실패), rich-text-49 116, survey-rich-text-55 81, preview-61 343, parity 149, completion-ux-43 86, common-sample-69 81, guide-registry 653, guide-render 34 통과. `tsc --noEmit` 통과, eslint 오류 0(기존 경고 1). 폐쇄망 유앤아이 글꼴 값·Windows 배율 125%+·로컬 실화면·폐쇄망 미실행. WPF·서버 변경 없음.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-28-02 — dev: 62-5_취소선위치실측_추가
 
 - 이유: 폐쇄망에서 웹 「실제 크기로 보기」와 WPF 실제 팝업의 취소선 위치·굵기가 달라 보이는 관찰(TODO62-5)을 같은 데이터로 재현·계측할 필요. 기존 `CheckStrikethrough62`는 Run 속성만 확인하고 선의 화면 위치는 검사하지 않음.
