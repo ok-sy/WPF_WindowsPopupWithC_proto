@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-28-02 — dev: 62-5_취소선위치실측_추가
+
+- 이유: 폐쇄망에서 웹 「실제 크기로 보기」와 WPF 실제 팝업의 취소선 위치·굵기가 달라 보이는 관찰(TODO62-5)을 같은 데이터로 재현·계측할 필요. 기존 `CheckStrikethrough62`는 Run 속성만 확인하고 선의 화면 위치는 검사하지 않음.
+- 변경:
+  - `scripts/verify-strike-62.cjs`(+`verify-strike-62-entry.tsx`) 추가: STR-01~05 케이스(글꼴 미지정·Noto Sans KR·Noto Serif KR·유앤아이Modern, 12/16/28/32, 굵게·기울임, LEFT/CENTER/RIGHT)를 장식 변형 G·S·U·C로 웹 미리보기와 WPF PopupWindow(PopupParityCapture)에 그려, 차이 행으로 선·글자 잉크 상자를 잰다. STR-06 웹 DOM 검사. 결과 `report.md`·`report.json`.
+  - 실측 결과와 대표 캡처를 `docs/reviews/TODO62-5_strike_measure/`에 보관. TODO62-5 실측 기록·체크, ACTIVE_TASKS 갱신.
+- 결과: 글자 잉크 높이는 동일, 취소선 중심은 웹이 WPF보다 12·16px 1px, 28px 2px, 32px 1.5~3.5px 위(잉크 대비 0.04~0.09). 32px 두께 웹 3 / WPF 2. WPF는 한글 가운데(잉크 0.47~0.55). 제품 코드 변경 없음, 보정 소유 결정 대기.
+- 주요 파일: `scripts/verify-strike-62.cjs`, `scripts/verify-strike-62-entry.tsx`, `docs/reviews/TODO62-5_strike_measure/`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
+- 검증: verify-strike-62 199건 통과(WPF 캡처 68장). 유앤아이Modern 미설치(대체 글꼴), Windows 배율 125% 이상·폐쇄망 실측·SCR-01~06 미실행.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-28-01 — dev: 61-23_실제크기미리보기표시모드_추가
 
 - 이유: 큰 모니터에서 더 작은 해상도 프리셋을 고르면 가상 화면이 작거나 일부 잘린 채 보여, 관리자 화면 표시를 실제 단말의 물리 크기로 오인할 위험이 있다(2026-11-27 TODO61-23 후속 설계). 승인된 B+A안(표시 모드 분리 + 안내) 구현.
