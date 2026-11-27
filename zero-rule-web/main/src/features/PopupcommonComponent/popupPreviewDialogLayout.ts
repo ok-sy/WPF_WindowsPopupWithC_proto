@@ -207,6 +207,32 @@ export function previewScreenPreset(key: PreviewScreenKey, scale: PreviewScreenS
 
 /**
  * POL-08-01 : 공통 렌더러
+ * ■ 실제 크기 미리보기 표시 모드(TODO61-23 후속, 2026-11-27)
+ * - layout: 레이아웃 확인. 가상 화면을 1:1로 그리고 브라우저보다 큰 축은 스크롤(기존 동작).
+ * - fit: 화면 비율 확인. 레이아웃을 다시 계산하지 않고 다 그린 가상 화면 전체를 한 축척으로 균일 축소해 브라우저에 맞춘다.
+ *   원래 크기 표시가 아니라 화면 전체에서 팝업이 차지하는 비율을 보는 모드다. 저장 데이터에는 넣지 않는다.
+ */
+export type PreviewDisplayMode = 'layout' | 'fit';
+/** 처음 여는 표시 모드. 기존 1:1 동작을 유지한다. */
+export const DEFAULT_PREVIEW_DISPLAY_MODE: PreviewDisplayMode = 'layout';
+/** 화면 비율 확인 모드에서 가상 화면과 브라우저 가장자리 사이에 두는 여백(px). 화면 끝이 바깥 색과 구분되게 한다. */
+export const PREVIEW_FIT_INSET = 16;
+
+/**
+ * POL-08-01 : 공통 렌더러
+ * ■ 화면 비율 확인 축척
+ * - in : shown(Size) 1:1로 그린 가상 화면 크기(px) · viewport(Size) 브라우저 표시 영역 · inset(number) 사방 여백
+ * - out: number 0 초과 1 이하 축척. 가로·세로 중 작은 비율 하나만 써서 늘이거나 왜곡하지 않는다.
+ * - 화면이 이미 브라우저에 들어가면 1(확대하지 않음): 실제보다 크게 보여 물리 크기를 오인하는 일을 막는다.
+ */
+export function previewFitScale(shown: Size, viewport: Size, inset: number = PREVIEW_FIT_INSET): number {
+  if (!(shown.width > 0 && shown.height > 0)) return 1;
+  const width = Math.max(1, viewport.width - inset * 2), height = Math.max(1, viewport.height - inset * 2);
+  return Math.min(1, width / shown.width, height / shown.height);
+}
+
+/**
+ * POL-08-01 : 공통 렌더러
  * POL-01-03 : 최소 크기
  * ■ 실제 크기 미리보기 창 크기 계산(목표 크기)
  * - in : popup(AdminPopupDetail) sizeMode·width/height·widthRatio/heightRatio·maximumWidth/maximumHeight · fitWindow(Size | null) PopupPreview가 계산한 IMAGE 권장 창 크기(WPF RecommendedSizeChanged와 같은 값, 이미 작업 영역 90% 이내) · workArea(Size) 작업 영역(현재 모니터 또는 기준 화면 프리셋)

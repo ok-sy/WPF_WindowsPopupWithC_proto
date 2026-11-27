@@ -57,6 +57,16 @@ export const NOTICE_STATUS_LABELS: Record<NoticeStatus, string> = {
 
 export const GUIDE_NOTICES: GuideNotice[] = [
   {
+    id: '2026-11-28-preview-display-mode', date: '2026-11-28', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-28',
+    title: '실제 크기 미리보기 표시 모드(레이아웃 확인 / 화면 비율 확인)·해상도 안내',
+    body: ['실제 크기 미리보기 상단 도구 패널에 표시 모드 토글을 추가했습니다. 레이아웃 확인은 기존과 같이 가상 화면을 1:1로 그리고 브라우저보다 크면 스크롤합니다. 화면 비율 확인은 팝업 크기·줄바꿈·본문 스크롤을 다시 계산하지 않고 가상 화면 전체를 한 비율로 줄여 화면 대비 팝업 비율을 보여 줍니다(브라우저보다 작은 화면은 확대하지 않음).',
+      '도구 패널 아래에 현재 모드·해상도·배율과 "선택한 해상도·Windows 배율의 가상 화면이며 실제 모니터 크기·확대 설정에 따라 표시 크기가 다를 수 있음" 안내를 항상 표시합니다. 레이아웃 확인에서 화면이 잘리면 가상 화면 일부만 보인다는 점과 팝업 본문 스크롤과는 별개임을 안내합니다.',
+      'props·저장 데이터·API 변경은 없습니다. 모달을 닫으면 표시 모드는 레이아웃 확인으로 돌아가고 해상도·배율 선택은 유지됩니다.'],
+    components: ['PopupPreviewDialog'],
+    action: '호출부 수정은 필요 없습니다. PopupcommonComponent 폴더(PopupPreviewDialog.tsx·popupPreviewDialogLayout.ts) 교체만 반영합니다.',
+    tab: 'component',
+  },
+  {
     id: '2026-11-26-is063-default-size-store', date: '2026-11-26', category: 'CHANGED', status: 'DONE', doneDate: '2026-11-26',
     title: '신규 폼 가로·세로 기본값 채우기·공통코드 스토어(code0101) 연결',
     body: ['IS063 샘플의 "폼 생성"은 가로·세로를 기본 창 크기(POPUP_DEFAULTS.window — 0101 WIDTH·HEIGHT, 없으면 560×420)로 한 번 채웁니다. IMAGE는 가로만 채우고 세로는 세로 자동이 계산합니다. 입력칸·우측 미리보기·실제 크기 보기·저장 값이 같은 값을 씁니다.',

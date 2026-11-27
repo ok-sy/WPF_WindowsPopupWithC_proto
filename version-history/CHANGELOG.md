@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-11-28-01 — dev: 61-23_실제크기미리보기표시모드_추가
+
+- 이유: 큰 모니터에서 더 작은 해상도 프리셋을 고르면 가상 화면이 작거나 일부 잘린 채 보여, 관리자 화면 표시를 실제 단말의 물리 크기로 오인할 위험이 있다(2026-11-27 TODO61-23 후속 설계). 승인된 B+A안(표시 모드 분리 + 안내) 구현.
+- 변경:
+  - `PopupPreviewDialog.tsx`: 도구 패널에 표시 모드 토글(레이아웃 확인 기본 / 화면 비율 확인)과 안내 문구(모드·해상도·배율, 실제 모니터 크기·확대 설정에 따라 다를 수 있음, 잘림 시 가상 화면 일부·본문 스크롤과 별개) 추가. 화면 비율 확인은 DIP 레이아웃을 다시 계산하지 않고 가상 화면 전체에 한 축척을 곱해 축소(확대 없음, 바깥 스크롤 없음). 닫으면 모드만 기본으로 복귀.
+  - 같은 파일: 가운데 스크롤·스크롤바 폭 측정을 rAF `useEffect` → 콜백 ref + `useLayoutEffect`로 변경(처음 열 때 Portal 부착 전 측정 누락, 보이지 않는 탭에서 rAF 미실행으로 도구 패널이 스크롤바와 겹치던 경로).
+  - `popupPreviewDialogLayout.ts`: `PreviewDisplayMode`, `previewFitScale`, `PREVIEW_FIT_INSET` 추가.
+  - 하네스 `verify-popup-preview-61.cjs`(+entry): UX-01·02·04·05 검사 16건 추가. Edge 158 headless에서 화면보다 큰 뷰포트를 에뮬레이션하면 페이지가 hidden이 되어 프레임·resize·스크린샷이 멈추던 문제 대응(화면 ≥ 뷰포트, hidden이면 bringToFront, 남은 프로필 삭제, 미지 경로 404, CDP 30초 제한). 이 문제로 변경 전 코드에서도 같은 하네스가 실패·무한 대기했음을 확인.
+  - 가이드: 컴포넌트 설명·값 목록 갱신, 2026-11-28 공지 추가. 문서: TODO61-23 구현 기록·체크, ACTIVE_TASKS, `61_POPUP_LAYOUT_GUIDE.md`, `ADMIN_POPUP_PREVIEW_COMPONENTS.md`.
+- 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupPreviewDialog.tsx`, `popupPreviewDialogLayout.ts`, `guide/guideData.ts`, `guide/guideNotices.ts`, `scripts/verify-popup-preview-61.cjs`, `scripts/verify-popup-preview-61-entry.tsx`, 문서 4종.
+- 검증: `tsc --noEmit` 통과, eslint 오류 0. preview-61 343(3회 연속)·image-preview 49·popup-parity 149·guide-registry 649·guide-render 34·common-sample-69 81 통과. UX-03 배율×모드 조합, 브라우저 줌·Windows 고DPI 실측, 로컬 실화면, 폐쇄망 확인은 미실행. TODO62-5 취소선 측정(STR-01~06)·SCR-01~06은 미착수.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-27-01 — dev: 62-5·61-23_서식스크롤재귀검증_해상도미리보기설계_추가
 
 - 이유: 폐쇄망 WPF 실제 팝업과 관리자 「실제 크기로 보기」에서 취소선 위치·본문 스크롤 표현이 달라 보이는 관찰, 고해상도 관리자 화면에서 저해상도 가상 화면을 실제 물리 크기로 오인할 위험을 기존 TODO에 반영.

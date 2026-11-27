@@ -10,9 +10,9 @@ const WebSocket = require('../zero-rule-web/node_modules/next/dist/compiled/ws')
 compiled.init(); fs.mkdirSync(output, {recursive: true});
 // PopupPreview가 Header 로고 경로에 쓰는 Next 전용 모듈을 하네스용으로 대체한다(verify-image-preview.cjs와 같은 방식).
 fs.writeFileSync(path.join(output, 'urls-shim.js'), 'exports.routerUrlOf = (url) => url;');
-let browser, socket, server, checks = 0;
+let browser, socket, server, checks = 0, navigated = false;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
+const check = (ok, message) => { if (!ok) throw Error(message); checks++; if (process.env.VERIFY_TRACE) console.log(checks, message.slice(0, 90)); };
 (async () => {
   await new Promise((resolve, reject) => compiled.webpack({mode: 'development', devtool: false,
     entry: path.join(__dirname, 'verify-popup-preview-61-entry.tsx'), output: {path: output, filename: 'bundle.js'},
@@ -20,10 +20,13 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
       alias: {'@/lib/urls$': path.join(output, 'urls-shim.js')}},
     module: {rules: [{test: /\.tsx?$/, use: path.join(__dirname, 'verify-ts-loader.cjs'), exclude: /node_modules/}]},
   }, (error, stats) => error || stats.hasErrors() ? reject(error || Error(stats.toString({all: false, errors: true}))) : resolve()));
-  server = http.createServer((req, res) => {res.setHeader('Content-Type', req.url === '/bundle.js' ? 'application/javascript' : 'text/html; charset=utf-8');
+  // 페이지·번들 외 경로(없는 영상 /missing.mp4 등)는 404. HTML을 200으로 주면 visible 페이지의 video 요소가 이를 불러오며 멈춘다(2026-11-27).
+  server = http.createServer((req, res) => {if (req.url !== '/' && req.url !== '/bundle.js') {res.statusCode = 404; res.end(); return;} res.setHeader('Content-Type', req.url === '/bundle.js' ? 'application/javascript' : 'text/html; charset=utf-8');
     res.end(req.url === '/bundle.js' ? fs.readFileSync(path.join(output, 'bundle.js'))
       : '<!doctype html><script>window.__errors=[];addEventListener("error",e=>__errors.push(e.message));</script><div id="root"></div><script src="/bundle.js"></script>');});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  // 이전 실행이 남긴 프로필은 지운다(남아 있으면 Edge 연결이 멈출 수 있다).
+  fs.rmSync(path.join(output, 'edge-profile'), {recursive: true, force: true});
   browser = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--disable-gpu', '--no-first-run',
     '--remote-debugging-port=9361', '--user-data-dir=' + path.join(output, 'edge-profile'), 'about:blank'], {windowsHide: true, stdio: 'ignore'});
   let targets;
@@ -31,10 +34,21 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   socket = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl); await new Promise(resolve => socket.once('open', resolve));
   let id = 0; const waiting = new Map();
   socket.on('message', raw => {const m = JSON.parse(raw); if (waiting.has(m.id)) {const p = waiting.get(m.id); waiting.delete(m.id); m.error ? p.reject(Error(JSON.stringify(m.error))) : p.resolve(m.result);}});
-  const send = (method, params = {}) => new Promise((resolve, reject) => {const key = ++id; waiting.set(key, {resolve, reject}); socket.send(JSON.stringify({id: key, method, params}));});
+  // CDP 응답이 30초 안에 오지 않으면 실패로 끝낸다(하네스가 무한 대기하지 않게, 2026-11-27).
+  const send = (method, params = {}) => new Promise((resolve, reject) => {const key = ++id;
+    const timer = setTimeout(() => {waiting.delete(key); reject(Error(`CDP timeout: ${method} ${JSON.stringify(params).slice(0, 160)}`));}, 30000);
+    waiting.set(key, {resolve: v => {clearTimeout(timer); resolve(v);}, reject: e => {clearTimeout(timer); reject(e);}}); socket.send(JSON.stringify({id: key, method, params}));});
   const run = async expression => {const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true}); if (result.exceptionDetails) throw Error(JSON.stringify(result.exceptionDetails)); return result.result.value;};
   // TODO61-23: 화면(screen.avail*)도 함께 지정한다. 기본은 화면 = 뷰포트(작업 영역 기준 계산이 예전 브라우저 기준과 같은 조건), 다르게 줄 때만 screen 인자를 쓴다.
-  const viewport = (width, height, screenWidth = width, screenHeight = height) => send('Emulation.setDeviceMetricsOverride', {width, height, screenWidth, screenHeight, deviceScaleFactor: 1, mobile: false});
+  // 2026-11-27 Edge 158: 화면(screen)보다 큰 뷰포트를 에뮬레이션하면 페이지가 hidden이 되어 렌더링 프레임·resize·스크린샷이 멈춘다
+  // (F11 재현용 1920×1080 뷰포트 + 화면 1040 등). 화면은 최소 뷰포트 크기로 준다. 미리보기 모달은 해상도 프리셋 기준이라 이 화면값을 쓰지 않는다.
+  const viewport = async (width, height, screenWidth = width, screenHeight = height) => {
+    await send('Emulation.setDeviceMetricsOverride', {width, height, screenWidth: Math.max(width, screenWidth), screenHeight: Math.max(height, screenHeight), deviceScaleFactor: 1, mobile: false});
+    // 첫 이동 전(about:blank)은 hidden일 수 있어 페이지를 연 뒤부터 확인한다.
+    // 크기를 바꾼 직후 hidden으로 남는 경우가 있어 앞으로 가져온 뒤 다시 확인한다.
+    let visibility = navigated ? await run('document.visibilityState') : 'visible';
+    for (let i = 0; i < 10 && visibility !== 'visible'; i++) {await send('Page.bringToFront'); await pause(100); visibility = await run('document.visibilityState');} check(visibility === 'visible', `headless page stays visible at ${width}x${height}: ${visibility}`);
+  };
   const clickAt = async (x, y) => {
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', {type, x, y, button: 'left', clickCount: 1});
     await pause(350);
@@ -60,6 +74,7 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   await send('Page.enable'); await viewport(1000, 900);
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port});
   for (let i = 0; i < 100; i++) {if (await run("!!document.querySelector('#root button')")) break; await pause(100);}
+  navigated = true; check(await run('document.visibilityState') === 'visible', 'headless page is visible after loading');
 
   // 1) 최소 호스트: API·등록 폼 없이 샘플 객체로 인라인 미리보기를 그린다.
   check(await run("document.querySelector('#root').textContent.includes('팝업 미리보기') && document.querySelector('#root').textContent.includes('본문')"), 'Inline preview renders a sample popup without the editor');
@@ -235,6 +250,50 @@ const check = (ok, message) => { if (!ok) throw Error(message); checks++; };
   check(await run(`(()=>{const c=document.querySelector('[data-testid=preview-virtual-scroll]');c.scrollLeft=c.scrollWidth;c.scrollTop=c.scrollHeight;
     const s=document.querySelector('[data-testid=preview-virtual-screen]').getBoundingClientRect(),r=c.getBoundingClientRect();return s.right<=r.right+0.5&&s.bottom<=r.bottom+0.5&&c.scrollLeft>0&&c.scrollTop>0;})()`),
     '[61-23] 2560x1440 can be scrolled to its bottom-right corner on a smaller browser');
+  // ⑦ 표시 모드(2026-11-27 UX-01~05): 레이아웃 확인(1:1+스크롤) ↔ 화면 비율 확인(가상 화면 균일 축소). 팝업 레이아웃(DIP)·본문 배치는 그대로.
+  const notice = () => run("(document.querySelector('[data-testid=preview-display-notice]')||{}).innerText||''");
+  const layoutSig = () => run(`(()=>{const w=document.querySelector('[data-testid=preview-popup-window]');let s=0;w.querySelectorAll('*').forEach(e=>{s+=e.offsetHeight*7+e.offsetWidth;});return s;})()`);
+  const chooseMode = async mode => { await run(`document.querySelector('[data-testid=preview-mode-${mode}]').click()`); await pause(400); };
+  let n = await notice();
+  check(n.includes('레이아웃 확인 · 2560×1440 · 100%') && n.includes('일부만 보입니다') && n.includes('실제 모니터 크기·확대 설정'),
+    '[61-23 UX-01] layout mode on a smaller browser says only part of the virtual screen is visible: ' + n);
+  const layoutLayout = await layoutSig(), layoutWin = (await virtual()).window;
+  for (const [key, display] of [['2560x1440', [2560, 1440]], ['3840x2160', [3840, 2160]], ['1366x768', [1366, 768]]]) {
+    await chooseMode('fit'); await chooseScreen(key);
+    const v = await virtual(), scale = display[0] ? v.screen.width / display[0] : 0;
+    check(v.screen.width <= 1000 - 32 + 0.5 && v.screen.height <= 900 - 32 + 0.5 && !v.scroll.x && !v.scroll.y && !(await outerScroll()).page,
+      `[61-23 UX-02] fit mode shows the whole ${key} screen without scrolling: ` + JSON.stringify(v));
+    check(Math.abs(v.screen.height / display[1] - scale) < 0.002 && Math.abs(v.shown.width / v.window.width - scale) < 0.002 && Math.abs(v.shown.height / v.window.height - scale) < 0.002,
+      `[61-23 UX-04] fit mode uses one uniform scale for the screen and the popup (${key}): ` + JSON.stringify({scale, v}));
+    n = await notice();
+    check(n.includes('화면 비율 확인 · ' + display.join('×')) && n.includes(Math.round(scale * 100) + '%로 균일 축소'), `[61-23] fit notice names the mode, resolution and scale (${key}): ` + n);
+  }
+  await chooseScreen('2560x1440');
+  check(await layoutSig() === layoutLayout && JSON.stringify((await virtual()).window) === JSON.stringify(layoutWin),
+    '[61-23 UX-05] switching to fit mode does not recompute the popup layout (same DIP sizes and line layout)');
+  check(await run("+document.querySelector('[data-testid=preview-virtual-screen]').dataset.fitScale") < 1 && await run("document.querySelector('[data-testid=preview-mode-fit]').getAttribute('aria-pressed')") === 'true',
+    '[61-23] fit mode is pressed and reports its scale');
+  // 모드는 해상도·배율 선택을 유지한 채 바뀌고, 레이아웃 확인으로 돌아오면 다시 1:1 + 스크롤이다.
+  await chooseMode('layout'); let back = await virtual();
+  check(near(back.screen.width, 2560) && back.scroll.x && back.scroll.y, '[61-23 UX-05] back to layout mode restores 1:1 with scrolling: ' + JSON.stringify(back));
+  // 브라우저보다 작은 화면은 두 모드 모두 1:1(확대하지 않음): 실제보다 크게 보이는 오인 방지.
+  await viewport(1920, 1080, 1920, 1080); await pause(300); await chooseScreen('1366x768'); await chooseMode('fit');
+  back = await virtual(); n = await notice();
+  check(near(back.screen.width, 1366) && near(back.screen.height, 768) && n.includes('100%로 균일 축소'), '[61-23 UX-01] fit mode never enlarges a screen smaller than the browser: ' + JSON.stringify(back) + n);
+  await chooseMode('layout'); n = await notice();
+  check(n.includes('가상 화면 전체가 보입니다') && !n.includes('일부만'), '[61-23] layout notice without clipping: ' + n);
+  await viewport(1000, 900); await pause(300);
+  // 합성 1320×1080(프리셋 아님, UX-01): 1920×1080 브라우저에서는 사방 여백 16 때문에 세로 기준((1080-32)/1080), 1000×900에서는 가로 기준((1000-32)/1320) 균일 축소.
+  // 브라우저에 여유 있게 들어가는 1320×900은 1(확대 없음).
+  check(Math.abs(await run('window.previewFitScale({width:1320,height:1080},{width:1920,height:1080})') - (1080 - 32) / 1080) < 1e-9
+    && await run('window.previewFitScale({width:1320,height:900},{width:1920,height:1080})') === 1
+    && Math.abs(await run('window.previewFitScale({width:1320,height:1080},{width:1000,height:900})') - (1000 - 32) / 1320) < 1e-9
+    && await run('window.previewFitScale({width:0,height:0},{width:1000,height:900})') === 1,
+    '[61-23 UX-01] synthetic 1320x1080: fit scale is uniform, never above 1, and safe for empty sizes');
+  await chooseMode('fit'); await escape();
+  // 화면 비율 확인 상태로 닫아도 다시 열면 기본 모드(레이아웃 확인)로 시작한다.
+  await openPreview(); n = await notice();
+  check(n.startsWith('레이아웃 확인'), '[61-23 UX-05] reopening starts in layout mode: ' + n);
   await escape();
   // 같은 FIXED 팝업이 해상도에 따라 화면 대비 크기가 달라지고, 작은 화면에서는 90% 상한으로 실제로 줄어든다.
   await render('TEXT', {width: 1300, height: 900, maximumWidth: 1600, maximumHeight: 1200}); await openPreview();

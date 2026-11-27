@@ -6,7 +6,7 @@ import PopupPreviewDialog from '../zero-rule-web/main/src/features/PopupcommonCo
 import type { Size } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { adaptiveWindowForImage, fitToImageLayout } from '../zero-rule-web/main/src/features/PopupcommonComponent/imagePreviewLayout';
 import { VIDEO_FIXED_DESCRIPTION, applyVideoFixedDescription, stripVideoFixedDescription } from '../zero-rule-web/main/src/features/PopupcommonComponent/videoFixedDescription';
-import { previewDialogSize, readBrowserViewport, readScreenWorkArea } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
+import { previewDialogSize, previewFitScale, readBrowserViewport, readScreenWorkArea } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupPreviewDialogLayout';
 import { registerPopupRichFonts } from '../zero-rule-web/main/src/features/PopupcommonComponent/popupRichText';
 import { closedNetGlobalStyle } from '../zero-rule-web/main/styles/globalStyle';
 // POL-08-01 : 공통 렌더러
@@ -57,6 +57,7 @@ function Host({popup, hint, placeholders}: {popup: any; hint: boolean; placehold
 (window as any).dialogSizeOf = (popupType: string, overrides: Record<string, unknown>, workArea: Size) => previewDialogSize(samplePopup(popupType, overrides), null, workArea);
 (window as any).readScreenWorkArea = readScreenWorkArea;
 (window as any).readBrowserViewport = readBrowserViewport;
+(window as any).previewFitScale = previewFitScale;
 (window as any).fitLayout = (natural: Size, workArea: Size) => fitToImageLayout((window as any).currentPopup, natural, workArea);
 // 2026-11-24: IMAGE ADAPTIVE 창 크기 맞춤과 동영상 고정 안내 문구 붙이기·떼기(순수 함수) 확인용.
 (window as any).adaptiveFit = (overrides: Record<string, unknown>, content: Record<string, unknown>, natural: Size, width: number | null) =>

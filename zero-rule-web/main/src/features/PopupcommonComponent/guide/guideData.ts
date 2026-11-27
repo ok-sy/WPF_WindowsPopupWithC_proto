@@ -397,7 +397,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
   },
   {
     name: 'PopupPreviewDialog', file: 'PopupPreviewDialog.tsx',
-    summary: '실제 크기로 띄워 보는 미리보기 창입니다. 상단에서 기준 화면(해상도)·배율을 골라 그 화면에서 WPF와 같은 크기·위치로 봅니다. 위치·배경 어둡게 처리도 WPF와 같습니다.',
+    summary: '실제 크기로 띄워 보는 미리보기 창입니다. 상단에서 기준 화면(해상도)·배율을 골라 그 화면에서 WPF와 같은 크기·위치로 봅니다. 위치·배경 어둡게 처리도 WPF와 같습니다. 표시 모드는 레이아웃 확인(실제 크기 1:1)과 화면 비율 확인(가상 화면 전체를 한 비율로 축소) 두 가지입니다.',
     props: [
       { name: 'popup', type: 'AdminPopupDetail', required: true, description: '미리 볼 값. withPreviewFallback(state)로 만들어 넘깁니다.' },
       { name: 'open', type: 'boolean', required: true, description: '열림 여부' },
@@ -405,7 +405,7 @@ const [passingScore, setPassingScore] = useState<number | null>(null);
       { name: 'showPlaceholders', type: 'boolean', description: '값이 없는 자리의 예시 문구·영상 영역 안내 문구 표시. 기본값 false' },
     ],
     outputs: [{ name: 'onClose', type: '() => void', required: true, description: '닫기 버튼·Esc를 누르면 호출됩니다.' }],
-    values: ['popup 전체(값을 바꾸지 않음)', '기준 화면: 해상도 13종 × 배율 100·125·150·175%. 내 모니터와 같은 항목에 * 표시, 처음 선택', '크기·위치: 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외) 기준. 브라우저보다 크면 축소 없이 스크롤'],
+    values: ['popup 전체(값을 바꾸지 않음)', '기준 화면: 해상도 13종 × 배율 100·125·150·175%. 내 모니터와 같은 항목에 * 표시, 처음 선택', '크기·위치: 작업 영역(해상도 ÷ 배율, 작업 표시줄 40 제외) 기준', '표시 모드: 레이아웃 확인(기본, 1:1 — 브라우저보다 크면 스크롤) / 화면 비율 확인(같은 배치를 균일 축소, 확대 없음). 닫으면 레이아웃 확인으로 돌아갑니다', '안내 문구: 현재 모드·해상도·배율과 "실제 모니터 크기·확대 설정에 따라 표시 크기가 다를 수 있음"'],
     reuse: ['미리보기 안에서 고른 답·기준 화면 선택은 닫아도 저장 값에 들어가지 않습니다.'],
     example: PREVIEW_EXAMPLE,
     processes: ['preview'],
