@@ -1,5 +1,16 @@
 # 변경 이력
 
+## 2026-11-28-04 — dev: 62-5_취소선사진정정·글꼴값확인도구_수정
+
+- 이유: 2026-11-28-03 후속에서 폐쇄망 사진 2장을 반대로 해석해 기록함. 취소선이 글자 윗부분에 걸려 역할을 못 한 쪽은 WPF 실제 팝업이고 웹 「실제 크기로 보기」는 정상이었다. 원인 후보인 폐쇄망 글꼴 파일의 취소선 값을 확인할 도구가 필요.
+- 변경:
+  - 기록 정정: TODO62-5(정정 절 추가, 기존 문장은 취소선 표시로 보존), ACTIVE_TASKS, CHANGELOG 2026-11-28-03 후속 문구, 하네스 주석.
+  - `scripts/list-wpf-font-faces.ps1`: 글꼴별 `Strike`·`StrikeThk`·`Underline`(em, WPF Typeface 값)·`Check`(0.15 미만·0.45 초과 '취소선 위치 이상')·`File` 열 추가, 넓은 출력.
+- 판단: 웹 보정(a497aba·d211d03)은 이 PC 기준 WPF 정상 동작에 맞춘 것으로 유지. 폐쇄망 실제 팝업 이상은 로컬 미재현(같은 이름 글꼴로 WPF 정상) → 폐쇄망 글꼴 파일 값 비정상 또는 서체 대체 의심, 미확정. WPF 보정은 스크립트 결과 확인 후 결정.
+- 주요 파일: `scripts/list-wpf-font-faces.ps1`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/policies/ACTIVE_TASKS.md`, `scripts/verify-strike-62.cjs`, `scripts/verify-strike-62-entry.tsx`, `version-history/CHANGELOG.md`.
+- 검증: 이 PC에서 `list-wpf-font-faces.ps1 -Filter Youandi` 실행 — YouandiModern Head·HeadExtraBold 0.3/0.02, TextBold 0.263/0.05 출력, '이상' 없음. 폐쇄망 실행·WPF 수정 미실행. 제품 코드 변경 없음.
+- 상태: 원격 반영(main 푸시).
+
 ## 2026-11-28-03 — dev: 62-5_미리보기취소선WPF위치_수정
 
 - 이유: 2026-11-28-02 실측에서 웹 미리보기 취소선이 WPF 실제 팝업보다 1~3.5px 위·32px에서 1px 굵게 그려짐을 확인(글자·전달값은 동일). 실제 팝업(WPF)을 기준으로 미리보기만 맞추기로 결정.
@@ -10,7 +21,7 @@
   - 문서: TODO62-5 보정 기록·체크, 실측 보고서 전후(`report-before.md`·`report-after.md`, 캡처 `*.before.png`·`*.after.png`), ACTIVE_TASKS, 가이드 공지 2026-11-28.
 - 주요 파일: `zero-rule-web/main/src/features/PopupcommonComponent/PopupRichBlocks.tsx`, `popupRichText.ts`, `guide/guideNotices.ts`, `scripts/verify-strike-62.cjs`, `scripts/verify-rich-text-49.cjs`, `docs/reviews/TODO62-5_strike_measure/`, `docs/design/62_취소선_문단서식_편집메뉴_TODO.md`, `docs/policies/ACTIVE_TASKS.md`.
 - 검증: verify-strike-62 230(중심 차이 최대 0.5px, 수정 전 코드는 허용 오차 검사 실패), rich-text-49 116, survey-rich-text-55 81, preview-61 343, parity 149, completion-ux-43 86, common-sample-69 81, guide-registry 653, guide-render 34 통과. `tsc --noEmit` 통과, eslint 오류 0(기존 경고 1). 폐쇄망 유앤아이 글꼴 값·Windows 배율 125%+·로컬 실화면·폐쇄망 미실행. WPF·서버 변경 없음.
-- 후속(폐쇄망 사진 대조): 웹 「실제 크기로 보기」에서 `Noto Sans 32`·`유앤아이Modern 32` 취소선이 글자 윗부분에 걸리고 WPF는 가운데. 마지막 줄 `Noto Serif 32`는 실제로 글꼴 미지정(폐쇄망 기본 Youandi New Kr Text)이라, 글꼴 미지정 구간을 맑은 고딕 값으로 두던 것을 근사값(0.3/0.05em, WPF 미설치 글꼴 기본값과 같음)으로 변경. 표에 `Noto Sans`·`Noto Serif`(0.322/0.05), 이 PC 설치본 YouandiModern Head·HeadExtraBold(0.3/0.02)·TextBold(0.263/0.05), Text(TextBold 값 추정) 추가. 하네스 STR-07(폐쇄망 글꼴 이름)·STR-08(Youandi 설치본) 추가, 허용 오차를 '중심 ≤ 1px + (두께 차 + 잉크 높이 차)/2'로 정리 → 343건 통과(Youandi 0px). 수정 전 코드로 재측정한 표를 `report-before.md`로 교체. 사진 수준의 어긋남은 이 PC 같은 글꼴로 미재현(폐쇄망 환경 요인 추정, 확인 필요). Youandi Head 밑줄 웹 3px 위는 별도 관찰. 회귀: rich-text-49 116·survey-55 81·parity 149·guide-registry 653, tsc 통과.
+- 후속(폐쇄망 사진 대조, 2026-11-28-04에서 정정 — 아래 사진 방향은 반대로 읽은 것): 웹 「실제 크기로 보기」에서 `Noto Sans 32`·`유앤아이Modern 32` 취소선이 글자 윗부분에 걸리고 WPF는 가운데. 마지막 줄 `Noto Serif 32`는 실제로 글꼴 미지정(폐쇄망 기본 Youandi New Kr Text)이라, 글꼴 미지정 구간을 맑은 고딕 값으로 두던 것을 근사값(0.3/0.05em, WPF 미설치 글꼴 기본값과 같음)으로 변경. 표에 `Noto Sans`·`Noto Serif`(0.322/0.05), 이 PC 설치본 YouandiModern Head·HeadExtraBold(0.3/0.02)·TextBold(0.263/0.05), Text(TextBold 값 추정) 추가. 하네스 STR-07(폐쇄망 글꼴 이름)·STR-08(Youandi 설치본) 추가, 허용 오차를 '중심 ≤ 1px + (두께 차 + 잉크 높이 차)/2'로 정리 → 343건 통과(Youandi 0px). 수정 전 코드로 재측정한 표를 `report-before.md`로 교체. 사진 수준의 어긋남은 이 PC 같은 글꼴로 미재현(폐쇄망 환경 요인 추정, 확인 필요). Youandi Head 밑줄 웹 3px 위는 별도 관찰. 회귀: rich-text-49 116·survey-55 81·parity 149·guide-registry 653, tsc 통과.
 - 상태: 원격 반영(main 푸시).
 
 ## 2026-11-28-02 — dev: 62-5_취소선위치실측_추가

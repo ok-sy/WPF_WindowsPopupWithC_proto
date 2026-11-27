@@ -29,6 +29,7 @@ const cases = [
   ...[12, 16, 32].map(size => ({id: `STR-03-${size}`, size})),
   {id: 'STR-04', font: 'Noto Serif KR', size: 32, underline: true},
   // STR-07(2026-11-28): 폐쇄망 사진의 글꼴 이름·서식 그대로 — Noto Sans 32 기울임, Noto Serif 32 굵게+밑줄, 28·16·12 크기.
+  // 폐쇄망 사진에서 이상했던 쪽은 WPF 실제 팝업이다. 이 PC에서는 WPF도 정상이라 재현되지 않는다(글꼴 파일 값 차이 의심, list-wpf-font-faces.ps1로 확인).
   {id: 'STR-07-sans-32i', font: 'Noto Sans', size: 32, italic: true, note: '폐쇄망 사진 조건'},
   {id: 'STR-07-serif-32b', font: 'Noto Serif', size: 32, bold: true, underline: true, note: '폐쇄망 사진 조건'},
   ...[28, 16, 12].flatMap(size => [{id: `STR-07-sans-${size}`, font: 'Noto Sans', size}, {id: `STR-07-serif-${size}`, font: 'Noto Serif', size}]),
